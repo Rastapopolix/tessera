@@ -91,6 +91,8 @@ Build options (environment; most use `0` or `1`; defaults in `firmware/src/build
 | `MELODEE_DUAL_CORE` | 1 | paired FM6/Prophet rendering on CPU1; `0` builds serial-only firmware |
 | `MELODEE_SLICE` | 1 | the SLICE engine |
 | `MELODEE_ICONS` | 1 | parameter icons on the knob cards |
+| `MELODEE_FM6`, `MELODEE_CZ`, `MELODEE_PROPHET` | 0 (firmware), 1 (host tests) | the retired engines; left out, a project's track of one loads SID INIT |
+| `MELODEE_PLAITS` | 1 (firmware), 0 (host tests) | MACRO, Plaits' synthesis (C++ from `firmware/third_party/mi`) |
 
 ## Samples
 
