@@ -80,6 +80,10 @@ static const preset_t MC_PRESETS[] = {
     MCP("KICK",        14, 60, 50, 40, 50, 64, 1,  0,   0, 64, 127, 30),
     MCP("SNARE",       15, 60, 60, 50, 50, 64, 1,  0,   0, 64, 127, 30),
     MCP("HIHAT",       16, 60, 70, 40, 40, 64, 1,  0,   0, 64, 127, 20),
+    MCP("VA BASS",      4, 40, 50, 30, 35, 80, 1,  0,   0, 64, 127, 15),   /* (short, struck: generator basslines) */
+    MCP("FM BASS",      6, 30, 45, 20, 40, 70, 1,  0,   0, 64, 127, 15),
+    MCP("CHIP ARP",     3, 50, 64, 40, 30, 64, 1,  0,   0, 64, 127, 10),
+    MCP("WIND",        10, 64, 40, 70, 64, 64, 0,  0,  80, 64, 127, 100),   /* (NOISE, HARM opens its filter) */
 };
 #undef MCP
 

@@ -114,6 +114,17 @@ int main(void)
     }
     check("MODEL, HARM, TIMBR, MORPH, DECAY, COLOR, AUX: each moves the sound", ok);
 
+    for (k = 0, ok = 1; k < ENGINES[ENGI_MACRO]->npresets; k++) {   /* every preset, as it loads (after the pitch
+                                                                       * checks: the voice remembers HARM, and VA's
+                                                                       * interval has hysteresis at 64) */
+        sound(k);
+        if (!play(48, 1.0, 0.5, &peak, &rms, &zc, &tail) || rms < 50.0 || peak > 0.95 * 2147483647.0) {
+            ok = 0;
+            printf("    preset %u (%s): peak %.0f rms %.0f\n", k, ENGINES[ENGI_MACRO]->presets[k].name, peak, rms);
+        }
+    }
+    check("every preset plays: sound, finite, within full scale", ok);
+
     {                                                 /* the cost against SID's, one note, on this computer */
         double t0, mc, sid, idle;
         int32_t o[2 * CTL];
