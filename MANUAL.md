@@ -609,8 +609,9 @@ layers, ENERGY, and the cords. Tessera 2.0 has a project format of its own: proj
 by Melodee show **OLD FORMAT** in their slot and do not load (there is no converter), and the first save writes over
 them. Melodee's own preset banks are not carried over.
 
-**A new project** (stopped): tap **SAVE** to the **PROJECT** page and turn **KNOB 1** past the slots and TMPL to
-**NEW**, then press **OCT+**. The NEW SONG screen asks for the key (**KNOB 1** root, **2** scale, **3** tempo), then,
+**A new project**: tap **SAVE** to the **PROJECT** page, turn **KNOB 1** down the list to **New song** and press
+**OCT+** (playback stops; with unsaved changes, **OCT+** again answers Yes to "Start a new song?"). The NEW SONG
+screen asks for the key (**KNOB 1** root, **2** scale, **3** tempo), then,
 after **OCT+**, a role per track (**KNOB 1** to **4**): **KEEP** its sound, or **DRUMS**, **BASS**, **CHORDS**,
 **LEAD** or **PAD** for the first sound of that kind. **OCT+** creates it with every pattern empty; **OCT-** goes back
 or cancels. It starts from the template when one is saved in TMPL, else from the power-on sounds, and has no slot
