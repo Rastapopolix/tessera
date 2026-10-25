@@ -1157,9 +1157,10 @@ static void act_do(void)
     id = cur_page()->id[c & 3u];
     if (id != G_LOAD)
         ui.act = 0;
-    if (id == G_LOAD && ui.proj_new) {                  /* NEW: a new song (unsaved changes: the dialog first) */
-        if (transport_busy()) ui_message("STOP FIRST");
-        else if (project_dirty()) confirm_open(CF_NEW_SONG, 0);
+    if (id == G_LOAD && ui.proj_new) {                  /* NEW: a new song (unsaved changes: the dialog first); playing,
+                                                         * the transport stops first, as SAVE + REC's (new_create checks) */
+        if (transport_busy()) transport_req = 2;
+        if (project_dirty()) confirm_open(CF_NEW_SONG, 0);
         else new_open();
         ui.act = 0;
         return;
