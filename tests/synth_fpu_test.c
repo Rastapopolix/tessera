@@ -22,10 +22,22 @@ static void fm6_numerics(void)
     assert(error<2e-5 && voice.ph[0]==phase);
     /* The Q24 log pitch lookup must remain exact, including negative logs.
      * Two short partial products replace the original wide interpolation. */
+    int32_t original_freq[1025];
+    double hz=(double)(1ull<<44)/FS,ratio=pow(2.0,1.0/1024.0);
+    for(uint32_t i=0;i<1025u;i++){
+        original_freq[i]=(int32_t)floor(hz+0.5);hz*=ratio;
+        assert(fm6_freq_point(i)==original_freq[i]);
+    }
+    _Static_assert(sizeof FM6_FREQ_BASE+sizeof FM6_FREQ_RES==2314u,"compact exact frequency table");
+    for(uint32_t ph=0;ph<0x1000000u;ph++){
+        uint32_t i=ph>>14,f=ph&16383u;
+        int32_t want=original_freq[i]+(int32_t)(((int64_t)(original_freq[i+1u]-original_freq[i])*f)>>14);
+        assert(fm6_freq((int32_t)ph+20*16777216)==want);
+    }
     for(int32_t octave=-4;octave<=20;octave++)for(uint32_t i=0;i<1024;i++)
     for(uint32_t f=0;f<16384;f+=127){
         int32_t lf=octave*16777216+(int32_t)(i*16384+f);
-        int32_t y=FM6_FREQ[i]+(int32_t)(((int64_t)(FM6_FREQ[i+1]-FM6_FREQ[i])*f)>>14);
+        int32_t y=original_freq[i]+(int32_t)(((int64_t)(original_freq[i+1]-original_freq[i])*f)>>14);
         int sh=20-octave;int32_t want=sh<=0?y:sh>31?0:y>>sh;
         assert(fm6_freq(lf)==want);
     }
