@@ -886,9 +886,9 @@ static void draw_columns(void)
         fmt_int(w3, (int32_t)left + 1);
         draw_column(0, "ARC", w0, "%", VAL(0u), (int32_t)tessera.en_arc * 10, ICON_AUTO);
         draw_column(1, "RESTS", w1, "%", VAL(1u), (int32_t)tessera.en_rests * 10, ICON_AUTO);
-        draw_column(2, "NOW", tessera.en_arc ? w2 : "--", tessera.en_arc ? "%" : "", T_DIM, -1, ICON_NONE);
+        draw_column(2, "NOW", tessera.en_arc ? w2 : "--", tessera.en_arc ? "%" : "", tessera.en_arc ? T_TEXT : T_MID, -1, ICON_NONE);
         draw_column(3, "REST", song.playing && energy_resting() ? w3 : "--", song.playing && energy_resting() ? "s" : "",
-                    T_DIM, -1, ICON_NONE);
+                    song.playing && energy_resting() ? T_TEXT : T_MID, -1, ICON_NONE);
         return;
     }
     if (cur_page()->graph == GR_TIMING) {                /* SUB (seq_sub.c): RATCH, its CHANCE (dim at x1), SHAPE, HUMAN */
