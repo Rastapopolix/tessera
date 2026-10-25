@@ -5,17 +5,25 @@
      X0X's, charlesvestal/fm1-x0x, both GPL-3.0), so it draws the FM-1 as the other FM-1 browser builds do. Changed:
      the names, the font from Google Fonts, no saves (no flash), the demo button and the Tessera line.
      Written as a page body (it publishes as is); web/sim/build.sh puts the document around it. -->
-<!-- DotGothic16 (SIL OFL 1.1) for the knob labels -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap">
+<!-- DotGothic16 (SIL OFL 1.1) for the knob labels; Chakra Petch (SIL OFL 1.1) for the page, as the project page -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Chakra+Petch:wght@400;500;600&display=swap">
 <style>
-:root { --bg: #8e8e93; --fg: #111; --dim: #2c2c2e; --rule: #5a5a5e;
-        --body: #1d1d1f; --tray: #141415; --part: #2a2a2d; --edge: #3a3a3e; --label: #d6d6d8;
-        --lit: #fff4d6; --green: #5fe08a; color-scheme: light; }
+/* the page: the project page's look (web/home/index.html): SMALTI, the mark's lapis and gold, Chakra Petch;
+ * the device: the black and mint FM-1 ("dark green"), a black body and knobs, the button trays, buttons, keybed and
+ * keys mint */
+:root { --bg: #0d1326; --fg: #f6f0e0; --dim: #b3b2b0; --rule: #343b51;
+        --surf: #18213c; --raise: #2b3249; --accent: #ffe296; --gold: #ecb848;
+        --t1: #deca60; --t2: #40c8d6; --t3: #6ed668; --t4: #d67cec;
+        --body: #1d1d1f; --well: #141415; --part: #2a2a2d; --edge: #3a3a3e; --label: #d6d6d8;
+        --tray: #5fc9ad; --btn: #7cd9c0; --btn-edge: #4bb398; --btn-ink: #0f2e27; --rec: #c62a22;
+        --key: #7cd9c0; --key-edge: #4bb398;
+        --lit: #f2fffa; --green: #5fe08a; color-scheme: dark; }
 html, body { background: var(--bg); }
-body { margin: 0; color: var(--fg); font: 13px/1.6 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; }
+body { margin: 0; color: var(--fg); font: 400 14px/1.6 "Chakra Petch", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 32px; }
 @media (orientation: portrait) and (max-width: 700px) { main { padding: 8px 8px 24px; } }
-a { color: inherit; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:hover { color: var(--gold); }
 .device { position: relative; width: 100%; aspect-ratio: 1000 / 624; user-select: none; -webkit-user-select: none;
           -webkit-touch-callout: none; touch-action: manipulation; }
 .device svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -24,60 +32,73 @@ a { color: inherit; }
 .hit.knob { cursor: ns-resize; border-radius: 50%; }
 .hit:focus-visible { outline: 2px solid var(--lit); outline-offset: 2px; }
 .face { transition: fill .05s; }
-.dim .face.btn { fill: #3a3934; }
-.lit .face.btn { fill: var(--lit); }
-.lit text { fill: #1d1d1f; }
+.dim .face.btn { fill: #95e3ce; }
+.lit .face.btn { fill: var(--lit); filter: drop-shadow(0 0 4px rgba(230, 255, 247, .7)); }
+.lit text { fill: var(--btn-ink); }
 .green .face.btn { fill: var(--green); }
 .green text { fill: #0d2414; }
-.face.key { fill: #0c0c0d; stroke: var(--edge); stroke-width: 1.5; }
-.slit { fill: #3a3a3c; transition: fill .05s; }
-.dim .slit { fill: #77777b; }
-.lit .slit { fill: #ececee; filter: drop-shadow(0 0 3px rgba(255, 255, 255, .6)); }
+.face.key { fill: var(--key); stroke: var(--key-edge); stroke-width: 1.5; }
+.slit { fill: #1e3a33; transition: fill .05s; }
+.dim .slit { fill: #3f6a5f; }
+.lit .slit { fill: #ffffff; filter: drop-shadow(0 0 3px rgba(255, 255, 255, .8)); }
 /* #119: what can be pressed breathes, dark .. ~60 % of lit and back (hal/fm1_input.h fm1_led_breath, ~1.1 s; MENU >
  * LEDS DIM LO ~30 %): the peaks between dark and lit at ~0.8 / ~0.58 on screen (the LED's share, gamma-encoded) */
-@keyframes breath-btn { 0%, 100% { fill: #3a3934; } 50% { fill: #d8cfb6; } }
-@keyframes breath-slit { 0%, 100% { fill: #3a3a3c; } 50% { fill: #c8c8ca; } }
-@keyframes breath-btn-lo { 0%, 100% { fill: #3a3934; } 50% { fill: #aca592; } }
-@keyframes breath-slit-lo { 0%, 100% { fill: #3a3a3c; } 50% { fill: #a1a1a3; } }
+@keyframes breath-btn { 0%, 100% { fill: #7cd9c0; } 50% { fill: #d6f7ee; } }
+@keyframes breath-slit { 0%, 100% { fill: #1e3a33; } 50% { fill: #cfe9e2; } }
+@keyframes breath-btn-lo { 0%, 100% { fill: #7cd9c0; } 50% { fill: #b4eedf; } }
+@keyframes breath-slit-lo { 0%, 100% { fill: #1e3a33; } 50% { fill: #a2c9bf; } }
 .breath .face.btn { animation: breath-btn 1.13s ease-in-out infinite; }
 .breath .slit { animation: breath-slit 1.13s ease-in-out infinite; }
 .dimlo .breath .face.btn { animation-name: breath-btn-lo; }
 .dimlo .breath .slit { animation-name: breath-slit-lo; }
 @media (prefers-reduced-motion: reduce) {
   .breath .face.btn, .breath .slit { animation: none; }
-  .breath .face.btn { fill: #aca592; }
-  .breath .slit { fill: #a1a1a3; }
+  .breath .face.btn { fill: #b4eedf; }
+  .breath .slit { fill: #a2c9bf; }
 }
 /* the DRUM grid's beats (hal/fm1_input.h fm1_led_mid): a steady level between the glow and lit, ~15 % (DIM LO ~10 %) */
-.mid .slit { fill: #9a9a9e; }
-.dimlo .mid .slit { fill: #8a8a8e; }
+.mid .slit { fill: #86b2a7; }
+.dimlo .mid .slit { fill: #6f9a8f; }
 .held .face { stroke: var(--lit); stroke-width: 3; }
 .latched .face { stroke: #79b8ff; stroke-width: 3; }
 .start { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px;
          background: rgba(0, 0, 0, .5); border-radius: 4% / 6%; }
 .start[hidden] { display: none; }
-.start button { font: inherit; font-size: 18px; padding: 12px 28px; background: #fff; color: #000; border: 0; cursor: pointer; }
+.start button { font: inherit; font-size: 18px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+                padding: 12px 28px; background: var(--gold); color: var(--bg); border: 0; cursor: pointer; }
+.start button:hover { background: var(--accent); }
 .start button:disabled { opacity: .4; cursor: progress; }
 .start p { margin: 0; max-width: 32em; text-align: center; color: #fff; }
 .keys, footer { margin: 16px 0 0; color: var(--dim); text-align: center; }
 .keys span { white-space: nowrap; margin: 0 8px; }
 .keys select { font: inherit; font-size: 12px; }
-kbd { font: 600 11px ui-monospace, Menlo, monospace; border: 1px solid var(--rule); padding: 0 4px; color: var(--fg); }
+kbd { font: 600 11px ui-monospace, Menlo, monospace; border: 1px solid var(--raise); background: var(--surf);
+      padding: 0 4px; color: var(--fg); }
 footer { margin-top: 12px; font-size: 12px; }
 footer nav a { margin: 0 6px; }
 footer small { font-size: 11px; opacity: .8; }
 /* melodee-tess: the guide to the generators, under the device */
 .guide { max-width: 860px; margin: 20px auto 0; color: var(--fg); font-size: 14px; line-height: 1.5; }
-.guide h2 { font-size: 15px; margin: 0 0 6px; }
-.guide h3 { font-size: 13px; margin: 0 0 4px; letter-spacing: .04em; }
+.guide h2 { font-size: 18px; font-weight: 600; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .06em; }
+.guide h2::after { content: ""; display: block; height: 4px; margin: 6px 0 0; width: 120px;
+                   background: linear-gradient(90deg, var(--t1) 0 23%, transparent 23% 25.7%, var(--t2) 25.7% 48.7%,
+                   transparent 48.7% 51.3%, var(--t3) 51.3% 74.3%, transparent 74.3% 77%, var(--t4) 77%); }
+.guide h3 { font-size: 13px; font-weight: 600; margin: 0 0 4px; letter-spacing: .06em; text-transform: uppercase; }
+.guide b { color: var(--accent); font-weight: 600; }
 .guide p { margin: 0 0 10px; }
 .guide ol { margin: 0 0 14px; padding-left: 1.4em; display: grid; gap: 4px; }
 .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 16px; }
-.demo button { font: inherit; font-weight: 600; padding: 7px 16px; background: var(--body); color: var(--label); border: 0; border-radius: 6px; cursor: pointer; }
+.demo button { font: inherit; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 9px 16px;
+               background: var(--gold); color: var(--bg); border: 0; cursor: pointer; }
+.demo button:hover:not(:disabled) { background: var(--accent); }
 .demo button:disabled { opacity: .45; cursor: default; }
-.demo button:focus-visible { outline: 2px solid var(--body); outline-offset: 2px; }
+.demo button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .gens { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin: 0 0 14px; }
-.gens section { min-width: 0; background: #9b9ba0; border-radius: 8px; padding: 10px 12px; }
+.gens section { min-width: 0; background: var(--surf); border-top: 4px solid var(--t1); padding: 10px 12px; }
+.gens section:nth-child(4n+2) { border-top-color: var(--t2); }
+.gens section:nth-child(4n+3) { border-top-color: var(--t3); }
+.gens section:nth-child(4n+4) { border-top-color: var(--t4); }
+.gens dt { color: var(--accent); }
 .gens dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; font-size: 13px; }
 .gens dt { font-weight: 700; white-space: nowrap; }
 .gens dd { margin: 0; }
@@ -93,8 +114,9 @@ footer small { font-size: 11px; opacity: .8; }
 <div class="guide">
   <h2>Try the generators</h2>
   <div class="demo"><button id="demo" type="button" disabled>Play the demo</button>
-    <span>Switch on first. It starts with KOTO GARDEN, the second demo in the video: two koto on QUAD, a breath flute
-      on SERIES, a mokugyo on POLY. The button plays it from the top (or press PLAY); STILL TIDE is in slot B
+    <span>Switch on first. It starts with STILL TIDE, the first demo in the video: an ambient piece made to run for an
+      hour, a breathing FM6 drone, a TRIO pad on AWAKE, wind chimes on FALL and a sub bass on MARKOV, thinned and
+      filled by ENERGY. The button plays it from the top (or press PLAY); KOTO GARDEN is in slot B
       (SAVE &gt; PROJECT).</span></div>
   <p>The demo is loaded as a project, as on the device, so PLAY plays it. <b>To start from an empty project</b>:
     tap <b>SAVE</b> (<kbd>8</kbd>) until the PROJECT page, turn <b>KNOB 1</b> down to <b>New song</b> and press
@@ -228,7 +250,7 @@ function build(name) {
                                 width: `${(ss - 2 * inset) / L.w * 100}%`, height: `${(ss - 2 * inset) / L.h * 100}%` });
   KNOBS.forEach((n, i) => {
     const [x, y, r] = L.knobs[i], g = el("g", {});
-    el("circle", { cx: x, cy: y, r: r + 5, fill: "var(--tray)" }, g);
+    el("circle", { cx: x, cy: y, r: r + 5, fill: "var(--well)" }, g);
     el("circle", { cx: x, cy: y, r, fill: "var(--part)", stroke: "var(--edge)", "stroke-width": 2 }, g);
     const ind = n === "MASTER" ? el("line", { x1: x, y1: y - r + 5, x2: x, y2: y - r + 14, stroke: "var(--label)", "stroke-width": 3, "stroke-linecap": "round" }, g) : null;
     label(g, x, y - r - 12, n, 16, DOT);
@@ -237,9 +259,9 @@ function build(name) {
   });
   const button = ([x, y, w, h], n, sub) => {
     const g = el("g", {});
-    el("rect", { x, y, width: w, height: h, rx: 8, fill: "var(--part)", stroke: "var(--edge)", "stroke-width": 1.5, class: "face btn" }, g);
-    const ink = n === "REC" ? "#ff453a" : undefined;
-    if (sub) { label(g, x + w / 2, y + h / 2 - 2, n, 10.8, SANS, ink); label(g, x + w / 2, y + h / 2 + 11, sub, 9.9); }
+    el("rect", { x, y, width: w, height: h, rx: 8, fill: "var(--btn)", stroke: "var(--btn-edge)", "stroke-width": 1.5, class: "face btn" }, g);
+    const ink = n === "REC" ? "var(--rec)" : "var(--btn-ink)";
+    if (sub) { label(g, x + w / 2, y + h / 2 - 2, n, 10.8, SANS, ink); label(g, x + w / 2, y + h / 2 + 11, sub, 9.9, SANS, ink); }
     else label(g, x + w / 2, y + h / 2 + 4.5, n, 12.6, SANS, ink);
     buttons.push({ g, bit: B[n], name: sub ? `${n} / ${sub}` : n });
   };
@@ -436,7 +458,7 @@ function drawScreen(fb) {
 // the power-on sweep (hal/fm1_led_anim.h): a level per LED, lit frames /64 (| 128: the glow under them), drawn as the
 // LED's share of lit between its dark (or glowing) colour and the lit one, mixed in linear light
 const lin = (h) => [1, 3, 5].map((i) => (parseInt(h.slice(i, i + 2), 16) / 255) ** 2.2);
-const ANIM = { btn: [lin("#3a3934"), lin("#3a3934"), lin("#fff4d6")], slit: [lin("#3a3a3c"), lin("#77777b"), lin("#ececee")] };
+const ANIM = { btn: [lin("#7cd9c0"), lin("#95e3ce"), lin("#f2fffa")], slit: [lin("#1e3a33"), lin("#3f6a5f"), lin("#ffffff")] };
 function animFill(kind, q) {
   const [dark, glow, lit] = ANIM[kind], s = Math.min(q & 127, 64) / 64, base = q & 128 ? glow : dark;
   const c = base.map((v, i) => Math.round(255 * (v + (lit[i] - v) * s) ** (1 / 2.2)));
