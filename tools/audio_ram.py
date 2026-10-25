@@ -75,6 +75,21 @@ def function_type(match):
     return f'{ret} ({", ".join(args)})'
 
 
+def call_arguments(line, begin):
+    """Read old LLVM intrinsic arguments, including nested constant GEPs."""
+    args, depth, start = [], 0, begin
+    for pos in range(begin, len(line)):
+        char = line[pos]
+        if char == ')' and depth == 0:
+            args.append(line[start:pos].strip())
+            return args, pos
+        if char == ',' and depth == 0:
+            args.append(line[start:pos].strip())
+            start = pos + 1
+        depth += (char in '([{') - (char in ')]}')
+    raise ValueError('Unterminated LLVM memory intrinsic')
+
+
 def relocate(ir, roots):
     functions = {m[2]: m for m in FUNCTION.finditer(ir)}
     selected = set()
@@ -87,6 +102,9 @@ def relocate(ir, roots):
             continue
         selected.add(name)
         pending.extend(REFERENCE.findall(functions[name][5]))
+        # Backend lowering can turn these intrinsics into libc calls after
+        # this pass. Their implementation must join an audio caller's closure.
+        pending.extend(re.findall(r'@llvm\.(memcpy|memset)\.', functions[name][5]))
     if 'fm1_alnk0_irq' not in selected:
         raise ValueError('Audio ISR is missing from the optimized module')
 
@@ -94,8 +112,8 @@ def relocate(ir, roots):
                 for name, m in functions.items()}
     for name in selected:
         if not sections[name]:
-            sections[name] = '.audio_text'
-        elif sections[name] not in ('.audio_text', '.dsp_text', '.ram_text'):
+            sections[name] = '.audio_libc' if name in {'memcpy', 'memset'} else '.audio_text'
+        elif sections[name] not in ('.audio_text', '.audio_libc', '.dsp_text', '.ram_text'):
             raise ValueError(f'Unexpected audio section for {name}: {sections[name]}')
     far = {}
 
@@ -103,10 +121,38 @@ def relocate(ir, roots):
         name = match[2]
         header = match[0].split('\n', 1)[0]
         if name in selected and not re.search(r'\bsection "', match[4]):
-            header = header[:-1].rstrip() + ' section ".audio_text" {'
+            header = header[:-1].rstrip() + f' section "{sections[name]}" {{'
         body = []
         for line in match[5].splitlines():
             call = CALL.search(line)
+            intrinsic = re.search(r'call void @llvm\.(memcpy|memset)\.p0i8(?:\.p0i8)?\.i32\(', line)
+            if intrinsic:
+                target = intrinsic[1]
+                if target in functions and bool(sections[name]) != bool(sections[target]):
+                    args, end = call_arguments(line, intrinsic.end())
+                    if len(args) != 5 or args[-1] != 'i1 false':
+                        raise ValueError('Unsupported cross-region memory intrinsic')
+                    typ = function_type(functions[target])
+                    far[target] = typ
+                    local = f'%audio_far_{len(body)}'
+                    body.append(f'  {local} = load volatile {typ}*, {typ}** @__audio_far_{target}, align 4')
+                    args = args[:3]
+                    if target == 'memset':
+                        value = args[1].removeprefix('i8 ')
+                        if value.startswith('%'):
+                            wide = f'%audio_fill_{len(body)}'
+                            body.append(f'  {wide} = zext i8 {value} to i32')
+                            value = wide
+                        args[1] = 'i32 ' + value
+                    # Name the unused libc result: an unnamed nonvoid call
+                    # would consume a numeric LLVM slot and renumber the IR.
+                    prefix = line[:intrinsic.start()]
+                    qualifier = prefix.strip()
+                    if qualifier not in ('', 'tail', 'notail'):
+                        raise ValueError('Unsupported memory intrinsic call qualifier')
+                    qualifier = qualifier + ' ' if qualifier else ''
+                    line = f'  %audio_copy_{len(body)} = {qualifier}call i8* {local}(' + ', '.join(args) + line[end:]
+                    call = None
             if call and call[1] in functions and sections[name] != sections[call[1]]:
                 # SRAM sections can call each other directly; all fit well
                 # inside branch range. Only a flash/RAM crossing needs this.

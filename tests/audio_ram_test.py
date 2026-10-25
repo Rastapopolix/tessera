@@ -47,6 +47,36 @@ class AudioRamTest(unittest.TestCase):
         self.assertIn('section ".dsp_text"',functions['hot'][4])
         self.assertNotIn('section',functions['boot'][4])
 
+    def test_lowered_memory_intrinsics(self):
+        extra = """define i8* @memcpy(i8* %d, i8* %s, i32 %n) {
+  ret i8* %d
+}
+define i8* @memset(i8* %d, i32 %c, i32 %n) {
+  ret i8* %d
+}
+define void @copy_boot(i8* %d, i8* %s, i8 %fill) {
+  tail call void @llvm.memcpy.p0i8.p0i8.i32(i8* %d, i8* getelementptr ([2 x i8], [2 x i8]* @bytes, i32 0, i32 0), i32 2, i32 4, i1 false)
+  call void @llvm.memset.p0i8.i32(i8* %d, i8 %fill, i32 2, i32 4, i1 false)
+  ret void
+}
+@bytes = global [2 x i8] zeroinitializer
+"""
+        source = IR.replace('  call fastcc void @render(i32 32)',
+            '  call void @llvm.memcpy.p0i8.p0i8.i32(i8* null, i8* null, i32 0, i32 4, i1 false)\n'
+            '  call void @llvm.memset.p0i8.i32(i8* null, i8 0, i32 0, i32 4, i1 false)', 1) + extra
+        output, selected, far = relocate(source, {'fm1_alnk0_irq'})
+        self.assertTrue({'memcpy', 'memset'} <= set(selected))
+        functions = {m[2]: m for m in FUNCTION.finditer(output)}
+        self.assertIn('section ".audio_libc"', functions['memcpy'][4])
+        self.assertTrue({'memcpy', 'memset'} <= set(far))
+        boot = next(m[5] for m in FUNCTION.finditer(output) if m[2] == 'copy_boot')
+        self.assertNotIn('@llvm.mem', boot)
+        self.assertRegex(boot, r'%audio_copy_\d+ = tail call i8\* %audio_far_')
+        self.assertIn('getelementptr ([2 x i8], [2 x i8]* @bytes, i32 0, i32 0)', boot)
+        self.assertIn('zext i8 %fill to i32', boot)
+        with self.assertRaisesRegex(ValueError, 'Unsupported cross-region'):
+            relocate(source.replace('i1 false', 'i1 true'), {'fm1_alnk0_irq'})
+
     def test_callback_abi(self):
         fn=next(m for m in FUNCTION.finditer(IR) if m[2]=='accept')
         self.assertEqual(function_type(fn),'void (void (i8*, i32)*, i8*)')
