@@ -5583,7 +5583,8 @@ static int test_undo_levels(void)
     return bad;
 }
 
-/* NEW SONG: SAVE > PROJECT, KNOB 1 past TMPL (NEW), KNOB 3 picks it, OCT+ (notes unsaved: the dialog first); KEY: KNOB 1
+/* NEW SONG: SAVE > PROJECT, KNOB 1 past TMPL (NEW), KNOB 3 picks it, OCT+ (playing: the transport stops; notes unsaved: the
+ * dialog first); KEY: KNOB 1
  * ROOT, 2 SCALE, 3 TEMPO, OCT+; ROLES: KNOB k track k's, OCT+ creates it: the power-on sounds (no template), BASS on
  * track 2 (a BASS sound), the key on every track, the tempo, every pattern empty, no slot */
 static int test_new_song(void)
@@ -5619,6 +5620,15 @@ static int test_new_song(void)
     bad += check("  a new song with nothing in it: no dialog", !ui.confirm && new_on());
     press(B_OCTDN);
     bad += check("  OCT- on KEY cancels", !new_on());
+    my_steps(&trk[0]);
+    go_page(GR_SLOTS);
+    for (i = 0; i < 6u; i++) turn(EN_K1, 1);
+    turn(EN_K3, 1);
+    song.playing = 1;
+    press(B_OCTUP);
+    bad += check("  OCT+ on NEW while playing: the transport stops and the dialog opens (as stopped)",
+                 transport_req == 2u && ui.confirm == CF_NEW_SONG);
+    stop_transport();
     ui_power_on();
     return bad;
 }
