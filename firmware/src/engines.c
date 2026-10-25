@@ -4,6 +4,15 @@
  * sounds at power-on. */
 #include "dsp.c"
 #include "audio_batch.h"
+#if MELODEE_ANALOG
+#include "eng_analog.c"         /* ANALOG: two band-limited oscillators, drive, a trapezoidal low-pass (Felucca) */
+#endif
+#if MELODEE_PHASE
+#include "eng_phase.c"          /* PHASE: phase distortion (Felucca) */
+#endif
+#if MELODEE_LOFI
+#include "eng_lofi.c"           /* LOFI: a chip voice (Felucca) */
+#endif
 #include "eng_sid.c"
 #include "eng_formant.c"
 #include "eng_trio.c"
@@ -34,6 +43,9 @@ static const engine_t ENG_RETIRED = {         /* 13 without MELODEE_SLICE: reser
 
 /* Each track owns only its selected engine's working state. Simple engines
  * use voice_t alone. State is released after the old engine's switch fade. */
+#if MELODEE_GURDY
+#include "eng_gurdy.c"          /* GURDY: a hurdy-gurdy (Ghoulbox) */
+#endif
 #include "resources.c"
 #include "eng_macro.c"          /* MACRO: Plaits' synthesis (MELODEE_PLAITS; macro_glue.cc, third_party/mi) */
 static uint32_t eng_state_size(uint32_t e)
@@ -80,9 +92,17 @@ static int16_t (*slc_rbuf(uint32_t part))[SLC_RB] { return resource_get(RES_ENGI
 
 /* the editor protocol, user presets and projects store these indices: append, never reorder */
 static const engine_t *const ENGINES[NENGINES] = {
-    &ENG_RETIRED,                /* 0: retired ANALOG; stored ID reserved */
+#if MELODEE_ANALOG
+    &ENG_ANALOG,                 /* 0 */
+#else
+    &ENG_RETIRED,                /* 0: ANALOG left out of the build; stored ID reserved */
+#endif
     &ENG_RETIRED,                /* 1: retired DIGITAL; stored ID reserved */
-    &ENG_RETIRED,                /* 2: retired PHASE; stored ID reserved (its core was CZ-1's) */
+#if MELODEE_PHASE
+    &ENG_PHASE,                  /* 2 */
+#else
+    &ENG_RETIRED,                /* 2: PHASE left out of the build; stored ID reserved */
+#endif
 #if MELODEE_SID
     &ENG_SID,                    /* 3: SID replaces LOFI without reusing a stored ID */
 #else
@@ -104,7 +124,11 @@ static const engine_t *const ENGINES[NENGINES] = {
 #else
     &ENG_RETIRED,                /* 7: retired WHEEL; stored ID reserved */
 #endif
+#if MELODEE_LOFI
+    &ENG_LOFI,                   /* 8 (ENGI_LOFI: retired GRAIN's id; LOFI's own 3 is SID's) */
+#else
     &ENG_RETIRED,                /* 8: retired GRAIN; stored index reserved */
+#endif
 #if PHYS_ON
     &ENG_PHYS,
 #else
@@ -126,7 +150,11 @@ static const engine_t *const ENGINES[NENGINES] = {
 #else
     &ENG_RETIRED,             /* 13: reserved (MELODEE_SLICE=0 builds without SLICE) */
 #endif
+#if MELODEE_GURDY
+    &ENG_GURDY,                  /* 14 (ENGI_GURDY) */
+#else
     &ENG_RETIRED,                /* 14: retired OBXF; stored index reserved */
+#endif
     &ENG_RETIRED,                /* 15: retired CZ-1 (2026-10-22); stored ID reserved */
     &ENG_RETIRED, &ENG_RETIRED, &ENG_RETIRED, /* 16..18 reserved */
     &ENG_RETIRED,                /* 19: retired Prophet (2026-10-22); stored ID reserved, its programs kept */
@@ -183,6 +211,18 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
 #if MELODEE_PLAITS
     ENGI_MACRO,                  /* MACRO */
 #endif
+#if MELODEE_ANALOG
+    0,                           /* ANALOG */
+#endif
+#if MELODEE_PHASE
+    2,                           /* PHASE */
+#endif
+#if MELODEE_LOFI
+    ENGI_LOFI,                   /* LOFI */
+#endif
+#if MELODEE_GURDY
+    ENGI_GURDY,                  /* GURDY */
+#endif
 #if MELODEE_SLICE
     13,                          /* SLICE */
 #endif
@@ -193,14 +233,14 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
  * Never relabel retired records FM6. */
 static int eng_extra_retired(uint32_t e)
 {
-    if (e == ENGI_ANALOG) return 1;
-    return e == ENGI_DIGITAL || e == 2u || (!MELODEE_LEGACY_EXTRAS && (e == 5u || (e == 6u && !MELODEE_TRIO) || e == 7u || e == 11u));
+    if (e == ENGI_ANALOG) return !MELODEE_ANALOG;
+    return e == ENGI_DIGITAL || (e == 2u && !MELODEE_PHASE) || (!MELODEE_LEGACY_EXTRAS && (e == 5u || (e == 6u && !MELODEE_TRIO) || e == 7u || e == 11u));
 }
 /* the engines one can pick, in ENGINE_ORDER: eng_ok(e), the n-th of them
  * eng_vis(n), e's place among them eng_rank(e), the next / previous one eng_step(e, dir) (wraps) */
 static int eng_ok(uint32_t e)
 {
-    return e < NENGINES && !(e >= 16u && e <= 18u) && !eng_extra_retired(e) && e != 4u && e != 8u && e != 14u && e != 20u && (MELODEE_SLICE || e != ENGI_SLICE) &&
+    return e < NENGINES && !(e >= 16u && e <= 18u) && !eng_extra_retired(e) && e != 4u && (MELODEE_LOFI || e != 8u) && (MELODEE_GURDY || e != 14u) && e != 20u && (MELODEE_SLICE || e != ENGI_SLICE) &&
            ENG_BUILT(e);
 }
 static uint32_t eng_sound_idx(uint32_t e)

@@ -60,8 +60,25 @@
 #ifndef MELODEE_PLAITS
 #define MELODEE_PLAITS 0         /* MACRO (eng_macro.c): Plaits' synthesis, C++ (build.py); the prototype: off by default */
 #endif
+/* ANALOG, PHASE, LOFI and GURDY: back from Felucca / Ghoulbox (2026-10-25), ids 0, 2, 8 (retired GRAIN's; LOFI's own 3 is SID's here) and 14 */
+#ifndef MELODEE_ANALOG
+#define MELODEE_ANALOG 1
+#endif
+#ifndef MELODEE_PHASE
+#define MELODEE_PHASE 1
+#endif
+#ifndef MELODEE_LOFI
+#define MELODEE_LOFI 1
+#endif
+#ifndef MELODEE_GURDY
+#define MELODEE_GURDY 1
+#endif
+#define ENGI_PHASE 2u
+#define ENGI_GURDY 14u
+#define ENGI_LOFI 8u
 #define ENG_BUILT(e) ((e) == 3u ? MELODEE_SID : (e) == 9u ? PHYS_ON : (e) == 12u ? MELODEE_FM6 : (e) == 15u || (e) == 19u ? 0 : \
-                      (e) == 21u ? MELODEE_PLAITS : 1)   /* SID PHYS FM6 CZ-1 PROPHET MACRO (PHYS: left out, not retired,
+                      (e) == 21u ? MELODEE_PLAITS : (e) == 0u ? MELODEE_ANALOG : (e) == 2u ? MELODEE_PHASE : (e) == 14u ? MELODEE_GURDY : \
+                      (e) == 8u ? MELODEE_LOFI : 1)   /* SID PHYS FM6 CZ-1 PROPHET MACRO (PHYS: left out, not retired,
                                                    * since 2026-10-21: its tracks load FM's first voice) */
 #define TRIO_ON (MELODEE_TRIO || MELODEE_LEGACY_EXTRAS)
 #define PHYS_ON (MELODEE_PHYS || MELODEE_LEGACY_EXTRAS)
@@ -82,7 +99,7 @@
 #define ENGI_ANALOG 0u           /* retired in 1.2: never selectable (eng_ok), its stored sounds play silent */
 #define ENGI_DIGITAL 1u          /* retired: never selectable (eng_ok), its stored sounds play silent */
 #define NENG_SHOWN (NENGINES - 11u - !MELODEE_SLICE - (MELODEE_LEGACY_EXTRAS ? 1u : 6u - MELODEE_TRIO - MELODEE_PHYS) - !MELODEE_SID - !MELODEE_FM6 - \
-                    !MELODEE_PLAITS)   /* the engines one can pick: PRESETS, the EDIT
+                    !MELODEE_PLAITS + MELODEE_ANALOG + MELODEE_PHASE + MELODEE_LOFI + MELODEE_GURDY)   /* the engines one can pick: PRESETS, the EDIT
                                                 * layer, the editor, in the display order of engines.c ENGINE_ORDER */
 #define ENGI_SLICE 13u           /* reserved without MELODEE_SLICE: never selectable (eng_ok) */
 #ifdef SMP_USER_SLOTS

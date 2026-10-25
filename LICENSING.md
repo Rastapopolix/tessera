@@ -43,6 +43,8 @@ Melodee's additions and modifications are credited separately in the source file
 | What | Licence | Where |
 | --- | --- | --- |
 | Original Felucca portions retained in the firmware, tools, web pages and tests | GPL-3.0-only | Source notices; `LICENSE` |
+| ANALOG, PHASE and LOFI (Felucca 1.6, as in GHOULBOX 2.4, <https://github.com/jasonpersinger/ghoulbox-fm1-dungeon-synth>): ported with their factory sounds; the preset effect sends and suggested patterns, and ANALOG's filter type and envelope sync, are left out. PHASE's waveforms are a C port of CrispyZebra (Leo Kuroshita, GPL-3.0) | GPL-3.0-only | `firmware/src/eng_analog.c`, `firmware/src/eng_phase.c`, `firmware/src/eng_lofi.c` |
+| GURDY (GHOULBOX 2.4, <https://github.com/jasonpersinger/ghoulbox-fm1-dungeon-synth>, on Felucca): ported with its six sounds; the crank, RING and the drones' temperament are left out | GPL-3.0-only | `firmware/src/eng_gurdy.c` |
 | Felucca 1.6's fix for its issue #236 (rows dark while a storage erase stops the LED scan), ported by hand | GPL-3.0-only | `firmware/src/storage_hw.c` |
 | Felucca 1.6.1's safe CPU1 hold (`fm1_cpu1_halt`, release commit a53ecf4), as adapted in Melodee 1.4.3 (keremimo/melodee 6e6a580) | GPL-3.0-only | `firmware/hal/fm1_core1_stop.h` |
 | The PHASE engine's waveforms: a C port of the oscillator of CrispyZebra (<https://github.com/hugelton/CrispyZebra>) | GPL-3.0 | `firmware/src/eng_phase.c` |

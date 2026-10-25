@@ -49,8 +49,8 @@ static int16_t boot_cell;
 static const char *const N_MSRC[] = {"OFF", "LFO", "ENV", "VEL", "KEY", "RAND", "MODW", "AT", "EXPR", "S&H", "SLEW"};
 static const char *const N_MDST[] = {"OFF", "PITCH", "CUT", "SHP", "AMP", "PAN", "", "", "", "", "RATE",
                                      "VIB", "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "DEPTH"};
-static const char *const N_ENGNAME[] = {"-", "-", "-", "SID", "-", MELODEE_LEGACY_EXTRAS ? "VOICE" : "-", TRIO_ON ? "TRIO" : "-", MELODEE_LEGACY_EXTRAS ? "WHEEL" : "-", "-", PHYS_ON ? "PHYS" : "-",
-                                             "DRUM", MELODEE_LEGACY_EXTRAS ? "NOISE" : "-", "FM6", MELODEE_SLICE ? "SLICE" : "-", "-", "-", "-", "-", "-", "-",
+static const char *const N_ENGNAME[] = {MELODEE_ANALOG ? "ANALOG" : "-", "-", MELODEE_PHASE ? "PHASE" : "-", "SID", "-", MELODEE_LEGACY_EXTRAS ? "VOICE" : "-", TRIO_ON ? "TRIO" : "-", MELODEE_LEGACY_EXTRAS ? "WHEEL" : "-", MELODEE_LOFI ? "LOFI" : "-", PHYS_ON ? "PHYS" : "-",
+                                             "DRUM", MELODEE_LEGACY_EXTRAS ? "NOISE" : "-", "FM6", MELODEE_SLICE ? "SLICE" : "-", MELODEE_GURDY ? "GURDY" : "-", "-", "-", "-", "-", "-",
                                              "-", MELODEE_PLAITS ? "MACRO" : "-"};   /* (15 CZ-1, 19 PROPHET: retired 2026-10-22; 20 reserved, 21 MACRO:
                                                                                    * one name per engine ID, NENGINES) */
 _Static_assert(NELEM(N_ENGNAME) == NENGINES, "N_ENGNAME: one name per engine ID");

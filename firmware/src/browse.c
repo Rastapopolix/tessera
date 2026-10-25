@@ -24,6 +24,18 @@ static const char *const PRESET_CAT[NENGINES] = {
     [5] = "PLBF",                                       /* VOICE: CHOIR AAH, VOX LEAD, WOW BASS, WHISPER */
     [11] = "FFFF",                                      /* NOISE */
 #endif
+#if MELODEE_ANALOG
+    [0] = "LPBSBKLBURWSPSRB",                           /* ANALOG (Felucca) */
+#endif
+#if MELODEE_PHASE
+    [2] = "RGSLEUR",                                    /* PHASE (Felucca) */
+#endif
+#if MELODEE_LOFI
+    [8] = "LBULLLPW",                                   /* LOFI (Felucca) */
+#endif
+#if MELODEE_GURDY
+    [14] = "SPSRSW",                                    /* GURDY (Ghoulbox) */
+#endif
     [3] = "OLBBBBBBLLLLLLLLPSPPGGKKUUERFFFF",          /* SID */
 #if TRIO_ON
     [6] = "BLLEPPSPPBLWFRPP",                           /* TRIO: FAT BASS .. CHIP CHOIR, then the warm set (WARM PAD .. SWEEP PAD) */

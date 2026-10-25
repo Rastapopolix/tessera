@@ -6,7 +6,7 @@ int main(void)
     int bad=0; reset(); up_boot();
     /* (melodee-tess 2026-10-16: MACRO appended at 21, 20 reserved for USER_NATIVE_P5; the others as they were) */
     bad+=check("engine and native collection IDs remain unchanged",NENGINES==22 && USER_GENERAL==16 && USER_NATIVE_FM==17 && USER_NATIVE_CZ==18 && ENGI_PROPHET==19 && USER_NATIVE_P5==20 && ENGI_MACRO==21 && !eng_ok(20));
-    const uint8_t retired[]={2,5,7,11};   /* (TRIO and PHYS back 2026-10-17: MELODEE_TRIO, MELODEE_PHYS) */
+    const uint8_t retired[]={5,7,11};   /* (TRIO and PHYS back 2026-10-17: MELODEE_TRIO, MELODEE_PHYS) */
     for(uint32_t j=0;j<NELEM(retired);j++) {
         uint32_t e=retired[j];
         bad+=check("retired engine absent from browser and DSP resources",!eng_ok(e) && !ENGINES[e]->npresets && !eng_state_size(e));
@@ -23,6 +23,14 @@ int main(void)
         bad+=check("retired user patch retains all native edit values",!memcmp(values+P_E0,TSEL->p+P_E0,16));
         bad+=check("retirement does not clear existing favorite identifiers",favorite_has(e,3));
     }
+    /* (2026-10-25: ANALOG 0, PHASE 2, LOFI 8 (GRAIN's id; its own 3 is SID's) and GURDY 14 back, from Felucca and Ghoulbox) */
+    bad+=check("ANALOG, PHASE, LOFI and GURDY are offered, with presets",eng_ok(0)&&eng_ok(2)&&eng_ok(ENGI_LOFI)&&eng_ok(ENGI_GURDY)&&ENGINES[0]->npresets&&ENGINES[2]->npresets&&ENGINES[ENGI_LOFI]->npresets&&ENGINES[ENGI_GURDY]->npresets);
+    set_engine_of(TSEL,ENGI_GURDY);apply_preset_to(TSEL,1);   /* DRONE WHEEL: Ghoulbox's reverb 110 and chorus 20 */
+    bad+=check("GURDY sound load: REVERB in slot 1, CHORUS in slot 2",TSEL->p[P_FXTYPE]==8 && TSEL->p[P_FXMIX]==55 && TSEL->p[P_FX2TYPE]==9 && TSEL->p[P_FX2MIX]==20);
+    apply_preset_to(TSEL,2);   /* DANCE GURDY: no chorus */
+    bad+=check("GURDY sound without a chorus: slot 2 OFF",TSEL->p[P_FXMIX]==35 && TSEL->p[P_FX2TYPE]==0);
+    set_engine_of(TSEL,ENGI_FM6);
+    bad+=check("another engine's load leaves the effects alone",TSEL->p[P_FXTYPE]==8 && TSEL->p[P_FXMIX]==35);
     for(uint32_t k=0;k<NENG_SHOWN;k++)bad+=check("browser lists only available engines",eng_ok(eng_vis(k)));
     printf("Engine retirement test %s\n",bad?"FAILED":"passed");return !!bad;
 }
