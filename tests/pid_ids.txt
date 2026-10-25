@@ -83,14 +83,14 @@
 0x06c FX SEND                  track 0..127 def 0
 0x06d FX SEND 2                track 0..127 def 0
 0x06e FX SEND 3                track 0..127 def 0
-0x06f ENGINE 1                 track 0..0 def 0
-0x070 ENGINE 2                 track 0..0 def 0
-0x071 ENGINE 3                 track 0..0 def 0
-0x072 ENGINE 4                 track 0..0 def 0
-0x073 ENGINE 5                 track 0..0 def 0
-0x074 ENGINE 6                 track 0..0 def 0
-0x075 ENGINE 7                 track 0..0 def 0
-0x076 ENGINE 8                 track 0..0 def 0
+0x06f ENGINE 1                 track 0..6 def 0
+0x070 ENGINE 2                 track 0..127 def 10
+0x071 ENGINE 3                 track 0..127 def 64
+0x072 ENGINE 4                 track 0..127 def 0
+0x073 ENGINE 5                 track 0..127 def 90
+0x074 ENGINE 6                 track 0..127 def 30
+0x075 ENGINE 7                 track 0..127 def 0
+0x076 ENGINE 8                 track 0..127 def 64
 0x100 TEMPO                    global 40..240 def 120
 0x101 SWING                    global 0..100 def 0
 0x102 CLOCK SOURCE             global 0..2 def 0

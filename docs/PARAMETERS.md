@@ -91,14 +91,14 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x06C | FX SEND | 0 to 127 | 0 | How much of the track goes to the effects (the first send effect when they are SPLIT). |
 | 0x06D | FX SEND 2 | 0 to 127 | 0 | How much of the track goes to send effect 2 (FX MODE SPLIT). |
 | 0x06E | FX SEND 3 | 0 to 127 | 0 | How much of the track goes to send effect 3 (FX MODE SPLIT). |
-| 0x06F | ENGINE 1 | 0 to 0 | 0 | The engine's parameter 1: what it is depends on the track's engine (its name on the EDIT pages). |
-| 0x070 | ENGINE 2 | 0 to 0 | 0 | The engine's parameter 2: what it is depends on the track's engine (its name on the EDIT pages). |
-| 0x071 | ENGINE 3 | 0 to 0 | 0 | The engine's parameter 3: what it is depends on the track's engine (its name on the EDIT pages). |
-| 0x072 | ENGINE 4 | 0 to 0 | 0 | The engine's parameter 4: what it is depends on the track's engine (its name on the EDIT pages). |
-| 0x073 | ENGINE 5 | 0 to 0 | 0 | The engine's parameter 5: what it is depends on the track's engine (its name on the EDIT pages). |
-| 0x074 | ENGINE 6 | 0 to 0 | 0 | The engine's parameter 6: what it is depends on the track's engine (its name on the EDIT pages). |
-| 0x075 | ENGINE 7 | 0 to 0 | 0 | The engine's parameter 7: what it is depends on the track's engine (its name on the EDIT pages). |
-| 0x076 | ENGINE 8 | 0 to 0 | 0 | The engine's parameter 8: what it is depends on the track's engine (its name on the EDIT pages). |
+| 0x06F | ENGINE 1 | SAW, SQR, TRI, SIN, PWM, SYNC, SUB | SAW | The engine's parameter 1: what it is depends on the track's engine (its name on the EDIT pages). |
+| 0x070 | ENGINE 2 | 0 to 127 ct | 10 | The engine's parameter 2: what it is depends on the track's engine (its name on the EDIT pages). |
+| 0x071 | ENGINE 3 | 0 to 127 | 64 | The engine's parameter 3: what it is depends on the track's engine (its name on the EDIT pages). |
+| 0x072 | ENGINE 4 | 0 to 127 | 0 | The engine's parameter 4: what it is depends on the track's engine (its name on the EDIT pages). |
+| 0x073 | ENGINE 5 | 0 to 127 | 90 | The engine's parameter 5: what it is depends on the track's engine (its name on the EDIT pages). |
+| 0x074 | ENGINE 6 | 0 to 127 | 30 | The engine's parameter 6: what it is depends on the track's engine (its name on the EDIT pages). |
+| 0x075 | ENGINE 7 | 0 to 127 | 0 | The engine's parameter 7: what it is depends on the track's engine (its name on the EDIT pages). |
+| 0x076 | ENGINE 8 | 0 to 127 | 64 | The engine's parameter 8: what it is depends on the track's engine (its name on the EDIT pages). |
 
 ## Global settings
 

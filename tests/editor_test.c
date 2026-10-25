@@ -367,7 +367,7 @@ static int user_preset_roundtrip(void)
     a[k++] = 3; a[k++] = 3;                                /* slot U04, SID */
     memcpy(a + k, "ROUND", 5); k += 5; a[k++] = 0;
     for (i = 0; i < P_COUNT; i++) {
-        const param_desc_t *d = param_desc_of(0, i);
+        const param_desc_t *d = param_desc_of(3, i);   /* (the record is SID's) */
         int16_t v = d->def;
         uint32_t u;
         if (i == P_LEVEL) v = 90;

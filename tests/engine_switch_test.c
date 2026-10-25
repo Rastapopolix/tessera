@@ -58,7 +58,7 @@ int main(void)
     check(MELODEE_FM6 ? "SID, PHYS, CZ-1 and Prophet never offered; FM6, TRIO and DRUM are" :
                         "FM6, CZ-1 and Prophet never offered; SID, TRIO, PHYS and DRUM are",
           !eng_ok(GONE[0]) && !eng_ok(GONE[1]) && !eng_ok(15) && !eng_ok(19) && eng_ok(ENGI_FALLBACK) && eng_ok(6) &&
-          eng_ok(ENGI_PHYS) == !MELODEE_FM6 && eng_ok(ENGI_DRUM) && shown == NENG_SHOWN && NENG_SHOWN == 4u - MELODEE_FM6);
+          eng_ok(ENGI_PHYS) == !MELODEE_FM6 && eng_ok(ENGI_DRUM) && shown == NENG_SHOWN && NENG_SHOWN == 4u - MELODEE_FM6 + MELODEE_ANALOG + MELODEE_PHASE + MELODEE_LOFI + MELODEE_GURDY);
     for (k = 0; k < NENG_SHOWN; k++) ok &= ENG_BUILT(eng_vis(k));
     for (k = 0; k < NPART; k++) ok &= ENG_BUILT(TRK_DEF[k][0]) && eng_ok(TRK_DEF[k][0]);
     check("the engine list and the power-on sounds: built engines only", ok);
