@@ -21,6 +21,6 @@ sync, and GURDY's crank, RING and drone temperament. They need parameters and co
 * The app is 574,460 B of the 581,564 B slot; user presets (64) and projects are unaffected.
 
 ### 📦 Installation
-Open **[rastapopolix.github.io/tessera](https://rastapopolix.github.io/tessera/)** in Chrome or Edge, connect the
+Open **[wiggismodular.github.io/tessera-moar](https://wiggismodular.github.io/tessera-moar/)** in Chrome or Edge, connect the
 FM-1 by USB and press **Install**. The installer can also put the official M-VAVE firmware back. Or take
 `tessera-2.1.fwsc` (dual core) or `tessera-2.1-1core.fwsc` from this release.
