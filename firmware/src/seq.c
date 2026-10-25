@@ -266,60 +266,70 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
     period = seq_div_samples((uint32_t)t->p[P_ARATE]);
     sw = t->p[P_ASWING] * (int32_t)period / 250;
     t->arp_pos += n;
-    if (t->arp_pos < period + (uint32_t)((t->arp_idx & 1u) ? sw : -sw) && t->arp_pos != 0xFFFFFFF + n)
-        return;
-    if (t->arp_pos >= 0xFFFFFFFu)
-        t->arp_pos = 0;
-    else if (midi_sync_active)
-        t->arp_pos -= period + (uint32_t)((t->arp_idx & 1u) ? sw : -sw);
-    else
-        t->arp_pos = 0;
-    /* build the note list: held notes (sorted or as played) over OCT octaves */
-    for (i = 0; i < t->nheld; i++)
-        list[i] = t->held[i];
-    cnt = t->nheld;
-    if (!t->p[P_AORDER])
-        for (i = 1; i < cnt; i++)
-            for (j = i; j > 0 && list[j - 1] > list[j]; j--) {
-                uint32_t x = list[j];
-                list[j] = list[j - 1];
-                list[j - 1] = x;
-            }
-    for (o = 0; o < (uint32_t)t->p[P_AOCT]; o++)
-        for (i = 0; i < cnt && len < 64u; i++)
-            if (micro_active(t)) {
-                uint32_t note = micro_degree_map(t, (int32_t)list[i] - 60 + (int32_t)scale_note_period(t) * (int32_t)o, 0, 1);
-                if (note < 128u) list[len++] = note;
-            } else {
-                list[len++] = clamp((int32_t)list[i] + 12 * (int32_t)o, 0, 127);
-            }
-    if (!len) return;
-    if (t->p[P_AMODE] == 6) { list[0] = t->held[t->nheld - 1u]; len = 1; } /* REPEAT: last played note, no octave traversal */
-    t->arp_idx++;
-    switch (t->p[P_AMODE]) {
-    case 2:
-        j = len - 1u - t->arp_idx % len;
-        break;
-    case 3: {
-        uint32_t cyc = len > 1u ? 2u * len - 2u : 1u, k = t->arp_idx % cyc;
-        j = k < len ? k : cyc - k;
-        break;
-    }
-    case 4:
-        j = rng() % len;
-        break;
-    default:
-        j = t->arp_idx % len;
-        break;
-    }
-    if (t->arp_note)
-        arp_off(t);
-    if ((uint32_t)(rng() & 127u) <= (uint32_t)t->p[P_APROB]) {
-        t->arp_note = (uint8_t)list[j];
-        t->arp_off = period * (uint32_t)t->p[P_AGATE] / 128u;
-        if (rec_on(t))
-            rec_note(t, t->arp_note, 100);           /* recording: what the arp plays */
-        trk_note_on(t, t->arp_note, 100);
+    for (;;) {
+        if (t->arp_pos < period + (uint32_t)((t->arp_idx & 1u) ? sw : -sw) && t->arp_pos != 0xFFFFFFF + n)
+            return;
+        if (t->arp_pos >= 0xFFFFFFFu)
+            t->arp_pos = 0;
+        else if (midi_sync_active)
+            t->arp_pos -= period + (uint32_t)((t->arp_idx & 1u) ? sw : -sw);
+        else
+            t->arp_pos = 0;
+        /* build the note list: held notes (sorted or as played) over OCT octaves */
+        len = 0;
+        for (i = 0; i < t->nheld; i++)
+            list[i] = t->held[i];
+        cnt = t->nheld;
+        if (!t->p[P_AORDER])
+            for (i = 1; i < cnt; i++)
+                for (j = i; j > 0 && list[j - 1] > list[j]; j--) {
+                    uint32_t x = list[j];
+                    list[j] = list[j - 1];
+                    list[j - 1] = x;
+                }
+        for (o = 0; o < (uint32_t)t->p[P_AOCT]; o++)
+            for (i = 0; i < cnt && len < 64u; i++)
+                if (micro_active(t)) {
+                    uint32_t note = micro_degree_map(t, (int32_t)list[i] - 60 + (int32_t)scale_note_period(t) * (int32_t)o, 0, 1);
+                    if (note < 128u) list[len++] = note;
+                } else {
+                    list[len++] = clamp((int32_t)list[i] + 12 * (int32_t)o, 0, 127);
+                }
+        if (!len) return;
+        if (t->p[P_AMODE] == 6) { list[0] = t->held[t->nheld - 1u]; len = 1; } /* REPEAT: last played note, no octave traversal */
+        t->arp_idx++;
+        switch (t->p[P_AMODE]) {
+        case 2:
+            j = len - 1u - t->arp_idx % len;
+            break;
+        case 3: {
+            uint32_t cyc = len > 1u ? 2u * len - 2u : 1u, k = t->arp_idx % cyc;
+            j = k < len ? k : cyc - k;
+            break;
+        }
+        case 4:
+            j = rng() % len;
+            break;
+        default:
+            j = t->arp_idx % len;
+            break;
+        }
+        if (t->arp_note)
+            arp_off(t);
+        if ((uint32_t)(rng() & 127u) <= (uint32_t)t->p[P_APROB]) {
+            t->arp_note = (uint8_t)list[j];
+            t->arp_off = period * (uint32_t)t->p[P_AGATE] / 128u;
+            if (rec_on(t))
+                rec_note(t, t->arp_note, 100);           /* recording: what the arp plays */
+            trk_note_on(t, t->arp_note, 100);
+        }
+        if (!midi_sync_active) return;
+        /* A recovered clock burst may cross several ARP steps. Consume them all
+         * and retain the residual phase, just as the sequencer does. */
+        if (t->arp_note) {
+            if (t->arp_off <= t->arp_pos) arp_off(t);
+            else t->arp_off -= t->arp_pos;
+        }
     }
 }
 
@@ -1303,6 +1313,7 @@ static void events_block(uint32_t n)
         uint32_t d1 = (pkt >> 16) & 0x7Fu, d2 = (pkt >> 24) & 0x7Fu;
         uint32_t source = midi_in_source[at] ? midi_in_source[at] : 1u, ms = midi_in_ms[at];
         uint32_t time = midi_in_time[at];
+        uint16_t pulse_count = midi_in_pulse[at];
         if (midi_render_timed && (int32_t)(time - midi_render_time) > 0)
             break;
         mi_r++;midi_dispatch_left--;
@@ -1314,11 +1325,15 @@ static void events_block(uint32_t n)
                 }
                 if (!clock_mode) continue; /* clocks alone cannot claim local transport */
                 if (status == 0xF8u)
-                    midi_clock_pulse(ms, time);
+                    midi_clock_pulse(ms, time, pulse_count);
                 else {
                     if (song.playing)
                         seq_advance(midi_clock_advance(time));
                     midi_clock_transport(status, ms);
+                    if (status == 0xFAu || status == 0xFBu) {
+                        midi_clock.pulse_count = pulse_count;
+                        midi_clock.count_valid = 1;
+                    }
                 }
                 if (song.playing)
                     seq_advance(midi_clock_advance(time));

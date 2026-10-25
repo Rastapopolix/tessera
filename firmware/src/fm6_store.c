@@ -7,6 +7,8 @@
  * DX7 SysEx accepted on any channel n:
  *   F0 43 0n 00 01 1B <155 bytes> <checksum> F7    a voice (VCED) -> the FM6 track's patch
  *   F0 43 0n 09 20 00 <4096 bytes> <checksum> F7   32 voices (VMEM) -> F001..F032 or F033..F064 (STORE slot)
+ *   F0 43 0n 7D 04 08 <155 bytes> <69 bytes> F7   recover a voice from the 231-byte wrapper seen in a
+ *                                                  MainStage-sourced file; opaque extra settings are ignored
  *   F0 43 1n gg pp dd F7                           a voice parameter pp + 128 gg (155: the six operator
  *                                                  switches, OP1 = bit 5) -> the track
  *   F0 43 1n 08 pp dd F7                           a function parameter (64 mono, 65 bend range, 66 step,
@@ -80,6 +82,13 @@ static void fm6_sysex(const uint8_t *b, uint32_t n)
     int tr = fm6_sx_track(ch);
     if (n == 163u && st == 0x00u && b[3] == 0x00 && b[4] == 0x01 && b[5] == 0x1B &&
         fm6_chk(b + 6, 155) == b[161]) {                 /* one voice */
+        uint8_t packed[FM6_PACKED]; fm6_pack(b + 6, packed);
+        sysex_stage(ENGI_FM6, packed, 1, FM6_PACKED);
+    } else if (n == 231u && st == 0x00u && b[3] == 0x7D && b[4] == 4 && b[5] == 8) {
+        /* The wrapper has no verified checksum. Require an intact, in-range VCED;
+         * do not interpret its opaque tail as Yamaha function parameters. */
+        for (uint32_t k = 0; k < FP_SIZE; k++)
+            if (b[6 + k] > fm6_max(k) || (k >= FP_NAME && b[6 + k] < 32u)) return;
         uint8_t packed[FM6_PACKED]; fm6_pack(b + 6, packed);
         sysex_stage(ENGI_FM6, packed, 1, FM6_PACKED);
     } else if (n == FM6_RX && st == 0x00u && b[3] == 0x09 && b[4] == 0x20 && b[5] == 0x00 &&

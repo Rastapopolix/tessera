@@ -7,7 +7,9 @@
  * runs on CPU1; events and control preparation remain on CPU0. Each job owns
  * PCM scratch, so two voices never concurrently add to the same destination. */
 typedef void (*audio_batch_fn)(const void *,int32_t *);
-#define AUDIO_BATCH_BYTES 256u
+/* The largest descriptor is engine_batch_t (voice.c): 84 bytes on FM-1, 96 on the 64-bit host. The producers'
+ * assertions enforce the bound; a job pads to 32 bytes, so 96 costs the target no more than 84 would. */
+#define AUDIO_BATCH_BYTES 96u
 #define AUDIO_BATCH_JOBS 8u
 typedef struct {
     audio_batch_fn run;int32_t *out;uint32_t n, profile_id,guard;

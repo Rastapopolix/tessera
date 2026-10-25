@@ -134,8 +134,8 @@ static uint32_t fm6_carriers(uint32_t a)
 static inline __attribute__((always_inline)) int32_t fm6_freq(int32_t lf)
 {
     uint32_t i=((uint32_t)lf&0xFFFFFFu)>>14,f=(uint32_t)lf&0x3FFFu;
-    uint32_t delta=(uint32_t)(FM6_FREQ[i+1u]-FM6_FREQ[i]);
-    int32_t y=FM6_FREQ[i]+(int32_t)((delta*(f>>7)+((delta*(f&127u))>>7))>>7);
+    uint32_t delta=(uint32_t)(fm6_freq_point(i+1u)-fm6_freq_point(i));
+    int32_t y=fm6_freq_point(i)+(int32_t)((delta*(f>>7)+((delta*(f&127u))>>7))>>7);
     int32_t sh=20-(lf>>24);
     return sh<=0?y:sh>31?0:y>>sh;
 }

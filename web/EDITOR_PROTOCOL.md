@@ -640,6 +640,16 @@ format: a single voice `F0 43 0n 00 01 1B`, the 155-byte unpacked voice, checksu
 voices `F0 43 0n 09 20 00`, 32 x 128 packed, checksum, `F7` (4104 bytes); the checksum is the two's complement
 of the data's sum, 7 bits. Raw 155 / 4096-byte files are read too.
 
+The editor's FM6 importer and the device's USB SysEx receiver also recover the DX7 voice from
+the exact 231-byte wrapper `F0 43 0n 7D 04 08 <155-byte VCED> <69 opaque bytes> F7`, observed in a
+MainStage-sourced `fulltines.syx`. This is a compatibility recovery, not a standard Yamaha bulk format:
+the apparent byte count `04 08` is 520 and does not describe the available payload, and no checksum
+scheme has been verified for this wrapper. Every VCED field must already be in range, its name printable,
+and every interior byte 7-bit; other headers or lengths are rejected. The extra 69 bytes are ignored;
+only the voice and name are imported, without applying any additional function or performance settings.
+Exports use the standard checksummed DX7 format above. A syntactically valid change within a field's
+range cannot be detected as corruption in this wrapper.
+
 The device itself also takes these as MIDI SysEx on its USB-MIDI port (any channel `n`), so Dexed or a DX7
 librarian can edit a track live: a single voice replaces the FM6 track's patch (the selected track when it plays
 FM6, else track n + 1, else the first FM6 track; the notes stop, as a DX7 program change). A 32-voice dump

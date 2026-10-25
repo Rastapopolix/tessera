@@ -144,6 +144,113 @@ static int phase_test(void)
     bad += check("128 beats stay on exact steps through tempo changes and polling jitter", exact);
     return bad;
 }
+static int long_session_test(void)
+{
+    int bad = 0;
+    for (uint32_t source = 1; source <= 2; source++) {
+        uint32_t start = 0xFFF00000u, bpm = source == 1u ? 137u : 120u;
+        timing_reset(source, start);
+        song.rec = 0;
+        timing_packet(start, 0xFA, 0, 0, source);
+        events_block(0);
+        /* Keep wall milliseconds independent while the raw 24 MHz timer and
+         * the 16-bit received-pulse counter wrap during this two-hour run. */
+        int exact = 1;
+        uint32_t clocks = bpm * 24u * 120u;
+        for (uint32_t pulse = 0; pulse <= clocks; pulse++) {
+            uint64_t elapsed = (uint64_t)pulse * 60000u * MIDI_TICKS_PER_MS / (bpm * 24u);
+            timing_packet(start + (uint32_t)elapsed, 0xF8, 0, 0, source);
+            fm1_ms = 1000u + (uint32_t)(elapsed / MIDI_TICKS_PER_MS);
+            midi_in_ms[(mi_w - 1u) % MQ] = fm1_ms;
+            events_block(0);
+            if (!song.playing || trk[0].seq_idx != pulse / 6u % 16u || trk[0].seq_pos != pulse % 6u * 1024u ||
+                beat_n != pulse / 24u % 4u || beat_pos != pulse % 24u * 1024u) exact = 0;
+            /* Exercise interpolation between arrivals, as audio blocks do. */
+            timing_now += (uint32_t)(30000u * MIDI_TICKS_PER_MS / (bpm * 24u));
+            events_block(0);
+        }
+        bad += check(source == 1u ? "USB two-hour clock keeps exact sequencer and beat phase across counter wraps" :
+                                   "TRS two-hour clock keeps exact sequencer and beat phase across counter wraps", exact);
+    }
+    return bad;
+}
+static int overflow_phase_test(void)
+{
+    int bad = 0;
+    for (uint32_t source = 1; source <= 2; source++) {
+        uint32_t start = 24000000u;
+        timing_reset(source, start);
+        song.rec = 0;
+        midi_rx_pulses[source - 1u] = 65534u; /* overflow recovery crosses the counter wrap too */
+        midi_rx_pulses[2u - source] = 1010u;
+        timing_packet(start, 0xFA, 0, 0, source);
+        events_block(0);
+        int exact = 1, released = 1;
+        /* Repeated overflows: some clocks were already queued when recovery
+         * discards them; others arrive while the full queue rejects packets.
+         * Include the very first clock after Start and several lost at once. */
+        for (uint32_t pulse = 0; pulse <= 96u; pulse++) {
+            uint32_t at = start + pulse * 500000u;
+            if (pulse % 24u == 0u) {
+                timing_packet(at, 0x90, 60, 100, source);
+                events_block(0);
+                for (uint32_t i = 0; i < MQ - 1u; i++) timing_packet(at, 0xB0, 1, i, source);
+                timing_packet(at, 0xF8, 0, 0, source); /* accepted, then discarded with notes */
+                timing_packet(at, 0xB0, 1, 0, source); /* overflow */
+            } else
+                timing_packet(at, 0xF8, 0, 0, source);
+            /* Unselected clocks must never enter the selected source's count. */
+            timing_packet(at, 0xF8, 0, 0, 3u - source);
+            if (pulse % 24u < 3u) continue;
+            events_block(0);
+            if (midi_owners[0] || gate_note(&trk[0], 60)) released = 0;
+            if (pulse % 24u == 3u) continue; /* overflow clears here; the next clock carries recovery */
+            if (!song.playing || trk[0].seq_idx != pulse / 6u % 16u || trk[0].seq_pos != pulse % 6u * 1024u) exact = 0;
+        }
+        /* Drain the final overflow and prove the next pulse restores phase. */
+        events_block(0);
+        timing_packet(start + 97u * 500000u, 0xF8, 0, 0, source); events_block(0);
+        exact &= trk[0].seq_idx == 0u && trk[0].seq_pos == 1024u;
+        bad += check(source == 1u ? "USB queue overflows recover every received clock without accumulating delay" :
+                                   "TRS queue overflows recover every received clock without accumulating delay", exact);
+        bad += check("clock recovery retains overflow's stuck-note release", released);
+        for (uint32_t pulse = 98u; pulse <= 120u; pulse++) {
+            timing_packet(start + pulse * 500000u, 0xF8, 0, 0, source); events_block(0);
+        }
+        bad += check("tempo reacquires 120 BPM after discarded clock entries", song.g[G_BPM] == 120 && midi_beat_samples == FS / 2u);
+    }
+    return bad;
+}
+static int arp_catchup_test(void)
+{
+    int bad = 0;
+    for (uint32_t swing = 0; swing <= 100u; swing += 100u) {
+        timing_reset(2, 24000000u);
+        song.rec = 0;
+        timing_packet(timing_now, 0xFA, 0, 0, 2); events_block(0);
+        track_t *t = &trk[0];
+        t->p[P_AMODE] = 1; t->p[P_ARATE] = 3; t->p[P_ASWING] = swing;
+        t->p[P_AOCT] = 1; t->p[P_APROB] = 127; t->p[P_AGATE] = 64;
+        t->nheld = 3; t->held[0] = 60; t->held[1] = 64; t->held[2] = 67;
+        t->arp_idx = UINT32_MAX; t->arp_pos = 0xFFFFFFFu;
+        arp_tick(t, 0);
+        /* Compare a burst with the same elapsed time in small audio advances.
+         * Four steps also leave a different note in the three-note chord. */
+        uint32_t elapsed = 4u * 3072u + 321u;
+        for (uint32_t n = elapsed; n;) {
+            uint32_t chunk = n < 32u ? n : 32u;
+            arp_tick(t, chunk); n -= chunk;
+        }
+        uint32_t idx = t->arp_idx, pos = t->arp_pos, off = t->arp_off, note = t->arp_note;
+        if (t->arp_note) arp_off(t);
+        t->arp_idx = UINT32_MAX; t->arp_pos = 0xFFFFFFFu;
+        arp_tick(t, 0); arp_tick(t, elapsed);
+        bad += check(swing ? "swung ARP burst matches small advances: note, index, residual and gate" :
+                            "straight ARP burst matches small advances: note, index, residual and gate",
+                     t->arp_idx == idx && t->arp_pos == pos && t->arp_off == off && t->arp_note == note);
+    }
+    return bad;
+}
 static void tempo_packet(uint32_t start, uint32_t time, uint32_t status, uint32_t source)
 {
     timing_packet(time, status, 0, 0, source);
@@ -372,7 +479,7 @@ static int old_formats_and_overdub_test(void)
 #ifndef MIDI_TIMING_NO_MAIN
 int main(void)
 {
-    int bad = grid_test() + timeline_test() + phase_test() + tempo_flutter_test() + divisions_test() + lengths_and_swing_test() +
+    int bad = grid_test() + timeline_test() + phase_test() + long_session_test() + overflow_phase_test() + arp_catchup_test() + tempo_flutter_test() + divisions_test() + lengths_and_swing_test() +
               loop_replay_test() + recorded_gate_storage_test() + old_formats_and_overdub_test();
     printf("%s\n", bad ? "MIDI TIMING TEST FAILED" : "MIDI timing tests passed");
     return bad != 0;
