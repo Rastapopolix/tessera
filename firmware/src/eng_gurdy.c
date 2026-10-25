@@ -118,6 +118,27 @@ static const preset_t GURDY_PRESETS[] = {
     /* GHOULBOX end */
 };
 
+/* Ghoulbox's effect sends of the six sounds (DIST CHORUS DELAY REVERB, 0..127), as Tessera's track effects: a GURDY
+ * sound load sets slot 1 to REVERB and slot 2 to CHORUS (or OFF); the other engines' loads leave the chain alone
+ * (param_kept). The reverb's mix is half its send (a send adds to the dry sound, the mix crossfades), a chorus below
+ * 15 and the distortion and delay sends are left out. A start to tune by ear */
+static const uint8_t GURDY_FX[6][2] = {{90, 10}, {110, 20}, {70, 0}, {85, 0}, {100, 25}, {80, 0}};   /* REVERB, CHORUS */
+static void gurdy_track_loaded(track_t *t)
+{
+    uint32_t k = t->preset, chorus;
+    if (t->eng_req != ENGI_GURDY || k >= NELEM(GURDY_FX))
+        return;
+    chorus = GURDY_FX[k][1] >= 15u;
+    t->p[P_FXTYPE] = 8;                                 /* REVERB */
+    t->p[P_FXMIX] = (int16_t)(GURDY_FX[k][0] / 2u);
+    t->p[P_FXRATE] = 60;                                  /* (TP's defaults) */
+    t->p[P_FXCHAR] = 64;
+    t->p[P_FX2TYPE] = chorus ? 9 : 0;                   /* CHORUS, or OFF */
+    t->p[P_FX2MIX] = (int16_t)(chorus ? GURDY_FX[k][1] : 0);
+    t->p[P_FX2RATE] = 60;
+    t->p[P_FX2CHAR] = 64;
+}
+
 static const engine_t ENG_GURDY = {
     .name = "GURDY",
     .page_title = {"DRONE", "WHEEL"},

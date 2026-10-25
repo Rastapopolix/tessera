@@ -25,6 +25,12 @@ int main(void)
     }
     /* (2026-10-25: ANALOG 0, PHASE 2, LOFI 8 (GRAIN's id; its own 3 is SID's) and GURDY 14 back, from Felucca and Ghoulbox) */
     bad+=check("ANALOG, PHASE, LOFI and GURDY are offered, with presets",eng_ok(0)&&eng_ok(2)&&eng_ok(ENGI_LOFI)&&eng_ok(ENGI_GURDY)&&ENGINES[0]->npresets&&ENGINES[2]->npresets&&ENGINES[ENGI_LOFI]->npresets&&ENGINES[ENGI_GURDY]->npresets);
+    set_engine_of(TSEL,ENGI_GURDY);apply_preset_to(TSEL,1);   /* DRONE WHEEL: Ghoulbox's reverb 110 and chorus 20 */
+    bad+=check("GURDY sound load: REVERB in slot 1, CHORUS in slot 2",TSEL->p[P_FXTYPE]==8 && TSEL->p[P_FXMIX]==55 && TSEL->p[P_FX2TYPE]==9 && TSEL->p[P_FX2MIX]==20);
+    apply_preset_to(TSEL,2);   /* DANCE GURDY: no chorus */
+    bad+=check("GURDY sound without a chorus: slot 2 OFF",TSEL->p[P_FXMIX]==35 && TSEL->p[P_FX2TYPE]==0);
+    set_engine_of(TSEL,ENGI_FM6);
+    bad+=check("another engine's load leaves the effects alone",TSEL->p[P_FXTYPE]==8 && TSEL->p[P_FXMIX]==35);
     for(uint32_t k=0;k<NENG_SHOWN;k++)bad+=check("browser lists only available engines",eng_ok(eng_vis(k)));
     printf("Engine retirement test %s\n",bad?"FAILED":"passed");return !!bad;
 }

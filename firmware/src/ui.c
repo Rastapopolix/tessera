@@ -985,6 +985,9 @@ static void apply_preset_to(track_t *t, uint32_t pi)
     t->p[P_ED_FLT] = pr->fenv;
     t->p[P_VOICE] = pr->mono ? V_LEGATO : V_POLY;   /* mono presets keep the legato feel */
     fm6_track_loaded(t);                              /* FM6: the preset's patch */
+#if MELODEE_GURDY
+    gurdy_track_loaded(t);                            /* GURDY: Ghoulbox's reverb and chorus */
+#endif
     load_end(t);
 }
 
