@@ -21,9 +21,11 @@ for name, f in (("SIM_DEMO_A", "koto-garden"), ("SIM_DEMO_B", "still-tide")):
     out.append(f"static const uint8_t {name}[{len(b)}] = {{" + ",".join(str(x) for x in b) + "};")
 Path("build/gen/sim_demos.h").write_text("\n".join(out) + "\n")
 PY
-# as Felucca's web/emu/build.sh: no fused multiply-adds (as the host build), a 1 MiB stack, no file system
+# as Felucca's web/emu/build.sh: no fused multiply-adds (as the host build), a 1 MiB stack, no file system;
+# the device's engine set (tools/build.py build_app: FM6 in, SID, PHYS and MACRO out), not core.h's host defaults
 VERSION=$(sed -n 's/^#define MELODEE_VERSION "\([^"]*\)".*/\1/p' firmware/src/melodee.c)   # upstream's, shown in the menu
-emcc -O2 -ffp-contract=off -w -DMELODEE_USB_AUDIO=1 "-DMELODEE_VERSION=\"$VERSION web\"" -Ibuild/gen -Ifirmware/src -Itests \
+ENGINES="-DMELODEE_FM6=${MELODEE_FM6:-1} -DMELODEE_SID=${MELODEE_SID:-0} -DMELODEE_PHYS=${MELODEE_PHYS:-0} -DMELODEE_PLAITS=${MELODEE_PLAITS:-0}"
+emcc -O2 -ffp-contract=off -w -DMELODEE_USB_AUDIO=1 $ENGINES "-DMELODEE_VERSION=\"$VERSION web\"" -Ibuild/gen -Ifirmware/src -Itests \
     --no-entry -sSTANDALONE_WASM -sSTACK_SIZE=1048576 -sINITIAL_MEMORY=33554432 -sFILESYSTEM=0 \
     -o "$OUT/melodee.wasm" web/sim/sim.c
 cp web/sim/worklet.js "$OUT/"
