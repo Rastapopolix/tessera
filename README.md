@@ -4,9 +4,10 @@
 <b><a href="https://wiggismodular.github.io/tessera-moar/">Project page</a></b> ·
 <b><a href="https://wiggismodular.github.io/tessera-moar/webapp/installer/">Install</a></b> ·
 <b><a href="https://wiggismodular.github.io/tessera-moar/webapp/sim/">Try it in your browser</a></b> ·
+<b><a href="https://wiggismodular.github.io/tessera-moar/webapp/editor/">Web editor</a></b> ·
 <b><a href="MANUAL.md">Manual</a></b> ·
 <b><a href="RECIPES.md">Recipes</a></b> ·
-<b><a href="https://github.com/Rastapopolix/tessera/releases/latest">Releases</a></b>
+<b><a href="https://github.com/WiggisModular/tessera-moar/releases/latest">Releases</a></b>
 </p>
 
 **Tessera** is a generative firmware for the M-Vave FM-1. Each of the four tracks can play its own steps, an

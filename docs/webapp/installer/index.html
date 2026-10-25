@@ -145,6 +145,7 @@
     <p class="small choice"><label><input id="stock-recovery" type="checkbox"> <span data-t="stockRecovery"></span></label></p>
   </details>
   <a class="next" href="../editor/" data-t="editor"></a>
+  <a class="next" href="../sim/" data-t="sim"></a>
   <footer>
   <p>Tessera is firmware for the FM-1 by Theo Dainis (Rastapopolix), a fork of Melodee: it adds the Tessera generators and a project format of its own. <a href="https://github.com/WiggisModular/tessera-moar" target="_blank" rel="noopener">github.com/WiggisModular/tessera-moar</a><br>
     Melodee by Ellic Studio, based on <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener">Felucca</a>
@@ -896,6 +897,7 @@ const TEXT = {
     dual: "標準（デュアルコア）", single: "シングルコア", dualTag: "標準", singleTag: "シングルコア",
     singleWhy: "シングルコア版は、標準版でクラッシュする FM-1 のためのものです（赤い TESSERA CRASH 画面、フリーズ、書き込みモードでの再起動）。FM-1 の 2 つ目のコアを起動しません（公式ファームウェアも使っていません）。重い FM6 の音色は早めに処理の上限に達します。標準版に戻すには、標準を選んでインストールしてください。",
     editor: "エディタ（インストール後、パソコンから音色やシーケンスを編集）",
+    sim: "シミュレーター（ブラウザでファームウェアを試す）",
     direct: "USB ケーブルはパソコンに直接つないでください。Probe や Transporter などの機材は不要です。",
     brick: "起動保護付きファームウェアの更新が中断した場合は、電源を入れ直すか、OCT− だけを押しながら電源を入れてください。キーのライトが短く3回点滅したら更新モードです。USB を接続し直して、もう一度インストールしてください。以前のファームウェアや長い1回の点滅の場合は、USB 復旧手順を確認してください:",
     recoveryLink: "USB 復旧手順とダウンロード",
@@ -945,6 +947,7 @@ const TEXT = {
     dual: "Standard (dual core)", single: "Single core", dualTag: "standard", singleTag: "single core",
     singleWhy: "The single-core build is for FM-1s that crash with the standard build (a red TESSERA CRASH screen, freezes, or restarts into update mode). It never starts the FM-1's second core, which the official firmware does not use either. Heavy FM6 sounds reach the CPU limit sooner. To go back, choose Standard and install again.",
     editor: "Editor (after installing: edit sounds and sequences from the computer)",
+    sim: "Simulator (try the firmware in your browser)",
     direct: "Connect the USB cable directly to the computer. No probe or Transporter is needed.",
     brick: "If an update is interrupted on firmware with boot protection, switch the FM-1 on again (or hold OCT− alone while switching on). Three short key-light flashes mean update mode: reconnect USB and press Install again. Older firmware and one long flash need the USB recovery instructions:",
     recoveryLink: "USB recovery instructions and downloads",
