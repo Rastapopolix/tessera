@@ -9,7 +9,7 @@ tools/build.py generate() with --preset rubik).
 
 Faces of the presets (S labels, M values/headers, L big numerals / titles):
   chakra      assets/fonts/ChakraPetch-{Regular,Medium,SemiBold}.ttf (SIL OFL 1.1, Google Fonts): Tessera's face, its
-              squared corners the tiles', at Rubik's 10 / 12 / 15 / 30 px (X Medium, S Regular, M Medium, L SemiBold),
+              squared corners the tiles', at Rubik's 10 / 12 / 15 / 30 px (X SemiBold, S Medium, M Medium, L SemiBold: readability 2.1),
               each set in Rubik's line box (height and baseline), so every layout stays as it was.
   rubik       assets/fonts/Rubik[wght].ttf (SIL OFL 1.1, Google Fonts): Melodee's face, at 10 / 12 / 15 / 30 px and weights
               400 / 500 / 600 (its tall x-height reads as Inter Tight's 12 / 15 / 28 at about the same width); X and S
@@ -60,8 +60,8 @@ def preset(name):
     if name == "chakra":
         f = FONTS.parent / "assets" / "fonts"                                 # SIL OFL 1.1, Google Fonts
         r, m, b = (str(f / f"ChakraPetch-{w}.ttf") for w in ("Regular", "Medium", "SemiBold"))
-        return [("X", m, 10, (32, 126), EXTRAS, 0.0, PHASES, (12, 9)),        # (Rubik's line boxes: the layout's)
-                ("S", r, 12, (32, 126), EXTRAS, 0.0, PHASES, (14, 11)),
+        return [("X", b, 10, (32, 126), EXTRAS, 0.0, PHASES, (12, 9)),        # (Rubik's line boxes: the layout's)
+                ("S", m, 12, (32, 126), EXTRAS, 0.0, PHASES, (14, 11)),
                 ("M", m, 15, (32, 126), EXTRAS, 0.0, PHASES, (19, 15)),
                 ("L", b, 30, (32, 32), [ord(c) for c in L_CHARS[1:]], 0.0, PHASES_L, (37, 29))]
     if name == "rubik":
