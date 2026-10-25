@@ -21,10 +21,10 @@ static const int8_t FM1_KEYMAP[6][FM1_NCOL] = {
     {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 };
 
-#include "sim_demos.h"                       /* (web/sim/build.sh: demos/koto-garden.tsp, still-tide.tsp) */
+#include "sim_demos.h"                       /* (web/sim/build.sh: demos/still-tide.tsp, koto-garden.tsp) */
 
-/* the demos in the slots, as the backup page would put them there: A KOTO GARDEN (the second in the demo video),
- * B STILL TIDE; then A loaded, so the simulator starts with KOTO GARDEN (SAVE > PROJECT loads B) */
+/* the demos in the slots, as the backup page would put them there: A STILL TIDE (the first in the demo video),
+ * B KOTO GARDEN; then A loaded, so the simulator starts with STILL TIDE (SAVE > PROJECT loads B) */
 static void web_demos_load(void)
 {
     memcpy(proj_bank_slot[0], SIM_DEMO_A, sizeof SIM_DEMO_A);
@@ -50,7 +50,7 @@ static void web_power_on(void)
     for (i = 0; i < NTRK; i++)
         if (TRK_DEF[i][0] != ENGI_DRUM)
             trk[i].p[P_SCALE] = TRK_DEF_SCALE;
-    web_demos_load();                        /* (KOTO GARDEN loaded, stopped: the demo button, or PLAY, starts it) */
+    web_demos_load();                        /* (STILL TIDE loaded, stopped: the demo button, or PLAY, starts it) */
     settings.palette = UI_DEFAULT_INDEX;     /* (ui_power_on: the tests' GRAY) */
     palette_set(settings.palette);
     song.master_q12 = 2048;                  /* until the page sends MASTER */
@@ -220,7 +220,7 @@ EXPORT uint32_t web_sample_rate(void) { return FS; }
 /* (web/sim/test_sim.mjs) track tr's MODE (tessera.mode) */
 EXPORT uint32_t web_test_mode(uint32_t tr) { return tr < TESSERA_TRACKS ? tessera.mode[tr] : 0u; }
 
-/* the demo button: KOTO GARDEN (slot A) loaded again, from its start, and PLAY */
+/* the demo button: STILL TIDE (slot A) loaded again, from its start, and PLAY */
 EXPORT void web_demo(void)
 {
     if (song.playing) {
