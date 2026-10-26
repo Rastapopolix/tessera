@@ -330,10 +330,10 @@ def main():
     parser.add_argument('--src', type=Path, default=Path('firmware/src'))
     parser.add_argument('--json', type=Path)
     # melodee-tess: the reservations of firmware/app.ld (build.py reads them from the ELF); --worker 0: serial build
-    parser.add_argument('--foreground', type=int, default=24320)
+    parser.add_argument('--foreground', type=int, default=14336)
     parser.add_argument('--irq', type=int, default=7936)
-    parser.add_argument('--worker', type=int, default=8192)
-    parser.add_argument('--worker-user', type=int, default=4096)
+    parser.add_argument('--worker', type=int, default=4096)
+    parser.add_argument('--worker-user', type=int, default=3072)
     args = parser.parse_args()
     report = analyze(args.ir.read_text(), args.dis.read_text(), args.src)
     errors = check(report, args.foreground, args.irq, args.worker, args.worker_user if args.worker else None)

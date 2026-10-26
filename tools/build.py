@@ -397,7 +397,7 @@ def check(img, syms, dis, rt):
             address = sym(name)
             if address:
                 live += 1
-                if not sym("_rt_start") <= address < sym("_guard_ram_end") <= 0x01C74000:
+                if not sym("_rt_start") <= address < sym("_guard_ram_end") <= sym("_resource_end"):
                     errors.append(f"audio function {name} escaped SRAM")
         current = None
         for line in dis.splitlines():
@@ -445,19 +445,19 @@ def check(img, syms, dis, rt):
         for name in ("fm1_core1_main", "audio_worker_loop"):
             if not 0x01C00000 <= sym(name) < sym("_dsp_end"):
                 errors.append(f"{name} must remain in internal RAM for flash-safe idle")
-        if sym("_cpu1_stacks_hi") - sym("_cpu1_stacks_lo") != 8192:
-            errors.append("CPU1 requires separate 4 KiB user and supervisor stacks")
+        if sym("_cpu1_stacks_hi") - sym("_cpu1_stacks_lo") != 4096:
+            errors.append("CPU1 requires a private 4 KiB stack bank")
         # Idle may call only the job's register-held callback; a compiler
         # outlined XIP helper would break flash writes after completion.
         body = dis.split("\naudio_worker_loop:", 1)[-1].split("\n\n", 1)[0]
         if re.search(r"\bcall -?\d+", body):
             errors.append("CPU1 polling loop contains a direct call; helpers must be inlined")
-        notes.append("CPU1: RAM polling loop, private 8 KiB stacks, bounded startup/join")
+        notes.append("CPU1: RAM polling loop, private 4 KiB stacks, bounded startup/join")
     errors += boot_audio.check_decoder(syms, dis, APP_XIP, sym("_app_xip_end"))
     # the deepest linked call path of each stack root against its reservation (tools/stack_budget.py; static, from the
     # optimized IR and the disassembly)
     if os.environ.get("MELODEE_SIZE") == "0":
-        notes.append("stack audit skipped: it reads the optimized IR (MELODEE_SIZE=1)")
+        errors.append("the reduced stack layout requires the stack audit, which reads the IR (MELODEE_SIZE=1)")
     else:
         ir_name = "melodee_audio.ll" if os.environ.get("MELODEE_RAM_AUDIO") == "1" else "melodee_size.ll"
         worker = sym("_cpu1_stacks_hi") - sym("_cpu1_stacks_lo") if sym("fm1_core1_start") else 0
@@ -472,7 +472,7 @@ def check(img, syms, dis, rt):
             errors.append(f"stack audit: {error}")
     bss = sym("_bss_end") - 0x01C08000
     pool = sym("_pool_end") - sym("_pool_start")
-    notes.append(f"image {len(img)} B; RAM .data+.bss {bss} B of 98304; pool {pool} B of {0x54000}")
+    notes.append(f"image {len(img)} B; RAM .data+.bss {bss} B of 98304; pool {pool} B of {sym('_resource_end') - sym('_pool_start')}")
     arena = sym("_resource_end") - sym("_resource_start")
     if arena:
         minimum = sym("_resource_minimum")
@@ -497,8 +497,9 @@ def check(img, syms, dis, rt):
         if (sym("_resource_cache_start"), sym("_resource_cache_end")) != (0x01F28000, 0x01F2F000):
             errors.append("cache resource bank must cover exactly the seven freed data-cache ways")
         notes.append(f"cache RAM: optional 28672 B after boot self-test; maximum resources {arena + tails + 28672} B")
-    if 0x54000 - pool < 8192:                     # keep >= 8 KiB of the pool spare
-        errors.append(f"pool headroom {0x54000 - pool} B < 8192 B")
+    pool_region = sym("_resource_end") - sym("_pool_start")
+    if pool_region - pool < 8192:                     # keep >= 8 KiB of the pool spare
+        errors.append(f"pool headroom {pool_region - pool} B < 8192 B")
     return errors, notes
 
 
