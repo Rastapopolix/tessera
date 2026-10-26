@@ -38,6 +38,7 @@ sys.path.insert(0, str(SRC / "tools"))
 import fm1pkg_make  # noqa: E402
 import lz4blk  # noqa: E402
 import boot_audio  # noqa: E402
+import stack_budget  # noqa: E402
 
 STUB_XIP = 0x02000120
 STUB_LEN = fm1pkg_make.STUB_LEN
@@ -453,6 +454,22 @@ def check(img, syms, dis, rt):
             errors.append("CPU1 polling loop contains a direct call; helpers must be inlined")
         notes.append("CPU1: RAM polling loop, private 8 KiB stacks, bounded startup/join")
     errors += boot_audio.check_decoder(syms, dis, APP_XIP, sym("_app_xip_end"))
+    # the deepest linked call path of each stack root against its reservation (tools/stack_budget.py; static, from the
+    # optimized IR and the disassembly)
+    if os.environ.get("MELODEE_SIZE") == "0":
+        notes.append("stack audit skipped: it reads the optimized IR (MELODEE_SIZE=1)")
+    else:
+        ir_name = "melodee_audio.ll" if os.environ.get("MELODEE_RAM_AUDIO") == "1" else "melodee_size.ll"
+        worker = sym("_cpu1_stacks_hi") - sym("_cpu1_stacks_lo") if sym("fm1_core1_start") else 0
+        try:
+            audit = stack_budget.analyze((OUT / ir_name).read_text(), dis, FW / "src")
+            errors += stack_budget.check(audit, sym("_ustack_top") - sym("_ustack_lo"),
+                                         sym("_sstack_top") - sym("_sstack_lo"), worker,
+                                         sym("_cpu1_ustack_top") - sym("_cpu1_stacks_lo") if worker else None)
+            (OUT / "stack-budget.json").write_text(json.dumps(audit, indent=2) + "\n")
+            notes.append("stack audit: " + ", ".join(f"{n} {p[0]} B" for n, p in audit["paths"].items()))
+        except ValueError as error:
+            errors.append(f"stack audit: {error}")
     bss = sym("_bss_end") - 0x01C08000
     pool = sym("_pool_end") - sym("_pool_start")
     notes.append(f"image {len(img)} B; RAM .data+.bss {bss} B of 98304; pool {pool} B of {0x54000}")
