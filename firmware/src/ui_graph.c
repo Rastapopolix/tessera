@@ -622,12 +622,21 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
             else cv_frame(x + 1, top, cw - 3, ch, dim);
             if (f) {
                 cv_text_c(x + cw / 2 - 1, top + (ch - f->h) / 2, f, b, tc, tb);
-            } else {                                     /* too wide for one line: the root over its quality */
+            } else {                                     /* too wide for one line: the root over its quality, the quality
+                                                          * in the largest face the cell holds; still too wide (CIRCLE's
+                                                          * seven cells): "maj" as "M" ("FM7") */
                 uint32_t rl = b[1] == '#' || b[1] == 'b' ? 2u : 1u;
                 char r[3] = {b[0], rl > 1u ? b[1] : 0, 0};
+                char *qs = b + rl;
                 int32_t y = top + (ch - (is_panel ? 26 : 22)) / 2;
+                const aafont_t *qf = is_panel && text_w(&AF_S, qs) <= cw - 6 ? &AF_S : &AF_X;
+                if (text_w(qf, qs) > cw - 6 && qs[0] == 'm' && qs[1] == 'a' && qs[2] == 'j') {
+                    qs[2] = 'M';
+                    qs += 2;
+                    if (is_panel && text_w(&AF_S, qs) <= cw - 6) qf = &AF_S;
+                }
                 cv_text_c(x + cw / 2 - 1, y, is_panel ? &AF_S : &AF_X, r, tc, tb);
-                cv_text_c(x + cw / 2 - 1, y + (is_panel ? 14 : 10), is_panel ? &AF_S : &AF_X, b + rl, tc, tb);
+                cv_text_c(x + cw / 2 - 1, y + (is_panel ? 14 : 10), qf, qs, tc, tb);
             }
             if (on && song.playing && g->n) {
                 uint32_t in = (g->n - 1u) % len + 1u;
