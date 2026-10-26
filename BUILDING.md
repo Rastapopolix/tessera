@@ -11,7 +11,7 @@ The build makes three files in `build/`:
 ## Prerequisites (macOS)
 
 - Python 3 with Pillow and fontTools: `pip3 install Pillow fonttools` (the UI font and icons are
-  rasterised at build time). Pillow's Raqm layout needs FriBidi: `brew install fribidi` (build.sh and
+  rasterised at build time; Python's `lzma` packs what boot copies to SRAM). Pillow's Raqm layout needs FriBidi: `brew install fribidi` (build.sh and
   tests/run_tests.sh point `DYLD_FALLBACK_LIBRARY_PATH` at Homebrew's lib)
 - Docker Desktop. The JieLi toolchain is Linux x86-64 only; the build runs each tool in a
   `linux/amd64` `debian:bookworm-slim` container (Rosetta on Apple silicon). Keep the source
@@ -96,6 +96,7 @@ Build options (environment; most use `0` or `1`; defaults in `firmware/src/build
 | `MELODEE_DUAL_CORE` | 1 | paired FM6 rendering on CPU1; `0` builds serial-only firmware |
 | `MELODEE_SLICE` | 1 | the SLICE engine |
 | `MELODEE_ICONS` | 1 | parameter icons on the knob cards |
+| `MELODEE_COMPRESS_AUDIO` | 1 | the five SRAM load images (`.ram_text`, `.dsp_text`, `.dsp_tables`, `.data`, `.audio_text`) stored as raw LZMA1 (`tools/boot_audio.py`) and unpacked by `fm1_cstart` before anything runs from SRAM (`firmware/src/boot_lzma.h`; a record that does not unpack exactly enters update mode); `0` stores them raw and copies them by words |
 
 ## Samples
 

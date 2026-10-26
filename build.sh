@@ -14,6 +14,7 @@ PY="${PYTHON:-python3}"
 [ "$(uname -s)" = Darwin ] && export DYLD_FALLBACK_LIBRARY_PATH="${DYLD_FALLBACK_LIBRARY_PATH:-/opt/homebrew/lib:/usr/local/lib:/usr/lib}"
 
 "$PY" -c 'import PIL' 2>/dev/null || { echo "build.sh: $PY has no Pillow (pip3 install Pillow)"; exit 1; }
+"$PY" -c 'import lzma' 2>/dev/null || { echo "build.sh: $PY was built without lzma (the boot images need it)"; exit 1; }
 "$PY" -c 'from PIL import features; assert features.check("raqm")' 2>/dev/null ||
     { echo "build.sh: $PY's Pillow has no Raqm (the UI font needs OpenType features: brew install fribidi)"; exit 1; }
 [ -x "$JIELI_TOOLCHAIN/pi32v2/bin/clang" ] || { echo "build.sh: no toolchain in $JIELI_TOOLCHAIN (run tools/get_toolchain.sh)"; exit 1; }

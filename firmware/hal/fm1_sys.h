@@ -29,6 +29,9 @@
 #define FM1_UPDATA_PARM_LEN 112u
 
 static uint32_t fm1_p33_timeouts;
+/* Publish newly copied/decompressed executable SRAM before first use. */
+static inline __attribute__((always_inline)) void fm1_code_sync(void)
+{ __asm__ volatile("csync" ::: "memory"); }
 
 static uint8_t fm1__p33_xfer(uint8_t b)
 {
