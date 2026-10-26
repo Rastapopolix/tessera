@@ -1,8 +1,8 @@
 {
-  "version": "2.1",
-  "product": "FM-1_83772010",
+  "version": "2.1.1",
+  "product": "FM-1_83772011",
   "pkg": {
-    "dual": "../../firmware/tessera-2.1.fwsc",
-    "single": "../../firmware/tessera-2.1-1core.fwsc"
+    "dual": "../../firmware/tessera-2.1.1.fwsc",
+    "single": "../../firmware/tessera-2.1.1-1core.fwsc"
   }
 }
