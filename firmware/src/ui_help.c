@@ -351,9 +351,9 @@ static void help_find(uint32_t k)
         else help_hp(HP_DRUM_SOUND + pg->id[k]);
         return;
     }
-    if (pg->scope == SC_TRK) {                          /* MIXER: LEVEL PAN, MUTE (ui_input.c tracks_edit) */
-        if (k == 2u) help_unused(k);
-        else help.pid = (uint16_t)PID_TRACK(k == 0u ? P_LEVEL : k == 1u ? P_PAN : P_MUTE);
+    if (pg->scope == SC_TRK) {                          /* MIXER: KNOB k track k's LEVEL, OCT+ held its PAN */
+        help.pid = (uint16_t)PID_TRACK(((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) ? P_PAN : P_LEVEL);
+        help_tr = k;
         return;
     }
     if (pg->graph == GR_PATGRID) {                      /* PATTERNS: KNOB k track k's */
@@ -403,7 +403,7 @@ static void help_find(uint32_t k)
     else if (pg->graph == GR_TWEAK) x = TW[k];
     else if (pg->graph == GR_TWEAK2) x = TW2[k];
     else if (pg->graph == GR_NOTELEN) x = NL[k];
-    else if (pg->graph == GR_TIMING && k < 3u) x = k == 2u ? TX_SUB_SHAPE : k ? TX_SUB_CHANCE : TX_SUB_RATCH;
+    else if (pg->graph == GR_TIMING) x = k == 3u ? TX_SUB_HUMAN : k == 2u ? TX_SUB_SHAPE : k ? TX_SUB_CHANCE : TX_SUB_RATCH;
     else if (pg->graph == GR_ENERGY && k < 2u) x = k ? TX_EN_RESTS : TX_EN_ARC;
     else if (pg->graph == GR_MIDICH) { x = TX_MIDI_CH; help_tr = k; }   /* (KNOB k: track k's) */
     else if (pg->graph == GR_KEYLINK && k == 0u) x = TX_KEY_LINK;

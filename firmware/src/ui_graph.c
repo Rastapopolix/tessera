@@ -384,7 +384,7 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
             if (i >= lb) cv_rect(sx, yb + hb - 1, step_w, 1, dim);
             else if (is_panel) {                            /* B's lift as its number (0 dim), after the row's "+" */
                 char d[2] = {(char)('0' + (vb > 7u ? 7u : vb)), 0};
-                cv_text_c(sx + step_w / 2, yb + (hb - 12) / 2, &AF_S, d, hb_on ? T_TEXT : vb ? c : dim, bg);
+                cv_text_c(sx + step_w / 2, yb + (hb - 12) / 2, &AF_S, d, hb_on ? T_TEXT : vb ? c : T_MID, bg);
             }
             else if (!vb) cv_rect(sx, yb + hb - 2, step_w, 2, hb_on ? T_TEXT : dim);
             else cv_rrect(sx, yb + hb - (2 + ((int32_t)vb - 1) * (hb - 2) / 6), step_w, 2 + ((int32_t)vb - 1) * (hb - 2) / 6, 1,
@@ -410,7 +410,7 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
             if (is_panel) {
                 char lb[4] = "OFF";
                 if (d) lb[0] = '/', fmt_int(lb + 1, d);
-                cv_text(14, ly, &AF_X, lb, r == (p->sel & 3u) ? T_TEXT : d ? c : dim);
+                cv_text(12, ly - 1, &AF_S, lb, r == (p->sel & 3u) ? T_TEXT : d ? c : T_MID);
             }
             for (uint32_t i = 0; i < 16u; i++) {
                 int32_t sx = x0 + (int32_t)i * cw + (int32_t)(i / 4u) * 2;
@@ -590,7 +590,7 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
                 for (uint32_t k = 0; k < cnt; k++)
                     cv_rect(x0 + sw - (int32_t)(cnt - k) * 8, ly + 4, 5, 5, k < tess_an.ans[tr] ? dim : k == tess_an.ans[tr] ? T_TEXT : c);
             }
-            cv_text(x0, ly, &AF_X, b, ph == TESS_AN_HEAR ? T_TEXT : c);
+            cv_text(x0, ly - 1, &AF_S, b, ph == TESS_AN_HEAR ? T_TEXT : c);
         }
     } else if (mode == TESS_ENG_CHORD) {
         /* the progression as a row of cards, a chord's name each, the one playing filled with a bar under it for how far
@@ -605,6 +605,13 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
         for (uint32_t i = 0; i < n; i++) {
             int32_t x = x0 + (int32_t)i * cw;
             uint32_t at = tessera_chord_at(tr, i, b), on = i == cur;
+            for (char *q = b; *q; q++)                  /* ("dim" as its symbol: "B\xB0", "C\xB07") */
+                if (q[0] == 'd' && q[1] == 'i' && q[2] == 'm') {
+                    q[0] = (char)0xB0;
+                    for (char *s2 = q + 1; (s2[0] = s2[2]) != 0; s2++)
+                        ;
+                    break;
+                }
             static const aafont_t *const FIT[3] = {&AF_M, &AF_S, &AF_X};
             const aafont_t *f = 0;
             uint16_t tc = on ? bg : c, tb = on ? c : bg;
@@ -620,7 +627,7 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
                 char r[3] = {b[0], rl > 1u ? b[1] : 0, 0};
                 int32_t y = top + (ch - (is_panel ? 26 : 22)) / 2;
                 cv_text_c(x + cw / 2 - 1, y, is_panel ? &AF_S : &AF_X, r, tc, tb);
-                cv_text_c(x + cw / 2 - 1, y + (is_panel ? 14 : 10), &AF_X, b + rl, tc, tb);
+                cv_text_c(x + cw / 2 - 1, y + (is_panel ? 14 : 10), is_panel ? &AF_S : &AF_X, b + rl, tc, tb);
             }
             if (on && song.playing && g->n) {
                 uint32_t in = (g->n - 1u) % len + 1u;
@@ -650,7 +657,7 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
                 int32_t cx = x0 + (int32_t)i * (cw + gap) + cw / 2, y = 3;
                 uint32_t mv = tessera.qcol[i] & 3u;
                 int sel = layer && i == (tessera.qcol_sel & 3u);
-                uint16_t mc = sel ? T_TEXT : mv ? c : dim;
+                uint16_t mc = sel ? T_TEXT : mv ? c : T_MID;
                 char e[4] = {'/', 0, 0, 0};
                 if (mv == GEN_QC_DOWN || mv == GEN_QC_UP)
                     for (int32_t k = 0; k < 4; k++)      /* (a triangle, 7 wide, its point the way the cells go) */
@@ -661,7 +668,7 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
                 } else
                     cv_rect(cx - 3, y + 2, 7, 1, mc);
                 fmt_int(e + 1, tessera_quad_every(i));
-                cv_text_c(cx, top + 4 * lane, &AF_X, e, sel ? T_TEXT : mv ? c : dim, bg);
+                cv_text_c(cx, top + 4 * lane - 1, &AF_S, e, sel ? T_TEXT : mv ? c : T_MID, bg);
                 if (sel) cv_rect(cx - cw / 2, top - 3, cw, 1, T_TEXT);
             }
         }
@@ -672,9 +679,9 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
             if (is_panel) {
                 char lb[3] = {'T', (char)('1' + r), 0};
                 uint16_t tc = r == tr ? T_TEXT : on ? c : dim;
-                cv_text(12, ly + (lane - 12) / 2, &AF_X, lb, tc);
-                cv_text(30, ly + (lane - 12) / 2, &AF_X, QD[q->dir % GEN_QD_COUNT], on ? tc : dim);
-                cv_text(x0 + 4 * (cw + gap) + 2, ly + (lane - 12) / 2, &AF_X, QR[q->range % GEN_QR_COUNT], on ? tc : dim);
+                cv_text(10, ly + (lane - 14) / 2, &AF_S, lb, tc);
+                cv_text(30, ly + (lane - 14) / 2, &AF_S, QD[q->dir % GEN_QD_COUNT], on ? tc : dim);
+                cv_text(x0 + 4 * (cw + gap) + 2, ly + (lane - 14) / 2, &AF_S, QR[q->range % GEN_QR_COUNT], on ? tc : dim);
                 for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {   /* (its LINKs: a dot a track, none for its own) */
                     int32_t dx = 208 + (int32_t)k * 5, dy = ly + lane / 2 - 1;
                     if (k == r) continue;
@@ -786,11 +793,11 @@ static void graph_tweak(const track_t *t, uint16_t c)
         char n[2] = {(char)('1' + i), 0};
         if (ev->follow == i + 1u) {                     /* (the track followed: in its own colour) */
             cv_rrect(cx, cy, 21, 21, 3, T_TRK(i), T_SURF);
-            cv_text_c(cx + 11, cy + 5, &AF_X, n, T_BG, T_TRK(i));
+            cv_text_c(cx + 11, cy + 4, &AF_S, n, T_BG, T_TRK(i));
         } else {
             if (i == tr) cv_dashed(cx, cy, 21, 21, 3, ev->follow ? T_TEXT : T_MID);
             else cv_rrect(cx, cy, 21, 21, 3, T_RAISE, T_SURF);
-            cv_text_c(cx + 11, cy + 5, &AF_X, n, i == tr ? T_TEXT : T_MID, i == tr ? T_SURF : T_RAISE);
+            cv_text_c(cx + 11, cy + 4, &AF_S, n, i == tr ? T_TEXT : T_MID, i == tr ? T_SURF : T_RAISE);
         }
     }
 }
@@ -831,11 +838,11 @@ static void graph_tweak2(const track_t *t, uint16_t c)
         char n[2] = {(char)('1' + i), 0};
         if (on && ev->br_to == i + 1u) {               /* (as FOLLOW: in the track's colour) */
             cv_rrect(cx, cy, 21, 21, 3, T_TRK(i), T_SURF);
-            cv_text_c(cx + 11, cy + 5, &AF_X, n, T_BG, T_TRK(i));
+            cv_text_c(cx + 11, cy + 4, &AF_S, n, T_BG, T_TRK(i));
         } else {
             if (i == tr) cv_dashed(cx, cy, 21, 21, 3, on ? T_TEXT : T_MID);
             else cv_rrect(cx, cy, 21, 21, 3, T_RAISE, T_SURF);
-            cv_text_c(cx + 11, cy + 5, &AF_X, n, i == tr ? T_TEXT : T_MID, i == tr ? T_SURF : T_RAISE);
+            cv_text_c(cx + 11, cy + 4, &AF_S, n, i == tr ? T_TEXT : T_MID, i == tr ? T_SURF : T_RAISE);
         }
     }
     /* LOGIC: three rows of 8 steps */
@@ -944,20 +951,23 @@ static void graph_notelen(const track_t *t, uint16_t c)
 
 /* TIMING page (SUB, seq_sub.c): a bar of 8 steps, an example rhythm's hits on them; each hit's step split into RATCH's
  * hits, each its share of the GATE. CHANCE below 100: the steps that would not ratchet this time, a hit each, dimmer
- * hits marking the ones skipped (the picture's choice is fixed, not the track's toss) */
+ * hits marking the ones skipped (the picture's choice is fixed, not the track's toss). HUMAN: each hit late by its
+ * example share of it, the step a 16th at 120 BPM (125 ms), the lines left where they are */
 static void graph_timing(const track_t *t, uint16_t c)
 {
     static const uint8_t HITS[8] = {1, 0, 1, 1, 0, 1, 0, 1};   /* an example rhythm */
     static const uint8_t SKIP[8] = {0, 0, 37, 74, 0, 11, 0, 90};   /* the % at which each step stops ratcheting */
+    static const uint8_t LATE[8] = {40, 0, 100, 10, 0, 70, 0, 25};   /* each hit's example share of HUMAN, % */
     uint32_t tr = trk_index(t) % TESSERA_TRACKS, hits = (tessera.sub_ratch[tr] & 7u) + 1u, ch = tessera.sub_chance[tr], i, k;
     uint32_t sh = tessera.sub_shape[tr] % SUB_SHAPES;
     if (tessera.mode[tr] == TESS_ENG_OFF) { hits = 4u; ch = 100u; }   /* (a STEP track: x4 shows the SHAPE) */
     int32_t x0 = PANEL_X0 + 6, w = PANEL_W - 12, sw = w / 8, g = t->p[P_SGATE] ? t->p[P_SGATE] : 64;
     cv_rect(x0, 92, w, 1, T_RAISE);
     for (i = 0; i < 8u; i++) {
-        int32_t x = x0 + (int32_t)i * sw;
+        int32_t x = x0 + (int32_t)i * sw, late = sw * (int32_t)tessera.sub_human[tr] * LATE[i] / 12500;
         cv_rect(x, i % 4u ? 89 : 86, 1, i % 4u ? 3 : 6, T_RAISE);
         if (!HITS[i]) continue;
+        x += late < sw / 4 ? late : sw / 4;             /* (HUMAN: a quarter of the step at most) */
         uint32_t n = hits > 1u && SKIP[i] < ch ? hits : 1u;
         int32_t part = sw / (int32_t)n, len = part * g / 128;   /* (part, len: EVEN's; SHAPE moves the hits) */
         if (len < 2) len = 2;
@@ -1708,7 +1718,7 @@ static uint32_t graph_sig(int play)
     }
     if (pg->graph == GR_TIMING && trk_index(t) < TESSERA_TRACKS)    /* (SUB lives in tessera) */
         h ^= ((uint32_t)tessera.sub_ratch[trk_index(t)] | (uint32_t)tessera.sub_chance[trk_index(t)] << 8 |
-              (uint32_t)t->p[P_SGATE] << 16) * 2246822519u;
+              (uint32_t)t->p[P_SGATE] << 16 | (uint32_t)tessera.sub_human[trk_index(t)] << 24) * 2246822519u;
     if (pg->graph == GR_NOTELEN && trk_index(t) < TESSERA_TRACKS)   /* (NOTE LENGTH lives in tessera, DIV in the song) */
         h ^= ((uint32_t)tessera.nl_mode[trk_index(t)] | (uint32_t)tessera.nl_len[trk_index(t)] << 8 |
               (uint32_t)tessera.nl_keys[trk_index(t)] << 16 | (uint32_t)tessera.mode[trk_index(t)] << 24 ^

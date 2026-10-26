@@ -1429,7 +1429,9 @@ const mixer = {
    voice: 155 bytes, 6 x 21 operator bytes (the sixth operator first, as the format has them), then 19 voice bytes
    and a 10-character name. packed: the 128-byte record of a 32-voice bank (every byte 7-bit). SysEx files: a
    single voice (F0 43 0n 00 01 1B, 155 bytes, checksum, F7: 163 bytes) or 32 packed voices (F0 43 0n 09 20 00,
-   4096 bytes, checksum, F7: 4104 bytes); raw 155 / 4096-byte files are read too. */
+   4096 bytes, checksum, F7: 4104 bytes); raw 155 / 4096-byte files are read too.
+   Recover the 155-byte voice from the 231-byte F0 43 0n 7D 04 08 wrapper seen in a MainStage-sourced file.
+   Its remaining 69 bytes are opaque, not a standard Yamaha checksum or supported function settings. */
 const FM6 = (() => {
   /* per operator byte: name, highest value; then the voice bytes */
   const OP = [["R1", 99], ["R2", 99], ["R3", 99], ["R4", 99], ["L1", 99], ["L2", 99], ["L3", 99], ["L4", 99],
@@ -1502,11 +1504,18 @@ const FM6 = (() => {
       while (e < d.length && d[e] !== 0xF7) e++;
       const m = d.subarray(i, e + 1);
       i = e;
-      if (m.length < 8 || m[1] !== 0x43 || (m[2] & 0xF0) !== 0) continue;
+      if (m.length < 8 || m.at(-1) !== 0xF7 || m[1] !== 0x43 || (m[2] & 0xF0) !== 0 ||
+          m.subarray(2, -1).some(x => x > 127)) continue;
       if (m[3] === 0 && m[4] === 0x01 && m[5] === 0x1B && m.length === 163) {
         const data = m.subarray(6, 6 + SIZE);
         if (checksum(data) !== m[161]) badSum++;
         const v = sanitize(data);
+        voices.push({ v, name: name(v) });
+      } else if (m.length === 231 && m[3] === 0x7D && m[4] === 4 && m[5] === 8) {
+        const data = m.subarray(6, 6 + SIZE);
+        /* No verified checksum for this wrapper: require a valid VCED without repairing any fields. */
+        if (data.some((x, k) => x > max(k) || (k >= NAME && x < 32))) continue;
+        const v = Uint8Array.from(data);
         voices.push({ v, name: name(v) });
       } else if (m[3] === 9 && m[4] === 0x20 && m[5] === 0 && m.length === 4104) {
         const data = m.subarray(6, 6 + 4096);

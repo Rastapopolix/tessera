@@ -88,7 +88,7 @@ int main(void)
         assert(scale_favorite_set(69, 0) && !scale_favorite(69) && scale_favorite(95));
         p=original;settings_import(&p,sizeof p);
     }
-    {   /* PANEL GAMMA: row 15 byte 24 bits 1..3; 0 (any settings before it) TUNED+VCOM; bit 0, a CZ-1 star, kept */
+    {   /* PANEL GAMMA: row 15 byte 24 bits 1..3; 0 (any settings before it, and TUNED+VCOM until 2.1-rc2) G2.2; bit 0, a CZ-1 star, kept */
         assert(gamma_get() == GAMMA_DEF);
         favorites.factory[15][24] = 0xF1u;
         for (uint32_t g = 0; g < GAMMA_N; g++) {
@@ -96,7 +96,11 @@ int main(void)
             settings_export(&p); memset(&favorites, 0, sizeof favorites); settings_import(&p, sizeof p);
             assert(gamma_get() == g && (favorites.factory[15][24] & 0xF1u) == 0xF1u);
         }
-        assert(!(favorites.factory[15][24] & 0x0Eu));      /* the default stores 0 */
+        gamma_put(GAMMA_DEF); assert(!(favorites.factory[15][24] & 0x0Eu));      /* the default stores 0 */
+        gamma_put(5u); assert(((favorites.factory[15][24] >> 1) & 7u) == 6u);    /* TUNED+VCOM chosen: 6 */
+        for (uint32_t v = 1; v <= 5u; v++) {           /* saved before 2.1-rc2: 1..5 G2.2..TUNED as before */
+            favorites.factory[15][24] = (uint8_t)(v << 1); assert(gamma_get() == v - 1u);
+        }
         favorites.factory[15][24] = 7u << 1; assert(gamma_get() == GAMMA_DEF);   /* unknown: the default */
         p=original;settings_import(&p,sizeof p);
     }

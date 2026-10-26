@@ -29,9 +29,30 @@ firmware best. Engine suggestions are welcome as issues in the meantime; they wi
 - **New or returning synth engines, for now**, even behind build flags. Until the review above, every kilobyte is
   planned for the generators, and engines that are not shipped still need tests and maintenance. Open an issue
   instead, so the idea is on the list for the review. Variants with more engines are a good fit for your own fork,
-  and you are welcome to keep one.
+  and you are welcome to keep one (see [Keeping a fork](#keeping-a-fork)).
 - **Changes to the flash layout, bootloader or update path** without discussion first. These can brick a device.
 - Changes to the project links, credits or branding in this repository.
+
+## Keeping a fork
+
+Forks are welcome, and the GPL lets you publish and share your own builds. So that people can tell your firmware
+from Tessera, and projects keep loading on both, please:
+
+- **Give it its own name and version line**, for example "Tessera MOAR 1.0", or a suffix on Tessera's version such
+  as 2.0.2-moar1. A plain "Tessera 2.1" from a fork is confused with Tessera's own 2.1.
+- **Give its packages their own identity.** Tessera's releases are `FM-1_8377` followed by the version
+  (`FM-1_83772002` for 2.0.2), set in `tools/build.py` (`PRODUCT`) and `firmware/src/melodee.c` (`MELODEE_ID`).
+  The installer and the Firmware Hub tell firmware apart by this string, so a fork that keeps `FM-1_8377…` looks
+  like a Tessera release. Pick your own prefix (not `FM-1_8377`, nor Melodee's or M-Vave's).
+- **Open an issue before you take an engine id, a parameter id or a cord destination.** They are stored in saved
+  projects and presets, and Tessera's lists are frozen (`firmware/src/core.h` for the engines, including reserved and
+  retired ids, `tests/pid_ids.txt`, `tests/cord_dests.txt`). An id that means one thing in Tessera and another in a
+  fork loads the wrong engine or setting when a project moves between them. I will note the ids a fork claims, so
+  Tessera does not reuse them.
+- **Say whose firmware it is**: "X by you, based on Tessera by Theo Dainis", in your README, installer and project
+  page, and point bug reports at your own repository.
+- **Open pull requests into your own fork.** GitHub suggests this repository as the target by default; change the
+  base before you press Create.
 
 ## Before a large change
 

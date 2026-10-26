@@ -759,17 +759,20 @@ static void draw_columns(void)
     uint32_t c;
     char val[12];
     const char *unit;
-    if (cur_page()->scope == SC_TRK) {                 /* LEVEL PAN MUTE of the selected track */
-        const track_t *t = TSEL;
-        uint32_t lvl = trk_level(song.sel);
-        param_format(&TP[P_LEVEL], (int32_t)lvl, val, &unit);   /* (0: OFF) */
-        col_mods(PID_TRACK(P_LEVEL));
-        draw_column(0, "LEVEL", val, unit, lvl && !t->p[P_MUTE] ? VAL(0u) : T_DIM, (int32_t)lvl * 1000 / 127, ICON_AUTO);
-        param_format(&TP[P_PAN], t->p[P_PAN], val, &unit);
-        col_mods(PID_TRACK(P_PAN));
-        draw_column(1, "PAN", val, unit, VAL(1u), RATIO(&TP[P_PAN], t->p[P_PAN]), param_icon(&TP[P_PAN], t->p[P_PAN]));
-        draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
-        draw_column(3, "MUTE", t->p[P_MUTE] ? "ON" : "OFF", "", t->p[P_MUTE] ? T_ACCENT : VAL(3u), -1, ICON_AUTO);
+    if (cur_page()->scope == SC_TRK) {                 /* MIXER: KNOB k track k's LEVEL, OCT+ held its PAN */
+        static const char *const NAME[2][4] = {{"T1 LVL", "T2 LVL", "T3 LVL", "T4 LVL"}, {"T1 PAN", "T2 PAN", "T3 PAN", "T4 PAN"}};
+        uint32_t pan = (fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u;
+        for (c = 0; c < 4u; c++) {
+            const track_t *t = &trk[c];
+            if (pan) {
+                param_format(&TP[P_PAN], t->p[P_PAN], val, &unit);
+                draw_column(c, NAME[1][c], val, unit, VAL(c), RATIO(&TP[P_PAN], t->p[P_PAN]), param_icon(&TP[P_PAN], t->p[P_PAN]));
+            } else {
+                uint32_t lvl = trk_level(c);
+                param_format(&TP[P_LEVEL], (int32_t)lvl, val, &unit);   /* (0: OFF) */
+                draw_column(c, NAME[0][c], val, unit, lvl && !t->p[P_MUTE] ? VAL(c) : T_DIM, (int32_t)lvl * 1000 / 127, ICON_AUTO);
+            }
+        }
         return;
     }
     if (cur_page()->graph == GR_SCALE_PICKER) {
@@ -831,6 +834,14 @@ static void draw_columns(void)
         fmt_int(w2, ev->human);
         if (ev->follow) { w3[0] = 'T'; w3[1] = (char)('0' + ev->follow); w3[2] = 0; }
         else str_cpy(w3, "OFF", sizeof w3);
+        if (tr < TESSERA_TRACKS && tessera.mode[tr] == TESS_ENG_OFF) {   /* (a STEP track: HUMAN alone) */
+            draw_column(0, "SHIFT", "--", "", T_DIM, -1, ICON_NONE);
+            draw_column(1, "DROP", "--", "", T_DIM, -1, ICON_NONE);
+            col_mods(PID_TESS(TX_TW_HUMAN));
+            draw_column(2, "HUMAN", w2, "%", VAL(2u), (int32_t)ev->human * 10, ICON_AUTO);
+            draw_column(3, "FOLLOW", "--", "", T_DIM, -1, ICON_NONE);
+            return;
+        }
         col_mods(PID_TESS(TX_TW_SHIFT));
         draw_column(0, "SHIFT", w0, ev->follow ? "deg" : "st", VAL(0u), (sh + 24) * 1000 / 48, ICON_AUTO);   /* (following: scale degrees) */
         col_mods(PID_TESS(TX_TW_DROP));
@@ -875,29 +886,30 @@ static void draw_columns(void)
         fmt_int(w3, (int32_t)left + 1);
         draw_column(0, "ARC", w0, "%", VAL(0u), (int32_t)tessera.en_arc * 10, ICON_AUTO);
         draw_column(1, "RESTS", w1, "%", VAL(1u), (int32_t)tessera.en_rests * 10, ICON_AUTO);
-        draw_column(2, "NOW", tessera.en_arc ? w2 : "--", tessera.en_arc ? "%" : "", T_DIM, -1, ICON_NONE);
+        draw_column(2, "NOW", tessera.en_arc ? w2 : "--", tessera.en_arc ? "%" : "", tessera.en_arc ? T_TEXT : T_MID, -1, ICON_NONE);
         draw_column(3, "REST", song.playing && energy_resting() ? w3 : "--", song.playing && energy_resting() ? "s" : "",
-                    T_DIM, -1, ICON_NONE);
+                    song.playing && energy_resting() ? T_TEXT : T_MID, -1, ICON_NONE);
         return;
     }
-    if (cur_page()->graph == GR_TIMING) {                /* SUB (seq_sub.c): RATCH, its CHANCE (dim at x1), SHAPE */
+    if (cur_page()->graph == GR_TIMING) {                /* SUB (seq_sub.c): RATCH, its CHANCE (dim at x1), SHAPE, HUMAN */
         uint32_t tr = song.sel % TESSERA_TRACKS, r = tessera.sub_ratch[tr], ch = tessera.sub_chance[tr];
-        uint32_t sh = tessera.sub_shape[tr] % 3u, step_trk = tessera.mode[tr] == TESS_ENG_OFF;
+        uint32_t sh = tessera.sub_shape[tr] % 3u, step_trk = tessera.mode[tr] == TESS_ENG_OFF, hu = tessera.sub_human[tr];
         static const char *const SHAPE[3] = {"EVEN", "ACCEL", "DECEL"};
         static const char *const RATCH[8] = {"x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8"};
-        char w1[8];
+        char w1[8], w3[8];
         fmt_int(w1, ch);
+        fmt_int(w3, hu);
         if (step_trk) {                                   /* (a STEP track: RATCH a step's, in its sheet) */
             draw_column(0, "RATCH", "STEP", "", T_DIM, -1, ICON_NONE);
             draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
             draw_column(2, "SHAPE", SHAPE[sh], "", VAL(2u), (int32_t)sh * 500, ICON_AUTO);
-            draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
-            return;
+        } else {
+            draw_column(0, "RATCH", RATCH[r & 7u], "", VAL(0u), (int32_t)(r & 7u) * 1000 / 7, ICON_AUTO);
+            draw_column(1, "CHANCE", w1, "%", r ? VAL(1u) : T_DIM, (int32_t)ch * 10, ICON_AUTO);
+            draw_column(2, "SHAPE", SHAPE[sh], "", r ? VAL(2u) : T_DIM, (int32_t)sh * 500, ICON_AUTO);
         }
-        draw_column(0, "RATCH", RATCH[r & 7u], "", VAL(0u), (int32_t)(r & 7u) * 1000 / 7, ICON_AUTO);
-        draw_column(1, "CHANCE", w1, "%", r ? VAL(1u) : T_DIM, (int32_t)ch * 10, ICON_AUTO);
-        draw_column(2, "SHAPE", SHAPE[sh], "", r ? VAL(2u) : T_DIM, (int32_t)sh * 500, ICON_AUTO);
-        draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+        col_mods(PID_TESS(TX_SUB_HUMAN));
+        draw_column(3, "HUMAN", w3, "ms", VAL(3u), (int32_t)hu * 1000 / (int32_t)TESS_HUMAN_MS, ICON_AUTO);
         return;
     }
     if (cur_page()->graph == GR_NOTELEN) {               /* NOTE LENGTH (note_len.c); LEN and KEYS FIXED's alone */

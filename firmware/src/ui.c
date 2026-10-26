@@ -200,6 +200,7 @@ enum { LAYER_NONE, LAYER_RESERVED, LAYER_GLO, LAYER_SCL, LAYER_N };
 static void draw_layer(void);
 static const char *layer_head(void);
 static uint32_t layer_leds(void);
+static int mixer_live(void);                            /* (ui_layer.c: MIXER's keys are the GLO layer's) */
 static uint32_t layer_btn(void);
 
 /* FM operator pages belonged to DIGITAL (retired): they never appear. SLICES:
@@ -286,7 +287,8 @@ static int seqm_page_ok(uint32_t i)                     /* (the page shown stays
     if (!ui.home && ui.page == i) return 1;
     if (p->graph == GR_EVOLVE || p->graph == GR_FORM || p->graph == GR_TWEAK || p->graph == GR_TWEAK2 ||
         p->graph == GR_NOTELEN || p->graph == GR_TIMING || p->graph == GR_ENERGY) return m >= 2u ||
-        (p->graph == GR_EVOLVE && !m) || (p->graph == GR_TIMING && !m);   /* (STEP: STEP EVOLVE; TIMING's SHAPE) */   /* (STEP: STEP EVOLVE) */
+        ((p->graph == GR_EVOLVE || p->graph == GR_TIMING || p->graph == GR_TWEAK) && !m);   /* (STEP: STEP EVOLVE;
+                                                         * TIMING's SHAPE and HUMAN; TWEAK's HUMAN) */
     if (p->fam == FAM_ARP && (p->graph == GR_ARP || p->graph == GR_NONE)) return m == 1u;
     if (p->fam == FAM_SEQ && p->graph == GR_ROLL) return m < 2u;
     return 1;

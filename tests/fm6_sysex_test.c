@@ -46,9 +46,41 @@ static void dump_request(uint32_t ch, uint32_t format)
     uint8_t req[] = {0xf0,0x43,(uint8_t)(0x20u | ch),(uint8_t)format,0xf7};
     host_wire_n = 0; usb_dump(req, sizeof req);
 }
+static int extended_voice_import(void)
+{
+    int bad = 0;
+    uint8_t wrapped[231] = {0xf0,0x43,15,0x7d,4,8}, pk[FM6_PACKED], v[FP_SIZE + 1u];
+    fresh_sysex();
+    fm6_factory(3, pk); fm6_unpack(pk, v);
+    memcpy(wrapped + 6, v, FP_SIZE); wrapped[230] = 0xf7;
+    usb_dump(wrapped, sizeof wrapped);
+    bad += check("extended wrapper stages exactly its DX7 voice without changing the track",
+                 sx_import.count == 1u && !memcmp(sx_import.data, pk, sizeof pk) && !trk[0].user);
+    ui.uslot = 0; sysex_choose(); native_load(ENGI_FM6, 0, 0); dump_request(15, 0);
+    bad += check("extended voice saves, loads and sends as a checksummed standard DX7 voice",
+                 host_wire_n == 163u && host_wire[2] == 15u && host_wire[3] == 0 &&
+                 !memcmp(host_wire + 6, v, FP_SIZE) && host_wire[161] == fm6_chk(v, FP_SIZE));
+    static const uint8_t mutations[][2] = {{1,0x44},{2,0x10},{3,0x7c},{4,3},{5,9},
+                                         {6,100},{151,31},{162,0x80},{230,0}};
+    int rejected = 1;
+    for (uint32_t i = 0; i < NELEM(mutations); i++) {
+        uint8_t invalid[232]; memcpy(invalid, wrapped, sizeof wrapped);
+        invalid[mutations[i][0]] = mutations[i][1];
+        fresh_sysex(); usb_dump(invalid, sizeof wrapped);
+        rejected &= !sx_import.count && !up_count();
+    }
+    fresh_sysex(); usb_dump(wrapped, sizeof wrapped - 1u);
+    rejected &= !sx_import.count && !up_count();
+    uint8_t oversized[232]; memcpy(oversized, wrapped, sizeof wrapped);
+    oversized[230] = 0; oversized[231] = 0xf7;
+    fresh_sysex(); usb_dump(oversized, sizeof oversized);
+    rejected &= !sx_import.count && !up_count();
+    bad += check("extended wrapper rejects changed headers, bad ranges, status, missing end and wrong lengths", rejected);
+    return bad;
+}
 int main(void)
 {
-    int bad = 0, ok;
+    int bad = extended_voice_import(), ok;
     uint8_t unpacked[FP_SIZE + 1u], previous[FP_SIZE], pk[128];
     fresh_sysex(); make_bank(7);
     native_put(ENGI_FM6, 63, FM6_INIT);

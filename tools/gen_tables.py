@@ -363,7 +363,25 @@ def fm6_tables():
     for i in range(1025):
         fl.append(math.floor(y + 0.5))
         y *= inc
-    L += arr("FM6_FREQ", "int32_t", fl, 8)
+    # Every sixteenth point is an anchor. Convex interpolation overshoots by
+    # at most 11635 units, so uint16 residuals restore the original integers.
+    # Duplicate the terminal anchor for the endpoint lookup at i == 1024.
+    anchors = fl[::16] + [fl[-1]]
+    residual = [anchors[i >> 4] +
+                ((anchors[(i >> 4) + 1] - anchors[i >> 4]) * (i & 15) >> 4) - value
+                for i, value in enumerate(fl)]
+    assert all(0 <= r <= 65535 for r in residual)
+    assert all(anchors[i >> 4] +
+               ((anchors[(i >> 4) + 1] - anchors[i >> 4]) * (i & 15) >> 4) - residual[i] == value
+               for i, value in enumerate(fl))
+    L += arr("FM6_FREQ_BASE", "int32_t", anchors, 8)
+    L += arr("FM6_FREQ_RES", "uint16_t", residual, 16)
+    L += ["/* Exact frequency points; no floating-point pitch approximation. */",
+          "static inline __attribute__((always_inline)) int32_t fm6_freq_point(uint32_t i)",
+          "{",
+          "    uint32_t k=i>>4;int32_t a=FM6_FREQ_BASE[k];",
+          "    return a+((uint32_t)(FM6_FREQ_BASE[k+1u]-a)*(i&15u)>>4)-FM6_FREQ_RES[i];",
+          "}"]
     # MARK I (EngineMkI.cpp): log sine (1/1024 octave) and exponent tables, made in float
     lg = [int(round(f32(-1024 * f32(math.log2(f32(math.sin(((0.5 + i) / 1024.0) * math.pi / 2.0)))))))
           for i in range(1024)]
