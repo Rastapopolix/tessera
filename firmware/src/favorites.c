@@ -23,17 +23,19 @@ typedef struct {
 static favorites_t favorites;
 static uint32_t favorites_user_hi;
 /* MENU > PANEL GAMMA (lcd.c lcd_gamma): favorites row 15 byte 24 bits 1..3 (above; bit 0 is a CZ-1 star).
- * 0 is TUNED+VCOM, the default, so settings saved before it get it; n the option n - 1 */
+ * 0 is the default, G2.2, so settings saved before it get it; n the option n - 1 (6: TUNED+VCOM). Until 2.1-rc2
+ * 0 was TUNED+VCOM, the default then: a panel left on it moves to G2.2 (Theo, 2026-10-26) */
 #define GAMMA_N 6u
-#define GAMMA_DEF 5u                                   /* TUNED+VCOM */
+#define GAMMA_DEF 0u                                   /* G2.2 */
 static uint32_t gamma_get(void)
 {
     uint32_t v = (favorites.factory[15][24] >> 1) & 7u;
-    return v && v <= GAMMA_DEF ? v - 1u : GAMMA_DEF;
+    return v && v <= GAMMA_N ? v - 1u : GAMMA_DEF;
 }
 static void gamma_put(uint32_t opt)
 {
-    favorites.factory[15][24] = (uint8_t)((favorites.factory[15][24] & ~0x0Eu) | (opt < GAMMA_DEF ? (opt + 1u) << 1 : 0u));
+    favorites.factory[15][24] = (uint8_t)((favorites.factory[15][24] & ~0x0Eu) |
+                                          (opt < GAMMA_N && opt != GAMMA_DEF ? (opt + 1u) << 1 : 0u));
 }
 
 /* Scale favorites use the upper half of retired engine 14's PER5 row. Keep

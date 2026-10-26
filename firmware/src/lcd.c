@@ -126,8 +126,8 @@ static void lcd_seq(const uint8_t *seq, uint32_t n)   /* a sequence in LCD_SEQ's
 }
 
 /* MENU > PANEL GAMMA (ui_menu.c, saved: favorites.c gamma_get): the panel's gamma. opt 0..3 GAMSET G2.2 (the chip's
- * default), G1.8, G2.5, G1.0; 4 the tuned tables; 5 those and VCOMS / VRHS, the default (Theo picked it on the
- * device, 2026-10-24: LCD_SEQ alone left the screen flatter than the renders) */
+ * default and the menu's, Theo 2026-10-26), G1.8, G2.5, G1.0; 4 the tuned tables; 5 those and VCOMS / VRHS (the
+ * default from 2026-10-24 to 2.1-rc2) */
 static const uint8_t LCD_GAMMA_TUNED[] = {             /* (the Waveshare 1.3" ST7789V tables) */
     0xE0, 14, 0xD0, 0x04, 0x0D, 0x11, 0x13, 0x2B, 0x3F, 0x54, 0x4C, 0x18, 0x0D, 0x0B, 0x1F, 0x23,
     0xE1, 14, 0xD0, 0x04, 0x0C, 0x11, 0x13, 0x2C, 0x3F, 0x44, 0x51, 0x2F, 0x1F, 0x1F, 0x20, 0x23,
@@ -162,7 +162,7 @@ static void lcd_init(void)
     fm1_lcd_hw_init();
     lcd_spin(2000000u);
     lcd_seq(LCD_SEQ, sizeof LCD_SEQ);
-    lcd_gamma(5u);                                       /* TUNED+VCOM, the default, before the settings load
+    lcd_gamma(0u);                                       /* G2.2, the default, before the settings load
                                                           * (main.c: another saved one follows them) */
     fm1_lcd_baud(LCD_BAUD);
     lcd_fill(0, 0, 240, 240, 0);
