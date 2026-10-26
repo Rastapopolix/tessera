@@ -9,6 +9,30 @@ extern uint32_t _audio_start[], _audio_end[], _audio_load[];
 extern uint8_t _app_xip_end[], _resource_start[];
 #include "boot_lzma.h"
 extern uint32_t _pool_start[], _pool_end[], _rt_start[], _rt_end[], _rt_load[];
+extern uint32_t _ustack_top[];
+extern uint8_t _cpu1_stacks_lo[], _cpu1_stacks_hi[], _cpu1_ustack_top[];
+
+/* Stack high-water marks (editor AUDIO_STATS flag 64, upstream Melodee 1.5): fm1_cstart paints each stack below what
+ * is in use, a reading finds the lowest word written since. The device side of tools/stack_budget.py's estimate */
+#define STACK_PAINT 0xA5C3A5C3u
+static void stack_paint(uint32_t *lo, uint32_t *hi) { while (lo < hi) *lo++ = STACK_PAINT; }
+static uint32_t stack_peak(const uint32_t *lo, const uint32_t *hi)   /* bytes used at most */
+{
+    const uint32_t *p = lo;
+    while (p < hi && *p == STACK_PAINT) p++;
+    return (uint32_t)((uintptr_t)hi - (uintptr_t)p);
+}
+/* v[0..5]: CPU0's user stack used at most, its size, the system stack's, its size; CPU1's user and system stacks used
+ * at most (the serial build has none: 0) */
+static void stack_report(uint32_t *v)
+{
+    const uint32_t *u = (const uint32_t *)_ustack_lo, *s = (const uint32_t *)_sstack_lo;
+    const uint32_t *c1 = (const uint32_t *)_cpu1_stacks_lo, *c2 = (const uint32_t *)_cpu1_ustack_top;
+    if (!((uintptr_t)_cpu1_stacks_hi - (uintptr_t)_cpu1_stacks_lo)) c2 = c1;   /* (a compare of the arrays folds) */
+    v[0] = stack_peak(u, _ustack_top); v[1] = (uint32_t)((uintptr_t)_ustack_top - (uintptr_t)u);
+    v[2] = stack_peak(s, (const uint32_t *)_sstack_top); v[3] = (uint32_t)((uintptr_t)_sstack_top - (uintptr_t)s);
+    v[4] = stack_peak(c1, c2); v[5] = stack_peak(c2, (const uint32_t *)_cpu1_stacks_hi);
+}
 
 
 /* TIMER5 outranks ALNK0, so the scan keeps its 100 us pace while a half buffer renders: before,
@@ -385,6 +409,12 @@ void fm1_cstart(void)
         fm1_enter_uboot();
     }
     fm1_irq_init();
+    {   /* (IRQs off, CPU1 held: the system stack and CPU1's are unused; this frame's own is kept) */
+        uint32_t here;
+        stack_paint((uint32_t *)_ustack_lo, (uint32_t *)((uintptr_t)&here & ~3u) - 64);
+        stack_paint((uint32_t *)_sstack_lo, (uint32_t *)_sstack_top);
+        stack_paint((uint32_t *)_cpu1_stacks_lo, (uint32_t *)_cpu1_stacks_hi);
+    }
     for (d = _bss_start; d < _bss_end; d++)
         *d = 0;
     for (d = _pool_start; d < _pool_end; d++)

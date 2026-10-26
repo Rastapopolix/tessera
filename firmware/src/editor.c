@@ -25,6 +25,10 @@ enum { ED_CORE1_TEST = 79 };                         /* test builds only: CPU1 f
 static void core1_test_stall(void *unused) { (void)unused; for (;;) ; }
 #endif
 
+#ifdef FM1_IRQ_TARGET
+static void stack_report(uint32_t *v);              /* main.c: the stacks' high-water marks */
+#endif
+
 static uint8_t ed_out[1024];                        /* the longest: a NAMES page (PROPHET pages its 201) */
 static uint32_t ed_n;
 
@@ -413,8 +417,9 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
     }
 #endif
 #if MELODEE_USB_AUDIO
-    case ED_AUDIO_STATS: {                         /* flags: 1 resets maxima, 2 voices, 4 cores, 8 memory, 16 part victims */
-        uint32_t snapshot[64] = {0}, k, count = na && (a[0] & 32u) ? 64u : na && (a[0] & 16u) ? 55u : na && (a[0] & 8u) ? 47u : na && (a[0] & 4u) ? 32u : na && (a[0] & 2u) ? 26u : 20u;
+    case ED_AUDIO_STATS: {                         /* flags: 1 resets maxima, 2 voices, 4 cores, 8 memory, 16 part victims,
+                                                    * 32 complete timing, 64 stack high-water marks */
+        uint32_t snapshot[70] = {0}, k, count = na && (a[0] & 64u) ? 70u : na && (a[0] & 32u) ? 64u : na && (a[0] & 16u) ? 55u : na && (a[0] & 8u) ? 47u : na && (a[0] & 4u) ? 32u : na && (a[0] & 2u) ? 26u : 20u;
         fm1_irq_off();
         snapshot[0] = ua.play_alt;
         snapshot[1] = ua.cap_alt;
@@ -484,7 +489,7 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
                 snapshot[47u+p] = shed_part[p];
                 snapshot[51u+p] = voice_kills_part[p];
             }
-        if(count==64u){
+        if(count>=64u){
             /* Upper envelope includes measured C entry/exit and allows one
              * TIMER5 preemption during the short assembly footer, plus 4 us
              * for register/timestamp/return overhead at supported clocks. */
@@ -497,6 +502,10 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
             snapshot[63]=(uint32_t)audio_bench_active()|(audio_bench_shed_requests<<1u);
 #endif
         }
+#ifdef FM1_IRQ_TARGET
+        if (count == 70u)
+            stack_report(snapshot + 64);           /* main.c */
+#endif
         if (na && (a[0] & 1u)) {
             audio_full_max_us=0;
             audio_irq_max_ticks=0;
@@ -507,7 +516,7 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
 #endif
         }
         fm1_irq_on();
-        ed_b(count == 64u ? 7u : count == 55u ? 6u : count == 47u ? 5u : count == 32u ? 4u : count == 26u ? 3u : 2u);
+        ed_b(count == 70u ? 8u : count == 64u ? 7u : count == 55u ? 6u : count == 47u ? 5u : count == 32u ? 4u : count == 26u ? 3u : 2u);
         for (i = 0; i < count; i++)
             for (k = 0; k < 5u; k++)
                 ed_b(snapshot[i] >> (7u * k));
