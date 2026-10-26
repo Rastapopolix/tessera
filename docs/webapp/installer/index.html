@@ -41,6 +41,8 @@
   .bar span:nth-child(1) { background: var(--t1); } .bar span:nth-child(2) { background: var(--t2); }
   .bar span:nth-child(3) { background: var(--t3); } .bar span:nth-child(4) { background: var(--t4); }
   p { margin: 0 0 14px; }
+  .needs { list-style: none; display: flex; flex-wrap: wrap; gap: var(--gap); padding: 0; margin: 0 0 var(--gap); }
+  .needs li { background: var(--surf); border-left: 4px solid var(--c); padding: 6px 12px; font-size: 14px; font-weight: 500; }
   .small { color: var(--mid); font-size: 14px; line-height: 1.5; }
   .panel { background: var(--surf); padding: 18px 20px 6px; margin: 0 0 var(--gap); border-left: 4px solid var(--c, var(--gold)); }
   .warn { color: var(--text); font-weight: 500; }
@@ -63,14 +65,39 @@
             font-size: 14px; font-weight: 500; }
   summary:hover, details[open] summary { color: var(--text); }
   .run { margin-top: 28px; }
-  progress { appearance: none; -webkit-appearance: none; width: 100%; height: 6px; border: 0; background: var(--surf); display: block; }
-  progress::-webkit-progress-bar { background: var(--surf); }
-  progress::-webkit-progress-value { background: var(--gold); }
+  progress { appearance: none; -webkit-appearance: none; width: 100%; height: 10px; border: 0; background: var(--raise); display: block; }
+  progress::-webkit-progress-bar { background: var(--raise); }
+  progress::-webkit-progress-value { background: var(--gold); transition: width .3s; }
   progress::-moz-progress-bar { background: var(--gold); }
   #status { margin-top: 14px; min-height: 1.6em; font-weight: 500; }
-  pre { color: var(--dim); font: 12px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; margin: 12px 0 0;
-        max-height: 14em; overflow: auto; }
-  pre:empty { display: none; }
+  pre { color: var(--dim); font: 12px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; margin: 0 0 12px;
+        max-height: 12em; overflow: auto; }
+  /* the install window: the stages, the bar and its percentage, the status, the log behind Details */
+  dialog { width: min(560px, calc(100vw - 32px)); background: var(--surf); color: var(--text); border: 0; padding: 0 24px 20px; }
+  dialog::backdrop { background: rgba(13, 19, 38, .88); }
+  dialog .bar { margin: 0 -24px 22px; }
+  dialog h2 { font-size: 22px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 12px; }
+  .keep { border-left: 4px solid var(--gold); background: var(--raise); padding: 10px 14px; font-weight: 500; }
+  .stages { list-style: none; counter-reset: st; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap);
+            padding: 0; margin: 18px 0 14px; }
+  .stages li { counter-increment: st; background: var(--bg); color: var(--dim); padding: 8px 8px 7px; font-size: 13px;
+               font-weight: 500; letter-spacing: .04em; text-transform: uppercase; border-top: 4px solid var(--line); line-height: 1.3; }
+  .stages li::before { content: counter(st) " "; font-weight: 600; }
+  .stages li.now { color: var(--text); border-top-color: var(--gold); background: var(--raise); }
+  .stages li.done { color: var(--mid); border-top-color: var(--t3); }
+  .stages li.done::before { content: "\2713  "; color: var(--t3); }
+  .meter { display: flex; align-items: center; gap: 12px; }
+  .meter progress { flex: 1; }
+  #run-pct { min-width: 3.5em; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  #run-status { margin: 12px 0 14px; min-height: 1.6em; font-weight: 500; }
+  dialog.ok .meter progress::-webkit-progress-value { background: var(--t3); }
+  dialog.ok .meter progress::-moz-progress-bar { background: var(--t3); }
+  dialog.ok #run-status { color: var(--t3); }
+  dialog.fail #run-status { color: var(--bad); }
+  dialog details { background: var(--bg); padding: 0 14px; margin: 0 0 16px; }
+  dialog summary { padding: 10px 0; font-size: 13px; }
+  #run-close { width: 100%; }
+  @media (max-width: 480px) { .stages { grid-template-columns: repeat(2, 1fr); } }
   .next { display: block; background: var(--surf); padding: 16px 20px; margin-top: 28px; color: var(--text);
           text-decoration: none; border-left: 4px solid var(--t2); }
   a.next:hover { background: var(--raise); color: var(--text); }
@@ -93,6 +120,10 @@
   <div class="kicker" id="ver">FM-1</div>
   <h1>TESSERA</h1>
   <div class="bar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+  <ul class="needs">
+    <li style="--c:var(--t1)" data-t="needBrowser"></li><li style="--c:var(--t2)" data-t="needCable"></li>
+    <li style="--c:var(--t3)" data-t="needTab"></li>
+  </ul>
   <div class="panel">
     <p data-t="intro"></p>
     <p class="warn" data-t="warn"></p>
@@ -120,10 +151,21 @@
   </section>
   <p><button id="go" disabled data-t="install"></button></p>
   <div class="run">
-    <progress id="bar" max="100" value="0"></progress>
     <p id="status"></p>
-    <pre id="log"></pre>
   </div>
+  <dialog id="run" aria-labelledby="run-title">
+    <div class="bar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+    <h2 id="run-title"></h2>
+    <p class="keep" data-t="runKeep"></p>
+    <ol class="stages">
+      <li id="run-st1" data-t="stPrep"></li><li id="run-st2" data-t="stLoader"></li>
+      <li id="run-st3" data-t="stWrite"></li><li id="run-st4" data-t="stReboot"></li>
+    </ol>
+    <div class="meter"><progress id="bar" max="100" value="0"></progress><span id="run-pct">0 %</span></div>
+    <p id="run-status" role="status"></p>
+    <details><summary data-t="details"></summary><pre id="log"></pre></details>
+    <button id="run-close" disabled data-t="close"></button>
+  </dialog>
   <p class="small" data-t="beta"></p>
   <p class="small" data-t="counted"></p>
   <p class="small"><span data-t="brick"></span>
@@ -918,7 +960,11 @@ const TEXT = {
     backup: "全体バックアップ保存中 ", stockError: "公式ファイルを確認できません: ",
     nomidi: "このブラウザでは使えません。Chrome か Edge で開いてください。", loadfail: "読み込めませんでした: ",
     start: "開始します", verify: "確認中", loader: "書き込みモードに切り替え中", write: "書き込み中",
-    reboot: "再起動中", done: "完了しました", stopped: "途中で止まりました。USB を挿し直してもう一度押してください。",
+    reboot: "再起動中", done: "完了しました。FM-1 を外しても大丈夫です。", stopped: "途中で止まりました。USB を挿し直してもう一度押してください。",
+    needBrowser: "Chrome か Edge", needCable: "USB データケーブル", needTab: "終わるまでこのタブを開いたまま",
+    runTitle: "Tessera をインストール中", runTitleStock: "公式V15に戻しています",
+    runKeep: "終わるまでこのタブを開いたまま、FM-1 を接続したままにしてください。タブを閉じたり、FM-1 の電源を切ったり、USB を抜いたりすると更新が中断します。",
+    stPrep: "準備", stLoader: "書き込みモード", stWrite: "書き込み", stReboot: "再起動", details: "詳細", close: "閉じる",
     error: "エラー: ",
     denied: "MIDI（SysEx）の使用が許可されませんでした。アドレスバーのサイト設定で MIDI を許可して、もう一度押してください。",
     notfound: "FM-1 が見つかりません。USB ケーブル（データ通信用か）を確かめ、MIDI を使う他のアプリを閉じてから、もう一度押してください。",
@@ -967,7 +1013,11 @@ const TEXT = {
     backup: "Saving complete backup ", stockError: "Cannot validate official firmware: ",
     nomidi: "This browser cannot do it. Open the page in Chrome or Edge.", loadfail: "Could not load: ",
     start: "Starting", verify: "Verifying", loader: "Switching to update mode", write: "Writing",
-    reboot: "Restarting", done: "Done", stopped: "Stopped. Replug the USB cable and press Install again.",
+    reboot: "Restarting", done: "Done. You can unplug the FM-1.", stopped: "Stopped. Replug the USB cable and press Install again.",
+    needBrowser: "Chrome or Edge", needCable: "A USB data cable", needTab: "This tab open until it is done",
+    runTitle: "Installing Tessera", runTitleStock: "Returning to official V15",
+    runKeep: "Keep this tab open and the FM-1 connected until it is finished. Closing the tab, switching the FM-1 off or unplugging it interrupts the update.",
+    stPrep: "Preparing", stLoader: "Update mode", stWrite: "Writing", stReboot: "Restarting", details: "Details", close: "Close",
     error: "Error: ",
     denied: "MIDI (SysEx) access was not allowed. Allow MIDI in the site settings (address bar) and press Install again.",
     notfound: "FM-1 not found. Check the USB cable (a data cable), close other apps that use MIDI, and press Install again.",
@@ -983,19 +1033,20 @@ const TEXT = {
 };
 let lang = (navigator.language || "en").toLowerCase().startsWith("ja") ? "ja" : "en";
 const t = (k) => TEXT[lang][k];
-let lastKey = null, lastArg = "";
+let lastKey = null, lastArg = "", runTitle = null;
 function applyLang() {
   document.documentElement.lang = lang;
   document.querySelectorAll("[data-t]").forEach((e) => { e.textContent = t(e.dataset.t); });
   $("lang").textContent = t("other");
   $("stock-go").textContent = t($("stock-skip-backup").checked ? "stockGoNoBackup" : "stockGo");
   if (lastKey === "ready") ready();
-  else if (lastKey) $("status").textContent = t(lastKey) + lastArg;
+  else if (lastKey) $("status").textContent = $("run-status").textContent = t(lastKey) + lastArg;
+  if (runTitle) $("run-title").textContent = t(runTitle);
 }
 $("lang").addEventListener("click", () => { lang = lang === "ja" ? "en" : "ja"; applyLang(); });
 applyLang();
 $("stock-skip-backup").addEventListener("change", applyLang);
-const sayK = (k, arg = "") => { lastKey = k; lastArg = arg; $("status").textContent = t(k) + arg; };
+const sayK = (k, arg = "") => { lastKey = k; lastArg = arg; $("status").textContent = $("run-status").textContent = t(k) + arg; };
 const say = (txt) => { lastKey = null; $("status").textContent = txt; };
 const buildIds = ["dual", "single", "nightly-dual", "nightly-single", "synth-dual", "synth-single"];
 const build = () => buildIds.find(k => $("build-" + k).checked) || "dual";
@@ -1006,7 +1057,7 @@ const selection = () => {     /* the release, or a channel ("nightly-dual": meta
 const ready = () => { lastKey = "ready"; $("status").textContent = `Tessera ${selection().channel.version} (${t(build() + "Tag")})`; };
 const log = (t) => { $("log").textContent += t + "\n"; };
 let image = null;
-const meta = {"version": "2.0.2", "product": "FM-1_83772002", "pkg": {"dual": "../../firmware/tessera-2.0.2.fwsc", "single": "../../firmware/tessera-2.0.2-1core.fwsc"}, "nightly": null, "synth": null};
+const meta = {"version": "2.1", "product": "FM-1_83772010", "pkg": {"dual": "../../firmware/tessera-2.1.fwsc", "single": "../../firmware/tessera-2.1-1core.fwsc"}, "nightly": null, "synth": null};
 $("ver").textContent = `FM-1 · ${meta.version}`;
 $("nightly-options").hidden = !meta.nightly;
 if (meta.nightly) $("nightly-info").textContent = `next · ${meta.nightly.commit.slice(0, 7)} · ${meta.nightly.builtAt}`;
@@ -1017,6 +1068,46 @@ const images = {};                // a build ("dual", "nightly-single", "synth-d
 let writing = false, stock = null, stockFileEpoch = 0, buildEpoch = 0, local = null, localFileEpoch = 0;
 const lockInstaller = (on) => { writing = on; $("go").disabled = on || !image; $("local-go").disabled = on || !local; $("local-file").disabled = on; buildIds.forEach(k => { $("build-" + k).disabled = on; }); $("stock-go").disabled = on || !stock; $("stock-file").disabled = on; $("stock-recovery").disabled = on; $("stock-skip-backup").disabled = on; };
 window.addEventListener("beforeunload", (e) => { if (writing) { e.preventDefault(); e.returnValue = t("leave"); } });
+
+// the install window (display only; the protocol is fm1ota.js): the four stages, the bar and its percentage, the
+// status, and the log behind Details, which keeps the stages and errors, not every request. Esc does not close it
+// while writing; Close does once it has finished. Nothing started (a refusal, a cancelled confirm): it just closes,
+// the page's status says why
+const STAGES = {start: 1, verify: 1, backup: 1, loader: 2, write: 3, reboot: 4, done: 5};
+let runStage = 0;
+const runShow = (n) => { for (let i = 1; i <= 4; i++) $("run-st" + i).className = i < n ? "done" : i === n ? "now" : ""; };
+function runOpen(title) {
+  runTitle = title; runStage = 0;
+  $("run-title").textContent = t(title); $("run-status").textContent = ""; $("log").textContent = "";
+  $("bar").value = 0; $("run-pct").textContent = "0 %"; $("run-close").disabled = true; $("run").className = "";
+  runShow(0);
+  if ($("run").showModal && !$("run").open) $("run").showModal();
+}
+function runStep(k, pct) {
+  const n = STAGES[k];
+  if (n && n > runStage) { runStage = n; runShow(n); log(t(k)); }
+  if (pct !== undefined) { $("bar").value = pct; $("run-pct").textContent = `${Math.floor(pct)} %`; }
+}
+function runEnd(ok) {
+  if (!ok && runStage === 0) { if ($("run").close) $("run").close(); return; }
+  if (ok) runStep("done", 100);
+  $("run").className = ok ? "ok" : "fail"; $("run-close").disabled = false;
+}
+/* the Updater's steps for an image (its writes: one request a 512-byte block, fm1ota.js MAXDATA; 74 to verify first):
+ * the status, the stages and the bar; the requests are counted, not each logged. onDone: when "done" arrives */
+function installSteps(img, onDone) {
+  const total = 74 + Math.ceil(img.length / 512);
+  return (k, a) => {
+    if (k === "start") { sayK("start"); runStep(k); }
+    if (k === "verify") { if (lastKey !== "verify") sayK("verify"); runStep(k, Math.min(5, (a / total) * 100)); }
+    if (k === "loader") { sayK("loader"); runStep(k); }
+    if (k === "write") { if (lastKey !== "write") sayK("write"); runStep(k, Math.min(97, ((74 + a) / total) * 100)); }
+    if (k === "reboot") { sayK("reboot"); runStep(k, 98); }
+    if (k === "done") { sayK("done"); onDone(); }
+  };
+}
+$("run-close").addEventListener("click", () => { if (!writing && $("run").close) $("run").close(); });
+$("run").addEventListener("cancel", (e) => { if (writing) e.preventDefault(); });
 
 // the chosen build's package: Install stays off until it is loaded and checked
 async function choose() {
@@ -1058,19 +1149,11 @@ async function flash(image, product, what) {
   let midi;
   try { midi = await navigator.requestMIDIAccess({ sysex: true }); }
   catch (e) { sayK("denied"); lockInstaller(false); return; }
+  let done = false;
+  runOpen("runTitle");
   try {
     const up = new Updater(midi, log);
-    let done = false;
-    const total = 74 + 1167;
-    const step = (k, a) => {
-      log(`${k} ${a ?? ""}`);
-      if (k === "start") sayK("start");
-      if (k === "verify") { sayK("verify"); $("bar").value = (a / total) * 100; }
-      if (k === "loader") sayK("loader");
-      if (k === "write") { sayK("write"); $("bar").value = ((74 + a) / total) * 100; }
-      if (k === "reboot") sayK("reboot");
-      if (k === "done") { $("bar").value = 100; sayK("done"); done = true; }
-    };
+    const step = installSteps(image, () => { done = true; });
     const ota = await up.find((id) => /^ota-/i.test(id.model));
     if (ota) {
       ota.link.close();
@@ -1085,6 +1168,7 @@ async function flash(image, product, what) {
     else sayK("error", e && e.message);
     log(String(e && e.stack || e));
   }
+  runEnd(done);
   lockInstaller(false);
 }
 $("go").addEventListener("click", () => { if (!writing && image) { const {channel, kind} = selection(); return flash(image, channel.product, `${channel.version}/${kind}`); } });
@@ -1147,18 +1231,20 @@ function archiveInfo(a) {
 $("stock-go").addEventListener("click", async () => {
   if (!stock || writing) return;
   const selected = stock, skipBackup = $("stock-skip-backup").checked; lockInstaller(true);
-  let link = null;
+  let link = null, done = false;
   try {
     let midi;
     try { midi = await navigator.requestMIDIAccess({sysex:true}); } catch (e) { sayK("denied"); return; }
+    runOpen("runTitleStock");
     const up = new Updater(midi, log);
-    const step = (k, n) => { log(`${k} ${n ?? ""}`); if (["start","verify","loader","write","reboot","done"].includes(k)) sayK(k); if (k === "done") $("bar").value = 100; };
+    const step = installSteps(selected.image, () => { done = true; });
     const loader = await up.find(id => id.model === "ota-FM-1");
     if (loader) {
       loader.link.close();
       if (!skipBackup && !$("stock-recovery").checked) { sayK("stockNeedBackup"); return; }
       if (!confirm(t(skipBackup ? "stockConfirmNoBackup" : "stockConfirm"))) return;
-      sayK(await up.resume(selected.image, step, selected.product) ? "done" : "stopped");
+      if (await up.resume(selected.image, step, selected.product)) done = true;
+      sayK(done ? "done" : "stopped");
     } else {
       const device = await up.find(id => id.model === "FM-1");
       if (!device) { sayK("notfound"); return; }
@@ -1167,8 +1253,9 @@ $("stock-go").addEventListener("click", async () => {
         link = new BackupConnection(input, output);
         const info = archiveInfo(await link.request([1,[]]));
         if (!info.supported) { sayK("stockUnsupported"); return; }
+        runStep("backup");
         const archive = await captureBackup((r,o) => link.request(r,o), info.version,
-          (done,total) => sayK("backup", `${Math.round(done / Math.max(1,total) * 100)}%`));
+          (got,total) => sayK("backup", `${Math.round(got / Math.max(1,total) * 100)}%`));
         saveArchive(archive); link.close(); link = null;
       }
       if (!confirm(t(skipBackup ? "stockConfirmNoBackup" : "stockConfirm"))) return;
@@ -1177,7 +1264,7 @@ $("stock-go").addEventListener("click", async () => {
   } catch (e) {
     if (e.code && TEXT[lang][e.code]) sayK(e.code,e.detail || ""); else sayK("error",e.message);
     log(String(e.stack || e));
-  } finally { if (link) link.close(); lockInstaller(false); }
+  } finally { if (link) link.close(); runEnd(done); lockInstaller(false); }
 });
 </script>
 </body>
