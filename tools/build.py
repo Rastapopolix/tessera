@@ -37,6 +37,7 @@ STB = OUT / "stub"
 sys.path.insert(0, str(SRC / "tools"))
 import fm1pkg_make  # noqa: E402
 import lz4blk  # noqa: E402
+import boot_audio  # noqa: E402
 
 STUB_XIP = 0x02000120
 STUB_LEN = fm1pkg_make.STUB_LEN
@@ -329,17 +330,30 @@ def build_app(stub):
     def symv(name):
         return int(re.search(r"^([0-9a-f]+) .*\s" + name + r"$", syms, re.M).group(1), 16)
     img = bytearray((OUT / "text.bin").read_bytes())
-    # .ram_text and .data follow .text at their load addresses; crt0 copies them by words
-    for sect, lname in (("ramtext.bin", "_rt_load"), ("dsptext.bin", "_dsp_load"), ("dsptables.bin", "_dt_load"), ("data.bin", "_data_load"), ("audiotext.bin", "_audio_load")):
-        load = symv(lname)
-        if load % 4:
-            raise SystemExit(f"{lname} {load:#x} is not word aligned")
-        blob = (OUT / sect).read_bytes() if (OUT / sect).exists() else b""
-        if blob:
-            if load - APP_XIP < len(img):
-                raise SystemExit(f"{lname} overlaps the image")
-            img += b"\xff" * (load - APP_XIP - len(img))
-            img += blob
+    loads = (("ramtext.bin", "_rt_load"), ("dsptext.bin", "_dsp_load"), ("dsptables.bin", "_dt_load"),
+             ("data.bin", "_data_load"), ("audiotext.bin", "_audio_load"))
+    assert tuple(sect for sect, _ in loads) == boot_audio.SECTIONS
+    blobs = [(OUT / sect).read_bytes() if (OUT / sect).exists() else b"" for sect, _ in loads]
+    if os.environ.get("MELODEE_COMPRESS_AUDIO", "1") != "0":
+        # the SRAM load images boot-compressed, one after another from _rt_load (main.c unpacks them before anything
+        # runs from SRAM); their own load addresses are only nominal
+        at = symv("_rt_load") - APP_XIP
+        if at % 4 or at < len(img):
+            raise SystemExit(f"_rt_load {at + APP_XIP:#x} is not a free word after .text")
+        packed = boot_audio.pack_images(blobs)
+        img += b"\xff" * (at - len(img)) + packed
+        print(f"boot images: {sum(map(len, blobs))} -> {len(packed)} flash bytes; expand once before anything runs from SRAM")
+    else:
+        # MELODEE_COMPRESS_AUDIO=0, the raw-copy reference profile: each at its load address; main.c copies them by words
+        for (sect, lname), blob in zip(loads, blobs):
+            load = symv(lname)
+            if load % 4:
+                raise SystemExit(f"{lname} {load:#x} is not word aligned")
+            if blob:
+                if load - APP_XIP < len(img):
+                    raise SystemExit(f"{lname} overlaps the image")
+                img += b"\xff" * (load - APP_XIP - len(img))
+                img += blob
     img += b"\xff" * (-len(img) % 4)
     img = bytearray(stub) + img
     (OUT / "melodee.bin").write_bytes(img)
@@ -438,6 +452,7 @@ def check(img, syms, dis, rt):
         if re.search(r"\bcall -?\d+", body):
             errors.append("CPU1 polling loop contains a direct call; helpers must be inlined")
         notes.append("CPU1: RAM polling loop, private 8 KiB stacks, bounded startup/join")
+    errors += boot_audio.check_decoder(syms, dis, APP_XIP, sym("_app_xip_end"))
     bss = sym("_bss_end") - 0x01C08000
     pool = sym("_pool_end") - sym("_pool_start")
     notes.append(f"image {len(img)} B; RAM .data+.bss {bss} B of 98304; pool {pool} B of {0x54000}")

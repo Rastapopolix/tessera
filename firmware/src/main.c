@@ -6,6 +6,8 @@
 extern uint32_t _data_start[], _data_end[], _data_load[], _bss_start[], _bss_end[];
 extern uint32_t _dsp_start[], _dsp_end[], _dsp_load[], _dt_start[], _dt_end[], _dt_load[];
 extern uint32_t _audio_start[], _audio_end[], _audio_load[];
+extern uint8_t _app_xip_end[], _resource_start[];
+#include "boot_lzma.h"
 extern uint32_t _pool_start[], _pool_end[], _rt_start[], _rt_end[], _rt_load[];
 
 
@@ -344,6 +346,21 @@ static void fm1_main(void)
     }
 }
 
+/* one boot-compressed load image at rec (tools/boot_audio.py: MAGIC, packed bytes, raw bytes, 0, the stream) into
+ * start .. end; the next record. The decoder's tables borrow the audio working arena, unused until resources_init. */
+static __attribute__((noinline)) const uint32_t *boot_image(const uint32_t *rec, uint32_t *start, uint32_t *end)
+{
+    uint32_t bytes = (uint32_t)((uintptr_t)end - (uintptr_t)start), packed;
+    if ((uintptr_t)(rec + 4) > (uintptr_t)_app_xip_end || rec[0] != BOOT_LZMA_MAGIC || rec[2] != bytes || rec[3] != 0)
+        fm1_enter_uboot();
+    packed = rec[1];
+    if (packed > (uintptr_t)_app_xip_end - (uintptr_t)(rec + 4) ||
+        !boot_lzma((uint8_t *)start, bytes, (const uint8_t *)(rec + 4), packed, (uint16_t *)_resource_start))
+        fm1_enter_uboot();
+    return rec + 4 + (packed + 3u) / 4u;
+}
+_Static_assert(BOOT_LZMA_PROBS * 2u <= 49152u, "boot decoder tables fit the audio working arena's minimum");
+
 void fm1_cstart(void)
 {
     uint32_t *s, *d, p3, src, wdt;
@@ -372,16 +389,28 @@ void fm1_cstart(void)
         *d = 0;
     for (d = _pool_start; d < _pool_end; d++)
         *d = 0;
-    for (s = _data_load, d = _data_start; d < _data_end; s++, d++)
-        *d = *s;
-    for (s = _rt_load, d = _rt_start; d < _rt_end; s++, d++)
-        *d = *s;                                /* flash driver code that must run from RAM */
-    for (s = _dsp_load, d = _dsp_start; d < _dsp_end; s++, d++)
-        *d = *s;                                /* DSP code: audio is stopped while NOR is busy */
-    for (s = _dt_load, d = _dt_start; d < _dt_end; s++, d++)
-        *d = *s;                                /* the oscillator correction tables */
-    for (s = _audio_load, d = _audio_start; d < _audio_end; s++, d++)
-        *d = *s;                                /* resident audio profile: executable ordinary SRAM */
+    if (_rt_load[0] == BOOT_LZMA_MAGIC) {
+        /* the SRAM load images boot-compressed (tools/boot_audio.py), one after another in their load order; one
+         * that does not unpack exactly: update mode */
+        const uint32_t *at = _rt_load;
+        at = boot_image(at, _rt_start, _rt_end);       /* flash driver code that must run from RAM */
+        at = boot_image(at, _dsp_start, _dsp_end);     /* DSP code: audio is stopped while NOR is busy */
+        at = boot_image(at, _dt_start, _dt_end);       /* the oscillator correction tables */
+        at = boot_image(at, _data_start, _data_end);
+        (void)boot_image(at, _audio_start, _audio_end);
+    } else {                                    /* MELODEE_COMPRESS_AUDIO=0: the raw-copy reference profile */
+        for (s = _data_load, d = _data_start; d < _data_end; s++, d++)
+            *d = *s;
+        for (s = _rt_load, d = _rt_start; d < _rt_end; s++, d++)
+            *d = *s;
+        for (s = _dsp_load, d = _dsp_start; d < _dsp_end; s++, d++)
+            *d = *s;
+        for (s = _dt_load, d = _dt_start; d < _dt_end; s++, d++)
+            *d = *s;
+        for (s = _audio_load, d = _audio_start; d < _audio_end; s++, d++)
+            *d = *s;                            /* resident audio profile: executable ordinary SRAM */
+    }
+    fm1_code_sync();
     fm1_mailbox_clear();
     fm1_power_ready = (uint8_t)fm1_power_init(); /* stock V15 supplies before cache, peripherals or CPU1 */
 #if MELODEE_CACHE_RAM
