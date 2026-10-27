@@ -272,6 +272,7 @@ if core; then
     run "USB descriptors: MIDI, CDC and audio configurations" python3 tests/usb_audio_desc_test.py
     run "boot images: LZMA records, decoder bounds, malformed streams and XIP dependencies" python3 tests/boot_audio_test.py
     run "resident audio: call graph and flash/RAM ABI boundaries" python3 tests/audio_ram_test.py
+    run "stack budgets: callbacks, re-entry, inlined calls, nested IRQs and overflow rejection" python3 tests/stack_budget_test.py
     t "removed effects: old songs and motion, MIDI, physical input and dry output" no_effects_test -O1 $FW
     t "resident audio: four-track resource budget and removed buses" ram_audio_test -O2 $FW
     t "resident audio: expanded voice budget and CPU1 fallback" ram_voice_budget_test -O2 $FW

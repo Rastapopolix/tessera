@@ -45,7 +45,7 @@ static int core1_test_count_only;            /* editor command 79 mode 7: count 
 #undef AW_LOAD
 #undef AW_WORD
 
-static uint32_t cpu1_stacks[2048] __attribute__((section(".cpu1_stacks"), aligned(32), used));
+static uint32_t cpu1_stacks[1024] __attribute__((section(".cpu1_stacks"), aligned(32), used));
 extern void fm1_core1_start(void);
 extern uint8_t _cpu1_stacks_lo[], _cpu1_stacks_hi[];
 /* Assembly names this symbol; the full polling body must be in RAM. */

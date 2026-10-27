@@ -390,8 +390,10 @@ shedding remains active. Serial builds retain their original five-voice state.
 
 The startup sequence follows `EnableOtherCpu` in the tested AC79 SDK's
 `system.a/port.c.o` and `cpu.a/startup.S.o`: entry mailbox `0x01C7FFF8`, temporary
-clock-divider bit 3, and `C1_CON` release/hold bits 3/1. CPU1 has separate 4 KiB
-user and supervisor stacks and no enabled interrupts. It polls an internal SRAM
+clock-divider bit 3, and `C1_CON` release/hold bits 3/1. CPU1 has a private 4 KiB bank, a 3 KiB user and a
+1 KiB supervisor stack, and no enabled interrupts. The build checks every stack's deepest linked call path
+against its reservation (`tools/stack_budget.py`, a static estimate with margins; `build/stack-budget.json`
+lists each path), and `tools/usb_audio_stats.py --stacks` reads the stacks' high-water marks on the device. It polls an internal SRAM
 mailbox while idle; the effect on battery consumption still needs measurement. Startup has a 10 ms
 handshake; a failure retains serial rendering.
 The worker's idle loop is in internal RAM and publishes completion only after

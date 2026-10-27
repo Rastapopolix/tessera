@@ -17,7 +17,7 @@ MEMORY
     XIP    (rx)  : ORIGIN = 0x02001000, LENGTH = 0x8C000   /* body ends before commit-marker sector 0x91000 */
     RAMTEXT (rwx): ORIGIN = 0x01C00000, LENGTH = 0x7F00
     RAM    (rwx) : ORIGIN = 0x01C08000, LENGTH = 96K
-    POOL   (rwx) : ORIGIN = 0x01C20000, LENGTH = 0x54000
+    POOL   (rwx) : ORIGIN = 0x01C20000, LENGTH = 0x56700   /* up to _guard0 */
     NOINIT (rw)  : ORIGIN = 0x01C7C020, LENGTH = 0x3D30
     CACHE  (rw)  : ORIGIN = 0x01F28000, LENGTH = 28K
 }
@@ -55,8 +55,9 @@ SECTIONS
         KEEP(*(.cpu1_stacks))
         _cpu1_stacks_hi = .; _resource_start = .;
     } > POOL
-    _cpu1_ustack_top = _cpu1_stacks_lo + 4096;
-    _cpu1_sstack_top = _cpu1_stacks_lo + 8192;
+    /* CPU1 (IRQs off): a 4 KiB bank, 3 KiB user and 1 KiB supervisor stack (tools/stack_budget.py checks either) */
+    _cpu1_ustack_top = _cpu1_stacks_lo + 3072;
+    _cpu1_sstack_top = _cpu1_stacks_lo + 4096;
     _resource_end = ORIGIN(POOL) + LENGTH(POOL);
     /* Complete resident interrupt/input graph trades arena capacity for code.
      * Four largest engine states must fit 48 KiB (ram_audio_test); effect
@@ -75,7 +76,11 @@ SECTIONS
     ASSERT(_resource_low_start <= _resource_low_end, "RAM code overlaps startup STATUS")
     ASSERT(_resource_data_start <= _resource_data_end, "data overlaps resource pool")
     ASSERT(_resource_retained_start <= _resource_retained_end, "retained state overlaps boot records")
-    _guard0 = 0x01C74000; _ustack_lo = 0x01C74100; _ustack_top = 0x01C7A000;
+    /* The build checks the deepest linked path of each stack (tools/stack_budget.py, with its margins): CPU0's
+     * foreground 14 KiB (was 24,320 B; 9,964 B measured 2026-10-27) and 7,936 B of interrupt stack, both with their
+     * 256-byte guards. _ustack_top stays where the boot stub's own stack starts (stub.ld _stub_sp). */
+    _guard0 = 0x01C76700; _ustack_lo = 0x01C76800; _ustack_top = 0x01C7A000;
     _guard1 = 0x01C7A000; _sstack_lo = 0x01C7A100; _sstack_top = 0x01C7C000;
+    ASSERT(_guard0 == ORIGIN(POOL) + LENGTH(POOL), "the pool must end at the foreground stack's guard")
     /DISCARD/ : { *(.comment) *(.note*) }
 }
