@@ -914,19 +914,24 @@ static void gen_chord_fill(gen_chord_t *g, uint32_t seed)
     }
 }
 static void gen_chord_start(gen_chord_t *g) { g->n = 0; }
-/* Chord pad: a strike on the chord's first step (HOLD: held to its end), on every beat (BEAT) or every step (STEP).
- * The note: the chord's degree (tessera.c makes the chord); the first strike of a chord louder. The CV: the degree */
+/* Chord pad: a strike on the chord's first step (HOLD: held to its end), on every beat (BEAT) or every step (STEP);
+ * OFF BEAT a stab on each beat's "and", halfway between the beats (a triplet beat: its last third; steps of a beat or
+ * longer: every second step), for the step's GATE. The note: the chord's degree (tessera.c makes the chord); the
+ * first strike of a chord louder. The CV: the degree */
 static void gen_chord_tick(gen_chord_t *g, const gen_clock_t *clk, gen_out_t *out)
 {
     uint32_t len = gen_chord_steps(g, clk->steps_per_bar), in = g->n % len, beat = clk->steps_per_bar / 4u;
     uint32_t i = (g->n / len) % gen_chord_len(g), deg = gen_chord_degree(g, i);
+    uint32_t off;
     if (!beat) beat = 1u;
+    off = beat < 2u ? 2u : beat;
     g->idx = (uint8_t)i;
     g->deg = (uint8_t)deg;
-    out->gate = (uint8_t)(!in || g->hit == GEN_CH_STEP || (g->hit == GEN_CH_BEAT && !(in % beat)));
+    if (g->hit == GEN_CH_OFF) out->gate = (uint8_t)(in % off == (off + 1u) / 2u);
+    else out->gate = (uint8_t)(!in || g->hit == GEN_CH_STEP || (g->hit == GEN_CH_BEAT && !(in % beat)));
     g->hold = (uint16_t)(g->hit == GEN_CH_HOLD ? len : g->hit == GEN_CH_BEAT ? (len - in < beat ? len - in : beat) : 0u);
     out->note = (uint8_t)deg;
-    out->vel = (uint8_t)(in ? 84u : 104u);
+    out->vel = (uint8_t)(in && !(g->hit == GEN_CH_OFF && in < off) ? 84u : 104u);
     out->cv = (int16_t)(deg * 32767u / 6u);
     g->n++;
 }

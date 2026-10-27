@@ -29,7 +29,7 @@ static const char *const TX_N_QMOVE[] = {"STOP", "DOWN", "UP", "RAND"};
 static const char *const TX_N_CSFILL[] = {"OFF", "ARP"};
 static const char *const TX_N_CHPROG[] = {"POP", "50S", "2-5-1", "CIRCLE", "TWO", "DRONE", "WALK", "USER"};   /* (GEN_CH_*) */
 static const char *const TX_N_CHBARS[] = {"1/2", "1", "2", "4"};
-static const char *const TX_N_CHHIT[] = {"HOLD", "BEAT", "STEP"};
+static const char *const TX_N_CHHIT[] = {"HOLD", "BEAT", "STEP", "OFFBEAT"};   /* (GEN_CH_*) */
 static const char *const TX_N_GRP4[] = {"TOM", "CLAP", "HATOP", "RIM", "BELL"};
 static const char *const TX_N_RATCH[] = {"x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8"};
 static const char *const TX_N_SHAPE[] = {"EVEN", "ACCEL", "DECEL"};   /* (SUB_EVEN ..) */
@@ -448,7 +448,9 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                  "chords (CHRD OFF: triads); hold OCT+ on GEN for OCT, CHRD and VOIC."),
     X_(TX_CH_BARS, "CHORD BARS", "How long each chord lasts: half a bar, 1, 2 or 4 bars."),
     X_(TX_CH_HIT, "CHORD HIT", "How the chord plays: HOLD once, held to the next chord; BEAT struck again every beat; "
-                               "STEP every step, for the step's GATE."),
+                               "STEP every step, for the step's GATE; OFFBEAT a short stab on the off-beats, the \"and\" halfway between "
+                               "the beats (reggae's skank), for the step's GATE: at 1/8 an eighth at most, at 1/16 a "
+                               "sixteenth, and SWING moves it with the step (at 1/8 the \"and\" is the swung step)."),
     X_(TX_CH_OCT, "CHORD OCT", "The chords' register, -2 to +2 octaves from their home around C3. OCT+ held on GEN, "
                                "KNOB 1; KNOB 2 and 3 there are SCL CHORD's CHRD and VOIC."),
     X_(TX_GRD_KICK, "ATLAS KICK", "How much of DENSITY the kick gets: 100 all of it, 50 half, 0 none (the kick "

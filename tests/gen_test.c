@@ -716,6 +716,26 @@ static void chord_tests(void)
             hits &= o.gate && !g.hold;
         }
     }
+    {   /* OFF BEAT: a stab halfway between the beats, for the step's GATE, the chord's first louder: at 1/16 steps 2,
+         * 6, 10, 14; at 1/8 the odd steps; at 8T the beat's last third; at 1/4 (a step a beat) every second step */
+        static const uint8_t SPB[4] = {16, 8, 12, 4}, AT[4] = {2, 1, 2, 1}, PER[4] = {4, 2, 3, 2};
+        for (uint32_t d = 0; d < 4u; d++) {
+            gen_clock_t c = {0, SPB[d], 0};
+            gen_chord_t g;
+            uint32_t n = 0;
+            memset(&g, 0, sizeof g);
+            g.bars = 1, g.hit = GEN_CH_OFF;
+            for (uint32_t i = 0; i < 4u * SPB[d]; i++) {
+                gen_out_t o = step_out();
+                uint32_t in = i % SPB[d];
+                gen_chord_tick(&g, &c, &o);
+                hits &= o.gate == (in % PER[d] == AT[d]) && !g.hold && o.note == POP[(i / SPB[d]) % 4u];
+                hits &= !o.gate || o.vel == (in < PER[d] ? 104u : 84u);
+                n += o.gate;
+            }
+            hits &= n == 4u * SPB[d] / PER[d];
+        }
+    }
     for (uint32_t b = 0; b < GEN_CH_BARS; b++) {      /* BARS: 1/2, 1, 2, 4 bars (8, 16, 32, 64 steps at 1/16) */
         gen_chord_t g;
         uint32_t n = 0, len = b ? 16u << (b - 1u) : 8u;
