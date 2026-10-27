@@ -2378,10 +2378,10 @@ static void pack_run(char *res, size_t cap)
         tessera_unpack(a);
     }
     {   /* a version 11 block (before CHORD: each track 5 bytes shorter) loads every setting, CHORD's defaults with the
-         * walk of the track's seed; a CELLS track (12, CHORD's number now) loads as TURING; PROG, BARS and HIT out of
-         * range are refused, OCT too; PROG, BARS, HIT, OCT and the walk round trip */
+         * walk of the track's seed; a CELLS track (12, CHORD's number now) loads as TURING; PROG and OCT out of range
+         * are refused (HIT's two bits are all in range since OFF BEAT); PROG, BARS, HIT, OCT and the walk round trip */
         static uint8_t v11[TESSERA_PK_BYTES_V11], v11b[TESSERA_PK_BYTES_V11];
-        static const uint8_t BAD[][2] = {{0, GEN_CH_PROGS}, {1, GEN_CH_HITS << 2}, {1, 3u << 4}, {1, 8u << 4}, {2, 8}, {4, 0x10}};
+        static const uint8_t BAD[][2] = {{0, GEN_CH_PROGS}, {1, 3u << 4}, {1, 8u << 4}, {2, 8}, {4, 0x10}};
         const uint32_t n12 = TESSERA_PK_BYTES / TESSERA_TRACKS, n11 = TESSERA_PK_BYTES_V11 / TESSERA_TRACKS;
         for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) memcpy(v11 + tr * n11, a + tr * n12, n11);
         tessera_reset();
@@ -2408,6 +2408,7 @@ static void pack_run(char *res, size_t cap)
         tessera_param_set(1, TX_CH_PROG, GEN_CH_WALK);
         tessera_param_set(1, TX_CH_BARS, 3);
         tessera_param_set(1, TX_CH_HIT, GEN_CH_STEP);
+        tessera_param_set(2, TX_CH_HIT, GEN_CH_OFF);
         tessera_param_set(3, TX_CH_PROG, 99);          /* (kept to the last) */
         tessera_param_set(1, TX_CH_OCT, -2);
         tessera_param_set(3, TX_CH_OCT, 9);            /* (kept to +2) */
@@ -2417,7 +2418,7 @@ static void pack_run(char *res, size_t cap)
         ok &= tessera_unpack(b) == 1 && tessera.chord[1].prog == GEN_CH_WALK && tessera.chord[1].bars == 3u &&
               tessera.chord[1].hit == GEN_CH_STEP && tessera.chord[1].walk[3] == 6u &&
               tessera.chord[3].prog == GEN_CH_PROGS - 1u && tessera_param_get(1, TX_CH_HIT) == GEN_CH_STEP &&
-              tessera.chord[1].oct == -2 && tessera_param_get(3, TX_CH_OCT) == 2;
+              tessera_param_get(2, TX_CH_HIT) == GEN_CH_OFF && tessera.chord[1].oct == -2 && tessera_param_get(3, TX_CH_OCT) == 2;
         tessera_unpack(a);
     }
     {   /* a version 12 block (before Grids' KICK, SNR, HAT, TOMS: each track 4 bytes shorter) loads every setting, the
