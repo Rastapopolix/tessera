@@ -459,7 +459,7 @@ enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_
        S_REF_SHEET_MOTION, S_REF_MOD, S_REF_PICKER_MOD, S_REF_ARP, S_REF_PATTERN,
        S_REF_FMEG, S_REF_GRID, S_REF_SCALES, S_FX_PHASER, S_FX_WIDTH, S_FX_FORMANT, S_FX_TAPE, S_FX_SPIT, S_FX_ECHO, S_FX_ROOM, S_FX_REVERB, S_FX_CHORUS, S_FX_FULL, S_FX_SLOT2, S_FX_SLOT3, S_FX_SEND, S_FX_SEPARATE, S_FX_SENDS, S_FX_BUS1, S_FX_BUS2, S_FX_BUS3,
        S_GEN_TURING, S_GEN_EUCLID, S_GEN_MARKOV, S_GEN_MORPH, S_GEN_EVOLVE, S_CORDS, S_HELP, S_CORDS_PICK_SRC, S_CORDS_PICK_DST,
-       S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_GEN_CHORD_OFFBEAT, S_GEN_STEP_EVOLVE_HOW, S_COUNT };
+       S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_GEN_CHORD_OFFBEAT, S_GEN_STEP_EVOLVE_HOW, S_GEN_STEP_ADORN, S_GEN_STEP_SERIAL, S_NOTES_EVOLVE, S_GEN_SEED, S_GEN_SEED_MORPH, S_COUNT };
 static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "home_chord", "home_inversion", "home_wide", "home_released", "home_fm6", "message", "message_key", "presets", "presets_nofav", "presets_cat", "presets_pending", "presets_recent", "user",
     "project", "project_boot", "tempo", "song_empty", "song", "step", "pattern", "motion", "drum",
     "mixer", "mixer_pan", "env", "env_dest", "lfo", "mod", "scl", "chord", "chord_wide", "chord_off", "chord_kit", "arp",
@@ -479,7 +479,7 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "h
     "notes_slide", "notes_mixed", "notes_chord", "notes_empty", "notes_raw", "notes_zoom", "notes_loop", "notes_drum", "notes_dense", "notes_rec", "notes_erase", "notes_drum_rec", "notes_drum_erase", "scl_micro", "scl_micro_layer", "scl_micro_chord", "scale_picker_edo", "scale_picker_historical", "scale_picker_favorites", "scale_picker_empty", "scale_settings_favorite", "menu_click", "menu_click_level", "menu_countin", "menu_preview", "menu_add", "menu_autosave_on", "menu_autosave_off", "drum_sound_808", "drum_sound_909", "drum_mix_909", "drum_hit_909", "drum_hit_free", "drum_hit_long",
     "stage_drum", "stage_trio", "stage_queued", "stage_browse", "stage_stopped", "stage_filter", "patterns", "patterns_stopped", "patterns_sheet", "patterns_copy", "patterns_replace", "patterns_delete", "project_new", "new_key", "new_roles",
     "ref_stage_held", "ref_stage_released", "ref_stage_cutoff", "ref_stage_drum", "ref_browser", "ref_patterns", "ref_song", "ref_env", "ref_lfo", "ref_edit_osc", "ref_mixer", "ref_notes", "ref_settings", "ref_dialog", "ref_sheet_sound", "ref_sheet_song", "ref_picker_wave", "ref_picker_mode", "ref_sections_p5", "ref_map_p5", "ref_map_fm6", "ref_scl_list", "ref_sheet_project", "ref_sheet_note", "ref_sheet_hit", "ref_motion", "ref_sheet_motion", "ref_mod", "ref_picker_mod", "ref_arp", "ref_pattern", "ref_fmeg", "ref_grid", "ref_scales", "fx_phaser", "fx_width", "fx_formant", "fx_tape", "fx_spit", "fx_echo", "fx_room", "fx_reverb", "fx_chorus", "fx_full", "fx_slot2", "fx_slot3", "fx_send", "fx_separate", "fx_sends", "fx_bus1", "fx_bus2", "fx_bus3",
-    "gen_turing", "gen_euclid", "gen_markov", "gen_morph", "gen_evolve", "cords", "help", "cords_pick_src", "cords_pick_dst", "gen_grids", "gen_tweak", "gen_tweak_off", "mod_shortcut", "gen_bounce", "gen_awake", "gen_poly", "gen_tweak2", "gen_tweak2_off", "organic", "gen_tweak2_coin", "mods_live", "mods_live_gen", "matrix", "gen_quad", "gen_length", "gen_fall", "gen_constel", "gen_length_hit", "gen_length_keys", "gen_length_step", "gen_pattern_constel", "gen_series", "gen_chord", "gen_chord_oct", "gen_grids_oct", "gen_chord_user", "gen_step_evolve", "help_gen", "gen_timing", "gen_timing_x1", "gen_energy", "gen_answer", "gen_answer_oct", "gen_seed_oct", "gen_timing_human", "gen_chord_circle", "gen_chord_offbeat", "gen_step_evolve_how"};
+    "gen_turing", "gen_euclid", "gen_markov", "gen_morph", "gen_evolve", "cords", "help", "cords_pick_src", "cords_pick_dst", "gen_grids", "gen_tweak", "gen_tweak_off", "mod_shortcut", "gen_bounce", "gen_awake", "gen_poly", "gen_tweak2", "gen_tweak2_off", "organic", "gen_tweak2_coin", "mods_live", "mods_live_gen", "matrix", "gen_quad", "gen_length", "gen_fall", "gen_constel", "gen_length_hit", "gen_length_keys", "gen_length_step", "gen_pattern_constel", "gen_series", "gen_chord", "gen_chord_oct", "gen_grids_oct", "gen_chord_user", "gen_step_evolve", "help_gen", "gen_timing", "gen_timing_x1", "gen_energy", "gen_answer", "gen_answer_oct", "gen_seed_oct", "gen_timing_human", "gen_chord_circle", "gen_chord_offbeat", "gen_step_evolve_how", "gen_step_adorn", "gen_step_serial", "notes_evolve", "gen_seed", "gen_seed_morph"};
 
 /* the scenes of the UI design screens: the state the UI-redesign
  * prototype drew them from (its setup(): two pattern tracks, the drum pattern on track 4, a synthetic scope),
@@ -1217,6 +1217,9 @@ static void setup(int s)
         break;
     case S_GEN_STEP_EVOLVE:                          /* STEP EVOLVE: a STEP melody, LOCK 60, AMOUNT 80, 3 steps changed */
     case S_GEN_STEP_EVOLVE_HOW:                      /* (OCT+ held: HOW ADORN) */
+    case S_GEN_STEP_ADORN:                           /* (HOW ADORN, playing step 5: a ratchet, a passing note, an octave) */
+    case S_GEN_STEP_SERIAL:                          /* (HOW SERIAL, playing step 5: ROTATE 3) */
+    case S_NOTES_EVOLVE:                             /* (NOTES of the ADORN one: its ghost notes dashed) */
         tessera_reset();
         song.sel = 0;
         {
@@ -1235,6 +1238,22 @@ static void setup(int s)
         tess_sv.mut[0][1] = 2u;                   /* (MOVE +2, an OCT up, a GHOST) */
         tess_sv.mut[0][4] = 1u << 3;
         tess_sv.mut[0][6] = VARY_PREV << 5;
+        if (s == S_GEN_STEP_ADORN || s == S_GEN_STEP_SERIAL || s == S_NOTES_EVOLVE) {
+            memset(tess_sv.mut[0], 0, sizeof tess_sv.mut[0]);
+            tess_sv.mut[0][1] = VARY_RATCH;
+            tess_sv.mut[0][3] = VARY_PREV << 5 | VARY_TOWARD << 3;
+            tess_sv.mut[0][5] = 1u << 3;
+            tessera.sv_how[0] = s == S_GEN_STEP_SERIAL ? TESS_SV_SERIAL : TESS_SV_ORNAMENT;
+            tess_sv.ser[0] = TESS_SV_SER_ROT, tess_sv.ser_arg[0] = 3;
+            tess_sv.steps[0] = 4;
+            trk[0].seq_idx = 4;
+            song.playing = 1;
+        }
+        if (s == S_NOTES_EVOLVE) {
+            song.playing = 0;
+            go_title("NOTES");
+            break;
+        }
         go_title("EVOLVE");
         if (s == S_GEN_STEP_EVOLVE_HOW) {
             tessera.sv_how[0] = TESS_SV_ORNAMENT;
@@ -1263,6 +1282,36 @@ static void setup(int s)
         }
         go_title("GEN");
         if (s == S_GEN_ANSWER_OCT) fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+        break;
+    case S_GEN_SEED:                                 /* TURING from T2's melody, three steps drifted, playing step 6 */
+    case S_GEN_SEED_MORPH:                           /* MORPH from it: A the melody, B its variation, at 60 % B */
+        tessera_reset();
+        song.sel = 0;
+        {
+            static const uint8_t MEL[16] = {60, 0, 63, 65, 0, 67, 70, 0, 72, 70, 0, 67, 65, 0, 63, 0};
+            for (uint32_t k = 0; k < 16u; k++) {
+                step_t *st = &trk[1].step[k];
+                st->n = MEL[k] ? 1u : 0u;
+                st->note[0] = MEL[k];
+                st->time = MEL[k] ? ST_NOTE : ST_REST;
+                st->vel = 100;
+            }
+            trk[1].p[P_SLEN] = 16;
+        }
+        tessera_knob(0, s == S_GEN_SEED ? TESS_ENG_TURING : TESS_ENG_MORPH);
+        tessera_param_set(0, TX_SD_SOURCE, 2);
+        if (s == S_GEN_SEED) {
+            sd_fill(0, 1);
+            tess_sd.loop[0][2] = 0x80u | 67u;              /* (a new pitch, a hit gone, a hit added) */
+            tess_sd.loop[0][6] &= 0x7Fu;
+            tess_sd.loop[0][10] |= 0x80u;
+        } else {
+            sd_morph_vary(&trk[0], 0, 0);
+            tessera.morph[0].morph_pos = 76;
+        }
+        tess_sd.pos[0] = 6;
+        song.playing = 1;
+        go_title("GEN");
         break;
     case S_GEN_SEED_OCT:                             /* TURING, OCT+ held: SOURCE T2, KEEP RHYTHM, GRAVITY 30 (STEP as seed) */
         tessera_reset();

@@ -171,6 +171,58 @@ static int32_t bar_x(uint32_t i) { return 13 + (int32_t)(i % 16u) * 13 + (int32_
 
 #include "tessera.h"
 
+/* TURING or MORPH playing from a SOURCE (STEP as seed): its loop as bars by pitch, a step as written in the source
+ * solid; one changed from it in the colour, with the step as written over it hollow (its ghost: an empty frame a note
+ * dropped, a bar without one a note added). The panel: under them how far the loop is from home, the share of its
+ * steps changed (MORPH: its position at the left, as without a SOURCE). 0 = not from a SOURCE */
+static int graph_seed_viz(uint32_t tr, int is_panel, uint16_t c, uint16_t bg, uint16_t dim, int32_t y_base)
+{
+    uint8_t now[16], home[16];
+    uint32_t at = 0, len = tessera_sd_loop(tr, now, home, &at), i, k, n = 0;
+    int32_t lo = 127, hi = 0, h = is_panel ? 70 : 18, w = is_panel ? 10 : 11, nh;
+    if (!len) return 0;
+    for (i = 0; i < len; i++)
+        for (k = 0; k < 2u; k++) {
+            uint32_t e = k ? home[i] : now[i];
+            if (e & 0x80u) {
+                if ((int32_t)(e & 0x7Fu) < lo) lo = (int32_t)(e & 0x7Fu);
+                if ((int32_t)(e & 0x7Fu) > hi) hi = (int32_t)(e & 0x7Fu);
+            }
+        }
+    for (i = 0; i < 16u; i++) {
+        int32_t sx = is_panel ? 18 + (int32_t)i * 12 + (int32_t)(i / 4u) * 4 : 13 + (int32_t)i * 13 + (int32_t)(i / 4u) * 4;
+        int head = song.playing && i == at, ch = i < len && now[i] != home[i];
+        if (i >= len) {
+            cv_rect(sx + w / 2 - 1, y_base + h - 3, 2, 2, dim);
+            continue;
+        }
+        n += (uint32_t)ch;
+        for (k = 0, nh = 0; k < 2u; k++) {               /* (what plays, then the step as written over it: inside
+                                                         * the bar playing, cut into it) */
+            uint32_t e = k ? home[i] : now[i];
+            int32_t bh = 4 + (hi > lo ? ((int32_t)(e & 0x7Fu) - lo) * (h - 4) / (hi - lo) : 0);
+            if (k && !ch) break;
+            if (!(e & 0x80u)) {
+                if (!k) cv_rrect(sx, y_base + h - 4, w, 4, 1, head ? c : dim, bg);
+                continue;
+            }
+            if (k) cv_frame(sx, y_base + h - bh, w, bh, bh <= nh ? bg : T_TEXT);
+            else nh = bh, cv_rrect(sx, y_base + h - bh, w, bh, 1, ch || head ? c : T_TEXT, bg);
+        }
+        cv_rect(sx, y_base + h + 2, w, head ? 2 : 1, head ? c : dim);
+    }
+    if (is_panel) {
+        if (tessera.mode[tr] == TESS_ENG_MORPH) {
+            cv_rect(18, y_base + h + 11, 120, 1, dim);
+            cv_rect(18 + (int32_t)tessera_morph(tr)->morph_pos * 116 / 127, y_base + h + 8, 4, 7, c);
+        }
+        cv_text_r(170, y_base + h + 7, &AF_X, "HOME", T_MID, bg);
+        cv_frame(176, y_base + h + 8, 46, 8, dim);
+        if (n) cv_rect(177, y_base + h + 9, (int32_t)(n * 44u / len) ? (int32_t)(n * 44u / len) : 1, 6, c);
+    }
+    return 1;
+}
+
 void graph_tessera_viz(uint32_t tr, int is_panel) {
     if (tr >= TESSERA_TRACKS) return;
     uint32_t mode = tessera.mode[tr];
@@ -179,6 +231,7 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
     uint16_t dim = is_panel ? T_LINE : T_RAISE;
     int32_t y_base = is_panel ? 10 : 14;           /* (the panel: tall bars, filling it as GRIDS' lanes do) */
 
+    if (graph_seed_viz(tr, is_panel, c, bg, dim, y_base)) return;
     if (mode == TESS_ENG_TURING) {
         const gen_turing_t *tur = tessera_turing(tr);
         uint32_t len = tur->len ? tur->len : 16u;
@@ -753,10 +806,72 @@ static void graph_form(const track_t *t, uint16_t c)
 }
 
 /* EVOLVE page: phrase progress strip, one cell per bar until the next mutation; all cells flash on a mutation */
+/* a STEP track's EVOLVE page, under the bars to the next round: its steps as a small roll, the phrase across the
+ * panel. A step playing as written: a bar at its pitch; a change: the step as written hollow, what plays now solid in
+ * the accent colour (a ratchet split into its hits, a passing note or a ghost in a rest, a dropped note only the
+ * hollow one); a drum hit in the middle row. Under it, what HOW does now (SERIAL: the transform's name) and how far the
+ * steps are from home: the share playing a change */
+static void graph_step_evolve(const track_t *t, uint32_t tr, uint16_t c)
+{
+    static const char *const SER[5] = {"", "BACKWARDS", "UPSIDE DOWN", "ROTATE ", "HALF SPEED"};
+    const step_t *st = t->step;
+    uint32_t len = (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP), i, k, arg = 0, ser = tessera_step_serial(tr, &arg), n = 0;
+    int32_t lo = 127, hi = 0, cw = PANEL_W / (int32_t)len, bw = cw > 3 ? cw - 2 : cw > 1 ? cw - 1 : 1;
+    char lab[16];
+    step_t v;
+    for (i = 0; i < len; i++) {                          /* (the pitch range: as written and as played) */
+        for (k = 0; k < 2u; k++) {
+            const step_t *s = k ? (tessera_step_now(tr, i, &v) ? &v : NULL) : &st[i];
+            if (s && s->time == ST_NOTE && s->n) {
+                if (s->note[0] < lo) lo = s->note[0];
+                if (s->note[0] > hi) hi = s->note[0];
+            }
+        }
+    }
+    if (lo > hi) lo = hi = 60;
+    for (i = 0; i < len; i++) {
+        int32_t x = PANEL_X0 + (int32_t)i * cw + (cw - bw) / 2, ch = tessera_step_now(tr, i, &v), y, r;
+        const step_t *s = &st[i];
+        n += (uint32_t)ch;
+        for (k = 0; k < 2u; k++) {                       /* (as written, then the change over it) */
+            const step_t *p = k ? &v : s;
+            if (k && !ch) break;
+            if (p->time != ST_NOTE || (!p->n && !p->hit)) {
+                if (!k && !ch) cv_rect(x, 66, bw, 2, T_RAISE);
+                continue;
+            }
+            y = !p->n ? 36 : hi == lo ? 36 : 60 - (p->note[0] - lo) * 48 / (hi - lo);
+            if (!k) {
+                if (ch) cv_frame(x, y, bw, 5, T_MID);
+                else cv_rect(x, y, bw, 5, T_TEXT);
+                continue;
+            }
+            r = p->time == ST_NOTE ? (int32_t)step_ratch(p) : 1;
+            if (r > 1 && bw >= 2 * r - 1) {               /* (a ratchet: its hits) */
+                int32_t hw = (bw - (r - 1)) / r;
+                for (int32_t h = 0; h < r; h++) cv_rect(x + h * (hw + 1), y, hw, 5, c);
+            } else {
+                cv_rect(x, y, bw, 5, c);
+            }
+        }
+        if (song.playing && i == t->seq_idx) cv_rect(x, 70, bw, 2, c);
+    }
+    if (ser) {
+        str_cpy(lab, SER[ser % 5u], sizeof lab);
+        if (ser == TESS_SV_SER_ROT) fmt_int(lab + 7, arg);
+    } else {
+        str_cpy(lab, pid_desc(PID_TESS(TX_SV_HOW), tr)->names[tessera.sv_how[tr] % TESS_SV_HOWS], sizeof lab);
+    }
+    cv_text(13, 80, &AF_S, lab, n ? T_TEXT : T_MID);
+    cv_text_r(170, 81, &AF_X, "HOME", T_MID, T_SURF);    /* (the meter: empty at home) */
+    cv_frame(176, 82, 50, 8, T_LINE);
+    if (n) cv_rect(177, 83, (int32_t)(n * 48u / len) ? (int32_t)(n * 48u / len) : 1, 6, c);
+}
+
 static void graph_evolve(const track_t *t, uint16_t c)
 {
     uint32_t tr = trk_index(t), bar = 0, of = 0, n, i, w;
-    int flash = 0;
+    int flash = 0, step = tessera_step_on(tr);
     tessera_phrase(tr, &bar, &of, &flash);
     n = of ? of : 1u;
     w = (200u - 2u * (n - 1u)) / n;
@@ -768,8 +883,9 @@ static void graph_evolve(const track_t *t, uint16_t c)
             else if (i < bar) col = T_TEXT;
             else if (i == bar && song.playing) col = c;
         }
-        cv_rrect(x, 20, (int32_t)w, of ? 16 : 4, 1, col, T_SURF);
+        cv_rrect(x, step ? -4 : 20, (int32_t)w, step ? 6 : of ? 16 : 4, 1, col, T_SURF);
     }
+    if (step) graph_step_evolve(t, tr, c);
 }
 
 /* TWEAK page: one small picture under each card. SHIFT: the note moved off its written pitch (the dashed line);
@@ -1270,6 +1386,16 @@ static void graph_recorded_notes(const track_t *t, uint16_t c)
                 int32_t ny = clamp(pr_row_y(ns->note[0]), PR_Y0, bottom - PR_RH);
                 cv_line(xe - 2, y + 2, xe + 2, ny + 2, T_TEXT);
             }
+        }
+    }
+    for (uint32_t si = base; si < end; si++) {          /* STEP EVOLVE: what a changed step plays now, dashed (its
+                                                         * ghost note; the step stays as written) */
+        step_t v;
+        if (!tessera_step_now(trk_index(t), si, &v) || v.time != ST_NOTE) continue;
+        int32_t x = notes_x(recording_prefix(t, period, si), a, b), xe = notes_x(recording_prefix(t, period, si + 1u), a, b);
+        for (uint32_t j = 0; j < v.n && j < 4u; j++) {
+            int32_t y = pr_row_y(v.note[j]);
+            if (y >= PR_Y0 && y < bottom) cv_dashed(x + 2, y, xe - x - 3, PR_RH, 1, T_TEXT);
         }
     }
     for (uint32_t i = recording_head[recording_owner(t)]; i < RECORD_MAX; i = recording_next[i])
