@@ -54,6 +54,7 @@ _Static_assert(P_M2SRC == P_M1SRC + 3 && P_M4AMT == P_M1SRC + 11 && P_M4AMT + 1 
 /* Tessera's cords (cord.c) join the matrix here: up to CORD_MAX more parameters held per block, the per-track terms */
 #include "cord.h"
 static uint32_t cord_mask[NTRK];
+static uint32_t cord_gmask;                              /* (the cords to the send effects: fx.c fx_bus_settings) */
 static uint8_t cord_envsrc;
 static __attribute__((noinline)) int32_t cord_depth(const track_t *t, int32_t g);   /* (out of mod_begin: */
 static __attribute__((noinline)) void cord_block(track_t *t, int32_t *off, int32_t lfo);   /* no cords, no cost) */

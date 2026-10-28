@@ -32,7 +32,7 @@ static uint32_t msc_dest(uint32_t k)
         return CD_OFF;
     for (code = CD_OFF + 1u; code < CD_N; code++) {
         const cord_dest_t *d = cord_dest(code);
-        if (d && (d->kind == CK_BLOCK || d->kind == CK_STEP) && d->pid == help.pid)
+        if (d && (d->kind == CK_BLOCK || d->kind == CK_STEP || d->kind == CK_GLOBAL) && d->pid == help.pid)
             return code;
     }
     return CD_OFF;
@@ -44,8 +44,8 @@ static int32_t msc_find(uint32_t dst, uint32_t tr)
     uint32_t i;
     for (i = 0; i < CORD_LIVE; i++) {
         const cord_t *c = cord_get(i);
-        if (msc_used(c) && c->dst == dst && c->dst_trk == tr)
-            return (int32_t)i;
+        if (msc_used(c) && c->dst == dst && (c->dst_trk == tr || cord_dest(dst)->kind == CK_GLOBAL))
+            return (int32_t)i;                          /* (a send effect's: every track's, whichever it is on) */
     }
     return -1;
 }

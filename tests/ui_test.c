@@ -1101,8 +1101,23 @@ static int test_cords_scroll_playing(void)
         seen |= (k->dst == CD_GRD_Y && k->dst_trk == 3u) << 0;
         cords_blocks(24);
     }
-    bad += check("..KNOB 3 a detent at a time through every track's destinations, playing between: the last reached",
-                 k->dst == cu_dst_code(CU_DPT - 1u) && k->dst_trk == NTRK - 1u && (seen & 1u) && pop.on == POP_PICK);
+    bad += check("..KNOB 3 a detent at a time through every track's destinations, then the send effects' (once, no "
+                 "track), playing between: the last reached (RETURN)",
+                 k->dst == CD_FX_RETURN && k->dst_trk == 0u && (seen & 1u) && pop.on == POP_PICK);
+    {                                                   /* the list: each entry back to itself, the send effects' last */
+        uint32_t v, round = 1, globals = 0;
+        int32_t tr;
+        cord_t e = {0};
+        for (v = 1; v < CU_NDST; v++) {
+            cu_dst_set(&e, v);
+            round &= cu_dst_of(&e) == v && cord_dest(e.dst) != 0;
+            (void)cu_pick_name(2u, (int32_t)v, &tr);
+            if (cu_global(e.dst)) globals++, round &= tr == -1 && v > NTRK * CU_DPT;
+            else round &= tr == (int32_t)e.dst_trk;
+        }
+        bad += check("..its list: every entry to its destination and back, the 10 send effects' once, with no track",
+                     round && globals == 10u && CU_NDST == 1u + NTRK * CU_DPT + 10u);
+    }
     for (i = 0; i < CU_NDST + 4u; i++) {
         turn(EN_K1 + 2u, -1);
         cords_blocks(24);
@@ -1235,6 +1250,44 @@ static int test_matrix(void)
                      cord_moves(PID_TRACK(P_PAN), 1, &sh) && !cord_moves(PID_TRACK(P_PAN), 0, &sh));
     }
     cord_clear();
+    return bad;
+}
+
+/* the mod shortcut (FX held + a knob) on the effects' pages: an insert's MIX / RATE / CHAR and the sends on the track,
+ * the send effects' and RETURN for every track (one cord, whichever track is selected); TYPE has none */
+static int test_fx_shortcut(void)
+{
+    int bad = 0;
+    int32_t i;
+    ui_power_on();
+    cord_clear();
+    song.sel = 1;
+    go_title("FX 2");
+    bad += check("FX 2: KNOB 1 TYPE no mod, 2..4 FX2 MIX / RTE / CHR",
+                 msc_dest(0) == CD_OFF && msc_dest(1) == CD_FX2_MIX && msc_dest(2) == CD_FX2_RATE &&
+                 msc_dest(3) == CD_FX2_CHAR);
+    go_title("FX SENDS");
+    bad += check("FX SENDS: SEND, SEND 2, SEND 3", msc_dest(0) == CD_FX_SEND && msc_dest(1) == CD_FX_SEND2 &&
+                 msc_dest(2) == CD_FX_SEND3);
+    go_title("SEND FX 3");
+    bad += check("SEND FX 3: TYPE no mod, SF3 MIX / RTE / CHR", msc_dest(0) == CD_OFF && msc_dest(1) == CD_SF3_MIX &&
+                 msc_dest(2) == CD_SF3_RATE && msc_dest(3) == CD_SF3_CHAR);
+    fm1_in.buttons |= 1u << panel.btn[MSC_BTN];
+    msc_knob(2, 10);
+    i = msc_find(CD_SF3_RATE, 1);
+    bad += check("...FX held, KNOB 3 turned: a cord to SF3 RTE, +20 %, no track of its own",
+                 i >= 0 && cord_get((uint32_t)i)->amount == 20 && cord_get((uint32_t)i)->dst_trk == 0u &&
+                 cord_get((uint32_t)i)->src == CS_LFO && cord_get((uint32_t)i)->src_trk == 1u);
+    song.sel = 3;
+    msc_knob(2, 5);
+    bad += check("...on track 4: the same cord, +30 %, none more", msc_find(CD_SF3_RATE, 3) == i &&
+                 cord_get((uint32_t)i)->amount == 30 && cord_count() == 1u);
+    fm1_in.buttons &= ~(1u << panel.btn[MSC_BTN]);
+    frame();
+    go_title("FX SEND");
+    bad += check("FX SEND: RETURN", msc_dest(1) == CD_FX_RETURN);
+    cord_clear();
+    song.sel = 0;
     return bad;
 }
 
@@ -5823,6 +5876,7 @@ int main(void)
     bad += test_tweak2();
     bad += test_organic();
     bad += test_matrix();
+    bad += test_fx_shortcut();
     bad += test_help_all();
     bad += test_help_gesture();
     bad += test_mods_page();
