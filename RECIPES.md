@@ -33,7 +33,7 @@ and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
 
 ## A first generative patch in a minute
 
-1. Power on. Track 1 is **GLASS PAD**, track 2 **STRINGS**, track 3 **BELLS**, track 4 the **808 KIT**.
+1. Power on. Track 1 is **GLASS PAD**, track 2 **STRING MACH**, track 3 **BELLS**, track 4 the **808 KIT**.
 2. Track 3 (BELLS): **SEQ** for GEN, **MODE** to **TURING**. Press **PLAY**: a looping melody in the track's scale.
 3. **PROB** at about 20: the loop changes a little each time round. At 0 (Lock) it holds.
 4. Track 4: MODE **ATLAS**, **DENS** at 50. A drum groove under it.
@@ -54,7 +54,7 @@ A held chord that changes slowly, for ambient beds.
 
 ## Chords that lead, melodies that follow (QNT CHRD)
 
-1. Track 2 (STRINGS): MODE **CHORD**, **PROG POP**, **BARS 1**, **HIT BEAT**.
+1. Track 2 (STRING MACH): MODE **CHORD**, **PROG POP**, **BARS 1**, **HIT BEAT**.
 2. Track 3 (BELLS): MODE **MARKOV**, **LEAP 30**, **DENS 60**.
 3. On track 3, **SCL**: **QNT** to **CHRD**. Its notes now snap to the chord track 2 plays, so the melody always
    fits the harmony. The keys and MIDI input snap too, so you can play along on track 3.
@@ -200,7 +200,7 @@ groove that keeps changing, which is the other use.
 
 ## Pads from sparse notes (LENGTH HIT)
 
-1. Any generator on a pad sound (GLASS PAD, STRINGS). Set **DENS** or **PROB** so it plays few notes.
+1. Any generator on a pad sound (GLASS PAD, STRING MACH). Set **DENS** or **PROB** so it plays few notes.
 2. **LENGTH** page: **LENGTH HIT**. Each note holds until the next hit, so rests let notes ring and the line turns
    into a slowly changing pad.
 3. For plucks instead: **FIXED**, **LEN 1/16**, **KEYS 2**.
