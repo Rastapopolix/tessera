@@ -42,23 +42,39 @@ static void test_click_volume(void)
 {
     reset_tools();
     int32_t reference[2*CTL], actual[2*CTL];
-    uint32_t previous_peak=0;
-    for(uint32_t level=0;level<3;level++) {
-        settings_click_level=level;song.master_q12=4096;
-        memset(reference,0,sizeof reference);click_req=2;click_render(reference,CTL);
-        uint32_t peak=0;
-        for(uint32_t i=0;i<2*CTL;i++) { uint32_t a=(uint32_t)abs(reference[i]);if(a>peak)peak=a; }
-        assert(peak>previous_peak);previous_peak=peak;
-        for(uint32_t master=0;master<4096;master+=1024) {
-            song.master_q12=master;memset(actual,0,sizeof actual);click_req=2;click_render(actual,CTL);
-            assert(!memcmp(reference,actual,sizeof actual));
+    for(uint32_t beat=1;beat<=2;beat++) {
+        uint32_t previous_peak=0;
+        for(uint32_t level=0;level<3;level++) {
+            settings_click_level=level;song.master_q12=4096;
+            memset(reference,0,sizeof reference);click_req=beat;click_render(reference,CTL);
+            uint32_t peak=0;
+            for(uint32_t i=0;i<2*CTL;i++) { uint32_t a=(uint32_t)abs(reference[i]);if(a>peak)peak=a; }
+            assert(peak>previous_peak);previous_peak=peak;
+            for(uint32_t master=0;master<=4096;master+=1024) {
+                song.master_q12=master;memset(actual,0,sizeof actual);click_req=beat;click_render(actual,CTL);
+                for(uint32_t i=0;i<2*CTL;i++)
+                    assert(abs(actual[i]-((reference[i]*(int32_t)master)>>12))<=1);
+                if(!master)for(uint32_t i=0;i<2*CTL;i++)assert(!actual[i]);
+            }
         }
     }
-    /* The same independent level is used when only count-in requests the click. */
-    seq_stop();settings_click=CLICK_OFF;settings_countin=1;song.rec=1;song.master_q12=0;
-    transport_req=1;events_block(0);assert(seq_counting() && click_req==2);
+    /* Master changes apply to a sounding tail without waiting for another beat. */
+    song.master_q12=0;
     memset(actual,0,sizeof actual);click_render(actual,CTL);
-    assert(!memcmp(reference,actual,sizeof actual));seq_stop();
+    for(uint32_t i=0;i<2*CTL;i++)assert(!actual[i]);
+    song.master_q12=4096;
+    memset(actual,0,sizeof actual);click_render(actual,CTL);
+    int energy=0;for(uint32_t i=0;i<2*CTL;i++)energy|=actual[i];assert(energy);
+    /* Count-in follows master even when AUDIO CLICK is off. */
+    for(uint32_t master=0;master<=4096;master+=1024) {
+        seq_stop();settings_click=CLICK_OFF;settings_countin=1;song.rec=1;song.master_q12=master;
+        transport_req=1;events_block(0);assert(seq_counting() && click_req==2);
+        memset(actual,0,sizeof actual);click_render(actual,CTL);
+        for(uint32_t i=0;i<2*CTL;i++)
+            assert(abs(actual[i]-((reference[i]*(int32_t)master)>>12))<=1);
+        if(!master)for(uint32_t i=0;i<2*CTL;i++)assert(!actual[i]);
+    }
+    seq_stop();
 }
 static void test_editing_tools(void)
 {
