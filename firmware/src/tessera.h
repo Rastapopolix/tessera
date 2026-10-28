@@ -364,6 +364,9 @@ uint32_t tessera_chord_user_key(uint32_t tr, uint32_t note, int first);   /* CHO
 int tessera_step_on(uint32_t tr);                        /* a STEP track (no generator, no ARP): its EVOLVE page */
 const step_t *tessera_step_vary(track_t *t, const step_t *s, step_t *out);   /* seq.c: the step as it plays */
 uint32_t tessera_step_varied(uint32_t tr);               /* steps playing a change now */
+uint32_t tessera_sd_loop(uint32_t tr, uint8_t *now, uint8_t *home, uint32_t *at);   /* TURING / MORPH from a SOURCE: its loop now and as written (the pictures) */
+int tessera_step_now(uint32_t tr, uint32_t i, step_t *out);   /* step i as it plays now: 1 changed (the pictures) */
+uint32_t tessera_step_serial(uint32_t tr, uint32_t *arg);   /* SERIAL's transform now (TESS_SV_SER_*), its argument */
 void tessera_step_clear(uint32_t tr);                    /* the steps as written again (KNOB 4 CLEAR) */
 void tessera_sv_layer_knob(uint32_t k, int32_t s);       /* its page, OCT+ held: KNOB 1 HOW */
 uint32_t tessera_step_keep(uint32_t tr);                 /* REC held: the changes become the steps; returns how many */

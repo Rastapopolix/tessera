@@ -179,6 +179,28 @@ uint32_t tessera_step_varied(uint32_t tr)
     for (uint32_t i = 0; i < len && i < NSTEP; i++) n += tess_sv.mut[tr][i] != 0u;
     return n;
 }
+/* step i of track tr as STEP EVOLVE plays it now, into *out: 1 = it differs from the step as written (the EVOLVE
+ * page's picture, NOTES' ghost notes: ui_graph.c) */
+int tessera_step_now(uint32_t tr, uint32_t i, step_t *out)
+{
+    const step_t *s;
+    uint32_t len;
+    if (tr >= TESSERA_TRACKS || !sv_on(&trk[tr], tr)) return 0;
+    len = trk[tr].p[P_SLEN] ? (uint32_t)trk[tr].p[P_SLEN] : 1u;
+    if (i >= len || i >= NSTEP) return 0;
+    s = &seq_steps(&trk[tr])[i];
+    if (tessera.sv_how[tr] == TESS_SV_SERIAL) return tess_sv.ser[tr] && sv_serial(&trk[tr], tr, i, out);
+    if (!tess_sv.mut[tr][i] || sv_kind(s) == VK_KEEP) return 0;
+    sv_apply(&trk[tr], i, tess_sv.mut[tr][i], out);
+    return memcmp(out, s, sizeof *s) != 0;
+}
+/* SERIAL's transform playing now (TESS_SV_SER_*; 0: none, or another HOW), its argument in *arg */
+uint32_t tessera_step_serial(uint32_t tr, uint32_t *arg)
+{
+    if (tr >= TESSERA_TRACKS || tessera.sv_how[tr] != TESS_SV_SERIAL || !sv_on(&trk[tr], tr)) return 0;
+    *arg = tess_sv.ser_arg[tr];
+    return tess_sv.ser[tr];
+}
 /* the changes back to as written, from the next round on afresh (CLEAR; a pattern load) */
 void tessera_step_clear(uint32_t tr)
 {
