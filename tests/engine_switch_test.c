@@ -73,6 +73,9 @@ int main(void)
         p.t[k].p[P_E0] = 99;
         p.t[k].p[P_E0 + 3u] = -40;
     }
+#if !MELODEE_SID_KIT
+    p.t[3].p[P_E0] = DK_SID;                      /* (and a DRUM track saved with KIT SID) */
+#endif
     p.sum = proj_sum(&p);
     check("(the project with them taken: a valid record)", !project_restore_runtime(&p));
     for (k = 0, ok = 1; k < 3u; k++) {
@@ -83,6 +86,11 @@ int main(void)
     check(MELODEE_FM6 ? "a project's SID, PHYS, Prophet tracks: FM6's first voice, its common settings kept (ATTACK)" :
                         "a project's FM6, CZ-1, Prophet tracks: SID INIT, its common settings kept (ATTACK)", ok);
     check("...the other track as saved (DRUM)", trk[3].eng_req == ENGI_DRUM);
+#if !MELODEE_SID_KIT
+    for (k = 0, ok = ENG_DRUM.edit[0].max == DK_909; k < ENG_DRUM.npresets; k++)
+        ok &= ENG_DRUM.presets[k].e[0] != DK_SID;
+    check("SID KIT left out: KIT goes to 909, no SID preset; a saved KIT SID loads as the 909", ok && trk[3].p[P_E0] == DK_909);
+#endif
     {
         int32_t o[2 * CTL];
         uint32_t f;

@@ -41,9 +41,15 @@ static uint32_t drum_gm(const int16_t *p,uint32_t note,int32_t *st);
 static int32_t drum_event_pitch;
 static uint32_t drum_event_length;
 static int drum_is909(const track_t *t) { return t->p[P_E0] == DK_909; }
-static int drum_issid(const track_t *t) { return t->p[P_E0] == DK_SID; }
+static int drum_issid(const track_t *t) { return MELODEE_SID_KIT && t->p[P_E0] == DK_SID; }
+#if MELODEE_SID_KIT
 typedef struct dsk_part dsk_part_t;
 static uint32_t dsk_bytes(void);
+#else                                          /* (drum_issid is 0: never called) */
+static uint32_t dsk_bytes(void) { return 0; }
+static void dsk_hit(track_t *t, uint32_t note, uint32_t vel) { (void)t; (void)note; (void)vel; }
+static int dsk_tick(track_t *t) { (void)t; return 0; }
+#endif
 static uint32_t drum_bytes(const track_t *t) { return drum_is909(t) ? sizeof(drum909_part_t) : drum_issid(t) ? dsk_bytes() : sizeof(drum_lane_t)*DV_NLANE; }
 static drum909_part_t *drum909_of(const track_t *t)
 {
@@ -151,7 +157,9 @@ static uint32_t drum_gm(const int16_t *p, uint32_t note, int32_t *st)
         t = DVT_ROUND;
     return t;
 }
+#if MELODEE_SID_KIT
 #include "drum_sid.c"                          /* KIT SID */
+#endif
 
 /* ----------------------------------------------------- the grid's lanes --- */
 /* A step's lane hits (step_t.hit / acc, the DRUM grid: SEQ > STEP on a DRUM track) play these GM notes, on any
@@ -371,11 +379,13 @@ static __attribute__((noinline)) void drum_color(drum_lane_t *L,int32_t value,in
 }
 static void drum_render_into(track_t *t,voice_t *v,int32_t *out,uint32_t n,const vmod_t *m,dr_scratch_t *scratch,const int16_t *p)
 {
+#if MELODEE_SID_KIT
     if (p[P_E0] == DK_SID) {
         if (v->s[2] == DK_SID)
             dsk_render(t, out, n > CTL ? CTL : n, m, p);
         return;
     }
+#endif
     drum_lane_t *L = drum_lane_of(t, v);
     int32_t y[CTL], drv = p[P_E7], g = 0, mk = 0;
     uint32_t i;
@@ -425,9 +435,12 @@ static int32_t drum_keys(const track_t *t, uint32_t k)
 static const preset_t DRUM_PRESETS[] = {
     {"808 KIT", {DK_808, 64, 64, 64, 64, 100, 0, 0}, {0, 100, 127, 100}, 0, 0},
     {"909 KIT", {DK_909, 64, 64, 64, 64, 100, 0, 0}, {0, 100, 127, 100}, 0, 0},
+#if MELODEE_SID_KIT
     {"SID KIT", {DK_SID, 64, 80, 64, 64, 100, 0, 0}, {0, 100, 127, 100}, 0, 0},    /* every drum on the SID */
     {"SID DIGI", {DK_SID, 64, 80, 64, 64, 100, 1, 0}, {0, 100, 127, 100}, 0, 0},   /* kick, snare on $D418 */
+#endif
 };
+#if MELODEE_SID_KIT
 /* KIT SID: KICK is DIGI (KICK and SNARE on $D418), DRV the filter's resonance */
 static const char *const N_DRUM_DIGI[] = {"OFF", "ON"};
 static const param_desc_t DRUM_SID_DIGI = {"DIGI", F_ENUM, 0, 1, 0, N_DRUM_DIGI, 0};
@@ -436,13 +449,16 @@ static const param_desc_t *drum_desc(const track_t *t, uint32_t k)
 {
     return !drum_issid(t) ? 0 : k == 6u ? &DRUM_SID_DIGI : k == 7u ? &DRUM_SID_RES : 0;
 }
+#else
+static const param_desc_t *drum_desc(const track_t *t, uint32_t k) { (void)t; (void)k; return 0; }
+#endif
 static uint32_t drum_cap(const track_t *t) { return drum_issid(t) ? 1u : DV_NLANE; }
 
 static const engine_t ENG_DRUM = {
     .name = "DRUM",
     .page_title = {"KIT", "HIT"},
     .edit = {
-        {"KIT", F_ENUM, DK_808, DK_SID, DK_808, N_DRUM_KIT, 0},
+        {"KIT", F_ENUM, DK_808, MELODEE_SID_KIT ? DK_SID : DK_909, DK_808, N_DRUM_KIT, 0},
         {"TUNE", F_PCT, 0, 127, 64, 0, 0},
         {"TONE", F_PCT, 0, 127, 64, 0, 0},
         {"DECY", F_PCT, 0, 127, 64, 0, 0},
