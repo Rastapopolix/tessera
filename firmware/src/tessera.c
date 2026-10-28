@@ -67,6 +67,19 @@ static void tess_seed_fresh(uint32_t tr)
     tessera.seed[tr] = (uint16_t)(1u + gen_stream(TESS_ENTROPY() + tr * 0x9E3779B9u) % TESS_SEED_MAX);
     tess_seed_apply(tr);
 }
+/* ATLAS's start (Theo: for inspiration): the first time a track turns to ATLAS since power-on or NEW, a random point on
+ * the map and DENSITY 30..50. A loaded project's tracks keep their own (tessera_unpack clears the bits). Not saved */
+static uint8_t tess_atlas_new;                          /* bit tr: track tr's ATLAS still at tessera_init's start */
+static void tess_atlas_fresh(uint32_t tr)
+{
+    uint32_t r;
+    if (!(tess_atlas_new >> tr & 1u)) return;
+    tess_atlas_new &= (uint8_t)~(1u << tr);
+    r = gen_stream(TESS_ENTROPY() + tr * 0x85EBCA6Bu);
+    tessera.grids[tr].x = (uint8_t)r;
+    tessera.grids[tr].y = (uint8_t)(r >> 8);
+    tessera.grids[tr].dens = (uint8_t)(30u + (r >> 16) % 21u);
+}
 static void tess_realign(uint32_t tr);
 static void sd_realign(uint32_t tr);                    /* (step_seed.c) */
 static void tess_form_restart(uint32_t tr);
@@ -115,6 +128,7 @@ void tessera_init(void)
     memset(&tess_an, 0, sizeof tess_an);
     tessera.key_link = 1;                               /* (a new project: one key for every track) */
     memset(tessera.acc_limit, TESS_ACC_LIMIT_DEF, sizeof tessera.acc_limit);   /* (the pitch accumulator: an octave) */
+    tess_atlas_new = (1u << TESSERA_TRACKS) - 1u;       /* (ATLAS: a random start, tess_atlas_fresh) */
 
     for (uint32_t i = 0; i < TESSERA_TRACKS; i++) {
         tessera.mode[i] = TESS_ENG_OFF;
@@ -1296,6 +1310,7 @@ void tessera_mode_set(uint32_t tr, uint32_t m)
     tessera.mode[tr] = (uint8_t)m;
     tessera.awake[tr].edit = 0;                             /* (no step picked under another generator) */
     if (m != TESS_ENG_OFF) tess_seed_fresh(tr);             /* (its picture shows the material at once) */
+    if (m == TESS_ENG_GRIDS) tess_atlas_fresh(tr);
     if (tessera.evolve[tr].form) tess_form_restart(tr);     /* the sections were another engine's */
     tess_rearm(tr);
     answer_restart(tr);
@@ -2376,6 +2391,7 @@ int tessera_unpack(const uint8_t *in)
         tess_pk_track(in + tr * TESS_PK_TRACK, tr, 1);
     tessera.en_arc = tail[0];
     tessera.en_rests = tail[1];
+    tess_atlas_new = 0;                                  /* (its tracks' ATLAS values are the project's) */
     return 1;
 }
 /* a block of version ver (an older project's or backup's): as tessera_unpack, each track converted by
@@ -2542,6 +2558,7 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
         tessera.active_gate[tr] = 0;
         tessera.mode[tr] = (uint8_t)v;
         if (v != TESS_ENG_OFF) tess_seed_fresh(tr);
+        if (v == TESS_ENG_GRIDS) tess_atlas_fresh(tr);
         if (ev->form) tess_form_restart(tr);
         tess_rearm(tr);
         answer_restart(tr);

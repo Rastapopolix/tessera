@@ -470,10 +470,10 @@ static void b_replay(uint32_t bar)
 static void s_grids(void) { gen(0, TESS_ENG_GRIDS); }
 static void s_grids_var(void)
 {
-    gen(0, TESS_ENG_GRIDS);
-    knob(tessera_knob, 1, -20);                       /* X 48 */
-    knob(tessera_knob, 2, 25);                        /* Y 228 */
-    knob(tessera_knob, 3, 15);                        /* DENSITY 80 */
+    gen(0, TESS_ENG_GRIDS);                           /* (a random start: X, Y, DENSITY set outright) */
+    tessera_param_set(0, TX_GRD_X, 48);
+    tessera_param_set(0, TX_GRD_Y, 228);
+    tessera_param_set(0, TX_GRD_DENS, 80);
     knob(tessera_evolve_knob, 0, -20);                /* LOCK 60: CHAOS 40 */
     knob(tessera_tweak_knob, 1, 10);                  /* DROP 20 */
     knob(tessera_tweak_knob, 2, 15);                  /* HUMAN 30 */
@@ -3145,6 +3145,36 @@ int main(int argc, char **argv)
             waitpid(pid, 0, 0);
         }
         bad += check("ROLL turned mid-bar: the line playing goes on to the bar line, note for note", same && n > 0u);
+    }
+    {   /* ATLAS's random start: the first turn to ATLAS since power-on / NEW; a loaded project keeps its own */
+        static uint8_t pk[TESSERA_PK_BYTES];
+        int ok = 1;
+        tessera_reset();
+        tessera_mode_set(0, TESS_ENG_GRIDS);
+        tessera_param_set(1, TX_MODE, TESS_ENG_GRIDS);
+        for (uint32_t r = 0; r < 2u; r++) ok &= tessera.grids[r].dens >= 30u && tessera.grids[r].dens <= 50u;
+        ok &= tessera.grids[0].x != tessera.grids[1].x || tessera.grids[0].y != tessera.grids[1].y;
+        ok &= tessera.grids[0].x != 128u || tessera.grids[0].y != 128u;
+        tessera_param_set(0, TX_GRD_X, 10);
+        tessera_mode_set(0, TESS_ENG_OFF);
+        tessera_mode_set(0, TESS_ENG_GRIDS);           /* (back to ATLAS: as left) */
+        ok &= tessera.grids[0].x == 10u;
+        tessera_param_set(2, TX_GRD_X, 7);
+        tessera_param_set(2, TX_GRD_Y, 9);
+        tessera_param_set(2, TX_GRD_DENS, 77);
+        tessera_pack(pk);
+        tessera_reset();
+        ok &= tessera_unpack(pk) == 1;
+        tessera_mode_set(2, TESS_ENG_GRIDS);
+        tessera_mode_set(3, TESS_ENG_GRIDS);
+        ok &= tessera.grids[2].x == 7u && tessera.grids[2].y == 9u && tessera.grids[2].dens == 77u;
+        ok &= tessera.grids[3].x == 128u && tessera.grids[3].y == 128u && tessera.grids[3].dens == 50u;
+        tessera_reset();                                /* (NEW: random again) */
+        tessera_mode_set(3, TESS_ENG_GRIDS);
+        ok &= tessera.grids[3].dens >= 30u && tessera.grids[3].dens <= 50u && tessera.grids[3].x != 128u;
+        tessera_reset();
+        bad += check("ATLAS: a random X / Y and DENSITY 30..50 the first time a track turns to it; a loaded project's kept",
+                     ok);
     }
     {
         unsigned h = 0, ok = 0;
