@@ -43,6 +43,14 @@ PALETTES = [
     ("VITRO",    (8, 25, 30),     (17, 41, 47),    (232, 244, 242), (255, 255, 255),     # glass
      ((62, 210, 222), (250, 232, 100), (236, 120, 236), (170, 222, 92))),
 ]
+# The Mono look (MELODEE_LOOK 1): one ink on black, the Settings' COLOR its ink (Theo 2026-10-28: yellow as the yellow
+# OLED of early norns units by default; white, green, blue, red). Its track colours are the ink (one ink: no track colours, so
+# Melodee's are not near any); its own slots, so a detailed build's stored id reads as Mono's default and back
+MONO_INK = [("YELLOW", (255, 208, 32)), ("WHITE", (240, 240, 240)), ("GREEN", (96, 255, 128)),
+            ("BLUE", (136, 192, 255)), ("RED", (255, 112, 100))]
+MONO_PALETTES = [(n, (0, 0, 0), (20, 20, 20), c, c, (c, c, c, c)) for n, c in MONO_INK]
+MONO_SLOTS = [6, 7, 8, 9, 10]
+MONO_DEFAULT = "YELLOW"
 SLOTS = [0, 2, 3, 4, 5]            # each palette's stored slot; 1 was DAY (retired: its stored id reads as the default)
 # Melodee's own track colours (NIGHT, DAY, CONTRAST as upstream had them): no track colour may come near one
 MELODEE_TRACKS = [(255, 122, 92), (255, 193, 69), (70, 217, 176), (157, 140, 255),
@@ -154,6 +162,10 @@ CHECKS = [("text", "bg", 12.0, "body text"), ("text", "surf", 9.0, "body text on
           ("key", "surf", 2.5, "a keycap on a surface"), ("ink", "dim", 1.8, "an unavailable keycap's label"),
           ("ink", "accent", 4.5, "text on the ARM badge")]
 
+# the Mono look's inks (WCAG AAA for its text: 7:1)
+MONO_CHECKS = [("text", "bg", 7.0, "text"), ("mid", "bg", 4.5, "labels"), ("dim", "bg", 2.2, "inactive (not read)"),
+               ("ink", "text", 7.0, "inverted text"), ("text", "surf", 6.0, "text on a surface")]
+
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -168,7 +180,9 @@ def main():
             m = min(MELODEE_TRACKS, key=lambda q: delta_e(c, q))
             if delta_e(c, m) < MELODEE_DE:
                 fails.append(f"{p[0]}/T{t + 1}: {c} is Melodee's {m} (dE {delta_e(c, m):.1f} < {MELODEE_DE})")
+    assert len(MONO_SLOTS) == len(MONO_PALETTES) and MONO_SLOTS[0] > SLOTS[-1] and MONO_SLOTS[-1] < 31
     rows = [derive(p, t) for p in PALETTES + [TEST_GRAY] for t in range(4)]
+    mono_rows = [derive(p, 0) for p in MONO_PALETTES]
     for name, d in rows:
         if name.startswith("GRAY"):
             for k, v in d.items():
@@ -180,11 +194,19 @@ def main():
             c = contrast(d[f], d[b])
             if c < lim:
                 fails.append(f"{name}: {f}/{b} {c:.2f} < {lim} ({why})")
+    for name, d in mono_rows:                # one ink on black: its text, labels and inverted text (ink on BG fills)
+        for f, b, lim, why in MONO_CHECKS:
+            c = contrast(d[f], d[b])
+            if c < lim:
+                fails.append(f"{name}: {f}/{b} {c:.2f} < {lim} ({why})")
     if a.report:
         print(f"{'palette':12s} " + " ".join(f"{f}/{b}".ljust(12) for f, b, _, _ in CHECKS))
         for name, d in rows:
             print(f"{name:12s} " + " ".join(f"{contrast(d[f], d[b]):5.1f}".ljust(12) for f, b, _, _ in CHECKS))
         print("minimum      " + " ".join(f"{lim:<12.2f}" for _, _, lim, _ in CHECKS))
+        print(f"{'Mono ink':12s} " + " ".join(f"{f}/{b}".ljust(12) for f, b, _, _ in MONO_CHECKS))
+        for name, d in mono_rows:
+            print(f"{name:12s} " + " ".join(f"{contrast(d[f], d[b]):5.1f}".ljust(12) for f, b, _, _ in MONO_CHECKS))
     if a.out:
         names = [p[0] for p in PALETTES]
 
@@ -197,17 +219,24 @@ def main():
                " * derived) */", "#pragma once", "#include <stdint.h>", "",
                "/* ui_pal_t {name, bg, surf, text, accent, trk[4]} (src/gfx.c); GRAY: host tests only */",
                "static const ui_pal_t UI_PALETTES[] = {"]
-        out += [row(p) for p in PALETTES]
-        out += ["#ifdef UI_TEST_PALETTE", row(TEST_GRAY), "#endif", "};",
-                f"#define UI_NPALETTES {len(PALETTES)}u", f"#define UI_DEFAULT_INDEX {names.index(DEFAULT)}u      /* {DEFAULT} */",
-                f"#define UI_GRAY_INDEX {len(PALETTES)}u      /* (UI_TEST_PALETTE only) */",
-                f"#define UI_PAL_TAG {PAL_TAG}u          /* stored id = UI_PAL_TAG + UI_PAL_SLOTS[index] */",
-                "static const uint8_t UI_PAL_SLOTS[] = {" + ", ".join(str(x) for x in SLOTS) + "};"]
+        mono_names = [p[0] for p in MONO_PALETTES]
+
+        def table(pals, slots, default, nms):
+            t = [row(p) for p in pals]
+            t += ["#ifdef UI_TEST_PALETTE", row(TEST_GRAY), "#endif", "};",
+                  f"#define UI_NPALETTES {len(pals)}u", f"#define UI_DEFAULT_INDEX {nms.index(default)}u      /* {default} */",
+                  f"#define UI_GRAY_INDEX {len(pals)}u      /* (UI_TEST_PALETTE only) */",
+                  "static const uint8_t UI_PAL_SLOTS[] = {" + ", ".join(str(x) for x in slots) + "};",
+                  "/* each palette's LINE (BG -> TEXT %), in UI_PALETTES' order */",
+                  "static const uint8_t UI_LINE_PCTS[] = {" +
+                  ", ".join(str(LINE_PCT.get(p[0], PCT["LINE"])) for p in pals) + ",",
+                  "#ifdef UI_TEST_PALETTE", f"    {LINE_PCT.get(TEST_GRAY[0], PCT['LINE'])},", "#endif", "};"]
+            return t
+        out = out[:-1] + ["#if MELODEE_LOOK                /* the Mono look: COLOR is its ink on black */",
+                          "static const ui_pal_t UI_PALETTES[] = {"] + table(MONO_PALETTES, MONO_SLOTS, MONO_DEFAULT, mono_names)
+        out += ["#else", "static const ui_pal_t UI_PALETTES[] = {"] + table(PALETTES, SLOTS, DEFAULT, names) + ["#endif"]
+        out += [f"#define UI_PAL_TAG {PAL_TAG}u          /* stored id = UI_PAL_TAG + UI_PAL_SLOTS[index] */"]
         out += [f"#define UI_{k}_PCT {v}" for k, v in PCT.items()] + [f"#define UI_RAISE_PCT {RAISE_PCT}   /* SURF -> TEXT */"]
-        out += ["/* each palette's LINE (BG -> TEXT %), in UI_PALETTES' order */",
-                "static const uint8_t UI_LINE_PCTS[] = {" +
-                ", ".join(str(LINE_PCT.get(p[0], PCT["LINE"])) for p in PALETTES) + ",",
-                "#ifdef UI_TEST_PALETTE", f"    {LINE_PCT.get(TEST_GRAY[0], PCT['LINE'])},", "#endif", "};"]
         out += [f"#define UI_REC_DARK 0x{to565(REC_DARK):04x}u", f"#define UI_REC_LIGHT 0x{to565(REC_LIGHT):04x}u",
                 f"#define UI_QR_LIGHT 0x{to565(QR_LIGHT):04x}u", f"#define UI_QR_DARK 0x{to565(QR_DARK):04x}u",
                 f"#define UI_CRASH_BG 0x{to565(CRASH_BG):04x}u", f"#define UI_CRASH_INK 0x{to565(CRASH_INK):04x}u", ""]
