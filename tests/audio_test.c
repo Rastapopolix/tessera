@@ -121,23 +121,35 @@ static void dma(void)
     fm1_alnk0_irq();
     check("an auxiliary interrupt does not render a DMA half", !host_acks && !audio_halves && !melodee_dbg.in_audio);
     host_pending = FM1_AUDIO_HALF;
-    host_us = 5000;
+    expected = HALF_FRAMES * 1000000u / FS;            /* the half's deadline in us */
+    host_us = expected * 85u / 100u;
     fm1_alnk0_irq();
-    check("one slow half records elapsed load but does not shed yet", host_acks == 1u && !shed_req && melodee_dbg.last_us == 5000u && !melodee_dbg.late);
+    check("one half at 85 % records elapsed load but does not shed yet", host_acks == 1u && !shed_req && melodee_dbg.last_us == host_us && !melodee_dbg.late);
     fm1_alnk0_irq();
-    check("a second slow half in a row requests shedding", host_acks == 2u && shed_req);
+    check("a second half over 80 % in a row requests shedding", host_acks == 2u && shed_req);
     shed_req = 0;
     host_half_reads = 0; host_dma_advanced = 1; host_us = 100;
     fm1_alnk0_irq();
     check("DMA advancing during a render is counted once", host_acks == 3u && melodee_dbg.late == 1u && !melodee_dbg.in_audio && !shed_req);
+    fresh();
+    host_us = expected * 79u / 100u;
+    fm1_alnk0_irq(); fm1_alnk0_irq(); fm1_alnk0_irq();
+    check("halves under 80 % never shed", !shed_req);
+    host_us = expected * 93u / 100u;
+    fm1_alnk0_irq();
+    check("one half over 92 % requests shedding at once", shed_req);
+    fresh();
+    host_us = 5000;
+    fm1_alnk0_irq();
+    check("one half past the deadline requests shedding at once", shed_req);
     fresh();
     expected = HALF_FRAMES * 1000000u / FS;            /* the half's deadline in us */
     host_us = expected * 90u / 100u; host_nest = expected * 30u / 100u;   /* the render 60 %, TIMER5 nested 30 % */
     fm1_alnk0_irq(); fm1_alnk0_irq();
     check("TIMER5 nested in the render counts toward the deadline", shed_req && melodee_dbg.last_us == host_us - host_nest);
     fresh();
-    host_us = 5000;
-    fm1_alnk0_irq(); host_us = 100; fm1_alnk0_irq(); host_us = 5000; fm1_alnk0_irq();
+    host_us = expected * 85u / 100u;
+    fm1_alnk0_irq(); host_us = 100; fm1_alnk0_irq(); host_us = expected * 85u / 100u; fm1_alnk0_irq();
     check("slow halves that are not consecutive do not shed", !shed_req);
     fresh();
     host_us = 580;

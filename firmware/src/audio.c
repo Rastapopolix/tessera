@@ -63,12 +63,15 @@ static void audio_block(int32_t *out, uint32_t n)       /* mix (mix.c), then Q15
     AP_END(AP_OUTPUT,output_start);
 }
 
-/* Overload: two halves in a row above 85 % (the render plus TIMER5 nested in it), fade one voice over the
- * next block, and one more each half while it lasts. Keep each part's
- * lowest POLY note and MONO / LEGATO / UNISON lead, as the shared budget does. */
+/* Overload: one half above 92 %, or two halves in a row above 80 % (the render plus TIMER5 nested in it), fade one
+ * voice over the next block, and one more each half while it lasts. Two dense FM6 tracks jump from under 80 % to past
+ * the deadline in a half or two; waiting for two halves over 85 % let the next one miss (a late half: a crackle).
+ * Keep each part's lowest POLY note and MONO / LEGATO / UNISON lead, as the shared budget does. */
 static volatile uint8_t shed_req;
-static uint8_t shed_over;                              /* bit k: the half k halves ago was over 85 % */
-#define SHED_TICKS ((HALF_FRAMES * 1000000u / FS) * 85u / 100u * FM1_TICKS_PER_US)   /* 85 % of a half */
+static uint8_t shed_over;                              /* bit k: the half k halves ago was over 80 % */
+#define SHED_PCT(n) ((HALF_FRAMES * 1000000u / FS) * (n) / 100u * FM1_TICKS_PER_US)
+#define SHED_TICKS SHED_PCT(80u)                       /* two in a row: shed */
+#define SHED_NOW_TICKS SHED_PCT(92u)                   /* one alone: shed (the next is likely late) */
 static uint32_t shed_count;
 #if MELODEE_AUDIO_BENCH
 static uint32_t audio_bench_shed_requests;
@@ -76,11 +79,11 @@ static uint32_t audio_bench_shed_requests;
 static uint32_t shed_part[NPART];
 
 /* end of a half: all = its ticks, TIMER5 nested in it included -> the render alone in us. The deadline sees
- * both; shed after 2 overloaded halves in a row (out of line: keeps the ISR's render loops as they were) */
+ * both; shed after one half near it or 2 loaded halves in a row (out of line: keeps the ISR's render loops as they were) */
 static __attribute__((noinline)) uint32_t shed_check(uint32_t all)
 {
     shed_over = (uint8_t)(shed_over << 1 | (all > SHED_TICKS));
-    if ((shed_over & 3u) == 3u)
+    if ((shed_over & 3u) == 3u || all > SHED_NOW_TICKS)
         shed_req = 1;
     return (all - t5_nested_ticks) / FM1_TICKS_PER_US;
 }
