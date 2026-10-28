@@ -443,8 +443,10 @@ static void help_find(uint32_t k)
             help.pid = (uint16_t)PID_TESS(TX_GRD_KICK + (k & 3u));
             return;
         }
-        if (sd_layer_on()) {                            /* (TURING, EUCLID, OCT+ held: SOURCE, KEEP) */
+        if (sd_layer_on()) {                            /* (TURING, EUCLID, MARKOV, MORPH, OCT+ held: SOURCE, KEEP,
+                                                         * GRAVITY) */
             if (k < 2u) help.pid = (uint16_t)PID_TESS(TX_SD_SOURCE + k);
+            else if (k == 2u) help.pid = (uint16_t)PID_TESS(TX_SD_GRAVITY);
             else help_unused(k);
             return;
         }

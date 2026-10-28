@@ -147,6 +147,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_SUB_HUMAN] = {"HUMAN", F_INT, 0, TESS_HUMAN_MS, 0, 0, "ms"},
     [TX_ACC_LIMIT] = {"LIMIT", F_INT, 1, TESS_ACC_LIMIT, TESS_ACC_LIMIT_DEF, 0, 0},
     [TX_ACC_MODE] = PE("MODE", TX_N_ACCMODE, 0),
+    [TX_SD_GRAVITY] = {"GRAVITY", F_INT, 0, 100, 0, 0, "%"},
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -524,14 +525,16 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                 "the others too, as the scale always is; drum tracks keep theirs. OWN: each track its "
                                 "own ROOT. Turning it on gives every track the selected track's key. SCL's Key link row; "
                                 "on in a new project, saved with it."),
-    X_(TX_SD_SOURCE, "SOURCE", "A STEP pattern for TURING or EUCLID to play from: T1 to T4 is that track's pattern "
-                               "playing now (this track's own too), which stays as written. TURING loops its first "
-                               "LEN steps and PROB changes them a step at a time; EUCLID plays its notes in order "
-                               "on its hits. OFF, or a pattern without notes: the generator's own. OCT+ held on GEN, "
-                               "KNOB 1."),
-    X_(TX_SD_KEEP, "KEEP", "With a SOURCE, what stays as written. FREE: TURING may change a step's pitch or its hit. "
+    X_(TX_SD_SOURCE, "SOURCE", "A STEP pattern for TURING, EUCLID, MARKOV or MORPH to play from: T1 to T4 is that "
+                               "track's pattern playing now (this track's own too), which stays as written. TURING "
+                               "loops its first LEN steps and PROB changes them a step at a time; EUCLID plays its "
+                               "notes in order on its hits; MARKOV learns what follows what in it (LEAP: jumps "
+                               "anywhere); MORPH blends it (A) with a variation of it (B). OFF, or a pattern without "
+                               "notes: the generator's own. OCT+ held on GEN, KNOB 1."),
+    X_(TX_SD_KEEP, "KEEP", "With a SOURCE, what stays as written. FREE: a step's pitch or its hit may change. "
                            "RHYTHM: only the pitches change (EUCLID: the source's own rhythm, on EUCLID's pitches). "
-                           "PITCH: only the hits come and go. OCT+ held on GEN, KNOB 2."),
+                           "PITCH: only the hits come and go (MARKOV: the notes in written order). OCT+ held on GEN, "
+                           "KNOB 2."),
     X_(TX_SUB_HUMAN, "TIMING HUMAN", "Plays each step a little late, as a player behind the beat: up to this many ms, "
                                      "a new amount each step, never early and never more than a quarter of the step. "
                                      "The same each time the piece plays. 0 on the grid. STEP tracks too (with a "
@@ -542,6 +545,10 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_ACC_MODE, "ACCUM MODE", "What a step's Accumulate does at LIMIT. WRAP: back to the note as written, and "
                                   "on again. PING: turns round and comes back. CLAMP: stays there. PLAY and a new "
                                   "pattern start it again."),
+    X_(TX_SD_GRAVITY, "GRAVITY", "With a SOURCE, the pull home: this share of the steps plays the source as written "
+                                 "at its place. TURING's changed step goes back to it, MARKOV's chain goes on from "
+                                 "there, EUCLID plays the source's own hit or rest, MORPH its A. 0: none. OCT+ held "
+                                 "on GEN, KNOB 3."),
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };

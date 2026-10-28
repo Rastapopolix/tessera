@@ -1008,15 +1008,17 @@ static void draw_columns(void)
                     }
                 }
                 return;
-            } else if (sd_layer_on()) {                     /* TURING, EUCLID, OCT+ held: SOURCE, KEEP */
-                uint32_t src = tessera.sd_src[tr], kp = tessera.sd_keep[tr];
+            } else if (sd_layer_on()) {                     /* TURING .. MORPH, OCT+ held: SOURCE, KEEP, GRAVITY */
+                uint32_t src = tessera.sd_src[tr], kp = tessera.sd_keep[tr], gv = tessera.sd_grav[tr];
                 col_mods(PID_TESS(TX_SD_SOURCE));
                 draw_column(0, "SOURCE", pid_desc(PID_TESS(TX_SD_SOURCE), tr)->names[src % (TESSERA_TRACKS + 1u)], "",
                             VAL(0u), (int32_t)src * 1000 / TESSERA_TRACKS, ICON_AUTO);
                 col_mods(PID_TESS(TX_SD_KEEP));
                 draw_column(1, "KEEP", pid_desc(PID_TESS(TX_SD_KEEP), tr)->names[kp % TESS_SD_KEEPS], "",
                             src ? VAL(1u) : T_DIM, (int32_t)kp * 1000 / (TESS_SD_KEEPS - 1), ICON_AUTO);
-                draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+                fmt_int(v3, gv);
+                col_mods(PID_TESS(TX_SD_GRAVITY));
+                draw_column(2, "GRAVITY", v3, "%", src ? VAL(2u) : T_DIM, (int32_t)gv * 10, ICON_AUTO);
                 draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
             } else if (m == TESS_ENG_TURING) {
                 const gen_turing_t *tur = tessera_turing(tr);

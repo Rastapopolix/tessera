@@ -213,6 +213,30 @@ static int test_tsp_record(void)
     tsp_resum(raw);
     bad += check("TSP1: a SEED part with a SOURCE or a KEEP out of range is refused", ok && !tsp_valid(raw, len));
 
+    reset();                                           /* GRAVITY: the record's GRAV part; a record without it */
+    tessera_param_set(1, TX_SD_SOURCE, 1); tessera_param_set(1, TX_SD_GRAVITY, 40);
+    tessera_param_set(3, TX_SD_GRAVITY, 100);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_GRAV];
+    reset();
+    ok = ok && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: each track's GRAVITY comes back from its part", ok && tessera.sd_grav[1] == 40u &&
+                 tessera.sd_grav[3] == 100u && !tessera.sd_grav[0] && tessera.sd_src[1] == 1u);
+    raw[tsp_seen.at[TSP_GRAV] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (saved before it: no GRAV part) */
+    tsp_resum(raw);
+    reset();
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_GRAV] && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: a record without the GRAV part loads with GRAVITY 0", ok && !tessera.sd_grav[1] &&
+                 !tessera.sd_grav[3] && tessera.sd_src[1] == 1u);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_GRAV];
+    raw[tsp_seen.at[TSP_GRAV] + 2u] = 101u;             /* (track 3's past 100 %) */
+    tsp_resum(raw);
+    bad += check("TSP1: a GRAV part past 100 % is refused", ok && !tsp_valid(raw, len));
+
     reset();                                           /* HUMAN TIME: the record's HUMAN part; a record without it */
     song.sel = 1; tessera_knob(0, TESS_ENG_EUCLID);
     tessera_param_set(1, TX_TW_HUMAN, 60); tessera_param_set(0, TX_TW_HUMAN, 40);   /* (track 0: a STEP track) */

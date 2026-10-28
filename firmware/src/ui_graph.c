@@ -84,12 +84,14 @@ static int an_layer_on(void)
            cur_page()->graph == GR_STEPS && tessera.mode[song.sel] == TESS_ENG_ANSWER &&
            ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
-/* TURING or EUCLID on GEN with OCT+ held: the knobs are SOURCE and KEEP (step_seed.c tessera_sd_layer_knob) */
+/* TURING, EUCLID, MARKOV or MORPH on GEN with OCT+ held: the knobs are SOURCE, KEEP and GRAVITY (step_seed.c
+ * tessera_sd_layer_knob) */
 static int sd_layer_on(void)
 {
+    uint32_t m = song.sel < TESSERA_TRACKS ? tessera.mode[song.sel] : TESS_ENG_OFF;
     return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->fam == FAM_GEN &&
            cur_page()->graph == GR_STEPS &&
-           (tessera.mode[song.sel] == TESS_ENG_TURING || tessera.mode[song.sel] == TESS_ENG_EUCLID) &&
+           (m == TESS_ENG_TURING || m == TESS_ENG_EUCLID || m == TESS_ENG_MARKOV || m == TESS_ENG_MORPH) &&
            ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
 /* a generator's OCT+ layer is on (QUAD's, CONSTELLATION's, CHORD's, GRIDS', ANSWER's, TURING's or EUCLID's): no octave,

@@ -300,24 +300,36 @@ the first QUAD track), and KNOB 4 **RANGE** (3 OCT, 1 OCT, 2 OCT or ±1: the oct
 **AUTO** steers the ship for you: OFF follows Y, 1 to 9 is a wander of its own (faster further up), SEEK flies to
 the next star. It has no knob: set it with a mod to **C AUTO** (a cord with no source is a fixed value).
 
-### TURING and EUCLID: SOURCE, KEEP (STEP as seed)
+### TURING, EUCLID, MARKOV and MORPH: SOURCE, KEEP, GRAVITY (STEP as seed)
 
-**SOURCE** (KNOB 1) lets TURING or EUCLID play from a STEP pattern you wrote. T1 to T4 is that track's pattern
-playing now, and it can be this track's own. The pattern itself never changes. OFF, or a pattern with no notes,
-plays the generator as usual.
+**SOURCE** (KNOB 1) lets TURING, EUCLID, MARKOV or MORPH play from a STEP pattern you wrote. T1 to T4 is that
+track's pattern playing now, and it can be this track's own. The pattern itself never changes. OFF, or a pattern
+with no notes, plays the generator as usual.
 
 - **TURING** loops the source's first LEN steps (up to 16). Each step, PROB is the chance that the step about to
   play changes and stays changed, as a Turing machine flips a bit. PROB 0 plays your melody as written; turn it up
   and the melody drifts. A new SOURCE or LEN, or PLAY, starts again from the pattern.
 - **EUCLID** plays the source's notes in order on its own hits, so the melody gets a new rhythm.
+- **MARKOV** learns from the source what follows what. Each step plays what came after the step it just played,
+  somewhere in your pattern (when a note appears twice, either of its followers). LEAP is now the chance of a jump
+  to any step of the pattern instead. With LEAP 0 a melody where every note is different plays as written; repeated
+  notes and rests are where it branches off. DENS has no say: the rhythm comes from the pattern.
+- **MORPH** plays **A**, your pattern as written (its first 16 steps), against **B**, a variation of it made at
+  PLAY: about half of its steps changed the way TURING changes them. MORPH's position is B's share, and EVOLVE
+  changes a few more of B's steps each time.
 
 **KEEP** (KNOB 2) says what stays as written:
 
-| KEEP | TURING | EUCLID |
-|---|---|---|
-| **FREE** | a step's pitch or its hit may change | the source's notes on EUCLID's hits |
-| **RHYTHM** | only the pitches change (to another note of the loop) | the source's own rhythm, on EUCLID's pitches |
-| **PITCH** | only the hits come and go | as FREE |
+| KEEP | TURING, MORPH's B | EUCLID | MARKOV |
+|---|---|---|---|
+| **FREE** | a step's pitch or its hit may change | the source's notes on EUCLID's hits | notes and rests from the chain |
+| **RHYTHM** | only the pitches change (to another note of the loop) | the source's own rhythm, on EUCLID's pitches | the source's rhythm, the notes from the chain |
+| **PITCH** | only the hits come and go | as FREE | the chain's rhythm, the notes in written order |
+
+**GRAVITY** (KNOB 3) pulls it all back home: at GRAVITY %, a step plays the source exactly as written at its place.
+TURING's changed step goes back to how you wrote it, MARKOV's chain carries on from there, EUCLID plays the
+source's own hit or rest, and MORPH plays A. 0 is off; 100 plays your pattern as written whatever the rest says.
+Drift with PROB, LEAP or MORPH, and let GRAVITY decide how far it may wander.
 
 The notes keep their written pitch, then follow this track's scale, TRN and SHIFT. Print (REC held) keeps what it
 played, as for any generator.

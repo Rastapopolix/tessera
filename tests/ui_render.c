@@ -1259,12 +1259,13 @@ static void setup(int s)
         go_title("GEN");
         if (s == S_GEN_ANSWER_OCT) fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
         break;
-    case S_GEN_SEED_OCT:                             /* TURING, OCT+ held: SOURCE T2, KEEP RHYTHM (STEP as seed) */
+    case S_GEN_SEED_OCT:                             /* TURING, OCT+ held: SOURCE T2, KEEP RHYTHM, GRAVITY 30 (STEP as seed) */
         tessera_reset();
         song.sel = 0;
         tessera_knob(0, TESS_ENG_TURING);
         tessera_param_set(0, TX_SD_SOURCE, 2);
         tessera_param_set(0, TX_SD_KEEP, TESS_SD_RHYTHM);
+        tessera_param_set(0, TX_SD_GRAVITY, 30);
         go_title("GEN");
         fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
         break;
