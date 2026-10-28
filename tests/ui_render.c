@@ -2178,7 +2178,11 @@ int main(int argc, char **argv)
     const char *out = argc > 1 ? argv[1] : "build/ui_new";
     char path[600];
     uint32_t p, s;
+#if MELODEE_LOOK
+    static const char *const SHOW[] = {"YELLOW", "WHITE", "GREEN", "BLUE", "RED"};   /* the Mono inks */
+#else
     static const char *const SHOW[] = {"NIGHT", "CONTRAST", "SMALTI"};
+#endif
     snprintf(path, sizeof path, "%s/report.txt", out);
     rep = fopen(path, "w");
     if (!rep) { fprintf(stderr, "cannot write %s\n", path); return 1; }
