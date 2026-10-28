@@ -13,9 +13,15 @@ const UPGRADE = [0xF0, 0x22, 0x24, 0x35, 0x7F, 0xF7];
 const MAXDATA = 512;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const IS_OTA = (id) => /^ota-/i.test(id.model);
+// the update loaders on the handshake: Tessera's own (firmware/loader/loader.c, still Melodee's identity), which
+// writes the app area only, and the official one, which writes the whole package including the boot data and
+// reports the name in its update record (firmware/src/ota.c). Each package goes only to its own.
+export const TESSERA_LOADER = "ota-FM-1_900";
+export const STOCK_LOADER = "ota-FM-1_015";
 
 // errors carry a code the pages translate: notfound, model, stopped, noloader, lost, noreturn,
-// mismatch (detail: the identity the device reports), badreq
+// mismatch (detail: the identity the device reports), badreq, wrongloader (detail: the loader's
+// identity). A step-1 error has lastRead: the last image address the running firmware read.
 function fail(code, msg, detail = "") { const e = new Error(msg); e.code = code; e.detail = detail; return e; }
 
 export function pack7(data) {
@@ -145,12 +151,12 @@ export class Updater {
   // serve read requests until the device asks for one of the finish addresses; stops early
   // when the port disappears (lost: true) instead of waiting out idleMs
   async serve(link, image, finishAddr, idleMs, onProgress) {
-    let served = 0, last = Date.now();
+    let served = 0, last = Date.now(), lastRead = -1;
     for (;;) {
       const pkt = await link.read(1000);
       if (!pkt) {
-        if (link.lost) return { served, finished: false, lost: true };
-        if (Date.now() - last > idleMs) return { served, finished: false };
+        if (link.lost) return { served, finished: false, lost: true, lastRead };
+        if (Date.now() - last > idleMs) return { served, finished: false, lastRead };
         continue;
       }
       const r = parseRequest(pkt);
@@ -162,17 +168,19 @@ export class Updater {
         continue;
       }
       if (r.len > MAXDATA || r.addr + r.len > image.length) throw fail("badreq", `bad request ${r.addr.toString(16)}+${r.len}`);
+      lastRead = r.addr;
       await sleep(10);
       if (!link.send(response(r.addr, Array.from(image.subarray(r.addr, r.addr + r.len)), r.fl))) {
-        return { served, finished: false, lost: true };
+        return { served, finished: false, lost: true, lastRead };
       }
       served++;
       if (onProgress) onProgress(served, r.addr);
     }
   }
 
-  // full install: running firmware -> loader -> new firmware
-  async install(image, product, onStep) {
+  // full install: running firmware -> loader -> new firmware; loader: the identity of the
+  // package's own loader (TESSERA_LOADER, STOCK_LOADER), any other one gets nothing
+  async install(image, product, onStep, loader) {
     const step = onStep || (() => {});
     const dev = await this.find((id) => !IS_OTA(id));
     if (!dev) throw fail("notfound", "FM-1 not found (USB cable, and no other app using it?)");
@@ -183,11 +191,19 @@ export class Updater {
     await sleep(2000);
     const s1 = await this.serve(dev.link, image, 0xE0000000, 8000, (n) => step("verify", n));
     dev.link.close();
-    if (!s1.finished) throw fail(s1.lost ? "lost" : "stopped", `the device ${s1.lost ? "was disconnected" : "stopped"} after ${s1.served} requests: nothing was written`);
+    if (!s1.finished) {
+      const e = fail(s1.lost ? "lost" : "stopped", `the device ${s1.lost ? "was disconnected" : "stopped"} after ${s1.served} requests: nothing was written`);
+      e.lastRead = s1.lastRead;
+      throw e;
+    }
     step("loader");
     await sleep(3000);
     const ota = await this.waitFor((id) => id.model === "ota-" + model, 30000);
     if (!ota) throw fail("noloader", "the update loader did not appear. Replug the USB cable and press Install again: the device stays in update mode until it is finished.");
+    if (ota.id.text !== loader) {
+      ota.link.close();
+      throw fail("wrongloader", `the device started ${ota.id.text}, this package goes only to ${loader}: nothing was sent to it`, ota.id.text);
+    }
     const s2 = await this.write(ota, image, step);
     if (!s2.finished) throw fail(s2.lost ? "lost" : "stopped", `the loader ${s2.lost ? "was disconnected" : "stopped"} after ${s2.served} requests. Reconnect and press Install again. With boot-protected firmware, power on holding OCT− alone if needed; three short key-light flashes mean update mode.`);
     step("reboot");
@@ -209,10 +225,11 @@ export class Updater {
     return s2;
   }
 
-  // resume: the device is already in update mode (loader) -> true when the write finished
-  async resume(image, onStep, product = null) {
+  // resume: the device is already in update mode -> true when the write finished. Only the
+  // package's own loader (identity `loader`) is written to; false if it is not there.
+  async resume(image, onStep, product, loader) {
     const model = product && product.split("_")[0];
-    const ota = await this.find((id) => model ? id.model === "ota-" + model : IS_OTA(id));
+    const ota = await this.find((id) => id.text === loader);
     if (!ota) return false;
     const step = onStep || (() => {});
     const result = await this.write(ota, image, step);

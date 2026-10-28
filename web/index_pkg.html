@@ -235,6 +235,10 @@ const TEXT = {
     stockNeedBackup: "書き込みモードからはバックアップできません。保存済みバックアップがある場合は更新中断の再開にチェックするか、データ消失を了承してバックアップを省略してください。",
     stockUnsupported: "このファームウェアは全体バックアップに未対応です。先に最新版をインストールするか、データ消失を了承して「バックアップを省略する」を選び、もう一度押してください。",
     backup: "全体バックアップ保存中 ", stockError: "公式ファイルを確認できません: ",
+    stockHead: "FM-1 が CHECK HEAD で公式ファイルを拒否しました（FAILED -5）。起動データが V15 と異なります。何も書き込んでおらず、Tessera はそのまま使えます。別の方法で戻そうとしないでください。GitHub で報告してください。",
+    loaderStock: "FM-1 は M-VAVE 公式の書き込みモードで待機しています。このモードには公式FM-1.fwscしか書き込めません。何も送っていません。先に「公式V15に戻す」を完了してください。",
+    loaderTessera: "FM-1 は Tessera の書き込みモード（Melodee Update）で待機しています。このモードには公式ファイルを送りません。何も送っていません。上の「インストール」で Tessera を完了してから、公式V15に戻してください。",
+    loaderUnknown: "このインストーラーが知らない書き込みモードです。何も送っていません。この名前を添えて GitHub で報告してください: ",
     nomidi: "このブラウザでは使えません。Chrome か Edge で開いてください。", loadfail: "読み込めませんでした: ",
     start: "開始します", verify: "確認中", loader: "書き込みモードに切り替え中", write: "書き込み中",
     reboot: "再起動中", done: "完了しました。FM-1 を外しても大丈夫です。", stopped: "途中で止まりました。USB を挿し直してもう一度押してください。",
@@ -288,6 +292,10 @@ const TEXT = {
     stockNeedBackup: "An update loader cannot export a backup. Select resume if you already saved a complete backup, or choose Skip backup to continue and accept possible data loss.",
     stockUnsupported: "This firmware does not support complete backups. Install the current Tessera first, or select Skip backup to accept possible data loss and try again.",
     backup: "Saving complete backup ", stockError: "Cannot validate official firmware: ",
+    stockHead: "The FM-1 refused the official file at CHECK HEAD (FAILED -5): its boot data differs from V15's. Nothing was written; Tessera stays installed. Do not try other ways to return to stock. Please report it on GitHub.",
+    loaderStock: "The FM-1 is waiting in M-VAVE's official update mode, which only accepts the official FM-1.fwsc. Nothing was sent. Finish Return to official V15 first.",
+    loaderTessera: "The FM-1 is waiting in Tessera's update mode (Melodee Update), which never receives the official file. Nothing was sent. Press Install above to finish Tessera first, then return to official V15.",
+    loaderUnknown: "The FM-1 is in an update mode this installer does not know. Nothing was sent. Please report it on GitHub with this name: ",
     nomidi: "This browser cannot do it. Open the page in Chrome or Edge.", loadfail: "Could not load: ",
     start: "Starting", verify: "Verifying", loader: "Switching to update mode", write: "Writing",
     reboot: "Restarting", done: "Done. You can unplug the FM-1.", stopped: "Stopped. Replug the USB cable and press Install again.",
@@ -419,6 +427,10 @@ function countInstall(what) {
   try { navigator.sendBeacon(`${COUNT_URL}?${q}`); } catch (e) { /* the count is never worth an error */ }
 }
 
+// an update loader that is not the package's own gets nothing: the official one would write a Tessera package's
+// head over the boot data, Tessera's would write only V15's application (docs/RECOVERY.md)
+const refuseLoader = (id) => id === STOCK_LOADER ? sayK("loaderStock") : id === TESSERA_LOADER ? sayK("loaderTessera") : sayK("loaderUnknown", id);
+
 // install an image whose identity the device must report afterwards (the chosen build, or a local test build);
 // what: the published build to count ("2.0/dual"), none for a local file
 async function flash(image, product, what) {
@@ -434,14 +446,18 @@ async function flash(image, product, what) {
     const ota = await up.find((id) => /^ota-/i.test(id.model));
     if (ota) {
       ota.link.close();
-      if (await up.resume(image, step, product)) done = true;
-      sayK(done ? "done" : "stopped");
+      if (ota.id.text !== TESSERA_LOADER) refuseLoader(ota.id.text);
+      else {
+        if (await up.resume(image, step, product, TESSERA_LOADER)) done = true;
+        sayK(done ? "done" : "stopped");
+      }
     } else {
-      await up.install(image, product, step);
+      await up.install(image, product, step, TESSERA_LOADER);
     }
     if (done && what) countInstall(what);
   } catch (e) {
-    if (e && e.code && TEXT[lang][e.code]) sayK(e.code, e.detail || "");
+    if (e && e.code === "wrongloader") refuseLoader(e.detail);
+    else if (e && e.code && TEXT[lang][e.code]) sayK(e.code, e.detail || "");
     else sayK("error", e && e.message);
     log(String(e && e.stack || e));
   }
@@ -515,12 +531,13 @@ $("stock-go").addEventListener("click", async () => {
     runOpen("runTitleStock");
     const up = new Updater(midi, log);
     const step = installSteps(selected.image, () => { done = true; });
-    const loader = await up.find(id => id.model === "ota-FM-1");
+    const loader = await up.find(id => /^ota-/i.test(id.model));
     if (loader) {
       loader.link.close();
+      if (loader.id.text !== STOCK_LOADER) { refuseLoader(loader.id.text); return; }
       if (!skipBackup && !$("stock-recovery").checked) { sayK("stockNeedBackup"); return; }
       if (!confirm(t(skipBackup ? "stockConfirmNoBackup" : "stockConfirm"))) return;
-      if (await up.resume(selected.image, step, selected.product)) done = true;
+      if (await up.resume(selected.image, step, selected.product, STOCK_LOADER)) done = true;
       sayK(done ? "done" : "stopped");
     } else {
       const device = await up.find(id => id.model === "FM-1");
@@ -536,10 +553,14 @@ $("stock-go").addEventListener("click", async () => {
         saveArchive(archive); link.close(); link = null;
       }
       if (!confirm(t(skipBackup ? "stockConfirmNoBackup" : "stockConfirm"))) return;
-      await up.install(selected.image, selected.product, step);
+      await up.install(selected.image, selected.product, step, STOCK_LOADER);
     }
   } catch (e) {
-    if (e.code && TEXT[lang][e.code]) sayK(e.code,e.detail || ""); else sayK("error",e.message);
+    // the firmware stops reading at CHECK HEAD when the device's boot data differs from V15's (FAILED -5):
+    // refused, never retried another way
+    if (e.code === "stopped" && e.lastRead >= selected.head.from && e.lastRead < selected.head.to) sayK("stockHead");
+    else if (e.code === "wrongloader") refuseLoader(e.detail);
+    else if (e.code && TEXT[lang][e.code]) sayK(e.code,e.detail || ""); else sayK("error",e.message);
     log(String(e.stack || e));
   } finally { if (link) link.close(); runEnd(done); lockInstaller(false); }
 });
