@@ -63,7 +63,7 @@ jobs:
           (cd ../pkgs && sha256sum *.fwsc)
       - uses: mymindstorm/setup-emsdk@v14
       - name: Simulator
-        run: web/sim/build.sh
+        run: bash web/sim/build.sh
       - name: The page, pushed to test-2.2-rc1
         run: |
           python web/make_site.py "../pkgs/tessera-$V.fwsc" "../pkgs/tessera-$V-1core.fwsc" "$V" ../site build/sim
