@@ -4,7 +4,8 @@
  * are its shortcuts and its map shows over the page. One table (LAYERS) drives the gesture, the keys, the knobs,
  * the LEDs and the overlay:
  *   GLO  SET   black keys 1..4 (F#3 G#3 A#3 C#4) T1..T4 MUTE (latched; lit = sounding), F3..B3 SOLO T1..T4 while
- *              held (HOLD cells, a corner triangle), C4 UNMUTE ALL, F4 TAP tempo; KNOB 1..4 T1..T4 LEVEL;
+ *              held (HOLD cells, a corner triangle), C4 UNMUTE ALL, E4 FILL while held (conditional steps), F4 TAP
+ *              tempo; KNOB 1..4 T1..T4 LEVEL;
  *              GLO + PLAY: from the top without stopping
  *   SCL  SET   any key: its note name is ROOT; KNOB 1..4 ROOT SCL CHRD VOIC (LY_SCL: the SCL page's first two,
  *              the CHORD page's two; QNT TRN stay on SCL); the LEDs show the root lit and the scale's notes blinking
@@ -41,6 +42,7 @@ static struct {
     uint8_t l, trk, oct;               /* SET: layer, snapshot track, OCT- / OCT+ pressed (bits) */
     int16_t v[9];                      /* the values when it opened: GLO mutes, levels, BPM; SCL ROOT..TRN, CHRD VOIC */
     uint32_t solo;                     /* GLO: the keys held that solo */
+    uint32_t fill;                     /* GLO: E4 held, FILL (seq.c seq_fill) */
     uint32_t tap[4];                   /* GLO TAP: the last taps (fm1_ms) */
     uint8_t ntap, dt_l, dtap, rp_dirty;
     uint32_t dt_ms;
@@ -53,7 +55,7 @@ static const uint32_t LY_DTAP_MS=300u;
 
 static int layer_allowed(void) { return !ui.menu && !ui.confirm && !ui.uboot && !name_on(); }
 /* MIXER (Tessera 2.1, Theo): the page is the GLO layer without holding GLO. Its keys are the layer's (black keys
- * mute, white keys solo while held, C4 unmutes all, F4 taps the tempo), its LEDs the layer's; its knobs are the four
+ * mute, white keys solo while held, C4 unmutes all, E4 FILL while held, F4 taps the tempo), its LEDs the layer's; its knobs are the four
  * tracks' levels, OCT+ held their pans (ui_input.c tracks_edit). A layer button armed (GLO, SCL held) wins */
 static int mixer_live(void) { return !ui.home && !ui.ly && layer_allowed() && cur_page()->graph == GR_TRK; }
 static uint32_t ly_bit(uint32_t l) { return 1u << panel.btn[LAYERS[l].btn]; }
@@ -249,6 +251,8 @@ static void layer_key(uint32_t l, uint32_t k)
         } else if (p == 4u) {
             for (i = 0; i < NTRK; i++)
                 trk[i].p[P_MUTE] = 0;
+        } else if (p == 6u) {
+            lys.fill |= 1u << k;                        /* (layer_keys: FILL while held) */
         } else if (p == 7u) {
             glo_tap();
         }
@@ -257,7 +261,7 @@ static void layer_key(uint32_t l, uint32_t k)
         if (tessera.key_link) scale_share(TSEL);       /* (KEY LINK: every melodic track's) */
     }
 }
-/* each pass: the keys the layer got now; then GLO's solo: the tracks of its keys still held (perform.c) */
+/* each pass: the keys the layer got now; then GLO's solo: the tracks of its keys still held (perform.c); FILL while E4 is */
 static void layer_keys(uint32_t keys)
 {
     uint32_t k, l = layer_open() ? layer_open() : ui.layer ? ui.layer : mixer_live() ? (uint32_t)LAYER_GLO : 0u, s = 0;
@@ -265,6 +269,8 @@ static void layer_keys(uint32_t keys)
         if ((keys >> k) & 1u)
             layer_key(l, k);
     lys.solo &= kb_layer;
+    lys.fill &= kb_layer;
+    seq_fill = lys.fill != 0u;
     for (k = 0; k < 27u; k++)
         if ((lys.solo >> k) & 1u)
             s |= 1u << key_place(k);
@@ -344,7 +350,8 @@ static uint32_t layer_leds(void)
         uint32_t p = key_place(k), b = (uint32_t)key_black(k), on = 0, e;
         if (l == LAYER_GLO) {
             on = b ? p < NTRK && glo_sounding(p) :
-                 p < NTRK ? ((lys.solo >> k) & 1u) | blink : p == 4u ? blink : p == 7u && !song.g[G_CLOCK] && blink;
+                 p < NTRK ? ((lys.solo >> k) & 1u) | blink : p == 4u ? blink : p == 6u ? ((lys.fill >> k) & 1u) | blink :
+                 p == 7u && !song.g[G_CLOCK] && blink;
         } else if (l == LAYER_SCL) {                    /* the root lit, the scale's notes blink */
             e = (k + 5u + 12u - root) % 12u;
             on = e == 0u || (((mask >> e) & 1u) && blink);
@@ -448,19 +455,20 @@ static void layer_scl(void)                             /* KNOB 2's scales, 4 x 
     }
 }
 /* GLO held (docs/design: mock/r6_pages GLO): the keys as a keyboard: the black keys MUTE 1..4 (muted: red), the white
- * keys SOLO 1..4 (held: the track's colour), C unmutes all, the high F taps the tempo (an outside clock: dim) */
+ * keys SOLO 1..4 (held: the track's colour), C unmutes all, E FILL (held: lit), the high F taps the tempo (an outside
+ * clock: dim) */
 static void layer_glo_keys(int32_t h)
 {
     static const char *const WL[8][2] = {{"Solo", "1"}, {"Solo", "2"}, {"Solo", "3"}, {"Solo", "4"}, {"Mute", "all"},
-                                         {"", ""}, {"", ""}, {"Tap", "bpm"}};
+                                         {"", ""}, {"Fill", "held"}, {"Tap", "bpm"}};
     static const uint8_t BX[NTRK] = {0, 1, 2, 4};       /* black key t: between white BX and BX + 1 (F# G# A# C#) */
     const int32_t kw = 28, x0 = 1, wy = 68, by = 24, bh = 38;
     uint32_t i;
     cv_text_on(8, 6, &AF_X, "Keys", T_MID, T_PANEL);
     for (i = 0; i < 8u; i++) {
         int32_t x = x0 + (int32_t)i * (kw + 1);
-        int on = i < NTRK && ((track_solo >> i) & 1u), none = !WL[i][0][0], dim = i == 7u && song.g[G_CLOCK];
-        uint16_t f = on ? T_TRK(i) : none ? ux_mix(T_PANEL, T_SURF, 50) : T_SURF, ink = on ? T_INK : dim ? T_DIM : T_TEXT;
+        int on = (i < NTRK && ((track_solo >> i) & 1u)) || (i == 6u && seq_fill), none = !WL[i][0][0], dim = i == 7u && song.g[G_CLOCK];
+        uint16_t f = on ? (i < NTRK ? T_TRK(i) : T_THEME) : none ? ux_mix(T_PANEL, T_SURF, 50) : T_SURF, ink = on ? T_INK : dim ? T_DIM : T_TEXT;
         cv_rrect(x, wy, kw, h - wy - 6, 4, f, T_PANEL);
         if (!none) {
             cv_text_c(x + kw / 2, h - 36, &AF_X, WL[i][0], ink, f);
@@ -520,7 +528,7 @@ static void draw_layer(void)
         layer_cards(l);
     }
     if (l == LAYER_GLO)
-        sig += track_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u +
+        sig += track_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u + (uint32_t)seq_fill * 7u +
                (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 | trk[3].p[P_MUTE] << 3) * 131u;
     else if (l == LAYER_SCL)
         sig += (uint32_t)TSEL->p[P_SCALE] * 31u;

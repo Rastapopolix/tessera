@@ -55,7 +55,7 @@ page's four settings sit along the top of the screen in the same order.
 | **SCL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
 | **EDIT** | The sound's EDIT pages; on an EDIT page, the map | With OCT- / OCT+: undo / redo |
 | **FX** | The insert and send effects | The mod amount of any knob you turn |
-| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, KNOB 1 to 4 the levels, F4 taps the tempo; with PLAY, restart from the top |
+| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, F4 taps the tempo; with PLAY, restart from the top |
 | **SAVE** | USER (ready to save the sound), PROJECT, PRESETS | Save the project to its slot (as SAVE + REC) |
 | **REC** | Record | Capture or print the last bars (see [Print and keep](#print-and-keep)) |
 | **OCT+** | Octave up; on some pages, an action (shown on screen) | A page's extra layer (see [OCT+ layers](#oct-layers-on-gen)) |
@@ -70,8 +70,8 @@ you patch it.
 
 **MIXER** (tap GLO) is the four tracks as a mixer: **KNOB 1 to 4** set the levels of tracks 1 to 4, and with
 **OCT+** held they set the pans. The keys are the mixer's while it is shown: the **black keys** F#3 G#3 A#3 C#4 mute
-and unmute tracks 1 to 4, the **white keys** F3 G3 A3 B3 solo a track while held, **C4** unmutes them all and **F4**
-taps the tempo, the same as with GLO held on any other page. Each strip shows MUTE or SOLO; a track silenced by
+and unmute tracks 1 to 4, the **white keys** F3 G3 A3 B3 solo a track while held, **C4** unmutes them all, **E4**
+holds FILL and **F4** taps the tempo, the same as with GLO held on any other page. Each strip shows MUTE or SOLO; a track silenced by
 another's solo dims. Any page button leaves the mixer, and the keys play notes again.
 
 **Lists** (the HOME menu, SCL, VOICE, the sheets and the sound designer): KNOB 1 picks the row, KNOB 2 changes its
@@ -451,6 +451,31 @@ Velocity and Chance it holds:
   it falls; the notes are drawn as written.
 
 <p align="center"><img src="assets/gallery/sheet_note.png" alt="A note's sheet, Ratchet x3 and Nudge +2/16" width="240"></p>
+
+### A step's Condition, and FILL
+
+The same sheet (a note's, or a hit's on the drum grid) has a **Condition**: which passes of the pattern the step
+plays in. KNOB 2 steps through them:
+
+| Condition | The step plays |
+|---|---|
+| **Off** | every pass (as always) |
+| **1:2**, **2:2** | in the first, the second of every two passes |
+| **1:3** .. **3:3** | in pass 1, 2 or 3 of every three |
+| **1:4** .. **4:4** | in pass 1 to 4 of every four |
+| **1:8**, **8:8** | in the first, the last of every eight |
+| **FILL** | only while FILL is held |
+| **!FILL** | only while FILL is not held |
+| **FIRST** | in the first pass only |
+| **!FIRST** | in every pass but the first |
+
+Each track counts the passes of its own pattern (its own LEN) from PLAY; a pattern change, and each section of a
+song, start the count again at the first. A step whose condition is met then rolls its Chance as ever. On the drum
+grid the condition is the step's: every hit of that step shares it.
+
+**FILL** is held with **GLO** + **E4** (on MIXER, E4 alone), for as long as the key is held: a fill on the last bar,
+or a break with !FILL on the beat that drops out. Conditions are saved with the project; an older project plays
+every step as before.
 
 ---
 

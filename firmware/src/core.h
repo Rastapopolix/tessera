@@ -305,6 +305,13 @@ enum { ST_NOTE, ST_TIE, ST_REST };
 #define SF_ACCENT 1u
 #define SF_SLIDE 2u
 #define SF_RECORDED 4u                         /* step is a view of timed notes, played by recording.c */
+#define SF_COND_SHIFT 3u                       /* bits 3..6: the step's condition (SC_*), 0 every pass; bit 7 spare */
+#define SF_COND (15u << SF_COND_SHIFT)
+/* a step's condition (Elektron's trig conditions, Tessera 2.1): a:b plays in pass a of every b of its pattern, counted
+ * from PLAY (a pattern change or a song's section starts again at the first); FILL while FILL is held (GLO + E4),
+ * !FILL while it is not; FIRST the first pass only, !FIRST every other. Then its Chance as ever */
+enum { SC_OFF, SC_1_2, SC_2_2, SC_1_3, SC_2_3, SC_3_3, SC_1_4, SC_2_4, SC_3_4, SC_4_4, SC_1_8, SC_8_8, SC_FILL, SC_NFILL,
+       SC_FIRST, SC_NFIRST, SC_COUNT };
 #define RECORD_MAX 1024u
 #define RECORD_UNIT 65536u                     /* fractional onset within its swung step; duration uses an exponent */
 /* owner: bank/track in low 5 bits, duration exponent in high 3. step: actual index in
@@ -353,7 +360,7 @@ typedef struct {                 /* acid-style step: up to 4 notes (POLY), time,
     uint8_t time : 4;            /* ST_NOTE / ST_TIE / ST_REST */
     uint8_t climb : 4;           /* the pitch accumulator (Tessera): scale degrees a pattern pass, -7..+7 (two's
                                   * complement; 0 off): step_climb, step_acc.c */
-    uint8_t flags;               /* SF_ACCENT | SF_SLIDE */
+    uint8_t flags;               /* SF_ACCENT | SF_SLIDE | SF_RECORDED, the condition (SF_COND) */
     uint8_t vel;
     uint8_t hit;                 /* bit l: lane l hits (its GM note, on any engine): the DRUM grid */
     uint8_t acc;                 /* hit != 0: lane accents; hit == 0: recorded gate, 1..255 of a step (0 legacy) */
@@ -381,6 +388,11 @@ static void step_set_chance(step_t *s, uint32_t chance) { s->probability = (uint
 static uint32_t step_gate(const step_t *s) { return s->hit ? 0u : s->acc; }
 static int32_t step_climb(const step_t *s) { return (int32_t)(s->climb ^ 8u) - 8; }
 static void step_set_climb(step_t *s, int32_t v) { s->climb = (uint8_t)((uint32_t)(v < -7 ? -7 : v > 7 ? 7 : v) & 15u); }
+static uint32_t step_cond(const step_t *s) { return (s->flags & SF_COND) >> SF_COND_SHIFT; }
+static void step_set_cond(step_t *s, uint32_t c)
+{
+    s->flags = (uint8_t)((s->flags & ~SF_COND) | ((c < SC_COUNT ? c : 0u) << SF_COND_SHIFT));
+}
 static int step_acc_valid(const step_t *s) { return s->hit ? !(s->acc & ~s->hit) : s->time != ST_REST || !s->acc; }
 #define MOTION_MAX 64u
 /* Four tracks x64 steps fit one byte. Values retain their signed parameter range. */

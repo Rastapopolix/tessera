@@ -205,6 +205,21 @@ static void nt_chance(int32_t s)
     if (st_free())
         step_set_chance(st, (uint32_t)clamp((int32_t)step_chance(st) + s, 0, 100));
 }
+static void nt_cond_v(char *b)                          /* the step's condition: "Off", "1:4", "!FILL" */
+{
+    static const char *const SC_NAME[SC_COUNT] = {"Off", "1:2", "2:2", "1:3", "2:3", "3:3", "1:4", "2:4", "3:4", "4:4", "1:8",
+                                                  "8:8", "FILL", "!FILL", "FIRST", "!FIRST"};
+    str_cpy(b, SC_NAME[step_cond(st_at())], 8);
+}
+static void nt_cond(int32_t s)
+{
+    step_t *st = st_at();
+    if (!st_free())
+        return;
+    fm1_irq_off();
+    step_set_cond(st, (uint32_t)clamp((int32_t)step_cond(st) + (s > 0 ? 1 : -1), SC_OFF, SC_COUNT - 1));
+    fm1_irq_on();
+}
 static void nt_ratch_v(char *b) { b[0] = 'x'; fmt_int(b + 1, (int32_t)step_ratch(st_at())); }   /* the step's RATCH */
 static void nt_ratch(int32_t s)
 {
@@ -264,7 +279,8 @@ static void nt_delete(void)
 }
 static void nt_copy(void) { if(st_free())note_copy_arm(); }
 static const sheet_row_t SHEET_NOTE[] = {{"Length", nt_len_v, nt_len, 0, 0}, {"Velocity", nt_vel_v, nt_vel, 0, 0},
-    {"Chance", nt_chance_v, nt_chance, 0, 0}, {"Ratchet", nt_ratch_v, nt_ratch, 0, 0}, {"Nudge", nt_nudge_v, nt_nudge, 0, 0},
+    {"Chance", nt_chance_v, nt_chance, 0, 0}, {"Condition", nt_cond_v, nt_cond, 0, 0},
+    {"Ratchet", nt_ratch_v, nt_ratch, 0, 0}, {"Nudge", nt_nudge_v, nt_nudge, 0, 0},
     {"Accumulate", nt_climb_v, nt_climb, 0, 0}, {"Slide", nt_slide_v, 0, nt_slide, 0},
     {"Move note",0,0,note_move_arm,0}, {"Copy note",0,0,nt_copy,0}, {"Delete note", 0, 0, nt_delete, SR_RED}};
 static const sheet_row_t SHEET_REC_NOTE[] = {{"Length", nt_len_v, nt_len, 0, 0}, {"Velocity", nt_vel_v, nt_vel, 0, 0},
@@ -274,7 +290,7 @@ static void ht_acc_v(char *b) { str_cpy(b, ht_acc_on() ? "On" : "Off", 8); }
 static void ht_acc(void) { edit_param(3u, ht_acc_on() ? -1 : 1); }
 static void ht_clear(void) { edit_param(2u, -1); }
 static const sheet_row_t SHEET_HIT[] = {{"Accent", ht_acc_v, 0, ht_acc, 0}, {"Chance", nt_chance_v, nt_chance, 0, 0},
-    {"Ratchet", nt_ratch_v, nt_ratch, 0, 0}, {"Nudge", nt_nudge_v, nt_nudge, 0, 0}, {"Clear hit", 0, 0, ht_clear, SR_RED}};
+    {"Condition", nt_cond_v, nt_cond, 0, 0}, {"Ratchet", nt_ratch_v, nt_ratch, 0, 0}, {"Nudge", nt_nudge_v, nt_nudge, 0, 0}, {"Clear hit", 0, 0, ht_clear, SR_RED}};
 
 /* OCT+ on NOTES / the drum grid: an empty place gets a note (the last one played) / the lane's hit; on a note or a
  * hit: its sheet. 0: not such a page */

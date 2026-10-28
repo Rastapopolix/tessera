@@ -245,6 +245,23 @@ static void arp_off(track_t *t)                  /* the sounding arp note ends (
 static volatile uint32_t beat_pos, beat_n;      /* clock units into the beat, beat of the bar (0..3) */
 static volatile uint32_t bar_n;                  /* bars since PLAY (seq_phase: the slowest DIV is 4 bars) */
 static uint32_t seq_period_was[NTRK];            /* each track's step length last block (0: from PLAY) */
+/* a step's condition (SC_*) against its track's pass (t->seq_pass: 0 the first since PLAY, a pattern change or a song's
+ * section). seq_fill: FILL held (the GLO layer's E4, ui_layer.c) */
+static uint8_t seq_fill;
+static int seq_cond_met(const track_t *t, const step_t *s)
+{
+    static const uint8_t AB[SC_COUNT][2] = {{0, 1}, {1, 2}, {2, 2}, {1, 3}, {2, 3}, {3, 3}, {1, 4}, {2, 4}, {3, 4}, {4, 4},
+                                            {1, 8}, {8, 8}};
+    uint32_t c = step_cond(s), pass = t->seq_pass;
+    switch (c) {
+    case SC_OFF: return 1;
+    case SC_FILL: return seq_fill;
+    case SC_NFILL: return !seq_fill;
+    case SC_FIRST: return !pass;
+    case SC_NFIRST: return pass != 0u;
+    default: return pass % AB[c][1] == AB[c][0] - 1u;
+    }
+}
 static uint32_t seq_lag;                         /* the first block after PLAY: the tracks' step 0 starts after it */
 /* clock units since the last 4-bar line from PLAY: every DIV's grid divides it */
 static uint32_t seq_phase(uint32_t beat) { return (((bar_n & 3u) << 2) + beat_n) * beat + beat_pos; }
@@ -995,7 +1012,7 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
     uint32_t next_tie = seq_steps(t)[(t->seq_idx + 1u) % len].time == ST_TIE;
     uint8_t nn[4 + NLANE], vv[4 + NLANE];           /* the notes it plays: its notes, then its hits */
     uint32_t m = 0, sk = 0;
-    if (step_chance(s) < 100u && rng() % 100u >= step_chance(s)) {
+    if (!seq_cond_met(t, s) || (step_chance(s) < 100u && rng() % 100u >= step_chance(s))) {
         seq_release(t);
         return;
     }
