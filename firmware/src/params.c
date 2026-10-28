@@ -380,7 +380,7 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
         *unit = "%";
         break;
     case F_TIME: {
-        uint32_t ms10 = TIME_MS_X10[v & 127];
+        uint32_t ms10 = time_ms_x10((uint32_t)v);
         if (ms10 < 100u) {
             fmt_fix(val, (int32_t)ms10, 1);
             *unit = "ms";
@@ -396,7 +396,7 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
         break;
     }
     case F_LFOHZ: {
-        uint32_t h = LFO_HZ_X100[v & 127];
+        uint32_t h = lfo_hz_x100((uint32_t)v);
         if (h < 1000u)
             fmt_fix(val, (int32_t)h, 2);
         else
@@ -405,7 +405,7 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
         break;
     }
     case F_CUTOFF: {
-        uint32_t h = CUTOFF_HZ[v & 127];
+        uint32_t h = cutoff_hz((uint32_t)v);
         if (h < 1000u) {
             fmt_int(val, (int32_t)h);
             *unit = "Hz";
@@ -419,7 +419,7 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
         if (v <= 0) {
             str_cpy(val, "OFF", 6);
         } else {
-            fmt_fix(val, LEVEL_DB_X10[v], 1);
+            fmt_fix(val, level_db_x10((uint32_t)v), 1);
             *unit = "dB";
         }
         break;

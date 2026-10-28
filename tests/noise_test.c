@@ -214,7 +214,7 @@ static void colour(void)
 static void tracking(void)
 {
     int16_t e[8] = {0, 0, 64, 127, 127, 0, 0, 0};
-    double f[3], want = CUTOFF_HZ[64];
+    double f[3], want = cutoff_hz(64);
     uint32_t k;
     char what[160];
     for (k = 0; k < 3u; k++) {
