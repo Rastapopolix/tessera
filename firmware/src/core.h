@@ -57,6 +57,9 @@
 #ifndef MELODEE_PHYS
 #define MELODEE_PHYS 1           /* PHYS (eng_phys.c), back 2026-10-18 after TRIO; out of device builds 2026-10-21 (build.py) */
 #endif
+#ifndef MELODEE_LOOK
+#define MELODEE_LOOK 0           /* 0: the detailed look; 1: Mono (ui_mono.c), a build of its own */
+#endif
 #ifndef MELODEE_PLAITS
 #define MELODEE_PLAITS 0         /* MACRO (eng_macro.c): Plaits' synthesis, C++ (build.py); the prototype: off by default */
 #endif

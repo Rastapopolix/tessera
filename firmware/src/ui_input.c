@@ -930,6 +930,12 @@ static void edit_param(uint32_t slot, int32_t steps)
     }
     if (pg->graph == GR_FORM) {
         tessera_form_knob(slot, steps);
+#if MELODEE_LOOK
+        if (slot == 2u && song.sel < TESSERA_TRACKS) {   /* Mono: CLEAR says it acted, or why not */
+            ui_message(tessera.evolve[song.sel].form ? "CLEARED" : "FORM OFF");
+            mo_flash(2u);
+        }
+#endif
         ui.force = 1;
         return;
     }
