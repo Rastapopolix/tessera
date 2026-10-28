@@ -64,12 +64,12 @@ seed_none_markov_turing 0x9a406b7b 80
 seed_none_markov_turing.state 0xd3ce97c4
 replay_markov 0x76e6bd46 47
 replay_markov.state 0xcd0be4fe
-grids 0x3d9b246c 61
-grids.state 0x3f9bbebc
+grids 0x179581d4 45
+grids.state 0x816117ec
 grids_x48_y228_dens80_chaos40_drop_human 0xcdbe2e81 234
 grids_x48_y228_dens80_chaos40_drop_human.state 0xcc75afd3
-evolve_grids_every1_amount70_abac 0x1f06b032 237
-evolve_grids_every1_amount70_abac.state 0x0729d2f1
+evolve_grids_every1_amount70_abac 0x6db49ade 189
+evolve_grids_every1_amount70_abac.state 0x8464024f
 bounce 0x40d8e6ed 16
 bounce.state 0x20a217b0
 bounce_speed40_angle60_balls3_drop20 0x0ea69f44 54
@@ -104,8 +104,8 @@ logic_markov_not_euclid 0x5215136e 47
 logic_markov_not_euclid.state 0x003460fe
 logic_turing_and_higher_track 0x9226c64b 24
 logic_turing_and_higher_track.state 0x7f1edf3d
-cond_2of4_form_ab_grids_notfirst_not 0xe7242703 230
-cond_2of4_form_ab_grids_notfirst_not.state 0x82760ffa
+cond_2of4_form_ab_grids_notfirst_not 0xc791689c 165
+cond_2of4_form_ab_grids_notfirst_not.state 0xd35036c0
 quad 0x0252f066 48
 quad.state 0x1f931577
 quad_pend_prob70 0xc3b9d9f0 75
