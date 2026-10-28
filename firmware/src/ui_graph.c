@@ -94,11 +94,18 @@ static int sd_layer_on(void)
            (m == TESS_ENG_TURING || m == TESS_ENG_EUCLID || m == TESS_ENG_MARKOV || m == TESS_ENG_MORPH) &&
            ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
-/* a generator's OCT+ layer is on (QUAD's, CONSTELLATION's, CHORD's, GRIDS', ANSWER's, TURING's or EUCLID's): no octave,
- * no sheet */
+/* a STEP track's EVOLVE page (STEP EVOLVE) with OCT+ held: KNOB 1 is HOW (step_evolve.c tessera_sv_layer_knob) */
+static int sv_layer_on(void)
+{
+    return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->graph == GR_EVOLVE &&
+           tessera_step_on(song.sel) && ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+}
+/* a generator's OCT+ layer is on (QUAD's, CONSTELLATION's, CHORD's, GRIDS', ANSWER's, the SOURCE one, STEP EVOLVE's):
+ * no octave, no sheet */
 static int gen_layer_on(void)
 {
-    return quad_cols_on() || cs_layer_on() || ch_layer_on() || gr_layer_on() || an_layer_on() || sd_layer_on();
+    return quad_cols_on() || cs_layer_on() || ch_layer_on() || gr_layer_on() || an_layer_on() || sd_layer_on() ||
+           sv_layer_on();
 }
 /* QUAD's LINK as its card shows it: OFF, or "T" and the linked tracks ("T24") */
 static void quad_link_text(uint32_t m, char *b)

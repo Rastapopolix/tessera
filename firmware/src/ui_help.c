@@ -392,6 +392,11 @@ static void help_find(uint32_t k)
         help_hp((pg->graph == GR_CORDS ? HP_CORD_SRC : HP_MX_FROM) + k);
         return;
     }
+    if (pg->graph == GR_EVOLVE && sv_layer_on()) {     /* (STEP EVOLVE, OCT+ held: HOW) */
+        if (k) help_unused(k);
+        else help.pid = (uint16_t)PID_TESS(TX_SV_HOW);
+        return;
+    }
     if (pg->graph == GR_EVOLVE && tessera_step_on(tr)) {   /* STEP EVOLVE */
         static const uint8_t SV[3] = {TX_SV_LOCK, TX_SV_EVERY, TX_SV_AMOUNT};
         if (k == 3u) {

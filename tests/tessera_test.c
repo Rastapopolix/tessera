@@ -1976,6 +1976,11 @@ static const char *const SV_CHECK[] = {
     "STEP EVOLVE: REC held keeps: the steps become what played, none left changed, they play the same",
     "STEP EVOLVE: through the sequencer: changes after the first bar, the steps untouched; a pattern switch clears them",
     "STEP EVOLVE: LOCK, EVERY, AMOUNT round trip; version 13 loads as LOCK 50, EVERY 1 BAR, AMOUNT 0; over range refused",
+    "STEP EVOLVE HOW ORNAMENT: only adds: no note dropped, ratchets, passing notes in the rests",
+    "STEP EVOLVE HOW SERIAL: AMOUNT 100 LOCK 0: all four transforms come; RETROGRADE, ROTATION, AUGMENTATION as written",
+    "STEP EVOLVE HOW SERIAL: INVERSION mirrors each note in the scale about the first",
+    "STEP EVOLVE HOW SERIAL: REC held keeps the transform (backwards), none left changed",
+    "STEP EVOLVE HOW: another HOW puts the steps back as written",
 };
 #define SV_N (sizeof SV_CHECK / sizeof SV_CHECK[0])
 static void sv_setup(void)
@@ -2111,6 +2116,65 @@ static void sv_run(char *res, size_t cap)
             c[3u * n14 + n13 + k] = k == 1u ? 6u : 101u;   /* (track 4's) */
             if (tessera_unpack(c) != 0) fail |= 1u << 9;
         }
+    }
+    {   /* HOW ORNAMENT, AMOUNT 100 LOCK 0 */
+        uint32_t ratch = 0, passing = 0;
+        sv_setup();
+        knob(tessera_evolve_knob, 2, 50);
+        knob(tessera_evolve_knob, 0, -25);
+        tessera_sv_layer_knob(0, 1);
+        if (tessera_param_get(0, TX_SV_HOW) != TESS_SV_ORNAMENT) fail |= 1u << 10;
+        for (k = 0; k < 16u; k++) {
+            sv_play(BAR, played, &fail);
+            for (i = 0; i < 8u; i++) {
+                if (trk[0].step[i].n && !played[i].n) fail |= 1u << 10;
+                ratch += step_ratch(&played[i]) > 1u;
+                passing += !trk[0].step[i].n && played[i].n;
+            }
+        }
+        if (!ratch || !passing) fail |= 1u << 10;
+    }
+    {   /* HOW SERIAL, AMOUNT 100 LOCK 0 */
+        const track_t *t = &trk[0];
+        uint32_t seen = 0, loud = 0;                  /* (loud: a rest playing a note at full velocity, as SERIAL may) */
+        sv_setup();
+        knob(tessera_evolve_knob, 2, 50);
+        knob(tessera_evolve_knob, 0, -25);
+        tessera_sv_layer_knob(0, 1);
+        tessera_sv_layer_knob(0, 1);
+        sv_play(BAR, 0, &loud);
+        for (k = 0; k < 40u; k++) {
+            uint32_t ser, arg;
+            sv_play(BAR, played, &loud);
+            ser = tess_sv.ser[0], arg = tess_sv.ser_arg[0];
+            seen |= 1u << ser;
+            for (i = 0; i < 8u; i++) {
+                const step_t *w = &t->step[i];
+                int32_t j = ser == TESS_SV_SER_RETRO ? 7 - (int32_t)i : ser == TESS_SV_SER_ROT ? (int32_t)((i + arg) % 8u) :
+                            ser == TESS_SV_SER_AUG ? (i & 1u ? -1 : (int32_t)(arg * 4u + i / 2u)) : (int32_t)i;
+                if (ser == TESS_SV_SER_INV) {
+                    if (w->n && sv_dist(t, 60, played[i].note[0]) != -sv_dist(t, 60, w->note[0])) fail |= 1u << 12;
+                    continue;
+                }
+                if (j < 0 ? played[i].n != 0u : played[i].n != t->step[j].n ||
+                                                (played[i].n && played[i].note[0] != t->step[j].note[0]))
+                    fail |= 1u << 11;
+            }
+        }
+        if (seen != 0x1Fu && seen != 0x1Eu) fail |= 1u << 11;   /* (none at all, a round in 100: AMOUNT 100 never) */
+        if (!(seen & (1u << TESS_SV_SER_INV)) || (loud & 1u << 3)) fail |= 1u << 12;   /* (and all in the scale) */
+        tess_sv.ser[0] = TESS_SV_SER_RETRO;               /* REC held */
+        n = tessera_step_varied(0);
+        k = tessera_step_keep(0);
+        if (n != 8u || k != n || tessera_step_varied(0)) fail |= 1u << 13;
+        for (i = 0; i < 8u; i++)
+            if (trk[0].step[i].n != (FOLLOW_MELODY[7u - i] ? 1u : 0u) ||
+                (trk[0].step[i].n && trk[0].step[i].note[0] != FOLLOW_MELODY[7u - i]))
+                fail |= 1u << 13;
+        tess_sv.ser[0] = TESS_SV_SER_ROT, tess_sv.ser_arg[0] = 3;
+        tessera_sv_layer_knob(0, -1);                     /* ORNAMENT: as written again */
+        if (tess_sv.ser[0] || tessera_step_varied(0) || tessera_param_get(0, TX_SV_HOW) != TESS_SV_ORNAMENT)
+            fail |= 1u << 14;
     }
     snprintf(res, cap, "%u", fail);
 }

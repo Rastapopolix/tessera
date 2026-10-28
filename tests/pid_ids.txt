@@ -225,3 +225,4 @@
 0x268 ACCUM LIMIT              track 1..14 def 7
 0x269 ACCUM MODE               track 0..2 def 0
 0x26a GRAVITY                  track 0..100 def 0
+0x26b EVOLVE HOW               track 0..2 def 0
