@@ -175,7 +175,7 @@ static int full_pattern_archive(void)
     int bad=0, ok=1; reset(); static uint8_t archive[TSP_MAX], saved[TSP_MAX];
     for (uint32_t k=0; k<NTRK; k++) for (uint32_t b=0; b<NPAT; b++) {
         track_t *t=&trk[k]; pattern_request(t,b); t->p[P_SLEN]=(int16_t)(16+b);
-        t->step[3]=(step_t){{(uint8_t)(40+k*8+b),60,64,67},4,ST_NOTE,SF_ACCENT,100,0x81,0x80,(uint8_t)(20+b)};
+        t->step[3]=(step_t){{(uint8_t)(40+k*8+b),60,64,67},4,ST_NOTE, 0,SF_ACCENT,100,0x81,0x80,(uint8_t)(20+b)};
         t->step[4]=(step_t){{0},0,ST_TIE}; motion_set_event(t,3,P_PAN,(int16_t)(k*8+b));
     }
     chain_config.count=1; chain_config.row[0]=(chain_row_t){0,2};
@@ -234,7 +234,7 @@ static int expanded_recording_archive(void)
     reset();
     for(uint32_t k=0;k<NTRK;k++)for(uint32_t b=0;b<NPAT;b++) {
         pattern_request(&trk[k],b);
-        trk[k].step[3]=(step_t){{60},1,ST_NOTE,SF_RECORDED,100,0,0,0};
+        trk[k].step[3]=(step_t){{60},1,ST_NOTE, 0,SF_RECORDED,100,0,0,0};
     }
     for(uint32_t i=0;i<RECORD_MAX;i++)recording[i]=(recorded_note_t){(uint16_t)(i*61u),1234,60,100,(uint8_t)(i%32u),3};
     recording_reindex();
@@ -340,7 +340,7 @@ int main(void)
     persist_t ps;
 
     reset();
-    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 96, 0, 0};
+    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 96, 0, 0};
     bad += check("LIST captures runtime and all 30 archive objects with CRC",
                  list(0, &len, &crc) == 0 && rep[2] == 30u && len == tsp_len(ED_BK_RAW) && len &&
                  crc == st_crc32(ED_BK_RAW, len));
@@ -462,7 +462,7 @@ int main(void)
 
     /* projects */
     reset();
-    trk[1].step[3] = (step_t){{64}, 1, ST_NOTE, 0, 96, 0, 0};
+    trk[1].step[3] = (step_t){{64}, 1, ST_NOTE, 0, 0, 96, 0, 0};
     project_capture(&proj_scratch);
     stn = tsp_pack(st, &proj_scratch, 0);
     bad += check("a project record restores into slot 3 (flash and RAM)",
@@ -518,7 +518,7 @@ int main(void)
 
     /* the runtime */
     reset();
-    trk[2].step[5] = (step_t){{67}, 1, ST_NOTE, 0, 96, 0, 0};
+    trk[2].step[5] = (step_t){{67}, 1, ST_NOTE, 0, 0, 96, 0, 0};
     trk[2].p[P_LEVEL] = 77;
     project_capture(&proj_scratch);
     stn = tsp_pack(st, &proj_scratch, 1);

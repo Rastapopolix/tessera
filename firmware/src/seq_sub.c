@@ -204,17 +204,21 @@ static void seq_nudge_tick(track_t *t, uint32_t period, uint32_t cur_len, uint32
     next_len = step_samples(t, period, ni);
     lead = next_len * (uint32_t)-step_nudge(s) / 16u;
     if (t->seq_pos + lead < cur_len) return;
-    {   /* its turn: played as if on its line (seq_idx, STEP EVOLVE's change), its RATCH armed on the line */
+    {   /* its turn: played as if on its line (seq_idx and, step 0, seq_pass: the next pass's; STEP EVOLVE's change),
+         * its RATCH armed on the line */
         step_t sv;
         uint16_t was = t->seq_idx;
         t->seq_idx = (uint16_t)ni;
+        t->seq_pass += !ni;
         s = tessera_step_vary(t, s, &sv);
+        s = step_acc(t, s, &sv, t->seq_pass);
         seq_nudge[tr].s = *s;
         seq_nudge[tr].hits = (uint8_t)step_ratch(s);
         seq_nudge[tr].lead = cur_len - t->seq_pos;
         if (seq_nudge[tr].hits > 1u) seq_sub_begin(t);
         seq_step(t, &seq_nudge[tr].s, step_gate(s) ? next_len : period, 0);
         t->seq_idx = was;
+        t->seq_pass -= !ni;
         seq_nudge_early |= (uint8_t)(1u << tr);
     }
 }

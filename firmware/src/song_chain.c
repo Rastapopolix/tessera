@@ -51,6 +51,7 @@ static void chain_apply(void)
         motion_restore(t);
         pattern_apply(t, chain_patterns[chain.row][i]);
         t->seq_idx = (uint16_t)(t->p[P_SLEN] - 1);
+        t->seq_pass = 0;
         t->seq_pos = 0x7FFFFFFFu;
         t->rh_n = t->rskip_n = 0;
     }

@@ -2093,7 +2093,7 @@ static int test_grid(void)
     bad += check("pages: black keys 11 / 10 up / down (the cursor along); past LEN a key does nothing", ok);
     t->p[P_SLEN] = 16;
     /* a step's GM notes on their lanes */
-    t->step[8] = (step_t){{41, 49, 36, 0}, 3, ST_NOTE, SF_ACCENT, 96, 0, 0};
+    t->step[8] = (step_t){{41, 49, 36, 0}, 3, ST_NOTE, 0, SF_ACCENT, 96, 0, 0};
     ok = step_lanes(&t->step[8]) == ((1u << DV_TOM) | (1u << DV_BELL) | (1u << DV_KICK)) &&
          step_accents(&t->step[8]) == step_lanes(&t->step[8]);
     grid_hit(t, 8, DV_TOM, 0);
@@ -2932,12 +2932,30 @@ static int test_step_sheets(void)
     bad += check("..KNOB 2 on Length snaps to 1.25 steps", notes_selected(t)<RECORD_MAX && recording[notes_selected(t)].duration*(1u<<(recording[notes_selected(t)].owner>>5))==5u*RECORD_UNIT/4u && pop.on == POP_SHEET);
     turn(EN_K1, 1); turn(EN_K1, 1); turn(EN_K2, -10);
     bad += check("..Chance: 90 %", step_chance(&t->step[4]) == 90u);
+    turn(EN_K1, 1); turn(EN_K1, 1); turn(EN_K1, 1); turn(EN_K2, 1); turn(EN_K2, 1); turn(EN_K2, 1); turn(EN_K2, -1);
+    bad += check("..Accumulate: +2 a pass, the step's", !strcmp(pop.rows[pop.sel].label, "Accumulate") &&
+                 step_climb(&t->step[4]) == 2);
+    for (int k = 0; k < 6; k++) turn(EN_K1, 1);
+    frame();
+    bad += check("..the tenth row (Delete note) scrolls the sheet a row", pop.on == POP_SHEET && pop.sel == 9u &&
+                 pop.first == 1u);
+    for (int k = 0; k < 9; k++) turn(EN_K1, -1);
+    frame();
+    bad += check("..and back to the top", pop.sel == 0u && pop.first == 0u);
     sheet_do("Slide");
     bad += check("..Slide: on, the sheet closed", (t->step[4].flags & SF_SLIDE) && !pop.on);
     sheet_do("Delete note");
     bad += check("..Delete note: gone", !step_on(&t->step[4]));
     hold(B_OCTUP);
     bad += check("NOTES: OCT+ held: the pattern's sheet", pop.on == POP_SHEET && pop.rows == SHEET_PATTERN);
+    sheet_do("Accum mode");
+    bad += check("..Accum mode: OCT+ steps WRAP to PING", tessera.acc_mode[trk_index(t)] == TESS_ACC_PING && !pop.on);
+    hold(B_OCTUP);
+    sheet_do("Accum limit");                            /* (OCT+: 7 to 8) */
+    hold(B_OCTUP);
+    for (int k = 0; k < 16 && strcmp(pop.rows[pop.sel].label, "Accum limit"); k++) turn(EN_K1, 1);
+    turn(EN_K2, -1); turn(EN_K2, -1); turn(EN_K2, -1); turn(EN_K2, -1);
+    bad += check("..Accum limit: 8 then KNOB 2 down to 4, the track's", tessera.acc_limit[trk_index(t)] == 4u);
     press(B_OCTDN);
     ui_power_on();
     track_select(3); frame();                           /* T4 DRUM: the grid */
@@ -3306,7 +3324,7 @@ static int test_chain(void)
             pattern_request(&trk[i], k);
             track_defaults_steps(&trk[i]);
             trk[i].p[P_SLEN] = (int16_t)(2u + k);
-            trk[i].step[0] = (step_t){{(uint8_t)(60u + 5u * k), (uint8_t)(64u + 5u * k), (uint8_t)(67u + 5u * k)}, 3, ST_NOTE, 0, 96};
+            trk[i].step[0] = (step_t){{(uint8_t)(60u + 5u * k), (uint8_t)(64u + 5u * k), (uint8_t)(67u + 5u * k)}, 3, ST_NOTE, 0, 0, 96};
         }
         project_save(k);
     }

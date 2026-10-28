@@ -15,10 +15,11 @@
 #define TSP_HEAD 12u
 #define TSP_STEP_BYTES 10u                      /* step v2: 80 bits */
 enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TSP_FM6, TSP_DRUM, TSP_REC, TSP_NAME,
-       TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
+       TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
-                                              * TSP_HUMAN: each track's HUMAN TIME; none: TWEAK HUMAN's timing, as it was) */
+                                              * TSP_HUMAN: each track's HUMAN TIME; none: TWEAK HUMAN's timing, as it was;
+                                              * TSP_ACC: each track's Accumulate LIMIT, then each one's MODE; none: 7, WRAP) */
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
 #endif
@@ -47,12 +48,12 @@ static void tsp_end(tsp_w_t *w)
 }
 
 /* step v2, 80 bits: notes 4 x 7, kind 4 (n 0..4, 5 tie, 6 rest; +8 recorded), accent and slide 2, velocity 7, hits 8,
- * accents / recorded gate 8, chance 8, RATCH 2, NUDGE 4, the pitch accumulator 4 (0: not yet in RAM), RATCH's high bit 1
+ * accents / recorded gate 8, chance 8, RATCH 2, NUDGE 4, the pitch accumulator 4 (-7..+7, 0 off), RATCH's high bit 1
  * (x5..x8; 0 in a record of before it), 4 spare (0) */
 static int tsp_step_pack(uint8_t *b, const step_t *s)
 {
     uint32_t pos = 0, j;
-    if (s->n > 4u || s->time > ST_REST || s->vel > 127u || s->probability > 101u || !step_acc_valid(s)) return 0;
+    if (s->n > 4u || s->time > ST_REST || s->vel > 127u || s->probability > 101u || s->climb == 8u || !step_acc_valid(s)) return 0;
     memset(b, 0, TSP_STEP_BYTES);
     for (j = 0; j < 4u; j++) { if (s->note[j] > 127u) return 0; proj_bits_put(b, &pos, s->note[j], 7u); }
     proj_bits_put(b, &pos, (s->time == ST_NOTE ? s->n : s->time == ST_TIE ? 5u : 6u) | (s->flags & SF_RECORDED ? 8u : 0u), 4u);
@@ -63,7 +64,7 @@ static int tsp_step_pack(uint8_t *b, const step_t *s)
     proj_bits_put(b, &pos, s->probability, 8u);
     proj_bits_put(b, &pos, s->sub & 3u, 2u);
     proj_bits_put(b, &pos, (s->sub >> 2) & 15u, 4u);
-    pos += 4u;                                          /* (the pitch accumulator's place: 0) */
+    proj_bits_put(b, &pos, s->climb, 4u);
     proj_bits_put(b, &pos, (s->sub >> 6) & 1u, 1u);
     return 1;
 }
@@ -82,9 +83,9 @@ static int tsp_step_unpack(step_t *s, const uint8_t *b)
     s->probability = (uint8_t)proj_bits_get(b, &pos, 8u);
     r = proj_bits_get(b, &pos, 2u);
     s->sub = (uint8_t)(r | proj_bits_get(b, &pos, 4u) << 2);
-    pos += 4u;
+    s->climb = (uint8_t)proj_bits_get(b, &pos, 4u);
     s->sub |= (uint8_t)(proj_bits_get(b, &pos, 1u) << 6);
-    return (meta & 7u) < 7u && s->probability <= 101u && step_acc_valid(s);
+    return (meta & 7u) < 7u && s->probability <= 101u && s->climb != 8u && step_acc_valid(s);
 }
 
 /* the timed notes: the 32 owners' counts (11 bits each, as FUN's directory), then each note in 8 bytes */
@@ -177,7 +178,7 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
         if (runtime) pattern_commit(&trk[t]);
         for (b = 0; b < NPAT; b++)
             for (i = 0; i < NSTEP; i++) {
-                static const step_t empty = {{0}, 0, ST_REST, 0, 0, 0, 0, 0, 0};
+                static const step_t empty = {{0}, 0, ST_REST, 0, 0, 0, 0, 0, 0, 0};
                 const step_t *s = b == active ? &q->t[t].step[i] : runtime ? &pattern_at(t, b)->step[i] : &empty;
                 uint8_t v[TSP_STEP_BYTES];
                 if (!tsp_step_pack(v, s)) { motion_unguard(f); return 0; }
@@ -266,6 +267,10 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
         tsp_end(&w);
         tsp_begin(&w, TSP_HUMAN, 1);                   /* (HUMAN TIME: each track's) */
         tsp_bytes(&w, tessera.sub_human, NTRK);
+        tsp_end(&w);
+        tsp_begin(&w, TSP_ACC, 1);                     /* (the pitch accumulator: each track's LIMIT, then MODE) */
+        tsp_bytes(&w, tessera.acc_limit, NTRK);
+        tsp_bytes(&w, tessera.acc_mode, NTRK);
         tsp_end(&w);
     }
     motion_unguard(f);
@@ -429,6 +434,12 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (tsp_seen.ver[TSP_HUMAN] != 1u || tsp_seen.len[TSP_HUMAN] != NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_HUMAN] + k] > TESS_HUMAN_MS) return 0;
     }
+    if (tsp_seen.at[TSP_ACC]) {
+        const uint8_t *p = raw + tsp_seen.at[TSP_ACC];
+        if (tsp_seen.ver[TSP_ACC] != 1u || tsp_seen.len[TSP_ACC] != 2u * NTRK) return 0;
+        for (uint32_t k = 0; k < NTRK; k++)
+            if (p[k] > TESS_ACC_LIMIT || p[NTRK + k] >= TESS_ACC_MODES) return 0;   /* (LIMIT 0: 7) */
+    }
     if (tsp_seen.at[TSP_CORDS]) {
         if (tsp_seen.ver[TSP_CORDS] != 1u || tsp_seen.len[TSP_CORDS] != CORD_PK_BYTES ||
             !cord_check(raw + tsp_seen.at[TSP_CORDS])) return 0;
@@ -469,6 +480,13 @@ static void tsp_restore(const uint8_t *raw)
     if (tsp_seen.at[TSP_SEED]) {                       /* (saved before STEP as seed: tessera_reset's OFF, FREE) */
         memcpy(tessera.sd_src, raw + tsp_seen.at[TSP_SEED], NTRK);
         memcpy(tessera.sd_keep, raw + tsp_seen.at[TSP_SEED] + NTRK, NTRK);
+    }
+    if (tsp_seen.at[TSP_ACC]) {
+        memcpy(tessera.acc_limit, raw + tsp_seen.at[TSP_ACC], NTRK);
+        memcpy(tessera.acc_mode, raw + tsp_seen.at[TSP_ACC] + NTRK, NTRK);
+    } else {                                           /* (saved before Accumulate: an octave, WRAP) */
+        memset(tessera.acc_limit, TESS_ACC_LIMIT_DEF, NTRK);
+        memset(tessera.acc_mode, TESS_ACC_WRAP, NTRK);
     }
     if (tsp_seen.at[TSP_HUMAN])
         memcpy(tessera.sub_human, raw + tsp_seen.at[TSP_HUMAN], NTRK);

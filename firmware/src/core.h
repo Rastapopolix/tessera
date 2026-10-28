@@ -350,7 +350,9 @@ static int drum_patch_unpack(drum_patch_t *p,const uint8_t *b)
 typedef struct {                 /* acid-style step: up to 4 notes (POLY), time, accent, slide; drum hits */
     uint8_t note[4];
     uint8_t n;                   /* notes in use, 0 = empty */
-    uint8_t time;                /* ST_NOTE / ST_TIE / ST_REST */
+    uint8_t time : 4;            /* ST_NOTE / ST_TIE / ST_REST */
+    uint8_t climb : 4;           /* the pitch accumulator (Tessera): scale degrees a pattern pass, -7..+7 (two's
+                                  * complement; 0 off): step_climb, step_acc.c */
     uint8_t flags;               /* SF_ACCENT | SF_SLIDE */
     uint8_t vel;
     uint8_t hit;                 /* bit l: lane l hits (its GM note, on any engine): the DRUM grid */
@@ -377,6 +379,8 @@ static void step_set_nudge(step_t *s, int32_t v)
 static uint32_t step_chance(const step_t *s) { return !s->probability ? 100u : s->probability <= 100u ? s->probability : 0u; }
 static void step_set_chance(step_t *s, uint32_t chance) { s->probability = (uint8_t)(chance >= 100u ? 0u : chance ? chance : 101u); }
 static uint32_t step_gate(const step_t *s) { return s->hit ? 0u : s->acc; }
+static int32_t step_climb(const step_t *s) { return (int32_t)(s->climb ^ 8u) - 8; }
+static void step_set_climb(step_t *s, int32_t v) { s->climb = (uint8_t)((uint32_t)(v < -7 ? -7 : v > 7 ? 7 : v) & 15u); }
 static int step_acc_valid(const step_t *s) { return s->hit ? !(s->acc & ~s->hit) : s->time != ST_REST || !s->acc; }
 #define MOTION_MAX 64u
 /* Four tracks x64 steps fit one byte. Values retain their signed parameter range. */
@@ -420,6 +424,7 @@ typedef struct track {
     volatile uint32_t pattern_gen;                      /* invalidates editor history even for identical banks */
     uint32_t seq_pos;            /* samples (INT), or MIDI musical units, into the step */
     uint16_t seq_idx;
+    uint32_t seq_pass;           /* passes of the pattern since PLAY or its start (the pitch accumulator, step_acc.c) */
     uint8_t seq_notes[4 + NLANE];   /* sounding seq notes (the step's notes, then its hits) */
     uint8_t seq_n;
     uint8_t seq_hold;            /* last step slides: keep the notes until the next step */

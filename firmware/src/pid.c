@@ -39,6 +39,7 @@ static const char *const TX_N_MIDICH[] = {"AUTO", "1", "2", "3", "4", "5", "6", 
 static const char *const TX_N_ANORDER[] = {"PLAYED", "REVERSE", "SHUFFLE"};   /* (TESS_AN_*) */
 static const char *const TX_N_ANLEN[] = {"SHORT", "MID", "LONG"};
 static const char *const TX_N_SDKEEP[] = {"FREE", "RHYTHM", "PITCH"};   /* (TESS_SD_*) */
+static const char *const TX_N_ACCMODE[] = {"WRAP", "PING", "CLAMP"};    /* (TESS_ACC_*) */
 static const char *const TX_N_QEVERY[] = {"/1", "/2", "/3", "/4", "/6", "/8", "/16"};   /* (every n steps, as TX_N_DIV) */
 
 /* the ranges tessera_param_set keeps (PULSES and ROT: at most STEPS, below STEPS, as it says) */
@@ -144,6 +145,8 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_SD_SOURCE] = PE("SOURCE", TX_N_FOLLOW, 0),
     [TX_SD_KEEP] = PE("KEEP", TX_N_SDKEEP, 0),
     [TX_SUB_HUMAN] = {"HUMAN", F_INT, 0, TESS_HUMAN_MS, 0, 0, "ms"},
+    [TX_ACC_LIMIT] = {"LIMIT", F_INT, 1, TESS_ACC_LIMIT, TESS_ACC_LIMIT_DEF, 0, 0},
+    [TX_ACC_MODE] = PE("MODE", TX_N_ACCMODE, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -533,6 +536,12 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                      "a new amount each step, never early and never more than a quarter of the step. "
                                      "The same each time the piece plays. 0 on the grid. STEP tracks too (with a "
                                      "step's NUDGE). TWEAK's HUMAN varies velocity and length."),
+    X_(TX_ACC_LIMIT, "ACCUM LIMIT", "How far a step's Accumulate takes its notes, in scale degrees from the note "
+                                    "as written: 7 is an octave of a 7-note scale. The pattern's sheet (OCT+ held "
+                                    "on NOTES)."),
+    X_(TX_ACC_MODE, "ACCUM MODE", "What a step's Accumulate does at LIMIT. WRAP: back to the note as written, and "
+                                  "on again. PING: turns round and comes back. CLAMP: stays there. PLAY and a new "
+                                  "pattern start it again."),
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };

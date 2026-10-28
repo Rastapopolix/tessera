@@ -240,6 +240,8 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x265 | SOURCE | OFF, T1, T2, T3, T4 | OFF | A STEP pattern for TURING or EUCLID to play from: T1 to T4 is that track's pattern playing now (this track's own too), which stays as written. TURING loops its first LEN steps and PROB changes them a step at a time; EUCLID plays its notes in order on its hits. OFF, or a pattern without notes: the generator's own. OCT+ held on GEN, KNOB 1. |
 | 0x266 | KEEP | FREE, RHYTHM, PITCH | FREE | With a SOURCE, what stays as written. FREE: TURING may change a step's pitch or its hit. RHYTHM: only the pitches change (EUCLID: the source's own rhythm, on EUCLID's pitches). PITCH: only the hits come and go. OCT+ held on GEN, KNOB 2. |
 | 0x267 | TIMING HUMAN | 0 to 60 ms | 0 | Plays each step a little late, as a player behind the beat: up to this many ms, a new amount each step, never early and never more than a quarter of the step. The same each time the piece plays. 0 on the grid. STEP tracks too (with a step's NUDGE). TWEAK's HUMAN varies velocity and length. |
+| 0x268 | ACCUM LIMIT | 1 to 14 | 7 | How far a step's Accumulate takes its notes, in scale degrees from the note as written: 7 is an octave of a 7-note scale. The pattern's sheet (OCT+ held on NOTES). |
+| 0x269 | ACCUM MODE | WRAP, PING, CLAMP | WRAP | What a step's Accumulate does at LIMIT. WRAP: back to the note as written, and on again. PING: turns round and comes back. CLAMP: stays there. PLAY and a new pattern start it again. |
 
 ## Mods
 

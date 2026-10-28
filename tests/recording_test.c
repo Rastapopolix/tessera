@@ -379,7 +379,7 @@ static int first_note_start(void)
         settings_countin = 2;
         track_t *t = TSEL;
         t->p[P_SLEN] = 16;
-        t->step[5] = (step_t){{71}, 1, ST_NOTE, 0, 91};
+        t->step[5] = (step_t){{71}, 1, ST_NOTE, 0, 0, 91};
         step_t untouched = t->step[5];
         go_page(GR_ROLL); cursor_set(5);
         uint32_t note = source ? 60u : kb_map(t, 5);
@@ -537,7 +537,7 @@ static int take_quantization(void)
     bad += check("QNT OFF at the end leaves the entire captured performance intact", !memcmp(&original, &recording[0], sizeof original));
 
     raw_begin(); t = TSEL; t->p[P_RECQ] = 3;
-    t->step[1] = (step_t){{72}, 1, ST_NOTE, 0, 100}; step_t manual = t->step[1];
+    t->step[1] = (step_t){{72}, 1, ST_NOTE, 0, 0, 100}; step_t manual = t->step[1];
     seq_advance(2500); input_on(t, 60, 91); seq_advance(500); input_off(t, 60);
     /* A finer grid would move this note's rounded overview onto the manual cell. */
     t->p[P_RECQ] = 4; original = recording[0]; seq_stop();

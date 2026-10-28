@@ -237,7 +237,7 @@ static int arp_rec(void)
     key_up(K_C4);
     bad += check("  key up: nothing held", !t->nheld && !t->arp_phys);
     t->p[P_AMODE] = 0;
-    for (i = 0; i < NSTEP; i++) t->step[i] = (step_t){{0}, 0, ST_REST, 0, 0};
+    for (i = 0; i < NSTEP; i++) t->step[i] = (step_t){{0}, 0, ST_REST, 0, 0, 0};
     t->p[P_CHRD] = CH_DIA3;
     song.rec = 1; song.playing = 1;
     t->seq_idx = 0; t->seq_pos = 0;

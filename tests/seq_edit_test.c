@@ -344,7 +344,7 @@ static int test_compact_history(void)
             for (uint32_t flags = 0; flags < 8u; flags++)
                 for (uint32_t byte = 0; byte < 256u; byte++) {
                     step_t s = {{(uint8_t)byte, (uint8_t)(byte ^ 255u), 0, 255},
-                                (uint8_t)n, (uint8_t)time, (uint8_t)flags,
+                                (uint8_t)n, (uint8_t)time, (uint8_t)(byte & 15u), (uint8_t)flags,
                                 (uint8_t)byte, (uint8_t)byte, (uint8_t)(byte ^ 255u), (uint8_t)byte};
                     step_snapshot_t packed;
                     step_snapshot_put(&packed, &s);
@@ -353,7 +353,7 @@ static int test_compact_history(void)
                 }
     bad += check("compact history preserves every step byte for all control combinations", exact);
     {   /* step v2: RATCH and NUDGE (the sub byte) go through history too */
-        step_t v = {{60}, 1, ST_NOTE, 0, 96, 0, 0, 0, 0}, w;
+        step_t v = {{60}, 1, ST_NOTE, 0, 0, 96, 0, 0, 0, 0}, w;
         step_snapshot_t snap;
         step_set_ratch(&v, 7); step_set_nudge(&v, -5);
         step_snapshot_put(&snap, &v); w = step_snapshot_get(&snap);
@@ -363,7 +363,7 @@ static int test_compact_history(void)
         bad += check("RATCH stops at x8, NUDGE keeps its bits apart", step_ratch(&v) == 8u && step_nudge(&v) == 3);
     }
     bad += check("all eight levels have fixed storage even for dense patterns",
-                 sizeof step_history.state[0].step == NSTEP * 10u && sizeof undo_sram[0].step == NSTEP * 10u);
+                 sizeof step_history.state[0].step == NSTEP * 11u && sizeof undo_sram[0].step == NSTEP * 11u);
     track_t *t = edit_setup();
     for (uint32_t i = 0; i < NSTEP; i++) {
         put_note(t, i, 48u + i % 36u, 1);

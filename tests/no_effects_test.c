@@ -32,7 +32,7 @@ int main(void)
     ui_power_on();project_t old;project_capture(&old);
     for(uint32_t k=0;k<NPART;k++){
         old.t[k].p[P_RESERVED33]=127;old.t[k].p[P_RESERVED45]=2;
-        old.t[k].step[0]=(step_t){{60,64,67},3,ST_NOTE,0,100};
+        old.t[k].step[0]=(step_t){{60,64,67},3,ST_NOTE, 0,0,100};
     }
     for(uint32_t i=0;i<G_COUNT;i++)if(global_reserved(i))old.g[i]=127;
     old.motion.count=1;old.motion.event[0]=(motion_event_t){0,P_RESERVED36,127};

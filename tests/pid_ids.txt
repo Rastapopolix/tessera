@@ -222,3 +222,5 @@
 0x265 SOURCE                   track 0..4 def 0
 0x266 KEEP                     track 0..2 def 0
 0x267 TIMING HUMAN             track 0..60 def 0
+0x268 ACCUM LIMIT              track 1..14 def 7
+0x269 ACCUM MODE               track 0..2 def 0

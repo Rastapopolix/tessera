@@ -61,7 +61,7 @@ static int controls(void)
 static int edits_and_store(void)
 {
     int bad=0;kit(DK_909);scope(SC_DRUMHIT);ui.drum_sound=D9_BD;cursor_set(3);
-    TSEL->step[3]=(step_t){{0},0,ST_NOTE,0,100,3,2,0};
+    TSEL->step[3]=(step_t){{0},0,ST_NOTE, 0,0,100,3,2,0};
     drum_hit_edit(2,7);uint32_t i=drum_hit_selected();recorded_note_t hit=recording[i];
     bad+=check("grid pitch edit retains the kick, snare and their velocities",i<RECORD_MAX && hit.note==36 && hit.pitch==7 && !drum_patch[0].c[D9_BD][0] && TSEL->step[3].hit==3);
     step_history_end();step_history_finish();drum_hit_edit(3,-8);step_history_end();step_history_finish();

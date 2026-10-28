@@ -853,6 +853,7 @@ static void seq_start(void)
         if (t->p[P_LTRIG] && t->p[P_LSYNC]) t->lfo_ph = (uint32_t)t->p[P_LPHASE] << 25;
         t->seq_idx = (uint16_t)(t->p[P_SLEN] - 1);
         t->seq_pos = 0x7FFFFFFF;                   /* step 0 fires on the first block */
+        t->seq_pass = 0;
         t->rskip_n = 0;
         t->rh_n = 0;
         cap_step[i] = 0xFFFFu;                     /* (capture: step 0 is the first) */
@@ -880,6 +881,7 @@ static void seq_release(track_t *t)
 }
 
 #include "seq_erase.c"
+#include "step_acc.c"                               /* the pitch accumulator: a step's notes climbing each pass */
 #include "seq_sub.c"                               /* SUB: a step's notes again within it (RATCH) */
 
 /* Map a quantized onset back to the compact tempo-relative event format. The
@@ -1088,6 +1090,8 @@ static void seq_grid_tick(track_t *t, uint32_t n)
         if (starting) seq_lag = n;
         t->seq_pos = starting ? (chain.running ? chain.carry : 0u) : t->seq_pos - cur_len;
         t->seq_idx = (uint16_t)((t->seq_idx + 1u) % (len ? len : 1u));
+        if (!t->seq_idx && !starting)
+            t->seq_pass++;
         if (!t->seq_idx && !starting && !chain.running) {
             uint8_t bit = (uint8_t)(1u << trk_index(t));
             if (song.rec_pass & bit) rec_set(t, 0);
@@ -1132,8 +1136,10 @@ static void seq_grid_tick(track_t *t, uint32_t n)
                 step_t sv;                          /* (STEP EVOLVE: the step with its change, tessera.c; not again for a
                                                      * step NUDGE played early) */
                 uint32_t span = step_samples(t, period, t->seq_idx);
-                if (!(seq_nudge_early & (1u << tr_idx)))
+                if (!(seq_nudge_early & (1u << tr_idx))) {
                     s = tessera_step_vary(t, s, &sv);
+                    s = step_acc(t, s, &sv, t->seq_pass);   /* (Accumulate: its notes this pass) */
+                }
                 seq_nudge_step(t, s, step_gate(s) ? span : period, span, skip);   /* (SUB: its NUDGE, RATCH) */
                 if (tr_idx < TESSERA_TRACKS)
                     tessera.hit[tr_idx] = t->seq_n != 0;   /* (TWEAK 2's LOGIC on another track reads it) */
