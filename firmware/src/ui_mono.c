@@ -778,15 +778,15 @@ static void mo_list(int32_t x, int32_t y, int32_t w, const char *title, const ch
         cv_blit((uint32_t)x * 2u, (uint32_t)(y * 2 + top));
     }
 }
-/* the picker (pick_draw): the names around the value, under its knob's label, over its column and the next */
-static void mo_pick(int32_t col, int32_t count, int32_t cur, int32_t first, int32_t rows,
-                    const char *(*name)(int32_t, int32_t *))
+/* the picker (pick_draw): the names around the value (pick_name, called directly: the stack audit resolves no
+ * pointer), under its knob's label, over its column and the next */
+static void mo_pick(int32_t col, int32_t count, int32_t cur, int32_t first, int32_t rows)
 {
     mo_row_t r[8];
     int32_t i, tr;
     if (rows > 8) rows = 8;
     for (i = 0; i < rows; i++) {
-        str_cpy(r[i].name, name(first + i, &tr), sizeof r[i].name);
+        str_cpy(r[i].name, pick_name(first + i, &tr), sizeof r[i].name);
         r[i].val[0] = 0, r[i].warn = 0;
         r[i].dim = first + i - cur > 1 || cur - first - i > 1;
     }

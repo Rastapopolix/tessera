@@ -423,8 +423,7 @@ static void sheet_input(int32_t k1, int32_t k2, uint32_t oct)
 static int own_screen(void);                            /* ui_draw.c */
 #if MELODEE_LOOK                                        /* the Mono look's lists (ui_mono.c) */
 static void mo_sheet(void);
-static void mo_pick(int32_t col, int32_t count, int32_t cur, int32_t first, int32_t rows,
-                    const char *(*name)(int32_t, int32_t *));
+static void mo_pick(int32_t col, int32_t count, int32_t cur, int32_t first, int32_t rows);
 static void mo_vlist(const char *title, const char *const *names, int32_t count, int32_t sel, int32_t now,
                      int32_t first, int32_t rows);
 #endif
@@ -694,7 +693,7 @@ static void pick_draw(void)
     x = 4 + 60 * (int32_t)(pop.col < 3u ? pop.col : 2u);   /* its column and the next (the last: the two last), whole:
                                                          * a neighbour's value is under it entirely or not at all */
 #if MELODEE_LOOK
-    mo_pick((int32_t)pop.col, count, cur, first, rows, pick_name);
+    mo_pick((int32_t)pop.col, count, cur, first, rows);
     return;
 #endif
     cv_begin(POP_PICK_W, (uint32_t)h, T_BG);
