@@ -857,6 +857,14 @@ static void edit_param(uint32_t slot, int32_t steps)
         0)) {
         ui_message("STOP TO EDIT"); return;
     }
+    if (pg->graph == GR_EVOLVE && sv_layer_on()) {  /* STEP EVOLVE, OCT+ held: HOW */
+        tessera_sv_layer_knob(slot, steps);
+        oct_eat |= 2u;
+        ui.oct_t0 |= 2u;
+        oct_deferred = 0;
+        ui.force = 1;
+        return;
+    }
     if (pg->graph == GR_EVOLVE) {                   /* (ROLL: 128 seeds, a quick turn across them) */
         tessera_evolve_knob(slot, slot == 3u ? accel(EN_K1 + slot, steps, 128) : steps);
         ui.force = 1;

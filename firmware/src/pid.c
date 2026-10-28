@@ -39,6 +39,7 @@ static const char *const TX_N_MIDICH[] = {"AUTO", "1", "2", "3", "4", "5", "6", 
 static const char *const TX_N_ANORDER[] = {"PLAYED", "REVERSE", "SHUFFLE"};   /* (TESS_AN_*) */
 static const char *const TX_N_ANLEN[] = {"SHORT", "MID", "LONG"};
 static const char *const TX_N_SDKEEP[] = {"FREE", "RHYTHM", "PITCH"};   /* (TESS_SD_*) */
+static const char *const TX_N_SVHOW[] = {"DRIFT", "ADORN", "SERIAL"};   /* (TESS_SV_*) */
 static const char *const TX_N_ACCMODE[] = {"WRAP", "PING", "CLAMP"};    /* (TESS_ACC_*) */
 static const char *const TX_N_QEVERY[] = {"/1", "/2", "/3", "/4", "/6", "/8", "/16"};   /* (every n steps, as TX_N_DIV) */
 
@@ -148,6 +149,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_ACC_LIMIT] = {"LIMIT", F_INT, 1, TESS_ACC_LIMIT, TESS_ACC_LIMIT_DEF, 0, 0},
     [TX_ACC_MODE] = PE("MODE", TX_N_ACCMODE, 0),
     [TX_SD_GRAVITY] = {"GRAVITY", F_INT, 0, 100, 0, 0, "%"},
+    [TX_SV_HOW] = PE("HOW", TX_N_SVHOW, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -549,6 +551,11 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                  "at its place. TURING's changed step goes back to it, MARKOV's chain goes on from "
                                  "there, EUCLID plays the source's own hit or rest, MORPH its A. 0: none. OCT+ held "
                                  "on GEN, KNOB 3."),
+    X_(TX_SV_HOW, "EVOLVE HOW", "What STEP EVOLVE's rounds do to the steps. DRIFT: moves by scale degrees, octave "
+                                "jumps, drops, swaps and ghost notes. ADORN, ornaments that only add: ratchets, "
+                                "octave jumps, neighbour notes, passing notes in the rests. SERIAL: the whole phrase "
+                                "at once: backwards, upside down, rotated or half of it at half speed; AMOUNT is the "
+                                "chance of one a round, LOCK of it staying. OCT+ held on EVOLVE, KNOB 1."),
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };

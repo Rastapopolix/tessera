@@ -237,6 +237,28 @@ static int test_tsp_record(void)
     tsp_resum(raw);
     bad += check("TSP1: a GRAV part past 100 % is refused", ok && !tsp_valid(raw, len));
 
+    reset();                                           /* STEP EVOLVE's HOW: the record's HOW part; a record without it */
+    tessera_param_set(0, TX_SV_HOW, TESS_SV_SERIAL); tessera_param_set(2, TX_SV_HOW, TESS_SV_ORNAMENT);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_HOW];
+    reset();
+    ok = ok && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: each track's STEP EVOLVE HOW comes back from its part", ok &&
+                 tessera.sv_how[0] == TESS_SV_SERIAL && tessera.sv_how[2] == TESS_SV_ORNAMENT && !tessera.sv_how[1]);
+    raw[tsp_seen.at[TSP_HOW] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (saved before it: no HOW part) */
+    tsp_resum(raw);
+    reset();
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_HOW] && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: a record without the HOW part loads with HOW DRIFT", ok && !tessera.sv_how[0] && !tessera.sv_how[2]);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_HOW];
+    raw[tsp_seen.at[TSP_HOW] + 1u] = TESS_SV_HOWS;     /* (track 2's past SERIAL) */
+    tsp_resum(raw);
+    bad += check("TSP1: a HOW part out of range is refused", ok && !tsp_valid(raw, len));
+
     reset();                                           /* HUMAN TIME: the record's HUMAN part; a record without it */
     song.sel = 1; tessera_knob(0, TESS_ENG_EUCLID);
     tessera_param_set(1, TX_TW_HUMAN, 60); tessera_param_set(0, TX_TW_HUMAN, 40);   /* (track 0: a STEP track) */

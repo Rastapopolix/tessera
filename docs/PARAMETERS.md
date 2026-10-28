@@ -243,6 +243,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x268 | ACCUM LIMIT | 1 to 14 | 7 | How far a step's Accumulate takes its notes, in scale degrees from the note as written: 7 is an octave of a 7-note scale. The pattern's sheet (OCT+ held on NOTES). |
 | 0x269 | ACCUM MODE | WRAP, PING, CLAMP | WRAP | What a step's Accumulate does at LIMIT. WRAP: back to the note as written, and on again. PING: turns round and comes back. CLAMP: stays there. PLAY and a new pattern start it again. |
 | 0x26A | GRAVITY | 0 to 100 % | 0 | With a SOURCE, the pull home: this share of the steps plays the source as written at its place. TURING's changed step goes back to it, MARKOV's chain goes on from there, EUCLID plays the source's own hit or rest, MORPH its A. 0: none. OCT+ held on GEN, KNOB 3. |
+| 0x26B | EVOLVE HOW | DRIFT, ADORN, SERIAL | DRIFT | What STEP EVOLVE's rounds do to the steps. DRIFT: moves by scale degrees, octave jumps, drops, swaps and ghost notes. ADORN, ornaments that only add: ratchets, octave jumps, neighbour notes, passing notes in the rests. SERIAL: the whole phrase at once: backwards, upside down, rotated or half of it at half speed; AMOUNT is the chance of one a round, LOCK of it staying. OCT+ held on EVOLVE, KNOB 1. |
 
 ## Mods
 

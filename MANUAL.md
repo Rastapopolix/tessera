@@ -363,6 +363,16 @@ On a **STEP** track, EVOLVE varies the steps you wrote, as they play, without ch
 Hold **REC** to keep the changes playing: they become the steps (KEPT n STEPS). EDIT held undoes it. Switching
 pattern clears the changes.
 
+**HOW** (OCT+ held on EVOLVE, KNOB 1) says what kind of change a round makes. It is saved with the project.
+
+| HOW | A round |
+|---|---|
+| **DRIFT** | As above: moves, octave jumps, drops, swaps, ghost notes. |
+| **ADORN** | Ornaments that only add, never take away: a note ratchets (one more hit, up to x4), jumps an octave or turns to its neighbour a degree away; a rest after a note gets a soft passing note, a degree toward the next note. |
+| **SERIAL** | The whole phrase at once, for the round: **backwards** (retrograde), **upside down** (inversion in the scale, about its first note), **rotated** by a few steps, or **half of it at half speed** (augmentation). AMOUNT is the chance a round brings one, LOCK the chance it stays for the next. |
+
+Changing HOW puts the steps back as written. REC held keeps any of them, SERIAL's whole phrase included.
+
 <p align="center"><img src="assets/gallery/gen_evolve.png" alt="EVOLVE" width="240"> <img src="assets/gallery/step_evolve.png" alt="STEP EVOLVE" width="240"></p>
 
 ---

@@ -2484,6 +2484,7 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_SV_LOCK: return tessera.sv_lock[tr];
     case TX_SV_EVERY: return tessera.sv_every[tr];
     case TX_SV_AMOUNT: return tessera.sv_amount[tr];
+    case TX_SV_HOW: return tessera.sv_how[tr];
     case TX_GRD_PART4: return tessera.grids[tr].part4;
     case TX_SUB_RATCH: return tessera.sub_ratch[tr];
     case TX_SUB_CHANCE: return tessera.sub_chance[tr];
@@ -2643,6 +2644,11 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
     case TX_SV_LOCK: tessera.sv_lock[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_SV_EVERY: tessera.sv_every[tr] = (uint8_t)tess_clampi(v, 0, 5); tess_sv.steps[tr] = 0; return;
     case TX_SV_AMOUNT: tessera.sv_amount[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
+    case TX_SV_HOW:                                     /* (another HOW: the changes back to as written) */
+        v = tess_clampi(v, 0, TESS_SV_HOWS - 1);
+        if (v != tessera.sv_how[tr]) tessera_step_clear(tr);
+        tessera.sv_how[tr] = (uint8_t)v;
+        return;
     case TX_GRD_PART4: tessera.grids[tr].part4 = (uint8_t)tess_clampi(v, 0, GEN_GRIDS_P4_N - 1); return;
     case TX_SUB_RATCH: tessera.sub_ratch[tr] = (uint8_t)tess_clampi(v, 0, SUB_HITS_MAX - 1); return;
     case TX_SUB_CHANCE: tessera.sub_chance[tr] = (uint8_t)tess_clampi(v, 0, 100); return;

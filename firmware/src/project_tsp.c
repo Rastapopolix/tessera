@@ -15,12 +15,13 @@
 #define TSP_HEAD 12u
 #define TSP_STEP_BYTES 10u                      /* step v2: 80 bits */
 enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TSP_FM6, TSP_DRUM, TSP_REC, TSP_NAME,
-       TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
+       TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_HOW, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
                                               * TSP_HUMAN: each track's HUMAN TIME; none: TWEAK HUMAN's timing, as it was;
                                               * TSP_ACC: each track's Accumulate LIMIT, then each one's MODE; none: 7, WRAP;
-                                              * TSP_GRAV: each track's GRAVITY (STEP as seed); none: 0) */
+                                              * TSP_GRAV: each track's GRAVITY (STEP as seed); none: 0;
+                                              * TSP_HOW: each track's STEP EVOLVE HOW; none: DRIFT) */
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
 #endif
@@ -278,6 +279,9 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
         tsp_begin(&w, TSP_GRAV, 1);                    /* (STEP as seed's GRAVITY: each track's) */
         tsp_bytes(&w, tessera.sd_grav, NTRK);
         tsp_end(&w);
+        tsp_begin(&w, TSP_HOW, 1);                     /* (STEP EVOLVE's HOW: each track's) */
+        tsp_bytes(&w, tessera.sv_how, NTRK);
+        tsp_end(&w);
     }
     motion_unguard(f);
     if (!w.ok) return 0;
@@ -440,6 +444,10 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (tsp_seen.ver[TSP_GRAV] != 1u || tsp_seen.len[TSP_GRAV] != NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_GRAV] + k] > 100u) return 0;
     }
+    if (tsp_seen.at[TSP_HOW]) {
+        if (tsp_seen.ver[TSP_HOW] != 1u || tsp_seen.len[TSP_HOW] != NTRK) return 0;
+        for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_HOW] + k] >= TESS_SV_HOWS) return 0;
+    }
     if (tsp_seen.at[TSP_HUMAN]) {
         if (tsp_seen.ver[TSP_HUMAN] != 1u || tsp_seen.len[TSP_HUMAN] != NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_HUMAN] + k] > TESS_HUMAN_MS) return 0;
@@ -493,6 +501,8 @@ static void tsp_restore(const uint8_t *raw)
     }
     if (tsp_seen.at[TSP_GRAV])                         /* (saved before GRAVITY: tessera_reset's 0) */
         memcpy(tessera.sd_grav, raw + tsp_seen.at[TSP_GRAV], NTRK);
+    if (tsp_seen.at[TSP_HOW])                          /* (saved before HOW: tessera_reset's DRIFT) */
+        memcpy(tessera.sv_how, raw + tsp_seen.at[TSP_HOW], NTRK);
     if (tsp_seen.at[TSP_ACC]) {
         memcpy(tessera.acc_limit, raw + tsp_seen.at[TSP_ACC], NTRK);
         memcpy(tessera.acc_mode, raw + tsp_seen.at[TSP_ACC] + NTRK, NTRK);

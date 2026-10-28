@@ -3,15 +3,18 @@
 /* Variation: a phrase played with changes that come and go, the phrase itself untouched (STEP EVOLVE: tessera.c
  * tessera_step_vary; ANSWER's phrases to come). A change a place, one byte (0: as written):
  *   bits 0-2  MOVE: -3..+3 scale degrees (two's complement); VARY_DROP (4): a rest
- *   bits 3-4  OCT: 1 an octave up, 2 down
+ *   bits 3-4  OCT: 1 an octave up, 2 down; 3 (VARY_TOWARD, ORNAMENT's passing note): a degree toward the next note
  *   bits 5-6  SRC: whose notes the place plays: its own, the next note's (a SWAP's first half), the last note's (its
  *             second half; on an empty place a GHOST: softer)
+ *   bit 7     VARY_RATCH (ORNAMENT): the step's hits one more (x1: x2), up to x4
  * A round (vary_round), as EVOLVE's LOCK on a generator: each change stays at LOCK % (else its place is as written
  * again), then new ones until AMOUNT's share of the places is changed (100: half of them). LOCK 100 holds a
  * variation, 0 makes a fresh one each round. The caller says what each place holds (VK_*) and plays the changes.
  * Included by tessera.c */
 #define VARY_MAX 64u
 #define VARY_DROP 4u
+#define VARY_TOWARD 3u                                  /* (OCT's 3) */
+#define VARY_RATCH 0x80u
 enum { VARY_OWN, VARY_NEXT, VARY_PREV };
 enum { VK_EMPTY, VK_NOTE, VK_HITS, VK_KEEP };          /* a place: nothing, notes, drum hits only, not to be touched */
 
@@ -19,6 +22,7 @@ static int32_t vary_move(uint32_t m) { uint32_t d = m & 7u; return d == VARY_DRO
 static int vary_dropped(uint32_t m) { return (m & 7u) == VARY_DROP; }
 static int32_t vary_oct(uint32_t m) { uint32_t o = (m >> 3) & 3u; return o == 1u ? 1 : o == 2u ? -1 : 0; }
 static uint32_t vary_src(uint32_t m) { return (m >> 5) & 3u; }
+static int vary_toward(uint32_t m) { return ((m >> 3) & 3u) == VARY_TOWARD; }
 
 /* the place with notes (or hits) after i (dir 1) or before it (dir -1), round the phrase; len: none */
 static uint32_t vary_find(const uint8_t *kind, uint32_t len, uint32_t i, int dir)
@@ -60,6 +64,23 @@ static int vary_new(uint8_t *mut, const uint8_t *kind, uint32_t len, uint32_t i,
     return 1;
 }
 
+/* ORNAMENT's new change at a place, adding and never taking away: a note RATCHets (40 %), jumps an OCT (30) or turns
+ * to a NEIGHBOUR a degree away (30); drum hits RATCH; an empty place after a note a PASSING note, its last note a
+ * degree toward the next one, softer. 1 = made */
+static int vary_new_orn(uint8_t *mut, const uint8_t *kind, uint32_t i, uint32_t len, uint32_t *rnd)
+{
+    uint32_t r = gen_rnd(rnd, 100u);
+    if (kind[i] == VK_EMPTY) {
+        if (vary_find(kind, len, i, -1) == len) return 0;
+        mut[i] = (uint8_t)(VARY_PREV << 5 | VARY_TOWARD << 3);
+        return 1;
+    }
+    if (kind[i] == VK_HITS || r < 40u) mut[i] = VARY_RATCH;
+    else if (r < 70u) mut[i] = (uint8_t)((gen_rnd(rnd, 2u) ? 1u : 2u) << 3);
+    else mut[i] = (uint8_t)(gen_rnd(rnd, 2u) ? 1u : 7u);   /* (+1 or -1) */
+    return 1;
+}
+
 /* the place's change put back as written, a SWAP's both halves */
 static void vary_undo(uint8_t *mut, const uint8_t *kind, uint32_t len, uint32_t i)
 {
@@ -76,8 +97,9 @@ static uint32_t vary_target(const uint8_t *kind, uint32_t len, uint32_t amount)
     return amount ? (amount * n + 199u) / 200u : 0u;
 }
 /* one round over a phrase of len places (kind: what each holds): each change kept at LOCK %, then new ones at places
- * no change holds, until AMOUNT's share is changed */
-static void vary_round(uint8_t *mut, const uint8_t *kind, uint32_t len, uint32_t amount, uint32_t lock, uint32_t *rnd)
+ * no change holds, until AMOUNT's share is changed; orn: ORNAMENT's changes (vary_new_orn), else DRIFT's */
+static void vary_round(uint8_t *mut, const uint8_t *kind, uint32_t len, uint32_t amount, uint32_t lock, uint32_t *rnd,
+                       int orn)
 {
     uint32_t want, i, k, changed = 0;
     if (len > VARY_MAX) len = VARY_MAX;
@@ -89,7 +111,7 @@ static void vary_round(uint8_t *mut, const uint8_t *kind, uint32_t len, uint32_t
     for (i = 0; i < len; i++) changed += mut[i] != 0u;
     for (k = 0; changed < want && k < 4u * len; k++) {  /* (a few tries a place) */
         i = gen_rnd(rnd, len);
-        if (kind[i] != VK_KEEP && !mut[i] && vary_new(mut, kind, len, i, rnd))
+        if (kind[i] != VK_KEEP && !mut[i] && (orn ? vary_new_orn(mut, kind, i, len, rnd) : vary_new(mut, kind, len, i, rnd)))
             for (changed = 0, i = 0; i < len; i++) changed += mut[i] != 0u;
     }
 }

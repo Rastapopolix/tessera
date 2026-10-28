@@ -159,6 +159,8 @@ typedef struct {
     uint8_t          sv_lock[TESSERA_TRACKS];   /* 0..100: the chance a change is a step put back as written */
     uint8_t          sv_every[TESSERA_TRACKS];  /* 0 OFF, 1..5: 1 2 4 8 16 bars between rounds of changes */
     uint8_t          sv_amount[TESSERA_TRACKS]; /* 0..100: changes a round, 1 a quarter; 0 none (as written) */
+    uint8_t          sv_how[TESSERA_TRACKS];    /* HOW: TESS_SV_DRIFT (as before), _ORNAMENT, _SERIAL; not in the packed
+                                                 * block: the record's HOW part */
     /* SUB (the TIMING page; seq.c seq_sub.c): a generator's notes again within their step */
     uint8_t          sub_ratch[TESSERA_TRACKS];  /* 0..7: RATCH x1..x8, the hits a step (0 x1: as before) */
     uint8_t          sub_chance[TESSERA_TRACKS]; /* 0..100: the chance a step ratchets (100: every step) */
@@ -196,7 +198,10 @@ typedef struct {
     uint16_t steps[TESSERA_TRACKS];             /* steps since the last round */
     uint32_t rnd[TESSERA_TRACKS];               /* its random stream */
     uint8_t  mut[TESSERA_TRACKS][TESS_SV_STEPS];   /* each step's change (vary.c), 0 as written */
+    uint8_t  ser[TESSERA_TRACKS];               /* HOW SERIAL: the round's transform (TESS_SV_SER_*), 0 none */
+    uint8_t  ser_arg[TESSERA_TRACKS];           /* its argument: ROTATION's steps, AUGMENTATION's half (0 the first) */
 } tessera_sv_t;
+enum { TESS_SV_SER_NONE, TESS_SV_SER_RETRO, TESS_SV_SER_INV, TESS_SV_SER_ROT, TESS_SV_SER_AUG };
 extern tessera_sv_t tess_sv;
 /* ANSWER as it plays (answer.c; not saved, cleared by tessera_init). In .pool */
 enum { TESS_AN_IDLE, TESS_AN_HEAR, TESS_AN_GAP, TESS_AN_PLAY, TESS_AN_LOOP };
@@ -316,6 +321,7 @@ enum {
     TX_ACC_LIMIT, TX_ACC_MODE,                      /* (0x268, 0x269: the pitch accumulator's LIMIT and MODE, a STEP
                                                      * track's) */
     TX_SD_GRAVITY,                                  /* (0x26A: STEP as seed's GRAVITY, any track's) */
+    TX_SV_HOW,                                      /* (0x26B: STEP EVOLVE's HOW, a STEP track's) */
     TX_COUNT
 };
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */
@@ -323,6 +329,7 @@ enum {
 #define TESS_ACC_LIMIT_DEF 7u
 enum { TESS_ACC_WRAP, TESS_ACC_PING, TESS_ACC_CLAMP, TESS_ACC_MODES };   /* TX_ACC_MODE */
 enum { TESS_SD_FREE, TESS_SD_RHYTHM, TESS_SD_PITCH, TESS_SD_KEEPS };   /* TX_SD_KEEP */
+enum { TESS_SV_DRIFT, TESS_SV_ORNAMENT, TESS_SV_SERIAL, TESS_SV_HOWS };   /* TX_SV_HOW */
 void tessera_sd_play(void);                         /* seq.c, PLAY: STEP as seed's loops from their sources again */
 void tessera_sd_layer_knob(uint32_t k, int32_t s);  /* TURING / EUCLID / MARKOV / MORPH on GEN, OCT+ held: KNOB 1
                                                      * SOURCE, 2 KEEP, 3 GRAVITY */
@@ -358,6 +365,7 @@ int tessera_step_on(uint32_t tr);                        /* a STEP track (no gen
 const step_t *tessera_step_vary(track_t *t, const step_t *s, step_t *out);   /* seq.c: the step as it plays */
 uint32_t tessera_step_varied(uint32_t tr);               /* steps playing a change now */
 void tessera_step_clear(uint32_t tr);                    /* the steps as written again (KNOB 4 CLEAR) */
+void tessera_sv_layer_knob(uint32_t k, int32_t s);       /* its page, OCT+ held: KNOB 1 HOW */
 uint32_t tessera_step_keep(uint32_t tr);                 /* REC held: the changes become the steps; returns how many */
 void tessera_chord_ulen_knob(int32_t s);                   /* OCT+ held on GEN in CHORD USER, KNOB 4: LEN */
 void tessera_chord_oct_knob(int32_t s);                    /* OCT+ held on GEN in CHORD, KNOB 1: OCT */
