@@ -166,7 +166,7 @@ generator turns the arpeggiator off; choosing ARP again brings back its last set
 
 <p align="center"><img src="assets/gallery/seq_mode.png" alt="GEN with MODE STEP" width="320"></p>
 
-### The pattern's sheet: Double, Half, Euclid
+### The pattern's sheet: Double, Half, Euclid, Accumulate
 
 Hold **OCT+** on NOTES, PATTERN or the drum grid for the pattern's sheet. Besides Quantize, Clear pattern and
 Clear motion it has:
@@ -181,6 +181,13 @@ Clear motion it has:
   It does not work on a pattern with recorded notes.
 
 Each one is undone with **EDIT** held, one at a time.
+
+Two rows set the track's pitch accumulator (a step's Accumulate, below):
+
+- **Accum limit** (1–14, 7): how far a step's notes go, in scale degrees from the notes as written. 7 is an octave
+  of a 7-note scale.
+- **Accum mode**: what they do there. **Wrap** goes back to the notes as written and climbs again, **Ping** turns
+  round and comes back, **Clamp** stays at the limit.
 
 ---
 
@@ -427,7 +434,7 @@ fifth of it (TWEAK 100: 20 ms).
 
 <p align="center"><img src="assets/gallery/gen_timing.png" alt="TIMING, x4 ACCEL" width="240"></p>
 
-### A step's Ratchet and Nudge
+### A step's Ratchet, Nudge and Accumulate
 
 On a STEP track's NOTES page, **OCT+** on a note opens its sheet (on the drum grid, OCT+ on a hit). Besides Length,
 Velocity and Chance it holds:
@@ -436,6 +443,12 @@ Velocity and Chance it holds:
 - **Nudge** (−8/16 to +7/16): the step plays that many sixteenths of a step late or early. An early step plays near
   the end of the step before, and across the loop too, but not across a pattern change or a song's turn, nor while
   recording: there it plays on its line.
+- **Accumulate** (−7 to +7, Off): the step's notes move that many scale degrees further each time the pattern comes
+  round, so a short loop climbs or falls on its own. They stay within the track's Accum limit and do what its Accum
+  mode says there (the pattern's sheet, above). PLAY and a new pattern start them again from the notes as written.
+  Every note of a chord moves, in the track's scale (with QNT OFF, in semitones). A TIE holds what played before
+  it, and drum hits and recorded notes do not move. On NOTES a small mark over a note says it climbs, under it that
+  it falls; the notes are drawn as written.
 
 <p align="center"><img src="assets/gallery/sheet_note.png" alt="A note's sheet, Ratchet x3 and Nudge +2/16" width="240"></p>
 

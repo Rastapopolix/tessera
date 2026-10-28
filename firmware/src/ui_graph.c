@@ -1250,6 +1250,11 @@ static void graph_recorded_notes(const track_t *t, uint16_t c)
             if (y < PR_Y0 || y >= bottom) { cv_rect(x + 1, y < PR_Y0 ? PR_Y0 : bottom - 1, xe - x - 1, 1, c); continue; }
             cv_rect(x + lead, y + 1, xe - x - lead - (cont ? 0 : 1), PR_RH - 2, selected ? T_ACCENT : c);
             if (selected) cv_frame(x + (source == si ? 1 : 0), y, xe - x - (source == si ? 2 : 0), PR_RH, T_TEXT);
+            if (st->climb && source == si) {           /* (Accumulate: a caret over a climbing note, under a falling one) */
+                int32_t cy = step_climb(st) > 0 ? y - 1 : y + PR_RH, d = step_climb(st) > 0 ? 1 : -1;
+                if (cy - 2 * d >= PR_Y0 && cy - 2 * d < bottom)
+                    for (int32_t r = 0; r < 3; r++) cv_rect(x + lead + r, cy - r * d, 5 - 2 * r, 1, T_TEXT);
+            }
             uint32_t next = (si + 1u) % step_pattern_len(t);
             const step_t *ns = &seq_steps(t)[next];
             if (!j && (st->flags & SF_SLIDE) && si + 1u < end && ns->time == ST_NOTE && ns->n) {

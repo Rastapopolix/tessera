@@ -591,6 +591,7 @@ static void roll_scene(int s)
             else step_put(&t->step[i], LINE_T[i] == 1u ? ST_TIE : ST_REST, 0, 0, &n);
         }
         t->step[2].flags |= SF_SLIDE;                  /* (slides into a note, from before a tie) */
+        step_set_climb(&t->step[3], 2); step_set_climb(&t->step[13], -1);   /* (Accumulate: a caret over, under) */
         ui.cursor = 9;
         break;
     case S_ROLL_LEN32:
