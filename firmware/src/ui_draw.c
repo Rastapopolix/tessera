@@ -396,6 +396,11 @@ static void pv_column(uint32_t c, const char *label, const char *val, const char
                       int hot);
 static void cu_columns(void);                           /* CORDS (ui_cords.c) */
 static void mx_columns(void);                           /* MATRIX (ui_matrix.c) */
+#if MELODEE_LOOK
+static uint8_t mo_on;                                   /* a Mono page being drawn: its knobs to mo_capture (ui_mono.c) */
+static void mo_capture(uint32_t c, const char *label, const char *val, const char *unit, uint16_t vc, int32_t ratio,
+                       int hot);
+#endif
 static void draw_column(uint32_t c, const char *label, const char *val, const char *unit, uint16_t vc,
                         int32_t ratio, uint32_t icon)
 {
@@ -412,6 +417,13 @@ static void draw_column(uint32_t c, const char *label, const char *val, const ch
     if (col_pid != PID_NONE && ratio >= 0 && cord_moves(col_pid, song.sel, &sh))   /* the mods on it, now */
         live = clamp(ratio + sh * 1000 / 32768, 0, 1000);
     col_pid = PID_NONE;
+#if MELODEE_LOOK
+    if (mo_on) {                                        /* Mono: the knob's texts to its dial (ui_mono.c) */
+        mo_capture(c, label, val, unit, vc, ratio, hot);
+        fmt_named = 0;
+        return;
+    }
+#endif
     if (col_style == CS_CAPTURE) {                      /* a list's row (ui_list.c) */
         list_capture(c, label, val, unit, vc);
         fmt_named = 0;
@@ -1612,6 +1624,9 @@ static void draw_confirm(void)
 #include "ui_scales.c"                                  /* SCALES: a screen of its own */
 #include "ui_designer.c"                                /* guided native sound creation */
 #include "ui_awake.c"                                   /* AWAKE's step entry on GEN */
+#if MELODEE_LOOK
+#include "ui_mono.c"                                    /* the Mono look (MELODEE_LOOK 1) */
+#endif
 static int own_screen(void)                             /* a page drawn whole by its own code, no cards or footer */
 {
     uint32_t g = cur_page()->graph;
@@ -1645,6 +1660,12 @@ static void draw_page(void)
         motion_draw();
     } else if (!own_screen() && list_on()) {            /* a list page (ui_list.c) */
         list_draw();
+#if MELODEE_LOOK
+    } else if (!own_screen() && (pv_kind() == PV_CURVE || pv_kind() == PV_RINGS || pv_kind() == PV_NOTES)) {   /* Mono:
+                                                         * the knob pages, NOTES */
+        mono_page();
+        return;
+#endif
     } else if (!own_screen() && pv_kind()) {            /* the redesign's other pages (ui_pages.c) */
         pv_draw();
     } else if (own_screen()) {                          /* the browser, PATTERNS, SONG: screens of their own */
@@ -1659,6 +1680,14 @@ static void draw_page(void)
             patterns_draw();
         }
     } else {
+#if MELODEE_LOOK
+        if (!ui.home) {                                 /* Mono: the whole page, its footer too (ui_mono.c) */
+            mono_page();
+            return;
+        }
+        mono_stage();                                   /* .. Stage too */
+        return;
+#endif
         if (ui.force)
             draw_frame(ui.home);
         melodee_dbg.stage = 3;
