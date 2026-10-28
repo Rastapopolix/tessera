@@ -24,6 +24,8 @@ typedef struct {
     int32_t rev_bass[8];
     int16_t rev_rate, rev_char;
     float rev_dc;
+    int32_t glide;                /* ECHO: the delay read now (Q8, quarter-rate samples), gliding to its TIME */
+    uint8_t slow;                 /* REVERB: blocks since SIZE's lines last moved a sample */
 } fx_state_t;
 static fx_state_t fx_state[FX_STATE_COUNT];
 static volatile uint32_t fx_epoch;
@@ -226,11 +228,12 @@ static inline __attribute__((always_inline)) void fx_return(int32_t target,uint3
     fx_right[i]=mono?fx_left[i]:type==FX_WIDTH?r:r+fx_scale(wr-r,(uint32_t)*mix*2u);
 }
 /* Tiny time effects run at FS/4. ECHO: 10..370 ms, 8 KiB. ROOM: four
- * damped combs at 13..26 ms, 2 KiB. They are intentionally lo-fi. */
+ * damped combs at 13..26 ms, 2 KiB. They are intentionally lo-fi. ECHO's TIME
+ * glides (at most 1/4 sample a tick, as a tape's speed: a pitch bend, no click) */
 static __attribute__((noinline,section(".dsp_text"))) void fx_time(fx_state_t *restrict f,int16_t *restrict mem,uint32_t n,int32_t target)
 {
     static const uint16_t len[4]={149,211,263,293};
-    int32_t mix=f->mix;uint32_t delay=110u+(uint32_t)f->rate*31u;
+    int32_t mix=f->mix,want=(int32_t)(110u+(uint32_t)f->rate*31u)<<8,at=f->glide?f->glide:want;
     int32_t feedback=f->type==FX_ECHO?f->character*220:12000+f->character*120;
     if(f->type==FX_ROOM && (!f->rev_span[0] || f->rev_rate!=f->rate)){
         f->rev_rate=f->rate;for(uint32_t k=0;k<4u;k++)f->rev_span[k]=(uint16_t)((uint32_t)len[k]*(64u+(uint32_t)f->rate)/191u);
@@ -239,7 +242,9 @@ static __attribute__((noinline,section(".dsp_text"))) void fx_time(fx_state_t *r
         int32_t mono=fx_div_pow2(fx_left[i]+fx_right[i],1);
         if(!f->decim){
             if(f->type==FX_ECHO){
-                f->echo=mem[(f->pos+4096u-delay)&4095u];
+                if(at!=want)at+=fx_limit(want-at,-64,64);
+                uint32_t back=(uint32_t)at>>8;int32_t a=mem[(f->pos+4096u-back)&4095u],b=mem[(f->pos+4095u-back)&4095u];
+                f->echo=a+(((b-a)*(at&255))>>8);
                 mem[f->pos]=(int16_t)fx_limit(mono+fx_div_pow2(f->echo*feedback,15),-32767,32767);
                 f->pos=(f->pos+1u)&4095u;
             }else{
@@ -258,7 +263,7 @@ static __attribute__((noinline,section(".dsp_text"))) void fx_time(fx_state_t *r
         f->decim=(f->decim+1u)&3u;
         fx_return(target,0,f->mono,i,f->echo,f->type==FX_ROOM?f->damp[1]+f->damp[3]:f->echo,&mix);
     }
-    f->mix=mix;
+    f->mix=mix;f->glide=at;
 }
 /* Full-band stereo chorus: two fractional taps, no feedback or filters.
  * 512 stereo int16 frames cost 2 KiB. The 5.8 ms centre and +/-2.9 ms
@@ -293,13 +298,30 @@ static __attribute__((noinline,section(".audio_text"),aligned(16))) void fx_chor
 static const uint16_t REV_LEN[8] __attribute__((section(".data.fx_lengths")))={131,149,167,191,211,233,251,277};
 static const uint16_t REV_AP_LEN[8] __attribute__((section(".data.fx_lengths")))={23,31,43,61,19,29,37,47};
 #define FX_REVERB_BYTES 4096u
+/* SIZE moved (a knob, a mod): each line one sample nearer its length every 4 blocks, about 1/16 of a sample a tick,
+ * a slight glide instead of a jump. The first block: there at once. 1 there, 0 moved, -1 a block between moves */
+static int fx_span_glide(fx_state_t *f)
+{
+    uint32_t first=!f->rev_span[0],done=1;
+    if(!first && (++f->slow&3u))return -1;
+    for(uint32_t k=0;k<8u;k++){
+        uint32_t want=(uint32_t)REV_LEN[k]*(64u+(uint32_t)f->rate)/191u,now=f->rev_span[k];
+        now=first?want:now<want?now+1u:now>want?now-1u:now;
+        f->rev_span[k]=(uint16_t)now;done&=now==want;
+    }
+    return (int)done;
+}
 static void fx_reverb_setup(fx_state_t *f)
 {
     if(f->rev_span[0] && f->rev_rate==f->rate && f->rev_char==f->character)return;
-    f->rev_rate=f->rate;f->rev_char=f->character;
+    if(f->rev_rate!=f->rate || !f->rev_span[0]){
+        int moved=fx_span_glide(f);
+        if(moved>0)f->rev_rate=f->rate;
+        else if(moved<0 && f->rev_char==f->character)return;   /* (nothing moved: the gains as they are) */
+    }
+    f->rev_char=f->character;
     float decay=300.0f+(float)(f->character*f->character)*(5700.0f/(127.0f*127.0f));
     for(uint32_t k=0;k<8u;k++){
-        f->rev_span[k]=(uint16_t)((uint32_t)REV_LEN[k]*(64u+(uint32_t)f->rate)/191u);
         float x=6.907755f*(float)f->rev_span[k]*(1000.0f*FX_REV_DIV)/((float)FS*decay);
         f->rev_gain[k]=(int32_t)(65536.0f*(1.0f-x*0.5f)/(1.0f+x*0.5f));
     }
@@ -641,6 +663,15 @@ static uint32_t fx_audio_ticks,fx_audio_ready;
 #endif
 static int32_t fx_bus_mix,fx_bus_target;
 static fx_plan_t fx_bus_plan[FX_SLOTS];
+/* the send effects' settings for this block: song.g's SEND FX 1..3 and RETURN as the mods move them (cord.c
+ * cord_fx_bus); fx_bus_active, before anything reads them */
+#define FX_BUS_G (G_FXRETURN-G_MFXTYPE+1)
+static int16_t fx_bus_g[FX_BUS_G];
+static void fx_bus_settings(void)
+{
+    memcpy(fx_bus_g,song.g+G_MFXTYPE,sizeof fx_bus_g);
+    if(cord_gmask)cord_fx_bus(fx_bus_g);
+}
 /* Fade the return before changing topology, then reset only the global histories.
  * Inserts keep their state; separate send levels survive a round trip to CHAIN. */
 static void fx_bus_select(void)
@@ -684,10 +715,11 @@ static void fx_bus_kernel(void *unused)
 static int fx_bus_active(void)
 {
     uint32_t base=NPART*FX_SLOTS;
+    fx_bus_settings();
 #if defined(MELODEE_FX_PROFILE) && MELODEE_FX_PROFILE && defined(FM1_IRQ_TARGET)
     if(fx_profile_control>>30u)return 1;
 #endif
-    for(uint32_t slot=0;slot<FX_SLOTS;slot++)if((song.g[G_MFXTYPE+slot*FX_PARAMS] && song.g[G_MFXMIX+slot*FX_PARAMS]) || fx_state[base+slot].mix)return 1;
+    for(uint32_t slot=0;slot<FX_SLOTS;slot++)if((fx_bus_g[slot*FX_PARAMS] && fx_bus_g[slot*FX_PARAMS+1u]) || fx_state[base+slot].mix)return 1;
     for(uint32_t slot=0;slot<FX_SLOTS;slot++)if(fx_state[base+slot].type || resource[RES_FX0+base+slot].size){resource[RES_FX0+base+slot].size=0;fx_zero(&fx_state[base+slot]);}
     return 0;
 }
@@ -702,9 +734,9 @@ static void fx_bus_start(uint32_t n)
 #if defined(MELODEE_FX_PROFILE) && MELODEE_FX_PROFILE && defined(FM1_IRQ_TARGET)
     uint32_t start=fm1_ticks();
 #endif
-    for(uint32_t slot=0;slot<FX_SLOTS;slot++)fx_slot_prepare(&fx_bus_plan[slot],NPART*FX_SLOTS+slot,song.g+G_MFXTYPE+slot*FX_PARAMS);
+    for(uint32_t slot=0;slot<FX_SLOTS;slot++)fx_slot_prepare(&fx_bus_plan[slot],NPART*FX_SLOTS+slot,fx_bus_g+slot*FX_PARAMS);
     for(uint32_t slot=0;slot<FX_SLOTS;slot++)if(fx_bus_plan[slot].active && fx_bus_plan[slot].target){
-        int32_t amount=fx_limit(song.g[G_FXRETURN],0,127);fx_bus_target=(amount+(amount==127))*256;break;
+        int32_t amount=fx_limit(fx_bus_g[G_FXRETURN-G_MFXTYPE],0,127);fx_bus_target=(amount+(amount==127))*256;break;
     }
     if((song.g[G_FXMODE]!=0)!=fx_bus_separate)fx_bus_target=0;
     /* A later allocation may compact earlier handles; snapshot pointers only

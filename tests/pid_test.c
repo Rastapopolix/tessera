@@ -74,7 +74,8 @@ static int reference(FILE *f)
         }
     }
     {                                                   /* the cords' (firmware/src/cord.c) */
-        static const char *const KIND[] = {"each voice", "the audio block", "the LFO's depth", "the generator's step"};
+        static const char *const KIND[] = {"each voice", "the audio block", "the LFO's depth", "the generator's step",
+                                             "the send effects' block (every track's)"};
         static const char *const SRC_HELP[CS_N] = {"", "the track's LFO", "the envelope of the track's latest note",
             "the latest note's velocity", "the latest note's pitch (C4 = 0)", "a new random value at each note",
             "MIDI mod wheel (CC1)", "MIDI channel aftertouch", "MIDI expression (CC11)",

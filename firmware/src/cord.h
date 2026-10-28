@@ -15,8 +15,10 @@
  *   CK_BLOCK  a track parameter, modulated in place for the part's block (mod.c mod_begin .. mod_end); only those
  *             read inside it: mix_part after mod_begin, track_render_audio, env_tick, track_lfo_tick, the FX send
  *   CK_DEPTH  the track LFO's depth (mod.c's MD_DEPTH: a gain on the LFO wherever it goes)
- *   CK_STEP   a Tessera setting, in place around the track's generator step (tessera_clock_step) */
-enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP };
+ *   CK_STEP   a Tessera setting, in place around the track's generator step (tessera_clock_step)
+ *   CK_GLOBAL a project setting of the send effects (SEND FX 1..3, RETURN), for the block (fx.c fx_bus_start): one
+ *             for every track, so the cord's destination track means nothing (kept 0) */
+enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_GLOBAL };
 
 /* Destination codes. FROZEN: saved cords keep them; new ones at the end, a retired one stays as a gap */
 enum {
@@ -44,13 +46,21 @@ enum {
     CD_GRD_KICK, CD_GRD_SNR, CD_GRD_HAT, CD_GRD_TOMS,
     CD_AN_VARY,
     CD_SUB_HUMAN,                 /* TIMING's HUMAN TIME */
+    CD_FX1_MIX, CD_FX1_RATE, CD_FX1_CHAR,                           /* the track's inserts, FX 1..3 */
+    CD_FX2_MIX, CD_FX2_RATE, CD_FX2_CHAR,
+    CD_FX3_MIX, CD_FX3_RATE, CD_FX3_CHAR,
+    CD_FX_SEND2, CD_FX_SEND3,
+    CD_SF1_MIX, CD_SF1_RATE, CD_SF1_CHAR,                           /* the send effects (CK_GLOBAL) */
+    CD_SF2_MIX, CD_SF2_RATE, CD_SF2_CHAR,
+    CD_SF3_MIX, CD_SF3_RATE, CD_SF3_CHAR,
+    CD_FX_RETURN,
     CD_N
 };
 
 typedef struct {
     uint8_t code, kind;
     uint8_t md;                   /* CK_VOICE / CK_DEPTH: mod.c's MD_* it shares; else 0 */
-    uint16_t pid;                 /* CK_BLOCK / CK_STEP: the parameter (pid.h); else PID_NONE */
+    uint16_t pid;                 /* CK_BLOCK / CK_STEP / CK_GLOBAL: the parameter (pid.h); else PID_NONE */
     const char *name;             /* as a cord shows it: <= 7 characters */
     const char *full;             /* for the help and the reference */
 } cord_dest_t;
@@ -91,6 +101,7 @@ uint32_t cord_count(void);                          /* cords doing something (a 
 uint32_t cord_adopt(void);
 void cord_tick(void);                               /* an audio block (mix.c mix_block): DRIFT's clock, SLOTH, OCHD */
 void cord_defaults(void);                           /* a new project's mods (project.c): the default patch */
+void cord_fx_bus(int16_t *g);                       /* fx.c fx_bus_start: the send effects' settings as moved now */
 void cord_sound_load(uint32_t tr);                  /* a sound loads on track tr (ui.c load_begin) */                          /* MOD's routes into cords (main loop): the routes left, no room */
 
 #endif

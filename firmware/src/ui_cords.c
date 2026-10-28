@@ -23,12 +23,39 @@ static void cu_adopt(void)
 }
 
 #define CU_NSRC (1u + NTRK * (CS_N - 1u))               /* KNOB 1's list: --, then track by track */
-#define CU_DPT (CD_N - 2u)                              /* a track's destinations (none, the retired one: not listed) */
-#define CU_NDST (1u + NTRK * CU_DPT)
+/* KNOB 3's list: --, a track's destinations track by track (none, the retired one: not listed), then the send
+ * effects' once (CK_GLOBAL: every track's) */
+static int cu_global(uint32_t code) { return cord_dest(code) && cord_dest(code)->kind == CK_GLOBAL; }
+static uint32_t cu_count(uint32_t below, int global)    /* the listed codes 1 .. below - 1 of that kind */
+{
+    uint32_t code, n = 0;
+    for (code = CD_OFF + 1u; code < below; code++)
+        n += cord_dest(code) && cu_global(code) == global;
+    return n;
+}
+#define CU_DPT cu_count(CD_N, 0)
+#define CU_NDST (1u + NTRK * CU_DPT + cu_count(CD_N, 1))
 static uint32_t cu_src_of(const cord_t *c) { return c->src ? 1u + c->src_trk * (CS_N - 1u) + c->src - 1u : 0u; }
-static uint32_t cu_dst_k(uint32_t code) { return code - 1u - (code > CD_RETIRED_CL_RULE); }   /* code -> its place */
-static uint32_t cu_dst_code(uint32_t k) { return k + 1u + (k + 1u >= CD_RETIRED_CL_RULE); }
-static uint32_t cu_dst_of(const cord_t *c) { return c->dst ? 1u + c->dst_trk * CU_DPT + cu_dst_k(c->dst) : 0u; }
+static uint32_t cu_dst_k(uint32_t code) { return cu_count(code, cu_global(code)); }   /* code -> its place, in its kind */
+static uint32_t cu_dst_code(uint32_t k, int global)
+{
+    uint32_t code;
+    for (code = CD_OFF + 1u; code < CD_N; code++)
+        if (cord_dest(code) && cu_global(code) == global && !k--) return code;
+    return CD_OFF;
+}
+static uint32_t cu_dst_of(const cord_t *c)
+{
+    if (!c->dst) return 0u;
+    return cu_global(c->dst) ? 1u + NTRK * CU_DPT + cu_dst_k(c->dst) : 1u + c->dst_trk * CU_DPT + cu_dst_k(c->dst);
+}
+/* KNOB 3's entry v (1 ..) into c: its destination and track */
+static void cu_dst_set(cord_t *c, uint32_t v)
+{
+    uint32_t n = NTRK * CU_DPT;
+    c->dst = (uint8_t)(v - 1u < n ? cu_dst_code((v - 1u) % CU_DPT, 0) : cu_dst_code(v - 1u - n, 1));
+    c->dst_trk = (uint8_t)(v - 1u < n ? (v - 1u) / CU_DPT : 0u);
+}
 
 /* the source's name, "+" after it when UNI folds it (cord.c cord_fold_on) */
 static const char *cu_src_name(const cord_t *c)
@@ -113,7 +140,7 @@ static void cu_rows(void)
         cv_rect(104, 14, 10, 2, on ? T_MID : T_DIM);    /* an arrow */
         cv_line(110, 11, 113, 14, on ? T_MID : T_DIM);
         cv_line(110, 17, 113, 14, on ? T_MID : T_DIM);
-        cu_chip(118, 6, 74, c->dst_trk, cu_dst_name(c), c->dst != CD_OFF, c->dst != CD_OFF, bg);
+        cu_chip(118, 6, 74, c->dst_trk, cu_dst_name(c), c->dst != CD_OFF, c->dst != CD_OFF && !cu_global(c->dst), bg);
         cu_pct_text(b, a);
         cv_text_r(232, 9, &AF_X, b, on ? (sel ? T_THEME : T_SEC) : T_DIM, bg);
         cv_blit(0, (uint32_t)(CU_Y + (int32_t)k * CU_H));   /* (its move: cu_leds) */
@@ -181,7 +208,9 @@ static void cu_columns(void)
                 c->src ? VAL(0u) : T_DIM, -1, ICON_NONE);
     fmt_int(val, (int32_t)cord_ui_sel + 1);
     draw_column(1, "MOD", val, "/16", VAL(1u), (int32_t)cord_ui_sel * 1000 / (CORD_LIVE - 1u), ICON_NONE);
-    if (c->dst) {
+    if (c->dst && cu_global(c->dst))
+        str_cpy(val, cu_dst_name(c), sizeof val);
+    else if (c->dst) {
         val[0] = 'T'; val[1] = (char)('1' + c->dst_trk); val[2] = ' ';
         str_cpy(val + 3, cu_dst_name(c), sizeof val - 3);
     } else
@@ -212,9 +241,8 @@ static const char *cu_pick_name(uint32_t col, int32_t i, int32_t *tr)
         *tr = (i - 1) / (int32_t)(CS_N - 1u);
         return cord_src_name((uint32_t)((i - 1) % (int32_t)(CS_N - 1u) + 1));
     }
-    *tr = (i - 1) / (int32_t)CU_DPT;
-    c.dst = (uint8_t)cu_dst_code((uint32_t)(i - 1) % CU_DPT);
-    c.dst_trk = (uint8_t)*tr;
+    cu_dst_set(&c, (uint32_t)i);
+    *tr = cu_global(c.dst) ? -1 : c.dst_trk;
     return cu_dst_name(&c);
 }
 
@@ -251,8 +279,8 @@ static void cu_knob(uint32_t slot, int32_t steps)
     } else if (slot == 2u) {
         int was = c.dst != CD_OFF;
         v = clamp((int32_t)cu_dst_of(&c) + list_accel(EN_K1 + 2u, steps, CU_NDST, 0), 0, CU_NDST - 1);
-        c.dst = v ? (uint8_t)cu_dst_code((uint32_t)(v - 1) % CU_DPT) : CD_OFF;
-        c.dst_trk = v ? (uint8_t)((uint32_t)(v - 1) / CU_DPT) : 0u;
+        if (v) cu_dst_set(&c, (uint32_t)v);
+        else c.dst = CD_OFF, c.dst_trk = 0u;
         if (!was && c.dst && !c.amount && !c.offset) {  /* (connected: a move to hear at once) */
             if (c.src) c.amount = 50;
             else c.offset = 25;

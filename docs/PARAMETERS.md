@@ -339,3 +339,24 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | AT TOMS | the generator's step | Atlas' TOMS: how many of the near misses play the tom |
 | AN VARY | the generator's step | Answer's VARY: how much each answer changes the phrase |
 | H TIME | the generator's step | TIMING's HUMAN: how late a step may play |
+| FX1 MIX | the audio block | the track's FX 1: how much of the effect is heard |
+| FX1 RTE | the audio block | the track's FX 1 RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
+| FX1 CHR | the audio block | the track's FX 1 fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
+| FX2 MIX | the audio block | the track's FX 2: how much of the effect is heard |
+| FX2 RTE | the audio block | the track's FX 2 RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
+| FX2 CHR | the audio block | the track's FX 2 fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
+| FX3 MIX | the audio block | the track's FX 3: how much of the effect is heard |
+| FX3 RTE | the audio block | the track's FX 3 RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
+| FX3 CHR | the audio block | the track's FX 3 fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
+| SEND 2 | the audio block | how much of the track goes to SEND FX 2 (FX MODE SPLIT) |
+| SEND 3 | the audio block | how much of the track goes to SEND FX 3 (FX MODE SPLIT) |
+| SF1 MIX | the send effects' block (every track's) | SEND FX 1's MIX, for every track (the project's) |
+| SF1 RTE | the send effects' block (every track's) | SEND FX 1's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
+| SF1 CHR | the send effects' block (every track's) | SEND FX 1's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
+| SF2 MIX | the send effects' block (every track's) | SEND FX 2's MIX, for every track (the project's) |
+| SF2 RTE | the send effects' block (every track's) | SEND FX 2's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
+| SF2 CHR | the send effects' block (every track's) | SEND FX 2's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
+| SF3 MIX | the send effects' block (every track's) | SEND FX 3's MIX, for every track (the project's) |
+| SF3 RTE | the send effects' block (every track's) | SEND FX 3's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
+| SF3 CHR | the send effects' block (every track's) | SEND FX 3's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
+| RETURN | the send effects' block (every track's) | the send effects' RETURN: how loud they come back, for every track |

@@ -19,7 +19,7 @@ static void check(const char *what, int ok)
     bad += !ok;
 }
 
-static const char *const KIND[] = {"voice", "block", "depth", "step"};
+static const char *const KIND[] = {"voice", "block", "depth", "step", "send"};
 
 static cord_t C(uint32_t src, uint32_t st, uint32_t dst, uint32_t dt, int32_t amount, int32_t offset)
 {
@@ -235,6 +235,169 @@ static int behaviour(void)
     return bad - fails;
 }
 
+/* the effects (2026-10-28): an insert's MIX / RATE / CHAR and SEND 2 / 3 for the track's block, the send effects'
+ * for every track (CK_GLOBAL, its track ignored); ECHO's TIME glides, REVERB's SIZE a sample at a time (ROOM's
+ * jumps: a glide measured no better on its short combs) */
+static void fresh_tracks(void);
+static int fx_dests(void)
+{
+    int fails = bad;
+    cord_t c;
+    int32_t sh, was;
+    uint32_t i, ok;
+    fx_state_t *f = &fx_state[0];                       /* (track 1's FX 1) */
+
+    fresh_tracks();
+    trk[1].p[P_FX2TYPE] = FX_ECHO; trk[1].p[P_FX2MIX] = 0; trk[1].p[P_FX2RATE] = 20;
+    c = C(CS_OFF, 0, CD_FX2_MIX, 1, 0, 50);
+    cord_set(0, &c);
+    check("FX2 MIX +50 % on track 2 (its MIX 0: the effect off): not active without the mod", !fx_active(&trk[1]));
+    mod_begin(&trk[1]);
+    i = (uint32_t)trk[1].p[P_FX2MIX];
+    ok = (uint32_t)fx_active(&trk[1]);
+    mod_end(&trk[1]);
+    check("...for the block: MIX 64, the effect active; back to 0 after it", i == 64u && ok && !trk[1].p[P_FX2MIX]);
+    c = C(CS_OFF, 0, CD_FX2_RATE, 1, 0, -100);
+    cord_set(1, &c);
+    mod_begin(&trk[1]);
+    i = (uint32_t)trk[1].p[P_FX2RATE];
+    mod_end(&trk[1]);
+    check("FX2 RTE -100 %: RATE (TIME) at 0 for the block, 20 after it", i == 0u && trk[1].p[P_FX2RATE] == 20);
+    check("...the knob card's live mark: track 2's FX 2 RATE moved, track 1's not",
+          cord_moves(PID_TRACK(P_FX2RATE), 1, &sh) && sh < 0 && !cord_moves(PID_TRACK(P_FX2RATE), 0, &sh));
+
+    /* SEND 3 (FX MODE SPLIT): read after the block's mods (it was before mod_begin) */
+    fresh_tracks();
+    song.g[G_FXMODE] = 1;
+    song.g[G_MFX3TYPE] = FX_ROOM; song.g[G_MFX3MIX] = 127; song.g[G_FXRETURN] = 100;
+    trk[3].p[P_FXSEND3] = 0;
+    c = C(CS_OFF, 0, CD_FX_SEND3, 3, 0, 100);
+    cord_set(0, &c);
+    for (i = 0; i < 4u; i++) {
+        int32_t o[2 * CTL];
+        mix_block(o, CTL);
+    }
+    check("SEND 3 +100 % on track 4 (its SEND 3 at 0, FX MODE SPLIT): sent at full for the block, 0 stored",
+          fx_extra_gain[1] == 65536u && trk[3].p[P_FXSEND3] == 0);
+
+    /* the send effects: for every track, the cord's track kept 0 */
+    fresh_tracks();
+    song.g[G_MFXTYPE] = FX_ECHO; song.g[G_MFXMIX] = 0; song.g[G_MFXRATE] = 30; song.g[G_FXRETURN] = 100;
+    c = C(CS_OFF, 0, CD_SF1_RATE, 2, 0, 50);
+    cord_set(0, &c);
+    check("SF1 RTE (a send effect's): set on track 3, kept as every track's (its track 0)",
+          cord_get(0)->dst_trk == 0u && cord_count() == 1u && !cord_mask[2] && !cord_mask[0] && cord_gmask == 1u);
+    fx_bus_active();
+    check("...this block: SEND FX 1's RATE 30 + 64, the project's stored 30", fx_bus_g[G_MFXRATE - G_MFXTYPE] == 94 &&
+          song.g[G_MFXRATE] == 30);
+    check("...SEND FX 1's MIX 0: the send effects off", !fx_bus_active());
+    c = C(CS_OFF, 0, CD_SF1_MIX, 0, 0, 100);
+    cord_set(1, &c);
+    c = C(CS_OFF, 0, CD_FX_RETURN, 0, 0, -30);
+    cord_set(2, &c);
+    fx_bus_active();
+    check("...SF1 MIX +100 %: MIX 127, the send effects on; RETURN -30 %: 100 - 38",
+          fx_bus_g[G_MFXMIX - G_MFXTYPE] == 127 && fx_bus_active() && fx_bus_g[G_FXRETURN - G_MFXTYPE] == 62);
+    check("...the live mark: SEND FX 1's RATE moved on any track's page",
+          cord_moves(PID_GLOBAL(G_MFXRATE), 0, &sh) && cord_moves(PID_GLOBAL(G_MFXRATE), 3, &sh) && sh > 0);
+    c = C(CS_LFO, 1, CD_SF1_RATE, 0, 100, 0);
+    cord_set(0, &c);
+    trk[1].lfo_val = 32767; trk[1].lfo_fade = 32767;
+    fx_bus_active();
+    was = fx_bus_g[G_MFXRATE - G_MFXTYPE];
+    trk[1].lfo_val = -32767;
+    fx_bus_active();
+    check("...track 2's LFO, +100 %: SEND FX 1's RATE up to 127 at its top, down to 0 at its bottom",
+          was == 127 && fx_bus_g[G_MFXRATE - G_MFXTYPE] == 0);
+    {
+        uint8_t pk[CORD_PK_BYTES];
+        cord_pack(pk);
+        pk[2 * 6 + 3] = 2;                              /* (cord 3, RETURN, saved with a track: 3) */
+        check("...saved and loaded: the send effects' cords as they were, a track saved with one read as 0",
+              cord_unpack(pk) && cord_get(0)->dst == CD_SF1_RATE && cord_get(2)->dst == CD_FX_RETURN &&
+              cord_get(2)->dst_trk == 0u && cord_gmask == 7u);
+    }
+    cord_clear();
+    check("...cleared: no send effect cords", !cord_gmask);
+
+    /* ECHO's TIME glides: at most 1/4 sample a quarter-rate tick (8 a block), no jump */
+    fresh_tracks();
+    trk[0].p[P_FXTYPE] = FX_ECHO; trk[0].p[P_FXMIX] = 127; trk[0].p[P_FXRATE] = 0; trk[0].p[P_FXCHAR] = 64;
+    trk_note_on(&trk[0], 60, 100);
+    for (i = 0; i < 8u; i++) {
+        int32_t o[2 * CTL];
+        mix_block(o, CTL);
+    }
+    check("ECHO: at its TIME at once when it starts (110 quarter-rate samples)", f->type == FX_ECHO && f->glide == 110 * 256);
+    trk[0].p[P_FXRATE] = 127;
+    {
+        int32_t o[2 * CTL];
+        mix_block(o, CTL);
+        check("...TIME to its top: a block later 2 samples on (8 ticks of 1/4), not a jump",
+              f->glide == 110 * 256 + 8 * 64);
+        for (i = 0; i < 3u * FS / CTL; i++) mix_block(o, CTL);
+        check("...three seconds later there (110 + 127 x 31)", f->glide == (110 + 127 * 31) * 256);
+    }
+    trk_note_off(&trk[0], 60);
+
+    /* REVERB's SIZE: a sample at a time every 4 blocks, there at the start; ROOM's at once */
+    fresh_tracks();
+    trk[0].p[P_FXTYPE] = FX_ROOM; trk[0].p[P_FXMIX] = 127; trk[0].p[P_FXRATE] = 0;
+    trk_note_on(&trk[0], 60, 100);
+    {
+        int32_t o[2 * CTL];
+        uint16_t at;
+        for (i = 0; i < 4u; i++) mix_block(o, CTL);
+        at = f->rev_span[0];
+        check("ROOM: its lines at their SIZE at once (149 x 64 / 191)", f->type == FX_ROOM && at == 149u * 64u / 191u);
+        trk[0].p[P_FXRATE] = 127;
+        for (i = 0; i < 4u; i++) mix_block(o, CTL);
+        check("...SIZE to its top: there a block later", f->rev_span[0] == 149u && f->rev_span[3] == 293u &&
+              f->rev_rate == 127);
+        trk[0].p[P_FXTYPE] = FX_REVERB; trk[0].p[P_FXRATE] = 0;
+        for (i = 0; i < 400u; i++) mix_block(o, CTL);
+        at = f->rev_span[0];
+        check("REVERB (from ROOM, after its fade): its lines at their SIZE", f->type == FX_REVERB &&
+              at == 131u * 64u / 191u && f->rev_rate == 0);
+        trk[0].p[P_FXRATE] = 127;
+        for (i = 0; i < 8u; i++) mix_block(o, CTL);
+        check("...SIZE to its top: 8 blocks later 2 samples longer, not there yet", f->rev_span[0] == at + 2u &&
+              f->rev_rate == 0);
+        for (i = 0; i < 1200u; i++) mix_block(o, CTL);
+        check("...later there, settled", f->rev_span[0] == 131u && f->rev_span[7] == 277u && f->rev_rate == 127);
+    }
+    trk_note_off(&trk[0], 60);
+
+    /* all of them at once, playing: nothing past full scale, every stored value as it was */
+    fresh_tracks();
+    song.g[G_FXMODE] = 1;
+    was = song.g[G_MFXRATE];
+    for (i = 0; i < 3u; i++) {
+        trk[i].p[P_FXTYPE] = (int16_t)(FX_ECHO + i); trk[i].p[P_FXMIX] = 60; trk[i].p[P_FXSEND] = 60;
+        trk[i].p[P_FXSEND2] = 40; trk[i].p[P_FXSEND3] = 40;
+        song.g[G_MFXTYPE + i * FX_PARAMS] = (int16_t)(FX_ECHO + i);
+    }
+    {
+        static const uint8_t D[16] = {CD_FX1_MIX, CD_FX1_RATE, CD_FX1_CHAR, CD_FX2_MIX, CD_FX2_RATE, CD_FX2_CHAR,
+                                      CD_FX3_MIX, CD_FX3_RATE, CD_FX3_CHAR, CD_FX_SEND2, CD_FX_SEND3, CD_SF1_RATE,
+                                      CD_SF2_RATE, CD_SF3_CHAR, CD_SF1_MIX, CD_FX_RETURN};
+        for (i = 0; i < 16u; i++) {
+            c = C(i & 1u ? CS_LFO : CS_DRIFT, i % 4u, D[i], i % 3u, (int32_t)(i * 13u % 201u) - 100, 0);
+            cord_set(i, &c);
+        }
+        for (i = 0; i < 4u; i++) { trk[i].p[P_LRATE] = 120; trk[i].lfo_fade = 32767; }
+    }
+    check("sixteen effect cords at once, on three tracks playing: never past full scale", render(2) > 0);
+    ok = 1;
+    for (i = 0; i < 3u; i++)
+        ok &= trk[i].p[P_FXMIX] == 60 && trk[i].p[P_FXRATE] == TP[P_FXRATE].def && trk[i].p[P_FXSEND2] == 40;
+    check("...after it the stored values as they were (MIX, RATE, SEND 2; the project's RATE)",
+          ok && song.g[G_MFXRATE] == was);
+    cord_clear();
+    song.g[G_FXMODE] = 0;
+    return bad - fails;
+}
+
 /* MOD's routes into cords (cord_adopt): the same move, the sound's go with it, the project's stay, no room: left */
 static void fresh_tracks(void)
 {
@@ -446,9 +609,9 @@ int main(int argc, char **argv)
         } else {
             const pid_entry_t *e = pid_find(d->pid);
             const param_desc_t *pd = pid_desc(d->pid, 0);
-            if (!e || !(e->flags & PID_F_TRACK) || (e->flags & (PID_F_ACTION | PID_F_DEVICE)) || !pd || (pd->max <= pd->min && !(d->pid >= PID_TRACK(P_E0) && d->pid <= PID_TRACK(P_E7))) ||   /* (E1..E8: the engine's) */
-               
-                (d->kind == CK_STEP) != (d->pid >= PID_TESS(0))) {
+            if (!e || (d->kind == CK_GLOBAL) == !!(e->flags & PID_F_TRACK) || (e->flags & (PID_F_ACTION | PID_F_DEVICE)) || !pd || (pd->max <= pd->min && !(d->pid >= PID_TRACK(P_E0) && d->pid <= PID_TRACK(P_E7))) ||   /* (E1..E8: the engine's) */
+                (d->kind == CK_STEP) != (d->pid >= PID_TESS(0)) ||
+                (d->kind == CK_GLOBAL) != (d->pid >= PID_GLOBAL(G_MFXTYPE) && d->pid <= PID_GLOBAL(G_FXRETURN))) {
                 params = 0;
                 printf("    0x%03x %s\n", d->pid, d->name);
             }
@@ -459,13 +622,15 @@ int main(int argc, char **argv)
     check("each destination at its own code, none missing", placed);
     check("names: at most 7 characters (a cord's chip), unique; every one explained", names);
     check("per voice and LFO depth: on mod.c's own destinations (MD_PITCH .. MD_AMP, MD_DEPTH)", mods);
-    check("the others: a per-track parameter with a range (pid.c; E1..E8 the engine's), not an action nor the device's", params);
+    check("the others: a per-track parameter with a range (pid.c; E1..E8 the engine's; the send effects' the project's), "
+          "not an action nor the device's", params);
     check("no parameter reached by two destinations", !twice);
     check("past the end: nothing", !cord_dest(CD_N) && !cord_dest(255));
     snprintf(what, sizeof what, "the limits: room for %u cords, %u in use (Theo 2026-10-16)", CORD_MAX, CORD_LIVE);
     check(what, CORD_MAX == 32u && CORD_LIVE == 16u);
 
     (void)behaviour();
+    (void)fx_dests();
     (void)adoption();
     (void)drift_and_defaults();
 

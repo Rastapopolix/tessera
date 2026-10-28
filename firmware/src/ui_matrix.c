@@ -1,9 +1,10 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis (melodee-tess) */
-/* MATRIX (LFO family, after MODS): the mods (cord.c) at a glance, source track by destination track. A cell is lit when
- * a mod goes from its row's track to its column's, as bright as they move it now (cord.c cord_share), and moves with
- * them. Nothing of its own to save: a view of the mods. KNOB 1 the row (FROM), 2 the column (TO), 3 which of the
- * cell's mods (several: one by one), OCT+ opens that mod in MODS. Included by ui_pages.c. */
+/* MATRIX (LFO family, after MODS): the mods (cord.c) at a glance, source track by destination track. A cell is lit
+ * when a mod goes from its row's track to its column's, as bright as they move it now (cord.c cord_share), and moves
+ * with them (a mod to the send effects goes to no track: not here). Nothing of its own to save: a view of the mods.
+ * KNOB 1 the row (FROM), 2 the column (TO), 3 which of the cell's mods (several: one by one), OCT+ opens that mod in
+ * MODS. Included by ui_pages.c. */
 
 static uint8_t mx_from, mx_to, mx_k;                    /* the cell picked, and which of its mods */
 
@@ -14,7 +15,8 @@ static uint32_t mx_cell(uint32_t from, uint32_t to, uint32_t k, uint32_t *i)
     *i = CORD_LIVE;
     for (j = 0; j < CORD_LIVE; j++) {
         const cord_t *c = cord_get(j);
-        if (!cord_live(c) || !c->src || c->src_trk != from || c->dst_trk != to) continue;
+        if (!cord_live(c) || !c->src || c->src_trk != from || c->dst_trk != to || cord_dest(c->dst)->kind == CK_GLOBAL)
+            continue;
         if (n++ == k) *i = j;
     }
     return n;
@@ -27,7 +29,8 @@ static uint32_t mx_level(uint32_t from, uint32_t to)
     for (j = 0; j < CORD_LIVE; j++) {
         const cord_t *c = cord_get(j);
         int32_t s;
-        if (!cord_live(c) || !c->src || c->src_trk != from || c->dst_trk != to) continue;
+        if (!cord_live(c) || !c->src || c->src_trk != from || c->dst_trk != to || cord_dest(c->dst)->kind == CK_GLOBAL)
+            continue;
         s = cord_share(c);
         a += s < 0 ? -s : s;
         n = 1;

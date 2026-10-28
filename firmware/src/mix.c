@@ -204,13 +204,6 @@ static __attribute__((noinline)) void mix_prepare_batch(uint32_t n)
 static __attribute__((noinline)) void mix_part(track_t *t,uint32_t n)
 {
     uint32_t extra=0;
-    if(fx_send_on && fx_bus_separate)for(uint32_t slot=0;slot<FX_SLOTS-1u;slot++){
-        uint32_t amount=(uint32_t)t->p[P_FXSEND2+slot];fx_extra_gain[slot]=(amount+(amount==127u))*512u;extra|=amount;
-    }
-    /* Reuse the return workspace until the worker starts. The difference is
-     * this track's exact post-fader/pan/solo contribution; CHAIN's sample loops
-     * stay unchanged and zero extra sends need no extra mixing pass. */
-    if(extra){memcpy(fx_bus_sum_l,mix_l,n*sizeof *mix_l);memcpy(fx_bus_sum_r,mix_r,n*sizeof *mix_r);}
     int rendered;
 #if MELODEE_BATCH_AUDIO && !MELODEE_LEGACY_EXTRAS
     if(batch_ready){
@@ -229,6 +222,13 @@ static __attribute__((noinline)) void mix_part(track_t *t,uint32_t n)
         spread_on=t->p[P_SPRD]>0 && (trk_vmode(t)==V_POLY || trk_vmode(t)==V_UNISON);
         rendered=(int)track_render_audio(t,part_buf,n,0);
     }
+    /* SEND 2 / 3 as the mods move them (after mod_begin). Reuse the return workspace until the worker starts. The
+     * difference is this track's exact post-fader/pan/solo contribution; CHAIN's sample loops stay unchanged and
+     * zero extra sends need no extra mixing pass. */
+    if(fx_send_on && fx_bus_separate)for(uint32_t slot=0;slot<FX_SLOTS-1u;slot++){
+        uint32_t amount=(uint32_t)t->p[P_FXSEND2+slot];fx_extra_gain[slot]=(amount+(amount==127u))*512u;extra|=amount;
+    }
+    if(extra){memcpy(fx_bus_sum_l,mix_l,n*sizeof *mix_l);memcpy(fx_bus_sum_r,mix_r,n*sizeof *mix_r);}
 #if defined(MELODEE_FX_PROFILE) && MELODEE_FX_PROFILE && defined(FM1_IRQ_TARGET)
     if(fx_profile_control>>30u && fx_profile_track((uint32_t)(t-trk))){for(uint32_t i=0;i<n;i++)part_buf[i]=((i&8u)?-8000:8000)+(int32_t)i*97;rendered=1;spread_on=0;}
 #endif
