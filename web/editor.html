@@ -1999,9 +1999,9 @@ function makeMockDevice(opt = {}) {
     st.bank[slot] = snapshot(name);
     clearSteps(); st.p[29] = 16;
   });
-  /* the power-on sounds (engines.c TRK_DEF): SID 26, STRINGS, INIT SID, DRUM KIT (the reference build; FUNK BASS II until
-     the PROPHET was retired, 2026-10-22) */
-  [[1, FM6_E, 15], [2, 3, 0], [3, 10, 0], [0, 3, 26]].forEach(([i, e, p]) => { st.sel = i; setEngine(e); applyPreset(p); });
+  /* the power-on sounds (engines.c TRK_DEF): SID 26, TRIO STRING MACH, INIT SID, DRUM KIT (the reference build; FUNK BASS II
+     until the PROPHET was retired, 2026-10-22; FM6 STRINGS until 2026-10-28) */
+  [[1, 6, 6], [2, 3, 0], [3, 10, 0], [0, 3, 26]].forEach(([i, e, p]) => { st.sel = i; setEngine(e); applyPreset(p); });
   /* the device powers on with its sequencers empty; the mock starts as a little demo to look at: track 1 with
      the power-on bass, track 4 with BEAT, pads left, lead right */
   st.sel = 3; loadDemo(1);

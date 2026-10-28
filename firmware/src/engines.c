@@ -239,7 +239,8 @@ static const uint8_t TRK_DEF[NPART][2] = {
     {ENGI_FM6, 16},                                 /* FM6 GLASS PAD, the drone (FM back, PHYS and SID out: 2026-10-21) */
 #endif
 #if MELODEE_FM6
-    {ENGI_FM6, 15},                                 /* FM6 STRINGS (Theo 2026-10-21: ambient; was PAD, DIGITAL PAD) */
+    {6, 6},                                         /* TRIO STRING MACH (2026-10-28: two FM6 pads under generators
+                                                     * crackle, past the FM-1's six-operator limit; was FM6 STRINGS) */
 #else
     {ENGI_SID, 19},                                 /* (without it: SID 8580 PAD) */
 #endif
