@@ -189,7 +189,9 @@ starts, identify its recovery mode using the steps below.
 A tag `vX.Y[.Z]` on `main` runs `.github/workflows/release.yml`: both variants built, the full host suite, the two
 packages checked as the site checks them, and a GitHub release with both packages, `SHA256SUMS` and the notes in
 `docs/RELEASE_X.Y.md` (which must exist; a tag with a suffix, `v2.0-rc1`, makes a prerelease). Run by hand from the
-Actions tab with a version, it builds and checks without publishing.
+Actions tab with a version, it builds and checks without publishing. A tag's packages also get a GitHub build
+provenance attestation, verified before the release is published; anyone can check a download with
+`gh attestation verify tessera-X.Y.fwsc --repo Rastapopolix/tessera`.
 
 The site is GitHub Pages from `main`'s `docs/`: publish a release there with the `make_site.py` line above into
 `docs/` (the test pages go into `docs/test/VERSION/` the same way), in a pull request.
