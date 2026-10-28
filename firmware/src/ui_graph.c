@@ -821,7 +821,7 @@ static void graph_step_evolve(const track_t *t, uint32_t tr, uint16_t c)
     step_t v;
     for (i = 0; i < len; i++) {                          /* (the pitch range: as written and as played) */
         for (k = 0; k < 2u; k++) {
-            const step_t *s = k ? (tessera_step_now(tr, i, &v) ? &v : NULL) : &st[i];
+            const step_t *s = k ? (tessera_step_now(tr, i, &v) ? &v : 0) : &st[i];
             if (s && s->time == ST_NOTE && s->n) {
                 if (s->note[0] < lo) lo = s->note[0];
                 if (s->note[0] > hi) hi = s->note[0];
