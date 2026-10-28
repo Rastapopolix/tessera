@@ -112,12 +112,13 @@ Tessera 2.0 has three engines on the device:
 |---|---|
 | **FM6** | Six-operator FM in the manner of the DX7: 32 algorithms, operator envelopes and scaling, pitch EG, LFO and the function settings (bend, porta, wheel, foot, breath, aftertouch). Its ENGINE setting picks MODERN, MARK I (the DX7's own tables) or OPL. The main melodic voice. |
 | **TRIO** | Three oscillators: WAVE, INT2, INT3 (intervals) and DETUNE. Basses and leads. |
-| **DRUM** | Drum kits: **808**, **909** and **SID KIT** (every drum on a C64 chip). Eight lanes: BD, SD, CP, CH, OH, TM, RS, CB. The 808 has six tom pitches. |
+| **DRUM** | Drum kits: **808** and **909**. Eight lanes: BD, SD, CP, CH, OH, TM, RS, CB. The 808 has six tom pitches. |
 
 <p align="center"><img src="assets/gallery/edit_fm6.png" alt="FM6 ALGO page" width="240"> <img src="assets/gallery/fm6_eg.png" alt="FM6 operator envelope" width="240"> <img src="assets/gallery/drum.png" alt="DRUM steps" width="240"></p>
 
 **SID** and **PHYS** are no longer in the device build, and neither are CZ-1 and Prophet. A track saved with SID
-loads FM6's INIT; one saved with PHYS loads FM6's first voice. DRUM's SID KIT stays. FM6 and TRIO presets have
+loads FM6's INIT; one saved with PHYS loads FM6's first voice. DRUM's SID KIT
+and SID DIGI are out too (2.2, for flash room): a track saved with KIT SID loads as the 909. FM6 and TRIO presets have
 releases that ring out, so short sequenced notes are not cut off. The slow pads (GLASS PAD, SOFT PAD, DEEP PAD, PAD,
 STRINGS) swell in slowly: they speak on long notes and drones, and stay quiet on short steps.
 

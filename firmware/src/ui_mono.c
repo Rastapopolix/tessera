@@ -974,7 +974,7 @@ static void mo_stage_col(uint32_t k, int top)
     if (mute) {
         str_cpy(a, "MUTE", sizeof a);
     } else if (lvl) {
-        int32_t d = LEVEL_DB_X10[lvl];
+        int32_t d = level_db_x10(lvl);
         fmt_int(a, (d + (d < 0 ? -5 : 5)) / 10);
     } else {
         str_cpy(a, "OFF", sizeof a);

@@ -51,7 +51,7 @@ page also has a way back to the official V15 firmware, with a backup first.
 * **Modulation**: 16 cords from any source to any destination on any track, generators included; slow organic
   sources (TIDE, SWARM); live marks on every knob a cord moves, and **MATRIX** to see the whole patch.
 * **Print**: hold REC to turn what a generator played into ordinary steps.
-* **Sounds**: FM6 (six-operator FM, three engine models), TRIO and DRUM (808, 909, SID KIT).
+* **Sounds**: FM6 (six-operator FM, three engine models), TRIO and DRUM (808, 909).
 * **MIDI OUT** of every track and the generators, each on a channel of its own (GLO > MIDI OUT), and **CLOCK OUT**,
   over USB.
 * **Its own look**: the SMALTI palette, square tiles, Chakra Petch, and an animated mosaic splash.

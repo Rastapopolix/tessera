@@ -51,6 +51,10 @@
 #define MELODEE_SID 1            /* SID as a melodic engine (eng_sid.c); DRUM's SID KIT and SID DIGI keep the chip core either
                                   * way. Tessera 2026-10-21: out, FM back (its tracks load FM's INIT) */
 #endif
+#ifndef MELODEE_SID_KIT
+#define MELODEE_SID_KIT 1        /* DRUM's SID KIT and SID DIGI (drum_sid.c); the device build leaves them out for flash
+                                  * (2026-10-28: a stored KIT SID loads clamped: the 909) */
+#endif
 #ifndef MELODEE_TRIO
 #define MELODEE_TRIO 1           /* TRIO (eng_trio.c), back 2026-10-17 beside SID and DRUM (MACRO out: too costly) */
 #endif
