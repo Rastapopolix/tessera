@@ -1675,9 +1675,12 @@ uint32_t tessera_sig(uint32_t tr)
 {
     if (tr < TESSERA_TRACKS && tessera_step_on(tr))    /* (STEP EVOLVE: its EVOLVE page and the changes) */
         return tessera.sv_lock[tr] * 13u + tessera.sv_every[tr] * 61u + tessera.sv_amount[tr] * 29u +
-               tess_sv.flash[tr] * 4093u + tess_sv.steps[tr] * 977u + tessera_step_varied(tr) * 131u;
+               tess_sv.flash[tr] * 4093u + tess_sv.steps[tr] * 977u + tessera_step_varied(tr) * 131u +
+               tessera.sv_how[tr] * 7u + tess_sv.ser[tr] * 104729u + tess_sv.ser_arg[tr] * 17u;
     if (tr >= TESSERA_TRACKS || tessera.mode[tr] == TESS_ENG_OFF) return 0;
-    uint32_t h = tessera.mode[tr] * 1009u + tessera.last_note[tr] * 53u + tessera.active_gate[tr];
+    uint32_t h = sd_source(tr) ? tess_sd.pos[tr] * 7907u + tess_sd.load[tr] + 1u : 0u;   /* (STEP as seed: its loop) */
+    for (uint32_t i = 0; h && i < SD_LOOP; i++) h = (h ^ tess_sd.loop[tr][i]) * 16777619u;
+    h ^= tessera.mode[tr] * 1009u + tessera.last_note[tr] * 53u + tessera.active_gate[tr];
     h ^= tessera.evolve[tr].bar_cnt * 977u + tessera.evolve[tr].flash * 4093u + tessera.evolve[tr].every * 61u + tessera.evolve[tr].amount * 29u + tessera.evolve[tr].lock * 13u + tessera.evolve[tr].form * 7u + tessera.evolve[tr].form_pos * 131u + tessera.evolve[tr].sec * 17u;
     switch (tessera.mode[tr]) {
     case TESS_ENG_TURING: { const tessera_turing_t *a = &tessera.turing[tr];

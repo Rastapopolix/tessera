@@ -267,6 +267,34 @@ static int sd_morph(const track_t *t, uint32_t tr, gen_out_t *out)
     return 1;
 }
 
+/* TURING or MORPH playing from a SOURCE, for its pictures (ui_graph.c): the loop's steps (0: not from one), into now[]
+ * as they play now (MORPH: B) and home[] as written in the source (bit 7 a hit, bits 0..6 its note; a rest 0); *at
+ * the step playing (the last one, stopped) */
+uint32_t tessera_sd_loop(uint32_t tr, uint8_t *now, uint8_t *home, uint32_t *at)
+{
+    uint32_t s = tr < TESSERA_TRACKS ? sd_source(tr) : 0u, m, len, i, note, vel, live;
+    if (!s) return 0;
+    m = tessera.mode[tr];
+    if (m == TESS_ENG_TURING) {
+        len = tessera.turing[tr].len;
+        len = len < 2u ? 2u : len > SD_LOOP ? SD_LOOP : len;
+        live = tess_sd.len[tr] == tessera.turing[tr].len;
+    } else if (m == TESS_ENG_MORPH) {
+        len = sd_len(s - 1u);
+        len = len > SD_LOOP ? SD_LOOP : len;
+        live = tess_sd.len[tr] == SD_MORPH;
+    } else {
+        return 0;
+    }
+    live = live && !tess_sd.load[tr];                   /* (not filled yet: as written) */
+    for (i = 0; i < len; i++) {
+        home[i] = (uint8_t)(sd_step(s - 1u, i, &note, &vel) ? 0x80u | (note & 0x7Fu) : 0u);
+        now[i] = live ? (tess_sd.loop[tr][i] & 0x80u ? tess_sd.loop[tr][i] : 0u) : home[i];
+    }
+    *at = (tess_sd.pos[tr] + len - 1u) % len;
+    return len;
+}
+
 /* OCT+ held on GEN, TURING, EUCLID, MARKOV or MORPH: KNOB 1 SOURCE, KNOB 2 KEEP, KNOB 3 GRAVITY (ui_input.c) */
 void tessera_sd_layer_knob(uint32_t k, int32_t s)
 {

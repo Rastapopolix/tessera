@@ -1981,6 +1981,8 @@ static const char *const SV_CHECK[] = {
     "STEP EVOLVE HOW SERIAL: INVERSION mirrors each note in the scale about the first",
     "STEP EVOLVE HOW SERIAL: REC held keeps the transform (backwards), none left changed",
     "STEP EVOLVE HOW: another HOW puts the steps back as written",
+    "STEP EVOLVE picture: each step as the EVOLVE page and NOTES show it is the step that played (ADORN, SERIAL)",
+    "STEP as seed picture: TURING's loop is the source as written until it drifts, then each step changed counts",
 };
 #define SV_N (sizeof SV_CHECK / sizeof SV_CHECK[0])
 static void sv_setup(void)
@@ -2014,6 +2016,17 @@ static uint32_t sv_play(uint32_t n, step_t *out, uint32_t *fail)
         if (out) out[i % len] = *r;
     }
     return changed;
+}
+/* the steps as the pictures show them (tessera_step_now) against those played last: 0 the same */
+static int sv_shown(const step_t *played)
+{
+    for (uint32_t i = 0; i < 8u; i++) {
+        step_t v;
+        const step_t *w = tessera_step_now(0, i, &v) ? &v : &trk[0].step[i];
+        if (w->n != played[i].n || (w->n && w->note[0] != played[i].note[0]) || step_ratch(w) != step_ratch(&played[i]))
+            return 1;
+    }
+    return 0;
 }
 static void sv_run(char *res, size_t cap)
 {
@@ -2131,6 +2144,7 @@ static void sv_run(char *res, size_t cap)
                 ratch += step_ratch(&played[i]) > 1u;
                 passing += !trk[0].step[i].n && played[i].n;
             }
+            if (sv_shown(played)) fail |= 1u << 15;
         }
         if (!ratch || !passing) fail |= 1u << 10;
     }
@@ -2160,6 +2174,7 @@ static void sv_run(char *res, size_t cap)
                                                 (played[i].n && played[i].note[0] != t->step[j].note[0]))
                     fail |= 1u << 11;
             }
+            if (sv_shown(played)) fail |= 1u << 15;
         }
         if (seen != 0x1Fu && seen != 0x1Eu) fail |= 1u << 11;   /* (none at all, a round in 100: AMOUNT 100 never) */
         if (!(seen & (1u << TESS_SV_SER_INV)) || (loud & 1u << 3)) fail |= 1u << 12;   /* (and all in the scale) */
@@ -2175,6 +2190,23 @@ static void sv_run(char *res, size_t cap)
         tessera_sv_layer_knob(0, -1);                     /* ORNAMENT: as written again */
         if (tess_sv.ser[0] || tessera_step_varied(0) || tessera_param_get(0, TX_SV_HOW) != TESS_SV_ORNAMENT)
             fail |= 1u << 14;
+    }
+    {   /* STEP as seed: TURING from track 2's melody */
+        uint8_t now[16], home[16];
+        uint32_t at, len, d = 0;
+        sv_setup();
+        for (i = 0; i < 8u; i++) trk[1].step[i] = trk[0].step[i];
+        trk[1].p[P_SLEN] = 8;
+        tessera_knob(0, TESS_ENG_TURING);
+        tessera_param_set(0, TX_SD_SOURCE, 2);
+        sd_fill(0, 1);
+        len = tessera_sd_loop(0, now, home, &at);
+        if (len != tessera.turing[0].len || memcmp(now, home, len) || !(home[0] & 0x80u) || home[0] != (0x80u | FOLLOW_MELODY[0]))
+            fail |= 1u << 16;
+        tess_sd.loop[0][1] ^= 0x80u, tess_sd.loop[0][2] = (uint8_t)(0x80u | 77u);
+        tessera_sd_loop(0, now, home, &at);
+        for (i = 0; i < len; i++) d += now[i] != home[i];
+        if (d != 2u || tessera_sd_loop(1, now, home, &at)) fail |= 1u << 16;
     }
     snprintf(res, cap, "%u", fail);
 }

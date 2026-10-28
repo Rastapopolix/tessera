@@ -334,6 +334,13 @@ Drift with PROB, LEAP or MORPH, and let GRAVITY decide how far it may wander.
 The notes keep their written pitch, then follow this track's scale, TRN and SHIFT. Print (REC held) keeps what it
 played, as for any generator.
 
+With a SOURCE, TURING's and MORPH's picture on GEN shows the loop as it plays now: a step as you wrote it in white,
+a changed one in the track's colour with the written step drawn over it hollow (its ghost: an empty frame is a
+note dropped). MORPH shows B, its variation. **HOME** under it is how far the loop has wandered: empty when it plays
+your pattern as written, full when every step has changed.
+
+<p align="center"><img src="assets/gallery/gen_seed.png" alt="TURING from a SOURCE" width="240"></p>
+
 ---
 
 ## EVOLVE
@@ -372,6 +379,13 @@ pattern clears the changes.
 | **SERIAL** | The whole phrase at once, for the round: **backwards** (retrograde), **upside down** (inversion in the scale, about its first note), **rotated** by a few steps, or **half of it at half speed** (augmentation). AMOUNT is the chance a round brings one, LOCK the chance it stays for the next. |
 
 Changing HOW puts the steps back as written. REC held keeps any of them, SERIAL's whole phrase included.
+
+The EVOLVE page's picture shows the steps across the phrase, by pitch, under the bars left until the next round. A
+step playing as written is white; a changed one is in the track's colour, with the step as written hollow where
+it was: a ratchet is split into its hits, a passing or ghost note sits in a rest, a dropped note leaves only the
+hollow one. Under them: HOW, or SERIAL's transform this round (BACKWARDS, UPSIDE DOWN, ROTATE n, HALF SPEED), and
+**HOME**, how far the steps are from as written (empty: all as written). On NOTES, a changed step's note as it
+plays now is dashed, beside the note you wrote.
 
 <p align="center"><img src="assets/gallery/gen_evolve.png" alt="EVOLVE" width="240"> <img src="assets/gallery/step_evolve.png" alt="STEP EVOLVE" width="240"></p>
 
