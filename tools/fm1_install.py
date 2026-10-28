@@ -15,11 +15,15 @@ the FM-1 restarts and the installed identity is checked.
   fm1_install.py --info [--port NAME]
 
 If the FM-1 is still in update mode (an earlier install was cut off), the
-install finishes the write. Needs mido with python-rtmidi.
+install finishes the write, but only with the package's own loader: Tessera's
+(ota-FM-1_900, "Melodee Update") for a Tessera package, the official one
+(ota-FM-1_015) for the official V15. A package with --force never resumes.
+Needs mido with python-rtmidi.
 
 Exit codes: 0 done, 1 cancelled or other error, 2 bad arguments or package,
 3 FM-1 not found, 4 connection lost or the device stopped, 5 timeout (no
-loader / no restart), 6 wrong model, or another identity after the install.
+loader / no restart), 6 wrong model, another update loader than the package's,
+or another identity after the install.
 """
 import argparse
 import hashlib
@@ -37,6 +41,12 @@ LOADER_MARK = b"FELUCCA-LOADER-1"
 # the unmodified official FM-1 V15 (FM-1.fwsc from M-VAVE): returning to it is allowed without --force,
 # as the web installer's "Return to official V15" (web/fm1pkg.js validateStockPackage)
 STOCK_V15_SHA256 = "db1642b2b6fa5c2cccb11ffd13878068bb28601678d3644049f99dc40e7edb8a"
+# the update loaders on the handshake (web/fm1ota.js): Tessera's own (firmware/loader/loader.c, still Melodee's
+# identity) writes the app area only; the official one writes the whole package including the boot data and
+# reports the name in its update record (firmware/src/ota.c). Each package goes only to its own.
+TESSERA_LOADER, STOCK_LOADER = "ota-FM-1_900", "ota-FM-1_015"
+LOADER_HINT = {TESSERA_LOADER: "finish the interrupted Tessera install with a Tessera package first",
+               STOCK_LOADER: "finish the interrupted return to stock with the official FM-1.fwsc first"}
 PORT_RE = re.compile(r"fm-1|tessera|melodee|felucca|ota|composite|sinco|usb-midi", re.I)   # never probe other gear
 
 # seconds; the tests shorten them
@@ -45,7 +55,7 @@ DELAY = {"open": 0.3, "start": 2.0, "reply": 0.01, "loader": 3.0, "reboot": 3.0,
          "wait_loader": 30.0, "wait_reboot": 40.0}
 
 EXIT = {"usage": 2, "badpkg": 2, "notfound": 3, "model": 6, "lost": 4, "stopped": 4, "badreq": 4,
-        "noloader": 5, "noreturn": 5, "mismatch": 6}
+        "noloader": 5, "noreturn": 5, "mismatch": 6, "loader": 6}
 
 
 class InstallError(Exception):
@@ -139,6 +149,15 @@ def logical_image(raw):
 
 def model_of(text):
     return text.split("_")[0].removeprefix("ota-")
+
+
+def own_loader(dev, loader):
+    """refuse a device in update mode whose loader is not `loader` (the package's own; None: unknown)"""
+    if dev.id.loader and dev.id.text != loader:
+        dev.link.close()
+        raise InstallError("loader", f"the FM-1 is in update mode as {dev.id.text}; this package goes only to "
+                                     f"{loader or 'the loader it starts itself'}, so nothing was sent. "
+                                     + LOADER_HINT.get(dev.id.text, "Please report this loader on GitHub"))
 
 
 # ------------------------------------------------------------------ MIDI ---
@@ -308,7 +327,7 @@ class Updater:
             served += 1
             progress(served, addr + n)
 
-    def check(self, dev, image, step):
+    def check(self, dev, image, step, loader):
         """step 1: the running firmware checks the package and starts the loader"""
         step("start", dev.id.text)
         dev.link.send(UPGRADE)
@@ -326,6 +345,8 @@ class Updater:
         if not ota:
             raise InstallError("noloader", "the update loader did not appear. Replug the USB cable and "
                                            "run the install again: the FM-1 stays in update mode until it is done")
+        if loader:                  # None (--force): whichever loader the package just started
+            own_loader(ota, loader)
         return ota
 
     def write(self, ota, image, step):
@@ -355,13 +376,14 @@ class Updater:
         step("done", back.id.text)
         return back.id.text
 
-    def install(self, dev, image, product, step=lambda *a: None):
+    def install(self, dev, image, product, step=lambda *a: None, loader=None):
         """running firmware -> loader -> new firmware; dev from find(). A device already in
-        update mode only needs the write."""
+        update mode only needs the write, if it runs the package's own loader (`loader`)."""
         if model_of(dev.id.text) != model_of(product):
             dev.link.close()
             raise InstallError("model", f"the device is {dev.id.text}, the package is for {product}")
-        ota = dev if dev.id.loader else self.check(dev, image, step)
+        own_loader(dev, loader)
+        ota = dev if dev.id.loader else self.check(dev, image, step, loader)
         self.write(ota, image, step)
         return self.verify(product, step)
 
@@ -369,6 +391,7 @@ class Updater:
 # ------------------------------------------------------------------- CLI ---
 
 def load_package(path, force):
+    """-> (identity, logical image, the identity of its own update loader or None with --force)"""
     try:
         raw = open(path, "rb").read()
     except OSError as e:
@@ -381,7 +404,8 @@ def load_package(path, force):
         raise InstallError("badpkg", f"{path}: no Melodee update loader in this package; only Melodee's own "
                                      "packages and the unmodified official V15 (FM-1.fwsc) are installed "
                                      "(--force overrides)")
-    return product, logical_image(raw)
+    loader = STOCK_LOADER if official else TESSERA_LOADER if LOADER_MARK in raw else None
+    return product, logical_image(raw), loader
 
 
 def not_found(up):
@@ -426,11 +450,12 @@ def run(a, backend, out, ask):
         mode = "update loader (update not finished)" if dev.id.loader else "running"
         print(f"{dev.id.text}  [{mode}]  port: {dev.name}", file=out)
         return 0
-    product, image = load_package(a.package, a.force)
+    product, image, loader = load_package(a.package, a.force)
     print(f"package: {product}  ({a.package})", file=out)
     dev = up.find()
     if not dev:
         raise not_found(up)
+    own_loader(dev, loader)
     print(f"device:  {dev.id.text}  ({dev.name})" + ("  in update mode: the write will be finished" if dev.id.loader else ""),
           file=out)
     if not a.yes and not ask("Install? Do not unplug the FM-1 while writing. [y/N] "):
@@ -439,7 +464,7 @@ def run(a, backend, out, ask):
         return 1
     prog = Progress(out)
     try:
-        up.install(dev, image, product, prog)
+        up.install(dev, image, product, prog, loader)
     finally:
         prog.end()
     return 0

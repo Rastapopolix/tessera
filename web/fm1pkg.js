@@ -234,6 +234,9 @@ export async function sha256hex(bytes) {
 
 // Only the user's unmodified official V15 is accepted for a return to stock.
 // The digest pins every file, loader and flash layout; filenames are not evidence.
+// The file goes to the device unchanged, through its own official loader. head: the image
+// range the firmware compares with the device's boot data (CHECK HEAD, firmware/src/ota.c)
+// before it starts that loader.
 export async function validateStockPackage(bytes) {
   if (bytes.length !== STOCK_V15_SIZE || await sha256hex(bytes) !== STOCK_V15_SHA256)
     throw new Error("Select the unmodified official FM-1 V15 file (FM-1.fwsc).");
@@ -242,7 +245,9 @@ export async function validateStockPackage(bytes) {
       pkg.appBase !== 16384 || pkg.appOff !== 16672 || pkg.app.size !== STOCK_APP_SIZE ||
       !pkg.entries.some((e) => e.type === 100 && e.name === "ota.bin" && e.size === 19969))
     throw new Error("The official firmware has an unsupported FM-1 layout.");
-  return { product: pkg.product, image: logicalImage(bytes), sha256: STOCK_V15_SHA256 };
+  const head = pkg.flashEntry.dataOff;
+  return { product: pkg.product, image: logicalImage(bytes), sha256: STOCK_V15_SHA256,
+    head: { from: head, to: head + 0x4000 } };
 }
 
 // official V15 + Melodee app -> installable package (Uint8Array)
