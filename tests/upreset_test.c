@@ -284,10 +284,10 @@ int main(void)
         memset(st, 0, sizeof st);
         for (i = 0; i < 16u; i++)
             st[i].time = ST_REST;
-        st[0] = (step_t){{60, 64, 67, 0}, 3, ST_NOTE, SF_ACCENT | SF_SLIDE, 100};
-        st[1] = (step_t){{0}, 0, ST_TIE, 0, 0};
-        st[2] = (step_t){{50}, 0, ST_NOTE, SF_ACCENT, 0};   /* n = 0: empty */
-        st[20] = (step_t){{70}, 1, ST_NOTE, 0, 90};         /* beyond 16: not stored */
+        st[0] = (step_t){{60, 64, 67, 0}, 3, ST_NOTE, 0, SF_ACCENT | SF_SLIDE, 100};
+        st[1] = (step_t){{0}, 0, ST_TIE, 0, 0, 0};
+        st[2] = (step_t){{50}, 0, ST_NOTE, 0, SF_ACCENT, 0};   /* n = 0: empty */
+        st[20] = (step_t){{70}, 1, ST_NOTE, 0, 0, 90};         /* beyond 16: not stored */
         up_pat_from(&r, st);
         bad += check("steps -> pattern", r.note[0] == 60 && r.flags[0] == 3 && r.note[1] == 0 && r.flags[1] == 4 &&
                                              r.note[2] == 0 && r.flags[2] == 0 && !up_pat_empty(&r));

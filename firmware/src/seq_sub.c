@@ -209,6 +209,7 @@ static void seq_nudge_tick(track_t *t, uint32_t period, uint32_t cur_len, uint32
         uint16_t was = t->seq_idx;
         t->seq_idx = (uint16_t)ni;
         s = tessera_step_vary(t, s, &sv);
+        s = step_acc(t, s, &sv, t->seq_pass + !ni);         /* (step 0 early: the next pass's) */
         seq_nudge[tr].s = *s;
         seq_nudge[tr].hits = (uint8_t)step_ratch(s);
         seq_nudge[tr].lead = cur_len - t->seq_pos;

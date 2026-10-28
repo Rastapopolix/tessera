@@ -2063,7 +2063,7 @@ static void library_note_sweep(const char *out)
             sysex_stage(ENGI_FM6,raw,1,FM6_PACKED);ui.uslot=15;ui.msg_t=0;slot_enter();
         } else if(scene==1u){eng(ENGI_FM6);go_page(GR_USER);ui.uslot=15;bulk=(typeof(bulk)){.on=1,.engine=ENGI_FM6,.anchor=12,.end=15};slot_enter();}
         else if(scene==4u||scene==5u){eng(ENGI_FM6);go_page(GR_USER);sx_import.count=32;confirm_open(scene==4u?CF_BULK_ERASE:CF_IMPORT,0);}
-        else {go_page(GR_ROLL);cursor_set(2);TSEL->step[2]=(step_t){{60},1,ST_NOTE,0,96};TSEL->step[5]=(step_t){{64},1,ST_NOTE,0,96};
+        else {go_page(GR_ROLL);cursor_set(2);TSEL->step[2]=(step_t){{60},1,ST_NOTE, 0,0,96};TSEL->step[5]=(step_t){{64},1,ST_NOTE, 0,0,96};
             if(scene==2u)bulk=(typeof(bulk)){.on=1,.anchor=2,.end=5};
             else if(scene==3u)note_manual_length(1,RECORD_UNIT/4u);
             else if(scene==6u||scene==8u){bulk=(typeof(bulk)){.on=1,.anchor=2,.end=5};notes_bulk_sheet_open();if(scene==8u){pop.sel=2;ui.note_grid=2;}}

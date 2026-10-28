@@ -4,11 +4,11 @@
 #define MELODEE_STEP_SNAPSHOT_H
 /* Main-loop history only. Preserve every step field, including unused note
  * bytes and n on rests/ties. Three bounded control fields share one byte;
- * all other bytes remain exact. No variable-size allocation or audio decode. */
+ * the pitch accumulator has one of its own; all other bytes remain exact. No variable-size allocation or audio decode. */
 typedef struct {
-    uint8_t note[4], meta, vel, hit, acc, probability, sub;
+    uint8_t note[4], meta, vel, hit, acc, probability, sub, climb;
 } step_snapshot_t;
-_Static_assert(sizeof(step_snapshot_t) == 10u, "compact history step");
+_Static_assert(sizeof(step_snapshot_t) == 11u, "compact history step");
 _Static_assert(ST_REST < 4u && (SF_ACCENT | SF_SLIDE | SF_RECORDED) < 8u,
                "history control fields fit one byte");
 static void step_snapshot_put(step_snapshot_t *out, const step_t *in)
@@ -16,6 +16,7 @@ static void step_snapshot_put(step_snapshot_t *out, const step_t *in)
     for (uint32_t i = 0; i < 4u; i++) out->note[i] = in->note[i];
     out->meta = (uint8_t)(in->n | (in->time << 3) | (in->flags << 5));
     out->vel = in->vel; out->hit = in->hit; out->acc = in->acc; out->probability = in->probability; out->sub = in->sub;
+    out->climb = in->climb;
 }
 static step_t step_snapshot_get(const step_snapshot_t *in)
 {
@@ -23,6 +24,7 @@ static step_t step_snapshot_get(const step_snapshot_t *in)
     for (uint32_t i = 0; i < 4u; i++) out.note[i] = in->note[i];
     out.n = in->meta & 7u; out.time = (in->meta >> 3) & 3u; out.flags = in->meta >> 5;
     out.vel = in->vel; out.hit = in->hit; out.acc = in->acc; out.probability = in->probability; out.sub = in->sub;
+    out.climb = in->climb & 15u;
     return out;
 }
 static void step_snapshot_save(step_snapshot_t *out, const step_t *in)

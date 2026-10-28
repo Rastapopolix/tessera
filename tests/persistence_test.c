@@ -151,7 +151,7 @@ static int test_tsp_record(void)
     int bad = 0, ok;
     uint32_t len, i, k, b;
     reset();
-    trk[0].step[5] = (step_t){{62}, 1, ST_NOTE, 0, 90, 0, 0, 0, 0};
+    trk[0].step[5] = (step_t){{62}, 1, ST_NOTE, 0, 0, 90, 0, 0, 0, 0};
     step_set_ratch(&trk[0].step[5], 3); step_set_nudge(&trk[0].step[5], -6);
     trk[0].step[6] = trk[0].step[5]; step_set_ratch(&trk[0].step[6], 8);   /* (x8: RATCH's high bit) */
     song.sel = 1; tessera_knob(0, TESS_ENG_EUCLID);
@@ -242,12 +242,46 @@ static int test_tsp_record(void)
     tsp_resum(raw);
     bad += check("TSP1: a HUMAN part past 60 ms is refused", ok && !tsp_valid(raw, len));
 
+    reset();                                           /* the pitch accumulator: steps' Accumulate, the record's ACC part */
+    trk[0].step[3] = (step_t){{62}, 1, ST_NOTE, 0, 0, 90}; step_set_climb(&trk[0].step[3], -7);
+    trk[0].step[5] = (step_t){{64}, 1, ST_NOTE, 0, 0, 90}; step_set_climb(&trk[0].step[5], 5);
+    tessera_param_set(1, TX_ACC_LIMIT, 3); tessera_param_set(1, TX_ACC_MODE, TESS_ACC_PING);
+    tessera_param_set(3, TX_ACC_LIMIT, 14); tessera_param_set(3, TX_ACC_MODE, TESS_ACC_CLAMP);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_ACC];
+    reset();
+    ok = ok && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: steps' Accumulate (-7, +5) and each track's LIMIT / MODE come back",
+                 ok && step_climb(&trk[0].step[3]) == -7 && step_climb(&trk[0].step[5]) == 5 &&
+                 !trk[0].step[4].climb && tessera.acc_limit[1] == 3u && tessera.acc_mode[1] == TESS_ACC_PING &&
+                 tessera.acc_limit[3] == 14u && tessera.acc_mode[3] == TESS_ACC_CLAMP &&
+                 tessera.acc_limit[0] == TESS_ACC_LIMIT_DEF && tessera.acc_mode[0] == TESS_ACC_WRAP);
+    raw[tsp_seen.at[TSP_ACC] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (saved before it: no ACC part) */
+    tsp_resum(raw);
+    tessera_param_set(1, TX_ACC_LIMIT, 2);
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_ACC];
+    tsp_restore(raw);
+    bad += check("TSP1: a record without the ACC part loads with LIMIT 7, WRAP", ok && tessera.acc_limit[1] == 7u &&
+                 tessera.acc_mode[1] == TESS_ACC_WRAP && tessera.acc_mode[3] == TESS_ACC_WRAP);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_ACC];
+    raw[tsp_seen.at[TSP_ACC] + 2u] = (uint8_t)(TESS_ACC_LIMIT + 1u);   /* (track 3's LIMIT past 14) */
+    tsp_resum(raw);
+    ok &= !tsp_valid(raw, len);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok &= len && tsp_valid(raw, len);
+    raw[tsp_seen.at[TSP_ACC] + NTRK] = TESS_ACC_MODES;   /* (track 1's MODE past CLAMP) */
+    tsp_resum(raw);
+    bad += check("TSP1: an ACC part with a LIMIT or a MODE out of range is refused", ok && !tsp_valid(raw, len));
+
     reset();                                           /* the largest: every step of every pattern full, 1,024 notes */
     for (k = 0; k < NTRK; k++) {
         for (b = 0; b < NPAT; b++)
             for (i = 0; i < NSTEP; i++) {
-                step_t s = {{(uint8_t)(40u + i), 60, 64, 67}, 4, ST_NOTE, SF_ACCENT, 100, 0, 0, 20, 0};
-                step_set_ratch(&s, 4); step_set_nudge(&s, 7);
+                step_t s = {{(uint8_t)(40u + i), 60, 64, 67}, 4, ST_NOTE, 0, SF_ACCENT, 100, 0, 0, 20, 0};
+                step_set_ratch(&s, 4); step_set_nudge(&s, 7); step_set_climb(&s, -3);
                 if (b == trk[k].pattern) trk[k].step[i] = s; else pattern_at(k, b)->step[i] = s;
             }
         song.sel = (uint8_t)k; tessera_knob(0, TESS_ENG_TURING);
@@ -365,7 +399,7 @@ int main(void)
                   st_load(OBJ_SETTINGS, &p, sizeof p) == (int)sizeof p && p.palette == palette_to_stored(1));
 
     reset();
-    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 96, 0, 0};
+    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 96, 0, 0};
     project_save(0);
     oldlen = proj_bank_len[0]; memcpy(old, proj_bank_slot[0], oldlen);
     trk[0].step[0].note[0] = 72;

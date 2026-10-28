@@ -70,7 +70,7 @@ static int motion_capacity(void)
 static int probability_playback(void)
 {
     int bad = 0; ui_power_on(); track_t *t = &trk[0];
-    step_t s = {{60, 64, 0, 0}, 2, ST_NOTE, 0, 90, 1u << DV_KICK, 0, 0};
+    step_t s = {{60, 64, 0, 0}, 2, ST_NOTE, 0, 0, 90, 1u << DV_KICK, 0, 0};
     bad += check("zero-initialized probability remains legacy 100 percent", step_chance(&s) == 100u);
     step_set_chance(&s, 0); seq_step(t, &s, div_samples(2), 0);
     bad += check("zero percent suppresses the whole chord and drum hits", step_chance(&s) == 0u && !t->seq_n);
@@ -84,7 +84,7 @@ static int probability_playback(void)
 static int compact_project(void)
 {
     int bad = 0; ui_power_on(); track_t *t = &trk[0];
-    t->step[3] = (step_t){{60, 67}, 2, ST_NOTE, SF_ACCENT, 110, 0x81, 0x80, 0};
+    t->step[3] = (step_t){{60, 67}, 2, ST_NOTE, 0, SF_ACCENT, 110, 0x81, 0x80, 0};
     step_set_chance(&t->step[3], 25); t->p[P_FM1_LEVEL] = 80; t->p[P_ED_FLT] = -50;
     motion_set_event(t, 3, P_LEVEL, 110);
     static project_t before, after; static uint8_t packed[TSP_MAX], corrupt[TSP_MAX];
@@ -167,7 +167,7 @@ static int older_count(void)
         for (i = 0; i < 8u; i++) trk[k].p[P_E0 + i] = (int16_t)(ENGINES[trk[k].eng_req]->edit[i].min + (int16_t)(k + i) %
             (ENGINES[trk[k].eng_req]->edit[i].max - ENGINES[trk[k].eng_req]->edit[i].min + 1));
     t->p[P_FM1_ATK] = 33; t->p[P_LEVEL] = 20;
-    t->step[2] = (step_t){{60, 64, 67}, 3, ST_NOTE, 0, 100};
+    t->step[2] = (step_t){{60, 64, 67}, 3, ST_NOTE, 0, 0, 100};
     project_capture(&before);
     memset(&m, 0, sizeof m);                                       /* as that firmware numbered them */
     m.count = 3; m.on = 1;
@@ -202,7 +202,7 @@ static int older_count(void)
 static int loads_and_song(void)
 {
     int bad = 0; ui_power_on(); track_t *t = &trk[0];
-    t->p[P_LEVEL] = 21; motion_set_event(t, 0, P_LEVEL, 100); t->step[0] = (step_t){{60}, 1, ST_NOTE, 0, 100};
+    t->p[P_LEVEL] = 21; motion_set_event(t, 0, P_LEVEL, 100); t->step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 100};
     apply_preset_to(t, 1);
     bad += check("sound load clears incompatible motion and keeps pattern", !motion_count(t) && t->step[0].note[0] == 60);
     undo_swap(); bad += check("sound undo restores the original motion pool and base", motion_count(t) == 1u && t->p[P_LEVEL] == 21);

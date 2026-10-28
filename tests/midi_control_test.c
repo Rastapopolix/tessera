@@ -98,7 +98,7 @@ static void clock_setup(uint32_t mode)
 {
     midi_test_reset(); song.g[G_CLOCK] = (int16_t)mode;
     trk[0].p[P_SLEN] = 16; trk[0].p[P_SDIV] = 2;
-    for (uint32_t i = 0; i < 16; i++) trk[0].step[i] = (step_t){{(uint8_t)(60 + i)}, 1, ST_NOTE, 0, 100};
+    for (uint32_t i = 0; i < 16; i++) trk[0].step[i] = (step_t){{(uint8_t)(60 + i)}, 1, ST_NOTE, 0, 0, 100};
     events_block(CTL);
 }
 static void clock_packet(uint32_t source, uint32_t status, uint32_t ms)

@@ -166,6 +166,10 @@ typedef struct {
                                                   * (STEP ones too); not in the packed block: the record's SUB part */
     uint8_t          sub_human[TESSERA_TRACKS];  /* 0..TESS_HUMAN_MS: HUMAN TIME, a step up to this many ms late, any
                                                   * track's (STEP ones too); not in the packed block: the HUMAN part */
+    uint8_t          acc_limit[TESSERA_TRACKS];  /* 1..TESS_ACC_LIMIT: the pitch accumulator's reach in degrees from the
+                                                  * written note, a STEP track's (step_acc.c; 0 reads as 7) */
+    uint8_t          acc_mode[TESSERA_TRACKS];   /* TESS_ACC_WRAP / PING / CLAMP: what it does at LIMIT; both not in the
+                                                  * packed block: the record's ACC part */
     /* MIDI OUT (midi_out.c; GLO > MIDI OUT): each track's channel. 0 AUTO (ROUT, a drum track the DRUM channel, as
      * before), 1..16 that channel, TESS_MIDI_OFF none; not in the packed block: the record's MIDI part */
     uint8_t          midi_ch[TESSERA_TRACKS];
@@ -307,9 +311,14 @@ enum {
     TX_KEY_LINK,                                    /* (0x264: KEY LINK, the project's: one value, whichever track) */
     TX_SD_SOURCE, TX_SD_KEEP,                       /* (0x265, 0x266: STEP as seed's SOURCE and KEEP, any track's) */
     TX_SUB_HUMAN,                                   /* (0x267: TIMING's HUMAN TIME, any track's) */
+    TX_ACC_LIMIT, TX_ACC_MODE,                      /* (0x268, 0x269: the pitch accumulator's LIMIT and MODE, a STEP
+                                                     * track's) */
     TX_COUNT
 };
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */
+#define TESS_ACC_LIMIT 14u                          /* TX_ACC_LIMIT: up to two octaves of a 7-note scale */
+#define TESS_ACC_LIMIT_DEF 7u
+enum { TESS_ACC_WRAP, TESS_ACC_PING, TESS_ACC_CLAMP, TESS_ACC_MODES };   /* TX_ACC_MODE */
 enum { TESS_SD_FREE, TESS_SD_RHYTHM, TESS_SD_PITCH, TESS_SD_KEEPS };   /* TX_SD_KEEP */
 void tessera_sd_play(void);                         /* seq.c, PLAY: STEP as seed's loops from their sources again */
 void tessera_sd_layer_knob(uint32_t k, int32_t s);  /* TURING / EUCLID on GEN, OCT+ held: KNOB 1 SOURCE, 2 KEEP */

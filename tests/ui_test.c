@@ -2093,7 +2093,7 @@ static int test_grid(void)
     bad += check("pages: black keys 11 / 10 up / down (the cursor along); past LEN a key does nothing", ok);
     t->p[P_SLEN] = 16;
     /* a step's GM notes on their lanes */
-    t->step[8] = (step_t){{41, 49, 36, 0}, 3, ST_NOTE, SF_ACCENT, 96, 0, 0};
+    t->step[8] = (step_t){{41, 49, 36, 0}, 3, ST_NOTE, 0, SF_ACCENT, 96, 0, 0};
     ok = step_lanes(&t->step[8]) == ((1u << DV_TOM) | (1u << DV_BELL) | (1u << DV_KICK)) &&
          step_accents(&t->step[8]) == step_lanes(&t->step[8]);
     grid_hit(t, 8, DV_TOM, 0);
@@ -3306,7 +3306,7 @@ static int test_chain(void)
             pattern_request(&trk[i], k);
             track_defaults_steps(&trk[i]);
             trk[i].p[P_SLEN] = (int16_t)(2u + k);
-            trk[i].step[0] = (step_t){{(uint8_t)(60u + 5u * k), (uint8_t)(64u + 5u * k), (uint8_t)(67u + 5u * k)}, 3, ST_NOTE, 0, 96};
+            trk[i].step[0] = (step_t){{(uint8_t)(60u + 5u * k), (uint8_t)(64u + 5u * k), (uint8_t)(67u + 5u * k)}, 3, ST_NOTE, 0, 0, 96};
         }
         project_save(k);
     }

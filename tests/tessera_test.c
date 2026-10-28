@@ -1382,6 +1382,98 @@ static void br_check(char *res, size_t cap)
     snprintf(res, cap, "%u", (unsigned)ok);
 }
 
+/* ------------------------------------------------- PITCH ACCUMULATOR --- */
+/* a STEP track (C major, 1/16, LEN 4) for `passes` passes: step 1 C4 Accumulate +2, step 2 E4 + G4 -1, step 3 a TIE,
+ * step 4 C5 none; LIMIT lim, MODE mode, QNT q. Its notes in order into out[] (up to max); returns how many. stop_at: a
+ * STOP and PLAY after that many passes (0: none) */
+static int32_t acc_nudge0;                              /* step 1's NUDGE (acc_play) */
+static uint32_t acc_play(uint32_t mode, uint32_t lim, uint32_t q, uint32_t passes, uint32_t stop_at, uint8_t *out,
+                         uint32_t max)
+{
+    static const uint8_t C4[1] = {60}, EG[2] = {64, 67}, C5[1] = {72};
+    uint32_t f, i, n = 0, pass, total;
+    int32_t o[2 * CTL];
+    host_tracks_init();
+    tessera_reset();
+    song.g[G_BPM] = 120;
+    pass = 4u * seq_div_samples(2) / CTL * CTL;          /* (a pass: four 1/16 steps, in whole blocks) */
+    total = passes * pass;
+    for (i = 0; i < NTRK; i++) tt_open[i] = -1;
+    tt_n = tt_blk = 0;
+    memset(trk[0].step, 0, sizeof trk[0].step);
+    trk[0].p[P_SDIV] = 2;                               /* 1/16 */
+    trk[0].p[P_SLEN] = 4;
+    trk[0].p[P_ROOT] = 0;
+    trk[0].p[P_SCALE] = 1;                              /* (MAJ) */
+    trk[0].p[P_QUANT] = (int16_t)q;
+    put_step(&trk[0], 0, 1, C4, ST_NOTE, 0); step_set_climb(&trk[0].step[0], 2);
+    step_set_nudge(&trk[0].step[0], acc_nudge0);
+    put_step(&trk[0], 1, 2, EG, ST_NOTE, 0); step_set_climb(&trk[0].step[1], -1);
+    put_step(&trk[0], 2, 0, C4, ST_TIE, 0);  step_set_climb(&trk[0].step[2], 3);
+    put_step(&trk[0], 3, 1, C5, ST_NOTE, 0);
+    tessera_param_set(0, TX_ACC_LIMIT, (int32_t)lim);
+    tessera_param_set(0, TX_ACC_MODE, (int32_t)mode);
+    transport_req = 1;
+    for (f = 0; f < total + 4u * CTL; f += CTL) {
+        uint32_t a0 = vage, k, best;
+        if (stop_at && f == stop_at * pass) transport_req = 3;   /* (a restart: from step 1) */
+        if (f >= total) transport_req = 2;
+        mix_block(o, CTL);
+        for (k = 0; k < NVOICE; k++) {                  /* (the voices it started, oldest first: a step's notes in order) */
+            for (best = NVOICE, i = 0; i < NVOICE; i++)
+                if (trk[0].v[i].active && trk[0].v[i].age > a0 && (best == NVOICE || trk[0].v[i].age < trk[0].v[best].age))
+                    best = i;
+            if (best == NVOICE) break;
+            if (n < max) out[n++] = trk[0].v[best].note;
+            a0 = trk[0].v[best].age;
+        }
+    }
+    memset(trk[0].step, 0, sizeof trk[0].step);         /* (none left for the next test) */
+    return n;
+}
+/* "1": WRAP 7 climbs C4 by thirds of the scale (C E G B, C again) and E4 + G4 down a degree a pass, both from the
+ * notes as written after 8 passes; PING 3 turns round, CLAMP 3 stays; QNT OFF moves semitones; a restart begins
+ * again; the TIE and C5 never move; Accumulate 0 plays as written; step 1 NUDGEd early plays the next pass's notes */
+static void acc_check(char *res, size_t cap)
+{
+    static const uint8_t WRAP[9][3] = {{60, 64, 67}, {64, 62, 65}, {67, 60, 64}, {71, 59, 62}, {60, 57, 60},
+                                       {64, 55, 59}, {67, 53, 57}, {71, 52, 55}, {60, 64, 67}};
+    static const uint8_t PING[6] = {60, 64, 64, 60, 64, 64};     /* (+2 a pass, LIMIT 3: 0 2 2 0 2 2 degrees) */
+    static const uint8_t CLAMP[5] = {60, 64, 65, 65, 65};        /* (0 2 3 3 3 degrees) */
+    uint8_t got[64];
+    uint32_t ok = 1, n, p;
+    n = acc_play(TESS_ACC_WRAP, 7, Q_SNAP, 9, 0, got, 64);
+    printf("acc: WRAP 7:");
+    for (p = 0; p < n; p++) printf(" %u", got[p]);
+    printf("\n");
+    ok &= n == 9u * 4u;
+    for (p = 0; p < 9u && ok; p++)
+        ok &= got[4u * p] == WRAP[p][0] && got[4u * p + 1u] == WRAP[p][1] && got[4u * p + 2u] == WRAP[p][2] &&
+              got[4u * p + 3u] == 72u;
+    acc_nudge0 = -4;                                    /* (step 1 early, in the pass before: the next pass's notes) */
+    n = acc_play(TESS_ACC_WRAP, 7, Q_SNAP, 4, 0, got, 64);
+    acc_nudge0 = 0;
+    printf("acc: step 1 NUDGE -4/16:");
+    for (p = 0; p < n; p++) printf(" %u", got[p]);
+    printf("\n");
+    ok &= n >= 13u && got[0] == 60u && got[4] == 64u && got[8] == 67u && got[12] == 71u;
+    n = acc_play(TESS_ACC_PING, 3, Q_SNAP, 6, 0, got, 64);
+    ok &= n == 6u * 4u;
+    for (p = 0; p < 6u && ok; p++) ok &= got[4u * p] == PING[p];
+    n = acc_play(TESS_ACC_CLAMP, 3, Q_SNAP, 5, 0, got, 64);
+    ok &= n == 5u * 4u;
+    for (p = 0; p < 5u && ok; p++) ok &= got[4u * p] == CLAMP[p];
+    n = acc_play(TESS_ACC_WRAP, 7, Q_OFF, 3, 0, got, 64);     /* (semitones: C4 D4 E4; E4 + G4: D#4 + F#4 a pass) */
+    ok &= n == 12u && got[0] == 60u && got[4] == 62u && got[8] == 64u && got[5] == 63u && got[6] == 66u;
+    n = acc_play(TESS_ACC_WRAP, 7, Q_SNAP, 4, 2, got, 64);    /* (a restart after two passes: C4 again) */
+    printf("acc: restart after 2:");
+    for (p = 0; p < n; p++) printf(" %u", got[p]);
+    printf("\n");
+    ok &= n >= 16u && got[0] == 60u && got[4] == 64u && got[8] == 60u && got[12] == 64u;
+    printf("acc: %s\n", ok ? "ok" : "FAILED");
+    snprintf(res, cap, "%u", (unsigned)ok);
+}
+
 /* ------------------------------------------------------------ ENERGY --- */
 /* CHORD on track 0 (DRONE, HIT HOLD) and Euclid on track 1 at 120 BPM for 12 s; with rest, a rest from 2 s to 8 s.
  * *before / *during / *after: track 1's note-ons before 2 s, in 2.5 .. 7.5 s, after 8.5 s; *held: track 0's voices
@@ -2936,6 +3028,27 @@ int main(int argc, char **argv)
         }
         bad += check("SUB: RATCH x1..x8 in equal parts of the step, CHANCE tossed on the SEED, NOTE LENGTH's held notes "
                      "once, Grids' parts repeated, STEP tracks' per-step RATCH and NUDGE, SHAPE; STOP releases", ok);
+    }
+    {   /* the pitch accumulator (step_acc.c) */
+        unsigned ok = 0;
+        pid_t pid;
+        int fd[2];
+        fflush(stdout);
+        if (!pipe(fd) && (pid = fork()) >= 0) {
+            if (!pid) {
+                close(fd[0]);
+                acc_check(res, sizeof res);
+                fflush(stdout);
+                if (write(fd[1], res, strlen(res) + 1u) < 0) _exit(1);
+                _exit(0);
+            }
+            close(fd[1]);
+            if (read(fd[0], res, sizeof res - 1u) > 0) sscanf(res, "%u", &ok);
+            close(fd[0]);
+            waitpid(pid, 0, 0);
+        }
+        bad += check("ACCUMULATE: a STEP track's notes climb in the scale each pass, WRAP / PING / CLAMP at LIMIT, "
+                     "semitones with QNT OFF, from the notes as written after PLAY; TIEs and 0 as written", ok);
     }
     {   /* BREATH (CHORD) */
         unsigned ok = 0;
