@@ -430,6 +430,7 @@ static int project_restore_runtime(const project_t *input)
     proj_name_get(proj_name, (const uint8_t *)p->name);
     proj_cur = PROJ_NO_SLOT;                            /* (project_load: its slot) */
     undo_clear();                                       /* (ui.c) the undo levels belong to the old project */
+    list_forget();                                      /* (browse.c) the tracks' LISTs too */
     undo_depth++;                                       /* and these loads take none */
     for (k = 0; k < NTRK; k++) {                        /* the power-on sounds: format 1 (tracks 2..4), old drums */
         track_t *t = &trk[k];
@@ -727,6 +728,7 @@ static void project_new_blank(void)
     }
     undo_depth--;
     undo_clear();
+    list_forget();
     proj_cur = PROJ_NO_SLOT;
     proj_name[0] = 0;
     song.sel = 0;
