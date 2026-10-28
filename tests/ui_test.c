@@ -2926,20 +2926,22 @@ static int test_step_sheets(void)
     bad += check("NOTES: OCT+ on an empty step places the last note played, no sheet", t->step[4].n == 1u &&
                  t->step[4].note[0] == 62u && !pop.on && song.octave == 0);
     press(B_OCTUP);
-    bad += check("..OCT+ on the note: its sheet (Length, Velocity, Chance, Slide, Delete note)", pop.on == POP_SHEET &&
+    bad += check("..OCT+ on the note: its sheet (Length, Velocity, Chance, Condition, .., Delete note)", pop.on == POP_SHEET &&
                  pop.rows == SHEET_NOTE && !memcmp(pop.title, "Note ", 5));
     turn(EN_K2, 1);
     bad += check("..KNOB 2 on Length snaps to 1.25 steps", notes_selected(t)<RECORD_MAX && recording[notes_selected(t)].duration*(1u<<(recording[notes_selected(t)].owner>>5))==5u*RECORD_UNIT/4u && pop.on == POP_SHEET);
     turn(EN_K1, 1); turn(EN_K1, 1); turn(EN_K2, -10);
     bad += check("..Chance: 90 %", step_chance(&t->step[4]) == 90u);
+    turn(EN_K1, 1);
+    bad += check("..then Condition (Off)", !strcmp(pop.rows[pop.sel].label, "Condition") && !step_cond(&t->step[4]));
     turn(EN_K1, 1); turn(EN_K1, 1); turn(EN_K1, 1); turn(EN_K2, 1); turn(EN_K2, 1); turn(EN_K2, 1); turn(EN_K2, -1);
     bad += check("..Accumulate: +2 a pass, the step's", !strcmp(pop.rows[pop.sel].label, "Accumulate") &&
                  step_climb(&t->step[4]) == 2);
     for (int k = 0; k < 6; k++) turn(EN_K1, 1);
     frame();
-    bad += check("..the tenth row (Delete note) scrolls the sheet a row", pop.on == POP_SHEET && pop.sel == 9u &&
-                 pop.first == 1u);
-    for (int k = 0; k < 9; k++) turn(EN_K1, -1);
+    bad += check("..the eleventh row (Delete note) scrolls the sheet two rows", pop.on == POP_SHEET && pop.sel == 10u &&
+                 pop.first == 2u);
+    for (int k = 0; k < 10; k++) turn(EN_K1, -1);
     frame();
     bad += check("..and back to the top", pop.sel == 0u && pop.first == 0u);
     sheet_do("Slide");

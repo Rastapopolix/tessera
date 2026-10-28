@@ -49,7 +49,7 @@ static void tsp_end(tsp_w_t *w)
 
 /* step v2, 80 bits: notes 4 x 7, kind 4 (n 0..4, 5 tie, 6 rest; +8 recorded), accent and slide 2, velocity 7, hits 8,
  * accents / recorded gate 8, chance 8, RATCH 2, NUDGE 4, the pitch accumulator 4 (-7..+7, 0 off), RATCH's high bit 1
- * (x5..x8; 0 in a record of before it), 4 spare (0) */
+ * (x5..x8; 0 in a record of before it), the condition 4 (SC_*; 0 in a record of before it, every pass) */
 static int tsp_step_pack(uint8_t *b, const step_t *s)
 {
     uint32_t pos = 0, j;
@@ -66,6 +66,7 @@ static int tsp_step_pack(uint8_t *b, const step_t *s)
     proj_bits_put(b, &pos, (s->sub >> 2) & 15u, 4u);
     proj_bits_put(b, &pos, s->climb, 4u);
     proj_bits_put(b, &pos, (s->sub >> 6) & 1u, 1u);
+    proj_bits_put(b, &pos, step_cond(s), 4u);
     return 1;
 }
 static int tsp_step_unpack(step_t *s, const uint8_t *b)
@@ -85,6 +86,7 @@ static int tsp_step_unpack(step_t *s, const uint8_t *b)
     s->sub = (uint8_t)(r | proj_bits_get(b, &pos, 4u) << 2);
     s->climb = (uint8_t)proj_bits_get(b, &pos, 4u);
     s->sub |= (uint8_t)(proj_bits_get(b, &pos, 1u) << 6);
+    step_set_cond(s, proj_bits_get(b, &pos, 4u));
     return (meta & 7u) < 7u && s->probability <= 101u && s->climb != 8u && step_acc_valid(s);
 }
 
