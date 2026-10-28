@@ -373,7 +373,7 @@ static void stage_col(uint32_t k)
         int32_t a1 = lvl ? -KA_END + (int32_t)lvl * 2 * KA_END / 127 : -KA_END - 1;
         knob_arc(27 - KNOB_RING_R, 136 - KNOB_RING_R, KNOB_RING_R, KNOB_RING_COV, KNOB_RING_ANG, -KA_END, a1, T_LINE, tc, bg);
         if (lvl) {
-            int32_t d = LEVEL_DB_X10[lvl];
+            int32_t d = level_db_x10(lvl);
             fmt_int(v, (d + (d < 0 ? -5 : 5)) / 10);
         } else {
             str_cpy(v, "OFF", sizeof v);

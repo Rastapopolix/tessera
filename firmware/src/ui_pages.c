@@ -908,7 +908,7 @@ static void pv_strip(uint32_t k)
     pv_knob(27 - KNOB_LEVEL_R, 70 - KNOB_LEVEL_R, KNOB_LEVEL_R, KNOB_LEVEL_COV, KNOB_LEVEL_ANG, (int32_t)lvl, 0, 127,
             hot == 1u ? T_TEXT : tc, bg);
     if (lvl) {
-        int32_t d = LEVEL_DB_X10[lvl];
+        int32_t d = level_db_x10(lvl);
         fmt_int(b, (d + (d < 0 ? -5 : 5)) / 10);
     } else {
         str_cpy(b, "OFF", sizeof b);
