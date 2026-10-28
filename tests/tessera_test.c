@@ -425,6 +425,22 @@ static void s_seed_turing_drift(void) { s_seed(TESS_ENG_TURING, TESS_SD_RHYTHM, 
 static void s_seed_turing_hits(void) { s_seed(TESS_ENG_TURING, TESS_SD_PITCH, 25); }
 static void s_seed_euclid(void) { s_seed(TESS_ENG_EUCLID, TESS_SD_FREE, 0); }
 static void s_seed_euclid_rhythm(void) { s_seed(TESS_ENG_EUCLID, TESS_SD_RHYTHM, 0); }
+/* slice 2: MARKOV (LEAP 0: the chain alone), MORPH (A / B), GRAVITY 100 on drifting ones */
+static void s_seed_markov(void) { s_seed(TESS_ENG_MARKOV, TESS_SD_FREE, 0); tessera_param_set(1, TX_MKV_LEAP, 0); }
+static void s_seed_markov_rhythm(void) { s_seed(TESS_ENG_MARKOV, TESS_SD_RHYTHM, 0); tessera_param_set(1, TX_MKV_LEAP, 50); }
+static void s_seed_markov_pitch(void) { s_seed(TESS_ENG_MARKOV, TESS_SD_PITCH, 0); tessera_param_set(1, TX_MKV_LEAP, 50); }
+static void s_seed_morph_a(void) { s_seed(TESS_ENG_MORPH, TESS_SD_FREE, 0); tessera_param_set(1, TX_MRP_POS, 0); }
+static void s_seed_morph_b(void) { s_seed(TESS_ENG_MORPH, TESS_SD_RHYTHM, 0); tessera_param_set(1, TX_MRP_POS, 127); }
+static void s_seed_gravity(uint32_t mode)
+{
+    s_seed(mode, TESS_SD_FREE, 25);
+    if (mode == TESS_ENG_MARKOV) tessera_param_set(1, TX_MKV_LEAP, 100);
+    if (mode == TESS_ENG_MORPH) tessera_param_set(1, TX_MRP_POS, 127);
+    knob(tessera_sd_layer_knob, 2, 100);              /* GRAVITY 100 */
+}
+static void s_seed_turing_grav(void) { s_seed_gravity(TESS_ENG_TURING); }
+static void s_seed_markov_grav(void) { s_seed_gravity(TESS_ENG_MARKOV); }
+static void s_seed_morph_grav(void) { s_seed_gravity(TESS_ENG_MORPH); }
 
 typedef struct {
     const char *name;
@@ -787,6 +803,14 @@ static const scen_t SCEN[] = {
     {"seed_turing_t1_prob50_keep_pitch", 4, 0x104Au, s_seed_turing_hits, 0},
     {"seed_euclid_t1", 4, 0x104Bu, s_seed_euclid, 0},
     {"seed_euclid_t1_keep_rhythm", 4, 0x104Cu, s_seed_euclid_rhythm, 0},
+    {"seed_markov_t1_leap0", 4, 0x104Du, s_seed_markov, 0},
+    {"seed_markov_t1_leap50_keep_rhythm", 4, 0x104Eu, s_seed_markov_rhythm, 0},
+    {"seed_markov_t1_leap50_keep_pitch", 4, 0x104Fu, s_seed_markov_pitch, 0},
+    {"seed_morph_t1_a", 4, 0x1050u, s_seed_morph_a, 0},
+    {"seed_morph_t1_b_keep_rhythm", 4, 0x1051u, s_seed_morph_b, 0},
+    {"seed_turing_t1_prob50_gravity100", 4, 0x1052u, s_seed_turing_grav, 0},
+    {"seed_markov_t1_leap100_gravity100", 4, 0x1053u, s_seed_markov_grav, 0},
+    {"seed_morph_t1_b_gravity100", 4, 0x1054u, s_seed_morph_grav, 0},
 };
 #define NSCEN (sizeof SCEN / sizeof SCEN[0])
 
@@ -2850,19 +2874,31 @@ int main(int argc, char **argv)
         snprintf(line, sizeof line, "FOLLOW a STEP melody: all %u notes a third above it (in C major)", n2);
         bad += check(line, n2 > 16u && !wrong);
     }
-    for (int which = 0; which < 5; which++) {   /* STEP as seed, in a child as the scenarios (4 bars: 64 steps) */
-        static const char *const NAME[5] = {"seed_turing_t1", "seed_turing_t1_prob50_keep_rhythm",
-                                            "seed_turing_t1_prob50_keep_pitch", "seed_euclid_t1",
-                                            "seed_euclid_t1_keep_rhythm"};
-        static const char *const WHAT[5] = {
+    for (int which = 0; which < 13; which++) {   /* STEP as seed, in a child as the scenarios (4 bars: 64 steps) */
+        static const char *const NAME[13] = {"seed_turing_t1", "seed_turing_t1_prob50_keep_rhythm",
+                                             "seed_turing_t1_prob50_keep_pitch", "seed_euclid_t1",
+                                             "seed_euclid_t1_keep_rhythm", "seed_markov_t1_leap0",
+                                             "seed_markov_t1_leap50_keep_rhythm", "seed_markov_t1_leap50_keep_pitch",
+                                             "seed_morph_t1_a", "seed_morph_t1_b_keep_rhythm",
+                                             "seed_turing_t1_prob50_gravity100", "seed_markov_t1_leap100_gravity100",
+                                             "seed_morph_t1_b_gravity100"};
+        static const char *const WHAT[13] = {
             "STEP as seed: TURING, SOURCE T1, PROB 0: the melody as written, LEN 8 a loop (6 notes in 8)",
             "  PROB 50 KEEP RHYTHM: its rhythm kept, only its own notes, in another order",
             "  PROB 50 KEEP PITCH: the hits come and go, each one a note of the melody's",
             "STEP as seed: EUCLID 5 of 16, SOURCE T1: the melody's notes in order on its hits",
-            "  KEEP RHYTHM: the melody's rhythm (6 notes in 8 steps), EUCLID's pitches"};
+            "  KEEP RHYTHM: the melody's rhythm (6 notes in 8 steps), EUCLID's pitches",
+            "STEP as seed: MARKOV, SOURCE T1, LEAP 0: only the melody's notes, its chain the melody's own",
+            "  LEAP 50 KEEP RHYTHM: the melody's rhythm, its notes in another order",
+            "  LEAP 50 KEEP PITCH: the melody's notes in their order, on another rhythm",
+            "STEP as seed: MORPH, SOURCE T1, at A: the melody as written",
+            "  at B, KEEP RHYTHM: the melody's rhythm, some of its notes changed",
+            "STEP as seed: GRAVITY 100: TURING at PROB 50 plays the melody as written",
+            "  MARKOV at LEAP 100 plays the melody as written",
+            "  MORPH at B plays the melody as written"};
         unsigned n = 0, order = 0, of = 0;
         pid_t pid;
-        int fd[2], ok;
+        int fd[2], ok, whole;
         if (!pipe(fd) && (pid = fork()) >= 0) {
             if (!pid) {
                 close(fd[0]);
@@ -2875,11 +2911,14 @@ int main(int argc, char **argv)
             close(fd[0]);
             waitpid(pid, 0, 0);
         }
-        ok = which == 0 ? (n == 48u || n == 49u) && order == n :   /* (49: the step at the stop's block too) */
-             which == 1 ? (n == 48u || n == 49u) && of == n && order < n :
+        whole = n == 48u || n == 49u;                 /* (49: the step at the stop's block too) */
+        ok = which == 0 || which == 8 || which >= 10 ? whole && order == n :
+             which == 1 || which == 6 || which == 9 ? whole && of == n && order < n :
              which == 2 ? n > 24u && n < 48u && of == n :
              which == 3 ? n == 20u && order == n :
-                          (n == 48u || n == 49u) && of < n;
+             which == 4 ? whole && of < n :
+             which == 5 ? n > 24u && of == n :
+                          n > 12u && order == n && !whole;
         snprintf(line, sizeof line, "%s (%u notes, %u in order, %u its)", WHAT[which], n, order, of);
         bad += check(line, ok);
     }

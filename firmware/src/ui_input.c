@@ -961,7 +961,7 @@ static void edit_param(uint32_t slot, int32_t steps)
             ui.force = 1;
             return;
         }
-        if (sd_layer_on()) {                            /* TURING, EUCLID, OCT+ held: SOURCE, KEEP */
+        if (sd_layer_on()) {                            /* TURING .. MORPH, OCT+ held: SOURCE, KEEP, GRAVITY */
             tessera_sd_layer_knob(slot, steps);
             oct_eat |= 2u;
             ui.oct_t0 |= 2u;

@@ -82,6 +82,7 @@ static void tess_atlas_fresh(uint32_t tr)
 }
 static void tess_realign(uint32_t tr);
 static void sd_realign(uint32_t tr);                    /* (step_seed.c) */
+static void sd_evolve(uint32_t tr, uint32_t amt);
 static void tess_form_restart(uint32_t tr);
 /* The seed ROLL left waiting (tessera_seed_turn): its line from its start. The playheads back on step 1; a FORM
  * begins again at A (its sections were the old line's) */
@@ -349,7 +350,10 @@ void tessera_mutate(uint32_t tr)
     case TESS_ENG_TURING: gen_turing_mutate(&tessera.turing[tr], amt, &tessera.rnd[tr]); break;
     case TESS_ENG_EUCLID: gen_euclid_mutate(&tessera.euclid[tr], amt, &tessera.rnd[tr]); break;
     case TESS_ENG_MARKOV: gen_markov_mutate(&tessera.markov[tr], amt, &tessera.rnd[tr]); break;
-    case TESS_ENG_MORPH:  gen_morph_mutate(&tessera.morph[tr], amt, &tessera.rnd[tr]); break;
+    case TESS_ENG_MORPH:
+        gen_morph_mutate(&tessera.morph[tr], amt, &tessera.rnd[tr]);
+        sd_evolve(tr, amt);                                  /* (a SOURCE: B a little further from it) */
+        break;
     case TESS_ENG_GRIDS:  gen_grids_mutate(&tessera.grids[tr], amt, &tessera.rnd[tr]); break;
     case TESS_ENG_BOUNCE: gen_bounce_mutate(&tessera.bounce[tr], amt, &tessera.rnd[tr]); break;
     case TESS_ENG_AWAKE:  gen_awake_mutate(&tessera.awake[tr], amt, &tessera.rnd[tr]); break;
@@ -785,7 +789,7 @@ static int32_t tess_key(const track_t *t, uint32_t tr)
 {
     return tessera.mode[tr] == TESS_ENG_MARKOV || tessera.mode[tr] == TESS_ENG_ANSWER ? 0 : (int32_t)(t->p[P_ROOT] % 12);
 }
-#include "step_seed.c"                                  /* STEP as seed: TURING and EUCLID from a STEP pattern */
+#include "step_seed.c"                                  /* STEP as seed: TURING, EUCLID, MARKOV, MORPH from a STEP pattern */
 static uint32_t cord_smask[NTRK];                       /* (cord.c: the cords on Tessera settings, per track) */
 static void cord_step_begin(uint32_t tr);
 static void cord_step_end(uint32_t tr);
@@ -1125,10 +1129,12 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
         sd_euclid(t, tr, &out);                         /* (a SOURCE: its notes) */
         break;
     case TESS_ENG_MARKOV:
-        gen_markov_tick(&tessera.markov[tr], &clk, &tessera.rnd[tr], &out);
+        if (!sd_markov(t, tr, &out))                    /* (a SOURCE: its chain instead) */
+            gen_markov_tick(&tessera.markov[tr], &clk, &tessera.rnd[tr], &out);
         break;
     case TESS_ENG_MORPH:
-        gen_morph_tick(&tessera.morph[tr], &clk, &tessera.rnd[tr], &out);
+        if (!sd_morph(t, tr, &out))                     /* (a SOURCE: A it, B a variation) */
+            gen_morph_tick(&tessera.morph[tr], &clk, &tessera.rnd[tr], &out);
         break;
     case TESS_ENG_GRIDS:
         gen_grids_tick(&tessera.grids[tr], &clk, &tessera.rnd[tr], &out);
@@ -2489,6 +2495,7 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_KEY_LINK: return tessera.key_link;          /* (the project's, whichever track) */
     case TX_SD_SOURCE: return tessera.sd_src[tr];
     case TX_SD_KEEP: return tessera.sd_keep[tr];
+    case TX_SD_GRAVITY: return tessera.sd_grav[tr];
     case TX_CH_BREATH: return tessera.ch_breath[tr];
     case TX_EN_ARC: return tessera.en_arc;              /* (the project's, whichever track) */
     case TX_EN_RESTS: return tessera.en_rests;
@@ -2649,7 +2656,11 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
         tessera.sd_src[tr] = (uint8_t)tess_clampi(v, 0, TESSERA_TRACKS);
         tess_sd.load[tr] = 1;
         return;
-    case TX_SD_KEEP: tessera.sd_keep[tr] = (uint8_t)tess_clampi(v, 0, TESS_SD_KEEPS - 1); return;
+    case TX_SD_KEEP:                                    /* (MORPH's B made again, KEEP's way) */
+        tessera.sd_keep[tr] = (uint8_t)tess_clampi(v, 0, TESS_SD_KEEPS - 1);
+        if (tessera.mode[tr] == TESS_ENG_MORPH) tess_sd.load[tr] = 1;
+        return;
+    case TX_SD_GRAVITY: tessera.sd_grav[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_CH_BREATH: tessera.ch_breath[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_AN_VARY: tessera.answer[tr].vary = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_AN_ECHO: tessera.answer[tr].echo = (uint8_t)tess_clampi(v, 0, 100); return;
