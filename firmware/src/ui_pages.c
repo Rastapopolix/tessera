@@ -357,6 +357,10 @@ static void pv_sound(void)
     if (!ui.force && sig == pv.sound)
         return;
     pv.sound = sig;
+#if MELODEE_LOOK
+    mo_sound(en, nm);
+    return;
+#endif
     cv_begin(240, 240 - PV_SOUND_Y, T_BG);
     cv_icon_mid(6, 8, 16, trk_icon(song.sel, 1), T_THEME, T_BG);   /* (its ink at x 8, as the text was) */
     x = cv_text_on(26, 1, &AF_S, en, T_THEME, T_BG);

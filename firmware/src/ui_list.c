@@ -222,6 +222,10 @@ static void list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
     int32_t top;
     char lb[16], v[16];
     uint16_t vc;
+#if MELODEE_LOOK
+    mo_list_rows(n, row, first, vis, cap);
+    return;
+#endif
     for (top = 0; top < (int32_t)vis * LIST_ROW; ) {   /* in slices between rows */
         int32_t sh = (int32_t)vis * LIST_ROW - top <= 110 ? (int32_t)vis * LIST_ROW - top : 110;
         cv_begin(240, (uint32_t)sh, T_BG);
