@@ -375,7 +375,7 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
 }
 #if MELODEE_LOOK
 /* Mono: the rows 11 cells apart from row 12, the name at the left, the value at the right (dim), the row picked
- * inverted across the screen; COLOR: the inks as five boxes before the name, the one chosen filled; a scroll bar a
+ * inverted across the screen; COLOR: the inks as boxes before the name, the one chosen filled; a scroll bar a
  * cell wide at the right */
 static void menu_mono(void)
 {
@@ -394,12 +394,13 @@ static void menu_mono(void)
             mo_text(MI_NAME[i], 2, y + 2, on ? MO_BG : MO_DIM);
             if (i == MI_COLOR) {
                 uint32_t k, n = NPALETTES < 8u ? NPALETTES : 8u;
+                int32_t sw = n > 5u ? 4 : 6;            /* (more than five inks: narrower boxes, clear of COLOR) */
                 value = UI_PALETTES[settings.palette % NPALETTES].name;
-                x -= mo_tw(value) + 4;
+                x -= mo_tw(value) + 3;
                 for (k = n; k-- > 0;) {
-                    x -= 6;
-                    if (k == settings.palette % NPALETTES) mo_fill(x, y + 2, 5, 6, ink);
-                    else mo_box(x, y + 2, 5, 6, dim);
+                    x -= sw;
+                    if (k == settings.palette % NPALETTES) mo_fill(x, y + 2, sw - 1, 6, ink);
+                    else mo_box(x, y + 2, sw - 1, 6, dim);
                 }
             }
             if (value) {

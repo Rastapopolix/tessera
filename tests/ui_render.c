@@ -2208,7 +2208,7 @@ int main(int argc, char **argv)
     char path[600];
     uint32_t p, s;
 #if MELODEE_LOOK
-    static const char *const SHOW[] = {"YELLOW", "WHITE", "GREEN", "BLUE", "RED"};   /* the Mono inks */
+    static const char *const SHOW[] = {"YELLOW", "WHITE", "GREEN", "BLUE", "RED", "ORANGE", "PINK", "HOT PINK"};   /* the Mono inks */
 #else
     static const char *const SHOW[] = {"NIGHT", "CONTRAST", "SMALTI"};
 #endif
