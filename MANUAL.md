@@ -143,6 +143,10 @@ and SID DIGI are out too (2.2, for flash room): a track saved with KIT SID loads
 releases that ring out, so short sequenced notes are not cut off. The slow pads (GLASS PAD, SOFT PAD, DEEP PAD, PAD,
 STRINGS) swell in slowly: they speak on long notes and drones, and stay quiet on short steps.
 
+**FM6's amp envelope.** FM6 has no ADSR of its own, as the DX7 had none: each carrier's envelope (ENV: EG RATE, EG
+LVL, an operator at a time) is the sound's volume. **AEG** (EDIT 2, KNOB 4) moves them all at once: turned right a
+slower attack and a longer release, left a shorter one, 0 the patch as it is.
+
 **A filter for FM6.** FM6 has no filter of its own, as the DX7 had none: its brightness is **MLVL** (EDIT 1, KNOB 3),
 the level of the operators that are not carriers, and the track's CUTOFF cords move it. For a resonant low-pass, put
 the **FILTER** effect on the track (FX, an insert's TYPE **FILTER**): **CUT** is its cutoff, **RES** its resonance,
