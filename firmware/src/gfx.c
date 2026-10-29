@@ -22,7 +22,14 @@ typedef struct {
 } aafont_t;
 typedef struct { const char *name; uint16_t bg, surf, text, accent, trk[4]; } ui_pal_t;
 typedef struct { uint16_t off; uint8_t w; const char *label; } kc_t;
+#if MELODEE_LOOK                        /* the Mono look: every text in its 5 x 7 face (below), the faces only their sizes */
+static const aafont_t AF_X = {12, 9, 32, 126, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static const aafont_t AF_S = {14, 11, 32, 126, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static const aafont_t AF_M = {19, 15, 32, 126, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static const aafont_t AF_L = {37, 29, 32, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+#else
 #include "ui_fonts.h"                   /* AF_X 10 px / 500 (labels), AF_S 12 px / 400, AF_M 15 px / 500, AF_L 30 px / 500 */
+#endif
 #include "ui_palettes.h"
 #include "ui_keycaps.h"                 /* KC_*: the keycaps / badges (tools/gen_aa_keycaps.py), KNOB_* arcs */
 #define ELLIPSIS '\x85'                 /* the ellipsis glyph of AF_S and AF_M */
@@ -908,6 +915,7 @@ static void cv_alpha_hc(int32_t x, int32_t y, uint32_t w, uint32_t h, const uint
 }
 
 /* ------------------------------------------------------------- text --- */
+#if !MELODEE_LOOK
 /* the glyph number of ch in f, -1 = not in the face */
 static int32_t glyph_at(const aafont_t *f, uint32_t ch)
 {
@@ -946,6 +954,7 @@ static uint32_t fold(const aafont_t *f, uint32_t c)
 {
     return c >= 'a' && c <= 'z' && f->last < 'a' && glyph_at(f, c) < 0 ? c - 32u : c;
 }
+#endif
 
 #if MELODEE_LOOK
 /* The Mono look (ui_mono.c): every text in the one 5 x 7 face, a font pixel 2 x 2 (AF_L's 4 x 4), so the pictures
@@ -1066,7 +1075,7 @@ static int32_t text_w(const aafont_t *f, const char *s)
 {
 #if MELODEE_LOOK
     return mono_w(f, s);
-#endif
+#else
     int32_t pen = 0;
     uint32_t prev = 0;
     for (; *s; s++) {
@@ -1077,6 +1086,7 @@ static int32_t text_w(const aafont_t *f, const char *s)
         prev = c;
     }
     return (pen + 8) >> 4;
+#endif
 }
 
 /* y = top of the line box (the baseline is y + f->asc); returns the pen x at the end.
@@ -1110,7 +1120,7 @@ static int32_t cv_text_flags(int32_t x, int32_t y, const aafont_t *f, const char
         }
         return x + mono_w(f, s);
     }
-#endif
+#else
     const uint16_t *rv = ramp(fg, bg);
     const char *s0 = s;
     int32_t pen = 0, err = 0, x0 = 0x7FFF, y0 = 0x7FFF, x1 = -0x7FFF, y1 = -0x7FFF;
@@ -1163,6 +1173,7 @@ static int32_t cv_text_flags(int32_t x, int32_t y, const aafont_t *f, const char
     }
     (void)s0;
     return x + ((pen + 8) >> 4);
+#endif
 }
 static int32_t cv_text_on(int32_t x, int32_t y, const aafont_t *f, const char *s, uint16_t fg, uint16_t bg)
 {
@@ -1278,12 +1289,23 @@ static const uint16_t *kc_ramp(uint16_t under, uint16_t fill, uint16_t ink)
         v[a] = swap16(ux_mix(fill, ink, (int32_t)(a - 5u) * 10));
     return v;
 }
+#if MELODEE_LOOK                                  /* the Mono look: a keycap its label inverted, in the 5 x 7 face */
+static int32_t kc_w(uint32_t id) { return id < KC_COUNT ? mono_w(&AF_S, KC[id].label) + 2 : 0; }
+#else
 static int32_t kc_w(uint32_t id) { return id < KC_COUNT ? KC[id].w : 0; }
+#endif
 /* keycap / badge `id` with its top-left at (x, y), KC_H tall: fill and label tinted with tokens, `under` what lies
  * behind its corners; returns its right edge */
 static int32_t cv_keycap(int32_t x, int32_t y, uint32_t id, uint16_t fill, uint16_t ink, uint16_t under)
 {
     const kc_t *k = &KC[id < KC_COUNT ? id : 0u];
+#if MELODEE_LOOK
+    int32_t w = kc_w(id < KC_COUNT ? id : 0u);
+    (void)under;
+    cv_rect(x, y - 1, w, KC_H + 2, fill);
+    cv_text_on(x + 2, y - 1 + (KC_H + 2 - (int32_t)AF_S.h) / 2, &AF_S, k->label, ink, fill);
+    return x + w;
+#endif
     const uint16_t *rv = kc_ramp(under, fill, ink);
     cv_alpha(x, y, k->w, KC_H, KC_DATA + k->off, rv);
     if (x < 0 || x + k->w > (int32_t)cv_w || y + cv_oy < 0 || y + KC_H + cv_oy > (int32_t)cv_h)
@@ -1295,7 +1317,11 @@ static int32_t cv_keycap(int32_t x, int32_t y, uint32_t id, uint16_t fill, uint1
 
 /* a key hint: the keycap, then what it does (S, TEXT); unavailable: a DIM keycap and a DIM word. The word sits on
  * the keycap's centre line (S caps 9 rows, the keycap's 7). act may be 0 (the keycap alone); returns the end x */
+#if MELODEE_LOOK
+#define KH_GAP 8                                  /* keycap -> its word (Mono: a letter's room) */
+#else
 #define KH_GAP 4                                  /* keycap -> its word */
+#endif
 static int32_t kh_w(uint32_t id, const char *act) { return kc_w(id) + (act && act[0] ? KH_GAP + text_w(&AF_S, act) : 0); }
 static int32_t cv_key_hint(int32_t x, int32_t y, uint32_t id, const char *act, int on, uint16_t under)
 {

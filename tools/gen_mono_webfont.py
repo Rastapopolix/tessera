@@ -8,8 +8,8 @@ WOFF, so the site, the installer, the editor and the simulator page letter as th
   python3 tools/gen_mono_webfont.py --check  (tests/run_tests.sh: fails when a page's face is not MO_FONT's)
 
 A font pixel is 100 units, a glyph 6 pixels wide (5 and one clear), 7 above the baseline and 1 below: 800 units an
-em, so the face is sharp at 8, 16, 24 ... px. Lower case is drawn as upper (as the device draws it but in a chord's
-name); the degree and the o slashed are the device's too; a few signs the pages use and the device has no need of (| { } ~ ` and the middle dot, dashes, ellipsis, times) are added here. The WOFF
+em, so the face is sharp at 8, 16, 24 ... px. Lower case is drawn as upper (as on the device); a few signs the pages
+use and the device has no need of (| { } ~ ` and the middle dot, dashes, ellipsis, times) are added here. The WOFF
 goes inline, as a data URL, between the TESSERA-MONO markers of every page in PAGES, so each one stays a single file.
 """
 import base64
@@ -36,13 +36,11 @@ MARK = re.compile(r"(/\* TESSERA-MONO:[^*]*\*/).*?(/\* /TESSERA-MONO \*/)", re.S
 
 
 def mo_font():
-    """MO_FONT's glyphs by code point: ' ' .. 'z', then the degree and the o slashed (gfx.c mono_ch)"""
-    body = re.search(r"MO_FONT\[93\]\[7\] = \{(.*?)\n\};", SRC.read_text(), re.S).group(1)
-    rows = [tuple(int(v) for v in m.split(",")) for m in re.findall(r"\{([\d,\s]+)\}", body)]
-    assert len(rows) == 93 and all(len(r) == 7 for r in rows), "MO_FONT: 93 glyphs of 7 rows"
-    out = {0x20 + i: r for i, r in enumerate(rows[:91])}
-    out[0xB0], out[0xF8] = rows[91], rows[92]
-    return out
+    """MO_FONT's first 64 glyphs, ' ' .. '_' (the pages set in capitals; its small letters are a chord name's)"""
+    body = re.search(r"MO_FONT\[\d+\]\[7\] = \{(.*?)\n\};", SRC.read_text(), re.S).group(1)
+    rows = [tuple(int(v) for v in m.split(",")) for m in re.findall(r"\{([\d,\s]+)\}", body)][:64]
+    assert len(rows) == 64 and all(len(r) == 7 for r in rows), "MO_FONT: 64 glyphs of 7 rows"
+    return {0x20 + i: r for i, r in enumerate(rows)}
 
 
 def glyph(rows):
