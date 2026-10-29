@@ -64,6 +64,11 @@
 #ifndef MELODEE_LOOK
 #define MELODEE_LOOK 0           /* 0: the detailed look; 1: Mono (ui_mono.c), a build of its own */
 #endif
+#if MELODEE_LOOK
+#define LOOK(d, m) (m)           /* the look's own of two (a string the 5 x 7 face fits, a position) */
+#else
+#define LOOK(d, m) (d)
+#endif
 #ifndef MELODEE_PLAITS
 #define MELODEE_PLAITS 0         /* MACRO (eng_macro.c): Plaits' synthesis, C++ (build.py); the prototype: off by default */
 #endif
