@@ -153,6 +153,9 @@ static void fmp_check(uint32_t alg)
 static void fm6_hook(uint32_t kind, uint32_t a, uint32_t b)
 {
     uint32_t i, n = cv_w * cv_h;
+    if (MELODEE_LOOK)                                    /* (the Mono look: the chart split over its two half canvases;
+                                                         * linted in the detailed build) */
+        return;
     if (fmp_n) {                                         /* the part just drawn: its pixels */
         for (i = 0; i < n; i++)
             if (cv_px[i] != FMP_SENT) fmp_mask[i] |= (uint64_t)1u << (fmp_n - 1u);

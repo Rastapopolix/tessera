@@ -773,6 +773,16 @@ static void pv_fx(void)
     const char *foot=fx_state[(master?NPART:song.sel%NPART)*FX_SLOTS+slot].failed?"MEMORY FULL":type==FX_WIDTH?"Mono changes the tone":type==FX_OFF || !mix?"Turn MIX to hear FX":master?"Shared by all tracks":"OCT+ sound actions";
     cv_text_on(12,88,&AF_X,foot,T_DIM,T_PANEL);
 }
+/* the picture pv_pic chose on the current canvas, cv_oy its top (pv_picture; the Mono look's picture area): the
+ * output's wave between rows wy and wy + wh where a page has no picture of its own */
+static void pv_pic_body(uint32_t pic, int32_t cut, int32_t res, int32_t wy, int32_t wh)
+{
+    if (pic == 5u) pv_arp();
+    else if (pic == 6u) pv_steps();
+    else if (pic == 3u) pv_filter(cut, res);
+    else if (pic == 9u) pv_fx();
+    else stage_wave(T_THEME, wy, wh);
+}
 static void pv_picture(void)
 {
     int32_t cut, res;
@@ -828,11 +838,7 @@ static void pv_picture(void)
         cv_rrect(PV_PANEL_X, 0, PV_PANEL_W, PV_PIC_H - dy, 6, T_PANEL, T_BG);
         cv_bg = T_PANEL;
         cv_oy = -dy / 2;                                /* (under the tabs: the picture's middle) */
-        if (pic == 5u) pv_arp();
-        else if (pic == 6u) pv_steps();
-        else if (pic == 3u) pv_filter(cut, res);
-        else if (pic == 9u) pv_fx();
-        else stage_wave(T_THEME, 8 + dy / 2, PV_PIC_H - 16 - dy);
+        pv_pic_body(pic, cut, res, 8 + dy / 2, PV_PIC_H - 16 - dy);
         cv_oy = 0;
         cv_blit(0, (uint32_t)(PV_PIC_Y + dy));
     }

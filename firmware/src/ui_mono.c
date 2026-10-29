@@ -687,18 +687,46 @@ static void mo_pic_notes(const track_t *t)
         mo_text(b, 1, 101, MO_DIM);
     }
 }
+/* a picture with no Mono drawing of its own yet: the detailed look's (ui_graph.c graph_body, ui_pages.c pv_pic_body)
+ * in the picture area, in the ink's palette (gen_ui_palettes.py: every colour the ink or a blend of it on black); what
+ * runs past the area cleared again for the footer */
+static void mo_pic_detailed(void)
+{
+    int32_t oy0 = cv_oy, oy = cv_oy + MO_PY0 * 2;
+    uint16_t bg = cv_bg;
+    cv_bg = MO_BG;
+    if (pv_kind() == PV_CURVE || pv_kind() == PV_RINGS) {
+        int32_t cut, res;
+        uint32_t pic = pv_pic(&cut, &res);
+        cv_oy = oy;
+        if (pic == 4u || pic == 8u) graph_body(oy);     /* (FM6's chart, CHORD's chord: as pv_picture) */
+        else pv_pic_body(pic, cut, res, 8, (MO_PY1 - MO_PY0) * 2 - 16);
+    } else {
+        graph_body(oy);
+    }
+    cv_oy = oy0;
+    cv_bg = bg;
+    mo_fill(0, MO_PY1, 120, 120 - MO_PY1, MO_BG);
+}
 static void mo_picture(void)
 {
     const page_t *pg = cur_page();
     track_t *t = TSEL;
     uint32_t tr = song.sel;
     if (pg->graph == GR_STEPS && pg->fam == FAM_GEN && tr < TESSERA_TRACKS && tessera.mode[tr] != TESS_ENG_OFF) {
+        uint8_t now[16], home[16];
+        uint32_t at;
+        if (tessera_sd_loop(tr, now, home, &at)) {      /* STEP as seed: its loop, as the detailed look draws it */
+            mo_pic_detailed();
+            return;
+        }
         switch (tessera.mode[tr]) {
         case TESS_ENG_TURING: mo_pic_turing(tessera_turing(tr)); return;
         case TESS_ENG_EUCLID: mo_pic_euclid(tessera_euclid(tr)); return;
         case TESS_ENG_MARKOV: mo_pic_markov(tessera_markov(tr)); return;
         case TESS_ENG_MORPH: mo_pic_morph(tessera_morph(tr)); return;
         case TESS_ENG_GRIDS: mo_pic_grids(tessera_grids(tr), t); return;
+        default: mo_pic_detailed(); return;             /* (the generators since: BOUNCE .. ANSWER) */
         }
     }
     if (pg->graph == GR_ROLL) {
@@ -713,12 +741,7 @@ static void mo_picture(void)
         mo_pic_lfo(t);
         return;
     }
-    {                                                   /* the rest: a stand-in until its Mono picture is drawn */
-        char b[12];
-        mo_cut(b, mo_title(pg), 9);
-        mo_text_s(b, 60 - (mo_tw(b) * 2 + 1) / 2, 66, 2, MO_INK);
-        mo_textc("MONO PICTURE LATER", 60, 92, MO_DIM);
-    }
+    mo_pic_detailed();                                  /* the rest: the detailed picture until its Mono one is drawn */
 }
 
 /* ---- lists over the page: a list knob's picker, OCT+'s whole list, the OCT+ sheets ---- */
