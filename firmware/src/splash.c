@@ -4,7 +4,7 @@
  * splash_lay() sets the tiles from the middle outwards, one every SPL_STEP_MS, the gold one last with a press,
  * in the wait the boot already makes before the first frame, then holds the finished mark a moment (SPL_HOLD_MS;
  * a button or key pressed ends it sooner). The mark's colours are fixed (it is the logo),
- * the rest the palette's. Drawn with lcd_fill and draw_text_box only. */
+ * the rest the palette's; the Mono look: outlined tiles in the ink, the gold one solid. Drawn with lcd_fill and draw_text_box only. */
 
 #define SPL_U 22                                /* a tile, px */
 #define SPL_G 4                                 /* the grout between two */
@@ -13,9 +13,13 @@
 #define SPL_STEP_MS 60u
 #define SPL_HOLD_MS 800u                        /* the finished mark held (a press ends it sooner) */
 #define SPL_GOLD 2u                             /* the gold tessera: top right */
+#if !MELODEE_LOOK
 static const uint16_t SPL_LAPIS[9] = {RGB(44, 64, 120), RGB(58, 84, 150), 0, RGB(66, 96, 170), RGB(50, 74, 136),
                                       RGB(40, 60, 112), RGB(62, 90, 160), RGB(46, 68, 126), RGB(54, 80, 146)};
 #define SPL_GOLD_C RGB(236, 184, 72)
+#else
+#define SPL_GOLD_C T_TEXT                       /* (Mono: the ink) */
+#endif
 /* a hand-set look without rotation: each tile a pixel off the grid */
 static const int8_t SPL_JIT[9][2] = {{0, 1}, {1, -1}, {-1, 0}, {1, 0}, {0, 0}, {-1, 1}, {0, -1}, {1, 1}, {-1, -1}};
 static const uint8_t SPL_ORDER[9] = {4, 1, 3, 5, 7, 0, 6, 8, 2};   /* from the middle outwards, the gold one last */
@@ -25,6 +29,12 @@ static void spl_tile(uint32_t i, int32_t grow, uint16_t c)
     int32_t x = SPL_CX - SPL_U / 2 + ((int32_t)(i % 3u) - 1) * (SPL_U + SPL_G) + SPL_JIT[i][0] - grow;
     int32_t y = SPL_CY - SPL_U / 2 + ((int32_t)(i / 3u) - 1) * (SPL_U + SPL_G) + SPL_JIT[i][1] - grow;
     lcd_fill((uint32_t)x, (uint32_t)y, (uint32_t)(SPL_U + 2 * grow), (uint32_t)(SPL_U + 2 * grow), c);
+#if MELODEE_LOOK                                /* Mono (the site's logo): the tiles outlined in the ink, 2 px, the
+                                                 * gold one solid */
+    if (i != SPL_GOLD && c != T_BG)
+        lcd_fill((uint32_t)(x + 2), (uint32_t)(y + 2), (uint32_t)(SPL_U + 2 * grow - 4), (uint32_t)(SPL_U + 2 * grow - 4),
+                 T_BG);
+#endif
 }
 
 static void splash(const char *line)          /* the boot screen: the mosaic's bed, TESSERA, then a line */
@@ -62,7 +72,11 @@ static void splash_lay(uint32_t ms, int anim)
     uint32_t k, used = 0;
     if (anim) {
         for (k = 0; k < 8u; k++) {
+#if MELODEE_LOOK
+            spl_tile(SPL_ORDER[k], 0, T_TEXT);
+#else
             spl_tile(SPL_ORDER[k], 0, SPL_LAPIS[SPL_ORDER[k]]);
+#endif
             spl_wait(SPL_STEP_MS);
             used += SPL_STEP_MS;
         }
