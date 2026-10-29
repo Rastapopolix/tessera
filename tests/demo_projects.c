@@ -231,69 +231,94 @@ enum { FX_TINE = 8, FX_KALIMBA = 19, FX_SOFT_PAD = 25, FX_DEEP_PAD = 27, FX_RIN 
        FX_KOTO_PLUCK = 36, FX_KOTO_RING = 37, FX_KUGO_HARP = 39 };   /* FM6 presets (eng_fm6.c FM6_PRESETS) */
 enum { TR_FAT_BASS = 0, TR_WARM_PAD = 5, TR_HOLLOW_PAD = 7, TR_SUB_BASS = 9, TR_BREATH_FLUTE = 11 };   /* TRIO's */
 enum { DK_808_KIT, DK_909_KIT };                                   /* DRUM's */
+enum { OR_WARM_PAD = 1, OR_FLUTE = 21, OR_DUB_CHORD = 23 };              /* ORACLE's (oracle_sounds.h) */
+enum { FX_TINE_EP = 0, FX_FLUTE = 20 };
+/* a STEP track's step i: one note (0: a rest) at velocity vel */
+static void step_note(uint32_t tr, uint32_t i, uint8_t note, uint32_t vel)
+{
+    step_t *st = &trk[tr].step[i];
+    memset(st, 0, sizeof *st);
+    st->time = note ? ST_NOTE : ST_REST;
+    st->n = note ? 1u : 0u;
+    st->note[0] = note;
+    st->vel = (uint8_t)(note ? vel : 0u);
+}
 
 /* ------------------------------------------------------------- the demos --- */
-/* STILL TIDE: the ambient one. A DIA7 drone that breathes, a warm pad answering it, wind chimes falling, a sub bass
- * that rarely moves; ENERGY's slow arc thins the generators over minutes and RESTS leaves the drone alone now and
- * then. YO on D, 72 BPM: nothing to clash, so it can run for an hour. */
+/* STILL TIDE: the ambient one. An ORACLE drone that breathes, a warm pad wandering and coming home (GRAVITY), an
+ * electric piano falling as leaves through the FILTER effect, a sub bass varied from a line written in STEP (STEP as
+ * seed); ENERGY's slow arc thins the generators over minutes and RESTS leaves the drone alone now and then. YO on D,
+ * 72 BPM: nothing to clash, so it can run for an hour. (3.0: no bell on its own; the chimes are gone.) */
 static void demo_still(void)
 {
     song.g[G_BPM] = 72;
-    sound(0, ENGI_FM6, FX_SOFT_PAD);
+    sound(0, ENGI_ORACLE, OR_WARM_PAD);
     sound(1, ENGI_TRIO, TR_WARM_PAD);
-    sound(2, ENGI_FM6, FX_FURIN);
+    sound(2, ENGI_FM6, FX_TINE_EP);
     sound(3, ENGI_TRIO, TR_SUB_BASS);
     scale(2, SCL_YO, 0);
     sends(110, 90, 70, 60);
 
-    /* T1: CHORD DRONE, held, every voice on its own breath */
-    trk[0].p[P_CHRD] = 2;                             /* DIA7 */
+    /* T1: CHORD DRONE on ORACLE, held, every voice on its own breath */
+    trk[0].p[P_CHRD] = 1;                             /* DIA3 (ORACLE: three units a voice of the budget's 16) */
     trk[0].p[P_VOIC] = 1;                             /* OPEN */
     gen(0, TESS_ENG_CHORD, 11);
     tx(0, TX_CH_PROG, GEN_CH_DRONE); tx(0, TX_CH_BARS, 3); tx(0, TX_CH_HIT, GEN_CH_HOLD);
     tx(0, TX_CH_OCT, -1); tx(0, TX_CH_BREATH, 80);
-    mixer(0, 100, -10, 90, 0);
+    mixer(0, 94, -10, 90, 0);
 
-    /* T2: AWAKE at half notes, ringing to the next (LENGTH HIT), PROB leaving gaps */
+    /* T2: AWAKE at half notes, ringing to the next (LENGTH HIT); EVOLVE every 8 bars, GRAVITY pulls it home */
     trk[1].p[P_SDIV] = DIV_2;
     gen(1, TESS_ENG_AWAKE, 37);
     tx(1, TX_AWK_LENA, 7); tx(1, TX_AWK_LENB, 5); tx(1, TX_AWK_PROB, 55);
     tx(1, TX_NL_MODE, 2);
-    tx(1, TX_EV_EVERY, 4); tx(1, TX_EV_AMOUNT, 25);   /* EVERY 8 bars */
+    tx(1, TX_EV_EVERY, 4); tx(1, TX_EV_AMOUNT, 35);   /* EVERY 8 bars */
+    tx(1, TX_SD_GRAVITY, 40);
     mixer(1, 84, 20, 100, 30);
 
-    /* T3: FALL (BOUNCE past 4 balls): leaves landing on bells; the wind leans them with TIDE */
+    /* T3: FALL (BOUNCE past 4 balls): leaves landing on an electric piano, through a FILTER insert whose cutoff a
+     * TIDE opens and closes over minutes */
     trk[2].p[P_SDIV] = DIV_8;
     gen(2, TESS_ENG_BOUNCE, 5);
     tx(2, TX_BNC_BALLS, 5); tx(2, TX_BNC_SPEED, 10); tx(2, TX_BNC_ANGLE, 45);
     tx(2, TX_TW_DROP, 45); tx(2, TX_TW_HUMAN, 40); tx(2, TX_TW_SHIFT, 12);
-    mixer(2, 102, -30, 110, 70);
+    trk[2].p[P_FXTYPE] = 10; trk[2].p[P_FXMIX] = 127; trk[2].p[P_FXRATE] = 70; trk[2].p[P_FXCHAR] = 40;   /* FILTER */
+    mixer(2, 100, -30, 110, 70);
 
-    /* T4: MARKOV, mostly neighbours, mostly rests, an octave down (SUB BASS adds its own octave below) */
-    trk[3].p[P_SDIV] = DIV_2;
-    gen(3, TESS_ENG_MARKOV, 64);
-    tx(3, TX_MKV_LEAP, 10); tx(3, TX_MKV_DENS, 45); tx(3, TX_MKV_SPAN, 1);
+    /* T4: a sub bass line written in STEP (D, rests, A, G), played by TURING from it: the rhythm kept, the pitches
+     * varied now and then */
+    {
+        static const uint8_t LINE[8] = {38, 0, 0, 45, 0, 43, 0, 0};   /* D2 . . A2 . G2 . . */
+        for (uint32_t i = 0; i < 8u; i++) step_note(3, i, LINE[i], 96);
+        trk[3].p[P_SLEN] = 8;
+    }
+    trk[3].p[P_SDIV] = DIV_4;
+    gen(3, TESS_ENG_TURING, 64);
+    tx(3, TX_SD_SOURCE, 4); tx(3, TX_SD_KEEP, TESS_SD_RHYTHM);
+    tx(3, TX_TUR_PROB, 15);
     tx(3, TX_TW_SHIFT, -12); tx(3, TX_NL_MODE, 2);
     mixer(3, 85, 0, 30, 0);
 
     /* ENERGY: the project's tide and rests */
     tx(0, TX_EN_ARC, 60); tx(0, TX_EN_RESTS, 70);
     /* MODS */
-    cord(0, CS_TORPOR, 0, CD_CUTOFF, 0, 30, 0, 0);    /* T1 TIDE 1 -> T1 CUTOFF */
+    cord(0, CS_TORPOR, 0, CD_E1, 0, 30, 0, 0);        /* T1 TIDE 1 -> T1 CUT (ORACLE's MACRO) */
     cord(1, CS_OCHD2, 0, CD_PAN, 0, 25, 0, 0);        /* T1 SWARM 2 -> T1 PAN */
-    cord(2, CS_INERTIA, 2, CD_BNC_ANGLE, 2, 40, 0, 0);   /* T3 TIDE 2 -> T3 WIND */
+    cord(2, CS_INERTIA, 2, CD_FX1_RATE, 2, 35, 0, 0); /* T3 TIDE 2 -> T3 FX1 RTE: the filter's cutoff */
     cord(3, CS_ENERGY, 0, CD_FX_SEND, 1, 30, 0, 0);   /* ENERGY -> T2 FX SEND */
+    cord(4, CS_DRIFT, 2, CD_SF2_RATE, 0, 8, 0, 0);    /* T3 DRIFT -> SF2 RTE: the echo's time bends a little */
 }
 
 /* KOTO GARDEN: Zen-1's and FuMi-1's FM voices in HIRA on C. Two koto on QUAD's shared grid, one in eighths and one in
- * triplets, a column turning down so notes travel between them; a breath flute on the infinity series; a mokugyo
- * on POLY's three rhythms. 92 BPM */
+ * triplets, a column turning down so notes travel between them; an ORACLE flute on the infinity series in an ABAC
+ * FORM whose returns develop; a mokugyo written in STEP, its conditions and accumulator making it a little different
+ * each bar. 92 BPM */
 static void demo_garden(void)
 {
     song.g[G_BPM] = 92;
     sound(0, ENGI_FM6, FX_KOTO_PLUCK);
     sound(1, ENGI_FM6, FX_KOTO_RING);
-    sound(2, ENGI_TRIO, TR_BREATH_FLUTE);
+    sound(2, ENGI_ORACLE, OR_FLUTE);
     sound(3, ENGI_FM6, FX_MOKUGYO);
     scale(0, SCL_HIRA, 0);
     sends(90, 80, 80, 55);
@@ -312,28 +337,113 @@ static void demo_garden(void)
     tx(1, TX_TW_SHIFT, 12); tx(1, TX_TW_HUMAN, 30);
     mixer(1, 108, 25, 70, 40);
 
-    /* T3: SERIES at quarter notes, two degrees a step, ringing on */
+    /* T3: SERIES at quarter notes, two degrees a step, ringing on; FORM ABAC, 4 bars a section, each return of A
+     * developed a little (DEVELOP 40) */
     trk[2].p[P_SDIV] = DIV_4;
     gen(2, TESS_ENG_SERIES, 50);
     tx(2, TX_SR_START, 17); tx(2, TX_SR_INTV, 2); tx(2, TX_SR_LOOP, 0);
     tx(2, TX_NL_MODE, 2); tx(2, TX_TW_DROP, 35); tx(2, TX_TW_HUMAN, 35);
-    mixer(2, 81, 0, 90, 30);
+    tx(2, TX_EV_EVERY, 3); tx(2, TX_FM_FORM, 2); tx(2, TX_FM_CONTRAST, 40); tx(2, TX_FM_DEVELOP, 40);
+    mixer(2, 92, 0, 90, 30);
 
-    /* T4: POLY, rhythms /3 /4 /5 against each other */
+    /* T4: STEP, a mokugyo figure in sixteenths: the pickups only every other bar (1:2) or on the fourth (4:4), one
+     * note climbing a degree a pass up to 4 and back (Accumulate, PING) */
+    {
+        static const uint8_t FIG[16] = {48, 0, 0, 0, 0, 0, 55, 0, 48, 0, 0, 0, 0, 52, 0, 55};
+        for (uint32_t i = 0; i < 16u; i++) step_note(3, i, FIG[i], i % 8u ? 84 : 104);
+        step_set_cond(&trk[3].step[13], SC_1_2);
+        step_set_cond(&trk[3].step[15], SC_4_4);
+        step_set_climb(&trk[3].step[6], 1);
+        trk[3].p[P_SLEN] = 16;
+        tx(3, TX_ACC_LIMIT, 4); tx(3, TX_ACC_MODE, TESS_ACC_PING);
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF);                    /* (GEN: MODE STEP) */
     trk[3].p[P_SDIV] = DIV_16;
-    gen(3, TESS_ENG_POLY, 7);
-    tx(3, TX_POL_DIV1, 3); tx(3, TX_POL_DIV2, 4); tx(3, TX_POL_DIV3, 5); tx(3, TX_POL_DIV4, 0);
-    tx(3, TX_POL_SPAN, 1); tx(3, TX_TW_SHIFT, -12);
-    mixer(3, 108, 10, 40, 0);
+    mixer(3, 117, 10, 40, 0);
 
     cord(0, CS_APATHY, 0, CD_QD_PROB, 0, -40, 0, 0);  /* T1 TIDE 3 -> T1 Q PROB: the koto thins and fills */
-    cord(1, CS_OCHD4, 2, CD_CUTOFF, 2, 25, 0, 0);     /* T3 SWARM 4 -> T3 CUTOFF: the flute's breath */
+    cord(1, CS_OCHD4, 2, CD_E1, 2, 25, 0, 0);         /* T3 SWARM 4 -> T3 CUT (ORACLE's MACRO): the flute's breath */
     cord(2, CS_DRIFT, 1, CD_PAN, 1, 30, 0, 0);        /* T2 DRIFT -> T2 PAN */
+}
+
+/* LOW HARBOUR: the ambient dub. Slow and roomy, not a loop: ORACLE chord stabs on the offbeats, most of them dropped,
+ * each voice breathing, through a FILTER that a TIDE opens over minutes and into a long dotted echo whose time drifts
+ * like a tape's; a sub bass that walks and rests and is pulled home (GRAVITY); a 909 one-drop of rim and hats, the
+ * pickups conditional; a flute answering now and then. ENERGY's arc and RESTS clear the floor for the echoes.
+ * A dorian, 70 BPM */
+static void step_hits(uint32_t tr, uint32_t i, uint32_t lanes, uint32_t vel)   /* a DRUM step: lanes' hits */
+{
+    step_t *st = &trk[tr].step[i];
+    memset(st, 0, sizeof *st);
+    st->time = lanes ? ST_NOTE : ST_REST;
+    st->hit = (uint8_t)lanes;
+    st->vel = (uint8_t)(lanes ? vel : 0u);
+}
+enum { L_BD = 1, L_SD = 2, L_CP = 4, L_CH = 8, L_OH = 16, L_TM = 32, L_RS = 64, L_CB = 128 };   /* DRUM's lanes */
+static void demo_dub(void)
+{
+    song.g[G_BPM] = 70;
+    sound(0, ENGI_ORACLE, OR_DUB_CHORD);
+    sound(1, ENGI_TRIO, TR_SUB_BASS);
+    sound(2, ENGI_DRUM, DK_909_KIT);
+    sound(3, ENGI_FM6, FX_FLUTE);
+    scale(9, SCL_DOR, 0);
+    sends(118, 100, 111, 104);                        /* a big room; ECHO 321 ms: a dotted sixteenth at 70 BPM */
+
+    /* T1: CHORD stabs on the offbeats, TWO's two chords over 2 bars, DROP leaving most out; BREATH swells each voice */
+    trk[0].p[P_CHRD] = 1;                             /* DIA3 (ORACLE: three units a voice of the budget's 16) */
+    gen(0, TESS_ENG_CHORD, 23);
+    tx(0, TX_CH_PROG, GEN_CH_TWO); tx(0, TX_CH_BARS, 2); tx(0, TX_CH_HIT, GEN_CH_OFF);
+    tx(0, TX_CH_BREATH, 60); tx(0, TX_TW_DROP, 70); tx(0, TX_TW_HUMAN, 20);
+    or_patch[0][OR_DECAY_AMP] = 78; or_patch[0][OR_RELEASE_AMP] = 70;   /* (AMP ENV: short stabs; the echo is the tail) */
+    trk[0].p[P_FXTYPE] = 10; trk[0].p[P_FXMIX] = 127; trk[0].p[P_FXRATE] = 64; trk[0].p[P_FXCHAR] = 50;   /* FILTER */
+    mixer(0, 108, -15, 60, 120);
+
+    /* T2: MARKOV sub bass in quarters, neighbours and rests; EVOLVE every 4 bars, GRAVITY pulls it back */
+    trk[1].p[P_SDIV] = DIV_4;
+    gen(1, TESS_ENG_MARKOV, 41);
+    tx(1, TX_MKV_LEAP, 15); tx(1, TX_MKV_DENS, 55); tx(1, TX_MKV_SPAN, 1);
+    tx(1, TX_TW_SHIFT, -12);
+    tx(1, TX_EV_EVERY, 3); tx(1, TX_EV_AMOUNT, 30); tx(1, TX_SD_GRAVITY, 50);
+    mixer(1, 92, 0, 10, 0);
+
+    /* T3: 909 STEP, one bar of sixteenths: kick and rim on the third beat (one drop), hats on some offbeats by
+     * condition, an open hat every other bar (1:2), a rim pickup on the fourth bar (4:4) */
+    {
+        static const uint8_t L[16] = {0, 0, L_CH, 0, 0, 0, L_CH, 0, L_BD | L_RS, 0, L_CH, 0, 0, 0, L_OH, L_RS};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(2, i, L[i], i == 8u ? 110 : 80);
+        step_set_cond(&trk[2].step[2], SC_2_4);      /* (conditions, not chance: the same each time it plays) */
+        step_set_cond(&trk[2].step[6], SC_1_2);
+        step_set_cond(&trk[2].step[10], SC_3_4);
+        step_set_cond(&trk[2].step[14], SC_1_2);
+        step_set_cond(&trk[2].step[15], SC_4_4);
+        trk[2].p[P_SLEN] = 16;
+    }
+    tx(2, TX_MODE, TESS_ENG_OFF);                    /* (GEN: MODE STEP) */
+    trk[2].p[P_SDIV] = DIV_16;
+    tx(2, TX_SUB_HUMAN, 12);
+    mixer(2, 96, 10, 40, 70);
+
+    /* T4: AWAKE, a flute (a melodica's part) answering in half notes now and then, into the echo */
+    trk[3].p[P_SDIV] = DIV_2;
+    gen(3, TESS_ENG_AWAKE, 58);
+    tx(3, TX_AWK_LENA, 5); tx(3, TX_AWK_LENB, 7); tx(3, TX_AWK_PROB, 35);
+    tx(3, TX_TW_SHIFT, 12);
+    mixer(3, 98, 25, 90, 90);
+
+    /* ENERGY: a slow arc, and rests that leave the echoes */
+    tx(0, TX_EN_ARC, 45); tx(0, TX_EN_RESTS, 60);
+    /* MODS */
+    cord(0, CS_INERTIA, 0, CD_FX1_RATE, 0, 40, 0, 0); /* T1 TIDE 2 -> T1 FX1 RTE: the stabs' filter opens and closes */
+    cord(1, CS_DRIFT, 0, CD_SF2_RATE, 0, 10, 0, 0);   /* T1 DRIFT -> SF2 RTE: the echo's time bends as a tape's */
+    cord(2, CS_APATHY, 0, CD_FX_SEND2, 0, 30, 0, 1);  /* T1 TIDE 3 -> T1 SEND 2: more of the stabs into the echo, then less */
+    cord(3, CS_OCHD3, 3, CD_PAN, 3, 35, 0, 0);        /* T4 SWARM 3 -> T4 PAN */
 }
 
 static const struct { const char *name, *file; void (*make)(void); } DEMOS[] = {
     {"STILL TIDE", "still-tide", demo_still},
     {"KOTO GARDEN", "koto-garden", demo_garden},
+    {"LOW HARBOUR", "low-harbour", demo_dub},
 };
 #define NDEMO (sizeof DEMOS / sizeof DEMOS[0])
 
@@ -360,6 +470,11 @@ static dm_play_t play(uint32_t secs, const char *wav)
     double sq = 0;
     memset(&r, 0, sizeof r);
     memset(dm_notes, 0, sizeof dm_notes);
+    uint32_t step_age[NTRK];
+    for (i = 0; i < NTRK; i++) {
+        step_age[i] = 0;
+        for (uint32_t k = 0; k < NVOICE; k++) if (trk[i].v[k].age > step_age[i]) step_age[i] = trk[i].v[k].age;
+    }
     if (wav && !(w = fopen(wav, "wb"))) fprintf(stderr, "demos: cannot write %s\n", wav);
     if (w) wav_hdr(w, frames);
     char vdir[600];
@@ -379,6 +494,11 @@ static dm_play_t play(uint32_t secs, const char *wav)
         }
         dm_f = f;
         mix_block(o, CTL);
+        for (i = 0; i < NTRK; i++)                       /* (a STEP track's notes: dm_note sees a generator's only, so
+                                                         * the voices it started, by their age) */
+            if (i >= TESSERA_TRACKS || tessera.mode[i] == TESS_ENG_OFF)
+                for (uint32_t k = 0; k < NVOICE; k++)
+                    if (trk[i].v[k].age > step_age[i]) step_age[i] = trk[i].v[k].age, dm_notes[i]++;
         fm1_ms = f / (FS / 1000u);
         if (vst && vb % V_BLOCKS == 0) { ui_draw(); v_ppm(vdir, vf++); }
         if (busy_now() > r.voices) r.voices = busy_now();
@@ -599,7 +719,7 @@ static int archive_restore(const char *path)
         project_cur_name(name);
         snprintf(w, sizeof w, "slot %c: %s loads", 'A' + slot, name);
         bad += check(w, proj_cur == slot);
-        bad += report(name, (dm_play_t[]){play(10, 0)});
+        bad += report(name, (dm_play_t[]){play(20, 0)});
     }
     free(json);
     return bad;
