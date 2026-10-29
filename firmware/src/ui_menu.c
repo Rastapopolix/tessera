@@ -145,6 +145,30 @@ static const menu_credit_t MENU_CREDITS[] = {
     {"https://doi.org/10.1121/1.411872", MC_URL},
 };
 
+#if MELODEE_LOOK
+/* Mono: the 5 x 7 font, 19 characters a line (a word longer than that broken), 18 px apart as the detailed look's */
+static int32_t menu_text(const char *s, int32_t y, uint16_t col, int draw)
+{
+    char a[96], line[24];
+    const char *p = a;
+    mo_ascii(a, s, sizeof a);
+    while (*p) {
+        uint32_t n = 0, take = 0;
+        while (p[n] && n < 19u) {
+            if (p[n] == ' ') take = n;
+            n++;
+        }
+        if (!p[n] || !take) take = n;
+        mo_cut(line, p, take);
+        if (draw && y + 14 > 0 && y < MENU_DOC_H)
+            mo_text(line, 3, y / 2, col == T_SEC ? MO_DIM : col);
+        y += 18;
+        p += take;
+        while (*p == ' ') p++;
+    }
+    return y;
+}
+#else
 static int32_t menu_text(const char *s, int32_t y, uint16_t col, int draw)
 {
     while (*s) {
@@ -174,10 +198,30 @@ static int32_t menu_text(const char *s, int32_t y, uint16_t col, int draw)
     }
     return y;
 }
+#endif
 
 static int32_t menu_document(int32_t y, int draw)
 {
     uint32_t i;
+#if MELODEE_LOOK                                        /* (Mono: the name twice the size, the QR code under the tempo) */
+    if (draw) {
+        char d[16];
+        mo_text_s("TESSERA", 3, (y + 4) / 2, 2, MO_INK);
+        mo_text("FOR THE FM-1", 3, (y + 38) / 2, MO_INK);
+        mo_text(MELODEE_VERSION, 3, (y + 58) / 2, MO_INK);
+        mo_ascii(d, __DATE__, sizeof d);
+        mo_text(d, 3, (y + 76) / 2, MO_DIM);
+        draw_about_qr(158, y + 38);
+    }
+    y += 124;
+    y = menu_text("TESSERA by Theo Dainis (Rastapopolix)", y, T_TEXT, draw);
+    y = menu_text("Thanks: Inputsignwave", y, T_SEC, draw);
+    y = menu_text("Based on MELODEE by Kerem Kilic", y, T_TEXT, draw);
+    y = menu_text("(C) 2026 Kerem Kilic, Ellic Studio", y, T_SEC, draw);
+    y = menu_text("and Felucca by Leo Kuroshita, Hugelton Instruments", y, T_TEXT, draw);
+    y = menu_text("GPL-3.0-only", y, T_TEXT, draw);
+    y = menu_text("github.com/Rastapopolix/tessera", y, T_MID, draw) + 12;
+#else
     if (draw) {
         int32_t x;                                    /* (docs/design: mock/r6_pages About) */
         cv_text(6, y + 4, &AF_L, "Tessera", T_THEME);
@@ -195,6 +239,7 @@ static int32_t menu_document(int32_t y, int draw)
         cv_text(6, y + 220, &AF_S, "github.com/Rastapopolix/tessera", T_MID);
     }
     y += 246;
+#endif
 #ifdef FM1_CRASH_MAGIC
     if (fm1_crash.magic == FM1_CRASH_MAGIC) {         /* the last crash's record (kept over the restart, gone at a
                                                        * power-off): what its screen said, for a report */
@@ -252,6 +297,12 @@ static int32_t menu_scroll_max(void)
 /* the menu's header (0..24): its title, the REC mark, the way back */
 static void menu_head(void)
 {
+#if MELODEE_LOOK
+    mo_dhead(ui.menu == 2 ? "ABOUT" : "SETTINGS", 0, 0);
+    cv_begin(240, MENU_HEAD - H_HEAD, MO_BG);           /* (the menu's strip is taller than the pages' header) */
+    cv_blit(0, H_HEAD);
+    return;
+#endif
     cv_begin(240, MENU_HEAD, T_BG);
     cv_text(8, 2, &AF_M, ui.menu == 2 ? "About" : "Settings", T_TEXT);
     if (ui.menu >= 2) {                               /* the way back at the right, the REC mark before it (then */
@@ -294,6 +345,79 @@ static void menu_words(char *d, const char *s, uint32_t n)
         if (!first && d[i] >= 'A' && d[i] <= 'Z') d[i] = (char)(d[i] + 32);
     }
 }
+/* row i's value (menu_words makes it words), 0: none; b holds one made up ("0.4 s") */
+static const char *menu_value(uint32_t i, char *b, uint32_t size)
+{
+    const char *value = 0;
+    if (i >= MI_CLICK && i <= MI_ADD)
+        value = i==MI_CLICK?(const char *const[]){"OFF","REC","ON"}[settings_click%3u]:
+          i==MI_CLICK_LEVEL?(const char *const[]){"LOW","MID","HIGH"}[settings_click_level%3u]:
+          i==MI_COUNTIN?(const char *const[]){"OFF","1 BAR","2 BARS"}[settings_countin%3u]:
+          i==MI_PREVIEW?(settings_preview?"ON":"OFF"):(settings_chord_add?"ADD":"HOLD");
+    if (i == MI_ACCEL) value = PREF_BITS & PREF_ACCEL_OFF ? "OFF" : "ON";
+    if (i == MI_TRACK_KNOB) value = settings_knob_swap ? "LEFT" : "RIGHT";
+    if (i == MI_MIDI_OUT) value = (const char *const[]){"KEYS", "ALL", "OFF"}[settings_midi_out % MIDI_OUT_N];
+    if (i == MI_CLOCK_OUT) value = settings_clock_out ? "ON" : "OFF";
+    if (i == MI_AUTOSAVE) value = settings_autosave ? "ON" : "OFF";
+    if (i == MI_SCREEN) value = (const char *const[]){"NEVER", "5 MIN", "15 MIN", "30 MIN", "60 MIN"}[scr_get()];
+    if (i == MI_GAMMA) value = GAMMA_NAME[gamma_get()];
+    if (i == MI_LIGHTS) value = LIGHTS_NAME[settings_lights % LIGHTS_N];
+#if MELODEE_USB_AUDIO
+    if (i == MI_USB_INPUT) value = ua_tracks_want ? "4 TRACKS" : "STEREO";
+    if (i == MI_USB) value = (const char *const[]){"In + Out", "In", "Out", "Off"}[ua_off_want & 3u];
+#endif
+    if (i == MI_HOLD) {                         /* "0.4 s" */
+        str_cpy(b, "0.4 s", size);
+        b[2] = (char)('0' + HOLD_MS[settings_hold % 4u] / 100u);
+        value = b;
+    }
+    return value;
+}
+#if MELODEE_LOOK
+/* Mono: the rows 11 cells apart from row 12, the name at the left, the value at the right (dim), the row picked
+ * inverted across the screen; COLOR: the inks as five boxes before the name, the one chosen filled; a scroll bar a
+ * cell wide at the right */
+static void menu_mono(void)
+{
+    uint32_t first = ui.menu_sel >= MENU_VISIBLE ? ui.menu_sel - MENU_VISIBLE + 1u : 0u, i;
+    int32_t top, hh = (int32_t)MENU_VISIBLE * 11;
+    for (top = 0; top < 108; top += 54) {               /* (the rows below the menu's strip, in two canvases) */
+        cv_begin(240, 108, MO_BG);
+        cv_oy = -top * 2;
+        for (i = first; i < first + MENU_VISIBLE && i < MI_COUNT; i++) {
+            int32_t y = 1 + (int32_t)(i - first) * 11, on = i == ui.menu_sel, x = 115;
+            uint16_t ink = on ? MO_BG : MO_INK, dim = on ? MO_BG : MO_DIM;
+            char b[24], a[24];
+            const char *value = menu_value(i, b, sizeof b);
+            if (on)
+                mo_fill(0, y, 118, 10, MO_INK);
+            mo_text(MI_NAME[i], 2, y + 2, on ? MO_BG : MO_DIM);
+            if (i == MI_COLOR) {
+                uint32_t k, n = NPALETTES < 8u ? NPALETTES : 8u;
+                value = UI_PALETTES[settings.palette % NPALETTES].name;
+                x -= mo_tw(value) + 4;
+                for (k = n; k-- > 0;) {
+                    x -= 6;
+                    if (k == settings.palette % NPALETTES) mo_fill(x, y + 2, 5, 6, ink);
+                    else mo_box(x, y + 2, 5, 6, dim);
+                }
+            }
+            if (value) {
+                mo_ascii(a, value, sizeof a);
+                mo_textr(a, 115, y + 2, i == MI_COLOR ? ink : dim);
+            }
+        }
+        if (MI_COUNT > MENU_VISIBLE) {
+            int32_t th = hh * (int32_t)MENU_VISIBLE / (int32_t)MI_COUNT;
+            int32_t ty = (int32_t)((uint32_t)(hh - th) * first / (MI_COUNT - MENU_VISIBLE));
+            mo_vl(119, 1, hh, MO_DIM);
+            mo_fill(118, 1 + ty, 2, th, MO_INK);
+        }
+        cv_oy = 0;
+        cv_blit(0, (uint32_t)(MENU_HEAD + top * 2));
+    }
+}
+#endif
 static void draw_menu(void)
 {
     uint32_t i, pass, sig = ui.menu * 7u + ui.menu_sel * 131u + settings.palette * 1009u + settings.lowcut * 7919u +
@@ -324,6 +448,10 @@ static void draw_menu(void)
         }
         return;
     }
+#if MELODEE_LOOK
+    menu_mono();
+    return;
+#endif
     for (pass = 0; pass < 2u; pass++) {
         int32_t top = pass ? MENU_SPLIT : MENU_HEAD;
         cv_begin(240, (uint32_t)(pass ? 240 - MENU_SPLIT : MENU_SPLIT - MENU_HEAD), T_BG);
@@ -343,28 +471,7 @@ static void draw_menu(void)
             }
             menu_words(w, MI_NAME[i], sizeof w);
             cv_text_on(12, yt, &AF_S, w, sel ? T_TEXT : T_SEC, bg);
-            if (i >= MI_CLICK && i <= MI_ADD)
-                value = i==MI_CLICK?(const char *const[]){"OFF","REC","ON"}[settings_click%3u]:
-                  i==MI_CLICK_LEVEL?(const char *const[]){"LOW","MID","HIGH"}[settings_click_level%3u]:
-                  i==MI_COUNTIN?(const char *const[]){"OFF","1 BAR","2 BARS"}[settings_countin%3u]:
-                  i==MI_PREVIEW?(settings_preview?"ON":"OFF"):(settings_chord_add?"ADD":"HOLD");
-            if (i == MI_ACCEL) value = PREF_BITS & PREF_ACCEL_OFF ? "OFF" : "ON";
-            if (i == MI_TRACK_KNOB) value = settings_knob_swap ? "LEFT" : "RIGHT";
-            if (i == MI_MIDI_OUT) value = (const char *const[]){"KEYS", "ALL", "OFF"}[settings_midi_out % MIDI_OUT_N];
-            if (i == MI_CLOCK_OUT) value = settings_clock_out ? "ON" : "OFF";
-            if (i == MI_AUTOSAVE) value = settings_autosave ? "ON" : "OFF";
-            if (i == MI_SCREEN) value = (const char *const[]){"NEVER", "5 MIN", "15 MIN", "30 MIN", "60 MIN"}[scr_get()];
-            if (i == MI_GAMMA) value = GAMMA_NAME[gamma_get()];
-            if (i == MI_LIGHTS) value = LIGHTS_NAME[settings_lights % LIGHTS_N];
-#if MELODEE_USB_AUDIO
-            if (i == MI_USB_INPUT) value = ua_tracks_want ? "4 TRACKS" : "STEREO";
-            if (i == MI_USB) value = (const char *const[]){"In + Out", "In", "Out", "Off"}[ua_off_want & 3u];
-#endif
-            if (i == MI_HOLD) {                         /* "0.4 s" */
-                str_cpy(b, "0.4 s", sizeof b);
-                b[2] = (char)('0' + HOLD_MS[settings_hold % 4u] / 100u);
-                value = b;
-            }
+            value = menu_value(i, b, sizeof b);
             if (i == MI_COLOR) {                        /* the palettes as swatches, the one chosen outlined */
                 uint32_t k;
                 int32_t x;

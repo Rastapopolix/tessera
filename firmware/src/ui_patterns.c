@@ -234,6 +234,10 @@ static void pt_song(void)
 static void patterns_draw(void)
 {
     uint32_t k;
+#if MELODEE_LOOK
+    mo_patterns();
+    return;
+#endif
     pt_numbers();
     pt_song();
     for (k = 0; k < NTRK; k++)
@@ -511,6 +515,10 @@ static void song_draw(void)
 {
     uint32_t k;
     sg_frame();
+#if MELODEE_LOOK
+    mo_song();
+    return;
+#endif
     sg_head();
     sg_foot();
     sg_labels();

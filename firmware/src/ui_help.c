@@ -496,10 +496,18 @@ static void help_find(uint32_t k)
 #define HELP_W 228
 #define HELP_H 214
 #define HELP_TW 204                                     /* (the text's width) */
+#define HELP_FONT (&AF_M)
+#if MELODEE_LOOK                                        /* (Mono: the 5 x 7 font, 17 characters a line, 9 cells apart) */
+#define HELP_T0 30
+#define HELP_T1 190
+#define HELP_LH 18u
+#define HELP_TEXT_W(f, s) (mo_tw(s) * 2)
+#else
 #define HELP_T0 34                                      /* (the text's first line, its last above HELP_T1) */
 #define HELP_T1 188
-#define HELP_FONT (&AF_M)
 #define HELP_LH (AF_M.h + 2u)                           /* (a line's height) */
+#define HELP_TEXT_W(f, s) text_w(f, s)
+#endif
 #define HELP_ROWS ((HELP_T1 - HELP_T0) / HELP_LH)       /* (the lines the card shows) */
 
 /* text's words wrapped to lines of HELP_TW px in font f: each line's start and length (at most max of them); returns
@@ -515,7 +523,7 @@ static uint32_t help_wrap(const aafont_t *f, const char *text, uint16_t *at, uin
             memcpy(line, text + start, end - start);
             line[end - start] = 0;
         }
-        if ((end - start >= sizeof line || text_w(f, line) > HELP_TW) && n) {   /* (the line up to the last word) */
+        if ((end - start >= sizeof line || HELP_TEXT_W(f, line) > HELP_TW) && n) {   /* (the line up to the last word) */
             if (lines < max) at[lines] = (uint16_t)start, len[lines] = (uint8_t)(n - start);
             lines++;
             start = i = n + 1u;
@@ -626,6 +634,10 @@ static void help_draw(void)
         return;
     help.card = 0;
     help_value(e, val, sizeof val);
+#if MELODEE_LOOK
+    mo_help(e ? e->name : help.name, val, help_text());
+    return;
+#endif
     help_strip(0, 124, e ? e->name : help.name, val, help_text());
     help_strip(124, HELP_H - 124, e ? e->name : help.name, val, help_text());
 }

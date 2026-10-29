@@ -193,6 +193,11 @@ static void slot_draw(void)
             slot_detail(k, r, used, d);
             if(sx_import.count){fmt_int(d,sx_import.count);str_cpy(d+str_len(d)," incoming patches",20);}
             else if(bulk_has(r))str_cpy(d,"Selected",24);
+#if MELODEE_LOOK
+            mo_slot_card(tag, used ? nm : "Empty", used, d, boot == r + 1u, y);
+            y += SL_CARD;
+            continue;
+#endif
             cv_text_on(16 + text_w(&AF_M, tag) + 8, 28, &AF_X, d, T_MID, T_LIFT);
             if (boot == r + 1u) {
                 cv_rrect(186, 10, 40, 18, 5, T_SURF, T_LIFT);
@@ -201,6 +206,15 @@ static void slot_draw(void)
             cv_blit(0, (uint32_t)y);
             y += SL_CARD;
         } else {
+#if MELODEE_LOOK
+            {
+                int32_t span = (int32_t)(PV_SOUND_Y - 2 - SL_Y0), th = n > vis ? span * (int32_t)vis / (int32_t)n : 0;
+                mo_slot_row(tag, nm, used, boot == r + 1u, k != SK_PROJECT && bulk_has(r), y,
+                            n > vis ? (span - th) * slv.first / (int32_t)(n - vis) - (y - SL_Y0) : 0, th);
+            }
+            y += SL_ROW;
+            continue;
+#endif
             cv_begin(240, SL_ROW, T_BG);
             if(k!=SK_PROJECT && bulk_has(r))cv_rect(6,3,3,SL_ROW-6,T_THEME);
             cv_text_on(16, 5, &AF_S, tag, used ? T_MID : T_DIM, T_BG);

@@ -509,9 +509,89 @@ static void layer_cards(uint32_t l)
     }
 }
 
+#if MELODEE_LOOK
+/* Mono: the knobs as the knob pages' dials; GLO's keys as three rows of cells (the black keys MUTE 1..4, filled while
+ * muted; the white keys SOLO 1..4, filled while held; C unmutes all, E FILL, F taps the tempo, dim with an outside
+ * clock), SCL KNOB 2's scales 4 x 4 (the one now selected inverted); under them what OCT- and the button do. Drawn
+ * whole under the header when anything on it changes */
+static void mo_lcell(int32_t c, int32_t y, const char *name, const char *sub, int on, int dim)
+{
+    int32_t cx = 15 + 30 * c;
+    if (on) mo_fill(cx - 14, y, 28, 18, dim ? MO_DIM : MO_INK);
+    else mo_box(cx - 14, y, 28, 18, MO_DIM);
+    mo_textc(name, cx, y + 2, on ? MO_BG : dim ? MO_DIM : MO_INK);
+    mo_textc(sub, cx, y + 10, on ? MO_BG : MO_DIM);
+}
+static int32_t mo_lhint(int32_t x, const char *key, const char *word)
+{
+    mo_inv(key, x + 1, 112);
+    x += mo_tw(key) + 4;
+    mo_text(word, x, 112, MO_DIM);
+    return x + mo_tw(word) + 5;
+}
+static void mo_layer(uint32_t l)
+{
+    uint32_t sig = l * 7919u + ux.pal * 31u + song.sel * 13u, c, s, i;
+    const uint8_t *p = (const uint8_t *)mo_col;
+    memset(mo_col, 0, sizeof mo_col);
+    mo_on = 1;
+    layer_cards(l);
+    mo_on = 0;
+    for (i = 0; i < sizeof mo_col; i++)
+        sig = (sig ^ p[i]) * 16777619u;
+    if (l == LAYER_GLO)
+        sig += track_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u + (uint32_t)seq_fill * 7u +
+               (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 | trk[3].p[P_MUTE] << 3) * 131u;
+    else
+        sig += (uint32_t)TSEL->p[P_SCALE] * 31u;
+    if (!ui.force && sig == ui.layer_sig)
+        return;
+    ui.layer_sig = sig;
+    for (s = 0; s < 2u; s++) {
+        int32_t x = 1;
+        cv_begin(240, s ? 120u : 102u, MO_BG);
+        cv_oy = s ? -120 : -18;
+        mo_cols();
+        if (l == LAYER_GLO) {
+            char n[6];
+            for (c = 0; c < NTRK; c++) {                /* "MUTE" over "1 F#" */
+                n[0] = (char)('1' + c), n[1] = ' ';
+                bnote(n + 2, c);
+                mo_lcell((int32_t)c, 52, "MUTE", n, trk[c].p[P_MUTE] != 0, 0);
+                n[2] = W_NOTE[c], n[3] = 0;
+                mo_lcell((int32_t)c, 71, "SOLO", n, (track_solo >> c) & 1u, 0);
+            }
+            mo_lcell(0, 90, "ALL", "C", 0, 0);
+            mo_lcell(1, 90, "FILL", "E", seq_fill != 0, 0);
+            mo_lcell(2, 90, "TAP", "F", 0, song.g[G_CLOCK] != 0);
+            x = mo_lhint(x, "OCT-", "UNDO");
+            mo_lhint(x, "GLO", "DONE");
+        } else {
+            uint32_t sc = (uint32_t)TSEL->p[P_SCALE], base = sc / 16u * 16u;
+            for (i = 0; i < 16u && base + i <= (uint32_t)TP[P_SCALE].max; i++) {
+                int32_t cx = 1 + 30 * (int32_t)(i % 4u), y = 53 + 14 * (int32_t)(i / 4u);
+                char a[8];
+                mo_abbr(a, TP[P_SCALE].names[base + i]);
+                if (base + i == sc) mo_fill(cx, y, 28, 12, MO_INK);
+                else mo_box(cx, y, 28, 12, MO_DIM);
+                mo_textc(a, cx + 14, y + 3, base + i == sc ? MO_BG : MO_INK);
+            }
+            x = mo_lhint(x, "KEYS", "ROOT");
+            mo_lhint(x, "OCT-", "UNDO");
+        }
+        mo_hl(0, 109, 120, MO_INK);
+        cv_oy = 0;
+        cv_blit(0, s ? 120u : 18u);
+    }
+}
+#endif
 static void draw_layer(void)
 {
     uint32_t l = ui.layer % LAYER_N, sig = l * 7919u + ux.gen * 977u, c;
+#if MELODEE_LOOK
+    mo_layer(l);
+    return;
+#endif
     if (l == LAYER_GLO) {                               /* the four levels as strips at the top, each track's colour */
         uint8_t cs = col_style;
         if (ui.force)

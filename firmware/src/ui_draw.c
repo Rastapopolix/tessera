@@ -272,6 +272,13 @@ static void mo_cu_led(uint32_t lv);
 static void mo_chip(uint32_t c, const char *val, const char *unit, uint16_t vc, int hot, int32_t y);
 static void mo_strip_col(uint32_t c, const char *label, const char *val, uint16_t vc, int hot, int32_t y);
 static int foot_tabs_on(void);
+static int32_t mo_tw(const char *s);
+static void mo_help(const char *name, const char *val, const char *text);
+static void mo_browser(uint32_t cur, uint32_t total);
+static void mo_patterns(void);
+static void mo_song(void);
+static void mo_slot_card(const char *tag, const char *nm, int used, const char *d, int boot, int32_t y);
+static void mo_slot_row(const char *tag, const char *nm, int used, int boot, int mark, int32_t y, int32_t ty, int32_t th);
 #endif
 static void draw_head(void)
 {

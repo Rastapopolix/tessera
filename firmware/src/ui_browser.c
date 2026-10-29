@@ -169,6 +169,10 @@ static void browser_foot(void)
 static void browser_draw(void)
 {
     uint32_t total, cur = preset_pos(&total);
+#if MELODEE_LOOK
+    mo_browser(cur, total);
+    return;
+#endif
     if (ui.force)                                       /* (the canvases cover the rest) */
         lcd_fill(BR_SIDE_W + BR_LIST_W, BR_TOP_H, 240u - BR_SIDE_W - BR_LIST_W, BR_BODY_H, T_BG);
     browser_top(total);
