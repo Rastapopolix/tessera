@@ -743,7 +743,6 @@ static uint32_t pv_pic(int32_t *cut, int32_t *res)
     uint32_t e = TSEL->eng_req % NENGINES, c;
     *cut = -1;
     *res = 0;
-    if(pg->fam==FAM_FX)return 9u;
     if (pg->graph == GR_ARP || pg->graph == GR_STEPS)
         return pg->graph == GR_ARP ? 5u : 6u;
     if (pg->fam == FAM_ARP && pg->graph == GR_NONE)     /* ARP 2: the notes it plays too (not GEN's other pages) */
@@ -760,7 +759,7 @@ static uint32_t pv_pic(int32_t *cut, int32_t *res)
         if (d->fmt == F_CUTOFF || str_eq(d->label, "CUTOFF")) *cut = *vp;   /* (the Prophet's: by its label) */
         else if (str_eq(d->label, "RES") || str_eq(d->label, "RESO")) *res = *vp;
     }
-    return *cut >= 0 ? 3u : 0u;
+    return *cut >= 0 ? 3u : pg->fam == FAM_FX ? 9u : 0u;   /* (FX FILTER: its curve, CUT and RES) */
 }
 /* FX follows R5: four rings, a rounded track-colour picture, compact labels.
  * WIDTH explicitly names its two sides and the mono tradeoff. */
@@ -774,7 +773,7 @@ static void pv_fx(void)
     }
     uint32_t base=cur_page()->id[0],master=cur_page()->scope==SC_GLOBAL,slot=(base-(master?G_MFXTYPE:P_FXTYPE))/FX_PARAMS;
     const int16_t *values=master?song.g:TSEL->p;uint32_t type=(uint32_t)clamp(values[base],0,FX_COUNT-1);
-    static const char *const hint[FX_COUNT]={"Dry signal","Moving notches","All-pass L / dry R","Random vowels","Crossover jitter","Jumping resonance","Short lo-fi echoes","Small lo-fi space","Diffused reverb","Pitch shimmer"};
+    static const char *const hint[FX_COUNT]={"Dry signal","Moving notches","All-pass L / dry R","Random vowels","Crossover jitter","Jumping resonance","Short lo-fi echoes","Small lo-fi space","Diffused reverb","Pitch shimmer","Resonant low-pass"};
     int32_t mix=values[base+1u],cha=values[base+3u],py=50*16;
     cv_text_on(12,8,&AF_X,hint[type],T_MID,T_PANEL);
     for(int32_t x=0;x<208;x++){
