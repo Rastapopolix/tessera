@@ -1,6 +1,6 @@
 # Tessera shortcuts
 
-The buttons and combinations of Tessera 2.0 on one sheet, a supplement to the **[manual](MANUAL.md)**. A printable
+The buttons and combinations of Tessera on one sheet, a supplement to the **[manual](MANUAL.md)**. A printable
 two-page version is [docs/cheatsheet/tessera-cheatsheet.pdf](docs/cheatsheet/tessera-cheatsheet.pdf).
 
 **A + B**: hold A, then press or turn B. **Held**: about 0.7 s (the GLO and SCL layers: MENU > HOLD, 0.3 to 0.6 s);
@@ -48,6 +48,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **GLO** + black keys F#3 G#3 A#3 C#4 | Mute / unmute track 1 to 4 (lit: sounding) |
 | **GLO** + white keys F3 G3 A3 B3 | Solo track 1 to 4 while the key is held |
 | **GLO** + C4 / F4 | Unmute all / tap the tempo (three taps or more; INT clock) |
+| **GLO** + E4 | FILL, while held (steps set to FILL / !FILL) |
 | **GLO** + KNOB 1 to 4 | Level of track 1 to 4 |
 | **GLO** + PLAY | Restart from the top without stopping |
 | **SCL** + any key | ROOT: that key's note name (every melodic track while SCL > Key link is LINKED) |
@@ -75,10 +76,11 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **ENV** + SELECT or KNOB 1 | The cursor's note longer / shorter |
 | **SCL** + SELECT or KNOB 1 | Moves the note (ties, chord and velocity with it) |
 | **EDIT** tapped | Deletes the note and its ties |
-| **OCT+** | The note's sheet (length, velocity, chance, ratchet x1–x8, nudge ±/16, accumulate ±7...) |
+| **OCT+** | The note's sheet (length, velocity, chance, ratchet x1–x8, nudge ±/16, accumulate ±7, condition 1:2..8:8, FILL...) |
 | **OCT+** + SELECT, KNOB 1 or 2 | Selects a run of notes; let go: the Selected notes sheet (move, copy, quantize, delete) |
 | **OCT-** | Clears the selection |
 | **PRESETS** | Zooms the notes |
+| **OCT+** held | The pattern's sheet: Double, Half, Euclid (hits, turn), Accum limit / mode, Quantize, Clear |
 
 ## The drum grid (NOTES on a DRUM track)
 
@@ -90,7 +92,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | D#5 / F#5 | Page down / up (patterns over 16 steps) |
 | KNOB 1 to 4 | STEP, LANE, HIT, ACC |
 | **EDIT** | Clears the cursor step |
-| **OCT+** | The hit's sheet (accent, chance, ratchet, nudge) |
+| **OCT+** | The hit's sheet (accent, chance, ratchet, nudge, condition) |
 
 ## Patterns
 
@@ -129,7 +131,8 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | Do this | And this happens |
 |---|---|
 | GEN: **KNOB 1** | MODE: STEP, ARP or a generator |
-| GEN: **OCT+** held | The second layer of QUAD, CHORD, ATLAS and CONSTL |
+| GEN: **OCT+** held | The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD, CHORD, ATLAS, CONSTL, ANSWER |
+| EVOLVE: **OCT+** held | GRAVITY (a generator); HOW: DRIFT, ADORN, SERIAL (a STEP track) |
 | ATLAS: **OCT+** + a black key | The fourth part's sound (TOM, CLAP, OPEN HAT, RIM, BELL) |
 | CHORD, PROG USER: **OCT+** + keys | One chord a key, its root the key's note |
 | AWAKE: a white key | Picks that step: KNOB 1 its A, KNOB 2 its B; the key again lets it go |
@@ -142,6 +145,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 
 | Do this | And this happens |
 |---|---|
+| Any button or key at power-on | Skips the boot mark |
 | **OCT-** alone while switching on | The update loader (three key-light flashes), to reinstall from the web installer |
 | **OCT-** + **OCT+** while switching on | HARDWARE CALIBRATION: teach each button and knob |
 | **OCT-** + **OCT+** held 5 s | Update mode (UBOOT); a countdown from 2 s, let go to cancel |

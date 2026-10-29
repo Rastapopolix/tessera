@@ -150,6 +150,8 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_ACC_MODE] = PE("MODE", TX_N_ACCMODE, 0),
     [TX_SD_GRAVITY] = {"GRAVITY", F_INT, 0, 100, 0, 0, "%"},
     [TX_SV_HOW] = PE("HOW", TX_N_SVHOW, 0),
+    [TX_EN_LEVEL] = PD("LEVEL", F_INT, -100, 100, 0),
+    [TX_EN_DEPTH] = PD("DEPTH", F_PCT, 0, 100, 100),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -494,8 +496,9 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                      "(USER: its LEN there)."),
     XP_(TX_EN_ARC, "ENERGY ARC", "The project's slow tide, the same for every track: over 3 to 6 minutes it swings from "
                                  "the tracks as set to sparse and back. At the sparse end the generator tracks leave "
-                                 "out up to 70 % more of their hits and play up to 16 softer; ARC is how far it "
-                                 "swings, 0 off. It is the cord source ENERGY too (to a filter, a send)."),
+                                 "out up to 70 % more of their hits and play up to 16 softer, at the full end they "
+                                 "take back their DROP and play up to 12 louder; ARC is how far it swings, round "
+                                 "LEVEL, 0 off. It is the cord source ENERGY too (to a filter, a send)."),
     XP_(TX_EN_RESTS, "ENERGY RESTS", "How often the music rests: 8 to 18 s with the generator tracks silent (a CHORD "
                                      "track's held chord and its BREATH go on), at 100 about every 4 minutes, near 0 "
                                      "about every 20, sooner while ARC's tide is sparse. 0 off."),
@@ -556,6 +559,12 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                 "octave jumps, neighbour notes, passing notes in the rests. SERIAL: the whole phrase "
                                 "at once: backwards, upside down, rotated or half of it at half speed; AMOUNT is the "
                                 "chance of one a round, LOCK of it staying. OCT+ held on EVOLVE, KNOB 1."),
+    XP_(TX_EN_LEVEL, "ENERGY LEVEL", "The project's energy, played by hand: ARC's tide swings round it. Up, the "
+                                     "generator tracks take back their DROP and play up to 12 louder; down, they leave "
+                                     "out hits and play softer. EVOLVE changes less when low, more when high. 0: as "
+                                     "set."),
+    X_(TX_EN_DEPTH, "ENERGY DEPTH", "How much ENERGY (its LEVEL, ARC's tide, RESTS) moves this track. 100 all of it, "
+                                    "0 an anchor that plays as set whatever the energy. OCT+ held on ENERGY, KNOB 1."),
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };

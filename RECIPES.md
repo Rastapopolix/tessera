@@ -1,6 +1,6 @@
 # Tessera recipes and tips
 
-Short, tested ways to get somewhere with Tessera 2.0. Each uses only what the firmware has; the page and knob names
+Short, tested ways to get somewhere with Tessera. Each uses only what the firmware has; the page and knob names
 are the ones on the screen, and [MANUAL.md](MANUAL.md) explains each page in full. Where a step names a page, tap
 the button in brackets until it shows: GEN, EVOLVE, FORM, TWEAK, TWEAK 2 and LENGTH are under **SEQ**, MODS, MATRIX
 and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
@@ -25,6 +25,10 @@ and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
 - [Entries and arrangements (COND and FORM)](#entries-and-arrangements-cond-and-form)
 - [From generator to pattern (print, then STEP EVOLVE)](#from-generator-to-pattern-print-then-step-evolve)
 - [Movement over minutes (TIDE and SWARM)](#movement-over-minutes-tide-and-swarm)
+- [Drift, then come home (GRAVITY on EVOLVE)](#drift-then-come-home-gravity-on-evolve)
+- [A filter sweep on FM6 (the FILTER effect)](#a-filter-sweep-on-fm6-the-filter-effect)
+- [A fill on the last bar (Condition and FILL)](#a-fill-on-the-last-bar-condition-and-fill)
+- [A line that climbs (Accumulate)](#a-line-that-climbs-accumulate)
 - [Driving another synth (MIDI OUT)](#driving-another-synth-midi-out)
 
 **[Tips](#tips)**
@@ -235,6 +239,43 @@ groove that keeps changing, which is the other use.
    want for FX SEND and density.
 4. **MATRIX** shows the patch at a glance: rows are sources, columns destinations, lit as they move.
 5. Because PLAY restarts TIDE and SWARM from the seed, the same project unfolds the same way each time.
+
+## Drift, then come home (GRAVITY on EVOLVE)
+
+1. Track 3 (BELLS): MODE **TURING**, **PROB 0** (Lock), and turn **ROLL** on EVOLVE until you like the loop.
+2. **EVOLVE**: **EVERY 2**, **AMOUNT 40**. Every two bars the line changes a little, and keeps going further.
+3. Hold **OCT+** on EVOLVE: **GRAVITY 30**. Now about one round in three brings a changed note back instead, so the
+   melody wanders and returns. At 70 it stays close to home; at 0 it wanders freely.
+4. Home is the loop as you last set it: turn a knob or ROLL and that becomes the new home.
+
+## A filter sweep on FM6 (the FILTER effect)
+
+FM6 has no filter of its own; the FILTER effect gives it one.
+
+1. Track 1 (GLASS PAD): **FX**, the **FX 1** page: **FX** to **FILTER**, **MIX** full, **CUT** about halfway,
+   **RES** a third up.
+2. Hold **FX** and turn **CUT** (KNOB 3) to the right: a cord from the track's LFO to the cutoff, its amount set
+   as you turn.
+3. On **LFO**, a slow RATE: the pad opens and closes. For a sweep over minutes, set the cord's source to
+   **TIDE 2** or **DRIFT** on MODS instead.
+4. For a dub-style echo that bends, put **ECHO** on FX 2 and a slow cord on its TIME (FX2 RTE): the repeats glide in
+   pitch like a tape's.
+
+## A fill on the last bar (Condition and FILL)
+
+1. Track 4 (808 KIT) on STEP, a groove on the drum grid (**NOTES**).
+2. Write a run of snare or tom hits on the last four steps. On each, **OCT+** for the hit's sheet: **Condition**
+   **4:4**. They play on every fourth pass only.
+3. For a fill on demand, set another few hits to **FILL** instead, and the kick on the last beat to **!FILL**.
+   Hold **GLO** and **E4** (on MIXER, E4 alone) while the bar plays: the fill comes in and the kick drops out.
+
+## A line that climbs (Accumulate)
+
+1. A STEP track with a short pattern, four or five notes (**PATTERN**: **LEN 5**).
+2. **NOTES**, **OCT+** on the first note: **Accumulate +2**. Each time round it plays two scale degrees higher.
+3. Hold **OCT+** on NOTES for the pattern's sheet: **Accum limit 7**, **Accum mode Ping**: it climbs an octave,
+   then comes back down. A second note at **−1** falls against it.
+4. **PLAY** starts it again from the notes as written.
 
 ## Driving another synth (MIDI OUT)
 

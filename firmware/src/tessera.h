@@ -188,6 +188,8 @@ typedef struct {
     /* ENERGY (energy.c; the ENERGY page), the project's, not a track's: its slow tide and its rests */
     uint8_t          en_arc;                     /* 0..100: how far the tide swings, 0 off */
     uint8_t          en_rests;                   /* 0..100: how often the notes rest, 0 off */
+    int8_t           en_level;                   /* -100..100: the energy the tide swings round, 0 as set (part 2) */
+    uint8_t          en_depth[TESSERA_TRACKS];   /* 0..100: a track's share of ENERGY, 100 all (as before), 0 an anchor */
 } tessera_state_t;
 
 extern tessera_state_t tessera;
@@ -238,7 +240,8 @@ void tessera_kill(track_t *t);
 void tessera_mutate(uint32_t tr);
 void tessera_seed_turn(uint32_t tr, int32_t s);    /* ROLL (EVOLVE page): the next seed, on the bar line */
 void tessera_evolve_knob(uint32_t k, int32_t s);
-void tessera_ev_layer_knob(uint32_t k, int32_t s);   /* OCT+ held on a generator's EVOLVE: KNOB 1 GRAVITY */
+void tessera_ev_layer_knob(uint32_t k, int32_t s);
+void tessera_en_layer_knob(uint32_t k, int32_t s);   /* OCT+ held on ENERGY: KNOB 1 the track's DEPTH */   /* OCT+ held on a generator's EVOLVE: KNOB 1 GRAVITY */
 uint32_t tessera_every_bars(uint32_t every);
 int  tessera_lock_get(uint32_t tr);            /* 0..100, or -1 when LOCK is not available for the mode */
 void tessera_phrase(uint32_t tr, uint32_t *bar, uint32_t *of, int *flash); /* of == 0: EVERY is OFF */
@@ -327,6 +330,8 @@ enum {
                                                      * track's) */
     TX_SD_GRAVITY,                                  /* (0x26A: STEP as seed's GRAVITY, any track's) */
     TX_SV_HOW,                                      /* (0x26B: STEP EVOLVE's HOW, a STEP track's) */
+    TX_EN_LEVEL,                                    /* (0x26C: ENERGY's LEVEL, the project's: one value, whichever track) */
+    TX_EN_DEPTH,                                    /* (0x26D: ENERGY's DEPTH, any track's) */
     TX_COUNT
 };
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */

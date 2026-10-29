@@ -1351,16 +1351,17 @@ static void mo_pic_timing(const track_t *t)
  * a rest: the time left as a bar along the top */
 static void mo_pic_energy(void)
 {
-    int32_t i, a = tessera.en_arc, at, py = 0;
+    int32_t i, a = tessera.en_arc, at, py = 0, lv = tessera.en_level * 32767 / 100;
     mo_hl(2, 80, 116, MO_DIM);
     mo_vl(2, 77, 7, MO_DIM);
-    for (i = 0; i < 116; i++) {
-        int32_t y = 80 - en_sin((uint32_t)i, 116u) * a / 100 * 22 / 32767;
-        if (i) mo_line(1 + i, py, 2 + i, y, a ? MO_INK : MO_DIM);
+    for (i = 0; i < 116; i++) {                      /* (round LEVEL) */
+        int32_t e = en_sin((uint32_t)i, 116u) * a / 100 + lv;
+        int32_t y = 80 - (e < -32767 ? -32767 : e > 32767 ? 32767 : e) * 22 / 32767;
+        if (i) mo_line(1 + i, py, 2 + i, y, a || lv ? MO_INK : MO_DIM);
         py = y;
     }
     at = (int32_t)en_frac(energy.ph, energy.per, 116u);
-    if (a && song.playing)
+    if ((a || lv) && song.playing)
         mo_disc(2 + at, 80 - energy_now() * 22 / 32767, 2, MO_INK);
     if (song.playing && energy_resting()) {
         int32_t len = (int32_t)(energy.rest_left / EN_BPS) * 116 / 18;

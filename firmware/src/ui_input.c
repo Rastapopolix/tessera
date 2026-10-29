@@ -910,10 +910,18 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
-    if (pg->graph == GR_ENERGY) {                   /* ENERGY, the project's: ARC and RESTS as percents (the others: none) */
-        if (slot < 2u) {
-            uint32_t x = slot ? TX_EN_RESTS : TX_EN_ARC;
-            tessera_param_set(0, x, tessera_param_get(0, x) + accel(EN_K1 + slot, steps, 100));
+    if (pg->graph == GR_ENERGY && en_layer_on()) {  /* ENERGY, OCT+ held: the selected track's DEPTH */
+        tessera_en_layer_knob(slot, accel(EN_K1 + slot, steps, 100));
+        oct_eat |= 2u;
+        ui.oct_t0 |= 2u;
+        oct_deferred = 0;
+        ui.force = 1;
+        return;
+    }
+    if (pg->graph == GR_ENERGY) {                   /* ENERGY, the project's: ARC, RESTS, LEVEL as percents (KNOB 4: none) */
+        if (slot < 3u) {
+            uint32_t x = slot == 2u ? TX_EN_LEVEL : slot ? TX_EN_RESTS : TX_EN_ARC;
+            tessera_param_set(0, x, tessera_param_get(0, x) + accel(EN_K1 + slot, steps, slot == 2u ? 200 : 100));
         }
         ui.force = 1;
         return;
