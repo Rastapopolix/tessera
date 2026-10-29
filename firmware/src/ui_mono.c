@@ -1447,3 +1447,144 @@ static void mo_strip_col(uint32_t c, const char *label, const char *val, uint16_
     mo_textc(d, CARD_W / 4, 8, vc == T_DIM ? MO_DIM : MO_INK);
     cv_blit((uint32_t)CARD_X(c), (uint32_t)y);
 }
+
+/* ---- the help card (ARP held + a knob; help_draw): 114 x 107 cells under the header ---- */
+/* the name inverted at the top, the value right of it; the text wrapped to 17 characters a line (help_wrap measures in
+ * cells here), eight lines and a scroll bar; what turning does next under a line */
+static void mo_help(const char *name, const char *val, const char *text)
+{
+    uint16_t at[64];
+    uint8_t len[64];
+    char a[64], b[24], line[64];
+    uint32_t n = help_wrap(HELP_FONT, text, at, len, 64), rows = HELP_ROWS, i;
+    int32_t w = HELP_W / 2, h = HELP_H / 2, top, vw;
+    const char *hint;
+    if (n > rows && help.top + rows < n) hint = "CW: MORE  CCW: UP";
+    else if (help.top) hint = "CCW: UP";
+    else hint = "ARP + KNOB: HELP";
+    for (top = 0; top < h * 2; top += 120) {
+        int32_t sh = h * 2 - top < 120 ? h * 2 - top : 120, y = HELP_T0 / 2;
+        cv_begin((uint32_t)w * 2u, (uint32_t)sh, MO_BG);
+        cv_oy = -top;
+        mo_box(0, 0, w, h, MO_INK);
+        mo_ascii(a, val, sizeof a);
+        mo_cut(b, a, 8);
+        vw = b[0] ? mo_tw(b) + 4 : 0;
+        mo_textr(b, w - 4, 3, MO_INK);
+        mo_ascii(a, name ? name : "", sizeof a);
+        mo_cut(b, a, (uint32_t)(w - 10 - vw) / 6u);
+        mo_fill(2, 2, mo_tw(b) + 3, 9, MO_INK);
+        mo_text(b, 4, 3, MO_BG);
+        mo_hl(1, 12, w - 2, MO_INK);
+        for (i = help.top; i < n && i < 64u && i < help.top + rows; i++, y += (int32_t)HELP_LH / 2) {
+            memcpy(line, text + at[i], len[i]);
+            line[len[i]] = 0;
+            mo_ascii(a, line, sizeof a);
+            mo_text(a, 4, y, MO_INK);
+        }
+        if (n > rows) {                                 /* (the scroll bar: the lines shown of all of them) */
+            int32_t th = (HELP_T1 - HELP_T0) / 2 - 2, bh = th * (int32_t)rows / (int32_t)n;
+            mo_vl(w - 3, HELP_T0 / 2, th, MO_DIM);
+            mo_fill(w - 4, HELP_T0 / 2 + th * (int32_t)help.top / (int32_t)n, 3, bh > 3 ? bh : 3, MO_INK);
+        }
+        mo_hl(1, h - 12, w - 2, MO_INK);
+        mo_text(hint, 4, h - 9, MO_DIM);
+        cv_oy = 0;
+        cv_blit(HELP_X, (uint32_t)(HELP_Y + top));
+    }
+}
+
+/* ---- SAVE > PRESETS, the sound browser (browser_draw): drawn whole when anything on it changes ---- */
+/* the header: the track and its list inverted, the list's length (or the message) at the right. Left, LIST: its names
+ * 9 cells apart, the one shown inverted. Right, the sounds: the one shown in a frame (its engine, its place), two before
+ * and three after (dim further off); the place as a scroll bar; a fast turn's acceleration inverted (x4). The foot:
+ * the favourite's star (KNOB 3), BACK (OCT-) outlined, OK (OCT+) filled */
+static uint32_t mo_br_sig;
+static void mo_browser(uint32_t cur, uint32_t total)
+{
+    uint32_t m = list_mode(), out = cur >= total, at = out ? 0u : cur, k, src, s, first;
+    int pending = browse_pending(), badge = pending && brw.x > 1u, fav = browser_shown_fav(), back = browser_can_back();
+    uint32_t sig = at * 7u + total * 131u + m * 1031u + (uint32_t)pending * 3u + (badge ? brw.x : 0u) * 40503u +
+                   out * 17u + song.sel * 11u + up_gen * 7919u + ux.pal * 31u + (uint32_t)fav * 65537u +
+                   (uint32_t)back * 257u + (ui.msg_t ? str_hash(3u, ui.msg) : 0u);
+    char a[24], b[24], tag[6], nm[16];
+    if (!ui.force && sig == mo_br_sig)
+        return;
+    mo_br_sig = sig;
+    first = (uint32_t)clamp((int32_t)m - 5, 0, (int32_t)LM_N - 10);
+    for (s = 0; s < 2u; s++) {
+        int32_t r;
+        cv_begin(240, 120, MO_BG);
+        cv_oy = -(int32_t)s * 120;
+        b[0] = (char)('1' + song.sel % NTRK), b[1] = ' ';   /* the header */
+        mo_ascii(a, list_name(m), sizeof a);
+        mo_cut(b + 2, a, 8);
+        mo_fill(0, 0, mo_tw(b) + 3, 8, MO_INK);
+        mo_text(b, 1, 1, MO_BG);
+        if (ui.msg_t) {
+            mo_ascii(a, ui.msg, sizeof a);
+            mo_cut(b, a, (uint32_t)(117 - mo_tw(b) - 6) / 6u);
+            mo_textr(b, 119, 1, MO_INK);
+        } else {
+            fmt_int(b, (int32_t)total);
+            str_cpy(b + str_len(b), total == 1u ? " SOUND" : " SOUNDS", 8);
+            mo_textr(b, 119, 1, MO_DIM);
+        }
+        mo_hl(0, 8, 120, MO_INK);
+        for (r = 0; r < 10 && first + (uint32_t)r < LM_N; r++) {   /* LIST: ten rows */
+            uint32_t i = first + (uint32_t)r;
+            int32_t y = 12 + r * 9;
+            mo_ascii(a, browser_list_name(i), sizeof a);
+            mo_cut(b, a, 7);
+            if (i == m)
+                mo_fill(0, y - 1, 44, 9, MO_INK);
+            mo_text(b, 2, y, i == m ? MO_BG : i < LM_CAT ? MO_INK : MO_DIM);
+        }
+        mo_vl(46, 11, 96, MO_DIM);
+        if (!total) {
+            mo_textc(m == LM_FAV ? "NO FAVES" : m == LM_RECENT ? "NONE YET" : "NO SOUNDS", 83, 48, MO_DIM);
+        } else {
+            for (r = -2; r <= 3; r++) {                 /* the sounds round the one shown */
+                int32_t n = (int32_t)at + r;
+                if (!r || n < 0 || n >= (int32_t)total)
+                    continue;
+                src = preset_at((uint32_t)n, &k);
+                entry_label(src, k, tag, nm);
+                mo_ascii(a, nm[0] ? nm : tag, sizeof a);
+                mo_cut(b, a, 11);
+                mo_text(b, 50, r < 0 ? 40 + r * 12 : 54 + r * 12, r == -1 || r == 1 ? MO_INK : MO_DIM);
+            }
+            src = preset_at(at, &k);                    /* the card */
+            entry_label(src, k, tag, nm);
+            mo_box(48, 39, 68, 23, out ? MO_DIM : MO_INK);
+            mo_ascii(a, nm[0] ? nm : tag, sizeof a);
+            mo_cut(b, a, 10);
+            mo_text(b, 51, 42, out ? MO_DIM : MO_INK);
+            mo_ascii(a, ENGINES[eng_idx(src_engine(src, k))]->name, sizeof a);
+            mo_cut(b, a, 4);
+            mo_text(b, 51, 52, MO_DIM);
+            fmt_int(b, (int32_t)at + 1);
+            str_cpy(b + str_len(b), "/", 2);
+            fmt_int(b + str_len(b), (int32_t)total);
+            mo_textr(b, 113, 52, MO_DIM);
+            mo_vl(119, 11, 96, MO_DIM);                 /* the scroll bar: the place */
+            mo_fill(118, 11 + (total > 1u ? (int32_t)at * 86 / (int32_t)(total - 1u) : 0), 2, 10,
+                    out ? MO_DIM : MO_INK);
+            if (badge) {                                /* a fast turn: its acceleration */
+                b[0] = 'X';
+                fmt_int(b + 1, brw.x);
+                mo_fill(113 - mo_tw(b) - 1, 11, mo_tw(b) + 2, 9, MO_INK);
+                mo_text(b, 113 - mo_tw(b), 12, MO_BG);
+            }
+        }
+        mo_hl(0, 108, 120, MO_INK);                     /* the foot */
+        if (fav) mo_inv("* FAV", 2, 111);
+        else mo_text("* FAV", 2, 111, MO_DIM);
+        mo_box(62, 110, 28, 10, back ? MO_INK : MO_DIM);
+        mo_textc("BACK", 76, 111, back ? MO_INK : MO_DIM);
+        mo_fill(93, 110, 27, 10, MO_INK);
+        mo_textc("OK", 106, 111, MO_BG);
+        cv_oy = 0;
+        cv_blit(0, s * 120u);
+    }
+}
