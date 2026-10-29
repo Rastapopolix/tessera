@@ -1028,7 +1028,11 @@ static void pv_draw(void)
         if (ui.force || sig != ui.graph_sig || px != pv.gplay) {   /* (the step playing alone: cv_blit sends its mark) */
             ui.graph_sig = sig;
             pv.gplay = px;
+#if MELODEE_LOOK
+            mo_grid_panel();
+#else
             pv_panel(PV_GRID_Y, PV_GRID_H, pv_grid);
+#endif
         }
         return;
     }

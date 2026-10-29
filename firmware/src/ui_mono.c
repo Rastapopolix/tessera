@@ -690,6 +690,81 @@ static void mo_pic_notes(const track_t *t)
 /* a picture with no Mono drawing of its own yet: the detailed look's (ui_graph.c graph_body, ui_pages.c pv_pic_body)
  * in the picture area, in the ink's palette (gen_ui_palettes.py: every colour the ink or a blend of it on black); what
  * runs past the area cleared again for the footer */
+/* MATRIX: the tracks along the top (TO) and down the left (FROM), a cell between each pair: no mod a dim outline,
+ * mods filled from the left as far as their amounts reach (MOD: how many); the picked cell framed twice */
+static void mo_pic_matrix(void)
+{
+    uint32_t r, k;
+    mo_text("FR>TO", 1, 53, MO_DIM);
+    for (k = 0; k < NTRK; k++) {
+        char n[2] = {(char)('1' + k), 0};
+        mo_textc(n, 43 + (int32_t)k * 22, 53, MO_INK);
+        mo_textc(n, 25, 64 + (int32_t)k * 11, MO_INK);
+    }
+    for (r = 0; r < NTRK; r++)
+        for (k = 0; k < NTRK; k++) {
+            int32_t x = 33 + (int32_t)k * 22, y = 62 + (int32_t)r * 11;
+            uint32_t lv = mx_level(r, k);
+            if (r == mx_from && k == mx_to)
+                mo_box(x - 1, y - 1, 22, 11, MO_INK);
+            mo_box(x, y, 20, 9, lv ? MO_INK : MO_DIM);
+            if (lv)
+                mo_fill(x + 1, y + 1, 1 + (int32_t)lv * 17 / 8, 7, MO_INK);
+        }
+}
+/* the drum grid's lanes from row y0, dy cells apart (lanes first .. first + n - 1): the lane's name at the left (the
+ * lane picked inverted), the bank's 16 steps: a hit a 5 x 5 square (accented) or 3 x 3, none a dot (on the beats ink);
+ * the cursor framed; the playhead a bar over the rows at y0 - 2 */
+static void mo_lanes_draw(const track_t *t, int32_t y0, int32_t dy, uint32_t first, uint32_t n)
+{
+    uint32_t l, i, len = (uint32_t)t->p[P_SLEN], base = ui.bank * 16u;
+    for (l = first; l < first + n && l < NLANE; l++) {
+        int32_t y = y0 + (int32_t)(l - first) * dy;
+        int sel = l == ui.lane;
+        char a[8], b[4];
+        mo_ascii(a, drum_lane_abbr(t, l), sizeof a);
+        mo_cut(b, a, 2);
+        if (sel) mo_inv(b, 2, y);
+        else mo_text(b, 2, y, MO_DIM);
+        for (i = 0; i < 16u && base + i < len; i++) {
+            const step_t *st = &seq_steps(t)[base + i];
+            uint32_t bit = 1u << l;
+            int32_t x = 18 + (int32_t)i * 6 + (int32_t)(i / 4u);
+            if (step_lanes(st) & bit) {
+                if (step_accents(st) & bit) mo_fill(x, y + 1, 5, 5, MO_INK);
+                else mo_fill(x + 1, y + 2, 3, 3, MO_INK);
+            } else {
+                mo_px(x + 2, y + 3, i % 4u == 0u || sel ? MO_INK : MO_DIM);
+            }
+            if (sel && base + i == ui.cursor)
+                mo_box(x - 1, y, 7, 7, MO_INK);
+        }
+    }
+    if (song.playing && t->seq_idx < len && t->seq_idx / 16u == ui.bank) {
+        i = t->seq_idx % 16u;
+        mo_hl(18 + (int32_t)i * 6 + (int32_t)(i / 4u), y0 - 2, 5, MO_INK);
+    }
+}
+/* DRUM HIT's picture (under the dials): six lanes round the one picked, 9 cells apart */
+static void mo_pic_grid(const track_t *t)
+{
+    uint32_t first = ui.lane > 2u ? ui.lane - 2u : 0u;
+    if (first > NLANE - 6u) first = NLANE - 6u;
+    mo_lanes_draw(t, 55, 9, first, 6);
+}
+/* the drum grid's own page (pv_draw PV_GRID): all eight lanes, 10 cells apart, rows 11 .. 97 */
+static void mo_grid_panel(void)
+{
+    int32_t top;
+    for (top = 0; top < PV_GRID_H; top += 120) {
+        int32_t sh = PV_GRID_H - top < 120 ? PV_GRID_H - top : 120;
+        cv_begin(240, (uint32_t)sh, MO_BG);
+        cv_oy = -top;
+        mo_lanes_draw(TSEL, 4, 10, 0, NLANE);
+        cv_oy = 0;
+        cv_blit(0, (uint32_t)(PV_GRID_Y + top));
+    }
+}
 static void mo_pic_detailed(void)
 {
     int32_t oy0 = cv_oy, oy = cv_oy + MO_PY0 * 2;
@@ -729,6 +804,10 @@ static void mo_picture(void)
         default: mo_pic_detailed(); return;             /* (the generators since: BOUNCE .. ANSWER) */
         }
     }
+    if ((pg->graph == GR_ROLL || pg->graph == GR_DRUMHIT) && grid_on()) {
+        mo_pic_grid(t);
+        return;
+    }
     if (pg->graph == GR_ROLL) {
         mo_pic_notes(t);
         return;
@@ -739,6 +818,10 @@ static void mo_picture(void)
     }
     if (pg->graph == GR_LFO) {
         mo_pic_lfo(t);
+        return;
+    }
+    if (pg->graph == GR_MATRIX) {
+        mo_pic_matrix();
         return;
     }
     mo_pic_detailed();                                  /* the rest: the detailed picture until its Mono one is drawn */
@@ -1855,4 +1938,86 @@ static void mo_slot_row(const char *tag, const char *nm, int used, int boot, int
             cv_rect(236, ty, 4, th, MO_INK);
     }
     cv_blit(0, (uint32_t)y);
+}
+
+/* ---- SCL > SCALES (scales_draw): as the browser, drawn whole when anything on it changes ---- */
+/* the header: the track and SCALES inverted, the family's count; the families down the left (the one picked inverted),
+ * its scales down the right (the one picked framed: its notes and period under it, a star when a favourite); the
+ * place as a scroll bar; the favourite's star, BACK and OK */
+static uint32_t mo_sc_sig;
+static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fav)
+{
+    static const char *const FAM[SCALE_FAMILIES + 2u] = {"ALL", "WESTERN", "EDO", "JUST", "HARMON", "HISTOR", "REGION",
+                                                         "NON-OCT", "MAQAM", "* FAVES"};
+    uint32_t f, s, sig = total * 7u + song.sel * 131u + ux.pal * 31u + ui.scale_family * 7919u + rank * 40503u +
+                            scale * 1031u + fav;
+    char a[32], b[32];
+    if (!ui.force && sig == mo_sc_sig)
+        return;
+    mo_sc_sig = sig;
+    for (s = 0; s < 2u; s++) {
+        int32_t d;
+        cv_begin(240, 120, MO_BG);
+        cv_oy = -(int32_t)s * 120;
+        b[0] = (char)('1' + song.sel % NTRK);
+        str_cpy(b + 1, " SCALES", 8);
+        mo_fill(0, 0, mo_tw(b) + 3, 8, MO_INK);
+        mo_text(b, 1, 1, MO_BG);
+        fmt_int(b, (int32_t)total);
+        str_cpy(b + str_len(b), total == 1u ? " SCALE" : " SCALES", 8);
+        mo_textr(b, 119, 1, MO_DIM);
+        mo_hl(0, 8, 120, MO_INK);
+        for (f = 0; f < SCALE_FAMILIES + 2u; f++) {     /* the families */
+            int32_t y = 12 + (int32_t)f * 9;
+            if (f == ui.scale_family)
+                mo_fill(0, y - 1, 44, 9, MO_INK);
+            mo_text(FAM[f], 2, y, f == ui.scale_family ? MO_BG : MO_INK);
+        }
+        mo_vl(46, 11, 96, MO_DIM);
+        if (!total || rank >= total)
+            mo_textc(!total ? (ui.scale_family == SCALE_FAMILIES + 1u ? "NO FAVES" : "NO SCALES") : "NOT HERE", 83, 48,
+                     MO_DIM);
+        for (d = -2; d <= 3 && total && rank < total; d++) {
+            int32_t at = (int32_t)rank + d;
+            uint32_t id;
+            if (at < 0 || at >= (int32_t)total)
+                continue;
+            id = scale_picker_at((uint32_t)at);
+            scales_name(a, id, sizeof a);
+            mo_ascii(b, a, sizeof b);
+            if (!d) {                                   /* the one picked: its name in two lines */
+                uint32_t n = str_len(b), cut = n > 10u ? 10u : n, k;
+                char l[12];
+                for (k = cut; n > 10u && k > 3u; k--)  /* (at a space or after a hyphen that fits) */
+                    if (b[k] == ' ' || b[k - 1u] == '-') { cut = k; break; }
+                mo_box(48, 33, 68, 33, MO_INK);
+                mo_cut(l, b, cut);
+                mo_text(l, 51, 36, MO_INK);
+                while (b[cut] == ' ') cut++;
+                mo_cut(l, b + cut, 10);
+                mo_text(l, 51, 45, MO_INK);
+                if (scale_favorite(id))
+                    mo_text("*", 110, 36, MO_INK);
+                fmt_int(b, SCALE_DEGREES[id]);
+                str_cpy(b + str_len(b), SCALE_FAMILY[id] == 6u ? " NON-OCT" : " NOTES", 10);
+                mo_text(b, 51, 56, MO_DIM);
+            } else {
+                b[11] = 0;
+                mo_text(b, 50, d < 0 ? 36 + d * 11 : 59 + d * 11, d == -1 || d == 1 ? MO_INK : MO_DIM);
+            }
+        }
+        if (total > 1u) {                               /* the scroll bar: the place */
+            mo_vl(119, 11, 96, MO_DIM);
+            mo_fill(118, 11 + (int32_t)rank * 86 / (int32_t)(total - 1u), 2, 10, MO_INK);
+        }
+        mo_hl(0, 108, 120, MO_INK);                     /* the foot */
+        if (scale_favorite(scale)) mo_inv("* FAV", 2, 111);
+        else mo_text("* FAV", 2, 111, MO_DIM);
+        mo_box(62, 110, 28, 10, MO_INK);
+        mo_textc("BACK", 76, 111, MO_INK);
+        mo_fill(93, 110, 27, 10, MO_INK);
+        mo_textc("OK", 106, 111, MO_BG);
+        cv_oy = 0;
+        cv_blit(0, s * 120u);
+    }
 }

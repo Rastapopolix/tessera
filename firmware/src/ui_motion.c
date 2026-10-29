@@ -176,17 +176,29 @@ static void motion_draw(void)
         int32_t top = (int32_t)r * MO_H;
         cv_begin(240, MO_H, T_BG);
         cv_oy = -top;
+#if MELODEE_LOOK                                        /* (Mono: no panel, the lanes' rules dim, the ink's font) */
+        cv_oy = 0;
+        if (r)
+            cv_rect(10, 0, 220, 2, T_MID);
+        if (!n && r == 1u)
+            mo_textc("NO MOTION", 60, 12, T_MID);
+#else
         cv_rrect(4, 0, 232, MO_VIS * MO_H, 6, T_PANEL, T_BG);
         cv_oy = 0;
         if (r)
             cv_rect(10, 0, 220, 1, T_LINE);
         if (!n && r == 1u)
             cv_text_c(120, 24, &AF_S, "No motion", T_MID, T_PANEL);
+#endif
         if (l < n) {
             const param_desc_t *d = mo_desc(ids[l]);
             int32_t lo, hi, span, x0 = 52, x1 = 230, gy0 = 10, gh = 44, py = -1;
             int sel = l == mo.lane;
+#if MELODEE_LOOK
+            uint16_t lc = !on || !sel ? T_MID : T_TEXT;
+#else
             uint16_t lc = !on ? T_DIM : sel ? T_THEME : ux_mix(T_PANEL, T_THEME, 60);
+#endif
             int16_t v = mo_base(ids[l]), w = v;
             char b[16];
             lo = hi = clamp(v, d->min, d->max);         /* (the lane scaled to what it moves through, 16 at least) */
@@ -203,7 +215,16 @@ static void motion_draw(void)
             for (s = 4; s < len; s += 4)                /* (the beats, faint) */
                 cv_rect(x0 + (int32_t)s * (x1 - x0) / (int32_t)len, 4, 1, MO_H - 8, ux_mix(T_PANEL, T_LINE, 50));
             mo_label(ids[l], b);
+#if MELODEE_LOOK
+            {
+                char a[16];
+                mo_ascii(a, b, 5);                      /* (four characters fit before the lane) */
+                if (sel && on) mo_inv(a, 3, MO_H / 4 - 3);
+                else mo_text(a, 3, MO_H / 4 - 3, on ? T_TEXT : T_MID);
+            }
+#else
             cv_text_on(10, MO_H / 2 - 6, &AF_X, b, !on ? T_DIM : sel ? T_THEME : T_MID, T_PANEL);
+#endif
             for (s = 0; s < len; s++) {                 /* the value held step by step */
                 int32_t xa = x0 + (int32_t)s * (x1 - x0) / (int32_t)len, xb = x0 + (int32_t)(s + 1u) * (x1 - x0) / (int32_t)len;
                 int32_t y;
