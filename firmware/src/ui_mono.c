@@ -910,6 +910,133 @@ static void mono_page(void)
     }
 }
 
+/* ---- the chrome of the screens still drawn whole by their own code (lists, MIXER, MODS, the browser, ...) ---- */
+/* the header (draw_head; 18 px = 9 cells): the page's chip inverted (ERASING, a message or a layer's name in its
+ * place), the octave shift, then at the right REC, PLAY or STOP and the tempo; its line on row 8 */
+static void mo_dhead(const char *chip, const char *msg, int low)
+{
+    char b[24], t[24];
+    int32_t x = 119;
+    cv_begin(240, H_HEAD, MO_BG);
+    fmt_int(b, song.g[G_BPM]);
+    x = 119 - mo_tw(b);
+    mo_text(b, x, 1, ui.bpm_t ? MO_INK : MO_DIM);
+    x -= 7;
+    if (chain.running || song.playing) {                /* PLAY: a triangle; STOP: a square */
+        for (int32_t r = 0; r < 3; r++) mo_vl(x + r, 1 + r, 7 - 2 * r, MO_INK);
+    } else {
+        mo_fill(x, 2, 5, 5, MO_DIM);
+    }
+    if (song.rec) {
+        x -= 7;
+        if (((song.rec & ~song.rec_wait) >> song.sel) & 1u) mo_disc(x + 2, 4, 2, MO_INK);
+        else mo_circ(x + 2, 4, 2, MO_INK);
+    }
+    if (low) {                                          /* the battery, only when it runs low */
+        x -= 10;
+        mo_box(x, 2, 7, 5, MO_INK), mo_vl(x + 7, 3, 3, MO_INK);
+    }
+    mo_ascii(t, msg ? msg : chip, sizeof t);
+    mo_cut(b, t, (uint32_t)(x - 6) / 6u);
+    mo_fill(0, 0, mo_tw(b) + 3, 8, MO_INK);
+    mo_text(b, 1, 1, MO_BG);
+    if (!msg && song.octave) {                          /* the octave shift, signed */
+        t[0] = song.octave > 0 ? '+' : '-';
+        fmt_int(t + 1, song.octave < 0 ? -song.octave : song.octave);
+        mo_text(t, mo_tw(b) + 6, 1, MO_INK);
+    }
+    mo_hl(0, 8, 120, MO_INK);
+    cv_blit(0, Y_HEAD);
+}
+/* a list page's rows (list_rows; 22 px = 11 cells apart): the label at the left, the value at the right (dim), the
+ * row picked inverted across the screen, a row with more behind it a '>'; a scroll bar when not all fit */
+static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
+                         int (*cap)(uint32_t r, char *lb, char *v, uint16_t *vc))
+{
+    uint32_t r;
+    int32_t top, hh = (int32_t)vis * 11;
+    char lb[16], v[16], a[20], t[20];
+    uint16_t vc;
+    for (top = 0; top < hh; top += 55) {                /* five rows a canvas (110 px) */
+        int32_t sh = hh - top < 55 ? hh - top : 55;
+        cv_begin(240, (uint32_t)sh * 2u, MO_BG);
+        cv_oy = -top * 2;
+        for (r = first; r < n && r < first + vis; r++) {
+            int32_t y = (int32_t)(r - first) * 11, on = r == row, more, vw;
+            if (y + 11 <= top || y >= top + sh)
+                continue;
+            more = cap(r, lb, v, &vc);
+            if (on)
+                mo_fill(0, y, 118, 10, MO_INK);
+            mo_ascii(a, v, sizeof a);
+            mo_cut(t, a, 9);
+            vw = mo_tw(t);
+            mo_textr(t, more ? 109 : 115, y + 2, on ? MO_BG : vc == T_DIM ? MO_DIM : MO_INK);
+            if (more)
+                mo_text(">", 111, y + 2, on ? MO_BG : MO_DIM);
+            mo_ascii(a, lb, sizeof a);
+            mo_cut(t, a, (uint32_t)(110 - vw - 8) / 6u);
+            mo_text(t, 2, y + 2, on ? MO_BG : MO_DIM);
+        }
+        if (n > vis) {                                  /* the scroll bar: a cell wide at the right */
+            int32_t th = hh * (int32_t)vis / (int32_t)n;
+            int32_t ty = (int32_t)((uint32_t)(hh - th) * first / (n - vis));
+            mo_vl(119, 0, hh, MO_DIM);
+            mo_fill(118, ty, 2, th, MO_INK);
+        }
+        cv_oy = 0;
+        cv_blit(0, (uint32_t)(LIST_Y0 + top * 2));
+    }
+}
+/* the sound's strip at the bottom (pv_sound; 20 px): the page tabs where the page has them, else the track, its
+ * engine and its sound's name */
+static void mo_sound(const char *en, const char *nm)
+{
+    char a[24], b[24];
+    int32_t x;
+    cv_begin(240, 240 - PV_SOUND_Y, MO_BG);
+    if (foot_tabs_on()) {
+        cv_oy = -PV_SOUND_Y;
+        mo_foot();
+        cv_oy = 0;
+    } else {
+        mo_hl(0, 0, 120, MO_INK);
+        b[0] = 'T', b[1] = (char)('1' + song.sel % 10u), b[2] = 0;
+        mo_inv(b, 1, 2);
+        mo_ascii(a, en, sizeof a);
+        mo_cut(b, a, 8);
+        x = mo_text(b, 16, 2, MO_INK) + 6;
+        mo_ascii(a, nm, sizeof a);
+        mo_cut(b, a, (uint32_t)(119 - x) / 6u);
+        mo_text(b, x, 2, MO_DIM);
+    }
+    cv_blit(0, PV_SOUND_Y);
+}
+/* a confirm dialog (draw_confirm): a frame, a warning sign, the question, the name it is about, NO (OCT-) outlined and
+ * YES (OCT+) filled */
+static void mo_confirm(const char *a, const char *b)
+{
+    char t[40], u[40];
+    int32_t w = DLG_W / 2, h = DLG_H / 2;
+    cv_begin(DLG_W, DLG_H, MO_BG);
+    mo_box(0, 0, w, h, MO_INK);
+    mo_fill(w / 2 - 5, 5, 11, 11, MO_INK);
+    mo_text("!", w / 2 - 2, 7, MO_BG);
+    mo_ascii(u, a, sizeof u);
+    mo_cut(t, u, (uint32_t)(w - 6) / 6u);
+    mo_textc(t, w / 2, 21, MO_INK);
+    if (b[0]) {
+        mo_ascii(u, b, sizeof u);
+        mo_cut(t, u, (uint32_t)(w - 6) / 6u);
+        mo_textc(t, w / 2, 32, MO_DIM);
+    }
+    mo_box(8, 46, 40, 11, MO_INK);
+    mo_textc("NO", 28, 48, MO_INK);
+    mo_fill(56, 46, 40, 11, MO_INK);
+    mo_textc("YES", 76, 48, MO_BG);
+    cv_blit(DLG_X, DLG_Y);
+}
+
 /* ---- Stage (HOME) ---- */
 /* The header: PLAY or STOP and the tempo, the selected track's engine. A column a track, 30 cells: its role (the
  * selected track's inverted; an armed track's REC), the sound in two words of four letters, the engine, the pattern

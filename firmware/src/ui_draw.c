@@ -259,6 +259,14 @@ static int32_t page_tabs(int32_t x0, int32_t x1, int32_t y)
     }
     return x1 - (int32_t)n * (w + 2) + 2;
 }
+#if MELODEE_LOOK                                        /* the Mono look's chrome (ui_mono.c) */
+static void mo_dhead(const char *chip, const char *msg, int low);
+static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
+                         int (*cap)(uint32_t r, char *lb, char *v, uint16_t *vc));
+static void mo_sound(const char *en, const char *nm);
+static void mo_confirm(const char *a, const char *b);
+static int foot_tabs_on(void);
+#endif
 static void draw_head(void)
 {
     char b[16], chip[16];
@@ -283,14 +291,23 @@ static void draw_head(void)
     }
     fmt_int(b, bpm);
     if (!ui.force && sig == ui.head_sig) {
+#if MELODEE_LOOK
+        if (!moved)
+            return;                                     /* (Mono: the tempo snaps, drawn with the header) */
+#else
         if (ui.roll[ROLL_BPM].from[0] || moved) {       /* rolling, or snapped to the new value: the BPM's strip only */
             cv_begin(BPM_W, H_HEAD, T_BG);
             roll_text(ROLL_BPM, BPM_W - text_w(&AF_S, b), 3, b, ui.bpm_t ? T_ACCENT : T_TEXT);
             cv_blit(BPM_X, Y_HEAD);
         }
         return;
+#endif
     }
     ui.head_sig = sig;
+#if MELODEE_LOOK
+    mo_dhead(chip, seq_erase_active(TSEL) ? "ERASING" : msg ? (ui.msg_t ? ui.msg : layer_head()) : 0, low);
+    return;
+#endif
     cv_begin(240, H_HEAD, T_BG);
     roll_text(ROLL_BPM, BPM_X + BPM_W - text_w(&AF_S, b), 3, b, ui.bpm_t ? T_ACCENT : T_TEXT);   /* (right-aligned) */
     cv_icon_mid(BPM_X - 14, H_HEAD / 2, 12, chain.running ? ICON_X_SONG : song.playing ? ICON_X_PLAY : ICON_X_STOP,
@@ -1593,6 +1610,10 @@ static void draw_confirm(void)
     uint16_t ring = ux_mix(T_SURF, T_THEME, 20);
     confirm_text(a, b);
     confirm_words(a);
+#if MELODEE_LOOK
+    mo_confirm(a, b);
+    return;
+#endif
     cv_begin(DLG_W, DLG_H, T_BG);
     cv_rrect(0, 0, DLG_W, DLG_H, 10, T_LINE, T_BG);
     cv_rrect(1, 1, DLG_W - 2, DLG_H - 2, 9, T_SURF, T_LINE);
