@@ -115,7 +115,7 @@ async function editorMock() {
   inp.onmidimessage = (e) => link.receive(e.data);
   const rq = async (r, o) => link.request(r, o);
   const info = E.parse[E.CMD.INFO](await rq(E.req.info()));
-  ok(info.nengines === 22 && info.engines[15] === "-" && info.engines[19] === "-" && info.engines[14] === "-" && info.engines[1] === "-" && info.engines[12] === "FM6" && info.engines[13] === "-"
+  ok(info.nengines === 22 && info.engines[15] === "-" && info.engines[19] === "ORACLE" && info.engines[14] === "-" && info.engines[1] === "-" && info.engines[12] === "FM6" && info.engines[13] === "-"
  && info.engines[2] === "-" && info.engines[5] === "-" && info.engines[6] === "TRIO" && info.engines[7] === "-" && info.engines[8] === "-" && info.engines[9] === "PHYS" && info.engines[10] === "DRUM" && info.engines[11] === "-" && info.pcount === 119 && info.pe0 === 111 && info.engines[4] === "-",
     "editor: INFO");
   let descs = 0;
@@ -1014,7 +1014,9 @@ async function editorFm6() {
   await rq(E.req.set(0,info.pe0+7,24));
   g=E.parse[C.FM6_GET](await rq(E.req.fm6Get(0,0)));
   const d = E.parse[C.DUMP](await rq(E.req.dump()), info);
-  ok(eq(g.packed,F6.pack(mine)) && d.p[info.pe0+7]===0,"FM6: unused E7 cannot select a factory voice");
+  // E7 is AEG since #267 (the carriers' envelope times, applied as it plays): it keeps its value, the voice stays
+  ok(eq(g.packed,F6.pack(mine)) && d.p[info.pe0+7]===24,"FM6: E7 (AEG) keeps its value and selects no factory voice");
+  await rq(E.req.set(0,info.pe0+7,0));
   await rq(E.req.preset(12,4));
   g=E.parse[C.FM6_GET](await rq(E.req.fm6Get(0,0)));
   ok(eq(g.packed,F6.FACTORY_PK[4]),"FM6: factory preset loads its own patch directly");

@@ -416,7 +416,7 @@ static void steal_pad(track_t *t)
 static int steal_test(const char *dir)
 {
     static const uint8_t N1[7] = {48, 52, 55, 59, 62, 65, 69};
-    const uint32_t frames = 4u * FS;
+    const uint32_t frames = 4u * FS / CTL * CTL;   /* whole blocks: 4 s is 5512.5 of them (CTL 32), the last overran L */
     char path[512];
     FILE *w;
     int32_t prev = 0, *L = calloc(frames, sizeof *L);
@@ -493,7 +493,7 @@ static void xfade_sine(track_t *t)
 static int xfade_test(const char *dir)
 {
     static const uint8_t CH[3] = {57, 60, 64};
-    const uint32_t frames = 4u * FS, B = FS / 10u / CTL * CTL;   /* B: 0.1 s in whole blocks */
+    const uint32_t frames = 4u * FS / CTL * CTL, B = FS / 10u / CTL * CTL;   /* whole blocks (L); B: 0.1 s in whole blocks */
     /* switches: (a) in a release tail, (b) twice with a chord held, (c) with a note right after it */
     const uint32_t sw[4] = {11u * B, 23u * B, 29u * B + 7u * CTL, 33u * B};
     const uint32_t on[3] = {B, 15u * B, 25u * B}, sine[3] = {14u * B, 24u * B, 32u * B};
