@@ -15,7 +15,7 @@
  *    while its key is held (Dexed keeps a decayed note keyed).
  * 7. modulation: feedback, the modulation index (Bessel), LFO vibrato and tremolo, the pitch envelope.
  * 8. no DC, no clipping: every factory patch, C1..C7 at velocity 30 and 127.
- * 9. macros: neutral at 0 (the patch's own samples); MLVL, MRAT, FB brighter; MEG keeps it up longer; VMOD
+ * 9. macros: neutral at 0 (the patch's own samples); MLVL, MRAT, FB brighter; MEG keeps it up longer; AEG the amp envelope; VMOD
  *    makes velocity count more; DTUN spreads the carriers (beats); ALG puts another algorithm in; PTCH loads its
  *    patch (main loop).
  * 10. voices: POLY takes Dexed's 16, all free some seconds after their release.
@@ -746,6 +746,22 @@ static void macros(void)
         l1 = centroid_of(base, e, 100, FS / 2);
         printf("fm6: MEG 0 / +50: centroid at 0.5 s %.0f / %.0f Hz\n", l0, l1);
         check("MEG: + the modulators decay slower (brighter later)", l1 > l0 * 1.1);
+    }
+    {   /* AEG: the carriers' envelope, the amp envelope: + a slower attack and a longer release, - a shorter one */
+        static double y[FS];
+        double a[3], r[3];
+        static const int16_t AEG[3] = {0, 50, -50};
+        for (uint32_t k = 0; k < 3u; k++) {
+            memcpy(e, E0, sizeof e); e[7] = AEG[k];
+            setup(base, e);
+            voice_render(48, 100, y, FS * 3 / 4, FS / 4);
+            a[k] = rms(y, 0, FS / 200);
+            r[k] = rms(y, FS * 3 / 10, FS / 2);
+        }
+        printf("fm6: AEG 0 / +50 / -50: first 5 ms rms %.0f / %.0f / %.0f, after the release %.0f / %.0f / %.0f\n",
+               a[0], a[1], a[2], r[0], r[1], r[2]);
+        check("AEG: + a slower attack and longer release, - a shorter release (the carriers' envelope)",
+              a[1] < a[0] * 0.8 && r[1] > r[0] * 1.5 && r[2] < r[0] * 0.67);
     }
     {   /* VMOD: velocity changes the brightness more */
         double s0 = centroid_of(base, E0, 127, FS / 10) / centroid_of(base, E0, 40, FS / 10);

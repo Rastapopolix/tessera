@@ -1662,7 +1662,7 @@ static void mo_pic_fm6(const track_t *t)
         hot = 0;
     else if (hot == P_E3 || hot == P_E4 || hot == P_E5)
         hotset = 63u & ~car;
-    else if (hot == P_E6)
+    else if (hot == P_E6 || hot == P_E7)
         hotset = car;
     fm6_routes(alg, m);
     for (k = 0; k < 6u; k++) {

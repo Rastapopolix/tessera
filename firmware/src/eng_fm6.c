@@ -10,7 +10,7 @@
  * in the web editor (EDITOR_PROTOCOL.md FM6_*) and over USB-MIDI as DX7 SysEx (fm6_store.c), loaded from the
  * PATCH slots and saved inside projects. The FM6 function settings (bend, portamento, the controllers, ENGINE:
  * fm6_core.c fm6_fn) are the track's, as each Dexed instance has its own, saved with the project and the
- * template (project.c), edited on the FM pages and by DX7 function SysEx. On the device the seven EDIT
+ * template (project.c), edited on the FM pages and by DX7 function SysEx. On the device the eight EDIT
  * values are macros on top of the patch, neutral at 0 (then the native patch is unmodified):
  *   ALG   PAT = the patch's algorithm, 1..32 another one
  *   FB    added to the patch's feedback (0..7)
@@ -19,6 +19,8 @@
  *   MEG   the modulators' envelope times: + slower (rates down to 40 steps), - faster
  *   VMOD  added to the modulators' velocity sensitivity (0..7)
  *   DTUN  spreads the carriers apart in pitch (up to about +-36 cents between the outer ones)
+ *   AEG   the carriers' envelope times, the amp envelope: + slower attack and release (rates down to 40 steps),
+ *         - faster
  * User presets and projects retain the whole voice; the preset browser loads factory voices.
  * The operator envelopes are the voice's amplitude and end it (engine_t.ownenv / done): the track's ADSR, ENV
  * DEST and the matrix's ENV do nothing here. The track's FLT moves MLVL (ENV / LFO -> FLT, the matrix's CUT), SHP
@@ -52,7 +54,7 @@ static uint8_t fm6_on[NTRK];                     /* the operator switches (bit k
 static struct {                                  /* the patch through the macros: the audio ISR's copy */
     uint8_t p[FP_SIZE + 1u];
     uint8_t gen, ok;
-    int16_t e[7];                                /* P_E0..P_E6 it was made with */
+    int16_t e[8];                                /* P_E0..P_E7 it was made with */
     int32_t dt[6];                               /* DTUN: per operator, Q24 log2 */
 } fm6_eff[NTRK];
 
@@ -252,24 +254,24 @@ static void fm6_init(void)
 }
 
 /* -------------------------------------------------------------- macros --- */
-/* the patch through E0..E6 (audio ISR; cheap when nothing changed). With every macro at 0 it is the patch.
+/* the patch through E0..E7 (audio ISR; cheap when nothing changed). With every macro at 0 it is the patch.
  * 1 = made again (the patch or a macro changed) */
 static int fm6_eff_build(const track_t *t)
 {
     uint32_t tr = (uint32_t)(t - trk), k, j, car, n = 0;
     const int16_t *e = &t->p[P_E0];
-    int32_t meg, step;
+    int32_t meg, aeg, step;
     if (tr >= NTRK)
         return 0;
     if (fm6_eff[tr].ok && fm6_eff[tr].gen == fm6_pgen[tr]) {
-        for (k = 0; k < 7u && fm6_eff[tr].e[k] == e[k]; k++)
+        for (k = 0; k < 8u && fm6_eff[tr].e[k] == e[k]; k++)
             ;
-        if (k == 7u)
+        if (k == 8u)
             return 0;
     }
     fm6_eff[tr].gen = fm6_pgen[tr];
     memcpy(fm6_eff[tr].p, fm6_patch[tr], FP_SIZE);
-    for (k = 0; k < 7u; k++)
+    for (k = 0; k < 8u; k++)
         fm6_eff[tr].e[k] = e[k];
     {
         uint8_t *p = fm6_eff[tr].p;
@@ -278,6 +280,7 @@ static int fm6_eff_build(const track_t *t)
         p[FP_FB] = (uint8_t)clamp(p[FP_FB] + e[1], 0, 7);
         car = fm6_carriers(alg);
         meg = clamp(e[4], -64, 63) * 40 / 64;               /* MEG: rate steps (+ slower) */
+        aeg = clamp(e[7], -64, 63) * 40 / 64;               /* AEG: the carriers' (+ slower) */
         step = clamp(e[6], 0, 127) * (12 * 13981) / 127;    /* DTUN: up to 12 cents a step (1 cent = 13981) */
         for (k = 0; k < 6u; k++) {
             uint8_t *op = p + (5u - k) * FP_OP;              /* OP1 first: carriers in their order */
@@ -286,6 +289,8 @@ static int fm6_eff_build(const track_t *t)
             if ((car >> ki) & 1u) {                          /* carriers 0, +1, -1, +2, -2, +3 steps apart */
                 static const int8_t SPREAD[6] = {0, 1, -1, 2, -2, 3};
                 fm6_eff[tr].dt[ki] = SPREAD[n++] * step;
+                for (j = 0; j < 4u; j++)
+                    op[FP_R1 + j] = (uint8_t)clamp(op[FP_R1 + j] - aeg, 0, 99);
                 continue;
             }
             if (!op[FP_MODE])
@@ -1086,7 +1091,7 @@ static void fm6_sx_byte(uint8_t b)
 static const char *const N_FM6_ALG[] = {"PAT", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13",
                                         "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25",
                                         "26", "27", "28", "29", "30", "31", "32", 0};
-/* {ALG, FB, MLVL, MRAT, MEG, VMOD, DTUN, unused}: neutral macros, DTUN on the pad. */
+/* {ALG, FB, MLVL, MRAT, MEG, VMOD, DTUN, AEG}: neutral macros, DTUN on the pad. */
 #define FM6_PR(name, mono) {name, {0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 127, 0}, 0, mono}
 static const preset_t FM6_PRESETS[] = {
     {"TINE EP", {0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 127, 0}, 0, 0},
@@ -1147,7 +1152,7 @@ static const engine_t ENG_FM6 = {
         {"MEG", F_BIPCT, -64, 63, 0, 0, 0},
         {"VMOD", F_INT, -7, 7, 0, 0, 0},
         {"DTUN", F_PCT, 0, 127, 0, 0, 0},
-        {"-", F_INT, 0, 0, 0, 0, 0},
+        {"AEG", F_BIPCT, -64, 63, 0, 0, 0},
     },
     .presets = FM6_PRESETS,
     .npresets = NELEM(FM6_PRESETS),

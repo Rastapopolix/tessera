@@ -1740,7 +1740,7 @@ static uint32_t fm6_alg_of(const track_t *t)
 /* FM6's EDIT pages: the algorithm, drawn as graph_fm draws DIGITAL's, "ALG 05" top left. Carriers THEME with INK
  * numerals, modulators RAISE with THEME ones; an operator at output level 0: a DIM numeral (a carrier on RAISE).
  * Routes THEME, the feedback loop MID (DIM at feedback 0), the output bus MID. The knob just turned in ACCENT:
- * ALG and PTCH the label, FB the loop, MLVL the routes, MRAT MEG VMOD the modulators, DTUN the carriers. */
+ * ALG and PTCH the label, FB the loop, MLVL the routes, MRAT MEG VMOD the modulators, DTUN AEG the carriers. */
 static void graph_fm6(const track_t *t, uint16_t c)
 {
     uint32_t alg = fm6_alg_of(t), k, j, car = fm6_car_ops(alg), top = 0, hi = 0, fbop = fm6_fb_op(alg), hotset = 0;
@@ -1757,7 +1757,7 @@ static void graph_fm6(const track_t *t, uint16_t c)
         hot = 0;                                     /* (their columns are no macros) */
     else if (hot == P_E3 || hot == P_E4 || hot == P_E5)
         hotset = 63u & ~car;
-    else if (hot == P_E6)
+    else if (hot == P_E6 || hot == P_E7)
         hotset = car;
     fm6_routes(alg, m);
     for (k = 0; k < 6u; k++) {

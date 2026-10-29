@@ -1858,7 +1858,7 @@ function makeMockDevice(opt = {}) {
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},   /* 11: retired NOISE; stored ID reserved */
     { name: "FM6", titles: ["OPS", "PATCH"], edit: [D("ALG", F.INT, 0, 32, 0), D("FB", F.INT, -7, 7, 0), D("MLVL", F.BIPCT, -64, 63, 0),
         D("MRAT", F.INT, -16, 16, 0), D("MEG", F.BIPCT, -64, 63, 0), D("VMOD", F.INT, -7, 7, 0), D("DTUN", F.PCT, 0, 127, 0),
-        NONE],
+        D("AEG", F.BIPCT, -64, 63, 0)],
       presets: [P("TINE EP", [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 127, 0], 0), P("BELL", [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 127, 0], 0),
         P("FM BASS", [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 127, 0], 1), P("BRASS", [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 127, 0], 0),
         P("PAD", [0, 0, 0, 0, 0, 0, 30, 0], [0, 0, 127, 0], 0), P("MARIMBA", [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 127, 0], 0),
