@@ -357,6 +357,14 @@ On a generator track, EVOLVE mutates the phrase every few bars.
 
 With LOCK up, Turing's loop is its LENGTH long; Markov's and Morph's loops are as long as PATTERN's **LEN**.
 
+**GRAVITY** (OCT+ held, KNOB 1; the same GRAVITY as the SOURCE layer's) lets the phrase drift and then come home.
+Home is the generator as you last set it: a knob, ROLL, MODE or a loaded project. At GRAVITY %, a round of EVERY
+moves the generator a step back toward home instead of changing it. Turing flips a changed bit back, Euclid's
+rotation and pulses step back, Markov's LEAP, Atlas' X and Y, Bounce's angle and Morph's position move back. Awake,
+Poly, Quad, Series and Chord put a changed value back, and Constellation lets no star go. 0 is off; at 100 it goes
+home and stays there. With a SOURCE, GRAVITY plays the source instead (above), and with FORM on, the sections play
+as they are.
+
 ### STEP EVOLVE
 
 On a **STEP** track, EVOLVE varies the steps you wrote, as they play, without changing them.

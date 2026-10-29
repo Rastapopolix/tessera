@@ -547,10 +547,10 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_ACC_MODE, "ACCUM MODE", "What a step's Accumulate does at LIMIT. WRAP: back to the note as written, and "
                                   "on again. PING: turns round and comes back. CLAMP: stays there. PLAY and a new "
                                   "pattern start it again."),
-    X_(TX_SD_GRAVITY, "GRAVITY", "With a SOURCE, the pull home: this share of the steps plays the source as written "
-                                 "at its place. TURING's changed step goes back to it, MARKOV's chain goes on from "
-                                 "there, EUCLID plays the source's own hit or rest, MORPH its A. 0: none. OCT+ held "
-                                 "on GEN, KNOB 3."),
+    X_(TX_SD_GRAVITY, "GRAVITY", "The pull home. With EVERY on, this share of EVOLVE's rounds moves the generator "
+                                 "back toward its settings as you last set them, instead of changing it: it drifts, "
+                                 "then comes home. With a SOURCE, this share of the steps plays the source as written "
+                                 "at its place. 0: none. OCT+ held on EVOLVE, KNOB 1, or on GEN, KNOB 3."),
     X_(TX_SV_HOW, "EVOLVE HOW", "What STEP EVOLVE's rounds do to the steps. DRIFT: moves by scale degrees, octave "
                                 "jumps, drops, swaps and ghost notes. ADORN, ornaments that only add: ratchets, "
                                 "octave jumps, neighbour notes, passing notes in the rests. SERIAL: the whole phrase "

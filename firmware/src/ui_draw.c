@@ -1021,6 +1021,16 @@ static void draw_columns(void)
             draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
             return;
         }
+        if (ev_layer_on()) {                            /* a generator's EVOLVE, OCT+ held: GRAVITY (lit with EVERY on) */
+            uint32_t gv = tessera.sd_grav[tr];
+            fmt_int(e0, gv);
+            col_mods(PID_TESS(TX_SD_GRAVITY));
+            draw_column(0, "GRAVITY", e0, "%", ev->every && !ev->form ? VAL(0u) : T_DIM, (int32_t)gv * 10, ICON_AUTO);
+            draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+            return;
+        }
         if (tessera_step_on(tr)) {                      /* STEP EVOLVE: LOCK, EVERY, AMOUNT, CLEAR (the steps changed) */
             uint32_t every = tessera.sv_every[tr], amount = tessera.sv_amount[tr], n = tessera_step_varied(tr);
             fmt_int(e0, (uint32_t)lk);
@@ -1081,7 +1091,8 @@ static void draw_columns(void)
                             src ? VAL(1u) : T_DIM, (int32_t)kp * 1000 / (TESS_SD_KEEPS - 1), ICON_AUTO);
                 fmt_int(v3, gv);
                 col_mods(PID_TESS(TX_SD_GRAVITY));
-                draw_column(2, "GRAVITY", v3, "%", src ? VAL(2u) : T_DIM, (int32_t)gv * 10, ICON_AUTO);
+                draw_column(2, "GRAVITY", v3, "%", src || (tessera.evolve[tr].every && !tessera.evolve[tr].form) ?
+                            VAL(2u) : T_DIM, (int32_t)gv * 10, ICON_AUTO);
                 draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
             } else if (m == TESS_ENG_TURING) {
                 const gen_turing_t *tur = tessera_turing(tr);
