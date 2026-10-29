@@ -302,13 +302,20 @@ static void list_draw(void)
         uint32_t s2 = scale_mask(TSEL) * 13u + (uint32_t)TSEL->p[P_ROOT] + ux.gen * 977u + ux.pal * 31u + song.sel * 7u;
         if (ui.force || s2 != ps) {
             ps = s2;
+#if MELODEE_LOOK
+            mo_scale_pic(pic_y, PV_SOUND_Y - pic_y);
+#else
             list_scale_pic(pic_y, PV_SOUND_Y - pic_y);
+#endif
         }
-    } else if (l->pic == LP_GRAPH) {                    /* (the page's graph, as the panel draws it) */
+    }
+#if !MELODEE_LOOK                                       /* (no list has one yet; Mono would draw its own) */
+    else if (l->pic == LP_GRAPH) {                      /* (the page's graph, as the panel draws it) */
         graph_y = pic_y;
         graph_h = PV_SOUND_Y - pic_y;
         draw_graph();
         graph_y = Y_GRAPH;
         graph_h = H_GRAPH;
     }
+#endif
 }

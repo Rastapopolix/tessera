@@ -309,6 +309,7 @@ static void pv_column(uint32_t c, const char *label0, const char *val0, const ch
     int32_t x;
     char label[12], val[16], unit[8];
     const char *l0 = label0, *v0 = val0, *u0 = unit0;
+#if !MELODEE_LOOK                                       /* (Mono: no rings, no faders; mono_page's cells) */
     if (col_style == CS_RING) {
         pv_ring(c, l0, v0, u0, vc, ratio, hot);
         return;
@@ -317,6 +318,9 @@ static void pv_column(uint32_t c, const char *label0, const char *val0, const ch
         pv_fader(c, l0, v0, u0, vc, ratio, hot);
         return;
     }
+#else
+    (void)ratio;
+#endif
     if (col_style == CS_CHIP) {
 #if MELODEE_LOOK
         mo_chip(c, v0, u0, vc, hot, pv_chip_y);
@@ -980,6 +984,7 @@ static void pv_draw(void)
 {
     uint32_t kind = pv_kind(), sig;
     int32_t px;
+#if !MELODEE_LOOK                                       /* (Mono: NOTES, the rings and the curves are mono_page's) */
     if (kind == PV_NOTES) {
         if (ui.force) {
             lcd_fill(0, H_HEAD, 240, 240 - H_HEAD, T_BG);
@@ -1015,6 +1020,7 @@ static void pv_draw(void)
         }
         return;
     }
+#endif
     if (kind == PV_GRID) {
         if (ui.force)
             lcd_fill(0, H_HEAD, 240, 240 - H_HEAD, T_BG);
@@ -1049,6 +1055,7 @@ static void pv_draw(void)
         col_style = CS_CARD;
         return;
     }
+#if !MELODEE_LOOK                                       /* (MOD: hidden for MODS, ui.c page_visible) */
     if (kind == PV_MOD) {
         if (ui.force)
             lcd_fill(0, H_HEAD, 240, 240 - H_HEAD, T_BG);
@@ -1061,6 +1068,7 @@ static void pv_draw(void)
         col_style = CS_CARD;
         return;
     }
+#endif
     if (kind == PV_MIXER) {
         uint32_t k;
         if (ui.force)
@@ -1070,6 +1078,7 @@ static void pv_draw(void)
             pv_strip(k);
         return;
     }
+#if !MELODEE_LOOK                                       /* (Mono: the rings and the curves are mono_page's) */
     pv_tab_h = kind == PV_RINGS && (sec_on() || (designer_on() && designer_tabs_on())) ? SEC_TAB_H : 0;
     if (kind != PV_CURVE) {                             /* RINGS, FADERS */
         if (ui.force) {                                 /* (the parts then cover what they draw) */
@@ -1118,4 +1127,5 @@ static void pv_draw(void)
             pv_optabs();
         pv_panel(PV_CURVE_Y + (tabs ? PV_OPTAB_H + 2 : 0), PV_CURVE_H - (tabs ? PV_OPTAB_H + 2 : 0), pv_curve);
     }
+#endif
 }
