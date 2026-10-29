@@ -100,6 +100,12 @@ static int sv_layer_on(void)
     return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->graph == GR_EVOLVE &&
            tessera_step_on(song.sel) && ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
+/* the ENERGY page with OCT+ held: KNOB 1 is the selected track's DEPTH (tessera.c tessera_en_layer_knob) */
+static int en_layer_on(void)
+{
+    return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->graph == GR_ENERGY &&
+           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+}
 /* a generator track's EVOLVE page with OCT+ held: KNOB 1 is GRAVITY (tessera.c tessera_ev_layer_knob) */
 static int ev_layer_on(void)
 {
@@ -108,11 +114,11 @@ static int ev_layer_on(void)
            ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
 /* a generator's OCT+ layer is on (QUAD's, CONSTELLATION's, CHORD's, GRIDS', ANSWER's, the SOURCE one, STEP EVOLVE's,
- * EVOLVE's): no octave, no sheet */
+ * EVOLVE's, ENERGY's): no octave, no sheet */
 static int gen_layer_on(void)
 {
     return quad_cols_on() || cs_layer_on() || ch_layer_on() || gr_layer_on() || an_layer_on() || sd_layer_on() ||
-           sv_layer_on() || ev_layer_on();
+           sv_layer_on() || ev_layer_on() || en_layer_on();
 }
 /* QUAD's LINK as its card shows it: OFF, or "T" and the linked tracks ("T24") */
 static void quad_link_text(uint32_t m, char *b)
@@ -1137,15 +1143,16 @@ static void graph_timing(const track_t *t, uint16_t c)
  * it, and where it is now (a dot); a rest, the time left on a bar along the top. Live: graph_sig redraws it as it moves */
 static void graph_energy(uint16_t c)
 {
-    int32_t x0 = PANEL_X0 + 6, w = PANEL_W - 12, i, a = tessera.en_arc, at;
+    int32_t x0 = PANEL_X0 + 6, w = PANEL_W - 12, i, a = tessera.en_arc, at, lv = tessera.en_level * 32767 / 100;
     cv_rect(x0, 50, w, 1, T_RAISE);
     cv_rect(x0, 46, 1, 9, T_RAISE);
-    for (i = 0; i < w; i += 2) {
-        int32_t y = 50 - en_sin((uint32_t)i, (uint32_t)w) * a / 100 * 36 / 32767;
-        cv_rect(x0 + i, y, 2, 2, a ? T_MID : T_RAISE);
+    for (i = 0; i < w; i += 2) {                     /* (round LEVEL) */
+        int32_t e = en_sin((uint32_t)i, (uint32_t)w) * a / 100 + lv;
+        int32_t y = 50 - (e < -32767 ? -32767 : e > 32767 ? 32767 : e) * 36 / 32767;
+        cv_rect(x0 + i, y, 2, 2, a || lv ? T_MID : T_RAISE);
     }
     at = (int32_t)en_frac(energy.ph, energy.per, (uint32_t)w);
-    if (a && song.playing)
+    if ((a || lv) && song.playing)
         cv_ball(x0 + at, 50 - energy_now() * 36 / 32767, 7, c);
     if (song.playing && energy_resting()) {
         int32_t len = (int32_t)(energy.rest_left / EN_BPS) * w / 18;
