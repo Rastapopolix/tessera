@@ -43,7 +43,10 @@
 /* Tessera (phase 4, tessera-notes/docs/design/phase4/PLAN.md): an engine left out of the build (0) is never offered; its stored ID
  * stays reserved and a project's track of it loads SID's INIT (project.c). Its code goes where nothing reaches it */
 /* CZ-1 and PROPHET: retired as engines 2026-10-22 (their IDs stay reserved), their stores and tones with the own
- * project format */
+ * project format. The Prophet's engine came back as ORACLE (2026-10-29, ID 19): its own sounds, no factory bank */
+#ifndef MELODEE_ORACLE
+#define MELODEE_ORACLE 1         /* ORACLE (eng_oracle.c): two oscillators, Poly-Mod, a 4-pole ladder (after the Prophet-5) */
+#endif
 #ifndef MELODEE_FM6
 #define MELODEE_FM6 1
 #endif
@@ -72,8 +75,8 @@
 #ifndef MELODEE_PLAITS
 #define MELODEE_PLAITS 0         /* MACRO (eng_macro.c): Plaits' synthesis, C++ (build.py); the prototype: off by default */
 #endif
-#define ENG_BUILT(e) ((e) == 3u ? MELODEE_SID : (e) == 9u ? PHYS_ON : (e) == 12u ? MELODEE_FM6 : (e) == 15u || (e) == 19u ? 0 : \
-                      (e) == 21u ? MELODEE_PLAITS : 1)   /* SID PHYS FM6 CZ-1 PROPHET MACRO (PHYS: left out, not retired,
+#define ENG_BUILT(e) ((e) == 3u ? MELODEE_SID : (e) == 9u ? PHYS_ON : (e) == 12u ? MELODEE_FM6 : (e) == 15u ? 0 : (e) == 19u ? MELODEE_ORACLE : \
+                      (e) == 21u ? MELODEE_PLAITS : 1)   /* SID PHYS FM6 CZ-1 ORACLE MACRO (PHYS: left out, not retired,
                                                    * since 2026-10-21: its tracks load FM's first voice) */
 #define TRIO_ON (MELODEE_TRIO || MELODEE_LEGACY_EXTRAS)
 #define PHYS_ON (MELODEE_PHYS || MELODEE_LEGACY_EXTRAS)
@@ -83,7 +86,7 @@
 #error "MELODEE_FM6 or MELODEE_SID: one of them is the place of an engine left out"
 #endif
 #define ENGI_CZ 15u      /* retired (the CZ-1) */
-#define ENGI_PROPHET 19u /* 16..18 reserved: historical preset namespaces */
+#define ENGI_ORACLE 19u  /* ORACLE (the Prophet's ID until 2026-10-22); 16..18 reserved: historical preset namespaces */
 #define USER_GENERAL 16u
 #define USER_NATIVE_P5 20u
 #define NENGINES 22               /* 13 SLICE and 14 OBXF reserved; 15 native CZ-1; 20 reserved (USER_NATIVE_P5's
@@ -93,7 +96,7 @@
 #define USER_NONE 256u
 #define ENGI_ANALOG 0u           /* retired in 1.2: never selectable (eng_ok), its stored sounds play silent */
 #define ENGI_DIGITAL 1u          /* retired: never selectable (eng_ok), its stored sounds play silent */
-#define NENG_SHOWN (NENGINES - 11u - !MELODEE_SLICE - (MELODEE_LEGACY_EXTRAS ? 1u : 6u - MELODEE_TRIO - MELODEE_PHYS) - !MELODEE_SID - !MELODEE_FM6 - \
+#define NENG_SHOWN (NENGINES - 10u - !MELODEE_ORACLE - !MELODEE_SLICE - (MELODEE_LEGACY_EXTRAS ? 1u : 6u - MELODEE_TRIO - MELODEE_PHYS) - !MELODEE_SID - !MELODEE_FM6 - \
                     !MELODEE_PLAITS)   /* the engines one can pick: PRESETS, the EDIT
                                                 * layer, the editor, in the display order of engines.c ENGINE_ORDER */
 #define ENGI_SLICE 13u           /* reserved without MELODEE_SLICE: never selectable (eng_ok) */

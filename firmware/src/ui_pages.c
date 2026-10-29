@@ -55,7 +55,7 @@ static uint32_t pv_kind(void)
         return PV_GRID;
     if (ui.home || act_cols() || grid_on())
         return PV_NONE;
-    if ((pg->graph == GR_ADSR && pg->scope == SC_TRACK) || pg->graph == GR_LFO || pg->graph == GR_FMEG ||
+    if ((pg->graph == GR_ADSR && (pg->scope == SC_TRACK || pg->scope == SC_ORACLE)) || pg->graph == GR_LFO || pg->graph == GR_FMEG ||
         pg->graph == GR_FMPEG)
         return PV_CURVE;
     if (pg->graph == GR_NONE || pg->graph == GR_ARP || pg->graph == GR_STEPS ||
@@ -446,7 +446,7 @@ static int32_t pv_hot(void) { return ui.hot_t ? (int32_t)(ui.hot_col & 3u) : -1;
 static void pv_env(int32_t h)
 {
     const page_t *pg = cur_page();
-    int32_t va = TSEL->p[pg->id[0]], vd = TSEL->p[pg->id[1]], vs = TSEL->p[pg->id[2]], vr = TSEL->p[pg->id[3]];
+    int32_t va = page_value(pg, 0), vd = page_value(pg, 1), vs = page_value(pg, 2), vr = page_value(pg, 3);
     int32_t top = 18, bot = h - 22, x0 = 12, x1 = x0 + 10 + va * 40 / 127, x2 = x1 + 16 + vd * 52 / 127;
     int32_t x4 = PV_PANEL_W - 14, x3 = x4 - 24 - vr * 48 / 127, sus = vs * 1000 / 127, hot = pv_hot(), x, py = 0;
     int32_t e = 32768, kd = 150733 / (x2 - x1), kr = 150733 / (x4 - x3);

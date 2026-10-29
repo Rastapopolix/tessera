@@ -162,7 +162,7 @@ def analyze(ir, dis, src):
                 if field and int(field[1]) in field_targets:
                     targets = field_targets[int(field[1])]
                     if name == 'engine_batch_kernel':
-                        targets = targets-{'fm6_render', 'p5_render'}
+                        targets = targets-{'fm6_render', 'or_render'}   # (they never reach the batch: their own kernels)
                     bindings.setdefault(regs[0], set()).update(targets)
                     if not field_targets[int(field[1])]:
                         unset.add(regs[0])

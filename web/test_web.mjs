@@ -208,9 +208,9 @@ async function editorMock() {
   prefs = await E.readDevicePreferences(rq, info, names, prefs);
   ok(!prefs.favorites[info.namespace.general][31] && !E.devicePresetRows(info, names, prefs).some((r) => r.user), "editor: erased slot disappears and loses star");
   {   /* the lists in the device's order (engines.c ENGINE_ORDER): FM6 first (second until the PROPHET was retired,
-       2026-10-22), DRUM last, "-" never; the numbers stay */
+       2026-10-22), ORACLE after it (2026-10-29), DRUM last, "-" never; the numbers stay */
     const shown = E.engineOrder(info.engines).map((i) => info.engines[i]);
-    ok(shown.join() === "FM6,SID,TRIO,PHYS,DRUM" &&
+    ok(shown.join() === "FM6,ORACLE,SID,TRIO,PHYS,DRUM" &&
        E.engineOrder(info.engines)[0] === 12 && E.engineOrder(info.engines).at(-1) === 10,
        "editor: engines listed FM6 first, DRUM last (indices kept)");
     ok(E.engineOrder(["ANALOG", "X", "-", "DRUM", "FM6"]).join() === "0,4,3,1", "editor: an unknown engine follows the known ones");

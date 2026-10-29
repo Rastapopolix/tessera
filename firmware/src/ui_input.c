@@ -1104,6 +1104,15 @@ static void edit_param(uint32_t slot, int32_t steps)
         motion_unguard(f);
         return;
     }
+    if (pg->scope == SC_ORACLE) {                        /* (ORACLE's: into its patch, as FM6's) */
+        uint8_t old[MO_NATIVE_N];
+        uint32_t f = motion_guard();
+        motion_native_peek(TSEL, old);
+        or_page_put(pg, slot, v);
+        native_motion(old);
+        motion_unguard(f);
+        return;
+    }
     if (pg->scope == SC_GLOBAL && pg->id[slot] == G_BOOT) {   /* BOOT: the device's (settings), saved */
         settings_boot = (uint8_t)v;
         settings_save();

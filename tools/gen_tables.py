@@ -112,8 +112,34 @@ def main(path):
     L += exp_steps("CUTOFF_HZ", [int(round(f)) for f in fc], 30.0, 16000 / 30)
     # trapezoidal (Simper) SVF: g = tan(pi fc / FS), Q12; stable at any cutoff/resonance
     L += arr("SVF_G", "uint16_t", [int(4096 * math.tan(math.pi * min(f, 0.45 * FS) / FS)) for f in fc])
-    # tanh(i / 128), i = 0..1024, in RAM: the 909 kit's saturation (gen_909_tables.py x0x_tanh_tab; the Prophet's
-    # P5_TANH until it was retired, 2026-10-22)
+    # ORACLE (eng_oracle.c; the Prophet engine of before 2026-10-22, its P5_ tables): key tracking, the LFO, the
+    # envelopes, the ladder's coefficients, 2^x for Poly-Mod
+    L += [f"#define OR_KEYTRACK_HALF_Q7 {round(128 * 256 * 127 * math.log(2) / (2 * 192 * math.log(fc[-1] / fc[0])))}"]
+    # LFO rate, raw 0..127. Measured on a Rev-4 factory demo (rates 74..97 -> 2.4..8.4 Hz,
+    # within 2 %): ln Hz = -3.1005 + 0.05387 raw, bent at the ends to the documented .022 / 500 Hz.
+    def or_lfo_hz(v):
+        x = -3.1005 + 0.05387 * v
+        if v > 100:
+            x += (math.log(500) - (-3.1005 + 0.05387 * 127)) * ((v - 100) / 27) ** 2
+        if v < 20:
+            x -= (-3.1005 - math.log(.022)) * ((20 - v) / 20) ** 2
+        return math.exp(x)
+    L += arr("OR_LFO_INC", "uint32_t", [int(or_lfo_hz(v) / FS * 2**32) for v in range(128)], 8)
+    # LFO amount response, normalized: vibrato depth measured at 18..55 fits 0.0519 * raw^1.737 cents (full scale
+    # 235 cents, in the engine)
+    L += arr("OR_AMOUNT", "float", [f"{(v / 127) ** 1.737:.9e}f" for v in range(128)])
+    orms = [10000 ** (v / 127) for v in range(128)]
+    L += arr("OR_ENV_ATK", "float", [f"{CTL / (m * FS / 1000):.9e}f" for m in orms])
+    L += arr("OR_ENV_EXP", "float", [f"{1 - math.exp(-CTL / (m / 1000 * FS)):.9e}f" for m in orms])
+    L += arr("OR_ENV_SSM", "float", [f"{CTL / (3.6 * m * FS / 1000):.9e}f" for m in orms])
+    g = arr("OR_TPT_G", "float", [f"{math.tan(math.pi * f / FS) / (1 + math.tan(math.pi * f / FS)):.9e}f" for f in fc])
+    g[0] = g[0].replace(" =", ' __attribute__((section(".dsp_tables"))) =')
+    L += g
+    exp2 = arr("OR_EXP2", "float", [f"{2 ** (i / 512):.9e}f" for i in range(514)])
+    exp2[0] = exp2[0].replace(" =", ' __attribute__((section(".dsp_tables"))) =')
+    L += exp2
+    # tanh(i / 128), i = 0..1024, in RAM: the 909 kit's saturation (gen_909_tables.py x0x_tanh_tab) and ORACLE's
+    # (the Prophet's P5_TANH until it was retired, 2026-10-22)
     tanh = arr("DSP_TANH", "float", [f"{math.tanh(i / 128):.9e}f" for i in range(1025)])
     tanh[0] = tanh[0].replace(" =", ' __attribute__((section(".dsp_tables"))) =')
     L += tanh

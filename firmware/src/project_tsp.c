@@ -15,15 +15,17 @@
 #define TSP_HEAD 12u
 #define TSP_STEP_BYTES 10u                      /* step v2: 80 bits */
 enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TSP_FM6, TSP_DRUM, TSP_REC, TSP_NAME,
-       TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_HOW,
-       TSP_ENERGY = 22, TSP_PARTS };   /* (21: ORACLE's, claimed; TSP_SUB: each track's SHAPE; none: EVEN;
+       TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_HOW, TSP_ORACLE,
+       TSP_ENERGY, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
                                               * TSP_HUMAN: each track's HUMAN TIME; none: TWEAK HUMAN's timing, as it was;
                                               * TSP_ACC: each track's Accumulate LIMIT, then each one's MODE; none: 7, WRAP;
                                               * TSP_GRAV: each track's GRAVITY (STEP as seed); none: 0;
                                               * TSP_HOW: each track's STEP EVOLVE HOW; none: DRIFT;
+                                              * TSP_ORACLE: each track's ORACLE patch; none: its preset's;
                                               * TSP_ENERGY: ENERGY's LEVEL + 100, then each track's DEPTH; none: 0, 100) */
+_Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22, "the parts' numbers are stored: never renumbered");
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
 #endif
@@ -220,6 +222,10 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
         for (i = 0; i < FM6_PACKED; i++) { if (q->fm6[t][i] > 127u) w.ok = 0; tsp_byte(&w, q->fm6[t][i]); }
     tsp_byte(&w, q->fm6_fn_ok);
     tsp_bytes(&w, q->fm6_fn, sizeof q->fm6_fn);
+    tsp_end(&w);
+
+    tsp_begin(&w, TSP_ORACLE, 1);                      /* each track's ORACLE patch (eng_oracle.c, OR_N bytes) */
+    for (t = 0; t < NTRK; t++) { if (!or_patch_ok(q->oracle[t])) w.ok = 0; tsp_bytes(&w, q->oracle[t], OR_N); }
     tsp_end(&w);
 
     tsp_begin(&w, TSP_DRUM, 1);                        /* each track's kit offsets */
@@ -445,6 +451,13 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         const uint8_t *p = raw + tsp_seen.at[TSP_SEED];
         if (tsp_seen.ver[TSP_SEED] != 1u || tsp_seen.len[TSP_SEED] != 2u * NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (p[k] > TESSERA_TRACKS || p[NTRK + k] >= TESS_SD_KEEPS) return 0;
+    }
+    q->oracle_ok = 0;                                  /* (a record of before ORACLE: each track its preset's) */
+    if (tsp_seen.at[TSP_ORACLE]) {
+        const uint8_t *p = raw + tsp_seen.at[TSP_ORACLE];
+        if (tsp_seen.ver[TSP_ORACLE] != 1u || tsp_seen.len[TSP_ORACLE] != NTRK * OR_N) return 0;
+        for (uint32_t k = 0; k < NTRK; k++) { if (!or_patch_ok(p + k * OR_N)) return 0; memcpy(q->oracle[k], p + k * OR_N, OR_N); }
+        q->oracle_ok = 1;
     }
     if (tsp_seen.at[TSP_GRAV]) {
         if (tsp_seen.ver[TSP_GRAV] != 1u || tsp_seen.len[TSP_GRAV] != NTRK) return 0;
