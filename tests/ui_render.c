@@ -178,7 +178,7 @@ static void fm6_hook(uint32_t kind, uint32_t a, uint32_t b)
 static uint8_t aud_on;                                  /* the LCD load audit runs: its frames are not linted */
 static void finding(const char *what, const rbox_t *b, const rbox_t *o)
 {
-    static char seen[600][64];
+    static char seen[8000][64];
     static uint32_t nseen;
     char key[64];
     uint32_t i;
@@ -188,7 +188,7 @@ static void finding(const char *what, const rbox_t *b, const rbox_t *o)
     snprintf(key, sizeof key, "%.20s|%.14s|%.24s", cur_name, what, b->s);
     for (i = 0; i < nseen && strcmp(seen[i], key); i++) ;
     if (i < nseen) return;                       /* each finding once per screen */
-    if (nseen < 600u) strcpy(seen[nseen++], key);
+    if (nseen < 8000u) strcpy(seen[nseen++], key);
     else return;
     fprintf(rep, "LINT %-22s %-32s '%s' (%d,%d)-(%d,%d)", cur_name, what, b->s, b->x0, b->y0, b->x1, b->y1);
     if (o) fprintf(rep, " / '%s' (%d,%d)-(%d,%d)", o->s, o->x0, o->y0, o->x1, o->y1);
@@ -2105,15 +2105,16 @@ static void roll_cost(void)
             t_full / CLOCKS_PER_SEC / N * 1e6, (unsigned long long)(px_full / N), (unsigned long long)(bl_full / N));
 }
 
+#define DS_SHOW (MELODEE_LOOK ? "YELLOW" : "NIGHT")       /* the palette the designer's images are written in */
 static void designer_sweep(const char *out)
 {
     char name[96],file[64];
     for(uint32_t palid=0;palid<UI_PAL_ENTRIES;palid++)for(uint32_t eng=0;eng<NENG_SHOWN;eng++){
-        int night=str_eq(UI_PALETTES[palid].name,"NIGHT");
+        int night=str_eq(UI_PALETTES[palid].name,DS_SHOW);
         state();sound_init_of(TSEL,eng_vis(eng));pal(palid);designer_open();
         snprintf(name,sizeof name,"%s/designer %s START",UI_PALETTES[palid].name,ENGINES[TSEL->eng_req]->name);cur_name=name;
         nscr=npend=0;ui.force=1;ui_draw();lint();if(palid==UI_GRAY_INDEX)mono_check();
-        if(TSEL->eng_req==ENGI_FM6 && night)write_ppm(out,"NIGHT","designer_start");
+        if(TSEL->eng_req==ENGI_FM6 && night)write_ppm(out,DS_SHOW,"designer_start");
         ds.expert=1;designer_begin();
         for(uint32_t i=0;i<ds.n;i++){
             ds.at=(uint8_t)i;designer_page();
@@ -2125,13 +2126,13 @@ static void designer_sweep(const char *out)
                     nscr=npend=0;ui.force=1;ui_draw();lint();if(palid==UI_GRAY_INDEX)mono_check();
                 }
                 ds.row=0;ui.force=1;ui_draw();
-                if(night){snprintf(file,sizeof file,"designer_features_%u",TSEL->eng_req);write_ppm(out,"NIGHT",file);}
+                if(night){snprintf(file,sizeof file,"designer_features_%u",TSEL->eng_req);write_ppm(out,DS_SHOW,file);}
                 continue;
             }
             snprintf(name,sizeof name,"%s/designer %s %s OP%u",UI_PALETTES[palid].name,ENGINES[TSEL->eng_req]->name,cur_page()->title,fm6_opsel+1);cur_name=name;
             nscr=npend=0;ui.force=1;ui_draw();lint();if(palid==UI_GRAY_INDEX)mono_check();
             if(night && TSEL->eng_req==ENGI_FM6 && str_eq(cur_page()->title,"FREQ") && fm6_opsel==0){
-                snprintf(file,sizeof file,"designer_%u",TSEL->eng_req);write_ppm(out,"NIGHT",file);
+                snprintf(file,sizeof file,"designer_%u",TSEL->eng_req);write_ppm(out,DS_SHOW,file);
             }
         }
         designer_compare();                             /* the original, its chip */
@@ -2141,11 +2142,11 @@ static void designer_sweep(const char *out)
         designer_finish();                              /* its sheet, the question */
         snprintf(name,sizeof name,"%s/designer %s sheet",UI_PALETTES[palid].name,ENGINES[TSEL->eng_req]->name);cur_name=name;
         nscr=npend=0;ui.force=1;ui_draw();lint();if(palid==UI_GRAY_INDEX)mono_check();
-        if(TSEL->eng_req==ENGI_FM6 && night)write_ppm(out,"NIGHT","designer_sheet");
+        if(TSEL->eng_req==ENGI_FM6 && night)write_ppm(out,DS_SHOW,"designer_sheet");
         pop_close();confirm_open(CF_DISCARD_DESIGN,song.sel);
         snprintf(name,sizeof name,"%s/designer %s discard",UI_PALETTES[palid].name,ENGINES[TSEL->eng_req]->name);cur_name=name;
         nscr=npend=0;ui.force=1;ui_draw();lint();if(palid==UI_GRAY_INDEX)mono_check();
-        if(TSEL->eng_req==ENGI_FM6 && night)write_ppm(out,"NIGHT","designer_discard");
+        if(TSEL->eng_req==ENGI_FM6 && night)write_ppm(out,DS_SHOW,"designer_discard");
         ui.confirm=0;designer_close(1);
     }
     cur_name=0;
@@ -2299,8 +2300,10 @@ int main(int argc, char **argv)
             fprintf(rep, "  HOME, a frame without force (lazy strips): %.1f us, %llu texts\n",
                     (double)(clock() - c0) / CLOCKS_PER_SEC / (N * 4) * 1e6, (unsigned long long)(n_text / (N * 4)));
         }
-        {   /* the STEP page's piano roll: its panel alone redrawn, and a frame that changes nothing (the signature only) */
+        {   /* the STEP page's piano roll: its panel alone redrawn, and a frame that changes nothing (the signature only);
+             * not linted (the Mono look draws these pages whole, never this panel alone) */
             static const int G[] = {S_ROLL_CHORDS, S_ROLL_PLAYING, S_DRUM};
+            aud_on = 1;
             for (k = 0; k < 3u; k++) {
                 clock_t c0;
                 double tg, ti;
@@ -2315,6 +2318,7 @@ int main(int argc, char **argv)
                 ti = (double)(clock() - c0) / CLOCKS_PER_SEC / (N * 4) * 1e6;
                 fprintf(rep, "  %s: the panel redrawn %.1f us; an unchanged frame (signature only) %.2f us\n", S_NAME[G[k]], tg, ti);
             }
+            aud_on = 0;
         }
         roll_cost();
         audit_sends(rep);
