@@ -284,11 +284,12 @@ static int native_motion_test(void)
     ui.home = 0; ui.page = page; motion_clear(TSEL);
     bad += check("clearing keeps the current page until leaving it", page_visible(page));
     go_home(); bad += check("empty motion disappears after leaving", !page_visible(page));
-    motion_set_event(TSEL, 0, MO_NATIVE + 10u, MO_TAG_P5 << 8 | 60);   /* (a retired Prophet's) */
+    motion_set_event(TSEL, 0, MO_NATIVE + 10u, MO_TAG_ORACLE << 8 | 60);   /* (ORACLE's, on a track of another engine) */
     bad += check("another engine's native events cannot expose an empty motion page", !page_visible(page));
     motion_clear(TSEL);
     bad += check("invalid native tags, fields and values are refused", !motion_native_ok(MO_NATIVE, 0) &&
-        !motion_native_ok(MO_NATIVE + 10u, MO_TAG_P5 << 8 | 60) && !motion_native_ok(MO_NATIVE + 38u, MO_TAG_CZ << 8 | 1) &&
+        !motion_native_ok(MO_NATIVE + 10u, MO_TAG_CZ << 8 | 60) && !motion_native_ok(MO_NATIVE + OR_N, MO_TAG_ORACLE << 8) &&
+        !motion_native_ok(MO_NATIVE + OR_SYNC, MO_TAG_ORACLE << 8 | 2) && motion_native_ok(MO_NATIVE + OR_CUTOFF, MO_TAG_ORACLE << 8 | 127) && !motion_native_ok(MO_NATIVE + 38u, MO_TAG_CZ << 8 | 1) &&
         !motion_native_ok(MO_NATIVE + FP_TRNSP, MO_TAG_FM6 << 8) &&
         !motion_native_ok(MO_NATIVE + FP_DET, MO_TAG_FM6 << 8 | 99));
     ui_power_on(); set_engine_of(TSEL, ENGI_FM6); apply_preset_to(TSEL, 0);

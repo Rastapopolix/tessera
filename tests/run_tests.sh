@@ -257,6 +257,7 @@ sound && [ $TABLES = 1 ] && job dsp_tracks
 if core; then
     t "flash storage (A/B, torn writes)" storage_test
     t "native FM6 user presets, scrolling, migration and interrupted saves" fm6_preset_test -O1 $FW
+    t "ORACLE: its sounds in range and playing, the pages, the patch in a project" oracle_test -O1 -DMELODEE_USB_AUDIO=1 $FW
     t "resource lifetimes, cache eviction, tails and capacity" resources_test -O2 $FW
     t "aligned libc: copy/clear bounds, ordering and float aliasing" libc_word_test -O2 -fstrict-aliasing
     t "audio worker: stalled jobs and wrapping deadlines" audio_worker_test
@@ -342,10 +343,10 @@ if core && [ $TABLES = 1 ]; then
     t "full backup: CRC before writes, stale runtime, USB reset / timeout, malformed objects, older projects" backup_test $FW
     t "demo projects (demos/): made, saved, backed up, loaded and played; the shipped ones load; put into a backup" \
         demo_projects -O2 $FW -DMELODEE_SID=0 -DMELODEE_SID_KIT=0 -DMELODEE_PHYS=0 -DTRK_START_TESS=1 -- demo_tests
-    t "engines off (FM6, CZ-1, Prophet left out): never offered, a project's tracks of them SID INIT, the parts play" \
-        engine_switch_test $FW -DMELODEE_FM6=0 -DMELODEE_CZ=0 -DMELODEE_PROPHET=0
-    t "engines off (SID, PHYS, CZ-1, Prophet left out, FM back): never offered, their tracks FM6's first voice, the parts play" \
-        engine_switch_fm:engine_switch_test $FW -DMELODEE_SID=0 -DMELODEE_SID_KIT=0 -DMELODEE_PHYS=0 -DMELODEE_CZ=0 -DMELODEE_PROPHET=0
+    t "engines off (FM6, CZ-1, ORACLE left out): never offered, a project's tracks of them SID INIT, the parts play" \
+        engine_switch_test $FW -DMELODEE_FM6=0 -DMELODEE_CZ=0 -DMELODEE_ORACLE=0
+    t "engines off (SID, PHYS, CZ-1, ORACLE left out, FM back): never offered, their tracks FM6's first voice, the parts play" \
+        engine_switch_fm:engine_switch_test $FW -DMELODEE_SID=0 -DMELODEE_SID_KIT=0 -DMELODEE_PHYS=0 -DMELODEE_CZ=0 -DMELODEE_ORACLE=0
     t "editor: real C protocol, malformed transfers and queue recovery" editor_test $FW
     t "DX7 librarian: USB voice/bank receive, dump replies and malformed frame recovery" fm6_sysex_test $FW
     t "SWING: track + global at most 100, sequencer step lengths, the SWG display" swing_test -O2 $FW
