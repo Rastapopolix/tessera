@@ -264,6 +264,7 @@ static void mo_dhead(const char *chip, const char *msg, int low);
 static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
                          int (*cap)(uint32_t r, char *lb, char *v, uint16_t *vc));
 static void mo_sound(const char *en, const char *nm);
+static void mo_scale_pic(int32_t y, int32_t h);
 static void mo_confirm(const char *a, const char *b);
 static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint32_t flags, int32_t meter);
 static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on);

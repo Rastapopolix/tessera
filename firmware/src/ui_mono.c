@@ -2040,6 +2040,30 @@ static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
         cv_blit(0, (uint32_t)(LIST_Y0 + top * 2));
     }
 }
+/* the octave under SCL's rows (list_scale_pic; h px from y): the scale's keys solid (black keys dim when not in it),
+ * the root's with a notch, as CHORD's keys */
+static void mo_scale_pic(int32_t y, int32_t h)
+{
+    static const uint8_t WHITE[7] = {0, 2, 4, 5, 7, 9, 11}, BLACK[5][2] = {{1, 0}, {3, 1}, {6, 3}, {8, 4}, {10, 5}};
+    uint32_t mask = scale_mask(TSEL), root = (uint32_t)TSEL->p[P_ROOT] % 12u, i;
+    int32_t kh = h / 2 - 4, bh = kh * 3 / 5;
+    cv_begin(240, (uint32_t)h, MO_BG);
+    for (i = 0; i < 7u; i++) {
+        uint32_t n = WHITE[i], on = (mask >> ((n + 12u - root) % 12u)) & 1u;
+        int32_t x = 4 + 16 * (int32_t)i;
+        if (on) mo_fill(x, 2, 15, kh, MO_INK);
+        else mo_box(x, 2, 15, kh, MO_INK);
+        if (n == root) mo_fill(x + 6, kh - 4, 3, 2, MO_BG);
+    }
+    for (i = 0; i < 5u; i++) {
+        uint32_t n = BLACK[i][0], on = (mask >> ((n + 12u - root) % 12u)) & 1u;
+        int32_t x = 4 + 16 * BLACK[i][1] + 11;
+        mo_fill(x - 1, 2, 11, bh + 1, MO_BG);
+        mo_fill(x, 2, 9, bh, on ? MO_INK : MO_DIM);
+        if (n == root) mo_fill(x + 3, bh - 3, 3, 2, MO_BG);
+    }
+    cv_blit(0, (uint32_t)y);
+}
 /* the sound's strip at the bottom (pv_sound; 20 px): the page tabs where the page has them, else the track, its
  * engine and its sound's name */
 static void mo_sound(const char *en, const char *nm)
