@@ -60,6 +60,27 @@ static void web_power_on(void)
     web_booted = 1;
 }
 
+/* the page's shell picker (web/sim/index.html): the ink by name (the Mono look's COLOR, as MENU > COLOR sets it;
+ * an unknown name, or the detailed look, leaves it). name: n bytes at web_ink_name(), not terminated */
+static char web_ink_buf[16];
+EXPORT char *web_ink_name(void) { return web_ink_buf; }
+EXPORT uint32_t web_ink(uint32_t n)
+{
+#if MELODEE_LOOK
+    uint32_t i;
+    for (i = 0; i < NPALETTES && n < sizeof web_ink_buf; i++)
+        if (strlen(UI_PALETTES[i].name) == n && !memcmp(UI_PALETTES[i].name, web_ink_buf, n)) {
+            settings.palette = i;
+            palette_set(i);
+            ui.force = 1;
+            return 1;
+        }
+#else
+    (void)n;
+#endif
+    return 0;
+}
+
 /* one pass of main.c's loop: what the browser has (no USB, editor, UBOOT, flash) */
 static void web_frame(void)
 {

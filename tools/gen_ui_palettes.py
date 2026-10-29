@@ -45,13 +45,13 @@ PALETTES = [
 ]
 # The Mono look (MELODEE_LOOK 1): one ink on black, the Settings' COLOR its ink (Theo 2026-10-28: yellow as the yellow
 # OLED of early norns units by default; white, green, blue, red; 2026-10-29: orange, pink and hot pink, the FM-1's
-# shells). Its track colours are the ink (one ink: no track colours, so
+# shells, and lilac, the lavender shell's). Its track colours are the ink (one ink: no track colours, so
 # Melodee's are not near any); its own slots, so a detailed build's stored id reads as Mono's default and back
 MONO_INK = [("YELLOW", (255, 208, 32)), ("WHITE", (240, 240, 240)), ("GREEN", (96, 255, 128)),
             ("BLUE", (136, 192, 255)), ("RED", (255, 112, 100)), ("ORANGE", (255, 144, 40)),
-            ("PINK", (255, 176, 216)), ("HOT PINK", (255, 88, 176))]
+            ("PINK", (255, 176, 216)), ("HOT PINK", (255, 88, 176)), ("LILAC", (192, 150, 255))]
 MONO_PALETTES = [(n, (0, 0, 0), (20, 20, 20), c, c, (c, c, c, c)) for n, c in MONO_INK]
-MONO_SLOTS = [6, 7, 8, 9, 10, 11, 12, 13]
+MONO_SLOTS = [6, 7, 8, 9, 10, 11, 12, 13, 14]
 MONO_DEFAULT = "YELLOW"
 SLOTS = [0, 2, 3, 4, 5]            # each palette's stored slot; 1 was DAY (retired: its stored id reads as the default)
 # Melodee's own track colours (NIGHT, DAY, CONTRAST as upstream had them): no track colour may come near one

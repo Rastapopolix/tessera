@@ -79,7 +79,7 @@ value.
 
 **The look.** Tessera draws every screen in one ink on black, with a 5 x 7 pixel font: the selected item is
 inverted, and quieter things are drawn in a dimmer ink. MENU > COLOR picks the ink: **YELLOW** (the default),
-WHITE, GREEN, BLUE, RED, and ORANGE, PINK and HOT PINK to match the FM-1's shells. The tracks are told apart by their numbers, not by colours.
+WHITE, GREEN, BLUE, RED, and ORANGE, PINK, HOT PINK and LILAC to match the FM-1's shells. The tracks are told apart by their numbers, not by colours.
 
 <table>
 <tr>
@@ -93,6 +93,7 @@ WHITE, GREEN, BLUE, RED, and ORANGE, PINK and HOT PINK to match the FM-1's shell
 <td align="center"><img src="assets/gallery/ink_orange.png" alt="ORANGE" width="180"><br><b>ORANGE</b></td>
 <td align="center"><img src="assets/gallery/ink_pink.png" alt="PINK" width="180"><br><b>PINK</b></td>
 <td align="center"><img src="assets/gallery/ink_hot_pink.png" alt="HOT PINK" width="180"><br><b>HOT PINK</b></td>
+<td align="center"><img src="assets/gallery/ink_lilac.png" alt="LILAC" width="180"><br><b>LILAC</b></td>
 </tr>
 </table>
 
