@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
 # Copyright (C) 2026 Theo Dainis (melodee-tess)
-"""Tessera Mono, the web pages' pixel face: the Mono look's own 5 x 7 font (firmware/src/ui_mono.c MO_FONT) as a
+"""Tessera Mono, the web pages' pixel face: the Mono look's own 5 x 7 font (firmware/src/gfx.c MO_FONT) as a
 WOFF, so the site, the installer, the editor and the simulator page letter as the device does.
 
   python3 tools/gen_mono_webfont.py          (needs fonttools)
   python3 tools/gen_mono_webfont.py --check  (tests/run_tests.sh: fails when a page's face is not MO_FONT's)
 
 A font pixel is 100 units, a glyph 6 pixels wide (5 and one clear), 7 above the baseline and 1 below: 800 units an
-em, so the face is sharp at 8, 16, 24 ... px. Lower case is drawn as upper (as on the device); a few signs the pages
-use and the device has no need of (| { } ~ ` and the middle dot, dashes, ellipsis, times) are added here. The WOFF
+em, so the face is sharp at 8, 16, 24 ... px. Lower case is drawn as upper (as the device draws it but in a chord's
+name); the degree and the o slashed are the device's too; a few signs the pages use and the device has no need of (| { } ~ ` and the middle dot, dashes, ellipsis, times) are added here. The WOFF
 goes inline, as a data URL, between the TESSERA-MONO markers of every page in PAGES, so each one stays a single file.
 """
 import base64
@@ -22,7 +22,7 @@ from fontTools.fontBuilder import FontBuilder
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "firmware/src/ui_mono.c"
+SRC = ROOT / "firmware/src/gfx.c"
 PAGES = ("web/home/index.html", "web/index_pkg.html", "web/editor.html", "web/sim/index.html")
 PX, ADV, ASC, DESC = 100, 6, 7, 1
 EXTRA = {                                               # code point: 7 rows, bit 4 the left column (as MO_FONT)
@@ -36,11 +36,13 @@ MARK = re.compile(r"(/\* TESSERA-MONO:[^*]*\*/).*?(/\* /TESSERA-MONO \*/)", re.S
 
 
 def mo_font():
-    """MO_FONT's 64 glyphs, ' ' .. '_'"""
-    body = re.search(r"MO_FONT\[64\]\[7\] = \{(.*?)\n\};", SRC.read_text(), re.S).group(1)
+    """MO_FONT's glyphs by code point: ' ' .. 'z', then the degree and the o slashed (gfx.c mono_ch)"""
+    body = re.search(r"MO_FONT\[93\]\[7\] = \{(.*?)\n\};", SRC.read_text(), re.S).group(1)
     rows = [tuple(int(v) for v in m.split(",")) for m in re.findall(r"\{([\d,\s]+)\}", body)]
-    assert len(rows) == 64 and all(len(r) == 7 for r in rows), "MO_FONT: 64 glyphs of 7 rows"
-    return {0x20 + i: r for i, r in enumerate(rows)}
+    assert len(rows) == 93 and all(len(r) == 7 for r in rows), "MO_FONT: 93 glyphs of 7 rows"
+    out = {0x20 + i: r for i, r in enumerate(rows[:91])}
+    out[0xB0], out[0xF8] = rows[91], rows[92]
+    return out
 
 
 def glyph(rows):
@@ -83,7 +85,7 @@ def build():
     fb.setupHorizontalMetrics({n: (ADV * PX, 0) for n in names})
     fb.setupHorizontalHeader(ascent=ASC * PX, descent=-DESC * PX)
     fb.setupNameTable({"familyName": "Tessera Mono", "styleName": "Regular",
-                       "copyright": "Copyright (C) 2026 Theo Dainis; GPL-3.0-only (firmware/src/ui_mono.c)"})
+                       "copyright": "Copyright (C) 2026 Theo Dainis; GPL-3.0-only (firmware/src/gfx.c)"})
     fb.setupOS2(sTypoAscender=ASC * PX, sTypoDescender=-DESC * PX, usWinAscent=ASC * PX, usWinDescent=DESC * PX)
     fb.setupPost()
     fb.font["head"].created = fb.font["head"].modified = 3_844_800_000   # fixed: the same bytes every run
