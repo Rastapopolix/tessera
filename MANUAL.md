@@ -128,17 +128,18 @@ key skips it.
 
 ## Sounds
 
-Tessera has three engines on the device:
+Tessera has four engines on the device:
 
 | Engine | What it is |
 |---|---|
 | **FM6** | Six-operator FM in the manner of the DX7: 32 algorithms, operator envelopes and scaling, pitch EG, LFO and the function settings (bend, porta, wheel, foot, breath, aftertouch). Its ENGINE setting picks MODERN, MARK I (the DX7's own tables) or OPL. The main melodic voice. |
+| **ORACLE** | Two oscillators, POLY MOD and a four-pole low-pass filter: a classic polyphonic analogue voice. Warm pads, brass, sync leads, basses, plucks. 24 sounds of its own; the sound is kept in the project. |
 | **TRIO** | Three oscillators: WAVE, INT2, INT3 (intervals) and DETUNE. Basses and leads. |
 | **DRUM** | Drum kits: **808** and **909**. Eight lanes: BD, SD, CP, CH, OH, TM, RS, CB. The 808 has six tom pitches. |
 
 <p align="center"><img src="assets/gallery/edit_fm6.png" alt="FM6 ALGO page" width="240"> <img src="assets/gallery/fm6_eg.png" alt="FM6 operator envelope" width="240"> <img src="assets/gallery/drum.png" alt="DRUM steps" width="240"></p>
 
-**SID** and **PHYS** are no longer in the device build, and neither are CZ-1 and Prophet. A track saved with SID
+**SID** and **PHYS** are no longer in the device build, and neither is CZ-1. A track saved with SID
 loads FM6's INIT; one saved with PHYS loads FM6's first voice. DRUM's SID KIT
 and SID DIGI are out too (2.2, for flash room): a track saved with KIT SID loads as the 909. FM6 and TRIO presets have
 releases that ring out, so short sequenced notes are not cut off. The slow pads (GLASS PAD, SOFT PAD, DEEP PAD, PAD,
@@ -154,6 +155,31 @@ the **FILTER** effect on the track (FX, an insert's TYPE **FILTER**): **CUT** is
 and both are cord destinations (FX1 RTE, FX1 CHR). It works on any track, and as a send effect.
 
 <p align="center"><img src="assets/gallery/fx_filter.png" alt="FX 1 on FILTER: its curve" width="240"></p>
+
+**ORACLE.** Oscillator A (saw, pulse) and B (saw, triangle, pulse) and noise go through a resonant four-pole
+low-pass filter and the amp, each with its own envelope. **POLY MOD** lets the filter envelope and oscillator B bend
+A's pitch, A's pulse width or the cutoff, note by note: B at audio rate into A's pitch gives bells and metal, the
+filter envelope into A's pitch a sweep on each note. Its pages, on **EDIT**:
+
+| Page | KNOB 1 to 4 |
+|---|---|
+| **MACRO**, **MACRO 2** | CUT, RES, TUNE A, TUNE B; PW A, PW B, LVL A, LVL B: offsets on the sound, the ones the HOME knobs, cords and motion move |
+| **OSC A** | FREQ A (semitones), WAVE A (SAW, PLS, S+P), PW A, SYNC (A restarts with B) |
+| **OSC B** | FREQ B, FINE B (a little sharp, for beating), WAVE B (SAW, TRI, PLS and their mixes), PW B |
+| **OSC MIX** | the levels of OSC A, OSC B and NOISE; B MODE: KEY (follows the notes), FIXED, LO KEY / LO FIX (B as a slow LFO for POLY MOD) |
+| **FILTER** | CUTOFF, RES, ENV AMT (how far FILT ENV opens it), KEY (OFF, HALF, FULL: brighter as notes go up) |
+| **POLY MOD** | FENV and OSC B (how much each moves), TO (FREQ, PW, FILT or a mix), VEL (what playing harder opens) |
+| **CHARACTER** | MODEL (EARLY or LATE filter: each colours the resonance its own way), VINTAGE (each voice drifts a little), GLIDE |
+| **FILT ENV**, **AMP ENV** | ATK, DEC, SUS, REL |
+| **LFO MOD** | RATE, AMOUNT, WAVE (SAW, TRI, SQR and mixes), NOISE (random movement mixed in) |
+| **LFO ROUTE** | PITCH (A, B, A+B: vibrato), PW, FILT |
+
+As on FM6, **ENV** goes to FILT ENV and AMP ENV (ORACLE has no use for the track's ENV), and **LFO** to MODS and the
+track's LFO pages, then LFO MOD and LFO ROUTE. The sound lives in the project, a patch per track: a turned knob is
+saved with it, but an ORACLE sound cannot go to a USER slot, so keep one you like in a project. ORACLE takes more of the FM-1 than an FM6 voice (about
+one and a half times): one ORACLE track of pads or chords is fine; with two busy ones, keep BUDGET in mind (below).
+
+<p align="center"><img src="assets/gallery/oracle_osc.png" alt="ORACLE OSC A page" width="240"> <img src="assets/gallery/oracle_filter.png" alt="ORACLE FILTER page" width="240"> <img src="assets/gallery/oracle_env.png" alt="ORACLE AMP ENV page" width="240"></p>
 
 **PRESETS** (SAVE) browses the sounds. Its LIST knob picks ALL, the favourites, RECENT or a category, and it starts
 on ALL at power-on.
@@ -773,6 +799,7 @@ Tessera stands on other people's ideas and work:
 
 - **Melodee** by keremimo, and **Felucca** by Leo Kuroshita / Hügelton Instruments: the firmware Tessera is built on.
 - **Grids** by Émilie Gillet / Mutable Instruments: the ATLAS generator's drum map and the way it is read.
+- **ORACLE** is Melodee's Prophet engine (after the Prophet-5), back under its own name with its own sounds.
 - **norns** scripts, as ideas restated in C (no code copied): **Awake** (tehn) for AWAKE, **Fall** (ambalek) for
   BOUNCE's FALL, **Constellation** (timothy-taylor) for CONSTELLATION, **initenere** for QUAD, and **nørgård** for
   SERIES.

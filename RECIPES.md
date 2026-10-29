@@ -29,6 +29,8 @@ and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
 - [A filter sweep on FM6 (the FILTER effect)](#a-filter-sweep-on-fm6-the-filter-effect)
 - [A fill on the last bar (Condition and FILL)](#a-fill-on-the-last-bar-condition-and-fill)
 - [A line that climbs (Accumulate)](#a-line-that-climbs-accumulate)
+- [Returns that vary (FORM DEVELOP)](#returns-that-vary-form-develop)
+- [A pad that opens slowly (ORACLE)](#a-pad-that-opens-slowly-oracle)
 - [Driving another synth (MIDI OUT)](#driving-another-synth-midi-out)
 
 **[Tips](#tips)**
@@ -276,6 +278,33 @@ FM6 has no filter of its own; the FILTER effect gives it one.
 3. Hold **OCT+** on NOTES for the pattern's sheet: **Accum limit 7**, **Accum mode Ping**: it climbs an octave,
    then comes back down. A second note at **−1** falls against it.
 4. **PLAY** starts it again from the notes as written.
+
+## Returns that vary (FORM DEVELOP)
+
+FORM brings its sections back exactly; DEVELOP lets each return vary a little, so the piece keeps its shape but
+never repeats itself note for note.
+
+1. A melodic track: MODE **TURING**, **PROB 0** so the loop itself holds still.
+2. **EVOLVE**: **EVERY 4**. **FORM**: **ABAC**, **CONTR 40**: four sections of four bars, A coming back every
+   eight bars.
+3. Hold **OCT+** on FORM: **DEVELOP 40**. Each time A comes back it is A varied by about that much: a note or two
+   changed. The section itself is kept, so the next return starts from A again: after an hour
+   it is still the same A, varied, not something that has drifted away.
+4. Hold **OCT+** on EVOLVE: **GRAVITY 30**. About one return in three is exact, so the original comes back now and
+   then.
+5. **DEVELOP 0** (the default) gives exact returns again. Between 30 and 50 the returns sound like a player
+   ornamenting the same phrase; above 70 they wander further each time.
+
+## A pad that opens slowly (ORACLE)
+
+1. Track 1: **PRESETS**, **WARM PAD** (an ORACLE sound). MODE **CHORD**, **PROG DRONE**, **HIT HOLD**, **BARS 2**.
+2. **EDIT** to **FILTER**: **CUTOFF** down to about 40, **ENV AMT** 60. On **FILT ENV**, **ATK** about 100: each
+   chord starts dark and opens over a few seconds.
+3. **CHARACTER**: **VINTAGE** 50. The voices drift apart a little in pitch and tone, like an old analogue synth.
+4. **MACRO** (the first EDIT page): hold **FX** and turn **CUT** (KNOB 1) to the right: a cord from the track's LFO to the cutoff. On
+   **LFO** a slow RATE, or on **MODS** set the cord's source to **TIDE 2** for a swell over minutes.
+5. For a darker, rounder bass under it, track 2 on **SUB BASS** (ORACLE) and a slow TURING; ORACLE takes more of the
+   FM-1 than an FM6 voice, so keep the bass sparse (DENS low) when two ORACLE tracks play.
 
 ## Driving another synth (MIDI OUT)
 
