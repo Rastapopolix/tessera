@@ -7,7 +7,10 @@
  *   RESTS 0..100: how often the notes rest, 8-18 s each: at 100 about every 4 min, at 1 about every 20 (sooner while
  *         the tide is sparse). A rest leaves out the generator tracks' hits, except CHORD's: a held chord and its
  *         BREATH go on. 0 off.
- * The tide is ENERGY, a cord source (cord.c CS_ENERGY), the same for every track. Both run while the transport runs,
+ * Part 2 (ENERGY_2): LEVEL -100..+100 the energy the tide swings round (0 as set); DEPTH a track's share of it (100 all,
+ *   0 an anchor that neither the tide, LEVEL nor RESTS move). Above 0 (full) a generator's hits take back up to all of
+ *   its TWEAK DROP and play up to 12 louder; EVOLVE's AMOUNT goes x0.5 (-1) .. x1.5 (+1). LEVEL 0, ARC 0: nothing changes.
+ * ENERGY (LEVEL and the tide) is a cord source (cord.c CS_ENERGY), the same for every track. Both run while the transport runs,
  * an audio block at a time (cord_tick); PLAY starts them from the project's SEEDs, so a piece replays. Project-wide
  * settings: tessera.en_arc, en_rests (the Tessera block's tail since TS18). Included by tessera.c. */
 
@@ -26,7 +29,18 @@ static uint32_t en_rnd(uint32_t n)                    /* 0..n-1 */
     k = (k ^ (k >> 15)) * 0x846CA68Bu;
     return n ? (k ^ (k >> 16)) % n : 0u;
 }
-static uint32_t en_sparse(void) { return energy.e < 0 ? (uint32_t)-energy.e : 0u; }   /* 0..32767 */
+/* ENERGY now, Q15: LEVEL plus the tide, -32767 sparse .. 32767 full */
+static int32_t en_all(void)
+{
+    int32_t e = energy.e + (int32_t)tessera.en_level * 32767 / 100;
+    return e < -32767 ? -32767 : e > 32767 ? 32767 : e;
+}
+/* the energy track tr feels: ENERGY times its DEPTH */
+static int32_t en_track(uint32_t tr)
+{
+    return tr < TESSERA_TRACKS ? en_all() * (int32_t)tessera.en_depth[tr] / 100 : en_all();
+}
+static uint32_t en_sparse(void) { int32_t e = en_all(); return e < 0 ? (uint32_t)-e : 0u; }   /* 0..32767 */
 static void en_rest_draw(void)                        /* the time to the next rest, from RESTS and the tide */
 {
     uint32_t r = tessera.en_rests ? tessera.en_rests : 1u, s = 240u + (100u - r) * 48u / 5u;   /* 240 .. 1190 s */
@@ -78,17 +92,40 @@ static void energy_tick(void)                         /* an audio block (cord_ti
     }
 }
 static void energy_rests_on(void) { en_rest_draw(); }   /* RESTS from 0: the next one counted from now */
-int32_t energy_now(void) { return energy.e; }          /* the ENERGY cord source */
+int32_t energy_now(void) { return en_all(); }          /* the ENERGY cord source */
 int energy_resting(void) { return energy.rest_left != 0u; }
+/* track tr's TWEAK DROP as ENERGY leaves it: above 0, up to all of it taken back (no hit added) */
+static uint32_t energy_drop(uint32_t tr, uint32_t drop)
+{
+    int32_t e = en_track(tr);
+    return e > 0 ? drop - (drop * (uint32_t)e + 16383u) / 32767u : drop;
+}
+/* EVOLVE's AMOUNT as ENERGY scales it: x0.5 at -1 .. x1.5 at +1, at most 100 */
+static uint32_t energy_amount(uint32_t tr, uint32_t amt)
+{
+    int32_t e = en_track(tr);
+    if (!e) return amt;
+    amt = amt * (uint32_t)(65534 + e) / 65534u;
+    return amt > 100u ? 100u : amt;
+}
 
 /* a generator's hit of track tr (not CHORD's): 1 kept, 0 left out (a rest, the sparse tide); *vel softened. At ARC 0
  * and no rest it draws nothing: the track plays as it would */
 static int energy_hit(uint32_t tr, uint8_t *vel)
 {
-    uint32_t s = en_sparse();
-    (void)tr;
+    int32_t e;
+    uint32_t s;
+    if (tr < TESSERA_TRACKS && !tessera.en_depth[tr]) return 1;   /* (an anchor) */
     if (energy.rest_left) return 0;
-    if (!s) return 1;
+    e = en_track(tr);
+    if (e > 0) {                                      /* full: up to 12 louder */
+        if (vel) {
+            int32_t v = (int32_t)*vel + e * 12 / 32767;
+            *vel = (uint8_t)(v > 127 ? 127 : v);
+        }
+        return 1;
+    }
+    if (!(s = (uint32_t)-e)) return 1;
     if (en_rnd(32768u) < s * 7u / 10u) return 0;      /* (up to 70 %) */
     if (vel) {
         int32_t v = (int32_t)*vel - (int32_t)(s * 16u / 32767u);

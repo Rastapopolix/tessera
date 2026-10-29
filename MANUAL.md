@@ -557,10 +557,17 @@ off at 0.
 
 | Knob | Setting | What it does |
 |---|---|---|
-| 1 | **ARC** (0–100 %) | A slow tide, 3 to 6 minutes a turn: from the tracks as set to sparse and back. At the sparse end the generator tracks leave out up to 70 % more of their hits and play softer. ARC is how far it swings. |
+| 1 | **ARC** (0–100 %) | A slow tide, 3 to 6 minutes a turn, swinging round LEVEL from full to sparse and back. At the sparse end the generator tracks leave out up to 70 % more of their hits and play up to 16 softer. At the full end they take back their own DROP and play up to 12 louder. ARC is how far it swings. |
 | 2 | **RESTS** (0–100 %) | How often the music rests: 8 to 18 s with the generator tracks silent (a CHORD track's held chord goes on), about every 4 minutes at 100, every 20 near 0, sooner while the tide is sparse. |
-| 3 | **NOW** | Where the tide is while playing: +100 full, −100 sparse. |
+| 3 | **LEVEL** (−100 to +100) | The energy by hand: the tide swings round it. Up is busier and louder, down is sparser and softer, as above. 0 is the tracks as set. |
 | 4 | **REST** | The seconds left of a rest. |
+
+Energy also sets how much EVOLVE changes: half its AMOUNT at the sparse end, half as much again at the full end.
+
+Hold **OCT+** for **DEPTH** (KNOB 1, 0–100 %): how much energy moves the selected track. 100 is all of it. 0 makes
+the track an anchor, a drone or a bass that plays as set through the tide, LEVEL and the rests.
+
+The picture shows a turn of the tide round LEVEL and, while playing, where it is now.
 
 PLAY starts the tide from the project's seeds, so a piece plays the same each time. ENERGY is also a cord source in
 MODS: send it to a filter or a send and the sound follows the tide too.

@@ -929,17 +929,30 @@ static void draw_columns(void)
         }
         return;
     }
-    if (cur_page()->graph == GR_ENERGY) {                /* ENERGY (energy.c), the project's: ARC, RESTS, the tide now, a rest */
+    if (cur_page()->graph == GR_ENERGY && en_layer_on()) {   /* ENERGY, OCT+ held: the selected track's DEPTH */
+        char w0[8];
+        uint32_t dp = tessera.en_depth[song.sel % TESSERA_TRACKS];
+        fmt_int(w0, dp);
+        col_mods(PID_TESS(TX_EN_DEPTH));
+        draw_column(0, "DEPTH", w0, "%", VAL(0u), (int32_t)dp * 10, ICON_AUTO);
+        draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
+        draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+        draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+        return;
+    }
+    if (cur_page()->graph == GR_ENERGY) {                /* ENERGY (energy.c), the project's: ARC, RESTS, LEVEL, a rest */
         char w0[8], w1[8], w2[8], w3[8];
-        int32_t now = energy_now() * 100 / 32767;
+        int32_t lv = tessera.en_level;
         uint32_t left = energy.rest_left / EN_BPS;
         fmt_int(w0, tessera.en_arc);
         fmt_int(w1, tessera.en_rests);
-        fmt_int(w2, now);
+        if (lv > 0) { w2[0] = '+'; fmt_int(w2 + 1, lv); }
+        else fmt_int(w2, lv);
         fmt_int(w3, (int32_t)left + 1);
         draw_column(0, "ARC", w0, "%", VAL(0u), (int32_t)tessera.en_arc * 10, ICON_AUTO);
         draw_column(1, "RESTS", w1, "%", VAL(1u), (int32_t)tessera.en_rests * 10, ICON_AUTO);
-        draw_column(2, "NOW", tessera.en_arc ? w2 : "--", tessera.en_arc ? "%" : "", tessera.en_arc ? T_TEXT : T_MID, -1, ICON_NONE);
+        col_mods(PID_TESS(TX_EN_LEVEL));
+        draw_column(2, "LEVEL", w2, "", VAL(2u), (lv + 100) * 5, ICON_AUTO);
         draw_column(3, "REST", song.playing && energy_resting() ? w3 : "--", song.playing && energy_resting() ? "s" : "",
                     song.playing && energy_resting() ? T_TEXT : T_MID, -1, ICON_NONE);
         return;

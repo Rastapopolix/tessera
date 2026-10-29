@@ -1587,6 +1587,41 @@ static void en_check(char *res, size_t cap)
     en_play(1, &b, &d, &a, &h);
     printf("energy: a rest: Euclid %u, %u, %u notes; the drone %u voices\n", (unsigned)b, (unsigned)d, (unsigned)a, (unsigned)h);
     ok &= b && !d && a && h >= 3u;
+    {   /* part 2: LEVEL and DEPTH (ARC 0, no rest): 0 as set; +100 DROP all taken back, 12 louder, EVOLVE x1.5; -100
+         * EVOLVE x0.5 and about 70 % left out; DEPTH 50 half of it, DEPTH 0 an anchor even in a rest */
+        uint8_t v = 80;
+        uint32_t kept = 0, ok2 = 1;
+        tessera_reset();
+        energy.e = 0;
+        energy.rest_left = 0;
+        ok2 &= energy_drop(0, 50) == 50u && energy_amount(0, 60) == 60u && energy_hit(0, &v) && v == 80u;
+        tessera_param_set(0, TX_EN_LEVEL, 100);
+        ok2 &= tessera_param_get(2, TX_EN_LEVEL) == 100 && energy_now() == 32767;
+        ok2 &= energy_drop(0, 50) == 0u && energy_amount(0, 60) == 90u && energy_amount(0, 90) == 100u;
+        ok2 &= energy_hit(0, &v) && v == 92u;
+        tessera_param_set(1, TX_EN_DEPTH, 50);
+        ok2 &= energy_drop(1, 50) == 25u && energy_drop(0, 50) == 0u;
+        tessera_param_set(0, TX_EN_LEVEL, -100);
+        ok2 &= energy_amount(0, 60) == 30u && energy_drop(0, 50) == 50u;
+        for (i = 0; i < 1000u; i++) {
+            uint8_t w = 80;
+            if (energy_hit(0, &w)) { kept++; v = w; }
+        }
+        ok2 &= kept > 240u && kept < 360u && v == 64u;   /* (the kept ones 16 softer) */
+        tessera_param_set(2, TX_EN_DEPTH, 0);
+        energy.rest_left = 100;
+        v = 80;
+        ok2 &= energy_hit(2, &v) && v == 80u && !energy_hit(0, &v) && energy_amount(2, 60) == 60u;
+        energy.rest_left = 0;
+        tessera_param_set(0, TX_EN_LEVEL, 0);
+        tessera_param_set(0, TX_EN_ARC, 100);
+        energy.e = 30000;
+        tessera_param_set(0, TX_EN_LEVEL, 50);
+        ok2 &= energy_now() == 32767;                       /* (clamped) */
+        printf("energy: LEVEL -100: %u of 1000 hits kept; LEVEL / DEPTH / anchor checks %s\n", (unsigned)kept,
+               ok2 ? "ok" : "FAILED");
+        ok &= ok2;
+    }
     snprintf(res, cap, "%u", (unsigned)ok);
 }
 

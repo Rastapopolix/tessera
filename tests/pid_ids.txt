@@ -226,3 +226,5 @@
 0x269 ACCUM MODE               track 0..2 def 0
 0x26a GRAVITY                  track 0..100 def 0
 0x26b EVOLVE HOW               track 0..2 def 0
+0x26c ENERGY LEVEL             global -100..100 def 0
+0x26d ENERGY DEPTH             track 0..100 def 100

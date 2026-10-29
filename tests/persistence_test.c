@@ -237,6 +237,29 @@ static int test_tsp_record(void)
     tsp_resum(raw);
     bad += check("TSP1: a GRAV part past 100 % is refused", ok && !tsp_valid(raw, len));
 
+    reset();                                           /* ENERGY part 2: LEVEL and each DEPTH; a record without them */
+    tessera_param_set(0, TX_EN_LEVEL, -40); tessera_param_set(2, TX_EN_DEPTH, 0); tessera_param_set(3, TX_EN_DEPTH, 55);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_ENERGY];
+    reset();
+    ok = ok && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: ENERGY's LEVEL and each track's DEPTH come back from their part", ok && tessera.en_level == -40 &&
+                 tessera.en_depth[0] == 100u && !tessera.en_depth[2] && tessera.en_depth[3] == 55u);
+    raw[tsp_seen.at[TSP_ENERGY] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (saved before it: no ENERGY part) */
+    tsp_resum(raw);
+    reset();
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_ENERGY] && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: a record without the ENERGY part loads with LEVEL 0, every DEPTH 100", ok && !tessera.en_level &&
+                 tessera.en_depth[2] == 100u && tessera.en_depth[3] == 100u);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_ENERGY];
+    raw[tsp_seen.at[TSP_ENERGY]] = 201u;                /* (LEVEL past +100) */
+    tsp_resum(raw);
+    bad += check("TSP1: an ENERGY part with LEVEL past 100 is refused", ok && !tsp_valid(raw, len));
+
     reset();                                           /* STEP EVOLVE's HOW: the record's HOW part; a record without it */
     tessera_param_set(0, TX_SV_HOW, TESS_SV_SERIAL); tessera_param_set(2, TX_SV_HOW, TESS_SV_ORNAMENT);
     project_capture(&proj_scratch);
