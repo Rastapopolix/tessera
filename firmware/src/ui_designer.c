@@ -381,6 +381,10 @@ static void designer_start_draw(void)
     if(!ui.force && s==ds.sig)return;
     ds.sig=s;
     col_style=CS_RING;
+#if MELODEE_LOOK
+    mo_dstart();
+    return;
+#endif
     uint32_t st=designer_start();
     draw_column(0,"ENGINE",ENGINES[ds.eng]->name,"",VAL(0u),(int32_t)(eng_rank(ds.eng)*1000u/(NENG_SHOWN-1u)),ICON_NONE);
     draw_column(1,"START",st==0u?"CURRENT":st==1u?"INIT":DS_GOAL[ds.goal],"",VAL(1u),(int32_t)(st*1000u/DG_COUNT),ICON_NONE);
@@ -445,6 +449,10 @@ static int designer_foot(void)
     sig=str_hash(str_hash(nx*7u+song.sel*131u+ux.gen*977u+ux.pal*31u+0xF00Du,go),nm);
     if(!ui.force && sig==pv.sound)return 1;
     pv.sound=sig;
+#if MELODEE_LOOK
+    mo_dfoot(nm,go);
+    return 1;
+#endif
     gw=text_w(&AF_S,go)+30;
     cv_begin(240,240-PV_SOUND_Y,T_BG);
     cv_rrect(6,1,34,18,5,T_SURF,T_BG);

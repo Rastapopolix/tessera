@@ -285,6 +285,10 @@ static void mo_grid_panel(void);
 static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fav);
 static void mo_slot_card(const char *tag, const char *nm, int used, const char *d, int boot, int32_t y);
 static void mo_slot_row(const char *tag, const char *nm, int used, int boot, int mark, int32_t y, int32_t ty, int32_t th);
+static void mo_dstart(void);
+static void mo_msc(void);
+static void mo_smap(uint32_t cur);
+static void mo_dfoot(const char *nm, const char *go);
 #endif
 static void draw_head(void)
 {
@@ -1491,6 +1495,9 @@ static void draw_uboot(void)
     ui.head_sig = ~0u;
     draw_text_box(0, 76, 240, &AF_M, "UPDATE MODE IN", T_TEXT, 1);
     draw_text_box(0, 102, 240, &AF_L, d, T_THEME, 1);
+#if MELODEE_LOOK
+    draw_text_box(0, 150, 240, &AF_S, "LET GO TO CANCEL", T_MID, 1);
+#else
     {   /* the two keycaps held, and what letting go does */
         int32_t w = kc_w(KC_OCTDN) + 3 + kh_w(KC_OCTUP, "LET GO TO CANCEL"), x = (240 - w) / 2;
         cv_begin(240, KC_H + 2, T_BG);
@@ -1499,6 +1506,7 @@ static void draw_uboot(void)
         cv_blit(0, 149);
         lcd_sync();
     }
+#endif
     ui.force = 0;
     scr_shown();
 }

@@ -464,7 +464,7 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
          * Under them the four notes, a bar each at its pitch, the one playing lit */
         const gen_poly_t *p = tessera_poly(tr);
         uint32_t n = 7u * (p->span >= 1u && p->span <= 3u ? p->span : 1u), now = (p->tick + GEN_POLY_WRAP - 1u) % GEN_POLY_WRAP, base = now - now % 16u;
-        int32_t top = is_panel ? 6 : y_base, lane = is_panel ? 13 : 5, x0 = is_panel ? 46 : 40, cw = is_panel ? 11 : 12;
+        int32_t top = is_panel ? 6 : y_base, lane = is_panel ? LOOK(13, 15) : 5, x0 = is_panel ? 46 : 40, cw = is_panel ? 11 : 12;
         int32_t ny = top + 4 * lane + (is_panel ? 6 : 2), nh = is_panel ? 112 - ny - 6 : 8;
         for (uint32_t r = 0; r < 4u; r++) {
             uint32_t d = p->div[r];
@@ -472,7 +472,7 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
             if (is_panel) {
                 char lb[4] = "OFF";
                 if (d) lb[0] = '/', fmt_int(lb + 1, d);
-                cv_text(12, ly - 1, &AF_S, lb, r == (p->sel & 3u) ? T_TEXT : d ? c : T_MID);
+                cv_text(LOOK(12, 4), ly - 1, &AF_S, lb, r == (p->sel & 3u) ? T_TEXT : d ? c : T_MID);
             }
             for (uint32_t i = 0; i < 16u; i++) {
                 int32_t sx = x0 + (int32_t)i * cw + (int32_t)(i / 4u) * 2;
@@ -664,6 +664,7 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
         uint32_t n = gen_chord_len(g), cur = g->n ? g->idx : 0u, pcs = 0, len = gen_chord_steps(g, tess_steps_per_bar(&trk[tr]));
         int32_t cw = sw / (int32_t)n;
         char b[12];
+        TEXT_CASE(1);
         for (uint32_t i = 0; i < n; i++) {
             int32_t x = x0 + (int32_t)i * cw;
             uint32_t at = tessera_chord_at(tr, i, b), on = i == cur;
@@ -697,14 +698,20 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
                     qs += 2;
                     if (is_panel && text_w(&AF_S, qs) <= cw - 6) qf = &AF_S;
                 }
+#if MELODEE_LOOK
+                if (text_w(qf, qs) > cw - 4 && qs[0] == 'm' && qs[1] == '7' && qs[2] == 'b' && qs[3] == '5')
+                    qs[2] = 0, qs[0] = (char)0xF8;      /* (the 5 x 7 face's cells hold two letters: "m7b5" as its symbol) */
+                if (text_w(qf, qs) > cw - 4) qs[(cw - 4) / text_w(qf, "M")] = 0;
+#endif
                 cv_text_c(x + cw / 2 - 1, y, is_panel ? &AF_S : &AF_X, r, tc, tb);
-                cv_text_c(x + cw / 2 - 1, y + (is_panel ? 14 : 10), qf, qs, tc, tb);
+                cv_text_c(x + cw / 2 - 1, y + (is_panel ? LOOK(14, 16) : LOOK(10, 15)), qf, qs, tc, tb);
             }
             if (on && song.playing && g->n) {
                 uint32_t in = (g->n - 1u) % len + 1u;
                 cv_rect(x + 1, top + ch + 3, (cw - 3) * (int32_t)in / (int32_t)len, 2, T_TEXT);
             }
         }
+        TEXT_CASE(0);
         if (is_panel) {
             int32_t ky = top + ch + 12, kw = sw / 12;
             for (uint32_t k = 0; k < 12u; k++) {
@@ -750,11 +757,11 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
             if (is_panel) {
                 char lb[3] = {'T', (char)('1' + r), 0};
                 uint16_t tc = r == tr ? T_TEXT : on ? c : dim;
-                cv_text(10, ly + (lane - 14) / 2, &AF_S, lb, tc);
-                cv_text(30, ly + (lane - 14) / 2, &AF_S, QD[q->dir % GEN_QD_COUNT], on ? tc : dim);
+                cv_text(LOOK(10, 3), ly + (lane - 14) / 2, &AF_S, lb, tc);
+                cv_text(LOOK(30, 27), ly + (lane - 14) / 2, &AF_S, QD[q->dir % GEN_QD_COUNT], on ? tc : dim);
                 cv_text(x0 + 4 * (cw + gap) + 2, ly + (lane - 14) / 2, &AF_S, QR[q->range % GEN_QR_COUNT], on ? tc : dim);
                 for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {   /* (its LINKs: a dot a track, none for its own) */
-                    int32_t dx = 208 + (int32_t)k * 5, dy = ly + lane / 2 - 1;
+                    int32_t dx = LOOK(208, 225) + (int32_t)k * LOOK(5, 4), dy = ly + lane / 2 - 1;
                     if (k == r) continue;
                     cv_rect(dx, dy, 3, 3, on && ((q->link >> k) & 1u) ? T_ACCENT : dim);
                 }
@@ -1153,7 +1160,7 @@ static void graph_midich(void)
         if (ch == MIDI_OUT_NONE)
             str_cpy(b, "OFF", sizeof b);
         else {
-            str_cpy(b, "CHANNEL ", sizeof b);
+            str_cpy(b, LOOK("CHANNEL ", "CH "), sizeof b);
             fmt_int(n, (int32_t)ch + 1);
             str_cpy(b + str_len(b), n, 4);
             if (!tessera.midi_ch[k]) str_cpy(b + str_len(b), drum_track(&trk[k]) && settings_drumch ? "  (DRUM)" : "  (ROUT)", 10);
@@ -1161,8 +1168,8 @@ static void graph_midich(void)
         cv_text(PANEL_X0 + 32, y + 3, &AF_X, b, ch == MIDI_OUT_NONE ? T_DIM : T_TEXT);
     }
     if (settings_midi_out != MIDI_OUT_ALL)
-        cv_text(PANEL_X0 + 6, 86, &AF_X, settings_midi_out == MIDI_OUT_OFF ? "MENU MIDI OUT: OFF, NOTHING SENT"
-                                                                           : "MENU MIDI OUT: KEYS ONLY", T_DIM);
+        cv_text(PANEL_X0 + 6, 86, &AF_X, settings_midi_out == MIDI_OUT_OFF ? LOOK("MENU MIDI OUT: OFF, NOTHING SENT", "MIDI OUT: OFF")
+                                                                           : LOOK("MENU MIDI OUT: KEYS ONLY", "MIDI OUT: KEYS"), T_DIM);
 }
 
 static void graph_steps(const track_t *t, uint16_t c)
@@ -1478,7 +1485,7 @@ static void graph_chord(const track_t *t, uint16_t c)
     char b[12];
     const char *cap = "LAST";
     if (!t->p[P_CHRD]) {
-        panel_note("CHORD KEYS OFF", "[K1] DIA3: IN-KEY CHORDS", 0);   /* (the title says what they are) */
+        panel_note("CHORD KEYS OFF", LOOK("[K1] DIA3: IN-KEY CHORDS", "[K1] DIA3: IN KEY"), 0);   /* (the title says what they are) */
         return;
     }
     if (chord_kit(t)) {
@@ -1510,7 +1517,9 @@ static void graph_chord(const track_t *t, uint16_t c)
     if (trk_vmode(t) != V_POLY)
         cap = "ROOT ONLY";                              /* MONO / LEGATO / UNISON */
     chord_name(b, (uint32_t)r, mask);
+    TEXT_CASE(1);
     cv_text_on(14, 8, &AF_M, b, T_TEXT, T_SURF);
+    TEXT_CASE(0);
     cv_text_r(226, 12, &AF_S, cap, T_MID, T_SURF);
     lo = nn[0] - nn[0] % 12u;
     cnt = nn[n - 1u] - lo < 24u ? 24u : 36u;
