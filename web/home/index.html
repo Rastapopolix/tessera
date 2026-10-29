@@ -72,7 +72,9 @@ nav .brand svg { width: 26px; height: 26px; }
 nav .links { margin-left: auto; display: flex; gap: 14px; font: 16px/1 var(--pixel); text-transform: uppercase; }
 nav .links a { color: var(--mid); text-decoration: none; padding: 3px 4px 2px; }
 nav .links a:hover { color: var(--bg); background: var(--ink); }
-@media (max-width: 680px) { nav .links a.opt { display: none; } }
+@media (max-width: 900px) { nav .links a.opt { display: none; } }
+@media (max-width: 480px) { nav .links a.opt2 { display: none; } nav .wrap { gap: 12px; } }   /* (GitHub: also in the footer) */
+@media (max-width: 360px) { nav .brand { font-size: 20px; } nav .wrap { gap: 8px; } nav .links { gap: 6px; } nav .links, .theme { font-size: 14px; } }
 
 /* hero */
 .hero { padding: 72px 0 56px; }
@@ -182,7 +184,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <a class="opt" href="#recipes">Recipes</a>
       <a href="#install">Install</a>
       <a class="opt" href="#about">About</a>
-      <a href="https://github.com/Rastapopolix/tessera">GitHub</a>
+      <a class="opt2" href="https://github.com/Rastapopolix/tessera">GitHub</a>
     </div>
     <button class="theme" id="theme" type="button" aria-label="Light or dark page"></button>
   </div>
