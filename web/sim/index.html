@@ -216,8 +216,8 @@ const STORE = "melodee-tess-sim-flash", SHELL = "tessera-sim-shell", MIDI_ON = "
 // The FM-1's shell colours (by eye from product photos: adjust here), each with the Mono ink made for it: the ink
 // follows the keys and buttons, so the black FM-1 (black on black) keeps the default YELLOW. A shell is its body,
 // trays (the button and key beds), buttons and keys, their edge and label ink, the slits' dark, and the labels
-// printed on the body. The LED levels between dark and lit are mixed from them (shellVars) unless given (mint's
-// are the drawing's own, tuned by eye before the picker).
+// printed on the body (rec: REC's ink where the red is lost on the buttons). The LED levels between dark and lit are
+// mixed from them (shellVars) unless given (mint's are the drawing's own, tuned by eye before the picker).
 const INKS = { YELLOW: "#ffd020", WHITE: "#f0f0f0", GREEN: "#60ff80", BLUE: "#88c0ff", RED: "#ff7064",
                ORANGE: "#ff9028", PINK: "#ffb0d8", "HOT PINK": "#ff58b0", LILAC: "#c096ff" };   // tools/gen_ui_palettes.py MONO_INK
 const SHELLS = [
@@ -237,8 +237,8 @@ const SHELLS = [
     btnInk: "#0d1d36", slit: "#1c3460", label: "#3a3630" },
   { id: "cream-brick", name: "Cream / brick", ink: "RED", body: "#ebe5d5", tray: "#b4523c", btn: "#c96b53", edge: "#9a4230",
     btnInk: "#2b0d06", slit: "#4c1a10", label: "#3a3630" },
-  { id: "pink", name: "Pink", ink: "HOT PINK", body: "#f4b5ce", tray: "#e8709f", btn: "#f08eb5", edge: "#d45c8c",
-    btnInk: "#3a0c20", slit: "#6a1e3e", label: "#3a0c20" },
+  { id: "hot-pink", name: "Hot pink", ink: "HOT PINK", body: "#d6346c", tray: "#c42a60", btn: "#cf2f67", edge: "#a91f50",
+    btnInk: "#fde8ef", slit: "#5e0f2c", label: "#fde8ef", litInk: "#3a0c20", rec: "#ffe08a" },   // (all pink: the labels light)
 ];
 const toLin = (h) => [1, 3, 5].map((i) => (parseInt(h.slice(i, i + 2), 16) / 255) ** 2.2);
 const toHex = (c) => "#" + c.map((v) => Math.round(255 * Math.max(0, Math.min(1, v)) ** (1 / 2.2)).toString(16).padStart(2, "0")).join("");
@@ -249,7 +249,7 @@ const LEVEL = { "--btn-dim": ["btn", .2], "--btn-breath": ["btn", .75], "--btn-l
 function shellVars(sh) {
   const lit = sh.lit || "#f6f6f6", v = { "--body": sh.body, "--tray": sh.tray, "--btn": sh.btn, "--btn-edge": sh.edge,
     "--key": sh.btn, "--key-edge": sh.edge, "--btn-ink": sh.btnInk, "--lit-ink": sh.litInk || sh.btnInk, "--slit": sh.slit,
-    "--label": sh.label, "--lit": lit };
+    "--label": sh.label, "--lit": lit, "--rec": sh.rec || "#c62a22" };
   for (const [k, [base, s]] of Object.entries(LEVEL)) v[k] = sh.fixed?.[k] || mixLin(sh[base], base === "slit" ? "#ffffff" : lit, s);
   // the page takes the ink too (as the project page: one ink on black)
   const ink = INKS[sh.ink];
