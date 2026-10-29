@@ -59,6 +59,10 @@
   .small { color: var(--mid); font-size: 14px; line-height: 1.5; }
   .panel { position: relative; border: 2px solid var(--line); padding: 18px 20px 6px 24px; margin: 0 0 var(--gap); }
   .warn { color: var(--text); font-weight: 600; }
+  /* the tip under the stripes: the help card, Tessera's most-missed function */
+  .tip { display: flex; gap: 12px; align-items: baseline; border: 2px solid var(--ink); padding: 10px 14px; margin: 0 0 var(--gap); }
+  .tip b { flex: none; background: var(--ink); color: var(--bg); font: 16px/1 var(--pixel); font-weight: 400; padding: 3px 6px 2px; }
+  .tip span { font-size: 14px; line-height: 1.5; }
   .panel strong { font: 16px/1.3 var(--pixel); text-transform: uppercase; font-weight: 400; }
   label { cursor: pointer; }
   .choice label { display: flex; gap: 10px; align-items: center; padding: 6px 0; }
@@ -138,6 +142,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
   <div class="kicker" id="ver">FM-1</div>
   <h1>TESSERA</h1>
   <div class="bar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+  <p class="tip"><b data-t="tipLabel"></b><span data-t="tip"></span></p>
   <ul class="needs">
     <li style="--c:var(--p1)" data-t="needBrowser"></li><li style="--c:var(--p2)" data-t="needCable"></li>
     <li style="--c:var(--p3)" data-t="needTab"></li>
@@ -221,6 +226,7 @@ const $ = (id) => document.getElementById(id);
 const TEXT = {
   ja: {
     intro: "FM-1 を USB で接続してください。（Chrome か Edge で使えます）",
+    tipLabel: "ヒント", tip: "ARP を押したままつまみを回すと、そのつまみのヘルプカードが出ます（値は変わりません）。同じつまみをさらに回すと長い説明をスクロールし、ARP を離すと閉じます。",
     warn: "書き込み中は USB を抜かないでください。",
     install: "インストール", other: "English",
     nightlyTitle: "Nightly（next）", "nightly-dual": "Nightly（デュアルコア）",
@@ -278,6 +284,7 @@ const TEXT = {
   },
   en: {
     intro: "Connect the FM-1 by USB. (Works in Chrome or Edge.)",
+    tipLabel: "TIP", tip: "Once installed, hold ARP and turn any knob for its help card: what it does, on every page (the value does not change). Turn the same knob further to scroll, let go of ARP to close it.",
     warn: "Do not unplug the USB cable while writing.",
     install: "Install", other: "日本語",
     nightlyTitle: "Nightly (next)", "nightly-dual": "Nightly — dual core",
