@@ -237,6 +237,29 @@ static int test_tsp_record(void)
     tsp_resum(raw);
     bad += check("TSP1: a GRAV part past 100 % is refused", ok && !tsp_valid(raw, len));
 
+    reset();                                           /* FORM's DEVELOP: the record's DEV part; a record without it */
+    tessera_param_set(0, TX_FM_DEVELOP, 30); tessera_param_set(2, TX_FM_DEVELOP, 100);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_DEV];
+    reset();
+    ok = ok && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: each track's DEVELOP comes back from its part", ok && tessera.fm_dev[0] == 30u &&
+                 tessera.fm_dev[2] == 100u && !tessera.fm_dev[1] && !tessera.fm_dev[3]);
+    raw[tsp_seen.at[TSP_DEV] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (saved before it: no DEV part) */
+    tsp_resum(raw);
+    reset();
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_DEV] && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: a record without the DEV part loads with DEVELOP 0 (exact returns, as before)",
+                 ok && !tessera.fm_dev[0] && !tessera.fm_dev[2]);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_DEV];
+    raw[tsp_seen.at[TSP_DEV] + 1u] = 101u;             /* (track 2's past 100 %) */
+    tsp_resum(raw);
+    bad += check("TSP1: a DEV part past 100 % is refused", ok && !tsp_valid(raw, len));
+
     reset();                                           /* ENERGY part 2: LEVEL and each DEPTH; a record without them */
     tessera_param_set(0, TX_EN_LEVEL, -40); tessera_param_set(2, TX_EN_DEPTH, 0); tessera_param_set(3, TX_EN_DEPTH, 55);
     project_capture(&proj_scratch);

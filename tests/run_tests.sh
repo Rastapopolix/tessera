@@ -81,10 +81,10 @@
 #                   no note held after the stop, the generator state after the stop, the saved block's bytes and round
 #                   trip; logs in build/tessera_log/. TESSERA_UPDATE=1 rewrites the baseline (only after an intended
 #                   change of what they play). tests/gen_test.c: each generator alone (gen.c without the firmware).
-# LONG-FORM (tests/longform_test.c): eight hours of nine patches left playing (notes only: the sequencer without the
+# LONG-FORM (tests/longform_test.c): eight hours of ten patches left playing (notes only: the sequencer without the
 #                   voices, checked against mix_block for the first two minutes): no long silence, no collapse to one
 #                   note, no loop replayed for minutes, not thinning out by the last hour; a table of every measure in
-#                   build/longform_report.txt. KNOWN gaps (a FORM's exact returns) print as KNOWN and fail once fixed.
+#                   build/longform_report.txt. KNOWN: a FORM at DEVELOP 0 freezes by design (prints KNOWN; fails if it stops).
 # Change baseline entries only for reviewed, intentional differences in sound or cost;
 # retain every unaffected golden / CPU / target entry. VERBOSE=1: every render.
 export AC79_SDK="${AC79_SDK:-$HOME/fw-AC79_AIoT_SDK}"
@@ -361,7 +361,7 @@ if core && [ $TABLES = 1 ]; then
         -O2 $FW -- "$OUT/tessera_test" tests/tessera_baseline.txt build/tessera_log
     t "GEN: each generator on its own (gen.c alone): ranges, rests, draws per step, determinism, mutation, sections" \
         gen_test -O2 $FW
-    t "LONG-FORM: 8 hours of 9 patches: no long silence, one-note collapse, frozen loop or thinning out" longform_test \
+    t "LONG-FORM: 8 hours of 10 patches: no long silence, one-note collapse, frozen loop or thinning out" longform_test \
         -O2 $FW -- env LF_JOBS=2 "$OUT/longform_test" 8 build/longform_report.txt
     t "PARAMETER IDS: every setting numbered, ranges, get/set, frozen against tests/pid_ids.txt" pid_test \
         -O1 $FW -- "$OUT/pid_test" tests/pid_ids.txt docs/PARAMETERS.md
