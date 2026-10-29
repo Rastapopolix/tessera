@@ -2136,11 +2136,98 @@ static void graph_scope(uint16_t c, int32_t top, int32_t h)
 
 /* Each arrangement row selects one bank per track. graph_y, graph_h: the panel's place (ui_pages.c: under its rings) */
 static int32_t graph_y = Y_GRAPH, graph_h = H_GRAPH, graph_oy = GOY;   /* (graph_oy: the 100 px scale's top) */
-static void draw_graph(void)
+/* the page's picture on the current canvas, its top at canvas row oy (draw_graph: 0; the Mono look's picture area) */
+static void graph_body(int32_t oy)
 {
     const page_t *pg = cur_page();
     const track_t *t = TSEL;
     uint16_t c = ACC;
+    cv_oy = oy + graph_oy;                           /* graphs on a 100 px scale */
+    switch (pg->graph) {
+    case GR_LFO:
+        graph_lfo(t, c);
+        break;
+    case GR_FORM:
+        graph_form(t, c);
+        break;
+    case GR_EVOLVE:
+        graph_evolve(t, c);
+        break;
+    case GR_TWEAK:
+        cv_oy = oy;
+        graph_tweak(t, c);
+        break;
+    case GR_TWEAK2:
+        cv_oy = oy;
+        graph_tweak2(t, c);
+        break;
+    case GR_ORGANIC:
+        graph_organic(t, c);
+        break;
+    case GR_NOTELEN:
+        graph_notelen(t, c);
+        break;
+    case GR_TIMING:
+        graph_timing(t, c);
+        break;
+    case GR_ENERGY:
+        graph_energy(c);
+        break;
+    case GR_MIDICH:
+        cv_oy = oy;
+        graph_midich();
+        break;
+    case GR_MATRIX:
+        mx_graph(c);
+        break;
+    case GR_STEPS:
+        graph_steps(t, c);
+        break;
+    case GR_DRUMHIT:
+    case GR_ROLL:
+        cv_oy = oy;
+        if (grid_on()) graph_grid(t, c);
+        else { proll.play = notes_play_x(t); graph_recorded_notes(t, c); }
+        break;
+    case GR_SCALE:
+        if (scale_settings_page(pg)) {
+            cv_oy = oy;
+            cv_text_fit(12, 3, &AF_S, SCALE_TITLE[clamp(t->p[P_SCALE], 0, SCALE_TOTAL - 1u)], T_TEXT, T_SURF, 216);
+            cv_oy = oy + 20;
+        }
+        graph_scale(t, c);
+        break;
+    case GR_CHORD:
+        cv_oy = oy;
+        graph_chord(t, c);
+        break;
+#if MELODEE_SLICE
+    case GR_SLICES:
+        cv_oy = oy;
+        graph_slices();
+        break;
+#endif
+    case GR_FMEG: {                                  /* FM6: operator fm6_opsel's envelope */
+        const uint8_t *op = &fm6_patch[song.sel % NTRK][(5u - fm6_opsel % 6u) * FP_OP];
+        graph_dxenv(op + FP_R1, op + FP_L1, 0, c);
+        break;
+    }
+    case GR_FMPEG:                                   /* FM6: the pitch envelope */
+        graph_dxenv(fm6_patch[song.sel % NTRK] + FP_PR1, fm6_patch[song.sel % NTRK] + FP_PL1, 1, c);
+        break;
+    default:
+#if MELODEE_LEGACY_EXTRAS
+        if (pg->scope == SC_ENGINE && t->eng_req % NENGINES == 7u) graph_wheel(t, c);
+        else
+#endif
+        if ((pg->scope == SC_ENGINE || pg->scope == SC_FM6 || pg->scope == SC_FMOP) &&
+                 t->eng_req % NENGINES == ENGI_FM6) graph_fm6(t, c);   /* EDIT 1 and 2, FM6's pages */
+        else { cv_oy = oy; graph_scope(c, 0, H_GRAPH); }
+        break;
+    }
+}
+static void draw_graph(void)
+{
     uint32_t sig;
     sig = graph_signature();
     if (!ui.force && sig == ui.graph_sig)
@@ -2149,93 +2236,11 @@ static void draw_graph(void)
     cv_begin(240, (uint32_t)graph_h, T_BG);
     cv_rrect(3, 0, 234, graph_h, 5, T_SURF, T_BG);   /* the panel */
     cv_bg = T_SURF;                                  /* (text drawn with cv_text lands on it) */
-    cv_oy = graph_oy;                                /* graphs on a 100 px scale */
     if (ui.home) {                                   /* (Stage draws its own panel: ui_stage.c) */
         cv_oy = 0;
-        graph_scope(c, 0, H_GRAPH);
+        graph_scope(ACC, 0, H_GRAPH);
     } else {
-        switch (pg->graph) {
-        case GR_LFO:
-            graph_lfo(t, c);
-            break;
-        case GR_FORM:
-            graph_form(t, c);
-            break;
-        case GR_EVOLVE:
-            graph_evolve(t, c);
-            break;
-        case GR_TWEAK:
-            cv_oy = 0;
-            graph_tweak(t, c);
-            break;
-        case GR_TWEAK2:
-            cv_oy = 0;
-            graph_tweak2(t, c);
-            break;
-        case GR_ORGANIC:
-            graph_organic(t, c);
-            break;
-        case GR_NOTELEN:
-            graph_notelen(t, c);
-            break;
-        case GR_TIMING:
-            graph_timing(t, c);
-            break;
-        case GR_ENERGY:
-            graph_energy(c);
-            break;
-        case GR_MIDICH:
-            cv_oy = 0;
-            graph_midich();
-            break;
-        case GR_MATRIX:
-            mx_graph(c);
-            break;
-        case GR_STEPS:
-            graph_steps(t, c);
-            break;
-        case GR_DRUMHIT:
-        case GR_ROLL:
-            cv_oy = 0;
-            if (grid_on()) graph_grid(t, c);
-            else { proll.play = notes_play_x(t); graph_recorded_notes(t, c); }
-            break;
-        case GR_SCALE:
-            if (scale_settings_page(pg)) {
-                cv_oy = 0;
-                cv_text_fit(12, 3, &AF_S, SCALE_TITLE[clamp(t->p[P_SCALE], 0, SCALE_TOTAL - 1u)], T_TEXT, T_SURF, 216);
-                cv_oy = 20;
-            }
-            graph_scale(t, c);
-            break;
-        case GR_CHORD:
-            cv_oy = 0;
-            graph_chord(t, c);
-            break;
-#if MELODEE_SLICE
-        case GR_SLICES:
-            cv_oy = 0;
-            graph_slices();
-            break;
-#endif
-        case GR_FMEG: {                                  /* FM6: operator fm6_opsel's envelope */
-            const uint8_t *op = &fm6_patch[song.sel % NTRK][(5u - fm6_opsel % 6u) * FP_OP];
-            graph_dxenv(op + FP_R1, op + FP_L1, 0, c);
-            break;
-        }
-        case GR_FMPEG:                                   /* FM6: the pitch envelope */
-            graph_dxenv(fm6_patch[song.sel % NTRK] + FP_PR1, fm6_patch[song.sel % NTRK] + FP_PL1, 1, c);
-            break;
-        default:
-#if MELODEE_LEGACY_EXTRAS
-            if (pg->scope == SC_ENGINE && t->eng_req % NENGINES == 7u) graph_wheel(t, c);
-            else
-#endif
-            if ((pg->scope == SC_ENGINE || pg->scope == SC_FM6 || pg->scope == SC_FMOP) &&
-                     t->eng_req % NENGINES == ENGI_FM6) graph_fm6(t, c);   /* EDIT 1 and 2, FM6's pages */
-            else { cv_oy = 0; graph_scope(c, 0, H_GRAPH); }
-            break;
-        }
+        graph_body(0);
     }
     cv_oy = 0;
     cv_blit(0, (uint32_t)graph_y);
