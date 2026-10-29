@@ -39,9 +39,15 @@ static FILE *rep;
 static const char *cur_name = "";
 static char free_seen[64][40];
 static uint32_t nfree_seen;
+#if MELODEE_LOOK
+static void mono_icon(int32_t x0, int32_t y0, int32_t x1, int32_t y1, const char *s);   /* (below) */
+#endif
 static void hk_text(int32_t x0, int32_t y0, int32_t x1, int32_t y1, const char *s, uint32_t flags)
 {
     n_text++;
+#if MELODEE_LOOK
+    if (flags & 4u) mono_icon(x0, y0, x1, y1, s);       /* the Mono look draws no icon */
+#endif
     if (npend >= 256u) return;
     pend[npend] = (rbox_t){(int16_t)x0, (int16_t)y0, (int16_t)x1, (int16_t)y1, (uint8_t)flags, {0}};
     strncpy(pend[npend].s, s, 27);
@@ -194,6 +200,14 @@ static void finding(const char *what, const rbox_t *b, const rbox_t *o)
     if (o) fprintf(rep, " / '%s' (%d,%d)-(%d,%d)", o->s, o->x0, o->y0, o->x1, o->y1);
     fputc('\n', rep);
 }
+#if MELODEE_LOOK
+static void mono_icon(int32_t x0, int32_t y0, int32_t x1, int32_t y1, const char *s)
+{
+    rbox_t b = {(int16_t)x0, (int16_t)y0, (int16_t)x1, (int16_t)y1, 4u, {0}};
+    strncpy(b.s, s, 27);
+    finding("Mono: an icon", &b, 0);
+}
+#endif
 /* a rectangle of the screen is drawn again: boxes inside it are gone, boxes it covers in part are hidden */
 static void cover(int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
