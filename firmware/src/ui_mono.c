@@ -169,12 +169,67 @@ static void mo_dial(int32_t cx, int32_t cy, int32_t r, int32_t v, uint16_t c)
 }
 
 /* ---- header, dials, footer ---- */
+/* the footer's tabs: the family's pages, as the button turns through them; *cur the shown one's place */
+static uint32_t mo_tabs(uint16_t *idx, uint32_t *cur)
+{
+    const page_t *pg = cur_page();
+    uint32_t i, n = 0;
+    *cur = 0;
+    for (i = 0; i < NPAGES && n < 16u; i++)
+        if (PAGES[i].fam == pg->fam && page_visible(i)) {
+            if (&PAGES[i] == pg) *cur = n;
+            idx[n++] = (uint16_t)i;
+        }
+    return n;
+}
+static void mo_tab_name(char *t, const uint16_t *idx, uint32_t i)   /* tab i's four letters */
+{
+    const char *s = mo_title(&PAGES[idx[i]]);
+    char p[8] = "";
+    uint32_t k = 0, j;
+    for (; *s && k < 4u; s++)                           /* four letters, no spaces: LFO 2 -> LFO2 */
+        if (*s != ' ') t[k++] = *s;
+    t[k] = 0;
+    for (j = 0; j < i && !p[0]; j++) {                  /* the same four as a page before: its last letter instead */
+        const char *q = mo_title(&PAGES[idx[j]]);
+        uint32_t m = 0;
+        for (; *q && m < 4u; q++)
+            if (*q != ' ') p[m++] = *q;
+        p[m] = 0;
+        if (!str_eq(p, t)) p[0] = 0;
+    }
+    if (p[0] && k == 4u) {
+        const char *e = mo_title(&PAGES[idx[i]]);
+        t[3] = e[str_len(e) - 1u];
+    }
+}
+static int mo_tabs_fit(const uint16_t *idx, uint32_t n)   /* all n tabs on the footer at once */
+{
+    int32_t x = 1;
+    uint32_t i;
+    char t[8];
+    for (i = 0; i < n; i++) {
+        mo_tab_name(t, idx, i);
+        if (x + mo_tw(t) > 119)
+            return 0;
+        x += mo_tw(t) + 5;
+    }
+    return 1;
+}
 static void mo_head(void)
 {
     const page_t *pg = cur_page();
-    char t[24], sub[8];
-    uint32_t i;
+    char t[24], sub[8], at[8] = "";
+    uint16_t idx[16];
+    uint32_t i, cur, n = mo_tabs(idx, &cur);
+    int32_t room;
     str_cpy(sub, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), sizeof sub);
+    if (!mo_tabs_fit(idx, n)) {                         /* more pages than the footer shows: where this one is (4/9) */
+        fmt_int(at, (int32_t)cur + 1);
+        str_cpy(at + str_len(at), "/", 2);
+        fmt_int(at + str_len(at), (int32_t)n);
+    }
+    room = 94 - mo_tw(sub) - 4 - (at[0] ? mo_tw(at) + 6 : 0);
     if (ui.msg_t && ui.msg[0]) {                        /* a message: in the title's place, inverted */
         mo_cut(t, ui.msg, 15);
         mo_inv(t, 2, 1);
@@ -183,10 +238,14 @@ static void mo_head(void)
         if (pg->fam == FAM_GEN && pg->graph == GR_STEPS && song.sel < TESSERA_TRACKS) {
             str_cpy(t + str_len(t), "/", 2);
             str_cpy(t + str_len(t), TX_N_MODE[tessera.mode[song.sel] % TESS_ENG_COUNT], 8);   /* (pid.c) */
+            if (mo_tw(t) > room)                        /* (beside the position: the MODE alone, GEN is the tab) */
+                str_cpy(t, TX_N_MODE[tessera.mode[song.sel] % TESS_ENG_COUNT], 8);
         }
-        t[(94 - mo_tw(sub) - 4) / 6] = 0;               /* (room before the engine) */
+        t[room / 6] = 0;                                /* (room before the position and the engine) */
         mo_text(t, 1, 1, MO_INK);
     }
+    if (at[0])
+        mo_textr(at, 94 - mo_tw(sub) - 6, 1, MO_DIM);
     mo_textr(sub, 94, 1, MO_DIM);
     for (i = 0; i < 4u; i++) {                          /* the tracks: the selected one filled */
         if (i == song.sel) mo_disc(99 + (int32_t)i * 6, 4, 2, MO_INK);
@@ -312,48 +371,38 @@ static void mo_cols(void)
     mo_vals_new = 1;
     mo_dash(0, 50, 120, MO_DIM);
 }
+/* the family's pages as tabs, the shown one inverted; more than fit: from late enough to show it, a cell less each
+ * side, and an arrow at the side that has pages past it */
 static void mo_foot(void)
 {
-    const page_t *pg = cur_page();
-    uint32_t i, n = 0, cur = 0, first = 0;
     uint16_t idx[16];
-    int32_t x = 1, w = 0;
+    uint32_t i, cur, n = mo_tabs(idx, &cur), first = 0, last;
+    int fit = mo_tabs_fit(idx, n);
+    int32_t x0 = fit ? 1 : 5, x1 = fit ? 119 : 113, x;   /* (a tab's block reaches x1 + 1) */
+    char t[8];
     mo_hl(0, 109, 120, MO_INK);                         /* (row 110 clear: the selected tab's block below it) */
-    for (i = 0; i < NPAGES && n < 16u; i++)             /* the family's pages, as the button turns through them */
-        if (PAGES[i].fam == pg->fam && page_visible(i)) {
-            if (&PAGES[i] == pg) cur = n;
-            idx[n++] = (uint16_t)i;
+    for (;; first++) {                                  /* the first tab: the shown one fits after it */
+        for (x = x0, i = first; i <= cur; i++) {
+            mo_tab_name(t, idx, i);
+            x += mo_tw(t) + 5;
         }
-    for (i = 0; i < n; i++)                             /* how many fit from the first: start late enough to show cur */
-        w += 6 * 4 + 5;
-    while (first < cur && (int32_t)(cur - first + 1u) * 29 > 118)
-        first++;
-    for (i = first; i < n; i++) {
-        char t[8], p[8] = "";
-        const char *s = mo_title(&PAGES[idx[i]]);
-        uint32_t k = 0, j;
-        for (; *s && k < 4u; s++)                       /* four letters, no spaces: LFO 2 -> LFO2 */
-            if (*s != ' ') t[k++] = *s;
-        t[k] = 0;
-        for (j = 0; j < i && !p[0]; j++) {              /* the same four as a page before: its last letter instead */
-            const char *q = mo_title(&PAGES[idx[j]]);
-            uint32_t m = 0;
-            for (; *q && m < 4u; q++)
-                if (*q != ' ') p[m++] = *q;
-            p[m] = 0;
-            if (!str_eq(p, t)) p[0] = 0;
-        }
-        if (p[0] && k == 4u) {
-            const char *e = mo_title(&PAGES[idx[i]]);
-            t[3] = e[str_len(e) - 1u];
-        }
-        if (x + mo_tw(t) > 119)
+        if (first >= cur || x - 5 <= x1)
+            break;
+    }
+    for (x = x0, last = first, i = first; i < n; i++, last = i) {
+        mo_tab_name(t, idx, i);
+        if (x + mo_tw(t) > x1)
             break;
         if (i == cur) mo_inv(t, x + 1, 112);
         else mo_text(t, x + 1, 112, MO_DIM);
         x += mo_tw(t) + 5;
     }
-    (void)w;
+    if (first > 0u)                                     /* pages before: an arrow left, a 3 x 5 wedge */
+        for (i = 0; i < 3u; i++)
+            mo_vl((int32_t)i, 115 - (int32_t)i, 1 + 2 * (int32_t)i, MO_DIM);
+    if (last < n)                                       /* .. after: right */
+        for (i = 0; i < 3u; i++)
+            mo_vl(119 - (int32_t)i, 115 - (int32_t)i, 1 + 2 * (int32_t)i, MO_DIM);
 }
 
 /* ---- the pictures ---- */
