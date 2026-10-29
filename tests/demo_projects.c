@@ -719,7 +719,7 @@ static int archive_restore(const char *path)
         project_cur_name(name);
         snprintf(w, sizeof w, "slot %c: %s loads", 'A' + slot, name);
         bad += check(w, proj_cur == slot);
-        bad += report(name, (dm_play_t[]){play(10, 0)});
+        bad += report(name, (dm_play_t[]){play(20, 0)});
     }
     free(json);
     return bad;
