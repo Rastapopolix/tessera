@@ -619,9 +619,6 @@ static void mo_pic_notes(const track_t *t)
         mo_text(b, 1, 101, MO_DIM);
     }
 }
-/* a picture with no Mono drawing of its own yet: the detailed look's (ui_graph.c graph_body, ui_pages.c pv_pic_body)
- * in the picture area, in the ink's palette (gen_ui_palettes.py: every colour the ink or a blend of it on black); what
- * runs past the area cleared again for the footer */
 /* MATRIX: the tracks along the top (TO) and down the left (FROM), a cell between each pair: no mod a dim outline,
  * mods filled from the left as far as their amounts reach (MOD: how many); the picked cell framed twice */
 static void mo_pic_matrix(void)
@@ -696,24 +693,6 @@ static void mo_grid_panel(void)
         cv_oy = 0;
         cv_blit(0, (uint32_t)(PV_GRID_Y + top));
     }
-}
-static void mo_pic_detailed(void)
-{
-    int32_t oy0 = cv_oy, oy = cv_oy + MO_PY0 * 2;
-    uint16_t bg = cv_bg;
-    cv_bg = MO_BG;
-    if (pv_kind() == PV_CURVE || pv_kind() == PV_RINGS) {
-        int32_t cut, res;
-        uint32_t pic = pv_pic(&cut, &res);
-        cv_oy = oy;
-        if (pic == 4u || pic == 8u) graph_body(oy);     /* (FM6's chart, CHORD's chord: as pv_picture) */
-        else pv_pic_body(pic, cut, res, 8, (MO_PY1 - MO_PY0) * 2 - 16);
-    } else {
-        graph_body(oy);
-    }
-    cv_oy = oy0;
-    cv_bg = bg;
-    mo_fill(0, MO_PY1, 120, 120 - MO_PY1, MO_BG);
 }
 /* BOUNCE: the box, its walls hit on the last step drawn twice as thick; the balls, discs. FALL (BALLS past 4): the floor
  * (thick on a landing), the leaves tilted as they sway, a landed one flat on the floor (dim as it rests, a bass leaf
@@ -1408,6 +1387,327 @@ static void mo_pic_midich(void)
     if (settings_midi_out != MIDI_OUT_ALL)
         mo_text(settings_midi_out == MIDI_OUT_OFF ? "MIDI OUT: OFF" : "MIDI OUT: KEYS", 2, 101, MO_DIM);
 }
+static void mo_stage_wave(int32_t top, int32_t h, uint16_t c);
+/* the value of the knob turning (KNOB k), with its unit, on the picture's foot row at the right */
+static void mo_hot_value(int32_t k)
+{
+    char v[12], b[20];
+    const char *unit;
+    pv_value((uint32_t)k, v, &unit);
+    mo_ascii(b, v, sizeof b);
+    if (unit[0]) mo_ascii(b + str_len(b), unit, 6);
+    mo_textr(b, 118, 102, MO_INK);
+}
+/* ENV (and the FM operators' ENV pages): attack linear, decay exponential to the sustain, held, release exponential;
+ * the area under it hatched dim, the curve and a handle at each segment's end in ink; the segment turning: its handle a ring,
+ * its value at the foot */
+static void mo_pic_env(const track_t *t)
+{
+    const page_t *pg = cur_page();
+    int32_t va = t->p[pg->id[0]], vd = t->p[pg->id[1]], vs = t->p[pg->id[2]], vr = t->p[pg->id[3]];
+    int32_t top = 56, bot = 98, x0 = 2, x1 = x0 + 5 + va * 20 / 127, x2 = x1 + 8 + vd * 26 / 127, x4 = 117;
+    int32_t x3 = x4 - 12 - vr * 24 / 127, sus = vs * 1000 / 127, hot = pv_hot(), x, py = 0, e = 32768;
+    int32_t kd = 75366 / (x2 - x1), kr = 75366 / (x4 - x3), i;
+#define MOY(l) (bot - (l) * (bot - top) / 1000)
+    for (x = x0; x <= x4; x++) {
+        int32_t l, y, seg = x < x1 ? 0 : x < x2 ? 1 : x < x3 ? 2 : 3;
+        if (seg == 0) l = (x - x0) * 1000 / (x1 - x0);
+        else if (seg == 1) { e = x == x1 ? 32768 : (e * (32768 - kd)) >> 15; l = sus + ((1000 - sus) * e >> 15); }
+        else if (seg == 2) l = sus;
+        else { e = x == x3 ? 32768 : (e * (32768 - kr)) >> 15; l = x == x4 ? 0 : sus * e >> 15; }
+        y = MOY(l);
+        if (y < bot && !(x & 1)) mo_vl(x, y + 1, bot - y, MO_DIM);
+        if (x > x0) mo_line(x - 1, py, x, y, MO_INK);
+        py = y;
+    }
+    mo_hl(x0, bot, x4 - x0 + 1, MO_INK);
+    {
+        const int32_t hx[4] = {x1, x2, x3, x4}, hy[4] = {top, MOY(sus), MOY(sus), bot};
+        for (i = 0; i < 4; i++) {
+            mo_disc(hx[i], hy[i], i == hot ? 3 : 2, MO_BG);
+            if (i == hot) mo_circ(hx[i], hy[i], 2, MO_INK);
+            else mo_disc(hx[i], hy[i], 1, MO_INK);
+        }
+    }
+#undef MOY
+    if (hot >= 0) mo_hot_value(hot);
+}
+/* FM6's EG RATE / EG LVL (operator fm6_opsel) and PITCH EG / LV: the DX7 envelope from L4 by R1..R3 to L1..L3, held,
+ * then R4 back to L4 (a slower rate a wider segment); the area under it hatched dim, a point at each level; the knob turning:
+ * its segment (a rate) or its point (a level) a ring, its value at the foot. PITCH: the note's own pitch dashed */
+static void mo_pic_dxenv(void)
+{
+    const uint8_t *v = fm6_patch[song.sel % NTRK];
+    int pitch = cur_page()->graph == GR_FMPEG, lv = cur_page()->id[0] == FP_L1 || cur_page()->id[0] == FP_PL1;
+    const uint8_t *r = pitch ? v + FP_PR1 : v + (5u - fm6_opsel % 6u) * FP_OP + FP_R1;
+    const uint8_t *l = pitch ? v + FP_PL1 : v + (5u - fm6_opsel % 6u) * FP_OP + FP_L1;
+    int32_t x0 = 2, x1 = 117, top = 58, bot = 98, px[6], py[6], w[5], sum = 30, i, x, hot = pv_hot();
+#define DXY(a) (bot - (int32_t)(a) * (bot - top) / 99)
+    for (i = 0; i < 4; i++)
+        sum += w[i < 3 ? i : 4] = 8 + (99 - r[i]) * 38 / 99;
+    w[3] = 30;
+    px[0] = x0;
+    py[0] = DXY(l[3]);
+    for (i = 0; i < 5; i++) {
+        px[i + 1] = px[i] + w[i] * (x1 - x0) / sum;
+        py[i + 1] = i < 3 ? DXY(l[i]) : i == 3 ? py[3] : DXY(l[3]);
+    }
+    px[5] = x1;
+    for (x = x0, i = 0; x <= x1; x++) {                 /* the area under it */
+        int32_t y;
+        while (i < 5 && x > px[i + 1]) i++;
+        y = i < 5 && px[i + 1] > px[i] ? py[i] + (py[i + 1] - py[i]) * (x - px[i]) / (px[i + 1] - px[i]) : py[5];
+        if (y < bot && !(x & 1)) mo_vl(x, y + 1, bot - y, MO_DIM);
+    }
+    if (pitch) mo_dash(x0, DXY(50), x1 - x0, MO_INK);
+    mo_hl(x0, bot, x1 - x0 + 1, MO_INK);
+    for (i = 0; i < 5; i++) {
+        int seg = i < 3 ? i : i == 4 ? 3 : -1;
+        mo_line(px[i], py[i], px[i + 1], py[i + 1], MO_INK);
+        if (!lv && seg >= 0 && seg == hot) mo_line(px[i], py[i] - 1, px[i + 1], py[i + 1] - 1, MO_INK);
+    }
+    for (i = 1; i < 5; i++) {
+        int on = hot >= 0 && (lv ? i == hot + 1 || (hot == 2 && i == 4) : 0);
+        mo_disc(px[i], py[i], on ? 3 : 2, MO_BG);
+        if (on) mo_circ(px[i], py[i], 2, MO_INK);
+        else mo_disc(px[i], py[i], 1, MO_INK);
+    }
+#undef DXY
+    if (hot >= 0) mo_hot_value(hot);
+}
+/* a page with a cutoff: the filter's response, flat, the resonance's peak at the cutoff (dashed), then the slope; the
+ * area under it hatched dim */
+static void mo_pic_filter(int32_t cut, int32_t res)
+{
+    int32_t x, fc = 4 + clamp(cut, 0, 127) * 108 / 127, peak = clamp(res, 0, 127) * 20 / 127, y0 = 76, py = 0;
+    for (x = MO_PY0 + 2; x < 100; x += 3) mo_px(fc, x, MO_INK);
+    for (x = 2; x < 118; x++) {
+        int32_t d = x - fc, y = y0 - peak * 16 / (16 + d * d) + (d > 0 ? d * 7 / 8 : 0);
+        y = clamp(y, MO_PY0 + 2, 100);
+        if (y < 100 && !(x & 1)) mo_vl(x, y + 1, 100 - y, MO_DIM);
+        if (x > 2) mo_line(x - 1, py, x, y, MO_INK);
+        py = y;
+    }
+    mo_hl(2, 100, 116, MO_INK);
+}
+/* ARP and ARP 2: the notes it plays, a block a step (16 at most): the keys held (else C3 E3 G3) over OCT octaves in
+ * MODE's order, low to high bottom to top; the notes and the octaves above. OFF: dim */
+static void mo_pic_arp(const track_t *t)
+{
+    static const uint8_t DEF[3] = {48, 52, 55};
+    uint8_t base[16], seq[16];
+    uint32_t nb = t->nheld ? t->nheld : 3u, n = 0, o, i, j, oct = (uint32_t)clamp(t->p[P_AOCT], 1, 4), mode = (uint32_t)t->p[P_AMODE];
+    int32_t lo = 127, hi = 0, w, bw;
+    char b[32];
+    if (nb > 16u) nb = 16u;
+    for (i = 0; i < nb; i++) base[i] = t->nheld ? t->held[i] : DEF[i];
+    if (mode != 5u)                                     /* (ORD: as played; the others from the lowest) */
+        for (i = 1; i < nb; i++)
+            for (j = i; j > 0 && base[j - 1] > base[j]; j--) { uint8_t x = base[j]; base[j] = base[j - 1]; base[j - 1] = x; }
+    for (o = 0; o < oct; o++)
+        for (i = 0; i < nb && n < 16u; i++) seq[n++] = (uint8_t)clamp(base[i] + 12 * (int32_t)o, 0, 127);
+    if (mode == 2u)                                     /* DN */
+        for (i = 0; i < n / 2u; i++) { uint8_t x = seq[i]; seq[i] = seq[n - 1u - i]; seq[n - 1u - i] = x; }
+    else if (mode == 3u)                                /* UPDN */
+        for (i = n >= 2u ? n - 2u : 0u; i > 0u && n < 16u; i--) seq[n++] = seq[i];
+    else if (mode == 4u)                                /* RND: one of its orders */
+        for (i = n; i > 1u; i--) { j = (i * 7u + 3u) % i; uint8_t x = seq[i - 1u]; seq[i - 1u] = seq[j]; seq[j] = x; }
+    for (i = 0; i < n; i++) { lo = seq[i] < lo ? seq[i] : lo; hi = seq[i] > hi ? seq[i] : hi; }
+    w = n ? 116 / (int32_t)n : 116;
+    bw = w - 1 < 10 ? w - 1 : 10;
+    for (i = 0; i < n; i++) {
+        int32_t y = 98 - (hi > lo ? (seq[i] - lo) * 30 / (hi - lo) : 15);
+        mo_fill(2 + (int32_t)i * w, y, bw, 3, mode ? MO_INK : MO_DIM);
+    }
+    b[0] = 0;
+    for (i = 0; i < nb && i < 4u; i++) {
+        note_name(b + str_len(b), base[i]);
+        str_cpy(b + str_len(b), " ", 2);
+    }
+    mo_ascii(b, b, sizeof b);
+    b[13] = 0;
+    mo_text(b, 2, 56, mode ? MO_INK : MO_DIM);
+    str_cpy(b, "X", 2);
+    fmt_int(b + 1, (int32_t)oct);
+    mo_textr(b, 118, 56, MO_DIM);
+}
+/* FX: what the effect does (its hint), its wave (moved by MIX, CHAOS: dim when OFF or dry), and a foot; the send
+ * pages: where the signal goes, in words */
+static void mo_pic_fx(void)
+{
+    static const char *const hint[FX_COUNT] = {"DRY SIGNAL", "MOVING NOTCHES", "ALL-PASS L/DRY R", "RANDOM VOWELS",
+        "CROSSOVER JITTER", "JUMPING RESONANCE", "SHORT LO-FI ECHO", "SMALL LO-FI SPACE", "DIFFUSED REVERB", "PITCH SHIMMER"};
+    uint32_t base = cur_page()->id[0], master, slot, type;
+    const int16_t *values;
+    int32_t mix, cha, py = 81, x;
+    const char *foot;
+    if (base == G_TRK_SEND || base == P_FXSEND) {
+        uint32_t sends = base == P_FXSEND;
+        mo_text(song.g[G_FXMODE] ? "SEPARATE SENDS" : "TO SHARED FX", 2, 56, MO_DIM);
+        mo_text(sends ? "A LEVEL PER FX" : song.g[G_FXMODE] ? "SEND 1: TRACK" : "SEND: TRACK", 2, 74, MO_INK);
+        mo_text(sends ? "RETURNS + DRY" : "RETURN: ALL", 2, 86, MO_INK);
+        return;
+    }
+    master = cur_page()->scope == SC_GLOBAL;
+    slot = (base - (master ? G_MFXTYPE : P_FXTYPE)) / FX_PARAMS;
+    values = master ? song.g : TSEL->p;
+    type = (uint32_t)clamp(values[base], 0, FX_COUNT - 1);
+    mix = values[base + 1u];
+    cha = values[base + 3u];
+    mo_text(hint[type], 2, 56, MO_DIM);
+    for (x = 0; x < 116; x++) {
+        int32_t ph = (int32_t)(sine_i((uint32_t)x * 0x0AC00000u) >> 10), y = 81 * 32;
+        if (type == FX_PHASER || type == FX_WIDTH || type == FX_CHORUS) y += ph * mix / 9;
+        else if (type == FX_FORMANT) y -= ((ph + 32) * mix) / 15;
+        else if (type == FX_TAPE || type == FX_SPIT) y += (ph * ((x * 2 * (cha + 1) / 32) % 32)) / 4;
+        else if (type >= FX_ECHO) y += (ph * mix * (116 - x)) / 1060;
+        y = clamp(y / 32, 68, 94);
+        if (x) mo_line(1 + x, py, 2 + x, y, type && mix ? MO_INK : MO_DIM);
+        py = y;
+    }
+    foot = fx_state[(master ? NPART : song.sel % NPART) * FX_SLOTS + slot].failed ? "MEMORY FULL" : type == FX_WIDTH ?
+           "THIN IN MONO" : type == FX_OFF || !mix ? "MIX UP TO HEAR" : master ? "ALL TRACKS" : "OCT+ ACTIONS";
+    mo_text(foot, 2, 102, MO_DIM);
+}
+/* CHORD (the SCALE family's CHORD page): the chord's name and where it comes from, then two or three octaves of keys
+ * from the C under its lowest note, the keys it plays solid (black keys dim when not), the root's with a notch; the cases with no chord: words */
+static void mo_pic_chord_keys(const track_t *t)
+{
+    static const uint8_t WHITE[12] = {0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6};   /* (a semitone's white key, or the one left of it) */
+    static const uint8_t BLACK[12] = {0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0};
+    uint8_t nn[CHORD_MAX];
+    uint32_t n, i, j, k = trk_index(t), lo, cnt, pass;
+    int32_t r, ww, x0;
+    uint16_t mask;
+    char b[16];
+    const char *cap = "LAST";
+    if (!t->p[P_CHRD]) {
+        mo_textc("CHORD KEYS OFF", 60, 70, MO_INK);
+        mo_textc("K1 DIA3: IN KEY", 60, 84, MO_DIM);
+        return;
+    }
+    if (chord_kit(t)) {
+        mo_textc("NO CHORDS ON KITS", 60, 76, MO_INK);
+        return;
+    }
+    if (micro_active(t) || !chord_last[k].n) {
+        n = chord_make(t, micro_active(t) ? 60u : (uint32_t)(60 + t->p[P_ROOT]), nn, &r, &mask);
+        cap = "ON ROOT";
+    } else {
+        r = chord_last[k].root;
+        mask = chord_last[k].mask;
+        n = chord_last[k].n;
+    }
+    if (micro_active(t)) {                              /* (a microtonal scale: its degrees by name) */
+        if (chord_last[k].n)
+            for (n = chord_last[k].n, i = 0; i < n; i++) nn[i] = chord_last[k].note[i];
+        mo_text("SCALE DEGREES", 2, 56, MO_DIM);
+        for (i = 0; i < n && i < 4u; i++) {
+            note_name(b, nn[i]);
+            mo_ascii(b, b, 5);
+            mo_textc(b, 16 + (int32_t)i * 29, 80, i ? MO_INK : MO_DIM);
+        }
+        return;
+    }
+    if (chord_last[k].n)
+        for (i = 0; i < n; i++) nn[i] = chord_last[k].note[i];
+    if (trk_vmode(t) != V_POLY)
+        cap = "ROOT ONLY";                              /* MONO / LEGATO / UNISON */
+    chord_name(b, (uint32_t)r, mask);
+    mo_ascii(b, b, 11);
+    TEXT_CASE(1);
+    mo_text(b, 2, 56, MO_INK);
+    TEXT_CASE(0);
+    mo_textr(cap, 118, 56, MO_DIM);
+    lo = nn[0] - nn[0] % 12u;
+    cnt = nn[n - 1u] - lo < 24u ? 24u : 36u;
+    ww = 116 / (int32_t)(cnt / 12u * 7u);
+    x0 = 2 + (116 - ww * (int32_t)(cnt / 12u * 7u)) / 2;
+    for (pass = 0; pass < 2u; pass++)                   /* the white keys, then the black over them */
+        for (i = 0; i < cnt; i++) {
+            uint32_t note = lo + i, pc = note % 12u, on = 0;
+            int32_t x = x0 + (int32_t)(i / 12u * 7u + WHITE[pc]) * ww, bw = ww / 2 | 1;
+            if (BLACK[pc] != pass) continue;
+            for (j = 0; j < n; j++) on |= nn[j] == note;
+            if (pass) {
+                x += ww - 1 - bw / 2;
+                mo_fill(x - 1, 68, bw + 2, 20, MO_BG);
+                mo_fill(x, 68, bw, 19, on ? MO_INK : MO_DIM);
+                if (on && pc == (uint32_t)r % 12u) mo_fill(x + bw / 2, 83, 1, 2, MO_BG);
+            } else {
+                if (on) mo_fill(x, 68, ww - 1, 33, MO_INK);
+                else mo_box(x, 68, ww - 1, 33, MO_INK);
+                if (on && pc == (uint32_t)r % 12u) mo_fill(x + (ww - 1) / 2 - 1, 95, 2, 2, MO_BG);
+            }
+        }
+}
+/* FM6's EDIT and operator pages: the algorithm as graph_fm6 charts it (FM6_CELL), on the cell grid: an operator a box
+ * 11 x 9, columns 18 apart, rows 12; the carriers solid over the output bus, the modulators outlined, an operator at
+ * output level 0 dim; the routes and the feedback loop (dim at feedback 0); the operators the knob turning moves (or
+ * the operator page's own) with a bar each side; "ALG 05" top left, in ink while ALG or PTCH turns */
+static void mo_pic_fm6(const track_t *t)
+{
+    uint32_t alg = fm6_alg_of(t), k, j, car = fm6_car_ops(alg), top = 0, hi = 0, fbop = fm6_fb_op(alg), hotset = 0;
+    uint32_t fbsrc = fm6_fb_source(alg, fm6_fn[(t - trk) % NTRK][FN_ENGINE]);
+    uint32_t hot = ui.hot_t ? (uint32_t)cur_page()->id[ui.hot_col & 3u] : 0u;
+    const uint8_t *pt = fm6_patch[(t - trk) % NTRK];
+    int32_t x[6], y[6], bus = 105, cl = 120, cr = 0, fb = clamp(pt[FP_FB] + t->p[P_E1], 0, 7), lx, ly;
+    uint8_t m[6], fan[6] = {0, 0, 0, 0, 0, 0};
+    uint16_t fc;
+    char b[7] = {'A', 'L', 'G', ' ', (char)('0' + (alg + 1u) / 10u), (char)('0' + (alg + 1u) % 10u), 0};
+    if (cur_page()->scope == SC_FMOP)
+        hotset = 1u << (fm6_opsel % 6u), hot = 0;
+    else if (cur_page()->scope == SC_FM6)
+        hot = 0;
+    else if (hot == P_E3 || hot == P_E4 || hot == P_E5)
+        hotset = 63u & ~car;
+    else if (hot == P_E6)
+        hotset = car;
+    fm6_routes(alg, m);
+    for (k = 0; k < 6u; k++) {
+        uint32_t col = FM6_CELL[alg][k] & 7u, row = FM6_CELL[alg][k] >> 4;
+        hi = col > hi ? col : hi;
+        top = row > top ? row : top;
+        for (j = 0; j < 6u; j++)
+            fan[j] += (uint8_t)(m[k] >> j & 1u);
+    }
+    for (k = 0; k < 6u; k++) {
+        x[k] = 60 + (int32_t)(FM6_CELL[alg][k] & 7u) * 18 - (int32_t)hi * 9;
+        y[k] = bus - 12 - 12 * (int32_t)(FM6_CELL[alg][k] >> 4);
+        if (car >> k & 1u) { cl = x[k] < cl ? x[k] : cl; cr = x[k] > cr ? x[k] : cr; }
+    }
+    for (k = 0; k < 6u; k++) {                          /* into k: down from its source, across on the jog row, down */
+        for (j = 0; j < 6u; j++)
+            if (m[k] >> j & 1u) {
+                mo_vl(x[j], y[j] + 9, y[k] - 2 - y[j] - 9, MO_INK);
+                mo_hl(x[j] < x[k] ? x[j] : x[k], y[k] - 2, (x[j] < x[k] ? x[k] - x[j] : x[j] - x[k]) + 1, MO_INK);
+                mo_vl(x[k], y[k] - 2, 2, MO_INK);
+                if (fan[j] > 1u) mo_fill(x[j] - 1, y[k] - 3, 3, 2, MO_INK);   /* one modulating several */
+                if (m[k] & (m[k] - 1u)) mo_fill(x[k] - 1, y[k] - 3, 3, 2, MO_INK);   /* several modulating one */
+            }
+        if (car >> k & 1u) mo_vl(x[k], y[k] + 9, bus - y[k] - 9, MO_INK);
+    }
+    mo_hl(cl, bus, cr + 10 - cl, MO_INK);               /* the output bus, out on the right */
+    mo_line(cr + 7, bus - 2, cr + 9, bus, MO_INK);
+    mo_line(cr + 7, bus + 2, cr + 9, bus, MO_INK);
+    fc = fb ? MO_INK : MO_DIM;                          /* the feedback: out of the right side, up, in on top */
+    lx = (x[fbsrc] > x[fbop] ? x[fbsrc] : x[fbop]) + 8;
+    ly = y[fbop] - 3;
+    mo_hl(x[fbsrc] + 6, y[fbsrc] + 4, lx - x[fbsrc] - 6, fc);
+    mo_vl(lx, ly, y[fbsrc] + 5 - ly, fc);
+    mo_hl(x[fbop] + 2, ly, lx - x[fbop] - 2, fc);
+    mo_vl(x[fbop] + 2, ly, 3, fc);
+    for (k = 0; k < 6u; k++) {
+        uint32_t on = pt[(5u - k) * FP_OP + FP_OL] != 0, solid = (car >> k & 1u) && on;
+        char n[2] = {(char)('1' + k), 0};
+        mo_fill(x[k] - 5, y[k], 11, 9, MO_BG);
+        if (solid) mo_fill(x[k] - 5, y[k], 11, 9, MO_INK);
+        else mo_box(x[k] - 5, y[k], 11, 9, on ? MO_INK : MO_DIM);
+        mo_text(n, x[k] - 2, y[k] + 1, solid ? MO_BG : on ? MO_INK : MO_DIM);
+        if (hotset >> k & 1u) { mo_vl(x[k] - 7, y[k] + 1, 7, MO_INK); mo_vl(x[k] + 7, y[k] + 1, 7, MO_INK); }
+    }
+    mo_text(b, 2, 56, hot == P_E0 || hot == P_E7 ? MO_INK : MO_DIM);
+}
 static void mo_picture(void)
 {
     const page_t *pg = cur_page();
@@ -1434,7 +1734,7 @@ static void mo_picture(void)
         case TESS_ENG_SERIES: mo_pic_series(tessera_series(tr)); return;
         case TESS_ENG_CHORD: mo_pic_chord(tr); return;
         case TESS_ENG_ANSWER: mo_pic_answer(tr); return;
-        default: mo_pic_detailed(); return;
+        default: mo_pic_pattern(t); return;
         }
     }
     if ((pg->graph == GR_ROLL || pg->graph == GR_DRUMHIT) && grid_on()) {
@@ -1469,7 +1769,31 @@ static void mo_picture(void)
     case GR_MIDICH: mo_pic_midich(); return;
     default: break;
     }
-    mo_pic_detailed();                                  /* the rest: the detailed picture until its Mono one is drawn */
+    if (pg->graph == GR_CHORD) {
+        mo_pic_chord_keys(t);
+        return;
+    }
+    if (pg->graph == GR_ADSR) {
+        mo_pic_env(t);
+        return;
+    }
+    if (pg->graph == GR_FMEG || pg->graph == GR_FMPEG) {
+        mo_pic_dxenv();
+        return;
+    }
+    if ((pg->scope == SC_ENGINE || pg->scope == SC_FM6 || pg->scope == SC_FMOP) && t->eng_req % NENGINES == ENGI_FM6 &&
+        pg->graph == GR_NONE) {                         /* (FM6's EDIT pages and its own: the chart, as graph_body) */
+        mo_pic_fm6(t);
+        return;
+    }
+    if (pv_kind() == PV_CURVE || pv_kind() == PV_RINGS) {   /* the sound pages' pictures (ui_pages.c pv_pic) */
+        int32_t cut, res;
+        uint32_t pic = pv_pic(&cut, &res);
+        if (pic == 3u) { mo_pic_filter(cut, res); return; }
+        if (pic == 5u) { mo_pic_arp(t); return; }
+        if (pic == 9u) { mo_pic_fx(); return; }
+    }
+    mo_stage_wave(MO_PY0 + 4, 48, MO_INK);              /* the rest: the output */
 }
 
 /* ---- lists over the page: a list knob's picker, OCT+'s whole list, the OCT+ sheets ---- */
