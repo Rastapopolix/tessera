@@ -2391,9 +2391,10 @@ static void mono_stage(void)
 }
 
 /* ---- MIXER ---- */
-/* a track's strip (pv_strip; 27 x 106 cells): its sound in two words of four letters, LEVEL as a dial with its dB,
- * the meter beside it, PAN a small dial and its side, SOLO boxed, MUTE inverted (silenced by another's solo: dim),
- * REC a dot (armed) or a ring; the selected track's strip outlined, the knob turning its value inverted */
+/* a track's strip (pv_strip; 29 x 106 cells, a cell into the gaps beside its card): its sound in two words of four
+ * letters, LEVEL as a dial with its dB, the meter beside it, PAN a small dial and its side, SOLO boxed, MUTE inverted
+ * (silenced by another's solo: dim), REC a dot (armed) or a ring; the selected track's strip outlined, a clear cell
+ * inside its outline all round; the knob turning its value inverted */
 static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint32_t flags, int32_t meter)
 {
     uint32_t sel = flags & 1u, mute = flags & 2u, solo = flags & 4u, quiet = flags & 8u, arm = flags & 16u;
@@ -2401,9 +2402,9 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
     uint16_t ink = quiet ? MO_DIM : MO_INK;
     char a[8], b[8];
     int32_t h;
-    cv_begin(CARD_W, PV_STRIP_ROWS, MO_BG);
+    cv_begin(CARD_W + 4, PV_STRIP_ROWS, MO_BG);
     if (sel)
-        mo_box(0, 0, CARD_W / 2, PV_STRIP_ROWS / 2, MO_INK);
+        mo_box(0, 0, CARD_W / 2 + 2, PV_STRIP_ROWS / 2, MO_INK);
     mo_word(a, nm, 0);
     mo_textc(a, 14, 3, ink);
     mo_word(a, nm, 1);
@@ -2432,17 +2433,17 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
     if (hot == 2u) mo_inv(b, 14 - mo_tw(b) / 2, 77);
     else mo_textc(b, 14, 77, MO_DIM);
     if (solo) {
-        mo_box(2, 86, 24, 11, MO_INK);
+        mo_box(2, 86, 25, 11, MO_INK);
         mo_textc("SOLO", 14, 88, MO_INK);
     } else if (mute) {
-        mo_fill(2, 86, 24, 11, MO_INK);
+        mo_fill(2, 86, 25, 11, MO_INK);
         mo_textc("MUTE", 14, 88, MO_BG);
     } else {
         mo_textc("MUTE", 14, 88, MO_DIM);
     }
-    if (arm) mo_disc(13, 101, 3, MO_INK);
-    else mo_circ(13, 101, 3, MO_DIM);
-    cv_blit((uint32_t)CARD_X(k), PV_STRIP_TOP);
+    if (arm) mo_disc(14, 101, 3, MO_INK);
+    else mo_circ(14, 101, 3, MO_DIM);
+    cv_blit((uint32_t)CARD_X(k) - 2u, PV_STRIP_TOP);
 }
 
 /* ---- MODS (CORDS) ---- */
