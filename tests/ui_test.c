@@ -3178,12 +3178,32 @@ static int test_native_env_lfo(void)
     for (i = 0; i < NPAGES; i++)
         found |= PAGES[i].fam == FAM_ENV && page_visible(i);
     bad += check("..the track's ADSR and ENV DEST hidden", !found);
+    turn(EN_SELECT, 1);
+    o = str_eq(cur_page()->title, "EG LVL") && cur_fam() == FAM_ENV;
+    turn(EN_SELECT, 1);
+    o &= str_eq(cur_page()->title, "PITCH EG");
+    turn(EN_SELECT, 1);
+    o &= str_eq(cur_page()->title, "PITCH LV");
+    turn(EN_SELECT, 1);
+    o &= str_eq(cur_page()->title, "EG RATE") && cur_fam() == FAM_ENV;
+    turn(EN_SELECT, -1);
+    bad += check("..SELECT turns ENV's pages only (EG RATE, EG LVL, PITCH EG, PITCH LV, round), ENV lit, never EDIT's",
+                 o && str_eq(cur_page()->title, "PITCH LV") && cur_fam() == FAM_ENV);
+    open_family(FAM_EDIT);
+    for (i = 0; i < 12u && !str_eq(cur_page()->title, "EG RATE"); i++) turn(EN_SELECT, 1);
+    turn(EN_SELECT, 1);
+    bad += check("..from EDIT its EG pages are EDIT's: on to SCALE, EDIT lit",
+                 str_eq(cur_page()->title, "EG LVL") && cur_fam() == FAM_EDIT &&
+                 (turn(EN_SELECT, 1), str_eq(cur_page()->title, "SCALE")) && cur_fam() == FAM_EDIT);
     ui.fam_last[FAM_LFO] = 0;
     open_family(FAM_LFO);
     bad += check("LFO on FM6: MODS first, as on any engine", str_eq(cur_page()->title, "MODS"));
     for (i = 0; i < 8u && !str_eq(cur_page()->title, "FM LFO"); i++) open_family(FAM_LFO);
     bad += check("..its own LFO after the family's pages (after LFO DEST), then round to MODS",
                  str_eq(cur_page()->title, "FM LFO") && i == 6u && (open_family(FAM_LFO), str_eq(cur_page()->title, "MODS")));
+    for (i = 0; i < 8u && !str_eq(cur_page()->title, "FM LFO"); i++) open_family(FAM_LFO);
+    turn(EN_SELECT, 1);
+    bad += check("..SELECT from FM LFO: round to MODS (not FM BEND)", str_eq(cur_page()->title, "MODS") && cur_fam() == FAM_LFO);
     open_family(FAM_LFO); go_home(); open_family(FAM_LFO);
     bad += check("..from elsewhere: the LFO page last used", str_eq(cur_page()->title, "MATRIX"));
     go_home();
