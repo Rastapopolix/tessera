@@ -83,7 +83,7 @@ def build():
     fb.setupHorizontalMetrics({n: (ADV * PX, 0) for n in names})
     fb.setupHorizontalHeader(ascent=ASC * PX, descent=-DESC * PX)
     fb.setupNameTable({"familyName": "Tessera Mono", "styleName": "Regular",
-                       "copyright": "Copyright (C) 2026 Theo Dainis; GPL-3.0-only (firmware/src/ui_mono.c)"})
+                       "copyright": "Copyright (C) 2026 Theo Dainis; GPL-3.0-only (firmware/src/gfx.c)"})
     fb.setupOS2(sTypoAscender=ASC * PX, sTypoDescender=-DESC * PX, usWinAscent=ASC * PX, usWinDescent=DESC * PX)
     fb.setupPost()
     fb.font["head"].created = fb.font["head"].modified = 3_844_800_000   # fixed: the same bytes every run

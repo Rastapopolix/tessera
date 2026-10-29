@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 /* The README's Visual Reference Gallery and the manual's pictures: the real drawing code (tests/ui_render.c's scenes)
- * in the device build's engine set (FM6, TRIO, DRUM: no SID, PHYS, CZ-1 or Prophet), the default palette (SMALTI),
+ * in the device build's engine set (FM6, TRIO, DRUM: no SID, PHYS, CZ-1 or Prophet), the Mono look's default ink (YELLOW),
  * as PPM in OUTDIR/ppm (240 x 240; the PNGs in assets/gallery are these 2x, nearest: tools/gallery_png.py).
- *   cc -O1 -w -DMELODEE_USB_AUDIO=1 -DMELODEE_SID=0 -DMELODEE_PHYS=0 '-DMELODEE_VERSION="v2.0"' \
+ *   cc -O1 -w -DMELODEE_LOOK=1 -DMELODEE_USB_AUDIO=1 -DMELODEE_SID=0 -DMELODEE_PHYS=0 '-DMELODEE_VERSION="v2.0"' \
  *      -Ibuild/gen -Ifirmware/src -Itests -o build/gallery_render tests/gallery_render.c -lm
  *   mkdir -p build/gallery/ppm && build/gallery_render build/gallery
  * (README.md, MANUAL.md and the project page show these as assets/gallery/<name>.png) */

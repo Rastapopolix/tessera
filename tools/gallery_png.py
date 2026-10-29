@@ -3,7 +3,7 @@
 # Copyright (C) 2026 Theo Dainis (melodee-tess)
 """The gallery's PNGs: tests/gallery_render.c's PPMs (240 x 240) at 2x, nearest, into assets/gallery.
 
-  cc -O1 -w -DMELODEE_USB_AUDIO=1 -DMELODEE_SID=0 -DMELODEE_PHYS=0 '-DMELODEE_VERSION="v2.0"' \\
+  cc -O1 -w -DMELODEE_LOOK=1 -DMELODEE_USB_AUDIO=1 -DMELODEE_SID=0 -DMELODEE_PHYS=0 '-DMELODEE_VERSION="v2.0"' \\
      -Ibuild/gen -Ifirmware/src -Itests \\
      -o build/gallery_render tests/gallery_render.c -lm
   mkdir -p build/gallery/ppm && build/gallery_render build/gallery && python3 tools/gallery_png.py build/gallery/ppm

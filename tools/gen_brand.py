@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
 """Tessera's brand pictures for GitHub and the project page, in the Mono look: one ink on black, the device's own
-5 x 7 font (firmware/src/ui_mono.c MO_FONT) at whole-pixel scales:
+5 x 7 font (firmware/src/gfx.c MO_FONT) at whole-pixel scales:
 
   assets/brand/logo.svg            the mark: 3 x 3 tiles outlined in the ink, the top-right one solid (the splash's
                                    tessera that is laid last)
