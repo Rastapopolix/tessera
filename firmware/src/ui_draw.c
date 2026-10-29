@@ -1750,8 +1750,10 @@ static void draw_page(void)
             draw_graph();
     }
     melodee_dbg.stage = 6;
+#if !MELODEE_LOOK                                       /* (Mono: every page's foot is its own, ui_mono.c) */
     if (!ui.home && !own_screen() && !pv_kind() && !list_on() && !slot_kind() && !motion_page())
         draw_foot();
+#endif
 }
 static void ui_draw_frame(void);
 static void ui_draw(void)                               /* (gfx.c: the fills wait for the frame's canvases) */
