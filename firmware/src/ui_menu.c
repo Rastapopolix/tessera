@@ -375,8 +375,8 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
 }
 #if MELODEE_LOOK
 /* Mono: the rows 11 cells apart from row 12, the name at the left, the value at the right (dim), the row picked
- * inverted across the screen; COLOR: the inks as boxes before the name, the one chosen filled; a scroll bar a
- * cell wide at the right */
+ * inverted across the screen; COLOR: the inks as boxes before the name (two rows of them past eight), the one chosen
+ * filled; a scroll bar a cell wide at the right */
 static void menu_mono(void)
 {
     uint32_t first = ui.menu_sel >= MENU_VISIBLE ? ui.menu_sel - MENU_VISIBLE + 1u : 0u, i;
@@ -393,14 +393,15 @@ static void menu_mono(void)
                 mo_fill(0, y, 118, 10, MO_INK);
             mo_text(MI_NAME[i], 2, y + 2, on ? MO_BG : MO_DIM);
             if (i == MI_COLOR) {
-                uint32_t k, n = NPALETTES < 8u ? NPALETTES : 8u;
-                int32_t sw = n > 5u ? 4 : 6;            /* (more than five inks: narrower boxes, clear of COLOR) */
+                uint32_t k, n = NPALETTES < 10u ? NPALETTES : 10u, cols = n > 8u ? (n + 1u) / 2u : n;
+                int32_t sw = n > 5u ? 4 : 6, bh = n > 8u ? 3 : 6;   /* (more than five inks: narrower boxes, clear of
+                                                                     * COLOR; more than eight: two rows of small ones) */
                 value = UI_PALETTES[settings.palette % NPALETTES].name;
-                x -= mo_tw(value) + 3;
-                for (k = n; k-- > 0;) {
-                    x -= sw;
-                    if (k == settings.palette % NPALETTES) mo_fill(x, y + 2, sw - 1, 6, ink);
-                    else mo_box(x, y + 2, sw - 1, 6, dim);
+                x -= mo_tw(value) + 3 + sw * (int32_t)cols;
+                for (k = 0; k < n; k++) {
+                    int32_t bx = x + sw * (int32_t)(k % cols), by = y + 2 + (bh + 1) * (int32_t)(k / cols);
+                    if (k == settings.palette % NPALETTES) mo_fill(bx, by, sw - 1, bh, ink);
+                    else mo_box(bx, by, sw - 1, bh, dim);
                 }
             }
             if (value) {
