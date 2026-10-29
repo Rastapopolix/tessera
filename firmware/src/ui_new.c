@@ -200,6 +200,75 @@ static void new_role_col(uint32_t k)
         cv_free_text(x, 96, &AF_X, ENGINES[eng_idx(e)]->name, T_MID, bg, CARD_W - 8);
     cv_blit((uint32_t)CARD_X(k), 24);
 }
+#if MELODEE_LOOK
+/* Mono: KEY's ROOT SCALE TEMPO as the knob pages' dials, the key twice the size under them and the tempo; ROLES a column
+ * a track (30 cells): T1 (inverted while its knob turns), the role (KEEP dim), the sound it gets in two words, its
+ * engine. BACK (OCT-) outlined, ROLES or CREATE (OCT+) filled. Drawn whole under the header, in two canvases */
+static void mo_new(void)
+{
+    char v[12], key[32], b[16];
+    const char *unit;
+    uint32_t k, s;
+    if (nw.on == 1) {
+        memset(mo_col, 0, sizeof mo_col);
+        param_format(&TP[P_ROOT], nw.root, v, &unit);
+        mo_capture(0, "ROOT", v, unit, T_TEXT, nw.root * 1000 / 11, ui.hot_t && ui.hot_col == 0u);
+        new_scale_word(key, 12, 0);
+        mo_capture(1, "SCALE", key, "", T_TEXT, -1, ui.hot_t && ui.hot_col == 1u);
+        fmt_int(v, nw.bpm);
+        mo_capture(2, "TEMPO", v, "", T_TEXT, RATIO(&GP[G_BPM], nw.bpm), ui.hot_t && ui.hot_col == 2u);
+    }
+    for (s = 0; s < 2u; s++) {
+        cv_begin(240, s ? 120u : 102u, MO_BG);
+        cv_oy = s ? -120 : -18;
+        if (nw.on == 1) {
+            mo_cols();
+            param_format(&TP[P_ROOT], nw.root, key, &unit);
+            str_cpy(key + str_len(key), " ", 2);
+            new_scale_word(key + str_len(key), sizeof key - str_len(key), 1);   /* "A MINOR" */
+            mo_ascii(b, key, sizeof b);
+            if (mo_tw(b) * 2 + 2 <= 116) mo_text_s(b, 60 - (mo_tw(b) * 2 + 1) / 2, 62, 2, MO_INK);
+            else mo_textc(b, 60, 66, MO_INK);
+            fmt_int(b, nw.bpm);
+            str_cpy(b + str_len(b), " BPM  4/4", 10);
+            mo_textc(b, 60, 84, MO_DIM);
+        } else {
+            for (k = 0; k < NTRK; k++) {
+                uint32_t kk, src = nw.role[k] ? new_role_sound(nw.role[k], &kk) : USER_NONE;
+                int hot = ui.hot_t && ui.hot_col == k, on = nw.role[k] != 0u;
+                int32_t x = 1 + 30 * (int32_t)k;
+                char nm[16], tag[6], w[8];
+                b[0] = 'T', b[1] = (char)('1' + k), b[2] = 0;
+                if (hot) mo_inv(b, x + 2, 12), mo_box(x - 1, 10, 30, 76, MO_INK);
+                else mo_text(b, x + 2, 12, MO_DIM);
+                mo_abbr(w, NR_NAME[nw.role[k]]);
+                mo_text(str_len(NR_NAME[nw.role[k]]) <= 4u ? NR_NAME[nw.role[k]] : w, x + 2, 26, on ? MO_INK : MO_DIM);
+                if (src == USER_NONE) {
+                    str_cpy(nm, nw.role[k] || !template_used() ? "--" : "TEMPLATE", sizeof nm);
+                } else {
+                    entry_label(src, kk, tag, nm);
+                    mo_ascii(key, ENGINES[eng_idx(src_engine(src, kk))]->name, sizeof key);
+                    mo_cut(w, key, 4);
+                    mo_text(w, x + 2, 66, MO_DIM);
+                }
+                mo_word(w, nm, 0);
+                mo_text(w, x + 2, 42, on ? MO_INK : MO_DIM);
+                mo_word(w, nm, 1);
+                mo_text(w, x + 2, 52, on ? MO_INK : MO_DIM);
+                if (k)
+                    mo_vl(x - 2, 12, 72, MO_DIM);
+            }
+        }
+        mo_box(2, 107, 32, 11, MO_DIM);                 /* the keys */
+        mo_textc("BACK", 18, 109, MO_INK);
+        str_cpy(b, nw.on == 1 ? "ROLES" : "CREATE", 8);
+        mo_fill(117 - mo_tw(b) - 8, 107, mo_tw(b) + 8, 11, MO_INK);
+        mo_text(b, 117 - mo_tw(b) - 4, 109, MO_BG);
+        cv_oy = 0;
+        cv_blit(0, s ? 120u : 18u);
+    }
+}
+#endif
 static void new_draw(void)
 {
     static uint32_t sig;
@@ -217,6 +286,12 @@ static void new_draw(void)
         return;
     }
     sig = s;
+#if MELODEE_LOOK
+    mo_new();
+    ui.force = 0;
+    if (ui.hot_t) ui.hot_t--;
+    return;
+#endif
     if (nw.on == 1) {                               /* KEY: ROOT SCALE TEMPO as rings, the key large under them */
         char key[32];
         const aafont_t *f = &AF_L;

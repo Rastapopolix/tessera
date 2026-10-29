@@ -1588,3 +1588,271 @@ static void mo_browser(uint32_t cur, uint32_t total)
         cv_blit(0, s * 120u);
     }
 }
+
+/* ---- SEQ > PATTERNS and SEQ > SONG (patterns_draw, song_draw): drawn whole when anything on them changes ---- */
+static uint32_t mo_pt_sig;
+static void mo_dbox(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c)   /* a dashed outline */
+{
+    mo_dash(x, y, w, c), mo_dash(x, y + h - 1, w, c);
+    for (int32_t i = 2; i < h - 1; i += 2)
+        mo_px(x, y + i, c), mo_px(x + w - 1, y + i, c);
+}
+/* PATTERNS under the header: the patterns' numbers; a row a track: its number boxed (the selected one filled), a cell
+ * per pattern, 11 x 16: the one playing filled (how far through it a notch at its foot), the others with something
+ * in them outlined with their thirds' notes as three bars, the one waiting dashed, empty ones dim; Copy to: the
+ * place framed twice. At the foot the song's sections as letters (the one playing or picked filled), no song: the
+ * jam's */
+static void mo_patterns(void)
+{
+    uint32_t n = chain_config.count, jamrows = !n && jam.n, cur, i, k, b, s, sig = 2166136261u;
+    const uint8_t (*pat)[NTRK] = jamrows ? (const uint8_t (*)[NTRK])jam.pat : (const uint8_t (*)[NTRK])chain_patterns;
+    uint8_t rep[CHAIN_ROWS];
+    if (jamrows)
+        n = jam.n;
+    for (i = 0; i < n; i++)
+        rep[i] = jamrows ? jam.rep[i] : chain_config.row[i].repeat;
+    cur = chain.running ? chain.row : jamrows ? n - 1u : ui.song_row;
+    if (n && cur >= n)
+        cur = n - 1u;
+    for (k = 0; k < NTRK; k++) {
+        const track_t *t = &trk[k];
+        sig = fnv1(fnv1(fnv1(sig, steps_hash(t)), t->pattern_gen), t->pattern + 16u * t->pattern_next +
+                   65536u * (uint32_t)t->p[P_SLEN] + 16384u * (uint32_t)(t->p[P_MUTE] != 0));
+        sig = fnv1(sig, pt_prog(t) * 977u);
+    }
+    sig = fnv1(sig, song_hash(pat, rep, n) + cur * 7919u + jamrows * 3u + song.sel * 131u + ux.pal * 31u);
+    if (ptc_on())
+        sig = fnv1(sig, 1u + ui.ptc_src + 16u * ui.ptc_dst);
+    if (!ui.force && sig == mo_pt_sig)
+        return;
+    mo_pt_sig = sig;
+    for (s = 0; s < 2u; s++) {                          /* rows 9 .. 59, then 60 .. 119 */
+        cv_begin(240, s ? 120u : 102u, MO_BG);
+        cv_oy = s ? -120 : -18;
+        for (b = 0; b < NPAT; b++) {
+            char c[2] = {(char)('1' + b), 0};
+            mo_textc(c, 20 + 13 * (int32_t)b, 11, MO_DIM);
+        }
+        for (k = 0; k < NTRK; k++) {
+            const track_t *t = &trk[k];
+            uint16_t tc = t->p[P_MUTE] ? MO_DIM : MO_INK;
+            uint32_t prog = pt_prog(t);
+            int32_t y = 20 + (int32_t)k * 19;
+            char c[2] = {(char)('1' + k), 0};
+            if (k == song.sel) {
+                mo_fill(1, y + 3, 9, 9, tc);
+                mo_text(c, 3, y + 4, MO_BG);
+            } else {
+                mo_box(1, y + 3, 9, 9, tc);
+                mo_text(c, 3, y + 4, tc);
+            }
+            for (b = 0; b < NPAT; b++) {
+                int32_t x = 15 + 13 * (int32_t)b;
+                int dst = ptc_on() && k == ui.ptc_trk && b == ui.ptc_dst, used = pattern_used(k, b);
+                if (dst)                                /* Copy to: where it goes */
+                    mo_box(x - 1, y - 1, 13, 18, MO_INK);
+                if (b == t->pattern) {                  /* playing: filled, how far through it */
+                    mo_fill(x, y, 11, 16, tc);
+                    if (prog)
+                        mo_hl(x + 1, y + 13, 1 + (int32_t)prog * 8 / 17, MO_BG);
+                    continue;
+                }
+                if (b == t->pattern_next)               /* waiting for the bar: dashed */
+                    mo_dbox(x, y, 11, 16, tc);
+                else
+                    mo_box(x, y, 11, 16, used || dst ? tc : MO_DIM);
+                if (used) {                             /* its thirds' notes as three bars */
+                    uint32_t len, div, j, q[3] = {0, 0, 0}, m = 1;
+                    const step_t *st = pat_steps(k, b, &len, &div);
+                    len = len > NSTEP ? NSTEP : len ? len : 1u;
+                    for (j = 0; j < len; j++)
+                        if (step_on(&st[j])) q[j * 3u / len]++;
+                    for (j = 0; j < 3u; j++)
+                        if (q[j] > m) m = q[j];
+                    for (j = 0; j < 3u; j++) {
+                        int32_t h = q[j] ? 2 + (int32_t)(q[j] * 9u / m) : 1;
+                        mo_vl(x + 3 + 2 * (int32_t)j, y + 14 - h, h, tc);
+                    }
+                } else if (dst) {
+                    mo_textc("+", x + 6, y + 5, MO_INK);
+                }
+            }
+        }
+        mo_hl(0, 98, 120, MO_DIM);
+        mo_text(jamrows ? "JAM" : "SONG", 2, 104, MO_DIM);
+        if (!n) {
+            mo_text("--", 30, 104, MO_DIM);
+        } else {
+            uint32_t first = cur > 2u ? cur - 2u : 0u;
+            if (n > 6u && first > n - 6u) first = n - 6u;
+            if (n <= 6u) first = 0;
+            for (i = first; i < first + 6u && i < n; i++) {
+                int32_t x = 28 + 15 * (int32_t)(i - first);
+                char l[2] = {row_letter(pat, i), 0};
+                if (i == cur) mo_fill(x, 102, 13, 11, MO_INK);
+                else mo_box(x, 102, 13, 11, MO_DIM);
+                mo_textc(l, x + 7, 104, i == cur ? MO_BG : MO_INK);
+            }
+        }
+        cv_oy = 0;
+        cv_blit(0, s ? 120u : 18u);
+    }
+}
+/* SONG: the header (its length at the tempo, the jam at the right: REC while it logs); the sections as columns of 28
+ * cells (their letters, repeats after them; the row picked underlined), a track's patterns as blocks (one pattern
+ * over sections in a row as one; the selected track's in the row picked framed twice, an empty one there dashed); a
+ * song playing: its playhead. At the foot the sections and bars, how far the song has played */
+static void mo_song(void)
+{
+    uint32_t n = chain_config.count, j, k, s, sig;
+    uint32_t secs = sg.bars * 240u / (uint32_t)(song.g[G_BPM] > 0 ? song.g[G_BPM] : 120), jam_on = song.playing && !chain.running;
+    char b[32], l[8];
+    sig = fnv1(fnv1(sg.first + 16u * sg.ncols + 256u * sg.sel, (uint32_t)(sg.px + 1)), sg.bars * 7u + sg.play * 131u);
+    sig = fnv1(sig, secs * 7u + jam.n * 131u + jam_on * 3u + song.sel * 1031u + ux.pal * 31u +
+                    (ui.msg_t ? str_hash(3u, ui.msg) : 0u) + song.rec * 40503u);
+    for (j = 0; j < n; j++)
+        sig = fnv1(sig, chain_config.row[j].repeat + 32u * (uint32_t)row_letter((const uint8_t (*)[NTRK])chain_patterns, j));
+    for (k = 0; k < NTRK; k++) {
+        sig = fnv1(sig, trk[k].pattern_gen + 16384u * (uint32_t)(trk[k].p[P_MUTE] != 0));
+        for (j = 0; j < n; j++)
+            sig = fnv1(sig, chain_patterns[j][k] + 16u * (uint32_t)pattern_used(k, chain_patterns[j][k]));
+    }
+    if (!ui.force && sig == mo_pt_sig)
+        return;
+    mo_pt_sig = sig;
+    for (s = 0; s < 2u; s++) {
+        int32_t x;
+        cv_begin(240, 120, MO_BG);
+        cv_oy = -(int32_t)s * 120;
+        mo_fill(0, 0, mo_tw("SONG") + 3, 8, MO_INK);    /* the header */
+        x = mo_text("SONG", 1, 1, MO_BG) + 4;
+        if (sg.bars) {
+            fmt_int(b, (int32_t)(secs / 60u));
+            str_cpy(b + str_len(b), secs % 60u < 10u ? ":0" : ":", 3);
+            fmt_int(b + str_len(b), (int32_t)(secs % 60u));
+            x = mo_text(b, x, 1, MO_DIM);
+        }
+        if (ui.msg_t) {
+            char a[24];
+            mo_ascii(a, ui.msg, sizeof a);
+            mo_cut(b, a, (uint32_t)(119 - x - 6) / 6u);
+            mo_textr(b, 119, 1, MO_INK);
+        } else if (jam_on || jam.n) {                   /* the jam: logging (a dot), its rows */
+            if (jam_on) {
+                str_cpy(b, "JAM", 4);
+            } else {
+                str_cpy(b, "JAM ", 5);
+                fmt_int(b + 4, jam.n);
+                str_cpy(b + str_len(b), jam.n > 1u ? " ROWS" : " ROW", 6);
+            }
+            mo_textr(b, 119, 1, jam_on ? MO_INK : MO_DIM);
+            if (jam_on)
+                mo_disc(119 - mo_tw(b) - 5, 4, 2, MO_INK);
+        }
+        mo_hl(0, 8, 120, MO_INK);
+        for (j = 0; j < SG_COLS && sg.first + j < sg.ncols; j++) {   /* the sections: rules, letters */
+            uint32_t r = sg.first + j;
+            int32_t cx = 4 + 28 * (int32_t)j;
+            l[0] = '+', l[1] = 0;
+            if (r < n) {
+                l[0] = row_letter((const uint8_t (*)[NTRK])chain_patterns, r);
+                if (chain_config.row[r].repeat > 1u)
+                    l[1] = 'X', fmt_int(l + 2, chain_config.row[r].repeat);
+            }
+            mo_vl(cx, 11, 85, MO_DIM);
+            mo_text(l, cx + 3, 11, r == sg.sel ? MO_INK : MO_DIM);
+            if (r == sg.sel)
+                mo_hl(cx + 2, 19, mo_tw(l) + 2, MO_INK);
+        }
+        for (k = 0; k < NTRK; k++) {                    /* a track's blocks */
+            const track_t *t = &trk[k];
+            uint16_t tc = t->p[P_MUTE] ? MO_DIM : MO_INK;
+            int32_t y = 23 + (int32_t)k * 18;
+            for (j = 0; j < SG_COLS && sg.first + j < n;) {
+                uint32_t r = sg.first + j, p = chain_patterns[r][k], e = j + 1u, pick = k == song.sel && r == sg.sel;
+                int used = pattern_used(k, p);
+                int32_t bx = 6 + 28 * (int32_t)j, w;
+                char pl[3] = {'P', (char)('1' + p % NPAT), 0};
+                while (!pick && used && e < SG_COLS && sg.first + e < n && chain_patterns[sg.first + e][k] == p &&
+                       !(k == song.sel && sg.first + e == sg.sel))
+                    e++;
+                w = 28 * (int32_t)(e - j) - 4;
+                if (used) {
+                    if (pick)
+                        mo_box(bx - 1, y - 1, w + 2, 16, MO_INK);
+                    mo_fill(bx + (pick ? 1 : 0), y + (pick ? 1 : 0), w - (pick ? 2 : 0), pick ? 12 : 14, tc);
+                    mo_text(pl, bx + 3, y + 4, MO_BG);
+                } else if (pick) {
+                    mo_dbox(bx, y, w, 14, tc);
+                    mo_text(pl, bx + 3, y + 4, tc);
+                }
+                j = e;
+            }
+        }
+        if (sg.px >= 0)                                 /* the playhead (sg_frame: px of 8 + 56 a column) */
+            mo_vl(4 + (sg.px - 8) / 2, 11, 85, MO_INK);
+        mo_hl(0, 98, 120, MO_DIM);                      /* the foot */
+        if (!n) {
+            mo_text("NO SECTIONS YET", 2, 101, MO_DIM);
+        } else {
+            fmt_int(b, (int32_t)n);
+            str_cpy(b + str_len(b), n > 1u ? " SECTIONS " : " SECTION ", 11);
+            fmt_int(b + str_len(b), (int32_t)sg.bars);
+            str_cpy(b + str_len(b), sg.bars > 1u ? " BARS" : " BAR", 6);
+            b[19] = 0;                                  /* (19 characters fit) */
+            mo_text(b, 2, 101, MO_DIM);
+        }
+        mo_box(2, 112, 116, 5, MO_DIM);
+        if (chain.running && sg.bars) {
+            int32_t w = (int32_t)(sg.play * 114u / sg.bars);
+            mo_fill(3, 113, w < 2 ? 2 : w, 3, MO_INK);
+        }
+        cv_oy = 0;
+        cv_blit(0, s * 120u);
+    }
+}
+
+/* ---- PROJECT, USER, the STOREs (slot_draw): a strip a row ---- */
+/* the slot picked (46 px = 23 cells): framed, its tag inverted, its name, a line about it (dim), BOOT inverted at the
+ * right on the one power-on loads */
+static void mo_slot_card(const char *tag, const char *nm, int used, const char *d, int boot, int32_t y)
+{
+    char a[24], b[24];
+    int32_t x;
+    cv_begin(240, SL_CARD, MO_BG);
+    mo_box(1, 0, 118, 23, MO_INK);
+    mo_ascii(a, tag, sizeof a);
+    mo_inv(a, 5, 4);
+    x = 5 + mo_tw(a) + 5 > 32 ? 5 + mo_tw(a) + 5 : 32;   /* (the names in a column, as the rows') */
+    mo_ascii(a, nm, sizeof a);
+    mo_cut(b, a, (uint32_t)((boot ? 88 : 115) - x) / 6u);
+    mo_text(b, x, 4, used ? MO_INK : MO_DIM);
+    mo_ascii(a, d, sizeof a);
+    mo_cut(b, a, (uint32_t)(115 - x) / 6u);
+    mo_text(b, x, 14, MO_DIM);
+    if (boot)
+        mo_inv("BOOT", 92, 4);
+    cv_blit(0, (uint32_t)y);
+}
+/* another slot (22 px = 11 cells): its tag and name (dim while empty), BOOT at the right, a selected one (bulk) marked
+ * at the left; the scroll bar (ty, th: its thumb in px from this row's top; th 0: none) a cell wide at the right */
+static void mo_slot_row(const char *tag, const char *nm, int used, int boot, int mark, int32_t y, int32_t ty, int32_t th)
+{
+    char a[24], b[24];
+    cv_begin(240, SL_ROW, MO_BG);
+    if (mark)
+        mo_vl(1, 1, 9, MO_INK);
+    mo_ascii(a, tag, sizeof a);
+    mo_text(a, 5, 2, MO_DIM);
+    mo_ascii(a, nm, sizeof a);
+    mo_cut(b, a, (uint32_t)((boot ? 88 : 115) - 32) / 6u);
+    mo_text(b, 32, 2, used ? MO_INK : MO_DIM);
+    if (boot)
+        mo_textr("BOOT", 115, 2, MO_DIM);
+    if (th) {
+        mo_vl(119, 0, 11, MO_DIM);
+        if (ty < SL_ROW && ty + th > 0)
+            cv_rect(236, ty, 4, th, MO_INK);
+    }
+    cv_blit(0, (uint32_t)y);
+}
