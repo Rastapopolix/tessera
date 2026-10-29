@@ -2390,6 +2390,9 @@ static void ui_input(void)
 static void setup_title(void)
 {
     lcd_fill(0, 0, 240, 240, T_BG);
+#if MELODEE_LOOK
+    draw_text_box(0, 8, 240, &AF_M, "CALIBRATION", T_TEXT, 1);
+#else
     {   /* the title with its icon (the menu row's), centred together; M from y 8 as before */
         const char *t = "HARDWARE CALIBRATION";
         int32_t x = (240 - (16 + 6 + text_w(&AF_M, t))) / 2;
@@ -2398,7 +2401,8 @@ static void setup_title(void)
         cv_text(x + 22, 3, &AF_M, t, T_TEXT);
         cv_blit(0, 5);
     }
-    draw_text_box(0, 32, 240, &AF_S, "TEACH EACH BUTTON AND KNOB", T_MID, 1);
+#endif
+    draw_text_box(0, 32, 240, &AF_S, LOOK("TEACH EACH BUTTON AND KNOB", "TEACH EACH CONTROL"), T_MID, 1);
     lcd_fill(16, 56, 208, 1, T_LINE);
 }
 static void setup_show(const char *what, const char *name)     /* "PRESS" / "TURN RIGHT", the control */

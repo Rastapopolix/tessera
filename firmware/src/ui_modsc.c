@@ -135,6 +135,10 @@ static void msc_draw(void)
     char head[24], v[12];
     if (!ui.force)
         return;
+#if MELODEE_LOOK
+    mo_msc();
+    return;
+#endif
     cv_begin(220, 124, T_BG);
     cv_rrect(0, 0, 220, 124, 8, T_THEME, T_BG);
     cv_rrect(1, 1, 218, 122, 7, T_SURF, T_THEME);

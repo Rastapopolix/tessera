@@ -15,72 +15,6 @@
 #define MO_PY0 52                                       /* the picture's rows: MO_PY0 .. MO_PY1 - 1 */
 #define MO_PY1 109
 
-static const uint8_t MO_FONT[64][7] = {   /* ' ' .. '_': 5 x 7, bit 4 the left column (lower case drawn as upper) */
-    {0, 0, 0, 0, 0, 0, 0}, /*   */
-    {4, 4, 4, 4, 4, 0, 4}, /* ! */
-    {10, 10, 0, 0, 0, 0, 0}, /* " */
-    {10, 10, 31, 10, 31, 10, 10}, /* # */
-    {4, 15, 20, 14, 5, 30, 4}, /* $ */
-    {24, 25, 2, 4, 8, 19, 3}, /* % */
-    {12, 18, 20, 8, 21, 18, 13}, /* & */
-    {12, 4, 8, 0, 0, 0, 0}, /* ' */
-    {2, 4, 8, 8, 8, 4, 2}, /* ( */
-    {8, 4, 2, 2, 2, 4, 8}, /* ) */
-    {0, 4, 21, 14, 21, 4, 0}, /* *  */
-    {0, 4, 4, 31, 4, 4, 0}, /* + */
-    {0, 0, 0, 0, 12, 4, 8}, /* , */
-    {0, 0, 0, 31, 0, 0, 0}, /* - */
-    {0, 0, 0, 0, 0, 12, 12}, /* . */
-    {0, 1, 2, 4, 8, 16, 0}, /* /  */
-    {14, 17, 19, 21, 25, 17, 14}, /* 0 */
-    {4, 12, 4, 4, 4, 4, 14}, /* 1 */
-    {14, 17, 1, 2, 4, 8, 31}, /* 2 */
-    {31, 2, 4, 2, 1, 17, 14}, /* 3 */
-    {2, 6, 10, 18, 31, 2, 2}, /* 4 */
-    {31, 16, 30, 1, 1, 17, 14}, /* 5 */
-    {6, 8, 16, 30, 17, 17, 14}, /* 6 */
-    {31, 1, 2, 4, 8, 8, 8}, /* 7 */
-    {14, 17, 17, 14, 17, 17, 14}, /* 8 */
-    {14, 17, 17, 15, 1, 2, 12}, /* 9 */
-    {0, 12, 12, 0, 12, 12, 0}, /* : */
-    {0, 12, 12, 0, 12, 4, 8}, /* ; */
-    {2, 4, 8, 16, 8, 4, 2}, /* < */
-    {0, 0, 31, 0, 31, 0, 0}, /* = */
-    {8, 4, 2, 1, 2, 4, 8}, /* > */
-    {14, 17, 1, 2, 4, 0, 4}, /* ? */
-    {14, 17, 23, 21, 23, 16, 15}, /* @ */
-    {14, 17, 17, 31, 17, 17, 17}, /* A */
-    {30, 17, 17, 30, 17, 17, 30}, /* B */
-    {14, 17, 16, 16, 16, 17, 14}, /* C */
-    {28, 18, 17, 17, 17, 18, 28}, /* D */
-    {31, 16, 16, 30, 16, 16, 31}, /* E */
-    {31, 16, 16, 30, 16, 16, 16}, /* F */
-    {14, 17, 16, 23, 17, 17, 15}, /* G */
-    {17, 17, 17, 31, 17, 17, 17}, /* H */
-    {14, 4, 4, 4, 4, 4, 14}, /* I */
-    {7, 2, 2, 2, 2, 18, 12}, /* J */
-    {17, 18, 20, 24, 20, 18, 17}, /* K */
-    {16, 16, 16, 16, 16, 16, 31}, /* L */
-    {17, 27, 21, 21, 17, 17, 17}, /* M */
-    {17, 17, 25, 21, 19, 17, 17}, /* N */
-    {14, 17, 17, 17, 17, 17, 14}, /* O */
-    {30, 17, 17, 30, 16, 16, 16}, /* P */
-    {14, 17, 17, 17, 21, 18, 13}, /* Q */
-    {30, 17, 17, 30, 20, 18, 17}, /* R */
-    {15, 16, 16, 14, 1, 1, 30}, /* S */
-    {31, 4, 4, 4, 4, 4, 4}, /* T */
-    {17, 17, 17, 17, 17, 17, 14}, /* U */
-    {17, 17, 17, 17, 17, 10, 4}, /* V */
-    {17, 17, 17, 21, 21, 21, 10}, /* W */
-    {17, 17, 10, 4, 10, 17, 17}, /* X */
-    {17, 17, 17, 10, 4, 4, 4}, /* Y */
-    {31, 1, 2, 4, 8, 16, 31}, /* Z */
-    {14, 8, 8, 8, 8, 8, 14}, /* [ */
-    {0, 16, 8, 4, 2, 1, 0}, /* \\ */
-    {14, 2, 2, 2, 2, 2, 14}, /* ] */
-    {4, 10, 17, 0, 0, 0, 0}, /* ^ */
-    {0, 0, 0, 0, 0, 0, 31}, /* _ */
-};
 static const int8_t MO_SIN[64] = {0, 12, 25, 37, 49, 60, 71, 81, 90, 98, 106, 112, 117, 122, 125, 126, 127, 126, 125, 122, 117, 112, 106, 98, 90, 81, 71, 60, 49, 37, 25, 12, 0, -12, -25, -37, -49, -60, -71, -81, -90, -98, -106, -112, -117, -122, -125, -126, -127, -126, -125, -122, -117, -112, -106, -98, -90, -81, -71, -60, -49, -37, -25, -12};
 
 static struct {
@@ -170,9 +104,7 @@ static int32_t mo_tw(const char *s) { int32_t n = (int32_t)str_len(s); return n 
 static int32_t mo_text_s(const char *s, int32_t x, int32_t y, int32_t sc, uint16_t c)   /* sc: cells a font pixel */
 {
     for (; *s; s++, x += 6 * sc) {
-        uint32_t ch = (uint8_t)*s, r, b;
-        if (ch >= 'a' && ch <= 'z') ch -= 32u;
-        if (ch < 32u || ch > 95u) ch = '?';
+        uint32_t ch = mono_ch((uint8_t)*s), r, b;
         for (r = 0; r < 7u; r++)
             for (b = 0; b < 5u; b++)
                 if (MO_FONT[ch - 32u][r] & (16u >> b))
@@ -1097,26 +1029,41 @@ static void mo_sound(const char *en, const char *nm)
 }
 /* a confirm dialog (draw_confirm): a frame, a warning sign, the question, the name it is about, NO (OCT-) outlined and
  * YES (OCT+) filled */
+/* s in up to two lines of n characters at most, broken between words (a word too long cut), centred on cx from row y
+ * (one line: half a line lower) */
+static void mo_lines(const char *s, int32_t cx, int32_t y, uint32_t n, uint16_t c)
+{
+    char u[48], l[2][24];
+    uint32_t k, m = 0, i = 0;
+    mo_ascii(u, s, sizeof u);
+    for (k = 0; k < 2u && u[i]; k++) {
+        uint32_t e = i, br = 0;
+        while (u[e] && e - i < n) {
+            if (u[e] == ' ') br = e;
+            e++;
+        }
+        if (u[e] && u[e] != ' ' && br > i && k == 0u) e = br;   /* (between words; the last line cut) */
+        mo_cut(l[k], u + i, e - i);
+        m++;
+        for (i = e; u[i] == ' '; i++) ;
+    }
+    for (k = 0; k < m; k++)
+        mo_textc(l[k], cx, y + (m == 1u ? 4 : 0) + (int32_t)k * 8, c);
+}
 static void mo_confirm(const char *a, const char *b)
 {
-    char t[40], u[40];
     int32_t w = DLG_W / 2, h = DLG_H / 2;
     cv_begin(DLG_W, DLG_H, MO_BG);
     mo_box(0, 0, w, h, MO_INK);
-    mo_fill(w / 2 - 5, 5, 11, 11, MO_INK);
-    mo_text("!", w / 2 - 2, 7, MO_BG);
-    mo_ascii(u, a, sizeof u);
-    mo_cut(t, u, (uint32_t)(w - 6) / 6u);
-    mo_textc(t, w / 2, 21, MO_INK);
-    if (b[0]) {
-        mo_ascii(u, b, sizeof u);
-        mo_cut(t, u, (uint32_t)(w - 6) / 6u);
-        mo_textc(t, w / 2, 32, MO_DIM);
-    }
-    mo_box(8, 46, 40, 11, MO_INK);
-    mo_textc("NO", 28, 48, MO_INK);
-    mo_fill(56, 46, 40, 11, MO_INK);
-    mo_textc("YES", 76, 48, MO_BG);
+    mo_fill(w / 2 - 5, 2, 11, 11, MO_INK);
+    mo_text("!", w / 2 - 2, 4, MO_BG);
+    mo_lines(a, w / 2, 15, (uint32_t)(w - 6) / 6u, MO_INK);
+    if (b[0])
+        mo_lines(b, w / 2, 32, (uint32_t)(w - 6) / 6u, MO_DIM);
+    mo_box(8, 49, 40, 11, MO_INK);
+    mo_textc("NO", 28, 51, MO_INK);
+    mo_fill(56, 49, 40, 11, MO_INK);
+    mo_textc("YES", 76, 51, MO_BG);
     cv_blit(DLG_X, DLG_Y);
 }
 
@@ -1311,7 +1258,9 @@ static void mo_stage_panel(void)
             str_cpy(b + str_len(b), "/", 2);
             str_cpy(b + str_len(b), N_NOTE[note[0] % 12u], 4);
         }
+        TEXT_CASE(1);
         mo_inv(b, 2, 91);
+        TEXT_CASE(0);
     }
     for (i = 0, b[0] = 0; i < n && i < 5u; i++) {       /* the notes */
         if (i) str_cpy(b + str_len(b), " ", 2);
@@ -2020,4 +1969,163 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
         cv_oy = 0;
         cv_blit(0, s * 120u);
     }
+}
+
+/* the sound designer's START: ENGINE START PAGES as the knob pages' dials, the engine twice the size under them, where
+ * the sound starts and which pages follow; BACK (OCT-) outlined, DESIGN (OCT+) filled */
+static void mo_dstart(void)
+{
+    char b[24], w[24];
+    uint32_t st = designer_start(), s;
+    memset(mo_col, 0, sizeof mo_col);
+    mo_capture(0, "ENGINE", ENGINES[ds.eng]->name, "", VAL(0u), (int32_t)(eng_rank(ds.eng) * 1000u / (NENG_SHOWN - 1u)),
+               ui.hot_t && ui.hot_col == 0u);
+    mo_capture(1, "START", st == 0u ? "CURRENT" : st == 1u ? "INIT" : DS_GOAL[ds.goal], "", VAL(1u),
+               (int32_t)(st * 1000u / DG_COUNT), ui.hot_t && ui.hot_col == 1u);
+    mo_capture(2, "PAGES", ds.expert ? "ALL" : "MAIN", "", VAL(2u), ds.expert ? 1000 : 0, ui.hot_t && ui.hot_col == 2u);
+    for (s = 0; s < 2u; s++) {
+        cv_begin(240, s ? 120u : 102u, MO_BG);
+        cv_oy = s ? -120 : -18;
+        mo_cols();
+        mo_ascii(b, ENGINES[ds.eng]->name, sizeof b);
+        if (mo_tw(b) * 2 + 2 <= 116) mo_text_s(b, 60 - (mo_tw(b) * 2 + 1) / 2, 62, 2, MO_INK);
+        else mo_textc(b, 60, 66, MO_INK);
+        if (st > 1u) {
+            str_cpy(w, DS_GOAL[ds.goal], sizeof w);
+            str_cpy(w + str_len(w), " FROM INIT", sizeof w - str_len(w));
+        } else str_cpy(w, st ? "FROM INIT" : "FROM THIS SOUND", sizeof w);
+        mo_textc(w, 60, 80, MO_DIM);
+        mo_textc(ds.expert ? "ALL PAGES" : "MAIN PAGES", 60, 90, MO_DIM);
+        mo_box(2, 107, 32, 11, MO_DIM);
+        mo_textc("BACK", 18, 109, MO_INK);
+        mo_fill(117 - mo_tw("DESIGN") - 8, 107, mo_tw("DESIGN") + 8, 11, MO_INK);
+        mo_text("DESIGN", 117 - mo_tw("DESIGN") - 4, 109, MO_BG);
+        cv_oy = 0;
+        cv_blit(0, s ? 120u : 18u);
+    }
+}
+
+/* the mod shortcut's map (ui_modsc.c): a card over the dimmed page, 110 x 92 cells at (5, 16): a knob two lines, its
+ * parameter and the amount, then the cord's source and a bar from the middle; the knob last turned inverted; at the
+ * foot the source SELECT gives a new cord */
+static void mo_msc(void)
+{
+    uint32_t tr = song.sel % NTRK, k;
+    int32_t top;
+    char b[24], v[12];
+    for (top = 0; top < 184; top += 120) {
+        cv_begin(220, top ? 64u : 120u, MO_BG);
+        cv_oy = -top;
+        mo_box(0, 0, 110, 92, MO_INK);
+        mo_text("MOD AMOUNT", 4, 3, MO_INK);
+        for (k = 0; k < 4u; k++) {
+            int32_t y = 13 + (int32_t)k * 17, i, w;
+            uint32_t dst = msc_dest(k);
+            const pid_entry_t *e = help.pid != PID_NONE ? pid_find(help.pid) : 0;
+            int16_t *vp;
+            const param_desc_t *d = page_desc(ui.home ? stage_page() : cur_page(), k, &vp);
+            mo_ascii(b, d && d->label && d->label[0] ? d->label : e ? e->name : "--", sizeof b);
+            b[dst == CD_OFF ? 10 : 11] = 0;
+            if (k == msc.knob && dst != CD_OFF) mo_inv(b, 4, y);
+            else mo_text(b, 4, y, dst == CD_OFF ? MO_DIM : MO_INK);
+            if (dst == CD_OFF) {
+                mo_textr("NO MOD", 106, y, MO_DIM);
+                continue;
+            }
+            mo_hl(44, y + 11, 62, MO_DIM);
+            mo_vl(75, y + 9, 5, MO_DIM);
+            if ((i = msc_find(dst, tr)) < 0) {
+                mo_textr("0", 106, y, MO_DIM);
+                continue;
+            }
+            mo_ascii(b, cord_src_name(cord_get((uint32_t)i)->src), sizeof b);
+            b[7] = 0;
+            mo_text(b, 4, y + 8, MO_DIM);
+            w = cord_get((uint32_t)i)->amount * 30 / 100;
+            if (w > 0) mo_fill(76, y + 10, w, 3, MO_INK);
+            else if (w < 0) mo_fill(75 + w, y + 10, -w, 3, MO_INK);
+            v[0] = '+';
+            fmt_int(cord_get((uint32_t)i)->amount < 0 ? v : v + 1, cord_get((uint32_t)i)->amount);
+            mo_textr(v, 106, y, MO_INK);
+        }
+        mo_hl(2, 82, 106, MO_DIM);
+        str_cpy(b, "SELECT: ", sizeof b);
+        mo_ascii(b + 8, cord_src_name(msc_src(tr)), sizeof b - 8u);
+        mo_text(b, 4, 84, MO_DIM);
+        cv_oy = 0;
+        cv_blit(10, (uint32_t)(32 + top));
+    }
+}
+
+/* the EDIT map (ui_sections.c smap): the page under the cursor named on the first line, then a row a section: its name
+ * (the section open ink), a tile a page, four letters of its name where a tile holds them; the cursor's tile filled,
+ * the page open a dot. Eleven rows at a time, round the cursor's */
+static void mo_smap(uint32_t cur)
+{
+    uint8_t pg[8];
+    uint32_t r, c, n, first = 0, s;
+    char b[24], t[24];
+    if (sec.n > 11u) first = smap.row > 5u ? smap.row - 5u : 0u;
+    if (sec.n > 11u && first > sec.n - 11u) first = sec.n - 11u;
+    n = smap_pages(smap.row, pg);
+    b[0] = 0;
+    if (sec.op[smap.row]) {
+        mo_ascii(b, sec.name[smap.row], sizeof b);
+        str_cpy(b + str_len(b), " ", 2);
+    }
+    if (n) {
+        sec_short(pg[smap.col < n ? smap.col : 0u], t, sizeof t);
+        mo_ascii(b + str_len(b), t, sizeof b - str_len(b));
+    }
+    for (s = 0; s < 2u; s++) {
+        cv_begin(240, s ? 120u : 102u, MO_BG);
+        cv_oy = s ? -120 : -18;
+        b[19] = 0;
+        mo_text(b, 2, 11, MO_INK);
+        mo_hl(0, 19, 120, MO_DIM);
+        for (r = first; r < sec.n && r < first + 11u; r++) {
+            int32_t y = 22 + (int32_t)(r - first) * 8, w;
+            n = smap_pages(r, pg);
+            mo_ascii(t, sec.name[r], sizeof t);
+            mo_cut(b, t, 5);
+            mo_text(b, 2, y, r == cur ? MO_INK : MO_DIM);
+            w = n ? (86 - (int32_t)(n - 1u) * 2) / (int32_t)n : 0;
+            for (c = 0; c < n; c++) {
+                int32_t x = 34 + (int32_t)c * (w + 2);
+                int on = r == smap.row && c == smap.col, here = pg[c] == ui.page && r == cur;
+                if (on) mo_fill(x, y - 1, w, 9, MO_INK);
+                else mo_box(x, y - 1, w, 9, MO_DIM);
+                if (!sec.op[r] && w >= 26) {
+                    sec_short(pg[c], t, sizeof t);
+                    mo_ascii(b, t, sizeof b);
+                    if (str_len(b) > 4u) mo_abbr(t, b), str_cpy(b, t, sizeof b);
+                    mo_textc(b, x + w / 2 + (here ? 2 : 0), y, on ? MO_BG : MO_DIM);
+                }
+                if (here) mo_fill(sec.op[r] || w < 26 ? x + w / 2 - 1 : x + 2, y + 2, 2, 3, on ? MO_BG : MO_INK);
+            }
+        }
+        if (first) mo_textr("^", 112, 11, MO_DIM);
+        if (first + 11u < sec.n) mo_textr("V", 119, 11, MO_DIM);
+        cv_oy = 0;
+        cv_blit(0, s ? 120u : 18u);
+    }
+}
+
+/* under a sound designer stage's page (ui_designer.c designer_foot): BACK (OCT-) outlined, the sound, the next stage
+ * (OCT+) filled */
+static void mo_dfoot(const char *nm, const char *go)
+{
+    char b[24], t[24];
+    int32_t gw;
+    mo_ascii(t, go, sizeof t);
+    gw = mo_tw(t) + 8;
+    cv_begin(240, 240 - PV_SOUND_Y, MO_BG);
+    mo_box(2, 0, 32, 10, MO_DIM);
+    mo_textc("BACK", 18, 2, MO_INK);
+    mo_ascii(b, nm, sizeof b);
+    b[(uint32_t)(117 - gw - 38) / 6u] = 0;
+    mo_text(b, 38, 2, MO_DIM);
+    mo_fill(117 - gw, 0, gw, 10, MO_INK);
+    mo_text(t, 117 - gw + 4, 2, MO_BG);
+    cv_blit(0, PV_SOUND_Y);
 }

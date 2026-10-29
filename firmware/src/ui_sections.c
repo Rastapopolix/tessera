@@ -254,6 +254,10 @@ static void smap_draw(void)
     if (!ui.force && sig == smap.sig)
         return;
     smap.sig = sig;
+#if MELODEE_LOOK
+    mo_smap(cur);
+    return;
+#endif
     {   /* (the operators' rows: their pages named once, a row above OP1) */
         uint32_t extra = 0;
         for (r = 0; r < sec.n; r++)
