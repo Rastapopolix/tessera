@@ -910,6 +910,133 @@ static void mono_page(void)
     }
 }
 
+/* ---- the chrome of the screens still drawn whole by their own code (lists, MIXER, MODS, the browser, ...) ---- */
+/* the header (draw_head; 18 px = 9 cells): the page's chip inverted (ERASING, a message or a layer's name in its
+ * place), the octave shift, then at the right REC, PLAY or STOP and the tempo; its line on row 8 */
+static void mo_dhead(const char *chip, const char *msg, int low)
+{
+    char b[24], t[24];
+    int32_t x = 119;
+    cv_begin(240, H_HEAD, MO_BG);
+    fmt_int(b, song.g[G_BPM]);
+    x = 119 - mo_tw(b);
+    mo_text(b, x, 1, ui.bpm_t ? MO_INK : MO_DIM);
+    x -= 7;
+    if (chain.running || song.playing) {                /* PLAY: a triangle; STOP: a square */
+        for (int32_t r = 0; r < 3; r++) mo_vl(x + r, 1 + r, 7 - 2 * r, MO_INK);
+    } else {
+        mo_fill(x, 2, 5, 5, MO_DIM);
+    }
+    if (song.rec) {
+        x -= 7;
+        if (((song.rec & ~song.rec_wait) >> song.sel) & 1u) mo_disc(x + 2, 4, 2, MO_INK);
+        else mo_circ(x + 2, 4, 2, MO_INK);
+    }
+    if (low) {                                          /* the battery, only when it runs low */
+        x -= 10;
+        mo_box(x, 2, 7, 5, MO_INK), mo_vl(x + 7, 3, 3, MO_INK);
+    }
+    mo_ascii(t, msg ? msg : chip, sizeof t);
+    mo_cut(b, t, (uint32_t)(x - 6) / 6u);
+    mo_fill(0, 0, mo_tw(b) + 3, 8, MO_INK);
+    mo_text(b, 1, 1, MO_BG);
+    if (!msg && song.octave) {                          /* the octave shift, signed */
+        t[0] = song.octave > 0 ? '+' : '-';
+        fmt_int(t + 1, song.octave < 0 ? -song.octave : song.octave);
+        mo_text(t, mo_tw(b) + 6, 1, MO_INK);
+    }
+    mo_hl(0, 8, 120, MO_INK);
+    cv_blit(0, Y_HEAD);
+}
+/* a list page's rows (list_rows; 22 px = 11 cells apart): the label at the left, the value at the right (dim), the
+ * row picked inverted across the screen, a row with more behind it a '>'; a scroll bar when not all fit */
+static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
+                         int (*cap)(uint32_t r, char *lb, char *v, uint16_t *vc))
+{
+    uint32_t r;
+    int32_t top, hh = (int32_t)vis * 11;
+    char lb[16], v[16], a[20], t[20];
+    uint16_t vc;
+    for (top = 0; top < hh; top += 55) {                /* five rows a canvas (110 px) */
+        int32_t sh = hh - top < 55 ? hh - top : 55;
+        cv_begin(240, (uint32_t)sh * 2u, MO_BG);
+        cv_oy = -top * 2;
+        for (r = first; r < n && r < first + vis; r++) {
+            int32_t y = (int32_t)(r - first) * 11, on = r == row, more, vw;
+            if (y + 11 <= top || y >= top + sh)
+                continue;
+            more = cap(r, lb, v, &vc);
+            if (on)
+                mo_fill(0, y, 118, 10, MO_INK);
+            mo_ascii(a, v, sizeof a);
+            mo_cut(t, a, 9);
+            vw = mo_tw(t);
+            mo_textr(t, more ? 109 : 115, y + 2, on ? MO_BG : vc == T_DIM ? MO_DIM : MO_INK);
+            if (more)
+                mo_text(">", 111, y + 2, on ? MO_BG : MO_DIM);
+            mo_ascii(a, lb, sizeof a);
+            mo_cut(t, a, (uint32_t)(110 - vw - 8) / 6u);
+            mo_text(t, 2, y + 2, on ? MO_BG : MO_DIM);
+        }
+        if (n > vis) {                                  /* the scroll bar: a cell wide at the right */
+            int32_t th = hh * (int32_t)vis / (int32_t)n;
+            int32_t ty = (int32_t)((uint32_t)(hh - th) * first / (n - vis));
+            mo_vl(119, 0, hh, MO_DIM);
+            mo_fill(118, ty, 2, th, MO_INK);
+        }
+        cv_oy = 0;
+        cv_blit(0, (uint32_t)(LIST_Y0 + top * 2));
+    }
+}
+/* the sound's strip at the bottom (pv_sound; 20 px): the page tabs where the page has them, else the track, its
+ * engine and its sound's name */
+static void mo_sound(const char *en, const char *nm)
+{
+    char a[24], b[24];
+    int32_t x;
+    cv_begin(240, 240 - PV_SOUND_Y, MO_BG);
+    if (foot_tabs_on()) {
+        cv_oy = -PV_SOUND_Y;
+        mo_foot();
+        cv_oy = 0;
+    } else {
+        mo_hl(0, 0, 120, MO_INK);
+        b[0] = 'T', b[1] = (char)('1' + song.sel % 10u), b[2] = 0;
+        mo_inv(b, 1, 2);
+        mo_ascii(a, en, sizeof a);
+        mo_cut(b, a, 8);
+        x = mo_text(b, 16, 2, MO_INK) + 6;
+        mo_ascii(a, nm, sizeof a);
+        mo_cut(b, a, (uint32_t)(119 - x) / 6u);
+        mo_text(b, x, 2, MO_DIM);
+    }
+    cv_blit(0, PV_SOUND_Y);
+}
+/* a confirm dialog (draw_confirm): a frame, a warning sign, the question, the name it is about, NO (OCT-) outlined and
+ * YES (OCT+) filled */
+static void mo_confirm(const char *a, const char *b)
+{
+    char t[40], u[40];
+    int32_t w = DLG_W / 2, h = DLG_H / 2;
+    cv_begin(DLG_W, DLG_H, MO_BG);
+    mo_box(0, 0, w, h, MO_INK);
+    mo_fill(w / 2 - 5, 5, 11, 11, MO_INK);
+    mo_text("!", w / 2 - 2, 7, MO_BG);
+    mo_ascii(u, a, sizeof u);
+    mo_cut(t, u, (uint32_t)(w - 6) / 6u);
+    mo_textc(t, w / 2, 21, MO_INK);
+    if (b[0]) {
+        mo_ascii(u, b, sizeof u);
+        mo_cut(t, u, (uint32_t)(w - 6) / 6u);
+        mo_textc(t, w / 2, 32, MO_DIM);
+    }
+    mo_box(8, 46, 40, 11, MO_INK);
+    mo_textc("NO", 28, 48, MO_INK);
+    mo_fill(56, 46, 40, 11, MO_INK);
+    mo_textc("YES", 76, 48, MO_BG);
+    cv_blit(DLG_X, DLG_Y);
+}
+
 /* ---- Stage (HOME) ---- */
 /* The header: PLAY or STOP and the tempo, the selected track's engine. A column a track, 30 cells: its role (the
  * selected track's inverted; an armed track's REC), the sound in two words of four letters, the engine, the pattern
@@ -1168,4 +1295,155 @@ static void mono_stage(void)
     mo_stage_panel();
     cv_oy = 0;
     cv_blit(0, 120);
+}
+
+/* ---- MIXER ---- */
+/* a track's strip (pv_strip; 27 x 106 cells): its sound in two words of four letters, LEVEL as a dial with its dB,
+ * the meter beside it, PAN a small dial and its side, SOLO boxed, MUTE inverted (silenced by another's solo: dim),
+ * REC a dot (armed) or a ring; the selected track's strip outlined, the knob turning its value inverted */
+static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint32_t flags, int32_t meter)
+{
+    uint32_t sel = flags & 1u, mute = flags & 2u, solo = flags & 4u, quiet = flags & 8u, arm = flags & 16u;
+    uint32_t hot = flags >> 5 & 3u, octp = flags >> 7 & 1u;
+    uint16_t ink = quiet ? MO_DIM : MO_INK;
+    char a[8], b[8];
+    int32_t h;
+    cv_begin(CARD_W, PV_STRIP_ROWS, MO_BG);
+    if (sel)
+        mo_box(0, 0, CARD_W / 2, PV_STRIP_ROWS / 2, MO_INK);
+    mo_word(a, nm, 0);
+    mo_textc(a, 14, 3, ink);
+    mo_word(a, nm, 1);
+    mo_textc(a, 14, 12, ink);
+    mo_dial(12, 31, 8, (int32_t)lvl * 1000 / 127, ink);
+    if (lvl) {
+        int32_t d = level_db_x10(lvl);
+        fmt_int(b, (d + (d < 0 ? -5 : 5)) / 10);
+    } else {
+        str_cpy(b, "OFF", sizeof b);
+    }
+    if (hot == 1u) mo_inv(b, 13 - mo_tw(b) / 2, 43);
+    else mo_textc(b, 13, 43, ink);
+    mo_vl(24, 23, 18, MO_DIM);                          /* the meter */
+    h = meter * 18 / (TS_MH - 2);
+    if (h > 0)
+        mo_fill(23, 41 - h, 3, h, ink);
+    mo_textc("PAN", 13, 55, octp ? MO_INK : MO_DIM);
+    mo_dial(13, 69, 5, (pan + 64) * 1000 / 127, ink);
+    if (pan) {
+        b[0] = pan < 0 ? 'L' : 'R';
+        fmt_int(b + 1, pan < 0 ? -pan : pan);
+    } else {
+        str_cpy(b, "C", sizeof b);
+    }
+    if (hot == 2u) mo_inv(b, 14 - mo_tw(b) / 2, 77);
+    else mo_textc(b, 14, 77, MO_DIM);
+    if (solo) {
+        mo_box(2, 86, 24, 11, MO_INK);
+        mo_textc("SOLO", 14, 88, MO_INK);
+    } else if (mute) {
+        mo_fill(2, 86, 24, 11, MO_INK);
+        mo_textc("MUTE", 14, 88, MO_BG);
+    } else {
+        mo_textc("MUTE", 14, 88, MO_DIM);
+    }
+    if (arm) mo_disc(13, 101, 3, MO_INK);
+    else mo_circ(13, 101, 3, MO_DIM);
+    cv_blit((uint32_t)CARD_X(k), PV_STRIP_TOP);
+}
+
+/* ---- MODS (CORDS) ---- */
+/* a cord's row (cu_rows; 120 x 24 cells): its number, the source as its track and four letters, an arrow, the
+ * destination so, the move at the right; the cord picked outlined; under them its light and move (mo_cu_bar) */
+static void mo_cu_side(int32_t x, uint32_t tr, const char *name, int has_trk, int on)
+{
+    char a[8];
+    if (!on) {
+        mo_text("--", x + 8, 3, MO_DIM);
+        return;
+    }
+    if (has_trk) {                                      /* the track: its numeral inverted */
+        a[0] = (char)('1' + (tr & 3u)), a[1] = 0;
+        mo_inv(a, x + 1, 3);
+    }
+    mo_abbr(a, name);
+    mo_text(a, x + 8, 3, MO_INK);
+}
+static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on)
+{
+    char b[16];
+    uint16_t ink = on ? MO_INK : MO_DIM;
+    cv_begin(240, CU_H, MO_BG);
+    if (sel)
+        mo_box(1, 0, 118, CU_H / 2 - 1, MO_INK);
+    fmt_int(b, (int32_t)n);
+    mo_text(b, n >= 10u ? 3 : 5, 3, sel ? MO_INK : MO_DIM);
+    mo_cu_side(13, c->src_trk, cu_src_name(c), 1, c->src != CS_OFF);
+    mo_text(">", 47, 3, ink);
+    mo_cu_side(54, c->dst_trk, cu_dst_name(c), !cu_global(c->dst), c->dst != CD_OFF);
+    fmt_int(b + 1, cu_pct(c) < 0 ? -cu_pct(c) : cu_pct(c));
+    b[0] = cu_pct(c) < 0 ? '-' : '+';
+    str_cpy(b + str_len(b), "%", 2);
+    mo_textr(cu_pct(c) ? b : b + 1, 116, 3, sel ? MO_INK : ink);
+}
+/* the move (cu_bar's canvas, 105 x 4 cells): the line, its middle, the amount from the middle, a mark where it moves
+ * the destination now */
+static void mo_cu_bar(const cord_t *c, int32_t s)
+{
+    int on = cord_live(c);
+    int32_t a = cu_pct(c), m = 52, x = 1 + (a + 100) * 102 / 200, lx = m + clamp(s, -32768, 32768) * 51 / 32768;
+    cv_begin(CU_BAR_W, 9, MO_BG);
+    mo_hl(1, 2, 102, MO_DIM);
+    if (a)
+        mo_fill(x < m ? x : m, 1, x < m ? m - x : x - m, 2, on ? MO_INK : MO_DIM);
+    mo_vl(m, 0, 4, MO_DIM);
+    if (on && c->src)
+        mo_vl(lx, 0, 4, MO_INK);
+}
+/* the light (cu_leds' canvas, 4 x 4 cells): how far the cord moves its destination now, lit or dim */
+static void mo_cu_led(uint32_t lv)
+{
+    cv_begin(8, 8, MO_BG);
+    if (lv)
+        mo_disc(1, 1, 1, lv > 3u ? MO_INK : MO_DIM);
+}
+
+/* ---- a knob as a chip or a strip (pv_chip, pv_column's CS_STRIP) on the screens drawn by their own code ---- */
+static void mo_four(char *d, const char *s)            /* four characters: a number shortened, a word abbreviated */
+{
+    char a[16], f[16];
+    mo_ascii(a, s, sizeof a);
+    mo_fit(f, a);
+    if (str_len(f) <= 4u) str_cpy(d, f, 8);
+    else mo_abbr(d, a);
+}
+/* the chip (27 x 9 cells): the value in four characters, centred; the knob turning: inverted */
+static void mo_chip(uint32_t c, const char *val, const char *unit, uint16_t vc, int hot, int32_t y)
+{
+    char v[24], d[8];
+    str_cpy(v, val, sizeof v);
+    if (str_len(v) + str_len(unit) < sizeof v) str_cpy(v + str_len(v), unit, sizeof v - str_len(v));
+    mo_four(d, v);
+    cv_begin(CARD_W, PV_CHIP_H, MO_BG);
+    if (hot) {
+        mo_fill(0, 0, CARD_W / 2, PV_CHIP_H / 2, MO_INK);
+        mo_textc(d, CARD_W / 4, 1, MO_BG);
+    } else if (d[0]) {
+        mo_textc(d, CARD_W / 4, 1, vc == T_DIM ? MO_DIM : MO_INK);
+    }
+    cv_blit((uint32_t)CARD_X(c), (uint32_t)y);
+}
+/* the strip (27 x 15 cells): the label in four letters (dim) over the value in four characters; the knob turning:
+ * outlined */
+static void mo_strip_col(uint32_t c, const char *label, const char *val, uint16_t vc, int hot, int32_t y)
+{
+    char d[8];
+    cv_begin(CARD_W, PV_STRIP_H, MO_BG);
+    if (hot)
+        mo_box(0, 0, CARD_W / 2, PV_STRIP_H / 2, MO_INK);
+    mo_abbr(d, label);
+    mo_textc(d, CARD_W / 4, 0, MO_DIM);
+    mo_four(d, val);
+    mo_textc(d, CARD_W / 4, 8, vc == T_DIM ? MO_DIM : MO_INK);
+    cv_blit((uint32_t)CARD_X(c), (uint32_t)y);
 }

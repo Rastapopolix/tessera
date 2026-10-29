@@ -164,7 +164,11 @@ static void palette_set(uint32_t i)
     ux.lift = ux_mix(p->surf, p->text, 3);
     ux.sec = ux_mix(p->bg, p->text, 80);
     ux.light = ux_luma(p->bg) > 128u;
+#if MELODEE_LOOK
+    ux.rec = p->accent;                          /* (the Mono look: one ink, REC too) */
+#else
     ux.rec = ux.mono ? p->accent : ux.light ? UI_REC_LIGHT : UI_REC_DARK;
+#endif
     palette_theme();
 }
 /* the selected track (ui_draw, every frame): THEME takes its colour; 1 = it changed (redraw everything) */
