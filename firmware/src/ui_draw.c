@@ -273,10 +273,16 @@ static void mo_chip(uint32_t c, const char *val, const char *unit, uint16_t vc, 
 static void mo_strip_col(uint32_t c, const char *label, const char *val, uint16_t vc, int hot, int32_t y);
 static int foot_tabs_on(void);
 static int32_t mo_tw(const char *s);
+static int32_t mo_text(const char *s, int32_t x, int32_t y, uint16_t c);
+static void mo_textc(const char *s, int32_t cx, int32_t y, uint16_t c);
+static void mo_inv(const char *s, int32_t x, int32_t y);
+static void mo_ascii(char *d, const char *s, uint32_t n);
 static void mo_help(const char *name, const char *val, const char *text);
 static void mo_browser(uint32_t cur, uint32_t total);
 static void mo_patterns(void);
 static void mo_song(void);
+static void mo_grid_panel(void);
+static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fav);
 static void mo_slot_card(const char *tag, const char *nm, int used, const char *d, int boot, int32_t y);
 static void mo_slot_row(const char *tag, const char *nm, int used, int boot, int mark, int32_t y, int32_t ty, int32_t th);
 #endif

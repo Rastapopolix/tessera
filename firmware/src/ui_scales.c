@@ -37,6 +37,10 @@ static void scales_draw(void)
     char b[32];
     for (r = 0; r < SCALE_TOTAL; r++)
         fav = (fav ^ (uint32_t)scale_favorite(r)) * 16777619u + r;
+#if MELODEE_LOOK
+    mo_scales(scale, total, rank, fav);
+    return;
+#endif
     if (ui.force) {
         lcd_fill(0, 0, 240, 240, T_BG);
         scv.top = scv.side = scv.list = scv.foot = 0;
