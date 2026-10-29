@@ -61,7 +61,8 @@ page's four settings sit along the top of the screen in the same order.
 | **OCT+** | Octave up; on some pages, an action (shown on screen) | A page's extra layer (see [OCT+ layers](#oct-layers-on-gen)) |
 
 On the home page each track's tile shows its sound and engine. **ALGORITHM** picks the track on every page (or
-the left knob, with MENU > TRACK KNOB set to LEFT), and **SELECT** turns the pages of the section shown. The four sounds a new project starts with are an ambient set: **GLASS PAD**
+the left knob, with MENU > TRACK KNOB set to LEFT), and **SELECT** turns the pages of the section shown. When a section has more pages than the footer's tabs show, the header gives the page's place (4/10) and
+arrows at the footer's ends say more pages lie that way. The four sounds a new project starts with are an ambient set: **GLASS PAD**
 and **BELLS** on FM6, **STRING MACH** on TRIO, and the **808 KIT** on DRUM. (Track 2 is a TRIO pad so that
 generators on both pads stay within what the FM-1 can play: see [How many voices at once](#how-many-voices-at-once).) A new project has no mods, so nothing moves until
 you patch it.
@@ -736,7 +737,7 @@ Hold **HOME** for the menu. Tessera's additions:
 
 | Item | What it does |
 |---|---|
-| **COLOR** | The screen's ink, on black: YELLOW (the default), WHITE, GREEN, BLUE, RED, ORANGE, PINK or HOT PINK. |
+| **COLOR** | The screen's ink, on black: YELLOW (the default), WHITE, GREEN, BLUE, RED, ORANGE, PINK, HOT PINK or LILAC. |
 | **MIDI OUT** | What goes out over USB MIDI: **KEYS** (the notes you play, as Melodee sent them), **ALL** (also the steps, the ARP, recordings and every generator) or **OFF**. Each track on its own channel: see [MIDI OUT channels](#midi-out-channels). |
 | **CLOCK OUT** | 24 pulses a beat with START and STOP over USB, while the clock is INT. |
 | **PANEL GAMMA** | The screen's contrast curve: the panel chip's own **G2.2** (the default), G1.8, G2.5 and G1.0, or TUNED and TUNED+VCOM. The screen goes black for a moment and redraws. Saved. |
