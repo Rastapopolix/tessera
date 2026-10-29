@@ -6,7 +6,7 @@
 #include "../hal/fm1_eq.h"
 #define FX_RATE (FS/4u)
 #define FX_REV_DIV 8u
-enum { FX_OFF, FX_PHASER, FX_WIDTH, FX_FORMANT, FX_TAPE, FX_SPIT, FX_ECHO, FX_ROOM, FX_REVERB, FX_CHORUS, FX_COUNT };
+enum { FX_OFF, FX_PHASER, FX_WIDTH, FX_FORMANT, FX_TAPE, FX_SPIT, FX_ECHO, FX_ROOM, FX_REVERB, FX_CHORUS, FX_FILTER, FX_COUNT };
 typedef struct { float b0,b1,b2,a1,a2,z1,z2; } fx_bq_t;
 typedef struct {
     fx_bq_t q[2][4];
@@ -226,6 +226,39 @@ static inline __attribute__((always_inline)) void fx_return(int32_t target,uint3
     if(*mix!=target)*mix+=fx_limit(target-*mix,-128,128);
     fx_left[i]=l+fx_scale(wl-l,(uint32_t)*mix*2u);
     fx_right[i]=mono?fx_left[i]:type==FX_WIDTH?r:r+fx_scale(wr-r,(uint32_t)*mix*2u);
+}
+/* FILTER: a resonant 12 dB low-pass (Cytomic's trapezoidal state-variable filter) at the full rate, so it is open
+ * at the top: RATE the cutoff (CUT, 30 Hz .. 16 kHz, an engine's CUTOFF scale), CHAR the resonance (RES). The
+ * coefficients glide across the block from the last block's (a knob, a cord: no steps). Histories: q[ch][0].z1/z2;
+ * the coefficients a1 a2 a3: q[0][1].b0 b1 b2 (the last block's) */
+static void fx_svf_design(const fx_state_t *f,float *c)
+{
+    uint32_t ph=cutoff_hz((uint32_t)f->rate)*(uint32_t)(0x80000000u/FS);   /* (pi fc / FS) */
+    float g=(float)sine_i(ph)/(float)sine_i(ph+0x40000000u),k=2.0f-(float)f->character*(1.9f/127.0f);
+    c[0]=1.0f/(1.0f+g*(g+k));c[1]=g*c[0];c[2]=g*c[1];
+}
+static __attribute__((noinline,section(".audio_text"),aligned(16))) void fx_svf(fx_state_t *restrict f,uint32_t n,const float *c,int32_t target)
+{
+    fx_bq_t *k=&f->q[0][1];
+    float a1=k->b0,a2=k->b1,a3=k->b2,inv=1.0f/(float)(n?n:1u);
+    float d1=(c[0]-a1)*inv,d2=(c[1]-a2)*inv,d3=(c[2]-a3)*inv;
+    int32_t mix=f->mix;uint32_t channels=f->mono?1u:2u;
+    for(uint32_t i=0;i<n;i++){
+        int32_t y[2];
+        a1+=d1;a2+=d2;a3+=d3;
+        for(uint32_t ch=0;ch<channels;ch++){
+            fx_bq_t *q=&f->q[ch][0];
+            float x=(float)(ch?fx_right[i]:fx_left[i]),v3=x-q->z2,v1=a1*q->z1+a2*v3,v2=q->z2+a2*q->z1+a3*v3;
+            q->z1=fx_bound(2.0f*v1-q->z1,2000000.0f);q->z2=fx_bound(2.0f*v2-q->z2,2000000.0f);
+            y[ch]=(int32_t)fx_bound(v2,1000000.0f);
+        }
+        fx_return(target,FX_FILTER,f->mono,i,y[0],f->mono?y[0]:y[1],&mix);
+    }
+    k->b0=c[0];k->b1=c[1];k->b2=c[2];f->mix=mix;
+    if(f->mono){f->q[1][0].z1=f->q[0][0].z1;f->q[1][0].z2=f->q[0][0].z2;}
+    for(uint32_t ch=0;ch<2u;ch++){   /* (denormal tails: a silent insert stays cheap) */
+        fx_bq_t *q=&f->q[ch][0];if(q->z1>-1e-9f && q->z1<1e-9f)q->z1=0;if(q->z2>-1e-9f && q->z2<1e-9f)q->z2=0;
+    }
 }
 /* Tiny time effects run at FS/4. ECHO: 10..370 ms, 8 KiB. ROOM: four
  * damped combs at 13..26 ms, 2 KiB. They are intentionally lo-fi. ECHO's TIME
@@ -481,7 +514,7 @@ static __attribute__((noinline,section(".dsp_text"))) void fx_up(fx_state_t *f,u
 }
 static __attribute__((noinline,section(".dsp_text"))) void fx_copy(fx_state_t *f,uint32_t n)
 {
-    uint32_t mono=f->type<=FX_ECHO && f->type!=FX_WIDTH;
+    uint32_t mono=(f->type<=FX_ECHO && f->type!=FX_WIDTH) || f->type==FX_FILTER;
     for(uint32_t i=0;i<n;i++){
         fx_dry_l[i]=fx_left[i];fx_dry_r[i]=fx_right[i];if(fx_left[i]!=fx_right[i])mono=0;
     }
@@ -567,7 +600,7 @@ static void fx_slot_prepare(fx_plan_t *plan,uint32_t si,const int16_t *p)
     if(profiling){f->rate=(fx_profile_control>>12u)&127u;f->character=(fx_profile_control>>19u)&127u;}
 #endif
     int16_t *mem=0;
-    if(f->type>=FX_ECHO){
+    if(f->type>=FX_ECHO && f->type!=FX_FILTER){
         uint32_t bytes=f->type==FX_CHORUS?FX_CHORUS_BYTES:f->type==FX_ROOM?2048u:f->type==FX_REVERB?FX_REVERB_BYTES:8192u;
         if(!f->failed && !resource[RES_FX0+si].size){
             void *(*volatile allocate)(uint32_t,uint32_t)=fx_memory;mem=allocate(RES_FX0+si,bytes);if(!mem)f->failed=1;
@@ -581,7 +614,11 @@ static __attribute__((noinline,section(".audio_text"),aligned(16))) int fx_slot_
     if(!plan->active)return 0;
     fx_state_t *f=plan->f;int16_t *mem=plan->mem;int32_t target=plan->target;
     void (*volatile copy)(fx_state_t *,uint32_t)=fx_copy;copy(f,n);
-    if(f->type==FX_CHORUS){
+    if(f->type==FX_FILTER){
+        float c[3];void (*volatile design)(const fx_state_t *,float *)=fx_svf_design;design(f,c);
+        if(!f->age){f->q[0][1].b0=c[0];f->q[0][1].b1=c[1];f->q[0][1].b2=c[2];f->age=1;}
+        void (*volatile run)(fx_state_t *,uint32_t,const float *,int32_t)=fx_svf;run(f,n,c,target);
+    }else if(f->type==FX_CHORUS){
         if(!n)return 1;
         if(!f->age){f->rev_l=f->rev_r=256*65536;f->age=1;}
         f->phase+=LFO_INC[f->rate]*n/CTL;
@@ -741,7 +778,7 @@ static void fx_bus_start(uint32_t n)
     if((song.g[G_FXMODE]!=0)!=fx_bus_separate)fx_bus_target=0;
     /* A later allocation may compact earlier handles; snapshot pointers only
      * after all three preparations have completed. */
-    for(uint32_t slot=0;slot<FX_SLOTS;slot++)if(fx_bus_plan[slot].active && fx_bus_plan[slot].f->type>=FX_ECHO)fx_bus_plan[slot].mem=resource[RES_FX0+NPART*FX_SLOTS+slot].ptr;
+    for(uint32_t slot=0;slot<FX_SLOTS;slot++)if(fx_bus_plan[slot].active && fx_bus_plan[slot].f->type>=FX_ECHO && fx_bus_plan[slot].f->type!=FX_FILTER)fx_bus_plan[slot].mem=resource[RES_FX0+NPART*FX_SLOTS+slot].ptr;
     for(uint32_t i=0;i<n;i++){fx_left[i]=fx_send_l[i];fx_right[i]=fx_send_r[i];}
     AP_END(AP_FX,audio_start);
 #if defined(MELODEE_FX_PROFILE) && MELODEE_FX_PROFILE && defined(FM1_IRQ_TARGET)

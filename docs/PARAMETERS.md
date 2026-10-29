@@ -76,15 +76,15 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x05D | LFO TRIGGER | NOTE, FREE | NOTE | NOTE starts the LFO again with each note; FREE lets it run on. |
 | 0x05E | LFO POLARITY | BI, UNI | BI | BI moves both ways from the setting; UNI only one way. |
 | 0x05F | STEREO SPREAD | 0 to 127 | 0 | Spreads the track's voices from left to right. |
-| 0x060 | FX 1 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS | OFF | The track's insert effect 1. |
+| 0x060 | FX 1 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS, FILTER | OFF | The track's insert effect 1. |
 | 0x061 | FX 1 MIX | 0 to 127 | 0 | How much of insert effect 1 is heard. |
 | 0x062 | FX 1 RATE | 0 to 127 | 60 | Insert effect 1's speed (its time or size, by the effect). |
 | 0x063 | FX 1 CHARACTER | 0 to 127 | 64 | Insert effect 1's character (its depth, decay or the like, by the effect). |
-| 0x064 | FX 2 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS | OFF | The track's insert effect 2. |
+| 0x064 | FX 2 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS, FILTER | OFF | The track's insert effect 2. |
 | 0x065 | FX 2 MIX | 0 to 127 | 0 | How much of insert effect 2 is heard. |
 | 0x066 | FX 2 RATE | 0 to 127 | 60 | Insert effect 2's speed (its time or size, by the effect). |
 | 0x067 | FX 2 CHARACTER | 0 to 127 | 64 | Insert effect 2's character (its depth, decay or the like, by the effect). |
-| 0x068 | FX 3 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS | OFF | The track's insert effect 3. |
+| 0x068 | FX 3 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS, FILTER | OFF | The track's insert effect 3. |
 | 0x069 | FX 3 MIX | 0 to 127 | 0 | How much of insert effect 3 is heard. |
 | 0x06A | FX 3 RATE | 0 to 127 | 60 | Insert effect 3's speed (its time or size, by the effect). |
 | 0x06B | FX 3 CHARACTER | 0 to 127 | 64 | Insert effect 3's character (its depth, decay or the like, by the effect). |
@@ -119,15 +119,15 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x115 | A4 TUNING | 400 to 480 Hz | 440 | The pitch of A4 for the whole device, in hertz. (The device's, not the project's.) |
 | 0x116 | CLEAR SEQUENCE | (a button) |  | Empties the selected track's pattern (it asks first). |
 | 0x117 | INIT SOUND | (a button) |  | Resets the selected track's sound to its engine's starting point. |
-| 0x11B | SEND FX 1 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS | OFF | Send effect 1, shared by every track. |
+| 0x11B | SEND FX 1 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS, FILTER | OFF | Send effect 1, shared by every track. |
 | 0x11C | SEND FX 1 MIX | 0 to 127 | 127 | How much of send effect 1 is heard. |
 | 0x11D | SEND FX 1 RATE | 0 to 127 | 60 | Send effect 1's speed (its time or size, by the effect). |
 | 0x11E | SEND FX 1 CHARACTER | 0 to 127 | 64 | Send effect 1's character (its depth, decay or the like, by the effect). |
-| 0x11F | SEND FX 2 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS | OFF | Send effect 2, shared by every track. |
+| 0x11F | SEND FX 2 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS, FILTER | OFF | Send effect 2, shared by every track. |
 | 0x120 | SEND FX 2 MIX | 0 to 127 | 127 | How much of send effect 2 is heard. |
 | 0x121 | SEND FX 2 RATE | 0 to 127 | 60 | Send effect 2's speed (its time or size, by the effect). |
 | 0x122 | SEND FX 2 CHARACTER | 0 to 127 | 64 | Send effect 2's character (its depth, decay or the like, by the effect). |
-| 0x123 | SEND FX 3 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS | OFF | Send effect 3, shared by every track. |
+| 0x123 | SEND FX 3 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS, FILTER | OFF | Send effect 3, shared by every track. |
 | 0x124 | SEND FX 3 MIX | 0 to 127 | 127 | How much of send effect 3 is heard. |
 | 0x125 | SEND FX 3 RATE | 0 to 127 | 60 | Send effect 3's speed (its time or size, by the effect). |
 | 0x126 | SEND FX 3 CHARACTER | 0 to 127 | 64 | Send effect 3's character (its depth, decay or the like, by the effect). |
