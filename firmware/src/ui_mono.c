@@ -1404,7 +1404,8 @@ static void mo_hot_value(int32_t k)
 static void mo_pic_env(const track_t *t)
 {
     const page_t *pg = cur_page();
-    int32_t va = t->p[pg->id[0]], vd = t->p[pg->id[1]], vs = t->p[pg->id[2]], vr = t->p[pg->id[3]];
+    (void)t;
+    int32_t va = page_value(pg, 0), vd = page_value(pg, 1), vs = page_value(pg, 2), vr = page_value(pg, 3);
     int32_t top = 56, bot = 98, x0 = 2, x1 = x0 + 5 + va * 20 / 127, x2 = x1 + 8 + vd * 26 / 127, x4 = 117;
     int32_t x3 = x4 - 12 - vr * 24 / 127, sus = vs * 1000 / 127, hot = pv_hot(), x, py = 0, e = 32768;
     int32_t kd = 75366 / (x2 - x1), kr = 75366 / (x4 - x3), i;

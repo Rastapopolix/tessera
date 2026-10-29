@@ -1796,7 +1796,7 @@ function makeMockDevice(opt = {}) {
     E("MIDI", ["USB", "TRS"], 0), E("DRUM", ["OFF", ...Array.from({ length: 16 }, (_, i) => String(i + 1))], 10), E("ROUT", ["CH1-4", "SEL", "CH5-8", "CH9-12", "CH13-16"], 0), D("CPU", F.INT, 0, 0, 0),
     D("SLOT", F.INT, 1, 5, 1), E("BOOT", ["OFF", "A", "B", "C", "D"], 0), E("LOAD", NGO, 0), E("SAVE", NGO, 0),
     E("ENG", ["-", "-", "-", "SID", "-", "-", "TRIO", "-",
-      "-", "PHYS", "DRUM", "-", "FM6", "-", "-", "-", "-", "-", "-", "-", "-", "-"], 0), D("A4", F.INT, 400, 480, 440, null, "Hz"),
+      "-", "PHYS", "DRUM", "-", "FM6", "-", "-", "-", "-", "-", "-", "ORACLE", "-", "-"], 0), D("A4", F.INT, 400, 480, 440, null, "Hz"),
     E("CLRSQ", NGO, 0), E("INIT", NGO, 0),
     ...Array.from({length:3},()=>D("",F.INT,0,127,0)),
   ];
@@ -1900,8 +1900,24 @@ function makeMockDevice(opt = {}) {
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},   /* (15: the CZ-1, retired 2026-10-22) */
   ];
-  ENG.push(...Array.from({length:6},()=>({name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]})));   /* (19: the
-                                                     PROPHET, retired 2026-10-22; 20, 21 reserved) */
+  ENG.push(...Array.from({length:3},()=>({name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]})));   /* 16..18 reserved */
+  { const Z8 = [0, 0, 0, 0, 0, 0, 0, 0];
+  ENG.push({ name: "ORACLE", titles: ["MACRO", "MACRO 2"],   /* 19: the Prophet engine, back 2026-10-29 (eng_oracle.c) */
+    edit: [D("CUT", F.INT, -63, 63, 0), D("RES", F.INT, -63, 63, 0), D("TUNE A", F.SEMI, -24, 24, 0),
+      D("TUNE B", F.SEMI, -24, 24, 0), D("PW A", F.INT, -63, 63, 0), D("PW B", F.INT, -63, 63, 0),
+      D("LVL A", F.INT, -63, 63, 0), D("LVL B", F.INT, -63, 63, 0)],
+    presets: [   /* (the sounds are patches: eng_oracle.c or_sound; the mock plays none) */
+      P("INIT ORACLE", Z8, [0, 0, 127, 0], 0), P("WARM PAD", Z8, [0, 0, 127, 0], 0),
+      P("GLASS PAD", Z8, [0, 0, 127, 0], 0), P("SOFT STRINGS", Z8, [0, 0, 127, 0], 0),
+      P("BRASS", Z8, [0, 0, 127, 0], 0), P("SYNC LEAD", Z8, [0, 0, 127, 0], 1),
+      P("FUNK BASS", Z8, [0, 0, 127, 0], 1), P("SUB BASS", Z8, [0, 0, 127, 0], 1),
+      P("ACID LINE", Z8, [0, 0, 127, 0], 1), P("PLUCK", Z8, [0, 0, 127, 0], 0),
+      P("POLY BELLS", Z8, [0, 0, 127, 0], 0), P("KEYS", Z8, [0, 0, 127, 0], 0), P("CLAV", Z8, [0, 0, 127, 0], 0),
+      P("KOTO", Z8, [0, 0, 127, 0], 0), P("DRONE", Z8, [0, 0, 127, 0], 0), P("WIND", Z8, [0, 0, 127, 0], 0),
+      P("RUMBLE", Z8, [0, 0, 127, 0], 0), P("SQUARE LEAD", Z8, [0, 0, 127, 0], 1), P("VOX", Z8, [0, 0, 127, 0], 0),
+      P("SWEEP PAD", Z8, [0, 0, 127, 0], 0), P("SEQ BLIP", Z8, [0, 0, 127, 0], 0), P("FLUTE", Z8, [0, 0, 127, 0], 1),
+      P("FAT POLY", Z8, [0, 0, 127, 0], 0), P("DUB CHORD", Z8, [0, 0, 127, 0], 0)] }); }
+  ENG.push(...Array.from({length:2},()=>({name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]})));   /* 20, 21 reserved */
   const FM6_E = ENG.findIndex((e) => e.name === "FM6"), FM6_BANK = 0;
   /* the mock's demo sequences (the device powers on empty; it has no pattern library): absolute notes, 0 rest;
      flags 1 accent, 2 slide, 4 tie (holds the previous note). ACID, BEAT */
@@ -2537,7 +2553,7 @@ function aliasOf(names, i) { const k = names ? names.indexOf(names[i]) : -1; ret
 /* the order the device shows its engines in (src/engines.c ENGINE_ORDER): the lists here follow it, the protocol keeps
    the engine numbers. engineOrder(names): the indices of names in that order, "-" (a reserved number) left out; a name
    the list does not know (another firmware) follows in index order */
-const ENGINE_ORDER = ["PROPHET", "ANALOG", "FM6", "DIGITAL", "PHASE", "CZ-1", "SID", "TRIO", "PHYS", "VOICE", "NOISE",
+const ENGINE_ORDER = ["PROPHET", "ANALOG", "FM6", "ORACLE", "DIGITAL", "PHASE", "CZ-1", "SID", "TRIO", "PHYS", "VOICE", "NOISE",
   "DRUM"];
 function engineOrder(names) {
   const rank = (n) => { const k = ENGINE_ORDER.indexOf(n); return k < 0 ? ENGINE_ORDER.length : k; };

@@ -33,6 +33,9 @@ static const char *const PRESET_CAT[NENGINES] = {
 #endif
     [10] = "DDDD",                                      /* DRUM: the kits (808, 909, SID, SID DIGI) */
     [12] = "KEBRPEGUKRBEEKGSPLUEWEBEOPPPFEEEDEDDUUUU",  /* FM6, INIT VOICE, ZEN-1's (SOFT PAD .. KUGO HARP) */
+#if MELODEE_ORACLE
+    [19] = "OPPSRLBBBUEKKUPFFLPPUWKK",                     /* ORACLE (oracle_sounds.h): INIT ORACLE .. DUB CHORD */
+#endif
 #if MELODEE_PLAITS
     [21] = "OBPLKEBGUEE",                          /* MACRO (eng_macro.c MC_PRESETS) */
 #endif

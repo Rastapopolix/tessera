@@ -50,8 +50,9 @@ static const char *const N_MSRC[] = {"OFF", "LFO", "ENV", "VEL", "KEY", "RAND", 
 static const char *const N_MDST[] = {"OFF", "PITCH", "CUT", "SHP", "AMP", "PAN", "", "", "", "", "RATE",
                                      "VIB", "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "DEPTH"};
 static const char *const N_ENGNAME[] = {"-", "-", "-", "SID", "-", MELODEE_LEGACY_EXTRAS ? "VOICE" : "-", TRIO_ON ? "TRIO" : "-", MELODEE_LEGACY_EXTRAS ? "WHEEL" : "-", "-", PHYS_ON ? "PHYS" : "-",
-                                             "DRUM", MELODEE_LEGACY_EXTRAS ? "NOISE" : "-", "FM6", MELODEE_SLICE ? "SLICE" : "-", "-", "-", "-", "-", "-", "-",
-                                             "-", MELODEE_PLAITS ? "MACRO" : "-"};   /* (15 CZ-1, 19 PROPHET: retired 2026-10-22; 20 reserved, 21 MACRO:
+                                             "DRUM", MELODEE_LEGACY_EXTRAS ? "NOISE" : "-", "FM6", MELODEE_SLICE ? "SLICE" : "-", "-", "-", "-", "-", "-",
+                                             MELODEE_ORACLE ? "ORACLE" : "-", "-", MELODEE_PLAITS ? "MACRO" : "-"};   /* (15 CZ-1: retired
+                                                                                   * 2026-10-22; 19 PROPHET, then ORACLE; 20 reserved, 21 MACRO:
                                                                                    * one name per engine ID, NENGINES) */
 _Static_assert(NELEM(N_ENGNAME) == NENGINES, "N_ENGNAME: one name per engine ID");
 
@@ -724,4 +725,11 @@ static const param_desc_t *page_desc(const page_t *pg, uint32_t slot, int16_t **
         id += 3u * mod_ui_slot;
     *valp = &TSEL->p[id];
     return track_desc(TSEL, id);
+}
+/* the value in column slot of a page, as page_desc has it (0: none): what a picture of the page draws */
+static int32_t page_value(const page_t *pg, uint32_t slot)
+{
+    int16_t *vp;
+    const param_desc_t *d = page_desc(pg, slot, &vp);
+    return d && vp ? *vp : 0;
 }
