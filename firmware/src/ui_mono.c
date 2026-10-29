@@ -1109,6 +1109,305 @@ static void mo_pic_seed(uint32_t tr)
     mo_box(86, 101, 32, 7, MO_DIM);
     if (n) mo_fill(87, 102, (int32_t)(n * 30u / len) ? (int32_t)(n * 30u / len) : 1, 5, MO_INK);
 }
+/* FORM: a cell a section of the form, its height its letter (A tall, B middling, C short), the one playing solid with
+ * the bars elapsed under it; no form a dim line */
+static void mo_pic_form(const track_t *t)
+{
+    uint32_t tr = trk_index(t), pos = 0, bar = 0, of = 0, i, len;
+    uint8_t seq[4];
+    int flash = 0;
+    int32_t w;
+    len = tessera_form_get(tr, seq, &pos);
+    tessera_phrase(tr, &bar, &of, &flash);
+    if (!len) {
+        mo_hl(2, 92, 116, MO_DIM);
+        return;
+    }
+    w = (116 - 3 * ((int32_t)len - 1)) / (int32_t)len;
+    for (i = 0; i < len; i++) {
+        int32_t x = 2 + (int32_t)i * (w + 3), h = 30 - 9 * (int32_t)seq[i];
+        char l[2] = {(char)('A' + seq[i] % 3u), 0};
+        if (i == pos) mo_fill(x, 92 - h, w, h, MO_INK), mo_textc(l, x + w / 2 + 1, 92 - h + 2, MO_BG);
+        else mo_box(x, 92 - h, w, h, MO_INK), mo_textc(l, x + w / 2 + 1, 92 - h + 2, MO_INK);
+        mo_hl(x, 95, w, MO_DIM);
+        if (i == pos && of) mo_fill(x, 95, w * (int32_t)(bar + 1u) / (int32_t)of, 2, MO_INK);
+        (void)flash;
+    }
+}
+/* EVOLVE: a cell a bar to the next round, the bars gone solid, the one playing outlined, all solid on the round. A STEP
+ * track's: under them its steps as a small roll, a step as written dim, a change solid over the written one outlined;
+ * what HOW does now and how far the steps are from home */
+static void mo_pic_evolve(const track_t *t)
+{
+    static const char *const SER[5] = {"", "BACKWARDS", "UPSIDE DOWN", "ROTATE ", "HALF SPEED"};
+    uint32_t tr = trk_index(t), bar = 0, of = 0, n, i;
+    int flash = 0, step = tessera_step_on(tr);
+    int32_t w;
+    tessera_phrase(tr, &bar, &of, &flash);
+    n = of ? of : 1u;
+    w = (116 - ((int32_t)n - 1)) / (int32_t)n;
+    for (i = 0; i < n; i++) {
+        int32_t x = 2 + (int32_t)i * (w + 1), h = step ? 4 : of ? 12 : 2;
+        if (of && (flash || i < bar)) mo_fill(x, 54, w, h, MO_INK);
+        else if (of && i == bar && song.playing) mo_box(x, 54, w, h, MO_INK);
+        else mo_box(x, 54, w, h, MO_DIM);
+    }
+    if (step) {
+        const step_t *st = t->step;
+        uint32_t len = (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP), k, arg = 0, ser = tessera_step_serial(tr, &arg), ch = 0;
+        int32_t lo = 127, hi = 0, cw = 116 / (int32_t)len, bw = cw > 2 ? cw - 1 : 1;
+        char lab[16];
+        step_t v;
+        for (i = 0; i < len; i++)
+            for (k = 0; k < 2u; k++) {
+                const step_t *s = k ? (tessera_step_now(tr, i, &v) ? &v : 0) : &st[i];
+                if (s && s->time == ST_NOTE && s->n) {
+                    if (s->note[0] < lo) lo = s->note[0];
+                    if (s->note[0] > hi) hi = s->note[0];
+                }
+            }
+        if (lo > hi) lo = hi = 60;
+        for (i = 0; i < len; i++) {
+            int32_t x = 2 + (int32_t)i * cw, c2 = tessera_step_now(tr, i, &v), y;
+            ch += (uint32_t)c2;
+            for (k = 0; k < 2u; k++) {
+                const step_t *p = k ? &v : &st[i];
+                if (k && !c2) break;
+                if (p->time != ST_NOTE || (!p->n && !p->hit)) {
+                    if (!k && !c2) mo_hl(x, 92, bw, MO_DIM);
+                    continue;
+                }
+                y = !p->n || hi == lo ? 76 : 89 - (p->note[0] - lo) * 26 / (hi - lo);
+                if (k) mo_fill(x, y, bw, 3, MO_INK);
+                else if (c2) mo_box(x, y, bw, 3, MO_DIM);
+                else mo_fill(x, y, bw, 3, MO_DIM);
+            }
+            if (song.playing && i == t->seq_idx) mo_hl(x, 95, bw, MO_INK);
+        }
+        if (ser) {
+            str_cpy(lab, SER[ser % 5u], sizeof lab);
+            if (ser == TESS_SV_SER_ROT) fmt_int(lab + 7, arg);
+        } else {
+            mo_ascii(lab, pid_desc(PID_TESS(TX_SV_HOW), tr)->names[tessera.sv_how[tr] % TESS_SV_HOWS], sizeof lab);
+        }
+        lab[11] = 0;
+        mo_text(lab, 2, 101, ch ? MO_INK : MO_DIM);
+        mo_box(86, 101, 32, 7, MO_DIM);
+        if (ch) mo_fill(87, 102, (int32_t)(ch * 30u / len) ? (int32_t)(ch * 30u / len) : 1, 5, MO_INK);
+    }
+}
+/* the four tracks as numbered cells in two rows from (x, y), the one picked solid, this track outlined, the rest dim */
+static void mo_trk_cells(int32_t x, int32_t y, uint32_t picked, uint32_t tr, int on)
+{
+    for (uint32_t i = 0; i < TESSERA_TRACKS; i++) {
+        int32_t cx = x + (int32_t)(i % 2u) * 13, cy = y + (int32_t)(i / 2u) * 13;
+        char n[2] = {(char)('1' + i), 0};
+        if (picked == i + 1u) mo_fill(cx, cy, 11, 11, MO_INK), mo_text(n, cx + 3, cy + 2, MO_BG);
+        else mo_box(cx, cy, 11, 11, i == tr && on ? MO_INK : MO_DIM), mo_text(n, cx + 3, cy + 2, i == tr ? MO_INK : MO_DIM);
+    }
+}
+/* TWEAK: under each dial its picture. SHIFT: the note off its written pitch (the dashed line); DROP: 8 hits, the ones it
+ * drops outlined; HUMAN: 5 notes' gates and loudness, uneven as it rises; FOLLOW: the tracks, the one followed solid.
+ * At their off positions all dim */
+static void mo_pic_tweak(const track_t *t)
+{
+    static const uint8_t DROP_ORDER[8] = {3, 6, 0, 5, 2, 7, 1, 4};
+    static const int8_t HUM_LEN[5] = {-2, 5, -5, 1, 4}, HUM_VEL[5] = {3, -4, 1, -2, 5};
+    uint32_t tr = trk_index(t), i;
+    const tessera_evolve_t *ev = &tessera.evolve[tr < TESSERA_TRACKS ? tr : 0u];
+    int32_t sh = ev->shift, nd = ((int32_t)ev->drop * 8 + 50) / 100, hu = ev->human, y;
+    mo_dash(3, 80, 25, MO_DIM);                         /* SHIFT: +-24 over +-22 cells */
+    y = 80 - sh * 22 / 24;
+    if (sh) mo_vl(15, y < 80 ? y + 2 : 81, y < 80 ? 78 - y : y - 81, MO_DIM);
+    mo_fill(5, y - 1, 20, 3, sh ? MO_INK : MO_DIM);
+    for (i = 0; i < 8u; i++) {                          /* DROP */
+        int32_t hx = 32 + (int32_t)(i % 4u) * 7, hy = 62 + (int32_t)(i / 4u) * 16, gone = 0, k;
+        for (k = 0; k < nd; k++)
+            if (DROP_ORDER[k] == i) gone = 1;
+        if (gone) mo_box(hx, hy, 5, 10, MO_DIM);
+        else mo_fill(hx, hy, 5, 10, MO_INK);
+    }
+    for (i = 0; i < 5u; i++) {                          /* HUMAN */
+        int32_t w = 26 - 26 * (HUM_LEN[i] + 5) * hu / 1000, h = 3 + HUM_VEL[i] * hu / 200;
+        mo_fill(62, 60 + (int32_t)i * 9 + (4 - h) / 2, w, h < 1 ? 1 : h, hu ? MO_INK : MO_DIM);
+    }
+    mo_trk_cells(92, 64, ev->follow, tr, ev->follow != 0u);   /* FOLLOW */
+}
+/* TWEAK 2. BRANCH: a stem forking, the branch to TO solid as far as its chance (COIN: both, the likelier solid); TO:
+ * the tracks, the one hits go to solid; LOGIC: 8 steps of this track, of WITH's and what plays; COND: 8 bars, those a
+ * hit may play in solid */
+static void mo_pic_tweak2(const track_t *t)
+{
+    static const uint8_t ME = 0xD6u, OTHER = 0x4Du;
+    static const uint8_t PLAYS[TESS_COND_COUNT] = {0xFF, 0x55, 0xAA, 0x11, 0x22, 0x44, 0x88, 0x01, 0x80, 0x01, 0xFE};
+    uint32_t tr = trk_index(t), i, res = ME;
+    const tessera_evolve_t *ev = &tessera.evolve[tr < TESSERA_TRACKS ? tr : 0u];
+    int on = ev->br_to && ev->br_to != tr + 1u, lg = ev->logic && ev->lg_with && ev->lg_with != tr + 1u;
+    int coin = on && ev->br_mode == TESS_BR_COIN, right = on && ev->branch && (!coin || ev->branch >= 50u);
+    mo_vl(14, 82, 12, MO_DIM);                          /* BRANCH */
+    mo_line(14, 82, 5, 66, coin && right ? MO_DIM : MO_INK);
+    mo_line(14, 82, 23, 66, right ? MO_INK : MO_DIM);
+    if (coin && right) mo_box(2, 61, 6, 6, MO_DIM); else mo_fill(2, 61, 6, 6, MO_INK);
+    if (right) mo_fill(20, 61, 6, 6, MO_INK); else mo_box(20, 61, 6, 6, MO_DIM);
+    mo_trk_cells(32, 64, on ? ev->br_to : 0u, tr, on);  /* TO */
+    if (lg) res = ev->logic == TESS_LG_AND ? ME & OTHER : ev->logic == TESS_LG_OR ? ME | OTHER :
+                  ev->logic == TESS_LG_XOR ? ME ^ OTHER : ME & ~OTHER & 0xFFu;
+    for (i = 0; i < 8u; i++) {                          /* LOGIC */
+        int32_t hx = 61 + (int32_t)i * 3;
+        if ((ME >> i) & 1u) mo_fill(hx, 60, 2, 6, MO_DIM); else mo_px(hx, 65, MO_DIM);
+        if ((OTHER >> i) & 1u) mo_fill(hx, 70, 2, 6, MO_DIM); else mo_px(hx, 75, MO_DIM);
+        if ((res >> i) & 1u) mo_fill(hx, 82, 2, 10, lg ? MO_INK : MO_DIM); else mo_px(hx, 91, MO_DIM);
+    }
+    for (i = 0; i < 8u; i++) {                          /* COND */
+        int32_t hx = 92 + (int32_t)(i % 4u) * 7, hy = 62 + (int32_t)(i / 4u) * 16;
+        if ((PLAYS[ev->cond % TESS_COND_COUNT] >> i) & 1u) mo_fill(hx, hy, 5, 10, ev->cond ? MO_INK : MO_DIM);
+        else mo_box(hx, hy, 5, 10, MO_DIM);
+    }
+}
+/* ORGANIC: TIDE's three circuits as dots on their lines (slowest first, -1 left, +1 right), SWARM's eight as bars up or
+ * down from the middle, slowest left */
+static void mo_pic_organic(const track_t *t)
+{
+    static const char *const NAME[3] = {"T1", "T2", "T3"};
+    static const uint8_t OUT[3] = {0, 2, 1};
+    uint32_t tr = trk_index(t) % TESSERA_TRACKS, i;
+    for (i = 0; i < 3u; i++) {
+        int32_t y = 62 + (int32_t)i * 16, v = organic_out(tr, OUT[i]);
+        mo_text(NAME[i], 2, y - 3, MO_DIM);
+        mo_hl(16, y, 42, MO_DIM);
+        mo_vl(37, y - 2, 5, MO_DIM);
+        mo_disc(37 + v * 19 / 32767, y, 2, MO_INK);
+    }
+    mo_hl(62, 79, 56, MO_DIM);
+    for (i = 0; i < 8u; i++) {
+        int32_t x = 63 + (int32_t)i * 7, h = organic_out(tr, 3u + i) * 22 / 32767;
+        if (h > 0) mo_fill(x, 79 - h, 5, h, MO_INK);
+        else if (h < 0) mo_fill(x, 80, 5, -h, MO_INK);
+    }
+}
+/* LENGTH: a bar of the track's steps at its DIV (the grid along the foot), an example rhythm's hits on it, and over them
+ * the notes those hits play, as long as the mode makes them (note_len.c; as the detailed picture) */
+static void mo_pic_notelen(const track_t *t)
+{
+    static const uint8_t HITS[6] = {0, 3, 6, 8, 11, 14};
+    static const uint8_t LEN32[6] = {1, 2, 4, 8, 16, 32};
+    uint32_t tr = trk_index(t) % TESSERA_TRACKS, m = tessera.nl_mode[tr], keys = tessera.nl_keys[tr], i, k;
+    int32_t x0 = 2, bar = 116, steps, sw, gate, start[6], end[6], row[6], on_end[NL_KEYS];
+    uint32_t div = seq_div_samples((uint32_t)t->p[P_SDIV]), barlen = 4u * seq_beat_samples();
+    if (tessera.mode[tr] == TESS_ENG_GRIDS || m >= NL_COUNT) m = NL_STEP;
+    if (m != NL_FIXED) keys = 1u;
+    if (keys < 1u || keys > NL_KEYS) keys = NL_KEYS;
+    steps = div ? (int32_t)((barlen + div / 2u) / div) : 16;
+    steps = steps < 1 ? 1 : steps > 32 ? 32 : steps;
+    sw = bar / steps;
+    gate = sw * (t->p[P_SGATE] ? t->p[P_SGATE] : 64) / 128;
+    mo_hl(x0, 106, bar, MO_DIM);
+    for (i = 0; i < (uint32_t)steps; i++)
+        mo_vl(x0 + (int32_t)i * sw, i % 4u ? 104 : 102, i % 4u ? 2 : 4, MO_DIM);
+    for (k = 0; k < NL_KEYS; k++) on_end[k] = -1;
+    for (i = 0; i < 6u; i++) {
+        int32_t s = (int32_t)HITS[i] * steps / 16;
+        start[i] = x0 + s * sw;
+        if (m == NL_FIXED) end[i] = start[i] + bar * LEN32[tessera.nl_len[tr] % 6u] / 32;
+        else if (m == NL_HIT) end[i] = i + 1u < 6u ? x0 + (int32_t)HITS[i + 1u] * steps / 16 * sw : x0 + bar;
+        else end[i] = start[i] + (gate > 1 ? gate : 1);
+        row[i] = 0;
+    }
+    for (i = 0; i < 6u; i++) {
+        int32_t r = -1, first = -1;
+        for (k = 0; k < keys; k++) {
+            if (on_end[k] >= 0 && end[on_end[k]] > start[i] && start[on_end[k]] < start[i]) {
+                if (first < 0 || end[on_end[k]] < end[on_end[first]]) first = (int32_t)k;
+            } else if (r < 0) r = (int32_t)k;
+        }
+        if (r < 0) {
+            end[on_end[first]] = start[i];
+            r = first;
+        }
+        row[i] = r;
+        on_end[r] = (int32_t)i;
+    }
+    for (i = 0; i < 6u; i++) {
+        int32_t y = 55 + row[i] * 9, e = end[i] > x0 + bar ? x0 + bar : end[i], ww = e - start[i];
+        mo_fill(start[i], 97, 1, 4, MO_INK);
+        mo_fill(start[i], y, ww < 1 ? 1 : ww, 6, MO_INK);
+        if (end[i] > x0 + bar) mo_vl(x0 + bar - 1, y, 6, MO_BG);
+    }
+}
+/* TIMING: a bar of 8 steps, an example rhythm's hits; each hit's step split into RATCH's hits, each its share of the
+ * GATE; CHANCE: the steps that would not ratchet this time a hit each, the skipped ones dim; HUMAN: the hits late by
+ * their example share (as the detailed picture) */
+static void mo_pic_timing(const track_t *t)
+{
+    static const uint8_t HITS[8] = {1, 0, 1, 1, 0, 1, 0, 1};
+    static const uint8_t SKIP[8] = {0, 0, 37, 74, 0, 11, 0, 90};
+    static const uint8_t LATE[8] = {40, 0, 100, 10, 0, 70, 0, 25};
+    uint32_t tr = trk_index(t) % TESSERA_TRACKS, hits = (tessera.sub_ratch[tr] & 7u) + 1u, ch = tessera.sub_chance[tr], i, k;
+    uint32_t sh = tessera.sub_shape[tr] % SUB_SHAPES;
+    int32_t sw = 14, g = t->p[P_SGATE] ? t->p[P_SGATE] : 64;
+    if (tessera.mode[tr] == TESS_ENG_OFF) { hits = 4u; ch = 100u; }
+    mo_hl(4, 106, 112, MO_DIM);
+    for (i = 0; i < 8u; i++) {
+        int32_t x = 4 + (int32_t)i * sw, late = sw * (int32_t)tessera.sub_human[tr] * LATE[i] / 12500;
+        mo_vl(x, i % 4u ? 104 : 102, i % 4u ? 2 : 4, MO_DIM);
+        if (!HITS[i]) continue;
+        x += late < sw / 4 ? late : sw / 4;
+        uint32_t n = hits > 1u && SKIP[i] < ch ? hits : 1u;
+        int32_t len = (sw / (int32_t)n) * g / 128;
+        if (len < 1) len = 1;
+        for (k = 0; k < n; k++) {
+            int32_t dy = n > 4u ? 2 : 4, y = 56 + (int32_t)k * dy / 2;
+            int32_t hx = x + (int32_t)seq_sub_at((uint32_t)sw, k, n, sh);
+            int32_t room = (int32_t)seq_sub_at((uint32_t)sw, k + 1u, n, sh) - (int32_t)seq_sub_at((uint32_t)sw, k, n, sh);
+            int32_t l = len < room ? len : room;
+            mo_fill(hx, 97, 1, 4, MO_INK);
+            mo_fill(hx, y, l > 1 ? l : 1, 38 - (int32_t)k * dy, MO_INK);
+        }
+        if (n == 1u && hits > 1u)
+            for (k = 1; k < hits; k++)
+                mo_fill(x + (int32_t)k * (sw / (int32_t)hits), 97, 1, 4, MO_DIM);
+    }
+}
+/* ENERGY: a turn of the tide, full above the line, sparse below, as far as ARC swings it, and where it is now (a disc);
+ * a rest: the time left as a bar along the top */
+static void mo_pic_energy(void)
+{
+    int32_t i, a = tessera.en_arc, at, py = 0;
+    mo_hl(2, 80, 116, MO_DIM);
+    mo_vl(2, 77, 7, MO_DIM);
+    for (i = 0; i < 116; i++) {
+        int32_t y = 80 - en_sin((uint32_t)i, 116u) * a / 100 * 22 / 32767;
+        if (i) mo_line(1 + i, py, 2 + i, y, a ? MO_INK : MO_DIM);
+        py = y;
+    }
+    at = (int32_t)en_frac(energy.ph, energy.per, 116u);
+    if (a && song.playing)
+        mo_disc(2 + at, 80 - energy_now() * 22 / 32767, 2, MO_INK);
+    if (song.playing && energy_resting()) {
+        int32_t len = (int32_t)(energy.rest_left / EN_BPS) * 116 / 18;
+        mo_fill(2, 54, len < 2 ? 2 : len > 116 ? 116 : len, 3, MO_INK);
+    }
+}
+/* MIDI OUT: a row a track: its number, the channel its notes go out on (AUTO: ROUT's or DRUM's), and the menu's MIDI OUT
+ * when it keeps the steps in (KEYS) or sends nothing (OFF) */
+static void mo_pic_midich(void)
+{
+    for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
+        int32_t y = 54 + (int32_t)k * 11;
+        uint32_t ch = midi_out_channel(&trk[k]);
+        char n[3] = {'T', (char)('1' + k), 0}, b[24];
+        mo_inv(n, 3, y);
+        if (ch == MIDI_OUT_NONE) str_cpy(b, "OFF", sizeof b);
+        else {
+            str_cpy(b, "CH ", sizeof b);
+            fmt_int(b + 3, (int32_t)ch + 1);
+            if (!tessera.midi_ch[k]) str_cpy(b + str_len(b), drum_track(&trk[k]) && settings_drumch ? " DRUM" : " ROUT", 6);
+        }
+        mo_text(b, 18, y, ch == MIDI_OUT_NONE ? MO_DIM : MO_INK);
+    }
+    if (settings_midi_out != MIDI_OUT_ALL)
+        mo_text(settings_midi_out == MIDI_OUT_OFF ? "MIDI OUT: OFF" : "MIDI OUT: KEYS", 2, 101, MO_DIM);
+}
 static void mo_picture(void)
 {
     const page_t *pg = cur_page();
@@ -1157,6 +1456,18 @@ static void mo_picture(void)
     if (pg->graph == GR_MATRIX) {
         mo_pic_matrix();
         return;
+    }
+    switch (pg->graph) {                                /* the generators' other pages */
+    case GR_FORM: mo_pic_form(t); return;
+    case GR_EVOLVE: mo_pic_evolve(t); return;
+    case GR_TWEAK: mo_pic_tweak(t); return;
+    case GR_TWEAK2: mo_pic_tweak2(t); return;
+    case GR_ORGANIC: mo_pic_organic(t); return;
+    case GR_NOTELEN: mo_pic_notelen(t); return;
+    case GR_TIMING: mo_pic_timing(t); return;
+    case GR_ENERGY: mo_pic_energy(); return;
+    case GR_MIDICH: mo_pic_midich(); return;
+    default: break;
     }
     mo_pic_detailed();                                  /* the rest: the detailed picture until its Mono one is drawn */
 }
