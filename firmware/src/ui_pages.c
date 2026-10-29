@@ -318,9 +318,17 @@ static void pv_column(uint32_t c, const char *label0, const char *val0, const ch
         return;
     }
     if (col_style == CS_CHIP) {
+#if MELODEE_LOOK
+        mo_chip(c, v0, u0, vc, hot, pv_chip_y);
+#else
         pv_chip(c, l0, v0, u0, vc, hot);
+#endif
         return;
     }
+#if MELODEE_LOOK
+    mo_strip_col(c, l0, v0, vc, hot, pv_strip_y);
+    return;
+#endif
     pv_words(l0, v0, u0, label, val, unit);            /* (CS_STRIP: the words as the rings') */
     cv_begin(CARD_W, PV_STRIP_H, T_BG);
     if (hot) {
@@ -894,6 +902,14 @@ static void pv_strip(uint32_t k)
     trk_short_name(k, nm);
     sig = str_hash(1u + sel * 2u + mute * 4u + arm * 8u + hot * 16u + octp * 64u + solo * 128u + quiet * 256u, nm) +
           lvl * 7919u + (uint32_t)(pan + 128) * 104729u;
+#if MELODEE_LOOK
+    if (!ui.force && sig == pvm.strip[k] && m == pvm.meter[k])
+        return;
+    pvm.strip[k] = sig;
+    pvm.meter[k] = (uint8_t)(m < 0 ? 0 : m);
+    mo_strip(k, nm, lvl, pan, sel | mute << 1 | solo << 2 | quiet << 3 | arm << 4 | hot << 5 | octp << 7, pvm.meter[k]);
+    return;
+#endif
     if (!ui.force && sig == pvm.strip[k]) {
         if (m != pvm.meter[k]) {                        /* the meter alone */
             pvm.meter[k] = (uint8_t)(m < 0 ? 0 : m);

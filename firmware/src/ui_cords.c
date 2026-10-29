@@ -129,6 +129,11 @@ static void cu_rows(void)
         uint16_t bg = sel ? T_LIFT : T_BG;
         int32_t a = cu_pct(c);
         char b[16];
+#if MELODEE_LOOK
+        mo_cu_row(top + k + 1u, c, sel, on);
+        cv_blit(0, (uint32_t)(CU_Y + (int32_t)k * CU_H));
+        continue;
+#endif
         cv_begin(240, CU_H, T_BG);
         if (sel) {
             cv_rrect(4, 1, 232, CU_H - 4, 7, T_THEME, T_BG);
@@ -160,6 +165,11 @@ static void cu_bar(uint32_t k, const cord_t *c, int sel, int32_t s)
     uint16_t bg = sel ? T_LIFT : T_BG;
     int on = cord_live(c);
     int32_t a = cu_pct(c), m = 104, x = 2 + (a + 100) * 206 / 200, lx = m + clamp(s, -32768, 32768) * 103 / 32768;
+#if MELODEE_LOOK
+    mo_cu_bar(c, s);
+    cv_blit(CU_BAR_X, (uint32_t)(CU_Y + (int32_t)k * CU_H + 27));
+    return;
+#endif
     cv_begin(CU_BAR_W, 9, bg);
     cv_rect(2, 3, 206, 3, T_LINE);
     if (a)
@@ -187,9 +197,13 @@ static void cu_leds(void)
         if (!ui.force && key == was[k])
             continue;
         was[k] = key;
+#if MELODEE_LOOK
+        mo_cu_led(lv);
+#else
         cv_begin(8, 8, bg);
         if (lv)
             cv_disc(4, 4, 6, lv > 1 ? ux_mix(T_DIM, T_THEME, (lv - 1) * 100 / 7) : T_DIM, 0);   /* (T_DIM: on either row) */
+#endif
         cv_blit(CU_LED_X, (uint32_t)(CU_Y + (int32_t)k * CU_H + CU_LED_Y));
     }
 }
