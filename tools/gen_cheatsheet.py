@@ -7,8 +7,11 @@
 
 CHEATSHEET.md stays the source: this reads its title, the paragraphs under it and its tables (a heading, then a
 table of two columns) and writes docs/cheatsheet/cheatsheet.html. With --pdf, a Chromium-based browser (Chrome,
-Edge, Chromium) prints that page headless to docs/cheatsheet/tessera-cheatsheet.pdf.
+Edge, Chromium) prints that page headless to docs/cheatsheet/tessera-cheatsheet.pdf. The page is the Mono look
+for paper: black ink on white, the headings in Tessera Mono (the device's 5 x 7 font: tools/gen_mono_webfont.py),
+each section's heading inverted as the device's header is.
 """
+import base64
 import argparse
 import html
 import re
@@ -16,28 +19,38 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gen_mono_webfont import build as mono_woff         # noqa: E402
+
 SRC = Path(__file__).resolve().parents[1]
 MD = SRC / "CHEATSHEET.md"
 OUT = SRC / "docs" / "cheatsheet"
 
 CSS = """
 @page { size: A4; margin: 11mm 10mm 10mm 10mm; }
-:root { --lapis: #1d3461; --gold: #b8892b; --ink: #1a1a1a; --line: #d9d4c7; --tint: #f6f3ea; }
+:root { --ink: #000; --line: #c8c8c8; --tint: #f2f2f2; --pixel: "Tessera Mono", ui-monospace, monospace; }
 * { box-sizing: border-box; }
 body { margin: 0; color: var(--ink); background: #fff; font: 7.6pt/1.28 "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
-header { border-bottom: 2px solid var(--gold); margin-bottom: 3mm; padding-bottom: 1.5mm; }
-h1 { margin: 0; color: var(--lapis); font-size: 15pt; letter-spacing: .02em; }
+header { border-bottom: 2px solid var(--ink); margin-bottom: 3mm; padding-bottom: 1.5mm; }
+h1 { margin: 0; font: 400 18pt/1 var(--pixel); text-transform: uppercase; }
 header p { margin: 1mm 0 0; color: #444; }
 main { column-count: 2; column-gap: 6mm; }
 section { break-inside: avoid; margin: 0 0 3mm; }
-h2 { margin: 0 0 1mm; padding: .6mm 1.6mm; color: #fff; background: var(--lapis); font-size: 8.4pt; }
+h2 { margin: 0 0 1mm; padding: .8mm 1.6mm .5mm; color: #fff; background: var(--ink); font: 400 9pt/1.1 var(--pixel);
+     text-transform: uppercase; }
 table { width: 100%; border-collapse: collapse; }
 td { padding: .55mm 1.4mm; vertical-align: top; border-bottom: .3mm solid var(--line); }
 td:first-child { width: 42%; }
 tr:nth-child(even) td { background: var(--tint); }
-b { color: var(--lapis); }
+b { color: var(--ink); }
 footer { margin-top: 2mm; color: #666; font-size: 6.6pt; text-align: right; }
 """
+
+
+def face():
+    """Tessera Mono, inline"""
+    return ('\n@font-face { font-family: "Tessera Mono"; src: url("data:font/woff;base64,'
+            + base64.b64encode(mono_woff()).decode() + '") format("woff"); }')
 
 
 def inline(text):
@@ -72,7 +85,7 @@ def parse(md):
 
 def page(title, intro, sections):
     out = [f"<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>{html.escape(title)}</title>",
-           f"<!-- made by tools/gen_cheatsheet.py from CHEATSHEET.md: edit that, not this -->\n<style>{CSS}</style>\n"
+           f"<!-- made by tools/gen_cheatsheet.py from CHEATSHEET.md: edit that, not this -->\n<style>{face()}{CSS}</style>\n"
            "</head>\n<body>\n<header>", f"<h1>{html.escape(title)}</h1>"]
     out += [f"<p>{inline(p)}</p>" for p in intro[1:]]          # (the first: where the PDF is, not for the page)
     out.append("</header>\n<main>")

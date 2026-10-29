@@ -54,7 +54,8 @@ page also has a way back to the official V15 firmware, with a backup first.
 * **Sounds**: FM6 (six-operator FM, three engine models), TRIO and DRUM (808, 909).
 * **MIDI OUT** of every track and the generators, each on a channel of its own (GLO > MIDI OUT), and **CLOCK OUT**,
   over USB.
-* **Its own look**: the SMALTI palette, square tiles, Chakra Petch, and an animated mosaic splash.
+* **Its own look**: one ink on black and a 5 x 7 pixel font, as on a monochrome OLED; YELLOW by default, or
+  WHITE, GREEN, BLUE or RED (MENU > COLOR).
 
 The **[manual](MANUAL.md)** covers every page, knob and shortcut; **[RECIPES.md](RECIPES.md)** has step-by-step
 patches and tips.
@@ -64,7 +65,7 @@ patches and tips.
 ## Gallery
 
 *The pages as the firmware draws them, rendered on the host from the firmware's own drawing code
-(`tests/gallery_render.c`) in the default SMALTI palette, shown at 2x.*
+(`tests/gallery_render.c`) in the default YELLOW ink, shown at 2x.*
 
 <table>
 <tr>

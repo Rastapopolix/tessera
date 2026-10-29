@@ -77,8 +77,9 @@ another's solo dims. Any page button leaves the mixer, and the keys play notes a
 **Lists** (the HOME menu, SCL, VOICE, the sheets and the sound designer): KNOB 1 picks the row, KNOB 2 changes its
 value.
 
-**The look.** Tessera's palette is **SMALTI**, lapis and gold. MARMO, VITRO, NIGHT and CONTRAST are in MENU >
-COLOR. Each track has its own colour, used for its tile, its cords and its row in MATRIX.
+**The look.** Tessera draws every screen in one ink on black, with a 5 x 7 pixel font: the selected item is
+inverted, and quieter things are drawn in a dimmer ink. MENU > COLOR picks the ink: **YELLOW** (the default),
+WHITE, GREEN, BLUE or RED. The tracks are told apart by their numbers, not by colours.
 
 ---
 
@@ -252,8 +253,8 @@ saved project keeps its seeds.
 
 ## OCT+ layers on GEN
 
-Some generators have more settings than three knobs. Hold **OCT+** on GEN: the knobs' labels move onto tiles in the
-track's colour, an OCT+ key shows in the header, and the four knobs set the layer. Let go to return.
+Some generators have more settings than three knobs. Hold **OCT+** on GEN: the knobs' labels change to the layer's, an OCT+
+key shows in the header, and the four knobs set the layer. Let go to return.
 
 <p align="center"><img src="assets/gallery/gen_grids_oct.png" alt="ATLAS with OCT+ held" width="240"> <img src="assets/gallery/gen_chord_oct.png" alt="CHORD with OCT+ held" width="240"> <img src="assets/gallery/gen_chord_user.png" alt="CHORD USER with OCT+ held" width="240"></p>
 
@@ -335,9 +336,8 @@ Drift with PROB, LEAP or MORPH, and let GRAVITY decide how far it may wander.
 The notes keep their written pitch, then follow this track's scale, TRN and SHIFT. Print (REC held) keeps what it
 played, as for any generator.
 
-With a SOURCE, TURING's and MORPH's picture on GEN shows the loop as it plays now: a step as you wrote it in white,
-a changed one in the track's colour with the written step drawn over it hollow (its ghost: an empty frame is a
-note dropped). MORPH shows B, its variation. **HOME** under it is how far the loop has wandered: empty when it plays
+With a SOURCE, TURING's and MORPH's picture on GEN shows the loop as it plays now: a step as you wrote it is drawn plain,
+a changed one with the written step drawn over it hollow (its ghost: an empty frame is a note dropped). MORPH shows B, its variation. **HOME** under it is how far the loop has wandered: empty when it plays
 your pattern as written, full when every step has changed.
 
 <p align="center"><img src="assets/gallery/gen_seed.png" alt="TURING from a SOURCE" width="240"></p>
@@ -382,8 +382,7 @@ pattern clears the changes.
 Changing HOW puts the steps back as written. REC held keeps any of them, SERIAL's whole phrase included.
 
 The EVOLVE page's picture shows the steps across the phrase, by pitch, under the bars left until the next round. A
-step playing as written is white; a changed one is in the track's colour, with the step as written hollow where
-it was: a ratchet is split into its hits, a passing or ghost note sits in a rest, a dropped note leaves only the
+step playing as written is drawn plain; a changed one has the step as written drawn hollow where it was: a ratchet is split into its hits, a passing or ghost note sits in a rest, a dropped note leaves only the
 hollow one. Under them: HOW, or SERIAL's transform this round (BACKWARDS, UPSIDE DOWN, ROTATE n, HALF SPEED), and
 **HOME**, how far the steps are from as written (empty: all as written). On NOTES, a changed step's note as it
 plays now is dashed, beside the note you wrote.
@@ -415,7 +414,7 @@ are reached. Changing MODE or ROLL starts the form again at A.
 | 1 | **SHIFT** (±24) | Transposes by semitones; while following, by scale steps from the followed note. |
 | 2 | **DROP** (0–100 %) | The chance a hit is left out, whatever the generator. |
 | 3 | **HUMAN** (0–100 %) | Varies each note's velocity and length a little, as a player would: at 100 up to 20 softer or louder and up to half as long, the same each time the piece plays. The timing is TIMING's **HUMAN**. |
-| 4 | **FOLLOW** | OFF, or T1 to T4: plays that track's pitch, SHIFT away, in this track's scale. STEP tracks can be followed too. The followed track is drawn in its own colour. |
+| 4 | **FOLLOW** | OFF, or T1 to T4: plays that track's pitch, SHIFT away, in this track's scale. STEP tracks can be followed too. |
 
 On an ATLAS track only DROP and HUMAN apply: SHIFT, FOLLOW and FLRSH would change which drum plays. On a STEP track
 TWEAK holds HUMAN alone.
@@ -600,7 +599,7 @@ at a time, each with an activity light and a moving mark.
 ## MATRIX
 
 MATRIX, after MODS, shows the cords as a 4 x 4 grid: source track down the left (FROM), destination track along the
-top (TO). A cell is lit, in the source track's colour, when a cord goes that way, as bright as the cords move it now.
+top (TO). A cell is lit when a cord goes that way, brighter the more the cords move it now.
 
 | Knob | What it does |
 |---|---|
@@ -658,7 +657,7 @@ Hold **HOME** for the menu. Tessera's additions:
 
 | Item | What it does |
 |---|---|
-| **COLOR** | The palette: SMALTI (Tessera's own), MARMO, VITRO, NIGHT or CONTRAST. |
+| **COLOR** | The screen's ink, on black: YELLOW (the default), WHITE, GREEN, BLUE or RED. |
 | **MIDI OUT** | What goes out over USB MIDI: **KEYS** (the notes you play, as Melodee sent them), **ALL** (also the steps, the ARP, recordings and every generator) or **OFF**. Each track on its own channel: see [MIDI OUT channels](#midi-out-channels). |
 | **CLOCK OUT** | 24 pulses a beat with START and STOP over USB, while the clock is INT. |
 | **PANEL GAMMA** | The screen's contrast curve: the panel chip's own **G2.2** (the default), G1.8, G2.5 and G1.0, or TUNED and TUNED+VCOM. The screen goes black for a moment and redraws. Saved. |
