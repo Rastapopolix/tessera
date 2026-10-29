@@ -461,6 +461,11 @@ static void help_find(uint32_t k)
         else help.pid = (uint16_t)PID_TESS(TX_SD_GRAVITY);
         return;
     }
+    if (pg->graph == GR_FORM && fm_layer_on()) {       /* (a generator's FORM, OCT+ held: DEVELOP) */
+        if (k) help_unused(k);
+        else help.pid = (uint16_t)PID_TESS(TX_FM_DEVELOP);
+        return;
+    }
     if (pg->graph == GR_EVOLVE && tessera_step_on(tr)) {   /* STEP EVOLVE */
         static const uint8_t SV[3] = {TX_SV_LOCK, TX_SV_EVERY, TX_SV_AMOUNT};
         if (k == 3u) {

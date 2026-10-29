@@ -862,6 +862,16 @@ static void draw_columns(void)
         uint32_t tr = song.sel;
         const tessera_evolve_t *ev = &tessera.evolve[tr < TESSERA_TRACKS ? tr : 0u];
         char f2[16];
+        if (fm_layer_on()) {                            /* a generator's FORM, OCT+ held: DEVELOP (lit with a FORM on) */
+            uint32_t dv = tessera.fm_dev[tr];
+            fmt_int(f2, dv);
+            col_mods(PID_TESS(TX_FM_DEVELOP));
+            draw_column(0, "DEVLP", f2, "%", ev->form ? VAL(0u) : T_DIM, (int32_t)dv * 10, ICON_AUTO);
+            draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+            return;
+        }
         fmt_int(f2, ev->contrast);
         draw_column(0, "FORM", tessera_form_name(ev->form), "", VAL(0u), (int32_t)ev->form * 1000 / 6, ICON_AUTO);
         col_mods(PID_TESS(TX_FM_CONTRAST));

@@ -183,6 +183,8 @@ typedef struct {
     uint8_t          sd_src[TESSERA_TRACKS];     /* SOURCE: 0 OFF, 1..4 that track's STEP pattern */
     uint8_t          sd_keep[TESSERA_TRACKS];    /* KEEP: TESS_SD_FREE, _RHYTHM, _PITCH */
     uint8_t          sd_grav[TESSERA_TRACKS];    /* GRAVITY: 0..100 % of steps played as written, 0 off */
+    /* FORM's DEVELOP (OCT+ held on FORM, KNOB 1): the record's DEV part, not the packed block */
+    uint8_t          fm_dev[TESSERA_TRACKS];     /* 0..100: how far a section's return varies, 0 exact (as before) */
     /* CHORD's BREATH (HIT HOLD): its voices on slow cycles of their own, one now and then sitting out */
     uint8_t          ch_breath[TESSERA_TRACKS];  /* 0..100: 0 off (as before) */
     /* ENERGY (energy.c; the ENERGY page), the project's, not a track's: its slow tide and its rests */
@@ -206,6 +208,10 @@ typedef struct {
     uint8_t   gv_mode[TESSERA_TRACKS];          /* the MODE home is for, + 1; 0 none yet */
     gen_sec_t gv_home[TESSERA_TRACKS], gv_last[TESSERA_TRACKS];
     uint8_t   gv_haw[TESSERA_TRACKS][16], gv_law[TESSERA_TRACKS][16];   /* (Awake's values: home's, the last round's) */
+    /* FORM's DEVELOP (tessera.c tess_form_develop): a return as developed, so leaving it keeps the section unchanged */
+    uint8_t   dv_on;                            /* tracks (bits) playing a developed return */
+    gen_sec_t dv_last[TESSERA_TRACKS];
+    uint8_t   dv_law[TESSERA_TRACKS][16];
 } tessera_sv_t;
 enum { TESS_SV_SER_NONE, TESS_SV_SER_RETRO, TESS_SV_SER_INV, TESS_SV_SER_ROT, TESS_SV_SER_AUG };
 extern tessera_sv_t tess_sv;
@@ -241,6 +247,7 @@ void tessera_mutate(uint32_t tr);
 void tessera_seed_turn(uint32_t tr, int32_t s);    /* ROLL (EVOLVE page): the next seed, on the bar line */
 void tessera_evolve_knob(uint32_t k, int32_t s);
 void tessera_ev_layer_knob(uint32_t k, int32_t s);
+void tessera_fm_layer_knob(uint32_t k, int32_t s);   /* OCT+ held on FORM: KNOB 1 DEVELOP */
 void tessera_en_layer_knob(uint32_t k, int32_t s);   /* OCT+ held on ENERGY: KNOB 1 the track's DEPTH */   /* OCT+ held on a generator's EVOLVE: KNOB 1 GRAVITY */
 uint32_t tessera_every_bars(uint32_t every);
 int  tessera_lock_get(uint32_t tr);            /* 0..100, or -1 when LOCK is not available for the mode */
@@ -332,6 +339,7 @@ enum {
     TX_SV_HOW,                                      /* (0x26B: STEP EVOLVE's HOW, a STEP track's) */
     TX_EN_LEVEL,                                    /* (0x26C: ENERGY's LEVEL, the project's: one value, whichever track) */
     TX_EN_DEPTH,                                    /* (0x26D: ENERGY's DEPTH, any track's) */
+    TX_FM_DEVELOP,                                  /* (0x26E: FORM's DEVELOP, a generator track's) */
     TX_COUNT
 };
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */

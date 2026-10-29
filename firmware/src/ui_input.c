@@ -945,6 +945,14 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
+    if (pg->graph == GR_FORM && fm_layer_on()) {    /* a generator's FORM, OCT+ held: DEVELOP */
+        tessera_fm_layer_knob(slot, steps);
+        oct_eat |= 2u;
+        ui.oct_t0 |= 2u;
+        oct_deferred = 0;
+        ui.force = 1;
+        return;
+    }
     if (pg->graph == GR_FORM) {
         tessera_form_knob(slot, steps);
 #if MELODEE_LOOK
