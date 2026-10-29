@@ -13,10 +13,10 @@ from pathlib import Path
 from PIL import Image
 
 src = Path(sys.argv[1] if len(sys.argv) > 1 else "build/gallery/ppm")
-out = Path(__file__).resolve().parent.parent / "assets/gallery"
+out = Path(sys.argv[2]) if len(sys.argv) > 2 else Path(__file__).resolve().parent.parent / "assets/gallery"
 n = 0
 for ppm in sorted(src.glob("*.ppm")):
-    name = ppm.stem.split("_", 1)[1] if ppm.stem.startswith(("SMALTI_", "smalti_")) else ppm.stem
+    name = ppm.stem.split("_", 1)[1] if ppm.stem.split("_", 1)[0].isupper() else ppm.stem   # (SMALTI_, YELLOW_: the palette)
     im = Image.open(ppm).convert("RGB")
     im.resize((im.width * 2, im.height * 2), Image.NEAREST).save(out / f"{name}.png", optimize=True)
     n += 1
