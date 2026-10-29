@@ -83,6 +83,7 @@ static void tess_atlas_fresh(uint32_t tr)
 static void tess_realign(uint32_t tr);
 static void sd_realign(uint32_t tr);                    /* (step_seed.c) */
 static void sd_evolve(uint32_t tr, uint32_t amt);
+static uint32_t sd_source(uint32_t tr);
 static void tess_form_restart(uint32_t tr);
 /* The seed ROLL left waiting (tessera_seed_turn): its line from its start. The playheads back on step 1; a FORM
  * begins again at A (its sections were the old line's) */
@@ -392,11 +393,22 @@ uint32_t tessera_form_get(uint32_t tr, uint8_t seq[4], uint32_t *pos)
 }
 
 /* Remember the live phrase as the section being left (the Markov / Morph notes are written straight into it) */
+static void tess_gen_save(uint32_t tr, gen_sec_t *g, uint8_t *aw);
 static void tess_save_sec(uint32_t tr)
 {
     tessera_evolve_t *ev = &tessera.evolve[tr];
     tessera_sec_t *s = &tessera.sec[tr][ev->sec % 3u];
     gen_sec_t g = {s->reg, s->p0, s->p1};
+    tess_gen_save(tr, &g, s->note);
+    s->reg = g.reg;
+    s->p0 = g.p0;
+    s->p1 = g.p1;
+}
+/* The generator's settings as a section keeps them (Awake's 16 bytes of values into aw) */
+static void tess_gen_save(uint32_t tr, gen_sec_t *gs, uint8_t *aw)
+{
+    const tessera_evolve_t *ev = &tessera.evolve[tr];
+    gen_sec_t g = *gs;
     switch (tessera.mode[tr]) {
     case TESS_ENG_TURING:
         gen_turing_save(&tessera.turing[tr], &g);
@@ -409,8 +421,8 @@ static void tess_save_sec(uint32_t tr)
     case TESS_ENG_BOUNCE: gen_bounce_save(&tessera.bounce[tr], &g); break;
     case TESS_ENG_AWAKE:                                     /* (its values: the phrase buffer, Awake has no LOCK) */
         gen_awake_save(&tessera.awake[tr], &g);
-        memcpy(s->note, tessera.awake[tr].a, 8);
-        memcpy(s->note + 8, tessera.awake[tr].b, 8);
+        memcpy(aw, tessera.awake[tr].a, 8);
+        memcpy(aw + 8, tessera.awake[tr].b, 8);
         break;
     case TESS_ENG_POLY:   gen_poly_save(&tessera.poly[tr], &g); break;
     case TESS_ENG_QUAD:   gen_quad_save(&tessera.quad[tr], &g); break;
@@ -418,9 +430,76 @@ static void tess_save_sec(uint32_t tr)
     case TESS_ENG_SERIES: gen_series_save(&tessera.series[tr], &g); break;
     case TESS_ENG_CHORD:  gen_chord_save(&tessera.chord[tr], &g); break;
     }
-    s->reg = g.reg;
-    s->p0 = g.p0;
-    s->p1 = g.p1;
+    *gs = g;
+}
+
+/* GRAVITY on EVOLVE (a generator without a SOURCE, FORM off): home is the generator as it was last set by hand (a knob,
+ * ROLL, MODE, a load: whatever left it other than the last round did). At GRAVITY % a round pulls it toward home
+ * (gen.c gen_*_pull) instead of changing it; GRAVITY 0 draws nothing, so the rounds play as before. CONSTELLATION's pull
+ * lets no star go; QUAD's only alone and with its columns still */
+static void tess_gv_now(uint32_t tr, gen_sec_t *g, uint8_t *aw)
+{
+    memset(g, 0, sizeof *g);
+    memset(aw, 0, 16);
+    tess_gen_save(tr, g, aw);
+}
+#define TESS_GV_PULL(E, f) \
+    case E: { gen_##f##_t h = tessera.f[tr]; gen_##f##_load(&h, hs); gen_##f##_pull(&tessera.f[tr], &h, amt, rnd); } break;
+static void tess_gv_pull(uint32_t tr, uint32_t amt)
+{
+    const gen_sec_t *hs = &tess_sv.gv_home[tr];
+    uint32_t *rnd = &tessera.rnd[tr], i, n = 0;
+    switch (tessera.mode[tr]) {
+    case TESS_ENG_TURING:                                    /* (from the phrase's start, as home was taken) */
+        if (!tessera.evolve[tr].rec) tessera.turing[tr].reg = tessera.evolve[tr].base_reg;
+        { gen_turing_t h = tessera.turing[tr]; gen_turing_load(&h, hs); gen_turing_pull(&tessera.turing[tr], &h, amt, rnd); }
+        break;
+    TESS_GV_PULL(TESS_ENG_EUCLID, euclid)
+    TESS_GV_PULL(TESS_ENG_MARKOV, markov)
+    TESS_GV_PULL(TESS_ENG_MORPH, morph)
+    TESS_GV_PULL(TESS_ENG_GRIDS, grids)
+    TESS_GV_PULL(TESS_ENG_BOUNCE, bounce)
+    TESS_GV_PULL(TESS_ENG_POLY, poly)
+    TESS_GV_PULL(TESS_ENG_SERIES, series)
+    TESS_GV_PULL(TESS_ENG_CHORD, chord)
+    case TESS_ENG_AWAKE: {
+        gen_awake_t h = tessera.awake[tr];
+        memcpy(h.a, tess_sv.gv_haw[tr], 8);
+        memcpy(h.b, tess_sv.gv_haw[tr] + 8, 8);
+        gen_awake_load(&h, hs);
+        gen_awake_pull(&tessera.awake[tr], &h, amt, rnd);
+        break;
+    }
+    case TESS_ENG_QUAD:
+        for (i = 0; i < TESSERA_TRACKS; i++) n += tessera.mode[i] == TESS_ENG_QUAD;
+        if (n < 2u && !tess_quad_moving()) {
+            gen_quad_t h = tessera.quad[tr];
+            gen_quad_load(&h, hs);
+            gen_quad_pull(&tessera.quad[tr], &h, amt, rnd);
+        }
+        break;
+    }
+    tessera.evolve[tr].flash = 4;
+    tess_realign(tr);
+}
+#undef TESS_GV_PULL
+/* EVOLVE's round (EVERY, FORM off): home taken again if the generator was changed since the last round, then a pull
+ * home at GRAVITY % (none with a SOURCE: GRAVITY plays the source there, step_seed.c), else a mutation */
+static void tess_gv_round(uint32_t tr)
+{
+    gen_sec_t g;
+    uint8_t aw[16];
+    uint32_t grav = tessera.sd_grav[tr], amt = tessera.evolve[tr].amount;
+    tess_gv_now(tr, &g, aw);
+    if (tess_sv.gv_mode[tr] != tessera.mode[tr] + 1u || memcmp(&g, &tess_sv.gv_last[tr], sizeof g) ||
+        memcmp(aw, tess_sv.gv_law[tr], sizeof aw)) {
+        tess_sv.gv_mode[tr] = (uint8_t)(tessera.mode[tr] + 1u);
+        tess_sv.gv_home[tr] = g;
+        memcpy(tess_sv.gv_haw[tr], aw, sizeof aw);
+    }
+    if (grav && !sd_source(tr) && gen_rnd(&tessera.rnd[tr], 100u) < grav) tess_gv_pull(tr, amt > 100u ? 100u : amt);
+    else tessera_mutate(tr);
+    tess_gv_now(tr, &tess_sv.gv_last[tr], tess_sv.gv_law[tr]);
 }
 
 /* Bring a remembered section back: its settings, and (Markov / Morph) its recorded phrase */
@@ -566,7 +645,7 @@ static void tessera_evolve_tick(const track_t *t, uint32_t tr)
         } else if (ev->every && ++ev->bar_cnt >= tessera_every_bars(ev->every)) {
             ev->bar_cnt = 0;
             if (ev->form) tess_form_advance(tr);
-            else tessera_mutate(tr);         /* also puts the loop back on step 1 and rearms it */
+            else tess_gv_round(tr);          /* (a mutation or GRAVITY's pull: the loop back on step 1, rearmed) */
         }
     } else if (!ev->step_cnt && tessera.roll[tr]) {
         tess_roll_apply(tr);                 /* (PLAY's first step: a bar line too) */
@@ -694,6 +773,17 @@ void tessera_evolve_knob(uint32_t k, int32_t s)
 {
     TESS_IRQ_OFF();
     tess_evolve_knob_body(k, s);
+    TESS_IRQ_ON();
+}
+
+/* OCT+ held on a generator track's EVOLVE page: KNOB 1 GRAVITY (ui_input.c; the SOURCE layer's too) */
+void tessera_ev_layer_knob(uint32_t k, int32_t s)
+{
+    uint32_t tr = song.sel;
+    tessera_ensure_init();
+    if (tr >= TESSERA_TRACKS || !s || k) return;
+    TESS_IRQ_OFF();
+    tess_param_set_body(tr, TX_SD_GRAVITY, (int32_t)tessera.sd_grav[tr] + s);
     TESS_IRQ_ON();
 }
 

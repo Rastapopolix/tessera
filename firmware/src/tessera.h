@@ -200,6 +200,10 @@ typedef struct {
     uint8_t  mut[TESSERA_TRACKS][TESS_SV_STEPS];   /* each step's change (vary.c), 0 as written */
     uint8_t  ser[TESSERA_TRACKS];               /* HOW SERIAL: the round's transform (TESS_SV_SER_*), 0 none */
     uint8_t  ser_arg[TESSERA_TRACKS];           /* its argument: ROTATION's steps, AUGMENTATION's half (0 the first) */
+    /* GRAVITY on EVOLVE (tessera.c tess_gv_round): a generator track's home and its state after the last round */
+    uint8_t   gv_mode[TESSERA_TRACKS];          /* the MODE home is for, + 1; 0 none yet */
+    gen_sec_t gv_home[TESSERA_TRACKS], gv_last[TESSERA_TRACKS];
+    uint8_t   gv_haw[TESSERA_TRACKS][16], gv_law[TESSERA_TRACKS][16];   /* (Awake's values: home's, the last round's) */
 } tessera_sv_t;
 enum { TESS_SV_SER_NONE, TESS_SV_SER_RETRO, TESS_SV_SER_INV, TESS_SV_SER_ROT, TESS_SV_SER_AUG };
 extern tessera_sv_t tess_sv;
@@ -234,6 +238,7 @@ void tessera_kill(track_t *t);
 void tessera_mutate(uint32_t tr);
 void tessera_seed_turn(uint32_t tr, int32_t s);    /* ROLL (EVOLVE page): the next seed, on the bar line */
 void tessera_evolve_knob(uint32_t k, int32_t s);
+void tessera_ev_layer_knob(uint32_t k, int32_t s);   /* OCT+ held on a generator's EVOLVE: KNOB 1 GRAVITY */
 uint32_t tessera_every_bars(uint32_t every);
 int  tessera_lock_get(uint32_t tr);            /* 0..100, or -1 when LOCK is not available for the mode */
 void tessera_phrase(uint32_t tr, uint32_t *bar, uint32_t *of, int *flash); /* of == 0: EVERY is OFF */

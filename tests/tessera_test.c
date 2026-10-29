@@ -2880,6 +2880,53 @@ static int base_get(const char *file, const char *name, char *want, size_t cap)
     return 0;
 }
 
+/* GRAVITY on EVOLVE (tessera.c tess_gv_round): each generator drifts for 8 rounds at GRAVITY 0, then at GRAVITY 100
+ * comes back to its home within 60 rounds; EUCLID's home follows PULSES set by hand. Called straight, no transport.
+ * Writes "drifted home of follow" */
+static uint32_t gv_off(uint32_t tr)                  /* how many of the generator's saved bytes differ from home */
+{
+    gen_sec_t g;
+    uint8_t aw[16];
+    const uint8_t *a = (const uint8_t *)&g, *b = (const uint8_t *)&tess_sv.gv_home[tr];
+    uint32_t n = 0, i;
+    tess_gv_now(tr, &g, aw);
+    for (i = 0; i < sizeof g; i++) n += a[i] != b[i];
+    for (i = 0; i < 16u; i++) n += aw[i] != tess_sv.gv_haw[tr][i];
+    return n;
+}
+static void gravity_run(char *res, size_t cap)
+{
+    static const uint8_t M[11] = {TESS_ENG_TURING, TESS_ENG_EUCLID, TESS_ENG_MARKOV, TESS_ENG_MORPH, TESS_ENG_GRIDS,
+                                  TESS_ENG_BOUNCE, TESS_ENG_AWAKE, TESS_ENG_POLY, TESS_ENG_QUAD, TESS_ENG_SERIES,
+                                  TESS_ENG_CHORD};
+    uint32_t drifted = 0, home = 0, follow = 0, i, r;
+    for (i = 0; i < 11u; i++) {
+        uint32_t off = 0;
+        tessera_reset();
+        gen(0, M[i]);
+        if (M[i] == TESS_ENG_CHORD) tessera_param_set(0, TX_CH_PROG, GEN_CH_WALK);
+        tessera.evolve[0].every = 1;
+        tessera.evolve[0].amount = 60;
+        for (r = 0; r < 8u; r++) tess_gv_round(0);
+        for (r = 0; r < 8u; r++) { tess_gv_round(0); off += gv_off(0); }
+        drifted += off > 0u;
+        tessera_param_set(0, TX_SD_GRAVITY, 100);
+        for (r = 0; r < 60u && gv_off(0); r++) tess_gv_round(0);
+        home += !gv_off(0);
+    }
+    tessera_reset();                                 /* EUCLID: PULSES set by hand is home from the next round */
+    gen(0, TESS_ENG_EUCLID);
+    tessera.evolve[0].every = 1;
+    tessera.evolve[0].amount = 80;
+    for (r = 0; r < 12u; r++) tess_gv_round(0);
+    tessera_param_set(0, TX_EUC_PULSES, 11);
+    tess_gv_round(0);
+    tessera_param_set(0, TX_SD_GRAVITY, 100);
+    for (r = 0; r < 40u; r++) tess_gv_round(0);
+    follow = tessera.euclid[0].pulses == 11u && tess_sv.gv_home[0].p0 == 11u;
+    snprintf(res, cap, "%u %u %u", drifted, home, follow);
+}
+
 int main(int argc, char **argv)
 {
     const char *base = argc > 1 ? argv[1] : "tests/tessera_baseline.txt", *logdir = argc > 2 ? argv[2] : 0;
@@ -2993,6 +3040,26 @@ int main(int argc, char **argv)
         }
         snprintf(line, sizeof line, "FOLLOW a STEP melody: all %u notes a third above it (in C major)", n2);
         bad += check(line, n2 > 16u && !wrong);
+    }
+    {                                                /* GRAVITY on EVOLVE, in a child */
+        unsigned dr = 0, hm = 0, fo = 0;
+        pid_t pid;
+        int fd[2];
+        if (!pipe(fd) && (pid = fork()) >= 0) {
+            if (!pid) {
+                close(fd[0]);
+                gravity_run(res, sizeof res);
+                if (write(fd[1], res, strlen(res) + 1u) < 0) _exit(1);
+                _exit(0);
+            }
+            close(fd[1]);
+            if (read(fd[0], res, sizeof res - 1u) > 0) sscanf(res, "%u %u %u", &dr, &hm, &fo);
+            close(fd[0]);
+            waitpid(pid, 0, 0);
+        }
+        snprintf(line, sizeof line, "GRAVITY on EVOLVE: %u of 11 generators drift at 0, %u of 11 come home at 100", dr, hm);
+        bad += check(line, dr >= 10u && hm == 11u);
+        bad += check("  EUCLID's PULSES set by hand while it drifts becomes home", fo == 1u);
     }
     for (int which = 0; which < 13; which++) {   /* STEP as seed, in a child as the scenarios (4 bars: 64 steps) */
         static const char *const NAME[13] = {"seed_turing_t1", "seed_turing_t1_prob50_keep_rhythm",
