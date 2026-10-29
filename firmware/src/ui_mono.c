@@ -715,6 +715,400 @@ static void mo_pic_detailed(void)
     cv_bg = bg;
     mo_fill(0, MO_PY1, 120, 120 - MO_PY1, MO_BG);
 }
+/* BOUNCE: the box, its walls hit on the last step drawn twice as thick; the balls, discs. FALL (BALLS past 4): the floor
+ * (thick on a landing), the leaves tilted as they sway, a landed one flat on the floor (dim as it rests, a bass leaf
+ * hollow), a gust's streaks dashed across the box */
+static void mo_pic_bounce(const gen_bounce_t *b)
+{
+    static const uint8_t LEAF[3][2] = {{1, 2}, {0, 4}, {1, 2}};   /* (a row's first cell and length) */
+    uint32_t w = b->hit, n = b->balls >= 1u && b->balls <= GEN_BOUNCE_MAX ? b->balls : 1u, k;
+    if (b->balls == GEN_BOUNCE_FALL) {
+        mo_fill(2, w ? 105 : 106, 116, w ? 2 : 1, w ? MO_INK : MO_DIM);
+        if (b->gust)
+            for (k = 0; k < 4u; k++) {
+                int32_t gx = 4 + (int32_t)b->lx[k * 2u] * 90 / 255 + (b->angle > 45u ? -4 : 4) * (int32_t)b->gust;
+                mo_dash(gx < 2 ? 2 : gx, 56 + (int32_t)((b->ly[k * 2u] + 97u * k) & 255u) * 40 / 255, 12, MO_DIM);
+            }
+        for (k = 0; k < GEN_FALL_LEAVES; k++) {
+            int32_t lx = 3 + (int32_t)b->lx[k] * 110 / 255, ly = 101 - (int32_t)b->ly[k] * 46 / 255, r;
+            int tilt = (((int32_t)b->ly[k] + (int32_t)k * 40) & 63) < 32;
+            if (b->lt[k]) {                              /* landed */
+                if (b->lv[k] & 0x80u) mo_box(lx, 103, 4, 2, b->lt[k] > 3u ? MO_INK : MO_DIM);
+                else mo_fill(lx, 103, 4, 2, b->lt[k] > 3u ? MO_INK : MO_DIM);
+                continue;
+            }
+            for (r = 0; r < 3; r++)
+                mo_hl(tilt ? lx + LEAF[r][0] + r - 1 : lx + 1 - r + LEAF[r][0], ly + r, LEAF[r][1], MO_INK);
+        }
+        return;
+    }
+    mo_fill(2, 53, 116, w & 8u ? 2 : 1, w & 8u ? MO_INK : MO_DIM);                      /* top */
+    mo_fill(2, w & 1u ? 105 : 106, 116, w & 1u ? 2 : 1, w & 1u ? MO_INK : MO_DIM);      /* floor */
+    mo_fill(2, 53, w & 2u ? 2 : 1, 54, w & 2u ? MO_INK : MO_DIM);                       /* left */
+    mo_fill(w & 4u ? 116 : 117, 53, w & 4u ? 2 : 1, 54, w & 4u ? MO_INK : MO_DIM);      /* right */
+    for (k = n; k-- > 0;)
+        mo_disc(7 + (int32_t)b->x[k] * 106 / 255, 101 - (int32_t)b->y[k] * 43 / 255, 2, MO_INK);
+}
+/* AWAKE: loop A (the notes) as bars 1..8 high over loop B (their lift) as its figure, 16 steps each; a rest a dash,
+ * past a loop's length a dim line; the steps playing solid, the others outlined; the step the keys picked framed */
+static void mo_pic_awake(const gen_awake_t *a)
+{
+    uint32_t la = a->len_a ? a->len_a : 1u, lb = a->len_b ? a->len_b : 1u, i;
+    uint32_t ca = (a->pos_a + la - 1u) % la, cb = (a->pos_b + lb - 1u) % lb;
+    char b[16];
+    for (i = 0; i < 16u; i++) {
+        int32_t x = 2 + (int32_t)i * 7 + (int32_t)(i / 4u);
+        uint32_t va = gen_awake_a(a, i), vb = gen_awake_b(a, i);
+        int on_a = song.playing && i == ca, on_b = song.playing && i == cb;
+        if (i >= la) mo_hl(x, 80, 6, MO_DIM);
+        else if (!va) mo_fill(x, 79, 6, 2, on_a ? MO_INK : MO_DIM);
+        else {
+            int32_t h = 3 + ((int32_t)va - 1) * 21 / 7;
+            if (on_a) mo_fill(x, 81 - h, 6, h, MO_INK);
+            else mo_box(x, 81 - h, 6, h, MO_INK);
+        }
+        if (i >= lb) mo_hl(x, 92, 6, MO_DIM);
+        else {
+            char d[2] = {(char)('0' + (vb > 7u ? 7u : vb)), 0};
+            if (on_b) mo_inv(d, x + 1, 85);
+            else mo_text(d, x + 1, 85, vb ? MO_INK : MO_DIM);
+        }
+        if (a->edit && (a->edit & 15u) == i)
+            mo_box(x - 1, 54, 8, 40, MO_INK);
+    }
+    str_cpy(b, "A ", sizeof b);
+    fmt_int(b + 2, la);
+    str_cpy(b + str_len(b), "  +B ", 6);
+    fmt_int(b + str_len(b), lb);
+    mo_text(b, 1, 101, MO_DIM);
+}
+/* POLY: the four rhythms a row each: its divider (the one RHY picks inverted; OFF dim), the bar's 16 steps, a tick where
+ * it lands (solid when it fires at the step playing); the step playing underlined; under them the four notes, a bar
+ * each at its pitch, the one playing solid */
+static void mo_pic_poly(const gen_poly_t *p)
+{
+    uint32_t n = 7u * (p->span >= 1u && p->span <= 3u ? p->span : 1u), now = (p->tick + GEN_POLY_WRAP - 1u) % GEN_POLY_WRAP;
+    uint32_t base = now - now % 16u, r, i;
+    for (r = 0; r < 4u; r++) {
+        uint32_t d = p->div[r];
+        int32_t y = 54 + (int32_t)r * 10;
+        char lb[4] = "OFF";
+        if (d) lb[0] = '/', fmt_int(lb + 1, d);
+        if (r == (p->sel & 3u)) mo_inv(lb, 2, y);
+        else mo_text(lb, 2, y, d ? MO_INK : MO_DIM);
+        for (i = 0; i < 16u; i++) {
+            int32_t x = 22 + (int32_t)i * 6 + (int32_t)(i / 4u);
+            uint32_t st = base + i, cur = song.playing && st == now;
+            if (d && st % d == 0u) {
+                if (cur) mo_fill(x, y, 5, 7, MO_INK);
+                else mo_box(x, y, 5, 7, MO_INK);
+            } else {
+                mo_px(x + 2, y + 6, MO_DIM);
+            }
+            if (cur && r == 0u) mo_hl(x, 94, 5, MO_INK);
+        }
+    }
+    for (i = 0; i < 4u; i++) {
+        int32_t x = 22 + (int32_t)i * 25, h = 2 + (int32_t)(p->pitch[i] > n - 1u ? n - 1u : p->pitch[i]) * 9 / (int32_t)(n - 1u);
+        if (i == p->pos) mo_fill(x, 107 - h, 22, h, MO_INK);
+        else mo_box(x, 107 - h, 22, h, MO_INK);
+    }
+}
+/* QUAD: the grid the tracks share, a row a track: T1 and its DIR, its four cells (a bar its pitch, a rest a dash; the
+ * cell it plays solid), its RANGE and LINKs (a dot a track, solid when linked); a row not in QUAD dim. Over each column
+ * its MOVE (a triangle the way it goes, RAND two dots, STOP a dash), under it its EVERY; the column OCT+ edits marked */
+static void mo_pic_quad(uint32_t tr)
+{
+    static const char *const QD[GEN_QD_COUNT] = {">", "<", "<>", "?", "="};
+    static const char *const QR[GEN_QR_COUNT] = {"3", "1", "2", "+-1"};
+    int layer = quad_cols_on();
+    uint32_t r, i, k;
+    for (i = 0; i < 4u; i++) {
+        int32_t x = 30 + (int32_t)i * 18, cx = x + 7;
+        uint32_t mv = tessera.qcol[i] & 3u;
+        int sel = layer && i == (tessera.qcol_sel & 3u);
+        uint16_t c = sel || mv ? MO_INK : MO_DIM;
+        char e[4] = {'/', 0, 0, 0};
+        if (mv == GEN_QC_DOWN || mv == GEN_QC_UP)
+            for (k = 0; k < 3u; k++)
+                mo_hl(cx - 2 + (int32_t)k, mv == GEN_QC_DOWN ? 53 + (int32_t)k : 55 - (int32_t)k, 5 - 2 * (int32_t)k, c);
+        else if (mv == GEN_QC_RAND) {
+            mo_px(cx - 2, 53, c);
+            mo_px(cx + 2, 55, c);
+        } else
+            mo_hl(cx - 2, 54, 5, c);
+        fmt_int(e + 1, tessera_quad_every(i));
+        mo_textc(e, cx + 1, 101, c);
+        if (sel) mo_hl(x, 57, 16, MO_INK);
+    }
+    for (r = 0; r < TESSERA_TRACKS; r++) {
+        const gen_quad_t *q = tessera_quad(r);
+        int on = tessera.mode[r] == TESS_ENG_QUAD;
+        int32_t y = 59 + (int32_t)r * 10;
+        uint16_t c = on ? MO_INK : MO_DIM;
+        char lb[3] = {'T', (char)('1' + r), 0};
+        if (r == tr) mo_inv(lb, 2, y);
+        else mo_text(lb, 2, y, c);
+        mo_text(QD[q->dir % GEN_QD_COUNT], 16, y, c);
+        mo_text(QR[q->range % GEN_QR_COUNT], 102, y, c);
+        for (k = 0; k < TESSERA_TRACKS; k++)            /* (its LINKs, under the RANGE) */
+            if (k != r) mo_px(102 + (int32_t)k * 4, y + 8, on && ((q->link >> k) & 1u) ? MO_INK : MO_DIM);
+        for (i = 0; i < 4u; i++) {
+            int32_t x = 30 + (int32_t)i * 18, v = q->cell[i] > 21u ? 21 : q->cell[i], h;
+            int cur = on && i == q->pos;
+            mo_hl(x, y + 8, 16, MO_DIM);
+            if (!v) {
+                mo_hl(x + 5, y + 6, 6, cur ? MO_INK : c);
+                continue;
+            }
+            h = 2 + (v - 1) * 5 / 20;
+            if (cur) mo_fill(x, y + 7 - h, 16, h, MO_INK);
+            else mo_box(x, y + 7 - h, 16, h, c);
+        }
+    }
+}
+/* CONSTELLATION: the sky scrolling left, the far two layers dim dots; the front layer's stars a plus their size (bright
+ * ones and the ones heard ink, the others ahead ink and behind dim); behind the ship the stars it heard joined; the ship
+ * mid-sky, its thruster flickering, the brackets SIZE rows round it (dim when the loop plays), the star sounding ringed.
+ * LOCK up: the loop under the sky, its stars joined, the one played ringed, a mark where LEN ends it */
+static void mo_pic_constel(uint32_t tr)
+{
+    const gen_constel_t *g = tessera_constel(tr);
+    int lock = tessera.evolve[tr].lock != 0;
+    int32_t top = 54, sh = lock ? 32 : 52, cw = 7, sx = 4 + 7 * cw + 3, row = g->ship >> 8;
+    int32_t wd = g->size > 7u ? 7 : (int32_t)g->size, i, px = 0, py = 0, pv = 0;
+#define MCS_Y(r) (top + sh - 2 - (int32_t)(r) * (sh - 4) / (int32_t)(GEN_CS_ROWS - 1u))
+    for (uint32_t l = 2; l > 0; l--)
+        for (i = -7; i < 9; i++) {
+            uint32_t st = gen_cs_star(g->sky, ((uint32_t)g->col >> l) + (uint32_t)i, l, 30u);
+            if (st) mo_px(sx + i * cw + (int32_t)l, MCS_Y((st & 15u) - 1u), MO_DIM);
+        }
+    for (i = -7; i <= 0; i++) {                         /* (the constellation behind the ship: its lines first) */
+        uint32_t st = gen_cs_star(g->sky, (uint32_t)g->col + (uint32_t)i, 0, g->dens);
+        int32_t y;
+        if (!st || !((g->trail >> (uint32_t)-i) & 1u)) continue;
+        y = MCS_Y((st & 15u) - 1u);
+        if (pv) mo_line(px, py, sx + i * cw, y, MO_INK);
+        px = sx + i * cw, py = y, pv = 1;
+    }
+    for (i = -7; i < 9; i++) {
+        uint32_t st = gen_cs_star(g->sky, (uint32_t)g->col + (uint32_t)i, 0, g->dens);
+        int32_t x = sx + i * cw, y, a;
+        int heard = i <= 0 && ((g->trail >> (uint32_t)-i) & 1u);
+        uint16_t c;
+        if (!st) continue;
+        y = MCS_Y((st & 15u) - 1u);
+        a = 1 + (int32_t)((st >> 6) & 3u) / 2;
+        c = heard || (st >> 4) & 2u || i >= 0 ? MO_INK : MO_DIM;
+        mo_hl(x - a, y, 2 * a + 1, c);
+        mo_vl(x, y - a, 2 * a + 1, c);
+        if (!i && g->caught) mo_circ(x, y, 4, MO_INK);
+    }
+    {
+        int32_t y = MCS_Y(row), yt = MCS_Y(row + wd > 14 ? 14 : row + wd) - 2, yb = MCS_Y(row - wd < 0 ? 0 : row - wd) + 2;
+        uint16_t bc = g->held ? MO_DIM : MO_INK;
+        mo_hl(sx - 2, yt, 5, bc); mo_px(sx - 2, yt + 1, bc); mo_px(sx + 2, yt + 1, bc);
+        mo_hl(sx - 2, yb, 5, bc); mo_px(sx - 2, yb - 1, bc); mo_px(sx + 2, yb - 1, bc);
+        mo_fill(sx - 11, y, 5, 1, MO_INK);              /* the ship: body, nose, fins, thruster */
+        mo_px(sx - 6, y, MO_INK);
+        mo_px(sx - 10, y - 1, MO_INK); mo_px(sx - 10, y + 1, MO_INK);
+        mo_hl(sx - 13 - (int32_t)(g->col & 1u), y, 1 + (int32_t)(g->col & 1u), MO_DIM);
+        if (g->filled && song.playing) {                /* (FILL ARP: a hollow diamond at the note it played) */
+            int32_t fy = MCS_Y(g->filled - 1u);
+            mo_px(sx, fy - 2, MO_INK); mo_px(sx, fy + 2, MO_INK); mo_px(sx - 2, fy, MO_INK); mo_px(sx + 2, fy, MO_INK);
+            mo_px(sx - 1, fy - 1, MO_INK); mo_px(sx + 1, fy - 1, MO_INK); mo_px(sx - 1, fy + 1, MO_INK); mo_px(sx + 1, fy + 1, MO_INK);
+        }
+    }
+#undef MCS_Y
+    if (lock) {
+        int32_t ly = 92, lh = 12;
+        uint32_t now = song.playing && g->held ? (uint32_t)g->held - 1u : 16u, n = g->len >= 1u && g->len <= 16u ? g->len : 16u, k;
+        int32_t qx = -1, qy = 0;
+        mo_dash(4, 89, 112, MO_DIM);
+        if (n < 16u) mo_vl(4 + (int32_t)n * cw, ly - 1, lh + 3, MO_INK);
+        for (k = 0; k < n; k++) {
+            uint32_t v = g->loop[k];
+            int32_t x = 4 + (int32_t)k * cw + cw / 2, y;
+            if (!(v & 15u)) {
+                if (k == now) mo_fill(x - 1, ly + lh, 3, 2, MO_INK);
+                continue;
+            }
+            y = ly + lh - (int32_t)((v & 15u) - 1u) * lh / (int32_t)(GEN_CS_ROWS - 1u);
+            if (qx >= 0) mo_line(qx, qy, x, y, MO_DIM);
+            qx = x, qy = y;
+            mo_fill(x - 1, y - 1, 3, 3, MO_INK);
+            if (k == now) mo_circ(x, y, 3, MO_INK);
+        }
+    }
+}
+/* SERIES: the next 16 degrees as bars (the one playing solid), a dim line joining their tops behind them; the loop's
+ * length bracketed under them, LOOP OFF dashed (the series running on) */
+static void mo_pic_series(const gen_series_t *g)
+{
+    gen_series_t p = *g;                                /* (from the step just played) */
+    int32_t px = -1, py = 0;
+    uint32_t k;
+    if (p.n) p.n--;
+    for (int pass = 0; pass < 2; pass++)
+        for (k = 0; k < 16u; k++) {
+            uint32_t d = gen_sr_degree(&p, k);
+            int32_t x = 4 + (int32_t)k * 7, h = 2 + (int32_t)d * 38 / 14, y = 97 - h;
+            if (!pass) {
+                if (px >= 0) mo_line(px, py, x + 2, y, MO_DIM);
+                px = x + 2, py = y;
+            } else if (song.playing && g->n && k == 0u) mo_fill(x, y, 5, h, MO_INK);
+            else mo_box(x, y, 5, h, MO_INK);
+        }
+    if (g->loop) {
+        int32_t w = (int32_t)g->loop * 7 - 2;
+        mo_hl(4, 103, w, MO_INK);
+        mo_vl(4, 100, 4, MO_INK);
+        mo_vl(4 + w - 1, 100, 4, MO_INK);
+    } else
+        mo_dash(4, 103, 110, MO_DIM);
+}
+/* a chord's name in a card x .. x + w - 1 from row y: on one line when it fits, else the root over its quality, "maj"
+ * as "M" and "m7b5" as o slashed when the card is narrow; the small letters kept (Am7) */
+static void mo_chord_card(char *b, int32_t x, int32_t w, int32_t y, uint16_t c)
+{
+    uint32_t rl = b[1] == '#' || b[1] == 'b' ? 2u : 1u, m = (uint32_t)(w - 2) / 6u;
+    char r[3] = {b[0], rl > 1u ? b[1] : 0, 0}, *q = b + rl;
+    TEXT_CASE(1);
+    if (str_len(b) <= m) {
+        mo_textc(b, x + w / 2, y + 4, c);
+    } else {
+        if (str_len(q) > m && q[0] == 'm' && q[1] == 'a' && q[2] == 'j') q[2] = 'M', q += 2;
+        if (str_len(q) > m && q[0] == 'm' && q[1] == '7' && q[2] == 'b' && q[3] == '5') q[0] = (char)0xF8, q[2] = 0;
+        if (str_len(q) > m) q[m] = 0;
+        mo_textc(r, x + w / 2, y, c);
+        mo_textc(q, x + w / 2, y + 8, c);
+    }
+    TEXT_CASE(0);
+}
+/* CHORD: the progression as cards (the one playing solid, a bar under it for how far through it is), then an octave
+ * of keys from C, the playing chord's notes solid, its root with a notch */
+static void mo_pic_chord(uint32_t tr)
+{
+    static const uint8_t BLACK[12] = {0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0};
+    const gen_chord_t *g = tessera_chord(tr);
+    uint32_t n = gen_chord_len(g), cur = g->n ? g->idx : 0u, pcs = 0, len = gen_chord_steps(g, tess_steps_per_bar(&trk[tr]));
+    uint32_t i, k;
+    int32_t cw = 116 / (int32_t)(n ? n : 1u);
+    char b[12];
+    for (i = 0; i < n; i++) {
+        int32_t x = 2 + (int32_t)i * cw;
+        uint32_t at = tessera_chord_at(tr, i, b), on = i == cur;
+        for (char *q = b; *q; q++)                      /* ("dim" as its symbol: B degree, C degree 7) */
+            if (q[0] == 'd' && q[1] == 'i' && q[2] == 'm') {
+                q[0] = (char)0xB0;
+                for (char *s2 = q + 1; (s2[0] = s2[2]) != 0; s2++) ;
+                break;
+            }
+        if (on) pcs = at, mo_fill(x, 53, cw - 1, 18, MO_INK);
+        else mo_box(x, 53, cw - 1, 18, MO_DIM);
+        mo_chord_card(b, x, cw - 1, 55, on ? MO_BG : MO_INK);
+        if (on && song.playing && g->n)
+            mo_hl(x, 73, (cw - 1) * (int32_t)((g->n - 1u) % len + 1u) / (int32_t)len, MO_INK);
+    }
+    for (k = 0; k < 12u; k++) {
+        int32_t x = 4 + (int32_t)k * 9, y = BLACK[k] ? 78 : 86;
+        uint32_t lit = (pcs >> k) & 1u, root = k == (pcs >> 12);
+        if (lit) mo_fill(x, y, 8, 107 - y - (BLACK[k] ? 8 : 0), MO_INK);
+        else mo_box(x, y, 8, 107 - y - (BLACK[k] ? 8 : 0), MO_DIM);
+        if (lit && root) mo_fill(x + 3, y + 2, 2, 3, MO_BG);
+    }
+}
+/* ANSWER: the phrase on a staff of its steps, a note a square at its height, lines joining them, the one playing
+ * ringed; under it what it does now: LISTENING, an answer of FADE's count (a square an answer, the played ones dim),
+ * LOOPS or PLAY KEYS. The squares outlined once the answers fade past half */
+static void mo_pic_answer(uint32_t tr)
+{
+    const tessera_answer_t *a = tessera_answer(tr);
+    uint32_t n = a->n, span = n ? (uint32_t)a->at[n - 1u] + 1u : 1u, lo = 127, hi = 0, ph = tess_an.phase[tr], i;
+    uint32_t cnt = tessera_answer_count(tr), now = tess_an.slot[tr];
+    int fade = ph == TESS_AN_PLAY && cnt && tess_an.ans[tr] * 2u >= cnt;
+    int32_t px = -1, py = 0;
+    char b[16];
+    if (span < 8u) span = 8u;
+    for (i = 0; i < n; i++) {
+        lo = a->note[i] < lo ? a->note[i] : lo;
+        hi = a->note[i] > hi ? a->note[i] : hi;
+    }
+    if (hi < lo + 7u) hi = lo + 7u;
+    mo_hl(2, 97, 116, MO_DIM);
+    for (int pass = 0; pass < 2; pass++)
+        for (i = 0; i < n; i++) {
+            int32_t x = 5 + (int32_t)a->at[i] * 110 / (int32_t)(span - 1u);
+            int32_t y = 93 - (int32_t)(a->note[i] - lo) * 37 / (int32_t)(hi - lo);
+            if (!pass) {
+                if (px >= 0) mo_line(px, py, x, y, MO_DIM);
+                px = x, py = y;
+                continue;
+            }
+            if (fade && ph != TESS_AN_HEAR) mo_box(x - 1, y - 1, 3, 3, MO_INK);
+            else mo_fill(x - 1, y - 1, 3, 3, MO_INK);
+            if (song.playing && now == i + 1u && (ph == TESS_AN_PLAY || ph == TESS_AN_LOOP)) mo_circ(x, y, 3, MO_INK);
+        }
+    if (ph == TESS_AN_HEAR) str_cpy(b, "LISTENING", sizeof b);
+    else if (!n || ph == TESS_AN_IDLE) str_cpy(b, "PLAY KEYS", sizeof b);
+    else if (!cnt) str_cpy(b, "LOOPS", sizeof b);
+    else {
+        str_cpy(b, "ANSWER ", sizeof b);
+        fmt_int(b + 7, (int32_t)(tess_an.ans[tr] + 1u));
+        for (i = 0; i < cnt && i < 8u; i++) {
+            int32_t x = 118 - (int32_t)(cnt - i) * 5;
+            if (i == tess_an.ans[tr]) mo_fill(x, 102, 4, 4, MO_INK);
+            else mo_box(x, 102, 4, 4, i < tess_an.ans[tr] ? MO_DIM : MO_INK);
+        }
+    }
+    mo_text(b, 2, 101, ph == TESS_AN_HEAR ? MO_INK : MO_DIM);
+}
+/* STEP as seed: the loop as bars, a step the generator changed solid with the step as written outlined over it (cut
+ * into the bar where it is lower), an unchanged one outlined, a rest a dash, past the loop a dot; the step playing
+ * underlined. Under it MORPH's place between A and B (MORPH), and HOME: how many steps have moved off the written ones */
+static void mo_pic_seed(uint32_t tr)
+{
+    uint8_t now[16], home[16];
+    uint32_t at = 0, len = tessera_sd_loop(tr, now, home, &at), i, k, n = 0;
+    int32_t lo = 127, hi = 0;
+    for (i = 0; i < len; i++)
+        for (k = 0; k < 2u; k++) {
+            uint32_t e = k ? home[i] : now[i];
+            if (e & 0x80u) {
+                if ((int32_t)(e & 0x7Fu) < lo) lo = (int32_t)(e & 0x7Fu);
+                if ((int32_t)(e & 0x7Fu) > hi) hi = (int32_t)(e & 0x7Fu);
+            }
+        }
+    for (i = 0; i < 16u; i++) {
+        int32_t x = 2 + (int32_t)i * 7 + (int32_t)(i / 4u), nh = 0;
+        int head = song.playing && i == at, ch = i < len && now[i] != home[i];
+        if (i >= len) {
+            mo_px(x + 2, 92, MO_DIM);
+            continue;
+        }
+        n += (uint32_t)ch;
+        for (k = 0; k < 2u; k++) {
+            uint32_t e = k ? home[i] : now[i];
+            int32_t bh = 3 + (hi > lo ? ((int32_t)(e & 0x7Fu) - lo) * 33 / (hi - lo) : 0);
+            if (k && !ch) break;
+            if (!(e & 0x80u)) {
+                if (!k) mo_hl(x, 92, 6, head ? MO_INK : MO_DIM);
+                continue;
+            }
+            if (k) mo_box(x, 93 - bh, 6, bh, bh <= nh ? MO_BG : MO_INK);
+            else if (ch || head) nh = bh, mo_fill(x, 93 - bh, 6, bh, MO_INK);
+            else mo_box(x, 93 - bh, 6, bh, MO_INK);
+        }
+        mo_fill(x, 95, 6, head ? 2 : 1, head ? MO_INK : MO_DIM);
+    }
+    if (tessera.mode[tr] == TESS_ENG_MORPH) {
+        mo_hl(2, 104, 50, MO_DIM);
+        mo_fill(2 + (int32_t)tessera_morph(tr)->morph_pos * 47 / 127, 101, 3, 7, MO_INK);
+    }
+    mo_text("HOME", 60, 101, MO_DIM);
+    mo_box(86, 101, 32, 7, MO_DIM);
+    if (n) mo_fill(87, 102, (int32_t)(n * 30u / len) ? (int32_t)(n * 30u / len) : 1, 5, MO_INK);
+}
 static void mo_picture(void)
 {
     const page_t *pg = cur_page();
@@ -723,8 +1117,8 @@ static void mo_picture(void)
     if (pg->graph == GR_STEPS && pg->fam == FAM_GEN && tr < TESSERA_TRACKS && tessera.mode[tr] != TESS_ENG_OFF) {
         uint8_t now[16], home[16];
         uint32_t at;
-        if (tessera_sd_loop(tr, now, home, &at)) {      /* STEP as seed: its loop, as the detailed look draws it */
-            mo_pic_detailed();
+        if (tessera_sd_loop(tr, now, home, &at)) {      /* STEP as seed: its loop */
+            mo_pic_seed(tr);
             return;
         }
         switch (tessera.mode[tr]) {
@@ -733,7 +1127,15 @@ static void mo_picture(void)
         case TESS_ENG_MARKOV: mo_pic_markov(tessera_markov(tr)); return;
         case TESS_ENG_MORPH: mo_pic_morph(tessera_morph(tr)); return;
         case TESS_ENG_GRIDS: mo_pic_grids(tessera_grids(tr), t); return;
-        default: mo_pic_detailed(); return;             /* (the generators since: BOUNCE .. ANSWER) */
+        case TESS_ENG_BOUNCE: mo_pic_bounce(tessera_bounce(tr)); return;
+        case TESS_ENG_AWAKE: mo_pic_awake(tessera_awake(tr)); return;
+        case TESS_ENG_POLY: mo_pic_poly(tessera_poly(tr)); return;
+        case TESS_ENG_QUAD: mo_pic_quad(tr); return;
+        case TESS_ENG_CONSTEL: mo_pic_constel(tr); return;
+        case TESS_ENG_SERIES: mo_pic_series(tessera_series(tr)); return;
+        case TESS_ENG_CHORD: mo_pic_chord(tr); return;
+        case TESS_ENG_ANSWER: mo_pic_answer(tr); return;
+        default: mo_pic_detailed(); return;
         }
     }
     if ((pg->graph == GR_ROLL || pg->graph == GR_DRUMHIT) && grid_on()) {
