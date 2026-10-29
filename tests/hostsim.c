@@ -868,6 +868,10 @@ int main(int argc, char **argv)
         inst.p[P_SUS] = p->env[2]; inst.p[P_REL] = p->env[3]; inst.p[P_ED_FLT] = p->fenv;
     }
     fm6_track_loaded(&inst);                            /* FM6: the preset's patch */
+    if (MELODEE_ORACLE && eng == ENGI_ORACLE) {       /* ORACLE: the preset's patch */
+        inst.preset = (uint8_t)(preset % ENGINES[eng]->npresets);
+        or_track_loaded(&inst);
+    }
     inst.p[P_VOICE] = (int16_t)mono;
     inst.p[P_RESERVED34] = argc > 5 ? atoi(argv[5]) : 24;      /* as melodee_init */
     inst.p[P_RESERVED35] = argc > 5 ? atoi(argv[5]) : 28;

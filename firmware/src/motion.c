@@ -19,7 +19,7 @@ static uint8_t motion_base_valid, motion_full;
  * leaves it). While motion moves a byte, the patch's own is in motion_nbase (its bit in motion_nactive) */
 #define MO_NATIVE 112u
 #define MO_NATIVE_N 144u                                /* (FM6: the voice up to TRANSPOSE; the CZ-1: 128; P5: 88) */
-enum { MO_TAG_NONE, MO_TAG_P5, MO_TAG_CZ, MO_TAG_FM6 };
+enum { MO_TAG_NONE, MO_TAG_ORACLE, MO_TAG_CZ, MO_TAG_FM6 };   /* (1: the Prophet's, ORACLE's since 2026-10-29) */
 /* Native payloads carry an engine tag >= 256; ordinary parameters fit -64..127.
  * Keep the historical native wire IDs even as ordinary engine IDs reach 112. */
 static int motion_native_event(uint32_t id,int32_t value){return id>=MO_NATIVE && value>=256;}
@@ -49,7 +49,8 @@ static void motion_unguard(uint32_t f)
 static uint32_t motion_native_tag(const track_t *t)
 {
     uint32_t e = t->eng_req;
-    return e == ENGI_FM6 ? MO_TAG_FM6 : MO_TAG_NONE;   /* (MO_TAG_P5, MO_TAG_CZ: the retired Prophet's, CZ-1's) */
+    return e == ENGI_FM6 ? MO_TAG_FM6 : MELODEE_ORACLE && e == ENGI_ORACLE ? MO_TAG_ORACLE : MO_TAG_NONE;   /* (MO_TAG_CZ:
+                                                     * the retired CZ-1's) */
 }
 /* byte i of the patch of the track's engine, 0: none motion moves (FM6's TRANSPOSE and name: what changes the voices
  * themselves) */
@@ -59,6 +60,8 @@ static uint8_t *motion_native_at(track_t *t, uint32_t i)
     switch (motion_native_tag(t)) {
     case MO_TAG_FM6:
         return i < FP_TRNSP ? &fm6_patch[k][i] : 0;
+    case MO_TAG_ORACLE:
+        return i < OR_N ? &or_patch_of(t)[i] : 0;
     default:
         return 0;
     }
@@ -72,6 +75,8 @@ static int motion_native_ok(uint32_t id, int32_t value)    /* (a store's event: 
         static const uint8_t globalmax[FP_TRNSP - FP_PR1] = {99,99,99,99,99,99,99,99,31,7,1,99,99,99,99,1,5,7};
         return i < FP_TRNSP && v <= (i < FP_PR1 ? opmax[i % FP_OP] : globalmax[i - FP_PR1]);
     }
+    if (tag == MO_TAG_ORACLE)
+        return i < OR_N && v <= or_byte_max(i);
     return 0;
 }
 static int motion_nbit(uint32_t k, uint32_t i) { return (motion_nactive[k][i / 32u] >> (i % 32u)) & 1u; }

@@ -498,7 +498,8 @@ enum { FAM_HOME, FAM_ENV, FAM_LFO, FAM_SCL, FAM_EDIT, FAM_GLO, FAM_SAVE, FAM_ARP
        FAM_FX, FAM_COUNT };
 #define FAM_GEN FAM_ARP      /* Tessera: ARP's family holds the generators too (no new family: FAM_COUNT sized state) */
 enum { SC_TRACK, SC_GLOBAL, SC_ENGINE, SC_STEP, SC_TRK,   /* SC_TRK: the TRACKS page (ui_input.c tracks_edit) */
-       SC_FM6, SC_FMOP, SC_DRUM, SC_DRUMHIT };          /* FM6: its patch, functions; operator fm6_opsel */
+       SC_FM6, SC_FMOP, SC_DRUM, SC_DRUMHIT, SC_ORACLE };   /* FM6: its patch, functions; operator fm6_opsel;
+                                                           * ORACLE: its patch (oracle_pages.c) */
 enum { GR_NONE, GR_ADSR, GR_LFO, GR_STEPS, GR_ARP, GR_SCALE, GR_ROLL, GR_BROWSE, GR_SLOTS, GR_USER, GR_TRK,
        GR_MOD, GR_PATS, GR_SONG, GR_MOTION, GR_CHORD, GR_SLICES,
        GR_FMEG, GR_FMPEG, GR_FMSTORE, GR_SCALE_PICKER, GR_DRUMHIT, GR_PATGRID, GR_EVOLVE, GR_FORM, GR_TWEAK,
@@ -509,6 +510,7 @@ typedef struct {
     uint8_t fam, scope, graph;
     uint8_t id[4];               /* param ids; 0xFF = empty slot */
 } page_t;
+#include "oracle_pages.c"       /* ORACLE's pages: its patch as values (or_page_desc, or_page_put) */
 
 #define G_TRK_SEND 0xFDu
 #define G_TRK_RECQ 0xFEu                                 /* a global page's column that is the selected track's P_RECQ */
@@ -560,6 +562,18 @@ static const page_t PAGES[] = {
     {"FM PORTA", FAM_EDIT, SC_FM6, GR_NONE, {FP_SIZE + FN_PMODE, FP_SIZE + FN_PTIME, FP_SIZE + FN_GLISS, FP_SIZE + FN_ENGINE}},
     {"FM WH/FT", FAM_EDIT, SC_FM6, GR_NONE, {FP_SIZE + FN_MWR, FP_SIZE + FN_MWA, FP_SIZE + FN_FCR, FP_SIZE + FN_FCA}},
     {"FM BR/AT", FAM_EDIT, SC_FM6, GR_NONE, {FP_SIZE + FN_BCR, FP_SIZE + FN_BCA, FP_SIZE + FN_ATR, FP_SIZE + FN_ATA}},
+    /* ORACLE only (page_visible): its patch. FILT ENV and AMP ENV are what ENV visits, LFO MOD and LFO ROUTE come after
+     * the track's LFO pages (ui.c native_titles) */
+    {"OSC A", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_FREQ_A, OV_WAVE_A, OV_PW_A, OV_SYNC}},
+    {"OSC B", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_FREQ_B, OV_FINE_B, OV_WAVE_B, OV_PW_B}},
+    {"OSC MIX", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_LVL_A, OV_LVL_B, OV_NOISE, OV_B_MODE}},
+    {"FILTER", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_CUT, OV_RES, OV_ENV, OV_KEY}},
+    {"POLY MOD", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_PM_ENV, OV_PM_B, OV_PM_DEST, OV_VEL}},
+    {"CHARACTER", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_MODEL, OV_VINTAGE, OV_GLIDE, 0xFF}},
+    {"FILT ENV", FAM_EDIT, SC_ORACLE, GR_ADSR, {OV_FA, OV_FD, OV_FS, OV_FR}},
+    {"AMP ENV", FAM_EDIT, SC_ORACLE, GR_ADSR, {OV_AA, OV_AD, OV_AS, OV_AR}},
+    {"LFO MOD", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_RATE, OV_AMT, OV_LWAVE, OV_NMIX}},
+    {"LFO ROUTE", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_L_PITCH, OV_L_PW, OV_L_FILT, 0xFF}},
     {"OP1 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM1_ATK, P_FM1_DEC, P_FM1_SUS, P_FM1_REL}},
     {"OP2 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM2_ATK, P_FM2_DEC, P_FM2_SUS, P_FM2_REL}},
     {"OP3 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM3_ATK, P_FM3_DEC, P_FM3_SUS, P_FM3_REL}},
@@ -662,6 +676,8 @@ static void fm6_page_put(const page_t *pg, uint32_t slot, int32_t val)
 static const param_desc_t *page_desc(const page_t *pg, uint32_t slot, int16_t **valp)
 {
     uint32_t id = pg->id[slot];
+    if (pg->scope == SC_ORACLE)
+        return or_page_desc(pg, slot, valp);
     if ((pg->scope == SC_FM6 || pg->scope == SC_FMOP) && !MELODEE_FM6) { *valp = 0; return 0; }   /* (left out) */
     if (pg->scope == SC_FM6 || pg->scope == SC_FMOP)
         return fm6_page_desc(pg, slot, valp);

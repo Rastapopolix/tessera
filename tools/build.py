@@ -430,7 +430,7 @@ def check(img, syms, dis, rt):
         errors.append(f"audio RAM functions off a 16-byte boundary: {', '.join(misaligned)}")
     else:
         notes.append(".audio_text: its C functions on 16-byte boundaries")
-    for name in ("fm6_output", "fm6_dc_samples", "fm6_eg_go", "fm6_eg_step", "fm6_peg_go", "mix_mono_samples", "master_samples", "master_out"):
+    for name in ("fm6_output", "fm6_dc_samples", "fm6_eg_go", "fm6_eg_step", "fm6_peg_go", "or_dc_samples", "mix_mono_samples", "master_samples", "master_out"):
         address = sym(name)
         if address and not sym("_dsp_start") <= address < sym("_dsp_end"):
             errors.append(f"{name} must remain in internal DSP RAM")

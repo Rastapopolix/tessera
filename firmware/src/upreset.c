@@ -255,7 +255,7 @@ static int up_parse(const uint8_t *a, uint32_t na, up_rec_t *r, uint32_t *slot)
     r->used = UP_USED;
     r->ver = UP_VER;
     r->engine = a[1];
-    if(r->engine==ENGI_PROPHET)return 1;
+    if(r->engine==ENGI_ORACLE)return 1;   /* (ORACLE: its sound is a native patch, saved with the project only) */
     r->np = P_COUNT;
     for (i = 0; i < n; i++)
         r->name[i] = (char)a[2 + i];
@@ -445,7 +445,7 @@ static void up_set_name(up_rec_t *r, uint32_t k, const char *name)
 static int up_store(uint32_t k, const char *name)
 {
     momentary_restore();
-    if (k >= UP_SLOTS || TSEL->eng_req == ENGI_PROPHET) return 1;
+    if (k >= UP_SLOTS || TSEL->eng_req == ENGI_ORACLE) return 1;   /* (ORACLE: the project keeps its patch) */
     up_rec_t r;
     uint32_t i;
     memset(&r, 0, sizeof r);
