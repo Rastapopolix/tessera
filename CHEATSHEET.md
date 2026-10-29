@@ -29,10 +29,10 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **SEQ** | GEN, then the MODE's pages. STEP: EVOLVE, TWEAK, TIMING, NOTES. ARP: ARP, ARP 2, NOTES. A generator: EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY. All: PATTERN, TEMPO, PATTERNS, SONG |
 | **SEQ** held | PATTERNS |
 | **ARP** | STEP track: switches it to ARP, the ARP page (again: ARP 2). Generator track: GEN ("ARP: MODE ON GEN") |
-| **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST; on FM6 then FM LFO |
-| **ENV** | ENV, ENV DEST; on FM6 instead EG RATE, EG LVL, PITCH EG, PITCH LV |
+| **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST; on FM6 then FM LFO; on ORACLE then LFO MOD, LFO ROUTE |
+| **ENV** | ENV, ENV DEST; on FM6 instead EG RATE, EG LVL, PITCH EG, PITCH LV; on ORACLE FILT ENV, AMP ENV |
 | **SCL** | SCALES, SCL, CHORD |
-| **EDIT** | The sound's EDIT pages |
+| **EDIT** | The sound's EDIT pages (ORACLE: MACRO, MACRO 2, OSC A, OSC B, OSC MIX, FILTER, POLY MOD, CHARACTER, ...) |
 | **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across, KNOB 2 rows, OCT+ opens, OCT- or EDIT closes |
 | **PRESETS** on an EDIT page | The next / previous section (FM6: Algo, OP1 to OP6, Pitch, LFO, Ctrl, Store) |
 | **FX** | The insert and send effects |
@@ -138,6 +138,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | AWAKE: a white key | Picks that step: KNOB 1 its A, KNOB 2 its B; the key again lets it go |
 | EVOLVE: **KNOB 4** (ROLL) | A new seed a click; turn back for the last one |
 | FORM: **KNOB 3** (CLEAR) | Forgets B and C |
+| FORM: **OCT+** held, **KNOB 1** | DEVELOP: each return of a section varies a little (0: exact) |
 | MODS: **OCT+** | The picked mod: BI / UNI |
 | MATRIX: **OCT+** | Opens the picked mod in MODS |
 

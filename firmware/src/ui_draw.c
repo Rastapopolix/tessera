@@ -1507,7 +1507,8 @@ static void draw_columns(void)
             unit = "%";
         } else {
             param_format(d, *vp, val, &unit);
-            if(d->names==N_FX && (*vp==FX_REVERB || *vp==FX_CHORUS))str_cpy(val,N_FX[*vp],sizeof val);
+            if(d->names==N_FX && *vp>=0 && *vp<FX_COUNT && (MELODEE_LOOK || *vp==FX_REVERB || *vp==FX_CHORUS))
+                str_cpy(val,N_FX[*vp],sizeof val);   /* (Mono: the whole name, ui_mono.c mo_fit shortens it: FILTR) */
         }
         if (vp >= TSEL->p && vp < TSEL->p + P_COUNT)     /* a track parameter: the mods on it, live */
             col_mods(PID_TRACK(vp - TSEL->p));
