@@ -14,8 +14,8 @@
 /* /TESSERA-MONO */
   /* the project page's look (web/home/index.html): the Mono look's one ink on black, the four tracks as its fills */
   :root {
-    --bg: #000; --ink: #ffd020; --surf: #0f0c02; --raise: #211b04; --line: #3b3007; --text: var(--ink); --mid: #c7a219;
-    --dim: #8c7212;
+    --bg: #111; --ink: #ffd020; --surf: #19170f; --raise: #252113; --line: #3b3007; --text: #e6e0d0; --mid: #b9b2a0;
+    --dim: #8e877a;
     --p1: var(--ink);
     --p2: repeating-linear-gradient(135deg, var(--ink) 0 2px, transparent 2px 5px);
     --p3: radial-gradient(circle, var(--ink) 1.2px, transparent 1.6px) 0 0 / 5px 5px;
@@ -23,6 +23,11 @@
     --pixel: "Tessera Mono", ui-monospace, monospace; --gap: 6px;
     color-scheme: dark;
   }
+  /* the light version (dark ink on paper): only from the LIGHT / DARK button (stored); dark is the default, whatever the system says */
+  :root[data-theme="light"] { --bg: #f6f2e7; --ink: #1c1a14; --surf: #eee8d6; --raise: #e2d9bf; --line: #c8bd9b; --text: #1c1a14; --mid: #4b4535; --dim: #786e57; color-scheme: light; }
+  .theme { font: 16px/1 var(--pixel); color: var(--mid); background: none; border: 0; padding: 3px 4px 2px;
+           cursor: pointer; text-transform: uppercase; }
+  .theme:hover { color: var(--bg); background: var(--ink); }
   * { box-sizing: border-box; }
   :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
   body { margin: 0; background: var(--bg); color: var(--text);
@@ -41,7 +46,7 @@
   main.wrap { padding-top: 40px; padding-bottom: 56px; }
   .kicker { display: inline-block; background: var(--ink); color: var(--bg); font: 16px/1 var(--pixel);
             text-transform: uppercase; padding: 3px 6px 2px; }
-  h1 { font: clamp(40px, 9vw, 64px)/1.1 var(--pixel); margin: 12px 0 0; }
+  h1 { color: var(--ink); font: clamp(40px, 9vw, 64px)/1.1 var(--pixel); margin: 12px 0 0; }
   .bar { display: flex; gap: var(--gap); margin: 16px 0 28px; }
   .bar span { flex: 1; height: 8px; }
   .bar span:nth-child(1) { background: var(--p1); } .bar span:nth-child(2) { background: var(--p2); }
@@ -86,7 +91,7 @@
            padding: 0 24px 20px; }
   dialog::backdrop { background: rgba(0, 0, 0, .88); }
   dialog .bar { margin: 0 -24px 22px; }
-  dialog h2 { font: 24px/1.2 var(--pixel); text-transform: uppercase; margin: 0 0 12px; }
+  dialog h2 { color: var(--ink); font: 24px/1.2 var(--pixel); text-transform: uppercase; margin: 0 0 12px; }
   .keep { border: 2px solid var(--ink); padding: 10px 14px; font-weight: 600; }
   .stages { list-style: none; counter-reset: st; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap);
             padding: 0; margin: 18px 0 14px; }
@@ -114,15 +119,19 @@
   footer p { color: var(--dim); font-size: 13px; }
   footer a { color: var(--mid); }
 </style>
+<script>/* the theme chosen with the LIGHT / DARK button, before the page draws */
+try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 </head>
 <body>
 <nav>
   <div class="wrap">
     <a class="brand" href="../../" aria-label="Tessera">
-      <svg viewBox="0 0 78 78" aria-hidden="true"><rect x="4" y="5" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="31" y="3" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="53" y="2" width="22" height="22" fill="#ffd020"/><rect x="5" y="30" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="30" y="30" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="55" y="31" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="4" y="55" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="31" y="57" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="55" y="55" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/></svg>
+      <svg viewBox="0 0 78 78" aria-hidden="true"><rect x="4" y="5" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="3" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="53" y="2" width="22" height="22" fill="currentColor"/><rect x="5" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="30" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="31" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="4" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="57" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/></svg>
       TESSERA
     </a>
     <button class="lang" id="lang"></button>
+    <button class="theme" id="theme" type="button" aria-label="Light or dark page"></button>
   </div>
 </nav>
 <main class="wrap">
@@ -573,6 +582,19 @@ $("stock-go").addEventListener("click", async () => {
     log(String(e.stack || e));
   } finally { if (link) link.close(); runEnd(done); lockInstaller(false); }
 });
+</script>
+<script>/* LIGHT / DARK: names the other look; the choice is stored (tessera-theme) */
+(function () {
+  var b = document.getElementById("theme"), r = document.documentElement;
+  function light() { return r.dataset.theme === "light"; }
+  function show() { b.textContent = light() ? "Dark" : "Light"; }
+  b.addEventListener("click", function () {
+    r.dataset.theme = light() ? "dark" : "light";
+    try { localStorage.setItem("tessera-theme", r.dataset.theme); } catch (e) {}
+    show();
+  });
+  show();
+})();
 </script>
 </body>
 </html>
