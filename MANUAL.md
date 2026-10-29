@@ -584,8 +584,8 @@ at a time, each with an activity light and a moving mark.
   it at once.
 - **Live marks**: a knob a cord reaches shows a mark where the cords move it now.
 - **DRIFT** is each track's slow wander, a new point about every 12 seconds, eased between.
-- **Effects.** RTE is the effect's third knob (RATE; ECHO's TIME, ROOM's and REVERB's SIZE), CHR its fourth (DEPTH,
-  REPEAT, DECAY, as the effect names it). A moved ECHO TIME glides, as a tape's speed does, so the repeats bend in
+- **Effects.** RTE is the effect's third knob (RATE; ECHO's TIME, ROOM's and REVERB's SIZE, FILTER's CUT), CHR its
+  fourth (DEPTH, REPEAT, DECAY, RES, as the effect names it). A moved ECHO TIME glides, as a tape's speed does, so the repeats bend in
   pitch instead of clicking (turning the knob glides too); REVERB changes SIZE a sample at a time. The send
   effects' mods are the project's, not a track's: MATRIX leaves them out. **FX held** + a knob on an FX page makes
   one too. A project with effect mods does not load in firmware before them.
