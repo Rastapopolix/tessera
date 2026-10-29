@@ -246,6 +246,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x26B | EVOLVE HOW | DRIFT, ADORN, SERIAL | DRIFT | What STEP EVOLVE's rounds do to the steps. DRIFT: moves by scale degrees, octave jumps, drops, swaps and ghost notes. ADORN, ornaments that only add: ratchets, octave jumps, neighbour notes, passing notes in the rests. SERIAL: the whole phrase at once: backwards, upside down, rotated or half of it at half speed; AMOUNT is the chance of one a round, LOCK of it staying. OCT+ held on EVOLVE, KNOB 1. |
 | 0x26C | ENERGY LEVEL | -100 to 100 | 0 | The project's energy, played by hand: ARC's tide swings round it. Up, the generator tracks take back their DROP and play up to 12 louder; down, they leave out hits and play softer. EVOLVE changes less when low, more when high. 0: as set. |
 | 0x26D | ENERGY DEPTH | 0 to 100 % | 100 | How much ENERGY (its LEVEL, ARC's tide, RESTS) moves this track. 100 all of it, 0 an anchor that plays as set whatever the energy. OCT+ held on ENERGY, KNOB 1. |
+| 0x26E | FORM DEVELOP | 0 to 100 % | 0 | How far a section varies each time FORM comes back to it: it stays recognisable but is never quite the same. The section itself is kept, so the next return starts from it again. GRAVITY is the chance a return stays exact. 0: every return exact. OCT+ held on FORM, KNOB 1. |
 
 ## Mods
 

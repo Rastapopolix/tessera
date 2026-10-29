@@ -16,9 +16,9 @@
  * The limits are the guardrails the ROADMAP asks of long-form play; a patch whose automation is meant to rest
  * (ENERGY RESTS) is allowed its rests. Two roles get their own: a drum generator (GRIDS) plays its lanes, so no
  * pitch count; a harmony bed (CHORD) is meant to come round again, so it may replay its progression up to 15
- * minutes (a melodic track: about 4). Limits marked KNOWN are gaps the ROADMAP already
- * lists (risk 1 of generators.md: a FORM never develops once its sections exist): they are printed as KNOWN while
- * they fail and fail the test once they pass, so the limit is made strict when the gap closes. */
+ * minutes (a melodic track: about 4). Limits marked KNOWN are patches meant to freeze: a FORM at DEVELOP 0 recalls
+ * its sections exactly, by design (risk 1 of generators.md, answered by DEVELOP: the same FORM at DEVELOP 40 must not
+ * freeze). They are printed as KNOWN while they freeze and fail the test if they stop, so a change of that is seen. */
 #include <sys/wait.h>
 #include <unistd.h>
 #define TESSERA_NOTE_HOOK lf_note
@@ -62,12 +62,17 @@ static void p_morph(void)
     px(0, TX_EV_EVERY, EV_1);
     px(0, TX_EV_AMOUNT, 40);
 }
-static void p_form(void)                              /* risk 1: once A, B and C exist every return is exact */
+static void p_form(void)                              /* risk 1: at DEVELOP 0 every return is exact (by design) */
 {
     gen(0, TESS_ENG_TURING);
     px(0, TX_FM_FORM, FM_ABAC);
     px(0, TX_EV_EVERY, EV_1);
     px(0, TX_FM_CONTRAST, 60);
+}
+static void p_form_develop(void)                      /* risk 1 answered: FORM's DEVELOP varies each return */
+{
+    p_form();
+    px(0, TX_FM_DEVELOP, 40);
 }
 static void p_gravity(void)                           /* GRAVITY on EVOLVE: drifts and comes home */
 {
@@ -137,7 +142,8 @@ static const patch_t PATCH[] = {
     {"euclid_evolve1_amount30", 0x4C02u, p_euclid, 0, 0, "Euclid: PULSES a random walk (risk 2)"},
     {"markov_evolve2_lock60", 0x4C03u, p_markov, 0, 0, "Markov with LOCK (déjà vu)"},
     {"morph_evolve1_amount40", 0x4C04u, p_morph, 0, 0, "Morph: rhythm A losing its bits (risk 2)"},
-    {"form_turing_abac_contrast60", 0x4C05u, p_form, 0, 1u, "FORM: sections recalled exactly (risk 1)"},
+    {"form_turing_abac_contrast60", 0x4C05u, p_form, 0, 1u, "FORM at DEVELOP 0: sections recalled exactly (by design)"},
+    {"form_turing_abac_develop40", 0x4C0Au, p_form_develop, 0, 0, "FORM DEVELOP 40: returns vary, A kept (risk 1)"},
     {"gravity50_turing_awake", 0x4C06u, p_gravity, 0, 0, "GRAVITY on EVOLVE pulling home (risk 4)"},
     {"four_tracks_probe", 0x4C07u, p_four, 0, 0, "the 2-hour probe's four tracks, Euclid at EVERY 4"},
     {"grids_bounce_constel_series", 0x4C08u, p_newer, 0, 0, "the newer generators together"},
@@ -451,7 +457,7 @@ static void lf_judge(const patch_t *p, const char *out, FILE *rep, uint32_t hour
         frozen_ok = bed ? frozen_bars <= 448u && x->distinct_last * 10u >= x->nlast
                         : frozen_bars <= 112u && x->distinct_last * 5u >= x->nlast;
         if (known) {
-            snprintf(line, sizeof line, "%s: KNOWN frozen (risk 1, FORM recalls sections exactly): longest %u bars, "
+            snprintf(line, sizeof line, "%s: KNOWN frozen (FORM at DEVELOP 0 recalls sections exactly): longest %u bars, "
                                         "%u/%u distinct", who, frozen_bars, x->distinct_last, x->nlast);
             printf("longform: %-100s %s\n", line, frozen_ok ? "FIXED: make it strict" : "KNOWN");
             lf_bad += frozen_ok;

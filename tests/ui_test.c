@@ -685,6 +685,36 @@ static int test_constel_speed(void)
     return bad;
 }
 
+/* a generator's FORM, OCT+ held: KNOB 1 DEVELOP (2 % a click), its help, the octave stays; let go, KNOB 1 is FORM */
+static int test_form_develop(void)
+{
+    int bad = 0;
+    int32_t oct;
+    ui_power_on();
+    go_title("GEN");
+    tessera_param_set(song.sel, TX_MODE, TESS_ENG_TURING);
+    go_title("FORM");
+    frame();
+    oct = song.octave;
+    fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+    host_pressed |= 1u << panel.btn[B_OCTUP];
+    frame();
+    turn(EN_K1, 1);
+    turn(EN_K1, 1);
+    turn(EN_K1, 1);
+    help_find(0);
+    bad += check("FORM, OCT+ held: KNOB 1 is DEVELOP (3 clicks: 6 %), its help; FORM itself unchanged",
+                 tessera.fm_dev[song.sel] == 6u && help.pid == PID_TESS(TX_FM_DEVELOP) && pid_find(help.pid) &&
+                 !tessera.evolve[song.sel].form);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
+    frame();
+    turn(EN_K1, 1);
+    bad += check("..let go: the octave as it was, KNOB 1 is FORM again (AB), DEVELOP kept",
+                 song.octave == oct && tessera.evolve[song.sel].form == 1u && tessera.fm_dev[song.sel] == 6u);
+    ui_power_on();
+    return bad;
+}
+
 /* QUAD on GEN, OCT+ held: KNOB 1 the column, 2 its MOVE, 3 its EVERY, 4 the row's RANGE; the octave stays, no sheet
  * opens; let go, the generator's knobs again; a tap of OCT+ still raises the octave */
 static int test_quad_cols(void)
@@ -5914,6 +5944,7 @@ int main(void)
     bad += test_step_evolve();
     bad += test_div_order();
     bad += test_quad_cols();
+    bad += test_form_develop();
     bad += test_screen();
     bad += test_favorites();
     bad += test_browser();

@@ -152,6 +152,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_SV_HOW] = PE("HOW", TX_N_SVHOW, 0),
     [TX_EN_LEVEL] = PD("LEVEL", F_INT, -100, 100, 0),
     [TX_EN_DEPTH] = PD("DEPTH", F_PCT, 0, 100, 100),
+    [TX_FM_DEVELOP] = PD("DEVLP", F_PCT, 0, 100, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -565,6 +566,10 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                      "set."),
     X_(TX_EN_DEPTH, "ENERGY DEPTH", "How much ENERGY (its LEVEL, ARC's tide, RESTS) moves this track. 100 all of it, "
                                     "0 an anchor that plays as set whatever the energy. OCT+ held on ENERGY, KNOB 1."),
+    X_(TX_FM_DEVELOP, "FORM DEVELOP", "How far a section varies each time FORM comes back to it: it stays "
+                                      "recognisable but is never quite the same. The section itself is kept, so the "
+                                      "next return starts from it again. GRAVITY is the chance a return stays exact. "
+                                      "0: every return exact. OCT+ held on FORM, KNOB 1."),
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };

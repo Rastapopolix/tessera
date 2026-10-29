@@ -442,8 +442,14 @@ FORM strings mutated phrases into a short song form of sections A, B and C, each
 | 3 | **CLEAR** | Forgets B and C: the phrase playing becomes A. |
 | 4 | **FLRSH** (−12 to +12) | Flourish: semitones added on the last beat of every phrase; 0 is off. |
 
-A section played again comes back exactly. B and C are made from the section before, by CONTR, the first time they
-are reached. Changing MODE or ROLL starts the form again at A.
+B and C are made from the section before, by CONTR, the first time they are reached. Changing MODE or ROLL starts
+the form again at A.
+
+**DEVELOP** (OCT+ held, KNOB 1, 0–100 %): how far a section varies each time the form comes back to it. At 0 (the
+default) a section played again comes back exactly, as before. Above 0 each return is the section with one change of
+that size, so it stays recognisable but is never quite the same; the section itself is kept, so the next return
+starts from it again and the form never drifts away over hours. GRAVITY (OCT+ held on EVOLVE) is the chance a return
+stays exact. A knob turned while a section plays is kept in it, as without DEVELOP.
 
 ---
 

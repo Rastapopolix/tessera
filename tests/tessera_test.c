@@ -2962,6 +2962,81 @@ static void gravity_run(char *res, size_t cap)
     snprintf(res, cap, "%u %u %u", drifted, home, follow);
 }
 
+/* FORM's DEVELOP (tessera.c tess_form_develop): each generator on ABAC, the returns to A counted 10 times at DEVELOP 0
+ * (exact), 20 at DEVELOP 60 (varied; A as stored never changes: no drift), 10 at GRAVITY 100 (exact again); a knob
+ * turned in a developed return is kept; MARKOV with LOCK replays A's phrase in a developed return, never records over
+ * it. Called straight, no transport. Writes "exact varied kept grav hand markov" */
+static int dv_same(uint32_t tr)                       /* the generator as the section it is in has it stored */
+{
+    gen_sec_t g;
+    uint8_t aw[16];
+    const tessera_sec_t *s = &tessera.sec[tr][tessera.evolve[tr].sec % 3u];
+    tess_gv_now(tr, &g, aw);
+    return g.reg == s->reg && g.p0 == s->p0 && g.p1 == s->p1 &&
+           (tessera.mode[tr] != TESS_ENG_AWAKE || !memcmp(aw, s->note, 16));
+}
+static uint32_t dv_returns(uint32_t n, uint32_t *same)   /* n returns to A (ABAC: two boundaries each) */
+{
+    uint32_t r, k = 0;
+    for (r = 0; r < n; r++) {
+        tess_form_advance(0);
+        tess_form_advance(0);
+        k += (uint32_t)dv_same(0);
+    }
+    *same = k;
+    return n;
+}
+static void develop_run(char *res, size_t cap)
+{
+    static const uint8_t M[11] = {TESS_ENG_TURING, TESS_ENG_EUCLID, TESS_ENG_MARKOV, TESS_ENG_MORPH, TESS_ENG_GRIDS,
+                                  TESS_ENG_BOUNCE, TESS_ENG_AWAKE, TESS_ENG_POLY, TESS_ENG_QUAD, TESS_ENG_SERIES,
+                                  TESS_ENG_CHORD};
+    uint32_t exact = 0, varied = 0, kept = 0, grav = 0, hand, markov, i, same;
+    tessera_sec_t a0;
+    for (i = 0; i < 11u; i++) {
+        tessera_reset();
+        gen(0, M[i]);
+        if (M[i] == TESS_ENG_CHORD) tessera_param_set(0, TX_CH_PROG, GEN_CH_WALK);
+        tessera_param_set(0, TX_FM_FORM, 2);         /* (ABAC) */
+        tessera_param_set(0, TX_FM_CONTRAST, 60);
+        dv_returns(10, &same);
+        exact += same == 10u;
+        a0 = tessera.sec[0][0];
+        tessera_param_set(0, TX_FM_DEVELOP, 60);
+        dv_returns(20, &same);
+        varied += same < 20u;
+        tess_form_advance(0);                        /* (leave the last A: what is stored is A as it was) */
+        kept += !memcmp(&a0, &tessera.sec[0][0], sizeof a0);
+        tessera_param_set(0, TX_SD_GRAVITY, 100);
+        tess_form_advance(0);
+        tess_form_advance(0);
+        dv_returns(10, &same);
+        grav += same == 10u;
+    }
+    tessera_reset();                                 /* a knob turned in a developed return is kept (EUCLID's PULSES, */
+    gen(0, TESS_ENG_EUCLID);                         /* which a section stores) */
+    tessera_param_set(0, TX_FM_FORM, 2);
+    tessera_param_set(0, TX_FM_DEVELOP, 60);
+    tess_form_advance(0);
+    tess_form_advance(0);
+    tessera_param_set(0, TX_EUC_PULSES, tessera.euclid[0].pulses == 3u ? 7 : 3);
+    a0 = tessera.sec[0][0];
+    tess_form_advance(0);
+    hand = memcmp(&a0, &tessera.sec[0][0], sizeof a0) != 0;
+    tessera_reset();                                 /* MARKOV with LOCK: a developed return replays A's phrase */
+    gen(0, TESS_ENG_MARKOV);
+    tessera_param_set(0, TX_EV_LOCK, 60);
+    tessera_param_set(0, TX_FM_FORM, 2);
+    tessera_param_set(0, TX_FM_DEVELOP, 100);
+    tessera.evolve[0].rec = 0;
+    tessera.evolve[0].valid |= 1u;                   /* (A's phrase recorded) */
+    tess_form_advance(0);
+    tess_form_advance(0);
+    markov = tessera.evolve[0].sec == 0u && !tessera.evolve[0].rec && (tessera.evolve[0].valid & 1u) &&
+             (tess_sv.dv_on & 1u);
+    snprintf(res, cap, "%u %u %u %u %u %u", exact, varied, kept, grav, hand, markov);
+}
+
 int main(int argc, char **argv)
 {
     const char *base = argc > 1 ? argv[1] : "tests/tessera_baseline.txt", *logdir = argc > 2 ? argv[2] : 0;
@@ -3095,6 +3170,31 @@ int main(int argc, char **argv)
         snprintf(line, sizeof line, "GRAVITY on EVOLVE: %u of 11 generators drift at 0, %u of 11 come home at 100", dr, hm);
         bad += check(line, dr >= 10u && hm == 11u);
         bad += check("  EUCLID's PULSES set by hand while it drifts becomes home", fo == 1u);
+    }
+    {                                                /* FORM's DEVELOP, in a child */
+        unsigned ex = 0, va = 0, ke = 0, gr = 0, ha = 0, mk = 0;
+        pid_t pid;
+        int fd[2];
+        if (!pipe(fd) && (pid = fork()) >= 0) {
+            if (!pid) {
+                close(fd[0]);
+                develop_run(res, sizeof res);
+                if (write(fd[1], res, strlen(res) + 1u) < 0) _exit(1);
+                _exit(0);
+            }
+            close(fd[1]);
+            if (read(fd[0], res, sizeof res - 1u) > 0) sscanf(res, "%u %u %u %u %u %u", &ex, &va, &ke, &gr, &ha, &mk);
+            close(fd[0]);
+            waitpid(pid, 0, 0);
+        }
+        snprintf(line, sizeof line, "FORM DEVELOP 0: %u of 11 generators return to A exactly, every time", ex);
+        bad += check(line, ex == 11u);
+        snprintf(line, sizeof line, "  DEVELOP 60: %u of 11 vary their returns, %u of 11 keep A as stored (no drift)", va, ke);
+        bad += check(line, va >= 10u && ke == 11u);
+        snprintf(line, sizeof line, "  GRAVITY 100: %u of 11 return exactly again", gr);
+        bad += check(line, gr == 11u);
+        bad += check("  a knob turned in a developed return is kept in the section", ha == 1u);
+        bad += check("  MARKOV with LOCK: a developed return replays A's phrase, never records over it", mk == 1u);
     }
     for (int which = 0; which < 13; which++) {   /* STEP as seed, in a child as the scenarios (4 bars: 64 steps) */
         static const char *const NAME[13] = {"seed_turing_t1", "seed_turing_t1_prob50_keep_rhythm",
