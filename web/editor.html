@@ -10,39 +10,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tessera Editor</title>
 <link rel="icon" href="../../media/brand/logo.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   /* Fukiai: Hügelton Instruments' icon font (MIT, FUKIAI-LICENSE.txt). Icons are text in .ic spans;
      they stay hidden until the face has loaded (html.fk), so a missing font never shows boxes. */
   @font-face { font-family: "Fukiai"; src: url("fukiai.ttf") format("truetype"); font-display: block; unicode-range: U+EA00-EB09; }
-  /* the project page's look (web/home/index.html): SMALTI, the mark's lapis and gold, Chakra Petch;
-     --hi is what the old black-and-white look inverted (the open tab, a pressed button, a set step) */
-  :root { --bg: #0d1326; --fg: #f6f0e0; --dim: #9a9aa2; --line: #343b51; --surf: #18213c; --raise: #2b3249;
-          --accent: #ffe296; --gold: #ecb848; --hi: var(--gold); --hi-fg: #0d1326;
-          --t1: #deca60; --t2: #40c8d6; --t3: #6ed668; --t4: #d67cec; }
+  /* TESSERA-MONO: tools/gen_mono_webfont.py writes the face here (firmware/src/ui_mono.c's 5 x 7 font) */
+@font-face { font-family: "Tessera Mono"; font-display: block; src: url("data:font/woff;base64,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") format("woff"); }
+/* /TESSERA-MONO */
+  /* the project page's look (web/home/index.html): the Mono look's one ink on black, the four tracks as its fills;
+     --hi is what the device inverts (the open tab, a pressed button, a set step) */
+  :root { --bg: #000; --fg: #ffd020; --dim: #9c7f15; --line: #3b3007; --surf: #0f0c02; --raise: #211b04;
+          --accent: var(--fg); --gold: var(--fg); --hi: var(--fg); --hi-fg: #000;
+          --t1: var(--fg); --t2: var(--fg); --t3: var(--fg); --t4: var(--fg);
+          --p1: var(--fg);
+          --p2: repeating-linear-gradient(135deg, var(--fg) 0 2px, transparent 2px 5px);
+          --p3: radial-gradient(circle, var(--fg) 1.2px, transparent 1.6px) 0 0 / 5px 5px;
+          --p4: repeating-linear-gradient(90deg, var(--fg) 0 2px, transparent 2px 4px);
+          --pixel: "Tessera Mono", ui-monospace, monospace; }
   html { color-scheme: dark; }
+  :focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
   body { margin: 0; background: var(--bg); color: var(--fg);
-         font: 13px/1.45 "Chakra Petch", system-ui, sans-serif;
+         font: 12px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
          font-variant-numeric: tabular-nums; }
   main { max-width: 1100px; margin: 0 auto; padding: 16px; }
-  h1 { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; letter-spacing: .14em; margin: 4px 0 8px; }
+  h1 { display: flex; align-items: center; gap: 10px; font: 400 24px/1 var(--pixel); margin: 4px 0 8px; }
   h1 a { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--fg); }
   h1 svg { width: 26px; height: 26px; }
-  h1 small { font-size: 13px; font-weight: 500; letter-spacing: .12em; color: var(--dim); }
-  .tbar { display: flex; gap: 4px; margin: 0 0 8px; } .tbar i { flex: 1; height: 4px; }
-  .tbar i:nth-child(1) { background: var(--t1); } .tbar i:nth-child(2) { background: var(--t2); }
-  .tbar i:nth-child(3) { background: var(--t3); } .tbar i:nth-child(4) { background: var(--t4); }
-  h2 { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent);
+  h1 small { font: 16px/1 var(--pixel); background: var(--fg); color: var(--bg); padding: 3px 5px 2px; }
+  .tbar { display: flex; gap: 4px; margin: 0 0 8px; } .tbar i { flex: 1; height: 6px; }
+  .tbar i:nth-child(1) { background: var(--p1); } .tbar i:nth-child(2) { background: var(--p2); }
+  .tbar i:nth-child(3) { background: var(--p3); } .tbar i:nth-child(4) { background: var(--p4); }
+  h2 { font: 400 16px/1.2 var(--pixel); text-transform: uppercase; color: var(--accent);
        margin: 0 0 4px; padding-bottom: 2px; border-bottom: 1px solid var(--line); }
   h3 { font-size: 11px; font-weight: 400; color: var(--dim); margin: 4px 0 0; }
   a { color: var(--accent); }
   .lang { float: right; font-size: 12px; color: var(--dim); text-decoration: underline; background: none; padding: 0; }
-  button { font: inherit; font-weight: 500; background: var(--raise); color: var(--fg); border: 0; padding: 3px 10px; cursor: pointer; }
+  button { font: inherit; background: var(--raise); color: var(--fg); border: 0; padding: 3px 10px; cursor: pointer; }
   button:hover:not(:disabled) { background: var(--line); }
-  #connect { background: var(--gold); color: var(--hi-fg); font-weight: 600; }
-  #connect:hover:not(:disabled) { background: var(--accent); }
+  #connect { background: var(--fg); color: var(--hi-fg); font-weight: 600; border: 1px solid var(--fg); }
+  #connect:hover:not(:disabled) { background: var(--bg); color: var(--fg); }
   button:disabled { opacity: .3; cursor: default; }
   button.lang { color: var(--dim); background: none; }
   select, input[type=text], input[type=number], input[type=search] {
@@ -112,6 +118,7 @@
   .list td { padding: 1px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .list tr[data-id], .list tr[data-slot] { cursor: pointer; }
   .list tr.sel td { background: var(--hi); color: var(--hi-fg); }
+  select[size] option:checked { background: var(--hi); color: var(--hi-fg); }
   .list tr.empty td { color: var(--dim); }
   .list tr.over td { outline: 1px dashed var(--fg); outline-offset: -1px; }
   .list.over { outline: 1px solid var(--fg); }
@@ -134,7 +141,7 @@
   .top { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 4px 0 0; }
   @media (max-width: 600px) { .top { position: static; } }
   .tabs { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 2px solid var(--hi); margin: 6px 0 0; }
-  .tabs button { background: none; color: var(--dim); padding: 4px 10px; border: 1px solid transparent; border-bottom: 0; white-space: nowrap; }
+  .tabs button { background: none; color: var(--dim); font: 16px/1 var(--pixel); text-transform: uppercase; padding: 5px 8px 3px; border: 1px solid transparent; border-bottom: 0; white-space: nowrap; }
   .tabs button:hover { color: var(--fg); }
   .tabs button[aria-selected="true"] { background: var(--hi); color: var(--hi-fg); }
   .trackbar { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
@@ -142,7 +149,7 @@
   .seg button, button.tog { background: var(--surf); color: var(--fg); border: 1px solid var(--line); padding: 1px 10px; }
   .seg button + button { border-left: 0; }
   .seg button[aria-pressed="true"], button.tog[aria-pressed="true"] { background: var(--hi); color: var(--hi-fg); border-color: var(--hi); }
-  /* the track buttons and mixer strips take the tracks' own colours */
+  /* the track buttons and mixer strips: the one ink, as on the device (--t1..--t4 kept for a track colour ink) */
   #trackbtns button:nth-child(1) { --hi: var(--t1); } #trackbtns button:nth-child(2) { --hi: var(--t2); }
   #trackbtns button:nth-child(3) { --hi: var(--t3); } #trackbtns button:nth-child(4) { --hi: var(--t4); }
   .strip:nth-child(1) { --hi: var(--t1); } .strip:nth-child(2) { --hi: var(--t2); }
@@ -167,7 +174,7 @@
   .mixer { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-width: 640px; margin: 6px 0; }
   .strip { background: var(--surf); border: 1px solid var(--line); padding: 6px 4px; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
   .strip.sel { border-color: var(--hi); box-shadow: inset 0 0 0 1px var(--hi); }
-  .strip .num { font-size: 18px; font-weight: 600; line-height: 1; }
+  .strip .num { font: 24px/1 var(--pixel); }
   .strip .snd { font-size: 11px; line-height: 1.3; width: 100%; text-align: center; overflow-wrap: anywhere; min-height: 2.6em; }
   .strip .rec { font-size: 11px; color: var(--dim); }
   .strip .rec.on { color: var(--fg); font-weight: 600; }
@@ -185,7 +192,7 @@
 <body>
 <main>
   <button class="lang" id="lang"></button>
-  <h1><a href="../../" aria-label="Tessera"><svg viewBox="0 0 78 78" aria-hidden="true"><rect x="2" y="3" width="22" height="22" fill="#2c4078"/><rect x="29" y="1" width="22" height="22" fill="#3a5496"/><rect x="53" y="2" width="22" height="22" fill="#ecb848"/><rect x="3" y="28" width="22" height="22" fill="#4260aa"/><rect x="28" y="28" width="22" height="22" fill="#324a88"/><rect x="53" y="29" width="22" height="22" fill="#283c70"/><rect x="2" y="53" width="22" height="22" fill="#3e5aa0"/><rect x="29" y="55" width="22" height="22" fill="#2e447e"/><rect x="53" y="53" width="22" height="22" fill="#365092"/></svg>TESSERA</a> <small>EDITOR</small></h1>
+  <h1><a href="../../" aria-label="Tessera"><svg viewBox="0 0 78 78" aria-hidden="true"><rect x="4" y="5" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="31" y="3" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="53" y="2" width="22" height="22" fill="#ffd020"/><rect x="5" y="30" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="30" y="30" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="55" y="31" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="4" y="55" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="31" y="57" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="55" y="55" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/></svg>TESSERA</a> <small>EDITOR</small></h1>
   <div class="tbar" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
   <p class="dim"><a href="../installer/" style="color:inherit" data-t="installer"></a></p>
   <!-- always visible: connection, version, sync mode, the tabs and (Sound / Sequencer / Tracks) the track selector -->

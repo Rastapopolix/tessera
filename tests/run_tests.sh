@@ -163,6 +163,9 @@ web_tests() {                                     # the editor mock's tables mus
     if command -v node >/dev/null 2>&1; then
         step "web pages: editor protocol, package builder, update protocol" node web/test_web.mjs
         step "web backup: capture, validation before writes, restore order" node web/test_backup.mjs
+        if python3 -c "import fontTools" 2>/dev/null; then
+            step "web pages: Tessera Mono is the firmware's 5 x 7 font" python3 tools/gen_mono_webfont.py --check
+        fi
     else
         echo "== skip web tests (no node)"
     fi
