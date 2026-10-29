@@ -2792,6 +2792,30 @@ static void pack_run(char *res, size_t cap)
         }
         tessera_unpack(a);
     }
+    {   /* ANSWER FADE on GEN's KNOB 4: a count a click, 1 .. 16 then LOOPS and no further; back down a count a click */
+        uint32_t i, up = 1;
+        tessera_reset();
+        gen(1, TESS_ENG_ANSWER);
+        tessera_param_set(1, TX_AN_FADE, 0);
+        for (i = 2; i <= 16u; i++) {
+            tessera_knob(3, 1);
+            up &= tessera_answer_count(1) == i;
+        }
+        tessera_knob(3, 1);
+        up &= tessera_answer_count(1) == 0u && tessera_param_get(1, TX_AN_FADE) == 100;
+        tessera_knob(3, 1);
+        up &= tessera_param_get(1, TX_AN_FADE) == 100;
+        tessera_knob(3, -1);
+        up &= tessera_answer_count(1) == 16u;
+        tessera_param_set(1, TX_AN_FADE, 33);           /* (the default: 6) */
+        tessera_knob(3, -1);
+        up &= tessera_answer_count(1) == 5u;
+        tessera_param_set(1, TX_AN_FADE, 10);           /* (between two counts' first values: 2) */
+        tessera_knob(3, 1);
+        up &= tessera_answer_count(1) == 3u;
+        ok &= up;
+        tessera_unpack(a);
+    }
     {   /* CHORD USER: a key's note rounded down to the track's scale is the chord's root (D dorian: E ii, F# rounded to
          * F iii, C vii, D I); the degrees and LEN round trip; a degree over 6 or a LEN of 0 or 9 is refused */
         const uint32_t n13 = TESSERA_PK_BYTES / TESSERA_TRACKS, n12 = TESSERA_PK_BYTES_V12 / TESSERA_TRACKS;

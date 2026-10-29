@@ -112,6 +112,7 @@ static void sec_go(uint32_t k)                          /* to section k: the pag
     ui.page = (uint8_t)p;
     ui.fam_last[FAM_EDIT] = ui.page;
     page_entered();
+    ui.via = FAM_EDIT;                                  /* (an operator's EG pages: EDIT's here, ui.c page_scroll) */
 }
 static void sec_note(void)                              /* the page shown: the last used in its section */
 {
@@ -238,6 +239,7 @@ static void smap_input(int32_t k1, int32_t k2, uint32_t oct)
         ui.page = pg[smap.col];
         ui.fam_last[FAM_EDIT] = ui.page;
         page_entered();
+        ui.via = FAM_EDIT;
         smap_close();
     }
 }

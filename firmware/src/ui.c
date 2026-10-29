@@ -101,6 +101,8 @@ static struct {
     uint8_t drum_sound;
     uint8_t page;                /* index into PAGES */
     uint8_t fam_last[FAM_COUNT]; /* last page used per family */
+    uint8_t via;                 /* the family whose button / SELECT reached this page (ENV, LFO, EDIT), 0: another way;
+                                  * an engine's own ENV / LFO pages are EDIT's too (page_scroll) */
     uint8_t bank;                /* SEQ: 16-step bank (follows the cursor) */
     uint8_t pat_key, pat_copy, pat_track;          /* SEQ + white-key bank gesture */
     uint8_t ptc_on, ptc_trk, ptc_src, ptc_dst;     /* PATTERNS' Copy to: track ptc_trk's pattern src to dst
@@ -400,6 +402,7 @@ static void page_entered(void)
     seq_midi_reset();
     ui.hot_t = 0;                                /* clear the previous page's emphasis */
     ui.act = 0;
+    ui.via = 0;
     if (song.sel < TESSERA_TRACKS) tessera_awake_select(song.sel, 16u);   /* (AWAKE's step picked: let go) */
     ui.proj_new = 0;
     ui.ptc_on = 0;
@@ -539,20 +542,37 @@ static void note_name(char *b, uint32_t n)
     fmt_int(b + str_len(b), (int32_t)(n / 12u) - 1);
 }
 
-/* SELECT: the open section's pages, both ways (wraps; pages the track does not show skipped) */
+static uint32_t fam_pages(uint32_t fam, uint8_t *pg);
+/* SELECT: the open section's pages, both ways (wraps; pages the track does not show skipped). On an engine with its
+ * own ENV / LFO (FM6): from ENV or LFO the pages that button visits (fam_pages), so ENV's EG pages do not run on into
+ * EDIT's; from EDIT all of EDIT's, its EG pages among them */
 static void page_scroll(int32_t dir)
 {
-    uint32_t fam = fam_grp(cur_page()->fam), n, i = ui.page;
-    for (n = 0; n < NPAGES; n++) {
-        i = (i + (dir > 0 ? 1u : NPAGES - 1u)) % NPAGES;
-        if (in_fam(i, fam) && page_visible(i))
-            break;
+    uint32_t fam = fam_grp(cur_page()->fam), n, i = ui.page, nf = 0;
+    if ((ui.via == FAM_ENV || ui.via == FAM_LFO) && native_page(ui.page, ui.via)) nf = ui.via;
+    else if ((fam == FAM_ENV || fam == FAM_LFO) && native_titles(fam)) nf = fam;
+    if (nf) {
+        uint8_t pg[NPAGES];
+        uint32_t k;
+        n = fam_pages(nf, pg);
+        for (k = 0; k < n && pg[k] != ui.page; k++) {}
+        if (!n)
+            return;
+        i = k < n ? pg[(k + (dir > 0 ? 1u : n - 1u)) % n] : pg[0];
+        fam = nf;
+    } else {
+        for (n = 0; n < NPAGES; n++) {
+            i = (i + (dir > 0 ? 1u : NPAGES - 1u)) % NPAGES;
+            if (in_fam(i, fam) && page_visible(i))
+                break;
+        }
     }
     if (i == ui.page)
         return;
     ui.page = (uint8_t)i;
     ui.fam_last[fam] = ui.page;
     page_entered();
+    ui.via = (uint8_t)fam;
 }
 
 /* the pages a family's button visits, in order: on an engine with its own (native_titles) ENV its pages only, LFO
@@ -607,6 +627,7 @@ static void open_family(uint32_t fam)
     ui.fam_last[fam] = ui.page;
     ui.home = 0;
     page_entered();
+    ui.via = (uint8_t)fam;
     if (fam == FAM_SAVE && cur_page()->graph == GR_USER)
         slot_save_sheet();                       /* SAVE: USER; OCT+ then its slot's sheet on Save here (ui_slots.c) */
 }

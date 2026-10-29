@@ -37,10 +37,11 @@ static int led_get(const uint8_t *nl, uint32_t id)
 static const uint8_t FAM_BTN[FAM_COUNT] = {B_HOME, B_ENV, B_LFO, B_SCL, B_EDIT, B_GLO, B_SAVE,
                                            B_ARP, B_SEQ, B_GLO, B_FX};   /* GLO: mixer + global settings; REC is transport */
 
-static uint32_t cur_fam(void)                       /* (an engine's own envelope / LFO page: ENV / LFO, ui.c native_page) */
+static uint32_t cur_fam(void)                       /* (an engine's own envelope / LFO page: ENV / LFO, ui.c native_page;
+                                                     * EDIT when EDIT reached it) */
 {
-    return ui.home ? FAM_HOME : native_page(ui.page, FAM_ENV) ? FAM_ENV : native_page(ui.page, FAM_LFO) ? FAM_LFO :
-           cur_page()->fam;
+    return ui.home ? FAM_HOME : ui.via == FAM_EDIT ? FAM_EDIT : native_page(ui.page, FAM_ENV) ? FAM_ENV :
+           native_page(ui.page, FAM_LFO) ? FAM_LFO : cur_page()->fam;
 }
 
 static int layer_set_open(void);                       /* (ui_layer.c) */

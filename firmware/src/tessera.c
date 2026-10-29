@@ -1504,7 +1504,12 @@ static void tess_knob_body(uint32_t k, int32_t s)
         const tessera_answer_t *a = &tessera.answer[tr];
         if (k == 1u) tess_param_set_body(tr, TX_AN_VARY, (int32_t)a->vary + s * 2);
         else if (k == 2u) tess_param_set_body(tr, TX_AN_ECHO, (int32_t)a->echo + s * 2);
-        else if (k == 3u) tess_param_set_body(tr, TX_AN_FADE, (int32_t)a->fade + s);
+        else if (k == 3u) {                                 /* FADE: a count a click, 1 .. 16 then LOOPS (100), each */
+            int32_t c = a->fade >= 100u ? 16 : (int32_t)a->fade * 15 / 99;   /* count's first value (answer.c) */
+            c += s > 0 ? 1 : -1;
+            c = c < 0 ? 0 : c > 16 ? 16 : c;
+            tess_param_set_body(tr, TX_AN_FADE, c >= 16 ? 100 : (c * 99 + 14) / 15);
+        }
     } else if (mode == TESS_ENG_CONSTEL) {
         tessera_constel_t *c = &tessera.constel[tr];
         if (k == 1u) {                                      /* Y: a row a click */
