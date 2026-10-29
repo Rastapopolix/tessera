@@ -304,11 +304,14 @@ static void list_draw(void)
             ps = s2;
             list_scale_pic(pic_y, PV_SOUND_Y - pic_y);
         }
-    } else if (l->pic == LP_GRAPH) {                    /* (the page's graph, as the panel draws it) */
+    }
+#if !MELODEE_LOOK                                       /* (no list has one yet; Mono would draw its own) */
+    else if (l->pic == LP_GRAPH) {                      /* (the page's graph, as the panel draws it) */
         graph_y = pic_y;
         graph_h = PV_SOUND_Y - pic_y;
         draw_graph();
         graph_y = Y_GRAPH;
         graph_h = H_GRAPH;
     }
+#endif
 }

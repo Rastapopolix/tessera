@@ -980,6 +980,7 @@ static void pv_draw(void)
 {
     uint32_t kind = pv_kind(), sig;
     int32_t px;
+#if !MELODEE_LOOK                                       /* (Mono: NOTES, the rings and the curves are mono_page's) */
     if (kind == PV_NOTES) {
         if (ui.force) {
             lcd_fill(0, H_HEAD, 240, 240 - H_HEAD, T_BG);
@@ -1015,6 +1016,7 @@ static void pv_draw(void)
         }
         return;
     }
+#endif
     if (kind == PV_GRID) {
         if (ui.force)
             lcd_fill(0, H_HEAD, 240, 240 - H_HEAD, T_BG);
@@ -1070,6 +1072,7 @@ static void pv_draw(void)
             pv_strip(k);
         return;
     }
+#if !MELODEE_LOOK                                       /* (Mono: the rings and the curves are mono_page's) */
     pv_tab_h = kind == PV_RINGS && (sec_on() || (designer_on() && designer_tabs_on())) ? SEC_TAB_H : 0;
     if (kind != PV_CURVE) {                             /* RINGS, FADERS */
         if (ui.force) {                                 /* (the parts then cover what they draw) */
@@ -1118,4 +1121,5 @@ static void pv_draw(void)
             pv_optabs();
         pv_panel(PV_CURVE_Y + (tabs ? PV_OPTAB_H + 2 : 0), PV_CURVE_H - (tabs ? PV_OPTAB_H + 2 : 0), pv_curve);
     }
+#endif
 }
