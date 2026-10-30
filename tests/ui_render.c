@@ -485,7 +485,7 @@ static void eng(uint32_t e) { set_engine_of(TSEL, e); }
  * went with it: skipped) */
 #define E_FM ENGI_FM6
 
-enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_WIDE, S_HOME_RELEASED, S_HOME_FM6, S_MESSAGE, S_MESSAGE_KEY, S_PRESETS, S_PRESETS_NOFAV, S_PRESETS_CAT, S_PRESETS_PENDING, S_PRESETS_RECENT, S_USER, S_PROJECT, S_PROJECT_BOOT, S_TEMPO,
+enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_WIDE, S_HOME_RELEASED, S_HOME_FM6, S_MESSAGE, S_MESSAGE_KEY, S_MESSAGE_PAGED, S_PRESETS, S_PRESETS_NOFAV, S_PRESETS_CAT, S_PRESETS_PENDING, S_PRESETS_RECENT, S_USER, S_PROJECT, S_PROJECT_BOOT, S_TEMPO,
        S_SONG_EMPTY, S_SONG, S_STEP, S_PATTERN, S_MOTION, S_DRUM, S_MIXER, S_MIXER_PAN,
        S_ENV, S_ENVDEST, S_LFO, S_MOD, S_SCL, S_CHORD, S_CHORD_WIDE, S_CHORD_OFF, S_CHORD_KIT, S_ARP, S_VOICE, S_GLOBAL, S_SYSTEM,
        S_EDIT_SID, S_EDIT_DIGITAL, S_OP_ENV, S_EDIT_WHEEL, S_EDIT_PHYS,
@@ -512,7 +512,7 @@ enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_
        S_REF_FMEG, S_REF_GRID, S_REF_SCALES, S_FX_PHASER, S_FX_WIDTH, S_FX_FORMANT, S_FX_TAPE, S_FX_SPIT, S_FX_ECHO, S_FX_ROOM, S_FX_REVERB, S_FX_CHORUS, S_FX_FULL, S_FX_SLOT2, S_FX_SLOT3, S_FX_SEND, S_FX_SEPARATE, S_FX_SENDS, S_FX_BUS1, S_FX_BUS2, S_FX_BUS3,
        S_GEN_TURING, S_GEN_EUCLID, S_GEN_MARKOV, S_GEN_MORPH, S_GEN_EVOLVE, S_CORDS, S_HELP, S_CORDS_PICK_SRC, S_CORDS_PICK_DST,
        S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_GEN_CHORD_OFFBEAT, S_GEN_STEP_EVOLVE_HOW, S_GEN_STEP_ADORN, S_GEN_STEP_SERIAL, S_NOTES_EVOLVE, S_GEN_SEED, S_GEN_SEED_MORPH, S_GEN_FORM, S_MIDI_OUT, S_EDIT_FILT, S_GEN_EVOLVE_GRAV, S_GEN_ENERGY_LEVEL, S_GEN_ENERGY_DEPTH, S_COUNT };
-static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "home_chord", "home_inversion", "home_wide", "home_released", "home_fm6", "message", "message_key", "presets", "presets_nofav", "presets_cat", "presets_pending", "presets_recent", "user",
+static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "home_chord", "home_inversion", "home_wide", "home_released", "home_fm6", "message", "message_key", "message_paged", "presets", "presets_nofav", "presets_cat", "presets_pending", "presets_recent", "user",
     "project", "project_boot", "tempo", "song_empty", "song", "step", "pattern", "motion", "drum",
     "mixer", "mixer_pan", "env", "env_dest", "lfo", "mod", "scl", "chord", "chord_wide", "chord_off", "chord_kit", "arp",
     "voice", "global", "system", "edit_sid", "edit_fm6", "op_env", "edit_wheel",
@@ -976,6 +976,8 @@ static void setup(int s)
     }
     case S_MESSAGE: ui_say("LOADED ", "07 A VERY LONG PATTERN NAME"); break;
     case S_MESSAGE_KEY: ui_message("[EDIT] HOLD TO UNDO"); break;            /* a message with a keycap */
+    case S_MESSAGE_PAGED:                                /* over a page with its position (NOTES, 5 pages): it covers it */
+        song.sel = 0; go_page(GR_ROLL); ui_message("SELECT A NOTE"); break;
     case S_PRESETS: favorite_set(0, 4, 1); favorite_set(0, 5, 1); go_page(GR_BROWSE); break;
     case S_PRESETS_NOFAV: favorites.filter = 1; go_page(GR_BROWSE); break;
     case S_PRESETS_CAT: list_set(LM_CAT + 5u); eng(ENGI_FM6); go_page(GR_BROWSE); break;   /* STRING */
