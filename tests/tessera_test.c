@@ -2018,6 +2018,7 @@ static const char *const SV_CHECK[] = {
     "STEP EVOLVE HOW: another HOW puts the steps back as written",
     "STEP EVOLVE picture: each step as the EVOLVE page and NOTES show it is the step that played (ADORN, SERIAL)",
     "STEP as seed picture: TURING's loop is the source as written until it drifts, then each step changed counts",
+    "STEP as seed: TURING from its own melody, PROB 100 KEEP RHYTHM: pitches spread over SPAN, in the scale, never one",
 };
 #define SV_N (sizeof SV_CHECK / sizeof SV_CHECK[0])
 static void sv_setup(void)
@@ -2242,6 +2243,56 @@ static void sv_run(char *res, size_t cap)
         tessera_sd_loop(0, now, home, &at);
         for (i = 0; i < len; i++) d += now[i] != home[i];
         if (d != 2u || tessera_sd_loop(1, now, home, &at)) fail |= 1u << 16;
+    }
+    {   /* STEP as seed: TURING drifting its own melody (Theo 2026-10-30: copies of the loop's notes narrowed it to one,
+         * an octave up). 512 steps; the last 256's pitches: at least 8, all in C major over SPAN 2 from the lowest (60) */
+        uint32_t seen[128] = {0}, kinds = 0, loopk = 0, bad = 0, j;
+        uint8_t now[16], home[16];
+        uint32_t at, len;
+        sv_setup();
+        tessera_knob(0, TESS_ENG_TURING);
+        tessera_param_set(0, TX_TUR_LEN, 8);
+        tessera_param_set(0, TX_TUR_PROB, 100);
+        tessera_param_set(0, TX_SD_SOURCE, 1);
+        tessera_param_set(0, TX_SD_KEEP, TESS_SD_RHYTHM);
+        for (i = 0; i < 512u; i++) {
+            gen_out_t o = {0, 60, 100, 0, 0, 0};
+            if (!sd_turing(&trk[0], 0, &o)) { bad = 1; break; }
+            if (i < 256u || !o.gate) continue;
+            if (o.note < 60u || o.note >= 84u || !((0xab5u >> (o.note % 12u)) & 1u)) bad = 1;
+            kinds += !seen[o.note]++;
+        }
+        len = tessera_sd_loop(0, now, home, &at);
+        for (i = 0; i < len; i++) {                   /* (the loop's own pitches at the end: more than one) */
+            for (j = 0; j < i && (now[j] & 0x7Fu) != (now[i] & 0x7Fu); j++) {}
+            loopk += (now[i] & 0x80u) && j == i;
+        }
+        if (bad || kinds < 8u || loopk < 2u) fail |= 1u << 17;
+        /* Theo's device case: a rising run then rests (16 steps), LEN 16, PROB 100, SPAN 1 OCT, KEEP FREE: the rests
+         * that turn into hits took the run's top note, so most of what played sat at the top. No more than a third */
+        for (i = 0; i < 16u; i++) {
+            static const uint8_t RUN[8] = {60, 62, 64, 65, 67, 69, 71, 72};
+            step_t *st = &trk[0].step[i];
+            st->n = i < 8u ? 1u : 0u;
+            st->note[0] = i < 8u ? RUN[i] : 0u;
+            st->time = i < 8u ? ST_NOTE : ST_REST;
+            st->vel = 100;
+        }
+        trk[0].p[P_SLEN] = 16;
+        tessera_param_set(0, TX_TUR_LEN, 16);
+        tessera_param_set(0, TX_TUR_SPAN, 1);
+        tessera_param_set(0, TX_SD_KEEP, TESS_SD_FREE);
+        tessera_sd_play();
+        memset(seen, 0, sizeof seen);
+        for (i = 0, j = 0, kinds = 0; i < 1024u; i++) {
+            gen_out_t o = {0, 60, 100, 0, 0, 0};
+            sd_turing(&trk[0], 0, &o);
+            if (i < 256u || !o.gate) continue;
+            if (o.note < 60u || o.note > 72u || !((0xab5u >> (o.note % 12u)) & 1u)) bad = 1;
+            kinds += !seen[o.note]++;
+            j++;
+        }
+        if (bad || kinds < 7u || seen[72] * 3u > j) fail |= 1u << 17;
     }
     snprintf(res, cap, "%u", fail);
 }
@@ -3206,7 +3257,7 @@ int main(int argc, char **argv)
                                              "seed_morph_t1_b_gravity100"};
         static const char *const WHAT[13] = {
             "STEP as seed: TURING, SOURCE T1, PROB 0: the melody as written, LEN 8 a loop (6 notes in 8)",
-            "  PROB 50 KEEP RHYTHM: its rhythm kept, only its own notes, in another order",
+            "  PROB 50 KEEP RHYTHM: its rhythm kept, in another order, new notes of the scale among its own",
             "  PROB 50 KEEP PITCH: the hits come and go, each one a note of the melody's",
             "STEP as seed: EUCLID 5 of 16, SOURCE T1: the melody's notes in order on its hits",
             "  KEEP RHYTHM: the melody's rhythm (6 notes in 8 steps), EUCLID's pitches",
@@ -3235,7 +3286,8 @@ int main(int argc, char **argv)
         }
         whole = n == 48u || n == 49u;                 /* (49: the step at the stop's block too) */
         ok = which == 0 || which == 8 || which >= 10 ? whole && order == n :
-             which == 1 || which == 6 || which == 9 ? whole && of == n && order < n :
+             which == 1 ? whole && of < n && of > 0u && order < n :
+             which == 6 || which == 9 ? whole && of == n && order < n :
              which == 2 ? n > 24u && n < 48u && of == n :
              which == 3 ? n == 20u && order == n :
              which == 4 ? whole && of < n :

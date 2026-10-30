@@ -396,7 +396,7 @@ with no notes, plays the generator as usual.
 | KEEP | TURING, MORPH's B | EUCLID | MARKOV |
 |---|---|---|---|
 | **FREE** | a step's pitch or its hit may change | the source's notes on EUCLID's hits | notes and rests from the chain |
-| **RHYTHM** | only the pitches change (to another note of the loop) | the source's own rhythm, on EUCLID's pitches | the source's rhythm, the notes from the chain |
+| **RHYTHM** | only the pitches change (to another of your notes, or any note of the scale over SPAN octaves up from your lowest) | the source's own rhythm, on EUCLID's pitches | the source's rhythm, the notes from the chain |
 | **PITCH** | only the hits come and go | as FREE | the chain's rhythm, the notes in written order |
 
 **GRAVITY** (KNOB 3) pulls it all back home: at GRAVITY %, a step plays the source exactly as written at its place.
