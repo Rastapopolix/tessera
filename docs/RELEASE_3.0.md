@@ -60,6 +60,13 @@ Three demo projects in [demos/](demos/README.md): **STILL TIDE** and **KOTO GARD
 **LOW HARBOUR**, a slow ambient dub. `tools/demo_backup.py` puts them into slots B, C and D of your own backup. And a
 new demo video on the [project page](https://rastapopolix.github.io/tessera/).
 
+### 🐛 Fixes
+* **SWING turned while playing stays in time.** Turning a track's SWING (or the global one) during a late step used to
+  leave the track off the beat until the next PLAY, even after turning it back to 0. It now goes straight back onto the
+  grid, as it already did for DIV and tempo.
+* The boot screen no longer flashes yellow before your COLOR: it starts black and the logo comes in your ink.
+* NOTES shows Accumulate: a small caret over a note, pointing up when it climbs, down when it falls.
+
 ### 🔧 Under the hood
 * **More audio memory**: the stacks were cut to what they really use (about 14 KB more for the audio), and the boot
   images are compressed (7 KB less flash).
