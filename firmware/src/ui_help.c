@@ -61,8 +61,9 @@ static const help_t HELP_PAGE[HP_COUNT] = {
     H_(HP_NOTES_STEP, "NOTES STEP", "Moves along the pattern: one note at a time where notes are, one step at a time "
                                     "between them, empty steps too. OCT+ on a note opens its sheet: length, velocity, "
                                     "chance, ratchet, nudge, slide, move, copy, delete. The PRESETS knob zooms."),
-    H_(HP_NOTES_NOTE, "NOTES NOTE", "The picked note's pitch, a semitone a detent. On an empty step the first turn "
-                                    "writes the last note played there."),
+    H_(HP_NOTES_NOTE, "NOTES NOTE", "The picked note's pitch. QNT OFF: a semitone a detent; QNT on: a note of the "
+                                    "scale (CHRD: of the chord), a note off it going to the next one first; with ENV "
+                                    "held, a semitone. On an empty step the first turn writes the last note played there."),
     H_(HP_NOTES_LENGTH, "NOTES LENGTH", "How long the picked note lasts, a quarter of a step a detent; with ENV held, "
                                         "a sixteenth, for fine lengths. A long note ties over the steps after it."),
     H_(HP_NOTES_VEL, "NOTES VELOCITY", "How hard the picked note plays, 1 to 127. With ENV held instead: right slides "

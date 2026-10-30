@@ -4780,6 +4780,19 @@ static int test_quick_layers(void)
     ok &= msg_is("TAP: CLK IS EXT") && song.g[G_BPM] == 120;
     btn_up(B_GLO); frame(); song.g[G_CLOCK] = 0;
     bad += check("GLO + F4 x3 at 0.5 s: TAP 120 BPM; with CLK EXT: dimmed, it says why", ok);
+    go_home(); frame();
+    turn(EN_SELECT, 2);
+    ok = song.g[G_BPM] == 122 && ui.home && ui.bpm_t;
+    btn_down(B_GLO); frame();
+    turn(EN_SELECT, -3);
+    ok &= song.g[G_BPM] == 119 && ui.layer == LAYER_GLO;
+    btn_up(B_GLO); frame();
+    ok &= ui.home && !ui.layer;                   /* (a combo: no tap, so no MIXER) */
+    song.g[G_CLOCK] = 1;
+    turn(EN_SELECT, 1);
+    ok &= song.g[G_BPM] == 119 && msg_is("TEMPO: CLK IS EXT");
+    song.g[G_CLOCK] = 0; song.g[G_BPM] = 120;
+    bad += check("SELECT on HOME, and with GLO held: the tempo (a combo, no MIXER); with CLK EXT it says why", ok);
     {
         set_engine_of(TSEL, 3);                   /* (the generic ENV page) */
         int16_t l2 = trk[2].p[P_LEVEL], atk = TSEL->p[P_ATK];

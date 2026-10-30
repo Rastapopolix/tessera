@@ -55,14 +55,16 @@ page's four settings sit along the top of the screen in the same order.
 | **SCL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
 | **EDIT** | The sound's EDIT pages; on an EDIT page, the map | With OCT- / OCT+: undo / redo |
 | **FX** | The insert and send effects | The mod amount of any knob you turn |
-| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, F4 taps the tempo; with PLAY, restart from the top |
+| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it; with PLAY, restart from the top |
 | **SAVE** | USER (ready to save the sound), PROJECT, PRESETS | Save the project to its slot (as SAVE + REC) |
 | **REC** | Record | Capture or print the last bars (see [Print and keep](#print-and-keep)) |
 | **OCT+** | Octave up; on some pages, an action (shown on screen) | A page's extra layer (see [OCT+ layers](#oct-layers-on-gen)) |
 
 On the home page each track's tile shows its sound and engine. **ALGORITHM** picks the track on every page (or
-the left knob, with MENU > TRACK KNOB set to LEFT), and **SELECT** turns the pages of the section shown. When a section has more pages than the footer's tabs show, the header gives the page's place (4/10) and
-arrows at the footer's ends say more pages lie that way. The four sounds a new project starts with are an ambient set: **GLASS PAD**
+the left knob, with MENU > TRACK KNOB set to LEFT), and **SELECT** turns the pages of the section shown (on the home
+page, the tempo). When a section has more pages than the footer's tabs show, the header gives the page's place (4/10:
+SEQ counts GEN's pages and the sequencer's together, the way the button goes through them) and arrows at the footer's
+ends say more pages lie that way. The four sounds a new project starts with are an ambient set: **GLASS PAD**
 and **BELLS** on FM6, **STRING MACH** on TRIO, and the **808 KIT** on DRUM. (Track 2 is a TRIO pad so that
 generators on both pads stay within what the FM-1 can play: see [How many voices at once](#how-many-voices-at-once).) A new project has no mods, so nothing moves until
 you patch it.
@@ -80,7 +82,10 @@ value.
 
 **The look.** Tessera draws every screen in one ink on black, with a 5 x 7 pixel font: the selected item is
 inverted, and quieter things are drawn in a dimmer ink. MENU > COLOR picks the ink: **YELLOW** (the default),
-WHITE, GREEN, BLUE, RED, and ORANGE, PINK, HOT PINK and LILAC to match the FM-1's shells. The tracks are told apart by their numbers, not by colours.
+WHITE, GREEN, BLUE, RED, and ORANGE, PINK, HOT PINK and LILAC to match the FM-1's shells. In these the tracks are told
+apart by their numbers, not by colours. **MOSAIC** gives each track a colour of its own (T1 yellow, T2 blue, T3 hot pink,
+T4 green): the screen takes the selected track's, the pages that show all four (HOME, MIXER, PATTERNS, SONG, QUAD,
+FOLLOW, MATRIX, MIDI OUT, the cords) draw each in its own, and the value you turn and the row you pick show in white.
 
 <table>
 <tr>
@@ -95,6 +100,7 @@ WHITE, GREEN, BLUE, RED, and ORANGE, PINK, HOT PINK and LILAC to match the FM-1'
 <td align="center"><img src="assets/gallery/ink_pink.png" alt="PINK" width="180"><br><b>PINK</b></td>
 <td align="center"><img src="assets/gallery/ink_hot_pink.png" alt="HOT PINK" width="180"><br><b>HOT PINK</b></td>
 <td align="center"><img src="assets/gallery/ink_lilac.png" alt="LILAC" width="180"><br><b>LILAC</b></td>
+<td align="center"><img src="assets/gallery/ink_mosaic.png" alt="MOSAIC" width="180"><br><b>MOSAIC</b></td>
 </tr>
 </table>
 
@@ -111,6 +117,7 @@ key skips it.
 | Tap **ARP** | Switches a STEP track to ARP and opens **ARP**; tap again for **ARP 2**. On a generator track it opens GEN instead ("ARP: MODE ON GEN"), so a playing generator never goes quiet by accident. |
 | Hold **OCT+** on GEN | The generator's second layer, for TURING, EUCLID, MARKOV, MORPH, QUAD, CHORD, ATLAS, CONSTELLATION and ANSWER (see [OCT+ layers](#oct-layers-on-gen)). |
 | Hold **OCT+** on EVOLVE | A generator's GRAVITY; on a STEP track, STEP EVOLVE's HOW (see [EVOLVE](#evolve)). |
+| Turn **SELECT** on HOME, or with **GLO** held | Sets the tempo (BPM), as SEQ > TEMPO does; F4 with GLO held taps it. With CLK on USB or TRS the tempo is the clock's. |
 | **GLO** + **E4** (on MIXER, E4) | Holds [FILL](#a-steps-condition-and-fill) for the steps whose condition is FILL or !FILL. |
 | **GEN** on an AWAKE track, a white key | Picks that step: KNOB 1 sets its A, KNOB 2 its B. The same key lets it go. |
 | Hold **ARP**, turn a knob | The [help card](#help-card) for that knob. Turn the same knob further to scroll a long text. |
@@ -224,6 +231,11 @@ SEQ then shows only that mode's pages:
 MOTION and DRUM HIT appear as in upstream. With STEP, GEN's KNOB 2 to 4 are DIVISION, SWING and GATE. The
 generators run at the track's DIV (PATTERN page) and play in the track's scale (SCL). Choosing STEP or a
 generator turns the arpeggiator off; choosing ARP again brings back its last setting.
+
+On NOTES, **KNOB 2** sets the picked note's pitch. With **QNT OFF** it moves a semitone a detent. With QNT on
+(SNAP, WHITE, ALL, MPC) it moves a note of the scale a detent; a note off the scale goes to the next scale note in
+the turn's direction first. With **QNT CHRD** and a CHORD track playing it moves through that chord's notes. Hold
+**ENV** while turning for a semitone at a time. A microtonal scale moves a degree a detent, as before.
 
 <p align="center"><img src="assets/gallery/seq_mode.png" alt="GEN with MODE STEP" width="320"></p>
 
@@ -384,7 +396,7 @@ with no notes, plays the generator as usual.
 | KEEP | TURING, MORPH's B | EUCLID | MARKOV |
 |---|---|---|---|
 | **FREE** | a step's pitch or its hit may change | the source's notes on EUCLID's hits | notes and rests from the chain |
-| **RHYTHM** | only the pitches change (to another note of the loop) | the source's own rhythm, on EUCLID's pitches | the source's rhythm, the notes from the chain |
+| **RHYTHM** | only the pitches change (to another of your notes, or any note of the scale over SPAN octaves up from your lowest) | the source's own rhythm, on EUCLID's pitches | the source's rhythm, the notes from the chain |
 | **PITCH** | only the hits come and go | as FREE | the chain's rhythm, the notes in written order |
 
 **GRAVITY** (KNOB 3) pulls it all back home: at GRAVITY %, a step plays the source exactly as written at its place.
@@ -640,7 +652,8 @@ A **CHORD** track plays a progression; with **QNT CHRD** the other tracks follow
 - On the CHORD track: GEN, MODE **CHORD**, then **PROG**, **BARS** and **HIT**. The chord's kind and voicing come
   from **SCL > CHORD** (CHRD, VOIC), or the OCT+ layer. CHRD OFF plays triads.
 - On any other track: **SCL**, **QNT** to **CHRD**. Its keys, its MIDI input and its generator snap to the nearest
-  note of the chord playing now. With no CHORD track, CHRD acts as SNAP.
+  note of the chord playing now, and KNOB 2 on NOTES steps through its notes. With no CHORD track, CHRD acts as
+  SNAP.
 - **CH PROG** is a mod destination, so a slow source can change progressions.
 
 ---
@@ -737,7 +750,7 @@ Hold **HOME** for the menu. Tessera's additions:
 
 | Item | What it does |
 |---|---|
-| **COLOR** | The screen's ink, on black: YELLOW (the default), WHITE, GREEN, BLUE, RED, ORANGE, PINK, HOT PINK or LILAC. |
+| **COLOR** | The screen's ink, on black: YELLOW (the default), WHITE, GREEN, BLUE, RED, ORANGE, PINK, HOT PINK or LILAC; or MOSAIC, a colour per track with the selection in white. |
 | **MIDI OUT** | What goes out over USB MIDI: **KEYS** (the notes you play, as Melodee sent them), **ALL** (also the steps, the ARP, recordings and every generator) or **OFF**. Each track on its own channel: see [MIDI OUT channels](#midi-out-channels). |
 | **CLOCK OUT** | 24 pulses a beat with START and STOP over USB, while the clock is INT. |
 | **PANEL GAMMA** | The screen's contrast curve: the panel chip's own **G2.2** (the default), G1.8, G2.5 and G1.0, or TUNED and TUNED+VCOM. The screen goes black for a moment and redraws. Saved. |

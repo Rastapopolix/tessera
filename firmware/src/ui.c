@@ -547,14 +547,20 @@ static void note_name(char *b, uint32_t n)
 }
 
 static uint32_t fam_pages(uint32_t fam, uint8_t *pg);
+/* the ENV / LFO whose pages SELECT turns (fam_pages) on an engine with its own (native_titles); 0: the page's family's
+ * (in_fam). From EDIT the engine's own pages are EDIT's */
+static uint32_t page_nf(void)
+{
+    uint32_t fam = fam_grp(cur_page()->fam);
+    if ((ui.via == FAM_ENV || ui.via == FAM_LFO) && native_page(ui.page, ui.via)) return ui.via;
+    return (fam == FAM_ENV || fam == FAM_LFO) && native_titles(fam) ? fam : 0u;
+}
 /* SELECT: the open section's pages, both ways (wraps; pages the track does not show skipped). On an engine with its
  * own ENV / LFO (FM6): from ENV or LFO the pages that button visits (fam_pages), so ENV's EG pages do not run on into
  * EDIT's; from EDIT all of EDIT's, its EG pages among them */
 static void page_scroll(int32_t dir)
 {
-    uint32_t fam = fam_grp(cur_page()->fam), n, i = ui.page, nf = 0;
-    if ((ui.via == FAM_ENV || ui.via == FAM_LFO) && native_page(ui.page, ui.via)) nf = ui.via;
-    else if ((fam == FAM_ENV || fam == FAM_LFO) && native_titles(fam)) nf = fam;
+    uint32_t fam = fam_grp(cur_page()->fam), n, i = ui.page, nf = page_nf();
     if (nf) {
         uint8_t pg[NPAGES];
         uint32_t k;

@@ -72,6 +72,8 @@ static void hk_whole(uint32_t x, uint32_t y, uint32_t r0, uint32_t fill);
 #define GFX_HOOK_BEGIN() (npend = ncells = 0)
 #define GFX_HOOK_CELL(x0, y0, x1, y1) hk_cell(x0, y0, x1, y1)
 #define GFX_HOOK_PIXELS(n) (px_visited += (n))
+static char mo_place_seen[8];                  /* the place (4/9) a Mono header drew */
+#define MO_HOOK_PLACE(s) strncpy(mo_place_seen, s, 7)
 #define UI_FILL_HOOK(x, y, w, h) hk_fill(x, y, w, h)
 static void fm6_hook(uint32_t kind, uint32_t a, uint32_t b);
 #define FM6_CHART_HOOK(kind, a, b) fm6_hook(kind, a, b)
@@ -511,7 +513,7 @@ enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_
        S_REF_SHEET_MOTION, S_REF_MOD, S_REF_PICKER_MOD, S_REF_ARP, S_REF_PATTERN,
        S_REF_FMEG, S_REF_GRID, S_REF_SCALES, S_FX_PHASER, S_FX_WIDTH, S_FX_FORMANT, S_FX_TAPE, S_FX_SPIT, S_FX_ECHO, S_FX_ROOM, S_FX_REVERB, S_FX_CHORUS, S_FX_FULL, S_FX_SLOT2, S_FX_SLOT3, S_FX_SEND, S_FX_SEPARATE, S_FX_SENDS, S_FX_BUS1, S_FX_BUS2, S_FX_BUS3,
        S_GEN_TURING, S_GEN_EUCLID, S_GEN_MARKOV, S_GEN_MORPH, S_GEN_EVOLVE, S_CORDS, S_HELP, S_CORDS_PICK_SRC, S_CORDS_PICK_DST,
-       S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_GEN_CHORD_OFFBEAT, S_GEN_STEP_EVOLVE_HOW, S_GEN_STEP_ADORN, S_GEN_STEP_SERIAL, S_NOTES_EVOLVE, S_GEN_SEED, S_GEN_SEED_MORPH, S_GEN_FORM, S_MIDI_OUT, S_EDIT_FILT, S_GEN_EVOLVE_GRAV, S_GEN_ENERGY_LEVEL, S_GEN_ENERGY_DEPTH, S_COUNT };
+       S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_GEN_CHORD_OFFBEAT, S_GEN_CHORD_DRONE, S_GEN_STEP_EVOLVE_HOW, S_GEN_STEP_ADORN, S_GEN_STEP_SERIAL, S_NOTES_EVOLVE, S_GEN_SEED, S_GEN_SEED_MORPH, S_GEN_FORM, S_MIDI_OUT, S_EDIT_FILT, S_GEN_EVOLVE_GRAV, S_GEN_ENERGY_LEVEL, S_GEN_ENERGY_DEPTH, S_EDIT_FILT_BP, S_EDIT_FILT_HP, S_EDIT_FILT_NOT, S_STAGE_FILTER_HP, S_COUNT };
 static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "home_chord", "home_inversion", "home_wide", "home_released", "home_fm6", "message", "message_key", "message_paged", "presets", "presets_nofav", "presets_cat", "presets_pending", "presets_recent", "user",
     "project", "project_boot", "tempo", "song_empty", "song", "step", "pattern", "motion", "drum",
     "mixer", "mixer_pan", "env", "env_dest", "lfo", "mod", "scl", "chord", "chord_wide", "chord_off", "chord_kit", "arp",
@@ -531,7 +533,7 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "h
     "notes_slide", "notes_mixed", "notes_chord", "notes_empty", "notes_raw", "notes_zoom", "notes_loop", "notes_drum", "notes_dense", "notes_rec", "notes_erase", "notes_drum_rec", "notes_drum_erase", "scl_micro", "scl_micro_layer", "scl_micro_chord", "scale_picker_edo", "scale_picker_historical", "scale_picker_favorites", "scale_picker_empty", "scale_settings_favorite", "menu_click", "menu_click_level", "menu_countin", "menu_preview", "menu_add", "menu_autosave_on", "menu_autosave_off", "drum_sound_808", "drum_sound_909", "drum_mix_909", "drum_hit_909", "drum_hit_free", "drum_hit_long",
     "stage_drum", "stage_trio", "stage_queued", "stage_browse", "stage_stopped", "stage_filter", "patterns", "patterns_stopped", "patterns_sheet", "patterns_copy", "patterns_replace", "patterns_delete", "project_new", "new_key", "new_roles",
     "ref_stage_held", "ref_stage_released", "ref_stage_cutoff", "ref_stage_drum", "ref_browser", "ref_patterns", "ref_song", "ref_env", "ref_lfo", "ref_edit_osc", "ref_mixer", "ref_notes", "ref_settings", "ref_dialog", "ref_sheet_sound", "ref_sheet_song", "ref_picker_wave", "ref_picker_mode", "ref_sections_p5", "ref_map_p5", "ref_map_fm6", "ref_scl_list", "ref_sheet_project", "ref_sheet_note", "ref_sheet_hit", "ref_motion", "ref_sheet_motion", "ref_mod", "ref_picker_mod", "ref_arp", "ref_pattern", "ref_fmeg", "ref_grid", "ref_scales", "fx_phaser", "fx_width", "fx_formant", "fx_tape", "fx_spit", "fx_echo", "fx_room", "fx_reverb", "fx_chorus", "fx_full", "fx_slot2", "fx_slot3", "fx_send", "fx_separate", "fx_sends", "fx_bus1", "fx_bus2", "fx_bus3",
-    "gen_turing", "gen_euclid", "gen_markov", "gen_morph", "gen_evolve", "cords", "help", "cords_pick_src", "cords_pick_dst", "gen_grids", "gen_tweak", "gen_tweak_off", "mod_shortcut", "gen_bounce", "gen_awake", "gen_poly", "gen_tweak2", "gen_tweak2_off", "organic", "gen_tweak2_coin", "mods_live", "mods_live_gen", "matrix", "gen_quad", "gen_length", "gen_fall", "gen_constel", "gen_length_hit", "gen_length_keys", "gen_length_step", "gen_pattern_constel", "gen_series", "gen_chord", "gen_chord_oct", "gen_grids_oct", "gen_chord_user", "gen_step_evolve", "help_gen", "gen_timing", "gen_timing_x1", "gen_energy", "gen_answer", "gen_answer_oct", "gen_seed_oct", "gen_timing_human", "gen_chord_circle", "gen_chord_offbeat", "gen_step_evolve_how", "gen_step_adorn", "gen_step_serial", "notes_evolve", "gen_seed", "gen_seed_morph", "gen_form", "midi_out", "edit_filt", "gen_evolve_grav", "gen_energy_level", "gen_energy_depth"};
+    "gen_turing", "gen_euclid", "gen_markov", "gen_morph", "gen_evolve", "cords", "help", "cords_pick_src", "cords_pick_dst", "gen_grids", "gen_tweak", "gen_tweak_off", "mod_shortcut", "gen_bounce", "gen_awake", "gen_poly", "gen_tweak2", "gen_tweak2_off", "organic", "gen_tweak2_coin", "mods_live", "mods_live_gen", "matrix", "gen_quad", "gen_length", "gen_fall", "gen_constel", "gen_length_hit", "gen_length_keys", "gen_length_step", "gen_pattern_constel", "gen_series", "gen_chord", "gen_chord_oct", "gen_grids_oct", "gen_chord_user", "gen_step_evolve", "help_gen", "gen_timing", "gen_timing_x1", "gen_energy", "gen_answer", "gen_answer_oct", "gen_seed_oct", "gen_timing_human", "gen_chord_circle", "gen_chord_offbeat", "gen_chord_drone", "gen_step_evolve_how", "gen_step_adorn", "gen_step_serial", "notes_evolve", "gen_seed", "gen_seed_morph", "gen_form", "midi_out", "edit_filt", "gen_evolve_grav", "gen_energy_level", "gen_energy_depth", "edit_filt_bp", "edit_filt_hp", "edit_filt_not", "stage_filter_hp"};
 
 /* the scenes of the UI design screens: the state the UI-redesign
  * prototype drew them from (its setup(): two pattern tracks, the drum pattern on track 4, a synthetic scope),
@@ -1071,6 +1073,8 @@ static void setup(int s)
     case S_STAGE_FILTER:                                 /* SID's RES turning, a chord held: the curve behind it */
         eng(3); go_home(); TSEL->p[P_E5] = 12; ui.hot_col = 3; ui.hot_t = 30; stage_out();
         input_on(TSEL, 57, 100); input_on(TSEL, 60, 100); input_on(TSEL, 64, 100); break;
+    case S_STAGE_FILTER_HP:                              /* TRIO's CUT turning, MODE HP (not one of Stage's knobs) */
+        eng(6); go_home(); TSEL->p[P_E4] = 2; TSEL->p[P_E6] = 90; ui.hot_col = 0; ui.hot_t = 30; stage_out(); break;
     case S_STAGE_QUEUED:
         go_home(); trk[1].pattern_next = 2; trk[2].p[P_MUTE] = 1; song.rec = 2u; fm1_ms = 0; break;
     case S_STAGE_BROWSE:
@@ -1272,6 +1276,13 @@ static void setup(int s)
         song.sel = 0;
         tessera_knob(0, TESS_ENG_CHORD);
         tessera_param_set(0, TX_CH_HIT, GEN_CH_OFF);
+        go_title("GEN");
+        break;
+    case S_GEN_CHORD_DRONE:                          /* CHORD DRONE: two five-letter values side by side (MODE, PROG) */
+        tessera_reset();
+        song.sel = 0;
+        tessera_knob(0, TESS_ENG_CHORD);
+        tessera_param_set(0, TX_CH_PROG, GEN_CH_DRONE);
         go_title("GEN");
         break;
     case S_GEN_CHORD_OCT:                            /* CHORD with OCT+ held: OCT +1, CHRD DIA7, VOIC OPEN */
@@ -1652,6 +1663,9 @@ static void setup(int s)
     case S_SYSTEM: go_title("SYSTEM"); break;
     case S_EDIT_SID: eng(3); go_title("EDIT 1"); break;
     case S_EDIT_FILT: eng(6); go_title("EDIT 2"); TSEL->p[P_E6] = 90; break;   /* TRIO's CUT and RES: the filter's curve */
+    case S_EDIT_FILT_BP: case S_EDIT_FILT_HP: case S_EDIT_FILT_NOT:   /* .. its MODE BP, HP, notch: the curve follows it
+                                                                      * (issue #299) */
+        eng(6); go_title("EDIT 2"); TSEL->p[P_E6] = 90; TSEL->p[P_E4] = (int16_t)(1 + s - S_EDIT_FILT_BP); break;
     case S_EDIT_DIGITAL: eng(E_FM); go_title("EDIT 1"); break;
     case S_OP_ENV: eng(1); go_title("OP1 ENV"); break;
     case S_EDIT_WHEEL: eng(7); go_title("EDIT 1"); ui.hot_col = 1; ui.hot_t = 30; break;
@@ -2220,7 +2234,7 @@ int main(int argc, char **argv)
     char path[600];
     uint32_t p, s;
 #if MELODEE_LOOK
-    static const char *const SHOW[] = {"YELLOW", "WHITE", "GREEN", "BLUE", "RED", "ORANGE", "PINK", "HOT PINK", "LILAC"};   /* the Mono inks */
+    static const char *const SHOW[] = {"YELLOW", "WHITE", "GREEN", "BLUE", "RED", "ORANGE", "PINK", "HOT PINK", "LILAC", "MOSAIC"};   /* the Mono inks */
 #else
     static const char *const SHOW[] = {"NIGHT", "CONTRAST", "SMALTI"};
 #endif
@@ -2255,7 +2269,7 @@ int main(int argc, char **argv)
         cur_name = "Mono self-test";
         memset(mo_vals, 0, sizeof mo_vals);
         mo_vals[0].used = mo_vals[1].used = mo_vals[2].used = 1;
-        mo_vals[0].kind = MV_INV, mo_vals[0].cut = 1, mo_vals[0].fx0 = 0, mo_vals[0].fx1 = 30;
+        mo_vals[0].kind = MV_DIAL, mo_vals[0].cut = 1, mo_vals[0].fx0 = -1, mo_vals[0].tx0 = 0, mo_vals[0].tx1 = 30;
         mo_vals[1].kind = MV_BOX, mo_vals[1].fx0 = 32, mo_vals[1].fx1 = 58, mo_vals[1].tx0 = 34, mo_vals[1].tx1 = 57;
         mo_vals[2].kind = MV_DIAL, mo_vals[2].fx0 = -1, mo_vals[2].tx0 = 59, mo_vals[2].tx1 = 70;
         mo_vals_new = 1;
@@ -2263,6 +2277,66 @@ int main(int argc, char **argv)
         if (nfind != 3u) { fprintf(stderr, "ui_render: the Mono lint missed its self-test (%u of 3)\n", nfind); return 1; }
         fprintf(rep, "(Mono self-test: %u findings above are expected)\n\n", nfind);
         nfind = 0, nmono = n0;
+    }
+    {   /* the header's place (4/9) and the footer's tabs: the pages each button and SELECT visit, in their order, on
+         * every engine (ENV / LFO: an engine's own pages, native_titles); the place shown on all of them or on none */
+        static const uint8_t FAMS[] = {FAM_ENV, FAM_LFO, FAM_EDIT, FAM_SEQ};
+        static const char *const FN[] = {"env", "lfo", "edit", "seq"};
+        uint32_t EN[] = {ENGI_FM6, ENGI_ORACLE, 0, ENGI_DRUM}, e, f, k, w, yel = 0;
+        for (e = 0; e < NENGINES; e++)
+            if (ENGINES[e] == &ENG_TRIO) EN[2] = e;
+        for (p = 0; p < UI_PAL_ENTRIES; p++)
+            if (!strcmp(UI_PALETTES[p].name, "YELLOW")) yel = p;
+        fprintf(rep, "\nPage places (Mono header n/m: the button's and SELECT's pages):\n");
+        for (e = 0; e < 4u; e++)
+            for (f = 0; f < sizeof FAMS; f++)
+                for (w = 0; w < 2u; w++) {              /* the button again, then SELECT */
+                    char name[64];
+                    uint32_t first, n0 = 0, fit0 = 0;
+                    if (!ENG_BUILT(EN[e])) continue;
+                    state(); eng(EN[e]); go_home(); pal(yel);
+                    song.playing = 0;                   /* (SONG playing: JAM in the place's room) */
+                    open_family(FAMS[f]);
+                    first = ui.page;
+                    if (!w) fprintf(rep, "  %s %s:", ENGINES[EN[e]]->name, FN[f]);
+                    for (k = 0; k < 40u; k++) {
+                        uint16_t idx[16];
+                        uint32_t cur, n = mo_tabs(idx, &cur);
+                        int fit = mo_tabs_fit(idx, n);
+                        if (!k) n0 = n, fit0 = (uint32_t)fit;
+                        if (!w) fprintf(rep, " %s%s%u/%u", mo_title(cur_page()), fit ? "(" : "[", cur + 1u, n);
+                        if (n != n0 || (uint32_t)fit != fit0 || cur != k || idx[cur] != ui.page) {
+                            fprintf(stderr, "ui_render: %s %s %s: page %u (%s) shows %u/%u (fit %d), its place %u/%u\n",
+                                    ENGINES[EN[e]]->name, FN[f], w ? "SELECT" : "button", k + 1u, mo_title(cur_page()),
+                                    cur + 1u, n, fit, k + 1u, n0);
+                            nfind++;
+                            break;
+                        }
+                        if (!w) {                       /* the header shows it (the knob pages' and the whole screens') */
+                            uint32_t seen;
+                            snprintf(name, sizeof name, "%u/%u", k + 1u, n);
+                            mo_place_seen[0] = 0;
+                            draw(0);
+                            seen = !strcmp(mo_place_seen, name);
+                            if (seen == (uint32_t)fit) {
+                                fprintf(stderr, "ui_render: %s %s: page %u (%s): the header %s %s\n", ENGINES[EN[e]]->name,
+                                        FN[f], k + 1u, mo_title(cur_page()), fit ? "shows" : "lacks", name);
+                                nfind++;
+                            }
+                            snprintf(name, sizeof name, "nav_%s_%s_%u", EN[e] == ENGI_FM6 ? "fm6" : "oracle", FN[f], k + 1u);
+                            if ((EN[e] == ENGI_FM6 || EN[e] == ENGI_ORACLE) && FAMS[f] != FAM_SEQ)
+                                write_ppm(out, "YELLOW", name);
+                        }
+                        if (w) page_scroll(1); else open_family(FAMS[f]);
+                        if (ui.page == first) break;
+                    }
+                    if (!w) fprintf(rep, "\n");
+                    if (k + 1u != n0) {
+                        fprintf(stderr, "ui_render: %s %s %s: %u pages visited, %u counted\n", ENGINES[EN[e]]->name,
+                                FN[f], w ? "SELECT" : "button", k + 1u, n0);
+                        nfind++;
+                    }
+                }
     }
 #endif
     for (p = 0; p < UI_PAL_ENTRIES; p++)
@@ -2304,6 +2378,37 @@ int main(int argc, char **argv)
         }
         if (!MELODEE_LOOK && fmp_charts - c0 != 96u) {   /* (the Mono look: no FM6 chart yet, ui_mono.c's stand-in) */
             fprintf(stderr, "ui_render: %u FM6 charts drawn of 96\n", fmp_charts - c0);
+            return 1;
+        }
+    }
+    {   /* the filter's picture follows its type (issue #299): the curve's shape per type, TRIO's TONE page drawn
+         * differently under each MODE, Stage's too */
+        static const int SC[] = {S_EDIT_FILT, S_EDIT_FILT_BP, S_EDIT_FILT_HP, S_EDIT_FILT_NOT};
+        uint32_t h[4], k, j, i, hs;
+        int32_t lo, mid, hi;
+        for (k = 0; k <= FLT_NOTCH; k++) {
+            lo = flt_curve(k, -40, 64, 480, 14, 896, 127);
+            mid = flt_curve(k, 0, 64, 480, 14, 896, 127);
+            hi = flt_curve(k, 40, 64, 480, 14, 896, 127);
+            if (k == FLT_LP ? !(lo > hi && mid > lo) : k == FLT_HP ? !(hi > lo && mid > hi) :
+                k == FLT_NOTCH ? !(mid < lo && mid < hi) : !(mid > lo && mid > hi && lo == hi)) {   /* (BP: even) */
+                fprintf(stderr, "ui_render: filter type %u: curve %d %d %d off its shape\n", k, lo, mid, hi);
+                return 1;
+            }
+        }
+        for (k = 0; k < 4u; k++) {
+            setup(SC[k]); pal(UI_GRAY_INDEX); draw(SC[k]);
+            for (hs = 2166136261u, i = 108u * 240u; i < 200u * 240u; i++)   /* (the picture's rows, both looks: */
+                hs = (hs ^ host_screen[i]) * 16777619u;                      /*  under the knobs' values) */
+            for (h[k] = hs, j = 0; j < k; j++)
+                if (h[j] == hs) {
+                    fprintf(stderr, "ui_render: TRIO's TONE page drawn the same under MODE %u and %u\n", j, k);
+                    return 1;
+                }
+        }
+        setup(S_STAGE_FILTER_HP); pal(UI_GRAY_INDEX);
+        if (stage_picture((int32_t[4]){0}) != SP_FILTER || flt_engine_type() != FLT_HP) {
+            fprintf(stderr, "ui_render: Stage's filter picture misses TRIO's MODE\n");
             return 1;
         }
     }

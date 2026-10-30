@@ -12,8 +12,14 @@
 #define MO_BG T_BG                                      /* one ink: the palette's (NIGHT: white on black, DAY the reverse) */
 #define MO_INK T_TEXT
 #define MO_DIM T_MID
+#define MO_HOT T_ACCENT                                 /* the value turning, the row picked: the ink (MOSAIC: white) */
+#define MO_TRK(k) T_TRK(k)                              /* track k where the four show together: the ink (MOSAIC: its own) */
+static uint16_t mo_tdim(uint32_t k) { return ux_mix(T_BG, T_TRK(k), UI_MID_PCT); }   /* .. dim (one ink: MO_DIM) */
 #define MO_PY0 52                                       /* the picture's rows: MO_PY0 .. MO_PY1 - 1 */
 #define MO_PY1 109
+#ifndef MO_HOOK_PLACE
+#define MO_HOOK_PLACE(s) ((void)0)                      /* a header drew the page's place (tests/ui_render.c) */
+#endif
 
 static const int8_t MO_SIN[64] = {0, 12, 25, 37, 49, 60, 71, 81, 90, 98, 106, 112, 117, 122, 125, 126, 127, 126, 125, 122, 117, 112, 106, 98, 90, 81, 71, 60, 49, 37, 25, 12, 0, -12, -25, -37, -49, -60, -71, -81, -90, -98, -106, -112, -117, -122, -125, -126, -127, -126, -125, -122, -117, -112, -106, -98, -90, -81, -71, -60, -49, -37, -25, -12};
 
@@ -115,11 +121,12 @@ static int32_t mo_text_s(const char *s, int32_t x, int32_t y, int32_t sc, uint16
 static int32_t mo_text(const char *s, int32_t x, int32_t y, uint16_t c) { return mo_text_s(s, x, y, 1, c); }
 static void mo_textc(const char *s, int32_t cx, int32_t y, uint16_t c) { mo_text(s, cx - mo_tw(s) / 2, y, c); }
 static void mo_textr(const char *s, int32_t rx, int32_t y, uint16_t c) { mo_text(s, rx - mo_tw(s), y, c); }
-static void mo_inv(const char *s, int32_t x, int32_t y)   /* ink on a filled box */
+static void mo_invc(const char *s, int32_t x, int32_t y, uint16_t c)   /* on a filled box of colour c */
 {
-    mo_fill(x - 1, y - 1, mo_tw(s) + 2, 9, MO_INK);
+    mo_fill(x - 1, y - 1, mo_tw(s) + 2, 9, c);
     mo_text(s, x, y, MO_BG);
 }
+static void mo_inv(const char *s, int32_t x, int32_t y) { mo_invc(s, x, y, MO_INK); }   /* ink on a filled box */
 static int mo_vowel(char c)
 {
     c = c >= 'a' && c <= 'z' ? (char)(c - 32) : c;
@@ -169,14 +176,24 @@ static void mo_dial(int32_t cx, int32_t cy, int32_t r, int32_t v, uint16_t c)
 }
 
 /* ---- header, dials, footer ---- */
-/* the footer's tabs: the family's pages, as the button turns through them; *cur the shown one's place */
+/* the footer's tabs: the pages the button and SELECT turn through (SEQ: GEN's and ARP's too, in_fam; ENV / LFO on an
+ * engine with its own: fam_pages), *cur the shown one's place */
 static uint32_t mo_tabs(uint16_t *idx, uint32_t *cur)
 {
     const page_t *pg = cur_page();
-    uint32_t i, n = 0;
+    uint32_t i, n = 0, nf = page_nf();
     *cur = 0;
+    if (nf) {
+        uint8_t fp[NPAGES];
+        uint32_t m = fam_pages(nf, fp);
+        for (i = 0; i < m && n < 16u; i++) {
+            if (&PAGES[fp[i]] == pg) *cur = n;
+            idx[n++] = fp[i];
+        }
+        return n;
+    }
     for (i = 0; i < NPAGES && n < 16u; i++)
-        if (PAGES[i].fam == pg->fam && page_visible(i)) {
+        if (in_fam(i, pg->fam) && page_visible(i)) {
             if (&PAGES[i] == pg) *cur = n;
             idx[n++] = (uint16_t)i;
         }
@@ -216,19 +233,27 @@ static int mo_tabs_fit(const uint16_t *idx, uint32_t n)   /* all n tabs on the f
     }
     return 1;
 }
+/* the page's place among its tabs (4/9) when they are more than the footer shows, else "" (on every page of the
+ * family alike: the knob pages' header and the whole screens', mo_dhead) */
+static void mo_place(char *at)
+{
+    uint16_t idx[16];
+    uint32_t cur, n = mo_tabs(idx, &cur);
+    at[0] = 0;
+    if (!n || &PAGES[idx[cur]] != cur_page() || mo_tabs_fit(idx, n))
+        return;
+    fmt_int(at, (int32_t)cur + 1);
+    str_cpy(at + str_len(at), "/", 2);
+    fmt_int(at + str_len(at), (int32_t)n);
+}
 static void mo_head(void)
 {
     const page_t *pg = cur_page();
-    char t[24], sub[8], at[8] = "";
-    uint16_t idx[16];
-    uint32_t i, cur, n = mo_tabs(idx, &cur);
+    char t[24], sub[8], at[8];
+    uint32_t i;
     int32_t room;
     str_cpy(sub, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), sizeof sub);
-    if (!mo_tabs_fit(idx, n)) {                         /* more pages than the footer shows: where this one is (4/9) */
-        fmt_int(at, (int32_t)cur + 1);
-        str_cpy(at + str_len(at), "/", 2);
-        fmt_int(at + str_len(at), (int32_t)n);
-    }
+    mo_place(at);                                       /* more pages than the footer shows: where this one is */
     room = 94 - mo_tw(sub) - 4 - (at[0] ? mo_tw(at) + 6 : 0);
     if (ui.msg_t && ui.msg[0]) {                        /* a message: in the title's place, inverted, over the */
         mo_cut(t, ui.msg, 15);                          /* position and the engine (they would show through) */
@@ -245,12 +270,14 @@ static void mo_head(void)
         t[room / 6] = 0;                                /* (room before the position and the engine) */
         mo_text(t, 1, 1, MO_INK);
     }
-    if (at[0])
+    if (at[0]) {
         mo_textr(at, 94 - mo_tw(sub) - 6, 1, MO_DIM);
+        MO_HOOK_PLACE(at);
+    }
     mo_textr(sub, 94, 1, MO_DIM);
     for (i = 0; i < 4u; i++) {                          /* the tracks: the selected one filled */
-        if (i == song.sel) mo_disc(99 + (int32_t)i * 6, 4, 2, MO_INK);
-        else mo_circ(99 + (int32_t)i * 6, 4, 2, MO_INK);
+        if (i == song.sel) mo_disc(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));
+        else mo_circ(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));
     }
     if (song.rec & (1u << song.sel))                    /* REC: a bar under the track's dot */
         mo_hl(97 + (int32_t)song.sel * 6, 8, 5, MO_INK);
@@ -286,9 +313,9 @@ static int mo_fit(char *d, const char *s)
     d[5] = 0;
     return 1;
 }
-/* the four knobs' values as drawn, for the Mono lint (tests/ui_render.c): the frame (a box, a filled box or the
- * inverted block; -1 none), the text, the kind */
-enum { MV_DIAL, MV_BOX, MV_KEY, MV_INV };
+/* the four knobs' values as drawn, for the Mono lint (tests/ui_render.c): the frame (a box or a filled box; -1
+ * none), the text, the kind */
+enum { MV_DIAL, MV_BOX, MV_KEY };
 static struct { int16_t fx0, fx1, tx0, tx1; uint8_t kind, cut, used; char s[8]; } mo_vals[4];
 static uint8_t mo_flash_col, mo_flash_t;               /* a one-shot knob's value inverted a moment (CLEAR) */
 static void mo_flash(uint32_t c)
@@ -297,17 +324,31 @@ static void mo_flash(uint32_t c)
     mo_flash_t = 13;                                    /* frames: about 200 ms */
 }
 static uint8_t mo_vals_new;                             /* mo_cols drew them since the lint last looked */
+static uint8_t mo_cols_trk;                             /* the knobs are the four tracks': each in its colour (MOSAIC) */
 #define MO_BOX_W 27                                     /* a boxed value's outline: 4 characters and a clear cell each side */
+#define MO_GAP 3                                        /* clear cells wanted between two values (as between two boxes) */
+/* may column i move a cell (d -1 left, +1 right) to widen a gap of g: the gap it closes stays wider, or is the
+ * screen's edge (which needs no clear cell) */
+static int mo_cols_can(const int32_t *x, const int32_t *w, int32_t i, int32_t d, int32_t g)
+{
+    int32_t j;
+    for (j = i + d; j >= 0 && j < 4 && !mo_col[j].used; j += d) ;
+    if (j < 0) return x[i] > 0;
+    if (j > 3) return x[i] + w[i] < 120;
+    return (d < 0 ? x[i] - x[j] - w[j] : x[j] - x[i] - w[i]) >= g + 2;
+}
 static void mo_cols(void)
 {
     char v[4][16];
-    uint8_t wide[4], kind[4], cut[4];
-    uint32_t i;
-    for (i = 0; i < 4u; i++) {                          /* what each column shows, first: a wide one narrows its neighbours' margins */
+    uint8_t kind[4], cut[4];
+    int32_t tw[4], x[4], w[4], w0[4], x0[4];             /* the frame (a dial's: its text) and its narrowest */
+    uint32_t i, a, b, pass;
+    for (i = 0; i < 4u; i++) {                          /* what each column shows, first: its neighbours make room */
         const char *s = mo_col[i].val;
         uint32_t n;
-        wide[i] = kind[i] = cut[i] = 0;
+        kind[i] = cut[i] = 0;
         v[i][0] = 0;
+        x[i] = w[i] = w0[i] = 0;
         if (!mo_col[i].used)
             continue;
         if (s[0] == '[') {                              /* "[OCT+]": the key that acts, a filled box */
@@ -324,50 +365,69 @@ static void mo_cols(void)
             cut[i] = (uint8_t)mo_fit(v[i], b);
             kind[i] = mo_col[i].ratio < 0 ? MV_BOX : MV_DIAL;
         }
-        if (str_len(v[i]) > 4u && kind[i] != MV_KEY)   /* five: no box, inverted at full length */
-            wide[i] = 1, kind[i] = MV_INV;
+        tw[i] = mo_tw(v[i]);                            /* a dial's value: plain at any length; a box: 27 wide, wider for */
+        w0[i] = kind[i] == MV_DIAL ? tw[i] : tw[i] + 4; /* five characters (a clear cell each side, always) */
+        w[i] = w0[i] > MO_BOX_W || kind[i] == MV_DIAL ? w0[i] : MO_BOX_W;
+        x[i] = 15 + (int32_t)i * 30 - w[i] / 2;
+        x[i] = x[i] < 0 ? 0 : x[i] + w[i] > 120 ? 120 - w[i] : x[i];
+        x0[i] = x[i];
+    }
+    for (pass = 0; pass < 24u; pass++) {                /* two values too close: a box narrows toward its text, else one
+                                                         * moves (2 cells at most) into a wider gap; at least a clear cell */
+        uint32_t moved = 0;
+        for (a = 0; a < 4u; a = b) {
+            int32_t g;
+            for (b = a + 1u; b < 4u && !mo_col[b].used; b++) ;
+            if (!mo_col[a].used || b >= 4u || (g = x[b] - x[a] - w[a]) >= MO_GAP)
+                continue;
+            if (w[a] - w0[a] >= 2 && w[a] - w0[a] >= w[b] - w0[b])
+                x[a]++, w[a] -= 2;
+            else if (w[b] - w0[b] >= 2)
+                x[b]++, w[b] -= 2;
+            else if (x[a] > x0[a] - 2 && mo_cols_can(x, w, (int32_t)a, -1, g))
+                x[a]--;
+            else if (x[b] < x0[b] + 2 && mo_cols_can(x, w, (int32_t)b, 1, g))
+                x[b]++;
+            else
+                continue;
+            moved = 1;
+        }
+        if (!moved)
+            break;
     }
     for (i = 0; i < 4u; i++) {
-        int32_t cx = 15 + (int32_t)i * 30, tw = mo_tw(v[i]), tx = cx - tw / 2, ty, fx0 = -1, fx1 = -1;
-        uint16_t ink = mo_col[i].dim ? MO_DIM : MO_INK;
+        int32_t cx = 15 + (int32_t)i * 30, tx = x[i] + (w[i] - tw[i]) / 2, ty, fx0 = -1, fx1 = -1;
+        uint16_t dim = mo_cols_trk ? mo_tdim(i) : MO_DIM;
+        uint16_t ink = mo_col[i].dim ? dim : mo_col[i].hot ? MO_HOT : mo_cols_trk ? MO_TRK(i) : MO_INK;
         char l[8];
         mo_vals[i].used = mo_col[i].used;
         if (!mo_col[i].used)
             continue;
         mo_abbr(l, mo_col[i].label);
-        mo_textc(l, cx, 12, mo_col[i].hot ? MO_INK : MO_DIM);
+        mo_textc(l, cx, 12, mo_col[i].hot ? MO_HOT : dim);
         ty = mo_col[i].ratio >= 0 && mo_col[i].val[0] != '[' ? 39 : 25;
         if (mo_col[i].ratio >= 0 && mo_col[i].val[0] != '[')
             mo_dial(cx, 28, 7, mo_col[i].ratio, ink);
-        if (mo_flash_t && i == mo_flash_col && (kind[i] == MV_BOX || kind[i] == MV_KEY)) {   /* it acted: inverted */
-            fx0 = cx - MO_BOX_W / 2, fx1 = cx + MO_BOX_W / 2;
-            mo_fill(fx0, 21, MO_BOX_W, 15, MO_INK);
+        if (kind[i] != MV_DIAL)
+            fx0 = x[i], fx1 = x[i] + w[i] - 1;
+        if (mo_flash_t && i == mo_flash_col && kind[i] != MV_DIAL) {   /* it acted: inverted */
+            mo_fill(fx0, 21, w[i], 15, MO_INK);
             mo_text(v[i], tx, ty, MO_BG);
         } else if (kind[i] == MV_KEY) {
-            fx0 = cx - MO_BOX_W / 2, fx1 = cx + MO_BOX_W / 2;
-            mo_fill(fx0, 21, MO_BOX_W, 15, ink);
+            mo_fill(fx0, 21, w[i], 15, ink);
             mo_text(v[i], tx, ty, MO_BG);
         } else if (kind[i] == MV_BOX) {
-            fx0 = cx - MO_BOX_W / 2, fx1 = cx + MO_BOX_W / 2;
-            mo_box(fx0, 21, MO_BOX_W, 15, ink);
+            mo_box(fx0, 21, w[i], 15, ink);
             mo_text(v[i], tx, ty, ink);
-        } else if (kind[i] == MV_INV) {                 /* a cell of margin each side, but none toward another wide one
-                                                         * (they keep a cell between them) or past the screen's edge */
-            fx0 = tx - (i > 0u && wide[i - 1u] ? 0 : 1);
-            fx1 = tx + tw - 1 + (i < 3u && wide[i + 1u] ? 0 : 1);
-            fx0 = fx0 < 0 ? 0 : fx0;
-            fx1 = fx1 > 119 ? 119 : fx1;
-            mo_fill(fx0, ty - 1, fx1 - fx0 + 1, 9, ink);
-            mo_text(v[i], tx, ty, MO_BG);
         } else {
             mo_text(v[i], tx, ty, ink);
         }
         mo_vals[i].fx0 = (int16_t)fx0, mo_vals[i].fx1 = (int16_t)fx1;
-        mo_vals[i].tx0 = (int16_t)tx, mo_vals[i].tx1 = (int16_t)(tx + tw - 1);
+        mo_vals[i].tx0 = (int16_t)tx, mo_vals[i].tx1 = (int16_t)(tx + tw[i] - 1);
         mo_vals[i].kind = kind[i], mo_vals[i].cut = cut[i];
         str_cpy(mo_vals[i].s, v[i], sizeof mo_vals[i].s);
         if (mo_col[i].hot)
-            mo_hl(cx - 12, 48, 25, MO_INK);
+            mo_hl(cx - 12, 48, 25, MO_HOT);
     }
     mo_vals_new = 1;
     mo_dash(0, 50, 120, MO_DIM);
@@ -567,23 +627,21 @@ static void mo_pic_morph(const gen_morph_t *g)
 static void mo_pic_lfo(track_t *t)
 {
     int32_t x, py = 0, uni = t->p[P_LPOL] != 0, z = uni ? 98 : 80, amp = uni ? 40 : 18, now;
-    uint32_t ph = (uint32_t)t->p[P_LPHASE] << 25, step = 0xFFFFFFFFu / 58u;
+    uint32_t ph = (uint32_t)t->p[P_LPHASE] << 25, step = 0xFFFFFFFFu / 116u;
     char b[16];
     const char *unit;
     mo_dash(2, z, 116, MO_DIM);
-    for (x = 0; x < 116; x++) {                         /* two cycles from PHASE */
-        int32_t w = lfo_wave(t, ph + (uint32_t)x * step), y;
-        if (t->p[P_LWAVE] == 4)
-            w = (int32_t)((x / 10 * 2654435761u) >> 16) - 32768;
-        y = uni ? z - (w + 32768) * amp / 65536 : z - w * amp / 32768;
+    for (x = 0; x < 116; x++) {                         /* one cycle from PHASE, so the dot crosses it all; */
+        int32_t w = lfo_wave(t, ph + (uint32_t)x * step), y;   /* S&H: this cycle's held value, flat */
+        y =uni ? z - (w + 32768) * amp / 65536 : z - w * amp / 32768;
         if (x) mo_line(1 + x, py, 2 + x, y, MO_INK);
         py = y;
     }
-    now = (int32_t)((t->lfo_ph - ph) / step);           /* where it is: on the first cycle */
+    now = (int32_t)((t->lfo_ph - ph) / step);           /* where it is (lfo_val: UNI is already 0..+1) */
     if (now >= 0 && now < 116) {
         int32_t w = t->lfo_val;
         mo_vl(2 + now, MO_PY0 + 2, 50, MO_DIM);
-        mo_disc(2 + now, uni ? z - (w + 32768) * amp / 65536 : z - w * amp / 32768, 2, MO_INK);
+        mo_disc(2 + now, z - w * amp / 32768, 2, MO_INK);
     }
     param_format(&TP[P_LSYNC], t->p[P_LSYNC], b + 5, &unit);
     if (t->p[P_LSYNC]) { b[0] = 'S'; b[1] = 'Y'; b[2] = 'N'; b[3] = 'C'; b[4] = ' '; mo_text(b, 2, 102, MO_DIM); }
@@ -683,18 +741,18 @@ static void mo_pic_matrix(void)
     mo_text("FR>TO", 1, 53, MO_DIM);
     for (k = 0; k < NTRK; k++) {
         char n[2] = {(char)('1' + k), 0};
-        mo_textc(n, 43 + (int32_t)k * 22, 53, MO_INK);
-        mo_textc(n, 25, 64 + (int32_t)k * 11, MO_INK);
+        mo_textc(n, 43 + (int32_t)k * 22, 53, MO_TRK(k));
+        mo_textc(n, 25, 64 + (int32_t)k * 11, MO_TRK(k));
     }
     for (r = 0; r < NTRK; r++)
         for (k = 0; k < NTRK; k++) {
             int32_t x = 33 + (int32_t)k * 22, y = 62 + (int32_t)r * 11;
             uint32_t lv = mx_level(r, k);
             if (r == mx_from && k == mx_to)
-                mo_box(x - 1, y - 1, 22, 11, MO_INK);
-            mo_box(x, y, 20, 9, lv ? MO_INK : MO_DIM);
+                mo_box(x - 1, y - 1, 22, 11, MO_HOT);
+            mo_box(x, y, 20, 9, lv ? MO_TRK(r) : mo_tdim(r));
             if (lv)
-                mo_fill(x + 1, y + 1, 1 + (int32_t)lv * 17 / 8, 7, MO_INK);
+                mo_fill(x + 1, y + 1, 1 + (int32_t)lv * 17 / 8, 7, MO_TRK(r));
         }
 }
 /* the drum grid's lanes from row y0, dy cells apart (lanes first .. first + n - 1): the lane's name at the left (the
@@ -880,24 +938,24 @@ static void mo_pic_quad(uint32_t tr)
         const gen_quad_t *q = tessera_quad(r);
         int on = tessera.mode[r] == TESS_ENG_QUAD;
         int32_t y = 59 + (int32_t)r * 10;
-        uint16_t c = on ? MO_INK : MO_DIM;
+        uint16_t c = on ? MO_TRK(r) : mo_tdim(r);
         char lb[3] = {'T', (char)('1' + r), 0};
-        if (r == tr) mo_inv(lb, 2, y);
+        if (r == tr) mo_invc(lb, 2, y, MO_TRK(r));
         else mo_text(lb, 2, y, c);
         mo_text(QD[q->dir % GEN_QD_COUNT], 16, y, c);
         mo_text(QR[q->range % GEN_QR_COUNT], 102, y, c);
         for (k = 0; k < TESSERA_TRACKS; k++)            /* (its LINKs, under the RANGE) */
-            if (k != r) mo_px(102 + (int32_t)k * 4, y + 8, on && ((q->link >> k) & 1u) ? MO_INK : MO_DIM);
+            if (k != r) mo_px(102 + (int32_t)k * 4, y + 8, on && ((q->link >> k) & 1u) ? MO_TRK(k) : mo_tdim(k));
         for (i = 0; i < 4u; i++) {
             int32_t x = 30 + (int32_t)i * 18, v = q->cell[i] > 21u ? 21 : q->cell[i], h;
             int cur = on && i == q->pos;
-            mo_hl(x, y + 8, 16, MO_DIM);
+            mo_hl(x, y + 8, 16, mo_tdim(r));
             if (!v) {
-                mo_hl(x + 5, y + 6, 6, cur ? MO_INK : c);
+                mo_hl(x + 5, y + 6, 6, cur ? MO_TRK(r) : c);
                 continue;
             }
             h = 2 + (v - 1) * 5 / 20;
-            if (cur) mo_fill(x, y + 7 - h, 16, h, MO_INK);
+            if (cur) mo_fill(x, y + 7 - h, 16, h, MO_TRK(r));
             else mo_box(x, y + 7 - h, 16, h, c);
         }
     }
@@ -1237,8 +1295,8 @@ static void mo_trk_cells(int32_t x, int32_t y, uint32_t picked, uint32_t tr, int
     for (uint32_t i = 0; i < TESSERA_TRACKS; i++) {
         int32_t cx = x + (int32_t)(i % 2u) * 13, cy = y + (int32_t)(i / 2u) * 13;
         char n[2] = {(char)('1' + i), 0};
-        if (picked == i + 1u) mo_fill(cx, cy, 11, 11, MO_INK), mo_text(n, cx + 3, cy + 2, MO_BG);
-        else mo_box(cx, cy, 11, 11, i == tr && on ? MO_INK : MO_DIM), mo_text(n, cx + 3, cy + 2, i == tr ? MO_INK : MO_DIM);
+        if (picked == i + 1u) mo_fill(cx, cy, 11, 11, MO_TRK(i)), mo_text(n, cx + 3, cy + 2, MO_BG);
+        else mo_box(cx, cy, 11, 11, i == tr && on ? MO_TRK(i) : mo_tdim(i)), mo_text(n, cx + 3, cy + 2, i == tr ? MO_TRK(i) : mo_tdim(i));
     }
 }
 /* TWEAK: under each dial its picture. SHIFT: the note off its written pitch (the dashed line); DROP: 8 hits, the ones it
@@ -1432,14 +1490,14 @@ static void mo_pic_midich(void)
         int32_t y = 54 + (int32_t)k * 11;
         uint32_t ch = midi_out_channel(&trk[k]);
         char n[3] = {'T', (char)('1' + k), 0}, b[24];
-        mo_inv(n, 3, y);
+        mo_invc(n, 3, y, MO_TRK(k));
         if (ch == MIDI_OUT_NONE) str_cpy(b, "OFF", sizeof b);
         else {
             str_cpy(b, "CH ", sizeof b);
             fmt_int(b + 3, (int32_t)ch + 1);
             if (!tessera.midi_ch[k]) str_cpy(b + str_len(b), drum_track(&trk[k]) && settings_drumch ? " DRUM" : " ROUT", 6);
         }
-        mo_text(b, 18, y, ch == MIDI_OUT_NONE ? MO_DIM : MO_INK);
+        mo_text(b, 18, y, ch == MIDI_OUT_NONE ? mo_tdim(k) : MO_TRK(k));
     }
     if (settings_midi_out != MIDI_OUT_ALL)
         mo_text(settings_midi_out == MIDI_OUT_OFF ? "MIDI OUT: OFF" : "MIDI OUT: KEYS", 2, 101, MO_DIM);
@@ -1453,7 +1511,7 @@ static void mo_hot_value(int32_t k)
     pv_value((uint32_t)k, v, &unit);
     mo_ascii(b, v, sizeof b);
     if (unit[0]) mo_ascii(b + str_len(b), unit, 6);
-    mo_textr(b, 118, 102, MO_INK);
+    mo_textr(b, 118, 102, MO_HOT);
 }
 /* ENV (and the FM operators' ENV pages): attack linear, decay exponential to the sustain, held, release exponential;
  * the area under it hatched dim, the curve and a handle at each segment's end in ink; the segment turning: its handle a ring,
@@ -1533,14 +1591,14 @@ static void mo_pic_dxenv(void)
 #undef DXY
     if (hot >= 0) mo_hot_value(hot);
 }
-/* a page with a cutoff: the filter's response, flat, the resonance's peak at the cutoff (dashed), then the slope; the
- * area under it hatched dim */
-static void mo_pic_filter(int32_t cut, int32_t res)
+/* a page with a cutoff: the filter's response as its type shapes it (ui_stage.c flt_curve: flat, the resonance's peak
+ * at the cutoff (dashed), the slope); the area under it hatched dim */
+static void mo_pic_filter(int32_t cut, int32_t res, uint32_t type)
 {
     int32_t x, fc = 4 + clamp(cut, 0, 127) * 108 / 127, peak = clamp(res, 0, 127) * 20 / 127, y0 = 76, py = 0;
     for (x = MO_PY0 + 2; x < 100; x += 3) mo_px(fc, x, MO_INK);
     for (x = 2; x < 118; x++) {
-        int32_t d = x - fc, y = y0 - peak * 16 / (16 + d * d) + (d > 0 ? d * 7 / 8 : 0);
+        int32_t d = x - fc, y = y0 - flt_curve(type, d, 16, peak * 16, 14, (100 - y0) * 16, res) / 16;
         y = clamp(y, MO_PY0 + 2, 100);
         if (y < 100 && !(x & 1)) mo_vl(x, y + 1, 100 - y, MO_DIM);
         if (x > 2) mo_line(x - 1, py, x, y, MO_INK);
@@ -1847,8 +1905,8 @@ static void mo_picture(void)
     }
     if (pv_kind() == PV_CURVE || pv_kind() == PV_RINGS) {   /* the sound pages' pictures (ui_pages.c pv_pic) */
         int32_t cut, res;
-        uint32_t pic = pv_pic(&cut, &res);
-        if (pic == 3u) { mo_pic_filter(cut, res); return; }
+        uint32_t type, pic = pv_pic(&cut, &res, &type);
+        if (pic == 3u) { mo_pic_filter(cut, res, type); return; }
         if (pic == 5u) { mo_pic_arp(t); return; }
         if (pic == 9u) { mo_pic_fx(); return; }
     }
@@ -1897,7 +1955,7 @@ static void mo_list(int32_t x, int32_t y, int32_t w, const char *title, const ch
             if (row[i].warn && str_len(t) + 2u < sizeof t)
                 str_cpy(t + str_len(t), " !", 3);   /* (a row that erases: red in the detailed look) */
             if (on)
-                mo_fill(2, r, w - 4, 9, MO_INK);
+                mo_fill(2, r, w - 4, 9, MO_HOT);
             mo_text(t, 4, r + 1, ink);
             if (row[i].val[0])
                 mo_textr(row[i].val, w - 4, r + 1, on ? MO_BG : MO_DIM);
@@ -1989,8 +2047,8 @@ static uint32_t mo_signature(void)
     }
     if (cur_page()->graph == GR_ROLL)                   /* NOTES: the steps */
         h = (h ^ steps_hash(t) ^ (uint32_t)t->p[P_SLEN] << 8 ^ (uint32_t)t->p[P_SDIV] << 16) * 16777619u;
-    if (cur_page()->graph == GR_LFO)                    /* the LFO's dot: 58 places a cycle */
-        h = (h ^ (t->lfo_ph / (0xFFFFFFFFu / 58u))) * 16777619u;
+    if (cur_page()->graph == GR_LFO)                    /* the LFO's dot: 116 places a cycle */
+        h = (h ^ (t->lfo_ph / (0xFFFFFFFFu / 116u))) * 16777619u;
     if (ui.msg_t)
         h = (h ^ str_hash(1u, ui.msg)) * 16777619u;
     return h;
@@ -2013,7 +2071,9 @@ static void mono_page(void)
         cv_begin(240, 120, MO_BG);
         cv_oy = -(int32_t)s * 120;
         mo_head();
+        mo_cols_trk = cur_page()->graph == GR_MIDICH;
         mo_cols();
+        mo_cols_trk = 0;
         mo_picture();
         mo_foot();
         cv_oy = 0;
@@ -2031,7 +2091,7 @@ static void mo_dhead(const char *chip, const char *msg, int low)
     cv_begin(240, H_HEAD, MO_BG);
     fmt_int(b, song.g[G_BPM]);
     x = 119 - mo_tw(b);
-    mo_text(b, x, 1, ui.bpm_t ? MO_INK : MO_DIM);
+    mo_text(b, x, 1, ui.bpm_t ? MO_HOT : MO_DIM);
     x -= 7;
     if (chain.running || song.playing) {                /* PLAY: a triangle; STOP: a square */
         for (int32_t r = 0; r < 3; r++) mo_vl(x + r, 1 + r, 7 - 2 * r, MO_INK);
@@ -2046,6 +2106,14 @@ static void mo_dhead(const char *chip, const char *msg, int low)
     if (low) {                                          /* the battery, only when it runs low */
         x -= 10;
         mo_box(x, 2, 7, 5, MO_INK), mo_vl(x + 7, 3, 3, MO_INK);
+    }
+    if (!msg && !ui.home && !ui.menu && !new_on() && !sec_map_on() && !designer_on()) {   /* a page: its place (4/9) */
+        mo_place(t);
+        if (t[0]) {
+            x -= mo_tw(t) + 6;
+            mo_text(t, x, 1, MO_DIM);
+            MO_HOOK_PLACE(t);
+        }
     }
     mo_ascii(t, msg ? msg : chip, sizeof t);
     mo_cut(b, t, (uint32_t)(x - 6) / 6u);
@@ -2078,7 +2146,7 @@ static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
                 continue;
             more = cap(r, lb, v, &vc);
             if (on)
-                mo_fill(0, y, 118, 10, MO_INK);
+                mo_fill(0, y, 118, 10, MO_HOT);
             mo_ascii(a, v, sizeof a);
             mo_cut(t, a, 9);
             vw = mo_tw(t);
@@ -2216,12 +2284,12 @@ static void mo_stage_col(uint32_t k, int top)
     uint32_t page = song.playing && t->seq_idx < len ? t->seq_idx / 16u : 0u, ph = song.playing ? t->seq_idx : 0xFFFFu;
     uint32_t next = t->pattern_next < NPAT ? t->pattern_next + 1u : 0u, lvl = (uint32_t)t->p[P_LEVEL] & 127u, i, src, kk;
     int32_t x0 = (int32_t)k * 30, cx = x0 + 15;
-    uint16_t ink = mute ? MO_DIM : MO_INK;
+    uint16_t ink = mute ? mo_tdim(k) : MO_TRK(k), dim = mo_tdim(k);
     char nm[16], a[8], b[8], chip[3] = {'P', (char)('1' + t->pattern % NPAT), 0};
     if (sel && !stage.out)
-        mo_box(x0, 10, 30, 78, MO_INK);
+        mo_box(x0, 10, 30, 78, MO_TRK(k));
     else if (sel && !top)                               /* (the knobs out: under them only) */
-        mo_box(x0, 60, 30, 28, MO_INK), mo_hl(x0, 60, 30, MO_BG);
+        mo_box(x0, 60, 30, 28, MO_TRK(k)), mo_hl(x0, 60, 30, MO_BG);
     if (top && !stage.out) {
         uint32_t cat;
         trk_short_name(k, nm);
@@ -2245,7 +2313,7 @@ static void mo_stage_col(uint32_t k, int top)
     }
     if (top) {
         str_cpy(a, eng_abbr(ENGINES[eng_idx(t->eng_req)]->name), 5);
-        mo_textc(a, cx, 41, MO_DIM);
+        mo_textc(a, cx, 41, dim);
         mo_fill(x0 + 3, 50, 13, 9, ink);                /* the pattern playing; the next one dashed */
         mo_text(chip, x0 + 4, 51, MO_BG);
         if (next) {
@@ -2266,9 +2334,9 @@ static void mo_stage_col(uint32_t k, int top)
             mo_fill(x, y, 4, 3, ink);
             if (si == ph) mo_px(x + 1, y + 1, MO_BG), mo_px(x + 2, y + 1, MO_BG);
         } else if (si == ph) {
-            mo_box(x, y, 4, 3, MO_INK);
+            mo_box(x, y, 4, 3, MO_TRK(k));
         } else {
-            mo_px(x + 1, y + 1, st->time == ST_TIE ? ink : MO_DIM);
+            mo_px(x + 1, y + 1, st->time == ST_TIE ? ink : dim);
         }
     }
     if (mute) {
@@ -2280,7 +2348,7 @@ static void mo_stage_col(uint32_t k, int top)
         str_cpy(a, "OFF", sizeof a);
     }
     mo_textc(a, cx, 78, ink);
-    mo_dash(x0 + 3, 86, 24, MO_DIM);
+    mo_dash(x0 + 3, 86, 24, dim);
     mo_hl(x0 + 3, 86, (int32_t)lvl * 24 / 127, ink);
 }
 static void mo_stage_head(void)
@@ -2297,8 +2365,8 @@ static void mo_stage_head(void)
             mo_fill(1, 2, 5, 5, MO_INK);
         }
         fmt_int(b, song.g[G_BPM]);
-        mo_text(b, 9, 1, ui.bpm_t ? MO_INK : MO_DIM);
-        if (ui.bpm_t) mo_hl(9, 8, mo_tw(b), MO_INK);
+        mo_text(b, 9, 1, ui.bpm_t ? MO_HOT : MO_DIM);
+        if (ui.bpm_t) mo_hl(9, 8, mo_tw(b), MO_HOT);
     }
     str_cpy(b, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), 8);
     mo_textr(b, 118, 1, MO_DIM);
@@ -2350,7 +2418,7 @@ static void mo_stage_panel(void)
             stage_value(sp, d, *vp, b, &unit);
             str_cpy(b + str_len(b), unit, 4);
             mo_text(stage_label(ui.hot_col & 3u, d), 2, 92, MO_DIM);
-            mo_text_s(b, 2, 102, 2, MO_INK);
+            mo_text_s(b, 2, 102, 2, MO_HOT);
             return;
         }
     }
@@ -2458,12 +2526,12 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
 {
     uint32_t sel = flags & 1u, mute = flags & 2u, solo = flags & 4u, quiet = flags & 8u, arm = flags & 16u;
     uint32_t hot = flags >> 5 & 3u, octp = flags >> 7 & 1u;
-    uint16_t ink = quiet ? MO_DIM : MO_INK;
+    uint16_t ink = quiet ? mo_tdim(k) : MO_TRK(k), dim = mo_tdim(k);
     char a[8], b[8];
     int32_t h;
     cv_begin(CARD_W + 4, PV_STRIP_ROWS, MO_BG);
     if (sel)
-        mo_box(0, 0, CARD_W / 2 + 2, PV_STRIP_ROWS / 2, MO_INK);
+        mo_box(0, 0, CARD_W / 2 + 2, PV_STRIP_ROWS / 2, MO_TRK(k));
     mo_word(a, nm, 0);
     mo_textc(a, 14, 3, ink);
     mo_word(a, nm, 1);
@@ -2475,13 +2543,13 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
     } else {
         str_cpy(b, "OFF", sizeof b);
     }
-    if (hot == 1u) mo_inv(b, 13 - mo_tw(b) / 2, 43);
+    if (hot == 1u) mo_invc(b, 13 - mo_tw(b) / 2, 43, MO_HOT);
     else mo_textc(b, 13, 43, ink);
-    mo_vl(24, 23, 18, MO_DIM);                          /* the meter */
+    mo_vl(24, 23, 18, dim);                          /* the meter */
     h = meter * 18 / (TS_MH - 2);
     if (h > 0)
         mo_fill(23, 41 - h, 3, h, ink);
-    mo_textc("PAN", 13, 55, octp ? MO_INK : MO_DIM);
+    mo_textc("PAN", 13, 55, octp ? MO_TRK(k) : dim);
     mo_dial(13, 69, 5, (pan + 64) * 1000 / 127, ink);
     if (pan) {
         b[0] = pan < 0 ? 'L' : 'R';
@@ -2489,19 +2557,19 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
     } else {
         str_cpy(b, "C", sizeof b);
     }
-    if (hot == 2u) mo_inv(b, 14 - mo_tw(b) / 2, 77);
-    else mo_textc(b, 14, 77, MO_DIM);
+    if (hot == 2u) mo_invc(b, 14 - mo_tw(b) / 2, 77, MO_HOT);
+    else mo_textc(b, 14, 77, dim);
     if (solo) {
-        mo_box(2, 86, 25, 11, MO_INK);
-        mo_textc("SOLO", 14, 88, MO_INK);
+        mo_box(2, 86, 25, 11, MO_TRK(k));
+        mo_textc("SOLO", 14, 88, MO_TRK(k));
     } else if (mute) {
-        mo_fill(2, 86, 25, 11, MO_INK);
+        mo_fill(2, 86, 25, 11, MO_TRK(k));
         mo_textc("MUTE", 14, 88, MO_BG);
     } else {
-        mo_textc("MUTE", 14, 88, MO_DIM);
+        mo_textc("MUTE", 14, 88, dim);
     }
-    if (arm) mo_disc(14, 101, 3, MO_INK);
-    else mo_circ(14, 101, 3, MO_DIM);
+    if (arm) mo_disc(14, 101, 3, MO_TRK(k));
+    else mo_circ(14, 101, 3, dim);
     cv_blit((uint32_t)CARD_X(k) - 2u, PV_STRIP_TOP);
 }
 
@@ -2517,7 +2585,7 @@ static void mo_cu_side(int32_t x, uint32_t tr, const char *name, int has_trk, in
     }
     if (has_trk) {                                      /* the track: its numeral inverted */
         a[0] = (char)('1' + (tr & 3u)), a[1] = 0;
-        mo_inv(a, x + 1, 3);
+        mo_invc(a, x + 1, 3, MO_TRK(tr));
     }
     mo_abbr(a, name);
     mo_text(a, x + 8, 3, MO_INK);
@@ -2579,7 +2647,7 @@ static void mo_chip(uint32_t c, const char *val, const char *unit, uint16_t vc, 
     mo_four(d, v);
     cv_begin(CARD_W, PV_CHIP_H, MO_BG);
     if (hot) {
-        mo_fill(0, 0, CARD_W / 2, PV_CHIP_H / 2, MO_INK);
+        mo_fill(0, 0, CARD_W / 2, PV_CHIP_H / 2, MO_HOT);
         mo_textc(d, CARD_W / 4, 1, MO_BG);
     } else if (d[0]) {
         mo_textc(d, CARD_W / 4, 1, vc == T_DIM ? MO_DIM : MO_INK);
@@ -2593,7 +2661,7 @@ static void mo_strip_col(uint32_t c, const char *label, const char *val, uint16_
     char d[8];
     cv_begin(CARD_W, PV_STRIP_H, MO_BG);
     if (hot)
-        mo_box(0, 0, CARD_W / 2, PV_STRIP_H / 2, MO_INK);
+        mo_box(0, 0, CARD_W / 2, PV_STRIP_H / 2, MO_HOT);
     mo_abbr(d, label);
     mo_textc(d, CARD_W / 4, 0, MO_DIM);
     mo_four(d, val);
@@ -2788,7 +2856,7 @@ static void mo_patterns(void)
         }
         for (k = 0; k < NTRK; k++) {
             const track_t *t = &trk[k];
-            uint16_t tc = t->p[P_MUTE] ? MO_DIM : MO_INK;
+            uint16_t tc = t->p[P_MUTE] ? mo_tdim(k) : MO_TRK(k);
             uint32_t prog = pt_prog(t);
             int32_t y = 20 + (int32_t)k * 19;
             char c[2] = {(char)('1' + k), 0};
@@ -2901,6 +2969,12 @@ static void mo_song(void)
             mo_textr(b, 119, 1, jam_on ? MO_INK : MO_DIM);
             if (jam_on)
                 mo_disc(119 - mo_tw(b) - 5, 4, 2, MO_INK);
+        } else {                                        /* else SONG's place among SEQ's pages (as mo_head) */
+            mo_place(b);
+            if (b[0]) {
+                mo_textr(b, 119, 1, MO_DIM);
+                MO_HOOK_PLACE(b);
+            }
         }
         mo_hl(0, 8, 120, MO_INK);
         for (j = 0; j < SG_COLS && sg.first + j < sg.ncols; j++) {   /* the sections: rules, letters */
@@ -2919,7 +2993,7 @@ static void mo_song(void)
         }
         for (k = 0; k < NTRK; k++) {                    /* a track's blocks */
             const track_t *t = &trk[k];
-            uint16_t tc = t->p[P_MUTE] ? MO_DIM : MO_INK;
+            uint16_t tc = t->p[P_MUTE] ? mo_tdim(k) : MO_TRK(k);
             int32_t y = 23 + (int32_t)k * 18;
             for (j = 0; j < SG_COLS && sg.first + j < n;) {
                 uint32_t r = sg.first + j, p = chain_patterns[r][k], e = j + 1u, pick = k == song.sel && r == sg.sel;
@@ -3147,7 +3221,7 @@ static void mo_msc(void)
             const param_desc_t *d = page_desc(ui.home ? stage_page() : cur_page(), k, &vp);
             mo_ascii(b, d && d->label && d->label[0] ? d->label : e ? e->name : "--", sizeof b);
             b[dst == CD_OFF ? 10 : 11] = 0;
-            if (k == msc.knob && dst != CD_OFF) mo_inv(b, 4, y);
+            if (k == msc.knob && dst != CD_OFF) mo_invc(b, 4, y, MO_HOT);
             else mo_text(b, 4, y, dst == CD_OFF ? MO_DIM : MO_INK);
             if (dst == CD_OFF) {
                 mo_textr("NO MOD", 106, y, MO_DIM);

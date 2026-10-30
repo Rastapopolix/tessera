@@ -150,8 +150,8 @@ chord_form_ab_evolve 0x598d5772 27
 chord_form_ab_evolve.state 0x9da16929
 seed_turing_t1 0xd6556121 49
 seed_turing_t1.state 0x65ef253b
-seed_turing_t1_prob50_keep_rhythm 0x35f1692e 49
-seed_turing_t1_prob50_keep_rhythm.state 0xf3aa0550
+seed_turing_t1_prob50_keep_rhythm 0x3fa63dad 49
+seed_turing_t1_prob50_keep_rhythm.state 0xa28a6936
 seed_turing_t1_prob50_keep_pitch 0x5e9b6707 38
 seed_turing_t1_prob50_keep_pitch.state 0x20ecf3ab
 seed_euclid_t1 0x83888c82 20
@@ -166,7 +166,7 @@ seed_markov_t1_leap50_keep_pitch 0x9a884164 51
 seed_markov_t1_leap50_keep_pitch.state 0x8ecd2bd2
 seed_morph_t1_a 0xd6556121 49
 seed_morph_t1_a.state 0x23b87d21
-seed_morph_t1_b_keep_rhythm 0x2c2a5891 49
+seed_morph_t1_b_keep_rhythm 0x97d7b366 49
 seed_morph_t1_b_keep_rhythm.state 0xea13323f
 seed_turing_t1_prob50_gravity100 0xd6556121 49
 seed_turing_t1_prob50_gravity100.state 0xe3b082cd
