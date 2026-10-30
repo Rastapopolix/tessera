@@ -30,16 +30,16 @@ check("powers on and draws the screen", x.web_screen_draws() !== draws && screen
 check("silent at power-on (the sequencers start empty)", peak === 0);
 peak = 0; x.web_keys(C); run(S / 2);
 check("a key (C) plays the selected track", peak > 0.05);
-x.web_keys(0); run(S * 4); peak = 0; run(S / 4);   // (STILL TIDE's soft pad and long reverb: ~3 s to fade)
+x.web_keys(0); run(S * 7); peak = 0; run(S / 4);   // (STILL TIDE 3.0: its ORACLE drone and long reverb, ~6 s to fade)
 check("the note ends after the key is let go", peak < 0.01);
 const before = screen();
-check("it starts with STILL TIDE loaded: CHORD, AWAKE, BOUNCE, MARKOV", [0, 1, 2, 3].map(x.web_test_mode).join() === "12,7,6,3");
+check("it starts with STILL TIDE loaded: CHORD, AWAKE, BOUNCE, TURING", [0, 1, 2, 3].map(x.web_test_mode).join() === "12,7,6,1");
 peak = 0; x.web_demo(); run(S * 4);
 check("the demo plays (STILL TIDE from its top, PLAY)", peak > 0.05 && x.web_playing() === 1);
 check("the PLAY button's LED is lit", (x.web_lit_buttons() & PLAY) !== 0);
 check("the HOME screen changes while it plays (scope, playheads)", screen().some((v, i) => v !== before[i]));
 check("the keys glow (the dim plane)", x.web_dim_keys() !== 0);
-x.web_buttons(PLAY); run(4); x.web_buttons(0); run(S * 4);   // (the reverb's tail)
+x.web_buttons(PLAY); run(4); x.web_buttons(0); run(S * 6);   // (the reverb's tail: ~5 s in STILL TIDE 3.0)
 peak = 0; run(S / 2);
 check("PLAY again stops it", peak < 0.02 && x.web_playing() === 0 && !(x.web_lit_buttons() & PLAY));
 peak = 0; x.web_master(0); x.web_keys(C); run(S / 4); x.web_keys(0); x.web_master(700);
