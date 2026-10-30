@@ -65,7 +65,7 @@
 #define MELODEE_PHYS 1           /* PHYS (eng_phys.c), back 2026-10-18 after TRIO; out of device builds 2026-10-21 (build.py) */
 #endif
 #ifndef MELODEE_LOOK
-#define MELODEE_LOOK 0           /* 0: the detailed look; 1: Mono (ui_mono.c), a build of its own */
+#define MELODEE_LOOK 0           /* 0: the detailed look (the host tests); 1: Mono (ui_mono.c), build.py's default */
 #endif
 #if MELODEE_LOOK
 #define LOOK(d, m) (m)           /* the look's own of two (a string the 5 x 7 face fits, a position) */
