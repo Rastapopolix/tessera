@@ -744,6 +744,18 @@ static void drum_hit_key(uint32_t accent)
     notes_preview();
 }
 
+/* KNOB 2's note: by the track's scale notes while QNT is on (tessera_pitch_turn), semitones with ENV held; one that
+ * would leave 1..127 stays (semitones: at the end) */
+static uint32_t pitch_turn(uint32_t note, int32_t steps)
+{
+    uint32_t env = ui.step_mods & (1u << panel.btn[B_ENV]);
+    int32_t n = tessera_pitch_turn(TSEL, (int32_t)note, steps, env != 0u);
+    ui.step_used |= (uint16_t)env;
+    if (n == (int32_t)note + steps)
+        return (uint32_t)clamp(n, 1, 127);
+    return n < 1 || n > 127 ? note : (uint32_t)n;
+}
+
 static void step_edit(uint32_t slot, int32_t steps)
 {
     if (slot == 0u) {                                   /* KNOB 1: the notes one by one, the steps (empty ones too) */
@@ -772,7 +784,7 @@ static void step_edit(uint32_t slot, int32_t steps)
             st->note[0] = last_note; st->n = 1; st->time = ST_NOTE;
         } else {
             uint32_t j = notes_manual_slot(st);
-            st->note[j] = (uint8_t)clamp((int32_t)st->note[j] + steps, 1, 127);
+            st->note[j] = (uint8_t)pitch_turn(st->note[j], steps);
         }
         last_note = st->note[notes_manual_slot(st)];
     } else if (slot == 2u) {
@@ -1340,7 +1352,7 @@ static void notes_event_edit(uint32_t slot, int32_t delta)
         after.step = (uint8_t)(actual | (before.step & 64u) | (!view && actual ? 128u : 0u));
     } else if (slot == 1u) {
         if(drum_track(TSEL))after.pitch=(int8_t)clamp(before.pitch+delta,-24,24);
-        else after.note=(uint8_t)clamp((int32_t)before.note+delta,1,127);
+        else after.note=(uint8_t)pitch_turn(before.note,delta);
     }
     else if (slot == 2u || slot == 4u) {
         int32_t duration = (int32_t)before.duration * (1u << (before.owner >> 5));

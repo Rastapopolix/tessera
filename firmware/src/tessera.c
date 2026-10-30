@@ -1942,6 +1942,24 @@ static int32_t tess_scale_steps(const track_t *t, int32_t n, int32_t k)
     return n;
 }
 
+/* NOTES KNOB 2: n moved k notes of t's scale (QNT CHRD with a CHORD track playing: of its chord), one off them counting
+ * its next one that way as the first; QNT OFF, a microtonal scale (its notes are its degrees) or fine: k semitones */
+int32_t tessera_pitch_turn(const track_t *t, int32_t n, int32_t k, int fine)
+{
+    uint32_t pcs;
+    int32_t dir = k < 0 ? -1 : 1;
+    if (fine || t->p[P_QUANT] == Q_OFF || micro_active(t))
+        return n + k;
+    if (t->p[P_QUANT] != Q_CHRD || !(pcs = tessera_chord_pcs() & 0xFFFu))
+        return tess_scale_steps(t, n, k);
+    for (; k; k -= dir) {
+        uint32_t guard = 12;
+        do n += dir;
+        while (guard-- && !((pcs >> (uint32_t)((n + 1200) % 12)) & 1u));
+    }
+    return n;
+}
+
 /* FOLLOW: the note track src gives track tr, -1 none. A generator: the last note it played. A STEP track: the highest
  * note it sounds now (a chord's top: the melody), else the last one it sounded (a rest keeps it) */
 static int32_t tess_follow_source(uint32_t src, uint32_t tr)

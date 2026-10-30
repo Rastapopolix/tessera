@@ -240,6 +240,7 @@ void tessera_knob(uint32_t k, int32_t s);
 void tessera_mode_set(uint32_t tr, uint32_t m);   /* SEQ MODE (IRQs off) */
 void tessera_ensure_init(void);
 int32_t tessera_snap_note(const track_t *t, int32_t n);
+int32_t tessera_pitch_turn(const track_t *t, int32_t n, int32_t k, int fine);   /* NOTES KNOB 2: by scale notes */
 uint32_t tessera_euclid_pitch(const track_t *t, uint32_t step);
 uint32_t tessera_sig(uint32_t tr);
 void tessera_kill(track_t *t);
