@@ -17,6 +17,9 @@
 static uint16_t mo_tdim(uint32_t k) { return ux_mix(T_BG, T_TRK(k), UI_MID_PCT); }   /* .. dim (one ink: MO_DIM) */
 #define MO_PY0 52                                       /* the picture's rows: MO_PY0 .. MO_PY1 - 1 */
 #define MO_PY1 109
+#ifndef MO_HOOK_PLACE
+#define MO_HOOK_PLACE(s) ((void)0)                      /* a header drew the page's place (tests/ui_render.c) */
+#endif
 
 static const int8_t MO_SIN[64] = {0, 12, 25, 37, 49, 60, 71, 81, 90, 98, 106, 112, 117, 122, 125, 126, 127, 126, 125, 122, 117, 112, 106, 98, 90, 81, 71, 60, 49, 37, 25, 12, 0, -12, -25, -37, -49, -60, -71, -81, -90, -98, -106, -112, -117, -122, -125, -126, -127, -126, -125, -122, -117, -112, -106, -98, -90, -81, -71, -60, -49, -37, -25, -12};
 
@@ -173,12 +176,22 @@ static void mo_dial(int32_t cx, int32_t cy, int32_t r, int32_t v, uint16_t c)
 }
 
 /* ---- header, dials, footer ---- */
-/* the footer's tabs: the pages the button turns through (SEQ: GEN's and ARP's too, in_fam), *cur the shown one's place */
+/* the footer's tabs: the pages the button and SELECT turn through (SEQ: GEN's and ARP's too, in_fam; ENV / LFO on an
+ * engine with its own: fam_pages), *cur the shown one's place */
 static uint32_t mo_tabs(uint16_t *idx, uint32_t *cur)
 {
     const page_t *pg = cur_page();
-    uint32_t i, n = 0;
+    uint32_t i, n = 0, nf = page_nf();
     *cur = 0;
+    if (nf) {
+        uint8_t fp[NPAGES];
+        uint32_t m = fam_pages(nf, fp);
+        for (i = 0; i < m && n < 16u; i++) {
+            if (&PAGES[fp[i]] == pg) *cur = n;
+            idx[n++] = fp[i];
+        }
+        return n;
+    }
     for (i = 0; i < NPAGES && n < 16u; i++)
         if (in_fam(i, pg->fam) && page_visible(i)) {
             if (&PAGES[i] == pg) *cur = n;
@@ -220,19 +233,27 @@ static int mo_tabs_fit(const uint16_t *idx, uint32_t n)   /* all n tabs on the f
     }
     return 1;
 }
+/* the page's place among its tabs (4/9) when they are more than the footer shows, else "" (on every page of the
+ * family alike: the knob pages' header and the whole screens', mo_dhead) */
+static void mo_place(char *at)
+{
+    uint16_t idx[16];
+    uint32_t cur, n = mo_tabs(idx, &cur);
+    at[0] = 0;
+    if (!n || &PAGES[idx[cur]] != cur_page() || mo_tabs_fit(idx, n))
+        return;
+    fmt_int(at, (int32_t)cur + 1);
+    str_cpy(at + str_len(at), "/", 2);
+    fmt_int(at + str_len(at), (int32_t)n);
+}
 static void mo_head(void)
 {
     const page_t *pg = cur_page();
-    char t[24], sub[8], at[8] = "";
-    uint16_t idx[16];
-    uint32_t i, cur, n = mo_tabs(idx, &cur);
+    char t[24], sub[8], at[8];
+    uint32_t i;
     int32_t room;
     str_cpy(sub, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), sizeof sub);
-    if (!mo_tabs_fit(idx, n)) {                         /* more pages than the footer shows: where this one is (4/9) */
-        fmt_int(at, (int32_t)cur + 1);
-        str_cpy(at + str_len(at), "/", 2);
-        fmt_int(at + str_len(at), (int32_t)n);
-    }
+    mo_place(at);                                       /* more pages than the footer shows: where this one is */
     room = 94 - mo_tw(sub) - 4 - (at[0] ? mo_tw(at) + 6 : 0);
     if (ui.msg_t && ui.msg[0]) {                        /* a message: in the title's place, inverted, over the */
         mo_cut(t, ui.msg, 15);                          /* position and the engine (they would show through) */
@@ -249,8 +270,10 @@ static void mo_head(void)
         t[room / 6] = 0;                                /* (room before the position and the engine) */
         mo_text(t, 1, 1, MO_INK);
     }
-    if (at[0])
+    if (at[0]) {
         mo_textr(at, 94 - mo_tw(sub) - 6, 1, MO_DIM);
+        MO_HOOK_PLACE(at);
+    }
     mo_textr(sub, 94, 1, MO_DIM);
     for (i = 0; i < 4u; i++) {                          /* the tracks: the selected one filled */
         if (i == song.sel) mo_disc(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));
@@ -2086,6 +2109,14 @@ static void mo_dhead(const char *chip, const char *msg, int low)
         x -= 10;
         mo_box(x, 2, 7, 5, MO_INK), mo_vl(x + 7, 3, 3, MO_INK);
     }
+    if (!msg && !ui.home && !ui.menu && !new_on() && !sec_map_on() && !designer_on()) {   /* a page: its place (4/9) */
+        mo_place(t);
+        if (t[0]) {
+            x -= mo_tw(t) + 6;
+            mo_text(t, x, 1, MO_DIM);
+            MO_HOOK_PLACE(t);
+        }
+    }
     mo_ascii(t, msg ? msg : chip, sizeof t);
     mo_cut(b, t, (uint32_t)(x - 6) / 6u);
     mo_fill(0, 0, mo_tw(b) + 3, 8, MO_INK);
@@ -2940,6 +2971,12 @@ static void mo_song(void)
             mo_textr(b, 119, 1, jam_on ? MO_INK : MO_DIM);
             if (jam_on)
                 mo_disc(119 - mo_tw(b) - 5, 4, 2, MO_INK);
+        } else {                                        /* else SONG's place among SEQ's pages (as mo_head) */
+            mo_place(b);
+            if (b[0]) {
+                mo_textr(b, 119, 1, MO_DIM);
+                MO_HOOK_PLACE(b);
+            }
         }
         mo_hl(0, 8, 120, MO_INK);
         for (j = 0; j < SG_COLS && sg.first + j < sg.ncols; j++) {   /* the sections: rules, letters */
