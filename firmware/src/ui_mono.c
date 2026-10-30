@@ -290,9 +290,9 @@ static int mo_fit(char *d, const char *s)
     d[5] = 0;
     return 1;
 }
-/* the four knobs' values as drawn, for the Mono lint (tests/ui_render.c): the frame (a box, a filled box or the
- * inverted block; -1 none), the text, the kind */
-enum { MV_DIAL, MV_BOX, MV_KEY, MV_INV };
+/* the four knobs' values as drawn, for the Mono lint (tests/ui_render.c): the frame (a box or a filled box; -1
+ * none), the text, the kind */
+enum { MV_DIAL, MV_BOX, MV_KEY };
 static struct { int16_t fx0, fx1, tx0, tx1; uint8_t kind, cut, used; char s[8]; } mo_vals[4];
 static uint8_t mo_flash_col, mo_flash_t;               /* a one-shot knob's value inverted a moment (CLEAR) */
 static void mo_flash(uint32_t c)
@@ -303,16 +303,29 @@ static void mo_flash(uint32_t c)
 static uint8_t mo_vals_new;                             /* mo_cols drew them since the lint last looked */
 static uint8_t mo_cols_trk;                             /* the knobs are the four tracks': each in its colour (MOSAIC) */
 #define MO_BOX_W 27                                     /* a boxed value's outline: 4 characters and a clear cell each side */
+#define MO_GAP 3                                        /* clear cells wanted between two values (as between two boxes) */
+/* may column i move a cell (d -1 left, +1 right) to widen a gap of g: the gap it closes stays wider, or is the
+ * screen's edge (which needs no clear cell) */
+static int mo_cols_can(const int32_t *x, const int32_t *w, int32_t i, int32_t d, int32_t g)
+{
+    int32_t j;
+    for (j = i + d; j >= 0 && j < 4 && !mo_col[j].used; j += d) ;
+    if (j < 0) return x[i] > 0;
+    if (j > 3) return x[i] + w[i] < 120;
+    return (d < 0 ? x[i] - x[j] - w[j] : x[j] - x[i] - w[i]) >= g + 2;
+}
 static void mo_cols(void)
 {
     char v[4][16];
-    uint8_t wide[4], kind[4], cut[4];
-    uint32_t i;
-    for (i = 0; i < 4u; i++) {                          /* what each column shows, first: a wide one narrows its neighbours' margins */
+    uint8_t kind[4], cut[4];
+    int32_t tw[4], x[4], w[4], w0[4], x0[4];             /* the frame (a dial's: its text) and its narrowest */
+    uint32_t i, a, b, pass;
+    for (i = 0; i < 4u; i++) {                          /* what each column shows, first: its neighbours make room */
         const char *s = mo_col[i].val;
         uint32_t n;
-        wide[i] = kind[i] = cut[i] = 0;
+        kind[i] = cut[i] = 0;
         v[i][0] = 0;
+        x[i] = w[i] = w0[i] = 0;
         if (!mo_col[i].used)
             continue;
         if (s[0] == '[') {                              /* "[OCT+]": the key that acts, a filled box */
@@ -329,11 +342,38 @@ static void mo_cols(void)
             cut[i] = (uint8_t)mo_fit(v[i], b);
             kind[i] = mo_col[i].ratio < 0 ? MV_BOX : MV_DIAL;
         }
-        if (str_len(v[i]) > 4u && kind[i] != MV_KEY)   /* five: no box, inverted at full length */
-            wide[i] = 1, kind[i] = MV_INV;
+        tw[i] = mo_tw(v[i]);                            /* a dial's value: plain at any length; a box: 27 wide, wider for */
+        w0[i] = kind[i] == MV_DIAL ? tw[i] : tw[i] + 4; /* five characters (a clear cell each side, always) */
+        w[i] = w0[i] > MO_BOX_W || kind[i] == MV_DIAL ? w0[i] : MO_BOX_W;
+        x[i] = 15 + (int32_t)i * 30 - w[i] / 2;
+        x[i] = x[i] < 0 ? 0 : x[i] + w[i] > 120 ? 120 - w[i] : x[i];
+        x0[i] = x[i];
+    }
+    for (pass = 0; pass < 24u; pass++) {                /* two values too close: a box narrows toward its text, else one
+                                                         * moves (2 cells at most) into a wider gap; at least a clear cell */
+        uint32_t moved = 0;
+        for (a = 0; a < 4u; a = b) {
+            int32_t g;
+            for (b = a + 1u; b < 4u && !mo_col[b].used; b++) ;
+            if (!mo_col[a].used || b >= 4u || (g = x[b] - x[a] - w[a]) >= MO_GAP)
+                continue;
+            if (w[a] - w0[a] >= 2 && w[a] - w0[a] >= w[b] - w0[b])
+                x[a]++, w[a] -= 2;
+            else if (w[b] - w0[b] >= 2)
+                x[b]++, w[b] -= 2;
+            else if (x[a] > x0[a] - 2 && mo_cols_can(x, w, (int32_t)a, -1, g))
+                x[a]--;
+            else if (x[b] < x0[b] + 2 && mo_cols_can(x, w, (int32_t)b, 1, g))
+                x[b]++;
+            else
+                continue;
+            moved = 1;
+        }
+        if (!moved)
+            break;
     }
     for (i = 0; i < 4u; i++) {
-        int32_t cx = 15 + (int32_t)i * 30, tw = mo_tw(v[i]), tx = cx - tw / 2, ty, fx0 = -1, fx1 = -1;
+        int32_t cx = 15 + (int32_t)i * 30, tx = x[i] + (w[i] - tw[i]) / 2, ty, fx0 = -1, fx1 = -1;
         uint16_t dim = mo_cols_trk ? mo_tdim(i) : MO_DIM;
         uint16_t ink = mo_col[i].dim ? dim : mo_col[i].hot ? MO_HOT : mo_cols_trk ? MO_TRK(i) : MO_INK;
         char l[8];
@@ -345,31 +385,22 @@ static void mo_cols(void)
         ty = mo_col[i].ratio >= 0 && mo_col[i].val[0] != '[' ? 39 : 25;
         if (mo_col[i].ratio >= 0 && mo_col[i].val[0] != '[')
             mo_dial(cx, 28, 7, mo_col[i].ratio, ink);
-        if (mo_flash_t && i == mo_flash_col && (kind[i] == MV_BOX || kind[i] == MV_KEY)) {   /* it acted: inverted */
-            fx0 = cx - MO_BOX_W / 2, fx1 = cx + MO_BOX_W / 2;
-            mo_fill(fx0, 21, MO_BOX_W, 15, MO_INK);
+        if (kind[i] != MV_DIAL)
+            fx0 = x[i], fx1 = x[i] + w[i] - 1;
+        if (mo_flash_t && i == mo_flash_col && kind[i] != MV_DIAL) {   /* it acted: inverted */
+            mo_fill(fx0, 21, w[i], 15, MO_INK);
             mo_text(v[i], tx, ty, MO_BG);
         } else if (kind[i] == MV_KEY) {
-            fx0 = cx - MO_BOX_W / 2, fx1 = cx + MO_BOX_W / 2;
-            mo_fill(fx0, 21, MO_BOX_W, 15, ink);
+            mo_fill(fx0, 21, w[i], 15, ink);
             mo_text(v[i], tx, ty, MO_BG);
         } else if (kind[i] == MV_BOX) {
-            fx0 = cx - MO_BOX_W / 2, fx1 = cx + MO_BOX_W / 2;
-            mo_box(fx0, 21, MO_BOX_W, 15, ink);
+            mo_box(fx0, 21, w[i], 15, ink);
             mo_text(v[i], tx, ty, ink);
-        } else if (kind[i] == MV_INV) {                 /* a cell of margin each side, but none toward another wide one
-                                                         * (they keep a cell between them) or past the screen's edge */
-            fx0 = tx - (i > 0u && wide[i - 1u] ? 0 : 1);
-            fx1 = tx + tw - 1 + (i < 3u && wide[i + 1u] ? 0 : 1);
-            fx0 = fx0 < 0 ? 0 : fx0;
-            fx1 = fx1 > 119 ? 119 : fx1;
-            mo_fill(fx0, ty - 1, fx1 - fx0 + 1, 9, ink);
-            mo_text(v[i], tx, ty, MO_BG);
         } else {
             mo_text(v[i], tx, ty, ink);
         }
         mo_vals[i].fx0 = (int16_t)fx0, mo_vals[i].fx1 = (int16_t)fx1;
-        mo_vals[i].tx0 = (int16_t)tx, mo_vals[i].tx1 = (int16_t)(tx + tw - 1);
+        mo_vals[i].tx0 = (int16_t)tx, mo_vals[i].tx1 = (int16_t)(tx + tw[i] - 1);
         mo_vals[i].kind = kind[i], mo_vals[i].cut = cut[i];
         str_cpy(mo_vals[i].s, v[i], sizeof mo_vals[i].s);
         if (mo_col[i].hot)
