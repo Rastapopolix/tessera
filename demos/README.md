@@ -93,21 +93,22 @@ they still sound right (the WAVs) before committing.
 
 ## The demo video
 
-The video (about 3 minutes, 1080 x 1080) is made from the firmware's own sound and screens: both demos as `make`
-plays them (their first 20 s are the same samples as the WAVs above), then a short tour of the modes the demos leave
-out (TURING, EUCLID, MORPH, ATLAS, CONSTELLATION, ANSWER).
+The video (6 minutes, 1080 x 1080, in the Mono look) is made from the firmware's own sound and screens: the three
+demos as `make` plays them (their first 20 s are the same samples as the WAVs above), then every generator with its
+knobs turned through the real UI (`ui_input`, as a hand turns them), then what is new in 3.0, TWEAK and TIMING, and
+LOW HARBOUR again under the end card, fading out.
 
 ```
-./build.sh
-cc -O2 -w -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_SID=0 -DMELODEE_PHYS=0 -DTRK_START_TESS=1 \
-   -o build/dp tests/demo_projects.c -lm
-build/dp video build/video                      # each clip's WAV, frames and captions (about 900 MB of frames)
-python3 tools/demo_video.py build/video build/tessera-2.0-demo.mp4   # needs Pillow and imageio-ffmpeg (or ffmpeg)
+cc -O2 -w -DMELODEE_LOOK=1 -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_SID=0 -DMELODEE_PHYS=0 -DTRK_START_TESS=1 \
+   -o build/dp tests/demo_projects.c -lm                     # (after ./build.sh or tools/build.py's generate(): build/gen)
+build/dp video build/video                      # each clip's WAV, frames and captions (about 1.8 GB of frames)
+python3 tools/demo_video.py build/video build/tessera-3.0-demo.mp4   # needs Pillow and imageio-ffmpeg (or ffmpeg)
 ```
 
-The pages shown and the captions are the timelines in `tests/demo_projects.c` (V_STILL, V_GARDEN, the tour).
+The pages shown, the knob turns and the captions are the timelines in `tests/demo_projects.c` (V_STILL, V_GARDEN,
+V_HARBOUR, v_generators, v_features); `DM_DEBUG=1` prints the knobs each clip ends on.
 
-The project page plays the copy in `assets/video/` (`tessera-2.0-demo.mp4`, and `tessera-2.0-demo.jpg`, its title card
+The project page plays the copy in `assets/video/` (`tessera-3.0-demo.mp4`, and `tessera-3.0-demo.jpg`, its title card
 as the poster); `web/make_site.py` puts both in the site's `media/video/`. After making a new video, copy it there
 and make the poster again:
-`ffmpeg -ss 1 -i assets/video/tessera-2.0-demo.mp4 -frames:v 1 -vf scale=720:720 -q:v 3 assets/video/tessera-2.0-demo.jpg`.
+`ffmpeg -ss 1 -i assets/video/tessera-3.0-demo.mp4 -frames:v 1 -vf scale=720:720 -q:v 3 assets/video/tessera-3.0-demo.jpg`.
