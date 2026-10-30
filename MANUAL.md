@@ -232,6 +232,11 @@ MOTION and DRUM HIT appear as in upstream. With STEP, GEN's KNOB 2 to 4 are DIVI
 generators run at the track's DIV (PATTERN page) and play in the track's scale (SCL). Choosing STEP or a
 generator turns the arpeggiator off; choosing ARP again brings back its last setting.
 
+On NOTES, **KNOB 2** sets the picked note's pitch. With **QNT OFF** it moves a semitone a detent. With QNT on
+(SNAP, WHITE, ALL, MPC) it moves a note of the scale a detent; a note off the scale goes to the next scale note in
+the turn's direction first. With **QNT CHRD** and a CHORD track playing it moves through that chord's notes. Hold
+**ENV** while turning for a semitone at a time. A microtonal scale moves a degree a detent, as before.
+
 <p align="center"><img src="assets/gallery/seq_mode.png" alt="GEN with MODE STEP" width="320"></p>
 
 ### The pattern's sheet: Double, Half, Euclid, Accumulate
@@ -647,7 +652,8 @@ A **CHORD** track plays a progression; with **QNT CHRD** the other tracks follow
 - On the CHORD track: GEN, MODE **CHORD**, then **PROG**, **BARS** and **HIT**. The chord's kind and voicing come
   from **SCL > CHORD** (CHRD, VOIC), or the OCT+ layer. CHRD OFF plays triads.
 - On any other track: **SCL**, **QNT** to **CHRD**. Its keys, its MIDI input and its generator snap to the nearest
-  note of the chord playing now. With no CHORD track, CHRD acts as SNAP.
+  note of the chord playing now, and KNOB 2 on NOTES steps through its notes. With no CHORD track, CHRD acts as
+  SNAP.
 - **CH PROG** is a mod destination, so a slow source can change progressions.
 
 ---

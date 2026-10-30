@@ -487,10 +487,54 @@ static int test_conditions(void)
     return bad;
 }
 
+/* NOTES KNOB 2: semitones with QNT OFF; QNT on, the scale's notes (an off-scale note to the next one that way first);
+ * CHRD, the playing chord's; ENV held, a semitone */
+static int test_pitch_scale(void)
+{
+    int bad = 0, ok;
+    track_t *t = edit_setup();
+    put_note(t, 0, 60, 1); cursor_set(0); frame();
+    turn(EN_K2, 1);
+    bad += check("QNT OFF: KNOB 2 a semitone", t->step[0].note[0] == 61);
+    t->p[P_QUANT] = Q_SNAP; t->p[P_SCALE] = 1; t->p[P_ROOT] = 0; frame();
+    turn(EN_K2, 1);
+    ok = t->step[0].note[0] == 62;
+    turn(EN_K2, 1); turn(EN_K2, 1);
+    ok &= t->step[0].note[0] == 65;
+    turn(EN_K2, -1);
+    ok &= t->step[0].note[0] == 64;
+    bad += check("QNT SNAP: an off-scale note to the next scale note, then by scale notes", ok);
+    t->step[0].note[0] = 61; frame(); turn(EN_K2, -1);
+    bad += check("..down too: C# to C", t->step[0].note[0] == 60);
+    btn_down(B_ENV); frame();
+    turn(EN_K2, 1);
+    ok = t->step[0].note[0] == 61;
+    btn_up(B_ENV); frame();
+    bad += check("ENV held: a semitone, and its release does nothing else", ok && t->step[0].note[0] == 61 && cur_page()->graph == GR_ROLL);
+    t->step[0].note[0] = 127; frame(); turn(EN_K2, 1);
+    bad += check("the top: the note stays", t->step[0].note[0] == 127);
+    {
+        uint8_t mode = tessera.mode[1];
+        uint16_t pc = tessera.chord_pc[1];
+        tessera.mode[1] = TESS_ENG_CHORD; tessera.chord_pc[1] = (1u << 2) | (1u << 5) | (1u << 9);   /* (D minor) */
+        t->p[P_QUANT] = Q_CHRD; t->step[0].note[0] = 60; frame();
+        turn(EN_K2, 1);
+        ok = t->step[0].note[0] == 62;
+        turn(EN_K2, 1); turn(EN_K2, 1);
+        ok &= t->step[0].note[0] == 69;
+        turn(EN_K2, -3);
+        ok &= t->step[0].note[0] == 57;
+        tessera.mode[1] = mode; tessera.chord_pc[1] = pc;
+        bad += check("QNT CHRD: through the playing chord's notes", ok);
+    }
+    t->p[P_QUANT] = Q_OFF;
+    return bad;
+}
+
 int main(void)
 {
     int bad = test_note_edits() + test_entry_history() + test_midi_entry() + test_record_timing() + test_step_modifiers() +
-              test_held_gestures() + test_compact_history() + test_conditions();
+              test_held_gestures() + test_compact_history() + test_conditions() + test_pitch_scale();
     printf("sequencer editing: %s\n", bad ? "FAILED" : "all passed");
     return bad != 0;
 }
