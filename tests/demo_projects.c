@@ -861,7 +861,9 @@ static void v_run(const char *out, const vclip_t *c)
     fclose(w);
     if (getenv("DM_DEBUG")) {                           /* (the knobs as the clip left them) */
         printf("knobs %s:", c->name);
+#if MELODEE_LOOK                                        /* (the suite builds the detailed look: no mo_col) */
         for (uint32_t k = 0; k < 4u; k++) printf(" [%s=%s]", mo_col[k].label, mo_col[k].val);
+#endif
         printf(" GRAVITY %d DEVELOP %d SOURCE %d", tessera_param_get(0, TX_SD_GRAVITY), tessera_param_get(0, TX_FM_DEVELOP),
                tessera_param_get(0, TX_SD_SOURCE));
         printf("\n");
