@@ -151,8 +151,39 @@ static void stage_hits(void)
     }
 }
 
+/* the filter pictures (stage_filter, ui_pages.c pv_filter, ui_mono.c mo_pic_filter) follow the filter's type */
+enum { FLT_LP, FLT_BP, FLT_HP, FLT_NOTCH };
+/* the selected track's engine's filter type: the knob that sets it (an enum named LP, BP, HP, NOT(CH): TRIO's MODE, on
+ * TONE but not among Stage's knobs), else a low-pass (ORACLE's) */
+static uint32_t flt_engine_type(void)
+{
+    uint32_t i;
+    for (i = 0; i < 8u; i++) {
+        const param_desc_t *d = track_desc(TSEL, P_E0 + i);
+        int32_t v = TSEL->p[P_E0 + i];
+        const char *n;
+        if (!d || d->fmt != F_ENUM || !d->names || !str_eq(d->names[0], "LP") || v < d->min || v > d->max)
+            continue;
+        n = d->names[v - d->min];
+        return str_eq(n, "BP") ? FLT_BP : str_eq(n, "HP") ? FLT_HP : str_prefix(n, "NOT") ? FLT_NOTCH : FLT_LP;
+    }
+    return FLT_LP;
+}
+/* the response's height over the flat level (1/16 px) d px from the cutoff: the resonance's peak (peak high, w wide in
+ * px^2), then the slope s (1/16 px a px; a band-pass half of it on each side); a notch dips deep, narrower as the
+ * resonance rises (TRIO's damping 2.0 .. 0.25) */
+static int32_t flt_curve(uint32_t type, int32_t d, int32_t w, int32_t peak, int32_t s, int32_t deep, int32_t res)
+{
+    int32_t bump = peak * w / (w + d * d), ad = d < 0 ? -d : d, lp = bump - (d > 0 ? d * s : 0), bp = bump - ad * s / 2;
+    if (type == FLT_NOTCH) {
+        int32_t q = 8 - clamp(res, 0, 127) * 7 / 127, nw = w * q * q / 9 + 1;
+        return -deep * nw / (nw + d * d);
+    }
+    return type == FLT_BP ? bp : type == FLT_HP ? bump - (d < 0 ? ad * s : 0) : lp;
+}
+
 /* While the knobs are out, the panel shows what the one turning shapes behind the notes: a filter's response (cutoff,
- * resonance), an envelope (its attack .. release); 0 = nothing to show */
+ * resonance, type), an envelope (its attack .. release); 0 = nothing to show */
 enum { SP_NONE, SP_FILTER, SP_ENV };
 static uint32_t stage_picture(int32_t *v)
 {
@@ -167,7 +198,7 @@ static uint32_t stage_picture(int32_t *v)
             v[k] = TSEL->p[P_ATK + k];
         return SP_ENV;
     }
-    {   /* an engine's filter: its F_CUTOFF knob and the RES beside it */
+    {   /* an engine's filter: its F_CUTOFF knob, the RES beside it, its type */
         int32_t cut = -1, res = 0;
         for (k = 0; k < 4u; k++) {
             const param_desc_t *d = track_desc(TSEL, sp->id[k]);
@@ -178,18 +209,20 @@ static uint32_t stage_picture(int32_t *v)
             return SP_NONE;
         v[0] = TSEL->p[sp->id[cut]];
         v[1] = res;
+        v[2] = (int32_t)flt_engine_type();
         return SP_FILTER;
     }
 }
-/* a low-pass response: flat, the resonance's peak at the cutoff (a dotted line), then the slope; cut, res 0..127 */
-static void stage_filter(int32_t cut, int32_t res, uint16_t c)
+/* a filter's response (flt_curve): flat, the resonance's peak at the cutoff (a dotted line), the slope; cut, res
+ * 0..127 */
+static void stage_filter(int32_t cut, int32_t res, uint32_t type, uint16_t c)
 {
     int32_t x, fc = 10 + clamp(cut, 0, 127) * 200 / 127, peak = clamp(res, 0, 127) * 14 / 127;
     int32_t top = 3, bot = ST_PANEL_H - 4, y0 = 22 * 16, py = 0;
     for (x = top; x < bot; x += 5)
         cv_rect(fc, x, 1, 2, ux_mix(T_PANEL, c, 60));
     for (x = 0; x < 220; x++) {
-        int32_t d = 8 + x - fc, y = y0 - peak * 16 * 64 / (64 + d * d) + (d > 0 ? d * 10 : 0);
+        int32_t d = 8 + x - fc, y = y0 - flt_curve(type, d, 64, peak * 16, 10, bot * 16 - y0, res);
         y = clamp(y, top * 16, bot * 16);
         cv_vspan_aa(8 + x, x ? py : y, y, c);
         py = y;
@@ -230,7 +263,7 @@ static void stage_panel(void)
     pic = drum ? SP_NONE : stage_picture(pv);
     /* behind: the waveform (dimmed while notes are held, or over a drum's lanes), or what the knob turning shapes */
     if (pic == SP_FILTER)
-        stage_filter(pv[0], pv[1], ux_mix(T_PANEL, T_THEME, 55));
+        stage_filter(pv[0], pv[1], (uint32_t)pv[2], ux_mix(T_PANEL, T_THEME, 55));
     else if (pic == SP_ENV)
         graph_adsr_v(pv[0], pv[1], pv[2], pv[3], 4, ST_PANEL_H - 8, ux_mix(T_PANEL, T_THEME, 55));
     else
