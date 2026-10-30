@@ -2255,7 +2255,7 @@ int main(int argc, char **argv)
         cur_name = "Mono self-test";
         memset(mo_vals, 0, sizeof mo_vals);
         mo_vals[0].used = mo_vals[1].used = mo_vals[2].used = 1;
-        mo_vals[0].kind = MV_INV, mo_vals[0].cut = 1, mo_vals[0].fx0 = 0, mo_vals[0].fx1 = 30;
+        mo_vals[0].kind = MV_DIAL, mo_vals[0].cut = 1, mo_vals[0].fx0 = -1, mo_vals[0].tx0 = 0, mo_vals[0].tx1 = 30;
         mo_vals[1].kind = MV_BOX, mo_vals[1].fx0 = 32, mo_vals[1].fx1 = 58, mo_vals[1].tx0 = 34, mo_vals[1].tx1 = 57;
         mo_vals[2].kind = MV_DIAL, mo_vals[2].fx0 = -1, mo_vals[2].tx0 = 59, mo_vals[2].tx1 = 70;
         mo_vals_new = 1;
