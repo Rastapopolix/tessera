@@ -51,7 +51,12 @@ MONO_INK = [("YELLOW", (255, 208, 32)), ("WHITE", (240, 240, 240)), ("GREEN", (9
             ("BLUE", (136, 192, 255)), ("RED", (255, 112, 100)), ("ORANGE", (255, 144, 40)),
             ("PINK", (255, 176, 216)), ("HOT PINK", (255, 88, 176)), ("LILAC", (192, 150, 255))]
 MONO_PALETTES = [(n, (0, 0, 0), (20, 20, 20), c, c, (c, c, c, c)) for n, c in MONO_INK]
-MONO_SLOTS = [6, 7, 8, 9, 10, 11, 12, 13, 14]
+# MOSAIC (Theo 2026-10-30, after a user's wish for more colour): each track its own ink, the selected track's the
+# screen's (src/gfx.c palette_theme: TEXT follows THEME when the track colours differ), the selected value white (ACCENT)
+_INK = dict(MONO_INK)
+MONO_PALETTES.append(("MOSAIC", (0, 0, 0), (20, 20, 20), _INK["YELLOW"], _INK["WHITE"],
+                      (_INK["YELLOW"], _INK["BLUE"], _INK["HOT PINK"], _INK["GREEN"])))
+MONO_SLOTS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 MONO_DEFAULT = "YELLOW"
 SLOTS = [0, 2, 3, 4, 5]            # each palette's stored slot; 1 was DAY (retired: its stored id reads as the default)
 # Melodee's own track colours (NIGHT, DAY, CONTRAST as upstream had them): no track colour may come near one
@@ -184,7 +189,11 @@ def main():
                 fails.append(f"{p[0]}/T{t + 1}: {c} is Melodee's {m} (dE {delta_e(c, m):.1f} < {MELODEE_DE})")
     assert len(MONO_SLOTS) == len(MONO_PALETTES) and MONO_SLOTS[0] > SLOTS[-1] and MONO_SLOTS[-1] < 31
     rows = [derive(p, t) for p in PALETTES + [TEST_GRAY] for t in range(4)]
-    mono_rows = [derive(p, 0) for p in MONO_PALETTES]
+    mono_rows = [derive(p, 0) for p in MONO_PALETTES if p[5][0] == p[5][1]]
+    for p in MONO_PALETTES:                  # MOSAIC: each track's colour as the ink, and the white of the selection
+        if p[5][0] != p[5][1]:
+            mono_rows += [derive((p[0],) + p[1:3] + (c, c, p[5]), t) for t, c in enumerate(p[5])]
+            mono_rows.append(derive((f"{p[0]}/SEL",) + p[1:3] + (p[4], p[4], p[5]), 0))
     for name, d in rows:
         if name.startswith("GRAY"):
             for k, v in d.items():

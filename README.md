@@ -61,7 +61,8 @@ page also has a way back to the official V15 firmware, with a backup first.
 * **MIDI OUT** of every track and the generators, each on a channel of its own (GLO > MIDI OUT), and **CLOCK OUT**,
   over USB.
 * **Its own look**: one ink on black and a 5 x 7 pixel font, as on a monochrome OLED; YELLOW by default, or
-  WHITE, GREEN, BLUE, RED, or ORANGE, PINK, HOT PINK or LILAC as the FM-1's shells (MENU > COLOR).
+  WHITE, GREEN, BLUE, RED, or ORANGE, PINK, HOT PINK or LILAC as the FM-1's shells, or MOSAIC: a colour per track
+  (MENU > COLOR).
 
 The **[manual](MANUAL.md)** covers every page, knob and shortcut; **[RECIPES.md](RECIPES.md)** has step-by-step
 patches and tips.
@@ -116,8 +117,8 @@ patches and tips.
 </tr>
 </table>
 
-**The nine inks** (MENU > COLOR), the same HOME in each: YELLOW is the default; ORANGE, PINK, HOT PINK and LILAC match the
-FM-1's shells.
+**The inks** (MENU > COLOR), the same HOME in each: YELLOW is the default; ORANGE, PINK, HOT PINK and LILAC match the
+FM-1's shells; MOSAIC gives each track its own colour and shows the selection in white.
 
 <table>
 <tr>
@@ -132,6 +133,7 @@ FM-1's shells.
 <td align="center"><img src="assets/gallery/ink_pink.png" alt="PINK" width="180"><br><b>PINK</b></td>
 <td align="center"><img src="assets/gallery/ink_hot_pink.png" alt="HOT PINK" width="180"><br><b>HOT PINK</b></td>
 <td align="center"><img src="assets/gallery/ink_lilac.png" alt="LILAC" width="180"><br><b>LILAC</b></td>
+<td align="center"><img src="assets/gallery/ink_mosaic.png" alt="MOSAIC" width="180"><br><b>MOSAIC</b></td>
 </tr>
 </table>
 

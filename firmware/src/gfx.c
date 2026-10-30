@@ -141,10 +141,29 @@ static uint32_t ux_luma(uint16_t c)        /* 0..255 */
     return ((c >> 11) * 255u / 31u * 54u + ((c >> 5) & 63u) * 255u / 63u * 183u + (c & 31u) * 255u / 31u * 19u) >> 8;
 }
 
+#if MELODEE_LOOK
+static uint8_t ux_multi;         /* MOSAIC: TEXT follows THEME (not in ux: a field there costs the detailed build 1.6 KB) */
+static void palette_text(const ui_pal_t *p, uint16_t text)   /* MOSAIC: TEXT and what palette_set mixes from it */
+{
+    ux.text = ux.rec = text;
+    ux.mid = ux_mix(p->bg, text, UI_MID_PCT);
+    ux.dim = ux_mix(p->bg, text, UI_DIM_PCT);
+    ux.line = ux_mix(p->bg, text, UI_LINE_PCTS[ux.pal]);
+    ux.raise = ux_mix(p->surf, text, UI_RAISE_PCT);
+    ux.key = ux_mix(p->bg, text, UI_KEY_PCT);
+    ux.grid = ux_mix(p->surf, text, 6);
+    ux.lift = ux_mix(p->surf, text, 3);
+    ux.sec = ux_mix(p->bg, text, 80);
+}
+#endif
 static void palette_theme(void)                    /* THEME and what is mixed from it: the track's colour */
 {
     const ui_pal_t *p = &UI_PALETTES[ux.pal];
     ux.theme = p->trk[ux.trk & 3u];
+#if MELODEE_LOOK
+    if (ux_multi)
+        palette_text(p, ux.theme);               /* MOSAIC: the ink (and REC) the selected track's */
+#endif
     ux.sel = ux_mix(p->bg, ux.theme, UI_SEL_PCT);
     ux.tint = ux_mix(p->bg, ux.theme, UI_TINT_PCT);
     ux.lane = ux_mix(p->surf, ux.theme, 10);
@@ -173,6 +192,7 @@ static void palette_set(uint32_t i)
     ux.light = ux_luma(p->bg) > 128u;
 #if MELODEE_LOOK
     ux.rec = p->accent;                          /* (the Mono look: one ink, REC too) */
+    ux_multi = !ux.mono && p->trk[0] != p->trk[1];   /* (one ink: the track colours are the ink; GRAY: one ink) */
 #else
     ux.rec = ux.mono ? p->accent : ux.light ? UI_REC_LIGHT : UI_REC_DARK;
 #endif

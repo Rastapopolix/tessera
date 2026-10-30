@@ -12,6 +12,9 @@
 #define MO_BG T_BG                                      /* one ink: the palette's (NIGHT: white on black, DAY the reverse) */
 #define MO_INK T_TEXT
 #define MO_DIM T_MID
+#define MO_HOT T_ACCENT                                 /* the value turning, the row picked: the ink (MOSAIC: white) */
+#define MO_TRK(k) T_TRK(k)                              /* track k where the four show together: the ink (MOSAIC: its own) */
+static uint16_t mo_tdim(uint32_t k) { return ux_mix(T_BG, T_TRK(k), UI_MID_PCT); }   /* .. dim (one ink: MO_DIM) */
 #define MO_PY0 52                                       /* the picture's rows: MO_PY0 .. MO_PY1 - 1 */
 #define MO_PY1 109
 
@@ -115,11 +118,12 @@ static int32_t mo_text_s(const char *s, int32_t x, int32_t y, int32_t sc, uint16
 static int32_t mo_text(const char *s, int32_t x, int32_t y, uint16_t c) { return mo_text_s(s, x, y, 1, c); }
 static void mo_textc(const char *s, int32_t cx, int32_t y, uint16_t c) { mo_text(s, cx - mo_tw(s) / 2, y, c); }
 static void mo_textr(const char *s, int32_t rx, int32_t y, uint16_t c) { mo_text(s, rx - mo_tw(s), y, c); }
-static void mo_inv(const char *s, int32_t x, int32_t y)   /* ink on a filled box */
+static void mo_invc(const char *s, int32_t x, int32_t y, uint16_t c)   /* on a filled box of colour c */
 {
-    mo_fill(x - 1, y - 1, mo_tw(s) + 2, 9, MO_INK);
+    mo_fill(x - 1, y - 1, mo_tw(s) + 2, 9, c);
     mo_text(s, x, y, MO_BG);
 }
+static void mo_inv(const char *s, int32_t x, int32_t y) { mo_invc(s, x, y, MO_INK); }   /* ink on a filled box */
 static int mo_vowel(char c)
 {
     c = c >= 'a' && c <= 'z' ? (char)(c - 32) : c;
@@ -249,8 +253,8 @@ static void mo_head(void)
         mo_textr(at, 94 - mo_tw(sub) - 6, 1, MO_DIM);
     mo_textr(sub, 94, 1, MO_DIM);
     for (i = 0; i < 4u; i++) {                          /* the tracks: the selected one filled */
-        if (i == song.sel) mo_disc(99 + (int32_t)i * 6, 4, 2, MO_INK);
-        else mo_circ(99 + (int32_t)i * 6, 4, 2, MO_INK);
+        if (i == song.sel) mo_disc(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));
+        else mo_circ(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));
     }
     if (song.rec & (1u << song.sel))                    /* REC: a bar under the track's dot */
         mo_hl(97 + (int32_t)song.sel * 6, 8, 5, MO_INK);
@@ -297,6 +301,7 @@ static void mo_flash(uint32_t c)
     mo_flash_t = 13;                                    /* frames: about 200 ms */
 }
 static uint8_t mo_vals_new;                             /* mo_cols drew them since the lint last looked */
+static uint8_t mo_cols_trk;                             /* the knobs are the four tracks': each in its colour (MOSAIC) */
 #define MO_BOX_W 27                                     /* a boxed value's outline: 4 characters and a clear cell each side */
 static void mo_cols(void)
 {
@@ -329,13 +334,14 @@ static void mo_cols(void)
     }
     for (i = 0; i < 4u; i++) {
         int32_t cx = 15 + (int32_t)i * 30, tw = mo_tw(v[i]), tx = cx - tw / 2, ty, fx0 = -1, fx1 = -1;
-        uint16_t ink = mo_col[i].dim ? MO_DIM : MO_INK;
+        uint16_t dim = mo_cols_trk ? mo_tdim(i) : MO_DIM;
+        uint16_t ink = mo_col[i].dim ? dim : mo_col[i].hot ? MO_HOT : mo_cols_trk ? MO_TRK(i) : MO_INK;
         char l[8];
         mo_vals[i].used = mo_col[i].used;
         if (!mo_col[i].used)
             continue;
         mo_abbr(l, mo_col[i].label);
-        mo_textc(l, cx, 12, mo_col[i].hot ? MO_INK : MO_DIM);
+        mo_textc(l, cx, 12, mo_col[i].hot ? MO_HOT : dim);
         ty = mo_col[i].ratio >= 0 && mo_col[i].val[0] != '[' ? 39 : 25;
         if (mo_col[i].ratio >= 0 && mo_col[i].val[0] != '[')
             mo_dial(cx, 28, 7, mo_col[i].ratio, ink);
@@ -367,7 +373,7 @@ static void mo_cols(void)
         mo_vals[i].kind = kind[i], mo_vals[i].cut = cut[i];
         str_cpy(mo_vals[i].s, v[i], sizeof mo_vals[i].s);
         if (mo_col[i].hot)
-            mo_hl(cx - 12, 48, 25, MO_INK);
+            mo_hl(cx - 12, 48, 25, MO_HOT);
     }
     mo_vals_new = 1;
     mo_dash(0, 50, 120, MO_DIM);
@@ -683,18 +689,18 @@ static void mo_pic_matrix(void)
     mo_text("FR>TO", 1, 53, MO_DIM);
     for (k = 0; k < NTRK; k++) {
         char n[2] = {(char)('1' + k), 0};
-        mo_textc(n, 43 + (int32_t)k * 22, 53, MO_INK);
-        mo_textc(n, 25, 64 + (int32_t)k * 11, MO_INK);
+        mo_textc(n, 43 + (int32_t)k * 22, 53, MO_TRK(k));
+        mo_textc(n, 25, 64 + (int32_t)k * 11, MO_TRK(k));
     }
     for (r = 0; r < NTRK; r++)
         for (k = 0; k < NTRK; k++) {
             int32_t x = 33 + (int32_t)k * 22, y = 62 + (int32_t)r * 11;
             uint32_t lv = mx_level(r, k);
             if (r == mx_from && k == mx_to)
-                mo_box(x - 1, y - 1, 22, 11, MO_INK);
-            mo_box(x, y, 20, 9, lv ? MO_INK : MO_DIM);
+                mo_box(x - 1, y - 1, 22, 11, MO_HOT);
+            mo_box(x, y, 20, 9, lv ? MO_TRK(r) : mo_tdim(r));
             if (lv)
-                mo_fill(x + 1, y + 1, 1 + (int32_t)lv * 17 / 8, 7, MO_INK);
+                mo_fill(x + 1, y + 1, 1 + (int32_t)lv * 17 / 8, 7, MO_TRK(r));
         }
 }
 /* the drum grid's lanes from row y0, dy cells apart (lanes first .. first + n - 1): the lane's name at the left (the
@@ -880,24 +886,24 @@ static void mo_pic_quad(uint32_t tr)
         const gen_quad_t *q = tessera_quad(r);
         int on = tessera.mode[r] == TESS_ENG_QUAD;
         int32_t y = 59 + (int32_t)r * 10;
-        uint16_t c = on ? MO_INK : MO_DIM;
+        uint16_t c = on ? MO_TRK(r) : mo_tdim(r);
         char lb[3] = {'T', (char)('1' + r), 0};
-        if (r == tr) mo_inv(lb, 2, y);
+        if (r == tr) mo_invc(lb, 2, y, MO_TRK(r));
         else mo_text(lb, 2, y, c);
         mo_text(QD[q->dir % GEN_QD_COUNT], 16, y, c);
         mo_text(QR[q->range % GEN_QR_COUNT], 102, y, c);
         for (k = 0; k < TESSERA_TRACKS; k++)            /* (its LINKs, under the RANGE) */
-            if (k != r) mo_px(102 + (int32_t)k * 4, y + 8, on && ((q->link >> k) & 1u) ? MO_INK : MO_DIM);
+            if (k != r) mo_px(102 + (int32_t)k * 4, y + 8, on && ((q->link >> k) & 1u) ? MO_TRK(k) : mo_tdim(k));
         for (i = 0; i < 4u; i++) {
             int32_t x = 30 + (int32_t)i * 18, v = q->cell[i] > 21u ? 21 : q->cell[i], h;
             int cur = on && i == q->pos;
-            mo_hl(x, y + 8, 16, MO_DIM);
+            mo_hl(x, y + 8, 16, mo_tdim(r));
             if (!v) {
-                mo_hl(x + 5, y + 6, 6, cur ? MO_INK : c);
+                mo_hl(x + 5, y + 6, 6, cur ? MO_TRK(r) : c);
                 continue;
             }
             h = 2 + (v - 1) * 5 / 20;
-            if (cur) mo_fill(x, y + 7 - h, 16, h, MO_INK);
+            if (cur) mo_fill(x, y + 7 - h, 16, h, MO_TRK(r));
             else mo_box(x, y + 7 - h, 16, h, c);
         }
     }
@@ -1237,8 +1243,8 @@ static void mo_trk_cells(int32_t x, int32_t y, uint32_t picked, uint32_t tr, int
     for (uint32_t i = 0; i < TESSERA_TRACKS; i++) {
         int32_t cx = x + (int32_t)(i % 2u) * 13, cy = y + (int32_t)(i / 2u) * 13;
         char n[2] = {(char)('1' + i), 0};
-        if (picked == i + 1u) mo_fill(cx, cy, 11, 11, MO_INK), mo_text(n, cx + 3, cy + 2, MO_BG);
-        else mo_box(cx, cy, 11, 11, i == tr && on ? MO_INK : MO_DIM), mo_text(n, cx + 3, cy + 2, i == tr ? MO_INK : MO_DIM);
+        if (picked == i + 1u) mo_fill(cx, cy, 11, 11, MO_TRK(i)), mo_text(n, cx + 3, cy + 2, MO_BG);
+        else mo_box(cx, cy, 11, 11, i == tr && on ? MO_TRK(i) : mo_tdim(i)), mo_text(n, cx + 3, cy + 2, i == tr ? MO_TRK(i) : mo_tdim(i));
     }
 }
 /* TWEAK: under each dial its picture. SHIFT: the note off its written pitch (the dashed line); DROP: 8 hits, the ones it
@@ -1432,14 +1438,14 @@ static void mo_pic_midich(void)
         int32_t y = 54 + (int32_t)k * 11;
         uint32_t ch = midi_out_channel(&trk[k]);
         char n[3] = {'T', (char)('1' + k), 0}, b[24];
-        mo_inv(n, 3, y);
+        mo_invc(n, 3, y, MO_TRK(k));
         if (ch == MIDI_OUT_NONE) str_cpy(b, "OFF", sizeof b);
         else {
             str_cpy(b, "CH ", sizeof b);
             fmt_int(b + 3, (int32_t)ch + 1);
             if (!tessera.midi_ch[k]) str_cpy(b + str_len(b), drum_track(&trk[k]) && settings_drumch ? " DRUM" : " ROUT", 6);
         }
-        mo_text(b, 18, y, ch == MIDI_OUT_NONE ? MO_DIM : MO_INK);
+        mo_text(b, 18, y, ch == MIDI_OUT_NONE ? mo_tdim(k) : MO_TRK(k));
     }
     if (settings_midi_out != MIDI_OUT_ALL)
         mo_text(settings_midi_out == MIDI_OUT_OFF ? "MIDI OUT: OFF" : "MIDI OUT: KEYS", 2, 101, MO_DIM);
@@ -1453,7 +1459,7 @@ static void mo_hot_value(int32_t k)
     pv_value((uint32_t)k, v, &unit);
     mo_ascii(b, v, sizeof b);
     if (unit[0]) mo_ascii(b + str_len(b), unit, 6);
-    mo_textr(b, 118, 102, MO_INK);
+    mo_textr(b, 118, 102, MO_HOT);
 }
 /* ENV (and the FM operators' ENV pages): attack linear, decay exponential to the sustain, held, release exponential;
  * the area under it hatched dim, the curve and a handle at each segment's end in ink; the segment turning: its handle a ring,
@@ -1897,7 +1903,7 @@ static void mo_list(int32_t x, int32_t y, int32_t w, const char *title, const ch
             if (row[i].warn && str_len(t) + 2u < sizeof t)
                 str_cpy(t + str_len(t), " !", 3);   /* (a row that erases: red in the detailed look) */
             if (on)
-                mo_fill(2, r, w - 4, 9, MO_INK);
+                mo_fill(2, r, w - 4, 9, MO_HOT);
             mo_text(t, 4, r + 1, ink);
             if (row[i].val[0])
                 mo_textr(row[i].val, w - 4, r + 1, on ? MO_BG : MO_DIM);
@@ -2013,7 +2019,9 @@ static void mono_page(void)
         cv_begin(240, 120, MO_BG);
         cv_oy = -(int32_t)s * 120;
         mo_head();
+        mo_cols_trk = cur_page()->graph == GR_MIDICH;
         mo_cols();
+        mo_cols_trk = 0;
         mo_picture();
         mo_foot();
         cv_oy = 0;
@@ -2031,7 +2039,7 @@ static void mo_dhead(const char *chip, const char *msg, int low)
     cv_begin(240, H_HEAD, MO_BG);
     fmt_int(b, song.g[G_BPM]);
     x = 119 - mo_tw(b);
-    mo_text(b, x, 1, ui.bpm_t ? MO_INK : MO_DIM);
+    mo_text(b, x, 1, ui.bpm_t ? MO_HOT : MO_DIM);
     x -= 7;
     if (chain.running || song.playing) {                /* PLAY: a triangle; STOP: a square */
         for (int32_t r = 0; r < 3; r++) mo_vl(x + r, 1 + r, 7 - 2 * r, MO_INK);
@@ -2078,7 +2086,7 @@ static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
                 continue;
             more = cap(r, lb, v, &vc);
             if (on)
-                mo_fill(0, y, 118, 10, MO_INK);
+                mo_fill(0, y, 118, 10, MO_HOT);
             mo_ascii(a, v, sizeof a);
             mo_cut(t, a, 9);
             vw = mo_tw(t);
@@ -2216,12 +2224,12 @@ static void mo_stage_col(uint32_t k, int top)
     uint32_t page = song.playing && t->seq_idx < len ? t->seq_idx / 16u : 0u, ph = song.playing ? t->seq_idx : 0xFFFFu;
     uint32_t next = t->pattern_next < NPAT ? t->pattern_next + 1u : 0u, lvl = (uint32_t)t->p[P_LEVEL] & 127u, i, src, kk;
     int32_t x0 = (int32_t)k * 30, cx = x0 + 15;
-    uint16_t ink = mute ? MO_DIM : MO_INK;
+    uint16_t ink = mute ? mo_tdim(k) : MO_TRK(k), dim = mo_tdim(k);
     char nm[16], a[8], b[8], chip[3] = {'P', (char)('1' + t->pattern % NPAT), 0};
     if (sel && !stage.out)
-        mo_box(x0, 10, 30, 78, MO_INK);
+        mo_box(x0, 10, 30, 78, MO_TRK(k));
     else if (sel && !top)                               /* (the knobs out: under them only) */
-        mo_box(x0, 60, 30, 28, MO_INK), mo_hl(x0, 60, 30, MO_BG);
+        mo_box(x0, 60, 30, 28, MO_TRK(k)), mo_hl(x0, 60, 30, MO_BG);
     if (top && !stage.out) {
         uint32_t cat;
         trk_short_name(k, nm);
@@ -2245,7 +2253,7 @@ static void mo_stage_col(uint32_t k, int top)
     }
     if (top) {
         str_cpy(a, eng_abbr(ENGINES[eng_idx(t->eng_req)]->name), 5);
-        mo_textc(a, cx, 41, MO_DIM);
+        mo_textc(a, cx, 41, dim);
         mo_fill(x0 + 3, 50, 13, 9, ink);                /* the pattern playing; the next one dashed */
         mo_text(chip, x0 + 4, 51, MO_BG);
         if (next) {
@@ -2266,9 +2274,9 @@ static void mo_stage_col(uint32_t k, int top)
             mo_fill(x, y, 4, 3, ink);
             if (si == ph) mo_px(x + 1, y + 1, MO_BG), mo_px(x + 2, y + 1, MO_BG);
         } else if (si == ph) {
-            mo_box(x, y, 4, 3, MO_INK);
+            mo_box(x, y, 4, 3, MO_TRK(k));
         } else {
-            mo_px(x + 1, y + 1, st->time == ST_TIE ? ink : MO_DIM);
+            mo_px(x + 1, y + 1, st->time == ST_TIE ? ink : dim);
         }
     }
     if (mute) {
@@ -2280,7 +2288,7 @@ static void mo_stage_col(uint32_t k, int top)
         str_cpy(a, "OFF", sizeof a);
     }
     mo_textc(a, cx, 78, ink);
-    mo_dash(x0 + 3, 86, 24, MO_DIM);
+    mo_dash(x0 + 3, 86, 24, dim);
     mo_hl(x0 + 3, 86, (int32_t)lvl * 24 / 127, ink);
 }
 static void mo_stage_head(void)
@@ -2297,8 +2305,8 @@ static void mo_stage_head(void)
             mo_fill(1, 2, 5, 5, MO_INK);
         }
         fmt_int(b, song.g[G_BPM]);
-        mo_text(b, 9, 1, ui.bpm_t ? MO_INK : MO_DIM);
-        if (ui.bpm_t) mo_hl(9, 8, mo_tw(b), MO_INK);
+        mo_text(b, 9, 1, ui.bpm_t ? MO_HOT : MO_DIM);
+        if (ui.bpm_t) mo_hl(9, 8, mo_tw(b), MO_HOT);
     }
     str_cpy(b, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), 8);
     mo_textr(b, 118, 1, MO_DIM);
@@ -2350,7 +2358,7 @@ static void mo_stage_panel(void)
             stage_value(sp, d, *vp, b, &unit);
             str_cpy(b + str_len(b), unit, 4);
             mo_text(stage_label(ui.hot_col & 3u, d), 2, 92, MO_DIM);
-            mo_text_s(b, 2, 102, 2, MO_INK);
+            mo_text_s(b, 2, 102, 2, MO_HOT);
             return;
         }
     }
@@ -2458,12 +2466,12 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
 {
     uint32_t sel = flags & 1u, mute = flags & 2u, solo = flags & 4u, quiet = flags & 8u, arm = flags & 16u;
     uint32_t hot = flags >> 5 & 3u, octp = flags >> 7 & 1u;
-    uint16_t ink = quiet ? MO_DIM : MO_INK;
+    uint16_t ink = quiet ? mo_tdim(k) : MO_TRK(k), dim = mo_tdim(k);
     char a[8], b[8];
     int32_t h;
     cv_begin(CARD_W + 4, PV_STRIP_ROWS, MO_BG);
     if (sel)
-        mo_box(0, 0, CARD_W / 2 + 2, PV_STRIP_ROWS / 2, MO_INK);
+        mo_box(0, 0, CARD_W / 2 + 2, PV_STRIP_ROWS / 2, MO_TRK(k));
     mo_word(a, nm, 0);
     mo_textc(a, 14, 3, ink);
     mo_word(a, nm, 1);
@@ -2475,13 +2483,13 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
     } else {
         str_cpy(b, "OFF", sizeof b);
     }
-    if (hot == 1u) mo_inv(b, 13 - mo_tw(b) / 2, 43);
+    if (hot == 1u) mo_invc(b, 13 - mo_tw(b) / 2, 43, MO_HOT);
     else mo_textc(b, 13, 43, ink);
-    mo_vl(24, 23, 18, MO_DIM);                          /* the meter */
+    mo_vl(24, 23, 18, dim);                          /* the meter */
     h = meter * 18 / (TS_MH - 2);
     if (h > 0)
         mo_fill(23, 41 - h, 3, h, ink);
-    mo_textc("PAN", 13, 55, octp ? MO_INK : MO_DIM);
+    mo_textc("PAN", 13, 55, octp ? MO_TRK(k) : dim);
     mo_dial(13, 69, 5, (pan + 64) * 1000 / 127, ink);
     if (pan) {
         b[0] = pan < 0 ? 'L' : 'R';
@@ -2489,19 +2497,19 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
     } else {
         str_cpy(b, "C", sizeof b);
     }
-    if (hot == 2u) mo_inv(b, 14 - mo_tw(b) / 2, 77);
-    else mo_textc(b, 14, 77, MO_DIM);
+    if (hot == 2u) mo_invc(b, 14 - mo_tw(b) / 2, 77, MO_HOT);
+    else mo_textc(b, 14, 77, dim);
     if (solo) {
-        mo_box(2, 86, 25, 11, MO_INK);
-        mo_textc("SOLO", 14, 88, MO_INK);
+        mo_box(2, 86, 25, 11, MO_TRK(k));
+        mo_textc("SOLO", 14, 88, MO_TRK(k));
     } else if (mute) {
-        mo_fill(2, 86, 25, 11, MO_INK);
+        mo_fill(2, 86, 25, 11, MO_TRK(k));
         mo_textc("MUTE", 14, 88, MO_BG);
     } else {
-        mo_textc("MUTE", 14, 88, MO_DIM);
+        mo_textc("MUTE", 14, 88, dim);
     }
-    if (arm) mo_disc(14, 101, 3, MO_INK);
-    else mo_circ(14, 101, 3, MO_DIM);
+    if (arm) mo_disc(14, 101, 3, MO_TRK(k));
+    else mo_circ(14, 101, 3, dim);
     cv_blit((uint32_t)CARD_X(k) - 2u, PV_STRIP_TOP);
 }
 
@@ -2517,7 +2525,7 @@ static void mo_cu_side(int32_t x, uint32_t tr, const char *name, int has_trk, in
     }
     if (has_trk) {                                      /* the track: its numeral inverted */
         a[0] = (char)('1' + (tr & 3u)), a[1] = 0;
-        mo_inv(a, x + 1, 3);
+        mo_invc(a, x + 1, 3, MO_TRK(tr));
     }
     mo_abbr(a, name);
     mo_text(a, x + 8, 3, MO_INK);
@@ -2579,7 +2587,7 @@ static void mo_chip(uint32_t c, const char *val, const char *unit, uint16_t vc, 
     mo_four(d, v);
     cv_begin(CARD_W, PV_CHIP_H, MO_BG);
     if (hot) {
-        mo_fill(0, 0, CARD_W / 2, PV_CHIP_H / 2, MO_INK);
+        mo_fill(0, 0, CARD_W / 2, PV_CHIP_H / 2, MO_HOT);
         mo_textc(d, CARD_W / 4, 1, MO_BG);
     } else if (d[0]) {
         mo_textc(d, CARD_W / 4, 1, vc == T_DIM ? MO_DIM : MO_INK);
@@ -2593,7 +2601,7 @@ static void mo_strip_col(uint32_t c, const char *label, const char *val, uint16_
     char d[8];
     cv_begin(CARD_W, PV_STRIP_H, MO_BG);
     if (hot)
-        mo_box(0, 0, CARD_W / 2, PV_STRIP_H / 2, MO_INK);
+        mo_box(0, 0, CARD_W / 2, PV_STRIP_H / 2, MO_HOT);
     mo_abbr(d, label);
     mo_textc(d, CARD_W / 4, 0, MO_DIM);
     mo_four(d, val);
@@ -2788,7 +2796,7 @@ static void mo_patterns(void)
         }
         for (k = 0; k < NTRK; k++) {
             const track_t *t = &trk[k];
-            uint16_t tc = t->p[P_MUTE] ? MO_DIM : MO_INK;
+            uint16_t tc = t->p[P_MUTE] ? mo_tdim(k) : MO_TRK(k);
             uint32_t prog = pt_prog(t);
             int32_t y = 20 + (int32_t)k * 19;
             char c[2] = {(char)('1' + k), 0};
@@ -2919,7 +2927,7 @@ static void mo_song(void)
         }
         for (k = 0; k < NTRK; k++) {                    /* a track's blocks */
             const track_t *t = &trk[k];
-            uint16_t tc = t->p[P_MUTE] ? MO_DIM : MO_INK;
+            uint16_t tc = t->p[P_MUTE] ? mo_tdim(k) : MO_TRK(k);
             int32_t y = 23 + (int32_t)k * 18;
             for (j = 0; j < SG_COLS && sg.first + j < n;) {
                 uint32_t r = sg.first + j, p = chain_patterns[r][k], e = j + 1u, pick = k == song.sel && r == sg.sel;
@@ -3147,7 +3155,7 @@ static void mo_msc(void)
             const param_desc_t *d = page_desc(ui.home ? stage_page() : cur_page(), k, &vp);
             mo_ascii(b, d && d->label && d->label[0] ? d->label : e ? e->name : "--", sizeof b);
             b[dst == CD_OFF ? 10 : 11] = 0;
-            if (k == msc.knob && dst != CD_OFF) mo_inv(b, 4, y);
+            if (k == msc.knob && dst != CD_OFF) mo_invc(b, 4, y, MO_HOT);
             else mo_text(b, 4, y, dst == CD_OFF ? MO_DIM : MO_INK);
             if (dst == CD_OFF) {
                 mo_textr("NO MOD", 106, y, MO_DIM);
