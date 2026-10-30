@@ -45,7 +45,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libharfbuzz-dev libfribidi-dev libraqm-dev
-          python -m pip install Pillow fonttools
+          python -m pip install Pillow fonttools==4.68.0   # (the webfont check: Tessera Mono as generated)
       - uses: actions/cache@v4
         with:
           path: .nightly-deps
@@ -73,9 +73,9 @@ jobs:
       - name: Build both release variants
         run: |
           mkdir -p build/release-assets
-          ./build.sh --release "$V" 2>&1 | tee dual.log
+          MELODEE_LOOK=1 ./build.sh --release "$V" 2>&1 | tee dual.log   # 3.0: the Mono look only
           cp "build/tessera-$V.fwsc" build/release-assets/
-          MELODEE_DUAL_CORE=0 ./build.sh --release "$V" 2>&1 | tee single.log
+          MELODEE_DUAL_CORE=0 MELODEE_LOOK=1 ./build.sh --release "$V" 2>&1 | tee single.log
           cp "build/tessera-$V-1core.fwsc" build/release-assets/
       - name: Check the packages as the site does, checksums
         run: |
