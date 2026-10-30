@@ -72,6 +72,8 @@ static void hk_whole(uint32_t x, uint32_t y, uint32_t r0, uint32_t fill);
 #define GFX_HOOK_BEGIN() (npend = ncells = 0)
 #define GFX_HOOK_CELL(x0, y0, x1, y1) hk_cell(x0, y0, x1, y1)
 #define GFX_HOOK_PIXELS(n) (px_visited += (n))
+static char mo_place_seen[8];                  /* the place (4/9) a Mono header drew */
+#define MO_HOOK_PLACE(s) strncpy(mo_place_seen, s, 7)
 #define UI_FILL_HOOK(x, y, w, h) hk_fill(x, y, w, h)
 static void fm6_hook(uint32_t kind, uint32_t a, uint32_t b);
 #define FM6_CHART_HOOK(kind, a, b) fm6_hook(kind, a, b)
@@ -2270,6 +2272,66 @@ int main(int argc, char **argv)
         if (nfind != 3u) { fprintf(stderr, "ui_render: the Mono lint missed its self-test (%u of 3)\n", nfind); return 1; }
         fprintf(rep, "(Mono self-test: %u findings above are expected)\n\n", nfind);
         nfind = 0, nmono = n0;
+    }
+    {   /* the header's place (4/9) and the footer's tabs: the pages each button and SELECT visit, in their order, on
+         * every engine (ENV / LFO: an engine's own pages, native_titles); the place shown on all of them or on none */
+        static const uint8_t FAMS[] = {FAM_ENV, FAM_LFO, FAM_EDIT, FAM_SEQ};
+        static const char *const FN[] = {"env", "lfo", "edit", "seq"};
+        uint32_t EN[] = {ENGI_FM6, ENGI_ORACLE, 0, ENGI_DRUM}, e, f, k, w, yel = 0;
+        for (e = 0; e < NENGINES; e++)
+            if (ENGINES[e] == &ENG_TRIO) EN[2] = e;
+        for (p = 0; p < UI_PAL_ENTRIES; p++)
+            if (!strcmp(UI_PALETTES[p].name, "YELLOW")) yel = p;
+        fprintf(rep, "\nPage places (Mono header n/m: the button's and SELECT's pages):\n");
+        for (e = 0; e < 4u; e++)
+            for (f = 0; f < sizeof FAMS; f++)
+                for (w = 0; w < 2u; w++) {              /* the button again, then SELECT */
+                    char name[64];
+                    uint32_t first, n0 = 0, fit0 = 0;
+                    if (!ENG_BUILT(EN[e])) continue;
+                    state(); eng(EN[e]); go_home(); pal(yel);
+                    song.playing = 0;                   /* (SONG playing: JAM in the place's room) */
+                    open_family(FAMS[f]);
+                    first = ui.page;
+                    if (!w) fprintf(rep, "  %s %s:", ENGINES[EN[e]]->name, FN[f]);
+                    for (k = 0; k < 40u; k++) {
+                        uint16_t idx[16];
+                        uint32_t cur, n = mo_tabs(idx, &cur);
+                        int fit = mo_tabs_fit(idx, n);
+                        if (!k) n0 = n, fit0 = (uint32_t)fit;
+                        if (!w) fprintf(rep, " %s%s%u/%u", mo_title(cur_page()), fit ? "(" : "[", cur + 1u, n);
+                        if (n != n0 || (uint32_t)fit != fit0 || cur != k || idx[cur] != ui.page) {
+                            fprintf(stderr, "ui_render: %s %s %s: page %u (%s) shows %u/%u (fit %d), its place %u/%u\n",
+                                    ENGINES[EN[e]]->name, FN[f], w ? "SELECT" : "button", k + 1u, mo_title(cur_page()),
+                                    cur + 1u, n, fit, k + 1u, n0);
+                            nfind++;
+                            break;
+                        }
+                        if (!w) {                       /* the header shows it (the knob pages' and the whole screens') */
+                            uint32_t seen;
+                            snprintf(name, sizeof name, "%u/%u", k + 1u, n);
+                            mo_place_seen[0] = 0;
+                            draw(0);
+                            seen = !strcmp(mo_place_seen, name);
+                            if (seen == (uint32_t)fit) {
+                                fprintf(stderr, "ui_render: %s %s: page %u (%s): the header %s %s\n", ENGINES[EN[e]]->name,
+                                        FN[f], k + 1u, mo_title(cur_page()), fit ? "shows" : "lacks", name);
+                                nfind++;
+                            }
+                            snprintf(name, sizeof name, "nav_%s_%s_%u", EN[e] == ENGI_FM6 ? "fm6" : "oracle", FN[f], k + 1u);
+                            if ((EN[e] == ENGI_FM6 || EN[e] == ENGI_ORACLE) && FAMS[f] != FAM_SEQ)
+                                write_ppm(out, "YELLOW", name);
+                        }
+                        if (w) page_scroll(1); else open_family(FAMS[f]);
+                        if (ui.page == first) break;
+                    }
+                    if (!w) fprintf(rep, "\n");
+                    if (k + 1u != n0) {
+                        fprintf(stderr, "ui_render: %s %s %s: %u pages visited, %u counted\n", ENGINES[EN[e]]->name,
+                                FN[f], w ? "SELECT" : "button", k + 1u, n0);
+                        nfind++;
+                    }
+                }
     }
 #endif
     for (p = 0; p < UI_PAL_ENTRIES; p++)
