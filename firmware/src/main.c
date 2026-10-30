@@ -6,7 +6,33 @@
 extern uint32_t _data_start[], _data_end[], _data_load[], _bss_start[], _bss_end[];
 extern uint32_t _dsp_start[], _dsp_end[], _dsp_load[], _dt_start[], _dt_end[], _dt_load[];
 extern uint32_t _audio_start[], _audio_end[], _audio_load[];
+extern uint8_t _app_xip_end[], _resource_start[];
+#include "boot_lzma.h"
 extern uint32_t _pool_start[], _pool_end[], _rt_start[], _rt_end[], _rt_load[];
+extern uint32_t _ustack_top[];
+extern uint8_t _cpu1_stacks_lo[], _cpu1_stacks_hi[], _cpu1_ustack_top[];
+
+/* Stack high-water marks (editor AUDIO_STATS flag 64, upstream Melodee 1.5): fm1_cstart paints each stack below what
+ * is in use, a reading finds the lowest word written since. The device side of tools/stack_budget.py's estimate */
+#define STACK_PAINT 0xA5C3A5C3u
+static void stack_paint(uint32_t *lo, uint32_t *hi) { while (lo < hi) *lo++ = STACK_PAINT; }
+static uint32_t stack_peak(const uint32_t *lo, const uint32_t *hi)   /* bytes used at most */
+{
+    const uint32_t *p = lo;
+    while (p < hi && *p == STACK_PAINT) p++;
+    return (uint32_t)((uintptr_t)hi - (uintptr_t)p);
+}
+/* v[0..5]: CPU0's user stack used at most, its size, the system stack's, its size; CPU1's user and system stacks used
+ * at most (the serial build has none: 0) */
+static void stack_report(uint32_t *v)
+{
+    const uint32_t *u = (const uint32_t *)_ustack_lo, *s = (const uint32_t *)_sstack_lo;
+    const uint32_t *c1 = (const uint32_t *)_cpu1_stacks_lo, *c2 = (const uint32_t *)_cpu1_ustack_top;
+    if (!((uintptr_t)_cpu1_stacks_hi - (uintptr_t)_cpu1_stacks_lo)) c2 = c1;   /* (a compare of the arrays folds) */
+    v[0] = stack_peak(u, _ustack_top); v[1] = (uint32_t)((uintptr_t)_ustack_top - (uintptr_t)u);
+    v[2] = stack_peak(s, (const uint32_t *)_sstack_top); v[3] = (uint32_t)((uintptr_t)_sstack_top - (uintptr_t)s);
+    v[4] = stack_peak(c1, c2); v[5] = stack_peak(c2, (const uint32_t *)_cpu1_stacks_hi);
+}
 
 
 /* TIMER5 outranks ALNK0, so the scan keeps its 100 us pace while a half buffer renders: before,
@@ -179,7 +205,7 @@ static void fm1_main(void)
     fm1__pc_out(6,0);                         /* codec held quiet before flash and splash */
     settings_init();                           /* a readable default palette before loading flash */
     lcd_init();                                /* maintenance must be visible before any boot writes */
-    splash("STARTING UP");
+    lcd_fill(0, 0, 240, 240, T_BG);            /* (black, not the splash: the saved ink is not read yet) */
     lcd_sync();
     dsp_tables_init();                        /* the RAM lookup tables (FM6), before anything renders */
     persist_boot();
@@ -344,6 +370,21 @@ static void fm1_main(void)
     }
 }
 
+/* one boot-compressed load image at rec (tools/boot_audio.py: MAGIC, packed bytes, raw bytes, 0, the stream) into
+ * start .. end; the next record. The decoder's tables borrow the audio working arena, unused until resources_init. */
+static __attribute__((noinline)) const uint32_t *boot_image(const uint32_t *rec, uint32_t *start, uint32_t *end)
+{
+    uint32_t bytes = (uint32_t)((uintptr_t)end - (uintptr_t)start), packed;
+    if ((uintptr_t)(rec + 4) > (uintptr_t)_app_xip_end || rec[0] != BOOT_LZMA_MAGIC || rec[2] != bytes || rec[3] != 0)
+        fm1_enter_uboot();
+    packed = rec[1];
+    if (packed > (uintptr_t)_app_xip_end - (uintptr_t)(rec + 4) ||
+        !boot_lzma((uint8_t *)start, bytes, (const uint8_t *)(rec + 4), packed, (uint16_t *)_resource_start))
+        fm1_enter_uboot();
+    return rec + 4 + (packed + 3u) / 4u;
+}
+_Static_assert(BOOT_LZMA_PROBS * 2u <= 49152u, "boot decoder tables fit the audio working arena's minimum");
+
 void fm1_cstart(void)
 {
     uint32_t *s, *d, p3, src, wdt;
@@ -368,20 +409,38 @@ void fm1_cstart(void)
         fm1_enter_uboot();
     }
     fm1_irq_init();
+    {   /* (IRQs off, CPU1 held: the system stack and CPU1's are unused; this frame's own is kept) */
+        uint32_t here;
+        stack_paint((uint32_t *)_ustack_lo, (uint32_t *)((uintptr_t)&here & ~3u) - 64);
+        stack_paint((uint32_t *)_sstack_lo, (uint32_t *)_sstack_top);
+        stack_paint((uint32_t *)_cpu1_stacks_lo, (uint32_t *)_cpu1_stacks_hi);
+    }
     for (d = _bss_start; d < _bss_end; d++)
         *d = 0;
     for (d = _pool_start; d < _pool_end; d++)
         *d = 0;
-    for (s = _data_load, d = _data_start; d < _data_end; s++, d++)
-        *d = *s;
-    for (s = _rt_load, d = _rt_start; d < _rt_end; s++, d++)
-        *d = *s;                                /* flash driver code that must run from RAM */
-    for (s = _dsp_load, d = _dsp_start; d < _dsp_end; s++, d++)
-        *d = *s;                                /* DSP code: audio is stopped while NOR is busy */
-    for (s = _dt_load, d = _dt_start; d < _dt_end; s++, d++)
-        *d = *s;                                /* the oscillator correction tables */
-    for (s = _audio_load, d = _audio_start; d < _audio_end; s++, d++)
-        *d = *s;                                /* resident audio profile: executable ordinary SRAM */
+    if (_rt_load[0] == BOOT_LZMA_MAGIC) {
+        /* the SRAM load images boot-compressed (tools/boot_audio.py), one after another in their load order; one
+         * that does not unpack exactly: update mode */
+        const uint32_t *at = _rt_load;
+        at = boot_image(at, _rt_start, _rt_end);       /* flash driver code that must run from RAM */
+        at = boot_image(at, _dsp_start, _dsp_end);     /* DSP code: audio is stopped while NOR is busy */
+        at = boot_image(at, _dt_start, _dt_end);       /* the oscillator correction tables */
+        at = boot_image(at, _data_start, _data_end);
+        (void)boot_image(at, _audio_start, _audio_end);
+    } else {                                    /* MELODEE_COMPRESS_AUDIO=0: the raw-copy reference profile */
+        for (s = _data_load, d = _data_start; d < _data_end; s++, d++)
+            *d = *s;
+        for (s = _rt_load, d = _rt_start; d < _rt_end; s++, d++)
+            *d = *s;
+        for (s = _dsp_load, d = _dsp_start; d < _dsp_end; s++, d++)
+            *d = *s;
+        for (s = _dt_load, d = _dt_start; d < _dt_end; s++, d++)
+            *d = *s;
+        for (s = _audio_load, d = _audio_start; d < _audio_end; s++, d++)
+            *d = *s;                            /* resident audio profile: executable ordinary SRAM */
+    }
+    fm1_code_sync();
     fm1_mailbox_clear();
     fm1_power_ready = (uint8_t)fm1_power_init(); /* stock V15 supplies before cache, peripherals or CPU1 */
 #if MELODEE_CACHE_RAM

@@ -914,19 +914,24 @@ static void gen_chord_fill(gen_chord_t *g, uint32_t seed)
     }
 }
 static void gen_chord_start(gen_chord_t *g) { g->n = 0; }
-/* Chord pad: a strike on the chord's first step (HOLD: held to its end), on every beat (BEAT) or every step (STEP).
- * The note: the chord's degree (tessera.c makes the chord); the first strike of a chord louder. The CV: the degree */
+/* Chord pad: a strike on the chord's first step (HOLD: held to its end), on every beat (BEAT) or every step (STEP);
+ * OFF BEAT a stab on each beat's "and", halfway between the beats (a triplet beat: its last third; steps of a beat or
+ * longer: every second step), for the step's GATE. The note: the chord's degree (tessera.c makes the chord); the
+ * first strike of a chord louder. The CV: the degree */
 static void gen_chord_tick(gen_chord_t *g, const gen_clock_t *clk, gen_out_t *out)
 {
     uint32_t len = gen_chord_steps(g, clk->steps_per_bar), in = g->n % len, beat = clk->steps_per_bar / 4u;
     uint32_t i = (g->n / len) % gen_chord_len(g), deg = gen_chord_degree(g, i);
+    uint32_t off;
     if (!beat) beat = 1u;
+    off = beat < 2u ? 2u : beat;
     g->idx = (uint8_t)i;
     g->deg = (uint8_t)deg;
-    out->gate = (uint8_t)(!in || g->hit == GEN_CH_STEP || (g->hit == GEN_CH_BEAT && !(in % beat)));
+    if (g->hit == GEN_CH_OFF) out->gate = (uint8_t)(in % off == (off + 1u) / 2u);
+    else out->gate = (uint8_t)(!in || g->hit == GEN_CH_STEP || (g->hit == GEN_CH_BEAT && !(in % beat)));
     g->hold = (uint16_t)(g->hit == GEN_CH_HOLD ? len : g->hit == GEN_CH_BEAT ? (len - in < beat ? len - in : beat) : 0u);
     out->note = (uint8_t)deg;
-    out->vel = (uint8_t)(in ? 84u : 104u);
+    out->vel = (uint8_t)(in && !(g->hit == GEN_CH_OFF && in < off) ? 84u : 104u);
     out->cv = (int16_t)(deg * 32767u / 6u);
     g->n++;
 }
@@ -1023,4 +1028,120 @@ static void gen_chord_load(gen_chord_t *g, const gen_sec_t *s)
     g->prog = (uint8_t)(p < GEN_CH_PROGS ? p : GEN_CH_POP);
     g->bars = (uint8_t)((s->p0 >> 3) & 3u);
     g->hit = (uint8_t)(h < GEN_CH_HITS ? h : GEN_CH_HOLD);
+}
+
+/* ------------------------------------------------------------------ GRAVITY's pull (EVOLVE) --- */
+/* A round of EVOLVE pulled home instead of changed (tessera.c tess_gv_round): h is the generator as it was last set by
+ * hand. Each pull moves about as far as the generator's mutation would, but toward h and never past it */
+
+/* v moved toward to by up to d (at least 1) */
+static uint32_t gen_toward(uint32_t v, uint32_t to, uint32_t d)
+{
+    if (!d) d = 1;
+    if (v < to) return to - v > d ? v + d : to;
+    return v - to > d ? v - d : to;
+}
+/* of the bits set in d, one at random (0: none) */
+static uint32_t gen_any_bit(uint32_t d, uint32_t *rnd)
+{
+    uint32_t n = 0, x, k;
+    for (x = d; x; x &= x - 1u) n++;
+    if (!n) return 0;
+    for (k = gen_rnd(rnd, n); k--; ) d &= d - 1u;
+    return d & (0u - d);
+}
+/* Turing: as many of the register's active bits as AMOUNT flips, each one that differs from home flipped back */
+static void gen_turing_pull(gen_turing_t *g, const gen_turing_t *h, uint32_t amt, uint32_t *rnd)
+{
+    uint32_t len = g->len ? g->len : 16u, n = (amt * len + 99u) / 100u, b;
+    uint32_t m = len >= 16u ? 0xFFFFu : (1u << len) - 1u;
+    if (!n) n = 1;
+    while (n-- && (b = gen_any_bit((g->reg ^ h->reg) & m, rnd)) != 0u) g->reg ^= (uint16_t)b;
+}
+/* Euclid: the rotation a step toward home's (the short way round), the pulses one toward home's (kept 1..STEPS-1), the
+ * pitches home's again */
+static void gen_euclid_pull(gen_euclid_t *g, const gen_euclid_t *h, uint32_t amt, uint32_t *rnd)
+{
+    uint32_t steps = g->steps ? g->steps : 16u, hi = steps > 1u ? steps - 1u : 1u, to = h->rot % steps;
+    uint32_t up = (to + steps - g->rot % steps) % steps;
+    (void)amt; (void)rnd;
+    if (up) g->rot = (uint8_t)(up * 2u <= steps ? (g->rot + 1u) % steps : (g->rot + steps - 1u) % steps);
+    g->pulses = (uint8_t)gen_toward(g->pulses, h->pulses < 1u ? 1u : h->pulses > hi ? hi : h->pulses, 1u);
+    g->pitch_seed = h->pitch_seed;
+}
+/* Markov: the tension up to AMOUNT/2 toward home's */
+static void gen_markov_pull(gen_markov_t *g, const gen_markov_t *h, uint32_t amt, uint32_t *rnd)
+{
+    (void)rnd;
+    g->tension = (uint8_t)gen_toward(g->tension, h->tension, amt / 2u);
+}
+/* Morph: 1..3 of snapshot A's bits that differ from home's flipped back, the position up to AMOUNT/2 toward home's */
+static void gen_morph_pull(gen_morph_t *g, const gen_morph_t *h, uint32_t amt, uint32_t *rnd)
+{
+    uint32_t n = 1u + amt / 34u, b;
+    while (n-- && (b = gen_any_bit((uint32_t)(g->snap_a ^ h->snap_a), rnd)) != 0u) g->snap_a ^= (uint16_t)b;
+    g->morph_pos = (uint8_t)gen_toward(g->morph_pos, h->morph_pos, amt / 2u);
+}
+/* Grids: the point toward home's, X and Y by up to AMOUNT/100 of a quarter of the map */
+static void gen_grids_pull(gen_grids_t *g, const gen_grids_t *h, uint32_t amt, uint32_t *rnd)
+{
+    (void)rnd;
+    g->x = (uint8_t)gen_toward(g->x, h->x, amt * 64u / 100u);
+    g->y = (uint8_t)gen_toward(g->y, h->y, amt * 64u / 100u);
+}
+/* Bounce: the angle (FALL: the WIND) toward home's by up to AMOUNT/100 of 15 degrees, one at least */
+static void gen_bounce_pull(gen_bounce_t *g, const gen_bounce_t *h, uint32_t amt, uint32_t *rnd)
+{
+    (void)rnd;
+    g->angle = (uint8_t)gen_toward(g->angle, h->angle, amt * 15u / 100u + 1u);
+}
+/* Awake: as many of each loop's values as its mutation draws, each one that differs from home's put back */
+static void gen_awake_pull_loop(uint8_t *v, const uint8_t *hv, uint32_t len, uint32_t n, uint32_t *rnd)
+{
+    while (n--) {
+        uint32_t d = 0, i, b;
+        for (i = 0; i < len; i++)
+            if (((v[i >> 1] ^ hv[i >> 1]) >> ((i & 1u) * 4u)) & 0xFu) d |= 1u << i;
+        if (!(b = gen_any_bit(d, rnd))) return;
+        for (i = 0; !(b & 1u); b >>= 1) i++;
+        gen_awake_put(v, i, (hv[i >> 1] >> ((i & 1u) * 4u)) & 0xFu);
+    }
+}
+static void gen_awake_pull(gen_awake_t *g, const gen_awake_t *h, uint32_t amt, uint32_t *rnd)
+{
+    uint32_t la = g->len_a >= 1u && g->len_a <= 16u ? g->len_a : 16u, lb = g->len_b >= 1u && g->len_b <= 16u ? g->len_b : 16u;
+    gen_awake_pull_loop(g->a, h->a, la, 1u + amt * la / 200u, rnd);
+    gen_awake_pull_loop(g->b, h->b, lb, 1u + amt * lb / 200u, rnd);
+}
+/* Poly: each pitch a degree toward home's */
+static void gen_poly_pull(gen_poly_t *g, const gen_poly_t *h, uint32_t amt, uint32_t *rnd)
+{
+    (void)amt; (void)rnd;
+    for (uint32_t i = 0; i < 4u; i++) g->pitch[i] = (uint8_t)gen_toward(g->pitch[i], h->pitch[i], 1u);
+}
+/* Quad alone: each cell a degree toward home's; a rest where home has a note (or a note where it rests) home's */
+static void gen_quad_pull(gen_quad_t *g, const gen_quad_t *h, uint32_t amt, uint32_t *rnd)
+{
+    (void)amt; (void)rnd;
+    for (uint32_t i = 0; i < 4u; i++)
+        g->cell[i] = (uint8_t)(!g->cell[i] || !h->cell[i] ? h->cell[i] : gen_toward(g->cell[i], h->cell[i], 1u));
+}
+/* Series: home's START again */
+static void gen_series_pull(gen_series_t *g, const gen_series_t *h, uint32_t amt, uint32_t *rnd)
+{
+    (void)amt; (void)rnd;
+    g->start = h->start;
+}
+/* Chord pad: WALK one of its chords that differs from home's put back; home's ROT again */
+static void gen_chord_pull(gen_chord_t *g, const gen_chord_t *h, uint32_t amt, uint32_t *rnd)
+{
+    uint32_t d = 0, i, b;
+    (void)amt;
+    for (i = 1; i < GEN_CH_WALK_N; i++)
+        if (g->walk[i] != h->walk[i]) d |= 1u << i;
+    if ((b = gen_any_bit(d, rnd)) != 0u) {
+        for (i = 0; !(b & 1u); b >>= 1) i++;
+        g->walk[i] = h->walk[i];
+    }
+    g->rot = h->rot;
 }

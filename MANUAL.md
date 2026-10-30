@@ -1,6 +1,6 @@
 <p align="center"><img src="assets/brand/banner.png" alt="Tessera: generative firmware for the M-Vave FM-1" width="100%"></p>
 
-# Tessera 2.0 manual
+# Tessera manual
 
 Tessera is a generative firmware for the M-Vave FM-1. It grew out of Melodee (Tess), a fork of
 [Melodee](https://github.com/keremimo/melodee) by keremimo (itself built on *Felucca* by Leo Kuroshita / Hügelton
@@ -55,29 +55,51 @@ page's four settings sit along the top of the screen in the same order.
 | **SCL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
 | **EDIT** | The sound's EDIT pages; on an EDIT page, the map | With OCT- / OCT+: undo / redo |
 | **FX** | The insert and send effects | The mod amount of any knob you turn |
-| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, KNOB 1 to 4 the levels, F4 taps the tempo; with PLAY, restart from the top |
+| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, F4 taps the tempo; with PLAY, restart from the top |
 | **SAVE** | USER (ready to save the sound), PROJECT, PRESETS | Save the project to its slot (as SAVE + REC) |
 | **REC** | Record | Capture or print the last bars (see [Print and keep](#print-and-keep)) |
 | **OCT+** | Octave up; on some pages, an action (shown on screen) | A page's extra layer (see [OCT+ layers](#oct-layers-on-gen)) |
 
 On the home page each track's tile shows its sound and engine. **ALGORITHM** picks the track on every page (or
-the left knob, with MENU > TRACK KNOB set to LEFT), and **SELECT** turns the pages of the section shown. The four sounds a new project starts with are an ambient set: **GLASS PAD**,
-**STRINGS** and **BELLS** on FM6, and the **808 KIT** on DRUM. A new project has no mods, so nothing moves until
+the left knob, with MENU > TRACK KNOB set to LEFT), and **SELECT** turns the pages of the section shown. When a section has more pages than the footer's tabs show, the header gives the page's place (4/10) and
+arrows at the footer's ends say more pages lie that way. The four sounds a new project starts with are an ambient set: **GLASS PAD**
+and **BELLS** on FM6, **STRING MACH** on TRIO, and the **808 KIT** on DRUM. (Track 2 is a TRIO pad so that
+generators on both pads stay within what the FM-1 can play: see [How many voices at once](#how-many-voices-at-once).) A new project has no mods, so nothing moves until
 you patch it.
 
 <p align="center"><img src="assets/gallery/home.png" alt="HOME" width="320"> <img src="assets/gallery/mixer.png" alt="MIXER" width="320"></p>
 
 **MIXER** (tap GLO) is the four tracks as a mixer: **KNOB 1 to 4** set the levels of tracks 1 to 4, and with
 **OCT+** held they set the pans. The keys are the mixer's while it is shown: the **black keys** F#3 G#3 A#3 C#4 mute
-and unmute tracks 1 to 4, the **white keys** F3 G3 A3 B3 solo a track while held, **C4** unmutes them all and **F4**
-taps the tempo, the same as with GLO held on any other page. Each strip shows MUTE or SOLO; a track silenced by
+and unmute tracks 1 to 4, the **white keys** F3 G3 A3 B3 solo a track while held, **C4** unmutes them all, **E4**
+holds FILL and **F4** taps the tempo, the same as with GLO held on any other page. Each strip shows MUTE or SOLO; a track silenced by
 another's solo dims. Any page button leaves the mixer, and the keys play notes again.
 
 **Lists** (the HOME menu, SCL, VOICE, the sheets and the sound designer): KNOB 1 picks the row, KNOB 2 changes its
 value.
 
-**The look.** Tessera's palette is **SMALTI**, lapis and gold. MARMO, VITRO, NIGHT and CONTRAST are in MENU >
-COLOR. Each track has its own colour, used for its tile, its cords and its row in MATRIX.
+**The look.** Tessera draws every screen in one ink on black, with a 5 x 7 pixel font: the selected item is
+inverted, and quieter things are drawn in a dimmer ink. MENU > COLOR picks the ink: **YELLOW** (the default),
+WHITE, GREEN, BLUE, RED, and ORANGE, PINK, HOT PINK and LILAC to match the FM-1's shells. The tracks are told apart by their numbers, not by colours.
+
+<table>
+<tr>
+<td align="center"><img src="assets/gallery/ink_yellow.png" alt="YELLOW" width="180"><br><b>YELLOW</b></td>
+<td align="center"><img src="assets/gallery/ink_white.png" alt="WHITE" width="180"><br><b>WHITE</b></td>
+<td align="center"><img src="assets/gallery/ink_green.png" alt="GREEN" width="180"><br><b>GREEN</b></td>
+<td align="center"><img src="assets/gallery/ink_blue.png" alt="BLUE" width="180"><br><b>BLUE</b></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/gallery/ink_red.png" alt="RED" width="180"><br><b>RED</b></td>
+<td align="center"><img src="assets/gallery/ink_orange.png" alt="ORANGE" width="180"><br><b>ORANGE</b></td>
+<td align="center"><img src="assets/gallery/ink_pink.png" alt="PINK" width="180"><br><b>PINK</b></td>
+<td align="center"><img src="assets/gallery/ink_hot_pink.png" alt="HOT PINK" width="180"><br><b>HOT PINK</b></td>
+<td align="center"><img src="assets/gallery/ink_lilac.png" alt="LILAC" width="180"><br><b>LILAC</b></td>
+</tr>
+</table>
+
+**At power-on** the Tessera mark is laid tile by tile, held for a moment, then breaks into grains that a wind sweeps away. Any button or
+key skips it.
 
 ---
 
@@ -87,7 +109,9 @@ COLOR. Each track has its own colour, used for its tile, its cords and its row i
 |---|---|
 | Tap **SEQ** | **GEN** first: KNOB 1 (**MODE**) picks what the track plays. SEQ then shows only that mode's pages. |
 | Tap **ARP** | Switches a STEP track to ARP and opens **ARP**; tap again for **ARP 2**. On a generator track it opens GEN instead ("ARP: MODE ON GEN"), so a playing generator never goes quiet by accident. |
-| Hold **OCT+** on GEN | The generator's second layer, for TURING, EUCLID, QUAD, CHORD, ATLAS, CONSTELLATION and ANSWER (see [OCT+ layers](#oct-layers-on-gen)). |
+| Hold **OCT+** on GEN | The generator's second layer, for TURING, EUCLID, MARKOV, MORPH, QUAD, CHORD, ATLAS, CONSTELLATION and ANSWER (see [OCT+ layers](#oct-layers-on-gen)). |
+| Hold **OCT+** on EVOLVE | A generator's GRAVITY; on a STEP track, STEP EVOLVE's HOW (see [EVOLVE](#evolve)). |
+| **GLO** + **E4** (on MIXER, E4) | Holds [FILL](#a-steps-condition-and-fill) for the steps whose condition is FILL or !FILL. |
 | **GEN** on an AWAKE track, a white key | Picks that step: KNOB 1 sets its A, KNOB 2 its B. The same key lets it go. |
 | Hold **ARP**, turn a knob | The [help card](#help-card) for that knob. Turn the same knob further to scroll a long text. |
 | Hold **FX**, turn a knob | Sets how far a cord moves that knob's parameter (see [Mod shortcut](#mod-shortcut)). |
@@ -105,20 +129,58 @@ COLOR. Each track has its own colour, used for its tile, its cords and its row i
 
 ## Sounds
 
-Tessera 2.0 has three engines on the device:
+Tessera has four engines on the device:
 
 | Engine | What it is |
 |---|---|
 | **FM6** | Six-operator FM in the manner of the DX7: 32 algorithms, operator envelopes and scaling, pitch EG, LFO and the function settings (bend, porta, wheel, foot, breath, aftertouch). Its ENGINE setting picks MODERN, MARK I (the DX7's own tables) or OPL. The main melodic voice. |
+| **ORACLE** | Two oscillators, POLY MOD and a four-pole low-pass filter: a classic polyphonic analogue voice. Warm pads, brass, sync leads, basses, plucks. 24 sounds of its own; the sound is kept in the project. |
 | **TRIO** | Three oscillators: WAVE, INT2, INT3 (intervals) and DETUNE. Basses and leads. |
-| **DRUM** | Drum kits: **808**, **909** and **SID KIT** (every drum on a C64 chip). Eight lanes: BD, SD, CP, CH, OH, TM, RS, CB. The 808 has six tom pitches. |
+| **DRUM** | Drum kits: **808** and **909**. Eight lanes: BD, SD, CP, CH, OH, TM, RS, CB. The 808 has six tom pitches. |
 
 <p align="center"><img src="assets/gallery/edit_fm6.png" alt="FM6 ALGO page" width="240"> <img src="assets/gallery/fm6_eg.png" alt="FM6 operator envelope" width="240"> <img src="assets/gallery/drum.png" alt="DRUM steps" width="240"></p>
 
-**SID** and **PHYS** are no longer in the device build, and neither are CZ-1 and Prophet. A track saved with SID
-loads FM6's INIT; one saved with PHYS loads FM6's first voice. DRUM's SID KIT stays. FM6 and TRIO presets have
+**SID** and **PHYS** are no longer in the device build, and neither is CZ-1. A track saved with SID
+loads FM6's INIT; one saved with PHYS loads FM6's first voice. DRUM's SID KIT
+and SID DIGI are out too (2.2, for flash room): a track saved with KIT SID loads as the 909. FM6 and TRIO presets have
 releases that ring out, so short sequenced notes are not cut off. The slow pads (GLASS PAD, SOFT PAD, DEEP PAD, PAD,
 STRINGS) swell in slowly: they speak on long notes and drones, and stay quiet on short steps.
+
+**FM6's amp envelope.** FM6 has no ADSR of its own, as the DX7 had none: each carrier's envelope (ENV: EG RATE, EG
+LVL, an operator at a time) is the sound's volume. **AEG** (EDIT 2, KNOB 4) moves them all at once: turned right a
+slower attack and a longer release, left a shorter one, 0 the patch as it is.
+
+**A filter for FM6.** FM6 has no filter of its own, as the DX7 had none: its brightness is **MLVL** (EDIT 1, KNOB 3),
+the level of the operators that are not carriers, and the track's CUTOFF cords move it. For a resonant low-pass, put
+the **FILTER** effect on the track (FX, an insert's TYPE **FILTER**): **CUT** is its cutoff, **RES** its resonance,
+and both are cord destinations (FX1 RTE, FX1 CHR). It works on any track, and as a send effect.
+
+<p align="center"><img src="assets/gallery/fx_filter.png" alt="FX 1 on FILTER: its curve" width="240"></p>
+
+**ORACLE.** Oscillator A (saw, pulse) and B (saw, triangle, pulse) and noise go through a resonant four-pole
+low-pass filter and the amp, each with its own envelope. **POLY MOD** lets the filter envelope and oscillator B bend
+A's pitch, A's pulse width or the cutoff, note by note: B at audio rate into A's pitch gives bells and metal, the
+filter envelope into A's pitch a sweep on each note. Its pages, on **EDIT**:
+
+| Page | KNOB 1 to 4 |
+|---|---|
+| **MACRO**, **MACRO 2** | CUT, RES, TUNE A, TUNE B; PW A, PW B, LVL A, LVL B: offsets on the sound, the ones the HOME knobs, cords and motion move |
+| **OSC A** | FREQ A (semitones), WAVE A (SAW, PLS, S+P), PW A, SYNC (A restarts with B) |
+| **OSC B** | FREQ B, FINE B (a little sharp, for beating), WAVE B (SAW, TRI, PLS and their mixes), PW B |
+| **OSC MIX** | the levels of OSC A, OSC B and NOISE; B MODE: KEY (follows the notes), FIXED, LO KEY / LO FIX (B as a slow LFO for POLY MOD) |
+| **FILTER** | CUTOFF, RES, ENV AMT (how far FILT ENV opens it), KEY (OFF, HALF, FULL: brighter as notes go up) |
+| **POLY MOD** | FENV and OSC B (how much each moves), TO (FREQ, PW, FILT or a mix), VEL (what playing harder opens) |
+| **CHARACTER** | MODEL (EARLY or LATE filter: each colours the resonance its own way), VINTAGE (each voice drifts a little), GLIDE |
+| **FILT ENV**, **AMP ENV** | ATK, DEC, SUS, REL |
+| **LFO MOD** | RATE, AMOUNT, WAVE (SAW, TRI, SQR and mixes), NOISE (random movement mixed in) |
+| **LFO ROUTE** | PITCH (A, B, A+B: vibrato), PW, FILT |
+
+As on FM6, **ENV** goes to FILT ENV and AMP ENV (ORACLE has no use for the track's ENV), and **LFO** to MODS and the
+track's LFO pages, then LFO MOD and LFO ROUTE. The sound lives in the project, a patch per track: a turned knob is
+saved with it, but an ORACLE sound cannot go to a USER slot, so keep one you like in a project. ORACLE takes more of the FM-1 than an FM6 voice (about
+one and a half times): one ORACLE track of pads or chords is fine; with two busy ones, keep BUDGET in mind (below).
+
+<p align="center"><img src="assets/gallery/oracle_osc.png" alt="ORACLE OSC A page" width="240"> <img src="assets/gallery/oracle_filter.png" alt="ORACLE FILTER page" width="240"> <img src="assets/gallery/oracle_env.png" alt="ORACLE AMP ENV page" width="240"></p>
 
 **PRESETS** (SAVE) browses the sounds. Its LIST knob picks ALL, the favourites, RECENT or a category, and it starts
 on ALL at power-on.
@@ -165,7 +227,7 @@ generator turns the arpeggiator off; choosing ARP again brings back its last set
 
 <p align="center"><img src="assets/gallery/seq_mode.png" alt="GEN with MODE STEP" width="320"></p>
 
-### The pattern's sheet: Double, Half, Euclid
+### The pattern's sheet: Double, Half, Euclid, Accumulate
 
 Hold **OCT+** on NOTES, PATTERN or the drum grid for the pattern's sheet. Besides Quantize, Clear pattern and
 Clear motion it has:
@@ -181,6 +243,13 @@ Clear motion it has:
 
 Each one is undone with **EDIT** held, one at a time.
 
+Two rows set the track's pitch accumulator (a step's Accumulate, below):
+
+- **Accum limit** (1–14, 7): how far a step's notes go, in scale degrees from the notes as written. 7 is an octave
+  of a 7-note scale.
+- **Accum mode**: what they do there. **Wrap** goes back to the notes as written and climbs again, **Ping** turns
+  round and comes back, **Clamp** stays at the limit.
+
 ---
 
 ## The generators
@@ -194,14 +263,14 @@ generator is also a mod source: its **GATE**, its **NOTE** and a **CV** (see [MO
 | **EUCLID** | STEPS (1–32) | PULSE | ROT | Hits spread as evenly as they go over STEPS, turned round by ROT, on pitches picked by the seed. |
 | **MARKOV** | LEAP (0–100 %) | DENS (5–100 %) | SPAN (1–3 oct) | A random walk over eight scale degrees. LEAP 0 moves to neighbours, 100 leaps widely. DENS is the chance a step plays. |
 | **MORPH** | POS (0–127) | SNP A (1–8) | SNP B (1–8) | A rhythm blended from preset A into preset B. POS starts halfway. |
-| **ATLAS** | X (0–255) | Y (0–255) | DENS (0–100 %) | Inspired by Émilie Gillet's Grids (Mutable Instruments): its drum map, kick, snare, closed hat and a fourth part from the point X, Y. Best on a DRUM track. More on the [OCT+ layer](#atlas-kick-snr-hat-toms). |
+| **ATLAS** | X (0–255) | Y (0–255) | DENS (0–100 %) | Inspired by Émilie Gillet's Grids (Mutable Instruments): its drum map, kick, snare, closed hat and a fourth part from the point X, Y. Best on a DRUM track. The first time a track turns to ATLAS after power-on or a new song, X and Y start at a random point and DENS at 30 to 50 %, for a fresh groove; a loaded project keeps its own. More on the [OCT+ layer](#atlas-kick-snr-hat-toms). |
 | **BOUNCE** | SPEED (1–64) | ANGLE (0–90°) | BALLS (1–4, Fall) | Balls in a box: a note where a ball hits a wall. Each extra ball starts from its own place and angle; balls that hit on the same step play together, three notes at most. Past 4, **FALL** (after ambalek's norns script Fall): eight leaves fall at their own speeds and play where they land (left low, right high), and ANGLE becomes **WIND**: calm in the middle, leaning the melody low or high either side, gusting further out. |
 | **AWAKE** | LEN A (1–16) | LEN B (1–16) | PROB (0–100 %) | Two loops, as norns' Awake. A is the melody (scale degrees or rests), B lifts it up the scale; different lengths shift B against A. Steps can be set from the keys (below). |
 | **POLY** | RHY (1–4) | DIVISION (OFF, /1–/16) | SPAN (1–3 oct) | Four notes stepped on by four rhythms. RHY picks which rhythm DIVISION edits. Rhythms that land together play once, louder: /4 against /3 is a polyrhythm. |
 | **QUAD** | DIR | PROB (0–100 %) | LINK | A 4 x 4 grid of notes the four tracks share, a row each, inspired by the norns script initenere. Each QUAD track plays its row on its own DIV, so the polyrhythm comes from the tracks' speeds. DIR: FWD, BACK, PEND, RAND or HOLD. LINK: the other QUAD tracks this one's steps also move on (HOLD tracks then play only when pulled). More on the [OCT+ layer](#quad-columns-and-range). |
 | **CONSTL** | Y (0–14) | DENS (0–100 %) | SPEED | After timothy-taylor's norns script Constellation: a ship flies through a sky of stars; the stars that cross its crosshair play. Y is the crosshair's height (where the melody sits), DENS how many stars, SPEED how fast the sky passes (the straight note values, slow to fast). More on the [OCT+ layer](#constellation-lock-len-fill-size). |
 | **SERIES** | START (0–127) | INTV (1–7) | LOOP (OFF, 1–16) | Per Nørgård's infinity series (after the norns script nørgård): a melody alike at every scale. START picks where it begins, INTV how many scale degrees a step of the series is, LOOP repeats that many steps (OFF never repeats). |
-| **CHORD** | PROG | BARS (½, 1, 2, 4) | HIT | A progression's chords in the track's scale: POP (I V vi IV), 50S, 2-5-1, CIRCLE, TWO, DRONE, WALK (four chords from the seed) or USER (your own). HIT: HOLD (once, held), BEAT or STEP. See [Harmony](#harmony-one-key-chord-and-qnt-chrd). |
+| **CHORD** | PROG | BARS (½, 1, 2, 4) | HIT | A progression's chords in the track's scale: POP (I V vi IV), 50S, 2-5-1, CIRCLE, TWO, DRONE, WALK (four chords from the seed) or USER (your own). HIT: HOLD (once, held), BEAT, STEP or OFFBEAT (short stabs on the "and" between the beats, a reggae skank). See [Harmony](#harmony-one-key-chord-and-qnt-chrd). |
 | **ANSWER** | VARY (0–100 %) | ECHO (0–100 %) | FADE (1–16, LOOPS) | After Zen-1's call and response (the idea only): play a phrase on the track's keys (or MIDI IN), up to 8 notes, and a bar without a key ends it. ANSWER plays it back, after a rest, as answers that change a little more each time (VARY: a note moved a degree or two, an octave, left out or swapped), each softer than the last. ECHO repeats some notes once more at half the velocity. FADE is how many answers it gives, 1 to 16, before it rests until you play again; turned all the way up (LOOPS) it never forgets and plays on as four loops of different lengths. Its OCT+ layer: ORDER (PLAYED, REVERSE, SHUFFLE), SHIFT (each answer moved up to this many scale degrees), SPACE (the rest before an answer, up to 4 bars) and LEN (the loops' lengths at FADE LOOPS). |
 
 <table>
@@ -243,8 +312,8 @@ saved project keeps its seeds.
 
 ## OCT+ layers on GEN
 
-Some generators have more settings than three knobs. Hold **OCT+** on GEN: the knobs' labels move onto tiles in the
-track's colour, an OCT+ key shows in the header, and the four knobs set the layer. Let go to return.
+Some generators have more settings than three knobs. Hold **OCT+** on GEN: the knobs' labels change to the layer's, an OCT+
+key shows in the header, and the four knobs set the layer. Let go to return.
 
 <p align="center"><img src="assets/gallery/gen_grids_oct.png" alt="ATLAS with OCT+ held" width="240"> <img src="assets/gallery/gen_chord_oct.png" alt="CHORD with OCT+ held" width="240"> <img src="assets/gallery/gen_chord_user.png" alt="CHORD USER with OCT+ held" width="240"></p>
 
@@ -292,27 +361,45 @@ the first QUAD track), and KNOB 4 **RANGE** (3 OCT, 1 OCT, 2 OCT or ±1: the oct
 **AUTO** steers the ship for you: OFF follows Y, 1 to 9 is a wander of its own (faster further up), SEEK flies to
 the next star. It has no knob: set it with a mod to **C AUTO** (a cord with no source is a fixed value).
 
-### TURING and EUCLID: SOURCE, KEEP (STEP as seed)
+### TURING, EUCLID, MARKOV and MORPH: SOURCE, KEEP, GRAVITY (STEP as seed)
 
-**SOURCE** (KNOB 1) lets TURING or EUCLID play from a STEP pattern you wrote. T1 to T4 is that track's pattern
-playing now, and it can be this track's own. The pattern itself never changes. OFF, or a pattern with no notes,
-plays the generator as usual.
+**SOURCE** (KNOB 1) lets TURING, EUCLID, MARKOV or MORPH play from a STEP pattern you wrote. T1 to T4 is that
+track's pattern playing now, and it can be this track's own. The pattern itself never changes. OFF, or a pattern
+with no notes, plays the generator as usual.
 
 - **TURING** loops the source's first LEN steps (up to 16). Each step, PROB is the chance that the step about to
   play changes and stays changed, as a Turing machine flips a bit. PROB 0 plays your melody as written; turn it up
   and the melody drifts. A new SOURCE or LEN, or PLAY, starts again from the pattern.
 - **EUCLID** plays the source's notes in order on its own hits, so the melody gets a new rhythm.
+- **MARKOV** learns from the source what follows what. Each step plays what came after the step it just played,
+  somewhere in your pattern (when a note appears twice, either of its followers). LEAP is now the chance of a jump
+  to any step of the pattern instead. With LEAP 0 a melody where every note is different plays as written; repeated
+  notes and rests are where it branches off. DENS has no say: the rhythm comes from the pattern.
+- **MORPH** plays **A**, your pattern as written (its first 16 steps), against **B**, a variation of it made at
+  PLAY: about half of its steps changed the way TURING changes them. MORPH's position is B's share, and EVOLVE
+  changes a few more of B's steps each time.
 
 **KEEP** (KNOB 2) says what stays as written:
 
-| KEEP | TURING | EUCLID |
-|---|---|---|
-| **FREE** | a step's pitch or its hit may change | the source's notes on EUCLID's hits |
-| **RHYTHM** | only the pitches change (to another note of the loop) | the source's own rhythm, on EUCLID's pitches |
-| **PITCH** | only the hits come and go | as FREE |
+| KEEP | TURING, MORPH's B | EUCLID | MARKOV |
+|---|---|---|---|
+| **FREE** | a step's pitch or its hit may change | the source's notes on EUCLID's hits | notes and rests from the chain |
+| **RHYTHM** | only the pitches change (to another note of the loop) | the source's own rhythm, on EUCLID's pitches | the source's rhythm, the notes from the chain |
+| **PITCH** | only the hits come and go | as FREE | the chain's rhythm, the notes in written order |
+
+**GRAVITY** (KNOB 3) pulls it all back home: at GRAVITY %, a step plays the source exactly as written at its place.
+TURING's changed step goes back to how you wrote it, MARKOV's chain carries on from there, EUCLID plays the
+source's own hit or rest, and MORPH plays A. 0 is off; 100 plays your pattern as written whatever the rest says.
+Drift with PROB, LEAP or MORPH, and let GRAVITY decide how far it may wander.
 
 The notes keep their written pitch, then follow this track's scale, TRN and SHIFT. Print (REC held) keeps what it
 played, as for any generator.
+
+With a SOURCE, TURING's and MORPH's picture on GEN shows the loop as it plays now: a step as you wrote it is drawn plain,
+a changed one with the written step drawn over it hollow (its ghost: an empty frame is a note dropped). MORPH shows B, its variation. **HOME** under it is how far the loop has wandered: empty when it plays
+your pattern as written, full when every step has changed.
+
+<p align="center"><img src="assets/gallery/gen_seed.png" alt="TURING from a SOURCE" width="240"></p>
 
 ---
 
@@ -329,6 +416,14 @@ On a generator track, EVOLVE mutates the phrase every few bars.
 
 With LOCK up, Turing's loop is its LENGTH long; Markov's and Morph's loops are as long as PATTERN's **LEN**.
 
+**GRAVITY** (OCT+ held, KNOB 1; the same GRAVITY as the SOURCE layer's) lets the phrase drift and then come home.
+Home is the generator as you last set it: a knob, ROLL, MODE or a loaded project. At GRAVITY %, a round of EVERY
+moves the generator a step back toward home instead of changing it. Turing flips a changed bit back, Euclid's
+rotation and pulses step back, Markov's LEAP, Atlas' X and Y, Bounce's angle and Morph's position move back. Awake,
+Poly, Quad, Series and Chord put a changed value back, and Constellation lets no star go. 0 is off; at 100 it goes
+home and stays there. With a SOURCE, GRAVITY plays the source instead (above), and with FORM on, the sections play
+as they are.
+
 ### STEP EVOLVE
 
 On a **STEP** track, EVOLVE varies the steps you wrote, as they play, without changing them.
@@ -342,6 +437,22 @@ On a **STEP** track, EVOLVE varies the steps you wrote, as they play, without ch
 
 Hold **REC** to keep the changes playing: they become the steps (KEPT n STEPS). EDIT held undoes it. Switching
 pattern clears the changes.
+
+**HOW** (OCT+ held on EVOLVE, KNOB 1) says what kind of change a round makes. It is saved with the project.
+
+| HOW | A round |
+|---|---|
+| **DRIFT** | As above: moves, octave jumps, drops, swaps, ghost notes. |
+| **ADORN** | Ornaments that only add, never take away: a note ratchets (one more hit, up to x4), jumps an octave or turns to its neighbour a degree away; a rest after a note gets a soft passing note, a degree toward the next note. |
+| **SERIAL** | The whole phrase at once, for the round: **backwards** (retrograde), **upside down** (inversion in the scale, about its first note), **rotated** by a few steps, or **half of it at half speed** (augmentation). AMOUNT is the chance a round brings one, LOCK the chance it stays for the next. |
+
+Changing HOW puts the steps back as written. REC held keeps any of them, SERIAL's whole phrase included.
+
+The EVOLVE page's picture shows the steps across the phrase, by pitch, under the bars left until the next round. A
+step playing as written is drawn plain; a changed one has the step as written drawn hollow where it was: a ratchet is split into its hits, a passing or ghost note sits in a rest, a dropped note leaves only the
+hollow one. Under them: HOW, or SERIAL's transform this round (BACKWARDS, UPSIDE DOWN, ROTATE n, HALF SPEED), and
+**HOME**, how far the steps are from as written (empty: all as written). On NOTES, a changed step's note as it
+plays now is dashed, beside the note you wrote.
 
 <p align="center"><img src="assets/gallery/gen_evolve.png" alt="EVOLVE" width="240"> <img src="assets/gallery/step_evolve.png" alt="STEP EVOLVE" width="240"></p>
 
@@ -358,8 +469,14 @@ FORM strings mutated phrases into a short song form of sections A, B and C, each
 | 3 | **CLEAR** | Forgets B and C: the phrase playing becomes A. |
 | 4 | **FLRSH** (−12 to +12) | Flourish: semitones added on the last beat of every phrase; 0 is off. |
 
-A section played again comes back exactly. B and C are made from the section before, by CONTR, the first time they
-are reached. Changing MODE or ROLL starts the form again at A.
+B and C are made from the section before, by CONTR, the first time they are reached. Changing MODE or ROLL starts
+the form again at A.
+
+**DEVELOP** (OCT+ held, KNOB 1, 0–100 %): how far a section varies each time the form comes back to it. At 0 (the
+default) a section played again comes back exactly, as before. Above 0 each return is the section with one change of
+that size, so it stays recognisable but is never quite the same; the section itself is kept, so the next return
+starts from it again and the form never drifts away over hours. GRAVITY (OCT+ held on EVOLVE) is the chance a return
+stays exact. A knob turned while a section plays is kept in it, as without DEVELOP.
 
 ---
 
@@ -370,7 +487,7 @@ are reached. Changing MODE or ROLL starts the form again at A.
 | 1 | **SHIFT** (±24) | Transposes by semitones; while following, by scale steps from the followed note. |
 | 2 | **DROP** (0–100 %) | The chance a hit is left out, whatever the generator. |
 | 3 | **HUMAN** (0–100 %) | Varies each note's velocity and length a little, as a player would: at 100 up to 20 softer or louder and up to half as long, the same each time the piece plays. The timing is TIMING's **HUMAN**. |
-| 4 | **FOLLOW** | OFF, or T1 to T4: plays that track's pitch, SHIFT away, in this track's scale. STEP tracks can be followed too. The followed track is drawn in its own colour. |
+| 4 | **FOLLOW** | OFF, or T1 to T4: plays that track's pitch, SHIFT away, in this track's scale. STEP tracks can be followed too. |
 
 On an ATLAS track only DROP and HUMAN apply: SHIFT, FOLLOW and FLRSH would change which drum plays. On a STEP track
 TWEAK holds HUMAN alone.
@@ -426,7 +543,7 @@ fifth of it (TWEAK 100: 20 ms).
 
 <p align="center"><img src="assets/gallery/gen_timing.png" alt="TIMING, x4 ACCEL" width="240"></p>
 
-### A step's Ratchet and Nudge
+### A step's Ratchet, Nudge and Accumulate
 
 On a STEP track's NOTES page, **OCT+** on a note opens its sheet (on the drum grid, OCT+ on a hit). Besides Length,
 Velocity and Chance it holds:
@@ -435,8 +552,39 @@ Velocity and Chance it holds:
 - **Nudge** (−8/16 to +7/16): the step plays that many sixteenths of a step late or early. An early step plays near
   the end of the step before, and across the loop too, but not across a pattern change or a song's turn, nor while
   recording: there it plays on its line.
+- **Accumulate** (−7 to +7, Off): the step's notes move that many scale degrees further each time the pattern comes
+  round, so a short loop climbs or falls on its own. They stay within the track's Accum limit and do what its Accum
+  mode says there (the pattern's sheet, above). PLAY and a new pattern start them again from the notes as written.
+  Every note of a chord moves, in the track's scale (with QNT OFF, in semitones). A TIE holds what played before
+  it, and drum hits and recorded notes do not move. On NOTES a small caret over a note points up when it
+  climbs, down when it falls; the notes are drawn as written.
 
 <p align="center"><img src="assets/gallery/sheet_note.png" alt="A note's sheet, Ratchet x3 and Nudge +2/16" width="240"></p>
+
+### A step's Condition, and FILL
+
+The same sheet (a note's, or a hit's on the drum grid) has a **Condition**: which passes of the pattern the step
+plays in. KNOB 2 steps through them:
+
+| Condition | The step plays |
+|---|---|
+| **Off** | every pass (as always) |
+| **1:2**, **2:2** | in the first, the second of every two passes |
+| **1:3** .. **3:3** | in pass 1, 2 or 3 of every three |
+| **1:4** .. **4:4** | in pass 1 to 4 of every four |
+| **1:8**, **8:8** | in the first, the last of every eight |
+| **FILL** | only while FILL is held |
+| **!FILL** | only while FILL is not held |
+| **FIRST** | in the first pass only |
+| **!FIRST** | in every pass but the first |
+
+Each track counts the passes of its own pattern (its own LEN) from PLAY; a pattern change, and each section of a
+song, start the count again at the first. A step whose condition is met then rolls its Chance as ever. On the drum
+grid the condition is the step's: every hit of that step shares it.
+
+**FILL** is held with **GLO** + **E4** (on MIXER, E4 alone), for as long as the key is held: a fill on the last bar,
+or a break with !FILL on the beat that drops out. Conditions are saved with the project; an older project plays
+every step as before.
 
 ---
 
@@ -447,10 +595,17 @@ off at 0.
 
 | Knob | Setting | What it does |
 |---|---|---|
-| 1 | **ARC** (0–100 %) | A slow tide, 3 to 6 minutes a turn: from the tracks as set to sparse and back. At the sparse end the generator tracks leave out up to 70 % more of their hits and play softer. ARC is how far it swings. |
+| 1 | **ARC** (0–100 %) | A slow tide, 3 to 6 minutes a turn, swinging round LEVEL from full to sparse and back. At the sparse end the generator tracks leave out up to 70 % more of their hits and play up to 16 softer. At the full end they take back their own DROP and play up to 12 louder. ARC is how far it swings. |
 | 2 | **RESTS** (0–100 %) | How often the music rests: 8 to 18 s with the generator tracks silent (a CHORD track's held chord goes on), about every 4 minutes at 100, every 20 near 0, sooner while the tide is sparse. |
-| 3 | **NOW** | Where the tide is while playing: +100 full, −100 sparse. |
+| 3 | **LEVEL** (−100 to +100) | The energy by hand: the tide swings round it. Up is busier and louder, down is sparser and softer, as above. 0 is the tracks as set. |
 | 4 | **REST** | The seconds left of a rest. |
+
+Energy also sets how much EVOLVE changes: half its AMOUNT at the sparse end, half as much again at the full end.
+
+Hold **OCT+** for **DEPTH** (KNOB 1, 0–100 %): how much energy moves the selected track. 100 is all of it. 0 makes
+the track an anchor, a drone or a bass that plays as set through the tide, LEVEL and the rests.
+
+The picture shows a turn of the tide round LEVEL and, while playing, where it is now.
 
 PLAY starts the tide from the project's seeds, so a piece plays the same each time. ENERGY is also a cord source in
 MODS: send it to a filter or a send and the sound follows the tide too.
@@ -499,7 +654,7 @@ at a time, each with an activity light and a moving mark.
 |---|---|
 | 1 | **Source**: `--`, then per track (T1 to T4) LFO, ENV, VEL, KEY, RAND, MODW, AT, EXPR, S&H, SLEW, the generator's GATE, NOTE and CV, DRIFT, TIDE 1 to 3, and SWARM 1 to 8; and the project's ENERGY. |
 | 2 | **Mod**: which of the 16 the other knobs edit. |
-| 3 | **Destination**, on a track: the voice (PITCH, CUTOFF, SHAPE, GAIN), the mix (LEVEL, PAN, SPREAD, FX SEND), the envelope and LFO settings, the engine's E1 to E8, and the generators' settings (T PROB, T LEN, E PULSE, E ROT, M LEAP, M DENS, MP POS, SHIFT, DROP, HUMAN, BRANCH, EV AMT, CONTR, AT X, AT Y, AT DENS, AT KICK, AT SNR, AT HAT, AT TOMS, B SPEED, B ANGLE, A PROB, Q PROB, C Y, C SIZE, C DENS, C AUTO, S START, CH PROG, AN VARY, H TIME). |
+| 3 | **Destination**, on a track: the voice (PITCH, CUTOFF, SHAPE, GAIN), the mix (LEVEL, PAN, SPREAD, FX SEND, SEND 2, SEND 3), the track's effects (FX1 MIX, FX1 RTE, FX1 CHR, the same for FX2 and FX3), the envelope and LFO settings, the engine's E1 to E8, and the generators' settings (T PROB, T LEN, E PULSE, E ROT, M LEAP, M DENS, MP POS, SHIFT, DROP, HUMAN, BRANCH, EV AMT, CONTR, AT X, AT Y, AT DENS, AT KICK, AT SNR, AT HAT, AT TOMS, B SPEED, B ANGLE, A PROB, Q PROB, C Y, C SIZE, C DENS, C AUTO, S START, CH PROG, AN VARY, H TIME). After the tracks' come the send effects', once, for every track: SF1 MIX, SF1 RTE, SF1 CHR (the same for SF2 and SF3) and RETURN. |
 | 4 | **Amount**, −100 to +100 %. With no source (`--`) the cord is a fixed move and KNOB 4 sets its offset. |
 
 - **BI and UNI.** A bipolar source (LFO at POL BI, KEY, RAND, S&H, SLEW, NOTE, DRIFT, TIDE, SWARM, ENERGY) swings both
@@ -509,6 +664,11 @@ at a time, each with an activity light and a moving mark.
   it at once.
 - **Live marks**: a knob a cord reaches shows a mark where the cords move it now.
 - **DRIFT** is each track's slow wander, a new point about every 12 seconds, eased between.
+- **Effects.** RTE is the effect's third knob (RATE; ECHO's TIME, ROOM's and REVERB's SIZE, FILTER's CUT), CHR its
+  fourth (DEPTH, REPEAT, DECAY, RES, as the effect names it). A moved ECHO TIME glides, as a tape's speed does, so the repeats bend in
+  pitch instead of clicking (turning the knob glides too); REVERB changes SIZE a sample at a time. The send
+  effects' mods are the project's, not a track's: MATRIX leaves them out. **FX held** + a knob on an FX page makes
+  one too. A project with effect mods does not load in firmware before them.
 - Melodee's MOD routes, in old projects and sounds, become cords when they load. If all 16 are in use the screen
   says **MODS FULL**.
 
@@ -519,7 +679,7 @@ at a time, each with an activity light and a moving mark.
 ## MATRIX
 
 MATRIX, after MODS, shows the cords as a 4 x 4 grid: source track down the left (FROM), destination track along the
-top (TO). A cell is lit, in the source track's colour, when a cord goes that way, as bright as the cords move it now.
+top (TO). A cell is lit when a cord goes that way, brighter the more the cords move it now.
 
 | Knob | What it does |
 |---|---|
@@ -577,7 +737,7 @@ Hold **HOME** for the menu. Tessera's additions:
 
 | Item | What it does |
 |---|---|
-| **COLOR** | The palette: SMALTI (Tessera's own), MARMO, VITRO, NIGHT or CONTRAST. |
+| **COLOR** | The screen's ink, on black: YELLOW (the default), WHITE, GREEN, BLUE, RED, ORANGE, PINK, HOT PINK or LILAC. |
 | **MIDI OUT** | What goes out over USB MIDI: **KEYS** (the notes you play, as Melodee sent them), **ALL** (also the steps, the ARP, recordings and every generator) or **OFF**. Each track on its own channel: see [MIDI OUT channels](#midi-out-channels). |
 | **CLOCK OUT** | 24 pulses a beat with START and STOP over USB, while the clock is INT. |
 | **PANEL GAMMA** | The screen's contrast curve: the panel chip's own **G2.2** (the default), G1.8, G2.5 and G1.0, or TUNED and TUNED+VCOM. The screen goes black for a moment and redraws. Saved. |
@@ -605,7 +765,7 @@ notes go out at all is still the menu's **MIDI OUT** (KEYS, ALL or OFF): for the
 ## Saving and older projects
 
 A project holds everything in one record: the patterns, the sounds, the generators with their seeds, sections and
-layers, ENERGY, and the cords. Tessera 2.0 has a project format of its own: projects saved by Melodee (Tess) 1.x or
+layers, ENERGY, and the cords. Since 2.0 Tessera has a project format of its own: projects saved by Melodee (Tess) 1.x or
 by Melodee show **OLD FORMAT** in their slot and do not load (there is no converter), and the first save writes over
 them. Melodee's own preset banks are not carried over.
 
@@ -640,6 +800,7 @@ Tessera stands on other people's ideas and work:
 
 - **Melodee** by keremimo, and **Felucca** by Leo Kuroshita / Hügelton Instruments: the firmware Tessera is built on.
 - **Grids** by Émilie Gillet / Mutable Instruments: the ATLAS generator's drum map and the way it is read.
+- **ORACLE** is Melodee's Prophet engine (after the Prophet-5), back under its own name with its own sounds.
 - **norns** scripts, as ideas restated in C (no code copied): **Awake** (tehn) for AWAKE, **Fall** (ambalek) for
   BOUNCE's FALL, **Constellation** (timothy-taylor) for CONSTELLATION, **initenere** for QUAD, and **nørgård** for
   SERIES.

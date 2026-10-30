@@ -21,9 +21,11 @@ enum { POP_NONE, POP_SHEET, POP_PICK, POP_LIST };
 #define POP_X 6                                         /* a sheet: 228 wide, its rows 20 px, 22 apart from y 28 */
 #define POP_W 228
 #define POP_ROW 22
+#define POP_ROWS 9                                      /* a sheet's rows on the screen at once; more scroll (KNOB 1) */
 #define POP_PICK_W 112                                  /* a picker: up to eight names, 20 px each; two whole columns */
 static struct {
     uint8_t on, n, sel, col;
+    uint8_t first;                                      /* a sheet's first row on the screen (more than POP_ROWS) */
     char title[24], sub[20];
     const sheet_row_t *rows;
     uint32_t t, sig;
@@ -53,7 +55,7 @@ static void sheet_open(const char *title, const char *sub, const sheet_row_t *ro
     str_cpy(pop.sub, sub, sizeof pop.sub);
     pop.rows = rows;
     pop.n = (uint8_t)n;
-    pop.sel = 0;
+    pop.sel = pop.first = 0;
     pop.on = POP_SHEET;
     ui.force = 1;
 }
@@ -133,10 +135,29 @@ static const sheet_row_t SHEET_SONG[] = {
 static void nt_quantize_v(char *b){str_cpy(b,ui.note_grid==2u?"0.25 step":ui.note_grid==1u?"0.5 step":"1 step",16);}
 static void nt_quantize_grid(int32_t s){ui.note_grid=(uint8_t)clamp((int32_t)ui.note_grid+s,0,2);ui.force=1;}
 static void nt_quantize(void){ui.note_copy=ui.note_move=0;note_quantize(RECORD_UNIT>>ui.note_grid);ui.force=1;}
+/* .. the pitch accumulator's LIMIT and MODE (the track's: step_acc.c; OCT+ steps them) */
+static void nt_acclim_v(char *b) { fmt_int(b, tessera_param_get(trk_index(TSEL), TX_ACC_LIMIT)); }
+static void nt_acclim(int32_t s)
+{
+    uint32_t tr = trk_index(TSEL);
+    tessera_param_set(tr, TX_ACC_LIMIT, tessera_param_get(tr, TX_ACC_LIMIT) + (s > 0 ? 1 : -1));
+}
+static void nt_accmode_v(char *b)
+{
+    static const char *const M[TESS_ACC_MODES] = {"Wrap", "Ping", "Clamp"};
+    str_cpy(b, M[tessera_param_get(trk_index(TSEL), TX_ACC_MODE) % TESS_ACC_MODES], 8);
+}
+static void nt_accmode(int32_t s)                      /* (round: OCT+ goes on past CLAMP to WRAP) */
+{
+    uint32_t tr = trk_index(TSEL);
+    tessera_param_set(tr, TX_ACC_MODE, (tessera_param_get(tr, TX_ACC_MODE) + (s > 0 ? 1 : TESS_ACC_MODES - 1)) %
+                                       TESS_ACC_MODES);
+}
 /* .. and the SEQ tools (seq_tools.c): DOUBLE, HALF, EUCLID's hits and rotation (KNOB 2; OCT+ writes it) */
 static const sheet_row_t SHEET_PATTERN[] = {{"Quantize",nt_quantize_v,nt_quantize_grid,nt_quantize,0},
     {"Double", seqt_double_v, 0, seqt_double, 0}, {"Half", seqt_half_v, 0, seqt_half, 0},
     {"Euclid", seqt_hits_v, seqt_hits_turn, seqt_euclid, 0}, {"Euclid turn", seqt_rot_v, seqt_rot_turn, seqt_euclid, 0},
+    {"Accum limit", nt_acclim_v, nt_acclim, 0, 0}, {"Accum mode", nt_accmode_v, nt_accmode, 0, 0},
     {"Clear pattern", 0, 0, 0, CF_CLEAR_SEQ}, {"Clear motion", 0, 0, 0, CF_CLEAR_MOTION}};
 /* PATTERNS' (OCT+): the selected track's pattern; Copy to: its place picked on the grid (ui_patterns.c) */
 static const sheet_row_t SHEET_PATTERNS[] = {{"Copy to\x85", 0, 0, ptc_start, 0}, {"Delete pattern", 0, 0, 0, CF_DEL_PAT}};
@@ -184,6 +205,21 @@ static void nt_chance(int32_t s)
     if (st_free())
         step_set_chance(st, (uint32_t)clamp((int32_t)step_chance(st) + s, 0, 100));
 }
+static void nt_cond_v(char *b)                          /* the step's condition: "Off", "1:4", "!FILL" */
+{
+    static const char *const SC_NAME[SC_COUNT] = {"Off", "1:2", "2:2", "1:3", "2:3", "3:3", "1:4", "2:4", "3:4", "4:4", "1:8",
+                                                  "8:8", "FILL", "!FILL", "FIRST", "!FIRST"};
+    str_cpy(b, SC_NAME[step_cond(st_at())], 8);
+}
+static void nt_cond(int32_t s)
+{
+    step_t *st = st_at();
+    if (!st_free())
+        return;
+    fm1_irq_off();
+    step_set_cond(st, (uint32_t)clamp((int32_t)step_cond(st) + (s > 0 ? 1 : -1), SC_OFF, SC_COUNT - 1));
+    fm1_irq_on();
+}
 static void nt_ratch_v(char *b) { b[0] = 'x'; fmt_int(b + 1, (int32_t)step_ratch(st_at())); }   /* the step's RATCH */
 static void nt_ratch(int32_t s)
 {
@@ -211,6 +247,22 @@ static void nt_nudge(int32_t s)
     step_set_nudge(st, clamp(step_nudge(st) + (s > 0 ? 1 : -1), -8, 7));
     fm1_irq_on();
 }
+static void nt_climb_v(char *b)                        /* the step's Accumulate: "+2" degrees a pass, "Off" */
+{
+    int32_t v = step_climb(st_at());
+    if (!v) { str_cpy(b, "Off", 4); return; }
+    b[0] = v > 0 ? '+' : '-';
+    fmt_int(b + 1, v > 0 ? v : -v);
+}
+static void nt_climb(int32_t s)
+{
+    step_t *st = st_at();
+    if (!st_free())
+        return;
+    fm1_irq_off();
+    step_set_climb(st, step_climb(st) + (s > 0 ? 1 : -1));
+    fm1_irq_on();
+}
 static void nt_slide_v(char *b) { str_cpy(b, st_at()->flags & SF_SLIDE ? "On" : "Off", 8); }
 static void nt_slide(void)
 {
@@ -227,8 +279,9 @@ static void nt_delete(void)
 }
 static void nt_copy(void) { if(st_free())note_copy_arm(); }
 static const sheet_row_t SHEET_NOTE[] = {{"Length", nt_len_v, nt_len, 0, 0}, {"Velocity", nt_vel_v, nt_vel, 0, 0},
-    {"Chance", nt_chance_v, nt_chance, 0, 0}, {"Ratchet", nt_ratch_v, nt_ratch, 0, 0}, {"Nudge", nt_nudge_v, nt_nudge, 0, 0},
-    {"Slide", nt_slide_v, 0, nt_slide, 0},
+    {"Chance", nt_chance_v, nt_chance, 0, 0}, {"Condition", nt_cond_v, nt_cond, 0, 0},
+    {"Ratchet", nt_ratch_v, nt_ratch, 0, 0}, {"Nudge", nt_nudge_v, nt_nudge, 0, 0},
+    {"Accumulate", nt_climb_v, nt_climb, 0, 0}, {"Slide", nt_slide_v, 0, nt_slide, 0},
     {"Move note",0,0,note_move_arm,0}, {"Copy note",0,0,nt_copy,0}, {"Delete note", 0, 0, nt_delete, SR_RED}};
 static const sheet_row_t SHEET_REC_NOTE[] = {{"Length", nt_len_v, nt_len, 0, 0}, {"Velocity", nt_vel_v, nt_vel, 0, 0},
     {"Move note",0,0,note_move_arm,0}, {"Copy note",0,0,nt_copy,0}, {"Delete note", 0, 0, nt_delete, SR_RED}};
@@ -237,7 +290,7 @@ static void ht_acc_v(char *b) { str_cpy(b, ht_acc_on() ? "On" : "Off", 8); }
 static void ht_acc(void) { edit_param(3u, ht_acc_on() ? -1 : 1); }
 static void ht_clear(void) { edit_param(2u, -1); }
 static const sheet_row_t SHEET_HIT[] = {{"Accent", ht_acc_v, 0, ht_acc, 0}, {"Chance", nt_chance_v, nt_chance, 0, 0},
-    {"Ratchet", nt_ratch_v, nt_ratch, 0, 0}, {"Nudge", nt_nudge_v, nt_nudge, 0, 0}, {"Clear hit", 0, 0, ht_clear, SR_RED}};
+    {"Condition", nt_cond_v, nt_cond, 0, 0}, {"Ratchet", nt_ratch_v, nt_ratch, 0, 0}, {"Nudge", nt_nudge_v, nt_nudge, 0, 0}, {"Clear hit", 0, 0, ht_clear, SR_RED}};
 
 /* OCT+ on NOTES / the drum grid: an empty place gets a note (the last one played) / the lane's hit; on a note or a
  * hit: its sheet. 0: not such a page */
@@ -368,6 +421,12 @@ static void sheet_input(int32_t k1, int32_t k2, uint32_t oct)
 /* knob c turned on a page: its picker when its value is a name from a long list; another knob: the picker goes.
  * Not on a screen of its own: SCALES is the scales' list itself (Kerem: the picker covered it) */
 static int own_screen(void);                            /* ui_draw.c */
+#if MELODEE_LOOK                                        /* the Mono look's lists (ui_mono.c) */
+static void mo_sheet(void);
+static void mo_pick(int32_t col, int32_t count, int32_t cur, int32_t first, int32_t rows);
+static void mo_vlist(const char *title, const char *const *names, int32_t count, int32_t sel, int32_t now,
+                     int32_t first, int32_t rows);
+#endif
 /* a list of numbers (a MIDI channel, an algorithm, an envelope step; one name such as OFF among them): its value steps
  * on the card as MIDI's and ROUT's do, no picker (Kerem, 2026-10-11) */
 static int pick_numbers(const param_desc_t *d)
@@ -483,6 +542,19 @@ static void vlist_draw(void)
         return;
     pop.sig = sig;
     first = clamp(enum_rank(d,vl.sel) - 3, 0, enum_rows(d) - n);
+#if MELODEE_LOOK
+    {
+        char nm[7][20], t[20];
+        const char *np[7];
+        for (i = 0; i < n; i++) {
+            menu_words(nm[i], d->names[enum_value(d, first + i) - d->min], sizeof nm[i]);
+            np[i] = nm[i];
+        }
+        menu_words(t, d->label, sizeof t);
+        mo_vlist(t, np, enum_rows(d), enum_rank(d, vl.sel), enum_rank(d, *vp), first, n);
+        return;
+    }
+#endif
     h = 30 + n * 20 + 6;
     y0 = 236 - h;
     for (top = 0; top < h; ) {                          /* in slices between rows (a canvas holds 124 rows) */
@@ -518,8 +590,16 @@ static void vlist_draw(void)
 static void sheet_draw(void)
 {
     uint32_t i, sig = str_hash(pop.sel * 7u + pop.n * 131u + ux.gen * 977u + ux.pal * 31u, pop.title);
-    int32_t h = 34 + (int32_t)pop.n * POP_ROW, y0 = 236 - h, top;
+    uint32_t vis = pop.n < POP_ROWS ? pop.n : POP_ROWS;
+    int32_t h = 34 + (int32_t)vis * POP_ROW, y0 = 236 - h, top;
     char v[20];
+    if (pop.sel < pop.first)                            /* (the row picked stays on the screen) */
+        pop.first = pop.sel;
+    else if (pop.sel >= pop.first + vis)
+        pop.first = (uint8_t)(pop.sel - vis + 1u);
+    if (pop.first + vis > pop.n)
+        pop.first = (uint8_t)(pop.n - vis);
+    sig = str_hash(sig + pop.first * 7919u, pop.sub);
     for (i = 0; i < pop.n; i++)
         if (pop.rows[i].value) {
             pop.rows[i].value(v);
@@ -528,6 +608,10 @@ static void sheet_draw(void)
     if (!ui.force && sig == pop.sig)
         return;
     pop.sig = sig;
+#if MELODEE_LOOK
+    mo_sheet();
+    return;
+#endif
     for (top = 0; top < h; ) {                          /* in slices between rows (a canvas holds 124 rows) */
         int32_t sh = h - top <= 124 ? h - top : 28 + (top + 124 - 28) / POP_ROW * POP_ROW - top;
         cv_begin(POP_W, (uint32_t)sh, T_BG);
@@ -537,9 +621,13 @@ static void sheet_draw(void)
         cv_text_on(10, 8, &AF_S, pop.title, T_TEXT, T_SURF);
         if (pop.sub[0])
             cv_text_r(POP_W - 10, 9, &AF_X, pop.sub, T_MID, T_SURF);
-        for (i = 0; i < pop.n; i++) {
+        if (pop.first)                                  /* (rows above: a mark over the first, below: under the last) */
+            for (i = 0; i < 3u; i++) cv_rect(POP_W / 2 - (int32_t)i, 23 + (int32_t)i, 1 + 2 * (int32_t)i, 1, T_MID);
+        if (pop.first + vis < pop.n)
+            for (i = 0; i < 3u; i++) cv_rect(POP_W / 2 - (int32_t)i, h - 3 - (int32_t)i, 1 + 2 * (int32_t)i, 1, T_MID);
+        for (i = pop.first; i < pop.first + vis; i++) {
             const sheet_row_t *r = &pop.rows[i];
-            int32_t y = 28 + (int32_t)i * POP_ROW;
+            int32_t y = 28 + (int32_t)(i - pop.first) * POP_ROW;
             int on = i == pop.sel;
             uint16_t bg = on ? T_LIFT : T_SURF;
             if (y + POP_ROW <= top || y >= top + sh)
@@ -604,6 +692,10 @@ static void pick_draw(void)
     int32_t first = clamp(cur - (rows - 1) / 2, 0, count - rows);   /* the names around it, the list's ends kept */
     x = 4 + 60 * (int32_t)(pop.col < 3u ? pop.col : 2u);   /* its column and the next (the last: the two last), whole:
                                                          * a neighbour's value is under it entirely or not at all */
+#if MELODEE_LOOK
+    mo_pick((int32_t)pop.col, count, cur, first, rows);
+    return;
+#endif
     cv_begin(POP_PICK_W, (uint32_t)h, T_BG);
     cv_rrect(0, 0, POP_PICK_W, h, 10, T_LINE, T_BG);
     cv_rrect(1, 1, POP_PICK_W - 2, h - 2, 9, T_SURF, T_LINE);

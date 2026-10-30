@@ -6,7 +6,7 @@ static int banks_and_chords(void)
 {
     int bad = 0; ui_power_on(); track_t *t = TSEL;
     t->p[P_SLEN] = 64;
-    t->step[63] = (step_t){{60,64,67,71},4,ST_NOTE,SF_ACCENT,112,0x81,0x80,41};
+    t->step[63] = (step_t){{60,64,67,71},4,ST_NOTE, 0,SF_ACCENT,112,0x81,0x80,41};
     t->step[0] = (step_t){{0},0,ST_TIE};
     motion_set_event(t, 63, P_LEVEL, 83);
     bad += check("bank copy preserves four-note chords, wrapped ties, grid, chance and automation", !pattern_copy(t, 0, 7) &&
@@ -27,8 +27,8 @@ static int independent_switches(void)
     int bad = 0; ui_power_on();
     for (uint32_t k = 0; k < 2; k++) {
         track_t *t = &trk[k]; track_defaults_steps(t); t->p[P_SLEN] = (int16_t)(2+k);
-        t->step[0] = (step_t){{60,64,67,71},4,ST_NOTE,0,100};
-        pattern_request(t, 1); t->p[P_SLEN] = 4; t->step[0] = (step_t){{62,65,69,72},4,ST_NOTE,0,100};
+        t->step[0] = (step_t){{60,64,67,71},4,ST_NOTE, 0,0,100};
+        pattern_request(t, 1); t->p[P_SLEN] = 4; t->step[0] = (step_t){{62,65,69,72},4,ST_NOTE, 0,0,100};
         pattern_request(t, 0);
     }
     seq_start(); events_block(32);
@@ -51,7 +51,7 @@ static int all_banks_persist(void)
     for (uint32_t k = 0; k < NTRK; k++) for (uint32_t b = 0; b < NPAT; b++) {
         track_t *t = &trk[k]; pattern_request(t, b);
         t->p[P_SLEN] = (int16_t)(32+b); t->p[P_SSWING] = (int16_t)b;
-        t->step[0] = (step_t){{(uint8_t)(40+k*8+b),60,64,67},4,ST_NOTE,SF_SLIDE,100,(uint8_t)(1u<<b),(uint8_t)(1u<<b),(uint8_t)(20+b)};
+        t->step[0] = (step_t){{(uint8_t)(40+k*8+b),60,64,67},4,ST_NOTE, 0,SF_SLIDE,100,(uint8_t)(1u<<b),(uint8_t)(1u<<b),(uint8_t)(20+b)};
         t->step[1] = (step_t){{0},0,ST_TIE}; motion_set_event(t, 0, P_LEVEL, (int16_t)(k*8+b));
     }
     chain_config.count = 2; chain_config.row[0] = (chain_row_t){0,3}; chain_config.row[1] = (chain_row_t){7,2};
@@ -82,7 +82,7 @@ static int panel_banks(void)
     bad += check("SEQ bank keys stay silent and do not record notes", kb_note[PAT_KEY[7]] == KB_SILENT && !TSEL->nheld);
     key_up(PAT_KEY[7]); frame(); btn_up(B_SEQ); frame();
     bad += check("SEQ plus eighth white key selects bank 8 without a page tap", TSEL->pattern == 7 && ui.home && ui.page == original_page);
-    TSEL->step[3] = (step_t){{60,64,67,71},4,ST_NOTE,0,100};
+    TSEL->step[3] = (step_t){{60,64,67,71},4,ST_NOTE, 0,0,100};
     btn_down(B_SEQ); frame(); key_down(PAT_KEY[7]); frame(); key_down(PAT_KEY[2]); frame();
     key_up(PAT_KEY[2]); key_up(PAT_KEY[7]); frame(); btn_up(B_SEQ); frame();
     pattern_request(TSEL,2);
@@ -96,7 +96,7 @@ static int arranged_chords(void)
         track_t *t = &trk[k];
         for (uint32_t b = 0; b < 2u; b++) {
             pattern_request(t, b); track_defaults_steps(t); t->p[P_SLEN] = 2;
-            t->step[0] = (step_t){{(uint8_t)(48+k+b),60,64,67},4,ST_NOTE,0,100};
+            t->step[0] = (step_t){{(uint8_t)(48+k+b),60,64,67},4,ST_NOTE, 0,0,100};
         }
         pattern_request(t, 0);
         chain_patterns[0][k] = (uint8_t)(1u - (k & 1u));
@@ -182,6 +182,36 @@ static int div_change_in_time(void)
     song.g[G_BPM] = 120;
     return bad;
 }
+/* SWING turned while playing, during an odd (late) step: the track keeps the grid, its even steps on the lines of a
+ * straight track twice as slow (it kept the old odd step's offset before, out of time until the next PLAY) */
+static int swing_change_in_time(void)
+{
+    int bad = 0;
+    ui_power_on();
+    track_t *a = &trk[0], *b = &trk[1];
+    for (uint32_t k = 0; k < 2; k++) { track_defaults_steps(&trk[k]); trk[k].p[P_SLEN] = 16; trk[k].p[P_SSWING] = 0; }
+    a->p[P_SDIV] = 1; b->p[P_SDIV] = 2;                 /* 1/8, 1/16 */
+    song.g[G_BPM] = 120; song.g[G_SWING] = 0;
+    uint32_t q = div_samples(0);
+    static const struct { uint8_t from, to; uint8_t late; const char *what; } C[] = {
+        {60, 0, 1, "SWING 60 -> 0 late in an odd step: every 1/8 step lands with a 1/16 step"},
+        {60, 0, 0, "SWING 60 -> 0 early in an odd step: the same"},
+        {0, 60, 0, "SWING 0 -> 60 early in an odd step: the even steps land with the 1/8 steps"},
+        {20, 80, 1, "SWING 20 -> 80 late in an odd step: the same"},
+        {80, 20, 0, "SWING 80 -> 20 early in an odd step: the same"}};
+    for (uint32_t c = 0; c < sizeof C / sizeof C[0]; c++) {
+        b->p[P_SSWING] = C[c].from;
+        seq_start(); events_block(32);
+        for (uint32_t i = 0; i < 200u; i++) events_block(32);
+        uint32_t len = swing_step_len(b, div_samples(2), 1);
+        while (!(b->seq_idx & 1u) || (C[c].late ? b->seq_pos < len * 3u / 4u : b->seq_pos > len / 4u)) events_block(32);
+        b->p[P_SSWING] = C[c].to;
+        bad += check(C[c].what, steps_together(a, b, 4u * q / 32u));
+        seq_stop();
+    }
+    b->p[P_SSWING] = 0;
+    return bad;
+}
 
 /* SEQ tools (seq_tools.c), the Pattern sheet's: DOUBLE (its LEN steps, recorded notes and motion copied after
  * themselves, what lay hidden there replaced), HALF (LEN only, the rest kept hidden), EUCLID on a lane or a note row;
@@ -195,7 +225,7 @@ static void rec_put(track_t *t, uint32_t actual, uint32_t note, uint32_t bits, u
     r.step = (uint8_t)(actual | bits);
     note_duration(&r, RECORD_UNIT);
     recording_restore_note(t, i, r);
-    t->step[view] = (step_t){{(uint8_t)note}, 1, ST_NOTE, SF_RECORDED, 100};
+    t->step[view] = (step_t){{(uint8_t)note}, 1, ST_NOTE, 0, SF_RECORDED, 100};
 }
 static int rec_has(const track_t *t, uint32_t note, uint32_t step)   /* (step: the byte as stored) */
 {
@@ -214,8 +244,8 @@ static int seq_tools(void)
 {
     int bad = 0; ui_power_on(); track_t *t = TSEL;
     track_defaults_steps(t); t->p[P_SLEN] = 8;
-    t->step[5] = (step_t){{65}, 1, ST_NOTE, 0, 100};
-    t->step[12] = (step_t){{99}, 1, ST_NOTE, 0, 100};               /* (hidden, past LEN) */
+    t->step[5] = (step_t){{65}, 1, ST_NOTE, 0, 0, 100};
+    t->step[12] = (step_t){{99}, 1, ST_NOTE, 0, 0, 100};               /* (hidden, past LEN) */
     rec_put(t, 3, 70, 0, 3);
     rec_put(t, 7, 72, 64u | 128u, 0);                               /* (played late in the last step: shown on the first) */
     rec_put(t, 9, 74, 0, 9);                                        /* (hidden) */
@@ -284,7 +314,7 @@ static int seq_tools(void)
     uint32_t on = 0, at = 0;
     for (uint32_t i = 0; i < 8; i++) if (step_on(&t->step[i])) { on |= 1u << i; at = t->step[i].note[0]; }
     bad += check("EUCLID 3 of 8, empty pattern: x..x..x. on ROOT's D4", on == 0x49u && at == 62 && msg_is("EUCLID"));
-    t->step[1] = (step_t){{67, 70}, 2, ST_NOTE, 0, 90};
+    t->step[1] = (step_t){{67, 70}, 2, ST_NOTE, 0, 0, 90};
     t->step[2] = (step_t){{0}, 0, ST_TIE};
     seqt.hits = 4; seqt.rot = 1; cursor_set(0);
     seqt_euclid();
@@ -301,7 +331,7 @@ static int seq_tools(void)
 
     /* .. a lane of the drum grid */
     ui_power_on(); t = TSEL; set_engine(ENGI_DRUM); track_defaults_steps(t); t->p[P_SLEN] = 16;
-    t->step[0] = (step_t){{0}, 0, ST_NOTE, 0, 0, 1u << 3};          /* (CH on step 1) */
+    t->step[0] = (step_t){{0}, 0, ST_NOTE, 0, 0, 0, 1u << 3};          /* (CH on step 1) */
     ui.lane = 0; seqt.hits = 5; seqt.rot = 0;
     seqt_euclid();
     on = 0;
@@ -323,6 +353,6 @@ static int seq_tools(void)
 }
 int main(void)
 {
-    int bad = div_change_in_time()+banks_and_chords()+independent_switches()+all_banks_persist()+panel_banks()+arranged_chords()+replaced_motion()+migrated_bank_rename()+seq_tools();
+    int bad = div_change_in_time()+swing_change_in_time()+banks_and_chords()+independent_switches()+all_banks_persist()+panel_banks()+arranged_chords()+replaced_motion()+migrated_bank_rename()+seq_tools();
     printf("%s\n",bad ? "PATTERN TEST FAILED" : "pattern bank tests passed"); return !!bad;
 }

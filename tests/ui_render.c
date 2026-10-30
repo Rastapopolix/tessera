@@ -39,9 +39,15 @@ static FILE *rep;
 static const char *cur_name = "";
 static char free_seen[64][40];
 static uint32_t nfree_seen;
+#if MELODEE_LOOK
+static void mono_icon(int32_t x0, int32_t y0, int32_t x1, int32_t y1, const char *s);   /* (below) */
+#endif
 static void hk_text(int32_t x0, int32_t y0, int32_t x1, int32_t y1, const char *s, uint32_t flags)
 {
     n_text++;
+#if MELODEE_LOOK
+    if (flags & 4u) mono_icon(x0, y0, x1, y1, s);       /* the Mono look draws no icon */
+#endif
     if (npend >= 256u) return;
     pend[npend] = (rbox_t){(int16_t)x0, (int16_t)y0, (int16_t)x1, (int16_t)y1, (uint8_t)flags, {0}};
     strncpy(pend[npend].s, s, 27);
@@ -153,6 +159,9 @@ static void fmp_check(uint32_t alg)
 static void fm6_hook(uint32_t kind, uint32_t a, uint32_t b)
 {
     uint32_t i, n = cv_w * cv_h;
+    if (MELODEE_LOOK)                                    /* (the Mono look: the chart split over its two half canvases;
+                                                         * linted in the detailed build) */
+        return;
     if (fmp_n) {                                         /* the part just drawn: its pixels */
         for (i = 0; i < n; i++)
             if (cv_px[i] != FMP_SENT) fmp_mask[i] |= (uint64_t)1u << (fmp_n - 1u);
@@ -175,7 +184,7 @@ static void fm6_hook(uint32_t kind, uint32_t a, uint32_t b)
 static uint8_t aud_on;                                  /* the LCD load audit runs: its frames are not linted */
 static void finding(const char *what, const rbox_t *b, const rbox_t *o)
 {
-    static char seen[600][64];
+    static char seen[8000][64];
     static uint32_t nseen;
     char key[64];
     uint32_t i;
@@ -185,12 +194,20 @@ static void finding(const char *what, const rbox_t *b, const rbox_t *o)
     snprintf(key, sizeof key, "%.20s|%.14s|%.24s", cur_name, what, b->s);
     for (i = 0; i < nseen && strcmp(seen[i], key); i++) ;
     if (i < nseen) return;                       /* each finding once per screen */
-    if (nseen < 600u) strcpy(seen[nseen++], key);
+    if (nseen < 8000u) strcpy(seen[nseen++], key);
     else return;
     fprintf(rep, "LINT %-22s %-32s '%s' (%d,%d)-(%d,%d)", cur_name, what, b->s, b->x0, b->y0, b->x1, b->y1);
     if (o) fprintf(rep, " / '%s' (%d,%d)-(%d,%d)", o->s, o->x0, o->y0, o->x1, o->y1);
     fputc('\n', rep);
 }
+#if MELODEE_LOOK
+static void mono_icon(int32_t x0, int32_t y0, int32_t x1, int32_t y1, const char *s)
+{
+    rbox_t b = {(int16_t)x0, (int16_t)y0, (int16_t)x1, (int16_t)y1, 4u, {0}};
+    strncpy(b.s, s, 27);
+    finding("Mono: an icon", &b, 0);
+}
+#endif
 /* a rectangle of the screen is drawn again: boxes inside it are gone, boxes it covers in part are hidden */
 static void cover(int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
@@ -305,9 +322,44 @@ static void hk_blit(uint32_t x, uint32_t y, uint32_t r0, uint32_t w, uint32_t h)
     npend = 0;
 }
 
+#if MELODEE_LOOK
+/* the Mono lint (ui_mono.c's knob values, in cells): no value cut; a boxed value's text a clear cell inside its box;
+ * the values on the screen, a clear cell between neighbours */
+static uint32_t nmono;                                  /* knob values the Mono lint looked at */
+static void mono_lint(void)
+{
+    uint32_t i;
+    int32_t prev = -2;
+    if (!mo_vals_new)
+        return;
+    mo_vals_new = 0;
+    for (i = 0; i < 4u; i++) {
+        rbox_t b;
+        int32_t x0, x1;
+        if (!mo_vals[i].used)
+            continue;
+        nmono++;
+        x0 = mo_vals[i].fx0 >= 0 ? mo_vals[i].fx0 : mo_vals[i].tx0;
+        x1 = mo_vals[i].fx0 >= 0 ? mo_vals[i].fx1 : mo_vals[i].tx1;
+        memset(&b, 0, sizeof b);
+        b.x0 = (int16_t)(x0 * 2), b.x1 = (int16_t)(x1 * 2 + 2), b.y0 = 42, b.y1 = 72;
+        snprintf(b.s, sizeof b.s, "%s", mo_vals[i].s);
+        if (mo_vals[i].cut) finding("Mono: value cut", &b, 0);
+        if ((mo_vals[i].kind == MV_BOX || mo_vals[i].kind == MV_KEY) &&
+            (mo_vals[i].tx0 < mo_vals[i].fx0 + 2 || mo_vals[i].tx1 > mo_vals[i].fx1 - 2))
+            finding("Mono: no clear cell in its box", &b, 0);
+        if (x0 < 0 || x1 > 119) finding("Mono: off the screen", &b, 0);
+        if (x0 - prev < 2) finding("Mono: touches its neighbour", &b, 0);
+        prev = x1;
+    }
+}
+#endif
 static void lint(void)
 {
     uint32_t i, j;
+#if MELODEE_LOOK
+    mono_lint();
+#endif
     for (i = 0; i < nscr; i++) {
         const rbox_t *b = &scr[i];
         if (b->x0 < 0 || b->y0 < 0 || b->x1 > 240 || b->y1 > 240) finding("off the screen", b, 0);
@@ -433,7 +485,7 @@ static void eng(uint32_t e) { set_engine_of(TSEL, e); }
  * went with it: skipped) */
 #define E_FM ENGI_FM6
 
-enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_WIDE, S_HOME_RELEASED, S_HOME_FM6, S_MESSAGE, S_MESSAGE_KEY, S_PRESETS, S_PRESETS_NOFAV, S_PRESETS_CAT, S_PRESETS_PENDING, S_PRESETS_RECENT, S_USER, S_PROJECT, S_PROJECT_BOOT, S_TEMPO,
+enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_WIDE, S_HOME_RELEASED, S_HOME_FM6, S_MESSAGE, S_MESSAGE_KEY, S_MESSAGE_PAGED, S_PRESETS, S_PRESETS_NOFAV, S_PRESETS_CAT, S_PRESETS_PENDING, S_PRESETS_RECENT, S_USER, S_PROJECT, S_PROJECT_BOOT, S_TEMPO,
        S_SONG_EMPTY, S_SONG, S_STEP, S_PATTERN, S_MOTION, S_DRUM, S_MIXER, S_MIXER_PAN,
        S_ENV, S_ENVDEST, S_LFO, S_MOD, S_SCL, S_CHORD, S_CHORD_WIDE, S_CHORD_OFF, S_CHORD_KIT, S_ARP, S_VOICE, S_GLOBAL, S_SYSTEM,
        S_EDIT_SID, S_EDIT_DIGITAL, S_OP_ENV, S_EDIT_WHEEL, S_EDIT_PHYS,
@@ -459,8 +511,8 @@ enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_
        S_REF_SHEET_MOTION, S_REF_MOD, S_REF_PICKER_MOD, S_REF_ARP, S_REF_PATTERN,
        S_REF_FMEG, S_REF_GRID, S_REF_SCALES, S_FX_PHASER, S_FX_WIDTH, S_FX_FORMANT, S_FX_TAPE, S_FX_SPIT, S_FX_ECHO, S_FX_ROOM, S_FX_REVERB, S_FX_CHORUS, S_FX_FULL, S_FX_SLOT2, S_FX_SLOT3, S_FX_SEND, S_FX_SEPARATE, S_FX_SENDS, S_FX_BUS1, S_FX_BUS2, S_FX_BUS3,
        S_GEN_TURING, S_GEN_EUCLID, S_GEN_MARKOV, S_GEN_MORPH, S_GEN_EVOLVE, S_CORDS, S_HELP, S_CORDS_PICK_SRC, S_CORDS_PICK_DST,
-       S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_COUNT };
-static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "home_chord", "home_inversion", "home_wide", "home_released", "home_fm6", "message", "message_key", "presets", "presets_nofav", "presets_cat", "presets_pending", "presets_recent", "user",
+       S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_GEN_CHORD_OFFBEAT, S_GEN_STEP_EVOLVE_HOW, S_GEN_STEP_ADORN, S_GEN_STEP_SERIAL, S_NOTES_EVOLVE, S_GEN_SEED, S_GEN_SEED_MORPH, S_GEN_FORM, S_MIDI_OUT, S_EDIT_FILT, S_GEN_EVOLVE_GRAV, S_GEN_ENERGY_LEVEL, S_GEN_ENERGY_DEPTH, S_COUNT };
+static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "home_chord", "home_inversion", "home_wide", "home_released", "home_fm6", "message", "message_key", "message_paged", "presets", "presets_nofav", "presets_cat", "presets_pending", "presets_recent", "user",
     "project", "project_boot", "tempo", "song_empty", "song", "step", "pattern", "motion", "drum",
     "mixer", "mixer_pan", "env", "env_dest", "lfo", "mod", "scl", "chord", "chord_wide", "chord_off", "chord_kit", "arp",
     "voice", "global", "system", "edit_sid", "edit_fm6", "op_env", "edit_wheel",
@@ -479,7 +531,7 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "h
     "notes_slide", "notes_mixed", "notes_chord", "notes_empty", "notes_raw", "notes_zoom", "notes_loop", "notes_drum", "notes_dense", "notes_rec", "notes_erase", "notes_drum_rec", "notes_drum_erase", "scl_micro", "scl_micro_layer", "scl_micro_chord", "scale_picker_edo", "scale_picker_historical", "scale_picker_favorites", "scale_picker_empty", "scale_settings_favorite", "menu_click", "menu_click_level", "menu_countin", "menu_preview", "menu_add", "menu_autosave_on", "menu_autosave_off", "drum_sound_808", "drum_sound_909", "drum_mix_909", "drum_hit_909", "drum_hit_free", "drum_hit_long",
     "stage_drum", "stage_trio", "stage_queued", "stage_browse", "stage_stopped", "stage_filter", "patterns", "patterns_stopped", "patterns_sheet", "patterns_copy", "patterns_replace", "patterns_delete", "project_new", "new_key", "new_roles",
     "ref_stage_held", "ref_stage_released", "ref_stage_cutoff", "ref_stage_drum", "ref_browser", "ref_patterns", "ref_song", "ref_env", "ref_lfo", "ref_edit_osc", "ref_mixer", "ref_notes", "ref_settings", "ref_dialog", "ref_sheet_sound", "ref_sheet_song", "ref_picker_wave", "ref_picker_mode", "ref_sections_p5", "ref_map_p5", "ref_map_fm6", "ref_scl_list", "ref_sheet_project", "ref_sheet_note", "ref_sheet_hit", "ref_motion", "ref_sheet_motion", "ref_mod", "ref_picker_mod", "ref_arp", "ref_pattern", "ref_fmeg", "ref_grid", "ref_scales", "fx_phaser", "fx_width", "fx_formant", "fx_tape", "fx_spit", "fx_echo", "fx_room", "fx_reverb", "fx_chorus", "fx_full", "fx_slot2", "fx_slot3", "fx_send", "fx_separate", "fx_sends", "fx_bus1", "fx_bus2", "fx_bus3",
-    "gen_turing", "gen_euclid", "gen_markov", "gen_morph", "gen_evolve", "cords", "help", "cords_pick_src", "cords_pick_dst", "gen_grids", "gen_tweak", "gen_tweak_off", "mod_shortcut", "gen_bounce", "gen_awake", "gen_poly", "gen_tweak2", "gen_tweak2_off", "organic", "gen_tweak2_coin", "mods_live", "mods_live_gen", "matrix", "gen_quad", "gen_length", "gen_fall", "gen_constel", "gen_length_hit", "gen_length_keys", "gen_length_step", "gen_pattern_constel", "gen_series", "gen_chord", "gen_chord_oct", "gen_grids_oct", "gen_chord_user", "gen_step_evolve", "help_gen", "gen_timing", "gen_timing_x1", "gen_energy", "gen_answer", "gen_answer_oct", "gen_seed_oct", "gen_timing_human", "gen_chord_circle"};
+    "gen_turing", "gen_euclid", "gen_markov", "gen_morph", "gen_evolve", "cords", "help", "cords_pick_src", "cords_pick_dst", "gen_grids", "gen_tweak", "gen_tweak_off", "mod_shortcut", "gen_bounce", "gen_awake", "gen_poly", "gen_tweak2", "gen_tweak2_off", "organic", "gen_tweak2_coin", "mods_live", "mods_live_gen", "matrix", "gen_quad", "gen_length", "gen_fall", "gen_constel", "gen_length_hit", "gen_length_keys", "gen_length_step", "gen_pattern_constel", "gen_series", "gen_chord", "gen_chord_oct", "gen_grids_oct", "gen_chord_user", "gen_step_evolve", "help_gen", "gen_timing", "gen_timing_x1", "gen_energy", "gen_answer", "gen_answer_oct", "gen_seed_oct", "gen_timing_human", "gen_chord_circle", "gen_chord_offbeat", "gen_step_evolve_how", "gen_step_adorn", "gen_step_serial", "notes_evolve", "gen_seed", "gen_seed_morph", "gen_form", "midi_out", "edit_filt", "gen_evolve_grav", "gen_energy_level", "gen_energy_depth"};
 
 /* the scenes of the UI design screens: the state the UI-redesign
  * prototype drew them from (its setup(): two pattern tracks, the drum pattern on track 4, a synthetic scope),
@@ -591,6 +643,7 @@ static void roll_scene(int s)
             else step_put(&t->step[i], LINE_T[i] == 1u ? ST_TIE : ST_REST, 0, 0, &n);
         }
         t->step[2].flags |= SF_SLIDE;                  /* (slides into a note, from before a tie) */
+        step_set_climb(&t->step[3], 2); step_set_climb(&t->step[13], -1);   /* (Accumulate: a caret over, under) */
         ui.cursor = 9;
         break;
     case S_ROLL_LEN32:
@@ -923,6 +976,8 @@ static void setup(int s)
     }
     case S_MESSAGE: ui_say("LOADED ", "07 A VERY LONG PATTERN NAME"); break;
     case S_MESSAGE_KEY: ui_message("[EDIT] HOLD TO UNDO"); break;            /* a message with a keycap */
+    case S_MESSAGE_PAGED:                                /* over a page with its position (NOTES, 5 pages): it covers it */
+        song.sel = 0; go_page(GR_ROLL); ui_message("SELECT A NOTE"); break;
     case S_PRESETS: favorite_set(0, 4, 1); favorite_set(0, 5, 1); go_page(GR_BROWSE); break;
     case S_PRESETS_NOFAV: favorites.filter = 1; go_page(GR_BROWSE); break;
     case S_PRESETS_CAT: list_set(LM_CAT + 5u); eng(ENGI_FM6); go_page(GR_BROWSE); break;   /* STRING */
@@ -1130,13 +1185,28 @@ static void setup(int s)
         tessera_param_set(0, TX_SUB_HUMAN, 40);
         go_title("TIMING");
         break;
+    case S_GEN_FORM:                                /* FORM: sections A A B A, CONTRAST 50 */
+        tessera_reset();
+        song.sel = 0;
+        tessera_param_set(0, TX_FM_FORM, 3);
+        tessera_param_set(0, TX_FM_CONTRAST, 50);
+        go_title("FORM");
+        break;
+    case S_MIDI_OUT:                                /* MIDI OUT: the tracks' channels */
+        go_title("MIDI OUT");
+        break;
     case S_GEN_ENERGY:                              /* ENERGY: ARC 60, RESTS 40, stopped (the tide's curve, no dot) */
+    case S_GEN_ENERGY_LEVEL:                        /* (LEVEL -35: the curve below the line) */
+    case S_GEN_ENERGY_DEPTH:                        /* (OCT+ held: track 1's DEPTH 40) */
         tessera_reset();
         song.sel = 0;
         tessera_knob(0, TESS_ENG_EUCLID);
         tessera_param_set(0, TX_EN_ARC, 60);
         tessera_param_set(0, TX_EN_RESTS, 40);
+        if (s == S_GEN_ENERGY_LEVEL) tessera_param_set(0, TX_EN_LEVEL, -35);
+        if (s == S_GEN_ENERGY_DEPTH) tessera_param_set(0, TX_EN_DEPTH, 40);
         go_title("ENERGY");
+        if (s == S_GEN_ENERGY_DEPTH) fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
         break;
     case S_GEN_PATTERN_CONSTEL:                     /* PATTERN of a CONSTELLATION track: its steps, not GEN's sky */
         tessera_reset();
@@ -1197,6 +1267,13 @@ static void setup(int s)
         TSEL->p[P_CHRD] = CH_DIA7;
         go_title("GEN");
         break;
+    case S_GEN_CHORD_OFFBEAT:                        /* CHORD HIT OFFBEAT: the longest HIT name in its column */
+        tessera_reset();
+        song.sel = 0;
+        tessera_knob(0, TESS_ENG_CHORD);
+        tessera_param_set(0, TX_CH_HIT, GEN_CH_OFF);
+        go_title("GEN");
+        break;
     case S_GEN_CHORD_OCT:                            /* CHORD with OCT+ held: OCT +1, CHRD DIA7, VOIC OPEN */
         tessera_reset();
         song.sel = 0;
@@ -1208,6 +1285,10 @@ static void setup(int s)
         fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
         break;
     case S_GEN_STEP_EVOLVE:                          /* STEP EVOLVE: a STEP melody, LOCK 60, AMOUNT 80, 3 steps changed */
+    case S_GEN_STEP_EVOLVE_HOW:                      /* (OCT+ held: HOW ADORN) */
+    case S_GEN_STEP_ADORN:                           /* (HOW ADORN, playing step 5: a ratchet, a passing note, an octave) */
+    case S_GEN_STEP_SERIAL:                          /* (HOW SERIAL, playing step 5: ROTATE 3) */
+    case S_NOTES_EVOLVE:                             /* (NOTES of the ADORN one: its ghost notes dashed) */
         tessera_reset();
         song.sel = 0;
         {
@@ -1226,7 +1307,27 @@ static void setup(int s)
         tess_sv.mut[0][1] = 2u;                   /* (MOVE +2, an OCT up, a GHOST) */
         tess_sv.mut[0][4] = 1u << 3;
         tess_sv.mut[0][6] = VARY_PREV << 5;
+        if (s == S_GEN_STEP_ADORN || s == S_GEN_STEP_SERIAL || s == S_NOTES_EVOLVE) {
+            memset(tess_sv.mut[0], 0, sizeof tess_sv.mut[0]);
+            tess_sv.mut[0][1] = VARY_RATCH;
+            tess_sv.mut[0][3] = VARY_PREV << 5 | VARY_TOWARD << 3;
+            tess_sv.mut[0][5] = 1u << 3;
+            tessera.sv_how[0] = s == S_GEN_STEP_SERIAL ? TESS_SV_SERIAL : TESS_SV_ORNAMENT;
+            tess_sv.ser[0] = TESS_SV_SER_ROT, tess_sv.ser_arg[0] = 3;
+            tess_sv.steps[0] = 4;
+            trk[0].seq_idx = 4;
+            song.playing = 1;
+        }
+        if (s == S_NOTES_EVOLVE) {
+            song.playing = 0;
+            go_title("NOTES");
+            break;
+        }
         go_title("EVOLVE");
+        if (s == S_GEN_STEP_EVOLVE_HOW) {
+            tessera.sv_how[0] = TESS_SV_ORNAMENT;
+            fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+        }
         break;
     case S_GEN_ANSWER:                               /* ANSWER: five notes heard, its second answer, its third note */
     case S_GEN_ANSWER_OCT:                           /* (OCT+ held: ORDER SHUFFLE, SHIFT 3, SPACE 50, LEN LONG) */
@@ -1251,12 +1352,43 @@ static void setup(int s)
         go_title("GEN");
         if (s == S_GEN_ANSWER_OCT) fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
         break;
-    case S_GEN_SEED_OCT:                             /* TURING, OCT+ held: SOURCE T2, KEEP RHYTHM (STEP as seed) */
+    case S_GEN_SEED:                                 /* TURING from T2's melody, three steps drifted, playing step 6 */
+    case S_GEN_SEED_MORPH:                           /* MORPH from it: A the melody, B its variation, at 60 % B */
+        tessera_reset();
+        song.sel = 0;
+        {
+            static const uint8_t MEL[16] = {60, 0, 63, 65, 0, 67, 70, 0, 72, 70, 0, 67, 65, 0, 63, 0};
+            for (uint32_t k = 0; k < 16u; k++) {
+                step_t *st = &trk[1].step[k];
+                st->n = MEL[k] ? 1u : 0u;
+                st->note[0] = MEL[k];
+                st->time = MEL[k] ? ST_NOTE : ST_REST;
+                st->vel = 100;
+            }
+            trk[1].p[P_SLEN] = 16;
+        }
+        tessera_knob(0, s == S_GEN_SEED ? TESS_ENG_TURING : TESS_ENG_MORPH);
+        tessera_param_set(0, TX_SD_SOURCE, 2);
+        if (s == S_GEN_SEED) {
+            sd_fill(0, 1);
+            tess_sd.loop[0][2] = 0x80u | 67u;              /* (a new pitch, a hit gone, a hit added) */
+            tess_sd.loop[0][6] &= 0x7Fu;
+            tess_sd.loop[0][10] |= 0x80u;
+        } else {
+            sd_morph_vary(&trk[0], 0, 0);
+            tessera.morph[0].morph_pos = 76;
+        }
+        tess_sd.pos[0] = 6;
+        song.playing = 1;
+        go_title("GEN");
+        break;
+    case S_GEN_SEED_OCT:                             /* TURING, OCT+ held: SOURCE T2, KEEP RHYTHM, GRAVITY 30 (STEP as seed) */
         tessera_reset();
         song.sel = 0;
         tessera_knob(0, TESS_ENG_TURING);
         tessera_param_set(0, TX_SD_SOURCE, 2);
         tessera_param_set(0, TX_SD_KEEP, TESS_SD_RHYTHM);
+        tessera_param_set(0, TX_SD_GRAVITY, 30);
         go_title("GEN");
         fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
         break;
@@ -1326,17 +1458,22 @@ static void setup(int s)
         go_title("GEN");
         break;
     case S_GEN_TURING: case S_GEN_EUCLID: case S_GEN_MARKOV: case S_GEN_MORPH: case S_GEN_EVOLVE: case S_GEN_GRIDS:
+    case S_GEN_EVOLVE_GRAV:                          /* (MARKOV's EVOLVE, OCT+ held: GRAVITY 40) */
         tessera_reset();                            /* (track 1's generator, from its defaults) */
         song.sel = 0;
         tessera_knob(0, s == S_GEN_TURING ? TESS_ENG_TURING : s == S_GEN_EUCLID ? TESS_ENG_EUCLID :
                         s == S_GEN_MORPH ? TESS_ENG_MORPH : s == S_GEN_GRIDS ? TESS_ENG_GRIDS : TESS_ENG_MARKOV);
         if (s == S_GEN_GRIDS) tessera_knob(3, 10);  /* DENSITY 70 */
-        if (s == S_GEN_EVOLVE) {
+        if (s == S_GEN_EVOLVE || s == S_GEN_EVOLVE_GRAV) {
             tessera_evolve_knob(0, 30);             /* LOCK 60 */
             tessera_evolve_knob(1, 1);
             tessera_evolve_knob(1, 1);              /* EVERY 2 bars */
         }
-        go_title(s == S_GEN_EVOLVE ? "EVOLVE" : "GEN");    /* (GEN: ARP's tap) */
+        go_title(s == S_GEN_EVOLVE || s == S_GEN_EVOLVE_GRAV ? "EVOLVE" : "GEN");    /* (GEN: ARP's tap) */
+        if (s == S_GEN_EVOLVE_GRAV) {
+            tessera_param_set(0, TX_SD_GRAVITY, 40);
+            fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+        }
         break;
     case S_GEN_TWEAK: case S_GEN_TWEAK_OFF:         /* TWEAK: each knob's picture, set and at its off position */
         tessera_reset();
@@ -1514,6 +1651,7 @@ static void setup(int s)
     case S_GLOBAL: go_title("GLOBAL"); break;
     case S_SYSTEM: go_title("SYSTEM"); break;
     case S_EDIT_SID: eng(3); go_title("EDIT 1"); break;
+    case S_EDIT_FILT: eng(6); go_title("EDIT 2"); TSEL->p[P_E6] = 90; break;   /* TRIO's CUT and RES: the filter's curve */
     case S_EDIT_DIGITAL: eng(E_FM); go_title("EDIT 1"); break;
     case S_OP_ENV: eng(1); go_title("OP1 ENV"); break;
     case S_EDIT_WHEEL: eng(7); go_title("EDIT 1"); ui.hot_col = 1; ui.hot_t = 30; break;
@@ -1695,7 +1833,11 @@ static void sweep_columns(void)
                         *vp = (int16_t)v;
                     nscr = npend = 0;
                     ui.force = 1;
+#if MELODEE_LOOK
+                    draw_page();                         /* (Mono: its knob pages are drawn whole, ui_mono.c) */
+#else
                     draw_columns();
+#endif
                     lint();
                     nsweep++;
                     if (v - d->min > 300) v = d->max - 1;      /* wide ranges: the ends */
@@ -2000,15 +2142,16 @@ static void roll_cost(void)
             t_full / CLOCKS_PER_SEC / N * 1e6, (unsigned long long)(px_full / N), (unsigned long long)(bl_full / N));
 }
 
+#define DS_SHOW (MELODEE_LOOK ? "YELLOW" : "NIGHT")       /* the palette the designer's images are written in */
 static void designer_sweep(const char *out)
 {
     char name[96],file[64];
     for(uint32_t palid=0;palid<UI_PAL_ENTRIES;palid++)for(uint32_t eng=0;eng<NENG_SHOWN;eng++){
-        int night=str_eq(UI_PALETTES[palid].name,"NIGHT");
+        int night=str_eq(UI_PALETTES[palid].name,DS_SHOW);
         state();sound_init_of(TSEL,eng_vis(eng));pal(palid);designer_open();
         snprintf(name,sizeof name,"%s/designer %s START",UI_PALETTES[palid].name,ENGINES[TSEL->eng_req]->name);cur_name=name;
         nscr=npend=0;ui.force=1;ui_draw();lint();if(palid==UI_GRAY_INDEX)mono_check();
-        if(TSEL->eng_req==ENGI_FM6 && night)write_ppm(out,"NIGHT","designer_start");
+        if(TSEL->eng_req==ENGI_FM6 && night)write_ppm(out,DS_SHOW,"designer_start");
         ds.expert=1;designer_begin();
         for(uint32_t i=0;i<ds.n;i++){
             ds.at=(uint8_t)i;designer_page();
@@ -2020,13 +2163,13 @@ static void designer_sweep(const char *out)
                     nscr=npend=0;ui.force=1;ui_draw();lint();if(palid==UI_GRAY_INDEX)mono_check();
                 }
                 ds.row=0;ui.force=1;ui_draw();
-                if(night){snprintf(file,sizeof file,"designer_features_%u",TSEL->eng_req);write_ppm(out,"NIGHT",file);}
+                if(night){snprintf(file,sizeof file,"designer_features_%u",TSEL->eng_req);write_ppm(out,DS_SHOW,file);}
                 continue;
             }
             snprintf(name,sizeof name,"%s/designer %s %s OP%u",UI_PALETTES[palid].name,ENGINES[TSEL->eng_req]->name,cur_page()->title,fm6_opsel+1);cur_name=name;
             nscr=npend=0;ui.force=1;ui_draw();lint();if(palid==UI_GRAY_INDEX)mono_check();
             if(night && TSEL->eng_req==ENGI_FM6 && str_eq(cur_page()->title,"FREQ") && fm6_opsel==0){
-                snprintf(file,sizeof file,"designer_%u",TSEL->eng_req);write_ppm(out,"NIGHT",file);
+                snprintf(file,sizeof file,"designer_%u",TSEL->eng_req);write_ppm(out,DS_SHOW,file);
             }
         }
         designer_compare();                             /* the original, its chip */
@@ -2036,11 +2179,11 @@ static void designer_sweep(const char *out)
         designer_finish();                              /* its sheet, the question */
         snprintf(name,sizeof name,"%s/designer %s sheet",UI_PALETTES[palid].name,ENGINES[TSEL->eng_req]->name);cur_name=name;
         nscr=npend=0;ui.force=1;ui_draw();lint();if(palid==UI_GRAY_INDEX)mono_check();
-        if(TSEL->eng_req==ENGI_FM6 && night)write_ppm(out,"NIGHT","designer_sheet");
+        if(TSEL->eng_req==ENGI_FM6 && night)write_ppm(out,DS_SHOW,"designer_sheet");
         pop_close();confirm_open(CF_DISCARD_DESIGN,song.sel);
         snprintf(name,sizeof name,"%s/designer %s discard",UI_PALETTES[palid].name,ENGINES[TSEL->eng_req]->name);cur_name=name;
         nscr=npend=0;ui.force=1;ui_draw();lint();if(palid==UI_GRAY_INDEX)mono_check();
-        if(TSEL->eng_req==ENGI_FM6 && night)write_ppm(out,"NIGHT","designer_discard");
+        if(TSEL->eng_req==ENGI_FM6 && night)write_ppm(out,DS_SHOW,"designer_discard");
         ui.confirm=0;designer_close(1);
     }
     cur_name=0;
@@ -2056,7 +2199,7 @@ static void library_note_sweep(const char *out)
             sysex_stage(ENGI_FM6,raw,1,FM6_PACKED);ui.uslot=15;ui.msg_t=0;slot_enter();
         } else if(scene==1u){eng(ENGI_FM6);go_page(GR_USER);ui.uslot=15;bulk=(typeof(bulk)){.on=1,.engine=ENGI_FM6,.anchor=12,.end=15};slot_enter();}
         else if(scene==4u||scene==5u){eng(ENGI_FM6);go_page(GR_USER);sx_import.count=32;confirm_open(scene==4u?CF_BULK_ERASE:CF_IMPORT,0);}
-        else {go_page(GR_ROLL);cursor_set(2);TSEL->step[2]=(step_t){{60},1,ST_NOTE,0,96};TSEL->step[5]=(step_t){{64},1,ST_NOTE,0,96};
+        else {go_page(GR_ROLL);cursor_set(2);TSEL->step[2]=(step_t){{60},1,ST_NOTE, 0,0,96};TSEL->step[5]=(step_t){{64},1,ST_NOTE, 0,0,96};
             if(scene==2u)bulk=(typeof(bulk)){.on=1,.anchor=2,.end=5};
             else if(scene==3u)note_manual_length(1,RECORD_UNIT/4u);
             else if(scene==6u||scene==8u){bulk=(typeof(bulk)){.on=1,.anchor=2,.end=5};notes_bulk_sheet_open();if(scene==8u){pop.sel=2;ui.note_grid=2;}}
@@ -2076,7 +2219,11 @@ int main(int argc, char **argv)
     const char *out = argc > 1 ? argv[1] : "build/ui_new";
     char path[600];
     uint32_t p, s;
+#if MELODEE_LOOK
+    static const char *const SHOW[] = {"YELLOW", "WHITE", "GREEN", "BLUE", "RED", "ORANGE", "PINK", "HOT PINK", "LILAC"};   /* the Mono inks */
+#else
     static const char *const SHOW[] = {"NIGHT", "CONTRAST", "SMALTI"};
+#endif
     snprintf(path, sizeof path, "%s/report.txt", out);
     rep = fopen(path, "w");
     if (!rep) { fprintf(stderr, "cannot write %s\n", path); return 1; }
@@ -2102,6 +2249,22 @@ int main(int argc, char **argv)
         fprintf(rep, "(self-test: %u findings above are expected)\n\n", nfind);
         nfind = 0;
     }
+#if MELODEE_LOOK
+    {   /* the Mono lint itself: a value cut, a text against its box, two values touching */
+        uint32_t n0 = nmono;
+        cur_name = "Mono self-test";
+        memset(mo_vals, 0, sizeof mo_vals);
+        mo_vals[0].used = mo_vals[1].used = mo_vals[2].used = 1;
+        mo_vals[0].kind = MV_INV, mo_vals[0].cut = 1, mo_vals[0].fx0 = 0, mo_vals[0].fx1 = 30;
+        mo_vals[1].kind = MV_BOX, mo_vals[1].fx0 = 32, mo_vals[1].fx1 = 58, mo_vals[1].tx0 = 34, mo_vals[1].tx1 = 57;
+        mo_vals[2].kind = MV_DIAL, mo_vals[2].fx0 = -1, mo_vals[2].tx0 = 59, mo_vals[2].tx1 = 70;
+        mo_vals_new = 1;
+        mono_lint();
+        if (nfind != 3u) { fprintf(stderr, "ui_render: the Mono lint missed its self-test (%u of 3)\n", nfind); return 1; }
+        fprintf(rep, "(Mono self-test: %u findings above are expected)\n\n", nfind);
+        nfind = 0, nmono = n0;
+    }
+#endif
     for (p = 0; p < UI_PAL_ENTRIES; p++)
         for (s = 0; s < S_COUNT; s++) {
             char name[64];
@@ -2139,7 +2302,10 @@ int main(int argc, char **argv)
                 write_ppm(out, "MONO", image);
             }
         }
-        if (fmp_charts - c0 != 96u) { fprintf(stderr, "ui_render: %u FM6 charts drawn of 96\n", fmp_charts - c0); return 1; }
+        if (!MELODEE_LOOK && fmp_charts - c0 != 96u) {   /* (the Mono look: no FM6 chart yet, ui_mono.c's stand-in) */
+            fprintf(stderr, "ui_render: %u FM6 charts drawn of 96\n", fmp_charts - c0);
+            return 1;
+        }
     }
     sweep_columns();
     roll_frames(argc > 2 ? argv[2] : 0);
@@ -2171,8 +2337,10 @@ int main(int argc, char **argv)
             fprintf(rep, "  HOME, a frame without force (lazy strips): %.1f us, %llu texts\n",
                     (double)(clock() - c0) / CLOCKS_PER_SEC / (N * 4) * 1e6, (unsigned long long)(n_text / (N * 4)));
         }
-        {   /* the STEP page's piano roll: its panel alone redrawn, and a frame that changes nothing (the signature only) */
+        {   /* the STEP page's piano roll: its panel alone redrawn, and a frame that changes nothing (the signature only);
+             * not linted (the Mono look draws these pages whole, never this panel alone) */
             static const int G[] = {S_ROLL_CHORDS, S_ROLL_PLAYING, S_DRUM};
+            aud_on = 1;
             for (k = 0; k < 3u; k++) {
                 clock_t c0;
                 double tg, ti;
@@ -2187,6 +2355,7 @@ int main(int argc, char **argv)
                 ti = (double)(clock() - c0) / CLOCKS_PER_SEC / (N * 4) * 1e6;
                 fprintf(rep, "  %s: the panel redrawn %.1f us; an unchanged frame (signature only) %.2f us\n", S_NAME[G[k]], tg, ti);
             }
+            aud_on = 0;
         }
         roll_cost();
         audit_sends(rep);
@@ -2232,6 +2401,10 @@ int main(int argc, char **argv)
         }
     }
     if (audf) fclose(audf);
+#if MELODEE_LOOK
+    fprintf(rep, "\nMono lint: %u knob values\n", nmono);
+    if (!nmono) { fprintf(stderr, "ui_render: the Mono lint saw no knob value\n"); nfind++; }
+#endif
     fprintf(rep, "\n%u lint findings, %u ellipsised free texts, %u MONO pixels off gray; %u column values swept; "
             "%u FM6 charts linted\n", nfind, nfree, mono_bad, nsweep, fmp_charts);
     fclose(rep);

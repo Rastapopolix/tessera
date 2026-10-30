@@ -259,6 +259,38 @@ static int32_t page_tabs(int32_t x0, int32_t x1, int32_t y)
     }
     return x1 - (int32_t)n * (w + 2) + 2;
 }
+#if MELODEE_LOOK                                        /* the Mono look's chrome (ui_mono.c) */
+static void mo_dhead(const char *chip, const char *msg, int low);
+static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
+                         int (*cap)(uint32_t r, char *lb, char *v, uint16_t *vc));
+static void mo_sound(const char *en, const char *nm);
+static void mo_scale_pic(int32_t y, int32_t h);
+static void mo_confirm(const char *a, const char *b);
+static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint32_t flags, int32_t meter);
+static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on);
+static void mo_cu_bar(const cord_t *c, int32_t s);
+static void mo_cu_led(uint32_t lv);
+static void mo_chip(uint32_t c, const char *val, const char *unit, uint16_t vc, int hot, int32_t y);
+static void mo_strip_col(uint32_t c, const char *label, const char *val, uint16_t vc, int hot, int32_t y);
+static int foot_tabs_on(void);
+static int32_t mo_tw(const char *s);
+static int32_t mo_text(const char *s, int32_t x, int32_t y, uint16_t c);
+static void mo_textc(const char *s, int32_t cx, int32_t y, uint16_t c);
+static void mo_inv(const char *s, int32_t x, int32_t y);
+static void mo_ascii(char *d, const char *s, uint32_t n);
+static void mo_help(const char *name, const char *val, const char *text);
+static void mo_browser(uint32_t cur, uint32_t total);
+static void mo_patterns(void);
+static void mo_song(void);
+static void mo_grid_panel(void);
+static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fav);
+static void mo_slot_card(const char *tag, const char *nm, int used, const char *d, int boot, int32_t y);
+static void mo_slot_row(const char *tag, const char *nm, int used, int boot, int mark, int32_t y, int32_t ty, int32_t th);
+static void mo_dstart(void);
+static void mo_msc(void);
+static void mo_smap(uint32_t cur);
+static void mo_dfoot(const char *nm, const char *go);
+#endif
 static void draw_head(void)
 {
     char b[16], chip[16];
@@ -283,14 +315,23 @@ static void draw_head(void)
     }
     fmt_int(b, bpm);
     if (!ui.force && sig == ui.head_sig) {
+#if MELODEE_LOOK
+        if (!moved)
+            return;                                     /* (Mono: the tempo snaps, drawn with the header) */
+#else
         if (ui.roll[ROLL_BPM].from[0] || moved) {       /* rolling, or snapped to the new value: the BPM's strip only */
             cv_begin(BPM_W, H_HEAD, T_BG);
             roll_text(ROLL_BPM, BPM_W - text_w(&AF_S, b), 3, b, ui.bpm_t ? T_ACCENT : T_TEXT);
             cv_blit(BPM_X, Y_HEAD);
         }
         return;
+#endif
     }
     ui.head_sig = sig;
+#if MELODEE_LOOK
+    mo_dhead(chip, seq_erase_active(TSEL) ? "ERASING" : msg ? (ui.msg_t ? ui.msg : layer_head()) : 0, low);
+    return;
+#endif
     cv_begin(240, H_HEAD, T_BG);
     roll_text(ROLL_BPM, BPM_X + BPM_W - text_w(&AF_S, b), 3, b, ui.bpm_t ? T_ACCENT : T_TEXT);   /* (right-aligned) */
     cv_icon_mid(BPM_X - 14, H_HEAD / 2, 12, chain.running ? ICON_X_SONG : song.playing ? ICON_X_PLAY : ICON_X_STOP,
@@ -396,6 +437,11 @@ static void pv_column(uint32_t c, const char *label, const char *val, const char
                       int hot);
 static void cu_columns(void);                           /* CORDS (ui_cords.c) */
 static void mx_columns(void);                           /* MATRIX (ui_matrix.c) */
+#if MELODEE_LOOK
+static uint8_t mo_on;                                   /* a Mono page being drawn: its knobs to mo_capture (ui_mono.c) */
+static void mo_capture(uint32_t c, const char *label, const char *val, const char *unit, uint16_t vc, int32_t ratio,
+                       int hot);
+#endif
 static void draw_column(uint32_t c, const char *label, const char *val, const char *unit, uint16_t vc,
                         int32_t ratio, uint32_t icon)
 {
@@ -412,6 +458,13 @@ static void draw_column(uint32_t c, const char *label, const char *val, const ch
     if (col_pid != PID_NONE && ratio >= 0 && cord_moves(col_pid, song.sel, &sh))   /* the mods on it, now */
         live = clamp(ratio + sh * 1000 / 32768, 0, 1000);
     col_pid = PID_NONE;
+#if MELODEE_LOOK
+    if (mo_on) {                                        /* Mono: the knob's texts to its dial (ui_mono.c) */
+        mo_capture(c, label, val, unit, vc, ratio, hot);
+        fmt_named = 0;
+        return;
+    }
+#endif
     if (col_style == CS_CAPTURE) {                      /* a list's row (ui_list.c) */
         list_capture(c, label, val, unit, vc);
         fmt_named = 0;
@@ -809,6 +862,16 @@ static void draw_columns(void)
         uint32_t tr = song.sel;
         const tessera_evolve_t *ev = &tessera.evolve[tr < TESSERA_TRACKS ? tr : 0u];
         char f2[16];
+        if (fm_layer_on()) {                            /* a generator's FORM, OCT+ held: DEVELOP (lit with a FORM on) */
+            uint32_t dv = tessera.fm_dev[tr];
+            fmt_int(f2, dv);
+            col_mods(PID_TESS(TX_FM_DEVELOP));
+            draw_column(0, "DEVLP", f2, "%", ev->form ? VAL(0u) : T_DIM, (int32_t)dv * 10, ICON_AUTO);
+            draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+            return;
+        }
         fmt_int(f2, ev->contrast);
         draw_column(0, "FORM", tessera_form_name(ev->form), "", VAL(0u), (int32_t)ev->form * 1000 / 6, ICON_AUTO);
         col_mods(PID_TESS(TX_FM_CONTRAST));
@@ -876,17 +939,30 @@ static void draw_columns(void)
         }
         return;
     }
-    if (cur_page()->graph == GR_ENERGY) {                /* ENERGY (energy.c), the project's: ARC, RESTS, the tide now, a rest */
+    if (cur_page()->graph == GR_ENERGY && en_layer_on()) {   /* ENERGY, OCT+ held: the selected track's DEPTH */
+        char w0[8];
+        uint32_t dp = tessera.en_depth[song.sel % TESSERA_TRACKS];
+        fmt_int(w0, dp);
+        col_mods(PID_TESS(TX_EN_DEPTH));
+        draw_column(0, "DEPTH", w0, "%", VAL(0u), (int32_t)dp * 10, ICON_AUTO);
+        draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
+        draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+        draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+        return;
+    }
+    if (cur_page()->graph == GR_ENERGY) {                /* ENERGY (energy.c), the project's: ARC, RESTS, LEVEL, a rest */
         char w0[8], w1[8], w2[8], w3[8];
-        int32_t now = energy_now() * 100 / 32767;
+        int32_t lv = tessera.en_level;
         uint32_t left = energy.rest_left / EN_BPS;
         fmt_int(w0, tessera.en_arc);
         fmt_int(w1, tessera.en_rests);
-        fmt_int(w2, now);
+        if (lv > 0) { w2[0] = '+'; fmt_int(w2 + 1, lv); }
+        else fmt_int(w2, lv);
         fmt_int(w3, (int32_t)left + 1);
         draw_column(0, "ARC", w0, "%", VAL(0u), (int32_t)tessera.en_arc * 10, ICON_AUTO);
         draw_column(1, "RESTS", w1, "%", VAL(1u), (int32_t)tessera.en_rests * 10, ICON_AUTO);
-        draw_column(2, "NOW", tessera.en_arc ? w2 : "--", tessera.en_arc ? "%" : "", tessera.en_arc ? T_TEXT : T_MID, -1, ICON_NONE);
+        col_mods(PID_TESS(TX_EN_LEVEL));
+        draw_column(2, "LEVEL", w2, "", VAL(2u), (lv + 100) * 5, ICON_AUTO);
         draw_column(3, "REST", song.playing && energy_resting() ? w3 : "--", song.playing && energy_resting() ? "s" : "",
                     song.playing && energy_resting() ? T_TEXT : T_MID, -1, ICON_NONE);
         return;
@@ -958,6 +1034,26 @@ static void draw_columns(void)
         const tessera_evolve_t *ev = &tessera.evolve[tr < TESSERA_TRACKS ? tr : 0u];
         char e0[16], e1[16], e2[16], e3[16], e0u[8] = "", e1u[8] = "", e2u[8] = "%";
         int lk = tessera_lock_get(tr);
+        if (sv_layer_on()) {                            /* STEP EVOLVE, OCT+ held: HOW */
+            uint32_t how = tessera.sv_how[tr] % TESS_SV_HOWS;
+            col_mods(PID_TESS(TX_SV_HOW));
+            draw_column(0, "HOW", pid_desc(PID_TESS(TX_SV_HOW), tr)->names[how], "", VAL(0u),
+                        (int32_t)how * 1000 / (TESS_SV_HOWS - 1), ICON_AUTO);
+            draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+            return;
+        }
+        if (ev_layer_on()) {                            /* a generator's EVOLVE, OCT+ held: GRAVITY (lit with EVERY on) */
+            uint32_t gv = tessera.sd_grav[tr];
+            fmt_int(e0, gv);
+            col_mods(PID_TESS(TX_SD_GRAVITY));
+            draw_column(0, "GRAVITY", e0, "%", ev->every && !ev->form ? VAL(0u) : T_DIM, (int32_t)gv * 10, ICON_AUTO);
+            draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+            return;
+        }
         if (tessera_step_on(tr)) {                      /* STEP EVOLVE: LOCK, EVERY, AMOUNT, CLEAR (the steps changed) */
             uint32_t every = tessera.sv_every[tr], amount = tessera.sv_amount[tr], n = tessera_step_varied(tr);
             fmt_int(e0, (uint32_t)lk);
@@ -1008,15 +1104,18 @@ static void draw_columns(void)
                     }
                 }
                 return;
-            } else if (sd_layer_on()) {                     /* TURING, EUCLID, OCT+ held: SOURCE, KEEP */
-                uint32_t src = tessera.sd_src[tr], kp = tessera.sd_keep[tr];
+            } else if (sd_layer_on()) {                     /* TURING .. MORPH, OCT+ held: SOURCE, KEEP, GRAVITY */
+                uint32_t src = tessera.sd_src[tr], kp = tessera.sd_keep[tr], gv = tessera.sd_grav[tr];
                 col_mods(PID_TESS(TX_SD_SOURCE));
                 draw_column(0, "SOURCE", pid_desc(PID_TESS(TX_SD_SOURCE), tr)->names[src % (TESSERA_TRACKS + 1u)], "",
                             VAL(0u), (int32_t)src * 1000 / TESSERA_TRACKS, ICON_AUTO);
                 col_mods(PID_TESS(TX_SD_KEEP));
                 draw_column(1, "KEEP", pid_desc(PID_TESS(TX_SD_KEEP), tr)->names[kp % TESS_SD_KEEPS], "",
                             src ? VAL(1u) : T_DIM, (int32_t)kp * 1000 / (TESS_SD_KEEPS - 1), ICON_AUTO);
-                draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+                fmt_int(v3, gv);
+                col_mods(PID_TESS(TX_SD_GRAVITY));
+                draw_column(2, "GRAVITY", v3, "%", src || (tessera.evolve[tr].every && !tessera.evolve[tr].form) ?
+                            VAL(2u) : T_DIM, (int32_t)gv * 10, ICON_AUTO);
                 draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
             } else if (m == TESS_ENG_TURING) {
                 const gen_turing_t *tur = tessera_turing(tr);
@@ -1408,7 +1507,8 @@ static void draw_columns(void)
             unit = "%";
         } else {
             param_format(d, *vp, val, &unit);
-            if(d->names==N_FX && (*vp==FX_REVERB || *vp==FX_CHORUS))str_cpy(val,N_FX[*vp],sizeof val);
+            if(d->names==N_FX && *vp>=0 && *vp<FX_COUNT && (MELODEE_LOOK || *vp==FX_REVERB || *vp==FX_CHORUS))
+                str_cpy(val,N_FX[*vp],sizeof val);   /* (Mono: the whole name, ui_mono.c mo_fit shortens it: FILTR) */
         }
         if (vp >= TSEL->p && vp < TSEL->p + P_COUNT)     /* a track parameter: the mods on it, live */
             col_mods(PID_TRACK(vp - TSEL->p));
@@ -1431,6 +1531,9 @@ static void draw_uboot(void)
     ui.head_sig = ~0u;
     draw_text_box(0, 76, 240, &AF_M, "UPDATE MODE IN", T_TEXT, 1);
     draw_text_box(0, 102, 240, &AF_L, d, T_THEME, 1);
+#if MELODEE_LOOK
+    draw_text_box(0, 150, 240, &AF_S, "LET GO TO CANCEL", T_MID, 1);
+#else
     {   /* the two keycaps held, and what letting go does */
         int32_t w = kc_w(KC_OCTDN) + 3 + kh_w(KC_OCTUP, "LET GO TO CANCEL"), x = (240 - w) / 2;
         cv_begin(240, KC_H + 2, T_BG);
@@ -1439,6 +1542,7 @@ static void draw_uboot(void)
         cv_blit(0, 149);
         lcd_sync();
     }
+#endif
     ui.force = 0;
     scr_shown();
 }
@@ -1569,6 +1673,10 @@ static void draw_confirm(void)
     uint16_t ring = ux_mix(T_SURF, T_THEME, 20);
     confirm_text(a, b);
     confirm_words(a);
+#if MELODEE_LOOK
+    mo_confirm(a, b);
+    return;
+#endif
     cv_begin(DLG_W, DLG_H, T_BG);
     cv_rrect(0, 0, DLG_W, DLG_H, 10, T_LINE, T_BG);
     cv_rrect(1, 1, DLG_W - 2, DLG_H - 2, 9, T_SURF, T_LINE);
@@ -1600,6 +1708,9 @@ static void draw_confirm(void)
 #include "ui_scales.c"                                  /* SCALES: a screen of its own */
 #include "ui_designer.c"                                /* guided native sound creation */
 #include "ui_awake.c"                                   /* AWAKE's step entry on GEN */
+#if MELODEE_LOOK
+#include "ui_mono.c"                                    /* the Mono look (MELODEE_LOOK 1) */
+#endif
 static int own_screen(void)                             /* a page drawn whole by its own code, no cards or footer */
 {
     uint32_t g = cur_page()->graph;
@@ -1633,6 +1744,12 @@ static void draw_page(void)
         motion_draw();
     } else if (!own_screen() && list_on()) {            /* a list page (ui_list.c) */
         list_draw();
+#if MELODEE_LOOK
+    } else if (!own_screen() && (pv_kind() == PV_CURVE || pv_kind() == PV_RINGS || pv_kind() == PV_NOTES)) {   /* Mono:
+                                                         * the knob pages, NOTES */
+        mono_page();
+        return;
+#endif
     } else if (!own_screen() && pv_kind()) {            /* the redesign's other pages (ui_pages.c) */
         pv_draw();
     } else if (own_screen()) {                          /* the browser, PATTERNS, SONG: screens of their own */
@@ -1647,6 +1764,14 @@ static void draw_page(void)
             patterns_draw();
         }
     } else {
+#if MELODEE_LOOK
+        if (!ui.home) {                                 /* Mono: the whole page, its footer too (ui_mono.c) */
+            mono_page();
+            return;
+        }
+        mono_stage();                                   /* .. Stage too */
+        return;
+#endif
         if (ui.force)
             draw_frame(ui.home);
         melodee_dbg.stage = 3;
@@ -1660,8 +1785,10 @@ static void draw_page(void)
             draw_graph();
     }
     melodee_dbg.stage = 6;
+#if !MELODEE_LOOK                                       /* (Mono: every page's foot is its own, ui_mono.c) */
     if (!ui.home && !own_screen() && !pv_kind() && !list_on() && !slot_kind() && !motion_page())
         draw_foot();
+#endif
 }
 static void ui_draw_frame(void);
 static void ui_draw(void)                               /* (gfx.c: the fills wait for the frame's canvases) */

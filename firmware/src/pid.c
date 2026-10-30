@@ -29,7 +29,7 @@ static const char *const TX_N_QMOVE[] = {"STOP", "DOWN", "UP", "RAND"};
 static const char *const TX_N_CSFILL[] = {"OFF", "ARP"};
 static const char *const TX_N_CHPROG[] = {"POP", "50S", "2-5-1", "CIRCLE", "TWO", "DRONE", "WALK", "USER"};   /* (GEN_CH_*) */
 static const char *const TX_N_CHBARS[] = {"1/2", "1", "2", "4"};
-static const char *const TX_N_CHHIT[] = {"HOLD", "BEAT", "STEP"};
+static const char *const TX_N_CHHIT[] = {"HOLD", "BEAT", "STEP", "OFFBEAT"};   /* (GEN_CH_*) */
 static const char *const TX_N_GRP4[] = {"TOM", "CLAP", "HATOP", "RIM", "BELL"};
 static const char *const TX_N_RATCH[] = {"x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8"};
 static const char *const TX_N_SHAPE[] = {"EVEN", "ACCEL", "DECEL"};   /* (SUB_EVEN ..) */
@@ -39,6 +39,8 @@ static const char *const TX_N_MIDICH[] = {"AUTO", "1", "2", "3", "4", "5", "6", 
 static const char *const TX_N_ANORDER[] = {"PLAYED", "REVERSE", "SHUFFLE"};   /* (TESS_AN_*) */
 static const char *const TX_N_ANLEN[] = {"SHORT", "MID", "LONG"};
 static const char *const TX_N_SDKEEP[] = {"FREE", "RHYTHM", "PITCH"};   /* (TESS_SD_*) */
+static const char *const TX_N_SVHOW[] = {"DRIFT", "ADORN", "SERIAL"};   /* (TESS_SV_*) */
+static const char *const TX_N_ACCMODE[] = {"WRAP", "PING", "CLAMP"};    /* (TESS_ACC_*) */
 static const char *const TX_N_QEVERY[] = {"/1", "/2", "/3", "/4", "/6", "/8", "/16"};   /* (every n steps, as TX_N_DIV) */
 
 /* the ranges tessera_param_set keeps (PULSES and ROT: at most STEPS, below STEPS, as it says) */
@@ -144,6 +146,13 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_SD_SOURCE] = PE("SOURCE", TX_N_FOLLOW, 0),
     [TX_SD_KEEP] = PE("KEEP", TX_N_SDKEEP, 0),
     [TX_SUB_HUMAN] = {"HUMAN", F_INT, 0, TESS_HUMAN_MS, 0, 0, "ms"},
+    [TX_ACC_LIMIT] = {"LIMIT", F_INT, 1, TESS_ACC_LIMIT, TESS_ACC_LIMIT_DEF, 0, 0},
+    [TX_ACC_MODE] = PE("MODE", TX_N_ACCMODE, 0),
+    [TX_SD_GRAVITY] = {"GRAVITY", F_INT, 0, 100, 0, 0, "%"},
+    [TX_SV_HOW] = PE("HOW", TX_N_SVHOW, 0),
+    [TX_EN_LEVEL] = PD("LEVEL", F_INT, -100, 100, 0),
+    [TX_EN_DEPTH] = PD("DEPTH", F_PCT, 0, 100, 100),
+    [TX_FM_DEVELOP] = PD("DEVLP", F_PCT, 0, 100, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -448,7 +457,9 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                  "chords (CHRD OFF: triads); hold OCT+ on GEN for OCT, CHRD and VOIC."),
     X_(TX_CH_BARS, "CHORD BARS", "How long each chord lasts: half a bar, 1, 2 or 4 bars."),
     X_(TX_CH_HIT, "CHORD HIT", "How the chord plays: HOLD once, held to the next chord; BEAT struck again every beat; "
-                               "STEP every step, for the step's GATE."),
+                               "STEP every step, for the step's GATE; OFFBEAT a short stab on the off-beats, the \"and\" halfway between "
+                               "the beats (reggae's skank), for the step's GATE: at 1/8 an eighth at most, at 1/16 a "
+                               "sixteenth, and SWING moves it with the step (at 1/8 the \"and\" is the swung step)."),
     X_(TX_CH_OCT, "CHORD OCT", "The chords' register, -2 to +2 octaves from their home around C3. OCT+ held on GEN, "
                                "KNOB 1; KNOB 2 and 3 there are SCL CHORD's CHRD and VOIC."),
     X_(TX_GRD_KICK, "ATLAS KICK", "How much of DENSITY the kick gets: 100 all of it, 50 half, 0 none (the kick "
@@ -486,8 +497,9 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                      "(USER: its LEN there)."),
     XP_(TX_EN_ARC, "ENERGY ARC", "The project's slow tide, the same for every track: over 3 to 6 minutes it swings from "
                                  "the tracks as set to sparse and back. At the sparse end the generator tracks leave "
-                                 "out up to 70 % more of their hits and play up to 16 softer; ARC is how far it "
-                                 "swings, 0 off. It is the cord source ENERGY too (to a filter, a send)."),
+                                 "out up to 70 % more of their hits and play up to 16 softer, at the full end they "
+                                 "take back their DROP and play up to 12 louder; ARC is how far it swings, round "
+                                 "LEVEL, 0 off. It is the cord source ENERGY too (to a filter, a send)."),
     XP_(TX_EN_RESTS, "ENERGY RESTS", "How often the music rests: 8 to 18 s with the generator tracks silent (a CHORD "
                                      "track's held chord and its BREATH go on), at 100 about every 4 minutes, near 0 "
                                      "about every 20, sooner while ARC's tide is sparse. 0 off."),
@@ -519,18 +531,45 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                 "the others too, as the scale always is; drum tracks keep theirs. OWN: each track its "
                                 "own ROOT. Turning it on gives every track the selected track's key. SCL's Key link row; "
                                 "on in a new project, saved with it."),
-    X_(TX_SD_SOURCE, "SOURCE", "A STEP pattern for TURING or EUCLID to play from: T1 to T4 is that track's pattern "
-                               "playing now (this track's own too), which stays as written. TURING loops its first "
-                               "LEN steps and PROB changes them a step at a time; EUCLID plays its notes in order "
-                               "on its hits. OFF, or a pattern without notes: the generator's own. OCT+ held on GEN, "
-                               "KNOB 1."),
-    X_(TX_SD_KEEP, "KEEP", "With a SOURCE, what stays as written. FREE: TURING may change a step's pitch or its hit. "
+    X_(TX_SD_SOURCE, "SOURCE", "A STEP pattern for TURING, EUCLID, MARKOV or MORPH to play from: T1 to T4 is that "
+                               "track's pattern playing now (this track's own too), which stays as written. TURING "
+                               "loops its first LEN steps and PROB changes them a step at a time; EUCLID plays its "
+                               "notes in order on its hits; MARKOV learns what follows what in it (LEAP: jumps "
+                               "anywhere); MORPH blends it (A) with a variation of it (B). OFF, or a pattern without "
+                               "notes: the generator's own. OCT+ held on GEN, KNOB 1."),
+    X_(TX_SD_KEEP, "KEEP", "With a SOURCE, what stays as written. FREE: a step's pitch or its hit may change. "
                            "RHYTHM: only the pitches change (EUCLID: the source's own rhythm, on EUCLID's pitches). "
-                           "PITCH: only the hits come and go. OCT+ held on GEN, KNOB 2."),
+                           "PITCH: only the hits come and go (MARKOV: the notes in written order). OCT+ held on GEN, "
+                           "KNOB 2."),
     X_(TX_SUB_HUMAN, "TIMING HUMAN", "Plays each step a little late, as a player behind the beat: up to this many ms, "
                                      "a new amount each step, never early and never more than a quarter of the step. "
                                      "The same each time the piece plays. 0 on the grid. STEP tracks too (with a "
                                      "step's NUDGE). TWEAK's HUMAN varies velocity and length."),
+    X_(TX_ACC_LIMIT, "ACCUM LIMIT", "How far a step's Accumulate takes its notes, in scale degrees from the note "
+                                    "as written: 7 is an octave of a 7-note scale. The pattern's sheet (OCT+ held "
+                                    "on NOTES)."),
+    X_(TX_ACC_MODE, "ACCUM MODE", "What a step's Accumulate does at LIMIT. WRAP: back to the note as written, and "
+                                  "on again. PING: turns round and comes back. CLAMP: stays there. PLAY and a new "
+                                  "pattern start it again."),
+    X_(TX_SD_GRAVITY, "GRAVITY", "The pull home. With EVERY on, this share of EVOLVE's rounds moves the generator "
+                                 "back toward its settings as you last set them, instead of changing it: it drifts, "
+                                 "then comes home. With a SOURCE, this share of the steps plays the source as written "
+                                 "at its place. 0: none. OCT+ held on EVOLVE, KNOB 1, or on GEN, KNOB 3."),
+    X_(TX_SV_HOW, "EVOLVE HOW", "What STEP EVOLVE's rounds do to the steps. DRIFT: moves by scale degrees, octave "
+                                "jumps, drops, swaps and ghost notes. ADORN, ornaments that only add: ratchets, "
+                                "octave jumps, neighbour notes, passing notes in the rests. SERIAL: the whole phrase "
+                                "at once: backwards, upside down, rotated or half of it at half speed; AMOUNT is the "
+                                "chance of one a round, LOCK of it staying. OCT+ held on EVOLVE, KNOB 1."),
+    XP_(TX_EN_LEVEL, "ENERGY LEVEL", "The project's energy, played by hand: ARC's tide swings round it. Up, the "
+                                     "generator tracks take back their DROP and play up to 12 louder; down, they leave "
+                                     "out hits and play softer. EVOLVE changes less when low, more when high. 0: as "
+                                     "set."),
+    X_(TX_EN_DEPTH, "ENERGY DEPTH", "How much ENERGY (its LEVEL, ARC's tide, RESTS) moves this track. 100 all of it, "
+                                    "0 an anchor that plays as set whatever the energy. OCT+ held on ENERGY, KNOB 1."),
+    X_(TX_FM_DEVELOP, "FORM DEVELOP", "How far a section varies each time FORM comes back to it: it stays "
+                                      "recognisable but is never quite the same. The section itself is kept, so the "
+                                      "next return starts from it again. GRAVITY is the chance a return stays exact. "
+                                      "0: every return exact. OCT+ held on FORM, KNOB 1."),
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };

@@ -37,10 +37,11 @@ static int led_get(const uint8_t *nl, uint32_t id)
 static const uint8_t FAM_BTN[FAM_COUNT] = {B_HOME, B_ENV, B_LFO, B_SCL, B_EDIT, B_GLO, B_SAVE,
                                            B_ARP, B_SEQ, B_GLO, B_FX};   /* GLO: mixer + global settings; REC is transport */
 
-static uint32_t cur_fam(void)                       /* (an engine's own envelope / LFO page: ENV / LFO, ui.c native_page) */
+static uint32_t cur_fam(void)                       /* (an engine's own envelope / LFO page: ENV / LFO, ui.c native_page;
+                                                     * EDIT when EDIT reached it) */
 {
-    return ui.home ? FAM_HOME : native_page(ui.page, FAM_ENV) ? FAM_ENV : native_page(ui.page, FAM_LFO) ? FAM_LFO :
-           cur_page()->fam;
+    return ui.home ? FAM_HOME : ui.via == FAM_EDIT ? FAM_EDIT : native_page(ui.page, FAM_ENV) ? FAM_ENV :
+           native_page(ui.page, FAM_LFO) ? FAM_LFO : cur_page()->fam;
 }
 
 static int layer_set_open(void);                       /* (ui_layer.c) */
@@ -857,6 +858,22 @@ static void edit_param(uint32_t slot, int32_t steps)
         0)) {
         ui_message("STOP TO EDIT"); return;
     }
+    if (pg->graph == GR_EVOLVE && sv_layer_on()) {  /* STEP EVOLVE, OCT+ held: HOW */
+        tessera_sv_layer_knob(slot, steps);
+        oct_eat |= 2u;
+        ui.oct_t0 |= 2u;
+        oct_deferred = 0;
+        ui.force = 1;
+        return;
+    }
+    if (pg->graph == GR_EVOLVE && ev_layer_on()) {  /* a generator's EVOLVE, OCT+ held: GRAVITY */
+        tessera_ev_layer_knob(slot, steps);
+        oct_eat |= 2u;
+        ui.oct_t0 |= 2u;
+        oct_deferred = 0;
+        ui.force = 1;
+        return;
+    }
     if (pg->graph == GR_EVOLVE) {                   /* (ROLL: 128 seeds, a quick turn across them) */
         tessera_evolve_knob(slot, slot == 3u ? accel(EN_K1 + slot, steps, 128) : steps);
         ui.force = 1;
@@ -893,10 +910,18 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
-    if (pg->graph == GR_ENERGY) {                   /* ENERGY, the project's: ARC and RESTS as percents (the others: none) */
-        if (slot < 2u) {
-            uint32_t x = slot ? TX_EN_RESTS : TX_EN_ARC;
-            tessera_param_set(0, x, tessera_param_get(0, x) + accel(EN_K1 + slot, steps, 100));
+    if (pg->graph == GR_ENERGY && en_layer_on()) {  /* ENERGY, OCT+ held: the selected track's DEPTH */
+        tessera_en_layer_knob(slot, accel(EN_K1 + slot, steps, 100));
+        oct_eat |= 2u;
+        ui.oct_t0 |= 2u;
+        oct_deferred = 0;
+        ui.force = 1;
+        return;
+    }
+    if (pg->graph == GR_ENERGY) {                   /* ENERGY, the project's: ARC, RESTS, LEVEL as percents (KNOB 4: none) */
+        if (slot < 3u) {
+            uint32_t x = slot == 2u ? TX_EN_LEVEL : slot ? TX_EN_RESTS : TX_EN_ARC;
+            tessera_param_set(0, x, tessera_param_get(0, x) + accel(EN_K1 + slot, steps, slot == 2u ? 200 : 100));
         }
         ui.force = 1;
         return;
@@ -920,8 +945,22 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
+    if (pg->graph == GR_FORM && fm_layer_on()) {    /* a generator's FORM, OCT+ held: DEVELOP */
+        tessera_fm_layer_knob(slot, steps);
+        oct_eat |= 2u;
+        ui.oct_t0 |= 2u;
+        oct_deferred = 0;
+        ui.force = 1;
+        return;
+    }
     if (pg->graph == GR_FORM) {
         tessera_form_knob(slot, steps);
+#if MELODEE_LOOK
+        if (slot == 2u && song.sel < TESSERA_TRACKS) {   /* Mono: CLEAR says it acted, or why not */
+            ui_message(tessera.evolve[song.sel].form ? "CLEARED" : "FORM OFF");
+            mo_flash(2u);
+        }
+#endif
         ui.force = 1;
         return;
     }
@@ -961,7 +1000,7 @@ static void edit_param(uint32_t slot, int32_t steps)
             ui.force = 1;
             return;
         }
-        if (sd_layer_on()) {                            /* TURING, EUCLID, OCT+ held: SOURCE, KEEP */
+        if (sd_layer_on()) {                            /* TURING .. MORPH, OCT+ held: SOURCE, KEEP, GRAVITY */
             tessera_sd_layer_knob(slot, steps);
             oct_eat |= 2u;
             ui.oct_t0 |= 2u;
@@ -1069,6 +1108,15 @@ static void edit_param(uint32_t slot, int32_t steps)
         uint32_t f = motion_guard();
         motion_native_peek(TSEL, old);
         fm6_page_put(pg, slot, v);
+        native_motion(old);
+        motion_unguard(f);
+        return;
+    }
+    if (pg->scope == SC_ORACLE) {                        /* (ORACLE's: into its patch, as FM6's) */
+        uint8_t old[MO_NATIVE_N];
+        uint32_t f = motion_guard();
+        motion_native_peek(TSEL, old);
+        or_page_put(pg, slot, v);
         native_motion(old);
         motion_unguard(f);
         return;
@@ -2376,6 +2424,9 @@ static void ui_input(void)
 static void setup_title(void)
 {
     lcd_fill(0, 0, 240, 240, T_BG);
+#if MELODEE_LOOK
+    draw_text_box(0, 8, 240, &AF_M, "CALIBRATION", T_TEXT, 1);
+#else
     {   /* the title with its icon (the menu row's), centred together; M from y 8 as before */
         const char *t = "HARDWARE CALIBRATION";
         int32_t x = (240 - (16 + 6 + text_w(&AF_M, t))) / 2;
@@ -2384,7 +2435,8 @@ static void setup_title(void)
         cv_text(x + 22, 3, &AF_M, t, T_TEXT);
         cv_blit(0, 5);
     }
-    draw_text_box(0, 32, 240, &AF_S, "TEACH EACH BUTTON AND KNOB", T_MID, 1);
+#endif
+    draw_text_box(0, 32, 240, &AF_S, LOOK("TEACH EACH BUTTON AND KNOB", "TEACH EACH CONTROL"), T_MID, 1);
     lcd_fill(16, 56, 208, 1, T_LINE);
 }
 static void setup_show(const char *what, const char *name)     /* "PRESS" / "TURN RIGHT", the control */

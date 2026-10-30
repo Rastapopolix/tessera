@@ -84,19 +84,47 @@ static int an_layer_on(void)
            cur_page()->graph == GR_STEPS && tessera.mode[song.sel] == TESS_ENG_ANSWER &&
            ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
-/* TURING or EUCLID on GEN with OCT+ held: the knobs are SOURCE and KEEP (step_seed.c tessera_sd_layer_knob) */
+/* TURING, EUCLID, MARKOV or MORPH on GEN with OCT+ held: the knobs are SOURCE, KEEP and GRAVITY (step_seed.c
+ * tessera_sd_layer_knob) */
 static int sd_layer_on(void)
 {
+    uint32_t m = song.sel < TESSERA_TRACKS ? tessera.mode[song.sel] : TESS_ENG_OFF;
     return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->fam == FAM_GEN &&
            cur_page()->graph == GR_STEPS &&
-           (tessera.mode[song.sel] == TESS_ENG_TURING || tessera.mode[song.sel] == TESS_ENG_EUCLID) &&
+           (m == TESS_ENG_TURING || m == TESS_ENG_EUCLID || m == TESS_ENG_MARKOV || m == TESS_ENG_MORPH) &&
            ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
-/* a generator's OCT+ layer is on (QUAD's, CONSTELLATION's, CHORD's, GRIDS', ANSWER's, TURING's or EUCLID's): no octave,
- * no sheet */
+/* a STEP track's EVOLVE page (STEP EVOLVE) with OCT+ held: KNOB 1 is HOW (step_evolve.c tessera_sv_layer_knob) */
+static int sv_layer_on(void)
+{
+    return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->graph == GR_EVOLVE &&
+           tessera_step_on(song.sel) && ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+}
+/* the ENERGY page with OCT+ held: KNOB 1 is the selected track's DEPTH (tessera.c tessera_en_layer_knob) */
+static int en_layer_on(void)
+{
+    return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->graph == GR_ENERGY &&
+           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+}
+/* a generator track's EVOLVE page with OCT+ held: KNOB 1 is GRAVITY (tessera.c tessera_ev_layer_knob) */
+static int ev_layer_on(void)
+{
+    return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->graph == GR_EVOLVE &&
+           !tessera_step_on(song.sel) && tessera.mode[song.sel] != TESS_ENG_OFF &&
+           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+}
+/* a generator track's FORM page with OCT+ held: KNOB 1 is DEVELOP (tessera.c tessera_fm_layer_knob) */
+static int fm_layer_on(void)
+{
+    return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->graph == GR_FORM &&
+           tessera.mode[song.sel] != TESS_ENG_OFF && ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+}
+/* a generator's OCT+ layer is on (QUAD's, CONSTELLATION's, CHORD's, GRIDS', ANSWER's, the SOURCE one, STEP EVOLVE's,
+ * EVOLVE's, FORM's, ENERGY's): no octave, no sheet */
 static int gen_layer_on(void)
 {
-    return quad_cols_on() || cs_layer_on() || ch_layer_on() || gr_layer_on() || an_layer_on() || sd_layer_on();
+    return quad_cols_on() || cs_layer_on() || ch_layer_on() || gr_layer_on() || an_layer_on() || sd_layer_on() ||
+           sv_layer_on() || ev_layer_on() || fm_layer_on() || en_layer_on();
 }
 /* QUAD's LINK as its card shows it: OFF, or "T" and the linked tracks ("T24") */
 static void quad_link_text(uint32_t m, char *b)
@@ -162,6 +190,58 @@ static int32_t bar_x(uint32_t i) { return 13 + (int32_t)(i % 16u) * 13 + (int32_
 
 #include "tessera.h"
 
+/* TURING or MORPH playing from a SOURCE (STEP as seed): its loop as bars by pitch, a step as written in the source
+ * solid; one changed from it in the colour, with the step as written over it hollow (its ghost: an empty frame a note
+ * dropped, a bar without one a note added). The panel: under them how far the loop is from home, the share of its
+ * steps changed (MORPH: its position at the left, as without a SOURCE). 0 = not from a SOURCE */
+static int graph_seed_viz(uint32_t tr, int is_panel, uint16_t c, uint16_t bg, uint16_t dim, int32_t y_base)
+{
+    uint8_t now[16], home[16];
+    uint32_t at = 0, len = tessera_sd_loop(tr, now, home, &at), i, k, n = 0;
+    int32_t lo = 127, hi = 0, h = is_panel ? 70 : 18, w = is_panel ? 10 : 11, nh;
+    if (!len) return 0;
+    for (i = 0; i < len; i++)
+        for (k = 0; k < 2u; k++) {
+            uint32_t e = k ? home[i] : now[i];
+            if (e & 0x80u) {
+                if ((int32_t)(e & 0x7Fu) < lo) lo = (int32_t)(e & 0x7Fu);
+                if ((int32_t)(e & 0x7Fu) > hi) hi = (int32_t)(e & 0x7Fu);
+            }
+        }
+    for (i = 0; i < 16u; i++) {
+        int32_t sx = is_panel ? 18 + (int32_t)i * 12 + (int32_t)(i / 4u) * 4 : 13 + (int32_t)i * 13 + (int32_t)(i / 4u) * 4;
+        int head = song.playing && i == at, ch = i < len && now[i] != home[i];
+        if (i >= len) {
+            cv_rect(sx + w / 2 - 1, y_base + h - 3, 2, 2, dim);
+            continue;
+        }
+        n += (uint32_t)ch;
+        for (k = 0, nh = 0; k < 2u; k++) {               /* (what plays, then the step as written over it: inside
+                                                         * the bar playing, cut into it) */
+            uint32_t e = k ? home[i] : now[i];
+            int32_t bh = 4 + (hi > lo ? ((int32_t)(e & 0x7Fu) - lo) * (h - 4) / (hi - lo) : 0);
+            if (k && !ch) break;
+            if (!(e & 0x80u)) {
+                if (!k) cv_rrect(sx, y_base + h - 4, w, 4, 1, head ? c : dim, bg);
+                continue;
+            }
+            if (k) cv_frame(sx, y_base + h - bh, w, bh, bh <= nh ? bg : T_TEXT);
+            else nh = bh, cv_rrect(sx, y_base + h - bh, w, bh, 1, ch || head ? c : T_TEXT, bg);
+        }
+        cv_rect(sx, y_base + h + 2, w, head ? 2 : 1, head ? c : dim);
+    }
+    if (is_panel) {
+        if (tessera.mode[tr] == TESS_ENG_MORPH) {
+            cv_rect(18, y_base + h + 11, 120, 1, dim);
+            cv_rect(18 + (int32_t)tessera_morph(tr)->morph_pos * 116 / 127, y_base + h + 8, 4, 7, c);
+        }
+        cv_text_r(170, y_base + h + 7, &AF_X, "HOME", T_MID, bg);
+        cv_frame(176, y_base + h + 8, 46, 8, dim);
+        if (n) cv_rect(177, y_base + h + 9, (int32_t)(n * 44u / len) ? (int32_t)(n * 44u / len) : 1, 6, c);
+    }
+    return 1;
+}
+
 void graph_tessera_viz(uint32_t tr, int is_panel) {
     if (tr >= TESSERA_TRACKS) return;
     uint32_t mode = tessera.mode[tr];
@@ -170,6 +250,7 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
     uint16_t dim = is_panel ? T_LINE : T_RAISE;
     int32_t y_base = is_panel ? 10 : 14;           /* (the panel: tall bars, filling it as GRIDS' lanes do) */
 
+    if (graph_seed_viz(tr, is_panel, c, bg, dim, y_base)) return;
     if (mode == TESS_ENG_TURING) {
         const gen_turing_t *tur = tessera_turing(tr);
         uint32_t len = tur->len ? tur->len : 16u;
@@ -402,7 +483,7 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
          * Under them the four notes, a bar each at its pitch, the one playing lit */
         const gen_poly_t *p = tessera_poly(tr);
         uint32_t n = 7u * (p->span >= 1u && p->span <= 3u ? p->span : 1u), now = (p->tick + GEN_POLY_WRAP - 1u) % GEN_POLY_WRAP, base = now - now % 16u;
-        int32_t top = is_panel ? 6 : y_base, lane = is_panel ? 13 : 5, x0 = is_panel ? 46 : 40, cw = is_panel ? 11 : 12;
+        int32_t top = is_panel ? 6 : y_base, lane = is_panel ? LOOK(13, 15) : 5, x0 = is_panel ? 46 : 40, cw = is_panel ? 11 : 12;
         int32_t ny = top + 4 * lane + (is_panel ? 6 : 2), nh = is_panel ? 112 - ny - 6 : 8;
         for (uint32_t r = 0; r < 4u; r++) {
             uint32_t d = p->div[r];
@@ -410,7 +491,7 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
             if (is_panel) {
                 char lb[4] = "OFF";
                 if (d) lb[0] = '/', fmt_int(lb + 1, d);
-                cv_text(12, ly - 1, &AF_S, lb, r == (p->sel & 3u) ? T_TEXT : d ? c : T_MID);
+                cv_text(LOOK(12, 4), ly - 1, &AF_S, lb, r == (p->sel & 3u) ? T_TEXT : d ? c : T_MID);
             }
             for (uint32_t i = 0; i < 16u; i++) {
                 int32_t sx = x0 + (int32_t)i * cw + (int32_t)(i / 4u) * 2;
@@ -602,6 +683,7 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
         uint32_t n = gen_chord_len(g), cur = g->n ? g->idx : 0u, pcs = 0, len = gen_chord_steps(g, tess_steps_per_bar(&trk[tr]));
         int32_t cw = sw / (int32_t)n;
         char b[12];
+        TEXT_CASE(1);
         for (uint32_t i = 0; i < n; i++) {
             int32_t x = x0 + (int32_t)i * cw;
             uint32_t at = tessera_chord_at(tr, i, b), on = i == cur;
@@ -635,14 +717,20 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
                     qs += 2;
                     if (is_panel && text_w(&AF_S, qs) <= cw - 6) qf = &AF_S;
                 }
+#if MELODEE_LOOK
+                if (text_w(qf, qs) > cw - 4 && qs[0] == 'm' && qs[1] == '7' && qs[2] == 'b' && qs[3] == '5')
+                    qs[2] = 0, qs[0] = (char)0xF8;      /* (the 5 x 7 face's cells hold two letters: "m7b5" as its symbol) */
+                if (text_w(qf, qs) > cw - 4) qs[(cw - 4) / text_w(qf, "M")] = 0;
+#endif
                 cv_text_c(x + cw / 2 - 1, y, is_panel ? &AF_S : &AF_X, r, tc, tb);
-                cv_text_c(x + cw / 2 - 1, y + (is_panel ? 14 : 10), qf, qs, tc, tb);
+                cv_text_c(x + cw / 2 - 1, y + (is_panel ? LOOK(14, 16) : LOOK(10, 15)), qf, qs, tc, tb);
             }
             if (on && song.playing && g->n) {
                 uint32_t in = (g->n - 1u) % len + 1u;
                 cv_rect(x + 1, top + ch + 3, (cw - 3) * (int32_t)in / (int32_t)len, 2, T_TEXT);
             }
         }
+        TEXT_CASE(0);
         if (is_panel) {
             int32_t ky = top + ch + 12, kw = sw / 12;
             for (uint32_t k = 0; k < 12u; k++) {
@@ -688,11 +776,11 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
             if (is_panel) {
                 char lb[3] = {'T', (char)('1' + r), 0};
                 uint16_t tc = r == tr ? T_TEXT : on ? c : dim;
-                cv_text(10, ly + (lane - 14) / 2, &AF_S, lb, tc);
-                cv_text(30, ly + (lane - 14) / 2, &AF_S, QD[q->dir % GEN_QD_COUNT], on ? tc : dim);
+                cv_text(LOOK(10, 3), ly + (lane - 14) / 2, &AF_S, lb, tc);
+                cv_text(LOOK(30, 27), ly + (lane - 14) / 2, &AF_S, QD[q->dir % GEN_QD_COUNT], on ? tc : dim);
                 cv_text(x0 + 4 * (cw + gap) + 2, ly + (lane - 14) / 2, &AF_S, QR[q->range % GEN_QR_COUNT], on ? tc : dim);
                 for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {   /* (its LINKs: a dot a track, none for its own) */
-                    int32_t dx = 208 + (int32_t)k * 5, dy = ly + lane / 2 - 1;
+                    int32_t dx = LOOK(208, 225) + (int32_t)k * LOOK(5, 4), dy = ly + lane / 2 - 1;
                     if (k == r) continue;
                     cv_rect(dx, dy, 3, 3, on && ((q->link >> k) & 1u) ? T_ACCENT : dim);
                 }
@@ -744,10 +832,72 @@ static void graph_form(const track_t *t, uint16_t c)
 }
 
 /* EVOLVE page: phrase progress strip, one cell per bar until the next mutation; all cells flash on a mutation */
+/* a STEP track's EVOLVE page, under the bars to the next round: its steps as a small roll, the phrase across the
+ * panel. A step playing as written: a bar at its pitch; a change: the step as written hollow, what plays now solid in
+ * the accent colour (a ratchet split into its hits, a passing note or a ghost in a rest, a dropped note only the
+ * hollow one); a drum hit in the middle row. Under it, what HOW does now (SERIAL: the transform's name) and how far the
+ * steps are from home: the share playing a change */
+static void graph_step_evolve(const track_t *t, uint32_t tr, uint16_t c)
+{
+    static const char *const SER[5] = {"", "BACKWARDS", "UPSIDE DOWN", "ROTATE ", "HALF SPEED"};
+    const step_t *st = t->step;
+    uint32_t len = (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP), i, k, arg = 0, ser = tessera_step_serial(tr, &arg), n = 0;
+    int32_t lo = 127, hi = 0, cw = PANEL_W / (int32_t)len, bw = cw > 3 ? cw - 2 : cw > 1 ? cw - 1 : 1;
+    char lab[16];
+    step_t v;
+    for (i = 0; i < len; i++) {                          /* (the pitch range: as written and as played) */
+        for (k = 0; k < 2u; k++) {
+            const step_t *s = k ? (tessera_step_now(tr, i, &v) ? &v : 0) : &st[i];
+            if (s && s->time == ST_NOTE && s->n) {
+                if (s->note[0] < lo) lo = s->note[0];
+                if (s->note[0] > hi) hi = s->note[0];
+            }
+        }
+    }
+    if (lo > hi) lo = hi = 60;
+    for (i = 0; i < len; i++) {
+        int32_t x = PANEL_X0 + (int32_t)i * cw + (cw - bw) / 2, ch = tessera_step_now(tr, i, &v), y, r;
+        const step_t *s = &st[i];
+        n += (uint32_t)ch;
+        for (k = 0; k < 2u; k++) {                       /* (as written, then the change over it) */
+            const step_t *p = k ? &v : s;
+            if (k && !ch) break;
+            if (p->time != ST_NOTE || (!p->n && !p->hit)) {
+                if (!k && !ch) cv_rect(x, 66, bw, 2, T_RAISE);
+                continue;
+            }
+            y = !p->n ? 36 : hi == lo ? 36 : 60 - (p->note[0] - lo) * 48 / (hi - lo);
+            if (!k) {
+                if (ch) cv_frame(x, y, bw, 5, T_MID);
+                else cv_rect(x, y, bw, 5, T_TEXT);
+                continue;
+            }
+            r = p->time == ST_NOTE ? (int32_t)step_ratch(p) : 1;
+            if (r > 1 && bw >= 2 * r - 1) {               /* (a ratchet: its hits) */
+                int32_t hw = (bw - (r - 1)) / r;
+                for (int32_t h = 0; h < r; h++) cv_rect(x + h * (hw + 1), y, hw, 5, c);
+            } else {
+                cv_rect(x, y, bw, 5, c);
+            }
+        }
+        if (song.playing && i == t->seq_idx) cv_rect(x, 70, bw, 2, c);
+    }
+    if (ser) {
+        str_cpy(lab, SER[ser % 5u], sizeof lab);
+        if (ser == TESS_SV_SER_ROT) fmt_int(lab + 7, arg);
+    } else {
+        str_cpy(lab, pid_desc(PID_TESS(TX_SV_HOW), tr)->names[tessera.sv_how[tr] % TESS_SV_HOWS], sizeof lab);
+    }
+    cv_text(13, 80, &AF_S, lab, n ? T_TEXT : T_MID);
+    cv_text_r(170, 81, &AF_X, "HOME", T_MID, T_SURF);    /* (the meter: empty at home) */
+    cv_frame(176, 82, 50, 8, T_LINE);
+    if (n) cv_rect(177, 83, (int32_t)(n * 48u / len) ? (int32_t)(n * 48u / len) : 1, 6, c);
+}
+
 static void graph_evolve(const track_t *t, uint16_t c)
 {
     uint32_t tr = trk_index(t), bar = 0, of = 0, n, i, w;
-    int flash = 0;
+    int flash = 0, step = tessera_step_on(tr);
     tessera_phrase(tr, &bar, &of, &flash);
     n = of ? of : 1u;
     w = (200u - 2u * (n - 1u)) / n;
@@ -759,8 +909,9 @@ static void graph_evolve(const track_t *t, uint16_t c)
             else if (i < bar) col = T_TEXT;
             else if (i == bar && song.playing) col = c;
         }
-        cv_rrect(x, 20, (int32_t)w, of ? 16 : 4, 1, col, T_SURF);
+        cv_rrect(x, step ? -4 : 20, (int32_t)w, step ? 6 : of ? 16 : 4, 1, col, T_SURF);
     }
+    if (step) graph_step_evolve(t, tr, c);
 }
 
 /* TWEAK page: one small picture under each card. SHIFT: the note moved off its written pitch (the dashed line);
@@ -998,15 +1149,16 @@ static void graph_timing(const track_t *t, uint16_t c)
  * it, and where it is now (a dot); a rest, the time left on a bar along the top. Live: graph_sig redraws it as it moves */
 static void graph_energy(uint16_t c)
 {
-    int32_t x0 = PANEL_X0 + 6, w = PANEL_W - 12, i, a = tessera.en_arc, at;
+    int32_t x0 = PANEL_X0 + 6, w = PANEL_W - 12, i, a = tessera.en_arc, at, lv = tessera.en_level * 32767 / 100;
     cv_rect(x0, 50, w, 1, T_RAISE);
     cv_rect(x0, 46, 1, 9, T_RAISE);
-    for (i = 0; i < w; i += 2) {
-        int32_t y = 50 - en_sin((uint32_t)i, (uint32_t)w) * a / 100 * 36 / 32767;
-        cv_rect(x0 + i, y, 2, 2, a ? T_MID : T_RAISE);
+    for (i = 0; i < w; i += 2) {                     /* (round LEVEL) */
+        int32_t e = en_sin((uint32_t)i, (uint32_t)w) * a / 100 + lv;
+        int32_t y = 50 - (e < -32767 ? -32767 : e > 32767 ? 32767 : e) * 36 / 32767;
+        cv_rect(x0 + i, y, 2, 2, a || lv ? T_MID : T_RAISE);
     }
     at = (int32_t)en_frac(energy.ph, energy.per, (uint32_t)w);
-    if (a && song.playing)
+    if ((a || lv) && song.playing)
         cv_ball(x0 + at, 50 - energy_now() * 36 / 32767, 7, c);
     if (song.playing && energy_resting()) {
         int32_t len = (int32_t)(energy.rest_left / EN_BPS) * w / 18;
@@ -1028,7 +1180,7 @@ static void graph_midich(void)
         if (ch == MIDI_OUT_NONE)
             str_cpy(b, "OFF", sizeof b);
         else {
-            str_cpy(b, "CHANNEL ", sizeof b);
+            str_cpy(b, LOOK("CHANNEL ", "CH "), sizeof b);
             fmt_int(n, (int32_t)ch + 1);
             str_cpy(b + str_len(b), n, 4);
             if (!tessera.midi_ch[k]) str_cpy(b + str_len(b), drum_track(&trk[k]) && settings_drumch ? "  (DRUM)" : "  (ROUT)", 10);
@@ -1036,8 +1188,8 @@ static void graph_midich(void)
         cv_text(PANEL_X0 + 32, y + 3, &AF_X, b, ch == MIDI_OUT_NONE ? T_DIM : T_TEXT);
     }
     if (settings_midi_out != MIDI_OUT_ALL)
-        cv_text(PANEL_X0 + 6, 86, &AF_X, settings_midi_out == MIDI_OUT_OFF ? "MENU MIDI OUT: OFF, NOTHING SENT"
-                                                                           : "MENU MIDI OUT: KEYS ONLY", T_DIM);
+        cv_text(PANEL_X0 + 6, 86, &AF_X, settings_midi_out == MIDI_OUT_OFF ? LOOK("MENU MIDI OUT: OFF, NOTHING SENT", "MIDI OUT: OFF")
+                                                                           : LOOK("MENU MIDI OUT: KEYS ONLY", "MIDI OUT: KEYS"), T_DIM);
 }
 
 static void graph_steps(const track_t *t, uint16_t c)
@@ -1250,12 +1402,27 @@ static void graph_recorded_notes(const track_t *t, uint16_t c)
             if (y < PR_Y0 || y >= bottom) { cv_rect(x + 1, y < PR_Y0 ? PR_Y0 : bottom - 1, xe - x - 1, 1, c); continue; }
             cv_rect(x + lead, y + 1, xe - x - lead - (cont ? 0 : 1), PR_RH - 2, selected ? T_ACCENT : c);
             if (selected) cv_frame(x + (source == si ? 1 : 0), y, xe - x - (source == si ? 2 : 0), PR_RH, T_TEXT);
+            if (st->climb && source == si) {           /* (Accumulate: a caret over a climbing note, under a falling one) */
+                int32_t cy = step_climb(st) > 0 ? y - 1 : y + PR_RH, d = step_climb(st) > 0 ? 1 : -1;
+                if (cy - 2 * d >= PR_Y0 && cy - 2 * d < bottom)
+                    for (int32_t r = 0; r < 3; r++) cv_rect(x + lead + r, cy - r * d, 5 - 2 * r, 1, T_TEXT);
+            }
             uint32_t next = (si + 1u) % step_pattern_len(t);
             const step_t *ns = &seq_steps(t)[next];
             if (!j && (st->flags & SF_SLIDE) && si + 1u < end && ns->time == ST_NOTE && ns->n) {
                 int32_t ny = clamp(pr_row_y(ns->note[0]), PR_Y0, bottom - PR_RH);
                 cv_line(xe - 2, y + 2, xe + 2, ny + 2, T_TEXT);
             }
+        }
+    }
+    for (uint32_t si = base; si < end; si++) {          /* STEP EVOLVE: what a changed step plays now, dashed (its
+                                                         * ghost note; the step stays as written) */
+        step_t v;
+        if (!tessera_step_now(trk_index(t), si, &v) || v.time != ST_NOTE) continue;
+        int32_t x = notes_x(recording_prefix(t, period, si), a, b), xe = notes_x(recording_prefix(t, period, si + 1u), a, b);
+        for (uint32_t j = 0; j < v.n && j < 4u; j++) {
+            int32_t y = pr_row_y(v.note[j]);
+            if (y >= PR_Y0 && y < bottom) cv_dashed(x + 2, y, xe - x - 3, PR_RH, 1, T_TEXT);
         }
     }
     for (uint32_t i = recording_head[recording_owner(t)]; i < RECORD_MAX; i = recording_next[i])
@@ -1338,7 +1505,7 @@ static void graph_chord(const track_t *t, uint16_t c)
     char b[12];
     const char *cap = "LAST";
     if (!t->p[P_CHRD]) {
-        panel_note("CHORD KEYS OFF", "[K1] DIA3: IN-KEY CHORDS", 0);   /* (the title says what they are) */
+        panel_note("CHORD KEYS OFF", LOOK("[K1] DIA3: IN-KEY CHORDS", "[K1] DIA3: IN KEY"), 0);   /* (the title says what they are) */
         return;
     }
     if (chord_kit(t)) {
@@ -1370,7 +1537,9 @@ static void graph_chord(const track_t *t, uint16_t c)
     if (trk_vmode(t) != V_POLY)
         cap = "ROOT ONLY";                              /* MONO / LEGATO / UNISON */
     chord_name(b, (uint32_t)r, mask);
+    TEXT_CASE(1);
     cv_text_on(14, 8, &AF_M, b, T_TEXT, T_SURF);
+    TEXT_CASE(0);
     cv_text_r(226, 12, &AF_S, cap, T_MID, T_SURF);
     lo = nn[0] - nn[0] % 12u;
     cnt = nn[n - 1u] - lo < 24u ? 24u : 36u;
@@ -1584,7 +1753,7 @@ static uint32_t fm6_alg_of(const track_t *t)
 /* FM6's EDIT pages: the algorithm, drawn as graph_fm draws DIGITAL's, "ALG 05" top left. Carriers THEME with INK
  * numerals, modulators RAISE with THEME ones; an operator at output level 0: a DIM numeral (a carrier on RAISE).
  * Routes THEME, the feedback loop MID (DIM at feedback 0), the output bus MID. The knob just turned in ACCENT:
- * ALG and PTCH the label, FB the loop, MLVL the routes, MRAT MEG VMOD the modulators, DTUN the carriers. */
+ * ALG and PTCH the label, FB the loop, MLVL the routes, MRAT MEG VMOD the modulators, DTUN AEG the carriers. */
 static void graph_fm6(const track_t *t, uint16_t c)
 {
     uint32_t alg = fm6_alg_of(t), k, j, car = fm6_car_ops(alg), top = 0, hi = 0, fbop = fm6_fb_op(alg), hotset = 0;
@@ -1601,7 +1770,7 @@ static void graph_fm6(const track_t *t, uint16_t c)
         hot = 0;                                     /* (their columns are no macros) */
     else if (hot == P_E3 || hot == P_E4 || hot == P_E5)
         hotset = 63u & ~car;
-    else if (hot == P_E6)
+    else if (hot == P_E6 || hot == P_E7)
         hotset = car;
     fm6_routes(alg, m);
     for (k = 0; k < 6u; k++) {
@@ -1996,11 +2165,98 @@ static void graph_scope(uint16_t c, int32_t top, int32_t h)
 
 /* Each arrangement row selects one bank per track. graph_y, graph_h: the panel's place (ui_pages.c: under its rings) */
 static int32_t graph_y = Y_GRAPH, graph_h = H_GRAPH, graph_oy = GOY;   /* (graph_oy: the 100 px scale's top) */
-static void draw_graph(void)
+/* the page's picture on the current canvas, its top at canvas row oy (draw_graph: 0; the Mono look's picture area) */
+static void graph_body(int32_t oy)
 {
     const page_t *pg = cur_page();
     const track_t *t = TSEL;
     uint16_t c = ACC;
+    cv_oy = oy + graph_oy;                           /* graphs on a 100 px scale */
+    switch (pg->graph) {
+    case GR_LFO:
+        graph_lfo(t, c);
+        break;
+    case GR_FORM:
+        graph_form(t, c);
+        break;
+    case GR_EVOLVE:
+        graph_evolve(t, c);
+        break;
+    case GR_TWEAK:
+        cv_oy = oy;
+        graph_tweak(t, c);
+        break;
+    case GR_TWEAK2:
+        cv_oy = oy;
+        graph_tweak2(t, c);
+        break;
+    case GR_ORGANIC:
+        graph_organic(t, c);
+        break;
+    case GR_NOTELEN:
+        graph_notelen(t, c);
+        break;
+    case GR_TIMING:
+        graph_timing(t, c);
+        break;
+    case GR_ENERGY:
+        graph_energy(c);
+        break;
+    case GR_MIDICH:
+        cv_oy = oy;
+        graph_midich();
+        break;
+    case GR_MATRIX:
+        mx_graph(c);
+        break;
+    case GR_STEPS:
+        graph_steps(t, c);
+        break;
+    case GR_DRUMHIT:
+    case GR_ROLL:
+        cv_oy = oy;
+        if (grid_on()) graph_grid(t, c);
+        else { proll.play = notes_play_x(t); graph_recorded_notes(t, c); }
+        break;
+    case GR_SCALE:
+        if (scale_settings_page(pg)) {
+            cv_oy = oy;
+            cv_text_fit(12, 3, &AF_S, SCALE_TITLE[clamp(t->p[P_SCALE], 0, SCALE_TOTAL - 1u)], T_TEXT, T_SURF, 216);
+            cv_oy = oy + 20;
+        }
+        graph_scale(t, c);
+        break;
+    case GR_CHORD:
+        cv_oy = oy;
+        graph_chord(t, c);
+        break;
+#if MELODEE_SLICE
+    case GR_SLICES:
+        cv_oy = oy;
+        graph_slices();
+        break;
+#endif
+    case GR_FMEG: {                                  /* FM6: operator fm6_opsel's envelope */
+        const uint8_t *op = &fm6_patch[song.sel % NTRK][(5u - fm6_opsel % 6u) * FP_OP];
+        graph_dxenv(op + FP_R1, op + FP_L1, 0, c);
+        break;
+    }
+    case GR_FMPEG:                                   /* FM6: the pitch envelope */
+        graph_dxenv(fm6_patch[song.sel % NTRK] + FP_PR1, fm6_patch[song.sel % NTRK] + FP_PL1, 1, c);
+        break;
+    default:
+#if MELODEE_LEGACY_EXTRAS
+        if (pg->scope == SC_ENGINE && t->eng_req % NENGINES == 7u) graph_wheel(t, c);
+        else
+#endif
+        if ((pg->scope == SC_ENGINE || pg->scope == SC_FM6 || pg->scope == SC_FMOP) &&
+                 t->eng_req % NENGINES == ENGI_FM6) graph_fm6(t, c);   /* EDIT 1 and 2, FM6's pages */
+        else { cv_oy = oy; graph_scope(c, 0, H_GRAPH); }
+        break;
+    }
+}
+static void draw_graph(void)
+{
     uint32_t sig;
     sig = graph_signature();
     if (!ui.force && sig == ui.graph_sig)
@@ -2009,93 +2265,11 @@ static void draw_graph(void)
     cv_begin(240, (uint32_t)graph_h, T_BG);
     cv_rrect(3, 0, 234, graph_h, 5, T_SURF, T_BG);   /* the panel */
     cv_bg = T_SURF;                                  /* (text drawn with cv_text lands on it) */
-    cv_oy = graph_oy;                                /* graphs on a 100 px scale */
     if (ui.home) {                                   /* (Stage draws its own panel: ui_stage.c) */
         cv_oy = 0;
-        graph_scope(c, 0, H_GRAPH);
+        graph_scope(ACC, 0, H_GRAPH);
     } else {
-        switch (pg->graph) {
-        case GR_LFO:
-            graph_lfo(t, c);
-            break;
-        case GR_FORM:
-            graph_form(t, c);
-            break;
-        case GR_EVOLVE:
-            graph_evolve(t, c);
-            break;
-        case GR_TWEAK:
-            cv_oy = 0;
-            graph_tweak(t, c);
-            break;
-        case GR_TWEAK2:
-            cv_oy = 0;
-            graph_tweak2(t, c);
-            break;
-        case GR_ORGANIC:
-            graph_organic(t, c);
-            break;
-        case GR_NOTELEN:
-            graph_notelen(t, c);
-            break;
-        case GR_TIMING:
-            graph_timing(t, c);
-            break;
-        case GR_ENERGY:
-            graph_energy(c);
-            break;
-        case GR_MIDICH:
-            cv_oy = 0;
-            graph_midich();
-            break;
-        case GR_MATRIX:
-            mx_graph(c);
-            break;
-        case GR_STEPS:
-            graph_steps(t, c);
-            break;
-        case GR_DRUMHIT:
-        case GR_ROLL:
-            cv_oy = 0;
-            if (grid_on()) graph_grid(t, c);
-            else { proll.play = notes_play_x(t); graph_recorded_notes(t, c); }
-            break;
-        case GR_SCALE:
-            if (scale_settings_page(pg)) {
-                cv_oy = 0;
-                cv_text_fit(12, 3, &AF_S, SCALE_TITLE[clamp(t->p[P_SCALE], 0, SCALE_TOTAL - 1u)], T_TEXT, T_SURF, 216);
-                cv_oy = 20;
-            }
-            graph_scale(t, c);
-            break;
-        case GR_CHORD:
-            cv_oy = 0;
-            graph_chord(t, c);
-            break;
-#if MELODEE_SLICE
-        case GR_SLICES:
-            cv_oy = 0;
-            graph_slices();
-            break;
-#endif
-        case GR_FMEG: {                                  /* FM6: operator fm6_opsel's envelope */
-            const uint8_t *op = &fm6_patch[song.sel % NTRK][(5u - fm6_opsel % 6u) * FP_OP];
-            graph_dxenv(op + FP_R1, op + FP_L1, 0, c);
-            break;
-        }
-        case GR_FMPEG:                                   /* FM6: the pitch envelope */
-            graph_dxenv(fm6_patch[song.sel % NTRK] + FP_PR1, fm6_patch[song.sel % NTRK] + FP_PL1, 1, c);
-            break;
-        default:
-#if MELODEE_LEGACY_EXTRAS
-            if (pg->scope == SC_ENGINE && t->eng_req % NENGINES == 7u) graph_wheel(t, c);
-            else
-#endif
-            if ((pg->scope == SC_ENGINE || pg->scope == SC_FM6 || pg->scope == SC_FMOP) &&
-                     t->eng_req % NENGINES == ENGI_FM6) graph_fm6(t, c);   /* EDIT 1 and 2, FM6's pages */
-            else { cv_oy = 0; graph_scope(c, 0, H_GRAPH); }
-            break;
-        }
+        graph_body(0);
     }
     cv_oy = 0;
     cv_blit(0, (uint32_t)graph_y);

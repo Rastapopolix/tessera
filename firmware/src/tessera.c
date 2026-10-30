@@ -67,8 +67,23 @@ static void tess_seed_fresh(uint32_t tr)
     tessera.seed[tr] = (uint16_t)(1u + gen_stream(TESS_ENTROPY() + tr * 0x9E3779B9u) % TESS_SEED_MAX);
     tess_seed_apply(tr);
 }
+/* ATLAS's start (Theo: for inspiration): the first time a track turns to ATLAS since power-on or NEW, a random point on
+ * the map and DENSITY 30..50. A loaded project's tracks keep their own (tessera_unpack clears the bits). Not saved */
+static uint8_t tess_atlas_new;                          /* bit tr: track tr's ATLAS still at tessera_init's start */
+static void tess_atlas_fresh(uint32_t tr)
+{
+    uint32_t r;
+    if (!(tess_atlas_new >> tr & 1u)) return;
+    tess_atlas_new &= (uint8_t)~(1u << tr);
+    r = gen_stream(TESS_ENTROPY() + tr * 0x85EBCA6Bu);
+    tessera.grids[tr].x = (uint8_t)r;
+    tessera.grids[tr].y = (uint8_t)(r >> 8);
+    tessera.grids[tr].dens = (uint8_t)(30u + (r >> 16) % 21u);
+}
 static void tess_realign(uint32_t tr);
 static void sd_realign(uint32_t tr);                    /* (step_seed.c) */
+static void sd_evolve(uint32_t tr, uint32_t amt);
+static uint32_t sd_source(uint32_t tr);
 static void tess_form_restart(uint32_t tr);
 /* The seed ROLL left waiting (tessera_seed_turn): its line from its start. The playheads back on step 1; a FORM
  * begins again at A (its sections were the old line's) */
@@ -114,6 +129,9 @@ void tessera_init(void)
     memset(&tess_sv, 0, sizeof tess_sv);
     memset(&tess_an, 0, sizeof tess_an);
     tessera.key_link = 1;                               /* (a new project: one key for every track) */
+    memset(tessera.acc_limit, TESS_ACC_LIMIT_DEF, sizeof tessera.acc_limit);
+    memset(tessera.en_depth, 100, sizeof tessera.en_depth);   /* (ENERGY moves every track, as before part 2) */   /* (the pitch accumulator: an octave) */
+    tess_atlas_new = (1u << TESSERA_TRACKS) - 1u;       /* (ATLAS: a random start, tess_atlas_fresh) */
 
     for (uint32_t i = 0; i < TESSERA_TRACKS; i++) {
         tessera.mode[i] = TESS_ENG_OFF;
@@ -329,12 +347,16 @@ void tessera_mutate(uint32_t tr)
     if (tr >= TESSERA_TRACKS) return;
     uint32_t amt = tessera.evolve[tr].amount;
     if (amt > 100u) amt = 100u;
+    amt = energy_amount(tr, amt);                            /* (ENERGY: calmer sparse, more full) */
 
     switch (tessera.mode[tr]) {
     case TESS_ENG_TURING: gen_turing_mutate(&tessera.turing[tr], amt, &tessera.rnd[tr]); break;
     case TESS_ENG_EUCLID: gen_euclid_mutate(&tessera.euclid[tr], amt, &tessera.rnd[tr]); break;
     case TESS_ENG_MARKOV: gen_markov_mutate(&tessera.markov[tr], amt, &tessera.rnd[tr]); break;
-    case TESS_ENG_MORPH:  gen_morph_mutate(&tessera.morph[tr], amt, &tessera.rnd[tr]); break;
+    case TESS_ENG_MORPH:
+        gen_morph_mutate(&tessera.morph[tr], amt, &tessera.rnd[tr]);
+        sd_evolve(tr, amt);                                  /* (a SOURCE: B a little further from it) */
+        break;
     case TESS_ENG_GRIDS:  gen_grids_mutate(&tessera.grids[tr], amt, &tessera.rnd[tr]); break;
     case TESS_ENG_BOUNCE: gen_bounce_mutate(&tessera.bounce[tr], amt, &tessera.rnd[tr]); break;
     case TESS_ENG_AWAKE:  gen_awake_mutate(&tessera.awake[tr], amt, &tessera.rnd[tr]); break;
@@ -372,12 +394,33 @@ uint32_t tessera_form_get(uint32_t tr, uint8_t seq[4], uint32_t *pos)
     return TESS_FORM_LEN[f];
 }
 
-/* Remember the live phrase as the section being left (the Markov / Morph notes are written straight into it) */
+/* Remember the live phrase as the section being left (the Markov / Morph notes are written straight into it). A
+ * developed return left as it was developed is not remembered: the section stays as it was, so DEVELOP never drifts;
+ * changed since (a knob), it is */
+static void tess_gen_save(uint32_t tr, gen_sec_t *g, uint8_t *aw);
+static void tess_gv_now(uint32_t tr, gen_sec_t *g, uint8_t *aw);
 static void tess_save_sec(uint32_t tr)
 {
     tessera_evolve_t *ev = &tessera.evolve[tr];
     tessera_sec_t *s = &tessera.sec[tr][ev->sec % 3u];
     gen_sec_t g = {s->reg, s->p0, s->p1};
+    if (tess_sv.dv_on >> tr & 1u) {
+        gen_sec_t now;
+        uint8_t aw[16];
+        tess_sv.dv_on &= (uint8_t)~(1u << tr);
+        tess_gv_now(tr, &now, aw);
+        if (!memcmp(&now, &tess_sv.dv_last[tr], sizeof now) && !memcmp(aw, tess_sv.dv_law[tr], sizeof aw)) return;
+    }
+    tess_gen_save(tr, &g, s->note);
+    s->reg = g.reg;
+    s->p0 = g.p0;
+    s->p1 = g.p1;
+}
+/* The generator's settings as a section keeps them (Awake's 16 bytes of values into aw) */
+static void tess_gen_save(uint32_t tr, gen_sec_t *gs, uint8_t *aw)
+{
+    const tessera_evolve_t *ev = &tessera.evolve[tr];
+    gen_sec_t g = *gs;
     switch (tessera.mode[tr]) {
     case TESS_ENG_TURING:
         gen_turing_save(&tessera.turing[tr], &g);
@@ -390,8 +433,8 @@ static void tess_save_sec(uint32_t tr)
     case TESS_ENG_BOUNCE: gen_bounce_save(&tessera.bounce[tr], &g); break;
     case TESS_ENG_AWAKE:                                     /* (its values: the phrase buffer, Awake has no LOCK) */
         gen_awake_save(&tessera.awake[tr], &g);
-        memcpy(s->note, tessera.awake[tr].a, 8);
-        memcpy(s->note + 8, tessera.awake[tr].b, 8);
+        memcpy(aw, tessera.awake[tr].a, 8);
+        memcpy(aw + 8, tessera.awake[tr].b, 8);
         break;
     case TESS_ENG_POLY:   gen_poly_save(&tessera.poly[tr], &g); break;
     case TESS_ENG_QUAD:   gen_quad_save(&tessera.quad[tr], &g); break;
@@ -399,9 +442,77 @@ static void tess_save_sec(uint32_t tr)
     case TESS_ENG_SERIES: gen_series_save(&tessera.series[tr], &g); break;
     case TESS_ENG_CHORD:  gen_chord_save(&tessera.chord[tr], &g); break;
     }
-    s->reg = g.reg;
-    s->p0 = g.p0;
-    s->p1 = g.p1;
+    *gs = g;
+}
+
+/* GRAVITY on EVOLVE (a generator without a SOURCE, FORM off): home is the generator as it was last set by hand (a knob,
+ * ROLL, MODE, a load: whatever left it other than the last round did). At GRAVITY % a round pulls it toward home
+ * (gen.c gen_*_pull) instead of changing it; GRAVITY 0 draws nothing, so the rounds play as before. CONSTELLATION's pull
+ * lets no star go; QUAD's only alone and with its columns still */
+static void tess_gv_now(uint32_t tr, gen_sec_t *g, uint8_t *aw)
+{
+    memset(g, 0, sizeof *g);
+    memset(aw, 0, 16);
+    tess_gen_save(tr, g, aw);
+}
+#define TESS_GV_PULL(E, f) \
+    case E: { gen_##f##_t h = tessera.f[tr]; gen_##f##_load(&h, hs); gen_##f##_pull(&tessera.f[tr], &h, amt, rnd); } break;
+static void tess_gv_pull(uint32_t tr, uint32_t amt)
+{
+    const gen_sec_t *hs = &tess_sv.gv_home[tr];
+    uint32_t *rnd = &tessera.rnd[tr], i, n = 0;
+    switch (tessera.mode[tr]) {
+    case TESS_ENG_TURING:                                    /* (from the phrase's start, as home was taken) */
+        if (!tessera.evolve[tr].rec) tessera.turing[tr].reg = tessera.evolve[tr].base_reg;
+        { gen_turing_t h = tessera.turing[tr]; gen_turing_load(&h, hs); gen_turing_pull(&tessera.turing[tr], &h, amt, rnd); }
+        break;
+    TESS_GV_PULL(TESS_ENG_EUCLID, euclid)
+    TESS_GV_PULL(TESS_ENG_MARKOV, markov)
+    TESS_GV_PULL(TESS_ENG_MORPH, morph)
+    TESS_GV_PULL(TESS_ENG_GRIDS, grids)
+    TESS_GV_PULL(TESS_ENG_BOUNCE, bounce)
+    TESS_GV_PULL(TESS_ENG_POLY, poly)
+    TESS_GV_PULL(TESS_ENG_SERIES, series)
+    TESS_GV_PULL(TESS_ENG_CHORD, chord)
+    case TESS_ENG_AWAKE: {
+        gen_awake_t h = tessera.awake[tr];
+        memcpy(h.a, tess_sv.gv_haw[tr], 8);
+        memcpy(h.b, tess_sv.gv_haw[tr] + 8, 8);
+        gen_awake_load(&h, hs);
+        gen_awake_pull(&tessera.awake[tr], &h, amt, rnd);
+        break;
+    }
+    case TESS_ENG_QUAD:
+        for (i = 0; i < TESSERA_TRACKS; i++) n += tessera.mode[i] == TESS_ENG_QUAD;
+        if (n < 2u && !tess_quad_moving()) {
+            gen_quad_t h = tessera.quad[tr];
+            gen_quad_load(&h, hs);
+            gen_quad_pull(&tessera.quad[tr], &h, amt, rnd);
+        }
+        break;
+    }
+    tessera.evolve[tr].flash = 4;
+    tess_realign(tr);
+}
+#undef TESS_GV_PULL
+/* EVOLVE's round (EVERY, FORM off): home taken again if the generator was changed since the last round, then a pull
+ * home at GRAVITY % (none with a SOURCE: GRAVITY plays the source there, step_seed.c), else a mutation */
+static void tess_gv_round(uint32_t tr)
+{
+    gen_sec_t g;
+    uint8_t aw[16];
+    uint32_t grav = tessera.sd_grav[tr], amt = energy_amount(tr, tessera.evolve[tr].amount > 100u ? 100u :
+                                                                 tessera.evolve[tr].amount);
+    tess_gv_now(tr, &g, aw);
+    if (tess_sv.gv_mode[tr] != tessera.mode[tr] + 1u || memcmp(&g, &tess_sv.gv_last[tr], sizeof g) ||
+        memcmp(aw, tess_sv.gv_law[tr], sizeof aw)) {
+        tess_sv.gv_mode[tr] = (uint8_t)(tessera.mode[tr] + 1u);
+        tess_sv.gv_home[tr] = g;
+        memcpy(tess_sv.gv_haw[tr], aw, sizeof aw);
+    }
+    if (grav && !sd_source(tr) && gen_rnd(&tessera.rnd[tr], 100u) < grav) tess_gv_pull(tr, amt);
+    else tessera_mutate(tr);
+    tess_gv_now(tr, &tess_sv.gv_last[tr], tess_sv.gv_law[tr]);
 }
 
 /* Bring a remembered section back: its settings, and (Markov / Morph) its recorded phrase */
@@ -454,6 +565,7 @@ static void tess_form_restart(uint32_t tr)
     ev->bar_cnt = 0;
     ev->cond_bar = 0;                                        /* (COND: a section counts its own bars) */
     ev->cond_first = 1;
+    tess_sv.dv_on &= (uint8_t)~(1u << tr);                   /* (a developed return's note: gone with B and C) */
     tess_rearm(tr);
 }
 
@@ -470,8 +582,28 @@ static void tess_form_reset(uint32_t tr)
     ev->form_pos = 0;
 }
 
-/* A section boundary: remember this section, move on. A section seen before is recalled exactly;
- * a new one starts from the old one and is pushed away from it by CONTRAST. */
+/* DEVELOP: a section just recalled varies by one mutation of DEVELOP's strength (scaled by ENERGY, as a round is),
+ * unless GRAVITY keeps it exact this time; the state it leaves is noted so that leaving it unchanged keeps the section
+ * as it was (tess_save_sec). 0: the exact recall, as before */
+static void tess_form_develop(uint32_t tr)
+{
+    tessera_evolve_t *ev = &tessera.evolve[tr];
+    uint32_t dev = tessera.fm_dev[tr], grav = tessera.sd_grav[tr];
+    uint8_t keep = ev->amount, valid = ev->valid;
+    if (!dev || (grav && gen_rnd(&tessera.rnd[tr], 100u) < grav)) return;
+    ev->amount = (uint8_t)(dev > 100u ? 100u : dev);
+    tessera_mutate(tr);
+    ev->amount = keep;
+    if ((tessera.mode[tr] == TESS_ENG_MARKOV || tessera.mode[tr] == TESS_ENG_MORPH) && ((valid >> (ev->sec % 3u)) & 1u)) {
+        ev->valid = valid;                                   /* (Markov / Morph: LOCK still replays the section's phrase, */
+        ev->rec = 0;                                         /* never recorded over: the change is in the other steps) */
+    }
+    tess_gv_now(tr, &tess_sv.dv_last[tr], tess_sv.dv_law[tr]);
+    tess_sv.dv_on |= (uint8_t)(1u << tr);
+}
+
+/* A section boundary: remember this section, move on. A section seen before is recalled (exactly, or developed by
+ * DEVELOP); a new one starts from the old one and is pushed away from it by CONTRAST. */
 static void tess_form_advance(uint32_t tr)
 {
     tessera_evolve_t *ev = &tessera.evolve[tr];
@@ -484,6 +616,7 @@ static void tess_form_advance(uint32_t tr)
     ev->cond_first = 1;
     if (ev->visited & (1u << ev->sec)) {
         tess_load_sec(tr);
+        tess_form_develop(tr);
     } else {
         uint8_t keep = ev->amount;
         uint32_t n = 1u + ev->contrast / 50u;
@@ -547,7 +680,7 @@ static void tessera_evolve_tick(const track_t *t, uint32_t tr)
         } else if (ev->every && ++ev->bar_cnt >= tessera_every_bars(ev->every)) {
             ev->bar_cnt = 0;
             if (ev->form) tess_form_advance(tr);
-            else tessera_mutate(tr);         /* also puts the loop back on step 1 and rearms it */
+            else tess_gv_round(tr);          /* (a mutation or GRAVITY's pull: the loop back on step 1, rearmed) */
         }
     } else if (!ev->step_cnt && tessera.roll[tr]) {
         tess_roll_apply(tr);                 /* (PLAY's first step: a bar line too) */
@@ -678,6 +811,39 @@ void tessera_evolve_knob(uint32_t k, int32_t s)
     TESS_IRQ_ON();
 }
 
+/* OCT+ held on a generator track's EVOLVE page: KNOB 1 GRAVITY (ui_input.c; the SOURCE layer's too) */
+void tessera_ev_layer_knob(uint32_t k, int32_t s)
+{
+    uint32_t tr = song.sel;
+    tessera_ensure_init();
+    if (tr >= TESSERA_TRACKS || !s || k) return;
+    TESS_IRQ_OFF();
+    tess_param_set_body(tr, TX_SD_GRAVITY, (int32_t)tessera.sd_grav[tr] + s);
+    TESS_IRQ_ON();
+}
+
+/* OCT+ held on a generator track's FORM page: KNOB 1 DEVELOP, a step of 2 % a click as CONTRAST (ui_input.c) */
+void tessera_fm_layer_knob(uint32_t k, int32_t s)
+{
+    uint32_t tr = song.sel;
+    tessera_ensure_init();
+    if (tr >= TESSERA_TRACKS || !s || k) return;
+    TESS_IRQ_OFF();
+    tess_param_set_body(tr, TX_FM_DEVELOP, (int32_t)tessera.fm_dev[tr] + s * 2);
+    TESS_IRQ_ON();
+}
+
+/* OCT+ held on the ENERGY page: KNOB 1 the selected track's DEPTH (ui_input.c) */
+void tessera_en_layer_knob(uint32_t k, int32_t s)
+{
+    uint32_t tr = song.sel;
+    tessera_ensure_init();
+    if (tr >= TESSERA_TRACKS || !s || k) return;
+    TESS_IRQ_OFF();
+    tess_param_set_body(tr, TX_EN_DEPTH, (int32_t)tessera.en_depth[tr] + s);
+    TESS_IRQ_ON();
+}
+
 /* TWEAK page encoders: 0 SHIFT, 1 DROP, 2 HUMAN, 3 FOLLOW */
 static void tess_tweak_knob_body(uint32_t k, int32_t s)
 {
@@ -770,7 +936,7 @@ static int32_t tess_key(const track_t *t, uint32_t tr)
 {
     return tessera.mode[tr] == TESS_ENG_MARKOV || tessera.mode[tr] == TESS_ENG_ANSWER ? 0 : (int32_t)(t->p[P_ROOT] % 12);
 }
-#include "step_seed.c"                                  /* STEP as seed: TURING and EUCLID from a STEP pattern */
+#include "step_seed.c"                                  /* STEP as seed: TURING, EUCLID, MARKOV, MORPH from a STEP pattern */
 static uint32_t cord_smask[NTRK];                       /* (cord.c: the cords on Tessera settings, per track) */
 static void cord_step_begin(uint32_t tr);
 static void cord_step_end(uint32_t tr);
@@ -909,7 +1075,7 @@ static void tess_grids_play(track_t *t, uint32_t tr, const gen_out_t *out)
     for (p = 0; p < GEN_GRIDS_PARTS; p++) {
         uint32_t vel = (out->accent >> p) & 1u ? 127u : p == GEN_GRIDS_TOM ? 80u : 96u;
         if (!((out->parts >> p) & 1u)) continue;
-        if (tw->drop && gen_rnd(&tessera.rnd[tr], 100u) < tw->drop) continue;
+        if (tw->drop && gen_rnd(&tessera.rnd[tr], 100u) < energy_drop(tr, tw->drop)) continue;
         if (tw->human) {
             int32_t j = (int32_t)(tw->human / 5u), v = (int32_t)vel + (int32_t)gen_rnd(&tessera.rnd[tr], (uint32_t)(2 * j + 1)) - j;
             vel = (uint32_t)(v < 1 ? 1 : v > 127 ? 127 : v);
@@ -1110,10 +1276,12 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
         sd_euclid(t, tr, &out);                         /* (a SOURCE: its notes) */
         break;
     case TESS_ENG_MARKOV:
-        gen_markov_tick(&tessera.markov[tr], &clk, &tessera.rnd[tr], &out);
+        if (!sd_markov(t, tr, &out))                    /* (a SOURCE: its chain instead) */
+            gen_markov_tick(&tessera.markov[tr], &clk, &tessera.rnd[tr], &out);
         break;
     case TESS_ENG_MORPH:
-        gen_morph_tick(&tessera.morph[tr], &clk, &tessera.rnd[tr], &out);
+        if (!sd_morph(t, tr, &out))                     /* (a SOURCE: A it, B a variation) */
+            gen_morph_tick(&tessera.morph[tr], &clk, &tessera.rnd[tr], &out);
         break;
     case TESS_ENG_GRIDS:
         gen_grids_tick(&tessera.grids[tr], &clk, &tessera.rnd[tr], &out);
@@ -1161,7 +1329,7 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
     if (should_trigger && !tess_cond(tr)) should_trigger = 0;
     {   /* TWEAK: DROP thins any engine's hits; HUMAN varies the velocity (the gate below) */
         const tessera_evolve_t *tw = &tessera.evolve[tr];
-        if (should_trigger && tw->drop && gen_rnd(&tessera.rnd[tr], 100u) < tw->drop) should_trigger = 0;
+        if (should_trigger && tw->drop && gen_rnd(&tessera.rnd[tr], 100u) < energy_drop(tr, tw->drop)) should_trigger = 0;
         if (should_trigger && tw->human) {
             int32_t j = (int32_t)(tw->human / 5u);                    /* up to +-20 */
             int32_t v = (int32_t)vel + (int32_t)gen_rnd(&tessera.rnd[tr], (uint32_t)(2 * j + 1)) - j;
@@ -1295,6 +1463,7 @@ void tessera_mode_set(uint32_t tr, uint32_t m)
     tessera.mode[tr] = (uint8_t)m;
     tessera.awake[tr].edit = 0;                             /* (no step picked under another generator) */
     if (m != TESS_ENG_OFF) tess_seed_fresh(tr);             /* (its picture shows the material at once) */
+    if (m == TESS_ENG_GRIDS) tess_atlas_fresh(tr);
     if (tessera.evolve[tr].form) tess_form_restart(tr);     /* the sections were another engine's */
     tess_rearm(tr);
     answer_restart(tr);
@@ -1482,7 +1651,12 @@ static void tess_knob_body(uint32_t k, int32_t s)
         const tessera_answer_t *a = &tessera.answer[tr];
         if (k == 1u) tess_param_set_body(tr, TX_AN_VARY, (int32_t)a->vary + s * 2);
         else if (k == 2u) tess_param_set_body(tr, TX_AN_ECHO, (int32_t)a->echo + s * 2);
-        else if (k == 3u) tess_param_set_body(tr, TX_AN_FADE, (int32_t)a->fade + s);
+        else if (k == 3u) {                                 /* FADE: a count a click, 1 .. 16 then LOOPS (100), each */
+            int32_t c = a->fade >= 100u ? 16 : (int32_t)a->fade * 15 / 99;   /* count's first value (answer.c) */
+            c += s > 0 ? 1 : -1;
+            c = c < 0 ? 0 : c > 16 ? 16 : c;
+            tess_param_set_body(tr, TX_AN_FADE, c >= 16 ? 100 : (c * 99 + 14) / 15);
+        }
     } else if (mode == TESS_ENG_CONSTEL) {
         tessera_constel_t *c = &tessera.constel[tr];
         if (k == 1u) {                                      /* Y: a row a click */
@@ -1653,9 +1827,12 @@ uint32_t tessera_sig(uint32_t tr)
 {
     if (tr < TESSERA_TRACKS && tessera_step_on(tr))    /* (STEP EVOLVE: its EVOLVE page and the changes) */
         return tessera.sv_lock[tr] * 13u + tessera.sv_every[tr] * 61u + tessera.sv_amount[tr] * 29u +
-               tess_sv.flash[tr] * 4093u + tess_sv.steps[tr] * 977u + tessera_step_varied(tr) * 131u;
+               tess_sv.flash[tr] * 4093u + tess_sv.steps[tr] * 977u + tessera_step_varied(tr) * 131u +
+               tessera.sv_how[tr] * 7u + tess_sv.ser[tr] * 104729u + tess_sv.ser_arg[tr] * 17u;
     if (tr >= TESSERA_TRACKS || tessera.mode[tr] == TESS_ENG_OFF) return 0;
-    uint32_t h = tessera.mode[tr] * 1009u + tessera.last_note[tr] * 53u + tessera.active_gate[tr];
+    uint32_t h = sd_source(tr) ? tess_sd.pos[tr] * 7907u + tess_sd.load[tr] + 1u : 0u;   /* (STEP as seed: its loop) */
+    for (uint32_t i = 0; h && i < SD_LOOP; i++) h = (h ^ tess_sd.loop[tr][i]) * 16777619u;
+    h ^= tessera.mode[tr] * 1009u + tessera.last_note[tr] * 53u + tessera.active_gate[tr];
     h ^= tessera.evolve[tr].bar_cnt * 977u + tessera.evolve[tr].flash * 4093u + tessera.evolve[tr].every * 61u + tessera.evolve[tr].amount * 29u + tessera.evolve[tr].lock * 13u + tessera.evolve[tr].form * 7u + tessera.evolve[tr].form_pos * 131u + tessera.evolve[tr].sec * 17u;
     switch (tessera.mode[tr]) {
     case TESS_ENG_TURING: { const tessera_turing_t *a = &tessera.turing[tr];
@@ -2375,6 +2552,7 @@ int tessera_unpack(const uint8_t *in)
         tess_pk_track(in + tr * TESS_PK_TRACK, tr, 1);
     tessera.en_arc = tail[0];
     tessera.en_rests = tail[1];
+    tess_atlas_new = 0;                                  /* (its tracks' ATLAS values are the project's) */
     return 1;
 }
 /* a block of version ver (an older project's or backup's): as tessera_unpack, each track converted by
@@ -2461,18 +2639,25 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_SV_LOCK: return tessera.sv_lock[tr];
     case TX_SV_EVERY: return tessera.sv_every[tr];
     case TX_SV_AMOUNT: return tessera.sv_amount[tr];
+    case TX_SV_HOW: return tessera.sv_how[tr];
     case TX_GRD_PART4: return tessera.grids[tr].part4;
     case TX_SUB_RATCH: return tessera.sub_ratch[tr];
     case TX_SUB_CHANCE: return tessera.sub_chance[tr];
     case TX_SUB_SHAPE: return tessera.sub_shape[tr];
     case TX_SUB_HUMAN: return tessera.sub_human[tr];
+    case TX_ACC_LIMIT: return tessera.acc_limit[tr] ? tessera.acc_limit[tr] : (int32_t)TESS_ACC_LIMIT_DEF;
+    case TX_ACC_MODE: return tessera.acc_mode[tr];
     case TX_MIDI_CH: return tessera.midi_ch[tr];
     case TX_KEY_LINK: return tessera.key_link;          /* (the project's, whichever track) */
     case TX_SD_SOURCE: return tessera.sd_src[tr];
     case TX_SD_KEEP: return tessera.sd_keep[tr];
+    case TX_SD_GRAVITY: return tessera.sd_grav[tr];
+    case TX_FM_DEVELOP: return tessera.fm_dev[tr];
     case TX_CH_BREATH: return tessera.ch_breath[tr];
     case TX_EN_ARC: return tessera.en_arc;              /* (the project's, whichever track) */
     case TX_EN_RESTS: return tessera.en_rests;
+    case TX_EN_LEVEL: return tessera.en_level;
+    case TX_EN_DEPTH: return tessera.en_depth[tr];
     case TX_AN_VARY: return tessera.answer[tr].vary;
     case TX_AN_ECHO: return tessera.answer[tr].echo;
     case TX_AN_FADE: return tessera.answer[tr].fade;
@@ -2539,6 +2724,7 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
         tessera.active_gate[tr] = 0;
         tessera.mode[tr] = (uint8_t)v;
         if (v != TESS_ENG_OFF) tess_seed_fresh(tr);
+        if (v == TESS_ENG_GRIDS) tess_atlas_fresh(tr);
         if (ev->form) tess_form_restart(tr);
         tess_rearm(tr);
         answer_restart(tr);
@@ -2616,18 +2802,30 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
     case TX_SV_LOCK: tessera.sv_lock[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_SV_EVERY: tessera.sv_every[tr] = (uint8_t)tess_clampi(v, 0, 5); tess_sv.steps[tr] = 0; return;
     case TX_SV_AMOUNT: tessera.sv_amount[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
+    case TX_SV_HOW:                                     /* (another HOW: the changes back to as written) */
+        v = tess_clampi(v, 0, TESS_SV_HOWS - 1);
+        if (v != tessera.sv_how[tr]) tessera_step_clear(tr);
+        tessera.sv_how[tr] = (uint8_t)v;
+        return;
     case TX_GRD_PART4: tessera.grids[tr].part4 = (uint8_t)tess_clampi(v, 0, GEN_GRIDS_P4_N - 1); return;
     case TX_SUB_RATCH: tessera.sub_ratch[tr] = (uint8_t)tess_clampi(v, 0, SUB_HITS_MAX - 1); return;
     case TX_SUB_CHANCE: tessera.sub_chance[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_SUB_SHAPE: tessera.sub_shape[tr] = (uint8_t)tess_clampi(v, 0, SUB_SHAPES - 1); return;
     case TX_SUB_HUMAN: tessera.sub_human[tr] = (uint8_t)tess_clampi(v, 0, (int32_t)TESS_HUMAN_MS); return;
+    case TX_ACC_LIMIT: tessera.acc_limit[tr] = (uint8_t)tess_clampi(v, 1, (int32_t)TESS_ACC_LIMIT); return;
+    case TX_ACC_MODE: tessera.acc_mode[tr] = (uint8_t)tess_clampi(v, 0, TESS_ACC_MODES - 1); return;
     case TX_MIDI_CH: tessera.midi_ch[tr] = (uint8_t)tess_clampi(v, 0, (int32_t)TESS_MIDI_OFF); return;
     case TX_KEY_LINK: tessera.key_link = (uint8_t)tess_clampi(v, 0, 1); return;
     case TX_SD_SOURCE:                                  /* (the loop filled again from the new source) */
         tessera.sd_src[tr] = (uint8_t)tess_clampi(v, 0, TESSERA_TRACKS);
         tess_sd.load[tr] = 1;
         return;
-    case TX_SD_KEEP: tessera.sd_keep[tr] = (uint8_t)tess_clampi(v, 0, TESS_SD_KEEPS - 1); return;
+    case TX_SD_KEEP:                                    /* (MORPH's B made again, KEEP's way) */
+        tessera.sd_keep[tr] = (uint8_t)tess_clampi(v, 0, TESS_SD_KEEPS - 1);
+        if (tessera.mode[tr] == TESS_ENG_MORPH) tess_sd.load[tr] = 1;
+        return;
+    case TX_SD_GRAVITY: tessera.sd_grav[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
+    case TX_FM_DEVELOP: tessera.fm_dev[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_CH_BREATH: tessera.ch_breath[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_AN_VARY: tessera.answer[tr].vary = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_AN_ECHO: tessera.answer[tr].echo = (uint8_t)tess_clampi(v, 0, 100); return;
@@ -2645,6 +2843,8 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
         }
         tessera.en_rests = (uint8_t)v;
         return;
+    case TX_EN_LEVEL: tessera.en_level = (int8_t)tess_clampi(v, -100, 100); return;
+    case TX_EN_DEPTH: tessera.en_depth[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_BNC_SPEED: tessera.bounce[tr].speed = (uint8_t)tess_clampi(v, 1, 64); eng = TESS_ENG_BOUNCE; break;
     case TX_BNC_ANGLE: tessera.bounce[tr].angle = (uint8_t)tess_clampi(v, 0, 90); eng = TESS_ENG_BOUNCE; break;
     case TX_BNC_BALLS: tessera.bounce[tr].balls = (uint8_t)tess_clampi(v, 1, GEN_BOUNCE_FALL); eng = TESS_ENG_BOUNCE; break;
@@ -2742,6 +2942,8 @@ void tessera_param_poke(uint32_t tr, uint32_t x, int32_t v)
     case TX_SV_AMOUNT: tessera.sv_amount[tr] = (uint8_t)tess_clampi(v, 0, 100); break;
     case TX_GRD_PART4: tessera.grids[tr].part4 = (uint8_t)tess_clampi(v, 0, GEN_GRIDS_P4_N - 1); break;
     case TX_SUB_HUMAN: tessera.sub_human[tr] = (uint8_t)tess_clampi(v, 0, (int32_t)TESS_HUMAN_MS); break;
+    case TX_ACC_LIMIT: tessera.acc_limit[tr] = (uint8_t)tess_clampi(v, 1, (int32_t)TESS_ACC_LIMIT); break;
+    case TX_ACC_MODE: tessera.acc_mode[tr] = (uint8_t)tess_clampi(v, 0, TESS_ACC_MODES - 1); break;
     case TX_BNC_SPEED: tessera.bounce[tr].speed = (uint8_t)tess_clampi(v, 1, 64); break;
     case TX_BNC_ANGLE: tessera.bounce[tr].angle = (uint8_t)tess_clampi(v, 0, 90); break;
     case TX_AWK_PROB: tessera.awake[tr].prob = (uint8_t)tess_clampi(v, 0, 100); break;

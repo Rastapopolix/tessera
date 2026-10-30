@@ -12,6 +12,7 @@
 #include "eng_drum.c"           /* DRUM: synthesized 808 circuits (drum_808.c), the 909, a C64's SID (drum_sid.c) */
 #include "eng_noise.c"
 #include "eng_fm6.c"            /* FM6: 6-operator FM rendered as Dexed renders it (fm6_core.c) */
+#include "eng_oracle.c"         /* ORACLE: two oscillators, Poly-Mod, a 4-pole ladder (the Prophet engine, back) */
 #if MELODEE_SLICE
 #include "eng_slice.c"
 #else
@@ -51,6 +52,9 @@ static uint32_t eng_state_size(uint32_t e)
 #endif
     case ENGI_DRUM: return sizeof(drum909_part_t);
     case ENGI_FM6: return sizeof(fm6_part_t);
+#if MELODEE_ORACLE
+    case ENGI_ORACLE: return sizeof(or_part_t);
+#endif
 #if MELODEE_SLICE
     case ENGI_SLICE: return sizeof(slc_rb_t);
 #endif
@@ -70,9 +74,12 @@ static int eng_state_prepare(const track_t *t)
 static phys_slot_t *phys_slots(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(phys_slot_t) * PHYS_POLY); }
 static drum909_part_t *drum909_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(drum909_part_t)); }
 static drum_lane_t *drum_kit_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(drum_lane_t) * DV_NLANE); }
+#if MELODEE_SID_KIT
 static dsk_part_t *dsk_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(dsk_part_t)); }
+#endif
 static drw_part_t *drw_of(const track_t *t) { return resource_get(RES_ENGINE0 + (uint32_t)(t - trk), sizeof(drw_part_t)); }
 static fm6_part_t *fm6_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(fm6_part_t)); }
+static or_part_t *or_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(or_part_t)); }
 static sid_part_t *sid_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(sid_part_t)); }
 #if MELODEE_SLICE
 static int16_t (*slc_rbuf(uint32_t part))[SLC_RB] { return resource_get(RES_ENGINE0 + part % NPART, sizeof(slc_rb_t)); }
@@ -129,7 +136,11 @@ static const engine_t *const ENGINES[NENGINES] = {
     &ENG_RETIRED,                /* 14: retired OBXF; stored index reserved */
     &ENG_RETIRED,                /* 15: retired CZ-1 (2026-10-22); stored ID reserved */
     &ENG_RETIRED, &ENG_RETIRED, &ENG_RETIRED, /* 16..18 reserved */
-    &ENG_RETIRED,                /* 19: retired Prophet (2026-10-22); stored ID reserved, its programs kept */
+#if MELODEE_ORACLE
+    &ENG_ORACLE,                 /* 19: ORACLE (2026-10-29: the Prophet engine, retired 2026-10-22, back as its own) */
+#else
+    &ENG_RETIRED,                /* 19: ORACLE left out of the build; stored ID reserved */
+#endif
     &ENG_RETIRED,                /* 20: reserved (USER_NATIVE_P5, the browser's Prophet user bank) */
 #if MELODEE_PLAITS
     &ENG_MACRO,                  /* 21: MACRO, Plaits' synthesis (Tessera) */
@@ -164,6 +175,9 @@ static const preset_t *eng_preset(const engine_t *e, uint32_t k)
 static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
 #if MELODEE_FM6
     12,                          /* FM6 */
+#endif
+#if MELODEE_ORACLE
+    ENGI_ORACLE,                 /* ORACLE */
 #endif
 #if MELODEE_LEGACY_EXTRAS
     3, 5,                        /* SID VOICE */
@@ -239,7 +253,8 @@ static const uint8_t TRK_DEF[NPART][2] = {
     {ENGI_FM6, 16},                                 /* FM6 GLASS PAD, the drone (FM back, PHYS and SID out: 2026-10-21) */
 #endif
 #if MELODEE_FM6
-    {ENGI_FM6, 15},                                 /* FM6 STRINGS (Theo 2026-10-21: ambient; was PAD, DIGITAL PAD) */
+    {6, 6},                                         /* TRIO STRING MACH (2026-10-28: two FM6 pads under generators
+                                                     * crackle, past the FM-1's six-operator limit; was FM6 STRINGS) */
 #else
     {ENGI_SID, 19},                                 /* (without it: SID 8580 PAD) */
 #endif

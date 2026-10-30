@@ -30,7 +30,8 @@ typedef struct {
     uint8_t fm6[NTRK][FM6_PACKED];             /* each track's FM6 patch, packed (eng_fm6.c) */
     uint8_t fm6_fn[NTRK][FM6_NFN];             /* .. and its function settings (fm6_fn_ok; else Dexed's): not in
                                                 * a record of before them) */
-    uint8_t fm6_fn_ok, rsv2[3];
+    uint8_t fm6_fn_ok, oracle_ok, rsv2[2];          /* oracle_ok: oracle[] read (a record of before ORACLE: none) */
+    uint8_t oracle[NTRK][OR_N];                 /* each track's ORACLE patch (eng_oracle.c) */
     drum_patch_t drum[NTRK];
     recorded_note_t recording[RECORD_MAX];
     uint8_t pattern[NTRK];                     /* each track's current pattern */
@@ -230,7 +231,10 @@ static void project_capture(project_t *p)
         motion_native_snapshot(&trk[i], native, MO_TAG_FM6, sizeof native);
         fm6_pack(native, p->fm6[i]);
         memcpy(p->fm6_fn[i], fm6_fn[i], FM6_NFN);
+        memcpy(p->oracle[i], or_patch_of(&trk[i]), OR_N);
+        motion_native_snapshot(&trk[i], p->oracle[i], MO_TAG_ORACLE, OR_N);   /* (the patch's own, not motion's) */
     }
+    p->oracle_ok = 1;
     memcpy(p->drum,drum_patch,sizeof drum_patch);
     p->fm6_fn_ok = 1;
     p->motion = motion;
@@ -424,12 +428,15 @@ static int project_restore_runtime(const project_t *input)
             fm6_set_patch(k, v);
             memcpy(fm6_fn[k], p->fm6_fn_ok && fm6_fn_ok(p->fm6_fn[k]) ? p->fm6_fn[k] : FM6_FNDEF, FM6_NFN);
         }
+        if (!p->oracle_ok || !or_set_patch(k, p->oracle[k]))   /* the project's own ORACLE patch; a record of */
+            or_track_loaded(t);                                 /* before it: its preset's */
     }
     song.sel = (uint8_t)(p->sel < NTRK ? p->sel : 0u);
     fm1_irq_on();
     proj_name_get(proj_name, (const uint8_t *)p->name);
     proj_cur = PROJ_NO_SLOT;                            /* (project_load: its slot) */
     undo_clear();                                       /* (ui.c) the undo levels belong to the old project */
+    list_forget();                                      /* (browse.c) the tracks' LISTs too */
     undo_depth++;                                       /* and these loads take none */
     for (k = 0; k < NTRK; k++) {                        /* the power-on sounds: format 1 (tracks 2..4), old drums */
         track_t *t = &trk[k];
@@ -727,6 +734,7 @@ static void project_new_blank(void)
     }
     undo_depth--;
     undo_clear();
+    list_forget();
     proj_cur = PROJ_NO_SLOT;
     proj_name[0] = 0;
     song.sel = 0;

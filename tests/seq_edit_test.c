@@ -341,10 +341,10 @@ static int test_compact_history(void)
      * independent n on rests/ties, per-hit gates, and all accent masks. */
     for (uint32_t n = 0; n <= 4u; n++)
         for (uint32_t time = ST_NOTE; time <= ST_REST; time++)
-            for (uint32_t flags = 0; flags < 8u; flags++)
+            for (uint32_t flags = 0; flags < 128u; flags += 3u)   /* (the condition's bits too; bit 7 spare) */
                 for (uint32_t byte = 0; byte < 256u; byte++) {
                     step_t s = {{(uint8_t)byte, (uint8_t)(byte ^ 255u), 0, 255},
-                                (uint8_t)n, (uint8_t)time, (uint8_t)flags,
+                                (uint8_t)n, (uint8_t)time, (uint8_t)(byte & 15u), (uint8_t)flags,
                                 (uint8_t)byte, (uint8_t)byte, (uint8_t)(byte ^ 255u), (uint8_t)byte};
                     step_snapshot_t packed;
                     step_snapshot_put(&packed, &s);
@@ -353,7 +353,7 @@ static int test_compact_history(void)
                 }
     bad += check("compact history preserves every step byte for all control combinations", exact);
     {   /* step v2: RATCH and NUDGE (the sub byte) go through history too */
-        step_t v = {{60}, 1, ST_NOTE, 0, 96, 0, 0, 0, 0}, w;
+        step_t v = {{60}, 1, ST_NOTE, 0, 0, 96, 0, 0, 0, 0}, w;
         step_snapshot_t snap;
         step_set_ratch(&v, 7); step_set_nudge(&v, -5);
         step_snapshot_put(&snap, &v); w = step_snapshot_get(&snap);
@@ -363,7 +363,7 @@ static int test_compact_history(void)
         bad += check("RATCH stops at x8, NUDGE keeps its bits apart", step_ratch(&v) == 8u && step_nudge(&v) == 3);
     }
     bad += check("all eight levels have fixed storage even for dense patterns",
-                 sizeof step_history.state[0].step == NSTEP * 10u && sizeof undo_sram[0].step == NSTEP * 10u);
+                 sizeof step_history.state[0].step == NSTEP * 11u && sizeof undo_sram[0].step == NSTEP * 11u);
     track_t *t = edit_setup();
     for (uint32_t i = 0; i < NSTEP; i++) {
         put_note(t, i, 48u + i % 36u, 1);
@@ -381,10 +381,116 @@ static int test_compact_history(void)
     return bad;
 }
 
+/* conditional steps (Tessera 2.1): step 1 of a 4-step pattern under each condition, which passes it plays in */
+static uint32_t cond_passes(track_t *t, uint32_t cond, uint32_t passes, int fill)
+{
+    uint32_t tr = trk_index(t), played = 0, step = 65535u;
+    step_set_cond(&t->step[0], cond);
+    seq_fill = (uint8_t)fill;
+    transport_req = 1;
+    events_block(1);
+    while (cap_step[tr] == 65535u || cap_step[tr] < passes * 4u) {
+        events_block(1);
+        if (cap_step[tr] != step) {
+            step = cap_step[tr];
+            if (step % 4u == 0u && step / 4u < passes && t->seq_n) played |= 1u << (step / 4u);
+        }
+    }
+    stop_transport();
+    seq_stop();
+    seq_fill = 0;
+    return played;
+}
+static int test_conditions(void)
+{
+    int bad = 0, ok;
+    track_t *t = edit_setup();
+    uint32_t i;
+    for (i = 1; i < 4u; i++) t->step[i].time = ST_REST;
+    put_note(t, 0, 60, 1);
+    t->p[P_SLEN] = 4;
+    bad += check("COND OFF: step 1 plays every pass", cond_passes(t, SC_OFF, 8, 0) == 0xFFu);
+    ok = cond_passes(t, SC_1_2, 8, 0) == 0x55u && cond_passes(t, SC_2_2, 8, 0) == 0xAAu;
+    ok &= cond_passes(t, SC_2_3, 9, 0) == 0x092u && cond_passes(t, SC_3_4, 8, 0) == 0x44u;
+    ok &= cond_passes(t, SC_1_8, 9, 0) == 0x101u && cond_passes(t, SC_8_8, 9, 0) == 0x80u;
+    bad += check("..a:b: pass a of every b, counted from PLAY (1:2 2:2 2:3 3:4 1:8 8:8)", ok);
+    bad += check("..FIRST the first pass only, !FIRST every other", cond_passes(t, SC_FIRST, 6, 0) == 0x01u &&
+                 cond_passes(t, SC_NFIRST, 6, 0) == 0x3Eu);
+    bad += check("..FILL only while FILL is held, !FILL only while it is not", cond_passes(t, SC_FILL, 4, 0) == 0u &&
+                 cond_passes(t, SC_FILL, 4, 1) == 0xFu && cond_passes(t, SC_NFILL, 4, 1) == 0u &&
+                 cond_passes(t, SC_NFILL, 4, 0) == 0xFu);
+    step_set_nudge(&t->step[0], -4);
+    bad += check("..NUDGE early across the loop: counted in its own pass (1:2, 2:2)", cond_passes(t, SC_1_2, 8, 0) == 0x55u &&
+                 cond_passes(t, SC_2_2, 8, 0) == 0xAAu);
+    step_set_nudge(&t->step[0], 0);
+    {   /* a pattern change starts the count again */
+        uint32_t tr = trk_index(t);
+        step_set_cond(&t->step[0], SC_OFF);
+        transport_req = 1;
+        events_block(1);
+        while (cap_step[tr] == 65535u || cap_step[tr] < 10u) events_block(1);
+        ok = t->seq_pass == 2u;
+        t->pattern_next = 1;
+        while (cap_step[tr] < 13u) events_block(1);
+        ok &= t->pattern == 1u && t->seq_pass == 0u;
+        stop_transport();
+        seq_stop();
+        bad += check("..passes counted per track; a pattern change starts again at the first", ok);
+        t->pattern_next = 0;
+        while (t->pattern != 0u) { pattern_switch(t, 0); }
+    }
+    step_set_chance(&t->step[0], 0);
+    bad += check("..Chance after the condition: a met condition with Chance 0 stays silent", cond_passes(t, SC_1_2, 4, 0) == 0u);
+    step_set_chance(&t->step[0], 100);
+    {   /* the sheet's Condition row; history; the project's step bits */
+        step_t v = t->step[0], w;
+        step_snapshot_t snap;
+        uint8_t b[TSP_STEP_BYTES];
+        step_set_cond(&t->step[0], SC_OFF);
+        cursor_set(0); frame();
+        press(B_OCTUP);
+        for (i = 0; i < 16u && pop.on == POP_SHEET && !str_eq(pop.rows[pop.sel].label, "Condition"); i++) turn(EN_K1, 1);
+        turn(EN_K1 + 1u, 1); turn(EN_K1 + 1u, 1); turn(EN_K1 + 1u, 1);
+        ok = step_cond(&t->step[0]) == SC_1_3 && pop.on == POP_SHEET;
+        for (i = 0; i < 20u; i++) turn(EN_K1 + 1u, 1);
+        ok &= step_cond(&t->step[0]) == SC_NFIRST && (t->step[0].flags & 7u) == (v.flags & 7u);
+        for (i = 0; i < 20u; i++) turn(EN_K1 + 1u, -1);
+        ok &= step_cond(&t->step[0]) == SC_OFF;
+        press(B_OCTDN); frame();
+        bad += check("..the note sheet's Condition row: KNOB 2 Off .. !FIRST, the step's other flags kept", ok);
+        v.note[0] = 127; v.note[3] = 5; v.flags = SF_SLIDE | SF_RECORDED; step_set_cond(&v, SC_NFILL);
+        step_snapshot_put(&snap, &v); w = step_snapshot_get(&snap);
+        ok = !memcmp(&v, &w, sizeof v);
+        memset(&w, 0, sizeof w);
+        ok &= tsp_step_pack(b, &v) && tsp_step_unpack(&w, b) && step_cond(&w) == SC_NFILL &&
+              (w.flags & (SF_SLIDE | SF_RECORDED)) == (SF_SLIDE | SF_RECORDED);
+        b[9] &= 0x0Fu;                                    /* (a record of before it: the last 4 bits 0) */
+        ok &= tsp_step_unpack(&w, b) && step_cond(&w) == SC_OFF;
+        bad += check("..kept by history and the project's step (0 in an older record: every pass)", ok);
+    }
+    {   /* FILL held: GLO + E4 (MIXER: E4 alone); the GLO map lights it */
+        uint32_t e4 = white(6);
+        ok = !seq_fill;
+        lay_combo(B_GLO, e4);
+        ok &= seq_fill && ui.layer == LAYER_GLO;
+        btn_up(B_GLO); frame();
+        ok &= seq_fill;                                   /* (GLO let go first: FILL stays with its key, as SOLO) */
+        key_up(e4); frame();
+        ok &= !seq_fill;
+        open_family(FAM_TRK); frame();
+        key_down(e4); frame();
+        ok &= seq_fill;
+        key_up(e4); frame();
+        bad += check("..FILL: GLO + E4 held (on MIXER E4 alone), as long as E4 is held", ok && !seq_fill);
+    }
+    step_set_cond(&t->step[0], SC_OFF);
+    return bad;
+}
+
 int main(void)
 {
     int bad = test_note_edits() + test_entry_history() + test_midi_entry() + test_record_timing() + test_step_modifiers() +
-              test_held_gestures() + test_compact_history();
+              test_held_gestures() + test_compact_history() + test_conditions();
     printf("sequencer editing: %s\n", bad ? "FAILED" : "all passed");
     return bad != 0;
 }

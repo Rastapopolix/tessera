@@ -8,7 +8,7 @@ static void setup(void)
 }
 static void manual(uint32_t step,uint32_t note,uint32_t length)
 {
-    TSEL->step[step]=(step_t){{(uint8_t)note},1,ST_NOTE,0,96};step_note_resize(TSEL,step,(int32_t)length);
+    TSEL->step[step]=(step_t){{(uint8_t)note},1,ST_NOTE, 0,0,96};step_note_resize(TSEL,step,(int32_t)length);
 }
 static void select_range(uint32_t start,int32_t delta)
 {
@@ -72,7 +72,7 @@ int main(void)
     setup();manual(1,67,2);manual(3,60,2);manual(10,72,2);TSEL->step[3].flags|=SF_RECORDED;
     a=(recorded_note_t){.step=3,.on=22000,.note=60,.vel=83,.duration=40960,.owner=(uint8_t)(recording_owner(TSEL)|(2u<<5))};
     b=a;b.step=7|64u;b.on=40000;b.note=65;b.vel=97;
-    recording_restore_note(TSEL,0,a);recording_restore_note(TSEL,1,b);TSEL->step[8]=(step_t){{65},1,ST_NOTE,SF_RECORDED,97};
+    recording_restore_note(TSEL,0,a);recording_restore_note(TSEL,1,b);TSEL->step[8]=(step_t){{65},1,ST_NOTE, 0,SF_RECORDED,97};
     select_range(1,2);hold(B_OCTUP);
     bad+=check("holding OCT+ with a range opens selected-note tools",pop.on==POP_SHEET&&!strcmp(pop.title,"Selected notes"));
     for(pop.sel=0;pop.sel<pop.n&&!str_eq(pop.rows[pop.sel].label,"Quantize");pop.sel++);

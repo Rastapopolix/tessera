@@ -43,7 +43,10 @@
 /* Tessera (phase 4, tessera-notes/docs/design/phase4/PLAN.md): an engine left out of the build (0) is never offered; its stored ID
  * stays reserved and a project's track of it loads SID's INIT (project.c). Its code goes where nothing reaches it */
 /* CZ-1 and PROPHET: retired as engines 2026-10-22 (their IDs stay reserved), their stores and tones with the own
- * project format */
+ * project format. The Prophet's engine came back as ORACLE (2026-10-29, ID 19): its own sounds, no factory bank */
+#ifndef MELODEE_ORACLE
+#define MELODEE_ORACLE 1         /* ORACLE (eng_oracle.c): two oscillators, Poly-Mod, a 4-pole ladder (after the Prophet-5) */
+#endif
 #ifndef MELODEE_FM6
 #define MELODEE_FM6 1
 #endif
@@ -51,17 +54,29 @@
 #define MELODEE_SID 1            /* SID as a melodic engine (eng_sid.c); DRUM's SID KIT and SID DIGI keep the chip core either
                                   * way. Tessera 2026-10-21: out, FM back (its tracks load FM's INIT) */
 #endif
+#ifndef MELODEE_SID_KIT
+#define MELODEE_SID_KIT 1        /* DRUM's SID KIT and SID DIGI (drum_sid.c); the device build leaves them out for flash
+                                  * (2026-10-28: a stored KIT SID loads clamped: the 909) */
+#endif
 #ifndef MELODEE_TRIO
 #define MELODEE_TRIO 1           /* TRIO (eng_trio.c), back 2026-10-17 beside SID and DRUM (MACRO out: too costly) */
 #endif
 #ifndef MELODEE_PHYS
 #define MELODEE_PHYS 1           /* PHYS (eng_phys.c), back 2026-10-18 after TRIO; out of device builds 2026-10-21 (build.py) */
 #endif
+#ifndef MELODEE_LOOK
+#define MELODEE_LOOK 0           /* 0: the detailed look; 1: Mono (ui_mono.c), a build of its own */
+#endif
+#if MELODEE_LOOK
+#define LOOK(d, m) (m)           /* the look's own of two (a string the 5 x 7 face fits, a position) */
+#else
+#define LOOK(d, m) (d)
+#endif
 #ifndef MELODEE_PLAITS
 #define MELODEE_PLAITS 0         /* MACRO (eng_macro.c): Plaits' synthesis, C++ (build.py); the prototype: off by default */
 #endif
-#define ENG_BUILT(e) ((e) == 3u ? MELODEE_SID : (e) == 9u ? PHYS_ON : (e) == 12u ? MELODEE_FM6 : (e) == 15u || (e) == 19u ? 0 : \
-                      (e) == 21u ? MELODEE_PLAITS : 1)   /* SID PHYS FM6 CZ-1 PROPHET MACRO (PHYS: left out, not retired,
+#define ENG_BUILT(e) ((e) == 3u ? MELODEE_SID : (e) == 9u ? PHYS_ON : (e) == 12u ? MELODEE_FM6 : (e) == 15u ? 0 : (e) == 19u ? MELODEE_ORACLE : \
+                      (e) == 21u ? MELODEE_PLAITS : 1)   /* SID PHYS FM6 CZ-1 ORACLE MACRO (PHYS: left out, not retired,
                                                    * since 2026-10-21: its tracks load FM's first voice) */
 #define TRIO_ON (MELODEE_TRIO || MELODEE_LEGACY_EXTRAS)
 #define PHYS_ON (MELODEE_PHYS || MELODEE_LEGACY_EXTRAS)
@@ -71,7 +86,7 @@
 #error "MELODEE_FM6 or MELODEE_SID: one of them is the place of an engine left out"
 #endif
 #define ENGI_CZ 15u      /* retired (the CZ-1) */
-#define ENGI_PROPHET 19u /* 16..18 reserved: historical preset namespaces */
+#define ENGI_ORACLE 19u  /* ORACLE (the Prophet's ID until 2026-10-22); 16..18 reserved: historical preset namespaces */
 #define USER_GENERAL 16u
 #define USER_NATIVE_P5 20u
 #define NENGINES 22               /* 13 SLICE and 14 OBXF reserved; 15 native CZ-1; 20 reserved (USER_NATIVE_P5's
@@ -81,7 +96,7 @@
 #define USER_NONE 256u
 #define ENGI_ANALOG 0u           /* retired in 1.2: never selectable (eng_ok), its stored sounds play silent */
 #define ENGI_DIGITAL 1u          /* retired: never selectable (eng_ok), its stored sounds play silent */
-#define NENG_SHOWN (NENGINES - 11u - !MELODEE_SLICE - (MELODEE_LEGACY_EXTRAS ? 1u : 6u - MELODEE_TRIO - MELODEE_PHYS) - !MELODEE_SID - !MELODEE_FM6 - \
+#define NENG_SHOWN (NENGINES - 10u - !MELODEE_ORACLE - !MELODEE_SLICE - (MELODEE_LEGACY_EXTRAS ? 1u : 6u - MELODEE_TRIO - MELODEE_PHYS) - !MELODEE_SID - !MELODEE_FM6 - \
                     !MELODEE_PLAITS)   /* the engines one can pick: PRESETS, the EDIT
                                                 * layer, the editor, in the display order of engines.c ENGINE_ORDER */
 #define ENGI_SLICE 13u           /* reserved without MELODEE_SLICE: never selectable (eng_ok) */
@@ -305,6 +320,13 @@ enum { ST_NOTE, ST_TIE, ST_REST };
 #define SF_ACCENT 1u
 #define SF_SLIDE 2u
 #define SF_RECORDED 4u                         /* step is a view of timed notes, played by recording.c */
+#define SF_COND_SHIFT 3u                       /* bits 3..6: the step's condition (SC_*), 0 every pass; bit 7 spare */
+#define SF_COND (15u << SF_COND_SHIFT)
+/* a step's condition (Elektron's trig conditions, Tessera 2.1): a:b plays in pass a of every b of its pattern, counted
+ * from PLAY (a pattern change or a song's section starts again at the first); FILL while FILL is held (GLO + E4),
+ * !FILL while it is not; FIRST the first pass only, !FIRST every other. Then its Chance as ever */
+enum { SC_OFF, SC_1_2, SC_2_2, SC_1_3, SC_2_3, SC_3_3, SC_1_4, SC_2_4, SC_3_4, SC_4_4, SC_1_8, SC_8_8, SC_FILL, SC_NFILL,
+       SC_FIRST, SC_NFIRST, SC_COUNT };
 #define RECORD_MAX 1024u
 #define RECORD_UNIT 65536u                     /* fractional onset within its swung step; duration uses an exponent */
 /* owner: bank/track in low 5 bits, duration exponent in high 3. step: actual index in
@@ -350,8 +372,10 @@ static int drum_patch_unpack(drum_patch_t *p,const uint8_t *b)
 typedef struct {                 /* acid-style step: up to 4 notes (POLY), time, accent, slide; drum hits */
     uint8_t note[4];
     uint8_t n;                   /* notes in use, 0 = empty */
-    uint8_t time;                /* ST_NOTE / ST_TIE / ST_REST */
-    uint8_t flags;               /* SF_ACCENT | SF_SLIDE */
+    uint8_t time : 4;            /* ST_NOTE / ST_TIE / ST_REST */
+    uint8_t climb : 4;           /* the pitch accumulator (Tessera): scale degrees a pattern pass, -7..+7 (two's
+                                  * complement; 0 off): step_climb, step_acc.c */
+    uint8_t flags;               /* SF_ACCENT | SF_SLIDE | SF_RECORDED, the condition (SF_COND) */
     uint8_t vel;
     uint8_t hit;                 /* bit l: lane l hits (its GM note, on any engine): the DRUM grid */
     uint8_t acc;                 /* hit != 0: lane accents; hit == 0: recorded gate, 1..255 of a step (0 legacy) */
@@ -377,6 +401,13 @@ static void step_set_nudge(step_t *s, int32_t v)
 static uint32_t step_chance(const step_t *s) { return !s->probability ? 100u : s->probability <= 100u ? s->probability : 0u; }
 static void step_set_chance(step_t *s, uint32_t chance) { s->probability = (uint8_t)(chance >= 100u ? 0u : chance ? chance : 101u); }
 static uint32_t step_gate(const step_t *s) { return s->hit ? 0u : s->acc; }
+static int32_t step_climb(const step_t *s) { return (int32_t)(s->climb ^ 8u) - 8; }
+static void step_set_climb(step_t *s, int32_t v) { s->climb = (uint8_t)((uint32_t)(v < -7 ? -7 : v > 7 ? 7 : v) & 15u); }
+static uint32_t step_cond(const step_t *s) { return (s->flags & SF_COND) >> SF_COND_SHIFT; }
+static void step_set_cond(step_t *s, uint32_t c)
+{
+    s->flags = (uint8_t)((s->flags & ~SF_COND) | ((c < SC_COUNT ? c : 0u) << SF_COND_SHIFT));
+}
 static int step_acc_valid(const step_t *s) { return s->hit ? !(s->acc & ~s->hit) : s->time != ST_REST || !s->acc; }
 #define MOTION_MAX 64u
 /* Four tracks x64 steps fit one byte. Values retain their signed parameter range. */
@@ -420,6 +451,7 @@ typedef struct track {
     volatile uint32_t pattern_gen;                      /* invalidates editor history even for identical banks */
     uint32_t seq_pos;            /* samples (INT), or MIDI musical units, into the step */
     uint16_t seq_idx;
+    uint32_t seq_pass;           /* passes of the pattern since PLAY or its start (the pitch accumulator, step_acc.c) */
     uint8_t seq_notes[4 + NLANE];   /* sounding seq notes (the step's notes, then its hits) */
     uint8_t seq_n;
     uint8_t seq_hold;            /* last step slides: keep the notes until the next step */

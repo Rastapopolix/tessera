@@ -16,7 +16,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import vm from "node:vm";
 import { logicalImage, productOf } from "./fm1pkg.js";
-import { Updater, pack7, unpack7 } from "./fm1ota.js";
+import { STOCK_LOADER, TESSERA_LOADER, Updater, pack7, unpack7 } from "./fm1ota.js";
 
 let failed = 0;
 const ok = (cond, what) => { console.log(`${what.padEnd(64)} ${cond ? "ok" : "FAIL"}`); if (!cond) failed++; };
@@ -115,7 +115,7 @@ async function editorMock() {
   inp.onmidimessage = (e) => link.receive(e.data);
   const rq = async (r, o) => link.request(r, o);
   const info = E.parse[E.CMD.INFO](await rq(E.req.info()));
-  ok(info.nengines === 22 && info.engines[15] === "-" && info.engines[19] === "-" && info.engines[14] === "-" && info.engines[1] === "-" && info.engines[12] === "FM6" && info.engines[13] === "-"
+  ok(info.nengines === 22 && info.engines[15] === "-" && info.engines[19] === "ORACLE" && info.engines[14] === "-" && info.engines[1] === "-" && info.engines[12] === "FM6" && info.engines[13] === "-"
  && info.engines[2] === "-" && info.engines[5] === "-" && info.engines[6] === "TRIO" && info.engines[7] === "-" && info.engines[8] === "-" && info.engines[9] === "PHYS" && info.engines[10] === "DRUM" && info.engines[11] === "-" && info.pcount === 119 && info.pe0 === 111 && info.engines[4] === "-",
     "editor: INFO");
   let descs = 0;
@@ -208,9 +208,9 @@ async function editorMock() {
   prefs = await E.readDevicePreferences(rq, info, names, prefs);
   ok(!prefs.favorites[info.namespace.general][31] && !E.devicePresetRows(info, names, prefs).some((r) => r.user), "editor: erased slot disappears and loses star");
   {   /* the lists in the device's order (engines.c ENGINE_ORDER): FM6 first (second until the PROPHET was retired,
-       2026-10-22), DRUM last, "-" never; the numbers stay */
+       2026-10-22), ORACLE after it (2026-10-29), DRUM last, "-" never; the numbers stay */
     const shown = E.engineOrder(info.engines).map((i) => info.engines[i]);
-    ok(shown.join() === "FM6,SID,TRIO,PHYS,DRUM" &&
+    ok(shown.join() === "FM6,ORACLE,SID,TRIO,PHYS,DRUM" &&
        E.engineOrder(info.engines)[0] === 12 && E.engineOrder(info.engines).at(-1) === 10,
        "editor: engines listed FM6 first, DRUM last (indices kept)");
     ok(E.engineOrder(["ANALOG", "X", "-", "DRUM", "FM6"]).join() === "0,4,3,1", "editor: an unknown engine follows the known ones");
@@ -786,7 +786,7 @@ async function editorTracks() {
   const { m, rq, ev, done } = attachMock({ watchMs: 1000 });
   const info = E.parse[C.INFO](await rq(E.req.info()));
   const tr = E.parse[C.TRACK](await rq(E.req.track()));
-  ok(info.ntrk === 4 && tr.sel === 0 && tr.ntrk === 4 && tr.tracks[0].engine === 3 && tr.tracks[1].engine === 12
+  ok(info.ntrk === 4 && tr.sel === 0 && tr.ntrk === 4 && tr.tracks[0].engine === 3 && tr.tracks[1].engine === 6
     && tr.tracks[3].engine === 10 && tr.tracks[3].preset === 0, "tracks: INFO NTRK, TRACK lists 4 parts (track 4: DRUM KIT)");
   /* the v1 commands follow the selected track */
   const d0 = E.parse[C.DUMP](await rq(E.req.dump()), info);
@@ -795,7 +795,7 @@ async function editorTracks() {
   await rq(E.req.set(0, 1, 77));
   const td0 = E.parse[C.TRACK_DUMP](await rq(E.req.trackDump(0)), info);
   const td1 = E.parse[C.TRACK_DUMP](await rq(E.req.trackDump(1)), info);
-  ok(t1.sel === 1 && d1.engine === 12 && d0.engine === 3 && td1.p[1] === 77 && td0.p[1] === d0.p[1] && td0.p[1] !== 77,
+  ok(t1.sel === 1 && d1.engine === 6 && d0.engine === 3 && td1.p[1] === 77 && td0.p[1] === d0.p[1] && td0.p[1] !== 77,
     "tracks: TRACK selects; DUMP / SET act on it, TRACK_DUMP reads any track");
   /* steps of a track that is not selected */
   const w = E.parse[C.TRACK_STEP](await rq(E.req.trackStep(2, 5, { n: 2, notes: [60, 67, 0, 0], time: 0, flags: 1, vel: 99 })));
@@ -907,12 +907,12 @@ async function editorTrackParam() {
   const g = E.parse[C.TRACK_PARAM](await rq(E.req.trackParam(1, PAN)));
   const p2 = await E.mixer.setPan(rq, 2, 0, PAN, -40, true);
   const p1 = await E.mixer.setPan(rq, 1, 0, PAN, 99, true);
-  const alg = E.parse[C.TRACK_PARAM](await rq(E.req.trackParam(1, info.pe0, 50)));   /* track 2 is FM6 PAD: ALG 0..32 */
+  const alg = E.parse[C.TRACK_PARAM](await rq(E.req.trackParam(1, info.pe0, 50)));   /* track 2 is TRIO STRING MACH: WAVE 0..15 */
   const lv = E.parse[C.TRACK_PARAM](await rq(E.req.trackParam(3, 0, -5)));
   const sel = E.parse[C.TRACK](await rq(E.req.track()));
   const td2 = E.parse[C.TRACK_DUMP](await rq(E.req.trackDump(2)), info);
   await sleep(10);
-  ok(g.track === 1 && g.id === PAN && g.value === -24 && p2 === -40 && p1 === 63 && alg.value === 32 && lv.value === 0 && td2.p[PAN] === -40
+  ok(g.track === 1 && g.id === PAN && g.value === -24 && p2 === -40 && p1 === 63 && alg.value === 15 && lv.value === 0 && td2.p[PAN] === -40
     && sel.sel === 0 && (sent[C.TRACK] || 0) === tracks0 + 1 && ev.pushes.length === pushes,
     "v4: TRACK_PARAM get / set on other tracks (clamped as SET, selection kept, no push)");
   const bad = await rq(E.req.trackParam(4, PAN), { timeout: 60, retries: 0, quiet: true }).then(() => "reply", () => "none");
@@ -1014,7 +1014,9 @@ async function editorFm6() {
   await rq(E.req.set(0,info.pe0+7,24));
   g=E.parse[C.FM6_GET](await rq(E.req.fm6Get(0,0)));
   const d = E.parse[C.DUMP](await rq(E.req.dump()), info);
-  ok(eq(g.packed,F6.pack(mine)) && d.p[info.pe0+7]===0,"FM6: unused E7 cannot select a factory voice");
+  // E7 is AEG since #267 (the carriers' envelope times, applied as it plays): it keeps its value, the voice stays
+  ok(eq(g.packed,F6.pack(mine)) && d.p[info.pe0+7]===24,"FM6: E7 (AEG) keeps its value and selects no factory voice");
+  await rq(E.req.set(0,info.pe0+7,0));
   await rq(E.req.preset(12,4));
   g=E.parse[C.FM6_GET](await rq(E.req.fm6Get(0,0)));
   ok(eq(g.packed,F6.FACTORY_PK[4]),"FM6: factory preset loads its own patch directly");
@@ -1278,10 +1280,11 @@ const UPGRADE = [0xF0, 0x22, 0x24, 0x35, 0x7F, 0xF7];
 
 /* an FM-1 on WebMIDI: identity, then "device asks, host answers" reads of the image */
 class FakeFM1 {
-  constructor(image, { unplugAfter = Infinity } = {}) {
+  constructor(image, { unplugAfter = Infinity, identity = "FM-1_015", afterWrite = "FM-1_900", loader = TESSERA_LOADER } = {}) {
+    this.afterWrite = afterWrite; this.loader = loader;     // the loader step 1 starts (the package's own)
     this.image = image; this.unplugAfter = unplugAfter; this.served = 0; this.bad = 0;
     this.access = { inputs: new Map(), outputs: new Map() };
-    this.boot("FM-1_015", "FM-1");
+    this.boot(identity, identity === "FM-1_015" ? "FM-1" : "Tessera");
   }
   boot(identity, name) {
     this.identity = identity; this.waiting = null; this.queue = [];
@@ -1315,8 +1318,8 @@ class FakeFM1 {
       this.waiting = null;
       this.served++;
       if (this.served >= this.unplugAfter) { this.input.state = this.output.state = "disconnected"; return; }
-      if (addr === 0xE0000000) setTimeout(() => this.boot("ota-FM-1_900", "Melodee Update"), 300);
-      else if (addr === 0xF0000000) setTimeout(() => this.boot("FM-1_900", "Melodee"), 300);
+      if (addr === 0xE0000000) setTimeout(() => this.boot(this.loader, this.loader === STOCK_LOADER ? "FM-1" : "Melodee Update"), 300);
+      else if (addr === 0xF0000000) setTimeout(() => this.boot(this.afterWrite, this.afterWrite === "FM-1_015" ? "FM-1" : "Tessera"), 300);
       else this.next();
     }
   }
@@ -1337,20 +1340,49 @@ async function updater() {
   const image = Uint8Array.from({ length: 0x2000 }, (_, i) => (i * 7) & 0xFF);
   const dev = new FakeFM1(image);
   const steps = [];
-  const got = await new Updater(dev.access).install(image, "FM-1_900", (k) => steps.push(k));
+  const got = await new Updater(dev.access).install(image, "FM-1_900", (k) => steps.push(k), TESSERA_LOADER);
   ok(got === "FM-1_900" && dev.bad === 0 && steps.includes("write") && steps.at(-1) === "done",
-    `fm1ota.js: install: running firmware -> loader -> Melodee (${dev.served} reads)`);
+    `fm1ota.js: install: running firmware -> loader -> Tessera (${dev.served} reads)`);
+
+  const stock = new FakeFM1(image, {identity:"FM-1_83772011", afterWrite:"FM-1_015", loader:STOCK_LOADER});
+  const restored = await new Updater(stock.access).install(image, "FM-1_015", null, STOCK_LOADER);
+  ok(restored === "FM-1_015" && stock.bad === 0, "fm1ota.js: a Tessera returns to stock V15 through the official loader");
+  // each package goes only to its own loader: the official one would write a Tessera package's head
+  // over the boot data, Tessera's would write only V15's application
+  const pairs = [["FM-1_015", STOCK_LOADER, TESSERA_LOADER], ["FM-1_83772011", TESSERA_LOADER, STOCK_LOADER]];
+  const refused = await Promise.all(pairs.map(async ([product, own, other]) => {   // ~5 s each
+    const wrong = new FakeFM1(image, {identity:"FM-1_83772011", afterWrite:product, loader:other});
+    const err = await new Updater(wrong.access).install(image, product, null, own).then(() => null, (x) => x);
+    return err && err.code === "wrongloader" && err.detail === other && wrong.served === 4 && wrong.identity === other;
+  }));
+  for (const [i, [product, own, other]] of pairs.entries()) {
+    ok(refused[i], `fm1ota.js: ${product} is not written when step 1 starts ${other}`);
+    const waiting = new FakeFM1(image, {afterWrite:product});
+    waiting.boot(other, "Melodee Update");
+    const resumedWrong = await new Updater(waiting.access).resume(image, null, product, own);
+    ok(resumedWrong === false && waiting.served === 0 && waiting.identity === other,
+      `fm1ota.js: ${product} never resumes in ${other}`);
+  }
+  const unnamed = new FakeFM1(image);
+  unnamed.boot(TESSERA_LOADER, "Melodee Update");
+  ok(await new Updater(unnamed.access).resume(image, null, "FM-1_900") === false && unnamed.served === 0,
+    "fm1ota.js: resume without the package's loader identity writes nothing");
+  const recovery = new FakeFM1(image, {afterWrite:"FM-1_015"});
+  recovery.boot(STOCK_LOADER, "FM-1");
+  const resumed = await new Updater(recovery.access).resume(image, null, "FM-1_015", STOCK_LOADER);
+  ok(resumed && recovery.identity === "FM-1_015" && recovery.bad === 0,
+    "fm1ota.js: an interrupted return to stock resumes in the official loader");
 
   const dev2 = new FakeFM1(image, { unplugAfter: 3 });
-  dev2.boot("ota-FM-1_900", "Melodee Update");
+  dev2.boot(TESSERA_LOADER, "Melodee Update");
   const t0 = Date.now();
-  const done = await new Updater(dev2.access).resume(image);
+  const done = await new Updater(dev2.access).resume(image, null, null, TESSERA_LOADER);
   ok(done === false && Date.now() - t0 < 6000, "fm1ota.js: unplugged during the write -> stops at once");
 
   const dev3 = new FakeFM1(image, { unplugAfter: 2 });
-  const e = await new Updater(dev3.access).install(image, "FM-1_900").then(() => null, (x) => x);
-  ok(e && e.code === "lost", "fm1ota.js: unplugged in step 1 -> error code 'lost'");
-  const e2 = await new Updater({ inputs: new Map(), outputs: new Map() }).install(image, "FM-1_900").then(() => null, (x) => x);
+  const e = await new Updater(dev3.access).install(image, "FM-1_900", null, TESSERA_LOADER).then(() => null, (x) => x);
+  ok(e && e.code === "lost" && e.lastRead === 0x40, "fm1ota.js: unplugged in step 1 -> error code 'lost', last read address");
+  const e2 = await new Updater({ inputs: new Map(), outputs: new Map() }).install(image, "FM-1_900", null, TESSERA_LOADER).then(() => null, (x) => x);
   ok(e2 && e2.code === "notfound", "fm1ota.js: no device -> error code 'notfound'");
 }
 
@@ -1377,8 +1409,11 @@ async function stockRestore() {
   const installer = readFileSync(join(HERE, "index_pkg.html"), "utf8");
   const script = installer.match(/<script type="module">([\s\S]*?)<\/script>/)[1]
     .replace("/*META*/", JSON.stringify({version:"0.10",product:"FM-1_9010",pkg:{dual:"test.fwsc",single:"test-1core.fwsc"}}));
-  async function run({skip = false, loader = false, recovery = false, supported = false, confirm = true, backupError = false, version = "MELODEE 0.9"} = {}) {
-    const calls = [], elements = new Map();
+  const HEAD = {from:1024, to:1024 + 0x4000};
+  // loader: the identity of the update loader the FM-1 is waiting in (false: running firmware);
+  // button: "stock-go" (Return to official V15) or "go" (Install)
+  async function run({skip = false, loader = false, recovery = false, supported = false, confirm = true, backupError = false, version = "MELODEE 0.9", installError = null, button = "stock-go"} = {}) {
+    const calls = [], writes = [], elements = new Map();
     const element = (id) => {
       if (!elements.has(id)) elements.set(id, {checked:false, disabled:false, textContent:"", value:0, listeners:{},
         addEventListener(k, fn) { this.listeners[k] = fn; }});
@@ -1393,15 +1428,19 @@ async function stockRestore() {
       window:{addEventListener() {}},
       fetch:async () => ({ok:true, arrayBuffer:async () => new ArrayBuffer(0)}),
       productOf:() => "FM-1_9010", logicalImage:() => new Uint8Array(),
+      TESSERA_LOADER, STOCK_LOADER,
       URL:{createObjectURL:() => "blob:test", revokeObjectURL() {}}, Blob, setTimeout:() => 0,
       confirm:(message) => { calls.push("confirm"); calls.push(message); return confirm; },
       Updater:class {
         async find(filter) {
-          const id = {model:loader ? "ota-FM-1" : "FM-1"};
-          return filter(id) ? {link:{input:{},output:{},close() {}}} : null;
+          const id = loader ? {model:"ota-FM-1", text:loader} : {model:"FM-1", text:"FM-1_9010"};
+          return filter(id) ? {id, link:{input:{},output:{},close() {}}} : null;
         }
-        async install() { calls.push("install"); }
-        async resume() { calls.push("resume"); return true; }
+        async install(image, product, step, own) {
+          calls.push("install"); writes.push([product, own]);
+          if (installError) throw installError;
+        }
+        async resume(image, step, product, own) { calls.push("resume"); writes.push([product, own]); return true; }
       },
       BackupConnection:class {
         constructor() { calls.push("backup-open"); }
@@ -1412,14 +1451,17 @@ async function stockRestore() {
     });
     vm.runInContext(script, context);
     await new Promise(resolve => setImmediate(resolve));
-    vm.runInContext('stock = {image:new Uint8Array(),product:"FM-1_015"};', context);
+    vm.runInContext(`stock = {image:new Uint8Array(),product:"FM-1_015",head:${JSON.stringify(HEAD)}};`, context);
+    if (button === "go") vm.runInContext("image = new Uint8Array(1);", context);
     element("stock-skip-backup").checked = skip;
     element("stock-recovery").checked = recovery;
     element("stock-skip-backup").listeners.change();
     const label = element("stock-go").textContent;
-    await element("stock-go").listeners.click();
-    return {calls, label, status:element("status").textContent, unlocked:!element("stock-skip-backup").disabled};
+    await element(button).listeners.click();
+    return {calls, writes, label, status:element("status").textContent, unlocked:!element("stock-skip-backup").disabled};
   }
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const fail = (code, more = {}) => Object.assign(new Error(code), {code}, more);
   let r = await run();
   ok(!r.calls.includes("install") && r.status.includes("select Skip backup") && r.calls.includes("backup-close") && r.unlocked,
     "stock: unsupported backups block flashing by default, explain opt-out");
@@ -1441,15 +1483,34 @@ async function stockRestore() {
   r = await run({supported:true, backupError:true});
   ok(!r.calls.includes("install") && !r.calls.includes("confirm") && r.calls.includes("backup-close") && r.unlocked,
     "stock: a failed backup never silently falls through to flashing");
-  r = await run({loader:true});
+  r = await run({skip:true});
+  ok(same(r.writes, [["FM-1_015", STOCK_LOADER]]), "stock: the official file goes only to the official loader");
+  r = await run({loader:STOCK_LOADER});
   ok(!r.calls.includes("resume") && r.status.includes("Skip backup"),
     "stock: interrupted updates still require saved backup or explicit skip");
-  r = await run({loader:true, skip:true});
-  ok(r.calls.includes("resume") && r.calls.some(c => c.includes("without creating a backup")),
-    "stock: explicit skip can resume a loader after data-loss confirmation");
-  r = await run({loader:true, recovery:true});
+  r = await run({loader:STOCK_LOADER, skip:true});
+  ok(r.calls.includes("resume") && r.calls.some(c => c.includes("without creating a backup")) && same(r.writes, [["FM-1_015", STOCK_LOADER]]),
+    "stock: explicit skip can resume the official loader after data-loss confirmation");
+  r = await run({loader:STOCK_LOADER, recovery:true});
   ok(r.calls.includes("resume") && r.calls.some(c => c.includes("Has the complete backup")),
     "stock: saved-backup recovery retains its existing confirmation");
+  r = await run({loader:TESSERA_LOADER, skip:true});
+  ok(r.writes.length === 0 && !r.calls.includes("confirm") && r.status.includes("Tessera's update mode"),
+    "stock: never resumes in Tessera's loader, says to finish Tessera first");
+  r = await run({loader:"ota-FM-1_123", recovery:true});
+  ok(r.writes.length === 0 && r.status.includes("ota-FM-1_123"), "stock: an unknown loader gets nothing, named");
+  r = await run({skip:true, installError:fail("stopped", {lastRead:HEAD.from + 0x200})});
+  ok(r.status.includes("CHECK HEAD") && r.status.includes("Nothing was written"), "stock: stopped at CHECK HEAD -> FAILED -5 explained");
+  r = await run({skip:true, installError:fail("stopped", {lastRead:HEAD.to})});
+  ok(!r.status.includes("CHECK HEAD") && r.status.includes("Stopped"), "stock: stopped elsewhere -> the usual message");
+  r = await run({skip:true, installError:fail("wrongloader", {detail:TESSERA_LOADER})});
+  ok(r.status.includes("Tessera's update mode"), "stock: step 1 started Tessera's loader -> refused, explained");
+  r = await run({button:"go", loader:STOCK_LOADER});
+  ok(r.writes.length === 0 && r.status.includes("official update mode"), "install: never resumes in the official loader");
+  r = await run({button:"go", loader:TESSERA_LOADER});
+  ok(same(r.writes, [["FM-1_9010", TESSERA_LOADER]]), "install: resumes in Tessera's loader");
+  r = await run({button:"go"});
+  ok(same(r.writes, [["FM-1_9010", TESSERA_LOADER]]), "install: a Tessera package goes only to Tessera's loader");
 }
 async function installerBuilds() {
   const installer = readFileSync(join(HERE, "index_pkg.html"), "utf8");
@@ -1473,6 +1534,7 @@ async function installerBuilds() {
     window:{addEventListener() {}},
     fetch:async (url) => { fetched.push(url); return {ok:true, arrayBuffer:async () => new Uint8Array(Buffer.from(url)).buffer}; },
     productOf:(pkg) => /nightly|synth/.test(String.fromCharCode(...pkg)) ? "FM-1_900" : "FM-1_91002", logicalImage:(pkg) => String.fromCharCode(...pkg),
+    TESSERA_LOADER, STOCK_LOADER,
     Updater:class { async find() { return null; } async install(image, product) { installed.push([image, product]); } },
   });
   vm.runInContext(script, context);
@@ -1540,7 +1602,8 @@ async function localBuild() {
       Package:class { constructor(raw) { if (!raw[0]) throw new Error("not an FM-1 .fwsc (UFW header CRC mismatch)"); } },
       productOf:(raw) => Buffer.from(raw.subarray(1, raw.indexOf(0, 1))).toString(), logicalImage:(raw) => "image:" + raw.length,
       confirm:(message) => { asked.push(message); return answer; },
-      Updater:class { async find() { return null; } async install(image, product) { installed.push([image, product]); } },
+      TESSERA_LOADER, STOCK_LOADER,
+    Updater:class { async find() { return null; } async install(image, product) { installed.push([image, product]); } },
     });
     vm.runInContext(script, context);
     await new Promise(resolve => setImmediate(resolve));
@@ -1581,6 +1644,7 @@ async function installerBuildRaces() {
     document:{documentElement:{},querySelectorAll:()=>[],getElementById:element},window:{addEventListener(){}},
     fetch:url=>new Promise(resolve=>pending.set(url,resolve)),productOf:()=>"FM-1_91002",
     logicalImage:pkg=>String.fromCharCode(...pkg),
+    TESSERA_LOADER, STOCK_LOADER,
     Updater:class { async find(){ return null; } async install(img){installed=img;await new Promise(resolve=>installDone=resolve);} }
   });
   const finish = url => pending.get(url)({ok:true,arrayBuffer:async()=>Uint8Array.from(Buffer.from(url)).buffer});

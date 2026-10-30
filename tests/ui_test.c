@@ -155,6 +155,7 @@ static void ui_power_on(void)
     memset(&favorites, 0, sizeof favorites);
     memset(&brw, 0, sizeof brw);                  /* the browser: nothing pending, LIST ALL, RECENT empty */
     list_recent = 0;
+    list_forget();
     recent_n = 0;
     undo_clear();
     memset(pat_last, 0, sizeof pat_last);
@@ -684,6 +685,36 @@ static int test_constel_speed(void)
     return bad;
 }
 
+/* a generator's FORM, OCT+ held: KNOB 1 DEVELOP (2 % a click), its help, the octave stays; let go, KNOB 1 is FORM */
+static int test_form_develop(void)
+{
+    int bad = 0;
+    int32_t oct;
+    ui_power_on();
+    go_title("GEN");
+    tessera_param_set(song.sel, TX_MODE, TESS_ENG_TURING);
+    go_title("FORM");
+    frame();
+    oct = song.octave;
+    fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+    host_pressed |= 1u << panel.btn[B_OCTUP];
+    frame();
+    turn(EN_K1, 1);
+    turn(EN_K1, 1);
+    turn(EN_K1, 1);
+    help_find(0);
+    bad += check("FORM, OCT+ held: KNOB 1 is DEVELOP (3 clicks: 6 %), its help; FORM itself unchanged",
+                 tessera.fm_dev[song.sel] == 6u && help.pid == PID_TESS(TX_FM_DEVELOP) && pid_find(help.pid) &&
+                 !tessera.evolve[song.sel].form);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
+    frame();
+    turn(EN_K1, 1);
+    bad += check("..let go: the octave as it was, KNOB 1 is FORM again (AB), DEVELOP kept",
+                 song.octave == oct && tessera.evolve[song.sel].form == 1u && tessera.fm_dev[song.sel] == 6u);
+    ui_power_on();
+    return bad;
+}
+
 /* QUAD on GEN, OCT+ held: KNOB 1 the column, 2 its MOVE, 3 its EVERY, 4 the row's RANGE; the octave stays, no sheet
  * opens; let go, the generator's knobs again; a tap of OCT+ still raises the octave */
 static int test_quad_cols(void)
@@ -1100,8 +1131,23 @@ static int test_cords_scroll_playing(void)
         seen |= (k->dst == CD_GRD_Y && k->dst_trk == 3u) << 0;
         cords_blocks(24);
     }
-    bad += check("..KNOB 3 a detent at a time through every track's destinations, playing between: the last reached",
-                 k->dst == cu_dst_code(CU_DPT - 1u) && k->dst_trk == NTRK - 1u && (seen & 1u) && pop.on == POP_PICK);
+    bad += check("..KNOB 3 a detent at a time through every track's destinations, then the send effects' (once, no "
+                 "track), playing between: the last reached (RETURN)",
+                 k->dst == CD_FX_RETURN && k->dst_trk == 0u && (seen & 1u) && pop.on == POP_PICK);
+    {                                                   /* the list: each entry back to itself, the send effects' last */
+        uint32_t v, round = 1, globals = 0;
+        int32_t tr;
+        cord_t e = {0};
+        for (v = 1; v < CU_NDST; v++) {
+            cu_dst_set(&e, v);
+            round &= cu_dst_of(&e) == v && cord_dest(e.dst) != 0;
+            (void)cu_pick_name(2u, (int32_t)v, &tr);
+            if (cu_global(e.dst)) globals++, round &= tr == -1 && v > NTRK * CU_DPT;
+            else round &= tr == (int32_t)e.dst_trk;
+        }
+        bad += check("..its list: every entry to its destination and back, the 10 send effects' once, with no track",
+                     round && globals == 10u && CU_NDST == 1u + NTRK * CU_DPT + 10u);
+    }
     for (i = 0; i < CU_NDST + 4u; i++) {
         turn(EN_K1 + 2u, -1);
         cords_blocks(24);
@@ -1234,6 +1280,44 @@ static int test_matrix(void)
                      cord_moves(PID_TRACK(P_PAN), 1, &sh) && !cord_moves(PID_TRACK(P_PAN), 0, &sh));
     }
     cord_clear();
+    return bad;
+}
+
+/* the mod shortcut (FX held + a knob) on the effects' pages: an insert's MIX / RATE / CHAR and the sends on the track,
+ * the send effects' and RETURN for every track (one cord, whichever track is selected); TYPE has none */
+static int test_fx_shortcut(void)
+{
+    int bad = 0;
+    int32_t i;
+    ui_power_on();
+    cord_clear();
+    song.sel = 1;
+    go_title("FX 2");
+    bad += check("FX 2: KNOB 1 TYPE no mod, 2..4 FX2 MIX / RTE / CHR",
+                 msc_dest(0) == CD_OFF && msc_dest(1) == CD_FX2_MIX && msc_dest(2) == CD_FX2_RATE &&
+                 msc_dest(3) == CD_FX2_CHAR);
+    go_title("FX SENDS");
+    bad += check("FX SENDS: SEND, SEND 2, SEND 3", msc_dest(0) == CD_FX_SEND && msc_dest(1) == CD_FX_SEND2 &&
+                 msc_dest(2) == CD_FX_SEND3);
+    go_title("SEND FX 3");
+    bad += check("SEND FX 3: TYPE no mod, SF3 MIX / RTE / CHR", msc_dest(0) == CD_OFF && msc_dest(1) == CD_SF3_MIX &&
+                 msc_dest(2) == CD_SF3_RATE && msc_dest(3) == CD_SF3_CHAR);
+    fm1_in.buttons |= 1u << panel.btn[MSC_BTN];
+    msc_knob(2, 10);
+    i = msc_find(CD_SF3_RATE, 1);
+    bad += check("...FX held, KNOB 3 turned: a cord to SF3 RTE, +20 %, no track of its own",
+                 i >= 0 && cord_get((uint32_t)i)->amount == 20 && cord_get((uint32_t)i)->dst_trk == 0u &&
+                 cord_get((uint32_t)i)->src == CS_LFO && cord_get((uint32_t)i)->src_trk == 1u);
+    song.sel = 3;
+    msc_knob(2, 5);
+    bad += check("...on track 4: the same cord, +30 %, none more", msc_find(CD_SF3_RATE, 3) == i &&
+                 cord_get((uint32_t)i)->amount == 30 && cord_count() == 1u);
+    fm1_in.buttons &= ~(1u << panel.btn[MSC_BTN]);
+    frame();
+    go_title("FX SEND");
+    bad += check("FX SEND: RETURN", msc_dest(1) == CD_FX_RETURN);
+    cord_clear();
+    song.sel = 0;
     return bad;
 }
 
@@ -2092,7 +2176,7 @@ static int test_grid(void)
     bad += check("pages: black keys 11 / 10 up / down (the cursor along); past LEN a key does nothing", ok);
     t->p[P_SLEN] = 16;
     /* a step's GM notes on their lanes */
-    t->step[8] = (step_t){{41, 49, 36, 0}, 3, ST_NOTE, SF_ACCENT, 96, 0, 0};
+    t->step[8] = (step_t){{41, 49, 36, 0}, 3, ST_NOTE, 0, SF_ACCENT, 96, 0, 0};
     ok = step_lanes(&t->step[8]) == ((1u << DV_TOM) | (1u << DV_BELL) | (1u << DV_KICK)) &&
          step_accents(&t->step[8]) == step_lanes(&t->step[8]);
     grid_hit(t, 8, DV_TOM, 0);
@@ -2393,6 +2477,39 @@ static int test_browser(void)
     e = recent[0];
     turn(EN_PRESET, 1);
     bad += check("RECENT: browsing it loads the next one and keeps the order", recent[0] == e && preset_pos(&total) == 1u);
+
+    ui_power_on();                                         /* LIST is each track's (upstream Melodee 38aa10b, a user's
+                                                            * report: a brass track, then a bass one; PRESETS on the brass
+                                                            * track loaded a bass) */
+    PREF_BITS |= PREF_ACCEL_OFF;
+    go_page(GR_BROWSE);
+    list_set(list_cat(CAT_KEYS));
+    turn(EN_K2, 1);
+    cur_entry(&src, &k);
+    ok = entry_cat(src, k) == CAT_KEYS;
+    track_select(1);
+    list_set(list_cat(CAT_BASS));
+    turn(EN_K2, 1);
+    cur_entry(&src, &k);
+    ok &= song.sel == 1u && entry_cat(src, k) == CAT_BASS;
+    track_select(0);
+    go_home();
+    turn(EN_PRESET, 1);
+    cur_entry(&src, &k);
+    bad += check("LIST is each track's: PRESETS on the keys track loads keys after the bass track picked BASS",
+                 ok && song.sel == 0u && list_mode() == list_cat(CAT_KEYS) && entry_cat(src, k) == CAT_KEYS);
+    track_select(1);
+    bad += check("LIST: the bass track keeps BASS", list_mode() == list_cat(CAT_BASS));
+    track_select(0);
+    list_forget();                                         /* (a project loaded) */
+    turn(EN_PRESET, 1);
+    cur_entry(&src, &k);
+    bad += check("LIST: a track without one browses the category of its sound, not the last one picked",
+                 list_lcat == CAT_BASS && list_mode() == list_cat(CAT_KEYS) && entry_cat(src, k) == CAT_KEYS);
+    track_select(1);
+    project_new_blank();
+    bad += check("LIST: a new project forgets the tracks' LISTs", !list_trk[0] && !list_trk[1]);
+    PREF_BITS &= (uint8_t)~PREF_ACCEL_OFF;
     list_set(LM_ALL);
     return bad;
 }
@@ -2892,18 +3009,38 @@ static int test_step_sheets(void)
     bad += check("NOTES: OCT+ on an empty step places the last note played, no sheet", t->step[4].n == 1u &&
                  t->step[4].note[0] == 62u && !pop.on && song.octave == 0);
     press(B_OCTUP);
-    bad += check("..OCT+ on the note: its sheet (Length, Velocity, Chance, Slide, Delete note)", pop.on == POP_SHEET &&
+    bad += check("..OCT+ on the note: its sheet (Length, Velocity, Chance, Condition, .., Delete note)", pop.on == POP_SHEET &&
                  pop.rows == SHEET_NOTE && !memcmp(pop.title, "Note ", 5));
     turn(EN_K2, 1);
     bad += check("..KNOB 2 on Length snaps to 1.25 steps", notes_selected(t)<RECORD_MAX && recording[notes_selected(t)].duration*(1u<<(recording[notes_selected(t)].owner>>5))==5u*RECORD_UNIT/4u && pop.on == POP_SHEET);
     turn(EN_K1, 1); turn(EN_K1, 1); turn(EN_K2, -10);
     bad += check("..Chance: 90 %", step_chance(&t->step[4]) == 90u);
+    turn(EN_K1, 1);
+    bad += check("..then Condition (Off)", !strcmp(pop.rows[pop.sel].label, "Condition") && !step_cond(&t->step[4]));
+    turn(EN_K1, 1); turn(EN_K1, 1); turn(EN_K1, 1); turn(EN_K2, 1); turn(EN_K2, 1); turn(EN_K2, 1); turn(EN_K2, -1);
+    bad += check("..Accumulate: +2 a pass, the step's", !strcmp(pop.rows[pop.sel].label, "Accumulate") &&
+                 step_climb(&t->step[4]) == 2);
+    for (int k = 0; k < 6; k++) turn(EN_K1, 1);
+    frame();
+    bad += check("..the eleventh row (Delete note) scrolls the sheet two rows", pop.on == POP_SHEET && pop.sel == 10u &&
+                 pop.first == 2u);
+    for (int k = 0; k < 10; k++) turn(EN_K1, -1);
+    frame();
+    bad += check("..and back to the top", pop.sel == 0u && pop.first == 0u);
     sheet_do("Slide");
     bad += check("..Slide: on, the sheet closed", (t->step[4].flags & SF_SLIDE) && !pop.on);
     sheet_do("Delete note");
     bad += check("..Delete note: gone", !step_on(&t->step[4]));
     hold(B_OCTUP);
     bad += check("NOTES: OCT+ held: the pattern's sheet", pop.on == POP_SHEET && pop.rows == SHEET_PATTERN);
+    sheet_do("Accum mode");
+    bad += check("..Accum mode: OCT+ steps WRAP to PING", tessera.acc_mode[trk_index(t)] == TESS_ACC_PING && !pop.on);
+    hold(B_OCTUP);
+    sheet_do("Accum limit");                            /* (OCT+: 7 to 8) */
+    hold(B_OCTUP);
+    for (int k = 0; k < 16 && strcmp(pop.rows[pop.sel].label, "Accum limit"); k++) turn(EN_K1, 1);
+    turn(EN_K2, -1); turn(EN_K2, -1); turn(EN_K2, -1); turn(EN_K2, -1);
+    bad += check("..Accum limit: 8 then KNOB 2 down to 4, the track's", tessera.acc_limit[trk_index(t)] == 4u);
     press(B_OCTDN);
     ui_power_on();
     track_select(3); frame();                           /* T4 DRUM: the grid */
@@ -3071,12 +3208,32 @@ static int test_native_env_lfo(void)
     for (i = 0; i < NPAGES; i++)
         found |= PAGES[i].fam == FAM_ENV && page_visible(i);
     bad += check("..the track's ADSR and ENV DEST hidden", !found);
+    turn(EN_SELECT, 1);
+    o = str_eq(cur_page()->title, "EG LVL") && cur_fam() == FAM_ENV;
+    turn(EN_SELECT, 1);
+    o &= str_eq(cur_page()->title, "PITCH EG");
+    turn(EN_SELECT, 1);
+    o &= str_eq(cur_page()->title, "PITCH LV");
+    turn(EN_SELECT, 1);
+    o &= str_eq(cur_page()->title, "EG RATE") && cur_fam() == FAM_ENV;
+    turn(EN_SELECT, -1);
+    bad += check("..SELECT turns ENV's pages only (EG RATE, EG LVL, PITCH EG, PITCH LV, round), ENV lit, never EDIT's",
+                 o && str_eq(cur_page()->title, "PITCH LV") && cur_fam() == FAM_ENV);
+    open_family(FAM_EDIT);
+    for (i = 0; i < 12u && !str_eq(cur_page()->title, "EG RATE"); i++) turn(EN_SELECT, 1);
+    turn(EN_SELECT, 1);
+    bad += check("..from EDIT its EG pages are EDIT's: on to SCALE, EDIT lit",
+                 str_eq(cur_page()->title, "EG LVL") && cur_fam() == FAM_EDIT &&
+                 (turn(EN_SELECT, 1), str_eq(cur_page()->title, "SCALE")) && cur_fam() == FAM_EDIT);
     ui.fam_last[FAM_LFO] = 0;
     open_family(FAM_LFO);
     bad += check("LFO on FM6: MODS first, as on any engine", str_eq(cur_page()->title, "MODS"));
     for (i = 0; i < 8u && !str_eq(cur_page()->title, "FM LFO"); i++) open_family(FAM_LFO);
     bad += check("..its own LFO after the family's pages (after LFO DEST), then round to MODS",
                  str_eq(cur_page()->title, "FM LFO") && i == 6u && (open_family(FAM_LFO), str_eq(cur_page()->title, "MODS")));
+    for (i = 0; i < 8u && !str_eq(cur_page()->title, "FM LFO"); i++) open_family(FAM_LFO);
+    turn(EN_SELECT, 1);
+    bad += check("..SELECT from FM LFO: round to MODS (not FM BEND)", str_eq(cur_page()->title, "MODS") && cur_fam() == FAM_LFO);
     open_family(FAM_LFO); go_home(); open_family(FAM_LFO);
     bad += check("..from elsewhere: the LFO page last used", str_eq(cur_page()->title, "MATRIX"));
     go_home();
@@ -3272,7 +3429,7 @@ static int test_chain(void)
             pattern_request(&trk[i], k);
             track_defaults_steps(&trk[i]);
             trk[i].p[P_SLEN] = (int16_t)(2u + k);
-            trk[i].step[0] = (step_t){{(uint8_t)(60u + 5u * k), (uint8_t)(64u + 5u * k), (uint8_t)(67u + 5u * k)}, 3, ST_NOTE, 0, 96};
+            trk[i].step[0] = (step_t){{(uint8_t)(60u + 5u * k), (uint8_t)(64u + 5u * k), (uint8_t)(67u + 5u * k)}, 3, ST_NOTE, 0, 0, 96};
         }
         project_save(k);
     }
@@ -5769,6 +5926,7 @@ int main(void)
     bad += test_tweak2();
     bad += test_organic();
     bad += test_matrix();
+    bad += test_fx_shortcut();
     bad += test_help_all();
     bad += test_help_gesture();
     bad += test_mods_page();
@@ -5786,6 +5944,7 @@ int main(void)
     bad += test_step_evolve();
     bad += test_div_order();
     bad += test_quad_cols();
+    bad += test_form_develop();
     bad += test_screen();
     bad += test_favorites();
     bad += test_browser();

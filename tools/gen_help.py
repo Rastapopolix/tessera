@@ -7,14 +7,16 @@ HELP_PAGE), packed for the device build.
   tools/gen_help.py OUT.h
 
 pid.c stays the source: this reads its T_ / G_ / X_ / XP_ entries (and the text macros defined among them) in order and
-writes OUT.h with the texts byte-pair coded: every byte from PID_HELP_LO up stands for two bytes (either of which
-may be a code again), the codes chosen most frequent pair first while one is left. Texts that are equal are kept
-once. The help gesture expands one text at a time (pid_help_unpack.h); the device build leaves the plain texts
+writes OUT.h with the texts byte-pair coded, then Huffman coded: every symbol from PID_HELP_LO up stands for two
+symbols (either of which may be a pair again), the pairs chosen most frequent first, up to PID_HELP_NSYM symbols
+(10 bits each in the pair table); each text is then a byte-aligned bit stream of canonical Huffman codes of its
+symbols, ending in symbol 0. Texts that are equal are kept once. The help gesture expands one text at a time (pid_help_unpack.h); the device build leaves the plain texts
 out (MELODEE_HELP_PACKED, firmware/src/pid.c), the host build keeps them, and tests/help_pack_test.c checks every
 expanded text against them (tests/ui_test.c the page texts). The round trip is checked here too.
 HELP_PAGE's texts follow PIDS' (text PID_HELP_N + hp), its H_ entries read in order: they must be in HP_ order.
 """
 import argparse
+import heapq
 import re
 import sys
 from collections import Counter
@@ -95,38 +97,86 @@ def page_texts():
     return [strings(args_of(body, m.end() - 1)[0][-1], {}) for m in re.finditer(r"\bH_\(", body)]
 
 
+NSYM = 1024                           # symbols: the text's bytes, then pairs; 10 bits each in PID_HELP_PAIR
+W = 10
+MAXL = 15                             # the longest Huffman code (a nibble in PID_HELP_LEN)
+
+
 def pack(items):
-    """byte-pair code the distinct texts: (lo, pairs, coded texts)"""
+    """byte-pair code the distinct texts, each ending in 0: (lo, pairs, symbol lists)"""
     raw = [t.encode("latin-1") for t in items]
     lo = max(max(r) for r in raw if r) + 1
-    assert lo <= 128, "help text outside ASCII: fewer codes are left"
-    data, pairs = [list(r) for r in raw], []
-    for code in range(lo, 256):
-        c = Counter((a, b) for d in data for a, b in zip(d, d[1:]))
+    data, pairs = [list(r) + [0] for r in raw], []
+    c = Counter((a, b) for d in data for a, b in zip(d[:-2], d[1:-1]))   # the pairs, the closing 0 left out
+    for code in range(lo, NSYM):
         if not c:
             break
         pair, n = c.most_common(1)[0]
-        if n < 3:                                     # a pair seen twice saves 2 B and costs 2 B of table
+        if n < 2:
             break
         pairs.append(pair)
         for k, d in enumerate(data):
+            if pair[0] not in d:
+                continue
             o, i = [], 0
             while i < len(d):
-                if i + 1 < len(d) and (d[i], d[i + 1]) == pair:
+                if i + 1 < len(d) - 1 and (d[i], d[i + 1]) == pair:
                     o.append(code)
                     i += 2
                 else:
                     o.append(d[i])
                     i += 1
-            data[k] = o
+            if o != d:
+                c.subtract(Counter(zip(d[:-2], d[1:-1])))
+                c.update(Counter(zip(o[:-2], o[1:-1])))
+                data[k] = o
+        c = +c
     return lo, pairs, data
 
 
-def unpack(lo, pairs, d):
-    """as pid_help_unpack.h: each coded byte expanded on a stack; (the text, the deepest stack)"""
-    out, depth = [], 0
-    for b in d:
-        stack = [b]
+def huffman(count):
+    """code lengths (at most MAXL) of the symbols counted"""
+    heap = [(n, s, [s]) for s, n in count.items()]
+    heapq.heapify(heap)
+    length = {s: 0 for s in count}
+    while len(heap) > 1:
+        a, b = heapq.heappop(heap), heapq.heappop(heap)
+        for s in a[2] + b[2]:
+            length[s] += 1
+        heapq.heappush(heap, (a[0] + b[0], min(a[1], b[1]), a[2] + b[2]))
+    assert max(length.values()) <= MAXL, "gen_help: a Huffman code longer than MAXL"
+    return length
+
+
+def canonical(length):
+    """symbol -> (code, length): codes in order of length, then of symbol"""
+    codes, code, prev = {}, 0, 0
+    for s in sorted(length, key=lambda s: (length[s], s)):
+        code <<= length[s] - prev
+        prev = length[s]
+        codes[s] = (code, prev)
+        code += 1
+    return codes
+
+
+def unpack(lo, pairs, length, d):
+    """as pid_help_unpack.h: the bits decoded (canonical, by the lengths alone), each pair expanded on a stack;
+    (the text, the deepest stack)"""
+    count = Counter(length.values())
+    out, depth, bit = [], 0, 0
+    while True:
+        code = first = 0
+        for n in range(1, MAXL + 1):
+            code |= d[bit >> 3] >> (7 - (bit & 7)) & 1
+            bit += 1
+            if code - first < count[n]:
+                sym = sorted(s for s in length if length[s] == n)[code - first]
+                break
+            first = (first + count[n]) << 1
+            code <<= 1
+        if not sym:
+            return bytes(out), depth
+        stack = [sym]
         while stack:
             depth = max(depth, len(stack))
             c = stack.pop()
@@ -134,7 +184,22 @@ def unpack(lo, pairs, d):
                 stack += [pairs[c - lo][1], pairs[c - lo][0]]
             else:
                 out.append(c)
-    return bytes(out), depth
+
+
+def bitpack(values, w):
+    """values as w-bit fields, MSB first, and a byte of padding (the reader takes two bytes)"""
+    acc, n = 0, 0
+    for v in values:
+        acc, n = acc << w | v, n + w
+    acc <<= -n % 8
+    return list(acc.to_bytes((n + 7) // 8, "big")) + [0]
+
+
+def c_bytes(name, ctype, vals, per=24):
+    lines = [f"static const {ctype} {name}[{max(1, len(vals))}] = {{"]
+    for i in range(0, len(vals), per):
+        lines.append("    " + ", ".join(map(str, vals[i:i + per])) + ",")
+    return lines + ["};"]
 
 
 def main():
@@ -144,39 +209,51 @@ def main():
     pids, pages = texts(), page_texts()
     items = pids + pages
     distinct = list(dict.fromkeys(items))
-    lo, pairs, coded = pack(distinct)
+    lo, pairs, syms = pack(distinct)
+    nsym = lo + len(pairs)
+    length = huffman(Counter(s for d in syms for s in d))
+    codes = canonical(length)
     data, at, deepest, longest = [], {}, 0, 0
-    for t, d in zip(distinct, coded):
-        got, depth = unpack(lo, pairs, d)
+    for t, d in zip(distinct, syms):
+        acc, n = 0, 0
+        for s in d:
+            acc, n = acc << codes[s][1] | codes[s][0], n + codes[s][1]
+        acc <<= -n % 8
+        coded = list(acc.to_bytes((n + 7) // 8, "big"))
+        got, depth = unpack(lo, pairs, length, coded)
         assert got == t.encode("latin-1"), f"gen_help: round trip fails for {t[:40]!r}"
         at[t] = len(data)
-        data += d + [0]
+        data += coded
         deepest, longest = max(deepest, depth), max(longest, len(t))
     assert len(data) < 65536
+    maxl = max(length.values())
+    count = [sum(1 for s in length if length[s] == n) for n in range(maxl + 1)]
+    nib = [length.get(s, 0) for s in range(nsym)] + [0] * (nsym & 1)
+    lens = [nib[i] << 4 | nib[i + 1] for i in range(0, len(nib), 2)]
+    pair_bits = bitpack([v for p in pairs for v in p], W)
     plain = sum(len(t) + 1 for t in distinct)
-    lines = ["/* generated by tools/gen_help.py from firmware/src/pid.c and ui_help.c: the help texts, byte-pair coded */",
+    lines = ["/* generated by tools/gen_help.py from firmware/src/pid.c and ui_help.c: the help texts, byte-pair coded,",
+             " * then Huffman coded */",
              "#pragma once", "#include <stdint.h>", "",
              f"#define PID_HELP_N {len(pids)}            /* PIDS entries, in their order */",
              f"#define HELP_PAGE_N {len(pages)}            /* then ui_help.c HELP_PAGE's, in HP_ order */",
-             f"#define PID_HELP_LO {lo}u           /* bytes from here up are pairs (PID_HELP_PAIR[b - LO]) */",
+             f"#define PID_HELP_LO {lo}u           /* symbols from here up are pairs (PID_HELP_PAIR's 2 x {W} bits) */",
+             f"#define PID_HELP_NSYM {nsym}u        /* the symbols (0 ends a text) */",
+             f"#define PID_HELP_MAXL {maxl}u          /* the longest code, in bits */",
              f"#define PID_HELP_MAX {longest}         /* the longest text, without its 0 */",
-             f"#define PID_HELP_DEPTH {deepest}       /* the expansion stack it needs */", "",
-             f"static const uint8_t PID_HELP_PAIR[{max(1, len(pairs))}][2] = {{"]
-    for i in range(0, len(pairs), 12):
-        lines.append("    " + " ".join(f"{{{p[0]}, {p[1]}}}," for p in pairs[i:i + 12]))
-    lines += ["};", f"static const uint16_t PID_HELP_AT[{len(items)}] = {{"]
-    offs = [at[t] for t in items]
-    for i in range(0, len(offs), 16):
-        lines.append("    " + ", ".join(map(str, offs[i:i + 16])) + ",")
-    lines += ["};", f"static const uint8_t PID_HELP_DATA[{len(data)}] = {{"]
-    for i in range(0, len(data), 24):
-        lines.append("    " + ", ".join(map(str, data[i:i + 24])) + ",")
-    lines.append("};")
+             f"#define PID_HELP_DEPTH {deepest}       /* the expansion stack it needs */", ""]
+    lines += c_bytes("PID_HELP_PAIR", "uint8_t", pair_bits)
+    lines += ["/* each symbol's code length (0: unused), a nibble each, the even symbol's high */"]
+    lines += c_bytes("PID_HELP_LEN", "uint8_t", lens)
+    lines += c_bytes("PID_HELP_CNT", "uint16_t", count, 16)
+    lines += c_bytes("PID_HELP_AT", "uint16_t", [at[t] for t in items], 16)
+    lines += c_bytes("PID_HELP_DATA", "uint8_t", data)
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     Path(a.out).write_text("\n".join(lines) + "\n")
-    packed = len(data) + 2 * len(pairs) + 2 * len(items)
+    packed = len(data) + len(pair_bits) + len(lens) + 2 * len(count) + 2 * len(items)
     print(f"help: {len(pids)} + {len(pages)} texts ({len(distinct)} distinct), {plain} B -> {len(data)} B coded + "
-          f"{2 * len(pairs)} B pairs + {2 * len(items)} B offsets = {packed} B -> {a.out}")
+          f"{len(pair_bits)} B pairs + {len(lens) + 2 * len(count)} B code + {2 * len(items)} B offsets = {packed} B "
+          f"-> {a.out}")
 
 
 if __name__ == "__main__":

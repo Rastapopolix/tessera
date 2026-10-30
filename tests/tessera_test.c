@@ -425,6 +425,22 @@ static void s_seed_turing_drift(void) { s_seed(TESS_ENG_TURING, TESS_SD_RHYTHM, 
 static void s_seed_turing_hits(void) { s_seed(TESS_ENG_TURING, TESS_SD_PITCH, 25); }
 static void s_seed_euclid(void) { s_seed(TESS_ENG_EUCLID, TESS_SD_FREE, 0); }
 static void s_seed_euclid_rhythm(void) { s_seed(TESS_ENG_EUCLID, TESS_SD_RHYTHM, 0); }
+/* slice 2: MARKOV (LEAP 0: the chain alone), MORPH (A / B), GRAVITY 100 on drifting ones */
+static void s_seed_markov(void) { s_seed(TESS_ENG_MARKOV, TESS_SD_FREE, 0); tessera_param_set(1, TX_MKV_LEAP, 0); }
+static void s_seed_markov_rhythm(void) { s_seed(TESS_ENG_MARKOV, TESS_SD_RHYTHM, 0); tessera_param_set(1, TX_MKV_LEAP, 50); }
+static void s_seed_markov_pitch(void) { s_seed(TESS_ENG_MARKOV, TESS_SD_PITCH, 0); tessera_param_set(1, TX_MKV_LEAP, 50); }
+static void s_seed_morph_a(void) { s_seed(TESS_ENG_MORPH, TESS_SD_FREE, 0); tessera_param_set(1, TX_MRP_POS, 0); }
+static void s_seed_morph_b(void) { s_seed(TESS_ENG_MORPH, TESS_SD_RHYTHM, 0); tessera_param_set(1, TX_MRP_POS, 127); }
+static void s_seed_gravity(uint32_t mode)
+{
+    s_seed(mode, TESS_SD_FREE, 25);
+    if (mode == TESS_ENG_MARKOV) tessera_param_set(1, TX_MKV_LEAP, 100);
+    if (mode == TESS_ENG_MORPH) tessera_param_set(1, TX_MRP_POS, 127);
+    knob(tessera_sd_layer_knob, 2, 100);              /* GRAVITY 100 */
+}
+static void s_seed_turing_grav(void) { s_seed_gravity(TESS_ENG_TURING); }
+static void s_seed_markov_grav(void) { s_seed_gravity(TESS_ENG_MARKOV); }
+static void s_seed_morph_grav(void) { s_seed_gravity(TESS_ENG_MORPH); }
 
 typedef struct {
     const char *name;
@@ -470,10 +486,10 @@ static void b_replay(uint32_t bar)
 static void s_grids(void) { gen(0, TESS_ENG_GRIDS); }
 static void s_grids_var(void)
 {
-    gen(0, TESS_ENG_GRIDS);
-    knob(tessera_knob, 1, -20);                       /* X 48 */
-    knob(tessera_knob, 2, 25);                        /* Y 228 */
-    knob(tessera_knob, 3, 15);                        /* DENSITY 80 */
+    gen(0, TESS_ENG_GRIDS);                           /* (a random start: X, Y, DENSITY set outright) */
+    tessera_param_set(0, TX_GRD_X, 48);
+    tessera_param_set(0, TX_GRD_Y, 228);
+    tessera_param_set(0, TX_GRD_DENS, 80);
     knob(tessera_evolve_knob, 0, -20);                /* LOCK 60: CHAOS 40 */
     knob(tessera_tweak_knob, 1, 10);                  /* DROP 20 */
     knob(tessera_tweak_knob, 2, 15);                  /* HUMAN 30 */
@@ -787,6 +803,14 @@ static const scen_t SCEN[] = {
     {"seed_turing_t1_prob50_keep_pitch", 4, 0x104Au, s_seed_turing_hits, 0},
     {"seed_euclid_t1", 4, 0x104Bu, s_seed_euclid, 0},
     {"seed_euclid_t1_keep_rhythm", 4, 0x104Cu, s_seed_euclid_rhythm, 0},
+    {"seed_markov_t1_leap0", 4, 0x104Du, s_seed_markov, 0},
+    {"seed_markov_t1_leap50_keep_rhythm", 4, 0x104Eu, s_seed_markov_rhythm, 0},
+    {"seed_markov_t1_leap50_keep_pitch", 4, 0x104Fu, s_seed_markov_pitch, 0},
+    {"seed_morph_t1_a", 4, 0x1050u, s_seed_morph_a, 0},
+    {"seed_morph_t1_b_keep_rhythm", 4, 0x1051u, s_seed_morph_b, 0},
+    {"seed_turing_t1_prob50_gravity100", 4, 0x1052u, s_seed_turing_grav, 0},
+    {"seed_markov_t1_leap100_gravity100", 4, 0x1053u, s_seed_markov_grav, 0},
+    {"seed_morph_t1_b_gravity100", 4, 0x1054u, s_seed_morph_grav, 0},
 };
 #define NSCEN (sizeof SCEN / sizeof SCEN[0])
 
@@ -1382,6 +1406,98 @@ static void br_check(char *res, size_t cap)
     snprintf(res, cap, "%u", (unsigned)ok);
 }
 
+/* ------------------------------------------------- PITCH ACCUMULATOR --- */
+/* a STEP track (C major, 1/16, LEN 4) for `passes` passes: step 1 C4 Accumulate +2, step 2 E4 + G4 -1, step 3 a TIE,
+ * step 4 C5 none; LIMIT lim, MODE mode, QNT q. Its notes in order into out[] (up to max); returns how many. stop_at: a
+ * STOP and PLAY after that many passes (0: none) */
+static int32_t acc_nudge0;                              /* step 1's NUDGE (acc_play) */
+static uint32_t acc_play(uint32_t mode, uint32_t lim, uint32_t q, uint32_t passes, uint32_t stop_at, uint8_t *out,
+                         uint32_t max)
+{
+    static const uint8_t C4[1] = {60}, EG[2] = {64, 67}, C5[1] = {72};
+    uint32_t f, i, n = 0, pass, total;
+    int32_t o[2 * CTL];
+    host_tracks_init();
+    tessera_reset();
+    song.g[G_BPM] = 120;
+    pass = 4u * seq_div_samples(2) / CTL * CTL;          /* (a pass: four 1/16 steps, in whole blocks) */
+    total = passes * pass;
+    for (i = 0; i < NTRK; i++) tt_open[i] = -1;
+    tt_n = tt_blk = 0;
+    memset(trk[0].step, 0, sizeof trk[0].step);
+    trk[0].p[P_SDIV] = 2;                               /* 1/16 */
+    trk[0].p[P_SLEN] = 4;
+    trk[0].p[P_ROOT] = 0;
+    trk[0].p[P_SCALE] = 1;                              /* (MAJ) */
+    trk[0].p[P_QUANT] = (int16_t)q;
+    put_step(&trk[0], 0, 1, C4, ST_NOTE, 0); step_set_climb(&trk[0].step[0], 2);
+    step_set_nudge(&trk[0].step[0], acc_nudge0);
+    put_step(&trk[0], 1, 2, EG, ST_NOTE, 0); step_set_climb(&trk[0].step[1], -1);
+    put_step(&trk[0], 2, 0, C4, ST_TIE, 0);  step_set_climb(&trk[0].step[2], 3);
+    put_step(&trk[0], 3, 1, C5, ST_NOTE, 0);
+    tessera_param_set(0, TX_ACC_LIMIT, (int32_t)lim);
+    tessera_param_set(0, TX_ACC_MODE, (int32_t)mode);
+    transport_req = 1;
+    for (f = 0; f < total + 4u * CTL; f += CTL) {
+        uint32_t a0 = vage, k, best;
+        if (stop_at && f == stop_at * pass) transport_req = 3;   /* (a restart: from step 1) */
+        if (f >= total) transport_req = 2;
+        mix_block(o, CTL);
+        for (k = 0; k < NVOICE; k++) {                  /* (the voices it started, oldest first: a step's notes in order) */
+            for (best = NVOICE, i = 0; i < NVOICE; i++)
+                if (trk[0].v[i].active && trk[0].v[i].age > a0 && (best == NVOICE || trk[0].v[i].age < trk[0].v[best].age))
+                    best = i;
+            if (best == NVOICE) break;
+            if (n < max) out[n++] = trk[0].v[best].note;
+            a0 = trk[0].v[best].age;
+        }
+    }
+    memset(trk[0].step, 0, sizeof trk[0].step);         /* (none left for the next test) */
+    return n;
+}
+/* "1": WRAP 7 climbs C4 by thirds of the scale (C E G B, C again) and E4 + G4 down a degree a pass, both from the
+ * notes as written after 8 passes; PING 3 turns round, CLAMP 3 stays; QNT OFF moves semitones; a restart begins
+ * again; the TIE and C5 never move; Accumulate 0 plays as written; step 1 NUDGEd early plays the next pass's notes */
+static void acc_check(char *res, size_t cap)
+{
+    static const uint8_t WRAP[9][3] = {{60, 64, 67}, {64, 62, 65}, {67, 60, 64}, {71, 59, 62}, {60, 57, 60},
+                                       {64, 55, 59}, {67, 53, 57}, {71, 52, 55}, {60, 64, 67}};
+    static const uint8_t PING[6] = {60, 64, 64, 60, 64, 64};     /* (+2 a pass, LIMIT 3: 0 2 2 0 2 2 degrees) */
+    static const uint8_t CLAMP[5] = {60, 64, 65, 65, 65};        /* (0 2 3 3 3 degrees) */
+    uint8_t got[64];
+    uint32_t ok = 1, n, p;
+    n = acc_play(TESS_ACC_WRAP, 7, Q_SNAP, 9, 0, got, 64);
+    printf("acc: WRAP 7:");
+    for (p = 0; p < n; p++) printf(" %u", got[p]);
+    printf("\n");
+    ok &= n == 9u * 4u;
+    for (p = 0; p < 9u && ok; p++)
+        ok &= got[4u * p] == WRAP[p][0] && got[4u * p + 1u] == WRAP[p][1] && got[4u * p + 2u] == WRAP[p][2] &&
+              got[4u * p + 3u] == 72u;
+    acc_nudge0 = -4;                                    /* (step 1 early, in the pass before: the next pass's notes) */
+    n = acc_play(TESS_ACC_WRAP, 7, Q_SNAP, 4, 0, got, 64);
+    acc_nudge0 = 0;
+    printf("acc: step 1 NUDGE -4/16:");
+    for (p = 0; p < n; p++) printf(" %u", got[p]);
+    printf("\n");
+    ok &= n >= 13u && got[0] == 60u && got[4] == 64u && got[8] == 67u && got[12] == 71u;
+    n = acc_play(TESS_ACC_PING, 3, Q_SNAP, 6, 0, got, 64);
+    ok &= n == 6u * 4u;
+    for (p = 0; p < 6u && ok; p++) ok &= got[4u * p] == PING[p];
+    n = acc_play(TESS_ACC_CLAMP, 3, Q_SNAP, 5, 0, got, 64);
+    ok &= n == 5u * 4u;
+    for (p = 0; p < 5u && ok; p++) ok &= got[4u * p] == CLAMP[p];
+    n = acc_play(TESS_ACC_WRAP, 7, Q_OFF, 3, 0, got, 64);     /* (semitones: C4 D4 E4; E4 + G4: D#4 + F#4 a pass) */
+    ok &= n == 12u && got[0] == 60u && got[4] == 62u && got[8] == 64u && got[5] == 63u && got[6] == 66u;
+    n = acc_play(TESS_ACC_WRAP, 7, Q_SNAP, 4, 2, got, 64);    /* (a restart after two passes: C4 again) */
+    printf("acc: restart after 2:");
+    for (p = 0; p < n; p++) printf(" %u", got[p]);
+    printf("\n");
+    ok &= n >= 16u && got[0] == 60u && got[4] == 64u && got[8] == 60u && got[12] == 64u;
+    printf("acc: %s\n", ok ? "ok" : "FAILED");
+    snprintf(res, cap, "%u", (unsigned)ok);
+}
+
 /* ------------------------------------------------------------ ENERGY --- */
 /* CHORD on track 0 (DRONE, HIT HOLD) and Euclid on track 1 at 120 BPM for 12 s; with rest, a rest from 2 s to 8 s.
  * *before / *during / *after: track 1's note-ons before 2 s, in 2.5 .. 7.5 s, after 8.5 s; *held: track 0's voices
@@ -1471,6 +1587,41 @@ static void en_check(char *res, size_t cap)
     en_play(1, &b, &d, &a, &h);
     printf("energy: a rest: Euclid %u, %u, %u notes; the drone %u voices\n", (unsigned)b, (unsigned)d, (unsigned)a, (unsigned)h);
     ok &= b && !d && a && h >= 3u;
+    {   /* part 2: LEVEL and DEPTH (ARC 0, no rest): 0 as set; +100 DROP all taken back, 12 louder, EVOLVE x1.5; -100
+         * EVOLVE x0.5 and about 70 % left out; DEPTH 50 half of it, DEPTH 0 an anchor even in a rest */
+        uint8_t v = 80;
+        uint32_t kept = 0, ok2 = 1;
+        tessera_reset();
+        energy.e = 0;
+        energy.rest_left = 0;
+        ok2 &= energy_drop(0, 50) == 50u && energy_amount(0, 60) == 60u && energy_hit(0, &v) && v == 80u;
+        tessera_param_set(0, TX_EN_LEVEL, 100);
+        ok2 &= tessera_param_get(2, TX_EN_LEVEL) == 100 && energy_now() == 32767;
+        ok2 &= energy_drop(0, 50) == 0u && energy_amount(0, 60) == 90u && energy_amount(0, 90) == 100u;
+        ok2 &= energy_hit(0, &v) && v == 92u;
+        tessera_param_set(1, TX_EN_DEPTH, 50);
+        ok2 &= energy_drop(1, 50) == 25u && energy_drop(0, 50) == 0u;
+        tessera_param_set(0, TX_EN_LEVEL, -100);
+        ok2 &= energy_amount(0, 60) == 30u && energy_drop(0, 50) == 50u;
+        for (i = 0; i < 1000u; i++) {
+            uint8_t w = 80;
+            if (energy_hit(0, &w)) { kept++; v = w; }
+        }
+        ok2 &= kept > 240u && kept < 360u && v == 64u;   /* (the kept ones 16 softer) */
+        tessera_param_set(2, TX_EN_DEPTH, 0);
+        energy.rest_left = 100;
+        v = 80;
+        ok2 &= energy_hit(2, &v) && v == 80u && !energy_hit(0, &v) && energy_amount(2, 60) == 60u;
+        energy.rest_left = 0;
+        tessera_param_set(0, TX_EN_LEVEL, 0);
+        tessera_param_set(0, TX_EN_ARC, 100);
+        energy.e = 30000;
+        tessera_param_set(0, TX_EN_LEVEL, 50);
+        ok2 &= energy_now() == 32767;                       /* (clamped) */
+        printf("energy: LEVEL -100: %u of 1000 hits kept; LEVEL / DEPTH / anchor checks %s\n", (unsigned)kept,
+               ok2 ? "ok" : "FAILED");
+        ok &= ok2;
+    }
     snprintf(res, cap, "%u", (unsigned)ok);
 }
 
@@ -1860,6 +2011,13 @@ static const char *const SV_CHECK[] = {
     "STEP EVOLVE: REC held keeps: the steps become what played, none left changed, they play the same",
     "STEP EVOLVE: through the sequencer: changes after the first bar, the steps untouched; a pattern switch clears them",
     "STEP EVOLVE: LOCK, EVERY, AMOUNT round trip; version 13 loads as LOCK 50, EVERY 1 BAR, AMOUNT 0; over range refused",
+    "STEP EVOLVE HOW ORNAMENT: only adds: no note dropped, ratchets, passing notes in the rests",
+    "STEP EVOLVE HOW SERIAL: AMOUNT 100 LOCK 0: all four transforms come; RETROGRADE, ROTATION, AUGMENTATION as written",
+    "STEP EVOLVE HOW SERIAL: INVERSION mirrors each note in the scale about the first",
+    "STEP EVOLVE HOW SERIAL: REC held keeps the transform (backwards), none left changed",
+    "STEP EVOLVE HOW: another HOW puts the steps back as written",
+    "STEP EVOLVE picture: each step as the EVOLVE page and NOTES show it is the step that played (ADORN, SERIAL)",
+    "STEP as seed picture: TURING's loop is the source as written until it drifts, then each step changed counts",
 };
 #define SV_N (sizeof SV_CHECK / sizeof SV_CHECK[0])
 static void sv_setup(void)
@@ -1893,6 +2051,17 @@ static uint32_t sv_play(uint32_t n, step_t *out, uint32_t *fail)
         if (out) out[i % len] = *r;
     }
     return changed;
+}
+/* the steps as the pictures show them (tessera_step_now) against those played last: 0 the same */
+static int sv_shown(const step_t *played)
+{
+    for (uint32_t i = 0; i < 8u; i++) {
+        step_t v;
+        const step_t *w = tessera_step_now(0, i, &v) ? &v : &trk[0].step[i];
+        if (w->n != played[i].n || (w->n && w->note[0] != played[i].note[0]) || step_ratch(w) != step_ratch(&played[i]))
+            return 1;
+    }
+    return 0;
 }
 static void sv_run(char *res, size_t cap)
 {
@@ -1995,6 +2164,84 @@ static void sv_run(char *res, size_t cap)
             c[3u * n14 + n13 + k] = k == 1u ? 6u : 101u;   /* (track 4's) */
             if (tessera_unpack(c) != 0) fail |= 1u << 9;
         }
+    }
+    {   /* HOW ORNAMENT, AMOUNT 100 LOCK 0 */
+        uint32_t ratch = 0, passing = 0;
+        sv_setup();
+        knob(tessera_evolve_knob, 2, 50);
+        knob(tessera_evolve_knob, 0, -25);
+        tessera_sv_layer_knob(0, 1);
+        if (tessera_param_get(0, TX_SV_HOW) != TESS_SV_ORNAMENT) fail |= 1u << 10;
+        for (k = 0; k < 16u; k++) {
+            sv_play(BAR, played, &fail);
+            for (i = 0; i < 8u; i++) {
+                if (trk[0].step[i].n && !played[i].n) fail |= 1u << 10;
+                ratch += step_ratch(&played[i]) > 1u;
+                passing += !trk[0].step[i].n && played[i].n;
+            }
+            if (sv_shown(played)) fail |= 1u << 15;
+        }
+        if (!ratch || !passing) fail |= 1u << 10;
+    }
+    {   /* HOW SERIAL, AMOUNT 100 LOCK 0 */
+        const track_t *t = &trk[0];
+        uint32_t seen = 0, loud = 0;                  /* (loud: a rest playing a note at full velocity, as SERIAL may) */
+        sv_setup();
+        knob(tessera_evolve_knob, 2, 50);
+        knob(tessera_evolve_knob, 0, -25);
+        tessera_sv_layer_knob(0, 1);
+        tessera_sv_layer_knob(0, 1);
+        sv_play(BAR, 0, &loud);
+        for (k = 0; k < 40u; k++) {
+            uint32_t ser, arg;
+            sv_play(BAR, played, &loud);
+            ser = tess_sv.ser[0], arg = tess_sv.ser_arg[0];
+            seen |= 1u << ser;
+            for (i = 0; i < 8u; i++) {
+                const step_t *w = &t->step[i];
+                int32_t j = ser == TESS_SV_SER_RETRO ? 7 - (int32_t)i : ser == TESS_SV_SER_ROT ? (int32_t)((i + arg) % 8u) :
+                            ser == TESS_SV_SER_AUG ? (i & 1u ? -1 : (int32_t)(arg * 4u + i / 2u)) : (int32_t)i;
+                if (ser == TESS_SV_SER_INV) {
+                    if (w->n && sv_dist(t, 60, played[i].note[0]) != -sv_dist(t, 60, w->note[0])) fail |= 1u << 12;
+                    continue;
+                }
+                if (j < 0 ? played[i].n != 0u : played[i].n != t->step[j].n ||
+                                                (played[i].n && played[i].note[0] != t->step[j].note[0]))
+                    fail |= 1u << 11;
+            }
+            if (sv_shown(played)) fail |= 1u << 15;
+        }
+        if (seen != 0x1Fu && seen != 0x1Eu) fail |= 1u << 11;   /* (none at all, a round in 100: AMOUNT 100 never) */
+        if (!(seen & (1u << TESS_SV_SER_INV)) || (loud & 1u << 3)) fail |= 1u << 12;   /* (and all in the scale) */
+        tess_sv.ser[0] = TESS_SV_SER_RETRO;               /* REC held */
+        n = tessera_step_varied(0);
+        k = tessera_step_keep(0);
+        if (n != 8u || k != n || tessera_step_varied(0)) fail |= 1u << 13;
+        for (i = 0; i < 8u; i++)
+            if (trk[0].step[i].n != (FOLLOW_MELODY[7u - i] ? 1u : 0u) ||
+                (trk[0].step[i].n && trk[0].step[i].note[0] != FOLLOW_MELODY[7u - i]))
+                fail |= 1u << 13;
+        tess_sv.ser[0] = TESS_SV_SER_ROT, tess_sv.ser_arg[0] = 3;
+        tessera_sv_layer_knob(0, -1);                     /* ORNAMENT: as written again */
+        if (tess_sv.ser[0] || tessera_step_varied(0) || tessera_param_get(0, TX_SV_HOW) != TESS_SV_ORNAMENT)
+            fail |= 1u << 14;
+    }
+    {   /* STEP as seed: TURING from track 2's melody */
+        uint8_t now[16], home[16];
+        uint32_t at, len, d = 0;
+        sv_setup();
+        for (i = 0; i < 8u; i++) trk[1].step[i] = trk[0].step[i];
+        trk[1].p[P_SLEN] = 8;
+        tessera_knob(0, TESS_ENG_TURING);
+        tessera_param_set(0, TX_SD_SOURCE, 2);
+        sd_fill(0, 1);
+        len = tessera_sd_loop(0, now, home, &at);
+        if (len != tessera.turing[0].len || memcmp(now, home, len) || !(home[0] & 0x80u) || home[0] != (0x80u | FOLLOW_MELODY[0]))
+            fail |= 1u << 16;
+        tess_sd.loop[0][1] ^= 0x80u, tess_sd.loop[0][2] = (uint8_t)(0x80u | 77u);
+        tessera_sd_loop(0, now, home, &at);
+        for (i = 0; i < len; i++) d += now[i] != home[i];
+        if (d != 2u || tessera_sd_loop(1, now, home, &at)) fail |= 1u << 16;
     }
     snprintf(res, cap, "%u", fail);
 }
@@ -2378,10 +2625,10 @@ static void pack_run(char *res, size_t cap)
         tessera_unpack(a);
     }
     {   /* a version 11 block (before CHORD: each track 5 bytes shorter) loads every setting, CHORD's defaults with the
-         * walk of the track's seed; a CELLS track (12, CHORD's number now) loads as TURING; PROG, BARS and HIT out of
-         * range are refused, OCT too; PROG, BARS, HIT, OCT and the walk round trip */
+         * walk of the track's seed; a CELLS track (12, CHORD's number now) loads as TURING; PROG and OCT out of range
+         * are refused (HIT's two bits are all in range since OFF BEAT); PROG, BARS, HIT, OCT and the walk round trip */
         static uint8_t v11[TESSERA_PK_BYTES_V11], v11b[TESSERA_PK_BYTES_V11];
-        static const uint8_t BAD[][2] = {{0, GEN_CH_PROGS}, {1, GEN_CH_HITS << 2}, {1, 3u << 4}, {1, 8u << 4}, {2, 8}, {4, 0x10}};
+        static const uint8_t BAD[][2] = {{0, GEN_CH_PROGS}, {1, 3u << 4}, {1, 8u << 4}, {2, 8}, {4, 0x10}};
         const uint32_t n12 = TESSERA_PK_BYTES / TESSERA_TRACKS, n11 = TESSERA_PK_BYTES_V11 / TESSERA_TRACKS;
         for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) memcpy(v11 + tr * n11, a + tr * n12, n11);
         tessera_reset();
@@ -2408,6 +2655,7 @@ static void pack_run(char *res, size_t cap)
         tessera_param_set(1, TX_CH_PROG, GEN_CH_WALK);
         tessera_param_set(1, TX_CH_BARS, 3);
         tessera_param_set(1, TX_CH_HIT, GEN_CH_STEP);
+        tessera_param_set(2, TX_CH_HIT, GEN_CH_OFF);
         tessera_param_set(3, TX_CH_PROG, 99);          /* (kept to the last) */
         tessera_param_set(1, TX_CH_OCT, -2);
         tessera_param_set(3, TX_CH_OCT, 9);            /* (kept to +2) */
@@ -2417,7 +2665,7 @@ static void pack_run(char *res, size_t cap)
         ok &= tessera_unpack(b) == 1 && tessera.chord[1].prog == GEN_CH_WALK && tessera.chord[1].bars == 3u &&
               tessera.chord[1].hit == GEN_CH_STEP && tessera.chord[1].walk[3] == 6u &&
               tessera.chord[3].prog == GEN_CH_PROGS - 1u && tessera_param_get(1, TX_CH_HIT) == GEN_CH_STEP &&
-              tessera.chord[1].oct == -2 && tessera_param_get(3, TX_CH_OCT) == 2;
+              tessera_param_get(2, TX_CH_HIT) == GEN_CH_OFF && tessera.chord[1].oct == -2 && tessera_param_get(3, TX_CH_OCT) == 2;
         tessera_unpack(a);
     }
     {   /* a version 12 block (before Grids' KICK, SNR, HAT, TOMS: each track 4 bytes shorter) loads every setting, the
@@ -2579,6 +2827,30 @@ static void pack_run(char *res, size_t cap)
         }
         tessera_unpack(a);
     }
+    {   /* ANSWER FADE on GEN's KNOB 4: a count a click, 1 .. 16 then LOOPS and no further; back down a count a click */
+        uint32_t i, up = 1;
+        tessera_reset();
+        gen(1, TESS_ENG_ANSWER);
+        tessera_param_set(1, TX_AN_FADE, 0);
+        for (i = 2; i <= 16u; i++) {
+            tessera_knob(3, 1);
+            up &= tessera_answer_count(1) == i;
+        }
+        tessera_knob(3, 1);
+        up &= tessera_answer_count(1) == 0u && tessera_param_get(1, TX_AN_FADE) == 100;
+        tessera_knob(3, 1);
+        up &= tessera_param_get(1, TX_AN_FADE) == 100;
+        tessera_knob(3, -1);
+        up &= tessera_answer_count(1) == 16u;
+        tessera_param_set(1, TX_AN_FADE, 33);           /* (the default: 6) */
+        tessera_knob(3, -1);
+        up &= tessera_answer_count(1) == 5u;
+        tessera_param_set(1, TX_AN_FADE, 10);           /* (between two counts' first values: 2) */
+        tessera_knob(3, 1);
+        up &= tessera_answer_count(1) == 3u;
+        ok &= up;
+        tessera_unpack(a);
+    }
     {   /* CHORD USER: a key's note rounded down to the track's scale is the chord's root (D dorian: E ii, F# rounded to
          * F iii, C vii, D I); the degrees and LEN round trip; a degree over 6 or a LEN of 0 or 9 is refused */
         const uint32_t n13 = TESSERA_PK_BYTES / TESSERA_TRACKS, n12 = TESSERA_PK_BYTES_V12 / TESSERA_TRACKS;
@@ -2641,6 +2913,128 @@ static int base_get(const char *file, const char *name, char *want, size_t cap)
     }
     fclose(fp);
     return 0;
+}
+
+/* GRAVITY on EVOLVE (tessera.c tess_gv_round): each generator drifts for 8 rounds at GRAVITY 0, then at GRAVITY 100
+ * comes back to its home within 60 rounds; EUCLID's home follows PULSES set by hand. Called straight, no transport.
+ * Writes "drifted home of follow" */
+static uint32_t gv_off(uint32_t tr)                  /* how many of the generator's saved bytes differ from home */
+{
+    gen_sec_t g;
+    uint8_t aw[16];
+    const uint8_t *a = (const uint8_t *)&g, *b = (const uint8_t *)&tess_sv.gv_home[tr];
+    uint32_t n = 0, i;
+    tess_gv_now(tr, &g, aw);
+    for (i = 0; i < sizeof g; i++) n += a[i] != b[i];
+    for (i = 0; i < 16u; i++) n += aw[i] != tess_sv.gv_haw[tr][i];
+    return n;
+}
+static void gravity_run(char *res, size_t cap)
+{
+    static const uint8_t M[11] = {TESS_ENG_TURING, TESS_ENG_EUCLID, TESS_ENG_MARKOV, TESS_ENG_MORPH, TESS_ENG_GRIDS,
+                                  TESS_ENG_BOUNCE, TESS_ENG_AWAKE, TESS_ENG_POLY, TESS_ENG_QUAD, TESS_ENG_SERIES,
+                                  TESS_ENG_CHORD};
+    uint32_t drifted = 0, home = 0, follow = 0, i, r;
+    for (i = 0; i < 11u; i++) {
+        uint32_t off = 0;
+        tessera_reset();
+        gen(0, M[i]);
+        if (M[i] == TESS_ENG_CHORD) tessera_param_set(0, TX_CH_PROG, GEN_CH_WALK);
+        tessera.evolve[0].every = 1;
+        tessera.evolve[0].amount = 60;
+        for (r = 0; r < 8u; r++) tess_gv_round(0);
+        for (r = 0; r < 8u; r++) { tess_gv_round(0); off += gv_off(0); }
+        drifted += off > 0u;
+        tessera_param_set(0, TX_SD_GRAVITY, 100);
+        for (r = 0; r < 60u && gv_off(0); r++) tess_gv_round(0);
+        home += !gv_off(0);
+    }
+    tessera_reset();                                 /* EUCLID: PULSES set by hand is home from the next round */
+    gen(0, TESS_ENG_EUCLID);
+    tessera.evolve[0].every = 1;
+    tessera.evolve[0].amount = 80;
+    for (r = 0; r < 12u; r++) tess_gv_round(0);
+    tessera_param_set(0, TX_EUC_PULSES, 11);
+    tess_gv_round(0);
+    tessera_param_set(0, TX_SD_GRAVITY, 100);
+    for (r = 0; r < 40u; r++) tess_gv_round(0);
+    follow = tessera.euclid[0].pulses == 11u && tess_sv.gv_home[0].p0 == 11u;
+    snprintf(res, cap, "%u %u %u", drifted, home, follow);
+}
+
+/* FORM's DEVELOP (tessera.c tess_form_develop): each generator on ABAC, the returns to A counted 10 times at DEVELOP 0
+ * (exact), 20 at DEVELOP 60 (varied; A as stored never changes: no drift), 10 at GRAVITY 100 (exact again); a knob
+ * turned in a developed return is kept; MARKOV with LOCK replays A's phrase in a developed return, never records over
+ * it. Called straight, no transport. Writes "exact varied kept grav hand markov" */
+static int dv_same(uint32_t tr)                       /* the generator as the section it is in has it stored */
+{
+    gen_sec_t g;
+    uint8_t aw[16];
+    const tessera_sec_t *s = &tessera.sec[tr][tessera.evolve[tr].sec % 3u];
+    tess_gv_now(tr, &g, aw);
+    return g.reg == s->reg && g.p0 == s->p0 && g.p1 == s->p1 &&
+           (tessera.mode[tr] != TESS_ENG_AWAKE || !memcmp(aw, s->note, 16));
+}
+static uint32_t dv_returns(uint32_t n, uint32_t *same)   /* n returns to A (ABAC: two boundaries each) */
+{
+    uint32_t r, k = 0;
+    for (r = 0; r < n; r++) {
+        tess_form_advance(0);
+        tess_form_advance(0);
+        k += (uint32_t)dv_same(0);
+    }
+    *same = k;
+    return n;
+}
+static void develop_run(char *res, size_t cap)
+{
+    static const uint8_t M[11] = {TESS_ENG_TURING, TESS_ENG_EUCLID, TESS_ENG_MARKOV, TESS_ENG_MORPH, TESS_ENG_GRIDS,
+                                  TESS_ENG_BOUNCE, TESS_ENG_AWAKE, TESS_ENG_POLY, TESS_ENG_QUAD, TESS_ENG_SERIES,
+                                  TESS_ENG_CHORD};
+    uint32_t exact = 0, varied = 0, kept = 0, grav = 0, hand, markov, i, same;
+    tessera_sec_t a0;
+    for (i = 0; i < 11u; i++) {
+        tessera_reset();
+        gen(0, M[i]);
+        if (M[i] == TESS_ENG_CHORD) tessera_param_set(0, TX_CH_PROG, GEN_CH_WALK);
+        tessera_param_set(0, TX_FM_FORM, 2);         /* (ABAC) */
+        tessera_param_set(0, TX_FM_CONTRAST, 60);
+        dv_returns(10, &same);
+        exact += same == 10u;
+        a0 = tessera.sec[0][0];
+        tessera_param_set(0, TX_FM_DEVELOP, 60);
+        dv_returns(20, &same);
+        varied += same < 20u;
+        tess_form_advance(0);                        /* (leave the last A: what is stored is A as it was) */
+        kept += !memcmp(&a0, &tessera.sec[0][0], sizeof a0);
+        tessera_param_set(0, TX_SD_GRAVITY, 100);
+        tess_form_advance(0);
+        tess_form_advance(0);
+        dv_returns(10, &same);
+        grav += same == 10u;
+    }
+    tessera_reset();                                 /* a knob turned in a developed return is kept (EUCLID's PULSES, */
+    gen(0, TESS_ENG_EUCLID);                         /* which a section stores) */
+    tessera_param_set(0, TX_FM_FORM, 2);
+    tessera_param_set(0, TX_FM_DEVELOP, 60);
+    tess_form_advance(0);
+    tess_form_advance(0);
+    tessera_param_set(0, TX_EUC_PULSES, tessera.euclid[0].pulses == 3u ? 7 : 3);
+    a0 = tessera.sec[0][0];
+    tess_form_advance(0);
+    hand = memcmp(&a0, &tessera.sec[0][0], sizeof a0) != 0;
+    tessera_reset();                                 /* MARKOV with LOCK: a developed return replays A's phrase */
+    gen(0, TESS_ENG_MARKOV);
+    tessera_param_set(0, TX_EV_LOCK, 60);
+    tessera_param_set(0, TX_FM_FORM, 2);
+    tessera_param_set(0, TX_FM_DEVELOP, 100);
+    tessera.evolve[0].rec = 0;
+    tessera.evolve[0].valid |= 1u;                   /* (A's phrase recorded) */
+    tess_form_advance(0);
+    tess_form_advance(0);
+    markov = tessera.evolve[0].sec == 0u && !tessera.evolve[0].rec && (tessera.evolve[0].valid & 1u) &&
+             (tess_sv.dv_on & 1u);
+    snprintf(res, cap, "%u %u %u %u %u %u", exact, varied, kept, grav, hand, markov);
 }
 
 int main(int argc, char **argv)
@@ -2757,19 +3151,76 @@ int main(int argc, char **argv)
         snprintf(line, sizeof line, "FOLLOW a STEP melody: all %u notes a third above it (in C major)", n2);
         bad += check(line, n2 > 16u && !wrong);
     }
-    for (int which = 0; which < 5; which++) {   /* STEP as seed, in a child as the scenarios (4 bars: 64 steps) */
-        static const char *const NAME[5] = {"seed_turing_t1", "seed_turing_t1_prob50_keep_rhythm",
-                                            "seed_turing_t1_prob50_keep_pitch", "seed_euclid_t1",
-                                            "seed_euclid_t1_keep_rhythm"};
-        static const char *const WHAT[5] = {
+    {                                                /* GRAVITY on EVOLVE, in a child */
+        unsigned dr = 0, hm = 0, fo = 0;
+        pid_t pid;
+        int fd[2];
+        if (!pipe(fd) && (pid = fork()) >= 0) {
+            if (!pid) {
+                close(fd[0]);
+                gravity_run(res, sizeof res);
+                if (write(fd[1], res, strlen(res) + 1u) < 0) _exit(1);
+                _exit(0);
+            }
+            close(fd[1]);
+            if (read(fd[0], res, sizeof res - 1u) > 0) sscanf(res, "%u %u %u", &dr, &hm, &fo);
+            close(fd[0]);
+            waitpid(pid, 0, 0);
+        }
+        snprintf(line, sizeof line, "GRAVITY on EVOLVE: %u of 11 generators drift at 0, %u of 11 come home at 100", dr, hm);
+        bad += check(line, dr >= 10u && hm == 11u);
+        bad += check("  EUCLID's PULSES set by hand while it drifts becomes home", fo == 1u);
+    }
+    {                                                /* FORM's DEVELOP, in a child */
+        unsigned ex = 0, va = 0, ke = 0, gr = 0, ha = 0, mk = 0;
+        pid_t pid;
+        int fd[2];
+        if (!pipe(fd) && (pid = fork()) >= 0) {
+            if (!pid) {
+                close(fd[0]);
+                develop_run(res, sizeof res);
+                if (write(fd[1], res, strlen(res) + 1u) < 0) _exit(1);
+                _exit(0);
+            }
+            close(fd[1]);
+            if (read(fd[0], res, sizeof res - 1u) > 0) sscanf(res, "%u %u %u %u %u %u", &ex, &va, &ke, &gr, &ha, &mk);
+            close(fd[0]);
+            waitpid(pid, 0, 0);
+        }
+        snprintf(line, sizeof line, "FORM DEVELOP 0: %u of 11 generators return to A exactly, every time", ex);
+        bad += check(line, ex == 11u);
+        snprintf(line, sizeof line, "  DEVELOP 60: %u of 11 vary their returns, %u of 11 keep A as stored (no drift)", va, ke);
+        bad += check(line, va >= 10u && ke == 11u);
+        snprintf(line, sizeof line, "  GRAVITY 100: %u of 11 return exactly again", gr);
+        bad += check(line, gr == 11u);
+        bad += check("  a knob turned in a developed return is kept in the section", ha == 1u);
+        bad += check("  MARKOV with LOCK: a developed return replays A's phrase, never records over it", mk == 1u);
+    }
+    for (int which = 0; which < 13; which++) {   /* STEP as seed, in a child as the scenarios (4 bars: 64 steps) */
+        static const char *const NAME[13] = {"seed_turing_t1", "seed_turing_t1_prob50_keep_rhythm",
+                                             "seed_turing_t1_prob50_keep_pitch", "seed_euclid_t1",
+                                             "seed_euclid_t1_keep_rhythm", "seed_markov_t1_leap0",
+                                             "seed_markov_t1_leap50_keep_rhythm", "seed_markov_t1_leap50_keep_pitch",
+                                             "seed_morph_t1_a", "seed_morph_t1_b_keep_rhythm",
+                                             "seed_turing_t1_prob50_gravity100", "seed_markov_t1_leap100_gravity100",
+                                             "seed_morph_t1_b_gravity100"};
+        static const char *const WHAT[13] = {
             "STEP as seed: TURING, SOURCE T1, PROB 0: the melody as written, LEN 8 a loop (6 notes in 8)",
             "  PROB 50 KEEP RHYTHM: its rhythm kept, only its own notes, in another order",
             "  PROB 50 KEEP PITCH: the hits come and go, each one a note of the melody's",
             "STEP as seed: EUCLID 5 of 16, SOURCE T1: the melody's notes in order on its hits",
-            "  KEEP RHYTHM: the melody's rhythm (6 notes in 8 steps), EUCLID's pitches"};
+            "  KEEP RHYTHM: the melody's rhythm (6 notes in 8 steps), EUCLID's pitches",
+            "STEP as seed: MARKOV, SOURCE T1, LEAP 0: only the melody's notes, its chain the melody's own",
+            "  LEAP 50 KEEP RHYTHM: the melody's rhythm, its notes in another order",
+            "  LEAP 50 KEEP PITCH: the melody's notes in their order, on another rhythm",
+            "STEP as seed: MORPH, SOURCE T1, at A: the melody as written",
+            "  at B, KEEP RHYTHM: the melody's rhythm, some of its notes changed",
+            "STEP as seed: GRAVITY 100: TURING at PROB 50 plays the melody as written",
+            "  MARKOV at LEAP 100 plays the melody as written",
+            "  MORPH at B plays the melody as written"};
         unsigned n = 0, order = 0, of = 0;
         pid_t pid;
-        int fd[2], ok;
+        int fd[2], ok, whole;
         if (!pipe(fd) && (pid = fork()) >= 0) {
             if (!pid) {
                 close(fd[0]);
@@ -2782,11 +3233,14 @@ int main(int argc, char **argv)
             close(fd[0]);
             waitpid(pid, 0, 0);
         }
-        ok = which == 0 ? (n == 48u || n == 49u) && order == n :   /* (49: the step at the stop's block too) */
-             which == 1 ? (n == 48u || n == 49u) && of == n && order < n :
+        whole = n == 48u || n == 49u;                 /* (49: the step at the stop's block too) */
+        ok = which == 0 || which == 8 || which >= 10 ? whole && order == n :
+             which == 1 || which == 6 || which == 9 ? whole && of == n && order < n :
              which == 2 ? n > 24u && n < 48u && of == n :
              which == 3 ? n == 20u && order == n :
-                          (n == 48u || n == 49u) && of < n;
+             which == 4 ? whole && of < n :
+             which == 5 ? n > 24u && of == n :
+                          n > 12u && order == n && !whole;
         snprintf(line, sizeof line, "%s (%u notes, %u in order, %u its)", WHAT[which], n, order, of);
         bad += check(line, ok);
     }
@@ -2936,6 +3390,27 @@ int main(int argc, char **argv)
         bad += check("SUB: RATCH x1..x8 in equal parts of the step, CHANCE tossed on the SEED, NOTE LENGTH's held notes "
                      "once, Grids' parts repeated, STEP tracks' per-step RATCH and NUDGE, SHAPE; STOP releases", ok);
     }
+    {   /* the pitch accumulator (step_acc.c) */
+        unsigned ok = 0;
+        pid_t pid;
+        int fd[2];
+        fflush(stdout);
+        if (!pipe(fd) && (pid = fork()) >= 0) {
+            if (!pid) {
+                close(fd[0]);
+                acc_check(res, sizeof res);
+                fflush(stdout);
+                if (write(fd[1], res, strlen(res) + 1u) < 0) _exit(1);
+                _exit(0);
+            }
+            close(fd[1]);
+            if (read(fd[0], res, sizeof res - 1u) > 0) sscanf(res, "%u", &ok);
+            close(fd[0]);
+            waitpid(pid, 0, 0);
+        }
+        bad += check("ACCUMULATE: a STEP track's notes climb in the scale each pass, WRAP / PING / CLAMP at LIMIT, "
+                     "semitones with QNT OFF, from the notes as written after PLAY; TIEs and 0 as written", ok);
+    }
     {   /* BREATH (CHORD) */
         unsigned ok = 0;
         pid_t pid;
@@ -3031,6 +3506,36 @@ int main(int argc, char **argv)
             waitpid(pid, 0, 0);
         }
         bad += check("ROLL turned mid-bar: the line playing goes on to the bar line, note for note", same && n > 0u);
+    }
+    {   /* ATLAS's random start: the first turn to ATLAS since power-on / NEW; a loaded project keeps its own */
+        static uint8_t pk[TESSERA_PK_BYTES];
+        int ok = 1;
+        tessera_reset();
+        tessera_mode_set(0, TESS_ENG_GRIDS);
+        tessera_param_set(1, TX_MODE, TESS_ENG_GRIDS);
+        for (uint32_t r = 0; r < 2u; r++) ok &= tessera.grids[r].dens >= 30u && tessera.grids[r].dens <= 50u;
+        ok &= tessera.grids[0].x != tessera.grids[1].x || tessera.grids[0].y != tessera.grids[1].y;
+        ok &= tessera.grids[0].x != 128u || tessera.grids[0].y != 128u;
+        tessera_param_set(0, TX_GRD_X, 10);
+        tessera_mode_set(0, TESS_ENG_OFF);
+        tessera_mode_set(0, TESS_ENG_GRIDS);           /* (back to ATLAS: as left) */
+        ok &= tessera.grids[0].x == 10u;
+        tessera_param_set(2, TX_GRD_X, 7);
+        tessera_param_set(2, TX_GRD_Y, 9);
+        tessera_param_set(2, TX_GRD_DENS, 77);
+        tessera_pack(pk);
+        tessera_reset();
+        ok &= tessera_unpack(pk) == 1;
+        tessera_mode_set(2, TESS_ENG_GRIDS);
+        tessera_mode_set(3, TESS_ENG_GRIDS);
+        ok &= tessera.grids[2].x == 7u && tessera.grids[2].y == 9u && tessera.grids[2].dens == 77u;
+        ok &= tessera.grids[3].x == 128u && tessera.grids[3].y == 128u && tessera.grids[3].dens == 50u;
+        tessera_reset();                                /* (NEW: random again) */
+        tessera_mode_set(3, TESS_ENG_GRIDS);
+        ok &= tessera.grids[3].dens >= 30u && tessera.grids[3].dens <= 50u && tessera.grids[3].x != 128u;
+        tessera_reset();
+        bad += check("ATLAS: a random X / Y and DENSITY 30..50 the first time a track turns to it; a loaded project's kept",
+                     ok);
     }
     {
         unsigned h = 0, ok = 0;

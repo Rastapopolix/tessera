@@ -64,4 +64,5 @@ static void pattern_switch(track_t *t, uint32_t bank)
     pattern_commit(t);
     pattern_apply(t, bank);
     t->seq_idx = (uint16_t)(t->p[P_SLEN] - 1);
+    t->seq_pass = 0;                                    /* (the pitch accumulator from the notes as written) */
 }

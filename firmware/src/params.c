@@ -12,7 +12,7 @@ static const uint8_t N_DIV_ORDER[10] = {9, 8, 7, 6, 0, 4, 1, 5, 2, 3};
 static const char *const N_RECQ[] = {"OFF", "1/4", "1/8", "1/16", "1/32", "8T", "16T", "1/2", "1/1", "2BAR", "4BAR"};
 static const char *const N_LTRIG[] = {"NOTE", "FREE"};
 static const char *const N_LPOL[] = {"BI", "UNI"};
-static const char *const N_FX[] = {"OFF", "PHASER", "WIDTH", "FORMANT", "TAPE", "SPIT", "ECHO", "ROOM", "REVERB", "CHORUS"};
+static const char *const N_FX[] = {"OFF", "PHASER", "WIDTH", "FORMANT", "TAPE", "SPIT", "ECHO", "ROOM", "REVERB", "CHORUS", "FILTER"};
 static const char *const N_ONOFF[] = {"OFF", "ON"};
 static const char *const N_QUANT[] = {"OFF", "SNAP", "WHITE", "ALL", "MPC", "CHRD"};   /* Q_OFF .. Q_CHRD (seq.c kb_map, midi_map) */
 /* chord keys (chord.c): OFF, the diatonic triad / seventh of the track's ROOT and SCALE on the key, fixed shapes */
@@ -50,8 +50,9 @@ static const char *const N_MSRC[] = {"OFF", "LFO", "ENV", "VEL", "KEY", "RAND", 
 static const char *const N_MDST[] = {"OFF", "PITCH", "CUT", "SHP", "AMP", "PAN", "", "", "", "", "RATE",
                                      "VIB", "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "DEPTH"};
 static const char *const N_ENGNAME[] = {"-", "-", "-", "SID", "-", MELODEE_LEGACY_EXTRAS ? "VOICE" : "-", TRIO_ON ? "TRIO" : "-", MELODEE_LEGACY_EXTRAS ? "WHEEL" : "-", "-", PHYS_ON ? "PHYS" : "-",
-                                             "DRUM", MELODEE_LEGACY_EXTRAS ? "NOISE" : "-", "FM6", MELODEE_SLICE ? "SLICE" : "-", "-", "-", "-", "-", "-", "-",
-                                             "-", MELODEE_PLAITS ? "MACRO" : "-"};   /* (15 CZ-1, 19 PROPHET: retired 2026-10-22; 20 reserved, 21 MACRO:
+                                             "DRUM", MELODEE_LEGACY_EXTRAS ? "NOISE" : "-", "FM6", MELODEE_SLICE ? "SLICE" : "-", "-", "-", "-", "-", "-",
+                                             MELODEE_ORACLE ? "ORACLE" : "-", "-", MELODEE_PLAITS ? "MACRO" : "-"};   /* (15 CZ-1: retired
+                                                                                   * 2026-10-22; 19 PROPHET, then ORACLE; 20 reserved, 21 MACRO:
                                                                                    * one name per engine ID, NENGINES) */
 _Static_assert(NELEM(N_ENGNAME) == NENGINES, "N_ENGNAME: one name per engine ID");
 
@@ -268,9 +269,10 @@ static const param_desc_t GP[G_COUNT] = {
 static const param_desc_t *global_desc(uint32_t id)
 {
     if(param_master_fx(id) && (id-G_MFXTYPE)%FX_PARAMS>=2u){
-        static param_desc_t d;static const char *const character[]={"CHAR","DEPTH","DEPTH","FOCUS","JITTER","BITE","REPEAT","DECAY","DEPTH","DEPTH"};
+        static param_desc_t d;static const char *const character[]={"CHAR","DEPTH","DEPTH","FOCUS","JITTER","BITE","REPEAT","DECAY","DEPTH","DEPTH","RES"};
         uint32_t base=G_MFXTYPE+(id-G_MFXTYPE)/FX_PARAMS*FX_PARAMS,type=(uint32_t)clamp(song.g[base],0,NELEM(N_FX)-1);d=GP[id];
-        if(id-base==3u)d.label=character[type];else if(type>=6u && type<=8u){d.label=type==6u?"TIME":"SIZE";d.fmt=F_PCT;}return &d;
+        if(id-base==3u)d.label=character[type];else if(type>=6u && type<=8u){d.label=type==6u?"TIME":"SIZE";d.fmt=F_PCT;}
+        else if(type==10u){d.label="CUT";d.fmt=F_CUTOFF;}return &d;
     }
     return &GP[id];
 }
@@ -279,11 +281,12 @@ static const param_desc_t *track_desc(const track_t *t, uint32_t id)
 {
     if (param_fx(id) && ((id-P_FXTYPE)%FX_PARAMS)>=2u) {
         static param_desc_t fx_desc;
-        static const char *const character[] = {"CHAR", "DEPTH", "DEPTH", "FOCUS", "JITTER", "BITE", "REPEAT", "DECAY", "DEPTH", "DEPTH"};
+        static const char *const character[] = {"CHAR", "DEPTH", "DEPTH", "FOCUS", "JITTER", "BITE", "REPEAT", "DECAY", "DEPTH", "DEPTH", "RES"};
         uint32_t base=P_FXTYPE+(id-P_FXTYPE)/FX_PARAMS*FX_PARAMS;
         fx_desc=TP[id];uint32_t type=(uint32_t)clamp(t->p[base],0,NELEM(N_FX)-1);
         if(id-base==3u)fx_desc.label=character[type];
         else if(type>=6u && type<=8u){fx_desc.label=type==6u?"TIME":"SIZE";fx_desc.fmt=F_PCT;}
+        else if(type==10u){fx_desc.label="CUT";fx_desc.fmt=F_CUTOFF;}   /* (FILTER: fx.c fx_svf) */
         return &fx_desc;
     }
     if (id == P_MPCDEG) {                             /* a degree of the track's scale */
@@ -380,7 +383,7 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
         *unit = "%";
         break;
     case F_TIME: {
-        uint32_t ms10 = TIME_MS_X10[v & 127];
+        uint32_t ms10 = time_ms_x10((uint32_t)v);
         if (ms10 < 100u) {
             fmt_fix(val, (int32_t)ms10, 1);
             *unit = "ms";
@@ -396,7 +399,7 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
         break;
     }
     case F_LFOHZ: {
-        uint32_t h = LFO_HZ_X100[v & 127];
+        uint32_t h = lfo_hz_x100((uint32_t)v);
         if (h < 1000u)
             fmt_fix(val, (int32_t)h, 2);
         else
@@ -405,7 +408,7 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
         break;
     }
     case F_CUTOFF: {
-        uint32_t h = CUTOFF_HZ[v & 127];
+        uint32_t h = cutoff_hz((uint32_t)v);
         if (h < 1000u) {
             fmt_int(val, (int32_t)h);
             *unit = "Hz";
@@ -419,7 +422,7 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
         if (v <= 0) {
             str_cpy(val, "OFF", 6);
         } else {
-            fmt_fix(val, LEVEL_DB_X10[v], 1);
+            fmt_fix(val, level_db_x10((uint32_t)v), 1);
             *unit = "dB";
         }
         break;
@@ -496,7 +499,8 @@ enum { FAM_HOME, FAM_ENV, FAM_LFO, FAM_SCL, FAM_EDIT, FAM_GLO, FAM_SAVE, FAM_ARP
        FAM_FX, FAM_COUNT };
 #define FAM_GEN FAM_ARP      /* Tessera: ARP's family holds the generators too (no new family: FAM_COUNT sized state) */
 enum { SC_TRACK, SC_GLOBAL, SC_ENGINE, SC_STEP, SC_TRK,   /* SC_TRK: the TRACKS page (ui_input.c tracks_edit) */
-       SC_FM6, SC_FMOP, SC_DRUM, SC_DRUMHIT };          /* FM6: its patch, functions; operator fm6_opsel */
+       SC_FM6, SC_FMOP, SC_DRUM, SC_DRUMHIT, SC_ORACLE };   /* FM6: its patch, functions; operator fm6_opsel;
+                                                           * ORACLE: its patch (oracle_pages.c) */
 enum { GR_NONE, GR_ADSR, GR_LFO, GR_STEPS, GR_ARP, GR_SCALE, GR_ROLL, GR_BROWSE, GR_SLOTS, GR_USER, GR_TRK,
        GR_MOD, GR_PATS, GR_SONG, GR_MOTION, GR_CHORD, GR_SLICES,
        GR_FMEG, GR_FMPEG, GR_FMSTORE, GR_SCALE_PICKER, GR_DRUMHIT, GR_PATGRID, GR_EVOLVE, GR_FORM, GR_TWEAK,
@@ -507,6 +511,7 @@ typedef struct {
     uint8_t fam, scope, graph;
     uint8_t id[4];               /* param ids; 0xFF = empty slot */
 } page_t;
+#include "oracle_pages.c"       /* ORACLE's pages: its patch as values (or_page_desc, or_page_put) */
 
 #define G_TRK_SEND 0xFDu
 #define G_TRK_RECQ 0xFEu                                 /* a global page's column that is the selected track's P_RECQ */
@@ -558,6 +563,18 @@ static const page_t PAGES[] = {
     {"FM PORTA", FAM_EDIT, SC_FM6, GR_NONE, {FP_SIZE + FN_PMODE, FP_SIZE + FN_PTIME, FP_SIZE + FN_GLISS, FP_SIZE + FN_ENGINE}},
     {"FM WH/FT", FAM_EDIT, SC_FM6, GR_NONE, {FP_SIZE + FN_MWR, FP_SIZE + FN_MWA, FP_SIZE + FN_FCR, FP_SIZE + FN_FCA}},
     {"FM BR/AT", FAM_EDIT, SC_FM6, GR_NONE, {FP_SIZE + FN_BCR, FP_SIZE + FN_BCA, FP_SIZE + FN_ATR, FP_SIZE + FN_ATA}},
+    /* ORACLE only (page_visible): its patch. FILT ENV and AMP ENV are what ENV visits, LFO MOD and LFO ROUTE come after
+     * the track's LFO pages (ui.c native_titles) */
+    {"OSC A", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_FREQ_A, OV_WAVE_A, OV_PW_A, OV_SYNC}},
+    {"OSC B", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_FREQ_B, OV_FINE_B, OV_WAVE_B, OV_PW_B}},
+    {"OSC MIX", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_LVL_A, OV_LVL_B, OV_NOISE, OV_B_MODE}},
+    {"FILTER", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_CUT, OV_RES, OV_ENV, OV_KEY}},
+    {"POLY MOD", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_PM_ENV, OV_PM_B, OV_PM_DEST, OV_VEL}},
+    {"CHARACTER", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_MODEL, OV_VINTAGE, OV_GLIDE, 0xFF}},
+    {"FILT ENV", FAM_EDIT, SC_ORACLE, GR_ADSR, {OV_FA, OV_FD, OV_FS, OV_FR}},
+    {"AMP ENV", FAM_EDIT, SC_ORACLE, GR_ADSR, {OV_AA, OV_AD, OV_AS, OV_AR}},
+    {"LFO MOD", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_RATE, OV_AMT, OV_LWAVE, OV_NMIX}},
+    {"LFO ROUTE", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_L_PITCH, OV_L_PW, OV_L_FILT, 0xFF}},
     {"OP1 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM1_ATK, P_FM1_DEC, P_FM1_SUS, P_FM1_REL}},
     {"OP2 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM2_ATK, P_FM2_DEC, P_FM2_SUS, P_FM2_REL}},
     {"OP3 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM3_ATK, P_FM3_DEC, P_FM3_SUS, P_FM3_REL}},
@@ -660,6 +677,8 @@ static void fm6_page_put(const page_t *pg, uint32_t slot, int32_t val)
 static const param_desc_t *page_desc(const page_t *pg, uint32_t slot, int16_t **valp)
 {
     uint32_t id = pg->id[slot];
+    if (pg->scope == SC_ORACLE)
+        return or_page_desc(pg, slot, valp);
     if ((pg->scope == SC_FM6 || pg->scope == SC_FMOP) && !MELODEE_FM6) { *valp = 0; return 0; }   /* (left out) */
     if (pg->scope == SC_FM6 || pg->scope == SC_FMOP)
         return fm6_page_desc(pg, slot, valp);
@@ -706,4 +725,11 @@ static const param_desc_t *page_desc(const page_t *pg, uint32_t slot, int16_t **
         id += 3u * mod_ui_slot;
     *valp = &TSEL->p[id];
     return track_desc(TSEL, id);
+}
+/* the value in column slot of a page, as page_desc has it (0: none): what a picture of the page draws */
+static int32_t page_value(const page_t *pg, uint32_t slot)
+{
+    int16_t *vp;
+    const param_desc_t *d = page_desc(pg, slot, &vp);
+    return d && vp ? *vp : 0;
 }

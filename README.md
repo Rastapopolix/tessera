@@ -43,18 +43,25 @@ page also has a way back to the official V15 firmware, with a backup first.
 * **Thirteen generators** on SEQ > GEN: TURING, EUCLID, MARKOV, MORPH, ATLAS (with a fourth drum part), BOUNCE (and
   FALL), AWAKE, POLY, QUAD, CONSTELLATION, SERIES, CHORD and ANSWER, besides the step sequencer and the arpeggiator.
 * **Shaping**: EVOLVE mutates a phrase every few bars, and **STEP EVOLVE** does the same to steps you wrote; FORM
-  builds sections such as AABA; TWEAK shifts, drops, humanises or follows another track; TWEAK 2 branches hits
+  builds sections such as AABA, and with **DEVELOP** each return varies a little; TWEAK shifts, drops, humanises or follows another track; TWEAK 2 branches hits
   to another track's sound, combines tracks with logic, and plays only on certain bars; LENGTH sets how long notes
-  hold.
+  hold. **GRAVITY** lets a drifting line come back home.
+* **Your steps as a seed**: TURING, EUCLID, MARKOV and MORPH can play from a STEP pattern you wrote (SOURCE) and vary
+  it, keeping its rhythm or its pitches as you choose.
+* **Steps**: per step ratchets, nudges, conditions (1:2 to 8:8, FILL, FIRST) and a pitch accumulator that climbs each
+  pass; the pattern's sheet doubles, halves or writes a Euclidean rhythm.
 * **Harmony**: one key and scale for the whole project (**Key link**); a CHORD track plays a progression (or your
   own), and **QNT CHRD** makes the other tracks follow it.
-* **Modulation**: 16 cords from any source to any destination on any track, generators included; slow organic
+* **Modulation**: 16 cords from any source to any destination on any track, generators and effects included; slow organic
   sources (TIDE, SWARM); live marks on every knob a cord moves, and **MATRIX** to see the whole patch.
 * **Print**: hold REC to turn what a generator played into ordinary steps.
-* **Sounds**: FM6 (six-operator FM, three engine models), TRIO and DRUM (808, 909, SID KIT).
+* **Sounds**: FM6 (six-operator FM, three engine models), **ORACLE** (two oscillators, POLY MOD and a four-pole
+  filter: a classic polyphonic analogue voice), TRIO and DRUM (808, 909), with three insert effects a track and three
+  send effects, a resonant FILTER among them.
 * **MIDI OUT** of every track and the generators, each on a channel of its own (GLO > MIDI OUT), and **CLOCK OUT**,
   over USB.
-* **Its own look**: the SMALTI palette, square tiles, Chakra Petch, and an animated mosaic splash.
+* **Its own look**: one ink on black and a 5 x 7 pixel font, as on a monochrome OLED; YELLOW by default, or
+  WHITE, GREEN, BLUE, RED, or ORANGE, PINK, HOT PINK or LILAC as the FM-1's shells (MENU > COLOR).
 
 The **[manual](MANUAL.md)** covers every page, knob and shortcut; **[RECIPES.md](RECIPES.md)** has step-by-step
 patches and tips.
@@ -64,7 +71,7 @@ patches and tips.
 ## Gallery
 
 *The pages as the firmware draws them, rendered on the host from the firmware's own drawing code
-(`tests/gallery_render.c`) in the default SMALTI palette, shown at 2x.*
+(`tests/gallery_render.c`) in the default YELLOW ink, shown at 2x.*
 
 <table>
 <tr>
@@ -99,8 +106,32 @@ patches and tips.
 </tr>
 <tr>
 <td align="center" valign="top"><img src="assets/gallery/edit_fm6.png" alt="FM6" width="240"><br><b>FM6</b><br><sub>Six-operator FM.</sub></td>
+<td align="center" valign="top"><img src="assets/gallery/oracle_osc.png" alt="ORACLE" width="240"><br><b>ORACLE</b><br><sub>Two oscillators, POLY MOD, a four-pole filter.</sub></td>
 <td align="center" valign="top"><img src="assets/gallery/edit_trio.png" alt="TRIO" width="240"><br><b>TRIO</b><br><sub>Three oscillators.</sub></td>
-<td align="center" valign="top"><img src="assets/gallery/drum.png" alt="DRUM" width="240"><br><b>DRUM</b><br><sub>808, 909 and SID kits.</sub></td>
+</tr>
+<tr>
+<td align="center" valign="top"><img src="assets/gallery/drum.png" alt="DRUM" width="240"><br><b>DRUM</b><br><sub>808 and 909 kits.</sub></td>
+<td align="center" valign="top"><img src="assets/gallery/oracle_filter.png" alt="ORACLE FILTER" width="240"><br><b>ORACLE FILTER</b><br><sub>CUTOFF, RES, its envelope and key tracking.</sub></td>
+<td align="center" valign="top"><img src="assets/gallery/fx_filter.png" alt="FILTER effect" width="240"><br><b>FILTER FX</b><br><sub>A resonant low-pass for any track.</sub></td>
+</tr>
+</table>
+
+**The nine inks** (MENU > COLOR), the same HOME in each: YELLOW is the default; ORANGE, PINK, HOT PINK and LILAC match the
+FM-1's shells.
+
+<table>
+<tr>
+<td align="center"><img src="assets/gallery/ink_yellow.png" alt="YELLOW" width="180"><br><b>YELLOW</b></td>
+<td align="center"><img src="assets/gallery/ink_white.png" alt="WHITE" width="180"><br><b>WHITE</b></td>
+<td align="center"><img src="assets/gallery/ink_green.png" alt="GREEN" width="180"><br><b>GREEN</b></td>
+<td align="center"><img src="assets/gallery/ink_blue.png" alt="BLUE" width="180"><br><b>BLUE</b></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/gallery/ink_red.png" alt="RED" width="180"><br><b>RED</b></td>
+<td align="center"><img src="assets/gallery/ink_orange.png" alt="ORANGE" width="180"><br><b>ORANGE</b></td>
+<td align="center"><img src="assets/gallery/ink_pink.png" alt="PINK" width="180"><br><b>PINK</b></td>
+<td align="center"><img src="assets/gallery/ink_hot_pink.png" alt="HOT PINK" width="180"><br><b>HOT PINK</b></td>
+<td align="center"><img src="assets/gallery/ink_lilac.png" alt="LILAC" width="180"><br><b>LILAC</b></td>
 </tr>
 </table>
 
@@ -132,7 +163,7 @@ Felucca by Leo Kuroshita / Hügelton Instruments.
 
 The ATLAS generator uses the drum map of **Grids** by Émilie Gillet / Mutable Instruments. Several generators are
 inspired by **norns** scripts (ideas only, no code copied): **QUAD** by initenere, **FALL** by ambalek's Fall,
-**CONSTELLATION** by timothy-taylor's Constellation, **AWAKE** by tehn's Awake and **SERIES** by nørgård. The
-The TIDE and SWARM mod sources are inspired by **Triple Sloth** by Nonlinear Circuits (Andrew Fitch) and **ochd** by
+**CONSTELLATION** by timothy-taylor's Constellation, **AWAKE** by tehn's Awake and **SERIES** by nørgård.
+**ORACLE** is Melodee's Prophet engine (after the Prophet-5) under its own name, with its own sounds. The TIDE and SWARM mod sources are inspired by **Triple Sloth** by Nonlinear Circuits (Andrew Fitch) and **ochd** by
 Instruō and DivKid. See
 [LICENSING.md](LICENSING.md) for every third-party part and its licence.

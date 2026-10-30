@@ -34,7 +34,7 @@ int main(void)
     int bad=0;uint8_t fm[FM6_PACKED],cz[144u],got[FM6_PACKED];
     reset();fm6_init();up_boot();
     fm6_factory(3,fm);memcpy(fm+118,"MY VOICE  ",10);memset(cz,0,sizeof cz);memcpy(cz+128,"MY CZ TONE      ",16);cz[20]=0x37;
-    bad+=check("64 FM6 slots, independent from 64 general slots; no CZ-1 or Prophet pool",native_limit(ENGI_FM6)==64 && !native_limit(ENGI_CZ) && !native_limit(ENGI_PROPHET) && UP_SLOTS==64 && !native_count(ENGI_FM6));
+    bad+=check("64 FM6 slots, independent from 64 general slots; no CZ-1 or Prophet pool",native_limit(ENGI_FM6)==64 && !native_limit(ENGI_CZ) && !native_limit(ENGI_ORACLE) && UP_SLOTS==64 && !native_count(ENGI_FM6));
     bad+=check("F064 stores original 128-byte DX7 VMEM",native_put(ENGI_FM6,63,fm)==0 && !memcmp(native_raw(ENGI_FM6,63),fm,128));
     bad+=check("a CZ-1 tone is refused (its store retired with the engine)",native_put(ENGI_CZ,127,cz)==1 && !native_used(ENGI_CZ,127));
     bad+=check("a native slot cannot occupy a general slot",!up_used(63) && native_count(ENGI_FM6)==1 && !native_count(ENGI_CZ));

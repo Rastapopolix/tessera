@@ -66,7 +66,7 @@ static void answer_round(uint32_t tr)
     uint8_t kind[TESS_AN_NOTES], *ord = tess_an.ord[tr];
     if (amount && cnt) amount += (100u - amount) * tess_an.ans[tr] / cnt;   /* (each answer more changed) */
     for (i = 0; i < n; i++) kind[i] = VK_NOTE;
-    if (amount) vary_round(tess_an.mut[tr], kind, n, amount, 50u, rnd);
+    if (amount) vary_round(tess_an.mut[tr], kind, n, amount, 50u, rnd, 0);
     else memset(tess_an.mut[tr], 0, TESS_AN_NOTES);
     for (i = 0; i < n; i++) ord[i] = (uint8_t)(a->order == TESS_AN_REVERSE ? n - 1u - i : i);
     if (a->order == TESS_AN_SHUFFLE)

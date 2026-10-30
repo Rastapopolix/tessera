@@ -151,7 +151,7 @@ static int test_tsp_record(void)
     int bad = 0, ok;
     uint32_t len, i, k, b;
     reset();
-    trk[0].step[5] = (step_t){{62}, 1, ST_NOTE, 0, 90, 0, 0, 0, 0};
+    trk[0].step[5] = (step_t){{62}, 1, ST_NOTE, 0, 0, 90, 0, 0, 0, 0};
     step_set_ratch(&trk[0].step[5], 3); step_set_nudge(&trk[0].step[5], -6);
     trk[0].step[6] = trk[0].step[5]; step_set_ratch(&trk[0].step[6], 8);   /* (x8: RATCH's high bit) */
     song.sel = 1; tessera_knob(0, TESS_ENG_EUCLID);
@@ -213,6 +213,98 @@ static int test_tsp_record(void)
     tsp_resum(raw);
     bad += check("TSP1: a SEED part with a SOURCE or a KEEP out of range is refused", ok && !tsp_valid(raw, len));
 
+    reset();                                           /* GRAVITY: the record's GRAV part; a record without it */
+    tessera_param_set(1, TX_SD_SOURCE, 1); tessera_param_set(1, TX_SD_GRAVITY, 40);
+    tessera_param_set(3, TX_SD_GRAVITY, 100);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_GRAV];
+    reset();
+    ok = ok && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: each track's GRAVITY comes back from its part", ok && tessera.sd_grav[1] == 40u &&
+                 tessera.sd_grav[3] == 100u && !tessera.sd_grav[0] && tessera.sd_src[1] == 1u);
+    raw[tsp_seen.at[TSP_GRAV] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (saved before it: no GRAV part) */
+    tsp_resum(raw);
+    reset();
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_GRAV] && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: a record without the GRAV part loads with GRAVITY 0", ok && !tessera.sd_grav[1] &&
+                 !tessera.sd_grav[3] && tessera.sd_src[1] == 1u);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_GRAV];
+    raw[tsp_seen.at[TSP_GRAV] + 2u] = 101u;             /* (track 3's past 100 %) */
+    tsp_resum(raw);
+    bad += check("TSP1: a GRAV part past 100 % is refused", ok && !tsp_valid(raw, len));
+
+    reset();                                           /* FORM's DEVELOP: the record's DEV part; a record without it */
+    tessera_param_set(0, TX_FM_DEVELOP, 30); tessera_param_set(2, TX_FM_DEVELOP, 100);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_DEV];
+    reset();
+    ok = ok && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: each track's DEVELOP comes back from its part", ok && tessera.fm_dev[0] == 30u &&
+                 tessera.fm_dev[2] == 100u && !tessera.fm_dev[1] && !tessera.fm_dev[3]);
+    raw[tsp_seen.at[TSP_DEV] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (saved before it: no DEV part) */
+    tsp_resum(raw);
+    reset();
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_DEV] && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: a record without the DEV part loads with DEVELOP 0 (exact returns, as before)",
+                 ok && !tessera.fm_dev[0] && !tessera.fm_dev[2]);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_DEV];
+    raw[tsp_seen.at[TSP_DEV] + 1u] = 101u;             /* (track 2's past 100 %) */
+    tsp_resum(raw);
+    bad += check("TSP1: a DEV part past 100 % is refused", ok && !tsp_valid(raw, len));
+
+    reset();                                           /* ENERGY part 2: LEVEL and each DEPTH; a record without them */
+    tessera_param_set(0, TX_EN_LEVEL, -40); tessera_param_set(2, TX_EN_DEPTH, 0); tessera_param_set(3, TX_EN_DEPTH, 55);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_ENERGY];
+    reset();
+    ok = ok && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: ENERGY's LEVEL and each track's DEPTH come back from their part", ok && tessera.en_level == -40 &&
+                 tessera.en_depth[0] == 100u && !tessera.en_depth[2] && tessera.en_depth[3] == 55u);
+    raw[tsp_seen.at[TSP_ENERGY] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (saved before it: no ENERGY part) */
+    tsp_resum(raw);
+    reset();
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_ENERGY] && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: a record without the ENERGY part loads with LEVEL 0, every DEPTH 100", ok && !tessera.en_level &&
+                 tessera.en_depth[2] == 100u && tessera.en_depth[3] == 100u);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_ENERGY];
+    raw[tsp_seen.at[TSP_ENERGY]] = 201u;                /* (LEVEL past +100) */
+    tsp_resum(raw);
+    bad += check("TSP1: an ENERGY part with LEVEL past 100 is refused", ok && !tsp_valid(raw, len));
+
+    reset();                                           /* STEP EVOLVE's HOW: the record's HOW part; a record without it */
+    tessera_param_set(0, TX_SV_HOW, TESS_SV_SERIAL); tessera_param_set(2, TX_SV_HOW, TESS_SV_ORNAMENT);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_HOW];
+    reset();
+    ok = ok && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: each track's STEP EVOLVE HOW comes back from its part", ok &&
+                 tessera.sv_how[0] == TESS_SV_SERIAL && tessera.sv_how[2] == TESS_SV_ORNAMENT && !tessera.sv_how[1]);
+    raw[tsp_seen.at[TSP_HOW] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (saved before it: no HOW part) */
+    tsp_resum(raw);
+    reset();
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_HOW] && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: a record without the HOW part loads with HOW DRIFT", ok && !tessera.sv_how[0] && !tessera.sv_how[2]);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_HOW];
+    raw[tsp_seen.at[TSP_HOW] + 1u] = TESS_SV_HOWS;     /* (track 2's past SERIAL) */
+    tsp_resum(raw);
+    bad += check("TSP1: a HOW part out of range is refused", ok && !tsp_valid(raw, len));
+
     reset();                                           /* HUMAN TIME: the record's HUMAN part; a record without it */
     song.sel = 1; tessera_knob(0, TESS_ENG_EUCLID);
     tessera_param_set(1, TX_TW_HUMAN, 60); tessera_param_set(0, TX_TW_HUMAN, 40);   /* (track 0: a STEP track) */
@@ -242,12 +334,46 @@ static int test_tsp_record(void)
     tsp_resum(raw);
     bad += check("TSP1: a HUMAN part past 60 ms is refused", ok && !tsp_valid(raw, len));
 
+    reset();                                           /* the pitch accumulator: steps' Accumulate, the record's ACC part */
+    trk[0].step[3] = (step_t){{62}, 1, ST_NOTE, 0, 0, 90}; step_set_climb(&trk[0].step[3], -7);
+    trk[0].step[5] = (step_t){{64}, 1, ST_NOTE, 0, 0, 90}; step_set_climb(&trk[0].step[5], 5);
+    tessera_param_set(1, TX_ACC_LIMIT, 3); tessera_param_set(1, TX_ACC_MODE, TESS_ACC_PING);
+    tessera_param_set(3, TX_ACC_LIMIT, 14); tessera_param_set(3, TX_ACC_MODE, TESS_ACC_CLAMP);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_ACC];
+    reset();
+    ok = ok && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: steps' Accumulate (-7, +5) and each track's LIMIT / MODE come back",
+                 ok && step_climb(&trk[0].step[3]) == -7 && step_climb(&trk[0].step[5]) == 5 &&
+                 !trk[0].step[4].climb && tessera.acc_limit[1] == 3u && tessera.acc_mode[1] == TESS_ACC_PING &&
+                 tessera.acc_limit[3] == 14u && tessera.acc_mode[3] == TESS_ACC_CLAMP &&
+                 tessera.acc_limit[0] == TESS_ACC_LIMIT_DEF && tessera.acc_mode[0] == TESS_ACC_WRAP);
+    raw[tsp_seen.at[TSP_ACC] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (saved before it: no ACC part) */
+    tsp_resum(raw);
+    tessera_param_set(1, TX_ACC_LIMIT, 2);
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_ACC];
+    tsp_restore(raw);
+    bad += check("TSP1: a record without the ACC part loads with LIMIT 7, WRAP", ok && tessera.acc_limit[1] == 7u &&
+                 tessera.acc_mode[1] == TESS_ACC_WRAP && tessera.acc_mode[3] == TESS_ACC_WRAP);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_ACC];
+    raw[tsp_seen.at[TSP_ACC] + 2u] = (uint8_t)(TESS_ACC_LIMIT + 1u);   /* (track 3's LIMIT past 14) */
+    tsp_resum(raw);
+    ok &= !tsp_valid(raw, len);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok &= len && tsp_valid(raw, len);
+    raw[tsp_seen.at[TSP_ACC] + NTRK] = TESS_ACC_MODES;   /* (track 1's MODE past CLAMP) */
+    tsp_resum(raw);
+    bad += check("TSP1: an ACC part with a LIMIT or a MODE out of range is refused", ok && !tsp_valid(raw, len));
+
     reset();                                           /* the largest: every step of every pattern full, 1,024 notes */
     for (k = 0; k < NTRK; k++) {
         for (b = 0; b < NPAT; b++)
             for (i = 0; i < NSTEP; i++) {
-                step_t s = {{(uint8_t)(40u + i), 60, 64, 67}, 4, ST_NOTE, SF_ACCENT, 100, 0, 0, 20, 0};
-                step_set_ratch(&s, 4); step_set_nudge(&s, 7);
+                step_t s = {{(uint8_t)(40u + i), 60, 64, 67}, 4, ST_NOTE, 0, SF_ACCENT, 100, 0, 0, 20, 0};
+                step_set_ratch(&s, 4); step_set_nudge(&s, 7); step_set_climb(&s, -3);
                 if (b == trk[k].pattern) trk[k].step[i] = s; else pattern_at(k, b)->step[i] = s;
             }
         song.sel = (uint8_t)k; tessera_knob(0, TESS_ENG_TURING);
@@ -365,7 +491,7 @@ int main(void)
                   st_load(OBJ_SETTINGS, &p, sizeof p) == (int)sizeof p && p.palette == palette_to_stored(1));
 
     reset();
-    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 96, 0, 0};
+    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 96, 0, 0};
     project_save(0);
     oldlen = proj_bank_len[0]; memcpy(old, proj_bank_slot[0], oldlen);
     trk[0].step[0].note[0] = 72;

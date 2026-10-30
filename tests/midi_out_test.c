@@ -72,8 +72,8 @@ static int notes_test(void)
 {
     int bad = 0;
     reset(MIDI_OUT_ALL);
-    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 100};
-    trk[1].step[2] = (step_t){{64, 67}, 2, ST_NOTE, 0, 90};
+    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 100};
+    trk[1].step[2] = (step_t){{64, 67}, 2, ST_NOTE, 0, 0, 90};
     play(4);
     bad += check("ALL: steps go out, each track on its own channel",
                  count(0x90, 0, 60) >= 1u && count(0x90, 1, 64) >= 1u && count(0x90, 1, 67) >= 1u);
@@ -82,7 +82,7 @@ static int notes_test(void)
     bad += check("  STOP: every note sent has its note-off", balanced() && count(0x80, -1, -1) >= 3u);
 
     reset(MIDI_OUT_KEYS);
-    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 100};
+    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 100};
     play(4);
     bad += check("KEYS: the steps stay inside (as before)", !count(0x90, -1, -1));
     key_down(KEY_C4); drain();
@@ -92,13 +92,13 @@ static int notes_test(void)
     stop();
 
     reset(MIDI_OUT_OFF);
-    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 100};
+    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 100};
     play(2); key_down(KEY_C4); key_up(KEY_C4); drain(); stop();
     bad += check("OFF: nothing goes out, keys neither", !log_n);
 
     reset(MIDI_OUT_ALL);
     trk[0].p[P_MUTE] = 1;
-    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 100};
+    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 100};
     play(4); stop();
     bad += check("a muted track sends nothing", !count(0x90, -1, -1));
     return bad;
@@ -114,7 +114,7 @@ static int echo_and_route_test(void)
 
     reset(MIDI_OUT_ALL);
     song.g[G_ROUTE] = 2;                                 /* CH5-8 */
-    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 100};
+    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 100};
     play(1);
     bad += check("ROUT CH5-8: track 1 on channel 5", count(0x90, 4, 60) >= 1u && !count(0x90, 0, 60));
     song.g[G_ROUTE] = 3;                                 /* changed while its note may sound */
@@ -128,11 +128,11 @@ static int echo_and_route_test(void)
     uint32_t d = NTRK;
     for (uint32_t i = 0; i < NTRK; i++) if (drum_track(&trk[i])) { d = i; break; }
     if (d < NTRK) {
-        trk[d].step[0] = (step_t){{36}, 1, ST_NOTE, 0, 100};
+        trk[d].step[0] = (step_t){{36}, 1, ST_NOTE, 0, 0, 100};
         play(1); stop();
         bad += check("a drum track on the DRUM channel (10)", count(0x90, 9, 36) >= 1u && balanced());
         reset(MIDI_OUT_ALL); settings_drumch = 0;
-        trk[d].step[0] = (step_t){{36}, 1, ST_NOTE, 0, 100};
+        trk[d].step[0] = (step_t){{36}, 1, ST_NOTE, 0, 0, 100};
         play(1); stop();
         bad += check("  DRUM OFF: its track's channel", count(0x90, (int)d, 36) >= 1u);
     } else
@@ -140,9 +140,9 @@ static int echo_and_route_test(void)
 
     reset(MIDI_OUT_ALL);                                 /* each track's own channel (GLO > MIDI OUT) */
     tessera_param_set(0, TX_MIDI_CH, 12); tessera_param_set(1, TX_MIDI_CH, 3); song.g[G_ROUTE] = 2;
-    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 100};
-    trk[1].step[0] = (step_t){{64}, 1, ST_NOTE, 0, 100};
-    trk[2].step[0] = (step_t){{67}, 1, ST_NOTE, 0, 100};
+    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 100};
+    trk[1].step[0] = (step_t){{64}, 1, ST_NOTE, 0, 0, 100};
+    trk[2].step[0] = (step_t){{67}, 1, ST_NOTE, 0, 0, 100};
     play(1);
     bad += check("MIDI CH: track 1 on its 12, track 2 on its 3 (ROUT CH5-8 left behind), track 3 AUTO on ROUT's 7",
                  count(0x90, 11, 60) >= 1u && count(0x90, 2, 64) >= 1u && count(0x90, 6, 67) >= 1u &&
@@ -160,14 +160,14 @@ static int echo_and_route_test(void)
     if (d < NTRK) {
         reset(MIDI_OUT_ALL);
         tessera_param_set(d, TX_MIDI_CH, 16);
-        trk[d].step[0] = (step_t){{36}, 1, ST_NOTE, 0, 100};
+        trk[d].step[0] = (step_t){{36}, 1, ST_NOTE, 0, 0, 100};
         play(1); stop();
         bad += check("  a drum track's own channel wins over DRUM", count(0x90, 15, 36) >= 1u && !count(0x90, 9, 36));
     }
 
     reset(MIDI_OUT_ALL);
-    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 100};
-    trk[0].step[1] = (step_t){{62}, 1, ST_TIE, 0, 100};
+    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 100};
+    trk[0].step[1] = (step_t){{62}, 1, ST_TIE, 0, 0, 100};
     play(1);
     panic_req = 1u; blocks(1);
     bad += check("a panic ends the notes sent", balanced());

@@ -17,6 +17,12 @@ static uint32_t trk_icon(uint32_t k, int filled) { return (filled ? ICON_X_TRK1 
  * fg on bg; returns its width */
 static int32_t cv_icon_on(int32_t x, int32_t y, uint32_t size, uint32_t id, uint16_t fg, uint16_t bg)
 {
+#if MELODEE_LOOK                                        /* the Mono look has no icons (the host lint names any asked for) */
+    (void)fg, (void)bg;
+    if (id < ICON_COUNT)
+        GFX_HOOK_TEXT(x, y + cv_oy, x + (int32_t)size, y + cv_oy + (int32_t)size, "icon", 4u);
+    return 0;
+#endif
     const uint8_t *idx = size == 24u ? AI24_IDX : size == 16u ? AI16_IDX : AI12_IDX;
     const uint8_t *dat = size == 24u ? AI24_DATA : size == 16u ? AI16_DATA : AI12_DATA;
     if (id >= ICON_COUNT)
@@ -35,6 +41,9 @@ static int32_t cv_icon_on(int32_t x, int32_t y, uint32_t size, uint32_t id, uint
 /* the same, its ink centred on row cy (header icons: each glyph sits differently in its cell) */
 static int32_t cv_icon_mid(int32_t x, int32_t cy, uint32_t size, uint32_t id, uint16_t fg, uint16_t bg)
 {
+#if MELODEE_LOOK
+    return cv_icon_on(x, cy, size, id, fg, bg);
+#endif
     const uint8_t *idx = size == 24u ? AI24_IDX : size == 16u ? AI16_IDX : AI12_IDX;
     const uint8_t *dat = size == 24u ? AI24_DATA : size == 16u ? AI16_DATA : AI12_DATA;
     int32_t top = -1, bot = 0, r, k;
@@ -104,7 +113,7 @@ static const icon_map_t ICON_MAP[] = {
     {"VOWL", ICON_VOICE}, {"VOWL2", ICON_VOICE}, {"TALK", ICON_SWEEP}, {"SHIFT", ICON_TRANSPOSE},
     {"BUZZ", ICON_PULSE}, {"BRTH", ICON_NOISE}, {"Q", ICON_RESO}, {"RAND", ICON_PROB},
     {"FREQ", ICON_CUTOFF}, {"TRK", ICON_KEYTRACK}, {"DRFT", ICON_SWEEP},   /* NOISE (COLR, DENS, CRSH: above) */
-    {"MLVL", ICON_MOD}, {"MRAT", ICON_RATIO}, {"MEG", ICON_DECAY}, {"VMOD", ICON_ACCENT}, {"DTUN", ICON_DETUNE},
+    {"MLVL", ICON_MOD}, {"MRAT", ICON_RATIO}, {"MEG", ICON_DECAY}, {"AEG", ICON_DECAY}, {"VMOD", ICON_ACCENT}, {"DTUN", ICON_DETUNE},
     {"PTCH", ICON_LOAD}, {"STORE", ICON_SAVE}, {"SEND", ICON_MIDI}, {"BOOT", ICON_LOAD}, {"DRUM", ICON_DRUM},           /* FM6 (ALG, FB: above; its pages: fm6_icon) */
     /* fixed columns drawn by ui_draw.c (STEP page, preset browser, SYSTEM) */
     {"NOTE", ICON_PITCH}, {"STEP", ICON_STEPS}, {"FLAG", ICON_ACCENT}, {"ACC", ICON_ACCENT}, {"LANE", ICON_DRUM}, {"HIT", ICON_GATE}, {"SLD", ICON_SLIDE}, {"USB", ICON_MIDI},

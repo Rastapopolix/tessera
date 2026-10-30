@@ -34,8 +34,8 @@ the web editor's settings and survive power-off:
 
 - **AUDIO CLICK:** OFF, REC (while a track is armed and playback runs), or ON.
 - **CLICK LEVEL:** LOW, MID, HIGH. The first beat of each four-beat bar is accented.
-  This sets both metronome and count-in volume independently of mix MASTER,
-  including when MASTER is zero. The click goes to headphones/line out and
+  This sets both metronome and count-in volume relative to mix MASTER;
+  MASTER at zero silences both. The click goes to headphones/line out and
   speaker, after effects and USB capture, so recordings contain no click.
 - **COUNT-IN:** OFF, 1 BAR, 2 BARS. Starting an armed track with internal clock
   counts four or eight beats before the first step. Count-in clicks sound even

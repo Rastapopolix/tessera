@@ -108,8 +108,10 @@ static void separate_sends(void)
         FILE *f=fopen("tests/fixtures/tpli-send-chain.bin","rb");assert(f);uint32_t n=fread(b,1,sizeof b,f);fclose(f);ui_power_on();
         assert(tmpl_take(b,n));template_load();
         assert(!song.g[G_FXMODE] && TSEL->p[P_FXSEND]==81 && !TSEL->p[P_FXSEND2] && !TSEL->p[P_FXSEND3]);
-        /* (its track 1's engine retired since (2026-10-22): it loads with FM6's own values, not the fixture's 42) */
-        assert(TSEL->p[P_E3]==track_desc(TSEL,P_E3)->def && song.g[G_FXRETURN]==73 && song.g[G_MFXTYPE]==FX_REVERB);
+        /* (its track 1 is engine 19, the Prophet's: since 2026-10-29 ORACLE, the same macros, the fixture's 42 kept
+         * inside TUNE B's range) */
+        assert(TSEL->eng_req==ENGI_ORACLE && TSEL->p[P_E3]==track_desc(TSEL,P_E3)->max && song.g[G_FXRETURN]==73 &&
+               song.g[G_MFXTYPE]==FX_REVERB);
     }
     ui_power_on();fx_bus_mix=0;song.g[G_FXMODE]=1;fx_bus_select();fx_send_on=1;
     memset(mix_l,0,sizeof mix_l);memset(mix_r,0,sizeof mix_r);
@@ -401,9 +403,48 @@ static void chorus_test(void)
     for(uint32_t slot=0;slot<FX_SLOTS;slot++)assert(!resource[RES_FX0+slot].size && !resource[RES_FX0+NPART*FX_SLOTS+slot].size);
     puts("Chorus: full-band independent stereo, bounded hot inputs, exact silent tail, 2 KiB/slot, RATE/DEPTH, insert/send persistence and bypass release: OK");
 }
+/* FILTER (fx.c fx_svf): full rate, so open it passes the top; CUT down it takes a tone away; RES lifts the cutoff;
+ * a CUT turned while it plays moves without a jump; silence leaves no denormal tail */
+static uint64_t filter_energy(int cut,int res,uint32_t inc)
+{
+    reset_fx();track_t *t=&trk[0];t->p[P_FXTYPE]=FX_FILTER;t->p[P_FXMIX]=127;t->p[P_FXRATE]=(int16_t)cut;t->p[P_FXCHAR]=(int16_t)res;
+    uint32_t phase=0;uint64_t e=0;int32_t b[CTL];
+    for(uint32_t frame=0;frame<FS/CTL;frame++){
+        for(uint32_t i=0;i<CTL;i++){phase+=inc;b[i]=sine_i(phase)/4;}
+        assert(fx_process(t,b,CTL));
+        if(frame>=FS/CTL/2u)for(uint32_t i=0;i<CTL;i++)e+=(uint64_t)((int64_t)fx_left[i]*fx_left[i]);
+        for(uint32_t i=0;i<CTL;i++)assert(fx_left[i]==fx_right[i]);
+    }
+    assert(!resource[RES_FX0].size);return e;
+}
+static void filter_test(void)
+{
+    _Static_assert(FX_FILTER==10,"stored FX IDs stay fixed");
+    const uint32_t k10=(uint32_t)(10000.0*4294967296.0/FS),k1=(uint32_t)(1000.0*4294967296.0/FS),k100=(uint32_t)(100.0*4294967296.0/FS);
+    uint64_t dry10=0,dry1=0;
+    for(uint32_t i=0;i<FS/2u;i++){int64_t a=sine_i(i*k10)/4,c=sine_i(i*k1)/4;dry10+=(uint64_t)(a*a);dry1+=(uint64_t)(c*c);}
+    uint64_t open10=filter_energy(127,64,k10),shut1=filter_energy(0,64,k1),low=filter_energy(40,0,k100);
+    assert(open10>dry10*80u/100u && open10<dry10*125u/100u);   /* (open: 10 kHz through) */
+    assert(shut1<dry1/1000u);                                   /* (30 Hz: 1 kHz gone) */
+    uint32_t c=0;while(cutoff_hz(c)<1000u)c++;
+    assert(filter_energy((int)c,127,k1)>dry1*4u);               /* (RES at the top: the cutoff lifted) */
+    assert(low>dry1/2u);                                         /* (100 Hz under a 300 Hz cutoff: through) */
+    reset_fx();track_t *t=&trk[0];t->p[P_FXTYPE]=FX_FILTER;t->p[P_FXMIX]=127;t->p[P_FXCHAR]=100;
+    int32_t b[CTL],prev=0,jump=0;uint32_t phase=0;
+    for(uint32_t frame=0;frame<2000u;frame++){
+        t->p[P_FXRATE]=(int16_t)((frame/40u)%2u?127:0);
+        for(uint32_t i=0;i<CTL;i++){phase+=k100;b[i]=sine_i(phase)/8;}
+        fx_process(t,b,CTL);
+        for(uint32_t i=0;i<CTL;i++){int32_t d=abs(fx_left[i]-prev);if(frame>100u && d>jump)jump=d;prev=fx_left[i];assert(abs(fx_left[i])<=1000000);}
+    }
+    assert(jump<1200);                                           /* (measured 600: a block's glide from 30 Hz to 16 kHz) */
+    for(uint32_t k=0;k<20000;k++){memset(b,0,sizeof b);fx_process(t,b,CTL);}
+    for(uint32_t ch=0;ch<2;ch++)assert(!fx_state[0].q[ch][0].z1 && !fx_state[0].q[ch][0].z2);
+    puts("FILTER: open passes 10 kHz, shut takes 1 kHz away, RES lifts the cutoff, CUT jumps glide, no denormal tail: OK");
+}
 int main(int argc,char **argv)
 {
-    legacy();frozen_three_slots();send_return();separate_sends();fx_chain_test();reverb_tail();reverb_presence();reverb_rate_conversion();rate_and_pan();tape_smooth();chorus_test();
+    legacy();frozen_three_slots();send_return();separate_sends();fx_chain_test();reverb_tail();reverb_presence();reverb_rate_conversion();rate_and_pan();tape_smooth();chorus_test();filter_test();
     uint64_t dry=fx_signal(FX_OFF,60,64,0,0);
     for(uint32_t mode=FX_PHASER;mode<FX_COUNT;mode++){
         assert(fx_signal(mode,60,64,0,0)==dry);

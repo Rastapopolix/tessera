@@ -123,6 +123,7 @@ static void host_preset_values(track_t *t, uint32_t e, uint32_t pi, const preset
     t->p[P_ED_FLT] = p->fenv;
     t->p[P_VOICE] = p->mono ? V_LEGATO : V_POLY;
     fm6_track_loaded(t);                          /* FM6: the preset's patch (ui.c apply_preset_to) */
+    or_track_loaded(t);                           /* ORACLE: its sound's */
 }
 static void host_preset_req(track_t *t, uint32_t e, uint32_t pi)
 {
@@ -204,7 +205,7 @@ static uint32_t started_since(const track_t *t, uint32_t a0)
 }
 
 /* the demo song: T1 the power-on bass (TRK_DEF: SID BELL RING; PROPHET FUNK BASS II until 2026-10-22, ANALOG ACID until 2.0) (16 steps), T2 the
- * power-on pad (TRK_DEF: FM6 STRINGS; GLASS PAD, PAD, DIGITAL PAD before) (32 steps, tied chords), T3 SID INIT SID
+ * power-on pad (TRK_DEF: TRIO STRING MACH; FM6 STRINGS, GLASS PAD, PAD, DIGITAL PAD before) (32 steps, tied chords), T3 SID INIT SID
  * (12 steps: 3 against 4), T4 808 DRUM drums (16 steps, up to 3 notes a step); 120 BPM, 8 bars. Bars 5..6:
  * live recording: a clap into the drums just before step 4 (quantised onto it, not triggered twice),
  * MIDI ch 3 into the lead, a two-key chord on the keys into an empty pad step. solo: 0 = the mix,
@@ -415,7 +416,7 @@ static void steal_pad(track_t *t)
 static int steal_test(const char *dir)
 {
     static const uint8_t N1[7] = {48, 52, 55, 59, 62, 65, 69};
-    const uint32_t frames = 4u * FS;
+    const uint32_t frames = 4u * FS / CTL * CTL;   /* whole blocks: 4 s is 5512.5 of them (CTL 32), the last overran L */
     char path[512];
     FILE *w;
     int32_t prev = 0, *L = calloc(frames, sizeof *L);
@@ -492,7 +493,7 @@ static void xfade_sine(track_t *t)
 static int xfade_test(const char *dir)
 {
     static const uint8_t CH[3] = {57, 60, 64};
-    const uint32_t frames = 4u * FS, B = FS / 10u / CTL * CTL;   /* B: 0.1 s in whole blocks */
+    const uint32_t frames = 4u * FS / CTL * CTL, B = FS / 10u / CTL * CTL;   /* whole blocks (L); B: 0.1 s in whole blocks */
     /* switches: (a) in a release tail, (b) twice with a chord held, (c) with a note right after it */
     const uint32_t sw[4] = {11u * B, 23u * B, 29u * B + 7u * CTL, 33u * B};
     const uint32_t on[3] = {B, 15u * B, 25u * B}, sine[3] = {14u * B, 24u * B, 32u * B};
@@ -868,6 +869,10 @@ int main(int argc, char **argv)
         inst.p[P_SUS] = p->env[2]; inst.p[P_REL] = p->env[3]; inst.p[P_ED_FLT] = p->fenv;
     }
     fm6_track_loaded(&inst);                            /* FM6: the preset's patch */
+    if (MELODEE_ORACLE && eng == ENGI_ORACLE) {       /* ORACLE: the preset's patch */
+        inst.preset = (uint8_t)(preset % ENGINES[eng]->npresets);
+        or_track_loaded(&inst);
+    }
     inst.p[P_VOICE] = (int16_t)mono;
     inst.p[P_RESERVED34] = argc > 5 ? atoi(argv[5]) : 24;      /* as melodee_init */
     inst.p[P_RESERVED35] = argc > 5 ? atoi(argv[5]) : 28;

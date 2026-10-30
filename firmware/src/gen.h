@@ -178,18 +178,19 @@ typedef struct {
 } gen_series_t;
 
 /* 12. Chord pad: one chord at a time on a degree of the track's scale, from a progression, BARS long (tessera.c builds
- * its tones with the track's SCL CHORD: CHRD, VOIC). HIT: held for the chord, struck every beat, or every step. WALK is
+ * its tones with the track's SCL CHORD: CHRD, VOIC). HIT: held for the chord, struck every beat, every step, or
+ * short on the off-beats (OFF BEAT). WALK is
  * the seed's own four chords (ROLL a new walk, EVOLVE changes one); USER up to eight played in on the keys (OCT+ held
  * on GEN: tessera_chord_user_key); the others are fixed progressions */
 enum { GEN_CH_POP, GEN_CH_50S, GEN_CH_251, GEN_CH_CIRCLE, GEN_CH_TWO, GEN_CH_DRONE, GEN_CH_WALK, GEN_CH_USER, GEN_CH_PROGS };
-enum { GEN_CH_HOLD, GEN_CH_BEAT, GEN_CH_STEP, GEN_CH_HITS };
+enum { GEN_CH_HOLD, GEN_CH_BEAT, GEN_CH_STEP, GEN_CH_OFF, GEN_CH_HITS };   /* (saved: append only) */
 #define GEN_CH_BARS 4u     /* BARS 0..3: 1/2, 1, 2, 4 bars a chord */
 #define GEN_CH_WALK_N 4u
 #define GEN_CH_USER_N 8u   /* USER's chords at most */
 typedef struct {
     uint8_t  prog;        /* GEN_CH_*: the progression */
     uint8_t  bars;        /* 0..3: 1/2, 1, 2, 4 bars a chord */
-    uint8_t  hit;         /* GEN_CH_HOLD, _BEAT, _STEP */
+    uint8_t  hit;         /* GEN_CH_HOLD, _BEAT, _STEP, _OFF */
     uint8_t  rot;         /* 0..7: the progression begins this many chords in (EVOLVE turns it) */
     int8_t   oct;         /* -2..2: octaves from the chords' home (around C3; tessera.c, not a section's) */
     uint8_t  walk[GEN_CH_WALK_N];   /* WALK's degrees, 0..6 */

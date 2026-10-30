@@ -22,7 +22,8 @@ enum {
     HP_FMOP,                                            /* FM6's operator pages: FP_R1 .. FP_OP from here */
     HP_FMVOICE = HP_FMOP + FP_OP + 1,                   /* .. the voice's: FP_PR1 .. FP_TRNSP */
     HP_FMFN = HP_FMVOICE + FP_TRNSP + 1 - FP_PR1,       /* .. the functions: FN_PBUP .. FN_ENGINE */
-    HP_COUNT = HP_FMFN + FM6_NFN
+    HP_ORACLE = HP_FMFN + FM6_NFN,                      /* ORACLE's pages: oracle_pages.c OV_ order */
+    HP_COUNT = HP_ORACLE + OV_COUNT
 };
 #if MELODEE_HELP_PACKED
 typedef struct { const char *name; } help_t;
@@ -241,6 +242,59 @@ static const help_t HELP_PAGE[HP_COUNT] = {
                                                "for; OFF uses all of MIDI's range."),
     H_(HP_FMFN + FN_ENGINE, "FM ENGINE", "How the FM is computed: MODRN clean, MARK I as the first hardware "
                                          "(grittier), OPL as the small FM chips (lo-fi)."),
+    H_(HP_ORACLE + 0, "OSC A FREQ", "Oscillator A's pitch in semitones from the note: 12 an octave up, -12 down."),
+    H_(HP_ORACLE + 1, "OSC A WAVE", "Oscillator A's waves: SAW, PLS (pulse) or both at once (S+P); OFF leaves it "
+                                    "silent."),
+    H_(HP_ORACLE + 2, "OSC A PW", "The width of A's pulse: 64 square, lower or higher thinner and more nasal. Only "
+                                  "heard with PLS on."),
+    H_(HP_ORACLE + 3, "SYNC", "ON: oscillator A restarts with each cycle of B, so tuning A away from B sweeps hard, "
+                              "tearing overtones."),
+    H_(HP_ORACLE + 4, "OSC B FREQ", "Oscillator B's pitch in semitones from the note; with B MODE FIXED or LO FIX "
+                                    "its own frequency, the note ignored."),
+    H_(HP_ORACLE + 5, "OSC B FINE", "Tunes B a little sharp of A: a small amount gives the slow beating of two "
+                                    "detuned oscillators."),
+    H_(HP_ORACLE + 6, "OSC B WAVE", "Oscillator B's waves: SAW, TRI (triangle), PLS (pulse), any mix of them, or OFF."),
+    H_(HP_ORACLE + 7, "OSC B PW", "The width of B's pulse: 64 square, lower or higher thinner. Only heard with PLS "
+                                  "on."),
+    H_(HP_ORACLE + 8, "OSC A LEVEL", "How loud oscillator A is in the mix into the filter."),
+    H_(HP_ORACLE + 9, "OSC B LEVEL", "How loud oscillator B is in the mix into the filter."),
+    H_(HP_ORACLE + 10, "NOISE LEVEL", "How much white noise goes into the filter, for breath, wind or percussion."),
+    H_(HP_ORACLE + 11, "OSC B MODE", "KEY: B follows the notes. FIXED: B keeps its own pitch. LO: B runs very "
+                                     "slowly, a second LFO for POLY MOD."),
+    H_(HP_ORACLE + 12, "CUTOFF", "Where the 4-pole low-pass filter starts to cut: lower is darker. A cord or knob "
+                                 "motion can sweep it."),
+    H_(HP_ORACLE + 13, "RESONANCE", "Lifts the filter's sound at the cutoff, up to a whistle: high values let the "
+                                    "filter sing on its own."),
+    H_(HP_ORACLE + 14, "FILTER ENV AMOUNT", "How far the filter envelope (FILT ENV) opens the cutoff on each note."),
+    H_(HP_ORACLE + 15, "FILTER KEY TRACK", "How the cutoff follows the note: OFF the same for all notes, HALF or "
+                                           "FULL brighter as notes go up."),
+    H_(HP_ORACLE + 16, "FILTER ATTACK", "How long the filter envelope takes to open after a note starts."),
+    H_(HP_ORACLE + 17, "FILTER DECAY", "How long the filter envelope then takes to fall to its SUSTAIN level."),
+    H_(HP_ORACLE + 18, "FILTER SUSTAIN", "Where the filter envelope stays while a note is held."),
+    H_(HP_ORACLE + 19, "FILTER RELEASE", "How long the filter envelope takes to close once the note ends."),
+    H_(HP_ORACLE + 20, "AMP ATTACK", "How long a note takes to fade in."),
+    H_(HP_ORACLE + 21, "AMP DECAY", "How long a note then takes to fall to its SUSTAIN level."),
+    H_(HP_ORACLE + 22, "AMP SUSTAIN", "How loud a note stays while it is held."),
+    H_(HP_ORACLE + 23, "AMP RELEASE", "How long a note takes to fade out once it ends."),
+    H_(HP_ORACLE + 24, "POLY MOD FENV", "How much the filter envelope moves the POLY MOD destinations, note by note."),
+    H_(HP_ORACLE + 25, "POLY MOD OSC B", "How much oscillator B moves the POLY MOD destinations at audio rate: "
+                                         "metallic and bell-like sounds."),
+    H_(HP_ORACLE + 26, "POLY MOD TO", "Where POLY MOD goes: oscillator A's FREQ, A's PW, the filter (FILT), or a mix "
+                                      "of them."),
+    H_(HP_ORACLE + 27, "VELOCITY", "What playing harder opens: the filter envelope (FILT), the loudness (AMP), BOTH "
+                                   "or neither."),
+    H_(HP_ORACLE + 28, "LFO RATE", "How fast the LFO moves, from a slow drift to a fast flutter."),
+    H_(HP_ORACLE + 29, "LFO AMOUNT", "How much the LFO moves what LFO ROUTE sends it to."),
+    H_(HP_ORACLE + 30, "LFO WAVE", "The LFO's shape: SAW, TRI (triangle), SQR (square) or a mix of them."),
+    H_(HP_ORACLE + 31, "LFO NOISE", "Mixes noise into the LFO: higher turns its wobble into random movement."),
+    H_(HP_ORACLE + 32, "LFO TO PITCH", "Which oscillators the LFO bends in pitch for vibrato: A, B, both or none."),
+    H_(HP_ORACLE + 33, "LFO TO PW", "Which oscillators' pulse width the LFO moves: A, B, both or none."),
+    H_(HP_ORACLE + 34, "LFO TO FILTER", "ON: the LFO also sweeps the filter's cutoff."),
+    H_(HP_ORACLE + 35, "FILTER MODEL", "Which filter circuit it follows: EARLY the first models', LATE the later "
+                                       "ones'. Each colors the resonance its own way."),
+    H_(HP_ORACLE + 36, "VINTAGE", "How far each voice drifts from the others in pitch and tone, like an old analog "
+                                  "synth warming up."),
+    H_(HP_ORACLE + 37, "GLIDE", "How long each note slides in pitch from the last one: 0 none."),
 };
 #undef H_
 
@@ -379,6 +433,11 @@ static void help_find(uint32_t k)
         else help_hp(id >= FP_SIZE ? HP_FMFN + (id - FP_SIZE) % FM6_NFN : HP_FMVOICE + (id - FP_PR1) % (HP_FMFN - HP_FMVOICE));
         return;
     }
+    if (pg->scope == SC_ORACLE) {                       /* ORACLE's patch (oracle_pages.c views) */
+        if (pg->id[k] >= OV_COUNT) help_unused(k);
+        else help_hp(HP_ORACLE + pg->id[k]);
+        return;
+    }
     if (pg->graph == GR_TIMING && k < 2u && tr < TESSERA_TRACKS && tessera.mode[tr] == TESS_ENG_OFF) {
         help_hp(HP_TIMING_STEP);                        /* (a STEP track: SHAPE only, ui_input.c) */
         help.name = k ? "TIMING CHANCE" : "TIMING RATCH";
@@ -390,6 +449,21 @@ static void help_find(uint32_t k)
     }
     if (pg->graph == GR_CORDS || pg->graph == GR_MATRIX) {
         help_hp((pg->graph == GR_CORDS ? HP_CORD_SRC : HP_MX_FROM) + k);
+        return;
+    }
+    if (pg->graph == GR_EVOLVE && sv_layer_on()) {     /* (STEP EVOLVE, OCT+ held: HOW) */
+        if (k) help_unused(k);
+        else help.pid = (uint16_t)PID_TESS(TX_SV_HOW);
+        return;
+    }
+    if (pg->graph == GR_EVOLVE && ev_layer_on()) {     /* (a generator's EVOLVE, OCT+ held: GRAVITY) */
+        if (k) help_unused(k);
+        else help.pid = (uint16_t)PID_TESS(TX_SD_GRAVITY);
+        return;
+    }
+    if (pg->graph == GR_FORM && fm_layer_on()) {       /* (a generator's FORM, OCT+ held: DEVELOP) */
+        if (k) help_unused(k);
+        else help.pid = (uint16_t)PID_TESS(TX_FM_DEVELOP);
         return;
     }
     if (pg->graph == GR_EVOLVE && tessera_step_on(tr)) {   /* STEP EVOLVE */
@@ -404,7 +478,8 @@ static void help_find(uint32_t k)
     else if (pg->graph == GR_TWEAK2) x = TW2[k];
     else if (pg->graph == GR_NOTELEN) x = NL[k];
     else if (pg->graph == GR_TIMING) x = k == 3u ? TX_SUB_HUMAN : k == 2u ? TX_SUB_SHAPE : k ? TX_SUB_CHANCE : TX_SUB_RATCH;
-    else if (pg->graph == GR_ENERGY && k < 2u) x = k ? TX_EN_RESTS : TX_EN_ARC;
+    else if (pg->graph == GR_ENERGY && en_layer_on()) x = k ? 0xFFu : TX_EN_DEPTH;
+    else if (pg->graph == GR_ENERGY && k < 3u) x = k == 2u ? TX_EN_LEVEL : k ? TX_EN_RESTS : TX_EN_ARC;
     else if (pg->graph == GR_MIDICH) { x = TX_MIDI_CH; help_tr = k; }   /* (KNOB k: track k's) */
     else if (pg->graph == GR_KEYLINK && k == 0u) x = TX_KEY_LINK;
     else if (pg->graph == GR_ORGANIC && k < 2u) x = k ? TX_ORG_RATE : TX_ORG_SPEED;
@@ -443,8 +518,10 @@ static void help_find(uint32_t k)
             help.pid = (uint16_t)PID_TESS(TX_GRD_KICK + (k & 3u));
             return;
         }
-        if (sd_layer_on()) {                            /* (TURING, EUCLID, OCT+ held: SOURCE, KEEP) */
+        if (sd_layer_on()) {                            /* (TURING, EUCLID, MARKOV, MORPH, OCT+ held: SOURCE, KEEP,
+                                                         * GRAVITY) */
             if (k < 2u) help.pid = (uint16_t)PID_TESS(TX_SD_SOURCE + k);
+            else if (k == 2u) help.pid = (uint16_t)PID_TESS(TX_SD_GRAVITY);
             else help_unused(k);
             return;
         }
@@ -489,10 +566,18 @@ static void help_find(uint32_t k)
 #define HELP_W 228
 #define HELP_H 214
 #define HELP_TW 204                                     /* (the text's width) */
+#define HELP_FONT (&AF_M)
+#if MELODEE_LOOK                                        /* (Mono: the 5 x 7 font, 17 characters a line, 9 cells apart) */
+#define HELP_T0 30
+#define HELP_T1 190
+#define HELP_LH 18u
+#define HELP_TEXT_W(f, s) (mo_tw(s) * 2)
+#else
 #define HELP_T0 34                                      /* (the text's first line, its last above HELP_T1) */
 #define HELP_T1 188
-#define HELP_FONT (&AF_M)
 #define HELP_LH (AF_M.h + 2u)                           /* (a line's height) */
+#define HELP_TEXT_W(f, s) text_w(f, s)
+#endif
 #define HELP_ROWS ((HELP_T1 - HELP_T0) / HELP_LH)       /* (the lines the card shows) */
 
 /* text's words wrapped to lines of HELP_TW px in font f: each line's start and length (at most max of them); returns
@@ -508,7 +593,7 @@ static uint32_t help_wrap(const aafont_t *f, const char *text, uint16_t *at, uin
             memcpy(line, text + start, end - start);
             line[end - start] = 0;
         }
-        if ((end - start >= sizeof line || text_w(f, line) > HELP_TW) && n) {   /* (the line up to the last word) */
+        if ((end - start >= sizeof line || HELP_TEXT_W(f, line) > HELP_TW) && n) {   /* (the line up to the last word) */
             if (lines < max) at[lines] = (uint16_t)start, len[lines] = (uint8_t)(n - start);
             lines++;
             start = i = n + 1u;
@@ -619,6 +704,10 @@ static void help_draw(void)
         return;
     help.card = 0;
     help_value(e, val, sizeof val);
+#if MELODEE_LOOK
+    mo_help(e ? e->name : help.name, val, help_text());
+    return;
+#endif
     help_strip(0, 124, e ? e->name : help.name, val, help_text());
     help_strip(124, HELP_H - 124, e ? e->name : help.name, val, help_text());
 }

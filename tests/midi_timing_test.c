@@ -446,10 +446,10 @@ static int loop_replay_test(void)
 static int recorded_gate_storage_test(void)
 {
     timing_reset(2, 24000000u);
-    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 111, 0, 83};
+    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 111, 0, 83};
     pattern_commit(&trk[0]);
     pattern_request(&trk[0], 1);
-    trk[0].step[2] = (step_t){{64}, 1, ST_NOTE, 0, 70, 0, 211};
+    trk[0].step[2] = (step_t){{64}, 1, ST_NOTE, 0, 0, 70, 0, 211};
     project_capture(&proj_scratch);
     uint32_t n = tsp_pack(proj_wire_u.raw, &proj_scratch, 1); int ok = n && tsp_valid(proj_wire_u.raw, n);
     if (ok) {

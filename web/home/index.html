@@ -15,141 +15,164 @@
 <meta property="og:image" content="https://rastapopolix.github.io/tessera/media/brand/social-preview.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="media/brand/logo.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+/* TESSERA-MONO: tools/gen_mono_webfont.py writes the face here (firmware/src/gfx.c's 5 x 7 font) */
+@font-face { font-family: "Tessera Mono"; font-display: block; src: url("data:font/woff;base64,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") format("woff"); }
+/* /TESSERA-MONO */
 :root {
-  /* SMALTI (tools/gen_ui_palettes.py) and the mark's lapis and gold (firmware/src/splash.c) */
-  --bg: #0d1326; --surf: #18213c; --raise: #2b3249; --line: #343b51; --text: #f6f0e0; --mid: #b3b2b0;
-  --dim: #73747a; --accent: #ffe296; --gold: #ecb848;
-  --t1: #deca60; --t2: #40c8d6; --t3: #6ed668; --t4: #d67cec;
+  /* the Mono look: one ink on near-black (Settings COLOR, YELLOW the default; tools/gen_ui_palettes.py) for headings,
+     labels and buttons, the body text a soft off-white (easier on the eyes in long text), the rest the ink at lower strengths; the four tracks as the device's fills: solid, hatched, dotted, striped */
+  --bg: #111; --ink: #ffd020; --surf: #19170f; --raise: #252113; --line: #3b3007; --text: #e6e0d0; --mid: #b9b2a0;
+  --dim: #8e877a;
+  --p1: var(--ink);
+  --p2: repeating-linear-gradient(135deg, var(--ink) 0 2px, transparent 2px 5px);
+  --p3: radial-gradient(circle, var(--ink) 1.2px, transparent 1.6px) 0 0 / 5px 5px;
+  --p4: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px);
+  --pixel: "Tessera Mono", ui-monospace, monospace;
   --gap: 6px; --max: 1120px;
 }
+/* the light version (dark ink on paper): only from the LIGHT / DARK button (stored); dark is the default, whatever the system says */
+:root[data-theme="light"] { --bg: #f6f2e7; --ink: #1c1a14; --surf: #eee8d6; --raise: #e2d9bf; --line: #c8bd9b; --text: #1c1a14; --mid: #4b4535; --dim: #786e57; color-scheme: light; }
+.theme { font: 16px/1 var(--pixel); color: var(--mid); background: none; border: 0; padding: 3px 4px 2px;
+         cursor: pointer; text-transform: uppercase; }
+.theme:hover { color: var(--bg); background: var(--ink); }
 * { box-sizing: border-box; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 html { scroll-behavior: smooth; }
 body {
   margin: 0; background: var(--bg); color: var(--text);
-  font: 400 17px/1.55 "Chakra Petch", system-ui, sans-serif; -webkit-font-smoothing: antialiased;
+  font: 400 16px/1.6 ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 }
-a { color: var(--accent); text-underline-offset: 3px; }
-a:hover { color: var(--gold); }
+a { color: var(--ink); text-underline-offset: 3px; }
+a:hover { background: var(--ink); color: var(--bg); text-decoration: none; }
 img { display: block; max-width: 100%; }
 .wrap { max-width: var(--max); margin: 0 auto; padding: 0 16px; }
-h1, h2, h3 { font-weight: 600; letter-spacing: .02em; line-height: 1.15; margin: 0; }
-h2 { font-size: clamp(26px, 4vw, 36px); text-transform: uppercase; }
-h3 { font-size: 18px; text-transform: uppercase; letter-spacing: .06em; }
+h1, h2, h3 { color: var(--ink); font-family: var(--pixel); font-weight: 400; letter-spacing: 0; line-height: 1.15; margin: 0;
+             text-transform: uppercase; }
+h2 { font-size: clamp(24px, 4vw, 40px); }
+h3 { font-size: 16px; }
 p { margin: 0 0 1em; }
-.kicker { color: var(--mid); text-transform: uppercase; letter-spacing: .12em; font-size: 13px; font-weight: 500; }
+.kicker { display: inline-block; background: var(--ink); color: var(--bg); font: 16px/1 var(--pixel);
+          text-transform: uppercase; padding: 3px 6px 2px; margin-bottom: 14px; }
 .bar { display: flex; gap: var(--gap); margin: 18px 0 0; }
-.bar span { flex: 1; height: 6px; }
-.bar span:nth-child(1) { background: var(--t1); } .bar span:nth-child(2) { background: var(--t2); }
-.bar span:nth-child(3) { background: var(--t3); } .bar span:nth-child(4) { background: var(--t4); }
+.bar span { flex: 1; height: 8px; }
+.bar span:nth-child(1) { background: var(--p1); } .bar span:nth-child(2) { background: var(--p2); }
+.bar span:nth-child(3) { background: var(--p3); } .bar span:nth-child(4) { background: var(--p4); }
 
-/* top */
-nav { position: sticky; top: 0; z-index: 5; background: rgba(13, 19, 38, .92); backdrop-filter: blur(6px);
-      border-bottom: 1px solid var(--line); }
+/* top: the device's header, inverted */
+nav { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 2px solid var(--ink); }
 nav .wrap { display: flex; align-items: center; gap: 20px; height: 56px; }
-nav .brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none;
-             font-weight: 600; letter-spacing: .14em; }
+nav .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none;
+             font: 24px/1 var(--pixel); }
+nav .brand:hover { background: none; color: var(--ink); }
 nav .brand svg { width: 26px; height: 26px; }
-nav .links { margin-left: auto; display: flex; gap: 18px; font-size: 15px; }
-nav .links a { color: var(--mid); text-decoration: none; }
-nav .links a:hover { color: var(--text); }
-@media (max-width: 680px) { nav .links a.opt { display: none; } }
+nav .links { margin-left: auto; display: flex; gap: 14px; font: 16px/1 var(--pixel); text-transform: uppercase; }
+nav .links a { color: var(--mid); text-decoration: none; padding: 3px 4px 2px; }
+nav .links a:hover { color: var(--bg); background: var(--ink); }
+@media (max-width: 900px) { nav .links a.opt { display: none; } }
+@media (max-width: 480px) { nav .links a.opt2 { display: none; } nav .wrap { gap: 12px; } }   /* (GitHub: also in the footer) */
+@media (max-width: 360px) { nav .brand { font-size: 20px; } nav .wrap { gap: 8px; } nav .links { gap: 6px; } nav .links, .theme { font-size: 14px; } }
 
 /* hero */
 .hero { padding: 72px 0 56px; }
 .hero .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
-.mark { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5.5%; width: min(150px, 40vw); aspect-ratio: 1; }
-.mark i { display: block; background: var(--line); }
-.mark.laid i { animation: lay .18s ease-out both; }
-@keyframes lay { from { background: var(--line); } to { background: var(--c); } }
-.mark i.gold { --c: var(--gold); }
-.mark.laid i.gold { animation: lay .12s ease-out both, press .24s ease-out both; }
-@keyframes press { 0% { transform: scale(1.18); } 100% { transform: scale(1); } }
-.hero h1 { font-size: clamp(56px, 10vw, 112px); letter-spacing: .04em; margin: 28px 0 6px; }
-.hero .tag { color: var(--mid); text-transform: uppercase; letter-spacing: .12em; font-size: clamp(13px, 1.8vw, 18px); }
-@media (max-width: 480px) { .hero .tag { letter-spacing: .04em; } }
-.hero .lede { font-size: 19px; margin: 22px 0 28px; max-width: 34em; }
+.mark { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8%; width: min(150px, 40vw); aspect-ratio: 1; }
+.mark i { display: block; border: 3px solid var(--line); }
+.mark.laid i { animation: lay .18s steps(2) both; }
+@keyframes lay { from { border-color: var(--line); } to { border-color: var(--ink); } }
+.mark i.lit { background: var(--line); }
+.mark.laid i.lit { animation: lay .12s steps(2) both, fill .24s steps(2) both; }
+@keyframes fill { from { background: transparent; } to { background: var(--ink); } }
+.hero h1 { font-size: clamp(48px, 10vw, 112px); margin: 28px 0 10px; }
+.hero .tag { color: var(--mid); font: clamp(16px, 1.8vw, 16px)/1.3 var(--pixel); text-transform: uppercase; }
+.hero .lede { font-size: 17px; margin: 22px 0 28px; max-width: 34em; }
 .cta { display: flex; flex-wrap: wrap; gap: 10px; }
-.btn { display: inline-block; padding: 12px 18px; background: var(--surf); color: var(--text); text-decoration: none;
-       font-weight: 600; letter-spacing: .06em; text-transform: uppercase; font-size: 15px;
-       border: 1px solid var(--raise); }
-.btn:hover { background: var(--raise); color: var(--text); }
-.btn.main { background: var(--gold); color: var(--bg); border-color: var(--gold); }
-.btn.main:hover { background: var(--accent); color: var(--bg); }
+.btn { display: inline-block; padding: 10px 14px 9px; background: var(--bg); color: var(--ink); text-decoration: none;
+       font: 16px/1 var(--pixel); text-transform: uppercase; border: 2px solid var(--ink); }
+.btn:hover, .btn.main { background: var(--ink); color: var(--bg); }
+.btn.main:hover { background: var(--bg); color: var(--ink); }
 .screens { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.screen { background: var(--surf); padding: 7px; }
-.screen img { width: 100%; height: auto; }
+.screen { border: 2px solid var(--line); padding: 5px; }
+.screen img { width: 100%; height: auto; image-rendering: pixelated; }
 @media (max-width: 860px) {
   .hero .wrap { grid-template-columns: 1fr; gap: 36px; }
   .hero { padding-top: 40px; }
 }
 
-section { padding: 64px 0; border-top: 1px solid var(--line); }
+section { padding: 64px 0; border-top: 2px dotted var(--line); }
 
 /* the demo video: square, the firmware's own sound and screens */
-.video { max-width: 720px; margin: 0 auto; background: var(--surf); padding: 7px; }
+.video { max-width: 720px; margin: 0 auto; border: 2px solid var(--line); padding: 5px; }
 .video video { display: block; width: 100%; height: auto; aspect-ratio: 1; background: var(--bg); }
 section > .wrap > header { margin-bottom: 28px; }
-section > .wrap > header p { color: var(--mid); max-width: 44em; margin-top: 10px; }
+section > .wrap > header p { color: var(--mid); max-width: 44em; margin-top: 12px; }
 
-/* features: square tiles with grout */
+/* features: tiles, each with its track's fill along the top */
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--gap); }
-.tile { background: var(--surf); padding: 20px 20px 18px; border-top: 4px solid var(--c, var(--gold)); }
+.tile { position: relative; border: 2px solid var(--line); padding: 26px 20px 18px; }
+.tile::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 8px; background: var(--c, var(--p1)); }
 .tile h3 { margin-bottom: 8px; }
-.tile p { color: var(--mid); margin: 0; font-size: 16px; }
+.tile p { color: var(--mid); margin: 0; font-size: 15px; }
 
 /* generators */
 .gens { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px var(--gap); }
 .gen figure { margin: 0; }
-.gen .screen { padding: 5px; }
+.gen .screen { padding: 4px; }
 .gen figcaption { padding: 10px 2px 0; }
-.gen figcaption b { display: block; letter-spacing: .08em; font-weight: 600; }
-.gen figcaption span { color: var(--mid); font-size: 15px; line-height: 1.4; display: block; }
+.gen figcaption b { display: block; color: var(--ink); font: 16px/1.2 var(--pixel); text-transform: uppercase; }
+.gen figcaption span { color: var(--mid); font-size: 14px; line-height: 1.45; display: block; margin-top: 4px; }
 
 /* steps */
 .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--gap); counter-reset: s; }
-.step { background: var(--surf); padding: 20px; counter-increment: s; }
-.step::before { content: counter(s); display: inline-grid; place-items: center; width: 30px; height: 30px;
-                background: var(--gold); color: var(--bg); font-weight: 600; margin-bottom: 12px; }
-.step p { color: var(--mid); margin: 6px 0 0; font-size: 16px; }
+.step { border: 2px solid var(--line); padding: 20px; counter-increment: s; }
+.step::before { content: counter(s); display: inline-grid; place-items: center; width: 32px; height: 32px;
+                background: var(--ink); color: var(--bg); font: 16px/1 var(--pixel); margin-bottom: 12px; }
+.step p { color: var(--mid); margin: 6px 0 0; font-size: 15px; }
 
-/* recipes list */
-.recipes { columns: 2 280px; column-gap: 32px; padding: 0; margin: 0; list-style: none; }
-.recipes li { break-inside: avoid; padding: 10px 0; border-bottom: 1px solid var(--line); }
-.recipes a { color: var(--text); text-decoration: none; }
-.recipes a:hover { color: var(--accent); }
-.recipes small { color: var(--dim); display: block; font-size: 14px; }
+/* recipes: a numbered list, as the device's list rows (the row under the pointer inverted) */
+.recipes { columns: 2 300px; column-gap: 32px; padding: 0; margin: 0; list-style: none; counter-reset: r; }
+.recipes li { break-inside: avoid; border-bottom: 2px dotted var(--line); counter-increment: r; }
+.recipes a { display: grid; grid-template-columns: 40px 1fr; padding: 10px 6px; color: var(--ink); text-decoration: none; }
+.recipes a::before { content: counter(r, decimal-leading-zero); font: 16px/1.5 var(--pixel); grid-row: span 2; }
+.recipes a:hover { background: var(--ink); color: var(--bg); }
+.recipes a:hover small { color: var(--bg); }
+.recipes small { color: var(--dim); display: block; font-size: 13px; }
 
-/* links: one card each, as tiles */
+/* links: one card each */
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--gap); margin-top: 28px; }
-.card { display: block; background: var(--surf); padding: 18px 20px; color: var(--text); text-decoration: none;
-        border-left: 4px solid var(--c, var(--gold)); }
-a.card:hover { background: var(--raise); color: var(--text); }
-.card b { display: block; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
-.card span { color: var(--mid); font-size: 15px; line-height: 1.4; display: block; margin-top: 4px; }
-.card a { color: var(--accent); }
-code { font-family: ui-monospace, Consolas, monospace; font-size: .88em; background: var(--bg); padding: 1px 5px;
-       overflow-wrap: anywhere; }
-.note { margin-top: 28px; padding: 16px 20px; border: 1px solid var(--line); color: var(--mid); font-size: 16px; }
-.note b { color: var(--text); }
+.card { display: block; position: relative; border: 2px solid var(--line); padding: 16px 20px 16px 26px;
+        color: var(--ink); text-decoration: none; }
+.card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: var(--c, var(--p1)); }
+a.card:hover { border-color: var(--ink); background: var(--raise); color: var(--ink); }
+.card b { display: block; color: var(--ink); font: 16px/1.3 var(--pixel); text-transform: uppercase; font-weight: 400; }
+.card span { color: var(--mid); font-size: 14px; line-height: 1.45; display: block; margin-top: 6px; }
+.card a { color: var(--ink); }
+code { font-family: inherit; font-size: .9em; background: var(--raise); padding: 1px 5px; overflow-wrap: anywhere; }
+.note { margin-top: 28px; padding: 16px 20px; border: 2px dashed var(--line); color: var(--mid); font-size: 15px; }
+.note b { color: var(--ink); }
 .about { max-width: 46em; }
 .about p { margin: 0; }
 .about .note { margin-top: 20px; }
 
-footer { border-top: 1px solid var(--line); padding: 36px 0 48px; color: var(--mid); font-size: 15px; }
-footer p { max-width: 52em; }
-@media (prefers-reduced-motion: reduce) { .mark.laid i { animation: none; background: var(--c); } html { scroll-behavior: auto; } }
+footer { border-top: 2px solid var(--ink); padding: 36px 0 48px; color: var(--dim); font-size: 14px; }
+footer a { color: var(--mid); }
+footer p { max-width: 56em; }
+@media (prefers-reduced-motion: reduce) {
+  .mark.laid i, .mark.laid i.lit { animation: none; border-color: var(--ink); }
+  .mark.laid i.lit { background: var(--ink); }
+  html { scroll-behavior: auto; }
+}
 </style>
+<script>/* the theme chosen with the LIGHT / DARK button, before the page draws */
+try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 </head>
 <body>
 
 <nav>
   <div class="wrap">
     <a class="brand" href="#top" aria-label="Tessera">
-      <svg viewBox="0 0 78 78" aria-hidden="true"><rect x="2" y="3" width="22" height="22" fill="#2c4078"/><rect x="29" y="1" width="22" height="22" fill="#3a5496"/><rect x="53" y="2" width="22" height="22" fill="#ecb848"/><rect x="3" y="28" width="22" height="22" fill="#4260aa"/><rect x="28" y="28" width="22" height="22" fill="#324a88"/><rect x="53" y="29" width="22" height="22" fill="#283c70"/><rect x="2" y="53" width="22" height="22" fill="#3e5aa0"/><rect x="29" y="55" width="22" height="22" fill="#2e447e"/><rect x="53" y="53" width="22" height="22" fill="#365092"/></svg>
+      <svg viewBox="0 0 78 78" aria-hidden="true"><rect x="4" y="5" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="3" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="53" y="2" width="22" height="22" fill="currentColor"/><rect x="5" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="30" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="31" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="4" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="57" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/></svg>
       TESSERA
     </a>
     <div class="links">
@@ -158,8 +181,9 @@ footer p { max-width: 52em; }
       <a class="opt" href="#recipes">Recipes</a>
       <a href="#install">Install</a>
       <a class="opt" href="#about">About</a>
-      <a href="https://github.com/Rastapopolix/tessera">GitHub</a>
+      <a class="opt2" href="https://github.com/Rastapopolix/tessera">GitHub</a>
     </div>
+    <button class="theme" id="theme" type="button" aria-label="Light or dark page"></button>
   </div>
 </nav>
 
@@ -168,9 +192,9 @@ footer p { max-width: 52em; }
   <div class="wrap">
     <div>
       <div class="mark" id="mark" aria-hidden="true">
-        <i style="--c:#2c4078"></i><i style="--c:#3a5496"></i><i class="gold"></i>
-        <i style="--c:#4260aa"></i><i style="--c:#324a88"></i><i style="--c:#283c70"></i>
-        <i style="--c:#3e5aa0"></i><i style="--c:#2e447e"></i><i style="--c:#365092"></i>
+        <i></i><i></i><i class="lit"></i>
+        <i></i><i></i><i></i>
+        <i></i><i></i><i></i>
       </div>
       <h1>TESSERA</h1>
       <div class="tag">Generative firmware for the M-Vave FM-1</div>
@@ -195,14 +219,14 @@ footer p { max-width: 52em; }
   <div class="wrap">
     <header>
       <div class="kicker">Hear it</div>
-      <h2>Four minutes of Tessera</h2>
-      <p>The two demo projects, STILL TIDE and KOTO GARDEN, then the pages that shape any generator, then a tour of
-        the other modes. Every sound and every screen in it is the firmware's own.</p>
+      <h2>Six minutes of Tessera</h2>
+      <p>The three demo projects, STILL TIDE, KOTO GARDEN and LOW HARBOUR, then every generator with its knobs turned,
+        then what is new in 3.0. Every sound and every screen in it is the firmware's own.</p>
     </header>
     <div class="video">
-      <video controls playsinline preload="none" poster="media/video/tessera-2.0-demo.jpg" width="1080" height="1080">
-        <source src="media/video/tessera-2.0-demo.mp4" type="video/mp4">
-        <a href="media/video/tessera-2.0-demo.mp4">Download the demo video (MP4, 7.7 MB)</a>
+      <video controls playsinline preload="none" poster="media/video/tessera-3.0-demo.jpg" width="1080" height="1080">
+        <source src="media/video/tessera-3.0-demo.mp4" type="video/mp4">
+        <a href="media/video/tessera-3.0-demo.mp4">Download the demo video (MP4, 13 MB)</a>
       </video>
     </div>
   </div>
@@ -217,14 +241,14 @@ footer p { max-width: 52em; }
         play, and every automatic layer starts off, so nothing moves until you ask it to.</p>
     </header>
     <div class="tiles">
-      <div class="tile" style="--c:var(--t1)"><h3>Thirteen generators</h3><p>Turing, Euclid, Markov, Morph, Atlas, Bounce and Fall, Awake, Poly, Quad, Constellation, Series, Chord and Answer.</p></div>
-      <div class="tile" style="--c:var(--t2)"><h3>Evolve and form</h3><p>Mutate a phrase every few bars, or build sections A, B and C into forms such as AABA. STEP EVOLVE varies the steps you wrote.</p></div>
-      <div class="tile" style="--c:var(--t3)"><h3>Tracks that talk</h3><p>Branch hits to another track's sound, combine tracks with AND, OR and XOR, follow another track's pitch, play only on certain bars.</p></div>
-      <div class="tile" style="--c:var(--t4)"><h3>Harmony</h3><p>One key for every track with Key link. A Chord track plays a progression, or your own played in on the keys, and QNT CHRD makes every other track follow it.</p></div>
-      <div class="tile" style="--c:var(--t1)"><h3>Sixteen cords</h3><p>Any source to any destination on any track, generators included. Slow organic sources, live marks on the knobs, and a MATRIX to see the patch.</p></div>
-      <div class="tile" style="--c:var(--t2)"><h3>Print</h3><p>Hold REC and what a generator just played becomes ordinary steps, ready to edit.</p></div>
-      <div class="tile" style="--c:var(--t3)"><h3>Sounds</h3><p>Six-operator FM with three engine models, the three-oscillator TRIO, and 808, 909 and SID drum kits.</p></div>
-      <div class="tile" style="--c:var(--t4)"><h3>MIDI out</h3><p>Every track and generator, each on a channel of its own, and the clock, over USB: Tessera can drive the rest of your setup.</p></div>
+      <div class="tile" style="--c:var(--p1)"><h3>Thirteen generators</h3><p>Turing, Euclid, Markov, Morph, Atlas, Bounce and Fall, Awake, Poly, Quad, Constellation, Series, Chord and Answer.</p></div>
+      <div class="tile" style="--c:var(--p2)"><h3>Evolve and form</h3><p>Mutate a phrase every few bars, or build sections A, B and C into forms such as AABA. STEP EVOLVE varies the steps you wrote.</p></div>
+      <div class="tile" style="--c:var(--p3)"><h3>Tracks that talk</h3><p>Branch hits to another track's sound, combine tracks with AND, OR and XOR, follow another track's pitch, play only on certain bars.</p></div>
+      <div class="tile" style="--c:var(--p4)"><h3>Harmony</h3><p>One key for every track with Key link. A Chord track plays a progression, or your own played in on the keys, and QNT CHRD makes every other track follow it.</p></div>
+      <div class="tile" style="--c:var(--p1)"><h3>Sixteen cords</h3><p>Any source to any destination on any track, generators included. Slow organic sources, live marks on the knobs, and a MATRIX to see the patch.</p></div>
+      <div class="tile" style="--c:var(--p2)"><h3>Print</h3><p>Hold REC and what a generator just played becomes ordinary steps, ready to edit.</p></div>
+      <div class="tile" style="--c:var(--p3)"><h3>Sounds</h3><p>Six-operator FM with three engine models, ORACLE (two oscillators, POLY MOD and a four-pole filter), the three-oscillator TRIO, and 808 and 909 drum kits.</p></div>
+      <div class="tile" style="--c:var(--p4)"><h3>MIDI out</h3><p>Every track and generator, each on a channel of its own, and the clock, over USB: Tessera can drive the rest of your setup.</p></div>
     </div>
     <div class="bar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
   </div>
@@ -293,16 +317,16 @@ footer p { max-width: 52em; }
     </div>
     <p style="margin-top:22px;color:var(--mid)">Do not unplug the FM-1 while it is writing. This is experimental firmware: use it at your own risk.</p>
     <div class="cards">
-      <a class="card" style="--c:var(--t1)" href="webapp/installer/"><b>Install @VERSION@</b><span>The web installer, in Chrome or Edge.</span></a>
-      <a class="card" style="--c:var(--t2)" href="webapp/sim/"><b>Try it in your browser</b><span>The same firmware on an on-screen FM-1, with sound.</span></a>
-      <div class="card" style="--c:var(--t3)"><b>Download .fwsc</b><span><a href="firmware/@FWSC@">Standard</a> ·
+      <a class="card" style="--c:var(--p1)" href="webapp/installer/"><b>Install @VERSION@</b><span>The web installer, in Chrome or Edge.</span></a>
+      <a class="card" style="--c:var(--p2)" href="webapp/sim/"><b>Try it in your browser</b><span>The same firmware on an on-screen FM-1, with sound.</span></a>
+      <div class="card" style="--c:var(--p3)"><b>Download .fwsc</b><span><a href="firmware/@FWSC@">Standard</a> ·
         <a href="firmware/@FWSC1@">single core</a> ·
         <a href="https://github.com/Rastapopolix/tessera/releases">all releases</a>. From a terminal:
         <code>python3 tools/fm1_install.py @FWSC@</code> (<a href="https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py">fm1_install.py</a>, needs mido and python-rtmidi).</span></div>
-      <a class="card" style="--c:var(--t4)" href="https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md"><b>Manual</b><span>Every page, knob and mode.</span></a>
-      <a class="card" style="--c:var(--t1)" href="https://github.com/Rastapopolix/tessera/blob/HEAD/docs/cheatsheet/tessera-cheatsheet.pdf"><b>Cheatsheet</b><span>The buttons and combinations on one printable page.</span></a>
-      <a class="card" style="--c:var(--t2)" href="webapp/editor/"><b>Web editor</b><span>Edit sounds and sequences from the computer.</span></a>
-      <a class="card" style="--c:var(--t3)" href="https://github.com/Rastapopolix/tessera"><b>Source</b><span>GPL-3.0, on GitHub, with the changes in every release.</span></a>
+      <a class="card" style="--c:var(--p4)" href="https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md"><b>Manual</b><span>Every page, knob and mode.</span></a>
+      <a class="card" style="--c:var(--p1)" href="https://github.com/Rastapopolix/tessera/blob/HEAD/docs/cheatsheet/tessera-cheatsheet.pdf"><b>Cheatsheet</b><span>The buttons and combinations on one printable page.</span></a>
+      <a class="card" style="--c:var(--p2)" href="webapp/editor/"><b>Web editor</b><span>Edit sounds and sequences from the computer.</span></a>
+      <a class="card" style="--c:var(--p3)" href="https://github.com/Rastapopolix/tessera"><b>Source</b><span>GPL-3.0, on GitHub, with the changes in every release.</span></a>
     </div>
     <div class="note"><b>Back to the stock firmware.</b> Open the installer and choose <i>Return to official V15</i>, or
       install M-Vave's own <code>FM-1.fwsc</code> with <code>fm1_install.py</code>. If an update is cut off, see the
@@ -339,11 +363,24 @@ footer p { max-width: 52em; }
 </footer>
 
 <script>
-/* the splash's laying order: from the middle outwards, the gold tessera last (firmware/src/splash.c SPL_ORDER) */
+/* the splash's laying order: from the middle outwards, the filled tessera last (firmware/src/splash.c SPL_ORDER) */
 (function () {
   var m = document.getElementById('mark'), tiles = m.children, order = [4, 1, 3, 5, 7, 0, 6, 8, 2];
   for (var k = 0; k < 9; k++) tiles[order[k]].style.animationDelay = (k * 70 + (k === 8 ? 90 : 0)) + 'ms';
   m.classList.add('laid');
+})();
+</script>
+<script>/* LIGHT / DARK: names the other look; the choice is stored (tessera-theme) */
+(function () {
+  var b = document.getElementById("theme"), r = document.documentElement;
+  function light() { return r.dataset.theme === "light"; }
+  function show() { b.textContent = light() ? "Dark" : "Light"; }
+  b.addEventListener("click", function () {
+    r.dataset.theme = light() ? "dark" : "light";
+    try { localStorage.setItem("tessera-theme", r.dataset.theme); } catch (e) {}
+    show();
+  });
+  show();
 })();
 </script>
 </body>

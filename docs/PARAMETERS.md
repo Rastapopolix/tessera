@@ -76,15 +76,15 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x05D | LFO TRIGGER | NOTE, FREE | NOTE | NOTE starts the LFO again with each note; FREE lets it run on. |
 | 0x05E | LFO POLARITY | BI, UNI | BI | BI moves both ways from the setting; UNI only one way. |
 | 0x05F | STEREO SPREAD | 0 to 127 | 0 | Spreads the track's voices from left to right. |
-| 0x060 | FX 1 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS | OFF | The track's insert effect 1. |
+| 0x060 | FX 1 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS, FILTER | OFF | The track's insert effect 1. |
 | 0x061 | FX 1 MIX | 0 to 127 | 0 | How much of insert effect 1 is heard. |
 | 0x062 | FX 1 RATE | 0 to 127 | 60 | Insert effect 1's speed (its time or size, by the effect). |
 | 0x063 | FX 1 CHARACTER | 0 to 127 | 64 | Insert effect 1's character (its depth, decay or the like, by the effect). |
-| 0x064 | FX 2 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS | OFF | The track's insert effect 2. |
+| 0x064 | FX 2 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS, FILTER | OFF | The track's insert effect 2. |
 | 0x065 | FX 2 MIX | 0 to 127 | 0 | How much of insert effect 2 is heard. |
 | 0x066 | FX 2 RATE | 0 to 127 | 60 | Insert effect 2's speed (its time or size, by the effect). |
 | 0x067 | FX 2 CHARACTER | 0 to 127 | 64 | Insert effect 2's character (its depth, decay or the like, by the effect). |
-| 0x068 | FX 3 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS | OFF | The track's insert effect 3. |
+| 0x068 | FX 3 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS, FILTER | OFF | The track's insert effect 3. |
 | 0x069 | FX 3 MIX | 0 to 127 | 0 | How much of insert effect 3 is heard. |
 | 0x06A | FX 3 RATE | 0 to 127 | 60 | Insert effect 3's speed (its time or size, by the effect). |
 | 0x06B | FX 3 CHARACTER | 0 to 127 | 64 | Insert effect 3's character (its depth, decay or the like, by the effect). |
@@ -119,15 +119,15 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x115 | A4 TUNING | 400 to 480 Hz | 440 | The pitch of A4 for the whole device, in hertz. (The device's, not the project's.) |
 | 0x116 | CLEAR SEQUENCE | (a button) |  | Empties the selected track's pattern (it asks first). |
 | 0x117 | INIT SOUND | (a button) |  | Resets the selected track's sound to its engine's starting point. |
-| 0x11B | SEND FX 1 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS | OFF | Send effect 1, shared by every track. |
+| 0x11B | SEND FX 1 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS, FILTER | OFF | Send effect 1, shared by every track. |
 | 0x11C | SEND FX 1 MIX | 0 to 127 | 127 | How much of send effect 1 is heard. |
 | 0x11D | SEND FX 1 RATE | 0 to 127 | 60 | Send effect 1's speed (its time or size, by the effect). |
 | 0x11E | SEND FX 1 CHARACTER | 0 to 127 | 64 | Send effect 1's character (its depth, decay or the like, by the effect). |
-| 0x11F | SEND FX 2 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS | OFF | Send effect 2, shared by every track. |
+| 0x11F | SEND FX 2 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS, FILTER | OFF | Send effect 2, shared by every track. |
 | 0x120 | SEND FX 2 MIX | 0 to 127 | 127 | How much of send effect 2 is heard. |
 | 0x121 | SEND FX 2 RATE | 0 to 127 | 60 | Send effect 2's speed (its time or size, by the effect). |
 | 0x122 | SEND FX 2 CHARACTER | 0 to 127 | 64 | Send effect 2's character (its depth, decay or the like, by the effect). |
-| 0x123 | SEND FX 3 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS | OFF | Send effect 3, shared by every track. |
+| 0x123 | SEND FX 3 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS, FILTER | OFF | Send effect 3, shared by every track. |
 | 0x124 | SEND FX 3 MIX | 0 to 127 | 127 | How much of send effect 3 is heard. |
 | 0x125 | SEND FX 3 RATE | 0 to 127 | 60 | Send effect 3's speed (its time or size, by the effect). |
 | 0x126 | SEND FX 3 CHARACTER | 0 to 127 | 64 | Send effect 3's character (its depth, decay or the like, by the effect). |
@@ -211,7 +211,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x248 | CONSTELLATION FILL | OFF, ARP | OFF | What the steps between stars play: OFF a rest, ARP the last four stars again, low to high and softer. OCT+ held on GEN, KNOB 3. |
 | 0x249 | CHORD PROG | POP, 50S, 2-5-1, CIRCLE, TWO, DRONE, WALK, USER | POP | The progression, on the degrees of the track's scale: POP I V vi IV, 50S I vi IV V, 2-5-1 ii V I I, CIRCLE the scale's fifths down, TWO I IV, DRONE I alone; WALK four chords of the track's SEED (ROLL another, EVOLVE changes one); USER up to eight of your own: hold OCT+ on GEN and play their roots on the keys, one key a chord (rounded down to the scale; letting OCT+ go ends it). SCL CHORD's CHRD and VOIC shape the chords (CHRD OFF: triads); hold OCT+ on GEN for OCT, CHRD and VOIC. |
 | 0x24A | CHORD BARS | 1/2, 1, 2, 4 | 1 | How long each chord lasts: half a bar, 1, 2 or 4 bars. |
-| 0x24B | CHORD HIT | HOLD, BEAT, STEP | HOLD | How the chord plays: HOLD once, held to the next chord; BEAT struck again every beat; STEP every step, for the step's GATE. |
+| 0x24B | CHORD HIT | HOLD, BEAT, STEP, OFFBEAT | HOLD | How the chord plays: HOLD once, held to the next chord; BEAT struck again every beat; STEP every step, for the step's GATE; OFFBEAT a short stab on the off-beats, the "and" halfway between the beats (reggae's skank), for the step's GATE: at 1/8 an eighth at most, at 1/16 a sixteenth, and SWING moves it with the step (at 1/8 the "and" is the swung step). |
 | 0x24C | CHORD OCT | -2 to 2 | 0 | The chords' register, -2 to +2 octaves from their home around C3. OCT+ held on GEN, KNOB 1; KNOB 2 and 3 there are SCL CHORD's CHRD and VOIC. |
 | 0x24D | ATLAS KICK | 0 to 100 % | 100 | How much of DENSITY the kick gets: 100 all of it, 50 half, 0 none (the kick silent). OCT+ held on GEN, KNOB 1. |
 | 0x24E | ATLAS SNARE | 0 to 100 % | 100 | How much of DENSITY the snare gets: 100 all of it, 0 none. OCT+ held on GEN, KNOB 2. |
@@ -225,7 +225,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x256 | TIMING RATCH | x1, x2, x3, x4, x5, x6, x7, x8 | x1 | Plays each step's notes 1 to 8 times in equal parts of the step, a ratchet; x1 plays them once, as written. Each hit gets its share of the step's GATE. Notes NOTE LENGTH holds (FIXED, HIT) and BRANCHed ones play once. |
 | 0x257 | TIMING CHANCE | 0 to 100 % | 100 | How often a step ratchets: 100 every step, 0 none. The toss replays with the track's SEED. |
 | 0x258 | CHORD BREATH | 0 to 100 % | 0 | With HIT HOLD, the chord breathes: each voice is struck again, softer, on a slow cycle of its own (11 to 19 s), and the same chord again is tied over instead of struck (DRONE: one long chord). BREATH is the chance a voice above the lowest sits a cycle out, one at a time; 0 is off. OCT+ held on GEN, KNOB 4 (USER: its LEN there). |
-| 0x259 | ENERGY ARC | 0 to 100 % | 0 | The project's slow tide, the same for every track: over 3 to 6 minutes it swings from the tracks as set to sparse and back. At the sparse end the generator tracks leave out up to 70 % more of their hits and play up to 16 softer; ARC is how far it swings, 0 off. It is the cord source ENERGY too (to a filter, a send). |
+| 0x259 | ENERGY ARC | 0 to 100 % | 0 | The project's slow tide, the same for every track: over 3 to 6 minutes it swings from the tracks as set to sparse and back. At the sparse end the generator tracks leave out up to 70 % more of their hits and play up to 16 softer, at the full end they take back their DROP and play up to 12 louder; ARC is how far it swings, round LEVEL, 0 off. It is the cord source ENERGY too (to a filter, a send). |
 | 0x25A | ENERGY RESTS | 0 to 100 % | 0 | How often the music rests: 8 to 18 s with the generator tracks silent (a CHORD track's held chord and its BREATH go on), at 100 about every 4 minutes, near 0 about every 20, sooner while ARC's tide is sparse. 0 off. |
 | 0x25B | ANSWER VARY | 0 to 100 % | 30 | How much each answer changes the phrase you played: a note moved a degree or two, an octave, left out or swapped with the next. Each answer changes it a little more. 0 answers it as played. |
 | 0x25C | ANSWER ECHO | 0 to 100 % | 20 | The chance a note it plays comes back once more, at half its velocity, 3 to 8 steps later, one in four an octave up. 0 off. |
@@ -237,9 +237,16 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x262 | TIMING SHAPE | EVEN, ACCEL, DECEL | EVEN | Where a ratchet's hits fall in their step: EVEN in equal parts, ACCEL closer and closer (a roll that speeds up), DECEL further and further apart (a bounce). The track's, for its RATCH and for every step's Ratchet on a STEP track. |
 | 0x263 | MIDI OUT CHANNEL | AUTO, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, OFF | AUTO | The MIDI channel this track's notes go out on over USB, so each track can play its own instrument. AUTO follows SYSTEM's ROUT (CH1-4: tracks on 1 to 4), a drum track the DRUM channel; OFF sends none of its notes. Saved with the project. Which notes go out at all is the menu's MIDI OUT: KEYS, ALL or OFF. GLO > MIDI OUT, a knob for each track. |
 | 0x264 | KEY LINK | OWN, LINKED | LINKED | LINKED: one key for the whole project. Changing ROOT on any melodic track sets it on the others too, as the scale always is; drum tracks keep theirs. OWN: each track its own ROOT. Turning it on gives every track the selected track's key. SCL's Key link row; on in a new project, saved with it. |
-| 0x265 | SOURCE | OFF, T1, T2, T3, T4 | OFF | A STEP pattern for TURING or EUCLID to play from: T1 to T4 is that track's pattern playing now (this track's own too), which stays as written. TURING loops its first LEN steps and PROB changes them a step at a time; EUCLID plays its notes in order on its hits. OFF, or a pattern without notes: the generator's own. OCT+ held on GEN, KNOB 1. |
-| 0x266 | KEEP | FREE, RHYTHM, PITCH | FREE | With a SOURCE, what stays as written. FREE: TURING may change a step's pitch or its hit. RHYTHM: only the pitches change (EUCLID: the source's own rhythm, on EUCLID's pitches). PITCH: only the hits come and go. OCT+ held on GEN, KNOB 2. |
+| 0x265 | SOURCE | OFF, T1, T2, T3, T4 | OFF | A STEP pattern for TURING, EUCLID, MARKOV or MORPH to play from: T1 to T4 is that track's pattern playing now (this track's own too), which stays as written. TURING loops its first LEN steps and PROB changes them a step at a time; EUCLID plays its notes in order on its hits; MARKOV learns what follows what in it (LEAP: jumps anywhere); MORPH blends it (A) with a variation of it (B). OFF, or a pattern without notes: the generator's own. OCT+ held on GEN, KNOB 1. |
+| 0x266 | KEEP | FREE, RHYTHM, PITCH | FREE | With a SOURCE, what stays as written. FREE: a step's pitch or its hit may change. RHYTHM: only the pitches change (EUCLID: the source's own rhythm, on EUCLID's pitches). PITCH: only the hits come and go (MARKOV: the notes in written order). OCT+ held on GEN, KNOB 2. |
 | 0x267 | TIMING HUMAN | 0 to 60 ms | 0 | Plays each step a little late, as a player behind the beat: up to this many ms, a new amount each step, never early and never more than a quarter of the step. The same each time the piece plays. 0 on the grid. STEP tracks too (with a step's NUDGE). TWEAK's HUMAN varies velocity and length. |
+| 0x268 | ACCUM LIMIT | 1 to 14 | 7 | How far a step's Accumulate takes its notes, in scale degrees from the note as written: 7 is an octave of a 7-note scale. The pattern's sheet (OCT+ held on NOTES). |
+| 0x269 | ACCUM MODE | WRAP, PING, CLAMP | WRAP | What a step's Accumulate does at LIMIT. WRAP: back to the note as written, and on again. PING: turns round and comes back. CLAMP: stays there. PLAY and a new pattern start it again. |
+| 0x26A | GRAVITY | 0 to 100 % | 0 | The pull home. With EVERY on, this share of EVOLVE's rounds moves the generator back toward its settings as you last set them, instead of changing it: it drifts, then comes home. With a SOURCE, this share of the steps plays the source as written at its place. 0: none. OCT+ held on EVOLVE, KNOB 1, or on GEN, KNOB 3. |
+| 0x26B | EVOLVE HOW | DRIFT, ADORN, SERIAL | DRIFT | What STEP EVOLVE's rounds do to the steps. DRIFT: moves by scale degrees, octave jumps, drops, swaps and ghost notes. ADORN, ornaments that only add: ratchets, octave jumps, neighbour notes, passing notes in the rests. SERIAL: the whole phrase at once: backwards, upside down, rotated or half of it at half speed; AMOUNT is the chance of one a round, LOCK of it staying. OCT+ held on EVOLVE, KNOB 1. |
+| 0x26C | ENERGY LEVEL | -100 to 100 | 0 | The project's energy, played by hand: ARC's tide swings round it. Up, the generator tracks take back their DROP and play up to 12 louder; down, they leave out hits and play softer. EVOLVE changes less when low, more when high. 0: as set. |
+| 0x26D | ENERGY DEPTH | 0 to 100 % | 100 | How much ENERGY (its LEVEL, ARC's tide, RESTS) moves this track. 100 all of it, 0 an anchor that plays as set whatever the energy. OCT+ held on ENERGY, KNOB 1. |
+| 0x26E | FORM DEVELOP | 0 to 100 % | 0 | How far a section varies each time FORM comes back to it: it stays recognisable but is never quite the same. The section itself is kept, so the next return starts from it again. GRAVITY is the chance a return stays exact. 0: every return exact. OCT+ held on FORM, KNOB 1. |
 
 ## Mods
 
@@ -337,3 +344,24 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | AT TOMS | the generator's step | Atlas' TOMS: how many of the near misses play the tom |
 | AN VARY | the generator's step | Answer's VARY: how much each answer changes the phrase |
 | H TIME | the generator's step | TIMING's HUMAN: how late a step may play |
+| FX1 MIX | the audio block | the track's FX 1: how much of the effect is heard |
+| FX1 RTE | the audio block | the track's FX 1 RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
+| FX1 CHR | the audio block | the track's FX 1 fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
+| FX2 MIX | the audio block | the track's FX 2: how much of the effect is heard |
+| FX2 RTE | the audio block | the track's FX 2 RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
+| FX2 CHR | the audio block | the track's FX 2 fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
+| FX3 MIX | the audio block | the track's FX 3: how much of the effect is heard |
+| FX3 RTE | the audio block | the track's FX 3 RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
+| FX3 CHR | the audio block | the track's FX 3 fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
+| SEND 2 | the audio block | how much of the track goes to SEND FX 2 (FX MODE SPLIT) |
+| SEND 3 | the audio block | how much of the track goes to SEND FX 3 (FX MODE SPLIT) |
+| SF1 MIX | the send effects' block (every track's) | SEND FX 1's MIX, for every track (the project's) |
+| SF1 RTE | the send effects' block (every track's) | SEND FX 1's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
+| SF1 CHR | the send effects' block (every track's) | SEND FX 1's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
+| SF2 MIX | the send effects' block (every track's) | SEND FX 2's MIX, for every track (the project's) |
+| SF2 RTE | the send effects' block (every track's) | SEND FX 2's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
+| SF2 CHR | the send effects' block (every track's) | SEND FX 2's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
+| SF3 MIX | the send effects' block (every track's) | SEND FX 3's MIX, for every track (the project's) |
+| SF3 RTE | the send effects' block (every track's) | SEND FX 3's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
+| SF3 CHR | the send effects' block (every track's) | SEND FX 3's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
+| RETURN | the send effects' block (every track's) | the send effects' RETURN: how loud they come back, for every track |

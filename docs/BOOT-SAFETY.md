@@ -19,6 +19,14 @@ application. OCT− and OCT+ together remain the application's calibration gestu
 One long flash means the loader was unavailable or the handover failed, and the
 stub requested ROM UBOOT instead. Follow [USB recovery](../BUILDING.md#recover-a-black-screen-fm-1).
 
+The installer (web and `tools/fm1_install.py`) resumes only in the update mode the package
+belongs to. Tessera's update mode shows up as **Melodee Update** (`ota-FM-1_900`); an
+interrupted **Return to official V15** waits in M-VAVE's official update mode
+(`ota-FM-1_015`). A Tessera package is never sent to the official loader (it would write
+the package's boot data), and the official file is never sent to Tessera's (it would
+write only V15's application). If the FM-1 waits in the other one, the installer sends
+nothing and says which install to finish first.
+
 ## Flash layout and commit
 
 | Flash range | Purpose |

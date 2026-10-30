@@ -101,6 +101,8 @@ static struct {
     uint8_t drum_sound;
     uint8_t page;                /* index into PAGES */
     uint8_t fam_last[FAM_COUNT]; /* last page used per family */
+    uint8_t via;                 /* the family whose button / SELECT reached this page (ENV, LFO, EDIT), 0: another way;
+                                  * an engine's own ENV / LFO pages are EDIT's too (page_scroll) */
     uint8_t bank;                /* SEQ: 16-step bank (follows the cursor) */
     uint8_t pat_key, pat_copy, pat_track;          /* SEQ + white-key bank gesture */
     uint8_t ptc_on, ptc_trk, ptc_src, ptc_dst;     /* PATTERNS' Copy to: track ptc_trk's pattern src to dst
@@ -214,10 +216,12 @@ static const char *const *native_titles(uint32_t fam)
     static const char *const FM_ENV[] = {"EG RATE", "EG LVL", "PITCH EG", "PITCH LV", 0};
     static const char *const FM_LFO[] = {"FM LFO", 0};
     uint32_t e = TSEL->eng_req;
+    static const char *const OR_ENV[] = {"FILT ENV", "AMP ENV", 0};
+    static const char *const OR_LFO[] = {"LFO MOD", "LFO ROUTE", 0};
     if (fam == FAM_ENV)
-        return e == ENGI_FM6 ? FM_ENV : 0;
+        return e == ENGI_FM6 ? FM_ENV : MELODEE_ORACLE && e == ENGI_ORACLE ? OR_ENV : 0;
     if (fam == FAM_LFO)
-        return e == ENGI_FM6 ? FM_LFO : 0;
+        return e == ENGI_FM6 ? FM_LFO : MELODEE_ORACLE && e == ENGI_ORACLE ? OR_LFO : 0;
     return 0;
 }
 static int native_page(uint32_t i, uint32_t fam)       /* page i: one of fam's native pages (a prefix of its title) */
@@ -314,6 +318,8 @@ static int page_visible(uint32_t i)
         return drum_track(TSEL);
     if (PAGES[i].scope == SC_FM6 || PAGES[i].scope == SC_FMOP)
         return TSEL->eng_req == ENGI_FM6;              /* FM6's patch, operators and functions */
+    if (PAGES[i].scope == SC_ORACLE)
+        return MELODEE_ORACLE && TSEL->eng_req == ENGI_ORACLE;   /* ORACLE's patch */
 #if MELODEE_SLICE
     if (PAGES[i].graph == GR_SLICES)
         return SMP_USER_SLOTS && ENGINES[TSEL->eng_req % NENGINES] == &ENG_SLICE;
@@ -400,6 +406,7 @@ static void page_entered(void)
     seq_midi_reset();
     ui.hot_t = 0;                                /* clear the previous page's emphasis */
     ui.act = 0;
+    ui.via = 0;
     if (song.sel < TESSERA_TRACKS) tessera_awake_select(song.sel, 16u);   /* (AWAKE's step picked: let go) */
     ui.proj_new = 0;
     ui.ptc_on = 0;
@@ -539,20 +546,37 @@ static void note_name(char *b, uint32_t n)
     fmt_int(b + str_len(b), (int32_t)(n / 12u) - 1);
 }
 
-/* SELECT: the open section's pages, both ways (wraps; pages the track does not show skipped) */
+static uint32_t fam_pages(uint32_t fam, uint8_t *pg);
+/* SELECT: the open section's pages, both ways (wraps; pages the track does not show skipped). On an engine with its
+ * own ENV / LFO (FM6): from ENV or LFO the pages that button visits (fam_pages), so ENV's EG pages do not run on into
+ * EDIT's; from EDIT all of EDIT's, its EG pages among them */
 static void page_scroll(int32_t dir)
 {
-    uint32_t fam = fam_grp(cur_page()->fam), n, i = ui.page;
-    for (n = 0; n < NPAGES; n++) {
-        i = (i + (dir > 0 ? 1u : NPAGES - 1u)) % NPAGES;
-        if (in_fam(i, fam) && page_visible(i))
-            break;
+    uint32_t fam = fam_grp(cur_page()->fam), n, i = ui.page, nf = 0;
+    if ((ui.via == FAM_ENV || ui.via == FAM_LFO) && native_page(ui.page, ui.via)) nf = ui.via;
+    else if ((fam == FAM_ENV || fam == FAM_LFO) && native_titles(fam)) nf = fam;
+    if (nf) {
+        uint8_t pg[NPAGES];
+        uint32_t k;
+        n = fam_pages(nf, pg);
+        for (k = 0; k < n && pg[k] != ui.page; k++) {}
+        if (!n)
+            return;
+        i = k < n ? pg[(k + (dir > 0 ? 1u : n - 1u)) % n] : pg[0];
+        fam = nf;
+    } else {
+        for (n = 0; n < NPAGES; n++) {
+            i = (i + (dir > 0 ? 1u : NPAGES - 1u)) % NPAGES;
+            if (in_fam(i, fam) && page_visible(i))
+                break;
+        }
     }
     if (i == ui.page)
         return;
     ui.page = (uint8_t)i;
     ui.fam_last[fam] = ui.page;
     page_entered();
+    ui.via = (uint8_t)fam;
 }
 
 /* the pages a family's button visits, in order: on an engine with its own (native_titles) ENV its pages only, LFO
@@ -607,6 +631,7 @@ static void open_family(uint32_t fam)
     ui.fam_last[fam] = ui.page;
     ui.home = 0;
     page_entered();
+    ui.via = (uint8_t)fam;
     if (fam == FAM_SAVE && cur_page()->graph == GR_USER)
         slot_save_sheet();                       /* SAVE: USER; OCT+ then its slot's sheet on Save here (ui_slots.c) */
 }
@@ -664,6 +689,7 @@ typedef struct {
     uint8_t eng, preset, user, user_native, patn;
     uint8_t gmode;               /* a print (capture_take on a generator track): its SEQ MODE + 1; 0 = not one */
     uint8_t fm6[FP_SIZE + 1u];   /* the track's complete patch */
+    uint8_t oracle[OR_N];        /* .. and its ORACLE patch */
     drum_patch_t drum;
     int16_t p[P_COUNT];
     step_snapshot_t step[NSTEP];
@@ -709,6 +735,7 @@ static uint32_t track_sig(const track_t *t)      /* the sound (an FM6 track's pa
     uint8_t id[4] = {t->eng_req, t->preset, t->user, t->user_native};
     uint32_t h = fnv(fnv(steps_sig(t), t->p, sizeof t->p), id, 3), k = trk_index(t);
     h = fnv(h, fm6_patch[k], sizeof fm6_patch[k]); /* (a patch the editor sent between two loads) */
+    h = fnv(h, or_patch_of(t), OR_N);
     h = fnv(h,&drum_patch[k],sizeof(drum_patch_t));
     for (uint32_t j = 0; j < motion.count; j++)
         if ((motion.event[j].place >> 6) == k) h = fnv(h, &motion.event[j], sizeof motion.event[j]);
@@ -720,13 +747,14 @@ static int scale_shared(uint32_t id);
 static struct {
     uint8_t active, track, count, native;
     int16_t *ptr[P_COUNT+G_COUNT], value[P_COUNT+G_COUNT];
-    uint8_t fm[FP_SIZE+1u], fn[FM6_NFN], on;
+    uint8_t fm[FP_SIZE+1u], fn[FM6_NFN], on, oracle[OR_N];
 } momentary;
 static void momentary_restore(void)
 {
     if(!momentary.active)return;
     uint32_t tr=momentary.track;fm1_irq_off();
     if(momentary.native==1){fm6_put_patch(tr,momentary.fm,0);memcpy(fm6_fn[tr],momentary.fn,FM6_NFN);fm6_on[tr]=momentary.on;}
+    if(momentary.native==2)memcpy(or_patch[tr],momentary.oracle,OR_N);
     for(uint32_t i=0;i<momentary.count;i++)*momentary.ptr[i]=momentary.value[i];
     momentary.active=momentary.count=momentary.native=0;fm1_irq_on();ui.force=1;
 }
@@ -737,7 +765,7 @@ static void momentary_take(uint32_t slot)
     if(!(fm1_in.buttons&(1u<<panel.btn[B_LFO])) || pg->graph==GR_FMSTORE)return;
     d=page_desc(pg,slot,&vp);
     if(!d || !vp || d->max==d->min)return;
-    uint32_t native=pg->scope==SC_FM6 || pg->scope==SC_FMOP?1:0;
+    uint32_t native=pg->scope==SC_FM6 || pg->scope==SC_FMOP?1:pg->scope==SC_ORACLE?2:0;
     if(!native && pg->scope!=SC_TRACK && pg->scope!=SC_ENGINE &&
        !(pg->scope==SC_GLOBAL && (pg->id[slot]<=G_SWING)))return;
     if(!native && pg->scope==SC_TRACK && scale_shared((uint32_t)(vp-TSEL->p)))return;
@@ -745,6 +773,7 @@ static void momentary_take(uint32_t slot)
     if(native && !momentary.native){
         uint32_t tr=song.sel;fm1_irq_off();momentary.native=(uint8_t)native;
         memcpy(momentary.fm,fm6_patch[tr],sizeof momentary.fm);memcpy(momentary.fn,fm6_fn[tr],FM6_NFN);momentary.on=fm6_on[tr];
+        memcpy(momentary.oracle,or_patch_of(&trk[tr]),OR_N);
         fm1_irq_on();
     }
     if(!native){uint32_t i;for(i=0;i<momentary.count && momentary.ptr[i]!=vp;i++);
@@ -790,6 +819,7 @@ static void load_begin(track_t *t, uint32_t what)
     memcpy(u->p, t->p, sizeof u->p);
     step_snapshot_save(u->step, t->step);
     memcpy(u->fm6, fm6_patch[i], FP_SIZE);
+    memcpy(u->oracle, or_patch_of(t), OR_N);
     u->drum=drum_patch[i];
     u->pat = pat_sig[i];
     u->patn = pat_last[i];
@@ -896,6 +926,7 @@ static void undo_step(int redo)
         fm6_set_patch(tr, u->fm6);
         memcpy(u->fm6, v, FP_SIZE);
         {drum_patch_t dp=drum_patch[tr];drum_patch[tr]=u->drum;u->drum=dp;}
+        {uint8_t o[OR_N];memcpy(o,or_patch_of(t),OR_N);fm1_irq_off();memcpy(or_patch[tr],u->oracle,OR_N);fm1_irq_on();memcpy(u->oracle,o,OR_N);}
     }
     u->keep = 0;                                /* the next load copies the track as it is now */
     undo_top = (uint8_t)(redo ? undo_top + 1u : undo_top - 1u);
@@ -987,6 +1018,7 @@ static void apply_preset_to(track_t *t, uint32_t pi)
     t->p[P_ED_FLT] = pr->fenv;
     t->p[P_VOICE] = pr->mono ? V_LEGATO : V_POLY;   /* mono presets keep the legato feel */
     fm6_track_loaded(t);                              /* FM6: the preset's patch */
+    or_track_loaded(t);                               /* ORACLE: the preset's patch */
     load_end(t);
 }
 

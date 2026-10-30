@@ -67,8 +67,9 @@ class FakeFM1:
     """a MIDI backend with one FM-1 on it"""
 
     def __init__(self, image, identity="FM-1_015", name="FM-1", unplug_after=None, after_write="FM-1_900",
-                 stall_after=None, bad_addr=None):
+                 stall_after=None, bad_addr=None, loader=I.TESSERA_LOADER):
         self.image, self.unplug_after, self.after_write = image, unplug_after, after_write
+        self.loader = loader        # the loader step 1 starts (the package's own)
         self.stall_after, self.bad_addr = stall_after, bad_addr
         self.served = self.bad = self.upgrades = 0
         self.sent, self.links, self.gen, self.lock = [], [], 0, threading.Lock()
@@ -123,7 +124,7 @@ class FakeFM1:
             if self.stall_after and self.served >= self.stall_after:
                 return
             if addr == I.FINISH_CHECK:
-                threading.Timer(0.05, self.boot, ("ota-FM-1_900", "Melodee Update")).start()
+                threading.Timer(0.05, self.boot, (self.loader, "Melodee Update")).start()
             elif addr == I.FINISH_WRITE:
                 threading.Timer(0.05, self.boot, (self.after_write, "Melodee")).start()
             else:
@@ -254,10 +255,32 @@ def errors():
     dev = FakeFM1(I.logical_image(package(marker=False)))
     rc, out, err = cli([plain, "--yes", "--force"], dev)
     ok(rc == 0 and dev.bad == 0, "... installs with --force")
+    dev = FakeFM1(image, identity=I.TESSERA_LOADER, name="Melodee Update")
+    rc, out, err = cli([plain, "--yes", "--force"], dev)
+    ok(rc == 6 and dev.upgrades == 0 and "nothing was sent" in err, "... but never resumes in an update loader")
     rc, out, err = cli([pkgfile("short.fwsc", b"\0" * 100), "--yes"], FakeFM1(image))
     ok(rc == 2 and "too short" in err, "not a package -> exit 2")
     rc, out, err = cli([str(TMP / "missing.fwsc"), "--yes"], FakeFM1(image))
     ok(rc == 2, "missing file -> exit 2")
+
+
+def loaders():
+    """each package goes only to its own update loader: the official one would write a Tessera
+    package's head over the boot data"""
+    raw = package()
+    image = I.logical_image(raw)
+    p = pkgfile("ok.fwsc", raw)
+    dev = FakeFM1(image, identity=I.STOCK_LOADER, name="FM-1")
+    rc, out, err = cli([p, "--yes"], dev)
+    ok(rc == 6 and dev.upgrades == 0 and "nothing was sent" in err and "official FM-1.fwsc" in err and "device:" not in out,
+       "Tessera package, FM-1 in the official loader -> exit 6 before asking, nothing sent")
+    dev = FakeFM1(image, identity="ota-FM-1_123", name="Melodee Update")
+    rc, out, err = cli([p, "--yes"], dev)
+    ok(rc == 6 and dev.upgrades == 0 and "report" in err, "an unknown loader -> exit 6, nothing sent")
+    dev = FakeFM1(image, loader=I.STOCK_LOADER)
+    rc, out, err = cli([p, "--yes"], dev)
+    ok(rc == 6 and dev.upgrades == 1 and dev.served == 4 and dev.identity == I.STOCK_LOADER,
+       "step 1 starts the official loader -> exit 6, nothing sent to it")
 
 
 def against_js():
@@ -282,10 +305,19 @@ def official():
         print("official V15 restore: skipped (needs FM-1_v15.fwsc in the repo root)")
         return
     raw = v15.read_bytes()
-    dev = FakeFM1(I.logical_image(raw), identity="FM-1_900", name="Melodee", after_write="FM-1_015")
+    dev = FakeFM1(I.logical_image(raw), identity="FM-1_900", name="Melodee", after_write="FM-1_015", loader=I.STOCK_LOADER)
     rc, out, err = cli([str(v15), "--yes"], dev)
     ok(rc == 0 and dev.bad == 0 and "FM-1_015" in out and dev.identity == "FM-1_015",
        "official V15 (FM-1.fwsc) from Melodee: installed without --force, back as FM-1_015")
+    dev = FakeFM1(I.logical_image(raw), identity=I.STOCK_LOADER, name="FM-1", after_write="FM-1_015")
+    rc, out, err = cli([str(v15), "--yes"], dev)
+    ok(rc == 0 and dev.upgrades == 1 and dev.identity == "FM-1_015", "official V15 resumes in the official loader")
+    dev = FakeFM1(I.logical_image(raw), identity=I.TESSERA_LOADER, name="Melodee Update", after_write="FM-1_015")
+    rc, out, err = cli([str(v15), "--yes"], dev)
+    ok(rc == 6 and dev.upgrades == 0 and "Tessera package first" in err, "official V15 never resumes in Tessera's loader")
+    dev = FakeFM1(I.logical_image(raw), identity="FM-1_900", name="Melodee", after_write="FM-1_015")
+    rc, out, err = cli([str(v15), "--yes"], dev)
+    ok(rc == 6 and dev.served == 4 and dev.identity == I.TESSERA_LOADER, "official V15 is not written when step 1 starts Tessera's loader")
     bad = bytearray(raw)
     bad[-1] ^= 1
     dev = FakeFM1(I.logical_image(bytes(bad)), identity="FM-1_900", name="Melodee")
@@ -296,6 +328,7 @@ def official():
 wire()
 installs()
 errors()
+loaders()
 against_js()
 official()
 shutil.rmtree(TMP, ignore_errors=True)

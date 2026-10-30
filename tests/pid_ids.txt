@@ -68,15 +68,15 @@
 0x05d LFO TRIGGER              track 0..1 def 0
 0x05e LFO POLARITY             track 0..1 def 0
 0x05f STEREO SPREAD            track 0..127 def 0
-0x060 FX 1 TYPE                track 0..9 def 0
+0x060 FX 1 TYPE                track 0..10 def 0
 0x061 FX 1 MIX                 track 0..127 def 0
 0x062 FX 1 RATE                track 0..127 def 60
 0x063 FX 1 CHARACTER           track 0..127 def 64
-0x064 FX 2 TYPE                track 0..9 def 0
+0x064 FX 2 TYPE                track 0..10 def 0
 0x065 FX 2 MIX                 track 0..127 def 0
 0x066 FX 2 RATE                track 0..127 def 60
 0x067 FX 2 CHARACTER           track 0..127 def 64
-0x068 FX 3 TYPE                track 0..9 def 0
+0x068 FX 3 TYPE                track 0..10 def 0
 0x069 FX 3 MIX                 track 0..127 def 0
 0x06a FX 3 RATE                track 0..127 def 60
 0x06b FX 3 CHARACTER           track 0..127 def 64
@@ -106,15 +106,15 @@
 0x115 A4 TUNING                global device 400..480 def 440
 0x116 CLEAR SEQUENCE           global action 0..1 def 0
 0x117 INIT SOUND               global action 0..1 def 0
-0x11b SEND FX 1 TYPE           global 0..9 def 0
+0x11b SEND FX 1 TYPE           global 0..10 def 0
 0x11c SEND FX 1 MIX            global 0..127 def 127
 0x11d SEND FX 1 RATE           global 0..127 def 60
 0x11e SEND FX 1 CHARACTER      global 0..127 def 64
-0x11f SEND FX 2 TYPE           global 0..9 def 0
+0x11f SEND FX 2 TYPE           global 0..10 def 0
 0x120 SEND FX 2 MIX            global 0..127 def 127
 0x121 SEND FX 2 RATE           global 0..127 def 60
 0x122 SEND FX 2 CHARACTER      global 0..127 def 64
-0x123 SEND FX 3 TYPE           global 0..9 def 0
+0x123 SEND FX 3 TYPE           global 0..10 def 0
 0x124 SEND FX 3 MIX            global 0..127 def 127
 0x125 SEND FX 3 RATE           global 0..127 def 60
 0x126 SEND FX 3 CHARACTER      global 0..127 def 64
@@ -193,7 +193,7 @@
 0x248 CONSTELLATION FILL       track 0..1 def 0
 0x249 CHORD PROG               track 0..7 def 0
 0x24a CHORD BARS               track 0..3 def 1
-0x24b CHORD HIT                track 0..2 def 0
+0x24b CHORD HIT                track 0..3 def 0
 0x24c CHORD OCT                track -2..2 def 0
 0x24d ATLAS KICK               track 0..100 def 100
 0x24e ATLAS SNARE              track 0..100 def 100
@@ -222,3 +222,10 @@
 0x265 SOURCE                   track 0..4 def 0
 0x266 KEEP                     track 0..2 def 0
 0x267 TIMING HUMAN             track 0..60 def 0
+0x268 ACCUM LIMIT              track 1..14 def 7
+0x269 ACCUM MODE               track 0..2 def 0
+0x26a GRAVITY                  track 0..100 def 0
+0x26b EVOLVE HOW               track 0..2 def 0
+0x26c ENERGY LEVEL             global -100..100 def 0
+0x26d ENERGY DEPTH             track 0..100 def 100
+0x26e FORM DEVELOP             track 0..100 def 0

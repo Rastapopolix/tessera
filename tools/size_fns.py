@@ -22,7 +22,7 @@ SIZE_FILES = ["ui.c", "gfx.c", "favorites.c", "icons.c", "ui_graph.c", "ui_draw.
               "editor.c", "project_tsp.c", "editor_fm6.c", "editor_preferences.c", "editor_backup.c", "console.c",
               # main-loop only too: the boot and the main loop (main.c, not its ISR), parameters and their text, the
               # browser, the screen saver, calibration, the update entry
-              "main.c", "params.c", "browse.c", "screen.c", "panel.c", "ota.c", "favorites.c"]
+              "main.c", "params.c", "oracle_pages.c", "browse.c", "screen.c", "panel.c", "ota.c", "favorites.c"]
 DEF = re.compile(r"^(?:static|void|int|uint\w*|int\w*|const)\b[^;=(]*?\b([A-Za-z_]\w*)\s*\(", re.M)
 # Stopped note transforms are infrequent main-loop work.
 # Keep their callers' common input/render paths compact as well as the helpers.

@@ -159,6 +159,8 @@ typedef struct {
     uint8_t          sv_lock[TESSERA_TRACKS];   /* 0..100: the chance a change is a step put back as written */
     uint8_t          sv_every[TESSERA_TRACKS];  /* 0 OFF, 1..5: 1 2 4 8 16 bars between rounds of changes */
     uint8_t          sv_amount[TESSERA_TRACKS]; /* 0..100: changes a round, 1 a quarter; 0 none (as written) */
+    uint8_t          sv_how[TESSERA_TRACKS];    /* HOW: TESS_SV_DRIFT (as before), _ORNAMENT, _SERIAL; not in the packed
+                                                 * block: the record's HOW part */
     /* SUB (the TIMING page; seq.c seq_sub.c): a generator's notes again within their step */
     uint8_t          sub_ratch[TESSERA_TRACKS];  /* 0..7: RATCH x1..x8, the hits a step (0 x1: as before) */
     uint8_t          sub_chance[TESSERA_TRACKS]; /* 0..100: the chance a step ratchets (100: every step) */
@@ -166,20 +168,30 @@ typedef struct {
                                                   * (STEP ones too); not in the packed block: the record's SUB part */
     uint8_t          sub_human[TESSERA_TRACKS];  /* 0..TESS_HUMAN_MS: HUMAN TIME, a step up to this many ms late, any
                                                   * track's (STEP ones too); not in the packed block: the HUMAN part */
+    uint8_t          acc_limit[TESSERA_TRACKS];  /* 1..TESS_ACC_LIMIT: the pitch accumulator's reach in degrees from the
+                                                  * written note, a STEP track's (step_acc.c; 0 reads as 7) */
+    uint8_t          acc_mode[TESSERA_TRACKS];   /* TESS_ACC_WRAP / PING / CLAMP: what it does at LIMIT; both not in the
+                                                  * packed block: the record's ACC part */
     /* MIDI OUT (midi_out.c; GLO > MIDI OUT): each track's channel. 0 AUTO (ROUT, a drum track the DRUM channel, as
      * before), 1..16 that channel, TESS_MIDI_OFF none; not in the packed block: the record's MIDI part */
     uint8_t          midi_ch[TESSERA_TRACKS];
     /* KEY LINK (ui.c scale_share; SCL's sheet), the project's: 1 one ROOT for every melodic track, shared as SCL and
      * QNT always are; 0 each track its own ROOT (as before). On in a new project; a record without its part: off */
     uint8_t          key_link;
-    /* STEP as seed (step_seed.c; OCT+ held on GEN, TURING and EUCLID): the record's SEED part, not the packed block */
+    /* STEP as seed (step_seed.c; OCT+ held on GEN, TURING, EUCLID, MARKOV and MORPH): the record's SEED part (SOURCE,
+     * KEEP) and GRAV part (GRAVITY), not the packed block */
     uint8_t          sd_src[TESSERA_TRACKS];     /* SOURCE: 0 OFF, 1..4 that track's STEP pattern */
     uint8_t          sd_keep[TESSERA_TRACKS];    /* KEEP: TESS_SD_FREE, _RHYTHM, _PITCH */
+    uint8_t          sd_grav[TESSERA_TRACKS];    /* GRAVITY: 0..100 % of steps played as written, 0 off */
+    /* FORM's DEVELOP (OCT+ held on FORM, KNOB 1): the record's DEV part, not the packed block */
+    uint8_t          fm_dev[TESSERA_TRACKS];     /* 0..100: how far a section's return varies, 0 exact (as before) */
     /* CHORD's BREATH (HIT HOLD): its voices on slow cycles of their own, one now and then sitting out */
     uint8_t          ch_breath[TESSERA_TRACKS];  /* 0..100: 0 off (as before) */
     /* ENERGY (energy.c; the ENERGY page), the project's, not a track's: its slow tide and its rests */
     uint8_t          en_arc;                     /* 0..100: how far the tide swings, 0 off */
     uint8_t          en_rests;                   /* 0..100: how often the notes rest, 0 off */
+    int8_t           en_level;                   /* -100..100: the energy the tide swings round, 0 as set (part 2) */
+    uint8_t          en_depth[TESSERA_TRACKS];   /* 0..100: a track's share of ENERGY, 100 all (as before), 0 an anchor */
 } tessera_state_t;
 
 extern tessera_state_t tessera;
@@ -190,7 +202,18 @@ typedef struct {
     uint16_t steps[TESSERA_TRACKS];             /* steps since the last round */
     uint32_t rnd[TESSERA_TRACKS];               /* its random stream */
     uint8_t  mut[TESSERA_TRACKS][TESS_SV_STEPS];   /* each step's change (vary.c), 0 as written */
+    uint8_t  ser[TESSERA_TRACKS];               /* HOW SERIAL: the round's transform (TESS_SV_SER_*), 0 none */
+    uint8_t  ser_arg[TESSERA_TRACKS];           /* its argument: ROTATION's steps, AUGMENTATION's half (0 the first) */
+    /* GRAVITY on EVOLVE (tessera.c tess_gv_round): a generator track's home and its state after the last round */
+    uint8_t   gv_mode[TESSERA_TRACKS];          /* the MODE home is for, + 1; 0 none yet */
+    gen_sec_t gv_home[TESSERA_TRACKS], gv_last[TESSERA_TRACKS];
+    uint8_t   gv_haw[TESSERA_TRACKS][16], gv_law[TESSERA_TRACKS][16];   /* (Awake's values: home's, the last round's) */
+    /* FORM's DEVELOP (tessera.c tess_form_develop): a return as developed, so leaving it keeps the section unchanged */
+    uint8_t   dv_on;                            /* tracks (bits) playing a developed return */
+    gen_sec_t dv_last[TESSERA_TRACKS];
+    uint8_t   dv_law[TESSERA_TRACKS][16];
 } tessera_sv_t;
+enum { TESS_SV_SER_NONE, TESS_SV_SER_RETRO, TESS_SV_SER_INV, TESS_SV_SER_ROT, TESS_SV_SER_AUG };
 extern tessera_sv_t tess_sv;
 /* ANSWER as it plays (answer.c; not saved, cleared by tessera_init). In .pool */
 enum { TESS_AN_IDLE, TESS_AN_HEAR, TESS_AN_GAP, TESS_AN_PLAY, TESS_AN_LOOP };
@@ -223,6 +246,9 @@ void tessera_kill(track_t *t);
 void tessera_mutate(uint32_t tr);
 void tessera_seed_turn(uint32_t tr, int32_t s);    /* ROLL (EVOLVE page): the next seed, on the bar line */
 void tessera_evolve_knob(uint32_t k, int32_t s);
+void tessera_ev_layer_knob(uint32_t k, int32_t s);
+void tessera_fm_layer_knob(uint32_t k, int32_t s);   /* OCT+ held on FORM: KNOB 1 DEVELOP */
+void tessera_en_layer_knob(uint32_t k, int32_t s);   /* OCT+ held on ENERGY: KNOB 1 the track's DEPTH */   /* OCT+ held on a generator's EVOLVE: KNOB 1 GRAVITY */
 uint32_t tessera_every_bars(uint32_t every);
 int  tessera_lock_get(uint32_t tr);            /* 0..100, or -1 when LOCK is not available for the mode */
 void tessera_phrase(uint32_t tr, uint32_t *bar, uint32_t *of, int *flash); /* of == 0: EVERY is OFF */
@@ -307,12 +333,24 @@ enum {
     TX_KEY_LINK,                                    /* (0x264: KEY LINK, the project's: one value, whichever track) */
     TX_SD_SOURCE, TX_SD_KEEP,                       /* (0x265, 0x266: STEP as seed's SOURCE and KEEP, any track's) */
     TX_SUB_HUMAN,                                   /* (0x267: TIMING's HUMAN TIME, any track's) */
+    TX_ACC_LIMIT, TX_ACC_MODE,                      /* (0x268, 0x269: the pitch accumulator's LIMIT and MODE, a STEP
+                                                     * track's) */
+    TX_SD_GRAVITY,                                  /* (0x26A: STEP as seed's GRAVITY, any track's) */
+    TX_SV_HOW,                                      /* (0x26B: STEP EVOLVE's HOW, a STEP track's) */
+    TX_EN_LEVEL,                                    /* (0x26C: ENERGY's LEVEL, the project's: one value, whichever track) */
+    TX_EN_DEPTH,                                    /* (0x26D: ENERGY's DEPTH, any track's) */
+    TX_FM_DEVELOP,                                  /* (0x26E: FORM's DEVELOP, a generator track's) */
     TX_COUNT
 };
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */
+#define TESS_ACC_LIMIT 14u                          /* TX_ACC_LIMIT: up to two octaves of a 7-note scale */
+#define TESS_ACC_LIMIT_DEF 7u
+enum { TESS_ACC_WRAP, TESS_ACC_PING, TESS_ACC_CLAMP, TESS_ACC_MODES };   /* TX_ACC_MODE */
 enum { TESS_SD_FREE, TESS_SD_RHYTHM, TESS_SD_PITCH, TESS_SD_KEEPS };   /* TX_SD_KEEP */
+enum { TESS_SV_DRIFT, TESS_SV_ORNAMENT, TESS_SV_SERIAL, TESS_SV_HOWS };   /* TX_SV_HOW */
 void tessera_sd_play(void);                         /* seq.c, PLAY: STEP as seed's loops from their sources again */
-void tessera_sd_layer_knob(uint32_t k, int32_t s);  /* TURING / EUCLID on GEN, OCT+ held: KNOB 1 SOURCE, 2 KEEP */
+void tessera_sd_layer_knob(uint32_t k, int32_t s);  /* TURING / EUCLID / MARKOV / MORPH on GEN, OCT+ held: KNOB 1
+                                                     * SOURCE, 2 KEEP, 3 GRAVITY */
 #define TESS_MIDI_OFF 17u                           /* TX_MIDI_CH: 0 AUTO, 1..16, 17 OFF */
 int32_t tessera_param_get(uint32_t tr, uint32_t x);           /* the value its page shows */
 void tessera_param_poke(uint32_t tr, uint32_t x, int32_t v); /* written as it is (cord.c, around a step) */
@@ -344,7 +382,11 @@ uint32_t tessera_chord_user_key(uint32_t tr, uint32_t note, int first);   /* CHO
 int tessera_step_on(uint32_t tr);                        /* a STEP track (no generator, no ARP): its EVOLVE page */
 const step_t *tessera_step_vary(track_t *t, const step_t *s, step_t *out);   /* seq.c: the step as it plays */
 uint32_t tessera_step_varied(uint32_t tr);               /* steps playing a change now */
+uint32_t tessera_sd_loop(uint32_t tr, uint8_t *now, uint8_t *home, uint32_t *at);   /* TURING / MORPH from a SOURCE: its loop now and as written (the pictures) */
+int tessera_step_now(uint32_t tr, uint32_t i, step_t *out);   /* step i as it plays now: 1 changed (the pictures) */
+uint32_t tessera_step_serial(uint32_t tr, uint32_t *arg);   /* SERIAL's transform now (TESS_SV_SER_*), its argument */
 void tessera_step_clear(uint32_t tr);                    /* the steps as written again (KNOB 4 CLEAR) */
+void tessera_sv_layer_knob(uint32_t k, int32_t s);       /* its page, OCT+ held: KNOB 1 HOW */
 uint32_t tessera_step_keep(uint32_t tr);                 /* REC held: the changes become the steps; returns how many */
 void tessera_chord_ulen_knob(int32_t s);                   /* OCT+ held on GEN in CHORD USER, KNOB 4: LEN */
 void tessera_chord_oct_knob(int32_t s);                    /* OCT+ held on GEN in CHORD, KNOB 1: OCT */

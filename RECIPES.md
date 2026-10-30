@@ -1,6 +1,6 @@
 # Tessera recipes and tips
 
-Short, tested ways to get somewhere with Tessera 2.0. Each uses only what the firmware has; the page and knob names
+Short, tested ways to get somewhere with Tessera. Each uses only what the firmware has; the page and knob names
 are the ones on the screen, and [MANUAL.md](MANUAL.md) explains each page in full. Where a step names a page, tap
 the button in brackets until it shows: GEN, EVOLVE, FORM, TWEAK, TWEAK 2 and LENGTH are under **SEQ**, MODS, MATRIX
 and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
@@ -25,6 +25,12 @@ and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
 - [Entries and arrangements (COND and FORM)](#entries-and-arrangements-cond-and-form)
 - [From generator to pattern (print, then STEP EVOLVE)](#from-generator-to-pattern-print-then-step-evolve)
 - [Movement over minutes (TIDE and SWARM)](#movement-over-minutes-tide-and-swarm)
+- [Drift, then come home (GRAVITY on EVOLVE)](#drift-then-come-home-gravity-on-evolve)
+- [A filter sweep on FM6 (the FILTER effect)](#a-filter-sweep-on-fm6-the-filter-effect)
+- [A fill on the last bar (Condition and FILL)](#a-fill-on-the-last-bar-condition-and-fill)
+- [A line that climbs (Accumulate)](#a-line-that-climbs-accumulate)
+- [Returns that vary (FORM DEVELOP)](#returns-that-vary-form-develop)
+- [A pad that opens slowly (ORACLE)](#a-pad-that-opens-slowly-oracle)
 - [Driving another synth (MIDI OUT)](#driving-another-synth-midi-out)
 
 **[Tips](#tips)**
@@ -33,7 +39,7 @@ and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
 
 ## A first generative patch in a minute
 
-1. Power on. Track 1 is **GLASS PAD**, track 2 **STRINGS**, track 3 **BELLS**, track 4 the **808 KIT**.
+1. Power on. Track 1 is **GLASS PAD**, track 2 **STRING MACH**, track 3 **BELLS**, track 4 the **808 KIT**.
 2. Track 3 (BELLS): **SEQ** for GEN, **MODE** to **TURING**. Press **PLAY**: a looping melody in the track's scale.
 3. **PROB** at about 20: the loop changes a little each time round. At 0 (Lock) it holds.
 4. Track 4: MODE **ATLAS**, **DENS** at 50. A drum groove under it.
@@ -54,7 +60,7 @@ A held chord that changes slowly, for ambient beds.
 
 ## Chords that lead, melodies that follow (QNT CHRD)
 
-1. Track 2 (STRINGS): MODE **CHORD**, **PROG POP**, **BARS 1**, **HIT BEAT**.
+1. Track 2 (STRING MACH): MODE **CHORD**, **PROG POP**, **BARS 1**, **HIT BEAT**.
 2. Track 3 (BELLS): MODE **MARKOV**, **LEAP 30**, **DENS 60**.
 3. On track 3, **SCL**: **QNT** to **CHRD**. Its notes now snap to the chord track 2 plays, so the melody always
    fits the harmony. The keys and MIDI input snap too, so you can play along on track 3.
@@ -200,7 +206,7 @@ groove that keeps changing, which is the other use.
 
 ## Pads from sparse notes (LENGTH HIT)
 
-1. Any generator on a pad sound (GLASS PAD, STRINGS). Set **DENS** or **PROB** so it plays few notes.
+1. Any generator on a pad sound (GLASS PAD, STRING MACH). Set **DENS** or **PROB** so it plays few notes.
 2. **LENGTH** page: **LENGTH HIT**. Each note holds until the next hit, so rests let notes ring and the line turns
    into a slowly changing pad.
 3. For plucks instead: **FIXED**, **LEN 1/16**, **KEYS 2**.
@@ -235,6 +241,70 @@ groove that keeps changing, which is the other use.
    want for FX SEND and density.
 4. **MATRIX** shows the patch at a glance: rows are sources, columns destinations, lit as they move.
 5. Because PLAY restarts TIDE and SWARM from the seed, the same project unfolds the same way each time.
+
+## Drift, then come home (GRAVITY on EVOLVE)
+
+1. Track 3 (BELLS): MODE **TURING**, **PROB 0** (Lock), and turn **ROLL** on EVOLVE until you like the loop.
+2. **EVOLVE**: **EVERY 2**, **AMOUNT 40**. Every two bars the line changes a little, and keeps going further.
+3. Hold **OCT+** on EVOLVE: **GRAVITY 30**. Now about one round in three brings a changed note back instead, so the
+   melody wanders and returns. At 70 it stays close to home; at 0 it wanders freely.
+4. Home is the loop as you last set it: turn a knob or ROLL and that becomes the new home.
+
+## A filter sweep on FM6 (the FILTER effect)
+
+FM6 has no filter of its own; the FILTER effect gives it one.
+
+1. Track 1 (GLASS PAD): **FX**, the **FX 1** page: **FX** to **FILTER**, **MIX** full, **CUT** about halfway,
+   **RES** a third up.
+2. Hold **FX** and turn **CUT** (KNOB 3) to the right: a cord from the track's LFO to the cutoff, its amount set
+   as you turn.
+3. On **LFO**, a slow RATE: the pad opens and closes. For a sweep over minutes, set the cord's source to
+   **TIDE 2** or **DRIFT** on MODS instead.
+4. For a dub-style echo that bends, put **ECHO** on FX 2 and a slow cord on its TIME (FX2 RTE): the repeats glide in
+   pitch like a tape's.
+
+## A fill on the last bar (Condition and FILL)
+
+1. Track 4 (808 KIT) on STEP, a groove on the drum grid (**NOTES**).
+2. Write a run of snare or tom hits on the last four steps. On each, **OCT+** for the hit's sheet: **Condition**
+   **4:4**. They play on every fourth pass only.
+3. For a fill on demand, set another few hits to **FILL** instead, and the kick on the last beat to **!FILL**.
+   Hold **GLO** and **E4** (on MIXER, E4 alone) while the bar plays: the fill comes in and the kick drops out.
+
+## A line that climbs (Accumulate)
+
+1. A STEP track with a short pattern, four or five notes (**PATTERN**: **LEN 5**).
+2. **NOTES**, **OCT+** on the first note: **Accumulate +2**. Each time round it plays two scale degrees higher.
+3. Hold **OCT+** on NOTES for the pattern's sheet: **Accum limit 7**, **Accum mode Ping**: it climbs an octave,
+   then comes back down. A second note at **−1** falls against it.
+4. **PLAY** starts it again from the notes as written.
+
+## Returns that vary (FORM DEVELOP)
+
+FORM brings its sections back exactly; DEVELOP lets each return vary a little, so the piece keeps its shape but
+never repeats itself note for note.
+
+1. A melodic track: MODE **TURING**, **PROB 0** so the loop itself holds still.
+2. **EVOLVE**: **EVERY 4**. **FORM**: **ABAC**, **CONTR 40**: four sections of four bars, A coming back every
+   eight bars.
+3. Hold **OCT+** on FORM: **DEVELOP 40**. Each time A comes back it is A varied by about that much: a note or two
+   changed. The section itself is kept, so the next return starts from A again: after an hour
+   it is still the same A, varied, not something that has drifted away.
+4. Hold **OCT+** on EVOLVE: **GRAVITY 30**. About one return in three is exact, so the original comes back now and
+   then.
+5. **DEVELOP 0** (the default) gives exact returns again. Between 30 and 50 the returns sound like a player
+   ornamenting the same phrase; above 70 they wander further each time.
+
+## A pad that opens slowly (ORACLE)
+
+1. Track 1: **PRESETS**, **WARM PAD** (an ORACLE sound). MODE **CHORD**, **PROG DRONE**, **HIT HOLD**, **BARS 2**.
+2. **EDIT** to **FILTER**: **CUTOFF** down to about 40, **ENV AMT** 60. On **FILT ENV**, **ATK** about 100: each
+   chord starts dark and opens over a few seconds.
+3. **CHARACTER**: **VINTAGE** 50. The voices drift apart a little in pitch and tone, like an old analogue synth.
+4. **MACRO** (the first EDIT page): hold **FX** and turn **CUT** (KNOB 1) to the right: a cord from the track's LFO to the cutoff. On
+   **LFO** a slow RATE, or on **MODS** set the cord's source to **TIDE 2** for a swell over minutes.
+5. For a darker, rounder bass under it, track 2 on **SUB BASS** (ORACLE) and a slow TURING; ORACLE takes more of the
+   FM-1 than an FM6 voice, so keep the bass sparse (DENS low) when two ORACLE tracks play.
 
 ## Driving another synth (MIDI OUT)
 

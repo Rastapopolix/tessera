@@ -55,7 +55,7 @@ static uint32_t pv_kind(void)
         return PV_GRID;
     if (ui.home || act_cols() || grid_on())
         return PV_NONE;
-    if ((pg->graph == GR_ADSR && pg->scope == SC_TRACK) || pg->graph == GR_LFO || pg->graph == GR_FMEG ||
+    if ((pg->graph == GR_ADSR && (pg->scope == SC_TRACK || pg->scope == SC_ORACLE)) || pg->graph == GR_LFO || pg->graph == GR_FMEG ||
         pg->graph == GR_FMPEG)
         return PV_CURVE;
     if (pg->graph == GR_NONE || pg->graph == GR_ARP || pg->graph == GR_STEPS ||
@@ -309,6 +309,7 @@ static void pv_column(uint32_t c, const char *label0, const char *val0, const ch
     int32_t x;
     char label[12], val[16], unit[8];
     const char *l0 = label0, *v0 = val0, *u0 = unit0;
+#if !MELODEE_LOOK                                       /* (Mono: no rings, no faders; mono_page's cells) */
     if (col_style == CS_RING) {
         pv_ring(c, l0, v0, u0, vc, ratio, hot);
         return;
@@ -317,10 +318,21 @@ static void pv_column(uint32_t c, const char *label0, const char *val0, const ch
         pv_fader(c, l0, v0, u0, vc, ratio, hot);
         return;
     }
+#else
+    (void)ratio;
+#endif
     if (col_style == CS_CHIP) {
+#if MELODEE_LOOK
+        mo_chip(c, v0, u0, vc, hot, pv_chip_y);
+#else
         pv_chip(c, l0, v0, u0, vc, hot);
+#endif
         return;
     }
+#if MELODEE_LOOK
+    mo_strip_col(c, l0, v0, vc, hot, pv_strip_y);
+    return;
+#endif
     pv_words(l0, v0, u0, label, val, unit);            /* (CS_STRIP: the words as the rings') */
     cv_begin(CARD_W, PV_STRIP_H, T_BG);
     if (hot) {
@@ -357,6 +369,10 @@ static void pv_sound(void)
     if (!ui.force && sig == pv.sound)
         return;
     pv.sound = sig;
+#if MELODEE_LOOK
+    mo_sound(en, nm);
+    return;
+#endif
     cv_begin(240, 240 - PV_SOUND_Y, T_BG);
     cv_icon_mid(6, 8, 16, trk_icon(song.sel, 1), T_THEME, T_BG);   /* (its ink at x 8, as the text was) */
     x = cv_text_on(26, 1, &AF_S, en, T_THEME, T_BG);
@@ -430,7 +446,7 @@ static int32_t pv_hot(void) { return ui.hot_t ? (int32_t)(ui.hot_col & 3u) : -1;
 static void pv_env(int32_t h)
 {
     const page_t *pg = cur_page();
-    int32_t va = TSEL->p[pg->id[0]], vd = TSEL->p[pg->id[1]], vs = TSEL->p[pg->id[2]], vr = TSEL->p[pg->id[3]];
+    int32_t va = page_value(pg, 0), vd = page_value(pg, 1), vs = page_value(pg, 2), vr = page_value(pg, 3);
     int32_t top = 18, bot = h - 22, x0 = 12, x1 = x0 + 10 + va * 40 / 127, x2 = x1 + 16 + vd * 52 / 127;
     int32_t x4 = PV_PANEL_W - 14, x3 = x4 - 24 - vr * 48 / 127, sus = vs * 1000 / 127, hot = pv_hot(), x, py = 0;
     int32_t e = 32768, kd = 150733 / (x2 - x1), kr = 150733 / (x4 - x3);
@@ -727,7 +743,6 @@ static uint32_t pv_pic(int32_t *cut, int32_t *res)
     uint32_t e = TSEL->eng_req % NENGINES, c;
     *cut = -1;
     *res = 0;
-    if(pg->fam==FAM_FX)return 9u;
     if (pg->graph == GR_ARP || pg->graph == GR_STEPS)
         return pg->graph == GR_ARP ? 5u : 6u;
     if (pg->fam == FAM_ARP && pg->graph == GR_NONE)     /* ARP 2: the notes it plays too (not GEN's other pages) */
@@ -744,7 +759,7 @@ static uint32_t pv_pic(int32_t *cut, int32_t *res)
         if (d->fmt == F_CUTOFF || str_eq(d->label, "CUTOFF")) *cut = *vp;   /* (the Prophet's: by its label) */
         else if (str_eq(d->label, "RES") || str_eq(d->label, "RESO")) *res = *vp;
     }
-    return *cut >= 0 ? 3u : 0u;
+    return *cut >= 0 ? 3u : pg->fam == FAM_FX ? 9u : 0u;   /* (FX FILTER: its curve, CUT and RES) */
 }
 /* FX follows R5: four rings, a rounded track-colour picture, compact labels.
  * WIDTH explicitly names its two sides and the mono tradeoff. */
@@ -752,13 +767,13 @@ static void pv_fx(void)
 {
     if(cur_page()->id[0]==G_TRK_SEND || cur_page()->id[0]==P_FXSEND){
         uint32_t sends=cur_page()->id[0]==P_FXSEND;
-        cv_text_on(12,8,&AF_X,song.g[G_FXMODE]?"Independent FX sends":"Track to shared FX",T_MID,T_PANEL);
-        cv_text_on(12,45,&AF_X,sends?"One level per effect":song.g[G_FXMODE]?"SEND 1: this track":"SEND: this track",T_THEME,T_PANEL);
-        cv_text_on(12,65,&AF_X,sends?"Returns join the dry mix":"RETURN: all tracks",T_THEME,T_PANEL);return;
+        cv_text_on(12,8,&AF_X,song.g[G_FXMODE]?"Separate FX sends":"Track to shared FX",T_MID,T_PANEL);
+        cv_text_on(12,45,&AF_X,sends?"A level per effect":song.g[G_FXMODE]?"SEND 1: this track":"SEND: this track",T_THEME,T_PANEL);
+        cv_text_on(12,65,&AF_X,sends?"Returns join dry":"RETURN: all tracks",T_THEME,T_PANEL);return;
     }
     uint32_t base=cur_page()->id[0],master=cur_page()->scope==SC_GLOBAL,slot=(base-(master?G_MFXTYPE:P_FXTYPE))/FX_PARAMS;
     const int16_t *values=master?song.g:TSEL->p;uint32_t type=(uint32_t)clamp(values[base],0,FX_COUNT-1);
-    static const char *const hint[FX_COUNT]={"Dry signal","Moving notches","All-pass L / dry R","Random vowels","Phase / crossover jitter","Jumping resonance","Short lo-fi echoes","Small lo-fi space","Diffused stereo reverb","Stereo pitch shimmer"};
+    static const char *const hint[FX_COUNT]={"Dry signal","Moving notches","All-pass L / dry R","Random vowels","Crossover jitter","Jumping resonance","Short lo-fi echoes","Small lo-fi space","Diffused reverb","Pitch shimmer","Resonant low-pass"};
     int32_t mix=values[base+1u],cha=values[base+3u],py=50*16;
     cv_text_on(12,8,&AF_X,hint[type],T_MID,T_PANEL);
     for(int32_t x=0;x<208;x++){
@@ -770,8 +785,18 @@ static void pv_fx(void)
         else if(type>=FX_ECHO)y+=(ph*mix*(208-x))/1900;
         y=clamp(y,27*16,76*16);cv_vspan_aa(16+x,py,y,type&&mix?T_THEME:T_DIM);py=y;
     }
-    const char *foot=fx_state[(master?NPART:song.sel%NPART)*FX_SLOTS+slot].failed?"MEMORY FULL":type==FX_WIDTH?"Mono changes the tone":type==FX_OFF || !mix?"Turn MIX to hear FX":master?"Shared by all tracks":"OCT+ sound actions";
+    const char *foot=fx_state[(master?NPART:song.sel%NPART)*FX_SLOTS+slot].failed?"MEMORY FULL":type==FX_WIDTH?"Sums thin in mono":type==FX_OFF || !mix?"MIX up to hear FX":master?"Shared, all tracks":"OCT+ sound actions";
     cv_text_on(12,88,&AF_X,foot,T_DIM,T_PANEL);
+}
+/* the picture pv_pic chose on the current canvas, cv_oy its top (pv_picture; the Mono look's picture area): the
+ * output's wave between rows wy and wy + wh where a page has no picture of its own */
+static void pv_pic_body(uint32_t pic, int32_t cut, int32_t res, int32_t wy, int32_t wh)
+{
+    if (pic == 5u) pv_arp();
+    else if (pic == 6u) pv_steps();
+    else if (pic == 3u) pv_filter(cut, res);
+    else if (pic == 9u) pv_fx();
+    else stage_wave(T_THEME, wy, wh);
 }
 static void pv_picture(void)
 {
@@ -828,11 +853,7 @@ static void pv_picture(void)
         cv_rrect(PV_PANEL_X, 0, PV_PANEL_W, PV_PIC_H - dy, 6, T_PANEL, T_BG);
         cv_bg = T_PANEL;
         cv_oy = -dy / 2;                                /* (under the tabs: the picture's middle) */
-        if (pic == 5u) pv_arp();
-        else if (pic == 6u) pv_steps();
-        else if (pic == 3u) pv_filter(cut, res);
-        else if (pic == 9u) pv_fx();
-        else stage_wave(T_THEME, 8 + dy / 2, PV_PIC_H - 16 - dy);
+        pv_pic_body(pic, cut, res, 8 + dy / 2, PV_PIC_H - 16 - dy);
         cv_oy = 0;
         cv_blit(0, (uint32_t)(PV_PIC_Y + dy));
     }
@@ -884,6 +905,14 @@ static void pv_strip(uint32_t k)
     trk_short_name(k, nm);
     sig = str_hash(1u + sel * 2u + mute * 4u + arm * 8u + hot * 16u + octp * 64u + solo * 128u + quiet * 256u, nm) +
           lvl * 7919u + (uint32_t)(pan + 128) * 104729u;
+#if MELODEE_LOOK
+    if (!ui.force && sig == pvm.strip[k] && m == pvm.meter[k])
+        return;
+    pvm.strip[k] = sig;
+    pvm.meter[k] = (uint8_t)(m < 0 ? 0 : m);
+    mo_strip(k, nm, lvl, pan, sel | mute << 1 | solo << 2 | quiet << 3 | arm << 4 | hot << 5 | octp << 7, pvm.meter[k]);
+    return;
+#endif
     if (!ui.force && sig == pvm.strip[k]) {
         if (m != pvm.meter[k]) {                        /* the meter alone */
             pvm.meter[k] = (uint8_t)(m < 0 ? 0 : m);
@@ -908,7 +937,7 @@ static void pv_strip(uint32_t k)
     pv_knob(27 - KNOB_LEVEL_R, 70 - KNOB_LEVEL_R, KNOB_LEVEL_R, KNOB_LEVEL_COV, KNOB_LEVEL_ANG, (int32_t)lvl, 0, 127,
             hot == 1u ? T_TEXT : tc, bg);
     if (lvl) {
-        int32_t d = LEVEL_DB_X10[lvl];
+        int32_t d = level_db_x10(lvl);
         fmt_int(b, (d + (d < 0 ? -5 : 5)) / 10);
     } else {
         str_cpy(b, "OFF", sizeof b);
@@ -954,6 +983,7 @@ static void pv_draw(void)
 {
     uint32_t kind = pv_kind(), sig;
     int32_t px;
+#if !MELODEE_LOOK                                       /* (Mono: NOTES, the rings and the curves are mono_page's) */
     if (kind == PV_NOTES) {
         if (ui.force) {
             lcd_fill(0, H_HEAD, 240, 240 - H_HEAD, T_BG);
@@ -989,6 +1019,7 @@ static void pv_draw(void)
         }
         return;
     }
+#endif
     if (kind == PV_GRID) {
         if (ui.force)
             lcd_fill(0, H_HEAD, 240, 240 - H_HEAD, T_BG);
@@ -1002,7 +1033,11 @@ static void pv_draw(void)
         if (ui.force || sig != ui.graph_sig || px != pv.gplay) {   /* (the step playing alone: cv_blit sends its mark) */
             ui.graph_sig = sig;
             pv.gplay = px;
+#if MELODEE_LOOK
+            mo_grid_panel();
+#else
             pv_panel(PV_GRID_Y, PV_GRID_H, pv_grid);
+#endif
         }
         return;
     }
@@ -1019,6 +1054,7 @@ static void pv_draw(void)
         col_style = CS_CARD;
         return;
     }
+#if !MELODEE_LOOK                                       /* (MOD: hidden for MODS, ui.c page_visible) */
     if (kind == PV_MOD) {
         if (ui.force)
             lcd_fill(0, H_HEAD, 240, 240 - H_HEAD, T_BG);
@@ -1031,6 +1067,7 @@ static void pv_draw(void)
         col_style = CS_CARD;
         return;
     }
+#endif
     if (kind == PV_MIXER) {
         uint32_t k;
         if (ui.force)
@@ -1040,6 +1077,7 @@ static void pv_draw(void)
             pv_strip(k);
         return;
     }
+#if !MELODEE_LOOK                                       /* (Mono: the rings and the curves are mono_page's) */
     pv_tab_h = kind == PV_RINGS && (sec_on() || (designer_on() && designer_tabs_on())) ? SEC_TAB_H : 0;
     if (kind != PV_CURVE) {                             /* RINGS, FADERS */
         if (ui.force) {                                 /* (the parts then cover what they draw) */
@@ -1088,4 +1126,5 @@ static void pv_draw(void)
             pv_optabs();
         pv_panel(PV_CURVE_Y + (tabs ? PV_OPTAB_H + 2 : 0), PV_CURVE_H - (tabs ? PV_OPTAB_H + 2 : 0), pv_curve);
     }
+#endif
 }

@@ -315,6 +315,73 @@ static void nm_title(char *b)
     else
         str_cpy(b + 5, nm.ph, 12);                     /* "PROJECT A" */
 }
+#if MELODEE_LOOK
+/* Mono: what it names and the count; the name twice the size (the cursor's letter inverted, at the end a bar where the
+ * next one goes, an empty name its placeholder dim), a line under it; the characters around the cursor's (its own
+ * framed, twice the size); ABC / 123, the one typing inverted; BACK (OCT-) outlined, SAVE (OCT+) filled (outlined
+ * while it cannot write). Drawn whole under the header, in two canvases */
+static void mo_naming(uint32_t empty, uint32_t n)
+{
+    char b[24], c[2] = {0, 0};
+    uint32_t i, s, first = nm.cur > 8u ? nm.cur - 8u : 0u, at = 0, len = sizeof NM_SET - 1u;
+    int ok = !transport_busy();
+    char ch = !empty && nm.cur < nm.len ? nm.s[nm.cur] : ' ';
+    while (at < len && NM_SET[at] != ch) at++;
+    if (at >= len) at = 0;
+    for (s = 0; s < 2u; s++) {
+        int32_t x, d;
+        cv_begin(240, s ? 120u : 102u, MO_BG);
+        cv_oy = s ? -120 : -18;
+        fmt_int(b, nm.len);
+        str_cpy(b + str_len(b), "/", 2);
+        fmt_int(b + str_len(b), (int32_t)name_limit());
+        mo_textr(b, 117, 12, nm.len >= name_limit() ? MO_INK : MO_DIM);
+        x = 117 - mo_tw(b) - 6;
+        nm_title(b);
+        b[(uint32_t)(x - 3) / 6u < sizeof b ? (uint32_t)(x - 3) / 6u : sizeof b - 1u] = 0;
+        mo_text(b, 3, 12, MO_DIM);
+        for (i = first, x = 4; i <= n && x < 112; i++, x += 12) {   /* the name: nine characters round the cursor */
+            c[0] = i < n ? (empty ? nm.ph[i] : nm.s[i]) : 0;
+            if (!c[0]) {
+                if (i == nm.cur)
+                    mo_fill(x, 25, 2, 16, MO_INK);
+                break;
+            }
+            if (!empty && i == nm.cur) {
+                mo_fill(x - 1, 25, 12, 16, MO_INK);
+                mo_text_s(c, x, 26, 2, MO_BG);
+            } else {
+                mo_text_s(c, x, 26, 2, empty ? MO_DIM : MO_INK);
+            }
+        }
+        mo_hl(3, 44, 114, MO_DIM);
+        for (d = -4; d <= 4; d++) {                     /* the characters round the cursor's */
+            uint32_t j = (uint32_t)(((int32_t)at + d + (int32_t)len) % (int32_t)len);
+            int32_t cx = 60 + d * 13;
+            c[0] = NM_SET[j];
+            if (!d) {
+                mo_box(cx - 8, 51, 17, 20, MO_INK);
+                if (c[0] == ' ') mo_fill(cx - 1, 60, 3, 3, MO_INK);
+                else mo_text_s(c, cx - 4, 54, 2, MO_INK);
+            } else if (c[0] == ' ') {
+                mo_px(cx, 61, MO_DIM);
+            } else {
+                mo_textc(c, cx + 1, 58, d == 1 || d == -1 ? MO_INK : MO_DIM);
+            }
+        }
+        if (nm.num) mo_text("ABC", 42, 80, MO_DIM), mo_inv("123", 62, 80);
+        else mo_inv("ABC", 42, 80), mo_text("123", 62, 80, MO_DIM);
+        mo_box(2, 107, 32, 11, MO_DIM);                 /* the keys */
+        mo_textc("BACK", 18, 109, MO_INK);
+        str_cpy(b, nm.kind == NK_USER_SAVE || nm.kind == NK_PROJ_SAVE ? "SAVE" : "RENAME", 8);
+        if (ok) mo_fill(117 - mo_tw(b) - 8, 107, mo_tw(b) + 8, 11, MO_INK);
+        else mo_box(117 - mo_tw(b) - 8, 107, mo_tw(b) + 8, 11, MO_DIM);
+        mo_text(b, 117 - mo_tw(b) - 4, 109, ok ? MO_BG : MO_DIM);
+        cv_oy = 0;
+        cv_blit(0, s ? 120u : 18u);
+    }
+}
+#endif
 /* NAME (docs/design: mock/r6_pages NAME): what it names and the count; the name large (the cursor's letter on the
  * track's colour; at the end a bar where the next one goes), a line under it; the characters around the cursor's
  * (KNOB 2 turns through them: the cursor's in a ring); ABC / 123 (what the white keys type, D#); the keys: OCT-
@@ -325,6 +392,10 @@ static void nm_draw_name(void)
     uint32_t i, empty = nm.len == 0u, first = 0, n = empty ? str_len(nm.ph) : nm.len;
     const aafont_t *f = name_limit() <= NM_LEN ? &AF_L : &AF_M;
     int32_t x, w = 0;
+#if MELODEE_LOOK
+    mo_naming(empty, n);
+    return;
+#endif
     cv_begin(240, 18, T_BG);                            /* "Save U07", "7 / 12" */
     nm_title(b);
     for (i = 1, x = 0; b[i]; i++) {                     /* "SAVE PROJECT C" -> "Save project C"; U07 kept */

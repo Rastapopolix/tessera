@@ -5,25 +5,30 @@
      X0X's, charlesvestal/fm1-x0x, both GPL-3.0), so it draws the FM-1 as the other FM-1 browser builds do. Changed:
      the names, the font from Google Fonts, no saves (no flash), the demo button and the Tessera line.
      Written as a page body (it publishes as is); web/sim/build.sh puts the document around it. -->
-<!-- DotGothic16 (SIL OFL 1.1) for the knob labels; Chakra Petch (SIL OFL 1.1) for the page, as the project page -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Chakra+Petch:wght@400;500;600&display=swap">
+<!-- DotGothic16 (SIL OFL 1.1) for the knob labels; the page in Tessera Mono, as the project page -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap">
 <style>
-/* the page: the project page's look (web/home/index.html): SMALTI, the mark's lapis and gold, Chakra Petch;
- * the device: the black and mint FM-1 ("dark green"), a black body and knobs, the button trays, buttons, keybed and
- * keys mint */
-:root { --bg: #0d1326; --fg: #f6f0e0; --dim: #b3b2b0; --rule: #343b51;
-        --surf: #18213c; --raise: #2b3249; --accent: #ffe296; --gold: #ecb848;
-        --t1: #deca60; --t2: #40c8d6; --t3: #6ed668; --t4: #d67cec;
+/* TESSERA-MONO: tools/gen_mono_webfont.py writes the face here (firmware/src/gfx.c's 5 x 7 font) */
+@font-face { font-family: "Tessera Mono"; font-display: block; src: url("data:font/woff;base64,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") format("woff"); }
+/* /TESSERA-MONO */
+/* the page: the project page's look (web/home/index.html): the Mono look's one ink on black, Tessera Mono;
+ * the device: one of the FM-1's shells (the picker under it, SHELLS in the script, sets the --body .. --slit-midlo
+ * colours and the matching ink); these are the black and mint FM-1's ("dark green"), the drawing before the picker */
+:root { --bg: #000; --fg: #ffd020; --dim: #c7a219; --rule: #3b3007;
+        --surf: #0f0c02; --raise: #211b04; --accent: var(--fg); --gold: var(--fg);
+        --t1: var(--fg); --t2: var(--fg); --t3: var(--fg); --t4: var(--fg); --pixel: "Tessera Mono", ui-monospace, monospace;
         --body: #1d1d1f; --well: #141415; --part: #2a2a2d; --edge: #3a3a3e; --label: #d6d6d8;
         --tray: #5fc9ad; --btn: #7cd9c0; --btn-edge: #4bb398; --btn-ink: #0f2e27; --rec: #c62a22;
-        --key: #7cd9c0; --key-edge: #4bb398;
+        --key: #7cd9c0; --key-edge: #4bb398; --lit-ink: #0f2e27;
+        --btn-dim: #95e3ce; --btn-breath: #d6f7ee; --btn-lo: #b4eedf;
+        --slit: #1e3a33; --slit-dim: #3f6a5f; --slit-breath: #cfe9e2; --slit-lo: #a2c9bf; --slit-mid: #86b2a7; --slit-midlo: #6f9a8f;
         --lit: #f2fffa; --green: #5fe08a; color-scheme: dark; }
 html, body { background: var(--bg); }
-body { margin: 0; color: var(--fg); font: 400 14px/1.6 "Chakra Petch", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+body { margin: 0; color: var(--fg); font: 400 14px/1.6 ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; -webkit-font-smoothing: antialiased; }
 main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 32px; }
 @media (orientation: portrait) and (max-width: 700px) { main { padding: 8px 8px 24px; } }
 a { color: var(--accent); text-underline-offset: 3px; }
-a:hover { color: var(--gold); }
+a:hover { background: var(--fg); color: var(--bg); text-decoration: none; }
 .device { position: relative; width: 100%; aspect-ratio: 1000 / 624; user-select: none; -webkit-user-select: none;
           -webkit-touch-callout: none; touch-action: manipulation; }
 .device svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -32,45 +37,58 @@ a:hover { color: var(--gold); }
 .hit.knob { cursor: ns-resize; border-radius: 50%; }
 .hit:focus-visible { outline: 2px solid var(--lit); outline-offset: 2px; }
 .face { transition: fill .05s; }
-.dim .face.btn { fill: #95e3ce; }
+.dim .face.btn { fill: var(--btn-dim); }
 .lit .face.btn { fill: var(--lit); filter: drop-shadow(0 0 4px rgba(230, 255, 247, .7)); }
-.lit text { fill: var(--btn-ink); }
+.lit text { fill: var(--lit-ink); }
 .green .face.btn { fill: var(--green); }
 .green text { fill: #0d2414; }
 .face.key { fill: var(--key); stroke: var(--key-edge); stroke-width: 1.5; }
-.slit { fill: #1e3a33; transition: fill .05s; }
-.dim .slit { fill: #3f6a5f; }
+.slit { fill: var(--slit); transition: fill .05s; }
+.dim .slit { fill: var(--slit-dim); }
 .lit .slit { fill: #ffffff; filter: drop-shadow(0 0 3px rgba(255, 255, 255, .8)); }
 /* #119: what can be pressed breathes, dark .. ~60 % of lit and back (hal/fm1_input.h fm1_led_breath, ~1.1 s; MENU >
  * LEDS DIM LO ~30 %): the peaks between dark and lit at ~0.8 / ~0.58 on screen (the LED's share, gamma-encoded) */
-@keyframes breath-btn { 0%, 100% { fill: #7cd9c0; } 50% { fill: #d6f7ee; } }
-@keyframes breath-slit { 0%, 100% { fill: #1e3a33; } 50% { fill: #cfe9e2; } }
-@keyframes breath-btn-lo { 0%, 100% { fill: #7cd9c0; } 50% { fill: #b4eedf; } }
-@keyframes breath-slit-lo { 0%, 100% { fill: #1e3a33; } 50% { fill: #a2c9bf; } }
+@keyframes breath-btn { 0%, 100% { fill: var(--btn); } 50% { fill: var(--btn-breath); } }
+@keyframes breath-slit { 0%, 100% { fill: var(--slit); } 50% { fill: var(--slit-breath); } }
+@keyframes breath-btn-lo { 0%, 100% { fill: var(--btn); } 50% { fill: var(--btn-lo); } }
+@keyframes breath-slit-lo { 0%, 100% { fill: var(--slit); } 50% { fill: var(--slit-lo); } }
 .breath .face.btn { animation: breath-btn 1.13s ease-in-out infinite; }
 .breath .slit { animation: breath-slit 1.13s ease-in-out infinite; }
 .dimlo .breath .face.btn { animation-name: breath-btn-lo; }
 .dimlo .breath .slit { animation-name: breath-slit-lo; }
 @media (prefers-reduced-motion: reduce) {
   .breath .face.btn, .breath .slit { animation: none; }
-  .breath .face.btn { fill: #b4eedf; }
-  .breath .slit { fill: #a2c9bf; }
+  .breath .face.btn { fill: var(--btn-lo); }
+  .breath .slit { fill: var(--slit-lo); }
 }
 /* the DRUM grid's beats (hal/fm1_input.h fm1_led_mid): a steady level between the glow and lit, ~15 % (DIM LO ~10 %) */
-.mid .slit { fill: #86b2a7; }
-.dimlo .mid .slit { fill: #6f9a8f; }
+.mid .slit { fill: var(--slit-mid); }
+.dimlo .mid .slit { fill: var(--slit-midlo); }
 .held .face { stroke: var(--lit); stroke-width: 3; }
 .latched .face { stroke: #79b8ff; stroke-width: 3; }
 .start { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px;
          background: rgba(0, 0, 0, .5); border-radius: 4% / 6%; }
 .start[hidden] { display: none; }
-.start button { font: inherit; font-size: 18px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
-                padding: 12px 28px; background: var(--gold); color: var(--bg); border: 0; cursor: pointer; }
-.start button:hover { background: var(--accent); }
+.start button { font: 24px/1 var(--pixel); text-transform: uppercase;
+                padding: 12px 28px 10px; background: var(--fg); color: var(--bg); border: 2px solid var(--fg); cursor: pointer; }
+.start button:hover { background: var(--bg); color: var(--fg); }
 .start button:disabled { opacity: .4; cursor: progress; }
 .start p { margin: 0; max-width: 32em; text-align: center; color: #fff; }
+/* the shell picker: a swatch per FM-1 shell (body ring, button centre); picking one recolours the drawing and sets
+ * the ink that goes with it */
+.shells { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 10px; margin: 14px 0 0; }
+.shells > span { color: var(--dim); font: 14px/1 var(--pixel); text-transform: uppercase; margin-right: 4px; }
+.shells button { display: grid; justify-items: center; gap: 4px; padding: 4px; min-width: 64px; background: none;
+                 border: 2px solid transparent; color: var(--dim); font: 11px/1.15 var(--pixel); text-transform: uppercase;
+                 cursor: pointer; }
+.shells button:hover { color: var(--fg); background: none; }
+.shells button[aria-pressed="true"] { border-color: var(--fg); color: var(--fg); }
+.shells button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.shells i { width: 30px; height: 30px; border-radius: 50%; box-sizing: border-box; border: 8px solid var(--sw-body);
+            background: var(--sw-btn); box-shadow: 0 0 0 1px #555; }
 .keys, footer { margin: 16px 0 0; color: var(--dim); text-align: center; }
 .keys span { white-space: nowrap; margin: 0 8px; }
+#midiin, #midiknobs { white-space: normal; }     /* (long: they wrap on a phone) */
 .keys select { font: inherit; font-size: 12px; }
 kbd { font: 600 11px ui-monospace, Menlo, monospace; border: 1px solid var(--raise); background: var(--surf);
       padding: 0 4px; color: var(--fg); }
@@ -79,25 +97,27 @@ footer nav a { margin: 0 6px; }
 footer small { font-size: 11px; opacity: .8; }
 /* melodee-tess: the guide to the generators, under the device */
 .guide { max-width: 860px; margin: 20px auto 0; color: var(--fg); font-size: 14px; line-height: 1.5; }
-.guide h2 { font-size: 18px; font-weight: 600; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .06em; }
+.guide h2 { font: 24px/1.2 var(--pixel); margin: 0 0 8px; text-transform: uppercase; }
 .guide h2::after { content: ""; display: block; height: 4px; margin: 6px 0 0; width: 120px;
-                   background: linear-gradient(90deg, var(--t1) 0 23%, transparent 23% 25.7%, var(--t2) 25.7% 48.7%,
-                   transparent 48.7% 51.3%, var(--t3) 51.3% 74.3%, transparent 74.3% 77%, var(--t4) 77%); }
-.guide h3 { font-size: 13px; font-weight: 600; margin: 0 0 4px; letter-spacing: .06em; text-transform: uppercase; }
+                   background: repeating-linear-gradient(90deg, var(--fg) 0 2px, transparent 2px 4px); }
+.guide h3 { font: 16px/1.2 var(--pixel); margin: 0 0 4px; text-transform: uppercase; }
 .guide b { color: var(--accent); font-weight: 600; }
 .guide p { margin: 0 0 10px; }
 .guide ol { margin: 0 0 14px; padding-left: 1.4em; display: grid; gap: 4px; }
+/* the tip above the guide: the help card, Tessera's most-missed function */
+.tip { display: flex; gap: 12px; align-items: baseline; border: 2px solid var(--fg); padding: 10px 14px; margin: 0 0 16px; }
+.tip > b { flex: none; background: var(--fg); color: var(--bg); font: 16px/1 var(--pixel); padding: 3px 6px 2px; }
 .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 16px; }
-.demo button { font: inherit; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 9px 16px;
-               background: var(--gold); color: var(--bg); border: 0; cursor: pointer; }
-.demo button:hover:not(:disabled) { background: var(--accent); }
+.demo button { font: 16px/1 var(--pixel); text-transform: uppercase; padding: 9px 14px 8px;
+               background: var(--fg); color: var(--bg); border: 2px solid var(--fg); cursor: pointer; }
+.demo button:hover:not(:disabled) { background: var(--bg); color: var(--fg); }
 .demo button:disabled { opacity: .45; cursor: default; }
 .demo button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .gens { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin: 0 0 14px; }
-.gens section { min-width: 0; background: var(--surf); border-top: 4px solid var(--t1); padding: 10px 12px; }
-.gens section:nth-child(4n+2) { border-top-color: var(--t2); }
-.gens section:nth-child(4n+3) { border-top-color: var(--t3); }
-.gens section:nth-child(4n+4) { border-top-color: var(--t4); }
+.gens section { min-width: 0; border: 2px solid var(--rule); border-top: 6px solid var(--fg); padding: 10px 12px; }
+.gens section:nth-child(4n+2) { border-top-style: dashed; }
+.gens section:nth-child(4n+3) { border-top-style: dotted; }
+.gens section:nth-child(4n+4) { border-top-style: double; }
 .gens dt { color: var(--accent); }
 .gens dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; font-size: 13px; }
 .gens dt { font-weight: 700; white-space: nowrap; }
@@ -110,8 +130,12 @@ footer small { font-size: 11px; opacity: .8; }
   <canvas id="screen" width="240" height="240" role="img" aria-label="The screen"></canvas>
   <div class="start" id="start"><button id="go" type="button">Switch on</button><p id="status" hidden></p></div>
 </div>
+<div class="shells" id="shells" role="group" aria-label="The FM-1's shell"><span>Shell</span></div>
 
 <div class="guide">
+  <p class="tip"><b>TIP</b><span>Hold <b>ARP</b> (<kbd>9</kbd>, or Shift-click it to keep it held) and turn any knob:
+    a help card says what that knob does, on every page. The value does not change. Turn the same knob further to
+    scroll, let go of ARP to close it.</span></p>
   <h2>Try the generators</h2>
   <div class="demo"><button id="demo" type="button" disabled>Play the demo</button>
     <span>Switch on first. It starts with STILL TIDE, the first demo in the video: an ambient piece made to run for an
@@ -186,7 +210,65 @@ const PLAY_GREEN = 14;
 const WHITE = [0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 26];
 const BLACK = [1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25];
 const BLACK_AFTER = [0, 1, 2, 4, 5, 7, 8, 9, 11, 12, 14];      // the white key each black one follows
-const STORE = "melodee-tess-sim-flash", MIDI_ON = "melodee-tess-sim-midi", KNOBS_ON = "melodee-tess-sim-knobs", KNOB_MODE = "melodee-tess-sim-knobmode";
+const STORE = "melodee-tess-sim-flash", SHELL = "tessera-sim-shell", MIDI_ON = "melodee-tess-sim-midi", KNOBS_ON = "melodee-tess-sim-knobs", KNOB_MODE = "melodee-tess-sim-knobmode";
+
+// ------------------------------------------------------------------ the shells
+// The FM-1's shell colours (by eye from product photos: adjust here), each with the Mono ink made for it: the ink
+// follows the keys and buttons, so the black FM-1 (black on black) keeps the default YELLOW. A shell is its body,
+// trays (the button and key beds), buttons and keys, their edge and label ink, the slits' dark, and the labels
+// printed on the body (rec: REC's ink where the red is lost on the buttons). The LED levels between dark and lit are
+// mixed from them (shellVars) unless given (mint's are the drawing's own, tuned by eye before the picker).
+const INKS = { YELLOW: "#ffd020", WHITE: "#f0f0f0", GREEN: "#60ff80", BLUE: "#88c0ff", RED: "#ff7064",
+               ORANGE: "#ff9028", PINK: "#ffb0d8", "HOT PINK": "#ff58b0", LILAC: "#c096ff" };   // tools/gen_ui_palettes.py MONO_INK
+const SHELLS = [
+  { id: "black", name: "Black", ink: "YELLOW", body: "#1b1b1d", tray: "#29292c", btn: "#3b3b40", edge: "#505056",
+    btnInk: "#e4e4e6", slit: "#121214", label: "#d6d6d8", litInk: "#1b1b1d" },
+  { id: "mint", name: "Black / mint", ink: "GREEN", body: "#1d1d1f", tray: "#5fc9ad", btn: "#7cd9c0", edge: "#4bb398",
+    btnInk: "#0f2e27", slit: "#1e3a33", label: "#d6d6d8", litInk: "#0f2e27", lit: "#f2fffa",
+    fixed: { "--btn-dim": "#95e3ce", "--btn-breath": "#d6f7ee", "--btn-lo": "#b4eedf", "--slit-dim": "#3f6a5f",
+             "--slit-breath": "#cfe9e2", "--slit-lo": "#a2c9bf", "--slit-mid": "#86b2a7", "--slit-midlo": "#6f9a8f" } },
+  { id: "lavender", name: "Lavender", ink: "LILAC", body: "#b8acdf", tray: "#a394d4", btn: "#cbc1ee", edge: "#9283c8",
+    btnInk: "#2a2240", slit: "#463c6c", label: "#2a2240" },
+  { id: "orange", name: "Orange", ink: "ORANGE", body: "#ee8a30", tray: "#dc7720", btn: "#f6a656", edge: "#c86a16",
+    btnInk: "#3a1e05", slit: "#6a3a10", label: "#2e1804" },
+  { id: "cream-grey", name: "Cream / grey", ink: "WHITE", body: "#ebe5d5", tray: "#9b9b9e", btn: "#b6b6b9", edge: "#88888c",
+    btnInk: "#1e1e20", slit: "#3a3a3d", label: "#3a3630" },
+  { id: "cream-blue", name: "Cream / blue", ink: "BLUE", body: "#ebe5d5", tray: "#4f7fc4", btn: "#6f99d7", edge: "#3e6cb0",
+    btnInk: "#0d1d36", slit: "#1c3460", label: "#3a3630" },
+  { id: "cream-brick", name: "Cream / brick", ink: "RED", body: "#ebe5d5", tray: "#b4523c", btn: "#c96b53", edge: "#9a4230",
+    btnInk: "#2b0d06", slit: "#4c1a10", label: "#3a3630" },
+  { id: "hot-pink", name: "Hot pink", ink: "HOT PINK", body: "#d6346c", tray: "#c42a60", btn: "#cf2f67", edge: "#a91f50",
+    btnInk: "#fde8ef", slit: "#5e0f2c", label: "#fde8ef", litInk: "#3a0c20", rec: "#ffe08a" },   // (all pink: the labels light)
+];
+const toLin = (h) => [1, 3, 5].map((i) => (parseInt(h.slice(i, i + 2), 16) / 255) ** 2.2);
+const toHex = (c) => "#" + c.map((v) => Math.round(255 * Math.max(0, Math.min(1, v)) ** (1 / 2.2)).toString(16).padStart(2, "0")).join("");
+const mixLin = (a, b, s) => toHex(toLin(a).map((v, i) => v + (toLin(b)[i] - v) * s));   // a -> b, s of the way, in linear light
+// the LED levels as shares of the way from dark to lit (mint's, averaged over the channels)
+const LEVEL = { "--btn-dim": ["btn", .2], "--btn-breath": ["btn", .75], "--btn-lo": ["btn", .47], "--slit-dim": ["slit", .08],
+                "--slit-breath": ["slit", .74], "--slit-lo": ["slit", .49], "--slit-mid": ["slit", .35], "--slit-midlo": ["slit", .24] };
+function shellVars(sh) {
+  const lit = sh.lit || "#f6f6f6", v = { "--body": sh.body, "--tray": sh.tray, "--btn": sh.btn, "--btn-edge": sh.edge,
+    "--key": sh.btn, "--key-edge": sh.edge, "--btn-ink": sh.btnInk, "--lit-ink": sh.litInk || sh.btnInk, "--slit": sh.slit,
+    "--label": sh.label, "--lit": lit, "--rec": sh.rec || "#c62a22" };
+  for (const [k, [base, s]] of Object.entries(LEVEL)) v[k] = sh.fixed?.[k] || mixLin(sh[base], base === "slit" ? "#ffffff" : lit, s);
+  // the page takes the ink too (as the project page: one ink on black)
+  const ink = INKS[sh.ink];
+  Object.assign(v, { "--fg": ink, "--dim": mixLin("#000000", ink, .62), "--rule": mixLin("#000000", ink, .03),
+                     "--surf": mixLin("#000000", ink, .002), "--raise": mixLin("#000000", ink, .01) });
+  return v;
+}
+let shell = SHELLS[0];
+function sendInk() {
+  if (node) node.port.postMessage({ type: "ink", name: shell.ink });
+}
+function setShell(sh, remember) {
+  shell = sh;
+  for (const [k, v] of Object.entries(shellVars(sh))) document.documentElement.style.setProperty(k, v);
+  for (const b of document.querySelectorAll("#shells button")) b.setAttribute("aria-pressed", b.dataset.id === sh.id);
+  if (remember) try { localStorage.setItem(SHELL, sh.id); } catch {}
+  sendInk();
+  drawLights(lastLeds);                                           // (the glows and the power-on sweep in its colours)
+}
 
 // ------------------------------------------------------------------ the panel
 // Two drawings of the same controls: WIDE after the FM-1's own layout, TALL for a phone held upright (the
@@ -457,9 +539,14 @@ function drawScreen(fb) {
 }
 // the power-on sweep (hal/fm1_led_anim.h): a level per LED, lit frames /64 (| 128: the glow under them), drawn as the
 // LED's share of lit between its dark (or glowing) colour and the lit one, mixed in linear light
-const lin = (h) => [1, 3, 5].map((i) => (parseInt(h.slice(i, i + 2), 16) / 255) ** 2.2);
-const ANIM = { btn: [lin("#7cd9c0"), lin("#95e3ce"), lin("#f2fffa")], slit: [lin("#1e3a33"), lin("#3f6a5f"), lin("#ffffff")] };
+const lin = toLin, css = (k) => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+let ANIM = null, animShell = null;                                // the shell's dark, glow and lit (read when it changes)
 function animFill(kind, q) {
+  if (animShell !== shell) {
+    animShell = shell;
+    ANIM = { btn: [lin(css("--btn")), lin(css("--btn-dim")), lin(css("--lit"))],
+             slit: [lin(css("--slit")), lin(css("--slit-dim")), lin("#ffffff")] };
+  }
   const [dark, glow, lit] = ANIM[kind], s = Math.min(q & 127, 64) / 64, base = q & 128 ? glow : dark;
   const c = base.map((v, i) => Math.round(255 * (v + (lit[i] - v) * s) ** (1 / 2.2)));
   return `rgb(${c.join(",")})`;
@@ -573,6 +660,23 @@ async function midiOn() {
   } catch { /* no permission: the panel only */ }
 }
 
+// ------------------------------------------------------------------ the shell picker (the panel drawn, its state declared)
+{
+  const box = document.getElementById("shells");
+  for (const sh of SHELLS) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.id = sh.id;
+    b.title = `${sh.name}: ${sh.ink} ink`;
+    b.innerHTML = `<i style="--sw-body:${sh.body};--sw-btn:${sh.btn}"></i>${sh.name}`;
+    b.addEventListener("click", () => setShell(sh, true));
+    box.appendChild(b);
+  }
+  let saved = null;
+  try { saved = localStorage.getItem(SHELL); } catch {}
+  setShell(SHELLS.find((x) => x.id === saved) || SHELLS[0], false);
+}
+
 // ------------------------------------------------------------------ switching on
 const status = document.getElementById("status");
 const say = (t) => { status.textContent = t; status.hidden = !t; };
@@ -610,6 +714,7 @@ async function switchOn() {
     if (ac.sampleRate !== 44100) console.warn(`melodee-tess: the browser plays at ${ac.sampleRate} Hz, the pitch is off by ${(1200 * Math.log2(ac.sampleRate / 44100)).toFixed(0)} cents.`);
     syncButtons();
     syncKeys();
+    sendInk();
     send({ type: "visible", on: !document.hidden });
     midiOn();
     document.getElementById("demo").disabled = false;

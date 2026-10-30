@@ -11,7 +11,7 @@ The build makes three files in `build/`:
 ## Prerequisites (macOS)
 
 - Python 3 with Pillow and fontTools: `pip3 install Pillow fonttools` (the UI font and icons are
-  rasterised at build time). Pillow's Raqm layout needs FriBidi: `brew install fribidi` (build.sh and
+  rasterised at build time; Python's `lzma` packs what boot copies to SRAM). Pillow's Raqm layout needs FriBidi: `brew install fribidi` (build.sh and
   tests/run_tests.sh point `DYLD_FALLBACK_LIBRARY_PATH` at Homebrew's lib)
 - Docker Desktop. The JieLi toolchain is Linux x86-64 only; the build runs each tool in a
   `linux/amd64` `debian:bookworm-slim` container (Rosetta on Apple silicon). Keep the source
@@ -96,6 +96,7 @@ Build options (environment; most use `0` or `1`; defaults in `firmware/src/build
 | `MELODEE_DUAL_CORE` | 1 | paired FM6 rendering on CPU1; `0` builds serial-only firmware |
 | `MELODEE_SLICE` | 1 | the SLICE engine |
 | `MELODEE_ICONS` | 1 | parameter icons on the knob cards |
+| `MELODEE_COMPRESS_AUDIO` | 1 | the five SRAM load images (`.ram_text`, `.dsp_text`, `.dsp_tables`, `.data`, `.audio_text`) stored as raw LZMA1 (`tools/boot_audio.py`) and unpacked by `fm1_cstart` before anything runs from SRAM (`firmware/src/boot_lzma.h`; a record that does not unpack exactly enters update mode); `0` stores them raw and copies them by words |
 
 ## Samples
 
@@ -188,7 +189,9 @@ starts, identify its recovery mode using the steps below.
 A tag `vX.Y[.Z]` on `main` runs `.github/workflows/release.yml`: both variants built, the full host suite, the two
 packages checked as the site checks them, and a GitHub release with both packages, `SHA256SUMS` and the notes in
 `docs/RELEASE_X.Y.md` (which must exist; a tag with a suffix, `v2.0-rc1`, makes a prerelease). Run by hand from the
-Actions tab with a version, it builds and checks without publishing.
+Actions tab with a version, it builds and checks without publishing. A tag's packages also get a GitHub build
+provenance attestation, verified before the release is published; anyone can check a download with
+`gh attestation verify tessera-X.Y.fwsc --repo Rastapopolix/tessera`.
 
 The site is GitHub Pages from `main`'s `docs/`: publish a release there with the `make_site.py` line above into
 `docs/` (the test pages go into `docs/test/VERSION/` the same way), in a pull request.
@@ -389,8 +392,10 @@ shedding remains active. Serial builds retain their original five-voice state.
 
 The startup sequence follows `EnableOtherCpu` in the tested AC79 SDK's
 `system.a/port.c.o` and `cpu.a/startup.S.o`: entry mailbox `0x01C7FFF8`, temporary
-clock-divider bit 3, and `C1_CON` release/hold bits 3/1. CPU1 has separate 4 KiB
-user and supervisor stacks and no enabled interrupts. It polls an internal SRAM
+clock-divider bit 3, and `C1_CON` release/hold bits 3/1. CPU1 has a private 4 KiB bank, a 3 KiB user and a
+1 KiB supervisor stack, and no enabled interrupts. The build checks every stack's deepest linked call path
+against its reservation (`tools/stack_budget.py`, a static estimate with margins; `build/stack-budget.json`
+lists each path), and `tools/usb_audio_stats.py --stacks` reads the stacks' high-water marks on the device. It polls an internal SRAM
 mailbox while idle; the effect on battery consumption still needs measurement. Startup has a 10 ms
 handshake; a failure retains serial rendering.
 The worker's idle loop is in internal RAM and publishes completion only after

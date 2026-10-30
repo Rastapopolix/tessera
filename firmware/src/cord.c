@@ -2,7 +2,7 @@
  * Copyright (C) 2026 Theo Dainis (melodee-tess) */
 /* Cords (cord.h): the destinations. Left out on purpose:
  *   GLIDE, UNISON DETUNE, VOICE MODE ..: read at a note-on (voice_alloc, mono_play), before the block's modulation
- *   FX SEND 2 and 3: read in mix_part before mod_begin
+ *   an insert's or a send effect's TYPE, FX MODE: a choice, not an amount
  *   ARP, PATTERN, SCALE ..: read by the sequencer, outside the block
  *   TEMPO and the other globals: one value for every track, a cord's amount would be every track's
  *   MODE, FORM, EVERY, ROLL, FOLLOW: a choice or a restart, not an amount to move by
@@ -12,6 +12,7 @@
 #define V_(c, md, n, f) {c, CK_VOICE, md, PID_NONE, n, f}
 #define B_(c, p, n, f) {c, CK_BLOCK, 0, PID_TRACK(p), n, f}
 #define S_(c, x, n, f) {c, CK_STEP, 0, PID_TESS(x), n, f}
+#define G_(c, g, n, f) {c, CK_GLOBAL, 0, PID_GLOBAL(g), n, f}
 static const cord_dest_t CORD_DESTS[CD_N] = {
     [CD_OFF] = {CD_OFF, CK_VOICE, 0, PID_NONE, "--", "nothing"},
     [CD_PITCH] = V_(CD_PITCH, MD_PITCH, "PITCH", "the pitch of each voice: 100 % at a full source is an octave"),
@@ -75,10 +76,32 @@ static const cord_dest_t CORD_DESTS[CD_N] = {
     [CD_GRD_TOMS] = S_(CD_GRD_TOMS, TX_GRD_TOMS, "AT TOMS", "Atlas' TOMS: how many of the near misses play the tom"),
     [CD_AN_VARY] = S_(CD_AN_VARY, TX_AN_VARY, "AN VARY", "Answer's VARY: how much each answer changes the phrase"),
     [CD_SUB_HUMAN] = S_(CD_SUB_HUMAN, TX_SUB_HUMAN, "H TIME", "TIMING's HUMAN: how late a step may play"),
+    [CD_FX1_MIX] = B_(CD_FX1_MIX, P_FXMIX, "FX1 MIX", "the track's FX 1: how much of the effect is heard"),
+    [CD_FX1_RATE] = B_(CD_FX1_RATE, P_FXRATE, "FX1 RTE", "the track's FX 1 RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE)"),
+    [CD_FX1_CHAR] = B_(CD_FX1_CHAR, P_FXCHAR, "FX1 CHR", "the track's FX 1 fourth knob (DEPTH, REPEAT, DECAY ..: the effect's)"),
+    [CD_FX2_MIX] = B_(CD_FX2_MIX, P_FX2MIX, "FX2 MIX", "the track's FX 2: how much of the effect is heard"),
+    [CD_FX2_RATE] = B_(CD_FX2_RATE, P_FX2RATE, "FX2 RTE", "the track's FX 2 RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE)"),
+    [CD_FX2_CHAR] = B_(CD_FX2_CHAR, P_FX2CHAR, "FX2 CHR", "the track's FX 2 fourth knob (DEPTH, REPEAT, DECAY ..: the effect's)"),
+    [CD_FX3_MIX] = B_(CD_FX3_MIX, P_FX3MIX, "FX3 MIX", "the track's FX 3: how much of the effect is heard"),
+    [CD_FX3_RATE] = B_(CD_FX3_RATE, P_FX3RATE, "FX3 RTE", "the track's FX 3 RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE)"),
+    [CD_FX3_CHAR] = B_(CD_FX3_CHAR, P_FX3CHAR, "FX3 CHR", "the track's FX 3 fourth knob (DEPTH, REPEAT, DECAY ..: the effect's)"),
+    [CD_FX_SEND2] = B_(CD_FX_SEND2, P_FXSEND2, "SEND 2", "how much of the track goes to SEND FX 2 (FX MODE SPLIT)"),
+    [CD_FX_SEND3] = B_(CD_FX_SEND3, P_FXSEND3, "SEND 3", "how much of the track goes to SEND FX 3 (FX MODE SPLIT)"),
+    [CD_SF1_MIX] = G_(CD_SF1_MIX, G_MFXMIX, "SF1 MIX", "SEND FX 1's MIX, for every track (the project's)"),
+    [CD_SF1_RATE] = G_(CD_SF1_RATE, G_MFXRATE, "SF1 RTE", "SEND FX 1's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE)"),
+    [CD_SF1_CHAR] = G_(CD_SF1_CHAR, G_MFXCHAR, "SF1 CHR", "SEND FX 1's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's)"),
+    [CD_SF2_MIX] = G_(CD_SF2_MIX, G_MFX2MIX, "SF2 MIX", "SEND FX 2's MIX, for every track (the project's)"),
+    [CD_SF2_RATE] = G_(CD_SF2_RATE, G_MFX2RATE, "SF2 RTE", "SEND FX 2's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE)"),
+    [CD_SF2_CHAR] = G_(CD_SF2_CHAR, G_MFX2CHAR, "SF2 CHR", "SEND FX 2's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's)"),
+    [CD_SF3_MIX] = G_(CD_SF3_MIX, G_MFX3MIX, "SF3 MIX", "SEND FX 3's MIX, for every track (the project's)"),
+    [CD_SF3_RATE] = G_(CD_SF3_RATE, G_MFX3RATE, "SF3 RTE", "SEND FX 3's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE)"),
+    [CD_SF3_CHAR] = G_(CD_SF3_CHAR, G_MFX3CHAR, "SF3 CHR", "SEND FX 3's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's)"),
+    [CD_FX_RETURN] = G_(CD_FX_RETURN, G_FXRETURN, "RETURN", "the send effects' RETURN: how loud they come back, for every track"),
 };
 #undef V_
 #undef B_
 #undef S_
+#undef G_
 
 const cord_dest_t *cord_dest(uint32_t code)
 {
@@ -191,10 +214,14 @@ static void cord_masks(void)
     uint32_t i, t;
     for (t = 0; t < NTRK; t++) cord_mask[t] = cord_smask[t] = 0;
     cord_envsrc = 0;
+    cord_gmask = 0;
     for (i = 0; i < CORD_LIVE; i++) {
         const cord_t *c = &cords[i];
+        uint32_t kind;
         if (!cord_live(c)) continue;
-        if (cord_dest(c->dst)->kind == CK_STEP) cord_smask[c->dst_trk] |= 1u << i;
+        kind = cord_dest(c->dst)->kind;
+        if (kind == CK_STEP) cord_smask[c->dst_trk] |= 1u << i;
+        else if (kind == CK_GLOBAL) cord_gmask |= 1u << i;
         else cord_mask[c->dst_trk] |= 1u << i;
         if (c->src == CS_ENV) cord_envsrc |= (uint8_t)(1u << c->src_trk);
     }
@@ -208,6 +235,7 @@ int cord_set(uint32_t i, const cord_t *c)
         return 0;
     TESS_IRQ_OFF();
     cords[i] = *c;
+    if (cord_dest(c->dst)->kind == CK_GLOBAL) cords[i].dst_trk = 0;   /* (every track's: no track of its own) */
     cord_masks();
     TESS_IRQ_ON();
     for (t = 0; t < NTRK; t++)                          /* (edited: the project's now) */
@@ -222,6 +250,7 @@ static void cord_reset(void)
     uint32_t t;
     for (t = 0; t < NTRK; t++) cord_mask[t] = cord_smask[t] = cord_adopted[t] = 0;
     cord_envsrc = 0;
+    cord_gmask = 0;
     cord_fresh = 1;
     memset(cords, 0, sizeof cords);
 }
@@ -257,6 +286,7 @@ static int cord_parse(const uint8_t *in, cord_t *got)
         if (c->src >= CS_N || c->src_trk >= NTRK || c->dst >= CD_N || !cord_dest(c->dst) || c->dst_trk >= NTRK ||
             c->amount < -100 || c->amount > 100 || c->offset < -100 || c->offset > 100)
             return 0;
+        if (cord_dest(c->dst)->kind == CK_GLOBAL) c->dst_trk = 0;
     }
     return 1;
 }
@@ -295,7 +325,8 @@ static int32_t cord_share(const cord_t *c)
     return (x * c->amount) / 100 + (32768 * c->offset) / 100;
 }
 /* what the mods move parameter pid of track tr by now (Q15 of its range, as cord_share; the knob cards' live marks,
- * ui_draw.c). 0: no mod reaches it (the voice destinations PITCH .. GAIN, LFO DEP have no knob: never) */
+ * ui_draw.c). 0: no mod reaches it (the voice destinations PITCH .. GAIN, LFO DEP have no knob: never). A send
+ * effect's: whatever tr */
 static int cord_moves(uint32_t pid, uint32_t tr, int32_t *share)
 {
     uint32_t i;
@@ -303,7 +334,8 @@ static int cord_moves(uint32_t pid, uint32_t tr, int32_t *share)
     *share = 0;
     for (i = 0; i < CORD_LIVE; i++) {
         const cord_t *c = &cords[i];
-        if (c->dst_trk != tr || !cord_live(c) || cord_dest(c->dst)->pid != pid) continue;
+        if (!cord_live(c) || cord_dest(c->dst)->pid != pid ||
+            (c->dst_trk != tr && cord_dest(c->dst)->kind != CK_GLOBAL)) continue;
         *share += cord_share(c);
         n = 1;
     }
@@ -376,6 +408,23 @@ static __attribute__((noinline)) void cord_block(track_t *t, int32_t *off, int32
                 off[j] += cord_steps((32768 * c->offset) / 100, pd->max - pd->min);
         }
     }
+}
+
+/* fx.c fx_bus_settings (cord_gmask: some cord reaches them): the send effects' settings g (song.g from G_MFXTYPE to
+ * G_FXRETURN) as their cords move them this block, within each one's range */
+void cord_fx_bus(int16_t *g)
+{
+    int32_t off[G_FXRETURN - G_MFXTYPE + 1] = {0};
+    uint32_t m = cord_gmask, i;
+    for (i = 0; m; i++, m >>= 1) {
+        const cord_t *c = &cords[i];
+        uint32_t id;
+        if (!(m & 1u)) continue;
+        id = cord_dest(c->dst)->pid - PID_GLOBAL(0);
+        off[id - G_MFXTYPE] += cord_steps(cord_share(c), GP[id].max - GP[id].min);
+    }
+    for (i = 0; i < NELEM(off); i++)
+        if (off[i]) g[i] = (int16_t)clamp(g[i] + off[i], GP[G_MFXTYPE + i].min, GP[G_MFXTYPE + i].max);
 }
 
 /* ------------------------------------------------------------ the default patch --- */

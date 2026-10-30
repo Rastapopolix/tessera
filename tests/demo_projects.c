@@ -24,7 +24,8 @@
 #include "hostsim.c"
 #undef main
 
-static int32_t fm1_enc_take(uint32_t e) { (void)e; return 0; }
+static int32_t v_enc[7];                               /* (the video's knob turns: detents waiting for ui_input) */
+static int32_t fm1_enc_take(uint32_t e) { int32_t s = v_enc[e % 7u]; v_enc[e % 7u] = 0; return s; }
 static void fm1_irq_off(void) {}
 static void fm1_irq_on(void) {}
 static void lcd_sync(void) {}
@@ -48,8 +49,9 @@ static uint8_t fm1_led_dim[3][FM1_NCOL], fm1_led_dim_mask[3];
 #define FM1_TICKS_PER_US 1u
 static uint32_t host_ticks;
 static uint32_t fm1_ticks(void) { return host_ticks; }
-static uint32_t fm1_input_edges(int x) { (void)x; return 0; }
-static uint32_t fm1_input_note_edges(void) { return 0; }
+static uint32_t v_pressed, v_note_edges;               /* (the video's button and key presses, as edges) */
+static uint32_t fm1_input_edges(int x) { uint32_t p = v_pressed; (void)x; v_pressed = 0; return p; }
+static uint32_t fm1_input_note_edges(void) { uint32_t n = v_note_edges; v_note_edges = 0; return n; }
 static void fm1_wdt_feed(void) {}
 #define SCOPE_N 512u                                     /* audio.c: the HOME oscilloscope */
 static int16_t scope_buf[SCOPE_N];
@@ -84,6 +86,7 @@ static void fl_plain_window_init(void) {}
 #include "../firmware/src/storage.c"
 #include "../firmware/src/upreset.c"
 #include "../firmware/src/project.c"
+#include "../firmware/src/fm6_store.c"                 /* (ui_input's STORE and SEND: the video drives ui_input) */
 
 #define ED_BK_FLASH_PTR(off) (nor + (off))
 enum { ED_BACKUP_LIST = 65, ED_BACKUP_GET, ED_BACKUP_PUT };
@@ -231,69 +234,94 @@ enum { FX_TINE = 8, FX_KALIMBA = 19, FX_SOFT_PAD = 25, FX_DEEP_PAD = 27, FX_RIN 
        FX_KOTO_PLUCK = 36, FX_KOTO_RING = 37, FX_KUGO_HARP = 39 };   /* FM6 presets (eng_fm6.c FM6_PRESETS) */
 enum { TR_FAT_BASS = 0, TR_WARM_PAD = 5, TR_HOLLOW_PAD = 7, TR_SUB_BASS = 9, TR_BREATH_FLUTE = 11 };   /* TRIO's */
 enum { DK_808_KIT, DK_909_KIT };                                   /* DRUM's */
+enum { OR_WARM_PAD = 1, OR_FLUTE = 21, OR_DUB_CHORD = 23 };              /* ORACLE's (oracle_sounds.h) */
+enum { FX_TINE_EP = 0, FX_FLUTE = 20 };
+/* a STEP track's step i: one note (0: a rest) at velocity vel */
+static void step_note(uint32_t tr, uint32_t i, uint8_t note, uint32_t vel)
+{
+    step_t *st = &trk[tr].step[i];
+    memset(st, 0, sizeof *st);
+    st->time = note ? ST_NOTE : ST_REST;
+    st->n = note ? 1u : 0u;
+    st->note[0] = note;
+    st->vel = (uint8_t)(note ? vel : 0u);
+}
 
 /* ------------------------------------------------------------- the demos --- */
-/* STILL TIDE: the ambient one. A DIA7 drone that breathes, a warm pad answering it, wind chimes falling, a sub bass
- * that rarely moves; ENERGY's slow arc thins the generators over minutes and RESTS leaves the drone alone now and
- * then. YO on D, 72 BPM: nothing to clash, so it can run for an hour. */
+/* STILL TIDE: the ambient one. An ORACLE drone that breathes, a warm pad wandering and coming home (GRAVITY), an
+ * electric piano falling as leaves through the FILTER effect, a sub bass varied from a line written in STEP (STEP as
+ * seed); ENERGY's slow arc thins the generators over minutes and RESTS leaves the drone alone now and then. YO on D,
+ * 72 BPM: nothing to clash, so it can run for an hour. (3.0: no bell on its own; the chimes are gone.) */
 static void demo_still(void)
 {
     song.g[G_BPM] = 72;
-    sound(0, ENGI_FM6, FX_SOFT_PAD);
+    sound(0, ENGI_ORACLE, OR_WARM_PAD);
     sound(1, ENGI_TRIO, TR_WARM_PAD);
-    sound(2, ENGI_FM6, FX_FURIN);
+    sound(2, ENGI_FM6, FX_TINE_EP);
     sound(3, ENGI_TRIO, TR_SUB_BASS);
     scale(2, SCL_YO, 0);
     sends(110, 90, 70, 60);
 
-    /* T1: CHORD DRONE, held, every voice on its own breath */
-    trk[0].p[P_CHRD] = 2;                             /* DIA7 */
+    /* T1: CHORD DRONE on ORACLE, held, every voice on its own breath */
+    trk[0].p[P_CHRD] = 1;                             /* DIA3 (ORACLE: three units a voice of the budget's 16) */
     trk[0].p[P_VOIC] = 1;                             /* OPEN */
     gen(0, TESS_ENG_CHORD, 11);
     tx(0, TX_CH_PROG, GEN_CH_DRONE); tx(0, TX_CH_BARS, 3); tx(0, TX_CH_HIT, GEN_CH_HOLD);
     tx(0, TX_CH_OCT, -1); tx(0, TX_CH_BREATH, 80);
-    mixer(0, 100, -10, 90, 0);
+    mixer(0, 94, -10, 90, 0);
 
-    /* T2: AWAKE at half notes, ringing to the next (LENGTH HIT), PROB leaving gaps */
+    /* T2: AWAKE at half notes, ringing to the next (LENGTH HIT); EVOLVE every 8 bars, GRAVITY pulls it home */
     trk[1].p[P_SDIV] = DIV_2;
     gen(1, TESS_ENG_AWAKE, 37);
     tx(1, TX_AWK_LENA, 7); tx(1, TX_AWK_LENB, 5); tx(1, TX_AWK_PROB, 55);
     tx(1, TX_NL_MODE, 2);
-    tx(1, TX_EV_EVERY, 4); tx(1, TX_EV_AMOUNT, 25);   /* EVERY 8 bars */
+    tx(1, TX_EV_EVERY, 4); tx(1, TX_EV_AMOUNT, 35);   /* EVERY 8 bars */
+    tx(1, TX_SD_GRAVITY, 40);
     mixer(1, 84, 20, 100, 30);
 
-    /* T3: FALL (BOUNCE past 4 balls): leaves landing on bells; the wind leans them with TIDE */
+    /* T3: FALL (BOUNCE past 4 balls): leaves landing on an electric piano, through a FILTER insert whose cutoff a
+     * TIDE opens and closes over minutes */
     trk[2].p[P_SDIV] = DIV_8;
     gen(2, TESS_ENG_BOUNCE, 5);
     tx(2, TX_BNC_BALLS, 5); tx(2, TX_BNC_SPEED, 10); tx(2, TX_BNC_ANGLE, 45);
     tx(2, TX_TW_DROP, 45); tx(2, TX_TW_HUMAN, 40); tx(2, TX_TW_SHIFT, 12);
-    mixer(2, 102, -30, 110, 70);
+    trk[2].p[P_FXTYPE] = 10; trk[2].p[P_FXMIX] = 127; trk[2].p[P_FXRATE] = 70; trk[2].p[P_FXCHAR] = 40;   /* FILTER */
+    mixer(2, 100, -30, 110, 70);
 
-    /* T4: MARKOV, mostly neighbours, mostly rests, an octave down (SUB BASS adds its own octave below) */
-    trk[3].p[P_SDIV] = DIV_2;
-    gen(3, TESS_ENG_MARKOV, 64);
-    tx(3, TX_MKV_LEAP, 10); tx(3, TX_MKV_DENS, 45); tx(3, TX_MKV_SPAN, 1);
+    /* T4: a sub bass line written in STEP (D, rests, A, G), played by TURING from it: the rhythm kept, the pitches
+     * varied now and then */
+    {
+        static const uint8_t LINE[8] = {38, 0, 0, 45, 0, 43, 0, 0};   /* D2 . . A2 . G2 . . */
+        for (uint32_t i = 0; i < 8u; i++) step_note(3, i, LINE[i], 96);
+        trk[3].p[P_SLEN] = 8;
+    }
+    trk[3].p[P_SDIV] = DIV_4;
+    gen(3, TESS_ENG_TURING, 64);
+    tx(3, TX_SD_SOURCE, 4); tx(3, TX_SD_KEEP, TESS_SD_RHYTHM);
+    tx(3, TX_TUR_PROB, 15);
     tx(3, TX_TW_SHIFT, -12); tx(3, TX_NL_MODE, 2);
     mixer(3, 85, 0, 30, 0);
 
     /* ENERGY: the project's tide and rests */
     tx(0, TX_EN_ARC, 60); tx(0, TX_EN_RESTS, 70);
     /* MODS */
-    cord(0, CS_TORPOR, 0, CD_CUTOFF, 0, 30, 0, 0);    /* T1 TIDE 1 -> T1 CUTOFF */
+    cord(0, CS_TORPOR, 0, CD_E1, 0, 30, 0, 0);        /* T1 TIDE 1 -> T1 CUT (ORACLE's MACRO) */
     cord(1, CS_OCHD2, 0, CD_PAN, 0, 25, 0, 0);        /* T1 SWARM 2 -> T1 PAN */
-    cord(2, CS_INERTIA, 2, CD_BNC_ANGLE, 2, 40, 0, 0);   /* T3 TIDE 2 -> T3 WIND */
+    cord(2, CS_INERTIA, 2, CD_FX1_RATE, 2, 35, 0, 0); /* T3 TIDE 2 -> T3 FX1 RTE: the filter's cutoff */
     cord(3, CS_ENERGY, 0, CD_FX_SEND, 1, 30, 0, 0);   /* ENERGY -> T2 FX SEND */
+    cord(4, CS_DRIFT, 2, CD_SF2_RATE, 0, 8, 0, 0);    /* T3 DRIFT -> SF2 RTE: the echo's time bends a little */
 }
 
 /* KOTO GARDEN: Zen-1's and FuMi-1's FM voices in HIRA on C. Two koto on QUAD's shared grid, one in eighths and one in
- * triplets, a column turning down so notes travel between them; a breath flute on the infinity series; a mokugyo
- * on POLY's three rhythms. 92 BPM */
+ * triplets, a column turning down so notes travel between them; an ORACLE flute on the infinity series in an ABAC
+ * FORM whose returns develop; a mokugyo written in STEP, its conditions and accumulator making it a little different
+ * each bar. 92 BPM */
 static void demo_garden(void)
 {
     song.g[G_BPM] = 92;
     sound(0, ENGI_FM6, FX_KOTO_PLUCK);
     sound(1, ENGI_FM6, FX_KOTO_RING);
-    sound(2, ENGI_TRIO, TR_BREATH_FLUTE);
+    sound(2, ENGI_ORACLE, OR_FLUTE);
     sound(3, ENGI_FM6, FX_MOKUGYO);
     scale(0, SCL_HIRA, 0);
     sends(90, 80, 80, 55);
@@ -312,28 +340,113 @@ static void demo_garden(void)
     tx(1, TX_TW_SHIFT, 12); tx(1, TX_TW_HUMAN, 30);
     mixer(1, 108, 25, 70, 40);
 
-    /* T3: SERIES at quarter notes, two degrees a step, ringing on */
+    /* T3: SERIES at quarter notes, two degrees a step, ringing on; FORM ABAC, 4 bars a section, each return of A
+     * developed a little (DEVELOP 40) */
     trk[2].p[P_SDIV] = DIV_4;
     gen(2, TESS_ENG_SERIES, 50);
     tx(2, TX_SR_START, 17); tx(2, TX_SR_INTV, 2); tx(2, TX_SR_LOOP, 0);
     tx(2, TX_NL_MODE, 2); tx(2, TX_TW_DROP, 35); tx(2, TX_TW_HUMAN, 35);
-    mixer(2, 81, 0, 90, 30);
+    tx(2, TX_EV_EVERY, 3); tx(2, TX_FM_FORM, 2); tx(2, TX_FM_CONTRAST, 40); tx(2, TX_FM_DEVELOP, 40);
+    mixer(2, 92, 0, 90, 30);
 
-    /* T4: POLY, rhythms /3 /4 /5 against each other */
+    /* T4: STEP, a mokugyo figure in sixteenths: the pickups only every other bar (1:2) or on the fourth (4:4), one
+     * note climbing a degree a pass up to 4 and back (Accumulate, PING) */
+    {
+        static const uint8_t FIG[16] = {48, 0, 0, 0, 0, 0, 55, 0, 48, 0, 0, 0, 0, 52, 0, 55};
+        for (uint32_t i = 0; i < 16u; i++) step_note(3, i, FIG[i], i % 8u ? 84 : 104);
+        step_set_cond(&trk[3].step[13], SC_1_2);
+        step_set_cond(&trk[3].step[15], SC_4_4);
+        step_set_climb(&trk[3].step[6], 1);
+        trk[3].p[P_SLEN] = 16;
+        tx(3, TX_ACC_LIMIT, 4); tx(3, TX_ACC_MODE, TESS_ACC_PING);
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF);                    /* (GEN: MODE STEP) */
     trk[3].p[P_SDIV] = DIV_16;
-    gen(3, TESS_ENG_POLY, 7);
-    tx(3, TX_POL_DIV1, 3); tx(3, TX_POL_DIV2, 4); tx(3, TX_POL_DIV3, 5); tx(3, TX_POL_DIV4, 0);
-    tx(3, TX_POL_SPAN, 1); tx(3, TX_TW_SHIFT, -12);
-    mixer(3, 108, 10, 40, 0);
+    mixer(3, 117, 10, 40, 0);
 
     cord(0, CS_APATHY, 0, CD_QD_PROB, 0, -40, 0, 0);  /* T1 TIDE 3 -> T1 Q PROB: the koto thins and fills */
-    cord(1, CS_OCHD4, 2, CD_CUTOFF, 2, 25, 0, 0);     /* T3 SWARM 4 -> T3 CUTOFF: the flute's breath */
+    cord(1, CS_OCHD4, 2, CD_E1, 2, 25, 0, 0);         /* T3 SWARM 4 -> T3 CUT (ORACLE's MACRO): the flute's breath */
     cord(2, CS_DRIFT, 1, CD_PAN, 1, 30, 0, 0);        /* T2 DRIFT -> T2 PAN */
+}
+
+/* LOW HARBOUR: the ambient dub. Slow and roomy, not a loop: ORACLE chord stabs on the offbeats, most of them dropped,
+ * each voice breathing, through a FILTER that a TIDE opens over minutes and into a long dotted echo whose time drifts
+ * like a tape's; a sub bass that walks and rests and is pulled home (GRAVITY); a 909 one-drop of rim and hats, the
+ * pickups conditional; a flute answering now and then. ENERGY's arc and RESTS clear the floor for the echoes.
+ * A dorian, 70 BPM */
+static void step_hits(uint32_t tr, uint32_t i, uint32_t lanes, uint32_t vel)   /* a DRUM step: lanes' hits */
+{
+    step_t *st = &trk[tr].step[i];
+    memset(st, 0, sizeof *st);
+    st->time = lanes ? ST_NOTE : ST_REST;
+    st->hit = (uint8_t)lanes;
+    st->vel = (uint8_t)(lanes ? vel : 0u);
+}
+enum { L_BD = 1, L_SD = 2, L_CP = 4, L_CH = 8, L_OH = 16, L_TM = 32, L_RS = 64, L_CB = 128 };   /* DRUM's lanes */
+static void demo_dub(void)
+{
+    song.g[G_BPM] = 70;
+    sound(0, ENGI_ORACLE, OR_DUB_CHORD);
+    sound(1, ENGI_TRIO, TR_SUB_BASS);
+    sound(2, ENGI_DRUM, DK_909_KIT);
+    sound(3, ENGI_FM6, FX_FLUTE);
+    scale(9, SCL_DOR, 0);
+    sends(118, 100, 111, 104);                        /* a big room; ECHO 321 ms: a dotted sixteenth at 70 BPM */
+
+    /* T1: CHORD stabs on the offbeats, TWO's two chords over 2 bars, DROP leaving most out; BREATH swells each voice */
+    trk[0].p[P_CHRD] = 1;                             /* DIA3 (ORACLE: three units a voice of the budget's 16) */
+    gen(0, TESS_ENG_CHORD, 23);
+    tx(0, TX_CH_PROG, GEN_CH_TWO); tx(0, TX_CH_BARS, 2); tx(0, TX_CH_HIT, GEN_CH_OFF);
+    tx(0, TX_CH_BREATH, 60); tx(0, TX_TW_DROP, 70); tx(0, TX_TW_HUMAN, 20);
+    or_patch[0][OR_DECAY_AMP] = 78; or_patch[0][OR_RELEASE_AMP] = 70;   /* (AMP ENV: short stabs; the echo is the tail) */
+    trk[0].p[P_FXTYPE] = 10; trk[0].p[P_FXMIX] = 127; trk[0].p[P_FXRATE] = 64; trk[0].p[P_FXCHAR] = 50;   /* FILTER */
+    mixer(0, 108, -15, 60, 120);
+
+    /* T2: MARKOV sub bass in quarters, neighbours and rests; EVOLVE every 4 bars, GRAVITY pulls it back */
+    trk[1].p[P_SDIV] = DIV_4;
+    gen(1, TESS_ENG_MARKOV, 41);
+    tx(1, TX_MKV_LEAP, 15); tx(1, TX_MKV_DENS, 55); tx(1, TX_MKV_SPAN, 1);
+    tx(1, TX_TW_SHIFT, -12);
+    tx(1, TX_EV_EVERY, 3); tx(1, TX_EV_AMOUNT, 30); tx(1, TX_SD_GRAVITY, 50);
+    mixer(1, 92, 0, 10, 0);
+
+    /* T3: 909 STEP, one bar of sixteenths: kick and rim on the third beat (one drop), hats on some offbeats by
+     * condition, an open hat every other bar (1:2), a rim pickup on the fourth bar (4:4) */
+    {
+        static const uint8_t L[16] = {0, 0, L_CH, 0, 0, 0, L_CH, 0, L_BD | L_RS, 0, L_CH, 0, 0, 0, L_OH, L_RS};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(2, i, L[i], i == 8u ? 110 : 80);
+        step_set_cond(&trk[2].step[2], SC_2_4);      /* (conditions, not chance: the same each time it plays) */
+        step_set_cond(&trk[2].step[6], SC_1_2);
+        step_set_cond(&trk[2].step[10], SC_3_4);
+        step_set_cond(&trk[2].step[14], SC_1_2);
+        step_set_cond(&trk[2].step[15], SC_4_4);
+        trk[2].p[P_SLEN] = 16;
+    }
+    tx(2, TX_MODE, TESS_ENG_OFF);                    /* (GEN: MODE STEP) */
+    trk[2].p[P_SDIV] = DIV_16;
+    tx(2, TX_SUB_HUMAN, 12);
+    mixer(2, 96, 10, 40, 70);
+
+    /* T4: AWAKE, a flute (a melodica's part) answering in half notes now and then, into the echo */
+    trk[3].p[P_SDIV] = DIV_2;
+    gen(3, TESS_ENG_AWAKE, 58);
+    tx(3, TX_AWK_LENA, 5); tx(3, TX_AWK_LENB, 7); tx(3, TX_AWK_PROB, 35);
+    tx(3, TX_TW_SHIFT, 12);
+    mixer(3, 98, 25, 90, 90);
+
+    /* ENERGY: a slow arc, and rests that leave the echoes */
+    tx(0, TX_EN_ARC, 45); tx(0, TX_EN_RESTS, 60);
+    /* MODS */
+    cord(0, CS_INERTIA, 0, CD_FX1_RATE, 0, 40, 0, 0); /* T1 TIDE 2 -> T1 FX1 RTE: the stabs' filter opens and closes */
+    cord(1, CS_DRIFT, 0, CD_SF2_RATE, 0, 10, 0, 0);   /* T1 DRIFT -> SF2 RTE: the echo's time bends as a tape's */
+    cord(2, CS_APATHY, 0, CD_FX_SEND2, 0, 30, 0, 1);  /* T1 TIDE 3 -> T1 SEND 2: more of the stabs into the echo, then less */
+    cord(3, CS_OCHD3, 3, CD_PAN, 3, 35, 0, 0);        /* T4 SWARM 3 -> T4 PAN */
 }
 
 static const struct { const char *name, *file; void (*make)(void); } DEMOS[] = {
     {"STILL TIDE", "still-tide", demo_still},
     {"KOTO GARDEN", "koto-garden", demo_garden},
+    {"LOW HARBOUR", "low-harbour", demo_dub},
 };
 #define NDEMO (sizeof DEMOS / sizeof DEMOS[0])
 
@@ -345,6 +458,7 @@ typedef struct { uint32_t notes[NTRK], clips, voices, taken; int32_t peak; doubl
 typedef struct { uint32_t ms; int home; uint8_t sel; const char *page, *caption; } vstep_t;
 static const char *v_root;                              /* (0: no video) */
 static int v_want = -1, v_on;                           /* (the demo filmed in this make; v_on: its final play now) */
+static const uint32_t V_DEMO_SECS[] = {35, 30, 35};    /* (each demo's part of the video) */
 static FILE *v_cap;
 static double v_t0;
 static void v_page(int home, uint32_t sel, const char *title);
@@ -360,6 +474,11 @@ static dm_play_t play(uint32_t secs, const char *wav)
     double sq = 0;
     memset(&r, 0, sizeof r);
     memset(dm_notes, 0, sizeof dm_notes);
+    uint32_t step_age[NTRK];
+    for (i = 0; i < NTRK; i++) {
+        step_age[i] = 0;
+        for (uint32_t k = 0; k < NVOICE; k++) if (trk[i].v[k].age > step_age[i]) step_age[i] = trk[i].v[k].age;
+    }
     if (wav && !(w = fopen(wav, "wb"))) fprintf(stderr, "demos: cannot write %s\n", wav);
     if (w) wav_hdr(w, frames);
     char vdir[600];
@@ -379,6 +498,11 @@ static dm_play_t play(uint32_t secs, const char *wav)
         }
         dm_f = f;
         mix_block(o, CTL);
+        for (i = 0; i < NTRK; i++)                       /* (a STEP track's notes: dm_note sees a generator's only, so
+                                                         * the voices it started, by their age) */
+            if (i >= TESSERA_TRACKS || tessera.mode[i] == TESS_ENG_OFF)
+                for (uint32_t k = 0; k < NVOICE; k++)
+                    if (trk[i].v[k].age > step_age[i]) step_age[i] = trk[i].v[k].age, dm_notes[i]++;
         fm1_ms = f / (FS / 1000u);
         if (vst && vb % V_BLOCKS == 0) { ui_draw(); v_ppm(vdir, vf++); }
         if (busy_now() > r.voices) r.voices = busy_now();
@@ -473,7 +597,7 @@ static int make(const char *dir, uint32_t secs)
         restore_load(rec, len, name);
         snprintf(path, sizeof path, "%s/%s.wav", dir, DEMOS[d].file);
         v_on = v_root && v_want == (int)d;              /* (video: the demo filmed plays long, the others as the tests do) */
-        a = play(v_root ? (v_on ? 52u : 20u) : secs, path);
+        a = play(v_root ? (v_on ? V_DEMO_SECS[d] : 20u) : secs, path);
         v_on = 0;
         bad += report(DEMOS[d].name, &a);
     }
@@ -599,7 +723,7 @@ static int archive_restore(const char *path)
         project_cur_name(name);
         snprintf(w, sizeof w, "slot %c: %s loads", 'A' + slot, name);
         bad += check(w, proj_cur == slot);
-        bad += report(name, (dm_play_t[]){play(10, 0)});
+        bad += report(name, (dm_play_t[]){play(20, 0)});
     }
     free(json);
     return bad;
@@ -610,25 +734,32 @@ static int archive_restore(const char *path)
  * same audio as make's WAVs, only longer), each drawing its screens on a timeline; then a short tour of the modes
  * the demos leave out. Audio and screen from one pass, a frame every V_BLOCKS blocks. OUTDIR/<clip>.wav,
  * OUTDIR/<clip>/f00000.ppm .., OUTDIR/captions.txt (tools/demo_video.py: the video) */
-typedef struct { uint32_t ms, key, down; } vkey_t;
-typedef struct { uint32_t ms, tr, x; int32_t v; } vset_t;   /* a Tessera setting changed at ms, as a knob would */
+typedef struct { uint32_t ms, key, down; } vkey_t;   /* a key (0: F3 .. 7: C4 ..) down or up at ms */
+typedef struct { uint32_t ms, btn, down; } vbtn_t;   /* a button (panel.c B_) down or up at ms */
+typedef struct { uint32_t ms, role; int32_t steps; uint32_t dur; } vturn_t;   /* a knob (EN_) turned steps detents
+                                                     * over dur ms, through ui_input as a hand turns it */
 static const vstep_t V_STILL[] = {
     {0, 1, V_KEEP, 0, "STILL TIDE: an ambient demo, four tracks that keep changing on their own"},
-    {7000, 0, 0, "GEN", "Track 1, CHORD: a drone in YO on D, each voice breathing on its own slow cycle"},
-    {15000, 0, 1, "GEN", "Track 2, AWAKE: two loops of different lengths on a warm TRIO pad"},
-    {23000, 0, 2, "GEN", "Track 3, FALL: leaves land and play bells; a TIDE source leans the wind"},
-    {31000, 0, 3, "GEN", "Track 4, MARKOV: a sub bass that mostly rests"},
-    {38000, 0, 0, "ENERGY", "ENERGY: the project's slow tide thins the generators over minutes"},
-    {45000, 0, 0, "MATRIX", "MATRIX: every modulation cord, track by track"},
+    {5000, 0, 0, "GEN", "Track 1, CHORD on ORACLE: a drone in YO on D, each voice breathing on its own"},
+    {11000, 0, 1, "EVOLVE", "Track 2, AWAKE: a warm pad that wanders, and GRAVITY pulls it home"},
+    {17000, 0, 2, "FX 1", "Track 3, FALL: leaves land on an electric piano, through the FILTER effect"},
+    {23000, 0, 3, "GEN", "Track 4: a bass line written in STEP, varied by TURING (STEP as seed)"},
+    {29000, 0, 0, "MATRIX", "MATRIX: TIDE, SWARM and DRIFT move the filters, the pan and the echo"},
 };
 static const vstep_t V_GARDEN[] = {
-    {0, 1, V_KEEP, 0, "KOTO GARDEN: Zen-1's FM voices in HIRA on C"},
-    {7000, 0, 0, "GEN", "Track 1, QUAD: a koto on a grid the tracks share, notes travelling between them"},
-    {15000, 0, 1, "GEN", "Track 2, QUAD: the second koto, in triplets, on the same grid"},
-    {23000, 0, 2, "GEN", "Track 3, SERIES: a breath flute on Per Norgard's infinity series"},
-    {31000, 0, 3, "GEN", "Track 4, POLY: a mokugyo on three rhythms"},
-    {38000, 0, 0, "MODS", "MODS: sixteen cords, any source to any destination"},
-    {45000, 1, V_KEEP, 0, "KOTO GARDEN on Stage: every track's sound and level"},
+    {0, 1, V_KEEP, 0, "KOTO GARDEN: FM koto in HIRA on C"},
+    {5000, 0, 0, "GEN", "Tracks 1 and 2, QUAD: two koto on one grid, eighths against triplets"},
+    {11000, 0, 2, "FORM", "Track 3, an ORACLE flute on SERIES, in an ABAC FORM whose returns develop"},
+    {18000, 0, 3, "NOTES", "Track 4, STEP: a mokugyo; conditions and Accumulate change it bar by bar"},
+    {24000, 0, 0, "MODS", "MODS: a TIDE thins the koto and fills it again; SWARM breathes in the flute"},
+};
+static const vstep_t V_HARBOUR[] = {
+    {0, 1, V_KEEP, 0, "LOW HARBOUR: an ambient dub in A dorian, 70 BPM"},
+    {5000, 0, 0, "GEN", "Track 1, CHORD on ORACLE: offbeat stabs, most left out, into a long echo"},
+    {11000, 0, 0, "FX 1", "The stabs' FILTER effect, its cutoff opened and closed by a TIDE"},
+    {17000, 0, 2, "NOTES", "Track 3, a 909 in STEP: a one drop, the hats on conditions"},
+    {23000, 0, 1, "EVOLVE", "Track 2, a MARKOV sub bass that evolves; GRAVITY keeps it near home"},
+    {29000, 0, 0, "MODS", "MODS: DRIFT bends the echo's time like a tape's"},
 };
 static const vstep_t *v_steps_of(const char *wav, uint32_t *n, char *dir, uint32_t cap)
 {
@@ -638,6 +769,7 @@ static const vstep_t *v_steps_of(const char *wav, uint32_t *n, char *dir, uint32
     mkdir(dir, 0755);
     if (!strncmp(base, "still-tide", 10)) { *n = sizeof V_STILL / sizeof V_STILL[0]; return V_STILL; }
     if (!strncmp(base, "koto-garden", 11)) { *n = sizeof V_GARDEN / sizeof V_GARDEN[0]; return V_GARDEN; }
+    if (!strncmp(base, "low-harbour", 11)) { *n = sizeof V_HARBOUR / sizeof V_HARBOUR[0]; return V_HARBOUR; }
     *n = 0;
     return 0;
 }
@@ -662,51 +794,86 @@ static void v_ppm(const char *dir, uint32_t n)
     }
     fclose(f);
 }
-/* a tour clip: the project set up now, played secs s with its steps, keys and setting changes, frames and audio */
-static void v_clip(const char *out, const char *name, uint32_t secs, const vstep_t *st, uint32_t nst, const vkey_t *keys,
-                   uint32_t nkeys, const vset_t *sets, uint32_t nsets)
+/* a clip of the video: the project set up now, played secs s (after pre s unheard) with its pages, keys, buttons and
+ * knob turns, frames and audio */
+typedef struct {
+    const char *name;
+    uint32_t secs, pre;
+    const vstep_t *st; uint32_t nst;
+    const vkey_t *keys; uint32_t nkeys;
+    const vbtn_t *btns; uint32_t nbtns;
+    const vturn_t *turns; uint32_t nturns;
+} vclip_t;
+#define VN(a) a, (uint32_t)(sizeof a / sizeof a[0])
+static void v_run(const char *out, const vclip_t *c)
 {
     char dir[600], wav[600];
-    uint32_t frames = secs * FS, f, si = 0, ki = 0, xi = 0, b = 0, n = 0;
+    uint32_t frames = c->secs * FS, f, si = 0, ki = 0, bi = 0, b = 0, n = 0, done[16] = {0};
     memset(dm_notes, 0, sizeof dm_notes);
-    snprintf(dir, sizeof dir, "%s/%s", out, name);
+    snprintf(dir, sizeof dir, "%s/%s", out, c->name);
     mkdir(dir, 0755);
-    snprintf(wav, sizeof wav, "%s/%s.wav", out, name);
+    snprintf(wav, sizeof wav, "%s/%s.wav", out, c->name);
     FILE *w = fopen(wav, "wb");
     if (!w) return;
     wav_hdr(w, frames);
     transport_req = 1;
+    for (f = 0; f < c->pre * FS; f += CTL) { int32_t o[2 * CTL]; mix_block(o, CTL); }
     for (f = 0; f < frames; f += CTL, b++) {
         int32_t o[2 * CTL];
-        uint32_t ms = (uint32_t)((uint64_t)f * 1000u / FS);
-        while (si < nst && ms >= st[si].ms) {
-            v_page(st[si].home, st[si].sel, st[si].page);
-            fprintf(v_cap, "%s\t%.3f\t%.3f\t%s\n", name, v_t0 + st[si].ms / 1000.0,
-                    v_t0 + (si + 1u < nst ? st[si + 1u].ms / 1000.0 : (double)secs), st[si].caption);
+        uint32_t ms = (uint32_t)((uint64_t)f * 1000u / FS), input = b % V_BLOCKS == 0;
+        fm1_ms = (c->pre * FS + f) / (FS / 1000u);
+        host_ticks = fm1_ms * 1000u;
+        while (si < c->nst && ms >= c->st[si].ms) {
+            v_page(c->st[si].home, c->st[si].sel, c->st[si].page);
+            fprintf(v_cap, "%s\t%.3f\t%.3f\t%s\n", c->name, v_t0 + c->st[si].ms / 1000.0,
+                    v_t0 + (si + 1u < c->nst ? c->st[si + 1u].ms / 1000.0 : (double)c->secs), c->st[si].caption);
             si++;
         }
-        while (ki < nkeys && ms >= keys[ki].ms) {
-            if (keys[ki].down) fm1_in.notes |= 1u << keys[ki].key; else fm1_in.notes &= ~(1u << keys[ki].key);
+        while (ki < c->nkeys && ms >= c->keys[ki].ms) {
+            if (c->keys[ki].down) fm1_in.notes |= 1u << c->keys[ki].key, v_note_edges |= 1u << c->keys[ki].key;
+            else fm1_in.notes &= ~(1u << c->keys[ki].key);
             keyboard_block();
-            ki++;
+            ki++, input = 1;
         }
-        while (xi < nsets && ms >= sets[xi].ms) {
-            tx(sets[xi].tr, sets[xi].x, sets[xi].v);
-            ui.force = 1;
-            xi++;
+        while (bi < c->nbtns && ms >= c->btns[bi].ms) {
+            uint32_t m = 1u << panel.btn[c->btns[bi].btn];
+            if (c->btns[bi].down) fm1_in.buttons |= m, v_pressed |= m;
+            else fm1_in.buttons &= ~m;
+            bi++, input = 1;
         }
+        for (uint32_t t = 0; t < c->nturns && t < 16u; t++) {   /* (the detents due by now, evenly over dur) */
+            const vturn_t *u = &c->turns[t];
+            uint32_t all = (uint32_t)(u->steps < 0 ? -u->steps : u->steps), due;
+            if (ms < u->ms || done[t] >= all) continue;
+            due = u->dur ? (ms - u->ms) * all / u->dur + 1u : all;
+            if (due > all) due = all;
+            if (due > done[t]) {
+                v_enc[panel.enc[u->role] % 7u] += (int32_t)(due - done[t]) * (u->steps < 0 ? -1 : 1) * panel.dir[u->role];
+                done[t] = due, input = 1;
+            }
+        }
+        if (input) ui_input();
         dm_f = f;
         mix_block(o, CTL);
-        fm1_ms = f / (FS / 1000u);
         for (uint32_t i = 0; i < CTL; i++) wav_put(w, o[2 * i], o[2 * i + 1]);
         if (b % V_BLOCKS == 0) { ui_draw(); v_ppm(dir, n++); }
     }
     fclose(w);
+    if (getenv("DM_DEBUG")) {                           /* (the knobs as the clip left them) */
+        printf("knobs %s:", c->name);
+#if MELODEE_LOOK                                        /* (the suite builds the detailed look: no mo_col) */
+        for (uint32_t k = 0; k < 4u; k++) printf(" [%s=%s]", mo_col[k].label, mo_col[k].val);
+#endif
+        printf(" GRAVITY %d DEVELOP %d SOURCE %d", tessera_param_get(0, TX_SD_GRAVITY), tessera_param_get(0, TX_FM_DEVELOP),
+               tessera_param_get(0, TX_SD_SOURCE));
+        printf("\n");
+    }
+    fm1_in.buttons = fm1_in.notes = 0;
     transport_req = 2;
     for (f = 0; f < FS; f += CTL) { int32_t o[2 * CTL]; mix_block(o, CTL); }
-    printf("video: %s %u s, %u frames; notes %u %u %u %u\n", dir, secs, n, dm_notes[0], dm_notes[1], dm_notes[2],
+    printf("video: %s %u s, %u frames; notes %u %u %u %u\n", dir, c->secs, n, dm_notes[0], dm_notes[1], dm_notes[2],
            dm_notes[3]);
-    v_t0 += secs;
+    v_t0 += c->secs;
 }
 static void v_scene(uint32_t bpm, uint32_t engine, uint32_t preset, uint32_t mode, uint32_t div)
 {
@@ -720,65 +887,254 @@ static void v_scene(uint32_t bpm, uint32_t engine, uint32_t preset, uint32_t mod
     sends(90, 70, 70, 50);
     mixer(0, 104, 0, 70, 0);
 }
-enum { V_TINE = 0, V_BELL = 1, V_MARIMBA = 5, V_PLUCK = 7 };   /* FM6 presets (eng_fm6.c FM6_PRESETS) */
-static void v_voice(uint32_t tr, uint32_t preset, uint32_t mode, uint32_t div, int32_t level)   /* another track */
+/* track 2 under it: a soft ORACLE pad holding the scale's chord, so a pluck rings over a chord */
+static void v_pad(void)
 {
-    sound(tr, ENGI_FM6, preset);
-    trk[tr].p[P_SDIV] = (int16_t)div;
-    gen(tr, mode, 41);
-    mixer(tr, level, 0, 60, 0);
+    sound(1, ENGI_ORACLE, OR_WARM_PAD);
+    trk[1].p[P_CHRD] = 1;                               /* DIA3 */
+    gen(1, TESS_ENG_CHORD, 7);
+    tx(1, TX_CH_PROG, GEN_CH_DRONE); tx(1, TX_CH_BARS, 3); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 80, 0, 90, 0);
 }
-#define V_SET_S(c) (sizeof c / sizeof c[0])
-/* the shaping pages, one clip each: the generator plain, then the page's settings turned, captioned before and after */
-static void v_shaping(const char *out)
+enum { V_TINE = 0, V_MARIMBA = 5, V_PLUCK = 7, V_DX_MARIMBA = 12, V_GLASS_PAD = 16, V_HARP = 18, V_FLUTE = 20,
+       V_KOTO_RING = 37 };                              /* FM6 presets (eng_fm6.c FM6_PRESETS) */
+enum { V_OR_KEYS = 11, V_OR_FAT_POLY = 22 };            /* ORACLE's */
+#define V_CLIP(nm, sec, ...) do { static const vclip_t C_ = {nm, sec, 0, __VA_ARGS__}; v_run(out, &C_); } while (0)
+static const vkey_t V_NOKEYS[1];
+static const vbtn_t V_NOBTNS[1];
+static const vturn_t V_NOTURNS[1];
+#define V_NO(a) a, 0u
+/* the generators, one clip each, their knobs turned as a hand would */
+static void v_generators(const char *out)
 {
     {
-        v_scene(100, ENGI_FM6, V_TINE, TESS_ENG_TURING, DIV_16);
-        tx(0, TX_EV_LOCK, 100);
-        static const vstep_t S[] = {{0, 0, 0, "EVOLVE", "EVOLVE: a TURING phrase that loops as it is"},
-                                    {3500, 0, 0, "EVOLVE", "EVERY 1 bar, LOCK 40 %: now it mutates each bar, keeping part of itself"}};
-        static const vset_t X[] = {{3500, 0, TX_EV_EVERY, 1}, {3500, 0, TX_EV_LOCK, 40}, {3500, 0, TX_EV_AMOUNT, 70}};
-        v_clip(out, "3-evolve", 11, S, V_SET_S(S), 0, 0, X, V_SET_S(X));
+        v_scene(100, ENGI_FM6, FX_KOTO_PLUCK, TESS_ENG_TURING, DIV_16); v_pad();
+        static const vstep_t S[] = {{0, 0, 0, "GEN", "TURING: a looping shift register, locked"},
+                                    {2500, 0, 0, "GEN", "PROB up from LOCK: the loop starts to change, a step at a time"},
+                                    {6000, 0, 0, "GEN", "LEN 16 to 8: a shorter loop"}};
+        static const vturn_t T[] = {{2600, EN_K3, 5, 1500}, {6100, EN_K2, -8, 1600}};
+        V_CLIP("g01-turing", 9, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
     }
     {
-        v_scene(100, ENGI_FM6, V_PLUCK, TESS_ENG_MARKOV, DIV_16);
-        static const vstep_t S[] = {{0, 0, 0, "FORM", "FORM: phrases strung into a song form"},
-                                    {1200, 0, 0, "FORM", "AABA, a bar each: B moves away by CONTRAST, A comes back exactly; a fifth up on each phrase's last beat"}};
-        static const vset_t X[] = {{0, 0, TX_EV_EVERY, 1}, {0, 0, TX_FM_FORM, 4}, {0, 0, TX_FM_CONTRAST, 80},
-                                   {0, 0, TX_FM_FLOURISH, 7}};
-        v_clip(out, "4-form", 12, S, V_SET_S(S), 0, 0, X, V_SET_S(X));
+        v_scene(100, ENGI_FM6, V_PLUCK, TESS_ENG_EUCLID, DIV_16); v_pad();
+        static const vstep_t S[] = {{0, 0, 0, "GEN", "EUCLID: hits spread as evenly as they go"},
+                                    {1500, 0, 0, "GEN", "PULSE 4 to 7: more hits, still evenly spread"},
+                                    {4500, 0, 0, "GEN", "ROT: the same rhythm, turned"},
+                                    {7000, 0, 0, "GEN", "STEPS 16 to 12: a shorter cycle against the bar"}};
+        static const vturn_t T[] = {{1600, EN_K3, 3, 1200}, {4600, EN_K4, 3, 1200}, {7100, EN_K2, -4, 1200}};
+        V_CLIP("g02-euclid", 10, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
     }
     {
-        v_scene(96, ENGI_FM6, V_PLUCK, TESS_ENG_TURING, DIV_8);
-        v_voice(1, V_MARIMBA, TESS_ENG_EUCLID, DIV_16, 96);
-        static const vstep_t S[] = {{0, 0, 1, "TWEAK", "TWEAK on track 2: a EUCLID rhythm on its own note, under track 1's melody"},
-                                    {4500, 0, 1, "TWEAK", "FOLLOW T1, SHIFT -5: it plays track 1's notes an octave down; DROP leaves some out"}};
-        static const vset_t X[] = {{4500, 1, TX_TW_FOLLOW, 1}, {4500, 1, TX_TW_SHIFT, -5}, {4500, 1, TX_TW_DROP, 25}};
-        v_clip(out, "5-tweak", 12, S, V_SET_S(S), 0, 0, X, V_SET_S(X));
+        v_scene(96, ENGI_FM6, FX_KUGO_HARP, TESS_ENG_MARKOV, DIV_16); v_pad();
+        static const vstep_t S[] = {{0, 0, 0, "GEN", "MARKOV: a random walk over the scale"},
+                                    {2000, 0, 0, "GEN", "LEAP up: wider jumps"},
+                                    {5500, 0, 0, "GEN", "DENS down: more rests between the notes"}};
+        static const vturn_t T[] = {{2100, EN_K2, 12, 2000}, {5600, EN_K3, -12, 2000}};
+        V_CLIP("g03-markov", 9, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
     }
     {
-        v_scene(100, ENGI_FM6, V_MARIMBA, TESS_ENG_EUCLID, DIV_16);
-        sound(1, ENGI_FM6, V_BELL);
-        mixer(1, 100, 0, 80, 0);
-        static const vstep_t S[] = {{0, 0, 0, "TWEAK 2", "TWEAK 2: a EUCLID rhythm on a marimba"},
-                                    {3500, 0, 0, "TWEAK 2", "BRANCH 50 % TO T2: each hit tosses a coin, marimba or track 2's bell"}};
-        static const vset_t X[] = {{3500, 0, TX_TW_BR_TO, 2}, {3500, 0, TX_TW_BRANCH, 50}};
-        v_clip(out, "6-tweak2", 10, S, V_SET_S(S), 0, 0, X, V_SET_S(X));
+        v_scene(100, ENGI_FM6, V_TINE, TESS_ENG_MORPH, DIV_16); v_pad();
+        static const vstep_t S[] = {{0, 0, 0, "GEN", "MORPH: a rhythm blended between two patterns"},
+                                    {1800, 0, 0, "GEN", "POS: from pattern A over to B..."},
+                                    {5200, 0, 0, "GEN", "...and back"}};
+        static const vturn_t T[] = {{1900, EN_K2, 16, 3000}, {5300, EN_K2, -24, 3000}};
+        V_CLIP("g04-morph", 9, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
     }
     {
-        v_scene(84, ENGI_FM6, FX_KUGO_HARP, TESS_ENG_TURING, DIV_8);
-        tx(0, TX_TW_DROP, 25);
-        static const vstep_t S[] = {{0, 0, 0, "LENGTH", "LENGTH STEP: each note as long as the step's gate"},
-                                    {5000, 0, 0, "LENGTH", "HIT: a note holds until the next one, so the rests ring"}};
-        static const vset_t X[] = {{5000, 0, TX_NL_MODE, 2}};
-        v_clip(out, "7-length", 12, S, V_SET_S(S), 0, 0, X, V_SET_S(X));
+        v_scene(100, ENGI_DRUM, DK_909_KIT, TESS_ENG_GRIDS, DIV_16);
+        static const vstep_t S[] = {{0, 0, 0, "GEN", "ATLAS: kick, snare and hat from a map of drum patterns"},
+                                    {1500, 0, 0, "GEN", "X and Y: a walk across the map"},
+                                    {6500, 0, 0, "GEN", "DENS up: busier"}};
+        static const vturn_t T[] = {{1600, EN_K2, 14, 2200}, {3900, EN_K3, -12, 2200}, {6600, EN_K4, 10, 1600}};
+        V_CLIP("g05-atlas", 9, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
     }
     {
-        v_scene(92, ENGI_FM6, FX_KALIMBA, TESS_ENG_TURING, DIV_8);
+        v_scene(92, ENGI_FM6, V_KOTO_RING, TESS_ENG_BOUNCE, DIV_16); v_pad();
+        static const vstep_t S[] = {{0, 0, 0, "GEN", "BOUNCE: a ball bouncing in a box, a note where it hits"},
+                                    {1500, 0, 0, "GEN", "SPEED and ANGLE: a new path"},
+                                    {5500, 0, 0, "GEN", "BALLS past 4: FALL, leaves drifting down in the wind"}};
+        static const vturn_t T[] = {{1600, EN_K2, 8, 1500}, {3300, EN_K3, 10, 1500}, {5600, EN_K4, 4, 1600}};
+        V_CLIP("g06-bounce", 10, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
+    }
+    {
+        v_scene(96, ENGI_FM6, V_HARP, TESS_ENG_AWAKE, DIV_8); v_pad();
+        static const vstep_t S[] = {{0, 0, 0, "GEN", "AWAKE: two loops of different lengths, one melody"},
+                                    {2000, 0, 0, "GEN", "LEN A shorter: the loops shift against each other"},
+                                    {5500, 0, 0, "GEN", "PROB down: some steps rest"}};
+        static const vturn_t T[] = {{2100, EN_K2, -3, 1200}, {5600, EN_K4, -8, 1600}};
+        V_CLIP("g07-awake", 9, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
+    }
+    {
+        v_scene(100, ENGI_FM6, V_DX_MARIMBA, TESS_ENG_POLY, DIV_16); v_pad();
+        static const vstep_t S[] = {{0, 0, 0, "GEN", "POLY: rhythms in different divisions against each other"},
+                                    {2000, 0, 0, "GEN", "RHY: another set of rhythms"},
+                                    {5500, 0, 0, "GEN", "SPAN: the notes spread wider"}};
+        static const vturn_t T[] = {{2100, EN_K2, 2, 1000}, {5600, EN_K4, 1, 200}};
+        V_CLIP("g08-poly", 9, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
+    }
+    {
+        v_scene(92, ENGI_FM6, FX_KOTO_PLUCK, TESS_ENG_QUAD, DIV_8);
+        sound(1, ENGI_FM6, V_KOTO_RING); trk[1].p[P_SDIV] = DIV_8T; gen(1, TESS_ENG_QUAD, 23); mixer(1, 100, 30, 70, 0);
+        static const vstep_t S[] = {{0, 0, 0, "GEN", "QUAD: a 4 x 4 grid of notes the tracks share, a row each"},
+                                    {2000, 0, 0, "GEN", "DIR: the way through the row"},
+                                    {5500, 0, 0, "GEN", "PROB down: fewer of its notes"}};
+        static const vturn_t T[] = {{2100, EN_K2, 2, 1000}, {5600, EN_K3, -10, 1600}};
+        V_CLIP("g09-quad", 9, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
+    }
+    {
+        v_scene(90, ENGI_FM6, FX_KUGO_HARP, TESS_ENG_CONSTEL, DIV_8); v_pad();
+        static const vstep_t S[] = {{0, 0, 0, "GEN", "CONSTELLATION: stars play as they cross the ship's crosshair"},
+                                    {1500, 0, 0, "GEN", "Y: the ship moves up..."},
+                                    {4200, 0, 0, "GEN", "...and down, and other stars cross it"},
+                                    {7500, 0, 0, "GEN", "DENS: more stars"}};
+        static const vturn_t T[] = {{1600, EN_K2, 5, 2000}, {4300, EN_K2, -9, 2800}, {7600, EN_K3, 10, 1500}};
+        V_CLIP("g10-constellation", 10, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
+    }
+    {
+        v_scene(96, ENGI_FM6, V_FLUTE, TESS_ENG_SERIES, DIV_8); v_pad();
+        static const vstep_t S[] = {{0, 0, 0, "GEN", "SERIES: the infinity series, a melody that never quite repeats"},
+                                    {2000, 0, 0, "GEN", "START: another place in the series"},
+                                    {5500, 0, 0, "GEN", "INTV: wider steps between its notes"}};
+        static const vturn_t T[] = {{2100, EN_K2, 12, 1600}, {5600, EN_K3, 1, 300}};
+        V_CLIP("g11-series", 9, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
+    }
+    {
+        v_scene(96, ENGI_ORACLE, V_OR_KEYS, TESS_ENG_CHORD, DIV_16);
+        trk[0].p[P_CHRD] = 1;
+        static const vstep_t S[] = {{0, 0, 0, "GEN", "CHORD: a progression in the track's scale, here on ORACLE"},
+                                    {2000, 0, 0, "GEN", "HIT: held, then on the beat..."},
+                                    {4500, 0, 0, "GEN", "...then offbeat stabs"},
+                                    {7000, 0, 0, "GEN", "PROG: another progression"}};
+        static const vturn_t T[] = {{2100, EN_K4, 1, 100}, {4600, EN_K4, 2, 600}, {7100, EN_K2, 3, 900}};
+        V_CLIP("g12-chord", 10, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
+    }
+    {
+        v_scene(96, ENGI_FM6, V_TINE, TESS_ENG_ANSWER, DIV_8);   /* ANSWER: C D E G on the keys, then its answers */
+        static const vkey_t K[] = {{400, 7, 1}, {700, 7, 0}, {1025, 9, 1}, {1325, 9, 0}, {1650, 11, 1}, {1950, 11, 0},
+                                   {2275, 14, 1}, {2700, 14, 0}};
+        static const vstep_t S[] = {{0, 0, 0, "GEN", "ANSWER: play a phrase on the keys..."},
+                                    {4500, 0, 0, "GEN", "...and it answers, a little different each time"},
+                                    {9000, 0, 0, "GEN", "VARY up: the answers stray further"}};
+        static const vturn_t T[] = {{9100, EN_K2, 10, 1500}};
+        V_CLIP("g13-answer", 14, VN(S), VN(K), V_NO(V_NOBTNS), VN(T));
+    }
+}
+/* what is new in 3.0, and two of the shaping pages, on chords and ringing plucks */
+static void v_features(const char *out)
+{
+    {
+        v_scene(92, ENGI_ORACLE, V_OR_FAT_POLY, TESS_ENG_CHORD, DIV_16);
+        trk[0].p[P_CHRD] = 1;
+        tx(0, TX_CH_PROG, GEN_CH_CIRCLE); tx(0, TX_CH_HIT, GEN_CH_BEAT);
+        static const vstep_t S[] = {{0, 0, 0, "FILTER", "ORACLE: two oscillators, POLY MOD and a four-pole filter"},
+                                    {2500, 0, 0, "FILTER", "CUTOFF down: darker..."},
+                                    {5300, 0, 0, "FILTER", "...and open again"},
+                                    {8000, 0, 0, "FILTER", "RES up: the filter starts to sing"}};
+        static const vturn_t T[] = {{2600, EN_K1, -24, 2200}, {5400, EN_K1, 40, 2200}, {8100, EN_K2, 24, 1800}};
+        V_CLIP("n01-oracle", 11, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
+    }
+    {
+        v_scene(84, ENGI_FM6, V_GLASS_PAD, TESS_ENG_CHORD, DIV_16);
+        trk[0].p[P_CHRD] = 2;
+        tx(0, TX_CH_PROG, GEN_CH_TWO); tx(0, TX_CH_HIT, GEN_CH_HOLD);
+        trk[0].p[P_FXTYPE] = 10; trk[0].p[P_FXMIX] = 127; trk[0].p[P_FXRATE] = 90; trk[0].p[P_FXCHAR] = 40;
+        static const vstep_t S[] = {{0, 0, 0, "FX 1", "The FILTER effect: a resonant low-pass for any track, here FM6 chords"},
+                                    {2500, 0, 0, "FX 1", "CUT down..."},
+                                    {5500, 0, 0, "FX 1", "...and up, with more RES"}};
+        static const vturn_t T[] = {{2600, EN_K3, -30, 2600}, {5600, EN_K4, 16, 1200}, {6000, EN_K3, 40, 3000}};
+        V_CLIP("n02-filter", 10, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
+    }
+    {
+        v_scene(100, ENGI_FM6, FX_KOTO_PLUCK, TESS_ENG_TURING, DIV_16); v_pad();
+        tx(0, TX_EV_EVERY, 1); tx(0, TX_EV_AMOUNT, 60); tx(0, TX_EV_LOCK, 40);
+        static const vstep_t S[] = {{0, 0, 0, "EVOLVE", "EVOLVE every bar: the line keeps wandering away"},
+                                    {4500, 0, 0, "EVOLVE", "GRAVITY 50 (OCT+ held): half the rounds pull it back toward home"}};
+        static const vbtn_t B[] = {{4300, B_OCTUP, 1}, {7500, B_OCTUP, 0}};
+        static const vturn_t T[] = {{4600, EN_K1, 50, 2500}};
+        V_CLIP("n03-gravity", 12, VN(S), V_NO(V_NOKEYS), VN(B), VN(T));
+    }
+    {
+        v_scene(100, ENGI_FM6, V_HARP, TESS_ENG_MARKOV, DIV_16); v_pad();
+        tx(0, TX_EV_EVERY, 1); tx(0, TX_FM_FORM, 2); tx(0, TX_FM_CONTRAST, 60);
+        static const vstep_t S[] = {{0, 0, 0, "FORM", "FORM ABAC: A comes back exactly each time"},
+                                    {4500, 0, 0, "FORM", "DEVELOP 40 (OCT+ held): each return of A is varied a little"}};
+        static const vbtn_t B[] = {{4300, B_OCTUP, 1}, {7500, B_OCTUP, 0}};
+        static const vturn_t T[] = {{4600, EN_K1, 20, 2400}};
+        V_CLIP("n04-develop", 12, VN(S), V_NO(V_NOKEYS), VN(B), VN(T));
+    }
+    {
+        v_scene(96, ENGI_FM6, FX_KOTO_PLUCK, TESS_ENG_TURING, DIV_8); v_pad();
+        {   /* track 3: a short melody written in STEP, quiet */
+            static const uint8_t M[8] = {69, 0, 72, 74, 0, 76, 74, 0};
+            for (uint32_t i = 0; i < 8u; i++) step_note(2, i, M[i], 90);
+            trk[2].p[P_SLEN] = 8; trk[2].p[P_SDIV] = DIV_8;
+            sound(2, ENGI_FM6, V_KOTO_RING); tx(2, TX_MODE, TESS_ENG_OFF); mixer(2, 60, 20, 60, 0);
+        }
+        static const vstep_t S[] = {{0, 0, 0, "GEN", "STEP as seed: TURING on its own register..."},
+                                    {3500, 0, 0, "GEN", "...SOURCE T3 (OCT+ held): it plays from the melody written on track 3"},
+                                    {7500, 0, 0, "GEN", "KEEP RHYTHM: the rhythm stays as written, the pitches drift"}};
+        static const vbtn_t B[] = {{3300, B_OCTUP, 1}, {9000, B_OCTUP, 0}};
+        static const vturn_t T[] = {{3600, EN_K1, 3, 900}, {7600, EN_K2, 1, 100}};
+        V_CLIP("n05-seed", 12, VN(S), V_NO(V_NOKEYS), VN(B), VN(T));
+    }
+    {
+        power_on();
+        song.g[G_BPM] = 96;
+        scale(9, 6, 0);
+        sound(0, ENGI_DRUM, DK_909_KIT);
+        {   /* a groove with hits on conditions and a FILL run */
+            static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_BD, L_BD, 0, L_CH, 0, L_SD, L_SD, L_SD, L_SD};
+            for (uint32_t i = 0; i < 16u; i++) step_hits(0, i, L[i], 96);
+            step_set_cond(&trk[0].step[7], SC_1_2);
+            step_set_cond(&trk[0].step[13], SC_FILL); step_set_cond(&trk[0].step[14], SC_FILL);
+            step_set_cond(&trk[0].step[15], SC_FILL);
+            trk[0].p[P_SLEN] = 16;
+        }
+        tx(0, TX_MODE, TESS_ENG_OFF); trk[0].p[P_SDIV] = DIV_16;
+        sends(80, 60, 70, 50); mixer(0, 104, 0, 30, 0);
+        for (uint32_t k = 1; k < NTRK; k++) trk[k].p[P_LEVEL] = 0;
+        static const vstep_t S[] = {{0, 0, 0, "NOTES", "Conditions: a kick on every other bar (1:2), a snare run on FILL"},
+                                    {5000, 0, 0, "NOTES", "GLO + E4 held: FILL, the run comes in"}};
+        static const vbtn_t B[] = {{4900, B_GLO, 1}, {9000, B_GLO, 0}};
+        static const vkey_t K[] = {{5000, 11, 1}, {8900, 11, 0}};
+        V_CLIP("n06-fill", 10, VN(S), VN(K), VN(B), V_NO(V_NOTURNS));
+    }
+    {
+        v_scene(100, ENGI_FM6, FX_KALIMBA, TESS_ENG_TURING, DIV_8); v_pad();
+        static const uint8_t M[5] = {69, 72, 0, 76, 74};
+        for (uint32_t i = 0; i < 5u; i++) step_note(0, i, M[i], 96);
+        step_set_climb(&trk[0].step[0], 2);
+        step_set_climb(&trk[0].step[4], -1);
+        trk[0].p[P_SLEN] = 5;
+        tx(0, TX_MODE, TESS_ENG_OFF); tx(0, TX_ACC_LIMIT, 7); tx(0, TX_ACC_MODE, TESS_ACC_PING);
+        static const vstep_t S[] = {{0, 0, 0, "NOTES", "Accumulate: a note climbs two degrees each pass, up an octave and back"}};
+        V_CLIP("n07-accumulate", 10, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), V_NO(V_NOTURNS));
+    }
+    {
+        v_scene(100, ENGI_FM6, FX_KOTO_PLUCK, TESS_ENG_MARKOV, DIV_16); v_pad();
+        sound(2, ENGI_DRUM, DK_909_KIT); trk[2].p[P_SDIV] = DIV_16; gen(2, TESS_ENG_GRIDS, 5); mixer(2, 96, 0, 20, 0);
+        static const vstep_t S[] = {{0, 0, 0, "ENERGY", "ENERGY: one control over how busy every generator is"},
+                                    {1500, 0, 0, "ENERGY", "LEVEL up: the tracks fill..."},
+                                    {5500, 0, 0, "ENERGY", "...LEVEL down: they thin out to a few notes"}};
+        static const vturn_t T[] = {{1600, EN_K3, 30, 2500}, {5600, EN_K3, -60, 3000}};
+        V_CLIP("n08-energy", 10, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
+    }
+    {
+        v_scene(96, ENGI_FM6, FX_KOTO_PLUCK, TESS_ENG_TURING, DIV_8); v_pad();
+        sound(2, ENGI_FM6, V_DX_MARIMBA); trk[2].p[P_SDIV] = DIV_16; gen(2, TESS_ENG_EUCLID, 41); mixer(2, 96, 0, 60, 0);
+        static const vstep_t S[] = {{0, 0, 2, "TWEAK", "TWEAK on track 3: a EUCLID rhythm on its own note, under track 1's melody"},
+                                    {3000, 0, 2, "TWEAK", "FOLLOW T1: it plays track 1's notes..."},
+                                    {6000, 0, 2, "TWEAK", "...SHIFT down an octave, DROP leaves some out"}};
+        static const vturn_t T[] = {{3100, EN_K4, 1, 100}, {6100, EN_K1, -5, 1000}, {7400, EN_K2, 12, 1200}};
+        V_CLIP("s1-tweak", 10, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
+    }
+    {
+        v_scene(92, ENGI_FM6, FX_KALIMBA, TESS_ENG_TURING, DIV_8); v_pad();
         static const vstep_t S[] = {{0, 0, 0, "TIMING", "TIMING: eighth notes, one hit a step"},
-                                    {3500, 0, 0, "TIMING", "RATCH x4, CHANCE 50 %, ACCEL: some steps roll, faster and faster"}};
-        static const vset_t X[] = {{3500, 0, TX_SUB_RATCH, 3}, {3500, 0, TX_SUB_CHANCE, 50}, {3500, 0, TX_SUB_SHAPE, 1}};
-        v_clip(out, "8-timing", 10, S, V_SET_S(S), 0, 0, X, V_SET_S(X));
+                                    {2500, 0, 0, "TIMING", "RATCH x4: some steps roll..."},
+                                    {6000, 0, 0, "TIMING", "...SHAPE ACCEL: faster and faster"}};
+        static const vturn_t T[] = {{2600, EN_K1, 3, 900}, {6100, EN_K3, 1, 100}};
+        V_CLIP("s2-timing", 10, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
     }
 }
 static int make(const char *dir, uint32_t secs);
@@ -789,10 +1145,11 @@ static int video(const char *out)
     snprintf(cap, sizeof cap, "%s/captions.txt", out);
     if (!(v_cap = fopen(cap, "w"))) return 1;
     v_root = out;
-    for (int d = 0; d < 2; d++) {                       /* the demos, one make each, each in a fresh process as the
+    double t = 0;
+    for (int d = 0; d < (int)NDEMO; d++) {              /* the demos, one make each, each in a fresh process as the
                                                          * tests' run is (a load keeps a little of what played before,
                                                          * FALL's leaves, and power_on does not clear it): the one
-                                                         * filmed plays 52 s, the one before it 20 s as in the tests */
+                                                         * filmed plays V_DEMO_SECS, the others 20 s as in the tests */
         char sub[600];
         snprintf(sub, sizeof sub, "%s/%c", out, 'a' + d);
         mkdir(sub, 0755);
@@ -801,36 +1158,27 @@ static int video(const char *out)
         pid_t pid = fork();
         if (pid == 0) {
             v_cap = fopen(cap, "a");
-            v_t0 = 52.0 * d;
+            v_t0 = t;
             v_want = d;
-            make(sub, 20);                              /* OUTDIR/a/still-tide.wav, OUTDIR/b/koto-garden.wav, frames */
+            make(sub, 20);                              /* OUTDIR/a/still-tide.wav, b/koto-garden.wav, c/low-harbour.wav */
             fclose(v_cap);
             fflush(stdout);
             _exit(0);
         }
         waitpid(pid, 0, 0);
         v_cap = fopen(cap, "a");
+        t += V_DEMO_SECS[d];
     }
-    v_t0 = 104.0;
-    v_shaping(out);
-    static const struct { const char *name, *caption; uint32_t bpm, engine, preset, mode, div; } T[] = {
-        {"9-turing", "TURING: a looping shift register that locks or drifts", 100, ENGI_FM6, V_TINE, TESS_ENG_TURING, DIV_16},
-        {"10-euclid", "EUCLID: hits spread as evenly as they go", 100, ENGI_FM6, V_MARIMBA, TESS_ENG_EUCLID, DIV_16},
-        {"11-morph", "MORPH: a rhythm blended between two patterns", 100, ENGI_FM6, V_PLUCK, TESS_ENG_MORPH, DIV_16},
-        {"12-atlas", "ATLAS: kick, snare and hat from a map of drum patterns", 100, ENGI_DRUM, DK_808_KIT, TESS_ENG_GRIDS, DIV_16},
-        {"13-constellation", "CONSTELLATION: stars play as they cross the ship's crosshair", 90, ENGI_FM6, V_BELL, TESS_ENG_CONSTEL, DIV_8},
-    };
-    for (uint32_t i = 0; i < sizeof T / sizeof T[0]; i++) {
-        v_scene(T[i].bpm, T[i].engine, T[i].preset, T[i].mode, T[i].div);
-        vstep_t S[1] = {{0, 0, 0, "GEN", T[i].caption}};
-        v_clip(out, T[i].name, 9, S, 1, 0, 0, 0, 0);
+    v_t0 = t;
+    v_generators(out);
+    v_features(out);
+    {   /* the end: LOW HARBOUR again, from a minute in, under the end card while it fades (tools/demo_video.py) */
+        power_on();
+        demo_dub();
+        static const vstep_t S[] = {{0, 1, V_KEEP, 0, "LOW HARBOUR"}};
+        static const vclip_t C = {"zz-end", 12, 60, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), V_NO(V_NOTURNS)};
+        v_run(out, &C);
     }
-    v_scene(96, ENGI_FM6, V_TINE, TESS_ENG_ANSWER, DIV_8);   /* ANSWER: C D E G on the keys, then its answers */
-    static const vkey_t K[] = {{400, 7, 1}, {700, 7, 0}, {1025, 9, 1}, {1325, 9, 0}, {1650, 11, 1}, {1950, 11, 0},
-                               {2275, 14, 1}, {2700, 14, 0}};
-    static const vstep_t S[] = {{0, 0, 0, "GEN", "ANSWER: play a phrase on the keys..."},
-                                {4500, 0, 0, "GEN", "...and it answers, a little different each time, softer as it goes"}};
-    v_clip(out, "14-answer", 14, S, 2, K, sizeof K / sizeof K[0], 0, 0);
     fclose(v_cap);
     printf("video: %.0f s in %s\n", v_t0, out);
     return 0;

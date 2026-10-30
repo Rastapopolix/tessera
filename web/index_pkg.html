@@ -8,140 +8,163 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tessera · Installer</title>
 <link rel="icon" href="../../media/brand/logo.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* the project page's look (web/home/index.html): SMALTI, the mark's lapis and gold, Chakra Petch */
+  /* TESSERA-MONO: tools/gen_mono_webfont.py writes the face here (firmware/src/gfx.c's 5 x 7 font) */
+@font-face { font-family: "Tessera Mono"; font-display: block; src: url("data:font/woff;base64,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") format("woff"); }
+/* /TESSERA-MONO */
+  /* the project page's look (web/home/index.html): the Mono look's one ink on black, the four tracks as its fills */
   :root {
-    --bg: #0d1326; --surf: #18213c; --raise: #2b3249; --line: #343b51; --text: #f6f0e0; --mid: #b3b2b0;
-    --dim: #73747a; --accent: #ffe296; --gold: #ecb848; --bad: #ff8a7a;
-    --t1: #deca60; --t2: #40c8d6; --t3: #6ed668; --t4: #d67cec; --gap: 6px;
+    --bg: #111; --ink: #ffd020; --surf: #19170f; --raise: #252113; --line: #3b3007; --text: #e6e0d0; --mid: #b9b2a0;
+    --dim: #8e877a;
+    --p1: var(--ink);
+    --p2: repeating-linear-gradient(135deg, var(--ink) 0 2px, transparent 2px 5px);
+    --p3: radial-gradient(circle, var(--ink) 1.2px, transparent 1.6px) 0 0 / 5px 5px;
+    --p4: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px);
+    --pixel: "Tessera Mono", ui-monospace, monospace; --gap: 6px;
     color-scheme: dark;
   }
+  /* the light version (dark ink on paper): only from the LIGHT / DARK button (stored); dark is the default, whatever the system says */
+  :root[data-theme="light"] { --bg: #f6f2e7; --ink: #1c1a14; --surf: #eee8d6; --raise: #e2d9bf; --line: #c8bd9b; --text: #1c1a14; --mid: #4b4535; --dim: #786e57; color-scheme: light; }
+  .theme { font: 16px/1 var(--pixel); color: var(--mid); background: none; border: 0; padding: 3px 4px 2px;
+           cursor: pointer; text-transform: uppercase; }
+  .theme:hover { color: var(--bg); background: var(--ink); }
   * { box-sizing: border-box; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
   body { margin: 0; background: var(--bg); color: var(--text);
-         font: 400 16px/1.6 "Chakra Petch", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
-  a { color: var(--accent); text-underline-offset: 3px; }
-  a:hover { color: var(--gold); }
+         font: 400 15px/1.6 ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+  a { color: var(--ink); text-underline-offset: 3px; }
+  a:hover { background: var(--ink); color: var(--bg); text-decoration: none; }
   .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; }
-  nav { border-bottom: 1px solid var(--line); background: rgba(13, 19, 38, .92); }
+  nav { border-bottom: 2px solid var(--ink); background: var(--bg); }
   nav .wrap { display: flex; align-items: center; gap: 16px; height: 56px; }
-  nav .brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none;
-               font-weight: 600; letter-spacing: .14em; }
+  nav .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font: 24px/1 var(--pixel); }
+  nav .brand:hover { background: none; color: var(--ink); }
   nav .brand svg { width: 26px; height: 26px; }
-  .lang { margin-left: auto; font: inherit; font-size: 14px; color: var(--mid); background: none; border: 0;
-          padding: 4px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
-  .lang:hover { color: var(--text); }
+  .lang { margin-left: auto; font: 16px/1 var(--pixel); color: var(--mid); background: none; border: 0;
+          padding: 3px 4px 2px; cursor: pointer; text-transform: uppercase; letter-spacing: 0; }
+  .lang:hover { color: var(--bg); background: var(--ink); }
   main.wrap { padding-top: 40px; padding-bottom: 56px; }
-  .kicker { color: var(--mid); text-transform: uppercase; letter-spacing: .12em; font-size: 13px; font-weight: 500; }
-  h1 { font-size: clamp(40px, 9vw, 64px); font-weight: 600; letter-spacing: .04em; line-height: 1.1; margin: 6px 0 0; }
+  .kicker { display: inline-block; background: var(--ink); color: var(--bg); font: 16px/1 var(--pixel);
+            text-transform: uppercase; padding: 3px 6px 2px; }
+  h1 { color: var(--ink); font: clamp(40px, 9vw, 64px)/1.1 var(--pixel); margin: 12px 0 0; }
   .bar { display: flex; gap: var(--gap); margin: 16px 0 28px; }
-  .bar span { flex: 1; height: 6px; }
-  .bar span:nth-child(1) { background: var(--t1); } .bar span:nth-child(2) { background: var(--t2); }
-  .bar span:nth-child(3) { background: var(--t3); } .bar span:nth-child(4) { background: var(--t4); }
+  .bar span { flex: 1; height: 8px; }
+  .bar span:nth-child(1) { background: var(--p1); } .bar span:nth-child(2) { background: var(--p2); }
+  .bar span:nth-child(3) { background: var(--p3); } .bar span:nth-child(4) { background: var(--p4); }
   p { margin: 0 0 14px; }
   .needs { list-style: none; display: flex; flex-wrap: wrap; gap: var(--gap); padding: 0; margin: 0 0 var(--gap); }
-  .needs li { background: var(--surf); border-left: 4px solid var(--c); padding: 6px 12px; font-size: 14px; font-weight: 500; }
+  .needs li { position: relative; border: 2px solid var(--line); padding: 6px 12px 6px 18px; font-size: 14px; }
+  .needs li::before, .panel::before, .next::before { content: ""; position: absolute; left: -2px; top: -2px; bottom: -2px;
+    width: 6px; background: var(--c, var(--p1)); }
   .small { color: var(--mid); font-size: 14px; line-height: 1.5; }
-  .panel { background: var(--surf); padding: 18px 20px 6px; margin: 0 0 var(--gap); border-left: 4px solid var(--c, var(--gold)); }
-  .warn { color: var(--text); font-weight: 500; }
-  .panel strong { text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+  .panel { position: relative; border: 2px solid var(--line); padding: 18px 20px 6px 24px; margin: 0 0 var(--gap); }
+  .warn { color: var(--text); font-weight: 600; }
+  /* the tip under the stripes: the help card, Tessera's most-missed function */
+  .tip { display: flex; gap: 12px; align-items: baseline; border: 2px solid var(--ink); padding: 10px 14px; margin: 0 0 var(--gap); }
+  .tip b { flex: none; background: var(--ink); color: var(--bg); font: 16px/1 var(--pixel); font-weight: 400; padding: 3px 6px 2px; }
+  .tip span { font-size: 14px; line-height: 1.5; }
+  .panel strong { font: 16px/1.3 var(--pixel); text-transform: uppercase; font-weight: 400; }
   label { cursor: pointer; }
   .choice label { display: flex; gap: 10px; align-items: center; padding: 6px 0; }
-  input[type=radio], input[type=checkbox] { accent-color: var(--gold); width: 18px; height: 18px; margin: 0; flex: none; }
+  input[type=radio], input[type=checkbox] { accent-color: var(--ink); width: 18px; height: 18px; margin: 0; flex: none; }
   input[type=file] { font: inherit; font-size: 14px; color: var(--mid); margin-top: 6px; max-width: 100%; }
-  input[type=file]::file-selector-button { font: inherit; background: var(--raise); color: var(--text); border: 0;
-    padding: 6px 12px; margin-right: 10px; cursor: pointer; }
-  button { font: inherit; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; font-size: 15px;
-           background: var(--raise); color: var(--text); border: 1px solid var(--raise); padding: 11px 18px; cursor: pointer; }
-  button:hover { background: var(--line); }
+  input[type=file]::file-selector-button { font: 16px/1 var(--pixel); text-transform: uppercase; background: var(--bg);
+    color: var(--ink); border: 2px solid var(--ink); padding: 6px 10px 5px; margin-right: 10px; cursor: pointer; }
+  button { font: 16px/1 var(--pixel); text-transform: uppercase; letter-spacing: 0;
+           background: var(--bg); color: var(--ink); border: 2px solid var(--ink); padding: 10px 16px 9px; cursor: pointer; }
+  button:hover { background: var(--ink); color: var(--bg); }
   button:disabled { opacity: .35; cursor: default; }
-  #go { background: var(--gold); color: var(--bg); border-color: var(--gold); padding: 14px 28px; margin-top: 18px; }
-  #go:hover:not(:disabled) { background: var(--accent); }
-  details { background: var(--surf); margin: var(--gap) 0 0; padding: 0 20px; }
+  button:disabled:hover { background: var(--bg); color: var(--ink); }
+  #go { background: var(--ink); color: var(--bg); border-color: var(--ink); padding: 14px 28px 13px; margin-top: 18px; }
+  #go:hover:not(:disabled) { background: var(--bg); color: var(--ink); }
+  details { border: 2px solid var(--line); margin: var(--gap) 0 0; padding: 0 20px; }
   details[open] { padding-bottom: 6px; }
-  summary { cursor: pointer; padding: 14px 0; color: var(--mid); text-transform: uppercase; letter-spacing: .08em;
-            font-size: 14px; font-weight: 500; }
+  summary { cursor: pointer; padding: 14px 0 12px; color: var(--mid); font: 16px/1 var(--pixel); text-transform: uppercase; }
   summary:hover, details[open] summary { color: var(--text); }
   .run { margin-top: 28px; }
-  progress { appearance: none; -webkit-appearance: none; width: 100%; height: 10px; border: 0; background: var(--raise); display: block; }
-  progress::-webkit-progress-bar { background: var(--raise); }
-  progress::-webkit-progress-value { background: var(--gold); transition: width .3s; }
-  progress::-moz-progress-bar { background: var(--gold); }
-  #status { margin-top: 14px; min-height: 1.6em; font-weight: 500; }
+  progress { appearance: none; -webkit-appearance: none; width: 100%; height: 12px; border: 2px solid var(--ink);
+             background: var(--bg); display: block; }
+  progress::-webkit-progress-bar { background: var(--bg); }
+  progress::-webkit-progress-value { background: var(--ink); transition: width .3s; }
+  progress::-moz-progress-bar { background: var(--ink); }
+  #status { margin-top: 14px; min-height: 1.6em; font-weight: 600; }
   pre { color: var(--dim); font: 12px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; margin: 0 0 12px;
         max-height: 12em; overflow: auto; }
   /* the install window: the stages, the bar and its percentage, the status, the log behind Details */
-  dialog { width: min(560px, calc(100vw - 32px)); background: var(--surf); color: var(--text); border: 0; padding: 0 24px 20px; }
-  dialog::backdrop { background: rgba(13, 19, 38, .88); }
+  dialog { width: min(560px, calc(100vw - 32px)); background: var(--bg); color: var(--text); border: 2px solid var(--ink);
+           padding: 0 24px 20px; }
+  dialog::backdrop { background: rgba(0, 0, 0, .88); }
   dialog .bar { margin: 0 -24px 22px; }
-  dialog h2 { font-size: 22px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 12px; }
-  .keep { border-left: 4px solid var(--gold); background: var(--raise); padding: 10px 14px; font-weight: 500; }
+  dialog h2 { color: var(--ink); font: 24px/1.2 var(--pixel); text-transform: uppercase; margin: 0 0 12px; }
+  .keep { border: 2px solid var(--ink); padding: 10px 14px; font-weight: 600; }
   .stages { list-style: none; counter-reset: st; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap);
             padding: 0; margin: 18px 0 14px; }
-  .stages li { counter-increment: st; background: var(--bg); color: var(--dim); padding: 8px 8px 7px; font-size: 13px;
-               font-weight: 500; letter-spacing: .04em; text-transform: uppercase; border-top: 4px solid var(--line); line-height: 1.3; }
-  .stages li::before { content: counter(st) " "; font-weight: 600; }
-  .stages li.now { color: var(--text); border-top-color: var(--gold); background: var(--raise); }
-  .stages li.done { color: var(--mid); border-top-color: var(--t3); }
-  .stages li.done::before { content: "\2713  "; color: var(--t3); }
+  .stages li { counter-increment: st; color: var(--dim); padding: 8px 8px 6px; font: 16px/1.2 var(--pixel);
+               text-transform: uppercase; border: 2px dashed var(--line); }
+  .stages li::before { content: counter(st) " "; }
+  .stages li.now { color: var(--bg); background: var(--ink); border: 2px solid var(--ink); }
+  .stages li.done { color: var(--mid); border: 2px solid var(--line); }
+  .stages li.done::before { content: "\2713  "; color: var(--ink); font-family: ui-monospace, monospace; }
   .meter { display: flex; align-items: center; gap: 12px; }
   .meter progress { flex: 1; }
-  #run-pct { min-width: 3.5em; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
-  #run-status { margin: 12px 0 14px; min-height: 1.6em; font-weight: 500; }
-  dialog.ok .meter progress::-webkit-progress-value { background: var(--t3); }
-  dialog.ok .meter progress::-moz-progress-bar { background: var(--t3); }
-  dialog.ok #run-status { color: var(--t3); }
-  dialog.fail #run-status { color: var(--bad); }
-  dialog details { background: var(--bg); padding: 0 14px; margin: 0 0 16px; }
-  dialog summary { padding: 10px 0; font-size: 13px; }
+  #run-pct { min-width: 3.5em; text-align: right; font: 16px/1 var(--pixel); }
+  #run-status { margin: 12px 0 14px; min-height: 1.6em; font-weight: 600; }
+  dialog.ok #run-status { background: var(--ink); color: var(--bg); padding: 4px 8px; }
+  dialog.fail #run-status { border: 2px dashed var(--ink); padding: 4px 8px; }
+  dialog.fail #run-status::before { content: "! "; font-family: var(--pixel); }
+  dialog details { padding: 0 14px; margin: 0 0 16px; }
+  dialog summary { padding: 10px 0 8px; }
   #run-close { width: 100%; }
   @media (max-width: 480px) { .stages { grid-template-columns: repeat(2, 1fr); } }
-  .next { display: block; background: var(--surf); padding: 16px 20px; margin-top: 28px; color: var(--text);
-          text-decoration: none; border-left: 4px solid var(--t2); }
-  a.next:hover { background: var(--raise); color: var(--text); }
-  footer { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 24px; }
+  .next { display: block; position: relative; border: 2px solid var(--line); padding: 16px 20px 16px 24px; margin-top: 28px;
+          color: var(--text); text-decoration: none; }
+  a.next:hover { border-color: var(--ink); background: var(--raise); color: var(--text); }
+  footer { border-top: 2px solid var(--ink); margin-top: 40px; padding-top: 24px; }
   footer p { color: var(--dim); font-size: 13px; }
   footer a { color: var(--mid); }
 </style>
+<script>/* the theme chosen with the LIGHT / DARK button, before the page draws */
+try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 </head>
 <body>
 <nav>
   <div class="wrap">
     <a class="brand" href="../../" aria-label="Tessera">
-      <svg viewBox="0 0 78 78" aria-hidden="true"><rect x="2" y="3" width="22" height="22" fill="#2c4078"/><rect x="29" y="1" width="22" height="22" fill="#3a5496"/><rect x="53" y="2" width="22" height="22" fill="#ecb848"/><rect x="3" y="28" width="22" height="22" fill="#4260aa"/><rect x="28" y="28" width="22" height="22" fill="#324a88"/><rect x="53" y="29" width="22" height="22" fill="#283c70"/><rect x="2" y="53" width="22" height="22" fill="#3e5aa0"/><rect x="29" y="55" width="22" height="22" fill="#2e447e"/><rect x="53" y="53" width="22" height="22" fill="#365092"/></svg>
+      <svg viewBox="0 0 78 78" aria-hidden="true"><rect x="4" y="5" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="3" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="53" y="2" width="22" height="22" fill="currentColor"/><rect x="5" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="30" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="31" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="4" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="57" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/></svg>
       TESSERA
     </a>
     <button class="lang" id="lang"></button>
+    <button class="theme" id="theme" type="button" aria-label="Light or dark page"></button>
   </div>
 </nav>
 <main class="wrap">
   <div class="kicker" id="ver">FM-1</div>
   <h1>TESSERA</h1>
   <div class="bar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+  <p class="tip"><b data-t="tipLabel"></b><span data-t="tip"></span></p>
   <ul class="needs">
-    <li style="--c:var(--t1)" data-t="needBrowser"></li><li style="--c:var(--t2)" data-t="needCable"></li>
-    <li style="--c:var(--t3)" data-t="needTab"></li>
+    <li style="--c:var(--p1)" data-t="needBrowser"></li><li style="--c:var(--p2)" data-t="needCable"></li>
+    <li style="--c:var(--p3)" data-t="needTab"></li>
   </ul>
   <div class="panel">
     <p data-t="intro"></p>
     <p class="warn" data-t="warn"></p>
     <p class="small" data-t="direct"></p>
   </div>
-  <div class="panel choice" style="--c:var(--t2)">
+  <div class="panel choice" style="--c:var(--p2)">
     <p><label><input type="radio" name="build" id="build-dual" checked> <span data-t="dual"></span></label>
       <label><input type="radio" name="build" id="build-single"> <span data-t="single"></span></label></p>
     <p class="small" data-t="singleWhy"></p>
   </div>
-  <section id="nightly-options" class="panel choice" style="--c:var(--t3)" hidden>
+  <section id="nightly-options" class="panel choice" style="--c:var(--p3)" hidden>
     <p><strong data-t="nightlyTitle"></strong></p>
     <p><label><input type="radio" name="build" id="build-nightly-dual"> <span data-t="nightly-dual"></span></label>
       <label><input type="radio" name="build" id="build-nightly-single"> <span data-t="nightly-single"></span></label></p>
     <p class="small" data-t="nightlyWhy"></p>
     <p class="small" id="nightly-info"></p>
   </section>
-  <section id="synth-options" class="panel choice" style="--c:var(--t4)" hidden>
+  <section id="synth-options" class="panel choice" style="--c:var(--p4)" hidden>
     <p><strong data-t="synthTitle"></strong></p>
     <p><label><input type="radio" name="build" id="build-synth-dual"> <span data-t="synth-dual"></span></label>
       <label><input type="radio" name="build" id="build-synth-single"> <span data-t="synth-single"></span></label></p>
@@ -203,6 +226,7 @@ const $ = (id) => document.getElementById(id);
 const TEXT = {
   ja: {
     intro: "FM-1 を USB で接続してください。（Chrome か Edge で使えます）",
+    tipLabel: "ヒント", tip: "ARP を押したままつまみを回すと、そのつまみのヘルプカードが出ます（値は変わりません）。同じつまみをさらに回すと長い説明をスクロールし、ARP を離すと閉じます。",
     warn: "書き込み中は USB を抜かないでください。",
     install: "インストール", other: "English",
     nightlyTitle: "Nightly（next）", "nightly-dual": "Nightly（デュアルコア）",
@@ -235,6 +259,10 @@ const TEXT = {
     stockNeedBackup: "書き込みモードからはバックアップできません。保存済みバックアップがある場合は更新中断の再開にチェックするか、データ消失を了承してバックアップを省略してください。",
     stockUnsupported: "このファームウェアは全体バックアップに未対応です。先に最新版をインストールするか、データ消失を了承して「バックアップを省略する」を選び、もう一度押してください。",
     backup: "全体バックアップ保存中 ", stockError: "公式ファイルを確認できません: ",
+    stockHead: "FM-1 が CHECK HEAD で公式ファイルを拒否しました（FAILED -5）。起動データが V15 と異なります。何も書き込んでおらず、Tessera はそのまま使えます。別の方法で戻そうとしないでください。GitHub で報告してください。",
+    loaderStock: "FM-1 は M-VAVE 公式の書き込みモードで待機しています。このモードには公式FM-1.fwscしか書き込めません。何も送っていません。先に「公式V15に戻す」を完了してください。",
+    loaderTessera: "FM-1 は Tessera の書き込みモード（Melodee Update）で待機しています。このモードには公式ファイルを送りません。何も送っていません。上の「インストール」で Tessera を完了してから、公式V15に戻してください。",
+    loaderUnknown: "このインストーラーが知らない書き込みモードです。何も送っていません。この名前を添えて GitHub で報告してください: ",
     nomidi: "このブラウザでは使えません。Chrome か Edge で開いてください。", loadfail: "読み込めませんでした: ",
     start: "開始します", verify: "確認中", loader: "書き込みモードに切り替え中", write: "書き込み中",
     reboot: "再起動中", done: "完了しました。FM-1 を外しても大丈夫です。", stopped: "途中で止まりました。USB を挿し直してもう一度押してください。",
@@ -256,6 +284,7 @@ const TEXT = {
   },
   en: {
     intro: "Connect the FM-1 by USB. (Works in Chrome or Edge.)",
+    tipLabel: "TIP", tip: "Once installed, hold ARP and turn any knob for its help card: what it does, on every page (the value does not change). Turn the same knob further to scroll, let go of ARP to close it.",
     warn: "Do not unplug the USB cable while writing.",
     install: "Install", other: "日本語",
     nightlyTitle: "Nightly (next)", "nightly-dual": "Nightly — dual core",
@@ -288,6 +317,10 @@ const TEXT = {
     stockNeedBackup: "An update loader cannot export a backup. Select resume if you already saved a complete backup, or choose Skip backup to continue and accept possible data loss.",
     stockUnsupported: "This firmware does not support complete backups. Install the current Tessera first, or select Skip backup to accept possible data loss and try again.",
     backup: "Saving complete backup ", stockError: "Cannot validate official firmware: ",
+    stockHead: "The FM-1 refused the official file at CHECK HEAD (FAILED -5): its boot data differs from V15's. Nothing was written; Tessera stays installed. Do not try other ways to return to stock. Please report it on GitHub.",
+    loaderStock: "The FM-1 is waiting in M-VAVE's official update mode, which only accepts the official FM-1.fwsc. Nothing was sent. Finish Return to official V15 first.",
+    loaderTessera: "The FM-1 is waiting in Tessera's update mode (Melodee Update), which never receives the official file. Nothing was sent. Press Install above to finish Tessera first, then return to official V15.",
+    loaderUnknown: "The FM-1 is in an update mode this installer does not know. Nothing was sent. Please report it on GitHub with this name: ",
     nomidi: "This browser cannot do it. Open the page in Chrome or Edge.", loadfail: "Could not load: ",
     start: "Starting", verify: "Verifying", loader: "Switching to update mode", write: "Writing",
     reboot: "Restarting", done: "Done. You can unplug the FM-1.", stopped: "Stopped. Replug the USB cable and press Install again.",
@@ -419,6 +452,10 @@ function countInstall(what) {
   try { navigator.sendBeacon(`${COUNT_URL}?${q}`); } catch (e) { /* the count is never worth an error */ }
 }
 
+// an update loader that is not the package's own gets nothing: the official one would write a Tessera package's
+// head over the boot data, Tessera's would write only V15's application (docs/RECOVERY.md)
+const refuseLoader = (id) => id === STOCK_LOADER ? sayK("loaderStock") : id === TESSERA_LOADER ? sayK("loaderTessera") : sayK("loaderUnknown", id);
+
 // install an image whose identity the device must report afterwards (the chosen build, or a local test build);
 // what: the published build to count ("2.0/dual"), none for a local file
 async function flash(image, product, what) {
@@ -434,14 +471,18 @@ async function flash(image, product, what) {
     const ota = await up.find((id) => /^ota-/i.test(id.model));
     if (ota) {
       ota.link.close();
-      if (await up.resume(image, step, product)) done = true;
-      sayK(done ? "done" : "stopped");
+      if (ota.id.text !== TESSERA_LOADER) refuseLoader(ota.id.text);
+      else {
+        if (await up.resume(image, step, product, TESSERA_LOADER)) done = true;
+        sayK(done ? "done" : "stopped");
+      }
     } else {
-      await up.install(image, product, step);
+      await up.install(image, product, step, TESSERA_LOADER);
     }
     if (done && what) countInstall(what);
   } catch (e) {
-    if (e && e.code && TEXT[lang][e.code]) sayK(e.code, e.detail || "");
+    if (e && e.code === "wrongloader") refuseLoader(e.detail);
+    else if (e && e.code && TEXT[lang][e.code]) sayK(e.code, e.detail || "");
     else sayK("error", e && e.message);
     log(String(e && e.stack || e));
   }
@@ -515,12 +556,13 @@ $("stock-go").addEventListener("click", async () => {
     runOpen("runTitleStock");
     const up = new Updater(midi, log);
     const step = installSteps(selected.image, () => { done = true; });
-    const loader = await up.find(id => id.model === "ota-FM-1");
+    const loader = await up.find(id => /^ota-/i.test(id.model));
     if (loader) {
       loader.link.close();
+      if (loader.id.text !== STOCK_LOADER) { refuseLoader(loader.id.text); return; }
       if (!skipBackup && !$("stock-recovery").checked) { sayK("stockNeedBackup"); return; }
       if (!confirm(t(skipBackup ? "stockConfirmNoBackup" : "stockConfirm"))) return;
-      if (await up.resume(selected.image, step, selected.product)) done = true;
+      if (await up.resume(selected.image, step, selected.product, STOCK_LOADER)) done = true;
       sayK(done ? "done" : "stopped");
     } else {
       const device = await up.find(id => id.model === "FM-1");
@@ -536,13 +578,30 @@ $("stock-go").addEventListener("click", async () => {
         saveArchive(archive); link.close(); link = null;
       }
       if (!confirm(t(skipBackup ? "stockConfirmNoBackup" : "stockConfirm"))) return;
-      await up.install(selected.image, selected.product, step);
+      await up.install(selected.image, selected.product, step, STOCK_LOADER);
     }
   } catch (e) {
-    if (e.code && TEXT[lang][e.code]) sayK(e.code,e.detail || ""); else sayK("error",e.message);
+    // the firmware stops reading at CHECK HEAD when the device's boot data differs from V15's (FAILED -5):
+    // refused, never retried another way
+    if (e.code === "stopped" && e.lastRead >= selected.head.from && e.lastRead < selected.head.to) sayK("stockHead");
+    else if (e.code === "wrongloader") refuseLoader(e.detail);
+    else if (e.code && TEXT[lang][e.code]) sayK(e.code,e.detail || ""); else sayK("error",e.message);
     log(String(e.stack || e));
   } finally { if (link) link.close(); runEnd(done); lockInstaller(false); }
 });
+</script>
+<script>/* LIGHT / DARK: names the other look; the choice is stored (tessera-theme) */
+(function () {
+  var b = document.getElementById("theme"), r = document.documentElement;
+  function light() { return r.dataset.theme === "light"; }
+  function show() { b.textContent = light() ? "Dark" : "Light"; }
+  b.addEventListener("click", function () {
+    r.dataset.theme = light() ? "dark" : "light";
+    try { localStorage.setItem("tessera-theme", r.dataset.theme); } catch (e) {}
+    show();
+  });
+  show();
+})();
 </script>
 </body>
 </html>

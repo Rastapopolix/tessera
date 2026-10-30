@@ -81,6 +81,10 @@
 #                   no note held after the stop, the generator state after the stop, the saved block's bytes and round
 #                   trip; logs in build/tessera_log/. TESSERA_UPDATE=1 rewrites the baseline (only after an intended
 #                   change of what they play). tests/gen_test.c: each generator alone (gen.c without the firmware).
+# LONG-FORM (tests/longform_test.c): eight hours of ten patches left playing (notes only: the sequencer without the
+#                   voices, checked against mix_block for the first two minutes): no long silence, no collapse to one
+#                   note, no loop replayed for minutes, not thinning out by the last hour; a table of every measure in
+#                   build/longform_report.txt. KNOWN: a FORM at DEVELOP 0 freezes by design (prints KNOWN; fails if it stops).
 # Change baseline entries only for reviewed, intentional differences in sound or cost;
 # retain every unaffected golden / CPU / target entry. VERBOSE=1: every render.
 export AC79_SDK="${AC79_SDK:-$HOME/fw-AC79_AIoT_SDK}"
@@ -163,6 +167,9 @@ web_tests() {                                     # the editor mock's tables mus
     if command -v node >/dev/null 2>&1; then
         step "web pages: editor protocol, package builder, update protocol" node web/test_web.mjs
         step "web backup: capture, validation before writes, restore order" node web/test_backup.mjs
+        if python3 -c "import fontTools" 2>/dev/null; then
+            step "web pages: Tessera Mono is the firmware's 5 x 7 font" python3 tools/gen_mono_webfont.py --check
+        fi
     else
         echo "== skip web tests (no node)"
     fi
@@ -200,6 +207,10 @@ ui_renders() {
         python3 tests/ui_render.py build/ui_new build/ui_slot || fail "tests/ui_render.py"
         python3 tools/ui_mockcmp.py build/ui_new build/ui_mock || fail "tools/ui_mockcmp.py" # redesign parity (docs/design): a report, no gate yet
     fi
+    build ui_render_mono ui_render -O1 -w -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=1 -Ibuild/gen -Ifirmware/src -Itests || return
+    mkdir -p build/ui_mono/ppm build/ui_mono_slot
+    step "UI renders, Mono look (MELODEE_LOOK 1, ui_mono.c): the same screens, lint and MONO gray" \
+        "$OUT/ui_render_mono" build/ui_mono build/ui_mono_slot
 }
 dsp_tracks() {
     build hostsim hostsim -O2 $FW || return
@@ -250,6 +261,7 @@ sound && [ $TABLES = 1 ] && job dsp_tracks
 if core; then
     t "flash storage (A/B, torn writes)" storage_test
     t "native FM6 user presets, scrolling, migration and interrupted saves" fm6_preset_test -O1 $FW
+    t "ORACLE: its sounds in range and playing, the pages, the patch in a project" oracle_test -O1 -DMELODEE_USB_AUDIO=1 $FW
     t "resource lifetimes, cache eviction, tails and capacity" resources_test -O2 $FW
     t "aligned libc: copy/clear bounds, ordering and float aliasing" libc_word_test -O2 -fstrict-aliasing
     t "audio worker: stalled jobs and wrapping deadlines" audio_worker_test
@@ -270,7 +282,9 @@ if core; then
     t "USB audio: routing, clock drift and stream recovery" usb_audio_test
     t "USB audio: endpoint lifecycle and packet ownership" usb_audio_driver_test
     run "USB descriptors: MIDI, CDC and audio configurations" python3 tests/usb_audio_desc_test.py
+    run "boot images: LZMA records, decoder bounds, malformed streams and XIP dependencies" python3 tests/boot_audio_test.py
     run "resident audio: call graph and flash/RAM ABI boundaries" python3 tests/audio_ram_test.py
+    run "stack budgets: callbacks, re-entry, inlined calls, nested IRQs and overflow rejection" python3 tests/stack_budget_test.py
     t "removed effects: old songs and motion, MIDI, physical input and dry output" no_effects_test -O1 $FW
     t "resident audio: four-track resource budget and removed buses" ram_audio_test -O2 $FW
     t "resident audio: expanded voice budget and CPU1 fallback" ram_voice_budget_test -O2 $FW
@@ -332,11 +346,11 @@ if core && [ $TABLES = 1 ]; then
     t "storage safety: protect unreadable records until confirmed replacement" storage_safety_test $FW
     t "full backup: CRC before writes, stale runtime, USB reset / timeout, malformed objects, older projects" backup_test $FW
     t "demo projects (demos/): made, saved, backed up, loaded and played; the shipped ones load; put into a backup" \
-        demo_projects -O2 $FW -DMELODEE_SID=0 -DMELODEE_PHYS=0 -DTRK_START_TESS=1 -- demo_tests
-    t "engines off (FM6, CZ-1, Prophet left out): never offered, a project's tracks of them SID INIT, the parts play" \
-        engine_switch_test $FW -DMELODEE_FM6=0 -DMELODEE_CZ=0 -DMELODEE_PROPHET=0
-    t "engines off (SID, PHYS, CZ-1, Prophet left out, FM back): never offered, their tracks FM6's first voice, the parts play" \
-        engine_switch_fm:engine_switch_test $FW -DMELODEE_SID=0 -DMELODEE_PHYS=0 -DMELODEE_CZ=0 -DMELODEE_PROPHET=0
+        demo_projects -O2 $FW -DMELODEE_SID=0 -DMELODEE_SID_KIT=0 -DMELODEE_PHYS=0 -DTRK_START_TESS=1 -- demo_tests
+    t "engines off (FM6, CZ-1, ORACLE left out): never offered, a project's tracks of them SID INIT, the parts play" \
+        engine_switch_test $FW -DMELODEE_FM6=0 -DMELODEE_CZ=0 -DMELODEE_ORACLE=0
+    t "engines off (SID, PHYS, CZ-1, ORACLE left out, FM back): never offered, their tracks FM6's first voice, the parts play" \
+        engine_switch_fm:engine_switch_test $FW -DMELODEE_SID=0 -DMELODEE_SID_KIT=0 -DMELODEE_PHYS=0 -DMELODEE_CZ=0 -DMELODEE_ORACLE=0
     t "editor: real C protocol, malformed transfers and queue recovery" editor_test $FW
     t "DX7 librarian: USB voice/bank receive, dump replies and malformed frame recovery" fm6_sysex_test $FW
     t "SWING: track + global at most 100, sequencer step lengths, the SWG display" swing_test -O2 $FW
@@ -347,9 +361,12 @@ if core && [ $TABLES = 1 ]; then
         -O2 $FW -- "$OUT/tessera_test" tests/tessera_baseline.txt build/tessera_log
     t "GEN: each generator on its own (gen.c alone): ranges, rests, draws per step, determinism, mutation, sections" \
         gen_test -O2 $FW
+    t "LONG-FORM: 8 hours of 10 patches: no long silence, one-note collapse, frozen loop or thinning out" longform_test \
+        -O2 $FW -- env LF_JOBS=2 "$OUT/longform_test" 8 build/longform_report.txt
     t "PARAMETER IDS: every setting numbered, ranges, get/set, frozen against tests/pid_ids.txt" pid_test \
         -O1 $FW -- "$OUT/pid_test" tests/pid_ids.txt docs/PARAMETERS.md
     t "HELP: the device's packed help texts expand to pid.c's (tools/gen_help.py)" help_pack_test -O1 $FW
+    t "TABLES: the computed readouts (TIME, LFO Hz, CUTOFF, dB) equal the tables they replace" tables_test -O1 $FW
     t "CORDS: the destination table, frozen against tests/cord_dests.txt" cord_test \
         -O1 $FW -- "$OUT/cord_test" tests/cord_dests.txt
     t "double-tap layers, SCREEN OFF, LFO 2 SYNC / TRIG / POL" layer_screen_test \

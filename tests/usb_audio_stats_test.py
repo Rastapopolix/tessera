@@ -48,4 +48,16 @@ except RuntimeError as exc:
     assert 'schema 5' in str(exc)
 else:
     raise AssertionError('old firmware must not appear to have memory telemetry')
-print('audio stats: schemas 2/3/4/5, full-width counters, flags and malformed replies ok')
+# melodee-tess: schema 8, the stacks' high-water marks (flag 64)
+expected, incoming, outgoing, sent = reply(8, 70)
+result = stats.snapshot(incoming, outgoing, stacks=True)
+assert sent[0].data == stats.HEADER + [64]
+assert [result[f] for f in stats.STACK_FIELDS] == expected[64:]
+_, incoming, outgoing, _ = reply(7, 64)
+try:
+    stats.snapshot(incoming, outgoing, stacks=True)
+except RuntimeError as exc:
+    assert 'schema 8' in str(exc)
+else:
+    raise AssertionError('old firmware must not appear to have stack telemetry')
+print('audio stats: schemas 2/3/4/5/8, full-width counters, flags and malformed replies ok')
