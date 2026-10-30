@@ -182,6 +182,36 @@ static int div_change_in_time(void)
     song.g[G_BPM] = 120;
     return bad;
 }
+/* SWING turned while playing, during an odd (late) step: the track keeps the grid, its even steps on the lines of a
+ * straight track twice as slow (it kept the old odd step's offset before, out of time until the next PLAY) */
+static int swing_change_in_time(void)
+{
+    int bad = 0;
+    ui_power_on();
+    track_t *a = &trk[0], *b = &trk[1];
+    for (uint32_t k = 0; k < 2; k++) { track_defaults_steps(&trk[k]); trk[k].p[P_SLEN] = 16; trk[k].p[P_SSWING] = 0; }
+    a->p[P_SDIV] = 1; b->p[P_SDIV] = 2;                 /* 1/8, 1/16 */
+    song.g[G_BPM] = 120; song.g[G_SWING] = 0;
+    uint32_t q = div_samples(0);
+    static const struct { uint8_t from, to; uint8_t late; const char *what; } C[] = {
+        {60, 0, 1, "SWING 60 -> 0 late in an odd step: every 1/8 step lands with a 1/16 step"},
+        {60, 0, 0, "SWING 60 -> 0 early in an odd step: the same"},
+        {0, 60, 0, "SWING 0 -> 60 early in an odd step: the even steps land with the 1/8 steps"},
+        {20, 80, 1, "SWING 20 -> 80 late in an odd step: the same"},
+        {80, 20, 0, "SWING 80 -> 20 early in an odd step: the same"}};
+    for (uint32_t c = 0; c < sizeof C / sizeof C[0]; c++) {
+        b->p[P_SSWING] = C[c].from;
+        seq_start(); events_block(32);
+        for (uint32_t i = 0; i < 200u; i++) events_block(32);
+        uint32_t len = swing_step_len(b, div_samples(2), 1);
+        while (!(b->seq_idx & 1u) || (C[c].late ? b->seq_pos < len * 3u / 4u : b->seq_pos > len / 4u)) events_block(32);
+        b->p[P_SSWING] = C[c].to;
+        bad += check(C[c].what, steps_together(a, b, 4u * q / 32u));
+        seq_stop();
+    }
+    b->p[P_SSWING] = 0;
+    return bad;
+}
 
 /* SEQ tools (seq_tools.c), the Pattern sheet's: DOUBLE (its LEN steps, recorded notes and motion copied after
  * themselves, what lay hidden there replaced), HALF (LEN only, the rest kept hidden), EUCLID on a lane or a note row;
@@ -323,6 +353,6 @@ static int seq_tools(void)
 }
 int main(void)
 {
-    int bad = div_change_in_time()+banks_and_chords()+independent_switches()+all_banks_persist()+panel_banks()+arranged_chords()+replaced_motion()+migrated_bank_rename()+seq_tools();
+    int bad = div_change_in_time()+swing_change_in_time()+banks_and_chords()+independent_switches()+all_banks_persist()+panel_banks()+arranged_chords()+replaced_motion()+migrated_bank_rename()+seq_tools();
     printf("%s\n",bad ? "PATTERN TEST FAILED" : "pattern bank tests passed"); return !!bad;
 }
