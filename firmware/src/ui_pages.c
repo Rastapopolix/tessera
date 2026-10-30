@@ -659,14 +659,15 @@ static uint32_t pv_curve_sig(void)
 
 /* ---------------------------------------------------------- RINGS --- */
 
-/* a page with a cutoff: the filter's response (flat, the resonance's peak at the cutoff, then the slope) */
-static void pv_filter(int32_t cut, int32_t res)
+/* a page with a cutoff: the filter's response as its type shapes it (ui_stage.c flt_curve: flat, the resonance's peak
+ * at the cutoff, the slope) */
+static void pv_filter(int32_t cut, int32_t res, uint32_t type)
 {
     int32_t x, fc = 16 + clamp(cut, 0, 127) * 196 / 127, peak = clamp(res, 0, 127) * 30 / 127, y0 = 44 * 16, py = 0;
     for (x = 10; x < 102; x += 5)
         cv_rect(fc, x, 1, 2, ux_mix(T_PANEL, T_THEME, 60));
     for (x = 0; x < 216; x++) {
-        int32_t d = 12 + x - fc, y = y0 - peak * 16 * 64 / (64 + d * d) + (d > 0 ? d * 14 : 0);
+        int32_t d = 12 + x - fc, y = y0 - flt_curve(type, d, 64, peak * 16, 14, 100 * 16 - y0, res);
         y = clamp(y, 8 * 16, 100 * 16);
         cv_vspan_aa(12 + x, x ? py : y, y, T_THEME);
         py = y;
@@ -737,12 +738,13 @@ static void pv_steps(void)
 }
 
 
-static uint32_t pv_pic(int32_t *cut, int32_t *res)
+static uint32_t pv_pic(int32_t *cut, int32_t *res, uint32_t *type)   /* (type: a filter's, ui_stage.c FLT_) */
 {
     const page_t *pg = cur_page();
     uint32_t e = TSEL->eng_req % NENGINES, c;
     *cut = -1;
     *res = 0;
+    *type = pg->scope == SC_ENGINE ? flt_engine_type() : FLT_LP;   /* (TRIO's MODE; FX FILTER, ORACLE's: low-passes) */
     if (pg->graph == GR_ARP || pg->graph == GR_STEPS)
         return pg->graph == GR_ARP ? 5u : 6u;
     if (pg->fam == FAM_ARP && pg->graph == GR_NONE)     /* ARP 2: the notes it plays too (not GEN's other pages) */
@@ -790,18 +792,19 @@ static void pv_fx(void)
 }
 /* the picture pv_pic chose on the current canvas, cv_oy its top (pv_picture; the Mono look's picture area): the
  * output's wave between rows wy and wy + wh where a page has no picture of its own */
-static void pv_pic_body(uint32_t pic, int32_t cut, int32_t res, int32_t wy, int32_t wh)
+static void pv_pic_body(uint32_t pic, int32_t cut, int32_t res, uint32_t type, int32_t wy, int32_t wh)
 {
     if (pic == 5u) pv_arp();
     else if (pic == 6u) pv_steps();
-    else if (pic == 3u) pv_filter(cut, res);
+    else if (pic == 3u) pv_filter(cut, res, type);
     else if (pic == 9u) pv_fx();
     else stage_wave(T_THEME, wy, wh);
 }
 static void pv_picture(void)
 {
     int32_t cut, res;
-    uint32_t pic = pv_pic(&cut, &res), sig = pv_curve_sig() ^ pic * 131u ^ (uint32_t)(cut + 1) * 7919u, i;
+    uint32_t type, pic = pv_pic(&cut, &res, &type), sig = pv_curve_sig() ^ pic * 131u ^ (uint32_t)(cut + 1) * 7919u ^
+                                                        type * 104729u, i;
     int32_t pp = -1;
     if (pic == 6u && song.playing) {
         uint32_t tr = trk_index(TSEL);
@@ -853,7 +856,7 @@ static void pv_picture(void)
         cv_rrect(PV_PANEL_X, 0, PV_PANEL_W, PV_PIC_H - dy, 6, T_PANEL, T_BG);
         cv_bg = T_PANEL;
         cv_oy = -dy / 2;                                /* (under the tabs: the picture's middle) */
-        pv_pic_body(pic, cut, res, 8 + dy / 2, PV_PIC_H - 16 - dy);
+        pv_pic_body(pic, cut, res, type, 8 + dy / 2, PV_PIC_H - 16 - dy);
         cv_oy = 0;
         cv_blit(0, (uint32_t)(PV_PIC_Y + dy));
     }

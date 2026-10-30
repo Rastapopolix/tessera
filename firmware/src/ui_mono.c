@@ -1591,14 +1591,14 @@ static void mo_pic_dxenv(void)
 #undef DXY
     if (hot >= 0) mo_hot_value(hot);
 }
-/* a page with a cutoff: the filter's response, flat, the resonance's peak at the cutoff (dashed), then the slope; the
- * area under it hatched dim */
-static void mo_pic_filter(int32_t cut, int32_t res)
+/* a page with a cutoff: the filter's response as its type shapes it (ui_stage.c flt_curve: flat, the resonance's peak
+ * at the cutoff (dashed), the slope); the area under it hatched dim */
+static void mo_pic_filter(int32_t cut, int32_t res, uint32_t type)
 {
     int32_t x, fc = 4 + clamp(cut, 0, 127) * 108 / 127, peak = clamp(res, 0, 127) * 20 / 127, y0 = 76, py = 0;
     for (x = MO_PY0 + 2; x < 100; x += 3) mo_px(fc, x, MO_INK);
     for (x = 2; x < 118; x++) {
-        int32_t d = x - fc, y = y0 - peak * 16 / (16 + d * d) + (d > 0 ? d * 7 / 8 : 0);
+        int32_t d = x - fc, y = y0 - flt_curve(type, d, 16, peak * 16, 14, (100 - y0) * 16, res) / 16;
         y = clamp(y, MO_PY0 + 2, 100);
         if (y < 100 && !(x & 1)) mo_vl(x, y + 1, 100 - y, MO_DIM);
         if (x > 2) mo_line(x - 1, py, x, y, MO_INK);
@@ -1905,8 +1905,8 @@ static void mo_picture(void)
     }
     if (pv_kind() == PV_CURVE || pv_kind() == PV_RINGS) {   /* the sound pages' pictures (ui_pages.c pv_pic) */
         int32_t cut, res;
-        uint32_t pic = pv_pic(&cut, &res);
-        if (pic == 3u) { mo_pic_filter(cut, res); return; }
+        uint32_t type, pic = pv_pic(&cut, &res, &type);
+        if (pic == 3u) { mo_pic_filter(cut, res, type); return; }
         if (pic == 5u) { mo_pic_arp(t); return; }
         if (pic == 9u) { mo_pic_fx(); return; }
     }
