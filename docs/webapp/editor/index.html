@@ -10,39 +10,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tessera Editor</title>
 <link rel="icon" href="../../media/brand/logo.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   /* Fukiai: Hügelton Instruments' icon font (MIT, FUKIAI-LICENSE.txt). Icons are text in .ic spans;
      they stay hidden until the face has loaded (html.fk), so a missing font never shows boxes. */
   @font-face { font-family: "Fukiai"; src: url("fukiai.ttf") format("truetype"); font-display: block; unicode-range: U+EA00-EB09; }
-  /* the project page's look (web/home/index.html): SMALTI, the mark's lapis and gold, Chakra Petch;
-     --hi is what the old black-and-white look inverted (the open tab, a pressed button, a set step) */
-  :root { --bg: #0d1326; --fg: #f6f0e0; --dim: #9a9aa2; --line: #343b51; --surf: #18213c; --raise: #2b3249;
-          --accent: #ffe296; --gold: #ecb848; --hi: var(--gold); --hi-fg: #0d1326;
-          --t1: #deca60; --t2: #40c8d6; --t3: #6ed668; --t4: #d67cec; }
+  /* TESSERA-MONO: tools/gen_mono_webfont.py writes the face here (firmware/src/gfx.c's 5 x 7 font) */
+@font-face { font-family: "Tessera Mono"; font-display: block; src: url("data:font/woff;base64,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") format("woff"); }
+/* /TESSERA-MONO */
+  /* the project page's look (web/home/index.html): the Mono look's one ink on black, the four tracks as its fills;
+     --hi is what the device inverts (the open tab, a pressed button, a set step) */
+  :root { --bg: #000; --fg: #ffd020; --dim: #9c7f15; --line: #3b3007; --surf: #0f0c02; --raise: #211b04;
+          --accent: var(--fg); --gold: var(--fg); --hi: var(--fg); --hi-fg: #000;
+          --t1: var(--fg); --t2: var(--fg); --t3: var(--fg); --t4: var(--fg);
+          --p1: var(--fg);
+          --p2: repeating-linear-gradient(135deg, var(--fg) 0 2px, transparent 2px 5px);
+          --p3: radial-gradient(circle, var(--fg) 1.2px, transparent 1.6px) 0 0 / 5px 5px;
+          --p4: repeating-linear-gradient(90deg, var(--fg) 0 2px, transparent 2px 4px);
+          --pixel: "Tessera Mono", ui-monospace, monospace; }
   html { color-scheme: dark; }
+  :focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
   body { margin: 0; background: var(--bg); color: var(--fg);
-         font: 13px/1.45 "Chakra Petch", system-ui, sans-serif;
+         font: 12px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
          font-variant-numeric: tabular-nums; }
   main { max-width: 1100px; margin: 0 auto; padding: 16px; }
-  h1 { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; letter-spacing: .14em; margin: 4px 0 8px; }
+  h1 { display: flex; align-items: center; gap: 10px; font: 400 24px/1 var(--pixel); margin: 4px 0 8px; }
   h1 a { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--fg); }
   h1 svg { width: 26px; height: 26px; }
-  h1 small { font-size: 13px; font-weight: 500; letter-spacing: .12em; color: var(--dim); }
-  .tbar { display: flex; gap: 4px; margin: 0 0 8px; } .tbar i { flex: 1; height: 4px; }
-  .tbar i:nth-child(1) { background: var(--t1); } .tbar i:nth-child(2) { background: var(--t2); }
-  .tbar i:nth-child(3) { background: var(--t3); } .tbar i:nth-child(4) { background: var(--t4); }
-  h2 { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent);
+  h1 small { font: 16px/1 var(--pixel); background: var(--fg); color: var(--bg); padding: 3px 5px 2px; }
+  .tbar { display: flex; gap: 4px; margin: 0 0 8px; } .tbar i { flex: 1; height: 6px; }
+  .tbar i:nth-child(1) { background: var(--p1); } .tbar i:nth-child(2) { background: var(--p2); }
+  .tbar i:nth-child(3) { background: var(--p3); } .tbar i:nth-child(4) { background: var(--p4); }
+  h2 { font: 400 16px/1.2 var(--pixel); text-transform: uppercase; color: var(--accent);
        margin: 0 0 4px; padding-bottom: 2px; border-bottom: 1px solid var(--line); }
   h3 { font-size: 11px; font-weight: 400; color: var(--dim); margin: 4px 0 0; }
   a { color: var(--accent); }
   .lang { float: right; font-size: 12px; color: var(--dim); text-decoration: underline; background: none; padding: 0; }
-  button { font: inherit; font-weight: 500; background: var(--raise); color: var(--fg); border: 0; padding: 3px 10px; cursor: pointer; }
+  button { font: inherit; background: var(--raise); color: var(--fg); border: 0; padding: 3px 10px; cursor: pointer; }
   button:hover:not(:disabled) { background: var(--line); }
-  #connect { background: var(--gold); color: var(--hi-fg); font-weight: 600; }
-  #connect:hover:not(:disabled) { background: var(--accent); }
+  #connect { background: var(--fg); color: var(--hi-fg); font-weight: 600; border: 1px solid var(--fg); }
+  #connect:hover:not(:disabled) { background: var(--bg); color: var(--fg); }
   button:disabled { opacity: .3; cursor: default; }
   button.lang { color: var(--dim); background: none; }
   select, input[type=text], input[type=number], input[type=search] {
@@ -112,6 +118,7 @@
   .list td { padding: 1px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .list tr[data-id], .list tr[data-slot] { cursor: pointer; }
   .list tr.sel td { background: var(--hi); color: var(--hi-fg); }
+  select[size] option:checked { background: var(--hi); color: var(--hi-fg); }
   .list tr.empty td { color: var(--dim); }
   .list tr.over td { outline: 1px dashed var(--fg); outline-offset: -1px; }
   .list.over { outline: 1px solid var(--fg); }
@@ -134,7 +141,7 @@
   .top { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 4px 0 0; }
   @media (max-width: 600px) { .top { position: static; } }
   .tabs { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 2px solid var(--hi); margin: 6px 0 0; }
-  .tabs button { background: none; color: var(--dim); padding: 4px 10px; border: 1px solid transparent; border-bottom: 0; white-space: nowrap; }
+  .tabs button { background: none; color: var(--dim); font: 16px/1 var(--pixel); text-transform: uppercase; padding: 5px 8px 3px; border: 1px solid transparent; border-bottom: 0; white-space: nowrap; }
   .tabs button:hover { color: var(--fg); }
   .tabs button[aria-selected="true"] { background: var(--hi); color: var(--hi-fg); }
   .trackbar { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
@@ -142,7 +149,7 @@
   .seg button, button.tog { background: var(--surf); color: var(--fg); border: 1px solid var(--line); padding: 1px 10px; }
   .seg button + button { border-left: 0; }
   .seg button[aria-pressed="true"], button.tog[aria-pressed="true"] { background: var(--hi); color: var(--hi-fg); border-color: var(--hi); }
-  /* the track buttons and mixer strips take the tracks' own colours */
+  /* the track buttons and mixer strips: the one ink, as on the device (--t1..--t4 kept for a track colour ink) */
   #trackbtns button:nth-child(1) { --hi: var(--t1); } #trackbtns button:nth-child(2) { --hi: var(--t2); }
   #trackbtns button:nth-child(3) { --hi: var(--t3); } #trackbtns button:nth-child(4) { --hi: var(--t4); }
   .strip:nth-child(1) { --hi: var(--t1); } .strip:nth-child(2) { --hi: var(--t2); }
@@ -167,7 +174,7 @@
   .mixer { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-width: 640px; margin: 6px 0; }
   .strip { background: var(--surf); border: 1px solid var(--line); padding: 6px 4px; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
   .strip.sel { border-color: var(--hi); box-shadow: inset 0 0 0 1px var(--hi); }
-  .strip .num { font-size: 18px; font-weight: 600; line-height: 1; }
+  .strip .num { font: 24px/1 var(--pixel); }
   .strip .snd { font-size: 11px; line-height: 1.3; width: 100%; text-align: center; overflow-wrap: anywhere; min-height: 2.6em; }
   .strip .rec { font-size: 11px; color: var(--dim); }
   .strip .rec.on { color: var(--fg); font-weight: 600; }
@@ -185,7 +192,7 @@
 <body>
 <main>
   <button class="lang" id="lang"></button>
-  <h1><a href="../../" aria-label="Tessera"><svg viewBox="0 0 78 78" aria-hidden="true"><rect x="2" y="3" width="22" height="22" fill="#2c4078"/><rect x="29" y="1" width="22" height="22" fill="#3a5496"/><rect x="53" y="2" width="22" height="22" fill="#ecb848"/><rect x="3" y="28" width="22" height="22" fill="#4260aa"/><rect x="28" y="28" width="22" height="22" fill="#324a88"/><rect x="53" y="29" width="22" height="22" fill="#283c70"/><rect x="2" y="53" width="22" height="22" fill="#3e5aa0"/><rect x="29" y="55" width="22" height="22" fill="#2e447e"/><rect x="53" y="53" width="22" height="22" fill="#365092"/></svg>TESSERA</a> <small>EDITOR</small></h1>
+  <h1><a href="../../" aria-label="Tessera"><svg viewBox="0 0 78 78" aria-hidden="true"><rect x="4" y="5" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="31" y="3" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="53" y="2" width="22" height="22" fill="#ffd020"/><rect x="5" y="30" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="30" y="30" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="55" y="31" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="4" y="55" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="31" y="57" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="55" y="55" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/></svg>TESSERA</a> <small>EDITOR</small></h1>
   <div class="tbar" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
   <p class="dim"><a href="../installer/" style="color:inherit" data-t="installer"></a></p>
   <!-- always visible: connection, version, sync mode, the tabs and (Sound / Sequencer / Tracks) the track selector -->
@@ -1789,7 +1796,7 @@ function makeMockDevice(opt = {}) {
     E("MIDI", ["USB", "TRS"], 0), E("DRUM", ["OFF", ...Array.from({ length: 16 }, (_, i) => String(i + 1))], 10), E("ROUT", ["CH1-4", "SEL", "CH5-8", "CH9-12", "CH13-16"], 0), D("CPU", F.INT, 0, 0, 0),
     D("SLOT", F.INT, 1, 5, 1), E("BOOT", ["OFF", "A", "B", "C", "D"], 0), E("LOAD", NGO, 0), E("SAVE", NGO, 0),
     E("ENG", ["-", "-", "-", "SID", "-", "-", "TRIO", "-",
-      "-", "PHYS", "DRUM", "-", "FM6", "-", "-", "-", "-", "-", "-", "-", "-", "-"], 0), D("A4", F.INT, 400, 480, 440, null, "Hz"),
+      "-", "PHYS", "DRUM", "-", "FM6", "-", "-", "-", "-", "-", "-", "ORACLE", "-", "-"], 0), D("A4", F.INT, 400, 480, 440, null, "Hz"),
     E("CLRSQ", NGO, 0), E("INIT", NGO, 0),
     ...Array.from({length:3},()=>D("",F.INT,0,127,0)),
   ];
@@ -1851,7 +1858,7 @@ function makeMockDevice(opt = {}) {
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},   /* 11: retired NOISE; stored ID reserved */
     { name: "FM6", titles: ["OPS", "PATCH"], edit: [D("ALG", F.INT, 0, 32, 0), D("FB", F.INT, -7, 7, 0), D("MLVL", F.BIPCT, -64, 63, 0),
         D("MRAT", F.INT, -16, 16, 0), D("MEG", F.BIPCT, -64, 63, 0), D("VMOD", F.INT, -7, 7, 0), D("DTUN", F.PCT, 0, 127, 0),
-        NONE],
+        D("AEG", F.BIPCT, -64, 63, 0)],
       presets: [P("TINE EP", [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 127, 0], 0), P("BELL", [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 127, 0], 0),
         P("FM BASS", [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 127, 0], 1), P("BRASS", [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 127, 0], 0),
         P("PAD", [0, 0, 0, 0, 0, 0, 30, 0], [0, 0, 127, 0], 0), P("MARIMBA", [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 127, 0], 0),
@@ -1893,8 +1900,24 @@ function makeMockDevice(opt = {}) {
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},   /* (15: the CZ-1, retired 2026-10-22) */
   ];
-  ENG.push(...Array.from({length:6},()=>({name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]})));   /* (19: the
-                                                     PROPHET, retired 2026-10-22; 20, 21 reserved) */
+  ENG.push(...Array.from({length:3},()=>({name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]})));   /* 16..18 reserved */
+  { const Z8 = [0, 0, 0, 0, 0, 0, 0, 0];
+  ENG.push({ name: "ORACLE", titles: ["MACRO", "MACRO 2"],   /* 19: the Prophet engine, back 2026-10-29 (eng_oracle.c) */
+    edit: [D("CUT", F.INT, -63, 63, 0), D("RES", F.INT, -63, 63, 0), D("TUNE A", F.SEMI, -24, 24, 0),
+      D("TUNE B", F.SEMI, -24, 24, 0), D("PW A", F.INT, -63, 63, 0), D("PW B", F.INT, -63, 63, 0),
+      D("LVL A", F.INT, -63, 63, 0), D("LVL B", F.INT, -63, 63, 0)],
+    presets: [   /* (the sounds are patches: eng_oracle.c or_sound; the mock plays none) */
+      P("INIT ORACLE", Z8, [0, 0, 127, 0], 0), P("WARM PAD", Z8, [0, 0, 127, 0], 0),
+      P("GLASS PAD", Z8, [0, 0, 127, 0], 0), P("SOFT STRINGS", Z8, [0, 0, 127, 0], 0),
+      P("BRASS", Z8, [0, 0, 127, 0], 0), P("SYNC LEAD", Z8, [0, 0, 127, 0], 1),
+      P("FUNK BASS", Z8, [0, 0, 127, 0], 1), P("SUB BASS", Z8, [0, 0, 127, 0], 1),
+      P("ACID LINE", Z8, [0, 0, 127, 0], 1), P("PLUCK", Z8, [0, 0, 127, 0], 0),
+      P("POLY BELLS", Z8, [0, 0, 127, 0], 0), P("KEYS", Z8, [0, 0, 127, 0], 0), P("CLAV", Z8, [0, 0, 127, 0], 0),
+      P("KOTO", Z8, [0, 0, 127, 0], 0), P("DRONE", Z8, [0, 0, 127, 0], 0), P("WIND", Z8, [0, 0, 127, 0], 0),
+      P("RUMBLE", Z8, [0, 0, 127, 0], 0), P("SQUARE LEAD", Z8, [0, 0, 127, 0], 1), P("VOX", Z8, [0, 0, 127, 0], 0),
+      P("SWEEP PAD", Z8, [0, 0, 127, 0], 0), P("SEQ BLIP", Z8, [0, 0, 127, 0], 0), P("FLUTE", Z8, [0, 0, 127, 0], 1),
+      P("FAT POLY", Z8, [0, 0, 127, 0], 0), P("DUB CHORD", Z8, [0, 0, 127, 0], 0)] }); }
+  ENG.push(...Array.from({length:2},()=>({name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]})));   /* 20, 21 reserved */
   const FM6_E = ENG.findIndex((e) => e.name === "FM6"), FM6_BANK = 0;
   /* the mock's demo sequences (the device powers on empty; it has no pattern library): absolute notes, 0 rest;
      flags 1 accent, 2 slide, 4 tie (holds the previous note). ACID, BEAT */
@@ -1908,9 +1931,9 @@ function makeMockDevice(opt = {}) {
     D("DEG", F.INT, 1, 12, 1));                      /* 83: QNT MPC, the degree of pad H02 */
   TP.push(...["KICK","SNARE","CLAP","HATCL","HATOP","TOM","RIM","BELL"].map(n=>D(n,F.PCT,0,127,127)));
   TP.push(E("SYNC", ["OFF","4BAR","2BAR","1/1","1/2","1/4","1/8","8T","1/16","16T","1/32"],0), E("TRIG",["NOTE","FREE"],0), E("POL",["BI","UNI"],0), D("SPRD",F.PCT,0,127,0));
-  for(let slot=0;slot<3;slot++)TP.push(E("FX", ["OFF","PHASER","WIDTH","FORMANT","TAPE","SPIT","ECHO","ROOM","REVERB","CHORUS"],0),D("MIX",F.PCT,0,127,0),D("RATE",F.LFOHZ,0,127,60),D("CHAR",F.PCT,0,127,64));
+  for(let slot=0;slot<3;slot++)TP.push(E("FX", ["OFF","PHASER","WIDTH","FORMANT","TAPE","SPIT","ECHO","ROOM","REVERB","CHORUS","FILTER"],0),D("MIX",F.PCT,0,127,0),D("RATE",F.LFOHZ,0,127,60),D("CHAR",F.PCT,0,127,64));
   TP.push(D("SEND",F.PCT,0,127,0),D("SEND 2",F.PCT,0,127,0),D("SEND 3",F.PCT,0,127,0));
-  for(let slot=0;slot<3;slot++)GP.push(E("TYPE", ["OFF","PHASER","WIDTH","FORMANT","TAPE","SPIT","ECHO","ROOM","REVERB","CHORUS"],0),D("MIX",F.PCT,0,127,127),D("RATE",F.LFOHZ,0,127,60),D("CHAR",F.PCT,0,127,64));
+  for(let slot=0;slot<3;slot++)GP.push(E("TYPE", ["OFF","PHASER","WIDTH","FORMANT","TAPE","SPIT","ECHO","ROOM","REVERB","CHORUS","FILTER"],0),D("MIX",F.PCT,0,127,127),D("RATE",F.LFOHZ,0,127,60),D("CHAR",F.PCT,0,127,64));
   GP.push(D("RETURN",F.PCT,0,127,100),E("MODE",["CHAIN","SPLIT"],0),D("BUDGET",F.INT,8,32,16,null,"pts"));
   const P_COUNT = 119, G_COUNT = 42, NSTEP = 64, P_E0 = 111, G_ENGSEL = 20, P_RESERVED45 = 45;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1999,9 +2022,9 @@ function makeMockDevice(opt = {}) {
     st.bank[slot] = snapshot(name);
     clearSteps(); st.p[29] = 16;
   });
-  /* the power-on sounds (engines.c TRK_DEF): SID 26, STRINGS, INIT SID, DRUM KIT (the reference build; FUNK BASS II until
-     the PROPHET was retired, 2026-10-22) */
-  [[1, FM6_E, 15], [2, 3, 0], [3, 10, 0], [0, 3, 26]].forEach(([i, e, p]) => { st.sel = i; setEngine(e); applyPreset(p); });
+  /* the power-on sounds (engines.c TRK_DEF): SID 26, TRIO STRING MACH, INIT SID, DRUM KIT (the reference build; FUNK BASS II
+     until the PROPHET was retired, 2026-10-22; FM6 STRINGS until 2026-10-28) */
+  [[1, 6, 6], [2, 3, 0], [3, 10, 0], [0, 3, 26]].forEach(([i, e, p]) => { st.sel = i; setEngine(e); applyPreset(p); });
   /* the device powers on with its sequencers empty; the mock starts as a little demo to look at: track 1 with
      the power-on bass, track 4 with BEAT, pads left, lead right */
   st.sel = 3; loadDemo(1);
@@ -2530,7 +2553,7 @@ function aliasOf(names, i) { const k = names ? names.indexOf(names[i]) : -1; ret
 /* the order the device shows its engines in (src/engines.c ENGINE_ORDER): the lists here follow it, the protocol keeps
    the engine numbers. engineOrder(names): the indices of names in that order, "-" (a reserved number) left out; a name
    the list does not know (another firmware) follows in index order */
-const ENGINE_ORDER = ["PROPHET", "ANALOG", "FM6", "DIGITAL", "PHASE", "CZ-1", "SID", "TRIO", "PHYS", "VOICE", "NOISE",
+const ENGINE_ORDER = ["PROPHET", "ANALOG", "FM6", "ORACLE", "DIGITAL", "PHASE", "CZ-1", "SID", "TRIO", "PHYS", "VOICE", "NOISE",
   "DRUM"];
 function engineOrder(names) {
   const rank = (n) => { const k = ENGINE_ORDER.indexOf(n); return k < 0 ? ENGINE_ORDER.length : k; };

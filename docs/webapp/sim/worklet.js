@@ -95,6 +95,11 @@ if (typeof registerProcessor === "function") {
       else if (m.type === "midi") ex.web_midi(m.data[0] | 0, m.data[1] | 0, m.data[2] | 0);
       else if (m.type === "visible") this.period = m.on ? 1 / 30 : 1 / 4;
       else if (m.type === "demo" && ex.web_demo) ex.web_demo();   // melodee-tess
+      else if (m.type === "ink" && ex.web_ink) {                   // the page's shell picker: the ink by name
+        const name = String(m.name).slice(0, 15), buf = new Uint8Array(ex.memory.buffer, ex.web_ink_name(), name.length);
+        for (let i = 0; i < name.length; i++) buf[i] = name.charCodeAt(i) & 0x7f;           // (ASCII names)
+        ex.web_ink(name.length);
+      }
     }
 
     publish() {
