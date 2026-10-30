@@ -265,6 +265,34 @@ static int seq_cond_met(const track_t *t, const step_t *s)
 static uint32_t seq_lag;                         /* the first block after PLAY: the tracks' step 0 starts after it */
 /* clock units since the last 4-bar line from PLAY: every DIV's grid divides it */
 static uint32_t seq_phase(uint32_t beat) { return (((bar_n & 3u) << 2) + beat_n) * beat + beat_pos; }
+static uint8_t seq_swing_was[NTRK];              /* each track's SWING last block (track_swing) */
+static uint32_t seq_slip[NTRK];                  /* samples the step playing lasts longer (seq_grid_place) */
+/* DIV, tempo or SWING changed while playing: the step playing moves onto the grid from PLAY, so the track stays in time
+ * with the others (it kept the old step's offset before, until the next PLAY). done: its share played (Q16). Straight:
+ * just past a line with the step more than half done, it is due and plays now. Swung, an even step starts on a line
+ * and an odd one SWING's offset after the next (swing_step_len): the pair of lines nearer where the step was is taken;
+ * past the step's end there it plays now, before its start it lasts that much longer */
+static void seq_grid_place(track_t *t, uint32_t period, uint32_t done)
+{
+    uint32_t k = trk_index(t), len = swing_step_len(t, period, t->seq_idx);
+    uint32_t ph = (seq_phase(seq_beat_samples()) % period + period - seq_lag % period) % period;
+    int32_t sw = (int32_t)swing_step_len(t, period, 0) - (int32_t)period, pair = 2 * (int32_t)period;
+    int32_t start = (t->seq_idx & 1u) ? (int32_t)period + sw : 0, a = (int32_t)ph, d, x, y;
+    seq_slip[k] = 0;
+    if (!sw) {
+        t->seq_pos = ph + (done >= 32768u && ph < period / 2u ? len : 0u);
+        return;
+    }
+    d = start + (int32_t)(((uint64_t)len * done) >> 16);   /* (where the step was, in the pair) */
+    x = ((a - d) % pair + pair) % pair;
+    y = ((a + (int32_t)period - d) % pair + pair) % pair;
+    if ((y < pair - y ? y : pair - y) < (x < pair - x ? x : pair - x)) a += (int32_t)period;
+    d = ((a - start) % pair + pair) % pair;               /* (the place in the step: past the gap's middle, early) */
+    if (d >= (int32_t)len + (pair - (int32_t)len) / 2) {
+        seq_slip[k] = (uint32_t)(pair - d);
+        t->seq_pos = 0;
+    } else t->seq_pos = (uint32_t)d;
+}
 static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
 {
     uint32_t period, cnt, list[64], len = 0, i, j, o;
@@ -880,6 +908,7 @@ static void seq_start(void)
     song.tick = 0;
     beat_pos = 0; beat_n = 0; bar_n = 0;           /* the ARP LED's beat from the top too */
     memset(seq_period_was, 0, sizeof seq_period_was);
+    memset(seq_slip, 0, sizeof seq_slip);
     song.playing = 1;
     midi_out_start();
     if (click_wanted()) click_req=2;
@@ -1082,15 +1111,17 @@ static void seq_grid_tick(track_t *t, uint32_t n)
         t->rh_elapsed += n;
     period = seq_div_samples((uint32_t)t->p[P_SDIV]);
     len = (uint32_t)t->p[P_SLEN];
-    {   /* DIV or tempo changed while playing: the step's place moves onto the new grid from PLAY, so the track stays
-         * in time with the others (it kept the old step's offset before, until the next PLAY). Just past a line of the
-         * new grid with the old step more than half done: that step is due, so it plays now */
-        uint32_t *was = &seq_period_was[trk_index(t)];
-        if (*was && *was != period && t->seq_pos < 0x7FFFFFFFu && !chain.running) {
-            uint32_t ph = (seq_phase(seq_beat_samples()) % period + period - seq_lag % period) % period;
-            t->seq_pos = ph + (t->seq_pos >= *was / 2u && ph < period / 2u ? step_samples(t, period, t->seq_idx) : 0u);
+    {   /* DIV, tempo or SWING changed while playing: back onto the grid (seq_grid_place) */
+        uint32_t *was = &seq_period_was[trk_index(t)], sw = (uint32_t)track_swing(t), *slip = &seq_slip[trk_index(t)];
+        uint8_t *sw_was = &seq_swing_was[trk_index(t)];
+        if (*was && (*was != period || *sw_was != sw) && t->seq_pos < 0x7FFFFFFFu && !chain.running) {
+            int32_t old = (int32_t)(*sw_was * *was / 250u);
+            uint32_t len_was = *was + (uint32_t)((t->seq_idx & 1u) ? -old : old) + *slip;
+            uint64_t done = len_was ? ((uint64_t)t->seq_pos << 16) / len_was : 0u;
+            seq_grid_place(t, period, done > 65535u ? 65535u : (uint32_t)done);
         }
         *was = period;
+        *sw_was = (uint8_t)sw;
     }
     t->seq_pos += n;
     seq_sub_tick(t, step_samples(t, period, t->seq_idx));   /* (SUB: this step's repeats due, before the next step) */
@@ -1099,9 +1130,10 @@ static void seq_grid_tick(track_t *t, uint32_t n)
     else
         seq_gen_tick(t, step_samples(t, period, t->seq_idx));   /* (HUMAN: a generator step a moment late) */
     for (;;) {
-        uint32_t cur_len = step_samples(t, period, t->seq_idx);
+        uint32_t cur_len = step_samples(t, period, t->seq_idx) + seq_slip[trk_index(t)];
         if (t->seq_pos < cur_len && t->seq_pos != 0x7FFFFFFFu + n)
             break;
+        seq_slip[trk_index(t)] = 0;
         uint32_t starting = t->seq_pos >= 0x7FFFFFFFu;
         uint32_t punch_in = 0;
         if (starting) seq_lag = n;
@@ -1123,6 +1155,7 @@ static void seq_grid_tick(track_t *t, uint32_t n)
             t->seq_idx = 0;
             period = seq_div_samples((uint32_t)t->p[P_SDIV]);
             seq_period_was[trk_index(t)] = period;    /* (a pattern of another DIV starts here, as it is) */
+            seq_swing_was[trk_index(t)] = (uint8_t)track_swing(t);
             len = (uint32_t)t->p[P_SLEN];
         }
         cap_step[trk_index(t)]++;
