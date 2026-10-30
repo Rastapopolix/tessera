@@ -601,7 +601,8 @@ static void mo_pic_lfo(track_t *t)
 /* NOTES (a melodic track's steps): the cursor's page of 16, tabs 1..4 for the pattern's pages (the one shown inverted)
  * with LEN and DIV; a step a column 5 cells wide in groups of four: a note's height its pitch among the page's notes
  * (a chord: a tick above for each note more), a tie an outline at the note before's height, a rest a dim dash; an
- * accent a mark under, a slide a tail into the next; the playhead a dim frame, the cursor a thick underline */
+ * accent a mark under, a slide a tail into the next, Accumulate a caret over (pointing up or down); the playhead a
+ * dim frame, the cursor a thick underline */
 static void mo_pic_notes(const track_t *t)
 {
     uint32_t len = (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP), pages = (len + 15u) / 16u, pg = ui.cursor / 16u, i;
@@ -645,6 +646,11 @@ static void mo_pic_notes(const track_t *t)
                 mo_hl(x + 1, base - h - 2 * (int32_t)k, 3, MO_INK);
             if (st->flags & SF_ACCENT) mo_fill(x + 1, base + 2, 3, 2, MO_INK);
             if (st->flags & SF_SLIDE) mo_hl(x + 5, base - h, 2, MO_INK);
+            if (st->climb) {                            /* Accumulate: a caret over it, up climbing, down falling */
+                int32_t y = base - h - 2 * (int32_t)(st->n < 4u ? st->n - 1u : 3u) - 4, up = step_climb(st) > 0;
+                y = y < 61 ? 61 : y;                    /* (under the page tabs) */
+                for (k = 0; k < 3u; k++) mo_hl(x + (int32_t)k, y + (up ? 2 - (int32_t)k : (int32_t)k), 5 - 2 * (int32_t)k, MO_INK);
+            }
         } else if (st->time == ST_TIE) {
             mo_box(x - 1, base - prev, 6, prev, MO_INK);
         } else {

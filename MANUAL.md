@@ -556,8 +556,8 @@ Velocity and Chance it holds:
   round, so a short loop climbs or falls on its own. They stay within the track's Accum limit and do what its Accum
   mode says there (the pattern's sheet, above). PLAY and a new pattern start them again from the notes as written.
   Every note of a chord moves, in the track's scale (with QNT OFF, in semitones). A TIE holds what played before
-  it, and drum hits and recorded notes do not move. On NOTES a small mark over a note says it climbs, under it that
-  it falls; the notes are drawn as written.
+  it, and drum hits and recorded notes do not move. On NOTES a small caret over a note points up when it
+  climbs, down when it falls; the notes are drawn as written.
 
 <p align="center"><img src="assets/gallery/sheet_note.png" alt="A note's sheet, Ratchet x3 and Nudge +2/16" width="240"></p>
 
