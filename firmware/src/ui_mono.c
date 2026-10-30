@@ -230,9 +230,10 @@ static void mo_head(void)
         fmt_int(at + str_len(at), (int32_t)n);
     }
     room = 94 - mo_tw(sub) - 4 - (at[0] ? mo_tw(at) + 6 : 0);
-    if (ui.msg_t && ui.msg[0]) {                        /* a message: in the title's place, inverted */
-        mo_cut(t, ui.msg, 15);
+    if (ui.msg_t && ui.msg[0]) {                        /* a message: in the title's place, inverted, over the */
+        mo_cut(t, ui.msg, 15);                          /* position and the engine (they would show through) */
         mo_inv(t, 2, 1);
+        at[0] = sub[0] = 0;
     } else {
         str_cpy(t, mo_title(pg), sizeof t);
         if (pg->fam == FAM_GEN && pg->graph == GR_STEPS && song.sel < TESSERA_TRACKS) {
