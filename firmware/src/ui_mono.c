@@ -173,14 +173,14 @@ static void mo_dial(int32_t cx, int32_t cy, int32_t r, int32_t v, uint16_t c)
 }
 
 /* ---- header, dials, footer ---- */
-/* the footer's tabs: the family's pages, as the button turns through them; *cur the shown one's place */
+/* the footer's tabs: the pages the button turns through (SEQ: GEN's and ARP's too, in_fam), *cur the shown one's place */
 static uint32_t mo_tabs(uint16_t *idx, uint32_t *cur)
 {
     const page_t *pg = cur_page();
     uint32_t i, n = 0;
     *cur = 0;
     for (i = 0; i < NPAGES && n < 16u; i++)
-        if (PAGES[i].fam == pg->fam && page_visible(i)) {
+        if (in_fam(i, pg->fam) && page_visible(i)) {
             if (&PAGES[i] == pg) *cur = n;
             idx[n++] = (uint16_t)i;
         }
