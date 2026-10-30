@@ -604,23 +604,21 @@ static void mo_pic_morph(const gen_morph_t *g)
 static void mo_pic_lfo(track_t *t)
 {
     int32_t x, py = 0, uni = t->p[P_LPOL] != 0, z = uni ? 98 : 80, amp = uni ? 40 : 18, now;
-    uint32_t ph = (uint32_t)t->p[P_LPHASE] << 25, step = 0xFFFFFFFFu / 58u;
+    uint32_t ph = (uint32_t)t->p[P_LPHASE] << 25, step = 0xFFFFFFFFu / 116u;
     char b[16];
     const char *unit;
     mo_dash(2, z, 116, MO_DIM);
-    for (x = 0; x < 116; x++) {                         /* two cycles from PHASE */
-        int32_t w = lfo_wave(t, ph + (uint32_t)x * step), y;
-        if (t->p[P_LWAVE] == 4)
-            w = (int32_t)((x / 10 * 2654435761u) >> 16) - 32768;
-        y = uni ? z - (w + 32768) * amp / 65536 : z - w * amp / 32768;
+    for (x = 0; x < 116; x++) {                         /* one cycle from PHASE, so the dot crosses it all; */
+        int32_t w = lfo_wave(t, ph + (uint32_t)x * step), y;   /* S&H: this cycle's held value, flat */
+        y =uni ? z - (w + 32768) * amp / 65536 : z - w * amp / 32768;
         if (x) mo_line(1 + x, py, 2 + x, y, MO_INK);
         py = y;
     }
-    now = (int32_t)((t->lfo_ph - ph) / step);           /* where it is: on the first cycle */
+    now = (int32_t)((t->lfo_ph - ph) / step);           /* where it is (lfo_val: UNI is already 0..+1) */
     if (now >= 0 && now < 116) {
         int32_t w = t->lfo_val;
         mo_vl(2 + now, MO_PY0 + 2, 50, MO_DIM);
-        mo_disc(2 + now, uni ? z - (w + 32768) * amp / 65536 : z - w * amp / 32768, 2, MO_INK);
+        mo_disc(2 + now, z - w * amp / 32768, 2, MO_INK);
     }
     param_format(&TP[P_LSYNC], t->p[P_LSYNC], b + 5, &unit);
     if (t->p[P_LSYNC]) { b[0] = 'S'; b[1] = 'Y'; b[2] = 'N'; b[3] = 'C'; b[4] = ' '; mo_text(b, 2, 102, MO_DIM); }
@@ -2026,8 +2024,8 @@ static uint32_t mo_signature(void)
     }
     if (cur_page()->graph == GR_ROLL)                   /* NOTES: the steps */
         h = (h ^ steps_hash(t) ^ (uint32_t)t->p[P_SLEN] << 8 ^ (uint32_t)t->p[P_SDIV] << 16) * 16777619u;
-    if (cur_page()->graph == GR_LFO)                    /* the LFO's dot: 58 places a cycle */
-        h = (h ^ (t->lfo_ph / (0xFFFFFFFFu / 58u))) * 16777619u;
+    if (cur_page()->graph == GR_LFO)                    /* the LFO's dot: 116 places a cycle */
+        h = (h ^ (t->lfo_ph / (0xFFFFFFFFu / 116u))) * 16777619u;
     if (ui.msg_t)
         h = (h ^ str_hash(1u, ui.msg)) * 16777619u;
     return h;
