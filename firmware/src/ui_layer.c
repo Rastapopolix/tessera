@@ -232,6 +232,18 @@ static void glo_tap(void)
     }
 }
 
+/* SELECT on HOME, or with GLO held: the tempo, as SEQ > TEMPO's BPM (INT clock only) */
+static void bpm_turn(int32_t s)
+{
+    if (song.g[G_CLOCK]) {
+        ui_message("TEMPO: CLK IS EXT");
+        return;
+    }
+    song.g[G_BPM] = (int16_t)clamp(song.g[G_BPM] + accel(EN_SELECT, s, GP[G_BPM].max - GP[G_BPM].min),
+                                   GP[G_BPM].min, GP[G_BPM].max);
+    ui.bpm_t = 40;
+}
+
 /* a key pressed in layer l (k: 0 = F3 .. 26 = G5) */
 static void layer_key(uint32_t l, uint32_t k)
 {

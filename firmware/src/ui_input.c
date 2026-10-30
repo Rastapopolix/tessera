@@ -1574,6 +1574,7 @@ static int layer_set_open(void);
 static uint32_t layer_oct(uint32_t pressed, uint32_t oct);
 static int layer_allowed(void);
 static uint32_t ly_bit(uint32_t l);
+static void bpm_turn(int32_t s);
 
 /* a page button let go (they act on release; a layer's own button: layer_gesture) */
 static void page_tap(uint32_t b)
@@ -1996,6 +1997,10 @@ static void ui_input(void)
     if (knob_layer)
         for (k = 0; k < 4u; k++)
             if (ks[k]) combo = 1;
+    if (knob_layer && ui.ly == LAYER_GLO && (s = panel_enc(EN_SELECT)) != 0) {   /* GLO + SELECT: the tempo, a combo */
+        combo = 1;
+        bpm_turn(s);
+    }
     if (lay) {                                          /* a layer's button held: keys, knobs and buttons are combos */
         combo |= (pressed & ~ly_bit(ui.ly)) != 0u;
         notes = 0;                                      /* (the keys are the layer's, not the grid's or a step's) */
@@ -2373,8 +2378,9 @@ static void ui_input(void)
             if (pattern_request(TSEL, (uint32_t)clamp((int32_t)from + s, 0, NPAT - 1u))) ui_message("STOP SONG TO SWITCH");
             ui.force = 1;
         } else if (step_gesture(s)) {                   /* ENV / SCL / a key held: the note's length, its place */
-        } else if (!ui.home) {                          /* the section's pages (BPM: SEQ > TEMPO; the notes, the hits:
-                                                         * KNOB 1) */
+        } else if (ui.home) {                           /* HOME: the tempo (GLO held: above; SEQ > TEMPO) */
+            bpm_turn(s);
+        } else {                                        /* the section's pages (the notes, the hits: KNOB 1) */
             page_scroll(s);
         }
     }
