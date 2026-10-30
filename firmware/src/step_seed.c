@@ -4,7 +4,7 @@
  * pattern, SOURCE's (OFF, T1..T4: that track's pattern playing now, this track's own too), which it never changes.
  * TURING loads the source's first LEN steps into a loop and drifts it: each step, at PROB %, the step about to play
  * changes and stays so (a Turing machine's flipped bit). KEEP says what may change: FREE the hit or the pitch, RHYTHM
- * only the pitch (another note of the loop's, or a degree away), PITCH only the hit (a rest taking the last note
+ * only the pitch (another of the source's notes, or of the scale over SPAN octaves), PITCH only the hit (a rest taking the last note
  * before it). PROB 0 plays the source as written. EUCLID plays the source's notes in order on its hits (FREE, PITCH);
  * KEEP RHYTHM plays the source's own rhythm on Euclid's pitches. MARKOV learns from the source what follows what: each
  * step plays what followed the step it played last somewhere in the source (LEAP %: any of its steps); KEEP RHYTHM
@@ -78,25 +78,50 @@ static void sd_fill(uint32_t tr, uint32_t s)
     tess_sd.load[tr] = 0;
     tess_sd.len[tr] = tessera.turing[tr].len;
 }
+/* a changed step's new pitch, not note: half the time another of the source's notes as written, else any note of the
+ * track's scale from the source's lowest note up SPAN octaves (TURING's SPAN; MORPH 2), or to its highest. Never a
+ * note copied from the loop: copies of copies narrow it to one note, whichever wins (Theo's octave, 2026-10-30) */
+static uint32_t sd_pitch(const track_t *t, uint32_t tr, uint32_t s, uint32_t note)
+{
+    uint32_t i, k = 0, n, v, lo = 127, hi = 0, len = sd_len(s);
+    int32_t base, top, d, deg;
+    for (i = 0; i < len; i++)
+        if (sd_step(s, i, &n, &v) && n != note) {
+            k++;
+            if (n < lo) lo = n;
+            if (n > hi) hi = n;
+        }
+    if (lo > note) lo = note;
+    if (hi < note) hi = note;
+    if (k && gen_rnd(&tessera.rnd[tr], 2u)) {          /* (the source's notes: their weight as written) */
+        k = gen_rnd(&tessera.rnd[tr], k);
+        for (i = 0; i < len; i++)
+            if (sd_step(s, i, &n, &v) && n != note && !k--) return n;
+    }
+    k = tessera.mode[tr] == TESS_ENG_TURING && tessera.turing[tr].oct_span ? tessera.turing[tr].oct_span : 2u;
+    top = (int32_t)lo + 12 * (int32_t)k;
+    if (top <= (int32_t)hi) top = (int32_t)hi + 1;
+    base = tessera_snap_note(t, (int32_t)lo);
+    for (d = base, deg = 0; d < top && deg < 48; d = tess_scale_steps(t, d, 1)) deg++;
+    deg = (int32_t)gen_rnd(&tessera.rnd[tr], (uint32_t)deg);
+    d = tess_scale_steps(t, base, deg);
+    if (d == (int32_t)note) d = deg ? base : tess_scale_steps(t, base, 1);   /* (a change: never the note it was) */
+    return (uint32_t)clamp(d, 0, 127);
+}
 /* TURING's change to step p of its loop: KEEP RHYTHM a new pitch, KEEP PITCH the hit flipped, FREE either */
-static void sd_drift(const track_t *t, uint32_t tr, uint32_t p, uint32_t len)
+static void sd_drift(const track_t *t, uint32_t tr, uint32_t p)
 {
     uint8_t *e = &tess_sd.loop[tr][p];
     uint32_t keep = tessera.sd_keep[tr], pitch = keep == TESS_SD_RHYTHM ? 1u : keep == TESS_SD_PITCH ? 0u :
-                    gen_rnd(&tessera.rnd[tr], 2u);
-    if (!pitch) {
+                    gen_rnd(&tessera.rnd[tr], 2u), s = sd_source(tr);
+    if (!pitch) {                                       /* (FREE: a rest turned hit a new pitch too, not the note before
+                                                         * it, which after a rising run is always its top) */
         *e ^= 0x80u;
-        return;
+        if (keep == TESS_SD_PITCH || !(*e & 0x80u) || !s) return;
+    } else if (!(*e & 0x80u) || !s) {
+        return;                                         /* (a rest has no pitch to change) */
     }
-    if (!(*e & 0x80u)) return;                          /* (a rest has no pitch to change) */
-    {
-        uint32_t i = gen_rnd(&tessera.rnd[tr], len), k, note = *e & 0x7Fu;
-        for (k = 0; k < len; k++, i = (i + 1u) % len)   /* another note of the loop's .. */
-            if ((tess_sd.loop[tr][i] & 0x80u) && (tess_sd.loop[tr][i] & 0x7Fu) != note) break;
-        if (k < len) note = tess_sd.loop[tr][i] & 0x7Fu;
-        else note = (uint32_t)clamp(tess_scale_steps(t, (int32_t)note, gen_rnd(&tessera.rnd[tr], 2u) ? 1 : -1), 0, 127);
-        *e = (uint8_t)(0x80u | note);                   /* .. or, the loop all one note, a degree away */
-    }
+    *e = (uint8_t)(0x80u | sd_pitch(t, tr, s - 1u, *e & 0x7Fu));
 }
 /* GRAVITY's pull this step: 1 = it plays the source as written (no draw at 0) */
 static int sd_pull(uint32_t tr)
@@ -121,7 +146,7 @@ static int sd_turing(const track_t *t, uint32_t tr, gen_out_t *out)
         uint8_t *e = &tess_sd.loop[tr][p];
         *e = sd_step(s - 1u, p, &note, &vel) ? (uint8_t)(0x80u | (note & 0x7Fu)) : (uint8_t)(*e & 0x7Fu);
     } else if (tessera.turing[tr].prob && gen_rnd(&tessera.rnd[tr], 100u) < tessera.turing[tr].prob) {
-        sd_drift(t, tr, p, len);
+        sd_drift(t, tr, p);
     }
     note = tess_sd.loop[tr][p] & 0x7Fu;
     out->cv = (int16_t)(note * 32767u / 127u);
@@ -231,10 +256,10 @@ static void sd_morph_vary(const track_t *t, uint32_t tr, uint32_t n)
         sd_fill(tr, s - 1u);
         tess_sd.len[tr] = SD_MORPH;
         for (i = 0; i < len; i++)
-            if (gen_rnd(&tessera.rnd[tr], 2u)) sd_drift(t, tr, i, len);
+            if (gen_rnd(&tessera.rnd[tr], 2u)) sd_drift(t, tr, i);
         return;
     }
-    while (n--) sd_drift(t, tr, gen_rnd(&tessera.rnd[tr], len), len);
+    while (n--) sd_drift(t, tr, gen_rnd(&tessera.rnd[tr], len));
 }
 static void sd_evolve(uint32_t tr, uint32_t amt)        /* tessera_mutate, MORPH: 1..3 more of B's steps changed */
 {
