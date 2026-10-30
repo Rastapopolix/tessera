@@ -513,7 +513,7 @@ enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_
        S_REF_SHEET_MOTION, S_REF_MOD, S_REF_PICKER_MOD, S_REF_ARP, S_REF_PATTERN,
        S_REF_FMEG, S_REF_GRID, S_REF_SCALES, S_FX_PHASER, S_FX_WIDTH, S_FX_FORMANT, S_FX_TAPE, S_FX_SPIT, S_FX_ECHO, S_FX_ROOM, S_FX_REVERB, S_FX_CHORUS, S_FX_FULL, S_FX_SLOT2, S_FX_SLOT3, S_FX_SEND, S_FX_SEPARATE, S_FX_SENDS, S_FX_BUS1, S_FX_BUS2, S_FX_BUS3,
        S_GEN_TURING, S_GEN_EUCLID, S_GEN_MARKOV, S_GEN_MORPH, S_GEN_EVOLVE, S_CORDS, S_HELP, S_CORDS_PICK_SRC, S_CORDS_PICK_DST,
-       S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_GEN_CHORD_OFFBEAT, S_GEN_CHORD_DRONE, S_GEN_STEP_EVOLVE_HOW, S_GEN_STEP_ADORN, S_GEN_STEP_SERIAL, S_NOTES_EVOLVE, S_GEN_SEED, S_GEN_SEED_MORPH, S_GEN_FORM, S_MIDI_OUT, S_EDIT_FILT, S_GEN_EVOLVE_GRAV, S_GEN_ENERGY_LEVEL, S_GEN_ENERGY_DEPTH, S_COUNT };
+       S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_GEN_CHORD_OFFBEAT, S_GEN_CHORD_DRONE, S_GEN_STEP_EVOLVE_HOW, S_GEN_STEP_ADORN, S_GEN_STEP_SERIAL, S_NOTES_EVOLVE, S_GEN_SEED, S_GEN_SEED_MORPH, S_GEN_FORM, S_MIDI_OUT, S_EDIT_FILT, S_GEN_EVOLVE_GRAV, S_GEN_ENERGY_LEVEL, S_GEN_ENERGY_DEPTH, S_EDIT_FILT_BP, S_EDIT_FILT_HP, S_EDIT_FILT_NOT, S_STAGE_FILTER_HP, S_COUNT };
 static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "home_chord", "home_inversion", "home_wide", "home_released", "home_fm6", "message", "message_key", "message_paged", "presets", "presets_nofav", "presets_cat", "presets_pending", "presets_recent", "user",
     "project", "project_boot", "tempo", "song_empty", "song", "step", "pattern", "motion", "drum",
     "mixer", "mixer_pan", "env", "env_dest", "lfo", "mod", "scl", "chord", "chord_wide", "chord_off", "chord_kit", "arp",
@@ -533,7 +533,7 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "h
     "notes_slide", "notes_mixed", "notes_chord", "notes_empty", "notes_raw", "notes_zoom", "notes_loop", "notes_drum", "notes_dense", "notes_rec", "notes_erase", "notes_drum_rec", "notes_drum_erase", "scl_micro", "scl_micro_layer", "scl_micro_chord", "scale_picker_edo", "scale_picker_historical", "scale_picker_favorites", "scale_picker_empty", "scale_settings_favorite", "menu_click", "menu_click_level", "menu_countin", "menu_preview", "menu_add", "menu_autosave_on", "menu_autosave_off", "drum_sound_808", "drum_sound_909", "drum_mix_909", "drum_hit_909", "drum_hit_free", "drum_hit_long",
     "stage_drum", "stage_trio", "stage_queued", "stage_browse", "stage_stopped", "stage_filter", "patterns", "patterns_stopped", "patterns_sheet", "patterns_copy", "patterns_replace", "patterns_delete", "project_new", "new_key", "new_roles",
     "ref_stage_held", "ref_stage_released", "ref_stage_cutoff", "ref_stage_drum", "ref_browser", "ref_patterns", "ref_song", "ref_env", "ref_lfo", "ref_edit_osc", "ref_mixer", "ref_notes", "ref_settings", "ref_dialog", "ref_sheet_sound", "ref_sheet_song", "ref_picker_wave", "ref_picker_mode", "ref_sections_p5", "ref_map_p5", "ref_map_fm6", "ref_scl_list", "ref_sheet_project", "ref_sheet_note", "ref_sheet_hit", "ref_motion", "ref_sheet_motion", "ref_mod", "ref_picker_mod", "ref_arp", "ref_pattern", "ref_fmeg", "ref_grid", "ref_scales", "fx_phaser", "fx_width", "fx_formant", "fx_tape", "fx_spit", "fx_echo", "fx_room", "fx_reverb", "fx_chorus", "fx_full", "fx_slot2", "fx_slot3", "fx_send", "fx_separate", "fx_sends", "fx_bus1", "fx_bus2", "fx_bus3",
-    "gen_turing", "gen_euclid", "gen_markov", "gen_morph", "gen_evolve", "cords", "help", "cords_pick_src", "cords_pick_dst", "gen_grids", "gen_tweak", "gen_tweak_off", "mod_shortcut", "gen_bounce", "gen_awake", "gen_poly", "gen_tweak2", "gen_tweak2_off", "organic", "gen_tweak2_coin", "mods_live", "mods_live_gen", "matrix", "gen_quad", "gen_length", "gen_fall", "gen_constel", "gen_length_hit", "gen_length_keys", "gen_length_step", "gen_pattern_constel", "gen_series", "gen_chord", "gen_chord_oct", "gen_grids_oct", "gen_chord_user", "gen_step_evolve", "help_gen", "gen_timing", "gen_timing_x1", "gen_energy", "gen_answer", "gen_answer_oct", "gen_seed_oct", "gen_timing_human", "gen_chord_circle", "gen_chord_offbeat", "gen_chord_drone", "gen_step_evolve_how", "gen_step_adorn", "gen_step_serial", "notes_evolve", "gen_seed", "gen_seed_morph", "gen_form", "midi_out", "edit_filt", "gen_evolve_grav", "gen_energy_level", "gen_energy_depth"};
+    "gen_turing", "gen_euclid", "gen_markov", "gen_morph", "gen_evolve", "cords", "help", "cords_pick_src", "cords_pick_dst", "gen_grids", "gen_tweak", "gen_tweak_off", "mod_shortcut", "gen_bounce", "gen_awake", "gen_poly", "gen_tweak2", "gen_tweak2_off", "organic", "gen_tweak2_coin", "mods_live", "mods_live_gen", "matrix", "gen_quad", "gen_length", "gen_fall", "gen_constel", "gen_length_hit", "gen_length_keys", "gen_length_step", "gen_pattern_constel", "gen_series", "gen_chord", "gen_chord_oct", "gen_grids_oct", "gen_chord_user", "gen_step_evolve", "help_gen", "gen_timing", "gen_timing_x1", "gen_energy", "gen_answer", "gen_answer_oct", "gen_seed_oct", "gen_timing_human", "gen_chord_circle", "gen_chord_offbeat", "gen_chord_drone", "gen_step_evolve_how", "gen_step_adorn", "gen_step_serial", "notes_evolve", "gen_seed", "gen_seed_morph", "gen_form", "midi_out", "edit_filt", "gen_evolve_grav", "gen_energy_level", "gen_energy_depth", "edit_filt_bp", "edit_filt_hp", "edit_filt_not", "stage_filter_hp"};
 
 /* the scenes of the UI design screens: the state the UI-redesign
  * prototype drew them from (its setup(): two pattern tracks, the drum pattern on track 4, a synthetic scope),
@@ -1073,6 +1073,8 @@ static void setup(int s)
     case S_STAGE_FILTER:                                 /* SID's RES turning, a chord held: the curve behind it */
         eng(3); go_home(); TSEL->p[P_E5] = 12; ui.hot_col = 3; ui.hot_t = 30; stage_out();
         input_on(TSEL, 57, 100); input_on(TSEL, 60, 100); input_on(TSEL, 64, 100); break;
+    case S_STAGE_FILTER_HP:                              /* TRIO's CUT turning, MODE HP (not one of Stage's knobs) */
+        eng(6); go_home(); TSEL->p[P_E4] = 2; TSEL->p[P_E6] = 90; ui.hot_col = 0; ui.hot_t = 30; stage_out(); break;
     case S_STAGE_QUEUED:
         go_home(); trk[1].pattern_next = 2; trk[2].p[P_MUTE] = 1; song.rec = 2u; fm1_ms = 0; break;
     case S_STAGE_BROWSE:
@@ -1661,6 +1663,9 @@ static void setup(int s)
     case S_SYSTEM: go_title("SYSTEM"); break;
     case S_EDIT_SID: eng(3); go_title("EDIT 1"); break;
     case S_EDIT_FILT: eng(6); go_title("EDIT 2"); TSEL->p[P_E6] = 90; break;   /* TRIO's CUT and RES: the filter's curve */
+    case S_EDIT_FILT_BP: case S_EDIT_FILT_HP: case S_EDIT_FILT_NOT:   /* .. its MODE BP, HP, notch: the curve follows it
+                                                                      * (issue #299) */
+        eng(6); go_title("EDIT 2"); TSEL->p[P_E6] = 90; TSEL->p[P_E4] = (int16_t)(1 + s - S_EDIT_FILT_BP); break;
     case S_EDIT_DIGITAL: eng(E_FM); go_title("EDIT 1"); break;
     case S_OP_ENV: eng(1); go_title("OP1 ENV"); break;
     case S_EDIT_WHEEL: eng(7); go_title("EDIT 1"); ui.hot_col = 1; ui.hot_t = 30; break;
@@ -2373,6 +2378,37 @@ int main(int argc, char **argv)
         }
         if (!MELODEE_LOOK && fmp_charts - c0 != 96u) {   /* (the Mono look: no FM6 chart yet, ui_mono.c's stand-in) */
             fprintf(stderr, "ui_render: %u FM6 charts drawn of 96\n", fmp_charts - c0);
+            return 1;
+        }
+    }
+    {   /* the filter's picture follows its type (issue #299): the curve's shape per type, TRIO's TONE page drawn
+         * differently under each MODE, Stage's too */
+        static const int SC[] = {S_EDIT_FILT, S_EDIT_FILT_BP, S_EDIT_FILT_HP, S_EDIT_FILT_NOT};
+        uint32_t h[4], k, j, i, hs;
+        int32_t lo, mid, hi;
+        for (k = 0; k <= FLT_NOTCH; k++) {
+            lo = flt_curve(k, -40, 64, 480, 14, 896, 127);
+            mid = flt_curve(k, 0, 64, 480, 14, 896, 127);
+            hi = flt_curve(k, 40, 64, 480, 14, 896, 127);
+            if (k == FLT_LP ? !(lo > hi && mid > lo) : k == FLT_HP ? !(hi > lo && mid > hi) :
+                k == FLT_NOTCH ? !(mid < lo && mid < hi) : !(mid > lo && mid > hi && lo == hi)) {   /* (BP: even) */
+                fprintf(stderr, "ui_render: filter type %u: curve %d %d %d off its shape\n", k, lo, mid, hi);
+                return 1;
+            }
+        }
+        for (k = 0; k < 4u; k++) {
+            setup(SC[k]); pal(UI_GRAY_INDEX); draw(SC[k]);
+            for (hs = 2166136261u, i = 108u * 240u; i < 200u * 240u; i++)   /* (the picture's rows, both looks: */
+                hs = (hs ^ host_screen[i]) * 16777619u;                      /*  under the knobs' values) */
+            for (h[k] = hs, j = 0; j < k; j++)
+                if (h[j] == hs) {
+                    fprintf(stderr, "ui_render: TRIO's TONE page drawn the same under MODE %u and %u\n", j, k);
+                    return 1;
+                }
+        }
+        setup(S_STAGE_FILTER_HP); pal(UI_GRAY_INDEX);
+        if (stage_picture((int32_t[4]){0}) != SP_FILTER || flt_engine_type() != FLT_HP) {
+            fprintf(stderr, "ui_render: Stage's filter picture misses TRIO's MODE\n");
             return 1;
         }
     }
