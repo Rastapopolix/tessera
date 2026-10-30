@@ -205,7 +205,7 @@ static void fm1_main(void)
     fm1__pc_out(6,0);                         /* codec held quiet before flash and splash */
     settings_init();                           /* a readable default palette before loading flash */
     lcd_init();                                /* maintenance must be visible before any boot writes */
-    splash("STARTING UP");
+    lcd_fill(0, 0, 240, 240, T_BG);            /* (black, not the splash: the saved ink is not read yet) */
     lcd_sync();
     dsp_tables_init();                        /* the RAM lookup tables (FM6), before anything renders */
     persist_boot();

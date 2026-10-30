@@ -943,9 +943,9 @@ static void mo_pic_constel(uint32_t tr)
         uint16_t bc = g->held ? MO_DIM : MO_INK;
         mo_hl(sx - 2, yt, 5, bc); mo_px(sx - 2, yt + 1, bc); mo_px(sx + 2, yt + 1, bc);
         mo_hl(sx - 2, yb, 5, bc); mo_px(sx - 2, yb - 1, bc); mo_px(sx + 2, yb - 1, bc);
-        mo_fill(sx - 11, y, 5, 1, MO_INK);              /* the ship: body, nose, fins, thruster */
-        mo_px(sx - 6, y, MO_INK);
-        mo_px(sx - 10, y - 1, MO_INK); mo_px(sx - 10, y + 1, MO_INK);
+        mo_hl(sx - 11, y, 7, MO_INK);                   /* the ship, a triangle nose right, and its thruster */
+        mo_hl(sx - 11, y - 1, 5, MO_INK); mo_hl(sx - 11, y + 1, 5, MO_INK);
+        mo_hl(sx - 11, y - 2, 3, MO_INK); mo_hl(sx - 11, y + 2, 3, MO_INK);
         mo_hl(sx - 13 - (int32_t)(g->col & 1u), y, 1 + (int32_t)(g->col & 1u), MO_DIM);
         if (g->filled && song.playing) {                /* (FILL ARP: a hollow diamond at the note it played) */
             int32_t fy = MCS_Y(g->filled - 1u);
