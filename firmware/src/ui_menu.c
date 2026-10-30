@@ -390,7 +390,7 @@ static void menu_mono(void)
             char b[24], a[24];
             const char *value = menu_value(i, b, sizeof b);
             if (on)
-                mo_fill(0, y, 118, 10, MO_INK);
+                mo_fill(0, y, 118, 10, MO_HOT);
             mo_text(MI_NAME[i], 2, y + 2, on ? MO_BG : MO_DIM);
             if (i == MI_COLOR) {
                 uint32_t k, n = NPALETTES < 10u ? NPALETTES : 10u, cols = n > 8u ? (n + 1u) / 2u : n;

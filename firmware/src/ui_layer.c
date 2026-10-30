@@ -514,13 +514,14 @@ static void layer_cards(uint32_t l)
  * muted; the white keys SOLO 1..4, filled while held; C unmutes all, E FILL, F taps the tempo, dim with an outside
  * clock), SCL KNOB 2's scales 4 x 4 (the one now selected inverted); under them what OCT- and the button do. Drawn
  * whole under the header when anything on it changes */
-static void mo_lcell(int32_t c, int32_t y, const char *name, const char *sub, int on, int dim)
-{
+static void mo_lcell(int32_t c, int32_t y, const char *name, const char *sub, int on, int dim, int trk)
+{                                                       /* (trk: a track's cell, in its colour) */
     int32_t cx = 15 + 30 * c;
-    if (on) mo_fill(cx - 14, y, 28, 18, dim ? MO_DIM : MO_INK);
-    else mo_box(cx - 14, y, 28, 18, MO_DIM);
-    mo_textc(name, cx, y + 2, on ? MO_BG : dim ? MO_DIM : MO_INK);
-    mo_textc(sub, cx, y + 10, on ? MO_BG : MO_DIM);
+    uint16_t ink = trk ? MO_TRK(c) : MO_INK, dm = trk ? mo_tdim((uint32_t)c) : MO_DIM;
+    if (on) mo_fill(cx - 14, y, 28, 18, dim ? dm : ink);
+    else mo_box(cx - 14, y, 28, 18, dm);
+    mo_textc(name, cx, y + 2, on ? MO_BG : dim ? dm : ink);
+    mo_textc(sub, cx, y + 10, on ? MO_BG : dm);
 }
 static int32_t mo_lhint(int32_t x, const char *key, const char *word)
 {
@@ -551,19 +552,21 @@ static void mo_layer(uint32_t l)
         int32_t x = 1;
         cv_begin(240, s ? 120u : 102u, MO_BG);
         cv_oy = s ? -120 : -18;
+        mo_cols_trk = l == LAYER_GLO;                   /* (GLO's knobs: the four levels) */
         mo_cols();
+        mo_cols_trk = 0;
         if (l == LAYER_GLO) {
             char n[6];
             for (c = 0; c < NTRK; c++) {                /* "MUTE" over "1 F#" */
                 n[0] = (char)('1' + c), n[1] = ' ';
                 bnote(n + 2, c);
-                mo_lcell((int32_t)c, 52, "MUTE", n, trk[c].p[P_MUTE] != 0, 0);
+                mo_lcell((int32_t)c, 52, "MUTE", n, trk[c].p[P_MUTE] != 0, 0, 1);
                 n[2] = W_NOTE[c], n[3] = 0;
-                mo_lcell((int32_t)c, 71, "SOLO", n, (track_solo >> c) & 1u, 0);
+                mo_lcell((int32_t)c, 71, "SOLO", n, (track_solo >> c) & 1u, 0, 1);
             }
-            mo_lcell(0, 90, "ALL", "C", 0, 0);
-            mo_lcell(1, 90, "FILL", "E", seq_fill != 0, 0);
-            mo_lcell(2, 90, "TAP", "F", 0, song.g[G_CLOCK] != 0);
+            mo_lcell(0, 90, "ALL", "C", 0, 0, 0);
+            mo_lcell(1, 90, "FILL", "E", seq_fill != 0, 0, 0);
+            mo_lcell(2, 90, "TAP", "F", 0, song.g[G_CLOCK] != 0, 0);
             x = mo_lhint(x, "OCT-", "UNDO");
             mo_lhint(x, "GLO", "DONE");
         } else {
