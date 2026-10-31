@@ -399,6 +399,7 @@ typedef struct { uint16_t step, dur; uint8_t on, note, vel, tr; } cap_ev_t;
 static cap_ev_t cap_ev[CAP_N];
 static uint32_t cap_w, cap_from;                /* events written; the first of this run of the transport */
 static uint16_t cap_step[NTRK];                 /* the step playing, counted from PLAY (65535 before the first) */
+static uint32_t seq_run_step[NTRK];             /* the same, not wrapping: a generator joining (tessera.c tess_join) */
 static uint32_t cap_frac(const track_t *t)      /* RECORD_UNIT fraction of the step playing */
 {
     uint32_t span = step_samples(t, seq_div_samples((uint32_t)t->p[P_SDIV]), t->seq_idx);
@@ -902,6 +903,7 @@ static void seq_start(void)
         t->rskip_n = 0;
         t->rh_n = 0;
         cap_step[i] = 0xFFFFu;                     /* (capture: step 0 is the first) */
+        seq_run_step[i] = 0xFFFFFFFFu;
     }
     cap_from = cap_w;                              /* capture and the jam log: this run */
     jam.n = 0;
@@ -1160,6 +1162,7 @@ static void seq_grid_tick(track_t *t, uint32_t n)
             len = (uint32_t)t->p[P_SLEN];
         }
         cap_step[trk_index(t)]++;
+        seq_run_step[trk_index(t)]++;
         if (!t->seq_idx && t == &trk[0] && !chain.running)
             jam_loop();
         motion_step(t, t->seq_idx, &motion);

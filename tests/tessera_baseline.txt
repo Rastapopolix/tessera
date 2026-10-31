@@ -42,8 +42,8 @@ transport_stop_start 0x06ee1ac1 239
 transport_stop_start.state 0x2f5dbb5d
 mute_and_unmute 0x6a71f62b 52
 mute_and_unmute.state 0xebf57275
-knobs_while_playing 0xa44020c1 60
-knobs_while_playing.state 0x12473281
+knobs_while_playing 0xdf62fb69 54
+knobs_while_playing.state 0xa3fa53ae
 midi_clock_start_stop_continue 0xf271d3c2 126
 midi_clock_start_stop_continue.state 0x44854eac
 swing_track40_global30 0x504aa185 80
