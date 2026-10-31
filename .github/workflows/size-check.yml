@@ -58,18 +58,10 @@ jobs:
         run: |
           git worktree add ../base "origin/${{ github.base_ref }}"
           cd ../base && ./build.sh 2>&1 | tee "$GITHUB_WORKSPACE/base.log"
-      - name: Build this branch, detailed look (MELODEE_LOOK 0, dual core)
-        continue-on-error: true                       # a report: 3.0 ships Mono, the default build gates
-        env:
-          MELODEE_DUAL_CORE: '1'
-          MELODEE_LOOK: '0'
-        run: |
-          git worktree add ../detailed HEAD
-          cd ../detailed && ./build.sh 2>&1 | tee "$GITHUB_WORKSPACE/detailed.log"
       - name: Summary
         if: always()
         run: |
-          for f in head base detailed; do
+          for f in head base; do
             [ -f $f.log ] || continue
             echo "### $f" >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
@@ -84,6 +76,5 @@ jobs:
             build/*.fwsc
             head.log
             base.log
-            detailed.log
             flash_report.md
             flash_symbols.csv

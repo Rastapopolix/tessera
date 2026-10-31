@@ -5359,7 +5359,8 @@ static int test_bughunt_ui2(void)
 }
 
 #ifndef UI_TEST_NO_MAIN
-/* L is a sparse face (tools/gen_aa_font.py L_CHARS): every string drawn in it has all its glyphs */
+#if !MELODEE_LOOK
+/* L is a sparse face (tools/gen_aa_font.py L_CHARS): every string drawn in it has all its glyphs (the detailed look) */
 static int test_large_face(void)
 {
     static const char *const FIXED[] = {"TESSERA", "0123456789", "C#4 / .."};   /* splash.c, ui_menu.c; ui_draw.c draw_uboot */
@@ -5370,6 +5371,7 @@ static int test_large_face(void)
             missing += glyph_at(&AF_L, (uint8_t)*s) < 0;
     return check("the L face holds every glyph of the strings drawn in it", !missing);
 }
+#endif
 
 
 /* The FM6 algorithm charts (ui_graph.c graph_fm6: FM6_CELL, its routes fm6_routes and feedback operator
@@ -5922,7 +5924,9 @@ int main(void)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
     int bad = test_boot_maintenance();
+#if !MELODEE_LOOK
     bad += test_large_face();
+#endif
     bad += test_home_notes();
     bad += test_stage();
     bad += test_capture();
