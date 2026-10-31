@@ -328,8 +328,9 @@ if core && [ $TABLES = 1 ]; then
             python3 tests/text_spacing_test.py build/gen/ui_fonts.h
     fi
     t "settings: PER5 records, palette ids and preference preservation" settings_test -O1 -w -Ibuild/gen
+    # (ui_test's own checks still draw the detailed look: built with it until they are moved to Mono)
     t "UI: sounds keep steps, undo, recording, MIDI overflow, pending saves, panel recovery, drum grid, song chain, MONO gray" \
-        ui_test -DMELODEE_USB_AUDIO=1 $FW
+        ui_test -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=0 $FW
     t "Sound designer: native recipes, dependencies, compare, discard and save" designer_test -O2 -DMELODEE_USB_AUDIO=1 $FW
     t "Sequencer: tied length/move/delete, eight-level undo/redo, MIDI step entry and playing-step recording" seq_edit_test \
         -DMELODEE_USB_AUDIO=1 $FW

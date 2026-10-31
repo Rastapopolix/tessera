@@ -135,7 +135,7 @@ static int timing_geometry_and_context(void)
     uint32_t a,b;notes_window(t,period,&a,&b);
     int32_t x=notes_x(recording_raw_on(t,&recording[0],period),a,b), y=pr_row_y(61)+PR_TOP;
     int bad=check("swung off-grid notes draw at their original quarter-step position at maximum zoom",
-                  x==PR_X0+4*PR_CW&&pr_is_bar((uint32_t)x+1u,(uint32_t)y+2u)&&!pr_is_bar((uint32_t)x-2u,(uint32_t)y+2u));
+                  x==PR_X0+4*PR_CW&&(MELODEE_LOOK||(pr_is_bar((uint32_t)x+1u,(uint32_t)y+2u)&&!pr_is_bar((uint32_t)x-2u,(uint32_t)y+2u))));   /* (the bars: the detailed look's) */
     notes_cycle(1); frame();uint16_t selection=ui.note_pick;
     t->p[P_RECQ]=3;frame();
     bad+=check("changing the next-take quantization leaves a completed take's display unchanged",
