@@ -354,12 +354,6 @@ static void help_find(uint32_t k)
     static const uint8_t TW[4] = {TX_TW_SHIFT, TX_TW_DROP, TX_TW_HUMAN, TX_TW_FOLLOW};
     static const uint8_t TW2[4] = {TX_TW_BRANCH, TX_TW_BR_TO, TX_TW_LOGIC, TX_TW_COND};
     static const uint8_t NL[4] = {TX_NL_MODE, TX_NL_LEN, TX_NL_KEYS, 0xFF};   /* (GATE: PATTERN's, below) */
-    static const uint8_t ENG[TESS_ENG_COUNT][3] = {{0xFF, 0xFF, 0xFF}, {TX_TUR_LEN, TX_TUR_PROB, TX_TUR_SPAN},
-        {TX_EUC_STEPS, TX_EUC_PULSES, TX_EUC_ROT}, {TX_MKV_LEAP, TX_MKV_DENS, TX_MKV_SPAN}, {TX_MRP_POS, TX_MRP_SNPA, TX_MRP_SNPB},
-        {TX_GRD_X, TX_GRD_Y, TX_GRD_DENS}, {TX_BNC_SPEED, TX_BNC_ANGLE, TX_BNC_BALLS},
-        {TX_AWK_LENA, TX_AWK_LENB, TX_AWK_PROB}, {0xFF, TX_POL_DIV1, TX_POL_SPAN},
-        {TX_QD_DIR, TX_QD_PROB, TX_QD_LINK}, {TX_CS_Y, TX_CS_DENS, TX_CS_AUTO},
-        {TX_SR_START, TX_SR_INTV, TX_SR_LOOP}, {TX_CH_PROG, TX_CH_BARS, TX_CH_HIT}, {TX_AN_VARY, TX_AN_ECHO, TX_AN_FADE}};
     const page_t *pg = ui.home ? stage_page() : cur_page();
     uint32_t tr = song.sel, x = 0xFFu, lp, ls;
     int16_t *vp;
@@ -496,7 +490,7 @@ static void help_find(uint32_t k)
             help_hp(HP_QUAD_COL);
             return;
         }
-        x = k == 0u ? (uint32_t)TX_MODE : ENG[tessera.mode[tr] % TESS_ENG_COUNT][k - 1u];
+        x = k == 0u ? (uint32_t)TX_MODE : GEN_KNOB_TX[tessera.mode[tr] % TESS_ENG_COUNT][k - 1u];
         if (tessera.mode[tr] == TESS_ENG_AWAKE && k <= 1u && tessera_awake(tr)->edit) {   /* (a step picked) */
             help_hp(HP_AWAKE_A + k);
             return;

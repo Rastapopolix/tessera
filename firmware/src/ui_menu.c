@@ -4,7 +4,8 @@
  * glow: ui_input.c ui_leds), KNOB ACCEL (ui_input.c accel_by), TRACK KNOB (RIGHT: ALGORITHM picks the track, LEFT:
  * PRESETS does; panel.c), USB AUDIO (IN+OUT, IN, OUT or OFF; usb.c ua_off_set),
  * USB INPUT (stereo master or four track stems; usb.c ua_tracks_set),
- * MIDI OUT (KEYS, ALL or OFF: the notes sent over USB) and CLOCK OUT (midi_out.c),
+ * MIDI OUT (KEYS, ALL or OFF: the notes sent over USB) and CLOCK OUT (midi_out.c), MIDI CC IN (ON or OFF: CCs and
+ * NRPNs that set parameters; midi_cc.c),
  * AUTOSAVE (automatic project saves after five seconds stopped and untouched),
  * CALIBRATION (the setup screen: HARDWARE CALIBRATION), ABOUT.
  * PRESETS scrolls from ABOUT through all credits. ui.menu: 1 list, 2 information. */
@@ -14,14 +15,14 @@ enum { MI_COLOR, MI_HOLD, MI_LIGHTS,
 #if MELODEE_USB_AUDIO
        MI_USB, MI_USB_INPUT,
 #endif
-       MI_MIDI_OUT, MI_CLOCK_OUT, MI_CLICK, MI_CLICK_LEVEL, MI_COUNTIN, MI_PREVIEW, MI_ADD, MI_AUTOSAVE, MI_ACCEL, MI_TRACK_KNOB, MI_SCREEN, MI_GAMMA, MI_PANEL, MI_ABOUT, MI_DESIGNER, MI_BACK,
+       MI_MIDI_OUT, MI_CLOCK_OUT, MI_CC_IN, MI_CLICK, MI_CLICK_LEVEL, MI_COUNTIN, MI_PREVIEW, MI_ADD, MI_AUTOSAVE, MI_ACCEL, MI_TRACK_KNOB, MI_SCREEN, MI_GAMMA, MI_PANEL, MI_ABOUT, MI_DESIGNER, MI_BACK,
        MI_COUNT };
 static const char *const GAMMA_NAME[GAMMA_N] = {"G2.2", "G1.8", "G2.5", "G1.0", "TUNED", "TUNED+VCOM"};   /* (lcd.c) */
 static const char *const MI_NAME[MI_COUNT] = {"COLOR", "HOLD", "LIGHTS",
 #if MELODEE_USB_AUDIO
                                               "USB AUDIO", "USB INPUT",
 #endif
-                                              "MIDI OUT", "CLOCK OUT", "AUDIO CLICK", "CLICK LEVEL", "COUNT-IN", "NOTE PREVIEW", "CHORD ENTRY",
+                                              "MIDI OUT", "CLOCK OUT", "MIDI CC IN", "AUDIO CLICK", "CLICK LEVEL", "COUNT-IN", "NOTE PREVIEW", "CHORD ENTRY",
                                               "AUTOSAVE", "KNOB ACCEL", "TRACK KNOB", "SCREEN OFF", "PANEL GAMMA", "CALIBRATION", "ABOUT", "SOUND DESIGNER", "BACK"};
 #if MELODEE_USB_AUDIO
 /* USB AUDIO's four settings, as ua_off_want (UA_OFF_OUT | UA_OFF_IN) */
@@ -358,6 +359,7 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
     if (i == MI_TRACK_KNOB) value = settings_knob_swap ? "LEFT" : "RIGHT";
     if (i == MI_MIDI_OUT) value = (const char *const[]){"KEYS", "ALL", "OFF"}[settings_midi_out % MIDI_OUT_N];
     if (i == MI_CLOCK_OUT) value = settings_clock_out ? "ON" : "OFF";
+    if (i == MI_CC_IN) value = settings_cc_off ? "OFF" : "ON";
     if (i == MI_AUTOSAVE) value = settings_autosave ? "ON" : "OFF";
     if (i == MI_SCREEN) value = (const char *const[]){"NEVER", "5 MIN", "15 MIN", "30 MIN", "60 MIN"}[scr_get()];
     if (i == MI_GAMMA) value = GAMMA_NAME[gamma_get()];
@@ -603,6 +605,10 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_CLOCK_OUT) {  /* KNOB 2 right ON, left OFF; OCT+ toggles */
         settings_clock_out = (uint8_t)(s > 0 ? 1u : s < 0 ? 0u : !settings_clock_out);
         ui.force = 1; ok = 0;                          /* (on: from the next PLAY; off: STOP goes out now) */
+    }
+    if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_CC_IN) {      /* KNOB 2 right ON, left OFF; OCT+ toggles */
+        settings_cc_off = (uint8_t)(s > 0 ? 0u : s < 0 ? 1u : !settings_cc_off);
+        ui.force = 1; ok = 0;                          /* (midi_cc.c: parameter CCs and NRPN) */
     }
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_GAMMA) {   /* KNOB 2 / OCT+ the next panel gamma (saved on leaving) */
         gamma_put((gamma_get() + (s < 0 ? GAMMA_N - 1u : 1u)) % GAMMA_N);

@@ -413,11 +413,65 @@ static int drum_channel_test(void)
     return bad;
 }
 
+/* midi_cc.c: the fixed CC map, NRPN by central id, MIDI CC IN OFF */
+static void nrpn(uint32_t ch, uint32_t pid)
+{
+    queued(0xB0 | ch, 99, pid >> 7, 1); queued(0xB0 | ch, 98, pid & 127u, 1);
+}
+static int cc_test(void)
+{
+    int bad = 0; midi_test_reset(); track_t *t = &trk[0], *t2 = &trk[1];
+    const param_desc_t *e1 = track_desc(t, P_E0);
+    uint32_t home = ENGINES[t->eng_req]->knob[0];
+    song.g[G_ROUTE] = 0; settings_cc_off = 0;
+    queued(0xB0, 20, 127, 1);
+    bad += check("CC 20 sets E1 to its maximum", t->p[P_E0] == e1->max);
+    queued(0xB0, 20, 0, 1);
+    bad += check("CC 20 at 0 sets E1 to its minimum", t->p[P_E0] == e1->min);
+    queued(0xB0, 16, 127, 1);
+    bad += check("CC 16 sets the engine's HOME KNOB 1", home < P_COUNT && t->p[home] == track_desc(t, home)->max);
+    queued(0xB0, 76, 64, 1); queued(0xB0, 79, 127, 1); queued(0xB1, 91, 100, 1);
+    bad += check("CC 76 LFO RATE, 79 SUSTAIN, 91 FX SEND on channel 2's track",
+                 t->p[P_LRATE] == 64 && t->p[P_SUS] == 127 && t2->p[P_FXSEND] == 100 && !t->p[P_FXSEND]);
+    queued(0xB0, 102, 10, 1);
+    bad += check("CC 102 sets MODE (TURING)", tessera.mode[0] == TESS_ENG_TURING);
+    queued(0xB0, 104, 127, 1); queued(0xB0, 105, 0, 1);
+    bad += check("CC 104 / 105 follow the GEN page: TURING PROB, SPAN",
+                 pid_get(PID_TESS(TX_TUR_PROB), 0) == 100 && pid_get(PID_TESS(TX_TUR_SPAN), 0) == 1);
+    nrpn(0, PID_TESS(TX_TUR_SPAN)); queued(0xB0, 6, 127, 1);
+    bad += check("NRPN by central id: TURING SPAN (7-bit data entry)", pid_get(PID_TESS(TX_TUR_SPAN), 0) == 3);
+    nrpn(1, PID_TRACK(P_LEVEL)); queued(0xB1, 6, 64, 1); queued(0xB1, 38, 0, 1);
+    bad += check("NRPN 14-bit: LEVEL from MSB and LSB",
+                 t2->p[P_LEVEL] == track_desc(t2, P_LEVEL)->min + (track_desc(t2, P_LEVEL)->max - track_desc(t2, P_LEVEL)->min) * 8192 / 16383);
+    int16_t bpm = song.g[G_BPM];
+    nrpn(0, PID_GLOBAL(G_BPM)); queued(0xB0, 6, 127, 1);
+    bad += check("NRPN sets a global setting (TEMPO)", song.g[G_BPM] == global_desc(G_BPM)->max && song.g[G_BPM] != bpm);
+    nrpn(0, PID_GLOBAL(G_ROUTE)); queued(0xB0, 6, 127, 1);
+    bad += check("NRPN leaves the device's own setup alone (ROUT)", song.g[G_ROUTE] == 0);
+    int16_t scl = t->p[P_SCALE];
+    nrpn(0, PID_TRACK(P_SCALE)); queued(0xB0, 6, 127, 1);
+    bad += check("NRPN leaves the song's scale alone", t->p[P_SCALE] == scl);
+    int16_t lv = t->p[P_LEVEL];
+    nrpn(0, 0x3FFFu); queued(0xB0, 6, 0, 1);
+    bad += check("the null NRPN sets nothing", t->p[P_LEVEL] == lv);
+    nrpn(0, PID_TRACK(P_LEVEL)); queued(0xB0, 101, 0, 1); queued(0xB0, 100, 0, 1); queued(0xB0, 6, 7, 1);
+    bad += check("an RPN chosen after an NRPN: bend range, not LEVEL", midi_ch[0].semis == 7 && t->p[P_LEVEL] == lv);
+    settings_cc_off = 1;
+    queued(0xB0, 20, 127, 1); queued(0xB0, 7, 0, 1); queued(0xB0, 1, 99, 1);
+    nrpn(0, PID_TRACK(P_LEVEL)); queued(0xB0, 6, 0, 1);
+    bad += check("MIDI CC IN OFF: no parameter moves, the mod wheel still plays",
+                 t->p[P_E0] == e1->min && t->p[P_LEVEL] == lv && t->mw == 99);
+    settings_cc_off = 0;
+    queued(0xB0, 7, 0, 1);
+    bad += check("today's CC 7 LEVEL unchanged", t->p[P_LEVEL] == track_desc(t, P_LEVEL)->min);
+    return bad;
+}
+
 #ifndef MIDI_CONTROL_NO_MAIN
 int main(void)
 {
     int bad = controls_test() + sustain_test() + ownership_test() + clock_test(1) + clock_test(2) + clock_arp_and_boundaries() +
-              arp_ext_stop_test() + arp_idle_live_test() + usb_burst_test() + routing_range_test() + drum_channel_test();
+              arp_ext_stop_test() + arp_idle_live_test() + usb_burst_test() + routing_range_test() + drum_channel_test() + cc_test();
     printf("%s\n", bad ? "MIDI CONTROL/CLOCK TEST FAILED" : "MIDI control/clock integration tests passed"); return bad != 0;
 }
 #endif

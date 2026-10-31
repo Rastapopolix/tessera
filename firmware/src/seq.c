@@ -1243,6 +1243,7 @@ static track_t *midi_track(uint32_t ch)
     return ch - first < NPART ? &trk[ch - first] : 0;
 }
 
+#include "midi_cc.c"                /* Tessera: CC and NRPN control of parameters (midi_control.c calls it) */
 #include "midi_control.c"
 #include "midi_clock.c"
 #include "midi_out.c"
