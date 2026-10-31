@@ -13,6 +13,7 @@
  * palette: UI_PAL_TAG + index (any other id: the default).
  * favorites.factory[15][28]: tagged AUTOSAVE OFF; zero/unknown keeps autosave ON.
  * favorites.factory[15][30] bits 5..6 MIDI OUT (0 KEYS, 1 ALL, 2 OFF), bit 7 CLOCK OUT (midi_out.c).
+ * favorites.factory[15][24] bit 4: MIDI CC IN OFF (midi_cc.c); zero keeps it ON.
  * favorites.factory[15][25]: tagged TRACK KNOB LEFT (panel.c KNOB_SWAP_TAG); zero/unknown keeps it on the right.
  * bold: no longer used (one font weight); kept as it was saved, unless it holds the HOLD setting (panel.c). */
 typedef struct {
@@ -85,6 +86,7 @@ static int settings_import(persist_t *p, int n)
     settings_autosave = p->favorites.factory[15][28] != AUTOSAVE_OFF_TAG;
     settings_midi_out = (uint8_t)((p->favorites.factory[15][30] >> 5) & 3u) % MIDI_OUT_N;   /* (midi_out.c) */
     settings_clock_out = (uint8_t)(p->favorites.factory[15][30] >> 7);
+    settings_cc_off = (uint8_t)((p->favorites.factory[15][24] >> 4) & 1u);   /* (midi_cc.c) */
     settings_knob_swap = p->favorites.factory[15][25] == KNOB_SWAP_TAG;
     settings.magic = SETTINGS_MAGIC;
     settings.palette = palette_from_stored(p->palette);
@@ -134,6 +136,7 @@ static void settings_export(persist_t *p)
     p->favorites.factory[15][28] = settings_autosave ? 0u : AUTOSAVE_OFF_TAG;
     p->favorites.factory[15][30] = (uint8_t)((p->favorites.factory[15][30] & 0x1Fu) | settings_midi_out << 5 |
                                              (settings_clock_out != 0u) << 7);
+    p->favorites.factory[15][24] = (uint8_t)((p->favorites.factory[15][24] & ~0x10u) | (settings_cc_off != 0u) << 4);
     p->favorites.factory[15][25] = settings_knob_swap ? KNOB_SWAP_TAG : 0u;
     p->ext.usb_off=(p->ext.usb_off&3u)|(settings_budget!=VOICE_BUDGET_DEFAULT?WORK_BUDGET_TAG|((uint32_t)settings_budget<<8):0u);
     p->ext.boot = settings_boot;

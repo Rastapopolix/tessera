@@ -120,6 +120,23 @@ class StackBudget(unittest.TestCase):
                                'uh_probe': '  call void @uh_probe()\n  ret void'})
         self.assertEqual(report['paths']['fm1_cstart'][0], 360)
 
+    def test_bounded_hub_port_helper(self):
+        report = self.analyze({'fm1_cstart': '  call void @uh_probe()\n  ret void',
+                               'uh_probe': '  call void @uh_hub_port_probe()\n  ret void',
+                               'uh_hub_port_probe': '  call void @uh_probe()\n  ret void'})
+        self.assertEqual(report['paths']['fm1_cstart'][0], 600)
+
+    def test_idle_hub_port_helper(self):
+        report = self.analyze({'fm1_cstart': '  call void @uh_hub_port_probe()\n  ret void',
+                               'uh_probe': '  call void @uh_hub_port_probe()\n  ret void',
+                               'uh_hub_port_probe': '  call void @uh_probe()\n  ret void'})
+        self.assertEqual(report['paths']['fm1_cstart'][0], 480)
+
+    def test_unbounded_port_helper_recursion(self):
+        with self.assertRaisesRegex(ValueError, 'recursive stack path'):
+            self.analyze({'fm1_cstart': '  call void @uh_hub_port_probe()\n  ret void',
+                          'uh_hub_port_probe': '  call void @uh_hub_port_probe()\n  ret void'})
+
     def test_bounded_recording_reentry(self):
         report = self.analyze({'isr_alnk0': '  call void @input_on()\n  ret void',
                                'input_on': '  call void @seq_advance()\n  ret void',

@@ -253,6 +253,13 @@ static int settings_test(void)
     p.favorites.factory[15][30] = 3u << 5;
     settings_import(&p, sizeof p);
     bad += check("  an unknown value: KEYS", settings_midi_out == MIDI_OUT_KEYS);
+    settings_cc_off = 1;
+    settings_export(&p);
+    settings_cc_off = 0;
+    bad += check("settings: MIDI CC IN OFF is saved", settings_import(&p, sizeof p) && settings_cc_off == 1u);
+    p.favorites.factory[15][24] &= (uint8_t)~0x10u;
+    settings_import(&p, sizeof p);
+    bad += check("  an older record (bit 4 zero): CC IN ON", !settings_cc_off);
     return bad;
 }
 

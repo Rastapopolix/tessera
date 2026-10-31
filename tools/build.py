@@ -279,7 +279,7 @@ def build_app(stub):
     os.environ.setdefault("MELODEE_LOOK", "1")   # melodee-tess: the Mono look, what 3.0 ships (2026-10-30); =0 the detailed
                                                  # look (the host tests keep it: firmware/src/core.h)
     for flag in ("MELODEE_HELP_PACKED", "MELODEE_FLASH", "MELODEE_OTA", "MELODEE_OTA_DRYRUN", "MELODEE_OTA_RAMONLY", "MELODEE_CDC",
-                 "MELODEE_UART", "MELODEE_USB_AUDIO", "MELODEE_ICONS", "MELODEE_FM6", "MELODEE_SID", "MELODEE_SID_KIT", "MELODEE_PLAITS", "MELODEE_TRIO", "MELODEE_PHYS", "MELODEE_LOOK",
+                 "MELODEE_UART", "MELODEE_USB_AUDIO", "MELODEE_USB_HOST", "MELODEE_ICONS", "MELODEE_FM6", "MELODEE_SID", "MELODEE_SID_KIT", "MELODEE_PLAITS", "MELODEE_TRIO", "MELODEE_PHYS", "MELODEE_LOOK",
                  "MELODEE_BENCH_SILENT", "MELODEE_FX_PROFILE", "MELODEE_AUDIO_PROFILE", "MELODEE_BATCH_AUDIO", "MELODEE_ADMISSION", "MELODEE_AUDIO_BENCH", "MELODEE_DUAL_CORE", "MELODEE_CACHE_RAM", "MELODEE_CORE1_TEST", "MELODEE_RAM_AUDIO", "MELODEE_HW_EQ"):
         v = os.environ.get(flag)    # unset: the default in firmware/src/melodee.c
         if v in ("0", "1"):

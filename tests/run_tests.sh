@@ -55,6 +55,8 @@
 #                   (usb_audio_test.c); the endpoint driver against a model SIE: SET_INTERFACE, feedback, capture
 #                   packets ready in time, Out / In left out and the replug (usb_audio_driver_test.c); the four
 #                   track stems through the real mixer (usb_audio_tracks_test.c).
+# USB MIDI host (tests/usb_host_test.c): the driver against a SIE and bus model: a keyboard direct and behind a hub,
+#                   a stick without MIDI, low speed, hot-plug, ring back-pressure, OUT ACK / NAK / stall, back to device.
 # web (web/test_web.mjs): the editor protocol against its mock device, whose tables must equal the
 #                   firmware's (tests/descdump.c -> build/host/desc.json), the package builder, the updater.
 # PHYS (tests/phys_test.c): stability over the whole parameter and pitch range, the worst-case cost against
@@ -199,7 +201,7 @@ powercut_tests() {
         build/host/boot-fixtures/old-stub.fwsc
 }
 ui_renders() {
-    build ui_render ui_render -O1 -w -DMELODEE_USB_AUDIO=1 -Ibuild/gen -Ifirmware/src -Itests || return
+    build ui_render ui_render -O1 -w -DMELODEE_USB_AUDIO=1 -DMELODEE_USB_HOST=1 -Ibuild/gen -Ifirmware/src -Itests || return
     mkdir -p build/ui_new/ppm build/ui_slot
     step "UI renders: layout lint (every screen and palette, every page, engine and column value), MONO gray, draw cost" \
         "$OUT/ui_render" build/ui_new build/ui_slot
@@ -207,7 +209,7 @@ ui_renders() {
         python3 tests/ui_render.py build/ui_new build/ui_slot || fail "tests/ui_render.py"
         python3 tools/ui_mockcmp.py build/ui_new build/ui_mock || fail "tools/ui_mockcmp.py" # redesign parity (docs/design): a report, no gate yet
     fi
-    build ui_render_mono ui_render -O1 -w -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=1 -Ibuild/gen -Ifirmware/src -Itests || return
+    build ui_render_mono ui_render -O1 -w -DMELODEE_USB_AUDIO=1 -DMELODEE_USB_HOST=1 -DMELODEE_LOOK=1 -Ibuild/gen -Ifirmware/src -Itests || return
     mkdir -p build/ui_mono/ppm build/ui_mono_slot
     step "UI renders, Mono look (MELODEE_LOOK 1, ui_mono.c): the same screens, lint and MONO gray" \
         "$OUT/ui_render_mono" build/ui_mono build/ui_mono_slot
@@ -281,6 +283,7 @@ if core; then
     t "TRS MIDI parser" midi_uart_test
     t "USB audio: routing, clock drift and stream recovery" usb_audio_test
     t "USB audio: endpoint lifecycle and packet ownership" usb_audio_driver_test
+    t "USB MIDI host: enumeration (direct and behind a hub), event filter, ring back-pressure, OUT, faults" usb_host_test -O1 -fsanitize=address,undefined
     run "USB descriptors: MIDI, CDC and audio configurations" python3 tests/usb_audio_desc_test.py
     run "boot images: LZMA records, decoder bounds, malformed streams and XIP dependencies" python3 tests/boot_audio_test.py
     run "resident audio: call graph and flash/RAM ABI boundaries" python3 tests/audio_ram_test.py
@@ -328,8 +331,9 @@ if core && [ $TABLES = 1 ]; then
             python3 tests/text_spacing_test.py build/gen/ui_fonts.h
     fi
     t "settings: PER5 records, palette ids and preference preservation" settings_test -O1 -w -Ibuild/gen
+    # (ui_test's own checks still draw the detailed look: built with it until they are moved to Mono)
     t "UI: sounds keep steps, undo, recording, MIDI overflow, pending saves, panel recovery, drum grid, song chain, MONO gray" \
-        ui_test -DMELODEE_USB_AUDIO=1 $FW
+        ui_test -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=0 $FW
     t "Sound designer: native recipes, dependencies, compare, discard and save" designer_test -O2 -DMELODEE_USB_AUDIO=1 $FW
     t "Sequencer: tied length/move/delete, eight-level undo/redo, MIDI step entry and playing-step recording" seq_edit_test \
         -DMELODEE_USB_AUDIO=1 $FW
