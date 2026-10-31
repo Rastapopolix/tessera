@@ -698,6 +698,8 @@ at a time, each with an activity light and a moving mark.
 - **Not the LFO's POL.** The LFO page's **POL** (BI, UNI) sets how that page's own depths move (LFO PIT, FLT, SHP,
   AMP). It does not reach a mod: a mod from the LFO swings both ways whatever POL is, and its own +- or + alone says
   which way it moves. So a UNI LFO is never shifted twice, and a + mod from a BI LFO moves one way.
+- **The lists** of KNOB 1 and KNOB 3 name each entry with its track (**T2 GATE**, **T4 DECAY**); the project's
+  ENERGY and the send effects' have none. On the MOSAIC colours an entry is in its track's colour.
 - Choosing a destination on a new cord sets the amount to 50 % (or a fixed move of 25 % with no source), so you hear
   it at once.
 - **Live marks**: a knob a cord reaches shows a mark where the cords move it now.
