@@ -262,7 +262,7 @@ static int project_save_as(uint32_t slot, const char *name)
     }
     proj_wire_gen++;
     uint32_t len = tsp_pack(proj_wire_u.raw, p, 1);    /* (the generators and cords in it too) */
-    if (!len) { ui_message("SAVE FORMAT ERROR"); return 2; }
+    if (!len) { ui_message("SAVE FORMAT ERR"); return 2; }
     if (proj_write_slot(slot, proj_wire_u.raw, len)) { ui_message("SAVE ERROR"); return 2; }
     proj_name_get(proj_name, (const uint8_t *)p->name);
     proj_cur = (uint8_t)(slot & 3u);
@@ -294,7 +294,7 @@ static void project_quick_save(void)
     page_entered();
     ui.act = 4;                                         /* (SAVE: OCT+ names and writes it) */
     ui.force = 1;
-    ui_message("NEW PROJECT: PICK SLOT");
+    ui_message("NEW: PICK SLOT");
 }
 /* autosave (ui_input.c autosave_poll: stopped, untouched a while): the music back to the slot it was loaded from or last
  * saved to when it differs from what that slot holds ("SAVED B"); a new project (no slot yet) waits for a save */
@@ -630,7 +630,7 @@ static void template_save(void)
         return;
     }
 #endif
-    ui_message("TEMPLATE SAVED (RAM)");
+    ui_message("TEMPLATE IN RAM");
 }
 
 /* the first empty project slot (0..3), else 0 */
@@ -766,7 +766,7 @@ static void project_boot(void)
     if (settings_boot && project_used(settings_boot - 1u)) {
         song.g[G_SLOT] = (int16_t)settings_boot;
         if (bootguard.failed)
-            ui_message("BOOT PROJECT SKIPPED");
+            ui_message("BOOT PROJ SKIP");
         else
             project_load(settings_boot - 1u);
         return;
@@ -775,7 +775,7 @@ static void project_boot(void)
         template_load();
     else {
         if (template_used())
-            ui_message("TEMPLATE SKIPPED");
+            ui_message("TEMPLATE SKIP");
         cord_defaults();                              /* (Tessera: a new project's mods: none) */
     }
     song.g[G_SLOT] = (int16_t)(project_free_slot() + 1u);

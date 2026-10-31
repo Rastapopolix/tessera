@@ -39,7 +39,7 @@ static void seqt_len(int up)
     if (!rc && live_rec_sel())
         rc = 1;
     if (rc) {
-        ui_message(rc == 2 ? "PATTERN DATA FULL" : rc == 3 ? (up ? "64 STEPS MAX" : "1 STEP MIN") : "STOP TO EDIT");
+        ui_message(rc == 2 ? "PATTERN FULL" : rc == 3 ? (up ? "64 STEPS MAX" : "1 STEP MIN") : "STOP TO EDIT");
         return;
     }
     if (up && notes_have_recording(t)) {                /* (recorded notes: undone as a precise clear, LEN too) */
@@ -147,7 +147,7 @@ static void seqt_euclid(void)
         return;
     }
     if (notes_have_recording(TSEL)) {                   /* (their steps are the recorded notes' view) */
-        ui_message("RECORDED NOTES HERE");
+        ui_message("RECORDED NOTES");
         return;
     }
     seqt_load(TSEL, seqt_euclid_do);

@@ -444,7 +444,8 @@ static double render_chord(uint32_t seconds)
     return sum;
 }
 /* a render from the same start every time: in a child process (the engines keep state of their own across
- * renders); adopt: the routes into cords first. Its sum, or -1 */
+ * renders); adopt: the routes into cords first. Its sum, or -1. fresh_lpol: track tr's LFO POL */
+static int fresh_lpol;
 static double render_fresh(uint32_t tr, uint32_t s, uint32_t d, int32_t a, int adopt, const cord_t *cord)
 {
     int fd[2];
@@ -454,6 +455,7 @@ static double render_fresh(uint32_t tr, uint32_t s, uint32_t d, int32_t a, int a
     child = fork();
     if (!child) {
         fresh_tracks();
+        trk[tr].p[P_LPOL] = (int16_t)fresh_lpol;
         if (s) route(tr, 2, (int32_t)s, (int32_t)d, a);
         if (adopt && (cord_adopt() || !routes_off(tr) || cord_count() != 1u)) r = -2;
         if (cord) cord_set(0, cord);
@@ -497,6 +499,15 @@ static int adoption(void)
         snprintf(what, sizeof what, "%s on a chord: the cord sounds as the route did, bit for bit", R[i].what);
         check(what, was > 0 && was == now);
     }
+    fresh_lpol = 1;                                     /* the LFO at POL UNI: MOD read it 0..1, the cord + does */
+    for (i = 0; i < sizeof R / sizeof R[0]; i++) {
+        if (R[i].s != MS_LFO) continue;
+        was = render_fresh(1, R[i].s, R[i].d, R[i].a, 0, 0);
+        now = render_fresh(1, R[i].s, R[i].d, R[i].a, 1, 0);
+        snprintf(what, sizeof what, "%s, the LFO at POL UNI: the cord + (one way), as the route sounded", R[i].what);
+        check(what, was > 0 && was == now);
+    }
+    fresh_lpol = 0;
     c = C(CS_VEL, 1, CD_CUTOFF, 1, 60, 0);
     was = render_fresh(0, 0, 0, 0, 0, &c);
     c = C(CS_VEL, 0, CD_CUTOFF, 1, 60, 0);

@@ -231,6 +231,22 @@ typedef struct {                                         /* per block */
     int32_t dust_dc;                                     /* its mean, Q20 (taken off the aux) */
 } px_modal_blk_t;
 
+/* per block, the first n modes' states: bounded at +-64 (far beyond any real use: every sum of the next block fits in
+ * 32 bits), and a mode rung out to below 2^-12 (both states: ~-85 dBFS out) cleared. Its rounding would hold it there
+ * for as long as the note is held, a hum of a few LSB (found looking into a "bit-reduced" MODAL at short DAMP,
+ * 2026-11-01) */
+static inline void px_modes_bound(px_modal_t *M, uint32_t n)
+{
+    uint32_t i;
+    for (i = 0; i < n; i++) {
+        int32_t a = M->s[i][0], b = M->s[i][1];
+        if ((uint32_t)(a + 1024) < 2048u && (uint32_t)(b + 1024) < 2048u)
+            a = b = 0;
+        M->s[i][0] = px_clamp(a, -(1 << 28), 1 << 28);
+        M->s[i][1] = px_clamp(b, -(1 << 28), 1 << 28);
+    }
+}
+
 /* Resonator::CalcStiff, Q16 in and out */
 static int32_t px_stiff(int32_t s)
 {
@@ -260,8 +276,9 @@ static __attribute__((noinline)) void px_modal_exciter(px_modal_blk_t *B, px_mod
     px_svf_coef(&B->ex, cut, bow ? 179u : 384u);         /* q 0.7 / 1.5 */
     B->strike = 0;
     B->dust_thr = 0;
-    if (bow) {                                           /* Dust: density 0.3 (5e-5 + (1 - 5e-5) b^4) */
-        int32_t dn = px_m(brightness, brightness, 16), df;
+    if (bow) {                                           /* Dust: density 0.3 (5e-5 + (1 - 5e-5) b'^4), b' = 0.35 +
+                                                          * 0.65 b (DaisySP: b; a dull bow fell silent) */
+        int32_t bb = 22938 + px_m(brightness, 42598, 16), dn = px_m(bb, bb, 16), df;
         dn = px_m(dn, dn, 16);
         df = 3 + px_m(dn, 65533, 16);
         B->dust_thr = (uint32_t)df * 19661u;             /* 0.3 df, Q32 */
@@ -330,10 +347,7 @@ static __attribute__((noinline)) void px_modal_block(px_modal_blk_t *B, px_modal
     B->n = i;
     for (; i < PX_NMODE; i++)                            /* out of the band: silent */
         M->s[i][0] = M->s[i][1] = 0;
-    for (i = 0; i < B->n; i++) {                         /* bound the states at +-64 (far beyond any real use): */
-        M->s[i][0] = px_clamp(M->s[i][0], -(1 << 28), 1 << 28);   /* every sum of the next block fits */
-        M->s[i][1] = px_clamp(M->s[i][1], -(1 << 28), 1 << 28);   /* in 32 bits */
-    }
+    px_modes_bound(M, B->n);
 }
 
 /* ----------------------------------------------------------- Membrane --- */
@@ -391,10 +405,7 @@ static __attribute__((noinline)) void px_memb_block(px_modal_blk_t *B, px_modal_
     B->n = i;
     for (; i < PX_NMODE; i++)
         M->s[i][0] = M->s[i][1] = 0;
-    for (i = 0; i < B->n; i++) {
-        M->s[i][0] = px_clamp(M->s[i][0], -(1 << 28), 1 << 28);
-        M->s[i][1] = px_clamp(M->s[i][1], -(1 << 28), 1 << 28);
-    }
+    px_modes_bound(M, B->n);
 }
 
 /* n (<= 32) samples: out[i] = the resonator (Q20), aux[i] = the exciter (Q20). The exciter first (skipped

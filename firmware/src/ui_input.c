@@ -47,9 +47,24 @@ static uint32_t cur_fam(void)                       /* (an engine's own envelope
 static int layer_set_open(void);                       /* (ui_layer.c) */
 /* OCT- / OCT+ shift the octave on Stage (HOME) only; everywhere else, and over Stage's menu, dialogs and popups,
  * they are Esc / Enter (docs/design/README.md, Navigation) */
+/* NOTES with REC on (a melodic track): OCT- / OCT+ shift the keys' octave as on Stage (both: back to 0; OCT+ held
+ * still the pattern's sheet), not back / enter: the keys play there (Theo 2026-10-31) */
+static int grid_on(void);
+static int notes_oct(void)
+{
+    return !ui.home && cur_page()->graph == GR_ROLL && ((song.rec >> song.sel) & 1u) && !grid_on() && !designer_on() &&
+           !ui.menu && !ui.confirm && !name_on() && !new_on() && !layer_set_open() && !pop.on && !smap.on;
+}
 static int oct_nav(void)
 {
-    return designer_on() || !ui.home || ui.menu || ui.confirm || name_on() || new_on() || layer_set_open() || pop.on || smap.on;
+    return !notes_oct() &&
+           (designer_on() || !ui.home || ui.menu || ui.confirm || name_on() || new_on() || layer_set_open() || pop.on || smap.on);
+}
+static void notes_oct_say(void)                         /* (NOTES: no octave LEDs to read it from there) */
+{
+    char b[4] = {song.octave < 0 ? '-' : '+', (char)('0' + (song.octave < 0 ? -song.octave : song.octave)), 0, 0};
+    if (notes_oct())
+        ui_say("KEYS OCT ", song.octave ? b : "0");
 }
 static int oct_enter_ok(void)                           /* OCT+ would do something here */
 {
@@ -134,7 +149,7 @@ static void pattern_key_release(void)
     if (ui.pat_key && (!pattern_keys_on() || !(fm1_in.notes & (1u << PAT_KEY[ui.pat_key - 1u])))) {
         if (!ui.pat_copy) {
             uint32_t bank = ui.pat_key - 1u;
-            if (pattern_request(TSEL, bank)) ui_message("STOP SONG TO SWITCH");
+            if (pattern_request(TSEL, bank)) ui_message("STOP TO SWITCH");
             else { char b[12] = "PATTERN "; b[8] = (char)('1' + bank); b[9] = 0; ui_message(b); }
             ui.entry_open = 0; cursor_set(0); ui.force = 1;
         }
@@ -152,7 +167,7 @@ static void pattern_keys(uint32_t notes)
             else if (ui.pat_key != b + 1u) {
                 int rc = pattern_copy(TSEL, ui.pat_key - 1u, b);
                 ui.pat_copy = 1;
-                ui_message(rc == 2 ? "PATTERN DATA FULL" : rc ? "STOP TO COPY" : "PATTERN COPIED");
+                ui_message(rc == 2 ? "PATTERN FULL" : rc ? "STOP TO COPY" : "PATTERN COPIED");
                 ui.force = 1;
             }
         }
@@ -329,9 +344,9 @@ static void tracks_edit(uint32_t slot, int32_t steps)
     motion_capture(t, id, *vp);
 }
 
-/* REC arms one pattern pass on the selected track without navigating. During
- * playback it waits for loop zero; another tap cancels or finishes the take.
- * On STEP, armed keys audition/record instead of writing the cursor step. */
+/* REC arms the selected track without navigating. During playback it waits for loop zero, then records pass after
+ * pass (overdub) until another tap finishes the take (or cancels the wait). EDIT + REC clears the pattern for a new
+ * take, REC staying on. On STEP, armed keys audition/record instead of writing the cursor step. */
 static void rec_tap(void)
 {
     uint8_t bit = (uint8_t)(1u << song.sel);
@@ -344,17 +359,17 @@ static void rec_tap(void)
     fm1_irq_on();
     ui.force = 1;                                     /* also refresh the status on MENU / ABOUT */
     if (song.rec_wait & bit)
-        ui_message("WAITING FOR LOOP");
+        ui_message("WAIT FOR LOOP");
     else if ((song.rec & bit) && grid_on())
-        ui_message("LANE KEYS RECORD");               /* (the white keys stay the steps) */
+        ui_message("LANES RECORD");               /* (the white keys stay the steps) */
     else if ((song.rec & bit) && !ui.home && cur_page()->graph == GR_ROLL)
-        ui_message("KEYS RECORD LIVE");               /* (seq_entry pauses while armed and playing) */
+        ui_message("KEYS RECORD");               /* (seq_entry pauses while armed and playing) */
     else if (!(song.rec & bit))
         ui_message("REC OFF");
 }
 
-/* REC + PLAY starts an armed track, or queues its next pattern pass if playback
- * already runs. REC's release then does nothing (no tap, no hold). */
+/* REC + PLAY starts an armed track, or queues it for the next loop start if playback
+ * already runs; it records until REC again. REC's release then does nothing (no tap, no hold). */
 static void rec_play(void)
 {
     uint8_t bit = (uint8_t)(1u << song.sel);
@@ -373,7 +388,7 @@ static void rec_play(void)
     if (!song.playing && !seq_counting())
         transport_req = 1;
     ui.force = 1;
-    ui_message(song.rec_wait & bit ? "WAITING FOR LOOP" : "RECORDING");
+    ui_message(song.rec_wait & bit ? "WAIT FOR LOOP" : "RECORDING");
 }
 
 /* SAVE + REC (either pressed while the other is held): the project back to its slot (project.c project_quick_save);
@@ -386,7 +401,7 @@ static void qsave_chord(void)
     ui.rec_t0 |= 2u;
     if (transport_busy()) {
         transport_req = 2;
-        ui_message("STOPPING TO SAVE");
+        ui_message("STOP AND SAVE");
     }
     qsave_req = 1;
 }
@@ -398,6 +413,23 @@ static void qsave_poll(void)
     }
 }
 
+/* EDIT + REC (either pressed while the other is held) on NOTES: CLEAR PATTERN? (OCT+ yes), as the sheet's Clear
+ * pattern, for a new take: REC stays as it is (the next pass records again). With REC off, EDIT held undoes it (while
+ * recording EDIT held erases). Neither button then does its own thing (no EDIT delete or undo, no REC tap) */
+static void step_edit_combo(void);
+static void clear_chord(void)
+{
+    ui.rec_t0 |= 2u;
+    ui.edit_t0 |= 2u;
+    step_edit_combo();
+    ui.erase_owner = 0;                                 /* (EDIT held while recording erases: not this time) */
+    fm1_irq_off();
+    seq_erase_request = 0;
+    fm1_irq_on();
+    if (!cf_refused(CF_CLEAR_SEQ))
+        confirm_open(CF_CLEAR_SEQ, song.sel);
+}
+
 /* REC held: Capture. What the selected track played in its last bars while it was not recording (seq.c cap_ev) into
  * its pattern, as recorded notes (timing, velocity and length as played): an empty pattern takes 1, 2 or 4 bars (16, 32
  * or 64 steps), as many as the notes span, its LEN set to it; a pattern with notes the last LEN steps, over them. The
@@ -405,7 +437,7 @@ static void qsave_poll(void)
  * On a generator track it prints: what the generator played (tessera.c tess_cap) into its STEP pattern as into an
  * empty one, then the track plays that pattern (SEQ MODE STEP) from where it is; EDIT held puts the generator back.
  * Steps there already: REPLACE STEPS? first (over: 1, its OCT+), they go in the same undo; recorded notes there: not
- * (their pool is not in an undo level), CLEAR PATTERN TO PRINT. On a STEP track playing STEP EVOLVE's changes it keeps
+ * (their pool is not in an undo level), CLEAR TO PRINT. On a STEP track playing STEP EVOLVE's changes it keeps
  * them: they become the steps (KEPT n STEPS), EDIT held undoes it */
 static void capture_take(int over)
 {
@@ -416,7 +448,7 @@ static void capture_take(int over)
     int empty;
     cap_ev_t captured[CAP_N];
     uint32_t until;
-    if (chain_busy()) { ui_message("STOP SONG TO CAPTURE"); return; }
+    if (chain_busy()) { ui_message("STOP TO CAPTURE"); return; }
     if ((song.rec >> k) & 1u) { ui_message("RECORDING"); return; }
     if (gen == TESS_ENG_OFF && tessera_step_varied(k)) {   /* STEP EVOLVE: the changes playing become the steps */
         char b[16];
@@ -450,9 +482,9 @@ static void capture_take(int over)
         if (back > last) last = back;
         if (back < first) first = back;
     }
-    if (!n) { ui_message("NOTHING TO CAPTURE"); return; }
+    if (!n) { ui_message("NOTHING PLAYED"); return; }
     if (gen != TESS_ENG_OFF && notes_have_recording(t)) {
-        ui_message("CLEAR PATTERN TO PRINT");
+        ui_message("CLEAR TO PRINT");
         return;
     }
     if (gen != TESS_ENG_OFF && !seq_is_empty(t) && !over) {
@@ -531,7 +563,7 @@ static void capture_take(int over)
         fm1_irq_on();
     }
     load_end(t);
-    if (!put) { ui_message("NOTHING TO CAPTURE"); return; }
+    if (!put) { ui_message("NOTHING PLAYED"); return; }
     {
         char b[16];
         fmt_int(b, (int32_t)(w % 16u ? w : w / 16u));
@@ -805,7 +837,7 @@ static void step_edit(uint32_t slot, int32_t steps)
 static void motion_unplayed(void)
 {
     if (((song.rec >> song.sel) & 1u) && !song.playing && !chain_busy())
-        ui_message("PLAY TO RECORD MOTION");
+        ui_message("PLAY TO RECORD");
 }
 /* an edit of the engine's own patch (its bytes before: old, under motion_guard): its motion (motion.c) */
 static void native_motion(const uint8_t *old)
@@ -1390,7 +1422,7 @@ static void notes_delete_edit(void)
     uint32_t i = notes_selected(TSEL);
     if (i >= RECORD_MAX) {
         fm1_irq_on();
-        ui_message("NO RECORDED NOTE");
+        ui_message("NO NOTE PICKED");
         return;
     }
     /* One event delta per history entry keeps undo bounded without copying
@@ -1587,6 +1619,7 @@ static uint32_t layer_oct(uint32_t pressed, uint32_t oct);
 static int layer_allowed(void);
 static uint32_t ly_bit(uint32_t l);
 static void bpm_turn(int32_t s);
+static void glo_preset_turn(int32_t s);
 
 /* a page button let go (they act on release; a layer's own button: layer_gesture) */
 static void page_tap(uint32_t b)
@@ -1639,7 +1672,7 @@ static void page_tap(uint32_t b)
                 ui.home = 0;
                 page_entered();
             }
-            ui_message("ARP: MODE ON GEN");
+            ui_message("MODE IS ON GEN");
             return;
         }
         if (a < NPAGES && a2 < NPAGES) {
@@ -1662,10 +1695,10 @@ static void page_tap(uint32_t b)
 static void ui_notices(void)
 {
     static uint32_t midi_t, midi_last;
-    if (ui.msg_t && str_eq(ui.msg, "WAITING FOR LOOP") && !(song.rec_wait & (1u << song.sel)))
+    if (ui.msg_t && str_eq(ui.msg, "WAIT FOR LOOP") && !(song.rec_wait & (1u << song.sel)))
         ui_message(rec_on(TSEL) ? "RECORDING" : "REC OFF");
     if (motion_full) { motion_full = 0; ui_message("MOTION FULL"); }
-    if (recording_quant_blocked) { recording_quant_blocked = 0; ui_message("QNT STEP OCCUPIED"); }
+    if (recording_quant_blocked) { recording_quant_blocked = 0; ui_message("QNT STEP TAKEN"); }
     if (midi_hint) {                                    /* MIDI notes into a track that is not selected */
         uint32_t h = midi_hint;
         midi_hint = 0;
@@ -1820,7 +1853,7 @@ static void grids_part4_keys(uint32_t pressed)
             str_cpy(m + 7, tessera_grids_part4_name(song.sel), sizeof m - 7);
             ui_message(m);
         } else {
-            ui_message("PART4: CP OH TM RS CB");
+            ui_message("PART4: BLACK");
         }
         ui.force = 1;
     }
@@ -1839,7 +1872,7 @@ static int bulk_jog(int32_t delta)
     bulk.on=1;uint32_t limit=slots?user_limit():step_pattern_len(TSEL);
     uint32_t to=(uint32_t)clamp((int32_t)cur+delta,0,(int32_t)limit-1);
     if(slots==SK_FM6)fm6_bslot=(uint8_t)to;else if(slots)ui.uslot=(uint8_t)to;else cursor_set((int32_t)to);
-    bulk.end=(uint16_t)to;ui.bulk_hold=0;oct_eat|=2u;ui.oct_t0|=2u;ui.force=1;ui_message(slots?"PRESETS SELECTED":"Moving..");return 1;
+    bulk.end=(uint16_t)to;ui.bulk_hold=0;oct_eat|=2u;ui.oct_t0|=2u;ui.force=1;ui_message(slots?"PRESETS PICKED":"Moving..");return 1;
 }
 static void notes_bulk_copy(void){note_copy_arm();}
 static const sheet_row_t SHEET_NOTE_BULK[]={{"Move: KNOB 1",0,0,note_move_arm,0},{"Copy: KNOB 1",0,0,notes_bulk_copy,0},{"Quantize",nt_quantize_v,nt_quantize_grid,nt_quantize,0},{"Delete selected",0,0,notes_bulk_delete,0},{"Clear selection",0,0,bulk_clear,0}};
@@ -1948,6 +1981,7 @@ static void ui_input(void)
         if(bulk_context())ui.bulk_hold=1;else if(!gen_layer_on())page_sheet_open();   /* (QUAD, CONSTELLATION on GEN: their layer) */
     } else if (octup == BT_TAP && oct_deferred) {
         song.octave += song.octave < 3 ? 1 : 0;         /* (OCT+ pressed on a page with a sheet: on release) */
+        notes_oct_say();
     }
     if (octup != BT_NONE || !((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u))
         oct_deferred = 0;
@@ -2012,6 +2046,10 @@ static void ui_input(void)
     if (knob_layer && ui.ly == LAYER_GLO && (s = panel_enc(EN_SELECT)) != 0) {   /* GLO + SELECT: the tempo, a combo */
         combo = 1;
         bpm_turn(s);
+    }
+    if (knob_layer && ui.ly == LAYER_GLO && (s = panel_enc(EN_PRESET)) != 0) {   /* GLO + PRESETS: the sounds, a combo */
+        combo = 1;
+        glo_preset_turn(s);
     }
     if (lay) {                                          /* a layer's button held: keys, knobs and buttons are combos */
         combo |= (pressed & ~ly_bit(ui.ly)) != 0u;
@@ -2107,7 +2145,7 @@ static void ui_input(void)
         step_edit_combo();
         step_history_end();
         if (chain_busy()) ui_message("STOP TO UNDO");
-        else if (dir == 3u) ui_message("USE ONE OCT BUTTON");
+        else if (dir == 3u) ui_message("ONE OCT AT ONCE");
         else if (edit_oct) {
             if (step_page()) {
                 if (!step_history_apply(dir == 2u)) ui_message(dir == 2u ? "NOTHING TO REDO" : "NOTHING TO UNDO");
@@ -2184,11 +2222,14 @@ static void ui_input(void)
         if (ui.cursor != idx)
             cursor_set((int32_t)idx);
     }
-    {   /* SAVE + REC: the quick save */
-        uint32_t sv = 1u << panel.btn[B_SAVE], rc = 1u << panel.btn[B_REC];
+    {   /* SAVE + REC: the quick save; EDIT + REC on NOTES: clear the pattern */
+        uint32_t sv = 1u << panel.btn[B_SAVE], rc = 1u << panel.btn[B_REC], ed = 1u << panel.btn[B_EDIT];
         if (((pressed & rc) && (fm1_in.buttons & sv)) || ((pressed & sv) && (fm1_in.buttons & rc)))
             qsave_chord();
         qsave_poll();
+        if (((pressed & rc) && (fm1_in.buttons & ed)) || ((pressed & ed) && (fm1_in.buttons & rc)))
+            if (!ui.home && cur_page()->graph == GR_ROLL && !ui.menu && !ui.confirm && !name_on() && !pop.on)
+                clear_chord();
     }
     for (id = 0; id < 14u; id++) {
         if (!((pressed >> id) & 1u))
@@ -2243,11 +2284,13 @@ static void ui_input(void)
                 song.octave = 0;
                 ui.oct_t0 |= 2u;                        /* (OCT+ then neither a tap nor a sheet) */
                 oct_deferred = 0;
-            } else if (b == B_OCTUP && page_sheet() == 1u) {
-                oct_deferred = 1;                       /* Stage: OCT+ on release, held: the sound's sheet */
+                notes_oct_say();
+            } else if (b == B_OCTUP && page_sheet()) {
+                oct_deferred = 1;                       /* Stage, NOTES: OCT+ on release, held: the sheet */
                 ui.force = 1;
             } else {
                 song.octave += b == B_OCTDN ? (song.octave > -3 ? -1 : 0) : (song.octave < 3 ? 1 : 0);
+                notes_oct_say();
             }
             break;
         }
@@ -2387,7 +2430,7 @@ static void ui_input(void)
         } else if (pattern_keys_on()) {
             ui.seq_t0 |= 2u;
             uint32_t from = TSEL->pattern_next < NPAT ? TSEL->pattern_next : TSEL->pattern;
-            if (pattern_request(TSEL, (uint32_t)clamp((int32_t)from + s, 0, NPAT - 1u))) ui_message("STOP SONG TO SWITCH");
+            if (pattern_request(TSEL, (uint32_t)clamp((int32_t)from + s, 0, NPAT - 1u))) ui_message("STOP TO SWITCH");
             ui.force = 1;
         } else if (step_gesture(s)) {                   /* ENV / SCL / a key held: the note's length, its place */
         } else if (ui.home) {                           /* HOME: the tempo (GLO held: above; SEQ > TEMPO) */

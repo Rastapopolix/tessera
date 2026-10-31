@@ -295,7 +295,12 @@ static int seqm_page_ok(uint32_t i)                     /* (the page shown stays
                                                          * TIMING's SHAPE and HUMAN; TWEAK's HUMAN) */
     if (p->fam == FAM_ARP && (p->graph == GR_ARP || p->graph == GR_NONE)) return m == 1u;
     if (p->fam == FAM_SEQ && p->graph == GR_ROLL) return m < 2u;
+    if (p->fam == FAM_SEQ && p->graph == GR_STEPS) return m >= 2u;   /* PATTERN: STEP and ARP have it on GEN */
     return 1;
+}
+static int gen_pattern_page(const page_t *pg)          /* (params.c page_id) */
+{
+    return pg->fam == FAM_GEN && pg->graph == GR_STEPS && seqm_get(song.sel) < 2u;
 }
 
 static int page_visible(uint32_t i)

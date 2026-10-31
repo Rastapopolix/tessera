@@ -892,6 +892,57 @@ static int scen_fork(const scen_t *sc, const char *logdir, char *res, size_t cap
     return 0;
 }
 
+/* A generator picked while the others play joins their grid (Theo 2026-11-01: ATLAS picked on track 2 mid-bar, under
+ * an OFF BEAT CHORD on track 1, came in out of time): track 2's notes from the block it is picked at (or unmuted at)
+ * are the ones it plays from there when it runs from PLAY. SWING 30. "notes hash" of track 2 from block jn_at */
+static uint32_t jn_mode, jn_at, jn_div, jn_mute;   /* the generator, the block it joins at (0: from PLAY), track 2's
+                                                    * DIV, the block it is muted at (0: picked at jn_at instead) */
+static void jn_pick(void)
+{
+    tessera.seed[1] = 7;                              /* (the same material in both runs) */
+    tess_seed_apply(1);
+    gen(1, jn_mode);
+    if (jn_mode == TESS_ENG_GRIDS) {                  /* (ATLAS's random start set outright, as in both runs) */
+        tessera_param_set(1, TX_GRD_X, 60);
+        tessera_param_set(1, TX_GRD_Y, 170);
+        tessera_param_set(1, TX_GRD_DENS, 70);
+    }
+    if (jn_mode == TESS_ENG_EUCLID) {                 /* (13 steps: the loop, not the bar) */
+        tessera_param_set(1, TX_EUC_STEPS, 13);
+        tessera_param_set(1, TX_EUC_PULSES, 5);
+    }
+    sel(0);
+}
+static void s_join(void)
+{
+    gen(0, TESS_ENG_CHORD);
+    tessera_param_set(0, TX_CH_HIT, GEN_CH_OFF);
+    song.g[G_SWING] = 30;
+    trk[1].p[P_SDIV] = (int16_t)jn_div;
+    if (!jn_at || jn_mute) jn_pick();
+}
+static void k_join(uint32_t n)
+{
+    if (!n) transport_req = 1;
+    if (jn_mute && n == jn_mute) trk[1].p[P_MUTE] = 1;
+    if (jn_at && n == jn_at) {
+        if (jn_mute) trk[1].p[P_MUTE] = 0;
+        else jn_pick();
+    }
+}
+static void join_run(uint32_t from, char *res, size_t cap)
+{
+    const scen_t sc = {"join", 8, 0x1060u, s_join, 0, k_join};
+    uint32_t i, n = 0, h = 2166136261u;
+    scen_run(&sc, 0, res, cap);
+    for (i = 0; i < tt_n; i++) {
+        if (tt_ev[i].tr != 1u || tt_ev[i].blk < from) continue;
+        h = fnv(fnv(fnv(h, tt_ev[i].blk), tt_ev[i].note), tt_ev[i].vel);
+        n++;
+    }
+    snprintf(res, cap, "%u 0x%08x", n, h);
+}
+
 /* QNT CHRD, checked note by note: every note TURING and MARKOV play is a note of the chord track 1 sounds then (its
  * notes of the latest block it struck in); its chords' lowest notes walk POP in C major, a bar each. "notes wrong roots" */
 static void chord_link_run(char *res, size_t cap)
@@ -2878,7 +2929,38 @@ static void pack_run(char *res, size_t cap)
         }
         tessera_unpack(a);
     }
-    {   /* ANSWER FADE on GEN's KNOB 4: a count a click, 1 .. 16 then LOOPS and no further; back down a count a click */
+    {   /* ANSWER SOURCE: T1's STEP pattern is the call (its notes at their steps), read again before each answer; the
+         * keys then make none; another generator's SOURCE leaves ANSWER's phrase alone */
+        uint32_t i, sok = 1;
+        tessera_reset();
+        s_follow_step();                              /* (T1: 60 62 64 - 67 65 - 72) */
+        gen(1, TESS_ENG_ANSWER);
+        tessera_param_set(1, TX_SD_SOURCE, 1);
+        {
+            const tessera_answer_t *an = tessera_answer(1);
+            static const uint8_t AT[6] = {0, 1, 2, 4, 5, 7}, NOTE[6] = {60, 62, 64, 67, 65, 72};
+            sok &= an->n == 6u;
+            for (i = 0; i < 6u && i < an->n; i++) sok &= an->at[i] == AT[i] && an->note[i] == NOTE[i] && an->vel[i] == 100u;
+            tessera_answer_hear(&trk[1], 50, 90);
+            sok &= an->n == 6u && an->note[0] == 60u;
+            trk[0].step[0].note[0] = 59;                /* (the pattern changed: the next answer's call) */
+            tessera_param_set(1, TX_SD_SOURCE, 1);
+            sok &= an->note[0] == 59u;
+            tessera_param_set(1, TX_SD_SOURCE, 0);
+            tessera_answer_hear(&trk[1], 50, 90);       /* (OFF: the keys' call again) */
+            sok &= an->n == 1u && an->note[0] == 50u;
+        }
+        tessera_reset();
+        s_follow_step();
+        gen(1, TESS_ENG_TURING);
+        tessera_param_set(1, TX_SD_SOURCE, 1);
+        tessera_stop_all();
+        sok &= tessera_answer(1)->n == 0u;
+        ok &= sok;
+        tessera_unpack(a);
+    }
+    {   /* ANSWER FADE on GEN's KNOB 4: a count a click, 1 .. 16, then LOOPS SHORT MID LONG (LEN) and no further; back
+         * down the same way */
         uint32_t i, up = 1;
         tessera_reset();
         gen(1, TESS_ENG_ANSWER);
@@ -2887,10 +2969,17 @@ static void pack_run(char *res, size_t cap)
             tessera_knob(3, 1);
             up &= tessera_answer_count(1) == i;
         }
+        for (i = 0; i < TESS_AN_LENS; i++) {
+            tessera_knob(3, 1);
+            up &= tessera_answer_count(1) == 0u && tessera_param_get(1, TX_AN_FADE) == 100 &&
+                  tessera_param_get(1, TX_AN_LEN) == (int32_t)i;
+        }
         tessera_knob(3, 1);
-        up &= tessera_answer_count(1) == 0u && tessera_param_get(1, TX_AN_FADE) == 100;
-        tessera_knob(3, 1);
-        up &= tessera_param_get(1, TX_AN_FADE) == 100;
+        up &= tessera_param_get(1, TX_AN_FADE) == 100 && tessera_param_get(1, TX_AN_LEN) == TESS_AN_LENS - 1;
+        for (i = TESS_AN_LENS - 1u; i-- > 0;) {
+            tessera_knob(3, -1);
+            up &= tessera_param_get(1, TX_AN_FADE) == 100 && tessera_param_get(1, TX_AN_LEN) == (int32_t)i;
+        }
         tessera_knob(3, -1);
         up &= tessera_answer_count(1) == 16u;
         tessera_param_set(1, TX_AN_FADE, 33);           /* (the default: 6) */
@@ -3360,6 +3449,41 @@ int main(int argc, char **argv)
         snprintf(line, sizeof line, "CHORD POP a bar each (C G Am F: %u of %u), QNT CHRD: all %u notes of TURING and MARKOV "
                  "in the chord", roots, chords, n);
         bad += check(line, chords >= 8u && roots == chords && n > 32u && !wrong);
+    }
+    {   /* a generator joining mid-bar: on the grid of the tracks playing, as if it had run from PLAY */
+        static const struct { uint32_t mode, div, at, mute; const char *what; } JN[] = {
+            {TESS_ENG_GRIDS, 2, 6458, 0, "ATLAS picked mid-bar (bar 3, step 6.5)"},
+            {TESS_ENG_GRIDS, 5, 7000, 0, "ATLAS at 16T picked mid-bar"},
+            {TESS_ENG_EUCLID, 2, 9300, 0, "EUCLID 13 steps picked mid-bar"},
+            {TESS_ENG_GRIDS, 2, 7100, 2756, "ATLAS unmuted mid-bar"},
+        };
+        for (i = 0; i < sizeof JN / sizeof JN[0]; i++) {
+            char r[2][96];
+            unsigned n[2] = {0, 0}, h[2] = {0, 1};
+            for (int run = 0; run < 2; run++) {
+                pid_t pid;
+                int fd[2];
+                r[run][0] = 0;
+                if (pipe(fd) || (pid = fork()) < 0) continue;
+                if (!pid) {
+                    close(fd[0]);
+                    jn_mode = JN[i].mode;
+                    jn_div = JN[i].div;
+                    jn_at = run ? JN[i].at : 0u;
+                    jn_mute = run ? JN[i].mute : 0u;
+                    join_run(JN[i].at, res, sizeof res);
+                    if (write(fd[1], res, strlen(res) + 1u) < 0) _exit(1);
+                    _exit(0);
+                }
+                close(fd[1]);
+                if (read(fd[0], r[run], sizeof r[run] - 1u) > 0) sscanf(r[run], "%u 0x%x", &n[run], &h[run]);
+                close(fd[0]);
+                waitpid(pid, 0, 0);
+            }
+            snprintf(line, sizeof line, "%s: in time with the tracks playing (%u notes, %u from PLAY)", JN[i].what, n[1],
+                     n[0]);
+            bad += check(line, n[0] > 8u && n[0] == n[1] && h[0] == h[1]);
+        }
     }
     for (int which = 0; which < 2; which++) {   /* SEED back, PLAY again: in a child, as the scenarios */
         unsigned same = 0, differ = 0;

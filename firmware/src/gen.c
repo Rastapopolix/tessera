@@ -429,13 +429,33 @@ static void gen_fall_tick(gen_bounce_t *g, uint32_t *rnd, gen_out_t *out)
         w++;
     }
 }
-/* Bounce: each ball moves SPEED at its angle (ANGLE and its offset, folded into 0..90), off the walls as a mirror.
+/* Bounce: how far ball k moves a step across (dx) and up (dy): SPEED at its angle (ANGLE and its offset, folded into 0..90) */
+static void gen_bounce_step(const gen_bounce_t *g, uint32_t k, int32_t *dx, int32_t *dy)
+{
+    int32_t sp = g->speed ? g->speed : 1, a = (int32_t)g->angle + g->off[k];
+    if (a < 0) a = -a;
+    if (a > 90) a = 180 - a;
+    *dx = sp * (int32_t)gen_sin90((uint32_t)(90 - a)) / 127, *dy = sp * (int32_t)gen_sin90((uint32_t)a) / 127;
+}
+/* Bounce: the walls ball k hit on the last step (a bit each, as hit): its place is the mirror of where it went past the
+ * wall, so it lies less than its step from the wall it now moves away from only after a hit (the picture draws it there) */
+static uint32_t gen_bounce_touch(const gen_bounce_t *g, uint32_t k)
+{
+    uint32_t d = (g->dir >> (2u * k)) & 3u, t = 0;
+    int32_t dx, dy;
+    gen_bounce_step(g, k, &dx, &dy);
+    if (dx && !(d & 1u) && g->x[k] < dx) t |= 2u;
+    else if (dx && (d & 1u) && g->x[k] > 255 - dx) t |= 4u;
+    if (dy && !(d & 2u) && g->y[k] < dy) t |= 1u;
+    else if (dy && (d & 2u) && g->y[k] > 255 - dy) t |= 8u;
+    return t & g->hit;                                  /* (served balls have hit nothing) */
+}
+/* Bounce: each ball moves its step (gen_bounce_step), off the walls as a mirror.
  * A wall hit plays its note: the wall (floor 0, left 1, right 2, top 3) two scale degrees apart, where along it eight
  * more (two octaves in all; the top's accented); a ball in a corner plays the floor's or the top's. Hits on the same
  * step play together, three at most, the lowest wall first (a note twice: once); no random draw */
 static void gen_bounce_tick(gen_bounce_t *g, const gen_clock_t *clk, uint32_t *rnd, gen_out_t *out)
 {
-    int32_t sp = g->speed ? g->speed : 1;
     uint32_t n = g->balls >= 1u && g->balls <= GEN_BOUNCE_MAX ? g->balls : 1u, k, w, got = 0;
     uint8_t note[GEN_BOUNCE_MAX], wall[GEN_BOUNCE_MAX];
     (void)clk;
@@ -445,12 +465,10 @@ static void gen_bounce_tick(gen_bounce_t *g, const gen_clock_t *clk, uint32_t *r
     }
     g->hit = 0;
     for (k = 0; k < n; k++) {
-        int32_t a = (int32_t)g->angle + g->off[k], hw = -1, at = 0;
+        int32_t hw = -1, at = 0;
         uint32_t d = (g->dir >> (2u * k)) & 3u;
         int32_t dx, dy, x, y;
-        if (a < 0) a = -a;
-        if (a > 90) a = 180 - a;
-        dx = sp * (int32_t)gen_sin90((uint32_t)(90 - a)) / 127, dy = sp * (int32_t)gen_sin90((uint32_t)a) / 127;
+        gen_bounce_step(g, k, &dx, &dy);
         x = (int32_t)g->x[k] + (d & 1u ? -dx : dx), y = (int32_t)g->y[k] + (d & 2u ? -dy : dy);
         if (dx && (d & 1u) && x <= 0) x = -x, d ^= 1u, hw = 1, at = y;   /* (reaching a wall is a hit) */
         else if (dx && !(d & 1u) && x >= 255) x = 510 - x, d ^= 1u, hw = 2, at = y;

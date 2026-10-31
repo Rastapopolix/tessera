@@ -41,7 +41,7 @@ footer { margin-top: 2mm; color: #666; font-size: 6.6pt; text-align: right; }
 <tr><td>A page button again</td><td>That section's next page (from elsewhere most return to the page last used)</td></tr>
 <tr><td><b>OCT&#8209;</b> (off HOME)</td><td>Back: closes a list, sheet or map, else HOME</td></tr>
 <tr><td><b>OCT+</b> (off HOME)</td><td>Enter: opens the row, slot or note picked; does the action picked</td></tr>
-<tr><td><b>OCT+</b> held</td><td>The page's sheet: the sound's (HOME, EDIT, ENV, LFO, FX), the pattern's (GEN, NOTES, PATTERN), the song's (SONG), the pattern's on PATTERNS</td></tr>
+<tr><td><b>OCT+</b> held</td><td>The page's sheet: the sound's (HOME, EDIT, ENV, LFO, FX), the pattern's (GEN, NOTES, PATTERN; Swing there), the song's (SONG), the pattern's on PATTERNS</td></tr>
 <tr><td>A sheet: <b>KNOB 1</b>, <b>OCT+</b> / <b>OCT&#8209;</b></td><td>Picks the row / does it / closes</td></tr>
 <tr><td>A dialog: <b>OCT+</b> / <b>OCT&#8209;</b></td><td>Yes / no</td></tr>
 <tr><td>Lists (menu, SCL, VOICE): <b>KNOB 1</b> / <b>KNOB 2</b></td><td>The row / its value</td></tr>
@@ -52,7 +52,7 @@ footer { margin-top: 2mm; color: #666; font-size: 6.6pt; text-align: right; }
 <table>
 <tr><td><b>SEQ</b></td><td>GEN, then the MODE's pages. STEP: EVOLVE, TWEAK, TIMING, NOTES. ARP: ARP, ARP 2, NOTES. A generator: EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY. All: PATTERN, TEMPO, PATTERNS, SONG</td></tr>
 <tr><td><b>SEQ</b> held</td><td>PATTERNS</td></tr>
-<tr><td><b>ARP</b></td><td>STEP track: switches it to ARP, the ARP page (again: ARP 2). Generator track: GEN ("ARP: MODE ON GEN")</td></tr>
+<tr><td><b>ARP</b></td><td>STEP track: switches it to ARP, the ARP page (again: ARP 2). Generator track: GEN ("MODE IS ON GEN")</td></tr>
 <tr><td><b>LFO</b></td><td>MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST; on FM6 then FM LFO; on ORACLE then LFO MOD, LFO ROUTE</td></tr>
 <tr><td><b>ENV</b></td><td>ENV, ENV DEST; on FM6 instead EG RATE, EG LVL, PITCH EG, PITCH LV; on ORACLE FILT ENV, AMP ENV</td></tr>
 <tr><td><b>SCL</b></td><td>SCALES, SCL, CHORD</td></tr>
@@ -74,6 +74,7 @@ footer { margin-top: 2mm; color: #666; font-size: 6.6pt; text-align: right; }
 <tr><td><b>GLO</b> + C4 / F4</td><td>Unmute all / tap the tempo (three taps or more; INT clock)</td></tr>
 <tr><td><b>GLO</b> + E4</td><td>FILL, while held (steps set to FILL / !FILL)</td></tr>
 <tr><td><b>GLO</b> + KNOB 1 to 4</td><td>Level of track 1 to 4</td></tr>
+<tr><td><b>GLO</b> + PRESETS</td><td>Browse the selected track's sounds, on any page (the sound shows large in place of the GLO map)</td></tr>
 <tr><td><b>GLO</b> + PLAY</td><td>Restart from the top without stopping</td></tr>
 <tr><td><b>SCL</b> + any key</td><td>ROOT: that key's note name (every melodic track while SCL &gt; Key link is LINKED)</td></tr>
 <tr><td><b>SCL</b> + KNOB 1 to 4</td><td>ROOT, SCALE, CHRD, VOIC</td></tr>
@@ -133,11 +134,13 @@ footer { margin-top: 2mm; color: #666; font-size: 6.6pt; text-align: right; }
 <h2>Recording and transport</h2>
 <table>
 <tr><td><b>PLAY</b></td><td>Start / stop; on SONG: plays the song. Generators start from the top of their seed</td></tr>
-<tr><td><b>REC</b></td><td>Arms / disarms the track (playing: waits for the loop)</td></tr>
+<tr><td><b>REC</b></td><td>Arms the track; records every pass (overdub) until REC again (playing: from the loop's start)</td></tr>
 <tr><td><b>REC</b> + PLAY</td><td>Records now</td></tr>
 <tr><td><b>REC</b> held</td><td>Generator track: prints its last bars into STEP. STEP EVOLVE: keeps the changes. STEP: captures what you played</td></tr>
 <tr><td><b>REC</b> held on SONG</td><td>Take jam: the patterns played since PLAY become the song</td></tr>
 <tr><td><b>EDIT</b> held, recording on NOTES</td><td>Erases as the steps pass</td></tr>
+<tr><td><b>EDIT</b> + <b>REC</b> on NOTES</td><td>Clear pattern? (OCT+), REC stays on for a new take</td></tr>
+<tr><td><b>OCT-</b> / <b>OCT+</b> on NOTES, REC on</td><td>Keys octave down / up; both: octave 0</td></tr>
 <tr><td><b>EDIT</b> held</td><td>Undo (the last load, capture or print; on NOTES the last edit)</td></tr>
 <tr><td><b>EDIT</b> + OCT&#8209; / OCT+</td><td>Undo / redo</td></tr>
 </table>
@@ -155,7 +158,7 @@ footer { margin-top: 2mm; color: #666; font-size: 6.6pt; text-align: right; }
 <h2>Generators</h2>
 <table>
 <tr><td>GEN: <b>KNOB 1</b></td><td>MODE: STEP, ARP or a generator</td></tr>
-<tr><td>GEN: <b>OCT+</b> held</td><td>The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD, CHORD, ATLAS, CONSTL, ANSWER</td></tr>
+<tr><td>GEN: <b>OCT+</b> held</td><td>The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD, CHORD, ATLAS, CONSTL, ANSWER (SOURCE, ORDER, SHIFT, SPACE)</td></tr>
 <tr><td>EVOLVE: <b>OCT+</b> held</td><td>GRAVITY (a generator); HOW: DRIFT, ADORN, SERIAL (a STEP track)</td></tr>
 <tr><td>ATLAS: <b>OCT+</b> + a black key</td><td>The fourth part's sound (TOM, CLAP, OPEN HAT, RIM, BELL)</td></tr>
 <tr><td>CHORD, PROG USER: <b>OCT+</b> + keys</td><td>One chord a key, its root the key's note</td></tr>
@@ -163,7 +166,7 @@ footer { margin-top: 2mm; color: #666; font-size: 6.6pt; text-align: right; }
 <tr><td>EVOLVE: <b>KNOB 4</b> (ROLL)</td><td>A new seed a click; turn back for the last one</td></tr>
 <tr><td>FORM: <b>KNOB 3</b> (CLEAR)</td><td>Forgets B and C</td></tr>
 <tr><td>FORM: <b>OCT+</b> held, <b>KNOB 1</b></td><td>DEVELOP: each return of a section varies a little (0: exact)</td></tr>
-<tr><td>MODS: <b>OCT+</b></td><td>The picked mod: BI / UNI</td></tr>
+<tr><td>MODS: <b>OCT+</b></td><td>The picked mod: +- (both ways) / + (one way)</td></tr>
 <tr><td>MATRIX: <b>OCT+</b></td><td>Opens the picked mod in MODS</td></tr>
 </table>
 </section>

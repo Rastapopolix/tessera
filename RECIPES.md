@@ -31,6 +31,9 @@ and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
 - [A line that climbs (Accumulate)](#a-line-that-climbs-accumulate)
 - [Returns that vary (FORM DEVELOP)](#returns-that-vary-form-develop)
 - [A pad that opens slowly (ORACLE)](#a-pad-that-opens-slowly-oracle)
+- [Mallets, bells and drums (PHYS)](#mallets-bells-and-drums-phys)
+- [Play it in, layer by layer (REC)](#play-it-in-layer-by-layer-rec)
+- [Your phrase, answered (ANSWER SOURCE)](#your-phrase-answered-answer-source)
 - [Driving another synth (MIDI OUT)](#driving-another-synth-midi-out)
 
 **[Tips](#tips)**
@@ -237,7 +240,7 @@ groove that keeps changing, which is the other use.
 1. **LFO** to **ORGANIC** on any track: **SPEED** and **RATE** at 50 to start.
 2. **MODS**: **T1 TIDE 3** (about a minute a turn) to **T2 CUTOFF**; **T1 TIDE 2** (about 3 minutes) to **T3 FX
    SEND**; **T1 SWARM 5** (about 10 s) to **T4 AT DENS**.
-3. Press **OCT+** on a mod to make it **UNI**: it moves only up from the knob, never below, which is often what you
+3. Press **OCT+** on a mod to make it **+** (one way): it moves only up from the knob, never below, which is often what you
    want for FX SEND and density.
 4. **MATRIX** shows the patch at a glance: rows are sources, columns destinations, lit as they move.
 5. Because PLAY restarts TIDE and SWARM from the seed, the same project unfolds the same way each time.
@@ -306,6 +309,38 @@ never repeats itself note for note.
 5. For a darker, rounder bass under it, track 2 on **SUB BASS** (ORACLE) and a slow TURING; ORACLE takes more of the
    FM-1 than an FM6 voice, so keep the bass sparse (DENS low) when two ORACLE tracks play.
 
+## Mallets, bells and drums (PHYS)
+
+1. Track 1: **PRESETS**, **MARIMBA** (a PHYS sound). MODE **MARKOV**, and **DIV 1/8** on PATTERN: a mallet line
+   that wanders.
+2. Track 2: **SINGING BOWL** or **GONG** on **CHORD**, **PROG DRONE**, **HIT HOLD**: a long metal swell under it.
+3. Track 3: **HAND DRUM** on **ATLAS** for a groove struck rather than synthesized; **TOMS** or **TIMPANI** for
+   deeper ones.
+4. **EDIT** on a PHYS track: **STRC** changes the material (MODAL: a bar, a chime, a marimba's tuning), **BRIT** how
+   bright it sounds, **DAMP** how long it rings. Every knob stays in its musical range, so turn freely.
+5. For bowed sounds, try **BOWED METAL** or **BOWED STRING** on a slow TURING or a CHORD drone: they swell in, so
+   give them long notes.
+
+## Play it in, layer by layer (REC)
+
+1. Track 1 on **STEP** (**SEQ**, GEN, KNOB 1). **NOTES** is the next page.
+2. **PLAY**, then tap **REC**. It waits for the pattern's start (**WAIT FOR LOOP**), then records what you play on
+   the keys.
+3. Keep playing: every pass records on top of the last, so you can lay down a bass note first, then fill in. Tap
+   **REC** again to stop.
+4. Need another octave? **OCT-** / **OCT+** on NOTES while recording (both together: back to the middle).
+5. Start over: **EDIT** + **REC** on NOTES, then **OCT+** for CLEAR PATTERN. REC stays on for a fresh take.
+6. **QNT** (TEMPO) snaps the take to the grid when you stop.
+
+## Your phrase, answered (ANSWER SOURCE)
+
+1. Record a short line into track 1's STEP pattern (above), up to 8 notes.
+2. Track 2: MODE **ANSWER**, a different sound (a PHYS bell answering an FM6 piano works well).
+3. Hold **OCT+** on GEN and turn **KNOB 1** (SOURCE) to **T1**: track 1's pattern is now the call.
+4. **VARY** about 40 %: each answer changes a little more. **FADE** sets how many answers before it rests; past 16
+   (LOOPS) it keeps answering forever.
+5. Change the STEP pattern and the answers change with it, as ANSWER reads it again before each answer.
+
 ## Driving another synth (MIDI OUT)
 
 1. Hold **HOME** for the menu: **MIDI OUT** to **ALL**. The steps, the ARP and every generator now go out over USB
@@ -325,6 +360,13 @@ never repeats itself note for note.
   page button leaves it for its own page.
 - In lists (the menu, SCL, VOICE, sheets), **KNOB 1 picks the row and KNOB 2 changes it**.
 - Prefer the left knob for picking tracks? MENU > **TRACK KNOB LEFT**.
+- Hold **GLO** and turn **PRESETS** to change the selected track's sound from any page. The sound's name shows large
+  while GLO is held; let go to carry on where you were.
+
+**Building up live**
+
+- Add tracks while the others play: a generator you pick on another track **joins in time**, on the same beat and
+  bar, so a drum groove dropped under a playing chord lands right.
 
 **Seeds and repeatability**
 
@@ -341,6 +383,8 @@ never repeats itself note for note.
 - A cord with no source (`--`) is a fixed offset: use it to set things that have no knob, such as **C AUTO**.
 - A knob with a mod on it shows a moving mark: you can see what the cords are doing without opening MODS.
 - **OCT+** on MATRIX jumps straight to that cord in MODS.
+- A mod's **+-** moves both ways from the knob, **+** only up; the bar shows which. It is the mod's own setting, not
+  the LFO's POL. The lists name each source and destination with its track (**T2 GATE**).
 
 **Saving and safety**
 

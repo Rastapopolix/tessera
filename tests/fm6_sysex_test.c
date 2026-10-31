@@ -136,8 +136,8 @@ int main(void)
     for(uint32_t k=0;k<32;k++)ok &= !memcmp(host_wire+6+k*128u,FM6_INIT,128);
     bad += check("empty bank exports 32 valid INIT voices", ok);
     usb.config=0;host_wire_n=0;dump_request(0,9);
-    bad += check("disconnected send reports an error instead of success", !strcmp(ui.msg,"SYSEX SEND ERROR") && !sx_busy);
+    bad += check("disconnected send reports an error instead of success", !strcmp(ui.msg,"SYSEX SEND FAIL") && !sx_busy);
     fm6_send();
-    bad += check("disconnected single-voice SEND also reports failure", !strcmp(ui.msg,"SYSEX SEND ERROR") && so_w==so_r);
+    bad += check("disconnected single-voice SEND also reports failure", !strcmp(ui.msg,"SYSEX SEND FAIL") && so_w==so_r);
     printf("DX7 SysEx test %s\n",bad?"FAILED":"passed");return !!bad;
 }

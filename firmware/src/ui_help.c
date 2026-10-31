@@ -23,7 +23,9 @@ enum {
     HP_FMVOICE = HP_FMOP + FP_OP + 1,                   /* .. the voice's: FP_PR1 .. FP_TRNSP */
     HP_FMFN = HP_FMVOICE + FP_TRNSP + 1 - FP_PR1,       /* .. the functions: FN_PBUP .. FN_ENGINE */
     HP_ORACLE = HP_FMFN + FM6_NFN,                      /* ORACLE's pages: oracle_pages.c OV_ order */
-    HP_COUNT = HP_ORACLE + OV_COUNT
+    HP_PHYS = HP_ORACLE + OV_COUNT,                     /* PHYS's EDIT knobs: MODEL .. EXC, then HARM BEND (MEMB) CHRD
+                                                         * SYMP BUZZ (SYMP): PHYS_HELP */
+    HP_COUNT = HP_PHYS + 13
 };
 #if MELODEE_HELP_PACKED
 typedef struct { const char *name; } help_t;
@@ -296,7 +298,38 @@ static const help_t HELP_PAGE[HP_COUNT] = {
     H_(HP_ORACLE + 36, "VINTAGE", "How far each voice drifts from the others in pitch and tone, like an old analog "
                                   "synth warming up."),
     H_(HP_ORACLE + 37, "GLIDE", "How long each note slides in pitch from the last one: 0 none."),
+    /* PHYS (eng_phys.c; the knobs' curves keep each one in its musical range) */
+    H_(HP_PHYS, "MODEL", "What is played: MODAL a bar, bell or plate; STRNG a plucked or bowed string; MEMB a drum "
+                         "head; SYMP a plucked string with three more ringing along, as a sitar's."),
+    H_(HP_PHYS + 1, "STRUCTURE", "How the overtones sit. MODAL: left a gong's crowded ones, 16 to 48 in tune (a "
+                                 "string's), then stretched, a free bar or chime near 84, a tuned bar (marimba, vibes) at "
+                                 "the top. STRNG: left a buzzing bridge, 24 to 48 a plain string, right a stiff, piano-like "
+                                 "one. The picture names where it is."),
+    H_(HP_PHYS + 2, "BRIGHTNESS", "How bright: the strike's or pluck's tone and how long the high overtones ring. Left "
+                                  "a soft mallet, right a hard one. ENV and LFO to FLT move it."),
+    H_(HP_PHYS + 3, "DAMPING", "How long it rings: left a short knock, right on and on. With BOW, a drone."),
+    H_(HP_PHYS + 4, "POSITION", "Where it is struck or plucked. MODAL: 0 rings every overtone, higher leaves some out "
+                                "(hollower). MEMB: from the centre (round) to the rim. STRNG: 0 a plain pluck, higher "
+                                "nearer the middle (rounder)."),
+    H_(HP_PHYS + 5, "ACCENT", "How much harder a note at full velocity strikes: brighter, longer, louder. Softer notes "
+                              "get less of it."),
+    H_(HP_PHYS + 6, "BOW", "0: struck or plucked once. Above 0 (MODAL, STRNG) it is bowed instead and sounds while the "
+                           "note is held, harder to the right: pads and drones."),
+    H_(HP_PHYS + 7, "EXCITER", "Mixes in the strike itself: the mallet's knock, the pick's scrape. 0 none."),
+    H_(HP_PHYS + 8, "HARMONICS", "The drum head: left an even one (toms, timpani: overtones out of tune), right a "
+                                 "loaded one whose overtones are in tune (a tabla, a hand drum)."),
+    H_(HP_PHYS + 9, "BEND", "How far the pitch drops just after the strike, up to an octave: a tom's or a tabla's "
+                            "glide."),
+    H_(HP_PHYS + 10, "CHORD", "What the three strings ringing along are tuned to above the note: OCT 5TH 4TH MAJ MIN "
+                              "SUS 7TH. ROOT holds them on the scale's root, fifth and octave whatever is played: a drone."),
+    H_(HP_PHYS + 11, "SYMPATHETIC", "How much the plucked string sets the other three ringing."),
+    H_(HP_PHYS + 12, "BUZZ", "How much the plucked string buzzes on its bridge, as a sitar's or a tanpura's."),
 };
+#if PHYS_ON
+static const uint8_t PHYS_HELP[PM_COUNT][8] = {         /* a model's E knobs: HP_PHYS + this */
+    {0, 1, 2, 3, 4, 5, 6, 7}, {0, 1, 2, 3, 4, 5, 6, 7}, {0, 8, 2, 3, 4, 5, 9, 7}, {0, 10, 2, 3, 11, 5, 12, 7},
+};
+#endif
 #undef H_
 
 static struct {
@@ -520,8 +553,8 @@ static void help_find(uint32_t k)
             else help_unused(k);
             return;
         }
-        if (an_layer_on()) {                            /* (ANSWER, OCT+ held: ORDER, SHIFT, SPACE, LEN) */
-            help.pid = (uint16_t)PID_TESS(TX_AN_ORDER + (k & 3u));
+        if (an_layer_on()) {                            /* (ANSWER, OCT+ held: SOURCE, ORDER, SHIFT, SPACE) */
+            help.pid = (uint16_t)(k ? PID_TESS(TX_AN_ORDER + (k - 1u)) : PID_TESS(TX_SD_SOURCE));
             return;
         }
         if (cs_layer_on()) {                            /* (CONSTELLATION, OCT+ held: LOCK, LEN, FILL, SIZE) */
@@ -539,6 +572,12 @@ static void help_find(uint32_t k)
         help.pid = (uint16_t)PID_TESS(x);
         return;
     }
+#if PHYS_ON
+    if (page_desc(pg, k, &vp) && vp >= TSEL->p + P_E0 && vp < TSEL->p + P_E0 + 8 && TSEL->eng_req % NENGINES == ENGI_PHYS) {
+        help_hp(HP_PHYS + PHYS_HELP[(uint32_t)TSEL->p[P_E0] % PM_COUNT][vp - TSEL->p - P_E0]);   /* (the engine's own) */
+        return;
+    }
+#endif
     if (page_desc(pg, k, &vp) && vp) {
         if (vp >= TSEL->p && vp < TSEL->p + P_COUNT) help.pid = (uint16_t)PID_TRACK(vp - TSEL->p);
         else if (pg->scope == SC_GLOBAL && pg->id[k] < G_COUNT) help.pid = (uint16_t)PID_GLOBAL(pg->id[k]);

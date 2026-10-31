@@ -320,8 +320,9 @@ static int test_held_gestures(void)
     bad += check("  .. and moves it (4 -> 6); let go, it follows the play head again", step_note_length(t, 6) == 4 &&
                  ui.cursor == 9);
     press(B_OCTUP);
-    bad += check("  OCT+ while recording live: not the octave (Stage only), not the cursor", !song.octave && ui.cursor == 9 &&
+    bad += check("  OCT+ while recording live: the keys' octave (REC on), not the cursor", song.octave == 1 && ui.cursor == 9 &&
                  !ui.home);
+    song.octave = 0;
     put_note(t, 9, 64, 1);
     fm1_in.buttons |= 1u << panel.btn[B_FX]; host_pressed |= 1u << panel.btn[B_FX]; frame(); frame();
     {

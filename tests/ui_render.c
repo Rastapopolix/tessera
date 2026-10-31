@@ -490,13 +490,13 @@ static void eng(uint32_t e) { set_engine_of(TSEL, e); }
 enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_WIDE, S_HOME_RELEASED, S_HOME_FM6, S_MESSAGE, S_MESSAGE_KEY, S_MESSAGE_PAGED, S_PRESETS, S_PRESETS_NOFAV, S_PRESETS_CAT, S_PRESETS_PENDING, S_PRESETS_RECENT, S_USER, S_PROJECT, S_PROJECT_BOOT, S_TEMPO,
        S_SONG_EMPTY, S_SONG, S_STEP, S_PATTERN, S_MOTION, S_DRUM, S_MIXER, S_MIXER_PAN,
        S_ENV, S_ENVDEST, S_LFO, S_MOD, S_SCL, S_CHORD, S_CHORD_WIDE, S_CHORD_OFF, S_CHORD_KIT, S_ARP, S_VOICE, S_GLOBAL, S_SYSTEM,
-       S_EDIT_SID, S_EDIT_DIGITAL, S_OP_ENV, S_EDIT_WHEEL, S_EDIT_PHYS,
+       S_EDIT_SID, S_EDIT_DIGITAL, S_OP_ENV, S_EDIT_WHEEL, S_EDIT_PHYS, S_EDIT_PHYS_STRNG, S_EDIT_PHYS_MEMB, S_EDIT_PHYS_SYMP, S_EXCT_PHYS_BOWED,
        S_ALG1, S_ALG2, S_ALG3, S_ALG4, S_ALG5, S_ALG6, S_ALG7, S_ALG8, S_OP_LEVEL,
        S_FM6_ALG1, S_FM6_ALG5, S_FM6_ALG22, S_FM6_ALG32, S_FM6_FREQ, S_FM6_EG, S_FM6_PEG, S_FM6_STORE,
        S_CONFIRM_SEQ, S_CONFIRM_PROJ, S_CONFIRM_USER, S_CONFIRM_MOTION, S_CONFIRM_ERASE,
        S_MENU, S_ABOUT, S_ABOUT_REC, S_ABOUT_CREDITS, S_ABOUT_END, S_UBOOT, S_CALIBRATION,
        S_BATT0, S_BATT1, S_BATT2, S_BATT3, S_BATT_USB, S_MOTION_REC, S_MOTION_OFF, S_SONG_HOME,
-       S_MENU_HOLD, S_MENU_USB, S_MENU_USB_STEREO, S_MENU_USB_TRACKS, S_GLO_PEEK, S_GLO_ACTIVE, S_GLO_EXT, S_SCL_PEEK, S_SCL_ACTIVE, S_LAYER_HINT,
+       S_MENU_HOLD, S_MENU_USB, S_MENU_USB_STEREO, S_MENU_USB_TRACKS, S_GLO_PEEK, S_GLO_ACTIVE, S_GLO_EXT, S_GLO_SOUND, S_GLO_SOUND_FAST, S_SCL_PEEK, S_SCL_ACTIVE, S_LAYER_HINT,
        S_NAME_USER, S_NAME_TYPING, S_NAME_123, S_NAME_EMPTY, S_NAME_FULL, S_NAME_PLAYING, S_PROJECT_NAMED, S_SONG_NAMED,
        S_USER_FOOT,
 #if MELODEE_SLICE && SMP_USER_SLOTS
@@ -513,16 +513,16 @@ enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_
        S_REF_SHEET_MOTION, S_REF_MOD, S_REF_PICKER_MOD, S_REF_ARP, S_REF_PATTERN,
        S_REF_FMEG, S_REF_GRID, S_REF_SCALES, S_FX_PHASER, S_FX_WIDTH, S_FX_FORMANT, S_FX_TAPE, S_FX_SPIT, S_FX_ECHO, S_FX_ROOM, S_FX_REVERB, S_FX_CHORUS, S_FX_FULL, S_FX_SLOT2, S_FX_SLOT3, S_FX_SEND, S_FX_SEPARATE, S_FX_SENDS, S_FX_BUS1, S_FX_BUS2, S_FX_BUS3,
        S_GEN_TURING, S_GEN_EUCLID, S_GEN_MARKOV, S_GEN_MORPH, S_GEN_EVOLVE, S_CORDS, S_HELP, S_CORDS_PICK_SRC, S_CORDS_PICK_DST,
-       S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_GEN_CHORD_OFFBEAT, S_GEN_CHORD_DRONE, S_GEN_STEP_EVOLVE_HOW, S_GEN_STEP_ADORN, S_GEN_STEP_SERIAL, S_NOTES_EVOLVE, S_GEN_SEED, S_GEN_SEED_MORPH, S_GEN_FORM, S_MIDI_OUT, S_EDIT_FILT, S_GEN_EVOLVE_GRAV, S_GEN_ENERGY_LEVEL, S_GEN_ENERGY_DEPTH, S_EDIT_FILT_BP, S_EDIT_FILT_HP, S_EDIT_FILT_NOT, S_STAGE_FILTER_HP, S_COUNT };
+       S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_GEN_CHORD_OFFBEAT, S_GEN_CHORD_DRONE, S_GEN_STEP_EVOLVE_HOW, S_GEN_STEP_ADORN, S_GEN_STEP_SERIAL, S_NOTES_EVOLVE, S_GEN_SEED, S_GEN_SEED_MORPH, S_GEN_FORM, S_MIDI_OUT, S_EDIT_FILT, S_GEN_EVOLVE_GRAV, S_GEN_ENERGY_LEVEL, S_GEN_ENERGY_DEPTH, S_EDIT_FILT_BP, S_EDIT_FILT_HP, S_EDIT_FILT_NOT, S_STAGE_FILTER_HP, S_GEN_STEP_PAT, S_COUNT };
 static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "home_chord", "home_inversion", "home_wide", "home_released", "home_fm6", "message", "message_key", "message_paged", "presets", "presets_nofav", "presets_cat", "presets_pending", "presets_recent", "user",
     "project", "project_boot", "tempo", "song_empty", "song", "step", "pattern", "motion", "drum",
     "mixer", "mixer_pan", "env", "env_dest", "lfo", "mod", "scl", "chord", "chord_wide", "chord_off", "chord_kit", "arp",
     "voice", "global", "system", "edit_sid", "edit_fm6", "op_env", "edit_wheel",
-    "edit_phys", "alg_1", "alg_2", "alg_3", "alg_4", "alg_5", "alg_6", "alg_7", "alg_8", "op_level", "fm6_alg_01", "fm6_alg_05", "fm6_alg_22", "fm6_alg_32", "fm6_freq", "fm6_eg", "fm6_peg", "fm6_store", "confirm_seq", "confirm_project", "confirm_user",
+    "edit_phys", "edit_phys_strng", "edit_phys_memb", "edit_phys_symp", "exct_phys_bowed", "alg_1", "alg_2", "alg_3", "alg_4", "alg_5", "alg_6", "alg_7", "alg_8", "op_level", "fm6_alg_01", "fm6_alg_05", "fm6_alg_22", "fm6_alg_32", "fm6_freq", "fm6_eg", "fm6_peg", "fm6_store", "confirm_seq", "confirm_project", "confirm_user",
     "confirm_motion", "confirm_erase", "menu", "about", "about_rec", "about_credits", "about_end", "uboot", "calibration",
     "batt_0", "batt_1", "batt_2", "batt_3", "batt_usb", "motion_rec", "motion_off", "song_home",
     "menu_hold", "menu_usb", "menu_usb_stereo", "menu_usb_tracks",
-    "layer_glo_peek", "layer_glo_active", "layer_glo_ext", "layer_scl_peek", "layer_scl_active", "layer_hint",
+    "layer_glo_peek", "layer_glo_active", "layer_glo_ext", "layer_glo_sound", "layer_glo_sound_fast", "layer_scl_peek", "layer_scl_active", "layer_hint",
     "name_user", "name_typing", "name_123", "name_empty", "name_full", "name_playing", "project_named", "song_named",
     "user_foot",
 #if MELODEE_SLICE && SMP_USER_SLOTS
@@ -533,7 +533,7 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "h
     "notes_slide", "notes_mixed", "notes_chord", "notes_empty", "notes_raw", "notes_zoom", "notes_loop", "notes_drum", "notes_dense", "notes_rec", "notes_erase", "notes_drum_rec", "notes_drum_erase", "scl_micro", "scl_micro_layer", "scl_micro_chord", "scale_picker_edo", "scale_picker_historical", "scale_picker_favorites", "scale_picker_empty", "scale_settings_favorite", "menu_click", "menu_click_level", "menu_countin", "menu_preview", "menu_add", "menu_autosave_on", "menu_autosave_off", "drum_sound_808", "drum_sound_909", "drum_mix_909", "drum_hit_909", "drum_hit_free", "drum_hit_long",
     "stage_drum", "stage_trio", "stage_queued", "stage_browse", "stage_stopped", "stage_filter", "patterns", "patterns_stopped", "patterns_sheet", "patterns_copy", "patterns_replace", "patterns_delete", "project_new", "new_key", "new_roles",
     "ref_stage_held", "ref_stage_released", "ref_stage_cutoff", "ref_stage_drum", "ref_browser", "ref_patterns", "ref_song", "ref_env", "ref_lfo", "ref_edit_osc", "ref_mixer", "ref_notes", "ref_settings", "ref_dialog", "ref_sheet_sound", "ref_sheet_song", "ref_picker_wave", "ref_picker_mode", "ref_sections_p5", "ref_map_p5", "ref_map_fm6", "ref_scl_list", "ref_sheet_project", "ref_sheet_note", "ref_sheet_hit", "ref_motion", "ref_sheet_motion", "ref_mod", "ref_picker_mod", "ref_arp", "ref_pattern", "ref_fmeg", "ref_grid", "ref_scales", "fx_phaser", "fx_width", "fx_formant", "fx_tape", "fx_spit", "fx_echo", "fx_room", "fx_reverb", "fx_chorus", "fx_full", "fx_slot2", "fx_slot3", "fx_send", "fx_separate", "fx_sends", "fx_bus1", "fx_bus2", "fx_bus3",
-    "gen_turing", "gen_euclid", "gen_markov", "gen_morph", "gen_evolve", "cords", "help", "cords_pick_src", "cords_pick_dst", "gen_grids", "gen_tweak", "gen_tweak_off", "mod_shortcut", "gen_bounce", "gen_awake", "gen_poly", "gen_tweak2", "gen_tweak2_off", "organic", "gen_tweak2_coin", "mods_live", "mods_live_gen", "matrix", "gen_quad", "gen_length", "gen_fall", "gen_constel", "gen_length_hit", "gen_length_keys", "gen_length_step", "gen_pattern_constel", "gen_series", "gen_chord", "gen_chord_oct", "gen_grids_oct", "gen_chord_user", "gen_step_evolve", "help_gen", "gen_timing", "gen_timing_x1", "gen_energy", "gen_answer", "gen_answer_oct", "gen_seed_oct", "gen_timing_human", "gen_chord_circle", "gen_chord_offbeat", "gen_chord_drone", "gen_step_evolve_how", "gen_step_adorn", "gen_step_serial", "notes_evolve", "gen_seed", "gen_seed_morph", "gen_form", "midi_out", "edit_filt", "gen_evolve_grav", "gen_energy_level", "gen_energy_depth", "edit_filt_bp", "edit_filt_hp", "edit_filt_not", "stage_filter_hp"};
+    "gen_turing", "gen_euclid", "gen_markov", "gen_morph", "gen_evolve", "cords", "help", "cords_pick_src", "cords_pick_dst", "gen_grids", "gen_tweak", "gen_tweak_off", "mod_shortcut", "gen_bounce", "gen_awake", "gen_poly", "gen_tweak2", "gen_tweak2_off", "organic", "gen_tweak2_coin", "mods_live", "mods_live_gen", "matrix", "gen_quad", "gen_length", "gen_fall", "gen_constel", "gen_length_hit", "gen_length_keys", "gen_length_step", "gen_pattern_constel", "gen_series", "gen_chord", "gen_chord_oct", "gen_grids_oct", "gen_chord_user", "gen_step_evolve", "help_gen", "gen_timing", "gen_timing_x1", "gen_energy", "gen_answer", "gen_answer_oct", "gen_seed_oct", "gen_timing_human", "gen_chord_circle", "gen_chord_offbeat", "gen_chord_drone", "gen_step_evolve_how", "gen_step_adorn", "gen_step_serial", "notes_evolve", "gen_seed", "gen_seed_morph", "gen_form", "midi_out", "edit_filt", "gen_evolve_grav", "gen_energy_level", "gen_energy_depth", "edit_filt_bp", "edit_filt_hp", "edit_filt_not", "stage_filter_hp", "gen_step_pat"};
 
 /* the scenes of the UI design screens: the state the UI-redesign
  * prototype drew them from (its setup(): two pattern tracks, the drum pattern on track 4, a synthetic scope),
@@ -1166,6 +1166,12 @@ static void setup(int s)
         tessera.quad[0].pos = 2, tessera.quad[1].pos = 1, tessera.quad[3].pos = 0;
         go_title("GEN");
         break;
+    case S_GEN_STEP_PAT:                             /* GEN on a STEP track: MODE and the pattern's LEN DIV GATE */
+        tessera_reset();
+        song.sel = 0;
+        trk[0].p[P_AMODE] = 0;
+        go_title("GEN");
+        break;
     case S_GEN_LENGTH: case S_GEN_LENGTH_HIT: case S_GEN_LENGTH_KEYS: case S_GEN_LENGTH_STEP:
         tessera_reset();                            /* NOTE LENGTH: FIXED 1/4 KEYS 3; HIT; FIXED 1/1 KEYS 2; STEP */
         song.sel = 0;
@@ -1573,7 +1579,7 @@ static void setup(int s)
     case S_CORDS: case S_CORDS_PICK_SRC: case S_CORDS_PICK_DST: {   /* (tessera-notes/docs/design/phase2/cords.png's four; KNOB 1's
                                                      * and 3's lists) */
         static const cord_t C4[4] = {{CS_NOTE, 0, CD_CUTOFF, 1, 40, 0}, {CS_GATE, 1, CD_DECAY, 3, -25, 0},
-                                     {CS_LFO, 2, CD_EUC_PULSES, 0, 30, 0}, {CS_SH, 0, CD_FX_SEND, 1, 15, 0}};
+                                     {CS_LFO, 2, CD_EUC_PULSES, 0, 30, 0}, {CS_SH, 0, CD_FX_SEND, 1, 15, 0, 1}};
         uint32_t k;
         cord_clear();
         for (k = 0; k < 4u; k++) cord_set(k, &C4[k]);
@@ -1670,6 +1676,10 @@ static void setup(int s)
     case S_OP_ENV: eng(1); go_title("OP1 ENV"); break;
     case S_EDIT_WHEEL: eng(7); go_title("EDIT 1"); ui.hot_col = 1; ui.hot_t = 30; break;
     case S_EDIT_PHYS: eng(9); go_title("EDIT 1"); break;
+    case S_EDIT_PHYS_STRNG: eng(9); TSEL->p[P_E0] = 1; TSEL->p[P_E1] = 4; go_title("EDIT 1"); break;   /* (the buzz bridge) */
+    case S_EDIT_PHYS_MEMB: eng(9); TSEL->p[P_E0] = 2; go_title("EDIT 1"); break;
+    case S_EDIT_PHYS_SYMP: eng(9); TSEL->p[P_E0] = 3; TSEL->p[P_E1] = 56; TSEL->p[P_E4] = 90; go_title("EDIT 1"); break;
+    case S_EXCT_PHYS_BOWED: eng(9); TSEL->p[P_E0] = 1; TSEL->p[P_E6] = 64; go_title("EDIT 2"); break;
     case S_ALG1: case S_ALG2: case S_ALG3: case S_ALG4: case S_ALG5: case S_ALG6: case S_ALG7: case S_ALG8:
         eng(1); TSEL->p[P_E0] = (int16_t)(s - S_ALG1);      /* the 8 DIGITAL charts; FB on the odd ones, IDX high .. 0 */
         TSEL->p[P_E6] = (s - S_ALG1) & 1 ? 40 : 0; TSEL->p[P_E4] = (int16_t)((S_ALG8 - s) * 18);
@@ -1752,7 +1762,17 @@ static void setup(int s)
         ui.hot_col = 0; ui.hot_t = 30;
         break;
     case S_GLO_EXT: go_home(); ui.layer = LAYER_GLO; song.g[G_CLOCK] = 1; trk[0].p[P_MUTE] = trk[3].p[P_MUTE] = 1; break;
-    case S_SCL_PEEK: go_title("ENV"); ui.layer = LAYER_SCL; break;
+    /* GLO + PRESETS turned on ENV (Mono: the sound view in the map's place): loaded; a fast turn waiting (HOT) */
+    case S_GLO_SOUND: go_title("ENV"); ui.layer = LAYER_GLO; lys.snd = 1; break;
+    case S_GLO_SOUND_FAST: {
+        uint32_t total, cur;
+        go_title("ENV"); ui.layer = LAYER_GLO; lys.snd = 1;
+        cur = list_cur(&total);
+        brw.on = 1; brw.trk = song.sel; brw.mode = (uint8_t)list_mode(); brw.n = (uint16_t)((cur + 9u) % total); brw.x = 4;
+        brw.t = fm1_ms;
+        break;
+    }
+    case S_SCL_PEEK: lys.snd = 0; brw.on = 0; go_title("ENV"); ui.layer = LAYER_SCL; break;
     case S_SCL_ACTIVE: go_home(); ui.layer = LAYER_SCL; TSEL->p[P_ROOT] = 3; TSEL->p[P_SCALE] = 2; ui.hot_col = 1; ui.hot_t = 30; break;
     case S_LAYER_HINT: go_page(GR_TRK); ui.msg_t = 0; layer_tap(LAYER_GLO); break;
     /* NAME (ui_name.c): USER SAVE prefilled; a letter cycling (RS: S, R next); 123 on a project; an empty project name
@@ -2228,6 +2248,94 @@ static void library_note_sweep(const char *out)
     }
 }
 #ifndef UI_RENDER_NO_MAIN                           /* (tests/gallery_render.c: the scenes without this main) */
+#if MELODEE_LOOK
+/* Mono BOUNCE: a ball that hit a wall on the last step is drawn against it (the step its note plays): the cells next
+ * to the thick wall, inside the box (the floor row 104, left column 4, right 115, top row 55), inked by it; balls,
+ * speeds and angles enough for every wall. The picture drawn alone, its rows 50 .. 109 one canvas */
+static uint32_t mono_bounce_check(void)
+{
+    static const uint8_t SP[] = {5, 24, 64}, AN[] = {0, 13, 37, 61, 90};
+    uint32_t bad = 0, seen[4] = {0, 0, 0, 0}, si, ai, nb, i, k, w, j;
+    for (si = 0; si < sizeof SP; si++)
+        for (ai = 0; ai < sizeof AN; ai++)
+            for (nb = 1; nb <= GEN_BOUNCE_MAX; nb++) {
+                gen_bounce_t g;
+                uint32_t r = 1;
+                memset(&g, 0, sizeof g);
+                g.speed = SP[si], g.angle = AN[ai], g.balls = (uint8_t)nb;
+                gen_bounce_serve(&g, si * 7u + ai);
+                for (i = 0; i < 300u; i++) {
+                    gen_out_t o = {0, 60, 100, 0, 0, 0, {0, 0}, 0, 0};
+                    uint32_t t = 0;
+                    gen_bounce_tick(&g, 0, &r, &o);
+                    for (k = 0; k < nb; k++) t |= gen_bounce_touch(&g, k);
+                    if (t != g.hit) {                        /* (every wall hit, a ball against it) */
+                        if (!bad++) fprintf(stderr, "ui_render: BOUNCE %u/%u/%u step %u: walls hit %x, the balls touching %x\n",
+                                            SP[si], AN[ai], nb, i, g.hit, t);
+                        continue;
+                    }
+                    if (!t) continue;
+                    cv_begin(240, 120, MO_BG);
+                    cv_oy = -100;
+                    mo_pic_bounce(&g);
+                    cv_oy = 0;
+                    for (w = 0; w < 4u; w++) {
+                        uint32_t ink = 0;
+                        if (!(t >> w & 1u)) continue;
+                        for (j = 0; !ink; j++) {             /* (along the wall, a cell: its top left pixel) */
+                            uint32_t cx = w == 1u ? 4u : w == 2u ? 115u : 5u + j, cy = w == 0u ? 104u : w == 3u ? 55u : 55u + j;
+                            if (cx > 115u || cy > 104u) break;
+                            ink = cv_px[(cy * 2u - 100u) * 240u + cx * 2u] != swap16(MO_BG);
+                        }
+                        seen[w]++;
+                        if (!ink && !bad++)
+                            fprintf(stderr, "ui_render: BOUNCE %u/%u/%u step %u: no ball drawn against wall %u\n", SP[si], AN[ai], nb, i, w);
+                    }
+                }
+            }
+    for (w = 0; w < 4u; w++)
+        if (seen[w] < 20u && !bad++) fprintf(stderr, "ui_render: BOUNCE: wall %u hit only %u times\n", w, seen[w]);
+    fprintf(rep, "\nMono BOUNCE: wall hits drawn against the wall: floor %u, left %u, right %u, top %u; %u wrong\n",
+            seen[0], seen[1], seen[2], seen[3], bad);
+    return bad;
+}
+
+/* Mono MODS lists: a track's entry labelled with its track ("T2 GATE"), the project's not (ENERGY, SF1 MIX); KNOB 1's
+ * list open on cord 2 (T2 GATE): in its track's ink on MOSAIC (track 2's colour in the list's box), one ink elsewhere */
+static uint32_t mono_mods_pick_check(void)
+{
+    uint32_t bad = 0, p, x, y, mosaic = UI_NPALETTES;
+    int32_t tr, gate = 1 + 1 * (int32_t)(CS_N - 1u) + CS_GATE - 1, energy = (int32_t)(CS_N - 1u);
+    char b[20];
+    cu_pick_label(b, 0, gate, &tr);
+    if (strcmp(b, "T2 GATE") || tr != 1) { fprintf(stderr, "ui_render: MODS list: \"%s\" for track 2's GATE\n", b); bad++; }
+    cu_pick_label(b, 0, energy, &tr);
+    if (strcmp(b, "ENERGY") || tr != -1) { fprintf(stderr, "ui_render: MODS list: \"%s\" for ENERGY\n", b); bad++; }
+    cu_pick_label(b, 2, (int32_t)CU_NDST - 1, &tr);
+    if (tr != -1 || b[0] == 'T') { fprintf(stderr, "ui_render: MODS list: \"%s\" for a send effect's\n", b); bad++; }
+    for (p = 0; p < UI_NPALETTES; p++)
+        if (!strcmp(UI_PALETTES[p].name, "MOSAIC")) mosaic = p;
+    for (p = 0; p < 2u; p++) {
+        uint32_t pal = p ? mosaic : 0u, n = 0;
+        uint16_t c;
+        if (pal >= UI_NPALETTES) { fprintf(stderr, "ui_render: no MOSAIC palette\n"); return bad + 1u; }
+        setup(S_CORDS_PICK_SRC);
+        palette_set(pal);                               /* (after the scene: setup sets its own) */
+        nscr = npend = 0; ui.force = 1; ui_draw();
+        c = swap16(T_TRK(1));
+        for (y = 42; y < 204; y++)                      /* (the list's box: 70 x 41 cells from (1, 20)) */
+            for (x = 4; x < 140; x++)
+                n += host_screen[y * 240u + x] == c;
+        if (p ? n < 40u || T_TRK(1) == T_TEXT : 0) {
+            fprintf(stderr, "ui_render: MODS list on MOSAIC: %u pixels in track 2's colour\n", n);
+            bad++;
+        }
+        fprintf(rep, "Mono MODS list (%s): %u pixels in track 2's colour\n", UI_PALETTES[pal].name, n);
+    }
+    palette_set(0);
+    return bad;
+}
+#endif
 int main(int argc, char **argv)
 {
     const char *out = argc > 1 ? argv[1] : "build/ui_new";
@@ -2509,6 +2617,8 @@ int main(int argc, char **argv)
 #if MELODEE_LOOK
     fprintf(rep, "\nMono lint: %u knob values\n", nmono);
     if (!nmono) { fprintf(stderr, "ui_render: the Mono lint saw no knob value\n"); nfind++; }
+    if (mono_bounce_check()) nfind++;
+    if (mono_mods_pick_check()) nfind++;
 #endif
     fprintf(rep, "\n%u lint findings, %u ellipsised free texts, %u MONO pixels off gray; %u column values swept; "
             "%u FM6 charts linted\n", nfind, nfree, mono_bad, nsweep, fmp_charts);

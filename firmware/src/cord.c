@@ -438,7 +438,8 @@ void cord_defaults(void)
 /* ------------------------------------------------------------ MOD's routes --- */
 /* Tessera: MODS (the cords) take the place of MOD's four routes a track. A route that comes in (a project or a sound
  * saved with one, the editor's) becomes a cord on its track, the same move: SRC the source, DST its destination
- * (VIB: LFO PIT, DEPTH: LFO DEP), AMT (-64..63, 64 = all) the percentage whose cord_amt is AMT again. The routes of a
+ * (VIB: LFO PIT, DEPTH: LFO DEP), AMT (-64..63, 64 = all) the percentage whose cord_amt is AMT again; an LFO route of a
+ * track at POL UNI the cord + (mod.c read that LFO 0..1; a cord reads it -1..1: cord_lfo_raw). The routes of a
  * sound go with it: loading another sound on the track takes the cords that came with the last one away, unless one
  * was edited. A project's are its own. Main loop (ui_input); returns the routes left (no free cord: they stay, and
  * play as before, until one is) */
@@ -473,6 +474,7 @@ uint32_t cord_adopt(void)
                 continue;
             if (s && s < MS_N && d < MD_N && CORD_OF_MD[d] && a) {
                 c.src = (uint8_t)s; c.src_trk = (uint8_t)tr;
+                c.uni = (uint8_t)(s == MS_LFO && t->p[P_LPOL]);
                 c.dst = CORD_OF_MD[d]; c.dst_trk = (uint8_t)tr;
                 pct = clamp((pct + 63) / 64, 0, 100);   /* (up: cord_amt rounds down, to AMT again) */
                 c.amount = (int8_t)(a < 0 ? -pct : pct);

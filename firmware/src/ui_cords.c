@@ -4,8 +4,9 @@
  * four to a screen, as MOD's rows:
  * "2  [2] ENV -> [4] DECAY  -25 %" over the amount's bar from the middle; the cord KNOB 2 is on: a card. The knobs as
  * MOD's: KNOB 1 the source (--, then T1 LFO .. T4 NOTE), 2 the cord, 3 the destination (--, then T1 PITCH ..), 4 the
- * amount. A cord without a source is a fixed move: KNOB 4 its OFFSET. OCT+: a bipolar source's polarity, BI (both
- * ways from the knob) or UNI (folded to 0..1: one way, "+" after its name). Included by ui_pages.c. */
+ * amount. A cord without a source is a fixed move: KNOB 4 its OFFSET. OCT+: a bipolar source's direction, +- (both
+ * ways from the knob) or + (folded to 0..1: one way, "+" after its name); the mod's own (cord.h uni), not the LFO
+ * page's POL BI/UNI (cord.c cord_lfo_raw). Included by ui_pages.c. */
 
 static int32_t accel(uint32_t role, int32_t s, int32_t range);                       /* ui_input.c */
 static int32_t list_accel(uint32_t role, int32_t s, uint32_t total, uint32_t *fast);
@@ -154,7 +155,8 @@ static void cu_rows(void)
 
 /* a row's activity light under its number (tessera-notes/docs/design/phase2/cords.png): how far the cord moves its destination
  * now (cord.c cord_share: the source by the amount, and the offset), in 8 steps of the theme's colour; and its move,
- * the bar from the middle (its AMOUNT, or OFFSET), with a mark where it moves the destination now. Each its own small
+ * the bar from the middle (its AMOUNT, or OFFSET; a +- mod's both ways), with a mark where it moves the destination
+ * now. Each its own small
  * canvas, sent when it changes */
 #define CU_LED_X 9                                      /* 8 x 8 at (9, a row's y + 28) */
 #define CU_LED_Y 28
@@ -165,6 +167,7 @@ static void cu_bar(uint32_t k, const cord_t *c, int sel, int32_t s)
     uint16_t bg = sel ? T_LIFT : T_BG;
     int on = cord_live(c);
     int32_t a = cu_pct(c), m = 104, x = 2 + (a + 100) * 206 / 200, lx = m + clamp(s, -32768, 32768) * 103 / 32768;
+    int32_t d = x < m ? m - x : x - m;
 #if MELODEE_LOOK
     mo_cu_bar(c, s);
     cv_blit(CU_BAR_X, (uint32_t)(CU_Y + (int32_t)k * CU_H + 27));
@@ -172,8 +175,9 @@ static void cu_bar(uint32_t k, const cord_t *c, int sel, int32_t s)
 #endif
     cv_begin(CU_BAR_W, 9, bg);
     cv_rect(2, 3, 206, 3, T_LINE);
-    if (a)
-        cv_rect(x < m ? x : m, 3, x < m ? m - x : x - m, 3, on ? (sel ? T_THEME : ux_mix(bg, T_THEME, 60)) : T_DIM);
+    if (a)                                              /* (+-: both ways, as mo_cu_bar) */
+        cv_rect(cord_bip(c) ? m - d : x < m ? x : m, 3, cord_bip(c) ? 2 * d : d, 3,
+                on ? (sel ? T_THEME : ux_mix(bg, T_THEME, 60)) : T_DIM);
     cv_rect(m, 1, 1, 7, T_MID);
     if (on && c->src)                                   /* (a fixed OFFSET: no mark, the bar says it) */
         cv_rect(lx - 1, 0, 3, 9, T_TEXT);
@@ -218,7 +222,7 @@ static void cu_columns(void)
         str_cpy(src + 3, cord_src_name(c->src), sizeof src - 3);
     } else
         str_cpy(src, "--", sizeof src);
-    draw_column(0, "", src, c->src && cord_bipolar(c->src, c->src_trk) ? (c->uni ? "UNI" : "BI") : "",
+    draw_column(0, "", src, c->src ? (cord_bip(c) ? "+-" : "+") : "",   /* (the bar: both ways, or one) */
                 c->src ? VAL(0u) : T_DIM, -1, ICON_NONE);
     fmt_int(val, (int32_t)cord_ui_sel + 1);
     draw_column(1, "MOD", val, "/16", VAL(1u), (int32_t)cord_ui_sel * 1000 / (CORD_LIVE - 1u), ICON_NONE);
@@ -244,7 +248,7 @@ static int cu_pick(uint32_t col, int32_t *count, int32_t *cur)
     *cur = (int32_t)(col ? cu_dst_of(c) : cu_src_of(c));
     return 1;
 }
-/* entry i of a list: its name, its track (-1: none, the "--" first) */
+/* entry i of a list: its name, its track (-1: none, the "--" first; the project's ENERGY and send effects) */
 static const char *cu_pick_name(uint32_t col, int32_t i, int32_t *tr)
 {
     cord_t c = {0};
@@ -252,25 +256,37 @@ static const char *cu_pick_name(uint32_t col, int32_t i, int32_t *tr)
     if (i <= 0)
         return "--";
     if (col == 0u) {
-        *tr = (i - 1) / (int32_t)(CS_N - 1u);
-        return cord_src_name((uint32_t)((i - 1) % (int32_t)(CS_N - 1u) + 1));
+        uint32_t s = (uint32_t)((i - 1) % (int32_t)(CS_N - 1u) + 1);
+        if (s != CS_ENERGY) *tr = (i - 1) / (int32_t)(CS_N - 1u);
+        return cord_src_name(s);
     }
     cu_dst_set(&c, (uint32_t)i);
     *tr = cu_global(c.dst) ? -1 : c.dst_trk;
     return cu_dst_name(&c);
 }
 
-/* OCT+ on MODS: the cord's polarity, BI <-> UNI (a source that is 0..1 already: nothing to fold) */
+/* entry i's label in Mono's list (ui_mono.c mo_pick): "T1 SLEW", as KNOB 1's and 3's values ("T1 LFO", the rows'
+ * codes T1SL); the project's without a track. b: 20 bytes */
+static void cu_pick_label(char *b, uint32_t col, int32_t i, int32_t *tr)
+{
+    const char *s = cu_pick_name(col, i, tr);
+    b[0] = 0;
+    if (*tr >= 0)
+        b[0] = 'T', b[1] = (char)('1' + (*tr & 3)), b[2] = ' ', b[3] = 0;
+    str_cpy(b + str_len(b), s, 20u - str_len(b));
+}
+
+/* OCT+ on MODS: the cord's direction, +- <-> + (a source that is 0..1 already: nothing to fold) */
 static void cu_polarity(void)
 {
     cord_t c = *cord_get(cord_ui_sel);
     if (!c.src || !cord_bipolar(c.src, c.src_trk)) {
-        ui_message(c.src ? "UNI ALREADY" : "NO SOURCE");
+        ui_message(c.src ? "ONE WAY ALREADY" : "NO SOURCE");
         return;
     }
     c.uni = (uint8_t)!c.uni;
     (void)cord_set(cord_ui_sel, &c);
-    ui_message(c.uni ? "UNI: ONE WAY" : "BI: BOTH WAYS");
+    ui_message(c.uni ? "+ ONE WAY" : "+- BOTH WAYS");
     ui.force = 1;
 }
 

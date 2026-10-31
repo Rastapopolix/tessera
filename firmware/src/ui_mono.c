@@ -808,7 +808,9 @@ static void mo_grid_panel(void)
         cv_blit(0, (uint32_t)(PV_GRID_Y + top));
     }
 }
-/* BOUNCE: the box, its walls hit on the last step drawn twice as thick; the balls, discs. FALL (BALLS past 4): the floor
+/* BOUNCE: the box, its walls hit on the last step drawn twice as thick; the balls, discs, 0..255 running from touching
+ * one thick wall to touching the other, a ball that hit a wall on the last step drawn there (gen_bounce_touch; the
+ * model keeps it where it bounced back to), so it meets the wall on the step its note plays. FALL (BALLS past 4): the floor
  * (thick on a landing), the leaves tilted as they sway, a landed one flat on the floor (dim as it rests, a bass leaf
  * hollow), a gust's streaks dashed across the box */
 static void mo_pic_bounce(const gen_bounce_t *b)
@@ -839,8 +841,11 @@ static void mo_pic_bounce(const gen_bounce_t *b)
     mo_fill(2, w & 1u ? 105 : 106, 116, w & 1u ? 2 : 1, w & 1u ? MO_INK : MO_DIM);      /* floor */
     mo_fill(2, 53, w & 2u ? 2 : 1, 54, w & 2u ? MO_INK : MO_DIM);                       /* left */
     mo_fill(w & 4u ? 116 : 117, 53, w & 4u ? 2 : 1, 54, w & 4u ? MO_INK : MO_DIM);      /* right */
-    for (k = n; k-- > 0;)
-        mo_disc(7 + (int32_t)b->x[k] * 106 / 255, 101 - (int32_t)b->y[k] * 43 / 255, 2, MO_INK);
+    for (k = n; k-- > 0;) {
+        uint32_t t = gen_bounce_touch(b, k);
+        int32_t x = t & 2u ? 0 : t & 4u ? 255 : b->x[k], y = t & 1u ? 0 : t & 8u ? 255 : b->y[k];
+        mo_disc(6 + x * 107 / 255, 102 - y * 45 / 255, 2, MO_INK);
+    }
 }
 /* AWAKE: loop A (the notes) as bars 1..8 high over loop B (their lift) as its figure, 16 steps each; a rest a dash,
  * past a loop's length a dim line; the steps playing solid, the others outlined; the step the keys picked framed */
@@ -1758,6 +1763,94 @@ static void mo_pic_chord_keys(const track_t *t)
             }
         }
 }
+#if PHYS_ON
+/* PHYS's EDIT pages (BODY, EXCT). MODAL and MEMB: their partials, a bar each at its ratio to the note (1 .. 32, an
+ * octave 21 cells), as tall as POS strikes it and as long as BRIT and DAMP let it ring (against the first: the
+ * square root of q / f); STRNG and SYMP: the string between its bridges, plucked at POS (a bow over it when bowed),
+ * the bridge curved for STRNG's buzz and SYMP's BUZZ, doubled when stiff; SYMP's three strings under it, as long as
+ * CHRD tunes them (against C3: ROOT), shaking with SYMP. At the foot, MODAL's and STRNG's STRC as where it is
+ * (HARMONIC, FREE BAR, TUNED BAR, PLAIN ..: the sweet spots), MEMB's head, SYMP's chord; the knob turning's value */
+static void mo_pic_phys(const track_t *t)
+{
+    const int16_t *p = t->p;
+    uint32_t md = (uint32_t)p[P_E0] % PM_COUNT, i;
+    int32_t v[3], hot = pv_hot();
+    char foot[16];
+    phys_body(p, md, 0, v);
+    foot[0] = 0;
+    if (md == PM_MODAL || md == PM_MEMB) {
+        px_modal_t M = {{{0}}};                         /* (a scratch state: the blocks clamp it) */
+        px_modal_blk_t B;
+        uint32_t h[PX_NMODE], top = 1;
+        int32_t r2;
+        if (md == PM_MODAL)
+            px_modal_block(&B, &M, pitch_inc(36u * 16u), v[0], v[1], v[2], 0, p[P_E4] * 129, 0);
+        else
+            px_memb_block(&B, &M, pitch_inc(36u * 16u), v[0], v[1], v[2], 0, p[P_E4] * 516, 0);
+        for (i = 0; i < B.n; i++) {
+            uint32_t a = (uint32_t)(B.m[i].a < 0 ? -B.m[i].a : B.m[i].a) >> 16, w = 256;   /* (w: Q8; no 64-bit
+                                                                                          * signed divide on the device) */
+            uint64_t q0 = ((uint64_t)(uint32_t)(B.m[0].rpg - B.m[0].g) * (uint32_t)B.m[0].g) >> 16;
+            uint64_t qi = ((uint64_t)(uint32_t)(B.m[i].rpg - B.m[i].g) * (uint32_t)B.m[i].g) >> 16;
+            while (qi >> 31) qi >>= 1, q0 >>= 1;
+            if (q0 < qi) w = (uint32_t)((q0 << 8) / (uint32_t)qi);
+            h[i] = a * px_isqrt64((uint64_t)w << 8) >> 8;   /* (sqrt, Q8) */
+            if (h[i] > top) top = h[i];
+        }
+        for (i = 0; i < 6u; i++)                        /* the octaves */
+            mo_vl(6 + (int32_t)i * 21, 99, 2, MO_DIM);
+        mo_hl(2, 99, 116, MO_DIM);
+        for (i = 0; i < B.n; i++) {
+            uint32_t r = (uint32_t)(((uint64_t)B.m[i].g << 16) / (uint32_t)B.m[0].g), k = 0;
+            int32_t x, hh = (int32_t)px_isqrt64(h[i] * 1600u / top);   /* (40 high, square-rooted: the quiet
+                                                                         * partials seen too) */
+            while (r >= 2u << 16) r >>= 1, k++;
+            x = 6 + (int32_t)k * 21 + (int32_t)((r - 65536u) * 21u >> 16);   /* (log2, linear in each octave) */
+            if (k < 5u && hh > 0) mo_fill(x, 98 - hh, i ? 1 : 2, hh, MO_INK);
+        }
+        r2 = B.n > 1u ? (int32_t)(((uint64_t)B.m[1].g * 100u) / (uint32_t)B.m[0].g) : 200;   /* the second partial, x100 */
+        if (md == PM_MEMB) str_cpy(foot, p[P_E1] < 43 ? "TOM" : p[P_E1] < 86 ? "HAND DRUM" : "TABLA", sizeof foot);
+        else str_cpy(foot, r2 < 197 ? "GONG" : r2 < 203 ? "HARMONIC" : r2 < 260 ? "STRETCHED" : r2 < 300 ? "FREE BAR" :
+                           r2 < 370 ? "METAL BAR" : "TUNED BAR", sizeof foot);
+    } else {
+        int32_t x0 = 8, x1 = 112, y = 70, s = md == PM_SYMP ? PHYS_BUZZ(p[P_E6]) : v[0], bow = md == PM_STRING && p[P_E6];
+        int32_t xp = x0 + (md == PM_STRING && p[P_E4] ? p[P_E4] * (x1 - x0) / 254 : (x1 - x0) / 8), x, py = y;
+        mo_fill(x1, y - 3, 2, 8, MO_INK);               /* the bridges: the left one a slope when curved */
+        if (s < 15729) mo_line(x0 - 6, y + 5, x0, y, MO_INK), mo_line(x0 - 6, y + 6, x0, y + 1, MO_INK);
+        else mo_fill(x0 - 2, y - 3, 2, 8, MO_INK);
+        mo_dash(x0, y, x1 - x0, MO_DIM);
+        for (x = x0; x <= x1; x++) {                    /* plucked: a triangle from POS; bowed: a half sine */
+            int32_t d = bow ? mo_sin((x - x0) * 128 / (x1 - x0)) * 9 / 127
+                            : (x < xp ? (x - x0) * 9 / (xp - x0) : (x1 - x) * 9 / (x1 - xp));
+            if (x > x0) mo_line(x - 1, py, x, y - d, MO_INK);
+            if (s > 17039) mo_px(x, y - d + 1, MO_INK);   /* (stiff: a thicker string) */
+            py = y - d;
+        }
+        if (bow) {                                      /* the bow across it, at POS's place (or a fifth in) */
+            int32_t xb = x0 + (p[P_E4] ? p[P_E4] * (x1 - x0) / 254 : (x1 - x0) / 5);
+            mo_fill(xb - 12, y - 14, 24, 2, MO_INK);
+            for (x = xb - 11; x < xb + 12; x += 3) mo_px(x, y - 12, MO_DIM);
+        }
+        if (md == PM_SYMP) {
+            uint32_t c = (uint32_t)p[P_E1] >> 4;
+            for (i = 0; i < PX_NSYMP; i++) {
+                int32_t cents = c < 7u ? PHYS_CHORDS[c][i] : (t->p[P_ROOT] + (i == 1u ? 7 : i == 2u ? 12 : 0)) * 100;
+                int32_t len = (int32_t)((uint32_t)(x1 - x0) * px_exp2(-cents * 4369 / 80) >> 16), ys = 84 + (int32_t)i * 6;
+                int32_t amp = p[P_E4] * 3 / 127;
+                if (len > x1 - x0) len = x1 - x0;
+                mo_vl(x1 - len, ys - 1, 3, MO_DIM);
+                for (x = x1 - len; x < x1; x++) mo_px(x, ys - mo_sin((x - x1 + len) * 256 / (len > 0 ? len : 1)) * amp / 127, MO_DIM);
+            }
+            str_cpy(foot, "CHORD ", sizeof foot);
+            str_cpy(foot + 6, c < 7u ? N_PHYS_CHORD[c] : "ROOT", sizeof foot - 6);
+        } else {
+            str_cpy(foot, bow ? "BOWED" : s < 15729 ? "BUZZ BRIDGE" : s > 17039 ? "STIFF STRING" : "PLAIN STRING", sizeof foot);
+        }
+    }
+    mo_text(foot, 2, 102, MO_DIM);
+    if (hot >= 0) mo_hot_value(hot);
+}
+#endif
 /* FM6's EDIT and operator pages: the algorithm as graph_fm6 charts it (FM6_CELL), on the cell grid: an operator a box
  * 11 x 9, columns 18 apart, rows 12; the carriers solid over the output bus, the modulators outlined, an operator at
  * output level 0 dim; the routes and the feedback loop (dim at feedback 0); the operators the knob turning moves (or
@@ -1903,6 +1996,12 @@ static void mo_picture(void)
         mo_pic_fm6(t);
         return;
     }
+#if PHYS_ON
+    if (pg->scope == SC_ENGINE && t->eng_req % NENGINES == ENGI_PHYS && pg->graph == GR_NONE) {
+        mo_pic_phys(t);
+        return;
+    }
+#endif
     if (pv_kind() == PV_CURVE || pv_kind() == PV_RINGS) {   /* the sound pages' pictures (ui_pages.c pv_pic) */
         int32_t cut, res;
         uint32_t type, pic = pv_pic(&cut, &res, &type);
@@ -1917,7 +2016,7 @@ static void mo_picture(void)
 /* a frame of w x h cells at (x, y) on the screen, a title row (if any), the rows 10 cells each: the one picked
  * inverted across the frame (a clear cell inside it), the value now a dot at the right, a value right-aligned; more
  * above or below the rows shown: a notch on the frame. Drawn in slices of 120 px (a canvas's height) */
-typedef struct { char name[20], val[12]; uint8_t dim, warn; } mo_row_t;
+typedef struct { char name[20], val[12]; uint8_t dim, warn, trk; } mo_row_t;   /* trk: 1..4 a track's ink (MOSAIC), 0 */
 static void mo_ascii(char *d, const char *s, uint32_t n)   /* the 5 x 7 font's: an ellipsis (0x85) three dots, other
                                                          * characters past it left out */
 {
@@ -1948,7 +2047,8 @@ static void mo_list(int32_t x, int32_t y, int32_t w, const char *title, const ch
         }
         for (i = 0; i < rows; i++) {
             int32_t r = y0 + i * 10, on = i == sel;
-            uint16_t ink = on ? MO_BG : row[i].dim ? MO_DIM : MO_INK;
+            uint32_t k = row[i].trk - 1u;
+            uint16_t ink = on ? MO_BG : row[i].trk ? (row[i].dim ? mo_tdim(k) : MO_TRK(k)) : row[i].dim ? MO_DIM : MO_INK;
             char t[24], a[24];
             mo_ascii(a, row[i].name, sizeof a);
             mo_cut(t, a, (uint32_t)(w - 8 - (row[i].val[0] ? mo_tw(row[i].val) + 4 : 0)) / 6u);
@@ -1971,18 +2071,23 @@ static void mo_list(int32_t x, int32_t y, int32_t w, const char *title, const ch
     }
 }
 /* the picker (pick_draw): the names around the value (pick_name, called directly: the stack audit resolves no
- * pointer), under its knob's label, over its column and the next */
+ * pointer), under its knob's label, over its column and the next. MODS': each with its track, "T1 SWARM 1" (ten
+ * characters: wider, from the screen's edge), in its track's ink on MOSAIC */
 static void mo_pick(int32_t col, int32_t count, int32_t cur, int32_t first, int32_t rows)
 {
     mo_row_t r[8];
-    int32_t i, tr;
+    int32_t i, tr, cords = cur_page()->graph == GR_CORDS, w = cords ? 70 : 58;
     if (rows > 8) rows = 8;
     for (i = 0; i < rows; i++) {
-        str_cpy(r[i].name, pick_name(first + i, &tr), sizeof r[i].name);
+        if (cords)
+            cu_pick_label(r[i].name, (uint32_t)col, first + i, &tr);
+        else
+            str_cpy(r[i].name, pick_name(first + i, &tr), sizeof r[i].name);
         r[i].val[0] = 0, r[i].warn = 0;
+        r[i].trk = (uint8_t)(ux_multi && tr >= 0 ? tr + 1 : 0);
         r[i].dim = first + i - cur > 1 || cur - first - i > 1;
     }
-    mo_list(1 + 30 * (col < 3 ? col : 2), 20, 58, 0, 0, r, rows, cur - first, -1, first > 0, first + rows < count);
+    mo_list(col < 2 ? 1 + 30 * col : 119 - w, 20, w, 0, 0, r, rows, cur - first, -1, first > 0, first + rows < count);
 }
 /* OCT+'s whole list (vlist_draw): the list's name, the names around the one picked, the value now a dot; at the
  * bottom of the screen, its width */
@@ -1995,7 +2100,7 @@ static void mo_vlist(const char *title, const char *const *names, int32_t count,
     if (rows > 8) rows = 8;
     for (i = 0; i < rows; i++) {
         str_cpy(r[i].name, names[i], sizeof r[i].name);
-        r[i].val[0] = 0, r[i].dim = 0, r[i].warn = 0;
+        r[i].val[0] = 0, r[i].dim = 0, r[i].warn = 0, r[i].trk = 0;
     }
     fmt_int(pos, sel + 1);                              /* where it is in the whole list: 3/12 */
     str_cpy(pos + str_len(pos), "/", 2);
@@ -2020,7 +2125,7 @@ static void mo_sheet(void)
             sr->value(v);
             mo_ascii(r[i].val, v, sizeof r[i].val);
         }
-        r[i].dim = 0;
+        r[i].dim = 0, r[i].trk = 0;
         r[i].warn = sr->cf != 0;
     }
     mo_list(0, 120 - (12 + rows * 10 + 1), 120, pop.title, pop.sub, r, rows, (int32_t)pop.sel - first, -1, first > 0,
@@ -2607,16 +2712,17 @@ static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on)
     str_cpy(b + str_len(b), "%", 2);
     mo_textr(cu_pct(c) ? b : b + 1, 116, 3, sel ? MO_INK : ink);
 }
-/* the move (cu_bar's canvas, 105 x 4 cells): the line, its middle, the amount from the middle, a mark where it moves
- * the destination now */
+/* the move (cu_bar's canvas, 105 x 4 cells): the line, its middle, the amount from the middle (a +- mod's both ways:
+ * its source swings it as far down as up), a mark where it moves the destination now */
 static void mo_cu_bar(const cord_t *c, int32_t s)
 {
     int on = cord_live(c);
     int32_t a = cu_pct(c), m = 52, x = 1 + (a + 100) * 102 / 200, lx = m + clamp(s, -32768, 32768) * 51 / 32768;
+    int32_t d = x < m ? m - x : x - m;
     cv_begin(CU_BAR_W, 9, MO_BG);
     mo_hl(1, 2, 102, MO_DIM);
     if (a)
-        mo_fill(x < m ? x : m, 1, x < m ? m - x : x - m, 2, on ? MO_INK : MO_DIM);
+        mo_fill(cord_bip(c) ? m - d : x < m ? x : m, 1, cord_bip(c) ? 2 * d : d, 2, on ? MO_INK : MO_DIM);
     mo_vl(m, 0, 4, MO_DIM);
     if (on && c->src)
         mo_vl(lx, 0, 4, MO_INK);

@@ -17,7 +17,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | A page button again | That section's next page (from elsewhere most return to the page last used) |
 | **OCT-** (off HOME) | Back: closes a list, sheet or map, else HOME |
 | **OCT+** (off HOME) | Enter: opens the row, slot or note picked; does the action picked |
-| **OCT+** held | The page's sheet: the sound's (HOME, EDIT, ENV, LFO, FX), the pattern's (GEN, NOTES, PATTERN), the song's (SONG), the pattern's on PATTERNS |
+| **OCT+** held | The page's sheet: the sound's (HOME, EDIT, ENV, LFO, FX), the pattern's (GEN, NOTES, PATTERN; Swing there), the song's (SONG), the pattern's on PATTERNS |
 | A sheet: **KNOB 1**, **OCT+** / **OCT-** | Picks the row / does it / closes |
 | A dialog: **OCT+** / **OCT-** | Yes / no |
 | Lists (menu, SCL, VOICE): **KNOB 1** / **KNOB 2** | The row / its value |
@@ -28,7 +28,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 |---|---|
 | **SEQ** | GEN, then the MODE's pages. STEP: EVOLVE, TWEAK, TIMING, NOTES. ARP: ARP, ARP 2, NOTES. A generator: EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY. All: PATTERN, TEMPO, PATTERNS, SONG |
 | **SEQ** held | PATTERNS |
-| **ARP** | STEP track: switches it to ARP, the ARP page (again: ARP 2). Generator track: GEN ("ARP: MODE ON GEN") |
+| **ARP** | STEP track: switches it to ARP, the ARP page (again: ARP 2). Generator track: GEN ("MODE IS ON GEN") |
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST; on FM6 then FM LFO; on ORACLE then LFO MOD, LFO ROUTE |
 | **ENV** | ENV, ENV DEST; on FM6 instead EG RATE, EG LVL, PITCH EG, PITCH LV; on ORACLE FILT ENV, AMP ENV |
 | **SCL** | SCALES, SCL, CHORD |
@@ -50,6 +50,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **GLO** + C4 / F4 | Unmute all / tap the tempo (three taps or more; INT clock) |
 | **GLO** + E4 | FILL, while held (steps set to FILL / !FILL) |
 | **GLO** + KNOB 1 to 4 | Level of track 1 to 4 |
+| **GLO** + PRESETS | Browse the selected track's sounds, on any page (the sound shows large in place of the GLO map) |
 | **GLO** + PLAY | Restart from the top without stopping |
 | **SCL** + any key | ROOT: that key's note name (every melodic track while SCL > Key link is LINKED) |
 | **SCL** + KNOB 1 to 4 | ROOT, SCALE, CHRD, VOIC |
@@ -109,11 +110,13 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | Do this | And this happens |
 |---|---|
 | **PLAY** | Start / stop; on SONG: plays the song. Generators start from the top of their seed |
-| **REC** | Arms / disarms the track (playing: waits for the loop) |
+| **REC** | Arms the track; records every pass (overdub) until REC again (playing: from the loop's start) |
 | **REC** + PLAY | Records now |
 | **REC** held | Generator track: prints its last bars into STEP. STEP EVOLVE: keeps the changes. STEP: captures what you played |
 | **REC** held on SONG | Take jam: the patterns played since PLAY become the song |
 | **EDIT** held, recording on NOTES | Erases as the steps pass |
+| **EDIT** + **REC** on NOTES | Clear pattern? (OCT+), REC stays on for a new take |
+| **OCT-** / **OCT+** on NOTES, REC on | Keys octave down / up; both: octave 0 |
 | **EDIT** held | Undo (the last load, capture or print; on NOTES the last edit) |
 | **EDIT** + OCT- / OCT+ | Undo / redo |
 
@@ -131,7 +134,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | Do this | And this happens |
 |---|---|
 | GEN: **KNOB 1** | MODE: STEP, ARP or a generator |
-| GEN: **OCT+** held | The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD, CHORD, ATLAS, CONSTL, ANSWER |
+| GEN: **OCT+** held | The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD, CHORD, ATLAS, CONSTL, ANSWER (SOURCE, ORDER, SHIFT, SPACE) |
 | EVOLVE: **OCT+** held | GRAVITY (a generator); HOW: DRIFT, ADORN, SERIAL (a STEP track) |
 | ATLAS: **OCT+** + a black key | The fourth part's sound (TOM, CLAP, OPEN HAT, RIM, BELL) |
 | CHORD, PROG USER: **OCT+** + keys | One chord a key, its root the key's note |
@@ -139,7 +142,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | EVOLVE: **KNOB 4** (ROLL) | A new seed a click; turn back for the last one |
 | FORM: **KNOB 3** (CLEAR) | Forgets B and C |
 | FORM: **OCT+** held, **KNOB 1** | DEVELOP: each return of a section varies a little (0: exact) |
-| MODS: **OCT+** | The picked mod: BI / UNI |
+| MODS: **OCT+** | The picked mod: +- (both ways) / + (one way) |
 | MATRIX: **OCT+** | Opens the picked mod in MODS |
 
 ## Power-on and update

@@ -107,7 +107,7 @@ static void ps_row_insert(int dup)                     /* a section at the row p
         chain_config.row[r].slot = chain_patterns[r][0];
     }
     chain_config.count++;
-    ui_message(dup ? "SECTION DUPLICATED" : "SECTION INSERTED");
+    ui_message(dup ? "SECTION COPIED" : "SECTION ADDED");
 }
 static void ps_insert(void) { ps_row_insert(0); }
 static void ps_dup(void) { ps_row_insert(1); }
@@ -153,12 +153,21 @@ static void nt_accmode(int32_t s)                      /* (round: OCT+ goes on p
     tessera_param_set(tr, TX_ACC_MODE, (tessera_param_get(tr, TX_ACC_MODE) + (s > 0 ? 1 : TESS_ACC_MODES - 1)) %
                                        TESS_ACC_MODES);
 }
+/* .. the track's SWING (STEP and ARP: not on GEN's knobs) */
+static void nt_swing_v(char *b) { fmt_int(b, TSEL->p[P_SSWING]); str_cpy(b + str_len(b), "%", 2); }
+static void nt_swing(int32_t s)
+{
+    const param_desc_t *d = track_desc(TSEL, P_SSWING);
+    TSEL->p[P_SSWING] = (int16_t)clamp(TSEL->p[P_SSWING] + s, d->min, d->max);
+    motion_capture(TSEL, P_SSWING, TSEL->p[P_SSWING]);
+    ui.force = 1;
+}
 /* .. and the SEQ tools (seq_tools.c): DOUBLE, HALF, EUCLID's hits and rotation (KNOB 2; OCT+ writes it) */
 static const sheet_row_t SHEET_PATTERN[] = {{"Quantize",nt_quantize_v,nt_quantize_grid,nt_quantize,0},
     {"Double", seqt_double_v, 0, seqt_double, 0}, {"Half", seqt_half_v, 0, seqt_half, 0},
     {"Euclid", seqt_hits_v, seqt_hits_turn, seqt_euclid, 0}, {"Euclid turn", seqt_rot_v, seqt_rot_turn, seqt_euclid, 0},
     {"Accum limit", nt_acclim_v, nt_acclim, 0, 0}, {"Accum mode", nt_accmode_v, nt_accmode, 0, 0},
-    {"Clear pattern", 0, 0, 0, CF_CLEAR_SEQ}, {"Clear motion", 0, 0, 0, CF_CLEAR_MOTION}};
+    {"Swing", nt_swing_v, nt_swing, 0, 0}, {"Clear pattern", 0, 0, 0, CF_CLEAR_SEQ}, {"Clear motion", 0, 0, 0, CF_CLEAR_MOTION}};
 /* PATTERNS' (OCT+): the selected track's pattern; Copy to: its place picked on the grid (ui_patterns.c) */
 static const sheet_row_t SHEET_PATTERNS[] = {{"Copy to\x85", 0, 0, ptc_start, 0}, {"Delete pattern", 0, 0, 0, CF_DEL_PAT}};
 
@@ -386,10 +395,10 @@ static int cf_refused(uint32_t cf)
         ui_message("STOP TO EDIT");
     else if ((cf == CF_DEL_ROW && ui.song_row >= chain_config.count) ||
              (cf == CF_DEL_PAT && pattern_empty(song.sel % NTRK, TSEL->pattern)))
-        ui_message("NOTHING TO DELETE");
+        ui_message("NOTHING THERE");
     else if ((cf == CF_CLEAR_SONG && !chain_config.count) || (cf == CF_CLEAR_SEQ && seq_is_empty(TSEL)) ||
              (cf == CF_CLEAR_MOTION && !motion_count(TSEL)))
-        ui_message("NOTHING TO CLEAR");
+        ui_message("ALREADY EMPTY");
     else
         return 0;
     return 1;

@@ -33,7 +33,7 @@ static void sysex_import_name(char *nm)
 static int sysex_stage(uint32_t e, const uint8_t *raw, uint32_t count, uint32_t size)
 {
     if(!count || (count*size>sizeof sx_import.raw && !(e==ENGI_FM6&&count==32u&&size==FM6_PACKED)))return 0;
-    if (sx_import.count || ui.confirm || ui.name_active || ui.new_active || ui.layer || ui.ly || designer_on()) { ui_message("FINISH CURRENT IMPORT"); return 0; }
+    if (sx_import.count || ui.confirm || ui.name_active || ui.new_active || ui.layer || ui.ly || designer_on()) { ui_message("IMPORT RUNNING"); return 0; }
     if(count*size>sizeof sx_import.raw){sx_import.data=raw;fm6_rx_ready=2;}
     else {memcpy(sx_import.raw,raw,count*size);sx_import.data=sx_import.raw;}
     sx_import.general=size==238u;
@@ -47,7 +47,7 @@ static int sysex_stage(uint32_t e, const uint8_t *raw, uint32_t count, uint32_t 
     ui_say("IMPORT ", nm); str_cpy(ui.msg2, "CHOOSE USER SLOTS", sizeof ui.msg2); ui.force = 1;
     return 1;
 }
-static void sysex_cancel(void) { if(fm6_rx_ready==2u)fm6_rx_ready=0;sx_import.count = 0; bulk_clear(); ui_message("IMPORT CANCELLED"); }
+static void sysex_cancel(void) { if(fm6_rx_ready==2u)fm6_rx_ready=0;sx_import.count = 0; bulk_clear(); ui_message("IMPORT STOPPED"); }
 static void sysex_commit(void)
 {
     if (!sx_import.count) return;
@@ -57,17 +57,17 @@ static void sysex_commit(void)
         int rc = sx_import.general ? general_sysex_save(sx_import.first+saved,sx_import.data+saved*sx_import.size) : native_put(sx_import.engine,sx_import.first+saved,sx_import.data+saved*sx_import.size);
         if (rc == 1 || rc == 2) { /* Keep only the unsaved suffix for an honest retry. */
             if(saved){sx_import.data+=saved*sx_import.size;sx_import.count-=saved;sx_import.first+=saved;ui.uslot=(uint8_t)sx_import.first;}
-            ui_message("IMPORT SAVE ERROR"); return;
+            ui_message("IMPORT SAVE ERR"); return;
         }
         saved++;
     }
-    sx_import.count=0;if(fm6_rx_ready==2u)fm6_rx_ready=0;bulk_clear();ui_message("PATCHES IMPORTED");
+    sx_import.count=0;if(fm6_rx_ready==2u)fm6_rx_ready=0;bulk_clear();ui_message("IMPORT DONE");
 }
 static void sysex_choose(void)
 {
     if (transport_busy()) { ui_message("STOP TO IMPORT"); return; }
     uint32_t first = ui.uslot;
-    if (first + sx_import.count > (sx_import.general?UP_SLOTS:native_limit(sx_import.engine))) { ui_message("NOT ENOUGH SLOTS"); return; }
+    if (first + sx_import.count > (sx_import.general?UP_SLOTS:native_limit(sx_import.engine))) { ui_message("TOO FEW SLOTS"); return; }
     sx_import.first = (uint16_t)first;
     for(uint32_t k=first;k<first+sx_import.count;k++)if(sx_import.general?(up_used(k)||up_old(k)):(native_used(sx_import.engine,k)||native_old(sx_import.engine,k))){confirm_open(CF_IMPORT,0);return;}
     sysex_commit();
@@ -92,7 +92,7 @@ static void bulk_erase(void)
     if(transport_busy()){ui_message("STOP TO ERASE");return;}
     uint32_t e=bulk.engine;
     for (uint32_t k = 0; k < (native_limit(e) ? native_limit(e) : UP_SLOTS); k++)
-        if (bulk_has(k) && (native_limit(e) ? native_old(e,k) : up_old(k))) { ui_message("ERASE OLD SLOT FIRST"); return; }
+        if (bulk_has(k) && (native_limit(e) ? native_old(e,k) : up_old(k))) { ui_message("ERASE OLD SLOT"); return; }
     for(uint32_t k=0;k<(native_limit(e)?native_limit(e):UP_SLOTS);k++)if(bulk_has(k)&& (native_limit(e)?native_used(e,k):up_used(k))){
         if(native_limit(e)){int rc=native_put(e,k,0);if(rc==1||rc==2){ui_message("ERASE ERROR");return;}}
         else {up_ui_named(1,k,0);if(up_used(k))return;}
@@ -102,7 +102,7 @@ static void bulk_erase(void)
 static void bulk_erase_ask(void) { if(transport_busy())ui_message("STOP TO ERASE");else confirm_open(CF_BULK_ERASE,0); }
 static void bulk_send(void)
 {
-    for(uint32_t k=0;k<(native_limit(bulk.engine)?native_limit(bulk.engine):UP_SLOTS);k++)if(bulk_has(k)&&(native_limit(bulk.engine)?native_used(bulk.engine,k):up_used(k)))if(library_send(bulk.engine,k)){ui_message("SYSEX SEND ERROR");return;}
+    for(uint32_t k=0;k<(native_limit(bulk.engine)?native_limit(bulk.engine):UP_SLOTS);k++)if(bulk_has(k)&&(native_limit(bulk.engine)?native_used(bulk.engine,k):up_used(k)))if(library_send(bulk.engine,k)){ui_message("SYSEX SEND FAIL");return;}
     ui_message("PRESETS SENT");
 }
-static void library_send_current(void) { ui_message(library_send(library_engine(),ui.uslot)?"SYSEX SEND ERROR":"PRESET SENT"); }
+static void library_send_current(void) { ui_message(library_send(library_engine(),ui.uslot)?"SYSEX SEND FAIL":"PRESET SENT"); }

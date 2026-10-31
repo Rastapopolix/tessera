@@ -148,6 +148,75 @@ static uint32_t preset_of(uint32_t md)
     return 0;
 }
 
+/* --------------------------------------------------------------- clicks --- */
+/* Theo's device check of 3.2-rc1 (2026-11-01): TURING's repeats clicked on the struck presets, and the click stayed
+ * with a longer ATTACK. Each preset, through voice.c: a fresh note at ATTACK 0 (its first ms no louder than the
+ * sound after it), then the same note again while it rings (a strike at the envelope's level: its largest sample
+ * step at most 2.5 x the sound's own in 5 .. 100 ms after, where EXC's knock at x16 made 3 .. 4.5 x); MODAL at
+ * the shortest DAMP rung out to silence in 1.5 .. 2 s (no floor of noise) */
+static int16_t ck[FS * 2];
+static void ck_play(uint32_t pi, uint32_t frames, int32_t damp)
+{
+    uint32_t f, k;
+    host_tracks_init();
+    for (k = 1; k < NTRK; k++)
+        trk[k].p[P_LEVEL] = 0;
+    host_preset(&trk[0], 9, pi);
+    trk[0].p[P_ATK] = 0;
+    if (damp >= 0)
+        trk[0].p[P_E3] = (int16_t)damp;
+    for (f = 0; f < frames; f += CTL) {
+        int32_t o[2 * CTL];
+        if (!f)
+            trk_note_on(&trk[0], 60, 110);
+        if (damp < 0 && f == FS / 2u / CTL * CTL)
+            trk_note_on(&trk[0], 60, 110);           /* again, ringing */
+        mix_block(o, CTL);
+        for (k = 0; k < CTL; k++)
+            ck[f + k] = (int16_t)o[2 * k];
+    }
+}
+static int32_t ck_step(uint32_t a, uint32_t b)       /* the largest sample step in [a, b) */
+{
+    int32_t m = 0, d;
+    for (; a < b; a++)
+        if ((d = abs(ck[a] - ck[a - 1u])) > m)
+            m = d;
+    return m;
+}
+static void clicks(void)
+{
+    uint32_t pi, k, at = FS / 2u / CTL * CTL, bad = 0;
+    double worst = 0, tail = 0;
+    for (pi = 0; pi < ENG_PHYS.npresets; pi++) {
+        int32_t first = 0, body = 0;
+        double r;
+        ck_play(pi, FS, -1);
+        for (k = 1; k < 44u; k++)
+            first = abs(ck[k]) > first ? abs(ck[k]) : first;
+        for (k = 44; k < FS / 5u; k++)
+            body = abs(ck[k]) > body ? abs(ck[k]) : body;
+        r = ck_step(at + 1u, at + 132u) / (ck_step(at + 220u, at + 4410u) + 1.0);
+        worst = r > worst ? r : worst;
+        if (r > 2.5 || first > body + body / 8) {
+            printf("phys_test: CLICK %s: again while ringing %.2f x its own steps (limit 2.5), first ms %d, after %d\n",
+                   ENG_PHYS.presets[pi].name, r, first, body);
+            bad++;
+        }
+    }
+    ck_play(preset_of(PM_MODAL), FS * 2u, 0);        /* (BELL TREE at DAMP 0: the shortest) */
+    for (k = FS * 3u / 2u; k < FS * 2u; k++)
+        tail += (double)ck[k] * ck[k];
+    tail = sqrt(tail / (FS / 2u));
+    if (tail > 1.0) {
+        printf("phys_test: MODAL at DAMP 0 leaves a floor of %.2f LSB (RMS) 1.5 s after the strike\n", tail);
+        bad++;
+    }
+    printf("phys_test: clicks: a note again while ringing at most %.2f x its own steps (limit 2.5), first ms within "
+           "the sound, MODAL DAMP 0 rung out to %.2f LSB: %s\n", worst, tail, bad ? "FAIL" : "ok");
+    fails += bad != 0;
+}
+
 /* the whole engine (phys_note_on / phys_render through voice.c): every parameter and the pitch swept, a new
  * note every 0.1 s, the model switching under the notes, 8 notes asked */
 static void torture(void)
@@ -309,7 +378,7 @@ static void demo_write(const char *dir, const char *name, uint32_t secs, void (*
 }
 
 /* a phrase per preset: (time in 1/8 s, note, length in 1/8 s, velocity); chords share a time */
-#define NPHRASE 9
+#define NPHRASE 17
 static const uint8_t PHRASE[NPHRASE][24][4] = {
     {{0, 84, 6, 110}, {6, 91, 6, 80}, {12, 96, 6, 100}, {20, 88, 8, 70}, {28, 79, 10, 110}, {29, 86, 10, 90},
      {30, 91, 10, 90}, {44, 84, 12, 120}},                                                  /* BELL TREE */
@@ -332,6 +401,20 @@ static const uint8_t PHRASE[NPHRASE][24][4] = {
     {{0, 48, 6, 100}, {1, 55, 6, 90}, {2, 60, 6, 90}, {3, 64, 6, 100}, {4, 67, 6, 90}, {5, 72, 6, 100},
      {12, 53, 6, 100}, {13, 57, 6, 90}, {14, 60, 6, 90}, {15, 65, 6, 100}, {16, 69, 6, 90}, {17, 72, 8, 110},
      {24, 76, 8, 110}},                                                                     /* HARP */
+    {{0, 65, 4, 100}, {4, 69, 4, 90}, {8, 72, 4, 100}, {12, 76, 8, 110}, {20, 74, 4, 90}, {24, 72, 4, 100},
+     {28, 69, 12, 110}, {28, 62, 12, 90}},                                                  /* VIBES */
+    {{0, 43, 24, 120}, {24, 38, 32, 110}},                                                  /* GONG */
+    {{0, 60, 28, 100}, {28, 67, 28, 90}},                                                   /* SINGING BOWL */
+    {{0, 62, 1, 110}, {1, 69, 1, 90}, {2, 74, 1, 100}, {3, 69, 1, 90}, {4, 62, 1, 110}, {5, 69, 1, 90},
+     {6, 74, 1, 100}, {7, 78, 1, 90}, {8, 76, 2, 110}, {10, 74, 2, 90}, {12, 69, 4, 100}, {16, 67, 1, 110},
+     {17, 71, 1, 90}, {18, 74, 1, 100}, {19, 79, 1, 90}, {20, 78, 4, 110}, {24, 74, 8, 100}},   /* DULCIMER */
+    {{0, 50, 8, 110}, {8, 53, 2, 90}, {10, 55, 2, 100}, {12, 57, 4, 110}, {16, 55, 2, 90}, {18, 53, 2, 90},
+     {20, 50, 12, 120}},                                                                    /* SITAR */
+    {{0, 48, 16, 90}, {0, 55, 16, 80}, {16, 50, 16, 90}, {16, 57, 16, 80}, {32, 52, 24, 100},
+     {32, 59, 24, 90}},                                                                     /* BOWED STRING */
+    {{0, 36, 4, 120}, {4, 43, 4, 110}, {8, 36, 2, 100}, {10, 36, 2, 110}, {12, 43, 8, 127},
+     {24, 36, 16, 120}},                                                                    /* TIMPANI */
+    {{0, 48, 20, 90}, {0, 55, 20, 80}, {20, 53, 20, 90}, {20, 60, 20, 80}, {40, 48, 20, 100}},   /* SYMPATHY */
 };
 static void play_preset(uint32_t f, uint32_t pi)
 {
@@ -395,6 +478,7 @@ int main(int argc, char **argv)
         cost();                                         /* first: its children start from a clean state */
     stability();
     torture();
+    clicks();
     if (argc > 1)
         demos(argv[1]);
     printf("phys_test: %s\n", fails ? "FAILED" : "all checks ok");

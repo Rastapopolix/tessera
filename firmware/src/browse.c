@@ -29,7 +29,9 @@ static const char *const PRESET_CAT[NENGINES] = {
     [6] = "BLLEPPSPPBLWFRPP",                           /* TRIO: FAT BASS .. CHIP CHOIR, then the warm set (WARM PAD .. SWEEP PAD) */
 #endif
 #if PHYS_ON
-    [9] = "EKUSKDDSU",                                  /* PHYS: BELL TREE, MARIMBA, PLUCK, BOWED METAL, KALIMBA, HAND DRUM, TOMS, DRONE STRING, HARP */
+    [9] = "EKUSKDDSUEEPUUSDP",                          /* PHYS: BELL TREE, MARIMBA, PLUCK, BOWED METAL, KALIMBA, HAND DRUM, TOMS,
+                                                         * DRONE STRING, HARP, VIBES, GONG, SINGING BOWL, DULCIMER, SITAR,
+                                                         * BOWED STRING, TIMPANI, SYMPATHY */
 #endif
     [10] = "DDDD",                                      /* DRUM: the kits (808, 909, SID, SID DIGI) */
     [12] = "KEBRPEGUKRBEEKGSPLUEWEBEOPPPFEEEDEDDUUUU",  /* FM6, INIT VOICE, ZEN-1's (SOFT PAD .. KUGO HARP) */
@@ -412,7 +414,7 @@ static void browse_turn(uint32_t role, int32_t s)
         brw.on = 0;
     loaded = list_cur(&total);
     if (!total) {
-        ui_message(m == LM_FAV ? "NO FAVORITES" : m == LM_RECENT ? "NO RECENT SOUNDS" : "NO SOUNDS IN LIST");
+        ui_message(m == LM_FAV ? "NO FAVORITES" : m == LM_RECENT ? "NO RECENT SOUND" : "LIST IS EMPTY");
         return;
     }
     d = list_accel(role, s, total, &fast);
