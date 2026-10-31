@@ -232,6 +232,13 @@ void tessera_kill(track_t *t)
     seq_release(t);                                   /* (it empties seq_n: the step sequencer's notes go too) */
 }
 
+/* Joining (tess_join): a generator picked or unmuted while the transport runs plays on the others' grid. The steps are
+ * the track's since PLAY (seq.c seq_run_step: the one playing) */
+static uint8_t tess_join_due;                           /* bit tr: its next step joins */
+static uint8_t tess_in_step;                            /* 1 while a track's step plays (tessera_clock_step) */
+static uint32_t tess_ph0[TESSERA_TRACKS];               /* the step its phrase began on (a realign's) */
+static uint32_t tess_run_k[TESSERA_TRACKS];             /* the step it last played + 1 (0: none since PLAY) */
+
 static void tess_realign(uint32_t tr);
 static void tess_form_reset(uint32_t tr);
 
@@ -249,6 +256,8 @@ void tessera_stop_all(void)
         tessera.hit[i] = 0;
         tessera.br_in[i] = 0;
         tess_realign(i);
+        tess_ph0[i] = tess_run_k[i] = 0;                      /* (the next PLAY's steps from 0) */
+        tess_join_due &= (uint8_t)~(1u << i);
         gen_chord_start(&tessera.chord[i]);                   /* (not on EVOLVE's boundaries: the progression goes on) */
         tess_form_reset(i);
         answer_restart(i);                                    /* (a phrase kept: its answers from the first) */
@@ -298,6 +307,7 @@ static void tess_rearm(uint32_t tr)
 /* A phrase boundary (mutation, SEED, stop): rearm AND put the engines' own playheads back on step 1 */
 static void tess_realign(uint32_t tr)
 {
+    tess_ph0[tr] = !song.playing ? 0u : seq_run_step[tr] + !tess_in_step;   /* (from the UI: the next step) */
     tess_rearm(tr);
     sd_realign(tr);
     tessera.euclid[tr].step_idx = 0;
@@ -312,6 +322,40 @@ static void tess_realign(uint32_t tr)
     gen_constel_start(&tessera.constel[tr]);
     gen_series_start(&tessera.series[tr]);
     tessera.morph[tr].step_idx = (uint8_t)((tessera.morph[tr].step_idx & 0xF0u) | 0x0Fu);  /* engine pre-increments */
+}
+
+/* The step a generator picked (or unmuted) while the transport runs plays (Theo 2026-11-01: ATLAS picked under an
+ * OFF BEAT CHORD came in out of time, its step 1 where it was picked): it joins as if it had played since PLAY. A track
+ * that did not step since PLAY (it was STEP) takes the bar's counters from PLAY's and its phrase from EVERY's last
+ * boundary; one that did (another generator, MUTE) keeps them. Then the phrase loop and the engine's own playhead at
+ * the steps since the phrase began, CHORD's progression at those since PLAY (a FORM's section). The free ones
+ * (BOUNCE's ball, QUAD, CONSTELLATION's sky, SERIES) go on as they are */
+static void tess_join(const track_t *t, uint32_t tr)
+{
+    tessera_evolve_t *ev = &tessera.evolve[tr];
+    uint32_t k = seq_run_step[tr], spb = tess_steps_per_bar(t), e = tessera_every_bars(ev->every), j, n;
+    tess_join_due &= (uint8_t)~(1u << tr);
+    if (!song.playing || k == 0xFFFFFFFFu || !k) return;   /* (PLAY's first step: all on step 1 already) */
+    if (tess_run_k[tr] != k) {
+        uint32_t done = k / spb - !(k % spb);            /* the bar lines before this step's (evolve_tick counts it) */
+        ev->step_cnt = (uint16_t)(k - done * spb);
+        ev->bar_cnt = (uint8_t)(e ? done % e : 0u);
+        ev->cond_bar = (uint8_t)(done & 7u);
+        ev->cond_first = !done;
+        tess_ph0[tr] = e ? k / spb / e * e * spb : 0u;
+    }
+    j = k - tess_ph0[tr];
+    ev->lp_pos = (uint8_t)(j % tess_loop_len(tr));
+    n = tessera.euclid[tr].steps ? tessera.euclid[tr].steps : 16u;
+    tessera.euclid[tr].step_idx = (uint8_t)(j % n);
+    tessera.grids[tr].step_idx = (uint8_t)(j % gen_grids_steps(spb));
+    tessera.morph[tr].step_idx = (uint8_t)((tessera.morph[tr].step_idx & 0xF0u) | ((j + 15u) & 0x0Fu));
+    n = tessera.awake[tr].len_a >= 1u && tessera.awake[tr].len_a <= 16u ? tessera.awake[tr].len_a : 16u;
+    tessera.awake[tr].pos_a = (uint8_t)(j % n);
+    n = tessera.awake[tr].len_b >= 1u && tessera.awake[tr].len_b <= 16u ? tessera.awake[tr].len_b : 16u;
+    tessera.awake[tr].pos_b = (uint8_t)(j % n);
+    tessera.poly[tr].tick = j % GEN_POLY_WRAP;
+    tessera.chord[tr].n = (uint16_t)(ev->form ? j : k);
 }
 
 /* QUAD's mutation: with other QUAD rows, each column at AMOUNT % turns down a row among them (the last one's cell to
@@ -986,15 +1030,18 @@ void tessera_clock_step(track_t *t)
 {
     uint32_t tr = trk_index(t);
     if (tr >= TESSERA_TRACKS) return;
+    tess_in_step = 1;
     if (!cord_smask[tr]) {
         tess_clock_step_body(t, tr);
         tess_quad_link(t, tr);
-        return;
+    } else {
+        cord_step_begin(tr);                            /* the cords on its settings, for this step only */
+        tess_clock_step_body(t, tr);
+        tess_quad_link(t, tr);
+        cord_step_end(tr);
     }
-    cord_step_begin(tr);                                /* the cords on its settings, for this step only */
-    tess_clock_step_body(t, tr);
-    tess_quad_link(t, tr);
-    cord_step_end(tr);
+    tess_in_step = 0;
+    tess_run_k[tr] = seq_run_step[tr] + 1u;
 }
 /* TWEAK 2 (Logic and Branches). LOGIC: this step's hit g against track lg_with's last step (tessera.hit, what it
  * played on its own voice). The tracks step in index order, so a lower track's hit is this step's, a higher one's the
@@ -1236,10 +1283,12 @@ static void tess_chord_play(track_t *t, uint32_t tr, uint32_t gate)
 static void tess_clock_step_body(track_t *t, uint32_t tr)
 {
     tess_seed_fresh(tr);                                    /* before EVOLVE captures the phrase's start */
+    if ((tess_join_due >> tr & 1u) && !t->p[P_MUTE]) tess_join(t, tr);
     tessera_evolve_tick(t, tr);
 
     tessera.hit[tr] = 0;
     if (t->p[P_MUTE]) {
+        tess_join_due |= (uint8_t)(1u << tr);               /* (its playhead stands: back in time when heard) */
         if (tessera.active_gate[tr]) {
             trk_note_off(t, tessera.last_note[tr]);
             tessera.active_gate[tr] = 0;
@@ -1467,6 +1516,7 @@ void tessera_mode_set(uint32_t tr, uint32_t m)
     if (tessera.evolve[tr].form) tess_form_restart(tr);     /* the sections were another engine's */
     tess_rearm(tr);
     answer_restart(tr);
+    tess_join_due |= (uint8_t)(1u << tr);                   /* (playing: in time with the others) */
 }
 
 static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v);
@@ -2746,6 +2796,7 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
         if (ev->form) tess_form_restart(tr);
         tess_rearm(tr);
         answer_restart(tr);
+        tess_join_due |= (uint8_t)(1u << tr);
         return;
     case TX_TUR_LEN:
         tessera.turing[tr].len = (uint8_t)tess_clampi(v, 2, 16);
