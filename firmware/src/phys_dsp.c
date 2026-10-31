@@ -260,8 +260,9 @@ static __attribute__((noinline)) void px_modal_exciter(px_modal_blk_t *B, px_mod
     px_svf_coef(&B->ex, cut, bow ? 179u : 384u);         /* q 0.7 / 1.5 */
     B->strike = 0;
     B->dust_thr = 0;
-    if (bow) {                                           /* Dust: density 0.3 (5e-5 + (1 - 5e-5) b^4) */
-        int32_t dn = px_m(brightness, brightness, 16), df;
+    if (bow) {                                           /* Dust: density 0.3 (5e-5 + (1 - 5e-5) b'^4), b' = 0.35 +
+                                                          * 0.65 b (DaisySP: b; a dull bow fell silent) */
+        int32_t bb = 22938 + px_m(brightness, 42598, 16), dn = px_m(bb, bb, 16), df;
         dn = px_m(dn, dn, 16);
         df = 3 + px_m(dn, 65533, 16);
         B->dust_thr = (uint32_t)df * 19661u;             /* 0.3 df, Q32 */

@@ -29,7 +29,9 @@ static const char *const PRESET_CAT[NENGINES] = {
     [6] = "BLLEPPSPPBLWFRPP",                           /* TRIO: FAT BASS .. CHIP CHOIR, then the warm set (WARM PAD .. SWEEP PAD) */
 #endif
 #if PHYS_ON
-    [9] = "EKUSKDDSU",                                  /* PHYS: BELL TREE, MARIMBA, PLUCK, BOWED METAL, KALIMBA, HAND DRUM, TOMS, DRONE STRING, HARP */
+    [9] = "EKUSKDDSUEEPUUSDP",                          /* PHYS: BELL TREE, MARIMBA, PLUCK, BOWED METAL, KALIMBA, HAND DRUM, TOMS,
+                                                         * DRONE STRING, HARP, VIBES, GONG, SINGING BOWL, DULCIMER, SITAR,
+                                                         * BOWED STRING, TIMPANI, SYMPATHY */
 #endif
     [10] = "DDDD",                                      /* DRUM: the kits (808, 909, SID, SID DIGI) */
     [12] = "KEBRPEGUKRBEEKGSPLUEWEBEOPPPFEEEDEDDUUUU",  /* FM6, INIT VOICE, ZEN-1's (SOFT PAD .. KUGO HARP) */
