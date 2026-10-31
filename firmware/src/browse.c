@@ -414,7 +414,7 @@ static void browse_turn(uint32_t role, int32_t s)
         brw.on = 0;
     loaded = list_cur(&total);
     if (!total) {
-        ui_message(m == LM_FAV ? "NO FAVORITES" : m == LM_RECENT ? "NO RECENT SOUNDS" : "NO SOUNDS IN LIST");
+        ui_message(m == LM_FAV ? "NO FAVORITES" : m == LM_RECENT ? "NO RECENT SOUND" : "LIST IS EMPTY");
         return;
     }
     d = list_accel(role, s, total, &fast);

@@ -284,7 +284,7 @@ static void fm1_main(void)
 #if MELODEE_USB_AUDIO
         if (ua_off_apply(fm1_ms)) {                     /* the menu switched Melodee Out / In: the host re-reads */
             settings_save();                            /* while off the bus: no USB deadline missed */
-            ui_say("USB ", "RECONNECTING");
+            ui_say("USB ", "RECONNECT");
         }
 #endif
         if (fm1_ms > 30000u && bootguard.pending) {     /* a crash or hang in the first 30 s counts */
@@ -314,7 +314,7 @@ static void fm1_main(void)
                 if (ui.uboot) {
                     ui.uboot = 0;
                     ui.force = 1;                       /* what the countdown covered */
-                    ui_message("UPDATE CANCELLED");
+                    ui_message("UPDATE STOPPED");
                 }
                 t0 = fm1_ms;
             } else if (fm1_ms - t0 > 2000u && fm1_ms - t0 <= 5000u) {

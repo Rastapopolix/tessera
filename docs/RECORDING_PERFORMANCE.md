@@ -24,7 +24,7 @@ a division snaps only the new take's onsets to that swung grid. Independent
 note lengths, velocities and drum properties stay intact, and the piano roll
 shows the committed timing. Changing QNT later affects the next take only.
 An occupied manual step prevents the pass: the take is retained unchanged and
-the device shows **QNT STEP OCCUPIED**. Existing recorded notes and other banks
+the device shows **QNT STEP TAKEN**. Existing recorded notes and other banks
 are preserved.
 REC + PLAY arms and starts in one gesture (or waits for the next pattern start
 if already playing). Holding REC opens the mixer.

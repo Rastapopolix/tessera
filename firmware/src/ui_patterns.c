@@ -264,7 +264,7 @@ static void patgrid_edit(uint32_t k, int32_t steps)
     }
     uint32_t from = t->pattern_next < NPAT ? t->pattern_next : t->pattern;
     if (pattern_request(t, (uint32_t)clamp((int32_t)from + (steps > 0 ? 1 : -1), 0, NPAT - 1u)))
-        ui_message("STOP SONG TO SWITCH");
+        ui_message("STOP TO SWITCH");
     ui.force = 1;
 }
 
@@ -282,7 +282,7 @@ static void ptc_start(void)                             /* the pattern sheet's C
 {
     uint32_t k = song.sel % NTRK, src = trk[k].pattern, i, b = (src + 1u) % NPAT;
     if (chain_busy()) {
-        ui_message("STOP SONG TO COPY");
+        ui_message("STOP TO COPY");
         return;
     }
     if (pattern_empty(k, src)) {
@@ -310,8 +310,8 @@ static void ptc_paste(int asked)                        /* OCT+: copy it there (
     rc = pattern_copy(&trk[k], ui.ptc_src, ui.ptc_dst);
     if (!rc)
         ui.ptc_on = 0;
-    ui_message(!rc ? "PATTERN COPIED" : rc == 2 ? "PATTERN DATA FULL" : chain_busy() ? "STOP SONG TO COPY" :
-               "PATTERN IS PLAYING");
+    ui_message(!rc ? "PATTERN COPIED" : rc == 2 ? "PATTERN FULL" : chain_busy() ? "STOP TO COPY" :
+               "PATTERN PLAYING");
     ui.force = 1;
 }
 

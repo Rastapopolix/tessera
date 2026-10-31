@@ -1031,7 +1031,7 @@ static int test_grids_layer(void)
             fm1_in.notes |= 1u << K[i]; host_notes |= 1u << K[i]; frame();
             fm1_in.notes = 0; frame();
             if (tessera_param_get(tr, TX_GRD_PART4) != P4[i] ||
-                strcmp(ui.msg, i == 1u || i == 3u ? "PART4: CP OH TM RS CB" : i ? "PART4: BELL" : "PART4: CLAP"))
+                strcmp(ui.msg, i == 1u || i == 3u ? "PART4: BLACK" : i ? "PART4: BELL" : "PART4: CLAP"))
                 break;
         }
         bad += check("..a black key picks the fourth part's sound (CP CLAP, CB BELL); BD, a white key refused", i == 4u);
@@ -1689,7 +1689,7 @@ static int test_rec(void)
         bad += check("REC again disarms (the transport runs on)", song.rec == 0u && transport_req == 0u);
         hold(B_REC);
         bad += check("REC held captures (nothing played: nothing), no arming, no dialog", ui.confirm == CF_NONE && song.rec == 0u &&
-                     msg_is("NOTHING TO CAPTURE"));
+                     msg_is("NOTHING PLAYED"));
     }
     ui_power_on();
     press(B_REC);
@@ -3185,7 +3185,7 @@ static int test_init_scales_patterns(void)
     undo_step(1);
     bad += check("..EDIT held undoes it, EDIT + OCT+ redoes it", ok && seq_is_empty(t));
     sheet_do("Delete pattern");
-    ok = !ui.confirm && msg_is("NOTHING TO DELETE");
+    ok = !ui.confirm && msg_is("NOTHING THERE");
     sheet_do("Copy to\x85");
     bad += check("..an empty pattern: nothing to delete, nothing to copy", ok && !ptc_on() && msg_is("NOTHING TO COPY"));
     return bad;
@@ -4130,7 +4130,7 @@ static int test_boot_template(void)
     trk[2].p[P_E0] = 4;                                  /* (KIT 808) */
     sheet_do("Save as template");
     bad += check("SAVE on TMPL: the template, at once (no NAME, no dialog)", template_used() && !name_on() &&
-                 ui.confirm == CF_NONE && (msg_is("TEMPLATE SAVED (RAM)") || msg_is("TEMPLATE SAVED")));
+                 ui.confirm == CF_NONE && (msg_is("TEMPLATE IN RAM") || msg_is("TEMPLATE SAVED")));
     press(B_EDIT);
     bad += check("  EDIT there: no NAME (the template has no name)", !name_on());
     trk[1].p[P_LEVEL] = 20;
@@ -4158,8 +4158,8 @@ static int test_boot_template(void)
     bootguard.failed = 1;
     settings_boot = 2;
     project_boot();
-    bad += check("  a boot that crashed before: the project skipped (BOOT PROJECT SKIPPED)", trk[1].p[P_LEVEL] == 99 &&
-                 msg_is("BOOT PROJECT SKIPPED"));
+    bad += check("  a boot that crashed before: the project skipped (BOOT PROJ SKIP)", trk[1].p[P_LEVEL] == 99 &&
+                 msg_is("BOOT PROJ SKIP"));
     bootguard.failed = 0;
     {   /* the settings keep BOOT and the kept GLO values; the template follows them in the record */
         persist_t p = {0};
@@ -4277,7 +4277,7 @@ static int test_quick_save(void)
     btn_down(B_REC); frame();
     btn_up(B_REC); btn_up(B_SAVE); frame();
     bad += check("  a new project: PROJECT on a free slot (A), SAVE picked", !ui.home && cur_page()->graph == GR_SLOTS &&
-                 song.g[G_SLOT] == 1 && ui.act == 4u && msg_is("NEW PROJECT: PICK SLOT"));
+                 song.g[G_SLOT] == 1 && ui.act == 4u && msg_is("NEW: PICK SLOT"));
     memset(proj_bank_len, 0, sizeof proj_bank_len);
     memset(proj_bank_slot, 0, sizeof proj_bank_slot);
     return bad;
@@ -4353,7 +4353,7 @@ static int test_rec_gestures(void)
     transport_req = 0;
     song.rec = 0;
     hold(B_REC);
-    bad += check("REC held: Capture, nothing armed", !song.rec && !transport_req && msg_is("NOTHING TO CAPTURE"));
+    bad += check("REC held: Capture, nothing armed", !song.rec && !transport_req && msg_is("NOTHING PLAYED"));
     go_home();
     press(B_REC);
     bad += check("REC tapped: armed, transport remains stopped", (song.rec & 1u) && transport_req == 0u && ui.home);
@@ -4806,7 +4806,7 @@ static int test_quick_layers(void)
     ok &= ui.home && !ui.layer;                   /* (a combo: no tap, so no MIXER) */
     song.g[G_CLOCK] = 1;
     turn(EN_SELECT, 1);
-    ok &= song.g[G_BPM] == 119 && msg_is("TEMPO: CLK IS EXT");
+    ok &= song.g[G_BPM] == 119 && msg_is("CLOCK IS EXT");
     song.g[G_CLOCK] = 0; song.g[G_BPM] = 120;
     bad += check("SELECT on HOME, and with GLO held: the tempo (a combo, no MIXER); with CLK EXT it says why", ok);
     {
@@ -5005,14 +5005,14 @@ static int test_bughunt_ui(void)
     pattern_init();                      /* no song rows */
     go_title("SONG"); frame();
     hold(B_OCTUP); sheet_do("Delete section");
-    ok = !ui.confirm && msg_is("NOTHING TO DELETE") && text_w(&AF_S, ui.msg) <= 236 - 106;   /* (fits the header) */
+    ok = !ui.confirm && msg_is("NOTHING THERE") && text_w(&AF_S, ui.msg) <= 236 - 106;   /* (fits the header) */
     hold(B_OCTUP); sheet_do("Clear song");
-    ok &= !ui.confirm && msg_is("NOTHING TO CLEAR");
+    ok &= !ui.confirm && msg_is("ALREADY EMPTY");
     track_defaults_steps(TSEL);
     chain_config.count = 1; chain_config.row[0].slot = 0; chain_config.row[0].repeat = 1;
     go_title("PATTERN"); frame();
     sheet_do("Clear pattern");                          /* an empty track, the song with a row */
-    ok &= !ui.confirm && msg_is("NOTHING TO CLEAR");
+    ok &= !ui.confirm && msg_is("ALREADY EMPTY");
     go_title("SONG"); frame();
     hold(B_OCTUP); sheet_do("Clear song");
     bad += check("the sheets' Delete section / Clear song / Clear pattern with nothing there: NOTHING TO ..; a song: its dialog",
@@ -5681,7 +5681,7 @@ static int test_capture(void)
         hold(B_REC);
         tessera_knob(0, TESS_ENG_EUCLID);
         hold(B_REC);
-        bad += check("  printed (recorded) notes there: CLEAR PATTERN TO PRINT", msg_is("CLEAR PATTERN TO PRINT") &&
+        bad += check("  printed (recorded) notes there: CLEAR TO PRINT", msg_is("CLEAR TO PRINT") &&
                      tessera.mode[0] == TESS_ENG_EUCLID && !ui.confirm);
         stop_transport();
         track_defaults_steps(TSEL);

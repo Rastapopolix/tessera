@@ -543,7 +543,7 @@ static int take_quantization(void)
     t->p[P_RECQ] = 4; original = recording[0]; seq_stop();
     bad += check("a quantization collision preserves the take and unrelated manual notes atomically",
         !memcmp(&original, &recording[0], sizeof original) && !memcmp(&manual, &t->step[1], sizeof manual) && recording_quant_blocked);
-    ui_notices(); bad += check("a blocked automatic quantization reports its occupied destination", msg_is("QNT STEP OCCUPIED"));
+    ui_notices(); bad += check("a blocked automatic quantization reports its occupied destination", msg_is("QNT STEP TAKEN"));
 
     raw_begin(); t = TSEL; t->p[P_RECQ] = 3;
     for (uint32_t i = 0; i < RECORD_MAX; i++) {

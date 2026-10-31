@@ -293,8 +293,8 @@ static int seq_tools(void)
     motion_set_event(t, 0, P_LEVEL, 50);
     for (uint32_t i = 0; motion.count < MOTION_MAX; i++) motion_set_event(&trk[1], i, P_LEVEL, 10);
     seqt_double();
-    bad += check("no room for the motion's copy: PATTERN DATA FULL, nothing changed", t->p[P_SLEN] == 4 &&
-        msg_is("PATTERN DATA FULL") && motion_count(t) == 1);
+    bad += check("no room for the motion's copy: PATTERN FULL, nothing changed", t->p[P_SLEN] == 4 &&
+        msg_is("PATTERN FULL") && motion_count(t) == 1);
 
     ui_power_on(); t = TSEL; track_defaults_steps(t); t->p[P_SLEN] = 4;
     seq_start(); events_block(32);
@@ -341,7 +341,7 @@ static int seq_tools(void)
     bad += check("  its row says 5 of 16 BD", str_eq(b, "5 of 16 BD"));
     rec_put(t, 3, 36, 0, 3);
     seqt_euclid();
-    bad += check("  recorded notes there: RECORDED NOTES HERE, nothing changed", msg_is("RECORDED NOTES HERE"));
+    bad += check("  recorded notes there: RECORDED NOTES, nothing changed", msg_is("RECORDED NOTES"));
 
     /* the sheet itself: OCT+ held on PATTERN, its Double row */
     ui_power_on(); t = TSEL; my_steps(t); stop_transport();

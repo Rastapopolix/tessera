@@ -236,7 +236,7 @@ static void glo_tap(void)
 static void bpm_turn(int32_t s)
 {
     if (song.g[G_CLOCK]) {
-        ui_message("TEMPO: CLK IS EXT");
+        ui_message("CLOCK IS EXT");
         return;
     }
     song.g[G_BPM] = (int16_t)clamp(song.g[G_BPM] + accel(EN_SELECT, s, GP[G_BPM].max - GP[G_BPM].min),
@@ -315,7 +315,7 @@ static int layer_play(void)
     if (layer_open() != LAYER_GLO || chain_busy())
         return 0;
     if (song.g[G_CLOCK] && song.playing) {
-        ui_message("RESTART: CLK IS EXT");
+        ui_message("CLOCK IS EXT");
         return 1;
     }
     transport_req = song.playing ? 3u : 1u;

@@ -107,7 +107,7 @@ static void ps_row_insert(int dup)                     /* a section at the row p
         chain_config.row[r].slot = chain_patterns[r][0];
     }
     chain_config.count++;
-    ui_message(dup ? "SECTION DUPLICATED" : "SECTION INSERTED");
+    ui_message(dup ? "SECTION COPIED" : "SECTION ADDED");
 }
 static void ps_insert(void) { ps_row_insert(0); }
 static void ps_dup(void) { ps_row_insert(1); }
@@ -395,10 +395,10 @@ static int cf_refused(uint32_t cf)
         ui_message("STOP TO EDIT");
     else if ((cf == CF_DEL_ROW && ui.song_row >= chain_config.count) ||
              (cf == CF_DEL_PAT && pattern_empty(song.sel % NTRK, TSEL->pattern)))
-        ui_message("NOTHING TO DELETE");
+        ui_message("NOTHING THERE");
     else if ((cf == CF_CLEAR_SONG && !chain_config.count) || (cf == CF_CLEAR_SEQ && seq_is_empty(TSEL)) ||
              (cf == CF_CLEAR_MOTION && !motion_count(TSEL)))
-        ui_message("NOTHING TO CLEAR");
+        ui_message("ALREADY EMPTY");
     else
         return 0;
     return 1;

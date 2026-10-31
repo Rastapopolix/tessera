@@ -114,7 +114,7 @@ key skips it.
 | Do this | And this happens |
 |---|---|
 | Tap **SEQ** | **GEN** first: KNOB 1 (**MODE**) picks what the track plays. SEQ then shows only that mode's pages. |
-| Tap **ARP** | Switches a STEP track to ARP and opens **ARP**; tap again for **ARP 2**. On a generator track it opens GEN instead ("ARP: MODE ON GEN"), so a playing generator never goes quiet by accident. |
+| Tap **ARP** | Switches a STEP track to ARP and opens **ARP**; tap again for **ARP 2**. On a generator track it opens GEN instead ("MODE IS ON GEN"), so a playing generator never goes quiet by accident. |
 | Hold **OCT+** on GEN | The generator's second layer, for TURING, EUCLID, MARKOV, MORPH, QUAD, CHORD, ATLAS, CONSTELLATION and ANSWER (see [OCT+ layers](#oct-layers-on-gen)). |
 | Hold **OCT+** on EVOLVE | A generator's GRAVITY; on a STEP track, STEP EVOLVE's HOW (see [EVOLVE](#evolve)). |
 | Turn **SELECT** on HOME, or with **GLO** held | Sets the tempo (BPM), as SEQ > TEMPO does; F4 with GLO held taps it. With CLK on USB or TRS the tempo is the clock's. |
@@ -637,7 +637,7 @@ STEP pattern (1, 2 or 4 bars, as many as the notes span), and the track switches
 place. Hold EDIT to undo, which puts the generator back.
 
 - Steps written by hand already there: **REPLACE STEPS?** OCT+ prints over them, OCT- keeps them.
-- Recorded notes there: **CLEAR PATTERN TO PRINT**.
+- Recorded notes there: **CLEAR TO PRINT**.
 - On a STEP track playing STEP EVOLVE's changes, REC held keeps the changes instead.
 - On a STEP track without them, REC held captures what you played on the keys in the last bars.
 

@@ -60,7 +60,7 @@ static void designer_draft(void) { if(ds.compare)designer_compare(); }
 static void designer_open(void)
 {
     if(designer_on()){ui.menu=0;ui.force=1;return;}   /* (the menu over it: back to it) */
-    if(chain_busy()){ui_message("STOP SONG TO DESIGN");return;}
+    if(chain_busy()){ui_message("STOP TO DESIGN");return;}
     browse_commit();momentary_restore();pop_close();smap.on=0;
     memset(&ds,0,sizeof ds);ds.track=song.sel;ds.eng=TSEL->eng_req;
     if(!eng_ok(ds.eng))ds.eng=ENGI_FALLBACK;

@@ -269,7 +269,7 @@ static int native_motion_test(void)
     }
     ui_power_on(); set_engine_of(TSEL, ENGI_FM6); apply_preset_to(TSEL, 0);
     go_home(); song.rec = 1; turn(EN_K1, -1);
-    bad += check("armed stopped Stage edit explains how to record motion", !motion.count && msg_is("PLAY TO RECORD MOTION"));
+    bad += check("armed stopped Stage edit explains how to record motion", !motion.count && msg_is("PLAY TO RECORD"));
     seq_stop();
     ui_power_on(); set_engine_of(TSEL, ENGI_FM6); apply_preset_to(TSEL, 0);
     for (uint32_t p = 0; p < NPAGES; p++) if (PAGES[p].scope == SC_FMOP) { ui.home = 0; ui.page = p; break; }
