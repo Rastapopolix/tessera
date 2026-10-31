@@ -808,7 +808,9 @@ static void mo_grid_panel(void)
         cv_blit(0, (uint32_t)(PV_GRID_Y + top));
     }
 }
-/* BOUNCE: the box, its walls hit on the last step drawn twice as thick; the balls, discs. FALL (BALLS past 4): the floor
+/* BOUNCE: the box, its walls hit on the last step drawn twice as thick; the balls, discs, 0..255 running from touching
+ * one thick wall to touching the other, a ball that hit a wall on the last step drawn there (gen_bounce_touch; the
+ * model keeps it where it bounced back to), so it meets the wall on the step its note plays. FALL (BALLS past 4): the floor
  * (thick on a landing), the leaves tilted as they sway, a landed one flat on the floor (dim as it rests, a bass leaf
  * hollow), a gust's streaks dashed across the box */
 static void mo_pic_bounce(const gen_bounce_t *b)
@@ -839,8 +841,11 @@ static void mo_pic_bounce(const gen_bounce_t *b)
     mo_fill(2, w & 1u ? 105 : 106, 116, w & 1u ? 2 : 1, w & 1u ? MO_INK : MO_DIM);      /* floor */
     mo_fill(2, 53, w & 2u ? 2 : 1, 54, w & 2u ? MO_INK : MO_DIM);                       /* left */
     mo_fill(w & 4u ? 116 : 117, 53, w & 4u ? 2 : 1, 54, w & 4u ? MO_INK : MO_DIM);      /* right */
-    for (k = n; k-- > 0;)
-        mo_disc(7 + (int32_t)b->x[k] * 106 / 255, 101 - (int32_t)b->y[k] * 43 / 255, 2, MO_INK);
+    for (k = n; k-- > 0;) {
+        uint32_t t = gen_bounce_touch(b, k);
+        int32_t x = t & 2u ? 0 : t & 4u ? 255 : b->x[k], y = t & 1u ? 0 : t & 8u ? 255 : b->y[k];
+        mo_disc(6 + x * 107 / 255, 102 - y * 45 / 255, 2, MO_INK);
+    }
 }
 /* AWAKE: loop A (the notes) as bars 1..8 high over loop B (their lift) as its figure, 16 steps each; a rest a dash,
  * past a loop's length a dim line; the steps playing solid, the others outlined; the step the keys picked framed */
