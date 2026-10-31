@@ -329,9 +329,9 @@ static void tracks_edit(uint32_t slot, int32_t steps)
     motion_capture(t, id, *vp);
 }
 
-/* REC arms one pattern pass on the selected track without navigating. During
- * playback it waits for loop zero; another tap cancels or finishes the take.
- * On STEP, armed keys audition/record instead of writing the cursor step. */
+/* REC arms the selected track without navigating. During playback it waits for loop zero, then records pass after
+ * pass (overdub) until another tap finishes the take (or cancels the wait). EDIT + REC clears the pattern for a new
+ * take, REC staying on. On STEP, armed keys audition/record instead of writing the cursor step. */
 static void rec_tap(void)
 {
     uint8_t bit = (uint8_t)(1u << song.sel);
@@ -353,8 +353,8 @@ static void rec_tap(void)
         ui_message("REC OFF");
 }
 
-/* REC + PLAY starts an armed track, or queues its next pattern pass if playback
- * already runs. REC's release then does nothing (no tap, no hold). */
+/* REC + PLAY starts an armed track, or queues it for the next loop start if playback
+ * already runs; it records until REC again. REC's release then does nothing (no tap, no hold). */
 static void rec_play(void)
 {
     uint8_t bit = (uint8_t)(1u << song.sel);

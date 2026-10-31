@@ -632,8 +632,8 @@ static int rec_test(void)
     rec_run_to(t1, 0, 10);
     ok_chord = t1->step[13].n == 2u && rec_step_is(t1, 14, ST_TIE, 0, 0) && rec_step_is(t1, 15, ST_TIE, 0, 0) &&
                t1->step[0].time != ST_TIE;
-    /* (e) LEN 4, held for 10 steps: the take seals at the first pattern boundary.
-     * Each independent scenario starts a new armed pass; recording no longer loops. */
+    /* (e) LEN 4, held for 10 steps: REC records on over the loops; the hold ties up to the step before its own
+     * onset (the whole pattern this note) and no further. Each independent scenario starts a new armed take. */
     seq_stop(); song.rec = 0x02u; transport_req = 1;
     rec_run_to(t2, 1, 10);
     input_on(t2, 55, 100);
@@ -641,7 +641,7 @@ static int rec_test(void)
         rec_run_to(t2, (2u + i) % 4u, 50);
     input_off(t2, 55);
     ok_cap = rec_step_is(t2, 1, ST_NOTE, 1, 55) && rec_step_is(t2, 2, ST_TIE, 0, 0) && rec_step_is(t2, 3, ST_TIE, 0, 0) &&
-             rec_step_is(t2, 0, ST_REST, 0, 0) && !(song.rec & 0x02u);
+             rec_step_is(t2, 0, ST_TIE, 0, 0) && (song.rec & 0x02u);
     /* (f) SWING 50 %: ending the take commits QNT to the closest swung onset. */
     seq_stop(); t3->p[P_RECQ] = 3; song.rec = 0x04u; transport_req = 1;
     rec_run_to(t3, 4, 46);                         /* 0.46 x 1.2 = 0.55 period */
@@ -670,7 +670,7 @@ static int rec_test(void)
     printf("tracks: recording lengths: held 3.2 steps -> NOTE TIE TIE and a 0.2-step tail %s; 0.3 step -> one "
            "step %s; past the middle of the next -> NOTE TIE %s\n", ok_len ? "ok" : "FAIL", ok_short ? "ok" : "FAIL",
            ok_half ? "ok" : "FAIL");
-    printf("tracks: recording lengths: a chord ties until its last key %s; seals at LEN 4 boundary %s; MONO legato A..B -> "
+    printf("tracks: recording lengths: a chord ties until its last key %s; ties round LEN 4, REC on %s; MONO legato A..B -> "
            "A TIE B TIE %s\n", ok_chord ? "ok" : "FAIL", ok_cap ? "ok" : "FAIL", ok_mono ? "ok" : "FAIL");
     printf("tracks: recording with SWING 50 %%: notes round to the nearest swung onset %s\n",
            ok_swing ? "ok" : "FAIL");

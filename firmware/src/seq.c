@@ -1141,10 +1141,11 @@ static void seq_grid_tick(track_t *t, uint32_t n)
         t->seq_idx = (uint16_t)((t->seq_idx + 1u) % (len ? len : 1u));
         if (!t->seq_idx && !starting)
             t->seq_pass++;
-        if (!t->seq_idx && !starting && !chain.running) {
+        if (!t->seq_idx && !starting && !chain.running) {   /* punch-in at the loop's start; then REC stays on, a
+                                                         * pass over the last (overdub), until REC again (Theo
+                                                         * 2026-10-31: a whole take, not one pass) */
             uint8_t bit = (uint8_t)(1u << trk_index(t));
-            if (song.rec_pass & bit) rec_set(t, 0);
-            else if (song.rec & song.rec_wait & bit) {
+            if (song.rec & song.rec_wait & bit) {
                 song.rec_wait &= (uint8_t)~bit;
                 song.rec_pass |= bit;
                 punch_in = 1;
