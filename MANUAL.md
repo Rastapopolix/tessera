@@ -753,6 +753,7 @@ Hold **HOME** for the menu. Tessera's additions:
 | **COLOR** | The screen's ink, on black: YELLOW (the default), WHITE, GREEN, BLUE, RED, ORANGE, PINK, HOT PINK or LILAC; or MOSAIC, a colour per track with the selection in white. |
 | **MIDI OUT** | What goes out over USB MIDI: **KEYS** (the notes you play, as Melodee sent them), **ALL** (also the steps, the ARP, recordings and every generator) or **OFF**. Each track on its own channel: see [MIDI OUT channels](#midi-out-channels). |
 | **CLOCK OUT** | 24 pulses a beat with START and STOP over USB, while the clock is INT. |
+| **MIDI CC IN** | **ON** (the default): CCs and NRPNs set the tracks' parameters (see [MIDI CC control](#midi-cc-control)). **OFF**: they move nothing, for a sequencer that sends CCs to other gear on the same channels. Bend, mod wheel, expression, sustain and aftertouch always play. Saved. |
 | **PANEL GAMMA** | The screen's contrast curve: the panel chip's own **G2.2** (the default), G1.8, G2.5 and G1.0, or TUNED and TUNED+VCOM. The screen goes black for a moment and redraws. Saved. |
 | **TRACK KNOB** | RIGHT: the ALGORITHM knob picks the track and PRESETS browses sounds, as printed. LEFT: the two swap. |
 | **ABOUT** | Version, credits and, after a crash, LAST CRASH (until power-off). |
@@ -772,6 +773,44 @@ notes go out at all is still the menu's **MIDI OUT** (KEYS, ALL or OFF): for the
 **ALL**.
 
 <p align="center"><img src="assets/gallery/midi_out.png" alt="GLO > MIDI OUT" width="240"></p>
+
+### MIDI CC control
+
+External gear (a sequencer, a controller, norns or crow through a MIDI interface, a DAW) can turn Tessera's
+parameters. A track listens on the channel it plays on (**SYSTEM > ROUT**: CH1-4 is tracks 1 to 4 on channels 1 to 4;
+SEL the selected track; a drum track also on the **DRUM** channel). A CC's 0 to 127 spans the whole range of the
+parameter, as turning its knob all the way would; the knob carries on from there. While recording, **MOTION** keeps
+the moves as it keeps the knob's. Cords and MOD go on adding to the value the CC sets.
+
+| CC | Sets |
+|---|---|
+| 1 | Mod wheel (a MOD and cord source, **MODW**) |
+| 5 | GLIDE |
+| 7 | LEVEL |
+| 10 | PAN (64 the centre) |
+| 11 | Expression (**EXPR**) |
+| 16 to 19 | The engine's four HOME knobs |
+| 20 to 27 | The engine's E1 to E8 (its two EDIT pages) |
+| 64 | Sustain pedal |
+| 71, 74 | Two of the engine's own parameters, where it has them (its resonance and brightness) |
+| 72, 73, 75 | RELEASE, ATTACK, DECAY |
+| 76 | LFO RATE |
+| 77, 78 | LFO to pitch, LFO to filter |
+| 79 | SUSTAIN |
+| 91, 93, 94 | FX SEND 1, 2, 3 |
+| 102 | The generator's MODE (0 to 127 across the modes, in the GEN page's order) |
+| 103 to 105 | The GEN page's KNOB 2 to 4 for the track's MODE (TURING: LENGTH, PROB, SPAN; EUCLID: STEPS, PULSE, ROT ..) |
+| 120, 121, 123 | All sound off, reset controllers, all notes off |
+
+**Every other parameter by NRPN.** Each parameter has a number, its ID in the
+[parameter reference](docs/PARAMETERS.md) (0x000 a track's, 0x100 the project's, 0x200 the generators'). Send
+NRPN MSB (CC 99) = ID / 128 and LSB (CC 98) = ID % 128, then the value with data entry: CC 6 (0 to 127), and CC 38 after
+it for 14-bit precision. Example: TURING PROB on track 1 is 0x202: CC 99 = 4, CC 98 = 2, CC 6 = the amount, on
+channel 1. A project setting (TEMPO, the send effects) answers on any channel a track listens on. Left out: the
+device's setup (MIDI input, clock source, ROUT), the buttons (LOAD, SAVE ..) and the song's scale (SCL, QNT), which
+stay on the device.
+
+Turn **MIDI CC IN** off in the menu when another device's CCs should not reach Tessera.
 
 ---
 
