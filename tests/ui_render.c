@@ -496,7 +496,7 @@ enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_
        S_CONFIRM_SEQ, S_CONFIRM_PROJ, S_CONFIRM_USER, S_CONFIRM_MOTION, S_CONFIRM_ERASE,
        S_MENU, S_ABOUT, S_ABOUT_REC, S_ABOUT_CREDITS, S_ABOUT_END, S_UBOOT, S_CALIBRATION,
        S_BATT0, S_BATT1, S_BATT2, S_BATT3, S_BATT_USB, S_MOTION_REC, S_MOTION_OFF, S_SONG_HOME,
-       S_MENU_HOLD, S_MENU_USB, S_MENU_USB_STEREO, S_MENU_USB_TRACKS, S_GLO_PEEK, S_GLO_ACTIVE, S_GLO_EXT, S_SCL_PEEK, S_SCL_ACTIVE, S_LAYER_HINT,
+       S_MENU_HOLD, S_MENU_USB, S_MENU_USB_STEREO, S_MENU_USB_TRACKS, S_GLO_PEEK, S_GLO_ACTIVE, S_GLO_EXT, S_GLO_SOUND, S_GLO_SOUND_FAST, S_SCL_PEEK, S_SCL_ACTIVE, S_LAYER_HINT,
        S_NAME_USER, S_NAME_TYPING, S_NAME_123, S_NAME_EMPTY, S_NAME_FULL, S_NAME_PLAYING, S_PROJECT_NAMED, S_SONG_NAMED,
        S_USER_FOOT,
 #if MELODEE_SLICE && SMP_USER_SLOTS
@@ -522,7 +522,7 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "h
     "confirm_motion", "confirm_erase", "menu", "about", "about_rec", "about_credits", "about_end", "uboot", "calibration",
     "batt_0", "batt_1", "batt_2", "batt_3", "batt_usb", "motion_rec", "motion_off", "song_home",
     "menu_hold", "menu_usb", "menu_usb_stereo", "menu_usb_tracks",
-    "layer_glo_peek", "layer_glo_active", "layer_glo_ext", "layer_scl_peek", "layer_scl_active", "layer_hint",
+    "layer_glo_peek", "layer_glo_active", "layer_glo_ext", "layer_glo_sound", "layer_glo_sound_fast", "layer_scl_peek", "layer_scl_active", "layer_hint",
     "name_user", "name_typing", "name_123", "name_empty", "name_full", "name_playing", "project_named", "song_named",
     "user_foot",
 #if MELODEE_SLICE && SMP_USER_SLOTS
@@ -1762,7 +1762,17 @@ static void setup(int s)
         ui.hot_col = 0; ui.hot_t = 30;
         break;
     case S_GLO_EXT: go_home(); ui.layer = LAYER_GLO; song.g[G_CLOCK] = 1; trk[0].p[P_MUTE] = trk[3].p[P_MUTE] = 1; break;
-    case S_SCL_PEEK: go_title("ENV"); ui.layer = LAYER_SCL; break;
+    /* GLO + PRESETS turned on ENV (Mono: the sound view in the map's place): loaded; a fast turn waiting (HOT) */
+    case S_GLO_SOUND: go_title("ENV"); ui.layer = LAYER_GLO; lys.snd = 1; break;
+    case S_GLO_SOUND_FAST: {
+        uint32_t total, cur;
+        go_title("ENV"); ui.layer = LAYER_GLO; lys.snd = 1;
+        cur = list_cur(&total);
+        brw.on = 1; brw.trk = song.sel; brw.mode = (uint8_t)list_mode(); brw.n = (uint16_t)((cur + 9u) % total); brw.x = 4;
+        brw.t = fm1_ms;
+        break;
+    }
+    case S_SCL_PEEK: lys.snd = 0; brw.on = 0; go_title("ENV"); ui.layer = LAYER_SCL; break;
     case S_SCL_ACTIVE: go_home(); ui.layer = LAYER_SCL; TSEL->p[P_ROOT] = 3; TSEL->p[P_SCALE] = 2; ui.hot_col = 1; ui.hot_t = 30; break;
     case S_LAYER_HINT: go_page(GR_TRK); ui.msg_t = 0; layer_tap(LAYER_GLO); break;
     /* NAME (ui_name.c): USER SAVE prefilled; a letter cycling (RS: S, R next); 123 on a project; an empty project name

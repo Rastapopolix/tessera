@@ -45,6 +45,7 @@ static struct {
     uint32_t fill;                     /* GLO: E4 held, FILL (seq.c seq_fill) */
     uint32_t tap[4];                   /* GLO TAP: the last taps (fm1_ms) */
     uint8_t ntap, dt_l, dtap, rp_dirty;
+    uint8_t snd;                       /* GLO + PRESETS turned: the sound view in the map's place (Mono) */
     uint32_t dt_ms;
     struct { uint8_t home, page, act, seq, fam[FAM_COUNT]; } nv;
 } lys;
@@ -136,7 +137,7 @@ static void layer_let_go(uint32_t quiet)
     (void)quiet;
 
     if (lys.rp_dirty) { lys.rp_dirty=0; settings_save(); }
-    ui.ly_t0=0; ui.ly=0; ui.lock=0; kb_lock=0;
+    ui.ly_t0=0; ui.ly=0; ui.lock=0; kb_lock=0; lys.snd=0;
 }
 static void layer_lock_input(uint32_t pressed)
 {
@@ -245,8 +246,9 @@ static void bpm_turn(int32_t s)
 }
 
 /* PRESETS with GLO held, on any page: the selected track's sounds, as PRESETS on HOME (the same list, loads and
- * acceleration); the page's own PRESETS turn (FM6's operator, the NOTES zoom, ..) needs GLO let go. The sound shown
- * (the pending one while turning fast) in the message, as the page may not show it */
+ * acceleration); the page's own PRESETS turn (FM6's operator, the NOTES zoom, ..) needs GLO let go. Mono: the sound
+ * view in the map's place (mo_glo_sound) until GLO is let go or the map's keys or knobs are used; the detailed look:
+ * the sound shown (the pending one while turning fast) in the message */
 static void glo_preset_turn(int32_t s)
 {
     char tag[8], nm[24];
@@ -255,15 +257,30 @@ static void glo_preset_turn(int32_t s)
     browse_turn(EN_PRESET, s);
     if (!total)                                          /* (browse_turn said why) */
         return;
+    if (!lys.snd)
+        ui.force = 1;
+    lys.snd = 1;
+#if !MELODEE_LOOK
     src = browse_shown(&k);
     entry_label(src, k, tag, nm);
     ui_message(nm);
+#else
+    (void)tag, (void)nm, (void)k, (void)src;
+#endif
+}
+static int glo_sound_on(void) { return ui.layer == LAYER_GLO && lys.snd; }   /* draw_layer: the sound view, not the map */
+static void glo_map_back(void)                           /* the map's keys or knobs used: the map again */
+{
+    if (lys.snd)
+        ui.force = 1;
+    lys.snd = 0;
 }
 
 /* a key pressed in layer l (k: 0 = F3 .. 26 = G5) */
 static void layer_key(uint32_t l, uint32_t k)
 {
     uint32_t p = key_place(k), i;
+    glo_map_back();
 
     if (l == LAYER_GLO) {
         if (key_black(k)) {
@@ -309,6 +326,7 @@ static void layer_keys(uint32_t keys)
 static void layer_knob(uint32_t k, int32_t s)
 {
     uint32_t l = layer_open();
+    glo_map_back();
     if (l == LAYER_GLO) {                        /* T1..T4 LEVEL, recorded as on MIXER */
         int16_t *vp = &trk[k].p[P_LEVEL];
         *vp = (int16_t)clamp(*vp + accel(EN_K1 + k, s, TP[P_LEVEL].max - TP[P_LEVEL].min), TP[P_LEVEL].min, TP[P_LEVEL].max);
@@ -615,12 +633,94 @@ static void mo_layer(uint32_t l)
         cv_blit(0, s ? 120u : 18u);
     }
 }
+/* nm in up to two lines of ten large letters (twice the font), centred, broken between words: rows y, y + 16 (one
+ * line: y + 8) */
+static void mo_big_name(const char *nm, int32_t y, uint16_t c)
+{
+    char u[24], l[2][12];
+    uint32_t n, e = 0, i, k;
+    mo_ascii(u, nm, sizeof u);
+    n = str_len(u);
+    if (n > 10u) {
+        for (i = 1; i <= 10u; i++)
+            if (u[i] == ' ') e = i;
+        if (!e) e = 10u;
+    } else {
+        e = n;
+    }
+    mo_cut(l[0], u, e);
+    for (i = e; u[i] == ' '; i++) ;
+    mo_cut(l[1], u + i, 10);
+    for (k = 0; k < 2u; k++)
+        if (l[k][0])
+            mo_text_s(l[k], 60 - mo_tw(l[k]), y + (l[1][0] ? (int32_t)k * 16 : 8), 2, c);
+}
+/* GLO + PRESETS turned (lys.snd): the selected track's sound in the map's place. Its track and the list (LIST's
+ * name) above with its place in it; the sound before and after it dim; the sound large, HOT while a fast turn waits for
+ * the knob to rest (shown, not loaded yet; the turn's acceleration inverted, X4); its engine below; the foot: GLO DONE */
+static void mo_glo_sound(void)
+{
+    uint32_t total, at = preset_pos(&total), m = list_mode(), src, k, s, sig;
+    int pending = browse_pending();
+    char a[24], b[24], tag[8], nm[24];
+    sig = 0x534E44u + at * 7u + total * 131u + m * 1031u + (uint32_t)pending * 3u + song.sel * 11u + up_gen * 7919u +
+          ux.pal * 31u + (pending ? brw.x : 0u) * 40503u;
+    if (!ui.force && sig == ui.layer_sig)
+        return;
+    ui.layer_sig = sig;
+    for (s = 0; s < 2u; s++) {
+        int32_t r;
+        cv_begin(240, s ? 120u : 102u, MO_BG);
+        cv_oy = s ? -120 : -18;
+        b[0] = 'T', b[1] = (char)('1' + song.sel % NTRK), b[2] = 0;
+        mo_invc(b, 2, 13, MO_TRK(song.sel % NTRK));
+        mo_ascii(a, list_name(m), sizeof a);
+        mo_cut(b, a, 10);
+        mo_text(b, 18, 13, MO_DIM);
+        if (total && at < total) {
+            fmt_int(b, (int32_t)at + 1);
+            str_cpy(b + str_len(b), "/", 2);
+            fmt_int(b + str_len(b), (int32_t)total);
+            mo_textr(b, 118, 13, MO_DIM);
+        }
+        mo_hl(0, 22, 120, MO_DIM);
+        for (r = -1; r <= 1 && total; r += 2) {         /* the sounds before and after */
+            int32_t n = (int32_t)at + r;
+            if (n < 0 || n >= (int32_t)total)
+                continue;
+            src = preset_at((uint32_t)n, &k);
+            entry_label(src, k, tag, nm);
+            mo_ascii(a, nm[0] ? nm : tag, sizeof a);
+            mo_cut(b, a, 19);
+            mo_textc(b, 60, r < 0 ? 27 : 81, MO_DIM);
+        }
+        src = browse_shown(&k);                         /* the sound: the pending one while turning fast */
+        entry_label(src, k, tag, nm);
+        mo_big_name(nm[0] ? nm : tag, 40, pending ? MO_HOT : MO_INK);
+        mo_hl(0, 91, 120, MO_DIM);
+        mo_ascii(a, ENGINES[eng_idx(src_engine(src, k))]->name, sizeof a);
+        mo_cut(b, a, 19);
+        mo_textc(b, 60, 96, MO_DIM);
+        if (pending && brw.x > 1u) {                    /* a fast turn: its acceleration (as the browser) */
+            b[0] = 'X';
+            fmt_int(b + 1, brw.x);
+            mo_inv(b, 118 - mo_tw(b), 96);
+        }
+        mo_hl(0, 109, 120, MO_INK);
+        mo_lhint(1, "GLO", "DONE");
+        cv_oy = 0;
+        cv_blit(0, s ? 120u : 18u);
+    }
+}
 #endif
 static void draw_layer(void)
 {
     uint32_t l = ui.layer % LAYER_N, sig = l * 7919u + ux.gen * 977u, c;
 #if MELODEE_LOOK
-    mo_layer(l);
+    if (glo_sound_on())
+        mo_glo_sound();
+    else
+        mo_layer(l);
     return;
 #endif
     if (l == LAYER_GLO) {                               /* the four levels as strips at the top, each track's colour */

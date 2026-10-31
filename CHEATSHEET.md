@@ -50,7 +50,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **GLO** + C4 / F4 | Unmute all / tap the tempo (three taps or more; INT clock) |
 | **GLO** + E4 | FILL, while held (steps set to FILL / !FILL) |
 | **GLO** + KNOB 1 to 4 | Level of track 1 to 4 |
-| **GLO** + PRESETS | Browse the selected track's sounds, on any page (the name shows at the top) |
+| **GLO** + PRESETS | Browse the selected track's sounds, on any page (the sound shows large in place of the GLO map) |
 | **GLO** + PLAY | Restart from the top without stopping |
 | **SCL** + any key | ROOT: that key's note name (every melodic track while SCL > Key link is LINKED) |
 | **SCL** + KNOB 1 to 4 | ROOT, SCALE, CHRD, VOIC |

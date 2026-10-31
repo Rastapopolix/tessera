@@ -4917,6 +4917,20 @@ static int test_quick_layers(void)
         btn_up(B_GLO); frame();
         bad += check("GLO + PRESETS: the track's sounds from any page (alone: the page's), the name shown; a combo", ok &&
                      str_eq(cur_page()->title, "ENV") && !ui.layer);
+        btn_down(B_GLO); frame();
+        turn(EN_PRESET, 1);
+        ok = glo_sound_on();                      /* (draw_layer: the sound view, not the map) */
+        turn(EN_K1, 1); turn(EN_K1, -1);
+        ok &= !glo_sound_on() && ui.layer == LAYER_GLO;
+        turn(EN_PRESET, -1);
+        ok &= glo_sound_on();
+        btn_up(B_GLO); frame();
+        ok &= !glo_sound_on() && !ui.layer && str_eq(cur_page()->title, "ENV");
+        btn_down(B_GLO); frames(500);
+        ok &= ui.layer == LAYER_GLO && !glo_sound_on();
+        btn_up(B_GLO); frame();
+        bad += check("  GLO + PRESETS: the sound view in the map's place until GLO is let go or a knob or key of the map is "
+                     "used; GLO alone: the map", ok && list_cur(&total) == want);
     }
     song.playing = 1; transport_req = 0;
     btn_down(B_GLO); frame(); press(B_PLAY);
