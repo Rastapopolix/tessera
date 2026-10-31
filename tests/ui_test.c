@@ -4907,9 +4907,10 @@ static int test_quick_layers(void)
         spin(EN_PRESET, 1, 12);                   /* a fast turn: the first detent, then the knob's rest */
         want = preset_pos(&total);
         {
-            uint32_t k2;
+            uint32_t k2, s2;
             char tg[8];
-            entry_label(browse_shown(&k2), k2, tg, nm);   /* (the message: the sound the list shows, not loaded yet) */
+            s2 = browse_shown(&k2);                       /* (first: k2 is set by it, the order of a call's arguments is not) */
+            entry_label(s2, k2, tg, nm);                  /* (the message: the sound the list shows, not loaded yet) */
         }
         ok &= browse_pending() && want > list_cur(&total) && msg_is(nm);
         rest();
