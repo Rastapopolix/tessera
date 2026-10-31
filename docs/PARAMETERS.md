@@ -74,7 +74,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x05B | DRUM BELL | 0 to 127 | 127 | The bell's level in the kit. |
 | 0x05C | LFO SYNC | OFF, 4BAR, 2BAR, 1/1, 1/2, 1/4, 1/8, 8T, 1/16, 16T, 1/32 | OFF | Ties the LFO to the tempo: one cycle every bar, beat or step chosen; OFF runs at its own RATE. |
 | 0x05D | LFO TRIGGER | NOTE, FREE | NOTE | NOTE starts the LFO again with each note; FREE lets it run on. |
-| 0x05E | LFO POLARITY | BI, UNI | BI | BI moves both ways from the setting; UNI only one way. |
+| 0x05E | LFO POLARITY | BI, UNI | BI | BI moves both ways from the setting; UNI only one way. For this page's depths: a mod from the LFO has its own + or +- (OCT+ on MODS). |
 | 0x05F | STEREO SPREAD | 0 to 127 | 0 | Spreads the track's voices from left to right. |
 | 0x060 | FX 1 TYPE | OFF, PHASER, WIDTH, FORMANT, TAPE, SPIT, ECHO, ROOM, REVERB, CHORUS, FILTER | OFF | The track's insert effect 1. |
 | 0x061 | FX 1 MIX | 0 to 127 | 0 | How much of insert effect 1 is heard. |
@@ -250,11 +250,11 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 
 ## Mods
 
-A mod (the MODS page, under LFO) moves a destination on any track by a source on any track: by its AMOUNT (-100 to 100 %, at a full source the destination's whole range; PITCH: an octave) plus its OFFSET. A bipolar source (LFO at POL BI, KEY, RAND, S&H, SLEW, NOTE, DRIFT, TIDE, SWARM) swings both ways from the knob; OCT+ on MODS makes a mod UNI, the source folded to 0 to 1, so it moves one way only, as ENV does. ENV, VEL, KEY and RAND on a voice destination (PITCH, CUTOFF, SHAPE, GAIN) of their own track follow each note, as a chord's; elsewhere the latest note. Room for 32, 16 in use. They are the project's, saved with it. Melodee's MOD page is gone: the four routes a project or a sound was saved with become mods on their track, the same move (a sound's go when another sound is loaded on the track, unless one was edited).
+A mod (the MODS page, under LFO) moves a destination on any track by a source on any track: by its AMOUNT (-100 to 100 %, at a full source the destination's whole range; PITCH: an octave) plus its OFFSET. A mod's direction is shown under KNOB 1 and in its bar: +- moves both ways from the knob (the bar as far down as up), + one way only. A bipolar source (LFO, KEY, RAND, S&H, SLEW, NOTE, DRIFT, TIDE, SWARM, ENERGY) is +-; OCT+ on MODS makes it +, the source folded to 0 to 1, as ENV moves. The LFO page's POL (BI, UNI) is not the mod's: it shapes only that page's own depths (LFO PIT, FLT, SHP, AMP), and a mod from the LFO is +- or + by its own setting, whatever POL is. ENV, VEL, KEY and RAND on a voice destination (PITCH, CUTOFF, SHAPE, GAIN) of their own track follow each note, as a chord's; elsewhere the latest note. Room for 32, 16 in use. They are the project's, saved with it. Melodee's MOD page is gone: the four routes a project or a sound was saved with become mods on their track, the same move (a sound's go when another sound is loaded on the track, unless one was edited).
 
 | Source | |
 | --- | --- |
-| LFO | the track's LFO |
+| LFO | the track's LFO, both ways whatever its POL (the mod's +- or + decides) |
 | ENV | the envelope of the track's latest note |
 | VEL | the latest note's velocity |
 | KEY | the latest note's pitch (C4 = 0) |

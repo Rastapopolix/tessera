@@ -1052,6 +1052,16 @@ static int test_grids_layer(void)
 }
 
 /* CORDS (ui_cords.c): KNOB 2 the cord, 1 its source, 3 its destination, 4 the move (a fixed cord's: its OFFSET) */
+/* MODS: the bar's fill in the left half of row k's bar, below its middle (ui_cords.c cu_bar, the picked row's
+ * T_THEME; Mono's mo_cu_bar, T_TEXT); the live mark (T_TEXT) only on Mono */
+static uint32_t cords_left(uint32_t k)
+{
+    uint32_t n = 0, x, y, y0 = CU_Y + k * CU_H + 27u;
+    for (y = y0 + 2u; y < y0 + 6u; y++)
+        for (x = CU_BAR_X + 2u; x < CU_BAR_X + 102u; x++)
+            n += host_screen[y * 240u + x] == swap16(MELODEE_LOOK ? T_TEXT : T_THEME);
+    return n;
+}
 static int test_cords_page(void)
 {
     int bad = 0;
@@ -1088,6 +1098,20 @@ static int test_cords_page(void)
     bad += check("KNOB 1 back to --: the move kept as its OFFSET", c->src == CS_OFF && c->offset == 22 && !c->amount);
     turn(EN_K1 + 1u, -5);
     bad += check("KNOB 2 stops at cord 1", cord_ui_sel == 0u);
+    {   /* the bar: a +- mod's as far below the middle as above (its source swings both ways), a + mod's up only */
+        cord_t b = {CS_LFO, 0, CD_LEVEL, 0, 60, 0, 0};
+        uint32_t both, one, down;
+        cord_set(0, &b); ui.force = 1; frame();
+        both = cords_left(0);
+        b.uni = 1;
+        cord_set(0, &b); ui.force = 1; frame();
+        one = cords_left(0);
+        b.uni = 0; b.amount = -60;
+        cord_set(0, &b); ui.force = 1; frame();
+        down = cords_left(0);
+        bad += check("MODS bar: a +- mod's both ways from the middle, a + mod's one way (the live mark aside)",
+                     both > 40u && one < 6u && down > 40u);
+    }
     cord_clear();
     return bad;
 }

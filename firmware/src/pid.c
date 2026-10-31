@@ -256,7 +256,8 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     T_(P_LSYNC, "LFO SYNC",
         "Ties the LFO to the tempo: one cycle every bar, beat or step chosen; OFF runs at its own RATE."),
     T_(P_LTRIG, "LFO TRIGGER", "NOTE starts the LFO again with each note; FREE lets it run on."),
-    T_(P_LPOL, "LFO POLARITY", "BI moves both ways from the setting; UNI only one way."),
+    T_(P_LPOL, "LFO POLARITY", "BI moves both ways from the setting; UNI only one way. For this page's depths: a mod "
+                               "from the LFO has its own + or +- (OCT+ on MODS)."),
     T_(P_SPRD, "STEREO SPREAD", "Spreads the track's voices from left to right."),
     T_(P_FXTYPE, "FX 1 TYPE", "The track's insert effect 1."),
     T_(P_FXTYPE + 1, "FX 1 MIX", "How much of insert effect 1 is heard."),

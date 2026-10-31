@@ -2706,16 +2706,17 @@ static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on)
     str_cpy(b + str_len(b), "%", 2);
     mo_textr(cu_pct(c) ? b : b + 1, 116, 3, sel ? MO_INK : ink);
 }
-/* the move (cu_bar's canvas, 105 x 4 cells): the line, its middle, the amount from the middle, a mark where it moves
- * the destination now */
+/* the move (cu_bar's canvas, 105 x 4 cells): the line, its middle, the amount from the middle (a +- mod's both ways:
+ * its source swings it as far down as up), a mark where it moves the destination now */
 static void mo_cu_bar(const cord_t *c, int32_t s)
 {
     int on = cord_live(c);
     int32_t a = cu_pct(c), m = 52, x = 1 + (a + 100) * 102 / 200, lx = m + clamp(s, -32768, 32768) * 51 / 32768;
+    int32_t d = x < m ? m - x : x - m;
     cv_begin(CU_BAR_W, 9, MO_BG);
     mo_hl(1, 2, 102, MO_DIM);
     if (a)
-        mo_fill(x < m ? x : m, 1, x < m ? m - x : x - m, 2, on ? MO_INK : MO_DIM);
+        mo_fill(cord_bip(c) ? m - d : x < m ? x : m, 1, cord_bip(c) ? 2 * d : d, 2, on ? MO_INK : MO_DIM);
     mo_vl(m, 0, 4, MO_DIM);
     if (on && c->src)
         mo_vl(lx, 0, 4, MO_INK);

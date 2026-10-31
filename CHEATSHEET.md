@@ -141,7 +141,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | EVOLVE: **KNOB 4** (ROLL) | A new seed a click; turn back for the last one |
 | FORM: **KNOB 3** (CLEAR) | Forgets B and C |
 | FORM: **OCT+** held, **KNOB 1** | DEVELOP: each return of a section varies a little (0: exact) |
-| MODS: **OCT+** | The picked mod: BI / UNI |
+| MODS: **OCT+** | The picked mod: +- (both ways) / + (one way) |
 | MATRIX: **OCT+** | Opens the picked mod in MODS |
 
 ## Power-on and update
