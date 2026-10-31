@@ -32,7 +32,7 @@ CACHE_GUARDED = {
 
 def analyze(ir, dis, src):
     seq = (src / 'seq.c').read_text()
-    # melodee-tess: no USB host (upstream's usb_host.c); its hub re-entry bound applies only where it exists
+    # melodee-tess: the hub re-entry bound applies only where usb_host.c exists (MELODEE_USB_HOST)
     usb = (src / 'usb_host.c').read_text() if (src / 'usb_host.c').exists() else None
     if not ("if (song.playing || cin_left" in seq and
             "if (started) seq_advance(0);" in seq and
@@ -247,9 +247,10 @@ def analyze(ir, dis, src):
             starts_note = name == 'input_on' and target == 'seq_advance'
             if starts_note and note_started:
                 continue
-            # Only one hub level is supported. The recursive call in the
-            # inlined hub scanner uses depth=1; that probe rejects hubs.
-            probes_child = name == 'uh_probe' and target == 'uh_probe'
+            # Only one hub level is supported. The port helper calls the
+            # child probe with depth=1, which rejects hubs. Depending on
+            # inlining, that call can also appear inside uh_probe itself.
+            probes_child = name in {'uh_probe', 'uh_hub_port_probe'} and target == 'uh_probe'
             if probes_child and hub_depth:
                 continue
             # melodee-tess: a bank cache marks the bank loaded before it

@@ -270,6 +270,16 @@ static void fm1_main(void)
     for (;;) {
         uint32_t m = fm1_ms;
         fm1_wdt_feed();
+#if MELODEE_USB_HOST
+        uh_task(fm1_ms);                                /* before usb_retry: a host port is not retried as a device */
+        if (uh.msg) {
+            static const char *const UH_TEXT[] = {"", "", "", "MIDI READY", "NO MIDI DEVICE",
+                                                  "LOW SPEED", "DEVICE LOST"};
+            if (UH_TEXT[uh.msg][0])                     /* (on / off is the menu's value, not a toast) */
+                ui_say("USB ", UH_TEXT[uh.msg]);
+            uh.msg = 0;
+        }
+#endif
         usb_retry(fm1_ms);
 #if MELODEE_USB_AUDIO
         if (ua_off_apply(fm1_ms)) {                     /* the menu switched Melodee Out / In: the host re-reads */

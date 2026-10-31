@@ -754,6 +754,7 @@ Hold **HOME** for the menu. Tessera's additions:
 | **MIDI OUT** | What goes out over USB MIDI: **KEYS** (the notes you play, as Melodee sent them), **ALL** (also the steps, the ARP, recordings and every generator) or **OFF**. Each track on its own channel: see [MIDI OUT channels](#midi-out-channels). |
 | **CLOCK OUT** | 24 pulses a beat with START and STOP over USB, while the clock is INT. |
 | **MIDI CC IN** | **ON** (the default): CCs and NRPNs set the tracks' parameters (see [MIDI CC control](#midi-cc-control)). **OFF**: they move nothing, for a sequencer that sends CCs to other gear on the same channels. Bend, mod wheel, expression, sustain and aftertouch always play. Saved. |
+| **USB HOST** | **ON**: the USB-C port hosts a USB-MIDI keyboard, controller, synth or MIDI-to-CV module, with no computer in between (see [USB host](#usb-host)). **OFF** (the default): the port talks to a computer. Not saved: every start is OFF. |
 | **PANEL GAMMA** | The screen's contrast curve: the panel chip's own **G2.2** (the default), G1.8, G2.5 and G1.0, or TUNED and TUNED+VCOM. The screen goes black for a moment and redraws. Saved. |
 | **TRACK KNOB** | RIGHT: the ALGORITHM knob picks the track and PRESETS browses sounds, as printed. LEFT: the two swap. |
 | **ABOUT** | Version, credits and, after a crash, LAST CRASH (until power-off). |
@@ -812,6 +813,23 @@ stay on the device.
 
 Turn **MIDI CC IN** off in the menu when another device's CCs should not reach Tessera.
 
+### USB host
+
+With **USB HOST** ON in the menu the FM-1 is the computer: plug a class-compliant USB-MIDI device into the USB-C port,
+directly or through one USB hub, and after a moment the screen says **USB MIDI READY**.
+
+- **In**: its notes, CCs, bend and clock arrive as USB MIDI from a computer would: MIDI ROUTING picks the tracks, CLK
+  on USB follows its clock, and the [CC map](#midi-cc-control) works from its knobs.
+- **Out**: what MIDI OUT and CLOCK OUT send goes to the device, so a USB synth or a USB-MIDI-to-CV module plays
+  Tessera's tracks and follows its clock (MIDI OUT **ALL** for the steps and generators).
+- **Power**: the FM-1 does not power the device. Use a **powered hub**, or a device with its own power supply.
+- One MIDI device at a time: the first one found (behind a hub, the first port with a MIDI device). Full-speed
+  devices only (**LOW SPEED** otherwise); a device without USB-MIDI (a USB stick, crow) shows **NO MIDI DEVICE**.
+  norns is itself a host, so connect it as before.
+- Unplugging shows **DEVICE LOST** and ends every note held from MIDI; plug it in again and it is found again.
+- While USB HOST is ON there is no computer link: no USB audio, no web editor, no updates. Turn it OFF, or restart the
+  FM-1 (it always starts OFF), to get them back.
+
 ---
 
 ## Saving and older projects
@@ -851,6 +869,7 @@ To try the [demo projects](demos/README.md), `tools/demo_backup.py` puts them in
 Tessera stands on other people's ideas and work:
 
 - **Melodee** by keremimo, and **Felucca** by Leo Kuroshita / Hügelton Instruments: the firmware Tessera is built on.
+  USB host mode is Melodee's, by Kerem Kilic and recursivefieldinstruments.
 - **Grids** by Émilie Gillet / Mutable Instruments: the ATLAS generator's drum map and the way it is read.
 - **ORACLE** is Melodee's Prophet engine (after the Prophet-5), back under its own name with its own sounds.
 - **norns** scripts, as ideas restated in C (no code copied): **Awake** (tehn) for AWAKE, **Fall** (ambalek) for

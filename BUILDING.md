@@ -91,6 +91,7 @@ Build options (environment; most use `0` or `1`; defaults in `firmware/src/build
 | `MELODEE_FLASH` | 1 | settings, presets and projects in flash |
 | `MELODEE_OTA` | 1 | update entry (needs `MELODEE_FLASH`) |
 | `MELODEE_USB_AUDIO` | 1 | USB audio: "Tessera Out" plays the computer through the FM-1, "Tessera In" records the four tracks (16 / 24 bit, 44.1 kHz) |
+| `MELODEE_USB_HOST` | 1 | Menu USB HOST: the USB-C port hosts a USB-MIDI device (usb_host.c; ~3.6 KB flash, ~430 B RAM). Never saved, never in the update loader |
 | `MELODEE_CDC` | 0 (1 without USB audio) | USB serial console; it shares EP2 / EP3 with USB audio, so `MELODEE_USB_AUDIO=0` |
 | `MELODEE_UART` | 1 | TRS MIDI IN |
 | `MELODEE_DUAL_CORE` | 1 | paired FM6 rendering on CPU1; `0` builds serial-only firmware |
