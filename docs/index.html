@@ -122,6 +122,13 @@ section > .wrap > header p { color: var(--mid); max-width: 44em; margin-top: 12p
 .gen figcaption b { display: block; color: var(--ink); font: 16px/1.2 var(--pixel); text-transform: uppercase; }
 .gen figcaption span { color: var(--mid); font-size: 14px; line-height: 1.45; display: block; margin-top: 4px; }
 
+/* inks: the same screen in each of the device's inks */
+.inks { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px var(--gap); }
+.inks figure { margin: 0; }
+.inks .screen { padding: 4px; }
+.inks figcaption { padding: 8px 2px 0; color: var(--ink); font: 14px/1.2 var(--pixel); text-transform: uppercase; }
+.inks figcaption span { display: block; color: var(--mid); font-size: 13px; line-height: 1.4; text-transform: none; margin-top: 3px; }
+
 /* steps */
 .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--gap); counter-reset: s; }
 .step { border: 2px solid var(--line); padding: 20px; counter-increment: s; }
@@ -178,6 +185,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
     <div class="links">
       <a class="opt" href="#demo">Demo</a>
       <a class="opt" href="#generators">Generators</a>
+      <a class="opt" href="#inks">Inks</a>
       <a class="opt" href="#recipes">Recipes</a>
       <a href="#install">Install</a>
       <a class="opt" href="#about">About</a>
@@ -201,7 +209,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <p class="lede">Four tracks, thirteen generators. Evolve the phrases, build them into song forms, let the tracks
         answer and follow each other, and modulate anything from anything. Small tiles, set into a larger pattern.</p>
       <div class="cta">
-        <a class="btn main" href="webapp/installer/">Install 3.1</a>
+        <a class="btn main" href="webapp/installer/">Install 3.2</a>
         <a class="btn" href="webapp/sim/">Try it in your browser</a>
         <a class="btn" href="webapp/editor/">Web editor</a>
         <a class="btn" href="https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md">Manual</a>
@@ -247,9 +255,9 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <div class="tile" style="--c:var(--p3)"><h3>Tracks that talk</h3><p>Branch hits to another track's sound, combine tracks with AND, OR and XOR, follow another track's pitch, play only on certain bars.</p></div>
       <div class="tile" style="--c:var(--p4)"><h3>Harmony</h3><p>One key for every track with Key link. A Chord track plays a progression, or your own played in on the keys, and QNT CHRD makes every other track follow it.</p></div>
       <div class="tile" style="--c:var(--p1)"><h3>Sixteen cords</h3><p>Any source to any destination on any track, generators included. Slow organic sources, live marks on the knobs, and a MATRIX to see the patch.</p></div>
-      <div class="tile" style="--c:var(--p2)"><h3>Print</h3><p>Hold REC and what a generator just played becomes ordinary steps, ready to edit.</p></div>
-      <div class="tile" style="--c:var(--p3)"><h3>Sounds</h3><p>Six-operator FM with three engine models, ORACLE (two oscillators, POLY MOD and a four-pole filter), the three-oscillator TRIO, and 808 and 909 drum kits.</p></div>
-      <div class="tile" style="--c:var(--p4)"><h3>MIDI out</h3><p>Every track and generator, each on a channel of its own, and the clock, over USB: Tessera can drive the rest of your setup.</p></div>
+      <div class="tile" style="--c:var(--p2)"><h3>Record and print</h3><p>Play a pattern in layer by layer, and REC keeps overdubbing until you stop. Hold REC and what a generator just played becomes ordinary steps, ready to edit.</p></div>
+      <div class="tile" style="--c:var(--p3)"><h3>Sounds</h3><p>Six-operator FM with three engine models, ORACLE (two oscillators, POLY MOD and a four-pole filter), the three-oscillator TRIO, PHYS physical models (bells, mallets, strings, drum heads), and 808 and 909 drum kits.</p></div>
+      <div class="tile" style="--c:var(--p4)"><h3>MIDI in and out</h3><p>Every track and generator on a channel of its own, and the clock. External gear sets Tessera's parameters by MIDI CC, and as a USB host the FM-1 can play a USB-MIDI synth or MIDI-to-CV module directly.</p></div>
     </div>
     <div class="bar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
   </div>
@@ -279,6 +287,30 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_chord.png" alt="CHORD" loading="lazy" width="480" height="480"></div><figcaption><b>CHORD</b><span>Progressions the other tracks can follow.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/gallery/step_evolve.png" alt="STEP EVOLVE" loading="lazy" width="480" height="480"></div><figcaption><b>STEP EVOLVE</b><span>Your own steps, varied as they play.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/gallery/cords.png" alt="MODS" loading="lazy" width="480" height="480"></div><figcaption><b>MODS</b><span>Sixteen cords, any source to any destination.</span></figcaption></figure></div>
+    </div>
+  </div>
+</section>
+
+<section id="inks">
+  <div class="wrap">
+    <header>
+      <div class="kicker">Inks</div>
+      <h2>Your screen, your colour</h2>
+      <p>One pixel face, one ink on black. Pick one of nine inks in MENU &gt; COLOR to suit your FM-1's shell or your
+        mood, or MOSAIC, which gives each of the four tracks its own colour so you can tell them apart at a glance,
+        right down to the mod lists.</p>
+    </header>
+    <div class="inks">
+      <figure><div class="screen"><img src="media/gallery/ink_yellow.png" alt="HOME in Yellow" loading="lazy" width="480" height="480"></div><figcaption>Yellow<span>the default</span></figcaption></figure>
+      <figure><div class="screen"><img src="media/gallery/ink_white.png" alt="HOME in White" loading="lazy" width="480" height="480"></div><figcaption>White</figcaption></figure>
+      <figure><div class="screen"><img src="media/gallery/ink_green.png" alt="HOME in Green" loading="lazy" width="480" height="480"></div><figcaption>Green</figcaption></figure>
+      <figure><div class="screen"><img src="media/gallery/ink_blue.png" alt="HOME in Blue" loading="lazy" width="480" height="480"></div><figcaption>Blue</figcaption></figure>
+      <figure><div class="screen"><img src="media/gallery/ink_red.png" alt="HOME in Red" loading="lazy" width="480" height="480"></div><figcaption>Red</figcaption></figure>
+      <figure><div class="screen"><img src="media/gallery/ink_orange.png" alt="HOME in Orange" loading="lazy" width="480" height="480"></div><figcaption>Orange<span>for the orange shell</span></figcaption></figure>
+      <figure><div class="screen"><img src="media/gallery/ink_pink.png" alt="HOME in Pink" loading="lazy" width="480" height="480"></div><figcaption>Pink</figcaption></figure>
+      <figure><div class="screen"><img src="media/gallery/ink_hot_pink.png" alt="HOME in Hot pink" loading="lazy" width="480" height="480"></div><figcaption>Hot pink<span>for the pink shell</span></figcaption></figure>
+      <figure><div class="screen"><img src="media/gallery/ink_lilac.png" alt="HOME in Lilac" loading="lazy" width="480" height="480"></div><figcaption>Lilac</figcaption></figure>
+      <figure><div class="screen"><img src="media/gallery/ink_mosaic.png" alt="HOME in Mosaic" loading="lazy" width="480" height="480"></div><figcaption>Mosaic<span>a colour per track</span></figcaption></figure>
     </div>
   </div>
 </section>
@@ -318,12 +350,12 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
     </div>
     <p style="margin-top:22px;color:var(--mid)">Do not unplug the FM-1 while it is writing. This is experimental firmware: use it at your own risk.</p>
     <div class="cards">
-      <a class="card" style="--c:var(--p1)" href="webapp/installer/"><b>Install 3.1</b><span>The web installer, in Chrome or Edge.</span></a>
+      <a class="card" style="--c:var(--p1)" href="webapp/installer/"><b>Install 3.2</b><span>The web installer, in Chrome or Edge.</span></a>
       <a class="card" style="--c:var(--p2)" href="webapp/sim/"><b>Try it in your browser</b><span>The same firmware on an on-screen FM-1, with sound.</span></a>
-      <div class="card" style="--c:var(--p3)"><b>Download .fwsc</b><span><a href="firmware/tessera-3.1.fwsc">Standard</a> ·
-        <a href="firmware/tessera-3.1-1core.fwsc">single core</a> ·
+      <div class="card" style="--c:var(--p3)"><b>Download .fwsc</b><span><a href="firmware/tessera-3.2.fwsc">Standard</a> ·
+        <a href="firmware/tessera-3.2-1core.fwsc">single core</a> ·
         <a href="https://github.com/Rastapopolix/tessera/releases">all releases</a>. From a terminal:
-        <code>python3 tools/fm1_install.py tessera-3.1.fwsc</code> (<a href="https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py">fm1_install.py</a>, needs mido and python-rtmidi).</span></div>
+        <code>python3 tools/fm1_install.py tessera-3.2.fwsc</code> (<a href="https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py">fm1_install.py</a>, needs mido and python-rtmidi).</span></div>
       <a class="card" style="--c:var(--p4)" href="https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md"><b>Manual</b><span>Every page, knob and mode.</span></a>
       <a class="card" style="--c:var(--p1)" href="https://github.com/Rastapopolix/tessera/blob/HEAD/docs/cheatsheet/tessera-cheatsheet.pdf"><b>Cheatsheet</b><span>The buttons and combinations on one printable page.</span></a>
       <a class="card" style="--c:var(--p2)" href="webapp/editor/"><b>Web editor</b><span>Edit sounds and sequences from the computer.</span></a>
