@@ -2228,6 +2228,58 @@ static void library_note_sweep(const char *out)
     }
 }
 #ifndef UI_RENDER_NO_MAIN                           /* (tests/gallery_render.c: the scenes without this main) */
+#if MELODEE_LOOK
+/* Mono BOUNCE: a ball that hit a wall on the last step is drawn against it (the step its note plays): the cells next
+ * to the thick wall, inside the box (the floor row 104, left column 4, right 115, top row 55), inked by it; balls,
+ * speeds and angles enough for every wall. The picture drawn alone, its rows 50 .. 109 one canvas */
+static uint32_t mono_bounce_check(void)
+{
+    static const uint8_t SP[] = {5, 24, 64}, AN[] = {0, 13, 37, 61, 90};
+    uint32_t bad = 0, seen[4] = {0, 0, 0, 0}, si, ai, nb, i, k, w, j;
+    for (si = 0; si < sizeof SP; si++)
+        for (ai = 0; ai < sizeof AN; ai++)
+            for (nb = 1; nb <= GEN_BOUNCE_MAX; nb++) {
+                gen_bounce_t g;
+                uint32_t r = 1;
+                memset(&g, 0, sizeof g);
+                g.speed = SP[si], g.angle = AN[ai], g.balls = (uint8_t)nb;
+                gen_bounce_serve(&g, si * 7u + ai);
+                for (i = 0; i < 300u; i++) {
+                    gen_out_t o = {0, 60, 100, 0, 0, 0, {0, 0}, 0, 0};
+                    uint32_t t = 0;
+                    gen_bounce_tick(&g, 0, &r, &o);
+                    for (k = 0; k < nb; k++) t |= gen_bounce_touch(&g, k);
+                    if (t != g.hit) {                        /* (every wall hit, a ball against it) */
+                        if (!bad++) fprintf(stderr, "ui_render: BOUNCE %u/%u/%u step %u: walls hit %x, the balls touching %x\n",
+                                            SP[si], AN[ai], nb, i, g.hit, t);
+                        continue;
+                    }
+                    if (!t) continue;
+                    cv_begin(240, 120, MO_BG);
+                    cv_oy = -100;
+                    mo_pic_bounce(&g);
+                    cv_oy = 0;
+                    for (w = 0; w < 4u; w++) {
+                        uint32_t ink = 0;
+                        if (!(t >> w & 1u)) continue;
+                        for (j = 0; !ink; j++) {             /* (along the wall, a cell: its top left pixel) */
+                            uint32_t cx = w == 1u ? 4u : w == 2u ? 115u : 5u + j, cy = w == 0u ? 104u : w == 3u ? 55u : 55u + j;
+                            if (cx > 115u || cy > 104u) break;
+                            ink = cv_px[(cy * 2u - 100u) * 240u + cx * 2u] != swap16(MO_BG);
+                        }
+                        seen[w]++;
+                        if (!ink && !bad++)
+                            fprintf(stderr, "ui_render: BOUNCE %u/%u/%u step %u: no ball drawn against wall %u\n", SP[si], AN[ai], nb, i, w);
+                    }
+                }
+            }
+    for (w = 0; w < 4u; w++)
+        if (seen[w] < 20u && !bad++) fprintf(stderr, "ui_render: BOUNCE: wall %u hit only %u times\n", w, seen[w]);
+    fprintf(rep, "\nMono BOUNCE: wall hits drawn against the wall: floor %u, left %u, right %u, top %u; %u wrong\n",
+            seen[0], seen[1], seen[2], seen[3], bad);
+    return bad;
+}
+#endif
 int main(int argc, char **argv)
 {
     const char *out = argc > 1 ? argv[1] : "build/ui_new";
@@ -2509,6 +2561,7 @@ int main(int argc, char **argv)
 #if MELODEE_LOOK
     fprintf(rep, "\nMono lint: %u knob values\n", nmono);
     if (!nmono) { fprintf(stderr, "ui_render: the Mono lint saw no knob value\n"); nfind++; }
+    if (mono_bounce_check()) nfind++;
 #endif
     fprintf(rep, "\n%u lint findings, %u ellipsised free texts, %u MONO pixels off gray; %u column values swept; "
             "%u FM6 charts linted\n", nfind, nfree, mono_bad, nsweep, fmp_charts);
