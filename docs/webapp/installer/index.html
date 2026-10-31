@@ -1,66 +1,224 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: GPL-3.0-only
-     Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments -->
+     Copyright (C) 2026 Kerem Kilic (Ellic Studio)
+     Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments -->
 <html lang="ja">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Melodee (tess)</title>
+<title>Tessera · Installer</title>
+<link rel="icon" href="../../media/brand/logo.svg" type="image/svg+xml">
 <style>
-  :root { --bg: #fff; --fg: #000; --dim: #777; }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) { --bg: #000; --fg: #fff; --dim: #888; }
+  /* TESSERA-MONO: tools/gen_mono_webfont.py writes the face here (firmware/src/gfx.c's 5 x 7 font) */
+@font-face { font-family: "Tessera Mono"; font-display: block; src: url("data:font/woff;base64,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") format("woff"); }
+/* /TESSERA-MONO */
+  /* the project page's look (web/home/index.html): the Mono look's one ink on black, the four tracks as its fills */
+  :root {
+    --bg: #111; --ink: #ffd020; --surf: #19170f; --raise: #252113; --line: #3b3007; --text: #e6e0d0; --mid: #b9b2a0;
+    --dim: #8e877a;
+    --p1: var(--ink);
+    --p2: repeating-linear-gradient(135deg, var(--ink) 0 2px, transparent 2px 5px);
+    --p3: radial-gradient(circle, var(--ink) 1.2px, transparent 1.6px) 0 0 / 5px 5px;
+    --p4: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px);
+    --pixel: "Tessera Mono", ui-monospace, monospace; --gap: 6px;
+    color-scheme: dark;
   }
-  :root[data-theme="dark"] { --bg: #000; --fg: #fff; --dim: #888; }
-  body { margin: 0; background: var(--bg); color: var(--fg);
-         font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; }
-  main { max-width: 520px; margin: 0 auto; padding: 48px 16px; }
-  h1 { font-size: 24px; font-weight: 600; margin: 0 0 24px; }
-  .lang { float: right; font-size: 13px; color: var(--dim); cursor: pointer; text-decoration: underline; background: none; padding: 0; color: var(--dim); }
-  p { margin: 0 0 16px; }
-  button { font: inherit; background: var(--fg); color: var(--bg); border: 0; padding: 8px 20px; cursor: pointer; }
-  button:disabled { opacity: .3; cursor: default; }
-  #status { margin-top: 16px; min-height: 1.6em; }
-  .small { color: var(--dim); font-size: 13px; }
-  progress { width: 100%; height: 4px; margin-top: 16px; }
-  pre { color: var(--dim); font-size: 12px; white-space: pre-wrap; margin-top: 16px; }
+  /* the light version (dark ink on paper): only from the LIGHT / DARK button (stored); dark is the default, whatever the system says */
+  :root[data-theme="light"] { --bg: #f6f2e7; --ink: #1c1a14; --surf: #eee8d6; --raise: #e2d9bf; --line: #c8bd9b; --text: #1c1a14; --mid: #4b4535; --dim: #786e57; color-scheme: light; }
+  .theme { font: 16px/1 var(--pixel); color: var(--mid); background: none; border: 0; padding: 3px 4px 2px;
+           cursor: pointer; text-transform: uppercase; }
+  .theme:hover { color: var(--bg); background: var(--ink); }
+  * { box-sizing: border-box; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 400 15px/1.6 ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+  a { color: var(--ink); text-underline-offset: 3px; }
+  a:hover { background: var(--ink); color: var(--bg); text-decoration: none; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+  nav { border-bottom: 2px solid var(--ink); background: var(--bg); }
+  nav .wrap { display: flex; align-items: center; gap: 16px; height: 56px; }
+  nav .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font: 24px/1 var(--pixel); }
+  nav .brand:hover { background: none; color: var(--ink); }
+  nav .brand svg { width: 26px; height: 26px; }
+  .lang { margin-left: auto; font: 16px/1 var(--pixel); color: var(--mid); background: none; border: 0;
+          padding: 3px 4px 2px; cursor: pointer; text-transform: uppercase; letter-spacing: 0; }
+  .lang:hover { color: var(--bg); background: var(--ink); }
+  main.wrap { padding-top: 40px; padding-bottom: 56px; }
+  .kicker { display: inline-block; background: var(--ink); color: var(--bg); font: 16px/1 var(--pixel);
+            text-transform: uppercase; padding: 3px 6px 2px; }
+  h1 { color: var(--ink); font: clamp(40px, 9vw, 64px)/1.1 var(--pixel); margin: 12px 0 0; }
+  .bar { display: flex; gap: var(--gap); margin: 16px 0 28px; }
+  .bar span { flex: 1; height: 8px; }
+  .bar span:nth-child(1) { background: var(--p1); } .bar span:nth-child(2) { background: var(--p2); }
+  .bar span:nth-child(3) { background: var(--p3); } .bar span:nth-child(4) { background: var(--p4); }
+  p { margin: 0 0 14px; }
+  .needs { list-style: none; display: flex; flex-wrap: wrap; gap: var(--gap); padding: 0; margin: 0 0 var(--gap); }
+  .needs li { position: relative; border: 2px solid var(--line); padding: 6px 12px 6px 18px; font-size: 14px; }
+  .needs li::before, .panel::before, .next::before { content: ""; position: absolute; left: -2px; top: -2px; bottom: -2px;
+    width: 6px; background: var(--c, var(--p1)); }
+  .small { color: var(--mid); font-size: 14px; line-height: 1.5; }
+  .panel { position: relative; border: 2px solid var(--line); padding: 18px 20px 6px 24px; margin: 0 0 var(--gap); }
+  .warn { color: var(--text); font-weight: 600; }
+  /* the tip under the stripes: the help card, Tessera's most-missed function */
+  .tip { display: flex; gap: 12px; align-items: baseline; border: 2px solid var(--ink); padding: 10px 14px; margin: 0 0 var(--gap); }
+  .tip b { flex: none; background: var(--ink); color: var(--bg); font: 16px/1 var(--pixel); font-weight: 400; padding: 3px 6px 2px; }
+  .tip span { font-size: 14px; line-height: 1.5; }
+  .panel strong { font: 16px/1.3 var(--pixel); text-transform: uppercase; font-weight: 400; }
+  label { cursor: pointer; }
+  .choice label { display: flex; gap: 10px; align-items: center; padding: 6px 0; }
+  input[type=radio], input[type=checkbox] { accent-color: var(--ink); width: 18px; height: 18px; margin: 0; flex: none; }
+  input[type=file] { font: inherit; font-size: 14px; color: var(--mid); margin-top: 6px; max-width: 100%; }
+  input[type=file]::file-selector-button { font: 16px/1 var(--pixel); text-transform: uppercase; background: var(--bg);
+    color: var(--ink); border: 2px solid var(--ink); padding: 6px 10px 5px; margin-right: 10px; cursor: pointer; }
+  button { font: 16px/1 var(--pixel); text-transform: uppercase; letter-spacing: 0;
+           background: var(--bg); color: var(--ink); border: 2px solid var(--ink); padding: 10px 16px 9px; cursor: pointer; }
+  button:hover { background: var(--ink); color: var(--bg); }
+  button:disabled { opacity: .35; cursor: default; }
+  button:disabled:hover { background: var(--bg); color: var(--ink); }
+  #go { background: var(--ink); color: var(--bg); border-color: var(--ink); padding: 14px 28px 13px; margin-top: 18px; }
+  #go:hover:not(:disabled) { background: var(--bg); color: var(--ink); }
+  details { border: 2px solid var(--line); margin: var(--gap) 0 0; padding: 0 20px; }
+  details[open] { padding-bottom: 6px; }
+  summary { cursor: pointer; padding: 14px 0 12px; color: var(--mid); font: 16px/1 var(--pixel); text-transform: uppercase; }
+  summary:hover, details[open] summary { color: var(--text); }
+  .run { margin-top: 28px; }
+  progress { appearance: none; -webkit-appearance: none; width: 100%; height: 12px; border: 2px solid var(--ink);
+             background: var(--bg); display: block; }
+  progress::-webkit-progress-bar { background: var(--bg); }
+  progress::-webkit-progress-value { background: var(--ink); transition: width .3s; }
+  progress::-moz-progress-bar { background: var(--ink); }
+  #status { margin-top: 14px; min-height: 1.6em; font-weight: 600; }
+  pre { color: var(--dim); font: 12px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; margin: 0 0 12px;
+        max-height: 12em; overflow: auto; }
+  /* the install window: the stages, the bar and its percentage, the status, the log behind Details */
+  dialog { width: min(560px, calc(100vw - 32px)); background: var(--bg); color: var(--text); border: 2px solid var(--ink);
+           padding: 0 24px 20px; }
+  dialog::backdrop { background: rgba(0, 0, 0, .88); }
+  dialog .bar { margin: 0 -24px 22px; }
+  dialog h2 { color: var(--ink); font: 24px/1.2 var(--pixel); text-transform: uppercase; margin: 0 0 12px; }
+  .keep { border: 2px solid var(--ink); padding: 10px 14px; font-weight: 600; }
+  .stages { list-style: none; counter-reset: st; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap);
+            padding: 0; margin: 18px 0 14px; }
+  .stages li { counter-increment: st; color: var(--dim); padding: 8px 8px 6px; font: 16px/1.2 var(--pixel);
+               text-transform: uppercase; border: 2px dashed var(--line); }
+  .stages li::before { content: counter(st) " "; }
+  .stages li.now { color: var(--bg); background: var(--ink); border: 2px solid var(--ink); }
+  .stages li.done { color: var(--mid); border: 2px solid var(--line); }
+  .stages li.done::before { content: "\2713  "; color: var(--ink); font-family: ui-monospace, monospace; }
+  .meter { display: flex; align-items: center; gap: 12px; }
+  .meter progress { flex: 1; }
+  #run-pct { min-width: 3.5em; text-align: right; font: 16px/1 var(--pixel); }
+  #run-status { margin: 12px 0 14px; min-height: 1.6em; font-weight: 600; }
+  dialog.ok #run-status { background: var(--ink); color: var(--bg); padding: 4px 8px; }
+  dialog.fail #run-status { border: 2px dashed var(--ink); padding: 4px 8px; }
+  dialog.fail #run-status::before { content: "! "; font-family: var(--pixel); }
+  dialog details { padding: 0 14px; margin: 0 0 16px; }
+  dialog summary { padding: 10px 0 8px; }
+  #run-close { width: 100%; }
+  @media (max-width: 480px) { .stages { grid-template-columns: repeat(2, 1fr); } }
+  .next { display: block; position: relative; border: 2px solid var(--line); padding: 16px 20px 16px 24px; margin-top: 28px;
+          color: var(--text); text-decoration: none; }
+  a.next:hover { border-color: var(--ink); background: var(--raise); color: var(--text); }
+  footer { border-top: 2px solid var(--ink); margin-top: 40px; padding-top: 24px; }
+  footer p { color: var(--dim); font-size: 13px; }
+  footer a { color: var(--mid); }
 </style>
+<script>/* the theme chosen with the LIGHT / DARK button, before the page draws */
+try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 </head>
 <body>
-<main>
-  <button class="lang" id="lang"></button>
-  <h1>Melodee (tess)</h1>
-  <p data-t="intro"></p>
-  <p data-t="warn"></p>
-  <p class="small" data-t="direct"></p>
-  <p class="small" data-t="beta"></p>
-  <p class="small"><span data-t="brick"></span>
-    <a href="https://github.com/kurogedelic/FM-1-transporter" target="_blank" rel="noopener" style="color:inherit">FM-1-transporter</a></p>
-  <p><label><input type="radio" name="build" id="build-dual" checked> <span data-t="dual"></span></label><br>
-    <label><input type="radio" name="build" id="build-single"> <span data-t="single"></span></label></p>
-  <p class="small" data-t="singleWhy"></p>
+<nav>
+  <div class="wrap">
+    <a class="brand" href="../../" aria-label="Tessera">
+      <svg viewBox="0 0 78 78" aria-hidden="true"><rect x="4" y="5" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="3" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="53" y="2" width="22" height="22" fill="currentColor"/><rect x="5" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="30" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="31" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="4" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="57" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/></svg>
+      TESSERA
+    </a>
+    <button class="lang" id="lang"></button>
+    <button class="theme" id="theme" type="button" aria-label="Light or dark page"></button>
+  </div>
+</nav>
+<main class="wrap">
+  <div class="kicker" id="ver">FM-1</div>
+  <h1>TESSERA</h1>
+  <div class="bar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+  <p class="tip"><b data-t="tipLabel"></b><span data-t="tip"></span></p>
+  <ul class="needs">
+    <li style="--c:var(--p1)" data-t="needBrowser"></li><li style="--c:var(--p2)" data-t="needCable"></li>
+    <li style="--c:var(--p3)" data-t="needTab"></li>
+  </ul>
+  <div class="panel">
+    <p data-t="intro"></p>
+    <p class="warn" data-t="warn"></p>
+    <p class="small" data-t="direct"></p>
+  </div>
+  <div class="panel choice" style="--c:var(--p2)">
+    <p><label><input type="radio" name="build" id="build-dual" checked> <span data-t="dual"></span></label>
+      <label><input type="radio" name="build" id="build-single"> <span data-t="single"></span></label></p>
+    <p class="small" data-t="singleWhy"></p>
+  </div>
+  <section id="nightly-options" class="panel choice" style="--c:var(--p3)" hidden>
+    <p><strong data-t="nightlyTitle"></strong></p>
+    <p><label><input type="radio" name="build" id="build-nightly-dual"> <span data-t="nightly-dual"></span></label>
+      <label><input type="radio" name="build" id="build-nightly-single"> <span data-t="nightly-single"></span></label></p>
+    <p class="small" data-t="nightlyWhy"></p>
+    <p class="small" id="nightly-info"></p>
+  </section>
+  <section id="synth-options" class="panel choice" style="--c:var(--p4)" hidden>
+    <p><strong data-t="synthTitle"></strong></p>
+    <p><label><input type="radio" name="build" id="build-synth-dual"> <span data-t="synth-dual"></span></label>
+      <label><input type="radio" name="build" id="build-synth-single"> <span data-t="synth-single"></span></label></p>
+    <p class="small" data-t="synthWhy"></p>
+    <p class="small" id="synth-info"></p>
+    <p class="small"><a id="synth-editor" href="../synth-editor/" data-t="synthEditor"></a></p>
+  </section>
   <p><button id="go" disabled data-t="install"></button></p>
-  <details style="margin-top:24px">
+  <div class="run">
+    <p id="status"></p>
+  </div>
+  <dialog id="run" aria-labelledby="run-title">
+    <div class="bar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+    <h2 id="run-title"></h2>
+    <p class="keep" data-t="runKeep"></p>
+    <ol class="stages">
+      <li id="run-st1" data-t="stPrep"></li><li id="run-st2" data-t="stLoader"></li>
+      <li id="run-st3" data-t="stWrite"></li><li id="run-st4" data-t="stReboot"></li>
+    </ol>
+    <div class="meter"><progress id="bar" max="100" value="0"></progress><span id="run-pct">0 %</span></div>
+    <p id="run-status" role="status"></p>
+    <details><summary data-t="details"></summary><pre id="log"></pre></details>
+    <button id="run-close" disabled data-t="close"></button>
+  </dialog>
+  <p class="small" data-t="beta"></p>
+  <p class="small" data-t="counted"></p>
+  <p class="small"><span data-t="brick"></span>
+    <a href="https://github.com/keremimo/melodee/blob/next/docs/RECOVERY.md" target="_blank" rel="noopener" data-t="recoveryLink"></a></p>
+  <details>
+    <summary data-t="localTitle"></summary>
+    <p class="small" data-t="localWhy"></p>
+    <p><label><span data-t="localFile"></span><br><input id="local-file" type="file" accept=".fwsc"></label></p>
+    <p><button id="local-go" disabled data-t="localGo"></button></p>
+  </details>
+  <details>
     <summary data-t="stockTitle"></summary>
     <p class="small" data-t="back"></p>
-    <p class="small"><a href="https://www.m-vave.com/download" target="_blank" rel="noopener" style="color:inherit">M-VAVE Downloads</a></p>
+    <p class="small"><a href="https://www.m-vave.com/download" target="_blank" rel="noopener">M-VAVE Downloads</a></p>
     <p><label><span data-t="stockFile"></span><br><input id="stock-file" type="file" accept=".fwsc"></label></p>
     <p><button id="stock-go" disabled data-t="stockGo"></button></p>
     <p class="small" data-t="stockBackup"></p>
-    <p class="small"><label><input id="stock-skip-backup" type="checkbox"> <span data-t="stockSkipBackup"></span></label></p>
-    <p class="small"><label><input id="stock-recovery" type="checkbox"> <span data-t="stockRecovery"></span></label></p>
+    <p class="small choice"><label><input id="stock-skip-backup" type="checkbox"> <span data-t="stockSkipBackup"></span></label></p>
+    <p class="small choice"><label><input id="stock-recovery" type="checkbox"> <span data-t="stockRecovery"></span></label></p>
   </details>
-  <progress id="bar" max="100" value="0"></progress>
-  <p id="status"></p>
-  <pre id="log"></pre>
-  <p><a href="../editor/" style="color:inherit" data-t="editor"></a></p>
-  <p class="small">Melodee (tess) is a fork of Melodee by Theo Dainis, adding the Tessera note engines and project save. <a href="https://github.com/Rastapopolix/melodee-tess" target="_blank" rel="noopener" style="color:inherit">github.com/Rastapopolix/melodee-tess</a><br>
-    Melodee by Ellic Studio, based on <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener" style="color:inherit">Felucca</a>
-    by Leo Kuroshita (@kurogedelic), <a href="https://hugelton.com" target="_blank" rel="noopener" style="color:inherit">Hügelton Instruments</a>, with its CrispyZebra waveforms, drum voices, Sample Pack and Fukiai icons (MIT).<br>
+  <a class="next" href="../editor/" data-t="editor"></a>
+  <footer>
+  <p>Tessera is firmware for the FM-1 by Theo Dainis (Rastapopolix), a fork of Melodee: it adds the Tessera generators and a project format of its own. <a href="https://github.com/Rastapopolix/tessera" target="_blank" rel="noopener">github.com/Rastapopolix/tessera</a><br>
+    Melodee by Ellic Studio, based on <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener">Felucca</a>
+    by Leo Kuroshita (@kurogedelic), <a href="https://hugelton.com" target="_blank" rel="noopener">Hügelton Instruments</a>, with its CrispyZebra waveforms and Fukiai icons (MIT).<br>
     Font: Inter Tight (The Inter Project Authors, SIL OFL 1.1). Samples: Versilian Studios VSCO-2 Community Edition and VCSL (CC0 1.0).<br>
-    FM6 engine: msfa from Dexed (Google Inc., Pascal Gauthier, Apache-2.0). The package also holds three JieLi AC79 SDK files, uboot.boot, cfg_tool.bin and eq_cfg_hw.bin (JieLi Technology, Apache-2.0). <a href="../../firmware/LICENSING.md" style="color:inherit">Licences</a>: <a href="../../firmware/LICENSE" style="color:inherit">GPL-3.0</a>, <a href="../../firmware/LICENSES/Apache-2.0.txt" style="color:inherit">Apache-2.0</a>, <a href="../../firmware/LICENSES/" style="color:inherit">all</a>.<br>
+    FM6 engine: msfa from Dexed (Google Inc., Pascal Gauthier, Apache-2.0). The package also holds three JieLi AC79 SDK files, uboot.boot, cfg_tool.bin and eq_cfg_hw.bin (JieLi Technology, Apache-2.0). <a href="../../firmware/LICENSING.md">Licences</a>: <a href="../../firmware/LICENSE">GPL-3.0</a>, <a href="../../firmware/LICENSES/Apache-2.0.txt">Apache-2.0</a>, <a href="../../firmware/LICENSES/">all</a>.<br>
     M-VAVE and FM-1 are trademarks of their respective owners.<br>
-    <span data-t="license"></span> <a href="https://github.com/keremimo/melodee" target="_blank" rel="noopener" style="color:inherit">github.com/keremimo/melodee</a></p>
+    <span data-t="license"></span> <a href="https://github.com/keremimo/melodee" target="_blank" rel="noopener">github.com/keremimo/melodee</a></p>
+  </footer>
 </main>
 <script type="module">
 // SPDX-License-Identifier: GPL-3.0-only
@@ -299,6 +457,9 @@ async function sha256hex(bytes) {
 
 // Only the user's unmodified official V15 is accepted for a return to stock.
 // The digest pins every file, loader and flash layout; filenames are not evidence.
+// The file goes to the device unchanged, through its own official loader. head: the image
+// range the firmware compares with the device's boot data (CHECK HEAD, firmware/src/ota.c)
+// before it starts that loader.
 async function validateStockPackage(bytes) {
   if (bytes.length !== STOCK_V15_SIZE || await sha256hex(bytes) !== STOCK_V15_SHA256)
     throw new Error("Select the unmodified official FM-1 V15 file (FM-1.fwsc).");
@@ -307,7 +468,9 @@ async function validateStockPackage(bytes) {
       pkg.appBase !== 16384 || pkg.appOff !== 16672 || pkg.app.size !== STOCK_APP_SIZE ||
       !pkg.entries.some((e) => e.type === 100 && e.name === "ota.bin" && e.size === 19969))
     throw new Error("The official firmware has an unsupported FM-1 layout.");
-  return { product: pkg.product, image: logicalImage(bytes), sha256: STOCK_V15_SHA256 };
+  const head = pkg.flashEntry.dataOff;
+  return { product: pkg.product, image: logicalImage(bytes), sha256: STOCK_V15_SHA256,
+    head: { from: head, to: head + 0x4000 } };
 }
 
 // official V15 + Melodee app -> installable package (Uint8Array)
@@ -321,7 +484,8 @@ async function buildMelodeePackage(stockBytes, appBytes, product) {
 }
 
 // SPDX-License-Identifier: GPL-3.0-only
-// Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+// Copyright (C) 2026 Kerem Kilic (Ellic Studio)
+// Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
 //
 // The FM-1 USB-MIDI update protocol over WebMIDI (after tools/fm1_install.py).
 // Step 1: the running firmware (official
@@ -334,9 +498,15 @@ const UPGRADE = [0xF0, 0x22, 0x24, 0x35, 0x7F, 0xF7];
 const MAXDATA = 512;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const IS_OTA = (id) => /^ota-/i.test(id.model);
+// the update loaders on the handshake: Tessera's own (firmware/loader/loader.c, still Melodee's identity), which
+// writes the app area only, and the official one, which writes the whole package including the boot data and
+// reports the name in its update record (firmware/src/ota.c). Each package goes only to its own.
+const TESSERA_LOADER = "ota-FM-1_900";
+const STOCK_LOADER = "ota-FM-1_015";
 
 // errors carry a code the pages translate: notfound, model, stopped, noloader, lost, noreturn,
-// mismatch (detail: the identity the device reports), badreq
+// mismatch (detail: the identity the device reports), badreq, wrongloader (detail: the loader's
+// identity). A step-1 error has lastRead: the last image address the running firmware read.
 function fail(code, msg, detail = "") { const e = new Error(msg); e.code = code; e.detail = detail; return e; }
 
 function pack7(data) {
@@ -441,7 +611,7 @@ class Updater {
     const outs = [...this.access.outputs.values()];
     for (const input of this.access.inputs.values()) {
       if (input.state === "disconnected") continue;
-      if (!/fm-1|melodee|felucca|ota|composite|sinco|usb-midi/i.test(input.name || "")) continue;   // never probe other gear
+      if (!/fm-1|tessera|melodee|felucca|ota|composite|sinco|usb-midi/i.test(input.name || "")) continue;   // never probe other gear
       const output = outs.find((o) => o.name === input.name && o.state !== "disconnected");
       if (!output) continue;
       try { await input.open(); await output.open(); } catch (_) { continue; }
@@ -466,12 +636,12 @@ class Updater {
   // serve read requests until the device asks for one of the finish addresses; stops early
   // when the port disappears (lost: true) instead of waiting out idleMs
   async serve(link, image, finishAddr, idleMs, onProgress) {
-    let served = 0, last = Date.now();
+    let served = 0, last = Date.now(), lastRead = -1;
     for (;;) {
       const pkt = await link.read(1000);
       if (!pkt) {
-        if (link.lost) return { served, finished: false, lost: true };
-        if (Date.now() - last > idleMs) return { served, finished: false };
+        if (link.lost) return { served, finished: false, lost: true, lastRead };
+        if (Date.now() - last > idleMs) return { served, finished: false, lastRead };
         continue;
       }
       const r = parseRequest(pkt);
@@ -483,17 +653,19 @@ class Updater {
         continue;
       }
       if (r.len > MAXDATA || r.addr + r.len > image.length) throw fail("badreq", `bad request ${r.addr.toString(16)}+${r.len}`);
+      lastRead = r.addr;
       await sleep(10);
       if (!link.send(response(r.addr, Array.from(image.subarray(r.addr, r.addr + r.len)), r.fl))) {
-        return { served, finished: false, lost: true };
+        return { served, finished: false, lost: true, lastRead };
       }
       served++;
       if (onProgress) onProgress(served, r.addr);
     }
   }
 
-  // full install: running firmware -> loader -> new firmware
-  async install(image, product, onStep) {
+  // full install: running firmware -> loader -> new firmware; loader: the identity of the
+  // package's own loader (TESSERA_LOADER, STOCK_LOADER), any other one gets nothing
+  async install(image, product, onStep, loader) {
     const step = onStep || (() => {});
     const dev = await this.find((id) => !IS_OTA(id));
     if (!dev) throw fail("notfound", "FM-1 not found (USB cable, and no other app using it?)");
@@ -504,13 +676,21 @@ class Updater {
     await sleep(2000);
     const s1 = await this.serve(dev.link, image, 0xE0000000, 8000, (n) => step("verify", n));
     dev.link.close();
-    if (!s1.finished) throw fail(s1.lost ? "lost" : "stopped", `the device ${s1.lost ? "was disconnected" : "stopped"} after ${s1.served} requests: nothing was written`);
+    if (!s1.finished) {
+      const e = fail(s1.lost ? "lost" : "stopped", `the device ${s1.lost ? "was disconnected" : "stopped"} after ${s1.served} requests: nothing was written`);
+      e.lastRead = s1.lastRead;
+      throw e;
+    }
     step("loader");
     await sleep(3000);
     const ota = await this.waitFor((id) => id.model === "ota-" + model, 30000);
     if (!ota) throw fail("noloader", "the update loader did not appear. Replug the USB cable and press Install again: the device stays in update mode until it is finished.");
+    if (ota.id.text !== loader) {
+      ota.link.close();
+      throw fail("wrongloader", `the device started ${ota.id.text}, this package goes only to ${loader}: nothing was sent to it`, ota.id.text);
+    }
     const s2 = await this.write(ota, image, step);
-    if (!s2.finished) throw fail(s2.lost ? "lost" : "stopped", `the loader ${s2.lost ? "was disconnected" : "stopped"} after ${s2.served} requests. Replug and press Install again to resume.`);
+    if (!s2.finished) throw fail(s2.lost ? "lost" : "stopped", `the loader ${s2.lost ? "was disconnected" : "stopped"} after ${s2.served} requests. Reconnect and press Install again. With boot-protected firmware, power on holding OCT− alone if needed; three short key-light flashes mean update mode.`);
     step("reboot");
     await sleep(3000);
     const back = await this.waitFor((id) => !IS_OTA(id), 40000);
@@ -530,10 +710,11 @@ class Updater {
     return s2;
   }
 
-  // resume: the device is already in update mode (loader) -> true when the write finished
-  async resume(image, onStep, product = null) {
+  // resume: the device is already in update mode -> true when the write finished. Only the
+  // package's own loader (identity `loader`) is written to; false if it is not there.
+  async resume(image, onStep, product, loader) {
     const model = product && product.split("_")[0];
-    const ota = await this.find((id) => model ? id.model === "ota-" + model : IS_OTA(id));
+    const ota = await this.find((id) => id.text === loader);
     if (!ota) return false;
     const step = onStep || (() => {});
     const result = await this.write(ota, image, step);
@@ -561,9 +742,27 @@ const BACKUP_IDS_CZ = Array.from({length:17},(_,i)=>i);
 const BACKUP_IDS_OWN = Array.from({length:21},(_,i)=>i);
 const BACKUP_IDS_NATIVE = Array.from({length:23},(_,i)=>i);
 const BACKUP_IDS_P5 = Array.from({length:28},(_,i)=>i);
-const maxSize = id => id >= 32 ? 81920 : (id === 0 || (id >= 2 && id <= 5)) ? 27904 : id>=23&&id<=27?3600:3840;
-const idsOf = (n) => (n === BACKUP_IDS.length ? BACKUP_IDS : n === BACKUP_IDS_V1.length ? BACKUP_IDS_V1 : n === 9 ? BACKUP_IDS_BANKS : n === 17 ? BACKUP_IDS_CZ : n === 21 ? BACKUP_IDS_OWN : n === 23 ? BACKUP_IDS_NATIVE : n === 28 ? BACKUP_IDS_P5 : null);
+const BACKUP_IDS_TESS = Array.from({length:30},(_,i)=>i);   // melodee-tess: 28 the generators of the saved slots, 29 the live ones
+const maxSize = id => id >= 32 ? 81920 : (id === 0 || (id >= 2 && id <= 5)) ? 32768 : id>=23&&id<=27?3600:3840;
+const idsOf = (n) => (n === BACKUP_IDS.length ? BACKUP_IDS : n === BACKUP_IDS_V1.length ? BACKUP_IDS_V1 : n === 9 ? BACKUP_IDS_BANKS : n === 17 ? BACKUP_IDS_CZ : n === 21 ? BACKUP_IDS_OWN : n === 23 ? BACKUP_IDS_NATIVE : n === 28 ? BACKUP_IDS_P5 : n === 30 ? BACKUP_IDS_TESS : null);
 const BACKUP_CMD = { LIST: 65, GET: 66, PUT: 67 };
+// melodee-tess, the own project format: the projects (0 the live music, 2..5 the slots) are TSP1 records (project_tsp.c):
+// "TSP1", u32 length, u16 part count, u16 0, the parts (u8 id, u8 version, u16 length, bytes), u32 FNV-1a of the rest.
+// Firmware of the own format reads no older project, and older firmware reads no TSP1 one: no converter either way.
+const TSP_MAGIC = 0x31505354, TSP_HEAD = 12;
+const isProject = (id) => id === 0 || (id >= 2 && id <= 5);
+const fnv = (bytes) => { let s = 0x811c9dc5; for (const b of bytes) s = Math.imul(s ^ b, 16777619) >>> 0; return s; };
+const isTsp = (bytes) => bytes.length >= TSP_HEAD + 4 && new DataView(bytes.buffer, bytes.byteOffset, bytes.length).getUint32(0, true) === TSP_MAGIC;
+function tspCheck(bytes) {                    // the record whole: its length, every part inside it, its checksum
+  const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.length), n = bytes.length;
+  if (v.getUint32(4, true) !== n || fnv(bytes.subarray(0, n - 4)) !== v.getUint32(n - 4, true)) throw new Error("Damaged project record");
+  let at = TSP_HEAD;
+  for (let k = v.getUint16(8, true); k > 0; k--) {
+    if (at + 4 > n - 4) throw new Error("Damaged project record");
+    at += 4 + v.getUint16(at + 2, true);
+  }
+  if (at !== n - 4) throw new Error("Damaged project record");
+}
 const BACKUP_CHUNK = 256;
 const bkU32 = (n) => Array.from({ length: 5 }, (_, i) => (n >>> (i * 7)) & (i === 4 ? 15 : 127));
 const bkR32 = (a, off = 0) => {
@@ -620,7 +819,7 @@ function readBackup(file) {
   if (typeof file === "string") file = JSON.parse(file);
   const ids = file && Array.isArray(file.objects) ? idsOf(file.objects.length) : null;
   if (!file || file.format !== "felucca-backup" || file.version !== 1 || !ids)
-    throw new Error("Not a complete Melodee backup");
+    throw new Error("Not a complete backup file");
   const objects = file.objects.map((o, i) => {
     if (!o || o.id !== ids[i] || !Number.isInteger(o.size) || o.size < 0 || o.size > maxSize(o.id) ||
         !Number.isInteger(o.crc) || o.crc < 0 || o.crc > 0xffffffff || typeof o.data !== "string" ||
@@ -628,6 +827,7 @@ function readBackup(file) {
       throw new Error("Invalid backup object");
     const bytes = Uint8Array.from(atob(o.data), (c) => c.charCodeAt(0));
     if (bytes.length !== o.size || bkCrc(bytes) !== o.crc) throw new Error("Backup checksum mismatch");
+    if (isProject(o.id) && isTsp(bytes)) tspCheck(bytes);
     if(o.id>=23&&o.id<=27&&o.size){
       if(o.size!==3600)throw Error("Invalid Prophet bank size");const v=new DataView(bytes.buffer),used=v.getUint32(4,true),fav=v.getUint32(8,true),mask=(1<<(o.id===27?24:26))-1;
       if(v.getUint32(0,true)!==0x31553550||(used&~mask)||(fav&~(mask|(o.id===23?0x80000000:0))))throw Error("Invalid Prophet bank");
@@ -686,10 +886,29 @@ async function restoreBackup(request, file, onProgress = () => {}) {
   const ask = async (r, o = {}) => request(r, { timeout: 4000, retries: 0, ...o });
   const supported = bkManifest(await ask([BACKUP_CMD.LIST, []]));
   const liveSize = supported.find(o => o.id === 0)?.size || 0;
-  for (const o of archive.objects) if ((o.id === 0 || o.id >= 2 && o.id <= 5) && o.size > liveSize && !(liveSize >= 19008 && [19084,19092,20224].includes(o.size)))
-    throw new Error("This backup needs firmware with larger recording storage");
   for (const o of archive.objects) if (!supported.some(x => x.id === o.id) && o.size) throw new Error("This firmware does not support a nonempty object in this backup");
+  let own = false;                            // the device's live music a TSP1 record: firmware of the own format
+  if (liveSize >= TSP_HEAD + 4) {
+    const a = await ask([BACKUP_CMD.GET, [0, ...bkU32(0), 4, 0]]); bkCheck(a[1]);
+    if (a[0] !== 0 || bkR32(a, 2) !== 0 || (a[7] | a[8] << 7) !== 4) throw new Error("Unexpected backup reply");
+    own = new DataView(bkUnpack(a.slice(9), 4).buffer).getUint32(0, true) === TSP_MAGIC;
+  }
+  const oldProjects = archive.objects.some(o => isProject(o.id) && o.size && !isTsp(o.bytes));
+  const tspProjects = archive.objects.some(o => isProject(o.id) && o.size && isTsp(o.bytes));
+  if (own && oldProjects)
+    throw new Error("This backup's projects are in the format before Tessera's own; this firmware does not read them. Restore it with the firmware that made it.");
+  if (!own && tspProjects) throw new Error("This backup's projects are in Tessera's own format; update the firmware first.");
+  if (!own) for (const o of archive.objects) if (isProject(o.id) && o.size > liveSize && !(liveSize >= 19008 && [19084,19092,20224].includes(o.size)))
+    throw new Error("This backup needs firmware with larger recording storage");   // (fixed-size records; TSP1's vary)
   const put = async (args) => { const a = await ask([BACKUP_CMD.PUT, args]); bkCheck(a[2]); return a; };
+  // The firmware accepts or refuses each object's size before the first write (2.0 reads only the formats of
+  // 1.0 and later: an older archive restores on 1.2 first), so a refused archive writes nothing.
+  for (const o of archive.objects) if (o.id < 32 && o.size && supported.some(x => x.id === o.id)) {
+    const a = await ask([BACKUP_CMD.PUT, [0, o.id, ...bkU32(o.size), ...bkU32(o.crc)]]);
+    await ask([BACKUP_CMD.PUT, [3, o.id]]);
+    if (a[2] === 1) throw new Error("This backup holds an older format. Restore it with Melodee 1.2 first.");
+    bkCheck(a[2]);
+  }
   // Restore live music last. Other objects commit individually; a disconnect can leave a partial restore.
   for (const o of [...archive.objects.slice(2), archive.objects[1], archive.objects[0]]) {
     if (!supported.some(x => x.id === o.id)) continue;
@@ -752,28 +971,50 @@ const $ = (id) => document.getElementById(id);
 const TEXT = {
   ja: {
     intro: "FM-1 を USB で接続してください。（Chrome か Edge で使えます）",
+    tipLabel: "ヒント", tip: "ARP を押したままつまみを回すと、そのつまみのヘルプカードが出ます（値は変わりません）。同じつまみをさらに回すと長い説明をスクロールし、ARP を離すと閉じます。",
     warn: "書き込み中は USB を抜かないでください。",
     install: "インストール", other: "English",
+    nightlyTitle: "Nightly（next）", "nightly-dual": "Nightly（デュアルコア）",
+    "nightly-single": "Nightly（シングルコア）", "nightly-dualTag": "nightly・デュアルコア", "nightly-singleTag": "nightly・シングルコア",
+    nightlyWhy: "next の開発版です。インストール前にエディタで全体バックアップを保存してください。標準版を選ぶとリリース版へ戻せます。",
+    synthTitle: "シンセ専用（オプション）", "synth-dual": "シンセ専用（デュアルコア）", "synth-single": "シンセ専用（シングルコア）",
+    "synth-dualTag": "シンセ専用・デュアルコア", "synth-singleTag": "シンセ専用・シングルコア",
+    synthWhy: "パソコンで演奏・録音するための 1 トラックの音源版です。すべてのシンセと音色エディット、ARP・CHORD・SCALES、エフェクト（ドライブ、コーラス、ディレイ、リバーブ）、USB オーディオのステレオ録音を備えます。シーケンサー、ソング、プロジェクトの保存はありません。PLAY は ARP のホールドです。本体に保存したプロジェクトとプリセットはそのまま残り、標準を選んでインストールすると戻ります。インストール前にエディタで全体バックアップを保存してください。",
+    synthEditor: "シンセ専用版のエディタ（音色・エフェクト・設定をパソコンから編集）",
     dual: "標準（デュアルコア）", single: "シングルコア", dualTag: "標準", singleTag: "シングルコア",
-    singleWhy: "シングルコア版は、標準版でクラッシュする FM-1 のためのものです（赤い MELODEE CRASH 画面、フリーズ、書き込みモードでの再起動）。FM-1 の 2 つ目のコアを起動しません（公式ファームウェアも使っていません）。PROPHET の最大発音数は 8 から 5 になり、重い FM6・PROPHET の音色は早めに処理の上限に達します。標準版に戻すには、標準を選んでインストールしてください。",
+    singleWhy: "シングルコア版は、標準版でクラッシュする FM-1 のためのものです（赤い TESSERA CRASH 画面、フリーズ、書き込みモードでの再起動）。FM-1 の 2 つ目のコアを起動しません（公式ファームウェアも使っていません）。重い FM6 の音色は早めに処理の上限に達します。標準版に戻すには、標準を選んでインストールしてください。",
     editor: "エディタ（インストール後、パソコンから音色やシーケンスを編集）",
     direct: "USB ケーブルはパソコンに直接つないでください。Probe や Transporter などの機材は不要です。",
-    brick: "万一インストールに失敗して起動しなくなった場合は、復旧に Transporter が必要です:",
-    beta: "Melodee (tess) 1.0 は Melodee の実験的フォークです。不具合は github.com/Rastapopolix/melodee-tess へ知らせてください（本家には送らないでください）。このカスタムファームウェアを使ったことで FM-1 が壊れたり不具合が起きたりしても、作者は一切の責任を負いません。自己責任でお使いください。",
+    brick: "起動保護付きファームウェアの更新が中断した場合は、電源を入れ直すか、OCT− だけを押しながら電源を入れてください。キーのライトが短く3回点滅したら更新モードです。USB を接続し直して、もう一度インストールしてください。以前のファームウェアや長い1回の点滅の場合は、USB 復旧手順を確認してください:",
+    recoveryLink: "USB 復旧手順とダウンロード",
+    counted: "インストールが終わると、このページは GoatCounter でその回数を数えます。送るのはバージョンとビルドだけで、Cookie や個人情報は使いません。このブラウザを数えないようにするには、一度このページを #nocount 付きで開いてください。",
+    beta: "Tessera は Melodee から生まれた実験的なファームウェアです。不具合は github.com/Rastapopolix/tessera へ知らせてください。このカスタムファームウェアを使ったことで FM-1 が壊れたり不具合が起きたりしても、作者は一切の責任を負いません。自己責任でお使いください。",
     back: "M-VAVEから公式FM-1 V15を取得し、未変更のFM-1.fwscを選んでください。ファイルはこのブラウザ内で検証し、サーバーへ送りません。",
+    localTitle: "テストビルド（パソコンのファイル）", localFile: "テスト用ファームウェア（.fwsc）", localGo: "テストビルドをインストール",
+    localWhy: "テスト用の Tessera ビルドです。パソコンに保存した .fwsc（build/ や テストページのもの）を選んでください。tools/fm1pkg_make.py で作ったパッケージだけを受け付けます。ファイルはこのブラウザ内で確認し、サーバーへ送りません。テストビルドは未リリースで、正しく動かないことがあります。標準を選んでインストールするとリリース版に戻せます。",
+    localValid: "テストビルドを確認しました: ", localError: "このファイルは使えません: ",
+    localConfirm: "このテストビルドをインストールしますか？ リリース版ではなく、正しく動かないことがあります。\n",
     stockTitle: "公式V15に戻す", stockFile: "公式FM-1.fwsc", stockGo: "バックアップして公式V15へ戻す",
-    stockBackup: "現在の曲・保存曲・音色バンク・サンプル・設定を先に保存します。バックアップできない場合は、Melodeeを更新するか、データ消失を了承してバックアップを省略できます。復元はMelodeeを再インストールしてエディタから行います。",
-    stockSkipBackup: "バックアップを省略する（Melodeeの曲・音色・設定が失われる可能性があります）",
+    stockBackup: "現在の曲・保存曲・音色バンク・サンプル・設定を先に保存します。バックアップできない場合は、Tessera を更新するか、データ消失を了承してバックアップを省略できます。復元は Tessera を再インストールしてエディタから行います。",
+    stockSkipBackup: "バックアップを省略する（Tessera の曲・音色・設定が失われる可能性があります）",
     stockGoNoBackup: "バックアップせず公式V15へ戻す",
-    stockConfirmNoBackup: "バックアップを作成せず公式V15へ戻します。Melodeeの曲・音色・設定が失われる可能性があり、バックアップなしでは復元できません。続けますか？",
+    stockConfirmNoBackup: "バックアップを作成せず公式V15へ戻します。Tessera の曲・音色・設定が失われる可能性があり、バックアップなしでは復元できません。続けますか？",
     stockRecovery: "更新中断の再開：全体バックアップはすでにパソコンへ保存済み",
-    stockValid: "公式V15を確認しました", stockConfirm: "全体バックアップファイルをパソコンに保存できましたか？ 続けると公式V15へ戻します。Melodeeの曲は公式V15では開けません。",
+    stockValid: "公式V15を確認しました", stockConfirm: "全体バックアップファイルをパソコンに保存できましたか？ 続けると公式V15へ戻します。Tessera の曲は公式V15では開けません。",
     stockNeedBackup: "書き込みモードからはバックアップできません。保存済みバックアップがある場合は更新中断の再開にチェックするか、データ消失を了承してバックアップを省略してください。",
-    stockUnsupported: "このMelodeeは全体バックアップに未対応です。先に最新版をインストールするか、データ消失を了承して「バックアップを省略する」を選び、もう一度押してください。",
+    stockUnsupported: "このファームウェアは全体バックアップに未対応です。先に最新版をインストールするか、データ消失を了承して「バックアップを省略する」を選び、もう一度押してください。",
     backup: "全体バックアップ保存中 ", stockError: "公式ファイルを確認できません: ",
+    stockHead: "FM-1 が CHECK HEAD で公式ファイルを拒否しました（FAILED -5）。起動データが V15 と異なります。何も書き込んでおらず、Tessera はそのまま使えます。別の方法で戻そうとしないでください。GitHub で報告してください。",
+    loaderStock: "FM-1 は M-VAVE 公式の書き込みモードで待機しています。このモードには公式FM-1.fwscしか書き込めません。何も送っていません。先に「公式V15に戻す」を完了してください。",
+    loaderTessera: "FM-1 は Tessera の書き込みモード（Melodee Update）で待機しています。このモードには公式ファイルを送りません。何も送っていません。上の「インストール」で Tessera を完了してから、公式V15に戻してください。",
+    loaderUnknown: "このインストーラーが知らない書き込みモードです。何も送っていません。この名前を添えて GitHub で報告してください: ",
     nomidi: "このブラウザでは使えません。Chrome か Edge で開いてください。", loadfail: "読み込めませんでした: ",
     start: "開始します", verify: "確認中", loader: "書き込みモードに切り替え中", write: "書き込み中",
-    reboot: "再起動中", done: "完了しました", stopped: "途中で止まりました。USB を挿し直してもう一度押してください。",
+    reboot: "再起動中", done: "完了しました。FM-1 を外しても大丈夫です。", stopped: "途中で止まりました。USB を挿し直してもう一度押してください。",
+    needBrowser: "Chrome か Edge", needCable: "USB データケーブル", needTab: "終わるまでこのタブを開いたまま",
+    runTitle: "Tessera をインストール中", runTitleStock: "公式V15に戻しています",
+    runKeep: "終わるまでこのタブを開いたまま、FM-1 を接続したままにしてください。タブを閉じたり、FM-1 の電源を切ったり、USB を抜いたりすると更新が中断します。",
+    stPrep: "準備", stLoader: "書き込みモード", stWrite: "書き込み", stReboot: "再起動", details: "詳細", close: "閉じる",
     error: "エラー: ",
     denied: "MIDI（SysEx）の使用が許可されませんでした。アドレスバーのサイト設定で MIDI を許可して、もう一度押してください。",
     notfound: "FM-1 が見つかりません。USB ケーブル（データ通信用か）を確かめ、MIDI を使う他のアプリを閉じてから、もう一度押してください。",
@@ -788,28 +1029,50 @@ const TEXT = {
   },
   en: {
     intro: "Connect the FM-1 by USB. (Works in Chrome or Edge.)",
+    tipLabel: "TIP", tip: "Once installed, hold ARP and turn any knob for its help card: what it does, on every page (the value does not change). Turn the same knob further to scroll, let go of ARP to close it.",
     warn: "Do not unplug the USB cable while writing.",
     install: "Install", other: "日本語",
+    nightlyTitle: "Nightly (next)", "nightly-dual": "Nightly — dual core",
+    "nightly-single": "Nightly — single core", "nightly-dualTag": "nightly, dual core", "nightly-singleTag": "nightly, single core",
+    nightlyWhy: "Development builds from next. Save a complete backup in the editor before installing. Choose Standard to return to the release.",
+    synthTitle: "Synth only (optional)", "synth-dual": "Synth only — dual core", "synth-single": "Synth only — single core",
+    "synth-dualTag": "synth only, dual core", "synth-singleTag": "synth only, single core",
+    synthWhy: "A one-track sound module for playing and recording into a computer: every synth and its sound editing, ARP, CHORD and SCALES, the effects (drive, chorus, delay, reverb) and stereo recording over USB audio. There is no sequencer, song or project saving; PLAY holds the ARP. Projects and presets saved on the FM-1 stay where they are and come back when you choose Standard and install again. Save a complete backup in the editor before installing.",
+    synthEditor: "Synth-only editor (sounds, effects and settings from the computer)",
     dual: "Standard (dual core)", single: "Single core", dualTag: "standard", singleTag: "single core",
-    singleWhy: "The single-core build is for FM-1s that crash with the standard build (a red MELODEE CRASH screen, freezes, or restarts into update mode). It never starts the FM-1's second core, which the official firmware does not use either. PROPHET then plays up to five voices instead of eight, and heavy FM6 and PROPHET sounds reach the CPU limit sooner. To go back, choose Standard and install again.",
+    singleWhy: "The single-core build is for FM-1s that crash with the standard build (a red TESSERA CRASH screen, freezes, or restarts into update mode). It never starts the FM-1's second core, which the official firmware does not use either. Heavy FM6 sounds reach the CPU limit sooner. To go back, choose Standard and install again.",
     editor: "Editor (after installing: edit sounds and sequences from the computer)",
     direct: "Connect the USB cable directly to the computer. No probe or Transporter is needed.",
-    brick: "If an install fails and the FM-1 no longer starts, recovering it needs a Transporter:",
-    beta: "Melodee (tess) 1.0 is an experimental fork of Melodee; please report problems at github.com/Rastapopolix/melodee-tess, not to upstream. The author accepts no responsibility if your FM-1 is damaged or misbehaves because of this custom firmware. Use it at your own risk.",
+    brick: "If an update is interrupted on firmware with boot protection, switch the FM-1 on again (or hold OCT− alone while switching on). Three short key-light flashes mean update mode: reconnect USB and press Install again. Older firmware and one long flash need the USB recovery instructions:",
+    recoveryLink: "USB recovery instructions and downloads",
+    counted: "When an install finishes, the page counts it at GoatCounter: the version and the build only, no cookies or personal data. To leave this browser out, open this page once with #nocount at the end of its address.",
+    beta: "Tessera is an experimental firmware grown out of Melodee; please report problems at github.com/Rastapopolix/tessera. The author accepts no responsibility if your FM-1 is damaged or misbehaves because of this custom firmware. Use it at your own risk.",
     back: "Get official FM-1 V15 from M-VAVE and select the unmodified FM-1.fwsc. The browser validates it locally; it is not sent to a server.",
+    localTitle: "Test build from this computer", localFile: "Test firmware (.fwsc)", localGo: "Install test build",
+    localWhy: "For testing: pick a Tessera .fwsc saved on this computer, such as one from build/ or a test page. Only packages made by tools/fm1pkg_make.py are accepted. The browser checks the file locally; it is not sent to a server. Test builds are unreleased and may not work; choose Standard and install again to go back to the release.",
+    localValid: "Test build checked: ", localError: "Cannot use this file: ",
+    localConfirm: "Install this test build? It is not a release and may not work.\n",
     stockTitle: "Return to official V15", stockFile: "Official FM-1.fwsc", stockGo: "Back up and return to official V15",
-    stockBackup: "Current music, saved music, sound banks, samples and settings are saved first. If backups are unavailable, update Melodee or choose to skip the backup and accept possible data loss. To restore an archive later, reinstall Melodee and use the editor.",
-    stockSkipBackup: "Skip backup (Melodee music, sounds and settings may be lost)",
+    stockBackup: "Current music, saved music, sound banks, samples and settings are saved first. If backups are unavailable, update Tessera or choose to skip the backup and accept possible data loss. To restore an archive later, reinstall Tessera and use the editor.",
+    stockSkipBackup: "Skip backup (Tessera music, sounds and settings may be lost)",
     stockGoNoBackup: "Return to official V15 without backup",
-    stockConfirmNoBackup: "Return to official V15 without creating a backup? Melodee music, sounds and settings may be lost and cannot be restored without a backup. Continue?",
+    stockConfirmNoBackup: "Return to official V15 without creating a backup? Tessera music, sounds and settings may be lost and cannot be restored without a backup. Continue?",
     stockRecovery: "Resume an interrupted update: I already saved a complete backup to this computer",
-    stockValid: "Official V15 verified", stockConfirm: "Has the complete backup file been saved to this computer? Continue to return to official V15. Official V15 cannot open Melodee music.",
+    stockValid: "Official V15 verified", stockConfirm: "Has the complete backup file been saved to this computer? Continue to return to official V15. Official V15 cannot open Tessera music.",
     stockNeedBackup: "An update loader cannot export a backup. Select resume if you already saved a complete backup, or choose Skip backup to continue and accept possible data loss.",
-    stockUnsupported: "This Melodee does not support complete backups. Install the current Melodee first, or select Skip backup to accept possible data loss and try again.",
+    stockUnsupported: "This firmware does not support complete backups. Install the current Tessera first, or select Skip backup to accept possible data loss and try again.",
     backup: "Saving complete backup ", stockError: "Cannot validate official firmware: ",
+    stockHead: "The FM-1 refused the official file at CHECK HEAD (FAILED -5): its boot data differs from V15's. Nothing was written; Tessera stays installed. Do not try other ways to return to stock. Please report it on GitHub.",
+    loaderStock: "The FM-1 is waiting in M-VAVE's official update mode, which only accepts the official FM-1.fwsc. Nothing was sent. Finish Return to official V15 first.",
+    loaderTessera: "The FM-1 is waiting in Tessera's update mode (Melodee Update), which never receives the official file. Nothing was sent. Press Install above to finish Tessera first, then return to official V15.",
+    loaderUnknown: "The FM-1 is in an update mode this installer does not know. Nothing was sent. Please report it on GitHub with this name: ",
     nomidi: "This browser cannot do it. Open the page in Chrome or Edge.", loadfail: "Could not load: ",
     start: "Starting", verify: "Verifying", loader: "Switching to update mode", write: "Writing",
-    reboot: "Restarting", done: "Done", stopped: "Stopped. Replug the USB cable and press Install again.",
+    reboot: "Restarting", done: "Done. You can unplug the FM-1.", stopped: "Stopped. Replug the USB cable and press Install again.",
+    needBrowser: "Chrome or Edge", needCable: "A USB data cable", needTab: "This tab open until it is done",
+    runTitle: "Installing Tessera", runTitleStock: "Returning to official V15",
+    runKeep: "Keep this tab open and the FM-1 connected until it is finished. Closing the tab, switching the FM-1 off or unplugging it interrupts the update.",
+    stPrep: "Preparing", stLoader: "Update mode", stWrite: "Writing", stReboot: "Restarting", details: "Details", close: "Close",
     error: "Error: ",
     denied: "MIDI (SysEx) access was not allowed. Allow MIDI in the site settings (address bar) and press Install again.",
     notfound: "FM-1 not found. Check the USB cable (a data cable), close other apps that use MIDI, and press Install again.",
@@ -825,84 +1088,182 @@ const TEXT = {
 };
 let lang = (navigator.language || "en").toLowerCase().startsWith("ja") ? "ja" : "en";
 const t = (k) => TEXT[lang][k];
-let lastKey = null, lastArg = "";
+let lastKey = null, lastArg = "", runTitle = null;
 function applyLang() {
   document.documentElement.lang = lang;
   document.querySelectorAll("[data-t]").forEach((e) => { e.textContent = t(e.dataset.t); });
   $("lang").textContent = t("other");
   $("stock-go").textContent = t($("stock-skip-backup").checked ? "stockGoNoBackup" : "stockGo");
   if (lastKey === "ready") ready();
-  else if (lastKey) $("status").textContent = t(lastKey) + lastArg;
+  else if (lastKey) $("status").textContent = $("run-status").textContent = t(lastKey) + lastArg;
+  if (runTitle) $("run-title").textContent = t(runTitle);
 }
 $("lang").addEventListener("click", () => { lang = lang === "ja" ? "en" : "ja"; applyLang(); });
 applyLang();
 $("stock-skip-backup").addEventListener("change", applyLang);
-const sayK = (k, arg = "") => { lastKey = k; lastArg = arg; $("status").textContent = t(k) + arg; };
+const sayK = (k, arg = "") => { lastKey = k; lastArg = arg; $("status").textContent = $("run-status").textContent = t(k) + arg; };
 const say = (txt) => { lastKey = null; $("status").textContent = txt; };
-const build = () => $("build-single").checked ? "single" : "dual";
-const ready = () => { lastKey = "ready"; $("status").textContent = `Melodee (tess) ${meta.version} (${t(build() + "Tag")})`; };
+const buildIds = ["dual", "single", "nightly-dual", "nightly-single", "synth-dual", "synth-single"];
+const build = () => buildIds.find(k => $("build-" + k).checked) || "dual";
+const selection = () => {     /* the release, or a channel ("nightly-dual": meta.nightly's dual-core package) */
+  const kind = build(), dash = kind.indexOf("-");
+  return dash < 0 ? {kind, channel: meta, key: kind} : {kind, channel: meta[kind.slice(0, dash)], key: kind.slice(dash + 1)};
+};
+const ready = () => { lastKey = "ready"; $("status").textContent = `Tessera ${selection().channel.version} (${t(build() + "Tag")})`; };
 const log = (t) => { $("log").textContent += t + "\n"; };
 let image = null;
-const meta = {"version": "1.0", "product": "FM-1_910", "pkg": {"dual": "../../firmware/melodee-tess-1.0.fwsc", "single": "../../firmware/melodee-tess-1.0-1core.fwsc"}};
-const images = {};                // "dual" / "single" -> the package's image, each fetched once
+const meta = {"version": "3.0.1", "product": "FM-1_83773001", "pkg": {"dual": "../../firmware/tessera-3.0.1.fwsc", "single": "../../firmware/tessera-3.0.1-1core.fwsc"}, "nightly": null, "synth": null};
+$("ver").textContent = `FM-1 · ${meta.version}`;
+$("nightly-options").hidden = !meta.nightly;
+if (meta.nightly) $("nightly-info").textContent = `next · ${meta.nightly.commit.slice(0, 7)} · ${meta.nightly.builtAt}`;
+$("synth-options").hidden = !meta.synth;
+if (meta.synth) $("synth-info").textContent = `${meta.synth.branch} · ${meta.synth.commit.slice(0, 7)} · ${meta.synth.builtAt}`;
+const images = {};                // a build ("dual", "nightly-single", "synth-dual" ..) -> its package's image, each fetched once
 
-let writing = false, stock = null, stockFileEpoch = 0, buildEpoch = 0;
-const lockInstaller = (on) => { writing = on; $("go").disabled = on || !image; $("build-dual").disabled = on; $("build-single").disabled = on; $("stock-go").disabled = on || !stock; $("stock-file").disabled = on; $("stock-recovery").disabled = on; $("stock-skip-backup").disabled = on; };
+let writing = false, stock = null, stockFileEpoch = 0, buildEpoch = 0, local = null, localFileEpoch = 0;
+const lockInstaller = (on) => { writing = on; $("go").disabled = on || !image; $("local-go").disabled = on || !local; $("local-file").disabled = on; buildIds.forEach(k => { $("build-" + k).disabled = on; }); $("stock-go").disabled = on || !stock; $("stock-file").disabled = on; $("stock-recovery").disabled = on; $("stock-skip-backup").disabled = on; };
 window.addEventListener("beforeunload", (e) => { if (writing) { e.preventDefault(); e.returnValue = t("leave"); } });
+
+// the install window (display only; the protocol is fm1ota.js): the four stages, the bar and its percentage, the
+// status, and the log behind Details, which keeps the stages and errors, not every request. Esc does not close it
+// while writing; Close does once it has finished. Nothing started (a refusal, a cancelled confirm): it just closes,
+// the page's status says why
+const STAGES = {start: 1, verify: 1, backup: 1, loader: 2, write: 3, reboot: 4, done: 5};
+let runStage = 0;
+const runShow = (n) => { for (let i = 1; i <= 4; i++) $("run-st" + i).className = i < n ? "done" : i === n ? "now" : ""; };
+function runOpen(title) {
+  runTitle = title; runStage = 0;
+  $("run-title").textContent = t(title); $("run-status").textContent = ""; $("log").textContent = "";
+  $("bar").value = 0; $("run-pct").textContent = "0 %"; $("run-close").disabled = true; $("run").className = "";
+  runShow(0);
+  if ($("run").showModal && !$("run").open) $("run").showModal();
+}
+function runStep(k, pct) {
+  const n = STAGES[k];
+  if (n && n > runStage) { runStage = n; runShow(n); log(t(k)); }
+  if (pct !== undefined) { $("bar").value = pct; $("run-pct").textContent = `${Math.floor(pct)} %`; }
+}
+function runEnd(ok) {
+  if (!ok && runStage === 0) { if ($("run").close) $("run").close(); return; }
+  if (ok) runStep("done", 100);
+  $("run").className = ok ? "ok" : "fail"; $("run-close").disabled = false;
+}
+/* the Updater's steps for an image (its writes: one request a 512-byte block, fm1ota.js MAXDATA; 74 to verify first):
+ * the status, the stages and the bar; the requests are counted, not each logged. onDone: when "done" arrives */
+function installSteps(img, onDone) {
+  const total = 74 + Math.ceil(img.length / 512);
+  return (k, a) => {
+    if (k === "start") { sayK("start"); runStep(k); }
+    if (k === "verify") { if (lastKey !== "verify") sayK("verify"); runStep(k, Math.min(5, (a / total) * 100)); }
+    if (k === "loader") { sayK("loader"); runStep(k); }
+    if (k === "write") { if (lastKey !== "write") sayK("write"); runStep(k, Math.min(97, ((74 + a) / total) * 100)); }
+    if (k === "reboot") { sayK("reboot"); runStep(k, 98); }
+    if (k === "done") { sayK("done"); onDone(); }
+  };
+}
+$("run-close").addEventListener("click", () => { if (!writing && $("run").close) $("run").close(); });
+$("run").addEventListener("cancel", (e) => { if (writing) e.preventDefault(); });
 
 // the chosen build's package: Install stays off until it is loaded and checked
 async function choose() {
   if (writing) return;
   if (!navigator.requestMIDIAccess) { sayK("nomidi"); return; }
-  const kind = build(), epoch = ++buildEpoch;
+  const {kind, channel, key} = selection(), epoch = ++buildEpoch;
   image = null; $("go").disabled = true;
   try {
     if (!images[kind]) {
-      const url = meta.pkg[kind], r = await fetch(url);
+      if (!channel) throw new Error(kind.startsWith("synth-") ? "Synth only is not available yet" : "Nightly is not available yet");
+      const url = channel.pkg[key] + (channel.commit ? "?commit=" + channel.commit : ""), r = await fetch(url);
       if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
       const pkg = new Uint8Array(await r.arrayBuffer());
-      if (productOf(pkg) !== meta.product) { if (epoch === buildEpoch) sayK("badpkg"); return; }
+      if (productOf(pkg) !== channel.product) { if (epoch === buildEpoch) sayK("badpkg"); return; }
       images[kind] = logicalImage(pkg);
     }
     if (epoch !== buildEpoch) return;
     image = images[kind]; if (!writing) ready(); lockInstaller(writing);
   } catch (e) { if (epoch === buildEpoch) sayK("loadfail", e.message); }
 }
-$("build-dual").addEventListener("change", choose);
-$("build-single").addEventListener("change", choose);
+buildIds.forEach(k => $("build-" + k).addEventListener("change", choose));
 choose();
 
-$("go").addEventListener("click", async () => {
-  if (writing || !image) return;
+// the install count: one GoatCounter event per finished install of a published build (the version and the build, no
+// cookies); never for a local file, nor in a browser that opened this page with #nocount once
+const COUNT_URL = "https://tessera.goatcounter.com/count";
+const NOCOUNT = "tessera-nocount";
+try { if (location.hash === "#nocount") localStorage.setItem(NOCOUNT, "1"); } catch (e) { /* no storage: counted */ }
+function countInstall(what) {
+  try { if (localStorage.getItem(NOCOUNT)) return; } catch (e) { /* no storage: counted */ }
+  const q = new URLSearchParams({p: `install/${what}`, t: `Install ${what}`, e: "true", rnd: Math.random().toString(36).slice(2)});
+  try { navigator.sendBeacon(`${COUNT_URL}?${q}`); } catch (e) { /* the count is never worth an error */ }
+}
+
+// an update loader that is not the package's own gets nothing: the official one would write a Tessera package's
+// head over the boot data, Tessera's would write only V15's application (docs/RECOVERY.md)
+const refuseLoader = (id) => id === STOCK_LOADER ? sayK("loaderStock") : id === TESSERA_LOADER ? sayK("loaderTessera") : sayK("loaderUnknown", id);
+
+// install an image whose identity the device must report afterwards (the chosen build, or a local test build);
+// what: the published build to count ("2.0/dual"), none for a local file
+async function flash(image, product, what) {
   lockInstaller(true);
   let midi;
   try { midi = await navigator.requestMIDIAccess({ sysex: true }); }
   catch (e) { sayK("denied"); lockInstaller(false); return; }
+  let done = false;
+  runOpen("runTitle");
   try {
     const up = new Updater(midi, log);
-    const total = 74 + 1167;
-    const step = (k, a) => {
-      log(`${k} ${a ?? ""}`);
-      if (k === "start") sayK("start");
-      if (k === "verify") { sayK("verify"); $("bar").value = (a / total) * 100; }
-      if (k === "loader") sayK("loader");
-      if (k === "write") { sayK("write"); $("bar").value = ((74 + a) / total) * 100; }
-      if (k === "reboot") sayK("reboot");
-      if (k === "done") { $("bar").value = 100; sayK("done"); }
-    };
+    const step = installSteps(image, () => { done = true; });
     const ota = await up.find((id) => /^ota-/i.test(id.model));
     if (ota) {
       ota.link.close();
-      sayK((await up.resume(image, step, meta.product)) ? "done" : "stopped");
+      if (ota.id.text !== TESSERA_LOADER) refuseLoader(ota.id.text);
+      else {
+        if (await up.resume(image, step, product, TESSERA_LOADER)) done = true;
+        sayK(done ? "done" : "stopped");
+      }
     } else {
-      await up.install(image, meta.product, step);
+      await up.install(image, product, step, TESSERA_LOADER);
     }
+    if (done && what) countInstall(what);
   } catch (e) {
-    if (e && e.code && TEXT[lang][e.code]) sayK(e.code, e.detail || "");
+    if (e && e.code === "wrongloader") refuseLoader(e.detail);
+    else if (e && e.code && TEXT[lang][e.code]) sayK(e.code, e.detail || "");
     else sayK("error", e && e.message);
     log(String(e && e.stack || e));
   }
+  runEnd(done);
   lockInstaller(false);
+}
+$("go").addEventListener("click", () => { if (!writing && image) { const {channel, kind} = selection(); return flash(image, channel.product, `${channel.version}/${kind}`); } });
+
+// a test build from this computer: only a Melodee package (fm1pkg_make.py: CRCs intact, an FM-1_8377 or FM-1_9 identity and
+// Melodee's loader, so never a vendor or patched official package), as web/make_site.py checks before publishing
+const LOADER_MARK = Array.from("FELUCCA-LOADER-1", (c) => c.charCodeAt(0));
+const hasLoader = (raw) => {
+  for (let i = raw.indexOf(LOADER_MARK[0]); i >= 0; i = raw.indexOf(LOADER_MARK[0], i + 1))
+    if (LOADER_MARK.every((b, j) => raw[i + j] === b)) return true;
+  return false;
+};
+function checkLocal(raw) {
+  new Package(raw);
+  const product = productOf(raw);
+  if (!/^(FM-1_8377\d{4}|FM-1_9\d{2,4})$/.test(product)) throw new Error(`identity ${JSON.stringify(product)} is not a Tessera package`);
+  if (!hasLoader(raw)) throw new Error("no Tessera loader in it (only tools/fm1pkg_make.py packages)");
+  return {image: logicalImage(raw), product};
+}
+$("local-file").addEventListener("change", async () => {
+  const epoch = ++localFileEpoch, file = $("local-file").files[0]; local = null; lockInstaller(false);
+  if (!file) return;
+  try {
+    const checked = checkLocal(new Uint8Array(await file.arrayBuffer()));
+    if (epoch !== localFileEpoch) return;
+    local = {...checked, name: file.name}; sayK("localValid", `${file.name} (${checked.product})`); lockInstaller(false);
+  } catch (e) { if (epoch === localFileEpoch) sayK("localError", e.message); }
+});
+$("local-go").addEventListener("click", () => {
+  if (writing || !local) return;
+  const {image, product, name} = local;
+  if (confirm(t("localConfirm") + `${name} (${product})`)) return flash(image, product);
 });
 
 $("stock-file").addEventListener("change", async () => {
@@ -917,7 +1278,7 @@ $("stock-file").addEventListener("change", async () => {
 });
 function saveArchive(archive) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(archive)], {type:"application/json"}));
-  const a = document.createElement("a"); a.href = url; a.download = `Melodee-backup-${new Date().toISOString().slice(0,10)}.json`;
+  const a = document.createElement("a"); a.href = url; a.download = `Tessera-backup-${new Date().toISOString().slice(0,10)}.json`;
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function archiveInfo(a) {
@@ -926,25 +1287,28 @@ function archiveInfo(a) {
   const engines = a[pos]; pos += 5;
   for (let i = 0; i < engines; i++) { const end = a.indexOf(0,pos); if (end < 0) throw new Error("Invalid INFO"); pos = end + 1; }
   const ext = a.slice(pos + 1);
-  const supported = /^(MELODEE|FELUCCA) /i.test(version) && ext[0] === 16 && ext[1] === 0x55 && ext[2] === 1 &&
+  const supported = /^(TESSERA|MELODEE|FELUCCA) /i.test(version) && ext[0] === 16 && ext[1] === 0x55 && ext[2] === 1 &&
     ext[4] === 0x4d && ext[5] === 1 && ext[8] === 0x42 && ext[9] === 1 && (ext[10] & 1);
   return {version,supported};
 }
 $("stock-go").addEventListener("click", async () => {
   if (!stock || writing) return;
   const selected = stock, skipBackup = $("stock-skip-backup").checked; lockInstaller(true);
-  let link = null;
+  let link = null, done = false;
   try {
     let midi;
     try { midi = await navigator.requestMIDIAccess({sysex:true}); } catch (e) { sayK("denied"); return; }
+    runOpen("runTitleStock");
     const up = new Updater(midi, log);
-    const step = (k, n) => { log(`${k} ${n ?? ""}`); if (["start","verify","loader","write","reboot","done"].includes(k)) sayK(k); if (k === "done") $("bar").value = 100; };
-    const loader = await up.find(id => id.model === "ota-FM-1");
+    const step = installSteps(selected.image, () => { done = true; });
+    const loader = await up.find(id => /^ota-/i.test(id.model));
     if (loader) {
       loader.link.close();
+      if (loader.id.text !== STOCK_LOADER) { refuseLoader(loader.id.text); return; }
       if (!skipBackup && !$("stock-recovery").checked) { sayK("stockNeedBackup"); return; }
       if (!confirm(t(skipBackup ? "stockConfirmNoBackup" : "stockConfirm"))) return;
-      sayK(await up.resume(selected.image, step, selected.product) ? "done" : "stopped");
+      if (await up.resume(selected.image, step, selected.product, STOCK_LOADER)) done = true;
+      sayK(done ? "done" : "stopped");
     } else {
       const device = await up.find(id => id.model === "FM-1");
       if (!device) { sayK("notfound"); return; }
@@ -953,18 +1317,36 @@ $("stock-go").addEventListener("click", async () => {
         link = new BackupConnection(input, output);
         const info = archiveInfo(await link.request([1,[]]));
         if (!info.supported) { sayK("stockUnsupported"); return; }
+        runStep("backup");
         const archive = await captureBackup((r,o) => link.request(r,o), info.version,
-          (done,total) => sayK("backup", `${Math.round(done / Math.max(1,total) * 100)}%`));
+          (got,total) => sayK("backup", `${Math.round(got / Math.max(1,total) * 100)}%`));
         saveArchive(archive); link.close(); link = null;
       }
       if (!confirm(t(skipBackup ? "stockConfirmNoBackup" : "stockConfirm"))) return;
-      await up.install(selected.image, selected.product, step);
+      await up.install(selected.image, selected.product, step, STOCK_LOADER);
     }
   } catch (e) {
-    if (e.code && TEXT[lang][e.code]) sayK(e.code,e.detail || ""); else sayK("error",e.message);
+    // the firmware stops reading at CHECK HEAD when the device's boot data differs from V15's (FAILED -5):
+    // refused, never retried another way
+    if (e.code === "stopped" && e.lastRead >= selected.head.from && e.lastRead < selected.head.to) sayK("stockHead");
+    else if (e.code === "wrongloader") refuseLoader(e.detail);
+    else if (e.code && TEXT[lang][e.code]) sayK(e.code,e.detail || ""); else sayK("error",e.message);
     log(String(e.stack || e));
-  } finally { if (link) link.close(); lockInstaller(false); }
+  } finally { if (link) link.close(); runEnd(done); lockInstaller(false); }
 });
+</script>
+<script>/* LIGHT / DARK: names the other look; the choice is stored (tessera-theme) */
+(function () {
+  var b = document.getElementById("theme"), r = document.documentElement;
+  function light() { return r.dataset.theme === "light"; }
+  function show() { b.textContent = light() ? "Dark" : "Light"; }
+  b.addEventListener("click", function () {
+    r.dataset.theme = light() ? "dark" : "light";
+    try { localStorage.setItem("tessera-theme", r.dataset.theme); } catch (e) {}
+    show();
+  });
+  show();
+})();
 </script>
 </body>
 </html>
