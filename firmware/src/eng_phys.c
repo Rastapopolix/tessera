@@ -113,6 +113,16 @@ static void phys_body(const int16_t *p, uint32_t md, int32_t bmod, int32_t *v)
     v[1] = phys_map(mp[1], (p[P_E2] << 8) + bmod);
     v[2] = phys_map(mp[2], p[P_E3] << 8);
 }
+/* EXC's knock (MODAL, MEMB: the strike's own exciter) faded in over the block it starts in, as a fresh voice's
+ * envelope does: a strike on a voice still ringing (a note again, TURING's repeats) starts at the envelope's level,
+ * and its first samples clicked (2026-11-01). Only a strike's block */
+static __attribute__((noinline)) void phys_knock_in(int32_t *ax, uint32_t n)
+{
+    uint32_t i;
+    int32_t d = n ? 65536 / (int32_t)n : 0, r = 0;
+    for (i = 0; i < n; i++, r += d)
+        ax[i] = px_m(ax[i], r, 16);
+}
 static int32_t phys_lvl(const uint8_t *T, int32_t v)     /* v a knob 0..127: Q5 */
 {
     uint32_t i = (uint32_t)clamp(v, 0, 127) >> 5, f = (uint32_t)v & 31u;
@@ -230,8 +240,9 @@ static void phys_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const 
     phys_slot_t *S = phys_slot_of(t, v);
     uint32_t md = (uint32_t)p[P_E0] % PM_COUNT, i, f0 = m->inc;
     int32_t y[CTL], ax[CTL], bd[3], pos = p[P_E4];      /* bd: STRC, BRIT, DAMP (Q16 0..1) */
-    int32_t exc = p[P_E7] * (md == PM_MODAL ? 4128 : md == PM_MEMB ? 2064 : 258);   /* exc Q15 (a strike's click is
-                                                                                     * short: x16, x8, else unheard) */
+    int32_t exc = p[P_E7] * (md == PM_MODAL ? 1032 : md == PM_MEMB ? 516 : 258);   /* exc Q15 (a strike's click is
+                                                                                    * short: x4, x2, else unheard; x16
+                                                                                    * and x8 clicked, 2026-11-01) */
     int32_t bow = p[P_E6] ? 9830 + p[P_E6] * 129 : 0;   /* BOW: Dust at 0.15 .. 0.4 (DaisySP's sustain: 1; below
                                                          * 0.15 all but silent) */
     int32_t acc = clamp(p[P_E5] * v->vel * 4, 0, 65536);   /* ACC at full velocity, Q16 */
@@ -253,12 +264,16 @@ static void phys_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const 
         px_modal_blk_t B;
         px_modal_block(&B, &S->u.m, f0, bd[0], bd[1], bd[2], acc, pos * 129, bow);   /* pos 0..1/4 */
         px_modal_run(&B, &S->u.m, y, ax, n);
+        if (B.strike && exc)
+            phys_knock_in(ax, n);
         break;
     }
     case PM_MEMB: {
         px_modal_blk_t B;
         px_memb_block(&B, &S->u.m, f0, bd[0], bd[1], bd[2], acc, pos * 516, p[P_E6] * 6192);   /* BEND 0..12 st */
         px_modal_run(&B, &S->u.m, y, ax, n);
+        if (B.strike && exc)
+            phys_knock_in(ax, n);
         break;
     }
     case PM_STRING: {
