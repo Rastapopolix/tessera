@@ -273,8 +273,8 @@ def build_app(stub):
     subprocess.run([sys.executable, SRC / "tools/gen_909_tables.py", GEN / "x0x_drum_tables.h"], check=True)
     flags = [*CFLAGS, "-Ifirmware/hal", "-Ifirmware/src", "-Ibuild/gen"]
     os.environ.setdefault("MELODEE_HELP_PACKED", "1")   # melodee-tess: the help texts byte-pair coded (tools/gen_help.py)
-    for flag, v in (("MELODEE_FM6", "1"), ("MELODEE_SID", "0"), ("MELODEE_SID_KIT", "0"), ("MELODEE_PHYS", "0"), ("MELODEE_PLAITS", "0")):
-        os.environ.setdefault(flag, v)   # melodee-tess: FM back, SID and PHYS out (2026-10-21), DRUM's SID KIT out (2026-10-28), CZ-1 and Prophet stores and MACRO out, TRIO in; set =1 / =0
+    for flag, v in (("MELODEE_FM6", "1"), ("MELODEE_SID", "0"), ("MELODEE_SID_KIT", "0"), ("MELODEE_PHYS", "1"), ("MELODEE_PLAITS", "0")):
+        os.environ.setdefault(flag, v)   # melodee-tess: FM back, SID out (2026-10-21; PHYS too until it came back 2026-10-31), DRUM's SID KIT out (2026-10-28), CZ-1 and Prophet stores and MACRO out, TRIO in; set =1 / =0
                                          # to build the old set (the host tests keep all engines: firmware/src/core.h)
     os.environ.setdefault("MELODEE_LOOK", "1")   # melodee-tess: the Mono look, what 3.0 ships (2026-10-30); =0 the detailed
                                                  # look (the host tests keep it: firmware/src/core.h)

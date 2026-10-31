@@ -67,7 +67,9 @@ d9_render_smp 1444
 fx_filter 176
 fx_down 126
 fx_up 141
-fx_time 249
+# fx_time 249 -> 251 (2026-10-31): PHYS back in the device build moved its registers, +2 loop instructions (274),
+# its source unchanged.
+fx_time 251
 fx_reverb 1016
 mix_fx_samples 82
 mix_extra_sends 94

@@ -1763,6 +1763,94 @@ static void mo_pic_chord_keys(const track_t *t)
             }
         }
 }
+#if PHYS_ON
+/* PHYS's EDIT pages (BODY, EXCT). MODAL and MEMB: their partials, a bar each at its ratio to the note (1 .. 32, an
+ * octave 21 cells), as tall as POS strikes it and as long as BRIT and DAMP let it ring (against the first: the
+ * square root of q / f); STRNG and SYMP: the string between its bridges, plucked at POS (a bow over it when bowed),
+ * the bridge curved for STRNG's buzz and SYMP's BUZZ, doubled when stiff; SYMP's three strings under it, as long as
+ * CHRD tunes them (against C3: ROOT), shaking with SYMP. At the foot, MODAL's and STRNG's STRC as where it is
+ * (HARMONIC, FREE BAR, TUNED BAR, PLAIN ..: the sweet spots), MEMB's head, SYMP's chord; the knob turning's value */
+static void mo_pic_phys(const track_t *t)
+{
+    const int16_t *p = t->p;
+    uint32_t md = (uint32_t)p[P_E0] % PM_COUNT, i;
+    int32_t v[3], hot = pv_hot();
+    char foot[16];
+    phys_body(p, md, 0, v);
+    foot[0] = 0;
+    if (md == PM_MODAL || md == PM_MEMB) {
+        px_modal_t M = {{{0}}};                         /* (a scratch state: the blocks clamp it) */
+        px_modal_blk_t B;
+        uint32_t h[PX_NMODE], top = 1;
+        int32_t r2;
+        if (md == PM_MODAL)
+            px_modal_block(&B, &M, pitch_inc(36u * 16u), v[0], v[1], v[2], 0, p[P_E4] * 129, 0);
+        else
+            px_memb_block(&B, &M, pitch_inc(36u * 16u), v[0], v[1], v[2], 0, p[P_E4] * 516, 0);
+        for (i = 0; i < B.n; i++) {
+            uint32_t a = (uint32_t)(B.m[i].a < 0 ? -B.m[i].a : B.m[i].a) >> 16, w = 256;   /* (w: Q8; no 64-bit
+                                                                                          * signed divide on the device) */
+            uint64_t q0 = ((uint64_t)(uint32_t)(B.m[0].rpg - B.m[0].g) * (uint32_t)B.m[0].g) >> 16;
+            uint64_t qi = ((uint64_t)(uint32_t)(B.m[i].rpg - B.m[i].g) * (uint32_t)B.m[i].g) >> 16;
+            while (qi >> 31) qi >>= 1, q0 >>= 1;
+            if (q0 < qi) w = (uint32_t)((q0 << 8) / (uint32_t)qi);
+            h[i] = a * px_isqrt64((uint64_t)w << 8) >> 8;   /* (sqrt, Q8) */
+            if (h[i] > top) top = h[i];
+        }
+        for (i = 0; i < 6u; i++)                        /* the octaves */
+            mo_vl(6 + (int32_t)i * 21, 99, 2, MO_DIM);
+        mo_hl(2, 99, 116, MO_DIM);
+        for (i = 0; i < B.n; i++) {
+            uint32_t r = (uint32_t)(((uint64_t)B.m[i].g << 16) / (uint32_t)B.m[0].g), k = 0;
+            int32_t x, hh = (int32_t)px_isqrt64(h[i] * 1600u / top);   /* (40 high, square-rooted: the quiet
+                                                                         * partials seen too) */
+            while (r >= 2u << 16) r >>= 1, k++;
+            x = 6 + (int32_t)k * 21 + (int32_t)((r - 65536u) * 21u >> 16);   /* (log2, linear in each octave) */
+            if (k < 5u && hh > 0) mo_fill(x, 98 - hh, i ? 1 : 2, hh, MO_INK);
+        }
+        r2 = B.n > 1u ? (int32_t)(((uint64_t)B.m[1].g * 100u) / (uint32_t)B.m[0].g) : 200;   /* the second partial, x100 */
+        if (md == PM_MEMB) str_cpy(foot, p[P_E1] < 43 ? "TOM" : p[P_E1] < 86 ? "HAND DRUM" : "TABLA", sizeof foot);
+        else str_cpy(foot, r2 < 197 ? "GONG" : r2 < 203 ? "HARMONIC" : r2 < 260 ? "STRETCHED" : r2 < 300 ? "FREE BAR" :
+                           r2 < 370 ? "METAL BAR" : "TUNED BAR", sizeof foot);
+    } else {
+        int32_t x0 = 8, x1 = 112, y = 70, s = md == PM_SYMP ? PHYS_BUZZ(p[P_E6]) : v[0], bow = md == PM_STRING && p[P_E6];
+        int32_t xp = x0 + (md == PM_STRING && p[P_E4] ? p[P_E4] * (x1 - x0) / 254 : (x1 - x0) / 8), x, py = y;
+        mo_fill(x1, y - 3, 2, 8, MO_INK);               /* the bridges: the left one a slope when curved */
+        if (s < 15729) mo_line(x0 - 6, y + 5, x0, y, MO_INK), mo_line(x0 - 6, y + 6, x0, y + 1, MO_INK);
+        else mo_fill(x0 - 2, y - 3, 2, 8, MO_INK);
+        mo_dash(x0, y, x1 - x0, MO_DIM);
+        for (x = x0; x <= x1; x++) {                    /* plucked: a triangle from POS; bowed: a half sine */
+            int32_t d = bow ? mo_sin((x - x0) * 128 / (x1 - x0)) * 9 / 127
+                            : (x < xp ? (x - x0) * 9 / (xp - x0) : (x1 - x) * 9 / (x1 - xp));
+            if (x > x0) mo_line(x - 1, py, x, y - d, MO_INK);
+            if (s > 17039) mo_px(x, y - d + 1, MO_INK);   /* (stiff: a thicker string) */
+            py = y - d;
+        }
+        if (bow) {                                      /* the bow across it, at POS's place (or a fifth in) */
+            int32_t xb = x0 + (p[P_E4] ? p[P_E4] * (x1 - x0) / 254 : (x1 - x0) / 5);
+            mo_fill(xb - 12, y - 14, 24, 2, MO_INK);
+            for (x = xb - 11; x < xb + 12; x += 3) mo_px(x, y - 12, MO_DIM);
+        }
+        if (md == PM_SYMP) {
+            uint32_t c = (uint32_t)p[P_E1] >> 4;
+            for (i = 0; i < PX_NSYMP; i++) {
+                int32_t cents = c < 7u ? PHYS_CHORDS[c][i] : (t->p[P_ROOT] + (i == 1u ? 7 : i == 2u ? 12 : 0)) * 100;
+                int32_t len = (int32_t)((uint32_t)(x1 - x0) * px_exp2(-cents * 4369 / 80) >> 16), ys = 84 + (int32_t)i * 6;
+                int32_t amp = p[P_E4] * 3 / 127;
+                if (len > x1 - x0) len = x1 - x0;
+                mo_vl(x1 - len, ys - 1, 3, MO_DIM);
+                for (x = x1 - len; x < x1; x++) mo_px(x, ys - mo_sin((x - x1 + len) * 256 / (len > 0 ? len : 1)) * amp / 127, MO_DIM);
+            }
+            str_cpy(foot, "CHORD ", sizeof foot);
+            str_cpy(foot + 6, c < 7u ? N_PHYS_CHORD[c] : "ROOT", sizeof foot - 6);
+        } else {
+            str_cpy(foot, bow ? "BOWED" : s < 15729 ? "BUZZ BRIDGE" : s > 17039 ? "STIFF STRING" : "PLAIN STRING", sizeof foot);
+        }
+    }
+    mo_text(foot, 2, 102, MO_DIM);
+    if (hot >= 0) mo_hot_value(hot);
+}
+#endif
 /* FM6's EDIT and operator pages: the algorithm as graph_fm6 charts it (FM6_CELL), on the cell grid: an operator a box
  * 11 x 9, columns 18 apart, rows 12; the carriers solid over the output bus, the modulators outlined, an operator at
  * output level 0 dim; the routes and the feedback loop (dim at feedback 0); the operators the knob turning moves (or
@@ -1908,6 +1996,12 @@ static void mo_picture(void)
         mo_pic_fm6(t);
         return;
     }
+#if PHYS_ON
+    if (pg->scope == SC_ENGINE && t->eng_req % NENGINES == ENGI_PHYS && pg->graph == GR_NONE) {
+        mo_pic_phys(t);
+        return;
+    }
+#endif
     if (pv_kind() == PV_CURVE || pv_kind() == PV_RINGS) {   /* the sound pages' pictures (ui_pages.c pv_pic) */
         int32_t cut, res;
         uint32_t type, pic = pv_pic(&cut, &res, &type);
