@@ -81,7 +81,8 @@
 # TESSERA (tests/tessera_test.c): every note the generators play in each scenario (each generator, EVOLVE, FORM, TWEAK,
 #                   scales, divisions, transport, mute, knobs while playing, external MIDI clock) against tests/tessera_baseline.txt,
 #                   no note held after the stop, the generator state after the stop, the saved block's bytes and round
-#                   trip; logs in build/tessera_log/. TESSERA_UPDATE=1 rewrites the baseline (only after an intended
+#                   trip; a generator picked or unmuted mid-bar plays as if it had run from PLAY (ATLAS, EUCLID 13,
+#                   16T, SWING); logs in build/tessera_log/. TESSERA_UPDATE=1 rewrites the baseline (only after an intended
 #                   change of what they play). tests/gen_test.c: each generator alone (gen.c without the firmware).
 # LONG-FORM (tests/longform_test.c): eight hours of ten patches left playing (notes only: the sequencer without the
 #                   voices, checked against mix_block for the first two minutes): no long silence, no collapse to one
