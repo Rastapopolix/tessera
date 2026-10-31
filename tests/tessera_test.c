@@ -2878,7 +2878,38 @@ static void pack_run(char *res, size_t cap)
         }
         tessera_unpack(a);
     }
-    {   /* ANSWER FADE on GEN's KNOB 4: a count a click, 1 .. 16 then LOOPS and no further; back down a count a click */
+    {   /* ANSWER SOURCE: T1's STEP pattern is the call (its notes at their steps), read again before each answer; the
+         * keys then make none; another generator's SOURCE leaves ANSWER's phrase alone */
+        uint32_t i, sok = 1;
+        tessera_reset();
+        s_follow_step();                              /* (T1: 60 62 64 - 67 65 - 72) */
+        gen(1, TESS_ENG_ANSWER);
+        tessera_param_set(1, TX_SD_SOURCE, 1);
+        {
+            const tessera_answer_t *an = tessera_answer(1);
+            static const uint8_t AT[6] = {0, 1, 2, 4, 5, 7}, NOTE[6] = {60, 62, 64, 67, 65, 72};
+            sok &= an->n == 6u;
+            for (i = 0; i < 6u && i < an->n; i++) sok &= an->at[i] == AT[i] && an->note[i] == NOTE[i] && an->vel[i] == 100u;
+            tessera_answer_hear(&trk[1], 50, 90);
+            sok &= an->n == 6u && an->note[0] == 60u;
+            trk[0].step[0].note[0] = 59;                /* (the pattern changed: the next answer's call) */
+            tessera_param_set(1, TX_SD_SOURCE, 1);
+            sok &= an->note[0] == 59u;
+            tessera_param_set(1, TX_SD_SOURCE, 0);
+            tessera_answer_hear(&trk[1], 50, 90);       /* (OFF: the keys' call again) */
+            sok &= an->n == 1u && an->note[0] == 50u;
+        }
+        tessera_reset();
+        s_follow_step();
+        gen(1, TESS_ENG_TURING);
+        tessera_param_set(1, TX_SD_SOURCE, 1);
+        tessera_stop_all();
+        sok &= tessera_answer(1)->n == 0u;
+        ok &= sok;
+        tessera_unpack(a);
+    }
+    {   /* ANSWER FADE on GEN's KNOB 4: a count a click, 1 .. 16, then LOOPS SHORT MID LONG (LEN) and no further; back
+         * down the same way */
         uint32_t i, up = 1;
         tessera_reset();
         gen(1, TESS_ENG_ANSWER);
@@ -2887,10 +2918,17 @@ static void pack_run(char *res, size_t cap)
             tessera_knob(3, 1);
             up &= tessera_answer_count(1) == i;
         }
+        for (i = 0; i < TESS_AN_LENS; i++) {
+            tessera_knob(3, 1);
+            up &= tessera_answer_count(1) == 0u && tessera_param_get(1, TX_AN_FADE) == 100 &&
+                  tessera_param_get(1, TX_AN_LEN) == (int32_t)i;
+        }
         tessera_knob(3, 1);
-        up &= tessera_answer_count(1) == 0u && tessera_param_get(1, TX_AN_FADE) == 100;
-        tessera_knob(3, 1);
-        up &= tessera_param_get(1, TX_AN_FADE) == 100;
+        up &= tessera_param_get(1, TX_AN_FADE) == 100 && tessera_param_get(1, TX_AN_LEN) == TESS_AN_LENS - 1;
+        for (i = TESS_AN_LENS - 1u; i-- > 0;) {
+            tessera_knob(3, -1);
+            up &= tessera_param_get(1, TX_AN_FADE) == 100 && tessera_param_get(1, TX_AN_LEN) == (int32_t)i;
+        }
         tessera_knob(3, -1);
         up &= tessera_answer_count(1) == 16u;
         tessera_param_set(1, TX_AN_FADE, 33);           /* (the default: 6) */

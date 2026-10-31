@@ -25,7 +25,7 @@ static int answer_source(uint32_t tr)
 {
     uint32_t s = tessera.sd_src[tr], i, n = 0, note, vel, len;
     tessera_answer_t *a = &tessera.answer[tr];
-    if (!s || s > TESSERA_TRACKS) return 0;
+    if (!s || s > TESSERA_TRACKS || tessera.mode[tr] != TESS_ENG_ANSWER) return 0;   /* (another mode's SOURCE: its own) */
     len = sd_len(s - 1u);
     for (i = 0; i < len && i <= TESS_AN_AT_MAX && n < TESS_AN_NOTES; i++)
         if (sd_step(s - 1u, i, &note, &vel)) {
