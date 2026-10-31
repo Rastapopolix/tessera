@@ -266,7 +266,10 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
     midi_channel_t *c = midi_channel(ch);
     uint32_t i, mask;
     track_t *t = midi_track(ch);
-    if (t) midi_parameter(t,cc,value);
+    if (t && !settings_cc_off) {                   /* (MIDI CC IN OFF: no parameter moves; midi_cc.c) */
+        midi_parameter(t, cc, value);
+        midi_cc(t, ch, cc, value);
+    }
     switch (cc) {
     case 1:
         c->wheel = (uint8_t)value;
