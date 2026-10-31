@@ -1,7 +1,7 @@
 # Revision: shared workload budget
 
-(Written for Melodee before Tessera. Tessera's device build plays FM6, TRIO and DRUM: the CZ-1 and Prophet
-engines are retired, and SID and PHYS are out of device builds, so the parts about those engines describe them as
+(Written for Melodee before Tessera. Tessera's device build plays FM6, ORACLE, TRIO, PHYS and DRUM: the CZ-1 and Prophet
+engines are retired, and SID is out of device builds (PHYS was too, 2026-10-21 to -31), so the parts about those engines describe them as
 they were.)
 
 The user rejected the initial fixed one-voice Prophet/FM6 and two-hit DRUM

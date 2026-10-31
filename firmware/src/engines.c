@@ -245,8 +245,9 @@ static uint32_t eng_step(uint32_t e, int32_t dir)
 #endif
 /* the parts at power-on (engine, preset; the steps empty): bass (TRK_START_TESS: a drone), pad, lead, drums */
 static const uint8_t TRK_DEF[NPART][2] = {
-#if TRK_START_TESS && MELODEE_PHYS
-    {ENGI_PHYS, 7},                                 /* PHYS DRONE STRING (Theo 2026-10-19) */
+#if TRK_START_TESS && MELODEE_PHYS && MELODEE_SID
+    {ENGI_PHYS, 7},                                 /* PHYS DRONE STRING (Theo 2026-10-19; the host tests' set. PHYS back
+                                                     * in the device build 2026-10-31: its start stays FM6's) */
 #elif MELODEE_SID
     {ENGI_SID, 26},                                 /* (without it: SID BELL RING) */
 #else
