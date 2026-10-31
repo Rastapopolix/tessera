@@ -4893,6 +4893,31 @@ static int test_quick_layers(void)
         bad += check("GLO KNOB 3: T3 LEVEL from any page; OCT-: mutes and levels as it opened, no octave", ok &&
                      str_eq(cur_page()->title, "ENV"));
     }
+    {   /* GLO + PRESETS: the sounds from any page (ENV: PRESETS alone does nothing there), the name in the message */
+        uint32_t eng = TSEL->eng_req, pre = TSEL->preset, total, want;
+        char nm[24];
+        turn(EN_PRESET, 1);
+        ok = TSEL->eng_req == eng && TSEL->preset == pre;
+        btn_down(B_GLO); frame();
+        turn(EN_PRESET, 1);
+        sound_name(TSEL, nm);
+        ok &= (TSEL->eng_req != eng || TSEL->preset != pre) && ui.layer == LAYER_GLO && msg_is(nm);
+        turn(EN_PRESET, -1);
+        ok &= TSEL->eng_req == eng && TSEL->preset == pre;
+        spin(EN_PRESET, 1, 12);                   /* a fast turn: the first detent, then the knob's rest */
+        want = preset_pos(&total);
+        {
+            uint32_t k2;
+            char tg[8];
+            entry_label(browse_shown(&k2), k2, tg, nm);   /* (the message: the sound the list shows, not loaded yet) */
+        }
+        ok &= browse_pending() && want > list_cur(&total) && msg_is(nm);
+        rest();
+        ok &= !browse_pending() && list_cur(&total) == want;
+        btn_up(B_GLO); frame();
+        bad += check("GLO + PRESETS: the track's sounds from any page (alone: the page's), the name shown; a combo", ok &&
+                     str_eq(cur_page()->title, "ENV") && !ui.layer);
+    }
     song.playing = 1; transport_req = 0;
     btn_down(B_GLO); frame(); press(B_PLAY);
     ok = transport_req == 3u;

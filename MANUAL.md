@@ -55,7 +55,7 @@ page's four settings sit along the top of the screen in the same order.
 | **SCL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
 | **EDIT** | The sound's EDIT pages; on an EDIT page, the map | With OCT- / OCT+: undo / redo |
 | **FX** | The insert and send effects | The mod amount of any knob you turn |
-| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it; with PLAY, restart from the top |
+| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
 | **SAVE** | USER (ready to save the sound), PROJECT, PRESETS | Save the project to its slot (as SAVE + REC) |
 | **REC** | Records the selected track until REC again (see [Recording live](#recording-live)) | Capture or print the last bars (see [Print and keep](#print-and-keep)) |
 | **OCT+** | Octave up; on some pages, an action (shown on screen) | A page's extra layer (see [OCT+ layers](#oct-layers-on-gen)) |
@@ -118,6 +118,7 @@ key skips it.
 | Hold **OCT+** on GEN | The generator's second layer, for TURING, EUCLID, MARKOV, MORPH, QUAD, CHORD, ATLAS, CONSTELLATION and ANSWER (see [OCT+ layers](#oct-layers-on-gen)). |
 | Hold **OCT+** on EVOLVE | A generator's GRAVITY; on a STEP track, STEP EVOLVE's HOW (see [EVOLVE](#evolve)). |
 | Turn **SELECT** on HOME, or with **GLO** held | Sets the tempo (BPM), as SEQ > TEMPO does; F4 with GLO held taps it. With CLK on USB or TRS the tempo is the clock's. |
+| Turn **PRESETS** with **GLO** held, on any page | Browses the selected track's sounds as PRESETS does on HOME, and shows the sound's name at the top. Without GLO, PRESETS keeps the page's own job (or does nothing), so a stray turn never changes the sound. GLO + OCT- does not put the sound back. |
 | **GLO** + **E4** (on MIXER, E4) | Holds [FILL](#a-steps-condition-and-fill) for the steps whose condition is FILL or !FILL. |
 | **GEN** on an AWAKE track, a white key | Picks that step: KNOB 1 sets its A, KNOB 2 its B. The same key lets it go. |
 | Hold **ARP**, turn a knob | The [help card](#help-card) for that knob. Turn the same knob further to scroll a long text. |
@@ -194,7 +195,8 @@ one and a half times): one ORACLE track of pads or chords is fine; with two busy
 <p align="center"><img src="assets/gallery/oracle_osc.png" alt="ORACLE OSC A page" width="240"> <img src="assets/gallery/oracle_filter.png" alt="ORACLE FILTER page" width="240"> <img src="assets/gallery/oracle_env.png" alt="ORACLE AMP ENV page" width="240"></p>
 
 **PRESETS** (SAVE) browses the sounds. Its LIST knob picks ALL, the favourites, RECENT or a category, and it starts
-on ALL at power-on.
+on ALL at power-on. The PRESETS knob browses the same list on HOME and on PRESETS; on any other page, hold GLO and
+turn it.
 
 ### How many voices at once
 

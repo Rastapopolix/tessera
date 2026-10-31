@@ -244,6 +244,22 @@ static void bpm_turn(int32_t s)
     ui.bpm_t = 40;
 }
 
+/* PRESETS with GLO held, on any page: the selected track's sounds, as PRESETS on HOME (the same list, loads and
+ * acceleration); the page's own PRESETS turn (FM6's operator, the NOTES zoom, ..) needs GLO let go. The sound shown
+ * (the pending one while turning fast) in the message, as the page may not show it */
+static void glo_preset_turn(int32_t s)
+{
+    char tag[8], nm[24];
+    uint32_t k, src, total;
+    list_cur(&total);
+    browse_turn(EN_PRESET, s);
+    if (!total)                                          /* (browse_turn said why) */
+        return;
+    src = browse_shown(&k);
+    entry_label(src, k, tag, nm);
+    ui_message(nm);
+}
+
 /* a key pressed in layer l (k: 0 = F3 .. 26 = G5) */
 static void layer_key(uint32_t l, uint32_t k)
 {

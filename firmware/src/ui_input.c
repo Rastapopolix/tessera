@@ -1619,6 +1619,7 @@ static uint32_t layer_oct(uint32_t pressed, uint32_t oct);
 static int layer_allowed(void);
 static uint32_t ly_bit(uint32_t l);
 static void bpm_turn(int32_t s);
+static void glo_preset_turn(int32_t s);
 
 /* a page button let go (they act on release; a layer's own button: layer_gesture) */
 static void page_tap(uint32_t b)
@@ -2045,6 +2046,10 @@ static void ui_input(void)
     if (knob_layer && ui.ly == LAYER_GLO && (s = panel_enc(EN_SELECT)) != 0) {   /* GLO + SELECT: the tempo, a combo */
         combo = 1;
         bpm_turn(s);
+    }
+    if (knob_layer && ui.ly == LAYER_GLO && (s = panel_enc(EN_PRESET)) != 0) {   /* GLO + PRESETS: the sounds, a combo */
+        combo = 1;
+        glo_preset_turn(s);
     }
     if (lay) {                                          /* a layer's button held: keys, knobs and buttons are combos */
         combo |= (pressed & ~ly_bit(ui.ly)) != 0u;
