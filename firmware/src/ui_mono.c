@@ -2016,7 +2016,7 @@ static void mo_picture(void)
 /* a frame of w x h cells at (x, y) on the screen, a title row (if any), the rows 10 cells each: the one picked
  * inverted across the frame (a clear cell inside it), the value now a dot at the right, a value right-aligned; more
  * above or below the rows shown: a notch on the frame. Drawn in slices of 120 px (a canvas's height) */
-typedef struct { char name[20], val[12]; uint8_t dim, warn; } mo_row_t;
+typedef struct { char name[20], val[12]; uint8_t dim, warn, trk; } mo_row_t;   /* trk: 1..4 a track's ink (MOSAIC), 0 */
 static void mo_ascii(char *d, const char *s, uint32_t n)   /* the 5 x 7 font's: an ellipsis (0x85) three dots, other
                                                          * characters past it left out */
 {
@@ -2047,7 +2047,8 @@ static void mo_list(int32_t x, int32_t y, int32_t w, const char *title, const ch
         }
         for (i = 0; i < rows; i++) {
             int32_t r = y0 + i * 10, on = i == sel;
-            uint16_t ink = on ? MO_BG : row[i].dim ? MO_DIM : MO_INK;
+            uint32_t k = row[i].trk - 1u;
+            uint16_t ink = on ? MO_BG : row[i].trk ? (row[i].dim ? mo_tdim(k) : MO_TRK(k)) : row[i].dim ? MO_DIM : MO_INK;
             char t[24], a[24];
             mo_ascii(a, row[i].name, sizeof a);
             mo_cut(t, a, (uint32_t)(w - 8 - (row[i].val[0] ? mo_tw(row[i].val) + 4 : 0)) / 6u);
@@ -2070,18 +2071,23 @@ static void mo_list(int32_t x, int32_t y, int32_t w, const char *title, const ch
     }
 }
 /* the picker (pick_draw): the names around the value (pick_name, called directly: the stack audit resolves no
- * pointer), under its knob's label, over its column and the next */
+ * pointer), under its knob's label, over its column and the next. MODS': each with its track, "T1 SWARM 1" (ten
+ * characters: wider, from the screen's edge), in its track's ink on MOSAIC */
 static void mo_pick(int32_t col, int32_t count, int32_t cur, int32_t first, int32_t rows)
 {
     mo_row_t r[8];
-    int32_t i, tr;
+    int32_t i, tr, cords = cur_page()->graph == GR_CORDS, w = cords ? 70 : 58;
     if (rows > 8) rows = 8;
     for (i = 0; i < rows; i++) {
-        str_cpy(r[i].name, pick_name(first + i, &tr), sizeof r[i].name);
+        if (cords)
+            cu_pick_label(r[i].name, (uint32_t)col, first + i, &tr);
+        else
+            str_cpy(r[i].name, pick_name(first + i, &tr), sizeof r[i].name);
         r[i].val[0] = 0, r[i].warn = 0;
+        r[i].trk = (uint8_t)(ux_multi && tr >= 0 ? tr + 1 : 0);
         r[i].dim = first + i - cur > 1 || cur - first - i > 1;
     }
-    mo_list(1 + 30 * (col < 3 ? col : 2), 20, 58, 0, 0, r, rows, cur - first, -1, first > 0, first + rows < count);
+    mo_list(col < 2 ? 1 + 30 * col : 119 - w, 20, w, 0, 0, r, rows, cur - first, -1, first > 0, first + rows < count);
 }
 /* OCT+'s whole list (vlist_draw): the list's name, the names around the one picked, the value now a dot; at the
  * bottom of the screen, its width */
@@ -2094,7 +2100,7 @@ static void mo_vlist(const char *title, const char *const *names, int32_t count,
     if (rows > 8) rows = 8;
     for (i = 0; i < rows; i++) {
         str_cpy(r[i].name, names[i], sizeof r[i].name);
-        r[i].val[0] = 0, r[i].dim = 0, r[i].warn = 0;
+        r[i].val[0] = 0, r[i].dim = 0, r[i].warn = 0, r[i].trk = 0;
     }
     fmt_int(pos, sel + 1);                              /* where it is in the whole list: 3/12 */
     str_cpy(pos + str_len(pos), "/", 2);
@@ -2119,7 +2125,7 @@ static void mo_sheet(void)
             sr->value(v);
             mo_ascii(r[i].val, v, sizeof r[i].val);
         }
-        r[i].dim = 0;
+        r[i].dim = 0, r[i].trk = 0;
         r[i].warn = sr->cf != 0;
     }
     mo_list(0, 120 - (12 + rows * 10 + 1), 120, pop.title, pop.sub, r, rows, (int32_t)pop.sel - first, -1, first > 0,

@@ -248,7 +248,7 @@ static int cu_pick(uint32_t col, int32_t *count, int32_t *cur)
     *cur = (int32_t)(col ? cu_dst_of(c) : cu_src_of(c));
     return 1;
 }
-/* entry i of a list: its name, its track (-1: none, the "--" first) */
+/* entry i of a list: its name, its track (-1: none, the "--" first; the project's ENERGY and send effects) */
 static const char *cu_pick_name(uint32_t col, int32_t i, int32_t *tr)
 {
     cord_t c = {0};
@@ -256,12 +256,24 @@ static const char *cu_pick_name(uint32_t col, int32_t i, int32_t *tr)
     if (i <= 0)
         return "--";
     if (col == 0u) {
-        *tr = (i - 1) / (int32_t)(CS_N - 1u);
-        return cord_src_name((uint32_t)((i - 1) % (int32_t)(CS_N - 1u) + 1));
+        uint32_t s = (uint32_t)((i - 1) % (int32_t)(CS_N - 1u) + 1);
+        if (s != CS_ENERGY) *tr = (i - 1) / (int32_t)(CS_N - 1u);
+        return cord_src_name(s);
     }
     cu_dst_set(&c, (uint32_t)i);
     *tr = cu_global(c.dst) ? -1 : c.dst_trk;
     return cu_dst_name(&c);
+}
+
+/* entry i's label in Mono's list (ui_mono.c mo_pick): "T1 SLEW", as KNOB 1's and 3's values ("T1 LFO", the rows'
+ * codes T1SL); the project's without a track. b: 20 bytes */
+static void cu_pick_label(char *b, uint32_t col, int32_t i, int32_t *tr)
+{
+    const char *s = cu_pick_name(col, i, tr);
+    b[0] = 0;
+    if (*tr >= 0)
+        b[0] = 'T', b[1] = (char)('1' + (*tr & 3)), b[2] = ' ', b[3] = 0;
+    str_cpy(b + str_len(b), s, 20u - str_len(b));
 }
 
 /* OCT+ on MODS: the cord's direction, +- <-> + (a source that is 0..1 already: nothing to fold) */
