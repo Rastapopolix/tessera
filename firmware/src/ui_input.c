@@ -47,9 +47,24 @@ static uint32_t cur_fam(void)                       /* (an engine's own envelope
 static int layer_set_open(void);                       /* (ui_layer.c) */
 /* OCT- / OCT+ shift the octave on Stage (HOME) only; everywhere else, and over Stage's menu, dialogs and popups,
  * they are Esc / Enter (docs/design/README.md, Navigation) */
+/* NOTES with REC on (a melodic track): OCT- / OCT+ shift the keys' octave as on Stage (both: back to 0; OCT+ held
+ * still the pattern's sheet), not back / enter: the keys play there (Theo 2026-10-31) */
+static int grid_on(void);
+static int notes_oct(void)
+{
+    return !ui.home && cur_page()->graph == GR_ROLL && ((song.rec >> song.sel) & 1u) && !grid_on() && !designer_on() &&
+           !ui.menu && !ui.confirm && !name_on() && !new_on() && !layer_set_open() && !pop.on && !smap.on;
+}
 static int oct_nav(void)
 {
-    return designer_on() || !ui.home || ui.menu || ui.confirm || name_on() || new_on() || layer_set_open() || pop.on || smap.on;
+    return !notes_oct() &&
+           (designer_on() || !ui.home || ui.menu || ui.confirm || name_on() || new_on() || layer_set_open() || pop.on || smap.on);
+}
+static void notes_oct_say(void)                         /* (NOTES: no octave LEDs to read it from there) */
+{
+    char b[4] = {song.octave < 0 ? '-' : '+', (char)('0' + (song.octave < 0 ? -song.octave : song.octave)), 0, 0};
+    if (notes_oct())
+        ui_say("KEYS OCT ", song.octave ? b : "0");
 }
 static int oct_enter_ok(void)                           /* OCT+ would do something here */
 {
@@ -1965,6 +1980,7 @@ static void ui_input(void)
         if(bulk_context())ui.bulk_hold=1;else if(!gen_layer_on())page_sheet_open();   /* (QUAD, CONSTELLATION on GEN: their layer) */
     } else if (octup == BT_TAP && oct_deferred) {
         song.octave += song.octave < 3 ? 1 : 0;         /* (OCT+ pressed on a page with a sheet: on release) */
+        notes_oct_say();
     }
     if (octup != BT_NONE || !((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u))
         oct_deferred = 0;
@@ -2263,11 +2279,13 @@ static void ui_input(void)
                 song.octave = 0;
                 ui.oct_t0 |= 2u;                        /* (OCT+ then neither a tap nor a sheet) */
                 oct_deferred = 0;
-            } else if (b == B_OCTUP && page_sheet() == 1u) {
-                oct_deferred = 1;                       /* Stage: OCT+ on release, held: the sound's sheet */
+                notes_oct_say();
+            } else if (b == B_OCTUP && page_sheet()) {
+                oct_deferred = 1;                       /* Stage, NOTES: OCT+ on release, held: the sheet */
                 ui.force = 1;
             } else {
                 song.octave += b == B_OCTDN ? (song.octave > -3 ? -1 : 0) : (song.octave < 3 ? 1 : 0);
+                notes_oct_say();
             }
             break;
         }

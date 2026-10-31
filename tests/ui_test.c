@@ -1736,6 +1736,25 @@ static int test_rec(void)
     bad += check("REC + EDIT (REC first): the same question, REC's release no tap", ui.confirm == CF_CLEAR_SEQ && song.rec == 1u);
     press(B_OCTDN);
     bad += check("OCT-: nothing cleared", ui.confirm == CF_NONE && trk[0].step[2].n == 1 && song.rec == 1u);
+    /* NOTES with REC on: OCT- / OCT+ the keys' octave (as on Stage), not back / enter */
+    {
+        uint32_t c4 = kb_map(&trk[0], 0);
+        song.octave = 0;
+        press(B_OCTDN);
+        bad += check("NOTES, REC on: OCT- the keys an octave down, NOTES stays", !ui.home && cur_page()->graph == GR_ROLL &&
+                     song.octave == -1 && kb_map(&trk[0], 0) + 12u == c4 && msg_is("KEYS OCT -1"));
+        press(B_OCTUP);
+        press(B_OCTUP);
+        bad += check("NOTES, REC on: OCT+ (on release) up again, past 0", !ui.home && song.octave == 1 && msg_is("KEYS OCT +1") &&
+                     !pop.on && (oct_leds() & 2u));
+        hold(B_OCTUP);
+        bad += check("NOTES, REC on: OCT+ held still the pattern's sheet, the octave as it was", pop.on && song.octave == 1);
+        press(B_OCTDN);
+        song.rec = 0;
+        song.octave = 0;
+        press(B_OCTDN);
+        bad += check("NOTES, REC off: OCT- back to Stage, the octave as it was", ui.home && song.octave == 0);
+    }
     song.rec = 0;
     song.playing = 0;
     /* ARP: the arp's notes are recorded, not the key */
