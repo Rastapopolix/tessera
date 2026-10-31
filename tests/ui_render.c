@@ -1579,7 +1579,7 @@ static void setup(int s)
     case S_CORDS: case S_CORDS_PICK_SRC: case S_CORDS_PICK_DST: {   /* (tessera-notes/docs/design/phase2/cords.png's four; KNOB 1's
                                                      * and 3's lists) */
         static const cord_t C4[4] = {{CS_NOTE, 0, CD_CUTOFF, 1, 40, 0}, {CS_GATE, 1, CD_DECAY, 3, -25, 0},
-                                     {CS_LFO, 2, CD_EUC_PULSES, 0, 30, 0}, {CS_SH, 0, CD_FX_SEND, 1, 15, 0}};
+                                     {CS_LFO, 2, CD_EUC_PULSES, 0, 30, 0}, {CS_SH, 0, CD_FX_SEND, 1, 15, 0, 1}};
         uint32_t k;
         cord_clear();
         for (k = 0; k < 4u; k++) cord_set(k, &C4[k]);

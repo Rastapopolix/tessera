@@ -90,7 +90,7 @@ typedef struct {                  /* one cord, as saved (6 bytes: uni rides in s
     uint8_t dst, dst_trk;         /* CD_*, 0..3 */
     int8_t amount;                /* -100..100 %: at a full source, the destination's whole range (pitch: an octave) */
     int8_t offset;                /* -100..100 %: added whatever the source (CS_OFF: a fixed setting) */
-    uint8_t uni;                  /* 1: a bipolar source folded to 0..1 (UNI: moves one way from the knob); 0 BI */
+    uint8_t uni;                  /* 1: a bipolar source folded to 0..1 (+: moves one way from the knob); 0 +- */
 } cord_t;
 
 const char *cord_src_name(uint32_t code);           /* <= 7 characters; 0: no such source */
