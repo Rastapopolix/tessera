@@ -17,7 +17,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | A page button again | That section's next page (from elsewhere most return to the page last used) |
 | **OCT-** (off HOME) | Back: closes a list, sheet or map, else HOME |
 | **OCT+** (off HOME) | Enter: opens the row, slot or note picked; does the action picked |
-| **OCT+** held | The page's sheet: the sound's (HOME, EDIT, ENV, LFO, FX), the pattern's (GEN, NOTES, PATTERN), the song's (SONG), the pattern's on PATTERNS |
+| **OCT+** held | The page's sheet: the sound's (HOME, EDIT, ENV, LFO, FX), the pattern's (GEN, NOTES, PATTERN; Swing there), the song's (SONG), the pattern's on PATTERNS |
 | A sheet: **KNOB 1**, **OCT+** / **OCT-** | Picks the row / does it / closes |
 | A dialog: **OCT+** / **OCT-** | Yes / no |
 | Lists (menu, SCL, VOICE): **KNOB 1** / **KNOB 2** | The row / its value |
@@ -109,11 +109,13 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | Do this | And this happens |
 |---|---|
 | **PLAY** | Start / stop; on SONG: plays the song. Generators start from the top of their seed |
-| **REC** | Arms / disarms the track (playing: waits for the loop) |
+| **REC** | Arms the track; records every pass (overdub) until REC again (playing: from the loop's start) |
 | **REC** + PLAY | Records now |
 | **REC** held | Generator track: prints its last bars into STEP. STEP EVOLVE: keeps the changes. STEP: captures what you played |
 | **REC** held on SONG | Take jam: the patterns played since PLAY become the song |
 | **EDIT** held, recording on NOTES | Erases as the steps pass |
+| **EDIT** + **REC** on NOTES | Clear pattern? (OCT+), REC stays on for a new take |
+| **OCT-** / **OCT+** on NOTES, REC on | Keys octave down / up; both: octave 0 |
 | **EDIT** held | Undo (the last load, capture or print; on NOTES the last edit) |
 | **EDIT** + OCT- / OCT+ | Undo / redo |
 
@@ -131,7 +133,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | Do this | And this happens |
 |---|---|
 | GEN: **KNOB 1** | MODE: STEP, ARP or a generator |
-| GEN: **OCT+** held | The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD, CHORD, ATLAS, CONSTL, ANSWER |
+| GEN: **OCT+** held | The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD, CHORD, ATLAS, CONSTL, ANSWER (SOURCE, ORDER, SHIFT, SPACE) |
 | EVOLVE: **OCT+** held | GRAVITY (a generator); HOW: DRIFT, ADORN, SERIAL (a STEP track) |
 | ATLAS: **OCT+** + a black key | The fourth part's sound (TOM, CLAP, OPEN HAT, RIM, BELL) |
 | CHORD, PROG USER: **OCT+** + keys | One chord a key, its root the key's note |

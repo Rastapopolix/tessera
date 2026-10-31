@@ -57,7 +57,7 @@ page's four settings sit along the top of the screen in the same order.
 | **FX** | The insert and send effects | The mod amount of any knob you turn |
 | **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it; with PLAY, restart from the top |
 | **SAVE** | USER (ready to save the sound), PROJECT, PRESETS | Save the project to its slot (as SAVE + REC) |
-| **REC** | Record | Capture or print the last bars (see [Print and keep](#print-and-keep)) |
+| **REC** | Records the selected track until REC again (see [Recording live](#recording-live)) | Capture or print the last bars (see [Print and keep](#print-and-keep)) |
 | **OCT+** | Octave up; on some pages, an action (shown on screen) | A page's extra layer (see [OCT+ layers](#oct-layers-on-gen)) |
 
 On the home page each track's tile shows its sound and engine. **ALGORITHM** picks the track on every page (or
@@ -228,12 +228,13 @@ SEQ then shows only that mode's pages:
 
 | MODE | SEQ's pages |
 |---|---|
-| **STEP** | GEN, EVOLVE (STEP EVOLVE), TWEAK (its HUMAN), TIMING (its SHAPE and HUMAN), NOTES, PATTERN, TEMPO, PATTERNS, SONG |
-| **ARP** | GEN, ARP, ARP 2, NOTES, PATTERN, TEMPO, PATTERNS, SONG |
+| **STEP** | GEN, NOTES, EVOLVE (STEP EVOLVE), TWEAK (its HUMAN), TIMING (its SHAPE and HUMAN), TEMPO, PATTERNS, SONG |
+| **ARP** | GEN, NOTES, ARP, ARP 2, TEMPO, PATTERNS, SONG |
 | a generator | GEN, EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY, PATTERN, TEMPO, PATTERNS, SONG |
 
-MOTION and DRUM HIT appear as in upstream. With STEP, GEN's KNOB 2 to 4 are DIVISION, SWING and GATE. The
-generators run at the track's DIV (PATTERN page) and play in the track's scale (SCL). Choosing STEP or a
+MOTION and DRUM HIT appear as in upstream. With STEP or ARP, GEN is also the pattern's page: KNOB 2 to 4 are
+LENGTH, DIVISION and GATE, and the track's SWING is a row of the pattern's sheet (OCT+ held). A generator track has
+these on PATTERN instead. The generators run at the track's DIV and play in the track's scale (SCL). Choosing STEP or a
 generator turns the arpeggiator off; choosing ARP again brings back its last setting.
 
 On NOTES, **KNOB 2** sets the picked note's pitch. With **QNT OFF** it moves a semitone a detent. With QNT on
@@ -243,10 +244,23 @@ the turn's direction first. With **QNT CHRD** and a CHORD track playing it moves
 
 <p align="center"><img src="assets/gallery/seq_mode.png" alt="GEN with MODE STEP" width="320"></p>
 
+### Recording live
+
+Tap **REC** to arm the selected track. With the sequencer playing, it waits for the pattern's start (**WAIT FOR
+LOOP**), then records what you play on the keys (or MIDI IN) over every pass, each pass on top of the last, until
+you tap **REC** again. Stopped, the first key you play starts the sequencer and the take at once; **REC** +
+**PLAY** starts both together. QNT (TEMPO) snaps the take when it ends.
+
+- **EDIT** + **REC** on NOTES (either first): **CLEAR PATTERN?** OCT+ clears it and REC stays on, so the next
+  pass records a new take. With REC off, EDIT held undoes the clear.
+- **EDIT** held while recording on NOTES erases as the steps pass.
+- **OCT-** / **OCT+** on NOTES with REC on move the keys an octave down / up, as on HOME (both together: back to
+  the middle). The header shows it (**KEYS OCT +1**). OCT+ held still opens the pattern's sheet.
+
 ### The pattern's sheet: Double, Half, Euclid, Accumulate
 
-Hold **OCT+** on NOTES, PATTERN or the drum grid for the pattern's sheet. Besides Quantize, Clear pattern and
-Clear motion it has:
+Hold **OCT+** on GEN (STEP, ARP), NOTES, PATTERN or the drum grid for the pattern's sheet. Besides Quantize,
+Swing (the track's, KNOB 2), Clear pattern and Clear motion it has:
 
 - **Double**: the pattern twice as long (up to 64 steps). Its steps, recorded notes and motion are copied after
   themselves; a playing pattern carries on into the copy.
@@ -287,7 +301,7 @@ generator is also a mod source: its **GATE**, its **NOTE** and a **CV** (see [MO
 | **CONSTL** | Y (0–14) | DENS (0–100 %) | SPEED | After timothy-taylor's norns script Constellation: a ship flies through a sky of stars; the stars that cross its crosshair play. Y is the crosshair's height (where the melody sits), DENS how many stars, SPEED how fast the sky passes (the straight note values, slow to fast). More on the [OCT+ layer](#constellation-lock-len-fill-size). |
 | **SERIES** | START (0–127) | INTV (1–7) | LOOP (OFF, 1–16) | Per Nørgård's infinity series (after the norns script nørgård): a melody alike at every scale. START picks where it begins, INTV how many scale degrees a step of the series is, LOOP repeats that many steps (OFF never repeats). |
 | **CHORD** | PROG | BARS (½, 1, 2, 4) | HIT | A progression's chords in the track's scale: POP (I V vi IV), 50S, 2-5-1, CIRCLE, TWO, DRONE, WALK (four chords from the seed) or USER (your own). HIT: HOLD (once, held), BEAT, STEP or OFFBEAT (short stabs on the "and" between the beats, a reggae skank). See [Harmony](#harmony-one-key-chord-and-qnt-chrd). |
-| **ANSWER** | VARY (0–100 %) | ECHO (0–100 %) | FADE (1–16, LOOPS) | After Zen-1's call and response (the idea only): play a phrase on the track's keys (or MIDI IN), up to 8 notes, and a bar without a key ends it. ANSWER plays it back, after a rest, as answers that change a little more each time (VARY: a note moved a degree or two, an octave, left out or swapped), each softer than the last. ECHO repeats some notes once more at half the velocity. FADE is how many answers it gives, 1 to 16, before it rests until you play again; turned all the way up (LOOPS) it never forgets and plays on as four loops of different lengths. Its OCT+ layer: ORDER (PLAYED, REVERSE, SHUFFLE), SHIFT (each answer moved up to this many scale degrees), SPACE (the rest before an answer, up to 4 bars) and LEN (the loops' lengths at FADE LOOPS). |
+| **ANSWER** | VARY (0–100 %) | ECHO (0–100 %) | FADE (1–16, LOOPS) | After Zen-1's call and response (the idea only): play a phrase on the track's keys (or MIDI IN), up to 8 notes, and a bar without a key ends it. ANSWER plays it back, after a rest, as answers that change a little more each time (VARY: a note moved a degree or two, an octave, left out or swapped), each softer than the last. ECHO repeats some notes once more at half the velocity. FADE is how many answers it gives, 1 to 16, before it rests until you play again; turned on past 16 (LOOPS SHORT, MID or LONG, the loops' lengths) it never forgets and plays on as four loops of different lengths. Its OCT+ layer: SOURCE (below), ORDER (PLAYED, REVERSE, SHUFFLE), SHIFT (each answer moved up to this many scale degrees) and SPACE (the rest before an answer, up to 4 bars). **SOURCE** (OFF, T1 to T4) makes a STEP pattern the call instead of the keys: that track's pattern playing now (this track's own too), its first 8 notes at their steps, read again before each answer, so a sequence you record in STEP gets answered, and answered anew when you change it. The keys then just play. The other way round, REC held prints ANSWER's answers into STEP (see [Print and keep](#print-and-keep)). |
 
 <table>
 <tr>
