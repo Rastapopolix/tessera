@@ -486,14 +486,14 @@ static int test_phys_chrd_click(void)
 }
 static int test_gen_family(void)
 {
-    static const char STEP[] = "GEN EVOLVE TWEAK TIMING NOTES PATTERN TEMPO PATTERNS SONG GEN", ARP[] = "ARP ARP 2 NOTES PATTERN TEMPO PATTERNS SONG GEN ARP",
+    static const char STEP[] = "GEN NOTES EVOLVE TWEAK TIMING TEMPO PATTERNS SONG GEN", ARP[] = "ARP ARP 2 TEMPO PATTERNS SONG GEN NOTES ARP",
                       GEN[] = "GEN EVOLVE FORM TWEAK TWEAK 2 LENGTH TIMING ENERGY PATTERN TEMPO PATTERNS SONG";
     char got[128];
     int bad = 0, in_seq = 0, pattern_seq = 0;
     uint32_t k, n = 0;
     ui_power_on();
-    bad += check("SEQ in STEP: GEN EVOLVE (STEP EVOLVE) TWEAK (its HUMAN) TIMING (its SHAPE, HUMAN) NOTES PATTERN TEMPO "
-                 "PATTERNS SONG, then GEN again", str_eq(seq_taps(got, sizeof got, 10), STEP));
+    bad += check("SEQ in STEP: GEN NOTES EVOLVE (STEP EVOLVE) TWEAK (its HUMAN) TIMING (its SHAPE, HUMAN) TEMPO "
+                 "PATTERNS SONG, then GEN again (PATTERN: GEN's)", str_eq(seq_taps(got, sizeof got, 9), STEP));
     if (!str_eq(got, STEP)) printf("    got: %s\n", got);
     press(B_ARP);
     n = !ui.home && str_eq(cur_page()->title, "ARP") && seqm_get(song.sel) == 1u && TSEL->p[P_AMODE];
@@ -502,8 +502,24 @@ static int test_gen_family(void)
     press(B_ARP);
     n &= str_eq(cur_page()->title, "ARP");
     bad += check("ARP's taps: ARP's MODE on (UP), its page, then ARP 2, ARP", n);
-    bad += check("SEQ in ARP: back to ARP (its last page), ARP 2 NOTES PATTERN TEMPO PATTERNS SONG GEN", str_eq(seq_taps(got, sizeof got, 9), ARP));
+    bad += check("SEQ in ARP: back to ARP (its last page), ARP 2 TEMPO PATTERNS SONG GEN NOTES", str_eq(seq_taps(got, sizeof got, 8), ARP));
     if (!str_eq(got, ARP)) printf("    got: %s\n", got);
+    {
+        int16_t *vp;
+        const param_desc_t *d1, *d2, *d3;
+        int16_t len;
+        go_title("GEN");
+        TSEL->p[P_AMODE] = 0;
+        d1 = page_desc(cur_page(), 1, &vp);
+        d2 = page_desc(cur_page(), 2, &vp);
+        d3 = page_desc(cur_page(), 3, &vp);
+        len = TSEL->p[P_SLEN];
+        turn(EN_K2, -1);
+        n = d1 && d2 && d3 && str_eq(d1->label, "LEN") && str_eq(d2->label, "DIV") && str_eq(d3->label, "GATE") &&
+            TSEL->p[P_SLEN] == len - 1;
+        TSEL->p[P_SLEN] = len;
+        bad += check("GEN on a STEP track: MODE LEN DIV GATE (PATTERN's, KNOB 2 sets LEN)", n);
+    }
     tessera_param_set(song.sel, TX_MODE, TESS_ENG_TURING);
     bad += check("SEQ in a generator: GEN EVOLVE FORM TWEAK TWEAK 2 LENGTH TIMING ENERGY PATTERN TEMPO PATTERNS SONG", str_eq(seq_taps(got, sizeof got, 12), GEN));
     if (!str_eq(got, GEN)) printf("    got: %s\n", got);
