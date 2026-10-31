@@ -1112,7 +1112,7 @@ const selection = () => {     /* the release, or a channel ("nightly-dual": meta
 const ready = () => { lastKey = "ready"; $("status").textContent = `Tessera ${selection().channel.version} (${t(build() + "Tag")})`; };
 const log = (t) => { $("log").textContent += t + "\n"; };
 let image = null;
-const meta = {"version": "3.1", "product": "FM-1_83773010", "pkg": {"dual": "../../firmware/tessera-3.1.fwsc", "single": "../../firmware/tessera-3.1-1core.fwsc"}, "nightly": null, "synth": null};
+const meta = {"version": "3.2", "product": "FM-1_83773020", "pkg": {"dual": "../../firmware/tessera-3.2.fwsc", "single": "../../firmware/tessera-3.2-1core.fwsc"}, "nightly": null, "synth": null};
 $("ver").textContent = `FM-1 · ${meta.version}`;
 $("nightly-options").hidden = !meta.nightly;
 if (meta.nightly) $("nightly-info").textContent = `next · ${meta.nightly.commit.slice(0, 7)} · ${meta.nightly.builtAt}`;
