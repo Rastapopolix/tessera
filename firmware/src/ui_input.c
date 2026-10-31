@@ -398,6 +398,23 @@ static void qsave_poll(void)
     }
 }
 
+/* EDIT + REC (either pressed while the other is held) on NOTES: CLEAR PATTERN? (OCT+ yes), as the sheet's Clear
+ * pattern, for a new take: REC stays as it is (the next pass records again). With REC off, EDIT held undoes it (while
+ * recording EDIT held erases). Neither button then does its own thing (no EDIT delete or undo, no REC tap) */
+static void step_edit_combo(void);
+static void clear_chord(void)
+{
+    ui.rec_t0 |= 2u;
+    ui.edit_t0 |= 2u;
+    step_edit_combo();
+    ui.erase_owner = 0;                                 /* (EDIT held while recording erases: not this time) */
+    fm1_irq_off();
+    seq_erase_request = 0;
+    fm1_irq_on();
+    if (!cf_refused(CF_CLEAR_SEQ))
+        confirm_open(CF_CLEAR_SEQ, song.sel);
+}
+
 /* REC held: Capture. What the selected track played in its last bars while it was not recording (seq.c cap_ev) into
  * its pattern, as recorded notes (timing, velocity and length as played): an empty pattern takes 1, 2 or 4 bars (16, 32
  * or 64 steps), as many as the notes span, its LEN set to it; a pattern with notes the last LEN steps, over them. The
@@ -2184,11 +2201,14 @@ static void ui_input(void)
         if (ui.cursor != idx)
             cursor_set((int32_t)idx);
     }
-    {   /* SAVE + REC: the quick save */
-        uint32_t sv = 1u << panel.btn[B_SAVE], rc = 1u << panel.btn[B_REC];
+    {   /* SAVE + REC: the quick save; EDIT + REC on NOTES: clear the pattern */
+        uint32_t sv = 1u << panel.btn[B_SAVE], rc = 1u << panel.btn[B_REC], ed = 1u << panel.btn[B_EDIT];
         if (((pressed & rc) && (fm1_in.buttons & sv)) || ((pressed & sv) && (fm1_in.buttons & rc)))
             qsave_chord();
         qsave_poll();
+        if (((pressed & rc) && (fm1_in.buttons & ed)) || ((pressed & ed) && (fm1_in.buttons & rc)))
+            if (!ui.home && cur_page()->graph == GR_ROLL && !ui.menu && !ui.confirm && !name_on() && !pop.on)
+                clear_chord();
     }
     for (id = 0; id < 14u; id++) {
         if (!((pressed >> id) & 1u))

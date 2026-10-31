@@ -241,6 +241,8 @@ static void hold(uint32_t label)                  /* held 0.8 s, then let go */
     frame();
 }
 static void press(uint32_t label);
+static void btn_down(uint32_t label);
+static void btn_up(uint32_t label);
 static void edit_redo(void)                       /* EDIT held + OCT+: redo a load */
 {
     fm1_in.buttons |= 1u << panel.btn[B_EDIT];
@@ -1712,6 +1714,30 @@ static int test_rec(void)
     fm1_in.notes = 0;
     frame();
     bad += check("STEP, not armed: the key writes the cursor step (and moves on)", trk[0].step[0].n == 1 && ui.cursor == 1);
+    /* EDIT + REC on NOTES, armed and playing: CLEAR PATTERN? first; OCT+ clears it, REC stays on; EDIT held undoes */
+    ui_power_on();
+    go_title("NOTES");
+    trk[0].step[2] = (step_t){{64}, 1, ST_NOTE, 0, 0, 100};
+    song.rec = 1;
+    song.playing = 1;
+    transport_req = 0;
+    btn_down(B_EDIT); frame(); btn_down(B_REC); frame(); btn_up(B_REC); frame(); btn_up(B_EDIT); frame();
+    bad += check("EDIT + REC on NOTES: CLEAR PATTERN? first, REC still on, nothing deleted yet",
+                 ui.confirm == CF_CLEAR_SEQ && song.rec == 1u && trk[0].step[2].n == 1);
+    press(B_OCTUP);
+    bad += check("EDIT + REC, OCT+: the pattern cleared, REC still on for a new take",
+                 ui.confirm == CF_NONE && !trk[0].step[2].n && song.rec == 1u && msg_is("PATTERN CLEARED"));
+    press(B_REC);
+    hold(B_EDIT);
+    bad += check("EDIT + REC: REC off, then EDIT held undoes the clear (while recording EDIT held erases)",
+                 trk[0].step[2].n == 1 && !song.rec);
+    press(B_REC);
+    btn_down(B_REC); frame(); btn_down(B_EDIT); frame(); btn_up(B_EDIT); frame(); btn_up(B_REC); frame();
+    bad += check("REC + EDIT (REC first): the same question, REC's release no tap", ui.confirm == CF_CLEAR_SEQ && song.rec == 1u);
+    press(B_OCTDN);
+    bad += check("OCT-: nothing cleared", ui.confirm == CF_NONE && trk[0].step[2].n == 1 && song.rec == 1u);
+    song.rec = 0;
+    song.playing = 0;
     /* ARP: the arp's notes are recorded, not the key */
     ui_power_on();
     {
