@@ -2299,6 +2299,42 @@ static uint32_t mono_bounce_check(void)
             seen[0], seen[1], seen[2], seen[3], bad);
     return bad;
 }
+
+/* Mono MODS lists: a track's entry labelled with its track ("T2 GATE"), the project's not (ENERGY, SF1 MIX); KNOB 1's
+ * list open on cord 2 (T2 GATE): in its track's ink on MOSAIC (track 2's colour in the list's box), one ink elsewhere */
+static uint32_t mono_mods_pick_check(void)
+{
+    uint32_t bad = 0, p, x, y, mosaic = UI_NPALETTES;
+    int32_t tr, gate = 1 + 1 * (int32_t)(CS_N - 1u) + CS_GATE - 1, energy = (int32_t)(CS_N - 1u);
+    char b[20];
+    cu_pick_label(b, 0, gate, &tr);
+    if (strcmp(b, "T2 GATE") || tr != 1) { fprintf(stderr, "ui_render: MODS list: \"%s\" for track 2's GATE\n", b); bad++; }
+    cu_pick_label(b, 0, energy, &tr);
+    if (strcmp(b, "ENERGY") || tr != -1) { fprintf(stderr, "ui_render: MODS list: \"%s\" for ENERGY\n", b); bad++; }
+    cu_pick_label(b, 2, (int32_t)CU_NDST - 1, &tr);
+    if (tr != -1 || b[0] == 'T') { fprintf(stderr, "ui_render: MODS list: \"%s\" for a send effect's\n", b); bad++; }
+    for (p = 0; p < UI_NPALETTES; p++)
+        if (!strcmp(UI_PALETTES[p].name, "MOSAIC")) mosaic = p;
+    for (p = 0; p < 2u; p++) {
+        uint32_t pal = p ? mosaic : 0u, n = 0;
+        uint16_t c;
+        if (pal >= UI_NPALETTES) { fprintf(stderr, "ui_render: no MOSAIC palette\n"); return bad + 1u; }
+        setup(S_CORDS_PICK_SRC);
+        palette_set(pal);                               /* (after the scene: setup sets its own) */
+        nscr = npend = 0; ui.force = 1; ui_draw();
+        c = swap16(T_TRK(1));
+        for (y = 42; y < 204; y++)                      /* (the list's box: 70 x 41 cells from (1, 20)) */
+            for (x = 4; x < 140; x++)
+                n += host_screen[y * 240u + x] == c;
+        if (p ? n < 40u || T_TRK(1) == T_TEXT : 0) {
+            fprintf(stderr, "ui_render: MODS list on MOSAIC: %u pixels in track 2's colour\n", n);
+            bad++;
+        }
+        fprintf(rep, "Mono MODS list (%s): %u pixels in track 2's colour\n", UI_PALETTES[pal].name, n);
+    }
+    palette_set(0);
+    return bad;
+}
 #endif
 int main(int argc, char **argv)
 {
@@ -2582,6 +2618,7 @@ int main(int argc, char **argv)
     fprintf(rep, "\nMono lint: %u knob values\n", nmono);
     if (!nmono) { fprintf(stderr, "ui_render: the Mono lint saw no knob value\n"); nfind++; }
     if (mono_bounce_check()) nfind++;
+    if (mono_mods_pick_check()) nfind++;
 #endif
     fprintf(rep, "\n%u lint findings, %u ellipsised free texts, %u MONO pixels off gray; %u column values swept; "
             "%u FM6 charts linted\n", nfind, nfree, mono_bad, nsweep, fmp_charts);
