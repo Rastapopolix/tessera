@@ -131,7 +131,7 @@ static void fm6_sysex(const uint8_t *b, uint32_t n)
         int rc = 0;
         if (b[3] == 0x00 && tr >= 0) rc = fm6_send_voice((uint32_t)tr, ch);
         else if (b[3] == 0x09) rc = fm6_send_bank(ch);
-        if (rc) ui_message("SYSEX SEND ERROR");
+        if (rc) ui_message("SYSEX SEND FAIL");
 #endif
     }
 }
@@ -170,7 +170,7 @@ static void fm6_send(void)                               /* SEND: the selected t
 {
 #if MELODEE_OTA
     if (fm6_is(song.sel)) {
-        ui_message(fm6_send_voice(song.sel, song.sel) ? "SYSEX SEND ERROR" : "VOICE SENT");
+        ui_message(fm6_send_voice(song.sel, song.sel) ? "SYSEX SEND FAIL" : "VOICE SENT");
     }
 #else
     ui_message("NO SYSEX OUT");

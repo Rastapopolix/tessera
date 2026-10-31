@@ -241,6 +241,8 @@ static void hold(uint32_t label)                  /* held 0.8 s, then let go */
     frame();
 }
 static void press(uint32_t label);
+static void btn_down(uint32_t label);
+static void btn_up(uint32_t label);
 static void edit_redo(void)                       /* EDIT held + OCT+: redo a load */
 {
     fm1_in.buttons |= 1u << panel.btn[B_EDIT];
@@ -486,14 +488,14 @@ static int test_phys_chrd_click(void)
 }
 static int test_gen_family(void)
 {
-    static const char STEP[] = "GEN EVOLVE TWEAK TIMING NOTES PATTERN TEMPO PATTERNS SONG GEN", ARP[] = "ARP ARP 2 NOTES PATTERN TEMPO PATTERNS SONG GEN ARP",
+    static const char STEP[] = "GEN NOTES EVOLVE TWEAK TIMING TEMPO PATTERNS SONG GEN", ARP[] = "ARP ARP 2 TEMPO PATTERNS SONG GEN NOTES ARP",
                       GEN[] = "GEN EVOLVE FORM TWEAK TWEAK 2 LENGTH TIMING ENERGY PATTERN TEMPO PATTERNS SONG";
     char got[128];
     int bad = 0, in_seq = 0, pattern_seq = 0;
     uint32_t k, n = 0;
     ui_power_on();
-    bad += check("SEQ in STEP: GEN EVOLVE (STEP EVOLVE) TWEAK (its HUMAN) TIMING (its SHAPE, HUMAN) NOTES PATTERN TEMPO "
-                 "PATTERNS SONG, then GEN again", str_eq(seq_taps(got, sizeof got, 10), STEP));
+    bad += check("SEQ in STEP: GEN NOTES EVOLVE (STEP EVOLVE) TWEAK (its HUMAN) TIMING (its SHAPE, HUMAN) TEMPO "
+                 "PATTERNS SONG, then GEN again (PATTERN: GEN's)", str_eq(seq_taps(got, sizeof got, 9), STEP));
     if (!str_eq(got, STEP)) printf("    got: %s\n", got);
     press(B_ARP);
     n = !ui.home && str_eq(cur_page()->title, "ARP") && seqm_get(song.sel) == 1u && TSEL->p[P_AMODE];
@@ -502,8 +504,24 @@ static int test_gen_family(void)
     press(B_ARP);
     n &= str_eq(cur_page()->title, "ARP");
     bad += check("ARP's taps: ARP's MODE on (UP), its page, then ARP 2, ARP", n);
-    bad += check("SEQ in ARP: back to ARP (its last page), ARP 2 NOTES PATTERN TEMPO PATTERNS SONG GEN", str_eq(seq_taps(got, sizeof got, 9), ARP));
+    bad += check("SEQ in ARP: back to ARP (its last page), ARP 2 TEMPO PATTERNS SONG GEN NOTES", str_eq(seq_taps(got, sizeof got, 8), ARP));
     if (!str_eq(got, ARP)) printf("    got: %s\n", got);
+    {
+        int16_t *vp;
+        const param_desc_t *d1, *d2, *d3;
+        int16_t len;
+        go_title("GEN");
+        TSEL->p[P_AMODE] = 0;
+        d1 = page_desc(cur_page(), 1, &vp);
+        d2 = page_desc(cur_page(), 2, &vp);
+        d3 = page_desc(cur_page(), 3, &vp);
+        len = TSEL->p[P_SLEN];
+        turn(EN_K2, -1);
+        n = d1 && d2 && d3 && str_eq(d1->label, "LEN") && str_eq(d2->label, "DIV") && str_eq(d3->label, "GATE") &&
+            TSEL->p[P_SLEN] == len - 1;
+        TSEL->p[P_SLEN] = len;
+        bad += check("GEN on a STEP track: MODE LEN DIV GATE (PATTERN's, KNOB 2 sets LEN)", n);
+    }
     tessera_param_set(song.sel, TX_MODE, TESS_ENG_TURING);
     bad += check("SEQ in a generator: GEN EVOLVE FORM TWEAK TWEAK 2 LENGTH TIMING ENERGY PATTERN TEMPO PATTERNS SONG", str_eq(seq_taps(got, sizeof got, 12), GEN));
     if (!str_eq(got, GEN)) printf("    got: %s\n", got);
@@ -1015,7 +1033,7 @@ static int test_grids_layer(void)
             fm1_in.notes |= 1u << K[i]; host_notes |= 1u << K[i]; frame();
             fm1_in.notes = 0; frame();
             if (tessera_param_get(tr, TX_GRD_PART4) != P4[i] ||
-                strcmp(ui.msg, i == 1u || i == 3u ? "PART4: CP OH TM RS CB" : i ? "PART4: BELL" : "PART4: CLAP"))
+                strcmp(ui.msg, i == 1u || i == 3u ? "PART4: BLACK" : i ? "PART4: BELL" : "PART4: CLAP"))
                 break;
         }
         bad += check("..a black key picks the fourth part's sound (CP CLAP, CB BELL); BD, a white key refused", i == 4u);
@@ -1673,7 +1691,7 @@ static int test_rec(void)
         bad += check("REC again disarms (the transport runs on)", song.rec == 0u && transport_req == 0u);
         hold(B_REC);
         bad += check("REC held captures (nothing played: nothing), no arming, no dialog", ui.confirm == CF_NONE && song.rec == 0u &&
-                     msg_is("NOTHING TO CAPTURE"));
+                     msg_is("NOTHING PLAYED"));
     }
     ui_power_on();
     press(B_REC);
@@ -1696,6 +1714,49 @@ static int test_rec(void)
     fm1_in.notes = 0;
     frame();
     bad += check("STEP, not armed: the key writes the cursor step (and moves on)", trk[0].step[0].n == 1 && ui.cursor == 1);
+    /* EDIT + REC on NOTES, armed and playing: CLEAR PATTERN? first; OCT+ clears it, REC stays on; EDIT held undoes */
+    ui_power_on();
+    go_title("NOTES");
+    trk[0].step[2] = (step_t){{64}, 1, ST_NOTE, 0, 0, 100};
+    song.rec = 1;
+    song.playing = 1;
+    transport_req = 0;
+    btn_down(B_EDIT); frame(); btn_down(B_REC); frame(); btn_up(B_REC); frame(); btn_up(B_EDIT); frame();
+    bad += check("EDIT + REC on NOTES: CLEAR PATTERN? first, REC still on, nothing deleted yet",
+                 ui.confirm == CF_CLEAR_SEQ && song.rec == 1u && trk[0].step[2].n == 1);
+    press(B_OCTUP);
+    bad += check("EDIT + REC, OCT+: the pattern cleared, REC still on for a new take",
+                 ui.confirm == CF_NONE && !trk[0].step[2].n && song.rec == 1u && msg_is("PATTERN CLEARED"));
+    press(B_REC);
+    hold(B_EDIT);
+    bad += check("EDIT + REC: REC off, then EDIT held undoes the clear (while recording EDIT held erases)",
+                 trk[0].step[2].n == 1 && !song.rec);
+    press(B_REC);
+    btn_down(B_REC); frame(); btn_down(B_EDIT); frame(); btn_up(B_EDIT); frame(); btn_up(B_REC); frame();
+    bad += check("REC + EDIT (REC first): the same question, REC's release no tap", ui.confirm == CF_CLEAR_SEQ && song.rec == 1u);
+    press(B_OCTDN);
+    bad += check("OCT-: nothing cleared", ui.confirm == CF_NONE && trk[0].step[2].n == 1 && song.rec == 1u);
+    /* NOTES with REC on: OCT- / OCT+ the keys' octave (as on Stage), not back / enter */
+    {
+        uint32_t c4 = kb_map(&trk[0], 0);
+        song.octave = 0;
+        press(B_OCTDN);
+        bad += check("NOTES, REC on: OCT- the keys an octave down, NOTES stays", !ui.home && cur_page()->graph == GR_ROLL &&
+                     song.octave == -1 && kb_map(&trk[0], 0) + 12u == c4 && msg_is("KEYS OCT -1"));
+        press(B_OCTUP);
+        press(B_OCTUP);
+        bad += check("NOTES, REC on: OCT+ (on release) up again, past 0", !ui.home && song.octave == 1 && msg_is("KEYS OCT +1") &&
+                     !pop.on && (oct_leds() & 2u));
+        hold(B_OCTUP);
+        bad += check("NOTES, REC on: OCT+ held still the pattern's sheet, the octave as it was", pop.on && song.octave == 1);
+        press(B_OCTDN);
+        song.rec = 0;
+        song.octave = 0;
+        press(B_OCTDN);
+        bad += check("NOTES, REC off: OCT- back to Stage, the octave as it was", ui.home && song.octave == 0);
+    }
+    song.rec = 0;
+    song.playing = 0;
     /* ARP: the arp's notes are recorded, not the key */
     ui_power_on();
     {
@@ -3169,7 +3230,7 @@ static int test_init_scales_patterns(void)
     undo_step(1);
     bad += check("..EDIT held undoes it, EDIT + OCT+ redoes it", ok && seq_is_empty(t));
     sheet_do("Delete pattern");
-    ok = !ui.confirm && msg_is("NOTHING TO DELETE");
+    ok = !ui.confirm && msg_is("NOTHING THERE");
     sheet_do("Copy to\x85");
     bad += check("..an empty pattern: nothing to delete, nothing to copy", ok && !ptc_on() && msg_is("NOTHING TO COPY"));
     return bad;
@@ -4114,7 +4175,7 @@ static int test_boot_template(void)
     trk[2].p[P_E0] = 4;                                  /* (KIT 808) */
     sheet_do("Save as template");
     bad += check("SAVE on TMPL: the template, at once (no NAME, no dialog)", template_used() && !name_on() &&
-                 ui.confirm == CF_NONE && (msg_is("TEMPLATE SAVED (RAM)") || msg_is("TEMPLATE SAVED")));
+                 ui.confirm == CF_NONE && (msg_is("TEMPLATE IN RAM") || msg_is("TEMPLATE SAVED")));
     press(B_EDIT);
     bad += check("  EDIT there: no NAME (the template has no name)", !name_on());
     trk[1].p[P_LEVEL] = 20;
@@ -4142,8 +4203,8 @@ static int test_boot_template(void)
     bootguard.failed = 1;
     settings_boot = 2;
     project_boot();
-    bad += check("  a boot that crashed before: the project skipped (BOOT PROJECT SKIPPED)", trk[1].p[P_LEVEL] == 99 &&
-                 msg_is("BOOT PROJECT SKIPPED"));
+    bad += check("  a boot that crashed before: the project skipped (BOOT PROJ SKIP)", trk[1].p[P_LEVEL] == 99 &&
+                 msg_is("BOOT PROJ SKIP"));
     bootguard.failed = 0;
     {   /* the settings keep BOOT and the kept GLO values; the template follows them in the record */
         persist_t p = {0};
@@ -4261,7 +4322,7 @@ static int test_quick_save(void)
     btn_down(B_REC); frame();
     btn_up(B_REC); btn_up(B_SAVE); frame();
     bad += check("  a new project: PROJECT on a free slot (A), SAVE picked", !ui.home && cur_page()->graph == GR_SLOTS &&
-                 song.g[G_SLOT] == 1 && ui.act == 4u && msg_is("NEW PROJECT: PICK SLOT"));
+                 song.g[G_SLOT] == 1 && ui.act == 4u && msg_is("NEW: PICK SLOT"));
     memset(proj_bank_len, 0, sizeof proj_bank_len);
     memset(proj_bank_slot, 0, sizeof proj_bank_slot);
     return bad;
@@ -4337,7 +4398,7 @@ static int test_rec_gestures(void)
     transport_req = 0;
     song.rec = 0;
     hold(B_REC);
-    bad += check("REC held: Capture, nothing armed", !song.rec && !transport_req && msg_is("NOTHING TO CAPTURE"));
+    bad += check("REC held: Capture, nothing armed", !song.rec && !transport_req && msg_is("NOTHING PLAYED"));
     go_home();
     press(B_REC);
     bad += check("REC tapped: armed, transport remains stopped", (song.rec & 1u) && transport_req == 0u && ui.home);
@@ -4790,7 +4851,7 @@ static int test_quick_layers(void)
     ok &= ui.home && !ui.layer;                   /* (a combo: no tap, so no MIXER) */
     song.g[G_CLOCK] = 1;
     turn(EN_SELECT, 1);
-    ok &= song.g[G_BPM] == 119 && msg_is("TEMPO: CLK IS EXT");
+    ok &= song.g[G_BPM] == 119 && msg_is("CLOCK IS EXT");
     song.g[G_CLOCK] = 0; song.g[G_BPM] = 120;
     bad += check("SELECT on HOME, and with GLO held: the tempo (a combo, no MIXER); with CLK EXT it says why", ok);
     {
@@ -4989,14 +5050,14 @@ static int test_bughunt_ui(void)
     pattern_init();                      /* no song rows */
     go_title("SONG"); frame();
     hold(B_OCTUP); sheet_do("Delete section");
-    ok = !ui.confirm && msg_is("NOTHING TO DELETE") && text_w(&AF_S, ui.msg) <= 236 - 106;   /* (fits the header) */
+    ok = !ui.confirm && msg_is("NOTHING THERE") && text_w(&AF_S, ui.msg) <= 236 - 106;   /* (fits the header) */
     hold(B_OCTUP); sheet_do("Clear song");
-    ok &= !ui.confirm && msg_is("NOTHING TO CLEAR");
+    ok &= !ui.confirm && msg_is("ALREADY EMPTY");
     track_defaults_steps(TSEL);
     chain_config.count = 1; chain_config.row[0].slot = 0; chain_config.row[0].repeat = 1;
     go_title("PATTERN"); frame();
     sheet_do("Clear pattern");                          /* an empty track, the song with a row */
-    ok &= !ui.confirm && msg_is("NOTHING TO CLEAR");
+    ok &= !ui.confirm && msg_is("ALREADY EMPTY");
     go_title("SONG"); frame();
     hold(B_OCTUP); sheet_do("Clear song");
     bad += check("the sheets' Delete section / Clear song / Clear pattern with nothing there: NOTHING TO ..; a song: its dialog",
@@ -5665,7 +5726,7 @@ static int test_capture(void)
         hold(B_REC);
         tessera_knob(0, TESS_ENG_EUCLID);
         hold(B_REC);
-        bad += check("  printed (recorded) notes there: CLEAR PATTERN TO PRINT", msg_is("CLEAR PATTERN TO PRINT") &&
+        bad += check("  printed (recorded) notes there: CLEAR TO PRINT", msg_is("CLEAR TO PRINT") &&
                      tessera.mode[0] == TESS_ENG_EUCLID && !ui.confirm);
         stop_transport();
         track_defaults_steps(TSEL);

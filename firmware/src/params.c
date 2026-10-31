@@ -595,6 +595,7 @@ static const page_t PAGES[] = {
      * upstream's knobs (LEN DIV SWING GATE) again: FEEL, which stood in for them, gone */
     {"GEN", FAM_GEN, SC_TRACK, GR_STEPS, {P_SLEN, P_SDIV, P_SSWING, P_SGATE}},   /* Tessera: MODE and the engine's
                                                                                  * three, as on PATTERN */
+    {"NOTES", FAM_SEQ, SC_STEP, GR_ROLL, {0, 1, 2, 3}},   /* (STEP, ARP: right after GEN, Theo 2026-10-31) */
     {"EVOLVE", FAM_GEN, SC_TRACK, GR_EVOLVE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: LOCK EVERY AMOUNT SEED (tessera_evolve_knob) */
     {"FORM", FAM_GEN, SC_TRACK, GR_FORM, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: FORM CONTRAST CLEAR (tessera_form_knob) */
     {"TWEAK", FAM_GEN, SC_TRACK, GR_TWEAK, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: SHIFT DROP HUMAN FOLLOW (tessera_tweak_knob) */
@@ -605,7 +606,6 @@ static const page_t PAGES[] = {
     {"ENERGY", FAM_GEN, SC_TRACK, GR_ENERGY, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: the project's ARC RESTS (energy.c) */
     {"ARP", FAM_GEN, SC_TRACK, GR_ARP, {P_AMODE, P_ARATE, P_AOCT, P_AGATE}},
     {"ARP 2", FAM_GEN, SC_TRACK, GR_NONE, {P_ASWING, P_APROB, P_AHOLD, P_AORDER}},
-    {"NOTES", FAM_SEQ, SC_STEP, GR_ROLL, {0, 1, 2, 3}},
     {"PATTERN", FAM_SEQ, SC_TRACK, GR_STEPS, {P_SLEN, P_SDIV, P_SSWING, P_SGATE}},
     {"TEMPO", FAM_SEQ, SC_GLOBAL, GR_NONE, {G_BPM, G_SWING, G_TRK_RECQ, 0xFF}},   /* the project's: saved with it; QNT: the
                                                                                   * selected track's (TIMING's, folded in) */
@@ -674,9 +674,17 @@ static void fm6_page_put(const page_t *pg, uint32_t slot, int32_t val)
     fm6_put_patch(tr, v, 0);
 }
 
+static int gen_pattern_page(const page_t *pg);   /* ui.c */
+/* GEN on a STEP or ARP track is its pattern page too (PATTERN hidden there, Theo 2026-10-31): MODE, LEN, DIV, GATE;
+ * SWING on the pattern's sheet (OCT+ held) */
+static const uint8_t GEN_PATTERN_ID[4] = {P_SLEN, P_SLEN, P_SDIV, P_SGATE};
+static uint32_t page_id(const page_t *pg, uint32_t slot)
+{
+    return gen_pattern_page(pg) ? GEN_PATTERN_ID[slot & 3u] : pg->id[slot & 3u];
+}
 static const param_desc_t *page_desc(const page_t *pg, uint32_t slot, int16_t **valp)
 {
-    uint32_t id = pg->id[slot];
+    uint32_t id = page_id(pg, slot);
     if (pg->scope == SC_ORACLE)
         return or_page_desc(pg, slot, valp);
     if ((pg->scope == SC_FM6 || pg->scope == SC_FMOP) && !MELODEE_FM6) { *valp = 0; return 0; }   /* (left out) */

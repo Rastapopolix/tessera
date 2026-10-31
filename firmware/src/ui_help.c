@@ -553,8 +553,8 @@ static void help_find(uint32_t k)
             else help_unused(k);
             return;
         }
-        if (an_layer_on()) {                            /* (ANSWER, OCT+ held: ORDER, SHIFT, SPACE, LEN) */
-            help.pid = (uint16_t)PID_TESS(TX_AN_ORDER + (k & 3u));
+        if (an_layer_on()) {                            /* (ANSWER, OCT+ held: SOURCE, ORDER, SHIFT, SPACE) */
+            help.pid = (uint16_t)(k ? PID_TESS(TX_AN_ORDER + (k - 1u)) : PID_TESS(TX_SD_SOURCE));
             return;
         }
         if (cs_layer_on()) {                            /* (CONSTELLATION, OCT+ held: LOCK, LEN, FILL, SIZE) */

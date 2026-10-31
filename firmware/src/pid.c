@@ -510,16 +510,16 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_AN_ECHO, "ANSWER ECHO", "The chance a note it plays comes back once more, at half its velocity, 3 to 8 "
                                   "steps later, one in four an octave up. 0 off."),
     X_(TX_AN_FADE, "ANSWER FADE", "How long it remembers: 1 answer at 0 to 16 at 99, each softer than the last, then "
-                                  "it rests until you play again. At 100 it never forgets: the notes play on as four "
-                                  "loops of different lengths (LEN), so it never quite repeats."),
+                                  "it rests until you play again. Past 16 it never forgets: the notes play on as four "
+                                  "loops of different lengths, SHORT, MID or LONG (LEN), so it never quite repeats."),
     X_(TX_AN_ORDER, "ANSWER ORDER", "The order of the notes in an answer, over the rhythm you played: PLAYED, REVERSE "
-                                    "or SHUFFLE (a new order each answer). OCT+ held on GEN, KNOB 1."),
+                                    "or SHUFFLE (a new order each answer). OCT+ held on GEN, KNOB 2."),
     X_(TX_AN_SHIFT, "ANSWER SHIFT", "Each answer is moved up or down by up to this many degrees of the scale, a new "
-                                    "amount each time. 0 keeps it where you played it. OCT+ held on GEN, KNOB 2."),
+                                    "amount each time. 0 keeps it where you played it. OCT+ held on GEN, KNOB 3."),
     X_(TX_AN_SPACE, "ANSWER SPACE", "The rest before each answer: 0 answers straight away, 100 waits 4 bars. A bar "
-                                    "without a key ends the phrase you play. OCT+ held on GEN, KNOB 3."),
+                                    "without a key ends the phrase you play. OCT+ held on GEN, KNOB 4."),
     X_(TX_AN_LEN, "ANSWER LEN", "With FADE at 100, the lengths of the four loops the notes play on, in steps: SHORT "
-                                "5 7 11 13, MID 13 17 23 29, LONG 23 29 31 37. OCT+ held on GEN, KNOB 4."),
+                                "5 7 11 13, MID 13 17 23 29, LONG 23 29 31 37. FADE turned past 16."),
     X_(TX_SUB_SHAPE, "TIMING SHAPE", "Where a ratchet's hits fall in their step: EVEN in equal parts, ACCEL closer and "
                                      "closer (a roll that speeds up), DECEL further and further apart (a bounce). The "
                                      "track's, for its RATCH and for every step's Ratchet on a STEP track."),
@@ -537,7 +537,8 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                "loops its first LEN steps and PROB changes them a step at a time; EUCLID plays its "
                                "notes in order on its hits; MARKOV learns what follows what in it (LEAP: jumps "
                                "anywhere); MORPH blends it (A) with a variation of it (B). OFF, or a pattern without "
-                               "notes: the generator's own. OCT+ held on GEN, KNOB 1."),
+                               "notes: the generator's own. ANSWER: the pattern's first 8 notes are its call, read "
+                               "again before each answer; the keys then just play. OCT+ held on GEN, KNOB 1."),
     X_(TX_SD_KEEP, "KEEP", "With a SOURCE, what stays as written. FREE: a step's pitch or its hit may change. "
                            "RHYTHM: only the pitches change (EUCLID: the source's own rhythm, on EUCLID's pitches). "
                            "PITCH: only the hits come and go (MARKOV: the notes in written order). OCT+ held on GEN, "

@@ -284,18 +284,22 @@ static int pattern_passes(void)
         seq_advance(999);
         bad += check("recording remains active through the last sample of its pass", rec_on(t) && (recording_flags[1] & 1u));
         seq_advance(1);
+        bad += check("the end boundary starts the next pass: REC stays on (overdub), playback and live monitoring go on",
+            song.playing && song.rec == 1 && rec_on(t) && !song.rec_wait && !t->seq_idx && !t->seq_pos && gate_note(t, 67));
+        input_off(t, 67);
         uint32_t gate = (uint32_t)(((uint64_t)recording[1].duration << (recording[1].owner >> 5)) * period / RECORD_UNIT);
-        bad += check("the end boundary seals held notes and disarms while playback and live monitoring continue",
-            song.playing && !song.rec && !song.rec_wait && !song.rec_pass && !t->seq_idx && !t->seq_pos &&
-            !(recording_flags[1] & 1u) && !t->rh_n && gate >= 998u && gate <= 1000u && gate_note(t, 67));
-        bad += check("a late note snapped to zero is eligible immediately on the first playback loop",
-            !q || (recording_run[1].left && recording_refs[0][67]));
-        recorded_note_t saved[2]; memcpy(saved, recording, sizeof saved);
+        input_on(t, 72, 100); seq_advance(50); input_off(t, 72);
+        bad += check("the second pass overdubs: its key joins the take, a note held over the boundary sealed where it was let go",
+            recording[2].note == 72 && recording[2].vel == 100 && !(recording_flags[1] & 1u) && gate >= 998u && gate <= 1001u);
+        seq_advance(loop - 51u); rec_tap(); seq_advance(1);
+        bad += check("REC on a pass's last sample finishes the take; a late note snapped to zero plays at once",
+            song.playing && !song.rec && !song.rec_wait && !rec_on(t) && !t->rh_n && (!q || (recording_run[1].left && recording_refs[0][67])));
+        recorded_note_t saved[3]; memcpy(saved, recording, sizeof saved);
         motion_capture(t, P_LEVEL, 79);
-        input_off(t, 67); input_on(t, 72, 100); input_off(t, 72);
+        input_on(t, 74, 100); input_off(t, 74);
         seq_advance(loop * 2u + 17u);
-        bad += check("later loops and knob/input gestures cannot extend or overwrite the completed take",
-            !memcmp(saved, recording, sizeof saved) && !recording[2].vel && motion.count == 1 && motion.event[0].value == 78);
+        bad += check("after the take, later loops and knob/input gestures cannot extend or overwrite it",
+            !memcmp(saved, recording, sizeof saved) && !recording[3].vel && motion.count == 1 && motion.event[0].value == 78);
         seq_stop();
     }
 
@@ -304,12 +308,12 @@ static int pattern_passes(void)
     rec_tap(); seq_advance(recording_loop(t, period));
     bad += check("a one-step pattern activates at its wrap rather than disarming immediately", rec_on(t) && song.rec_pass == 1);
     seq_advance(recording_loop(t, period));
-    bad += check("an empty one-step take also disarms after exactly one pass", song.playing && !song.rec);
-    rec_tap(); seq_stop();
+    bad += check("a one-step take records on, pass after pass", song.playing && song.rec == 1 && rec_on(t));
+    seq_stop();
     bad += check("STOP clears pending runtime state and leaves the track armed for the next start", song.rec == 1 && !song.rec_wait && !song.rec_pass);
     seq_start(); seq_advance(0); input_on(t, 65, 99);
     seq_advance(recording_loop(t, period));
-    bad += check("an armed stopped start records immediately and seals at the first real end", !song.rec && song.playing && recording[0].note == 65 && !(recording_flags[0] & 1u));
+    bad += check("an armed stopped start records at once and goes on past the first end", song.rec == 1 && rec_on(t) && song.playing && recording[0].note == 65);
     input_off(t, 65); seq_stop();
 
     pass_begin(0, 2, 0); t = &trk[0];
@@ -320,16 +324,16 @@ static int pattern_passes(void)
     seq_advance(period);
     bad += check("the longer track starts while the shorter track is still recording", rec_on(t) && rec_on(&trk[1]));
     seq_advance(period);
-    bad += check("the shorter track disarms without interrupting the longer take", song.rec == 2 && !rec_on(t) && rec_on(&trk[1]));
+    bad += check("the shorter track goes on into its next pass beside the longer take", song.rec == 3 && rec_on(t) && rec_on(&trk[1]));
     seq_advance(2u * period);
-    bad += check("the longer track finishes at its own end", !song.rec && song.playing);
+    bad += check("both keep recording over their own loops", song.rec == 3 && rec_on(t) && rec_on(&trk[1]) && song.playing);
     seq_stop();
 
     pass_begin(2, 3, 0); t = &trk[0]; period = seq_div_samples(t->p[P_SDIV]);
     uint32_t loop = recording_loop(t, period);
     seq_advance(100); rec_tap(); seq_advance(loop * 5u);
-    bad += check("a large external-clock batch can punch in and finish an empty pass without missing either boundary",
-        !song.rec && !song.rec_wait && !song.rec_pass && song.playing);
+    bad += check("a large external-clock batch punches in and records on over the following passes",
+        song.rec == 1 && rec_on(t) && !song.rec_wait && song.playing);
     seq_stop();
 
     raw_begin(); t = &trk[0]; period = seq_div_samples(t->p[P_SDIV]);
@@ -359,7 +363,7 @@ static int pattern_passes(void)
     seq_advance(loop - 100u);
     bad += check("the continued take begins at loop zero", rec_on(t) && song.rec_pass == 1 && !t->seq_idx && !t->seq_pos);
     seq_advance(loop);
-    bad += check("the continued take also disarms after one full pattern", !song.rec && song.playing);
+    bad += check("the continued take records on past one full pattern", song.rec == 1 && rec_on(t) && song.playing);
     seq_stop();
 
     pass_begin(0, 3, 0); t = &trk[0]; rec_tap();
@@ -405,7 +409,7 @@ static int first_note_start(void)
             !(recording_flags[0] & 1u) && recording[0].duration > 1);
         uint32_t loop = recording_loop(t, seq_div_samples(t->p[P_SDIV]));
         seq_advance(loop - 500u);
-        bad += check("a note-started take still disarms at the pattern end and keeps playback running", !song.rec && song.playing);
+        bad += check("a note-started take records on past the pattern end, playback running", song.rec == 1 && rec_on(t) && song.playing);
         seq_stop(); settings_countin = 0;
     }
 
@@ -473,7 +477,7 @@ static int first_note_start(void)
             timing_packet(start + pulse * 500000u, 0xF8, 0, 0, source);
             events_block(0);
         }
-        bad += check("a note-started external-clock take completes at the master's pattern boundary", song.playing && !song.rec && !t->seq_idx && !t->seq_pos);
+        bad += check("a note-started external-clock take reaches the master's pattern boundary and records on", song.playing && rec_on(t) && !t->seq_idx && !t->seq_pos);
         seq_stop(); settings_countin = 0;
     }
     led_pos_init(); return bad;
@@ -499,7 +503,7 @@ static int take_quantization(void)
         seq_advance(loop - at - 201u);
         bad += check("QNT leaves captured onsets unmodified until the recording's last sample",
             rec_on(t) && !memcmp(raw, recording, sizeof raw) && recording_on(t, &recording[0], period) == recording_raw_on(t, &raw[0], period));
-        seq_advance(1);
+        rec_tap(); seq_advance(1);
         int exact = !song.rec && song.playing;
         for (uint32_t i = 0; i < 3; i++) {
             uint32_t snapped = recording_on(t, &recording[i], period);
@@ -543,7 +547,7 @@ static int take_quantization(void)
     t->p[P_RECQ] = 4; original = recording[0]; seq_stop();
     bad += check("a quantization collision preserves the take and unrelated manual notes atomically",
         !memcmp(&original, &recording[0], sizeof original) && !memcmp(&manual, &t->step[1], sizeof manual) && recording_quant_blocked);
-    ui_notices(); bad += check("a blocked automatic quantization reports its occupied destination", msg_is("QNT STEP OCCUPIED"));
+    ui_notices(); bad += check("a blocked automatic quantization reports its occupied destination", msg_is("QNT STEP TAKEN"));
 
     raw_begin(); t = TSEL; t->p[P_RECQ] = 3;
     for (uint32_t i = 0; i < RECORD_MAX; i++) {
@@ -581,11 +585,11 @@ static int take_quantization(void)
     uint32_t loop = recording_loop(t, seq_div_samples(t->p[P_SDIV]));
     rec_tap(); seq_advance(loop);
     seq_advance(1000); input_on(t, 60, 91); seq_advance(100); input_off(t, 60);
-    seq_advance(loop - 1100u); original = recording[0];
+    seq_advance(loop - 1101u); rec_tap(); seq_advance(1); original = recording[0];
     t->p[P_RECQ] = 3; rec_tap(); seq_advance(loop);
     seq_advance(2000); input_on(t, 67, 99); seq_advance(100); input_off(t, 67);
-    seq_advance(loop - 2100u);
-    bad += check("an automatically finished OFF take is never swept into a later enabled quantization pass",
+    seq_advance(loop - 2101u); rec_tap(); seq_advance(1);
+    bad += check("a finished OFF take is never swept into a later enabled quantization pass",
         !memcmp(&original, &recording[0], sizeof original) && !recording[1].on && !(recording_flags[0] & 8u));
     seq_stop();
 

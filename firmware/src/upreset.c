@@ -633,12 +633,12 @@ static int general_sysex_send(uint32_t k)
 static int general_sysex_frame(const uint8_t *body,uint32_t n)
 {
     if(n<4u || body[0]!=0x7d || body[1]!=0x4d || body[2]!=0x4c)return 0;
-    if(body[3]!=1u || n!=4u+sizeof(up_rec_t)+(sizeof(up_rec_t)+6u)/7u+1u){ui_message("INVALID PRESET SYSEX");return 1;}
-    for(uint32_t i=0;i<n;i++)if(body[i]>127u){ui_message("INVALID PRESET SYSEX");return 1;}
-    if(sx_checksum(body,n)){ui_message("INVALID PRESET SYSEX");return 1;}
+    if(body[3]!=1u || n!=4u+sizeof(up_rec_t)+(sizeof(up_rec_t)+6u)/7u+1u){ui_message("INVALID SYSEX");return 1;}
+    for(uint32_t i=0;i<n;i++)if(body[i]>127u){ui_message("INVALID SYSEX");return 1;}
+    if(sx_checksum(body,n)){ui_message("INVALID SYSEX");return 1;}
     up_rec_t r;uint8_t *raw=(uint8_t *)&r;uint32_t pos=0;
-    for(uint32_t i=4;i<n-1u;){uint32_t count=sizeof r-pos;if(count>7u)count=7;uint32_t mask=body[i++];if(!count || mask>>count){ui_message("INVALID PRESET SYSEX");return 1;}for(uint32_t j=0;j<count;j++)raw[pos++]=(uint8_t)(body[i++]|((mask>>j)&1u)<<7);}
-    if(!up_valid(&r)){ui_message("INVALID PRESET SYSEX");return 1;}
+    for(uint32_t i=4;i<n-1u;){uint32_t count=sizeof r-pos;if(count>7u)count=7;uint32_t mask=body[i++];if(!count || mask>>count){ui_message("INVALID SYSEX");return 1;}for(uint32_t j=0;j<count;j++)raw[pos++]=(uint8_t)(body[i++]|((mask>>j)&1u)<<7);}
+    if(!up_valid(&r)){ui_message("INVALID SYSEX");return 1;}
     sysex_stage(r.engine,(const uint8_t *)&r,1,sizeof r);return 1;
 }
 
