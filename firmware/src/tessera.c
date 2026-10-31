@@ -1651,11 +1651,13 @@ static void tess_knob_body(uint32_t k, int32_t s)
         const tessera_answer_t *a = &tessera.answer[tr];
         if (k == 1u) tess_param_set_body(tr, TX_AN_VARY, (int32_t)a->vary + s * 2);
         else if (k == 2u) tess_param_set_body(tr, TX_AN_ECHO, (int32_t)a->echo + s * 2);
-        else if (k == 3u) {                                 /* FADE: a count a click, 1 .. 16 then LOOPS (100), each */
-            int32_t c = a->fade >= 100u ? 16 : (int32_t)a->fade * 15 / 99;   /* count's first value (answer.c) */
+        else if (k == 3u) {                                 /* FADE: a count a click, 1 .. 16 (each count's first */
+            int32_t c = a->fade >= 100u ? 16 + (int32_t)(a->len % TESS_AN_LENS) : (int32_t)a->fade * 15 / 99;   /* value,
+                                                         * answer.c), then LOOPS (100) SHORT MID LONG: LEN */
             c += s > 0 ? 1 : -1;
-            c = c < 0 ? 0 : c > 16 ? 16 : c;
+            c = c < 0 ? 0 : c > 15 + (int32_t)TESS_AN_LENS ? 15 + (int32_t)TESS_AN_LENS : c;
             tess_param_set_body(tr, TX_AN_FADE, c >= 16 ? 100 : (c * 99 + 14) / 15);
+            if (c >= 16) tess_param_set_body(tr, TX_AN_LEN, c - 16);
         }
     } else if (mode == TESS_ENG_CONSTEL) {
         tessera_constel_t *c = &tessera.constel[tr];
@@ -2834,9 +2836,10 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
     case TX_ACC_MODE: tessera.acc_mode[tr] = (uint8_t)tess_clampi(v, 0, TESS_ACC_MODES - 1); return;
     case TX_MIDI_CH: tessera.midi_ch[tr] = (uint8_t)tess_clampi(v, 0, (int32_t)TESS_MIDI_OFF); return;
     case TX_KEY_LINK: tessera.key_link = (uint8_t)tess_clampi(v, 0, 1); return;
-    case TX_SD_SOURCE:                                  /* (the loop filled again from the new source) */
-        tessera.sd_src[tr] = (uint8_t)tess_clampi(v, 0, TESSERA_TRACKS);
+    case TX_SD_SOURCE:                                  /* (the loop filled again from the new source; ANSWER: its */
+        tessera.sd_src[tr] = (uint8_t)tess_clampi(v, 0, TESSERA_TRACKS);   /* call, answered from the first) */
         tess_sd.load[tr] = 1;
+        if (tessera.mode[tr] == TESS_ENG_ANSWER) answer_restart(tr);
         return;
     case TX_SD_KEEP:                                    /* (MORPH's B made again, KEEP's way) */
         tessera.sd_keep[tr] = (uint8_t)tess_clampi(v, 0, TESS_SD_KEEPS - 1);

@@ -7,7 +7,8 @@
  * Each answer is softer and more changed, until FADE's count is played and it forgets: it rests until the keys play
  * again. At the top of FADE it never forgets: its notes run as four loops of unequal lengths (LEN; Eno's tape loops),
  * so it never quite repeats. ECHO: a note now and then comes back once, softer, a few steps later, sometimes an octave
- * up. The phrase is saved (a project answers at PLAY); timing snaps to steps (SUB later). Included by tessera.c */
+ * up. The phrase is saved (a project answers at PLAY); timing snaps to steps (SUB later). SOURCE (T1..T4, STEP as
+ * seed's: tessera.sd_src) makes a STEP pattern the phrase instead, read again before each answer. Included by tessera.c */
 
 static const uint8_t AN_LOOPS[TESS_AN_LENS][4] = {{5, 7, 11, 13}, {13, 17, 23, 29}, {23, 29, 31, 37}};
 
@@ -18,9 +19,30 @@ uint32_t tessera_answer_count(uint32_t tr)
     return f >= 100u ? 0u : 1u + f * 15u / 99u;
 }
 
-/* the answers from the first again (PLAY, a mode change, a load): a phrase kept answers after its gap, none rests */
+/* SOURCE: the call is that track's STEP pattern playing now (this track's own too), its first 8 notes at their steps
+ * (a chord its first note, a drum hit its lane's note); 0: none (OFF, or a pattern without notes: the keys' call) */
+static int answer_source(uint32_t tr)
+{
+    uint32_t s = tessera.sd_src[tr], i, n = 0, note, vel, len;
+    tessera_answer_t *a = &tessera.answer[tr];
+    if (!s || s > TESSERA_TRACKS) return 0;
+    len = sd_len(s - 1u);
+    for (i = 0; i < len && i <= TESS_AN_AT_MAX && n < TESS_AN_NOTES; i++)
+        if (sd_step(s - 1u, i, &note, &vel)) {
+            a->note[n] = (uint8_t)note;
+            a->vel[n] = (uint8_t)(vel > 127u ? 127u : vel);
+            a->at[n++] = (uint8_t)i;
+        }
+    if (!n) return 0;
+    a->n = (uint8_t)n;
+    return 1;
+}
+
+/* the answers from the first again (PLAY, a mode change, a load, a new SOURCE): a phrase kept (or a SOURCE's) answers
+ * after its gap, none rests */
 static void answer_restart(uint32_t tr)
 {
+    answer_source(tr);
     tess_an.phase[tr] = tessera.answer[tr].n ? TESS_AN_GAP : TESS_AN_IDLE;
     tess_an.cnt[tr] = 0;
     tess_an.ans[tr] = 0;
@@ -39,6 +61,7 @@ void tessera_answer_hear(track_t *t, uint32_t note, uint32_t vel)
     uint32_t tr = trk_index(t), n, at;
     tessera_answer_t *a;
     if (tr >= TESSERA_TRACKS || tessera.mode[tr] != TESS_ENG_ANSWER || !vel || note > 127u) return;
+    if (tessera.sd_src[tr] && answer_source(tr)) return;   /* (a SOURCE's call: the keys just play) */
     a = &tessera.answer[tr];
     if (tess_an.phase[tr] != TESS_AN_HEAR) {
         answer_restart(tr);
@@ -159,6 +182,8 @@ static void answer_tick(const track_t *t, uint32_t tr, const gen_clock_t *clk, g
         }
         tess_an.phase[tr] = cnt ? TESS_AN_PLAY : TESS_AN_LOOP;
         tess_an.cnt[tr] = c = 0;
+        answer_source(tr);                              /* (a SOURCE: the pattern as it is now) */
+        n = a->n;
         answer_round(tr);
         if (!cnt) break;
         /* fall through */
@@ -181,6 +206,12 @@ static void answer_tick(const track_t *t, uint32_t tr, const gen_clock_t *clk, g
         }
         tess_an.phase[tr] = TESS_AN_GAP;
         return; }
+    case TESS_AN_IDLE:                                  /* forgotten: a SOURCE calls again (its track plays on) */
+        if (answer_source(tr)) {
+            tess_an.phase[tr] = TESS_AN_GAP;
+            tess_an.cnt[tr] = tess_an.ans[tr] = 0;
+        }
+        return;
     default:
         break;
     }
@@ -193,14 +224,18 @@ static void answer_tick(const track_t *t, uint32_t tr, const gen_clock_t *clk, g
     {   /* the four loops: place i on loop i % 4, sounding every LEN of it from its own step; a new round each turn of
          * the first loop */
         const uint8_t *L = AN_LOOPS[a->len % TESS_AN_LENS];
-        if (c && !(c % L[0])) answer_round(tr);
+        if (c && !(c % L[0])) {
+            answer_source(tr);
+            n = a->n;
+            answer_round(tr);
+        }
         for (i = 0; i < n; i++)
             if (c >= a->at[i] && !((c - a->at[i]) % L[i & 3u])) answer_play(t, tr, i, 256u, out);
         tess_an.cnt[tr] = c + 1u < 0x7FFFFFFFu ? c + 1u : 0u;
     }
 }
 
-/* OCT+ held on GEN in ANSWER: KNOB 1 ORDER, 2 SHIFT, 3 SPACE, 4 LEN */
+/* OCT+ held on GEN in ANSWER: KNOB 1 SOURCE, 2 ORDER, 3 SHIFT, 4 SPACE (LEN: FADE's top, tessera_knob) */
 void tessera_answer_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;
@@ -210,9 +245,9 @@ void tessera_answer_layer_knob(uint32_t k, int32_t s)
     if (tr >= TESSERA_TRACKS || !s) return;
     a = &tessera.answer[tr];
     TESS_IRQ_OFF();
-    if (k == 0u) tess_param_set_body(tr, TX_AN_ORDER, (int32_t)a->order + d);
-    else if (k == 1u) tess_param_set_body(tr, TX_AN_SHIFT, (int32_t)a->shift + d);
-    else if (k == 2u) tess_param_set_body(tr, TX_AN_SPACE, (int32_t)a->space + s * 2);
-    else if (k == 3u) tess_param_set_body(tr, TX_AN_LEN, (int32_t)a->len + d);
+    if (k == 0u) tess_param_set_body(tr, TX_SD_SOURCE, (int32_t)tessera.sd_src[tr] + d);
+    else if (k == 1u) tess_param_set_body(tr, TX_AN_ORDER, (int32_t)a->order + d);
+    else if (k == 2u) tess_param_set_body(tr, TX_AN_SHIFT, (int32_t)a->shift + d);
+    else if (k == 3u) tess_param_set_body(tr, TX_AN_SPACE, (int32_t)a->space + s * 2);
     TESS_IRQ_ON();
 }
