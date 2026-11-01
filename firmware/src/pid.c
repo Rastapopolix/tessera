@@ -153,6 +153,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_EN_LEVEL] = PD("LEVEL", F_INT, -100, 100, 0),
     [TX_EN_DEPTH] = PD("DEPTH", F_PCT, 0, 100, 100),
     [TX_FM_DEVELOP] = PD("DEVLP", F_PCT, 0, 100, 0),
+    [TX_MIDI_TR] = {"TRANS", F_INT, -TESS_MIDI_TR, TESS_MIDI_TR, 0, 0, "st"},
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -573,6 +574,11 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                       "recognisable but is never quite the same. The section itself is kept, so the "
                                       "next return starts from it again. GRAVITY is the chance a return stays exact. "
                                       "0: every return exact. OCT+ held on FORM, KNOB 1."),
+    X_(TX_MIDI_TR, "MIDI OUT TRANSPOSE", "Moves this track's notes up or down on their way out over MIDI, in "
+                                         "semitones (12 an octave), for an instrument or a MIDI-to-CV module that "
+                                         "plays them too high or too low. The track's own sound is unchanged; a note "
+                                         "moved past MIDI's range is not sent. 0: as played. Saved with the project. "
+                                         "OCT+ held on GLO > MIDI OUT, a knob for each track."),
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };

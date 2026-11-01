@@ -930,6 +930,16 @@ static void draw_columns(void)
         for (uint32_t k = 1; k < 4u; k++) draw_column(k, "", "", "", T_DIM, -1, ICON_NONE);
         return;
     }
+    if (cur_page()->graph == GR_MIDICH && midi_layer_on()) {   /* MIDI OUT, OCT+ held: each track's TRANSPOSE */
+        static const char *const NAME[TESSERA_TRACKS] = {"TRACK 1", "TRACK 2", "TRACK 3", "TRACK 4"};
+        for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
+            char w[8];
+            int32_t v = tessera.midi_tr[k];
+            midi_tr_text(w, v);
+            draw_column(k, NAME[k], w, "st", VAL(k), (v + TESS_MIDI_TR) * 1000 / (2 * TESS_MIDI_TR), ICON_AUTO);
+        }
+        return;
+    }
     if (cur_page()->graph == GR_MIDICH) {                /* MIDI OUT: each track's channel (AUTO, 1..16, OFF) */
         static const char *const NAME[TESSERA_TRACKS] = {"TRACK 1", "TRACK 2", "TRACK 3", "TRACK 4"};
         const param_desc_t *d = pid_desc(PID_TESS(TX_MIDI_CH), 0);
