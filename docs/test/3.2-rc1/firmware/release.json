@@ -1,0 +1,8 @@
+{
+  "version": "3.2-rc1",
+  "product": "FM-1_83773020",
+  "pkg": {
+    "dual": "../../firmware/tessera-3.2-rc1.fwsc",
+    "single": "../../firmware/tessera-3.2-rc1-1core.fwsc"
+  }
+}
