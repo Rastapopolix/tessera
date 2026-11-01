@@ -250,6 +250,15 @@ static int32_t menu_document(int32_t y, int draw)
     }
     y += 246;
 #endif
+#if MELODEE_USB_HOST
+    if (uh.on && uh_dg.root) {                        /* what USB HOST's last scan found, port by port (usb_host.c) */
+        char b[24];
+        y = menu_text("USB HOST SCAN", y, T_THEME, draw);
+        for (i = 0; uh_diag_line(i, b); i++)
+            y = menu_text(b, y, T_TEXT, draw);
+        y += 12;
+    }
+#endif
 #ifdef FM1_CRASH_MAGIC
     if (fm1_crash.magic == FM1_CRASH_MAGIC) {         /* the last crash's record (kept over the restart, gone at a
                                                        * power-off): what its screen said, for a report */
@@ -443,6 +452,9 @@ static void draw_menu(void)
 #endif
                             song.rec * 65537u + song.sel * 13u +
                             (ui.menu == 2 ? ui.menu_scroll * 48611u : 0u);
+#if MELODEE_USB_HOST
+    sig += ui.menu == 2 ? (uh.dg_n + uh.on * 256u) * 104729u : 0u;   /* (ABOUT's USB HOST SCAN) */
+#endif
     if (!ui.force && sig == ui.menu_sig)
         return;
     ui.menu_sig = sig;
