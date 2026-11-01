@@ -87,6 +87,7 @@ static int settings_import(persist_t *p, int n)
     settings_midi_out = (uint8_t)((p->favorites.factory[15][30] >> 5) & 3u) % MIDI_OUT_N;   /* (midi_out.c) */
     settings_clock_out = (uint8_t)(p->favorites.factory[15][30] >> 7);
     settings_cc_off = (uint8_t)((p->favorites.factory[15][24] >> 4) & 1u);   /* (midi_cc.c) */
+    settings_batt_off = (uint8_t)((p->favorites.factory[15][24] >> 5) & 1u);   /* (MENU BATTERY, core.h) */
     settings_knob_swap = p->favorites.factory[15][25] == KNOB_SWAP_TAG;
     settings.magic = SETTINGS_MAGIC;
     settings.palette = palette_from_stored(p->palette);
@@ -136,7 +137,8 @@ static void settings_export(persist_t *p)
     p->favorites.factory[15][28] = settings_autosave ? 0u : AUTOSAVE_OFF_TAG;
     p->favorites.factory[15][30] = (uint8_t)((p->favorites.factory[15][30] & 0x1Fu) | settings_midi_out << 5 |
                                              (settings_clock_out != 0u) << 7);
-    p->favorites.factory[15][24] = (uint8_t)((p->favorites.factory[15][24] & ~0x10u) | (settings_cc_off != 0u) << 4);
+    p->favorites.factory[15][24] = (uint8_t)((p->favorites.factory[15][24] & ~0x30u) | (settings_cc_off != 0u) << 4 |
+                                             (settings_batt_off != 0u) << 5);
     p->favorites.factory[15][25] = settings_knob_swap ? KNOB_SWAP_TAG : 0u;
     p->ext.usb_off=(p->ext.usb_off&3u)|(settings_budget!=VOICE_BUDGET_DEFAULT?WORK_BUDGET_TAG|((uint32_t)settings_budget<<8):0u);
     p->ext.boot = settings_boot;

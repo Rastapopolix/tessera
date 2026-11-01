@@ -28,6 +28,7 @@ static uint8_t settings_boot, settings_drumch = 10;  /* (params.c) */
 enum { MIDI_OUT_KEYS, MIDI_OUT_ALL, MIDI_OUT_OFF, MIDI_OUT_N };
 static uint8_t settings_midi_out, settings_clock_out;     /* (midi_out.c) */
 static uint8_t settings_cc_off;                           /* (midi_cc.c) */
+static uint8_t settings_batt_off;                         /* (core.h: MENU BATTERY) */
 #define VOICE_BUDGET_DEFAULT 16u
 static int16_t settings_budget=VOICE_BUDGET_DEFAULT;
 static int native_used(uint32_t e, uint32_t k) { (void)e; (void)k; return 0; }
@@ -91,11 +92,11 @@ int main(void)
     }
     {   /* PANEL GAMMA: row 15 byte 24 bits 1..3; 0 (any settings before it, and TUNED+VCOM until 2.1-rc2) G2.2; bit 0, a CZ-1 star, kept */
         assert(gamma_get() == GAMMA_DEF);
-        favorites.factory[15][24] = 0xE1u;                       /* (bit 4: MIDI CC IN, midi_cc.c) */
+        favorites.factory[15][24] = 0xC1u;                       /* (bit 4: MIDI CC IN, midi_cc.c; bit 5: BATTERY; 6..7 free) */
         for (uint32_t g = 0; g < GAMMA_N; g++) {
             gamma_put(g);
             settings_export(&p); memset(&favorites, 0, sizeof favorites); settings_import(&p, sizeof p);
-            assert(gamma_get() == g && (favorites.factory[15][24] & 0xE1u) == 0xE1u);
+            assert(gamma_get() == g && (favorites.factory[15][24] & 0xC1u) == 0xC1u);
         }
         gamma_put(GAMMA_DEF); assert(!(favorites.factory[15][24] & 0x0Eu));      /* the default stores 0 */
         gamma_put(5u); assert(((favorites.factory[15][24] >> 1) & 7u) == 6u);    /* TUNED+VCOM chosen: 6 */

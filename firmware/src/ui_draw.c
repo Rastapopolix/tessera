@@ -20,13 +20,27 @@ static int32_t batt_level(void)                         /* thresholds 531 / 561 
 {
     return song.batt_raw >= 591 ? 3 : song.batt_raw >= 561 ? 2 : song.batt_raw >= 531 ? 1 : 0;
 }
-/* A USB host powers us; there is no separate charger status line.
- * 4 means external power (a steady bolt inside the battery), otherwise its level. */
+/* external power: a computer (the USB device configured), or 5 V at the AC79's LDO5V input (P33 0xA1 bit 5, as main.c
+ * read it: a hub, a charger) */
+static int batt_ext(void)
+{
+    return (usb.config && !usb.suspended) || (song.pwr[0] & 0x20u);
+}
+/* 4 means external power (a steady bolt inside the battery), otherwise its level. */
 static int32_t batt_shown(void)
 {
-    if (usb.config && !usb.suspended)
+    if (batt_ext())
         return 4;
     return batt_level();
+}
+/* the Mono header's battery: -1 none, 0..3 its level, 4 + the level on external power (a bolt before it). MENU
+ * BATTERY OFF hides it, except when it runs low (a bar or none, on the battery) */
+static int32_t batt_head(void)
+{
+    int32_t lvl = batt_level();
+    if (batt_ext())
+        return settings_batt_off ? -1 : 4 + lvl;
+    return lvl <= 1 || !settings_batt_off ? lvl : -1;
 }
 
 /* REC: filled, the selected track ready/recording; outlined, waiting or another track armed. */
@@ -260,7 +274,7 @@ static int32_t page_tabs(int32_t x0, int32_t x1, int32_t y)
     return x1 - (int32_t)n * (w + 2) + 2;
 }
 #if MELODEE_LOOK                                        /* the Mono look's chrome (ui_mono.c) */
-static void mo_dhead(const char *chip, const char *msg, int low);
+static void mo_dhead(const char *chip, const char *msg, int32_t bat);
 static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
                          int (*cap)(uint32_t r, char *lb, char *v, uint16_t *vc));
 static void mo_sound(const char *en, const char *nm);
@@ -295,13 +309,14 @@ static void draw_head(void)
 {
     char b[16], chip[16];
     int32_t x;
-    uint32_t low = !(usb.config && !usb.suspended) && batt_level() <= 1, msg = ui.msg_t || ui.layer;
+    int32_t bat = batt_head();
+    uint32_t low = !batt_ext() && batt_level() <= 1, msg = ui.msg_t || ui.layer;
     uint32_t sig, moved = 0;
     int16_t bpm = song.g[G_BPM];                        /* (read once: what is noted is what is drawn) */
     head_chip_text(chip);
     sig = (uint32_t)seq_erase_active(TSEL) * 8191u + (uint32_t)song.playing * 3u + song.rec * 5u + song.rec_wait * 65537u + (uint32_t)(song.octave + 8) * 11u +
           song.sel * 13131u + (msg ? str_hash(7u, ui.msg_t ? ui.msg : layer_head()) : str_hash(5u, chip)) +
-          (ui.bpm_t != 0) * 31u + low * 7777u + (chain.running ? (chain.row + 1u) * 104729u : 0u) + ux.gen * 977u +
+          (ui.bpm_t != 0) * 31u + low * 7777u + (uint32_t)(bat + 1) * 2147483647u + (chain.running ? (chain.row + 1u) * 104729u : 0u) + ux.gen * 977u +
           (ui.home ? 0u : ui.page * 2654435761u) + page_sheet() * 524287u + (uint32_t)gen_layer_on() * 40503u;
     if (bpm != ui.roll_bpm) {
         char a[8];
@@ -329,7 +344,7 @@ static void draw_head(void)
     }
     ui.head_sig = sig;
 #if MELODEE_LOOK
-    mo_dhead(chip, seq_erase_active(TSEL) ? "ERASING" : msg ? (ui.msg_t ? ui.msg : layer_head()) : 0, low);
+    mo_dhead(chip, seq_erase_active(TSEL) ? "ERASING" : msg ? (ui.msg_t ? ui.msg : layer_head()) : 0, bat);
     return;
 #endif
     cv_begin(240, H_HEAD, T_BG);

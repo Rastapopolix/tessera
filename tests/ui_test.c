@@ -6045,6 +6045,41 @@ static int test_stage_knobs_after_drum(void)
     return bad;
 }
 
+/* the header's battery (ui_draw.c batt_head): its level on the battery, a bolt on external power (a computer, or 5 V
+ * at LDO5V); MENU BATTERY WHEN LOW hides it except when low; saved with the settings */
+static int test_battery(void)
+{
+    int bad = 0;
+    uint8_t keep_off = settings_batt_off, keep_cfg = usb.config, keep_pwr = song.pwr[0];
+    int32_t keep_raw = song.batt_raw;
+    settings_batt_off = 0; usb.config = 0; song.pwr[0] = 0;
+    song.batt_raw = 600; bad += check("battery: full on the battery, 3 bars", batt_head() == 3);
+    song.batt_raw = 570; bad += check("  two bars", batt_head() == 2);
+    song.batt_raw = 500; bad += check("  empty", batt_head() == 0);
+    song.pwr[0] = 0x20u; song.batt_raw = 570;
+    bad += check("  5 V in (P33 LDO5V): the bolt and the level", batt_head() == 4 + 2 && batt_shown() == 4);
+    song.pwr[0] = 0; usb.config = 1; usb.suspended = 0;
+    bad += check("  a computer: the bolt", batt_head() == 4 + 2);
+    usb.config = 0; settings_batt_off = 1;
+    bad += check("  WHEN LOW: hidden while it has two bars", batt_head() == -1);
+    song.batt_raw = 540;
+    bad += check("  WHEN LOW: shown at one bar", batt_head() == 1);
+    song.pwr[0] = 0x20u;
+    bad += check("  WHEN LOW, on external power: hidden", batt_head() == -1);
+    {
+        static persist_t p;
+        memset(&p, 0, sizeof p);
+        settings_export(&p);
+        settings_batt_off = 0;
+        bad += check("  WHEN LOW is saved with the settings", settings_import(&p, sizeof p) && settings_batt_off == 1u);
+        p.favorites.factory[15][24] &= (uint8_t)~0x20u;
+        settings_import(&p, sizeof p);
+        bad += check("  settings saved before it: ON", settings_batt_off == 0u);
+    }
+    settings_batt_off = keep_off; usb.config = keep_cfg; song.pwr[0] = keep_pwr; song.batt_raw = keep_raw;
+    return bad;
+}
+
 int main(void)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -6052,6 +6087,7 @@ int main(void)
 #if !MELODEE_LOOK
     bad += test_large_face();
 #endif
+    bad += test_battery();
     bad += test_home_notes();
     bad += test_stage();
     bad += test_capture();

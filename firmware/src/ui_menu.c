@@ -20,7 +20,7 @@ enum { MI_COLOR, MI_HOLD, MI_LIGHTS,
 #if MELODEE_USB_HOST
        MI_USB_HOST,
 #endif
-       MI_CLICK, MI_CLICK_LEVEL, MI_COUNTIN, MI_PREVIEW, MI_ADD, MI_AUTOSAVE, MI_ACCEL, MI_TRACK_KNOB, MI_SCREEN, MI_GAMMA, MI_PANEL, MI_ABOUT, MI_DESIGNER, MI_BACK,
+       MI_CLICK, MI_CLICK_LEVEL, MI_COUNTIN, MI_PREVIEW, MI_ADD, MI_AUTOSAVE, MI_ACCEL, MI_TRACK_KNOB, MI_SCREEN, MI_BATTERY, MI_GAMMA, MI_PANEL, MI_ABOUT, MI_DESIGNER, MI_BACK,
        MI_COUNT };
 static const char *const GAMMA_NAME[GAMMA_N] = {"G2.2", "G1.8", "G2.5", "G1.0", "TUNED", "TUNED+VCOM"};   /* (lcd.c) */
 static const char *const MI_NAME[MI_COUNT] = {"COLOR", "HOLD", "LIGHTS",
@@ -32,7 +32,7 @@ static const char *const MI_NAME[MI_COUNT] = {"COLOR", "HOLD", "LIGHTS",
                                               "USB HOST",
 #endif
                                               "AUDIO CLICK", "CLICK LEVEL", "COUNT-IN", "NOTE PREVIEW", "CHORD ENTRY",
-                                              "AUTOSAVE", "KNOB ACCEL", "TRACK KNOB", "SCREEN OFF", "PANEL GAMMA", "CALIBRATION", "ABOUT", "SOUND DESIGNER", "BACK"};
+                                              "AUTOSAVE", "KNOB ACCEL", "TRACK KNOB", "SCREEN OFF", "BATTERY", "PANEL GAMMA", "CALIBRATION", "ABOUT", "SOUND DESIGNER", "BACK"};
 #if MELODEE_USB_AUDIO
 /* USB AUDIO's four settings, as ua_off_want (UA_OFF_OUT | UA_OFF_IN) */
 static const char *const MI_USB_NAME[4] = {"IN+OUT", "IN", "OUT", "OFF"};
@@ -250,6 +250,33 @@ static int32_t menu_document(int32_t y, int draw)
     }
     y += 246;
 #endif
+    {                                                 /* the battery and power as read (ui_draw.c batt_ext), for a
+                                                       * report: the raw ADC, 5 V in, the P33 bytes */
+        char b[32];
+        str_cpy(b, "BATTERY ", sizeof b);
+        fmt_int(b + str_len(b), song.batt_raw);
+        str_cpy(b + str_len(b), ", ", 3);
+        fmt_int(b + str_len(b), batt_level());
+        str_cpy(b + str_len(b), batt_level() == 1 ? " BAR" : " BARS", 6);
+        y = menu_text("POWER", y, T_THEME, draw);
+        y = menu_text(b, y, T_TEXT, draw);
+        str_cpy(b, song.pwr[0] & 0x20u ? "5V IN: YES" : "5V IN: NO", sizeof b);
+        str_cpy(b + str_len(b), usb.config && !usb.suspended ? ", PC: YES" : ", PC: NO", 10);
+        y = menu_text(b, y, T_TEXT, draw);
+        {
+            static const char HX[] = "0123456789ABCDEF";
+            static const uint8_t REG[3] = {0xA1, 0x19, 0x1A};
+            uint32_t n = 3;                           /* "P33 A1:25 19:00 1A:01" */
+            str_cpy(b, "P33", sizeof b);
+            for (uint32_t r = 0; r < 3u; r++) {
+                b[n++] = ' ';
+                b[n++] = HX[REG[r] >> 4], b[n++] = HX[REG[r] & 15u], b[n++] = ':';
+                b[n++] = HX[song.pwr[r] >> 4], b[n++] = HX[song.pwr[r] & 15u];
+            }
+            b[n] = 0;
+        }
+        y = menu_text(b, y, T_SEC, draw) + 12;
+    }
 #if MELODEE_USB_HOST
     if (uh.on && uh_dg.root) {                        /* what USB HOST's last scan found, port by port (usb_host.c) */
         char b[24];
@@ -317,7 +344,7 @@ static int32_t menu_scroll_max(void)
 static void menu_head(void)
 {
 #if MELODEE_LOOK
-    mo_dhead(ui.menu == 2 ? "ABOUT" : "SETTINGS", 0, 0);
+    mo_dhead(ui.menu == 2 ? "ABOUT" : "SETTINGS", 0, -1);
     cv_begin(240, MENU_HEAD - H_HEAD, MO_BG);           /* (the menu's strip is taller than the pages' header) */
     cv_blit(0, H_HEAD);
     return;
@@ -382,6 +409,7 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
     if (i == MI_USB_HOST) value = uh.want ? "ON" : "OFF";
 #endif
     if (i == MI_AUTOSAVE) value = settings_autosave ? "ON" : "OFF";
+    if (i == MI_BATTERY) value = settings_batt_off ? "WHEN LOW" : "ON";
     if (i == MI_SCREEN) value = (const char *const[]){"NEVER", "5 MIN", "15 MIN", "30 MIN", "60 MIN"}[scr_get()];
     if (i == MI_GAMMA) value = GAMMA_NAME[gamma_get()];
     if (i == MI_LIGHTS) value = LIGHTS_NAME[settings_lights % LIGHTS_N];
@@ -455,6 +483,8 @@ static void draw_menu(void)
 #if MELODEE_USB_HOST
     sig += ui.menu == 2 ? (uh.dg_n + uh.on * 256u) * 104729u : 0u;   /* (ABOUT's USB HOST SCAN) */
 #endif
+    sig += ui.menu == 2 ? ((uint32_t)song.batt_raw * 131u + song.pwr[0] * 7u + song.pwr[1] * 977u + song.pwr[2] * 7919u +
+                           (usb.config && !usb.suspended)) * 16777619u : settings_batt_off * 15485863u;   /* (POWER) */
     if (!ui.force && sig == ui.menu_sig)
         return;
     ui.menu_sig = sig;
@@ -644,6 +674,10 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         gamma_put((gamma_get() + (s < 0 ? GAMMA_N - 1u : 1u)) % GAMMA_N);
         lcd_gamma_switch(gamma_get());                 /* (the panel black and on again: ui.force draws it all) */
         ui.force = 1; ok = 0;
+    }
+    if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_BATTERY) {   /* KNOB 2 right ON, left WHEN LOW; OCT+ toggles */
+        settings_batt_off = (uint8_t)(s > 0 ? 0u : s < 0 ? 1u : !settings_batt_off);
+        ui.force = 1; ok = 0;                          /* (the header's battery: ui_draw.c batt_head) */
     }
     if ((s || ok) && ui.menu==1 && ui.menu_sel==MI_SCREEN) {
         uint32_t value=scr_get(), top=4u;

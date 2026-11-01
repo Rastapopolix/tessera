@@ -298,6 +298,20 @@ static void fm1_main(void)
             if (b > 0)
                 song.batt_raw = song.batt_raw ? song.batt_raw + (b - song.batt_raw) / 32 : b;
         }
+        {                                               /* 5 V in and the AC79's charger (SDK p33.h), read only, twice a
+                                                         * second; a read that timed out keeps the last (ui_draw.c) */
+            static uint32_t pwr_ms;
+            if (fm1_ms - pwr_ms >= 500u) {
+                uint32_t to = fm1_p33_timeouts;
+                uint8_t a = fm1_p33_read(0xA1u), c = fm1_p33_read(0x19u), e = fm1_p33_read(0x1Au);
+                pwr_ms = fm1_ms;
+                if (fm1_p33_timeouts == to) {
+                    song.pwr[0] = a;
+                    song.pwr[1] = c;
+                    song.pwr[2] = e;
+                }
+            }
+        }
         {
             int32_t a = fm1_adc_read(FM1_ADC_MASTER);
             if (a >= 0) {
