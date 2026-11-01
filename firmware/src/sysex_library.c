@@ -44,7 +44,7 @@ static int sysex_stage(uint32_t e, const uint8_t *raw, uint32_t count, uint32_t 
     for(uint32_t p=0;p<NPAGES;p++)if(PAGES[p].graph==GR_USER){ui.page=(uint8_t)p;break;}
     ui.import_refresh=1;ui.home=0;ui.fam_last[FAM_SAVE]=ui.page;ui.uslot=0;song.seq_mode=0;ui.entry_open=0;ui.note_pick=0;ui.act=0;seq_midi_reset();
     char nm[16];sysex_import_name(nm);
-    ui_say("IMPORT ", nm); str_cpy(ui.msg2, "CHOOSE USER SLOTS", sizeof ui.msg2); ui.force = 1;
+    ui_say("IMPORT ", nm); str_cpy(ui.msg2, "PICK USER SLOTS", sizeof ui.msg2); ui.force = 1;
     return 1;
 }
 static void sysex_cancel(void) { if(fm6_rx_ready==2u)fm6_rx_ready=0;sx_import.count = 0; bulk_clear(); ui_message("IMPORT STOPPED"); }

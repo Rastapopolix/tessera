@@ -857,8 +857,8 @@ directly or through a USB hub, and after a moment the screen says **USB MIDI REA
 - **Power**: the FM-1 does not power the device. Use a **powered hub**, or a device with its own power supply.
 - One MIDI device at a time: the first one found (behind a hub, the first port with a MIDI device). Full-speed
   devices only (**LOW SPEED** otherwise, behind a hub too); a device without USB-MIDI (a USB stick, crow) shows
-  **NO MIDI DEVICE**. norns is itself a host, so connect it as before.
-- When nothing is found the screen adds **USB SCAN IN ABOUT**: the menu's **ABOUT** then lists, under
+  **NO MIDI**. norns is itself a host, so connect it as before.
+- When nothing is found the screen adds **USB SCAN: ABOUT**: the menu's **ABOUT** then lists, under
   **USB HOST SCAN**, what each hub port had: **P2 0103 NO MIDI 08** is port 2, its status in hex (1 connected,
   2 enabled, 100 powered, 200 low speed, 400 high speed), what was found and the device's USB class in hex (01 audio
   or MIDI, 03 a keyboard or mouse, 08 a stick, 09 a hub, 11 a hub's Billboard). Found: **EMPTY**, **LOW SPEED**,
