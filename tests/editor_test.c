@@ -112,7 +112,7 @@ static int preferences(void)
     int bad = 0;
     uint8_t a[4] = {0, 2, 0, 0};
     reset();
-    uint32_t n = request(ED_INFO, a, 0);
+    uint32_t n = request(ED_INFO, a, 0) - 4u;           /* (the user tunings' tag last: user_tunings) */
     bad += check("INFO explicitly tags display capabilities after SONG without changing command 33",
         ED_SONG == 33 && ED_UI_STATE == 34 && ED_FAV_SET == 38 &&
         host_wire[n - 35] == 0 && host_wire[n - 34] == 0x55 &&
@@ -567,10 +567,91 @@ static int library_transfers(void)
     sysex_cancel();bad+=check("cancel releases a pending import without changing its destination",!sx_import.count&&native_used(ENGI_FM6,3));
     return bad;
 }
+static uint32_t tune_req(const uint8_t *a, uint32_t n) { return request(ED_TUNE, a, n); }
+static uint32_t tune_frame(uint8_t *a, uint32_t slot, const char *name, const char *title, uint32_t count, const int32_t *pitch)
+{
+    uint32_t n = 0, i, k;
+    a[n++] = 2; a[n++] = (uint8_t)slot; a[n++] = (uint8_t)count;
+    for (i = 0; name[i]; i++) a[n++] = (uint8_t)name[i];
+    a[n++] = 0;
+    for (i = 0; title[i]; i++) a[n++] = (uint8_t)title[i];
+    a[n++] = 0;
+    for (i = 1; i <= count; i++)
+        for (k = 0; k < 5u; k++) a[n++] = (uint8_t)(((uint32_t)pitch[i] >> (7u * k)) & 127u);
+    return n;
+}
+static int user_tunings(void)
+{
+    static const int32_t P[6] = {0, 23100, 47400, 71700, 95500, 120800};
+    int32_t big[TUNE_DEGREES + 2u];
+    uint8_t a[600];
+    uint32_t n, i;
+    int bad = 0;
+    reset(); tune_clear_all();
+    request(ED_INFO, 0, 0);
+    for (i = 6, n = 0; i + 3u < host_wire_n; i++)
+        if (host_wire[i] == 0x54 && host_wire[i + 1u] == 1 && host_wire[i + 2u] == TUNE_SLOTS && host_wire[i + 3u] == TUNE_DEGREES) n = 1;
+    bad += check("INFO advertises the user tunings (54 01 slots degrees)", n);
+    n = tune_frame(a, 1, "slendr2", "My slendro", 5, P);
+    tune_req(a, n);
+    bad += check("TUNE put: slot 2 holds the table, its name upper case", host_wire[5] == 2 && !host_wire[6] && host_wire[7] == 1 &&
+                 tune_used(1) && !strcmp(tune_name(1), "SLENDR2") && tune_slot[1].pitch[5] == 120800 && tune_micro[1].count == 5u);
+    a[0] = 1; a[1] = 1;
+    n = tune_req(a, 2);
+    bad += check("TUNE get: the table back, the period last",
+                 !host_wire[6] && host_wire[8] == 5 && !strcmp((const char *)host_wire + 9, "SLENDR2") &&
+                 !strcmp((const char *)host_wire + 17, "My slendro") && n == 28u + 25u + 1u &&
+                 ed_bk_r32(host_wire + 28 + 20) == 120800u && ed_bk_r32(host_wire + 28) == 23100u);
+    a[0] = 0;
+    n = tune_req(a, 1);
+    bad += check("TUNE list: four slots, 64 degrees, TUNING, each slot's count and names",
+                 !host_wire[6] && host_wire[7] == TUNE_SLOTS && host_wire[8] == TUNE_DEGREES && host_wire[9] == 0 &&
+                 host_wire[10] == 0 && host_wire[13] == 5 && !strcmp((const char *)host_wire + 14, "SLENDR2"));
+    a[0] = 4; a[1] = 2;
+    tune_req(a, 2);
+    bad += check("TUNE select: TUNING is slot 2, the micro path plays it", !host_wire[6] && host_wire[7] == 2 && tune_sel == 2u &&
+                 tune_scale() == &tune_micro[1]);
+    a[0] = 4; a[1] = TUNE_SLOTS + 1u;
+    tune_req(a, 2);
+    bad += check("TUNE select past the slots refused", host_wire[6] == 1 && tune_sel == 2u);
+    big[0] = 0; big[1] = 50000; big[2] = 30000; big[3] = 120000;
+    n = tune_frame(a, 0, "BAD", "", 3, big);
+    tune_req(a, n);
+    bad += check("TUNE put of unsorted degrees refused, nothing stored", host_wire[6] == 1 && !tune_used(0));
+    n = tune_frame(a, 0, "EIGHTCHR", "", 5, P);
+    tune_req(a, n);
+    bad += check("TUNE put with an 8-character name refused", host_wire[6] == 1 && !tune_used(0));
+    n = tune_frame(a, 0, "OK", "", 5, P);
+    tune_req(a, n - 1u);
+    bad += check("TUNE put one byte short refused", host_wire[6] == 1 && !tune_used(0));
+    n = tune_frame(a, 4, "OK", "", 5, P);
+    tune_req(a, n);
+    bad += check("TUNE put past the slots refused", host_wire[6] == 1);
+    for (i = 0; i <= TUNE_DEGREES; i++) big[i] = (int32_t)i * 1500;
+    n = tune_frame(a, 3, "BIG64", "Sixty-four", TUNE_DEGREES, big);
+    tune_req(a, n);
+    bad += check("TUNE put of 64 degrees fits a frame", !host_wire[6] && tune_micro[3].count == TUNE_DEGREES);
+    a[0] = 1; a[1] = 0;
+    tune_req(a, 2);
+    bad += check("TUNE get of an empty slot refused", host_wire[6] == 1);
+    a[0] = 3; a[1] = 1;
+    tune_req(a, 2);
+    bad += check("TUNE clear: the slot empty, TUNING on it OFF", !host_wire[6] && !tune_used(1) && tune_sel == 0u);
+    a[0] = 9;
+    tune_req(a, 1);
+    bad += check("TUNE unknown op refused", host_wire[5] == 9 && host_wire[6] == 1);
+    tune_sel = 4;
+    a[0] = 0; a[1] = P_SCALE; a[2] = (3 + 8192) & 127; a[3] = (3 + 8192) >> 7;
+    request(ED_SET, a, 4);
+    bad += check("SET of SCL: its scale again, TUNING OFF", tune_sel == 0u && TSEL->p[P_SCALE] == 3);
+    tune_clear_all();
+    return bad;
+}
+
 int main(void)
 {
     int bad = library_transfers() + native_motion_protocol() + bank_protocol() + preferences() + framing() + uart_recovery() + steps() + song_protocol() + malformed_saves() + names_whole() +
-              native_protocol() + fm6_patches() + user_preset_roundtrip() + concert_pitch() + scale_catalogue();
+              native_protocol() + fm6_patches() + user_preset_roundtrip() + concert_pitch() + scale_catalogue() + user_tunings();
     printf("%s\n", bad ? "EDITOR TEST FAILED" : "editor test passed");
     return bad != 0;
 }

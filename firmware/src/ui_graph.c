@@ -2240,7 +2240,7 @@ static void graph_body(int32_t oy)
     case GR_SCALE:
         if (scale_settings_page(pg)) {
             cv_oy = oy;
-            cv_text_fit(12, 3, &AF_S, SCALE_TITLE[clamp(t->p[P_SCALE], 0, SCALE_TOTAL - 1u)], T_TEXT, T_SURF, 216);
+            cv_text_fit(12, 3, &AF_S, scale_pick_title(scale_picker_selected()), T_TEXT, T_SURF, 216);
             cv_oy = oy + 20;
         }
         graph_scale(t, c);

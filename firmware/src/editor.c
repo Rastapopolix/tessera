@@ -285,6 +285,7 @@ static int ed_flash_stop(void)
 #include "editor_backup.c"
 #include "editor_fm6.c"
 #include "editor_native.c"
+#include "editor_tune.c"
 
 static void ed_motion_reply(uint32_t k, uint32_t rc)
 {
@@ -346,6 +347,7 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
     if (ed_backup_handle(cmd, a, na)) { ed_send(); return; }
     if (ed_fm6_handle(cmd, a, na)) { ed_send(); return; }
     if (ed_native_handle(cmd, a, na)) { ed_send(); return; }
+    if (ed_tune_handle(cmd, a, na)) { ed_send(); return; }
     switch (cmd) {
     case 100: {
 #ifdef FM1_IRQ_TARGET
@@ -646,6 +648,7 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
         ed_b(0x35);ed_b(1);ed_b(0);ed_b(USER_GENERAL);ed_b(USER_NATIVE_FM);ed_b(USER_NATIVE_CZ);ed_b(USER_NATIVE_P5);ed_b(0);ed_b(1); /* native stable namespaces
                                                      * (its engine 0: no Prophet; ENGI_PROPHET until it was retired, 2026-10-22) */
         ed_b(0x4e); ed_b(1); ed_b(NATIVE_FM_SLOTS); ed_b(0); ed_b(0); ed_b(0); /* native user pools, command 78 (CZ-1's: 0, retired) */
+        ed_b(0x54); ed_b(1); ed_b(TUNE_SLOTS); ed_b(TUNE_DEGREES);   /* user tunings: command 80 (editor_tune.c) */
         break;
     case ED_GET:
     case ED_SET:
@@ -661,6 +664,7 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
                 if (a[0] == 0) {
                     (void)motion_capture(TSEL, a[1], *vp);
                     load_extend(TSEL);                      /* (ui.c undo: an audition's values after G_ENGSEL) */
+                    if (a[1] == P_SCALE) tune_sel = 0;      /* (SCL set: its scale, not TUNING's) */
                     if (scale_shared(a[1]))
                         scale_share(TSEL);
                 }
@@ -960,6 +964,7 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
             if (d->max > d->min)                           /* as SET: clamped; a fixed value stays */
                 t->p[a[1]] = (int16_t)enum_orig(d, clamp(ed_rv(a + 2), d->min, d->max));
             (void)motion_capture(t, a[1], t->p[a[1]]);
+            if (a[1] == P_SCALE) tune_sel = 0;              /* (as SET) */
             if (scale_shared(a[1]))
                 scale_share(t);
             ed_known(a[0], a[1]);

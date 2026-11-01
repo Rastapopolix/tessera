@@ -8,8 +8,8 @@
 #define SC_ROW 20                                       /* the scales: 20 px, the card 50, from y 24 */
 #define SC_CARD 50
 static struct { uint32_t top, side, list, foot; } scv;
-static const char *const SC_FAMILY_WORD[SCALE_FAMILIES + 2u] = {"All", "Western", "EDO", "Just", "Harmonic", "Historical",
-                                                                 "Regional", "Non-octave", "Maqam", "Faves"};
+static const char *const SC_FAMILY_WORD[SCALE_FAM_USER + 1u] = {"All", "Western", "EDO", "Just", "Harmonic", "Historical",
+                                                                 "Regional", "Non-octave", "Maqam", "Faves", "User"};
 
 static void scales_back(void)                           /* OCT- / OCT+: SCL's list */
 {
@@ -24,7 +24,7 @@ static void scales_back(void)                           /* OCT- / OCT+: SCL's li
 static void scales_name(char *b, uint32_t id, uint32_t n)   /* "53-tone equal division" -> "53-tone equal" */
 {
     uint32_t l;
-    str_cpy(b, SCALE_TITLE[id], n);
+    str_cpy(b, scale_pick_title(id), n);
     l = str_len(b);
     if (l > 9u && str_eq(b + l - 9u, " division"))
         b[l - 9u] = 0;
@@ -32,11 +32,13 @@ static void scales_name(char *b, uint32_t id, uint32_t n)   /* "53-tone equal di
 
 static void scales_draw(void)
 {
-    uint32_t scale = (uint32_t)clamp(TSEL->p[P_SCALE], 0, SCALE_TOTAL - 1u), total = scale_picker_count();
+    uint32_t scale = scale_picker_selected(), total = scale_picker_count();
     uint32_t rank = scale_picker_rank(), f, r, sig, fav = 0;
     char b[32];
     for (r = 0; r < SCALE_TOTAL; r++)
         fav = (fav ^ (uint32_t)scale_favorite(r)) * 16777619u + r;
+    for (r = 0; r < TUNE_SLOTS; r++)                    /* (and the tunings the editor sent) */
+        fav = (fav ^ tune_micro[r].count ^ (uint32_t)tune_slot[r].name[0] << 8) * 16777619u + r;
 #if MELODEE_LOOK
     mo_scales(scale, total, rank, fav);
     return;
@@ -64,7 +66,7 @@ static void scales_draw(void)
     if (sig != scv.side) {                              /* the families */
         scv.side = sig;
         cv_begin(SC_SIDE_W + 2, 196, T_BG);
-        for (f = 0; f < SCALE_FAMILIES + 2u; f++) {
+        for (f = 0; f <= SCALE_FAM_USER; f++) {
             int on = f == ui.scale_family;
             int32_t fy = 6 + (int32_t)f * 17;
             uint16_t bg = on ? T_LIFT : T_BG;
@@ -89,7 +91,8 @@ static void scales_draw(void)
         lcd_fill(SC_SIDE_W + 2, 24, 234 - SC_SIDE_W - 2, 192, T_BG);
         if (!total || rank >= total) {
             cv_begin(150, 20, T_BG);
-            cv_text_c(75, 3, &AF_S, !total ? (ui.scale_family == SCALE_FAMILIES + 1u ? "No favourites" : "No scales") :
+            cv_text_c(75, 3, &AF_S, !total ? (ui.scale_family == SCALE_FAMILIES + 1u ? "No favourites" :
+                                              ui.scale_family == SCALE_FAM_USER ? "No tunings sent" : "No scales") :
                       "Not in this family", T_MID, T_BG);
             cv_blit(SC_SIDE_W + 6, 100);
         }
@@ -105,11 +108,11 @@ static void scales_draw(void)
                 cv_begin(240 - SC_SIDE_W - 6, SC_CARD, T_BG);
                 cv_rrect(2, 2, 240 - SC_SIDE_W - 14, SC_CARD - 4, 8, T_THEME, T_BG);
                 cv_rrect(3, 3, 240 - SC_SIDE_W - 16, SC_CARD - 6, 7, T_LIFT, T_THEME);
-                cv_free_text(12, 8, &AF_M, b, T_TEXT, T_LIFT, scale_favorite(id) ? 104 : 124);
-                if (scale_favorite(id))
+                cv_free_text(12, 8, &AF_M, b, T_TEXT, T_LIFT, scale_pick_fav(id) ? 104 : 124);
+                if (scale_pick_fav(id))
                     cv_icon_on(240 - SC_SIDE_W - 32, 10, 12, ICON_X_STAR, T_THEME, T_LIFT);
-                fmt_int(dt, SCALE_DEGREES[id]);
-                str_cpy(dt + str_len(dt), SCALE_FAMILY[id] == 6u ? " NOTES \xB7 NON-OCTAVE" : " NOTES \xB7 OCTAVE", 20);
+                fmt_int(dt, (int32_t)scale_pick_degrees(id));
+                str_cpy(dt + str_len(dt), scale_pick_nonoct(id) ? " NOTES \xB7 NON-OCTAVE" : " NOTES \xB7 OCTAVE", 20);
                 cv_text_on(12, 30, &AF_X, dt, T_THEME, T_LIFT);
                 cv_blit(SC_SIDE_W + 2, 80);
             } else {
@@ -125,11 +128,11 @@ static void scales_draw(void)
             cv_blit(236, 26);
         }
     }
-    sig = (uint32_t)scale_favorite(scale) + ux.gen * 977u + ux.pal * 31u + 3u;
+    sig = (uint32_t)scale_pick_fav(scale) + ux.gen * 977u + ux.pal * 31u + 3u;
     if (sig != scv.foot) {                              /* the favourite's star, the keys */
         scv.foot = sig;
         cv_begin(240, 22, T_BG);
-        cv_icon_on(10, 5, 12, ICON_X_STAR, scale_favorite(scale) ? T_THEME : T_DIM, T_BG);
+        cv_icon_on(10, 5, 12, ICON_X_STAR, scale_pick_fav(scale) ? T_THEME : T_DIM, T_BG);
         cv_rrect(150, 1, 40, 20, 5, T_SURF, T_BG);
         cv_icon_mid(170 - 6, 11, 12, ICON_X_UNDO, T_MID, T_SURF);
         cv_rrect(194, 1, 40, 20, 5, T_SURF, T_BG);

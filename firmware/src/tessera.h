@@ -345,6 +345,7 @@ enum {
     TX_EN_DEPTH,                                    /* (0x26D: ENERGY's DEPTH, any track's) */
     TX_FM_DEVELOP,                                  /* (0x26E: FORM's DEVELOP, a generator track's) */
     TX_MIDI_TR,                                     /* (0x26F: MIDI OUT's TRANSPOSE, any track's) */
+    TX_TUNE,                                        /* (0x270: the user tuning, the project's: tune.h tune_sel) */
     TX_COUNT
 };
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */

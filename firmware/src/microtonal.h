@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 #pragma once
 #include "scales.h"
+#include "tune.h"
 
 /* Microtonal notes use the existing 7-bit note identity as a scale-degree address:
  * 60 is degree zero at C4 + ROOT + TRN. This keeps independent releases, chords,
@@ -9,6 +10,7 @@
 static const micro_scale_t *micro_scale(const track_t *t)
 {
     int32_t s = t->p[P_SCALE];
+    if (tune_scale()) return tune_scale();          /* (TUNE: a user tuning stands for SCL, tune.h) */
     return s >= (int32_t)SCALE_LEGACY && s < (int32_t)SCALE_TOTAL ? &MICRO_SCALE[s - SCALE_LEGACY] : 0;
 }
 static int micro_active(const track_t *t)

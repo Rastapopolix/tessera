@@ -40,6 +40,8 @@ static const char *const TX_N_ANORDER[] = {"PLAYED", "REVERSE", "SHUFFLE"};   /*
 static const char *const TX_N_ANLEN[] = {"SHORT", "MID", "LONG"};
 static const char *const TX_N_SDKEEP[] = {"FREE", "RHYTHM", "PITCH"};   /* (TESS_SD_*) */
 static const char *const TX_N_SVHOW[] = {"DRIFT", "ADORN", "SERIAL"};   /* (TESS_SV_*) */
+static const char *const TX_N_TUNE[] = {"OFF", "USR1", "USR2", "USR3", "USR4"};   /* (tune.h: the slots' own names
+                                                                                   * where shown, params.c) */
 static const char *const TX_N_ACCMODE[] = {"WRAP", "PING", "CLAMP"};    /* (TESS_ACC_*) */
 static const char *const TX_N_QEVERY[] = {"/1", "/2", "/3", "/4", "/6", "/8", "/16"};   /* (every n steps, as TX_N_DIV) */
 
@@ -154,6 +156,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_EN_DEPTH] = PD("DEPTH", F_PCT, 0, 100, 100),
     [TX_FM_DEVELOP] = PD("DEVLP", F_PCT, 0, 100, 0),
     [TX_MIDI_TR] = {"TRANS", F_INT, -TESS_MIDI_TR, TESS_MIDI_TR, 0, 0, "st"},
+    [TX_TUNE] = PE("TUNE", TX_N_TUNE, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -579,6 +582,10 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                          "plays them too high or too low. The track's own sound is unchanged; a note "
                                          "moved past MIDI's range is not sent. 0: as played. Saved with the project. "
                                          "OCT+ held on GLO > MIDI OUT, a knob for each track."),
+    XP_(TX_TUNE, "TUNING", "A tuning of your own for the whole project, as the scale is: USR1 to USR4 play the "
+                           "Scala (.scl) files sent from the web editor (PROJECTS, Tunings), saved with the project. The "
+                           "keys, the generators, QNT and chords play its degrees; ROOT and TRN move it. OFF, or an "
+                           "empty slot, plays SCL's scale. SCL > SCALES, the USER family."),
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };

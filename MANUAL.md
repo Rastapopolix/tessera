@@ -680,6 +680,29 @@ A **CHORD** track plays a progression; with **QNT CHRD** the other tracks follow
   SNAP.
 - **CH PROG** is a mod destination, so a slow source can change progressions.
 
+### Your own tunings (Scala files)
+
+Besides the 77 built-in scales, the FM-1 plays up to four tunings of your own, **USR1** to **USR4**, made from
+[Scala](https://www.huygens-fokker.org/scala/) `.scl` files (the format of the Scala archive's thousands of scales,
+and of most microtonal tools).
+
+1. Connect the FM-1 to the web editor, open **Projects**, and under **Tunings (Scala)** press **Load .scl** on a
+   slot. The editor reads the file and sends it; the slot takes the file's name (7 characters) and its description.
+2. On the device: **SCL > SCALES**, KNOB 1 to the **USER** family (after the favourites), KNOB 2 to the tuning. Or
+   press **Play** in the editor. It is listed in **ALL** too, after the built-in scales.
+3. Play with **QNT** on (any mode but OFF), as for the built-in microtonal scales.
+
+- The tuning is the project's, like SCL: every melodic track plays it (a drum track does not). The keys, MIDI input,
+  the generators, QNT, chords and recordings play its degrees; **ROOT** is degree 0 and **TRN** moves it.
+- Up to **64 degrees** per period. The last pitch of the file is the period, so non-octave tunings (a tritave, a
+  stretched octave) work, up to four octaves. Degrees below 1/1 or past the period are folded into it, sorted, and a
+  repeated one dropped; the editor says when it did.
+- Picking a built-in scale, or turning **SCL** itself, goes back to it (TUNING OFF). The **USR** slot stays.
+- The tunings are **saved with the project** (SAVE or autosave), so a project plays the same on any FM-1. Loading a
+  project brings its own tunings; a project saved without any loads with all four slots empty.
+- A `.kbm` keyboard map is not used: ROOT places degree 0, and the layouts (WHITE, ALL, MPC) place the degrees on
+  the keys as for the built-in scales. MIDI OUT sends no tuning messages, as for the built-in microtonal scales.
+
 ---
 
 ## MODS: the modulation cords

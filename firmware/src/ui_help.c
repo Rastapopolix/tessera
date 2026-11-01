@@ -44,7 +44,8 @@ static const help_t HELP_PAGE[HP_COUNT] = {
     H_(HP_TIMING_STEP, "TIMING", "A generator's: on a STEP track each step has its own ratchet and chance (OCT+ on a "
                                  "note: its sheet). KNOB 3, SHAPE, shapes the steps' ratchets here too."),
     H_(HP_SCALE_FAMILY, "SCALE FAMILY", "Narrows the scales KNOB 2 picks from: all of them, Western, EDO, just, "
-                                        "harmonic, historical, regional, non-octave, maqam, or the favourites."),
+                                        "harmonic, historical, regional, non-octave, maqam, the favourites, or "
+                                        "USER: the tunings sent from the web editor (TUNING, the project's)."),
     H_(HP_SCALE_FAV, "SCALE FAVOURITE", "Right marks the track's scale a favourite, left unmarks it; SCALES lists the "
                                         "favourites together."),
     H_(HP_SLOT_PROJECT, "PROJECT SLOT", "Which project slot, A to D, then the template and New song. OCT+ opens its "
