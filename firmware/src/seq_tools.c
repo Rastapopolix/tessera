@@ -1,15 +1,16 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* SEQ tools (Tessera 2.1): the Pattern sheet's DOUBLE, HALF and EUCLID (OCT+ held on NOTES, PATTERN, the drum grid;
+/* SEQ tools (Tessera 2.1): the Pattern sheet's DOUBLE, HALF, EUCLID and SNAP TO SCALE (OCT+ held on NOTES, PATTERN, the drum grid;
  * ui_popup.c SHEET_PATTERN). The selected track's pattern playing. DOUBLE copies its LEN steps, recorded notes and
  * motion after themselves (motion.c pattern_double, after upstream Melodee 1.4.5's pattern dialog), HALF halves LEN
  * (what is past it stays, hidden). EUCLID spreads HITS over LEN as evenly as they go, turned ROTATE steps on, and
  * writes them into one lane (a DRUM track: the grid's lane) or one note row (the note at the cursor; none: the
  * pattern's first note; none: ROOT in octave 4): a hit adds the note to its step, a step without one loses it, the
- * other lanes and notes stay. Each is one level EDIT held undoes (a doubled pattern with recorded notes: as a precise
- * clear, note_tools.c). Included by ui.c */
+ * other lanes and notes stay. SNAP TO SCALE moves a melodic track's notes onto its scale, once. Each is one level EDIT
+ * held undoes (a doubled or snapped pattern with recorded notes: as a precise clear, note_tools.c). Included by ui.c */
 static struct {
     uint8_t hits, rot;                                  /* EUCLID's, as last set (not saved); hits > LEN: LEN */
-} seqt = {4, 0};
+    uint16_t snap_pcs;                                  /* SNAP TO SCALE's pitch classes, for one snap */
+} seqt = {4, 0, 0};
 
 static void seqt_load(track_t *t, void (*edit)(track_t *t))
 {
@@ -185,4 +186,103 @@ static void seqt_rot_turn(int32_t s)
     int32_t len = (int32_t)step_pattern_len(TSEL);
     seqt.rot = (uint8_t)((((int32_t)(seqt.rot % (uint32_t)len) + s) % len + len) % len);
     ui.force = 1;
+}
+
+/* ----------------------------------------------------- SNAP TO SCALE --- */
+/* a track whose keys play notes: not a kit's or slices' (the sheet has no row there; seq.c kb_map) */
+static int seqt_melodic(const track_t *t)
+{
+    const engine_t *e = ENGINES[eng_idx(t->eng_req)];
+    return !drum_track(t) && !(e->keys && e->keys(t, 0) >= 0);
+}
+/* SCL from ROOT as pitch classes; QNT CHRD with a CHORD track playing: its chord's */
+static uint32_t seqt_snap_scale(const track_t *t)
+{
+    uint32_t mask = scale_mask(t), pcs = 0, i;
+    if (t->p[P_QUANT] == Q_CHRD && tessera_chord_pcs())
+        return tessera_chord_pcs();
+    for (i = 0; i < 12u; i++)
+        if ((mask >> i) & 1u)
+            pcs |= 1u << (((int32_t)i + t->p[P_ROOT] + 120) % 12);
+    return pcs;
+}
+/* A note as written is the note as it sounds (TRN moved it on its way in, seq.c kb_map; seq_step adds nothing), so it
+ * snaps as it is: to the nearest note, a tie going down. The live QNT rounds down (tessera_snap_note), but a written
+ * note moved once should move as little as it can */
+static uint32_t seqt_snap_note(uint32_t note) { return tessera_chord_snap(seqt.snap_pcs, (int32_t)note); }
+/* the notes of the pattern, all of it (what lies hidden past LEN comes back on the scale); *off: those it would move */
+static uint32_t seqt_snap_scan(const track_t *t, uint32_t *off)
+{
+    uint32_t all = 0, i, k;
+    *off = 0;
+    for (i = 0; i < NSTEP; i++)
+        if (!(t->step[i].flags & SF_RECORDED) && step_on(&t->step[i]))
+            for (k = 0; k < t->step[i].n && k < 4u; k++, all++)
+                *off += seqt_snap_note(t->step[i].note[k]) != t->step[i].note[k];
+    for (i = recording_head[recording_owner(t)]; i < RECORD_MAX; i = recording_next[i], all++)
+        *off += seqt_snap_note(recording[i].note) != recording[i].note;
+    return all;
+}
+static void seqt_snap_do(track_t *t)
+{
+    uint32_t len = step_pattern_len(t), i, j, k, n;
+    for (i = 0; i < NSTEP; i++) {
+        step_t *s = &t->step[i];
+        if (s->time != ST_NOTE)
+            continue;
+        for (k = n = 0; k < s->n && k < 4u; k++) {      /* (two notes of a chord on one: one note) */
+            uint8_t x = (uint8_t)seqt_snap_note(s->note[k]);
+            for (j = 0; j < n && s->note[j] != x; j++)
+                ;
+            if (j == n)
+                s->note[n++] = x;
+        }
+        s->n = (uint8_t)n;
+    }
+    for (i = recording_head[recording_owner(t)]; i < RECORD_MAX; i = recording_next[i])
+        recording[i].note = (uint8_t)seqt_snap_note(recording[i].note);
+    recording_reindex();
+    for (i = 0; i < len; i++)                           /* (a recorded step shows its notes) */
+        if (t->step[i].flags & SF_RECORDED)
+            notes_rebuild(t, i);
+}
+static void seqt_snap(void)
+{
+    track_t *t = TSEL;
+    uint32_t off, all;
+    char b[8];
+    ui.note_copy = ui.note_move = 0;
+    if (chain_busy() || live_rec_sel()) {
+        ui_message("STOP TO EDIT");
+        return;
+    }
+    seqt.snap_pcs = (uint16_t)seqt_snap_scale(t);
+    all = seqt_snap_scan(t, &off);
+    if (!all) {
+        ui_message("NOTHING TO SNAP");
+        return;
+    }
+    if (micro_active(t) || !off) {                      /* (a microtonal scale's notes are its degrees: microtonal.h) */
+        ui_message("ALL IN SCALE");
+        return;
+    }
+    if (recording_head[recording_owner(t)] < RECORD_MAX) {   /* (recorded notes: undone as a precise clear) */
+        fm1_irq_off();
+        recording_stop(t);                              /* (what sounds lets go under the note it started as) */
+        if (!note_transaction_begin_track(t)) {
+            fm1_irq_on();
+            return;
+        }
+        motion_snapshot_track(t, &note_transaction.motion);
+        note_transaction.clear = 1;
+        seqt_snap_do(t);
+        note_transaction_end();
+        fm1_irq_on();
+        undo_seal();
+        ui.note_pick = 0;
+    } else {
+        seqt_load(t, seqt_snap_do);
+    }
+    fmt_int(b, (int32_t)off);
+    ui_say("SNAPPED ", b);
 }

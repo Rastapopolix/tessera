@@ -205,7 +205,8 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
         "How the keys meet the scale: OFF plays every key, SNAP moves a note into the scale, WHITE puts the "
         "scale on the white keys, ALL and MPC lay it out over the keys or MPC pads; CHRD snaps the keys, MIDI and "
         "the generators to the nearest note of the chord a CHORD track plays (no CHORD track: as SNAP). Not OFF: "
-        "KNOB 2 on NOTES moves a note by the scale's notes (CHRD: the chord's)."),
+        "KNOB 2 on NOTES moves a note by the scale's notes (CHRD: the chord's). Notes already written stay: Snap to "
+        "scale in the pattern's sheet (OCT+ held) moves them onto the scale, once."),
     T_(P_TRANS, "TRANSPOSE", "Moves the track's notes up or down by semitones."),
     T_(P_SLEN, "PATTERN LENGTH", "How many steps the track's pattern has."),
     T_(P_SDIV, "PATTERN DIVISION", "How long one step is."),

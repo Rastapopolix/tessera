@@ -351,8 +351,117 @@ static int seq_tools(void)
     bad += check("PATTERN's sheet: Double", t->p[P_SLEN] == 64 && msg_is("PATTERN DOUBLED"));
     return bad;
 }
+/* SNAP TO SCALE (seq_tools.c): every written note to the nearest of the scale, a tie going down, once; QNT CHRD: the
+ * chord; a microtonal scale's notes already its degrees; one level EDIT held undoes; a kit has no row */
+static int snap_scale_id(const char *name)
+{
+    int i = 0;
+    while (strcmp(N_SCALE[i], name)) i++;
+    return i;
+}
+static int snap_in_key(const track_t *t, int32_t n) { return (scale_mask(t) >> ((n - t->p[P_ROOT] + 120) % 12)) & 1u; }
+static int snap_to_scale(void)
+{
+    int bad = 0, wrong = 0; ui_power_on(); track_t *t = TSEL; stop_transport();
+    /* every note of the range, a pentatonic from D: on the scale, no further than its nearest, a tie down */
+    t->p[P_SCALE] = (int16_t)snap_scale_id("PEN"); t->p[P_ROOT] = 2; t->p[P_QUANT] = Q_OFF;
+    seqt.snap_pcs = (uint16_t)seqt_snap_scale(t);
+    for (int32_t n = 0; n < 128; n++) {
+        int32_t d = 0, got = (int32_t)seqt_snap_note((uint32_t)n);
+        while (!((n - d >= 0 && snap_in_key(t, n - d)) || (n + d <= 127 && snap_in_key(t, n + d)))) d++;
+        if (got != (n - d >= 0 && snap_in_key(t, n - d) ? n - d : n + d)) wrong++;
+    }
+    bad += check("SNAP: all 128 notes to the nearest of the scale, a tie down, ROOT counted", !wrong);
+
+    /* D major, QNT OFF, TRN +5 (which STEP playback does not add) */
+    track_defaults_steps(t); t->p[P_SLEN] = 8;
+    t->p[P_SCALE] = (int16_t)snap_scale_id("MAJ"); t->p[P_TRANS] = 5;
+    seqt_snap();
+    bad += check("  an empty pattern: NOTHING TO SNAP", msg_is("NOTHING TO SNAP"));
+    t->step[0] = (step_t){{62}, 1, ST_NOTE, 0, 0, 100};                 /* D4: in */
+    t->step[1] = (step_t){{63}, 1, ST_NOTE, 0, 0, 100};                 /* D#4: E or D: down */
+    t->step[2] = (step_t){{60, 61, 67}, 3, ST_NOTE, 0, 0, 100};         /* C4: B3 or C#4: down; two in */
+    t->step[3] = (step_t){{63, 62}, 2, ST_NOTE, 0, 0, 100};             /* both on D4: one note */
+    t->step[4] = (step_t){{0}, 0, ST_TIE};
+    t->step[12] = (step_t){{68}, 1, ST_NOTE, 0, 0, 100};                /* (hidden, past LEN) */
+    seqt_snap();
+    bad += check("  written notes, the chord's each, hidden ones; in-scale ones untouched; TRN not counted",
+        t->step[0].note[0] == 62 && t->step[1].note[0] == 62 && t->step[2].n == 3 && t->step[2].note[0] == 59 &&
+        t->step[2].note[1] == 61 && t->step[2].note[2] == 67 && t->step[12].note[0] == 67);
+    bad += check("  two of a chord on one: one note; a tie stays a tie", t->step[3].n == 1 && t->step[3].note[0] == 62 &&
+        t->step[4].time == ST_TIE);
+    bad += check("  the toast counts the moved notes", msg_is("SNAPPED 4"));
+    seqt_snap();
+    bad += check("  again: ALL IN SCALE", msg_is("ALL IN SCALE"));
+    undo_swap();
+    bad += check("  EDIT held: the notes as written", t->step[1].note[0] == 63 && t->step[2].note[0] == 60 &&
+        t->step[3].n == 2 && t->step[3].note[0] == 63 && t->step[12].note[0] == 68);
+
+    /* recorded notes: their events and the step that shows them; undone whole */
+    ui_power_on(); t = TSEL; stop_transport(); track_defaults_steps(t); t->p[P_SLEN] = 8;
+    t->p[P_SCALE] = (int16_t)snap_scale_id("MAJ"); t->p[P_ROOT] = 2; t->p[P_QUANT] = Q_OFF;
+    t->step[1] = (step_t){{65}, 1, ST_NOTE, 0, 0, 100};
+    rec_put(t, 3, 63, 0, 3);
+    rec_put(t, 4, 62, 0, 4);
+    rec_put(t, 9, 68, 0, 9);                                        /* (hidden) */
+    seqt_snap();
+    bad += check("  recorded: moved, shown on their steps, hidden ones too; the written one too", rec_has(t, 62, 3) &&
+        !rec_has(t, 63, 3) && rec_has(t, 62, 4) && rec_has(t, 67, 9) && t->step[3].note[0] == 62 &&
+        t->step[1].note[0] == 64 && msg_is("SNAPPED 3"));
+    undo_swap();
+    bad += check("  EDIT held: all back", rec_has(t, 63, 3) && rec_has(t, 68, 9) && t->step[3].note[0] == 63 &&
+        t->step[1].note[0] == 65 && msg_is("UNDO"));
+    seq_start(); events_block(32);
+    uint32_t period = div_samples(t->p[P_SDIV]);
+    events_block(period); events_block(period); events_block(period); events_block(period / 2u);
+    seqt_snap();
+    bad += check("  playing: a sounding recorded note lets go, none left held under its old pitch",
+        rec_has(t, 62, 3) && !recording_owns(t, 63) && msg_is("SNAPPED 3"));
+    seq_stop();
+
+    /* QNT CHRD: the chord playing */
+    ui_power_on(); t = TSEL; stop_transport(); track_defaults_steps(t); t->p[P_SLEN] = 8;
+    uint32_t other = (trk_index(t) + 1u) % TESSERA_TRACKS;
+    tessera.mode[other] = TESS_ENG_CHORD; tessera.chord_pc[other] = 0x91u;   /* C E G */
+    t->p[P_QUANT] = Q_CHRD;
+    t->step[0] = (step_t){{62}, 1, ST_NOTE, 0, 0, 100};
+    t->step[1] = (step_t){{66}, 1, ST_NOTE, 0, 0, 100};
+    t->step[2] = (step_t){{64}, 1, ST_NOTE, 0, 0, 100};
+    seqt_snap();
+    bad += check("  QNT CHRD: to the chord's nearest, its own notes untouched", t->step[0].note[0] == 60 &&
+        t->step[1].note[0] == 67 && t->step[2].note[0] == 64);
+    tessera.mode[other] = TESS_ENG_OFF; tessera.chord_pc[other] = 0;
+
+    /* microtonal: with QNT on a note is a degree; QNT OFF: semitones, to those near the scale */
+    track_defaults_steps(t);
+    t->p[P_SCALE] = (int16_t)snap_scale_id("IN"); t->p[P_ROOT] = 0; t->p[P_QUANT] = Q_SNAP;
+    t->step[0] = (step_t){{61}, 1, ST_NOTE, 0, 0, 100};
+    t->step[1] = (step_t){{66}, 1, ST_NOTE, 0, 0, 100};
+    seqt_snap();
+    bad += check("  a microtonal scale, QNT on: its degrees stay", t->step[0].note[0] == 61 && t->step[1].note[0] == 66 &&
+        msg_is("ALL IN SCALE"));
+    t->p[P_QUANT] = Q_OFF;
+    seqt_snap();
+    bad += check("  QNT OFF: on the semitones near it", snap_in_key(t, t->step[0].note[0]) && snap_in_key(t, t->step[1].note[0]));
+
+    /* the sheet: a row on a melodic track, none on a kit */
+    t->p[P_SCALE] = (int16_t)snap_scale_id("MAJ"); t->step[0].note[0] = 61; t->step[0].n = 1;
+    t->p[P_ROOT] = 0; t->step[1].note[0] = 60;
+    go_title("PATTERN");
+    sheet_do("Snap to scale");
+    bad += check("PATTERN's sheet: Snap to scale", t->step[0].note[0] == 60 && msg_is("SNAPPED 1"));
+    pop_close();
+    ui_power_on(); t = TSEL; set_engine(ENGI_DRUM); stop_transport();
+    go_title("PATTERN");
+    press(B_OCTUP);
+    int row = 0;
+    for (uint32_t i = 0; i < pop.n; i++) row |= str_eq(pop.rows[i].label, "Snap to scale");
+    bad += check("  a kit's sheet has no such row, and its other rows", pop.on == POP_SHEET && !row && pop.n == NELEM(SHEET_PATTERN) - 1u);
+    pop_close();
+    return bad;
+}
 int main(void)
 {
-    int bad = div_change_in_time()+swing_change_in_time()+banks_and_chords()+independent_switches()+all_banks_persist()+panel_banks()+arranged_chords()+replaced_motion()+migrated_bank_rename()+seq_tools();
+    int bad = div_change_in_time()+swing_change_in_time()+banks_and_chords()+independent_switches()+all_banks_persist()+panel_banks()+arranged_chords()+replaced_motion()+migrated_bank_rename()+seq_tools()+snap_to_scale();
     printf("%s\n",bad ? "PATTERN TEST FAILED" : "pattern bank tests passed"); return !!bad;
 }
