@@ -2192,8 +2192,9 @@ static void mono_page(void)
 
 /* ---- the chrome of the screens still drawn whole by their own code (lists, MIXER, MODS, the browser, ...) ---- */
 /* the header (draw_head; 18 px = 9 cells): the page's chip inverted (ERASING, a message or a layer's name in its
- * place), the octave shift, then at the right REC, PLAY or STOP and the tempo; its line on row 8 */
-static void mo_dhead(const char *chip, const char *msg, int low)
+ * place), the octave shift, then at the right the battery (bat: ui_draw.c batt_head), REC, PLAY or STOP and the tempo;
+ * its line on row 8 */
+static void mo_dhead(const char *chip, const char *msg, int32_t bat)
 {
     char b[24], t[24];
     int32_t x = 119;
@@ -2212,9 +2213,18 @@ static void mo_dhead(const char *chip, const char *msg, int low)
         if (((song.rec & ~song.rec_wait) >> song.sel) & 1u) mo_disc(x + 2, 4, 2, MO_INK);
         else mo_circ(x + 2, 4, 2, MO_INK);
     }
-    if (low) {                                          /* the battery, only when it runs low */
+    if (bat >= 0) {                                     /* the battery: 0..3 bars of 5 cells, a bolt before it on
+                                                         * external power */
+        static const uint8_t BARS[4] = {0, 2, 3, 5};
         x -= 10;
         mo_box(x, 2, 7, 5, MO_INK), mo_vl(x + 7, 3, 3, MO_INK);
+        if (BARS[bat & 3])
+            mo_fill(x + 1, 3, BARS[bat & 3], 3, MO_INK);
+        if (bat >= 4) {
+            x -= 5;
+            mo_fill(x + 2, 2, 1, 1, MO_INK), mo_fill(x + 1, 3, 1, 1, MO_INK), mo_hl(x, 4, 3, MO_INK);
+            mo_fill(x + 1, 5, 1, 1, MO_INK), mo_fill(x, 6, 1, 1, MO_INK);
+        }
     }
     if (!msg && !ui.home && !ui.menu && !new_on() && !sec_map_on() && !designer_on()) {   /* a page: its place (4/9) */
         mo_place(t);
