@@ -106,6 +106,18 @@ static int en_layer_on(void)
     return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->graph == GR_ENERGY &&
            ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
+/* the MIDI OUT page with OCT+ held: KNOB k is track k's TRANSPOSE (midi_out.c) */
+static int midi_layer_on(void)
+{
+    return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_MIDICH &&
+           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+}
+/* a TRANSPOSE as its knob and the MIDI OUT picture say it: "+12", "0", "-24" */
+static void midi_tr_text(char *b, int32_t v)
+{
+    if (v > 0) b[0] = '+';
+    fmt_int(b + (v > 0), v);
+}
 /* a generator track's EVOLVE page with OCT+ held: KNOB 1 is GRAVITY (tessera.c tessera_ev_layer_knob) */
 static int ev_layer_on(void)
 {
@@ -120,11 +132,11 @@ static int fm_layer_on(void)
            tessera.mode[song.sel] != TESS_ENG_OFF && ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
 /* a generator's OCT+ layer is on (QUAD's, CONSTELLATION's, CHORD's, GRIDS', ANSWER's, the SOURCE one, STEP EVOLVE's,
- * EVOLVE's, FORM's, ENERGY's): no octave, no sheet */
+ * EVOLVE's, FORM's, ENERGY's; MIDI OUT's TRANSPOSE): no octave, no sheet */
 static int gen_layer_on(void)
 {
     return quad_cols_on() || cs_layer_on() || ch_layer_on() || gr_layer_on() || an_layer_on() || sd_layer_on() ||
-           sv_layer_on() || ev_layer_on() || fm_layer_on() || en_layer_on();
+           sv_layer_on() || ev_layer_on() || fm_layer_on() || en_layer_on() || midi_layer_on();
 }
 /* QUAD's LINK as its card shows it: OFF, or "T" and the linked tracks ("T24") */
 static void quad_link_text(uint32_t m, char *b)
@@ -1184,6 +1196,11 @@ static void graph_midich(void)
             fmt_int(n, (int32_t)ch + 1);
             str_cpy(b + str_len(b), n, 4);
             if (!tessera.midi_ch[k]) str_cpy(b + str_len(b), drum_track(&trk[k]) && settings_drumch ? "  (DRUM)" : "  (ROUT)", 10);
+            if (k < TESSERA_TRACKS && tessera.midi_tr[k]) {   /* (TRANSPOSE) */
+                str_cpy(b + str_len(b), "  ", 3);
+                midi_tr_text(b + str_len(b), tessera.midi_tr[k]);
+                str_cpy(b + str_len(b), " ST", 4);
+            }
         }
         cv_text(PANEL_X0 + 32, y + 3, &AF_X, b, ch == MIDI_OUT_NONE ? T_DIM : T_TEXT);
     }
@@ -1904,7 +1921,9 @@ static uint32_t graph_sig(int play)
     if (pg->graph == GR_MIDICH)                      /* (the channels, and what AUTO follows) */
         h ^= ((uint32_t)tessera.midi_ch[0] | (uint32_t)tessera.midi_ch[1] << 5 | (uint32_t)tessera.midi_ch[2] << 10 |
               (uint32_t)tessera.midi_ch[3] << 15 | (uint32_t)song.g[G_ROUTE] << 20 | (uint32_t)settings_drumch << 23 |
-              (uint32_t)settings_midi_out << 28) * 2246822519u;
+              (uint32_t)settings_midi_out << 28) * 2246822519u ^
+             ((uint32_t)(uint8_t)tessera.midi_tr[0] | (uint32_t)(uint8_t)tessera.midi_tr[1] << 8 |
+              (uint32_t)(uint8_t)tessera.midi_tr[2] << 16 | (uint32_t)(uint8_t)tessera.midi_tr[3] << 24) * 3266489917u;
     if (pg->graph == GR_ENERGY)                      /* (it moves: the tide, a rest; the settings) */
         h ^= ((uint32_t)tessera.en_arc | (uint32_t)tessera.en_rests << 8 | (uint32_t)song.playing << 16) * 2246822519u ^
              (uint32_t)(energy_now() >> 9) * 31u ^ (energy.rest_left / EN_BPS) * 7919u ^ en_frac(energy.ph, energy.per, 110u) * 104729u;

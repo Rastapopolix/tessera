@@ -175,6 +175,9 @@ typedef struct {
     /* MIDI OUT (midi_out.c; GLO > MIDI OUT): each track's channel. 0 AUTO (ROUT, a drum track the DRUM channel, as
      * before), 1..16 that channel, TESS_MIDI_OFF none; not in the packed block: the record's MIDI part */
     uint8_t          midi_ch[TESSERA_TRACKS];
+    /* MIDI OUT's TRANSPOSE (OCT+ held on GLO > MIDI OUT): each track's notes go out this many semitones up (down when
+     * negative), the sound itself unchanged; 0 as before. Not in the packed block: the record's TRANSP part */
+    int8_t           midi_tr[TESSERA_TRACKS];
     /* KEY LINK (ui.c scale_share; SCL's sheet), the project's: 1 one ROOT for every melodic track, shared as SCL and
      * QNT always are; 0 each track its own ROOT (as before). On in a new project; a record without its part: off */
     uint8_t          key_link;
@@ -341,6 +344,7 @@ enum {
     TX_EN_LEVEL,                                    /* (0x26C: ENERGY's LEVEL, the project's: one value, whichever track) */
     TX_EN_DEPTH,                                    /* (0x26D: ENERGY's DEPTH, any track's) */
     TX_FM_DEVELOP,                                  /* (0x26E: FORM's DEVELOP, a generator track's) */
+    TX_MIDI_TR,                                     /* (0x26F: MIDI OUT's TRANSPOSE, any track's) */
     TX_COUNT
 };
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */
@@ -353,6 +357,7 @@ void tessera_sd_play(void);                         /* seq.c, PLAY: STEP as seed
 void tessera_sd_layer_knob(uint32_t k, int32_t s);  /* TURING / EUCLID / MARKOV / MORPH on GEN, OCT+ held: KNOB 1
                                                      * SOURCE, 2 KEEP, 3 GRAVITY */
 #define TESS_MIDI_OFF 17u                           /* TX_MIDI_CH: 0 AUTO, 1..16, 17 OFF */
+#define TESS_MIDI_TR 48                             /* TX_MIDI_TR: -48..48 semitones, four octaves either way */
 int32_t tessera_param_get(uint32_t tr, uint32_t x);           /* the value its page shows */
 void tessera_param_poke(uint32_t tr, uint32_t x, int32_t v); /* written as it is (cord.c, around a step) */
 void tessera_param_set(uint32_t tr, uint32_t x, int32_t v);  /* clamped, with what its knob does besides (a MODE

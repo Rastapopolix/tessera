@@ -1487,8 +1487,8 @@ static void mo_pic_energy(void)
         mo_fill(2, 54, len < 2 ? 2 : len > 116 ? 116 : len, 3, MO_INK);
     }
 }
-/* MIDI OUT: a row a track: its number, the channel its notes go out on (AUTO: ROUT's or DRUM's), and the menu's MIDI OUT
- * when it keeps the steps in (KEYS) or sends nothing (OFF) */
+/* MIDI OUT: a row a track: its number, the channel its notes go out on (AUTO: ROUT's or DRUM's), its TRANSPOSE when not
+ * 0, and the menu's MIDI OUT when it keeps the steps in (KEYS) or sends nothing (OFF) */
 static void mo_pic_midich(void)
 {
     for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
@@ -1501,6 +1501,10 @@ static void mo_pic_midich(void)
             str_cpy(b, "CH ", sizeof b);
             fmt_int(b + 3, (int32_t)ch + 1);
             if (!tessera.midi_ch[k]) str_cpy(b + str_len(b), drum_track(&trk[k]) && settings_drumch ? " DRUM" : " ROUT", 6);
+            if (tessera.midi_tr[k]) {                   /* (TRANSPOSE, in semitones) */
+                str_cpy(b + str_len(b), " ", 2);
+                midi_tr_text(b + str_len(b), tessera.midi_tr[k]);
+            }
         }
         mo_text(b, 18, y, ch == MIDI_OUT_NONE ? mo_tdim(k) : MO_TRK(k));
     }

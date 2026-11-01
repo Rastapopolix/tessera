@@ -804,6 +804,12 @@ The page lists each track's channel as it is now, AUTO's included. The channels 
 notes go out at all is still the menu's **MIDI OUT** (KEYS, ALL or OFF): for the steps and the generators, set it to
 **ALL**.
 
+**TRANSPOSE**: hold **OCT+** on **GLO > MIDI OUT** and turn **KNOB 1** to **4** to move a track's notes up or down
+on their way out, a semitone a detent (12 an octave), up to four octaves either way. For a synth or a MIDI-to-CV
+module that plays them too high or too low: **-12** an octave down, **-24** two. Only what goes out over MIDI moves;
+the track's own sound stays where it is. A note moved past MIDI's range (0 to 127) is not sent. The page shows a
+track's TRANSPOSE after its channel when it is not 0 (**CH 1 ROUT -24**); it is saved with the project.
+
 <p align="center"><img src="assets/gallery/midi_out.png" alt="GLO > MIDI OUT" width="240"></p>
 
 ### MIDI CC control
