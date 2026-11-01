@@ -33,6 +33,7 @@ enum { S_DEVCTL = 15, S_TXTYPE = 24, S_TXINTERVAL = 25, S_RXTYPE = 26, S_RXINTER
 enum { UH_MSG_NONE, UH_MSG_ON, UH_MSG_OFF, UH_MSG_MIDI, UH_MSG_NOMIDI, UH_MSG_LOW, UH_MSG_LOST };
 #define UH_FIRST_ADDR 1u
 #define UH_MAX_ERRORS 16u
+#define UH_ROOT_TRIES 4u                                /* a device on the port that does not answer: bus resets */
 #define UH_HUBS 2u                                      /* the hub on the port and one behind it */
 #define UH_HUB_PORTS 7u                                 /* ports read per hub (a 9-byte hub descriptor) */
 /* What one probe found (uh_probe, uh_hub_port_probe; ABOUT shows it). UH_R_MIDI is the one success */
@@ -52,6 +53,8 @@ static struct {
     volatile uint8_t fault;                             /* TIMER5 -> main loop: reset the bus and look again */
     uint8_t seen, next_addr, dev, tried, cls;           /* cls: the last probed device's class (uh_probe) */
     uint16_t port_st;                                   /* the last hub port status read (uh_port_reset) */
+    uint8_t tries;                                      /* root probes that got no answer, since the attach */
+    uint8_t err, err_csr, err_addr;                     /* the last failed transfer: stage << 2 | -uh_ctl, CSR0 */
     uh_hub_t hub[UH_HUBS];
     uint8_t poll_hub, poll_port, dg_n;                  /* dg_n: counts uh_dg's changes (the ABOUT screen redraws) */
     uint8_t in_ep, out_mps, tx_count, tx_errors, line_idle;
@@ -66,6 +69,8 @@ static struct {
  * 0: no hub h; nbr[h] its own port count (only the first UH_HUB_PORTS are read) */
 static struct {
     uint8_t root, root_cls, ports[UH_HUBS], nbr[UH_HUBS], up[UH_HUBS];
+    uint8_t tries, line, devctl, power;                 /* the root probe: its try, D+/D-, DEVCTL, POWER after reset */
+    uint8_t err, err_csr, err_addr;                     /* the failed transfer behind the last failure (uh.err) */
     uint8_t res[UH_HUBS][UH_HUB_PORTS], cls[UH_HUBS][UH_HUB_PORTS];
     uint16_t st[UH_HUBS][UH_HUB_PORTS];
 } uh_dg;
@@ -84,6 +89,7 @@ static int uh_csr0(uint32_t want_set, uint32_t want_clr)
     uint32_t t = fm1_ms, v;
     for (;;) {
         v = sie_rd(S_CSR0);
+        uh.err_csr = (uint8_t)v;
         if (v & 0x04u) {                                /* RxStall */
             sie_wr(S_CSR0, 0);
             return -2;
@@ -102,6 +108,14 @@ static int uh_csr0(uint32_t want_set, uint32_t want_clr)
 
 /* One control transfer to `addr`: SETUP, the IN data stage if any, the status stage. Bytes read, or < 0.
  * Only requests without an OUT data stage (every one used here). */
+/* a failed transfer to addr in stage 1 SETUP, 2 DATA, 3 STATUS, r from uh_csr0: noted for ABOUT, r returned */
+static int uh_ctl_err(uint8_t addr, uint32_t stage, int r)
+{
+    uh.err = (uint8_t)(stage << 2 | (uint32_t)-r);
+    uh.err_addr = addr;
+    return r;
+}
+
 static int uh_ctl(uint8_t addr, uint8_t rt, uint8_t rq, uint16_t val, uint16_t idx, uint16_t len, uint8_t *out,
                   uint8_t mps)
 {
@@ -121,13 +135,13 @@ static int uh_ctl(uint8_t addr, uint8_t rt, uint8_t rq, uint16_t val, uint16_t i
     sie_wr(S_CSR0, 0x0Au);                              /* SetupPkt | TxPktRdy */
     r = uh_csr0(0, 0x02u);
     if (r < 0)
-        return r;
+        return uh_ctl_err(addr, 1, r);
     if (len && (rt & 0x80u)) {
         while (got < len) {
             sie_wr(S_CSR0, 0x20u);                      /* ReqPkt */
             r = uh_csr0(0x01u, 0);
             if (r < 0)
-                return r;
+                return uh_ctl_err(addr, 2, r);
             n = sie_rd(S_COUNT0);
             if (n > 64u)
                 n = 64u;
@@ -149,7 +163,7 @@ static int uh_ctl(uint8_t addr, uint8_t rt, uint8_t rq, uint16_t val, uint16_t i
         if (r >= 0)
             sie_wr(S_CSR0, 0);
     }
-    return r < 0 ? r : (int)got;
+    return r < 0 ? uh_ctl_err(addr, 3, r) : (int)got;
 }
 
 /* ---------------------------------------------------- enumeration --- */
@@ -229,6 +243,17 @@ static int uh_port_reset(uint8_t h, uint8_t p)
     return 0;
 }
 
+/* A failure that a control transfer stopped: keep that transfer's error for ABOUT */
+static void uh_dg_err(int r)
+{
+    if (uh.err && (r == UH_R_RESET || r == UH_R_ENABLE || (r >= UH_R_DESC && r <= UH_R_CFG) || r == UH_R_SETCFG ||
+                   r == UH_R_HUBFAIL)) {
+        uh_dg.err = uh.err;
+        uh_dg.err_csr = uh.err_csr;
+        uh_dg.err_addr = uh.err_addr;
+    }
+}
+
 /* Probe only port p of hub h (status st); keep the hubs and the other devices configured, and note what was found.
  * Each port reuses its address on reconnect (hub 0's ports 2..8, hub 1's 9..15), so repeated hot-plugs cannot
  * exhaust the USB address space. A low-speed device is not probed: behind a hub it needs PRE packets, which the
@@ -237,6 +262,7 @@ static int uh_hub_port_probe(uint8_t h, uint8_t p, uint32_t st, uh_midi_t *m)
 {
     int r;
     uh.cls = 0;
+    uh.err = 0;
     uh.port_st = (uint16_t)st;
     if (!h && uh_dg.ports[1] && uh_dg.up[1] == p) {     /* hub 1 hung here: it is gone, or reset below */
         uh.hub[1].addr = 0;
@@ -247,6 +273,7 @@ static int uh_hub_port_probe(uint8_t h, uint8_t p, uint32_t st, uh_midi_t *m)
         uh.next_addr = (uint8_t)(UH_FIRST_ADDR + h * UH_HUB_PORTS + p);
         r = uh_probe((uint8_t)(h + 1u), p, m);
     }
+    uh_dg_err(r);
     uh_dg.res[h][p - 1u] = (uint8_t)(uh.cls == 9u && r == UH_R_MIDI ? UH_R_HUB : r);
     uh_dg.cls[h][p - 1u] = uh.cls;
     uh_dg.st[h][p - 1u] = uh.port_st;
@@ -351,24 +378,69 @@ static char *uh_hex(char *d, uint32_t v, uint32_t digits)
     return d;
 }
 
-/* ABOUT's USB HOST lines (ui_menu.c): line i of the last scan into b (24 bytes), 0 past the last. The device on the
- * port ("ROOT FS HUB 09"), each hub ("HUB 1: 4 PORTS", "HUB 2 (P2): 4 PORTS": the second on hub 1's port 2) and
- * after it its ports: the number, wPortStatus in hex (1 connected, 2 enabled, 100 powered, 200 low speed, 400 high
- * speed), the result and, once a descriptor was read, the class in hex: "P1 0100 EMPTY", "P2 0103 NO MIDI 08",
- * "P3 0301 LOW SPEED", "P4 0103 MIDI 01". Ports not reached (a MIDI device was found before them) are left out. */
-static int uh_diag_line(uint32_t i, char *b)
+static int uh_res_text(char *d, uint32_t r, uint32_t cls)   /* the result, and the class once it was read */
 {
     static const char *const RES[] = {"", "EMPTY", "LOW SPEED", "RESET FAIL", "NOT ENABLED", "NO ANSWER",
                                       "ADDRESS FAIL", "CONFIG FAIL", "NO MIDI", "SET CFG FAIL", "HUB", "HUB FAIL",
                                       "HUB SKIPPED", "MIDI", "?", "?"};
-    uint32_t h, p, r = uh_dg.root, cls = uh_dg.root_cls;
-    char *d = uh_put(b, r == UH_R_LOW ? "ROOT " : "ROOT FS ");
-    if (!r)
+    d = uh_put(d, RES[r & 15u]);
+    if (r >= UH_R_ADDR) {                               /* (the device descriptor was read) */
+        *d++ = ' ';
+        uh_hex(d, cls, 2);
+    }
+    return 1;
+}
+
+/* ABOUT's USB HOST lines (ui_menu.c): line i of the last scan into b (24 bytes), 0 past the last.
+ *   ROOT FS HUB 09        the device on the port: the result and its class (hex)
+ *   TRY 1, LINE D+        the probe's try (UH_ROOT_TRIES), D+ / D- before the reset
+ *   DEVCTL 5D POWER 00    DEVCTL before the reset, POWER after it
+ *   ERR CSR0 10           the transfer behind the last failure, if any: CSR0,
+ *   @0 SETUP NO REPLY     its address, stage and kind (NO REPLY, STALL, TIMEOUT)
+ *   HUB 1: 4 PORTS        each hub, with its own port count (HUB 2 (P2): on hub 1's port 2), then its ports:
+ *   P2 0103 NO MIDI 08    the port, wPortStatus in hex (1 connected, 2 enabled, 100 powered, 200 low speed, 400 high
+ *                         speed), the result, the class. Ports not reached (a MIDI device was found before) left out. */
+static int uh_diag_line(uint32_t i, char *b)
+{
+    static const char *const LINE[] = {"NONE", "D-", "D+", "BOTH"};
+    static const char *const STAGE[] = {"", "SETUP ", "DATA ", "STATUS "};
+    static const char *const KIND[] = {"", "NO REPLY", "STALL", "TIMEOUT"};
+    uint32_t n = 0, h, p;
+    char *d;
+    if (!uh_dg.root)
         return 0;
-    for (h = 0; i && h < UH_HUBS; h++) {
+    if (i == n++)
+        return uh_res_text(uh_put(b, uh_dg.root == UH_R_LOW ? "ROOT " : "ROOT FS "), uh_dg.root, uh_dg.root_cls);
+    if (i == n++) {
+        d = uh_put(b, "TRY ");
+        *d++ = (char)('0' + uh_dg.tries % 10u);
+        d = uh_put(d, ", LINE ");
+        uh_put(d, LINE[uh_dg.line & 3u]);
+        return 1;
+    }
+    if (i == n++) {
+        d = uh_hex(uh_put(b, "DEVCTL "), uh_dg.devctl, 2);
+        uh_hex(uh_put(d, " POWER "), uh_dg.power, 2);
+        return 1;
+    }
+    if (uh_dg.err && i == n++) {
+        uh_hex(uh_put(b, "ERR CSR0 "), uh_dg.err_csr, 2);
+        return 1;
+    }
+    if (uh_dg.err && i == n++) {
+        d = uh_put(b, "@");
+        if (uh_dg.err_addr >= 10u)
+            *d++ = (char)('0' + uh_dg.err_addr / 10u % 10u);
+        *d++ = (char)('0' + uh_dg.err_addr % 10u);
+        d = uh_put(d, " ");
+        d = uh_put(d, STAGE[uh_dg.err >> 2 & 3u]);
+        uh_put(d, KIND[uh_dg.err & 3u]);
+        return 1;
+    }
+    for (h = 0; h < UH_HUBS; h++) {
         if (!uh_dg.ports[h])
             continue;
-        if (!--i) {                                     /* the hub's own line */
+        if (i == n++) {                                 /* the hub's own line */
             d = uh_put(b, "HUB ");
             *d++ = (char)('1' + h);
             if (h) {
@@ -385,25 +457,16 @@ static int uh_diag_line(uint32_t i, char *b)
             uh_put(d, uh_dg.nbr[h] == 1u ? " PORT" : " PORTS");
             return 1;
         }
-        for (p = 0; i && p < uh_dg.ports[h]; p++)
-            if (uh_dg.res[h][p] && !--i) {
+        for (p = 0; p < uh_dg.ports[h]; p++)
+            if (uh_dg.res[h][p] && i == n++) {
                 d = uh_put(b, "P");
                 *d++ = (char)('1' + p);
                 *d++ = ' ';
                 d = uh_hex(d, uh_dg.st[h][p], 4);
-                d = uh_put(d, " ");
-                r = uh_dg.res[h][p];
-                cls = uh_dg.cls[h][p];
+                return uh_res_text(uh_put(d, " "), uh_dg.res[h][p], uh_dg.cls[h][p]);
             }
     }
-    if (i)
-        return 0;
-    d = uh_put(d, RES[r & 15u]);
-    if (r >= UH_R_ADDR) {                               /* (the device descriptor was read) */
-        *d++ = ' ';
-        uh_hex(d, cls, 2);
-    }
-    return 1;
+    return 0;
 }
 
 /* Host EP1 has independent RX/TX DMA slots. Both target endpoints belong to this device and alternate setting. */
@@ -476,25 +539,38 @@ static void uh_host_up(void)
 static void uh_connect(void)
 {
     uh_midi_t m;
+    uint32_t reset = 30u + 10u * uh.tries, power = uh.tries >= 2u ? 0x40u : 0u;   /* (the SDK's FUSB POWER) */
     int r;
     memset(&uh_dg, 0, sizeof uh_dg);
     uh.dg_n++;
-    if (sie_rd(S_DEVCTL) & 0x20u) {                     /* low speed (FSDev is bit 6, LSDev bit 5) */
+    uh_dg.tries = (uint8_t)(uh.tries + 1u);
+    uh_dg.line = (uint8_t)fm1_usb_line();
+    uh_dg.devctl = (uint8_t)sie_rd(S_DEVCTL);
+    uh_dg.power = (uint8_t)power;
+    if (uh_dg.devctl & 0x20u) {                         /* low speed (FSDev is bit 6, LSDev bit 5) */
         uh_dg.root = UH_R_LOW;
         if (!uh.tried)
             uh.msg = UH_MSG_LOW;                        /* said once per attach, as NO MIDI is */
         uh.tried = 1;
         return;
     }
-    sie_wr(S_POWER, 0x08u);                             /* bus reset */
-    uh_wait(30);
-    sie_wr(S_POWER, 0);
-    uh_wait(30);
+    sie_wr(S_POWER, 0x08u | power);                     /* bus reset */
+    uh_wait(reset);
+    sie_wr(S_POWER, power);
+    uh_wait(reset);
     uh.next_addr = UH_FIRST_ADDR;
     uh_hubs_off();
+    uh.err = 0;
     r = uh_probe(0, 0, &m);
+    uh_dg_err(r);
     uh_dg.root = (uint8_t)(uh.cls == 9u && r == UH_R_MIDI ? UH_R_HUB : r);
     uh_dg.root_cls = uh.cls;
+    if (r >= UH_R_DESC && r <= UH_R_CFG && uh.tries + 1u < UH_ROOT_TRIES) {
+        uh.tries++;                                     /* no answer: a fresh SIE and a longer reset, as the SDK */
+        uh_host_up();                                   /* (usb_host_mount) does, after 0.5, 1, 2 s */
+        uh.retry_ms = fm1_ms + (250u << uh.tries);
+        return;
+    }
     if (r == UH_R_MIDI) {
         uh_start_ep(&m);
         uh.msg = UH_MSG_MIDI;
@@ -523,6 +599,7 @@ static void uh_task(uint32_t now)
             usb.sx_on = 0;
             fm1_usb_off();
             uh.on = 1;
+            uh.tries = 0;
             uh_host_up();
             uh.retry_ms = now;
             uh.msg = UH_MSG_ON;
@@ -539,6 +616,7 @@ static void uh_task(uint32_t now)
     if (uh.fault) {                                     /* stall, or the controller stopped answering (TIMER5 cleared run) */
         uh_session_end();
         uh.fault = 0;
+        uh.tries = 0;
         uh_host_up();
         uh.retry_ms = now + 500u;
         uh.msg = UH_MSG_LOST;
@@ -554,6 +632,7 @@ static void uh_task(uint32_t now)
         if (uh.line_idle < 5u) uh.line_idle++;
         if (uh.line_idle >= 5u) {                       /* debounce root disconnect while idle too */
             uh.tried = 0;
+            uh.tries = 0;
             uh_hubs_off();
         }
         return;
