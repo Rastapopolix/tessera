@@ -32,12 +32,16 @@ CACHE_GUARDED = {
 
 def analyze(ir, dis, src):
     seq = (src / 'seq.c').read_text()
-    # melodee-tess: the hub re-entry bound applies only where usb_host.c exists (MELODEE_USB_HOST)
+    # melodee-tess: the hub re-entry bound applies only where usb_host.c exists (MELODEE_USB_HOST): a hub is
+    # followed only into a free slot of UH_HUBS, its ports' probes one level down
     usb = (src / 'usb_host.c').read_text() if (src / 'usb_host.c').exists() else None
+    hubs = re.search(r'#define UH_HUBS (\d+)u', usb) if usb is not None else None
+    hub_levels = int(hubs[1]) if hubs else 1
     if not ("if (song.playing || cin_left" in seq and
             "if (started) seq_advance(0);" in seq and
-            (usb is None or "return depth == 0u ? uh_hub_probe" in usb and
-             "uh_probe(1, m)" in usb)):
+            (usb is None or hubs and 1 <= hub_levels <= 2 and
+             "r = depth < UH_HUBS && !uh.hub[depth].addr ? uh_hub_probe(depth," in usb and
+             "r = uh_probe((uint8_t)(h + 1u), p, m);" in usb)):
         raise ValueError(
             'review stack re-entry bounds after transport/USB changes')
     for (loader, _), (file, anchor) in CACHE_GUARDED.items():
@@ -247,11 +251,12 @@ def analyze(ir, dis, src):
             starts_note = name == 'input_on' and target == 'seq_advance'
             if starts_note and note_started:
                 continue
-            # Only one hub level is supported. The port helper calls the
-            # child probe with depth=1, which rejects hubs. Depending on
-            # inlining, that call can also appear inside uh_probe itself.
+            # hub_levels (UH_HUBS) hub levels are supported. The port helper
+            # calls the child probe one level down; at UH_HUBS it rejects
+            # hubs. Depending on inlining, that call can also appear inside
+            # uh_probe itself.
             probes_child = name in {'uh_probe', 'uh_hub_port_probe'} and target == 'uh_probe'
-            if probes_child and hub_depth:
+            if probes_child and hub_depth >= hub_levels:
                 continue
             # melodee-tess: a bank cache marks the bank loaded before it
             # checks or indexes it (CACHE_GUARDED): the nested lookup
