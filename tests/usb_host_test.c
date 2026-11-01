@@ -446,9 +446,10 @@ static void test_keyboard(int via_hub)
         assert(dev[HUB].cfg == 1 && dev[HUB].addr == 1);
         assert(dev[STICK].addr != 0 && dev[STICK].addr != dev[KBD].addr);   /* the stick was addressed, then passed over */
         assert(dev[KBD].addr == 4);                    /* stable address per hub port */
-        static const char *const scan[] = {"ROOT FS HUB 09", "HUB 1: 4 PORTS", "P1 0103 NO MIDI 08",
+        static const char *const scan[] = {"ROOT FS HUB 09", "TRY 1, LINE D+", "DEVCTL 40 POWER 00",
+                                           "HUB 1: 4 PORTS", "P1 0103 NO MIDI 08",
                                            "P2 0100 EMPTY", "P3 0103 MIDI 01"};
-        assert(scan_is(scan, 5));                       /* (port 4 not reached) */
+        assert(scan_is(scan, 7));                       /* (port 4 not reached) */
     } else {
         assert(dev[KBD].addr == 1 && scan_has("ROOT FS MIDI 01"));
     }
@@ -623,7 +624,11 @@ static void test_failed_probe(void)
     connect(-1);                                      /* a powered line with nothing answering EP0 */
     ep0_timeout = 1;
     host_on();
-    assert(!enumerate() && uh.msg == UH_MSG_NOMIDI && scan_has("ROOT FS NO ANSWER"));
+    assert(!enumerate() && uh.msg == UH_MSG_NOMIDI);    /* said once, after the last try */
+    static const char *const scan[] = {"ROOT FS NO ANSWER", "TRY 4, LINE D+", "DEVCTL 40 POWER 40", "ERR CSR0 02",
+                                       "@0 SETUP TIMEOUT"};
+    assert(scan_is(scan, 5));
+    assert(root_resets == UH_ROOT_TRIES && host_attaches == UH_ROOT_TRIES);   /* a fresh SIE each try, as the SDK */
     uh.msg = 0;
     uint32_t requests = setup_requests;
     for (int k = 0; k < 3000; k++) {
@@ -632,7 +637,19 @@ static void test_failed_probe(void)
         uh_task(now);
         assert(fm1_ms == now && !uh.run && !uh.msg);
     }
-    assert(root_resets == 1 && host_attaches == 1 && setup_requests == requests);
+    assert(root_resets == UH_ROOT_TRIES && host_attaches == UH_ROOT_TRIES && setup_requests == requests);
+    uh.want = 0; uh_task(fm1_ms); uh.msg = 0;
+
+    /* a device that answers only from the third try on (slow to start): found, with the SDK's POWER */
+    connect(KBD);
+    ep0_timeout = 1;
+    host_on();
+    for (int k = 0; k < 400 && root_resets < 2; k++) { fm1_ms += 20; uh_task(fm1_ms); }
+    for (int k = 0; k < 400 && host_attaches < 3; k++) { fm1_ms += 20; uh_task(fm1_ms); }
+    assert(root_resets == 2 && host_attaches == 3 && !uh.msg && !uh.run);   /* (no message between tries) */
+    ep0_timeout = 0;
+    assert(enumerate() && uh.msg == UH_MSG_MIDI && root_resets == 3 && common[1] == 0x40);
+    assert(scan_has("TRY 3, LINE D+") && scan_has("DEVCTL 40 POWER 40") && scan_has("ROOT FS MIDI 01"));
     uh.want = 0; uh_task(fm1_ms); uh.msg = 0;
 
     connect(HUB);
@@ -693,7 +710,8 @@ static void nested_setup(int kbd)
 
 static void test_nested_hub(void)
 {
-    static const char *const scan[] = {"ROOT FS HUB 09", "HUB 1: 4 PORTS", "P1 0100 EMPTY", "P2 0103 HUB 09",
+    static const char *const scan[] = {"ROOT FS HUB 09", "TRY 1, LINE D+", "DEVCTL 40 POWER 00",
+                                       "HUB 1: 4 PORTS", "P1 0100 EMPTY", "P2 0103 HUB 09",
                                        "HUB 2 (P2): 4 PORTS", "P1 0103 NO MIDI 08", "P2 0103 HUB SKIPPED 09",
                                        "P3 0103 MIDI 01"};
     nested_setup(1);
@@ -702,7 +720,7 @@ static void test_nested_hub(void)
     assert(dev[HUB].addr == 1 && dev[HUB2].addr == 3 && dev[HUB2].cfg == 1 && !dev[HUB3].cfg);
     assert(uh.hub[0].addr == 1 && uh.hub[1].addr == 3 && uh.hub[1].up == 2);
     assert(dev[STICK].addr == 9 && dev[HUB3].addr == 10 && dev[KBD].addr == 11 && uh.dev == 11);
-    assert(scan_is(scan, 8));
+    assert(scan_is(scan, 10));
     push_packet(0x643C9009u);
     poll_n(4);
     assert(mi_w - mi_r == 1);

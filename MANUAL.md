@@ -863,8 +863,11 @@ directly or through a USB hub, and after a moment the screen says **USB MIDI REA
   2 enabled, 100 powered, 200 low speed, 400 high speed), what was found and the device's USB class in hex (01 audio
   or MIDI, 03 a keyboard or mouse, 08 a stick, 09 a hub, 11 a hub's Billboard). Found: **EMPTY**, **LOW SPEED**,
   **NO MIDI**, **HUB** (a hub inside, listed after it as HUB 2 with the port it is on), **MIDI**, or the step that
-  failed (**RESET FAIL**, **NOT ENABLED**, **NO ANSWER**, **ADDRESS FAIL**, **CONFIG FAIL**). A photo of it helps
-  with a report.
+  failed (**RESET FAIL**, **NOT ENABLED**, **NO ANSWER**, **ADDRESS FAIL**, **CONFIG FAIL**). Under the first line
+  (**ROOT**, what is plugged into the FM-1) come the try (a device that does not answer is reset up to four times,
+  over about four seconds), the controller's registers, and for a failure which request got which reply
+  (**@0 SETUP NO REPLY**: the device at address 0 did not answer the first request). A photo of it helps with a
+  report.
 - Unplugging shows **DEVICE LOST** and ends every note held from MIDI; plug it in again and it is found again.
 - While USB HOST is ON there is no computer link: no USB audio, no web editor, no updates. Turn it OFF, or restart the
   FM-1 (it always starts OFF), to get them back.
