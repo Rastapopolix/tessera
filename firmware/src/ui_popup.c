@@ -162,12 +162,16 @@ static void nt_swing(int32_t s)
     motion_capture(TSEL, P_SSWING, TSEL->p[P_SSWING]);
     ui.force = 1;
 }
-/* .. and the SEQ tools (seq_tools.c): DOUBLE, HALF, EUCLID's hits and rotation (KNOB 2; OCT+ writes it) */
+/* .. and the SEQ tools (seq_tools.c): DOUBLE, HALF, EUCLID's hits and rotation (KNOB 2; OCT+ writes it); SNAP TO SCALE
+ * where the keys play notes (a kit, slices: no row) */
+#define SHEET_PATTERN_ROWS \
+    {"Double", seqt_double_v, 0, seqt_double, 0}, {"Half", seqt_half_v, 0, seqt_half, 0}, \
+    {"Euclid", seqt_hits_v, seqt_hits_turn, seqt_euclid, 0}, {"Euclid turn", seqt_rot_v, seqt_rot_turn, seqt_euclid, 0}, \
+    {"Accum limit", nt_acclim_v, nt_acclim, 0, 0}, {"Accum mode", nt_accmode_v, nt_accmode, 0, 0}, \
+    {"Swing", nt_swing_v, nt_swing, 0, 0}, {"Clear pattern", 0, 0, 0, CF_CLEAR_SEQ}, {"Clear motion", 0, 0, 0, CF_CLEAR_MOTION}
 static const sheet_row_t SHEET_PATTERN[] = {{"Quantize",nt_quantize_v,nt_quantize_grid,nt_quantize,0},
-    {"Double", seqt_double_v, 0, seqt_double, 0}, {"Half", seqt_half_v, 0, seqt_half, 0},
-    {"Euclid", seqt_hits_v, seqt_hits_turn, seqt_euclid, 0}, {"Euclid turn", seqt_rot_v, seqt_rot_turn, seqt_euclid, 0},
-    {"Accum limit", nt_acclim_v, nt_acclim, 0, 0}, {"Accum mode", nt_accmode_v, nt_accmode, 0, 0},
-    {"Swing", nt_swing_v, nt_swing, 0, 0}, {"Clear pattern", 0, 0, 0, CF_CLEAR_SEQ}, {"Clear motion", 0, 0, 0, CF_CLEAR_MOTION}};
+    {"Snap to scale", 0, 0, seqt_snap, 0}, SHEET_PATTERN_ROWS};
+static const sheet_row_t SHEET_PATTERN_KIT[] = {{"Quantize",nt_quantize_v,nt_quantize_grid,nt_quantize,0}, SHEET_PATTERN_ROWS};
 /* PATTERNS' (OCT+): the selected track's pattern; Copy to: its place picked on the grid (ui_patterns.c) */
 static const sheet_row_t SHEET_PATTERNS[] = {{"Copy to\x85", 0, 0, ptc_start, 0}, {"Delete pattern", 0, 0, 0, CF_DEL_PAT}};
 
@@ -372,7 +376,10 @@ static void page_sheet_open(void)
     case 3:
         str_cpy(nm, "T1", sizeof nm);
         nm[1] = (char)('1' + song.sel % NTRK);
-        sheet_open("Pattern", nm, SHEET_PATTERN, NELEM(SHEET_PATTERN));
+        if (seqt_melodic(TSEL))
+            sheet_open("Pattern", nm, SHEET_PATTERN, NELEM(SHEET_PATTERN));
+        else
+            sheet_open("Pattern", nm, SHEET_PATTERN_KIT, NELEM(SHEET_PATTERN_KIT));
         break;
     case 4: {                                           /* "Pattern 3", "T2" */
         char t[12] = "Pattern 1";
