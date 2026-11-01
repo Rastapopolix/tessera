@@ -847,7 +847,8 @@ Turn **MIDI CC IN** off in the menu when another device's CCs should not reach T
 ### USB host
 
 With **USB HOST** ON in the menu the FM-1 is the computer: plug a class-compliant USB-MIDI device into the USB-C port,
-directly or through one USB hub, and after a moment the screen says **USB MIDI READY**.
+directly or through a USB hub, and after a moment the screen says **USB MIDI READY**. A hub with another hub inside
+(as many USB-C hubs are) works too; a third hub is not followed.
 
 - **In**: its notes, CCs, bend and clock arrive as USB MIDI from a computer would: MIDI ROUTING picks the tracks, CLK
   on USB follows its clock, and the [CC map](#midi-cc-control) works from its knobs.
@@ -855,8 +856,15 @@ directly or through one USB hub, and after a moment the screen says **USB MIDI R
   Tessera's tracks and follows its clock (MIDI OUT **ALL** for the steps and generators).
 - **Power**: the FM-1 does not power the device. Use a **powered hub**, or a device with its own power supply.
 - One MIDI device at a time: the first one found (behind a hub, the first port with a MIDI device). Full-speed
-  devices only (**LOW SPEED** otherwise); a device without USB-MIDI (a USB stick, crow) shows **NO MIDI DEVICE**.
-  norns is itself a host, so connect it as before.
+  devices only (**LOW SPEED** otherwise, behind a hub too); a device without USB-MIDI (a USB stick, crow) shows
+  **NO MIDI DEVICE**. norns is itself a host, so connect it as before.
+- When nothing is found the screen adds **USB SCAN IN ABOUT**: the menu's **ABOUT** then lists, under
+  **USB HOST SCAN**, what each hub port had: **P2 0103 NO MIDI 08** is port 2, its status in hex (1 connected,
+  2 enabled, 100 powered, 200 low speed, 400 high speed), what was found and the device's USB class in hex (01 audio
+  or MIDI, 03 a keyboard or mouse, 08 a stick, 09 a hub, 11 a hub's Billboard). Found: **EMPTY**, **LOW SPEED**,
+  **NO MIDI**, **HUB** (a hub inside, listed after it as HUB 2 with the port it is on), **MIDI**, or the step that
+  failed (**RESET FAIL**, **NOT ENABLED**, **NO ANSWER**, **ADDRESS FAIL**, **CONFIG FAIL**). A photo of it helps
+  with a report.
 - Unplugging shows **DEVICE LOST** and ends every note held from MIDI; plug it in again and it is found again.
 - While USB HOST is ON there is no computer link: no USB audio, no web editor, no updates. Turn it OFF, or restart the
   FM-1 (it always starts OFF), to get them back.

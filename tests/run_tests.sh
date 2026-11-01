@@ -55,8 +55,8 @@
 #                   (usb_audio_test.c); the endpoint driver against a model SIE: SET_INTERFACE, feedback, capture
 #                   packets ready in time, Out / In left out and the replug (usb_audio_driver_test.c); the four
 #                   track stems through the real mixer (usb_audio_tracks_test.c).
-# USB MIDI host (tests/usb_host_test.c): the driver against a SIE and bus model: a keyboard direct and behind a hub,
-#                   a stick without MIDI, low speed, hot-plug, ring back-pressure, OUT ACK / NAK / stall, back to device.
+# USB MIDI host (tests/usb_host_test.c): the driver against a SIE and bus model: a keyboard direct, behind a hub and
+#                   behind a hub in a hub, the ABOUT scan lines, a stick without MIDI, low speed, hot-plug, ring back-pressure, OUT ACK / NAK / stall, back to device.
 # web (web/test_web.mjs): the editor protocol against its mock device, whose tables must equal the
 #                   firmware's (tests/descdump.c -> build/host/desc.json), the package builder, the updater.
 # PHYS (tests/phys_test.c): stability over the whole parameter and pitch range, the worst-case cost against
@@ -285,7 +285,7 @@ if core; then
     t "TRS MIDI parser" midi_uart_test
     t "USB audio: routing, clock drift and stream recovery" usb_audio_test
     t "USB audio: endpoint lifecycle and packet ownership" usb_audio_driver_test
-    t "USB MIDI host: enumeration (direct and behind a hub), event filter, ring back-pressure, OUT, faults" usb_host_test -O1 -fsanitize=address,undefined
+    t "USB MIDI host: enumeration (direct, behind a hub, behind two), event filter, ring back-pressure, OUT, faults" usb_host_test -O1 -fsanitize=address,undefined
     run "USB descriptors: MIDI, CDC and audio configurations" python3 tests/usb_audio_desc_test.py
     run "boot images: LZMA records, decoder bounds, malformed streams and XIP dependencies" python3 tests/boot_audio_test.py
     run "resident audio: call graph and flash/RAM ABI boundaries" python3 tests/audio_ram_test.py

@@ -2,8 +2,9 @@
 /* Copyright (C) 2026 Kerem Kilic (Ellic Studio)
  * Retains the USB host SIE/bus fixture contributed by recursivefieldinstruments (2026). */
 /* USB MIDI host (firmware/src/usb_host.c, usb_host_desc.h): the production code against a model of the SIE and of
- * what hangs on the cable. The model answers EP0 requests the way a keyboard, a hub and a mass-storage stick do,
- * so this tests the enumeration order, the hub handling, the packet filter and the fault paths. It does not test
+ * what hangs on the cable. The model answers EP0 requests the way a keyboard, hubs and a mass-storage stick do,
+ * so this tests the enumeration order, the hub handling (a hub behind a hub too), the scan ABOUT shows, the packet
+ * filter and the fault paths. It does not test
  * the controller: the register sequences come from the AC79 SDK's USB0 host code and need a bench.
  * melodee-tess: from upstream keremimo/melodee c14912b; MIDI out is midi_out.c's queue (midi_out_event), a lost
  * device raises midi_in_overflow. */
@@ -17,14 +18,14 @@
 #pragma GCC diagnostic pop
 
 /* ------------------------------------------------------- the devices --- */
-enum { KBD, HUB, STICK, NDEV };
+enum { KBD, HUB, STICK, HUB2, HUB3, NDEV };
 typedef struct {
     uint8_t addr, cfg, alt, present, in_default;
     uint8_t cls, mps0;
     const uint8_t *cfgd;
     uint16_t cfglen;
     uint8_t ports;                      /* hub: downstream devices by port (1-based), 0 = empty */
-    uint8_t port_dev[8], port_pow[8], port_en[8], port_chg[8];
+    uint8_t port_dev[8], port_pow[8], port_en[8], port_chg[8], port_ls[8];
     uint32_t seen_set_cfg, seen_set_if, seen_probe;
 } dev_t_;
 static dev_t_ dev[NDEV];
@@ -74,6 +75,7 @@ static void devices_init(void)
     dev[KBD] = (dev_t_){.present = 1, .cls = 0, .mps0 = 64, .cfgd = kbd_cfg, .cfglen = kbd_cfg_len};
     dev[HUB] = (dev_t_){.present = 1, .cls = 9, .mps0 = 64, .cfgd = hub_cfg, .cfglen = 25, .ports = 4};
     dev[STICK] = (dev_t_){.present = 1, .cls = 0, .mps0 = 8, .cfgd = stick_cfg, .cfglen = 32};
+    dev[HUB2] = dev[HUB3] = dev[HUB];                   /* hubs behind the first */
     root = -1;
     dflt = 0;
 }
@@ -177,7 +179,8 @@ static int answer(dev_t_ *d, const uint8_t *s)
             d->port_chg[idx] &= (uint8_t)~0x10u;
     } else if (rt == 0xA3 && rq == 0 && d->ports) {
         int c = hub_port_dev(d, idx);
-        uint32_t st = (c >= 0 && d->port_pow[idx] ? 1u : 0u) | (d->port_en[idx] ? 2u : 0u) | 0x100u;
+        uint32_t st = (c >= 0 && d->port_pow[idx] ? 1u : 0u) | (d->port_en[idx] ? 2u : 0u) | 0x100u |
+                      (c >= 0 && d->port_ls[idx] ? 0x200u : 0u);
         rsp[0] = (uint8_t)st;
         rsp[1] = (uint8_t)(st >> 8);
         rsp[2] = d->port_chg[idx];
@@ -391,6 +394,22 @@ static void poll_n(int n)
     }
 }
 
+/* ABOUT's USB HOST SCAN: the lines are exactly `want` (n of them), or with n 0 `want[0]` is one of them */
+static int scan_is(const char *const *want, uint32_t n)
+{
+    char b[24];
+    uint32_t i;
+    for (i = 0; uh_diag_line(i, b); i++) {
+        assert(strlen(b) < sizeof b);
+        if (!n && !strcmp(b, want[0]))
+            return 1;
+        if (n && (i >= n || strcmp(b, want[i])))
+            return 0;
+    }
+    return n && i == n;
+}
+static int scan_has(const char *line) { return scan_is(&line, 0); }
+
 static void test_parse(void)
 {
     uh_midi_t m;
@@ -427,8 +446,11 @@ static void test_keyboard(int via_hub)
         assert(dev[HUB].cfg == 1 && dev[HUB].addr == 1);
         assert(dev[STICK].addr != 0 && dev[STICK].addr != dev[KBD].addr);   /* the stick was addressed, then passed over */
         assert(dev[KBD].addr == 4);                    /* stable address per hub port */
+        static const char *const scan[] = {"ROOT FS HUB 09", "HUB 1: 4 PORTS", "P1 0103 NO MIDI 08",
+                                           "P2 0100 EMPTY", "P3 0103 MIDI 01"};
+        assert(scan_is(scan, 5));                       /* (port 4 not reached) */
     } else {
-        assert(dev[KBD].addr == 1);
+        assert(dev[KBD].addr == 1 && scan_has("ROOT FS MIDI 01"));
     }
     assert(common[0] == dev[KBD].addr);                 /* FADDR is the keyboard's for the endpoint */
     assert(regs[1][26] == (2 << 4 | 1));                /* RXTYPE: bulk, endpoint 1 */
@@ -502,6 +524,7 @@ static void test_no_midi(void)
     assert(!enumerate());
     assert(uh.msg == UH_MSG_NOMIDI);                    /* said once, then quiet */
     assert(root_resets == 1 && host_attaches == 1 && dev[STICK].seen_probe == 1);
+    assert(scan_has("ROOT FS NO MIDI 08"));             /* class 0: the interface's, mass storage */
     uh.msg = 0;
     {
         int k;
@@ -525,7 +548,7 @@ static void test_no_midi(void)
     devctl_ls = 1;
     host_on();
     assert(!enumerate() && uh.msg == UH_MSG_LOW);
-    assert(!root_resets && host_attaches == 1);
+    assert(!root_resets && host_attaches == 1 && scan_has("ROOT LOW SPEED"));
     uh.msg = 0;
     for (int k = 0; k < 600; k++) {                     /* 12 s with the device still attached: said once */
         fm1_ms += 20;
@@ -574,12 +597,14 @@ static void test_idle_hub(int with_stick)
     dev[HUB].port_chg[1] |= 1;
     uint32_t probes = dev[STICK].seen_probe;
     assert(!enumerate() && dev[STICK].seen_probe == probes + 1 && !dev[HUB].port_chg[1]);
+    assert(uh.msg == UH_MSG_NOMIDI && scan_has("P1 0103 NO MIDI 08"));   /* said for a hot-plug too */
+    uh.msg = 0;
     idle_hub(600);
     dev[HUB].port_dev[1] = 0;
     dev[HUB].port_en[1] = 0;
     dev[HUB].port_chg[1] |= 1;                         /* disconnects are acknowledged without port reset */
     idle_hub(100);
-    assert(!dev[HUB].port_chg[1]);
+    assert(!dev[HUB].port_chg[1] && scan_has("P1 0100 EMPTY"));
 
     /* An idle MIDI hot-plug resets only its port, preserving the powered hub and the stick. */
     uint32_t stick_resets = port_resets[1];
@@ -598,7 +623,7 @@ static void test_failed_probe(void)
     connect(-1);                                      /* a powered line with nothing answering EP0 */
     ep0_timeout = 1;
     host_on();
-    assert(!enumerate() && uh.msg == UH_MSG_NOMIDI);
+    assert(!enumerate() && uh.msg == UH_MSG_NOMIDI && scan_has("ROOT FS NO ANSWER"));
     uh.msg = 0;
     uint32_t requests = setup_requests;
     for (int k = 0; k < 3000; k++) {
@@ -615,7 +640,7 @@ static void test_failed_probe(void)
     host_on(); assert(!enumerate()); uh.msg = 0;
     ep0_timeout = 1;                                  /* configured hub stops answering without line drop */
     for (int k = 0; k < 30; k++) { fm1_ms += 20; uh_task(fm1_ms); }
-    assert(!uh.hub_addr && root_resets == 1);
+    assert(!uh.hub[0].addr && root_resets == 1);
     requests = setup_requests;
     idle_hub(600);
     assert(setup_requests == requests);
@@ -651,6 +676,80 @@ static void test_hub_synth_unplug(void)
     assert(root_resets == 2 && host_attaches == 2 && dev[KBD].addr == 4);
     uh.want = 0; uh_task(fm1_ms); uh.msg = 0;
     puts("USB host: unplugged OUT-only synth leaves hub idle without retry resets; replug works: OK");
+}
+
+/* A hub behind the hub (as in many USB-C hubs): its ports are scanned, addressed apart, polled and hot-plugged; a
+ * third hub is not followed; unplugging the inner hub forgets it. A low-speed device behind a hub says LOW SPEED. */
+static void nested_setup(int kbd)
+{
+    connect(HUB);
+    memset(dev[HUB].port_dev, 0, sizeof dev[HUB].port_dev);
+    dev[HUB].port_dev[2] = HUB2 + 1;
+    dev[HUB2].port_dev[1] = STICK + 1;
+    dev[HUB2].port_dev[2] = HUB3 + 1;
+    dev[HUB2].port_dev[3] = kbd ? KBD + 1 : 0;
+    host_on();
+}
+
+static void test_nested_hub(void)
+{
+    static const char *const scan[] = {"ROOT FS HUB 09", "HUB 1: 4 PORTS", "P1 0100 EMPTY", "P2 0103 HUB 09",
+                                       "HUB 2 (P2): 4 PORTS", "P1 0103 NO MIDI 08", "P2 0103 HUB SKIPPED 09",
+                                       "P3 0103 MIDI 01"};
+    nested_setup(1);
+    assert(enumerate() && uh.msg == UH_MSG_MIDI);
+    uh.msg = 0;
+    assert(dev[HUB].addr == 1 && dev[HUB2].addr == 3 && dev[HUB2].cfg == 1 && !dev[HUB3].cfg);
+    assert(uh.hub[0].addr == 1 && uh.hub[1].addr == 3 && uh.hub[1].up == 2);
+    assert(dev[STICK].addr == 9 && dev[HUB3].addr == 10 && dev[KBD].addr == 11 && uh.dev == 11);
+    assert(scan_is(scan, 8));
+    push_packet(0x643C9009u);
+    poll_n(4);
+    assert(mi_w - mi_r == 1);
+    mi_r = mi_w;
+    uh.want = 0; uh_task(fm1_ms); uh.msg = 0;
+
+    /* no MIDI device yet: both hubs idle; a keyboard plugged into the inner hub resets only its port */
+    nested_setup(0);
+    assert(!enumerate() && uh.msg == UH_MSG_NOMIDI);
+    uh.msg = 0;
+    idle_hub(600);
+    dev[HUB2].port_dev[3] = KBD + 1;
+    dev[HUB2].port_chg[3] |= 1;
+    assert(enumerate() && uh.msg == UH_MSG_MIDI && dev[KBD].addr == 11);
+    assert(root_resets == 1 && dev[HUB].seen_set_cfg == 1 && dev[HUB2].seen_set_cfg == 1 && port_resets[2] == 2);
+    assert(scan_has("P3 0103 MIDI 01"));
+    uh.want = 0; uh_task(fm1_ms); uh.msg = 0;
+
+    /* the inner hub unplugged while idle: forgotten, not polled; plugged in again with the keyboard: found */
+    nested_setup(0);
+    assert(!enumerate());
+    uh.msg = 0;
+    dev[HUB].port_dev[2] = 0;
+    dev[HUB].port_en[2] = 0;
+    dev[HUB].port_chg[2] |= 1;
+    dev[HUB2].present = 0;
+    for (int k = 0; k < 100; k++) { fm1_ms += 20; uh_task(fm1_ms); }
+    assert(!uh.hub[1].addr && !uh.msg && !scan_has("HUB 2 (P2): 4 PORTS") && scan_has("P2 0100 EMPTY"));
+    dev[HUB2].present = 1;
+    dev[HUB2].port_dev[3] = KBD + 1;
+    dev[HUB].port_dev[2] = HUB2 + 1;
+    dev[HUB].port_chg[2] |= 1;
+    assert(enumerate() && uh.msg == UH_MSG_MIDI && uh.hub[1].addr == 3 && dev[KBD].addr == 11);
+    assert(root_resets == 1 && dev[HUB].seen_set_cfg == 1);
+    uh.want = 0; uh_task(fm1_ms); uh.msg = 0;
+
+    /* low speed behind the hub: not reset or probed, LOW SPEED rather than NO MIDI DEVICE */
+    connect(HUB);
+    dev[HUB].port_dev[3] = 0;
+    dev[HUB].port_ls[1] = 1;
+    host_on();
+    assert(!enumerate() && uh.msg == UH_MSG_LOW && !port_resets[1] && !dev[STICK].seen_probe);
+    assert(scan_has("P1 0301 LOW SPEED"));
+    uh.msg = 0;
+    idle_hub(300);
+    uh.want = 0; uh_task(fm1_ms); uh.msg = 0;
+    puts("USB host: a hub behind a hub (scan, addresses, idle hot-plug, unplug), a third hub, low speed behind a hub: OK");
 }
 
 static void ack_tx(void)
@@ -781,6 +880,7 @@ int main(void)
     test_idle_hub(1);
     test_failed_probe();
     test_hub_synth_unplug();
+    test_nested_hub();
     test_host_output(0);
     test_host_output(1);
     test_endpoint_selection();

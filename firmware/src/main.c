@@ -277,6 +277,8 @@ static void fm1_main(void)
                                                   "LOW SPEED", "DEVICE LOST"};
             if (UH_TEXT[uh.msg][0])                     /* (on / off is the menu's value, not a toast) */
                 ui_say("USB ", UH_TEXT[uh.msg]);
+            if (uh.msg == UH_MSG_NOMIDI || uh.msg == UH_MSG_LOW)   /* what each hub port had: ABOUT */
+                str_cpy(ui.msg2, "USB SCAN IN ABOUT", sizeof ui.msg2);
             uh.msg = 0;
         }
 #endif
