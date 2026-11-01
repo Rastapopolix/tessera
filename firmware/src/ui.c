@@ -400,7 +400,8 @@ static void page_entered(void)
 {
     const page_t *pg = cur_page();
     if (pg->graph == GR_SCALE_PICKER && !ui.scale_picker_seen) {
-        ui.scale_family = (uint8_t)(SCALE_FAMILY[clamp(TSEL->p[P_SCALE], 0, SCALE_TOTAL - 1u)] + 1u);
+        ui.scale_family = (uint8_t)(tune_scale() ? SCALE_FAM_USER :
+                                    SCALE_FAMILY[clamp(TSEL->p[P_SCALE], 0, SCALE_TOTAL - 1u)] + 1u);
         ui.scale_picker_seen = 1;
     }
     song.seq_mode = !ui.home && pg->fam == FAM_SEQ;

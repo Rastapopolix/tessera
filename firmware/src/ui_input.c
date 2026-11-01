@@ -1184,6 +1184,8 @@ static void edit_param(uint32_t slot, int32_t steps)
         if (motion_param((uint32_t)(vp - TSEL->p)))
             motion_unplayed();
     }
+    if (pg->scope == SC_TRACK && vp - TSEL->p == P_SCALE)
+        tune_sel = 0;                                   /* (SCL turned: its scale again, not TUNING's) */
     if (pg->scope == SC_TRACK && scale_shared((uint32_t)(vp - TSEL->p)))
         scale_share(TSEL);
 }

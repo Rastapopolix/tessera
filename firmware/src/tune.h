@@ -20,6 +20,8 @@ static tune_slot_t tune_slot[TUNE_SLOTS] __attribute__((section(".pool")));   /*
 static micro_scale_t tune_micro[TUNE_SLOTS] = {     /* count 0: the slot is empty */
     {0, tune_slot[0].pitch}, {0, tune_slot[1].pitch}, {0, tune_slot[2].pitch}, {0, tune_slot[3].pitch}};
 _Static_assert(TUNE_SLOTS == 4u, "tune_micro's initialiser");
+#define SCALE_PICK_TOTAL (SCALE_TOTAL + TUNE_SLOTS)   /* SCL's picker: the catalogue, then the slots (scale_picker.c) */
+#define SCALE_FAM_USER (SCALE_FAMILIES + 2u)        /* its families: 0 ALL, 1..SCALE_FAMILIES, FAV, USER */
 static uint8_t tune_sel;                            /* TX_TUNE: 0 OFF, 1..TUNE_SLOTS that slot (the project's) */
 
 static int tune_used(uint32_t k) { return k < TUNE_SLOTS && tune_micro[k].count != 0u; }

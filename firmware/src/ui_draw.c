@@ -672,7 +672,7 @@ static void draw_foot(void)
         if (pg->graph == GR_ROLL && !drum_track(t)) {  /* the piano roll: its tinted rows' scale ("C MIN") */
             str_cpy(ti, N_NOTE[(uint32_t)t->p[P_ROOT] % 12u], 4);
             str_cpy(ti + str_len(ti), " ", 4);
-            str_cpy(ti + str_len(ti), N_SCALE[clamp(t->p[P_SCALE], 0, (int32_t)(sizeof N_SCALE / sizeof N_SCALE[0]) - 1)], 8);
+            str_cpy(ti + str_len(ti), scale_pick_name(scale_picker_selected()), 8);   /* (TSEL's: the song's scale) */
         }
     }
     str_cpy(s, ename, sizeof s);
@@ -829,9 +829,9 @@ static void draw_columns(void)
         return;
     }
     if (cur_page()->graph == GR_SCALE_PICKER) {
-        uint32_t scale = (uint32_t)clamp(TSEL->p[P_SCALE], 0, SCALE_TOTAL - 1u);
-        draw_column(0, "FAMILY", SCALE_FAMILY_SHORT[ui.scale_family], "", VAL(0u), -1, ICON_X_FOLDER);
-        draw_column(1, "SCALE", N_SCALE[scale], "", VAL(1u), -1, ICON_NONE);
+        uint32_t scale = scale_picker_selected();
+        draw_column(0, "FAMILY", scale_family_short(ui.scale_family), "", VAL(0u), -1, ICON_X_FOLDER);
+        draw_column(1, "SCALE", scale_pick_name(scale), "", VAL(1u), -1, ICON_NONE);
         param_format(&TP[P_ROOT], TSEL->p[P_ROOT], val, &unit);
         draw_column(2, "ROOT", val, unit, VAL(2u), -1, ICON_AUTO);
         param_format(&TP[P_QUANT], TSEL->p[P_QUANT], val, &unit);
@@ -1478,7 +1478,7 @@ static void draw_columns(void)
     for (c = 0; c < 4u; c++) {
         int16_t *vp;
         if (scale_settings_page(cur_page()) && c == 1u) {
-            draw_column(c, "FAV", scale_favorite((uint32_t)TSEL->p[P_SCALE]) ? "ON" : "OFF", "", VAL(c), -1, ICON_X_STAR);
+            draw_column(c, "FAV", scale_pick_fav(scale_picker_selected()) ? "ON" : "OFF", "", VAL(c), -1, ICON_X_STAR);
             continue;
         }
         const param_desc_t *d = page_desc(cur_page(), c, &vp);

@@ -3197,8 +3197,8 @@ static void mo_slot_row(const char *tag, const char *nm, int used, int boot, int
 static uint32_t mo_sc_sig;
 static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fav)
 {
-    static const char *const FAM[SCALE_FAMILIES + 2u] = {"ALL", "WESTERN", "EDO", "JUST", "HARMON", "HISTOR", "REGION",
-                                                         "NON-OCT", "MAQAM", "* FAVES"};
+    static const char *const FAM[SCALE_FAM_USER + 1u] = {"ALL", "WESTERN", "EDO", "JUST", "HARMON", "HISTOR", "REGION",
+                                                         "NON-OCT", "MAQAM", "* FAVES", "USER"};
     uint32_t f, s, sig = total * 7u + song.sel * 131u + ux.pal * 31u + ui.scale_family * 7919u + rank * 40503u +
                             scale * 1031u + fav;
     char a[32], b[32];
@@ -3217,15 +3217,16 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
         str_cpy(b + str_len(b), total == 1u ? " SCALE" : " SCALES", 8);
         mo_textr(b, 119, 1, MO_DIM);
         mo_hl(0, 8, 120, MO_INK);
-        for (f = 0; f < SCALE_FAMILIES + 2u; f++) {     /* the families */
-            int32_t y = 12 + (int32_t)f * 9;
+        for (f = 0; f <= SCALE_FAM_USER; f++) {         /* the families (8 px rows: eleven above the foot) */
+            int32_t y = 12 + (int32_t)f * 8;
             if (f == ui.scale_family)
-                mo_fill(0, y - 1, 44, 9, MO_INK);
+                mo_fill(0, y - 1, 44, 8, MO_INK);
             mo_text(FAM[f], 2, y, f == ui.scale_family ? MO_BG : MO_INK);
         }
         mo_vl(46, 11, 96, MO_DIM);
         if (!total || rank >= total)
-            mo_textc(!total ? (ui.scale_family == SCALE_FAMILIES + 1u ? "NO FAVES" : "NO SCALES") : "NOT HERE", 83, 48,
+            mo_textc(!total ? (ui.scale_family == SCALE_FAMILIES + 1u ? "NO FAVES" :
+                               ui.scale_family == SCALE_FAM_USER ? "NONE SENT" : "NO SCALES") : "NOT HERE", 83, 48,
                      MO_DIM);
         for (d = -2; d <= 3 && total && rank < total; d++) {
             int32_t at = (int32_t)rank + d;
@@ -3246,10 +3247,10 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
                 while (b[cut] == ' ') cut++;
                 mo_cut(l, b + cut, 10);
                 mo_text(l, 51, 45, MO_INK);
-                if (scale_favorite(id))
+                if (scale_pick_fav(id))
                     mo_text("*", 110, 36, MO_INK);
-                fmt_int(b, SCALE_DEGREES[id]);
-                str_cpy(b + str_len(b), SCALE_FAMILY[id] == 6u ? " NON-OCT" : " NOTES", 10);
+                fmt_int(b, (int32_t)scale_pick_degrees(id));
+                str_cpy(b + str_len(b), scale_pick_nonoct(id) ? " NON-OCT" : " NOTES", 10);
                 mo_text(b, 51, 56, MO_DIM);
             } else {
                 b[11] = 0;
@@ -3261,7 +3262,7 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
             mo_fill(118, 11 + (int32_t)rank * 86 / (int32_t)(total - 1u), 2, 10, MO_INK);
         }
         mo_hl(0, 108, 120, MO_INK);                     /* the foot */
-        if (scale_favorite(scale)) mo_inv("* FAV", 2, 111);
+        if (scale_pick_fav(scale)) mo_inv("* FAV", 2, 111);
         else mo_text("* FAV", 2, 111, MO_DIM);
         mo_box(62, 110, 28, 10, MO_INK);
         mo_textc("BACK", 76, 111, MO_INK);
