@@ -948,6 +948,16 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
+    if (pg->graph == GR_MIDICH && midi_layer_on()) {   /* MIDI OUT, OCT+ held: KNOB k track k's TRANSPOSE, a
+                                                        * semitone a detent */
+        if (slot < TESSERA_TRACKS)
+            tessera_param_set(slot, TX_MIDI_TR, tessera_param_get(slot, TX_MIDI_TR) + steps);
+        oct_eat |= 2u;
+        ui.oct_t0 |= 2u;
+        oct_deferred = 0;
+        ui.force = 1;
+        return;
+    }
     if (pg->graph == GR_MIDICH) {                   /* MIDI OUT: KNOB k track k's channel, a step a detent */
         if (slot < TESSERA_TRACKS)
             tessera_param_set(slot, TX_MIDI_CH, tessera_param_get(slot, TX_MIDI_CH) + steps);
@@ -1184,6 +1194,8 @@ static void edit_param(uint32_t slot, int32_t steps)
         if (motion_param((uint32_t)(vp - TSEL->p)))
             motion_unplayed();
     }
+    if (pg->scope == SC_TRACK && vp - TSEL->p == P_SCALE)
+        tune_sel = 0;                                   /* (SCL turned: its scale again, not TUNING's) */
     if (pg->scope == SC_TRACK && scale_shared((uint32_t)(vp - TSEL->p)))
         scale_share(TSEL);
 }

@@ -44,7 +44,8 @@ static const help_t HELP_PAGE[HP_COUNT] = {
     H_(HP_TIMING_STEP, "TIMING", "A generator's: on a STEP track each step has its own ratchet and chance (OCT+ on a "
                                  "note: its sheet). KNOB 3, SHAPE, shapes the steps' ratchets here too."),
     H_(HP_SCALE_FAMILY, "SCALE FAMILY", "Narrows the scales KNOB 2 picks from: all of them, Western, EDO, just, "
-                                        "harmonic, historical, regional, non-octave, maqam, or the favourites."),
+                                        "harmonic, historical, regional, non-octave, maqam, the favourites, or "
+                                        "USER: the tunings sent from the web editor (TUNING, the project's)."),
     H_(HP_SCALE_FAV, "SCALE FAVOURITE", "Right marks the track's scale a favourite, left unmarks it; SCALES lists the "
                                         "favourites together."),
     H_(HP_SLOT_PROJECT, "PROJECT SLOT", "Which project slot, A to D, then the template and New song. OCT+ opens its "
@@ -508,7 +509,8 @@ static void help_find(uint32_t k)
     else if (pg->graph == GR_TIMING) x = k == 3u ? TX_SUB_HUMAN : k == 2u ? TX_SUB_SHAPE : k ? TX_SUB_CHANCE : TX_SUB_RATCH;
     else if (pg->graph == GR_ENERGY && en_layer_on()) x = k ? 0xFFu : TX_EN_DEPTH;
     else if (pg->graph == GR_ENERGY && k < 3u) x = k == 2u ? TX_EN_LEVEL : k ? TX_EN_RESTS : TX_EN_ARC;
-    else if (pg->graph == GR_MIDICH) { x = TX_MIDI_CH; help_tr = k; }   /* (KNOB k: track k's) */
+    else if (pg->graph == GR_MIDICH) { x = midi_layer_on() ? TX_MIDI_TR : TX_MIDI_CH; help_tr = k; }   /* (KNOB k:
+                                                                                                    * track k's) */
     else if (pg->graph == GR_KEYLINK && k == 0u) x = TX_KEY_LINK;
     else if (pg->graph == GR_ORGANIC && k < 2u) x = k ? TX_ORG_RATE : TX_ORG_SPEED;
     else if (pg->graph == GR_FORM) {

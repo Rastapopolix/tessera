@@ -1487,8 +1487,8 @@ static void mo_pic_energy(void)
         mo_fill(2, 54, len < 2 ? 2 : len > 116 ? 116 : len, 3, MO_INK);
     }
 }
-/* MIDI OUT: a row a track: its number, the channel its notes go out on (AUTO: ROUT's or DRUM's), and the menu's MIDI OUT
- * when it keeps the steps in (KEYS) or sends nothing (OFF) */
+/* MIDI OUT: a row a track: its number, the channel its notes go out on (AUTO: ROUT's or DRUM's), its TRANSPOSE when not
+ * 0, and the menu's MIDI OUT when it keeps the steps in (KEYS) or sends nothing (OFF) */
 static void mo_pic_midich(void)
 {
     for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
@@ -1501,6 +1501,10 @@ static void mo_pic_midich(void)
             str_cpy(b, "CH ", sizeof b);
             fmt_int(b + 3, (int32_t)ch + 1);
             if (!tessera.midi_ch[k]) str_cpy(b + str_len(b), drum_track(&trk[k]) && settings_drumch ? " DRUM" : " ROUT", 6);
+            if (tessera.midi_tr[k]) {                   /* (TRANSPOSE, in semitones) */
+                str_cpy(b + str_len(b), " ", 2);
+                midi_tr_text(b + str_len(b), tessera.midi_tr[k]);
+            }
         }
         mo_text(b, 18, y, ch == MIDI_OUT_NONE ? mo_tdim(k) : MO_TRK(k));
     }
@@ -2188,8 +2192,9 @@ static void mono_page(void)
 
 /* ---- the chrome of the screens still drawn whole by their own code (lists, MIXER, MODS, the browser, ...) ---- */
 /* the header (draw_head; 18 px = 9 cells): the page's chip inverted (ERASING, a message or a layer's name in its
- * place), the octave shift, then at the right REC, PLAY or STOP and the tempo; its line on row 8 */
-static void mo_dhead(const char *chip, const char *msg, int low)
+ * place), the octave shift, then at the right the battery (bat: ui_draw.c batt_head), REC, PLAY or STOP and the tempo;
+ * its line on row 8 */
+static void mo_dhead(const char *chip, const char *msg, int32_t bat)
 {
     char b[24], t[24];
     int32_t x = 119;
@@ -2208,9 +2213,18 @@ static void mo_dhead(const char *chip, const char *msg, int low)
         if (((song.rec & ~song.rec_wait) >> song.sel) & 1u) mo_disc(x + 2, 4, 2, MO_INK);
         else mo_circ(x + 2, 4, 2, MO_INK);
     }
-    if (low) {                                          /* the battery, only when it runs low */
+    if (bat >= 0) {                                     /* the battery: 0..3 bars of 5 cells, a bolt before it on
+                                                         * external power */
+        static const uint8_t BARS[4] = {0, 2, 3, 5};
         x -= 10;
         mo_box(x, 2, 7, 5, MO_INK), mo_vl(x + 7, 3, 3, MO_INK);
+        if (BARS[bat & 3])
+            mo_fill(x + 1, 3, BARS[bat & 3], 3, MO_INK);
+        if (bat >= 4) {
+            x -= 5;
+            mo_fill(x + 2, 2, 1, 1, MO_INK), mo_fill(x + 1, 3, 1, 1, MO_INK), mo_hl(x, 4, 3, MO_INK);
+            mo_fill(x + 1, 5, 1, 1, MO_INK), mo_fill(x, 6, 1, 1, MO_INK);
+        }
     }
     if (!msg && !ui.home && !ui.menu && !new_on() && !sec_map_on() && !designer_on()) {   /* a page: its place (4/9) */
         mo_place(t);
@@ -3197,8 +3211,8 @@ static void mo_slot_row(const char *tag, const char *nm, int used, int boot, int
 static uint32_t mo_sc_sig;
 static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fav)
 {
-    static const char *const FAM[SCALE_FAMILIES + 2u] = {"ALL", "WESTERN", "EDO", "JUST", "HARMON", "HISTOR", "REGION",
-                                                         "NON-OCT", "MAQAM", "* FAVES"};
+    static const char *const FAM[SCALE_FAM_USER + 1u] = {"ALL", "WESTERN", "EDO", "JUST", "HARMON", "HISTOR", "REGION",
+                                                         "NON-OCT", "MAQAM", "* FAVES", "USER"};
     uint32_t f, s, sig = total * 7u + song.sel * 131u + ux.pal * 31u + ui.scale_family * 7919u + rank * 40503u +
                             scale * 1031u + fav;
     char a[32], b[32];
@@ -3217,15 +3231,16 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
         str_cpy(b + str_len(b), total == 1u ? " SCALE" : " SCALES", 8);
         mo_textr(b, 119, 1, MO_DIM);
         mo_hl(0, 8, 120, MO_INK);
-        for (f = 0; f < SCALE_FAMILIES + 2u; f++) {     /* the families */
-            int32_t y = 12 + (int32_t)f * 9;
+        for (f = 0; f <= SCALE_FAM_USER; f++) {         /* the families (8 px rows: eleven above the foot) */
+            int32_t y = 12 + (int32_t)f * 8;
             if (f == ui.scale_family)
-                mo_fill(0, y - 1, 44, 9, MO_INK);
+                mo_fill(0, y - 1, 44, 8, MO_INK);
             mo_text(FAM[f], 2, y, f == ui.scale_family ? MO_BG : MO_INK);
         }
         mo_vl(46, 11, 96, MO_DIM);
         if (!total || rank >= total)
-            mo_textc(!total ? (ui.scale_family == SCALE_FAMILIES + 1u ? "NO FAVES" : "NO SCALES") : "NOT HERE", 83, 48,
+            mo_textc(!total ? (ui.scale_family == SCALE_FAMILIES + 1u ? "NO FAVES" :
+                               ui.scale_family == SCALE_FAM_USER ? "NONE SENT" : "NO SCALES") : "NOT HERE", 83, 48,
                      MO_DIM);
         for (d = -2; d <= 3 && total && rank < total; d++) {
             int32_t at = (int32_t)rank + d;
@@ -3246,10 +3261,10 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
                 while (b[cut] == ' ') cut++;
                 mo_cut(l, b + cut, 10);
                 mo_text(l, 51, 45, MO_INK);
-                if (scale_favorite(id))
+                if (scale_pick_fav(id))
                     mo_text("*", 110, 36, MO_INK);
-                fmt_int(b, SCALE_DEGREES[id]);
-                str_cpy(b + str_len(b), SCALE_FAMILY[id] == 6u ? " NON-OCT" : " NOTES", 10);
+                fmt_int(b, (int32_t)scale_pick_degrees(id));
+                str_cpy(b + str_len(b), scale_pick_nonoct(id) ? " NON-OCT" : " NOTES", 10);
                 mo_text(b, 51, 56, MO_DIM);
             } else {
                 b[11] = 0;
@@ -3261,7 +3276,7 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
             mo_fill(118, 11 + (int32_t)rank * 86 / (int32_t)(total - 1u), 2, 10, MO_INK);
         }
         mo_hl(0, 108, 120, MO_INK);                     /* the foot */
-        if (scale_favorite(scale)) mo_inv("* FAV", 2, 111);
+        if (scale_pick_fav(scale)) mo_inv("* FAV", 2, 111);
         else mo_text("* FAV", 2, 111, MO_DIM);
         mo_box(62, 110, 28, 10, MO_INK);
         mo_textc("BACK", 76, 111, MO_INK);

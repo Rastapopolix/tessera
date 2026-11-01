@@ -272,11 +272,13 @@ static void fm1_main(void)
         fm1_wdt_feed();
 #if MELODEE_USB_HOST
         uh_task(fm1_ms);                                /* before usb_retry: a host port is not retried as a device */
-        if (uh.msg) {
-            static const char *const UH_TEXT[] = {"", "", "", "MIDI READY", "NO MIDI DEVICE",
-                                                  "LOW SPEED", "DEVICE LOST"};
-            if (UH_TEXT[uh.msg][0])                     /* (on / off is the menu's value, not a toast) */
-                ui_say("USB ", UH_TEXT[uh.msg]);
+        if (uh.msg) {                                   /* (on / off is the menu's value, not a toast; literals,
+                                                         * so tests/msg_len_test.py sees they fit the header) */
+            if (uh.msg >= UH_MSG_MIDI)
+                ui_say("USB ", uh.msg == UH_MSG_MIDI ? "MIDI READY" : uh.msg == UH_MSG_NOMIDI ? "NO MIDI" :
+                               uh.msg == UH_MSG_LOW ? "LOW SPEED" : "DEVICE LOST");
+            if (uh.msg == UH_MSG_NOMIDI || uh.msg == UH_MSG_LOW)   /* what each hub port had: ABOUT */
+                str_cpy(ui.msg2, "USB SCAN: ABOUT", sizeof ui.msg2);
             uh.msg = 0;
         }
 #endif
@@ -295,6 +297,20 @@ static void fm1_main(void)
             int32_t b = fm1_adc_read(FM1_ADC_BATT);     /* battery: slow IIR */
             if (b > 0)
                 song.batt_raw = song.batt_raw ? song.batt_raw + (b - song.batt_raw) / 32 : b;
+        }
+        {                                               /* 5 V in and the AC79's charger (SDK p33.h), read only, twice a
+                                                         * second; a read that timed out keeps the last (ui_draw.c) */
+            static uint32_t pwr_ms;
+            if (fm1_ms - pwr_ms >= 500u) {
+                uint32_t to = fm1_p33_timeouts;
+                uint8_t a = fm1_p33_read(0xA1u), c = fm1_p33_read(0x19u), e = fm1_p33_read(0x1Au);
+                pwr_ms = fm1_ms;
+                if (fm1_p33_timeouts == to) {
+                    song.pwr[0] = a;
+                    song.pwr[1] = c;
+                    song.pwr[2] = e;
+                }
+            }
         }
         {
             int32_t a = fm1_adc_read(FM1_ADC_MASTER);

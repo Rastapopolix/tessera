@@ -891,6 +891,28 @@ C4 + TRN. Recordings and STEP/NOTES keep these 7-bit addresses. MIDI OUT does no
 messages. See [the catalogue](../assets/scales/README.md) for mapping and register limits.
 
 
+### User tunings (command 80)
+
+INFO appends `54 01 slots degrees` (tag T, version 1, 4 slots, 64 degrees at most). A user tuning is a table in the
+microtonal path's format: the degrees above the root in hundredths of a cent, strictly rising, the last one the
+period (above the last degree, at most 480000: four octaves); degree 0 (the root, 0) is not sent. The editor reads a
+Scala `.scl` file, folds its degrees into the period and sorts them before it sends the table. The slots are the
+project's: in RAM, saved with the project (its TUNE part, TSP1 part 25) by SAVE or autosave, and a project loaded
+brings its own (none: all empty). The track parameter TUNING (central id 0x270, the project's: 0 OFF, 1..4 a slot)
+makes every melodic track play the slot instead of SCL's scale, wherever the microtonal path reads it; `SET` or
+`TRACK_PARAM` of SCL (id 26) sets it OFF. Pitches travel as u32 (5 x 7 bits, LSB first, as the backup's).
+
+Request `80 op [args]`, reply `80 op rc [data]`; rc 0 done, 1 bad arguments or an empty slot to get. Nothing is
+written to flash, so the transport keeps playing.
+
+| op | request args | reply data (rc 0) |
+| --- | --- | --- |
+| 0 list | — | slots, max degrees, TUNING, then per slot: count (0 empty), name string, title string |
+| 1 get | slot | slot, count, name, title, count x u32 (degrees 1..count, the period last) |
+| 2 put | slot, count 1..64, name (1..7 printable ASCII, the device upper-cases it, 0-ended), title (0..23, 0-ended), count x u32 | slot |
+| 3 clear | slot | slot (TUNING on that slot becomes OFF) |
+| 4 select | TUNING 0..slots | TUNING |
+
 ### Prophet native programs (engine 19)
 
 INFO adds the capability bytes `35 01 13 10 11 12 14 00 01` (hex): tag 0x35,

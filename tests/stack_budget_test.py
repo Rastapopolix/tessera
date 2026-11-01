@@ -13,7 +13,7 @@ ROOTS = ['fm1_cstart', 'isr_alnk0', 'isr_timer5', 'fm1_core1_main', 'fm1_fault_c
 
 
 class StackBudget(unittest.TestCase):
-    def analyze(self, bodies=None, extra_dis='', engine=None):
+    def analyze(self, bodies=None, extra_dis='', engine=None, usb=None):
         bodies = bodies or {}
         names = list(dict.fromkeys(ROOTS + list(bodies)))
         ir = '%struct.engine_t = type { void (i32)* }\n'
@@ -27,7 +27,9 @@ class StackBudget(unittest.TestCase):
             src = Path(directory)
             (src / 'core.h').write_text('typedef struct { void (*render)(int); } engine_t;')
             (src / 'seq.c').write_text('if (song.playing || cin_left\nif (started) seq_advance(0);')
-            (src / 'usb_host.c').write_text('return depth == 0u ? uh_hub_probe\nuh_probe(1, m)')
+            (src / 'usb_host.c').write_text(usb or '#define UH_HUBS 2u\n'
+                                            'r = depth < UH_HUBS && !uh.hub[depth].addr ? uh_hub_probe(depth,\n'
+                                            'r = uh_probe((uint8_t)(h + 1u), p, m);')
             (src / 'eng_test.c').write_text('.render=renderer,')
             # melodee-tess: the bank caches' and help's bounded re-entry (stack_budget.CACHE_GUARDED)
             (src / 'native_presets.c').write_text('native_fm_cached = (uint8_t)b;\n        native_index(ENGI_FM6, b);')
@@ -115,22 +117,33 @@ class StackBudget(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'recursive stack path'):
             self.analyze({'fm1_cstart': '  call void @fm1_cstart()\n  ret void'})
 
-    def test_bounded_hub_recursion(self):
+    def test_bounded_hub_recursion(self):                # (two hub levels: the root probe and two below)
         report = self.analyze({'fm1_cstart': '  call void @uh_probe()\n  ret void',
                                'uh_probe': '  call void @uh_probe()\n  ret void'})
-        self.assertEqual(report['paths']['fm1_cstart'][0], 360)
+        self.assertEqual(report['paths']['fm1_cstart'][0], 480)
 
     def test_bounded_hub_port_helper(self):
         report = self.analyze({'fm1_cstart': '  call void @uh_probe()\n  ret void',
                                'uh_probe': '  call void @uh_hub_port_probe()\n  ret void',
                                'uh_hub_port_probe': '  call void @uh_probe()\n  ret void'})
-        self.assertEqual(report['paths']['fm1_cstart'][0], 600)
+        self.assertEqual(report['paths']['fm1_cstart'][0], 840)
 
     def test_idle_hub_port_helper(self):
         report = self.analyze({'fm1_cstart': '  call void @uh_hub_port_probe()\n  ret void',
                                'uh_probe': '  call void @uh_hub_port_probe()\n  ret void',
                                'uh_hub_port_probe': '  call void @uh_probe()\n  ret void'})
-        self.assertEqual(report['paths']['fm1_cstart'][0], 480)
+        self.assertEqual(report['paths']['fm1_cstart'][0], 720)
+
+    def test_hub_levels_from_source(self):
+        one = '#define UH_HUBS 1u\nr = depth < UH_HUBS && !uh.hub[depth].addr ? uh_hub_probe(depth,\n' \
+              'r = uh_probe((uint8_t)(h + 1u), p, m);'
+        report = self.analyze({'fm1_cstart': '  call void @uh_probe()\n  ret void',
+                               'uh_probe': '  call void @uh_probe()\n  ret void'}, usb=one)
+        self.assertEqual(report['paths']['fm1_cstart'][0], 360)
+        with self.assertRaisesRegex(ValueError, 're-entry bounds'):
+            self.analyze(usb=one.replace('UH_HUBS 1u', 'UH_HUBS 3u'))
+        with self.assertRaisesRegex(ValueError, 're-entry bounds'):
+            self.analyze(usb='#define UH_HUBS 2u\nreturn uh_hub_probe(depth')
 
     def test_unbounded_port_helper_recursion(self):
         with self.assertRaisesRegex(ValueError, 'recursive stack path'):

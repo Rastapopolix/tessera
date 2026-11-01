@@ -2,13 +2,14 @@
 # SPDX-License-Identifier: GPL-3.0-only
 """The header messages fit: every literal text ui_message() or ui_say() shows is at most 15 characters, what the
 Mono header has room for (ui_mono.c mo_cut(.., ui.msg, 15): a longer one is cut, not ellipsised, so the render lint
-does not see it). ui_say's two literals count together."""
+does not see it). ui_say's two literals count together; the second message (a literal copied into ui.msg2) too."""
 import glob
 import re
 import sys
 
 ROOM = 15
 CALL = re.compile(r'\bui_(message|say)\s*\(')
+MSG2 = re.compile(r'\bstr_cpy\s*\(\s*ui\.msg2\s*,\s*"((?:[^"\\]|\\.)*)"')
 LIT = re.compile(r'"((?:[^"\\]|\\.)*)"')
 
 
@@ -89,6 +90,12 @@ def main():
                 if len(s) > ROOM:
                     print(f'{path}:{line}: "{s}" is {len(s)} characters (room: {ROOM})')
                     bad += 1
+        for m in MSG2.finditer(src):
+            s = bytes(m.group(1), 'utf-8').decode('unicode_escape')
+            if len(s) > ROOM:
+                line = src.count('\n', 0, m.start()) + 1
+                print(f'{path}:{line}: "{s}" (second message) is {len(s)} characters (room: {ROOM})')
+                bad += 1
     print(f'messages: {bad} too long' if bad else 'messages: every literal fits the header')
     return 1 if bad else 0
 

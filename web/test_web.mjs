@@ -31,7 +31,7 @@ const E = vm.runInNewContext(proto + `
 ;({ frame, unframe, parse, req, Link, parseWav, resample, normalize, takeSample, autoTrim, zoomView, rootFromName, buildSlot, makeMockDevice, CMD, SMP,
    UP, bank, nativeBank, capturePatch, auditionPatch, startWatch, libraryFile, readLibraryFile, paramKeys, patternFromSteps, stepsFromPattern, upName,
    mixer, parseNotes, parseHits, hitsText, gridFromSteps, LANE_NOTE, LANE_OF, readDevicePreferences, devicePresetRows, engineOrder, ENGINE_ORDER, aliasOf, fmtValue, FM6,
-   FM4, fromDigital, nativeImportTargets, scaleRows, SCALE_INFO })`,
+   FM4, fromDigital, nativeImportTargets, scaleRows, SCALE_INFO, parseScala, tuneName, tuneValid, TUNE })`,
 { setTimeout, clearTimeout, setInterval, clearInterval, console });
 
 {
@@ -1074,6 +1074,68 @@ async function editorSong() {
 }
 
 /* Run the page's actual session helpers and connect-load path with delayed replies. */
+/* ------------------------------------------------- user tunings (Scala, command 80) --- */
+/* parseScala == tools/gen_scales.py on every catalogue .scl, the folds and refusals, and command 80 against the mock
+   (its put / get / list / select / clear, and the tunings saved with a project) */
+async function editorTunings() {
+  const rows = JSON.parse(py(`import sys, json; sys.path.insert(0, "tools"); import gen_scales
+print(json.dumps([[r["file"], r["pitch"], r["name"]] for r in gen_scales.catalogue() if "file" in r]))`).toString());
+  const root = join(HERE, "..");
+  let same = rows.length > 0;
+  for (const [file, pitch] of rows) {
+    const t = E.parseScala(readFileSync(join(root, "assets/scales", file), "utf8"), file);
+    same &&= eq([0, ...t.pitch], pitch) && t.count === pitch.length - 1 && !t.folded && E.tuneValid(t);
+  }
+  ok(same, `Scala: the ${rows.length} catalogue .scl files read as tools/gen_scales.py reads them`);
+  const edo = (n) => `! ${n}-EDO\n${n}-tone equal\n ${n}\n!\n` + Array.from({ length: n }, (_, i) => `${(1200 * (i + 1) / n).toFixed(5)} step`).join("\n");
+  const e12 = E.parseScala(edo(12), "12edo.scl"), chr = E.SCALE_INFO.find((r) => r.name === "CHR");
+  ok(eq(e12.pitch, Array.from({ length: 12 }, (_, i) => (i + 1) * 10000)) && e12.count === chr.count && e12.name === "12EDO" &&
+     e12.title === "12-tone equal", "Scala: a 12-EDO file is CHR's twelve semitones, its name from the file");
+  const e53 = E.parseScala(edo(53));
+  ok(e53.count === 53 && e53.pitch[0] === 2264 && e53.pitch[52] === 120000 && e53.name === "53-TONE",
+     "Scala: 53-EDO as the catalogue's 53EDO (its name from the description without a file)");
+  const ji = E.parseScala("Just\n3\n5/4\n3/2   the fifth\n2\n");
+  ok(eq(ji.pitch, [38631, 70196, 120000]), "Scala: ratios n/d and n, text after a pitch ignored");
+  const fold = E.parseScala("Folds\n5\n-100.0\n1300.\n700.0\n700.0\n1200.0");
+  ok(eq(fold.pitch, [10000, 70000, 110000, 120000]) && fold.count === 4 && fold.folded === 3,
+     "Scala: degrees folded into the period, sorted, a repeat dropped");
+  const bp = E.parseScala("BP\n2\n1.\n3/1");
+  ok(bp.pitch.at(-1) === 190196 && bp.count === 2, "Scala: a non-octave period (the tritave)");
+  const refuses = ["", "Only a title", "T\nx\n100.", "T\n3\n100.\n200.", "T\n2\n100.\n0/1", "T\n2\n100.\nabc", "T\n1\n-1200.0",
+    "T\n1\n17/1", "T\n65\n" + Array.from({ length: 65 }, (_, i) => `${(i + 1) * 18}.0`).join("\n")];
+  ok(refuses.every((s) => { try { E.parseScala(s); return false; } catch (e) { return !!e?.message; } }),   /* (the page's Error: another realm) */
+     "Scala: no count, too few pitches, a zero or bad ratio, a period down or over 4 octaves, 65 degrees: refused");
+  ok(E.parseScala("T\n64\n" + Array.from({ length: 64 }, (_, i) => ((i + 1) * 18.75).toFixed(2)).join("\n")).count === 64,
+     "Scala: 64 degrees taken");
+  ok(E.tuneName("C:\\scl\\my long name.SCL") === "MY LONG" && E.tuneName("é.scl") === "USER", "Scala: a slot name of 7 printable characters");
+
+  const m = E.makeMockDevice({ auto: false });
+  const link = new E.Link((d) => [...m.access.outputs.values()][0].send(d), { timeout: 100 });
+  [...m.access.inputs.values()][0].onmidimessage = (e) => link.receive(e.data);
+  const rq = (r) => link.request(r), C = E.CMD, tune = (op, ...a) => rq(E.req.tune(op, ...a)).then((r) => E.parse[C.TUNE](r));
+  const info = E.parse[C.INFO](await rq(E.req.info()));
+  ok(info.tune?.slots === 4 && info.tune.degrees === 64, "TUNE: INFO advertises four slots of 64 degrees");
+  let r = E.parse[C.TUNE](await rq(E.req.tunePut(2, ji)));
+  ok(!r.rc && r.slot === 2, "TUNE: put a tuning in USR3");
+  r = await tune(1, 2);
+  ok(!r.rc && r.name === "JUST" && r.title === "Just" && eq(r.pitch, ji.pitch), "TUNE: get it back, its degrees as sent");
+  r = await tune(0);
+  ok(!r.rc && r.list.length === 4 && r.list[2].count === 3 && !r.list[0].count && r.sel === 0, "TUNE: the list, slot by slot");
+  r = await tune(4, 3);
+  ok(!r.rc && r.sel === 3, "TUNE: select it (TUNING USR3)");
+  r = E.parse[C.TUNE](await rq(E.req.tunePut(0, { ...ji, pitch: [70196, 38631, 120000] })));
+  ok(r.rc === 1 && !(await tune(0)).list[0].count, "TUNE: unsorted degrees refused");
+  await rq(E.req.project(1, 3));
+  await tune(3, 2);
+  r = await tune(0);
+  ok(!r.list[2].count && r.sel === 0, "TUNE: clear the slot TUNING plays: TUNING OFF");
+  await rq(E.req.project(0, 3));
+  r = await tune(0);
+  ok(r.list[2].count === 3 && r.sel === 3, "TUNE: a project loaded brings its tunings back");
+  r = await tune(4, 5);
+  ok(r.rc === 1, "TUNE: a selection past the slots refused");
+}
+
 async function editorSessions() {
   const state = html.slice(html.indexOf("let busy = 0;"), html.indexOf("let dragging", html.indexOf("let busy = 0;")));
   const requests = html.slice(html.indexOf("function assertSession(d)"), html.indexOf("/* the whole connect sequence */"));
@@ -1091,7 +1153,7 @@ async function editorSessions() {
     parse: { 1: r => r, 2: () => ({ used: false }), 3: () => ({}), 4: r => r },
     req: { info: () => "info", project: () => "project", smpInfo: () => "sample", dump: () => "dump" },
     paramKeys: noop, libAdopt: () => { adoptStarted?.(); return adopted || Promise.resolve(); },
-    buildUI: () => { shown++; }, renderPanels: noop, loadSteps: noop,
+    buildUI: () => { shown++; }, renderPanels: noop, loadSteps: noop, readTunings: noop,
     startWatch: async () => false, renderLive: noop, renderLib: noop,
     renderBank: noop, renderSysinfo: noop, sayK: noop, report: noop, syncPreferences: noop,
   });
@@ -1680,6 +1742,7 @@ await editorTracks();
 await editorMixer();
 await editorTrackParam();
 await editorSong();
+await editorTunings();
 await editorSessions();
 await editorFm6();
 await editorFm4();

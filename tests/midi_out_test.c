@@ -3,7 +3,7 @@
 /* MIDI OUT and CLOCK OUT (firmware/src/midi_out.c) through the real sequencer, keys, MIDI IN and the USB queue
  * (usb.c midi_out_q): KEYS sends the keys only (as before), ALL also the steps, the generators and the ARP, OFF nothing;
  * MIDI IN is never echoed; a track's channel follows ROUT and a drum track the DRUM channel, unless the track has its
- * own (GLO > MIDI OUT: 1..16, or OFF); a mute sends nothing;
+ * own (GLO > MIDI OUT: 1..16, or OFF); its TRANSPOSE moves the notes sent (not past 0..127); a mute sends nothing;
  * every note-on gets its note-off (STOP, a panic, a channel change); 24 clock pulses a beat with START and STOP while
  * CLK is INT, none from an external clock; the settings survive a save.
  * Run by tests/run_tests.sh (needs build/gen from one firmware build). */
@@ -36,6 +36,7 @@ static void reset(uint32_t out)
     fm1_in.notes = kb_prev = 0; song.sel = 0; song.g[G_ROUTE] = 0; settings_drumch = 10;
     settings_midi_out = (uint8_t)out; settings_clock_out = 0;
     memset(tessera.midi_ch, 0, sizeof tessera.midi_ch);
+    memset(tessera.midi_tr, 0, sizeof tessera.midi_tr);
     events_block(CTL); drain(); log_n = 0;
 }
 
@@ -164,6 +165,21 @@ static int echo_and_route_test(void)
         play(1); stop();
         bad += check("  a drum track's own channel wins over DRUM", count(0x90, 15, 36) >= 1u && !count(0x90, 9, 36));
     }
+
+    reset(MIDI_OUT_ALL);                                 /* TRANSPOSE (OCT+ held on GLO > MIDI OUT) */
+    tessera_param_set(0, TX_MIDI_TR, -24); tessera_param_set(1, TX_MIDI_TR, 99);
+    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 100};
+    trk[1].step[0] = (step_t){{100}, 1, ST_NOTE, 0, 0, 100};
+    play(1);
+    bad += check("TRANSPOSE: track 1 two octaves down, track 2 clamped to +48 and past 127 not sent",
+                 tessera_param_get(1, TX_MIDI_TR) == TESS_MIDI_TR && count(0x90, 0, 36) >= 1u && !count(0x90, 0, 60) &&
+                 !count(0x90, 1, -1) && !count(0x80, 1, -1));
+    tessera_param_set(0, TX_MIDI_TR, 12);                /* changed while its note may sound */
+    blocks(4 * beat_blocks());
+    bad += check("  changed: the notes go out an octave up, those sent before ended as they were sent",
+                 count(0x90, 0, 72) >= 1u && count(0x80, 0, 36) == count(0x90, 0, 36));
+    stop();
+    bad += check("  nothing left on", balanced());
 
     reset(MIDI_OUT_ALL);
     trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 100};

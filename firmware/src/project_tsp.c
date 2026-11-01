@@ -16,7 +16,7 @@
 #define TSP_STEP_BYTES 10u                      /* step v2: 80 bits */
 enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TSP_FM6, TSP_DRUM, TSP_REC, TSP_NAME,
        TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_HOW, TSP_ORACLE,
-       TSP_ENERGY, TSP_DEV, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
+       TSP_ENERGY, TSP_DEV, TSP_TRANSP, TSP_TUNE, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
                                               * TSP_HUMAN: each track's HUMAN TIME; none: TWEAK HUMAN's timing, as it was;
@@ -25,8 +25,11 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * TSP_HOW: each track's STEP EVOLVE HOW; none: DRIFT;
                                               * TSP_ORACLE: each track's ORACLE patch; none: its preset's;
                                               * TSP_ENERGY: ENERGY's LEVEL + 100, then each track's DEPTH; none: 0, 100;
-                                              * TSP_DEV: each track's FORM DEVELOP; none: 0, exact returns) */
-_Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23, "the parts' numbers are stored: never renumbered");
+                                              * TSP_DEV: each track's FORM DEVELOP; none: 0, exact returns;
+                                              * TSP_TRANSP: each track's MIDI OUT TRANSPOSE + 48; none: 0;
+                                              * TSP_TUNE: TUNE, then the user tunings (tune.h); none: OFF, empty) */
+_Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25,
+               "the parts' numbers are stored: never renumbered");
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
 #endif
@@ -271,6 +274,10 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
         tsp_begin(&w, TSP_MIDI, 1);                    /* (MIDI OUT: each track's channel) */
         tsp_bytes(&w, tessera.midi_ch, NTRK);
         tsp_end(&w);
+        tsp_begin(&w, TSP_TRANSP, 1);                  /* (MIDI OUT: each track's TRANSPOSE, + 48) */
+        for (uint32_t k = 0; k < NTRK; k++)
+            tsp_byte(&w, (uint32_t)(k < TESSERA_TRACKS ? tessera.midi_tr[k] + TESS_MIDI_TR : TESS_MIDI_TR));
+        tsp_end(&w);
         tsp_begin(&w, TSP_KEY, 1);                     /* (KEY LINK, the project's) */
         tsp_byte(&w, tessera.key_link);
         tsp_end(&w);
@@ -298,6 +305,19 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
         tsp_begin(&w, TSP_DEV, 1);                     /* (FORM's DEVELOP: each track's) */
         tsp_bytes(&w, tessera.fm_dev, NTRK);
         tsp_end(&w);
+        tsp_begin(&w, TSP_TUNE, 1);                    /* (TUNE, then each user tuning: its degree count, 0 empty, */
+        tsp_byte(&w, tune_sel);                        /* else its name, title and degrees as int32) */
+        for (t = 0; t < TUNE_SLOTS; t++) {
+            tsp_byte(&w, tune_micro[t].count);
+            if (!tune_micro[t].count) continue;
+            tsp_bytes(&w, tune_slot[t].name, TUNE_NAME);
+            tsp_bytes(&w, tune_slot[t].title, TUNE_TITLE);
+            for (i = 1; i <= tune_micro[t].count; i++) {
+                tsp_u16(&w, (uint32_t)tune_slot[t].pitch[i]);
+                tsp_u16(&w, (uint32_t)tune_slot[t].pitch[i] >> 16);
+            }
+        }
+        tsp_end(&w);
     }
     motion_unguard(f);
     if (!w.ok) return 0;
@@ -311,6 +331,31 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
 /* ---- reading */
 static struct { uint32_t at[TSP_PARTS], len[TSP_PARTS]; uint8_t ver[TSP_PARTS]; } tsp_seen;   /* the record tsp_valid read */
 static uint32_t tsp_u16_at(const uint8_t *b) { return b[0] | (uint32_t)b[1] << 8; }
+
+/* the TUNE part (p, len bytes; tsp_pack's): 1 a valid one; apply: TUNE and the slots from it (tune.h) */
+static int tsp_tune_read(const uint8_t *p, uint32_t len, int apply)
+{
+    uint32_t at = 1, k, i, n;
+    int32_t pitch[TUNE_DEGREES + 1u];
+    if (!len || p[0] > TUNE_SLOTS) return 0;
+    for (k = 0; k < TUNE_SLOTS; k++) {
+        if (at >= len) return 0;
+        n = p[at++];
+        if (!n) continue;
+        if (n > TUNE_DEGREES || at + TUNE_NAME + TUNE_TITLE + 4u * n > len) return 0;
+        pitch[0] = 0;
+        for (i = 1; i <= n; i++) {
+            const uint8_t *v = p + at + TUNE_NAME + TUNE_TITLE + 4u * (i - 1u);
+            pitch[i] = (int32_t)(v[0] | (uint32_t)v[1] << 8 | (uint32_t)v[2] << 16 | (uint32_t)v[3] << 24);
+        }
+        if (!tune_ok((const char *)p + at, (const char *)p + at + TUNE_NAME, n, pitch)) return 0;
+        if (apply) (void)tune_put(k, (const char *)p + at, (const char *)p + at + TUNE_NAME, n, pitch);
+        at += TUNE_NAME + TUNE_TITLE + 4u * n;
+    }
+    if (at != len) return 0;
+    if (apply) tune_sel = p[0];
+    return 1;
+}
 
 /* raw (len bytes) is a whole TSP1 record whose every part checks out: 1, and proj_scratch holds its project (the
  * patterns other than the current ones, the song's and motion's pattern tags, the generators and the cords stay in raw
@@ -448,6 +493,10 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (tsp_seen.ver[TSP_MIDI] != 1u || tsp_seen.len[TSP_MIDI] != NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_MIDI] + k] > TESS_MIDI_OFF) return 0;
     }
+    if (tsp_seen.at[TSP_TRANSP]) {
+        if (tsp_seen.ver[TSP_TRANSP] != 1u || tsp_seen.len[TSP_TRANSP] != NTRK) return 0;
+        for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_TRANSP] + k] > 2u * TESS_MIDI_TR) return 0;
+    }
     if (tsp_seen.at[TSP_KEY]) {
         if (tsp_seen.ver[TSP_KEY] != 1u || tsp_seen.len[TSP_KEY] != 1u || raw[tsp_seen.at[TSP_KEY]] > 1u) return 0;
     }
@@ -476,6 +525,8 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (tsp_seen.ver[TSP_ENERGY] != 1u || tsp_seen.len[TSP_ENERGY] != 1u + NTRK || p[0] > 200u) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (p[1u + k] > 100u) return 0;
     }
+    if (tsp_seen.at[TSP_TUNE] && (tsp_seen.ver[TSP_TUNE] != 1u ||
+                                  !tsp_tune_read(raw + tsp_seen.at[TSP_TUNE], tsp_seen.len[TSP_TUNE], 0))) return 0;
     if (tsp_seen.at[TSP_DEV]) {
         if (tsp_seen.ver[TSP_DEV] != 1u || tsp_seen.len[TSP_DEV] != NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_DEV] + k] > 100u) return 0;
@@ -526,6 +577,9 @@ static void tsp_restore(const uint8_t *raw)
     if (tsp_seen.at[TSP_CORDS]) (void)cord_unpack(raw + tsp_seen.at[TSP_CORDS]);
     if (tsp_seen.at[TSP_SUB]) memcpy(tessera.sub_shape, raw + tsp_seen.at[TSP_SUB], NTRK);
     if (tsp_seen.at[TSP_MIDI]) memcpy(tessera.midi_ch, raw + tsp_seen.at[TSP_MIDI], NTRK);
+    if (tsp_seen.at[TSP_TRANSP])                       /* (saved before TRANSPOSE: tessera_reset's 0) */
+        for (uint32_t k = 0; k < TESSERA_TRACKS; k++)
+            tessera.midi_tr[k] = (int8_t)((int32_t)raw[tsp_seen.at[TSP_TRANSP] + k] - TESS_MIDI_TR);
     tessera.key_link = tsp_seen.at[TSP_KEY] ? raw[tsp_seen.at[TSP_KEY]] : 0u;   /* (saved before KEY LINK: OWN) */
     if (tsp_seen.at[TSP_SEED]) {                       /* (saved before STEP as seed: tessera_reset's OFF, FREE) */
         memcpy(tessera.sd_src, raw + tsp_seen.at[TSP_SEED], NTRK);
@@ -541,6 +595,8 @@ static void tsp_restore(const uint8_t *raw)
     }
     if (tsp_seen.at[TSP_DEV])                          /* (saved before DEVELOP: tessera_reset's 0, exact returns) */
         memcpy(tessera.fm_dev, raw + tsp_seen.at[TSP_DEV], NTRK);
+    tune_clear_all();                                  /* (the tunings are the project's; saved before them: none) */
+    if (tsp_seen.at[TSP_TUNE]) (void)tsp_tune_read(raw + tsp_seen.at[TSP_TUNE], tsp_seen.len[TSP_TUNE], 1);
     if (tsp_seen.at[TSP_ACC]) {
         memcpy(tessera.acc_limit, raw + tsp_seen.at[TSP_ACC], NTRK);
         memcpy(tessera.acc_mode, raw + tsp_seen.at[TSP_ACC] + NTRK, NTRK);

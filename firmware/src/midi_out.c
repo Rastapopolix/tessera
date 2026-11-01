@@ -5,14 +5,16 @@
  * ARP, recordings and every generator, OFF nothing. Only notes started inside the sequencer (seq_advance) are sent
  * as ALL's extra ones, so MIDI IN is never echoed back. A track's channel is its own (GLO > MIDI OUT, tessera.midi_ch:
  * 1..16, or OFF: none of its notes), or AUTO: ROUT's (CH1-4: 1..4, CH5-8: 5..8, ..; SEL: 1..4), a drum track's the
- * SYSTEM DRUM channel. Every note sent is remembered until its note-off went out, so
- * a STOP, a panic or a channel change never leaves a note hanging on the other side.
+ * SYSTEM DRUM channel. A track's TRANSPOSE (OCT+ held on GLO > MIDI OUT, tessera.midi_tr) moves its notes on the way
+ * out only; one moved past 0..127 is not sent. Every note sent is remembered until its note-off went out, so
+ * a STOP, a panic, a channel or a TRANSPOSE change never leaves a note hanging on the other side.
  * CLOCK OUT (Settings): 24 pulses a beat with START and STOP, while CLK is INT (an external clock is not sent on). */
 enum { MIDI_OUT_KEYS, MIDI_OUT_ALL, MIDI_OUT_OFF, MIDI_OUT_N };
 static uint8_t settings_midi_out, settings_clock_out;   /* saved: favorites.c row 15 byte 30 (settings_persist.c) */
 static uint8_t midi_out_seq;                     /* 1 inside seq_advance: the sequencer is playing these notes */
 static uint32_t midi_out_held[NTRK][4];          /* the notes sent on, a bit each */
 static uint8_t midi_out_chan[NTRK];              /* the channel they went out on */
+static int8_t midi_out_tr[NTRK];                 /* and the TRANSPOSE (the bits are the notes as played) */
 static uint8_t midi_out_clk_live;               /* CLOCK OUT sent START, not STOP yet */
 static uint32_t midi_out_clk;                    /* CLOCK OUT: 24 x the samples since the last pulse; ~0u: none yet */
 
@@ -37,29 +39,32 @@ static void midi_out_flush(uint32_t k)
 {
     for (uint32_t w = 0; w < 4u; w++)
         for (uint32_t b = midi_out_held[k][w]; b; b &= b - 1u)
-            midi_out_send(midi_out_chan[k], w * 32u + (uint32_t)__builtin_ctz(b), 0);
+            midi_out_send(midi_out_chan[k], (uint32_t)((int32_t)(w * 32u + (uint32_t)__builtin_ctz(b)) + midi_out_tr[k]), 0);
     memset(midi_out_held[k], 0, sizeof midi_out_held[k]);
 }
 
 static void midi_out_note(const track_t *t, uint32_t note, uint32_t vel)
 {
     uint32_t k = trk_index(t), ch = midi_out_channel(t), bit = 1u << (note & 31u), *w = &midi_out_held[k][(note >> 5) & 3u];
+    int32_t tr = k < TESSERA_TRACKS ? tessera.midi_tr[k] : 0, s;
     note &= 127u;
     if (!vel) {
         if (*w & bit)
-            midi_out_send(midi_out_chan[k], note, 0);
+            midi_out_send(midi_out_chan[k], (uint32_t)((int32_t)note + midi_out_tr[k]), 0);
         *w &= ~bit;
         return;
     }
-    if (ch != midi_out_chan[k]) {                 /* the channel changed: end the old channel's notes */
-        midi_out_flush(k);
+    if (ch != midi_out_chan[k] || tr != midi_out_tr[k]) {   /* the channel or TRANSPOSE changed: end the notes sent */
+        midi_out_flush(k);                                    /* with the old ones */
         midi_out_chan[k] = (uint8_t)ch;
+        midi_out_tr[k] = (int8_t)tr;
     }
-    if (ch == MIDI_OUT_NONE)                      /* (OFF: nothing held, so nothing to end later) */
+    s = (int32_t)note + tr;
+    if (ch == MIDI_OUT_NONE || s < 0 || s > 127)  /* (OFF, or moved out of MIDI's range: nothing held to end later) */
         return;
     if (*w & bit)                                 /* sounding already: it starts again */
-        midi_out_send(ch, note, 0);
-    midi_out_send(ch, note, vel > 127u ? 127u : vel);
+        midi_out_send(ch, (uint32_t)s, 0);
+    midi_out_send(ch, (uint32_t)s, vel > 127u ? 127u : vel);
     *w |= bit;
 }
 

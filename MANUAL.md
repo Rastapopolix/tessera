@@ -680,6 +680,29 @@ A **CHORD** track plays a progression; with **QNT CHRD** the other tracks follow
   SNAP.
 - **CH PROG** is a mod destination, so a slow source can change progressions.
 
+### Your own tunings (Scala files)
+
+Besides the 77 built-in scales, the FM-1 plays up to four tunings of your own, **USR1** to **USR4**, made from
+[Scala](https://www.huygens-fokker.org/scala/) `.scl` files (the format of the Scala archive's thousands of scales,
+and of most microtonal tools).
+
+1. Connect the FM-1 to the web editor, open **Projects**, and under **Tunings (Scala)** press **Load .scl** on a
+   slot. The editor reads the file and sends it; the slot takes the file's name (7 characters) and its description.
+2. On the device: **SCL > SCALES**, KNOB 1 to the **USER** family (after the favourites), KNOB 2 to the tuning. Or
+   press **Play** in the editor. It is listed in **ALL** too, after the built-in scales.
+3. Play with **QNT** on (any mode but OFF), as for the built-in microtonal scales.
+
+- The tuning is the project's, like SCL: every melodic track plays it (a drum track does not). The keys, MIDI input,
+  the generators, QNT, chords and recordings play its degrees; **ROOT** is degree 0 and **TRN** moves it.
+- Up to **64 degrees** per period. The last pitch of the file is the period, so non-octave tunings (a tritave, a
+  stretched octave) work, up to four octaves. Degrees below 1/1 or past the period are folded into it, sorted, and a
+  repeated one dropped; the editor says when it did.
+- Picking a built-in scale, or turning **SCL** itself, goes back to it (TUNING OFF). The **USR** slot stays.
+- The tunings are **saved with the project** (SAVE or autosave), so a project plays the same on any FM-1. Loading a
+  project brings its own tunings; a project saved without any loads with all four slots empty.
+- A `.kbm` keyboard map is not used: ROOT places degree 0, and the layouts (WHITE, ALL, MPC) place the degrees on
+  the keys as for the built-in scales. MIDI OUT sends no tuning messages, as for the built-in microtonal scales.
+
 ---
 
 ## MODS: the modulation cords
@@ -786,9 +809,10 @@ Hold **HOME** for the menu. Tessera's additions:
 | **CLOCK OUT** | 24 pulses a beat with START and STOP over USB, while the clock is INT. |
 | **MIDI CC IN** | **ON** (the default): CCs and NRPNs set the tracks' parameters (see [MIDI CC control](#midi-cc-control)). **OFF**: they move nothing, for a sequencer that sends CCs to other gear on the same channels. Bend, mod wheel, expression, sustain and aftertouch always play. Saved. |
 | **USB HOST** | **ON**: the USB-C port hosts a USB-MIDI keyboard, controller, synth or MIDI-to-CV module, with no computer in between (see [USB host](#usb-host)). **OFF** (the default): the port talks to a computer. Not saved: every start is OFF. |
+| **BATTERY** | **ON** (the default): the header shows the battery at the right, its bars (none to three) on the battery, and a bolt before it on external power (a computer, a hub or a charger). **WHEN LOW**: only when it is down to a bar or none, on the battery. Saved. |
 | **PANEL GAMMA** | The screen's contrast curve: the panel chip's own **G2.2** (the default), G1.8, G2.5 and G1.0, or TUNED and TUNED+VCOM. The screen goes black for a moment and redraws. Saved. |
 | **TRACK KNOB** | RIGHT: the ALGORITHM knob picks the track and PRESETS browses sounds, as printed. LEFT: the two swap. |
-| **ABOUT** | Version, credits and, after a crash, LAST CRASH (until power-off). |
+| **ABOUT** | Version, credits, **POWER** (the battery's reading and bars, whether 5 V comes in), and, after a crash, LAST CRASH (until power-off). |
 
 ### MIDI OUT channels
 
@@ -803,6 +827,12 @@ Hold **HOME** for the menu. Tessera's additions:
 The page lists each track's channel as it is now, AUTO's included. The channels are saved with the project. Which
 notes go out at all is still the menu's **MIDI OUT** (KEYS, ALL or OFF): for the steps and the generators, set it to
 **ALL**.
+
+**TRANSPOSE**: hold **OCT+** on **GLO > MIDI OUT** and turn **KNOB 1** to **4** to move a track's notes up or down
+on their way out, a semitone a detent (12 an octave), up to four octaves either way. For a synth or a MIDI-to-CV
+module that plays them too high or too low: **-12** an octave down, **-24** two. Only what goes out over MIDI moves;
+the track's own sound stays where it is. A note moved past MIDI's range (0 to 127) is not sent. The page shows a
+track's TRANSPOSE after its channel when it is not 0 (**CH 1 ROUT -24**); it is saved with the project.
 
 <p align="center"><img src="assets/gallery/midi_out.png" alt="GLO > MIDI OUT" width="240"></p>
 
@@ -847,7 +877,8 @@ Turn **MIDI CC IN** off in the menu when another device's CCs should not reach T
 ### USB host
 
 With **USB HOST** ON in the menu the FM-1 is the computer: plug a class-compliant USB-MIDI device into the USB-C port,
-directly or through one USB hub, and after a moment the screen says **USB MIDI READY**.
+directly or through a USB hub, and after a moment the screen says **USB MIDI READY**. A hub with another hub inside
+(as many USB-C hubs are) works too; a third hub is not followed.
 
 - **In**: its notes, CCs, bend and clock arrive as USB MIDI from a computer would: MIDI ROUTING picks the tracks, CLK
   on USB follows its clock, and the [CC map](#midi-cc-control) works from its knobs.
@@ -855,8 +886,18 @@ directly or through one USB hub, and after a moment the screen says **USB MIDI R
   Tessera's tracks and follows its clock (MIDI OUT **ALL** for the steps and generators).
 - **Power**: the FM-1 does not power the device. Use a **powered hub**, or a device with its own power supply.
 - One MIDI device at a time: the first one found (behind a hub, the first port with a MIDI device). Full-speed
-  devices only (**LOW SPEED** otherwise); a device without USB-MIDI (a USB stick, crow) shows **NO MIDI DEVICE**.
-  norns is itself a host, so connect it as before.
+  devices only (**LOW SPEED** otherwise, behind a hub too); a device without USB-MIDI (a USB stick, crow) shows
+  **NO MIDI**. norns is itself a host, so connect it as before.
+- When nothing is found the screen adds **USB SCAN: ABOUT**: the menu's **ABOUT** then lists, under
+  **USB HOST SCAN**, what each hub port had: **P2 0103 NO MIDI 08** is port 2, its status in hex (1 connected,
+  2 enabled, 100 powered, 200 low speed, 400 high speed), what was found and the device's USB class in hex (01 audio
+  or MIDI, 03 a keyboard or mouse, 08 a stick, 09 a hub, 11 a hub's Billboard). Found: **EMPTY**, **LOW SPEED**,
+  **NO MIDI**, **HUB** (a hub inside, listed after it as HUB 2 with the port it is on), **MIDI**, or the step that
+  failed (**RESET FAIL**, **NOT ENABLED**, **NO ANSWER**, **ADDRESS FAIL**, **CONFIG FAIL**). Under the first line
+  (**ROOT**, what is plugged into the FM-1) come the try (a device that does not answer is reset up to four times,
+  over about four seconds), the controller's registers, and for a failure which request got which reply
+  (**@0 SETUP NO REPLY**: the device at address 0 did not answer the first request). A photo of it helps with a
+  report.
 - Unplugging shows **DEVICE LOST** and ends every note held from MIDI; plug it in again and it is found again.
 - While USB HOST is ON there is no computer link: no USB audio, no web editor, no updates. Turn it OFF, or restart the
   FM-1 (it always starts OFF), to get them back.

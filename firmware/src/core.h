@@ -503,10 +503,14 @@ typedef struct {
     uint32_t cpu_q8;             /* audio ISR load, 1/256 */
     uint32_t master_q12;
     int32_t batt_raw;            /* smoothed ADC ch3 (battery divider), 0 = not read yet */
+    uint8_t pwr[3];              /* P33 0xA1 (LDO5V_CON: bit 5 5 V in), 0x19 (CHG_READ: bit 0 full), 0x1A (CHG_CON0: bit 0
+                                  * charger on) as main.c last read them; 0 until then (and in the host tests) */
 } song_t;
 
 static track_t trk[NTRK];        /* the instrument: four parts */
 static song_t song;
+static uint8_t settings_batt_off;   /* MENU BATTERY OFF: the header shows the battery only when it runs low (saved:
+                                     * favorites.factory[15][24] bit 5, settings_persist.c) */
 #define TSEL (&trk[song.sel])    /* the selected track */
 
 #include "microtonal.h"
