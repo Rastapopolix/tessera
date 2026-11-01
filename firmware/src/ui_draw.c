@@ -33,7 +33,7 @@ static int32_t batt_shown(void)
         return 4;
     return batt_level();
 }
-/* the Mono header's battery: -1 none, 0..3 its level, 4 + the level on external power (a bolt before it). MENU
+/* the Mono header's battery: -1 none, 0..3 its level, 4 + the level on external power (solid, a bolt in it). MENU
  * BATTERY OFF hides it, except when it runs low (a bar or none, on the battery) */
 static int32_t batt_head(void)
 {

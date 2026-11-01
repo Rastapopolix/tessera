@@ -74,6 +74,10 @@ static void hk_whole(uint32_t x, uint32_t y, uint32_t r0, uint32_t fill);
 #define GFX_HOOK_PIXELS(n) (px_visited += (n))
 static char mo_place_seen[8];                  /* the place (4/9) a Mono header drew */
 #define MO_HOOK_PLACE(s) strncpy(mo_place_seen, s, 7)
+static uint32_t mo_batt_seen, nbatt;           /* how many times a Mono header drew the battery; the screens checked */
+#define MO_HOOK_BATT() (mo_batt_seen++)
+static void mono_cut_note(const char *full, const char *what);
+#define MO_HOOK_CUT(full, what) mono_cut_note(full, what)
 #define UI_FILL_HOOK(x, y, w, h) hk_fill(x, y, w, h)
 static void fm6_hook(uint32_t kind, uint32_t a, uint32_t b);
 #define FM6_CHART_HOOK(kind, a, b) fm6_hook(kind, a, b)
@@ -325,6 +329,21 @@ static void hk_blit(uint32_t x, uint32_t y, uint32_t r0, uint32_t w, uint32_t h)
 }
 
 #if MELODEE_LOOK
+/* a header's title or chip that does not fit: once each (what, the text) */
+static void mono_cut_note(const char *full, const char *what)
+{
+    static char seen[256][32];
+    static uint32_t n;
+    char k[32];
+    snprintf(k, sizeof k, "%s %s", what, full);
+    for (uint32_t i = 0; i < n; i++)
+        if (!strcmp(seen[i], k))
+            return;
+    if (n < 256u)
+        strcpy(seen[n++], k);
+    fprintf(stderr, "ui_render: %s: a Mono header cut its %s\n", cur_name, k);
+    nfind++;
+}
 /* the Mono lint (ui_mono.c's knob values, in cells): no value cut; a boxed value's text a clear cell inside its box;
  * the values on the screen, a clear cell between neighbours */
 static uint32_t nmono;                                  /* knob values the Mono lint looked at */
@@ -1832,7 +1851,16 @@ static void draw(int s)
         return;
     }
     ui.force = 1;
+    mo_batt_seen = 0;
     ui_draw();
+#if MELODEE_LOOK
+    /* every Mono screen shows the battery, MENU BATTERY ON: only a message too long beside it moves it, while it shows */
+    if (batt_head() >= 0 && !mo_batt_seen && !(ui.msg_t && ui.msg[0])) {
+        fprintf(stderr, "ui_render: %s: no battery in the header\n", cur_name);
+        nfind++;
+    }
+    nbatt++;
+#endif
 }
 
 /* every value of every column on every page of every engine: labels and values fit their column */
@@ -2249,6 +2277,48 @@ static void library_note_sweep(const char *out)
 }
 #ifndef UI_RENDER_NO_MAIN                           /* (tests/gallery_render.c: the scenes without this main) */
 #if MELODEE_LOOK
+/* MENU BATTERY WHEN LOW: hidden on every kind of header with charge left or on external power, shown when low; and the
+ * header's battery in each ink, every level, on the battery and on power (build/ui_mono/ppm/INK_batt_L_E.ppm) */
+static uint32_t mono_batt_check(const char *out)
+{
+    static const int32_t RAW[4] = {500, 540, 570, 600};
+    static const char *const SCREEN[] = {"EDIT 1", "MIDI OUT", "SYSTEM"};
+    uint32_t bad = 0, p, l, e, k;
+    state(); pal(UI_GRAY_INDEX);
+    settings_batt_off = 1;
+    for (k = 0; k < 5u; k++) {
+        cur_name = "BATTERY WHEN LOW";
+        state(); pal(UI_GRAY_INDEX);
+        if (k < 3u) go_title(SCREEN[k]);
+        else if (k == 3u) go_home();
+        else ui.menu = 1, ui.menu_sel = 0;
+        song.batt_raw = 600; usb.config = 0; song.pwr[0] = 0;
+        draw(-1);
+        if (mo_batt_seen) { fprintf(stderr, "ui_render: WHEN LOW, screen %u: a battery with charge left\n", k); bad++; }
+        song.batt_raw = 540;
+        draw(-1);
+        if (!mo_batt_seen) { fprintf(stderr, "ui_render: WHEN LOW, screen %u: no battery at one bar\n", k); bad++; }
+        song.pwr[0] = 0x20u;
+        draw(-1);
+        if (mo_batt_seen) { fprintf(stderr, "ui_render: WHEN LOW, screen %u: a battery on external power\n", k); bad++; }
+        song.pwr[0] = 0;
+    }
+    settings_batt_off = 0;
+    for (p = 0; p < UI_PAL_ENTRIES; p++)
+        for (l = 0; l < 4u; l++)
+            for (e = 0; e < 2u; e++) {
+                char name[32];
+                state(); pal(p); go_title("EDIT 1");
+                song.batt_raw = RAW[l]; usb.config = 0; song.pwr[0] = e ? 0x20u : 0u;
+                cur_name = "battery";
+                draw(-1);
+                snprintf(name, sizeof name, "batt_%u_%u", l, e);
+                write_ppm(out, UI_PALETTES[p].name, name);
+            }
+    song.pwr[0] = 0;
+    printf("ui_render: the battery on %u Mono screens\n", nbatt);
+    return bad;
+}
 /* Mono BOUNCE: a ball that hit a wall on the last step is drawn against it (the step its note plays): the cells next
  * to the thick wall, inside the box (the floor row 104, left column 4, right 115, top row 55), inked by it; balls,
  * speeds and angles enough for every wall. The picture drawn alone, its rows 50 .. 109 one canvas */
@@ -2617,6 +2687,7 @@ int main(int argc, char **argv)
 #if MELODEE_LOOK
     fprintf(rep, "\nMono lint: %u knob values\n", nmono);
     if (!nmono) { fprintf(stderr, "ui_render: the Mono lint saw no knob value\n"); nfind++; }
+    if (mono_batt_check(out)) nfind++;
     if (mono_bounce_check()) nfind++;
     if (mono_mods_pick_check()) nfind++;
 #endif

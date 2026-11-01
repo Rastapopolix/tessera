@@ -20,6 +20,12 @@ static uint16_t mo_tdim(uint32_t k) { return ux_mix(T_BG, T_TRK(k), UI_MID_PCT);
 #ifndef MO_HOOK_PLACE
 #define MO_HOOK_PLACE(s) ((void)0)                      /* a header drew the page's place (tests/ui_render.c) */
 #endif
+#ifndef MO_HOOK_BATT
+#define MO_HOOK_BATT() ((void)0)                        /* a header drew the battery (tests/ui_render.c) */
+#endif
+#ifndef MO_HOOK_CUT
+#define MO_HOOK_CUT(full, shown) ((void)0)              /* a header cut a title or a chip (tests/ui_render.c) */
+#endif
 
 static const int8_t MO_SIN[64] = {0, 12, 25, 37, 49, 60, 71, 81, 90, 98, 106, 112, 117, 122, 125, 126, 127, 126, 125, 122, 117, 112, 106, 98, 90, 81, 71, 60, 49, 37, 25, 12, 0, -12, -25, -37, -49, -60, -71, -81, -90, -98, -106, -112, -117, -122, -125, -126, -127, -126, -125, -122, -117, -112, -106, -98, -90, -81, -71, -60, -49, -37, -25, -12};
 
@@ -246,15 +252,46 @@ static void mo_place(char *at)
     str_cpy(at + str_len(at), "/", 2);
     fmt_int(at + str_len(at), (int32_t)n);
 }
+/* the battery on a header, x its left cell, 10 cells wide with the nub, rows 1..7 (bat: ui_draw.c batt_head). On the
+ * battery its bars fill the 7 x 5 inside (none to three). On external power solid with a bolt cut out, no bars: a bolt
+ * does not read over part of a fill, and charging lifts the reading anyway (ABOUT > POWER has it) */
+#define MO_BATT_W 10
+static void mo_battery(int32_t x, int32_t bat)
+{
+    static const uint8_t BARS[4] = {0, 2, 4, 7}, BOLT[5] = {3, 6, 15, 6, 12};   /* (bit 4 the left cell of five) */
+    int32_t bars = bat >= 4 ? 7 : BARS[bat & 3];
+    mo_box(x, 1, 9, 7, MO_INK), mo_vl(x + 9, 3, 3, MO_INK);
+    if (bars)
+        mo_fill(x + 1, 2, bars, 5, MO_INK);
+    if (bat >= 4)
+        for (int32_t r = 0; r < 5; r++)
+            for (int32_t c = 0; c < 5; c++)
+                if (BOLT[r] & (16 >> c))
+                    mo_fill(x + 2 + c, 2 + r, 1, 1, MO_BG);
+    MO_HOOK_BATT();
+}
+/* the battery at a header's right end, when bat says so: the right edge left for what comes before it */
+static int32_t mo_batt_right(int32_t bat)
+{
+    if (bat < 0)
+        return 119;
+    mo_battery(120 - MO_BATT_W, bat);
+    return 120 - MO_BATT_W - 2;
+}
 static void mo_head(void)
 {
     const page_t *pg = cur_page();
     char t[24], sub[8], at[8];
     uint32_t i;
-    int32_t room;
+    int32_t room, bat = batt_head(), right;
+    if (ui.msg_t && ui.msg[0] && (int32_t)str_len(ui.msg) * 6 + 2 > 96 - MO_BATT_W - 2)
+        bat = -1;                                       /* (a message too long beside it: for as long as it shows) */
+    right = bat >= 0 ? 96 - MO_BATT_W - 2 : 94;         /* (the title and the engine end here) */
     str_cpy(sub, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), sizeof sub);
     mo_place(at);                                       /* more pages than the footer shows: where this one is */
-    room = 94 - mo_tw(sub) - 4 - (at[0] ? mo_tw(at) + 6 : 0);
+    room = right - mo_tw(sub) - 4 - (at[0] ? mo_tw(at) + 6 : 0);
+    if (bat >= 0)
+        mo_battery(96 - MO_BATT_W, bat);
     if (ui.msg_t && ui.msg[0]) {                        /* a message: in the title's place, inverted, over the */
         mo_cut(t, ui.msg, 15);                          /* position and the engine (they would show through) */
         mo_inv(t, 2, 1);
@@ -267,14 +304,24 @@ static void mo_head(void)
             if (mo_tw(t) > room)                        /* (beside the position: the MODE alone, GEN is the tab) */
                 str_cpy(t, TX_N_MODE[tessera.mode[song.sel] % TESS_ENG_COUNT], 8);
         }
+        if (bat >= 0 && str_len(t) > (uint32_t)room / 6u) {   /* (beside the battery the title first: the engine gives */
+            room = right - (at[0] ? mo_tw(at) + 1 : 0);       /* way, then the position) */
+            sub[0] = 0;
+        }
+        if (bat >= 0 && str_len(t) > (uint32_t)room / 6u && at[0]) {
+            room = right;
+            at[0] = 0;
+        }
+        if (str_len(t) > (uint32_t)room / 6u)
+            MO_HOOK_CUT(t, "title");
         t[room / 6] = 0;                                /* (room before the position and the engine) */
         mo_text(t, 1, 1, MO_INK);
     }
     if (at[0]) {
-        mo_textr(at, 94 - mo_tw(sub) - 6, 1, MO_DIM);
+        mo_textr(at, sub[0] ? right - mo_tw(sub) - 6 : right, 1, MO_DIM);
         MO_HOOK_PLACE(at);
     }
-    mo_textr(sub, 94, 1, MO_DIM);
+    mo_textr(sub, right, 1, MO_DIM);
     for (i = 0; i < 4u; i++) {                          /* the tracks: the selected one filled */
         if (i == song.sel) mo_disc(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));
         else mo_circ(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));
@@ -2158,6 +2205,7 @@ static uint32_t mo_signature(void)
         h = (h ^ steps_hash(t) ^ (uint32_t)t->p[P_SLEN] << 8 ^ (uint32_t)t->p[P_SDIV] << 16) * 16777619u;
     if (cur_page()->graph == GR_LFO)                    /* the LFO's dot: 116 places a cycle */
         h = (h ^ (t->lfo_ph / (0xFFFFFFFFu / 116u))) * 16777619u;
+    h = (h ^ (uint32_t)(batt_head() + 1)) * 16777619u;   /* (the header's battery) */
     if (ui.msg_t)
         h = (h ^ str_hash(1u, ui.msg)) * 16777619u;
     return h;
@@ -2202,39 +2250,36 @@ static void mo_dhead(const char *chip, const char *msg, int32_t bat)
     fmt_int(b, song.g[G_BPM]);
     x = 119 - mo_tw(b);
     mo_text(b, x, 1, ui.bpm_t ? MO_HOT : MO_DIM);
-    x -= 7;
-    if (chain.running || song.playing) {                /* PLAY: a triangle; STOP: a square */
-        for (int32_t r = 0; r < 3; r++) mo_vl(x + r, 1 + r, 7 - 2 * r, MO_INK);
-    } else {
-        mo_fill(x, 2, 5, 5, MO_DIM);
+    if (!msg || (int32_t)str_len(msg) * 6 <= x - 7 - (song.rec ? 7 : 0) - 6) {   /* (a message too long: in its place) */
+        x -= 7;
+        if (chain.running || song.playing) {            /* PLAY: a triangle; STOP: a square */
+            for (int32_t r = 0; r < 3; r++) mo_vl(x + r, 1 + r, 7 - 2 * r, MO_INK);
+        } else {
+            mo_fill(x, 2, 5, 5, MO_DIM);
+        }
     }
     if (song.rec) {
         x -= 7;
         if (((song.rec & ~song.rec_wait) >> song.sel) & 1u) mo_disc(x + 2, 4, 2, MO_INK);
         else mo_circ(x + 2, 4, 2, MO_INK);
     }
-    if (bat >= 0) {                                     /* the battery: 0..3 bars of 5 cells, a bolt before it on
-                                                         * external power */
-        static const uint8_t BARS[4] = {0, 2, 3, 5};
-        x -= 10;
-        mo_box(x, 2, 7, 5, MO_INK), mo_vl(x + 7, 3, 3, MO_INK);
-        if (BARS[bat & 3])
-            mo_fill(x + 1, 3, BARS[bat & 3], 3, MO_INK);
-        if (bat >= 4) {
-            x -= 5;
-            mo_fill(x + 2, 2, 1, 1, MO_INK), mo_fill(x + 1, 3, 1, 1, MO_INK), mo_hl(x, 4, 3, MO_INK);
-            mo_fill(x + 1, 5, 1, 1, MO_INK), mo_fill(x, 6, 1, 1, MO_INK);
-        }
+    if (msg && (int32_t)str_len(msg) * 6 > x - MO_BATT_W - 2 - 6)
+        bat = -1;                                       /* (a message too long beside it: for as long as it shows) */
+    if (bat >= 0) {
+        x -= MO_BATT_W + 2;
+        mo_battery(x, bat);
     }
     if (!msg && !ui.home && !ui.menu && !new_on() && !sec_map_on() && !designer_on()) {   /* a page: its place (4/9) */
         mo_place(t);
-        if (t[0]) {
+        if (t[0] && (int32_t)str_len(chip) * 6 <= x - mo_tw(t) - 6 - 6) {   /* (the chip first) */
             x -= mo_tw(t) + 6;
             mo_text(t, x, 1, MO_DIM);
             MO_HOOK_PLACE(t);
         }
     }
     mo_ascii(t, msg ? msg : chip, sizeof t);
+    if (str_len(t) > (uint32_t)(x - 6) / 6u)
+        MO_HOOK_CUT(t, "chip");
     mo_cut(b, t, (uint32_t)(x - 6) / 6u);
     mo_fill(0, 0, mo_tw(b) + 3, 8, MO_INK);
     mo_text(b, 1, 1, MO_BG);
@@ -2473,7 +2518,8 @@ static void mo_stage_col(uint32_t k, int top)
 static void mo_stage_head(void)
 {
     char b[16];
-    if (ui.msg_t && ui.msg[0]) {
+    int32_t right = mo_batt_right(batt_head()), msg = ui.msg_t && ui.msg[0];
+    if (msg) {
         mo_cut(b, ui.msg, 15);
         mo_inv(b, 2, 1);
     } else {
@@ -2487,8 +2533,10 @@ static void mo_stage_head(void)
         mo_text(b, 9, 1, ui.bpm_t ? MO_HOT : MO_DIM);
         if (ui.bpm_t) mo_hl(9, 8, mo_tw(b), MO_HOT);
     }
-    str_cpy(b, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), 8);
-    mo_textr(b, 118, 1, MO_DIM);
+    if (!msg) {                                         /* (a message: in the engine's place too) */
+        str_cpy(b, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), 8);
+        mo_textr(b, right < 119 ? right : 118, 1, MO_DIM);
+    }
     mo_hl(0, 9, 120, MO_INK);
 }
 static void mo_stage_wave(int32_t top, int32_t h, uint16_t c)   /* the output, triggered on a rising zero crossing */
@@ -2610,7 +2658,7 @@ static void mono_stage(void)
         stage_columns();
         mo_on = 0;
     }
-    sig = mo_stage_signature();
+    sig = mo_stage_signature() ^ (uint32_t)(batt_head() + 1) * 2654435761u;
     if (ui.force || sig != mo_stage_sig) {              /* the top half: header, roles, names, engines, patterns */
         mo_stage_sig = sig;
         cv_begin(240, 120, MO_BG);
@@ -2849,6 +2897,7 @@ static void mo_browser(uint32_t cur, uint32_t total)
                    out * 17u + song.sel * 11u + up_gen * 7919u + ux.pal * 31u + (uint32_t)fav * 65537u +
                    (uint32_t)back * 257u + (ui.msg_t ? str_hash(3u, ui.msg) : 0u);
     char a[24], b[24], tag[6], nm[16];
+    sig ^= (uint32_t)(batt_head() + 1) * 2654435761u;   /* (the header's battery) */
     if (!ui.force && sig == mo_br_sig)
         return;
     mo_br_sig = sig;
@@ -2862,14 +2911,22 @@ static void mo_browser(uint32_t cur, uint32_t total)
         mo_cut(b + 2, a, 8);
         mo_fill(0, 0, mo_tw(b) + 3, 8, MO_INK);
         mo_text(b, 1, 1, MO_BG);
-        if (ui.msg_t) {
-            mo_ascii(a, ui.msg, sizeof a);
-            mo_cut(b, a, (uint32_t)(117 - mo_tw(b) - 6) / 6u);
-            mo_textr(b, 119, 1, MO_INK);
-        } else {
-            fmt_int(b, (int32_t)total);
-            str_cpy(b + str_len(b), total == 1u ? " SOUND" : " SOUNDS", 8);
-            mo_textr(b, 119, 1, MO_DIM);
+        {
+            int32_t chip = mo_tw(b) + 3, bat = batt_head(), right;
+            if (ui.msg_t && (int32_t)str_len(ui.msg) * 6 > 119 - MO_BATT_W - 2 - chip - 4)
+                bat = -1;                               /* (a message too long beside it: for as long as it shows) */
+            right = mo_batt_right(bat);
+            if (ui.msg_t) {
+                mo_ascii(a, ui.msg, sizeof a);
+                mo_cut(b, a, (uint32_t)(right - chip - 4) / 6u);
+                mo_textr(b, right, 1, MO_INK);
+            } else {
+                fmt_int(b, (int32_t)total);
+                str_cpy(b + str_len(b), total == 1u ? " SOUND" : " SOUNDS", 8);
+                if (right - mo_tw(b) < chip + 3)        /* (no room: the number) */
+                    fmt_int(b, (int32_t)total);
+                mo_textr(b, right, 1, MO_DIM);
+            }
         }
         mo_hl(0, 8, 120, MO_INK);
         for (r = 0; r < 10 && first + (uint32_t)r < LM_N; r++) {   /* LIST: ten rows */
@@ -2964,6 +3021,7 @@ static void mo_patterns(void)
     sig = fnv1(sig, song_hash(pat, rep, n) + cur * 7919u + jamrows * 3u + song.sel * 131u + ux.pal * 31u);
     if (ptc_on())
         sig = fnv1(sig, 1u + ui.ptc_src + 16u * ui.ptc_dst);
+    sig ^= (uint32_t)(batt_head() + 1) * 2654435761u;   /* (the header's battery) */
     if (!ui.force && sig == mo_pt_sig)
         return;
     mo_pt_sig = sig;
@@ -3058,11 +3116,12 @@ static void mo_song(void)
         for (j = 0; j < n; j++)
             sig = fnv1(sig, chain_patterns[j][k] + 16u * (uint32_t)pattern_used(k, chain_patterns[j][k]));
     }
+    sig ^= (uint32_t)(batt_head() + 1) * 2654435761u;   /* (the header's battery) */
     if (!ui.force && sig == mo_pt_sig)
         return;
     mo_pt_sig = sig;
     for (s = 0; s < 2u; s++) {
-        int32_t x;
+        int32_t x, bat, right;
         cv_begin(240, 120, MO_BG);
         cv_oy = -(int32_t)s * 120;
         mo_fill(0, 0, mo_tw("SONG") + 3, 8, MO_INK);    /* the header */
@@ -3073,11 +3132,15 @@ static void mo_song(void)
             fmt_int(b + str_len(b), (int32_t)(secs % 60u));
             x = mo_text(b, x, 1, MO_DIM);
         }
+        bat = batt_head();
+        if (ui.msg_t && (int32_t)str_len(ui.msg) * 6 > 119 - MO_BATT_W - 2 - x - 6)
+            bat = -1;                                   /* (a message too long beside it: for as long as it shows) */
+        right = mo_batt_right(bat);
         if (ui.msg_t) {
             char a[24];
             mo_ascii(a, ui.msg, sizeof a);
-            mo_cut(b, a, (uint32_t)(119 - x - 6) / 6u);
-            mo_textr(b, 119, 1, MO_INK);
+            mo_cut(b, a, (uint32_t)(right - x - 6) / 6u);
+            mo_textr(b, right, 1, MO_INK);
         } else if (jam_on || jam.n) {                   /* the jam: logging (a dot), its rows */
             if (jam_on) {
                 str_cpy(b, "JAM", 4);
@@ -3086,13 +3149,13 @@ static void mo_song(void)
                 fmt_int(b + 4, jam.n);
                 str_cpy(b + str_len(b), jam.n > 1u ? " ROWS" : " ROW", 6);
             }
-            mo_textr(b, 119, 1, jam_on ? MO_INK : MO_DIM);
+            mo_textr(b, right, 1, jam_on ? MO_INK : MO_DIM);
             if (jam_on)
-                mo_disc(119 - mo_tw(b) - 5, 4, 2, MO_INK);
+                mo_disc(right - mo_tw(b) - 5, 4, 2, MO_INK);
         } else {                                        /* else SONG's place among SEQ's pages (as mo_head) */
             mo_place(b);
             if (b[0]) {
-                mo_textr(b, 119, 1, MO_DIM);
+                mo_textr(b, right, 1, MO_DIM);
                 MO_HOOK_PLACE(b);
             }
         }
@@ -3216,6 +3279,7 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
     uint32_t f, s, sig = total * 7u + song.sel * 131u + ux.pal * 31u + ui.scale_family * 7919u + rank * 40503u +
                             scale * 1031u + fav;
     char a[32], b[32];
+    sig ^= (uint32_t)(batt_head() + 1) * 2654435761u;   /* (the header's battery) */
     if (!ui.force && sig == mo_sc_sig)
         return;
     mo_sc_sig = sig;
@@ -3226,10 +3290,14 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
         b[0] = (char)('1' + song.sel % NTRK);
         str_cpy(b + 1, " SCALES", 8);
         mo_fill(0, 0, mo_tw(b) + 3, 8, MO_INK);
-        mo_text(b, 1, 1, MO_BG);
-        fmt_int(b, (int32_t)total);
-        str_cpy(b + str_len(b), total == 1u ? " SCALE" : " SCALES", 8);
-        mo_textr(b, 119, 1, MO_DIM);
+        {
+            int32_t chip = mo_text(b, 1, 1, MO_BG) + 3, right = mo_batt_right(batt_head());
+            fmt_int(b, (int32_t)total);
+            str_cpy(b + str_len(b), total == 1u ? " SCALE" : " SCALES", 8);
+            if (right - mo_tw(b) < chip + 3)            /* (no room: the number) */
+                fmt_int(b, (int32_t)total);
+            mo_textr(b, right, 1, MO_DIM);
+        }
         mo_hl(0, 8, 120, MO_INK);
         for (f = 0; f <= SCALE_FAM_USER; f++) {         /* the families (8 px rows: eleven above the foot) */
             int32_t y = 12 + (int32_t)f * 8;
