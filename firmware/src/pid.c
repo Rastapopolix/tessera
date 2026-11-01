@@ -40,6 +40,8 @@ static const char *const TX_N_ANORDER[] = {"PLAYED", "REVERSE", "SHUFFLE"};   /*
 static const char *const TX_N_ANLEN[] = {"SHORT", "MID", "LONG"};
 static const char *const TX_N_SDKEEP[] = {"FREE", "RHYTHM", "PITCH"};   /* (TESS_SD_*) */
 static const char *const TX_N_SVHOW[] = {"DRIFT", "ADORN", "SERIAL"};   /* (TESS_SV_*) */
+static const char *const TX_N_TUNE[] = {"OFF", "USR1", "USR2", "USR3", "USR4"};   /* (tune.h: the slots' own names
+                                                                                   * where shown, params.c) */
 static const char *const TX_N_ACCMODE[] = {"WRAP", "PING", "CLAMP"};    /* (TESS_ACC_*) */
 static const char *const TX_N_QEVERY[] = {"/1", "/2", "/3", "/4", "/6", "/8", "/16"};   /* (every n steps, as TX_N_DIV) */
 
@@ -153,6 +155,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_EN_LEVEL] = PD("LEVEL", F_INT, -100, 100, 0),
     [TX_EN_DEPTH] = PD("DEPTH", F_PCT, 0, 100, 100),
     [TX_FM_DEVELOP] = PD("DEVLP", F_PCT, 0, 100, 0),
+    [TX_TUNE] = PE("TUNE", TX_N_TUNE, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -573,6 +576,10 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                       "recognisable but is never quite the same. The section itself is kept, so the "
                                       "next return starts from it again. GRAVITY is the chance a return stays exact. "
                                       "0: every return exact. OCT+ held on FORM, KNOB 1."),
+    XP_(TX_TUNE, "TUNING", "A tuning of your own for the whole project, as the scale is: USR1 to USR4 play the "
+                           "Scala (.scl) files sent from the web editor's TUNINGS tab, saved with the project. The "
+                           "keys, the generators, QNT and chords play its degrees; ROOT and TRN move it. OFF, or an "
+                           "empty slot, plays SCL's scale. SCL > SCALES, the USER family."),
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };

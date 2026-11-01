@@ -229,3 +229,4 @@
 0x26c ENERGY LEVEL             global -100..100 def 0
 0x26d ENERGY DEPTH             track 0..100 def 100
 0x26e FORM DEVELOP             track 0..100 def 0
+0x26f TUNING                   global 0..4 def 0

@@ -2723,6 +2723,7 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_SD_KEEP: return tessera.sd_keep[tr];
     case TX_SD_GRAVITY: return tessera.sd_grav[tr];
     case TX_FM_DEVELOP: return tessera.fm_dev[tr];
+    case TX_TUNE: return tune_sel;                      /* (the project's, whichever track) */
     case TX_CH_BREATH: return tessera.ch_breath[tr];
     case TX_EN_ARC: return tessera.en_arc;              /* (the project's, whichever track) */
     case TX_EN_RESTS: return tessera.en_rests;
@@ -2898,6 +2899,7 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
         return;
     case TX_SD_GRAVITY: tessera.sd_grav[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_FM_DEVELOP: tessera.fm_dev[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
+    case TX_TUNE: tune_sel = (uint8_t)tess_clampi(v, 0, (int32_t)TUNE_SLOTS); return;
     case TX_CH_BREATH: tessera.ch_breath[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_AN_VARY: tessera.answer[tr].vary = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_AN_ECHO: tessera.answer[tr].echo = (uint8_t)tess_clampi(v, 0, 100); return;
