@@ -82,7 +82,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **OCT+** + SELECT, KNOB 1 or 2 | Selects a run of notes; let go: the Selected notes sheet (move, copy, quantize, delete) |
 | **OCT-** | Clears the selection |
 | **PRESETS** | Zooms the notes |
-| **OCT+** held | The pattern's sheet: Double, Half, Euclid (hits, turn), Accum limit / mode, Quantize, Clear |
+| **OCT+** held | The pattern's sheet: Snap to scale, Double, Half, Euclid (hits, turn), Accum limit / mode, Quantize, Clear |
 
 ## The drum grid (NOTES on a DRUM track)
 

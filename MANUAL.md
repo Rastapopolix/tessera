@@ -248,6 +248,9 @@ On NOTES, **KNOB 2** sets the picked note's pitch. With **QNT OFF** it moves a s
 the turn's direction first. With **QNT CHRD** and a CHORD track playing it moves through that chord's notes. Hold
 **ENV** while turning for a semitone at a time. A microtonal scale moves a degree a detent, as before.
 
+QNT works on notes as they come in, so notes written with QNT OFF or before SCL changed stay where they are. To bring
+them onto the scale, use **Snap to scale** in the pattern's sheet (below).
+
 <p align="center"><img src="assets/gallery/seq_mode.png" alt="GEN with MODE STEP" width="320"></p>
 
 ### Recording live
@@ -263,11 +266,18 @@ you tap **REC** again. Stopped, the first key you play starts the sequencer and 
 - **OCT-** / **OCT+** on NOTES with REC on move the keys an octave down / up, as on HOME (both together: back to
   the middle). The header shows it (**KEYS OCT +1**). OCT+ held still opens the pattern's sheet.
 
-### The pattern's sheet: Double, Half, Euclid, Accumulate
+### The pattern's sheet: Snap to scale, Double, Half, Euclid, Accumulate
 
 Hold **OCT+** on GEN (STEP, ARP), NOTES, PATTERN or the drum grid for the pattern's sheet. Besides Quantize,
 Swing (the track's, KNOB 2), Clear pattern and Clear motion it has:
 
+- **Snap to scale**: OCT+ moves every written note of the pattern onto the track's scale and ROOT, once. That means
+  every note of a chord, recorded notes, and steps hidden past LEN. Each note goes to the nearest note of the scale;
+  halfway between two, it goes down. Two notes of a chord that land on the same note become one. With **QNT CHRD** and
+  a CHORD track playing, notes go to the nearest note of the chord playing now. The header says how many moved
+  (**SNAPPED 7**), or **ALL IN SCALE**. It works at any QNT, OFF included. On a microtonal scale or your own tuning
+  with QNT on, every note already is a degree of the scale, so nothing moves. With QNT OFF such a scale's notes play
+  as semitones and go to the nearest semitone close to the scale. A kit or slices has no such row.
 - **Double**: the pattern twice as long (up to 64 steps). Its steps, recorded notes and motion are copied after
   themselves; a playing pattern carries on into the copy.
 - **Half**: LEN halved (15 steps become 8). The steps past it stay, hidden, as when LEN is turned down.
