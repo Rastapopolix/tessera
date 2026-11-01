@@ -355,6 +355,13 @@
         <button id="backup-import" data-t="backupImport"></button><input id="backup-file" type="file" accept=".json,application/json" hidden></p>
       <p class="dim" id="backup-help"></p>
     </div>
+    <div class="group" id="tunings" hidden style="margin-top:16px">
+      <h2 data-t="tuneTitle"></h2>
+      <p class="dim" data-t="tuneHelp"></p>
+      <div class="slots" id="tunerows"></div>
+      <p class="bar"><button id="tuneoff" data-t="tuneOff"></button><input id="tunefile" type="file" accept=".scl,.SCL,text/plain" hidden>
+        <span id="tunestatus" class="dim" aria-live="polite"></span></p>
+    </div>
     <div class="group" id="songchain" hidden style="margin-top:16px">
       <h2 data-t="songTitle"></h2>
       <p class="dim" data-t="songHelp"></p>
@@ -414,7 +421,7 @@ const CMD = { INFO: 1, GET: 2, SET: 3, DUMP: 4, DESC: 5, STEP_GET: 6, STEP_SET: 
   TRACK_PARAM: 31, TRACK_CHANGED: 32, SONG: 33, PATTERN: 73, BANK_SONG: 74,
   UI_STATE: 34, UI_SET: 35, UI_PALETTES: 36, FAV_GET: 37, FAV_SET: 38,
   MOTION: 64, BACKUP_LIST: 65, BACKUP_GET: 66, BACKUP_PUT: 67,
-  FM6_GET: 68, FM6_PUT: 69, FM6_LIST: 70, FM6_ERASE: 71, NATIVE: 78 };   /* (75..77 CZ-1, 95 PROPHET: retired 2026-10-22) */
+  FM6_GET: 68, FM6_PUT: 69, FM6_LIST: 70, FM6_ERASE: 71, NATIVE: 78, TUNE: 80 };   /* (75..77 CZ-1, 95 PROPHET: retired 2026-10-22) */
 /* frames the device sends on its own (while WATCH is on); never replies */
 
 
@@ -422,6 +429,58 @@ const CMD = { INFO: 1, GET: 2, SET: 3, DUMP: 4, DESC: 5, STEP_GET: 6, STEP_SET: 
 const PUSH = new Set([CMD.CHANGED, CMD.RELOAD, CMD.STEP_CHANGED, CMD.TRACK_CHANGED]);
 /* user preset bank: name 1..12 printable ASCII, a 16-step pattern of (note, flags 1 acc 2 slide 4 tie) */
 const UP = { NAME_MAX: 12, PAT: 16, LIST_MAX: 16 };
+
+/* user tunings (firmware tune.h, command 80). A Scala .scl file (huygens-fokker.org/scala/scl_format.html): lines
+   starting "!" are comments; a description, the number of pitches, then a pitch a line: cents when it has a ".",
+   else a ratio n/d or n; the last pitch is the period. -> the device's table: every degree folded into the period,
+   sorted, a repeat dropped, in hundredths of a cent rounded as tools/gen_scales.py does. A .kbm keyboard map is not
+   read: the device's ROOT and TRN place degree 0 */
+const TUNE = { SLOTS: 4, DEGREES: 64, NAME: 7, TITLE: 23, PERIOD_MAX: 480000 };
+const u32enc = (n) => [0, 7, 14, 21, 28].map((s) => (n >>> s) & 0x7F);
+const tuneText = (s, n) => String(s ?? "").replace(/[^\x20-\x7E]/g, "").trim().slice(0, n);
+function tuneName(file) {
+  const base = String(file ?? "").replace(/^.*[\\/]/, "").replace(/\.scl$/i, "");
+  return tuneText(base, TUNE.NAME).toUpperCase().trim() || "USER";
+}
+function parseScala(text, file = "") {
+  const lines = String(text).split(/\r\n|\n|\r/).filter((l) => !l.startsWith("!"));
+  if (lines.length < 2) throw new Error("Not a Scala file: no pitch count");
+  const count = Number(lines[1].trim().split(/\s+/)[0]);
+  if (!Number.isInteger(count) || count < 1) throw new Error("Not a Scala file: the pitch count is not a number");
+  const cents = [];
+  for (const line of lines.slice(2)) {
+    const tok = line.trim().split(/\s+/)[0];
+    if (!tok) continue;
+    let c;
+    if (tok.includes(".")) c = /^[+-]?(\d+\.?\d*|\.\d+)$/.test(tok) ? Number(tok) : NaN;
+    else {
+      const m = /^(\d+)(?:\/(\d+))?$/.exec(tok), n = m ? +m[1] : 0, d = m && m[2] ? +m[2] : 1;
+      c = n > 0 && d > 0 ? 1200 * Math.log2(n / d) : NaN;
+    }
+    if (!Number.isFinite(c)) throw new Error(`Pitch ${cents.length + 1}: "${tok}" is not cents or a ratio`);
+    cents.push(c);
+    if (cents.length === count) break;
+  }
+  if (cents.length !== count) throw new Error(`Only ${cents.length} of ${count} pitches`);
+  const period = pyRound(cents[count - 1] * 100);
+  if (period <= 0) throw new Error("The last pitch, the period, must be above 1/1");
+  if (period > TUNE.PERIOD_MAX) throw new Error("The period is more than four octaves");
+  const deg = new Set([0]);
+  let folded = 0;
+  for (const c of cents.slice(0, -1)) {
+    const v = pyRound(c * 100), w = ((v % period) + period) % period;
+    if (w !== v || deg.has(w)) folded++;
+    deg.add(w);
+  }
+  const sorted = [...deg].sort((a, b) => a - b);
+  if (sorted.length > TUNE.DEGREES) throw new Error(`${sorted.length} degrees: the FM-1 plays at most ${TUNE.DEGREES}`);
+  return { name: tuneName(file || lines[0]), title: tuneText(lines[0], TUNE.TITLE), count: sorted.length,
+           pitch: [...sorted.slice(1), period], folded };
+}
+/* a table the device takes (as its tune_ok): 1..64 degrees rising from above 0, the period last and at most 4 octaves */
+const tuneValid = (t) => t && Array.isArray(t.pitch) && t.pitch.length >= 1 && t.pitch.length <= TUNE.DEGREES &&
+  t.pitch.every((v, i) => Number.isInteger(v) && v > (i ? t.pitch[i - 1] : 0)) && t.pitch.at(-1) <= TUNE.PERIOD_MAX &&
+  /^[\x20-\x7E]{1,7}$/.test(t.name) && /^[\x20-\x7E]{0,23}$/.test(t.title);
 const F = { INT: 0, PCT: 1, BIPCT: 2, TIME: 3, LFOHZ: 4, CUTOFF: 5, DB: 6, SEMI: 7, ENUM: 8, BPM: 9, NOTE: 10, ONOFF: 11, OCT: 12, STEPS: 13 };
 
 const v14enc = (v) => { const u = Math.max(-8192, Math.min(8191, Math.round(v))) + 8192; return [u & 0x7F, (u >> 7) & 0x7F]; };
@@ -481,6 +540,19 @@ class Reader {
 }
 
 const parse = {
+  [CMD.TUNE](a) {
+    const r = new Reader(a), o = { op: r.b(), rc: r.b() }, u32 = () => [0, 1, 2, 3, 4].reduce((n, k) => n + r.b() * 2 ** (7 * k), 0);
+    if (o.rc) return o;
+    if (o.op === 0) {
+      o.slots = r.b(); o.degrees = r.b(); o.sel = r.b();
+      o.list = Array.from({ length: o.slots }, (_, slot) => { const count = r.b(); return { slot, count, name: r.s(), title: r.s() }; });
+    } else if (o.op === 4) o.sel = r.b();
+    else {
+      o.slot = r.b();
+      if (o.op === 1) { o.count = r.b(); o.name = r.s(); o.title = r.s(); o.pitch = Array.from({ length: o.count }, u32); }
+    }
+    return o;
+  },
   [CMD.NATIVE](a) {
     const r=new Reader(a),o={engine:r.b(),op:r.b(),index:r.b(),rc:r.b()};
     if(o.rc)return o;
@@ -514,6 +586,8 @@ const parse = {
     o.namespace={general:o.nengines,12:o.nengines+1,15:o.nengines+2};
     const pp=trailer.findIndex((x,i)=>i>=19&&x===0x35&&trailer[i+1]===1);
     if(pp>=0)o.namespace={general:trailer[pp+3],12:trailer[pp+4],15:trailer[pp+5],19:trailer[pp+6]};
+    const tp = trailer.findIndex((x, i) => i >= (np >= 0 ? np + 6 : 19) && x === 0x54 && trailer[i + 1] === 1);   /* user tunings: command 80 */
+    o.tune = tp >= 0 ? { slots: trailer[tp + 2], degrees: trailer[tp + 3] } : null;
     return o;
   },
   [CMD.UI_STATE](a) {
@@ -673,6 +747,8 @@ function upName(s) { return String(s ?? "").replace(/[^\x20-\x7E]/g, "").trim().
 
 const req = {
   native: (engine,op,index,...args) => [CMD.NATIVE,[engine,op,index,...args]],
+  tune: (op, ...args) => [CMD.TUNE, [op, ...args]],
+  tunePut: (slot, t) => [CMD.TUNE, [2, slot, t.pitch.length, ...strEnc(t.name), ...strEnc(t.title), ...t.pitch.flatMap(u32enc)]],
   uiState: () => [CMD.UI_STATE, []],
   uiSet: (id, value) => [CMD.UI_SET, [id, value]],
   uiPalettes: () => [CMD.UI_PALETTES, []],
@@ -762,6 +838,7 @@ function replyMatches(cmd, args, a) {
     case CMD.BANK_SONG: case CMD.SONG: return a[0] === args[0];
     case CMD.PATTERN: return a[0] === args[0] && a[1] === args[1];
     case CMD.NATIVE: return a[0]===args[0] && a[1]===args[1] && a[2]===args[2];
+    case CMD.TUNE: return a[0] === args[0];
     case CMD.FM6_GET: case CMD.FM6_PUT: return a[0] === args[0] && a[1] === args[1];
     case CMD.FM6_ERASE: return a[0] === args[0];
     case CMD.PROJECT: return a[0] === args[0] && a[1] === args[1];
@@ -1952,6 +2029,7 @@ function makeMockDevice(opt = {}) {
   const st = {
     tracks: [0, 1, 2, 3].map(newTrack), sel: 0, rec: 0,
     native:{12:Array(64).fill(null)},
+    tunes: [null, null, null, null], tuneSel: 0,
     g: GP.map((d) => d.def),
     slots: [null, null, null, null], songRows: [], chainPlaying: false, chainRow: 0, chainRemaining: 0,
     smp: [0, 1, 2].map(() => ({ flash: new Uint8Array(SMP.SLOT_SIZE).fill(0xFF), zones: 0, name: "", len: 0, next: SMP.DATA_OFF })),
@@ -2034,7 +2112,8 @@ function makeMockDevice(opt = {}) {
   st.sel = 3; loadDemo(1);
   st.sel = 0; loadDemo(0);
   st.tracks[1].p[39] = -24; st.tracks[2].p[39] = 20; st.tracks[2].p[0] = 92;
-  const project = () => JSON.parse(JSON.stringify({ tracks: st.tracks, sel: st.sel, g: st.g, songRows: st.songRows, bankSongRows: st.bankSongRows || [] }));
+  const project = () => JSON.parse(JSON.stringify({ tracks: st.tracks, sel: st.sel, g: st.g, songRows: st.songRows, bankSongRows: st.bankSongRows || [],
+                                                    tunes: st.tunes, tuneSel: st.tuneSel }));   /* (the tunings are the project's) */
   st.slots[0] = project();
 
   function handle(cmd, a) {
@@ -2177,6 +2256,29 @@ function makeMockDevice(opt = {}) {
         m.events.forEach(e => {b(e.step | ((e.param & 128) >> 1));b(e.param);v(e.value);});
         break;
       }
+      case CMD.TUNE: {                             /* (editor_tune.c) */
+        const [op, k] = a;
+        let rc = 0;
+        if (op === 0) rc = a.length !== 1;
+        else if (op === 1) rc = a.length !== 2 || !st.tunes[k];
+        else if (op === 3) rc = a.length !== 2 || !(k < TUNE.SLOTS);
+        else if (op === 4) rc = a.length !== 2 || !(k <= TUNE.SLOTS);
+        else if (op === 2) {
+          const n = a[2] | 0, z1 = a.indexOf(0, 3), z2 = z1 < 0 ? -1 : a.indexOf(0, z1 + 1), at = z2 + 1;
+          const t = z2 < 0 ? null : { name: String.fromCharCode(...a.slice(3, z1)).toUpperCase(), title: String.fromCharCode(...a.slice(z1 + 1, z2)),
+            pitch: Array.from({ length: n }, (_, i) => a.slice(at + 5 * i, at + 5 * i + 5).reduce((s, x, j) => s + x * 2 ** (7 * j), 0)) };
+          rc = !(k < TUNE.SLOTS) || !t || at + 5 * n !== a.length || !tuneValid(t);
+          if (!rc) st.tunes[k] = t;
+        } else rc = 1;
+        if (!rc && op === 3) { st.tunes[k] = null; if (st.tuneSel === k + 1) st.tuneSel = 0; }
+        if (!rc && op === 4) st.tuneSel = k;
+        b(op); b(rc ? 1 : 0);
+        if (rc) break;
+        if (op === 0) { b(TUNE.SLOTS); b(TUNE.DEGREES); b(st.tuneSel); st.tunes.forEach((t) => { b(t ? t.pitch.length : 0); s(t ? t.name : ""); s(t ? t.title : ""); }); }
+        else if (op === 4) b(st.tuneSel);
+        else { b(k); if (op === 1) { const t = st.tunes[k]; b(t.pitch.length); s(t.name); s(t.title); t.pitch.forEach((x) => u32enc(x).forEach(b)); } }
+        break;
+      }
       case CMD.NATIVE: {
         const [engine,op,index]=a,pool=st.native[engine];let rc=!pool||op>7||index>=(op===7?NTRK:pool.length)?1:0;
         if(!rc){
@@ -2202,7 +2304,7 @@ function makeMockDevice(opt = {}) {
         if (!opt.legacy) b(NTRK);
         if (!opt.legacy && !opt.v3 && !opt.v5) {
           b(0);
-          if (st.uiCaps) { [0x55,1,st.uiCaps,0x4d,2,64,1,0x42,1,3,0x50,1,8,16].forEach(b); if (!opt.noFm6) [0x46,1,FM6.FACTORY_PK.length,FM6_BANK,0x35,1,0,16,17,18,20,0,1,0x4e,1,64,0,0,1].forEach(b); }
+          if (st.uiCaps) { [0x55,1,st.uiCaps,0x4d,2,64,1,0x42,1,3,0x50,1,8,16].forEach(b); if (!opt.noFm6) [0x46,1,FM6.FACTORY_PK.length,FM6_BANK,0x35,1,0,16,17,18,20,0,1,0x4e,1,64,0,0,1,0x54,1,TUNE.SLOTS,TUNE.DEGREES].forEach(b); }
         }
         break;
       case CMD.GET: case CMD.SET: {
@@ -2723,6 +2825,9 @@ const TEXT = {
     mixer: "ミキサー", mixHelp: "本体の MIXER ページと同じ 4 トラック。フェーダーはレベル。パンはどのトラックも選択を変えずに書き込みます。REC は本体での録音待機の表示です。",
     level: "レベル", pan: "パン", mute: "ミュート", rec: "REC", selectTrack: "選択", selectedTrack: "選択中",
     projHelp: "プロジェクトは本体の状態をまとめて保存します: 4 トラックの音色とパターン、曲の並び順、選択中のトラック、グローバル設定。",
+    tuneTitle: "ユーザー調律 (Scala)", tuneHelp: "Scala の .scl ファイルを読み込み、4 つのスロットに送ります。調律はプロジェクトと一緒に保存されます。本体の SCL > SCALES の USER で選ぶか、ここで再生します。ROOT が 0 度の音です (.kbm は使いません)。",
+    tuneLoad: ".scl を読み込む", tunePlay: "使う", tuneOff: "調律オフ (SCL の音階)", tuneNotes: "音", tuneFolded: "周期内に折り返し・重複を除去", tuneRefused: "本体がこの調律を受け付けませんでした",
+    tuneReplace: "USR{n} の {old} を置き換えますか？", tuneClearConfirm: "USR{n} を消去しますか？",
     slot: "スロット", songTitle: "ソング", songHelp: "保存スロットのパターンと繰り返す回数を順に並べます。音色は現在のまま。並び順を残すには、上のプロジェクトを保存してください。切替はトラック1のパターン終端、曲末で停止します。", songAdd: "行を追加", songRemove: "最後の行を削除", songPlay: "先頭から再生", songStop: "停止", songReps: "回", songEmpty: "行を追加してください", songBusy: "停止してから編集してください", songInvalid: "スロットと回数を確認してください", songPlaying: "再生中の行", songSaved: "並び順を変更しました。プロジェクトを保存すると残せます。",
     system: "システム", firmware: "ファームウェア", sync: "同期", tracksN: "トラック", stepsN: "ステップ数", enginesL: "エンジン",
     smpSlots: "サンプルスロット", userBank: "ユーザープリセット", none: "なし",
@@ -2817,6 +2922,9 @@ const TEXT = {
     mixer: "Mixer", mixHelp: "The four tracks of the device's MIXER page. The fader is the level. Pan is written to any track without changing the selection. REC shows a track armed for live recording on the device.",
     level: "Level", pan: "Pan", mute: "Mute", rec: "REC", selectTrack: "Select", selectedTrack: "Selected",
     projHelp: "A project keeps the sounds and patterns of all four tracks, the song chain, the selected track and the global settings.",
+    tuneTitle: "Tunings (Scala)", tuneHelp: "Read a Scala .scl file and send it to one of four slots. The tunings are saved with the project. Pick one on the device (SCL > SCALES, USER) or play it from here. ROOT is degree 0; .kbm maps are not used.",
+    tuneLoad: "Load .scl", tunePlay: "Play", tuneOff: "Tuning off (SCL's scale)", tuneNotes: "notes", tuneFolded: "folded into the period, repeats dropped", tuneRefused: "The FM-1 refused this tuning",
+    tuneReplace: "Replace {old} in USR{n}?", tuneClearConfirm: "Erase USR{n}?",
     slot: "Slot", songTitle: "Song", songHelp: "Arrange patterns from saved slots and choose their repeats. The current sounds stay. Save a project above to keep the chain. Rows change at the end of track 1; the song stops at the end.", songAdd: "Add row", songRemove: "Remove last row", songPlay: "Play from start", songStop: "Stop", songReps: "repeats", songEmpty: "Add a row first", songBusy: "Stop before editing", songInvalid: "Check slots and repeats", songPlaying: "Playing row", songSaved: "Chain changed. Save a project to keep it.",
     system: "System", firmware: "Firmware", sync: "Sync", tracksN: "Tracks", stepsN: "Steps", enginesL: "Engines",
     smpSlots: "Sample slots", userBank: "User presets", none: "none",
@@ -3107,8 +3215,10 @@ async function load(d) {
     if (d.info.ntrk) d.sel = parse[CMD.TRACK](await sessionRequest(d, req.track())).sel;   /* v3: the selected track */
     d.dump = await getDump(d);
     if (d.info.chainRows) d.song = songParse(d, await sessionRequest(d, songRequest(d)));
+    d.tunes = null;
     buildUI();
     renderPanels();
+    await readTunings(d);
     await loadSteps(d);
     if (d.info.ntrk) await readMixer(d);
     /* protocol v2: live pushes and the user bank; older firmware: DUMP polling, no bank */
@@ -3478,6 +3588,7 @@ function report(err) { if (err && err.message !== "closed") { console.warn(err);
 function renderSlots() {
   renderSong();
   renderBackup();
+  renderTunings();
   const box = $("slots");
   box.replaceChildren();
   for (let i = 0; i < 4; i++) {
@@ -3498,7 +3609,7 @@ async function project(op, slot) {
     const r = parse[CMD.PROJECT](await rq(req.project(op, slot), { timeout: 4000, retries: 0 }));
     dev.slotUsed[slot] = r.used;
     renderSlots();
-    if (!op && r.used) await afterSoundChange();
+    if (!op && r.used) { await afterSoundChange(); await readTunings(); }
     if (dev.info.chainRows) { dev.song = songParse(dev, await rq(songRequest(dev))); renderSong(); }
     sayK(op ? "savedSlot" : r.used ? "loadedSlot" : "emptySlot", String(slot + 1));
   } catch (err) { report(err); } finally { releaseBusy(); }
@@ -3580,6 +3691,56 @@ function renderBackup() {
   $("backup-import").disabled = !(caps & 2);
   $("backup-help").textContent = t(caps & 1 ? "backupHelp" : "backupOld");
 }
+/* user tunings (Scala): the project's, in four slots; a .scl read here, sent as its table (TUNE, command 80) */
+let tuneSlot = 0;
+async function readTunings(d = dev) {
+  assertSession(d);
+  if (!d.info.tune) { d.tunes = null; renderTunings(); return; }
+  const r = parse[CMD.TUNE](await sessionRequest(d, req.tune(0)));
+  d.tunes = r.rc ? null : r;
+  renderTunings();
+}
+function renderTunings() {
+  const box = $("tunings"), tu = dev?.tunes;
+  box.hidden = !tu;
+  if (!tu) return;
+  const rows = $("tunerows");
+  rows.replaceChildren();
+  tu.list.forEach((x) => {
+    const on = tu.sel === x.slot + 1;
+    rows.append(el("span", { text: `USR${x.slot + 1}${on ? " ▶" : ""}` }),
+      el("span", { class: x.count ? "" : "dim", text: x.count ? `${x.name} · ${x.title || ""} · ${x.count} ${t("tuneNotes")}` : t("empty") }),
+      el("button", { ic: "symbol_upload", onclick: () => { tuneSlot = x.slot; $("tunefile").click(); } }, t("tuneLoad")),
+      el("button", { disabled: !x.count || on, onclick: () => op(() => tuneSelect(x.slot + 1)) }, t("tunePlay")),
+      el("button", { ic: "symbol_trash", disabled: !x.count, onclick: () => op(async () => {
+        if (!confirm(t("tuneClearConfirm").replace("{n}", x.slot + 1))) return;
+        const r = parse[CMD.TUNE](await rq(req.tune(3, x.slot)));
+        if (r.rc) throw new Error(t("tuneRefused"));
+        await readTunings();
+      }) }, t("erase")));
+  });
+  $("tuneoff").disabled = !tu.sel;
+}
+async function tuneSelect(sel) {
+  const r = parse[CMD.TUNE](await rq(req.tune(4, sel)));
+  if (r.rc) throw new Error(t("tuneRefused"));
+  await readTunings();
+  await afterSoundChange();
+}
+$("tuneoff").addEventListener("click", () => op(() => tuneSelect(0)));
+$("tunefile").addEventListener("change", () => {
+  const file = $("tunefile").files[0], slot = tuneSlot; $("tunefile").value = "";
+  if (!file || !dev?.tunes) return;
+  op(async () => {
+    if (file.size > 65536) throw new Error("Scala file too large");
+    const tu = parseScala(await file.text(), file.name), was = dev.tunes.list[slot];
+    if (was?.count && !confirm(t("tuneReplace").replace("{n}", slot + 1).replace("{old}", was.name))) return;
+    const r = parse[CMD.TUNE](await rq(req.tunePut(slot, tu)));
+    if (r.rc) throw new Error(t("tuneRefused"));
+    await readTunings();
+    $("tunestatus").textContent = `USR${slot + 1}: ${tu.name}, ${tu.count} ${t("tuneNotes")}` + (tu.folded ? ` (${t("tuneFolded")})` : "");
+  });
+});
 const backupModule = () => import("./fm1backup.js");
 const backupProgress = (done, total) => sayK("backupWorking", `${Math.round(done / Math.max(1, total) * 100)}%`);
 $("backup-export").addEventListener("click", () => op(async () => {
