@@ -16,7 +16,7 @@
 #define TSP_STEP_BYTES 10u                      /* step v2: 80 bits */
 enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TSP_FM6, TSP_DRUM, TSP_REC, TSP_NAME,
        TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_HOW, TSP_ORACLE,
-       TSP_ENERGY, TSP_DEV, TSP_TUNE, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
+       TSP_ENERGY, TSP_DEV, TSP_TRANSP, TSP_TUNE, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
                                               * TSP_HUMAN: each track's HUMAN TIME; none: TWEAK HUMAN's timing, as it was;
@@ -26,8 +26,9 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * TSP_ORACLE: each track's ORACLE patch; none: its preset's;
                                               * TSP_ENERGY: ENERGY's LEVEL + 100, then each track's DEPTH; none: 0, 100;
                                               * TSP_DEV: each track's FORM DEVELOP; none: 0, exact returns;
+                                              * TSP_TRANSP: each track's MIDI OUT TRANSPOSE + 48; none: 0;
                                               * TSP_TUNE: TUNE, then the user tunings (tune.h); none: OFF, empty) */
-_Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TUNE == 24,
+_Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25,
                "the parts' numbers are stored: never renumbered");
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -273,6 +274,10 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
         tsp_begin(&w, TSP_MIDI, 1);                    /* (MIDI OUT: each track's channel) */
         tsp_bytes(&w, tessera.midi_ch, NTRK);
         tsp_end(&w);
+        tsp_begin(&w, TSP_TRANSP, 1);                  /* (MIDI OUT: each track's TRANSPOSE, + 48) */
+        for (uint32_t k = 0; k < NTRK; k++)
+            tsp_byte(&w, (uint32_t)(k < TESSERA_TRACKS ? tessera.midi_tr[k] + TESS_MIDI_TR : TESS_MIDI_TR));
+        tsp_end(&w);
         tsp_begin(&w, TSP_KEY, 1);                     /* (KEY LINK, the project's) */
         tsp_byte(&w, tessera.key_link);
         tsp_end(&w);
@@ -488,6 +493,10 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (tsp_seen.ver[TSP_MIDI] != 1u || tsp_seen.len[TSP_MIDI] != NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_MIDI] + k] > TESS_MIDI_OFF) return 0;
     }
+    if (tsp_seen.at[TSP_TRANSP]) {
+        if (tsp_seen.ver[TSP_TRANSP] != 1u || tsp_seen.len[TSP_TRANSP] != NTRK) return 0;
+        for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_TRANSP] + k] > 2u * TESS_MIDI_TR) return 0;
+    }
     if (tsp_seen.at[TSP_KEY]) {
         if (tsp_seen.ver[TSP_KEY] != 1u || tsp_seen.len[TSP_KEY] != 1u || raw[tsp_seen.at[TSP_KEY]] > 1u) return 0;
     }
@@ -568,6 +577,9 @@ static void tsp_restore(const uint8_t *raw)
     if (tsp_seen.at[TSP_CORDS]) (void)cord_unpack(raw + tsp_seen.at[TSP_CORDS]);
     if (tsp_seen.at[TSP_SUB]) memcpy(tessera.sub_shape, raw + tsp_seen.at[TSP_SUB], NTRK);
     if (tsp_seen.at[TSP_MIDI]) memcpy(tessera.midi_ch, raw + tsp_seen.at[TSP_MIDI], NTRK);
+    if (tsp_seen.at[TSP_TRANSP])                       /* (saved before TRANSPOSE: tessera_reset's 0) */
+        for (uint32_t k = 0; k < TESSERA_TRACKS; k++)
+            tessera.midi_tr[k] = (int8_t)((int32_t)raw[tsp_seen.at[TSP_TRANSP] + k] - TESS_MIDI_TR);
     tessera.key_link = tsp_seen.at[TSP_KEY] ? raw[tsp_seen.at[TSP_KEY]] : 0u;   /* (saved before KEY LINK: OWN) */
     if (tsp_seen.at[TSP_SEED]) {                       /* (saved before STEP as seed: tessera_reset's OFF, FREE) */
         memcpy(tessera.sd_src, raw + tsp_seen.at[TSP_SEED], NTRK);

@@ -809,9 +809,10 @@ Hold **HOME** for the menu. Tessera's additions:
 | **CLOCK OUT** | 24 pulses a beat with START and STOP over USB, while the clock is INT. |
 | **MIDI CC IN** | **ON** (the default): CCs and NRPNs set the tracks' parameters (see [MIDI CC control](#midi-cc-control)). **OFF**: they move nothing, for a sequencer that sends CCs to other gear on the same channels. Bend, mod wheel, expression, sustain and aftertouch always play. Saved. |
 | **USB HOST** | **ON**: the USB-C port hosts a USB-MIDI keyboard, controller, synth or MIDI-to-CV module, with no computer in between (see [USB host](#usb-host)). **OFF** (the default): the port talks to a computer. Not saved: every start is OFF. |
+| **BATTERY** | **ON** (the default): the header shows the battery at the right, its bars (none to three) on the battery, and a bolt before it on external power (a computer, a hub or a charger). **WHEN LOW**: only when it is down to a bar or none, on the battery. Saved. |
 | **PANEL GAMMA** | The screen's contrast curve: the panel chip's own **G2.2** (the default), G1.8, G2.5 and G1.0, or TUNED and TUNED+VCOM. The screen goes black for a moment and redraws. Saved. |
 | **TRACK KNOB** | RIGHT: the ALGORITHM knob picks the track and PRESETS browses sounds, as printed. LEFT: the two swap. |
-| **ABOUT** | Version, credits and, after a crash, LAST CRASH (until power-off). |
+| **ABOUT** | Version, credits, **POWER** (the battery's reading and bars, whether 5 V comes in), and, after a crash, LAST CRASH (until power-off). |
 
 ### MIDI OUT channels
 
@@ -826,6 +827,12 @@ Hold **HOME** for the menu. Tessera's additions:
 The page lists each track's channel as it is now, AUTO's included. The channels are saved with the project. Which
 notes go out at all is still the menu's **MIDI OUT** (KEYS, ALL or OFF): for the steps and the generators, set it to
 **ALL**.
+
+**TRANSPOSE**: hold **OCT+** on **GLO > MIDI OUT** and turn **KNOB 1** to **4** to move a track's notes up or down
+on their way out, a semitone a detent (12 an octave), up to four octaves either way. For a synth or a MIDI-to-CV
+module that plays them too high or too low: **-12** an octave down, **-24** two. Only what goes out over MIDI moves;
+the track's own sound stays where it is. A note moved past MIDI's range (0 to 127) is not sent. The page shows a
+track's TRANSPOSE after its channel when it is not 0 (**CH 1 ROUT -24**); it is saved with the project.
 
 <p align="center"><img src="assets/gallery/midi_out.png" alt="GLO > MIDI OUT" width="240"></p>
 
@@ -880,8 +887,8 @@ directly or through a USB hub, and after a moment the screen says **USB MIDI REA
 - **Power**: the FM-1 does not power the device. Use a **powered hub**, or a device with its own power supply.
 - One MIDI device at a time: the first one found (behind a hub, the first port with a MIDI device). Full-speed
   devices only (**LOW SPEED** otherwise, behind a hub too); a device without USB-MIDI (a USB stick, crow) shows
-  **NO MIDI DEVICE**. norns is itself a host, so connect it as before.
-- When nothing is found the screen adds **USB SCAN IN ABOUT**: the menu's **ABOUT** then lists, under
+  **NO MIDI**. norns is itself a host, so connect it as before.
+- When nothing is found the screen adds **USB SCAN: ABOUT**: the menu's **ABOUT** then lists, under
   **USB HOST SCAN**, what each hub port had: **P2 0103 NO MIDI 08** is port 2, its status in hex (1 connected,
   2 enabled, 100 powered, 200 low speed, 400 high speed), what was found and the device's USB class in hex (01 audio
   or MIDI, 03 a keyboard or mouse, 08 a stick, 09 a hub, 11 a hub's Billboard). Found: **EMPTY**, **LOW SPEED**,

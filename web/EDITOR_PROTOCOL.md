@@ -897,8 +897,8 @@ INFO appends `54 01 slots degrees` (tag T, version 1, 4 slots, 64 degrees at mos
 microtonal path's format: the degrees above the root in hundredths of a cent, strictly rising, the last one the
 period (above the last degree, at most 480000: four octaves); degree 0 (the root, 0) is not sent. The editor reads a
 Scala `.scl` file, folds its degrees into the period and sorts them before it sends the table. The slots are the
-project's: in RAM, saved with the project (its TUNE part, TSP1 part 24) by SAVE or autosave, and a project loaded
-brings its own (none: all empty). The track parameter TUNING (central id 0x26F, the project's: 0 OFF, 1..4 a slot)
+project's: in RAM, saved with the project (its TUNE part, TSP1 part 25) by SAVE or autosave, and a project loaded
+brings its own (none: all empty). The track parameter TUNING (central id 0x270, the project's: 0 OFF, 1..4 a slot)
 makes every melodic track play the slot instead of SCL's scale, wherever the microtonal path reads it; `SET` or
 `TRACK_PARAM` of SCL (id 26) sets it OFF. Pitches travel as u32 (5 x 7 bits, LSB first, as the backup's).
 

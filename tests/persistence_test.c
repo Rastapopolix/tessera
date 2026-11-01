@@ -157,6 +157,7 @@ static int test_tsp_record(void)
     song.sel = 1; tessera_knob(0, TESS_ENG_EUCLID);
     tessera_param_set(1, TX_SUB_SHAPE, SUB_DECEL); tessera_param_set(0, TX_SUB_SHAPE, SUB_ACCEL);   /* (the record's SUB part) */
     tessera_param_set(2, TX_MIDI_CH, 9); tessera_param_set(3, TX_MIDI_CH, (int32_t)TESS_MIDI_OFF);   /* (its MIDI part) */
+    tessera_param_set(0, TX_MIDI_TR, -36); tessera_param_set(3, TX_MIDI_TR, 7);   /* (its TRANSP part) */
     tessera_param_set(0, TX_KEY_LINK, 0);                                    /* (its KEY part: OWN, not the default) */
     tessera_param_set(1, TX_SD_SOURCE, 1); tessera_param_set(1, TX_SD_KEEP, TESS_SD_PITCH);   /* (its SEED part) */
     tessera.en_arc = 40u; tessera.en_rests = 60u;     /* (ENERGY: the block's project tail, TS18) */
@@ -174,6 +175,7 @@ static int test_tsp_record(void)
                  tessera.en_arc == 40u && tessera.en_rests == 60u &&
                  tessera.sub_shape[1] == SUB_DECEL && tessera.sub_shape[0] == SUB_ACCEL && tessera.sub_shape[2] == SUB_EVEN &&
                  tessera.midi_ch[2] == 9u && tessera.midi_ch[3] == TESS_MIDI_OFF && tessera.midi_ch[0] == 0u &&
+                 tessera.midi_tr[0] == -36 && tessera.midi_tr[3] == 7 && tessera.midi_tr[1] == 0 &&
                  tessera.key_link == 0u && tessera.sd_src[1] == 1u && tessera.sd_keep[1] == TESS_SD_PITCH &&
                  tessera.sd_src[0] == 0u && tessera.sd_keep[0] == TESS_SD_FREE);
     ok = project_rename(0, "TSP TWO") == 0;

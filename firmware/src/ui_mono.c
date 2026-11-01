@@ -1487,8 +1487,8 @@ static void mo_pic_energy(void)
         mo_fill(2, 54, len < 2 ? 2 : len > 116 ? 116 : len, 3, MO_INK);
     }
 }
-/* MIDI OUT: a row a track: its number, the channel its notes go out on (AUTO: ROUT's or DRUM's), and the menu's MIDI OUT
- * when it keeps the steps in (KEYS) or sends nothing (OFF) */
+/* MIDI OUT: a row a track: its number, the channel its notes go out on (AUTO: ROUT's or DRUM's), its TRANSPOSE when not
+ * 0, and the menu's MIDI OUT when it keeps the steps in (KEYS) or sends nothing (OFF) */
 static void mo_pic_midich(void)
 {
     for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
@@ -1501,6 +1501,10 @@ static void mo_pic_midich(void)
             str_cpy(b, "CH ", sizeof b);
             fmt_int(b + 3, (int32_t)ch + 1);
             if (!tessera.midi_ch[k]) str_cpy(b + str_len(b), drum_track(&trk[k]) && settings_drumch ? " DRUM" : " ROUT", 6);
+            if (tessera.midi_tr[k]) {                   /* (TRANSPOSE, in semitones) */
+                str_cpy(b + str_len(b), " ", 2);
+                midi_tr_text(b + str_len(b), tessera.midi_tr[k]);
+            }
         }
         mo_text(b, 18, y, ch == MIDI_OUT_NONE ? mo_tdim(k) : MO_TRK(k));
     }
@@ -2188,8 +2192,9 @@ static void mono_page(void)
 
 /* ---- the chrome of the screens still drawn whole by their own code (lists, MIXER, MODS, the browser, ...) ---- */
 /* the header (draw_head; 18 px = 9 cells): the page's chip inverted (ERASING, a message or a layer's name in its
- * place), the octave shift, then at the right REC, PLAY or STOP and the tempo; its line on row 8 */
-static void mo_dhead(const char *chip, const char *msg, int low)
+ * place), the octave shift, then at the right the battery (bat: ui_draw.c batt_head), REC, PLAY or STOP and the tempo;
+ * its line on row 8 */
+static void mo_dhead(const char *chip, const char *msg, int32_t bat)
 {
     char b[24], t[24];
     int32_t x = 119;
@@ -2208,9 +2213,18 @@ static void mo_dhead(const char *chip, const char *msg, int low)
         if (((song.rec & ~song.rec_wait) >> song.sel) & 1u) mo_disc(x + 2, 4, 2, MO_INK);
         else mo_circ(x + 2, 4, 2, MO_INK);
     }
-    if (low) {                                          /* the battery, only when it runs low */
+    if (bat >= 0) {                                     /* the battery: 0..3 bars of 5 cells, a bolt before it on
+                                                         * external power */
+        static const uint8_t BARS[4] = {0, 2, 3, 5};
         x -= 10;
         mo_box(x, 2, 7, 5, MO_INK), mo_vl(x + 7, 3, 3, MO_INK);
+        if (BARS[bat & 3])
+            mo_fill(x + 1, 3, BARS[bat & 3], 3, MO_INK);
+        if (bat >= 4) {
+            x -= 5;
+            mo_fill(x + 2, 2, 1, 1, MO_INK), mo_fill(x + 1, 3, 1, 1, MO_INK), mo_hl(x, 4, 3, MO_INK);
+            mo_fill(x + 1, 5, 1, 1, MO_INK), mo_fill(x, 6, 1, 1, MO_INK);
+        }
     }
     if (!msg && !ui.home && !ui.menu && !new_on() && !sec_map_on() && !designer_on()) {   /* a page: its place (4/9) */
         mo_place(t);

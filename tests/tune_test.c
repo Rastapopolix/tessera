@@ -154,7 +154,7 @@ static void project(void)
            tune_micro[3].count == 2u && tune_slot[3].pitch[2] == 190196 && micro_scale(t) == &tune_micro[3]);
     uint8_t *raw = proj_bank_slot[1];
     uint32_t len = tsp_len(raw);
-    verify("the record checks out, its TUNE part 24 found", len && tsp_valid(raw, len) && tsp_seen.at[TSP_TUNE] &&
+    verify("the record checks out, its TUNE part 25 found", len && tsp_valid(raw, len) && tsp_seen.at[TSP_TUNE] &&
            tsp_seen.len[TSP_TUNE] == 1u + TUNE_SLOTS + 2u * (TUNE_NAME + TUNE_TITLE) + 4u * (3u + 2u));
     raw[tsp_seen.at[TSP_TUNE] + 1u + 1u + TUNE_NAME + TUNE_TITLE + 4u] = 0;   /* slot 1's second degree: 0 */
     raw[tsp_seen.at[TSP_TUNE] + 1u + 1u + TUNE_NAME + TUNE_TITLE + 5u] = 0;
