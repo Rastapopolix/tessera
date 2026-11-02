@@ -1,0 +1,11 @@
+{
+  "what": "Generative firmware for the FM-1. Thirteen generators, song forms, shared harmony and modulation on four tracks, with FM, analogue-style, physical modelling and drum voices. Write patterns by hand or let them evolve, and play other gear over USB MIDI. Ten colour schemes.",
+  "author": "Theo Dainis (Rastapopolix)",
+  "kinds": [
+    "groove"
+  ],
+  "play": "https://rastapopolix.github.io/tessera/webapp/sim/",
+  "editor": "https://rastapopolix.github.io/tessera/webapp/editor/",
+  "cheat": "https://rastapopolix.github.io/tessera/cheatsheet/tessera-cheatsheet.pdf",
+  "image": "assets/hub-card.png"
+}
