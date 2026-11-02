@@ -262,7 +262,9 @@ static __attribute__((noinline,section(".audio_text"),aligned(16))) void fx_svf(
 }
 /* Tiny time effects run at FS/4. ECHO: 10..370 ms, 8 KiB. ROOM: four
  * damped combs at 13..26 ms, 2 KiB. They are intentionally lo-fi. ECHO's TIME
- * glides (at most 1/4 sample a tick, as a tape's speed: a pitch bend, no click) */
+ * glides (at most 1/4 sample a tick, as a tape's speed: a pitch bend, no click).
+ * The wet is interpolated back to FS as fx_up's is (Reverb's histories are free here): held, it mirrored the notes
+ * around FS/4 as an audible whine. */
 static __attribute__((noinline,section(".dsp_text"))) void fx_time(fx_state_t *restrict f,int16_t *restrict mem,uint32_t n,int32_t target)
 {
     static const uint16_t len[4]={149,211,263,293};
@@ -292,9 +294,13 @@ static __attribute__((noinline,section(".dsp_text"))) void fx_time(fx_state_t *r
                 }
                 f->echo=fx_div_pow2(sum,1);
             }
+            f->rev_prev_l=f->rev_l;f->rev_prev_r=f->rev_r;
+            f->rev_l=f->echo;f->rev_r=f->type==FX_ROOM?f->damp[1]+f->damp[3]:f->echo;
         }
+        int32_t l=f->rev_prev_l+fx_div_pow2((f->rev_l-f->rev_prev_l)*(f->decim+1),2);
+        int32_t r=f->mono?l:f->rev_prev_r+fx_div_pow2((f->rev_r-f->rev_prev_r)*(f->decim+1),2);
         f->decim=(f->decim+1u)&3u;
-        fx_return(target,0,f->mono,i,f->echo,f->type==FX_ROOM?f->damp[1]+f->damp[3]:f->echo,&mix);
+        fx_return(target,0,f->mono,i,l,r,&mix);
     }
     f->mix=mix;f->glide=at;
 }

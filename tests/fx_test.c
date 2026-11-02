@@ -3,6 +3,7 @@
 #include <assert.h>
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
+#include <math.h>
 static void reset_fx(void)
 {
     fx_clear_all();memset(fx_state,0,sizeof fx_state);
@@ -33,6 +34,33 @@ static uint64_t fx_signal(uint32_t type,int rate,int character,int mix,const cha
         }
     }
     if(w)fclose(w);assert(energy>1000000u);return h;
+}
+/* a tone's level in a run of samples (Goertzel, Hann window), dB against the signal's own full scale */
+static double fx_tone_db(const float *x,uint32_t n,double hz)
+{
+    double w=2.0*3.14159265358979*hz/FS,c=2.0*cos(w),s0=0,s1=0,s2=0,sum=0;
+    for(uint32_t i=0;i<n;i++){
+        double h=0.5-0.5*cos(2.0*3.14159265358979*i/(n-1u));
+        sum+=h;s0=x[i]*h+c*s1-s2;s2=s1;s1=s0;
+    }
+    double re=s1-s2*cos(w),im=s2*sin(w);
+    return 20.0*log10(2.0*sqrt(re*re+im*im)/sum+1e-9);
+}
+/* ECHO and ROOM run at FS/4: a tone must not come back mirrored around FS/4 (a whine in the demo video's audio,
+ * 27 dB under the tone while their wet was held). Interpolated as the other quarter-rate effects are, 50 dB and more */
+static void fx_images_check(uint32_t type)
+{
+    static float out[FS*2u];
+    reset_fx();track_t *t=&trk[0];t->p[P_FXTYPE]=(int16_t)type;t->p[P_FXMIX]=127;
+    uint32_t phase=0,inc=(uint32_t)(440.0/FS*4294967296.0),at=0;int32_t b[CTL];
+    for(uint32_t frame=0;at<FS*2u;frame++){
+        for(uint32_t i=0;i<CTL;i++){phase+=inc;b[i]=sine_i(phase)/2;}
+        int on=fx_process(t,b,CTL);assert(on);
+        if(frame<2u*FS/CTL)continue;   /* (the delay filled) */
+        for(uint32_t i=0;i<CTL && at<FS*2u;i++)out[at++]=(float)fx_left[i];
+    }
+    double tone=fx_tone_db(out,FS*2u,440.0),lo=fx_tone_db(out,FS*2u,FS/4.0-440.0),hi=fx_tone_db(out,FS*2u,FS/4.0+440.0);
+    assert(tone-lo>=50.0 && tone-hi>=50.0);
 }
 /* a decoded project through a TSP1 record (project_tsp.c) into proj_scratch */
 static int fx_roundtrip(const project_t *q)
@@ -445,6 +473,7 @@ static void filter_test(void)
 int main(int argc,char **argv)
 {
     legacy();frozen_three_slots();send_return();separate_sends();fx_chain_test();reverb_tail();reverb_presence();reverb_rate_conversion();rate_and_pan();tape_smooth();chorus_test();filter_test();
+    fx_images_check(FX_ECHO);fx_images_check(FX_ROOM);
     uint64_t dry=fx_signal(FX_OFF,60,64,0,0);
     for(uint32_t mode=FX_PHASER;mode<FX_COUNT;mode++){
         assert(fx_signal(mode,60,64,0,0)==dry);
