@@ -206,10 +206,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       </div>
       <h1>TESSERA</h1>
       <div class="tag">Generative firmware for the M-Vave FM-1</div>
-      <p class="lede">Systems that generate musical relationships, not just notes. Four tracks and thirteen generators: evolve the
-        phrases, build them into song forms and modulate anything from anything, while the tracks follow, answer and
-        share one harmony. The FM-1 feels like a small generative modular system: one instrument with one musical idea
-        behind it. Small tiles, set into a larger pattern.</p>
+      <p class="lede">Systems that generate musical relationships, not just notes. Thirteen generators across four tracks that follow, answer and share one harmony, building phrases into song forms. Small tiles, set into a larger pattern: the FM-1 as a small generative modular system.</p>
       <div class="cta">
         <a class="btn main" href="webapp/installer/">Install 3.2.2</a>
         <a class="btn" href="webapp/sim/">Try it in your browser</a>
@@ -252,14 +249,14 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
         play, and every automatic layer starts off, so nothing moves until you ask it to.</p>
     </header>
     <div class="tiles">
-      <div class="tile" style="--c:var(--p1)"><h3>Thirteen generators</h3><p>Turing, Euclid, Markov, Morph, Atlas, Bounce and Fall, Awake, Poly, Quad, Constellation, Series, Chord and Answer.</p></div>
+      <div class="tile" style="--c:var(--p1)"><h3>Thirteen generators</h3><p>Turing, Euclid, Markov, Morph, Atlas, Bounce (with its Fall mode), Awake, Poly, Quad, Constellation, Series, Chord, and Answer.</p></div>
       <div class="tile" style="--c:var(--p2)"><h3>Evolve and form</h3><p>Mutate a phrase every few bars, or build sections A, B and C into forms such as AABA. STEP EVOLVE varies the steps you wrote.</p></div>
       <div class="tile" style="--c:var(--p3)"><h3>Tracks that talk</h3><p>Branch hits to another track's sound, combine tracks with AND, OR and XOR, follow another track's pitch, play only on certain bars.</p></div>
       <div class="tile" style="--c:var(--p4)"><h3>Harmony</h3><p>One key for every track with Key link. A Chord track plays a progression, or your own played in on the keys, and QNT CHRD makes every other track follow it.</p></div>
       <div class="tile" style="--c:var(--p1)"><h3>Sixteen cords</h3><p>Any source to any destination on any track, generators included. Slow organic sources, live marks on the knobs, and a MATRIX to see the patch.</p></div>
       <div class="tile" style="--c:var(--p2)"><h3>Record and print</h3><p>Play a pattern in layer by layer, and REC keeps overdubbing until you stop. Hold REC and what a generator just played becomes ordinary steps, ready to edit.</p></div>
       <div class="tile" style="--c:var(--p3)"><h3>Sounds</h3><p>Six-operator FM with three engine models, ORACLE (two oscillators, POLY MOD and a four-pole filter), the three-oscillator TRIO, PHYS physical models (bells, mallets, strings, drum heads), and 808 and 909 drum kits.</p></div>
-      <div class="tile" style="--c:var(--p4)"><h3>MIDI in and out</h3><p>Every track and generator on a channel of its own, and the clock. External gear sets Tessera's parameters by MIDI CC, and as a USB host the FM-1 can play a USB-MIDI synth or MIDI-to-CV module directly.</p></div>
+      <div class="tile" style="--c:var(--p4)"><h3>MIDI in and out</h3><p>Every track and generator on a channel of its own, and the clock. External gear sets Tessera’s parameters by MIDI CC. As a USB host, the FM-1 can play a USB-MIDI synth or MIDI-to-CV module directly. The FM-1 doesn’t power its USB port, so you’ll need a powered USB-C hub that also feeds 5V back to it.</p></div>
     </div>
     <div class="bar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
   </div>
@@ -287,6 +284,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_constel.png" alt="CONSTELLATION" loading="lazy" width="480" height="480"></div><figcaption><b>CONSTELLATION</b><span>Stars play as they cross the ship's crosshair. After the norns script Constellation.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_series.png" alt="SERIES" loading="lazy" width="480" height="480"></div><figcaption><b>SERIES</b><span>Per Nørgård's infinity series.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_chord.png" alt="CHORD" loading="lazy" width="480" height="480"></div><figcaption><b>CHORD</b><span>Progressions the other tracks can follow.</span></figcaption></figure></div>
+      <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_answer.png" alt="ANSWER" loading="lazy" width="480" height="480"></div><figcaption><b>ANSWER</b><span>Plays your phrase back in fading variations and echoes.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/gallery/step_evolve.png" alt="STEP EVOLVE" loading="lazy" width="480" height="480"></div><figcaption><b>STEP EVOLVE</b><span>Your own steps, varied as they play.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/gallery/cords.png" alt="MODS" loading="lazy" width="480" height="480"></div><figcaption><b>MODS</b><span>Sixteen cords, any source to any destination.</span></figcaption></figure></div>
     </div>
@@ -379,8 +377,8 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
     </header>
     <div class="about">
       <div>
-        <p>I'm Theo Dainis, from Aotearoa New Zealand. I've been using and building synthesisers for the past 15 years, and I'm passionate about modular and open source. Elektron and Mutable Instruments are big influences on me. I love the DIY side: building things, and learning how music hardware works on the inside. Tessera is the sequencer I wanted on the FM-1: modular in a box, a small instrument that writes with you.</p>
-        <div class="note"><b>Built with Claude Code.</b> Tessera's code is written with <a href="https://claude.com/claude-code">Claude Code</a>, Anthropic's AI coding tool. I designed it, made the decisions, and test every release on my own FM-1 before it goes out. The source is open, so you can read every line and every change. Like any firmware, it comes with no warranty: save a <b>Complete backup</b> from the <a href="webapp/editor/">web editor</a> before you flash.</div>
+        <p>I'm Theo Dainis, from Aotearoa New Zealand. I've been using and building synthesisers for the past 15 years, and I'm passionate about modular and open source. I’m heavily influenced by Elektron, Mutable Instruments and the Monome and Whimsical Raps world. I love the DIY side: building things, and learning how music hardware works on the inside. Tessera is the sequencer I wanted on the FM-1: modular in a box, a small instrument that writes with you.</p>
+        <div class="note"><b>Built with Claude Code.</b> Tessera's code is written with <a href="https://claude.com/claude-code">Claude Code</a>, Anthropic's AI coding tool. I designed it, made the decisions, and test it on my own FM-1. It’s experimental, so please report anything odd. The source is open, so you can read every line and every change. Like any firmware, it comes with no warranty: save a <b>Complete backup</b> from the <a href="webapp/editor/">web editor</a> before you flash.</div>
       </div>
     </div>
   </div>
