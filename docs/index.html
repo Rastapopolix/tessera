@@ -93,7 +93,7 @@ nav .links a:hover { color: var(--bg); background: var(--ink); }
 .btn.main:hover { background: var(--bg); color: var(--ink); }
 .screens { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .screen { border: 2px solid var(--line); padding: 5px; }
-.screen img { width: 100%; height: auto; image-rendering: pixelated; }
+.screen img, .screen video { display: block; width: 100%; height: auto; image-rendering: pixelated; }
 @media (max-width: 860px) {
   .hero .wrap { grid-template-columns: 1fr; gap: 36px; }
   .hero { padding-top: 40px; }
@@ -215,10 +215,10 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       </div>
     </div>
     <div class="screens">
-      <div class="screen"><img src="media/gallery/gen_tweak2.png" alt="TWEAK 2: BRANCH, LOGIC and COND set" width="480" height="480"></div>
-      <div class="screen"><img src="media/gallery/gen_constel.png" alt="CONSTELLATION: stars play as they cross the crosshair" width="480" height="480"></div>
-      <div class="screen"><img src="media/gallery/gen_chord.png" alt="CHORD: a progression" width="480" height="480"></div>
-      <div class="screen"><img src="media/gallery/matrix.png" alt="MATRIX: the mods track by track" width="480" height="480"></div>
+      <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/gen_bounce.png" width="480" height="480" aria-label="BOUNCE: balls in a box, a note at every wall"><source src="media/gallery/loop_bounce.mp4" type="video/mp4"></video></div>
+      <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/gen_constel.png" width="480" height="480" aria-label="CONSTELLATION: stars play as they cross the crosshair"><source src="media/gallery/loop_constel.mp4" type="video/mp4"></video></div>
+      <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/gen_chord.png" width="480" height="480" aria-label="CHORD: a progression"><source src="media/gallery/loop_chord.mp4" type="video/mp4"></video></div>
+      <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/matrix.png" width="480" height="480" aria-label="MATRIX: the mods track by track"><source src="media/gallery/loop_matrix.mp4" type="video/mp4"></video></div>
     </div>
   </div>
 </div>
@@ -406,6 +406,15 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
   for (var k = 0; k < 9; k++) tiles[order[k]].style.animationDelay = (k * 70 + (k === 8 ? 90 : 0)) + 'ms';
   m.classList.add('laid');
 })();
+</script>
+<script>/* the hero's screens: slow loops drawn by the firmware, playing only while on screen; with reduced motion, or no
+   script, the stills */
+if (!matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
+  const io = new IntersectionObserver((es) => es.forEach((e) => {
+    if (e.isIntersecting) e.target.play().catch(() => {}); else e.target.pause();
+  }));
+  document.querySelectorAll("video.loop").forEach((v) => io.observe(v));
+}
 </script>
 <script>/* LIGHT / DARK: names the other look; the choice is stored (tessera-theme) */
 (function () {
