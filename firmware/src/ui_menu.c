@@ -344,7 +344,7 @@ static int32_t menu_scroll_max(void)
 static void menu_head(void)
 {
 #if MELODEE_LOOK
-    mo_dhead(ui.menu == 2 ? "ABOUT" : "SETTINGS", 0, -1);
+    mo_dhead(ui.menu == 2 ? "ABOUT" : "SETTINGS", 0, batt_head());
     cv_begin(240, MENU_HEAD - H_HEAD, MO_BG);           /* (the menu's strip is taller than the pages' header) */
     cv_blit(0, H_HEAD);
     return;
@@ -483,6 +483,7 @@ static void draw_menu(void)
 #if MELODEE_USB_HOST
     sig += ui.menu == 2 ? (uh.dg_n + uh.on * 256u) * 104729u : 0u;   /* (ABOUT's USB HOST SCAN) */
 #endif
+    sig += (uint32_t)(batt_head() + 1) * 2654435761u;   /* (the header's battery) */
     sig += ui.menu == 2 ? ((uint32_t)song.batt_raw * 131u + song.pwr[0] * 7u + song.pwr[1] * 977u + song.pwr[2] * 7919u +
                            (usb.config && !usb.suspended)) * 16777619u : settings_batt_off * 15485863u;   /* (POWER) */
     if (!ui.force && sig == ui.menu_sig)
