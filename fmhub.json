@@ -1,5 +1,5 @@
 {
-  "what": "Generative firmware for the FM-1. Thirteen generators, song forms, shared harmony and modulation on four tracks, with FM, analogue-style, physical modelling and drum voices. Write patterns by hand or let them evolve, and play other gear over USB MIDI. Ten colour schemes.",
+  "what": "Makes the FM-1 a small generative modular system. Rather than just generating notes, its thirteen generators create musical relationships: tracks follow, answer and share one harmony, and song forms develop over time. An instrument first, with one musical idea behind it.",
   "author": "Theo Dainis (Rastapopolix)",
   "kinds": [
     "groove"
