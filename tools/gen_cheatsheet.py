@@ -93,7 +93,7 @@ def page(title, intro, sections):
         out.append(f"<section>\n<h2>{inline(head)}</h2>\n<table>")
         out += [f"<tr><td>{inline(a)}</td><td>{inline(b)}</td></tr>" for a, b in rows]
         out.append("</table>\n</section>")
-    out.append("</main>\n<footer>Tessera 2.0, generative firmware. GPL-3.0. The manual: MANUAL.md</footer>\n"
+    out.append("</main>\n<footer>Tessera, generative firmware. GPL-3.0. The manual: MANUAL.md</footer>\n"
                "</body>\n</html>\n")
     return "\n".join(out)
 
