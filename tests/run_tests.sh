@@ -362,6 +362,7 @@ if core && [ $TABLES = 1 ]; then
     t "audio: silent bench keeps synthesis running and silences physical output" audio_silent_test:audio_test \
         -DMELODEE_BENCH_SILENT=1 $FW
     t "persistence: deferred settings, retry and failed-save rollback" persistence_test $FW
+    t "flash JEDEC gate: accepted parts (Puya, UCUN) enable writes, unknown IDs stay RAM-only" flash_id_test $FW
     t "first boot: foreign settings, safe defaults, ownership and interrupted cleanup" settings_origin_test $FW
     t "first boot: reset unsupported preset banks, preserve good entries and retry cuts" preset_boot_reset_test $FW
     t "storage safety: protect unreadable records until confirmed replacement" storage_safety_test $FW

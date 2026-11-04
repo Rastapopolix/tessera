@@ -205,10 +205,11 @@ static int32_t entry_gain[NPART]={32768,32768,32768,32768};   /* Tessera: Entrie
 static void mix_solo(track_t *t,int32_t *b,uint32_t n)
 {
     uint32_t ti=(uint32_t)(t-trk);
-    int32_t from=solo_gain[ti],to=!track_solo?entry_gain[ti]:((track_solo>>ti)&1u)?32768:0;   /* (SOLO: heard whatever Entries says) */
+    /* muted: the notes still sounding go too, not only the new ones (voice.c), as an insert FX's do (upstream 8d29d95) */
+    int32_t from=solo_gain[ti],to=t->p[P_MUTE]?0:!track_solo?entry_gain[ti]:((track_solo>>ti)&1u)?32768:0;   /* (SOLO: heard whatever Entries says) */
     if(from==32768 && to==32768)return;
     for(uint32_t i=0;i<n;i++){
-        from += clamp(to-from,-256,256); /* 128 samples, same GLO solo ramp as before */
+        from += clamp(to-from,-256,256); /* 128 samples, the same ramp for GLO solo and MUTE */
         b[i]=mulq16(b[i],(uint32_t)from<<1);
         if(spread_on)spread_buf[i]=mulq16(spread_buf[i],(uint32_t)from<<1);
     }
