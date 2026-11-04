@@ -14,7 +14,14 @@ as the backup page does, loads it and plays it; `tests/run_tests.sh` checks that
 
 ## Putting them on your FM-1
 
-The demos go into your slots through a backup of your own FM-1, so everything else on it stays as it is.
+**From the web editor** (Tessera 3.0 or later on the FM-1): connect it, open **Projects** > **Demo projects**, choose
+a slot for each demo (or **Leave out**) and press **Put on the FM-1**. The editor stops playback, lists what each
+chosen slot holds now and asks before it writes; only those slots change. Then SAVE > PROJECT: pick the slot and
+load it, and PLAY. Save a backup first (**Complete backup** > **Save backup**) if you want to keep the projects in
+those slots.
+
+**With a backup file** (Python 3, from this repository): the demos go into your slots through a backup of your own
+FM-1, so everything else on it stays as it is.
 
 1. Connect the FM-1 to the web editor and stop playback. **Complete backup** > **Save backup**: keep that file safe,
    it is your way back.
