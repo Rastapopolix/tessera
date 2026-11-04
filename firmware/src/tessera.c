@@ -438,18 +438,20 @@ static const char *const TESS_FORM_NAME[7] = {"OFF", "AB", "ABAC", "ABCB", "AABA
 
 const char *tessera_form_name(uint32_t form) { return TESS_FORM_NAME[form > 6u ? 6u : form]; }
 
+#include "form_chain.c"                              /* form chaining: the project's FORM, FOLLOW / OWN, SKIP, WANDER */
+/* the track has sections: its own FORM, or it follows the project's */
+static int tess_has_form(uint32_t tr) { return tessera.evolve[tr].form || fc_follows(tr); }
+
 uint32_t tessera_form_get(uint32_t tr, uint8_t seq[4], uint32_t *pos)
 {
     const tessera_evolve_t *ev = &tessera.evolve[tr < TESSERA_TRACKS ? tr : 0u];
-    uint32_t f = ev->form > 6u ? 0u : ev->form, i;
+    uint32_t f = ev->form > 6u ? 0u : ev->form, i, left;
+    if (tr < TESSERA_TRACKS && fc_follows(tr)) return tessera_chain_get(seq, pos, &left);   /* (the CHAIN's) */
     for (i = 0; i < 4u; i++) seq[i] = TESS_FORMS[f][i];
     *pos = ev->form_pos;
     return TESS_FORM_LEN[f];
 }
 
-#include "form_chain.c"                              /* form chaining: the project's FORM, FOLLOW / OWN, SKIP, WANDER */
-/* the track has sections: its own FORM, or it follows the project's */
-static int tess_has_form(uint32_t tr) { return tessera.evolve[tr].form || fc_follows(tr); }
 
 /* Remember the live phrase as the section being left (the Markov / Morph notes are written straight into it). A
  * developed return left as it was developed is not remembered: the section stays as it was, so DEVELOP never drifts;
@@ -829,7 +831,7 @@ void tessera_phrase(uint32_t tr, uint32_t *bar, uint32_t *of, int *flash)
         *flash = tess_sv.flash[tr] != 0;
         return;
     }
-    *of = tessera_every_bars(ev->every);
+    *of = tr < TESSERA_TRACKS && fc_follows(tr) ? fc_bars() : tessera_every_bars(ev->every);   /* (following: the CHAIN's) */
     *bar = ev->bar_cnt;
     *flash = ev->flash != 0;
 }
@@ -897,9 +899,24 @@ void tessera_fm_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;
     tessera_ensure_init();
-    if (tr >= TESSERA_TRACKS || !s || k) return;
+    if (tr >= TESSERA_TRACKS || !s || k > 2u) return;
     TESS_IRQ_OFF();
-    tess_param_set_body(tr, TX_FM_DEVELOP, (int32_t)tessera.fm_dev[tr] + s * 2);
+    if (k == 0u) tess_param_set_body(tr, TX_FM_DEVELOP, (int32_t)tessera.fm_dev[tr] + s * 2);
+    else if (k == 1u) tess_param_set_body(tr, TX_FC_FOLLOW, s > 0 ? 1 : 0);   /* (right OWN, left FOLLOW) */
+    else tess_param_set_body(tr, TX_FC_SKIP, (int32_t)tessera.fc_skip[tr] + s * 2);
+    TESS_IRQ_ON();
+}
+
+/* the CHAIN page (GLO), the project's: KNOB 1 FORM, 2 PHRASE, 3 WANDER; OCT+ held (layer): KNOB k place k's REPEAT */
+void tessera_chain_knob(uint32_t k, int32_t s, int layer)
+{
+    tessera_ensure_init();
+    if (!s || k > 3u) return;
+    TESS_IRQ_OFF();
+    if (layer) tess_param_set_body(0, TX_FC_REP1 + k, (int32_t)tessera.fc_rep[k] + s);
+    else if (k == 0u) tess_param_set_body(0, TX_FC_FORM, (int32_t)tessera.fc_form + s);
+    else if (k == 1u) tess_param_set_body(0, TX_FC_PHRASE, (int32_t)tessera.fc_phrase + s);
+    else if (k == 2u) tess_param_set_body(0, TX_FC_WANDER, (int32_t)tessera.fc_wander + s * 2);
     TESS_IRQ_ON();
 }
 

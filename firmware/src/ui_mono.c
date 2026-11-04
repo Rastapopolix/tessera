@@ -1547,6 +1547,35 @@ static void mo_pic_energy(void)
         mo_fill(2, 54, len < 2 ? 2 : len > 116 ? 116 : len, 3, MO_INK);
     }
 }
+/* CHAIN: the project's FORM, a block a place as wide as its REPEAT (A tallest), its letter; the place playing filled,
+ * its phrases gone along the foot; OFF a line. Under it the tracks that follow it, in their inks */
+static void mo_pic_chain(void)
+{
+    uint8_t seq[4];
+    uint32_t pos = 0, left = 0, n = tessera_chain_get(seq, &pos, &left), i, tot = 0;
+    int32_t x = 2;
+    if (!n) {
+        mo_hl(2, 84, 116, MO_DIM);
+        mo_text("CHAIN OFF", 2, 92, MO_DIM);
+        return;
+    }
+    for (i = 0; i < n; i++) tot += tessera.fc_rep[i] ? tessera.fc_rep[i] : 1u;
+    for (i = 0; i < n; i++) {
+        uint32_t r = tessera.fc_rep[i] ? tessera.fc_rep[i] : 1u;
+        int32_t w = (116 - 3 * ((int32_t)n - 1)) * (int32_t)r / (int32_t)tot, h = 26 - 7 * (int32_t)seq[i];
+        char l[2] = {(char)('A' + seq[i] % 3u), 0};
+        int on = i == pos && song.playing;
+        if (on) mo_fill(x, 84 - h, w, h, MO_INK), mo_textc(l, x + w / 2 + 1, 84 - h + 2, MO_BG);
+        else mo_box(x, 84 - h, w, h, MO_INK), mo_textc(l, x + w / 2 + 1, 84 - h + 2, MO_INK);
+        mo_hl(x, 87, w, MO_DIM);
+        if (on) mo_fill(x, 87, w * (int32_t)(r - left) / (int32_t)r, 2, MO_INK);
+        x += w + 3;
+    }
+    for (i = 0; i < TESSERA_TRACKS; i++) {
+        char t[3] = {'T', (char)('1' + i), 0};
+        if (fc_follows(i)) mo_invc(t, 3 + (int32_t)i * 16, 93, MO_TRK(i));
+    }
+}
 /* MIDI OUT: a row a track: its number, the channel its notes go out on (AUTO: ROUT's or DRUM's), its TRANSPOSE when not
  * 0, and the menu's MIDI OUT when it keeps the steps in (KEYS) or sends nothing (OFF) */
 static void mo_pic_midich(void)
@@ -2030,6 +2059,7 @@ static void mo_picture(void)
     case GR_TIMING: mo_pic_timing(t); return;
     case GR_ENERGY: mo_pic_energy(); return;
     case GR_MIDICH: mo_pic_midich(); return;
+    case GR_CHAIN: mo_pic_chain(); return;
     default: break;
     }
     if (pg->graph == GR_CHORD) {

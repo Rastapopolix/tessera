@@ -881,9 +881,14 @@ static void draw_columns(void)
             uint32_t dv = tessera.fm_dev[tr];
             fmt_int(f2, dv);
             col_mods(PID_TESS(TX_FM_DEVELOP));
-            draw_column(0, "DEVLP", f2, "%", ev->form ? VAL(0u) : T_DIM, (int32_t)dv * 10, ICON_AUTO);
-            draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
-            draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(0, "DEVLP", f2, "%", ev->form || fc_follows(tr) ? VAL(0u) : T_DIM, (int32_t)dv * 10, ICON_AUTO);
+            {                                           /* (the CHAIN's FOLLOW / OWN and SKIP: lit with its FORM on) */
+                char w2[8];
+                int32_t own = tessera_param_get(tr, TX_FC_FOLLOW);
+                fmt_int(w2, tessera.fc_skip[tr]);
+                draw_column(1, "CHAIN", own ? "OWN" : "FOLLOW", "", tessera.fc_form ? VAL(1u) : T_DIM, own * 1000, ICON_AUTO);
+                draw_column(2, "SKIP", w2, "%", tessera.fc_form && !own ? VAL(2u) : T_DIM, (int32_t)tessera.fc_skip[tr] * 10, ICON_AUTO);
+            }
             draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
             return;
         }
@@ -943,6 +948,29 @@ static void draw_columns(void)
     if (cur_page()->graph == GR_KEYLINK) {               /* KEY (SCL's row): KEY LINK, the project's */
         draw_column(0, "KEY", tessera.key_link ? "LINKED" : "OWN", "", VAL(0u), tessera.key_link ? 1000 : 0, ICON_AUTO);
         for (uint32_t k = 1; k < 4u; k++) draw_column(k, "", "", "", T_DIM, -1, ICON_NONE);
+        return;
+    }
+    if (cur_page()->graph == GR_CHAIN && chain_layer_on()) {   /* CHAIN, OCT+ held: each place's REPEAT (past the FORM: dim) */
+        uint8_t sq[4];
+        uint32_t ps = 0, lf = 0, n = tessera_chain_get(sq, &ps, &lf);
+        for (uint32_t k = 0; k < 4u; k++) {
+            char nm[8] = {'R', 'E', 'P', ' ', (char)(k < n ? 'A' + sq[k] % 3u : '1' + k), 0}, w[4];
+            fmt_int(w, tessera.fc_rep[k]);
+            draw_column(k, nm, w, "x", k < n ? VAL(k) : T_DIM, ((int32_t)tessera.fc_rep[k] - 1) * 1000 / 7, ICON_AUTO);
+        }
+        return;
+    }
+    if (cur_page()->graph == GR_CHAIN) {                 /* CHAIN (form_chain.c), the project's: FORM, PHRASE, WANDER, now */
+        uint8_t sq[4];
+        uint32_t ps = 0, lf = 0, n = tessera_chain_get(sq, &ps, &lf);
+        char w1[4], w2[8], w3[4] = {'-', '-', 0, 0};
+        fmt_int(w1, fc_bars());
+        fmt_int(w2, tessera.fc_wander);
+        if (n && song.playing) w3[0] = (char)('A' + sq[ps] % 3u), w3[1] = 0;
+        draw_column(0, "FORM", tessera_form_name(tessera.fc_form), "", VAL(0u), (int32_t)tessera.fc_form * 1000 / 6, ICON_AUTO);
+        draw_column(1, "PHRASE", w1, "bar", n ? VAL(1u) : T_DIM, (int32_t)tessera.fc_phrase * 500, ICON_AUTO);
+        draw_column(2, "WANDER", w2, "%", n ? VAL(2u) : T_DIM, (int32_t)tessera.fc_wander * 10, ICON_AUTO);
+        draw_column(3, "NOW", w3, "", T_DIM, -1, ICON_NONE);
         return;
     }
     if (cur_page()->graph == GR_MIDICH && midi_layer_on()) {   /* MIDI OUT, OCT+ held: each track's TRANSPOSE */

@@ -118,6 +118,12 @@ static int midi_snd_layer_on(void)
     return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_MIDICH &&
            ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) && !((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
+/* the CHAIN page with OCT+ held: KNOB k is place k's REPEAT (form_chain.c) */
+static int chain_layer_on(void)
+{
+    return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_CHAIN &&
+           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+}
 /* a TRANSPOSE as its knob and the MIDI OUT picture say it: "+12", "0", "-24" */
 static void midi_tr_text(char *b, int32_t v)
 {
@@ -142,7 +148,7 @@ static int fm_layer_on(void)
 static int gen_layer_on(void)
 {
     return quad_cols_on() || cs_layer_on() || ch_layer_on() || gr_layer_on() || an_layer_on() || sd_layer_on() ||
-           sv_layer_on() || ev_layer_on() || fm_layer_on() || en_layer_on() || midi_layer_on();
+           sv_layer_on() || ev_layer_on() || fm_layer_on() || en_layer_on() || midi_layer_on() || chain_layer_on();
 }
 /* QUAD's LINK as its card shows it: OFF, or "T" and the linked tracks ("T24") */
 static void quad_link_text(uint32_t m, char *b)
@@ -1184,6 +1190,35 @@ static void graph_energy(uint16_t c)
     }
 }
 
+/* CHAIN page (form_chain.c), the project's FORM: its places as blocks as long as their REPEATs (A tallest), the place
+ * playing filled, its phrases gone along the foot; OFF a line. Under it the tracks that follow (their numbers) */
+static void graph_chain(uint16_t c)
+{
+    uint8_t seq[4];
+    uint32_t pos = 0, left = 0, n = tessera_chain_get(seq, &pos, &left), i, tot = 0;
+    int32_t x = PANEL_X0 + 6, w = PANEL_W - 12, gap = 4;
+    if (!n) {
+        cv_rect(x, 36, w, 2, T_RAISE);
+        return;
+    }
+    for (i = 0; i < n; i++) tot += tessera.fc_rep[i] ? tessera.fc_rep[i] : 1u;
+    for (i = 0; i < n; i++) {
+        uint32_t r = tessera.fc_rep[i] ? tessera.fc_rep[i] : 1u;
+        int32_t bw = (w - gap * ((int32_t)n - 1)) * (int32_t)r / (int32_t)tot, hh = 26 - 7 * (int32_t)seq[i];
+        char l[2] = {(char)('A' + seq[i] % 3u), 0};
+        uint16_t col = i == pos && song.playing ? c : T_RAISE;
+        cv_rrect(x, 40 - hh, bw, hh, 1, col, T_SURF);
+        cv_text_c(x + bw / 2, 40 - hh + 2, &AF_X, l, i == pos && song.playing ? T_BG : T_TEXT, col);
+        if (i == pos && song.playing && r)
+            cv_rect(x, 43, bw * (int32_t)(r - left) / (int32_t)r, 2, c);
+        x += bw + gap;
+    }
+    for (i = 0; i < TESSERA_TRACKS; i++) {
+        char t[3] = {'T', (char)('1' + i), 0};
+        if (fc_follows(i)) cv_text_c(PANEL_X0 + 18 + (int32_t)i * 30, 52, &AF_X, t, T_TRK(i), T_SURF);
+    }
+}
+
 /* MIDI OUT: a row a track, its colour, the channel its notes go out on (AUTO: the one ROUT or DRUM gives it now), and
  * when the menu's MIDI OUT keeps the steps in (KEYS) or sends nothing (OFF), so */
 static void graph_midich(void)
@@ -1934,6 +1969,15 @@ static uint32_t graph_sig(int play)
               (uint32_t)(uint8_t)tessera.midi_tr[2] << 16 | (uint32_t)(uint8_t)tessera.midi_tr[3] << 24) * 3266489917u
              ^ ((uint32_t)tessera.sound_off[0] | (uint32_t)tessera.sound_off[1] << 1 | (uint32_t)tessera.sound_off[2] << 2 |
                 (uint32_t)tessera.sound_off[3] << 3) * 2654435761u;
+    if (pg->graph == GR_CHAIN) {                     /* (it moves: the place playing, its phrases; the settings) */
+        uint8_t sq[4];
+        uint32_t ps = 0, lf = 0;
+        (void)tessera_chain_get(sq, &ps, &lf);
+        h ^= ((uint32_t)tessera.fc_form | (uint32_t)tessera.fc_wander << 4 | ps << 12 | lf << 14 | (uint32_t)song.playing << 18 |
+              (uint32_t)(fc_follows(0) | fc_follows(1) << 1 | fc_follows(2) << 2 | fc_follows(3) << 3) << 20) * 2246822519u ^
+             ((uint32_t)tessera.fc_rep[0] | (uint32_t)tessera.fc_rep[1] << 4 | (uint32_t)tessera.fc_rep[2] << 8 |
+              (uint32_t)tessera.fc_rep[3] << 12 | (uint32_t)tessera.fc_phrase << 16) * 3266489917u;
+    }
     if (pg->graph == GR_ENERGY)                      /* (it moves: the tide, a rest; the settings) */
         h ^= ((uint32_t)tessera.en_arc | (uint32_t)tessera.en_rests << 8 | (uint32_t)song.playing << 16) * 2246822519u ^
              (uint32_t)(energy_now() >> 9) * 31u ^ (energy.rest_left / EN_BPS) * 7919u ^ en_frac(energy.ph, energy.per, 110u) * 104729u;
@@ -2234,6 +2278,9 @@ static void graph_body(int32_t oy)
     case GR_MIDICH:
         cv_oy = oy;
         graph_midich();
+        break;
+    case GR_CHAIN:
+        graph_chain(c);
         break;
     case GR_MATRIX:
         mx_graph(c);

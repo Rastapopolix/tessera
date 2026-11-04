@@ -279,6 +279,7 @@ void tessera_len_stop(track_t *t);                  /* the held notes end now (p
 void organic_play(void);                            /* seq.c, PLAY: SLOTH and OCHD from each track's SEED */
 void fchain_play(void);                             /* seq.c, PLAY: form chaining from the top (form_chain.c) */
 uint32_t tessera_chain_get(uint8_t seq[4], uint32_t *pos, uint32_t *left);   /* the project FORM: letters, place, left */
+void tessera_chain_knob(uint32_t k, int32_t s, int layer);   /* the CHAIN page: KNOB k turned s (layer: OCT+ held) */
 void energy_play(void);                             /* seq.c, PLAY: ENERGY's tide and rests from the SEEDs (energy.c) */
 int32_t energy_now(void);                           /* the tide now, Q15 -32767 sparse .. 32767 full (cord source) */
 int energy_resting(void);                           /* 1 while the notes rest */

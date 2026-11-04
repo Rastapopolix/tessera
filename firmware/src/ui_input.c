@@ -975,6 +975,18 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
+    if (pg->graph == GR_CHAIN) {                    /* CHAIN, the project's: FORM, PHRASE a step a detent, WANDER a
+                                                     * percent; OCT+ held: KNOB k place k's REPEAT */
+        int layer = chain_layer_on();
+        tessera_chain_knob(slot, slot == 2u && !layer ? accel(EN_K1 + slot, steps, 100) : steps, layer);
+        if (layer) {
+            oct_eat |= 2u;
+            ui.oct_t0 |= 2u;
+            oct_deferred = 0;
+        }
+        ui.force = 1;
+        return;
+    }
     if (pg->graph == GR_ENERGY && en_layer_on()) {  /* ENERGY, OCT+ held: the selected track's DEPTH */
         tessera_en_layer_knob(slot, accel(EN_K1 + slot, steps, 100));
         oct_eat |= 2u;
@@ -1828,7 +1840,7 @@ static void page_knob(uint32_t k, int32_t s)
         edit_param(k, s);
         pg = cur_page();
         if (!(pg->graph == GR_EVOLVE || pg->graph == GR_FORM || pg->graph == GR_TWEAK || pg->graph == GR_TWEAK2 ||
-              pg->graph == GR_ORGANIC || pg->graph == GR_MATRIX || pg->graph == GR_TIMING || pg->graph == GR_ENERGY || pg->graph == GR_MIDICH || pg->graph == GR_KEYLINK || (pg->graph == GR_NOTELEN && k < 3u) ||   /* Tessera's own pages: no picker */
+              pg->graph == GR_ORGANIC || pg->graph == GR_MATRIX || pg->graph == GR_TIMING || pg->graph == GR_ENERGY || pg->graph == GR_MIDICH || pg->graph == GR_CHAIN || pg->graph == GR_KEYLINK || (pg->graph == GR_NOTELEN && k < 3u) ||   /* Tessera's own pages: no picker */
               (song.sel < TESSERA_TRACKS && pg->graph == GR_STEPS && pg->fam == FAM_GEN && (k == 0u || tessera.mode[song.sel] != TESS_ENG_OFF))))
             pick_touch(k);                              /* a name from a long list: its picker (ui_popup.c) */
     }
