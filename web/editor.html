@@ -355,6 +355,13 @@
         <button id="backup-import" data-t="backupImport"></button><input id="backup-file" type="file" accept=".json,application/json" hidden></p>
       <p class="dim" id="backup-help"></p>
     </div>
+    <div id="demos-panel" style="margin-top:16px">
+      <h2 data-t="demosTitle"></h2>
+      <p class="dim" data-t="demosHelp"></p>
+      <div class="slots" id="demorows" style="grid-template-columns:auto auto 1fr"></div>
+      <p class="bar"><button id="demos-put" data-t="demosPut" data-ic="symbol_download"></button>
+        <span id="demos-status" class="dim" aria-live="polite"></span></p>
+    </div>
     <div class="group" id="tunings" hidden style="margin-top:16px">
       <h2 data-t="tuneTitle"></h2>
       <p class="dim" data-t="tuneHelp"></p>
@@ -2519,6 +2526,32 @@ function makeMockDevice(opt = {}) {
         b(a[0]); b(rc);
         break;
       }
+      case CMD.BACKUP_LIST: case CMD.BACKUP_GET: case CMD.BACKUP_PUT: {   /* (editor_backup.c: the own format's 30
+          objects; here only the music playing (an empty TSP1 record) and the slots' records, which the mock keeps) */
+        const u32 = (n) => [0, 1, 2, 3, 4].map(i => (n >>> (i * 7)) & (i === 4 ? 15 : 127)), r32 = (o) => (a[o] | a[o + 1] << 7 | a[o + 2] << 14 | a[o + 3] << 21 | a[o + 4] << 28) >>> 0;
+        const live = Uint8Array.of(0x54, 0x53, 0x50, 0x31, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        new DataView(live.buffer).setUint32(12, live.subarray(0, 12).reduce((h, x) => Math.imul(h ^ x, 16777619) >>> 0, 0x811c9dc5), true);
+        const obj = (id) => id === 0 ? live : id >= 2 && id <= 5 && st.slots[id - 2] ? st.bkSlot?.[id - 2] || new Uint8Array(0) : new Uint8Array(0);
+        st.chainPlaying = false;
+        if (cmd === CMD.BACKUP_LIST) { b(1); b(0); b(30); for (let id = 0; id < 30; id++) { const o = obj(id); b(id); out.push(...u32(o.length), ...u32(o.length ? crc32(o) : 0)); } break; }
+        if (cmd === CMD.BACKUP_GET) {
+          const o = obj(a[0]), off = r32(1), n = a[6] | a[7] << 7, ok = n && n <= 256 && off + n <= o.length;
+          b(a[0]); b(ok ? 0 : 1); out.push(...u32(off)); b(ok ? n & 127 : 0); b(ok ? n >> 7 : 0);
+          if (ok) for (let i = off; i < off + n; i += 7) { const c = o.subarray(i, Math.min(off + n, i + 7)); b(c.reduce((m, x, k) => m | (x >> 7) << k, 0)); c.forEach(x => b(x)); }
+          break;
+        }
+        const [op, id] = a; let rc = id < 2 || id > 5 ? 1 : 0;
+        if (!rc && op === 0) st.bkPut = { id, size: r32(2), crc: r32(7), bytes: [] };
+        else if (!rc && op === 1 && st.bkPut?.id === id) for (let i = 7; i < a.length; ) { const m = a[i++]; for (let k = 0; k < 7 && i < a.length && a[i] < 128 && st.bkPut.bytes.length < st.bkPut.size; k++) st.bkPut.bytes.push(a[i++] | (m >> k & 1) << 7); }
+        else if (!rc && op === 2 && st.bkPut?.id === id) {
+          const v = Uint8Array.from(st.bkPut.bytes); rc = v.length === st.bkPut.size && crc32(v) === st.bkPut.crc ? 0 : 2;
+          if (!rc) { (st.bkSlot ||= [])[id - 2] = v; st.slots[id - 2] = project(); }
+          st.bkPut = null;
+        } else if (op === 3) st.bkPut = null;
+        else rc = rc || 5;
+        b(op); b(id); b(rc);
+        break;
+      }
       case CMD.SMP_INFO:
         b(3); b(SMP.SLOT_SIZE / 1024);
         st.smp.forEach((u) => { b(u.zones); s(u.zones ? u.name : ""); b(u.zones ? Math.ceil(u.len / 1024) : 0); });
@@ -2747,6 +2780,9 @@ const TEXT = {
     fm6Exported: "バンクを書き出しました",
     motion: "モーション", motionOn: "再生", motionClear: "モーションを消去", motionConfirm: "選択トラックのモーションを消しますか？", chance: "確率 %", motionStep: "ステップ", motionParam: "パラメーター", motionValue: "値",
     backupTitle: "全体バックアップ", backupExport: "バックアップ保存", backupImport: "バックアップ復元", backupHelp: "現在の曲・A〜D・音色バンク・ユーザーサンプル・設定を、このパソコンへ保存。", backupOld: "全体バックアップには対応版への更新が必要です。", backupConfirm: "全体バックアップを復元しますか？ 現在の曲、保存データとサンプルを置き換えます。USBを抜かないでください。", backupWorking: "バックアップ処理中 ", backupDone: "バックアップを保存しました", backupRestored: "全体バックアップを復元しました",
+    demosTitle: "デモ・プロジェクト", demosHelp: "Tessera のデモ曲を選んだスロットへ書き込みます。そのスロットのプロジェクトは置き換わり、ほかは変わりません。残したい場合は先にバックアップを保存してください。", demosPut: "FM-1 に書き込む", demosNone: "スロットを選んでください", demosTwice: "同じスロットは一度だけ選べます", demosSkip: "書き込まない",
+    demosConfirm: "次のデモを書き込みますか？", demosWas: "現在", demosEmpty: "空き", demosOld: "読めない古い形式のプロジェクト", demosUnnamed: "名前なしのプロジェクト", demosKeep: "置き換えるプロジェクトを残したい場合は、キャンセルして先にバックアップを保存してください。", demosWorking: "デモを書き込み中 ", demosDone: "デモを書き込みました。SAVE > PROJECT から読み込めます: ", demosFetch: "デモ・ファイルを読み込めません: ",
+    demoStill: "アンビエント: ORACLE のドローン、GRAVITY、FILTER を通る FALL、STEP を種にしたベース", demoKoto: "HIRA の FM 箏が QUAD で 2 列、FORM で育つ ORACLE の笛、条件付きステップの木魚", demoHarbour: "アンビエント・ダブ: ORACLE のコードがエコーへ、サブベース、909 のワンドロップ",
     deviceDisplay: "本体の画面",
     deviceDisplayHelp: "FM-1 の画面に反映し、保存します。再生中の変更は停止後に保存されます。",
     devicePresets: "本体のプリセット",
@@ -2844,6 +2880,9 @@ const TEXT = {
     fm6Exported: "Bank exported",
     motion: "Motion", motionOn: "Play motion", motionClear: "Clear motion", motionConfirm: "Clear this track's motion?", chance: "Chance %", motionStep: "Step", motionParam: "Parameter", motionValue: "Value",
     backupTitle: "Complete backup", backupExport: "Save backup", backupImport: "Restore backup", backupHelp: "Save the current music, A–D, sound banks and settings to this computer.", backupOld: "Complete backups need firmware with archive support.", backupConfirm: "Restore this complete backup? Current music, saved data and samples will be replaced. Keep USB connected.", backupWorking: "Backing up / restoring ", backupDone: "Backup saved", backupRestored: "Complete backup restored",
+    demosTitle: "Demo projects", demosHelp: "Put Tessera's demo songs into the slots you choose. Each chosen slot's project is replaced; nothing else on the FM-1 changes. Save a backup first if you want to keep what is there.", demosPut: "Put on the FM-1", demosNone: "Choose a slot for at least one demo", demosTwice: "Choose each slot only once", demosSkip: "Leave out",
+    demosConfirm: "Put these demos on the FM-1?", demosWas: "now", demosEmpty: "empty", demosOld: "a project in an older format", demosUnnamed: "a project with no name", demosKeep: "To keep a project that will be replaced, cancel and save a backup first.", demosWorking: "Putting the demos on the FM-1 ", demosDone: "Demos written. Load them from SAVE > PROJECT: ", demosFetch: "Could not read the demo file: ",
+    demoStill: "Ambient: an ORACLE drone, GRAVITY, FALL through the FILTER effect, a bass from STEP as seed", demoKoto: "FM koto in HIRA on two QUAD rows, an ORACLE flute in a FORM that develops, a mokugyo with conditions", demoHarbour: "Ambient dub: ORACLE chord stabs into a drifting echo, a sub bass, a 909 one drop",
     deviceDisplay: "Device display",
     deviceDisplayHelp: "Changes apply to the FM-1 screen and save. Changes made while playing save after STOP.",
     devicePresets: "Device presets",
@@ -3690,6 +3729,32 @@ function renderBackup() {
   $("backup-export").disabled = !(caps & 1);
   $("backup-import").disabled = !(caps & 2);
   $("backup-help").textContent = t(caps & 1 ? "backupHelp" : "backupOld");
+  renderDemos();
+}
+/* the demo projects (demos/*.tsp, beside the editor on the site: webapp/editor/demos/), each into a slot of the
+   player's choice by BACKUP_PUT of that slot's object alone (fm1backup.js putProject) */
+const DEMOS = [{ file: "still-tide.tsp", name: "STILL TIDE", about: "demoStill", slot: 1 },
+               { file: "koto-garden.tsp", name: "KOTO GARDEN", about: "demoKoto", slot: 2 },
+               { file: "low-harbour.tsp", name: "LOW HARBOUR", about: "demoHarbour", slot: 3 }];
+function renderDemos() {
+  const caps = dev?.info?.backupCaps || 0, box = $("demorows");
+  $("demos-put").disabled = (caps & 3) !== 3;
+  if (box.contains(document.activeElement)) return;
+  box.replaceChildren();
+  for (const d of DEMOS) {
+    const sel = el("select", { "aria-label": d.name });
+    sel.append(el("option", { value: -1, text: t("demosSkip") }));
+    for (let k = 0; k < 4; k++) sel.append(el("option", { value: k, text: `${t("slot")} ${String.fromCharCode(65 + k)}` }));
+    sel.value = String(d.slot);
+    sel.addEventListener("change", () => { d.slot = +sel.value; });
+    box.append(el("span", { text: d.name }), sel, el("span", { class: "dim", text: t(d.about) }));
+  }
+}
+async function demoBytes(file) {                 // the site's copy beside the editor, else the repository's demos/
+  for (const url of [`demos/${file}`, `../demos/${file}`]) {
+    try { const r = await fetch(url, { cache: "no-cache" }); if (r.ok) return new Uint8Array(await r.arrayBuffer()); } catch { /* the next */ }
+  }
+  throw new Error(t("demosFetch") + file);
 }
 /* user tunings (Scala): the project's, in four slots; a .scl read here, sent as its table (TUNE, command 80) */
 let tuneSlot = 0;
@@ -3766,6 +3831,30 @@ $("backup-file").addEventListener("change", () => {
     await load(d); sayK("backupRestored");
   });
 });
+
+$("demos-put").addEventListener("click", () => op(async () => {
+  const d = dev, picks = DEMOS.filter(x => x.slot >= 0), say = (k, a) => { $("demos-status").textContent = t(k) + a; sayK(k, a); };
+  if ((d?.info?.backupCaps & 3) !== 3) return;
+  if (!picks.length) throw new Error(t("demosNone"));
+  if (new Set(picks.map(x => x.slot)).size !== picks.length) throw new Error(t("demosTwice"));
+  const { tspName, readSlots, putProject } = await backupModule();
+  const bytes = [];
+  for (const x of picks) { const b = await demoBytes(x.file); tspName(b); bytes.push(b); }
+  assertSession(d);
+  const now = await readSlots((r, o) => sessionRequest(d, r, o));   // (stops playback)
+  const was = (s) => !s.used ? t("demosEmpty") : s.name == null ? t("demosOld") : s.name ? s.name : t("demosUnnamed");
+  const lines = picks.map(x => `${t("slot")} ${String.fromCharCode(65 + x.slot)}: ${x.name} (${t("demosWas")}: ${was(now[x.slot])})`);
+  if (!confirm([t("demosConfirm"), "", ...lines, "", ...(picks.some(x => now[x.slot].used) ? [t("demosKeep")] : [])].join("\n"))) return;
+  const total = bytes.reduce((n, b) => n + b.length, 0); let base = 0;
+  for (let i = 0; i < picks.length; i++) {
+    await putProject((r, o) => sessionRequest(d, r, o), picks[i].slot, bytes[i],
+      (done) => say("demosWorking", `${Math.round((base + done) / total * 100)}%`));
+    base += bytes[i].length;
+    d.slotUsed[picks[i].slot] = true;
+  }
+  renderSlots();
+  say("demosDone", picks.map(x => `${x.name} ${String.fromCharCode(65 + x.slot)}`).join(", "));
+}));
 
 async function readMotion(d = dev) {
   assertSession(d);
