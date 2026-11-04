@@ -16,7 +16,7 @@
                                     synth-only branch, one track, no sequencer), kept as published; optional
   webapp/synth-editor/              the synth-only branch's editor (publish_synth.py), kept as published
   webapp/installer/index.html       index_pkg.html, self-contained (fm1pkg.js, fm1ota.js, metadata inlined)
-  webapp/editor/index.html          editor.html (+ fukiai.ttf, FUKIAI-LICENSE.txt)
+  webapp/editor/index.html          editor.html (+ fukiai.ttf, FUKIAI-LICENSE.txt, fm1backup.js, demos/*.tsp)
   webapp/sim/                       the web simulator (web/sim/build.sh: build/sim/), when given; else kept as published
   src/                              not touched
 
@@ -177,6 +177,10 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
     for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt", "fm1backup.js"):
         if not installer_only and (HERE / f).exists():
             shutil.copy(HERE / f, ed / f)
+    if not installer_only:                          # the demo projects, for the editor's Demo projects (demos/*.tsp)
+        (ed / "demos").mkdir(exist_ok=True)
+        for f in sorted((HERE.parent / "demos").glob("*.tsp")):
+            shutil.copy(f, ed / "demos" / f.name)
     if not installer_only:                          # the project page, its screens and the brand pictures
         home = (HERE / "home" / "index.html").read_text(encoding="utf-8")
         for mark in ("@VERSION@", "@FWSC@", "@FWSC1@"):
