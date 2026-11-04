@@ -3836,6 +3836,45 @@ static int test_knobs_menu(void)
     ui.menu = 0;
     return bad;
 }
+/* LANDSCAPE (ui_land.c): notes are drops only while the page shows; the still scene is not drawn again, a ring is */
+static uint32_t land_rings(void) { uint32_t n = 0; for (uint32_t i = 0; i < LAND_RIP; i++) n += land.used[i]; return n; }
+static int test_landscape(void)
+{
+    int bad = 0;
+    uint32_t sig, i, stars;
+    ui_power_on();
+    song.playing = 0;
+    go_title("PIECE");
+    frame();
+    trk_note_on(&trk[1], 60, 100);
+    bad += check("LANDSCAPE: a note with the page closed is not kept", !land_open && land_ev_at == 0u);
+    go_title("LANDSCAPE");
+    bad += check("  the page in GLO (Mono look), its scene shown", str_eq(cur_page()->title, "LANDSCAPE") && page_visible(ui.page));
+    for (i = 0; i < 300u; i++) frame();                 /* (quiet a while: all the stars) */
+    stars = land_stars();
+    sig = mo_signature();
+    frame();
+    bad += check("  quiet: all the stars, the scene unchanged a frame on", stars == LAND_STARS && mo_signature() == sig);
+    trk_note_on(&trk[1], 84, 120);
+    trk_note_on(&trk[3], 36, 60);
+    frame();
+    bad += check("  two notes: two rings, high to the right of low, T4 nearer than T2",
+                 land_rings() == 2u && land.x[0] > land.x[1] && land.y[1] > land.y[0]);
+    sig = mo_signature();
+    frame(); frame(); frame();
+    bad += check("  a ring opening: drawn again", mo_signature() != sig);
+    for (i = 0; i < 120u; i++) frame();
+    bad += check("  gone after its life; the stars thinned by the notes", !land_rings() && land_stars() < LAND_STARS);
+    for (i = 0; i < 20u; i++) trk_note_on(&trk[0], 40u + i, 100);
+    frame();
+    bad += check("  a burst: no more rings than LAND_RIP, the newest kept", land_rings() == LAND_RIP && !land_stars());
+    go_title("PIECE");
+    frame();
+    i = land_ev_at;
+    trk_note_on(&trk[1], 60, 100);
+    bad += check("  left: notes not kept again", land_ev_at == i && !land_open);
+    return bad;
+}
 #endif
 
 /* MENU > TRACK KNOB: LEFT swaps the ALGORITHM and PRESETS knobs' roles; saved with the settings */

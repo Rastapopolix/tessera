@@ -1646,6 +1646,7 @@ static void mo_pic_midich(void)
     if (settings_midi_out != MIDI_OUT_ALL)
         mo_text(settings_midi_out == MIDI_OUT_OFF ? "MIDI OUT: OFF" : "MIDI OUT: KEYS", 2, 101, MO_DIM);
 }
+#include "ui_land.c"                                    /* LANDSCAPE: rain on water */
 static void mo_stage_wave(int32_t top, int32_t h, uint16_t c);
 /* the value of the knob turning (KNOB k), with its unit, on the picture's foot row at the right */
 /* ENV (and the FM operators' ENV pages): attack linear, decay exponential to the sustain, held, release exponential;
@@ -2107,6 +2108,7 @@ static void mo_picture(void)
     case GR_CHAIN: mo_pic_chain(); return;
     case GR_ENTRIES: mo_pic_entries(); return;
     case GR_PIECE: mo_pic_piece(); return;
+    case GR_LAND: mo_pic_land(); return;
     default: break;
     }
     if (pg->graph == GR_CHORD) {
@@ -2287,6 +2289,8 @@ static uint32_t mo_signature(void)
     h = (h ^ (uint32_t)(batt_head() + 1)) * 16777619u;   /* (the header's battery) */
     if (ui.msg_t)
         h = (h ^ str_hash(1u, ui.msg)) * 16777619u;
+    if (cur_page()->graph == GR_LAND)                   /* LANDSCAPE: the scene, a step on */
+        h = (h ^ land_sig()) * 16777619u;
     return h;
 }
 
@@ -2324,6 +2328,7 @@ static void mono_page(void)
     mo_on = 0;
     if (mo_flash_t)
         mo_flash_t--;
+    land_open = cur_page()->graph == GR_LAND ? land_open : 0u;   /* (LANDSCAPE: its notes only while it shows) */
     sig = mo_signature() ^ (mo_flash_t ? 0x5A5A5A5Au : 0u);
     if (!ui.force && sig == mo_sig)
         return;
@@ -2333,7 +2338,8 @@ static void mono_page(void)
         cv_oy = -(int32_t)s * 120;
         mo_head();
         mo_cols_trk = cur_page()->graph == GR_MIDICH;
-        mo_cols();
+        if (cur_page()->graph != GR_LAND)               /* (LANDSCAPE: the scene in their place) */
+            mo_cols();
         mo_cols_trk = 0;
         mo_picture();
         if (!mo_turn())

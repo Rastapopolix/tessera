@@ -55,7 +55,7 @@ page's four settings sit along the top of the screen in the same order.
 | **SCL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
 | **EDIT** | The sound's EDIT pages; on an EDIT page, the map | With OCT- / OCT+: undo / redo |
 | **FX** | The insert and send effects | The mod amount of any knob you turn |
-| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT, [PIECE](#piece-a-length-and-a-shape), [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in) | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
+| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT, [PIECE](#piece-a-length-and-a-shape), [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in), [LANDSCAPE](#landscape-rain-on-water) | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
 | **SAVE** | USER (ready to save the sound), PROJECT, PRESETS | Save the project to its slot (as SAVE + REC) |
 | **REC** | Records the selected track until REC again (see [Recording live](#recording-live)) | Capture or print the last bars (see [Print and keep](#print-and-keep)) |
 | **OCT+** | Octave up; on some pages, an action (shown on screen) | A page's extra layer (see [OCT+ layers](#oct-layers-on-gen)) |
@@ -623,6 +623,20 @@ How it moves, in the ways music is usually built:
 Your hand wins. A track you mute stays muted and is left out of the rules. Its mute key on GLO brings a track Entries
 took out straight back, and Entries leaves it alone until the next section. SOLO is heard whatever Entries says.
 The choices come from the tracks' SEEDs, so PLAY plays the same piece again; STOP brings every track back.
+
+### LANDSCAPE: rain on water
+
+**GLO > LANDSCAPE** (the last GLO page) is a page to look at while the music plays: a night lake, drawn by the music.
+It has no settings and changes nothing; the knobs do nothing here.
+
+- Each note a track plays is a drop on the water. **Pitch** sets where it lands, low notes at the left, high at the
+  right. **T1** lands far out, **T4** close by. Louder notes open wider rings, with a second ring inside.
+- **ENERGY**'s tide moves the clouds: more and lower as it fills, a thin wisp as it falls sparse. While playing, the
+  clouds drift.
+- **Stars** come out as the music thins and all of them once nothing has played for a few seconds. Then the water is
+  still and the moon's reflection lies quiet.
+
+The scene only listens while the page shows. In the MOSAIC palette each track's drops are in its own colour.
 
 ---
 
