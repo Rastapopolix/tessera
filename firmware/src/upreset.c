@@ -11,7 +11,8 @@
  * Versions: a bank whose magic, record size or slot count differ reads as
  * empty; so does a record with another layout version. Read: UP_VER (4, values as biased bytes), UP_VER_GRID (5,
  * its pattern a drum grid: note[i] step i's lane hits, flags[i] their accents),
- * UP_VER_DRUM / UP_VER_DRUM_GRID (9 / 10, the DRUM patch beside the values). Other versions (1..3, the CZ records
+ * UP_VER_DRUM / UP_VER_DRUM_GRID (9 / 10, the DRUM patch beside the values), UP_VER_ORACLE (11, the ORACLE patch
+ * beside the values: its first 46 bytes in cz_extra, the last 6 after the values; up_oracle_raw). Other versions (1..3, the CZ records
  * of before the native CZ-1, the 192-byte banks; 8, a native CZ-1 tone: retired with its engine) remain protected
  * and unreadable. A record keeps np = the
  * P_COUNT it was stored with; when that differs from today's it is mapped by count: its last 8 values are
@@ -27,6 +28,8 @@
 #define UP_VER 4u                                /* the values as biased bytes */
 #define UP_VER_DRUM 9u
 #define UP_VER_DRUM_GRID 10u
+#define UP_VER_ORACLE 11u                        /* an ORACLE sound: its patch beside the values */
+#define UP_ORACLE_BYTES 52u                      /* (OR_N, eng_oracle.c) */
 #define UP_VER_GRID 5u                           /* 4 with a drum grid as the pattern (see the top) */
 #define UP_BANK_MAGIC 0x31425055u                /* "UPB1" */
 typedef struct {
@@ -44,6 +47,10 @@ typedef struct {
 } up_bank_t;
 _Static_assert(sizeof(up_rec_t) == 238, "user preset record layout");
 _Static_assert(P_COUNT <= UP_PMAX * 2u && P_COUNT < 128, "user preset record: P_COUNT");
+_Static_assert(P_COUNT + UP_ORACLE_BYTES - 46u <= UP_PMAX * 2u, "user preset record: room for an ORACLE patch");
+#if MELODEE_ORACLE && !defined(UP_HOST)
+_Static_assert(UP_ORACLE_BYTES == OR_N, "user preset record: the ORACLE patch's size");
+#endif
 #if MELODEE_FLASH && !defined(UP_HOST)
 /* One main-loop bank cache holds whichever bank was asked for last: a user preset bank or a native FM6 bank
  * (bank_buf, after native_presets.c). Each owner
@@ -95,12 +102,35 @@ static int up_drum_raw(const up_rec_t *r,drum_patch_t *p)
     memcpy(b,r->cz_extra,sizeof r->cz_extra);memcpy(b+sizeof r->cz_extra,r->packed+r->np,8u);return drum_patch_unpack(p,b);
 }
 
+/* an ORACLE record's patch -> p (UP_ORACLE_BYTES); 0: no room for it after the values, or a byte out of range */
+static int up_oracle_raw(const up_rec_t *r, uint8_t *p)
+{
+    if (r->np > sizeof r->packed - (UP_ORACLE_BYTES - sizeof r->cz_extra)) return 0;
+    memcpy(p, r->cz_extra, sizeof r->cz_extra);
+    memcpy(p + sizeof r->cz_extra, r->packed + r->np, UP_ORACLE_BYTES - sizeof r->cz_extra);
+#if MELODEE_ORACLE && !defined(UP_HOST)
+    return or_patch_ok(p);
+#else
+    for (uint32_t i = 0; i < UP_ORACLE_BYTES; i++) if (p[i] > 127u) return 0;
+    return 1;
+#endif
+}
+/* .. and the patch into the record (np set) */
+static void up_oracle_put(up_rec_t *r, const uint8_t *p)
+{
+    memcpy(r->cz_extra, p, sizeof r->cz_extra);
+    memcpy(r->packed + r->np, p + sizeof r->cz_extra, UP_ORACLE_BYTES - sizeof r->cz_extra);
+    r->ver = UP_VER_ORACLE;
+}
+
 static int up_valid(const up_rec_t *r)
 {
-    if (!(r->used == UP_USED && (r->ver == UP_VER || r->ver == UP_VER_GRID || (r->engine==ENGI_DRUM && (r->ver==UP_VER_DRUM || r->ver==UP_VER_DRUM_GRID))) && r->engine < USER_GENERAL &&
+    int oracle = MELODEE_ORACLE && r->engine == ENGI_ORACLE && r->ver == UP_VER_ORACLE;
+    if (!(r->used == UP_USED && (r->ver == UP_VER || r->ver == UP_VER_GRID || oracle || (r->engine==ENGI_DRUM && (r->ver==UP_VER_DRUM || r->ver==UP_VER_DRUM_GRID))) && (r->engine < USER_GENERAL || oracle) &&
           r->np >= 8u && r->np <= UP_PMAX * 2u && r->name[0])) return 0;
     for (uint32_t i = 0; i < r->np; i++) if (r->packed[i] > 191u) return 0;
     if(r->engine==ENGI_DRUM && (r->ver==UP_VER_DRUM || r->ver==UP_VER_DRUM_GRID)){drum_patch_t p;if(!up_drum_raw(r,&p))return 0;}
+    if (oracle) { uint8_t p[UP_ORACLE_BYTES]; if (!up_oracle_raw(r, p)) return 0; }
     return 1;
 }
 
@@ -445,7 +475,7 @@ static void up_set_name(up_rec_t *r, uint32_t k, const char *name)
 static int up_store(uint32_t k, const char *name)
 {
     momentary_restore();
-    if (k >= UP_SLOTS || TSEL->eng_req == ENGI_ORACLE) return 1;   /* (ORACLE: the project keeps its patch) */
+    if (k >= UP_SLOTS) return 1;
     up_rec_t r;
     uint32_t i;
     memset(&r, 0, sizeof r);
@@ -469,6 +499,9 @@ static int up_store(uint32_t k, const char *name)
             }
         }
     }
+#if MELODEE_ORACLE
+    if (r.engine == ENGI_ORACLE) up_oracle_put(&r, or_patch_of(TSEL));   /* (its pattern: never a drum grid) */
+#endif
     if(r.engine==ENGI_DRUM){uint8_t b[DRUM_WIRE_BYTES];drum_patch_pack(b,&drum_patch[song.sel]);memcpy(r.cz_extra,b,sizeof r.cz_extra);memcpy(r.packed+r.np,b+sizeof r.cz_extra,8u);r.ver=r.ver==UP_VER_GRID?UP_VER_DRUM_GRID:UP_VER_DRUM;}
     int rc = up_put(k, &r);
     if ((rc == 0 || rc == 3) && r.engine == ENGI_FM6) {    /* its voice: native FM6 slot k */
@@ -515,6 +548,13 @@ static int up_load(uint32_t k)
                 t->p[i] = param_reserved(i) ? 0 : v[i];
         t->preset = 0;
         if(r->engine==ENGI_DRUM){memset(&drum_patch[song.sel],0,sizeof(drum_patch_t));if(r->ver==UP_VER_DRUM || r->ver==UP_VER_DRUM_GRID)up_drum_raw(r,&drum_patch[song.sel]);}
+#if MELODEE_ORACLE
+        if (r->engine == ENGI_ORACLE) {                 /* ORACLE: the record's patch (up_valid checked it; else INIT) */
+            uint8_t p[UP_ORACLE_BYTES];
+            if (r->ver != UP_VER_ORACLE || !up_oracle_raw(r, p)) or_patch_init(p);
+            or_set_patch(song.sel % NTRK, p);
+        }
+#endif
         fm1_irq_on();
         if (t->eng_req == ENGI_FM6) {                   /* FM6: its voice, native slot k (else INIT) */
             uint8_t v[FP_SIZE + 1u];

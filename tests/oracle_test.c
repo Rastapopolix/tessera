@@ -5,6 +5,7 @@
  * 2. each sound plays: a chord held and let go, sound and nothing but finite samples, quiet 8 s after the release
  * 3. the pages: a view turned writes the patch and reads back; out-of-range patches refused
  * 4. a project: each track's patch saved and loaded byte for byte (TSP1 part 21), a changed patch too
+ * 5. a user preset (SAVE > USER, issue #379): a turned patch saved, back byte for byte after a power cycle
  *   build/host/oracle_test */
 #define main hostsim_main
 #include "hostsim.c"
@@ -170,6 +171,42 @@ static int test_project(void)
     return check("a project: every track's ORACLE patch back byte for byte (a turned one too)", proj_cur == 0u && same);
 }
 
+/* ------------------------------------------------------------ 5. user preset --- */
+static int test_user(void)
+{
+    uint8_t want[OR_N], bad[OR_N];
+    uint32_t k = 5u;
+    int saved, kept, again;
+    power_on();
+    memset(nor, 0xFF, sizeof nor);
+    persist_boot();
+    song.sel = 2u;
+    host_preset(&trk[2], ENGI_ORACLE, 4u);
+    or_view_put(or_patch_of(&trk[2]), OV_CUT, 21);   /* a turned patch, not its preset's */
+    or_view_put(or_patch_of(&trk[2]), OV_WAVE_B, 3);
+    trk[2].p[P_E0] = 17;                             /* a MACRO turned too */
+    memcpy(want, or_patch_of(&trk[2]), OR_N);
+    user_ui_named(2u, k, "MY ORACLE");                 /* (the SAVE > USER page's save) */
+    saved = up_used(k) && up_engine(k) == ENGI_ORACLE && !strcmp(ui.msg, "SAVED U06");
+    power_on();
+    memset(or_patch, 0, sizeof or_patch);
+    persist_boot();
+    song.sel = 0u;
+    host_preset(&trk[0], ENGI_ORACLE, 0u);
+    kept = up_used(k) && !up_load(k);
+    kept &= trk[0].eng_req == ENGI_ORACLE && !memcmp(or_patch_of(&trk[0]), want, OR_N) && trk[0].p[P_E0] == 17;
+    host_preset(&trk[1], 0u, 0u);                    /* from another engine: the patch too */
+    song.sel = 1u;
+    again = !up_load(k) && trk[1].eng_req == ENGI_ORACLE && !memcmp(or_patch_of(&trk[1]), want, OR_N);
+    memcpy(bad, want, OR_N);                         /* a record whose patch is out of range: not a sound */
+    bad[OR_SYNC] = 2u;
+    up_rec(k)->cz_extra[OR_SYNC] = bad[OR_SYNC];
+    return check("an ORACLE sound saves to USER (no SAVE ERROR, issue #379)", saved) +
+           check("after a power cycle it loads back: the patch byte for byte, its MACRO", kept) +
+           check("loaded onto a track of another engine: ORACLE and the patch", again) +
+           check("a record with a patch byte out of range is refused", !up_valid(up_rec(k)));
+}
+
 int main(void)
 {
     int bad = 0;
@@ -177,6 +214,7 @@ int main(void)
     bad += test_play();
     bad += test_views();
     bad += test_project();
+    bad += test_user();
     printf(bad ? "oracle: %d FAILED\n" : "oracle: all passed\n", bad);
     return bad != 0;
 }
