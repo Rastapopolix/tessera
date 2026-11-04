@@ -112,6 +112,12 @@ static int midi_layer_on(void)
     return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_MIDICH &&
            ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
+/* the MIDI OUT page with OCT- held (and not OCT+): KNOB k is track k's SOUND, ON or OFF (voice.c trk_note_on) */
+static int midi_snd_layer_on(void)
+{
+    return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_MIDICH &&
+           ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) && !((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+}
 /* a TRANSPOSE as its knob and the MIDI OUT picture say it: "+12", "0", "-24" */
 static void midi_tr_text(char *b, int32_t v)
 {
@@ -1202,6 +1208,8 @@ static void graph_midich(void)
                 str_cpy(b + str_len(b), " ST", 4);
             }
         }
+        if (tessera.sound_off[k])                       /* (SOUND OFF: no voices, MIDI and the mods only) */
+            str_cpy(b + str_len(b), ch == MIDI_OUT_NONE ? "  MODS ONLY" : "  SOUND OFF", 12);
         cv_text(PANEL_X0 + 32, y + 3, &AF_X, b, ch == MIDI_OUT_NONE ? T_DIM : T_TEXT);
     }
     if (settings_midi_out != MIDI_OUT_ALL)
@@ -1923,7 +1931,9 @@ static uint32_t graph_sig(int play)
               (uint32_t)tessera.midi_ch[3] << 15 | (uint32_t)song.g[G_ROUTE] << 20 | (uint32_t)settings_drumch << 23 |
               (uint32_t)settings_midi_out << 28) * 2246822519u ^
              ((uint32_t)(uint8_t)tessera.midi_tr[0] | (uint32_t)(uint8_t)tessera.midi_tr[1] << 8 |
-              (uint32_t)(uint8_t)tessera.midi_tr[2] << 16 | (uint32_t)(uint8_t)tessera.midi_tr[3] << 24) * 3266489917u;
+              (uint32_t)(uint8_t)tessera.midi_tr[2] << 16 | (uint32_t)(uint8_t)tessera.midi_tr[3] << 24) * 3266489917u
+             ^ ((uint32_t)tessera.sound_off[0] | (uint32_t)tessera.sound_off[1] << 1 | (uint32_t)tessera.sound_off[2] << 2 |
+                (uint32_t)tessera.sound_off[3] << 3) * 2654435761u;
     if (pg->graph == GR_ENERGY)                      /* (it moves: the tide, a rest; the settings) */
         h ^= ((uint32_t)tessera.en_arc | (uint32_t)tessera.en_rests << 8 | (uint32_t)song.playing << 16) * 2246822519u ^
              (uint32_t)(energy_now() >> 9) * 31u ^ (energy.rest_left / EN_BPS) * 7919u ^ en_frac(energy.ph, energy.per, 110u) * 104729u;

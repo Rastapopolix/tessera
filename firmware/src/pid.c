@@ -40,6 +40,7 @@ static const char *const TX_N_ANORDER[] = {"PLAYED", "REVERSE", "SHUFFLE"};   /*
 static const char *const TX_N_ANLEN[] = {"SHORT", "MID", "LONG"};
 static const char *const TX_N_SDKEEP[] = {"FREE", "RHYTHM", "PITCH"};   /* (TESS_SD_*) */
 static const char *const TX_N_SVHOW[] = {"DRIFT", "ADORN", "SERIAL"};   /* (TESS_SV_*) */
+static const char *const TX_N_SOUND[] = {"ON", "OFF"};
 static const char *const TX_N_TUNE[] = {"OFF", "USR1", "USR2", "USR3", "USR4"};   /* (tune.h: the slots' own names
                                                                                    * where shown, params.c) */
 static const char *const TX_N_ACCMODE[] = {"WRAP", "PING", "CLAMP"};    /* (TESS_ACC_*) */
@@ -157,6 +158,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_FM_DEVELOP] = PD("DEVLP", F_PCT, 0, 100, 0),
     [TX_MIDI_TR] = {"TRANS", F_INT, -TESS_MIDI_TR, TESS_MIDI_TR, 0, 0, "st"},
     [TX_TUNE] = PE("TUNE", TX_N_TUNE, 0),
+    [TX_SOUND] = PE("SOUND", TX_N_SOUND, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -587,6 +589,10 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                            "Scala (.scl) files sent from the web editor (PROJECTS, Tunings), saved with the project. The "
                            "keys, the generators, QNT and chords play its degrees; ROOT and TRN move it. OFF, or an "
                            "empty slot, plays SCL's scale. SCL > SCALES, the USER family."),
+    X_(TX_SOUND, "SOUND", "OFF: this track plays no sound of its own, so it takes none of the FM-1's voices. Its notes "
+                          "still go out over MIDI on its channel, and its GATE, NOTE and CV still move the mods: a "
+                          "track for an outside synth, or a lane that only modulates the others. ON: as always. Saved "
+                          "with the project. OCT- held on GLO > MIDI OUT, a knob for each track."),
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };
