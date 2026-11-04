@@ -26,7 +26,7 @@ static void cu_adopt(void)
 #define CU_NSRC (1u + NTRK * (CS_N - 1u))               /* KNOB 1's list: --, then track by track */
 /* KNOB 3's list: --, a track's destinations track by track (none, the retired one: not listed), then the send
  * effects' once (CK_GLOBAL: every track's) */
-static int cu_global(uint32_t code) { return cord_dest(code) && cord_dest(code)->kind == CK_GLOBAL; }
+static int cu_global(uint32_t code) { return cord_dest(code) && cord_dest(code)->kind >= CK_GLOBAL; }   /* (CK_CORD too) */
 static uint32_t cu_count(uint32_t below, int global)    /* the listed codes 1 .. below - 1 of that kind */
 {
     uint32_t code, n = 0;
@@ -76,8 +76,22 @@ static const char *cu_dst_name(const cord_t *c)
     return cord_dest(c->dst) ? cord_dest(c->dst)->name : "--";
 }
 
+/* Mono's four characters for a destination: a mod's move "M3%" (M3 AMT: Mono's abbreviation would read "M3MT"), else
+ * the name, abbreviated where it is drawn */
+static const char *cu_dst_mono(const cord_t *c)
+{
+    static char b[8];
+    if (c->dst < CD_M1_AMT || c->dst > CD_M16_AMT) return cu_dst_name(c);
+    b[0] = 'M';
+    fmt_int(b + 1, (int32_t)(c->dst - CD_M1_AMT + 1u));
+    str_cpy(b + str_len(b), "%", 2);
+    return b;
+}
+
 /* the move's percentage as "+40 %" (an amount, or a fixed cord's offset) */
 static int32_t cu_pct(const cord_t *c) { return c->src ? c->amount : c->offset; }
+/* the move now (the bar): as a mod of mods turns it (cord.c cord_move), else as set */
+static int32_t cu_now(const cord_t *c) { return cord_move((uint32_t)(c - cord_get(0))); }
 static void cu_pct_text(char *b, int32_t v)
 {
     char n[8];
@@ -105,6 +119,7 @@ static void cu_chip(int32_t x, int32_t y, int32_t w, uint32_t tr, const char *s,
 
 static uint8_t cu_led_was[4];                           /* (cu_leds: the step each light shows; a row redrawn: none) */
 static uint8_t cu_bar_was[4];                           /* (and where each row's live mark is) */
+static int8_t cu_mv_was[4];                             /* (and its move now: a mod of mods turns it) */
 #define CU_Y 22                                         /* the rows: 48 px each from y 22 (as MOD's), the chips at 220 */
 #define CU_H 48
 static void cu_rows(void)
@@ -126,7 +141,7 @@ static void cu_rows(void)
     memset(cu_bar_was, 0xFF, sizeof cu_bar_was);
     for (k = 0; k < 4u; k++) {
         const cord_t *c = cord_get(top + k);
-        int sel = top + k == cord_ui_sel, on = c->dst != CD_OFF && (c->amount || c->offset);
+        int sel = top + k == cord_ui_sel, on = cord_live(c);
         uint16_t bg = sel ? T_LIFT : T_BG;
         int32_t a = cu_pct(c);
         char b[16];
@@ -166,7 +181,7 @@ static void cu_bar(uint32_t k, const cord_t *c, int sel, int32_t s)
 {
     uint16_t bg = sel ? T_LIFT : T_BG;
     int on = cord_live(c);
-    int32_t a = cu_pct(c), m = 104, x = 2 + (a + 100) * 206 / 200, lx = m + clamp(s, -32768, 32768) * 103 / 32768;
+    int32_t a = cu_now(c), m = 104, x = 2 + (a + 100) * 206 / 200, lx = m + clamp(s, -32768, 32768) * 103 / 32768;
     int32_t d = x < m ? m - x : x - m;
 #if MELODEE_LOOK
     mo_cu_bar(c, s);
@@ -194,8 +209,9 @@ static void cu_leds(void)
         uint8_t key = (uint8_t)(lv | (top + k == cord_ui_sel) << 4 | (ux.pal & 7u) << 5);
         uint8_t bk = (uint8_t)(clamp(s, -32768, 32768) * 103 / 32768 + 104);   /* (the mark's x, 1 .. 207) */
         uint16_t bg = top + k == cord_ui_sel ? T_LIFT : T_BG;
-        if (ui.force || bk != cu_bar_was[k]) {
+        if (ui.force || bk != cu_bar_was[k] || cu_now(c) != cu_mv_was[k]) {
             cu_bar_was[k] = bk;
+            cu_mv_was[k] = (int8_t)cu_now(c);
             cu_bar(k, c, top + k == cord_ui_sel, s);
         }
         if (!ui.force && key == was[k])
@@ -227,7 +243,7 @@ static void cu_columns(void)
     fmt_int(val, (int32_t)cord_ui_sel + 1);
     draw_column(1, "MOD", val, "/16", VAL(1u), (int32_t)cord_ui_sel * 1000 / (CORD_LIVE - 1u), ICON_NONE);
     if (c->dst && cu_global(c->dst))
-        str_cpy(val, cu_dst_name(c), sizeof val);
+        str_cpy(val, LOOK(cu_dst_name(c), cu_dst_mono(c)), sizeof val);
     else if (c->dst) {
         val[0] = 'T'; val[1] = (char)('1' + c->dst_trk); val[2] = ' ';
         str_cpy(val + 3, cu_dst_name(c), sizeof val - 3);

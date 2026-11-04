@@ -619,6 +619,31 @@ static int check_dir(const char *dir)
         bad += check(what, restore_load(rec, len, name) == 0 && !strcmp(name, DEMOS[d].name));
         bad += report(DEMOS[d].name, (dm_play_t[]){play(20, 0)});
     }
+    /* the web editor's Demo projects (web/fm1backup.js putProject): each demo's PUT alone into a slot of its own (B,
+     * C, D) on a device that stays on: the slot list names them at once, and each loads from it */
+    power_on();
+    for (uint32_t d = 0; d < NDEMO; d++) {
+        char path[512];
+        FILE *f;
+        uint32_t len;
+        snprintf(path, sizeof path, "%s/%s.tsp", dir, DEMOS[d].file);
+        if (!(f = fopen(path, "rb"))) { bad += check(path, 0); continue; }
+        len = (uint32_t)fread(rec, 1, sizeof rec, f);
+        fclose(f);
+        bad += check("the editor's PUT of a demo into one slot", put_all(3u + d, rec, len) == 0);
+    }
+    for (uint32_t d = 0; d < NDEMO; d++) {
+        char name[PROJ_NAME_LEN + 1u], what[160];
+        snprintf(what, sizeof what, "slot %c names %s with no power cycle (it shows %s)", 'B' + d, DEMOS[d].name,
+                 proj_meta[1u + d].name);
+        bad += check(what, project_used(1u + d) && !strcmp(proj_meta[1u + d].name, DEMOS[d].name));
+        project_new_blank();
+        project_load(1u + d);
+        project_cur_name(name);
+        snprintf(what, sizeof what, "slot %c: %s loads", 'B' + d, name);
+        bad += check(what, proj_cur == 1u + d && !strcmp(name, DEMOS[d].name));
+    }
+    bad += check("slot A left empty", !project_used(0));
     return bad;
 }
 

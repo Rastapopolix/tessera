@@ -1175,9 +1175,9 @@ static int test_cords_scroll_playing(void)
         seen |= (k->dst == CD_GRD_Y && k->dst_trk == 3u) << 0;
         cords_blocks(24);
     }
-    bad += check("..KNOB 3 a detent at a time through every track's destinations, then the send effects' (once, no "
-                 "track), playing between: the last reached (RETURN)",
-                 k->dst == CD_FX_RETURN && k->dst_trk == 0u && (seen & 1u) && pop.on == POP_PICK);
+    bad += check("..KNOB 3 a detent at a time through every track's destinations, then the send effects' and the mods' "
+                 "moves (once, no track), playing between: the last reached (M16 AMT)",
+                 k->dst == CD_M16_AMT && k->dst_trk == 0u && (seen & 1u) && pop.on == POP_PICK);
     {                                                   /* the list: each entry back to itself, the send effects' last */
         uint32_t v, round = 1, globals = 0;
         int32_t tr;
@@ -1189,8 +1189,8 @@ static int test_cords_scroll_playing(void)
             if (cu_global(e.dst)) globals++, round &= tr == -1 && v > NTRK * CU_DPT;
             else round &= tr == (int32_t)e.dst_trk;
         }
-        bad += check("..its list: every entry to its destination and back, the 10 send effects' once, with no track",
-                     round && globals == 10u && CU_NDST == 1u + NTRK * CU_DPT + 10u);
+        bad += check("..its list: every entry to its destination and back, the 10 send effects' and 16 M AMT once, "
+                     "with no track", round && globals == 26u && CU_NDST == 1u + NTRK * CU_DPT + 26u);
     }
     for (i = 0; i < CU_NDST + 4u; i++) {
         turn(EN_K1 + 2u, -1);

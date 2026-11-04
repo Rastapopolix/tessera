@@ -368,3 +368,19 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | SF3 RTE | the send effects' block (every track's) | SEND FX 3's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
 | SF3 CHR | the send effects' block (every track's) | SEND FX 3's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
 | RETURN | the send effects' block (every track's) | the send effects' RETURN: how loud they come back, for every track |
+| M1 AMT | another mod's move, each block | MOD 1's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M2 AMT | another mod's move, each block | MOD 2's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M3 AMT | another mod's move, each block | MOD 3's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M4 AMT | another mod's move, each block | MOD 4's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M5 AMT | another mod's move, each block | MOD 5's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M6 AMT | another mod's move, each block | MOD 6's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M7 AMT | another mod's move, each block | MOD 7's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M8 AMT | another mod's move, each block | MOD 8's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M9 AMT | another mod's move, each block | MOD 9's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M10 AMT | another mod's move, each block | MOD 10's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M11 AMT | another mod's move, each block | MOD 11's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M12 AMT | another mod's move, each block | MOD 12's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M13 AMT | another mod's move, each block | MOD 13's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M14 AMT | another mod's move, each block | MOD 14's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M15 AMT | another mod's move, each block | MOD 15's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M16 AMT | another mod's move, each block | MOD 16's AMOUNT (a fixed mod's OFFSET), turned by another mod |

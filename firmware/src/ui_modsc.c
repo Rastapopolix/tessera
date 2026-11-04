@@ -27,6 +27,12 @@ static uint32_t msc_src(uint32_t tr) { return msc.src[tr % NTRK] ? msc.src[tr % 
 static uint32_t msc_dest(uint32_t k)
 {
     uint32_t code;
+    if (!ui.home && cur_page()->graph == GR_CORDS) {   /* MODS: KNOB 4, the picked mod's move (a mod of mods: M AMT; */
+        const cord_t *c = cord_get(cord_ui_sel);       /* not onto one, one level) */
+        help.pid = PID_NONE;
+        return k == 3u && c->dst != CD_OFF && !(c->dst >= CD_M1_AMT && c->dst <= CD_M16_AMT) ? CD_M1_AMT + cord_ui_sel
+                                                                                                : CD_OFF;
+    }
     help_find(k);
     if (help.pid == PID_NONE)
         return CD_OFF;
@@ -44,7 +50,7 @@ static int32_t msc_find(uint32_t dst, uint32_t tr)
     uint32_t i;
     for (i = 0; i < CORD_LIVE; i++) {
         const cord_t *c = cord_get(i);
-        if (msc_used(c) && c->dst == dst && (c->dst_trk == tr || cord_dest(dst)->kind == CK_GLOBAL))
+        if (msc_used(c) && c->dst == dst && (c->dst_trk == tr || cord_dest(dst)->kind >= CK_GLOBAL))
             return (int32_t)i;                          /* (a send effect's: every track's, whichever it is on) */
     }
     return -1;
@@ -152,7 +158,8 @@ static void msc_draw(void)
         const pid_entry_t *e = help.pid != PID_NONE ? pid_find(help.pid) : 0;
         int16_t *vp;
         const param_desc_t *d = page_desc(ui.home ? stage_page() : cur_page(), k, &vp);
-        const char *name = d && d->label && d->label[0] ? d->label : e ? e->name : "--";   /* (the card's own label) */
+        const char *name = dst >= CD_M1_AMT && dst <= CD_M16_AMT ? cord_dest(dst)->name :
+                           d && d->label && d->label[0] ? d->label : e ? e->name : "--";   /* (the card's own label) */
         uint16_t fg = dst == CD_OFF ? T_DIM : k == msc.knob ? T_THEME : T_TEXT;
         cv_free_text(12, y, &AF_X, name, fg, T_SURF, 92);
         if (dst == CD_OFF) {

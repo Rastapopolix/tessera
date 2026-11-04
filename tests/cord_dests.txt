@@ -84,3 +84,19 @@
 81 SF3 RTE  send  SEND FX 3 RATE
 82 SF3 CHR  send  SEND FX 3 CHARACTER
 83 RETURN   send  FX RETURN
+84 M1 AMT   cord  -
+85 M2 AMT   cord  -
+86 M3 AMT   cord  -
+87 M4 AMT   cord  -
+88 M5 AMT   cord  -
+89 M6 AMT   cord  -
+90 M7 AMT   cord  -
+91 M8 AMT   cord  -
+92 M9 AMT   cord  -
+93 M10 AMT  cord  -
+94 M11 AMT  cord  -
+95 M12 AMT  cord  -
+96 M13 AMT  cord  -
+97 M14 AMT  cord  -
+98 M15 AMT  cord  -
+99 M16 AMT  cord  -
