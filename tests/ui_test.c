@@ -5009,6 +5009,50 @@ static int test_quick_layers(void)
     key_down(white(4)); frame(); key_up(white(4)); frame();
     btn_up(B_GLO); frame();
     bad += check("  again: unmuted; C4: UNMUTE ALL", ok && !trk[2].p[P_MUTE] && !trk[1].p[P_MUTE]);
+    {   /* MENU MUTES BAR / PHRASE: playing, a mute key waits for the line (blinking), again calls it off */
+        uint32_t beat, keep = settings_mute_q, j, at = 0, pw = 0;
+        settings_mute_q = 1; seq_start(); beat = seq_beat_samples();
+        units_block(beat / 2u);
+        lay_combo(B_GLO, black(0)); key_up(black(0)); frame();
+        ok = !trk[0].p[P_MUTE] && mute_waiting() == 1u;
+        a = leds_at(0); b2 = leds_at(125);
+        ok &= ((a ^ b2) >> black(0)) & 1u;                                     /* (its key blinks) */
+        btn_up(B_GLO); frame();
+        for (j = 1; j <= 12u && !at; j++) { units_block(beat / 2u); if (trk[0].p[P_MUTE]) at = j; }
+        /* (4 beats in: the block after the line, before its steps) */
+        bad += check("MUTES BAR: GLO's mute key, playing, lands on the next bar line, not before", ok && at == 8u &&
+                     !mute_waiting());
+        lay_combo(B_GLO, black(1)); key_up(black(1)); btn_up(B_GLO); frame();
+        lay_combo(B_GLO, black(1)); key_up(black(1)); btn_up(B_GLO); frame();
+        ok = !mute_waiting();
+        for (j = 0; j < 10u; j++) units_block(beat);
+        bad += check("  pressed again before the line: called off", ok && !trk[1].p[P_MUTE]);
+        settings_mute_q = 2;
+        lay_combo(B_GLO, black(1)); key_up(black(1)); btn_up(B_GLO); frame();
+        for (j = 1; j <= 80u && !pw; j++) { units_block(beat); if (trk[1].p[P_MUTE]) pw = j; }
+        bad += check("MUTES PHRASE: on the CHAIN's phrase line", pw && bar_n % fc_bars() == 0u && bar_n >= fc_bars());
+        btn_down(B_GLO); frame(); key_down(white(4)); frame(); key_up(white(4)); btn_up(B_GLO); frame();
+        ok = trk[0].p[P_MUTE] && mute_waiting() == 3u;
+        stop_transport(); units_block(beat);
+        bad += check("  UNMUTE ALL waits too; STOP: the waiting keys land at once", ok && !trk[0].p[P_MUTE] &&
+                     !trk[1].p[P_MUTE] && !mute_waiting());
+        settings_mute_q = 0;
+        seq_start();
+        lay_combo(B_GLO, black(2)); key_up(black(2)); btn_up(B_GLO); frame();
+        bad += check("MUTES NOW (the default): at once while playing", trk[2].p[P_MUTE] == 1 && !mute_waiting());
+        lay_combo(B_GLO, black(2)); key_up(black(2)); btn_up(B_GLO); frame();
+        stop_transport(); units_block(beat);
+        {
+            static persist_t p;
+            memset(&p, 0, sizeof p);
+            settings_mute_q = 2; settings_export(&p); settings_mute_q = 0;
+            ok = settings_import(&p, sizeof p) && settings_mute_q == 2u;
+            p.favorites.factory[15][24] &= (uint8_t)~0xC0u;
+            settings_import(&p, sizeof p);
+            bad += check("  MUTES is saved with the settings; saved before it: NOW", ok && settings_mute_q == 0u);
+        }
+        settings_mute_q = (uint8_t)keep;
+    }
     lay_combo(B_GLO, white(2));
     ok = track_solo == 4u;   /* T3 solo: T1 T2 T4 muted */
     btn_up(B_GLO); frame();

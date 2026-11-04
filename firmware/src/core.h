@@ -511,6 +511,8 @@ static track_t trk[NTRK];        /* the instrument: four parts */
 static song_t song;
 static uint8_t settings_batt_off;   /* MENU BATTERY OFF: the header shows the battery only when it runs low (saved:
                                      * favorites.factory[15][24] bit 5, settings_persist.c) */
+static uint8_t settings_mute_q;    /* MENU MUTES: GLO's mute keys while playing land NOW (0), on the next BAR (1) or PHRASE
+                                     * (2) (entries.c mute_press; saved: favorites.factory[15][24] bits 6..7) */
 #define TSEL (&trk[song.sel])    /* the selected track */
 
 #include "microtonal.h"
