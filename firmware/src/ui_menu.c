@@ -12,7 +12,11 @@
  * PRESETS scrolls from ABOUT through all credits. ui.menu: 1 list, 2 information. */
 /* ------------------------------------------------------------ menu --- */
 #define MENU_HEAD 24                     /* the menu's own title strip (Stage and the pages: H_HEAD) */
-enum { MI_COLOR, MI_HOLD, MI_LIGHTS,
+enum { MI_COLOR,
+#if MELODEE_LOOK
+       MI_KNOBS,
+#endif
+       MI_HOLD, MI_LIGHTS,
 #if MELODEE_USB_AUDIO
        MI_USB, MI_USB_INPUT,
 #endif
@@ -23,7 +27,11 @@ enum { MI_COLOR, MI_HOLD, MI_LIGHTS,
        MI_CLICK, MI_CLICK_LEVEL, MI_COUNTIN, MI_PREVIEW, MI_ADD, MI_AUTOSAVE, MI_ACCEL, MI_TRACK_KNOB, MI_SCREEN, MI_BATTERY, MI_GAMMA, MI_PANEL, MI_ABOUT, MI_DESIGNER, MI_BACK,
        MI_COUNT };
 static const char *const GAMMA_NAME[GAMMA_N] = {"G2.2", "G1.8", "G2.5", "G1.0", "TUNED", "TUNED+VCOM"};   /* (lcd.c) */
-static const char *const MI_NAME[MI_COUNT] = {"COLOR", "HOLD", "LIGHTS",
+static const char *const MI_NAME[MI_COUNT] = {"COLOR",
+#if MELODEE_LOOK
+                                              "KNOBS",
+#endif
+                                              "HOLD", "LIGHTS",
 #if MELODEE_USB_AUDIO
                                               "USB AUDIO", "USB INPUT",
 #endif
@@ -402,6 +410,9 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
           i==MI_PREVIEW?(settings_preview?"ON":"OFF"):(settings_chord_add?"ADD":"HOLD");
     if (i == MI_ACCEL) value = PREF_BITS & PREF_ACCEL_OFF ? "OFF" : "ON";
     if (i == MI_TRACK_KNOB) value = settings_knob_swap ? "LEFT" : "RIGHT";
+#if MELODEE_LOOK
+    if (i == MI_KNOBS) value = KNOBS_BAR ? "BAR" : "DIAL";
+#endif
     if (i == MI_MIDI_OUT) value = (const char *const[]){"KEYS", "ALL", "OFF"}[settings_midi_out % MIDI_OUT_N];
     if (i == MI_CLOCK_OUT) value = settings_clock_out ? "ON" : "OFF";
     if (i == MI_CC_IN) value = settings_cc_off ? "OFF" : "ON";
@@ -648,6 +659,12 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         PREF_BITS = (uint8_t)(on ? PREF_BITS & ~PREF_ACCEL_OFF : PREF_BITS | PREF_ACCEL_OFF);
         ui.force=1; ok=0;
     }
+#if MELODEE_LOOK
+    if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_KNOBS) {      /* KNOB 2 right BAR, left DIAL; OCT+ toggles */
+        KNOBS_SAVED = (uint8_t)((s > 0 ? 1 : s < 0 ? 0 : !KNOBS_BAR) ? KNOBS_BAR_TAG : 0u);
+        ui.force = 1; ok = 0;                          /* (ui_mono.c mo_cols; saved with the favorites) */
+    }
+#endif
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_TRACK_KNOB) {   /* KNOB 2 right RIGHT, left LEFT; OCT+ toggles */
         settings_knob_swap = (uint8_t)(s > 0 ? 0u : s < 0 ? 1u : !settings_knob_swap);
         ui.force = 1; ok = 0;                          /* (from the next turn: the menu itself uses KNOB 1 / 2) */

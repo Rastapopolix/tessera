@@ -69,6 +69,10 @@ and **BELLS** on FM6, **STRING MACH** on TRIO, and the **808 KIT** on DRUM. (Tra
 generators on both pads stay within what the FM-1 can play: see [How many voices at once](#how-many-voices-at-once).) A new project has no mods, so nothing moves until
 you patch it.
 
+On every page the four knobs' values sit under their dials (or bars: MENU > KNOBS). The value you turn is drawn
+inverted, and while you turn it its name and value show large across the foot of the screen, as on the home page, with
+a bar for where it sits in its range; they go when the knob rests.
+
 <p align="center"><img src="assets/gallery/home.png" alt="HOME" width="320"> <img src="assets/gallery/mixer.png" alt="MIXER" width="320"></p>
 
 **MIXER** (tap GLO) is the four tracks as a mixer: **KNOB 1 to 4** set the levels of tracks 1 to 4, and with
@@ -815,6 +819,7 @@ Hold **HOME** for the menu. Tessera's additions:
 | Item | What it does |
 |---|---|
 | **COLOR** | The screen's ink, on black: YELLOW (the default), WHITE, GREEN, BLUE, RED, ORANGE, PINK, HOT PINK or LILAC; or MOSAIC, a colour per track with the selection in white. |
+| **KNOBS** | How the four knobs' values are drawn on every page: **DIAL** (the default) or **BAR**, an upright bar that fills from the bottom. MIXER and the home page keep their dials. Saved. |
 | **MIDI OUT** | What goes out over USB MIDI: **KEYS** (the notes you play, as Melodee sent them), **ALL** (also the steps, the ARP, recordings and every generator) or **OFF**. Each track on its own channel: see [MIDI OUT channels](#midi-out-channels). |
 | **CLOCK OUT** | 24 pulses a beat with START and STOP over USB, while the clock is INT. |
 | **MIDI CC IN** | **ON** (the default): CCs and NRPNs set the tracks' parameters (see [MIDI CC control](#midi-cc-control)). **OFF**: they move nothing, for a sequencer that sends CCs to other gear on the same channels. Bend, mod wheel, expression, sustain and aftertouch always play. Saved. |

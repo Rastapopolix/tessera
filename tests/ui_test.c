@@ -3769,6 +3769,34 @@ static int test_panel(void)
     return bad;
 }
 
+#if MELODEE_LOOK
+/* MENU > KNOBS: DIAL (default) or BAR, saved with the favorites (row 8 byte 26, tagged); any other byte reads DIAL */
+static int test_knobs_menu(void)
+{
+    int bad = 0;
+    persist_t p;
+    ui_power_on();
+    KNOBS_SAVED = 0;
+    hold(B_HOME);
+    ui.menu_sel = MI_KNOBS;
+    turn(EN_K2, 1);
+    bad += check("KNOBS: the menu's KNOB 2 right: BAR", ui.menu == 1 && KNOBS_BAR);
+    turn(EN_K2, -1);
+    bad += check("  left: DIAL", !KNOBS_BAR);
+    press(B_OCTUP);
+    bad += check("  OCT+ toggles: BAR", KNOBS_BAR);
+    memset(&p, 0, sizeof p);
+    settings_export(&p);
+    KNOBS_SAVED = 0;
+    bad += check("  saved with the settings", settings_import(&p, sizeof p) && KNOBS_BAR);
+    p.favorites.factory[8][26] = 0x01u;
+    settings_import(&p, sizeof p);
+    bad += check("  an older record (no tag): DIAL", !KNOBS_BAR);
+    ui.menu = 0;
+    return bad;
+}
+#endif
+
 /* MENU > TRACK KNOB: LEFT swaps the ALGORITHM and PRESETS knobs' roles; saved with the settings */
 static int test_track_knob(void)
 {
@@ -6134,6 +6162,9 @@ int main(void)
     bad += test_roll();
     bad += test_panel();
     bad += test_track_knob();
+#if MELODEE_LOOK
+    bad += test_knobs_menu();
+#endif
     bad += test_layer();
     bad += test_name();
     bad += test_edit_cycle();
