@@ -137,6 +137,12 @@ void tessera_init(void)
     tessera.et_dwell = 2;                               /* (Entries: off, 2 phrases, FADE over 2 bars, roles AUTO) */
     tessera.et_style = 1;
     tessera.et_fade = 2;
+    tessera.pl_peak = 62;                               /* (the planner: FREE, ARCH at the golden section, 3, STOP) */
+    tessera.pl_count = 3;
+    {
+        static const uint8_t U[8] = {10, 30, 55, 80, 100, 75, 40, 10};   /* (USER: an arch to start from) */
+        memcpy(tessera.pl_user, U, sizeof U);
+    }
     tess_atlas_new = (1u << TESSERA_TRACKS) - 1u;       /* (ATLAS: a random start, tess_atlas_fresh) */
 
     for (uint32_t i = 0; i < TESSERA_TRACKS; i++) {
@@ -444,6 +450,7 @@ const char *tessera_form_name(uint32_t form) { return TESS_FORM_NAME[form > 6u ?
 #include "form_chain.c"                              /* form chaining: the project's FORM, FOLLOW / OWN, SKIP, WANDER */
 /* the track has sections: its own FORM, or it follows the project's */
 static int tess_has_form(uint32_t tr) { return tessera.evolve[tr].form || fc_follows(tr); }
+#include "planner.c"                                 /* the piece planner: LENGTH, SHAPE, END */
 #include "entries.c"                                 /* Entries: tracks out and back in on the phrase lines */
 
 uint32_t tessera_form_get(uint32_t tr, uint8_t seq[4], uint32_t *pos)
@@ -909,6 +916,24 @@ void tessera_fm_layer_knob(uint32_t k, int32_t s)
     else if (k == 1u) tess_param_set_body(tr, TX_FC_FOLLOW, s > 0 ? 1 : 0);   /* (right OWN, left FOLLOW) */
     else if (k == 2u) tess_param_set_body(tr, TX_FC_SKIP, (int32_t)tessera.fc_skip[tr] + s * 2);
     else tess_param_set_body(tr, TX_ET_ROLE, (int32_t)tessera.et_role[tr] + (s > 0 ? 1 : -1));   /* (Entries' ROLE) */
+    TESS_IRQ_ON();
+}
+
+/* the PIECE page (GLO), the project's: KNOB 1 LENGTH, 2 SHAPE, 3 PEAK (ARCH, PLATEAU, VALLEY, STEPS) or COUNT (WAVES,
+ * BUILDS, STEPS: COUNT), 4 END; layer 1 (OCT+ held) USER's levels 1-4, layer 2 (OCT- held) 5-8 */
+void tessera_piece_knob(uint32_t k, int32_t s, int layer)
+{
+    uint32_t sh = tessera.pl_shape;
+    tessera_ensure_init();
+    if (!s || k > 3u) return;
+    TESS_IRQ_OFF();
+    if (layer) tess_param_set_body(0, TX_PL_USER1 + (layer == 2 ? 4u : 0u) + k, (int32_t)tessera.pl_user[(layer == 2 ? 4u : 0u) + k] + s * 2);
+    else if (k == 0u) tess_param_set_body(0, TX_PL_LENGTH, (int32_t)tessera.pl_length + s);
+    else if (k == 1u) tess_param_set_body(0, TX_PL_SHAPE, (int32_t)tessera.pl_shape + s);
+    else if (k == 2u && (sh == PL_WAVES || sh == PL_BUILDS || sh == PL_STEPS))
+        tess_param_set_body(0, TX_PL_COUNT, (int32_t)tessera.pl_count + s);
+    else if (k == 2u) tess_param_set_body(0, TX_PL_PEAK, (int32_t)tessera.pl_peak + s);
+    else tess_param_set_body(0, TX_PL_END, (int32_t)tessera.pl_end + s);
     TESS_IRQ_ON();
 }
 
@@ -2802,6 +2827,13 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_ET_STYLE: return tessera.et_style;
     case TX_ET_FADE: return tessera.et_fade;
     case TX_ET_ROLE: return tessera.et_role[tr];
+    case TX_PL_LENGTH: return tessera.pl_length;        /* (the planner's: the project's, whichever track) */
+    case TX_PL_SHAPE: return tessera.pl_shape;
+    case TX_PL_PEAK: return tessera.pl_peak;
+    case TX_PL_COUNT: return tessera.pl_count;
+    case TX_PL_END: return tessera.pl_end;
+    case TX_PL_USER1: case TX_PL_USER2: case TX_PL_USER3: case TX_PL_USER4:
+    case TX_PL_USER5: case TX_PL_USER6: case TX_PL_USER7: case TX_PL_USER8: return tessera.pl_user[x - TX_PL_USER1];
     case TX_KEY_LINK: return tessera.key_link;          /* (the project's, whichever track) */
     case TX_SD_SOURCE: return tessera.sd_src[tr];
     case TX_SD_KEEP: return tessera.sd_keep[tr];
@@ -2995,6 +3027,15 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
     case TX_ET_STYLE: tessera.et_style = (uint8_t)tess_clampi(v, 0, 1); return;
     case TX_ET_FADE: tessera.et_fade = (uint8_t)tess_clampi(v, 1, 4); return;
     case TX_ET_ROLE: tessera.et_role[tr] = (uint8_t)tess_clampi(v, 0, ET_ROLES - 1); return;
+    case TX_PL_LENGTH: tessera.pl_length = (uint8_t)tess_clampi(v, 0, (int32_t)PL_LENGTHS - 1); return;
+    case TX_PL_SHAPE: tessera.pl_shape = (uint8_t)tess_clampi(v, 0, PL_SHAPES - 1); return;
+    case TX_PL_PEAK: tessera.pl_peak = (uint8_t)tess_clampi(v, 0, 100); return;
+    case TX_PL_COUNT: tessera.pl_count = (uint8_t)tess_clampi(v, 2, 8); return;
+    case TX_PL_END: tessera.pl_end = (uint8_t)tess_clampi(v, 0, PL_ENDS - 1); return;
+    case TX_PL_USER1: case TX_PL_USER2: case TX_PL_USER3: case TX_PL_USER4:
+    case TX_PL_USER5: case TX_PL_USER6: case TX_PL_USER7: case TX_PL_USER8:
+        tessera.pl_user[x - TX_PL_USER1] = (uint8_t)tess_clampi(v, 0, 100);
+        return;
     case TX_KEY_LINK: tessera.key_link = (uint8_t)tess_clampi(v, 0, 1); return;
     case TX_SD_SOURCE:                                  /* (the loop filled again from the new source; ANSWER: its */
         tessera.sd_src[tr] = (uint8_t)tess_clampi(v, 0, TESSERA_TRACKS);   /* call, answered from the first) */

@@ -215,6 +215,14 @@ typedef struct {
     uint8_t          et_style;                   /* 0 CUT, 1 FADE (default) */
     uint8_t          et_fade;                    /* 1..4: a FADE's bars (default 2) */
     uint8_t          et_role[TESSERA_TRACKS];    /* 0 AUTO, 1 BASS, 2 RHYTHM, 3 HARMONY, 4 MELODY, 5 ANCHOR (never out) */
+    /* The piece planner (planner.c; the PIECE page under GLO): the piece's LENGTH and SHAPE, steering ENERGY, Entries and
+     * the CHAIN. The record's PLAN part. LENGTH FREE: nothing changes */
+    uint8_t          pl_length;                  /* 0 FREE, 1..21 minutes (planner.c PL_MIN: 1 .. 240) */
+    uint8_t          pl_shape;                   /* 0 ARCH .. 9 USER */
+    uint8_t          pl_peak;                    /* 0..100: ARCH's, PLATEAU's, VALLEY's centre, % of the length (62) */
+    uint8_t          pl_count;                   /* 2..8: WAVES' swells, BUILDS' builds, STEPS' terraces (3) */
+    uint8_t          pl_end;                     /* 0 STOP, 1 LOOP, 2 NEW, 3 FREE */
+    uint8_t          pl_user[8];                 /* 0..100: USER's levels, evenly along the piece */
 } tessera_state_t;
 
 extern tessera_state_t tessera;
@@ -292,6 +300,10 @@ void entries_tick(uint32_t n);                      /* seq.c, each block before 
 int entries_hand_in(uint32_t tr);                   /* GLO's mute key: an out track back in (1 if it was out) */
 uint32_t tessera_entries_get(uint32_t *warn, uint8_t role[4]);   /* the tracks out, those about to change, the roles */
 void tessera_entries_knob(uint32_t k, int32_t s, int layer);   /* the ENTRIES page: KNOB k turned s (layer: OCT+ held) */
+void planner_play(void);                            /* seq.c, PLAY: the planned piece from the top (planner.c) */
+int tessera_piece_get(uint32_t *x, uint32_t *left); /* the piece: where (Q16), seconds left; 1 while planned */
+int32_t tessera_piece_shape(uint32_t x);            /* the SHAPE at x (Q16): Q15 0 sparse .. 32767 full */
+void tessera_piece_knob(uint32_t k, int32_t s, int layer);   /* the PIECE page: KNOB k (layer 1 OCT+, 2 OCT-) */
 void energy_play(void);                             /* seq.c, PLAY: ENERGY's tide and rests from the SEEDs (energy.c) */
 int32_t energy_now(void);                           /* the tide now, Q15 -32767 sparse .. 32767 full (cord source) */
 int energy_resting(void);                           /* 1 while the notes rest */
@@ -382,6 +394,9 @@ enum {
     TX_ET_AMOUNT, TX_ET_DWELL, TX_ET_STYLE, TX_ET_FADE,   /* (0x27B..0x27E: Entries, the project's: one value, whichever
                                                      * track) */
     TX_ET_ROLE,                                     /* (0x27F: Entries' ROLE, any track's) */
+    TX_PL_LENGTH, TX_PL_SHAPE, TX_PL_PEAK, TX_PL_COUNT, TX_PL_END,   /* (0x280..0x284: the piece planner, the project's) */
+    TX_PL_USER1, TX_PL_USER2, TX_PL_USER3, TX_PL_USER4,             /* (0x285..0x28C: SHAPE USER's eight levels) */
+    TX_PL_USER5, TX_PL_USER6, TX_PL_USER7, TX_PL_USER8,
     TX_COUNT
 };
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */

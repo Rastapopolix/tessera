@@ -319,6 +319,31 @@ static int test_tsp_record(void)
     tsp_resum(raw);
     bad += check("TSP1: an ENTRY part with a ROLE past ANCHOR is refused", ok && !tsp_valid(raw, len));
 
+    reset();                                           /* the planner: the record's PLAN part; a record without it */
+    tessera_param_set(0, TX_PL_LENGTH, 12); tessera_param_set(0, TX_PL_SHAPE, 5); tessera_param_set(0, TX_PL_PEAK, 30);
+    tessera_param_set(0, TX_PL_COUNT, 6); tessera_param_set(0, TX_PL_END, 2); tessera_param_set(0, TX_PL_USER7, 99);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_PLAN];
+    reset();
+    ok = ok && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: the planner's LENGTH, SHAPE, PEAK, COUNT, END and USER levels come back",
+                 ok && tessera.pl_length == 12u && tessera.pl_shape == 5u && tessera.pl_peak == 30u && tessera.pl_count == 6u &&
+                 tessera.pl_end == 2u && tessera.pl_user[6] == 99u && tessera.pl_user[0] == 10u);
+    raw[tsp_seen.at[TSP_PLAN] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (saved before it: no PLAN part known) */
+    tsp_resum(raw);
+    reset();
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_PLAN] && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: a record without the PLAN part loads FREE (ARCH, PEAK 62, COUNT 3, STOP)",
+                 ok && !tessera.pl_length && !tessera.pl_shape && tessera.pl_peak == 62u && tessera.pl_count == 3u && !tessera.pl_end);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_PLAN];
+    raw[tsp_seen.at[TSP_PLAN] + 3u] = 1u;              /* (COUNT 1) */
+    tsp_resum(raw);
+    bad += check("TSP1: a PLAN part with a COUNT of 1 is refused", ok && !tsp_valid(raw, len));
+
     reset();                                           /* ENERGY part 2: LEVEL and each DEPTH; a record without them */
     tessera_param_set(0, TX_EN_LEVEL, -40); tessera_param_set(2, TX_EN_DEPTH, 0); tessera_param_set(3, TX_EN_DEPTH, 55);
     project_capture(&proj_scratch);

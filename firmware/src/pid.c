@@ -45,6 +45,11 @@ static const char *const TX_N_PHRASE[] = {"4", "8", "16"};   /* (form_chain.c FC
 static const char *const TX_N_FCFOLLOW[] = {"FOLLOW", "OWN"};
 static const char *const TX_N_ETSTYLE[] = {"CUT", "FADE"};   /* (entries.c) */
 static const char *const TX_N_ETROLE[] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "MELODY", "ANCHOR"};
+static const char *const TX_N_PLLEN[] = {"FREE", "1", "2", "3", "4", "5", "6", "8", "10", "12", "15", "20", "25", "30",
+                                         "40", "45", "60", "75", "90", "120", "180", "240"};   /* (planner.c PL_MIN) */
+static const char *const TX_N_PLSHAPE[] = {"ARCH", "RISE", "FALL", "PLATEAU", "VALLEY", "WAVES", "BUILDS", "STEPS",
+                                           "FLAT", "USER"};
+static const char *const TX_N_PLEND[] = {"STOP", "LOOP", "NEW", "FREE"};
 static const char *const TX_N_TUNE[] = {"OFF", "USR1", "USR2", "USR3", "USR4"};   /* (tune.h: the slots' own names
                                                                                    * where shown, params.c) */
 static const char *const TX_N_ACCMODE[] = {"WRAP", "PING", "CLAMP"};    /* (TESS_ACC_*) */
@@ -177,6 +182,19 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_ET_STYLE] = PE("STYLE", TX_N_ETSTYLE, 1),
     [TX_ET_FADE] = {"FADE", F_INT, 1, 4, 2, 0, "bar"},
     [TX_ET_ROLE] = PE("ROLE", TX_N_ETROLE, 0),
+    [TX_PL_LENGTH] = {"LENGTH", F_ENUM, 0, 21, 0, TX_N_PLLEN, "min"},
+    [TX_PL_SHAPE] = PE("SHAPE", TX_N_PLSHAPE, 0),
+    [TX_PL_PEAK] = PD("PEAK", F_PCT, 0, 100, 62),
+    [TX_PL_COUNT] = {"COUNT", F_INT, 2, 8, 3, 0, ""},
+    [TX_PL_END] = PE("END", TX_N_PLEND, 0),
+    [TX_PL_USER1] = PD("USER1", F_PCT, 0, 100, 10),
+    [TX_PL_USER2] = PD("USER2", F_PCT, 0, 100, 30),
+    [TX_PL_USER3] = PD("USER3", F_PCT, 0, 100, 55),
+    [TX_PL_USER4] = PD("USER4", F_PCT, 0, 100, 80),
+    [TX_PL_USER5] = PD("USER5", F_PCT, 0, 100, 100),
+    [TX_PL_USER6] = PD("USER6", F_PCT, 0, 100, 75),
+    [TX_PL_USER7] = PD("USER7", F_PCT, 0, 100, 40),
+    [TX_PL_USER8] = PD("USER8", F_PCT, 0, 100, 10),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -649,6 +667,30 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                    "HARMONY, MELODY (a melody only over a bass or harmony). ANCHOR is never taken out. "
                                    "AUTO: CHORD is harmony, ATLAS or a drum sound rhythm, notes mostly below C3 bass, "
                                    "else melody. GLO > ENTRIES with OCT+ held, or OCT+ held on FORM, KNOB 4."),
+    XP_(TX_PL_LENGTH, "PIECE LENGTH", "FREE: the music plays on unplanned. A length, 1 minute to 4 hours: the piece is "
+                                      "planned to it from PLAY, its SHAPE steering ENERGY (ARC how far), ENTRIES (how "
+                                      "many tracks play) and the CHAIN (further away near the top, A in the last part). "
+                                      "At the tempo now: a faster tempo, more bars. GLO > PIECE, KNOB 1."),
+    XP_(TX_PL_SHAPE, "PIECE SHAPE", "The piece's arc from sparse to full: ARCH one climax at PEAK; RISE a build to the "
+                                    "end; FALL starts full and dissolves; PLATEAU a long hold round PEAK; VALLEY full "
+                                    "with a breakdown at PEAK; WAVES COUNT swells; BUILDS COUNT rises each dropped at "
+                                    "once; STEPS terraces; FLAT steady; USER your eight levels. All but RISE and FALL "
+                                    "begin and end sparse. GLO > PIECE, KNOB 2."),
+    XP_(TX_PL_PEAK, "PIECE PEAK", "Where the climax of ARCH, PLATEAU, VALLEY or STEPS sits, as a share of the length "
+                                  "(62 %: the golden section). GLO > PIECE, KNOB 3."),
+    XP_(TX_PL_COUNT, "PIECE COUNT", "How many swells (WAVES), builds (BUILDS) or terraces (STEPS), 2 to 8. GLO > PIECE, "
+                                    "KNOB 3."),
+    XP_(TX_PL_END, "PIECE END", "At the end of the LENGTH: STOP lets the tracks fade and the tails ring, then stops; "
+                                "LOOP plays the same piece again; NEW draws new SEEDs and plays a new piece; FREE plays "
+                                "on unplanned. GLO > PIECE, KNOB 4."),
+    XP_(TX_PL_USER1, "PIECE USER 1", "SHAPE USER: the level at the piece's start. GLO > PIECE, OCT+ held, KNOB 1."),
+    XP_(TX_PL_USER2, "PIECE USER 2", "SHAPE USER: the level a seventh in. GLO > PIECE, OCT+ held, KNOB 2."),
+    XP_(TX_PL_USER3, "PIECE USER 3", "SHAPE USER: the level two sevenths in. GLO > PIECE, OCT+ held, KNOB 3."),
+    XP_(TX_PL_USER4, "PIECE USER 4", "SHAPE USER: the level three sevenths in. GLO > PIECE, OCT+ held, KNOB 4."),
+    XP_(TX_PL_USER5, "PIECE USER 5", "SHAPE USER: the level four sevenths in. GLO > PIECE, OCT- held, KNOB 1."),
+    XP_(TX_PL_USER6, "PIECE USER 6", "SHAPE USER: the level five sevenths in. GLO > PIECE, OCT- held, KNOB 2."),
+    XP_(TX_PL_USER7, "PIECE USER 7", "SHAPE USER: the level six sevenths in. GLO > PIECE, OCT- held, KNOB 3."),
+    XP_(TX_PL_USER8, "PIECE USER 8", "SHAPE USER: the level at the end. GLO > PIECE, OCT- held, KNOB 4."),
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };

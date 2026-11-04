@@ -16,7 +16,7 @@
 #define TSP_STEP_BYTES 10u                      /* step v2: 80 bits */
 enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TSP_FM6, TSP_DRUM, TSP_REC, TSP_NAME,
        TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_HOW, TSP_ORACLE,
-       TSP_ENERGY, TSP_DEV, TSP_TRANSP, TSP_TUNE, TSP_SOUND, TSP_CHAIN, TSP_ENTRY, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
+       TSP_ENERGY, TSP_DEV, TSP_TRANSP, TSP_TUNE, TSP_SOUND, TSP_CHAIN, TSP_ENTRY, TSP_PLAN, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
                                               * TSP_HUMAN: each track's HUMAN TIME; none: TWEAK HUMAN's timing, as it was;
@@ -33,9 +33,11 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * each track's FOLLOW (0 not set, 1, 2 OWN), then each one's SKIP; none:
                                               * OFF, 8 bars, 0, 1 each, not set, 0;
                                               * TSP_ENTRY: Entries' ENTRIES, DWELL, STYLE, FADE, then each track's
-                                              * ROLE; none: 0 (off), 2, FADE, 2 bars, AUTO) */
+                                              * ROLE; none: 0 (off), 2, FADE, 2 bars, AUTO;
+                                              * TSP_PLAN: the planner's LENGTH, SHAPE, PEAK, COUNT, END, then USER's
+                                              * eight levels; none: FREE, ARCH, 62, 3, STOP, the arch tessera_init sets) */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
-               TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28,
+               TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29,
                "the parts' numbers are stored: never renumbered");
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -331,6 +333,14 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
         tsp_byte(&w, tessera.et_fade);
         tsp_bytes(&w, tessera.et_role, NTRK);
         tsp_end(&w);
+        tsp_begin(&w, TSP_PLAN, 1);                    /* (the piece planner: the project's) */
+        tsp_byte(&w, tessera.pl_length);
+        tsp_byte(&w, tessera.pl_shape);
+        tsp_byte(&w, tessera.pl_peak);
+        tsp_byte(&w, tessera.pl_count);
+        tsp_byte(&w, tessera.pl_end);
+        tsp_bytes(&w, tessera.pl_user, 8);
+        tsp_end(&w);
         tsp_begin(&w, TSP_TUNE, 1);                    /* (TUNE, then each user tuning: its degree count, 0 empty, */
         tsp_byte(&w, tune_sel);                        /* else its name, title and degrees as int32) */
         for (t = 0; t < TUNE_SLOTS; t++) {
@@ -574,6 +584,12 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (p[0] > 100u || p[1] < 1u || p[1] > 8u || p[2] > 1u || p[3] < 1u || p[3] > 4u) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (p[4u + k] > 5u) return 0;
     }
+    if (tsp_seen.at[TSP_PLAN]) {
+        const uint8_t *p = raw + tsp_seen.at[TSP_PLAN];
+        if (tsp_seen.ver[TSP_PLAN] != 1u || tsp_seen.len[TSP_PLAN] != 13u) return 0;
+        if (p[0] > 21u || p[1] > 9u || p[2] > 100u || p[3] < 2u || p[3] > 8u || p[4] > 3u) return 0;
+        for (uint32_t k = 0; k < 8u; k++) if (p[5u + k] > 100u) return 0;
+    }
     if (tsp_seen.at[TSP_HUMAN]) {
         if (tsp_seen.ver[TSP_HUMAN] != 1u || tsp_seen.len[TSP_HUMAN] != NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_HUMAN] + k] > TESS_HUMAN_MS) return 0;
@@ -651,6 +667,12 @@ static void tsp_restore(const uint8_t *raw)
         const uint8_t *p = raw + tsp_seen.at[TSP_ENTRY];
         tessera.et_amount = p[0]; tessera.et_dwell = p[1]; tessera.et_style = p[2]; tessera.et_fade = p[3];
         memcpy(tessera.et_role, p + 4, NTRK);
+    }
+    if (tsp_seen.at[TSP_PLAN]) {                       /* (saved before the planner: tessera_reset's FREE) */
+        const uint8_t *p = raw + tsp_seen.at[TSP_PLAN];
+        tessera.pl_length = p[0]; tessera.pl_shape = p[1]; tessera.pl_peak = p[2]; tessera.pl_count = p[3];
+        tessera.pl_end = p[4];
+        memcpy(tessera.pl_user, p + 5, 8);
     }
     tune_clear_all();                                  /* (the tunings are the project's; saved before them: none) */
     if (tsp_seen.at[TSP_TUNE]) (void)tsp_tune_read(raw + tsp_seen.at[TSP_TUNE], tsp_seen.len[TSP_TUNE], 1);

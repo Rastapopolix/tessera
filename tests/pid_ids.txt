@@ -246,3 +246,16 @@
 0x27d ENTRIES STYLE            global 0..1 def 1
 0x27e ENTRIES FADE             global 1..4 def 2
 0x27f ENTRIES ROLE             track 0..5 def 0
+0x280 PIECE LENGTH             global 0..21 def 0
+0x281 PIECE SHAPE              global 0..9 def 0
+0x282 PIECE PEAK               global 0..100 def 62
+0x283 PIECE COUNT              global 2..8 def 3
+0x284 PIECE END                global 0..3 def 0
+0x285 PIECE USER 1             global 0..100 def 10
+0x286 PIECE USER 2             global 0..100 def 30
+0x287 PIECE USER 3             global 0..100 def 55
+0x288 PIECE USER 4             global 0..100 def 80
+0x289 PIECE USER 5             global 0..100 def 100
+0x28a PIECE USER 6             global 0..100 def 75
+0x28b PIECE USER 7             global 0..100 def 40
+0x28c PIECE USER 8             global 0..100 def 10

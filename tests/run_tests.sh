@@ -93,6 +93,10 @@
 #                   a melody over a bass or harmony, the breakdown before A and the full return, FORM OFF's sections,
 #                   PLAY again, CUT / FADE, no voice from a silent track, hand mutes and GLO's key, SOLO, AUTO's roles;
 #                   ENTRIES 0 with the rest turned plays the same notes.
+# PIECE (tests/planner_test.c): the piece planner (planner.c): the ten SHAPEs (range, PEAK, COUNT, USER, sparse ends),
+#                   LENGTH FREE with the rest turned plays the same notes, a 10-minute ARCH (intro, top, outro, the
+#                   CHAIN home for its last 15 %, ENERGY its curve, CONTRAST near the top), END STOP / LOOP / NEW / FREE,
+#                   a tempo change, the PIECE knobs.
 # LONG-FORM (tests/longform_test.c): eight hours of ten patches left playing (notes only: the sequencer without the
 #                   voices, checked against mix_block for the first two minutes): no long silence, no collapse to one
 #                   note, no loop replayed for minutes, not thinning out by the last hour; a table of every measure in
@@ -380,6 +384,8 @@ if core && [ $TABLES = 1 ]; then
         chain_test -O2 $FW
     t "ENTRIES: tracks out and back on the phrase lines: the rules, DWELL, anchors, breakdowns, CUT / FADE, hand, OFF unchanged" \
         entries_test -O2 $FW
+    t "PIECE: the planner: the SHAPEs, FREE unchanged, ENERGY / Entries / the CHAIN steered, END STOP LOOP NEW FREE, tempo" \
+        planner_test -O2 $FW
     t "GEN: each generator on its own (gen.c alone): ranges, rests, draws per step, determinism, mutation, sections" \
         gen_test -O2 $FW
     t "LONG-FORM: 8 hours of 10 patches: no long silence, one-note collapse, frozen loop or thinning out" longform_test \

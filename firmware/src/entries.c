@@ -32,6 +32,7 @@ static struct {
     uint8_t heard;                                    /* the tracks the sequencer gave notes since PLAY */
     uint8_t want;                                     /* how many tracks the rules want out now */
     uint8_t pend_sec;                                 /* the line pending is a section's */
+    uint8_t final;                                    /* a planned piece's END STOP: every track out, the ANCHORs too */
     uint8_t since[TESSERA_TRACKS];                    /* phrases a track has been in or out since it changed, up to 255 */
     uint16_t avg[TESSERA_TRACKS];                     /* its notes' average, x16 (AUTO's bass), 0 none yet */
 } et;
@@ -64,6 +65,18 @@ static uint32_t et_mask(uint32_t role)                /* the tracks of a role */
         if (et_role(tr) == role) m |= 1u << tr;
     return m;
 }
+/* the tracks with something to play: a generator, or a STEP pattern with a note (or heard since PLAY) */
+static uint32_t et_present(void)
+{
+    uint32_t tr, i, m = et.heard;
+    for (tr = 0; tr < TESSERA_TRACKS; tr++) {
+        uint32_t len = trk[tr].p[P_SLEN] > 0 ? (uint32_t)trk[tr].p[P_SLEN] : 1u;
+        if (tessera.mode[tr] != TESS_ENG_OFF) m |= 1u << tr;
+        for (i = 0; i < len && i < NSTEP && !(m >> tr & 1u); i++)
+            if (trk[tr].step[i].time != ST_REST) m |= 1u << tr;
+    }
+    return m;
+}
 static uint32_t et_hand_muted(void)
 {
     uint32_t tr, m = 0;
@@ -77,7 +90,7 @@ static void et_clear(void)
 {
     uint32_t tr;
     et.out = et.pend_in = et.pend_out = et.lock = 0;
-    et.want = 0;
+    et.want = et.final = 0;
     et.pend_p = 0xFFFFFFFFu;
     for (tr = 0; tr < TESSERA_TRACKS; tr++) {
         et.since[tr] = 0;
@@ -125,17 +138,17 @@ static void et_decide(uint32_t p)
     uint32_t go_out = 0, come_in = 0, most, wanted;
     et_chain(p, &sec, &home, &home_next);
     if (sec) lock = 0;                                /* (a new section: the hand's tracks are the rules' again) */
-    can = et.heard & ~mute & ~anchor & ~lock;         /* (the tracks the rules may move) */
+    can = et_present() & ~mute & ~anchor & ~lock;     /* (the tracks the rules may move) */
     for (tr = 0; tr < TESSERA_TRACKS; tr++)
         if ((uint32_t)et.since[tr] + 1u >= dwell) ready |= 1u << tr;
-    play = et.heard & ~mute & ~et.out;                /* (sounding now) */
+    play = et_present() & ~mute & ~et.out;            /* (sounding now) */
     most = (et_count(can) * tessera.et_amount + 50u) / 100u;
     if (!(play & anchor) && most >= et_count(can)) most = et_count(can) ? et_count(can) - 1u : 0u;   /* (one plays) */
     h = et_hash(p, 1u);
-    if (home && tessera.et_amount > 50u) {            /* A comes back with everything */
+    if (home && tessera.et_amount > 50u && !pl_on()) {   /* A comes back with everything (planned: the SHAPE says) */
         et.want = 0;
         come_in = et.out & ~mute;
-    } else if (home_next && tessera.et_amount > 50u) {   /* the phrase before A: down to the anchors */
+    } else if (home_next && tessera.et_amount > 50u && !pl_on()) {   /* the phrase before A: down to the anchors */
         uint32_t keep = play & anchor;
         if (!keep)                                    /* (none: the one lowest in the layering order plays on) */
             for (r = ET_BASS; r <= ET_MELODY && !keep; r++)
@@ -143,7 +156,9 @@ static void et_decide(uint32_t p)
                     if (((play & can) >> tr & 1u) && et_role(tr) == r) keep = 1u << tr;
         go_out = play & can & ~keep;
     } else {
-        if (sec) {                                    /* a section: how many out, a step up or down */
+        if (pl_on()) {                                /* a planned piece: as many out as its SHAPE is low */
+            et.want = (uint8_t)planner_out(p, most);
+        } else if (sec) {                             /* a section: how many out, a step up or down */
             int32_t w = (int32_t)et.want;
             if (home) w--;
             else if (!tessera.fc_form || !fc_len()) w += (int32_t)(h % 3u) - 1;
@@ -163,9 +178,10 @@ static void et_decide(uint32_t p)
                 }
             if (come_in) n--;
         }
-        if (n < wanted && sec)                        /* exits: on a section's line, the top of the order first */
-            for (r = ET_MELODY; r >= ET_BASS && n < wanted; r--)
-                for (i = 0; i < TESSERA_TRACKS && n < wanted; i++) {
+        if (n < wanted && (sec || pl_on()))           /* exits: on a section's line (planned: one a phrase between),
+                                                       * the top of the order first */
+            for (r = ET_MELODY; r >= ET_BASS && n < wanted && (sec || !go_out); r--)
+                for (i = 0; i < TESSERA_TRACKS && n < wanted && (sec || !go_out); i++) {
                     uint32_t left;
                     tr = (i + (h >> 4)) % TESSERA_TRACKS;
                     if (!((play & can & ready & ~come_in) >> tr & 1u) || et_role(tr) != r) continue;
@@ -207,10 +223,38 @@ static void et_apply(uint32_t p)
 
 /* seq.c seq_advance, each block before the steps: the phrase lines (a bar line falls at a block's end, so the
  * downbeat's steps play after this) and the levels' fades */
+/* a planned piece's start: as many tracks out as its SHAPE is low there, at once (the intro layers in from them) */
+static void et_intro(void)
+{
+    uint32_t mute = et_hand_muted(), can = et_present() & ~mute & ~et_mask(ET_ANCHOR), play = et_present() & ~mute;
+    uint32_t most = (et_count(can) * tessera.et_amount + 50u) / 100u, want, r, tr, n = 0;
+    if (!(play & et_mask(ET_ANCHOR)) && most >= et_count(can)) most = et_count(can) ? et_count(can) - 1u : 0u;
+    want = planner_out(0, most);
+    for (r = ET_MELODY; r >= ET_BASS && n < want; r--)
+        for (tr = 0; tr < TESSERA_TRACKS && n < want; tr++)
+            if ((can >> tr & 1u) && et_role(tr) == r) {
+                et.out |= (uint8_t)(1u << tr);
+                entry_gain[tr] = 0;
+                n++;
+            }
+    et.want = (uint8_t)want;
+}
+
+/* planner.c, a planned piece's END STOP: every track out, the ANCHORs too (its FADE, then the tails) */
+static void entries_all_out(void)
+{
+    et.out = (uint8_t)((1u << TESSERA_TRACKS) - 1u);
+    et.pend_in = et.pend_out = 0;
+    et.final = 1;
+}
+
 void entries_tick(uint32_t n)
 {
     uint32_t tr, b = bar_n, bars = fc_bars(), step;
-    if (!song.playing || !tessera.et_amount) {
+    planner_tick(n);
+    if (et.final && song.playing) {
+        /* (the end: everything fades out, nothing decided) */
+    } else if (!song.playing || !tessera.et_amount) {
         if (et.out || et.pend_in || et.pend_out || et.lock) {   /* (off or stopped: everything back in) */
             et.out = et.pend_in = et.pend_out = et.lock = 0;
             et.pend_p = 0xFFFFFFFFu;
@@ -221,13 +265,14 @@ void entries_tick(uint32_t n)
             return;
         }
     } else if (b != et.bar) {
-        if (et.bar != 0xFFFFFFFFu && b == et.bar + 1u) {
+        if (et.bar == 0xFFFFFFFFu && !b && pl_on()) et_intro();
+        else if (et.bar != 0xFFFFFFFFu && b == et.bar + 1u) {
             if (b % bars == bars - 1u) et_decide(b / bars + 1u);   /* (the phrase coming: decided, warned a bar ahead) */
             else if (b % bars == 0u) et_apply(b / bars);
         }
         et.bar = b;
     }
-    et.out &= (uint8_t)~et_mask(ET_ANCHOR);           /* (an ANCHOR never drops, set so now: back at once) */
+    if (!et.final) et.out &= (uint8_t)~et_mask(ET_ANCHOR);   /* (an ANCHOR never drops, set so now: back at once) */
     step = tessera.et_style ? 32768u * n / ((tessera.et_fade ? tessera.et_fade : 1u) * 4u * seq_beat_samples() + 1u) + 1u
                             : 32768u;
     for (tr = 0; tr < TESSERA_TRACKS; tr++) {
@@ -276,5 +321,5 @@ uint32_t tessera_entries_get(uint32_t *warn, uint8_t role[TESSERA_TRACKS])
     if (warn) *warn = song.playing && tessera.et_amount ? (uint32_t)(et.pend_in | et.pend_out) : 0u;
     if (role)
         for (tr = 0; tr < TESSERA_TRACKS; tr++) role[tr] = (uint8_t)et_role(tr);
-    return song.playing && tessera.et_amount ? et.out : 0u;
+    return song.playing && (tessera.et_amount || et.final) ? et.out : 0u;
 }

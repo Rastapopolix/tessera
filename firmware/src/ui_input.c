@@ -987,6 +987,19 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
+    if (pg->graph == GR_PIECE) {                    /* PIECE, the project's: LENGTH, SHAPE, END a step a detent, PEAK a
+                                                     * percent (COUNT a step); OCT+ / OCT- held: USER's levels */
+        int layer = piece_layer();
+        tessera_piece_knob(slot, layer || (slot == 2u && piece_k3() == 1) ? accel(EN_K1 + slot, steps, 100) : steps, layer);
+        if (layer == 1) {
+            oct_eat |= 2u;
+            ui.oct_t0 |= 2u;
+            oct_deferred = 0;
+        } else if (layer)
+            oct_eat |= 1u;                              /* (its release is no OCT-) */
+        ui.force = 1;
+        return;
+    }
     if (pg->graph == GR_ENTRIES) {                  /* ENTRIES, the project's: ENTRIES 2 a detent, DWELL, STYLE, FADE a
                                                      * step; OCT+ held: KNOB k track k's ROLE */
         int layer = entries_layer_on();
@@ -1852,7 +1865,7 @@ static void page_knob(uint32_t k, int32_t s)
         edit_param(k, s);
         pg = cur_page();
         if (!(pg->graph == GR_EVOLVE || pg->graph == GR_FORM || pg->graph == GR_TWEAK || pg->graph == GR_TWEAK2 ||
-              pg->graph == GR_ORGANIC || pg->graph == GR_MATRIX || pg->graph == GR_TIMING || pg->graph == GR_ENERGY || pg->graph == GR_MIDICH || pg->graph == GR_CHAIN || pg->graph == GR_ENTRIES || pg->graph == GR_KEYLINK || (pg->graph == GR_NOTELEN && k < 3u) ||   /* Tessera's own pages: no picker */
+              pg->graph == GR_ORGANIC || pg->graph == GR_MATRIX || pg->graph == GR_TIMING || pg->graph == GR_ENERGY || pg->graph == GR_MIDICH || pg->graph == GR_CHAIN || pg->graph == GR_ENTRIES || pg->graph == GR_PIECE || pg->graph == GR_KEYLINK || (pg->graph == GR_NOTELEN && k < 3u) ||   /* Tessera's own pages: no picker */
               (song.sel < TESSERA_TRACKS && pg->graph == GR_STEPS && pg->fam == FAM_GEN && (k == 0u || tessera.mode[song.sel] != TESS_ENG_OFF))))
             pick_touch(k);                              /* a name from a long list: its picker (ui_popup.c) */
     }

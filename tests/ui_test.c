@@ -3669,10 +3669,20 @@ static int test_product_ux(void)
     press(B_GLO); ok = cur_page()->fam == FAM_GLO && str_eq(cur_page()->title, "GLOBAL");
     press(B_GLO); ok &= str_eq(cur_page()->title, "SYSTEM");
     press(B_GLO); ok &= str_eq(cur_page()->title, "MIDI OUT");
+    press(B_GLO); ok &= str_eq(cur_page()->title, "PIECE");
     press(B_GLO); ok &= str_eq(cur_page()->title, "CHAIN");
     press(B_GLO); ok &= str_eq(cur_page()->title, "ENTRIES");
     press(B_GLO); ok &= cur_page()->graph == GR_TRK;
-    bad += check("GLO cycles MIXER > GLOBAL > SYSTEM > MIDI OUT > CHAIN > ENTRIES > MIXER", ok);
+    bad += check("GLO cycles MIXER > GLOBAL > SYSTEM > MIDI OUT > PIECE > CHAIN > ENTRIES > MIXER", ok);
+    go_title("PIECE");                            /* the planner: LENGTH, SHAPE, PEAK / COUNT, END; OCT+ / OCT- USER */
+    turn(EN_K1, 2); turn(EN_K2, 5); turn(EN_K3, 1); turn(EN_K4, 1);
+    ok = tessera.pl_length == 2u && tessera.pl_shape == 5u && tessera.pl_count == 4u && tessera.pl_end == 1u;
+    fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+    turn(EN_K2, -1);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
+    ok &= tessera.pl_user[5] < 75u;
+    bad += check("PIECE: KNOB 1 LENGTH, 2 SHAPE (WAVES), 3 its COUNT, 4 END; OCT- held KNOB 2 USER's sixth level", ok);
+    tessera.pl_length = 0; tessera.pl_shape = 0; tessera.pl_count = 3; tessera.pl_end = 0; tessera.pl_user[5] = 75;
     go_title("CHAIN");                            /* the project's FORM, PHRASE, WANDER (form_chain.c) */
     turn(EN_K1, 2); turn(EN_K2, 1); turn(EN_K3, 5);
     ok = tessera.fc_form == 2u && tessera.fc_phrase == 2u && tessera.fc_wander > 0u;
@@ -4341,13 +4351,15 @@ static int test_tempo_select(void)
     turn(EN_SELECT, 1);
     ok &= str_eq(cur_page()->title, "MIDI OUT");
     turn(EN_SELECT, 1);
+    ok &= str_eq(cur_page()->title, "PIECE");
+    turn(EN_SELECT, 1);
     ok &= str_eq(cur_page()->title, "CHAIN");
     turn(EN_SELECT, 1);
     ok &= str_eq(cur_page()->title, "ENTRIES");
     turn(EN_SELECT, 1);
     ok &= str_eq(cur_page()->title, "GLOBAL");
     turn(EN_SELECT, -1);
-    bad += check("SELECT on GLO: GLOBAL -> SYSTEM -> MIDI OUT -> CHAIN -> ENTRIES -> GLOBAL (wraps), back the other way; the BPM untouched",
+    bad += check("SELECT on GLO: GLOBAL -> SYSTEM -> MIDI OUT -> PIECE -> CHAIN -> ENTRIES -> GLOBAL (wraps), back the other way; the BPM untouched",
                  ok && str_eq(cur_page()->title, "ENTRIES") && song.g[G_BPM] == 120);
     go_title("NOTES");
     cursor_set(4);
