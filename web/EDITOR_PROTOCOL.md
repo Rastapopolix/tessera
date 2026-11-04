@@ -474,6 +474,12 @@ refuses an archive whose projects are in the other format, and checks every TSP1
 checksum) before the first write. The editor moves project records only through backups; `PROJECT` (command 9)
 loads, saves and queries a slot on the device.
 
+The editor's **Demo projects** (`fm1backup.js` `readSlots`, `putProject`) use the same commands on the slots alone:
+`LIST` (stops playback), the whole record of each used slot by `GET` for its name (part 10, NAME), then for each demo
+`PUT` begin, data and commit of that one slot's object (2..5); nothing else is written. The commit writes the slot
+and its name into the slot list at once, with no power cycle (`proj_write_slot`; `tests/demo_projects.c check`).
+A record this firmware cannot read is refused at the commit (rc 2) and the slot keeps what it held.
+
 ## Historical v6: project-based song chain
 
 INFO appends CHAIN_ROWS (16) after NTRK. Earlier INFO bytes and command numbers

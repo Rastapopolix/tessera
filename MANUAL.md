@@ -930,7 +930,8 @@ or cancels. It starts from the template when one is saved in TMPL, else from the
 until you save it.
 
 The web editor's **Complete backup** saves and restores the music, slots A to D, the sound banks and the settings.
-To try the [demo projects](demos/README.md), `tools/demo_backup.py` puts them into slots of your own backup.
+To try the [demo projects](demos/README.md), the editor's **Demo projects** (on the Projects tab) puts each into a
+slot you choose and leaves the rest of the FM-1 as it is; `tools/demo_backup.py` does the same with a backup file.
 
 ---
 
