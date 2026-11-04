@@ -914,6 +914,38 @@ static void seq_start(void)
     if (click_wanted()) click_req=2;
 }
 
+/* Song Position: right after seq_start, every track where it would be UNITS from the top. A step due on the spot
+ * plays now (seq_start's first step, numbered on); one begun before it plays on from its place, its notes unheard until
+ * the next. The beat and bar counters, the generators' playheads and phrase counters (tess_join, at each one's next
+ * step), the ARP and the synced LFOs follow; what the generators drew on the way is not replayed */
+static void seq_seek(uint32_t units)
+{
+    extern void tessera_seek_join(void);
+    uint32_t i, beats = units / MIDI_BEAT_UNITS;
+    beat_pos = units % MIDI_BEAT_UNITS;
+    beat_n = beats & 3u;
+    bar_n = beats / 4u;
+    for (i = 0; i < NTRK; i++) {
+        track_t *t = &trk[i];
+        uint32_t period = seq_div_samples((uint32_t)t->p[P_SDIV]), len = t->p[P_SLEN] > 0 ? (uint32_t)t->p[P_SLEN] : 1u;
+        uint32_t pair = 2u * period, k = units / pair * 2u, r = units % pair, first = step_samples(t, period, k % len);
+        if (r >= first) { k++; r -= first; }          /* (SWING: the pair's second step) */
+        if (!r) {
+            if (!k) continue;                          /* (the top: as PLAY) */
+            t->seq_idx = (uint16_t)((k - 1u) % len);   /* step k fires on the first block */
+            seq_run_step[i] = k - 1u;
+        } else {
+            t->seq_idx = (uint16_t)(k % len);
+            t->seq_pos = r;
+            seq_run_step[i] = k;
+        }
+        t->seq_pass = k / len;
+        period = seq_div_samples((uint32_t)t->p[P_ARATE]);
+        if (t->arp_pos < 0xFFFFFFFu && period) t->arp_pos = units % period;
+    }
+    tessera_seek_join();
+}
+
 static void seq_release(track_t *t)
 {
     uint32_t i;
@@ -1379,7 +1411,9 @@ static void events_block(uint32_t n)
         if (midi_render_timed && (int32_t)(time - midi_render_time) > 0)
             break;
         mi_r++;midi_dispatch_left--;
-        if (status >= 0xF8u) {
+        if (status == 0xF2u) {
+            if (selected_clock == source) midi_clock_position(d1 | d2 << 7);
+        } else if (status >= 0xF8u) {
             if (selected_clock == source) {
                 if (status == 0xFAu || status == 0xFBu || status == 0xFCu) {
                     if (!clock_mode) midi_clock_mode(source);

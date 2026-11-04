@@ -358,6 +358,12 @@ static void tess_join(const track_t *t, uint32_t tr)
     tessera.chord[tr].n = (uint16_t)(ev->form ? j : k);
 }
 
+/* Song Position (seq.c seq_seek): every generator track joins at its next step, as if it had played from the top */
+void tessera_seek_join(void)
+{
+    tess_join_due = (uint8_t)((1u << TESSERA_TRACKS) - 1u);
+}
+
 /* QUAD's mutation: with other QUAD rows, each column at AMOUNT % turns down a row among them (the last one's cell to
  * the first), so the cells pass from track to track; alone, or while any column moves of its own (tess_quad_cols:
  * the columns already pass the cells round), its own cells change (gen_quad_mutate) */
