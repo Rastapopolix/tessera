@@ -19,7 +19,7 @@ static void check(const char *what, int ok)
     bad += !ok;
 }
 
-static const char *const KIND[] = {"voice", "block", "depth", "step", "send", "cord", "fill"};
+static const char *const KIND[] = {"voice", "block", "depth", "step", "send", "cord", "fill", "tempo"};
 
 static cord_t C(uint32_t src, uint32_t st, uint32_t dst, uint32_t dt, int32_t amount, int32_t offset)
 {
@@ -740,6 +740,8 @@ int main(int argc, char **argv)
             if (d->pid != PID_NONE || d->md || c != CD_M1_AMT + (c - CD_M1_AMT) % 16u || c > CD_M16_AMT) mods = 0;
         } else if (d->kind == CK_FILL) {                /* (the project's FILL: no parameter) */
             if (d->pid != PID_NONE || d->md || c != CD_FILL) mods = 0;
+        } else if (d->kind == CK_TEMPO) {               /* (the project's tempo: no parameter) */
+            if (d->pid != PID_NONE || d->md || c != CD_TEMPO) mods = 0;
         } else if (d->kind == CK_VOICE || d->kind == CK_DEPTH) {
             if (d->pid != PID_NONE || !d->md || d->md >= MD_N || (d->md >= MD_RESERVED6 && d->md <= MD_RESERVED9) ||
                 (d->kind == CK_VOICE) != (d->md <= MD_AMP) || (d->kind == CK_DEPTH) != (d->md == MD_DEPTH))

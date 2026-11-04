@@ -412,3 +412,4 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | M15 AMT | another mod's move, each block | MOD 15's AMOUNT (a fixed mod's OFFSET), turned by another mod |
 | M16 AMT | another mod's move, each block | MOD 16's AMOUNT (a fixed mod's OFFSET), turned by another mod |
 | FILL | the project's FILL, each block | the project's FILL (steps set to FILL / NOT FILL), held while the move is past half |
+| TEMPO | the project's tempo on CLK INT, each block | the project's tempo on CLK INT: a full move up doubles it, down halves it (BPM stays as set) |

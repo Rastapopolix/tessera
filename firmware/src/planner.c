@@ -34,7 +34,8 @@ static struct {
 static uint32_t pl_secs(void) { return tessera.pl_length < PL_LENGTHS ? PL_MIN[tessera.pl_length] * 60u : 0u; }
 /* a piece is planned now: a LENGTH set, and this PLAY's not over */
 static int pl_on(void) { return pl_secs() && !plan.done; }
-static uint32_t pl_beats(void) { uint32_t b = beat_samples(); return pl_secs() * (uint32_t)FS / (b ? b : 1u); }   /* (at the tempo now) */
+static uint32_t pl_beats(void) { uint32_t b = beat_samples_set(); return pl_secs() * (uint32_t)FS / (b ? b : 1u); }   /* (at the tempo now:
+                                                                * BPM's, a TEMPO mod plays the piece faster or slower, never jumps it) */
 
 /* where beat b (since PLAY) is in the piece, Q16: 0 .. 65536 its end (and past it, 65536) */
 static uint32_t pl_at(uint32_t b)
@@ -182,7 +183,7 @@ int tessera_piece_get(uint32_t *x, uint32_t *left)
     if (!song.playing) return 1;
     if (plan.done) { *x = 65536u; *left = 0; return 0; }
     *x = pl_at(beats);
-    el = beats * (beat_samples() / 441u) / 100u;      /* (seconds played, at the tempo now) */
+    el = beats * (beat_samples_set() / 441u) / 100u;  /* (seconds played, at the tempo set) */
     *left = el < s ? s - el : 0u;
     return 1;
 }

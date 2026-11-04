@@ -22,8 +22,10 @@
  *             cord_tick): the project's, destination track 0 as CK_GLOBAL. One level: an M AMT cord's own move is
  *             never moved
  *   CK_FILL   the project's FILL (seq.c, the steps set to FILL / NOT FILL), held while the move is 50 % or more
- *             (cord.c cord_fill_tick); destination track 0 as CK_GLOBAL */
-enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_GLOBAL, CK_CORD, CK_FILL };
+ *             (cord.c cord_fill_tick); destination track 0 as CK_GLOBAL
+ *   CK_TEMPO  the project's tempo on CLK INT (mix.c seq_tempo_q12, cord.c cord_tempo_tick): a full move doubles it, a
+ *             full move down halves it; BPM itself is left alone; destination track 0 as CK_GLOBAL */
+enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO };
 
 /* Destination codes. FROZEN: saved cords keep them; new ones at the end, a retired one stays as a gap */
 enum {
@@ -62,6 +64,7 @@ enum {
     CD_M1_AMT,                                                      /* the cords' moves (CK_CORD): M1 AMT .. M16 AMT */
     CD_M16_AMT = CD_M1_AMT + 15,
     CD_FILL,                                                        /* the project's FILL (CK_FILL) */
+    CD_TEMPO,                                                       /* the project's tempo (CK_TEMPO), issue #359 */
     CD_N
 };
 
