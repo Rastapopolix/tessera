@@ -11,6 +11,8 @@
                                     packages hold JieLi SDK files under Apache-2.0, see LICENSING.md)
   firmware/tessera-VER-1core.fwsc the same release built with MELODEE_DUAL_CORE=0, for FM-1s that crash
                                     with the dual-core build; the installer offers both
+  firmware/tessera-X.Y-betaN*.fwsc  the beta (beta.json; publish_beta.py): the next update, both cores, for anyone to try
+                                    before its release; dropped by the release it leads to (X.Y or later)
   firmware/melodee-nightly*.fwsc    next's development builds (nightly.json; publish_nightly.py), kept as published
   firmware/melodee-synth*.fwsc      the synth-only firmware, both cores (synth.json; publish_synth.py: the
                                     synth-only branch, one track, no sequencer), kept as published; optional
@@ -104,8 +106,17 @@ def channel(spec, label, stem, branch):
                    "builtAt": spec["builtAt"], "pkg": {k: "../../firmware/" + f[3] for k, f in files.items()}}
 
 
-def main(pkg, single, version, out, nightly=None, installer_only=False, synth=None, sim=None):
-    """synth: the synth-only firmware ({pkg: {dual, single}, version, commit, builtAt, web}: web, the synth-only
+def version_key(version):
+    """X.Y[.Z][-suffix] -> (X, Y, Z): the release a version is or leads to"""
+    m = re.match(r"(\d+)\.(\d+)(?:\.(\d+))?", version)
+    if not m:
+        raise SystemExit(f"version {version!r}: use X.Y[.Z][-suffix]")
+    return tuple(int(n or 0) for n in m.groups())
+
+
+def main(pkg, single, version, out, nightly=None, installer_only=False, synth=None, sim=None, beta=None):
+    """beta: the beta ({pkg: {dual, single}, version X.Y[.Z]-betaN, commit, builtAt}); None keeps what the site has,
+    False drops it. A beta whose release is out (X.Y[.Z] at or before this release's) is dropped too. synth: the synth-only firmware ({pkg: {dual, single}, version, commit, builtAt, web}: web, the synth-only
     branch's web/ for its editor); None keeps what the site has. sim: web/sim/build.sh's output (build/sim); None
     keeps what the site has"""
     pkg, single, out = Path(pkg), Path(single), Path(out)
@@ -115,6 +126,13 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
         raise SystemExit(f"{single}: identity {product1}, {pkg} is {product}: build both from one release")
     if raw1 == raw:
         raise SystemExit(f"{single} is {pkg}: the single-core package is built with MELODEE_DUAL_CORE=0")
+    if beta is None:
+        beta = published(out, "beta")
+    if beta and version_key(beta["version"]) <= version_key(version):
+        beta = None                                 # (its release is out: the beta is over)
+    if beta and not re.fullmatch(r"\d+\.\d+(\.\d+)?-[A-Za-z0-9]+", beta["version"]):
+        raise SystemExit(f"beta version {beta['version']!r}: use X.Y[.Z]-suffix, e.g. 3.3-beta1")
+    beta_files, beta_meta = channel(beta, "beta", "tessera-" + beta["version"], "develop") if beta else ({}, None)
     if nightly is None:
         nightly = published(out, "nightly")
     nightly_files, nightly_meta = channel(nightly, "nightly", "melodee-nightly", "next") if nightly else ({}, None)
@@ -131,7 +149,7 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
     name, name1 = f"tessera-{v}.fwsc", f"tessera-{v}-1core.fwsc"
     release_meta = {"version": version, "product": product,
                     "pkg": {"dual": "../../firmware/" + name, "single": "../../firmware/" + name1}}
-    meta = json.dumps({**release_meta, "nightly": nightly_meta, "synth": synth_meta})
+    meta = json.dumps({**release_meta, "beta": beta_meta, "nightly": nightly_meta, "synth": synth_meta})
     for mark in ("/*LIB*/", "/*META*/"):
         if html.count(mark) != 1:
             raise SystemExit(f"index_pkg.html must contain {mark} once; update make_site.py")
@@ -140,7 +158,7 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
     for d in (inst, ed, fw):
         d.mkdir(parents=True, exist_ok=True)
     keep = {name, name1, "melodee-nightly.fwsc", "melodee-nightly-1core.fwsc", "melodee-synth.fwsc",
-            "melodee-synth-1core.fwsc"}
+            "melodee-synth-1core.fwsc", *(f[3] for f in beta_files.values())}
     for old in [*fw.glob("melodee-*.fwsc"), *fw.glob("tessera-*.fwsc")]:   # (melodee-tess-*: the releases before 2.0)
         if old.name not in keep:
             old.unlink()
@@ -149,7 +167,10 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
         if src.resolve() != dest.resolve():
             shutil.copy(src, dest)
     (fw / "release.json").write_text(json.dumps(release_meta, indent=2) + "\n")
-    for files, chan, label in ((nightly_files, nightly_meta, "nightly"), (synth_files, synth_meta, "synth")):
+    if not beta_meta and (fw / "beta.json").exists():
+        (fw / "beta.json").unlink()
+    for files, chan, label in ((beta_files, beta_meta, "beta"), (nightly_files, nightly_meta, "nightly"),
+                               (synth_files, synth_meta, "synth")):
         if chan:
             for path, data, identity, filename in files.values():
                 (fw / filename).write_bytes(data)
@@ -204,7 +225,8 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
         for f in ("index.html", "worklet.js", "melodee.wasm"):
             shutil.copy(sim / f, dest / f)
     print(f"site: {out}: webapp/installer ({len(html)} B), webapp/editor, firmware/{name} ({len(raw)} B) and "
-          f"{name1} ({len(raw1)} B), {product}" + (f"; synth {synth_meta['version']}" if synth_meta else ""))
+          f"{name1} ({len(raw1)} B), {product}" + (f"; beta {beta_meta['version']}" if beta_meta else "") +
+          (f"; synth {synth_meta['version']}" if synth_meta else ""))
 
 
 if __name__ == "__main__":

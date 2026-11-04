@@ -197,6 +197,16 @@ provenance attestation, verified before the release is published; anyone can che
 The site is GitHub Pages from `main`'s `docs/`: publish a release there with the `make_site.py` line above into
 `docs/` (the test pages go into `docs/test/VERSION/` the same way), in a pull request.
 
+### A beta on the installer
+
+The public installer can offer the next update as a **Beta** (both cores) beside the release, for anyone to try
+before the stable release. Push a branch `beta/X.Y[.Z]-suffix` from `develop` (e.g. `beta/3.3-beta1`):
+`.github/workflows/beta.yml` builds it as a release is built (`--release 3.3-beta1`: the release's identity, version
+`v3.3-beta1` on the device), puts it on `main`'s `docs/` installer with `web/publish_beta.py` (the release, editor and
+project page stay as they are) and opens a pull request from `site-beta-VERSION` into `main`: merging it makes the beta
+live. A new beta replaces the last. The release the beta leads to (3.3 here, or later) takes it off by itself when
+`make_site.py` publishes it; `python3 web/publish_beta.py docs --off` takes it off before then.
+
 ### Recover a black-screen FM-1
 
 Builds with the boot stub can recover an interrupted application write after power loss.

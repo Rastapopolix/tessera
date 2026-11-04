@@ -157,6 +157,14 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <label><input type="radio" name="build" id="build-single"> <span data-t="single"></span></label></p>
     <p class="small" data-t="singleWhy"></p>
   </div>
+  <section id="beta-options" class="panel choice" style="--c:var(--p1)" hidden>
+    <p><strong data-t="betaTitle"></strong> <span id="beta-version"></span></p>
+    <p><label><input type="radio" name="build" id="build-beta-dual"> <span data-t="beta-dual"></span></label>
+      <label><input type="radio" name="build" id="build-beta-single"> <span data-t="beta-single"></span></label></p>
+    <p class="small" data-t="betaWhy"></p>
+    <p class="small" id="beta-info"></p>
+    <p class="small"><a href="https://github.com/Rastapopolix/tessera/issues" data-t="betaReport"></a></p>
+  </section>
   <section id="nightly-options" class="panel choice" style="--c:var(--p3)" hidden>
     <p><strong data-t="nightlyTitle"></strong></p>
     <p><label><input type="radio" name="build" id="build-nightly-dual"> <span data-t="nightly-dual"></span></label>
@@ -229,6 +237,10 @@ const TEXT = {
     tipLabel: "ヒント", tip: "ARP を押したままつまみを回すと、そのつまみのヘルプカードが出ます（値は変わりません）。同じつまみをさらに回すと長い説明をスクロールし、ARP を離すと閉じます。",
     warn: "書き込み中は USB を抜かないでください。",
     install: "インストール", other: "English",
+    betaTitle: "ベータ版", "beta-dual": "ベータ（デュアルコア）", "beta-single": "ベータ（シングルコア）",
+    "beta-dualTag": "ベータ・デュアルコア", "beta-singleTag": "ベータ・シングルコア",
+    betaWhy: "次のアップデートを正式リリースの前に試せます。まだ不具合があるかもしれません。インストール前にエディタで全体バックアップを保存してください。ベータで保存したプロジェクトや音色は、古いリリースでは読めないことがあります。標準を選んでインストールするとリリース版へ戻せます。",
+    betaReport: "不具合の報告・感想（GitHub Issues）",
     nightlyTitle: "Nightly（next）", "nightly-dual": "Nightly（デュアルコア）",
     "nightly-single": "Nightly（シングルコア）", "nightly-dualTag": "nightly・デュアルコア", "nightly-singleTag": "nightly・シングルコア",
     nightlyWhy: "next の開発版です。インストール前にエディタで全体バックアップを保存してください。標準版を選ぶとリリース版へ戻せます。",
@@ -287,6 +299,10 @@ const TEXT = {
     tipLabel: "TIP", tip: "Once installed, hold ARP and turn any knob for its help card: what it does, on every page (the value does not change). Turn the same knob further to scroll, let go of ARP to close it.",
     warn: "Do not unplug the USB cable while writing.",
     install: "Install", other: "日本語",
+    betaTitle: "Beta", "beta-dual": "Beta — dual core", "beta-single": "Beta — single core",
+    "beta-dualTag": "beta, dual core", "beta-singleTag": "beta, single core",
+    betaWhy: "The next update, to try before its stable release. It may still have bugs: save a complete backup in the editor before installing. Projects and sounds saved on the beta may not all load on an older release. To go back, choose Standard and install again.",
+    betaReport: "Report a problem or tell us how it went (GitHub issues)",
     nightlyTitle: "Nightly (next)", "nightly-dual": "Nightly — dual core",
     "nightly-single": "Nightly — single core", "nightly-dualTag": "nightly, dual core", "nightly-singleTag": "nightly, single core",
     nightlyWhy: "Development builds from next. Save a complete backup in the editor before installing. Choose Standard to return to the release.",
@@ -358,7 +374,7 @@ applyLang();
 $("stock-skip-backup").addEventListener("change", applyLang);
 const sayK = (k, arg = "") => { lastKey = k; lastArg = arg; $("status").textContent = $("run-status").textContent = t(k) + arg; };
 const say = (txt) => { lastKey = null; $("status").textContent = txt; };
-const buildIds = ["dual", "single", "nightly-dual", "nightly-single", "synth-dual", "synth-single"];
+const buildIds = ["dual", "single", "beta-dual", "beta-single", "nightly-dual", "nightly-single", "synth-dual", "synth-single"];
 const build = () => buildIds.find(k => $("build-" + k).checked) || "dual";
 const selection = () => {     /* the release, or a channel ("nightly-dual": meta.nightly's dual-core package) */
   const kind = build(), dash = kind.indexOf("-");
@@ -369,6 +385,11 @@ const log = (t) => { $("log").textContent += t + "\n"; };
 let image = null;
 const meta = /*META*/;
 $("ver").textContent = `FM-1 · ${meta.version}`;
+$("beta-options").hidden = !meta.beta;
+if (meta.beta) {
+  $("beta-version").textContent = meta.beta.version;
+  $("beta-info").textContent = `${meta.beta.branch} · ${meta.beta.commit.slice(0, 7)} · ${meta.beta.builtAt}`;
+}
 $("nightly-options").hidden = !meta.nightly;
 if (meta.nightly) $("nightly-info").textContent = `next · ${meta.nightly.commit.slice(0, 7)} · ${meta.nightly.builtAt}`;
 $("synth-options").hidden = !meta.synth;
@@ -427,7 +448,7 @@ async function choose() {
   image = null; $("go").disabled = true;
   try {
     if (!images[kind]) {
-      if (!channel) throw new Error(kind.startsWith("synth-") ? "Synth only is not available yet" : "Nightly is not available yet");
+      if (!channel) throw new Error(kind.startsWith("synth-") ? "Synth only is not available yet" : kind.startsWith("beta-") ? "No beta at the moment" : "Nightly is not available yet");
       const url = channel.pkg[key] + (channel.commit ? "?commit=" + channel.commit : ""), r = await fetch(url);
       if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
       const pkg = new Uint8Array(await r.arrayBuffer());
