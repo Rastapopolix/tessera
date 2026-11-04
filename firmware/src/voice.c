@@ -530,10 +530,12 @@ static void midi_out_flush(uint32_t k);
 
 static int tess_sound_off(const track_t *t);           /* tessera.c: SOUND OFF, MIDI OUT and the mods only */
 static int entries_note(const track_t *t, uint32_t note);   /* tessera.c entries.c: 0 while Entries has it out */
+static void land_note(const track_t *t, uint32_t note, uint32_t vel);   /* land_feed.c: LANDSCAPE's drops */
 static void trk_note_on(track_t *t,uint32_t note,uint32_t vel)
 {
     if (!entries_note(t, note))
         return;
+    land_note(t, note, vel);
     midi_out_on(t, note, vel);
     if (!tess_sound_off(t))
         trk_note_on_work(t,note,vel);

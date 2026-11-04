@@ -452,6 +452,7 @@ const char *tessera_form_name(uint32_t form) { return TESS_FORM_NAME[form > 6u ?
 static int tess_has_form(uint32_t tr) { return tessera.evolve[tr].form || fc_follows(tr); }
 #include "planner.c"                                 /* the piece planner: LENGTH, SHAPE, END */
 #include "entries.c"                                 /* Entries: tracks out and back in on the phrase lines */
+#include "land_feed.c"                               /* LANDSCAPE's notes (ui_land.c) */
 
 uint32_t tessera_form_get(uint32_t tr, uint8_t seq[4], uint32_t *pos)
 {

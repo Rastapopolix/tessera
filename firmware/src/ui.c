@@ -312,6 +312,8 @@ static int page_visible(uint32_t i)
 {
     if (!seqm_page_ok(i))
         return 0;
+    if (PAGES[i].graph == GR_LAND)                      /* LANDSCAPE: the Mono look's (ui_land.c) */
+        return MELODEE_LOOK;
     if (PAGES[i].graph == GR_MOD)                       /* Tessera: MODS (the cords) instead, MOD's routes become */
         return 0;                                       /* cords (cord.c cord_adopt) */
     if(PAGES[i].fam==FAM_FX && PAGES[i].scope==SC_TRACK && PAGES[i].id[0]==P_FXSEND)
