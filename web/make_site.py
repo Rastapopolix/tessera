@@ -181,6 +181,9 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
         (ed / "demos").mkdir(exist_ok=True)
         for f in sorted((HERE.parent / "demos").glob("*.tsp")):
             shutil.copy(f, ed / "demos" / f.name)
+        (ed / "demos" / "checks").mkdir(exist_ok=True)   # the test projects (demos/checks/*.tsp)
+        for f in sorted((HERE.parent / "demos" / "checks").glob("*.tsp")):
+            shutil.copy(f, ed / "demos" / "checks" / f.name)
     if not installer_only:                          # the project page, its screens and the brand pictures
         home = (HERE / "home" / "index.html").read_text(encoding="utf-8")
         for mark in ("@VERSION@", "@FWSC@", "@FWSC1@"):

@@ -2780,6 +2780,11 @@ const TEXT = {
     fm6Exported: "バンクを書き出しました",
     motion: "モーション", motionOn: "再生", motionClear: "モーションを消去", motionConfirm: "選択トラックのモーションを消しますか？", chance: "確率 %", motionStep: "ステップ", motionParam: "パラメーター", motionValue: "値",
     backupTitle: "全体バックアップ", backupExport: "バックアップ保存", backupImport: "バックアップ復元", backupHelp: "現在の曲・A〜D・音色バンク・ユーザーサンプル・設定を、このパソコンへ保存。", backupOld: "全体バックアップには対応版への更新が必要です。", backupConfirm: "全体バックアップを復元しますか？ 現在の曲、保存データとサンプルを置き換えます。USBを抜かないでください。", backupWorking: "バックアップ処理中 ", backupDone: "バックアップを保存しました", backupRestored: "全体バックアップを復元しました",
+    demosChecks: "テスト用プロジェクト（実機チェック用、demos/checks/README.md）：",
+    chkChain: "CHAIN ABAC、4 小節フレーズ：全トラックが一緒にセクションを替える", chkEntries: "その CHAIN に ENTRIES 50：トラックがフェードで出入り",
+    chkPiece: "PIECE：2 分、ARCH、そして停止", chkMods: "モッドのモッド、GATE モッド、FILL へのモッド",
+    chkTempo: "TEMPO へのゆっくりしたモッド", chkMidi: "SOUND OFF トラック：MIDI のみ（TRANSPOSE -24）とモッド用レーン",
+    chkCpu: "ORACLE 4 トラック：設定 > 動作状態 を見る",
     demosTitle: "デモ・プロジェクト", demosHelp: "Tessera のデモ曲を選んだスロットへ書き込みます。そのスロットのプロジェクトは置き換わり、ほかは変わりません。残したい場合は先にバックアップを保存してください。", demosPut: "FM-1 に書き込む", demosNone: "スロットを選んでください", demosTwice: "同じスロットは一度だけ選べます", demosSkip: "書き込まない",
     demosConfirm: "次のデモを書き込みますか？", demosWas: "現在", demosEmpty: "空き", demosOld: "読めない古い形式のプロジェクト", demosUnnamed: "名前なしのプロジェクト", demosKeep: "置き換えるプロジェクトを残したい場合は、キャンセルして先にバックアップを保存してください。", demosWorking: "デモを書き込み中 ", demosDone: "デモを書き込みました。SAVE > PROJECT から読み込めます: ", demosFetch: "デモ・ファイルを読み込めません: ",
     demoStill: "アンビエント: ORACLE のドローン、GRAVITY、FILTER を通る FALL、STEP を種にしたベース", demoKoto: "HIRA の FM 箏が QUAD で 2 列、FORM で育つ ORACLE の笛、条件付きステップの木魚", demoHarbour: "アンビエント・ダブ: ORACLE のコードがエコーへ、サブベース、909 のワンドロップ",
@@ -2880,6 +2885,11 @@ const TEXT = {
     fm6Exported: "Bank exported",
     motion: "Motion", motionOn: "Play motion", motionClear: "Clear motion", motionConfirm: "Clear this track's motion?", chance: "Chance %", motionStep: "Step", motionParam: "Parameter", motionValue: "Value",
     backupTitle: "Complete backup", backupExport: "Save backup", backupImport: "Restore backup", backupHelp: "Save the current music, A–D, sound banks and settings to this computer.", backupOld: "Complete backups need firmware with archive support.", backupConfirm: "Restore this complete backup? Current music, saved data and samples will be replaced. Keep USB connected.", backupWorking: "Backing up / restoring ", backupDone: "Backup saved", backupRestored: "Complete backup restored",
+    demosChecks: "Test projects, for the device checks (demos/checks/README.md):",
+    chkChain: "CHAIN ABAC, 4-bar phrases: all tracks change section together", chkEntries: "ENTRIES 50 on that CHAIN: tracks fade out and back in",
+    chkPiece: "PIECE: 2 minutes, ARCH, then it stops", chkMods: "A mod of a mod, a GATE mod, a mod onto FILL",
+    chkTempo: "A slow mod onto TEMPO", chkMidi: "SOUND OFF tracks: MIDI only (TRANSPOSE -24) and a mod lane",
+    chkCpu: "Four ORACLE tracks: watch Settings > Health",
     demosTitle: "Demo projects", demosHelp: "Put Tessera's demo songs into the slots you choose. Each chosen slot's project is replaced; nothing else on the FM-1 changes. Save a backup first if you want to keep what is there.", demosPut: "Put on the FM-1", demosNone: "Choose a slot for at least one demo", demosTwice: "Choose each slot only once", demosSkip: "Leave out",
     demosConfirm: "Put these demos on the FM-1?", demosWas: "now", demosEmpty: "empty", demosOld: "a project in an older format", demosUnnamed: "a project with no name", demosKeep: "To keep a project that will be replaced, cancel and save a backup first.", demosWorking: "Putting the demos on the FM-1 ", demosDone: "Demos written. Load them from SAVE > PROJECT: ", demosFetch: "Could not read the demo file: ",
     demoStill: "Ambient: an ORACLE drone, GRAVITY, FALL through the FILTER effect, a bass from STEP as seed", demoKoto: "FM koto in HIRA on two QUAD rows, an ORACLE flute in a FORM that develops, a mokugyo with conditions", demoHarbour: "Ambient dub: ORACLE chord stabs into a drifting echo, a sub bass, a 909 one drop",
@@ -3736,12 +3746,19 @@ function renderBackup() {
 const DEMOS = [{ file: "still-tide.tsp", name: "STILL TIDE", about: "demoStill", slot: 1 },
                { file: "koto-garden.tsp", name: "KOTO GARDEN", about: "demoKoto", slot: 2 },
                { file: "low-harbour.tsp", name: "LOW HARBOUR", about: "demoHarbour", slot: 3 }];
+/* the test projects (demos/checks/*.tsp, demos/checks/README.md): short, one feature each, for the device checks */
+const CHECKS = ["chain", "entries", "piece", "mods", "tempo", "midi", "cpu"].map((k) =>
+  ({ file: `checks/chk-${k}.tsp`, name: `CHK ${k.toUpperCase()}`, about: "chk" + k[0].toUpperCase() + k.slice(1), slot: -1 }));
 function renderDemos() {
   const caps = dev?.info?.backupCaps || 0, box = $("demorows");
   $("demos-put").disabled = (caps & 3) !== 3;
   if (box.contains(document.activeElement)) return;
   box.replaceChildren();
-  for (const d of DEMOS) {
+  for (const d of [...DEMOS, null, ...CHECKS]) {
+    if (!d) {                                    /* (the test projects under their own heading) */
+      box.append(el("span", { class: "dim", text: t("demosChecks"), style: "grid-column:1 / -1; margin-top:8px" }));
+      continue;
+    }
     const sel = el("select", { "aria-label": d.name });
     sel.append(el("option", { value: -1, text: t("demosSkip") }));
     for (let k = 0; k < 4; k++) sel.append(el("option", { value: k, text: `${t("slot")} ${String.fromCharCode(65 + k)}` }));
@@ -3833,7 +3850,7 @@ $("backup-file").addEventListener("change", () => {
 });
 
 $("demos-put").addEventListener("click", () => op(async () => {
-  const d = dev, picks = DEMOS.filter(x => x.slot >= 0), say = (k, a) => { $("demos-status").textContent = t(k) + a; sayK(k, a); };
+  const d = dev, picks = [...DEMOS, ...CHECKS].filter(x => x.slot >= 0), say = (k, a) => { $("demos-status").textContent = t(k) + a; sayK(k, a); };
   if ((d?.info?.backupCaps & 3) !== 3) return;
   if (!picks.length) throw new Error(t("demosNone"));
   if (new Set(picks.map(x => x.slot)).size !== picks.length) throw new Error(t("demosTwice"));

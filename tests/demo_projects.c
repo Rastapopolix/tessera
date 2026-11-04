@@ -443,12 +443,117 @@ static void demo_dub(void)
     cord(3, CS_OCHD3, 3, CD_PAN, 3, 35, 0, 0);        /* T4 SWARM 3 -> T4 PAN */
 }
 
-static const struct { const char *name, *file; void (*make)(void); } DEMOS[] = {
+typedef struct { const char *name, *file; void (*make)(void); } demo_t;
+static const demo_t DEMO_LIST[] = {
     {"STILL TIDE", "still-tide", demo_still},
     {"KOTO GARDEN", "koto-garden", demo_garden},
     {"LOW HARBOUR", "low-harbour", demo_dub},
 };
-#define NDEMO (sizeof DEMOS / sizeof DEMOS[0])
+
+/* ------------------------------------------------------- the test projects --- */
+/* demos/checks/: short projects for the device checks, each set so its feature shows within a minute or two (the
+ * tracker's rows; demos/checks/README.md). All start from one plain four-track base, A minor at 110 BPM:
+ * T1 a TRIO pad on CHORD, T2 an FM6 piano on TURING, T3 a TRIO sub bass on EUCLID, T4 the 909 on ATLAS */
+static void chk_base(void)
+{
+    song.g[G_BPM] = 110;
+    sound(0, ENGI_TRIO, TR_WARM_PAD);
+    sound(1, ENGI_FM6, FX_TINE_EP);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    sound(3, ENGI_DRUM, DK_909_KIT);
+    scale(9, SCL_MIN, 0);
+    sends(90, 80, 70, 60);
+    gen(0, TESS_ENG_CHORD, 3);
+    tx(0, TX_CH_BARS, 2);
+    mixer(0, 80, -20, 80, 0);
+    trk[1].p[P_SDIV] = DIV_8;
+    gen(1, TESS_ENG_TURING, 17);
+    tx(1, TX_TUR_PROB, 20);
+    mixer(1, 90, 25, 60, 40);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 5);
+    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3);
+    tx(2, TX_TW_SHIFT, -12);
+    mixer(2, 90, 0, 10, 0);
+    gen(3, TESS_ENG_GRIDS, 9);
+    mixer(3, 85, 0, 20, 0);
+}
+/* CHAIN: ABAC, a phrase of 4 bars (8.7 s), WANDER 0: every track changes section on the same phrase line */
+static void chk_chain_set(void)
+{
+    tx(0, TX_FC_FORM, 2); tx(0, TX_FC_PHRASE, 0); tx(0, TX_FC_WANDER, 0);
+}
+static void chk_chain(void) { chk_base(); chk_chain_set(); }
+/* ENTRIES 50 on that CHAIN: tracks fade out on section lines (FADE 1 bar) and come back one a phrase; T3 the bass */
+static void chk_entries_set(void)
+{
+    chk_chain_set();
+    tx(0, TX_ET_AMOUNT, 50); tx(0, TX_ET_DWELL, 1); tx(0, TX_ET_STYLE, 1); tx(0, TX_ET_FADE, 1);
+    tx(2, TX_ET_ROLE, 1);                             /* (entries.c ET_BASS) */
+}
+static void chk_entries(void) { chk_base(); chk_entries_set(); }
+/* PIECE: 2 minutes, ARCH, END STOP, on ENTRIES 75: layers in, full at the top, thins out, fades and stops */
+static void chk_piece(void)
+{
+    chk_base(); chk_entries_set();
+    tx(0, TX_ET_AMOUNT, 75);
+    tx(0, TX_PL_LENGTH, 2); tx(0, TX_PL_SHAPE, 0); tx(0, TX_PL_PEAK, 50); tx(0, TX_PL_END, 0);   /* (planner.c PL_MIN, PL_ARCH) */
+}
+/* MODS: mod 1 (T1 SWARM 2 -> T1 CUT) at 0 %, its amount moved by mod 2 (T2 SWARM 1 -> M1 AMT): the filter
+ * mod breathes in and out; mod 3 a GATE (T3 SWARM 3 over its middle -> T2 CUT +60); mod 4 SWARM 4 -> FILL */
+static void chk_mods(void)
+{
+    chk_base();
+    cord(0, CS_OCHD2, 0, CD_CUTOFF, 0, 0, 0, CU_BI);
+    cord(1, CS_OCHD1, 1, CD_M1_AMT, 0, 80, 0, CU_BI);
+    cord(2, CS_OCHD3, 2, CD_CUTOFF, 1, 60, 0, CU_GATE);
+    cord(3, CS_OCHD4, 3, CD_FILL, 0, 100, 0, CU_UNI);
+}
+/* TEMPO: SWARM 1 (about a minute a turn) onto TEMPO at +30: everything speeds up and slows down together */
+static void chk_tempo(void)
+{
+    chk_base();
+    cord(0, CS_OCHD1, 0, CD_TEMPO, 0, 30, 0, CU_BI);
+}
+/* MIDI: T2 SOUND OFF on channel 1, two octaves down on the way out (MIDI OUT TRANSPOSE -24); T3 SOUND OFF with its
+ * channel OFF too, a lane whose CV opens T1's filter. (MENU: MIDI OUT ALL for the notes, CLOCK OUT for the clock) */
+static void chk_midi(void)
+{
+    chk_base();
+    tx(1, TX_SOUND, 1); tx(1, TX_MIDI_CH, 1); tx(1, TX_MIDI_TR, -24);
+    tx(2, TX_SOUND, 1); tx(2, TX_MIDI_CH, (int32_t)TESS_MIDI_OFF);
+    cord(0, CS_CV, 2, CD_CUTOFF, 0, 50, 0, CU_BI);
+}
+/* CPU: four ORACLE tracks, dense, a FILTER insert on T2, the room and echo high: what a busy project costs (Settings >
+ * Health in the editor while it plays) */
+static void chk_cpu(void)
+{
+    chk_base();
+    sound(0, ENGI_ORACLE, OR_WARM_PAD);
+    sound(1, ENGI_ORACLE, OR_FLUTE);
+    sound(2, ENGI_ORACLE, OR_DUB_CHORD);
+    sound(3, ENGI_ORACLE, OR_WARM_PAD);
+    trk[0].p[P_CHRD] = 1;                             /* DIA3 */
+    trk[1].p[P_SDIV] = DIV_16;
+    tx(2, TX_TW_SHIFT, 0);
+    gen(3, TESS_ENG_AWAKE, 21);
+    trk[3].p[P_SDIV] = DIV_8;
+    trk[1].p[P_FXTYPE] = 10; trk[1].p[P_FXMIX] = 127; trk[1].p[P_FXRATE] = 70; trk[1].p[P_FXCHAR] = 40;   /* FILTER */
+    sends(120, 110, 100, 100);
+    for (uint32_t k = 0; k < NTRK; k++) mixer(k, 80, (int32_t)k * 20 - 30, 100, 80);
+}
+static const demo_t CHECK_LIST[] = {
+    {"CHK CHAIN", "chk-chain", chk_chain},
+    {"CHK ENTRIES", "chk-entries", chk_entries},
+    {"CHK PIECE", "chk-piece", chk_piece},
+    {"CHK MODS", "chk-mods", chk_mods},
+    {"CHK TEMPO", "chk-tempo", chk_tempo},
+    {"CHK MIDI", "chk-midi", chk_midi},
+    {"CHK CPU", "chk-cpu", chk_cpu},
+};
+/* the set make / check work on: the demos, or ("checks ...") the test projects */
+static const demo_t *DEMOS = DEMO_LIST;
+static uint32_t NDEMO = sizeof DEMO_LIST / sizeof DEMO_LIST[0];
 
 /* ------------------------------------------------------------- playing --- */
 /* PLAY for secs s (wav: written there, 0 none): the notes each track played, the samples near full scale, the most
@@ -567,9 +672,9 @@ static int make(const char *dir, uint32_t secs)
         DEMOS[d].make();
         song.g[G_SLOT] = 1;                           /* (SLOT 1 in every record; a load keeps the device's own) */
         tessera_pack(tess); cord_pack(cords);
-        snprintf(what, sizeof what, "%s: saved to slot %u", DEMOS[d].name, d + 1u);
-        bad += check(what, project_save_as(d, DEMOS[d].name) == 0);
-        n = st_load(OBJ_SLOT(d), rec, sizeof rec);      /* (what the backup page's GET of object 2 + d reads) */
+        snprintf(what, sizeof what, "%s: saved to slot %u", DEMOS[d].name, d % 4u + 1u);
+        bad += check(what, project_save_as(d % 4u, DEMOS[d].name) == 0);
+        n = st_load(OBJ_SLOT(d % 4u), rec, sizeof rec);      /* (what the backup page's GET of object 2 + d reads) */
         len = n > 0 ? (uint32_t)n : 0u;
         snprintf(what, sizeof what, "%s: the slot is a whole TSP1 record (%u B of %u)", DEMOS[d].name, len, TSP_MAX);
         bad += check(what, len && tsp_valid(rec, len));
@@ -622,7 +727,7 @@ static int check_dir(const char *dir)
     /* the web editor's Demo projects (web/fm1backup.js putProject): each demo's PUT alone into a slot of its own (B,
      * C, D) on a device that stays on: the slot list names them at once, and each loads from it */
     power_on();
-    for (uint32_t d = 0; d < NDEMO; d++) {
+    for (uint32_t d = 0; d < NDEMO && d < 3u; d++) {
         char path[512];
         FILE *f;
         uint32_t len;
@@ -632,7 +737,7 @@ static int check_dir(const char *dir)
         fclose(f);
         bad += check("the editor's PUT of a demo into one slot", put_all(3u + d, rec, len) == 0);
     }
-    for (uint32_t d = 0; d < NDEMO; d++) {
+    for (uint32_t d = 0; d < NDEMO && d < 3u; d++) {
         char name[PROJ_NAME_LEN + 1u], what[160];
         snprintf(what, sizeof what, "slot %c names %s with no power cycle (it shows %s)", 'B' + d, DEMOS[d].name,
                  proj_meta[1u + d].name);
@@ -1231,6 +1336,10 @@ static void levels(uint32_t secs)
 int main(int argc, char **argv)
 {
     int bad;
+    if (argc >= 3 && !strcmp(argv[1], "checks")) {     /* checks make DIR [SECS] | checks check DIR: the test projects */
+        DEMOS = CHECK_LIST; NDEMO = sizeof CHECK_LIST / sizeof CHECK_LIST[0];
+        argv++; argc--;
+    }
     if (argc >= 3 && !strcmp(argv[1], "make")) bad = make(argv[2], argc > 3 ? (uint32_t)atoi(argv[3]) : 60u);
     else if (argc >= 3 && !strcmp(argv[1], "check")) bad = check_dir(argv[2]);
     else if (argc >= 4 && !strcmp(argv[1], "log")) {     /* log DEMO SECS: its notes as CSV on stdout */
@@ -1245,7 +1354,7 @@ int main(int argc, char **argv)
     else if (argc >= 3 && !strcmp(argv[1], "restore")) bad = archive_restore(argv[2]);
     else if (argc >= 3 && !strcmp(argv[1], "video")) return video(argv[2]);
     else if (argc >= 2 && !strcmp(argv[1], "levels")) { levels(argc > 2 ? (uint32_t)atoi(argv[2]) : 60u); return 0; }
-    else { fprintf(stderr, "demo_projects make DIR [SECS] | check DIR\n"); return 2; }
+    else { fprintf(stderr, "demo_projects [checks] make DIR [SECS] | [checks] check DIR\n"); return 2; }
     printf(bad ? "demos: %d FAILED\n" : "demos passed\n", bad);
     return bad != 0;
 }

@@ -195,6 +195,13 @@ demo_tests() {                                    # the demos made again, the sh
     mkdir -p build/demos &&
         "$OUT/demo_projects" make build/demos 20 &&
         "$OUT/demo_projects" check demos &&
+        mkdir -p build/demos/checks &&            # the test projects (demos/checks/): made again, the shipped ones load
+        "$OUT/demo_projects" checks make build/demos/checks 20 &&
+        "$OUT/demo_projects" checks check demos/checks &&
+        for _d in demos/checks/*.tsp; do
+            cmp -s "$_d" "build/demos/checks/${_d#demos/checks/}" ||
+                echo "== note: $_d differs from the one made now: make the test projects again (demos/checks/README.md)"
+        done &&
         for _d in demos/*.tsp; do                 # (a note, not a failure: a new setting's default changes them too)
             cmp -s "$_d" "build/demos/${_d#demos/}" ||
                 echo "== note: $_d differs from the one made now: make the demos again (demos/README.md)"
@@ -367,7 +374,7 @@ if core && [ $TABLES = 1 ]; then
     t "first boot: reset unsupported preset banks, preserve good entries and retry cuts" preset_boot_reset_test $FW
     t "storage safety: protect unreadable records until confirmed replacement" storage_safety_test $FW
     t "full backup: CRC before writes, stale runtime, USB reset / timeout, malformed objects, older projects" backup_test $FW
-    t "demo projects (demos/): made, saved, backed up, loaded and played; the shipped ones load; put into a backup" \
+    t "demo and test projects (demos/, demos/checks/): made, saved, backed up, loaded and played; the shipped ones load; put into a backup" \
         demo_projects -O2 $FW -DMELODEE_SID=0 -DMELODEE_SID_KIT=0 -DMELODEE_PHYS=0 -DTRK_START_TESS=1 -- demo_tests
     t "engines off (FM6, CZ-1, ORACLE left out): never offered, a project's tracks of them SID INIT, the parts play" \
         engine_switch_test $FW -DMELODEE_FM6=0 -DMELODEE_CZ=0 -DMELODEE_ORACLE=0
