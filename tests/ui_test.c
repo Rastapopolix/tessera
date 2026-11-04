@@ -6082,6 +6082,38 @@ static int test_capture(void)
         turn(EN_K1, 1);
         for (i = 0; i < 200u; i++) frame();
         bad += check("  .. and any touch starts the rest again", stored_param(1, 0, P_LEVEL) == 77);
+        {   /* battery low (no bars, on the battery): BATTERY LOW once, and the next STOP saves at once */
+            int ok;
+            uint8_t keep_cfg = usb.config, keep_pwr = song.pwr[0];
+            int32_t keep_raw = song.batt_raw;
+            usb.config = 0; song.pwr[0] = 0; song.batt_raw = 600;
+            frame();
+            ok = !batt_low;
+            song.batt_raw = 520; frame();
+            ok &= batt_low && !strcmp(ui.msg, "SAVED B") && !strcmp(ui.msg2, "BATTERY LOW");   /* (stopped, changed) */
+            bad += check("battery low, stopped: saved at once (SAVED B, then BATTERY LOW)",
+                         ok && stored_param(1, 0, P_LEVEL) == 66);
+            ui.msg_t = 0; ui.msg[0] = 0;
+            song.batt_raw = 540; frame();
+            ok = batt_low && !ui.msg[0];                 /* (one bar back: still low, said once) */
+            seq_start(); frame();
+            TSEL->p[P_LEVEL] = 44;
+            for (i = 0; i < 400u; i++) frame();
+            ok &= stored_param(1, 0, P_LEVEL) == 66;     /* (never while playing) */
+            stop_transport(); frame(); frame();
+            bad += check("  said once; playing: no save; STOP: saved straight away", ok && stored_param(1, 0, P_LEVEL) == 44);
+            song.batt_raw = 570; frame();
+            seq_start(); frame();
+            song.batt_raw = 520; frame();
+            bad += check("  going low while playing: BATTERY LOW, SAVES AT STOP", !strcmp(ui.msg, "BATTERY LOW") &&
+                         !strcmp(ui.msg2, "SAVES AT STOP"));
+            stop_transport(); frame(); frame();
+            song.batt_raw = 570; frame();
+            ok = !batt_low;
+            song.batt_raw = 520; usb.config = 1; usb.suspended = 0; frame();
+            bad += check("  charged past a bar: over; on a computer: never low", ok && !batt_low);
+            usb.config = keep_cfg; song.pwr[0] = keep_pwr; song.batt_raw = keep_raw; frame();
+        }
         memset(proj_bank_len, 0, sizeof proj_bank_len);
         memset(proj_bank_slot, 0, sizeof proj_bank_slot);
     }
