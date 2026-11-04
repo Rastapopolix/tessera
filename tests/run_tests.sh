@@ -84,6 +84,10 @@
 #                   trip; a generator picked or unmuted mid-bar plays as if it had run from PLAY (ATLAS, EUCLID 13,
 #                   16T, SWING); logs in build/tessera_log/. TESSERA_UPDATE=1 rewrites the baseline (only after an intended
 #                   change of what they play). tests/gen_test.c: each generator alone (gen.c without the firmware).
+# FORM CHAIN (tests/chain_test.c): form chaining (form_chain.c) through the sequencer: the letters in order with their
+#                   REPEATs, the change on the phrase's first step (tracks of other DIVs the same block), FOLLOW / OWN
+#                   and its default, an OWN track as without the CHAIN, SKIP, WANDER's rules and repeatability, FLOURISH
+#                   on the CHAIN's phrase, STOP and PLAY; FORM OFF with the rest turned plays the same notes.
 # LONG-FORM (tests/longform_test.c): eight hours of ten patches left playing (notes only: the sequencer without the
 #                   voices, checked against mix_block for the first two minutes): no long silence, no collapse to one
 #                   note, no loop replayed for minutes, not thinning out by the last hour; a table of every measure in
@@ -367,6 +371,8 @@ if core && [ $TABLES = 1 ]; then
     mkdir -p build/tessera_log
     t "TESSERA generators: notes per scenario against tests/tessera_baseline.txt, stops clean, saved block" tessera_test \
         -O2 $FW -- "$OUT/tessera_test" tests/tessera_baseline.txt build/tessera_log
+    t "FORM CHAIN: the project's FORM on the bar clock: order, counts, FOLLOW / OWN, SKIP, WANDER, OFF unchanged" \
+        chain_test -O2 $FW
     t "GEN: each generator on its own (gen.c alone): ranges, rests, draws per step, determinism, mutation, sections" \
         gen_test -O2 $FW
     t "LONG-FORM: 8 hours of 10 patches: no long silence, one-note collapse, frozen loop or thinning out" longform_test \
