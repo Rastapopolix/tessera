@@ -31,7 +31,7 @@ const E = vm.runInNewContext(proto + `
 ;({ frame, unframe, parse, req, Link, parseWav, resample, normalize, takeSample, autoTrim, zoomView, rootFromName, buildSlot, makeMockDevice, CMD, SMP,
    UP, bank, nativeBank, capturePatch, auditionPatch, startWatch, libraryFile, readLibraryFile, paramKeys, patternFromSteps, stepsFromPattern, upName,
    mixer, parseNotes, parseHits, hitsText, gridFromSteps, LANE_NOTE, LANE_OF, readDevicePreferences, devicePresetRows, engineOrder, ENGINE_ORDER, aliasOf, fmtValue, FM6,
-   FM4, fromDigital, nativeImportTargets, scaleRows, SCALE_INFO, parseScala, tuneName, tuneValid, TUNE })`,
+   FM4, fromDigital, nativeImportTargets, scaleRows, SCALE_INFO, parseScala, tuneName, tuneValid, TUNE, STATS, statsFields })`,
 { setTimeout, clearTimeout, setInterval, clearInterval, console });
 
 {
@@ -1077,6 +1077,32 @@ async function editorSong() {
 /* ------------------------------------------------- user tunings (Scala, command 80) --- */
 /* parseScala == tools/gen_scales.py on every catalogue .scl, the folds and refusals, and command 80 against the mock
    (its put / get / list / select / clear, and the tunings saved with a project) */
+/* settings > health: command 72's request, every schema's layout (as tools/usb_audio_stats.py), and the mock's reply */
+async function editorHealth() {
+  const C = E.CMD;
+  ok(C.STATS === 72 && eq(E.req.stats()[1], [126]) && eq(E.req.stats(E.STATS.ALL | 1)[1], [127]) && eq(E.req.stats(0)[1], []),
+     "health: command 72, all groups asked, bit 0 resets the maxima");
+  const py_len = JSON.parse(py(`import sys, json; sys.path.insert(0, "tools"); import types; sys.modules["mido"] = types.ModuleType("mido"); import usb_audio_stats as u
+f = u.FIELDS; g = [u.VOICE_FIELDS, u.CORE_FIELDS, u.MEMORY_FIELDS, u.PART_FIELDS, u.COMPLETE_FIELDS, u.STACK_FIELDS]
+print(json.dumps([list(f) + [x for grp in g[:n - 2] for x in grp] for n in range(2, 9)]))`).toString());
+  ok(py_len.every((names, i) => eq(E.statsFields(i + 2), names)) && E.statsFields(1) === null && E.statsFields(9) === null,
+     "health: schemas 2..8 name the fields as tools/usb_audio_stats.py does");
+  const n = E.statsFields(3).length, enc = (v) => [0, 1, 2, 3, 4].map((j) => Math.floor(v / 2 ** (7 * j)) & 0x7F);
+  const vals = Array.from({ length: n }, (_, i) => (i === 19 ? 128 : i === 18 ? 0xFFFFFFFF : i * 1000));
+  const r = E.parse[C.STATS]([3, ...vals.flatMap(enc)]);
+  ok(r && r.schema === 3 && r.values.cpu_q8 === 128 && r.values.audio_max_us === 0xFFFFFFFF && r.values.voices_given_up === 25000,
+     "health: 5 x 7-bit values decoded, 32 bits whole");
+  ok(E.parse[C.STATS]([3, ...vals.flatMap(enc), 0]) === null && E.parse[C.STATS]([9]) === null, "health: a reply of the wrong length or schema refused");
+  const m = E.makeMockDevice({ auto: false });
+  const link = new E.Link((d) => [...m.access.outputs.values()][0].send(d), { timeout: 100 });
+  [...m.access.inputs.values()][0].onmidimessage = (e) => link.receive(e.data);
+  const a = E.parse[C.STATS](await link.request(E.req.stats(E.STATS.ALL | 1)));
+  const b = E.parse[C.STATS](await link.request(E.req.stats()));
+  ok(a && a.schema === 8 && a.values.audio_full_max_us > 0 && b.values.audio_full_max_us === 0 && b.values.cpu_q8 > 0,
+     "health: the mock answers schema 8, and a reset clears its worst times");
+  link.close?.();
+}
+
 async function editorTunings() {
   const rows = JSON.parse(py(`import sys, json; sys.path.insert(0, "tools"); import gen_scales
 print(json.dumps([[r["file"], r["pitch"], r["name"]] for r in gen_scales.catalogue() if "file" in r]))`).toString());
@@ -1743,6 +1769,7 @@ await editorMixer();
 await editorTrackParam();
 await editorSong();
 await editorTunings();
+await editorHealth();
 await editorSessions();
 await editorFm6();
 await editorFm4();
