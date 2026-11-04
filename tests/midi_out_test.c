@@ -22,7 +22,7 @@ static void drain(void)
     }
 }
 static void blocks(uint32_t n) { while (n--) { events_block(CTL); drain(); } }
-static uint32_t beat_blocks(void) { return seq_beat_samples() / CTL; }
+static uint32_t beat_blocks(void) { return beat_samples() / CTL; }   /* (real time: blocks of samples) */
 
 static void reset(uint32_t out)
 {
