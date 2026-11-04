@@ -55,7 +55,7 @@ page's four settings sit along the top of the screen in the same order.
 | **SCL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
 | **EDIT** | The sound's EDIT pages; on an EDIT page, the map | With OCT- / OCT+: undo / redo |
 | **FX** | The insert and send effects | The mod amount of any knob you turn |
-| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT, [CHAIN](#chain-one-form-for-the-project) | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
+| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT, [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in) | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
 | **SAVE** | USER (ready to save the sound), PROJECT, PRESETS | Save the project to its slot (as SAVE + REC) |
 | **REC** | Records the selected track until REC again (see [Recording live](#recording-live)) | Capture or print the last bars (see [Print and keep](#print-and-keep)) |
 | **OCT+** | Octave up; on some pages, an action (shown on screen) | A page's extra layer (see [OCT+ layers](#oct-layers-on-gen)) |
@@ -535,6 +535,9 @@ its own FORM. Until you set it, a track follows when its own FORM is OFF and kee
 chance the track stays in its section one phrase longer where the CHAIN moves on (then it catches up; never twice
 running). Both are lit only while the CHAIN's FORM is on.
 
+**ROLE** (OCT+ held, KNOB 4): this track's part for [ENTRIES](#entries-tracks-out-and-back-in), the same setting as
+on the ENTRIES page.
+
 ### CHAIN: one form for the project
 
 **GLO > CHAIN** gives the whole project one FORM, so the tracks' sections line up: on each phrase line the CHAIN moves
@@ -557,6 +560,42 @@ only after a return to A; a letter plays twice running only if the FORM has it t
 first place's REPEAT. Each phrase further from A makes the next new section a little more different (up to +30 on its
 CONTR). The choices come from the tracks' SEEDs, so PLAY plays the same piece again. While a track follows, its own
 EVERY waits (the CHAIN's phrases are its sections) and FLOURISH plays on the CHAIN's last beat.
+
+### ENTRIES: tracks out and back in
+
+**GLO > ENTRIES** lets tracks drop out and come back on the CHAIN's phrase lines, so a piece thins and fills over
+time without a hand on the mutes. It works with the CHAIN's FORM on or OFF (OFF: phrases of the CHAIN's PHRASE, a
+section every 4 phrases), and on every track, STEP tracks too.
+
+| Knob | Setting | What it does |
+|---|---|---|
+| 1 | **ENTRIES** (0–100 %) | How many tracks may be out at once, up to all but one. 0 (the default, OFF): every track as set. |
+| 2 | **DWELL** (1–8 phrases) | The least a track stays in or out before it moves again (default 2). |
+| 3 | **STYLE** | CUT: in or out at once on the line. FADE (the default): its level fades over FADE bars from the line. |
+| 4 | **FADE** (1–4 bars) | How long a FADE takes. |
+
+Hold **OCT+** for each track's **ROLE** (KNOB 1 to 4; also OCT+ held on FORM, KNOB 4): **BASS**, **RHYTHM**,
+**HARMONY**, **MELODY** or **ANCHOR**. AUTO (the default) guesses: CHORD is harmony, ATLAS or a drum sound rhythm, a
+track whose notes sit mostly below C3 bass, anything else melody. The picture shows each track's role (AUTO's guess
+marked), whether it is IN, OUT or muted by hand, and its level.
+
+How it moves, in the ways music is usually built:
+
+- Where a section begins (the CHAIN moves on), a new number of tracks to leave out is chosen, one more or one fewer;
+  away from A mostly thinner, back on A fuller. Exits happen there, all at once, MELODY first, then HARMONY, RHYTHM
+  and BASS last.
+- Entries come one a phrase the other way round, BASS first; a melody comes in only over a bass or harmony that is
+  playing.
+- With ENTRIES above 50, the phrase before a return to A (after two phrases away or more) drops to the anchors, and A
+  comes back with everything. Without an ANCHOR, the track lowest in that order plays on alone.
+- An **ANCHOR** is never taken out. At least one track always plays.
+- Each change is decided a bar ahead: that track's mute key on GLO blinks quickly through the bar. A track with
+  FLOURISH set comes in on its flourish, the bar's last beat.
+- A track out plays no notes (none to MIDI OUT either), like a muted one.
+
+Your hand wins. A track you mute stays muted and is left out of the rules. Its mute key on GLO brings a track Entries
+took out straight back, and Entries leaves it alone until the next section. SOLO is heard whatever Entries says.
+The choices come from the tracks' SEEDs, so PLAY plays the same piece again; STOP brings every track back.
 
 ---
 

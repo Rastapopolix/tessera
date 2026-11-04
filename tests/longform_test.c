@@ -147,6 +147,26 @@ static void p_chain_wander(void)                      /* the same, WANDER 60 */
     p_chain();
     px(0, TX_FC_WANDER, 60);
 }
+static void p_entries(void)                           /* Entries 50 over the CHAIN: a bass, a rhythm, a chord bed, a
+                                                       * melody; DWELL 2, FADE */
+{
+    gen(0, TESS_ENG_TURING);
+    px(0, TX_ET_ROLE, ET_BASS);
+    gen(1, TESS_ENG_EUCLID);
+    px(1, TX_ET_ROLE, ET_RHYTHM);
+    gen(2, TESS_ENG_CHORD);
+    px(2, TX_CH_PROG, GEN_CH_WALK);                   /* (a bed that walks at its own pace, as p_ambient's: OWN) */
+    px(2, TX_EV_EVERY, EV_8);
+    px(2, TX_FC_FOLLOW, 1);
+    gen(3, TESS_ENG_MARKOV);
+    px(3, TX_EV_LOCK, 60);
+    for (uint32_t tr = 0; tr < 4u; tr++) px(tr, TX_FM_DEVELOP, tr == 1u ? 60 : 30);
+    px(0, TX_FC_FORM, FM_ABAC);
+    px(0, TX_FC_REP1, 2);
+    px(0, TX_FC_REP4, 2);
+    px(0, TX_FC_WANDER, 30);
+    px(0, TX_ET_AMOUNT, 50);
+}
 
 typedef struct {
     const char *name;
@@ -155,6 +175,8 @@ typedef struct {
     uint32_t rests;                                   /* ENERGY RESTS on: the mix may rest (8 to 18 s) */
     uint32_t known_frozen;                            /* tracks (bits) KNOWN to freeze (generators.md risk 1) */
     const char *why;
+    uint32_t entries;                                 /* Entries on: a track may lie out (its own silence not judged);
+                                                       * one always plays, an ANCHOR never out, DWELL kept */
 } patch_t;
 static const patch_t PATCH[] = {
     {"turing_evolve1_amount30", 0x4C01u, p_turing, 0, 0, "Turing, EVOLVE every bar"},
@@ -169,6 +191,7 @@ static const patch_t PATCH[] = {
     {"ambient_chord_energy_rests", 0x4C09u, p_ambient, 1, 0, "CHORD drone, ARC 60, RESTS 40"},
     {"chain_abac_counts_develop30", 0x4C0Bu, p_chain, 0, 0, "FORM CHAIN ABAC, counts, WANDER 0 (slice 1)"},
     {"chain_abac_wander60", 0x4C0Cu, p_chain_wander, 0, 0, "FORM CHAIN ABAC, counts, WANDER 60 (slice 1)"},
+    {"entries50_chain_abac", 0x4C0Du, p_entries, 0, 0, "ENTRIES 50 over the CHAIN's ABAC, WANDER 30 (slice 2)", 1},
 };
 #define NPATCH (sizeof PATCH / sizeof PATCH[0])
 
@@ -208,6 +231,8 @@ static void lf_note(track_t *t, uint32_t note, uint32_t vel)
 {
     uint32_t tr = trk_index(t), at = lf_blk - lf_win_start;
     if (tr >= LF_TR || !vel) return;
+    if (!lf_probe_on && (tessera_entries_get(0, 0) >> tr & 1u) && !entry_gain[tr]) return;   /* (Entries has it out:
+                                                                                             * not heard) */
     if (lf_probe_on) {
         lf_probe_hash = fnv(fnv(lf_probe_hash, lf_blk), note | tr << 8 | vel << 16);
         lf_probe_n++;
@@ -233,6 +258,8 @@ typedef struct {
     uint32_t last_hash[512], nlast;                   /* the last hour's windows (distinct count) */
 } lf_meas_t;
 static lf_meas_t lf_m[LF_TR + 1];
+static uint32_t lf_et_all_out, lf_et_anchor_out, lf_et_dwell_bad, lf_et_changes;   /* Entries' guardrails */
+static uint32_t lf_et_was, lf_et_since[LF_TR];
 static uint8_t lf_active[LF_TR];                      /* a generator track: its MODE + 1, 0 a STEP track */
 
 static uint32_t popc(uint32_t v)
@@ -330,6 +357,27 @@ static uint32_t lf_probe(const patch_t *p, int full, uint32_t *n)
     return lf_probe_hash;
 }
 
+/* Entries, each block: never every track out, an ANCHOR never, a track in or out DWELL phrases at least (in blocks:
+ * DWELL phrases less one block's slack) */
+static void lf_entries_block(void)
+{
+    uint8_t role[LF_TR];
+    uint32_t out = tessera_entries_get(0, role), tr, ph = fc_bars() * 4u * beat_samples() / CTL;
+    uint32_t dwell = tessera.et_dwell, playing = 0;
+    for (tr = 0; tr < LF_TR; tr++) {
+        if (lf_active[tr] && !(out >> tr & 1u)) playing++;
+        if ((out >> tr & 1u) && role[tr] == ET_ANCHOR) lf_et_anchor_out++;
+        if ((out ^ lf_et_was) >> tr & 1u) {
+            if (lf_et_since[tr] + 2u < dwell * ph) lf_et_dwell_bad++;
+            lf_et_since[tr] = 0;
+            lf_et_changes++;
+        } else
+            lf_et_since[tr]++;
+    }
+    if (!playing) lf_et_all_out++;
+    lf_et_was = out;
+}
+
 /* the patch for HOURS: the measures in lf_m */
 static void lf_run(const patch_t *p, uint32_t hours)
 {
@@ -337,6 +385,8 @@ static void lf_run(const patch_t *p, uint32_t hours)
     uint32_t wins_total = hours * 3600u * FS / CTL / win_blocks, wins_hour = 3600u * FS / CTL / win_blocks, win;
     lf_power_on(p);
     memset(lf_m, 0, sizeof lf_m);
+    lf_et_all_out = lf_et_anchor_out = lf_et_dwell_bad = lf_et_changes = lf_et_was = 0;
+    for (uint32_t tr = 0; tr < LF_TR; tr++) lf_et_since[tr] = 0xFFFFu;
     for (uint32_t k = 0; k <= LF_TR; k++) {
         memset(&lf_w[k], 0, sizeof lf_w[k]);
         lf_w[k].hash = 2166136261u, lf_w[k].lo = 127;
@@ -348,6 +398,7 @@ static void lf_run(const patch_t *p, uint32_t hours)
         for (uint32_t b = 0; b < win_blocks; b++, lf_blk++) {
             lf_fast_block();
             lf_held();
+            if (p->entries) lf_entries_block();
         }
         lf_close_window(win, wins_hour, wins_total);
     }
@@ -368,6 +419,8 @@ static int lf_child(const patch_t *p, uint32_t hours, int fd)
     int len = snprintf(line, sizeof line, "probe %u %u %u %u\n", hf, nf, hm, nm);
     if (write(fd, line, (size_t)len) < 0) return 1;
     lf_run(p, hours);
+    len = snprintf(line, sizeof line, "entries %u %u %u %u\n", lf_et_all_out, lf_et_anchor_out, lf_et_dwell_bad, lf_et_changes);
+    if (write(fd, line, (size_t)len) < 0) return 1;
     for (uint32_t k = 0; k <= LF_TR; k++) {
         lf_meas_t *m = &lf_m[k];
         uint32_t pitches = popc(m->pitch[0]) + popc(m->pitch[1]) + popc(m->pitch[2]) + popc(m->pitch[3]);
@@ -410,6 +463,23 @@ static void lf_judge(const patch_t *p, const char *out, FILE *rep, uint32_t hour
     }
     snprintf(line, sizeof line, "%s: the fast path plays mix_block's notes (%u in %u s)", p->name, nf, LF_PROBE_SECS);
     lf_bad += check(line, hf == hm && nf == nm && nf > 0);
+    s = strchr(s, '\n');
+    {
+        unsigned all = 0, anc = 0, dw = 0, ch = 0;
+        if (!s || sscanf(++s, "entries %u %u %u %u", &all, &anc, &dw, &ch) != 4) {
+            snprintf(line, sizeof line, "%s: Entries' measures", p->name);
+            lf_bad += check(line, 0);
+            return;
+        }
+        if (p->entries) {
+            snprintf(line, sizeof line, "%s: Entries moved tracks (%u changes), never all out, ANCHOR never, DWELL kept",
+                     p->name, ch);
+            lf_bad += check(line, ch >= 20u && !all && !anc && !dw);
+            if (rep) fprintf(rep, "%s: Entries %u changes, %u blocks all out, %u anchor out, %u under DWELL\n", p->name,
+                             ch, all, anc, dw);
+        }
+        /* (s on the Entries line: the track lines follow it) */
+    }
     for (k = 0; k <= LF_TR; k++) {
         lf_res_t *x = &r[k];
         s = strchr(s, '\n');
@@ -456,7 +526,7 @@ static void lf_judge(const patch_t *p, const char *out, FILE *rep, uint32_t hour
             snprintf(line, sizeof line, "%s: no silence longer than %u bars (longest %u, %u s)", who, most, silent_bars,
                      silent_bars * bar_s);
             lf_bad += check(line, silent_bars <= most);
-        } else {
+        } else if (!p->entries) {
             snprintf(line, sizeof line, "%s: never out longer than 64 bars (longest %u)", who, silent_bars);
             lf_bad += check(line, silent_bars <= 64u);
         }
