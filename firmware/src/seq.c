@@ -316,10 +316,8 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
             return;
         if (t->arp_pos >= 0xFFFFFFFu)
             t->arp_pos = 0;
-        else if (midi_sync_active)
+        else                                           /* (the residue carried on every clock: no drift) */
             t->arp_pos -= period + (uint32_t)((t->arp_idx & 1u) ? sw : -sw);
-        else
-            t->arp_pos = 0;
         /* build the note list: held notes (sorted or as played) over OCT octaves */
         len = 0;
         for (i = 0; i < t->nheld; i++)
@@ -368,7 +366,6 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
                 rec_note(t, t->arp_note, 100);           /* recording: what the arp plays */
             trk_note_on(t, t->arp_note, 100);
         }
-        if (!midi_sync_active) return;
         /* A recovered clock burst may cross several ARP steps. Consume them all
          * and retain the residual phase, just as the sequencer does. */
         if (t->arp_note) {
@@ -886,6 +883,7 @@ static void seq_start(void)
     energy_play();                                  /* (ENERGY's tide and rests too) */
     tessera_sd_play();                              /* (STEP as seed's loops from their sources again) */
     cin_left = 0; /* MIDI Start also cancels a pending local count-in. */
+    int_clock_rem = 0;                              /* every start from the same place: a take repeats exactly */
     uint32_t i;
     seq_erase_request = 0;
     seq_erase_transport++;
@@ -914,6 +912,38 @@ static void seq_start(void)
     song.playing = 1;
     midi_out_start();
     if (click_wanted()) click_req=2;
+}
+
+/* Song Position: right after seq_start, every track where it would be UNITS from the top. A step due on the spot
+ * plays now (seq_start's first step, numbered on); one begun before it plays on from its place, its notes unheard until
+ * the next. The beat and bar counters, the generators' playheads and phrase counters (tess_join, at each one's next
+ * step), the ARP and the synced LFOs follow; what the generators drew on the way is not replayed */
+static void seq_seek(uint32_t units)
+{
+    extern void tessera_seek_join(void);
+    uint32_t i, beats = units / MIDI_BEAT_UNITS;
+    beat_pos = units % MIDI_BEAT_UNITS;
+    beat_n = beats & 3u;
+    bar_n = beats / 4u;
+    for (i = 0; i < NTRK; i++) {
+        track_t *t = &trk[i];
+        uint32_t period = seq_div_samples((uint32_t)t->p[P_SDIV]), len = t->p[P_SLEN] > 0 ? (uint32_t)t->p[P_SLEN] : 1u;
+        uint32_t pair = 2u * period, k = units / pair * 2u, r = units % pair, first = step_samples(t, period, k % len);
+        if (r >= first) { k++; r -= first; }          /* (SWING: the pair's second step) */
+        if (!r) {
+            if (!k) continue;                          /* (the top: as PLAY) */
+            t->seq_idx = (uint16_t)((k - 1u) % len);   /* step k fires on the first block */
+            seq_run_step[i] = k - 1u;
+        } else {
+            t->seq_idx = (uint16_t)(k % len);
+            t->seq_pos = r;
+            seq_run_step[i] = k;
+        }
+        t->seq_pass = k / len;
+        period = seq_div_samples((uint32_t)t->p[P_ARATE]);
+        if (t->arp_pos < 0xFFFFFFFu && period) t->arp_pos = units % period;
+    }
+    tessera_seek_join();
 }
 
 static void seq_release(track_t *t)
@@ -1266,9 +1296,11 @@ static int rec_note_start(track_t *t)
     return 1;
 }
 
+static uint32_t seq_advanced;                   /* this block's units so far (an external clock's LFO units) */
 static void seq_advance(uint32_t n)
 {
     uint32_t i, beat = seq_beat_samples();
+    seq_advanced += n;
     midi_out_clock(n, beat);
     midi_out_seq = 1;                              /* (midi_out.c: these notes are the sequencer's) */
     chain_tick(n);
@@ -1291,7 +1323,8 @@ static void seq_advance(uint32_t n)
 /* everything that happens between two rendered blocks */
 static void events_block(uint32_t n)
 {
-    uint32_t i, pr;
+    uint32_t i, pr, lfo_units = 0;
+    seq_advanced = 0;
     if(song.playing || transport_req==1u)resource_release(RES_NOTE_HISTORY);
     uint32_t selected_clock = (uint32_t)song.g[G_CLOCK];
     if (midi_clock.selected != selected_clock) {
@@ -1378,7 +1411,9 @@ static void events_block(uint32_t n)
         if (midi_render_timed && (int32_t)(time - midi_render_time) > 0)
             break;
         mi_r++;midi_dispatch_left--;
-        if (status >= 0xF8u) {
+        if (status == 0xF2u) {
+            if (selected_clock == source) midi_clock_position(d1 | d2 << 7);
+        } else if (status >= 0xF8u) {
             if (selected_clock == source) {
                 if (status == 0xFAu || status == 0xFBu || status == 0xFCu) {
                     if (!clock_mode) midi_clock_mode(source);
@@ -1419,7 +1454,9 @@ static void events_block(uint32_t n)
             uint32_t elapsed = (uint32_t)((uint64_t)n * MIDI_BEAT_UNITS / beat_samples());
             for (i = 0; i < NPART; i++)
                 arp_step(&trk[i], trk[i].arp_phys ? elapsed : 0u, elapsed);
-        }
+            lfo_units = elapsed;
+        } else
+            lfo_units = lfo_ext_units(n, seq_advanced);
     } else {
         uint32_t left=n;
         if(cin_left) {
@@ -1438,8 +1475,10 @@ static void events_block(uint32_t n)
                 }
             }
         }
-        if(left)seq_advance(left);
+        lfo_units = seq_units_of(n - left);            /* (a count-in: the LFOs run on) */
+        if(left) { uint32_t units = int_clock_units(left); seq_advance(units); lfo_units += units; }   /* (mix.c) */
     }
+    lfo_block_units = lfo_units;
     if (song.playing)
         song.tick++;
 }
