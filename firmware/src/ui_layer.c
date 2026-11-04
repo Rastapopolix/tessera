@@ -513,7 +513,7 @@ static void layer_glo_keys(int32_t h)
     cv_text_on(8, 6, &AF_X, "Keys", T_MID, T_PANEL);
     for (i = 0; i < 8u; i++) {
         int32_t x = x0 + (int32_t)i * (kw + 1);
-        int on = (i < NTRK && ((track_solo >> i) & 1u)) || (i == 6u && seq_fill), none = !WL[i][0][0], dim = i == 7u && song.g[G_CLOCK];
+        int on = (i < NTRK && ((track_solo >> i) & 1u)) || (i == 6u && (seq_fill || seq_fill_mod)), none = !WL[i][0][0], dim = i == 7u && song.g[G_CLOCK];
         uint16_t f = on ? (i < NTRK ? T_TRK(i) : T_THEME) : none ? ux_mix(T_PANEL, T_SURF, 50) : T_SURF, ink = on ? T_INK : dim ? T_DIM : T_TEXT;
         cv_rrect(x, wy, kw, h - wy - 6, 4, f, T_PANEL);
         if (!none) {
@@ -587,7 +587,7 @@ static void mo_layer(uint32_t l)
     for (i = 0; i < sizeof mo_col; i++)
         sig = (sig ^ p[i]) * 16777619u;
     if (l == LAYER_GLO)
-        sig += track_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u + (uint32_t)seq_fill * 7u +
+        sig += track_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u + (uint32_t)(seq_fill | seq_fill_mod) * 7u +
                (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 | trk[3].p[P_MUTE] << 3) * 131u;
     else
         sig += (uint32_t)TSEL->p[P_SCALE] * 31u;
@@ -611,7 +611,7 @@ static void mo_layer(uint32_t l)
                 mo_lcell((int32_t)c, 71, "SOLO", n, (track_solo >> c) & 1u, 0, 1);
             }
             mo_lcell(0, 90, "ALL", "C", 0, 0, 0);
-            mo_lcell(1, 90, "FILL", "E", seq_fill != 0, 0, 0);
+            mo_lcell(1, 90, "FILL", "E", (seq_fill || seq_fill_mod) != 0, 0, 0);
             mo_lcell(2, 90, "TAP", "F", 0, song.g[G_CLOCK] != 0, 0);
             x = mo_lhint(x, "OCT-", "UNDO");
             mo_lhint(x, "GLO", "DONE");
@@ -739,7 +739,7 @@ static void draw_layer(void)
         layer_cards(l);
     }
     if (l == LAYER_GLO)
-        sig += track_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u + (uint32_t)seq_fill * 7u +
+        sig += track_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u + (uint32_t)(seq_fill | seq_fill_mod) * 7u +
                (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 | trk[3].p[P_MUTE] << 3) * 131u;
     else if (l == LAYER_SCL)
         sig += (uint32_t)TSEL->p[P_SCALE] * 31u;

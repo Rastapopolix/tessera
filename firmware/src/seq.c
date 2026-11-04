@@ -248,6 +248,7 @@ static uint32_t seq_period_was[NTRK];            /* each track's step length las
 /* a step's condition (SC_*) against its track's pass (t->seq_pass: 0 the first since PLAY, a pattern change or a song's
  * section). seq_fill: FILL held (the GLO layer's E4, ui_layer.c) */
 static uint8_t seq_fill;
+static volatile uint8_t seq_fill_mod;            /* FILL held by a mod (cord.c cord_fill_tick) */
 static int seq_cond_met(const track_t *t, const step_t *s)
 {
     static const uint8_t AB[SC_COUNT][2] = {{0, 1}, {1, 2}, {2, 2}, {1, 3}, {2, 3}, {3, 3}, {1, 4}, {2, 4}, {3, 4}, {4, 4},
@@ -255,8 +256,8 @@ static int seq_cond_met(const track_t *t, const step_t *s)
     uint32_t c = step_cond(s), pass = t->seq_pass;
     switch (c) {
     case SC_OFF: return 1;
-    case SC_FILL: return seq_fill;
-    case SC_NFILL: return !seq_fill;
+    case SC_FILL: return seq_fill || seq_fill_mod;
+    case SC_NFILL: return !seq_fill && !seq_fill_mod;
     case SC_FIRST: return !pass;
     case SC_NFIRST: return pass != 0u;
     default: return pass % AB[c][1] == AB[c][0] - 1u;

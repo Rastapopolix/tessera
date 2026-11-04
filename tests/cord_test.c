@@ -19,7 +19,7 @@ static void check(const char *what, int ok)
     bad += !ok;
 }
 
-static const char *const KIND[] = {"voice", "block", "depth", "step", "send", "cord"};
+static const char *const KIND[] = {"voice", "block", "depth", "step", "send", "cord", "fill"};
 
 static cord_t C(uint32_t src, uint32_t st, uint32_t dst, uint32_t dt, int32_t amount, int32_t offset)
 {
@@ -136,8 +136,8 @@ static int behaviour(void)
         check("...the LFO's POL UNI: BI still pulls down at its bottom, UNI leaves it, its top up",
               lo < 50u && uni == 50u && top > 50u);
         trk[0].p[P_LPOL] = 0;
-        c.uni = 2;
-        check("...a polarity past UNI: refused", !cord_set(1, &c));
+        c.uni = 3;
+        check("...a polarity past GATE: refused", !cord_set(1, &c));
         cord_clear();
         trk[2].p[P_LEVEL] = 100;
     }
@@ -194,6 +194,74 @@ static int behaviour(void)
         cord_clear();
         cord_tick();
         check("...cleared: every move back to 0", cord_move(2) == 0 && cord_move(8) == 0);
+        trk[2].p[P_LEVEL] = 100;
+    }
+
+    /* GATE (CU_GATE): all while the source is over the threshold (its OFFSET), none under it; FILL held past half */
+    {
+        uint32_t lv[4];
+        uint8_t pk[CORD_PK_BYTES];
+        cord_t got[CORD_MAX];
+        cord_clear();
+        trk[0].p[P_LPOL] = 0; trk[0].lfo_fade = 32767;
+        trk[2].p[P_LEVEL] = 50;
+        c = C(CS_LFO, 0, CD_LEVEL, 2, 40, 0);          /* mod 1: T1 LFO as a GATE over 0 -> T3 LEVEL +40 % */
+        c.uni = CU_GATE;
+        check("GATE: set", cord_set(0, &c));
+        trk[0].lfo_val = -16000; cord_tick();
+        mod_begin(&trk[2]); lv[0] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        trk[0].lfo_val = 16000; cord_tick();
+        mod_begin(&trk[2]); lv[1] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        trk[0].lfo_val = 32767; cord_tick();
+        mod_begin(&trk[2]); lv[2] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        check("...under the threshold nothing, over it the whole amount, however far over",
+              lv[0] == 50u && lv[1] > 50u && lv[1] == lv[2]);
+        trk[0].lfo_val = -32767; cord_tick();
+        trk[0].lfo_val = 200; cord_tick();
+        lv[0] = (uint32_t)cord_gate_on(cord_get(0));
+        trk[0].lfo_val = 400; cord_tick();
+        lv[1] = (uint32_t)cord_gate_on(cord_get(0));
+        trk[0].lfo_val = 200; cord_tick();
+        lv[2] = (uint32_t)cord_gate_on(cord_get(0));
+        trk[0].lfo_val = -10; cord_tick();
+        lv[3] = (uint32_t)cord_gate_on(cord_get(0));
+        check("...a step of hysteresis: opens past threshold + 256, closes at the threshold or under",
+              !lv[0] && lv[1] && lv[2] && !lv[3]);
+        c.offset = 50;                                  /* the threshold +50 %: the LFO at +25 % stays shut */
+        cord_set(0, &c);
+        trk[0].lfo_val = 8192; cord_tick();
+        mod_begin(&trk[2]); lv[0] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        trk[0].lfo_val = 24000; cord_tick();
+        mod_begin(&trk[2]); lv[1] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        check("...the OFFSET is the threshold and moves nothing itself", lv[0] == 50u && lv[1] > 50u);
+        cord_pack(pk);
+        check("...saved in src_trk's bit 6, the track kept", pk[1] == 0x40u && pk[2] == CD_LEVEL);
+        cord_clear();
+        check("...loaded back a GATE", cord_unpack(pk) && cord_get(0)->uni == CU_GATE && cord_get(0)->src_trk == 0u &&
+                                       cord_get(0)->offset == 50);
+        pk[1] = 0xC0u;
+        check("...both bits (no such polarity): the block refused", !cord_parse(pk, got));
+        cord_clear();
+        c = C(CS_LFO, 0, CD_FILL, 3, 100, 0);           /* mod 1: T1 LFO as a GATE -> FILL 100 % */
+        c.uni = CU_GATE;
+        cord_set(0, &c);
+        trk[0].lfo_val = 16000; cord_tick();
+        lv[0] = seq_fill_mod;
+        trk[0].lfo_val = -16000; cord_tick();
+        lv[1] = seq_fill_mod;
+        check("FILL: held while the GATE is open, the destination track kept 0",
+              lv[0] && !lv[1] && cord_get(0)->dst_trk == 0u);
+        c.amount = 40;
+        cord_set(0, &c);
+        trk[0].lfo_val = 16000; cord_tick();
+        check("...a move under half: not held", !seq_fill_mod);
+        c = C(CS_OFF, 0, CD_FILL, 0, 0, 60);            /* a fixed +60 %: held */
+        cord_set(0, &c);
+        cord_tick();
+        lv[0] = seq_fill_mod;
+        cord_clear();
+        cord_tick();
+        check("...a fixed move past half holds it; cleared, let go", lv[0] && !seq_fill_mod);
         trk[2].p[P_LEVEL] = 100;
     }
 
@@ -670,6 +738,8 @@ int main(int argc, char **argv)
         if (c == CD_OFF) continue;
         if (d->kind == CK_CORD) {                       /* (a mod's move: M1 AMT .. M16 AMT, no parameter) */
             if (d->pid != PID_NONE || d->md || c != CD_M1_AMT + (c - CD_M1_AMT) % 16u || c > CD_M16_AMT) mods = 0;
+        } else if (d->kind == CK_FILL) {                /* (the project's FILL: no parameter) */
+            if (d->pid != PID_NONE || d->md || c != CD_FILL) mods = 0;
         } else if (d->kind == CK_VOICE || d->kind == CK_DEPTH) {
             if (d->pid != PID_NONE || !d->md || d->md >= MD_N || (d->md >= MD_RESERVED6 && d->md <= MD_RESERVED9) ||
                 (d->kind == CK_VOICE) != (d->md <= MD_AMP) || (d->kind == CK_DEPTH) != (d->md == MD_DEPTH))
