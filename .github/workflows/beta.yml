@@ -66,30 +66,30 @@ jobs:
           tests/run_tests.sh
       - name: Build both variants
         run: |
-          mkdir -p ../pkgs
+          mkdir -p "$RUNNER_TEMP/pkgs"
           MELODEE_LOOK=1 ./build.sh --release "$V" 2>&1 | tee dual.log
-          cp "build/tessera-$V.fwsc" ../pkgs/
+          cp "build/tessera-$V.fwsc" "$RUNNER_TEMP/pkgs"/
           MELODEE_DUAL_CORE=0 MELODEE_LOOK=1 ./build.sh --release "$V" 2>&1 | tee single.log
-          cp "build/tessera-$V-1core.fwsc" ../pkgs/
-          (cd ../pkgs && sha256sum *.fwsc | tee SHA256SUMS)
+          cp "build/tessera-$V-1core.fwsc" "$RUNNER_TEMP/pkgs"/
+          (cd "$RUNNER_TEMP/pkgs" && sha256sum *.fwsc | tee SHA256SUMS)
           {
             echo "### Tessera $V (beta)"
             echo '```'
             grep -h -E -i "image [0-9]+ B|audio working arena|\.data\+\.bss|^app |^package " dual.log single.log
-            cat ../pkgs/SHA256SUMS
+            cat "$RUNNER_TEMP/pkgs"/SHA256SUMS
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
           name: tessera-${{ env.V }}
-          path: ../pkgs/*
+          path: ${{ runner.temp }}/pkgs/*
       - name: The installer's Beta, pushed to site-beta-${{ env.V }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           commit=$(git rev-parse HEAD)
           git worktree add -B "site-beta-$V" ../page origin/main
-          python web/publish_beta.py ../page/docs --dual "../pkgs/tessera-$V.fwsc" --single "../pkgs/tessera-$V-1core.fwsc" \
+          python web/publish_beta.py ../page/docs --dual "$RUNNER_TEMP/pkgs/tessera-$V.fwsc" --single "$RUNNER_TEMP/pkgs/tessera-$V-1core.fwsc" \
             --version "$V" --commit "$commit" --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           cd ../page
           git config user.name 'github-actions[bot]'
