@@ -3948,7 +3948,35 @@ static int test_layer(void)
         settings_export(&p);
         bad += check("the default USB VOLUME saves nothing", !p.favorites.factory[8][4] && !p.favorites.factory[8][7]);
     }
-#endif    /* release-act: every page button acts when let go */
+#endif
+    {                                                   /* MIDI LEARN (midi_learn.c, ui_learn.c) */
+        ui_power_on(); mlearn_forget();
+        hold(B_HOME); ui.menu_sel = MI_MIDI_LEARN; turn(EN_K2, 1);
+        ok = !ui.menu && mlearn_on && !mlearn_want.on;
+        turn(EN_K1, 1);                                 /* (HOME: the engine's first knob) */
+        ok &= mlearn_want.on && mlearn_want.track == song.sel;
+        uint32_t pid = mlearn_want.pid, tr = mlearn_want.track;
+        midi_event(0xB0, 5, 85, 64); frame();           /* (any channel) */
+        ok &= mlearn_count() == 1u && mlearn[0].cc == 85u && mlearn[0].pid == pid && !mlearn_want.on;
+        midi_event(0xB0, 5, 64, 127); frame();          /* (the pedal: never learned) */
+        ok &= mlearn_count() == 1u;
+        midi_event(0xB0, 0, 64, 0);
+        hold(B_HOME); hold(B_HOME);                     /* (the menu ends learning) */
+        ok &= !mlearn_on && !ui.menu;
+        const param_desc_t *d = pid_desc(pid, tr);
+        midi_event(0xB0, 9, 85, 0);
+        ok &= pid < PID_GLOBAL(0) && trk[tr].p[pid] == d->min;
+        midi_event(0xB0, 2, 85, 127);
+        ok &= trk[tr].p[pid] == d->max;
+        hold(B_HOME); ui.menu_sel = MI_MIDI_LEARN;
+        char b[24]; ok &= !strcmp(menu_value(MI_MIDI_LEARN, b, sizeof b), "1 CC");
+        turn(EN_K2, -1); ok &= !mlearn_count() && ui.menu;
+        hold(B_HOME);
+        midi_event(0xB0, 2, 85, 0);
+        ok &= trk[tr].p[pid] == d->max;                 /* (forgotten: CC 85 is no parameter of the fixed map) */
+        bad += check("MIDI LEARN: a knob, then a CC from any channel; the menu ends it, KNOB 2 left forgets", ok);
+    }
+    /* release-act: every page button acts when let go */
     {
         static const uint8_t PB[6] = {B_ENV, B_LFO, B_SCL, B_ARP, B_GLO, B_EDIT};
         static const uint8_t PF[6] = {FAM_ENV, FAM_LFO, FAM_SCL, FAM_ARP, FAM_GLO, FAM_EDIT};

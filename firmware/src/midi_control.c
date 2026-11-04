@@ -325,6 +325,7 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
 /* Keep the occasional controller/panic dispatch outside the hot rendering loop. */
 static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint32_t d1, uint32_t d2)
 {
+    if (st == 0xB0u && mlearn_receive(d1, d2)) return;   /* (a learned CC, any channel: midi_learn.c) */
     track_t *t = midi_track(ch);
     /* Controllers retain channel state even outside ROUT, but only mapped/owned tracks receive them.
      * In particular, pedal-up must clear sustain even if the channel currently owns no notes. */

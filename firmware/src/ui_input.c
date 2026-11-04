@@ -1834,6 +1834,8 @@ static void page_knob(uint32_t k, int32_t s)
         return;
     if (!pop.on && msc_knob(k, s))                     /* FX held: the knob's mod amount, the value left (ui_modsc.c) */
         return;
+    if (mlearn_on && !pop.on)                          /* MIDI LEARN: this knob's parameter waits for a CC (ui_learn.c) */
+        mlearn_take(k);
     if (ui.home || pg->scope == SC_STEP || pg->scope == SC_TRK || ((pg->scope==SC_DRUM || pg->scope==SC_DRUMHIT) && pg->id[k]!=255) || page_desc(pg, k, &hv) ||
         (pg->graph == GR_USER && k == 0u) || (pg->graph == GR_MOD && k == 1u)
         || pg->graph == GR_SONG || pg->graph == GR_PATGRID || pg->graph == GR_SCALE_PICKER || (scale_settings_page(pg) && k == 1u)
@@ -2010,6 +2012,7 @@ static void ui_confirm_accept(void)
 static void ui_input(void)
 {
     uint32_t pressed = fm1_input_edges(0), notes = fm1_input_note_edges(), now = fm1_ticks(), id, b, k;
+    mlearn_poll();                                      /* (MIDI LEARN: a CC for the knob picked) */
     if (boot_work.state) {
         for (k = 0; k < NE; k++) (void)panel_enc(k);
         panel_moved = 0;

@@ -1282,6 +1282,7 @@ static track_t *midi_track(uint32_t ch)
 }
 
 #include "midi_cc.c"                /* Tessera: CC and NRPN control of parameters (midi_control.c calls it) */
+#include "midi_learn.c"             /* MIDI LEARN: a CC onto any knob (midi_control.c calls it; upstream 7bd7e4f) */
 #include "midi_control.c"
 #include "midi_clock.c"
 #include "midi_out.c"
