@@ -157,6 +157,14 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <label><input type="radio" name="build" id="build-single"> <span data-t="single"></span></label></p>
     <p class="small" data-t="singleWhy"></p>
   </div>
+  <section id="beta-options" class="panel choice" style="--c:var(--p1)" hidden>
+    <p><strong data-t="betaTitle"></strong> <span id="beta-version"></span></p>
+    <p><label><input type="radio" name="build" id="build-beta-dual"> <span data-t="beta-dual"></span></label>
+      <label><input type="radio" name="build" id="build-beta-single"> <span data-t="beta-single"></span></label></p>
+    <p class="small" data-t="betaWhy"></p>
+    <p class="small" id="beta-info"></p>
+    <p class="small"><a href="https://github.com/Rastapopolix/tessera/issues" data-t="betaReport"></a></p>
+  </section>
   <section id="nightly-options" class="panel choice" style="--c:var(--p3)" hidden>
     <p><strong data-t="nightlyTitle"></strong></p>
     <p><label><input type="radio" name="build" id="build-nightly-dual"> <span data-t="nightly-dual"></span></label>
@@ -942,6 +950,65 @@ async function restoreBackup(request, file, onProgress = () => {}) {
   return archive;
 }
 
+// One project into one slot (A..D: 0..3), as the editor puts a demo (demos/*.tsp) on the FM-1: objects 2..5 alone, the
+// rest of the device as it was. The firmware writes the slot, its name shows in the slot list at once (editor_backup.c).
+const TSP_NAME = 10;                          // project_tsp.c's NAME part id (its 12 bytes, 0-padded)
+function tspName(bytes) {              // a whole TSP1 record's name ("" when it has none); throws when not one
+  if (!isTsp(bytes)) throw new Error("Not a Tessera project record");
+  tspCheck(bytes);
+  const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.length);
+  let at = TSP_HEAD;
+  for (let k = v.getUint16(8, true); k > 0; k--) {
+    const len = v.getUint16(at + 2, true);
+    if (bytes[at] === TSP_NAME) { const n = bytes.subarray(at + 4, at + 4 + len), z = n.indexOf(0); return String.fromCharCode(...(z < 0 ? n : n.subarray(0, z))); }
+    at += 4 + len;
+  }
+  return "";
+}
+async function getObject(ask, id, size) {
+  const bytes = new Uint8Array(size);
+  for (let off = 0; off < size; off += BACKUP_CHUNK) {
+    const n = Math.min(BACKUP_CHUNK, size - off), a = await ask([BACKUP_CMD.GET, [id, ...bkU32(off), n & 127, n >>> 7]]);
+    bkCheck(a[1]);
+    if (a[0] !== id || bkR32(a, 2) !== off || (a[7] | a[8] << 7) !== n) throw new Error("Unexpected backup reply");
+    bytes.set(bkUnpack(a.slice(9), n), off);
+  }
+  return bytes;
+}
+// What the four slots hold: [{ used, name }] (name null: a project the firmware does not read). Stops playback.
+// Throws when the firmware is not of Tessera's own project format (2.0 and later).
+async function readSlots(request) {
+  const ask = (r) => request(r, { timeout: 3000, retries: 1 });
+  const list = bkManifest(await ask([BACKUP_CMD.LIST, []]));
+  const live = list.find(o => o.id === 0);
+  if (!live || live.size < TSP_HEAD + 4 || new DataView((await getObject(ask, 0, 4)).buffer).getUint32(0, true) !== TSP_MAGIC) throw new Error("The demos need Tessera 2.0 or later on the FM-1");
+  const slots = [];
+  for (const id of [2, 3, 4, 5]) {            // (one request at a time)
+    const size = list.find(o => o.id === id)?.size || 0;
+    if (!size) { slots.push({ used: false, name: "" }); continue; }
+    const bytes = await getObject(ask, id, size);
+    let name = null;
+    try { name = tspName(bytes); } catch { /* a project of a format before Tessera's own */ }
+    slots.push({ used: true, name });
+  }
+  return slots;
+}
+async function putProject(request, slot, bytes, onProgress = () => {}) {
+  tspName(bytes);                             // a whole record, or nothing is sent
+  if (!(slot >= 0 && slot <= 3) || bytes.length > maxSize(2)) throw new Error("Invalid slot or project");
+  const id = 2 + slot, ask = (args) => request([BACKUP_CMD.PUT, args], { timeout: 4000, retries: 0 });
+  let a = await ask([0, id, ...bkU32(bytes.length), ...bkU32(bkCrc(bytes))]); bkCheck(a[2]);
+  try {
+    for (let off = 0; off < bytes.length; off += BACKUP_CHUNK) {
+      a = await ask([1, id, ...bkU32(off), ...bkPack(bytes.subarray(off, off + BACKUP_CHUNK))]); bkCheck(a[2]);
+      onProgress(Math.min(bytes.length, off + BACKUP_CHUNK), bytes.length);
+    }
+    a = await ask([2, id]);
+  } catch (e) { await ask([3, id]).catch(() => {}); throw e; }
+  if (a[2] === 2) throw new Error("This firmware does not read the demo: install the Tessera release it came with (or later)");
+  bkCheck(a[2]);
+}
+
 // Installer connection: no editor page or watcher owns this input simultaneously.
 class BackupConnection {
   constructor(input, output) {
@@ -974,6 +1041,10 @@ const TEXT = {
     tipLabel: "ヒント", tip: "ARP を押したままつまみを回すと、そのつまみのヘルプカードが出ます（値は変わりません）。同じつまみをさらに回すと長い説明をスクロールし、ARP を離すと閉じます。",
     warn: "書き込み中は USB を抜かないでください。",
     install: "インストール", other: "English",
+    betaTitle: "ベータ版", "beta-dual": "ベータ（デュアルコア）", "beta-single": "ベータ（シングルコア）",
+    "beta-dualTag": "ベータ・デュアルコア", "beta-singleTag": "ベータ・シングルコア",
+    betaWhy: "次のアップデートを正式リリースの前に試せます。まだ不具合があるかもしれません。インストール前にエディタで全体バックアップを保存してください。ベータで保存したプロジェクトや音色は、古いリリースでは読めないことがあります。標準を選んでインストールするとリリース版へ戻せます。",
+    betaReport: "不具合の報告・感想（GitHub Issues）",
     nightlyTitle: "Nightly（next）", "nightly-dual": "Nightly（デュアルコア）",
     "nightly-single": "Nightly（シングルコア）", "nightly-dualTag": "nightly・デュアルコア", "nightly-singleTag": "nightly・シングルコア",
     nightlyWhy: "next の開発版です。インストール前にエディタで全体バックアップを保存してください。標準版を選ぶとリリース版へ戻せます。",
@@ -1032,6 +1103,10 @@ const TEXT = {
     tipLabel: "TIP", tip: "Once installed, hold ARP and turn any knob for its help card: what it does, on every page (the value does not change). Turn the same knob further to scroll, let go of ARP to close it.",
     warn: "Do not unplug the USB cable while writing.",
     install: "Install", other: "日本語",
+    betaTitle: "Beta", "beta-dual": "Beta — dual core", "beta-single": "Beta — single core",
+    "beta-dualTag": "beta, dual core", "beta-singleTag": "beta, single core",
+    betaWhy: "The next update, to try before its stable release. It may still have bugs: save a complete backup in the editor before installing. Projects and sounds saved on the beta may not all load on an older release. To go back, choose Standard and install again.",
+    betaReport: "Report a problem or tell us how it went (GitHub issues)",
     nightlyTitle: "Nightly (next)", "nightly-dual": "Nightly — dual core",
     "nightly-single": "Nightly — single core", "nightly-dualTag": "nightly, dual core", "nightly-singleTag": "nightly, single core",
     nightlyWhy: "Development builds from next. Save a complete backup in the editor before installing. Choose Standard to return to the release.",
@@ -1103,7 +1178,7 @@ applyLang();
 $("stock-skip-backup").addEventListener("change", applyLang);
 const sayK = (k, arg = "") => { lastKey = k; lastArg = arg; $("status").textContent = $("run-status").textContent = t(k) + arg; };
 const say = (txt) => { lastKey = null; $("status").textContent = txt; };
-const buildIds = ["dual", "single", "nightly-dual", "nightly-single", "synth-dual", "synth-single"];
+const buildIds = ["dual", "single", "beta-dual", "beta-single", "nightly-dual", "nightly-single", "synth-dual", "synth-single"];
 const build = () => buildIds.find(k => $("build-" + k).checked) || "dual";
 const selection = () => {     /* the release, or a channel ("nightly-dual": meta.nightly's dual-core package) */
   const kind = build(), dash = kind.indexOf("-");
@@ -1112,8 +1187,13 @@ const selection = () => {     /* the release, or a channel ("nightly-dual": meta
 const ready = () => { lastKey = "ready"; $("status").textContent = `Tessera ${selection().channel.version} (${t(build() + "Tag")})`; };
 const log = (t) => { $("log").textContent += t + "\n"; };
 let image = null;
-const meta = {"version": "3.2.2", "product": "FM-1_83773022", "pkg": {"dual": "../../firmware/tessera-3.2.2.fwsc", "single": "../../firmware/tessera-3.2.2-1core.fwsc"}, "nightly": null, "synth": null};
+const meta = {"version": "3.2.2", "product": "FM-1_83773022", "pkg": {"dual": "../../firmware/tessera-3.2.2.fwsc", "single": "../../firmware/tessera-3.2.2-1core.fwsc"}, "beta": {"version": "3.3-beta1", "product": "FM-1_83773030", "branch": "develop", "commit": "8ac2d06025fc452cb8514402fdcd960cc566af00", "builtAt": "2026-11-04T20:05:14Z", "pkg": {"dual": "../../firmware/tessera-3.3-beta1.fwsc", "single": "../../firmware/tessera-3.3-beta1-1core.fwsc"}}, "nightly": null, "synth": null};
 $("ver").textContent = `FM-1 · ${meta.version}`;
+$("beta-options").hidden = !meta.beta;
+if (meta.beta) {
+  $("beta-version").textContent = meta.beta.version;
+  $("beta-info").textContent = `${meta.beta.branch} · ${meta.beta.commit.slice(0, 7)} · ${meta.beta.builtAt}`;
+}
 $("nightly-options").hidden = !meta.nightly;
 if (meta.nightly) $("nightly-info").textContent = `next · ${meta.nightly.commit.slice(0, 7)} · ${meta.nightly.builtAt}`;
 $("synth-options").hidden = !meta.synth;
@@ -1172,7 +1252,7 @@ async function choose() {
   image = null; $("go").disabled = true;
   try {
     if (!images[kind]) {
-      if (!channel) throw new Error(kind.startsWith("synth-") ? "Synth only is not available yet" : "Nightly is not available yet");
+      if (!channel) throw new Error(kind.startsWith("synth-") ? "Synth only is not available yet" : kind.startsWith("beta-") ? "No beta at the moment" : "Nightly is not available yet");
       const url = channel.pkg[key] + (channel.commit ? "?commit=" + channel.commit : ""), r = await fetch(url);
       if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
       const pkg = new Uint8Array(await r.arrayBuffer());
