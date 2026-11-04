@@ -15,6 +15,7 @@
  * favorites.factory[15][30] bits 5..6 MIDI OUT (0 KEYS, 1 ALL, 2 OFF), bit 7 CLOCK OUT (midi_out.c).
  * favorites.factory[15][24] bit 4: MIDI CC IN OFF (midi_cc.c); zero keeps it ON.
  * favorites.factory[15][25]: tagged TRACK KNOB LEFT (panel.c KNOB_SWAP_TAG); zero/unknown keeps it on the right.
+ * favorites.factory[8] bytes 4..7: 'U', 'V', 1, USB VOLUME 0..100 % (upstream's place); untagged = UA_VOLUME_DEFAULT.
  * bold: no longer used (one font weight); kept as it was saved, unless it holds the HOLD setting (panel.c). */
 typedef struct {
     uint32_t magic, palette, lowcut, zoom;
@@ -30,6 +31,8 @@ _Static_assert(sizeof(((persist_t *)0)->ext) == 32u, "ext: 8 words, new fields t
 _Static_assert(sizeof(persist_t) == 604u, "the record's layout: new settings take spare bytes (favorites.c)");
 
 static int16_t settings_glo[4];                     /* ext.glo: project.c GLO_KEPT (glo_restore, glo_poll) */
+#define USB_VOLUME_ROW 8u                           /* (favorites.c: GRAIN's retired row, past Felucca 1.0's stars) */
+#define USB_VOLUME_BYTE 4u
 #define RECORD_PREF_TAG 0x52500000u /* RP, high half of the old zoom word */
 #define A4_TAG 0x41340000u                          /* "A4": old spare contents are not tuning */
 #define AUTOSAVE_OFF_TAG 0xA1u                     /* CZ row byte 28: only this tag disables autosave */
@@ -80,6 +83,10 @@ static int settings_import(persist_t *p, int n)
     if (usb.up) ua_tracks_set(tracks, fm1_ms);    /* live backup restore: re-enumerate before changing stride */
     else ua_tracks = ua_tracks_want = tracks;
     ua_off = ua_off_want = (uint8_t)p->ext.usb_off;    /* (usb_start, after this, builds the configuration) */
+    {
+        const uint8_t *u = p->favorites.factory[USB_VOLUME_ROW] + USB_VOLUME_BYTE;
+        settings_usb_volume = u[0] == 'U' && u[1] == 'V' && u[2] == 1u && u[3] <= 100u ? u[3] : (uint8_t)UA_VOLUME_DEFAULT;
+    }
 #endif
     p->palette = palette_to_stored(palette_from_stored(p->palette));
     settings_screen=p->favorites.factory[15][27] < 8u ? p->favorites.factory[15][27] : 0u;
@@ -132,6 +139,13 @@ static void settings_export(persist_t *p)
 #if MELODEE_USB_AUDIO
     p->ext.usb_off = ua_off;
     p->favorites.factory[15][26] = ua_tracks ? 0xA1u : 0u; /* tagged; old/unknown bytes default to stereo */
+    {
+        uint8_t *u = p->favorites.factory[USB_VOLUME_ROW] + USB_VOLUME_BYTE;
+        memset(u, 0, 4);
+        if (settings_usb_volume != UA_VOLUME_DEFAULT) {
+            u[0] = 'U'; u[1] = 'V'; u[2] = 1u; u[3] = settings_usb_volume > 100u ? 100u : settings_usb_volume;
+        }
+    }
 #endif
     p->favorites.factory[15][27]=settings_screen;
     p->favorites.factory[15][28] = settings_autosave ? 0u : AUTOSAVE_OFF_TAG;

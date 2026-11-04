@@ -369,8 +369,8 @@ static void e0_send(const uint8_t *p, uint16_t len, uint16_t wlen)
 #include "usb_audio.c"
 static int ua_capture_active(void)
 {
-    /* Only track mode needs the mixer to collect a second set of samples. */
-    return usb.up && usb.config && !usb.suspended && ua.cap_alt && ua_cap_channels == 4u;
+    /* The mixer collects what capture sends: 4 the track stems, 2 the stereo mix before MASTER, 0 nothing */
+    return usb.up && usb.config && !usb.suspended && ua.cap_alt ? (int)ua_cap_channels : 0;
 }
 #endif
 
@@ -641,6 +641,10 @@ static void midi_in_event(uint32_t pkt)
     }
     if (cin == 0xFu && (st == 0xF8u || st == 0xFAu || st == 0xFBu || st == 0xFCu)) {
         midi_enqueue(0xFu | st << 8, 1u);
+        return;
+    }
+    if (cin == 3u && st == 0xF2u && !(pkt & 0x80800000u)) {   /* Song Position (midi_clock.c follows it) */
+        midi_enqueue(pkt, 1u);
         return;
     }
     if (cin >= 8u && cin <= 0xEu && (st >> 4) == cin && !((pkt >> 16) & 0x80u) &&

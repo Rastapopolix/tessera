@@ -22,7 +22,7 @@ static void drain(void)
     }
 }
 static void blocks(uint32_t n) { while (n--) { events_block(CTL); drain(); } }
-static uint32_t beat_blocks(void) { return seq_beat_samples() / CTL; }
+static uint32_t beat_blocks(void) { return beat_samples() / CTL; }   /* (real time: blocks of samples) */
 
 static void reset(uint32_t out)
 {
@@ -203,7 +203,7 @@ static int echo_and_route_test(void)
     reset(MIDI_OUT_ALL);
     trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 100};
     trk[0].step[1] = (step_t){{62}, 1, ST_TIE, 0, 0, 100};
-    play(1);
+    play(1); blocks(beat_blocks() / 8u);              /* (mid-step: not the block a new loop starts its note in) */
     panic_req = 1u; blocks(1);
     bad += check("a panic ends the notes sent", balanced());
     stop();
@@ -298,9 +298,59 @@ static int settings_test(void)
     return bad;
 }
 
+/* CLK INT runs on exact musical units (mix.c, Melodee 1.6.1): over five minutes at each of seven tempos, through the
+ * tempo changes, the song keeps the true tempo to a unit, and the tracks at 1/16, 1/32 and 1/8T, the ARP and the
+ * clock out never slide against it (before: a 1/16 track drifted ~27 ms in five minutes, the ARP over a second) */
+static int no_drift_test(void)
+{
+    static const int16_t BPM[] = {97, 120, 137, 173, 40, 240, 101};
+    static const uint8_t DIV[3] = {2, 3, 5};
+    int bad = 0;
+    uint32_t pulses = 0, bad_tracks = 0, bad_arp = 0, bad_pulses = 0, bad_tempo = 0, k;
+    int64_t off[3], arp_off0, steps_arp = 0;
+    double exact = 0.0;
+    reset(MIDI_OUT_KEYS);
+    settings_clock_out = 1;
+    for (k = 0; k < 3u; k++) { trk[k].p[P_SDIV] = DIV[k]; trk[k].p[P_SLEN] = 16; }
+    track_t *a = &trk[3];
+    a->p[P_AMODE] = 1; a->p[P_ARATE] = 2; a->p[P_ASWING] = 0; a->nheld = 1; a->held[0] = 60; a->arp_phys = 1;
+    song.g[G_BPM] = BPM[0];
+    transport_req = 1; events_block(CTL);
+    mo_r = mo_w;
+    uint64_t u0 = ((uint64_t)bar_n * 4u + beat_n) * MIDI_BEAT_UNITS + beat_pos;
+    for (k = 0; k < 3u; k++)
+        off[k] = (int64_t)seq_run_step[k] * seq_div_samples(DIV[k]) + trk[k].seq_pos - (int64_t)u0;
+    uint32_t last_idx = a->arp_idx;
+    arp_off0 = (int64_t)a->arp_pos - (int64_t)u0;
+    for (uint32_t b = 0; b < sizeof BPM / sizeof BPM[0]; b++) {
+        song.g[G_BPM] = BPM[b];
+        uint32_t n = 300u * (uint32_t)FS / CTL;       /* five minutes */
+        for (uint32_t i = 0; i < n; i++) {
+            events_block(CTL);
+            exact += (double)CTL * MIDI_BEAT_UNITS * BPM[b] / (FS * 60.0);
+            while (mo_r != mo_w) { if (((midi_out_q[mo_r % MQ] >> 8) & 0xFFu) == 0xF8u) pulses++; mo_r++; }
+            if (a->arp_idx != last_idx) { steps_arp += (uint32_t)(a->arp_idx - last_idx); last_idx = a->arp_idx; }
+            uint64_t u = ((uint64_t)bar_n * 4u + beat_n) * MIDI_BEAT_UNITS + beat_pos;
+            if ((double)(u - u0) > exact + 1.0 || (double)(u - u0) + 1.0 < exact) bad_tempo++;
+            for (k = 0; k < 3u; k++)
+                if ((int64_t)seq_run_step[k] * seq_div_samples(DIV[k]) + trk[k].seq_pos - (int64_t)u != off[k]) bad_tracks++;
+            if (steps_arp * (int64_t)seq_div_samples(2) + a->arp_pos - (int64_t)u != arp_off0) bad_arp++;
+            /* the clock out: a pulse every 1,024 units from PLAY's first */
+            if (pulses != (uint32_t)((u - u0) / 1024u) + 1u && pulses != (uint32_t)((u - u0) / 1024u)) bad_pulses++;
+        }
+    }
+    transport_req = 2; blocks(2);
+    a->p[P_AMODE] = 0; a->nheld = 0; a->arp_phys = 0;
+    bad += check("CLK INT, 35 minutes over 7 tempos: the song keeps the true tempo to a unit", !bad_tempo);
+    bad += check("  tracks at 1/16, 1/32 and 1/8T never slide against it", !bad_tracks);
+    bad += check("  the ARP never slides", !bad_arp && steps_arp > 8000);
+    bad += check("  the clock out stays on the same unit", !bad_pulses && pulses > 50000u);
+    return bad;
+}
+
 int main(void)
 {
-    int bad = notes_test() + echo_and_route_test() + generator_test() + clock_out_test() + settings_test();
+    int bad = notes_test() + echo_and_route_test() + generator_test() + clock_out_test() + no_drift_test() + settings_test();
     printf("%s\n", bad ? "MIDI OUT TEST FAILED" : "MIDI out tests passed");
     return bad != 0;
 }

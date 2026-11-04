@@ -358,6 +358,12 @@ static void tess_join(const track_t *t, uint32_t tr)
     tessera.chord[tr].n = (uint16_t)(ev->form ? j : k);
 }
 
+/* Song Position (seq.c seq_seek): every generator track joins at its next step, as if it had played from the top */
+void tessera_seek_join(void)
+{
+    tess_join_due = (uint8_t)((1u << TESSERA_TRACKS) - 1u);
+}
+
 /* QUAD's mutation: with other QUAD rows, each column at AMOUNT % turns down a row among them (the last one's cell to
  * the first), so the cells pass from track to track; alone, or while any column moves of its own (tess_quad_cols:
  * the columns already pass the cells round), its own cells change (gen_quad_mutate) */
@@ -1203,7 +1209,7 @@ static int tess_chord_same(const track_t *t, const tessera_chord_t *g, const uin
  * out of step) */
 static uint32_t tess_br_cycle(const track_t *t, uint32_t tr, int first)
 {
-    uint32_t period = seq_div_samples((uint32_t)t->p[P_SDIV]), s = (11u + gen_rnd(&tessera.rnd[tr], 9u)) * FS;
+    uint32_t period = seq_div_samples((uint32_t)t->p[P_SDIV]), s = seq_units_of((11u + gen_rnd(&tessera.rnd[tr], 9u)) * FS);
     uint32_t n = period ? s / period : 1u;
     if (first) n = n / 4u + gen_rnd(&tessera.rnd[tr], n * 3u / 4u + 1u);
     return n < 1u ? 1u : n > 65535u ? 65535u : n;

@@ -460,10 +460,15 @@ static void s_seed_back(void)
 }
 static void b_seed_back(uint32_t bar)
 {
-    if (bar == 3u || bar == 5u)                      /* the seed's line from this bar's line (its step: a block or two
-                                                      * before, a bar being 2756.25 blocks; a step 172) */
-        tt_mark[bar == 3u ? 0 : 1] = tt_blk - 2u;
+    if (bar == 3u || bar == 5u)                      /* the seed's line from this bar's line (its step plays in the
+                                                      * bar's first block, a bar being 2756.25 blocks; a step 172.27) */
+        tt_mark[bar == 3u ? 0 : 1] = tt_blk - (bar == 3u ? 1u : 2u);   /* (less the blocks played below) */
     if (bar != 2u && bar != 4u) return;
+    {   /* turned just after bar 2's (4's) line, its step played: ROLL waits for the next one */
+        int32_t o[2 * CTL];
+        mix_block(o, CTL);
+        tt_blk++;
+    }
     for (uint32_t tr = 0; tr < 2u; tr++) {
         sel(tr);
         knob(tessera_evolve_knob, 3, bar == 2u ? 1 : -1);
@@ -825,7 +830,7 @@ static void scen_run(const scen_t *sc, const char *logdir, char *res, size_t cap
     for (tr = 0; tr < NTRK; tr++) tt_open[tr] = -1;
     sc->setup();
     rng_state = sc->seed;
-    bar_len = 4u * seq_beat_samples();
+    bar_len = 4u * beat_samples();
     total = sc->bars * bar_len;
     if (!sc->blk)
         transport_req = 1;
@@ -1087,8 +1092,8 @@ static void seed_check(const char *name, uint32_t ntr, int mid, char *res, size_
     scen_run(sc, 0, res, cap);
     for (uint32_t tr = 0; tr < ntr; tr++) {
         uint32_t k = 0;
-        for (i = 0; i < tt_n; i++)                   /* (the step on bar 2's line falls in the block before it) */
-            k += tt_ev[i].tr == tr && tt_ev[i].blk + 1u < tt_bar_blk[2];
+        for (i = 0; i < tt_n; i++)                   /* (the step on bar 2's line falls in its first block) */
+            k += tt_ev[i].tr == tr && tt_ev[i].blk < tt_bar_blk[2];
         if (k > 512u) k = 512u;
         tt_from(tr, 0, a, k);
         same &= k > 0 && tt_from(tr, tt_mark[1], b, k) == k && !memcmp(a, b, k * sizeof a[0]);
@@ -1111,7 +1116,8 @@ static void roll_wait_check(char *res, size_t cap)
     for (int run = 0; run < 2; run++) {
         tt_n = tt_blk = 0;
         scen_run(run ? back : none, 0, res, cap);
-        lo = tt_bar_blk[2] - 2u, hi = tt_bar_blk[3] - 2u;   /* (a bar line's step: a block or two before the bar's) */
+        /* (a bar line's step: in the bar's first block, exact timing; seed_back plays a block more at bar 2's line) */
+        lo = tt_bar_blk[2], hi = tt_bar_blk[3] - (run ? 1u : 0u);
         for (tr = 0; tr < 2u; tr++) {
             uint32_t k = 0, *o = run ? b : a[tr];
             for (i = 0; i < tt_n && k < 256u; i++)
@@ -1142,7 +1148,7 @@ static uint32_t sub_play(uint32_t mode, uint32_t ratch, uint32_t chance, uint32_
     tessera_param_set(0, TX_SUB_CHANCE, (int32_t)chance);
     tessera_param_set(0, TX_NL_MODE, (int32_t)nl);
     rng_state = 0x5355u;
-    total = 2u * 4u * seq_beat_samples();
+    total = 2u * 4u * beat_samples();
     transport_req = 1;
     for (f = 0; f < total + 4u * CTL; f += CTL) {
         if (f >= total) transport_req = 2;
@@ -1178,7 +1184,7 @@ static uint32_t sub_step_play(uint32_t ratch, uint32_t hit, uint32_t *gap, uint3
         if (hit) trk[0].step[i].hit = (uint8_t)hit;
         step_set_ratch(&trk[0].step[i], ratch);
     }
-    total = 2u * 4u * seq_beat_samples();
+    total = 2u * 4u * beat_samples();
     transport_req = 1;
     for (f = 0; f < total + 4u * CTL; f += CTL) {
         if (f >= total) transport_req = 2;
@@ -1210,7 +1216,7 @@ static uint32_t sub_nudge_play(int32_t nudge, uint32_t ratch, uint32_t shape, ui
     step_set_nudge(&trk[0].step[4], nudge);
     step_set_ratch(&trk[0].step[4], ratch);
     tessera_param_set(0, TX_SUB_SHAPE, (int32_t)shape);
-    bar = 4u * seq_beat_samples() / CTL;
+    bar = 4u * beat_samples() / CTL;
     transport_req = 1;
     a0 = vage;
     for (f = 0; f < bar; f++) {
@@ -1244,7 +1250,7 @@ static uint32_t sub_step_human(uint32_t hum, uint32_t ms, uint32_t *at, uint32_t
     tessera_param_set(0, TX_TW_HUMAN, (int32_t)hum);
     tessera_param_set(0, TX_SUB_HUMAN, (int32_t)ms);
     rng_state = 0x4855u;                                /* (the SEED as before: a replay) */
-    bar = 4u * seq_beat_samples() / CTL;
+    bar = 4u * beat_samples() / CTL;
     transport_req = 1;
     a0 = vage;
     for (f = 0; f < bar; f++) {
@@ -1274,7 +1280,7 @@ static uint32_t sub_human_play(uint32_t ms, uint32_t *blk, uint32_t max)
     gen(0, TESS_ENG_EUCLID);
     tessera_param_set(0, TX_SUB_HUMAN, (int32_t)ms);
     rng_state = 0x4855u;
-    total = 2u * 4u * seq_beat_samples();
+    total = 2u * 4u * beat_samples();
     transport_req = 1;
     for (f = 0; f < total + 4u * CTL; f += CTL) {
         if (f >= total) transport_req = 2;
@@ -1471,7 +1477,7 @@ static uint32_t acc_play(uint32_t mode, uint32_t lim, uint32_t q, uint32_t passe
     host_tracks_init();
     tessera_reset();
     song.g[G_BPM] = 120;
-    pass = 4u * seq_div_samples(2) / CTL * CTL;          /* (a pass: four 1/16 steps, in whole blocks) */
+    pass = 4u * div_samples(2) / CTL * CTL;          /* (a pass: four 1/16 steps, in whole blocks) */
     total = passes * pass;
     for (i = 0; i < NTRK; i++) tt_open[i] = -1;
     tt_n = tt_blk = 0;
@@ -1710,7 +1716,7 @@ static uint32_t nl_play(uint32_t mode, uint32_t len, uint32_t keys, uint32_t bar
     tessera_param_set(0, TX_NL_LEN, (int32_t)len);
     tessera_param_set(0, TX_NL_KEYS, (int32_t)keys);
     rng_state = 0x4E4Cu;
-    bar_len = 4u * seq_beat_samples();
+    bar_len = 4u * beat_samples();
     total = bars * bar_len;
     transport_req = 1;
     *most = 0;
@@ -2175,7 +2181,7 @@ static void sv_run(char *res, size_t cap)
     }
     {   /* through the sequencer: 2 bars at 120 BPM */
         int32_t o[2 * CTL];
-        uint32_t f, bar_len = 4u * seq_beat_samples(), changed_bar0 = 0;
+        uint32_t f, bar_len = 4u * beat_samples(), changed_bar0 = 0;
         sv_setup();
         knob(tessera_evolve_knob, 2, 50);
         memcpy(as, trk[0].step, sizeof as);
