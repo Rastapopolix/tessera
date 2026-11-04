@@ -889,7 +889,8 @@ static void draw_columns(void)
                 draw_column(1, "CHAIN", own ? "OWN" : "FOLLOW", "", tessera.fc_form ? VAL(1u) : T_DIM, own * 1000, ICON_AUTO);
                 draw_column(2, "SKIP", w2, "%", tessera.fc_form && !own ? VAL(2u) : T_DIM, (int32_t)tessera.fc_skip[tr] * 10, ICON_AUTO);
             }
-            draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(3, "ROLE", ET_ROLE_NAME[tessera.et_role[tr] % ET_ROLES], "", tessera.et_amount ? VAL(3u) : T_DIM,
+                        (int32_t)tessera.et_role[tr] * 200, ICON_AUTO);   /* (Entries' ROLE: lit with ENTRIES on) */
             return;
         }
         fmt_int(f2, ev->contrast);
@@ -948,6 +949,25 @@ static void draw_columns(void)
     if (cur_page()->graph == GR_KEYLINK) {               /* KEY (SCL's row): KEY LINK, the project's */
         draw_column(0, "KEY", tessera.key_link ? "LINKED" : "OWN", "", VAL(0u), tessera.key_link ? 1000 : 0, ICON_AUTO);
         for (uint32_t k = 1; k < 4u; k++) draw_column(k, "", "", "", T_DIM, -1, ICON_NONE);
+        return;
+    }
+    if (cur_page()->graph == GR_ENTRIES && entries_layer_on()) {   /* ENTRIES, OCT+ held: each track's ROLE */
+        static const char *const NM[TESSERA_TRACKS] = {"ROLE 1", "ROLE 2", "ROLE 3", "ROLE 4"};
+        for (uint32_t k = 0; k < TESSERA_TRACKS; k++)
+            draw_column(k, NM[k], ET_ROLE_NAME[tessera.et_role[k] % ET_ROLES], "", VAL(k), (int32_t)tessera.et_role[k] * 200,
+                        ICON_AUTO);
+        return;
+    }
+    if (cur_page()->graph == GR_ENTRIES) {               /* ENTRIES (entries.c), the project's: ENTRIES, DWELL, STYLE, FADE */
+        char w1[8], w2[4], w4[4];
+        uint32_t on = tessera.et_amount != 0u;
+        fmt_int(w1, tessera.et_amount);
+        fmt_int(w2, tessera.et_dwell);
+        fmt_int(w4, tessera.et_fade);
+        draw_column(0, "ENTRIES", on ? w1 : "OFF", on ? "%" : "", VAL(0u), (int32_t)tessera.et_amount * 10, ICON_AUTO);
+        draw_column(1, "DWELL", w2, "ph", on ? VAL(1u) : T_DIM, ((int32_t)tessera.et_dwell - 1) * 1000 / 7, ICON_AUTO);
+        draw_column(2, "STYLE", tessera.et_style ? "FADE" : "CUT", "", on ? VAL(2u) : T_DIM, (int32_t)tessera.et_style * 1000, ICON_AUTO);
+        draw_column(3, "FADE", w4, "bar", on && tessera.et_style ? VAL(3u) : T_DIM, ((int32_t)tessera.et_fade - 1) * 1000 / 3, ICON_AUTO);
         return;
     }
     if (cur_page()->graph == GR_CHAIN && chain_layer_on()) {   /* CHAIN, OCT+ held: each place's REPEAT (past the FORM: dim) */

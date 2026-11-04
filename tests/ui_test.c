@@ -3670,8 +3670,9 @@ static int test_product_ux(void)
     press(B_GLO); ok &= str_eq(cur_page()->title, "SYSTEM");
     press(B_GLO); ok &= str_eq(cur_page()->title, "MIDI OUT");
     press(B_GLO); ok &= str_eq(cur_page()->title, "CHAIN");
+    press(B_GLO); ok &= str_eq(cur_page()->title, "ENTRIES");
     press(B_GLO); ok &= cur_page()->graph == GR_TRK;
-    bad += check("GLO cycles MIXER > GLOBAL > SYSTEM > MIDI OUT > CHAIN > MIXER", ok);
+    bad += check("GLO cycles MIXER > GLOBAL > SYSTEM > MIDI OUT > CHAIN > ENTRIES > MIXER", ok);
     go_title("CHAIN");                            /* the project's FORM, PHRASE, WANDER (form_chain.c) */
     turn(EN_K1, 2); turn(EN_K2, 1); turn(EN_K3, 5);
     ok = tessera.fc_form == 2u && tessera.fc_phrase == 2u && tessera.fc_wander > 0u;
@@ -3679,6 +3680,15 @@ static int test_product_ux(void)
     bad += check("CHAIN: KNOB 1 FORM and KNOB 2 PHRASE a step a detent, KNOB 3 WANDER; back to OFF and 4 bars",
                  ok && !tessera.fc_form && !tessera.fc_phrase);
     tessera.fc_wander = 0; tessera.fc_phrase = 1;
+    go_title("ENTRIES");                          /* Entries: ENTRIES, DWELL, STYLE, FADE; OCT+ held the ROLEs (entries.c) */
+    turn(EN_K1, 1); turn(EN_K2, 2); turn(EN_K3, -1); turn(EN_K4, 1);
+    ok = tessera.et_amount > 0u && tessera.et_dwell == 4u && tessera.et_style == 0u && tessera.et_fade == 3u;
+    fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+    turn(EN_K3, 2);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
+    ok &= tessera.et_role[2] == 1u;
+    bad += check("ENTRIES: KNOB 1 ENTRIES, 2 DWELL, 3 STYLE, 4 FADE; OCT+ held KNOB 3 track 3's ROLE a step a detent", ok);
+    tessera.et_amount = 0; tessera.et_dwell = 2; tessera.et_style = 1; tessera.et_fade = 2; tessera.et_role[2] = 0;
     go_title("MIDI OUT");                         /* KNOB k track k's MIDI OUT channel: AUTO, 1..16, OFF, a step a turn */
     turn(EN_K2, 3);
     turn(EN_K4, -1);
@@ -4333,10 +4343,12 @@ static int test_tempo_select(void)
     turn(EN_SELECT, 1);
     ok &= str_eq(cur_page()->title, "CHAIN");
     turn(EN_SELECT, 1);
+    ok &= str_eq(cur_page()->title, "ENTRIES");
+    turn(EN_SELECT, 1);
     ok &= str_eq(cur_page()->title, "GLOBAL");
     turn(EN_SELECT, -1);
-    bad += check("SELECT on GLO: GLOBAL -> SYSTEM -> MIDI OUT -> CHAIN -> GLOBAL (wraps), back the other way; the BPM untouched",
-                 ok && str_eq(cur_page()->title, "CHAIN") && song.g[G_BPM] == 120);
+    bad += check("SELECT on GLO: GLOBAL -> SYSTEM -> MIDI OUT -> CHAIN -> ENTRIES -> GLOBAL (wraps), back the other way; the BPM untouched",
+                 ok && str_eq(cur_page()->title, "ENTRIES") && song.g[G_BPM] == 120);
     go_title("NOTES");
     cursor_set(4);
     turn(EN_SELECT, 1);

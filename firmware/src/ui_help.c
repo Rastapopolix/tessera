@@ -492,9 +492,17 @@ static void help_find(uint32_t k)
         else help.pid = (uint16_t)PID_TESS(TX_SD_GRAVITY);
         return;
     }
-    if (pg->graph == GR_FORM && fm_layer_on()) {       /* (a generator's FORM, OCT+ held: DEVELOP, the CHAIN's FOLLOW, SKIP) */
-        if (k == 3u) help_unused(k);
-        else help.pid = (uint16_t)PID_TESS(k == 2u ? TX_FC_SKIP : k ? TX_FC_FOLLOW : TX_FM_DEVELOP);
+    if (pg->graph == GR_FORM && fm_layer_on()) {       /* (a generator's FORM, OCT+ held: DEVELOP, the CHAIN's FOLLOW, SKIP,
+                                                        * Entries' ROLE) */
+        help.pid = (uint16_t)PID_TESS(k == 3u ? TX_ET_ROLE : k == 2u ? TX_FC_SKIP : k ? TX_FC_FOLLOW : TX_FM_DEVELOP);
+        return;
+    }
+    if (pg->graph == GR_ENTRIES) {                     /* (the project's: ENTRIES, DWELL, STYLE, FADE; OCT+ held the ROLEs) */
+        if (entries_layer_on()) {
+            help.pid = (uint16_t)PID_TESS(TX_ET_ROLE);
+            help_tr = k;
+        } else
+            help.pid = (uint16_t)PID_TESS(k == 3u ? TX_ET_FADE : k == 2u ? TX_ET_STYLE : k ? TX_ET_DWELL : TX_ET_AMOUNT);
         return;
     }
     if (pg->graph == GR_CHAIN) {                       /* (the project's: FORM, PHRASE, WANDER; OCT+ held the REPEATs) */
