@@ -81,7 +81,7 @@ static void devices_init(void)
 }
 
 /* --------------------------------------------------- the SIE and bus --- */
-static uint8_t regs[4][32], common[16], index_reg, rsp[512];
+static uint8_t regs[4][32], common[16], index_reg, rsp[2048];
 static uint32_t rsp_len, rsp_pos, ep_cnt[4];
 static void *ep_radr[4];
 static void *ep_tadr[4];
@@ -89,6 +89,7 @@ static uint32_t USB_CON0, line_state;
 static uint8_t bus_dead;                /* nothing answers (cable pulled) */
 static uint8_t ep0_timeout;             /* SETUP stays busy until the driver's deadline */
 static uint8_t devctl_ls;               /* the device is low speed */
+static uint32_t slow_until;             /* nothing answers before this many bus resets (a hub still starting) */
 static uint32_t ctl_requests, setup_requests, rx_toggle_clears;
 static uint32_t tx_toggle_clears, off_count;
 static uint32_t root_resets, host_attaches, port_resets[8];
@@ -229,7 +230,7 @@ static void mock_write(uint32_t r, uint32_t v)
             memcpy(s, ep_radr[0], 8);
             if (ep0_timeout)
                 regs[0][17] = 2;
-            else if (bus_dead || !d || !answer(d, s))
+            else if (bus_dead || !d || root_resets < slow_until || !answer(d, s))
                 regs[0][17] = 0x10;                     /* no answer */
             else
                 regs[0][17] = 0;
@@ -338,6 +339,7 @@ static void connect(int which)
     devices_init();
     root = which;
     bus_dead = devctl_ls = ep0_timeout = 0;
+    slow_until = 0;
     memset(common, 0, sizeof common);
     memset(regs, 0, sizeof regs);
     dflt = 0;
@@ -874,6 +876,115 @@ static void test_endpoint_selection(void)
     puts("USB host: output-only synth, input-only controller, alternate boundaries, protocol/packet validation: OK");
 }
 
+/* An audio interface with MIDI: IAD, audio control, two audio streaming interfaces of three formats with eight
+ * rates each, then the MIDI streaming interface, then DFU. *midi_at = where the MIDI interface starts. */
+static uint16_t build_audio_cfg(uint8_t *d, uint32_t *midi_at)
+{
+    static const uint8_t head[] = {9, 2, 0, 0, 5, 1, 0, 0x80, 250, 8, 0x0B, 0, 4, 1, 0, 0, 0};
+    static const uint8_t ac[] = {
+        9, 4, 0, 0, 0, 1, 1, 0, 0,
+        10, 0x24, 1, 0, 1, 71, 0, 2, 1, 2,
+        12, 0x24, 2, 1, 1, 1, 0, 2, 3, 0, 0, 0,         /* USB streaming in, line out */
+        12, 0x24, 2, 4, 1, 2, 0, 2, 3, 0, 0, 0,
+        9, 0x24, 3, 3, 1, 3, 0, 1, 0,
+        9, 0x24, 3, 6, 1, 1, 0, 4, 0,
+        10, 0x24, 6, 2, 1, 1, 1, 0, 0, 0,
+    };
+    static const uint8_t midi[] = {
+        9, 4, 3, 0, 2, 1, 3, 0, 0,
+        7, 0x24, 1, 0, 1, 0x41, 0,
+        6, 0x24, 2, 1, 1, 0,
+        9, 0x24, 3, 1, 3, 1, 2, 1, 0,
+        9, 5, 0x02, 2, 64, 0, 0, 0, 0,
+        5, 0x25, 1, 1, 1,
+        9, 5, 0x81, 2, 64, 0, 0, 0, 0,
+        5, 0x25, 1, 1, 3,
+    };
+    static const uint8_t dfu[] = {9, 4, 4, 0, 0, 0xFE, 1, 1, 0, 9, 0x21, 1, 0xFF, 0, 0, 4, 0x10, 1};
+    uint32_t n = 0, f, k, q;
+    memcpy(d, head, sizeof head);
+    n += sizeof head;
+    memcpy(d + n, ac, sizeof ac);
+    n += sizeof ac;
+    for (f = 1; f <= 2; f++) {
+        uint8_t alt0[9] = {9, 4, (uint8_t)f, 0, 0, 1, 2, 0, 0};
+        memcpy(d + n, alt0, 9);
+        n += 9;
+        for (k = 1; k <= 3; k++) {
+            uint8_t as[9 + 7] = {9, 4, (uint8_t)f, (uint8_t)k, 1, 1, 2, 0, 0, 7, 0x24, 1, (uint8_t)(f == 1 ? 1 : 6), 1, 1, 0};
+            uint8_t ep[9 + 7] = {9, 5, (uint8_t)(f == 1 ? 0x03 : 0x84), 0x09, 0x20, 0x02, 1, 0, 0, 7, 0x25, 1, 1, 0, 0, 0};
+            memcpy(d + n, as, sizeof as);
+            n += sizeof as;
+            d[n++] = 8 + 8 * 3;                         /* format type I: 2/3/4-byte samples, eight rates */
+            d[n++] = 0x24; d[n++] = 2; d[n++] = 1; d[n++] = 2; d[n++] = (uint8_t)(k + 1); d[n++] = (uint8_t)(8 * (k + 1));
+            d[n++] = 8;
+            for (q = 0; q < 8; q++) {
+                uint32_t hz = 8000u * (q + 1u);
+                d[n++] = (uint8_t)hz; d[n++] = (uint8_t)(hz >> 8); d[n++] = (uint8_t)(hz >> 16);
+            }
+            memcpy(d + n, ep, sizeof ep);
+            n += sizeof ep;
+        }
+    }
+    *midi_at = n;
+    memcpy(d + n, midi, sizeof midi);
+    n += sizeof midi;
+    memcpy(d + n, dfu, sizeof dfu);
+    n += sizeof dfu;
+    d[2] = (uint8_t)n;
+    d[3] = (uint8_t)(n >> 8);
+    return (uint16_t)n;
+}
+
+static void test_audio_midi_device(void)
+{
+    static uint8_t cfg[1024];
+    uh_midi_t m;
+    uh_desc_t w;
+    uint32_t midi_at, i;
+    uint16_t n = build_audio_cfg(cfg, &midi_at);
+    assert(n <= sizeof cfg && midi_at > 320u);          /* past the 320 bytes the probe used to keep */
+    assert(uh_parse_midi(cfg, n, &m) && m.cfg == 1 && m.iface == 3 && m.alt == 0 && m.in_ep == 1 &&
+           m.in_mps == 64 && m.out_ep == 2 && m.out_mps == 64);
+    uh_desc_start(&w, &m);                              /* a byte at a time: every descriptor split */
+    for (i = 0; i < n && !uh_desc_feed(&w, cfg + i, 1); i++)
+        ;
+    assert(m.found && m.iface == 3 && m.in_ep == 1 && m.out_ep == 2);
+    assert(i + 1u < n && cfg[i - 8] == 9 && cfg[i - 7] == 4 && cfg[i - 6] == 4);   /* ends at the DFU interface */
+    for (int via_hub = 0; via_hub < 2; via_hub++)
+        for (int small = 0; small < 2; small++) {
+            connect(via_hub ? HUB : KBD);
+            dev[KBD].cfgd = cfg;
+            dev[KBD].cfglen = n;
+            dev[KBD].mps0 = small ? 8 : 64;             /* 8: the descriptor arrives in 8-byte packets */
+            host_on();
+            assert(enumerate() && uh.msg == UH_MSG_MIDI);
+            uh.msg = 0;
+            assert(dev[KBD].cfg == 1 && dev[KBD].addr == uh.dev && uh.in_ep == 1 && uh.out_mps == 64);
+            push_packet(0x643C9009u);
+            poll_n(4);
+            assert(mi_w - mi_r == 1 && midi_in_q[mi_r % MQ] == 0x643C9009u);
+            mi_r = mi_w;
+            uh.want = 0; uh_task(fm1_ms); uh.msg = 0;
+        }
+    printf("USB host: audio+MIDI device, %u-byte configuration walked as it arrives: OK\n", n);
+}
+
+static void test_slow_hub(void)                         /* (upstream 6e61576) */
+{
+    connect(HUB);
+    slow_until = 3;                                     /* answers after the third reset (400 ms recovery) */
+    host_on();
+    assert(enumerate() && uh.msg == UH_MSG_MIDI && root_resets == 3);
+    uh.want = 0; uh_task(fm1_ms); uh.msg = 0;
+    connect(HUB);
+    slow_until = UH_ROOT_TRIES + 1u;                    /* never in time: reported, then quiet until unplug */
+    host_on();
+    assert(!enumerate() && uh.msg == UH_MSG_NOMIDI && root_resets == UH_ROOT_TRIES);
+    uh.want = 0; uh_task(fm1_ms); uh.msg = 0;
+    puts("USB host: a slow hub gets longer recovery after each reset, then is reported: OK");
+}
+
 static void test_device_mode_untouched(void)
 {
     /* with the host off, usb_poll is the device driver and uh_task does nothing */
@@ -904,6 +1015,8 @@ int main(void)
     test_host_output(0);
     test_host_output(1);
     test_endpoint_selection();
+    test_audio_midi_device();
+    test_slow_hub();
     puts("USB host: all OK");
     return 0;
 }
