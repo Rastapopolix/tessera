@@ -1603,6 +1603,22 @@ static void mo_pic_piece(void)
     }
     mo_text(b, 2, 92, set ? MO_INK : MO_DIM);
 }
+/* PERF: a row a MACRO: its number, its level as a bar, and how many mods it drives (none: dim) */
+static void mo_pic_perf(void)
+{
+    for (uint32_t k = 0; k < 4u; k++) {
+        int32_t y = 54 + (int32_t)k * 11;
+        uint32_t n = 0, i;
+        char m[3] = {'M', (char)('1' + k), 0}, b[12];
+        for (i = 0; i < CORD_LIVE; i++) n += cord_get(i)->src == CS_MACRO1 + k;
+        mo_inv(m, 3, y);
+        mo_hl(18, y + 3, 52, MO_DIM);
+        mo_fill(18, y + 2, 52 * tessera.macro[k] / 100, 3, MO_INK);
+        fmt_int(b, (int32_t)n);
+        str_cpy(b + str_len(b), n == 1u ? " MOD" : " MODS", 6);
+        mo_text(n ? b : "NO MOD", 76, y, n ? MO_INK : MO_DIM);
+    }
+}
 /* ENTRIES: a row a track: its number, its role (AUTO's guess), IN / OUT / MUTE, its level as a bar; a row about
  * to change on the next line blinks; off: dim */
 static void mo_pic_entries(void)
@@ -2109,6 +2125,7 @@ static void mo_picture(void)
     case GR_ENTRIES: mo_pic_entries(); return;
     case GR_PIECE: mo_pic_piece(); return;
     case GR_LAND: mo_pic_land(); return;
+    case GR_PERF: mo_pic_perf(); return;
     default: break;
     }
     if (pg->graph == GR_CHORD) {
@@ -2291,6 +2308,9 @@ static uint32_t mo_signature(void)
         h = (h ^ str_hash(1u, ui.msg)) * 16777619u;
     if (cur_page()->graph == GR_LAND)                   /* LANDSCAPE: the scene, a step on */
         h = (h ^ land_sig()) * 16777619u;
+    if (cur_page()->graph == GR_PERF)                   /* PERF: the MACROs (a learned CC moves them too) */
+        h = (h ^ ((uint32_t)tessera.macro[0] | (uint32_t)tessera.macro[1] << 7 | (uint32_t)tessera.macro[2] << 14 |
+                  (uint32_t)tessera.macro[3] << 21)) * 16777619u;
     return h;
 }
 

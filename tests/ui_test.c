@@ -3875,6 +3875,48 @@ static int test_landscape(void)
     bad += check("  left: notes not kept again", land_ev_at == i && !land_open);
     return bad;
 }
+/* PERF (GLO, Mono look): KNOB k MACRO k, the project's; a mod reads it as a 0..1 source; saved with the project only
+ * when one is set (older firmware sees none) */
+static int test_perf(void)
+{
+    int bad = 0;
+    uint32_t sig;
+    cord_t c = {CS_MACRO2, 3, CD_CUTOFF, 0, 50, 0, 0};
+    ui_power_on();
+    song.playing = 0;
+    tessera_reset();
+    go_title("PERF");
+    bad += check("PERF: the page in GLO (Mono look), the MACROs at 0", str_eq(cur_page()->title, "PERF") &&
+                 page_visible(ui.page) && !tessera.macro[0] && !tessera.macro[3]);
+    turn(EN_K1 + 1u, 3);
+    turn(EN_K1 + 3u, 200);
+    bad += check("  KNOB 2 MACRO 2 up by 3; KNOB 4 stops at 100", tessera.macro[1] == 3u && tessera.macro[3] == 100u &&
+                 !tessera.macro[0]);
+    cord_set(0, &c);
+    tessera.macro[1] = 40;
+    bad += check("  a mod reads MACRO 2 as 0..1 whichever track, the project's (no track in its name)",
+                 cord_src(CS_MACRO2, 3) == 40 * 32767 / 100 && cord_src(CS_MACRO2, 0) == cord_src(CS_MACRO2, 3) &&
+                 !cord_bipolar(CS_MACRO2, 0) && str_eq(cord_src_name(CS_MACRO4), "MACRO 4"));
+    frame();
+    sig = mo_signature();
+    tessera.macro[1] = 41;                              /* (as a learned CC sets it: no ui.force) */
+    bad += check("  moved from elsewhere: drawn again", mo_signature() != sig);
+    project_save(1);
+    tessera.macro[1] = 0; tessera.macro[3] = 0;
+    project_load(1);
+    bad += check("  saved with the project", tessera.macro[1] == 41u && tessera.macro[3] == 100u);
+    {
+        project_t *p = &proj_scratch;
+        uint32_t len;
+        memset(tessera.macro, 0, 4);
+        project_capture(p);
+        len = tsp_pack(proj_wire_u.raw, p, 1);
+        bad += check("  all at 0: no PERF part written", len && tsp_valid(proj_wire_u.raw, len) && !tsp_seen.at[TSP_PERF]);
+    }
+    cord_clear();
+    tessera_reset();
+    return bad;
+}
 #endif
 
 /* MENU > TRACK KNOB: LEFT swaps the ALGORITHM and PRESETS knobs' roles; saved with the settings */

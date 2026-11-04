@@ -223,6 +223,7 @@ typedef struct {
     uint8_t          pl_count;                   /* 2..8: WAVES' swells, BUILDS' builds, STEPS' terraces (3) */
     uint8_t          pl_end;                     /* 0 STOP, 1 LOOP, 2 NEW, 3 FREE */
     uint8_t          pl_user[8];                 /* 0..100: USER's levels, evenly along the piece */
+    uint8_t          macro[4];                   /* 0..100: PERF's MACRO 1..4 (cord.c CS_MACRO1..4) */
 } tessera_state_t;
 
 extern tessera_state_t tessera;
@@ -397,6 +398,7 @@ enum {
     TX_PL_LENGTH, TX_PL_SHAPE, TX_PL_PEAK, TX_PL_COUNT, TX_PL_END,   /* (0x280..0x284: the piece planner, the project's) */
     TX_PL_USER1, TX_PL_USER2, TX_PL_USER3, TX_PL_USER4,             /* (0x285..0x28C: SHAPE USER's eight levels) */
     TX_PL_USER5, TX_PL_USER6, TX_PL_USER7, TX_PL_USER8,
+    TX_MACRO1, TX_MACRO2, TX_MACRO3, TX_MACRO4,     /* (0x28D..0x290: PERF's four MACROs, the project's: cord sources) */
     TX_COUNT
 };
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */
