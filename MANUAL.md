@@ -1077,6 +1077,11 @@ The web editor's **Complete backup** saves and restores the music, slots A to D,
 To try the [demo projects](demos/README.md), the editor's **Demo projects** (on the Projects tab) puts each into a
 slot you choose and leaves the rest of the FM-1 as it is; `tools/demo_backup.py` does the same with a backup file.
 
+To see how hard the FM-1 is working, the editor's **Settings** tab has **Health**: press **Live** and it reads the
+CPU load, the worst audio half against its deadline, late halves, voices shed or stolen (per track too), the second
+core and the stacks once a second. A value shown inverted means a crackle or a cut voice is likely. **Reset worst**
+starts the worst times again, for example before you try a busy part.
+
 ---
 
 ## If something goes wrong
