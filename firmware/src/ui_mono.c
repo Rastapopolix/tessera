@@ -1576,6 +1576,33 @@ static void mo_pic_chain(void)
         if (fc_follows(i)) mo_invc(t, 3 + (int32_t)i * 16, 93, MO_TRK(i));
     }
 }
+/* PIECE: the SHAPE over the piece (USER: its points, the layer's four filled); playing, the play head; the time left
+ * (or FREE, or ENDED) on the foot row */
+static void mo_pic_piece(void)
+{
+    uint32_t at = 0, left = 0, on = (uint32_t)tessera_piece_get(&at, &left), set = tessera.pl_length != 0u;
+    int32_t i, py = 0, lay = piece_layer();
+    char b[20];
+    mo_hl(2, 86, 116, MO_DIM);
+    for (i = 0; i < 116; i++) {
+        int32_t y = 86 - tessera_piece_shape((uint32_t)i * 65536u / 115u) * 32 / 32767;
+        if (i) mo_line(1 + i, py, 2 + i, y, set ? MO_INK : MO_DIM);
+        py = y;
+    }
+    if (tessera.pl_shape == PL_USER)
+        for (i = 0; i < 8; i++) {
+            int32_t x = 2 + i * 115 / 7, y = 86 - (int32_t)tessera.pl_user[i] * 32 / 100;
+            mo_disc(x, y, lay && (i >> 2) == lay - 1 ? 3 : 2, MO_INK);
+        }
+    if (on && song.playing) mo_vl(2 + (int32_t)(at * 115u >> 16), 52, 36, MO_INK);
+    if (!set) str_cpy(b, "FREE", sizeof b);
+    else if (song.playing && !on) str_cpy(b, "ENDED", sizeof b);
+    else {
+        piece_time(b, left);
+        str_cpy(b + str_len(b), song.playing ? " LEFT" : " LONG", 6);
+    }
+    mo_text(b, 2, 92, set ? MO_INK : MO_DIM);
+}
 /* ENTRIES: a row a track: its number, its role (AUTO's guess), IN / OUT / MUTE, its level as a bar; a row about
  * to change on the next line blinks; off: dim */
 static void mo_pic_entries(void)
@@ -2079,6 +2106,7 @@ static void mo_picture(void)
     case GR_MIDICH: mo_pic_midich(); return;
     case GR_CHAIN: mo_pic_chain(); return;
     case GR_ENTRIES: mo_pic_entries(); return;
+    case GR_PIECE: mo_pic_piece(); return;
     default: break;
     }
     if (pg->graph == GR_CHORD) {

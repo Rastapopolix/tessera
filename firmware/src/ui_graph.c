@@ -130,6 +130,42 @@ static int entries_layer_on(void)
     return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_ENTRIES &&
            ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
+/* the PIECE page with OCT+ held: KNOB k is USER's level k; with OCT- held, level 4 + k (planner.c). 1, 2, or 0 */
+static int piece_layer(void)
+{
+    if (ui.home || ui.menu || ui.confirm || cur_page()->graph != GR_PIECE) return 0;
+    if ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) return 1;
+    return ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) ? 2 : 0;
+}
+static int piece_layer_on(void) { return piece_layer() != 0; }
+/* PEAK (ARCH, PLATEAU, VALLEY) or COUNT (WAVES, BUILDS, STEPS) on KNOB 3; RISE, FALL, FLAT, USER: neither */
+static int piece_k3(void)
+{
+    uint32_t s = tessera.pl_shape;
+    return s == PL_WAVES || s == PL_BUILDS || s == PL_STEPS ? 2 : s == PL_ARCH || s == PL_PLATEAU || s == PL_VALLEY ? 1 : 0;
+}
+static const char *const PL_SHAPE_NAME[PL_SHAPES] = {"ARCH", "RISE", "FALL", "PLATEAU", "VALLEY", "WAVES", "BUILDS", "STEPS",
+                                                     "FLAT", "USER"};
+static const char *const PL_END_NAME[PL_ENDS] = {"STOP", "LOOP", "NEW", "FREE"};
+/* the time left as "12:34" ("1:02:03" past an hour) */
+static void piece_time(char *b, uint32_t s)
+{
+    char *o = b;
+    if (s >= 3600u) {
+        fmt_int(o, (int32_t)(s / 3600u));
+        o += str_len(o);
+        *o++ = ':';
+        *o++ = (char)('0' + s % 3600u / 600u);
+        *o++ = (char)('0' + s % 600u / 60u);
+    } else {
+        fmt_int(o, (int32_t)(s / 60u));
+        o += str_len(o);
+    }
+    *o++ = ':';
+    *o++ = (char)('0' + s % 60u / 10u);
+    *o++ = (char)('0' + s % 10u);
+    *o = 0;
+}
 static const char *const ET_ROLE_NAME[ET_ROLES] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "MELODY", "ANCHOR"};
 /* a TRANSPOSE as its knob and the MIDI OUT picture say it: "+12", "0", "-24" */
 static void midi_tr_text(char *b, int32_t v)
@@ -156,7 +192,7 @@ static int gen_layer_on(void)
 {
     return quad_cols_on() || cs_layer_on() || ch_layer_on() || gr_layer_on() || an_layer_on() || sd_layer_on() ||
            sv_layer_on() || ev_layer_on() || fm_layer_on() || en_layer_on() || midi_layer_on() || chain_layer_on() ||
-           entries_layer_on();
+           entries_layer_on() || piece_layer_on();
 }
 /* QUAD's LINK as its card shows it: OFF, or "T" and the linked tracks ("T24") */
 static void quad_link_text(uint32_t m, char *b)
@@ -1227,6 +1263,39 @@ static void graph_chain(uint16_t c)
     }
 }
 
+/* PIECE (planner.c): the SHAPE over the piece, sparse at the foot, full at the top (USER: its eight points, the
+ * layer's four ringed); playing, the play head and the time left; FREE: the curve dim and "FREE" */
+static void graph_piece(uint16_t c)
+{
+    int32_t x0 = PANEL_X0 + 8, w = PANEL_W - 16, top = 6, h = 40, i, py = 0;
+    uint32_t at = 0, left = 0, on = (uint32_t)tessera_piece_get(&at, &left), set = tessera.pl_length != 0u;
+    int lay = piece_layer();
+    char b[24];
+    cv_rect(x0, top + h, w, 1, T_RAISE);
+    for (i = 0; i <= w; i += 2) {
+        int32_t y = top + h - tessera_piece_shape((uint32_t)i * 65536u / (uint32_t)w) * h / 32767;
+        if (i) cv_rect(x0 + i - 2, y < py ? y : py, 2, (y < py ? py - y : y - py) + 2, set ? T_MID : T_RAISE);
+        py = y;
+    }
+    if (tessera.pl_shape == PL_USER)
+        for (i = 0; i < 8; i++) {
+            int32_t px = x0 + i * w / 7, y = top + h - (int32_t)tessera.pl_user[i] * h / 100;
+            int hot = lay && (i >> 2) == lay - 1;
+            cv_ball(px, y, hot ? 6 : 4, hot ? c : T_TEXT);
+        }
+    if (on && song.playing) {
+        int32_t px = x0 + (int32_t)(at * (uint32_t)w >> 16);
+        cv_rect(px, top - 2, 2, h + 4, c);
+    }
+    if (!set) str_cpy(b, "FREE: NOTHING PLANNED", sizeof b);
+    else if (song.playing && !on) str_cpy(b, "ENDED: PLAYING ON", sizeof b);
+    else {
+        piece_time(b, left);
+        str_cpy(b + str_len(b), song.playing ? " LEFT" : " LONG", 6);
+    }
+    cv_text(x0, top + h + 6, &AF_X, b, set ? T_TEXT : T_DIM);
+}
+
 /* ENTRIES (entries.c): a row a track, its colour and number, its role (AUTO's guess, "(AUTO)" beside), and where it
  * is: IN, OUT, MUTE (by hand), or "-" not heard yet; its level as a bar (a FADE seen moving); about to change on the
  * next line: the row blinks. Off: the rows dim */
@@ -2011,6 +2080,17 @@ static uint32_t graph_sig(int play)
              ((uint32_t)tessera.fc_rep[0] | (uint32_t)tessera.fc_rep[1] << 4 | (uint32_t)tessera.fc_rep[2] << 8 |
               (uint32_t)tessera.fc_rep[3] << 12 | (uint32_t)tessera.fc_phrase << 16) * 3266489917u;
     }
+    if (pg->graph == GR_PIECE) {                     /* (it moves: the play head, the time left; the settings) */
+        uint32_t px = 0, lf = 0;
+        int on = tessera_piece_get(&px, &lf);
+        h ^= ((uint32_t)tessera.pl_length | (uint32_t)tessera.pl_shape << 5 | (uint32_t)tessera.pl_peak << 9 |
+              (uint32_t)tessera.pl_count << 16 | (uint32_t)tessera.pl_end << 20 | (uint32_t)on << 22 | (uint32_t)song.playing << 23 |
+              (uint32_t)piece_layer() << 24) * 2246822519u ^ (px >> 8 | lf << 9) * 3266489917u ^
+             ((uint32_t)tessera.pl_user[0] | (uint32_t)tessera.pl_user[1] << 7 | (uint32_t)tessera.pl_user[2] << 14 |
+              (uint32_t)tessera.pl_user[3] << 21) * 40503u ^
+             ((uint32_t)tessera.pl_user[4] | (uint32_t)tessera.pl_user[5] << 7 | (uint32_t)tessera.pl_user[6] << 14 |
+              (uint32_t)tessera.pl_user[7] << 21) * 69069u;
+    }
     if (pg->graph == GR_ENTRIES) {                   /* (it moves: who is out, the warning, the fades; the settings) */
         uint8_t ro[TESSERA_TRACKS];
         uint32_t wn = 0, ou = tessera_entries_get(&wn, ro);
@@ -2324,6 +2404,9 @@ static void graph_body(int32_t oy)
         break;
     case GR_CHAIN:
         graph_chain(c);
+        break;
+    case GR_PIECE:
+        graph_piece(c);
         break;
     case GR_ENTRIES:
         cv_oy = oy;

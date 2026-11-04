@@ -951,6 +951,29 @@ static void draw_columns(void)
         for (uint32_t k = 1; k < 4u; k++) draw_column(k, "", "", "", T_DIM, -1, ICON_NONE);
         return;
     }
+    if (cur_page()->graph == GR_PIECE && piece_layer_on()) {   /* PIECE, OCT+ / OCT- held: USER's levels 1-4 / 5-8 */
+        static const char *const NM[8] = {"USER 1", "USER 2", "USER 3", "USER 4", "USER 5", "USER 6", "USER 7", "USER 8"};
+        uint32_t o = piece_layer() == 2 ? 4u : 0u;
+        for (uint32_t k = 0; k < 4u; k++) {
+            char w[8];
+            fmt_int(w, tessera.pl_user[o + k]);
+            draw_column(k, NM[o + k], w, "%", tessera.pl_shape == PL_USER ? VAL(k) : T_DIM, (int32_t)tessera.pl_user[o + k] * 10, ICON_AUTO);
+        }
+        return;
+    }
+    if (cur_page()->graph == GR_PIECE) {                 /* PIECE (planner.c), the project's: LENGTH, SHAPE, PEAK / COUNT, END */
+        char w1[8], w3[8];
+        uint32_t set = tessera.pl_length != 0u, k3 = (uint32_t)piece_k3();
+        fmt_int(w1, PL_MIN[tessera.pl_length % PL_LENGTHS]);
+        fmt_int(w3, k3 == 2u ? tessera.pl_count : tessera.pl_peak);
+        draw_column(0, "LENGTH", set ? w1 : "FREE", set ? "min" : "", VAL(0u), (int32_t)tessera.pl_length * 1000 / 21, ICON_AUTO);
+        draw_column(1, "SHAPE", PL_SHAPE_NAME[tessera.pl_shape % PL_SHAPES], "", set ? VAL(1u) : T_DIM,
+                    (int32_t)tessera.pl_shape * 1000 / 9, ICON_AUTO);
+        draw_column(2, k3 == 2u ? "COUNT" : "PEAK", k3 ? w3 : "-", k3 == 1u ? "%" : "", set && k3 ? VAL(2u) : T_DIM,
+                    k3 == 2u ? ((int32_t)tessera.pl_count - 2) * 1000 / 6 : k3 ? (int32_t)tessera.pl_peak * 10 : -1, ICON_AUTO);
+        draw_column(3, "END", PL_END_NAME[tessera.pl_end % PL_ENDS], "", set ? VAL(3u) : T_DIM, (int32_t)tessera.pl_end * 333, ICON_AUTO);
+        return;
+    }
     if (cur_page()->graph == GR_ENTRIES && entries_layer_on()) {   /* ENTRIES, OCT+ held: each track's ROLE */
         static const char *const NM[TESSERA_TRACKS] = {"ROLE 1", "ROLE 2", "ROLE 3", "ROLE 4"};
         for (uint32_t k = 0; k < TESSERA_TRACKS; k++)

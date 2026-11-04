@@ -497,6 +497,14 @@ static void help_find(uint32_t k)
         help.pid = (uint16_t)PID_TESS(k == 3u ? TX_ET_ROLE : k == 2u ? TX_FC_SKIP : k ? TX_FC_FOLLOW : TX_FM_DEVELOP);
         return;
     }
+    if (pg->graph == GR_PIECE) {                       /* (the project's: LENGTH, SHAPE, PEAK / COUNT, END; OCT+ / OCT- the
+                                                        * USER levels) */
+        if (piece_layer()) help.pid = (uint16_t)PID_TESS(TX_PL_USER1 + (piece_layer() == 2 ? 4u : 0u) + k);
+        else if (k == 2u && !piece_k3()) help_unused(k);
+        else help.pid = (uint16_t)PID_TESS(k == 3u ? TX_PL_END : k == 2u ? (piece_k3() == 2 ? TX_PL_COUNT : TX_PL_PEAK) :
+                                           k ? TX_PL_SHAPE : TX_PL_LENGTH);
+        return;
+    }
     if (pg->graph == GR_ENTRIES) {                     /* (the project's: ENTRIES, DWELL, STYLE, FADE; OCT+ held the ROLEs) */
         if (entries_layer_on()) {
             help.pid = (uint16_t)PID_TESS(TX_ET_ROLE);
