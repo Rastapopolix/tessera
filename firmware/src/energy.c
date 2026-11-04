@@ -74,14 +74,17 @@ static int32_t en_sin(uint32_t ph, uint32_t per)
     v = v > 32767 ? 32767 : v;
     return x & 32768u ? -v : v;
 }
+static int planner_energy(int32_t *e);               /* (planner.c: the planned piece's curve, in the tide's place) */
 static void energy_tick(void)                         /* an audio block (cord_tick) */
 {
+    int32_t pe;
     if (!song.playing) return;
     if (++energy.ph >= energy.per) {
         energy.ph = 0;
         en_turn();
     }
-    energy.e = tessera.en_arc ? en_sin(energy.ph, energy.per) * (int32_t)tessera.en_arc / 100 : 0;
+    if (planner_energy(&pe)) energy.e = pe * (int32_t)tessera.en_arc / 100;   /* (a LENGTH set: the SHAPE, ARC its swing) */
+    else energy.e = tessera.en_arc ? en_sin(energy.ph, energy.per) * (int32_t)tessera.en_arc / 100 : 0;
     if (!tessera.en_rests)
         energy.rest_left = 0;
     else if (energy.rest_left)

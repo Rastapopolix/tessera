@@ -73,6 +73,8 @@ static void fc_begin(fc_st_t *s, uint32_t p)          /* phrase p is A, the FORM
     s->heard = 1;
 }
 
+static int planner_home(uint32_t p);                 /* (planner.c: the piece's last 15 %, A for good) */
+static uint32_t planner_contrast(uint32_t p);         /* (planner.c: a new section's extra CONTRAST near the top) */
 /* from phrase s->p to the next */
 static void fc_step(fc_st_t *s)
 {
@@ -82,6 +84,16 @@ static void fc_step(fc_st_t *s)
     if (!n) return;
     if (s->pos >= n) s->pos = 0;                      /* (FORM shorter since) */
     cur = fc_letter_at(s->pos);
+    if (planner_home(q)) {                            /* (a planned piece's end: A, held) */
+        if (cur) {
+            s->pos = 0;
+            s->moved |= 1u;
+            s->extra = 0;
+            s->away = 0;
+        }
+        s->left = 0;
+        return;
+    }
     if (s->left && s->left >= fc_rep(s->pos)) s->left = (uint8_t)(fc_rep(s->pos) - 1u);   /* (a count lowered since) */
     if (s->left) {                                    /* the letter holds */
         s->left--;
@@ -107,7 +119,7 @@ static void fc_step(fc_st_t *s)
     s->pos = (uint8_t)nx;
     s->left = (uint8_t)(fc_rep(nx) - 1u);
     s->moved |= 1u;
-    s->extra = (uint8_t)(c && s->away < 3u ? 10u * s->away : c ? 30u : 0u);
+    s->extra = (uint8_t)((c && s->away < 3u ? 10u * s->away : c ? 30u : 0u) + (c ? planner_contrast(q) : 0u));
     if (!(s->heard >> c & 1u)) {
         s->heard |= (uint8_t)(1u << c);
         s->fresh_ok = 0;

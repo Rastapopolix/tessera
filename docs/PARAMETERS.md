@@ -264,6 +264,19 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x27D | ENTRIES STYLE | CUT, FADE | FADE | How a track leaves and comes back: CUT at once on the phrase line, or FADE over FADE bars from it. GLO > ENTRIES, KNOB 3. |
 | 0x27E | ENTRIES FADE | 1 to 4 bar | 2 | The bars a FADE takes, 1 to 4. GLO > ENTRIES, KNOB 4. |
 | 0x27F | ENTRIES ROLE | AUTO, BASS, RHYTHM, HARMONY, MELODY, ANCHOR | AUTO | What the track is to Entries: BASS comes in first and goes last, then RHYTHM, HARMONY, MELODY (a melody only over a bass or harmony). ANCHOR is never taken out. AUTO: CHORD is harmony, ATLAS or a drum sound rhythm, notes mostly below C3 bass, else melody. GLO > ENTRIES with OCT+ held, or OCT+ held on FORM, KNOB 4. |
+| 0x280 | PIECE LENGTH | FREE, 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 45, 60, 75, 90, 120, 180, 240 | FREE | FREE: the music plays on unplanned. A length, 1 minute to 4 hours: the piece is planned to it from PLAY, its SHAPE steering ENERGY (ARC how far), ENTRIES (how many tracks play) and the CHAIN (further away near the top, A in the last part). At the tempo now: a faster tempo, more bars. GLO > PIECE, KNOB 1. |
+| 0x281 | PIECE SHAPE | ARCH, RISE, FALL, PLATEAU, VALLEY, WAVES, BUILDS, STEPS, FLAT, USER | ARCH | The piece's arc from sparse to full: ARCH one climax at PEAK; RISE a build to the end; FALL starts full and dissolves; PLATEAU a long hold round PEAK; VALLEY full with a breakdown at PEAK; WAVES COUNT swells; BUILDS COUNT rises each dropped at once; STEPS terraces; FLAT steady; USER your eight levels. All but RISE and FALL begin and end sparse. GLO > PIECE, KNOB 2. |
+| 0x282 | PIECE PEAK | 0 to 100 % | 62 | Where the climax of ARCH, PLATEAU, VALLEY or STEPS sits, as a share of the length (62 %: the golden section). GLO > PIECE, KNOB 3. |
+| 0x283 | PIECE COUNT | 2 to 8  | 3 | How many swells (WAVES), builds (BUILDS) or terraces (STEPS), 2 to 8. GLO > PIECE, KNOB 3. |
+| 0x284 | PIECE END | STOP, LOOP, NEW, FREE | STOP | At the end of the LENGTH: STOP lets the tracks fade and the tails ring, then stops; LOOP plays the same piece again; NEW draws new SEEDs and plays a new piece; FREE plays on unplanned. GLO > PIECE, KNOB 4. |
+| 0x285 | PIECE USER 1 | 0 to 100 % | 10 | SHAPE USER: the level at the piece's start. GLO > PIECE, OCT+ held, KNOB 1. |
+| 0x286 | PIECE USER 2 | 0 to 100 % | 30 | SHAPE USER: the level a seventh in. GLO > PIECE, OCT+ held, KNOB 2. |
+| 0x287 | PIECE USER 3 | 0 to 100 % | 55 | SHAPE USER: the level two sevenths in. GLO > PIECE, OCT+ held, KNOB 3. |
+| 0x288 | PIECE USER 4 | 0 to 100 % | 80 | SHAPE USER: the level three sevenths in. GLO > PIECE, OCT+ held, KNOB 4. |
+| 0x289 | PIECE USER 5 | 0 to 100 % | 100 | SHAPE USER: the level four sevenths in. GLO > PIECE, OCT- held, KNOB 1. |
+| 0x28A | PIECE USER 6 | 0 to 100 % | 75 | SHAPE USER: the level five sevenths in. GLO > PIECE, OCT- held, KNOB 2. |
+| 0x28B | PIECE USER 7 | 0 to 100 % | 40 | SHAPE USER: the level six sevenths in. GLO > PIECE, OCT- held, KNOB 3. |
+| 0x28C | PIECE USER 8 | 0 to 100 % | 10 | SHAPE USER: the level at the end. GLO > PIECE, OCT- held, KNOB 4. |
 
 ## Mods
 
