@@ -266,6 +266,7 @@ void tessera_stop_all(void)
         tessera.evolve[i].cond_first = 1;
         tessera.evolve[i].br_side = 0;
         tessera.hit[i] = 0;
+        tessera.hold_mem[i] = 0;                              /* (HOLD samples afresh) */
         tessera.br_in[i] = 0;
         tess_realign(i);
         tess_ph0[i] = tess_run_k[i] = 0;                      /* (the next PLAY's steps from 0) */
@@ -906,6 +907,21 @@ void tessera_ev_layer_knob(uint32_t k, int32_t s)
     TESS_IRQ_ON();
 }
 
+/* OCT+ held on a generator track's TWEAK page: KNOB 4 FOLLOW's HOLD, OFF or a track, never this one (ui_input.c) */
+void tessera_tw_layer_knob(uint32_t k, int32_t s)
+{
+    uint32_t tr = song.sel;
+    int32_t dir = s > 0 ? 1 : -1, f;
+    tessera_ensure_init();
+    if (tr >= TESSERA_TRACKS || !s || k != 3u) return;
+    f = (int32_t)tessera.follow_hold[tr] + dir;
+    if (f == (int32_t)tr + 1) f += dir;
+    if (f < 0 || f > (int32_t)TESSERA_TRACKS) return;       /* (the ends: it stays) */
+    TESS_IRQ_OFF();
+    tess_param_set_body(tr, TX_TW_HOLD, f);
+    TESS_IRQ_ON();
+}
+
 /* OCT+ held on a generator track's FORM page: KNOB 1 DEVELOP, a step of 2 % a click as CONTRAST (ui_input.c) */
 void tessera_fm_layer_knob(uint32_t k, int32_t s)
 {
@@ -1001,6 +1017,7 @@ static void tess_tweak_knob_body(uint32_t k, int32_t s)
         if (f > (int32_t)TESSERA_TRACKS) f = (int32_t)TESSERA_TRACKS;
         if (f == (int32_t)tr + 1) f = 0;
         ev->follow = (uint8_t)f;
+        tessera.hold_mem[tr] = 0;
     }
 }
 void tessera_tweak_knob(uint32_t k, int32_t s)
@@ -1061,6 +1078,29 @@ void tessera_tweak2_knob(uint32_t k, int32_t s)
 
 static int32_t tess_scale_steps(const track_t *t, int32_t n, int32_t k);
 static int32_t tess_follow_source(uint32_t src, uint32_t tr);
+
+/* FOLLOW HOLD: track tr has just played a note. Each track that FOLLOWs with HOLD on tr samples its followed note now
+ * (the tracks step in index order: a lower source's note is this step's, a higher one's the step before) */
+void tessera_hold_hit(uint32_t tr)
+{
+    for (uint32_t f = 0; f < TESSERA_TRACKS; f++) {
+        int32_t n;
+        if (tessera.follow_hold[f] != tr + 1u || !tessera.evolve[f].follow || f == tr) continue;
+        n = tess_follow_source((uint32_t)tessera.evolve[f].follow - 1u, f);
+        if (n >= 0) tessera.hold_mem[f] = (uint8_t)(n + 1);
+    }
+}
+/* the note FOLLOW gives track tr, -1 none: with HOLD, the one last sampled (the first hit samples one at once) */
+static int32_t tess_follow_note(uint32_t tr)
+{
+    uint32_t src = (uint32_t)tessera.evolve[tr].follow - 1u;
+    if (!tessera.follow_hold[tr]) return tess_follow_source(src, tr);
+    if (!tessera.hold_mem[tr]) {
+        int32_t n = tess_follow_source(src, tr);
+        if (n >= 0) tessera.hold_mem[tr] = (uint8_t)(n + 1);
+    }
+    return (int32_t)tessera.hold_mem[tr] - 1;
+}
 
 static void tess_clock_step_body(track_t *t, uint32_t tr);
 /* The key a generator's note moves up by before the snap: the generators write C minor (MARKOV adds ROOT itself), so
@@ -1230,6 +1270,7 @@ static void tess_grids_play(track_t *t, uint32_t tr, const gen_out_t *out)
     tessera.hit[tr] = 1;
     tessera.last_note[tr] = t->seq_notes[0];
     tessera.active_gate[tr] = 1;
+    tessera_hold_hit(tr);
     t->seq_n = (uint8_t)n;
     t->seq_off = off;
 }
@@ -1363,6 +1404,7 @@ static void tess_chord_play(track_t *t, uint32_t tr, uint32_t gate)
     tessera.chord_pc[tr] = (uint16_t)(((uint32_t)mask << ((r % 12 + 12) % 12) | (uint32_t)mask >> (12 - (r % 12 + 12) % 12)) & 0xFFFu);
     tessera.hit[tr] = 1;
     tessera.last_note[tr] = t->seq_notes[0];             /* (FOLLOW of it: the chord's lowest note) */
+    tessera_hold_hit(tr);
     /* (BREATH: held a step past the next chord, which ties it over or lets it go) */
     t->seq_off = br ? period * g->hold + period : g->hold ? period * g->hold - period / 16u : tess_gate_len(t, period, 0);
     for (i = 0; i < t->seq_n; i++)
@@ -1483,7 +1525,7 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
         int32_t base_note = (int32_t)note + tess_key(t, tr);
         int following = 0;
         if (tw2->follow) {          /* harmony: the other track's pitch in this scale, SHIFT scale degrees away */
-            int32_t src_note = tess_follow_source((uint32_t)tw2->follow - 1u, tr);
+            int32_t src_note = tess_follow_note(tr);
             if (src_note >= 0) {
                 base_note = tess_scale_steps(t, tessera_snap_note(t, src_note), tw2->shift);
                 following = 1;
@@ -1519,6 +1561,7 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
             nl_on(t, tr, (uint32_t)final_note, vel, 0);
             tess_cap(t, (uint32_t)final_note, vel, step);
             tessera.last_note[tr] = (uint8_t)final_note;
+            tessera_hold_hit(tr);
             for (uint32_t i = 0; i < out.more_n && i < 2u; i++) {
                 int32_t m = tessera_snap_note(t, (int32_t)out.more[i] + tess_key(t, tr) + tess_flourish(t, tr)) + (int32_t)t->p[P_TRANS] + tw2->shift;
                 m = m < 0 ? 0 : m > 127 ? 127 : m;
@@ -1531,6 +1574,7 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
         tessera.last_note[tr] = (uint8_t)final_note;
         tessera.active_gate[tr] = 1;
         t->seq_notes[0] = (uint8_t)final_note;
+        tessera_hold_hit(tr);
         t->seq_n = 1;
         for (uint32_t i = 0; i < out.more_n && i < 2u; i++) {   /* (Bounce: balls hitting on the same step) */
             int32_t m = tessera_snap_note(t, (int32_t)out.more[i] + tess_key(t, tr) + tess_flourish(t, tr)) + (int32_t)t->p[P_TRANS] + tw2->shift;
@@ -2796,6 +2840,7 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_TW_DROP: return ev->drop;
     case TX_TW_HUMAN: return ev->human;
     case TX_TW_FOLLOW: return ev->follow;
+    case TX_TW_HOLD: return tessera.follow_hold[tr];
     case TX_GRD_X: return tessera.grids[tr].x;
     case TX_GRD_Y: return tessera.grids[tr].y;
     case TX_GRD_DENS: return tessera.grids[tr].dens;
@@ -2981,6 +3026,12 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
     case TX_TW_FOLLOW:
         v = tess_clampi(v, 0, TESSERA_TRACKS);
         ev->follow = (uint8_t)(v == (int32_t)tr + 1 ? 0 : v);   /* (not itself) */
+        tessera.hold_mem[tr] = 0;
+        return;
+    case TX_TW_HOLD:
+        v = tess_clampi(v, 0, TESSERA_TRACKS);
+        tessera.follow_hold[tr] = (uint8_t)(v == (int32_t)tr + 1 ? 0 : v);   /* (not itself) */
+        tessera.hold_mem[tr] = 0;
         return;
     case TX_GRD_X: tessera.grids[tr].x = (uint8_t)tess_clampi(v, 0, 255); eng = TESS_ENG_GRIDS; break;
     case TX_GRD_Y: tessera.grids[tr].y = (uint8_t)tess_clampi(v, 0, 255); eng = TESS_ENG_GRIDS; break;

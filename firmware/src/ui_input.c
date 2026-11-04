@@ -593,14 +593,31 @@ static void jam_take(void)
     ui.force = 1;
 }
 
+/* Low battery: on the battery, down to no bars (ui_draw.c batt_level 0), BATTERY LOW once (again only after charging
+ * past one bar or on external power); from then autosave waits no five seconds: the next STOP saves at once */
+static uint8_t batt_low;
+static void batt_poll(void)
+{
+    int32_t lvl = batt_level();
+    if (!song.batt_raw || batt_ext() || lvl >= 2) {
+        batt_low = 0;
+    } else if (!batt_low && !lvl) {
+        batt_low = 1;
+        ui_message("BATTERY LOW");
+        if (settings_autosave) str_cpy(ui.msg2, "SAVES AT STOP", sizeof ui.msg2);   /* (then, the second line) */
+        ui.msg_t = 120;
+    }
+}
+
 /* Autosave: stopped and untouched for AUTOSAVE_MS (no key, button, knob or MIDI), the project back to its slot when it
- * differs from what is there (project.c project_autosave); once per rest */
+ * differs from what is there (project.c project_autosave); once per rest. Battery low: as soon as stopped */
 #define AUTOSAVE_MS 5000u
 static void project_autosave(void);
 static void autosave_poll(uint32_t active)
 {
     static uint32_t t0, rx;
     static uint8_t done;
+    batt_poll();
 #if MELODEE_UART
     uint32_t r = usb.rx_pkts + um.bytes;
 #else
@@ -613,9 +630,10 @@ static void autosave_poll(uint32_t active)
         done = 0;
         return;
     }
-    if (!done && fm1_ms - t0 >= AUTOSAVE_MS) {
+    if (!done && fm1_ms - t0 >= (batt_low ? 0u : AUTOSAVE_MS)) {
         done = 1;
         project_autosave();
+        if (batt_low && ui.msg_t) str_cpy(ui.msg2, "BATTERY LOW", sizeof ui.msg2);   /* (SAVED B, then why) */
     }
 }
 
@@ -924,6 +942,14 @@ static void edit_param(uint32_t slot, int32_t steps)
     }
     if (pg->graph == GR_EVOLVE) {                   /* (ROLL: 128 seeds, a quick turn across them) */
         tessera_evolve_knob(slot, slot == 3u ? accel(EN_K1 + slot, steps, 128) : steps);
+        ui.force = 1;
+        return;
+    }
+    if (pg->graph == GR_TWEAK && tw_layer_on()) {   /* a generator's TWEAK, OCT+ held: FOLLOW's HOLD */
+        tessera_tw_layer_knob(slot, steps);
+        oct_eat |= 2u;
+        ui.oct_t0 |= 2u;
+        oct_deferred = 0;
         ui.force = 1;
         return;
     }

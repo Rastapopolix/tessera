@@ -199,6 +199,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_MACRO2] = PD("MACRO 2", F_PCT, 0, 100, 0),
     [TX_MACRO3] = PD("MACRO 3", F_PCT, 0, 100, 0),
     [TX_MACRO4] = PD("MACRO 4", F_PCT, 0, 100, 0),
+    [TX_TW_HOLD] = PE("HOLD", TX_N_FOLLOW, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -702,6 +703,9 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     XP_(TX_MACRO3, "MACRO 3", MACRO_TEXT),
     XP_(TX_MACRO4, "MACRO 4", MACRO_TEXT),
 #undef MACRO_TEXT
+    X_(TX_TW_HOLD, "FOLLOW HOLD", "Sample and hold for FOLLOW: the followed track's note is taken only when the "
+                                  "HOLD track plays, and this track keeps playing it in its own rhythm until the next "
+                                  "one. OFF: a new note on each of its own hits. TWEAK, OCT+ held, KNOB 4."),
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };

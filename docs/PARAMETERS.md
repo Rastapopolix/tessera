@@ -281,6 +281,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x28E | MACRO 2 | 0 to 100 % | 0 | A hand control for the whole project, 0 to 100 %. On its own it does nothing: pick MACRO as a mod's SOURCE (MODS) and send it anywhere, to as many places as you like. GLO > PERF, KNOB 1 to 4. |
 | 0x28F | MACRO 3 | 0 to 100 % | 0 | A hand control for the whole project, 0 to 100 %. On its own it does nothing: pick MACRO as a mod's SOURCE (MODS) and send it anywhere, to as many places as you like. GLO > PERF, KNOB 1 to 4. |
 | 0x290 | MACRO 4 | 0 to 100 % | 0 | A hand control for the whole project, 0 to 100 %. On its own it does nothing: pick MACRO as a mod's SOURCE (MODS) and send it anywhere, to as many places as you like. GLO > PERF, KNOB 1 to 4. |
+| 0x291 | FOLLOW HOLD | OFF, T1, T2, T3, T4 | OFF | Sample and hold for FOLLOW: the followed track's note is taken only when the HOLD track plays, and this track keeps playing it in its own rhythm until the next one. OFF: a new note on each of its own hits. TWEAK, OCT+ held, KNOB 4. |
 
 ## Mods
 
