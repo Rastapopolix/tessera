@@ -45,7 +45,6 @@ typedef struct {
 } uh_hub_t;
 
 static uint8_t uh_rx[64 + 4] __attribute__((aligned(4)));
-static uint8_t uh_cfg[320];                                  /* a configuration, cut short if longer */
 static struct {
     uint8_t want;                                       /* the menu (main loop) */
     uint8_t on;                                         /* the port is a host */
@@ -106,8 +105,6 @@ static int uh_csr0(uint32_t want_set, uint32_t want_clr)
     }
 }
 
-/* One control transfer to `addr`: SETUP, the IN data stage if any, the status stage. Bytes read, or < 0.
- * Only requests without an OUT data stage (every one used here). */
 /* a failed transfer to addr in stage 1 SETUP, 2 DATA, 3 STATUS, r from uh_csr0: noted for ABOUT, r returned */
 static int uh_ctl_err(uint8_t addr, uint32_t stage, int r)
 {
@@ -116,10 +113,13 @@ static int uh_ctl_err(uint8_t addr, uint32_t stage, int r)
     return r;
 }
 
-static int uh_ctl(uint8_t addr, uint8_t rt, uint8_t rq, uint16_t val, uint16_t idx, uint16_t len, uint8_t *out,
-                  uint8_t mps)
+/* One control transfer to `addr`: SETUP, the IN data stage if any, the status stage. Bytes read, or < 0.
+ * Only requests without an OUT data stage (every one used here). The data goes to `out`, or with `walk` to the
+ * descriptor walk, which may end the data stage early once it has found what it needs (upstream 3b64dcf). */
+static int uh_xfer(uint8_t addr, uint8_t rt, uint8_t rq, uint16_t val, uint16_t idx, uint16_t len, uint8_t *out,
+                   uh_desc_t *walk, uint8_t mps)
 {
-    uint32_t got = 0, n, i;
+    uint32_t got = 0, n, k, i, stop = 0;
     int r;
     sie_wr(S_FADDR, addr);
     sie_wr(S_INDEX, 0);
@@ -146,11 +146,15 @@ static int uh_ctl(uint8_t addr, uint8_t rt, uint8_t rq, uint16_t val, uint16_t i
             if (n > 64u)
                 n = 64u;
             fm1_usb_rx_sync();
-            for (i = 0; i < n && got + i < len; i++)
-                out[got + i] = ep0buf[i];
+            k = got + n > len ? len - got : n;
+            if (walk)                                   /* (the descriptor walk: it may end the data stage early) */
+                stop = (uint32_t)uh_desc_feed(walk, ep0buf, k);
+            else
+                for (i = 0; i < k; i++)
+                    out[got + i] = ep0buf[i];
             sie_wr(S_CSR0, 0);                          /* RxPktRdy done */
             got += n;
-            if (n < mps)
+            if (n < mps || stop)
                 break;
         }
         if (got > len)
@@ -165,6 +169,11 @@ static int uh_ctl(uint8_t addr, uint8_t rt, uint8_t rq, uint16_t val, uint16_t i
     }
     return r < 0 ? uh_ctl_err(addr, 3, r) : (int)got;
 }
+static int uh_ctl(uint8_t addr, uint8_t rt, uint8_t rq, uint16_t val, uint16_t idx, uint16_t len, uint8_t *out,
+                  uint8_t mps)
+{
+    return uh_xfer(addr, rt, rq, val, idx, len, out, 0, mps);
+}
 
 /* ---------------------------------------------------- enumeration --- */
 static int uh_hub_probe(uint8_t h, uint8_t up, uint8_t addr, uint8_t mps, uint8_t cfgval, uh_midi_t *m);
@@ -174,8 +183,9 @@ static int uh_hub_probe(uint8_t h, uint8_t up, uint8_t addr, uint8_t mps, uint8_
  * A UH_R_*: UH_R_MIDI found, else what stopped it. uh.cls: the device's class (9 for a hub, after its ports). */
 static int uh_probe(uint8_t depth, uint8_t up, uh_midi_t *m)
 {
-    uint8_t d8[8], mps, addr = uh.next_addr++;
-    uint32_t total, i;
+    uint8_t d8[8], c9[9], mps, addr = uh.next_addr++;
+    uint32_t total;
+    uh_desc_t walk;
     int r;
     uh.cls = 0;
     r = uh_ctl(0, 0x80, 6, 0x0100, 0, 8, d8, 8);        /* GET_DESCRIPTOR(device), first 8 bytes */
@@ -186,27 +196,22 @@ static int uh_probe(uint8_t depth, uint8_t up, uh_midi_t *m)
     if (uh_ctl(0, 0x00, 5, addr, 0, 0, 0, mps) < 0)     /* SET_ADDRESS */
         return UH_R_ADDR;
     uh_wait(10);                                        /* the device settles to its new address */
-    r = uh_ctl(addr, 0x80, 6, 0x0200, 0, 9, uh_cfg, mps);
+    r = uh_ctl(addr, 0x80, 6, 0x0200, 0, 9, c9, mps);
     if (r < 9)
         return UH_R_CFG;
-    total = (uint32_t)(uh_cfg[2] | uh_cfg[3] << 8);
-    if (total > sizeof uh_cfg)
-        total = sizeof uh_cfg;
-    if (total > 9u) {
-        r = uh_ctl(addr, 0x80, 6, 0x0200, 0, (uint16_t)total, uh_cfg, mps);
-        if (r < 9)
-            return UH_R_CFG;
-        total = (uint32_t)r;
-    }
-    for (i = 0; !uh.cls && i + 5u < total && uh_cfg[i]; i += uh_cfg[i])   /* class 0: the first interface's */
-        if (uh_cfg[i + 1] == 4u)
-            uh.cls = uh_cfg[i + 5];
+    total = (uint32_t)(c9[2] | c9[3] << 8);             /* the whole configuration, walked as it arrives (upstream
+                                                         * 3b64dcf: an audio+MIDI device lists MIDI last, past 320 B) */
+    uh_desc_start(&walk, m);
+    if (total > 9u && uh_xfer(addr, 0x80, 6, 0x0200, 0, (uint16_t)total, 0, &walk, mps) < 9)
+        return UH_R_CFG;
+    if (!uh.cls)                                        /* class 0: the first interface's */
+        uh.cls = walk.if_cls;
     if (d8[4] == 9u) {                                  /* a hub */
-        r = depth < UH_HUBS && !uh.hub[depth].addr ? uh_hub_probe(depth, up, addr, mps, uh_cfg[5], m) : UH_R_DEEP;
+        r = depth < UH_HUBS && !uh.hub[depth].addr ? uh_hub_probe(depth, up, addr, mps, c9[5], m) : UH_R_DEEP;
         uh.cls = 9;                                     /* (its ports' probes set it too) */
         return r;
     }
-    if (!uh_parse_midi(uh_cfg, total, m))
+    if (!m->found)
         return UH_R_NOMIDI;
     if (uh_ctl(addr, 0x00, 9, m->cfg, 0, 0, 0, mps) < 0)   /* SET_CONFIGURATION */
         return UH_R_SETCFG;
