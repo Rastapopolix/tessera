@@ -544,7 +544,9 @@ static void uh_host_up(void)
 static void uh_connect(void)
 {
     uh_midi_t m;
-    uint32_t reset = 30u + 10u * uh.tries, power = uh.tries >= 2u ? 0x40u : 0u;   /* (the SDK's FUSB POWER) */
+    /* A root port reset lasts >= 50 ms (USB 2.0 TDRSTR); some hubs answer only after 400 ms of recovery, so each try
+     * waits longer after it: 100, 200, 400, 800 ms (upstream 6e61576) */
+    uint32_t reset = 50u, recover = 100u << uh.tries, power = uh.tries >= 2u ? 0x40u : 0u;   /* (the SDK's FUSB POWER) */
     int r;
     memset(&uh_dg, 0, sizeof uh_dg);
     uh.dg_n++;
@@ -562,7 +564,7 @@ static void uh_connect(void)
     sie_wr(S_POWER, 0x08u | power);                     /* bus reset */
     uh_wait(reset);
     sie_wr(S_POWER, power);
-    uh_wait(reset);
+    uh_wait(recover);
     uh.next_addr = UH_FIRST_ADDR;
     uh_hubs_off();
     uh.err = 0;

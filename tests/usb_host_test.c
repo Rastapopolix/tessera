@@ -89,6 +89,7 @@ static uint32_t USB_CON0, line_state;
 static uint8_t bus_dead;                /* nothing answers (cable pulled) */
 static uint8_t ep0_timeout;             /* SETUP stays busy until the driver's deadline */
 static uint8_t devctl_ls;               /* the device is low speed */
+static uint32_t slow_until;             /* nothing answers before this many bus resets (a hub still starting) */
 static uint32_t ctl_requests, setup_requests, rx_toggle_clears;
 static uint32_t tx_toggle_clears, off_count;
 static uint32_t root_resets, host_attaches, port_resets[8];
@@ -229,7 +230,7 @@ static void mock_write(uint32_t r, uint32_t v)
             memcpy(s, ep_radr[0], 8);
             if (ep0_timeout)
                 regs[0][17] = 2;
-            else if (bus_dead || !d || !answer(d, s))
+            else if (bus_dead || !d || root_resets < slow_until || !answer(d, s))
                 regs[0][17] = 0x10;                     /* no answer */
             else
                 regs[0][17] = 0;
@@ -338,6 +339,7 @@ static void connect(int which)
     devices_init();
     root = which;
     bus_dead = devctl_ls = ep0_timeout = 0;
+    slow_until = 0;
     memset(common, 0, sizeof common);
     memset(regs, 0, sizeof regs);
     dflt = 0;
@@ -968,6 +970,21 @@ static void test_audio_midi_device(void)
     printf("USB host: audio+MIDI device, %u-byte configuration walked as it arrives: OK\n", n);
 }
 
+static void test_slow_hub(void)                         /* (upstream 6e61576) */
+{
+    connect(HUB);
+    slow_until = 3;                                     /* answers after the third reset (400 ms recovery) */
+    host_on();
+    assert(enumerate() && uh.msg == UH_MSG_MIDI && root_resets == 3);
+    uh.want = 0; uh_task(fm1_ms); uh.msg = 0;
+    connect(HUB);
+    slow_until = UH_ROOT_TRIES + 1u;                    /* never in time: reported, then quiet until unplug */
+    host_on();
+    assert(!enumerate() && uh.msg == UH_MSG_NOMIDI && root_resets == UH_ROOT_TRIES);
+    uh.want = 0; uh_task(fm1_ms); uh.msg = 0;
+    puts("USB host: a slow hub gets longer recovery after each reset, then is reported: OK");
+}
+
 static void test_device_mode_untouched(void)
 {
     /* with the host off, usb_poll is the device driver and uh_task does nothing */
@@ -999,6 +1016,7 @@ int main(void)
     test_host_output(1);
     test_endpoint_selection();
     test_audio_midi_device();
+    test_slow_hub();
     puts("USB host: all OK");
     return 0;
 }
