@@ -128,6 +128,25 @@ static void p_ambient(void)                           /* an ambient night: a CHO
     px(0, TX_EN_ARC, 60);
     px(0, TX_EN_RESTS, 40);
 }
+static void p_chain(void)                             /* form chaining: the project's ABAC, A x2 C x2, 8-bar phrases,
+                                                       * three tracks following, DEVELOP 30, SKIP on one */
+{
+    gen(0, TESS_ENG_TURING);
+    gen(1, TESS_ENG_EUCLID);
+    gen(2, TESS_ENG_MARKOV);
+    px(2, TX_EV_LOCK, 60);
+    for (uint32_t tr = 0; tr < 3u; tr++) px(tr, TX_FM_DEVELOP, tr == 1u ? 60 : 30);   /* (a Euclid rhythm has
+                                                                                   * little to vary: more) */
+    px(1, TX_FC_SKIP, 30);
+    px(0, TX_FC_FORM, FM_ABAC);
+    px(0, TX_FC_REP1, 2);
+    px(0, TX_FC_REP4, 2);
+}
+static void p_chain_wander(void)                      /* the same, WANDER 60 */
+{
+    p_chain();
+    px(0, TX_FC_WANDER, 60);
+}
 
 typedef struct {
     const char *name;
@@ -148,6 +167,8 @@ static const patch_t PATCH[] = {
     {"four_tracks_probe", 0x4C07u, p_four, 0, 0, "the 2-hour probe's four tracks, Euclid at EVERY 4"},
     {"grids_bounce_constel_series", 0x4C08u, p_newer, 0, 0, "the newer generators together"},
     {"ambient_chord_energy_rests", 0x4C09u, p_ambient, 1, 0, "CHORD drone, ARC 60, RESTS 40"},
+    {"chain_abac_counts_develop30", 0x4C0Bu, p_chain, 0, 0, "FORM CHAIN ABAC, counts, WANDER 0 (slice 1)"},
+    {"chain_abac_wander60", 0x4C0Cu, p_chain_wander, 0, 0, "FORM CHAIN ABAC, counts, WANDER 60 (slice 1)"},
 };
 #define NPATCH (sizeof PATCH / sizeof PATCH[0])
 
