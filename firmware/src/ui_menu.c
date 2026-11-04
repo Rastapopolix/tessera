@@ -6,7 +6,7 @@
  * USB INPUT (the stereo mix or four track stems, both before MASTER; usb.c ua_tracks_set),
  * USB VOLUME (the computer's audio through the FM-1, 0..100 %, apart from MASTER; usb_audio_stream.c),
  * MIDI OUT (KEYS, ALL or OFF: the notes sent over USB) and CLOCK OUT (midi_out.c), MIDI CC IN (ON or OFF: CCs and
- * NRPNs that set parameters; midi_cc.c), USB HOST (the USB-C port hosts a USB-MIDI device instead of talking to a
+ * NRPNs that set parameters; midi_cc.c), MIDI LEARN (a knob, then a CC; midi_learn.c, ui_learn.c), USB HOST (the USB-C port hosts a USB-MIDI device instead of talking to a
  * computer; not saved; usb_host.c),
  * AUTOSAVE (automatic project saves after five seconds stopped and untouched),
  * CALIBRATION (the setup screen: HARDWARE CALIBRATION), ABOUT.
@@ -21,7 +21,7 @@ enum { MI_COLOR,
 #if MELODEE_USB_AUDIO
        MI_USB, MI_USB_INPUT, MI_USB_VOLUME,
 #endif
-       MI_MIDI_OUT, MI_CLOCK_OUT, MI_CC_IN,
+       MI_MIDI_OUT, MI_CLOCK_OUT, MI_CC_IN, MI_MIDI_LEARN,
 #if MELODEE_USB_HOST
        MI_USB_HOST,
 #endif
@@ -36,7 +36,7 @@ static const char *const MI_NAME[MI_COUNT] = {"COLOR",
 #if MELODEE_USB_AUDIO
                                               "USB AUDIO", "USB INPUT", "USB VOLUME",
 #endif
-                                              "MIDI OUT", "CLOCK OUT", "MIDI CC IN",
+                                              "MIDI OUT", "CLOCK OUT", "MIDI CC IN", "MIDI LEARN",
 #if MELODEE_USB_HOST
                                               "USB HOST",
 #endif
@@ -417,6 +417,12 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
     if (i == MI_MIDI_OUT) value = (const char *const[]){"KEYS", "ALL", "OFF"}[settings_midi_out % MIDI_OUT_N];
     if (i == MI_CLOCK_OUT) value = settings_clock_out ? "ON" : "OFF";
     if (i == MI_CC_IN) value = settings_cc_off ? "OFF" : "ON";
+    if (i == MI_MIDI_LEARN) {                           /* how many CCs are learned */
+        uint32_t n = mlearn_count();
+        fmt_int(b, (int32_t)n);
+        str_cpy(b + str_len(b), n == 1u ? " CC" : " CCS", size - str_len(b));
+        value = n ? b : "NONE";
+    }
 #if MELODEE_USB_HOST
     if (i == MI_USB_HOST) value = uh.want ? "ON" : "OFF";
 #endif
@@ -598,6 +604,7 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
 {
     int32_t s;
     uint32_t ok = (oct >> 1) & 1u, back = oct & 1u;
+    mlearn_on = 0;                                      /* (the menu ends MIDI LEARN) */
     if (back) {
         if (ui.menu >= 2)
             ui.menu = 1, ui.force = 1;
@@ -613,6 +620,16 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         ui.menu_scroll = (uint16_t)clamp((int32_t)ui.menu_scroll + clamp(s, -128, 128) * 18, 0, menu_scroll_max());
     }
     s = panel_enc(EN_K2);
+    if ((s > 0 || ok) && ui.menu == 1 && ui.menu_sel == MI_MIDI_LEARN) {
+        menu_close();                                   /* KNOB 2 right or OCT+: learn (a knob, then a CC, as often as
+                                                         * wanted; the menu again ends it); KNOB 2 left forgets them all */
+        mlearn_start();
+        return;
+    }
+    if (s < 0 && ui.menu == 1 && ui.menu_sel == MI_MIDI_LEARN) {
+        mlearn_forget();
+        ui.force = 1;
+    }
     if (s != 0 && ui.menu == 1 && ui.menu_sel == MI_COLOR) {
         settings.palette = (settings.palette + (s > 0 ? 1u : NPALETTES - 1u)) % NPALETTES;   /* (wraps) */
         palette_set(settings.palette);              /* (the menu signature redraws) */
