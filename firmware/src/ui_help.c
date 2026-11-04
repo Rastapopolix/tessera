@@ -121,10 +121,12 @@ static const help_t HELP_PAGE[HP_COUNT] = {
     H_(HP_CORD_SRC, "MOD SOURCE", "What moves it: a track's LFO, envelope, velocity, key, random, controllers, its "
                                   "generator's gate, note or CV, or DRIFT, a slow wander, or its TIDE 1-3 or SWARM "
                                   "1-8 (LFO > ORGANIC). -- leaves the mod a fixed move. OCT+: BI swings both ways "
-                                  "from the knob, UNI (+) only one way."),
+                                  "from the knob, UNI (+) only one way, GATE (>) all or nothing: all while the "
+                                  "source is over a threshold (OCT+ held + KNOB 4)."),
     H_(HP_CORD_MOD, "MOD", "Which of the 16 mods the other knobs edit."),
     H_(HP_CORD_DST, "MOD DESTINATION", "What it moves, on which track: the voices' pitch, cutoff, shape, gain, a sound "
-                                       "setting, or a generator's."),
+                                       "setting, a generator's, another mod's amount (M1-M16 AMT) or the "
+                                       "project's FILL (held past half)."),
     H_(HP_CORD_AMT, "MOD AMOUNT", "How far, and which way: at a full source, 100 % is the destination's whole range "
                                   "(pitch: an octave)."),
     H_(HP_MX_FROM, "MATRIX FROM", "The track the mods come from: a row of the grid. A lit cell: a mod goes from this "

@@ -5,8 +5,9 @@
  * "2  [2] ENV -> [4] DECAY  -25 %" over the amount's bar from the middle; the cord KNOB 2 is on: a card. The knobs as
  * MOD's: KNOB 1 the source (--, then T1 LFO .. T4 NOTE), 2 the cord, 3 the destination (--, then T1 PITCH ..), 4 the
  * amount. A cord without a source is a fixed move: KNOB 4 its OFFSET. OCT+: a bipolar source's direction, +- (both
- * ways from the knob) or + (folded to 0..1: one way, "+" after its name); the mod's own (cord.h uni), not the LFO
- * page's POL BI/UNI (cord.c cord_lfo_raw). Included by ui_pages.c. */
+ * ways from the knob) or + (folded to 0..1: one way, "+" after its name), then GATE (">" after its name, Mono "^": all while the
+ * source is over a threshold, none under it; OCT+ held + KNOB 4 sets the threshold); the mod's own (cord.h uni), not
+ * the LFO page's POL BI/UNI (cord.c cord_lfo_raw). Included by ui_pages.c. */
 
 static int32_t accel(uint32_t role, int32_t s, int32_t range);                       /* ui_input.c */
 static int32_t list_accel(uint32_t role, int32_t s, uint32_t total, uint32_t *fast);
@@ -65,6 +66,7 @@ static const char *cu_src_name(const cord_t *c)
     if (!c->src) return "--";
     str_cpy(b, cord_src_name(c->src), sizeof b - 1u);
     if (cord_fold_on(c)) str_cpy(b + str_len(b), "+", 2);
+    else if (cord_gate(c)) str_cpy(b + str_len(b), LOOK(">", "^"), 2);   /* (Mono: its arrow is a ">") */
     return b;
 }
 
@@ -292,18 +294,41 @@ static void cu_pick_label(char *b, uint32_t col, int32_t i, int32_t *tr)
     str_cpy(b + str_len(b), s, 20u - str_len(b));
 }
 
-/* OCT+ on MODS: the cord's direction, +- <-> + (a source that is 0..1 already: nothing to fold) */
+/* OCT+ on MODS: how the cord reads its source, +- -> + -> GATE -> +- (a source that is 0..1 already: + <-> GATE). To
+ * GATE: the threshold (OFFSET) starts at the middle of a bipolar source, at 50 % of a 0..1 one */
 static void cu_polarity(void)
 {
     cord_t c = *cord_get(cord_ui_sel);
-    if (!c.src || !cord_bipolar(c.src, c.src_trk)) {
-        ui_message(c.src ? "ONE WAY ALREADY" : "NO SOURCE");
+    int bip;
+    if (!c.src) {
+        ui_message("NO SOURCE");
         return;
     }
-    c.uni = (uint8_t)!c.uni;
+    bip = cord_bipolar(c.src, c.src_trk);
+    c.uni = c.uni == CU_GATE ? (bip ? CU_BI : CU_UNI) : c.uni == CU_UNI || !bip ? CU_GATE : CU_UNI;
+    c.offset = c.uni == CU_GATE ? (bip ? 0 : 50) : 0;
     (void)cord_set(cord_ui_sel, &c);
-    ui_message(c.uni ? "+ ONE WAY" : "+- BOTH WAYS");
+    if (c.uni == CU_GATE) {
+        char b[24];
+        str_cpy(b, "GATE OVER ", sizeof b);
+        cu_pct_text(b + str_len(b), c.offset);
+        ui_message(b);
+    } else
+        ui_message(c.uni ? "+ ONE WAY" : "+- BOTH WAYS");
     ui.force = 1;
+}
+/* OCT+ held + KNOB 4 on a GATE mod: its threshold (ui_input.c: OCT+'s tap eaten) */
+static int cu_thresh_knob(int32_t steps)
+{
+    cord_t c = *cord_get(cord_ui_sel);
+    char b[24];
+    if (!cord_gate(&c)) return 0;
+    c.offset = (int8_t)clamp(c.offset + accel(EN_K1 + 3u, steps, 200), cord_bipolar(c.src, c.src_trk) ? -100 : 0, 100);
+    (void)cord_set(cord_ui_sel, &c);
+    str_cpy(b, "GATE OVER ", sizeof b);
+    cu_pct_text(b + str_len(b), c.offset);
+    ui_message(b);
+    return 1;
 }
 
 /* a knob on CORDS (ui_input.c edit_param) */
@@ -320,7 +345,9 @@ static void cu_knob(uint32_t slot, int32_t steps)
         v = clamp((int32_t)cu_src_of(&c) + list_accel(EN_K1, steps, CU_NSRC, 0), 0, CU_NSRC - 1);
         c.src = v ? (uint8_t)((v - 1) % (CS_N - 1u) + 1u) : CS_OFF;
         c.src_trk = v ? (uint8_t)((v - 1) / (CS_N - 1u)) : 0u;
-        if (c.src && !c.amount) { c.amount = c.offset; c.offset = 0; }   /* (one move shown: a fixed move becomes */
+        if (c.uni == CU_GATE && !c.src) { c.uni = CU_BI; c.offset = 0; }   /* (no source: no gate, no threshold; */
+        if (c.uni == CU_GATE && c.offset < 0 && !cord_bipolar(c.src, c.src_trk)) c.offset = 0;   /* 0..1: none under 0) */
+        if (c.src && !c.amount && c.uni != CU_GATE) { c.amount = c.offset; c.offset = 0; }   /* (one move shown: a fixed move becomes */
         if (!c.src && c.amount) { c.offset = c.amount; c.amount = 0; }   /* the source's, and back) */
     } else if (slot == 2u) {
         int was = c.dst != CD_OFF;

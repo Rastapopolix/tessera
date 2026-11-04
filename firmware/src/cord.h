@@ -20,8 +20,10 @@
  *             for every track, so the cord's destination track means nothing (kept 0)
  *   CK_CORD   another cord's move (M1 AMT .. M16 AMT: its AMOUNT, a fixed cord's OFFSET), for the block (cord.c
  *             cord_tick): the project's, destination track 0 as CK_GLOBAL. One level: an M AMT cord's own move is
- *             never moved */
-enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_GLOBAL, CK_CORD };
+ *             never moved
+ *   CK_FILL   the project's FILL (seq.c, the steps set to FILL / NOT FILL), held while the move is 50 % or more
+ *             (cord.c cord_fill_tick); destination track 0 as CK_GLOBAL */
+enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_GLOBAL, CK_CORD, CK_FILL };
 
 /* Destination codes. FROZEN: saved cords keep them; new ones at the end, a retired one stays as a gap */
 enum {
@@ -59,6 +61,7 @@ enum {
     CD_FX_RETURN,
     CD_M1_AMT,                                                      /* the cords' moves (CK_CORD): M1 AMT .. M16 AMT */
     CD_M16_AMT = CD_M1_AMT + 15,
+    CD_FILL,                                                        /* the project's FILL (CK_FILL) */
     CD_N
 };
 
@@ -90,13 +93,17 @@ enum {
     CS_N
 };
 
-typedef struct {                  /* one cord, as saved (6 bytes: uni rides in src_trk's top bit) */
+typedef struct {                  /* one cord, as saved (6 bytes: uni rides in src_trk's top two bits) */
     uint8_t src, src_trk;         /* CS_*, 0..3 */
     uint8_t dst, dst_trk;         /* CD_*, 0..3 */
     int8_t amount;                /* -100..100 %: at a full source, the destination's whole range (pitch: an octave) */
     int8_t offset;                /* -100..100 %: added whatever the source (CS_OFF: a fixed setting) */
-    uint8_t uni;                  /* 1: a bipolar source folded to 0..1 (+: moves one way from the knob); 0 +- */
+    uint8_t uni;                  /* CU_*: how the source is read */
 } cord_t;
+/* a cord's uni: CU_BI the source as it is (+-), CU_UNI a bipolar source folded to 0..1 (+: one way from the knob),
+ * CU_GATE the source as a gate: all (1) while it is over the threshold OFFSET (-100..100 % of its range), else 0 (the
+ * OFFSET then moves nothing) */
+enum { CU_BI, CU_UNI, CU_GATE };
 
 const char *cord_src_name(uint32_t code);           /* <= 7 characters; 0: no such source */
 int cord_set(uint32_t i, const cord_t *c);          /* i < CORD_LIVE; out of range: refused (0), nothing changed */

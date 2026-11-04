@@ -861,6 +861,10 @@ static void edit_param(uint32_t slot, int32_t steps)
         return;
     }
     if (pg->graph == GR_CORDS) {                        /* CORDS (ui_cords.c) */
+        if (slot == 3u && ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) && cu_thresh_knob(steps)) {
+            oct_eat |= 2u;                              /* (OCT+ held: a GATE's threshold; its release no OCT+) */
+            return;
+        }
         cu_knob(slot, steps);
         return;
     }

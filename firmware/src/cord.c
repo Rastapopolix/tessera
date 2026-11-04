@@ -100,6 +100,7 @@ static const cord_dest_t CORD_DESTS[CD_N] = {
     [CD_SF3_CHAR] = G_(CD_SF3_CHAR, G_MFX3CHAR, "SF3 CHR", "SEND FX 3's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's)"),
     [CD_FX_RETURN] = G_(CD_FX_RETURN, G_FXRETURN, "RETURN", "the send effects' RETURN: how loud they come back, for every track"),
     M_(1), M_(2), M_(3), M_(4), M_(5), M_(6), M_(7), M_(8), M_(9), M_(10), M_(11), M_(12), M_(13), M_(14), M_(15), M_(16),
+    [CD_FILL] = {CD_FILL, CK_FILL, 0, PID_NONE, "FILL", "the project's FILL (steps set to FILL / NOT FILL), held while the move is past half"},
 };
 #undef V_
 #undef B_
@@ -124,11 +125,15 @@ const char *cord_src_name(uint32_t code) { return code < CS_N ? CORD_SRC_NAME[co
  * (smoothstep), the tracks apart in time and in their points. Its clock: the blocks since power-on (cord_tick) */
 static uint32_t cord_blocks;
 static uint32_t cord_cmask, cord_amask;                 /* (the mods of mods: below, at cord_now) */
-static void cord_amounts(void);
+static uint32_t cord_tmask, cord_gates, cord_fmask;    /* (GATE, FILL: below, at cord_now) */
+static void cord_amounts(void), cord_gates_tick(void), cord_fill_tick(void);
 void cord_tick(void)
 {
     cord_blocks++;
+    if (cord_tmask) cord_gates_tick();
     if (cord_cmask) cord_amounts();
+    if (cord_fmask) cord_fill_tick();
+    else seq_fill_mod = 0;
     organic_tick();                                     /* (tessera.c, organic.c) */
     energy_tick();                                      /* (tessera.c, energy.c) */
 }
@@ -184,7 +189,9 @@ static int cord_bipolar(uint32_t s, uint32_t tr)
 /* a cord's polarity: its source bipolar, unless UNI folds it to 0..1. For the LFO the mod's BI/UNI alone decides: the
  * LFO page's POL shapes its own DEPTH routes, not the mods */
 static int cord_bip(const cord_t *c) { return !c->uni && cord_bipolar(c->src, c->src_trk); }
-static int cord_fold_on(const cord_t *c) { return c->uni && cord_bipolar(c->src, c->src_trk); }
+static int cord_fold_on(const cord_t *c) { return c->uni == CU_UNI && cord_bipolar(c->src, c->src_trk); }
+static int cord_gate(const cord_t *c) { return c->uni == CU_GATE && c->src; }
+static int cord_gate_on(const cord_t *c);
 static int32_t cord_fold(const cord_t *c, int32_t x) { return cord_fold_on(c) ? (x + 32768) >> 1 : x; }
 /* a cord's source now, folded when UNI. A track's LFO is folded before its FADE and (own: the DEPTH gain of the track
  * the cord is on, 32767 none) its DEPTH scale it, as the LFO's own POL UNI is (voice.c): faded in or turned down, a UNI
@@ -192,6 +199,7 @@ static int32_t cord_fold(const cord_t *c, int32_t x) { return cord_fold_on(c) ? 
 static int32_t cord_val(const cord_t *c, int32_t own)
 {
     if (!c->src) return 0;
+    if (cord_gate(c)) return cord_gate_on(c) ? 32767 : 0;
     if (c->src == CS_LFO && cord_fold_on(c)) {
         const track_t *s = &trk[c->src_trk % NTRK];
         int32_t x = mulq15((cord_lfo_raw(s) + 32768) >> 1, s->lfo_fade);
@@ -209,6 +217,8 @@ static uint8_t cord_envsrc;
 /* the mods of mods (CK_CORD): cmask bit i, cords[i] is an M AMT cord; amask bit i, one turns cords[i]; now[i], cords[i]'s
  * move (its AMOUNT, a fixed cord's OFFSET) as they make it this block (cord_amounts), else as set */
 static int8_t cord_now[CORD_MAX];
+/* GATE (cord.h CU_GATE): tmask bit i, cords[i] is one; gates bit i, its source is over its threshold now (cord_tick).
+ * fmask: the cords onto FILL (cord_tmask .. above, at cord_tick) */
 /* cord_adopt: bit i, cords[i] came with track t's sound (a route of it, unedited since) and goes with it; sig the
  * sound it came with; fresh: the cords just loaded (a project's routes are the project's: kept) */
 static uint16_t cord_adopted[NTRK];
@@ -227,7 +237,33 @@ static int cord_live(const cord_t *c)
 }
 /* cord c's move now (-100..100 %): its AMOUNT with a source, its OFFSET without, as the mods of mods turn it */
 static int32_t cord_amount(const cord_t *c) { return !c->src ? 0 : cord_bit(cord_amask, c) ? cord_now[c - cords] : c->amount; }
-static int32_t cord_offset(const cord_t *c) { return c->src ? c->offset : cord_bit(cord_amask, c) ? cord_now[c - cords] : c->offset; }
+static int32_t cord_offset(const cord_t *c)
+{
+    if (c->src) return cord_gate(c) ? 0 : c->offset;    /* (a GATE's OFFSET is its threshold) */
+    return cord_bit(cord_amask, c) ? cord_now[c - cords] : c->offset;
+}
+/* a GATE's threshold (Q15, its OFFSET of the source's range: -100..100 % of a bipolar one, 0..100 % of a 0..1 one) and
+ * whether it is open: over the threshold by a step (HYST) to open, at it or under to close, so a slow source near it
+ * does not chatter. cords[i]: as cord_tick found it this block; a copy: now, without the memory */
+#define CORD_HYST 256
+static int32_t cord_thresh(const cord_t *c) { return (32768 * c->offset) / 100; }
+static int cord_gate_now(const cord_t *c, int was)
+{
+    int32_t x = cord_src(c->src, c->src_trk), th = cord_thresh(c);
+    return was ? x > th : x > th + CORD_HYST;
+}
+static int cord_gate_on(const cord_t *c)
+{
+    if (c >= cords && c < cords + CORD_LIVE) return (int)((cord_gates >> (uint32_t)(c - cords)) & 1u);
+    return cord_gate_now(c, 0);
+}
+static __attribute__((noinline)) void cord_gates_tick(void)
+{
+    uint32_t m = cord_tmask, i, g = 0;
+    for (i = 0; m; i++, m >>= 1)
+        if ((m & 1u) && cord_gate_now(&cords[i], (int)((cord_gates >> i) & 1u))) g |= 1u << i;
+    cord_gates = g;
+}
 int32_t cord_move(uint32_t i)
 {
     const cord_t *c = cord_get(i);
@@ -240,6 +276,7 @@ static void cord_masks(void)
     cord_envsrc = 0;
     cord_gmask = 0;
     cord_cmask = cord_amask = 0;
+    cord_tmask = cord_fmask = 0;
     for (i = 0; i < CORD_LIVE; i++) {                   /* (the mods of mods first: the cords they turn are live) */
         const cord_t *c = &cords[i];
         uint32_t j = (uint32_t)c->dst - CD_M1_AMT;
@@ -255,11 +292,16 @@ static void cord_masks(void)
         uint32_t kind;
         if (!cord_live(c)) continue;
         kind = cord_dest(c->dst)->kind;
+        if (cord_gate(c)) cord_tmask |= 1u << i;
+        if (c->src == CS_ENV) cord_envsrc |= (uint8_t)(1u << c->src_trk);
         if (kind == CK_CORD) continue;                  /* (cord_amounts: cord_cmask) */
+        if (kind == CK_FILL) {                          /* (cord_fill_tick) */
+            cord_fmask |= 1u << i;
+            continue;
+        }
         if (kind == CK_STEP) cord_smask[c->dst_trk] |= 1u << i;
         else if (kind == CK_GLOBAL) cord_gmask |= 1u << i;
         else cord_mask[c->dst_trk] |= 1u << i;
-        if (c->src == CS_ENV) cord_envsrc |= (uint8_t)(1u << c->src_trk);
     }
 }
 
@@ -267,7 +309,7 @@ int cord_set(uint32_t i, const cord_t *c)
 {
     uint32_t t;
     if (i >= CORD_LIVE || c->src >= CS_N || c->src_trk >= NTRK || !cord_dest(c->dst) || c->dst_trk >= NTRK ||
-        c->amount < -100 || c->amount > 100 || c->offset < -100 || c->offset > 100 || c->uni > 1u)
+        c->amount < -100 || c->amount > 100 || c->offset < -100 || c->offset > 100 || c->uni > CU_GATE)
         return 0;
     TESS_IRQ_OFF();
     cords[i] = *c;
@@ -288,6 +330,7 @@ static void cord_reset(void)
     cord_envsrc = 0;
     cord_gmask = 0;
     cord_cmask = cord_amask = 0;
+    cord_tmask = cord_gates = cord_fmask = 0;
     cord_fresh = 1;
     memset(cords, 0, sizeof cords);
     memset(cord_now, 0, sizeof cord_now);
@@ -301,14 +344,15 @@ void cord_clear(void)
 
 /* ------------------------------------------------------------ saved (project.c, the Tessera object) --- */
 /* the cords as saved: CORD_MAX x 6 bytes, src src_trk dst dst_trk amount offset (CORD_LIVE in use, the rest kept 0);
- * UNI is src_trk's top bit (saved before it: 0, BI as they played) */
+ * UNI is src_trk's top bit (saved before it: 0, BI as they played), GATE the next (older firmware: a track past
+ * NTRK, the block refused) */
 #define CORD_PK_BYTES (CORD_MAX * 6u)
 static void cord_pack(uint8_t *out)
 {
     uint32_t i;
     for (i = 0; i < CORD_MAX; i++, out += 6) {
         const cord_t *c = &cords[i];
-        out[0] = c->src; out[1] = (uint8_t)(c->src_trk | c->uni << 7); out[2] = c->dst; out[3] = c->dst_trk;
+        out[0] = c->src; out[1] = (uint8_t)(c->src_trk | (c->uni & 1u) << 7 | (c->uni >> 1) << 6); out[2] = c->dst; out[3] = c->dst_trk;
         out[4] = (uint8_t)c->amount; out[5] = (uint8_t)c->offset;
     }
 }
@@ -318,11 +362,11 @@ static int cord_parse(const uint8_t *in, cord_t *got)
     uint32_t i;
     for (i = 0; i < CORD_MAX; i++, in += 6) {
         cord_t *c = &got[i];
-        c->src = in[0]; c->src_trk = in[1] & 0x7Fu; c->uni = in[1] >> 7; c->dst = in[2]; c->dst_trk = in[3];
+        c->src = in[0]; c->src_trk = in[1] & 0x3Fu; c->uni = (uint8_t)(in[1] >> 7 | (in[1] >> 5 & 2u)); c->dst = in[2]; c->dst_trk = in[3];
         c->amount = (int8_t)in[4]; c->offset = (int8_t)in[5];
         if (c->dst == CD_RETIRED_CL_RULE) memset(c, 0, sizeof *c);   /* (to CELLS' RULE, cut: the cord gone) */
         if (c->src >= CS_N || c->src_trk >= NTRK || c->dst >= CD_N || !cord_dest(c->dst) || c->dst_trk >= NTRK ||
-            c->amount < -100 || c->amount > 100 || c->offset < -100 || c->offset > 100)
+            c->amount < -100 || c->amount > 100 || c->offset < -100 || c->offset > 100 || c->uni > CU_GATE)
             return 0;
         if (cord_dest(c->dst)->kind >= CK_GLOBAL) c->dst_trk = 0;
     }
@@ -372,7 +416,7 @@ static int cord_moves(uint32_t pid, uint32_t tr, int32_t *share)
     *share = 0;
     for (i = 0; i < CORD_LIVE; i++) {
         const cord_t *c = &cords[i];
-        if (!cord_live(c) || cord_dest(c->dst)->kind == CK_CORD || cord_dest(c->dst)->pid != pid ||
+        if (!cord_live(c) || cord_dest(c->dst)->kind >= CK_CORD || cord_dest(c->dst)->pid != pid ||
             (c->dst_trk != tr && cord_dest(c->dst)->kind != CK_GLOBAL)) continue;
         *share += cord_share(c);
         n = 1;
@@ -412,7 +456,7 @@ static __attribute__((noinline)) void cord_block(track_t *t, int32_t *off, int32
         int32_t x;
         if (!(m & 1u)) continue;
         d = cord_dest(c->dst);
-        if (c->src == CS_LFO && c->src_trk == tr && !cord_fold_on(c)) {   /* its own LFO, BI: as mod_begin has it */
+        if (c->src == CS_LFO && c->src_trk == tr && !c->uni) {   /* its own LFO, BI: as mod_begin has it */
             int32_t g = mod.ldep < 32767 ? mulq15(t->lfo_fade, mod.ldep) : t->lfo_fade;
             x = t->p[P_LPOL] ? lfo * 2 - g : lfo;      /* (POL UNI's 0..g back to -g..g: cord_lfo_raw) */
         } else
@@ -420,7 +464,7 @@ static __attribute__((noinline)) void cord_block(track_t *t, int32_t *off, int32
         if (d->kind == CK_VOICE) {
             int32_t a = cord_amount(c), o = cord_offset(c);
             mod.amp |= d->md == MD_AMP;
-            if (c->src && a && MS_VOICE(c->src) && c->src_trk == (uint8_t)(t - trk) && !cord_fold_on(c) &&
+            if (c->src && a && MS_VOICE(c->src) && c->src_trk == (uint8_t)(t - trk) && !cord_fold_on(c) && !cord_gate(c) &&
                 mod.nv < NMSLOT + CORD_LIVE) {          /* its own voices' ENV VEL KEY RAND: each voice its own, as */
                 mod.vsrc[mod.nv] = c->src;              /* MOD's routes (mod_voice) */
                 mod.vdst[mod.nv] = (uint8_t)d->md;
@@ -462,6 +506,17 @@ static __attribute__((noinline)) void cord_amounts(void)
             cord_now[i] = (int8_t)clamp((c->src ? c->amount : c->offset) + (add[i] * 100 + (add[i] < 0 ? -16384 : 16384)) / 32768,
                                         -100, 100);
         }
+}
+
+/* each block with a mod onto FILL (cord_tick): FILL held while their moves together reach half (seq.c seq_fill_mod,
+ * with the GLO layer's FILL) */
+static __attribute__((noinline)) void cord_fill_tick(void)
+{
+    int32_t s = 0;
+    uint32_t m = cord_fmask, i;
+    for (i = 0; m; i++, m >>= 1)
+        if (m & 1u) s += cord_share(&cords[i]);
+    seq_fill_mod = s >= 16384;
 }
 
 /* fx.c fx_bus_settings (cord_gmask: some cord reaches them): the send effects' settings g (song.g from G_MFXTYPE to
