@@ -955,6 +955,15 @@ static void draw_columns(void)
         }
         return;
     }
+    if (cur_page()->graph == GR_MIDICH && midi_snd_layer_on()) {   /* MIDI OUT, OCT- held: each track's SOUND */
+        static const char *const NAME[TESSERA_TRACKS] = {"SND 1", "SND 2", "SND 3", "SND 4"};
+        const param_desc_t *d = pid_desc(PID_TESS(TX_SOUND), 0);
+        for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
+            uint32_t v = tessera.sound_off[k] & 1u;
+            draw_column(k, NAME[k], d->names[v], "", VAL(k), (int32_t)v * 1000, ICON_AUTO);
+        }
+        return;
+    }
     if (cur_page()->graph == GR_MIDICH) {                /* MIDI OUT: each track's channel (AUTO, 1..16, OFF) */
         static const char *const NAME[TESSERA_TRACKS] = {"TRACK 1", "TRACK 2", "TRACK 3", "TRACK 4"};
         const param_desc_t *d = pid_desc(PID_TESS(TX_MIDI_CH), 0);

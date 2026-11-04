@@ -1543,11 +1543,12 @@ static void mo_pic_midich(void)
         uint32_t ch = midi_out_channel(&trk[k]);
         char n[3] = {'T', (char)('1' + k), 0}, b[24];
         mo_invc(n, 3, y, MO_TRK(k));
-        if (ch == MIDI_OUT_NONE) str_cpy(b, "OFF", sizeof b);
+        if (ch == MIDI_OUT_NONE) str_cpy(b, tessera.sound_off[k] ? "OFF MODS ONLY" : "OFF", sizeof b);
         else {
             str_cpy(b, "CH ", sizeof b);
             fmt_int(b + 3, (int32_t)ch + 1);
-            if (!tessera.midi_ch[k]) str_cpy(b + str_len(b), drum_track(&trk[k]) && settings_drumch ? " DRUM" : " ROUT", 6);
+            if (tessera.sound_off[k]) str_cpy(b + str_len(b), " SND OFF", 9);   /* (SOUND OFF: in place of ROUT, DRUM) */
+            else if (!tessera.midi_ch[k]) str_cpy(b + str_len(b), drum_track(&trk[k]) && settings_drumch ? " DRUM" : " ROUT", 6);
             if (tessera.midi_tr[k]) {                   /* (TRANSPOSE, in semitones) */
                 str_cpy(b + str_len(b), " ", 2);
                 midi_tr_text(b + str_len(b), tessera.midi_tr[k]);

@@ -2664,6 +2664,13 @@ void tessera_reset(void)
     cord_reset();                                       /* the cords are the project's too: none */
 }
 
+/* voice.c trk_note_on: track t's SOUND OFF (its notes to MIDI OUT and the mods only, no voice) */
+static int tess_sound_off(const track_t *t)
+{
+    uint32_t tr = (uint32_t)(t - trk);
+    return tr < TESSERA_TRACKS && tessera.sound_off[tr];
+}
+
 /* ------------------------------------------------------------ the UI's view --- */
 /* ------------------------------------------------------------ parameters by number (pid.c) --- */
 static int32_t tess_clampi(int32_t v, int32_t lo, int32_t hi) { return v < lo ? lo : v > hi ? hi : v; }
@@ -2719,6 +2726,7 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_ACC_MODE: return tessera.acc_mode[tr];
     case TX_MIDI_CH: return tessera.midi_ch[tr];
     case TX_MIDI_TR: return tessera.midi_tr[tr];
+    case TX_SOUND: return tessera.sound_off[tr];
     case TX_KEY_LINK: return tessera.key_link;          /* (the project's, whichever track) */
     case TX_SD_SOURCE: return tessera.sd_src[tr];
     case TX_SD_KEEP: return tessera.sd_keep[tr];
@@ -2889,6 +2897,7 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
     case TX_ACC_MODE: tessera.acc_mode[tr] = (uint8_t)tess_clampi(v, 0, TESS_ACC_MODES - 1); return;
     case TX_MIDI_CH: tessera.midi_ch[tr] = (uint8_t)tess_clampi(v, 0, (int32_t)TESS_MIDI_OFF); return;
     case TX_MIDI_TR: tessera.midi_tr[tr] = (int8_t)tess_clampi(v, -TESS_MIDI_TR, TESS_MIDI_TR); return;
+    case TX_SOUND: tessera.sound_off[tr] = (uint8_t)tess_clampi(v, 0, 1); return;
     case TX_KEY_LINK: tessera.key_link = (uint8_t)tess_clampi(v, 0, 1); return;
     case TX_SD_SOURCE:                                  /* (the loop filled again from the new source; ANSWER: its */
         tessera.sd_src[tr] = (uint8_t)tess_clampi(v, 0, TESSERA_TRACKS);   /* call, answered from the first) */
