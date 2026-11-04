@@ -178,6 +178,10 @@ typedef struct {
     /* MIDI OUT's TRANSPOSE (OCT+ held on GLO > MIDI OUT): each track's notes go out this many semitones up (down when
      * negative), the sound itself unchanged; 0 as before. Not in the packed block: the record's TRANSP part */
     int8_t           midi_tr[TESSERA_TRACKS];
+    /* SOUND (OCT- held on GLO > MIDI OUT): 1 OFF, the track plays no voices of its own (voice.c trk_note_on); its notes
+     * still go out over MIDI and its GATE / NOTE / CV still feed the mods: a MIDI track, or a lane of modulation. 0 ON,
+     * as before. Not in the packed block: the record's SOUND part */
+    uint8_t          sound_off[TESSERA_TRACKS];
     /* KEY LINK (ui.c scale_share; SCL's sheet), the project's: 1 one ROOT for every melodic track, shared as SCL and
      * QNT always are; 0 each track its own ROOT (as before). On in a new project; a record without its part: off */
     uint8_t          key_link;
@@ -346,6 +350,7 @@ enum {
     TX_FM_DEVELOP,                                  /* (0x26E: FORM's DEVELOP, a generator track's) */
     TX_MIDI_TR,                                     /* (0x26F: MIDI OUT's TRANSPOSE, any track's) */
     TX_TUNE,                                        /* (0x270: the user tuning, the project's: tune.h tune_sel) */
+    TX_SOUND,                                       /* (0x271: SOUND ON / OFF, any track's: OFF plays no voices) */
     TX_COUNT
 };
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */

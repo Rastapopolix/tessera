@@ -37,6 +37,7 @@ static void reset(uint32_t out)
     settings_midi_out = (uint8_t)out; settings_clock_out = 0;
     memset(tessera.midi_ch, 0, sizeof tessera.midi_ch);
     memset(tessera.midi_tr, 0, sizeof tessera.midi_tr);
+    memset(tessera.sound_off, 0, sizeof tessera.sound_off);
     events_block(CTL); drain(); log_n = 0;
 }
 
@@ -178,6 +179,24 @@ static int echo_and_route_test(void)
     blocks(4 * beat_blocks());
     bad += check("  changed: the notes go out an octave up, those sent before ended as they were sent",
                  count(0x90, 0, 72) >= 1u && count(0x80, 0, 36) == count(0x90, 0, 36));
+    stop();
+    bad += check("  nothing left on", balanced());
+
+    reset(MIDI_OUT_ALL);                                 /* SOUND OFF (OCT- held on GLO > MIDI OUT) */
+    tessera_param_set(0, TX_SOUND, 1); tessera_param_set(1, TX_SOUND, 5);
+    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 100};
+    trk[1].step[0] = (step_t){{64}, 1, ST_NOTE, 0, 0, 100};
+    play(1);
+    {
+        uint32_t v, voiced0 = 0, voiced1 = 0;
+        for (v = 0; v < NVOICE; v++) {
+            voiced0 |= trk[0].v[v].active;
+            voiced1 |= trk[1].v[v].active;
+        }
+        bad += check("SOUND OFF: the notes still go out over MIDI, no voice of their own; a value past OFF clamped",
+                     count(0x90, 0, 60) >= 1u && count(0x90, 1, 64) >= 1u && !voiced0 && !voiced1 &&
+                     tessera_param_get(1, TX_SOUND) == 1);
+    }
     stop();
     bad += check("  nothing left on", balanced());
 

@@ -962,6 +962,13 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
+    if (pg->graph == GR_MIDICH && midi_snd_layer_on()) {   /* MIDI OUT, OCT- held: KNOB k track k's SOUND (right OFF) */
+        if (slot < TESSERA_TRACKS && steps)
+            tessera_param_set(slot, TX_SOUND, steps > 0);
+        oct_eat |= 1u;                                  /* (its release is no OCT-) */
+        ui.force = 1;
+        return;
+    }
     if (pg->graph == GR_MIDICH) {                   /* MIDI OUT: KNOB k track k's channel, a step a detent */
         if (slot < TESSERA_TRACKS)
             tessera_param_set(slot, TX_MIDI_CH, tessera_param_get(slot, TX_MIDI_CH) + steps);

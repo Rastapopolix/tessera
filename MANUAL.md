@@ -866,6 +866,13 @@ module that plays them too high or too low: **-12** an octave down, **-24** two.
 the track's own sound stays where it is. A note moved past MIDI's range (0 to 127) is not sent. The page shows a
 track's TRANSPOSE after its channel when it is not 0 (**CH 1 ROUT -24**); it is saved with the project.
 
+**SOUND**: hold **OCT-** on **GLO > MIDI OUT** and turn **KNOB 1** to **4** (right OFF, left ON). A track at SOUND
+OFF plays nothing on the FM-1 and takes none of its voices, but its notes still go out over MIDI on its channel, and
+its GATE, NOTE and CV still move the mods. So a track can play an outside synth alone, or, with its channel OFF too,
+be a lane that only modulates the other tracks (a generator driving their filters, say, through MODS). The keys
+played on that track make no sound either. The page shows **SND OFF** after the channel (**MODS ONLY** when the
+channel is OFF too); it is saved with the project, and firmware before it plays the track's sound as usual.
+
 <p align="center"><img src="assets/gallery/midi_out.png" alt="GLO > MIDI OUT" width="240"></p>
 
 ### MIDI CC control

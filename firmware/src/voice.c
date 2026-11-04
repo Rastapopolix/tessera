@@ -528,10 +528,12 @@ static void midi_out_on(const track_t *t, uint32_t note, uint32_t vel);   /* seq
 static void midi_out_off(const track_t *t, uint32_t note);
 static void midi_out_flush(uint32_t k);
 
+static int tess_sound_off(const track_t *t);           /* tessera.c: SOUND OFF, MIDI OUT and the mods only */
 static void trk_note_on(track_t *t,uint32_t note,uint32_t vel)
 {
     midi_out_on(t, note, vel);
-    trk_note_on_work(t,note,vel);
+    if (!tess_sound_off(t))
+        trk_note_on_work(t,note,vel);
 }
 
 static void trk_note_off(track_t *t, uint32_t note)
