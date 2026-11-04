@@ -75,6 +75,11 @@ static uint8_t browse_loads, browse_mark;    /* sound loads so far; at the brows
  * 1.3.4: left as saved, never read); bits 5..7 MIDI OUT and CLOCK OUT (midi_out.c: written by settings_export). */
 #define PREF_BITS (favorites.factory[15][30])
 #define PREF_ACCEL_OFF 2u
+/* MENU > KNOBS (Mono): the four knob columns as dials (the default) or bars; favorites.factory[8][26] tagged BAR, any
+ * other byte DIAL (favorites.c) */
+#define KNOBS_SAVED (favorites.factory[8][26])
+#define KNOBS_BAR_TAG 0xB1u
+#define KNOBS_BAR (KNOBS_SAVED == KNOBS_BAR_TAG)
 
 static uint8_t sync_reload;                  /* engine / preset / project / user preset loaded: editor RELOAD push */
 
