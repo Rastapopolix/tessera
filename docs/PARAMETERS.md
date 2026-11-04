@@ -277,6 +277,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x28A | PIECE USER 6 | 0 to 100 % | 75 | SHAPE USER: the level five sevenths in. GLO > PIECE, OCT- held, KNOB 2. |
 | 0x28B | PIECE USER 7 | 0 to 100 % | 40 | SHAPE USER: the level six sevenths in. GLO > PIECE, OCT- held, KNOB 3. |
 | 0x28C | PIECE USER 8 | 0 to 100 % | 10 | SHAPE USER: the level at the end. GLO > PIECE, OCT- held, KNOB 4. |
+| 0x291 | FOLLOW HOLD | OFF, T1, T2, T3, T4 | OFF | Sample and hold for FOLLOW: the followed track's note is taken only when the HOLD track plays, and this track keeps playing it in its own rhythm until the next one. OFF: a new note on each of its own hits. TWEAK, OCT+ held, KNOB 4. |
 
 ## Mods
 

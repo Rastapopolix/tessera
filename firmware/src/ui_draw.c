@@ -918,6 +918,13 @@ static void draw_columns(void)
         fmt_int(w2, ev->human);
         if (ev->follow) { w3[0] = 'T'; w3[1] = (char)('0' + ev->follow); w3[2] = 0; }
         else str_cpy(w3, "OFF", sizeof w3);
+        if (tw_layer_on()) {                            /* OCT+ held: FOLLOW's HOLD (lit while following) */
+            uint32_t h = tessera.follow_hold[tr];
+            char w4[4] = {'T', (char)('0' + h), 0, 0};
+            for (uint32_t k = 0; k < 3u; k++) draw_column(k, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(3, "HOLD", h ? w4 : "OFF", "", ev->follow ? VAL(3u) : T_DIM, (int32_t)h * 1000 / 4, ICON_AUTO);
+            return;
+        }
         if (tr < TESSERA_TRACKS && tessera.mode[tr] == TESS_ENG_OFF) {   /* (a STEP track: HUMAN alone) */
             draw_column(0, "SHIFT", "--", "", T_DIM, -1, ICON_NONE);
             draw_column(1, "DROP", "--", "", T_DIM, -1, ICON_NONE);
