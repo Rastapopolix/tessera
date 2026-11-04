@@ -407,6 +407,30 @@ static void s_follow_step(void)
     knob(tessera_tweak_knob, 0, 2);                   /* SHIFT +2: a third */
 }
 
+/* FOLLOW HOLD: track 3's Markov follows track 1's melody a third above, holding the note track 2's hits (steps 1 and 5
+ * of 8, a STEP track) sample */
+static void s_follow_hold(void)
+{
+    uint32_t i;
+    s_follow_step();
+    tessera_param_set(1, TX_TW_FOLLOW, 0);            /* (track 2 a STEP track again: the clock) */
+    tessera_param_set(1, TX_MODE, TESS_ENG_OFF);
+    for (i = 0; i < 8u; i++) {
+        step_t *st = &trk[1].step[i];
+        st->n = i % 4u ? 0u : 1u;
+        st->note[0] = 36;
+        st->time = i % 4u ? ST_REST : ST_NOTE;
+        st->vel = 100;
+    }
+    trk[1].p[P_SLEN] = 8;
+    trk[2].p[P_SCALE] = 1;
+    gen(2, TESS_ENG_MARKOV);
+    knob(tessera_knob, 2, 6);                         /* DENSITY 100 */
+    turns(tessera_tweak_knob, 3, 1);                  /* FOLLOW track 1 */
+    knob(tessera_tweak_knob, 0, 2);                   /* SHIFT +2 */
+    tessera_param_set(2, TX_TW_HOLD, 2);              /* HOLD on track 2's hits */
+}
+
 /* STEP as seed (step_seed.c): track 2 plays from track 1's STEP melody (FOLLOW_MELODY, C major), SOURCE T1 */
 static void s_seed(uint32_t mode, uint32_t keep, int32_t prob_turns)
 {
@@ -1007,6 +1031,23 @@ static void follow_run(char *res, size_t cap)
         n2++;
     }
     snprintf(res, cap, "%u %u", n2, bad);
+}
+
+/* FOLLOW HOLD: "notes, wrong ones, changes" of track 3 (one a step; the note held from steps 1 and 5) */
+static void follow_hold_run(char *res, size_t cap)
+{
+    static const scen_t sc = {"follow_hold", 4, 0x1031u, s_follow_hold, 0, 0};
+    uint32_t i, n = 0, bad = 0, chg = 0;
+    int last = -1;
+    scen_run(&sc, 0, res, cap);
+    for (i = 0; i < tt_n; i++) {
+        if (tt_ev[i].tr != 2u) continue;
+        bad += (int)tt_ev[i].note != major_step(FOLLOW_MELODY[n % 8u / 4u * 4u], 2);
+        chg += last >= 0 && (int)tt_ev[i].note != last;
+        last = tt_ev[i].note;
+        n++;
+    }
+    snprintf(res, cap, "%u %u %u", n, bad, chg);
 }
 
 /* STEP as seed: scenario name's track 2 notes: "count, in the melody's order, of the melody's notes, steps" (the
@@ -3296,6 +3337,40 @@ int main(int argc, char **argv)
         }
         snprintf(line, sizeof line, "FOLLOW a STEP melody: all %u notes a third above it (in C major)", n2);
         bad += check(line, n2 > 16u && !wrong);
+    }
+    {   /* FOLLOW HOLD, in a child */
+        unsigned n3 = 0, wrong = 1, chg = 0;
+        pid_t pid;
+        int fd[2];
+        if (!pipe(fd) && (pid = fork()) >= 0) {
+            if (!pid) {
+                close(fd[0]);
+                follow_hold_run(res, sizeof res);
+                if (write(fd[1], res, strlen(res) + 1u) < 0) _exit(1);
+                _exit(0);
+            }
+            close(fd[1]);
+            if (read(fd[0], res, sizeof res - 1u) > 0) sscanf(res, "%u %u %u", &n3, &wrong, &chg);
+            close(fd[0]);
+            waitpid(pid, 0, 0);
+        }
+        snprintf(line, sizeof line, "FOLLOW HOLD: %u notes, each the one track 2's last hit sampled (%u changes)", n3, chg);
+        bad += check(line, n3 > 16u && !wrong && chg >= 4u && chg < n3 / 2u);
+    }
+    {   /* FOLLOW HOLD's knob (TWEAK, OCT+ held, KNOB 4): OFF, the other tracks, never this one; the ends stay */
+        int ok = 1;
+        tessera_reset();
+        gen(1, TESS_ENG_TURING);
+        tessera_tw_layer_knob(3, 1); ok &= tessera.follow_hold[1] == 1u;
+        tessera_tw_layer_knob(3, 1); ok &= tessera.follow_hold[1] == 3u;   /* (past T2: itself) */
+        tessera_tw_layer_knob(3, 1); tessera_tw_layer_knob(3, 1); ok &= tessera.follow_hold[1] == 4u;
+        tessera_tw_layer_knob(3, -1); ok &= tessera.follow_hold[1] == 3u;
+        tessera_tw_layer_knob(3, -1); ok &= tessera.follow_hold[1] == 1u;
+        tessera_tw_layer_knob(3, -1); tessera_tw_layer_knob(3, -1); ok &= tessera.follow_hold[1] == 0u;
+        tessera_tw_layer_knob(0, 1); ok &= tessera.follow_hold[1] == 0u;   /* (KNOB 1..3: nothing) */
+        tessera_param_set(1, TX_TW_HOLD, 2); ok &= tessera.follow_hold[1] == 0u;   /* (itself: OFF) */
+        bad += check("FOLLOW HOLD's knob: OFF, T1, T3, T4, never its own track", ok);
+        tessera_reset();
     }
     {                                                /* GRAVITY on EVOLVE, in a child */
         unsigned dr = 0, hm = 0, fo = 0;

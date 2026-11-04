@@ -649,6 +649,13 @@ The scene only listens while the page shows. In the MOSAIC palette each track's 
 | 3 | **HUMAN** (0–100 %) | Varies each note's velocity and length a little, as a player would: at 100 up to 20 softer or louder and up to half as long, the same each time the piece plays. The timing is TIMING's **HUMAN**. |
 | 4 | **FOLLOW** | OFF, or T1 to T4: plays that track's pitch, SHIFT away, in this track's scale. STEP tracks can be followed too. |
 
+**HOLD** (OCT+ held, KNOB 4: OFF, or T1 to T4): a sample and hold for FOLLOW. The followed note is taken only when
+the HOLD track plays a note, and this track keeps playing that note, in its own rhythm, until the HOLD track plays
+again. So a bass can take a TURING line's note once a bar: FOLLOW the TURING track, and HOLD on a track that plays once
+a bar (a STEP track, or a EUCLID with one pulse; set it to SOUND OFF with its channel OFF to keep it silent). HOLD on a
+track with random hits (DROP, BRANCH) samples at random moments. OFF: a new note on each of this track's own hits, as
+before. HOLD is saved with the project; older firmware loads the project without it.
+
 On an ATLAS track only DROP and HUMAN apply: SHIFT, FOLLOW and FLRSH would change which drum plays. On a STEP track
 TWEAK holds HUMAN alone.
 
