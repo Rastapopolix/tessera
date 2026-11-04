@@ -1,16 +1,16 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis (Tessera); the glue's pattern: Quixotic7/FM1VST core-glue/melodee (GPL-3.0-only) */
-/* The Tessera core for FM1VST (core-api/fm1core.h, ABI 6), built as an .rfm1 for RemoteFM1 (web/rfm1/build.sh). It
- * is the web simulator's firmware (web/sim/sim.c: sound, sequencer, Tessera, UI on tests/ui_test.c's HAL stubs) behind
- * the core ABI instead of the browser's exports. No coroutine: main.c's loop is cut at its waits, as sim.c cuts it,
- * so every entry point returns:
+/* The Tessera core for FM1VST (core-api/fm1core.h, ABI 6), built as an .rfm1 for RemoteFM1 (web/rfm1/build.sh): the
+ * firmware of tessera_firmware.h (the host build with the flash) behind the core ABI. No coroutine: main.c's loop is
+ * cut at its waits, as web/sim/sim.c cuts it, so every entry point returns:
+ *   init       main.c fm1_main's power-on: the flash (settings, projects, user presets), the parts, the BOOT project
  *   tick(ms)   the device's millisecond (fm1_ms, the 1 MHz tick count), the panel's input in
- *   frame()    one pass of the loop (ui_input, ui_leds, ui_draw), every 15 ms
+ *   frame()    one pass of the loop (ui_input, the settings save, ui_leds, ui_draw), every frame the host draws
  *   idle()     ui_input, the other milliseconds (main.c: `while (fm1_ms - m < 15) ui_input();`)
  *   audio()    mix_block, CTL frames at a time, as many as the host asks (128 per block: four)
- * Left out with the hardware, as the web simulator leaves them: the flash (the project slots are RAM; saves are lost
- * when the app closes), USB audio, the USB host, the update, the editor's SysEx, the CPU budget. The flash image the
- * host keeps is FM1VST's (common/nor.c), erased and never written. */
+ * The flash is FM1VST's NOR image (common/nor.c), which the app keeps between runs. Its first run (the image erased)
+ * puts the demos in slots A and B and loads A, as the web simulator starts; later runs boot as the device does.
+ * Left out with the hardware: USB audio, the USB host, the update, the editor's SysEx, the CPU budget. */
 #include <stdio.h>
 #include <stdlib.h>                       /* first: its exit / atexit prototypes must not see the macros */
 #include <string.h>
@@ -21,20 +21,8 @@
 #include "exit.h"                         /* exit / atexit -> fm1core_exit / fm1core_atexit (common/exit.h) */
 #include "env.h"                          /* getenv -> NULL: no environment in a core (common/env.h) */
 
-#define UI_TEST_NO_MAIN 1
 #define TRK_START_TESS 1                  /* the device's power-on start (engines.c), not the tests' */
-#include "ui_test.c"
-
-/* the real matrix (hal/fm1_input.h; ui_test.c leaves it empty), as web/sim/sim.c has it */
-static const int8_t FM1_KEYMAP[6][FM1_NCOL] = {
-    {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-    { 5, 11,  4, 10,  3,  9,  2,  8, -1, -1, -1},
-    {34, 35, 36, 37, 38, 40, 39, 13,  7,  6, 12},
-    {23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33},
-    { 0,  1, 15, 14, 17, 16, 19, 18, 20, 21, 22},
-    {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-};
-
+#include "tessera_firmware.h"
 #include "sim_demos.h"                    /* (tools/gen_sim_demos.py: demos/still-tide.tsp, koto-garden.tsp) */
 
 #include "exit_end.h"
@@ -45,28 +33,70 @@ fm1panel_t fm1core_ts_panel;
 
 static uint32_t ts_booted;
 
-/* power-on, as web/sim/sim.c web_power_on: main.c melodee_init (ui_test.c ui_power_on) with the device's BPM and
- * scale, the demos in slots A and B (A loaded, stopped), the default palette */
-static void ts_power_on(void)
+/* main.c melodee_init (static there; main.c is the device's boot and cannot be built on the host). Verbatim. */
+static void ts_melodee_init(void)
 {
     uint32_t i;
-    ui_power_on();
+    chain_defaults(&chain_config);
+    pattern_init();
+    for (i = 0; i < G_COUNT; i++)
+        song.g[i] = GP[i].def;
     song.g[G_BPM] = TRK_DEF_BPM;
-    for (i = 0; i < NTRK; i++)
+    undo_depth++;                             /* (no undo copy of the power-on loads) */
+    fm6_init();                               /* every track's FM6 patch: the init voice */
+    for (i = 0; i < NTRK; i++) {
+        track_t *t = &trk[i];
+        track_defaults(t);
+        set_engine_of(t, TRK_DEF[i][0]);
+        apply_preset_to(t, TRK_DEF[i][1]);    /* with its sends */
         if (TRK_DEF[i][0] != ENGI_DRUM)
-            trk[i].p[P_SCALE] = TRK_DEF_SCALE;
-    memcpy(proj_bank_slot[0], SIM_DEMO_A, sizeof SIM_DEMO_A);
-    proj_bank_len[0] = sizeof SIM_DEMO_A;
-    memcpy(proj_bank_slot[1], SIM_DEMO_B, sizeof SIM_DEMO_B);
-    proj_bank_len[1] = sizeof SIM_DEMO_B;
-    proj_fetch(0);
-    proj_fetch(1);
-    project_load(0);
-    settings.palette = UI_DEFAULT_INDEX;
-    palette_set(settings.palette);
-    song.master_q12 = 2048;               /* until the panel's MASTER arrives */
+            t->p[P_SCALE] = TRK_DEF_SCALE;
+        t->engine = t->eng_req;
+        track_defaults_steps(t);              /* (a sound load never touches them) */
+        pat_sig[i] = steps_sig(t);            /* (empty: not the user's) */
+        pat_last[i] = 0;
+    }
+    undo_depth--;
+    song.sel = 0;
+    song.master_q12 = 2048;
+    ui.home = 1;
+    ui.force = 1;
+}
+
+/* the app's first run: nothing written to the flash yet */
+static int ts_flash_erased(void)
+{
+    const uint8_t *f = fm1nor_flash();
+    uint32_t i;
+    for (i = 0; i < FM1NOR_SIZE; i++)
+        if (f[i] != 0xFFu)
+            return 0;
+    return 1;
+}
+
+/* power-on, main.c fm1_main's order up to its loop (no waits, no splash): the flash, the settings, the panel table,
+ * the parts, the GLO values as last used, the BOOT project or the template. A first run: the demos in A and B (as
+ * the backup page would put them there), A loaded */
+static void ts_power_on(void)
+{
+    int first = ts_flash_erased();
+    settings_init();
+    lcd_fill(0, 0, 240, 240, T_BG);
+    persist_boot();
+    settings_init();
+    panel_init();
+    ts_melodee_init();
     usb.config = 1;                       /* a host is there: MIDI out flows (usb.c usb_midi_out_ready) */
-    screen_clear();
+    glo_restore();
+    if (first && flash_ok && !st_save(OBJ_SLOT(0), SIM_DEMO_A, sizeof SIM_DEMO_A) &&
+        !st_save(OBJ_SLOT(1), SIM_DEMO_B, sizeof SIM_DEMO_B)) {
+        proj_fetch(0);
+        proj_fetch(1);
+        project_load(0);
+    } else {
+        project_boot();
+    }
+    lcd_fill(0, 0, 240, 240, T_BG);
     ui.force = 1;
     ts_booted = 1;
 }
@@ -109,7 +139,14 @@ static void ts_out(void)
 }
 
 int fm1core_ts_halted(void) { return fm1core_halted(); }
-void fm1core_ts_shutdown(void) { fm1core_run_exit(); }
+/* shutdown: a settings change the firmware has queued (settings_poll saves only while stopped) is written, as it
+ * would be once the device stops */
+void fm1core_ts_shutdown(void)
+{
+    if (ts_booted && flash_ok && persist_pending)
+        settings_poll();
+    fm1core_run_exit();
+}
 void fm1core_ts_options(const char *flash_path, int no_flash, int save_on_exit, int headless)
 {
     (void)save_on_exit;
@@ -127,7 +164,7 @@ void fm1core_ts_init(int demo)
 {
     (void)demo;
     fm1core_exit_cleanup = fm1nor_close;
-    fm1nor_open();
+    fm1nor_open();                        /* (common/nor.c: erased, then the stage or the file) */
     if (!FM1CORE_PANEL->master)
         FM1CORE_PANEL->master = 724;      /* -> master_q12 2047, as melodee_init's 2048 */
     ts_power_on();
@@ -150,7 +187,10 @@ void fm1core_ts_frame(void)
     if (fm1core_halted() || !ts_booted)
         return;
     ts_in();
+    fm6_service();                        /* a pending FM6 settings save */
     ui_input();
+    glo_poll();                           /* a kept GLO value changed: the settings, later */
+    settings_poll();                      /* queued settings save: only while stopped */
     ui_leds();
     ui_draw();
     ts_out();
@@ -165,22 +205,29 @@ void fm1core_ts_idle(void)
 }
 
 /* audio: mix_block's Q15 stereo, CTL frames at a time (the device's block), clipped to int16; the HOME scope is fed
- * as audio.c audio_block feeds it. frames: a multiple of FM1P_BLOCK (128 = 4 CTL) */
+ * as audio.c audio_block feeds it. A flash erase is silence, as on the device (its IRQs are off while it erases:
+ * common/nor.c counts the blocks). frames: a multiple of FM1P_BLOCK (128 = 4 CTL) */
 void fm1core_ts_audio(int16_t *stereo, uint32_t frames)
 {
     static int32_t o[2u * CTL];
-    uint32_t f, k;
+    uint32_t b, f, k;
     if (fm1core_halted()) {
         memset(stereo, 0, (size_t)frames * 2u * sizeof *stereo);
         return;
     }
-    for (f = 0; f + CTL <= frames; f += CTL) {
-        mix_block(o, CTL);
-        for (k = 0; k < 2u * CTL; k++) {
-            int32_t v = o[k];
-            if ((k & 3u) == 2u)
-                scope_buf[scope_w++ & (SCOPE_N - 1u)] = (int16_t)v;
-            stereo[2u * f + k] = (int16_t)(v > 32767 ? 32767 : v < -32768 ? -32768 : v);
+    for (b = 0; b + FM1P_BLOCK <= frames; b += FM1P_BLOCK) {
+        if (fm1nor_stall_take()) {
+            memset(stereo + 2u * b, 0, FM1P_BLOCK * 2u * sizeof *stereo);
+            continue;
+        }
+        for (f = b; f < b + FM1P_BLOCK; f += CTL) {
+            mix_block(o, CTL);
+            for (k = 0; k < 2u * CTL; k++) {
+                int32_t v = o[k];
+                if ((k & 3u) == 2u)
+                    scope_buf[scope_w++ & (SCOPE_N - 1u)] = (int16_t)v;
+                stereo[2u * f + k] = (int16_t)(v > 32767 ? 32767 : v < -32768 ? -32768 : v);
+            }
         }
     }
 }
@@ -211,6 +258,8 @@ void fm1core_ts_dump(void)
     printf("tessera: fm1_ms %u playing %u bpm %d page %u home %u master_q12 %d  midi in %u out %u\n",
            (unsigned)fm1_ms, (unsigned)song.playing, (int)song.g[G_BPM], (unsigned)ui.page, (unsigned)ui.home,
            (int)song.master_q12, (unsigned)(mi_w - mi_r), (unsigned)(mo_w - mo_r));
+    printf("  flash: %s, %u writes, %u erases with the audio stalled%s\n", flash_ok ? "ok" : "RAM only",
+           (unsigned)fm1nor_dirty(), (unsigned)fm1nor_stalls(), persist_pending ? ", a settings save pending" : "");
 }
 void fm1core_ts_stats(uint32_t *shed, uint32_t *cpu_pct)
 {
@@ -219,13 +268,24 @@ void fm1core_ts_stats(uint32_t *shed, uint32_t *cpu_pct)
 }
 void fm1core_ts_ui_info(char *buf, uint32_t n)
 {
-    snprintf(buf, n, "%s page %u part %u menu %u playing %u", ui.home ? "home" : "page", (unsigned)ui.page,
-             (unsigned)song.sel + 1u, (unsigned)ui.menu, (unsigned)song.playing);
+    snprintf(buf, n, "%s page %u part %u menu %u playing %u slot %d msg '%s'", ui.home ? "home" : "page",
+             (unsigned)ui.page, (unsigned)song.sel + 1u, (unsigned)ui.menu, (unsigned)song.playing,
+             (int)song.g[G_SLOT], ui.msg_t ? ui.msg : "");
 }
 const int8_t *fm1core_ts_keymap(void) { return &FM1_KEYMAP[0][0]; }
 
-/* ---- the flash (fm1core.h ABI 2): common/nor.c's image, never written (the slots are RAM) ---- */
+/* ---- the flash (fm1core.h ABI 2): common/nor.c ---- */
 uint8_t *fm1core_ts_flash(void) { return fm1nor_flash(); }
 uint32_t fm1core_ts_flash_dirty(void) { return fm1nor_dirty(); }
 int fm1core_ts_flash_stage(const uint8_t *bytes, uint32_t n) { return fm1nor_stage(bytes, n); }
-int fm1core_ts_flash_sync(void) { return 1; }
+/* make the image current: what settings_poll would save is written now if it differs from the flash. Projects and
+ * user presets are written the moment they are saved (SAVE); the song being edited is RAM on the device as well.
+ * 1: current; 0: the firmware defers the write (it never erases while the transport runs) */
+int fm1core_ts_flash_sync(void)
+{
+    if (fm1core_halted() || !ts_booted || !flash_ok)
+        return 1;
+    persist_pending = 1;
+    settings_poll();
+    return persist_pending ? 0 : 1;
+}

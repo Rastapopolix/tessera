@@ -8,7 +8,8 @@ This folder is Tessera's core glue for FM1VST:
 
 | file | what |
 | --- | --- |
-| `core_tessera.c` | the firmware unit: the web simulator's firmware (`web/sim/sim.c`, on `tests/ui_test.c`'s HAL stubs) behind FM1VST's core ABI (`core-api/fm1core.h`) |
+| `core_tessera.c` | the firmware unit: power-on as main.c does it, and the loop behind FM1VST's core ABI (`core-api/fm1core.h`) |
+| `tessera_firmware.h` | the include list: the host build (`tests/hostsim.c`, `tests/ui_test.c`'s HAL stubs) with the flash (`storage.c` on FM1VST's NOR image) |
 | `core_tessera_desc.c` | the descriptor, the module's one export |
 | `core.cmake` | `fm1_add_core` and `fm1_add_rfm1` |
 | `build.sh` | builds, checks and runs the .rfm1 |
@@ -23,9 +24,12 @@ not changed: `build/rfm1/tree/` links to its folders, with this folder as `core-
 `cores/tessera`. The file is `build/rfm1/tessera-<version>.rfm1`; the script checks it (`tools/rfm1_check.py`) and
 plays it in wasm3 (`rfm1_run`). The version is the tag at HEAD, else the newest tag with `-dev`.
 
-Each call returns: `tick` sets the device's millisecond, `frame` is one pass of main.c's loop (input, LEDs, screen),
-`idle` reads the input, `audio` runs `mix_block` 32 frames at a time. It starts as the web simulator does, with STILL
-TIDE in slot A and KOTO GARDEN in slot B.
+Each call returns: `tick` sets the device's millisecond, `frame` is one pass of main.c's loop (input, the settings
+save, LEDs, screen), `idle` reads the input, `audio` runs `mix_block` 32 frames at a time.
 
-Left out, as in the web simulator: the flash (project slots are RAM, so saves are lost when the app closes), USB
-audio, the USB host, the update, the editor's SysEx, the CPU budget (`stats` reports 0).
+The flash is the 1 MiB image the app keeps: settings, projects and user presets survive the app, as on the device. The
+first run (the image erased) puts STILL TIDE in slot A and KOTO GARDEN in slot B and loads A, as the web simulator
+starts; later runs boot as the device does (the BOOT project, or a new one).
+
+Left out: USB audio, the USB host, the update, the editor's SysEx, the CPU budget (`stats` reports 0), and
+Calibration (MENU > PANEL waits in loops for the buttons; the app's panel table is fixed, so it says ON THE FM-1).

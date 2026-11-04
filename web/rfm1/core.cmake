@@ -2,8 +2,8 @@
 # Tessera as an FM1VST core (Quixotic7/FM1VST, cmake/FM1Cores.cmake fm1_add_core) and as an .rfm1 for RemoteFM1
 # (cmake/FM1Rfm1.cmake fm1_add_rfm1; FM1VST's docs/RFM1.md). web/rfm1/build.sh puts this folder at
 # core-glue/tessera/ and this repository at cores/tessera/ of a tree beside an FM1VST checkout and builds it.
-# The firmware is the web simulator's (web/sim/sim.c): the device's engine set and the Mono look, as web/sim/build.sh
-# builds it. The version: TESSERA_VERSION (build.sh: the tag, or --version), else melodee.c's string.
+# The firmware is the host build with the flash (tessera_firmware.h): the device's engine set and the Mono look, as
+# web/sim/build.sh builds them. The version: TESSERA_VERSION (build.sh: the tag, or --version), else melodee.c's string.
 set(TESSERA_VERSION "" CACHE STRING "the Tessera version of the core (3.2.2); empty: firmware/src/melodee.c's")
 if(TESSERA_VERSION)
     set(_ts_version VERSION ${TESSERA_VERSION})
