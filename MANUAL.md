@@ -55,7 +55,7 @@ page's four settings sit along the top of the screen in the same order.
 | **SCL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
 | **EDIT** | The sound's EDIT pages; on an EDIT page, the map | With OCT- / OCT+: undo / redo |
 | **FX** | The insert and send effects | The mod amount of any knob you turn |
-| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
+| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT, [CHAIN](#chain-one-form-for-the-project) | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
 | **SAVE** | USER (ready to save the sound), PROJECT, PRESETS | Save the project to its slot (as SAVE + REC) |
 | **REC** | Records the selected track until REC again (see [Recording live](#recording-live)) | Capture or print the last bars (see [Print and keep](#print-and-keep)) |
 | **OCT+** | Octave up; on some pages, an action (shown on screen) | A page's extra layer (see [OCT+ layers](#oct-layers-on-gen)) |
@@ -528,6 +528,35 @@ default) a section played again comes back exactly, as before. Above 0 each retu
 that size, so it stays recognisable but is never quite the same; the section itself is kept, so the next return
 starts from it again and the form never drifts away over hours. GRAVITY (OCT+ held on EVOLVE) is the chance a return
 stays exact. A knob turned while a section plays is kept in it, as without DEVELOP.
+
+**CHAIN** (OCT+ held, KNOB 2, FOLLOW or OWN) and **SKIP** (OCT+ held, KNOB 3, 0–100 %): this track's part in the
+project's [CHAIN](#chain-one-form-for-the-project). FOLLOW: its sections change with the CHAIN's letters. OWN: it keeps
+its own FORM. Until you set it, a track follows when its own FORM is OFF and keeps its own when it has one. SKIP is the
+chance the track stays in its section one phrase longer where the CHAIN moves on (then it catches up; never twice
+running). Both are lit only while the CHAIN's FORM is on.
+
+### CHAIN: one form for the project
+
+**GLO > CHAIN** gives the whole project one FORM, so the tracks' sections line up: on each phrase line the CHAIN moves
+to its next letter, and every generator track that FOLLOWs moves to its own A, B or C at the same moment (made by its
+CONTR the first time, recalled after, varied by its DEVELOP). Phrases are counted in bars from PLAY, so a change always
+lands on a downbeat, whatever each track's DIV.
+
+| Knob | Setting | What it does |
+|---|---|---|
+| 1 | **FORM** | OFF, AB, ABAC, ABCB, AABA, ABCA or AABC. OFF (the default): every track as set, nothing changes. |
+| 2 | **PHRASE** | 4, 8 or 16 bars a phrase. |
+| 3 | **WANDER** (0–100 %) | 0 plays the FORM as written, round and round. Up, the next letter is more often chosen than read. |
+
+Hold **OCT+** for each place's **REPEAT** (KNOB 1 to 4, 1 to 8 phrases): ABAC with A at 2 and C at 3 plays
+A A B A C C C, then again. The picture shows the places as blocks as long as their repeats, the one playing filled with
+its phrases along the foot, and the tracks that follow.
+
+WANDER's choices keep a shape: A is home and comes back the longer the music is away; a letter not heard yet comes
+only after a return to A; a letter plays twice running only if the FORM has it twice (AABA); a chosen letter plays its
+first place's REPEAT. Each phrase further from A makes the next new section a little more different (up to +30 on its
+CONTR). The choices come from the tracks' SEEDs, so PLAY plays the same piece again. While a track follows, its own
+EVERY waits (the CHAIN's phrases are its sections) and FLOURISH plays on the CHAIN's last beat.
 
 ---
 

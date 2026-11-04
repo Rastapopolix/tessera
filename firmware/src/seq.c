@@ -882,6 +882,7 @@ static void seq_start(void)
     seq_sub_clear();
     organic_play();                                 /* (SLOTH and OCHD from each track's SEED: a piece replays) */
     energy_play();                                  /* (ENERGY's tide and rests too) */
+    fchain_play();                                  /* (form chaining's draws: a piece replays) */
     tessera_sd_play();                              /* (STEP as seed's loops from their sources again) */
     cin_left = 0; /* MIDI Start also cancels a pending local count-in. */
     int_clock_rem = 0;                              /* every start from the same place: a take repeats exactly */

@@ -199,6 +199,15 @@ typedef struct {
     uint8_t          en_rests;                   /* 0..100: how often the notes rest, 0 off */
     int8_t           en_level;                   /* -100..100: the energy the tide swings round, 0 as set (part 2) */
     uint8_t          en_depth[TESSERA_TRACKS];   /* 0..100: a track's share of ENERGY, 100 all (as before), 0 an anchor */
+    /* Form chaining (form_chain.c; the CHAIN page under GLO), the project's FORM on the bar clock, and each track's part
+     * in it (OCT+ held on FORM): the record's CHAIN part, not the packed block. FORM OFF: nothing changes */
+    uint8_t          fc_form;                    /* 0 OFF, 1..6 AB .. AABC (TESS_FORMS) */
+    uint8_t          fc_phrase;                  /* 0, 1, 2: a phrase of 4, 8 (default), 16 bars */
+    uint8_t          fc_wander;                  /* 0..100: the chance the next letter is drawn, 0 as written */
+    uint8_t          fc_rep[4];                  /* 1..8: the phrases each place of the FORM holds (default 1) */
+    uint8_t          fc_follow[TESSERA_TRACKS];  /* 0 not set (FOLLOW where the track's own FORM is OFF, else OWN),
+                                                  * 1 FOLLOW, 2 OWN */
+    uint8_t          fc_skip[TESSERA_TRACKS];    /* 0..100: the chance the track holds its section a phrase longer */
 } tessera_state_t;
 
 extern tessera_state_t tessera;
@@ -268,6 +277,9 @@ void tessera_len_knob(uint32_t k, int32_t s);       /* LENGTH page: MODE LEN KEY
 void tessera_len_tick(track_t *t, uint32_t n);      /* seq.c, each block: FIXED's held notes end on time */
 void tessera_len_stop(track_t *t);                  /* the held notes end now (panic, a pattern change) */
 void organic_play(void);                            /* seq.c, PLAY: SLOTH and OCHD from each track's SEED */
+void fchain_play(void);                             /* seq.c, PLAY: form chaining from the top (form_chain.c) */
+uint32_t tessera_chain_get(uint8_t seq[4], uint32_t *pos, uint32_t *left);   /* the project FORM: letters, place, left */
+void tessera_chain_knob(uint32_t k, int32_t s, int layer);   /* the CHAIN page: KNOB k turned s (layer: OCT+ held) */
 void energy_play(void);                             /* seq.c, PLAY: ENERGY's tide and rests from the SEEDs (energy.c) */
 int32_t energy_now(void);                           /* the tide now, Q15 -32767 sparse .. 32767 full (cord source) */
 int energy_resting(void);                           /* 1 while the notes rest */
@@ -351,6 +363,10 @@ enum {
     TX_MIDI_TR,                                     /* (0x26F: MIDI OUT's TRANSPOSE, any track's) */
     TX_TUNE,                                        /* (0x270: the user tuning, the project's: tune.h tune_sel) */
     TX_SOUND,                                       /* (0x271: SOUND ON / OFF, any track's: OFF plays no voices) */
+    TX_FC_FORM, TX_FC_PHRASE, TX_FC_WANDER,         /* (0x272..0x274: form chaining, the project's: one value, whichever
+                                                     * track) */
+    TX_FC_REP1, TX_FC_REP2, TX_FC_REP3, TX_FC_REP4, /* (0x275..0x278: the repeats of the chain's four places) */
+    TX_FC_FOLLOW, TX_FC_SKIP,                       /* (0x279, 0x27A: FOLLOW / OWN and SKIP, a generator track's) */
     TX_COUNT
 };
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */

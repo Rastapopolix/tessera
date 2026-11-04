@@ -37,7 +37,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across, KNOB 2 rows, OCT+ opens, OCT- or EDIT closes |
 | **PRESETS** on an EDIT page | The next / previous section (FM6: Algo, OP1 to OP6, Pitch, LFO, Ctrl, Store) |
 | **FX** | The insert and send effects |
-| **GLO** | MIXER, GLOBAL (BUDGET: the shared voices), SYSTEM, MIDI OUT |
+| **GLO** | MIXER, GLOBAL (BUDGET: the shared voices), SYSTEM, MIDI OUT, CHAIN (the project's FORM, PHRASE, WANDER) |
 | On **MIXER**: **KNOB 1** to **4** / with **OCT+** held | Level / pan of track 1 to 4; the keys mute and solo as with GLO held |
 | **SAVE** | USER (save the sound), PROJECT, PRESETS |
 
@@ -130,6 +130,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **EDIT** on USER or PROJECT | Renames the slot |
 | **OCT+** on a PROJECT slot | Load, Save here, Rename, Boot, Erase |
 | GLO > MIDI OUT: **OCT+** held, **KNOB 1** to **4** | Each track's MIDI OUT TRANSPOSE, a semitone a click |
+| GLO > CHAIN: **OCT+** held, **KNOB 1** to **4** | Each place's REPEAT, 1 to 8 phrases |
 
 ## Generators
 
@@ -144,6 +145,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | EVOLVE: **KNOB 4** (ROLL) | A new seed a click; turn back for the last one |
 | FORM: **KNOB 3** (CLEAR) | Forgets B and C |
 | FORM: **OCT+** held, **KNOB 1** | DEVELOP: each return of a section varies a little (0: exact) |
+| FORM: **OCT+** held, **KNOB 2** / **3** | The CHAIN: FOLLOW or OWN; SKIP, the chance it lags a phrase |
 | MODS: **OCT+** | The picked mod: +- (both ways) / + (one way) |
 | MATRIX: **OCT+** | Opens the picked mod in MODS |
 

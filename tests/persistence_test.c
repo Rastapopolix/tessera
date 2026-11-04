@@ -264,6 +264,35 @@ static int test_tsp_record(void)
     tsp_resum(raw);
     bad += check("TSP1: a DEV part past 100 % is refused", ok && !tsp_valid(raw, len));
 
+    reset();                                           /* form chaining: the record's CHAIN part; a record without it */
+    tessera_param_set(0, TX_FC_FORM, 4); tessera_param_set(0, TX_FC_PHRASE, 2); tessera_param_set(0, TX_FC_WANDER, 35);
+    tessera_param_set(0, TX_FC_REP2, 3); tessera_param_set(0, TX_FC_REP4, 8);
+    tessera_param_set(1, TX_FC_FOLLOW, 1); tessera_param_set(3, TX_FC_SKIP, 20);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_CHAIN];
+    reset();
+    ok = ok && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: the CHAIN's FORM, PHRASE, WANDER, REPEATs and each track's FOLLOW and SKIP come back",
+                 ok && tessera.fc_form == 4u && tessera.fc_phrase == 2u && tessera.fc_wander == 35u &&
+                 tessera.fc_rep[0] == 1u && tessera.fc_rep[1] == 3u && tessera.fc_rep[3] == 8u &&
+                 tessera.fc_follow[1] == 2u && !tessera.fc_follow[0] && tessera.fc_skip[3] == 20u && !tessera.fc_skip[1]);
+    raw[tsp_seen.at[TSP_CHAIN] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (saved before it, or on a newer firmware: no
+                                                                     * CHAIN part known) */
+    tsp_resum(raw);
+    reset();
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_CHAIN] && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: a record without the CHAIN part loads with it OFF (8 bars, WANDER 0, counts 1, nothing set)",
+                 ok && !tessera.fc_form && tessera.fc_phrase == 1u && !tessera.fc_wander && tessera.fc_rep[1] == 1u &&
+                 !tessera.fc_follow[1] && !tessera.fc_skip[3]);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_CHAIN];
+    raw[tsp_seen.at[TSP_CHAIN] + 4u] = 0u;              /* (the second REPEAT 0) */
+    tsp_resum(raw);
+    bad += check("TSP1: a CHAIN part with a REPEAT of 0 is refused", ok && !tsp_valid(raw, len));
+
     reset();                                           /* ENERGY part 2: LEVEL and each DEPTH; a record without them */
     tessera_param_set(0, TX_EN_LEVEL, -40); tessera_param_set(2, TX_EN_DEPTH, 0); tessera_param_set(3, TX_EN_DEPTH, 55);
     project_capture(&proj_scratch);

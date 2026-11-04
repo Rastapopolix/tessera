@@ -492,9 +492,15 @@ static void help_find(uint32_t k)
         else help.pid = (uint16_t)PID_TESS(TX_SD_GRAVITY);
         return;
     }
-    if (pg->graph == GR_FORM && fm_layer_on()) {       /* (a generator's FORM, OCT+ held: DEVELOP) */
-        if (k) help_unused(k);
-        else help.pid = (uint16_t)PID_TESS(TX_FM_DEVELOP);
+    if (pg->graph == GR_FORM && fm_layer_on()) {       /* (a generator's FORM, OCT+ held: DEVELOP, the CHAIN's FOLLOW, SKIP) */
+        if (k == 3u) help_unused(k);
+        else help.pid = (uint16_t)PID_TESS(k == 2u ? TX_FC_SKIP : k ? TX_FC_FOLLOW : TX_FM_DEVELOP);
+        return;
+    }
+    if (pg->graph == GR_CHAIN) {                       /* (the project's: FORM, PHRASE, WANDER; OCT+ held the REPEATs) */
+        if (chain_layer_on()) help.pid = (uint16_t)PID_TESS(TX_FC_REP1 + k);
+        else if (k == 3u) help_unused(k);
+        else help.pid = (uint16_t)PID_TESS(k == 2u ? TX_FC_WANDER : k ? TX_FC_PHRASE : TX_FC_FORM);
         return;
     }
     if (pg->graph == GR_EVOLVE && tessera_step_on(tr)) {   /* STEP EVOLVE */

@@ -41,6 +41,8 @@ static const char *const TX_N_ANLEN[] = {"SHORT", "MID", "LONG"};
 static const char *const TX_N_SDKEEP[] = {"FREE", "RHYTHM", "PITCH"};   /* (TESS_SD_*) */
 static const char *const TX_N_SVHOW[] = {"DRIFT", "ADORN", "SERIAL"};   /* (TESS_SV_*) */
 static const char *const TX_N_SOUND[] = {"ON", "OFF"};
+static const char *const TX_N_PHRASE[] = {"4", "8", "16"};   /* (form_chain.c FC_PHRASE_BARS) */
+static const char *const TX_N_FCFOLLOW[] = {"FOLLOW", "OWN"};
 static const char *const TX_N_TUNE[] = {"OFF", "USR1", "USR2", "USR3", "USR4"};   /* (tune.h: the slots' own names
                                                                                    * where shown, params.c) */
 static const char *const TX_N_ACCMODE[] = {"WRAP", "PING", "CLAMP"};    /* (TESS_ACC_*) */
@@ -159,6 +161,15 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_MIDI_TR] = {"TRANS", F_INT, -TESS_MIDI_TR, TESS_MIDI_TR, 0, 0, "st"},
     [TX_TUNE] = PE("TUNE", TX_N_TUNE, 0),
     [TX_SOUND] = PE("SOUND", TX_N_SOUND, 0),
+    [TX_FC_FORM] = PE("FORM", TX_N_FORM, 0),
+    [TX_FC_PHRASE] = {"PHRASE", F_ENUM, 0, 2, 1, TX_N_PHRASE, "bar"},
+    [TX_FC_WANDER] = PD("WANDER", F_PCT, 0, 100, 0),
+    [TX_FC_REP1] = {"REP1", F_INT, 1, 8, 1, 0, "x"},
+    [TX_FC_REP2] = {"REP2", F_INT, 1, 8, 1, 0, "x"},
+    [TX_FC_REP3] = {"REP3", F_INT, 1, 8, 1, 0, "x"},
+    [TX_FC_REP4] = {"REP4", F_INT, 1, 8, 1, 0, "x"},
+    [TX_FC_FOLLOW] = PE("CHAIN", TX_N_FCFOLLOW, 0),
+    [TX_FC_SKIP] = PD("SKIP", F_PCT, 0, 100, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -593,6 +604,30 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                           "still go out over MIDI on its channel, and its GATE, NOTE and CV still move the mods: a "
                           "track for an outside synth, or a lane that only modulates the others. ON: as always. Saved "
                           "with the project. OCT- held on GLO > MIDI OUT, a knob for each track."),
+    XP_(TX_FC_FORM, "CHAIN FORM", "One FORM for the whole project: on each phrase line it moves to its next letter, and "
+                                  "every generator track that FOLLOWs moves with it to its own A, B or C, so the tracks' "
+                                  "sections line up. OFF: each track as set (its own FORM, or none). GLO > CHAIN, KNOB 1."),
+    XP_(TX_FC_PHRASE, "CHAIN PHRASE", "How long a phrase of the CHAIN is: 4, 8 or 16 bars, counted from PLAY. The "
+                                      "letters change on its lines. GLO > CHAIN, KNOB 2."),
+    XP_(TX_FC_WANDER, "CHAIN WANDER", "0 plays the CHAIN's FORM as written, round and round. Up, the next letter is "
+                                      "more often chosen than read: A comes back the longer the music is away, a "
+                                      "new letter only after a return to A, and each phrase away makes the next new "
+                                      "section more different. The same piece from PLAY each time. GLO > CHAIN, KNOB 3."),
+    XP_(TX_FC_REP1, "CHAIN REPEAT 1", "How many phrases the CHAIN's first letter plays, 1 to 8. GLO > CHAIN, OCT+ "
+                                      "held, KNOB 1."),
+    XP_(TX_FC_REP2, "CHAIN REPEAT 2", "How many phrases the CHAIN's second letter plays, 1 to 8. GLO > CHAIN, OCT+ "
+                                      "held, KNOB 2."),
+    XP_(TX_FC_REP3, "CHAIN REPEAT 3", "How many phrases the CHAIN's third letter plays, 1 to 8. GLO > CHAIN, OCT+ "
+                                      "held, KNOB 3."),
+    XP_(TX_FC_REP4, "CHAIN REPEAT 4", "How many phrases the CHAIN's fourth letter plays, 1 to 8. GLO > CHAIN, OCT+ "
+                                      "held, KNOB 4."),
+    X_(TX_FC_FOLLOW, "FORM FOLLOW", "FOLLOW: this track's sections change with the CHAIN's letters, on its phrase "
+                                   "lines (its EVERY waits meanwhile). OWN: it keeps its own FORM. Not set, a track "
+                                   "follows while its own FORM is OFF. Only while the CHAIN's FORM is on. OCT+ held on "
+                                   "FORM, KNOB 2."),
+    X_(TX_FC_SKIP, "FORM SKIP", "The chance this track stays in its section one phrase longer where the CHAIN moves "
+                                "on, then catches up; never twice running. 0: always with the CHAIN. OCT+ held on "
+                                "FORM, KNOB 3."),
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };

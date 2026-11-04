@@ -250,6 +250,15 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x26F | MIDI OUT TRANSPOSE | -48 to 48 st | 0 | Moves this track's notes up or down on their way out over MIDI, in semitones (12 an octave), for an instrument or a MIDI-to-CV module that plays them too high or too low. The track's own sound is unchanged; a note moved past MIDI's range is not sent. 0: as played. Saved with the project. OCT+ held on GLO > MIDI OUT, a knob for each track. |
 | 0x270 | TUNING | OFF, USR1, USR2, USR3, USR4 | OFF | A tuning of your own for the whole project, as the scale is: USR1 to USR4 play the Scala (.scl) files sent from the web editor (PROJECTS, Tunings), saved with the project. The keys, the generators, QNT and chords play its degrees; ROOT and TRN move it. OFF, or an empty slot, plays SCL's scale. SCL > SCALES, the USER family. |
 | 0x271 | SOUND | ON, OFF | ON | OFF: this track plays no sound of its own, so it takes none of the FM-1's voices. Its notes still go out over MIDI on its channel, and its GATE, NOTE and CV still move the mods: a track for an outside synth, or a lane that only modulates the others. ON: as always. Saved with the project. OCT- held on GLO > MIDI OUT, a knob for each track. |
+| 0x272 | CHAIN FORM | OFF, AB, ABAC, ABCB, AABA, ABCA, AABC | OFF | One FORM for the whole project: on each phrase line it moves to its next letter, and every generator track that FOLLOWs moves with it to its own A, B or C, so the tracks' sections line up. OFF: each track as set (its own FORM, or none). GLO > CHAIN, KNOB 1. |
+| 0x273 | CHAIN PHRASE | 4, 8, 16 | 8 | How long a phrase of the CHAIN is: 4, 8 or 16 bars, counted from PLAY. The letters change on its lines. GLO > CHAIN, KNOB 2. |
+| 0x274 | CHAIN WANDER | 0 to 100 % | 0 | 0 plays the CHAIN's FORM as written, round and round. Up, the next letter is more often chosen than read: A comes back the longer the music is away, a new letter only after a return to A, and each phrase away makes the next new section more different. The same piece from PLAY each time. GLO > CHAIN, KNOB 3. |
+| 0x275 | CHAIN REPEAT 1 | 1 to 8 x | 1 | How many phrases the CHAIN's first letter plays, 1 to 8. GLO > CHAIN, OCT+ held, KNOB 1. |
+| 0x276 | CHAIN REPEAT 2 | 1 to 8 x | 1 | How many phrases the CHAIN's second letter plays, 1 to 8. GLO > CHAIN, OCT+ held, KNOB 2. |
+| 0x277 | CHAIN REPEAT 3 | 1 to 8 x | 1 | How many phrases the CHAIN's third letter plays, 1 to 8. GLO > CHAIN, OCT+ held, KNOB 3. |
+| 0x278 | CHAIN REPEAT 4 | 1 to 8 x | 1 | How many phrases the CHAIN's fourth letter plays, 1 to 8. GLO > CHAIN, OCT+ held, KNOB 4. |
+| 0x279 | FORM FOLLOW | FOLLOW, OWN | FOLLOW | FOLLOW: this track's sections change with the CHAIN's letters, on its phrase lines (its EVERY waits meanwhile). OWN: it keeps its own FORM. Not set, a track follows while its own FORM is OFF. Only while the CHAIN's FORM is on. OCT+ held on FORM, KNOB 2. |
+| 0x27A | FORM SKIP | 0 to 100 % | 0 | The chance this track stays in its section one phrase longer where the CHAIN moves on, then catches up; never twice running. 0: always with the CHAIN. OCT+ held on FORM, KNOB 3. |
 
 ## Mods
 

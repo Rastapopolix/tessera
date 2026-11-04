@@ -232,3 +232,12 @@
 0x26f MIDI OUT TRANSPOSE       track -48..48 def 0
 0x270 TUNING                   global 0..4 def 0
 0x271 SOUND                    track 0..1 def 0
+0x272 CHAIN FORM               global 0..6 def 0
+0x273 CHAIN PHRASE             global 0..2 def 1
+0x274 CHAIN WANDER             global 0..100 def 0
+0x275 CHAIN REPEAT 1           global 1..8 def 1
+0x276 CHAIN REPEAT 2           global 1..8 def 1
+0x277 CHAIN REPEAT 3           global 1..8 def 1
+0x278 CHAIN REPEAT 4           global 1..8 def 1
+0x279 FORM FOLLOW              track 0..1 def 0
+0x27a FORM SKIP                track 0..100 def 0
