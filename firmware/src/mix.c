@@ -100,8 +100,32 @@ static uint32_t seq_div_samples(uint32_t div)
 static void events_block(uint32_t n);
 #if MELODEE_USB_AUDIO
 static int ua_capture_active(void);
-static uint8_t track_capture_on;
+static uint8_t track_capture_on, master_capture_on;   /* track_capture holds the stems, or the stereo mix (L, R a frame) */
 static int32_t track_capture[CTL * NTRK];
+/* USB stereo recording before MASTER (upstream 1d02852): Tessera's MASTER sits before the limiter, so the recording
+ * takes its own copy of the mix at a fixed MASTER (the default, 0.5) through its own DC blocker and limiter. */
+#define CAP_MASTER_Q12 2048
+static int32_t cap_lim = LIM_T, cap_dc[4];
+static inline __attribute__((always_inline)) void cap_out(int32_t *l, int32_t *r)   /* (master_out's twin) */
+{
+    int32_t a, al, ar;
+    *l = dc_block(*l, &cap_dc[0], &cap_dc[1]);
+    *r = dc_block(*r, &cap_dc[2], &cap_dc[3]);
+    al = *l < 0 ? -*l : *l;
+    ar = *r < 0 ? -*r : *r;
+    a = al > ar ? al : ar;
+    if (a > cap_lim)
+        cap_lim += (a - cap_lim) >> 2;
+    else if (cap_lim > LIM_T)
+        cap_lim -= ((cap_lim - LIM_T) >> 12) + 1;
+    if (cap_lim > LIM_T) {
+        int32_t g = (int32_t)(((uint32_t)LIM_T << 15) / (uint32_t)cap_lim);
+        *l = ((*l >> 4) * g) >> 11;
+        *r = ((*r >> 4) * g) >> 11;
+    }
+    *l = output_clip(*l);
+    *r = output_clip(*r);
+}
 #endif
 
 typedef struct {
@@ -259,10 +283,17 @@ static __attribute__((noinline,section(".dsp_text"))) void master_samples(int32_
     for(uint32_t i=0;i<n;i++){
         if(gain!=target)gain+=mix_clamp(target-gain,-128,128);
         int32_t l=mix_l[i],r=mix_r[i];
-        if(fx_bus_result){uint32_t ret=(uint32_t)gain*2u;
-            l+=((fx_scale(fx_left[i],ret)>>2)*(int32_t)song.master_q12)>>10;
-            r+=((fx_scale(fx_right[i],ret)>>2)*(int32_t)song.master_q12)>>10;}
+        if(fx_bus_result){uint32_t ret=(uint32_t)gain*2u;int32_t wl=fx_scale(fx_left[i],ret)>>2,wr=fx_scale(fx_right[i],ret)>>2;
+            l+=(wl*(int32_t)song.master_q12)>>10;
+            r+=(wr*(int32_t)song.master_q12)>>10;
+#if MELODEE_USB_AUDIO
+            if(master_capture_on){track_capture[2u*i]+=(wl*CAP_MASTER_Q12)>>10;track_capture[2u*i+1u]+=(wr*CAP_MASTER_Q12)>>10;}
+#endif
+        }
         master_out(&l,&r);out[2u*i]=l;out[2u*i+1u]=r;
+#if MELODEE_USB_AUDIO
+        if(master_capture_on)cap_out(&track_capture[2u*i],&track_capture[2u*i+1u]);   /* (the recording, before MASTER) */
+#endif
     }
     fx_bus_mix=gain;
 }
@@ -272,7 +303,9 @@ static __attribute__((noinline)) void mix_block(int32_t *out,uint32_t n)
     fx_profile_poll();
 #endif
 #if MELODEE_USB_AUDIO
-    track_capture_on=(uint8_t)ua_capture_active();
+    {int cap=ua_capture_active();
+     if(cap==2&&!master_capture_on){cap_lim=LIM_T;memset(cap_dc,0,sizeof cap_dc);}   /* (a recording starts clean) */
+     track_capture_on=(uint8_t)(cap==4);master_capture_on=(uint8_t)(cap==2);}
     if(track_capture_on)memset(track_capture,0,n*NTRK*sizeof *track_capture);
 #endif
     memset(mix_l,0,n*sizeof *mix_l);memset(mix_r,0,n*sizeof *mix_r);
@@ -289,6 +322,9 @@ static __attribute__((noinline)) void mix_block(int32_t *out,uint32_t n)
 #endif
     fx_bus_start(n);
     /* Dry gain overlaps the shared wet processing; limiter sees their sum. */
+#if MELODEE_USB_AUDIO
+    if(master_capture_on)for(uint32_t i=0;i<n;i++){track_capture[2u*i]=((mix_l[i]>>2)*CAP_MASTER_Q12)>>10;track_capture[2u*i+1u]=((mix_r[i]>>2)*CAP_MASTER_Q12)>>10;}
+#endif
     for(uint32_t i=0;i<n;i++){mix_l[i]=((mix_l[i]>>2)*(int32_t)song.master_q12)>>10;mix_r[i]=((mix_r[i]>>2)*(int32_t)song.master_q12)>>10;}
     fx_bus_join();
     void (*volatile run)(int32_t *,uint32_t)=master_samples;
