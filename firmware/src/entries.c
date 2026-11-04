@@ -38,6 +38,7 @@ static struct {
 } et;
 
 static int32_t tess_flourish(const track_t *t, uint32_t tr);
+static void mute_tick(void);                          /* (MENU MUTES, below) */
 
 static uint32_t et_hash(uint32_t p, uint32_t salt)    /* a draw: the SEEDs, the phrase, what is drawn */
 {
@@ -251,6 +252,7 @@ static void entries_all_out(void)
 void entries_tick(uint32_t n)
 {
     uint32_t tr, b = bar_n, bars = fc_bars(), step;
+    mute_tick();                                      /* (MENU MUTES: before the downbeat's steps) */
     planner_tick(n);
     if (et.final && song.playing) {
         /* (the end: everything fades out, nothing decided) */
@@ -298,6 +300,49 @@ static int entries_note(const track_t *t, uint32_t note)
         return 1;
     }
     return entry_gain[tr] > 0;
+}
+
+/* MENU MUTES (hand mutes on the beat): GLO's mute keys and C4's UNMUTE ALL, while playing, wait for the next bar line
+ * (BAR) or phrase line (PHRASE, the CHAIN's); the key blinks until then, and pressed again it is called off. NOW (0):
+ * at once, as before. Stopped: at once. */
+static uint8_t mute_pend;                             /* the tracks whose mute key waits for the line */
+static uint32_t mute_bar = 0xFFFFFFFFu;               /* the bar last seen playing */
+static void mute_now(uint32_t tr)                     /* the mute key's change: muted, or back in */
+{
+    track_t *t = &trk[tr];
+    if (t->p[P_MUTE]) {
+        t->p[P_MUTE] = 0;
+        (void)entries_hand_in(tr);                    /* (out by Entries meanwhile: back in too) */
+    } else if (!entries_hand_in(tr)) {                /* (out by Entries: back in, left alone a section) */
+        t->p[P_MUTE] = 1;
+        tessera_kill(t);
+    }
+}
+/* GLO's black key tr (all: C4's UNMUTE ALL): now, or on the line MUTES says */
+void mute_press(uint32_t tr, int all)
+{
+    uint32_t i, m = 0;
+    for (i = 0; i < TESSERA_TRACKS; i++) m |= (trk[i].p[P_MUTE] != 0) << i;
+    if (song.playing && settings_mute_q) {
+        mute_pend = all ? (uint8_t)m : (uint8_t)(mute_pend ^ (tr < TESSERA_TRACKS ? 1u << tr : 0u));
+    } else if (all) {
+        for (i = 0; i < TESSERA_TRACKS; i++) trk[i].p[P_MUTE] = 0;
+        mute_pend = 0;
+    } else if (tr < TESSERA_TRACKS) {
+        mute_now(tr);
+    }
+}
+uint32_t mute_waiting(void) { return song.playing ? mute_pend : 0u; }   /* the keys that blink */
+static void mute_tick(void)                           /* entries_tick: a waiting key's line */
+{
+    uint32_t b = bar_n, tr;
+    if (mute_pend && (!song.playing || !settings_mute_q ||
+                      (mute_bar != 0xFFFFFFFFu && b != mute_bar && (settings_mute_q < 2u || b % fc_bars() == 0u)))) {
+        for (tr = 0; tr < TESSERA_TRACKS; tr++)
+            if (mute_pend >> tr & 1u) mute_now(tr);
+        mute_pend = 0;
+    }
+    mute_bar = song.playing ? b : 0xFFFFFFFFu;
 }
 
 /* GLO's mute key on track tr while it is out: back in now, left alone until the next section. 1 if it was out */

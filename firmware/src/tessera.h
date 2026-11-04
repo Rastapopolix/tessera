@@ -305,6 +305,8 @@ void tessera_chain_knob(uint32_t k, int32_t s, int layer);   /* the CHAIN page: 
 void entries_play(void);                            /* seq.c, PLAY: Entries from the top, everything in (entries.c) */
 void entries_tick(uint32_t n);                      /* seq.c, each block before the steps: the lines, the fades */
 int entries_hand_in(uint32_t tr);                   /* GLO's mute key: an out track back in (1 if it was out) */
+void mute_press(uint32_t tr, int all);              /* GLO's mute key / UNMUTE ALL: now or on MENU MUTES' line */
+uint32_t mute_waiting(void);                        /* the mute keys waiting for their line (blinking) */
 uint32_t tessera_entries_get(uint32_t *warn, uint8_t role[4]);   /* the tracks out, those about to change, the roles */
 void tessera_entries_knob(uint32_t k, int32_t s, int layer);   /* the ENTRIES page: KNOB k turned s (layer: OCT+ held) */
 void planner_play(void);                            /* seq.c, PLAY: the planned piece from the top (planner.c) */

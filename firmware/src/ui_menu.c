@@ -6,7 +6,8 @@
  * USB INPUT (the stereo mix or four track stems, both before MASTER; usb.c ua_tracks_set),
  * USB VOLUME (the computer's audio through the FM-1, 0..100 %, apart from MASTER; usb_audio_stream.c),
  * MIDI OUT (KEYS, ALL or OFF: the notes sent over USB) and CLOCK OUT (midi_out.c), MIDI CC IN (ON or OFF: CCs and
- * NRPNs that set parameters; midi_cc.c), MIDI LEARN (a knob, then a CC; midi_learn.c, ui_learn.c), USB HOST (the USB-C port hosts a USB-MIDI device instead of talking to a
+ * NRPNs that set parameters; midi_cc.c), MIDI LEARN (a knob, then a CC; midi_learn.c, ui_learn.c), MUTES (GLO's
+ * mute keys while playing: NOW, on the next BAR or PHRASE; entries.c mute_press), USB HOST (the USB-C port hosts a USB-MIDI device instead of talking to a
  * computer; not saved; usb_host.c),
  * AUTOSAVE (automatic project saves after five seconds stopped and untouched),
  * CALIBRATION (the setup screen: HARDWARE CALIBRATION), ABOUT.
@@ -21,7 +22,7 @@ enum { MI_COLOR,
 #if MELODEE_USB_AUDIO
        MI_USB, MI_USB_INPUT, MI_USB_VOLUME,
 #endif
-       MI_MIDI_OUT, MI_CLOCK_OUT, MI_CC_IN, MI_MIDI_LEARN,
+       MI_MIDI_OUT, MI_CLOCK_OUT, MI_CC_IN, MI_MIDI_LEARN, MI_MUTES,
 #if MELODEE_USB_HOST
        MI_USB_HOST,
 #endif
@@ -36,7 +37,7 @@ static const char *const MI_NAME[MI_COUNT] = {"COLOR",
 #if MELODEE_USB_AUDIO
                                               "USB AUDIO", "USB INPUT", "USB VOLUME",
 #endif
-                                              "MIDI OUT", "CLOCK OUT", "MIDI CC IN", "MIDI LEARN",
+                                              "MIDI OUT", "CLOCK OUT", "MIDI CC IN", "MIDI LEARN", "MUTES",
 #if MELODEE_USB_HOST
                                               "USB HOST",
 #endif
@@ -426,6 +427,7 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
 #if MELODEE_USB_HOST
     if (i == MI_USB_HOST) value = uh.want ? "ON" : "OFF";
 #endif
+    if (i == MI_MUTES) value = (const char *const[]){"NOW", "BAR", "PHRASE"}[settings_mute_q % 3u];
     if (i == MI_AUTOSAVE) value = settings_autosave ? "ON" : "OFF";
     if (i == MI_BATTERY) value = settings_batt_off ? "WHEN LOW" : "ON";
     if (i == MI_SCREEN) value = (const char *const[]){"NEVER", "5 MIN", "15 MIN", "30 MIN", "60 MIN"}[scr_get()];
@@ -718,6 +720,11 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         gamma_put((gamma_get() + (s < 0 ? GAMMA_N - 1u : 1u)) % GAMMA_N);
         lcd_gamma_switch(gamma_get());                 /* (the panel black and on again: ui.force draws it all) */
         ui.force = 1; ok = 0;
+    }
+    if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_MUTES) {      /* KNOB 2 steps NOW BAR PHRASE, OCT+ wraps */
+        uint32_t v = settings_mute_q % 3u;
+        settings_mute_q = (uint8_t)(s > 0 ? (v < 2u ? v + 1u : v) : s < 0 ? (v ? v - 1u : 0u) : (v + 1u) % 3u);
+        ui.force = 1; ok = 0;                          /* (entries.c mute_press: GLO's mute keys while playing) */
     }
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_BATTERY) {   /* KNOB 2 right ON, left WHEN LOW; OCT+ toggles */
         settings_batt_off = (uint8_t)(s > 0 ? 0u : s < 0 ? 1u : !settings_batt_off);

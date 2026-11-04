@@ -279,26 +279,16 @@ static void glo_map_back(void)                           /* the map's keys or kn
 /* a key pressed in layer l (k: 0 = F3 .. 26 = G5) */
 static void layer_key(uint32_t l, uint32_t k)
 {
-    uint32_t p = key_place(k), i;
+    uint32_t p = key_place(k);
     glo_map_back();
 
     if (l == LAYER_GLO) {
         if (key_black(k)) {
-            if (p < NTRK && trk[p].p[P_MUTE]) {
-                trk[p].p[P_MUTE] = 0;
-                (void)entries_hand_in(p);               /* (out by Entries meanwhile: back in too) */
-            } else if (p < NTRK && !entries_hand_in(p)) {   /* (out by Entries: back in, left alone a section) */
-                trk[p].p[P_MUTE] = 1;
-                {
-                    extern void tessera_kill(track_t *t);
-                    tessera_kill(&trk[p]);
-                }
-            }
+            if (p < NTRK) mute_press(p, 0);              /* (MENU MUTES: now, or on the next bar / phrase) */
         } else if (p < NTRK) {
             lys.solo |= 1u << k;                        /* (layer_masks: track_solo while held) */
         } else if (p == 4u) {
-            for (i = 0; i < NTRK; i++)
-                trk[i].p[P_MUTE] = 0;
+            mute_press(0, 1);
         } else if (p == 6u) {
             lys.fill |= 1u << k;                        /* (layer_keys: FILL while held) */
         } else if (p == 7u) {
@@ -393,7 +383,8 @@ static const char W_NOTE[16];
 static int glo_sounding(uint32_t t)
 {
     uint32_t warn = 0, out = tessera_entries_get(&warn, 0);
-    if ((warn >> t) & 1u) return (fm1_ms / 125u) & 1u;  /* (Entries changes it on the next line: a quick blink) */
+    if (((warn | mute_waiting()) >> t) & 1u) return (fm1_ms / 125u) & 1u;   /* (Entries or a waiting mute key changes it
+                                                                            * on the next line: a quick blink) */
     return !trk[t].p[P_MUTE] && !((out >> t) & 1u && !((track_solo >> t) & 1u)) && (!track_solo || ((track_solo >> t) & 1u));
 }
 static uint32_t layer_leds(void)
@@ -495,7 +486,7 @@ static void layer_glo(void)
     lcell(LC_X(3), 50, LC_H, n, ICON_TEMPO, 0, "TAP", song.g[G_CLOCK] ? LS_DIM : LS_OFF, 0);
     for (e = 0; e < NTRK; e++) {                        /* the black keys 1..4: MUTE, latched */
         bnote(n, e);
-        lcell(LC_X(e), LM_Y, LM_H, n, ICON_MUTE, trk_icon(e, 0), 0, trk[e].p[P_MUTE] ? LS_MUTE : LS_OFF, 0);
+        lcell(LC_X(e), LM_Y, LM_H, n, ICON_MUTE, trk_icon(e, 0), 0, (mute_waiting() >> e) & 1u ? LS_WAIT : trk[e].p[P_MUTE] ? LS_MUTE : LS_OFF, 0);
     }
 }
 static void layer_scl(void)                             /* KNOB 2's scales, 4 x 4, the one now selected */
