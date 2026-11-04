@@ -56,6 +56,9 @@ static void ua_encode(uint8_t *p, uint32_t width, int16_t sample)
     p[1] = (uint8_t)((uint16_t)sample >> 8);
 }
 
+#define UA_VOLUME_DEFAULT 50u                  /* USB VOLUME: the old level at the default MASTER (0.5) */
+static uint8_t settings_usb_volume = UA_VOLUME_DEFAULT;   /* MENU > USB VOLUME, 0..100 % (settings_persist.c) */
+
 static void ua_play_reset(void)
 {
     ua.pw = ua.pr = 0;
@@ -154,12 +157,15 @@ static uint32_t ua_transmit(uint8_t *p)
     return n * width * ua_cap_channels;
 }
 
-/* Stereo Q15 post-FX/master/limiter mix, or four pre-master mono stems.
- * Stereo copies the finished synth output; playback follows MASTER.
+/* Stereo Q15 post-FX/limiter mix, or four mono stems, both before MASTER: the
+ * volume pot never sets the recording's level (upstream 1d02852). Stereo reads the
+ * mixer's copy at a fixed MASTER (tracks: L, R a frame), or the output for a block
+ * collected while capture was off. Playback has its own level (volume_q12: USB
+ * VOLUME, apart from MASTER; upstream cc28729).
  * Call in blocks of CTL (32), with USB service excluded during this copy.
  * In track mode a null stem pointer skips capture for a block collected while
- * capture was disabled. Stereo requires no stems or additional DSP pass. */
-static void ua_audio(int32_t *out, const int32_t *tracks, uint32_t n, uint32_t master_q12)
+ * capture was disabled. */
+static void ua_audio(int32_t *out, const int32_t *tracks, uint32_t n, uint32_t volume_q12)
 {
     uint32_t i, capture = ua.cap_alt && (ua_cap_channels == 2u || tracks), playback = 0;
     if (capture && ua.cw - ua.cr + n > UA_RING) {
@@ -185,15 +191,15 @@ static void ua_audio(int32_t *out, const int32_t *tracks, uint32_t n, uint32_t m
         if (capture) {
             uint32_t ch;
             if (ua_cap_channels == 2u) {
-                ua.cap[ci] = (int16_t)l;
-                ua.cap[ci + 1u] = (int16_t)r;
+                ua.cap[ci] = (int16_t)(tracks ? ua_clip(tracks[2u * i]) : l);
+                ua.cap[ci + 1u] = (int16_t)(tracks ? ua_clip(tracks[2u * i + 1u]) : r);
             } else
                 for (ch = 0; ch < UA_CAP_CHANNELS; ch++)
                     ua.cap[ci + ch] = (int16_t)ua_clip(tracks[i * UA_CAP_CHANNELS + ch]);
         }
         if (playback) {
-            l += (ua.play[pi] * (int32_t)master_q12) >> 12;
-            r += (ua.play[pi + 1u] * (int32_t)master_q12) >> 12;
+            l += (ua.play[pi] * (int32_t)volume_q12) >> 12;
+            r += (ua.play[pi + 1u] * (int32_t)volume_q12) >> 12;
             out[2u * i] = ua_clip(l);
             out[2u * i + 1u] = ua_clip(r);
         }

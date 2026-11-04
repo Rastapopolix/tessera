@@ -3890,6 +3890,25 @@ static int test_layer(void)
         usb.up = 0;
     }
     ua_tracks = ua_tracks_want = 0;
+    ui_power_on(); hold(B_HOME); ui.menu_sel = MI_USB_VOLUME;
+    ok = settings_usb_volume == UA_VOLUME_DEFAULT && ui.menu;
+    turn(EN_K2, 3); ok &= settings_usb_volume == 65u;
+    turn(EN_K2, 9); ok &= settings_usb_volume == 100u;           /* (stops at 100 %) */
+    press(B_OCTUP); ok &= settings_usb_volume == 0u && ui.menu;   /* (OCT+ wraps) */
+    turn(EN_K2, -1); ok &= settings_usb_volume == 0u;
+    turn(EN_K2, 7); hold(B_HOME);
+    {
+        persist_t p = {.magic = PERSIST_MAGIC, .panel = panel};
+        settings_export(&p); settings_usb_volume = UA_VOLUME_DEFAULT;
+        bad += check("USB VOLUME menu: KNOB 2 steps 5 %, OCT+ wraps, the settings keep it",
+                     ok && !memcmp(p.favorites.factory[8] + 4, "UV\x01\x23", 4) && settings_import(&p, sizeof p) &&
+                     settings_usb_volume == 35u);
+        p.favorites.factory[8][7] = 101u;
+        bad += check("unknown USB VOLUME setting takes the default",
+                     settings_import(&p, sizeof p) && settings_usb_volume == UA_VOLUME_DEFAULT);
+        settings_export(&p);
+        bad += check("the default USB VOLUME saves nothing", !p.favorites.factory[8][4] && !p.favorites.factory[8][7]);
+    }
 #endif    /* release-act: every page button acts when let go */
     {
         static const uint8_t PB[6] = {B_ENV, B_LFO, B_SCL, B_ARP, B_GLO, B_EDIT};

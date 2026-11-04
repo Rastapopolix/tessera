@@ -9,7 +9,7 @@
 #include "hostsim.c"
 #undef main
 
-struct result { uint64_t hash, energy, monitor; };
+struct result { uint64_t hash, energy, monitor, out_energy, differ; };
 
 static struct result render(uint32_t channel, int sliced, int variant)
 {
@@ -96,17 +96,20 @@ static struct result stereo_render(int insert, int send, uint32_t master)
         trk_note_on(&trk[0], 60, 100);
         for (uint32_t block = 0; block < 2048; block++) {
             mix_block(out, CTL);
-            assert(!track_capture_on);
-            for (uint32_t i = 0; i < CTL * NTRK; i++) assert(track_capture[i] == 123456);
+            assert(!track_capture_on && master_capture_on);
+            for (uint32_t i = CTL * 2; i < CTL * NTRK; i++) assert(track_capture[i] == 123456);   /* (stereo: 2 a frame) */
             ua.cw = ua.cr = 0;
-            ua_audio(out, 0, CTL, master);
+            ua_audio(out, track_capture, CTL, 4096);
             assert(ua.cw == CTL);
             for (uint32_t i = 0; i < CTL * 2; i++) {
+                int32_t c = ua.cap[i];
                 assert(out[i] >= -32768 && out[i] <= 32767);
-                assert(ua.cap[i] == out[i]);
-                result.hash = (result.hash ^ (uint32_t)out[i]) * 16777619u;
-                result.energy += (int64_t)out[i] * out[i];
-                if (!(i & 1u)) result.monitor += abs(out[i] - out[i + 1u]);
+                assert(c == ua_clip(track_capture[i]));
+                result.differ += c != out[i];
+                result.out_energy += (int64_t)out[i] * out[i];
+                result.hash = (result.hash ^ (uint32_t)c) * 16777619u;
+                result.energy += (int64_t)c * c;
+                if (!(i & 1u)) result.monitor += abs(c - ua.cap[i + 1u]);
             }
         }
         assert(write(fd[1], &result, sizeof result) == sizeof result);
@@ -126,9 +129,11 @@ int main(void)
     struct result wet = stereo_render(1, 1, 4096);
     assert(dry.energy && dry.monitor && insert.energy && wet.energy);
     assert(dry.hash != insert.hash && insert.hash != wet.hash);
-    assert(stereo_render(1, 1, 0).energy == 0);
-    assert(stereo_render(1, 1, 2048).energy < wet.energy);
-    puts("USB stereo: exact post-insert/send/pan/master/limiter copy, no stem collection: OK");
+    struct result half = stereo_render(1, 1, 2048), off = stereo_render(1, 1, 0);
+    assert(!half.differ && wet.differ);                     /* at MASTER's default the recording is the output */
+    assert(off.out_energy == 0 && half.out_energy < wet.out_energy);   /* MASTER sets the output ... */
+    assert(off.hash == wet.hash && half.hash == wet.hash);   /* ... and never the recording */
+    puts("USB stereo: post-insert/send/pan/limiter copy before MASTER, no stem collection: OK");
     for (uint32_t ch = 0; ch < NTRK; ch++) {
         struct result dry = render(ch, 0, 0);
         assert(dry.energy && dry.monitor);

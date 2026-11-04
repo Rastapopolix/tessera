@@ -3,7 +3,8 @@
 /* Melodee menu (HOME held): COLOR, HOLD (the layer threshold), LIGHTS (the keys' and buttons'
  * glow: ui_input.c ui_leds), KNOB ACCEL (ui_input.c accel_by), TRACK KNOB (RIGHT: ALGORITHM picks the track, LEFT:
  * PRESETS does; panel.c), USB AUDIO (IN+OUT, IN, OUT or OFF; usb.c ua_off_set),
- * USB INPUT (stereo master or four track stems; usb.c ua_tracks_set),
+ * USB INPUT (the stereo mix or four track stems, both before MASTER; usb.c ua_tracks_set),
+ * USB VOLUME (the computer's audio through the FM-1, 0..100 %, apart from MASTER; usb_audio_stream.c),
  * MIDI OUT (KEYS, ALL or OFF: the notes sent over USB) and CLOCK OUT (midi_out.c), MIDI CC IN (ON or OFF: CCs and
  * NRPNs that set parameters; midi_cc.c), USB HOST (the USB-C port hosts a USB-MIDI device instead of talking to a
  * computer; not saved; usb_host.c),
@@ -18,7 +19,7 @@ enum { MI_COLOR,
 #endif
        MI_HOLD, MI_LIGHTS,
 #if MELODEE_USB_AUDIO
-       MI_USB, MI_USB_INPUT,
+       MI_USB, MI_USB_INPUT, MI_USB_VOLUME,
 #endif
        MI_MIDI_OUT, MI_CLOCK_OUT, MI_CC_IN,
 #if MELODEE_USB_HOST
@@ -33,7 +34,7 @@ static const char *const MI_NAME[MI_COUNT] = {"COLOR",
 #endif
                                               "HOLD", "LIGHTS",
 #if MELODEE_USB_AUDIO
-                                              "USB AUDIO", "USB INPUT",
+                                              "USB AUDIO", "USB INPUT", "USB VOLUME",
 #endif
                                               "MIDI OUT", "CLOCK OUT", "MIDI CC IN",
 #if MELODEE_USB_HOST
@@ -426,6 +427,7 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
     if (i == MI_LIGHTS) value = LIGHTS_NAME[settings_lights % LIGHTS_N];
 #if MELODEE_USB_AUDIO
     if (i == MI_USB_INPUT) value = ua_tracks_want ? "4 TRACKS" : "STEREO";
+    if (i == MI_USB_VOLUME) { fmt_int(b, settings_usb_volume); str_cpy(b + str_len(b), "%", 2); value = b; }
     if (i == MI_USB) value = (const char *const[]){"In + Out", "In", "Out", "Off"}[ua_off_want & 3u];
 #endif
     if (i == MI_HOLD) {                         /* "0.4 s" */
@@ -621,6 +623,13 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
     if ((s != 0 || ok) && ui.menu == 1 && ui.menu_sel == MI_USB_INPUT) {
         ua_tracks_set(s > 0 ? 1 : s < 0 ? 0 : !ua_tracks_want, fm1_ms);
         ok = 0;
+    }
+    if ((s != 0 || ok) && ui.menu == 1 && ui.menu_sel == MI_USB_VOLUME) {
+        /* the computer's audio: KNOB 2 steps 5 %, OCT+ steps and wraps (apart from MASTER; saved when the menu closes) */
+        int32_t v = (int32_t)settings_usb_volume;
+        settings_usb_volume = (uint8_t)(s ? clamp(v + s * 5, 0, 100) : v + 5 > 100 ? 0 : v + 5);
+        ok = 0;
+        ui.force = 1;
     }
     if ((s != 0 || ok) && ui.menu == 1 && ui.menu_sel == MI_USB) {
         /* KNOB 2 steps IN+OUT IN OUT OFF, OCT+ steps and wraps; the host gets it once it rests (main.c) */
