@@ -168,6 +168,25 @@ static void p_entries(void)                           /* Entries 50 over the CHA
     px(0, TX_ET_AMOUNT, 50);
 }
 
+static void p_planned_loop(void)                     /* the Entries patch as a planned piece: 20 minutes, ARCH, END
+                                                       * LOOP (24 pieces in 8 h), ENTRIES 75, ARC 60 (slice 3) */
+{
+    p_entries();
+    px(0, TX_ET_AMOUNT, 75);
+    px(0, TX_EN_ARC, 60);
+    px(0, TX_PL_LENGTH, 11);                          /* (PL_MIN[11]: 20 minutes) */
+    px(0, TX_PL_SHAPE, PL_ARCH);
+    px(0, TX_PL_END, PL_END_LOOP);
+}
+static void p_planned_free(void)                      /* 2 hours of WAVES, then END FREE: it carries on unplanned */
+{
+    p_entries();
+    px(0, TX_PL_LENGTH, 19);                          /* (PL_MIN[19]: 120 minutes) */
+    px(0, TX_PL_SHAPE, PL_WAVES);
+    px(0, TX_PL_COUNT, 4);
+    px(0, TX_PL_END, PL_END_FREE);
+}
+
 typedef struct {
     const char *name;
     uint32_t seed;
@@ -192,6 +211,8 @@ static const patch_t PATCH[] = {
     {"chain_abac_counts_develop30", 0x4C0Bu, p_chain, 0, 0, "FORM CHAIN ABAC, counts, WANDER 0 (slice 1)"},
     {"chain_abac_wander60", 0x4C0Cu, p_chain_wander, 0, 0, "FORM CHAIN ABAC, counts, WANDER 60 (slice 1)"},
     {"entries50_chain_abac", 0x4C0Du, p_entries, 0, 0, "ENTRIES 50 over the CHAIN's ABAC, WANDER 30 (slice 2)", 1},
+    {"planned20_arch_loop", 0x4C0Eu, p_planned_loop, 0, 0, "a 20-minute ARCH piece, END LOOP (slice 3)", 1},
+    {"planned120_waves_free", 0x4C0Fu, p_planned_free, 0, 0, "a 2-hour WAVES piece, then END FREE (slice 3)", 1},
 };
 #define NPATCH (sizeof PATCH / sizeof PATCH[0])
 
@@ -259,7 +280,7 @@ typedef struct {
 } lf_meas_t;
 static lf_meas_t lf_m[LF_TR + 1];
 static uint32_t lf_et_all_out, lf_et_anchor_out, lf_et_dwell_bad, lf_et_changes;   /* Entries' guardrails */
-static uint32_t lf_et_was, lf_et_since[LF_TR];
+static uint32_t lf_et_was, lf_et_since[LF_TR], lf_et_bar;
 static uint8_t lf_active[LF_TR];                      /* a generator track: its MODE + 1, 0 a STEP track */
 
 static uint32_t popc(uint32_t v)
@@ -364,6 +385,9 @@ static void lf_entries_block(void)
     uint8_t role[LF_TR];
     uint32_t out = tessera_entries_get(0, role), tr, ph = fc_bars() * 4u * beat_samples() / CTL;
     uint32_t dwell = tessera.et_dwell, playing = 0;
+    if (bar_n < lf_et_bar)                            /* (END LOOP / NEW: a new piece from the top, DWELL anew) */
+        for (tr = 0; tr < LF_TR; tr++) lf_et_since[tr] = 0xFFFFu;
+    lf_et_bar = bar_n;
     for (tr = 0; tr < LF_TR; tr++) {
         if (lf_active[tr] && !(out >> tr & 1u)) playing++;
         if ((out >> tr & 1u) && role[tr] == ET_ANCHOR) lf_et_anchor_out++;
@@ -385,7 +409,7 @@ static void lf_run(const patch_t *p, uint32_t hours)
     uint32_t wins_total = hours * 3600u * FS / CTL / win_blocks, wins_hour = 3600u * FS / CTL / win_blocks, win;
     lf_power_on(p);
     memset(lf_m, 0, sizeof lf_m);
-    lf_et_all_out = lf_et_anchor_out = lf_et_dwell_bad = lf_et_changes = lf_et_was = 0;
+    lf_et_all_out = lf_et_anchor_out = lf_et_dwell_bad = lf_et_changes = lf_et_was = lf_et_bar = 0;
     for (uint32_t tr = 0; tr < LF_TR; tr++) lf_et_since[tr] = 0xFFFFu;
     for (uint32_t k = 0; k <= LF_TR; k++) {
         memset(&lf_w[k], 0, sizeof lf_w[k]);

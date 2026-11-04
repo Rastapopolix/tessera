@@ -55,7 +55,7 @@ page's four settings sit along the top of the screen in the same order.
 | **SCL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
 | **EDIT** | The sound's EDIT pages; on an EDIT page, the map | With OCT- / OCT+: undo / redo |
 | **FX** | The insert and send effects | The mod amount of any knob you turn |
-| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT, [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in) | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
+| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT, [PIECE](#piece-a-length-and-a-shape), [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in) | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
 | **SAVE** | USER (ready to save the sound), PROJECT, PRESETS | Save the project to its slot (as SAVE + REC) |
 | **REC** | Records the selected track until REC again (see [Recording live](#recording-live)) | Capture or print the last bars (see [Print and keep](#print-and-keep)) |
 | **OCT+** | Octave up; on some pages, an action (shown on screen) | A page's extra layer (see [OCT+ layers](#oct-layers-on-gen)) |
@@ -537,6 +537,33 @@ running). Both are lit only while the CHAIN's FORM is on.
 
 **ROLE** (OCT+ held, KNOB 4): this track's part for [ENTRIES](#entries-tracks-out-and-back-in), the same setting as
 on the ENTRIES page.
+
+### PIECE: a length and a shape
+
+**GLO > PIECE** plans the whole piece: how long it lasts and the shape it takes, sparse to full and back. It adds no
+system of its own; it steers ENERGY, [CHAIN](#chain-one-form-for-the-project) and
+[ENTRIES](#entries-tracks-out-and-back-in) along the shape.
+
+| Knob | Setting | What it does |
+|---|---|---|
+| 1 | **LENGTH** | FREE (the default: nothing planned, nothing changes), or 1 minute to 4 hours. |
+| 2 | **SHAPE** | ARCH (up to PEAK, down to the end), RISE, FALL, PLATEAU (up, held round PEAK, down), VALLEY (full, thin round PEAK, full), WAVES (COUNT swells), BUILDS (COUNT rises, each dropped at once), STEPS (the arch in COUNT terraces), FLAT or USER. |
+| 3 | **PEAK** (10–90 %) or **COUNT** (2–8) | PEAK: where ARCH, PLATEAU and VALLEY have their centre. COUNT: WAVES' swells, BUILDS' builds, STEPS' terraces. |
+| 4 | **END** | What happens at the end, on a phrase line: STOP (the tracks fade out, the tails ring, then it stops), LOOP (the same piece again from the top), NEW (new SEEDs, a new piece) or FREE (it carries on unplanned until STOP). |
+
+With **SHAPE** USER, hold **OCT+** for its points 1 to 4 and **OCT-** for 5 to 8 (KNOB 1 to 4, 0–100 %): eight levels
+evenly along the piece. The picture shows the shape, where the piece is while playing, and the time left.
+
+The shape is read in phrases (the CHAIN's PHRASE) from PLAY, at the tempo now, so a tempo change moves the plan with it.
+Every shape but RISE and FALL begins and ends sparse: an intro and an outro. While a LENGTH is set:
+
+- ENERGY's tide is the shape (ARC is how far it swings; LEVEL and RESTS work as before).
+- ENTRIES keeps out as many tracks as the shape is low, of the most ENTRIES allows, one change a phrase, so the piece
+  layers in, thins and fills, and layers out at its end. At ENTRIES 0 no track moves.
+- The CHAIN's new sections depart further near the top (up to +20 CONTR), and the last 15 % of the piece (12 phrases
+  at most) stays on A, its home.
+
+The piece comes from the tracks' SEEDs, so PLAY plays it again the same.
 
 ### CHAIN: one form for the project
 
