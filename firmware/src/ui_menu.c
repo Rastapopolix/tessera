@@ -3,7 +3,8 @@
 /* Melodee menu (HOME held): COLOR, HOLD (the layer threshold), LIGHTS (the keys' and buttons'
  * glow: ui_input.c ui_leds), KNOB ACCEL (ui_input.c accel_by), TRACK KNOB (RIGHT: ALGORITHM picks the track, LEFT:
  * PRESETS does; panel.c), USB AUDIO (IN+OUT, IN, OUT or OFF; usb.c ua_off_set),
- * USB INPUT (stereo master or four track stems; usb.c ua_tracks_set),
+ * USB INPUT (the stereo mix or four track stems, both before MASTER; usb.c ua_tracks_set),
+ * USB VOLUME (the computer's audio through the FM-1, 0..100 %, apart from MASTER; usb_audio_stream.c),
  * MIDI OUT (KEYS, ALL or OFF: the notes sent over USB) and CLOCK OUT (midi_out.c), MIDI CC IN (ON or OFF: CCs and
  * NRPNs that set parameters; midi_cc.c), USB HOST (the USB-C port hosts a USB-MIDI device instead of talking to a
  * computer; not saved; usb_host.c),
@@ -12,9 +13,13 @@
  * PRESETS scrolls from ABOUT through all credits. ui.menu: 1 list, 2 information. */
 /* ------------------------------------------------------------ menu --- */
 #define MENU_HEAD 24                     /* the menu's own title strip (Stage and the pages: H_HEAD) */
-enum { MI_COLOR, MI_HOLD, MI_LIGHTS,
+enum { MI_COLOR,
+#if MELODEE_LOOK
+       MI_KNOBS,
+#endif
+       MI_HOLD, MI_LIGHTS,
 #if MELODEE_USB_AUDIO
-       MI_USB, MI_USB_INPUT,
+       MI_USB, MI_USB_INPUT, MI_USB_VOLUME,
 #endif
        MI_MIDI_OUT, MI_CLOCK_OUT, MI_CC_IN,
 #if MELODEE_USB_HOST
@@ -23,9 +28,13 @@ enum { MI_COLOR, MI_HOLD, MI_LIGHTS,
        MI_CLICK, MI_CLICK_LEVEL, MI_COUNTIN, MI_PREVIEW, MI_ADD, MI_AUTOSAVE, MI_ACCEL, MI_TRACK_KNOB, MI_SCREEN, MI_BATTERY, MI_GAMMA, MI_PANEL, MI_ABOUT, MI_DESIGNER, MI_BACK,
        MI_COUNT };
 static const char *const GAMMA_NAME[GAMMA_N] = {"G2.2", "G1.8", "G2.5", "G1.0", "TUNED", "TUNED+VCOM"};   /* (lcd.c) */
-static const char *const MI_NAME[MI_COUNT] = {"COLOR", "HOLD", "LIGHTS",
+static const char *const MI_NAME[MI_COUNT] = {"COLOR",
+#if MELODEE_LOOK
+                                              "KNOBS",
+#endif
+                                              "HOLD", "LIGHTS",
 #if MELODEE_USB_AUDIO
-                                              "USB AUDIO", "USB INPUT",
+                                              "USB AUDIO", "USB INPUT", "USB VOLUME",
 #endif
                                               "MIDI OUT", "CLOCK OUT", "MIDI CC IN",
 #if MELODEE_USB_HOST
@@ -402,6 +411,9 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
           i==MI_PREVIEW?(settings_preview?"ON":"OFF"):(settings_chord_add?"ADD":"HOLD");
     if (i == MI_ACCEL) value = PREF_BITS & PREF_ACCEL_OFF ? "OFF" : "ON";
     if (i == MI_TRACK_KNOB) value = settings_knob_swap ? "LEFT" : "RIGHT";
+#if MELODEE_LOOK
+    if (i == MI_KNOBS) value = KNOBS_BAR ? "BAR" : "DIAL";
+#endif
     if (i == MI_MIDI_OUT) value = (const char *const[]){"KEYS", "ALL", "OFF"}[settings_midi_out % MIDI_OUT_N];
     if (i == MI_CLOCK_OUT) value = settings_clock_out ? "ON" : "OFF";
     if (i == MI_CC_IN) value = settings_cc_off ? "OFF" : "ON";
@@ -415,6 +427,7 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
     if (i == MI_LIGHTS) value = LIGHTS_NAME[settings_lights % LIGHTS_N];
 #if MELODEE_USB_AUDIO
     if (i == MI_USB_INPUT) value = ua_tracks_want ? "4 TRACKS" : "STEREO";
+    if (i == MI_USB_VOLUME) { fmt_int(b, settings_usb_volume); str_cpy(b + str_len(b), "%", 2); value = b; }
     if (i == MI_USB) value = (const char *const[]){"In + Out", "In", "Out", "Off"}[ua_off_want & 3u];
 #endif
     if (i == MI_HOLD) {                         /* "0.4 s" */
@@ -611,6 +624,13 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         ua_tracks_set(s > 0 ? 1 : s < 0 ? 0 : !ua_tracks_want, fm1_ms);
         ok = 0;
     }
+    if ((s != 0 || ok) && ui.menu == 1 && ui.menu_sel == MI_USB_VOLUME) {
+        /* the computer's audio: KNOB 2 steps 5 %, OCT+ steps and wraps (apart from MASTER; saved when the menu closes) */
+        int32_t v = (int32_t)settings_usb_volume;
+        settings_usb_volume = (uint8_t)(s ? clamp(v + s * 5, 0, 100) : v + 5 > 100 ? 0 : v + 5);
+        ok = 0;
+        ui.force = 1;
+    }
     if ((s != 0 || ok) && ui.menu == 1 && ui.menu_sel == MI_USB) {
         /* KNOB 2 steps IN+OUT IN OUT OFF, OCT+ steps and wraps; the host gets it once it rests (main.c) */
         uint32_t v = ua_off_want & 3u;
@@ -648,6 +668,12 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         PREF_BITS = (uint8_t)(on ? PREF_BITS & ~PREF_ACCEL_OFF : PREF_BITS | PREF_ACCEL_OFF);
         ui.force=1; ok=0;
     }
+#if MELODEE_LOOK
+    if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_KNOBS) {      /* KNOB 2 right BAR, left DIAL; OCT+ toggles */
+        KNOBS_SAVED = (uint8_t)((s > 0 ? 1 : s < 0 ? 0 : !KNOBS_BAR) ? KNOBS_BAR_TAG : 0u);
+        ui.force = 1; ok = 0;                          /* (ui_mono.c mo_cols; saved with the favorites) */
+    }
+#endif
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_TRACK_KNOB) {   /* KNOB 2 right RIGHT, left LEFT; OCT+ toggles */
         settings_knob_swap = (uint8_t)(s > 0 ? 0u : s < 0 ? 1u : !settings_knob_swap);
         ui.force = 1; ok = 0;                          /* (from the next turn: the menu itself uses KNOB 1 / 2) */

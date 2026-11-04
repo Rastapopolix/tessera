@@ -312,7 +312,7 @@ static uint32_t lf_probe(const patch_t *p, int full, uint32_t *n)
 /* the patch for HOURS: the measures in lf_m */
 static void lf_run(const patch_t *p, uint32_t hours)
 {
-    uint32_t bar_blocks = 4u * seq_beat_samples() / CTL, win_blocks = LF_BARS_WIN * bar_blocks;
+    uint32_t win_blocks = LF_BARS_WIN * 4u * beat_samples() / CTL;   /* (whole bars: at 120 BPM 4 bars are 11,025 blocks) */
     uint32_t wins_total = hours * 3600u * FS / CTL / win_blocks, wins_hour = 3600u * FS / CTL / win_blocks, win;
     lf_power_on(p);
     memset(lf_m, 0, sizeof lf_m);

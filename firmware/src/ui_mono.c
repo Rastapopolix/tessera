@@ -173,6 +173,14 @@ static void mo_cut(char *d, const char *s, uint32_t n)   /* s's first n characte
         d[i] = s[i];
     d[i] = 0;
 }
+/* a bar (MENU > KNOBS BAR): an outline 15 x 17 filled from its foot, v 0..1000 */
+static void mo_bar(int32_t cx, int32_t v, uint16_t c)
+{
+    int32_t h = 15 * v / 1000;
+    mo_box(cx - 7, 20, 15, 17, c);
+    if (h)
+        mo_fill(cx - 5, 35 - h, 11, h, c);
+}
 /* a dial: the ring and a pointer, v 0..1000 over 270 degrees from the lower left */
 static void mo_dial(int32_t cx, int32_t cy, int32_t r, int32_t v, uint16_t c)
 {
@@ -453,8 +461,10 @@ static void mo_cols(void)
         mo_abbr(l, mo_col[i].label);
         mo_textc(l, cx, 12, mo_col[i].hot ? MO_HOT : dim);
         ty = mo_col[i].ratio >= 0 && mo_col[i].val[0] != '[' ? 39 : 25;
-        if (mo_col[i].ratio >= 0 && mo_col[i].val[0] != '[')
-            mo_dial(cx, 28, 7, mo_col[i].ratio, ink);
+        if (mo_col[i].ratio >= 0 && mo_col[i].val[0] != '[') {
+            if (KNOBS_BAR) mo_bar(cx, mo_col[i].ratio, ink);
+            else mo_dial(cx, 28, 7, mo_col[i].ratio, ink);
+        }
         if (kind[i] != MV_DIAL)
             fx0 = x[i], fx1 = x[i] + w[i] - 1;
         if (mo_flash_t && i == mo_flash_col && kind[i] != MV_DIAL) {   /* it acted: inverted */
@@ -463,9 +473,14 @@ static void mo_cols(void)
         } else if (kind[i] == MV_KEY) {
             mo_fill(fx0, 21, w[i], 15, ink);
             mo_text(v[i], tx, ty, MO_BG);
+        } else if (kind[i] == MV_BOX && mo_col[i].hot) {   /* the value turning: inverted (a box: filled) */
+            mo_fill(fx0, 21, w[i], 15, MO_HOT);
+            mo_text(v[i], tx, ty, MO_BG);
         } else if (kind[i] == MV_BOX) {
             mo_box(fx0, 21, w[i], 15, ink);
             mo_text(v[i], tx, ty, ink);
+        } else if (mo_col[i].hot) {                     /* (a dial's: on a box a cell round its text, mo_invc) */
+            mo_invc(v[i], tx, ty, MO_HOT);
         } else {
             mo_text(v[i], tx, ty, ink);
         }
@@ -473,8 +488,6 @@ static void mo_cols(void)
         mo_vals[i].tx0 = (int16_t)tx, mo_vals[i].tx1 = (int16_t)(tx + tw[i] - 1);
         mo_vals[i].kind = kind[i], mo_vals[i].cut = cut[i];
         str_cpy(mo_vals[i].s, v[i], sizeof mo_vals[i].s);
-        if (mo_col[i].hot)
-            mo_hl(cx - 12, 48, 25, MO_HOT);
     }
     mo_vals_new = 1;
     mo_dash(0, 50, 120, MO_DIM);
@@ -1560,15 +1573,6 @@ static void mo_pic_midich(void)
 }
 static void mo_stage_wave(int32_t top, int32_t h, uint16_t c);
 /* the value of the knob turning (KNOB k), with its unit, on the picture's foot row at the right */
-static void mo_hot_value(int32_t k)
-{
-    char v[12], b[20];
-    const char *unit;
-    pv_value((uint32_t)k, v, &unit);
-    mo_ascii(b, v, sizeof b);
-    if (unit[0]) mo_ascii(b + str_len(b), unit, 6);
-    mo_textr(b, 118, 102, MO_HOT);
-}
 /* ENV (and the FM operators' ENV pages): attack linear, decay exponential to the sustain, held, release exponential;
  * the area under it hatched dim, the curve and a handle at each segment's end in ink; the segment turning: its handle a ring,
  * its value at the foot */
@@ -1602,7 +1606,6 @@ static void mo_pic_env(const track_t *t)
         }
     }
 #undef MOY
-    if (hot >= 0) mo_hot_value(hot);
 }
 /* FM6's EG RATE / EG LVL (operator fm6_opsel) and PITCH EG / LV: the DX7 envelope from L4 by R1..R3 to L1..L3, held,
  * then R4 back to L4 (a slower rate a wider segment); the area under it hatched dim, a point at each level; the knob turning:
@@ -1645,7 +1648,6 @@ static void mo_pic_dxenv(void)
         else mo_disc(px[i], py[i], 1, MO_INK);
     }
 #undef DXY
-    if (hot >= 0) mo_hot_value(hot);
 }
 /* a page with a cutoff: the filter's response as its type shapes it (ui_stage.c flt_curve: flat, the resonance's peak
  * at the cutoff (dashed), the slope); the area under it hatched dim */
@@ -1899,7 +1901,6 @@ static void mo_pic_phys(const track_t *t)
         }
     }
     mo_text(foot, 2, 102, MO_DIM);
-    if (hot >= 0) mo_hot_value(hot);
 }
 #endif
 /* FM6's EDIT and operator pages: the algorithm as graph_fm6 charts it (FM6_CELL), on the cell grid: an operator a box
@@ -2211,6 +2212,31 @@ static uint32_t mo_signature(void)
     return h;
 }
 
+/* a knob turning: its name and value large across the foot, as HOME shows them (mo_stage_panel), over the page's
+ * tabs and the picture's last rows until it rests (ui.hot_t); where the value sits in its range, a bar at the right */
+static int mo_turn(void)
+{
+    uint32_t i;
+    char b[24];
+    for (i = 0; i < 4u && !(mo_col[i].used && mo_col[i].hot); i++) ;
+    if (i >= 4u || mo_col[i].val[0] == '[')
+        return 0;
+    mo_fill(0, 88, 120, 32, MO_BG);
+    mo_hl(0, 88, 120, MO_INK);
+    mo_text(mo_col[i].label, 2, 92, MO_DIM);
+    str_cpy(b, mo_col[i].val, sizeof b);
+    str_cpy(b + str_len(b), mo_col[i].unit, sizeof b - str_len(b));
+    b[9] = 0;                                           /* (nine large characters across) */
+    mo_text_s(b, 2, 103, 2, MO_HOT);
+    if (mo_col[i].ratio >= 0) {
+        int32_t w = 40 * mo_col[i].ratio / 1000;
+        mo_box(76, 92, 42, 7, MO_DIM);
+        if (w)
+            mo_fill(77, 93, w, 5, MO_HOT);
+    }
+    return 1;
+}
+
 static void mono_page(void)
 {
     uint32_t s, sig;
@@ -2232,7 +2258,8 @@ static void mono_page(void)
         mo_cols();
         mo_cols_trk = 0;
         mo_picture();
-        mo_foot();
+        if (!mo_turn())
+            mo_foot();
         cv_oy = 0;
         cv_blit(0, s * 120u);
     }

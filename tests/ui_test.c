@@ -120,6 +120,8 @@ static void screen_clear(void)
 #endif
 }
 
+/* a stretch of sequencer time in one go (mix.c: units, on every clock) */
+static void units_block(uint32_t units) { events_block(0); seq_advance(units); }
 static int check(const char *what, int ok)
 {
     printf("ui: %-74s %s\n", what, ok ? "ok" : "FAIL");
@@ -2290,7 +2292,7 @@ static int test_grid(void)
     fm1_in.notes = 0;
     keyboard_block();
     ok = t->step[5].hit == 1u << DV_HATO && !t->step[5].n && t->rskip_n == 0u;
-    t->seq_pos = step_samples(t, div_samples((uint32_t)t->p[P_SDIV]), 5) - 10u;   /* late: rounds to step 7 */
+    t->seq_pos = step_samples(t, seq_div_samples((uint32_t)t->p[P_SDIV]), 5) - 10u;   /* late: rounds to step 7 */
     fm1_in.notes = 1u << key_at(1, 0);
     keyboard_block();
     ok &= t->step[5].hit == (1u << DV_HATO) && t->step[6].hit == (1u << DV_KICK) && t->rskip_n == 1u && t->rskip_idx == 6;
@@ -2340,7 +2342,7 @@ static int test_grid(void)
         ok = !memcmp(keep, t->step, sizeof keep) && !grid_on();
         t->seq_hold = 0;
         t->seq_n = 0;
-        seq_step(t, &t->step[0], div_samples((uint32_t)t->p[P_SDIV]), 0);
+        seq_step(t, &t->step[0], seq_div_samples((uint32_t)t->p[P_SDIV]), 0);
         ok &= t->seq_n == 1u && t->seq_notes[0] == 36u;
         seq_release(t);
         bad += check("a sound load keeps the grid; on SID its hits play as their GM notes", ok);
@@ -3542,12 +3544,12 @@ static int test_chain(void)
     events_block(n);
     bad += check("SONG starts all tracks at source step 0, recording paused", chain.running && song.playing &&
         !song.rec && trk[0].seq_idx == 0 && seq_steps(&trk[0])[0].n == 3 && trk[0].seq_n == 3 && trk[0].seq_notes[0] == 60);
-    period = div_samples((uint32_t)trk[0].p[P_SDIV]);
-    events_block(period);
-    events_block(period);
+    period = seq_div_samples((uint32_t)trk[0].p[P_SDIV]);
+    units_block(period);
+    units_block(period);
     bad += check("SONG first row repeats without a gap", chain.row == 0 && chain.remaining == 1 && trk[0].seq_idx == 0);
-    events_block(period);
-    events_block(period);
+    units_block(period);
+    units_block(period);
     ok = chain.row == 1 && chain.remaining == 1;
     for (i = 0; i < NTRK; i++) {
         ok &= trk[i].seq_idx == 0 && trk[i].p[P_SLEN] == 3 && seq_steps(&trk[i])[0].note[0] == 65;
@@ -3559,9 +3561,9 @@ static int test_chain(void)
     for (k = 0; k < NPAGES && cur_page()->scope != SC_STEP; k++) open_family(FAM_SEQ);
     turn(EN_K2, 1); press(B_EDIT); hold(B_REC); hold(B_EDIT);
     bad += check("SONG playing: step edits, clears, recording and undo are blocked", trk[0].step[0].note[0] == 65 && trk[0].step[0].n == 3 && !ui.confirm);
-    events_block(period);
-    events_block(period);
-    events_block(period);
+    units_block(period);
+    units_block(period);
+    units_block(period);
     ok = !song.playing && !chain.running && song.rec == 3;
     for (i = 0; i < NTRK; i++) ok &= !trk[i].seq_n && !memcmp(trk[i].step, before[i], sizeof before[i]) &&
         !memcmp(&trk[i].p[P_SLEN], timing[i], sizeof timing[i]);
@@ -3570,9 +3572,9 @@ static int test_chain(void)
     chain_config.row[0].repeat = 1;
     chain_prepare(); events_block(n);
     trk[0].seq_idx = 1;
-    last = step_samples(&trk[0], div_samples((uint32_t)trk[0].p[P_SDIV]), 1);
+    last = step_samples(&trk[0], seq_div_samples((uint32_t)trk[0].p[P_SDIV]), 1);
     trk[0].seq_pos = last - n + 19u;
-    events_block(n);
+    units_block(n);
     ok = chain.row == 1;
     for (i = 0; i < NTRK; i++) ok &= trk[i].seq_pos == 19u && trk[i].seq_idx == 0;
     bad += check("SONG transition preserves fractional block time on all tracks", ok);
@@ -3769,6 +3771,34 @@ static int test_panel(void)
     return bad;
 }
 
+#if MELODEE_LOOK
+/* MENU > KNOBS: DIAL (default) or BAR, saved with the favorites (row 8 byte 26, tagged); any other byte reads DIAL */
+static int test_knobs_menu(void)
+{
+    int bad = 0;
+    persist_t p;
+    ui_power_on();
+    KNOBS_SAVED = 0;
+    hold(B_HOME);
+    ui.menu_sel = MI_KNOBS;
+    turn(EN_K2, 1);
+    bad += check("KNOBS: the menu's KNOB 2 right: BAR", ui.menu == 1 && KNOBS_BAR);
+    turn(EN_K2, -1);
+    bad += check("  left: DIAL", !KNOBS_BAR);
+    press(B_OCTUP);
+    bad += check("  OCT+ toggles: BAR", KNOBS_BAR);
+    memset(&p, 0, sizeof p);
+    settings_export(&p);
+    KNOBS_SAVED = 0;
+    bad += check("  saved with the settings", settings_import(&p, sizeof p) && KNOBS_BAR);
+    p.favorites.factory[8][26] = 0x01u;
+    settings_import(&p, sizeof p);
+    bad += check("  an older record (no tag): DIAL", !KNOBS_BAR);
+    ui.menu = 0;
+    return bad;
+}
+#endif
+
 /* MENU > TRACK KNOB: LEFT swaps the ALGORITHM and PRESETS knobs' roles; saved with the settings */
 static int test_track_knob(void)
 {
@@ -3860,6 +3890,25 @@ static int test_layer(void)
         usb.up = 0;
     }
     ua_tracks = ua_tracks_want = 0;
+    ui_power_on(); hold(B_HOME); ui.menu_sel = MI_USB_VOLUME;
+    ok = settings_usb_volume == UA_VOLUME_DEFAULT && ui.menu;
+    turn(EN_K2, 3); ok &= settings_usb_volume == 65u;
+    turn(EN_K2, 9); ok &= settings_usb_volume == 100u;           /* (stops at 100 %) */
+    press(B_OCTUP); ok &= settings_usb_volume == 0u && ui.menu;   /* (OCT+ wraps) */
+    turn(EN_K2, -1); ok &= settings_usb_volume == 0u;
+    turn(EN_K2, 7); hold(B_HOME);
+    {
+        persist_t p = {.magic = PERSIST_MAGIC, .panel = panel};
+        settings_export(&p); settings_usb_volume = UA_VOLUME_DEFAULT;
+        bad += check("USB VOLUME menu: KNOB 2 steps 5 %, OCT+ wraps, the settings keep it",
+                     ok && !memcmp(p.favorites.factory[8] + 4, "UV\x01\x23", 4) && settings_import(&p, sizeof p) &&
+                     settings_usb_volume == 35u);
+        p.favorites.factory[8][7] = 101u;
+        bad += check("unknown USB VOLUME setting takes the default",
+                     settings_import(&p, sizeof p) && settings_usb_volume == UA_VOLUME_DEFAULT);
+        settings_export(&p);
+        bad += check("the default USB VOLUME saves nothing", !p.favorites.factory[8][4] && !p.favorites.factory[8][7]);
+    }
 #endif    /* release-act: every page button acts when let go */
     {
         static const uint8_t PB[6] = {B_ENV, B_LFO, B_SCL, B_ARP, B_GLO, B_EDIT};
@@ -5058,7 +5107,7 @@ static int test_bughunt_ui(void)
     {   /* the ARP button flashes on the beat while an ARP plays (the bar's first beat longer); dark otherwise */
         uint32_t q, b, r[5];
         ui_power_on(); frame();
-        b = beat_samples();
+        b = seq_beat_samples();
         r[0] = arp_led();                               /* no ARP playing */
         trk[2].p[P_AMODE] = 1; trk[2].nheld = 1; trk[2].held[0] = 60;
         beat_n = 1; beat_pos = 0; r[1] = arp_led();
@@ -6134,6 +6183,9 @@ int main(void)
     bad += test_roll();
     bad += test_panel();
     bad += test_track_knob();
+#if MELODEE_LOOK
+    bad += test_knobs_menu();
+#endif
     bad += test_layer();
     bad += test_name();
     bad += test_edit_cycle();
