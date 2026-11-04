@@ -241,3 +241,8 @@
 0x278 CHAIN REPEAT 4           global 1..8 def 1
 0x279 FORM FOLLOW              track 0..1 def 0
 0x27a FORM SKIP                track 0..100 def 0
+0x27b ENTRIES                  global 0..100 def 0
+0x27c ENTRIES DWELL            global 1..8 def 2
+0x27d ENTRIES STYLE            global 0..1 def 1
+0x27e ENTRIES FADE             global 1..4 def 2
+0x27f ENTRIES ROLE             track 0..5 def 0

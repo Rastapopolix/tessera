@@ -208,6 +208,13 @@ typedef struct {
     uint8_t          fc_follow[TESSERA_TRACKS];  /* 0 not set (FOLLOW where the track's own FORM is OFF, else OWN),
                                                   * 1 FOLLOW, 2 OWN */
     uint8_t          fc_skip[TESSERA_TRACKS];    /* 0..100: the chance the track holds its section a phrase longer */
+    /* Entries (entries.c; the ENTRIES page under GLO): tracks out and back in on the CHAIN's phrase lines. The record's
+     * ENTRY part. ENTRIES 0: nothing changes */
+    uint8_t          et_amount;                  /* 0..100: how many tracks may be out at most (of those that may), 0 off */
+    uint8_t          et_dwell;                   /* 1..8: the phrases a track stays in or out at least (default 2) */
+    uint8_t          et_style;                   /* 0 CUT, 1 FADE (default) */
+    uint8_t          et_fade;                    /* 1..4: a FADE's bars (default 2) */
+    uint8_t          et_role[TESSERA_TRACKS];    /* 0 AUTO, 1 BASS, 2 RHYTHM, 3 HARMONY, 4 MELODY, 5 ANCHOR (never out) */
 } tessera_state_t;
 
 extern tessera_state_t tessera;
@@ -280,6 +287,11 @@ void organic_play(void);                            /* seq.c, PLAY: SLOTH and OC
 void fchain_play(void);                             /* seq.c, PLAY: form chaining from the top (form_chain.c) */
 uint32_t tessera_chain_get(uint8_t seq[4], uint32_t *pos, uint32_t *left);   /* the project FORM: letters, place, left */
 void tessera_chain_knob(uint32_t k, int32_t s, int layer);   /* the CHAIN page: KNOB k turned s (layer: OCT+ held) */
+void entries_play(void);                            /* seq.c, PLAY: Entries from the top, everything in (entries.c) */
+void entries_tick(uint32_t n);                      /* seq.c, each block before the steps: the lines, the fades */
+int entries_hand_in(uint32_t tr);                   /* GLO's mute key: an out track back in (1 if it was out) */
+uint32_t tessera_entries_get(uint32_t *warn, uint8_t role[4]);   /* the tracks out, those about to change, the roles */
+void tessera_entries_knob(uint32_t k, int32_t s, int layer);   /* the ENTRIES page: KNOB k turned s (layer: OCT+ held) */
 void energy_play(void);                             /* seq.c, PLAY: ENERGY's tide and rests from the SEEDs (energy.c) */
 int32_t energy_now(void);                           /* the tide now, Q15 -32767 sparse .. 32767 full (cord source) */
 int energy_resting(void);                           /* 1 while the notes rest */
@@ -367,6 +379,9 @@ enum {
                                                      * track) */
     TX_FC_REP1, TX_FC_REP2, TX_FC_REP3, TX_FC_REP4, /* (0x275..0x278: the repeats of the chain's four places) */
     TX_FC_FOLLOW, TX_FC_SKIP,                       /* (0x279, 0x27A: FOLLOW / OWN and SKIP, a generator track's) */
+    TX_ET_AMOUNT, TX_ET_DWELL, TX_ET_STYLE, TX_ET_FADE,   /* (0x27B..0x27E: Entries, the project's: one value, whichever
+                                                     * track) */
+    TX_ET_ROLE,                                     /* (0x27F: Entries' ROLE, any track's) */
     TX_COUNT
 };
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */

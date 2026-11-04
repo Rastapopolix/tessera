@@ -259,6 +259,11 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x278 | CHAIN REPEAT 4 | 1 to 8 x | 1 | How many phrases the CHAIN's fourth letter plays, 1 to 8. GLO > CHAIN, OCT+ held, KNOB 4. |
 | 0x279 | FORM FOLLOW | FOLLOW, OWN | FOLLOW | FOLLOW: this track's sections change with the CHAIN's letters, on its phrase lines (its EVERY waits meanwhile). OWN: it keeps its own FORM. Not set, a track follows while its own FORM is OFF. Only while the CHAIN's FORM is on. OCT+ held on FORM, KNOB 2. |
 | 0x27A | FORM SKIP | 0 to 100 % | 0 | The chance this track stays in its section one phrase longer where the CHAIN moves on, then catches up; never twice running. 0: always with the CHAIN. OCT+ held on FORM, KNOB 3. |
+| 0x27B | ENTRIES | 0 to 100 % | 0 | 0: every track plays as set. Up, tracks drop out and come back on the CHAIN's phrase lines: how many may be out at once, up to all but one. Exits come where a section begins, melody first; entries one a phrase, bass first. Above 50 the phrase before a return to A thins to the anchors and A comes back full. A muted track stays muted; its key on GLO brings an out track back. GLO > ENTRIES, KNOB 1. |
+| 0x27C | ENTRIES DWELL | 1 to 8 ph | 2 | The phrases a track stays in or out at least before Entries moves it again, 1 to 8. GLO > ENTRIES, KNOB 2. |
+| 0x27D | ENTRIES STYLE | CUT, FADE | FADE | How a track leaves and comes back: CUT at once on the phrase line, or FADE over FADE bars from it. GLO > ENTRIES, KNOB 3. |
+| 0x27E | ENTRIES FADE | 1 to 4 bar | 2 | The bars a FADE takes, 1 to 4. GLO > ENTRIES, KNOB 4. |
+| 0x27F | ENTRIES ROLE | AUTO, BASS, RHYTHM, HARMONY, MELODY, ANCHOR | AUTO | What the track is to Entries: BASS comes in first and goes last, then RHYTHM, HARMONY, MELODY (a melody only over a bass or harmony). ANCHOR is never taken out. AUTO: CHORD is harmony, ATLAS or a drum sound rhythm, notes mostly below C3 bass, else melody. GLO > ENTRIES with OCT+ held, or OCT+ held on FORM, KNOB 4. |
 
 ## Mods
 

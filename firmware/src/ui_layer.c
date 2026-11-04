@@ -284,9 +284,12 @@ static void layer_key(uint32_t l, uint32_t k)
 
     if (l == LAYER_GLO) {
         if (key_black(k)) {
-            if (p < NTRK) {
-                trk[p].p[P_MUTE] = (int16_t)!trk[p].p[P_MUTE];
-                if (trk[p].p[P_MUTE]) {
+            if (p < NTRK && trk[p].p[P_MUTE]) {
+                trk[p].p[P_MUTE] = 0;
+                (void)entries_hand_in(p);               /* (out by Entries meanwhile: back in too) */
+            } else if (p < NTRK && !entries_hand_in(p)) {   /* (out by Entries: back in, left alone a section) */
+                trk[p].p[P_MUTE] = 1;
+                {
                     extern void tessera_kill(track_t *t);
                     tessera_kill(&trk[p]);
                 }
@@ -387,7 +390,12 @@ static uint32_t layer_oct(uint32_t pressed, uint32_t oct)
 static const char W_NOTE[16];
 /* --------------------------------------------------------- the LEDs --- */
 /* lit = in effect now (held, the value, a track sounding), slow blink = can be pressed, dark = nothing there */
-static int glo_sounding(uint32_t t) { return !trk[t].p[P_MUTE] && (!track_solo || ((track_solo >> t) & 1u)); }
+static int glo_sounding(uint32_t t)
+{
+    uint32_t warn = 0, out = tessera_entries_get(&warn, 0);
+    if ((warn >> t) & 1u) return (fm1_ms / 125u) & 1u;  /* (Entries changes it on the next line: a quick blink) */
+    return !trk[t].p[P_MUTE] && !((out >> t) & 1u && !((track_solo >> t) & 1u)) && (!track_solo || ((track_solo >> t) & 1u));
+}
 static uint32_t layer_leds(void)
 {
     uint32_t k, m = 0, blink = ((fm1_ms / 250u) & 1u) == 0u, l = ui.layer ? ui.layer : mixer_live() ? (uint32_t)LAYER_GLO : 0u;

@@ -506,7 +506,7 @@ enum { SC_TRACK, SC_GLOBAL, SC_ENGINE, SC_STEP, SC_TRK,   /* SC_TRK: the TRACKS 
 enum { GR_NONE, GR_ADSR, GR_LFO, GR_STEPS, GR_ARP, GR_SCALE, GR_ROLL, GR_BROWSE, GR_SLOTS, GR_USER, GR_TRK,
        GR_MOD, GR_PATS, GR_SONG, GR_MOTION, GR_CHORD, GR_SLICES,
        GR_FMEG, GR_FMPEG, GR_FMSTORE, GR_SCALE_PICKER, GR_DRUMHIT, GR_PATGRID, GR_EVOLVE, GR_FORM, GR_TWEAK,
-       GR_CORDS, GR_TWEAK2, GR_ORGANIC, GR_MATRIX, GR_NOTELEN, GR_TIMING, GR_ENERGY, GR_MIDICH, GR_KEYLINK, GR_CHAIN }; /* NOTES shares GR_ROLL for steps and recorded events */
+       GR_CORDS, GR_TWEAK2, GR_ORGANIC, GR_MATRIX, GR_NOTELEN, GR_TIMING, GR_ENERGY, GR_MIDICH, GR_KEYLINK, GR_CHAIN, GR_ENTRIES }; /* NOTES shares GR_ROLL for steps and recorded events */
 
 typedef struct {
     const char *title;
@@ -592,6 +592,8 @@ static const page_t PAGES[] = {
     {"MIDI OUT", FAM_GLO, SC_GLOBAL, GR_MIDICH, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: KNOB k track k's channel (midi_out.c) */
     {"CHAIN", FAM_GLO, SC_GLOBAL, GR_CHAIN, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: the project's FORM PHRASE WANDER; OCT+
                                                                        * held the REPEATs (form_chain.c) */
+    {"ENTRIES", FAM_GLO, SC_GLOBAL, GR_ENTRIES, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: ENTRIES DWELL STYLE FADE; OCT+
+                                                                           * held each track's ROLE (entries.c) */
     {"PRESETS", FAM_SAVE, SC_GLOBAL, GR_BROWSE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* browser: KNOB 1 LIST, 2 / PRESETS the sounds */
     {"USER", FAM_SAVE, SC_GLOBAL, GR_USER, {0xFF, 0xFF, 0xFF, 0xFF}},       /* user presets: SLOT LOAD ERASE SAVE */
     {"PROJECT", FAM_SAVE, SC_GLOBAL, GR_SLOTS, {G_SLOT, G_BOOT, G_LOAD, G_SAVE}},

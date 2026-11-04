@@ -124,6 +124,13 @@ static int chain_layer_on(void)
     return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_CHAIN &&
            ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
+/* the ENTRIES page with OCT+ held: KNOB k is track k's ROLE (entries.c) */
+static int entries_layer_on(void)
+{
+    return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_ENTRIES &&
+           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+}
+static const char *const ET_ROLE_NAME[ET_ROLES] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "MELODY", "ANCHOR"};
 /* a TRANSPOSE as its knob and the MIDI OUT picture say it: "+12", "0", "-24" */
 static void midi_tr_text(char *b, int32_t v)
 {
@@ -148,7 +155,8 @@ static int fm_layer_on(void)
 static int gen_layer_on(void)
 {
     return quad_cols_on() || cs_layer_on() || ch_layer_on() || gr_layer_on() || an_layer_on() || sd_layer_on() ||
-           sv_layer_on() || ev_layer_on() || fm_layer_on() || en_layer_on() || midi_layer_on() || chain_layer_on();
+           sv_layer_on() || ev_layer_on() || fm_layer_on() || en_layer_on() || midi_layer_on() || chain_layer_on() ||
+           entries_layer_on();
 }
 /* QUAD's LINK as its card shows it: OFF, or "T" and the linked tracks ("T24") */
 static void quad_link_text(uint32_t m, char *b)
@@ -1219,6 +1227,31 @@ static void graph_chain(uint16_t c)
     }
 }
 
+/* ENTRIES (entries.c): a row a track, its colour and number, its role (AUTO's guess, "(AUTO)" beside), and where it
+ * is: IN, OUT, MUTE (by hand), or "-" not heard yet; its level as a bar (a FADE seen moving); about to change on the
+ * next line: the row blinks. Off: the rows dim */
+static void graph_entries(void)
+{
+    uint8_t role[TESSERA_TRACKS];
+    uint32_t warn = 0, out = tessera_entries_get(&warn, role), on = tessera.et_amount != 0u, blink = (fm1_ms / 125u) & 1u;
+    for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
+        int32_t y = 4 + (int32_t)k * 20, bw = PANEL_W - 182, g = entry_gain[k];
+        char n[4], b[24];
+        const char *st = trk[k].p[P_MUTE] ? "MUTE" : (out >> k & 1u) ? "OUT" :
+                         !(et.heard >> k & 1u) && song.playing ? "-" : "IN";
+        uint16_t ink = !on || ((warn >> k & 1u) && blink) ? T_DIM : T_TEXT;
+        fmt_int(n, (int32_t)k + 1);
+        cv_rrect(PANEL_X0 + 6, y, 17, 17, 3, T_TRK(k), T_SURF);
+        cv_text_c(PANEL_X0 + 15, y + 3, &AF_X, n, T_BG, T_TRK(k));
+        str_cpy(b, ET_ROLE_NAME[role[k] % ET_ROLES], sizeof b);
+        if (!tessera.et_role[k]) str_cpy(b + str_len(b), " (AUTO)", 8);
+        cv_text(PANEL_X0 + 32, y + 3, &AF_X, b, ink);
+        cv_text(PANEL_X0 + 136, y + 3, &AF_X, st, ink);
+        cv_rect(PANEL_X0 + PANEL_W - 6 - bw, y + 7, bw, 3, T_RAISE);
+        if (on && song.playing) cv_rect(PANEL_X0 + PANEL_W - 6 - bw, y + 7, bw * g / 32768, 3, T_TRK(k));
+    }
+}
+
 /* MIDI OUT: a row a track, its colour, the channel its notes go out on (AUTO: the one ROUT or DRUM gives it now), and
  * when the menu's MIDI OUT keeps the steps in (KEYS) or sends nothing (OFF), so */
 static void graph_midich(void)
@@ -1978,6 +2011,16 @@ static uint32_t graph_sig(int play)
              ((uint32_t)tessera.fc_rep[0] | (uint32_t)tessera.fc_rep[1] << 4 | (uint32_t)tessera.fc_rep[2] << 8 |
               (uint32_t)tessera.fc_rep[3] << 12 | (uint32_t)tessera.fc_phrase << 16) * 3266489917u;
     }
+    if (pg->graph == GR_ENTRIES) {                   /* (it moves: who is out, the warning, the fades; the settings) */
+        uint8_t ro[TESSERA_TRACKS];
+        uint32_t wn = 0, ou = tessera_entries_get(&wn, ro);
+        h ^= (ou | wn << 4 | (wn ? (fm1_ms / 125u) & 1u : 0u) << 8 | (uint32_t)song.playing << 9 | (uint32_t)et.heard << 10 |
+              (uint32_t)tessera.et_amount << 16 | (uint32_t)tessera.et_style << 24) * 2246822519u ^
+             ((uint32_t)ro[0] | (uint32_t)ro[1] << 4 | (uint32_t)ro[2] << 8 | (uint32_t)ro[3] << 12 | (uint32_t)tessera.et_dwell << 16 |
+              (uint32_t)tessera.et_fade << 20 | (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 |
+              trk[3].p[P_MUTE] << 3) << 24) * 3266489917u ^
+             (uint32_t)((entry_gain[0] >> 11) | (entry_gain[1] >> 11) << 5 | (entry_gain[2] >> 11) << 10 | (entry_gain[3] >> 11) << 15) * 40503u;
+    }
     if (pg->graph == GR_ENERGY)                      /* (it moves: the tide, a rest; the settings) */
         h ^= ((uint32_t)tessera.en_arc | (uint32_t)tessera.en_rests << 8 | (uint32_t)song.playing << 16) * 2246822519u ^
              (uint32_t)(energy_now() >> 9) * 31u ^ (energy.rest_left / EN_BPS) * 7919u ^ en_frac(energy.ph, energy.per, 110u) * 104729u;
@@ -2281,6 +2324,10 @@ static void graph_body(int32_t oy)
         break;
     case GR_CHAIN:
         graph_chain(c);
+        break;
+    case GR_ENTRIES:
+        cv_oy = oy;
+        graph_entries();
         break;
     case GR_MATRIX:
         mx_graph(c);

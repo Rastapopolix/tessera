@@ -1576,6 +1576,24 @@ static void mo_pic_chain(void)
         if (fc_follows(i)) mo_invc(t, 3 + (int32_t)i * 16, 93, MO_TRK(i));
     }
 }
+/* ENTRIES: a row a track: its number, its role (AUTO's guess), IN / OUT / MUTE, its level as a bar; a row about
+ * to change on the next line blinks; off: dim */
+static void mo_pic_entries(void)
+{
+    uint8_t role[TESSERA_TRACKS];
+    uint32_t warn = 0, out = tessera_entries_get(&warn, role), on = tessera.et_amount != 0u, blink = (fm1_ms / 125u) & 1u;
+    for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
+        int32_t y = 54 + (int32_t)k * 11;
+        char n[3] = {'T', (char)('1' + k), 0}, b[12];
+        uint16_t ink = !on || ((warn >> k & 1u) && blink) ? mo_tdim(k) : MO_TRK(k);
+        mo_invc(n, 3, y, MO_TRK(k));
+        str_cpy(b, ET_ROLE_NAME[role[k] % ET_ROLES], sizeof b);
+        mo_text(b, 18, y, ink);
+        mo_text(trk[k].p[P_MUTE] ? "MUTE" : (out >> k & 1u) ? "OUT" : "IN", 72, y, ink);
+        mo_hl(98, y + 3, 20, MO_DIM);
+        if (on && song.playing) mo_fill(98, y + 2, 20 * entry_gain[k] / 32768, 3, MO_TRK(k));
+    }
+}
 /* MIDI OUT: a row a track: its number, the channel its notes go out on (AUTO: ROUT's or DRUM's), its TRANSPOSE when not
  * 0, and the menu's MIDI OUT when it keeps the steps in (KEYS) or sends nothing (OFF) */
 static void mo_pic_midich(void)
@@ -2060,6 +2078,7 @@ static void mo_picture(void)
     case GR_ENERGY: mo_pic_energy(); return;
     case GR_MIDICH: mo_pic_midich(); return;
     case GR_CHAIN: mo_pic_chain(); return;
+    case GR_ENTRIES: mo_pic_entries(); return;
     default: break;
     }
     if (pg->graph == GR_CHORD) {
