@@ -293,6 +293,32 @@ static int test_tsp_record(void)
     tsp_resum(raw);
     bad += check("TSP1: a CHAIN part with a REPEAT of 0 is refused", ok && !tsp_valid(raw, len));
 
+    reset();                                           /* Entries: the record's ENTRY part; a record without it */
+    tessera_param_set(0, TX_ET_AMOUNT, 65); tessera_param_set(0, TX_ET_DWELL, 5); tessera_param_set(0, TX_ET_STYLE, 0);
+    tessera_param_set(0, TX_ET_FADE, 4); tessera_param_set(1, TX_ET_ROLE, 5); tessera_param_set(3, TX_ET_ROLE, 2);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_ENTRY];
+    reset();
+    ok = ok && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: ENTRIES, DWELL, STYLE, FADE and each track's ROLE come back",
+                 ok && tessera.et_amount == 65u && tessera.et_dwell == 5u && tessera.et_style == 0u && tessera.et_fade == 4u &&
+                 tessera.et_role[1] == 5u && tessera.et_role[3] == 2u && !tessera.et_role[0]);
+    raw[tsp_seen.at[TSP_ENTRY] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (saved before it: no ENTRY part known) */
+    tsp_resum(raw);
+    reset();
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_ENTRY] && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: a record without the ENTRY part loads with Entries off (DWELL 2, FADE over 2 bars, AUTO)",
+                 ok && !tessera.et_amount && tessera.et_dwell == 2u && tessera.et_style == 1u && tessera.et_fade == 2u &&
+                 !tessera.et_role[1]);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_ENTRY];
+    raw[tsp_seen.at[TSP_ENTRY] + 4u] = 6u;              /* (track 1's ROLE past ANCHOR) */
+    tsp_resum(raw);
+    bad += check("TSP1: an ENTRY part with a ROLE past ANCHOR is refused", ok && !tsp_valid(raw, len));
+
     reset();                                           /* ENERGY part 2: LEVEL and each DEPTH; a record without them */
     tessera_param_set(0, TX_EN_LEVEL, -40); tessera_param_set(2, TX_EN_DEPTH, 0); tessera_param_set(3, TX_EN_DEPTH, 55);
     project_capture(&proj_scratch);

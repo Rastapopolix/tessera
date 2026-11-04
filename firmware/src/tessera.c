@@ -133,7 +133,10 @@ void tessera_init(void)
     memset(tessera.acc_limit, TESS_ACC_LIMIT_DEF, sizeof tessera.acc_limit);
     memset(tessera.en_depth, 100, sizeof tessera.en_depth);
     tessera.fc_phrase = 1;                              /* (form chaining: OFF, 8-bar phrases, each place once) */
-    memset(tessera.fc_rep, 1, sizeof tessera.fc_rep);   /* (ENERGY moves every track, as before part 2) */   /* (the pitch accumulator: an octave) */
+    memset(tessera.fc_rep, 1, sizeof tessera.fc_rep);
+    tessera.et_dwell = 2;                               /* (Entries: off, 2 phrases, FADE over 2 bars, roles AUTO) */
+    tessera.et_style = 1;
+    tessera.et_fade = 2;
     tess_atlas_new = (1u << TESSERA_TRACKS) - 1u;       /* (ATLAS: a random start, tess_atlas_fresh) */
 
     for (uint32_t i = 0; i < TESSERA_TRACKS; i++) {
@@ -441,6 +444,7 @@ const char *tessera_form_name(uint32_t form) { return TESS_FORM_NAME[form > 6u ?
 #include "form_chain.c"                              /* form chaining: the project's FORM, FOLLOW / OWN, SKIP, WANDER */
 /* the track has sections: its own FORM, or it follows the project's */
 static int tess_has_form(uint32_t tr) { return tessera.evolve[tr].form || fc_follows(tr); }
+#include "entries.c"                                 /* Entries: tracks out and back in on the phrase lines */
 
 uint32_t tessera_form_get(uint32_t tr, uint8_t seq[4], uint32_t *pos)
 {
@@ -899,11 +903,27 @@ void tessera_fm_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;
     tessera_ensure_init();
-    if (tr >= TESSERA_TRACKS || !s || k > 2u) return;
+    if (tr >= TESSERA_TRACKS || !s || k > 3u) return;
     TESS_IRQ_OFF();
     if (k == 0u) tess_param_set_body(tr, TX_FM_DEVELOP, (int32_t)tessera.fm_dev[tr] + s * 2);
     else if (k == 1u) tess_param_set_body(tr, TX_FC_FOLLOW, s > 0 ? 1 : 0);   /* (right OWN, left FOLLOW) */
-    else tess_param_set_body(tr, TX_FC_SKIP, (int32_t)tessera.fc_skip[tr] + s * 2);
+    else if (k == 2u) tess_param_set_body(tr, TX_FC_SKIP, (int32_t)tessera.fc_skip[tr] + s * 2);
+    else tess_param_set_body(tr, TX_ET_ROLE, (int32_t)tessera.et_role[tr] + (s > 0 ? 1 : -1));   /* (Entries' ROLE) */
+    TESS_IRQ_ON();
+}
+
+/* the ENTRIES page (GLO), the project's: KNOB 1 ENTRIES, 2 DWELL, 3 STYLE, 4 FADE; OCT+ held (layer): KNOB k track k's
+ * ROLE */
+void tessera_entries_knob(uint32_t k, int32_t s, int layer)
+{
+    tessera_ensure_init();
+    if (!s || k > 3u) return;
+    TESS_IRQ_OFF();
+    if (layer) tess_param_set_body(k, TX_ET_ROLE, (int32_t)tessera.et_role[k] + (s > 0 ? 1 : -1));
+    else if (k == 0u) tess_param_set_body(0, TX_ET_AMOUNT, (int32_t)tessera.et_amount + s * 2);
+    else if (k == 1u) tess_param_set_body(0, TX_ET_DWELL, (int32_t)tessera.et_dwell + s);
+    else if (k == 2u) tess_param_set_body(0, TX_ET_STYLE, s > 0 ? 1 : 0);   /* (right FADE, left CUT) */
+    else tess_param_set_body(0, TX_ET_FADE, (int32_t)tessera.et_fade + s);
     TESS_IRQ_ON();
 }
 
@@ -2777,6 +2797,11 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_FC_FOLLOW:                                  /* (0 FOLLOW, 1 OWN; not set: OWN where its own FORM is on) */
         return tessera.fc_follow[tr] ? tessera.fc_follow[tr] - 1 : ev->form ? 1 : 0;
     case TX_FC_SKIP: return tessera.fc_skip[tr];
+    case TX_ET_AMOUNT: return tessera.et_amount;        /* (Entries': the project's, whichever track) */
+    case TX_ET_DWELL: return tessera.et_dwell;
+    case TX_ET_STYLE: return tessera.et_style;
+    case TX_ET_FADE: return tessera.et_fade;
+    case TX_ET_ROLE: return tessera.et_role[tr];
     case TX_KEY_LINK: return tessera.key_link;          /* (the project's, whichever track) */
     case TX_SD_SOURCE: return tessera.sd_src[tr];
     case TX_SD_KEEP: return tessera.sd_keep[tr];
@@ -2965,6 +2990,11 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
         return;
     }
     case TX_FC_SKIP: tessera.fc_skip[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
+    case TX_ET_AMOUNT: tessera.et_amount = (uint8_t)tess_clampi(v, 0, 100); return;
+    case TX_ET_DWELL: tessera.et_dwell = (uint8_t)tess_clampi(v, 1, 8); return;
+    case TX_ET_STYLE: tessera.et_style = (uint8_t)tess_clampi(v, 0, 1); return;
+    case TX_ET_FADE: tessera.et_fade = (uint8_t)tess_clampi(v, 1, 4); return;
+    case TX_ET_ROLE: tessera.et_role[tr] = (uint8_t)tess_clampi(v, 0, ET_ROLES - 1); return;
     case TX_KEY_LINK: tessera.key_link = (uint8_t)tess_clampi(v, 0, 1); return;
     case TX_SD_SOURCE:                                  /* (the loop filled again from the new source; ANSWER: its */
         tessera.sd_src[tr] = (uint8_t)tess_clampi(v, 0, TESSERA_TRACKS);   /* call, answered from the first) */

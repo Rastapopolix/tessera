@@ -43,6 +43,8 @@ static const char *const TX_N_SVHOW[] = {"DRIFT", "ADORN", "SERIAL"};   /* (TESS
 static const char *const TX_N_SOUND[] = {"ON", "OFF"};
 static const char *const TX_N_PHRASE[] = {"4", "8", "16"};   /* (form_chain.c FC_PHRASE_BARS) */
 static const char *const TX_N_FCFOLLOW[] = {"FOLLOW", "OWN"};
+static const char *const TX_N_ETSTYLE[] = {"CUT", "FADE"};   /* (entries.c) */
+static const char *const TX_N_ETROLE[] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "MELODY", "ANCHOR"};
 static const char *const TX_N_TUNE[] = {"OFF", "USR1", "USR2", "USR3", "USR4"};   /* (tune.h: the slots' own names
                                                                                    * where shown, params.c) */
 static const char *const TX_N_ACCMODE[] = {"WRAP", "PING", "CLAMP"};    /* (TESS_ACC_*) */
@@ -170,6 +172,11 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_FC_REP4] = {"REP4", F_INT, 1, 8, 1, 0, "x"},
     [TX_FC_FOLLOW] = PE("CHAIN", TX_N_FCFOLLOW, 0),
     [TX_FC_SKIP] = PD("SKIP", F_PCT, 0, 100, 0),
+    [TX_ET_AMOUNT] = PD("ENTRIES", F_PCT, 0, 100, 0),
+    [TX_ET_DWELL] = {"DWELL", F_INT, 1, 8, 2, 0, "ph"},
+    [TX_ET_STYLE] = PE("STYLE", TX_N_ETSTYLE, 1),
+    [TX_ET_FADE] = {"FADE", F_INT, 1, 4, 2, 0, "bar"},
+    [TX_ET_ROLE] = PE("ROLE", TX_N_ETROLE, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -628,6 +635,20 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_FC_SKIP, "FORM SKIP", "The chance this track stays in its section one phrase longer where the CHAIN moves "
                                 "on, then catches up; never twice running. 0: always with the CHAIN. OCT+ held on "
                                 "FORM, KNOB 3."),
+    XP_(TX_ET_AMOUNT, "ENTRIES", "0: every track plays as set. Up, tracks drop out and come back on the CHAIN's phrase "
+                                 "lines: how many may be out at once, up to all but one. Exits come where a section "
+                                 "begins, melody first; entries one a phrase, bass first. Above 50 the phrase before a "
+                                 "return to A thins to the anchors and A comes back full. A muted track stays muted; "
+                                 "its key on GLO brings an out track back. GLO > ENTRIES, KNOB 1."),
+    XP_(TX_ET_DWELL, "ENTRIES DWELL", "The phrases a track stays in or out at least before Entries moves it again, 1 to "
+                                      "8. GLO > ENTRIES, KNOB 2."),
+    XP_(TX_ET_STYLE, "ENTRIES STYLE", "How a track leaves and comes back: CUT at once on the phrase line, or FADE over "
+                                      "FADE bars from it. GLO > ENTRIES, KNOB 3."),
+    XP_(TX_ET_FADE, "ENTRIES FADE", "The bars a FADE takes, 1 to 4. GLO > ENTRIES, KNOB 4."),
+    X_(TX_ET_ROLE, "ENTRIES ROLE", "What the track is to Entries: BASS comes in first and goes last, then RHYTHM, "
+                                   "HARMONY, MELODY (a melody only over a bass or harmony). ANCHOR is never taken out. "
+                                   "AUTO: CHORD is harmony, ATLAS or a drum sound rhythm, notes mostly below C3 bass, "
+                                   "else melody. GLO > ENTRIES with OCT+ held, or OCT+ held on FORM, KNOB 4."),
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };

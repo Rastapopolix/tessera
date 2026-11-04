@@ -201,10 +201,11 @@ static __attribute__((noinline,section(".dsp_text"))) void mix_mono_samples(trac
     t->peak=pk;
 }
 static int32_t solo_gain[NPART]={32768,32768,32768,32768};
+static int32_t entry_gain[NPART]={32768,32768,32768,32768};   /* Tessera: Entries' level of each track (entries.c) */
 static void mix_solo(track_t *t,int32_t *b,uint32_t n)
 {
     uint32_t ti=(uint32_t)(t-trk);
-    int32_t from=solo_gain[ti],to=!track_solo || ((track_solo>>ti)&1u)?32768:0;
+    int32_t from=solo_gain[ti],to=!track_solo?entry_gain[ti]:((track_solo>>ti)&1u)?32768:0;   /* (SOLO: heard whatever Entries says) */
     if(from==32768 && to==32768)return;
     for(uint32_t i=0;i<n;i++){
         from += clamp(to-from,-256,256); /* 128 samples, same GLO solo ramp as before */
@@ -217,7 +218,7 @@ static __attribute__((noinline,section(".dsp_text"))) void mix_fx_samples(track_
 {
     uint32_t ti=(uint32_t)(t-trk);int32_t lvl=LEVEL_Q12[t->p[P_LEVEL]&127],pk=t->peak;
     uint32_t send=fx_send_on?fx_send_gain(t):0u;
-    int32_t gain=solo_gain[ti],to=!t->p[P_MUTE] && (!track_solo || ((track_solo>>ti)&1u))?32768:0;
+    int32_t gain=solo_gain[ti],to=t->p[P_MUTE]?0:!track_solo?entry_gain[ti]:((track_solo>>ti)&1u)?32768:0;
     for(uint32_t i=0;i<n;i++){
         gain+=mix_clamp(to-gain,-256,256);
         int32_t l=fx_scale(fx_left[i],(uint32_t)gain*2u),r=fx_scale(fx_right[i],(uint32_t)gain*2u);

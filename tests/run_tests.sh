@@ -88,6 +88,11 @@
 #                   REPEATs, the change on the phrase's first step (tracks of other DIVs the same block), FOLLOW / OWN
 #                   and its default, an OWN track as without the CHAIN, SKIP, WANDER's rules and repeatability, FLOURISH
 #                   on the CHAIN's phrase, STOP and PLAY; FORM OFF with the rest turned plays the same notes.
+# ENTRIES (tests/entries_test.c): Entries (entries.c) through the sequencer: changes only on phrase lines, exits only where
+#                   a section begins, one entry a phrase, DWELL, at most ENTRIES out and one always playing, ANCHOR,
+#                   a melody over a bass or harmony, the breakdown before A and the full return, FORM OFF's sections,
+#                   PLAY again, CUT / FADE, no voice from a silent track, hand mutes and GLO's key, SOLO, AUTO's roles;
+#                   ENTRIES 0 with the rest turned plays the same notes.
 # LONG-FORM (tests/longform_test.c): eight hours of ten patches left playing (notes only: the sequencer without the
 #                   voices, checked against mix_block for the first two minutes): no long silence, no collapse to one
 #                   note, no loop replayed for minutes, not thinning out by the last hour; a table of every measure in
@@ -373,6 +378,8 @@ if core && [ $TABLES = 1 ]; then
         -O2 $FW -- "$OUT/tessera_test" tests/tessera_baseline.txt build/tessera_log
     t "FORM CHAIN: the project's FORM on the bar clock: order, counts, FOLLOW / OWN, SKIP, WANDER, OFF unchanged" \
         chain_test -O2 $FW
+    t "ENTRIES: tracks out and back on the phrase lines: the rules, DWELL, anchors, breakdowns, CUT / FADE, hand, OFF unchanged" \
+        entries_test -O2 $FW
     t "GEN: each generator on its own (gen.c alone): ranges, rests, draws per step, determinism, mutation, sections" \
         gen_test -O2 $FW
     t "LONG-FORM: 8 hours of 10 patches: no long silence, one-note collapse, frozen loop or thinning out" longform_test \
