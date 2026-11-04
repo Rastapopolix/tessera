@@ -72,9 +72,18 @@ static __attribute__((noinline,section(".dsp_text"))) void master_out(int32_t *l
 static const uint8_t DIV_DEN[6] = {1, 2, 4, 8, 3, 6};    /* original IDs stay fixed; slow rates append */
 static uint8_t midi_sync_active;                 /* armed by an incoming Start/Continue/Stop, never a clock pulse */
 static uint32_t midi_beat_samples;                    /* zero until an external clock has a measured tempo */
-static uint32_t beat_samples(void)
+static volatile uint16_t seq_tempo_q12 = 4096;   /* a TEMPO mod's factor on CLK INT, 4096 = 1 (cord.c cord_tempo_tick) */
+/* a beat in samples at the tempo set: an external clock's, or BPM (the planner's piece, which a TEMPO mod leaves) */
+static uint32_t beat_samples_set(void)
 {
     return midi_sync_active && midi_beat_samples ? midi_beat_samples : (uint32_t)FS * 60u / (uint32_t)song.g[G_BPM];
+}
+/* ... and at the tempo playing: a TEMPO mod's too, on CLK INT */
+static uint32_t beat_samples(void)
+{
+    if ((midi_sync_active && midi_beat_samples) || seq_tempo_q12 == 4096u)
+        return beat_samples_set();
+    return beat_samples_set() * 4096u / seq_tempo_q12;   /* (32 bits: at 40 BPM 66150 x 4096; the device has no 64-bit /) */
 }
 static uint32_t div_samples(uint32_t div)
 {
@@ -92,12 +101,18 @@ static uint32_t seq_beat_samples(void)
 {
     return MIDI_BEAT_UNITS;
 }
-/* CLK INT: audio samples to units at exactly the BPM, the remainder carried (seq_start clears it, so a take repeats
- * exactly). CTL samples at a time keep it in 32 bits */
-static uint32_t int_clock_rem;
+/* CLK INT: audio samples to units at exactly the BPM, the remainder carried (seq_start clears both). A TEMPO mod's
+ * factor (Q12) first stretches the samples, its 1/4096ths of a sample carried too; all in 32 bits (the device's libgcc
+ * has no 64-bit / or %) */
+static uint32_t int_clock_rem, int_clock_frac;
 static uint32_t int_clock_units(uint32_t n)
 {
     uint32_t per = (uint32_t)FS * 60u, units = 0;
+    if (seq_tempo_q12 != 4096u) {
+        uint32_t q = n * seq_tempo_q12 + int_clock_frac;
+        int_clock_frac = q & 4095u;
+        n = q >> 12;
+    }
     while (n) {
         uint32_t chunk = n < CTL ? n : CTL, ticks = chunk * MIDI_BEAT_UNITS * (uint32_t)song.g[G_BPM] + int_clock_rem;
         int_clock_rem = ticks % per;

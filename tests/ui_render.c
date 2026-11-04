@@ -2515,7 +2515,8 @@ static uint32_t mono_mods_pick_check(void)
     cu_pick_label(b, 0, energy, &tr);
     if (strcmp(b, "ENERGY") || tr != -1) { fprintf(stderr, "ui_render: MODS list: \"%s\" for ENERGY\n", b); bad++; }
     cu_pick_label(b, 2, (int32_t)CU_NDST - 1, &tr);
-    if (tr != -1 || b[0] == 'T') { fprintf(stderr, "ui_render: MODS list: \"%s\" for a send effect's\n", b); bad++; }
+    if (tr != -1 || (b[0] == 'T' && b[1] >= '1' && b[1] <= '4'))   /* (the last, TEMPO: the project's, no "T1 ") */
+        { fprintf(stderr, "ui_render: MODS list: \"%s\" for the project's last\n", b); bad++; }
     for (p = 0; p < UI_NPALETTES; p++)
         if (!strcmp(UI_PALETTES[p].name, "MOSAIC")) mosaic = p;
     for (p = 0; p < 2u; p++) {

@@ -887,7 +887,7 @@ static void seq_start(void)
     planner_play();                                 /* (the planned piece from its top) */
     tessera_sd_play();                              /* (STEP as seed's loops from their sources again) */
     cin_left = 0; /* MIDI Start also cancels a pending local count-in. */
-    int_clock_rem = 0;                              /* every start from the same place: a take repeats exactly */
+    int_clock_rem = int_clock_frac = 0;             /* every start from the same place: a take repeats exactly */
     uint32_t i;
     seq_erase_request = 0;
     seq_erase_transport++;

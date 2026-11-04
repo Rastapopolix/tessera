@@ -348,9 +348,54 @@ static int no_drift_test(void)
     return bad;
 }
 
+/* TEMPO as a mod destination (issue #359): a fixed mod +100 doubles CLK INT, -100 halves it, +50 is half an octave;
+ * the clock out follows; the planner's piece stays in BPM's beats (no jump through its shape) */
+static int tempo_mod_test(void)
+{
+    static const int8_t OFF[4] = {100, -100, 50, 0};
+    static const double WANT[4] = {2.0, 0.5, 1.41421356, 1.0};
+    int bad = 0, ok = 1, pulses_ok = 1, plan_ok = 1;
+    reset(MIDI_OUT_KEYS);
+    settings_clock_out = 1;
+    song.g[G_BPM] = 120;
+    tessera.pl_length = 4;                              /* (a 4-minute piece planned) */
+    uint32_t beats0 = pl_beats();
+    transport_req = 1; events_block(CTL);
+    for (uint32_t c = 0; c < 4u; c++) {
+        cord_t cd = {0};
+        cd.dst = CD_TEMPO;
+        cd.offset = OFF[c];
+        cord_set(0, &cd);
+        cord_tick();
+        mo_r = mo_w;
+        uint64_t u0 = ((uint64_t)bar_n * 4u + beat_n) * MIDI_BEAT_UNITS + beat_pos;
+        uint32_t pulses = 0, n = 10u * (uint32_t)FS / CTL;   /* ten seconds */
+        for (uint32_t i = 0; i < n; i++) {
+            cord_tick();
+            events_block(CTL);
+            while (mo_r != mo_w) { if (((midi_out_q[mo_r % MQ] >> 8) & 0xFFu) == 0xF8u) pulses++; mo_r++; }
+        }
+        uint64_t u = ((uint64_t)bar_n * 4u + beat_n) * MIDI_BEAT_UNITS + beat_pos;
+        double got = (double)(u - u0) / ((double)n * CTL * MIDI_BEAT_UNITS * 120.0 / (FS * 60.0));
+        ok &= got > WANT[c] * 0.998 && got < WANT[c] * 1.002;
+        pulses_ok &= pulses + 2u >= (uint32_t)((u - u0) / 1024u) && pulses <= (uint32_t)((u - u0) / 1024u) + 2u;
+        plan_ok &= pl_beats() == beats0 && beats0 == 480u;
+    }
+    cord_t off = {0};
+    cord_set(0, &off);
+    cord_tick();
+    tessera.pl_length = 0;
+    transport_req = 2; blocks(2);
+    bad += check("TEMPO mod: +100 doubles CLK INT, -100 halves it, +50 half an octave", ok && seq_tempo_q12 == 4096u);
+    bad += check("  the clock out follows it", pulses_ok);
+    bad += check("  the planner's piece stays in BPM's beats (no jump through its shape)", plan_ok);
+    return bad;
+}
+
 int main(void)
 {
-    int bad = notes_test() + echo_and_route_test() + generator_test() + clock_out_test() + no_drift_test() + settings_test();
+    int bad = notes_test() + echo_and_route_test() + generator_test() + clock_out_test() + no_drift_test() + tempo_mod_test() +
+              settings_test();
     printf("%s\n", bad ? "MIDI OUT TEST FAILED" : "MIDI out tests passed");
     return bad != 0;
 }

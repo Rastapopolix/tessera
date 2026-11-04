@@ -101,6 +101,7 @@ static const cord_dest_t CORD_DESTS[CD_N] = {
     [CD_FX_RETURN] = G_(CD_FX_RETURN, G_FXRETURN, "RETURN", "the send effects' RETURN: how loud they come back, for every track"),
     M_(1), M_(2), M_(3), M_(4), M_(5), M_(6), M_(7), M_(8), M_(9), M_(10), M_(11), M_(12), M_(13), M_(14), M_(15), M_(16),
     [CD_FILL] = {CD_FILL, CK_FILL, 0, PID_NONE, "FILL", "the project's FILL (steps set to FILL / NOT FILL), held while the move is past half"},
+    [CD_TEMPO] = {CD_TEMPO, CK_TEMPO, 0, PID_NONE, "TEMPO", "the project's tempo on CLK INT: a full move up doubles it, down halves it (BPM stays as set)"},
 };
 #undef V_
 #undef B_
@@ -125,8 +126,8 @@ const char *cord_src_name(uint32_t code) { return code < CS_N ? CORD_SRC_NAME[co
  * (smoothstep), the tracks apart in time and in their points. Its clock: the blocks since power-on (cord_tick) */
 static uint32_t cord_blocks;
 static uint32_t cord_cmask, cord_amask;                 /* (the mods of mods: below, at cord_now) */
-static uint32_t cord_tmask, cord_gates, cord_fmask;    /* (GATE, FILL: below, at cord_now) */
-static void cord_amounts(void), cord_gates_tick(void), cord_fill_tick(void);
+static uint32_t cord_tmask, cord_gates, cord_fmask, cord_pmask;   /* (GATE, FILL, TEMPO: below, at cord_now) */
+static void cord_amounts(void), cord_gates_tick(void), cord_fill_tick(void), cord_tempo_tick(void);
 void cord_tick(void)
 {
     cord_blocks++;
@@ -134,6 +135,8 @@ void cord_tick(void)
     if (cord_cmask) cord_amounts();
     if (cord_fmask) cord_fill_tick();
     else seq_fill_mod = 0;
+    if (cord_pmask) cord_tempo_tick();
+    else seq_tempo_q12 = 4096;
     organic_tick();                                     /* (tessera.c, organic.c) */
     energy_tick();                                      /* (tessera.c, energy.c) */
 }
@@ -276,7 +279,7 @@ static void cord_masks(void)
     cord_envsrc = 0;
     cord_gmask = 0;
     cord_cmask = cord_amask = 0;
-    cord_tmask = cord_fmask = 0;
+    cord_tmask = cord_fmask = cord_pmask = 0;
     for (i = 0; i < CORD_LIVE; i++) {                   /* (the mods of mods first: the cords they turn are live) */
         const cord_t *c = &cords[i];
         uint32_t j = (uint32_t)c->dst - CD_M1_AMT;
@@ -297,6 +300,10 @@ static void cord_masks(void)
         if (kind == CK_CORD) continue;                  /* (cord_amounts: cord_cmask) */
         if (kind == CK_FILL) {                          /* (cord_fill_tick) */
             cord_fmask |= 1u << i;
+            continue;
+        }
+        if (kind == CK_TEMPO) {                         /* (cord_tempo_tick) */
+            cord_pmask |= 1u << i;
             continue;
         }
         if (kind == CK_STEP) cord_smask[c->dst_trk] |= 1u << i;
@@ -330,7 +337,7 @@ static void cord_reset(void)
     cord_envsrc = 0;
     cord_gmask = 0;
     cord_cmask = cord_amask = 0;
-    cord_tmask = cord_gates = cord_fmask = 0;
+    cord_tmask = cord_gates = cord_fmask = cord_pmask = 0;
     cord_fresh = 1;
     memset(cords, 0, sizeof cords);
     memset(cord_now, 0, sizeof cord_now);
@@ -517,6 +524,21 @@ static __attribute__((noinline)) void cord_fill_tick(void)
     for (i = 0; m; i++, m >>= 1)
         if (m & 1u) s += cord_share(&cords[i]);
     seq_fill_mod = s >= 16384;
+}
+
+/* each block with a mod onto TEMPO (cord_tick): CLK INT's tempo times 2^move (mix.c seq_tempo_q12), half to double;
+ * the moves together, eased between the eighths of an octave */
+static __attribute__((noinline)) void cord_tempo_tick(void)
+{
+    static const uint16_t EXP2[17] = {2048, 2233, 2435, 2656, 2896, 3158, 3444, 3756, 4096, 4467, 4871, 5312, 5793,
+                                      6317, 6889, 7512, 8192};   /* 4096 * 2^(k / 8 - 1) */
+    int32_t s = 0, x;
+    uint32_t m = cord_pmask, i, k;
+    for (i = 0; m; i++, m >>= 1)
+        if (m & 1u) s += cord_share(&cords[i]);
+    x = clamp(s, -32768, 32768) + 32768;                /* 0 .. 65536: k eighths and a remainder of 4096 */
+    k = (uint32_t)x >> 12;
+    seq_tempo_q12 = (uint16_t)(k >= 16u ? EXP2[16] : EXP2[k] + (((int32_t)EXP2[k + 1u] - EXP2[k]) * (x & 4095) >> 12));
 }
 
 /* fx.c fx_bus_settings (cord_gmask: some cord reaches them): the send effects' settings g (song.g from G_MFXTYPE to
