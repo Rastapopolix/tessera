@@ -2795,7 +2795,7 @@ static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on)
     mo_text(b, n >= 10u ? 3 : 5, 3, sel ? MO_INK : MO_DIM);
     mo_cu_side(13, c->src_trk, cu_src_name(c), 1, c->src != CS_OFF);
     mo_text(">", 47, 3, ink);
-    mo_cu_side(54, c->dst_trk, cu_dst_name(c), !cu_global(c->dst), c->dst != CD_OFF);
+    mo_cu_side(54, c->dst_trk, cu_dst_mono(c), !cu_global(c->dst), c->dst != CD_OFF);
     fmt_int(b + 1, cu_pct(c) < 0 ? -cu_pct(c) : cu_pct(c));
     b[0] = cu_pct(c) < 0 ? '-' : '+';
     str_cpy(b + str_len(b), "%", 2);
@@ -2806,7 +2806,7 @@ static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on)
 static void mo_cu_bar(const cord_t *c, int32_t s)
 {
     int on = cord_live(c);
-    int32_t a = cu_pct(c), m = 52, x = 1 + (a + 100) * 102 / 200, lx = m + clamp(s, -32768, 32768) * 51 / 32768;
+    int32_t a = cu_now(c), m = 52, x = 1 + (a + 100) * 102 / 200, lx = m + clamp(s, -32768, 32768) * 51 / 32768;
     int32_t d = x < m ? m - x : x - m;
     cv_begin(CU_BAR_W, 9, MO_BG);
     mo_hl(1, 2, 102, MO_DIM);
@@ -3435,7 +3435,8 @@ static void mo_msc(void)
             const pid_entry_t *e = help.pid != PID_NONE ? pid_find(help.pid) : 0;
             int16_t *vp;
             const param_desc_t *d = page_desc(ui.home ? stage_page() : cur_page(), k, &vp);
-            mo_ascii(b, d && d->label && d->label[0] ? d->label : e ? e->name : "--", sizeof b);
+            mo_ascii(b, dst >= CD_M1_AMT && dst <= CD_M16_AMT ? cord_dest(dst)->name :
+                        d && d->label && d->label[0] ? d->label : e ? e->name : "--", sizeof b);
             b[dst == CD_OFF ? 10 : 11] = 0;
             if (k == msc.knob && dst != CD_OFF) mo_invc(b, 4, y, MO_HOT);
             else mo_text(b, 4, y, dst == CD_OFF ? MO_DIM : MO_INK);

@@ -17,8 +17,11 @@
  *   CK_DEPTH  the track LFO's depth (mod.c's MD_DEPTH: a gain on the LFO wherever it goes)
  *   CK_STEP   a Tessera setting, in place around the track's generator step (tessera_clock_step)
  *   CK_GLOBAL a project setting of the send effects (SEND FX 1..3, RETURN), for the block (fx.c fx_bus_start): one
- *             for every track, so the cord's destination track means nothing (kept 0) */
-enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_GLOBAL };
+ *             for every track, so the cord's destination track means nothing (kept 0)
+ *   CK_CORD   another cord's move (M1 AMT .. M16 AMT: its AMOUNT, a fixed cord's OFFSET), for the block (cord.c
+ *             cord_tick): the project's, destination track 0 as CK_GLOBAL. One level: an M AMT cord's own move is
+ *             never moved */
+enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_GLOBAL, CK_CORD };
 
 /* Destination codes. FROZEN: saved cords keep them; new ones at the end, a retired one stays as a gap */
 enum {
@@ -54,6 +57,8 @@ enum {
     CD_SF2_MIX, CD_SF2_RATE, CD_SF2_CHAR,
     CD_SF3_MIX, CD_SF3_RATE, CD_SF3_CHAR,
     CD_FX_RETURN,
+    CD_M1_AMT,                                                      /* the cords' moves (CK_CORD): M1 AMT .. M16 AMT */
+    CD_M16_AMT = CD_M1_AMT + 15,
     CD_N
 };
 
@@ -97,6 +102,7 @@ const char *cord_src_name(uint32_t code);           /* <= 7 characters; 0: no su
 int cord_set(uint32_t i, const cord_t *c);          /* i < CORD_LIVE; out of range: refused (0), nothing changed */
 const cord_t *cord_get(uint32_t i);
 void cord_clear(void);                              /* every cord off */
+int32_t cord_move(uint32_t i);                      /* cord i's move as its M AMT cords make it now: -100..100 % */
 uint32_t cord_count(void);                          /* cords doing something (a destination and an amount or offset) */
 uint32_t cord_adopt(void);
 void cord_tick(void);                               /* an audio block (mix.c mix_block): DRIFT's clock, SLOTH, OCHD */
