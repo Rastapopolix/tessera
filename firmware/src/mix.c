@@ -82,13 +82,35 @@ static uint32_t div_samples(uint32_t div)
     return div < 6u ? quarter / DIV_DEN[div] : div < 10u ? quarter << (div - 5u) : quarter / DIV_DEN[div % 6u];
 }
 
-/* External sequencing uses musical units, independent of the measured tempo.
- * 24 clocks/beat and every division divide exactly; tempo estimates only set
- * LFO timing and the display, never move an already recorded step. */
+/* The sequencer runs on musical units on every clock (Melodee 1.6.1, 2f9b694), so tracks, recordings, ARPs, synced
+ * LFOs and CLOCK OUT cannot slide against each other: 24 clocks/beat and every division divide exactly. A tempo only
+ * sets how fast units pass (int_clock_units, or an external clock's pulses) and the display; it never moves an already
+ * recorded step. (Before, CLK INT counted samples, each division's length rounded down: a 1/16 track drifted ~27 ms
+ * in five minutes against the clock out, and the ARP restarted its count at each note.) */
 #define MIDI_BEAT_UNITS 24576u
 static uint32_t seq_beat_samples(void)
 {
-    return midi_sync_active ? MIDI_BEAT_UNITS : beat_samples();
+    return MIDI_BEAT_UNITS;
+}
+/* CLK INT: audio samples to units at exactly the BPM, the remainder carried (seq_start clears it, so a take repeats
+ * exactly). CTL samples at a time keep it in 32 bits */
+static uint32_t int_clock_rem;
+static uint32_t int_clock_units(uint32_t n)
+{
+    uint32_t per = (uint32_t)FS * 60u, units = 0;
+    while (n) {
+        uint32_t chunk = n < CTL ? n : CTL, ticks = chunk * MIDI_BEAT_UNITS * (uint32_t)song.g[G_BPM] + int_clock_rem;
+        int_clock_rem = ticks % per;
+        units += ticks / per;
+        n -= chunk;
+    }
+    return units;
+}
+/* a real-time length (samples) in the sequencer's units at the tempo playing: for timings set in ms or seconds */
+static uint32_t seq_units_of(uint32_t samples)
+{
+    uint32_t beat = beat_samples();
+    return beat ? (uint32_t)((uint64_t)samples * MIDI_BEAT_UNITS / beat) : samples;
 }
 static uint32_t seq_div_samples(uint32_t div)
 {

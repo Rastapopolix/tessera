@@ -316,10 +316,8 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
             return;
         if (t->arp_pos >= 0xFFFFFFFu)
             t->arp_pos = 0;
-        else if (midi_sync_active)
+        else                                           /* (the residue carried on every clock: no drift) */
             t->arp_pos -= period + (uint32_t)((t->arp_idx & 1u) ? sw : -sw);
-        else
-            t->arp_pos = 0;
         /* build the note list: held notes (sorted or as played) over OCT octaves */
         len = 0;
         for (i = 0; i < t->nheld; i++)
@@ -368,7 +366,6 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
                 rec_note(t, t->arp_note, 100);           /* recording: what the arp plays */
             trk_note_on(t, t->arp_note, 100);
         }
-        if (!midi_sync_active) return;
         /* A recovered clock burst may cross several ARP steps. Consume them all
          * and retain the residual phase, just as the sequencer does. */
         if (t->arp_note) {
@@ -886,6 +883,7 @@ static void seq_start(void)
     energy_play();                                  /* (ENERGY's tide and rests too) */
     tessera_sd_play();                              /* (STEP as seed's loops from their sources again) */
     cin_left = 0; /* MIDI Start also cancels a pending local count-in. */
+    int_clock_rem = 0;                              /* every start from the same place: a take repeats exactly */
     uint32_t i;
     seq_erase_request = 0;
     seq_erase_transport++;
@@ -1266,9 +1264,11 @@ static int rec_note_start(track_t *t)
     return 1;
 }
 
+static uint32_t seq_advanced;                   /* this block's units so far (an external clock's LFO units) */
 static void seq_advance(uint32_t n)
 {
     uint32_t i, beat = seq_beat_samples();
+    seq_advanced += n;
     midi_out_clock(n, beat);
     midi_out_seq = 1;                              /* (midi_out.c: these notes are the sequencer's) */
     chain_tick(n);
@@ -1291,7 +1291,8 @@ static void seq_advance(uint32_t n)
 /* everything that happens between two rendered blocks */
 static void events_block(uint32_t n)
 {
-    uint32_t i, pr;
+    uint32_t i, pr, lfo_units = 0;
+    seq_advanced = 0;
     if(song.playing || transport_req==1u)resource_release(RES_NOTE_HISTORY);
     uint32_t selected_clock = (uint32_t)song.g[G_CLOCK];
     if (midi_clock.selected != selected_clock) {
@@ -1419,7 +1420,9 @@ static void events_block(uint32_t n)
             uint32_t elapsed = (uint32_t)((uint64_t)n * MIDI_BEAT_UNITS / beat_samples());
             for (i = 0; i < NPART; i++)
                 arp_step(&trk[i], trk[i].arp_phys ? elapsed : 0u, elapsed);
-        }
+            lfo_units = elapsed;
+        } else
+            lfo_units = lfo_ext_units(n, seq_advanced);
     } else {
         uint32_t left=n;
         if(cin_left) {
@@ -1438,8 +1441,10 @@ static void events_block(uint32_t n)
                 }
             }
         }
-        if(left)seq_advance(left);
+        lfo_units = seq_units_of(n - left);            /* (a count-in: the LFOs run on) */
+        if(left) { uint32_t units = int_clock_units(left); seq_advance(units); lfo_units += units; }   /* (mix.c) */
     }
+    lfo_block_units = lfo_units;
     if (song.playing)
         song.tick++;
 }
