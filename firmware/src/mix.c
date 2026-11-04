@@ -108,8 +108,9 @@ static uint32_t int_clock_units(uint32_t n)
 {
     const uint64_t per = (uint64_t)FS * 60u * 4096u;
     uint64_t ticks = (uint64_t)n * MIDI_BEAT_UNITS * (uint32_t)song.g[G_BPM] * seq_tempo_q12 + int_clock_rem;
-    int_clock_rem = ticks % per;
-    return (uint32_t)(ticks / per);
+    uint64_t units = ticks / per;
+    int_clock_rem = ticks - units * per;   /* not %: the device's libgcc has no __umoddi3 */
+    return (uint32_t)units;
 }
 /* a real-time length (samples) in the sequencer's units at the tempo playing: for timings set in ms or seconds */
 static uint32_t seq_units_of(uint32_t samples)
