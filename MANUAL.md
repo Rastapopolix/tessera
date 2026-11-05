@@ -88,8 +88,8 @@ them. Every one starts OFF, and you can use any of them alone.
 | [PIECE](#piece-a-length-and-a-shape) | GLO > PIECE | Over the whole piece, 1 minute to 4 hours | Nothing directly: it steers CHAIN, ENTRIES and ENERGY along its shape | The CHAIN's PHRASE (it counts in phrases) and the tempo |
 | [CHAIN](#chain-one-form-for-the-project) | GLO > CHAIN | On phrase lines (4, 8 or 16 bars) | The section (A, B, C) every following track plays, and the key in B and C | PIECE: bolder new sections near its top, A at its end |
 | [ENTRIES](#entries-tracks-out-and-back-in) | GLO > ENTRIES | On phrase lines | Which tracks play: it fades or cuts them out and back in | The CHAIN's phrases and sections, each track's ROLE, PIECE (how many out) |
-| [ENERGY](#energy) | SEQ > ENERGY | A slow tide of 3 to 6 minutes, and rests | How many hits the generator tracks play and how loud; how much EVOLVE changes | PIECE (the tide becomes its shape), each track's DEPTH |
-| [FORM](#form) | SEQ > FORM, each track | Every EVERY bars, or on the CHAIN's phrases | The track's own sections A, B and C | The CHAIN, while the track FOLLOWs it |
+| [ENERGY](#energy) | ARP > ENERGY | A slow tide of 3 to 6 minutes, and rests | How many hits the generator tracks play and how loud; how much EVOLVE changes | PIECE (the tide becomes its shape), each track's DEPTH |
+| [FORM](#form) | ARP > FORM, each track | Every EVERY bars, or on the CHAIN's phrases | The track's own sections A, B and C | The CHAIN, while the track FOLLOWs it |
 | SONG | SEQ > SONG | When a row has played its repeats | Which written pattern each track plays | Nothing above: it runs beside them |
 
 **Who wins where they meet:**
@@ -113,7 +113,7 @@ them. Every one starts OFF, and you can use any of them alone.
 2. **GLO > CHAIN**, FORM **ABAC**: the tracks change section together (tracks with FORM OFF follow by themselves).
 3. **GLO > ENTRIES** at 50: tracks drop out and come back on the phrase lines. Set a drone's ROLE to **ANCHOR**.
 4. **GLO > PIECE**, 10 minutes, **ARCH**, END **STOP**: an intro, a peak and an ending, then it stops by itself.
-5. **SEQ > ENERGY** ARC: how far the busy-sparse swing goes, along the PIECE's shape (or on its own tide without one).
+5. **ARP > ENERGY** ARC: how far the busy-sparse swing goes, along the PIECE's shape (or on its own tide without one).
 
 | I want... | Use |
 |---|---|
@@ -143,6 +143,16 @@ lets you do and when you would want it. Follow a link for the full description.
 |---|---|---|
 | [GEN](#seq-the-mode-and-its-pages) | Choose the track's MODE: your own steps, the ARP, or one of thirteen generators, and set the generator's three main knobs. | Every time you start a part. This is the most important page. |
 | [NOTES](#seq-the-mode-and-its-pages) | Write and edit steps by hand; open a step's sheet for ratchets, nudges, conditions and climbing notes. | You want a part exactly as you hear it in your head. |
+| [PATTERN](#seq-the-mode-and-its-pages) | A generator track's length, speed (DIV) and gate. | A generator should run faster, slower or over a different length. |
+| TEMPO | The project's BPM, swing and record quantize. | You set the speed and feel of the whole project. |
+| PATTERNS, SONG | Pick the pattern each track plays and chain patterns into a song (as in Melodee). | You arrange written patterns into a song by hand. |
+| ARP | The arpeggiator's MODE, RATE, OCT and GATE, on an ARP track. | You want to play chords and hear them broken up. |
+
+**ARP**: how the selected track's notes are shaped (the pages its MODE uses); held, the [help card](#help-card) for any
+knob you turn. *Hold ARP whenever a knob's name puzzles you.*
+
+| Page | What it lets you do | Reach for it when |
+|---|---|---|
 | [EVOLVE](#evolve) | Let a phrase mutate every few bars, pick a new seed (a new line) with ROLL, and pull it home with GRAVITY. | A loop has started to feel too static, or you want a fresh idea. |
 | [FORM](#form) | Give the track a song form (A B A C ...) built from its own phrase. | You want verse-and-chorus contrast instead of one long loop. |
 | [TWEAK](#tweak) | Transpose, thin out, humanise, or make a track follow another track's pitch. | You want a harmony, a bass that follows the melody, or a looser feel. |
@@ -150,13 +160,7 @@ lets you do and when you would want it. Follow a link for the full description.
 | [LENGTH](#length) | Set how long a generator's notes ring. | Notes sound too clipped, or you want pads out of sparse notes. |
 | [TIMING](#timing) | Add ratchets (rolls) and a behind-the-beat human feel. | You want rolls, stutters or a more relaxed groove. |
 | [ENERGY](#energy) | Give the whole project a slow tide from sparse to full, with occasional rests. | A long piece needs to rise and fall on its own. |
-| [PATTERN](#seq-the-mode-and-its-pages) | A generator track's length, speed (DIV) and gate. | A generator should run faster, slower or over a different length. |
-| TEMPO | The project's BPM, swing and record quantize. | You set the speed and feel of the whole project. |
-| PATTERNS, SONG | Pick the pattern each track plays and chain patterns into a song (as in Melodee). | You arrange written patterns into a song by hand. |
-| ARP, ARP 2 | The arpeggiator's mode and options, on an ARP track. | You want to play chords and hear them broken up. |
-
-**ARP**: on a STEP track, the arpeggiator; held, the [help card](#help-card) for any knob you turn. *Hold ARP whenever
-a knob's name puzzles you.*
+| ARP 2 | The arpeggiator's SWING, PROB, HOLD and ORDER, on an ARP track. | The arpeggio should swing, skip notes or hold on. |
 
 **LFO**: movement
 
@@ -252,8 +256,8 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 | Button | Tap | Hold |
 |---|---|---|
 | **HOME** | The home page: four tracks, their sounds and knobs | The menu |
-| **SEQ** | GEN, then the pages of the track's MODE | PATTERNS (the song under it) |
-| **ARP** | ARP's MODE and its page (again: ARP 2) | The help card for any knob you turn |
+| **SEQ** | What the track plays: GEN, then NOTES or ARP or PATTERN (by its MODE), TEMPO, PATTERNS, SONG | PATTERNS (the song under it) |
+| **ARP** | How the track's notes are shaped: EVOLVE, FORM, TWEAK, TIMING and the rest (by its MODE) | The help card for any knob you turn |
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST (an FM6 track: then FM LFO) | |
 | **ENV** | ENV, ENV DEST (an FM6 track: EG RATE, EG LVL, PITCH EG, PITCH LV) | |
 | **SCL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
@@ -333,8 +337,8 @@ key skips it.
 
 | Do this | And this happens |
 |---|---|
-| Tap **SEQ** | **GEN** first: KNOB 1 (**MODE**) picks what the track plays. SEQ then shows only that mode's pages. |
-| Tap **ARP** | Switches a STEP track to ARP and opens **ARP**; tap again for **ARP 2**. On a generator track it opens GEN instead ("MODE IS ON GEN"), so a playing generator never goes quiet by accident. |
+| Tap **SEQ** | **GEN** first: KNOB 1 (**MODE**) picks what the track plays. SEQ then shows only what that mode plays, ARP how it is shaped. |
+| Tap **ARP** | The track's shaping pages (EVOLVE, TWEAK, TIMING and so on); tap again for the next. It never changes the track's MODE: that is GEN's KNOB 1. |
 | Hold **OCT+** on GEN | The generator's second layer, for TURING, EUCLID, MARKOV, MORPH, QUAD, CHORD, ATLAS, CONSTELLATION and ANSWER (see [OCT+ layers](#oct-layers-on-gen)). |
 | Hold **OCT+** on EVOLVE | A generator's GRAVITY; on a STEP track, STEP EVOLVE's HOW (see [EVOLVE](#evolve)). |
 | Turn **SELECT** on HOME or MIXER, or with **GLO** held | Sets the tempo (BPM), as SEQ > TEMPO does; F4 with GLO held taps it. With CLK on USB or TRS the tempo is the clock's, and a Song Position from it (a DAW's PLAY from mid-song) starts the steps, the ARP and the generators where that song is, as if they had played from the top. |
@@ -444,23 +448,28 @@ clean:
 ## SEQ: the MODE and its pages
 
 > **In short:** GEN's MODE decides what a track plays: your own steps, an arpeggio, or a generator that writes the
-> notes. SEQ then only shows the pages that matter for that choice.
+> notes. SEQ (what plays) and ARP (how it is shaped) then only show the pages that matter for that choice.
 
 Tap **SEQ** for **GEN**, where **KNOB 1, MODE** picks what the selected track plays:
 
 - **STEP**: the step sequencer.
-- **ARP**: the arpeggiator over the keys held (the ARP button gets here too).
+- **ARP**: the arpeggiator over the keys held.
 - One of thirteen generators, in the knob's order: **CHORD** first, then **TURING**, **EUCLID**, **MARKOV**,
   **MORPH**, **ATLAS**, **BOUNCE**, **AWAKE**, **POLY**, **QUAD**, **CONSTL** (Constellation), **SERIES** and
   **ANSWER**.
 
-SEQ then shows only that mode's pages:
+Two buttons share the track's pages, and each shows only what its MODE uses. **SEQ** holds what the track plays;
+the **ARP** button holds how its notes are shaped. SELECT turns the pages of the one you are on.
 
-| MODE | SEQ's pages |
-|---|---|
-| **STEP** | GEN, NOTES (a DRUM track: NOTES, DRUM HIT), EVOLVE (STEP EVOLVE), TWEAK (its HUMAN), TIMING (its SHAPE and HUMAN), TEMPO, PATTERNS, SONG |
-| **ARP** | GEN, NOTES, TEMPO, PATTERNS, SONG (ARP and ARP 2 are the ARP button's own: SELECT turns between the two) |
-| a generator | GEN, EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY, PATTERN, TEMPO, PATTERNS, SONG |
+| MODE | SEQ: what plays | ARP: how it is shaped |
+|---|---|---|
+| **STEP** | GEN, NOTES (a DRUM track: NOTES, DRUM HIT), TEMPO, PATTERNS, SONG | EVOLVE (STEP EVOLVE), TWEAK (its HUMAN), TIMING (its SHAPE and HUMAN) |
+| **ARP** | GEN, NOTES, ARP (MODE, RATE, OCT, GATE), TEMPO, PATTERNS, SONG | ARP 2 (SWING, PROB, HOLD, ORDER), TWEAK (SHIFT and HUMAN) |
+| a generator | GEN, PATTERN, TEMPO, PATTERNS, SONG | EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY |
+
+On an ARP track, TWEAK's **SHIFT** moves the arpeggio by semitones and **HUMAN** makes its notes a little softer or
+louder and shorter, as on a generator. The arpeggio's tosses (RANDOM's order, PROB) come from the track's SEED, so PLAY
+plays it the same again.
 
 MOTION appears as in upstream; DRUM HIT, a DRUM track's grid of hits, comes right after NOTES. With STEP or ARP, GEN is also the pattern's page: KNOB 2 to 4 are
 LENGTH, DIVISION and GATE, and the track's SWING is a row of the pattern's sheet (OCT+ held). A generator track has

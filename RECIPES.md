@@ -2,7 +2,8 @@
 
 Short, tested ways to get somewhere with Tessera. Each uses only what the firmware has; the page and knob names
 are the ones on the screen, and [MANUAL.md](MANUAL.md) explains each page in full. Where a step names a page, tap
-the button in brackets until it shows: GEN, EVOLVE, FORM, TWEAK, TWEAK 2 and LENGTH are under **SEQ**, MODS, MATRIX
+the button in brackets until it shows: GEN, NOTES and PATTERN are under **SEQ**; EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING
+and ENERGY under **ARP**; MODS, MATRIX
 and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
 
 **Recipes**
@@ -369,7 +370,7 @@ together: CHAIN gives the tracks shared sections, ENTRIES brings tracks in and o
 3. On each generator track, **FORM**: **CONTR** about 40, so B and C sound different from A.
 4. **GLO > ENTRIES**: **ENTRIES 50**, **STYLE FADE**. Hold **OCT+** and set the pad's ROLE to **ANCHOR** if it should
    never leave.
-5. **ENERGY** (on any generator track's SEQ pages): **ARC** about 60, so the shape is heard in how busy and loud the
+5. **ENERGY** (on any generator track's ARP pages): **ARC** about 60, so the shape is heard in how busy and loud the
    tracks play.
 6. **GLO > PIECE**: **LENGTH 30 min**, **SHAPE ARCH**, **PEAK** about 60 %, **END STOP**. Press **PLAY**.
 
