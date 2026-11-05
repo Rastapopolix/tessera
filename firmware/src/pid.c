@@ -256,10 +256,12 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
         "KNOB 2 on NOTES moves a note by the scale's notes (CHRD: the chord's). Notes already written stay: Snap to "
         "scale in the pattern's sheet (OCT+ held) moves them onto the scale, once."),
     T_(P_TRANS, "TRANSPOSE", "Moves the track's notes up or down by semitones."),
-    T_(P_SLEN, "PATTERN LENGTH", "How many steps the track's pattern has."),
-    T_(P_SDIV, "PATTERN DIVISION", "How long one step is."),
-    T_(P_SSWING, "PATTERN SWING", "Delays every second step, for a swung feel."),
-    T_(P_SGATE, "PATTERN GATE", "How long each step's note lasts, as a share of the step."),
+    T_(P_SLEN, "PATTERN LENGTH", "How many steps the track's pattern has. Each of its 8 patterns keeps its own."),
+    T_(P_SDIV, "PATTERN DIVISION", "How long one step is. Each of the track's 8 patterns keeps its own."),
+    T_(P_SSWING, "PATTERN SWING", "Delays every second step, for a swung feel. Each of the track's 8 patterns keeps "
+                                  "its own."),
+    T_(P_SGATE, "PATTERN GATE", "How long each step's note lasts, as a share of the step. Each of the track's 8 "
+                                "patterns keeps its own."),
     T_(P_VOICE, "VOICE MODE",
         "POLY plays chords; MONO one note at a time; LEG(ATO) one at a time, a note played while one is held "
         "not starting again; UNI stacks detuned voices on one note."),
