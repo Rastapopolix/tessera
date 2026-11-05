@@ -502,6 +502,10 @@ static void help_find(uint32_t k)
         help.pid = (uint16_t)PID_TESS(k == 3u ? TX_ET_ROLE : k == 2u ? TX_FC_SKIP : k ? TX_FC_FOLLOW : TX_FM_DEVELOP);
         return;
     }
+    if (pg->graph == GR_PERF) {                        /* (the project's MACROs) */
+        help.pid = (uint16_t)PID_TESS(TX_MACRO1 + k);
+        return;
+    }
     if (pg->graph == GR_PIECE) {                       /* (the project's: LENGTH, SHAPE, PEAK / COUNT, END; OCT+ / OCT- the
                                                         * USER levels) */
         if (piece_layer()) help.pid = (uint16_t)PID_TESS(TX_PL_USER1 + (piece_layer() == 2 ? 4u : 0u) + k);

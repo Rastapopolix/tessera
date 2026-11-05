@@ -968,6 +968,14 @@ static void draw_columns(void)
         }
         return;
     }
+    if (cur_page()->graph == GR_PERF) {                  /* PERF: the four MACROs (cord.c CS_MACRO1) */
+        for (uint32_t k = 0; k < 4u; k++) {
+            char w[8];
+            fmt_int(w, tessera.macro[k]);
+            draw_column(k, cord_src_name(CS_MACRO1 + k), w, "%", VAL(k), (int32_t)tessera.macro[k] * 10, ICON_AUTO);
+        }
+        return;
+    }
     if (cur_page()->graph == GR_PIECE) {                 /* PIECE (planner.c), the project's: LENGTH, SHAPE, PEAK / COUNT, END */
         char w1[8], w3[8];
         uint32_t set = tessera.pl_length != 0u, k3 = (uint32_t)piece_k3();

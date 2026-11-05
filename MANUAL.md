@@ -55,7 +55,7 @@ page's four settings sit along the top of the screen in the same order.
 | **SCL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
 | **EDIT** | The sound's EDIT pages; on an EDIT page, the map | With OCT- / OCT+: undo / redo |
 | **FX** | The insert and send effects | The mod amount of any knob you turn |
-| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT, [PIECE](#piece-a-length-and-a-shape), [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in), [LANDSCAPE](#landscape-rain-on-water) | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
+| **GLO** | MIXER, GLOBAL, SYSTEM, MIDI OUT, [PIECE](#piece-a-length-and-a-shape), [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in), [LANDSCAPE](#landscape-rain-on-water), [PERF](#perf-four-macros) | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
 | **SAVE** | USER (ready to save the sound), PROJECT, PRESETS | Save the project to its slot (as SAVE + REC) |
 | **REC** | Records the selected track until REC again (see [Recording live](#recording-live)) | Capture or print the last bars (see [Print and keep](#print-and-keep)) |
 | **OCT+** | Octave up; on some pages, an action (shown on screen) | A page's extra layer (see [OCT+ layers](#oct-layers-on-gen)) |
@@ -626,7 +626,7 @@ The choices come from the tracks' SEEDs, so PLAY plays the same piece again; STO
 
 ### LANDSCAPE: rain on water
 
-**GLO > LANDSCAPE** (the last GLO page) is a page to look at while the music plays: a night lake, drawn by the music.
+**GLO > LANDSCAPE** is a page to look at while the music plays: a night lake, drawn by the music.
 It has no settings and changes nothing; the knobs do nothing here.
 
 - Each note a track plays is a drop on the water. **Pitch** sets where it lands, low notes at the left, high at the
@@ -637,6 +637,17 @@ It has no settings and changes nothing; the knobs do nothing here.
   still and the moon's reflection lies quiet.
 
 The scene only listens while the page shows. In the MOSAIC palette each track's drops are in its own colour.
+
+### PERF: four macros
+
+**GLO > PERF** (the last GLO page) gives you four hand controls for the whole project: **KNOB 1 to 4** set
+**MACRO 1 to 4**, 0 to 100 %. A macro does nothing by itself. In **MODS**, pick **MACRO 1 to 4** as a mod's source
+(they are the project's, so they show without a track) and send it anywhere: a filter, a level, an FX send, TEMPO,
+another mod's amount. One macro can drive as many mods as you like, so a single knob can open a filter, raise the
+reverb and push the tempo together.
+
+The page shows each macro as a bar and how many mods it drives. The macros are saved with the project. A project
+with a mod from a macro loses that mod on older firmware.
 
 ---
 

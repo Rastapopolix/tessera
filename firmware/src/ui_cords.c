@@ -287,7 +287,7 @@ static const char *cu_pick_name(uint32_t col, int32_t i, int32_t *tr)
         return "--";
     if (col == 0u) {
         uint32_t s = (uint32_t)((i - 1) % (int32_t)(CS_N - 1u) + 1);
-        if (s != CS_ENERGY) *tr = (i - 1) / (int32_t)(CS_N - 1u);
+        if (s < CS_ENERGY) *tr = (i - 1) / (int32_t)(CS_N - 1u);   /* (ENERGY, the MACROs: the project's) */
         return cord_src_name(s);
     }
     cu_dst_set(&c, (uint32_t)i);

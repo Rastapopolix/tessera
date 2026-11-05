@@ -506,7 +506,7 @@ enum { SC_TRACK, SC_GLOBAL, SC_ENGINE, SC_STEP, SC_TRK,   /* SC_TRK: the TRACKS 
 enum { GR_NONE, GR_ADSR, GR_LFO, GR_STEPS, GR_ARP, GR_SCALE, GR_ROLL, GR_BROWSE, GR_SLOTS, GR_USER, GR_TRK,
        GR_MOD, GR_PATS, GR_SONG, GR_MOTION, GR_CHORD, GR_SLICES,
        GR_FMEG, GR_FMPEG, GR_FMSTORE, GR_SCALE_PICKER, GR_DRUMHIT, GR_PATGRID, GR_EVOLVE, GR_FORM, GR_TWEAK,
-       GR_CORDS, GR_TWEAK2, GR_ORGANIC, GR_MATRIX, GR_NOTELEN, GR_TIMING, GR_ENERGY, GR_MIDICH, GR_KEYLINK, GR_CHAIN, GR_ENTRIES, GR_PIECE, GR_LAND }; /* NOTES shares GR_ROLL for steps and recorded events */
+       GR_CORDS, GR_TWEAK2, GR_ORGANIC, GR_MATRIX, GR_NOTELEN, GR_TIMING, GR_ENERGY, GR_MIDICH, GR_KEYLINK, GR_CHAIN, GR_ENTRIES, GR_PIECE, GR_LAND, GR_PERF }; /* NOTES shares GR_ROLL for steps and recorded events */
 
 typedef struct {
     const char *title;
@@ -598,6 +598,8 @@ static const page_t PAGES[] = {
                                                                            * held each track's ROLE (entries.c) */
     {"LANDSCAPE", FAM_GLO, SC_GLOBAL, GR_LAND, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: rain on water, played by the
                                                                          * music (ui_land.c; the Mono look only) */
+    {"PERF", FAM_GLO, SC_GLOBAL, GR_PERF, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: MACRO 1..4, the project's cord sources
+                                                                   * (cord.c CS_MACRO1; the Mono look only) */
     {"PRESETS", FAM_SAVE, SC_GLOBAL, GR_BROWSE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* browser: KNOB 1 LIST, 2 / PRESETS the sounds */
     {"USER", FAM_SAVE, SC_GLOBAL, GR_USER, {0xFF, 0xFF, 0xFF, 0xFF}},       /* user presets: SLOT LOAD ERASE SAVE */
     {"PROJECT", FAM_SAVE, SC_GLOBAL, GR_SLOTS, {G_SLOT, G_BOOT, G_LOAD, G_SAVE}},

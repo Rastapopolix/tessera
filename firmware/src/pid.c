@@ -195,6 +195,10 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_PL_USER6] = PD("USER6", F_PCT, 0, 100, 75),
     [TX_PL_USER7] = PD("USER7", F_PCT, 0, 100, 40),
     [TX_PL_USER8] = PD("USER8", F_PCT, 0, 100, 10),
+    [TX_MACRO1] = PD("MACRO 1", F_PCT, 0, 100, 0),
+    [TX_MACRO2] = PD("MACRO 2", F_PCT, 0, 100, 0),
+    [TX_MACRO3] = PD("MACRO 3", F_PCT, 0, 100, 0),
+    [TX_MACRO4] = PD("MACRO 4", F_PCT, 0, 100, 0),
     [TX_TW_HOLD] = PE("HOLD", TX_N_FOLLOW, 0),
 };
 
@@ -692,6 +696,13 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     XP_(TX_PL_USER6, "PIECE USER 6", "SHAPE USER: the level five sevenths in. GLO > PIECE, OCT- held, KNOB 2."),
     XP_(TX_PL_USER7, "PIECE USER 7", "SHAPE USER: the level six sevenths in. GLO > PIECE, OCT- held, KNOB 3."),
     XP_(TX_PL_USER8, "PIECE USER 8", "SHAPE USER: the level at the end. GLO > PIECE, OCT- held, KNOB 4."),
+#define MACRO_TEXT "A hand control for the whole project, 0 to 100 %. On its own it does nothing: pick MACRO as a mod's " \
+                   "SOURCE (MODS) and send it anywhere, to as many places as you like. GLO > PERF, KNOB 1 to 4."
+    XP_(TX_MACRO1, "MACRO 1", MACRO_TEXT),
+    XP_(TX_MACRO2, "MACRO 2", MACRO_TEXT),
+    XP_(TX_MACRO3, "MACRO 3", MACRO_TEXT),
+    XP_(TX_MACRO4, "MACRO 4", MACRO_TEXT),
+#undef MACRO_TEXT
     X_(TX_TW_HOLD, "FOLLOW HOLD", "Sample and hold for FOLLOW: the followed track's note is taken only when the "
                                   "HOLD track plays, and this track keeps playing it in its own rhythm until the next "
                                   "one. OFF: a new note on each of its own hits. TWEAK, OCT+ held, KNOB 4."),
