@@ -1013,6 +1013,12 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
+    if (pg->graph == GR_PERF) {                     /* PERF: KNOB k MACRO k, the project's, a percent a detent (faster
+                                                     * turned) */
+        tessera_param_set(0, TX_MACRO1 + slot, (int32_t)tessera.macro[slot & 3u] + accel(EN_K1 + slot, steps, 100));
+        ui.force = 1;
+        return;
+    }
     if (pg->graph == GR_PIECE) {                    /* PIECE, the project's: LENGTH, SHAPE, END a step a detent, PEAK a
                                                      * percent (COUNT a step); OCT+ / OCT- held: USER's levels */
         int layer = piece_layer();
@@ -1893,7 +1899,7 @@ static void page_knob(uint32_t k, int32_t s)
         edit_param(k, s);
         pg = cur_page();
         if (!(pg->graph == GR_EVOLVE || pg->graph == GR_FORM || pg->graph == GR_TWEAK || pg->graph == GR_TWEAK2 ||
-              pg->graph == GR_ORGANIC || pg->graph == GR_MATRIX || pg->graph == GR_TIMING || pg->graph == GR_ENERGY || pg->graph == GR_MIDICH || pg->graph == GR_CHAIN || pg->graph == GR_ENTRIES || pg->graph == GR_PIECE || pg->graph == GR_LAND || pg->graph == GR_KEYLINK || (pg->graph == GR_NOTELEN && k < 3u) ||   /* Tessera's own pages: no picker */
+              pg->graph == GR_ORGANIC || pg->graph == GR_MATRIX || pg->graph == GR_TIMING || pg->graph == GR_ENERGY || pg->graph == GR_MIDICH || pg->graph == GR_CHAIN || pg->graph == GR_ENTRIES || pg->graph == GR_PIECE || pg->graph == GR_LAND || pg->graph == GR_PERF || pg->graph == GR_KEYLINK || (pg->graph == GR_NOTELEN && k < 3u) ||   /* Tessera's own pages: no picker */
               (song.sel < TESSERA_TRACKS && pg->graph == GR_STEPS && pg->fam == FAM_GEN && (k == 0u || tessera.mode[song.sel] != TESS_ENG_OFF))))
             pick_touch(k);                              /* a name from a long list: its picker (ui_popup.c) */
     }

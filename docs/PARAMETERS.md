@@ -277,6 +277,10 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x28A | PIECE USER 6 | 0 to 100 % | 75 | SHAPE USER: the level five sevenths in. GLO > PIECE, OCT- held, KNOB 2. |
 | 0x28B | PIECE USER 7 | 0 to 100 % | 40 | SHAPE USER: the level six sevenths in. GLO > PIECE, OCT- held, KNOB 3. |
 | 0x28C | PIECE USER 8 | 0 to 100 % | 10 | SHAPE USER: the level at the end. GLO > PIECE, OCT- held, KNOB 4. |
+| 0x28D | MACRO 1 | 0 to 100 % | 0 | A hand control for the whole project, 0 to 100 %. On its own it does nothing: pick MACRO as a mod's SOURCE (MODS) and send it anywhere, to as many places as you like. GLO > PERF, KNOB 1 to 4. |
+| 0x28E | MACRO 2 | 0 to 100 % | 0 | A hand control for the whole project, 0 to 100 %. On its own it does nothing: pick MACRO as a mod's SOURCE (MODS) and send it anywhere, to as many places as you like. GLO > PERF, KNOB 1 to 4. |
+| 0x28F | MACRO 3 | 0 to 100 % | 0 | A hand control for the whole project, 0 to 100 %. On its own it does nothing: pick MACRO as a mod's SOURCE (MODS) and send it anywhere, to as many places as you like. GLO > PERF, KNOB 1 to 4. |
+| 0x290 | MACRO 4 | 0 to 100 % | 0 | A hand control for the whole project, 0 to 100 %. On its own it does nothing: pick MACRO as a mod's SOURCE (MODS) and send it anywhere, to as many places as you like. GLO > PERF, KNOB 1 to 4. |
 | 0x291 | FOLLOW HOLD | OFF, T1, T2, T3, T4 | OFF | Sample and hold for FOLLOW: the followed track's note is taken only when the HOLD track plays, and this track keeps playing it in its own rhythm until the next one. OFF: a new note on each of its own hits. TWEAK, OCT+ held, KNOB 4. |
 
 ## Mods
@@ -311,6 +315,10 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | SWARM 7 | a free LFO, 3.8 s a turn |
 | SWARM 8 | a free LFO, 2.4 s a turn |
 | ENERGY | the project's slow tide (ENERGY ARC), every track's the same: -100 % sparse .. 100 % full |
+| MACRO 1 | GLO > PERF's KNOB 1, the project's: 0 .. 100 % |
+| MACRO 2 | GLO > PERF's KNOB 2, the project's: 0 .. 100 % |
+| MACRO 3 | GLO > PERF's KNOB 3, the project's: 0 .. 100 % |
+| MACRO 4 | GLO > PERF's KNOB 4, the project's: 0 .. 100 % |
 
 | Destination | Moved at | What it moves |
 | --- | --- | --- |

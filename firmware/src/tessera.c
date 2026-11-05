@@ -2880,6 +2880,7 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_PL_END: return tessera.pl_end;
     case TX_PL_USER1: case TX_PL_USER2: case TX_PL_USER3: case TX_PL_USER4:
     case TX_PL_USER5: case TX_PL_USER6: case TX_PL_USER7: case TX_PL_USER8: return tessera.pl_user[x - TX_PL_USER1];
+    case TX_MACRO1: case TX_MACRO2: case TX_MACRO3: case TX_MACRO4: return tessera.macro[x - TX_MACRO1];   /* (the project's) */
     case TX_KEY_LINK: return tessera.key_link;          /* (the project's, whichever track) */
     case TX_SD_SOURCE: return tessera.sd_src[tr];
     case TX_SD_KEEP: return tessera.sd_keep[tr];
@@ -3087,6 +3088,9 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
     case TX_PL_USER1: case TX_PL_USER2: case TX_PL_USER3: case TX_PL_USER4:
     case TX_PL_USER5: case TX_PL_USER6: case TX_PL_USER7: case TX_PL_USER8:
         tessera.pl_user[x - TX_PL_USER1] = (uint8_t)tess_clampi(v, 0, 100);
+        return;
+    case TX_MACRO1: case TX_MACRO2: case TX_MACRO3: case TX_MACRO4:
+        tessera.macro[x - TX_MACRO1] = (uint8_t)tess_clampi(v, 0, 100);
         return;
     case TX_KEY_LINK: tessera.key_link = (uint8_t)tess_clampi(v, 0, 1); return;
     case TX_SD_SOURCE:                                  /* (the loop filled again from the new source; ANSWER: its */

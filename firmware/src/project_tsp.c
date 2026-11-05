@@ -16,8 +16,8 @@
 #define TSP_STEP_BYTES 10u                      /* step v2: 80 bits */
 enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TSP_FM6, TSP_DRUM, TSP_REC, TSP_NAME,
        TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_HOW, TSP_ORACLE,
-       TSP_ENERGY, TSP_DEV, TSP_TRANSP, TSP_TUNE, TSP_SOUND, TSP_CHAIN, TSP_ENTRY, TSP_PLAN,
-       TSP_HOLD = 31, TSP_PARTS };   /* (30: kept for the Performance page's PERF, ROADMAP) */   /* (TSP_SUB: each track's SHAPE; none: EVEN;
+       TSP_ENERGY, TSP_DEV, TSP_TRANSP, TSP_TUNE, TSP_SOUND, TSP_CHAIN, TSP_ENTRY, TSP_PLAN, TSP_PERF, TSP_HOLD,
+       TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
                                               * TSP_HUMAN: each track's HUMAN TIME; none: TWEAK HUMAN's timing, as it was;
@@ -37,9 +37,11 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * ROLE; none: 0 (off), 2, FADE, 2 bars, AUTO;
                                               * TSP_PLAN: the planner's LENGTH, SHAPE, PEAK, COUNT, END, then USER's
                                               * eight levels; none: FREE, ARCH, 62, 3, STOP, the arch tessera_init sets;
+                                              * TSP_PERF: PERF's four MACROs, written only when one is not 0; none: 0;
                                               * TSP_HOLD: each track's FOLLOW HOLD, 0 OFF, 1..4 a track; none: OFF) */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
-               TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_HOLD == 31,
+               TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_PERF == 30 &&
+               TSP_HOLD == 31,
                "the parts' numbers are stored: never renumbered");
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -343,6 +345,11 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
         tsp_byte(&w, tessera.pl_end);
         tsp_bytes(&w, tessera.pl_user, 8);
         tsp_end(&w);
+        if (tessera.macro[0] | tessera.macro[1] | tessera.macro[2] | tessera.macro[3]) {
+            tsp_begin(&w, TSP_PERF, 1);                /* (PERF's MACROs: only when set, so older firmware sees none) */
+            tsp_bytes(&w, tessera.macro, 4);
+            tsp_end(&w);
+        }
         tsp_begin(&w, TSP_HOLD, 1);                    /* (FOLLOW's HOLD: each track's) */
         tsp_bytes(&w, tessera.follow_hold, NTRK);
         tsp_end(&w);
@@ -595,6 +602,11 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (p[0] > 21u || p[1] > 9u || p[2] > 100u || p[3] < 2u || p[3] > 8u || p[4] > 3u) return 0;
         for (uint32_t k = 0; k < 8u; k++) if (p[5u + k] > 100u) return 0;
     }
+    if (tsp_seen.at[TSP_PERF]) {
+        const uint8_t *p = raw + tsp_seen.at[TSP_PERF];
+        if (tsp_seen.ver[TSP_PERF] != 1u || tsp_seen.len[TSP_PERF] != 4u) return 0;
+        for (uint32_t k = 0; k < 4u; k++) if (p[k] > 100u) return 0;
+    }
     if (tsp_seen.at[TSP_HOLD]) {
         if (tsp_seen.ver[TSP_HOLD] != 1u || tsp_seen.len[TSP_HOLD] != NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_HOLD] + k] > TESSERA_TRACKS) return 0;
@@ -683,6 +695,8 @@ static void tsp_restore(const uint8_t *raw)
         tessera.pl_end = p[4];
         memcpy(tessera.pl_user, p + 5, 8);
     }
+    if (tsp_seen.at[TSP_PERF]) memcpy(tessera.macro, raw + tsp_seen.at[TSP_PERF], 4);
+    else memset(tessera.macro, 0, 4);                  /* (none saved: 0) */
     if (tsp_seen.at[TSP_HOLD]) memcpy(tessera.follow_hold, raw + tsp_seen.at[TSP_HOLD], NTRK);
     else memset(tessera.follow_hold, 0, sizeof tessera.follow_hold);   /* (saved before HOLD: OFF) */
     memset(tessera.hold_mem, 0, sizeof tessera.hold_mem);

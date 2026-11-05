@@ -259,4 +259,8 @@
 0x28a PIECE USER 6             global 0..100 def 75
 0x28b PIECE USER 7             global 0..100 def 40
 0x28c PIECE USER 8             global 0..100 def 10
+0x28d MACRO 1                  global 0..100 def 0
+0x28e MACRO 2                  global 0..100 def 0
+0x28f MACRO 3                  global 0..100 def 0
+0x290 MACRO 4                  global 0..100 def 0
 0x291 FOLLOW HOLD              track 0..4 def 0
