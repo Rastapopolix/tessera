@@ -30,7 +30,7 @@ CSS = """
 @page { size: A4; margin: 11mm 10mm 10mm 10mm; }
 :root { --ink: #000; --line: #c8c8c8; --tint: #f2f2f2; --pixel: "Tessera Mono", ui-monospace, monospace; }
 * { box-sizing: border-box; }
-body { margin: 0; color: var(--ink); background: #fff; font: 7.6pt/1.28 "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+body { margin: 0; color: var(--ink); background: #fff; font: 7.0pt/1.2 "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
 header { border-bottom: 2px solid var(--ink); margin-bottom: 3mm; padding-bottom: 1.5mm; }
 h1 { margin: 0; font: 400 18pt/1 var(--pixel); text-transform: uppercase; }
 header p { margin: 1mm 0 0; color: #444; }
@@ -39,7 +39,7 @@ section { break-inside: avoid; margin: 0 0 3mm; }
 h2 { margin: 0 0 1mm; padding: .8mm 1.6mm .5mm; color: #fff; background: var(--ink); font: 400 9pt/1.1 var(--pixel);
      text-transform: uppercase; }
 table { width: 100%; border-collapse: collapse; }
-td { padding: .55mm 1.4mm; vertical-align: top; border-bottom: .3mm solid var(--line); }
+td { padding: .4mm 1.4mm; vertical-align: top; border-bottom: .3mm solid var(--line); }
 td:first-child { width: 42%; }
 tr:nth-child(even) td { background: var(--tint); }
 b { color: var(--ink); }
