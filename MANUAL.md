@@ -222,7 +222,8 @@ you patch it.
 
 On every page the four knobs' values sit under their dials (or bars: MENU > KNOBS). The value you turn is drawn
 inverted, and while you turn it its name and value show large across the foot of the screen, as on the home page, with
-a bar for where it sits in its range; they go when the knob rests.
+a bar for where it sits in its range; they go when the knob rests. NOTES leaves that out so the steps stay in view: its
+values stay in their boxes at the top.
 
 <p align="center"><img src="assets/gallery/home.png" alt="HOME" width="320"> <img src="assets/gallery/mixer.png" alt="MIXER" width="320"></p>
 

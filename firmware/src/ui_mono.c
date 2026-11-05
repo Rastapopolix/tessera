@@ -2316,7 +2316,8 @@ static uint32_t mo_signature(void)
 }
 
 /* a knob turning: its name and value large across the foot, as HOME shows them (mo_stage_panel), over the page's
- * tabs and the picture's last rows until it rests (ui.hot_t); where the value sits in its range, a bar at the right */
+ * tabs and the picture's last rows until it rests (ui.hot_t); where the value sits in its range, a bar at the right.
+ * Not on NOTES: it would cover the steps being placed (the column keeps the value, inverted) */
 static int mo_turn(void)
 {
     uint32_t i;
@@ -2363,7 +2364,7 @@ static void mono_page(void)
             mo_cols();
         mo_cols_trk = 0;
         mo_picture();
-        if (!mo_turn())
+        if (cur_page()->graph == GR_ROLL || !mo_turn())
             mo_foot();
         cv_oy = 0;
         cv_blit(0, s * 120u);
