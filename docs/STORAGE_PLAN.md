@@ -78,8 +78,8 @@ compared value by value with the old generator's.
 
 ## Where we stand (before the work)
 
-The FM-1 has a 1 MiB SPI NOR (Puya, JEDEC `0x856014`, checked at boot by `persist_boot`). There is no
-larger part to move to, so every gain is a reallocation.
+The FM-1 has a 1 MiB SPI NOR (Puya, JEDEC `0x856014`, or on newer units UCUN UC25HQ80, `0xB36014`;
+checked at boot by `persist_boot`). There is no larger part to move to, so every gain is a reallocation.
 
 | Region | Sectors | Bytes | Notes |
 | --- | ---: | ---: | --- |

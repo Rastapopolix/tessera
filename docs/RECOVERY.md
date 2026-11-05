@@ -84,6 +84,12 @@ is built and smoke-tested on its native OS; automated tests model interruptions 
 protected flash regions. Those checks do not establish physical USB recovery on
 every OS.
 
+The tool accepts the two 1 MiB flash parts the firmware accepts: the Puya P25Q80H
+(JEDEC `0x856014`) and, on newer units, the UCUN UC25HQ80 (`0xB36014`). Any other ID
+the RAM helper reports stops the tool before it reads or writes flash. Recovery with
+`--write` has not yet been run on a UC25HQ80 unit: on one, run a backup without
+`--write` first and keep it.
+
 Source: https://github.com/keremimo/melodee (tag v1.3.5).
 Protocol reference: https://github.com/kurogedelic/FM-1-transporter.
 Licences and corresponding libusb source are included in the archive.
