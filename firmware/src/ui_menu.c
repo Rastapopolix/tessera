@@ -418,6 +418,7 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
     if (i == MI_MIDI_OUT) value = (const char *const[]){"KEYS", "ALL", "OFF"}[settings_midi_out % MIDI_OUT_N];
     if (i == MI_CLOCK_OUT) value = settings_clock_out ? "ON" : "OFF";
     if (i == MI_CC_IN) value = settings_cc_off ? "OFF" : "ON";
+    if (i == MI_MIDI_LEARN && mlearn_ask) return "FORGET? OCT+";   /* (KNOB 2 left: OCT+ forgets them all) */
     if (i == MI_MIDI_LEARN) {                           /* how many CCs are learned */
         uint32_t n = mlearn_count();
         fmt_int(b, (int32_t)n);
@@ -624,6 +625,14 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
     int32_t s;
     uint32_t ok = (oct >> 1) & 1u, back = oct & 1u;
     mlearn_on = 0;                                      /* (the menu ends MIDI LEARN) */
+    if (mlearn_ask && (back || ui.menu_sel != MI_MIDI_LEARN || ui.menu != 1)) {   /* FORGET ALL? called off: OCT-, */
+        mlearn_ask = 0;                                 /* another row */
+        ui.force = 1;
+        if (back) {
+            enc_drop();
+            return;
+        }
+    }
     if (back) {
         if (ui.menu >= 2)
             ui.menu = 1, ui.force = 1;
@@ -639,14 +648,24 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         ui.menu_scroll = (uint16_t)clamp((int32_t)ui.menu_scroll + clamp(s, -128, 128) * 18, 0, menu_scroll_max());
     }
     s = panel_enc(EN_K2);
+    if (ok && mlearn_ask && ui.menu == 1 && ui.menu_sel == MI_MIDI_LEARN) {   /* FORGET ALL? yes */
+        mlearn_ask = 0;
+        mlearn_forget();
+        ui_message("CCS FORGOTTEN");
+        ui.force = 1;
+        enc_drop();
+        return;
+    }
     if ((s > 0 || ok) && ui.menu == 1 && ui.menu_sel == MI_MIDI_LEARN) {
+        mlearn_ask = 0;
         menu_close();                                   /* KNOB 2 right or OCT+: learn (a knob, then a CC, as often as
-                                                         * wanted; the menu again ends it); KNOB 2 left forgets them all */
+                                                         * wanted; OCT- or the menu ends it); KNOB 2 left asks FORGET
+                                                         * ALL? (OCT+ yes, OCT- no) */
         mlearn_start();
         return;
     }
-    if (s < 0 && ui.menu == 1 && ui.menu_sel == MI_MIDI_LEARN) {
-        mlearn_forget();
+    if (s < 0 && ui.menu == 1 && ui.menu_sel == MI_MIDI_LEARN && mlearn_count()) {
+        mlearn_ask = 1;
         ui.force = 1;
     }
     if (s != 0 && ui.menu == 1 && ui.menu_sel == MI_COLOR) {

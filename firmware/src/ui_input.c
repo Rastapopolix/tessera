@@ -596,6 +596,7 @@ static void jam_take(void)
 /* Low battery: on the battery, down to no bars (ui_draw.c batt_level 0), BATTERY LOW once (again only after charging
  * past one bar or on external power); from then autosave waits no five seconds: the next STOP saves at once */
 static uint8_t batt_low;
+static int project_has_slot(void);                      /* (project.c: loaded from or saved to a slot) */
 static void batt_poll(void)
 {
     int32_t lvl = batt_level();
@@ -604,7 +605,8 @@ static void batt_poll(void)
     } else if (!batt_low && !lvl) {
         batt_low = 1;
         ui_message("BATTERY LOW");
-        if (settings_autosave) str_cpy(ui.msg2, "SAVES AT STOP", sizeof ui.msg2);   /* (then, the second line) */
+        if (settings_autosave && project_has_slot()) str_cpy(ui.msg2, "SAVES AT STOP", sizeof ui.msg2);   /* (then, the */
+        else str_cpy(ui.msg2, "SAVE YOUR WORK", sizeof ui.msg2);   /* second line; no slot or AUTOSAVE off: yours) */
         ui.msg_t = 120;
     }
 }
@@ -1379,16 +1381,33 @@ static void act_do(void)
 static uint8_t oct_eat;                                 /* OCT taps not to come (held for a sheet, used in a combo) */
 static uint8_t oct_deferred;                            /* OCT+ pressed on Stage (its sheet when held): the octave on
                                                          * release */
+/* on a page with OCT held layers (MIDI OUT's TRANSPOSE / SOUND, PIECE's USER levels, MODS' threshold and CC) an OCT button
+ * held past OCT_HOLD_MS is a hold, never a tap: let go without a knob turned it is neither Esc nor Enter (a peek never
+ * leaves the page or flips a mod's polarity) */
+#define OCT_HOLD_MS 700u
+static int oct_layer_page(void)
+{
+    uint32_t g = cur_page()->graph;
+    return !ui.home && !ui.menu && (g == GR_MIDICH || g == GR_PIECE || g == GR_CORDS);
+}
 static uint32_t oct_taps(uint32_t pressed, int here)
 {
     static uint8_t down, chord;
-    uint32_t dn = panel.btn[B_OCTDN], up = panel.btn[B_OCTUP];
+    static uint32_t t_down[2];
+    uint32_t dn = panel.btn[B_OCTDN], up = panel.btn[B_OCTUP], k;
     uint32_t now = ((fm1_in.buttons >> dn) & 1u) | ((fm1_in.buttons >> up) & 1u) << 1, tap;
+    uint32_t edge = ((pressed >> dn) & 1u) | ((pressed >> up) & 1u) << 1;
+    for (k = 0; k < 2u; k++)
+        if ((edge >> k) & 1u)
+            t_down[k] = fm1_ms;
     if (here)
-        down |= (uint8_t)(((pressed >> dn) & 1u) | ((pressed >> up) & 1u) << 1);
+        down |= (uint8_t)edge;
     if (now == 3u)
         chord = 1;
     tap = down & ~now;
+    for (k = 0; k < 2u; k++)
+        if (((tap >> k) & 1u) && fm1_ms - t_down[k] > OCT_HOLD_MS && oct_layer_page())
+            tap &= ~(1u << k);
     down &= (uint8_t)now;
     if (chord) {
         tap = 0;
@@ -2049,6 +2068,9 @@ static void ui_input(void)
 {
     uint32_t pressed = fm1_input_edges(0), notes = fm1_input_note_edges(), now = fm1_ticks(), id, b, k;
     mlearn_poll();                                      /* (MIDI LEARN: a CC for the knob picked) */
+    if (mlearn_end_key(pressed))                        /* (learning: OCT- ends it, nothing else) */
+        pressed &= ~(1u << panel.btn[B_OCTDN]);
+    mlearn_show();
     if (boot_work.state) {
         for (k = 0; k < NE; k++) (void)panel_enc(k);
         panel_moved = 0;

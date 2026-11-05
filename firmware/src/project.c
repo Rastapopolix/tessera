@@ -298,6 +298,7 @@ static void project_quick_save(void)
 }
 /* autosave (ui_input.c autosave_poll: stopped, untouched a while): the music back to the slot it was loaded from or last
  * saved to when it differs from what that slot holds ("SAVED B"); a new project (no slot yet) waits for a save */
+static int project_has_slot(void) { return proj_cur < 4u; }
 static void project_autosave(void)
 {
     project_t *p = &proj_scratch;

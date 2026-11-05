@@ -587,7 +587,8 @@ static void mo_layer(uint32_t l)
         sig = (sig ^ p[i]) * 16777619u;
     if (l == LAYER_GLO)
         sig += track_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u + (uint32_t)(seq_fill | seq_fill_mod) * 7u +
-               (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 | trk[3].p[P_MUTE] << 3) * 131u;
+               (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 | trk[3].p[P_MUTE] << 3) * 131u +
+               (mute_waiting() ? 1u + ((fm1_ms / 250u) & 1u) : 0u) * 4099u;   /* (a waiting mute blinks) */
     else
         sig += (uint32_t)TSEL->p[P_SCALE] * 31u;
     if (!ui.force && sig == ui.layer_sig)
@@ -605,7 +606,7 @@ static void mo_layer(uint32_t l)
             for (c = 0; c < NTRK; c++) {                /* "MUTE" over "1 F#" */
                 n[0] = (char)('1' + c), n[1] = ' ';
                 bnote(n + 2, c);
-                mo_lcell((int32_t)c, 52, "MUTE", n, trk[c].p[P_MUTE] != 0, 0, 1);
+                mo_lcell((int32_t)c, 52, "MUTE", n, (trk[c].p[P_MUTE] != 0) ^ ((mute_waiting() >> c) & (fm1_ms / 250u) & 1u), 0, 1);
                 n[2] = W_NOTE[c], n[3] = 0;
                 mo_lcell((int32_t)c, 71, "SOLO", n, (track_solo >> c) & 1u, 0, 1);
             }
@@ -739,7 +740,8 @@ static void draw_layer(void)
     }
     if (l == LAYER_GLO)
         sig += track_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u + (uint32_t)(seq_fill | seq_fill_mod) * 7u +
-               (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 | trk[3].p[P_MUTE] << 3) * 131u;
+               (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 | trk[3].p[P_MUTE] << 3) * 131u +
+               (mute_waiting() ? 1u + ((fm1_ms / 250u) & 1u) : 0u) * 4099u;   /* (a waiting mute blinks) */
     else if (l == LAYER_SCL)
         sig += (uint32_t)TSEL->p[P_SCALE] * 31u;
 
