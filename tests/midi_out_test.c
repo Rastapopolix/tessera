@@ -444,9 +444,39 @@ static int cc_out_test(void)
     return bad;
 }
 
+/* NOTES KNOB 2's preview goes out as a key's note does (KEYS, ALL; not OFF), with its note-off; the cursor's never */
+static int preview_test(void)
+{
+    int bad = 0;
+    static const uint8_t OUT[3] = {MIDI_OUT_KEYS, MIDI_OUT_ALL, MIDI_OUT_OFF};
+    for (uint32_t k = 0; k < 3u; k++) {
+        reset(OUT[k]);
+        go_page(GR_ROLL);
+        step_t *st = &TSEL->step[0];
+        TSEL->p[P_QUANT] = Q_OFF;
+        st->time = ST_NOTE; st->n = 1; st->note[0] = 60; st->vel = 77;
+        cursor_set(0); frame(); drain(); log_n = 0;
+        turn(EN_K1 + 1, 1);
+        blocks(1);
+        uint32_t n = st->note[0], on = count(0x90, -1, (int)n);
+        blocks(FS / 6u / CTL + 2u);
+        uint32_t off = count(0x80, -1, (int)n);
+        bad += check(k < 2u ? "preview: KNOB 2's note and its note-off go out" : "preview: MIDI OUT OFF, nothing", k < 2u ? on == 1u && off == 1u : !on && !off);
+    }
+    reset(MIDI_OUT_ALL);
+    go_page(GR_ROLL);
+    settings_preview = 1;
+    TSEL->step[1].time = ST_NOTE; TSEL->step[1].n = 1; TSEL->step[1].note[0] = 64;
+    cursor_set(1); frame();
+    blocks(FS / 6u / CTL + 2u);
+    settings_preview = 0;
+    bad += check("preview: the cursor's sends nothing", !count(0x90, -1, 64));
+    return bad;
+}
+
 int main(void)
 {
-    int bad = notes_test() + echo_and_route_test() + generator_test() + clock_out_test() + no_drift_test() + tempo_mod_test() +
+    int bad = preview_test() + notes_test() + echo_and_route_test() + generator_test() + clock_out_test() + no_drift_test() + tempo_mod_test() +
               cc_out_test() + settings_test();
     printf("%s\n", bad ? "MIDI OUT TEST FAILED" : "MIDI out tests passed");
     return bad != 0;

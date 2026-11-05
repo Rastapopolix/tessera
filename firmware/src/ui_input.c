@@ -830,13 +830,16 @@ static void step_edit(uint32_t slot, int32_t steps)
     uint32_t at = notes_manual_start(TSEL);
     if (at >= NSTEP && (slot != 1u || (TSEL->step[ui.cursor].flags & SF_RECORDED))) { fm1_irq_on(); ui_message("SELECT A NOTE"); return; }
     step_t *st = &TSEL->step[at < NSTEP ? at : ui.cursor];
+    uint32_t heard = 0;                                 /* (KNOB 2: a note placed or moved sounds, stopped) */
     if (slot == 1u) {
         if (!st->n) {
             if (st->flags & SF_RECORDED) { fm1_irq_on(); ui_message("SELECT A NOTE"); return; }
             st->note[0] = last_note; st->n = 1; st->time = ST_NOTE;
+            heard = 1;
         } else {
-            uint32_t j = notes_manual_slot(st);
-            st->note[j] = (uint8_t)pitch_turn(st->note[j], steps);
+            uint32_t j = notes_manual_slot(st), old = st->note[j];
+            st->note[j] = (uint8_t)pitch_turn(old, steps);
+            heard = st->note[j] != old;
         }
         last_note = st->note[notes_manual_slot(st)];
     } else if (slot == 2u) {
@@ -850,6 +853,7 @@ static void step_edit(uint32_t slot, int32_t steps)
         st->flags &= (uint8_t)~SF_ACCENT;
     }
     fm1_irq_on();
+    if (heard) notes_preview_start(1);
 }
 
 /* REC armed, stopped: a knob that would record its moves says the transport has to run (motion lands on the step
@@ -1526,6 +1530,7 @@ static void notes_event_edit(uint32_t slot, int32_t delta)
     ui.note_pick = (uint16_t)(i + 1u); note_assign(&ui.note_identity,&after);
     ui.note_generation = recording_generation;
     fm1_irq_on(); ui.force = 1;
+    if (slot == 1u) notes_preview_start(1);             /* (KNOB 2: its new pitch, stopped) */
 }
 
 static void notes_delete_edit(void)
