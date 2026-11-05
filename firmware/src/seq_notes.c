@@ -163,7 +163,7 @@ static void notes_step_jog(int32_t delta)
 /* midi: sent as a key's note is (MIDI OUT KEYS, ALL) */
 static void notes_preview_start(uint32_t midi)
 {
-    if(song.playing || seq_counting() || ui.home || ui.menu || ui.layer || ui.entry_open) return;
+    if((song.playing && song.rec) || seq_counting() || ui.home || ui.menu || ui.layer || ui.entry_open) return;
     const page_t *pg=cur_page(); if(pg->graph!=GR_ROLL && pg->graph!=GR_STEPS && pg->graph!=GR_DRUMHIT) return;
     uint8_t nn[12],vv[12];uint32_t count=0,chosen=notes_selected(TSEL);
     if(pg->scope==SC_DRUMHIT)chosen=drum_hit_selected();
@@ -183,5 +183,5 @@ static void notes_preview_start(uint32_t midi)
     fm1_irq_off(); audition_track=song.sel;audition_count=(uint8_t)count;audition_pitch=pitch;audition_gate=gate;audition_midi=(uint8_t)midi;
     memcpy(audition_notes,nn,count);memcpy(audition_vel,vv,count);audition_request=1;fm1_irq_on();
 }
-/* the cursor moved: MENU > NOTE PREVIEW's choice. KNOB 2 turning a note (ui_input.c) always sounds it */
+/* the cursor moved. MENU > NOTE PREVIEW switches this and KNOB 2's (ui_input.c); playing too, not over a take */
 static void notes_preview(void) { if(settings_preview) notes_preview_start(0); }

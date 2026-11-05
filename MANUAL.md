@@ -421,10 +421,10 @@ BOUNCE, QUAD, CONSTELLATION and SERIES run free and simply carry on.
 On NOTES, **KNOB 2** sets the picked note's pitch. With **QNT OFF** it moves a semitone a detent. With QNT on
 (SNAP, WHITE, ALL, MPC) it moves a note of the scale a detent; a note off the scale goes to the next scale note in
 the turn's direction first. With **QNT CHRD** and a CHORD track playing it moves through that chord's notes. Hold
-**ENV** while turning for a semitone at a time. A microtonal scale moves a degree a detent, as before. With the
-transport stopped you hear the new pitch at the note's velocity, for about a sixth of a second, on that track and on
-MIDI OUT as a key's note would (KEYS, ALL); nothing is recorded. While playing there is no extra note: the step plays
-in its turn.
+**ENV** while turning for a semitone at a time. A microtonal scale moves a degree a detent, as before. With
+**MENU > NOTE PREVIEW** on, you hear the new pitch at the note's velocity, for about a sixth of a second, on that track
+and on MIDI OUT as a key's note would (KEYS, ALL); nothing is recorded. It sounds while playing too, but not while
+recording.
 
 A note's bar stands for its pitch over the C below the page's lowest note. The scale is one, two or three octaves
 tall, as the page's notes need; anything above three octaves shares the top of the area, so one note raised high

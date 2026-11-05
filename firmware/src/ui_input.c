@@ -152,6 +152,7 @@ static void pattern_key_release(void)
             if (pattern_request(TSEL, bank)) ui_message("STOP TO SWITCH");
             else { char b[12] = "PATTERN "; b[8] = (char)('1' + bank); b[9] = 0; ui_message(b); }
             ui.entry_open = 0; cursor_set(0); ui.force = 1;
+            if (song.playing) audition_request = 0;   /* (not a choice of note) */
         }
         ui.pat_key = ui.pat_copy = 0;
     }
@@ -830,7 +831,7 @@ static void step_edit(uint32_t slot, int32_t steps)
     uint32_t at = notes_manual_start(TSEL);
     if (at >= NSTEP && (slot != 1u || (TSEL->step[ui.cursor].flags & SF_RECORDED))) { fm1_irq_on(); ui_message("SELECT A NOTE"); return; }
     step_t *st = &TSEL->step[at < NSTEP ? at : ui.cursor];
-    uint32_t heard = 0;                                 /* (KNOB 2: a note placed or moved sounds, stopped) */
+    uint32_t heard = 0;                                 /* (KNOB 2: a note placed or moved sounds) */
     if (slot == 1u) {
         if (!st->n) {
             if (st->flags & SF_RECORDED) { fm1_irq_on(); ui_message("SELECT A NOTE"); return; }
@@ -853,7 +854,7 @@ static void step_edit(uint32_t slot, int32_t steps)
         st->flags &= (uint8_t)~SF_ACCENT;
     }
     fm1_irq_on();
-    if (heard) notes_preview_start(1);
+    if (heard && settings_preview) notes_preview_start(1);
 }
 
 /* REC armed, stopped: a knob that would record its moves says the transport has to run (motion lands on the step
@@ -1530,7 +1531,7 @@ static void notes_event_edit(uint32_t slot, int32_t delta)
     ui.note_pick = (uint16_t)(i + 1u); note_assign(&ui.note_identity,&after);
     ui.note_generation = recording_generation;
     fm1_irq_on(); ui.force = 1;
-    if (slot == 1u) notes_preview_start(1);             /* (KNOB 2: its new pitch, stopped) */
+    if (slot == 1u && settings_preview) notes_preview_start(1);   /* (KNOB 2: its new pitch) */
 }
 
 static void notes_delete_edit(void)
@@ -2205,7 +2206,7 @@ static void ui_input(void)
     if (!step_page() || drum_track(TSEL) || ui.menu || ui.confirm || name_on() || lay || live_rec_sel() || chain_busy())
         seq_midi_events(0);                         /* discard events during modal/layer input too */
     if (ui.seen_pattern_gen != TSEL->pattern_gen) {
-        if (ui.seen_pattern_gen) { seq_midi_reset(); ui.entry_open = ui.step_move = ui.note_move = ui.note_copy = 0; cursor_set(0); ui.force = 1; }
+        if (ui.seen_pattern_gen) { seq_midi_reset(); ui.entry_open = ui.step_move = ui.note_move = ui.note_copy = 0; cursor_set(0); ui.force = 1; if (song.playing) audition_request = 0; }
         ui.seen_pattern_gen = TSEL->pattern_gen;
     }
     if(bulk.on && (ui.home || slot_kind()==SK_PROJECT || bulk.track!=song.sel || bulk.pattern!=TSEL->pattern || bulk.engine!=library_engine() ||

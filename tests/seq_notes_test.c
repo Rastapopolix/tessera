@@ -538,7 +538,7 @@ static int knob_preview_recorded(void)
     uint32_t i=notes_selected(t);
     int bad=check("KNOB 2 preview: a recorded note is picked",i<RECORD_MAX);
     if(bad)return bad;
-    turn(EN_K1+1,1);events_block(CTL);
+    settings_preview=1;turn(EN_K1+1,1);events_block(CTL);settings_preview=0;
     uint32_t i2=notes_selected(t),n=recording[i2].note,head=rec_alive();
     bad+=check("KNOB 2 preview: a recorded note's new pitch sounds at its velocity",n>60&&gate_note(t,n)&&audition_vel[0]==recording[i2].vel&&head==1);
     for(uint32_t left=FS/6u+CTL;left;left-=left<CTL?left:CTL)events_block(left<CTL?left:CTL);

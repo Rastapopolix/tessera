@@ -444,7 +444,8 @@ static int cc_out_test(void)
     return bad;
 }
 
-/* NOTES KNOB 2's preview goes out as a key's note does (KEYS, ALL; not OFF), with its note-off; the cursor's never */
+/* NOTES KNOB 2's preview (NOTE PREVIEW on) goes out as a key's note does (KEYS, ALL; not OFF), with its note-off;
+   the cursor's never */
 static int preview_test(void)
 {
     int bad = 0;
@@ -456,6 +457,7 @@ static int preview_test(void)
         TSEL->p[P_QUANT] = Q_OFF;
         st->time = ST_NOTE; st->n = 1; st->note[0] = 60; st->vel = 77;
         cursor_set(0); frame(); drain(); log_n = 0;
+        settings_preview = 1;
         turn(EN_K1 + 1, 1);
         blocks(1);
         uint32_t n = st->note[0], on = count(0x90, -1, (int)n);
@@ -471,6 +473,11 @@ static int preview_test(void)
     blocks(FS / 6u / CTL + 2u);
     settings_preview = 0;
     bad += check("preview: the cursor's sends nothing", !count(0x90, -1, 64));
+    TSEL->step[0].time = ST_NOTE; TSEL->step[0].n = 1; TSEL->step[0].note[0] = 60;
+    cursor_set(0); frame(); drain(); log_n = 0;
+    turn(EN_K1 + 1, 1);
+    blocks(FS / 6u / CTL + 2u);
+    bad += check("preview: NOTE PREVIEW off, KNOB 2's sends nothing", !count(0x90, -1, -1));
     return bad;
 }
 
