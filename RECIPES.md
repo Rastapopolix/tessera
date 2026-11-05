@@ -349,7 +349,7 @@ never repeats itself note for note.
 
 ## Driving another synth (MIDI OUT)
 
-1. Hold **HOME** for the menu: **MIDI OUT** to **ALL**. The steps, the ARP and every generator now go out over USB
+1. Hold **HOME** for the menu: **NOTES OUT** to **ALL**. The steps, the ARP and every generator now go out over USB
    MIDI, each track on its own channel: AUTO gives 1 to 4 (GLO > SYSTEM ROUT at CH1-4; the drum track on its DRUM
    channel), or pick each track's channel, or OFF, on **GLO > MIDI OUT**.
 2. **CLOCK OUT** on: the other synth or DAW follows Tessera's tempo, START and STOP included.
@@ -412,18 +412,19 @@ Put Tessera's knobs on the knobs of your MIDI controller, once, and keep them th
    **LEARN: A KNOB**.
 2. Turn a knob on any page, for example **CUTOFF** on track 1. The screen names it and asks **SEND A CC**.
 3. Move a knob on your controller. The screen confirms it (**CC 21 =** then **T1 CUTOFF**).
-4. Repeat for up to 16 knobs; holding **HOME** for the menu ends learning.
+4. Repeat for up to 16 knobs. While learning, the header says **MIDI LEARN ON**; press **OCT-** (or hold **HOME**
+   for the menu) to end it.
 
 The learned knobs work on any page and from any MIDI channel, and are the device's, not a project's: they stay
-when you load another project and after power-off (they are saved once the music stops). **KNOB 2** left on the
-MIDI LEARN row forgets them all.
+when you load another project and after power-off (they are saved once the music stops). To start again, turn
+**KNOB 2** left on the MIDI LEARN row: it asks **FORGET? OCT+**, and OCT+ forgets them all (OCT- keeps them).
 
 ## An LFO for another synth's filter (mods out as CC)
 
 Tessera's mods can move an outside synth's settings over USB MIDI: an LFO, a TIDE or a generator's CV becomes a
 control change.
 
-1. **MENU > MIDI OUT**: **KEYS** or **ALL** (anything but OFF).
+1. **MENU > NOTES OUT**: **KEYS** or **ALL** (anything but OFF).
 2. **GLO > MIDI OUT**: set track 2's channel to the synth's channel. If the track should play nothing itself, hold
    **OCT-** and set it to SOUND OFF: it becomes a lane of CCs.
 3. **LFO > MODS**, a free mod: source **T2 LFO** (or **T2 TIDE 2** for a slow, uneven sweep), destination **T2 CC**,
