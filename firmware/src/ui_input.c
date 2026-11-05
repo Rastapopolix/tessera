@@ -1793,7 +1793,7 @@ static void page_tap(uint32_t b)
         if (a < NPAGES && a2 < NPAGES) {
             seqm_set(song.sel, 1);
             ui.page = (uint8_t)(!ui.home && ui.page == a ? a2 : a);
-            ui.fam_last[FAM_SEQ] = ui.page;
+            ui.fam_last[FAM_ARP] = ui.page;              /* (not SEQ's: ARP is its own lane) */
             ui.home = 0;
             page_entered();
             return;
@@ -2211,6 +2211,7 @@ static void ui_input(void)
         } else {
             ui.menu = 1;
             ui.menu_sel = 0;
+            menu_cols = 0;                              /* (the list first: COLOR's sheet on KNOB 2) */
             ui.confirm = 0;                             /* (a clear dialog is cancelled, NAME too) */
             name_close();
             new_close();

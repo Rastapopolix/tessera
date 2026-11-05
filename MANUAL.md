@@ -405,7 +405,7 @@ SEQ then shows only that mode's pages:
 | MODE | SEQ's pages |
 |---|---|
 | **STEP** | GEN, NOTES (a DRUM track: NOTES, DRUM HIT), EVOLVE (STEP EVOLVE), TWEAK (its HUMAN), TIMING (its SHAPE and HUMAN), TEMPO, PATTERNS, SONG |
-| **ARP** | GEN, NOTES, ARP, ARP 2, TEMPO, PATTERNS, SONG |
+| **ARP** | GEN, NOTES, TEMPO, PATTERNS, SONG (ARP and ARP 2 are the ARP button's own: SELECT turns between the two) |
 | a generator | GEN, EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY, PATTERN, TEMPO, PATTERNS, SONG |
 
 MOTION appears as in upstream; DRUM HIT, a DRUM track's grid of hits, comes right after NOTES. With STEP or ARP, GEN is also the pattern's page: KNOB 2 to 4 are
@@ -1230,7 +1230,7 @@ Hold **HOME** for the menu. Its rows come in groups: the screen, the knobs and b
 
 | Item | What it does |
 |---|---|
-| **COLOR** | The screen's ink, on black: YELLOW (the default), WHITE, GREEN, BLUE, RED, ORANGE, PINK, HOT PINK or LILAC; or MOSAIC, SUNSET, OCEAN or NEON, a colour per track with the selection in white. Picked, it shows them all below it: ONE INK, then MOSAIC (the four-colour sets), the one chosen framed. |
+| **COLOR** | The screen's ink, on black: YELLOW (the default), WHITE, GREEN, BLUE, RED, ORANGE, PINK, HOT PINK or LILAC; or MOSAIC, SUNSET, OCEAN or NEON, a colour per track with the selection in white. Holding HOME opens the list; turn KNOB 2 on COLOR (or press OCT+) and it shows them all below it: ONE INK, then MOSAIC (the four-colour sets), the one chosen framed. KNOB 1 to another row or OCT- folds them away. |
 | **KNOBS** | How the four knobs' values are drawn on every page: **DIAL** (the default) or **BAR**, an upright bar that fills from the bottom. MIXER and the home page keep their dials. Saved. |
 | **BATTERY** | **ON** (the default): every page's header shows the battery, its bars (none to three) on the battery, solid with a bolt in it on external power (a computer, a hub or a charger). A long message takes its place for as long as it shows. **WHEN LOW**: only when it is down to a bar or none, on the battery. Saved. Either way, when the last bar goes the screen says **BATTERY LOW** once; with autosave on, the project is then saved as soon as you press STOP (no five seconds' wait), so a long piece is not lost to a flat battery. It never saves while playing. |
 | **PANEL GAMMA** | The screen's contrast curve: the panel chip's own **G2.2** (the default), G1.8, G2.5 and G1.0, or TUNED and TUNED+VCOM. The screen goes black for a moment and redraws. Saved. |

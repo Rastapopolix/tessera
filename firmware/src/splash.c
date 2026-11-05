@@ -4,7 +4,8 @@
  * splash_lay() sets the tiles from the middle outwards, one every SPL_STEP_MS, the gold one last with a press,
  * in the wait the boot already makes before the first frame, then holds the finished mark a moment (SPL_HOLD_MS;
  * a button or key pressed ends it sooner). The mark's colours are fixed (it is the logo),
- * the rest the palette's; the Mono look: outlined tiles in the ink, the gold one solid. Drawn with lcd_fill and draw_text_box only. */
+ * the rest the palette's; the Mono look: outlined tiles in the ink (a MOSAIC palette: its four inks), the gold one
+ * solid. Drawn with lcd_fill and draw_text_box only. */
 
 #define SPL_U 22                                /* a tile, px */
 #define SPL_G 4                                 /* the grout between two */
@@ -21,7 +22,9 @@ static const uint16_t SPL_LAPIS[9] = {RGB(44, 64, 120), RGB(58, 84, 150), 0, RGB
                                       RGB(40, 60, 112), RGB(62, 90, 160), RGB(46, 68, 126), RGB(54, 80, 146)};
 #define SPL_GOLD_C RGB(236, 184, 72)
 #else
-#define SPL_GOLD_C T_TEXT                       /* (Mono: the ink) */
+#define SPL_GOLD_C T_ACCENT                     /* (Mono: the ink; MOSAIC and its kind: the white of the selection) */
+#define SPL_TILE_C(i) T_TRK(i)                  /* (Mono: the ink; MOSAIC, SUNSET, OCEAN, NEON: the four track inks, no
+                                                 * two neighbours alike: i % 4 over the 3 x 3) */
 #endif
 /* a hand-set look without rotation: each tile a pixel off the grid */
 static const int8_t SPL_JIT[9][2] = {{0, 1}, {1, -1}, {-1, 0}, {1, 0}, {0, 0}, {-1, 1}, {0, -1}, {1, 1}, {-1, -1}};
@@ -96,7 +99,8 @@ static uint16_t spl_ink(int32_t x, int32_t y)   /* the mark's colour at x, y (0:
         int32_t tx = x - (SPL_CX - SPL_U / 2 + ((int32_t)(i % 3u) - 1) * (SPL_U + SPL_G) + SPL_JIT[i][0]);
         int32_t ty = y - (SPL_CY - SPL_U / 2 + ((int32_t)(i / 3u) - 1) * (SPL_U + SPL_G) + SPL_JIT[i][1]);
         if (tx >= 0 && ty >= 0 && tx < SPL_U && ty < SPL_U)
-            return i == SPL_GOLD || tx < 2 || ty < 2 || tx >= SPL_U - 2 || ty >= SPL_U - 2 ? T_TEXT : 0;
+            return i == SPL_GOLD ? SPL_GOLD_C
+                 : tx < 2 || ty < 2 || tx >= SPL_U - 2 || ty >= SPL_U - 2 ? SPL_TILE_C(i) : 0;
     }
     t = x - 36;                                 /* TESSERA (AF_L: font pixels of 4, centred at row 120) */
     if (y >= 124 && y < 152 && t >= 0 && t < 168 && t % 24 < 20)
@@ -165,7 +169,7 @@ static void splash_lay(uint32_t ms, int anim)
     if (anim) {
         for (k = 0; k < 8u; k++) {
 #if MELODEE_LOOK
-            spl_tile(SPL_ORDER[k], 0, T_TEXT);
+            spl_tile(SPL_ORDER[k], 0, SPL_TILE_C(SPL_ORDER[k]));
 #else
             spl_tile(SPL_ORDER[k], 0, SPL_LAPIS[SPL_ORDER[k]]);
 #endif

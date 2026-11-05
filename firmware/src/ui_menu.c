@@ -51,6 +51,8 @@ static const char *const MI_NAME[MI_COUNT] = {"COLOR",
 #endif
                                               "SOUND DESIGNER", "CALIBRATION", "ABOUT", "BACK"};
 _Static_assert(MI_ADD - MI_CLICK == 4, "MI_CLICK .. MI_ADD in a row");
+static uint8_t menu_cols;   /* Mono: the COLOR sheet open (KNOB 2 or OCT+ on COLOR; KNOB 1 off it, OCT- or closing folds it:
+                             * HOME held shows the list first, beta3 Theo) */
 #if MELODEE_USB_AUDIO
 /* USB AUDIO's four settings, as ua_off_want (UA_OFF_OUT | UA_OFF_IN) */
 static const char *const MI_USB_NAME[4] = {"IN+OUT", "IN", "OUT", "OFF"};
@@ -490,7 +492,8 @@ static void menu_mono(void)
     for (top = 0; top < 108; top += 54) {               /* (the rows below the menu's strip, in two canvases) */
         cv_begin(240, 108, MO_BG);
         cv_oy = -top * 2;
-        for (i = first; i < first + MENU_VISIBLE && i < MI_COUNT && (i == MI_COLOR || ui.menu_sel != MI_COLOR); i++) {
+        for (i = first; i < first + MENU_VISIBLE && i < MI_COUNT && (i == MI_COLOR || ui.menu_sel != MI_COLOR || !menu_cols);
+             i++) {
             int32_t y = 1 + (int32_t)(i - first) * 11, on = i == ui.menu_sel;
             uint16_t ink = on ? MO_BG : MO_INK, dim = on ? MO_BG : MO_DIM;
             char b[24], a[24];
@@ -505,7 +508,7 @@ static void menu_mono(void)
                 mo_textr(a, 115, y + 2, i == MI_COLOR ? ink : dim);
             }
         }
-        if (ui.menu_sel == MI_COLOR)
+        if (ui.menu_sel == MI_COLOR && menu_cols)
             menu_colors();
         if (MI_COUNT > MENU_VISIBLE) {
             int32_t th = hh * (int32_t)MENU_VISIBLE / (int32_t)MI_COUNT;
@@ -520,7 +523,7 @@ static void menu_mono(void)
 #endif
 static void draw_menu(void)
 {
-    uint32_t i, pass, sig = ui.menu * 7u + ui.menu_sel * 131u + settings.palette * 1009u + settings.lowcut * 7919u +
+    uint32_t i, pass, sig = ui.menu * 7u + ui.menu_sel * 131u + menu_cols * 557u + settings.palette * 1009u + settings.lowcut * 7919u +
                             settings_hold * 3511u + settings_lights * 6151u + settings_autosave * 15485863u +
 #if MELODEE_USB_AUDIO
                             ua_off_want * 92821u + ua_tracks_want * 324161u +
@@ -623,6 +626,7 @@ static void menu_close(void)
 {
     settings_save();                                   /* palette / panel table, if changed */
     ui.menu = 0;
+    menu_cols = 0;
     ui.force = 1;
     go_home();
 }
@@ -641,6 +645,12 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
             return;
         }
     }
+    if (back && menu_cols) {                            /* OCT-: the COLOR sheet folds, the list stays */
+        menu_cols = 0;
+        ui.force = 1;
+        enc_drop();
+        return;
+    }
     if (back) {
         if (ui.menu >= 2)
             ui.menu = 1, ui.force = 1;
@@ -655,6 +665,8 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
     else if (s != 0 && ui.menu >= 2) {             /* bounded document scrolling */
         ui.menu_scroll = (uint16_t)clamp((int32_t)ui.menu_scroll + clamp(s, -128, 128) * 18, 0, menu_scroll_max());
     }
+    if (ui.menu_sel != MI_COLOR || ui.menu != 1)
+        menu_cols = 0;
     s = panel_enc(EN_K2);
     if (ok && mlearn_ask && ui.menu == 1 && ui.menu_sel == MI_MIDI_LEARN) {   /* FORGET ALL? yes */
         mlearn_ask = 0;
@@ -677,6 +689,7 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         ui.force = 1;
     }
     if (s != 0 && ui.menu == 1 && ui.menu_sel == MI_COLOR) {
+        menu_cols = 1;
         settings.palette = (settings.palette + (s > 0 ? 1u : NPALETTES - 1u)) % NPALETTES;   /* (wraps) */
         palette_set(settings.palette);              /* (the menu signature redraws) */
         ui.force = 1;
@@ -783,6 +796,7 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
     if (ok && ui.menu == 1) {
         switch (ui.menu_sel) {
         case MI_COLOR:                                 /* OCT+ steps through the palettes too */
+            menu_cols = 1;
             settings.palette = (settings.palette + 1u) % NPALETTES;
             palette_set(settings.palette);
             ui.force = 1;

@@ -490,7 +490,7 @@ static int test_phys_chrd_click(void)
 }
 static int test_gen_family(void)
 {
-    static const char STEP[] = "GEN NOTES EVOLVE TWEAK TIMING TEMPO PATTERNS SONG GEN", ARP[] = "ARP ARP 2 TEMPO PATTERNS SONG GEN NOTES ARP",
+    static const char STEP[] = "GEN NOTES EVOLVE TWEAK TIMING TEMPO PATTERNS SONG GEN", ARP[] = "GEN NOTES TEMPO PATTERNS SONG GEN",
                       GEN[] = "GEN EVOLVE FORM TWEAK TWEAK 2 LENGTH TIMING ENERGY PATTERN TEMPO PATTERNS SONG";
     char got[128];
     int bad = 0, in_seq = 0, pattern_seq = 0;
@@ -506,7 +506,15 @@ static int test_gen_family(void)
     press(B_ARP);
     n &= str_eq(cur_page()->title, "ARP");
     bad += check("ARP's taps: ARP's MODE on (UP), its page, then ARP 2, ARP", n);
-    bad += check("SEQ in ARP: back to ARP (its last page), ARP 2 TEMPO PATTERNS SONG GEN NOTES", str_eq(seq_taps(got, sizeof got, 8), ARP));
+    turn(EN_SELECT, 1);
+    n = str_eq(cur_page()->title, "ARP 2");
+    turn(EN_SELECT, 1);
+    n &= str_eq(cur_page()->title, "ARP");
+    turn(EN_SELECT, -1);
+    n &= str_eq(cur_page()->title, "ARP 2");
+    bad += check("SELECT on ARP: ARP and ARP 2 only, its own lane (not SEQ's pages; beta3)", n);
+    bad += check("SEQ in ARP: SEQ's own pages, GEN NOTES TEMPO PATTERNS SONG (ARP's are the ARP button's)",
+                 str_eq(seq_taps(got, sizeof got, 6), ARP));
     if (!str_eq(got, ARP)) printf("    got: %s\n", got);
     {
         int16_t *vp;
@@ -2734,9 +2742,22 @@ static int test_display_preferences(void)
     turn(EN_K2, 1);
     bad += check("COLOR KNOB 2 steps on to SMALTI",
                  settings.palette == 2 && settings.palette == UI_DEFAULT_INDEX);
+    bad += check("..its sheet open (Mono: the swatches below the row)", menu_cols == 1);
+    press(B_OCTDN);
+    bad += check("OCT- folds the sheet first, the menu stays", ui.menu == 1 && !menu_cols);
     press(B_OCTDN);
     bad += check("OCT- leaves display preferences without changing musical state",
                  !ui.menu && settings.palette == UI_DEFAULT_INDEX && !memcmp(sounds, trk, sizeof sounds));
+    hold(B_HOME);
+    {
+        int ok = ui.menu == 1 && ui.menu_sel == MI_COLOR && !menu_cols;   /* HOME held: the list, not the sheet */
+        turn(EN_K2, 1); turn(EN_K2, -1);
+        ok &= menu_cols == 1 && settings.palette == UI_DEFAULT_INDEX;
+        turn(EN_K1, 1);
+        ok &= !menu_cols && ui.menu_sel != MI_COLOR;
+        bad += check("HOME held: the list first; KNOB 2 on COLOR opens its sheet, KNOB 1 off the row folds it (beta3)", ok);
+        press(B_OCTDN);
+    }
     return bad;
 }
 
