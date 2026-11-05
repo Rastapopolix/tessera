@@ -301,7 +301,7 @@ int main(void)
                      st_load(OBJ_PROJ0, got, sizeof got) == (int)sizeof a && !memcmp(got, a, sizeof a));
     }
     {   /* every live object saved twice (both copies) at its full size: no sector shared by two objects, none in the
-         * app area or the OTA staging. Guards the free pair OBJ_TESSERA uses (0x9D000) at every upstream merge. */
+         * app area or the OTA staging. Guards the free pair OBJ_LEARN uses (0x9D000) at every upstream merge. */
         static uint8_t full[64u * 1024u];
         uint32_t obj, saved = 1;
         memset(nor, 0xFF, sizeof nor);
@@ -318,9 +318,9 @@ int main(void)
         bad += check("every live object saves both copies at full size", saved);
         bad += check("no two live objects share a flash sector", !sec_clash);
         bad += check("no object writes the app area or the OTA staging", !sec_reserved);
-        bad += check("Tessera's object stays in the free pair 0x9D000..0x9EFFF",
-                     st_sector(OBJ_TESSERA, 0) == 0x9D000u && st_sector(OBJ_TESSERA, 1) == 0x9E000u &&
-                     sec_owner[0x9D] == OBJ_TESSERA && sec_owner[0x9E] == OBJ_TESSERA);
+        bad += check("MIDI LEARN's object stays in the free pair 0x9D000..0x9EFFF",
+                     st_sector(OBJ_LEARN, 0) == 0x9D000u && st_sector(OBJ_LEARN, 1) == 0x9E000u &&
+                     sec_owner[0x9D] == OBJ_LEARN && sec_owner[0x9E] == OBJ_LEARN);
     }
     printf("%s\n", bad ? "STORAGE TEST FAILED" : "storage test passed");
     bad += check("user presets and native FM6 keep their places",
