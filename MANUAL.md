@@ -8,8 +8,8 @@ Instruments). Each of the four tracks can play its own steps, an arpeggio, or on
 pages around them evolve the phrases, build song forms, pass hits between tracks and modulate anything from
 anything.
 
-This manual covers what Tessera adds and changes. The step sequencer, the effects and the song pages work as in
-upstream Melodee. For recipes and tips, see **[RECIPES.md](RECIPES.md)**; every button and combination on one
+This manual covers the whole firmware: the step sequencer, the generators, the sounds, the effects, patterns and
+songs. For recipes and tips, see **[RECIPES.md](RECIPES.md)**; every button and combination on one
 sheet, **[CHEATSHEET.md](CHEATSHEET.md)** (and [a printable PDF](docs/cheatsheet/tessera-cheatsheet.pdf)). Every
 setting, with its range and default, is listed in [docs/PARAMETERS.md](docs/PARAMETERS.md).
 
@@ -152,7 +152,7 @@ lets you do and when you would want it. Follow a link for the full description.
 | [ENERGY](#energy) | Give the whole project a slow tide from sparse to full, with occasional rests. | A long piece needs to rise and fall on its own. |
 | [PATTERN](#seq-the-mode-and-its-pages) | A generator track's length, speed (DIV) and gate. | A generator should run faster, slower or over a different length. |
 | TEMPO | The project's BPM, swing and record quantize. | You set the speed and feel of the whole project. |
-| PATTERNS, SONG | Pick the pattern each track plays and chain patterns into a song (as in Melodee). | You arrange written patterns into a song by hand. |
+| [PATTERNS, SONG](#patterns-and-song) | Pick which of its 8 patterns each track plays, and line patterns up into a song. | You arrange written patterns into a song by hand. |
 | ARP, ARP 2 | The arpeggiator's mode and options, on an ARP track. | You want to play chords and hear them broken up. |
 
 **ARP**: on a STEP track, the arpeggiator; held, the [help card](#help-card) for any knob you turn. *Hold ARP whenever
@@ -462,7 +462,8 @@ SEQ then shows only that mode's pages:
 | **ARP** | GEN, NOTES, TEMPO, PATTERNS, SONG (ARP and ARP 2 are the ARP button's own: SELECT turns between the two) |
 | a generator | GEN, EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY, PATTERN, TEMPO, PATTERNS, SONG |
 
-MOTION appears as in upstream; DRUM HIT, a DRUM track's grid of hits, comes right after NOTES. With STEP or ARP, GEN is also the pattern's page: KNOB 2 to 4 are
+**MOTION**, the knob moves recorded on the pattern (see [Recording live](#recording-live)), shows once a track has
+some. DRUM HIT, a DRUM track's grid of hits, comes right after NOTES. With STEP or ARP, GEN is also the pattern's page: KNOB 2 to 4 are
 LENGTH, DIVISION and GATE, and the track's SWING is a row of the pattern's sheet (OCT+ held). A generator track has
 these on PATTERN instead. The generators run at the track's DIV and play in the track's scale (SCL). Choosing STEP or a
 generator turns the arpeggiator off; choosing ARP again brings back its last setting.
@@ -536,6 +537,77 @@ Two rows set the track's pitch accumulator (a step's Accumulate, below):
   of a 7-note scale.
 - **Accum mode**: what they do there. **Wrap** goes back to the notes as written and climbs again, **Ping** turns
   round and comes back, **Clamp** stays at the limit.
+
+### PATTERNS and SONG
+
+> **In short:** each track has 8 patterns, like 8 pages of its own steps. PATTERNS picks the one each track plays.
+> SONG lines up sets of patterns, one per track, into a song.
+
+**What a pattern holds.** A track's 64 steps with everything on them (notes, drum hits, each step's length, velocity,
+chance, ratchet, nudge, accumulate and condition), its recorded notes and knob motion, and its LEN, DIV, SWING and
+GATE. Each of the four tracks has 8, so a project has 32.
+
+What a pattern changes depends on the track's MODE:
+
+| MODE | A pattern is |
+|---|---|
+| **STEP** | The whole part. Another pattern plays other notes. |
+| **ARP** | Its LEN, DIV, GATE and its notes. The ARP and ARP 2 settings belong to the track. |
+| a generator | Only LEN, DIV, GATE, and the steps the generator can take as its seed (SOURCE, see [STEP as seed](#turing-euclid-markov-and-morph-source-keep-gravity-step-as-seed)). |
+
+The generator itself, its MODE, its knobs, EVOLVE, FORM, TWEAK and the rest, belongs to the track, not to a pattern.
+Switching pattern on a generator track does not give it other settings. To change a generator over a piece, use
+[FORM](#form) and [CHAIN](#chain-one-form-for-the-project) sections, [cords](#mods-the-modulation-cords), or
+separate projects.
+
+**PATTERNS.** Hold **SEQ** (or turn to its page). A row per track, a cell per pattern, 1 to 8:
+
+| On the screen | Means |
+|---|---|
+| Filled in the track's colour | The pattern playing. The bar at its foot shows how far through it is. |
+| Dashed | Queued: it plays next. |
+| Grey, three bars | Has notes. The bars show how many fall in its first, middle and last third. |
+| An outline | Empty. |
+| Letters at the foot | The song's sections; the one playing (or picked on SONG) is lit. With no song: **JAM** and the rows it logged (below). |
+
+| Do this | And this happens |
+|---|---|
+| **KNOB 1** to **KNOB 4** | Track 1 to 4's next pattern. Stopped: it changes at once. Playing: it waits (dashed) and changes when the pattern playing reaches its end. While a song plays it does not change: **STOP TO SWITCH**. |
+| **OCT-** | Clears the queue. Again: HOME. |
+| **OCT+** | The selected track's pattern's sheet: **Copy to** and **Delete pattern** (its notes and motion). |
+
+Copy to frames a place on the track's row, the first empty one first. Any knob moves it, **OCT+** copies (over a
+pattern in use it asks first), **OCT-** leaves. It works only while no song plays.
+
+With **SEQ** held, the white keys F3 to F4 pick the selected track's pattern 1 to 8, and SELECT the next or previous
+one.
+
+**SONG.** A song is up to 16 sections. Each section is one pattern per track and how many times it plays (1 to 16).
+A repeat is one pass of track 1's pattern, so make track 1's pattern the longest. Sections with the same four
+patterns share a letter: A, B, A, C.
+
+The screen shows the sections as columns and the tracks as rows, each pattern a block in the track's colour. At the
+top, the song's length at the tempo; at the foot, its sections and bars.
+
+| Do this | And this happens |
+|---|---|
+| **KNOB 1** | The section. The **+** after the last adds one. |
+| **KNOB 2** | The track. |
+| **KNOB 3** | That track's pattern in the section. On **+** it adds the section, starting from the one before. |
+| **KNOB 4** | The section's repeats. |
+| **PLAY** or **OCT+** | Plays the song from its first section. It stops after the last one. |
+| **OCT+** held | The song's sheet: Insert section, Duplicate section, Delete section, Take jam, Clear song. |
+| **REC** held | Take jam (below). |
+
+The song is edited only while it is stopped (**STOP TO EDIT**). While it plays, PATTERNS cannot switch patterns.
+**STOP** brings back the patterns that were selected before the song started.
+
+**The jam.** Playing without a song, Tessera logs the patterns you play: each time track 1's pattern starts, the
+four patterns playing are a row (the same as the last row: one more repeat). SONG's header says **capturing jam**. **REC** held on SONG makes those rows the song (**SONG FROM JAM**); over a song it asks first. The
+log starts again at each PLAY.
+
+SONG is not linked to [CHAIN](#chain-one-form-for-the-project): SONG counts pattern repeats, CHAIN counts bars. See
+[The long-form layers together](#the-long-form-layers-together).
 
 ---
 
@@ -1352,7 +1424,7 @@ Hold **HOME** for the menu. Its rows come in groups: the screen, the knobs and b
 | **PANEL GAMMA** | The screen's contrast curve: the panel chip's own **G2.2** (the default), G1.8, G2.5 and G1.0, or TUNED and TUNED+VCOM. The screen goes black for a moment and redraws. Saved. |
 | **TRACK KNOB** | RIGHT: the ALGORITHM knob picks the track and PRESETS browses sounds, as printed. LEFT: the two swap. |
 | **MUTES** | When GLO's mute keys (and C4's UNMUTE ALL) take effect while playing. **NOW** (the default): at once. **BAR**: on the next bar line. **PHRASE**: on the next phrase line (the CHAIN's PHRASE, counted from PLAY). A key waiting blinks quickly; press it again before the line to call it off. Stopped, a press is at once. Saved. |
-| **NOTES OUT** | What goes out over USB MIDI: **KEYS** (the notes you play, as Melodee sent them), **ALL** (also the steps, the ARP, recordings and every generator) or **OFF**. Each track on its own channel: see [MIDI OUT channels](#midi-out-channels). |
+| **NOTES OUT** | What goes out over USB MIDI: **KEYS** (only the notes you play on the keys), **ALL** (also the steps, the ARP, recordings and every generator) or **OFF**. Each track on its own channel: see [MIDI OUT channels](#midi-out-channels). |
 | **CLOCK OUT** | 24 pulses a beat with START and STOP over USB, while the clock is INT. |
 | **MIDI CC IN** | **ON** (the default): CCs and NRPNs set the tracks' parameters (see [MIDI CC control](#midi-cc-control)). **OFF**: they move nothing, for a sequencer that sends CCs to other gear on the same channels. Bend, mod wheel, expression, sustain and aftertouch always play. Saved. |
 | **MIDI LEARN** | Puts any knob on a CC of your controller. Turn KNOB 2 right (or press OCT+): the menu closes and the screen says **LEARN: A KNOB**. Turn a knob on any page (it still edits; the screen names it and asks **SEND A CC**), then move the controller's knob: **CC 21 =** then **T1 CUTOFF**. Repeat for as many as 16 knobs. While learning, the header says **MIDI LEARN ON**; OCT- ends it, as does holding HOME for the menu. A learned CC works from any channel, on whatever page is shown, and takes over what the [fixed CC map](#midi-cc-control) gave it, even with MIDI CC IN OFF. The row shows how many are learned; KNOB 2 left asks **FORGET? OCT+**: OCT+ forgets them all, OCT- keeps them. They are the device's, not a project's: kept through power-off and project loads (saved once the music stops). |

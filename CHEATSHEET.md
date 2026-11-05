@@ -100,11 +100,15 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 
 | Do this | And this happens |
 |---|---|
-| **SEQ** + white keys F3 to F4 | Pattern 1 to 8 (playing: from the next bar) |
+| **SEQ** + white keys F3 to F4 | Pattern 1 to 8 (playing: when the pattern playing ends) |
 | **SEQ** + a pattern key held + another | Copies the first pattern onto the second |
 | **SEQ** + SELECT | The next / previous pattern |
 | PATTERNS: KNOB 1 to 4 | Track 1 to 4's next pattern |
 | PATTERNS: **OCT-** | Clears the queue (again: HOME) |
+| PATTERNS: **OCT+** | The pattern's sheet: Copy to, Delete pattern |
+| SONG: KNOB 1 to 4 | Section (**+** adds one), track, its pattern there, repeats (1 to 16) |
+| SONG: **PLAY** or **OCT+** | Plays the song; STOP brings back the patterns you had |
+| SONG: **OCT+** held | Insert, duplicate, delete section; take jam; clear song |
 
 ## Recording and transport
 
