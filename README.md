@@ -9,11 +9,19 @@
 <b><a href="https://github.com/Rastapopolix/tessera/releases/latest">Releases</a></b>
 </p>
 
-**Tessera** is generative firmware for the M-Vave FM-1: systems that generate musical relationships, not just notes.
-Four tracks and thirteen generators: evolve the phrases, build them into song forms and modulate anything from
-anything, while the tracks follow, answer and share one harmony. The FM-1 feels like a small generative modular system:
-one instrument with one musical idea behind it. Small tiles, set into a larger pattern. GPL-3.0-only.
-**Status: Experimental.**
+**Tessera** is generative firmware for the M-Vave FM-1: an instrument for composing through systems. Instead of
+programming every note, you set up how the music behaves, and it plays.
+
+Each of the four tracks plays written steps or one of thirteen generators. The tracks listen to each other: a bass
+follows a melody, a written line seeds a generator, a chord track keeps every part in key, and any source can move
+almost any setting. And the music grows: phrases evolve, sections form, parts drop out and come back, and a whole
+piece can follow a shape you choose over minutes or hours, or never stop.
+
+It sits between a step-based groovebox and a self-playing ambient firmware. You build the system yourself, you can
+reach into it at any level, from one note to the arc of a three-hour piece, and nothing runs unless you switch it on.
+Every random choice comes from a seed, so PLAY replays a piece exactly and ROLL finds a new one.
+
+GPL-3.0-only. **Status: Experimental.**
 By **Theo Dainis** ([Rastapopolix](https://github.com/Rastapopolix)).
 
 Tessera grew out of Melodee (Tess), a fork of [Melodee](https://github.com/keremimo/melodee) by **keremimo**,
