@@ -115,7 +115,10 @@ static void test_compatibility(void)
     reset_tools();settings_click=2;settings_click_level=0;settings_countin=2;settings_preview=settings_chord_add=1;
     persist_t p={0};settings_export(&p);settings_click=settings_countin=settings_preview=settings_chord_add=0;settings_click_level=1;
     assert(settings_import(&p,sizeof p));assert(settings_click==2 && !settings_click_level && settings_countin==2 && settings_preview && settings_chord_add);
-    p.zoom=1;assert(settings_import(&p,sizeof p));assert(!settings_click && settings_click_level==1 && !settings_countin && !settings_preview && !settings_chord_add);
+    p.zoom=1;assert(settings_import(&p,sizeof p));assert(!settings_click && settings_click_level==1 && !settings_countin && settings_preview && !settings_chord_add);
+    /* NOTE PREVIEW: ON unless chosen OFF; a record from before 3.3 (no tag, its old bit clear) reads ON */
+    settings_preview=0;settings_export(&p);settings_preview=1;assert(settings_import(&p,sizeof p) && !settings_preview);
+    p.favorites.factory[8][27]=0;p.zoom=0;assert(settings_import(&p,sizeof p) && settings_preview);
     static project_t q,back;static uint8_t current[TSP_MAX];project_capture(&q);q.t[0].p[P_E4]=53;
     for(uint32_t t=0;t<NTRK;t++)q.t[t].p[P_RESERVED35]=77;   /* delay sends and their automation (a FUN16's are kept) */
     q.g[G_RESERVED25]=3;q.g[G_RESERVED26]=9;q.g[G_RESERVED4]=2;q.motion.count=1;q.motion.event[0]=(motion_event_t){0,P_RESERVED35,100};q.sum=proj_sum(&q);
