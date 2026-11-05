@@ -427,6 +427,11 @@ static void mono_check(void)
     uint32_t i;
     for (i = 0; i < 240u * 240u; i++) {
         uint16_t c = swap16(host_screen[i]);
+#if MELODEE_LOOK
+        uint32_t ry = i / 240u - MENU_HEAD;            /* MENU > COLOR's sheet: its boxes and tiles in the palettes' own */
+        if (ui.menu == 1 && ui.menu_sel == MI_COLOR && ((ry >= 46u && ry < 82u) || (ry >= 114u && ry < 150u)))
+            continue;                                   /* colours (ui_menu.c menu_colors: cells 25..40 and 59..74) */
+#endif
         if ((c >> 11) != (c & 31u) || ((c >> 5) & 63u) != (c >> 11) * 2u) {
             if (!mono_bad) fprintf(rep, "MONO %s: pixel %u,%u = %04x off gray\n", cur_name, i % 240u, i / 240u, c);
             mono_bad++;
@@ -2581,7 +2586,7 @@ int main(int argc, char **argv)
     char path[600];
     uint32_t p, s;
 #if MELODEE_LOOK
-    static const char *const SHOW[] = {"YELLOW", "WHITE", "GREEN", "BLUE", "RED", "ORANGE", "PINK", "HOT PINK", "LILAC", "MOSAIC"};   /* the Mono inks */
+    static const char *const SHOW[] = {"YELLOW", "WHITE", "GREEN", "BLUE", "RED", "ORANGE", "PINK", "HOT PINK", "LILAC", "MOSAIC", "SUNSET", "OCEAN", "NEON"};   /* the Mono inks */
 #else
     static const char *const SHOW[] = {"NIGHT", "CONTRAST", "SMALTI"};
 #endif
