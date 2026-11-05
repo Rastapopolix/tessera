@@ -1329,7 +1329,7 @@ static void graph_entries(void)
 }
 
 /* MIDI OUT: a row a track, its colour, the channel its notes go out on (AUTO: the one ROUT or DRUM gives it now), and
- * when the menu's MIDI OUT keeps the steps in (KEYS) or sends nothing (OFF), so */
+ * when the menu's NOTES OUT keeps the steps in (KEYS) or sends nothing (OFF), so */
 static void graph_midich(void)
 {
     for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
@@ -1357,8 +1357,8 @@ static void graph_midich(void)
         cv_text(PANEL_X0 + 32, y + 3, &AF_X, b, ch == MIDI_OUT_NONE ? T_DIM : T_TEXT);
     }
     if (settings_midi_out != MIDI_OUT_ALL)
-        cv_text(PANEL_X0 + 6, 86, &AF_X, settings_midi_out == MIDI_OUT_OFF ? LOOK("MENU MIDI OUT: OFF, NOTHING SENT", "MIDI OUT: OFF")
-                                                                           : LOOK("MENU MIDI OUT: KEYS ONLY", "MIDI OUT: KEYS"), T_DIM);
+        cv_text(PANEL_X0 + 6, 86, &AF_X, settings_midi_out == MIDI_OUT_OFF ? LOOK("MENU NOTES OUT: OFF, NOTHING SENT", "NOTES OUT: OFF")
+                                                                           : LOOK("MENU NOTES OUT: KEYS ONLY", "NOTES OUT: KEYS"), T_DIM);
 }
 
 static void graph_steps(const track_t *t, uint16_t c)

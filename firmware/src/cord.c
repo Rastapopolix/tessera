@@ -102,7 +102,7 @@ static const cord_dest_t CORD_DESTS[CD_N] = {
     M_(1), M_(2), M_(3), M_(4), M_(5), M_(6), M_(7), M_(8), M_(9), M_(10), M_(11), M_(12), M_(13), M_(14), M_(15), M_(16),
     [CD_FILL] = {CD_FILL, CK_FILL, 0, PID_NONE, "FILL", "the project's FILL (steps set to FILL / NOT FILL), held while the move is past half"},
     [CD_TEMPO] = {CD_TEMPO, CK_TEMPO, 0, PID_NONE, "TEMPO", "the project's tempo on CLK INT: a full move up doubles it, down halves it (BPM stays as set)"},
-    [CD_CC] = {CD_CC, CK_CC, 0, PID_NONE, "CC", "a MIDI CC out on the track's MIDI OUT channel, its number set with OCT- held and KNOB 3"},
+    [CD_CC] = {CD_CC, CK_CC, 0, PID_NONE, "CC", "a MIDI CC out on the track's MIDI OUT channel, its number set with OCT+ held and KNOB 3"},
 };
 #undef V_
 #undef B_

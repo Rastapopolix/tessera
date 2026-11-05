@@ -1609,14 +1609,15 @@ static void mo_pic_perf(void)
     for (uint32_t k = 0; k < 4u; k++) {
         int32_t y = 54 + (int32_t)k * 11;
         uint32_t n = 0, i;
-        char m[3] = {'M', (char)('1' + k), 0}, b[12];
+        char m[5] = {'M', 'C', 'R', (char)('1' + k), 0}, b[12];   /* (MCR1, as the knob and MODS' source: not M1, which
+                                                                     * MODS shows for mod 1's amount) */
         for (i = 0; i < CORD_LIVE; i++) n += cord_get(i)->src == CS_MACRO1 + k;
         mo_inv(m, 3, y);
-        mo_hl(18, y + 3, 52, MO_DIM);
-        mo_fill(18, y + 2, 52 * tessera.macro[k] / 100, 3, MO_INK);
+        mo_hl(30, y + 3, 46, MO_DIM);
+        mo_fill(30, y + 2, 46 * tessera.macro[k] / 100, 3, MO_INK);
         fmt_int(b, (int32_t)n);
         str_cpy(b + str_len(b), n == 1u ? " MOD" : " MODS", 6);
-        mo_text(n ? b : "NO MOD", 76, y, n ? MO_INK : MO_DIM);
+        mo_text(n ? b : "NO MOD", 82, y, n ? MO_INK : MO_DIM);
     }
 }
 /* ENTRIES: a row a track: its number, its role (AUTO's guess), IN / OUT / MUTE, its level as a bar; a row about
@@ -1638,7 +1639,7 @@ static void mo_pic_entries(void)
     }
 }
 /* MIDI OUT: a row a track: its number, the channel its notes go out on (AUTO: ROUT's or DRUM's), its TRANSPOSE when not
- * 0, and the menu's MIDI OUT when it keeps the steps in (KEYS) or sends nothing (OFF) */
+ * 0, and the menu's NOTES OUT when it keeps the steps in (KEYS) or sends nothing (OFF) */
 static void mo_pic_midich(void)
 {
     for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
@@ -1660,7 +1661,7 @@ static void mo_pic_midich(void)
         mo_text(b, 18, y, ch == MIDI_OUT_NONE ? mo_tdim(k) : MO_TRK(k));
     }
     if (settings_midi_out != MIDI_OUT_ALL)
-        mo_text(settings_midi_out == MIDI_OUT_OFF ? "MIDI OUT: OFF" : "MIDI OUT: KEYS", 2, 101, MO_DIM);
+        mo_text(settings_midi_out == MIDI_OUT_OFF ? "NOTES OUT: OFF" : "NOTES OUT: KEYS", 2, 101, MO_DIM);
 }
 #include "ui_land.c"                                    /* LANDSCAPE: rain on water */
 static void mo_stage_wave(int32_t top, int32_t h, uint16_t c);

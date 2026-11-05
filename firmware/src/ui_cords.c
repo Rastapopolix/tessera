@@ -343,7 +343,7 @@ static int cu_thresh_knob(int32_t steps)
     return 1;
 }
 
-/* OCT- held + KNOB 3 on a CC mod: its CC number, 0..119 (ui_input.c: OCT-'s tap eaten) */
+/* OCT+ held + KNOB 3 on a CC mod: its CC number, 0..119 (ui_input.c: OCT+'s tap eaten; KNOB 4 a GATE's threshold) */
 static int cu_cc_knob(int32_t steps)
 {
     const cord_t *c = cord_get(cord_ui_sel);

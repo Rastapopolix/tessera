@@ -5,7 +5,8 @@
  * PRESETS does; panel.c), USB AUDIO (IN+OUT, IN, OUT or OFF; usb.c ua_off_set),
  * USB INPUT (the stereo mix or four track stems, both before MASTER; usb.c ua_tracks_set),
  * USB VOLUME (the computer's audio through the FM-1, 0..100 %, apart from MASTER; usb_audio_stream.c),
- * MIDI OUT (KEYS, ALL or OFF: the notes sent over USB) and CLOCK OUT (midi_out.c), MIDI CC IN (ON or OFF: CCs and
+ * NOTES OUT (KEYS, ALL or OFF: the notes sent over USB MIDI; MIDI OUT until 3.3, renamed apart from GLO > MIDI OUT)
+ * and CLOCK OUT (midi_out.c), MIDI CC IN (ON or OFF: CCs and
  * NRPNs that set parameters; midi_cc.c), MIDI LEARN (a knob, then a CC; midi_learn.c, ui_learn.c), MUTES (GLO's
  * mute keys while playing: NOW, on the next BAR or PHRASE; entries.c mute_press), USB HOST (the USB-C port hosts a USB-MIDI device instead of talking to a
  * computer; not saved; usb_host.c),
@@ -14,35 +15,42 @@
  * PRESETS scrolls from ABOUT through all credits. ui.menu: 1 list, 2 information. */
 /* ------------------------------------------------------------ menu --- */
 #define MENU_HEAD 24                     /* the menu's own title strip (Stage and the pages: H_HEAD) */
+/* the rows in groups (3.3): the screen, the controls, playing, MIDI, USB, then the tools and ABOUT. MI_CLICK .. MI_ADD stay
+ * together (menu_value, menu_input take them as a range) */
 enum { MI_COLOR,
 #if MELODEE_LOOK
        MI_KNOBS,
 #endif
-       MI_HOLD, MI_LIGHTS,
+       MI_LIGHTS, MI_SCREEN, MI_BATTERY, MI_GAMMA,
+       MI_HOLD, MI_ACCEL, MI_TRACK_KNOB,
+       MI_MUTES, MI_CLICK, MI_CLICK_LEVEL, MI_COUNTIN, MI_PREVIEW, MI_ADD, MI_AUTOSAVE,
+       MI_MIDI_OUT, MI_CLOCK_OUT, MI_CC_IN, MI_MIDI_LEARN,
 #if MELODEE_USB_AUDIO
        MI_USB, MI_USB_INPUT, MI_USB_VOLUME,
 #endif
-       MI_MIDI_OUT, MI_CLOCK_OUT, MI_CC_IN, MI_MIDI_LEARN, MI_MUTES,
 #if MELODEE_USB_HOST
        MI_USB_HOST,
 #endif
-       MI_CLICK, MI_CLICK_LEVEL, MI_COUNTIN, MI_PREVIEW, MI_ADD, MI_AUTOSAVE, MI_ACCEL, MI_TRACK_KNOB, MI_SCREEN, MI_BATTERY, MI_GAMMA, MI_PANEL, MI_ABOUT, MI_DESIGNER, MI_BACK,
+       MI_DESIGNER, MI_PANEL, MI_ABOUT, MI_BACK,
        MI_COUNT };
 static const char *const GAMMA_NAME[GAMMA_N] = {"G2.2", "G1.8", "G2.5", "G1.0", "TUNED", "TUNED+VCOM"};   /* (lcd.c) */
 static const char *const MI_NAME[MI_COUNT] = {"COLOR",
 #if MELODEE_LOOK
                                               "KNOBS",
 #endif
-                                              "HOLD", "LIGHTS",
+                                              "LIGHTS", "SCREEN OFF", "BATTERY", "PANEL GAMMA",
+                                              "HOLD", "KNOB ACCEL", "TRACK KNOB",
+                                              "MUTES", "AUDIO CLICK", "CLICK LEVEL", "COUNT-IN", "NOTE PREVIEW", "CHORD ENTRY",
+                                              "AUTOSAVE",
+                                              "NOTES OUT", "CLOCK OUT", "MIDI CC IN", "MIDI LEARN",
 #if MELODEE_USB_AUDIO
                                               "USB AUDIO", "USB INPUT", "USB VOLUME",
 #endif
-                                              "MIDI OUT", "CLOCK OUT", "MIDI CC IN", "MIDI LEARN", "MUTES",
 #if MELODEE_USB_HOST
                                               "USB HOST",
 #endif
-                                              "AUDIO CLICK", "CLICK LEVEL", "COUNT-IN", "NOTE PREVIEW", "CHORD ENTRY",
-                                              "AUTOSAVE", "KNOB ACCEL", "TRACK KNOB", "SCREEN OFF", "BATTERY", "PANEL GAMMA", "CALIBRATION", "ABOUT", "SOUND DESIGNER", "BACK"};
+                                              "SOUND DESIGNER", "CALIBRATION", "ABOUT", "BACK"};
+_Static_assert(MI_ADD - MI_CLICK == 4, "MI_CLICK .. MI_ADD in a row");
 #if MELODEE_USB_AUDIO
 /* USB AUDIO's four settings, as ua_off_want (UA_OFF_OUT | UA_OFF_IN) */
 static const char *const MI_USB_NAME[4] = {"IN+OUT", "IN", "OUT", "OFF"};

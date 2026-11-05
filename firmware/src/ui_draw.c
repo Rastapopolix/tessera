@@ -916,7 +916,11 @@ static void draw_columns(void)
         fmt_int(w0 + 1, (uint32_t)(sh < 0 ? -sh : sh));
         fmt_int(w1, ev->drop);
         fmt_int(w2, ev->human);
-        if (ev->follow) { w3[0] = 'T'; w3[1] = (char)('0' + ev->follow); w3[2] = 0; }
+        if (ev->follow) {                               /* (a HOLD set under OCT+: shown as T3H2) */
+            uint32_t h = tr < TESSERA_TRACKS ? tessera.follow_hold[tr] : 0u;
+            w3[0] = 'T'; w3[1] = (char)('0' + ev->follow); w3[2] = 0;
+            if (h) { w3[2] = 'H'; w3[3] = (char)('0' + h); w3[4] = 0; }
+        }
         else str_cpy(w3, "OFF", sizeof w3);
         if (tw_layer_on()) {                            /* OCT+ held: FOLLOW's HOLD (lit while following) */
             uint32_t h = tessera.follow_hold[tr];
