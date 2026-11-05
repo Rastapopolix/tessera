@@ -43,10 +43,12 @@ the web editor's settings and survive power-off:
   follow their existing transport timing without a count-in. Notes pressed in
   the final half-beat and still held at the downbeat enter step one without
   retriggering their live sound; earlier presses are for monitoring only.
-- **NOTE PREVIEW:** OFF/ON. Moving the stopped STEP/NOTES cursor auditions its
-  note or drum hits. NOTES selects an individual note; STEP previews a chord.
-  Preview lasts about 167 ms, does not record or transmit MIDI, and respects
-  notes already held by the player or arpeggiator.
+- **NOTE PREVIEW:** OFF/ON. Moving the STEP/NOTES cursor auditions its note or
+  drum hits, stopped or playing (not while recording or counting in). NOTES
+  selects an individual note; STEP previews a chord. Preview lasts about 167 ms,
+  does not record or transmit MIDI, and respects notes already held by the
+  player, the arpeggiator or a playing step. Turning KNOB 2 on NOTES sounds the
+  new pitch too, and sends it like a key's note on MIDI OUT.
 - **CHORD ENTRY:** HOLD keeps the existing simultaneous-key entry and automatic
   advance. ADD lets separate taps add/remove pitches at the same cursor.
   Up to four pitches fit a polyphonic step; a full chord shows CHORD FULL.
