@@ -1068,6 +1068,18 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
+    if (pg->graph == GR_TIMING && tm_layer_on()) {  /* TIMING, OCT+ held: SPLIT as a percent, its HOW a step a turn */
+        if (slot < 2u) {
+            uint32_t x = slot ? TX_SUB_SPLIT_HOW : TX_SUB_SPLIT;
+            tessera_param_set(song.sel, x, tessera_param_get(song.sel, x) +
+                              (slot ? (steps > 0 ? 1 : steps < 0 ? -1 : 0) : accel(EN_K1, steps, 100)));
+        }
+        oct_eat |= 2u;
+        ui.oct_t0 |= 2u;
+        oct_deferred = 0;
+        ui.force = 1;
+        return;
+    }
     if (pg->graph == GR_TIMING) {                   /* SUB: RATCH a step a turn, CHANCE as a percent, SHAPE a step a turn,
                                                      * HUMAN a ms (a STEP track: SHAPE and HUMAN; its RATCH is each step's) */
         if (slot < 4u && song.sel < TESSERA_TRACKS && (slot >= 2u || tessera.mode[song.sel] != TESS_ENG_OFF)) {

@@ -469,7 +469,7 @@ static void help_find(uint32_t k)
         else help_hp(HP_ORACLE + pg->id[k]);
         return;
     }
-    if (pg->graph == GR_TIMING && k < 2u && tr < TESSERA_TRACKS && tessera.mode[tr] == TESS_ENG_OFF) {
+    if (pg->graph == GR_TIMING && k < 2u && tr < TESSERA_TRACKS && tessera.mode[tr] == TESS_ENG_OFF && !tm_layer_on()) {
         help_hp(HP_TIMING_STEP);                        /* (a STEP track: SHAPE only, ui_input.c) */
         help.name = k ? "TIMING CHANCE" : "TIMING RATCH";
         return;
@@ -539,6 +539,7 @@ static void help_find(uint32_t k)
     else if (pg->graph == GR_TWEAK) x = TW[k];
     else if (pg->graph == GR_TWEAK2) x = TW2[k];
     else if (pg->graph == GR_NOTELEN) x = NL[k];
+    else if (pg->graph == GR_TIMING && tm_layer_on()) x = k > 1u ? 0xFFu : k ? TX_SUB_SPLIT_HOW : TX_SUB_SPLIT;
     else if (pg->graph == GR_TIMING) x = k == 3u ? TX_SUB_HUMAN : k == 2u ? TX_SUB_SHAPE : k ? TX_SUB_CHANCE : TX_SUB_RATCH;
     else if (pg->graph == GR_ENERGY && en_layer_on()) x = k ? 0xFFu : TX_EN_DEPTH;
     else if (pg->graph == GR_ENERGY && k < 3u) x = k == 2u ? TX_EN_LEVEL : k ? TX_EN_RESTS : TX_EN_ARC;

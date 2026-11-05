@@ -1097,6 +1097,17 @@ static void draw_columns(void)
                     song.playing && energy_resting() ? T_TEXT : T_MID, -1, ICON_NONE);
         return;
     }
+    if (cur_page()->graph == GR_TIMING && tm_layer_on()) {   /* TIMING, OCT+ held: SPLIT, HOW (dim at 0) */
+        char w0[8];
+        uint32_t tr = song.sel % TESSERA_TRACKS, sp = tessera.sub_split[tr], how = tessera.sub_split_how[tr] % TESS_SPLIT_HOWS;
+        fmt_int(w0, sp);
+        col_mods(PID_TESS(TX_SUB_SPLIT));
+        draw_column(0, "SPLIT", w0, "%", VAL(0u), (int32_t)sp * 10, ICON_AUTO);
+        draw_column(1, "HOW", pid_desc(PID_TESS(TX_SUB_SPLIT_HOW), 0)->names[how], "", sp ? VAL(1u) : T_DIM, (int32_t)how * 500, ICON_AUTO);
+        draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+        draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+        return;
+    }
     if (cur_page()->graph == GR_TIMING) {                /* SUB (seq_sub.c): RATCH, its CHANCE (dim at x1), SHAPE, HUMAN */
         uint32_t tr = song.sel % TESSERA_TRACKS, r = tessera.sub_ratch[tr], ch = tessera.sub_chance[tr];
         uint32_t sh = tessera.sub_shape[tr] % 3u, step_trk = tessera.mode[tr] == TESS_ENG_OFF, hu = tessera.sub_human[tr];
