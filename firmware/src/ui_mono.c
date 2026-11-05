@@ -717,15 +717,24 @@ static void mo_pic_lfo(track_t *t)
         mo_textr(b, 118, 102, MO_INK);
     }
 }
+/* NOTES, a bar's height: x semitones over the page's base. A span of 12 or 24 fills the area; 36, the widest, gives
+ * three octaves its first 19 cells and all above them the last 3, so one note raised high leaves the rest readable;
+ * 127: the whole range, a page of one pitch. Rising with x and 3..25 cells for any note */
+static int32_t mo_note_h(int32_t x, int32_t span)
+{
+    if (span != 36) return 3 + x * 22 / span;
+    return x <= 36 ? 3 + x * 19 / 36 : 22 + (x - 36) * 3 / 91;
+}
 /* NOTES (a melodic track's steps): the cursor's page of 16, tabs 1..4 for the pattern's pages (the one shown inverted)
- * with LEN and DIV; a step a column 5 cells wide in groups of four: a note's height its pitch among the page's notes
- * (a chord: a tick above for each note more), a tie an outline at the note before's height, a rest a dim dash; an
+ * with LEN and DIV; a step a column 5 cells wide in groups of four: a note's height its pitch over the C below the
+ * page's lowest note, one, two or three octaves up (mo_note_h: turning a note moves the others only as it crosses into
+ * the next span, or moves the lowest past a C; one pitch alone: its place in the whole range) (a chord: a tick above for each note more), a tie an outline at the note before's height, a rest a dim dash; an
  * accent a mark under, a slide a tail into the next, Accumulate a caret over (pointing up or down); the playhead a
  * dim frame, the cursor a thick underline */
 static void mo_pic_notes(const track_t *t)
 {
     uint32_t len = (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP), pages = (len + 15u) / 16u, pg = ui.cursor / 16u, i;
-    int32_t lo = 127, hi = 0, prev = 3, base = 92;
+    int32_t lo = 127, hi = 0, prev = 3, base = 92, c0, span;
     char b[20];
     const char *unit;
     for (i = 0; i < 4u; i++) {                          /* the pattern's pages */
@@ -746,7 +755,9 @@ static void mo_pic_notes(const track_t *t)
             hi = st->note[0] > hi ? st->note[0] : hi;
         }
     }
-    if (hi - lo < 12) lo = hi - 12 < 0 ? 0 : (lo + hi) / 2 - 6, hi = lo + 12;   /* (an octave at least) */
+    c0 = lo / 12 * 12;
+    span = hi - c0 <= 12 ? 12 : hi - c0 <= 24 ? 24 : 36;
+    if (lo == hi) c0 = 0, span = 127;
     for (i = 0; i < 16u; i++) {
         uint32_t si = pg * 16u + i;
         const step_t *st = &seq_steps(t)[si < NSTEP ? si : 0u];
@@ -757,8 +768,7 @@ static void mo_pic_notes(const track_t *t)
         }
         if (step_on(st) && st->n) {
             uint32_t k;
-            h = 3 + (st->note[0] - lo) * 19 / (hi - lo > 0 ? hi - lo : 1);
-            h = h > 22 ? 22 : h;
+            h = mo_note_h(st->note[0] - c0, span);
             prev = h;
             mo_fill(x, base - h, 5, h, MO_INK);
             for (k = 1; k < st->n && k < 4u; k++)       /* a chord's other notes */

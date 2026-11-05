@@ -423,6 +423,10 @@ On NOTES, **KNOB 2** sets the picked note's pitch. With **QNT OFF** it moves a s
 the turn's direction first. With **QNT CHRD** and a CHORD track playing it moves through that chord's notes. Hold
 **ENV** while turning for a semitone at a time. A microtonal scale moves a degree a detent, as before.
 
+A note's bar stands for its pitch over the C below the page's lowest note. The scale is one, two or three octaves
+tall, as the page's notes need; anything above three octaves shares the top of the area, so one note raised high
+leaves the others readable. A page with only one pitch shows where it sits in the whole range.
+
 QNT works on notes as they come in, so notes written with QNT OFF or before SCL changed stay where they are. To bring
 them onto the scale, use **Snap to scale** in the pattern's sheet (below).
 
