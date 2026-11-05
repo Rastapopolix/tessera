@@ -72,16 +72,17 @@ budget still requires a device measurement; host playback cannot establish it.
 `JIELI_TOOLCHAIN` and `AC79_SDK` override the default locations
 (`~/.jieli/toolchain`, `~/fw-AC79_AIoT_SDK`).
 
-`./build.sh --release 2.0.1` makes a release build: the package identity becomes `FM-1_83772001`
-(Tessera's own prefix `FM-1_8377`, then X, Y as two digits and Z; X.Y without a patch number counts as
-X.Y.0, and a suffix such as `-rc1` does not change it) and the version string `v2.0.1`; the package is
-`build/tessera-2.0.1.fwsc`, and `build/release-2.0.1/` holds what a release ships: the package, the app
-(`tessera-2.0.1-app.bin`), `SHA256SUMS`, `LICENSE`, `LICENSING.md` and
+`./build.sh --release 3.3.1` makes a release build: the package identity becomes `FM-1_833`
+(Tessera's own `FM-1_8`, then X and Y; the patch number and a suffix such as `-beta2` do not change it) and the
+version string `v3.3.1`; the package is `build/tessera-3.3.1.fwsc`, and `build/release-3.3.1/` holds what a
+release ships: the package, the app (`tessera-3.3.1-app.bin`), `SHA256SUMS`, `LICENSE`, `LICENSING.md` and
 `LICENSES/` (the package contains Apache-2.0 SDK files, so the licence texts travel with it).
-Development builds report `FM-1_83770000`. The FM-1 sends this identity when asked, and the Firmware Hub
-uses it to recognise Tessera on a connected FM-1, so no other firmware may share the prefix. Releases up to
-2.0 used Melodee's numbering (`FM-1_9` and the version's digits, 2.0 is `FM-1_920`), which upstream Melodee
-uses too; the site and the installer still accept those packages. The update loader keeps reporting
+Development builds report `FM-1_800`. The FM-1 sends this identity when asked, and the Firmware Hub
+uses it to recognise Tessera on a connected FM-1, so no other firmware may share it. M-VAVE's M-UPGRADE
+3.11 (2026-11-03) refuses a device whose identity is not a name, `_` and one to three digits, so an identity
+stays three digits at most. Releases 2.0.1 to 3.3-beta1 reported `FM-1_8377` and four digits (3.2.2 is
+`FM-1_83773022`), releases up to 2.0 Melodee's numbering (`FM-1_9` and the version's digits, 2.0 is
+`FM-1_920`); the site and the installer still accept those packages. The update loader keeps reporting
 `ota-FM-1_900` ("Melodee Update").
 
 Build options (environment; most use `0` or `1`; defaults in `firmware/src/build_options.h`, `melodee.c`, `core.h` and `icons.c`):
@@ -564,7 +565,7 @@ Save a complete backup in the editor before trying a nightly. Selecting
 Standard in the installer returns to the released firmware.
 
 `./build.sh --nightly` stamps the current Git commit into the firmware version
-(`next-<commit>`) and uses development identity `FM-1_83770000`. Build both variants
+(`next-<commit>`) and uses development identity `FM-1_800`. Build both variants
 from the same commit; `MELODEE_DUAL_CORE=0 ./build.sh --nightly` produces
 `build/melodee-nightly-1core.fwsc`, while the dual-core package is
 `build/melodee-nightly.fwsc`. The installer shows the source commit and UTC
