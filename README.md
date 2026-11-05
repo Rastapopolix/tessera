@@ -35,7 +35,7 @@ and sequences from the computer with the [web editor](https://rastapopolix.githu
 Each release has two builds: `tessera-X.Y.fwsc` (standard, dual core: start here) and
 `tessera-X.Y-1core.fwsc` (single core, for FM-1s that crash with the standard build).
 
-Do not unplug the FM-1 while it is writing. This is experimental firmware: use it at your own risk. The installer
+Do not unplug the FM-1 while it is writing. Tessera is experimental in every sense of the word: use it at your own risk. The installer
 page also has a way back to the official V15 firmware, with a backup first.
 
 ---
