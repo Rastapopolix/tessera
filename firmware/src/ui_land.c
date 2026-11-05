@@ -14,6 +14,25 @@
 #define LAND_MX 94                                      /* the moon */
 #define LAND_MY 22
 
+/* a MOSAIC kind of palette: each part of the scene an ink of its four that suits it (Theo, beta3): the moon, the far
+ * hills, the water (its line and the moon in it), as track ink 0..3, or 4 the palette's white; the stars white. A one-ink
+ * palette: its ink, as before (its track inks are the ink, its white the ink) */
+static const struct { char name[7]; uint8_t moon, hills, water; } LAND_INKS[] = {
+    {"MOSAIC", 0, 3, 1},                                /* yellow moon, green hills, blue water */
+    {"SUNSET", 3, 2, 0},                                /* yellow moon, lilac hills, orange water */
+    {"OCEAN", 4, 2, 1},                                 /* white moon, green hills, teal water */
+    {"NEON", 3, 2, 0},                                  /* orange moon, lime hills, cyan water */
+};
+static uint16_t land_ink(uint32_t part, int dim)       /* part: 0 moon, 1 hills, 2 water */
+{
+    uint32_t i, k = 4u;
+    for (i = 0; i < sizeof LAND_INKS / sizeof LAND_INKS[0]; i++)
+        if (str_eq(UI_PALETTES[ux.pal].name, LAND_INKS[i].name))
+            k = part == 0u ? LAND_INKS[i].moon : part == 1u ? LAND_INKS[i].hills : LAND_INKS[i].water;
+    if (k > 3u) return dim ? MO_DIM : MO_HOT;
+    return dim ? mo_tdim(k) : T_TRK(k);
+}
+
 static struct {
     uint32_t t0[LAND_RIP];                              /* when the drop landed (fm1_ms) */
     uint8_t x[LAND_RIP], y[LAND_RIP], r[LAND_RIP], tr[LAND_RIP], vel[LAND_RIP], used[LAND_RIP];
@@ -98,15 +117,16 @@ static void land_ring(int32_t x, int32_t y, int32_t rx, int32_t ry, int dashed, 
 static void mo_pic_land(void)
 {
     uint32_t i, s = 0x2545F491u, stars = land_stars(), cover = land_cover(), clouds = 1u + cover / 4u;
+    uint16_t moon = land_ink(0, 0), hills = land_ink(1, 1), water = land_ink(2, 0), deep = land_ink(2, 1);
     int32_t x, y;
     for (i = 0; i < LAND_STARS; i++) {                  /* the stars, always in the same places */
         s = s * 1103515245u + 12345u;
         x = 2 + (int32_t)((s >> 8) % 116u);
         y = LAND_TOP + 2 + (int32_t)((s >> 20) % (uint32_t)(LAND_H - LAND_TOP - 12));
         if (i < stars && ((x - LAND_MX) * (x - LAND_MX) + (y - LAND_MY) * (y - LAND_MY) > 81))
-            mo_px(x, y, (s >> 30) ? MO_INK : MO_DIM);
+            mo_px(x, y, (s >> 30) ? MO_HOT : MO_DIM);
     }
-    mo_disc(LAND_MX, LAND_MY, 5, MO_INK);               /* a crescent */
+    mo_disc(LAND_MX, LAND_MY, 5, moon);                 /* a crescent */
     mo_disc(LAND_MX + 3, LAND_MY - 2, 4, MO_BG);
     for (i = 0; i < clouds; i++) {                      /* the clouds: bands of dashes, lower and wider when full */
         int32_t w = 18 + (int32_t)cover + (int32_t)(i * 7u % 9u), cy = LAND_TOP + 6 + (int32_t)(i * 11u % 23u) +
@@ -121,14 +141,14 @@ static void mo_pic_land(void)
     }
     for (x = 0; x < 120; x++) {                         /* the far shore: low hills */
         int32_t h = 3 + (mo_sin(x * 3) + mo_sin(x * 7 + 40) / 2) * 3 / 127, y0 = LAND_H - (h < 1 ? 1 : h);
-        mo_px(x, y0, MO_DIM);
-        for (y = y0 + 1 + ((x ^ y0) & 1); y < LAND_H; y += 2) mo_px(x, y, MO_DIM);   /* (dithered) */
+        mo_px(x, y0, hills);
+        for (y = y0 + 1 + ((x ^ y0) & 1); y < LAND_H; y += 2) mo_px(x, y, hills);   /* (dithered) */
     }
-    mo_hl(0, LAND_H, 120, MO_INK);
+    mo_hl(0, LAND_H, 120, water);
     for (y = LAND_H + 3, i = 0; y < MO_PY1 - 2; y += 4, i++) {   /* the moon in the water (it shivers under rings) */
         int32_t w = 7 - (int32_t)i, sh = land_moving() ? (int32_t)((fm1_ms / 80u + i) % 3u) - 1 : 0;
         if (w < 2) break;
-        for (x = 0; x < w; x += 2) mo_px(LAND_MX - w / 2 + x + sh, y, MO_DIM);
+        for (x = 0; x < w; x += 2) mo_px(LAND_MX - w / 2 + x + sh, y, deep);
     }
     for (i = 0; i < LAND_RIP; i++) {                    /* the rings: open fast, slow down, go to dashes and fade */
         uint32_t a, e;
