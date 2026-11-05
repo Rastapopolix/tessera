@@ -447,8 +447,33 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
 }
 #if MELODEE_LOOK
 /* Mono: the rows 11 cells apart from row 12, the name at the left, the value at the right (dim), the row picked
- * inverted across the screen; COLOR: the inks as boxes before the name (two rows of them past eight), the one chosen
- * filled; a scroll bar a cell wide at the right */
+ * inverted across the screen; a scroll bar a cell wide at the right. COLOR picked: its sheet in place of the rows below
+ * it (menu_colors) */
+/* MENU > COLOR's sheet: ONE INK, a box in each ink, and MOSAIC, a tile of four stripes in each palette's track colours
+ * (tools/gen_ui_palettes.py keeps them to a row each, inks first); the one chosen framed, a cell clear round it, and
+ * its name large below */
+static void menu_colors(void)
+{
+    uint32_t k, cur = settings.palette % NPALETTES, ni = 0, nm = 0;
+    mo_text("ONE INK", 2, 16, MO_DIM);
+    mo_text("MOSAIC", 2, 50, MO_DIM);
+    for (k = 0; k < NPALETTES; k++) {
+        const ui_pal_t *q = &UI_PALETTES[k];
+        int32_t x, y, w, j;
+        if (q->trk[0] == q->trk[1]) {                   /* one ink: a box 10 x 11 (the frames clear of the scroll bar) */
+            x = 2 + (int32_t)ni++ * 13, y = 27, w = 10;
+            mo_fill(x, y, w, 11, q->text);
+        } else {                                        /* MOSAIC: its four, 6 cells each */
+            x = 2 + (int32_t)nm++ * 29, y = 61, w = 24;
+            for (j = 0; j < 4; j++)
+                mo_fill(x + j * 6, y, 6, 11, q->trk[j]);
+        }
+        if (k == cur)
+            mo_box(x - 2, y - 2, w + 4, 15, MO_HOT);
+    }
+    mo_hl(0, 82, 120, MO_DIM);
+    mo_text_s(UI_PALETTES[cur].name, 2, 88, 2, MO_INK);
+}
 static void menu_mono(void)
 {
     uint32_t first = ui.menu_sel >= MENU_VISIBLE ? ui.menu_sel - MENU_VISIBLE + 1u : 0u, i;
@@ -456,31 +481,23 @@ static void menu_mono(void)
     for (top = 0; top < 108; top += 54) {               /* (the rows below the menu's strip, in two canvases) */
         cv_begin(240, 108, MO_BG);
         cv_oy = -top * 2;
-        for (i = first; i < first + MENU_VISIBLE && i < MI_COUNT; i++) {
-            int32_t y = 1 + (int32_t)(i - first) * 11, on = i == ui.menu_sel, x = 115;
+        for (i = first; i < first + MENU_VISIBLE && i < MI_COUNT && (i == MI_COLOR || ui.menu_sel != MI_COLOR); i++) {
+            int32_t y = 1 + (int32_t)(i - first) * 11, on = i == ui.menu_sel;
             uint16_t ink = on ? MO_BG : MO_INK, dim = on ? MO_BG : MO_DIM;
             char b[24], a[24];
             const char *value = menu_value(i, b, sizeof b);
             if (on)
                 mo_fill(0, y, 118, 10, MO_HOT);
             mo_text(MI_NAME[i], 2, y + 2, on ? MO_BG : MO_DIM);
-            if (i == MI_COLOR) {
-                uint32_t k, n = NPALETTES < 10u ? NPALETTES : 10u, cols = n > 8u ? (n + 1u) / 2u : n;
-                int32_t sw = n > 5u ? 4 : 6, bh = n > 8u ? 3 : 6;   /* (more than five inks: narrower boxes, clear of
-                                                                     * COLOR; more than eight: two rows of small ones) */
+            if (i == MI_COLOR)
                 value = UI_PALETTES[settings.palette % NPALETTES].name;
-                x -= mo_tw(value) + 3 + sw * (int32_t)cols;
-                for (k = 0; k < n; k++) {
-                    int32_t bx = x + sw * (int32_t)(k % cols), by = y + 2 + (bh + 1) * (int32_t)(k / cols);
-                    if (k == settings.palette % NPALETTES) mo_fill(bx, by, sw - 1, bh, ink);
-                    else mo_box(bx, by, sw - 1, bh, dim);
-                }
-            }
             if (value) {
                 mo_ascii(a, value, sizeof a);
                 mo_textr(a, 115, y + 2, i == MI_COLOR ? ink : dim);
             }
         }
+        if (ui.menu_sel == MI_COLOR)
+            menu_colors();
         if (MI_COUNT > MENU_VISIBLE) {
             int32_t th = hh * (int32_t)MENU_VISIBLE / (int32_t)MI_COUNT;
             int32_t ty = (int32_t)((uint32_t)(hh - th) * first / (MI_COUNT - MENU_VISIBLE));

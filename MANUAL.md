@@ -90,6 +90,9 @@ WHITE, GREEN, BLUE, RED, and ORANGE, PINK, HOT PINK and LILAC to match the FM-1'
 apart by their numbers, not by colours. **MOSAIC** gives each track a colour of its own (T1 yellow, T2 blue, T3 hot pink,
 T4 green): the screen takes the selected track's, the pages that show all four (HOME, MIXER, PATTERNS, SONG, QUAD,
 FOLLOW, MATRIX, MIDI OUT, the cords) draw each in its own, and the value you turn and the row you pick show in white.
+**SUNSET** (orange, hot pink, lilac, yellow), **OCEAN** (blue, teal, green, lilac) and **NEON** (cyan, magenta, lime,
+orange) do the same in other colours. With COLOR picked in the menu, the inks and the four-colour sets show below it,
+the one chosen framed and its name large; KNOB 2 or OCT+ steps through them.
 
 <table>
 <tr>
@@ -105,6 +108,11 @@ FOLLOW, MATRIX, MIDI OUT, the cords) draw each in its own, and the value you tur
 <td align="center"><img src="assets/gallery/ink_hot_pink.png" alt="HOT PINK" width="180"><br><b>HOT PINK</b></td>
 <td align="center"><img src="assets/gallery/ink_lilac.png" alt="LILAC" width="180"><br><b>LILAC</b></td>
 <td align="center"><img src="assets/gallery/ink_mosaic.png" alt="MOSAIC" width="180"><br><b>MOSAIC</b></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/gallery/ink_sunset.png" alt="SUNSET" width="180"><br><b>SUNSET</b></td>
+<td align="center"><img src="assets/gallery/ink_ocean.png" alt="OCEAN" width="180"><br><b>OCEAN</b></td>
+<td align="center"><img src="assets/gallery/ink_neon.png" alt="NEON" width="180"><br><b>NEON</b></td>
 </tr>
 </table>
 
@@ -974,7 +982,7 @@ Hold **HOME** for the menu. Tessera's additions:
 
 | Item | What it does |
 |---|---|
-| **COLOR** | The screen's ink, on black: YELLOW (the default), WHITE, GREEN, BLUE, RED, ORANGE, PINK, HOT PINK or LILAC; or MOSAIC, a colour per track with the selection in white. |
+| **COLOR** | The screen's ink, on black: YELLOW (the default), WHITE, GREEN, BLUE, RED, ORANGE, PINK, HOT PINK or LILAC; or MOSAIC, SUNSET, OCEAN or NEON, a colour per track with the selection in white. Picked, it shows them all below it: ONE INK, then MOSAIC (the four-colour sets), the one chosen framed. |
 | **KNOBS** | How the four knobs' values are drawn on every page: **DIAL** (the default) or **BAR**, an upright bar that fills from the bottom. MIXER and the home page keep their dials. Saved. |
 | **USB VOLUME** | The level of the computer's audio played through the FM-1, **0 to 100 %** in 5 % steps, apart from MASTER: the volume pot sets the FM-1's own sound, this the computer's. 50 % (the default) is the old level at MASTER's default. What the FM-1 records over USB (USB INPUT: stereo or four tracks) is taken before MASTER too, so the pot never changes a recording's level. Saved. |
 | **MIDI OUT** | What goes out over USB MIDI: **KEYS** (the notes you play, as Melodee sent them), **ALL** (also the steps, the ARP, recordings and every generator) or **OFF**. Each track on its own channel: see [MIDI OUT channels](#midi-out-channels). |
