@@ -22,7 +22,8 @@
 
 /* Flash map (Tessera, 2026-10-22: docs/design/PROJECT_FORMAT.md in tessera-notes): app area 0x4000..0x92FFF; project
  * copies (OBJ_PROJ0..3, ten sectors each, ST_PROJ_RUN) in 0x93000..0x9CFFF, 0xA0000..0xD7FFF and 0xEA000..0xF7FFF;
- * the Tessera object 0x9D000..0x9EFFF; FM6 patch bank copy A 0x9F000 (B 0xFE000); native FM6 0xD8000..0xDBFFF;
+ * MIDI LEARN's maps 0x9D000..0x9EFFF (OBJ_LEARN: OBJ_TESSERA's until TSP1); FM6 patch bank copy A 0x9F000 (B 0xFE000);
+ * native FM6 0xD8000..0xDBFFF;
  * user preset banks 0xDC000..0xDFFFF (upreset.c); OTA staging 0xE0000..0xE4FFF (0xE4000 the update-record sector);
  * preset extensions 0xE5000..0xE8FFF, 0xE9000, 0xFA000; 0xF8000..0xF9FFF and 0xFB000 free; settings 0xFC000..0xFDFFF;
  * 0xFF000 the device's key and MAC (never written).
@@ -36,7 +37,7 @@
  * never validates as a project (st_head checks the type).
  * User samples are disabled: this area must never accept sample uploads. U33..U64 use E5000..E8FFF; owned FM6
  * U01..U32 reuse the old bank pair, U33..U64 use E9000/FA000. E0000..E4FFF remains reserved for OTA loader staging. */
-enum { OBJ_SETTINGS, OBJ_PROJECT0, OBJ_UPRESET0 = OBJ_PROJECT0 + 4, OBJ_FM6BANK = OBJ_UPRESET0 + 2, OBJ_BANK0, OBJ_CZBANK0 = OBJ_BANK0 + 4, OBJ_UPRESET_EXT0 = OBJ_CZBANK0 + 8, OBJ_UPFM6_EXT = OBJ_UPRESET_EXT0 + 2, OBJ_NATIVEFM0, OBJ_P5BANK0 = OBJ_NATIVEFM0 + 2, OBJ_TESSERA = OBJ_P5BANK0 + 5, OBJ_PROJ0, OBJ_COUNT = OBJ_PROJ0 + 4 };
+enum { OBJ_SETTINGS, OBJ_PROJECT0, OBJ_UPRESET0 = OBJ_PROJECT0 + 4, OBJ_FM6BANK = OBJ_UPRESET0 + 2, OBJ_BANK0, OBJ_CZBANK0 = OBJ_BANK0 + 4, OBJ_UPRESET_EXT0 = OBJ_CZBANK0 + 8, OBJ_UPFM6_EXT = OBJ_UPRESET_EXT0 + 2, OBJ_NATIVEFM0, OBJ_P5BANK0 = OBJ_NATIVEFM0 + 2, OBJ_LEARN = OBJ_P5BANK0 + 5, OBJ_PROJ0, OBJ_COUNT = OBJ_PROJ0 + 4 };
 #define OBJ_SLOT(slot) (OBJ_PROJ0 + ((slot) & 3u))   /* a project slot's object */
 /* Each project copy (slot * 2 + copy): its ten sectors as up to two runs of consecutive sectors */
 static const struct { uint32_t at; uint8_t n; } ST_PROJ_RUN[8][2] = {
@@ -84,7 +85,7 @@ static uint32_t st_proj_sector(uint32_t obj, uint32_t copy, uint32_t i)
 static uint32_t st_sector(uint32_t obj, uint32_t copy)  /* flash offset of copy A (0) / B (1): its first sector */
 {
     if (st_proj(obj)) return st_proj_sector(obj, copy, 0);
-    if (obj == OBJ_TESSERA) return 0x9D000u + copy * ST_SECTOR;     /* the free pair below the FM6 patch bank */
+    if (obj == OBJ_LEARN) return 0x9D000u + copy * ST_SECTOR;       /* the free pair below the FM6 patch bank */
     if (obj >= OBJ_P5BANK0) return 0x93000u+(obj-OBJ_P5BANK0)*2u*ST_SECTOR+copy*ST_SECTOR;
     if (obj >= OBJ_NATIVEFM0) return 0xD8000u + (obj - OBJ_NATIVEFM0) * 2u * ST_SECTOR + copy * ST_SECTOR;
     if (obj == OBJ_UPFM6_EXT) return copy ? 0xFA000u : 0xE9000u;

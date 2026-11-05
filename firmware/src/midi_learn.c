@@ -4,11 +4,13 @@
 /* MIDI LEARN: a CC onto one knob's parameter (its central id, pid.h) of one track, whatever channel the CC comes on and
  * whatever page is shown. The MIDI handler sets it as the CC map does (midi_cc.c midi_pid: MOTION records it, cords add
  * on top); a learned CC no longer does what the fixed map gave it, MIDI CC IN OFF included (it was chosen). While
- * learning (MENU > MIDI LEARN) every CC only marks itself (mlearn_seen) for ui_learn.c. Up to MLEARN_N; kept until
- * power-off, not saved. Included by seq.c after midi_cc.c. */
+ * learning (MENU > MIDI LEARN) every CC only marks itself (mlearn_seen) for ui_learn.c. Up to MLEARN_N; the device's,
+ * not a project's: kept in flash object OBJ_LEARN (project.c mlearn_load, settings_poll saves it when mlearn_dirty).
+ * Included by seq.c after midi_cc.c. */
 #define MLEARN_N 16u
 typedef struct { uint8_t cc, track; uint16_t pid; } mlearn_t;   /* cc 0: free */
 static mlearn_t mlearn[MLEARN_N];
+static uint8_t mlearn_dirty;                             /* changed since saved (main loop only) */
 static volatile uint8_t mlearn_on;                       /* learning (the menu's MIDI LEARN until the menu again) */
 static volatile int16_t mlearn_seen = -1;                /* learning: the last CC sent */
 static int mlearn_ok(uint32_t cc)                        /* not the CCs that play (wheel, data entry, pedal, RPN ..) */

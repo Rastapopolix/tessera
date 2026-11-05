@@ -50,6 +50,7 @@ static void mlearn_bind(uint32_t cc)
         mlearn[k].cc = (uint8_t)cc;                     /* (the MIDI handler matches it from here) */
     }
     fm1_irq_on();
+    mlearn_dirty = 1;                                   /* (settings_poll saves it) */
     if (k == MLEARN_N) {
         ui_message("LEARN FULL");
         return;
@@ -84,4 +85,5 @@ static void mlearn_forget(void)
     fm1_irq_off();
     memset(mlearn, 0, sizeof mlearn);
     fm1_irq_on();
+    mlearn_dirty = 1;
 }

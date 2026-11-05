@@ -99,9 +99,54 @@ static void reset(void)
     up_gen = erases = 0;
     boot_syncs = boot_trace = boot_trace_bad = 0;
     irq_start_race = irq_races = 0;
+    memset(mlearn, 0, sizeof mlearn);
+    mlearn_dirty = 0;
 }
 
 #ifndef PERSISTENCE_TEST_NO_MAIN
+/* MIDI LEARN's maps: saved at rest in their own object, back at power-on; bad maps left free */
+static int test_mlearn_save(void)
+{
+    int bad = 0;
+    reset(); persist_boot(); settings_init();
+    uint32_t before = erases;
+    mlearn[0] = (mlearn_t){21, 2, PID_TESS(0)}; mlearn[3] = (mlearn_t){85, 0, PID_TESS(1)};
+    mlearn_dirty = 1; song.playing = 1;
+    settings_poll();
+    bad += check("MIDI LEARN: a learned CC waits while playing", mlearn_dirty && erases == before);
+    song.playing = 0;
+    settings_poll();
+    bad += check("MIDI LEARN: saved at STOP, one erase, settings untouched",
+                 !mlearn_dirty && !persist_pending && erases == before + 1u && st_exists(OBJ_LEARN));
+    memset(mlearn, 0, sizeof mlearn);
+    persist_boot();
+    bad += check("MIDI LEARN: back after power-on", mlearn[0].cc == 21 && mlearn[0].track == 2 &&
+                 mlearn[0].pid == PID_TESS(0) && mlearn[3].cc == 85 && mlearn[3].pid == PID_TESS(1) &&
+                 !mlearn[1].cc && !mlearn_dirty);
+    before = erases; settings_poll();
+    bad += check("MIDI LEARN: nothing changed, no erase", erases == before);
+    {
+        mlearn_rec_t r = {MLEARN_MAGIC, {{0}}};
+        r.m[0] = (mlearn_t){64, 0, PID_TESS(0)};            /* the pedal: never learned */
+        r.m[1] = (mlearn_t){22, 7, PID_TESS(0)};            /* no such track */
+        r.m[2] = (mlearn_t){23, 1, 0x2FFu};                 /* no such parameter */
+        r.m[3] = (mlearn_t){24, 1, PID_TESS(2)};
+        st_save(OBJ_LEARN, &r, sizeof r);
+        persist_boot();
+        bad += check("MIDI LEARN: a map that does not check out is left free",
+                     !mlearn[0].cc && !mlearn[1].cc && !mlearn[2].cc && mlearn[3].cc == 24);
+        r.magic = 0x4B534554u;                               /* another layout (an old Tessera block) */
+        st_save(OBJ_LEARN, &r, sizeof r);
+        persist_boot();
+        bad += check("MIDI LEARN: an unknown record loads nothing", !mlearn_count());
+    }
+    erase_error = 1; mlearn[5] = (mlearn_t){30, 1, PID_TESS(0)}; mlearn_dirty = 1;
+    settings_poll();
+    bad += check("MIDI LEARN: a failed save keeps it to retry", mlearn_dirty && persist_pending == 2);
+    erase_error = 0; fm1_ms += 1000; settings_poll();
+    bad += check("MIDI LEARN: ... and the retry saves it", !mlearn_dirty && !persist_pending);
+    return bad;
+}
 static int staged_import_persistence(void)
 {
     int bad=0;reset();memset(&sx_import,0,sizeof sx_import);fm6_rx_ready=0;
@@ -499,7 +544,7 @@ static int test_tsp_record(void)
 
 int main(void)
 {
-    int bad = test_boot_maintenance_writes() + test_tsp_record(), ok;
+    int bad = test_boot_maintenance_writes() + test_tsp_record() + test_mlearn_save(), ok;
     uint32_t before;
     persist_t p;
     static uint8_t old[TSP_MAX], keep[TSP_MAX];   /* (a slot's record as it was) */
