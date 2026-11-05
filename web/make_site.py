@@ -19,6 +19,8 @@
   webapp/synth-editor/              the synth-only branch's editor (publish_synth.py), kept as published
   webapp/installer/index.html       index_pkg.html, self-contained (fm1pkg.js, fm1ota.js, metadata inlined)
   webapp/editor/index.html          editor.html (+ fukiai.ttf, FUKIAI-LICENSE.txt, fm1backup.js, demos/*.tsp)
+  webapp/editor-beta/               the beta's editor, the same files from the beta's own web/ and demos/ (its Demo
+                                    projects hold the CHK test projects); goes with the beta
   webapp/sim/                       the web simulator (web/sim/build.sh: build/sim/), when given; else kept as published
   src/                              not touched
 
@@ -111,6 +113,20 @@ def channel(spec, label, stem, branch):
                    "builtAt": spec["builtAt"], "pkg": {k: "../../firmware/" + f[3] for k, f in files.items()}}
 
 
+def copy_editor(ed):
+    """this checkout's editor into ed: editor.html, its font and fm1backup.js, and the demo projects for its Demo
+    projects (demos/*.tsp, demos/checks/*.tsp: the test projects)"""
+    ed.mkdir(parents=True, exist_ok=True)
+    shutil.copy(HERE / "editor.html", ed / "index.html")
+    for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt", "fm1backup.js"):
+        if (HERE / f).exists():
+            shutil.copy(HERE / f, ed / f)
+    for sub in ("", "checks"):
+        (ed / "demos" / sub).mkdir(parents=True, exist_ok=True)
+        for f in sorted((HERE.parent / "demos" / sub).glob("*.tsp")):
+            shutil.copy(f, ed / "demos" / sub / f.name)
+
+
 def version_key(version):
     """X.Y[.Z][-suffix] -> (X, Y, Z): the release a version is or leads to"""
     m = re.match(r"(\d+)\.(\d+)(?:\.(\d+))?", version)
@@ -131,6 +147,7 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
         raise SystemExit(f"{single}: identity {product1}, {pkg} is {product}: build both from one release")
     if raw1 == raw:
         raise SystemExit(f"{single} is {pkg}: the single-core package is built with MELODEE_DUAL_CORE=0")
+    beta_editor = bool(beta)                        # (a beta published now: its editor is this checkout's)
     if beta is None:
         beta = published(out, "beta")
     if beta and version_key(beta["version"]) <= version_key(version):
@@ -138,6 +155,8 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
     if beta and not re.fullmatch(r"\d+\.\d+(\.\d+)?-[A-Za-z0-9]+", beta["version"]):
         raise SystemExit(f"beta version {beta['version']!r}: use X.Y[.Z]-suffix, e.g. 3.3-beta1")
     beta_files, beta_meta = channel(beta, "beta", "tessera-" + beta["version"], "develop") if beta else ({}, None)
+    if beta_meta:
+        beta_meta["editor"] = "../editor-beta/"
     if nightly is None:
         nightly = published(out, "nightly")
     nightly_files, nightly_meta = channel(nightly, "nightly", "melodee-nightly", "next") if nightly else ({}, None)
@@ -199,17 +218,12 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
     for doc in ("LICENSE", "LICENSING.md"):
         shutil.copy(HERE.parent / doc, fw / doc)
     if not installer_only:
-        shutil.copy(HERE / "editor.html", ed / "index.html")
-    for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt", "fm1backup.js"):
-        if not installer_only and (HERE / f).exists():
-            shutil.copy(HERE / f, ed / f)
-    if not installer_only:                          # the demo projects, for the editor's Demo projects (demos/*.tsp)
-        (ed / "demos").mkdir(exist_ok=True)
-        for f in sorted((HERE.parent / "demos").glob("*.tsp")):
-            shutil.copy(f, ed / "demos" / f.name)
-        (ed / "demos" / "checks").mkdir(exist_ok=True)   # the test projects (demos/checks/*.tsp)
-        for f in sorted((HERE.parent / "demos" / "checks").glob("*.tsp")):
-            shutil.copy(f, ed / "demos" / "checks" / f.name)
+        copy_editor(ed)
+    bed = out / "webapp" / "editor-beta"
+    if beta_meta and beta_editor:
+        copy_editor(bed)
+    elif not beta_meta and bed.exists():
+        shutil.rmtree(bed)
     if not installer_only:                          # the project page, its screens and the brand pictures
         home = (HERE / "home" / "index.html").read_text(encoding="utf-8")
         for mark in ("@VERSION@", "@FWSC@", "@FWSC1@"):

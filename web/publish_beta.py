@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
 """Put a beta (the next update, both cores) on an existing site checkout's installer, or take it off (--off); keep its
-release, editor, project page and the other channels. The release that the beta leads to drops it by itself
+release, editor, project page and the other channels. The beta's own editor (this checkout's web/, with the demo and CHK
+test projects) goes to webapp/editor-beta/, linked from the installer's Beta choice. The release that the beta leads to drops it by itself
 (make_site.py), so --off is only for a beta withdrawn before then.
 
   web/publish_beta.py docs --dual tessera-3.3-beta1.fwsc --single tessera-3.3-beta1-1core.fwsc \\

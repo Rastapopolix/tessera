@@ -163,6 +163,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <label><input type="radio" name="build" id="build-beta-single"> <span data-t="beta-single"></span></label></p>
     <p class="small" data-t="betaWhy"></p>
     <p class="small" id="beta-info"></p>
+    <p class="small"><a id="beta-editor" href="../editor-beta/" data-t="betaEditor" hidden></a></p>
     <p class="small"><a href="https://github.com/Rastapopolix/tessera/issues" data-t="betaReport"></a></p>
   </section>
   <section id="nightly-options" class="panel choice" style="--c:var(--p3)" hidden>
@@ -247,6 +248,7 @@ const TEXT = {
     synthTitle: "シンセ専用（オプション）", "synth-dual": "シンセ専用（デュアルコア）", "synth-single": "シンセ専用（シングルコア）",
     "synth-dualTag": "シンセ専用・デュアルコア", "synth-singleTag": "シンセ専用・シングルコア",
     synthWhy: "パソコンで演奏・録音するための 1 トラックの音源版です。すべてのシンセと音色エディット、ARP・CHORD・SCALES、エフェクト（ドライブ、コーラス、ディレイ、リバーブ）、USB オーディオのステレオ録音を備えます。シーケンサー、ソング、プロジェクトの保存はありません。PLAY は ARP のホールドです。本体に保存したプロジェクトとプリセットはそのまま残り、標準を選んでインストールすると戻ります。インストール前にエディタで全体バックアップを保存してください。",
+    betaEditor: "ベータ版のエディタ（新しい機能とテスト用プロジェクト入り）",
     synthEditor: "シンセ専用版のエディタ（音色・エフェクト・設定をパソコンから編集）",
     dual: "標準（デュアルコア）", single: "シングルコア", dualTag: "標準", singleTag: "シングルコア",
     singleWhy: "シングルコア版は、標準版でクラッシュする FM-1 のためのものです（赤い TESSERA CRASH 画面、フリーズ、書き込みモードでの再起動）。FM-1 の 2 つ目のコアを起動しません（公式ファームウェアも使っていません）。重い FM6 の音色は早めに処理の上限に達します。標準版に戻すには、標準を選んでインストールしてください。",
@@ -311,6 +313,7 @@ const TEXT = {
     synthTitle: "Synth only (optional)", "synth-dual": "Synth only — dual core", "synth-single": "Synth only — single core",
     "synth-dualTag": "synth only, dual core", "synth-singleTag": "synth only, single core",
     synthWhy: "A one-track sound module for playing and recording into a computer: every synth and its sound editing, ARP, CHORD and SCALES, the effects (drive, chorus, delay, reverb) and stereo recording over USB audio. There is no sequencer, song or project saving; PLAY holds the ARP. Projects and presets saved on the FM-1 stay where they are and come back when you choose Standard and install again. Save a complete backup in the editor before installing.",
+    betaEditor: "The beta's editor (its new features and the CHK test projects)",
     synthEditor: "Synth-only editor (sounds, effects and settings from the computer)",
     dual: "Standard (dual core)", single: "Single core", dualTag: "standard", singleTag: "single core",
     singleWhy: "The single-core build is for FM-1s that crash with the standard build (a red TESSERA CRASH screen, freezes, or restarts into update mode). It never starts the FM-1's second core, which the official firmware does not use either. Heavy FM6 sounds reach the CPU limit sooner. To go back, choose Standard and install again.",
@@ -393,6 +396,7 @@ $("beta-options").hidden = !meta.beta;
 if (meta.beta) {
   $("beta-version").textContent = meta.beta.version;
   $("beta-info").textContent = `${meta.beta.branch} · ${meta.beta.commit.slice(0, 7)} · ${meta.beta.builtAt}`;
+  if (meta.beta.editor) { $("beta-editor").href = meta.beta.editor; $("beta-editor").hidden = false; }
 }
 $("nightly-options").hidden = !meta.nightly;
 if (meta.nightly) $("nightly-info").textContent = `next · ${meta.nightly.commit.slice(0, 7)} · ${meta.nightly.builtAt}`;
