@@ -141,6 +141,11 @@ typedef struct {
     tessera_sec_t    sec[TESSERA_TRACKS][3];
     uint8_t          last_note[TESSERA_TRACKS];
     uint8_t          follow_mem[TESSERA_TRACKS];   /* FOLLOW of a STEP track: its last sounding note + 1, 0 none yet */
+    /* FOLLOW's HOLD (TWEAK, OCT+ held, KNOB 4): 0 off (the followed note on each of this track's own hits, as before),
+     * 1..4 that track's hits sample the followed note and this track plays it until the next one: a sample and hold.
+     * Not in the packed block: the record's HOLD part */
+    uint8_t          follow_hold[TESSERA_TRACKS];
+    uint8_t          hold_mem[TESSERA_TRACKS];     /* HOLD: the sampled note + 1, 0 none yet (not saved) */
     uint8_t          active_gate[TESSERA_TRACKS];
     uint8_t          hit[TESSERA_TRACKS];     /* its last step played on its own voice (LOGIC; seq.c sets a STEP track's) */
     uint8_t          br_in[TESSERA_TRACKS];   /* its seq_notes hold notes another track BRANCHed onto it */
@@ -279,6 +284,8 @@ void tessera_mutate(uint32_t tr);
 void tessera_seed_turn(uint32_t tr, int32_t s);    /* ROLL (EVOLVE page): the next seed, on the bar line */
 void tessera_evolve_knob(uint32_t k, int32_t s);
 void tessera_ev_layer_knob(uint32_t k, int32_t s);
+void tessera_tw_layer_knob(uint32_t k, int32_t s);
+void tessera_hold_hit(uint32_t tr);
 void tessera_fm_layer_knob(uint32_t k, int32_t s);   /* OCT+ held on FORM: KNOB 1 DEVELOP */
 void tessera_en_layer_knob(uint32_t k, int32_t s);   /* OCT+ held on ENERGY: KNOB 1 the track's DEPTH */   /* OCT+ held on a generator's EVOLVE: KNOB 1 GRAVITY */
 uint32_t tessera_every_bars(uint32_t every);
@@ -298,6 +305,8 @@ void tessera_chain_knob(uint32_t k, int32_t s, int layer);   /* the CHAIN page: 
 void entries_play(void);                            /* seq.c, PLAY: Entries from the top, everything in (entries.c) */
 void entries_tick(uint32_t n);                      /* seq.c, each block before the steps: the lines, the fades */
 int entries_hand_in(uint32_t tr);                   /* GLO's mute key: an out track back in (1 if it was out) */
+void mute_press(uint32_t tr, int all);              /* GLO's mute key / UNMUTE ALL: now or on MENU MUTES' line */
+uint32_t mute_waiting(void);                        /* the mute keys waiting for their line (blinking) */
 uint32_t tessera_entries_get(uint32_t *warn, uint8_t role[4]);   /* the tracks out, those about to change, the roles */
 void tessera_entries_knob(uint32_t k, int32_t s, int layer);   /* the ENTRIES page: KNOB k turned s (layer: OCT+ held) */
 void planner_play(void);                            /* seq.c, PLAY: the planned piece from the top (planner.c) */
@@ -397,8 +406,12 @@ enum {
     TX_PL_LENGTH, TX_PL_SHAPE, TX_PL_PEAK, TX_PL_COUNT, TX_PL_END,   /* (0x280..0x284: the piece planner, the project's) */
     TX_PL_USER1, TX_PL_USER2, TX_PL_USER3, TX_PL_USER4,             /* (0x285..0x28C: SHAPE USER's eight levels) */
     TX_PL_USER5, TX_PL_USER6, TX_PL_USER7, TX_PL_USER8,
+    TX_RSV_28D, TX_RSV_28E, TX_RSV_28F, TX_RSV_290, /* (0x28D..0x290: kept for the Performance page's MACRO 1..4, ROADMAP;
+                                                     * gaps, no parameter, until it lands) */
+    TX_TW_HOLD,                                     /* (0x291: FOLLOW's HOLD, a generator track's: OFF, T1..T4) */
     TX_COUNT
 };
+_Static_assert(TX_TW_HOLD == 0x91, "parameter ids are stored: never renumbered");
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */
 #define TESS_ACC_LIMIT 14u                          /* TX_ACC_LIMIT: up to two octaves of a 7-note scale */
 #define TESS_ACC_LIMIT_DEF 7u

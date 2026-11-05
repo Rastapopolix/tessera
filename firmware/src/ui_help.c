@@ -492,6 +492,11 @@ static void help_find(uint32_t k)
         else help.pid = (uint16_t)PID_TESS(TX_SD_GRAVITY);
         return;
     }
+    if (pg->graph == GR_TWEAK && tw_layer_on()) {     /* (a generator's TWEAK, OCT+ held: FOLLOW's HOLD) */
+        if (k != 3u) help_unused(k);
+        else help.pid = (uint16_t)PID_TESS(TX_TW_HOLD);
+        return;
+    }
     if (pg->graph == GR_FORM && fm_layer_on()) {       /* (a generator's FORM, OCT+ held: DEVELOP, the CHAIN's FOLLOW, SKIP,
                                                         * Entries' ROLE) */
         help.pid = (uint16_t)PID_TESS(k == 3u ? TX_ET_ROLE : k == 2u ? TX_FC_SKIP : k ? TX_FC_FOLLOW : TX_FM_DEVELOP);

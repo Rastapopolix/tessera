@@ -195,6 +195,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_PL_USER6] = PD("USER6", F_PCT, 0, 100, 75),
     [TX_PL_USER7] = PD("USER7", F_PCT, 0, 100, 40),
     [TX_PL_USER8] = PD("USER8", F_PCT, 0, 100, 10),
+    [TX_TW_HOLD] = PE("HOLD", TX_N_FOLLOW, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -691,6 +692,9 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     XP_(TX_PL_USER6, "PIECE USER 6", "SHAPE USER: the level five sevenths in. GLO > PIECE, OCT- held, KNOB 2."),
     XP_(TX_PL_USER7, "PIECE USER 7", "SHAPE USER: the level six sevenths in. GLO > PIECE, OCT- held, KNOB 3."),
     XP_(TX_PL_USER8, "PIECE USER 8", "SHAPE USER: the level at the end. GLO > PIECE, OCT- held, KNOB 4."),
+    X_(TX_TW_HOLD, "FOLLOW HOLD", "Sample and hold for FOLLOW: the followed track's note is taken only when the "
+                                  "HOLD track plays, and this track keeps playing it in its own rhythm until the next "
+                                  "one. OFF: a new note on each of its own hits. TWEAK, OCT+ held, KNOB 4."),
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };

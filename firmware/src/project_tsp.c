@@ -17,7 +17,7 @@
 enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TSP_FM6, TSP_DRUM, TSP_REC, TSP_NAME,
        TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_HOW, TSP_ORACLE,
        TSP_ENERGY, TSP_DEV, TSP_TRANSP, TSP_TUNE, TSP_SOUND, TSP_CHAIN, TSP_ENTRY, TSP_PLAN,
-       TSP_CCN = 32, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
+       TSP_HOLD = 31, TSP_CCN, TSP_PARTS };   /* (30: kept for the Performance page's PERF, ROADMAP; TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
                                               * TSP_HUMAN: each track's HUMAN TIME; none: TWEAK HUMAN's timing, as it was;
@@ -37,10 +37,10 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * ROLE; none: 0 (off), 2, FADE, 2 bars, AUTO;
                                               * TSP_PLAN: the planner's LENGTH, SHAPE, PEAK, COUNT, END, then USER's
                                               * eight levels; none: FREE, ARCH, 62, 3, STOP, the arch tessera_init sets;
-                                              * TSP_CCN: each cord's CC number (CC OUT, 0..119; CORD_MAX of them); none: 1 each.
-                                              * 30 and 31: kept for PERF and HOLD, ROADMAP) */
+                                              * TSP_HOLD: each track's FOLLOW HOLD, 0 OFF, 1..4 a track; none: OFF;
+                                              * TSP_CCN: each cord's CC number (CC OUT, 0..119; CORD_MAX of them); none: 1 each) */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
-               TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_CCN == 32,
+               TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_HOLD == 31 && TSP_CCN == 32,
                "the parts' numbers are stored: never renumbered");
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -347,6 +347,9 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
         tsp_byte(&w, tessera.pl_end);
         tsp_bytes(&w, tessera.pl_user, 8);
         tsp_end(&w);
+        tsp_begin(&w, TSP_HOLD, 1);                    /* (FOLLOW's HOLD: each track's) */
+        tsp_bytes(&w, tessera.follow_hold, NTRK);
+        tsp_end(&w);
         tsp_begin(&w, TSP_TUNE, 1);                    /* (TUNE, then each user tuning: its degree count, 0 empty, */
         tsp_byte(&w, tune_sel);                        /* else its name, title and degrees as int32) */
         for (t = 0; t < TUNE_SLOTS; t++) {
@@ -596,6 +599,10 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (p[0] > 21u || p[1] > 9u || p[2] > 100u || p[3] < 2u || p[3] > 8u || p[4] > 3u) return 0;
         for (uint32_t k = 0; k < 8u; k++) if (p[5u + k] > 100u) return 0;
     }
+    if (tsp_seen.at[TSP_HOLD]) {
+        if (tsp_seen.ver[TSP_HOLD] != 1u || tsp_seen.len[TSP_HOLD] != NTRK) return 0;
+        for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_HOLD] + k] > TESSERA_TRACKS) return 0;
+    }
     if (tsp_seen.at[TSP_HUMAN]) {
         if (tsp_seen.ver[TSP_HUMAN] != 1u || tsp_seen.len[TSP_HUMAN] != NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_HUMAN] + k] > TESS_HUMAN_MS) return 0;
@@ -686,6 +693,9 @@ static void tsp_restore(const uint8_t *raw)
         tessera.pl_end = p[4];
         memcpy(tessera.pl_user, p + 5, 8);
     }
+    if (tsp_seen.at[TSP_HOLD]) memcpy(tessera.follow_hold, raw + tsp_seen.at[TSP_HOLD], NTRK);
+    else memset(tessera.follow_hold, 0, sizeof tessera.follow_hold);   /* (saved before HOLD: OFF) */
+    memset(tessera.hold_mem, 0, sizeof tessera.hold_mem);
     tune_clear_all();                                  /* (the tunings are the project's; saved before them: none) */
     if (tsp_seen.at[TSP_TUNE]) (void)tsp_tune_read(raw + tsp_seen.at[TSP_TUNE], tsp_seen.len[TSP_TUNE], 1);
     if (tsp_seen.at[TSP_ACC]) {

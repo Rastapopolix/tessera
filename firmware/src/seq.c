@@ -1229,8 +1229,10 @@ static void seq_grid_tick(track_t *t, uint32_t n)
                     s = step_acc(t, s, &sv, t->seq_pass);   /* (Accumulate: its notes this pass) */
                 }
                 seq_nudge_step(t, s, step_gate(s) ? span : period, span, skip);   /* (SUB: its NUDGE, RATCH) */
-                if (tr_idx < TESSERA_TRACKS)
+                if (tr_idx < TESSERA_TRACKS) {
                     tessera.hit[tr_idx] = t->seq_n != 0;   /* (TWEAK 2's LOGIC on another track reads it) */
+                    if (t->seq_n) tessera_hold_hit(tr_idx);   /* (FOLLOW HOLD on this track: a sample) */
+                }
             }
         }
     }
