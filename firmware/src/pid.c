@@ -31,6 +31,7 @@ static const char *const TX_N_CHPROG[] = {"POP", "50S", "2-5-1", "CIRCLE", "TWO"
 static const char *const TX_N_CHBARS[] = {"1/2", "1", "2", "4"};
 static const char *const TX_N_CHHIT[] = {"HOLD", "BEAT", "STEP", "OFFBEAT"};   /* (GEN_CH_*) */
 static const char *const TX_N_GRP4[] = {"TOM", "CLAP", "HATOP", "RIM", "BELL"};
+static const char *const TX_N_SPLITHOW[] = {"DOUBLE", "PUSH", "MIX"};   /* (TESS_SPLIT_*) */
 static const char *const TX_N_RATCH[] = {"x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8"};
 static const char *const TX_N_SHAPE[] = {"EVEN", "ACCEL", "DECEL"};   /* (SUB_EVEN ..) */
 static const char *const TX_N_KEYLINK[] = {"OWN", "LINKED"};
@@ -202,6 +203,8 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_TW_HOLD] = PE("HOLD", TX_N_FOLLOW, 0),
     [TX_FC_KEYB] = PD("KEY B", F_SEMI, -12, 12, 0),
     [TX_FC_KEYC] = PD("KEY C", F_SEMI, -12, 12, 0),
+    [TX_SUB_SPLIT] = PD("SPLIT", F_PCT, 0, 100, 0),
+    [TX_SUB_SPLIT_HOW] = PE("HOW", TX_N_SPLITHOW, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -714,6 +717,13 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                     "is the key as set. 0: no change. SCL's Key in B and Key in C rows; saved with the project."
     XP_(TX_FC_KEYB, "KEY B", FC_KEY_TEXT),
     XP_(TX_FC_KEYC, "KEY C", FC_KEY_TEXT),
+    X_(TX_SUB_SPLIT, "TIMING SPLIT", "The chance a step plays at half its division: 1/8 to 1/16. HOW says what it does. "
+                                     "Never the bar's first step, nor a step that ratchets or ties. The same each "
+                                     "time the piece plays; ROLL gives new tosses. 0 off. OCT+ held on TIMING, KNOB 1."),
+    X_(TX_SUB_SPLIT_HOW, "TIMING HOW", "What a SPLIT step does. DOUBLE: the note, then a neighbouring note of the scale "
+                                       "halfway through the step (a drum: the same hit). PUSH: the note halfway "
+                                       "through the step, late only. MIX: tosses for one or the other. OCT+ held on "
+                                       "TIMING, KNOB 2."),
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT

@@ -69,6 +69,7 @@ enum {
     CD_FILL,                                                        /* the project's FILL (CK_FILL) */
     CD_TEMPO,                                                       /* the project's tempo (CK_TEMPO), issue #359 */
     CD_CC,                                                          /* a MIDI CC out (CK_CC), issue #374 */
+    CD_SUB_SPLIT,                                                   /* TIMING's SPLIT */
     CD_N
 };
 

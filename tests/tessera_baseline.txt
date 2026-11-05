@@ -1,177 +1,177 @@
 # Tessera generators: what they play, per scenario of tests/tessera_test.c: hash of the note log, notes.
 # Rewrite (TESSERA_UPDATE=1) only after an intended change of what they play.
 turing 0x57327a1f 40
-turing.state 0xe8f3b364
+turing.state 0x5a359664
 turing_len8_prob30_oct3 0xb10ca4bb 69
-turing_len8_prob30_oct3.state 0x295b66c7
+turing_len8_prob30_oct3.state 0xe88de547
 euclid 0x0800cccb 16
-euclid.state 0xcbc446b0
+euclid.state 0x8e4e3fb0
 euclid_13_5_rot3_roll 0x85ff1e96 49
-euclid_13_5_rot3_roll.state 0x548a69af
+euclid_13_5_rot3_roll.state 0x3678bc2f
 markov 0x01be3a32 96
-markov.state 0x131b09ed
+markov.state 0x7955c56d
 markov_tension81_density60_oct3 0xf75b2fde 82
-markov_tension81_density60_oct3.state 0x6df6e29e
+markov_tension81_density60_oct3.state 0xaf82789e
 morph 0x7c475e2d 45
-morph.state 0xb97498c6
+morph.state 0xff65a2c6
 morph_64_son_rumba 0x2f20343d 48
-morph_64_son_rumba.state 0x514a5768
+morph_64_son_rumba.state 0xda7b8c68
 evolve_turing_lock90_every1_amount50 0x30ee6171 130
-evolve_turing_lock90_every1_amount50.state 0xbfb8c09e
+evolve_turing_lock90_every1_amount50.state 0x8f8b569e
 evolve_euclid_every1_amount80 0xbbc1aa07 86
-evolve_euclid_every1_amount80.state 0x48a5b4bb
+evolve_euclid_every1_amount80.state 0xbef2fd3b
 evolve_markov_lock60_every2 0xf1091cff 186
-evolve_markov_lock60_every2.state 0x77456907
+evolve_markov_lock60_every2.state 0x21d04787
 evolve_morph_lock100_every1 0xab68e05c 123
-evolve_morph_lock100_every1.state 0xd295f9ab
+evolve_morph_lock100_every1.state 0x68417a2b
 form_turing_abac_contrast80_flourish5 0x0361a894 192
-form_turing_abac_contrast80_flourish5.state 0x58a7d63f
+form_turing_abac_contrast80_flourish5.state 0xf2deb0bf
 form_markov_aaba_lock50 0x1c08ef26 300
-form_markov_aaba_lock50.state 0xe282ddee
+form_markov_aaba_lock50.state 0x60255bee
 form_euclid_abcb_morph_aabc 0xfebc064b 246
-form_euclid_abcb_morph_aabc.state 0xa89faed7
+form_euclid_abcb_morph_aabc.state 0x1ff27557
 tweak_shift_drop_human_follow 0xf041a8c0 118
-tweak_shift_drop_human_follow.state 0xcf98d741
+tweak_shift_drop_human_follow.state 0x558e0cc1
 scale_root_transpose 0xdfd49597 94
-scale_root_transpose.state 0x3b0e0e16
+scale_root_transpose.state 0x4b60c016
 division_gate_length 0xd0fd4cc4 139
-division_gate_length.state 0x08643add
+division_gate_length.state 0x12c32e5d
 all_four_tracks 0xf04b8170 885
-all_four_tracks.state 0x79b46958
+all_four_tracks.state 0xc4025658
 transport_stop_start 0xddf84dcf 248
-transport_stop_start.state 0xcca8ee5d
+transport_stop_start.state 0x4967a1dd
 mute_and_unmute 0x621f77bf 52
-mute_and_unmute.state 0x83845743
+mute_and_unmute.state 0x12ae43c3
 knobs_while_playing 0x3fd2da5a 67
-knobs_while_playing.state 0x52d9bb12
+knobs_while_playing.state 0x7bef9b12
 midi_clock_start_stop_continue 0xf271d3c2 126
-midi_clock_start_stop_continue.state 0xab8f601f
+midi_clock_start_stop_continue.state 0x9c02aa9f
 swing_track40_global30 0x896db78f 80
-swing_track40_global30.state 0xfff60961
+swing_track40_global30.state 0xe3170ee1
 track_len_shorter_than_loop 0xcf707c9f 80
-track_len_shorter_than_loop.state 0xfff60961
+track_len_shorter_than_loop.state 0xe3170ee1
 pattern_switch_while_playing 0x6774ae8a 94
-pattern_switch_while_playing.state 0xc00c2271
+pattern_switch_while_playing.state 0xf93faff1
 song_chain_two_banks 0x3f26c156 49
-song_chain_two_banks.state 0x34a8c4be
+song_chain_two_banks.state 0xb12a6abe
 glo_mute_and_unmute 0x9b0e2f45 48
-glo_mute_and_unmute.state 0x83845743
+glo_mute_and_unmute.state 0x12ae43c3
 follow_step_melody_third 0x4ac5f28d 64
-follow_step_melody_third.state 0x675c8d9f
+follow_step_melody_third.state 0x4ff4981f
 seed_back_markov_turing 0x1fa4908c 162
-seed_back_markov_turing.state 0x61bdad86
+seed_back_markov_turing.state 0xa0515786
 seed_none_markov_turing 0x0ae946a9 79
-seed_none_markov_turing.state 0xf993a8ac
+seed_none_markov_turing.state 0x254b8fac
 replay_markov 0xeb0b606f 46
-replay_markov.state 0x131b09ed
+replay_markov.state 0x7955c56d
 grids 0x8c730f90 44
-grids.state 0x20940492
+grids.state 0x4e8ca492
 grids_x48_y228_dens80_chaos40_drop_human 0x1a6d42c5 234
-grids_x48_y228_dens80_chaos40_drop_human.state 0x942cb680
+grids_x48_y228_dens80_chaos40_drop_human.state 0x17f79780
 evolve_grids_every1_amount70_abac 0x30b5d4f5 188
-evolve_grids_every1_amount70_abac.state 0xb7df8cb0
+evolve_grids_every1_amount70_abac.state 0x918485b0
 bounce 0x97474fb4 16
-bounce.state 0x80dd65ea
+bounce.state 0x7b5591ea
 bounce_speed40_angle60_balls3_drop20 0x9378dce2 53
-bounce_speed40_angle60_balls3_drop20.state 0x5112bf88
+bounce_speed40_angle60_balls3_drop20.state 0x3acac488
 evolve_bounce_every1_amount60_ab 0x2bd86b5c 24
-evolve_bounce_every1_amount60_ab.state 0x4bc61431
+evolve_bounce_every1_amount60_ab.state 0x929b41b1
 awake 0x643d8d58 80
-awake.state 0x4aa563dc
+awake.state 0x5879e2dc
 awake_lena12_lenb5_prob70_shift2 0x5cc93b5a 64
-awake_lena12_lenb5_prob70_shift2.state 0x0e64c55a
+awake_lena12_lenb5_prob70_shift2.state 0xbea8295a
 evolve_awake_every1_amount70_abac 0x37a3ecc5 184
-evolve_awake_every1_amount70_abac.state 0x389e484a
+evolve_awake_every1_amount70_abac.state 0xd3da644a
 poly 0x324dbdf6 32
-poly.state 0x2f8c78f9
+poly.state 0xb3e1ea79
 poly_div_4_3_5_7_span2_human40 0x6c1efdac 84
-poly_div_4_3_5_7_span2_human40.state 0x40b553f9
+poly_div_4_3_5_7_span2_human40.state 0x9e944579
 evolve_poly_every1_amount100_ab 0x4c9a2fec 128
-evolve_poly_every1_amount100_ab.state 0x72b677a0
+evolve_poly_every1_amount100_ab.state 0x859ee8a0
 branch_markov_coin50_to_step_track 0x4b0f854b 89
-branch_markov_coin50_to_step_track.state 0x5d5503c4
+branch_markov_coin50_to_step_track.state 0x394016c4
 branch_euclid_toggle80_to_turing 0x715af46f 104
-branch_euclid_toggle80_to_turing.state 0xaaa245f3
+branch_euclid_toggle80_to_turing.state 0xed124a73
 branch_bounce_latch60_to_euclid 0x981c3d87 63
-branch_bounce_latch60_to_euclid.state 0xa26d13c6
+branch_bounce_latch60_to_euclid.state 0x62379dc6
 logic_markov_and_euclid 0xf5e95311 38
-logic_markov_and_euclid.state 0x4f43d76f
+logic_markov_and_euclid.state 0xa2b649ef
 logic_markov_or_euclid 0xe463fcb7 67
-logic_markov_or_euclid.state 0x22e9be99
+logic_markov_or_euclid.state 0x22e08019
 logic_markov_xor_euclid 0x58040c6f 49
-logic_markov_xor_euclid.state 0xab33e728
+logic_markov_xor_euclid.state 0x69bebc28
 logic_markov_not_euclid 0xbc571289 47
-logic_markov_not_euclid.state 0x445f6336
+logic_markov_not_euclid.state 0x085da536
 logic_turing_and_higher_track 0x247725de 24
-logic_turing_and_higher_track.state 0x783142a8
+logic_turing_and_higher_track.state 0xd28fd7a8
 cond_2of4_form_ab_grids_notfirst_not 0x05eeb8e8 164
-cond_2of4_form_ab_grids_notfirst_not.state 0x0f70fdd5
+cond_2of4_form_ab_grids_notfirst_not.state 0x7538cd55
 quad 0x8fac581d 48
-quad.state 0xb80f0d06
+quad.state 0xbcc87706
 quad_pend_prob70 0x7ddc4e53 74
-quad_pend_prob70.state 0x580c36a1
+quad_pend_prob70.state 0x97171c21
 quad_four_rows_link_hold 0x10ff1397 305
-quad_four_rows_link_hold.state 0xe147b40c
+quad_four_rows_link_hold.state 0xf92b4b0c
 evolve_quad_every1_amount70 0x37c57635 621
-evolve_quad_every1_amount70.state 0x9d8815f2
+evolve_quad_every1_amount70.state 0x5051a5f2
 fall 0xf75f618e 43
-fall.state 0x92bf6cf1
+fall.state 0x3d6a3a71
 fall_speed40_wind-38_evolve60 0x37055732 144
-fall_speed40_wind-38_evolve60.state 0x5b5b8ddd
+fall_speed40_wind-38_evolve60.state 0x67e0015d
 constel 0x64558d20 20
-constel.state 0xc9f45ed6
+constel.state 0xa1cc30d6
 constel_y10_dens80_auto5_lock50 0xa914a030 49
-constel_y10_dens80_auto5_lock50.state 0x231c274a
+constel_y10_dens80_auto5_lock50.state 0xd6b3c34a
 constel_size0_seek_evolve70 0xb2da3043 16
-constel_size0_seek_evolve70.state 0xeec81a34
+constel_size0_seek_evolve70.state 0x94d02534
 series 0x260c1959 128
-series.state 0xa1fe8bdd
+series.state 0xc3d9ff5d
 series_start20_intv3_loop6 0xe090c2ec 128
-series_start20_intv3_loop6.state 0x0ea0096d
+series_start20_intv3_loop6.state 0x5d5084ed
 quad_cols_link2_range 0xa94a96d6 276
-quad_cols_link2_range.state 0x0bf23126
+quad_cols_link2_range.state 0x8b8ceb26
 evolve_quad_cols 0xeab76476 270
-evolve_quad_cols.state 0xbe8e1f99
+evolve_quad_cols.state 0x64496119
 chord 0x6fd548c9 24
-chord.state 0xd03522bb
+chord.state 0x8ad16b3b
 chord_walk_half_beat_dia7 0xb05c1f59 128
-chord_walk_half_beat_dia7.state 0x0e25334f
+chord_walk_half_beat_dia7.state 0xa26c95cf
 chord_link_turing_markov 0x98580dcf 159
-chord_link_turing_markov.state 0xba96fe73
+chord_link_turing_markov.state 0x73cd42f3
 key_e_minor 0xe9929d44 334
-key_e_minor.state 0x875c94ef
+key_e_minor.state 0x9ffbc76f
 answer_heard_fade3 0x712e32b2 12
-answer_heard_fade3.state 0x5f275384
+answer_heard_fade3.state 0x831c0684
 answer_heard_reverse 0x50d503ae 12
-answer_heard_reverse.state 0x1f29f96a
+answer_heard_reverse.state 0xad71e56a
 answer_loops_shuffle_echo 0x596e9c12 52
-answer_loops_shuffle_echo.state 0x78f77a4c
+answer_loops_shuffle_echo.state 0xdb94714c
 chord_form_ab_evolve 0xcfe3794c 24
-chord_form_ab_evolve.state 0x3abec76a
+chord_form_ab_evolve.state 0xfb85b36a
 seed_turing_t1 0x28f38f45 48
-seed_turing_t1.state 0xc4e6ec17
+seed_turing_t1.state 0x1eae0e17
 seed_turing_t1_prob50_keep_rhythm 0xb87ffd38 48
-seed_turing_t1_prob50_keep_rhythm.state 0x6f48a1a4
+seed_turing_t1_prob50_keep_rhythm.state 0x59ce84a4
 seed_turing_t1_prob50_keep_pitch 0xc8f39f29 37
-seed_turing_t1_prob50_keep_pitch.state 0xa832ef7e
+seed_turing_t1_prob50_keep_pitch.state 0x5e5e42fe
 seed_euclid_t1 0xb0ab8b73 20
-seed_euclid_t1.state 0x4fa6e299
+seed_euclid_t1.state 0x99d21f99
 seed_euclid_t1_keep_rhythm 0xa816354d 48
-seed_euclid_t1_keep_rhythm.state 0xb4f65956
+seed_euclid_t1_keep_rhythm.state 0x4e6f8b56
 seed_markov_t1_leap0 0x50f767a2 49
-seed_markov_t1_leap0.state 0xf32bac1e
+seed_markov_t1_leap0.state 0xd407869e
 seed_markov_t1_leap50_keep_rhythm 0x67cf8e77 48
-seed_markov_t1_leap50_keep_rhythm.state 0xb48d847d
+seed_markov_t1_leap50_keep_rhythm.state 0x968767fd
 seed_markov_t1_leap50_keep_pitch 0x460df5b1 50
-seed_markov_t1_leap50_keep_pitch.state 0x5f919262
+seed_markov_t1_leap50_keep_pitch.state 0x0bf967e2
 seed_morph_t1_a 0x28f38f45 48
-seed_morph_t1_a.state 0xd2ffb9a9
+seed_morph_t1_a.state 0x590f3ea9
 seed_morph_t1_b_keep_rhythm 0x8caf586e 48
-seed_morph_t1_b_keep_rhythm.state 0xbabe2883
+seed_morph_t1_b_keep_rhythm.state 0x9641d503
 seed_turing_t1_prob50_gravity100 0x28f38f45 48
-seed_turing_t1_prob50_gravity100.state 0xa1ea5061
+seed_turing_t1_prob50_gravity100.state 0x8c703361
 seed_markov_t1_leap100_gravity100 0x28f38f45 48
-seed_markov_t1_leap100_gravity100.state 0x1976d4fe
+seed_markov_t1_leap100_gravity100.state 0x54b85d7e
 seed_morph_t1_b_gravity100 0x28f38f45 48
-seed_morph_t1_b_gravity100.state 0xfa6e2e52
+seed_morph_t1_b_gravity100.state 0xd8f934d2
 saved_block 0x225f3fdc 730

@@ -173,6 +173,8 @@ typedef struct {
                                                   * (STEP ones too); not in the packed block: the record's SUB part */
     uint8_t          sub_human[TESSERA_TRACKS];  /* 0..TESS_HUMAN_MS: HUMAN TIME, a step up to this many ms late, any
                                                   * track's (STEP ones too); not in the packed block: the HUMAN part */
+    uint8_t          sub_split[TESSERA_TRACKS];  /* 0..100: SPLIT, the chance a step plays at half its division (0: off), */
+    uint8_t          sub_split_how[TESSERA_TRACKS]; /* TESS_SPLIT_*: any track's; not in the packed block: the SPLIT part */
     uint8_t          acc_limit[TESSERA_TRACKS];  /* 1..TESS_ACC_LIMIT: the pitch accumulator's reach in degrees from the
                                                   * written note, a STEP track's (step_acc.c; 0 reads as 7) */
     uint8_t          acc_mode[TESSERA_TRACKS];   /* TESS_ACC_WRAP / PING / CLAMP: what it does at LIMIT; both not in the
@@ -414,9 +416,11 @@ enum {
     TX_MACRO1, TX_MACRO2, TX_MACRO3, TX_MACRO4,     /* (0x28D..0x290: PERF's four MACROs, the project's: cord sources) */
     TX_TW_HOLD,                                     /* (0x291: FOLLOW's HOLD, a generator track's: OFF, T1..T4) */
     TX_FC_KEYB, TX_FC_KEYC,                         /* (0x292, 0x293: the CHAIN's B and C sections' key, the project's) */
+    TX_SUB_SPLIT, TX_SUB_SPLIT_HOW,                 /* (0x294, 0x295: TIMING's SPLIT and HOW, any track's) */
     TX_COUNT
 };
-_Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93, "parameter ids are stored: never renumbered");
+_Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95, "parameter ids are stored: never renumbered");
+enum { TESS_SPLIT_DOUBLE, TESS_SPLIT_PUSH, TESS_SPLIT_MIX, TESS_SPLIT_HOWS };   /* TX_SUB_SPLIT_HOW */
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */
 #define TESS_ACC_LIMIT 14u                          /* TX_ACC_LIMIT: up to two octaves of a 7-note scale */
 #define TESS_ACC_LIMIT_DEF 7u

@@ -448,6 +448,32 @@ static int test_tsp_record(void)
     tsp_resum(raw);
     bad += check("TSP1: a HOW part out of range is refused", ok && !tsp_valid(raw, len));
 
+    reset();                                           /* SPLIT: the record's SPLIT part; none at 0; a bad value refused */
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    bad += check("TSP1: SPLIT at 0 writes no SPLIT part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_SPLIT]);
+    tessera_param_set(1, TX_SUB_SPLIT, 35); tessera_param_set(1, TX_SUB_SPLIT_HOW, TESS_SPLIT_MIX);
+    tessera_param_set(3, TX_SUB_SPLIT_HOW, TESS_SPLIT_PUSH);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_SPLIT];
+    tessera_reset();
+    tsp_restore(raw);
+    bad += check("TSP1: SPLIT and HOW come back from their part", ok && tessera.sub_split[1] == 35u &&
+                 tessera.sub_split_how[1] == TESS_SPLIT_MIX && tessera.sub_split_how[3] == TESS_SPLIT_PUSH && tessera.sub_split[0] == 0u);
+    raw[tsp_seen.at[TSP_SPLIT] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (its id one this build does not know: skipped, as older firmware does) */
+    tsp_resum(raw);
+    tessera_param_set(1, TX_SUB_SPLIT, 50);
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_SPLIT];
+    if (ok) tsp_restore(raw);
+    bad += check("TSP1: a record without the part loads with SPLIT off", ok && tessera.sub_split[1] == 0u && tessera.sub_split_how[1] == 0u);
+    tessera_param_set(2, TX_SUB_SPLIT, 10);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_SPLIT];
+    raw[tsp_seen.at[TSP_SPLIT] + 2u] = 101u;           /* (past 100) */
+    tsp_resum(raw);
+    bad += check("TSP1: a SPLIT past 100 refused", ok && !tsp_valid(raw, len));
     reset();                                           /* HUMAN TIME: the record's HUMAN part; a record without it */
     song.sel = 1; tessera_knob(0, TESS_ENG_EUCLID);
     tessera_param_set(1, TX_TW_HUMAN, 60); tessera_param_set(0, TX_TW_HUMAN, 40);   /* (track 0: a STEP track) */
