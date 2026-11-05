@@ -2886,7 +2886,20 @@ static void mo_cu_side(int32_t x, uint32_t tr, const char *name, int has_trk, in
         a[0] = (char)('1' + (tr & 3u)), a[1] = 0;
         mo_invc(a, x + 1, 3, MO_TRK(tr));
     }
-    mo_abbr(a, name);
+    {                                                   /* the mark (+ one way, ^ GATE) outlasts the abbreviation */
+        char w[16];
+        uint32_t n = str_len(name);
+        char mk = n > 1u && (name[n - 1u] == '+' || name[n - 1u] == '^') ? name[n - 1u] : 0;
+        str_cpy(w, name, sizeof w);
+        if (mk)
+            w[n - 1u < sizeof w - 1u ? n - 1u : sizeof w - 1u] = 0;
+        mo_abbr(a, w);
+        if (mk) {
+            if (str_len(a) > 3u)
+                a[3] = 0;
+            n = str_len(a), a[n] = mk, a[n + 1u] = 0;
+        }
+    }
     mo_text(a, x + 8, 3, MO_INK);
 }
 static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on)
