@@ -443,7 +443,7 @@ choose();
 
 // the install count: one GoatCounter event per finished install of a published build (the version and the build, no
 // cookies); never for a local file, nor in a browser that opened this page with #nocount once
-const COUNT_URL = "https://tessera.goatcounter.com/count";
+const COUNT_URL = "https://rastapopolix.goatcounter.com/count";
 const NOCOUNT = "tessera-nocount";
 try { if (location.hash === "#nocount") localStorage.setItem(NOCOUNT, "1"); } catch (e) { /* no storage: counted */ }
 function countInstall(what) {
