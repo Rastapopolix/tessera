@@ -219,8 +219,8 @@ static void ui_leds(void)
         memset(fm1_led_dim, 0, sizeof fm1_led_dim);
         return;
     }
-    if (fam == FAM_ARP && cur_page()->graph != GR_ARP && cur_page()->graph != GR_NONE)
-        fam = FAM_SEQ;                                  /* (GEN EVOLVE FORM TWEAK: SEQ's, ui.c fam_grp) */
+    if (fam == FAM_ARP && !arp_page(ui.page))
+        fam = FAM_SEQ;                                  /* (GEN, ARP: SEQ's; the shaping pages: ARP's, ui.c arp_page) */
     if (!ui.layer || FAM_BTN[fam] != layer_btn())
         led_put(nl, panel.btn[FAM_BTN[fam]], 1);
     if ((k = arp_led()) != 2u && (!ui.layer || layer_btn() != B_ARP))
@@ -964,8 +964,9 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
-    if (pg->graph == GR_TWEAK) {                    /* (a STEP track: HUMAN alone) */
-        if (slot == 2u || song.sel >= TESSERA_TRACKS || tessera.mode[song.sel] != TESS_ENG_OFF)
+    if (pg->graph == GR_TWEAK) {                    /* (a STEP track: HUMAN alone; an ARP track: SHIFT and HUMAN) */
+        if (slot == 2u || (slot == 0u && seqm_get(song.sel) == 1u) || song.sel >= TESSERA_TRACKS ||
+            tessera.mode[song.sel] != TESS_ENG_OFF)
             tessera_tweak_knob(slot, steps);
         ui.force = 1;
         return;
@@ -1792,32 +1793,24 @@ static void page_tap(uint32_t b)
         name_rename();                                  /* SAVE > USER / PROJECT: EDIT renames the slot */
         return;
     }
-    if (b == B_ARP) {                                   /* ARP: SEQ in ARP's MODE, its page (again: ARP 2, ARP) */
-        uint32_t i, a = NPAGES, a2 = NPAGES;
-        for (i = 0; i < NPAGES; i++)
-            if (PAGES[i].fam == FAM_ARP && PAGES[i].graph == GR_ARP) a = i;
-            else if (PAGES[i].fam == FAM_ARP && PAGES[i].graph == GR_NONE) a2 = i;
-        if (seqm_get(song.sel) >= 2u) {                 /* a generator's track: ARP leaves its MODE (only GEN's KNOB 1
-                                                         * changes it, so a playing generator never goes quiet), GEN */
-            for (i = 0; i < NPAGES && !(PAGES[i].graph == GR_STEPS && str_eq(PAGES[i].title, "GEN")); i++)
-                ;
-            if (i < NPAGES) {
-                ui.page = (uint8_t)i;
-                ui.fam_last[fam_grp(PAGES[i].fam)] = ui.page;
-                ui.home = 0;
-                page_entered();
+    if (b == B_ARP) {                                   /* ARP: the shaping lane (ui.c arp_page); again: its next page */
+        uint8_t pg[NPAGES];
+        uint32_t n = fam_pages(FAM_ARP, pg), k, last = ui.fam_last[FAM_ARP];
+        if (!n) return;
+        for (k = 0; k < n && pg[k] != ui.page; k++) {}
+        if (!ui.home && k < n) ui.page = pg[(k + 1u) % n];
+        else {
+            for (k = 0; k < n && pg[k] != last; k++) {}
+            if (k < n) ui.page = (uint8_t)last;
+            else {                                      /* first time: an ARP track's ARP 2, else the lane's first */
+                for (k = 0; k < n && PAGES[pg[k]].graph != GR_NONE; k++) {}
+                ui.page = pg[k < n ? k : 0u];
             }
-            ui_message("MODE IS ON GEN");
-            return;
         }
-        if (a < NPAGES && a2 < NPAGES) {
-            seqm_set(song.sel, 1);
-            ui.page = (uint8_t)(!ui.home && ui.page == a ? a2 : a);
-            ui.fam_last[FAM_ARP] = ui.page;              /* (not SEQ's: ARP is its own lane) */
-            ui.home = 0;
-            page_entered();
-            return;
-        }
+        ui.fam_last[FAM_ARP] = ui.page;
+        ui.home = 0;
+        page_entered();
+        return;
     }
     for (f = FAM_HOME + 1u; f < FAM_COUNT; f++)
         if (FAM_BTN[f] == b) {

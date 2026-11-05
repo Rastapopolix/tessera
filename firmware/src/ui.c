@@ -242,10 +242,16 @@ static int native_page(uint32_t i, uint32_t fam)       /* page i: one of fam's n
  * shows the track's MODE's only: STEP (NOTES), ARP (ARP, ARP 2), a generator (EVOLVE, FORM, TWEAK); GEN (MODE) and the
  * rest always. MODE: 0 STEP, 1 ARP (ARP's MODE not OFF), 2.. the generators (tessera.mode + 1) */
 static uint32_t fam_grp(uint32_t f) { return f == FAM_ARP ? FAM_SEQ : f; }
-/* ARP and ARP 2: their own lane (the ARP button's; SELECT turns between the two), not among SEQ's pages (beta3, Theo) */
+/* The ARP button's lane: how the track's notes are shaped (Theo, 3.3, after issue #441). A generator's EVOLVE, FORM,
+ * TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY; a STEP track's STEP EVOLVE, TWEAK, TIMING; an ARP track's ARP 2 and TWEAK.
+ * SEQ keeps what plays: GEN, NOTES, ARP (an ARP track's MODE RATE OCT GATE), PATTERN, TEMPO, PATTERNS, SONG */
 static int arp_page(uint32_t i)
 {
-    return i < NPAGES && PAGES[i].fam == FAM_ARP && (PAGES[i].graph == GR_ARP || PAGES[i].graph == GR_NONE);
+    uint32_t g;
+    if (i >= NPAGES || PAGES[i].fam != FAM_ARP) return 0;
+    g = PAGES[i].graph;
+    return g == GR_NONE || g == GR_EVOLVE || g == GR_FORM || g == GR_TWEAK || g == GR_TWEAK2 || g == GR_NOTELEN ||
+           g == GR_TIMING || g == GR_ENERGY;
 }
 static int in_fam(uint32_t i, uint32_t fam) { return fam_grp(PAGES[i].fam) == fam_grp(fam) && !arp_page(i); }
 static uint32_t seqm_get(uint32_t tr)
@@ -301,8 +307,9 @@ static int seqm_page_ok(uint32_t i)                     /* (the page shown stays
     if (!ui.home && ui.page == i) return 1;
     if (p->graph == GR_EVOLVE || p->graph == GR_FORM || p->graph == GR_TWEAK || p->graph == GR_TWEAK2 ||
         p->graph == GR_NOTELEN || p->graph == GR_TIMING || p->graph == GR_ENERGY) return m >= 2u ||
-        ((p->graph == GR_EVOLVE || p->graph == GR_TIMING || p->graph == GR_TWEAK) && !m);   /* (STEP: STEP EVOLVE;
-                                                         * TIMING's SHAPE and HUMAN; TWEAK's HUMAN) */
+        ((p->graph == GR_EVOLVE || p->graph == GR_TIMING || p->graph == GR_TWEAK) && !m) ||
+        (p->graph == GR_TWEAK && m == 1u);              /* (STEP: STEP EVOLVE; TIMING's SHAPE and HUMAN; TWEAK's
+                                                         * HUMAN. ARP: TWEAK's SHIFT and HUMAN) */
     if (p->fam == FAM_ARP && (p->graph == GR_ARP || p->graph == GR_NONE)) return m == 1u;
     if (p->fam == FAM_SEQ && p->graph == GR_ROLL) return m < 2u;
     if (p->fam == FAM_SEQ && p->graph == GR_STEPS) return m >= 2u;   /* PATTERN: STEP and ARP have it on GEN */
