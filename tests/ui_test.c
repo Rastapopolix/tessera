@@ -1064,6 +1064,26 @@ static uint32_t cords_left(uint32_t k)
             n += host_screen[y * 240u + x] == swap16(MELODEE_LOOK ? T_TEXT : T_THEME);
     return n;
 }
+/* the page order: DRUM HIT beside NOTES (a DRUM track's grid), PERF GLO's first page after MIXER; the menu's MIDI
+ * notes row named NOTES OUT (MIDI OUT is the GLO page) */
+static int test_page_order(void)
+{
+    uint32_t i, notes = NPAGES, hit = NPAGES, perf = NPAGES, glob = NPAGES, glo1 = NPAGES;
+    int menu = 0;
+    for (i = 0; i < NPAGES; i++) {
+        if (str_eq(PAGES[i].title, "NOTES")) notes = i;
+        if (str_eq(PAGES[i].title, "DRUM HIT")) hit = i;
+        if (str_eq(PAGES[i].title, "PERF")) perf = i;
+        if (str_eq(PAGES[i].title, "GLOBAL")) glob = i;
+        if (PAGES[i].fam == FAM_GLO && glo1 == NPAGES) glo1 = i;
+    }
+    for (i = 0; i < MI_COUNT; i++) {
+        if (str_eq(MI_NAME[i], "NOTES OUT")) menu |= 1;
+        if (str_eq(MI_NAME[i], "MIDI OUT")) menu |= 2;
+    }
+    return check("pages: DRUM HIT right after NOTES, PERF GLO's first table page (before GLOBAL); menu row NOTES OUT",
+                 hit == notes + 1u && perf + 1u == glob && glo1 == perf && menu == 1);
+}
 static int test_cords_page(void)
 {
     int bad = 0;
@@ -1125,6 +1145,31 @@ static int test_cords_page(void)
         down = cords_left(0);
         bad += check("MODS bar: a +- mod's both ways from the middle, a + mod's one way (the live mark aside)",
                      both > 40u && one < 6u && down > 40u);
+    }
+    {   /* a CC mod: OCT+ held + KNOB 3 its CC number (as OCT+ held + KNOB 4 a GATE's threshold), its release no OCT+ */
+        cord_t b = {CS_LFO, 0, CD_CC, 0, 60, 0, 0};
+        uint32_t n0;
+        int ok;
+        cord_set(0, &b); cord_ui_sel = 0; ui.force = 1; frame();
+        n0 = cord_cc_num(0);
+        fm1_ms += 3000u; host_ticks += 3000000u;
+        fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+        host_pressed |= 1u << panel.btn[B_OCTUP];
+        frame();
+        turn(EN_K1 + 2u, 3);
+        fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
+        frame();
+        c = cord_get(0);
+        ok = cord_cc_num(0) == n0 + 3u && c->dst == CD_CC && !c->uni && cur_page()->graph == GR_CORDS;
+        fm1_ms += 3000u; host_ticks += 3000000u;
+        fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+        host_pressed |= 1u << panel.btn[B_OCTDN];
+        frame();
+        turn(EN_K1 + 2u, 1);
+        fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
+        frame();
+        ok &= cord_cc_num(0) == n0 + 3u;
+        bad += check("MODS CC mod: OCT+ held + KNOB 3 its CC number (+3), no UNI from the release; OCT- held leaves it", ok);
     }
     cord_clear();
     return bad;
@@ -3667,6 +3712,12 @@ static int test_product_ux(void)
     turn(EN_K3, -1);
     bad += check("MIXER K3 is track 3's LEVEL, never a sequence length or a send",
                  trk[2].p[P_LEVEL] == lvl3 - 1 && TSEL->p[P_SLEN] == len && TSEL->p[P_RESERVED36] == send);
+    {
+        int16_t bpm = song.g[G_BPM];
+        turn(EN_SELECT, 2);
+        bad += check("SELECT on MIXER: the tempo (+2), as on HOME", song.g[G_BPM] == bpm + 2 && cur_page()->graph == GR_TRK);
+        song.g[G_BPM] = bpm;
+    }
     press(B_GLO); ok = cur_page()->fam == FAM_GLO && str_eq(cur_page()->title, "GLOBAL");
     press(B_GLO); ok &= str_eq(cur_page()->title, "SYSTEM");
     press(B_GLO); ok &= str_eq(cur_page()->title, "MIDI OUT");
@@ -6408,6 +6459,7 @@ int main(void)
     bad += test_rec();
     bad += test_gen_family();
     bad += test_phys_chrd_click();
+    bad += test_page_order();
     bad += test_cords_page();
     bad += test_cords_scroll_playing();
     bad += test_mod_shortcut();
