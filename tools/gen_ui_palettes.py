@@ -56,7 +56,13 @@ MONO_PALETTES = [(n, (0, 0, 0), (20, 20, 20), c, c, (c, c, c, c)) for n, c in MO
 _INK = dict(MONO_INK)
 MONO_PALETTES.append(("MOSAIC", (0, 0, 0), (20, 20, 20), _INK["YELLOW"], _INK["WHITE"],
                       (_INK["YELLOW"], _INK["BLUE"], _INK["HOT PINK"], _INK["GREEN"])))
-MONO_SLOTS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+# SUNSET, OCEAN and NEON (Theo 2026-11-05, after a viewer's wish for more like MOSAIC): the same, other inks. NEON is the
+# bold one: its magenta lifted to (255, 90, 230), as a full (255, 40, 200) reads 6.4:1 on black, under MONO_CHECKS' 7
+for _n, _t in (("SUNSET", ((255, 144, 40), _INK["HOT PINK"], _INK["LILAC"], _INK["YELLOW"])),
+               ("OCEAN", (_INK["BLUE"], (64, 224, 208), _INK["GREEN"], _INK["LILAC"])),
+               ("NEON", ((0, 230, 255), (255, 90, 230), (180, 255, 0), (255, 140, 0)))):
+    MONO_PALETTES.append((_n, (0, 0, 0), (20, 20, 20), _t[0], _INK["WHITE"], _t))
+MONO_SLOTS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
 MONO_DEFAULT = "YELLOW"
 SLOTS = [0, 2, 3, 4, 5]            # each palette's stored slot; 1 was DAY (retired: its stored id reads as the default)
 # Melodee's own track colours (NIGHT, DAY, CONTRAST as upstream had them): no track colour may come near one
@@ -188,6 +194,9 @@ def main():
             if delta_e(c, m) < MELODEE_DE:
                 fails.append(f"{p[0]}/T{t + 1}: {c} is Melodee's {m} (dE {delta_e(c, m):.1f} < {MELODEE_DE})")
     assert len(MONO_SLOTS) == len(MONO_PALETTES) and MONO_SLOTS[0] > SLOTS[-1] and MONO_SLOTS[-1] < 31
+    # MENU > COLOR's sheet (ui_menu.c menu_mono): one row of nine one-ink boxes, one row of four MOSAIC tiles, inks first
+    _multi = [p[5][0] != p[5][1] for p in MONO_PALETTES]
+    assert _multi.count(False) <= 9 and _multi.count(True) <= 4 and _multi == sorted(_multi)
     rows = [derive(p, t) for p in PALETTES + [TEST_GRAY] for t in range(4)]
     mono_rows = [derive(p, 0) for p in MONO_PALETTES if p[5][0] == p[5][1]]
     for p in MONO_PALETTES:                  # MOSAIC: each track's colour as the ink, and the white of the selection
