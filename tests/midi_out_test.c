@@ -392,10 +392,62 @@ static int tempo_mod_test(void)
     return bad;
 }
 
+/* CC OUT (cord.c cord_cc_tick): a mod onto a track's CC goes out on its channel with the cord's CC number, only when
+ * it changes and at most every 12 blocks; none with MIDI OUT OFF or the track muted */
+static uint32_t cc_count(uint32_t ch, uint32_t num, uint32_t *lo, uint32_t *hi)
+{
+    uint32_t n = 0;
+    *lo = 127; *hi = 0;
+    for (uint32_t i = 0; i < log_n; i++) {
+        uint32_t s = (log_pkt[i] >> 8) & 0xFFu, d1 = (log_pkt[i] >> 16) & 0x7Fu, d2 = log_pkt[i] >> 24;
+        if (s != (0xB0u | ch) || d1 != num || (log_pkt[i] & 15u) != 0x0Bu) continue;
+        n++;
+        if (d2 < *lo) *lo = d2;
+        if (d2 > *hi) *hi = d2;
+    }
+    return n;
+}
+static void cc_blocks(uint32_t n) { while (n--) { events_block(CTL); cord_tick(); drain(); } }   /* (mix.c's order) */
+static int cc_out_test(void)
+{
+    int bad = 0;
+    uint32_t lo, hi, n;
+    cord_t c = {0};
+    reset(MIDI_OUT_ALL);
+    cord_clear();
+    c.dst = CD_CC; c.dst_trk = 1; c.offset = 50;        /* (a fixed mod: half way) */
+    cord_set(0, &c);
+    cord_cc_set(0, 74);
+    cc_blocks(40);
+    n = cc_count(1, 74, &lo, &hi);
+    bad += check("CC OUT: a fixed mod sends its value once on its track's channel, with its CC number",
+                 n == 1u && lo == 64u && cord_cc_num(0) == 74u && cord_cc_num(1) == 1u);
+    c.src = CS_OCHD8; c.src_trk = 0; c.amount = 100; c.offset = 0;   /* (SWARM 8: 2.4 s a turn, no notes needed) */
+    cord_set(0, &c);
+    log_n = 0;
+    cc_blocks(5000);
+    n = cc_count(1, 74, &lo, &hi);
+    printf("    CC OUT: %u values, %u..%u\n", n, lo, hi);
+    bad += check("CC OUT: SWARM both ways sweeps around 64, at most every 12 blocks",
+                 n >= 20u && n <= 5000u / 12u + 1u && lo < 40u && hi > 88u);
+    settings_midi_out = MIDI_OUT_OFF; log_n = 0; cc_blocks(200);
+    n = cc_count(1, 74, &lo, &hi);
+    settings_midi_out = MIDI_OUT_ALL;
+    trk[1].p[P_MUTE] = 1; log_n = 0; cc_blocks(200);
+    n += cc_count(1, 74, &lo, &hi);
+    trk[1].p[P_MUTE] = 0;
+    bad += check("CC OUT: nothing with MIDI OUT OFF or the track muted", n == 0u);
+    cord_cc_set(0, 200);
+    bad += check("CC OUT: a CC number past 119 clamped", cord_cc_num(0) == 119u);
+    cord_clear();
+    bad += check("CC OUT: cleared mods start on CC 1", cord_cc_num(0) == 1u);
+    return bad;
+}
+
 int main(void)
 {
     int bad = notes_test() + echo_and_route_test() + generator_test() + clock_out_test() + no_drift_test() + tempo_mod_test() +
-              settings_test();
+              cc_out_test() + settings_test();
     printf("%s\n", bad ? "MIDI OUT TEST FAILED" : "MIDI out tests passed");
     return bad != 0;
 }

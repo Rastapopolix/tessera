@@ -73,6 +73,12 @@ static const char *cu_src_name(const cord_t *c)
 /* a destination's name: E1..E8 by the destination track's engine (as MOD names them) */
 static const char *cu_dst_name(const cord_t *c)
 {
+    if (c->dst == CD_CC && c >= cord_get(0) && c < cord_get(0) + CORD_LIVE) {   /* CC OUT: "CC 74", its number */
+        static char b[8];
+        str_cpy(b, "CC ", sizeof b);
+        fmt_int(b + 3, (int32_t)cord_cc_num((uint32_t)(c - cord_get(0))));
+        return b;
+    }
     if (c->dst >= CD_E1 && c->dst <= CD_E8)
         return mod_dst_name(&trk[c->dst_trk % NTRK], MD_E1 + (c->dst - CD_E1));
     return cord_dest(c->dst) ? cord_dest(c->dst)->name : "--";
@@ -83,6 +89,12 @@ static const char *cu_dst_name(const cord_t *c)
 static const char *cu_dst_mono(const cord_t *c)
 {
     static char b[8];
+    if (c->dst == CD_CC) {                              /* (CC OUT: "CC74", three digits "C119") */
+        const char *n = cu_dst_name(c) + 3;
+        b[0] = 'C'; b[1] = 'C';
+        str_cpy(b + (str_len(n) > 2u ? 1 : 2), n, 4);
+        return b;
+    }
     if (c->dst < CD_M1_AMT || c->dst > CD_M16_AMT) return cu_dst_name(c);
     b[0] = 'M';
     fmt_int(b + 1, (int32_t)(c->dst - CD_M1_AMT + 1u));
@@ -328,6 +340,20 @@ static int cu_thresh_knob(int32_t steps)
     str_cpy(b, "GATE OVER ", sizeof b);
     cu_pct_text(b + str_len(b), c.offset);
     ui_message(b);
+    return 1;
+}
+
+/* OCT- held + KNOB 3 on a CC mod: its CC number, 0..119 (ui_input.c: OCT-'s tap eaten) */
+static int cu_cc_knob(int32_t steps)
+{
+    const cord_t *c = cord_get(cord_ui_sel);
+    char b[12];
+    if (c->dst != CD_CC) return 0;
+    cord_cc_set(cord_ui_sel, (uint32_t)clamp((int32_t)cord_cc_num(cord_ui_sel) + accel(EN_K1 + 2u, steps, 120), 0, 119));
+    str_cpy(b, "CC ", sizeof b);
+    fmt_int(b + 3, (int32_t)cord_cc_num(cord_ui_sel));
+    ui_message(b);
+    ui.force = 1;
     return 1;
 }
 

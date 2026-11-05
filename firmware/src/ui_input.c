@@ -865,6 +865,10 @@ static void edit_param(uint32_t slot, int32_t steps)
             oct_eat |= 2u;                              /* (OCT+ held: a GATE's threshold; its release no OCT+) */
             return;
         }
+        if (slot == 2u && ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) && cu_cc_knob(steps)) {
+            oct_eat |= 1u;                              /* (OCT- held: a CC mod's number; its release no OCT-) */
+            return;
+        }
         cu_knob(slot, steps);
         return;
     }
