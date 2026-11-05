@@ -36,6 +36,7 @@ VERSION = "1.3.6"
 LOADER_SHA256 = "d9de9f1c81a3bb52998e5bced678f0ca851223014a7d43965b03f0719a44eb55"
 LOADER_ADDRESS = 0x1C02000
 FLASH_IDS = (0x856014, 0xB36014)  # the 1 MiB parts persist_boot accepts (0x85 Puya, 0xB3 UCUN UC25HQ80)
+UNTESTED_WRITE_IDS = (0xB36014,)  # no --write run reported on these yet: writing needs --allow-untested-flash
 
 
 def bundled_file(name):
@@ -241,7 +242,8 @@ class Link:
         key_data = self.command(0xFC09, struct.pack(">I", 0xAC6900))
         key = int.from_bytes(cipher(key_data[4:6][::-1]), "little")
         info = self.command(0xFC0A)
-        require(info[0] == 3 and int.from_bytes(info[2:6], "little") in FLASH_IDS,
+        self.flash_jedec = int.from_bytes(info[2:6], "little")
+        require(info[0] == 3 and self.flash_jedec in FLASH_IDS,
                 "Unexpected flash type or capacity; refusing recovery")
         return key
 
@@ -269,12 +271,16 @@ class Link:
         self.util.dispose_resources(self.dev)
 
 
-def recover(link, package, loader, output, write=False):
+def recover(link, package, loader, output, write=False, allow_untested=False):
     identity = link.identify()
     print("Connected to WL82 / UBOOT1.00. Loading recovery program into RAM...", flush=True)
     crash = cipher(link.command(0xFD07, struct.pack(">IH", 0x1C7C000, 512), incoming=512))
     durable_write(output / "retained-ram.bin", crash)
     key = link.load(loader)
+    untested = link.flash_jedec in UNTESTED_WRITE_IDS
+    require(not write or not untested or allow_untested,
+            f"Flash {link.flash_jedec:#08x} (UCUN UC25HQ80) has no tested --write recovery yet; nothing was read or "
+            "written. Run without --write to make a backup, or add --allow-untested-flash to write anyway")
     require(key == package.key, f"Chip-key mismatch: device {key:#06x}, package {package.key:#06x}; no flash writes")
     before = link.read_flash(0, FLASH_SIZE)
     require(len(before) == FLASH_SIZE, "Incomplete flash backup; refusing recovery")
@@ -285,7 +291,7 @@ def recover(link, package, loader, output, write=False):
     sectors = [a for a in range(APP_LO, APP_HI, SECTOR) if before[a:a + SECTOR] != expected[a:a + SECTOR]]
     report = {"package": str(package.path), "product": package.product, "package_sha256": package.digest,
               "device": identity, "chip_key": f"{key:#06x}", "full_backup": str(backup.resolve()),
-              "backup_sha256": sha256(before), "application_sectors_differ": len(sectors), "write_requested": write}
+              "backup_sha256": sha256(before), "flash_id": f"{link.flash_jedec:#08x}", "application_sectors_differ": len(sectors), "write_requested": write}
     durable_write(output / "backup.json", (json.dumps(report, indent=2) + "\n").encode())
     print(f"{len(sectors)} application sectors differ; protected regions will be retained.", flush=True)
     if not write:
@@ -312,6 +318,8 @@ def main(argv=None):
     mode.add_argument("--info", action="store_true", help="identify ROM USB only; no RAM loader or flash writes")
     mode.add_argument("--check", action="store_true", help="validate inputs offline; no USB access")
     mode.add_argument("--write", action="store_true", help="back up, restore application, and verify the entire flash")
+    parser.add_argument("--allow-untested-flash", action="store_true",
+                        help="allow --write on a flash part with no tested recovery yet (UCUN UC25HQ80, 0xB36014)")
     parser.add_argument("--loader", type=Path, help="override the bundled AC79 SDK RAM recovery loader")
     parser.add_argument("--backup-dir", type=Path, default=Path("fm1-recovery-backups"), help="parent for a new session directory")
     parser.add_argument("--libusb", help="explicit libusb shared-library path")
@@ -351,7 +359,7 @@ def main(argv=None):
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-")
         output = Path(tempfile.mkdtemp(prefix=stamp, dir=args.backup_dir)).resolve()
         print(f"Recovery session: {output}", flush=True)
-        recover(link, package, loader, output, args.write)
+        recover(link, package, loader, output, args.write, args.allow_untested_flash)
         return 0
     except (Exception, KeyboardInterrupt) as error:
         print(f"Recovery stopped: {error}", file=sys.stderr)

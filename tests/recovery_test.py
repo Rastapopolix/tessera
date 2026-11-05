@@ -223,9 +223,26 @@ class RecoveryTests(unittest.TestCase):
 
     def test_ucun_flash_restores_like_puya(self):
         self.link.flash_id = 0xB36014
-        result = R.recover(self.link, self.package, bytes(512), self.output, True)
+        result = R.recover(self.link, self.package, bytes(512), self.output, True, allow_untested=True)
         self.assertEqual(self.link.erases, [R.APP_LO + R.SECTOR])
         self.assertTrue(result["full_flash_verified"])
+        self.assertEqual(result["flash_id"], "0xb36014")
+
+    def test_ucun_write_needs_opt_in(self):
+        # Until a --write run is reported on a UC25HQ80, writing there needs --allow-untested-flash.
+        self.link.flash_id = 0xB36014
+        with self.assertRaisesRegex(R.RecoveryError, "allow-untested-flash"):
+            R.recover(self.link, self.package, bytes(512), self.output, True)
+        self.assertNotIn(0xFD05, self.link.calls)
+        self.assertEqual(self.link.erases, [])
+        self.assertFalse((self.output / "full-flash-before.bin").exists())
+
+    def test_ucun_backup_needs_no_opt_in(self):
+        self.link.flash_id = 0xB36014
+        result = R.recover(self.link, self.package, bytes(512), self.output)
+        self.assertEqual(self.link.erases, [])
+        self.assertFalse(result["write_requested"])
+        self.assertTrue((self.output / "full-flash-before.bin").exists())
 
     def test_unknown_flash_refused_before_flash_access(self):
         # One field off an accepted ID: capacity, memory type, manufacturer, unused top byte.
