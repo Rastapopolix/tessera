@@ -266,3 +266,5 @@
 0x291 FOLLOW HOLD              track 0..4 def 0
 0x292 KEY B                    global -12..12 def 0
 0x293 KEY C                    global -12..12 def 0
+0x294 TIMING SPLIT             track 0..100 def 0
+0x295 TIMING HOW               track 0..2 def 0

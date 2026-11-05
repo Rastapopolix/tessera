@@ -106,6 +106,12 @@ static int en_layer_on(void)
     return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->graph == GR_ENERGY &&
            ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
+/* the TIMING page with OCT+ held: KNOB 1 is SPLIT, KNOB 2 its HOW (seq_sub.c), any track's */
+static int tm_layer_on(void)
+{
+    return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->graph == GR_TIMING &&
+           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+}
 /* the MIDI OUT page with OCT+ held: KNOB k is track k's TRANSPOSE (midi_out.c) */
 static int midi_layer_on(void)
 {
@@ -198,7 +204,7 @@ static int fm_layer_on(void)
 static int gen_layer_on(void)
 {
     return quad_cols_on() || cs_layer_on() || ch_layer_on() || gr_layer_on() || an_layer_on() || sd_layer_on() ||
-           sv_layer_on() || ev_layer_on() || tw_layer_on() || fm_layer_on() || en_layer_on() || midi_layer_on() || chain_layer_on() ||
+           sv_layer_on() || ev_layer_on() || tw_layer_on() || fm_layer_on() || en_layer_on() || tm_layer_on() || midi_layer_on() || chain_layer_on() ||
            entries_layer_on() || piece_layer_on();
 }
 /* QUAD's LINK as its card shows it: OFF, or "T" and the linked tracks ("T24") */
@@ -2066,7 +2072,8 @@ static uint32_t graph_sig(int play)
     }
     if (pg->graph == GR_TIMING && trk_index(t) < TESSERA_TRACKS)    /* (SUB lives in tessera) */
         h ^= ((uint32_t)tessera.sub_ratch[trk_index(t)] | (uint32_t)tessera.sub_chance[trk_index(t)] << 8 |
-              (uint32_t)t->p[P_SGATE] << 16 | (uint32_t)tessera.sub_human[trk_index(t)] << 24) * 2246822519u;
+              (uint32_t)t->p[P_SGATE] << 16 | (uint32_t)tessera.sub_human[trk_index(t)] << 24) * 2246822519u ^
+             ((uint32_t)tessera.sub_split[trk_index(t)] | (uint32_t)tessera.sub_split_how[trk_index(t)] << 8) * 40503u;
     if (pg->graph == GR_NOTELEN && trk_index(t) < TESSERA_TRACKS)   /* (NOTE LENGTH lives in tessera, DIV in the song) */
         h ^= ((uint32_t)tessera.nl_mode[trk_index(t)] | (uint32_t)tessera.nl_len[trk_index(t)] << 8 |
               (uint32_t)tessera.nl_keys[trk_index(t)] << 16 | (uint32_t)tessera.mode[trk_index(t)] << 24 ^

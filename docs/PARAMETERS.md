@@ -284,6 +284,8 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x291 | FOLLOW HOLD | OFF, T1, T2, T3, T4 | OFF | Sample and hold for FOLLOW: the followed track's note is taken only when the HOLD track plays, and this track keeps playing it in its own rhythm until the next one. OFF: a new note on each of its own hits. TWEAK, OCT+ held, KNOB 4. |
 | 0x292 | KEY B | -12 to 12 semitones | 0 | A key change for the CHAIN's section: while the project plays it, every track that FOLLOWs the CHAIN moves its notes this many semitones, scale and all (+5 a fourth up, +7 a fifth, -2 a tone down). STEP tracks move too; drum tracks and OWN tracks keep theirs. A is the key as set. 0: no change. SCL's Key in B and Key in C rows; saved with the project. |
 | 0x293 | KEY C | -12 to 12 semitones | 0 | A key change for the CHAIN's section: while the project plays it, every track that FOLLOWs the CHAIN moves its notes this many semitones, scale and all (+5 a fourth up, +7 a fifth, -2 a tone down). STEP tracks move too; drum tracks and OWN tracks keep theirs. A is the key as set. 0: no change. SCL's Key in B and Key in C rows; saved with the project. |
+| 0x294 | TIMING SPLIT | 0 to 100 % | 0 | The chance a step plays at half its division: 1/8 to 1/16. HOW says what it does. Never the bar's first step, nor a step that ratchets or ties. The same each time the piece plays; ROLL gives new tosses. 0 off. OCT+ held on TIMING, KNOB 1. |
+| 0x295 | TIMING HOW | DOUBLE, PUSH, MIX | DOUBLE | What a SPLIT step does. DOUBLE: the note, then a neighbouring note of the scale halfway through the step (a drum: the same hit). PUSH: the note halfway through the step, late only. MIX: tosses for one or the other. OCT+ held on TIMING, KNOB 2. |
 
 ## Mods
 
@@ -425,3 +427,4 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | FILL | the project's FILL, each block | the project's FILL (steps set to FILL / NOT FILL), held while the move is past half |
 | TEMPO | the project's tempo on CLK INT, each block | the project's tempo on CLK INT: a full move up doubles it, down halves it (BPM stays as set) |
 | CC | a MIDI CC out, each block | a MIDI CC out on the track's MIDI OUT channel, its number set with OCT+ held and KNOB 3 |
+| SPLIT | the generator's step | TIMING's SPLIT: the chance a step plays at half its division |

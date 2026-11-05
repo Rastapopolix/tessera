@@ -93,6 +93,7 @@
 #                   a melody over a bass or harmony, the breakdown before A and the full return, FORM OFF's sections,
 #                   PLAY again, CUT / FADE, no voice from a silent track, hand mutes and GLO's key, SOLO, AUTO's roles;
 #                   ENTRIES 0 with the rest turned plays the same notes.
+# SPLIT (tests/split_test.c): TIMING's SPLIT through the real sequencer, read off MIDI OUT.
 # PIECE (tests/planner_test.c): the piece planner (planner.c): the ten SHAPEs (range, PEAK, COUNT, USER, sparse ends),
 #                   LENGTH FREE with the rest turned plays the same notes, a 10-minute ARCH (intro, top, outro, the
 #                   CHAIN home for its last 15 %, ENERGY its curve, CONTRAST near the top), END STOP / LOOP / NEW / FREE,
@@ -392,6 +393,8 @@ if core && [ $TABLES = 1 ]; then
         chain_test -O2 $FW
     t "ENTRIES: tracks out and back on the phrase lines: the rules, DWELL, anchors, breakdowns, CUT / FADE, hand, OFF unchanged" \
         entries_test -O2 $FW
+    t "SPLIT: TIMING's SPLIT: DOUBLE, PUSH, MIX on generators, STEP and drums; SPLIT 0 and a generator's own notes unchanged" \
+        split_test -O1 $FW
     t "PIECE: the planner: the SHAPEs, FREE unchanged, ENERGY / Entries / the CHAIN steered, END STOP LOOP NEW FREE, tempo" \
         planner_test -O2 $FW
     t "GEN: each generator on its own (gen.c alone): ranges, rests, draws per step, determinism, mutation, sections" \

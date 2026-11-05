@@ -569,6 +569,20 @@ static int test_gen_family(void)
         turn(EN_K1, -1);
         bad += check("TIMING: back to x1, kept there", tessera.sub_ratch[tr] == 0u);
         tessera_param_set(tr, TX_SUB_CHANCE, 100);
+        uint32_t oct = song.octave, shape = tessera.sub_shape[tr], hum = tessera.sub_human[tr];   /* OCT+ held: KNOB 1 SPLIT, KNOB 2 HOW; 3 and 4 nothing, no octave */
+        btn_down(B_OCTUP);
+        frame();
+        turn(EN_K1, 5);
+        turn(EN_K2, 1);
+        turn(EN_K3, 2);
+        turn(EN_K4, -2);
+        btn_up(B_OCTUP);
+        frame();
+        bad += check("TIMING, OCT+ held: SPLIT up, HOW PUSH, the rest untouched, no octave",
+                     tessera.sub_split[tr] > 0u && tessera.sub_split_how[tr] == TESS_SPLIT_PUSH &&
+                     tessera.sub_ratch[tr] == 0u && tessera.sub_shape[tr] == shape && tessera.sub_human[tr] == hum && song.octave == oct);
+        tessera_param_set(tr, TX_SUB_SPLIT, 0);
+        tessera_param_set(tr, TX_SUB_SPLIT_HOW, 0);
     }
     go_title("ENERGY");                           /* ENERGY, the project's: KNOB 1 ARC, KNOB 2 RESTS; 3 and 4 nothing */
     {

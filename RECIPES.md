@@ -450,6 +450,16 @@ copying every note.
 The bass now plays its own rhythm on the note the melody had at the bar line. HOLD on a track with random hits (DROP,
 BRANCH) samples at random moments instead.
 
+## Loosen a 1/8 line (TIMING SPLIT)
+
+A line on the grid, broken up now and then the way a player would: a quick pair of 1/16s here, a note pushed late there.
+
+1. Any melodic track at **DIV 1/8**: a generator, or a STEP track with a line written in.
+2. On **TIMING**, hold **OCT+**: **KNOB 1** sets **SPLIT 20 %**, **KNOB 2** sets **HOW** to **MIX**.
+3. Too busy, or not enough? Turn SPLIT. **ROLL** on EVOLVE gives a new set of tosses, and the generator's notes stay.
+
+The bar's first step stays on the grid. A mod on **SPLIT** (an LFO or TIDE) brings the looser bars in and out.
+
 ## Tips
 
 **Getting the most out of Tessera**

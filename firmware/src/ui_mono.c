@@ -1504,16 +1504,19 @@ static void mo_pic_notelen(const track_t *t)
 }
 /* TIMING: a bar of 8 steps, an example rhythm's hits; each hit's step split into RATCH's hits, each its share of the
  * GATE; CHANCE: the steps that would not ratchet this time a hit each, the skipped ones dim; HUMAN: the hits late by
- * their example share (as the detailed picture) */
+ * their example share (as the detailed picture); SPLIT (RATCH x1): the steps its % reaches, never the bar's first, in two
+ * halves (DOUBLE) or half a step on, a dim tick left on the line (PUSH); MIX: some of each */
 static void mo_pic_timing(const track_t *t)
 {
     static const uint8_t HITS[8] = {1, 0, 1, 1, 0, 1, 0, 1};
     static const uint8_t SKIP[8] = {0, 0, 37, 74, 0, 11, 0, 90};
     static const uint8_t LATE[8] = {40, 0, 100, 10, 0, 70, 0, 25};
+    static const uint8_t SPLITS[8] = {100, 0, 40, 10, 0, 70, 0, 25};   /* the % from which each step splits (100: never) */
     uint32_t tr = trk_index(t) % TESSERA_TRACKS, hits = (tessera.sub_ratch[tr] & 7u) + 1u, ch = tessera.sub_chance[tr], i, k;
-    uint32_t sh = tessera.sub_shape[tr] % SUB_SHAPES;
+    uint32_t sh = tessera.sub_shape[tr] % SUB_SHAPES, how = tessera.sub_split_how[tr];
     int32_t sw = 14, g = t->p[P_SGATE] ? t->p[P_SGATE] : 64;
-    if (tessera.mode[tr] == TESS_ENG_OFF) { hits = 4u; ch = 100u; }
+    uint32_t sp = hits > 1u && tessera.mode[tr] != TESS_ENG_OFF ? 0u : tessera.sub_split[tr];   /* (RATCH wins) */
+    if (tessera.mode[tr] == TESS_ENG_OFF) { hits = sp ? 1u : 4u; ch = 100u; }
     mo_hl(4, 106, 112, MO_DIM);
     for (i = 0; i < 8u; i++) {
         int32_t x = 4 + (int32_t)i * sw, late = sw * (int32_t)tessera.sub_human[tr] * LATE[i] / 12500;
@@ -1521,6 +1524,15 @@ static void mo_pic_timing(const track_t *t)
         if (!HITS[i]) continue;
         x += late < sw / 4 ? late : sw / 4;
         uint32_t n = hits > 1u && SKIP[i] < ch ? hits : 1u;
+        if (SPLITS[i] < sp) {
+            if (how == TESS_SPLIT_PUSH || (how == TESS_SPLIT_MIX && i % 4u == 3u)) {
+                mo_fill(x, 97, 1, 4, MO_DIM);
+                x += sw / 2;
+            } else {
+                n = 2u;
+                sh = SUB_EVEN;
+            }
+        }
         int32_t len = (sw / (int32_t)n) * g / 128;
         if (len < 1) len = 1;
         for (k = 0; k < n; k++) {
