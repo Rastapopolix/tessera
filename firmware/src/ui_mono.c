@@ -1038,7 +1038,10 @@ static void mo_pic_quad(uint32_t tr)
 /* CONSTELLATION: the sky scrolling left, the far two layers dim dots; the front layer's stars a plus their size (bright
  * ones and the ones heard ink, the others ahead ink and behind dim); behind the ship the stars it heard joined; the ship
  * mid-sky, its thruster flickering, the brackets SIZE rows round it (dim when the loop plays), the star sounding ringed.
- * LOCK up: the loop under the sky, its stars joined, the one played ringed, a mark where LEN ends it */
+ * LOCK up: the loop under the sky, its stars joined, the one played ringed, a mark where LEN ends it.
+ * In a MOSAIC kind of palette the sky takes its four inks, as LANDSCAPE does: a star the ink of its size, the far
+ * layers dim, the constellation's lines and the ship's brackets inks of their own, the ship the palette's white. A one-ink
+ * palette: its ink and its dim, as before (its four inks are its ink, mo_tdim its dim) */
 static void mo_pic_constel(uint32_t tr)
 {
     const gen_constel_t *g = tessera_constel(tr);
@@ -1049,14 +1052,14 @@ static void mo_pic_constel(uint32_t tr)
     for (uint32_t l = 2; l > 0; l--)
         for (i = -7; i < 9; i++) {
             uint32_t st = gen_cs_star(g->sky, ((uint32_t)g->col >> l) + (uint32_t)i, l, 30u);
-            if (st) mo_px(sx + i * cw + (int32_t)l, MCS_Y((st & 15u) - 1u), MO_DIM);
+            if (st) mo_px(sx + i * cw + (int32_t)l, MCS_Y((st & 15u) - 1u), mo_tdim(1u + l));
         }
     for (i = -7; i <= 0; i++) {                         /* (the constellation behind the ship: its lines first) */
         uint32_t st = gen_cs_star(g->sky, (uint32_t)g->col + (uint32_t)i, 0, g->dens);
         int32_t y;
         if (!st || !((g->trail >> (uint32_t)-i) & 1u)) continue;
         y = MCS_Y((st & 15u) - 1u);
-        if (pv) mo_line(px, py, sx + i * cw, y, MO_INK);
+        if (pv) mo_line(px, py, sx + i * cw, y, MO_TRK(2u));
         px = sx + i * cw, py = y, pv = 1;
     }
     for (i = -7; i < 9; i++) {
@@ -1067,19 +1070,19 @@ static void mo_pic_constel(uint32_t tr)
         if (!st) continue;
         y = MCS_Y((st & 15u) - 1u);
         a = 1 + (int32_t)((st >> 6) & 3u) / 2;
-        c = heard || (st >> 4) & 2u || i >= 0 ? MO_INK : MO_DIM;
+        c = heard || (st >> 4) & 2u || i >= 0 ? MO_TRK((st >> 6) & 3u) : mo_tdim((st >> 6) & 3u);
         mo_hl(x - a, y, 2 * a + 1, c);
         mo_vl(x, y - a, 2 * a + 1, c);
-        if (!i && g->caught) mo_circ(x, y, 4, MO_INK);
+        if (!i && g->caught) mo_circ(x, y, 4, MO_HOT);
     }
     {
         int32_t y = MCS_Y(row), yt = MCS_Y(row + wd > 14 ? 14 : row + wd) - 2, yb = MCS_Y(row - wd < 0 ? 0 : row - wd) + 2;
-        uint16_t bc = g->held ? MO_DIM : MO_INK;
+        uint16_t bc = g->held ? mo_tdim(3u) : MO_TRK(3u);
         mo_hl(sx - 2, yt, 5, bc); mo_px(sx - 2, yt + 1, bc); mo_px(sx + 2, yt + 1, bc);
         mo_hl(sx - 2, yb, 5, bc); mo_px(sx - 2, yb - 1, bc); mo_px(sx + 2, yb - 1, bc);
-        mo_hl(sx - 11, y, 7, MO_INK);                   /* the ship, a triangle nose right, and its thruster */
-        mo_hl(sx - 11, y - 1, 5, MO_INK); mo_hl(sx - 11, y + 1, 5, MO_INK);
-        mo_hl(sx - 11, y - 2, 3, MO_INK); mo_hl(sx - 11, y + 2, 3, MO_INK);
+        mo_hl(sx - 11, y, 7, MO_HOT);                   /* the ship, a triangle nose right, and its thruster */
+        mo_hl(sx - 11, y - 1, 5, MO_HOT); mo_hl(sx - 11, y + 1, 5, MO_HOT);
+        mo_hl(sx - 11, y - 2, 3, MO_HOT); mo_hl(sx - 11, y + 2, 3, MO_HOT);
         mo_hl(sx - 13 - (int32_t)(g->col & 1u), y, 1 + (int32_t)(g->col & 1u), MO_DIM);
         if (g->filled && song.playing) {                /* (FILL ARP: a hollow diamond at the note it played) */
             int32_t fy = MCS_Y(g->filled - 1u);
@@ -1102,10 +1105,10 @@ static void mo_pic_constel(uint32_t tr)
                 continue;
             }
             y = ly + lh - (int32_t)((v & 15u) - 1u) * lh / (int32_t)(GEN_CS_ROWS - 1u);
-            if (qx >= 0) mo_line(qx, qy, x, y, MO_DIM);
+            if (qx >= 0) mo_line(qx, qy, x, y, mo_tdim(2u));
             qx = x, qy = y;
-            mo_fill(x - 1, y - 1, 3, 3, MO_INK);
-            if (k == now) mo_circ(x, y, 3, MO_INK);
+            mo_fill(x - 1, y - 1, 3, 3, MO_TRK((v >> 6) & 3u));
+            if (k == now) mo_circ(x, y, 3, MO_HOT);
         }
     }
 }
