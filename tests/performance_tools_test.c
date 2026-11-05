@@ -184,8 +184,45 @@ static void test_knob_preview(void)
     /* the cursor's preview is still NOTE PREVIEW's and stays off MIDI */
     settings_preview=1;cursor_set(1);assert(audition_request && !audition_midi);advance(FS/6+CTL);settings_preview=0;
 }
+/* An ARP track: its tosses from the SEED (RANDOM's order and PROB replay from PLAY), TWEAK's SHIFT and HUMAN */
+static uint32_t arp_run(track_t *t, uint8_t *notes, uint8_t *vels, uint32_t n)   /* n notes the arp plays, from PLAY */
+{
+    uint32_t got = 0, guard = 0, period = seq_div_samples((uint32_t)t->p[P_ARATE]);
+    seq_sub_clear();                                             /* (PLAY: the tosses from the start) */
+    arp_off(t); t->nheld = 0; t->arp_pos = 0xFFFFFFF; t->arp_idx = 0xFFFFFFFFu;
+    arp_add(t, 60); arp_add(t, 64); arp_add(t, 67);
+    while (got < n && guard++ < 400u) {
+        arp_tick(t, period);
+        if (t->arp_note) {
+            notes[got] = t->arp_note; vels[got] = 0;
+            for (uint32_t i = 0; i < NVOICE; i++) if (t->v[i].active && t->v[i].note == t->arp_note) vels[got] = t->v[i].vel;
+            got++;
+            arp_off(t);
+        }
+    }
+    t->nheld = 0;
+    return got;
+}
+static void test_arp_shape(void)
+{
+    reset_tools();track_t *t=TSEL;uint32_t tr=song.sel;
+    uint8_t a[24],b[24],va[24],vb[24];
+    t->p[P_AMODE]=4;t->p[P_APROB]=100;t->p[P_AOCT]=2;           /* RANDOM over two octaves, some steps skipped */
+    memset(va,0,sizeof va);memset(vb,0,sizeof vb);
+    assert(arp_run(t,a,va,24)==24 && arp_run(t,b,vb,24)==24);
+    assert(!memcmp(a,b,24));                                     /* PLAY again: the same arpeggio */
+    tessera.evolve[tr].shift=5;
+    assert(arp_run(t,b,vb,24)==24);
+    for(uint32_t i=0;i<24u;i++) assert(b[i]==a[i]+5);            /* SHIFT: every note a fourth up, the same tosses */
+    tessera.evolve[tr].shift=0;tessera.evolve[tr].human=100;
+    assert(arp_run(t,b,vb,24)==24 && !memcmp(a,b,24));           /* HUMAN: the notes as before */
+    uint32_t differ=0;for(uint32_t i=1;i<24u;i++) differ+=vb[i]!=vb[0];
+    assert(differ);                                              /* .. their velocities uneven */
+    tessera.evolve[tr].human=0;
+    t->p[P_AMODE]=0;
+}
 int main(void)
 {
-    test_recording_tools();test_click_volume();test_editing_tools();test_knob_preview();test_midi_and_levels();test_compatibility();
+    test_recording_tools();test_click_volume();test_editing_tools();test_knob_preview();test_arp_shape();test_midi_and_levels();test_compatibility();
     puts("performance tools: count-in, click, additive entry, audition, momentary restore/keep, MIDI, drum levels and inert legacy effect values passed");return 0;
 }

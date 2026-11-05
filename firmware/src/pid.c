@@ -382,8 +382,8 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
         "CHAIN: one send through all three effects in a row; SPLIT: a send to each effect of its own."),
     G_(G_BUDGET, PID_F_DEVICE, "VOICE BUDGET",
        "How much sound work the FM-1 shares out between the tracks; lower leaves more headroom, higher allows more voices."),
-    X_(TX_MODE, "GENERATOR MODE", "SEQ shows the pages of the MODE only. STEP plays the track's own steps; ARP the "
-                                  "keys held, as an arpeggio (the ARP button opens it too); CHORD plays a progression's chords in the track's scale "
+    X_(TX_MODE, "GENERATOR MODE", "SEQ and ARP show the pages of the MODE only. STEP plays the track's own steps; ARP the "
+                                  "keys held, as an arpeggio; CHORD plays a progression's chords in the track's scale "
                                   "(QNT CHRD: the other tracks follow them); TURING, EUCLID, MARKOV and MORPH make its notes; "
                                   "ATLAS plays kick, snare, hat and toms (best on a DRUM track); BOUNCE plays where a ball "
                                   "hits the walls of its box; AWAKE adds two loops of its own lengths; POLY steps four notes on four rhythms; "

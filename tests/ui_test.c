@@ -452,20 +452,21 @@ static int test_no_phrases(void)
 }
 
 static void go_title(const char *title);
-/* SEQ (Tessera): GEN's MODE first, then the MODE's pages only (STEP: NOTES; ARP: ARP, ARP 2; a generator: EVOLVE,
- * FORM, TWEAK), PATTERN TEMPO PATTERNS SONG always; ARP's tap: SEQ in ARP's MODE, ARP then ARP 2 */
-static const char *seq_taps(char *got, size_t cap, uint32_t n)   /* n SEQ taps from HOME: the titles */
+/* SEQ (Tessera): GEN's MODE first, then what the MODE plays (STEP: NOTES; ARP: NOTES, ARP; a generator: PATTERN),
+ * TEMPO PATTERNS SONG always; the ARP button: how it is shaped (EVOLVE, TWEAK, TIMING..; ARP: ARP 2, TWEAK) */
+static const char *btn_taps(uint32_t b, char *got, size_t cap, uint32_t n)   /* n taps of b from HOME: the titles */
 {
     size_t used = 0;
     got[0] = 0;
     go_home();
     while (n--) {
-        press(B_SEQ);
+        press(b);
         used += (size_t)snprintf(got + used, cap - used, "%s%s", used ? " " : "", ui.home ? "HOME" : cur_page()->title);
         if (used >= cap) used = cap - 1u;
     }
     return got;
 }
+static const char *seq_taps(char *got, size_t cap, uint32_t n) { return btn_taps(B_SEQ, got, cap, n); }
 /* PHYS SYMP's CHRD (an F_INT shown as 8 names over 0..127): a click of KNOB 2 is the next name, both ways, to the ends */
 static int test_phys_chrd_click(void)
 {
@@ -488,34 +489,46 @@ static int test_phys_chrd_click(void)
     ok &= TSEL->p[P_E1] == 0;                     /* OCT */
     return check("PHYS CHRD: one click of KNOB 2 a name (OCT 5TH 4TH MAJ MIN SUS 7TH ROOT), both ways", ok);
 }
+/* SEQ: what plays; the ARP button: how it is shaped (3.3, issue #441) */
 static int test_gen_family(void)
 {
-    static const char STEP[] = "GEN NOTES EVOLVE TWEAK TIMING TEMPO PATTERNS SONG GEN", ARP[] = "GEN NOTES TEMPO PATTERNS SONG GEN",
-                      GEN[] = "GEN EVOLVE FORM TWEAK TWEAK 2 LENGTH TIMING ENERGY PATTERN TEMPO PATTERNS SONG";
+    static const char STEP[] = "GEN NOTES TEMPO PATTERNS SONG GEN", STEP_A[] = "EVOLVE TWEAK TIMING EVOLVE",
+                      ARP[] = "GEN NOTES ARP TEMPO PATTERNS SONG GEN", ARP_A[] = "ARP 2 TWEAK ARP 2",
+                      GEN[] = "GEN PATTERN TEMPO PATTERNS SONG GEN",
+                      GEN_A[] = "EVOLVE FORM TWEAK TWEAK 2 LENGTH TIMING ENERGY EVOLVE";
     char got[128];
     int bad = 0, in_seq = 0, pattern_seq = 0;
     uint32_t k, n = 0;
     ui_power_on();
-    bad += check("SEQ in STEP: GEN NOTES EVOLVE (STEP EVOLVE) TWEAK (its HUMAN) TIMING (its SHAPE, HUMAN) TEMPO "
-                 "PATTERNS SONG, then GEN again (PATTERN: GEN's)", str_eq(seq_taps(got, sizeof got, 9), STEP));
+    bad += check("SEQ in STEP: GEN NOTES TEMPO PATTERNS SONG, then GEN again (PATTERN: GEN's)",
+                 str_eq(seq_taps(got, sizeof got, 6), STEP));
     if (!str_eq(got, STEP)) printf("    got: %s\n", got);
-    press(B_ARP);
-    n = !ui.home && str_eq(cur_page()->title, "ARP") && seqm_get(song.sel) == 1u && TSEL->p[P_AMODE];
-    press(B_ARP);
-    n &= str_eq(cur_page()->title, "ARP 2");
-    press(B_ARP);
-    n &= str_eq(cur_page()->title, "ARP");
-    bad += check("ARP's taps: ARP's MODE on (UP), its page, then ARP 2, ARP", n);
+    bad += check("ARP in STEP: STEP EVOLVE, TWEAK (its HUMAN), TIMING (its SHAPE, HUMAN), round again",
+                 str_eq(btn_taps(B_ARP, got, sizeof got, 4), STEP_A));
+    if (!str_eq(got, STEP_A)) printf("    got: %s\n", got);
+    TSEL->p[P_AMODE] = 1;                       /* (ARP: GEN's MODE) */
+    bad += check("SEQ in ARP: GEN NOTES ARP (its MODE RATE OCT GATE) TEMPO PATTERNS SONG",
+                 str_eq(seq_taps(got, sizeof got, 7), ARP));
+    if (!str_eq(got, ARP)) printf("    got: %s\n", got);
+    bad += check("ARP in ARP: ARP 2 first, then TWEAK (SHIFT, HUMAN)", str_eq(btn_taps(B_ARP, got, sizeof got, 3), ARP_A));
+    if (!str_eq(got, ARP_A)) printf("    got: %s\n", got);
+    go_title("TWEAK");
     turn(EN_SELECT, 1);
     n = str_eq(cur_page()->title, "ARP 2");
     turn(EN_SELECT, 1);
-    n &= str_eq(cur_page()->title, "ARP");
-    turn(EN_SELECT, -1);
-    n &= str_eq(cur_page()->title, "ARP 2");
-    bad += check("SELECT on ARP: ARP and ARP 2 only, its own lane (not SEQ's pages; beta3)", n);
-    bad += check("SEQ in ARP: SEQ's own pages, GEN NOTES TEMPO PATTERNS SONG (ARP's are the ARP button's)",
-                 str_eq(seq_taps(got, sizeof got, 6), ARP));
-    if (!str_eq(got, ARP)) printf("    got: %s\n", got);
+    n &= str_eq(cur_page()->title, "TWEAK");
+    bad += check("SELECT on the ARP button's lane: its pages only (ARP 2, TWEAK)", n);
+    {
+        uint32_t tr = song.sel;
+        int8_t sh = tessera.evolve[tr].shift;
+        go_title("TWEAK");
+        turn(EN_K1, 2);
+        n = tessera.evolve[tr].shift == sh + 2;
+        turn(EN_K2, 3);
+        n &= tessera.evolve[tr].drop == 0;
+        tessera.evolve[tr].shift = sh;
+        bad += check("TWEAK on an ARP track: KNOB 1 SHIFT turns, DROP stays (ARP 2's PROB)", n);
+    }
     {
         int16_t *vp;
         const param_desc_t *d1, *d2, *d3;
@@ -533,12 +546,14 @@ static int test_gen_family(void)
         bad += check("GEN on a STEP track: MODE LEN DIV GATE (PATTERN's, KNOB 2 sets LEN)", n);
     }
     tessera_param_set(song.sel, TX_MODE, TESS_ENG_TURING);
-    bad += check("SEQ in a generator: GEN EVOLVE FORM TWEAK TWEAK 2 LENGTH TIMING ENERGY PATTERN TEMPO PATTERNS SONG", str_eq(seq_taps(got, sizeof got, 12), GEN));
+    bad += check("SEQ in a generator: GEN PATTERN TEMPO PATTERNS SONG", str_eq(seq_taps(got, sizeof got, 6), GEN));
     if (!str_eq(got, GEN)) printf("    got: %s\n", got);
-    go_title("EVOLVE");
-    press(B_ARP);
-    bad += check("ARP on a generator's track: the MODE stays (the generator keeps playing), GEN opens",
-                 seqm_get(song.sel) == 1u + TESS_ENG_TURING && !ui.home && str_eq(cur_page()->title, "GEN"));
+    ui.fam_last[FAM_ARP] = 0;
+    bad += check("ARP in a generator: EVOLVE FORM TWEAK TWEAK 2 LENGTH TIMING ENERGY, round again",
+                 str_eq(btn_taps(B_ARP, got, sizeof got, 8), GEN_A));
+    if (!str_eq(got, GEN_A)) printf("    got: %s\n", got);
+    bad += check("ARP on a generator's track: the MODE stays (the generator keeps playing)",
+                 seqm_get(song.sel) == 1u + TESS_ENG_TURING);
     go_title("LENGTH");                           /* NOTE LENGTH: KNOBS 1-3 its own, a step a turn; KNOB 4 PATTERN's GATE */
     {
         uint32_t tr = song.sel;
@@ -1773,7 +1788,7 @@ static int test_help_gesture(void)
     frame();
     frame();
     press(B_ARP);
-    bad += check("ARP tapped alone still opens ARP", !ui.home && str_eq(cur_page()->title, "ARP"));
+    bad += check("ARP tapped alone still opens its lane", !ui.home && arp_page(ui.page));
     return bad;
 }
 

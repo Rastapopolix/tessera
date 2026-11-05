@@ -57,7 +57,7 @@ static void seq_split_done(track_t *t, uint32_t tr);
 static void seq_sub_clear(void)
 {
     seq_sub_rec = seq_sub_armed = seq_nudge_due = seq_nudge_early = seq_hum_due = 0;
-    for (uint32_t k = 0; k < NTRK; k++) seq_hum_n[k] = seq_humv_n[k] = seq_split_n[k] = seq_split[k] = 0;
+    for (uint32_t k = 0; k < NTRK; k++) seq_hum_n[k] = seq_humv_n[k] = seq_split_n[k] = seq_split[k] = arp_draws[k] = 0;
 }
 
 /* A step starts: what it plays is recorded from here, the last step's repeats are dropped */

@@ -26,9 +26,9 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 
 | Tap (again: the next page) | Pages |
 |---|---|
-| **SEQ** | GEN, then the MODE's pages. STEP: NOTES (a DRUM track: NOTES, DRUM HIT), EVOLVE, TWEAK, TIMING. ARP: NOTES. A generator: EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY. All: PATTERN, TEMPO, PATTERNS, SONG |
+| **SEQ** | What plays: GEN, then STEP: NOTES (a DRUM track: NOTES, DRUM HIT). ARP: NOTES, ARP. A generator: PATTERN. All: TEMPO, PATTERNS, SONG |
 | **SEQ** held | PATTERNS |
-| **ARP** | STEP track: switches it to ARP, the ARP page (again: ARP 2; SELECT turns between the two only). Generator track: GEN ("MODE IS ON GEN") |
+| **ARP** | How it is shaped. STEP: EVOLVE, TWEAK, TIMING. ARP: ARP 2, TWEAK. A generator: EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY |
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST; on FM6 then FM LFO; on ORACLE then LFO MOD, LFO ROUTE |
 | **ENV** | ENV, ENV DEST; on FM6 instead EG RATE, EG LVL, PITCH EG, PITCH LV; on ORACLE FILT ENV, AMP ENV |
 | **SCL** | SCALES, SCL, CHORD |
