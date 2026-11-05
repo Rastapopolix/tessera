@@ -1392,7 +1392,7 @@ starts the worst times again, for example before you try a busy part.
   power-off. Please add both to a bug report.
 - **Update mode.** Hold **OCT-** alone while switching on to start the update loader, then reinstall from the web
   installer. See [docs/RECOVERY.md](docs/RECOVERY.md) for a unit stuck in UBOOT.
-- Do not unplug the FM-1 while it is writing. This is experimental firmware: use it at your own risk.
+- Do not unplug the FM-1 while it is writing. Tessera is experimental in every sense of the word: use it at your own risk.
 
 ---
 
