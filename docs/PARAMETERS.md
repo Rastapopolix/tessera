@@ -37,10 +37,10 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x01A | SCALE | CHR, MAJ, MIN, DOR, MIX, PEN, MPEN, HARM, PHRY, LYD, LOC, MEL, BLUES, WHOLE, DIMHW, DIMWH, 5EDO, 7EDO, 9EDO, 10EDO, 13EDO, 14EDO, 15EDO, 16EDO, 17EDO, 18EDO, 19EDO, 20EDO, 21EDO, 22EDO, 23EDO, 24EDO, 26EDO, 27EDO, 29EDO, 31EDO, 34EDO, 36EDO, 41EDO, 53EDO, JI-MAJ, JI-MIN, JI-12, JI-7L, JI-7, HARM8, HARM16, PARTCH, HARRIS, PYTH, MT-1/4, MT-1/3, MT-1/6, WERCK3, KIRN3, VALLOT, YOUNG2, RAST-J, SABA-J, SHRUTI, SLENDR, PELOG, BP-ET, BP-JI, RAST, BAYATI, HIJAZ, SABA, HUSAYN, SIKAH, IN, YO, HIRA, IWATO, KUMOI, RYUK | CHR | The scale the keys and the generators play in. |
 | 0x01B | QUANTIZE | OFF, SNAP, WHITE, ALL, MPC, CHRD | OFF | How the keys meet the scale: OFF plays every key, SNAP moves a note into the scale, WHITE puts the scale on the white keys, ALL and MPC lay it out over the keys or MPC pads; CHRD snaps the keys, MIDI and the generators to the nearest note of the chord a CHORD track plays (no CHORD track: as SNAP). Not OFF: KNOB 2 on NOTES moves a note by the scale's notes (CHRD: the chord's). Notes already written stay: Snap to scale in the pattern's sheet (OCT+ held) moves them onto the scale, once. |
 | 0x01C | TRANSPOSE | -24 to 24 semitones | 0 | Moves the track's notes up or down by semitones. |
-| 0x01D | PATTERN LENGTH | 1 to 64 | 16 | How many steps the track's pattern has. |
-| 0x01E | PATTERN DIVISION | 1/4, 1/8, 1/16, 1/32, 8T, 16T, 1/2, 1/1, 2BAR, 4BAR | 1/16 | How long one step is. |
-| 0x01F | PATTERN SWING | 0 to 100 % | 0 | Delays every second step, for a swung feel. |
-| 0x020 | PATTERN GATE | 1 to 127 | 64 | How long each step's note lasts, as a share of the step. |
+| 0x01D | PATTERN LENGTH | 1 to 64 | 16 | How many steps the track's pattern has. Each of its 8 patterns keeps its own. |
+| 0x01E | PATTERN DIVISION | 1/4, 1/8, 1/16, 1/32, 8T, 16T, 1/2, 1/1, 2BAR, 4BAR | 1/16 | How long one step is. Each of the track's 8 patterns keeps its own. |
+| 0x01F | PATTERN SWING | 0 to 100 % | 0 | Delays every second step, for a swung feel. Each of the track's 8 patterns keeps its own. |
+| 0x020 | PATTERN GATE | 1 to 127 | 64 | How long each step's note lasts, as a share of the step. Each of the track's 8 patterns keeps its own. |
 | 0x025 | VOICE MODE | POLY, MONO, LEG, UNI | POLY | POLY plays chords; MONO one note at a time; LEG(ATO) one at a time, a note played while one is held not starting again; UNI stacks detuned voices on one note. |
 | 0x026 | GLIDE | 0 to 127 | 0 | How long a note takes to slide to the next. |
 | 0x027 | PAN | -64 to 63 | 0 | The track's place from left to right. |

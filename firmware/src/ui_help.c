@@ -97,17 +97,20 @@ static const help_t HELP_PAGE[HP_COUNT] = {
                                        "darker)."),
     H_(HP_DRUM_LEVEL, "DRUM LEVEL", "The sound's level in the kit."),
     /* SEQ > PATTERNS (ui_patterns.c patgrid_edit), SONG (edit_param) */
-    H_(HP_PATTERNS, "PATTERN", "This track's pattern, one of its 8: stopped, it switches at once; playing, at the end "
-                               "of its bar (it breathes on the grid till then); while a song plays, not at all. OCT+ "
-                               "opens the sheet: Copy to (then any knob picks the place), Delete pattern."),
+    H_(HP_PATTERNS, "PATTERN", "This track's pattern, one of its 8: its steps, LEN, DIV, SWING and GATE (a generator's "
+                               "settings stay the track's). Stopped, it switches at once; playing, when the pattern "
+                               "playing ends (dashed till then); while a song plays, not at all. OCT+ opens the "
+                               "sheet: Copy to (then any knob picks the place), Delete pattern."),
     H_(HP_SONG_SECTION, "SONG SECTION", "Which section of the song, a row, the other knobs edit; the empty row after "
-                                        "the last adds one. PLAY (or OCT+) plays the song; REC held takes the "
-                                        "patterns playing as the song (TAKE JAM)."),
+                                        "the last adds one. PLAY (or OCT+) plays the song, STOP brings back the "
+                                        "patterns you had. REC held makes the patterns played since PLAY the song "
+                                        "(TAKE JAM). OCT+ held: the song's sheet."),
     H_(HP_SONG_TRACK, "SONG TRACK", "Which track KNOB 3 sets the pattern of (the track selected, as ALGORITHM "
                                     "does)."),
     H_(HP_SONG_PATTERN, "SONG PATTERN", "The pattern the track plays in this section. Turned on the empty row, it "
                                         "adds the section."),
-    H_(HP_SONG_REPEATS, "SONG REPEATS", "How many times the section plays before the next one, 1 to 16."),
+    H_(HP_SONG_REPEATS, "SONG REPEATS", "How many times the section plays before the next one, 1 to 16: a time is "
+                                          "one pass of track 1's pattern."),
     /* SAVE > PRESETS (the browser) */
     H_(HP_BROWSE_LIST, "PRESETS LIST", "Which list the sounds come from: all of them, the favourites, the recent "
                                        "ones, or a category (bass, lead, pad, keys, drums ..)."),
