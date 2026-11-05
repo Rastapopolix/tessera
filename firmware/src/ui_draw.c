@@ -929,7 +929,11 @@ static void draw_columns(void)
             draw_column(3, "HOLD", h ? w4 : "OFF", "", ev->follow ? VAL(3u) : T_DIM, (int32_t)h * 1000 / 4, ICON_AUTO);
             return;
         }
-        if (tr < TESSERA_TRACKS && tessera.mode[tr] == TESS_ENG_OFF) {   /* (a STEP track: HUMAN alone) */
+        if (tr < TESSERA_TRACKS && tessera.mode[tr] == TESS_ENG_OFF) {   /* (a STEP track: HUMAN alone; ARP: SHIFT too) */
+            if (seqm_get(tr) == 1u) {
+                col_mods(PID_TESS(TX_TW_SHIFT));
+                draw_column(0, "SHIFT", w0, "st", VAL(0u), (sh + 24) * 1000 / 48, ICON_AUTO);
+            } else
             draw_column(0, "SHIFT", "--", "", T_DIM, -1, ICON_NONE);
             draw_column(1, "DROP", "--", "", T_DIM, -1, ICON_NONE);
             col_mods(PID_TESS(TX_TW_HUMAN));

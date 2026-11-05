@@ -294,6 +294,16 @@ static void seq_grid_place(track_t *t, uint32_t period, uint32_t done)
         t->seq_pos = 0;
     } else t->seq_pos = (uint32_t)d;
 }
+/* An ARP track's TWEAK (SHIFT, HUMAN) and its tosses (RANDOM's order, PROB) from the track's SEED, so an arpeggio
+ * replays from PLAY as everything else does (seq_sub.c's streams; arp_draws back to 0 at PLAY) */
+static uint32_t seq_hum_draw(uint32_t tr, uint32_t n, uint32_t salt);   /* (seq_sub.c) */
+static int32_t cord_tess_get(uint32_t tr, uint32_t x);                  /* (cord.c) */
+static uint32_t arp_draws[NTRK];
+static uint32_t arp_rand(const track_t *t, uint32_t salt)
+{
+    uint32_t tr = trk_index(t);
+    return tr < TESSERA_TRACKS ? seq_hum_draw(tr, arp_draws[tr]++, salt) : rng();
+}
 static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
 {
     uint32_t period, cnt, list[64], len = 0, i, j, o;
@@ -352,7 +362,7 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
             break;
         }
         case 4:
-            j = rng() % len;
+            j = arp_rand(t, 0x41524Fu) % len;
             break;
         default:
             j = t->arp_idx % len;
@@ -360,12 +370,24 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
         }
         if (t->arp_note)
             arp_off(t);
-        if ((uint32_t)(rng() & 127u) <= (uint32_t)t->p[P_APROB]) {
-            t->arp_note = (uint8_t)list[j];
-            t->arp_off = period * (uint32_t)t->p[P_AGATE] / 128u;
+        if ((uint32_t)(arp_rand(t, 0x415250u) & 127u) <= (uint32_t)t->p[P_APROB]) {
+            uint32_t tr = trk_index(t), vel = 100u, cut = 0;
+            int32_t note = (int32_t)list[j];
+            if (tr < TESSERA_TRACKS) {                  /* TWEAK: SHIFT in semitones; HUMAN: velocity +-HUMAN/5, up to
+                                                         * HUMAN/2 % off the gate (as a STEP track's, seq_sub.c) */
+                uint32_t h = (uint32_t)cord_tess_get(tr, TX_TW_HUMAN);
+                note += cord_tess_get(tr, TX_TW_SHIFT);
+                if (h) {
+                    uint32_t x = seq_hum_draw(tr, arp_draws[tr], 0x415248u), jv = h / 5u;   /* (its own draw: the notes stay) */
+                    vel = (uint32_t)((int32_t)vel + (int32_t)((x & 0xFFFFu) % (2u * jv + 1u)) - (int32_t)jv);
+                    cut = (x >> 16) % (h / 2u + 1u);
+                }
+            }
+            t->arp_note = (uint8_t)clamp(note, 0, 127);
+            t->arp_off = period * (uint32_t)t->p[P_AGATE] / 128u * (100u - cut) / 100u;
             if (rec_on(t))
-                rec_note(t, t->arp_note, 100);           /* recording: what the arp plays */
-            trk_note_on(t, t->arp_note, 100);
+                rec_note(t, t->arp_note, vel);           /* recording: what the arp plays */
+            trk_note_on(t, t->arp_note, vel);
         }
         /* A recovered clock burst may cross several ARP steps. Consume them all
          * and retain the residual phase, just as the sequencer does. */
