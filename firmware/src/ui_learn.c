@@ -5,6 +5,7 @@
  * help card finds it (ui_help.c help_find) and waits for a CC; the next CC binds to it ("CC 21 =", then "T1 CUTOFF"). A CC
  * leaves the knob it had, a knob the CC it had. Included by ui_pages.c after ui_modsc.c. */
 static struct { uint8_t on, track; uint16_t pid; } mlearn_want;   /* on: a knob picked, waiting for its CC */
+static uint8_t mlearn_ask;                              /* the menu's MIDI LEARN row: FORGET ALL? asked (ui_menu.c) */
 
 /* "T1 CUTOFF" for parameter pid of track tr */
 static void mlearn_name(char *b, uint32_t n, uint32_t tr, uint32_t pid)
@@ -71,6 +72,32 @@ static void mlearn_poll(void)
     mlearn_seen = -1;
     if (mlearn_on && mlearn_want.on)
         mlearn_bind((uint32_t)cc);
+}
+/* each UI pass: while learning, the header says so once any other message is over (the knob waiting for its CC, else
+ * MIDI LEARN ON); OCT- ends learning (ui_input.c, before the page sees it) */
+static void mlearn_show(void)
+{
+    if (!mlearn_on || ui.msg_t || ui.menu)
+        return;
+    if (mlearn_want.on) {
+        char b[28];
+        mlearn_name(b, sizeof b, mlearn_want.track, mlearn_want.pid);
+        ui_say(b, "");
+        str_cpy(ui.msg2, "SEND A CC", sizeof ui.msg2);
+    } else {
+        ui_say("MIDI LEARN ON", "");
+        str_cpy(ui.msg2, "OCT- ENDS IT", sizeof ui.msg2);
+    }
+}
+static int mlearn_end_key(uint32_t pressed)             /* OCT- pressed while learning: learning ends. 1 if so */
+{
+    if (!mlearn_on || ui.menu || !((pressed >> panel.btn[B_OCTDN]) & 1u))
+        return 0;
+    mlearn_on = 0;
+    mlearn_want.on = 0;
+    ui.msg_t = 0;
+    ui_message("LEARN ENDED");
+    return 1;
 }
 /* the menu: learning starts (closing the menu), or every CC forgotten */
 static void mlearn_start(void)

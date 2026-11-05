@@ -1103,7 +1103,8 @@ static int test_cords_page(void)
     for (i = 0; i < 6u; i++) { frame(); fm1_ms += 200u; host_ticks += 200000u; }   /* (held 1.2 s) */
     fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
     frame();
-    bad += check("..OCT+ held on MODS: no sound sheet (MODS is not a sound page), the mod UNI", pop.on != POP_SHEET && c->uni);
+    bad += check("..OCT+ held on MODS, let go untouched: no sound sheet (MODS is not a sound page), the mod as it was (BI)",
+                 pop.on != POP_SHEET && !c->uni);
     press(B_OCTUP);
     turn(EN_K1 + 3u, -3);
     bad += check("KNOB 4: the amount down by 3 (22 %)", c->amount == 22);
@@ -4051,11 +4052,32 @@ static int test_layer(void)
         ok &= trk[tr].p[pid] == d->max;
         hold(B_HOME); ui.menu_sel = MI_MIDI_LEARN;
         char b[24]; ok &= !strcmp(menu_value(MI_MIDI_LEARN, b, sizeof b), "1 CC");
-        turn(EN_K2, -1); ok &= !mlearn_count() && ui.menu;
+        turn(EN_K2, -1);                                /* (KNOB 2 left asks first) */
+        ok &= mlearn_count() == 1u && ui.menu && !strcmp(menu_value(MI_MIDI_LEARN, b, sizeof b), "FORGET? OCT+");
+        press(B_OCTDN); ok &= mlearn_count() == 1u && ui.menu == 1;   /* (OCT-: no, the menu stays) */
+        turn(EN_K2, -1); press(B_OCTUP); ok &= !mlearn_count() && ui.menu;
         hold(B_HOME);
         midi_event(0xB0, 2, 85, 0);
         ok &= trk[tr].p[pid] == d->max;                 /* (forgotten: CC 85 is no parameter of the fixed map) */
-        bad += check("MIDI LEARN: a knob, then a CC from any channel; the menu ends it, KNOB 2 left forgets", ok);
+        bad += check("MIDI LEARN: a knob, then a CC from any channel; the menu ends it, KNOB 2 left asks, OCT+ forgets", ok);
+        {                                               /* OCT held layers: a peek let go untouched stays */
+            static const char *const PG[3] = {"MIDI OUT", "PIECE", "MODS"};
+            ok = 1;
+            for (uint32_t q = 0; q < 3u; q++) {
+                go_title(PG[q]); frame();
+                btn_down(B_OCTDN); frames(900); btn_up(B_OCTDN); frame(); frame();
+                ok &= !ui.home && str_eq(cur_page()->title, PG[q]);
+                press(B_OCTDN);
+                ok &= ui.home;                          /* (a tap is still Back) */
+            }
+            bad += check("OCT- held on MIDI OUT, PIECE, MODS and let go untouched: the page stays (a tap: HOME)", ok);
+        }
+        hold(B_HOME); ui.menu_sel = MI_MIDI_LEARN; turn(EN_K2, 1);
+        go_title("PIECE"); frame(); frames(1500);
+        ok = mlearn_on && (msg_is("MIDI LEARN ON") || msg_is("OCT- ENDS IT"));   /* (said on the header) */
+        press(B_OCTDN);
+        bad += check("..learning: the header says so; OCT- ends it, the page stays", ok && !mlearn_on && !ui.home &&
+                     str_eq(cur_page()->title, "PIECE") && msg_is("LEARN ENDED"));
     }
     /* release-act: every page button acts when let go */
     {
@@ -6151,6 +6173,15 @@ static int test_capture(void)
                          !strcmp(ui.msg2, "SAVES AT STOP"));
             stop_transport(); frame(); frame();
             song.batt_raw = 570; frame();
+            {                                            /* (a project with no slot: nowhere to save, it says so) */
+                uint8_t keep_cur = proj_cur;
+                proj_cur = PROJ_NO_SLOT;
+                song.batt_raw = 520; frame();
+                bad += check("  an unsaved project: BATTERY LOW, SAVE YOUR WORK (no slot to save to)",
+                             !strcmp(ui.msg, "BATTERY LOW") && !strcmp(ui.msg2, "SAVE YOUR WORK"));
+                proj_cur = keep_cur;
+                song.batt_raw = 570; frame();
+            }
             ok = !batt_low;
             song.batt_raw = 520; usb.config = 1; usb.suspended = 0; frame();
             bad += check("  charged past a bar: over; on a computer: never low", ok && !batt_low);
