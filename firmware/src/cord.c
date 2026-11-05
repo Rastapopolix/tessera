@@ -102,6 +102,7 @@ static const cord_dest_t CORD_DESTS[CD_N] = {
     M_(1), M_(2), M_(3), M_(4), M_(5), M_(6), M_(7), M_(8), M_(9), M_(10), M_(11), M_(12), M_(13), M_(14), M_(15), M_(16),
     [CD_FILL] = {CD_FILL, CK_FILL, 0, PID_NONE, "FILL", "the project's FILL (steps set to FILL / NOT FILL), held while the move is past half"},
     [CD_TEMPO] = {CD_TEMPO, CK_TEMPO, 0, PID_NONE, "TEMPO", "the project's tempo on CLK INT: a full move up doubles it, down halves it (BPM stays as set)"},
+    [CD_CC] = {CD_CC, CK_CC, 0, PID_NONE, "CC", "a MIDI CC out on the track's MIDI OUT channel, its number set with OCT- held and KNOB 3"},
 };
 #undef V_
 #undef B_
@@ -128,7 +129,8 @@ const char *cord_src_name(uint32_t code) { return code < CS_N ? CORD_SRC_NAME[co
 static uint32_t cord_blocks;
 static uint32_t cord_cmask, cord_amask;                 /* (the mods of mods: below, at cord_now) */
 static uint32_t cord_tmask, cord_gates, cord_fmask, cord_pmask;   /* (GATE, FILL, TEMPO: below, at cord_now) */
-static void cord_amounts(void), cord_gates_tick(void), cord_fill_tick(void), cord_tempo_tick(void);
+static void cord_amounts(void), cord_gates_tick(void), cord_fill_tick(void), cord_tempo_tick(void), cord_cc_tick(void);
+static uint32_t cord_ccmask;                            /* (CC OUT: bit i, cords[i] goes out as a CC; at cord_cc_tick) */
 void cord_tick(void)
 {
     cord_blocks++;
@@ -138,6 +140,7 @@ void cord_tick(void)
     else seq_fill_mod = 0;
     if (cord_pmask) cord_tempo_tick();
     else seq_tempo_q12 = 4096;
+    if (cord_ccmask) cord_cc_tick();
     organic_tick();                                     /* (tessera.c, organic.c) */
     energy_tick();                                      /* (tessera.c, energy.c) */
 }
@@ -216,6 +219,17 @@ static int32_t cord_val(const cord_t *c, int32_t own)
 
 /* ------------------------------------------------------------ the cords --- */
 static cord_t cords[CORD_MAX];
+_Static_assert(CD_FILL == 100 && CD_TEMPO == 101 && CD_CC == 102, "cord codes are saved: never renumbered");
+/* CC OUT: each cord's CC number (0..119), the value it last sent (0xFF none yet) and the block it went at */
+static uint8_t cord_ccn[CORD_LIVE] = {[0 ... CORD_LIVE - 1] = 1}, cord_cc_was[CORD_LIVE] = {[0 ... CORD_LIVE - 1] = 0xFF};
+static uint16_t cord_cc_at[CORD_LIVE];
+uint32_t cord_cc_num(uint32_t i) { return i < CORD_LIVE ? cord_ccn[i] : 1u; }
+void cord_cc_set(uint32_t i, uint32_t n)
+{
+    if (i >= CORD_LIVE) return;
+    cord_ccn[i] = (uint8_t)(n > 119u ? 119u : n);
+    cord_cc_was[i] = 0xFF;                              /* (the new number: its value goes out at once) */
+}
 /* per destination track, the cords that reach it (bit i: cords[i]): mask in the audio block, smask at the step.
  * envsrc: bit t, a cord reads track t's ENV (its voices report it only with mod.c active: mod_begin keeps it on) */
 static uint32_t cord_mask[NTRK], cord_smask[NTRK];
@@ -282,7 +296,7 @@ static void cord_masks(void)
     cord_envsrc = 0;
     cord_gmask = 0;
     cord_cmask = cord_amask = 0;
-    cord_tmask = cord_fmask = cord_pmask = 0;
+    cord_tmask = cord_fmask = cord_pmask = cord_ccmask = 0;
     for (i = 0; i < CORD_LIVE; i++) {                   /* (the mods of mods first: the cords they turn are live) */
         const cord_t *c = &cords[i];
         uint32_t j = (uint32_t)c->dst - CD_M1_AMT;
@@ -307,6 +321,10 @@ static void cord_masks(void)
         }
         if (kind == CK_TEMPO) {                         /* (cord_tempo_tick) */
             cord_pmask |= 1u << i;
+            continue;
+        }
+        if (kind == CK_CC) {                            /* (cord_cc_tick) */
+            cord_ccmask |= 1u << i;
             continue;
         }
         if (kind == CK_STEP) cord_smask[c->dst_trk] |= 1u << i;
@@ -340,10 +358,12 @@ static void cord_reset(void)
     cord_envsrc = 0;
     cord_gmask = 0;
     cord_cmask = cord_amask = 0;
-    cord_tmask = cord_gates = cord_fmask = cord_pmask = 0;
+    cord_tmask = cord_gates = cord_fmask = cord_pmask = cord_ccmask = 0;
     cord_fresh = 1;
     memset(cords, 0, sizeof cords);
     memset(cord_now, 0, sizeof cord_now);
+    memset(cord_ccn, 1, sizeof cord_ccn);
+    memset(cord_cc_was, 0xFF, sizeof cord_cc_was);
 }
 void cord_clear(void)
 {
@@ -542,6 +562,33 @@ static __attribute__((noinline)) void cord_tempo_tick(void)
     x = clamp(s, -32768, 32768) + 32768;                /* 0 .. 65536: k eighths and a remainder of 4096 */
     k = (uint32_t)x >> 12;
     seq_tempo_q12 = (uint16_t)(k >= 16u ? EXP2[16] : EXP2[k] + (((int32_t)EXP2[k + 1u] - EXP2[k]) * (x & 4095) >> 12));
+}
+
+/* each block with a mod onto CC (cord_tick): its value out on its track's MIDI OUT channel, when it changed and
+ * at most every 12 blocks (~9 ms) a mod, so a fast LFO does not flood the cable. 0..127: a source both ways centred
+ * on 64 (the whole range at 100 %), one way (and a fixed mod's OFFSET) from 0. Not with MIDI OUT OFF, the track's
+ * channel OFF or the track muted */
+static __attribute__((noinline)) void cord_cc_tick(void)
+{
+    uint32_t m = cord_ccmask, i;
+    if (settings_midi_out == MIDI_OUT_OFF) return;
+    for (i = 0; m; i++, m >>= 1) {
+        const cord_t *c = &cords[i];
+        const track_t *t;
+        uint32_t ch;
+        int32_t s, v;
+        if (!(m & 1u) || (uint16_t)(cord_blocks - cord_cc_at[i]) < 12u) continue;
+        t = &trk[c->dst_trk % NTRK];
+        ch = midi_out_channel(t);
+        if (ch == MIDI_OUT_NONE || t->p[P_MUTE]) continue;
+        s = cord_share(c);
+        v = c->src && cord_bip(c) ? 64 + (s * 64 >> 15) : (s * 127 + 16384) >> 15;
+        v = v < 0 ? 0 : v > 127 ? 127 : v;
+        if ((uint32_t)v == cord_cc_was[i]) continue;
+        cord_cc_was[i] = (uint8_t)v;
+        cord_cc_at[i] = (uint16_t)cord_blocks;
+        midi_out_event(0x0Bu | (0xB0u | ch) << 8 | (uint32_t)cord_ccn[i] << 16 | (uint32_t)v << 24);
+    }
 }
 
 /* fx.c fx_bus_settings (cord_gmask: some cord reaches them): the send effects' settings g (song.g from G_MFXTYPE to

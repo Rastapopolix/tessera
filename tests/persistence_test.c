@@ -167,6 +167,7 @@ static int test_tsp_record(void)
     {
         cord_t c = {CS_LFO, 0, CD_CUTOFF, 1, 30, 0};
         cord_set(0, &c);
+        cord_cc_set(3, 74);                                                  /* (its CCN part) */
     }
     ok = !project_save_as(0, "TSP");
     memset(trk[0].step, 0, sizeof trk[0].step); tessera_reset();
@@ -175,6 +176,7 @@ static int test_tsp_record(void)
                  step_ratch(&trk[0].step[5]) == 3u && step_nudge(&trk[0].step[5]) == -6 && trk[0].step[5].note[0] == 62u &&
                  step_ratch(&trk[0].step[6]) == 8u && step_nudge(&trk[0].step[6]) == -6 &&
                  tessera.mode[1] == TESS_ENG_EUCLID && cord_count() == 1u && cord_get(0)->amount == 30 &&
+                 cord_cc_num(3) == 74u && cord_cc_num(0) == 1u &&
                  tessera.en_arc == 40u && tessera.en_rests == 60u &&
                  tessera.sub_shape[1] == SUB_DECEL && tessera.sub_shape[0] == SUB_ACCEL && tessera.sub_shape[2] == SUB_EVEN &&
                  tessera.midi_ch[2] == 9u && tessera.midi_ch[3] == TESS_MIDI_OFF && tessera.midi_ch[0] == 0u &&

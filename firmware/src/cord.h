@@ -24,8 +24,11 @@
  *   CK_FILL   the project's FILL (seq.c, the steps set to FILL / NOT FILL), held while the move is 50 % or more
  *             (cord.c cord_fill_tick); destination track 0 as CK_GLOBAL
  *   CK_TEMPO  the project's tempo on CLK INT (mix.c seq_tempo_q12, cord.c cord_tempo_tick): a full move doubles it, a
- *             full move down halves it; BPM itself is left alone; destination track 0 as CK_GLOBAL */
-enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO };
+ *             full move down halves it; BPM itself is left alone; destination track 0 as CK_GLOBAL
+ *   CK_CC     a MIDI CC out on the destination track's MIDI OUT channel (cord.c cord_cc_tick, issue #374): its number
+ *             the cord's own (cord_cc_num, OCT- held + KNOB 3 on MODS); a track's, as CK_BLOCK (before CK_GLOBAL: the
+ *             kinds are not saved, only the codes) */
+enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO };
 
 /* Destination codes. FROZEN: saved cords keep them; new ones at the end, a retired one stays as a gap */
 enum {
@@ -65,6 +68,7 @@ enum {
     CD_M16_AMT = CD_M1_AMT + 15,
     CD_FILL,                                                        /* the project's FILL (CK_FILL) */
     CD_TEMPO,                                                       /* the project's tempo (CK_TEMPO), issue #359 */
+    CD_CC,                                                          /* a MIDI CC out (CK_CC), issue #374 */
     CD_N
 };
 
@@ -111,6 +115,9 @@ enum { CU_BI, CU_UNI, CU_GATE };
 
 const char *cord_src_name(uint32_t code);           /* <= 7 characters; 0: no such source */
 int cord_set(uint32_t i, const cord_t *c);          /* i < CORD_LIVE; out of range: refused (0), nothing changed */
+/* CC OUT: cord i's CC number (0..119; 1, the mod wheel, until set), and setting it (cord_reset: all 1 again) */
+uint32_t cord_cc_num(uint32_t i);
+void cord_cc_set(uint32_t i, uint32_t n);
 const cord_t *cord_get(uint32_t i);
 void cord_clear(void);                              /* every cord off */
 int32_t cord_move(uint32_t i);                      /* cord i's move as its M AMT cords make it now: -100..100 % */

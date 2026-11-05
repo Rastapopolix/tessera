@@ -75,7 +75,7 @@ static int reference(FILE *f)
     }
     {                                                   /* the cords' (firmware/src/cord.c) */
         static const char *const KIND[] = {"each voice", "the audio block", "the LFO's depth", "the generator's step",
-                                             "the send effects' block (every track's)", "another mod's move, each block", "the project's FILL, each block",
+                                             "a MIDI CC out, each block", "the send effects' block (every track's)", "another mod's move, each block", "the project's FILL, each block",
                                              "the project's tempo on CLK INT, each block"};
         static const char *const SRC_HELP[CS_N] = {"", "the track's LFO, both ways whatever its POL (the mod's +- or + "
             "decides)", "the envelope of the track's latest note",

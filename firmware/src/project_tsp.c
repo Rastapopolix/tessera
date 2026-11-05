@@ -17,7 +17,7 @@
 enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TSP_FM6, TSP_DRUM, TSP_REC, TSP_NAME,
        TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_HOW, TSP_ORACLE,
        TSP_ENERGY, TSP_DEV, TSP_TRANSP, TSP_TUNE, TSP_SOUND, TSP_CHAIN, TSP_ENTRY, TSP_PLAN, TSP_PERF, TSP_HOLD,
-       TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
+       TSP_CCN, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
                                               * TSP_HUMAN: each track's HUMAN TIME; none: TWEAK HUMAN's timing, as it was;
@@ -38,10 +38,11 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * TSP_PLAN: the planner's LENGTH, SHAPE, PEAK, COUNT, END, then USER's
                                               * eight levels; none: FREE, ARCH, 62, 3, STOP, the arch tessera_init sets;
                                               * TSP_PERF: PERF's four MACROs, written only when one is not 0; none: 0;
-                                              * TSP_HOLD: each track's FOLLOW HOLD, 0 OFF, 1..4 a track; none: OFF) */
+                                              * TSP_HOLD: each track's FOLLOW HOLD, 0 OFF, 1..4 a track; none: OFF;
+                                              * TSP_CCN: each cord's CC number (CC OUT, 0..119; CORD_MAX of them); none: 1 each) */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
                TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_PERF == 30 &&
-               TSP_HOLD == 31,
+               TSP_HOLD == 31 && TSP_CCN == 32,
                "the parts' numbers are stored: never renumbered");
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -280,6 +281,9 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
             cord_pack(c);
             tsp_bytes(&w, c, sizeof c);
         }
+        tsp_end(&w);
+        tsp_begin(&w, TSP_CCN, 1);                     /* (CC OUT: each cord's CC number) */
+        for (uint32_t i = 0; i < CORD_MAX; i++) tsp_byte(&w, cord_cc_num(i));   /* (past CORD_LIVE: 1) */
         tsp_end(&w);
         tsp_begin(&w, TSP_SUB, 1);                     /* (SUB: each track's SHAPE, outside the Tessera block) */
         tsp_bytes(&w, tessera.sub_shape, NTRK);
@@ -625,6 +629,10 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (tsp_seen.ver[TSP_CORDS] != 1u || tsp_seen.len[TSP_CORDS] != CORD_PK_BYTES ||
             !cord_check(raw + tsp_seen.at[TSP_CORDS])) return 0;
     }
+    if (tsp_seen.at[TSP_CCN]) {
+        if (tsp_seen.ver[TSP_CCN] != 1u || tsp_seen.len[TSP_CCN] != CORD_MAX) return 0;
+        for (uint32_t i = 0; i < CORD_MAX; i++) if (raw[tsp_seen.at[TSP_CCN] + i] > 119u) return 0;
+    }
     q->sum = proj_sum(q);
     return proj_ok(q);
 }
@@ -655,6 +663,8 @@ static void tsp_restore(const uint8_t *raw)
     tessera_reset();                                   /* (generators OFF, no cords: a record without them) */
     if (tsp_seen.at[TSP_TESSERA]) tessera_unpack_ver(raw[tsp_seen.at[TSP_TESSERA]], raw + tsp_seen.at[TSP_TESSERA] + 1u);
     if (tsp_seen.at[TSP_CORDS]) (void)cord_unpack(raw + tsp_seen.at[TSP_CORDS]);
+    if (tsp_seen.at[TSP_CCN])                          /* (saved before CC OUT: tessera_reset's 1 each) */
+        for (uint32_t i = 0; i < CORD_LIVE; i++) cord_cc_set(i, raw[tsp_seen.at[TSP_CCN] + i]);
     if (tsp_seen.at[TSP_SUB]) memcpy(tessera.sub_shape, raw + tsp_seen.at[TSP_SUB], NTRK);
     if (tsp_seen.at[TSP_MIDI]) memcpy(tessera.midi_ch, raw + tsp_seen.at[TSP_MIDI], NTRK);
     if (tsp_seen.at[TSP_TRANSP])                       /* (saved before TRANSPOSE: tessera_reset's 0) */
