@@ -43,7 +43,7 @@ the web editor's settings and survive power-off:
   follow their existing transport timing without a count-in. Notes pressed in
   the final half-beat and still held at the downbeat enter step one without
   retriggering their live sound; earlier presses are for monitoring only.
-- **NOTE PREVIEW:** OFF/ON. Moving the STEP/NOTES cursor auditions its note or
+- **NOTE PREVIEW:** ON/OFF (ON by default). Moving the STEP/NOTES cursor auditions its note or
   drum hits, stopped or playing (not while recording or counting in). NOTES
   selects an individual note; STEP previews a chord. Preview lasts about 167 ms,
   does not record or transmit MIDI, and respects notes already held by the
@@ -92,4 +92,4 @@ New data uses 100 parameters (engine parameters start at 92), FUN15 projects,
 FBKI pattern banks and TPLD templates. Older layouts import with drum levels
 at 100%, retaining native voices, notes, timing and automation. Recording
 preferences use tagged spare bits in PER5's unused zoom word; older settings
-load as click OFF, level MID, count-in OFF, preview OFF and chord entry HOLD.
+load as click OFF, level MID, count-in OFF, preview ON and chord entry HOLD.

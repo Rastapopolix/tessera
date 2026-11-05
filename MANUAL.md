@@ -475,7 +475,7 @@ On NOTES, **KNOB 2** sets the picked note's pitch. With **QNT OFF** it moves a s
 (SNAP, WHITE, ALL, MPC) it moves a note of the scale a detent; a note off the scale goes to the next scale note in
 the turn's direction first. With **QNT CHRD** and a CHORD track playing it moves through that chord's notes. Hold
 **ENV** while turning for a semitone at a time. A microtonal scale moves a degree a detent, as before. With
-**MENU > NOTE PREVIEW** on, you hear the new pitch at the note's velocity, for about a sixth of a second, on that track
+**MENU > NOTE PREVIEW** on (the default), you hear the new pitch at the note's velocity, for about a sixth of a second, on that track
 and on MIDI OUT as a key's note would (KEYS, ALL); nothing is recorded. It sounds while playing too, but not while
 recording.
 

@@ -16,6 +16,8 @@
  * favorites.factory[15][24] bit 4: MIDI CC IN OFF (midi_cc.c); zero keeps it ON. Bits 6..7: MENU MUTES (0 NOW).
  * favorites.factory[15][25]: tagged TRACK KNOB LEFT (panel.c KNOB_SWAP_TAG); zero/unknown keeps it on the right.
  * favorites.factory[8] bytes 4..7: 'U', 'V', 1, USB VOLUME 0..100 % (upstream's place); untagged = UA_VOLUME_DEFAULT.
+ * favorites.factory[8][27]: tagged NOTE PREVIEW OFF (since 3.3); any other byte ON, so units that never chose get it
+ * ON. The old recording-preferences bit 6 is still written for older firmware, and no longer read.
  * bold: no longer used (one font weight); kept as it was saved, unless it holds the HOLD setting (panel.c). */
 typedef struct {
     uint32_t magic, palette, lowcut, zoom;
@@ -36,6 +38,7 @@ static int16_t settings_glo[4];                     /* ext.glo: project.c GLO_KE
 #define RECORD_PREF_TAG 0x52500000u /* RP, high half of the old zoom word */
 #define A4_TAG 0x41340000u                          /* "A4": old spare contents are not tuning */
 #define AUTOSAVE_OFF_TAG 0xA1u                     /* CZ row byte 28: only this tag disables autosave */
+#define PREVIEW_OFF_TAG 0xB2u                      /* GRAIN row byte 27: only this tag turns NOTE PREVIEW off */
 /* Retired DIGITAL row, outside all live preset/settings bits. Kept by older
  * Melodee builds along with the other favorites; no layout or magic change. */
 static const uint8_t SETTINGS_OWNER[4] = {'M', 'D', 'S', 1};
@@ -106,7 +109,7 @@ static int settings_import(persist_t *p, int n)
     uint32_t level = (rp >> 2) & 3u;
     settings_click_level = (uint8_t)(level == 1u ? 0u : level == 2u ? 2u : 1u);
     settings_countin = (uint8_t)(((rp >> 4) & 3u) < 3u ? (rp >> 4) & 3u : 0u);
-    settings_preview = (uint8_t)((rp >> 6) & 1u);
+    settings_preview = p->favorites.factory[8][27] != PREVIEW_OFF_TAG;   /* (rp bit 6: older firmware's, not read) */
     settings_chord_add = (uint8_t)((rp >> 7) & 1u);
     settings_hold = (uint8_t)hold_from_stored(p->bold);
 #ifdef MELODEE_FAVORITES
@@ -149,6 +152,7 @@ static void settings_export(persist_t *p)
     }
 #endif
     p->favorites.factory[15][27]=settings_screen;
+    p->favorites.factory[8][27] = settings_preview ? 0u : PREVIEW_OFF_TAG;
     p->favorites.factory[15][28] = settings_autosave ? 0u : AUTOSAVE_OFF_TAG;
     p->favorites.factory[15][30] = (uint8_t)((p->favorites.factory[15][30] & 0x1Fu) | settings_midi_out << 5 |
                                              (settings_clock_out != 0u) << 7);
