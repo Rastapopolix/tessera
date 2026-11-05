@@ -222,7 +222,8 @@ you patch it.
 
 On every page the four knobs' values sit under their dials (or bars: MENU > KNOBS). The value you turn is drawn
 inverted, and while you turn it its name and value show large across the foot of the screen, as on the home page, with
-a bar for where it sits in its range; they go when the knob rests.
+a bar for where it sits in its range; they go when the knob rests. NOTES leaves that out so the steps stay in view: its
+values stay in their boxes at the top.
 
 <p align="center"><img src="assets/gallery/home.png" alt="HOME" width="320"> <img src="assets/gallery/mixer.png" alt="MIXER" width="320"></p>
 
@@ -420,7 +421,14 @@ BOUNCE, QUAD, CONSTELLATION and SERIES run free and simply carry on.
 On NOTES, **KNOB 2** sets the picked note's pitch. With **QNT OFF** it moves a semitone a detent. With QNT on
 (SNAP, WHITE, ALL, MPC) it moves a note of the scale a detent; a note off the scale goes to the next scale note in
 the turn's direction first. With **QNT CHRD** and a CHORD track playing it moves through that chord's notes. Hold
-**ENV** while turning for a semitone at a time. A microtonal scale moves a degree a detent, as before.
+**ENV** while turning for a semitone at a time. A microtonal scale moves a degree a detent, as before. With
+**MENU > NOTE PREVIEW** on, you hear the new pitch at the note's velocity, for about a sixth of a second, on that track
+and on MIDI OUT as a key's note would (KEYS, ALL); nothing is recorded. It sounds while playing too, but not while
+recording.
+
+A note's bar stands for its pitch over the C below the page's lowest note. The scale is one, two or three octaves
+tall, as the page's notes need; anything above three octaves shares the top of the area, so one note raised high
+leaves the others readable. A page with only one pitch shows where it sits in the whole range.
 
 QNT works on notes as they come in, so notes written with QNT OFF or before SCL changed stay where they are. To bring
 them onto the scale, use **Snap to scale** in the pattern's sheet (below).

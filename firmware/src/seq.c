@@ -842,34 +842,45 @@ static void countin_note(track_t *t,uint32_t note,uint32_t vel)
 }
 static int seq_counting(void) { return cin_left != 0; }
 static int click_wanted(void) { return settings_click == CLICK_ON || (settings_click == CLICK_REC && song.rec); }
-/* Preview has its own bounded lifetime and never enters the recording or MIDI-out paths. */
+/* Preview has its own bounded lifetime and never records; only KNOB 2's goes out, as a key's note (audition_midi). */
 static volatile uint8_t audition_request;
 static uint8_t audition_track, audition_count, audition_notes[12], audition_vel[12];
-static uint8_t audition_active, audition_owner, audition_n, audition_played[12];
+static uint8_t audition_active, audition_owner, audition_n, audition_played[12], audition_midi;
 static uint32_t audition_left, audition_gate;
 static int32_t audition_pitch;
+/* a playing step's note stays the sequencer's: a preview neither retriggers nor ends it */
+static int audition_seq_has(const track_t *t, uint32_t note)
+{
+    for (uint32_t k=0;k<t->seq_n;k++) if (t->seq_notes[k]==note) return 1;
+    return 0;
+}
 static void audition_stop(void)
 {
     track_t *t = &trk[audition_owner % NTRK];
     for (uint32_t i=0;i<audition_n;i++) {
         uint32_t note=audition_played[i];
-        if (!(live_held[trk_index(t)][note>>5] & (1u<<(note&31u))) && t->arp_note!=note && !recording_owns(t,note)) trk_note_off(t,note);
+        if (!(live_held[trk_index(t)][note>>5] & (1u<<(note&31u))) && t->arp_note!=note && !recording_owns(t,note) && !audition_seq_has(t,note)) trk_note_off(t,note);
     }
     audition_active=audition_n=0;
 }
+static __attribute__((noinline)) void audition_send(const track_t *t)   /* (a step's notes: one velocity) */
+{
+    for(uint32_t i=0;i<audition_n;i++) midi_out_key(t,audition_played[i],audition_vel[0]);
+}
 static __attribute__((noinline)) void audition_tick(uint32_t n)
 {
-    if (song.playing || seq_counting()) { audition_request=0; if(audition_active)audition_stop(); return; }
+    if (seq_counting()) { audition_request=0; if(audition_active)audition_stop(); return; }
     if (audition_request) {
         audition_stop(); audition_owner=audition_track; audition_left=FS/6u;
         track_t *t=&trk[audition_owner % NTRK];
         drum_event_pitch=audition_pitch;drum_event_length=audition_gate;
         for(uint32_t i=0;i<audition_count;i++) {
             uint32_t note=audition_notes[i];
-            if ((live_held[trk_index(t)][note>>5] & (1u<<(note&31u))) || t->arp_note==note) continue;
+            if ((live_held[trk_index(t)][note>>5] & (1u<<(note&31u))) || t->arp_note==note || recording_owns(t,note) || audition_seq_has(t,note)) continue;
             audition_played[audition_n++]=(uint8_t)note; trk_note_on(t,note,audition_vel[i]);
         }
         drum_event_pitch=0;drum_event_length=0;
+        if(audition_midi) audition_send(t);
         audition_active=1; audition_request=0;
     }
     if(audition_active) { if(n>=audition_left)audition_stop(); else audition_left-=n; }

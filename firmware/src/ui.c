@@ -529,6 +529,7 @@ static void grid_acc(track_t *t, uint32_t i, uint32_t l, uint32_t on)
 
 /* SEQ cursor: wraps inside the pattern length, the bank follows, a step entry ends */
 static void notes_preview(void);
+static void notes_preview_start(uint32_t midi);
 static uint32_t drum_hit_selected(void);
 static void cursor_set(int32_t c)
 {

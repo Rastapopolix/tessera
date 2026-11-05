@@ -529,9 +529,26 @@ static int bulk_and_pattern_clears(void)
     return bad;
 }
 
+/* NOTES KNOB 2 on a recorded note: its new pitch sounds, briefly, stopped; the event itself is all that changes */
+static int knob_preview_recorded(void)
+{
+    raw_begin();track_t *t=TSEL;
+    seq_advance(600);input_on(t,60,70);seq_advance(600);input_off(t,60);seq_stop();song.rec=0;
+    t->p[P_QUANT]=Q_OFF;go_page(GR_ROLL);cursor_set(0);frame();
+    uint32_t i=notes_selected(t);
+    int bad=check("KNOB 2 preview: a recorded note is picked",i<RECORD_MAX);
+    if(bad)return bad;
+    settings_preview=1;turn(EN_K1+1,1);events_block(CTL);settings_preview=0;
+    uint32_t i2=notes_selected(t),n=recording[i2].note,head=rec_alive();
+    bad+=check("KNOB 2 preview: a recorded note's new pitch sounds at its velocity",n>60&&gate_note(t,n)&&audition_vel[0]==recording[i2].vel&&head==1);
+    for(uint32_t left=FS/6u+CTL;left;left-=left<CTL?left:CTL)events_block(left<CTL?left:CTL);
+    bad+=check("KNOB 2 preview: it ends and records nothing",!gate_note(t,n)&&!audition_active&&rec_alive()==1);
+    return bad;
+}
+
 int main(void)
 {
-    int bad=selection_and_delete()+deletion_history()+loop_drums_and_playback()+timing_geometry_and_context()+control_clashes()+property_edits_and_mixed_patterns()+manual_chord_controls()+dense_selection_and_protection()+drum_recording_layout()+live_erase_manual()+live_erase_raw()+live_erase_scope_and_drums()+erase_edit_hold_conflicts()+bulk_and_pattern_clears();
+    int bad=knob_preview_recorded()+selection_and_delete()+deletion_history()+loop_drums_and_playback()+timing_geometry_and_context()+control_clashes()+property_edits_and_mixed_patterns()+manual_chord_controls()+dense_selection_and_protection()+drum_recording_layout()+live_erase_manual()+live_erase_raw()+live_erase_scope_and_drums()+erase_edit_hold_conflicts()+bulk_and_pattern_clears();
     printf("Recorded note editing: %s\n",bad?"FAILED":"all passed");
     return !!bad;
 }

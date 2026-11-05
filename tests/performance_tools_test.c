@@ -132,8 +132,57 @@ static void test_compatibility(void)
         TSEL->eng_req=3;TSEL->p[P_RESERVED35]=77;apply_preset_to(TSEL,8);assert(TSEL->p[P_RESERVED35]==0 && TSEL->p[P_RESERVED36]==0);
     }
 }
+static int pv_sounds(const track_t *t, uint32_t note)
+{
+    for(uint32_t i=0;i<NVOICE;i++)if(t->v[i].active&&t->v[i].gate&&t->v[i].note==note)return 1;
+    return 0;
+}
+/* NOTES KNOB 2: with NOTE PREVIEW on, the picked note's new pitch sounds at its velocity, briefly; off, nothing */
+static void test_knob_preview(void)
+{
+    reset_tools();go_page(GR_ROLL);track_t *t=TSEL;t->p[P_QUANT]=Q_OFF;t->p[P_VOICE]=V_POLY;
+    memset(t->step,0,sizeof t->step);t->p[P_SLEN]=16;
+    step_t *st=&t->step[0];st->time=ST_NOTE;st->n=1;st->note[0]=60;st->vel=77;
+    cursor_set(0);assert(!audition_request);
+    turn(EN_K1+1,1);assert(st->note[0]>60 && !audition_request);st->note[0]=60;
+    settings_preview=1;cursor_set(0);advance(FS/6+CTL);
+    turn(EN_K1+1,1);uint32_t a=st->note[0];assert(a>60 && audition_request && audition_vel[0]==77 && audition_notes[0]==a);
+    events_block(CTL);assert(pv_sounds(t,a) && audition_active);
+    turn(EN_K1+1,1);uint32_t b=st->note[0];assert(b>a);events_block(CTL);
+    assert(pv_sounds(t,b) && !pv_sounds(t,a));                 /* a turn more: only the new one */
+    advance(FS/6+CTL);assert(!audition_active && !audition_n && !pv_sounds(t,b));   /* it ends by itself */
+    for(uint32_t i=0;i<NVOICE;i++)assert(!t->v[i].active||!t->v[i].gate);
+    assert(recording_head[recording_owner(t)]>=RECORD_MAX);
+    /* an accent as it plays; a pitch at the end of the range: no change, nothing heard */
+    st->flags|=SF_ACCENT;turn(EN_K1+1,1);assert(audition_request && audition_vel[0]==127);advance(FS/6+CTL);st->flags=0;
+    st->note[0]=127;turn(EN_K1+1,1);assert(st->note[0]==127 && !audition_request);
+    /* a note placed on an empty step sounds */
+    st->note[0]=60;cursor_set(1);turn(EN_K1+1,1);assert(t->step[1].n==1 && audition_request);
+    events_block(CTL);assert(pv_sounds(t,t->step[1].note[0]));advance(FS/6+CTL);
+    /* REC armed: KNOB 2 edits nothing (STOP RECORDING), so nothing to hear; armed during a preview: it ends, unrecorded */
+    cursor_set(0);advance(FS/6+CTL);song.rec=1;a=st->note[0];turn(EN_K1+1,1);assert(st->note[0]==a && !audition_request);song.rec=0;
+    turn(EN_K1+1,1);events_block(CTL);assert(pv_sounds(t,st->note[0]));song.rec=1;
+    advance(FS/6+CTL);assert(!pv_sounds(t,st->note[0]) && recording_head[recording_owner(t)]>=RECORD_MAX);song.rec=0;
+    /* playing, it sounds too: the cursor's and KNOB 2's */
+    step_t *far=&t->step[8];far->time=ST_NOTE;far->n=1;far->note[0]=72;far->vel=90;
+    st->note[0]=60;seq_start();events_block(CTL);
+    cursor_set(8);assert(audition_request);events_block(CTL);assert(audition_active && pv_sounds(t,72));
+    turn(EN_K1+1,1);b=far->note[0];assert(b>72 && audition_request);events_block(CTL);assert(pv_sounds(t,b) && !pv_sounds(t,72));
+    advance(FS/6+CTL);assert(!audition_active && !pv_sounds(t,b));
+    /* a pattern's change moves the cursor; that is no choice of note */
+    t->pattern_gen++;frame();assert(!audition_request);
+    seq_stop();
+    /* the step playing that pitch keeps it: no second note, and the preview's end leaves it */
+    seq_start();events_block(CTL);assert(t->seq_n && t->seq_notes[0]==60 && pv_sounds(t,60));
+    cursor_set(0);events_block(CTL);assert(audition_active && !audition_n && pv_sounds(t,60));
+    audition_stop();assert(pv_sounds(t,60));
+    /* recording: nothing */
+    song.rec=1;cursor_set(1);assert(!audition_request);song.rec=0;seq_stop();
+    /* the cursor's preview is still NOTE PREVIEW's and stays off MIDI */
+    settings_preview=1;cursor_set(1);assert(audition_request && !audition_midi);advance(FS/6+CTL);settings_preview=0;
+}
 int main(void)
 {
-    test_recording_tools();test_click_volume();test_editing_tools();test_midi_and_levels();test_compatibility();
+    test_recording_tools();test_click_volume();test_editing_tools();test_knob_preview();test_midi_and_levels();test_compatibility();
     puts("performance tools: count-in, click, additive entry, audition, momentary restore/keep, MIDI, drum levels and inert legacy effect values passed");return 0;
 }

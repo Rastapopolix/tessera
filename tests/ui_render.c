@@ -538,7 +538,7 @@ enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_
        S_REF_SHEET_MOTION, S_REF_MOD, S_REF_PICKER_MOD, S_REF_ARP, S_REF_PATTERN,
        S_REF_FMEG, S_REF_GRID, S_REF_SCALES, S_FX_PHASER, S_FX_WIDTH, S_FX_FORMANT, S_FX_TAPE, S_FX_SPIT, S_FX_ECHO, S_FX_ROOM, S_FX_REVERB, S_FX_CHORUS, S_FX_FULL, S_FX_SLOT2, S_FX_SLOT3, S_FX_SEND, S_FX_SEPARATE, S_FX_SENDS, S_FX_BUS1, S_FX_BUS2, S_FX_BUS3,
        S_GEN_TURING, S_GEN_EUCLID, S_GEN_MARKOV, S_GEN_MORPH, S_GEN_EVOLVE, S_CORDS, S_HELP, S_CORDS_PICK_SRC, S_CORDS_PICK_DST,
-       S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_GEN_CHORD_OFFBEAT, S_GEN_CHORD_DRONE, S_GEN_STEP_EVOLVE_HOW, S_GEN_STEP_ADORN, S_GEN_STEP_SERIAL, S_NOTES_EVOLVE, S_GEN_SEED, S_GEN_SEED_MORPH, S_GEN_FORM, S_MIDI_OUT, S_EDIT_FILT, S_GEN_EVOLVE_GRAV, S_GEN_ENERGY_LEVEL, S_GEN_ENERGY_DEPTH, S_EDIT_FILT_BP, S_EDIT_FILT_HP, S_EDIT_FILT_NOT, S_STAGE_FILTER_HP, S_GEN_STEP_PAT, S_KNOBS_BAR, S_KNOBS_BAR_GEN, S_MENU_KNOBS, S_MODS_AMT, S_MIDI_SOUND, S_MODS_GATE, S_GLO_CHAIN, S_GLO_CHAIN_OFF, S_GLO_CHAIN_REPS, S_GEN_FORM_CHAIN, S_GLO_ENTRIES, S_GLO_ENTRIES_OFF, S_GLO_ENTRIES_ROLES, S_GLO_PIECE, S_GLO_PIECE_FREE, S_GLO_PIECE_USER, S_GLO_LAND, S_GLO_LAND_RAIN, S_GLO_PERF, S_MENU_COLORS, S_SCL_KEY, S_COUNT };
+       S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_GEN_CHORD_OFFBEAT, S_GEN_CHORD_DRONE, S_GEN_STEP_EVOLVE_HOW, S_GEN_STEP_ADORN, S_GEN_STEP_SERIAL, S_NOTES_EVOLVE, S_GEN_SEED, S_GEN_SEED_MORPH, S_GEN_FORM, S_MIDI_OUT, S_EDIT_FILT, S_GEN_EVOLVE_GRAV, S_GEN_ENERGY_LEVEL, S_GEN_ENERGY_DEPTH, S_EDIT_FILT_BP, S_EDIT_FILT_HP, S_EDIT_FILT_NOT, S_STAGE_FILTER_HP, S_GEN_STEP_PAT, S_KNOBS_BAR, S_KNOBS_BAR_GEN, S_MENU_KNOBS, S_MODS_AMT, S_MIDI_SOUND, S_MODS_GATE, S_GLO_CHAIN, S_GLO_CHAIN_OFF, S_GLO_CHAIN_REPS, S_GEN_FORM_CHAIN, S_GLO_ENTRIES, S_GLO_ENTRIES_OFF, S_GLO_ENTRIES_ROLES, S_GLO_PIECE, S_GLO_PIECE_FREE, S_GLO_PIECE_USER, S_GLO_LAND, S_GLO_LAND_RAIN, S_GLO_PERF, S_MENU_COLORS, S_SCL_KEY, S_ROLL_RAISED, S_ROLL_RAISED_TOP, S_ROLL_ONE, S_ROLL_TURN, S_COUNT };
 static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "home_chord", "home_inversion", "home_wide", "home_released", "home_fm6", "message", "message_key", "message_paged", "presets", "presets_nofav", "presets_cat", "presets_pending", "presets_recent", "user",
     "project", "project_boot", "tempo", "song_empty", "song", "step", "pattern", "motion", "drum",
     "mixer", "mixer_pan", "env", "env_dest", "lfo", "mod", "scl", "chord", "chord_wide", "chord_off", "chord_kit", "arp",
@@ -558,7 +558,7 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "h
     "notes_slide", "notes_mixed", "notes_chord", "notes_empty", "notes_raw", "notes_zoom", "notes_loop", "notes_drum", "notes_dense", "notes_rec", "notes_erase", "notes_drum_rec", "notes_drum_erase", "scl_micro", "scl_micro_layer", "scl_micro_chord", "scale_picker_edo", "scale_picker_historical", "scale_picker_favorites", "scale_picker_empty", "scale_settings_favorite", "menu_click", "menu_click_level", "menu_countin", "menu_preview", "menu_add", "menu_autosave_on", "menu_autosave_off", "drum_sound_808", "drum_sound_909", "drum_mix_909", "drum_hit_909", "drum_hit_free", "drum_hit_long",
     "stage_drum", "stage_trio", "stage_queued", "stage_browse", "stage_stopped", "stage_filter", "patterns", "patterns_stopped", "patterns_sheet", "patterns_copy", "patterns_replace", "patterns_delete", "project_new", "new_key", "new_roles",
     "ref_stage_held", "ref_stage_released", "ref_stage_cutoff", "ref_stage_drum", "ref_browser", "ref_patterns", "ref_song", "ref_env", "ref_lfo", "ref_edit_osc", "ref_mixer", "ref_notes", "ref_settings", "ref_dialog", "ref_sheet_sound", "ref_sheet_song", "ref_picker_wave", "ref_picker_mode", "ref_sections_p5", "ref_map_p5", "ref_map_fm6", "ref_scl_list", "ref_sheet_project", "ref_sheet_note", "ref_sheet_hit", "ref_motion", "ref_sheet_motion", "ref_mod", "ref_picker_mod", "ref_arp", "ref_pattern", "ref_fmeg", "ref_grid", "ref_scales", "fx_phaser", "fx_width", "fx_formant", "fx_tape", "fx_spit", "fx_echo", "fx_room", "fx_reverb", "fx_chorus", "fx_full", "fx_slot2", "fx_slot3", "fx_send", "fx_separate", "fx_sends", "fx_bus1", "fx_bus2", "fx_bus3",
-    "gen_turing", "gen_euclid", "gen_markov", "gen_morph", "gen_evolve", "cords", "help", "cords_pick_src", "cords_pick_dst", "gen_grids", "gen_tweak", "gen_tweak_off", "mod_shortcut", "gen_bounce", "gen_awake", "gen_poly", "gen_tweak2", "gen_tweak2_off", "organic", "gen_tweak2_coin", "mods_live", "mods_live_gen", "matrix", "gen_quad", "gen_length", "gen_fall", "gen_constel", "gen_length_hit", "gen_length_keys", "gen_length_step", "gen_pattern_constel", "gen_series", "gen_chord", "gen_chord_oct", "gen_grids_oct", "gen_chord_user", "gen_step_evolve", "help_gen", "gen_timing", "gen_timing_x1", "gen_energy", "gen_answer", "gen_answer_oct", "gen_seed_oct", "gen_timing_human", "gen_chord_circle", "gen_chord_offbeat", "gen_chord_drone", "gen_step_evolve_how", "gen_step_adorn", "gen_step_serial", "notes_evolve", "gen_seed", "gen_seed_morph", "gen_form", "midi_out", "edit_filt", "gen_evolve_grav", "gen_energy_level", "gen_energy_depth", "edit_filt_bp", "edit_filt_hp", "edit_filt_not", "stage_filter_hp", "gen_step_pat", "knobs_bar", "knobs_bar_gen", "menu_knobs", "mods_amt", "midi_sound", "mods_gate", "glo_chain", "glo_chain_off", "glo_chain_reps", "gen_form_chain", "glo_entries", "glo_entries_off", "glo_entries_roles", "glo_piece", "glo_piece_free", "glo_piece_user", "glo_land", "glo_land_rain", "glo_perf", "menu_colors", "scl_key"};
+    "gen_turing", "gen_euclid", "gen_markov", "gen_morph", "gen_evolve", "cords", "help", "cords_pick_src", "cords_pick_dst", "gen_grids", "gen_tweak", "gen_tweak_off", "mod_shortcut", "gen_bounce", "gen_awake", "gen_poly", "gen_tweak2", "gen_tweak2_off", "organic", "gen_tweak2_coin", "mods_live", "mods_live_gen", "matrix", "gen_quad", "gen_length", "gen_fall", "gen_constel", "gen_length_hit", "gen_length_keys", "gen_length_step", "gen_pattern_constel", "gen_series", "gen_chord", "gen_chord_oct", "gen_grids_oct", "gen_chord_user", "gen_step_evolve", "help_gen", "gen_timing", "gen_timing_x1", "gen_energy", "gen_answer", "gen_answer_oct", "gen_seed_oct", "gen_timing_human", "gen_chord_circle", "gen_chord_offbeat", "gen_chord_drone", "gen_step_evolve_how", "gen_step_adorn", "gen_step_serial", "notes_evolve", "gen_seed", "gen_seed_morph", "gen_form", "midi_out", "edit_filt", "gen_evolve_grav", "gen_energy_level", "gen_energy_depth", "edit_filt_bp", "edit_filt_hp", "edit_filt_not", "stage_filter_hp", "gen_step_pat", "knobs_bar", "knobs_bar_gen", "menu_knobs", "mods_amt", "midi_sound", "mods_gate", "glo_chain", "glo_chain_off", "glo_chain_reps", "gen_form_chain", "glo_entries", "glo_entries_off", "glo_entries_roles", "glo_piece", "glo_piece_free", "glo_piece_user", "glo_land", "glo_land_rain", "glo_perf", "menu_colors", "scl_key", "roll_raised", "roll_raised_top", "roll_one", "roll_turn"};
 
 /* the scenes of the UI design screens: the state the UI-redesign
  * prototype drew them from (its setup(): two pattern tracks, the drum pattern on track 4, a synthetic scope),
@@ -682,6 +682,24 @@ static void roll_scene(int s)
         }
         ui.cursor = 20; song.playing = 1; t->seq_idx = 22;
         break;
+    case S_ROLL_RAISED:                                  /* a scale, one note raised: a span up, then past three octaves */
+    case S_ROLL_RAISED_TOP:
+    case S_ROLL_TURN: {                                  /* (the value turning: no large read-out over the steps) */
+        static const uint8_t MEL[8] = {60, 62, 64, 65, 67, 69, 71, 72};
+        for (i = 0; i < 16u; i += 2u) {
+            uint8_t n = i != 4u ? MEL[i / 2u] : s == S_ROLL_RAISED ? 84 : s == S_ROLL_RAISED_TOP ? 127 : 100;
+            step_put(&t->step[i], ST_NOTE, 0, 1, &n);
+        }
+        ui.cursor = 4;
+        if (s == S_ROLL_TURN) { ui.hot_col = 1; ui.hot_t = 30; }
+        break;
+    }
+    case S_ROLL_ONE: {                                   /* one pitch alone: its place in the whole range */
+        uint8_t n = 127;
+        step_put(&t->step[4], ST_NOTE, 0, 1, &n);
+        ui.cursor = 4;
+        break;
+    }
     case S_ROLL_HIGH:
     case S_ROLL_LOW:
         for (i = 0; i < 16u; i += 2u) {
@@ -1999,7 +2017,7 @@ static void setup(int s)
         ui.song_row = 0; go_page(GR_SONG); ui.msg_t = 0;
         break;
     case S_ROLL_EMPTY: case S_ROLL_ACID: case S_ROLL_CHORDS: case S_ROLL_TIES: case S_ROLL_LEN32: case S_ROLL_HIGH:
-    case S_ROLL_LOW: case S_ROLL_WIDE: case S_ROLL_PLAYING: roll_scene(s); break;
+    case S_ROLL_LOW: case S_ROLL_WIDE: case S_ROLL_PLAYING: case S_ROLL_RAISED: case S_ROLL_RAISED_TOP: case S_ROLL_ONE: case S_ROLL_TURN: roll_scene(s); break;
     case S_USER_FOOT: song.playing = 0; up_store(3, "MY BASS"); ui.uslot = 3; go_page(GR_USER); break;   /* EDIT NAME lit */
 #if MELODEE_SLICE && SMP_USER_SLOTS
     /* EDIT > SLICES: BREAK's 16 slices (slice 6 selected); a user sample's slices set by hand: DIV 8 taken as MAN,
@@ -2498,6 +2516,24 @@ static uint32_t mono_batt_check(const char *out)
     printf("ui_render: the battery on %u Mono screens\n", nbatt);
     return bad;
 }
+/* Mono NOTES: a bar stays in its area and a higher note is never shorter, at every span and over the whole range */
+static uint32_t mono_note_h_check(void)
+{
+    static const int32_t SPAN[] = {12, 24, 36, 127};
+    uint32_t bad = 0;
+    for (uint32_t k = 0; k < 4u; k++) {
+        int32_t last = 0, top = SPAN[k] == 36 ? 127 : SPAN[k];
+        for (int32_t x = 0; x <= top; x++) {
+            int32_t h = mo_note_h(x, SPAN[k]);
+            if (h < 3 || h > 25 || h < last) {
+                if (!bad++) fprintf(stderr, "ui_render: NOTES span %d, %d semitones up: a bar of %d after %d\n", (int)SPAN[k], (int)x, (int)h, (int)last);
+            }
+            last = h;
+        }
+        if (last != 25) { if (!bad++) fprintf(stderr, "ui_render: NOTES span %d tops out at %d\n", (int)SPAN[k], (int)last); }
+    }
+    return bad;
+}
 /* Mono BOUNCE: a ball that hit a wall on the last step is drawn against it (the step its note plays): the cells next
  * to the thick wall, inside the box (the floor row 104, left column 4, right 115, top row 55), inked by it; balls,
  * speeds and angles enough for every wall. The picture drawn alone, its rows 50 .. 109 one canvas */
@@ -2884,6 +2920,7 @@ int main(int argc, char **argv)
     if (!nmono) { fprintf(stderr, "ui_render: the Mono lint saw no knob value\n"); nfind++; }
     if (mono_batt_check(out)) nfind++;
     if (mono_bounce_check()) nfind++;
+    if (mono_note_h_check()) nfind++;
     if (mono_mods_pick_check()) nfind++;
 #endif
     fprintf(rep, "\n%u lint findings, %u ellipsised free texts, %u MONO pixels off gray; %u column values swept; "
