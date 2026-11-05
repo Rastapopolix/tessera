@@ -1358,7 +1358,7 @@ sys.stdout.buffer.write(b"".join(raw[i * 48:i * 48 + 47] for i in range(20)) + r
   const product = py(`import sys; sys.path.insert(0, "tools")
 from fm1_install import product_of
 print(product_of(open(sys.argv[1], "rb").read()), end="")`, pkg).toString();
-  ok(/^FM-1_8377\d{4}$/.test(productOf(raw)) && productOf(raw) === product,
+  ok(/^FM-1_8\d\d$/.test(productOf(raw)) && productOf(raw) === product,
     "fm1pkg.js productOf == Python (development and release identities)");
 }
 
@@ -1500,7 +1500,7 @@ async function stockRestore() {
   const HEAD = {from:1024, to:1024 + 0x4000};
   // loader: the identity of the update loader the FM-1 is waiting in (false: running firmware);
   // button: "stock-go" (Return to official V15) or "go" (Install)
-  async function run({skip = false, loader = false, recovery = false, supported = false, confirm = true, backupError = false, version = "MELODEE 0.9", installError = null, button = "stock-go"} = {}) {
+  async function run({skip = false, loader = false, recovery = false, supported = false, confirm = true, backupError = false, version = "MELODEE 0.9", installError = null, button = "stock-go", product = "FM-1_015"} = {}) {
     const calls = [], writes = [], elements = new Map();
     const element = (id) => {
       if (!elements.has(id)) elements.set(id, {checked:false, disabled:false, textContent:"", value:0, listeners:{},
@@ -1539,7 +1539,7 @@ async function stockRestore() {
     });
     vm.runInContext(script, context);
     await new Promise(resolve => setImmediate(resolve));
-    vm.runInContext(`stock = {image:new Uint8Array(),product:"FM-1_015",head:${JSON.stringify(HEAD)}};`, context);
+    vm.runInContext(`stock = {image:new Uint8Array(),product:${JSON.stringify(product)},head:${JSON.stringify(HEAD)}};`, context);
     if (button === "go") vm.runInContext("image = new Uint8Array(1);", context);
     element("stock-skip-backup").checked = skip;
     element("stock-recovery").checked = recovery;
@@ -1588,7 +1588,16 @@ async function stockRestore() {
   r = await run({loader:"ota-FM-1_123", recovery:true});
   ok(r.writes.length === 0 && r.status.includes("ota-FM-1_123"), "stock: an unknown loader gets nothing, named");
   r = await run({skip:true, installError:fail("stopped", {lastRead:HEAD.from + 0x200})});
-  ok(r.status.includes("CHECK HEAD") && r.status.includes("Nothing was written"), "stock: stopped at CHECK HEAD -> FAILED -5 explained");
+  ok(r.status.includes("CHECK HEAD") && r.status.includes("Nothing was written") && r.status.includes("way back is V16"),
+    "stock: V15 stopped at CHECK HEAD -> FAILED -5 explained, the unit needs V16");
+  r = await run({skip:true, product:"FM-1_016", installError:fail("stopped", {lastRead:HEAD.from + 0x200})});
+  ok(r.status.includes("CHECK HEAD") && r.status.includes("way back is V15") && r.status.includes("fm1_open"),
+    "stock: V16 stopped at CHECK HEAD -> the unit needs V15, where to find it");
+  r = await run({skip:true, product:"FM-1_016", installError:fail("stopped", {lastRead:0x40})});
+  ok(r.status.includes("before 3.3") && same(r.writes, [["FM-1_016", STOCK_LOADER]]),
+    "stock: V16 stopped before the head (a Tessera before 3.3 refuses its size) -> update Tessera first");
+  r = await run({skip:true, installError:fail("stopped", {lastRead:0x40})});
+  ok(!r.status.includes("before 3.3") && r.status.includes("Stopped"), "stock: V15 stopped before the head -> the usual message");
   r = await run({skip:true, installError:fail("stopped", {lastRead:HEAD.to})});
   ok(!r.status.includes("CHECK HEAD") && r.status.includes("Stopped"), "stock: stopped elsewhere -> the usual message");
   r = await run({skip:true, installError:fail("wrongloader", {detail:TESSERA_LOADER})});
@@ -1727,6 +1736,10 @@ async function localBuild() {
     "local: confirmed test build installs with the identity read from the file");
   r = await run(file("tessera-2.0.1.fwsc", "FM-1_83772001"));
   ok(r.enabled && r.installed.length === 1 && r.installed[0][1] === "FM-1_83772001", "local: Tessera's own identity (FM-1_8377) installs");
+  r = await run(file("tessera-3.3.fwsc", "FM-1_833"));
+  ok(r.enabled && r.installed.length === 1 && r.installed[0][1] === "FM-1_833", "local: Tessera's three-digit identity (FM-1_8XY, M-UPGRADE 3.11) installs");
+  r = await run(file("long.fwsc", "FM-1_8331"));
+  ok(!r.enabled && r.installed.length === 0, "local: FM-1_8 and four digits is no Tessera identity");
   r = await run(file("t.fwsc", "FM-1_91029"), {answer:false});
   ok(r.enabled && r.installed.length === 0 && r.unlocked, "local: cancelling the confirmation never flashes");
   r = await run(file("FM-1.fwsc", "FM-1_015"));

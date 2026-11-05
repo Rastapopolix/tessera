@@ -203,10 +203,11 @@ int main(int argc, char **argv)
     }
 
     {   /* flash.bin's size in the UFW entry: an older Melodee's (0x89000) installs with its own loader; another
-         * board's (an SMK-37's 0x9D000) or a byte short of the FM-1's is refused (-15) before anything is erased */
-        static const uint32_t SZ[3] = {0x89000u, 0x9D000u, 0x93000u - 1u};
+         * board's (an SMK-37's 0x9D000), a byte short of the FM-1's or V16's (0xA9000, the official loader's alone) with
+         * Tessera's own loader is refused (-15) before anything is erased */
+        static const uint32_t SZ[4] = {0x89000u, 0x9D000u, 0x93000u - 1u, 0xA9000u};
         uint8_t saved[0x400];memcpy(saved,logical,sizeof saved);uint8_t *h=logical;
-        for (uint32_t z = 0; z < 3u; z++) {
+        for (uint32_t z = 0; z < 4u; z++) {
             uint8_t header[64];memcpy(header,h,64);ota_jl_enc(header,64);uint32_t count=ota_rd16(header+8);
             for(uint32_t k=0;k<count;k++){uint8_t *e=h+0x40+k*0x50u;ota_jl_enc(e,0x50);if(ota_rd16(e)==0)ota_wr32(e+12,SZ[z]);ota_jl_enc(e,0x50);}
             ota_wr16(header+2,ota_crc16(h+0x40,count*0x50u,0));ota_wr16(header,ota_crc16(header+2,62,0));ota_jl_enc(header,64);memcpy(h,header,64);
@@ -215,7 +216,8 @@ int main(int argc, char **argv)
                 bad+=check("an older Melodee partition (0x89000) still installs (its own loader)",rc==0&&committed);
             else
                 bad+=check(z == 1u ? "another board's size (0x9D000): -15, nothing erased" :
-                                     "a byte short of 0x93000: -15, nothing erased",
+                           z == 2u ? "a byte short of 0x93000: -15, nothing erased" :
+                                     "V16's size (0xA9000), Tessera's loader: -15, nothing erased",
                            rc==-15&&!committed&&!erases&&area_erased());
             memcpy(logical,saved,sizeof saved);
         }

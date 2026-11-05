@@ -31,7 +31,9 @@ archive. The complete file must have SHA-256
 `db1642b2b6fa5c2cccb11ffd13878068bb28601678d3644049f99dc40e7edb8a`.
 Modified V15 packages are refused before USB access. The recovery archives on the
 1.3.1 release were corrected on 2026-10-13 to accept V15's metadata layout. If an
-older download rejects V15, download the archive again.
+older download rejects V15, download the archive again. The recovery tool does not
+take V16; if V15 is no longer on M-VAVE's download page, it is in M-VAVE's
+`fm1_open` repository (`sdk/firmware/FM-1_015.fwsc`, the same file).
 
 For official recovery, substitute `FM-1.fwsc` in the commands below. Keep the full
 backup: recovery retains the bootloader and saved-data bytes, but official firmware

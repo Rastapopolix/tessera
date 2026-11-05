@@ -322,7 +322,7 @@ def official():
     bad[-1] ^= 1
     dev = FakeFM1(I.logical_image(bytes(bad)), identity="FM-1_900", name="Melodee")
     rc, out, err = cli([pkgfile("v15mod.fwsc", bytes(bad)), "--yes"], dev)
-    ok(rc == 2 and "official V15" in err and dev.sent == [], "a modified V15 is still refused (no MIDI)")
+    ok(rc == 2 and "official V15 or V16" in err and dev.sent == [], "a modified V15 is still refused (no MIDI)")
 
 
 wire()

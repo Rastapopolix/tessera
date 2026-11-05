@@ -40,10 +40,11 @@ from Tessera, and projects keep loading on both, please:
 
 - **Give it its own name and version line**, for example "Tessera MOAR 1.0", or a suffix on Tessera's version such
   as 2.0.2-moar1. A plain "Tessera 2.1" from a fork is confused with Tessera's own 2.1.
-- **Give its packages their own identity.** Tessera's releases are `FM-1_8377` followed by the version
-  (`FM-1_83772002` for 2.0.2), set in `tools/build.py` (`PRODUCT`) and `firmware/src/melodee.c` (`MELODEE_ID`).
-  The installer and the Firmware Hub tell firmware apart by this string, so a fork that keeps `FM-1_8377…` looks
-  like a Tessera release. Pick your own prefix (not `FM-1_8377`, nor Melodee's or M-Vave's).
+- **Give its packages their own identity.** Tessera's releases are `FM-1_8` followed by the version's X and Y
+  (`FM-1_833` for 3.3), set in `tools/build.py` (`PRODUCT`) and `firmware/src/melodee.c` (`MELODEE_ID`).
+  The installer and the Firmware Hub tell firmware apart by this string, so a fork that keeps `FM-1_8xx` looks
+  like a Tessera release. Pick your own (not `FM-1_8xx`, nor Melodee's, Felucca's, Skiff's or M-VAVE's), and keep
+  it to one to three digits after the `_`: M-UPGRADE 3.11 refuses anything longer.
 - **Open an issue before you take an engine id, a parameter id or a cord destination.** They are stored in saved
   projects and presets, and Tessera's lists are frozen (`firmware/src/core.h` for the engines, including reserved and
   retired ids, `tests/pid_ids.txt`, `tests/cord_dests.txt`). An id that means one thing in Tessera and another in a

@@ -25,7 +25,7 @@
   web/make_site.py build/tessera-X.Y.fwsc build/tessera-X.Y-1core.fwsc X.Y OUT_DIR [build/sim]
 
 The packages must be ones made by tools/fm1pkg_make.py (Melodee's own loader, no vendor files), from one
-release: their identity (FM-1_8377XYYZ from 2.0.1; FM-1_9 and two to four digits before, Melodee's numbering) is
+release: their identity (FM-1_8XY from 3.3, FM-1_8377XYYZ 2.0.1..3.3-beta1, FM-1_9 and two to four digits before) is
 read from them and must be the same; the device must report it after the install.
 """
 import json
@@ -43,6 +43,11 @@ def strip_module(src):
     return re.sub(r"^import .*?;\n", "", src, flags=re.M)
 
 
+# Tessera's identities: FM-1_8XY from 3.3 (M-UPGRADE 3.11 takes a name, "_" and 1 to 3 digits only), FM-1_8377XYYZ
+# 2.0.1..3.3-beta1, FM-1_9... (Melodee's numbering) before. A published older release stays publishable.
+TESSERA_ID = r"FM-1_8\d\d|FM-1_8377\d{4}|FM-1_9\d{2,4}"
+
+
 def product_of(raw):
     """the package identity: one marker byte after each of the first 20 blocks (fm1pkg.js productOf)"""
     return "".join(chr((m - i - 1) & 0xFF) for i in range(BLOCKS) if (m := raw[i * BLK + KEEP]) != 0x7D)
@@ -52,9 +57,9 @@ def check_package(pkg):
     """the package's bytes and identity; refuses anything that is not a Melodee package"""
     raw = pkg.read_bytes()
     product = product_of(raw)
-    if not re.fullmatch(r"FM-1_8377\d{4}|FM-1_9\d{2,4}", product):
-        raise SystemExit(f"{pkg}: identity {product!r} is not a Tessera package (FM-1_8377 and four digits, "
-                         "or FM-1_9 and two to four digits before 2.0.1)")
+    if not re.fullmatch(TESSERA_ID, product):
+        raise SystemExit(f"{pkg}: identity {product!r} is not a Tessera package (FM-1_8 and two digits; before 3.3 "
+                         "FM-1_8377 and four digits, before 2.0.1 FM-1_9 and two to four)")
     if b"FELUCCA-LOADER-1" not in raw:              # Melodee loader marker: never publish a package with vendor files
         raise SystemExit(f"{pkg}: no Melodee loader in it; the site ships only fm1pkg_make.py packages "
                          "(a package patched from an official one carries vendor files)")

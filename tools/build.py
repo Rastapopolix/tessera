@@ -57,7 +57,8 @@ SDK_SHA256 = {
     "cfg/eq_cfg_hw.bin": "41167491bffed4651750719c973d2758adeb9021a5670d02d6a53c85ed80ea7d",
 }
 
-PRODUCT = "FM-1_83770000"           # package identity (Tessera's own, 8377 = TESS): FM-1_8377 + X YY Z; 0000 for development builds
+PRODUCT = "FM-1_800"                # package identity (Tessera's own 8xx): FM-1_8 + X Y; 00 for development builds. M-UPGRADE
+                                    # 3.11 (2026-11-03) refuses any identity but a name, "_" and 1 to 3 digits (FM-1_8377XYYZ before 3.3)
 VERSION = None                      # MELODEE_VERSION for release builds (default: firmware/src/melodee.c)
 
 
@@ -554,16 +555,16 @@ def main():
     ap = argparse.ArgumentParser()
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument("--nightly", action="store_true", help="development package from the current Git commit")
-    mode.add_argument("--release", metavar="X.Y[.Z]", help="release build: identity FM-1_8377XYYZ, version string vX.Y[.Z]")
+    mode.add_argument("--release", metavar="X.Y[.Z]", help="release build: identity FM-1_8XY, version string vX.Y[.Z]")
     ap.add_argument("--sdk", type=Path, help="JieLi AC79 SDK checkout (default: $AC79_SDK)")
     a = ap.parse_args()
     name = "tessera.fwsc"
     variant = "-1core" if os.environ.get("MELODEE_DUAL_CORE") == "0" else ""
-    if a.release:                   # X one digit, Y one or two, Z one: 2.0 and 2.0.0 are FM-1_83772000, 2.0.1 FM-1_83772001
-        m = re.fullmatch(r"(\d)\.(\d{1,2})(?:\.(\d))?(-[A-Za-z0-9]+)?", a.release)   # (Y padded to two digits)
+    if a.release:                   # X and Y one digit each: 3.3, 3.3.1 and 3.3-beta2 are all FM-1_833 (three digits at most)
+        m = re.fullmatch(r"([1-9])\.(\d)(?:\.(\d))?(-[A-Za-z0-9]+)?", a.release)
         if not m:
-            raise SystemExit(f"--release {a.release}: use X.Y[.Z] or X.Y[.Z]-suffix (X one digit, Y one or two, Z one)")
-        PRODUCT = "FM-1_8377" + m[1] + m[2].zfill(2) + (m[3] or "0")
+            raise SystemExit(f"--release {a.release}: use X.Y[.Z] or X.Y[.Z]-suffix (X 1..9, Y and Z one digit: FM-1_8XY)")
+        PRODUCT = "FM-1_8" + m[1] + m[2]
         VERSION = "v" + a.release.lower()      # e.g. v1.0, v1.1-rc1
         name = f"tessera-{a.release}{variant}.fwsc"
     if a.nightly:

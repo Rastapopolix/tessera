@@ -27,10 +27,10 @@ class NightlySite(unittest.TestCase):
     def test_publish(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            dual = package(root / "release.fwsc", "FM-1_83771100", 1)
-            single = package(root / "single.fwsc", "FM-1_83771100", 2)
-            normal = package(root / "next.fwsc", "FM-1_83770000", 3)
-            slow = package(root / "slow.fwsc", "FM-1_83770000", 4)   # (the single-core nightly)
+            dual = package(root / "release.fwsc", "FM-1_811", 1)
+            single = package(root / "single.fwsc", "FM-1_811", 2)
+            normal = package(root / "next.fwsc", "FM-1_800", 3)
+            slow = package(root / "slow.fwsc", "FM-1_800", 4)   # (the single-core nightly)
             site = root / "site"
             main(dual, single, "1.1.0", site)
             home = (site / "index.html").read_text()   # the project page names the release and its packages
@@ -48,13 +48,13 @@ class NightlySite(unittest.TestCase):
             self.assertEqual((site / "firmware/tessera-1.1.0.fwsc").read_bytes(), dual.read_bytes())
             self.assertEqual((site / "firmware/tessera-1.1.0-1core.fwsc").read_bytes(), single.read_bytes())
             manifest = json.loads((site / "firmware/nightly.json").read_text())
-            self.assertEqual((manifest["product"], manifest["branch"]), ("FM-1_83770000", "next"))
+            self.assertEqual((manifest["product"], manifest["branch"]), ("FM-1_800", "next"))
             # Regenerating a release keeps both published nightly variants.
             main(dual, single, "1.1.0", site, installer_only=True)
             self.assertIn('"single": "../../firmware/melodee-nightly-1core.fwsc"', (site / "webapp/installer/index.html").read_text())
             self.assertEqual((site / "firmware/melodee-nightly-1core.fwsc").read_bytes(), slow.read_bytes())
             before = hashlib.sha256((site / "webapp/installer/index.html").read_bytes()).digest()
-            wrong = package(root / "wrong.fwsc", "FM-1_83771000", 5)
+            wrong = package(root / "wrong.fwsc", "FM-1_810", 5)
             official = package(root / "official.fwsc", "FM-1_015", 9)   # not a Tessera identity
             for other in (wrong, normal, official):
                 with self.assertRaises(SystemExit):
@@ -110,8 +110,8 @@ class NightlySite(unittest.TestCase):
             root = Path(tmp)
             dual = package(root / "release.fwsc", "FM-1_83773022", 1)
             single = package(root / "single.fwsc", "FM-1_83773022", 2)
-            beta = package(root / "beta.fwsc", "FM-1_83773030", 3)
-            beta1 = package(root / "beta-1core.fwsc", "FM-1_83773030", 4)
+            beta = package(root / "beta.fwsc", "FM-1_833", 3)
+            beta1 = package(root / "beta-1core.fwsc", "FM-1_833", 4)
             site = root / "site"
             main(dual, single, "3.2.2", site)
             editor, installer = site / "webapp/editor/index.html", site / "webapp/installer/index.html"
@@ -124,7 +124,7 @@ class NightlySite(unittest.TestCase):
             self.assertEqual((site / "firmware/tessera-3.3-beta1-1core.fwsc").read_bytes(), beta1.read_bytes())
             manifest = json.loads((site / "firmware/beta.json").read_text())
             self.assertEqual((manifest["version"], manifest["product"], manifest["branch"], manifest["commit"]),
-                             ("3.3-beta1", "FM-1_83773030", "develop", commit))
+                             ("3.3-beta1", "FM-1_833", "develop", commit))
             self.assertIn('"dual": "../../firmware/tessera-3.3-beta1.fwsc"', installer.read_text())
             # A second beta replaces the first; a 3.2.x patch release keeps it.
             publish_beta(site, str(beta), str(beta1), "3.3-beta2", commit, "2026-11-05T19:00:00Z")
@@ -133,7 +133,7 @@ class NightlySite(unittest.TestCase):
             self.assertIn('"version": "3.3-beta2"', installer.read_text())
             self.assertTrue((site / "firmware/tessera-3.3-beta2.fwsc").exists())
             before = hashlib.sha256(installer.read_bytes()).digest()
-            wrong = package(root / "wrong.fwsc", "FM-1_83773031", 5)
+            wrong = package(root / "wrong.fwsc", "FM-1_834", 5)
             for other, version in ((wrong, "3.3-beta3"), (beta, "3.3-beta3"), (beta1, "3.3")):
                 with self.assertRaises(SystemExit):   # (mixed identities, one build twice, no suffix)
                     publish_beta(site, str(beta), str(other), version, commit, "2026-11-06T19:00:00Z")
