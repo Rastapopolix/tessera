@@ -405,7 +405,7 @@ SEQ then shows only that mode's pages:
 | MODE | SEQ's pages |
 |---|---|
 | **STEP** | GEN, NOTES (a DRUM track: NOTES, DRUM HIT), EVOLVE (STEP EVOLVE), TWEAK (its HUMAN), TIMING (its SHAPE and HUMAN), TEMPO, PATTERNS, SONG |
-| **ARP** | GEN, NOTES, ARP, ARP 2, TEMPO, PATTERNS, SONG |
+| **ARP** | GEN, NOTES, TEMPO, PATTERNS, SONG (ARP and ARP 2 are the ARP button's own: SELECT turns between the two) |
 | a generator | GEN, EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY, PATTERN, TEMPO, PATTERNS, SONG |
 
 MOTION appears as in upstream; DRUM HIT, a DRUM track's grid of hits, comes right after NOTES. With STEP or ARP, GEN is also the pattern's page: KNOB 2 to 4 are

@@ -242,7 +242,12 @@ static int native_page(uint32_t i, uint32_t fam)       /* page i: one of fam's n
  * shows the track's MODE's only: STEP (NOTES), ARP (ARP, ARP 2), a generator (EVOLVE, FORM, TWEAK); GEN (MODE) and the
  * rest always. MODE: 0 STEP, 1 ARP (ARP's MODE not OFF), 2.. the generators (tessera.mode + 1) */
 static uint32_t fam_grp(uint32_t f) { return f == FAM_ARP ? FAM_SEQ : f; }
-static int in_fam(uint32_t i, uint32_t fam) { return fam_grp(PAGES[i].fam) == fam_grp(fam); }
+/* ARP and ARP 2: their own lane (the ARP button's; SELECT turns between the two), not among SEQ's pages (beta3, Theo) */
+static int arp_page(uint32_t i)
+{
+    return i < NPAGES && PAGES[i].fam == FAM_ARP && (PAGES[i].graph == GR_ARP || PAGES[i].graph == GR_NONE);
+}
+static int in_fam(uint32_t i, uint32_t fam) { return fam_grp(PAGES[i].fam) == fam_grp(fam) && !arp_page(i); }
 static uint32_t seqm_get(uint32_t tr)
 {
     tr %= NTRK;
@@ -566,6 +571,7 @@ static uint32_t page_nf(void)
 {
     uint32_t fam = fam_grp(cur_page()->fam);
     if ((ui.via == FAM_ENV || ui.via == FAM_LFO) && native_page(ui.page, ui.via)) return ui.via;
+    if (arp_page(ui.page)) return FAM_ARP;              /* (ARP, ARP 2: fam_pages) */
     return (fam == FAM_ENV || fam == FAM_LFO) && native_titles(fam) ? fam : 0u;
 }
 /* SELECT: the open section's pages, both ways (wraps; pages the track does not show skipped). On an engine with its
@@ -607,7 +613,7 @@ static uint32_t fam_pages(uint32_t fam, uint8_t *pg)
         if (native_page(i, fam) && page_visible(i))
             pg[n++] = (uint8_t)i;
     for (i = 0; i < NPAGES; i++)
-        if (PAGES[i].fam == fam && page_visible(i) && !native_page(i, fam))
+        if (PAGES[i].fam == fam && page_visible(i) && !native_page(i, fam) && (fam != FAM_ARP || arp_page(i)))
             pg[n++] = (uint8_t)i;
     for (i = 0; fam == FAM_LFO && i < NPAGES; i++)
         if (native_page(i, fam) && page_visible(i))

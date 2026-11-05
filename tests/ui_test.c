@@ -490,7 +490,7 @@ static int test_phys_chrd_click(void)
 }
 static int test_gen_family(void)
 {
-    static const char STEP[] = "GEN NOTES EVOLVE TWEAK TIMING TEMPO PATTERNS SONG GEN", ARP[] = "ARP ARP 2 TEMPO PATTERNS SONG GEN NOTES ARP",
+    static const char STEP[] = "GEN NOTES EVOLVE TWEAK TIMING TEMPO PATTERNS SONG GEN", ARP[] = "GEN NOTES TEMPO PATTERNS SONG GEN",
                       GEN[] = "GEN EVOLVE FORM TWEAK TWEAK 2 LENGTH TIMING ENERGY PATTERN TEMPO PATTERNS SONG";
     char got[128];
     int bad = 0, in_seq = 0, pattern_seq = 0;
@@ -506,7 +506,15 @@ static int test_gen_family(void)
     press(B_ARP);
     n &= str_eq(cur_page()->title, "ARP");
     bad += check("ARP's taps: ARP's MODE on (UP), its page, then ARP 2, ARP", n);
-    bad += check("SEQ in ARP: back to ARP (its last page), ARP 2 TEMPO PATTERNS SONG GEN NOTES", str_eq(seq_taps(got, sizeof got, 8), ARP));
+    turn(EN_SELECT, 1);
+    n = str_eq(cur_page()->title, "ARP 2");
+    turn(EN_SELECT, 1);
+    n &= str_eq(cur_page()->title, "ARP");
+    turn(EN_SELECT, -1);
+    n &= str_eq(cur_page()->title, "ARP 2");
+    bad += check("SELECT on ARP: ARP and ARP 2 only, its own lane (not SEQ's pages; beta3)", n);
+    bad += check("SEQ in ARP: SEQ's own pages, GEN NOTES TEMPO PATTERNS SONG (ARP's are the ARP button's)",
+                 str_eq(seq_taps(got, sizeof got, 6), ARP));
     if (!str_eq(got, ARP)) printf("    got: %s\n", got);
     {
         int16_t *vp;

@@ -1793,7 +1793,7 @@ static void page_tap(uint32_t b)
         if (a < NPAGES && a2 < NPAGES) {
             seqm_set(song.sel, 1);
             ui.page = (uint8_t)(!ui.home && ui.page == a ? a2 : a);
-            ui.fam_last[FAM_SEQ] = ui.page;
+            ui.fam_last[FAM_ARP] = ui.page;              /* (not SEQ's: ARP is its own lane) */
             ui.home = 0;
             page_entered();
             return;
