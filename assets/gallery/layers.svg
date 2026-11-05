@@ -33,8 +33,8 @@
   <path class="ar" d="M300 112 L160 176"/>
   <path class="ar" d="M400 112 L400 176"/>
   <path class="ar" d="M500 112 L640 176"/>
-  <text x="228" y="134" class="l" text-anchor="end">bolder sections near</text>
-  <text x="228" y="148" class="l" text-anchor="end">the top, A at the end</text>
+  <text x="200" y="134" class="l" text-anchor="end">bolder sections near</text>
+  <text x="200" y="148" class="l" text-anchor="end">the top, A at the end</text>
   <text x="408" y="146" class="l">how many</text>
   <text x="408" y="160" class="l">tracks out</text>
   <text x="592" y="134" class="l">the tide follows</text>
