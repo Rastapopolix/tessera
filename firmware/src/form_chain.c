@@ -176,6 +176,26 @@ static int fc_skips(const fc_st_t *s, uint32_t p, uint32_t tr)
     return run & 1u;                                  /* (a run of hits: hold, go, hold, ...) */
 }
 
+/* KEY B / KEY C: the semitones track tr's notes move by now, its scale with them (A: the key as set, 0). A generator
+ * track that FOLLOWs moves with its own section (so a SKIP holds the key too); a melodic STEP track not set OWN with the
+ * project's section on its own phrase line (counted as a follower's, from its steps since PLAY). Playing only */
+static int32_t fc_key(uint32_t tr)
+{
+    uint32_t c;
+    if (tr >= TESSERA_TRACKS || !(tessera.fc_key[0] | tessera.fc_key[1]) || !tessera.fc_form || !song.playing) return 0;
+    if (tessera.mode[tr] != TESS_ENG_OFF) {
+        if (!fc_follows(tr)) return 0;
+        c = tessera.evolve[tr].sec;
+    } else {
+        const track_t *t = &trk[tr];
+        uint32_t k = seq_run_step[tr], spb = tess_steps_per_bar(t);
+        if (tessera.fc_follow[tr] == 2u || k == 0xFFFFFFFFu || drum_track(t)) return 0;
+        c = fc_letter_at(fc_at(k / spb / fc_bars())->pos);
+    }
+    return c == 1u ? tessera.fc_key[0] : c == 2u ? tessera.fc_key[1] : 0;
+}
+int32_t tessera_key_now(uint32_t tr) { return fc_key(tr); }
+
 static void tess_sec_go(uint32_t tr, uint32_t sec, uint32_t extra);
 /* a following track's step: on the project's phrase line its section changes with the project's (or holds, SKIP; or
  * catches up, behind for any reason) */

@@ -19,12 +19,17 @@ static void check(const char *what, int ok)
 }
 
 static uint32_t ct_hash, ct_n, ct_blk, ct_track_hash[NTRK];
+#define CT_REC 4096u                                   /* (KEY B / C: every note, its block and bar) */
+typedef struct { uint32_t blk, bar; uint8_t tr, note; } ct_rec_t;
+static ct_rec_t ct_rec[CT_REC];
+static uint32_t ct_rec_n;
 static void ct_note(track_t *t, uint32_t note, uint32_t vel)
 {
     uint32_t tr = trk_index(t);
     if (!vel) return;
     ct_hash = (ct_hash ^ (ct_blk * 131u + note * 7u + tr)) * 16777619u;
     if (tr < NTRK) ct_track_hash[tr] = (ct_track_hash[tr] ^ (ct_blk * 131u + note)) * 16777619u;
+    if (ct_rec_n < CT_REC) ct_rec[ct_rec_n++] = (ct_rec_t){ct_blk, bar_n, (uint8_t)tr, (uint8_t)note};
     ct_n++;
 }
 
@@ -39,7 +44,7 @@ static void power_on(uint32_t seed)
     tessera_reset();
     song.g[G_BPM] = 120;
     rng_state = seed;
-    ct_hash = 2166136261u, ct_n = 0, ct_blk = 0;
+    ct_hash = 2166136261u, ct_n = 0, ct_blk = 0, ct_rec_n = 0;
     memset(ct_track_hash, 0, sizeof ct_track_hash);
 }
 static void play(void) { transport_req = 1; }
@@ -339,6 +344,79 @@ static void test_stop_restart(void)
           tessera.evolve[0].visited == 1u);
 }
 
+/* KEY B / KEY C: the notes of an AB.. FORM with the keys set against the same piece with none: the same notes in the
+ * same blocks, those of a B phrase (C) KEY B (KEY C) semitones up or down, A's as they were; on a following generator
+ * (TURING, CHORD: its chord too), a melodic STEP track; an OWN generator never moves; the keys 0: nothing changes */
+static const uint8_t KT_STEP[8] = {60, 0, 63, 65, 0, 67, 70, 0};
+static void kt_setup(int32_t kb, int32_t kc)
+{
+    power_on(0x4B45u);
+    gen(0, TESS_ENG_TURING);
+    gen(2, TESS_ENG_CHORD);
+    gen(3, TESS_ENG_MARKOV);
+    px(3, TX_FC_FOLLOW, 1);                           /* (set: OWN) */
+    for (uint32_t i = 0; i < 8u; i++) {               /* track 2: a STEP melody */
+        step_t *st = &trk[1].step[i];
+        st->n = KT_STEP[i] ? 1u : 0u;
+        st->note[0] = KT_STEP[i];
+        st->time = KT_STEP[i] ? ST_NOTE : ST_REST;
+        st->vel = 100;
+    }
+    trk[1].p[P_SLEN] = 8;
+    px(0, TX_FC_FORM, FM_ABCA);
+    px(0, TX_FC_PHRASE, 0);                           /* (4 bars) */
+    px(0, TX_FC_KEYB, kb);
+    px(0, TX_FC_KEYC, kc);
+    play();
+}
+static uint32_t kt_run(int32_t kb, int32_t kc, ct_rec_t *out)
+{
+    kt_setup(kb, kc);
+    uint32_t was = 0xFFFFFFFFu;
+    for (uint32_t b = 0; b < 16u * bar_blocks(); b++) {   /* (ABCA: 4 phrases of 4 bars) */
+        block();
+        if (seq_run_step[1] != was && trk[1].seq_n && ct_rec_n < CT_REC) {   /* (a STEP track's notes: not hooked) */
+            was = seq_run_step[1];
+            ct_rec[ct_rec_n++] = (ct_rec_t){ct_blk, seq_run_step[1] / tess_steps_per_bar(&trk[1]), 1u, trk[1].seq_notes[0]};
+        }
+    }
+    memcpy(out, ct_rec, ct_rec_n * sizeof *ct_rec);
+    return ct_rec_n;
+}
+static void test_keys(void)
+{
+    static ct_rec_t a[CT_REC], b[CT_REC], z[CT_REC];
+    uint32_t na = kt_run(0, 0, a), nb = kt_run(5, -3, b), i, bad = 0, moved[4] = {0, 0, 0, 0}, own_moved = 0;
+    check("KEY B / C: a STEP track's step plays it (not a drum track)", !drum_track(&trk[1]));
+    check("KEY B / C set: as many notes, in the same blocks", na == nb && na > 100u);
+    for (i = 0; i < na && i < nb; i++) {
+        uint32_t ph = a[i].bar / 4u, want;
+        int32_t k = ph == 1u ? 5 : ph == 2u ? -3 : 0;        /* (ABCA: B on phrase 1, C on 2) */
+        if (a[i].tr == 3u) k = 0;                     /* (OWN) */
+        want = (uint32_t)((int32_t)a[i].note + k);
+        if (b[i].blk != a[i].blk || b[i].tr != a[i].tr || b[i].note != want) {
+            if (bad++ < 4u) printf("chain:   note %u (block %u, bar %u, track %u): %u, want %u\n", i, a[i].blk, a[i].bar,
+                                   a[i].tr + 1u, b[i].note, want);
+        }
+        if (b[i].note != a[i].note) { if (a[i].tr == 3u) own_moved++; else moved[a[i].tr]++; }
+    }
+    printf("chain:   KEY: moved notes T1 %u, T2 (STEP) %u, T3 (CHORD) %u\n", moved[0], moved[1], moved[2]);
+    check("KEY B +5, KEY C -3: B's notes 5 up, C's 3 down, A's as before, on the phrase's first step", !bad);
+    check("KEY: the following TURING, the STEP track and the CHORD all move; the OWN MARKOV never",
+          moved[0] && moved[1] && moved[2] && !own_moved);
+    {
+        uint32_t nz = kt_run(0, 0, z), same = nz == na;
+        for (i = 0; i < nz && same; i++) same = z[i].blk == a[i].blk && z[i].note == a[i].note;
+        check("KEY B / C 0: the same piece", same);
+    }
+    kt_setup(7, 0);
+    for (i = 0; i < 6u * bar_blocks(); i++) block();
+    check("KEY: playing B, the saved key is untouched (ROOT, TRN as set)", trk[0].p[P_ROOT] == 0 && trk[0].p[P_TRANS] == 0 &&
+          trk[1].p[P_ROOT] == 0 && tessera_key_now(0) == 7 && tessera_key_now(1) == 7 && tessera_key_now(3) == 0);
+    seq_stop();
+    check("KEY: stopped, no key moves", tessera_key_now(0) == 0 && tessera_key_now(1) == 0);
+}
+
 int main(void)
 {
     test_off();
@@ -350,6 +428,7 @@ int main(void)
     test_wander_tracks();
     test_flourish();
     test_stop_restart();
+    test_keys();
     printf(fails ? "chain: %d FAILED\n" : "chain tests passed\n", fails);
     return fails != 0;
 }

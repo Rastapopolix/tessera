@@ -959,7 +959,13 @@ static void draw_columns(void)
     }
     if (cur_page()->graph == GR_KEYLINK) {               /* KEY (SCL's row): KEY LINK, the project's */
         draw_column(0, "KEY", tessera.key_link ? "LINKED" : "OWN", "", VAL(0u), tessera.key_link ? 1000 : 0, ICON_AUTO);
-        for (uint32_t k = 1; k < 4u; k++) draw_column(k, "", "", "", T_DIM, -1, ICON_NONE);
+        for (uint32_t k = 0; k < 2u; k++) {             /* (KEY B / C: the CHAIN's sections, form_chain.c; FORM OFF dim) */
+            char w[8];
+            int32_t v = tessera.fc_key[k];
+            midi_tr_text(w, v);
+            draw_column(k + 1u, k ? "KEY C" : "KEY B", w, "st", tessera.fc_form ? VAL(k + 1u) : T_DIM, (v + 12) * 1000 / 24, ICON_AUTO);
+        }
+        draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
         return;
     }
     if (cur_page()->graph == GR_PIECE && piece_layer_on()) {   /* PIECE, OCT+ / OCT- held: USER's levels 1-4 / 5-8 */

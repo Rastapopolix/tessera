@@ -200,6 +200,8 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_MACRO3] = PD("MACRO 3", F_PCT, 0, 100, 0),
     [TX_MACRO4] = PD("MACRO 4", F_PCT, 0, 100, 0),
     [TX_TW_HOLD] = PE("HOLD", TX_N_FOLLOW, 0),
+    [TX_FC_KEYB] = PD("KEY B", F_SEMI, -12, 12, 0),
+    [TX_FC_KEYC] = PD("KEY C", F_SEMI, -12, 12, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -706,6 +708,13 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_TW_HOLD, "FOLLOW HOLD", "Sample and hold for FOLLOW: the followed track's note is taken only when the "
                                   "HOLD track plays, and this track keeps playing it in its own rhythm until the next "
                                   "one. OFF: a new note on each of its own hits. TWEAK, OCT+ held, KNOB 4."),
+#define FC_KEY_TEXT "A key change for the CHAIN's section: while the project plays it, every track that FOLLOWs the " \
+                    "CHAIN moves its notes this many semitones, scale and all (+5 a fourth up, +7 a fifth, -2 a tone " \
+                    "down). STEP tracks move too; drum tracks and OWN tracks keep theirs. A " \
+                    "is the key as set. 0: no change. SCL's Key in B and Key in C rows; saved with the project."
+    XP_(TX_FC_KEYB, "KEY B", FC_KEY_TEXT),
+    XP_(TX_FC_KEYC, "KEY C", FC_KEY_TEXT),
+#undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };

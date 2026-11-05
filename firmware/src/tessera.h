@@ -213,6 +213,9 @@ typedef struct {
     uint8_t          fc_follow[TESSERA_TRACKS];  /* 0 not set (FOLLOW where the track's own FORM is OFF, else OWN),
                                                   * 1 FOLLOW, 2 OWN */
     uint8_t          fc_skip[TESSERA_TRACKS];    /* 0..100: the chance the track holds its section a phrase longer */
+    /* KEY B, KEY C (the KEY page, SCL's KEY row): semitones every following track's notes move by in the CHAIN's B / C
+     * section, -12..12, 0 the saved key (A always is). The record's FKEY part (written only when one is not 0) */
+    int8_t           fc_key[2];
     /* Entries (entries.c; the ENTRIES page under GLO): tracks out and back in on the CHAIN's phrase lines. The record's
      * ENTRY part. ENTRIES 0: nothing changes */
     uint8_t          et_amount;                  /* 0..100: how many tracks may be out at most (of those that may), 0 off */
@@ -302,6 +305,7 @@ void tessera_len_stop(track_t *t);                  /* the held notes end now (p
 void organic_play(void);                            /* seq.c, PLAY: SLOTH and OCHD from each track's SEED */
 void fchain_play(void);                             /* seq.c, PLAY: form chaining from the top (form_chain.c) */
 uint32_t tessera_chain_get(uint8_t seq[4], uint32_t *pos, uint32_t *left);   /* the project FORM: letters, place, left */
+int32_t tessera_key_now(uint32_t tr);   /* KEY B / C: the semitones track tr's notes move by now (form_chain.c) */
 void tessera_chain_knob(uint32_t k, int32_t s, int layer);   /* the CHAIN page: KNOB k turned s (layer: OCT+ held) */
 void entries_play(void);                            /* seq.c, PLAY: Entries from the top, everything in (entries.c) */
 void entries_tick(uint32_t n);                      /* seq.c, each block before the steps: the lines, the fades */
@@ -409,9 +413,10 @@ enum {
     TX_PL_USER5, TX_PL_USER6, TX_PL_USER7, TX_PL_USER8,
     TX_MACRO1, TX_MACRO2, TX_MACRO3, TX_MACRO4,     /* (0x28D..0x290: PERF's four MACROs, the project's: cord sources) */
     TX_TW_HOLD,                                     /* (0x291: FOLLOW's HOLD, a generator track's: OFF, T1..T4) */
+    TX_FC_KEYB, TX_FC_KEYC,                         /* (0x292, 0x293: the CHAIN's B and C sections' key, the project's) */
     TX_COUNT
 };
-_Static_assert(TX_TW_HOLD == 0x91, "parameter ids are stored: never renumbered");
+_Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93, "parameter ids are stored: never renumbered");
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */
 #define TESS_ACC_LIMIT 14u                          /* TX_ACC_LIMIT: up to two octaves of a 7-note scale */
 #define TESS_ACC_LIMIT_DEF 7u
