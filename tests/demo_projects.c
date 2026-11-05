@@ -14,8 +14,11 @@
  *   build/host/demo_projects levels [SECS]     each track alone: its level, to balance a demo by
  *   build/host/demo_projects video OUTDIR      the demo video's audio, screens and captions (tools/demo_video.py)
  *   build/host/demo_projects log N SECS        demo N's notes as CSV (time, track, note, velocity)
+ *   build/host/demo_projects form N SECS       demo N's long form: the CHAIN's sections, the tracks ENTRIES takes out, the
+ *                                              piece's progress, the notes in each (the 3.3 demos)
  * Checks per demo: the record saves, reads back the same, restores and loads with every generator, cord and sound;
- * each track plays notes; no sample at full scale; the voices stay inside the budget. */
+ * each track plays notes (a demo with a planned PIECE: over DM_PIECE_SECS, as it layers in); no sample at full scale;
+ * the voices stay inside the budget. */
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -443,11 +446,390 @@ static void demo_dub(void)
     cord(3, CS_OCHD3, 3, CD_PAN, 3, 35, 0, 0);        /* T4 SWARM 3 -> T4 PAN */
 }
 
+/* ---------------------------------------------- 3.3's long-form demos --- */
+/* Five more, each built round the long form: the CHAIN (one FORM for the project, KEY B / KEY C), ENTRIES (tracks
+ * dropping out and coming back on its phrase lines, by ROLE) and the PIECE (a LENGTH and the SHAPE it takes). */
+enum { FC_OFF, FC_AB, FC_ABAC, FC_ABCB, FC_AABA, FC_ABCA, FC_AABC };   /* (pid.c TX_N_FORM) */
+enum { PH_4, PH_8, PH_16 };                                            /* (TX_N_PHRASE) */
+enum { RO_AUTO, RO_BASS, RO_RHYTHM, RO_HARMONY, RO_MELODY, RO_ANCHOR }; /* (entries.c ET_*) */
+enum { SH_ARCH, SH_RISE, SH_FALL, SH_PLATEAU, SH_VALLEY, SH_WAVES, SH_BUILDS, SH_STEPS };   /* (planner.c PL_*) */
+enum { END_STOP, END_LOOP, END_NEW, END_FREE };
+enum { LEN_8 = 7, LEN_10 = 8, LEN_12 = 9, LEN_15 = 10, LEN_20 = 11, LEN_30 = 13 };   /* (planner.c PL_MIN: minutes) */
+enum { SCL_PEN = 5, SCL_PHRY = 8 };
+enum { FX_ORGAN = 6, FX_SOLID_BASS = 10, FX_CLAVINET = 13, FX_DRAWBARS = 14, FX_SYNC_LEAD = 17, FX_HARP = 18,
+       FX_SAW_BASS = 22, FX_KOTO_WARM = 38 };
+enum { TR_ARP_LEAD = 1, TR_STRING_MACH = 6, TR_SOFT_PAD = 8, TR_SOFT_LEAD = 10, TR_FIFTH_DRONE = 14 };
+enum { OR_GLASS_PAD = 2, OR_KEYS = 11, OR_DRONE = 14, OR_SEQ_BLIP = 20 };
+/* GLO > CHAIN: FORM, PHRASE, WANDER, each place's repeats; KEY B / KEY C in semitones */
+static void chain_set(uint32_t form, uint32_t phrase, int32_t wander, const uint8_t rep[4], int32_t key_b, int32_t key_c)
+{
+    tx(0, TX_FC_FORM, (int32_t)form); tx(0, TX_FC_PHRASE, (int32_t)phrase); tx(0, TX_FC_WANDER, wander);
+    for (uint32_t i = 0; i < 4u; i++) tx(0, TX_FC_REP1 + i, rep[i]);
+    tx(0, TX_FC_KEYB, key_b); tx(0, TX_FC_KEYC, key_c);
+}
+/* GLO > ENTRIES: ENTRIES, DWELL, STYLE (0 CUT, 1 FADE), FADE bars; each track's ROLE */
+static void entries_set(int32_t amount, int32_t dwell, int32_t style, int32_t fade, const uint8_t role[4])
+{
+    tx(0, TX_ET_AMOUNT, amount); tx(0, TX_ET_DWELL, dwell); tx(0, TX_ET_STYLE, style); tx(0, TX_ET_FADE, fade);
+    for (uint32_t k = 0; k < 4u; k++) tx(k, TX_ET_ROLE, role[k]);
+}
+/* GLO > PIECE: LENGTH, SHAPE, PEAK (ARCH .. VALLEY) or COUNT (WAVES .. STEPS), END */
+static void piece_set(int32_t length, int32_t shape, int32_t peak, int32_t count, int32_t end)
+{
+    tx(0, TX_PL_LENGTH, length); tx(0, TX_PL_SHAPE, shape); tx(0, TX_PL_PEAK, peak); tx(0, TX_PL_COUNT, count);
+    tx(0, TX_PL_END, end);
+}
+/* a generator track's part in the CHAIN: how new its B and C are (CONTRAST), how its returns vary (DEVELOP), SKIP */
+static void sections(uint32_t tr, int32_t contrast, int32_t develop, int32_t skip)
+{
+    tx(tr, TX_FM_CONTRAST, contrast); tx(tr, TX_FM_DEVELOP, develop); tx(tr, TX_FC_SKIP, skip);
+}
+
+/* EMBER FIELD: the drone. A low fifth that never moves (the CHAIN set OWN on it, an ANCHOR), an ORACLE drone above it
+ * whose MORPH line shifts by section, a tanpura-like cycle of plucks written in STEP, and a breathy flute on MARKOV
+ * that is the piece's voice: in A it keeps to a few notes, B and C wander further (CONTRAST), and each return of A
+ * comes back a little changed (DEVELOP). AABA in 16-bar phrases; the piece is 20 minutes on a PLATEAU, then plays
+ * again (END LOOP). E phrygian, 60 BPM. */
+static void demo_ember(void)
+{
+    song.g[G_BPM] = 60;
+    sound(0, ENGI_TRIO, TR_FIFTH_DRONE);
+    sound(1, ENGI_ORACLE, OR_DRONE);
+    sound(2, ENGI_FM6, FX_KOTO_WARM);
+    sound(3, ENGI_TRIO, TR_BREATH_FLUTE);
+    scale(4, SCL_PHRY, 0);
+    sends(122, 110, 60, 50);                          /* a long hall; the echo a little */
+
+    /* T1: the fifth, held: CHORD DRONE, HOLD, POW, an octave down, breathing slowly; OWN: the CHAIN leaves it be */
+    trk[0].p[P_CHRD] = 9;                             /* POW */
+    gen(0, TESS_ENG_CHORD, 7);
+    tx(0, TX_CH_PROG, GEN_CH_DRONE); tx(0, TX_CH_BARS, 3); tx(0, TX_CH_HIT, GEN_CH_HOLD);
+    tx(0, TX_CH_OCT, -1); tx(0, TX_CH_BREATH, 45);
+    tx(0, TX_FC_FOLLOW, 1);                           /* OWN */
+    mixer(0, 92, 0, 70, 0);
+
+    /* T2: ORACLE DRONE on MORPH in whole notes, ringing to the next: a slow line inside the drone, new in B and C */
+    trk[1].p[P_SDIV] = DIV_1;
+    gen(1, TESS_ENG_MORPH, 29);
+    tx(1, TX_MRP_POS, 40); tx(1, TX_NL_MODE, 2); tx(1, TX_TW_DROP, 25);
+    trk[1].p[P_VOICE] = 1;                            /* MONO: one ORACLE voice, gliding on */
+    sections(1, 45, 25, 20);
+    mixer(1, 78, -30, 100, 10);
+
+    /* T3: STEP, a tanpura's cycle in quarter notes (B, E', E', E, a beat's rest), the first pluck stronger */
+    {
+        static const uint8_t CYC[8] = {47, 52, 52, 40, 0, 47, 52, 40};
+        for (uint32_t i = 0; i < 8u; i++) step_note(2, i, CYC[i], i == 0u || i == 5u ? 96 : 70);
+        trk[2].p[P_SLEN] = 8;
+    }
+    tx(2, TX_MODE, TESS_ENG_OFF);
+    trk[2].p[P_SDIV] = DIV_4;
+    tx(2, TX_SUB_HUMAN, 15);
+    mixer(2, 84, 30, 80, 20);
+
+    /* T4: the flute, MARKOV in quarter notes, sparse, leaps rare; the CHAIN's B and C go further */
+    trk[3].p[P_SDIV] = DIV_4;
+    gen(3, TESS_ENG_MARKOV, 83);
+    tx(3, TX_MKV_LEAP, 12); tx(3, TX_MKV_DENS, 35); tx(3, TX_MKV_SPAN, 1);
+    tx(3, TX_NL_MODE, 2); tx(3, TX_TW_HUMAN, 40); tx(3, TX_TW_SHIFT, 12);
+    trk[3].p[P_VOICE] = 1;                            /* MONO: a flute plays one note */
+    sections(3, 70, 30, 0);
+    mixer(3, 86, 15, 110, 50);
+
+    {
+        static const uint8_t REP[4] = {1, 1, 1, 1}, ROLE[4] = {RO_ANCHOR, RO_HARMONY, RO_RHYTHM, RO_MELODY};
+        chain_set(FC_AABA, PH_16, 20, REP, 0, 0);
+        entries_set(45, 2, 1, 4, ROLE);
+        piece_set(LEN_20, SH_PLATEAU, 50, 3, END_LOOP);
+    }
+    tx(0, TX_EN_ARC, 30);
+    cord(0, CS_TORPOR, 1, CD_E1, 1, 35, 0, 0);        /* T2 TIDE 1 -> T2 CUT: the drone darkens and opens over minutes */
+    cord(1, CS_DRIFT, 0, CD_PAN, 0, 20, 0, 0);        /* T1 DRIFT -> T1 PAN */
+    cord(2, CS_OCHD1, 3, CD_FX_SEND, 3, 25, 0, 0);    /* T4 SWARM 1 -> T4 FX SEND: the flute nearer and further */
+}
+
+/* NIGHT FERRY: the second ambient dub, after LOW HARBOUR but its own: G minor at 76 BPM, a rockers beat on the 808
+ * (kick on one and three), an organ skank from EUCLID, a bass line written in STEP that the CHAIN moves to the fourth
+ * in B (KEY B +5) and down a tone in C (KEY C -2), as a dub's verse goes to its IV and bVII; a soft lead on TURING.
+ * ENTRIES at 60, CUT: the mixer moves of a dub, tracks dropping out and slamming back on the phrase lines, with the
+ * echo filling what is left. ABAC in 8-bar phrases, an 8-minute piece in three WAVES, then a new one (END NEW). */
+static void demo_ferry(void)
+{
+    song.g[G_BPM] = 76;
+    sound(0, ENGI_FM6, FX_DRAWBARS);
+    sound(1, ENGI_FM6, FX_SOLID_BASS);
+    sound(2, ENGI_DRUM, DK_808_KIT);
+    sound(3, ENGI_TRIO, TR_SOFT_LEAD);
+    scale(7, SCL_MIN, 0);
+    sends(112, 95, 96, 110);                          /* a room; the ECHO long, its feedback high */
+
+    /* T1: the skank, EUCLID 8 / 2 turned 2: the offbeats of beats two and four, each a DIA3 chord, short */
+    trk[0].p[P_CHRD] = 1;                             /* DIA3 */
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_EUCLID, 13);
+    tx(0, TX_EUC_STEPS, 8); tx(0, TX_EUC_PULSES, 2); tx(0, TX_EUC_ROT, 2);
+    tx(0, TX_NL_MODE, 1); tx(0, TX_NL_LEN, 1);        /* FIXED, 1/16: a chop */
+    tx(0, TX_TW_HUMAN, 15);
+    sections(0, 20, 0, 0);
+    mixer(0, 108, -20, 40, 85);
+
+    /* T2: STEP, a two-bar bass line in eighths (G, Bb, D, F and rests): the CHAIN's keys move it */
+    {
+        static const uint8_t LINE[16] = {43, 0, 0, 43, 46, 0, 50, 0, 43, 0, 0, 41, 0, 43, 46, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_note(1, i, LINE[i], i % 4u ? 88 : 104);
+        trk[1].p[P_SLEN] = 16;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF);
+    trk[1].p[P_SDIV] = DIV_8;
+    mixer(1, 116, 0, 10, 0);
+
+    /* T3: 808 STEP, rockers: kick on one and three, rim on two and four, hats on the offbeats now and then
+     * (conditions); a pickup of toms on the fourth bar, a clap before beat four on FILL (SWARM 5 holds it now and then) */
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_RS, 0, L_CH, 0, L_BD, 0, L_CH, 0, L_RS, L_TM, L_CH, L_TM};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(2, i, L[i], i % 8u == 0u ? 112 : 78);
+        step_set_cond(&trk[2].step[6], SC_1_2);
+        step_set_cond(&trk[2].step[10], SC_2_4);
+        step_set_cond(&trk[2].step[13], SC_4_4);
+        step_set_cond(&trk[2].step[15], SC_4_4);
+        step_hits(2, 11, L_CP, 90);
+        step_set_cond(&trk[2].step[11], SC_FILL);
+        trk[2].p[P_SLEN] = 16;
+    }
+    tx(2, TX_MODE, TESS_ENG_OFF);
+    trk[2].p[P_SDIV] = DIV_16;
+    tx(2, TX_SUB_HUMAN, 10);
+    mixer(2, 114, 5, 30, 55);
+
+    /* T4: the lead, TURING over 8 steps in eighths, mostly locked, many notes dropped; new phrases in B and C */
+    trk[3].p[P_SDIV] = DIV_8;
+    gen(3, TESS_ENG_TURING, 71);
+    tx(3, TX_TUR_LEN, 8); tx(3, TX_TUR_PROB, 8); tx(3, TX_TUR_SPAN, 1);
+    tx(3, TX_TW_DROP, 55); tx(3, TX_TW_HUMAN, 30);
+    sections(3, 60, 30, 25);
+    mixer(3, 100, 25, 70, 110);
+
+    {
+        static const uint8_t REP[4] = {2, 1, 1, 1}, ROLE[4] = {RO_HARMONY, RO_BASS, RO_RHYTHM, RO_MELODY};
+        chain_set(FC_ABAC, PH_8, 15, REP, 5, -2);
+        entries_set(60, 1, 0, 1, ROLE);
+        piece_set(LEN_8, SH_WAVES, 50, 3, END_NEW);
+    }
+    tx(0, TX_EN_ARC, 35);
+    cord(0, CS_DRIFT, 0, CD_SF2_RATE, 0, 10, 0, 0);   /* T1 DRIFT -> SF2 RTE: the echo's time bends */
+    cord(1, CS_INERTIA, 0, CD_SF2_CHAR, 0, 25, 0, 0); /* T1 TIDE 2 -> SF2 CHR: the echo's feedback swells and settles */
+    cord(2, CS_OCHD5, 2, CD_FILL, 0, 100, 60, CU_GATE);   /* T3 SWARM 5 -> FILL: the clap now and then */
+    cord(3, CS_APATHY, 3, CD_FX_SEND2, 3, 30, 0, CU_UNI); /* T4 TIDE 3 -> T4 SEND 2: the lead deeper into the echo */
+}
+
+/* TIN ROOF: drums with variation. The 808 on ATLAS (kick, snare, hats) with its X and Y moved by SWARM, so the
+ * pattern changes under you; each CHAIN section a pattern of its own (CONTRAST), a return varied (DEVELOP); a 909
+ * STEP percussion part of rims, toms and cowbell with conditions and ratchets, and FILL from SWARM; a fat bass on
+ * EUCLID and a clavinet on POLY, both moved to D in B (KEY B +5) and G in C (KEY C -2). A mixolydian, 108 BPM; ABAC in
+ * 8-bar phrases (A twice), WANDER; a 10-minute piece in three BUILDS, then a new one. */
+static void demo_roof(void)
+{
+    song.g[G_BPM] = 108;
+    sound(0, ENGI_DRUM, DK_808_KIT);
+    sound(1, ENGI_DRUM, DK_909_KIT);
+    sound(2, ENGI_TRIO, TR_FAT_BASS);
+    sound(3, ENGI_FM6, FX_CLAVINET);
+    scale(9, 4, 0);                                   /* MIX */
+    sends(70, 60, 85, 40);                            /* a short room, a short echo */
+
+    /* T1: ATLAS, the main kit: X and Y, the hats busier than the kick */
+    trk[0].p[P_SDIV] = DIV_16;
+    gen(0, TESS_ENG_GRIDS, 27);
+    tx(0, TX_GRD_X, 150); tx(0, TX_GRD_Y, 110); tx(0, TX_GRD_DENS, 55);
+    tx(0, TX_GRD_KICK, 90); tx(0, TX_GRD_SNR, 85); tx(0, TX_GRD_HAT, 70);
+    tx(0, TX_SUB_HUMAN, 6);
+    sections(0, 65, 35, 0);
+    mixer(0, 104, 0, 15, 0);
+
+    /* T2: 909 STEP percussion, 2 bars: rims and cowbell, a tom answer; conditions make bars differ, ratchets roll */
+    {
+        static const uint8_t L[32] = {0, 0, L_RS, 0, 0, L_CB, 0, L_RS, 0, 0, L_RS, 0, L_TM, 0, L_TM, 0,
+                                      0, L_RS, 0, 0, L_CB, 0, L_RS, 0, 0, 0, L_RS, L_CB, 0, L_TM, L_TM, L_TM};
+        for (uint32_t i = 0; i < 32u; i++) step_hits(1, i, L[i], i % 4u == 2u ? 92 : 72);
+        step_set_cond(&trk[1].step[5], SC_1_2);
+        step_set_cond(&trk[1].step[12], SC_2_4);
+        step_set_cond(&trk[1].step[14], SC_3_4);
+        step_set_cond(&trk[1].step[27], SC_2_2);
+        step_set_cond(&trk[1].step[29], SC_FILL);
+        step_set_cond(&trk[1].step[30], SC_FILL);
+        step_set_cond(&trk[1].step[31], SC_4_4);
+        trk[1].p[P_SLEN] = 32;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF);
+    trk[1].p[P_SDIV] = DIV_16;
+    tx(1, TX_SUB_RATCH, 1); tx(1, TX_SUB_CHANCE, 18);  /* x2 now and then: a roll */
+    tx(1, TX_SUB_HUMAN, 10);
+    mixer(1, 88, 30, 25, 30);
+
+    /* T3: the bass, EUCLID 16 / 5 in sixteenths, an octave down; each section its own turn of it */
+    trk[2].p[P_SDIV] = DIV_16;
+    gen(2, TESS_ENG_EUCLID, 44);
+    tx(2, TX_EUC_STEPS, 16); tx(2, TX_EUC_PULSES, 5); tx(2, TX_EUC_ROT, 0);
+    tx(2, TX_TW_SHIFT, -12); tx(2, TX_NL_MODE, 1); tx(2, TX_NL_LEN, 1);
+    sections(2, 45, 20, 0);
+    mixer(2, 96, 0, 5, 0);
+
+    /* T4: the clavinet, POLY: four rhythms over the same notes, 3 against 4; SKIP holds it back a phrase */
+    trk[3].p[P_SDIV] = DIV_16;
+    gen(3, TESS_ENG_POLY, 52);
+    tx(3, TX_POL_DIV1, 3); tx(3, TX_POL_DIV2, 4); tx(3, TX_POL_DIV3, 6); tx(3, TX_POL_DIV4, 0); tx(3, TX_POL_SPAN, 1);
+    tx(3, TX_TW_DROP, 40); tx(3, TX_TW_HUMAN, 25);
+    sections(3, 60, 25, 30);
+    mixer(3, 80, -25, 30, 45);
+
+    {
+        static const uint8_t REP[4] = {2, 1, 1, 1}, ROLE[4] = {RO_ANCHOR, RO_RHYTHM, RO_BASS, RO_MELODY};
+        chain_set(FC_ABAC, PH_8, 30, REP, 5, -2);
+        entries_set(55, 2, 0, 1, ROLE);
+        piece_set(LEN_10, SH_BUILDS, 50, 3, END_NEW);
+    }
+    cord(0, CS_OCHD2, 0, CD_GRD_X, 0, 30, 0, 0);      /* T1 SWARM 2 -> T1 X: the kit's pattern moves */
+    cord(1, CS_OCHD3, 0, CD_GRD_Y, 0, 25, 0, 0);      /* T1 SWARM 3 -> T1 Y */
+    cord(2, CS_OCHD6, 1, CD_FILL, 0, 100, 70, CU_GATE);   /* T2 SWARM 6 -> FILL: the tom fill now and then */
+    cord(3, CS_ENERGY, 0, CD_GRD_DENS, 0, 25, 0, 0);  /* ENERGY -> T1 DENS: busier as the piece builds */
+    cord(4, CS_DRIFT, 3, CD_CUTOFF, 3, 20, 0, 0);     /* T4 DRIFT -> T4 CUT */
+}
+
+/* COLD ORBIT: a sequencer piece in the Berlin way. A TURING line of sixteenths on an ORACLE blip whose filter a TIDE
+ * sweeps over minutes, a saw bass on EUCLID under it, string-machine chords from CHORD and a sync lead on AWAKE; the
+ * CHAIN moves it all to C minor in B (KEY B -2) and F minor in C (KEY C +3), and each section is a new sequence.
+ * ENTRIES at 70 with FADE: layers drift in and out. D minor, 120 BPM; ABCA in 8-bar phrases (A twice); a 15-minute
+ * ARCH, then it stops. */
+static void demo_orbit(void)
+{
+    song.g[G_BPM] = 120;
+    sound(0, ENGI_ORACLE, OR_SEQ_BLIP);
+    sound(1, ENGI_FM6, FX_SAW_BASS);
+    sound(2, ENGI_TRIO, TR_STRING_MACH);
+    sound(3, ENGI_FM6, FX_SYNC_LEAD);
+    scale(2, SCL_MIN, 0);
+    sends(100, 85, 116, 70);                          /* the ECHO in time: an eighth note and a half */
+
+    /* T1: TURING, 16 steps of sixteenths, all but locked: the sequence; a new one each section */
+    trk[0].p[P_SDIV] = DIV_16;
+    gen(0, TESS_ENG_TURING, 90);
+    tx(0, TX_TUR_LEN, 16); tx(0, TX_TUR_PROB, 4); tx(0, TX_TUR_SPAN, 2);
+    trk[0].p[P_VOICE] = 1;                            /* MONO: a sequencer's one voice */
+    tx(0, TX_NL_MODE, 1); tx(0, TX_NL_LEN, 1);
+    sections(0, 55, 20, 0);
+    mixer(0, 102, -15, 50, 70);
+
+    /* T2: the bass, EUCLID 16 / 7 in eighths, two octaves under the sequence */
+    trk[1].p[P_SDIV] = DIV_8;
+    gen(1, TESS_ENG_EUCLID, 17);
+    tx(1, TX_EUC_STEPS, 16); tx(1, TX_EUC_PULSES, 7); tx(1, TX_EUC_ROT, 1);
+    tx(1, TX_TW_SHIFT, -24); tx(1, TX_NL_MODE, 1); tx(1, TX_NL_LEN, 2);
+    trk[1].p[P_VOICE] = 1;                            /* MONO */
+    sections(1, 35, 10, 0);
+    mixer(1, 104, 0, 10, 0);
+
+    /* T3: CHORD, the minor's circle held 4 bars each, OPEN: the string machine */
+    trk[2].p[P_CHRD] = 1;                             /* DIA3 */
+    trk[2].p[P_VOIC] = 1;                             /* OPEN */
+    gen(2, TESS_ENG_CHORD, 5);
+    tx(2, TX_CH_PROG, GEN_CH_CIRCLE); tx(2, TX_CH_BARS, 3); tx(2, TX_CH_HIT, GEN_CH_HOLD); tx(2, TX_CH_OCT, -1);
+    trk[2].p[P_REL] = 50;                             /* (ENV: a shorter release, so a chord change never takes a voice) */
+    sections(2, 30, 0, 0);
+    mixer(2, 88, 20, 100, 20);
+
+    /* T4: the lead, AWAKE in quarter notes, sparse, an octave up */
+    trk[3].p[P_SDIV] = DIV_4;
+    gen(3, TESS_ENG_AWAKE, 66);
+    tx(3, TX_AWK_LENA, 6); tx(3, TX_AWK_LENB, 5); tx(3, TX_AWK_PROB, 40);
+    tx(3, TX_NL_MODE, 2); tx(3, TX_TW_SHIFT, 12); tx(3, TX_TW_DROP, 30);
+    trk[3].p[P_VOICE] = 1;                            /* MONO */
+    sections(3, 70, 30, 30);
+    mixer(3, 92, 30, 80, 80);
+
+    {
+        static const uint8_t REP[4] = {2, 1, 1, 1}, ROLE[4] = {RO_ANCHOR, RO_BASS, RO_HARMONY, RO_MELODY};
+        chain_set(FC_ABCA, PH_8, 0, REP, -2, 3);
+        entries_set(70, 2, 1, 2, ROLE);
+        piece_set(LEN_15, SH_ARCH, 60, 3, END_STOP);
+    }
+    cord(0, CS_INERTIA, 0, CD_E1, 0, 45, 0, 0);       /* T1 TIDE 2 -> T1 CUT: the sweep */
+    cord(1, CS_OCHD4, 0, CD_E2, 0, 25, 0, 0);         /* T1 SWARM 4 -> T1 RES */
+    cord(2, CS_ENERGY, 0, CD_FX_SEND2, 0, 30, 0, 0);  /* ENERGY -> T1 SEND 2: more echo near the top */
+    cord(3, CS_DRIFT, 2, CD_PAN, 2, 30, 0, 0);        /* T3 DRIFT -> T3 PAN */
+}
+
+/* PAPER KITES: loops of different lengths, after Eno's airport music. Two short figures written in STEP, a harp in 11
+ * eighths and ORACLE keys in 13, so they meet differently each time round; a pad on MORPH and a CONSTELLATION of
+ * high notes catching a few stars. The CHAIN carries them all to B flat (KEY B +5) and D (KEY C -3) and home, with
+ * WANDER choosing the way; ENTRIES at 50, FADE over 4 bars; a 30-minute piece in four WAVES, played again. F major
+ * pentatonic, 66 BPM; ABCA in 16-bar phrases. */
+static void demo_kites(void)
+{
+    song.g[G_BPM] = 66;
+    sound(0, ENGI_FM6, FX_HARP);
+    sound(1, ENGI_ORACLE, OR_KEYS);
+    sound(2, ENGI_TRIO, TR_SOFT_PAD);
+    sound(3, ENGI_ORACLE, OR_GLASS_PAD);
+    scale(5, SCL_PEN, 0);
+    sends(118, 105, 80, 60);
+
+    /* T1: STEP, 11 eighths: three notes (F, A, C') */
+    {
+        static const uint8_t FIG[11] = {65, 0, 0, 69, 0, 0, 0, 72, 0, 0, 0};
+        for (uint32_t i = 0; i < 11u; i++) step_note(0, i, FIG[i], 80);
+        trk[0].p[P_SLEN] = 11;
+    }
+    tx(0, TX_MODE, TESS_ENG_OFF);
+    trk[0].p[P_SDIV] = DIV_8;
+    mixer(0, 108, -35, 100, 40);
+
+    /* T2: STEP, 13 eighths: two notes (G, D') a ninth apart */
+    {
+        static const uint8_t FIG[13] = {0, 0, 67, 0, 0, 0, 0, 0, 74, 0, 0, 0, 0};
+        for (uint32_t i = 0; i < 13u; i++) step_note(1, i, FIG[i], 72);
+        trk[1].p[P_SLEN] = 13;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF);
+    trk[1].p[P_SDIV] = DIV_8;
+    mixer(1, 100, 35, 110, 50);
+
+    /* T3: the pad, MORPH in whole notes, an octave down, ringing; its sections new in B and C */
+    trk[2].p[P_SDIV] = DIV_1;
+    gen(2, TESS_ENG_MORPH, 33);
+    tx(2, TX_MRP_POS, 70); tx(2, TX_NL_MODE, 2); tx(2, TX_TW_SHIFT, -12);
+    sections(2, 50, 25, 0);
+    mixer(2, 90, 0, 100, 0);
+
+    /* T4: CONSTELLATION in quarter notes, few stars, high: a glass pad caught now and then */
+    trk[3].p[P_SDIV] = DIV_4;
+    gen(3, TESS_ENG_CONSTEL, 48);
+    tx(3, TX_CS_DENS, 25); tx(3, TX_CS_Y, 9); tx(3, TX_CS_LEN, 12);
+    tx(3, TX_NL_MODE, 2); tx(3, TX_TW_DROP, 40);
+    sections(3, 60, 30, 20);
+    mixer(3, 86, 10, 120, 60);
+
+    {
+        static const uint8_t REP[4] = {1, 1, 1, 1}, ROLE[4] = {RO_ANCHOR, RO_MELODY, RO_HARMONY, RO_MELODY};
+        chain_set(FC_ABCA, PH_16, 40, REP, 5, -3);
+        entries_set(50, 3, 1, 4, ROLE);
+        piece_set(LEN_30, SH_WAVES, 50, 4, END_LOOP);
+    }
+    tx(0, TX_EN_ARC, 25);
+    cord(0, CS_TORPOR, 2, CD_CUTOFF, 2, 30, 0, 0);    /* T3 TIDE 1 -> T3 CUT: the pad slowly opens and closes */
+    cord(1, CS_DRIFT, 1, CD_PAN, 1, 25, 0, 0);        /* T2 DRIFT -> T2 PAN */
+    cord(2, CS_OCHD2, 0, CD_FX_SEND, 0, 20, 0, 0);    /* T1 SWARM 2 -> T1 FX SEND */
+}
+
 typedef struct { const char *name, *file; void (*make)(void); } demo_t;
 static const demo_t DEMO_LIST[] = {
     {"STILL TIDE", "still-tide", demo_still},
     {"KOTO GARDEN", "koto-garden", demo_garden},
     {"LOW HARBOUR", "low-harbour", demo_dub},
+    {"EMBER FIELD", "ember-field", demo_ember},
+    {"NIGHT FERRY", "night-ferry", demo_ferry},
+    {"TIN ROOF", "tin-roof", demo_roof},
+    {"COLD ORBIT", "cold-orbit", demo_orbit},
+    {"PAPER KITES", "paper-kites", demo_kites},
 };
 
 /* ------------------------------------------------------- the test projects --- */
@@ -629,6 +1011,9 @@ static dm_play_t play(uint32_t secs, const char *wav)
     return r;
 }
 
+/* a demo with a planned PIECE starts sparse and layers in (Entries, by its SHAPE): its checks play this long, so every
+ * track has come in */
+#define DM_PIECE_SECS 600u
 static int report(const char *name, const dm_play_t *p)
 {
     char what[160];
@@ -704,6 +1089,10 @@ static int make(const char *dir, uint32_t secs)
         v_on = v_root && v_want == (int)d;              /* (video: the demo filmed plays long, the others as the tests do) */
         a = play(v_root ? (v_on ? V_DEMO_SECS[d] : 20u) : secs, path);
         v_on = 0;
+        if (tessera.pl_length && !v_root) {           /* (a planned piece layers in: its tracks come in over minutes) */
+            restore_load(rec, len, name);
+            a = play(DM_PIECE_SECS, 0);
+        }
         bad += report(DEMOS[d].name, &a);
     }
     return bad;
@@ -722,7 +1111,7 @@ static int check_dir(const char *dir)
         fclose(f);
         snprintf(what, sizeof what, "%s: restores through the backup page and loads", path);
         bad += check(what, restore_load(rec, len, name) == 0 && !strcmp(name, DEMOS[d].name));
-        bad += report(DEMOS[d].name, (dm_play_t[]){play(20, 0)});
+        bad += report(DEMOS[d].name, (dm_play_t[]){play(tessera.pl_length ? DM_PIECE_SECS : 20u, 0)});
     }
     /* the web editor's Demo projects (web/fm1backup.js putProject): each demo's PUT alone into a slot of its own (B,
      * C, D) on a device that stays on: the slot list names them at once, and each loads from it */
@@ -750,6 +1139,48 @@ static int check_dir(const char *dir)
     }
     bad += check("slot A left empty", !project_used(0));
     return bad;
+}
+
+
+/* form N SECS: demo N's long form as it plays: a line each time the CHAIN's place or the tracks out change (time, the
+ * letter, the tracks out by ENTRIES, where the piece is), with each track's notes since the line before */
+static void form_log(uint32_t d, uint32_t secs)
+{
+    uint32_t f, i, last_pos = 99, last_out = 99, step_age[NTRK], n0[NTRK] = {0};
+    char was = '?';
+    power_on();
+    DEMOS[d].make();
+    memset(dm_notes, 0, sizeof dm_notes);
+    for (i = 0; i < NTRK; i++) step_age[i] = 0;
+    transport_req = 1;
+    printf("%s\n  time  sect  out   piece  | notes T1 T2 T3 T4 since the line before\n", DEMOS[d].name);
+    for (f = 0; f < secs * FS; f += CTL) {
+        int32_t o[2 * CTL];
+        uint8_t seq[4], role[4];
+        uint32_t pos, left, warn, out, x = 0, sl = 0;
+        dm_f = f;
+        mix_block(o, CTL);
+        fm1_ms = f / (FS / 1000u);
+        for (i = 0; i < NTRK; i++)
+            if (i >= TESSERA_TRACKS || tessera.mode[i] == TESS_ENG_OFF)
+                for (uint32_t k = 0; k < NVOICE; k++)
+                    if (trk[i].v[k].age > step_age[i]) step_age[i] = trk[i].v[k].age, dm_notes[i]++;
+        if (f % (FS / 10u) >= CTL) continue;
+        uint32_t n = tessera_chain_get(seq, &pos, &left);
+        out = tessera_entries_get(&warn, role);
+        int planned = tessera_piece_get(&x, &sl);
+        if (pos != last_pos || out != last_out) {
+            char now = n ? (char)('A' + seq[pos % 4u]) : '-';
+            printf("%6.1f  %c%c    %c%c%c%c  %5.1f%%  |       %3u %3u %3u %3u\n", (double)f / FS, now, now != was ? '*' : ' ',
+                   out & 1 ? '1' : '.', out & 2 ? '2' : '.', out & 4 ? '3' : '.', out & 8 ? '4' : '.',
+                   planned ? x * 100.0 / 65536.0 : -1.0, dm_notes[0] - n0[0], dm_notes[1] - n0[1], dm_notes[2] - n0[2],
+                   dm_notes[3] - n0[3]);
+            memcpy(n0, dm_notes, sizeof n0);
+            last_pos = pos; last_out = out; was = now;
+        }
+    }
+    printf("%6.1f  end: notes T1 %u T2 %u T3 %u T4 %u, %s\n", (double)secs, dm_notes[0], dm_notes[1], dm_notes[2], dm_notes[3],
+           song.playing ? "still playing" : "stopped");
 }
 
 /* ------------------------------------------------- the backup page's file --- */
@@ -1276,7 +1707,8 @@ static int video(const char *out)
     if (!(v_cap = fopen(cap, "w"))) return 1;
     v_root = out;
     double t = 0;
-    for (int d = 0; d < (int)NDEMO; d++) {              /* the demos, one make each, each in a fresh process as the
+    for (int d = 0; d < (int)(sizeof V_DEMO_SECS / sizeof V_DEMO_SECS[0]); d++) {   /* the 3.0 demos (the video's three),
+                                                         * one make each, each in a fresh process as the
                                                          * tests' run is (a load keeps a little of what played before,
                                                          * FALL's leaves, and power_on does not clear it): the one
                                                          * filmed plays V_DEMO_SECS, the others 20 s as in the tests */
@@ -1347,6 +1779,7 @@ int main(int argc, char **argv)
         if (getenv("DM_DEBUG")) for (uint32_t k = 0; k < NTRK; k++) fprintf(stderr, "T%u scl %d root %d qnt %d eng %d\n", k + 1u, trk[k].p[P_SCALE], trk[k].p[P_ROOT], trk[k].p[P_QUANT], trk[k].engine);
         play((uint32_t)atoi(argv[3]), 0); return 0;
     }
+    else if (argc >= 4 && !strcmp(argv[1], "form")) { form_log((uint32_t)atoi(argv[2]) % NDEMO, (uint32_t)atoi(argv[3])); return 0; }
     else if (argc >= 3 && !strcmp(argv[1], "archive")) {   /* archive OUT.json: a new device's whole backup */
         power_on();
         bad = check("a whole archive written as the backup page writes it", archive_write(argv[2]) == 0);

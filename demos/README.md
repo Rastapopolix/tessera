@@ -1,13 +1,21 @@
-# Tessera 3.0 demo projects
+# Tessera demo projects
 
-Three projects that show what Tessera 3.0 does, each a few minutes of music that keeps changing on its own. Press
-PLAY and leave it, then open the pages named below to see what is moving and turn things.
+Eight projects that show what Tessera does, each music that keeps changing on its own. Press PLAY and leave it, then
+open the pages named below to see what is moving and turn things. The first three came with 3.0; the five after them
+came with 3.3 and are built round the long form: the **CHAIN** (one FORM for the whole project, with **KEY B** and **KEY
+C**), **ENTRIES** (tracks leaving and coming back on its phrase lines) and the **PIECE** (a length and the shape it
+takes). They need Tessera 3.3 or later.
 
 | File | Name on the FM-1 | What it shows |
 |---|---|---|
 | `still-tide.tsp` | STILL TIDE | Ambient: an ORACLE drone with BREATH, GRAVITY, FALL through the FILTER effect, a bass from STEP as seed, ENERGY |
 | `koto-garden.tsp` | KOTO GARDEN | FM koto in HIRA on QUAD, an ORACLE flute in a FORM that develops, a STEP mokugyo with conditions and Accumulate |
 | `low-harbour.tsp` | LOW HARBOUR | Ambient dub: ORACLE chord stabs into a drifting echo, a sub bass, a 909 one drop, RESTS |
+| `ember-field.tsp` | EMBER FIELD | Drone: a fifth that never moves (CHAIN: OWN), a tanpura cycle in STEP, a flute whose AABA sections differ; a 20-minute PIECE |
+| `night-ferry.tsp` | NIGHT FERRY | Ambient dub 2: an 808 rockers beat, an organ skank, a STEP bass the CHAIN moves to the IV and bVII; ENTRIES cuts |
+| `tin-roof.tsp` | TIN ROOF | Drums with variation: ATLAS moved by SWARM and new each section, a 909 part with conditions, ratchets and FILL |
+| `cold-orbit.tsp` | COLD ORBIT | Berlin school: a TURING sequence under a filter sweep, ABCA through three keys, a 15-minute ARCH that stops |
+| `paper-kites.tsp` | PAPER KITES | Loops of 11 and 13 steps meeting differently each time, a CHAIN that WANDERs through three keys; 30 minutes in WAVES |
 
 They are made by the firmware's own code (`tests/demo_projects.c`), which saves each one to a slot, reads it back
 as the backup page does, loads it and plays it; `tests/run_tests.sh` checks that these files still load and play.
@@ -85,6 +93,86 @@ A dorian, 70 BPM. An ambient dub: slow, with room for the echoes.
 - **T4 FM6 FLUTE**, AWAKE in half notes, PROB 35: an answer now and then, into the echo.
 - **ENERGY**: ARC 45, **RESTS 60**. **MODS**: T1 TIDE 2 → T1 FX1 RTE, T1 DRIFT → SF2 RTE (the echo's time bends like a
   tape's), T1 TIDE 3 → T1 SEND 2, T4 SWARM 3 → T4 PAN.
+
+## The 3.3 demos: the long form
+
+Each one sets the three GLO pages of 3.3 (**PIECE**, **CHAIN**, **ENTRIES**). A planned piece begins sparse and layers
+in, so give it a few minutes; the PIECE page shows where it is. In the CHAIN, a generator track that FOLLOWs plays its own
+A, B and C sections (how new B and C are is its FORM CONTRAST; how much a return of A varies, its DEVELOP); a melodic STEP
+track follows only KEY B and KEY C. Drum tracks never change key. `demo_projects form N SECS` prints how demo N unfolds:
+each section, the tracks out, the notes in each.
+
+The editor's Demo projects lists them under the first three, set to **Leave out**: choose a slot for the ones you want.
+With the backup file, name them: `python3 tools/demo_backup.py my-backup.json out.json --slots A,B demos/ember-field.tsp
+demos/tin-roof.tsp`.
+
+## EMBER FIELD
+
+E phrygian, 60 BPM. A drone.
+
+- **T1 TRIO FIFTH DRONE**, CHORD: PROG **DRONE**, HIT HOLD, chord **POW**, OCT −1, BREATH 45. Set **OWN** in the CHAIN
+  (OCT+ held on FORM), so the drone never moves; ROLE **ANCHOR**, so ENTRIES never takes it out.
+- **T2 ORACLE DRONE**, MORPH in whole notes, MONO, ringing on: a slow line inside the drone, new in B (CONTRAST 45).
+- **T3 FM6 KOTO WARM**, STEP: a tanpura's cycle in quarter notes (B, E', E', E, a rest, B, E', E).
+- **T4 TRIO BREATH FLUTE**, MARKOV in quarter notes, sparse (DENS 35), MONO: the voice of the piece. In A it keeps to
+  a few notes; **CONTRAST 70** makes B far from it, and **DEVELOP 30** varies each return of A.
+- **CHAIN** AABA, PHRASE 16 bars, WANDER 20. **ENTRIES** 45, DWELL 2, FADE over 4 bars. **PIECE** 20 minutes,
+  **PLATEAU**, END **LOOP**. ENERGY ARC 30.
+- **MODS**: T2 TIDE 1 → T2 CUT, T1 DRIFT → T1 PAN, T4 SWARM 1 → T4 FX SEND.
+
+## NIGHT FERRY
+
+G minor, 76 BPM. The second ambient dub: its own beat, its own key moves.
+
+- **T1 FM6 DRAWBARS**, EUCLID 8 / 2 turned 2, in eighths, DIA3 chords cut short (LENGTH FIXED 1/16): the skank.
+- **T2 FM6 SOLID BASS**, STEP: a two-bar line in eighths. **KEY B +5** takes it (and the skank and lead) to C minor in
+  B, **KEY C −2** to F in C: a dub's IV and bVII.
+- **T3 808 KIT**, STEP: rockers, the kick on one and three, rims on two and four, hats by **Condition** (1:2, 2:4), a
+  tom pickup on the fourth bar (4:4), a clap on **FILL** that T3's SWARM 5 holds now and then.
+- **T4 TRIO SOFT LEAD**, TURING over 8 steps, DROP 55, most of it into the echo; **SKIP 25** holds its section a phrase
+  now and then.
+- **CHAIN** ABAC (A twice), PHRASE 8, WANDER 15. **ENTRIES 60, CUT**, DWELL 1: tracks drop out and slam back on the
+  phrase lines, as a dub's mix does. **PIECE** 8 minutes in three **WAVES**, END **NEW** (a new piece each time).
+- **MODS**: T1 DRIFT → SF2 RTE (the echo's time bends), T1 TIDE 2 → SF2 CHR (its feedback), T3 SWARM 5 → FILL (a gate),
+  T4 TIDE 3 → T4 SEND 2.
+
+## TIN ROOF
+
+A mixolydian, 108 BPM. Drums that keep changing.
+
+- **T1 808 KIT** on **ATLAS**: X 150, Y 110; T1's SWARM 2 and 3 move X and Y, ENERGY its DENS, and each CHAIN section
+  is a pattern of its own (CONTRAST 65), a return of A a little changed (DEVELOP 35). ROLE ANCHOR.
+- **T2 909 KIT**, STEP, two bars of rims, cowbell and toms: **Conditions** (1:2, 2:4, 3:4, 2:2, 4:4), a tom fill on
+  **FILL** (T2's SWARM 6 holds it now and then), **RATCH x2** at CHANCE 18 for rolls, HUMAN 10 ms.
+- **T3 TRIO FAT BASS**, EUCLID 16 / 5 in sixteenths, an octave down, cut short; **T4 FM6
+  CLAVINET**, POLY (3, 4 and 6 against each other), SKIP 30. Both move with **KEY B +5** and **KEY C −2**.
+- **CHAIN** ABAC (A twice), PHRASE 8, WANDER 30. **ENTRIES** 55, CUT. **PIECE** 10 minutes, **BUILDS** 3, END **NEW**.
+- **MODS**: T1 SWARM 2 → T1 X, T1 SWARM 3 → T1 Y, T2 SWARM 6 → FILL, ENERGY → T1 DENS, T4 DRIFT → T4 CUT.
+
+## COLD ORBIT
+
+D minor, 120 BPM. A sequencer piece in the Berlin way.
+
+- **T1 ORACLE SEQ BLIP**, TURING, 16 steps of sixteenths, PROB 4 (all but locked), MONO; T1's TIDE 2 sweeps its CUT
+  over minutes and SWARM 4 its RES. Each section a new sequence (CONTRAST 55).
+- **T2 FM6 SAW BASS**, EUCLID 16 / 7 in eighths, two octaves down, MONO.
+- **T3 TRIO STRING MACH**, CHORD: the minor **CIRCLE**, 4 bars a chord, OPEN, held.
+- **T4 FM6 SYNC LEAD**, AWAKE in quarter notes, sparse, MONO.
+- **CHAIN** **ABCA** (A twice), PHRASE 8: **KEY B −2** (C minor), **KEY C +3** (F minor). **ENTRIES** 70, FADE over
+  2 bars. **PIECE** 15 minutes, **ARCH** peaking at 60 %, END **STOP**: it layers in, peaks, thins and stops.
+- **MODS**: T1 TIDE 2 → T1 CUT, T1 SWARM 4 → T1 RES, ENERGY → T1 SEND 2, T3 DRIFT → T3 PAN.
+
+## PAPER KITES
+
+F major pentatonic, 66 BPM. Loops of different lengths, after Eno's airport music.
+
+- **T1 FM6 HARP**, STEP: F, A and C' in a loop of **11** eighths. **T2 ORACLE KEYS**, STEP: G and D' in a loop of
+  **13**. They meet differently each time round, and both follow KEY B and KEY C.
+- **T3 TRIO SOFT PAD**, MORPH in whole notes, an octave down, ringing; **T4 ORACLE GLASS PAD**, CONSTELLATION in
+  quarter notes catching a few stars. Both FOLLOW the CHAIN.
+- **CHAIN** **ABCA**, PHRASE 16, **WANDER 40** (the way through A, B and C is drawn): **KEY B +5** (B flat), **KEY C −3**
+  (D). **ENTRIES** 50, DWELL 3, FADE over 4 bars. **PIECE** 30 minutes in four **WAVES**, END **LOOP**.
+- **MODS**: T3 TIDE 1 → T3 CUT, T2 DRIFT → T2 PAN, T1 SWARM 2 → T1 FX SEND.
 
 ## Making them again
 
