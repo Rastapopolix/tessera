@@ -35,6 +35,12 @@ and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
 - [Play it in, layer by layer (REC)](#play-it-in-layer-by-layer-rec)
 - [Your phrase, answered (ANSWER SOURCE)](#your-phrase-answered-answer-source)
 - [Driving another synth (MIDI OUT)](#driving-another-synth-midi-out)
+- [A piece that plays itself (PIECE, CHAIN and ENTRIES)](#a-piece-that-plays-itself-piece-chain-and-entries)
+- [One knob for a big build (PERF macros)](#one-knob-for-a-big-build-perf-macros)
+- [Drops that land on the bar (MUTES)](#drops-that-land-on-the-bar-mutes)
+- [Your controller's knobs, kept (MIDI LEARN)](#your-controllers-knobs-kept-midi-learn)
+- [An LFO for another synth's filter (mods out as CC)](#an-lfo-for-another-synths-filter-mods-out-as-cc)
+- [A bass that takes a note a bar (FOLLOW HOLD)](#a-bass-that-takes-a-note-a-bar-follow-hold)
 
 **[Tips](#tips)**
 
@@ -351,7 +357,116 @@ never repeats itself note for note.
 
 ---
 
+## A piece that plays itself (PIECE, CHAIN and ENTRIES)
+
+A piece with an intro, a build, a peak and an ending, that plays for half an hour with no hands on it. Three pages work
+together: CHAIN gives the tracks shared sections, ENTRIES brings tracks in and out, and PIECE plans the whole shape.
+
+1. Start from a few generator tracks playing together (the [first patch](#a-first-generative-patch-in-a-minute) is
+   enough): a melody, a pad or chords, and ATLAS drums.
+2. **GLO > CHAIN**: **FORM ABAC**, **PHRASE 8**, **WANDER** about 20 (now and then the next section is chosen rather
+   than read). Tracks whose own FORM is OFF follow it.
+3. On each generator track, **FORM**: **CONTR** about 40, so B and C sound different from A.
+4. **GLO > ENTRIES**: **ENTRIES 50**, **STYLE FADE**. Hold **OCT+** and set the pad's ROLE to **ANCHOR** if it should
+   never leave.
+5. **ENERGY** (on any generator track's SEQ pages): **ARC** about 60, so the shape is heard in how busy and loud the
+   tracks play.
+6. **GLO > PIECE**: **LENGTH 30 min**, **SHAPE ARCH**, **PEAK** about 60 %, **END STOP**. Press **PLAY**.
+
+The piece starts sparse, layers in, peaks a little past the middle, thins and fades out at the end. It comes from the
+tracks' seeds, so PLAY plays it again the same way; set END to **NEW** for a new piece each time (an installation that
+never repeats), or **LOOP** for the same one again. To hear a whole shape quickly before you commit, try LENGTH 5 min
+first.
+
+## One knob for a big build (PERF macros)
+
+A single knob that builds the whole track up: filters open, the reverb grows, the drums get busier and the tempo
+pushes a little.
+
+1. **LFO > MODS**, a free mod: **KNOB 1** (source) to **MACRO 1**, **KNOB 3** (destination) to **T1 CUTOFF**,
+   **KNOB 4** about +60 %.
+2. Another mod from **MACRO 1** to **T1 FX SEND**, about +40 %: more reverb or echo as it builds.
+3. Another from **MACRO 1** to **T4 AT DENS** (an ATLAS drum track), about +40 %: the groove fills in.
+4. One more from **MACRO 1** to **TEMPO**, about +5 %: a slight push (with CLK on INT).
+5. **GLO > PERF**: turn **KNOB 1** up for the build, back down for the breakdown. The page shows how many mods each
+   macro drives.
+
+Give **MACRO 2** the opposite job (negative amounts on levels and cutoffs) for a breakdown on another knob. The macros
+are saved with the project, so the build is there next time.
+
+## Drops that land on the bar (MUTES)
+
+Mute and unmute by hand, and let Tessera put the change on the beat for you.
+
+1. **MENU > MUTES**: **BAR** (or **PHRASE** for bigger moves, on the CHAIN's phrase lines).
+2. While playing, hold **GLO** and press the black key for track 4 (or press it on MIXER). The key blinks quickly: the
+   drums drop out on the next bar line.
+3. Press it again on a later bar to bring them back on the line. Changed your mind before the line? Press it again
+   while it blinks to call it off.
+
+## Your controller's knobs, kept (MIDI LEARN)
+
+Put Tessera's knobs on the knobs of your MIDI controller, once, and keep them through power-off.
+
+1. Hold **HOME** for the menu, go to **MIDI LEARN** and turn **KNOB 2** right (or press **OCT+**). The screen says
+   **LEARN: A KNOB**.
+2. Turn a knob on any page, for example **CUTOFF** on track 1. The screen names it and asks **SEND A CC**.
+3. Move a knob on your controller. The screen confirms it (**CC 21 =** then **T1 CUTOFF**).
+4. Repeat for up to 16 knobs; holding **HOME** for the menu ends learning.
+
+The learned knobs work on any page and from any MIDI channel, and are the device's, not a project's: they stay
+when you load another project and after power-off (they are saved once the music stops). **KNOB 2** left on the
+MIDI LEARN row forgets them all.
+
+## An LFO for another synth's filter (mods out as CC)
+
+Tessera's mods can move an outside synth's settings over USB MIDI: an LFO, a TIDE or a generator's CV becomes a
+control change.
+
+1. **MENU > MIDI OUT**: **KEYS** or **ALL** (anything but OFF).
+2. **GLO > MIDI OUT**: set track 2's channel to the synth's channel. If the track should play nothing itself, hold
+   **OCT-** and set it to SOUND OFF: it becomes a lane of CCs.
+3. **LFO > MODS**, a free mod: source **T2 LFO** (or **T2 TIDE 2** for a slow, uneven sweep), destination **T2 CC**,
+   amount 100 %. Set its CC number to the synth's filter (74 on many synths; the keys for it are in the manual's
+   [CC out](MANUAL.md#mods-the-modulation-cords)). The destination shows it: **T2 CC 74**.
+4. **LFO** on track 2: **RATE** for how fast it sweeps.
+
+A value goes out only when it changes. Nothing is sent while the track is muted or its channel is OFF.
+
+## A bass that takes a note a bar (FOLLOW HOLD)
+
+A bass that follows the melody, but takes its note only once a bar, so it moves like a real bass line instead of
+copying every note.
+
+1. Track 3 plays a melody (TURING, say).
+2. Track 2 is the bass: a generator for its rhythm (EUCLID, **STEPS 16**, **PULSE 4**), **TWEAK > FOLLOW T3**,
+   **SHIFT −7** for an octave down (while following, SHIFT counts
+   scale steps: −7 is an octave in a seven-note scale).
+3. A track that plays once a bar decides when the bass takes a new note: track 1 as **EUCLID**, **STEPS 16**,
+   **PULSE 1**, set to SOUND OFF with its channel OFF on **GLO > MIDI OUT** so it stays silent.
+4. On track 2, hold **OCT+** on **TWEAK** and set **HOLD** to **T1**.
+
+The bass now plays its own rhythm on the note the melody had at the bar line. HOLD on a track with random hits (DROP,
+BRANCH) samples at random moments instead.
+
 ## Tips
+
+**Getting the most out of Tessera**
+
+- Start small: one generator and one drum track. Add a layer only when the first ones sound right; four busy tracks
+  at once are hard to judge.
+- Pick the scale (**SCL**) early. Every generator plays in it, so it sets the mood more than any other setting.
+- Keep what you like before you experiment: note the seed on **ROLL**, hold **REC** to print a line into steps, or
+  save the project.
+- Movement is more interesting when it is slow. A TIDE or a slow LFO on a filter or a send, at a small amount, keeps
+  a loop alive for much longer than a fast one.
+- When EVOLVE wanders too far, turn up **GRAVITY** (OCT+ on EVOLVE) rather than turning EVOLVE off: it still moves,
+  but comes home.
+- A drone or a bass that should stay steady through ENERGY's tide: hold OCT+ on ENERGY and set **DEPTH 0** on it.
+- A track at SOUND OFF (OCT- held on GLO > MIDI OUT) is a free modulation lane: its generator's GATE, NOTE and CV
+  still drive mods on the other tracks.
+- For long pieces, try the plan on a short PIECE LENGTH first, to hear the whole shape, then make it longer.
+- Crackles mean the FM-1 is out of breath: lower **BUDGET** (GLO > GLOBAL) or thin the busiest track.
 
 **Finding your way**
 
@@ -365,6 +480,8 @@ never repeats itself note for note.
 
 **Building up live**
 
+- MENU > **MUTES BAR** (or PHRASE) puts your mutes on the beat, so you can press early and let it land.
+- **MIDI LEARN** in the menu puts any knob on your controller, and remembers it after power-off.
 - Add tracks while the others play: a generator you pick on another track **joins in time**, on the same beat and
   bar, so a drum groove dropped under a playing chord lands right.
 
@@ -378,6 +495,8 @@ never repeats itself note for note.
 
 **Mods**
 
+- A **PERF** macro is a source for as many mods as you like: one knob on GLO > PERF can move a whole
+  build.
 - Hold **FX** and turn a knob for the quickest mod: it makes the cord for you. Turn SELECT while FX is held to pick
   another source.
 - A cord with no source (`--`) is a fixed offset: use it to set things that have no knob, such as **C AUTO**.
