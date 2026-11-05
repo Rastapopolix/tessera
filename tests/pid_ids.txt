@@ -264,3 +264,5 @@
 0x28f MACRO 3                  global 0..100 def 0
 0x290 MACRO 4                  global 0..100 def 0
 0x291 FOLLOW HOLD              track 0..4 def 0
+0x292 KEY B                    global -12..12 def 0
+0x293 KEY C                    global -12..12 def 0

@@ -788,6 +788,13 @@ first place's REPEAT. Each phrase further from A makes the next new section a li
 CONTR). The choices come from the tracks' SEEDs, so PLAY plays the same piece again. While a track follows, its own
 EVERY waits (the CHAIN's phrases are its sections) and FLOURISH plays on the CHAIN's last beat.
 
+**A key for each section.** SCL's last rows, **Key in B** and **Key in C** (KEY B, KEY C: -12 to +12 semitones, 0 the default)
+move the key while the CHAIN plays its B or C: +5 takes B a fourth up, +7 a fifth, -2 a
+tone down. A is always the key as set. Every track that follows the CHAIN moves, its scale with it, on the phrase line;
+melodic STEP tracks move too (unless set OWN), drum tracks and OWN tracks never; a SKIP holds the track's key with its
+section. ROOT and TRN stay as set, so STOP is back in A's key. Saved with the project; older firmware plays every
+section in A's key.
+
 ### ENTRIES: tracks out and back in
 
 > **In short:** ENTRIES arranges the piece for you by taking tracks out and bringing them back in on phrase lines, in
@@ -1048,7 +1055,8 @@ place. Hold EDIT to undo, which puts the generator back.
 note, ROOT, is too while **SCL > Key link** is **LINKED** (the default in a new project): change ROOT on any melodic
 track, from SCL's list or with SCL held and a key, and every melodic track follows; drum tracks keep their own.
 **OWN** gives each track its own ROOT again; turning LINKED back on gives every track the selected track's key. Key
-link is saved with the project (a project saved before it loads as OWN). TRN still moves a single track.
+link is saved with the project (a project saved before it loads as OWN). TRN still moves a single track. The **Key in B** and
+**Key in C** rows at the end of SCL's list change the key in the CHAIN's sections ([CHAIN](#chain-one-form-for-the-project)).
 
 A **CHORD** track plays a progression; with **QNT CHRD** the other tracks follow it.
 

@@ -3513,6 +3513,10 @@ static int test_popups(void)
         turn(EN_K1, 1); turn(EN_K2, 1);                 /* (Key link: LINKED again) */
         bad += check("  LINKED again: every melodic track takes the selected track's key",
                      tessera.key_link && trk[m].p[P_ROOT] == 5 && (d == NTRK || trk[d].p[P_ROOT] == 3));
+        turn(EN_K1, 5); turn(EN_K2, 1); turn(EN_K2, 1);   /* (row 6, the last but one: Key in B, up two) */
+        turn(EN_K1, 1); turn(EN_K2, -1);                /* (the last: Key in C, down one) */
+        bad += check("  Key in B / Key in C rows: the CHAIN's KEY B / C, a semitone a detent; ROOT untouched",
+                     tessera.fc_key[0] == 2 && tessera.fc_key[1] == -1 && TSEL->p[P_ROOT] == 5);
     }
     {   /* sections (ui_sections.c): PRESETS the next section and back to the page last used; EDIT: the map */
         uint32_t f;

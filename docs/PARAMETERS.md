@@ -282,6 +282,8 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x28F | MACRO 3 | 0 to 100 % | 0 | A hand control for the whole project, 0 to 100 %. On its own it does nothing: pick MACRO as a mod's SOURCE (MODS) and send it anywhere, to as many places as you like. GLO > PERF, KNOB 1 to 4. |
 | 0x290 | MACRO 4 | 0 to 100 % | 0 | A hand control for the whole project, 0 to 100 %. On its own it does nothing: pick MACRO as a mod's SOURCE (MODS) and send it anywhere, to as many places as you like. GLO > PERF, KNOB 1 to 4. |
 | 0x291 | FOLLOW HOLD | OFF, T1, T2, T3, T4 | OFF | Sample and hold for FOLLOW: the followed track's note is taken only when the HOLD track plays, and this track keeps playing it in its own rhythm until the next one. OFF: a new note on each of its own hits. TWEAK, OCT+ held, KNOB 4. |
+| 0x292 | KEY B | -12 to 12 semitones | 0 | A key change for the CHAIN's section: while the project plays it, every track that FOLLOWs the CHAIN moves its notes this many semitones, scale and all (+5 a fourth up, +7 a fifth, -2 a tone down). STEP tracks move too; drum tracks and OWN tracks keep theirs. A is the key as set. 0: no change. SCL's Key in B and Key in C rows; saved with the project. |
+| 0x293 | KEY C | -12 to 12 semitones | 0 | A key change for the CHAIN's section: while the project plays it, every track that FOLLOWs the CHAIN moves its notes this many semitones, scale and all (+5 a fourth up, +7 a fifth, -2 a tone down). STEP tracks move too; drum tracks and OWN tracks keep theirs. A is the key as set. 0: no change. SCL's Key in B and Key in C rows; saved with the project. |
 
 ## Mods
 

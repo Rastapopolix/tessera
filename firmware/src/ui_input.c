@@ -981,6 +981,8 @@ static void edit_param(uint32_t slot, int32_t steps)
             tessera_param_set(0, TX_KEY_LINK, steps > 0);
             if (tessera.key_link) scale_share(TSEL);
         }
+        if ((slot == 1u || slot == 2u) && steps)        /* KEY B / C: a semitone a detent */
+            tessera_param_set(0, TX_FC_KEYB + slot - 1u, tessera.fc_key[slot - 1u] + steps);
         ui.force = 1;
         return;
     }
