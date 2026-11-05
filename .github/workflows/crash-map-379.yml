@@ -1,0 +1,67 @@
+name: Crash map 379 (temporary)
+
+# Temporary, on branch crash-map-379 only (never merged): builds 3.3-beta1 exactly as beta.yml did (8ac2d06) and
+# prints what is at the crash's PC and RETS (issue #379), for both variants.
+on:
+  push:
+    branches: [crash-map-379]
+
+permissions:
+  contents: read
+
+jobs:
+  map:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    env:
+      JIELI_TOOLCHAIN: ${{ github.workspace }}/.nightly-deps/jieli/toolchain
+      AC79_SDK: ${{ github.workspace }}/.nightly-deps/sdk
+      V: 3.3-beta1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libharfbuzz-dev libfribidi-dev libraqm-dev
+          python -m pip install Pillow fonttools==4.68.0
+      - uses: actions/cache@v4
+        with:
+          path: .nightly-deps
+          key: jieli-linux-sdk-d179b448-v1
+      - name: Fetch pinned SDK and toolchain
+        run: |
+          if [ ! -x "$JIELI_TOOLCHAIN/pi32v2/bin/clang" ]; then
+            tools/get_toolchain.sh "$GITHUB_WORKSPACE/.nightly-deps/jieli"
+          fi
+          if [ ! -d "$AC79_SDK/.git" ]; then
+            git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$AC79_SDK"
+          fi
+      - name: Map
+        run: |
+          OD="$JIELI_TOOLCHAIN/common/bin/objdump"
+          for variant in dual single; do
+            if [ $variant = dual ]; then MELODEE_LOOK=1 ./build.sh --release "$V" > build.log 2>&1;
+            else MELODEE_DUAL_CORE=0 MELODEE_LOOK=1 ./build.sh --release "$V" > build.log 2>&1; fi
+            tail -3 build.log
+            sha256sum build/tessera-$V*.fwsc
+            echo "===== $variant: symbols containing the addresses"
+            python3 - build/melodee.elf "$OD" <<'PY'
+          import re, subprocess, sys
+          elf, od = sys.argv[1], sys.argv[2]
+          t = subprocess.run([od, "-t", elf], capture_output=True, text=True).stdout
+          syms = []
+          for l in t.splitlines():
+              m = re.match(r"^([0-9a-f]{8}) .{7}(\S+)\s+([0-9a-f]{8})\s+(\S+)$", l)
+              if m and m.group(2) in (".text", ".ram_text", ".audio_text", ".dsp_text"):
+                  syms.append((int(m.group(1), 16), int(m.group(3), 16), m.group(4), m.group(2)))
+          for a in (0x0201EFB6, 0x0201F0AC):
+              hit = [s for s in syms if s[0] <= a < s[0] + max(s[1], 1)]
+              near = max((s for s in syms if s[0] <= a), default=None)
+              print(hex(a), "in", [(hex(s[0]), s[1], s[2], s[3]) for s in hit], "nearest below", near and (hex(near[0]), near[1], near[2], near[3]))
+          PY
+            echo "===== $variant: disassembly around PC and RETS"
+            "$OD" -d -mcpu=r3 -mattr=+fprev1 --start-address=0x0201EE80 --stop-address=0x0201F140 build/melodee.elf | tail -n +6
+          done
