@@ -66,11 +66,64 @@ everything automatic starts switched off.
    change, which hits play, how long notes ring, how they swing. *This lets you turn "random" into "musical".*
 4. **How a track grows into a song.** FORM gives a track sections A, B and C; CHAIN lines up all the tracks' sections;
    ENTRIES brings tracks in and out; PIECE plans the whole thing from start to end. *This lets a project play for
-   minutes or hours without sounding like one loop.*
+   minutes or hours without sounding like one loop.* How these act on each other:
+   [The long-form layers together](#the-long-form-layers-together).
 5. **Movement.** MODS are virtual patch cables: any source (an LFO, a slow TIDE, a generator's notes, a hand-turned
    macro) can move almost any setting on any track. *This lets the sound breathe, and lets tracks talk to each other.*
 6. **Playing it.** MIXER, the GLO keys, PERF's macros, FILL, quantized MUTES and MIDI LEARN are the hands-on side.
    *This lets you perform the piece, not just set it going.*
+
+### The long-form layers together
+
+> **In short:** PIECE plans the whole piece, CHAIN sets the section, ENTRIES picks which tracks play, ENERGY sets how
+> busy they are, and each track's FORM and generator play the notes. SONG is separate: your written patterns in order.
+
+Six pages shape a piece over time. Five of them work as one system, from the slowest to the fastest; SONG runs beside
+them. Every one starts OFF, and you can use any of them alone.
+
+<p align="center"><img src="assets/gallery/layers.svg" alt="PIECE steers CHAIN, ENTRIES and ENERGY; CHAIN sets the sections of the tracks that follow it and is ENTRIES' clock; ENTRIES takes tracks out and in; ENERGY thins and fills the generators; SONG runs beside them" width="640"></p>
+
+| Layer | Where | How often it changes | What it changes | What it listens to |
+|---|---|---|---|---|
+| [PIECE](#piece-a-length-and-a-shape) | GLO > PIECE | Over the whole piece, 1 minute to 4 hours | Nothing directly: it steers CHAIN, ENTRIES and ENERGY along its shape | The CHAIN's PHRASE (it counts in phrases) and the tempo |
+| [CHAIN](#chain-one-form-for-the-project) | GLO > CHAIN | On phrase lines (4, 8 or 16 bars) | The section (A, B, C) every following track plays, and the key in B and C | PIECE: bolder new sections near its top, A at its end |
+| [ENTRIES](#entries-tracks-out-and-back-in) | GLO > ENTRIES | On phrase lines | Which tracks play: it fades or cuts them out and back in | The CHAIN's phrases and sections, each track's ROLE, PIECE (how many out) |
+| [ENERGY](#energy) | SEQ > ENERGY | A slow tide of 3 to 6 minutes, and rests | How many hits the generator tracks play and how loud; how much EVOLVE changes | PIECE (the tide becomes its shape), each track's DEPTH |
+| [FORM](#form) | SEQ > FORM, each track | Every EVERY bars, or on the CHAIN's phrases | The track's own sections A, B and C | The CHAIN, while the track FOLLOWs it |
+| SONG | SEQ > SONG | When a row has played its repeats | Which written pattern each track plays | Nothing above: it runs beside them |
+
+**Who wins where they meet:**
+
+- **CHAIN and FORM.** A track that FOLLOWs takes its section from the CHAIN, and its own EVERY waits. OWN keeps its own
+  FORM. Until you choose, a track follows when its own FORM is OFF.
+- **ENTRIES and your hands.** ENTRIES only takes tracks out and brings them back; it never changes what a track plays.
+  A mute by hand always wins, and an ANCHOR never goes out.
+- **ENERGY and STEP tracks.** ENERGY changes how much a generator plays, not what it plays. STEP tracks play as
+  written. DEPTH 0 keeps a track out of ENERGY altogether.
+- **PIECE adds nothing of its own.** With LENGTH FREE nothing is planned. With ENTRIES at 0 no track moves, even with a
+  PIECE; with ENERGY's ARC at 0 its tide stays flat.
+- **SONG and CHAIN** both start counting at PLAY but are not linked: SONG counts pattern repeats, CHAIN counts bars. To
+  keep them in step, make each SONG row last a whole number of the CHAIN's phrases.
+- **Clocks.** CHAIN, ENTRIES and PIECE change on phrase lines. ENERGY's tide runs on its own slow clock unless a PIECE
+  sets it.
+
+**Build it up one layer at a time:**
+
+1. One generator track, FORM **AABA**: the track gets sections.
+2. **GLO > CHAIN**, FORM **ABAC**: the tracks change section together (tracks with FORM OFF follow by themselves).
+3. **GLO > ENTRIES** at 50: tracks drop out and come back on the phrase lines. Set a drone's ROLE to **ANCHOR**.
+4. **GLO > PIECE**, 10 minutes, **ARCH**, END **STOP**: an intro, a peak and an ending, then it stops by itself.
+5. **SEQ > ENERGY** ARC: how far the busy-sparse swing goes, along the PIECE's shape (or on its own tide without one).
+
+| I want... | Use |
+|---|---|
+| The whole project to move from A to B together | CHAIN |
+| One track with its own verse and chorus | FORM, with that track set to OWN |
+| The band to thin out and fill up | ENTRIES |
+| A beginning, a peak and an end, then stop | PIECE, END STOP |
+| Slow breathing in how busy and loud it is | ENERGY's ARC |
+| A fixed order of patterns I wrote | SONG |
+| One track left alone by all of this | OWN on FORM, ROLE ANCHOR, DEPTH 0 |
 
 ### Every page, and why you would use it
 
@@ -978,6 +1031,31 @@ grid: a 1/8 track now and then plays a pair of 1/16s, or a note pushed onto the 
 
 A project with SPLIT plays on firmware before 3.3 without it. A project with a cord onto SPLIT can't be read by that
 firmware at all, as with every new cord destination.
+
+### Rolls and feel: which one to use
+
+> **In short:** RATCH and a step's Ratchet make rolls, SPLIT breaks steps into the finer division now and then, HUMAN and
+> Nudge move steps a little late (or early), and SWING moves every other step. Use one for a clear job rather than all
+> at once.
+
+| Tool | Where | Tracks | What it does | Random? | Use it for |
+|---|---|---|---|---|---|
+| **RATCH**, CHANCE, SHAPE | TIMING, KNOB 1 to 3 | Generators | A step plays 2 to 8 times within itself, the same note; SHAPE spaces the hits evenly, faster or slower | CHANCE picks which steps (replays from PLAY) | Rolls, stutters, drum fills |
+| A step's **Ratchet** | NOTES, the note's sheet | STEP | The same for one written step; TIMING's SHAPE places the hits | No, it is written | A roll on the step you choose |
+| **ADORN** | EVOLVE on a STEP track | STEP | Each round adds a little: an extra hit, an octave jump, a neighbour note, a passing note in a rest | Yes, while EVOLVE runs | A written line that decorates itself |
+| **SPLIT**, HOW | TIMING, OCT+ held | Both | Some steps play at half their division: two notes (DOUBLE) or one note late (PUSH) | Yes (replays from PLAY) | Now and then breaking out of the grid |
+| **HUMAN** (timing) | TIMING | Both | Each step up to 60 ms late, never more than a quarter of a step | Yes (replays from PLAY) | A relaxed, behind-the-beat feel |
+| **HUMAN** (velocity) | TWEAK | Both | Each note a little softer or louder, and shorter | Yes (replays from PLAY) | Dynamics that sound played |
+| A step's **Nudge** | NOTES, the note's sheet | STEP | One step early or late, in sixteenths of a step | No, it is written | A push or a lay-back on one note |
+| **SWING** | The pattern's sheet (a track), TEMPO (the project) | Both | Every other step late by the same amount | No | Shuffle and groove |
+
+How they combine:
+
+- **Rolls win over SPLIT.** A generator track with RATCH above x1 never splits, nor does a STEP track's step with a
+  Ratchet.
+- **Late adds up.** HUMAN, a late Nudge and SPLIT's PUSH add together; an early Nudge stays as written.
+- **Feel first, breaks second.** Start with HUMAN around 10 to 20 ms and a little SWING; add SPLIT at 10 to 25 % for the
+  odd fill; keep RATCH for real rolls. Everything random replays the same from PLAY, and ROLL gives new tosses.
 
 ### A step's Ratchet, Nudge and Accumulate
 
