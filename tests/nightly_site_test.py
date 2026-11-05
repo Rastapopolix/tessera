@@ -122,6 +122,12 @@ class NightlySite(unittest.TestCase):
             commit = "89abcde" * 5 + "89abc"
             publish_beta(site, str(beta), str(beta1), "3.3-beta1", commit, "2026-11-04T19:00:00Z")
             self.assertEqual(editor.read_text(), "existing published editor")
+            # The beta's own editor (this checkout's web/) sits beside it, with the demo and CHK test projects.
+            beta_ed = site / "webapp/editor-beta"
+            self.assertIn("demosChecks", (beta_ed / "index.html").read_text())
+            self.assertTrue((beta_ed / "fm1backup.js").exists())
+            self.assertTrue(any(beta_ed.glob("demos/*.tsp")) and any(beta_ed.glob("demos/checks/chk-*.tsp")))
+            self.assertIn('"editor": "../editor-beta/"', installer.read_text())
             self.assertEqual((site / "firmware/tessera-3.2.2.fwsc").read_bytes(), dual.read_bytes())
             self.assertEqual((site / "firmware/tessera-3.3-beta1-1core.fwsc").read_bytes(), beta1.read_bytes())
             manifest = json.loads((site / "firmware/beta.json").read_text())
@@ -134,6 +140,7 @@ class NightlySite(unittest.TestCase):
             main(dual, single, "3.2.3", site, installer_only=True)
             self.assertIn('"version": "3.3-beta2"', installer.read_text())
             self.assertTrue((site / "firmware/tessera-3.3-beta2.fwsc").exists())
+            self.assertTrue((site / "webapp/editor-beta/index.html").exists())
             before = hashlib.sha256(installer.read_bytes()).digest()
             wrong = package(root / "wrong.fwsc", "FM-1_834", 5)
             for other, version in ((wrong, "3.3-beta3"), (beta, "3.3-beta3"), (beta1, "3.3")):
@@ -145,11 +152,13 @@ class NightlySite(unittest.TestCase):
             self.assertIn('"beta": null', installer.read_text())
             self.assertFalse((site / "firmware/beta.json").exists())
             self.assertFalse(any(site.glob("firmware/tessera-3.3-beta*.fwsc")))
+            self.assertFalse((site / "webapp/editor-beta").exists())
             # --off takes a beta off before then.
             publish_beta(site, str(beta), str(beta1), "3.4-beta1", commit, "2026-11-07T19:00:00Z")
             publish_beta(site, off=True)
             self.assertIn('"beta": null', installer.read_text())
             self.assertFalse(any(site.glob("firmware/tessera-3.4-beta*.fwsc")))
+            self.assertFalse((site / "webapp/editor-beta").exists())
 
 
 if __name__ == "__main__":
