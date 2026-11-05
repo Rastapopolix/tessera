@@ -145,6 +145,7 @@ static void cu_rows(void)
         uint32_t i;
         for (i = 0; i < sizeof(cord_t); i++)
             sg = (sg ^ b[i]) * 16777619u;
+        sg = (sg ^ cord_cc_num(k)) * 16777619u;         /* (a CC mod's number: "CC 74") */
     }
     for (k = 0; k < NTRK; k++)
         sg = (sg ^ trk[k].engine) * 16777619u;          /* (E1..E8's names) */
@@ -352,8 +353,8 @@ static int cu_cc_knob(int32_t steps)
     cord_cc_set(cord_ui_sel, (uint32_t)clamp((int32_t)cord_cc_num(cord_ui_sel) + accel(EN_K1 + 2u, steps, 120), 0, 119));
     str_cpy(b, "CC ", sizeof b);
     fmt_int(b + 3, (int32_t)cord_cc_num(cord_ui_sel));
-    ui_message(b);
-    ui.force = 1;
+    ui_message(b);                                      /* (no ui.force: the row redraws by its signature, which
+                                                         * holds the CC numbers; a whole frame flickered under the list) */
     return 1;
 }
 
