@@ -587,6 +587,8 @@ static const page_t PAGES[] = {
     {"VOICE", FAM_EDIT, SC_TRACK, GR_NONE, {P_VOICE, P_GLIDE, P_GLMODE, P_PRIO}},
     {"VOICE 2", FAM_EDIT, SC_TRACK, GR_NONE, {P_ALLOC, P_DETUNE, P_PAN, P_MUTE}},
     {"VOICE 3", FAM_EDIT, SC_TRACK, GR_NONE, {P_SPRD, 0xFF, 0xFF, 0xFF}},
+    {"PERF", FAM_GLO, SC_GLOBAL, GR_PERF, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: MACRO 1..4, the project's cord sources
+                                                                   * (cord.c CS_MACRO1; the Mono look only): GLO's first page after MIXER */
     {"GLOBAL", FAM_GLO, SC_GLOBAL, GR_NONE, {G_A4, G_BUDGET, G_CLOCK, G_TUNE}}, /* device reference/budget; CLK/TUNE kept */
     {"SYSTEM", FAM_GLO, SC_GLOBAL, GR_NONE, {G_MIDI, G_DRUMCH, G_ROUTE, G_INFO}},
     {"MIDI OUT", FAM_GLO, SC_GLOBAL, GR_MIDICH, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: KNOB k track k's channel (midi_out.c) */
@@ -598,8 +600,6 @@ static const page_t PAGES[] = {
                                                                            * held each track's ROLE (entries.c) */
     {"LANDSCAPE", FAM_GLO, SC_GLOBAL, GR_LAND, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: rain on water, played by the
                                                                          * music (ui_land.c; the Mono look only) */
-    {"PERF", FAM_GLO, SC_GLOBAL, GR_PERF, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: MACRO 1..4, the project's cord sources
-                                                                   * (cord.c CS_MACRO1; the Mono look only) */
     {"PRESETS", FAM_SAVE, SC_GLOBAL, GR_BROWSE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* browser: KNOB 1 LIST, 2 / PRESETS the sounds */
     {"USER", FAM_SAVE, SC_GLOBAL, GR_USER, {0xFF, 0xFF, 0xFF, 0xFF}},       /* user presets: SLOT LOAD ERASE SAVE */
     {"PROJECT", FAM_SAVE, SC_GLOBAL, GR_SLOTS, {G_SLOT, G_BOOT, G_LOAD, G_SAVE}},
@@ -608,6 +608,7 @@ static const page_t PAGES[] = {
     {"GEN", FAM_GEN, SC_TRACK, GR_STEPS, {P_SLEN, P_SDIV, P_SSWING, P_SGATE}},   /* Tessera: MODE and the engine's
                                                                                  * three, as on PATTERN */
     {"NOTES", FAM_SEQ, SC_STEP, GR_ROLL, {0, 1, 2, 3}},   /* (STEP, ARP: right after GEN, Theo 2026-10-31) */
+    {"DRUM HIT",FAM_SEQ,SC_DRUMHIT,GR_DRUMHIT,{0,1,2,3}},   /* (a DRUM track: beside NOTES, its grid) */
     {"EVOLVE", FAM_GEN, SC_TRACK, GR_EVOLVE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: LOCK EVERY AMOUNT SEED (tessera_evolve_knob) */
     {"FORM", FAM_GEN, SC_TRACK, GR_FORM, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: FORM CONTRAST CLEAR (tessera_form_knob) */
     {"TWEAK", FAM_GEN, SC_TRACK, GR_TWEAK, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: SHIFT DROP HUMAN FOLLOW (tessera_tweak_knob) */
@@ -625,7 +626,6 @@ static const page_t PAGES[] = {
     {"PATTERNS", FAM_SEQ, SC_GLOBAL, GR_PATGRID, {0xFF, 0xFF, 0xFF, 0xFF}},   /* the 4 x 8 grid: KNOB k track k's (ui_stage.c) */
     {"SONG", FAM_SEQ, SC_GLOBAL, GR_SONG, {0xFF, 0xFF, 0xFF, 0xFF}},
     {"MOTION", FAM_SEQ, SC_TRACK, GR_MOTION, {0xFF, 0xFF, 0xFF, 0xFF}},
-    {"DRUM HIT",FAM_SEQ,SC_DRUMHIT,GR_DRUMHIT,{0,1,2,3}},
 };
 #define NPAGES (sizeof(PAGES) / sizeof(PAGES[0]))
 static uint8_t mod_ui_slot;      /* the MOD page: the matrix slot (0..3) KNOB 2..4 edit */

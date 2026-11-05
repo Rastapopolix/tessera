@@ -575,7 +575,7 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_MIDI_CH, "MIDI OUT CHANNEL", "The MIDI channel this track's notes go out on over USB, so each track can play "
                                        "its own instrument. AUTO follows SYSTEM's ROUT (CH1-4: tracks on 1 to 4), a drum "
                                        "track the DRUM channel; OFF sends none of its notes. Saved with the project. "
-                                       "Which notes go out at all is the menu's MIDI OUT: KEYS, ALL or OFF. GLO > MIDI OUT, "
+                                       "Which notes go out at all is the menu's NOTES OUT: KEYS, ALL or OFF. GLO > MIDI OUT, "
                                        "a knob for each track."),
     XP_(TX_KEY_LINK, "KEY LINK", "LINKED: one key for the whole project. Changing ROOT on any melodic track sets it on "
                                 "the others too, as the scale always is; drum tracks keep theirs. OWN: each track its "

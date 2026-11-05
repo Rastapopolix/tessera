@@ -26,7 +26,7 @@
  *   CK_TEMPO  the project's tempo on CLK INT (mix.c seq_tempo_q12, cord.c cord_tempo_tick): a full move doubles it, a
  *             full move down halves it; BPM itself is left alone; destination track 0 as CK_GLOBAL
  *   CK_CC     a MIDI CC out on the destination track's MIDI OUT channel (cord.c cord_cc_tick, issue #374): its number
- *             the cord's own (cord_cc_num, OCT- held + KNOB 3 on MODS); a track's, as CK_BLOCK (before CK_GLOBAL: the
+ *             the cord's own (cord_cc_num, OCT+ held + KNOB 3 on MODS); a track's, as CK_BLOCK (before CK_GLOBAL: the
  *             kinds are not saved, only the codes) */
 enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO };
 

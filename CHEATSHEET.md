@@ -13,7 +13,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **HOME** | The home page: four tracks, their sounds and knobs |
 | **HOME** held | The menu (held again: leaves it) |
 | **ALGORITHM** | Picks the track, on every page (MENU > TRACK KNOB LEFT swaps it with PRESETS) |
-| **SELECT** | The pages of the section shown, both ways |
+| **SELECT** | The pages of the section shown, both ways; on HOME and MIXER the tempo |
 | A page button again | That section's next page (from elsewhere most return to the page last used) |
 | **OCT-** (off HOME) | Back: closes a list, sheet or map, else HOME |
 | **OCT+** (off HOME) | Enter: opens the row, slot or note picked; does the action picked |
@@ -26,7 +26,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 
 | Tap (again: the next page) | Pages |
 |---|---|
-| **SEQ** | GEN, then the MODE's pages. STEP: EVOLVE, TWEAK, TIMING, NOTES. ARP: ARP, ARP 2, NOTES. A generator: EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY. All: PATTERN, TEMPO, PATTERNS, SONG |
+| **SEQ** | GEN, then the MODE's pages. STEP: NOTES (a DRUM track: NOTES, DRUM HIT), EVOLVE, TWEAK, TIMING. ARP: ARP, ARP 2, NOTES. A generator: EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY. All: PATTERN, TEMPO, PATTERNS, SONG |
 | **SEQ** held | PATTERNS |
 | **ARP** | STEP track: switches it to ARP, the ARP page (again: ARP 2). Generator track: GEN ("MODE IS ON GEN") |
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST; on FM6 then FM LFO; on ORACLE then LFO MOD, LFO ROUTE |
@@ -37,7 +37,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across, KNOB 2 rows, OCT+ opens, OCT- or EDIT closes |
 | **PRESETS** on an EDIT page | The next / previous section (FM6: Algo, OP1 to OP6, Pitch, LFO, Ctrl, Store) |
 | **FX** | The insert and send effects |
-| **GLO** | MIXER, GLOBAL (BUDGET: the shared voices), SYSTEM, MIDI OUT, PIECE (the piece's LENGTH, SHAPE, END), CHAIN (the project's FORM, PHRASE, WANDER), ENTRIES (tracks out and back in) |
+| **GLO** | MIXER, PERF (MACRO 1 to 4, the project's mod sources), GLOBAL (BUDGET: the shared voices), SYSTEM, MIDI OUT, PIECE (the piece's LENGTH, SHAPE, END), CHAIN (the project's FORM, PHRASE, WANDER), ENTRIES (tracks out and back in), LANDSCAPE (the music as rain on water) |
 | On **MIXER**: **KNOB 1** to **4** / with **OCT+** held | Level / pan of track 1 to 4; the keys mute and solo as with GLO held |
 | **SAVE** | USER (save the sound), PROJECT, PRESETS |
 
@@ -46,7 +46,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | Do this | And this happens |
 |---|---|
 | **GLO** held | [GLO] SET over the page |
-| **GLO** + black keys F#3 G#3 A#3 C#4 | Mute / unmute track 1 to 4 (lit: sounding) |
+| **GLO** + black keys F#3 G#3 A#3 C#4 | Mute / unmute track 1 to 4 (lit: sounding); MENU > MUTES BAR or PHRASE waits for it (blinking) |
 | **GLO** + white keys F3 G3 A3 B3 | Solo track 1 to 4 while the key is held |
 | **GLO** + C4 / F4 | Unmute all / tap the tempo (three taps or more; INT clock) |
 | **GLO** + E4 | FILL, while held (steps set to FILL / !FILL) |
@@ -130,6 +130,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **EDIT** on USER or PROJECT | Renames the slot |
 | **OCT+** on a PROJECT slot | Load, Save here, Rename, Boot, Erase |
 | GLO > MIDI OUT: **OCT+** held, **KNOB 1** to **4** | Each track's MIDI OUT TRANSPOSE, a semitone a click |
+| GLO > MIDI OUT: **OCT-** held, **KNOB 1** to **4** | Each track's SOUND, ON or OFF (OFF: MIDI only) |
 | GLO > PIECE: **OCT+** / **OCT-** held, **KNOB 1** to **4** | SHAPE USER's points 1 to 4 / 5 to 8 |
 | GLO > CHAIN: **OCT+** held, **KNOB 1** to **4** | Each place's REPEAT, 1 to 8 phrases |
 | GLO > ENTRIES: **OCT+** held, **KNOB 1** to **4** | Each track's ROLE for ENTRIES: AUTO, BASS, RHYTHM, HARMONY, MELODY, ANCHOR |
@@ -150,8 +151,19 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | FORM: **OCT+** held, **KNOB 1** | DEVELOP: each return of a section varies a little (0: exact) |
 | FORM: **OCT+** held, **KNOB 2** / **3** | The CHAIN: FOLLOW or OWN; SKIP, the chance it lags a phrase |
 | FORM: **OCT+** held, **KNOB 4** | ROLE: this track's part for ENTRIES |
-| MODS: **OCT+** | The picked mod: +- (both ways) / + (one way) |
+| TWEAK: **OCT+** held, **KNOB 4** | FOLLOW's HOLD (shown as T3H2 on FOLLOW) |
+| MODS: **OCT+** | The picked mod: +- (both ways) / + (one way) / GATE |
+| MODS: **OCT+** held, **KNOB 4** / **KNOB 3** | A GATE's threshold / a CC mod's CC number |
 | MATRIX: **OCT+** | Opens the picked mod in MODS |
+
+## MIDI LEARN
+
+| Do this | And this happens |
+|---|---|
+| MENU > MIDI LEARN: **KNOB 2** right or **OCT+** | Learning on (the header says so) |
+| Learning: a knob, then a CC from your controller | That CC sets the knob's parameter; again for more |
+| Learning: **OCT-** | Ends it |
+| MENU > MIDI LEARN: **KNOB 2** left, then **OCT+** | Forgets every learned CC (OCT-: keeps them) |
 
 ## Power-on and update
 

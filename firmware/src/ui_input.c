@@ -885,8 +885,8 @@ static void edit_param(uint32_t slot, int32_t steps)
             oct_eat |= 2u;                              /* (OCT+ held: a GATE's threshold; its release no OCT+) */
             return;
         }
-        if (slot == 2u && ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) && cu_cc_knob(steps)) {
-            oct_eat |= 1u;                              /* (OCT- held: a CC mod's number; its release no OCT-) */
+        if (slot == 2u && ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) && cu_cc_knob(steps)) {
+            oct_eat |= 2u;                              /* (OCT+ held: a CC mod's number; its release no OCT+) */
             return;
         }
         cu_knob(slot, steps);
@@ -2554,7 +2554,7 @@ static void ui_input(void)
             if (pattern_request(TSEL, (uint32_t)clamp((int32_t)from + s, 0, NPAT - 1u))) ui_message("STOP TO SWITCH");
             ui.force = 1;
         } else if (step_gesture(s)) {                   /* ENV / SCL / a key held: the note's length, its place */
-        } else if (ui.home) {                           /* HOME: the tempo (GLO held: above; SEQ > TEMPO) */
+        } else if (ui.home || cur_page()->graph == GR_TRK) {   /* HOME, MIXER: the tempo (GLO held: above) */
             bpm_turn(s);
         } else {                                        /* the section's pages (the notes, the hits: KNOB 1) */
             page_scroll(s);
