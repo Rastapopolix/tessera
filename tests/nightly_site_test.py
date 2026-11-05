@@ -37,8 +37,10 @@ class NightlySite(unittest.TestCase):
             self.assertIn("Install 1.1.0", home)
             self.assertIn("firmware/tessera-1.1.0-1core.fwsc", home)
             self.assertNotRegex(home, r"@[A-Z0-9]+@")
-            demos = sorted(f.name for f in (site / "webapp/editor/demos").iterdir())   # (the editor's Demo projects)
-            self.assertEqual(demos, sorted(f.name for f in (Path(__file__).resolve().parent.parent / "demos").glob("*.tsp")))
+            src = Path(__file__).resolve().parent.parent / "demos"   # (the editor's Demo projects, and the CHK projects)
+            for sub in ("", "checks"):
+                self.assertEqual(sorted(f.name for f in (site / "webapp/editor/demos" / sub).glob("*.tsp")),
+                                 sorted(f.name for f in (src / sub).glob("*.tsp")))
             editor = site / "webapp/editor/index.html"
             editor.write_text("existing published editor")
             # Exercise migration from the existing inline-only release metadata.
