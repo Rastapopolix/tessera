@@ -2211,6 +2211,7 @@ static void ui_input(void)
         } else {
             ui.menu = 1;
             ui.menu_sel = 0;
+            menu_cols = 0;                              /* (the list first: COLOR's sheet on KNOB 2) */
             ui.confirm = 0;                             /* (a clear dialog is cancelled, NAME too) */
             name_close();
             new_close();

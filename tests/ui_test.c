@@ -2742,9 +2742,22 @@ static int test_display_preferences(void)
     turn(EN_K2, 1);
     bad += check("COLOR KNOB 2 steps on to SMALTI",
                  settings.palette == 2 && settings.palette == UI_DEFAULT_INDEX);
+    bad += check("..its sheet open (Mono: the swatches below the row)", menu_cols == 1);
+    press(B_OCTDN);
+    bad += check("OCT- folds the sheet first, the menu stays", ui.menu == 1 && !menu_cols);
     press(B_OCTDN);
     bad += check("OCT- leaves display preferences without changing musical state",
                  !ui.menu && settings.palette == UI_DEFAULT_INDEX && !memcmp(sounds, trk, sizeof sounds));
+    hold(B_HOME);
+    {
+        int ok = ui.menu == 1 && ui.menu_sel == MI_COLOR && !menu_cols;   /* HOME held: the list, not the sheet */
+        turn(EN_K2, 1); turn(EN_K2, -1);
+        ok &= menu_cols == 1 && settings.palette == UI_DEFAULT_INDEX;
+        turn(EN_K1, 1);
+        ok &= !menu_cols && ui.menu_sel != MI_COLOR;
+        bad += check("HOME held: the list first; KNOB 2 on COLOR opens its sheet, KNOB 1 off the row folds it (beta3)", ok);
+        press(B_OCTDN);
+    }
     return bad;
 }
 
