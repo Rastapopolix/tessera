@@ -930,7 +930,7 @@ How long a generator holds its notes.
 ## TIMING
 
 > **In short:** rolls and feel. Ratchets repeat a step quickly (a drum roll, a stutter); HUMAN plays steps a touch
-> late, like a player sitting behind the beat.
+> late, like a player sitting behind the beat; SPLIT (OCT+ held) breaks some steps into the next finer division.
 
 Ratchets: a step's notes played again within the step. And HUMAN: each step a little late.
 
@@ -948,6 +948,28 @@ Projects saved before HUMAN had its own knob keep their feel: a generator track'
 fifth of it (TWEAK 100: 20 ms).
 
 <p align="center"><img src="assets/gallery/gen_timing.png" alt="TIMING, x4 ACCEL" width="240"></p>
+
+**SPLIT.** Hold **OCT+** on TIMING, on a generator or a STEP track, and the knobs set how often a step breaks out of the
+grid: a 1/8 track now and then plays a pair of 1/16s, or a note pushed onto the off-1/16, as a player does.
+
+| Knob (OCT+ held) | Setting | What it does |
+|---|---|---|
+| 1 | **SPLIT** (0–100 %) | The chance a step plays at half its division: 1/4 to 1/8, 1/8 to 1/16, a triplet to its half. 0 is off, and the track plays exactly as without it. Also a cord destination (SPLIT), so an LFO, TIDE or ENERGY can bring it in and out. |
+| 2 | **HOW** | **DOUBLE**: the note, then a second note halfway through the step. **PUSH**: the note plays halfway through the step instead of on its line; late only. **MIX**: each split tosses again for one or the other. |
+
+- **DOUBLE's second note:** on a generator a scale degree up or down (tossed); the generator is not stepped again, so its
+  phrase and loop stay as they are. On a STEP track a degree toward the next written note, as ADORN's passing note. A
+  drum hit or ATLAS plays the same hit again.
+- **Gates:** each half gets half of the step's gate, as with a RATCH x2 step, and so does a pushed note.
+- **The tosses** have their own stream: SPLIT never changes which notes a generator picks. The same piece replays the same
+  from PLAY; ROLL gives new tosses.
+- **Left as written:** the bar's first step, so the downbeat stays on the grid, and the pattern's first step; a generator
+  track with RATCH above x1 (even at its lower CHANCE), a STEP track's step with a Ratchet; an early Nudge (a late one adds
+  to PUSH, as HUMAN does); a tie, a slide and the step slid into; timed notes; and everything while the track records.
+  Notes that LENGTH holds (FIXED, HIT) can PUSH but not DOUBLE.
+
+A project with SPLIT plays on firmware before 3.3 without it. A project with a cord onto SPLIT can't be read by that
+firmware at all, as with every new cord destination.
 
 ### A step's Ratchet, Nudge and Accumulate
 
@@ -1108,7 +1130,7 @@ at a time, each with an activity light and a moving mark.
 |---|---|
 | 1 | **Source**: `--`, then per track (T1 to T4) LFO, ENV, VEL, KEY, RAND, MODW, AT, EXPR, S&H, SLEW, the generator's GATE, NOTE and CV, DRIFT, TIDE 1 to 3, and SWARM 1 to 8; and the project's ENERGY and [PERF](#perf-four-macros)'s MACRO 1 to 4. |
 | 2 | **Mod**: which of the 16 the other knobs edit. |
-| 3 | **Destination**, on a track: the voice (PITCH, CUTOFF, SHAPE, GAIN), the mix (LEVEL, PAN, SPREAD, FX SEND, SEND 2, SEND 3), the track's effects (FX1 MIX, FX1 RTE, FX1 CHR, the same for FX2 and FX3), the envelope and LFO settings, the engine's E1 to E8, and the generators' settings (T PROB, T LEN, E PULSE, E ROT, M LEAP, M DENS, MP POS, SHIFT, DROP, HUMAN, BRANCH, EV AMT, CONTR, AT X, AT Y, AT DENS, AT KICK, AT SNR, AT HAT, AT TOMS, B SPEED, B ANGLE, A PROB, Q PROB, C Y, C SIZE, C DENS, C AUTO, S START, CH PROG, AN VARY, H TIME) and **CC** (a MIDI CC out, see *CC out*). After the tracks' come the send effects', once, for every track: SF1 MIX, SF1 RTE, SF1 CHR (the same for SF2 and SF3) and RETURN; then the mods' own moves, **M1 AMT** to **M16 AMT** (see *Mods of mods* below), **FILL** (see *FILL*) and **TEMPO** (see *TEMPO*). |
+| 3 | **Destination**, on a track: the voice (PITCH, CUTOFF, SHAPE, GAIN), the mix (LEVEL, PAN, SPREAD, FX SEND, SEND 2, SEND 3), the track's effects (FX1 MIX, FX1 RTE, FX1 CHR, the same for FX2 and FX3), the envelope and LFO settings, the engine's E1 to E8, and the generators' settings (T PROB, T LEN, E PULSE, E ROT, M LEAP, M DENS, MP POS, SHIFT, DROP, HUMAN, BRANCH, EV AMT, CONTR, AT X, AT Y, AT DENS, AT KICK, AT SNR, AT HAT, AT TOMS, B SPEED, B ANGLE, A PROB, Q PROB, C Y, C SIZE, C DENS, C AUTO, S START, CH PROG, AN VARY, H TIME, SPLIT) and **CC** (a MIDI CC out, see *CC out*). After the tracks' come the send effects', once, for every track: SF1 MIX, SF1 RTE, SF1 CHR (the same for SF2 and SF3) and RETURN; then the mods' own moves, **M1 AMT** to **M16 AMT** (see *Mods of mods* below), **FILL** (see *FILL*) and **TEMPO** (see *TEMPO*). |
 | 4 | **Amount**, −100 to +100 %. With no source (`--`) the cord is a fixed move and KNOB 4 sets its offset. |
 
 - **+- and +: the mod's direction.** Under KNOB 1 a mod shows **+-** (it moves both ways from the knob) or **+** (one
