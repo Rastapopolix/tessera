@@ -2,23 +2,23 @@
   <title>Tessera's long-form layers: who moves what</title>
   <defs>
     <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0 0 L10 5 L0 10 z" fill="#f2c230"/>
+      <path d="M0 0 L10 5 L0 10 z" fill="#ffd020"/>
     </marker>
     <marker id="d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0 0 L10 5 L0 10 z" fill="#9a8a4a"/>
+      <path d="M0 0 L10 5 L0 10 z" fill="#c7a219"/>
     </marker>
   </defs>
-  <rect width="800" height="600" fill="#0d0d0b"/>
+  <rect width="800" height="600" fill="#000000"/>
   <style>
-    .box{fill:#17150f;stroke:#f2c230;stroke-width:2}
-    .dash{fill:#17150f;stroke:#9a8a4a;stroke-width:2;stroke-dasharray:6 5}
-    .h{fill:#f2c230;font-size:17px;font-weight:700}
-    .t{fill:#e9e3d2;font-size:12.5px}
-    .s{fill:#a59d88;font-size:11.5px}
-    .l{fill:#f2c230;font-size:11.5px}
-    .ld{fill:#a59d88;font-size:11.5px}
-    .ar{stroke:#f2c230;stroke-width:2;fill:none;marker-end:url(#a)}
-    .ad{stroke:#9a8a4a;stroke-width:2;fill:none;stroke-dasharray:5 4;marker-end:url(#d)}
+    .box{fill:#000000;stroke:#ffd020;stroke-width:2}
+    .dash{fill:#000000;stroke:#c7a219;stroke-width:2;stroke-dasharray:6 5}
+    .h{fill:#ffd020;font-size:17px;font-weight:700}
+    .t{fill:#ffd020;font-size:12.5px}
+    .s{fill:#c7a219;font-size:11.5px}
+    .l{fill:#ffd020;font-size:11.5px}
+    .ld{fill:#c7a219;font-size:11.5px}
+    .ar{stroke:#ffd020;stroke-width:2;fill:none;marker-end:url(#a)}
+    .ad{stroke:#c7a219;stroke-width:2;fill:none;stroke-dasharray:5 4;marker-end:url(#d)}
   </style>
 
   <text x="24" y="30" class="s">SLOWEST AT THE TOP</text>
@@ -101,7 +101,7 @@
 
   <!-- SONG -->
   <rect class="dash" x="30" y="512" width="430" height="70" rx="6"/>
-  <text x="48" y="536" class="h" fill="#9a8a4a" style="fill:#c8b46a">SONG</text>
+  <text x="48" y="536" class="h" fill="#c7a219" style="fill:#c7a219">SONG</text>
   <text x="112" y="536" class="t">the written patterns, row by row</text>
   <text x="48" y="556" class="s">runs beside the layers above, not linked to them:</text>
   <text x="48" y="571" class="s">it counts pattern repeats, not phrases</text>
