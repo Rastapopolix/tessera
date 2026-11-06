@@ -417,6 +417,41 @@ static void test_keys(void)
     check("KEY: stopped, no key moves", tessera_key_now(0) == 0 && tessera_key_now(1) == 0);
 }
 
+/* steps longer than a bar (DIV 2 BAR, 4 BAR): a melodic STEP track at 4 bars a step asks for its key, and a following
+ * generator at 2 bars a step changes section; the CHAIN goes on in order (a step counted as one bar put their phrase
+ * behind the project's, and the CHAIN started again from the top), and the STEP track's key is its phrase's */
+enum { CT_DIV_2BAR = 8, CT_DIV_4BAR = 9 };            /* (params.c N_DIV) */
+static void ls_setup(void)
+{
+    power_on(0x4C53u);
+    gen(0, TESS_ENG_TURING);
+    trk[1].step[0].n = 1, trk[1].step[0].note[0] = 60, trk[1].step[0].time = ST_NOTE, trk[1].step[0].vel = 100;
+    trk[1].p[P_SLEN] = 1;
+    trk[1].p[P_SDIV] = CT_DIV_4BAR;
+    gen(2, TESS_ENG_MARKOV);
+    trk[2].p[P_SDIV] = CT_DIV_2BAR;
+    px(0, TX_FC_FORM, FM_ABCA);
+    px(0, TX_FC_PHRASE, 0);                           /* (4 bars) */
+    px(0, TX_FC_KEYB, 5);
+    px(0, TX_FC_KEYC, -3);
+    play();
+}
+static void test_long_steps(void)
+{
+    uint32_t stray, i;
+    int32_t key_b, key_c;
+    ls_setup();
+    run_phrases(8, 4, 1u | 4u, &stray);
+    check("long steps: a STEP track at 4 bars a step and a generator at 2 follow; the CHAIN in order (ABCA twice)",
+          seq_is(0, "ABCAABCA") && seq_is(2, "ABCAABCA") && !stray);
+    ls_setup();
+    for (i = 0; i < 6u * bar_blocks(); i++) block();  /* (bar 6: phrase 1, B) */
+    key_b = tessera_key_now(1);
+    for (i = 0; i < 4u * bar_blocks(); i++) block();  /* (bar 10: phrase 2, C) */
+    key_c = tessera_key_now(1);
+    check("long steps: the 4-bar STEP track's key is its phrase's (KEY B in B, KEY C in C)", key_b == 5 && key_c == -3);
+}
+
 int main(void)
 {
     test_off();
@@ -429,6 +464,7 @@ int main(void)
     test_flourish();
     test_stop_restart();
     test_keys();
+    test_long_steps();
     printf(fails ? "chain: %d FAILED\n" : "chain tests passed\n", fails);
     return fails != 0;
 }

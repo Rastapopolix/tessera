@@ -176,6 +176,17 @@ static int fc_skips(const fc_st_t *s, uint32_t p, uint32_t tr)
     return run & 1u;                                  /* (a run of hits: hold, go, hold, ...) */
 }
 
+/* the bar track t's step k (since PLAY) falls in, 0xFFFFFFFF if k does not begin one. A step of 2 or 4 bars (DIV
+ * 2 BAR, 4 BAR) begins 2 or 4 of them: tess_steps_per_bar counts such a step as one bar, which would put its phrase
+ * behind the project's (and fc_at takes an earlier phrase for a jump back: the CHAIN from the top) */
+static uint32_t fc_bar_of(const track_t *t, uint32_t k)
+{
+    uint32_t q = seq_div_samples(0u), d = seq_div_samples((uint32_t)t->p[P_SDIV]), spb;
+    if (q && d >= 6u * q) return k * ((d + 2u * q) / (4u * q));
+    spb = tess_steps_per_bar(t);
+    return k % spb ? 0xFFFFFFFFu : k / spb;
+}
+
 /* KEY B / KEY C: the semitones track tr's notes move by now, its scale with them (A: the key as set, 0). A generator
  * track that FOLLOWs moves with its own section (so a SKIP holds the key too); a melodic STEP track not set OWN with the
  * project's section on its own phrase line (counted as a follower's, from its steps since PLAY). Playing only */
@@ -188,9 +199,10 @@ static int32_t fc_key(uint32_t tr)
         c = tessera.evolve[tr].sec;
     } else {
         const track_t *t = &trk[tr];
-        uint32_t k = seq_run_step[tr], spb = tess_steps_per_bar(t);
+        uint32_t k = seq_run_step[tr], q = seq_div_samples(0u), d = seq_div_samples((uint32_t)t->p[P_SDIV]), bar;
         if (tessera.fc_follow[tr] == 2u || k == 0xFFFFFFFFu || drum_track(t)) return 0;
-        c = fc_letter_at(fc_at(k / spb / fc_bars())->pos);
+        bar = q && d >= 6u * q ? fc_bar_of(t, k) : k / tess_steps_per_bar(t);   /* (within a bar too) */
+        c = fc_letter_at(fc_at(bar / fc_bars())->pos);
     }
     return c == 1u ? tessera.fc_key[0] : c == 2u ? tessera.fc_key[1] : 0;
 }
@@ -202,10 +214,9 @@ static void tess_sec_go(uint32_t tr, uint32_t sec, uint32_t extra);
 static void fc_track_step(const track_t *t, uint32_t tr)
 {
     tessera_evolve_t *ev = &tessera.evolve[tr];
-    uint32_t k = seq_run_step[tr], spb = tess_steps_per_bar(t), bars = fc_bars(), bar, p;
+    uint32_t k = seq_run_step[tr], bars = fc_bars(), bar, p;
     const fc_st_t *s;
-    if (!song.playing || k == 0xFFFFFFFFu || k % spb) return;
-    bar = k / spb;
+    if (!song.playing || k == 0xFFFFFFFFu || (bar = fc_bar_of(t, k)) == 0xFFFFFFFFu) return;
     ev->bar_cnt = (uint8_t)(bar % bars);              /* (FLOURISH: the phrase's last bar) */
     if (bar % bars) return;
     p = bar / bars;
