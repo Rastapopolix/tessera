@@ -2217,13 +2217,16 @@ static void t_scene_constel(void) { v_scene(90, ENGI_FM6, FX_KUGO_HARP, TESS_ENG
 #ifndef T_LRATE2
 #define T_LRATE2 12
 #endif
+#ifndef T_TREM_RATE
+#define T_TREM_RATE 88
+#endif
 #ifndef T_SWEEP
 #define T_SWEEP 50
 #endif
 /* "Modulate the modulators" and PERF on one held chord (Theo 2026-11-06: inside the pieces the moves were buried): an
  * ORACLE pad holding the scale's chord through its four-pole filter, so a cord on CUTOFF is heard as plainly as it is
  * seen. M1: T1's LFO sweeps the cutoff; M2 (at fn_ms): T2's slow LFO on M1's amount, the sweep swelling and fading.
- * PERF: MCR1 from a dark, dry chord to an open one thrown into the echo */
+ * PERF: MCR1 from a dark, still chord to an open one pulsing (its filter, and a tremolo's depth) */
 static void t_chord_scene(void)
 {
     v_scene(72, ENGI_ORACLE, OR_WARM_PAD, TESS_ENG_CHORD, DIV_16);
@@ -2242,8 +2245,11 @@ static void t_scene_amt(void) { cord(1, CS_LFO, 1, CD_M1_AMT, 0, 100, -50, 0); u
 static void t_scene_perf(void)
 {
     t_chord_scene();
+    trk[0].p[P_LRATE] = T_TREM_RATE;
     cord(0, CS_MACRO1, 0, CD_CUTOFF, 0, 100, -55, CU_UNI);  /* MCR1: the chord from dark to open .. */
-    cord(1, CS_MACRO1, 0, CD_FX_SEND2, 0, 90, 0, CU_UNI);   /* .. and into the echo */
+    cord(1, CS_MACRO1, 0, CD_M1_AMT + 2u, 0, 100, 0, CU_UNI);   /* .. and M3's depth from none to full: */
+    cord(2, CS_LFO, 0, CD_LEVEL, 0, 0, 0, 0);           /* M3: T1's LFO on its level, a tremolo (Theo: the echo
+                                                         * throw was lost under the filter) */
 }
 /* the same screen (CEDAR RAIN's HOME, a minute in) in every ink: OUT/inks/<NAME>.ppm, for the demo's grids */
 static void t_inks(const char *out)

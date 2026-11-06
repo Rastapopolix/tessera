@@ -216,7 +216,7 @@ CUT = [
     ("b07c-kites-piece-2", 1, 4.5, [(0, "...and its top")]),
     ("b09b-undertow-close", 0, 6, [(0, "Nine inks"), (3, "Four-colour palettes, three new")], "grids"),
     ("b09b-undertow-close", 6, 18, [(0, "LANDSCAPE: rain on water, drawn by the music"),
-                                    (9, "It doesn't control anything. It's just nice to watch.")]),
+                                    (9, "It changes nothing. It's just nice to watch.")]),
 ]
 END_CLIP = ("b09b-undertow-close", 24)                  # the end card's music: UNDERTOW, on from the last clip
 GRID9 = ["YELLOW", "WHITE", "GREEN", "BLUE", "RED", "ORANGE", "PINK", "HOT PINK", "LILAC"]
