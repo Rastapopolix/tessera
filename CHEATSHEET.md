@@ -78,7 +78,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | A key + SELECT | That note's length |
 | **ENV** + SELECT or KNOB 1 | The cursor's note longer / shorter |
 | **SCL** + SELECT or KNOB 1 | Moves the note (ties, chord and velocity with it) |
-| **EDIT** tapped | Deletes the note and its ties |
+| **EDIT** tapped | Deletes the note and its ties; the cursor moves on the way KNOB 1 last turned |
 | **OCT+** | The note's sheet (length, velocity, chance, ratchet x1–x8, nudge ±/16, accumulate ±7, condition 1:2..8:8, FILL...) |
 | **OCT+** + SELECT, KNOB 1 or 2 | Selects a run of notes; let go: the Selected notes sheet (move, copy, quantize, delete) |
 | **OCT-** | Clears the selection |
