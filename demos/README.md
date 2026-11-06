@@ -14,6 +14,7 @@ takes). They need Tessera 3.3 or later.
 | `slow-light.tsp` | SLOW LIGHT | Drone: a TRIO fifth struck once and held, a wind, an ORACLE choir and a SOFT SWELL that change with the CHAIN's AABA; 15 minutes in WAVES |
 | `cedar-rain.tsp` | CEDAR RAIN | Plucked strings in KUMOI: a harp on TURING, a koto on EUCLID, an FM6 flute on MARKOV, 808 hand drums that ADORN varies; ABAC through three keys |
 | `undertow.tsp` | UNDERTOW | Call and answer in D minor: a STEP melody as ANSWER's SOURCE, answered on and on; minor chords and a sub bass in STEP |
+| `paper-kites.tsp` | PAPER KITES | Loops of different lengths: a harp in 11 eighths and ORACLE keys in 13 meet differently each time round, a MORPH pad, high CONSTELLATION stars; 30 minutes in WAVES |
 | `ember-field.tsp` | EMBER FIELD | Drone: a fifth that never moves (CHAIN: OWN), a tanpura cycle in STEP, a flute whose AABA sections differ; a 20-minute PIECE |
 
 They are made by the firmware's own code (`tests/demo_projects.c`), which saves each one to a slot, reads it back
@@ -167,6 +168,20 @@ E phrygian, 60 BPM. A drone.
   **PLATEAU**, END **LOOP**. ENERGY ARC 30.
 - **MODS**: T2 TIDE 1 → T2 CUT, T1 DRIFT → T1 PAN, T4 SWARM 1 → T4 FX SEND.
 
+## PAPER KITES
+
+F major pentatonic, 66 BPM. Loops of different lengths, so the parts meet differently each time round.
+
+- **T1 FM6 HARP**, STEP, 11 eighths: three notes (F, A, C'). ROLE **ANCHOR**. T1's SWARM 2 moves its FX SEND.
+- **T2 ORACLE KEYS**, STEP, 13 eighths: two notes a ninth apart (G, D'), so the two figures line up again only after
+  143 eighths. T2's DRIFT moves its PAN.
+- **T3 TRIO SOFT PAD**, MORPH in whole notes, an octave down, ringing on: new in B and C (CONTRAST 50), each return of
+  A a little changed (DEVELOP 25). T3's TIDE 1 opens and closes its CUT.
+- **T4 ORACLE GLASS PAD**, CONSTELLATION in quarter notes, few stars and high (DENS 25, Y 9), DROP 40: a note caught
+  now and then.
+- **CHAIN** ABCA, PHRASE 16 bars, WANDER 40: **KEY B +5** (B flat), **KEY C −3** (D). **ENTRIES** 50, DWELL 3, FADE over
+  4 bars. **PIECE** 30 minutes in four **WAVES**, END **LOOP**. ENERGY ARC 25.
+
 ## Making them again
 
 ```
@@ -179,8 +194,8 @@ cp build/demos/*.tsp demos/
 A change of what the generators play, or of the project format, can change the records: make them again and check
 they still sound right (the WAVs) before committing.
 
-Six more pieces are kept in reserve, built but not shipped here (NIGHT FERRY, TIN ROOF, COLD ORBIT, PAPER KITES, STONE
-PIER, FAR SHORE): `build/host/demo_projects reserve make build/reserve 180` makes them.
+Five more pieces are kept in reserve, built but not shipped here (NIGHT FERRY, TIN ROOF, COLD ORBIT, STONE PIER, FAR
+SHORE): `build/host/demo_projects reserve make build/reserve 180` makes them.
 
 ## The demo video
 

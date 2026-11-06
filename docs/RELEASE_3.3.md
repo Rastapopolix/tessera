@@ -17,7 +17,8 @@ Projects, presets and settings from 2.x and 3.x carry over.
   or starts a new piece.
 * **FORM's DEVELOP**: a section varies a little each time it returns, without drifting away.
 * The manual has a new page on **how these layers work together**, with a diagram, and one on **PATTERNS and SONG**.
-* **Four new demos** made with them: SLOW LIGHT, CEDAR RAIN, UNDERTOW and EMBER FIELD (web editor > Demo projects).
+* **Five new demos** made with them: SLOW LIGHT, CEDAR RAIN, UNDERTOW, EMBER FIELD and PAPER KITES (web editor > Demo
+  projects).
 
 ### 🎛️ Mods and performance
 * **PERF** (GLO > PERF, after MIXER): four macros, **MCR1 to MCR4**, as mod sources kept in the project.

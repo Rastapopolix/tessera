@@ -487,6 +487,9 @@ The bar's first step stays on the grid. A mod on **SPLIT** (an LFO or TIDE) brin
   page button leaves it for its own page.
 - In lists (the menu, SCL, VOICE, sheets), **KNOB 1 picks the row and KNOB 2 changes it**.
 - Prefer the left knob for picking tracks? MENU > **TRACK KNOB LEFT**.
+- The large value at the foot of the screen covering what you want to watch, or too small to read from where you
+  stand? MENU > **LARGE VALUE**: AUTO (the default) shows it only on pages without a picture, ON on every page, OFF
+  never. The knob's own column always shows its value.
 - Hold **GLO** and turn **PRESETS** to change the selected track's sound from any page. The sound's name shows large
   while GLO is held; let go to carry on where you were.
 
