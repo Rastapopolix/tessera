@@ -578,8 +578,8 @@ static void demo_light(void)
 /* CEDAR RAIN: plucked strings and a bamboo flute again, as KOTO GARDEN, but in KUMOI on E at 80 BPM and built another
  * way: a KUGO harp on TURING turning a 12-step figure in eighths (locked, a note now and then new), a koto under it on
  * EUCLID 16 / 5 in sixteenths, an octave down, an FM6 flute on MARKOV in half notes that is the song (TRIO's BREATH
- * FLUTE hissed), and a pair of 808 toms and a rim written in STEP like hand drums, ADORN filling the rests a little differently each round. The
- * CHAIN goes to A (KEY B +5) and to D (KEY C -2) and home, ABAC in 8-bar phrases (A twice), each B and C a new figure;
+ * FLUTE hissed), and a pair of 808 toms and a rim written in STEP like hand drums, ADORN filling the rests a little
+ * differently each round. The CHAIN goes to A (KEY B +5) and to D (KEY C -2) and home, ABAC in 8-bar phrases (A twice), each B and C a new figure;
  * ENTRIES at 45 with FADE; a 12-minute ARCH, played again. */
 static void demo_cedar(void)
 {
