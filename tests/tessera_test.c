@@ -2096,6 +2096,36 @@ static void org_run(char *res, size_t cap)
 }
 
 /* ------------------------------------------------------------ STEP EVOLVE --- */
+/* ANSWER hears a key on the nearest step: one played past the middle of a step counts on the next (as REC places it);
+ * the phrase counts from its first note's step, so a late first note does not push the rest a step early */
+static int check(const char *what, int ok);
+static int test_answer_nearest(void)
+{
+    const tessera_answer_t *a = &tessera.answer[1];
+    int ok;
+    tessera_reset();
+    gen(1, TESS_ENG_ANSWER);
+    tessera_answer_hear_at(&trk[1], 57, 90, 0);
+    tess_an.hclk[1] = 2;                               /* (two steps on) */
+    tessera_answer_hear_at(&trk[1], 60, 90, 1);        /* (past the third step's middle: the fourth) */
+    tess_an.hclk[1] = 5;
+    tessera_answer_hear_at(&trk[1], 62, 90, 0);
+    ok = a->n == 3u && a->at[0] == 0u && a->at[1] == 3u && a->at[2] == 5u;
+    tessera_reset();
+    gen(1, TESS_ENG_ANSWER);
+    tessera_answer_hear_at(&trk[1], 57, 90, 1);        /* the first late: the phrase starts on the next step */
+    tess_an.hclk[1] = 2;
+    tessera_answer_hear_at(&trk[1], 60, 90, 0);        /* early in the step after it: one step from the first */
+    ok &= a->n == 2u && a->at[0] == 0u && a->at[1] == 1u;
+    tessera_reset();
+    gen(1, TESS_ENG_ANSWER);
+    tessera_answer_hear(&trk[1], 57, 90);              /* (without: as before) */
+    tess_an.hclk[1] = 2;
+    tessera_answer_hear(&trk[1], 60, 90);
+    ok &= a->n == 2u && a->at[1] == 2u;
+    tessera_reset();
+    return check("ANSWER: a key past its step's middle counts on the next step, the phrase from its first note's", ok);
+}
 /* A STEP track's EVOLVE page (step_evolve.c, vary.c): the step player called as seq.c calls it, step by step, then once
  * through the sequencer. Each check a bit of "fail" */
 static const char *const SV_CHECK[] = {
@@ -3294,6 +3324,7 @@ int main(int argc, char **argv)
         tess_quad_cols(0);
         ok &= tessera.quad[2].cell[0] == 1u && tessera.quad[0].cell[1] == 6u && tessera.quad[3].cell[1] == 2u;
         bad += check("QUAD columns: DOWN and UP turn all four rows, each on its EVERY, on the first QUAD track's steps", ok);
+    bad += test_answer_nearest();
         for (uint32_t r = 0; r < TESSERA_TRACKS; r++) memcpy(was[r], tessera.quad[r].cell, 4);
         tess_quad_mutate(0, 100);
         ok = 1;

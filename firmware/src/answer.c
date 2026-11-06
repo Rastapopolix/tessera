@@ -55,8 +55,11 @@ static void answer_restart(uint32_t tr)
 }
 
 /* a note on the track's keys: the first after an answer (or a closed phrase) starts a new phrase; up to 8, a step
- * apart at least (keys while stopped: a step each) */
-void tessera_answer_hear(track_t *t, uint32_t note, uint32_t vel)
+ * apart at least (keys while stopped: a step each). On the nearest step, as REC places a note: one played past the
+ * middle of a step (late) counts on the next, so a note played a touch early is not a whole step early (Theo, 3.3.1:
+ * the answers felt off the grid) */
+void tessera_answer_hear(track_t *t, uint32_t note, uint32_t vel) { tessera_answer_hear_at(t, note, vel, 0); }
+void tessera_answer_hear_at(track_t *t, uint32_t note, uint32_t vel, uint32_t late)
 {
     uint32_t tr = trk_index(t), n, at;
     tessera_answer_t *a;
@@ -68,10 +71,13 @@ void tessera_answer_hear(track_t *t, uint32_t note, uint32_t vel)
         a->n = 0;
         tess_an.phase[tr] = TESS_AN_HEAR;
         tess_an.hclk[tr] = 0;
+        tess_an.hlate[tr] = late ? 1u : 0u;      /* (the phrase from its first note's step) */
     }
     n = a->n;
     if (n >= TESS_AN_NOTES) return;
-    at = tess_an.hclk[tr] > TESS_AN_AT_MAX ? TESS_AN_AT_MAX : tess_an.hclk[tr];
+    at = tess_an.hclk[tr] + (late ? 1u : 0u);
+    at = at > tess_an.hlate[tr] ? at - tess_an.hlate[tr] : 0u;
+    at = at > TESS_AN_AT_MAX ? TESS_AN_AT_MAX : at;
     if (n && at <= a->at[n - 1u]) at = a->at[n - 1u] + 1u;
     if (at > TESS_AN_AT_MAX) return;
     a->note[n] = (uint8_t)note;
