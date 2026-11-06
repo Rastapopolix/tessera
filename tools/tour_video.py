@@ -221,7 +221,8 @@ CUT = [
 DW = 1080                                               # the demo's square
 DS = 3                                                  # its screen, 3x: 720
 DX, DY = (DW - 240 * DS) // 2, 150
-CARD_S, TITLE_S, END_S, END_HOLD, CUT_FADE = 2.0, 3.0, 12.0, 2.0, 0.15
+CARD_S, TITLE_S, END_S, END_HOLD = 2.0, 3.0, 12.0, 2.0
+CUT_FADE, CUT_FADE_CARD = 0.3, 0.8                      # s: the music's fade between clips; out of and into a card
 CHAPTER_INK = {"a00": "OCEAN", "a03": "GREEN", "a04": "BLUE", "a05": "ORANGE", "a06": "MOSAIC", "a07": "SUNSET",
                "a09": "OCEAN", "a10": "YELLOW"}
 
@@ -298,11 +299,16 @@ def demo(src, intro, out):
             a = level(a)
         a = a[f0 * SPF * 2:(f0 + n) * SPF * 2]
         a.extend([0] * max(0, n * SPF * 2 - len(a)))
-        k = int(CUT_FADE * FS)
-        for i in range(k):                              # (a short fade at each cut: no jump between pieces)
-            g = i / k
-            for j in (2 * i, 2 * i + 1, len(a) - 2 - 2 * i, len(a) - 1 - 2 * i):
-                a[j] = int(a[j] * g)
+        idx = CUT.index(e)                              # (fades: long out of and into silence, short between clips)
+        k_in = int((CUT_FADE_CARD if idx == 0 or len(CUT[idx - 1]) == 2 else CUT_FADE) * FS)
+        k_out = int((CUT_FADE_CARD if idx + 1 == len(CUT) or len(CUT[idx + 1]) == 2 else CUT_FADE) * FS)
+        m = len(a) // 2
+        for i in range(max(k_in, k_out)):
+            for kk, frm in ((k_in, i), (k_out, m - 1 - i)):
+                if i < kk:
+                    g = math.sin(0.5 * math.pi * i / kk) ** 2
+                    a[2 * frm] = int(a[2 * frm] * g)
+                    a[2 * frm + 1] = int(a[2 * frm + 1] * g)
         audio.extend(a)
         plan.append(("clip", (ppm, caps, ink), n))
     # the end: SLOW LIGHT under the end card, fading out
