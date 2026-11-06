@@ -186,6 +186,8 @@
   .strip button { width: 100%; padding: 1px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .strip button.selb:disabled { opacity: 1; background: none; color: var(--dim); }
   #sysinfo th { padding-right: 16px; }
+  #health-table th { padding-right: 16px; text-align: left; font-weight: normal; }
+  #health-table td.warn { background: var(--hi); color: var(--hi-fg); padding: 0 4px; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -355,10 +357,17 @@
         <button id="backup-import" data-t="backupImport"></button><input id="backup-file" type="file" accept=".json,application/json" hidden></p>
       <p class="dim" id="backup-help"></p>
     </div>
+    <div id="demos-panel" style="margin-top:16px">
+      <h2 data-t="demosTitle"></h2>
+      <p class="dim" data-t="demosHelp"></p>
+      <div class="slots" id="demorows" style="grid-template-columns:auto auto 1fr"></div>
+      <p class="bar"><button id="demos-put" data-t="demosPut" data-ic="symbol_download"></button>
+        <span id="demos-status" class="dim" aria-live="polite"></span></p>
+    </div>
     <div class="group" id="tunings" hidden style="margin-top:16px">
       <h2 data-t="tuneTitle"></h2>
       <p class="dim" data-t="tuneHelp"></p>
-      <div class="slots" id="tunerows"></div>
+      <div class="slots" id="tunerows" style="grid-template-columns:auto auto auto auto auto"></div>
       <p class="bar"><button id="tuneoff" data-t="tuneOff"></button><input id="tunefile" type="file" accept=".scl,.SCL,text/plain" hidden>
         <span id="tunestatus" class="dim" aria-live="polite"></span></p>
     </div>
@@ -386,6 +395,13 @@
     <div class="group" style="margin-top:12px">
       <h2 data-t="system" data-ic="symbol_cog"></h2>
       <table id="sysinfo"></table>
+    </div>
+    <div class="group" id="health" style="margin-top:12px">
+      <h2 data-t="health"></h2>
+      <p class="dim" data-t="healthHelp"></p>
+      <p><button id="health-live" type="button"></button> <button id="health-reset" type="button" data-t="healthReset"></button>
+        <span id="health-note" class="dim"></span></p>
+      <table id="health-table"></table>
     </div>
   </section>
 
@@ -421,7 +437,7 @@ const CMD = { INFO: 1, GET: 2, SET: 3, DUMP: 4, DESC: 5, STEP_GET: 6, STEP_SET: 
   TRACK_PARAM: 31, TRACK_CHANGED: 32, SONG: 33, PATTERN: 73, BANK_SONG: 74,
   UI_STATE: 34, UI_SET: 35, UI_PALETTES: 36, FAV_GET: 37, FAV_SET: 38,
   MOTION: 64, BACKUP_LIST: 65, BACKUP_GET: 66, BACKUP_PUT: 67,
-  FM6_GET: 68, FM6_PUT: 69, FM6_LIST: 70, FM6_ERASE: 71, NATIVE: 78, TUNE: 80 };   /* (75..77 CZ-1, 95 PROPHET: retired 2026-10-22) */
+  FM6_GET: 68, FM6_PUT: 69, FM6_LIST: 70, FM6_ERASE: 71, STATS: 72, NATIVE: 78, TUNE: 80 };   /* (75..77 CZ-1, 95 PROPHET: retired 2026-10-22) */
 /* frames the device sends on its own (while WATCH is on); never replies */
 
 
@@ -740,6 +756,12 @@ const parse = {
     return o;
   },
   [CMD.FM6_ERASE](a) { return { index: a[0], rc: a[1] }; },
+  /* {schema, values: {name: n}} or null when the reply's length does not fit its schema */
+  [CMD.STATS](a) {
+    const names = statsFields(a[0]);
+    if (!names || a.length !== 1 + 5 * names.length) return null;
+    return { schema: a[0], values: Object.fromEntries(names.map((k, i) => [k, u35dec(a, 1 + 5 * i)])) };
+  },
 };
 
 /* a name the device accepts: printable ASCII, 1..12 characters */
@@ -820,7 +842,35 @@ const req = {
   fm6Put: (target, i, packed) => [CMD.FM6_PUT, [target & 0x7F, i & 0x7F, ...packed.map((x) => x & 0x7F)]],
   fm6List: () => [CMD.FM6_LIST, []],
   fm6Erase: (i) => [CMD.FM6_ERASE, [i & 0x7F]],
+  /* the health counters (command 72): flags as STATS (1 resets the maxima after reading) */
+  stats: (flags = STATS.ALL) => [CMD.STATS, flags ? [flags & 0x7F] : []],
 };
+
+/* the device's health (command 72, ED_AUDIO_STATS, as tools/usb_audio_stats.py): a schema byte, then 5 x 7 bits a
+   value. flags: 1 resets the maxima, 2 voices, 4 cores, 8 memory, 16 tracks, 32 complete timing, 64 stacks; the schema
+   answered (2..8) says which groups came */
+const STATS = {
+  FIELDS: ["play_alt", "cap_alt", "play_rate", "cap_rate", "play_fill", "cap_fill", "play_underruns", "play_overruns",
+    "cap_underruns", "cap_overruns", "bad_packets", "rx_packets", "tx_packets", "missed_frames", "poll_max_us",
+    "service_max_us", "audio_late", "feedback_q14", "audio_max_us", "cpu_q8"],
+  GROUPS: [
+    ["voices_active", "voices_held", "core1_rejected", "core1_faults", "voices_shed", "voices_given_up"],
+    ["core1_online", "core1_jobs", "core1_max_job_us", "core1_max_wait_us", "core1_timeouts", "fm6_pairs"],
+    ["cache_status", "cache_con_before", "cache_data_before", "cache_instruction_before", "cache_con_after",
+      "cache_data_after", "cache_instruction_after", "cache_failure_address", "cache_test_us", "resource_capacity",
+      "resource_used", "resource_peak", "resource_failures", "cache_capacity", "cache_used"],
+    [1, 2, 3, 4].map((p) => `track_${p}_voices_shed`).concat([1, 2, 3, 4].map((p) => `track_${p}_voices_given_up`)),
+    ["audio_full_max_us", "audio_full_last_us", "audio_deadline_misses", "audio_target_exceeded", "audio_batch_pairs",
+      "capacity_steals", "admission_rejections", "admission_enabled", "fixed_voice_bench"],
+    ["stack_cpu0_user_peak", "stack_cpu0_user_size", "stack_cpu0_system_peak", "stack_cpu0_system_size",
+      "stack_cpu1_user_peak", "stack_cpu1_system_peak"],
+  ],
+  ALL: 2 | 4 | 8 | 16 | 32 | 64,
+};
+/* the field names schema n carries (0 < n <= 8), or null */
+const statsFields = (n) => (n >= 2 && n <= 8 ? STATS.FIELDS.concat(...STATS.GROUPS.slice(0, n - 2)) : null);
+/* the 5 x 7-bit values back to numbers (unsigned 32-bit) */
+const u35dec = (a, i) => [0, 1, 2, 3, 4].reduce((v, j) => v + (a[i + j] & 0x7F) * 2 ** (7 * j), 0) % 2 ** 32;
 
 /* which reply belongs to which request (the device echoes these) */
 function replyMatches(cmd, args, a) {
@@ -2035,7 +2085,7 @@ function makeMockDevice(opt = {}) {
     smp: [0, 1, 2].map(() => ({ flash: new Uint8Array(SMP.SLOT_SIZE).fill(0xFF), zones: 0, name: "", len: 0, next: SMP.DATA_OFF })),
     bank: new Array(opt.slots || 64).fill(null),     /* user presets: {engine, name, p, pattern, grid} */
     uiCaps: opt.legacy || opt.v3 || opt.v5 ? 0 : opt.uiCaps ?? 57,
-    palette: 0, font: 0, monitor: 0, filter: 0, bankSig: 0, click:0, clickLevel:1, countin:0, preview:0, chordAdd:0, retiredPreference:127, screenOff:0,
+    palette: 0, font: 0, monitor: 0, filter: 0, bankSig: 0, click:0, clickLevel:1, countin:0, preview:1, chordAdd:0, retiredPreference:127, screenOff:0,
     palettes: ["MONO", "GREEN", "AMBER", "ICE", "VIOLET", "ROSE", "PAPER", "HI-CON"],
     favorites: Array.from({ length: ENG.length + 3 }, () => []),
     watch: false, v4: false, lastReq: 0,
@@ -2217,6 +2267,21 @@ function makeMockDevice(opt = {}) {
       case CMD.PING:
         b(0);
         break;
+      case CMD.STATS: {                            /* (editor.c ED_AUDIO_STATS): schema 8, made-up but steady numbers */
+        const names = statsFields(8), now = Date.now(), load = st.playing ? 48 : 21;
+        st.statsMax = st.statsMax || { audio_max_us: 410, audio_full_max_us: 452 };
+        const v = { cpu_q8: Math.round((load + (now >> 9) % 7) * 256 / 100), audio_max_us: st.statsMax.audio_max_us,
+          audio_full_max_us: st.statsMax.audio_full_max_us, audio_full_last_us: 300 + (now >> 8) % 40,
+          voices_active: st.playing ? 9 : 0, voices_held: st.playing ? 4 : 0, voices_shed: 2, voices_given_up: 0,
+          core1_online: 1, core1_jobs: (now >> 3) % 2 ** 28, core1_max_job_us: 180, core1_max_wait_us: 12,
+          track_1_voices_shed: 2, capacity_steals: 3, resource_capacity: 354048, resource_used: 183972,
+          resource_peak: 190112, stack_cpu0_user_peak: 6120, stack_cpu0_user_size: 10312, stack_cpu0_system_peak: 1880,
+          stack_cpu0_system_size: 2932, stack_cpu1_user_peak: 1400, stack_cpu1_system_peak: 600 };
+        b(8);
+        for (const k of names) { const n = (v[k] ?? 0) >>> 0; for (let j = 0; j < 5; j++) b(Math.floor(n / 2 ** (7 * j)) & 0x7F); }
+        if ((a[0] ?? 0) & 1) st.statsMax = { audio_max_us: 0, audio_full_max_us: 0 };
+        break;
+      }
       case CMD.UI_STATE: uiState(); break;
       case CMD.UI_PALETTES: b(st.palettes.length); st.palettes.forEach(s); break;
       case CMD.UI_SET: {
@@ -2519,6 +2584,32 @@ function makeMockDevice(opt = {}) {
         b(a[0]); b(rc);
         break;
       }
+      case CMD.BACKUP_LIST: case CMD.BACKUP_GET: case CMD.BACKUP_PUT: {   /* (editor_backup.c: the own format's 30
+          objects; here only the music playing (an empty TSP1 record) and the slots' records, which the mock keeps) */
+        const u32 = (n) => [0, 1, 2, 3, 4].map(i => (n >>> (i * 7)) & (i === 4 ? 15 : 127)), r32 = (o) => (a[o] | a[o + 1] << 7 | a[o + 2] << 14 | a[o + 3] << 21 | a[o + 4] << 28) >>> 0;
+        const live = Uint8Array.of(0x54, 0x53, 0x50, 0x31, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        new DataView(live.buffer).setUint32(12, live.subarray(0, 12).reduce((h, x) => Math.imul(h ^ x, 16777619) >>> 0, 0x811c9dc5), true);
+        const obj = (id) => id === 0 ? live : id >= 2 && id <= 5 && st.slots[id - 2] ? st.bkSlot?.[id - 2] || new Uint8Array(0) : new Uint8Array(0);
+        st.chainPlaying = false;
+        if (cmd === CMD.BACKUP_LIST) { b(1); b(0); b(30); for (let id = 0; id < 30; id++) { const o = obj(id); b(id); out.push(...u32(o.length), ...u32(o.length ? crc32(o) : 0)); } break; }
+        if (cmd === CMD.BACKUP_GET) {
+          const o = obj(a[0]), off = r32(1), n = a[6] | a[7] << 7, ok = n && n <= 256 && off + n <= o.length;
+          b(a[0]); b(ok ? 0 : 1); out.push(...u32(off)); b(ok ? n & 127 : 0); b(ok ? n >> 7 : 0);
+          if (ok) for (let i = off; i < off + n; i += 7) { const c = o.subarray(i, Math.min(off + n, i + 7)); b(c.reduce((m, x, k) => m | (x >> 7) << k, 0)); c.forEach(x => b(x)); }
+          break;
+        }
+        const [op, id] = a; let rc = id < 2 || id > 5 ? 1 : 0;
+        if (!rc && op === 0) st.bkPut = { id, size: r32(2), crc: r32(7), bytes: [] };
+        else if (!rc && op === 1 && st.bkPut?.id === id) for (let i = 7; i < a.length; ) { const m = a[i++]; for (let k = 0; k < 7 && i < a.length && a[i] < 128 && st.bkPut.bytes.length < st.bkPut.size; k++) st.bkPut.bytes.push(a[i++] | (m >> k & 1) << 7); }
+        else if (!rc && op === 2 && st.bkPut?.id === id) {
+          const v = Uint8Array.from(st.bkPut.bytes); rc = v.length === st.bkPut.size && crc32(v) === st.bkPut.crc ? 0 : 2;
+          if (!rc) { (st.bkSlot ||= [])[id - 2] = v; st.slots[id - 2] = project(); }
+          st.bkPut = null;
+        } else if (op === 3) st.bkPut = null;
+        else rc = rc || 5;
+        b(op); b(id); b(rc);
+        break;
+      }
       case CMD.SMP_INFO:
         b(3); b(SMP.SLOT_SIZE / 1024);
         st.smp.forEach((u) => { b(u.zones); s(u.zones ? u.name : ""); b(u.zones ? Math.ceil(u.len / 1024) : 0); });
@@ -2747,6 +2838,19 @@ const TEXT = {
     fm6Exported: "バンクを書き出しました",
     motion: "モーション", motionOn: "再生", motionClear: "モーションを消去", motionConfirm: "選択トラックのモーションを消しますか？", chance: "確率 %", motionStep: "ステップ", motionParam: "パラメーター", motionValue: "値",
     backupTitle: "全体バックアップ", backupExport: "バックアップ保存", backupImport: "バックアップ復元", backupHelp: "現在の曲・A〜D・音色バンク・ユーザーサンプル・設定を、このパソコンへ保存。", backupOld: "全体バックアップには対応版への更新が必要です。", backupConfirm: "全体バックアップを復元しますか？ 現在の曲、保存データとサンプルを置き換えます。USBを抜かないでください。", backupWorking: "バックアップ処理中 ", backupDone: "バックアップを保存しました", backupRestored: "全体バックアップを復元しました",
+    demosChecks: "テスト用プロジェクト（実機チェック用、demos/checks/README.md）：",
+    chkChain: "CHAIN ABAC、4 小節フレーズ：全トラックが一緒にセクションを替える", chkEntries: "その CHAIN に ENTRIES 50：トラックがフェードで出入り",
+    chkPiece: "PIECE：2 分、ARCH、そして停止", chkMods: "モッドのモッド、GATE モッド、FILL へのモッド",
+    chkTempo: "TEMPO へのゆっくりしたモッド", chkMidi: "SOUND OFF トラック：MIDI のみ（TRANSPOSE -24）とモッド用レーン",
+    chkCpu: "ORACLE 4 トラック：設定 > 動作状態 を見る",
+    demosTitle: "デモ・プロジェクト", demosHelp: "Tessera のデモ曲を選んだスロットへ書き込みます。そのスロットのプロジェクトは置き換わり、ほかは変わりません。残したい場合は先にバックアップを保存してください。", demosPut: "FM-1 に書き込む", demosNone: "スロットを選んでください", demosTwice: "同じスロットは一度だけ選べます", demosSkip: "書き込まない",
+    demosConfirm: "次のデモを書き込みますか？", demosWas: "現在", demosEmpty: "空き", demosOld: "読めない古い形式のプロジェクト", demosUnnamed: "名前なしのプロジェクト", demosKeep: "置き換えるプロジェクトを残したい場合は、キャンセルして先にバックアップを保存してください。", demosWorking: "デモを書き込み中 ", demosDone: "デモを書き込みました。SAVE > PROJECT から読み込めます: ", demosFetch: "デモ・ファイルを読み込めません: ",
+    demoStill: "アンビエント: ORACLE のドローン、GRAVITY、FILTER を通る FALL、STEP を種にしたベース", demoKoto: "HIRA の FM 箏が QUAD で 2 列、FORM で育つ ORACLE の笛、条件付きステップの木魚", demoHarbour: "アンビエント・ダブ: ORACLE のコードがエコーへ、サブベース、909 のワンドロップ",
+    demoLight: "ドローン: 一度だけ鳴らす TRIO の五度、TIDE で動く風、ORACLE の合唱、ときどき立ち上がる SOFT SWELL（15 分の WAVES）",
+    demoCedar: "KUMOI の撥弦: TURING の KUGO ハープ、EUCLID の箏、MARKOV の笛、ADORN で変わる 808 のタム（CHAIN で転調）",
+    demoUndertow: "ニ短調の呼びかけと応答: STEP のメロディを ANSWER が SOURCE にして答え続ける、短調のコード（Dm Bb Gm Am）とサブベース",
+    demoEmber: "ドローン: 動かない五度、タンプーラ風の STEP、CHAIN の AABA で変わる MARKOV の笛（20 分の PIECE）",
+    demoKites: "長さの違うループ: 11 拍のハープと 13 拍の ORACLE のキーが毎回ちがう重なり方をし、MORPH のパッドと高い CONSTELLATION の星（30 分の WAVES）",
     deviceDisplay: "本体の画面",
     deviceDisplayHelp: "FM-1 の画面に反映し、保存します。再生中の変更は停止後に保存されます。",
     devicePresets: "本体のプリセット",
@@ -2829,6 +2933,13 @@ const TEXT = {
     tuneLoad: ".scl を読み込む", tunePlay: "使う", tuneOff: "調律オフ (SCL の音階)", tuneNotes: "音", tuneFolded: "周期内に折り返し・重複を除去", tuneRefused: "本体がこの調律を受け付けませんでした",
     tuneReplace: "USR{n} の {old} を置き換えますか？", tuneClearConfirm: "USR{n} を消去しますか？",
     slot: "スロット", songTitle: "ソング", songHelp: "保存スロットのパターンと繰り返す回数を順に並べます。音色は現在のまま。並び順を残すには、上のプロジェクトを保存してください。切替はトラック1のパターン終端、曲末で停止します。", songAdd: "行を追加", songRemove: "最後の行を削除", songPlay: "先頭から再生", songStop: "停止", songReps: "回", songEmpty: "行を追加してください", songBusy: "停止してから編集してください", songInvalid: "スロットと回数を確認してください", songPlaying: "再生中の行", songSaved: "並び順を変更しました。プロジェクトを保存すると残せます。",
+    health: "動作状態", healthHelp: "FM-1 自身のカウンター。LIVE の間 1 秒ごとに読みます。CPU を確かめるときに見る数値です。最悪値は電源投入か RESET から。反転表示はノイズやボイス切れの恐れ。",
+    healthLive: "ライブ", healthStop: "停止", healthReset: "最悪値をリセット", healthSchema: "形式",
+    healthOld: "このファームウェアの返答は形式が違います。", healthNone: "応答なし：このファームウェアはカウンターなしでビルドされています（USB オーディオ無効）。",
+    healthCpu: "CPU 負荷", healthWorst: "最悪の半バッファ（期限に対して）", healthLate: "遅れた半バッファ · 期限超過",
+    healthVoices: "発音中 · 保持中のボイス", healthShed: "間引き · 断念 · 奪われたボイス", healthShedTracks: "間引き、トラック 1 · 2 · 3 · 4",
+    healthCore1: "第 2 コア 稼働 · タイムアウト · フォールト", healthMemory: "オーディオメモリ、ピーク", healthStack: "スタック、メイン · 割り込み",
+    yes: "はい", no: "いいえ",
     system: "システム", firmware: "ファームウェア", sync: "同期", tracksN: "トラック", stepsN: "ステップ数", enginesL: "エンジン",
     smpSlots: "サンプルスロット", userBank: "ユーザープリセット", none: "なし",
   },
@@ -2844,6 +2955,19 @@ const TEXT = {
     fm6Exported: "Bank exported",
     motion: "Motion", motionOn: "Play motion", motionClear: "Clear motion", motionConfirm: "Clear this track's motion?", chance: "Chance %", motionStep: "Step", motionParam: "Parameter", motionValue: "Value",
     backupTitle: "Complete backup", backupExport: "Save backup", backupImport: "Restore backup", backupHelp: "Save the current music, A–D, sound banks and settings to this computer.", backupOld: "Complete backups need firmware with archive support.", backupConfirm: "Restore this complete backup? Current music, saved data and samples will be replaced. Keep USB connected.", backupWorking: "Backing up / restoring ", backupDone: "Backup saved", backupRestored: "Complete backup restored",
+    demosChecks: "Test projects, for the device checks (demos/checks/README.md):",
+    chkChain: "CHAIN ABAC, 4-bar phrases: all tracks change section together", chkEntries: "ENTRIES 50 on that CHAIN: tracks fade out and back in",
+    chkPiece: "PIECE: 2 minutes, ARCH, then it stops", chkMods: "A mod of a mod, a GATE mod, a mod onto FILL",
+    chkTempo: "A slow mod onto TEMPO", chkMidi: "SOUND OFF tracks: MIDI only (TRANSPOSE -24) and a mod lane",
+    chkCpu: "Four ORACLE tracks: watch Settings > Health",
+    demosTitle: "Demo projects", demosHelp: "Put Tessera's demo songs into the slots you choose. Each chosen slot's project is replaced; nothing else on the FM-1 changes. Save a backup first if you want to keep what is there.", demosPut: "Put on the FM-1", demosNone: "Choose a slot for at least one demo", demosTwice: "Choose each slot only once", demosSkip: "Leave out",
+    demosConfirm: "Put these demos on the FM-1?", demosWas: "now", demosEmpty: "empty", demosOld: "a project in an older format", demosUnnamed: "a project with no name", demosKeep: "To keep a project that will be replaced, cancel and save a backup first.", demosWorking: "Putting the demos on the FM-1 ", demosDone: "Demos written. Load them from SAVE > PROJECT: ", demosFetch: "Could not read the demo file: ",
+    demoStill: "Ambient: an ORACLE drone, GRAVITY, FALL through the FILTER effect, a bass from STEP as seed", demoKoto: "FM koto in HIRA on two QUAD rows, an ORACLE flute in a FORM that develops, a mokugyo with conditions", demoHarbour: "Ambient dub: ORACLE chord stabs into a drifting echo, a sub bass, a 909 one drop",
+    demoLight: "Drone: a TRIO fifth struck once and held, a wind a TIDE moves, an ORACLE choir, a SOFT SWELL rising now and then (15 minutes in WAVES)",
+    demoCedar: "Plucked strings in KUMOI: a KUGO harp on TURING, a koto on EUCLID, a MARKOV flute, 808 toms that ADORN varies; the CHAIN moves key",
+    demoUndertow: "Call and answer in D minor: a STEP melody that ANSWER takes as its SOURCE and answers on and on, minor chords (Dm Bb Gm Am) and a sub bass",
+    demoEmber: "Drone: a fifth that never moves, a tanpura-like STEP cycle, a MARKOV flute changing with the CHAIN's AABA (a 20-minute PIECE)",
+    demoKites: "Loops of different lengths: a harp in 11 eighths and ORACLE keys in 13 meeting differently each time, a MORPH pad, high CONSTELLATION stars (30 minutes in WAVES)",
     deviceDisplay: "Device display",
     deviceDisplayHelp: "Changes apply to the FM-1 screen and save. Changes made while playing save after STOP.",
     devicePresets: "Device presets",
@@ -2926,6 +3050,13 @@ const TEXT = {
     tuneLoad: "Load .scl", tunePlay: "Play", tuneOff: "Tuning off (SCL's scale)", tuneNotes: "notes", tuneFolded: "folded into the period, repeats dropped", tuneRefused: "The FM-1 refused this tuning",
     tuneReplace: "Replace {old} in USR{n}?", tuneClearConfirm: "Erase USR{n}?",
     slot: "Slot", songTitle: "Song", songHelp: "Arrange patterns from saved slots and choose their repeats. The current sounds stay. Save a project above to keep the chain. Rows change at the end of track 1; the song stops at the end.", songAdd: "Add row", songRemove: "Remove last row", songPlay: "Play from start", songStop: "Stop", songReps: "repeats", songEmpty: "Add a row first", songBusy: "Stop before editing", songInvalid: "Check slots and repeats", songPlaying: "Playing row", songSaved: "Chain changed. Save a project to keep it.",
+    health: "Health", healthHelp: "The FM-1's own counters, read once a second while LIVE is on: what to look at while testing CPU. Worst times count from power-on or RESET. A value shown inverted means a crackle or a cut voice is likely.",
+    healthLive: "Live", healthStop: "Stop", healthReset: "Reset worst", healthSchema: "Schema",
+    healthOld: "This firmware's reply has another layout.", healthNone: "No answer: this firmware was built without the counters (USB audio off).",
+    healthCpu: "CPU load", healthWorst: "Worst half (of its deadline)", healthLate: "Late halves · deadline misses",
+    healthVoices: "Voices sounding · held", healthShed: "Voices shed · given up · stolen", healthShedTracks: "Shed, tracks 1 · 2 · 3 · 4",
+    healthCore1: "Second core on · timeouts · faults", healthMemory: "Audio memory, peak", healthStack: "Stack, main · interrupts",
+    yes: "yes", no: "no",
     system: "System", firmware: "Firmware", sync: "Sync", tracksN: "Tracks", stepsN: "Steps", enginesL: "Engines",
     smpSlots: "Sample slots", userBank: "User presets", none: "none",
   },
@@ -3311,6 +3442,8 @@ function selectTrack(i) {
 /* settings > system: what the device reported */
 function renderSysinfo() {
   const box = $("sysinfo");
+  if (!dev || !dev.info) { healthOn = false; healthLast = null; healthErr = ""; }
+  renderHealth();
   if (!dev || !dev.info) { box.replaceChildren(); return; }
   const i = dev.info;
   const rows = [
@@ -3321,6 +3454,63 @@ function renderSysinfo() {
   ];
   box.replaceChildren(...rows.map(([k, v]) => el("tr", {}, el("th", { text: t(k) }), el("td", { text: v }))));
 }
+
+/* settings > health: the device's own counters (command 72), read once a second while LIVE is on and the tab
+   shows. Worst times are since power-on or the last RESET. Marked: anything that means a crackle or a voice cut */
+const HEALTH = { DEADLINE_US: 2901, TARGET_US: 2321 };   /* audio.c: a half of 128 frames, its 80 % target */
+let healthOn = false, healthTimer = 0, healthLast = null, healthErr = "";
+function healthRows(v) {
+  const us = (n) => `${n} µs`, yes = (n) => t(n ? "yes" : "no");
+  const shed = [1, 2, 3, 4].map((p) => v[`track_${p}_voices_shed`] ?? 0);
+  return [
+    ["healthCpu", `${(v.cpu_q8 * 100 / 256).toFixed(1)} %`, v.cpu_q8 * 100 / 256 > 85],
+    ["healthWorst", `${us(v.audio_full_max_us ?? v.audio_max_us)} / ${us(HEALTH.DEADLINE_US)}`,
+      (v.audio_full_max_us ?? v.audio_max_us) > HEALTH.TARGET_US],
+    ["healthLate", `${v.audio_late} · ${v.audio_deadline_misses ?? 0}`, v.audio_late > 0 || v.audio_deadline_misses > 0],
+    ["healthVoices", `${v.voices_active ?? 0} · ${v.voices_held ?? 0}`, false],
+    ["healthShed", `${v.voices_shed ?? 0} · ${v.voices_given_up ?? 0} · ${v.capacity_steals ?? 0}`, v.voices_given_up > 0],
+    ["healthShedTracks", shed.join(" · "), false],
+    ["healthCore1", `${yes(v.core1_online)} · ${v.core1_timeouts ?? 0} · ${v.core1_faults ?? 0}`,
+      v.core1_timeouts > 0 || v.core1_faults > 0],
+    ["healthMemory", `${v.resource_peak ?? 0} / ${v.resource_capacity ?? 0} B`, v.resource_failures > 0],
+    ["healthStack", `${v.stack_cpu0_user_peak ?? 0} / ${v.stack_cpu0_user_size ?? 0} · ${v.stack_cpu0_system_peak ?? 0} / ${v.stack_cpu0_system_size ?? 0} B`,
+      v.stack_cpu0_user_size && v.stack_cpu0_user_peak > v.stack_cpu0_user_size * 0.9],
+  ];
+}
+function renderHealth() {
+  $("health-live").textContent = t(healthOn ? "healthStop" : "healthLive");
+  $("health-reset").disabled = !healthLast;
+  $("health-note").textContent = healthErr || (healthLast ? `${t("healthSchema")} ${healthLast.schema}` : "");
+  const box = $("health-table");
+  if (!healthLast) { box.replaceChildren(); return; }
+  box.replaceChildren(...healthRows(healthLast.values).map(([k, v, warn]) =>
+    el("tr", {}, el("th", { text: t(k) }), el("td", { text: v, class: warn ? "warn" : "" }))));
+}
+async function readHealth(reset = false) {
+  const d = dev;
+  if (!d || !d.info) return;
+  try {
+    const r = parse[CMD.STATS](await sessionRequest(d, req.stats(STATS.ALL | (reset ? 1 : 0)), { timeout: 800, retries: 0, quiet: true, key: "stats" }));
+    if (d !== dev) return;
+    healthLast = r; healthErr = r ? "" : t("healthOld");
+  } catch (err) {
+    if (d !== dev) return;
+    healthErr = t("healthNone");
+  }
+  renderHealth();
+}
+function healthTick() {
+  healthTimer = 0;
+  if (!healthOn || !dev) { healthOn = false; renderHealth(); return; }
+  if (tab === "settings" && !document.hidden) readHealth();
+  healthTimer = setTimeout(healthTick, 1000);
+}
+$("health-live").addEventListener("click", () => {
+  healthOn = !healthOn && !!dev;
+  if (healthOn && !healthTimer) healthTick();
+  renderHealth();
+});
+$("health-reset").addEventListener("click", () => readHealth(true));
 
 function updateBrowser() {
   const e = dev.dump.engine;
@@ -3690,6 +3880,44 @@ function renderBackup() {
   $("backup-export").disabled = !(caps & 1);
   $("backup-import").disabled = !(caps & 2);
   $("backup-help").textContent = t(caps & 1 ? "backupHelp" : "backupOld");
+  renderDemos();
+}
+/* the demo projects (demos/*.tsp, beside the editor on the site: webapp/editor/demos/), each into a slot of the
+   player's choice by BACKUP_PUT of that slot's object alone (fm1backup.js putProject) */
+const DEMOS = [{ file: "still-tide.tsp", name: "STILL TIDE", about: "demoStill", slot: 1 },
+               { file: "koto-garden.tsp", name: "KOTO GARDEN", about: "demoKoto", slot: 2 },
+               { file: "low-harbour.tsp", name: "LOW HARBOUR", about: "demoHarbour", slot: 3 },
+               { file: "slow-light.tsp", name: "SLOW LIGHT", about: "demoLight", slot: -1 },   /* (3.3: the long form) */
+               { file: "cedar-rain.tsp", name: "CEDAR RAIN", about: "demoCedar", slot: -1 },
+               { file: "undertow.tsp", name: "UNDERTOW", about: "demoUndertow", slot: -1 },
+               { file: "ember-field.tsp", name: "EMBER FIELD", about: "demoEmber", slot: -1 },
+               { file: "paper-kites.tsp", name: "PAPER KITES", about: "demoKites", slot: -1 }];
+/* the test projects (demos/checks/*.tsp, demos/checks/README.md): short, one feature each, for the device checks */
+const CHECKS = ["chain", "entries", "piece", "mods", "tempo", "midi", "cpu"].map((k) =>
+  ({ file: `checks/chk-${k}.tsp`, name: `CHK ${k.toUpperCase()}`, about: "chk" + k[0].toUpperCase() + k.slice(1), slot: -1 }));
+function renderDemos() {
+  const caps = dev?.info?.backupCaps || 0, box = $("demorows");
+  $("demos-put").disabled = (caps & 3) !== 3;
+  if (box.contains(document.activeElement)) return;
+  box.replaceChildren();
+  for (const d of [...DEMOS, null, ...CHECKS]) {
+    if (!d) {                                    /* (the test projects under their own heading) */
+      box.append(el("span", { class: "dim", text: t("demosChecks"), style: "grid-column:1 / -1; margin-top:8px" }));
+      continue;
+    }
+    const sel = el("select", { "aria-label": d.name });
+    sel.append(el("option", { value: -1, text: t("demosSkip") }));
+    for (let k = 0; k < 4; k++) sel.append(el("option", { value: k, text: `${t("slot")} ${String.fromCharCode(65 + k)}` }));
+    sel.value = String(d.slot);
+    sel.addEventListener("change", () => { d.slot = +sel.value; });
+    box.append(el("span", { text: d.name }), sel, el("span", { class: "dim", text: t(d.about) }));
+  }
+}
+async function demoBytes(file) {                 // the site's copy beside the editor, else the repository's demos/
+  for (const url of [`demos/${file}`, `../demos/${file}`]) {
+    try { const r = await fetch(url, { cache: "no-cache" }); if (r.ok) return new Uint8Array(await r.arrayBuffer()); } catch { /* the next */ }
+  }
+  throw new Error(t("demosFetch") + file);
 }
 /* user tunings (Scala): the project's, in four slots; a .scl read here, sent as its table (TUNE, command 80) */
 let tuneSlot = 0;
@@ -3766,6 +3994,30 @@ $("backup-file").addEventListener("change", () => {
     await load(d); sayK("backupRestored");
   });
 });
+
+$("demos-put").addEventListener("click", () => op(async () => {
+  const d = dev, picks = [...DEMOS, ...CHECKS].filter(x => x.slot >= 0), say = (k, a) => { $("demos-status").textContent = t(k) + a; sayK(k, a); };
+  if ((d?.info?.backupCaps & 3) !== 3) return;
+  if (!picks.length) throw new Error(t("demosNone"));
+  if (new Set(picks.map(x => x.slot)).size !== picks.length) throw new Error(t("demosTwice"));
+  const { tspName, readSlots, putProject } = await backupModule();
+  const bytes = [];
+  for (const x of picks) { const b = await demoBytes(x.file); tspName(b); bytes.push(b); }
+  assertSession(d);
+  const now = await readSlots((r, o) => sessionRequest(d, r, o));   // (stops playback)
+  const was = (s) => !s.used ? t("demosEmpty") : s.name == null ? t("demosOld") : s.name ? s.name : t("demosUnnamed");
+  const lines = picks.map(x => `${t("slot")} ${String.fromCharCode(65 + x.slot)}: ${x.name} (${t("demosWas")}: ${was(now[x.slot])})`);
+  if (!confirm([t("demosConfirm"), "", ...lines, "", ...(picks.some(x => now[x.slot].used) ? [t("demosKeep")] : [])].join("\n"))) return;
+  const total = bytes.reduce((n, b) => n + b.length, 0); let base = 0;
+  for (let i = 0; i < picks.length; i++) {
+    await putProject((r, o) => sessionRequest(d, r, o), picks[i].slot, bytes[i],
+      (done) => say("demosWorking", `${Math.round((base + done) / total * 100)}%`));
+    base += bytes[i].length;
+    d.slotUsed[picks[i].slot] = true;
+  }
+  renderSlots();
+  say("demosDone", picks.map(x => `${x.name} ${String.fromCharCode(65 + x.slot)}`).join(", "));
+}));
 
 async function readMotion(d = dev) {
   assertSession(d);

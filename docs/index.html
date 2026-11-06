@@ -206,9 +206,9 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       </div>
       <h1>TESSERA</h1>
       <div class="tag">Generative firmware for the M-Vave FM-1</div>
-      <p class="lede">Systems that generate musical relationships, not just notes. Thirteen generators across four tracks that follow, answer and share one harmony, building phrases into song forms. Small tiles, set into a larger pattern: the FM-1 as a small generative modular system.</p>
+      <p class="lede">An instrument for composing through systems. Instead of programming every note, you set up how the music behaves, and it plays: four tracks of written steps or thirteen generators that listen to each other and grow into whole pieces.</p>
       <div class="cta">
-        <a class="btn main" href="webapp/installer/">Install 3.2.2</a>
+        <a class="btn main" href="webapp/installer/">Install 3.3</a>
         <a class="btn" href="webapp/sim/">Try it in your browser</a>
         <a class="btn" href="webapp/editor/">Web editor</a>
         <a class="btn" href="https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md">Manual</a>
@@ -227,16 +227,39 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
   <div class="wrap">
     <header>
       <div class="kicker">Hear it</div>
-      <h2>Six minutes of Tessera</h2>
-      <p>The three demo projects, STILL TIDE, KOTO GARDEN and LOW HARBOUR, then every generator with its knobs turned,
-        then what is new in 3.0. Every sound and every screen in it is the firmware's own.</p>
+      <h2>Four minutes of Tessera 3.3</h2>
+      <p>The generators, the pages that shape them, tracks that listen to each other, mods and the long form, on
+        pieces made for 3.3. Every sound and every screen in it is the firmware's own.</p>
     </header>
     <div class="video">
-      <video controls playsinline preload="none" poster="media/video/tessera-3.0-demo.jpg" width="1080" height="1080">
-        <source src="media/video/tessera-3.0-demo.mp4" type="video/mp4">
-        <a href="media/video/tessera-3.0-demo.mp4">Download the demo video (MP4, 13 MB)</a>
+      <video controls playsinline preload="none" poster="media/video/tessera-3.3-demo.jpg" width="1080" height="1080">
+        <source src="media/video/tessera-3.3-demo.mp4" type="video/mp4">
+        <a href="media/video/tessera-3.3-demo.mp4">Download the demo video (MP4, 8 MB)</a>
       </video>
     </div>
+  </div>
+</section>
+
+<section id="why">
+  <div class="wrap">
+    <header>
+      <div class="kicker">What it is</div>
+      <h2>Composing through systems</h2>
+      <p>Generators write the notes, the tracks listen to each other, and the music grows. A bass follows a melody, a
+        written line seeds a generator, a chord track keeps every part in key, and any source can move almost any
+        setting. Phrases evolve while keeping their identity, sections form, parts drop out and come back in a musical
+        order, and a whole piece can follow a shape you choose, over minutes or hours, or never stop.</p>
+      <p><b>Between a groovebox and an autopilot.</b> A step-based groovebox has you write every note, then adds a
+        little chance on top: the pattern is still the music, and the dice only decorate it. A self-playing ambient
+        firmware does the opposite: the music writes itself, and you steer its mood. Tessera sits between them, and what
+        you get your hands on is the system itself.</p>
+    </header>
+    <div class="cards">
+      <div class="card" style="--c:var(--p1)"><b>You build it</b><span>Choose how each track makes its notes: written, generated or both. Decide which track follows which, what drives what, how sections form and when parts come and go.</span></div>
+      <div class="card" style="--c:var(--p2)"><b>Reach in anywhere</b><span>Write a single note, record a phrase, nudge one generator, or shape the arc of a three-hour piece.</span></div>
+      <div class="card" style="--c:var(--p3)"><b>Yours to switch on</b><span>Nothing runs until you turn it on. Every random choice comes from a seed, so PLAY replays a piece exactly and ROLL finds a new one.</span></div>
+    </div>
+    <div class="note">A groovebox lets you write the music. A self-playing firmware writes it for you. <b>Tessera lets you design how it gets written, then step in wherever you like.</b></div>
   </div>
 </section>
 
@@ -298,8 +321,9 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <div class="kicker">Inks</div>
       <h2>Your screen, your colour</h2>
       <p>One pixel face, one ink on black. Pick one of nine inks in MENU &gt; COLOR to suit your FM-1's shell or your
-        mood, or MOSAIC, which gives each of the four tracks its own colour so you can tell them apart at a glance,
-        right down to the mod lists.</p>
+        mood, or MOSAIC, SUNSET, OCEAN or NEON, which give each of the four tracks its own colour so you can tell them apart at a glance,
+        right down to the mod lists. The knob you turn can show large across the foot of the screen: MENU &gt; LARGE VALUE
+        keeps it off pages with a picture of their own (AUTO), or shows it everywhere, or nowhere.</p>
     </header>
     <div class="inks">
       <figure><div class="screen"><img src="media/gallery/ink_yellow.png" alt="HOME in Yellow" loading="lazy" width="480" height="480"></div><figcaption>Yellow<span>the default</span></figcaption></figure>
@@ -312,6 +336,9 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <figure><div class="screen"><img src="media/gallery/ink_hot_pink.png" alt="HOME in Hot pink" loading="lazy" width="480" height="480"></div><figcaption>Hot pink</figcaption></figure>
       <figure><div class="screen"><img src="media/gallery/ink_lilac.png" alt="HOME in Lilac" loading="lazy" width="480" height="480"></div><figcaption>Lilac</figcaption></figure>
       <figure><div class="screen"><img src="media/gallery/ink_mosaic.png" alt="HOME in Mosaic" loading="lazy" width="480" height="480"></div><figcaption>Mosaic<span>a colour per track</span></figcaption></figure>
+      <figure><div class="screen"><img src="media/gallery/ink_sunset.png" alt="HOME in Sunset" loading="lazy" width="480" height="480"></div><figcaption>Sunset</figcaption></figure>
+      <figure><div class="screen"><img src="media/gallery/ink_ocean.png" alt="HOME in Ocean" loading="lazy" width="480" height="480"></div><figcaption>Ocean</figcaption></figure>
+      <figure><div class="screen"><img src="media/gallery/ink_neon.png" alt="HOME in Neon" loading="lazy" width="480" height="480"></div><figcaption>Neon</figcaption></figure>
     </div>
   </div>
 </section>
@@ -351,12 +378,12 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
     </div>
     <p style="margin-top:22px;color:var(--mid)">Do not unplug the FM-1 while it is writing. Tessera is experimental in every sense of the word: use it at your own risk.</p>
     <div class="cards">
-      <a class="card" style="--c:var(--p1)" href="webapp/installer/"><b>Install 3.2.2</b><span>The web installer, in Chrome or Edge.</span></a>
+      <a class="card" style="--c:var(--p1)" href="webapp/installer/"><b>Install 3.3</b><span>The web installer, in Chrome or Edge.</span></a>
       <a class="card" style="--c:var(--p2)" href="webapp/sim/"><b>Try it in your browser</b><span>The same firmware on an on-screen FM-1, with sound.</span></a>
-      <div class="card" style="--c:var(--p3)"><b>Download .fwsc</b><span><a href="firmware/tessera-3.2.2.fwsc">Standard</a> ·
-        <a href="firmware/tessera-3.2.2-1core.fwsc">single core</a> ·
+      <div class="card" style="--c:var(--p3)"><b>Download .fwsc</b><span><a href="firmware/tessera-3.3.fwsc">Standard</a> ·
+        <a href="firmware/tessera-3.3-1core.fwsc">single core</a> ·
         <a href="https://github.com/Rastapopolix/tessera/releases">all releases</a>. From a terminal:
-        <code>python3 tools/fm1_install.py tessera-3.2.2.fwsc</code> (<a href="https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py">fm1_install.py</a>, needs mido and python-rtmidi).</span></div>
+        <code>python3 tools/fm1_install.py tessera-3.3.fwsc</code> (<a href="https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py">fm1_install.py</a>, needs mido and python-rtmidi).</span></div>
       <a class="card" style="--c:var(--p4)" href="https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md"><b>Manual</b><span>Every page, knob and mode.</span></a>
       <a class="card" style="--c:var(--p1)" href="https://github.com/Rastapopolix/tessera/blob/HEAD/docs/cheatsheet/tessera-cheatsheet.pdf"><b>Cheatsheet</b><span>The buttons and combinations on one printable page.</span></a>
       <a class="card" style="--c:var(--p2)" href="webapp/editor/"><b>Web editor</b><span>Edit sounds and sequences from the computer.</span></a>
@@ -379,7 +406,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
     <div class="about">
       <div>
         <p>I'm Theo Dainis, from Aotearoa New Zealand. I've been using and building synthesisers for the past 15 years, and I'm passionate about modular and open source. I’m heavily influenced by Elektron, Mutable Instruments and the Monome and Whimsical Raps world. I love the DIY side: building things, and learning how music hardware works on the inside. Tessera is the sequencer I wanted on the FM-1: modular in a box, a small instrument that writes with you.</p>
-        <div class="note"><b>Built with Claude Code.</b> Tessera's code is written with <a href="https://claude.com/claude-code">Claude Code</a>, Anthropic's AI coding tool. I designed it, made the decisions, and test it on my own FM-1. It’s experimental, so please report anything odd. The source is open, so you can read every line and every change. Like any firmware, it comes with no warranty: save a <b>Complete backup</b> from the <a href="webapp/editor/">web editor</a> before you flash.</div>
+        <div class="note"><b>Built with Claude Code.</b> As much as I’d like to take the credit, Tessera's code is written with <a href="https://claude.com/claude-code">Claude Code</a>, Anthropic's AI coding tool. I designed it, made the decisions, and test it on my own FM-1. It’s experimental, so please report anything odd. The source is open, so you can read every line and every change. Like any firmware, it comes with no warranty: save a <b>Complete backup</b> from the <a href="webapp/editor/">web editor</a> before you flash.</div>
       </div>
     </div>
   </div>
