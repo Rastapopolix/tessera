@@ -19,7 +19,7 @@
  * together (menu_value, menu_input take them as a range) */
 enum { MI_COLOR,
 #if MELODEE_LOOK
-       MI_KNOBS,
+       MI_KNOBS, MI_LARGE,
 #endif
        MI_LIGHTS, MI_SCREEN, MI_BATTERY, MI_GAMMA,
        MI_HOLD, MI_ACCEL, MI_TRACK_KNOB,
@@ -36,7 +36,7 @@ enum { MI_COLOR,
 static const char *const GAMMA_NAME[GAMMA_N] = {"G2.2", "G1.8", "G2.5", "G1.0", "TUNED", "TUNED+VCOM"};   /* (lcd.c) */
 static const char *const MI_NAME[MI_COUNT] = {"COLOR",
 #if MELODEE_LOOK
-                                              "KNOBS",
+                                              "KNOBS", "LARGE VALUE",
 #endif
                                               "LIGHTS", "SCREEN OFF", "BATTERY", "PANEL GAMMA",
                                               "HOLD", "KNOB ACCEL", "TRACK KNOB",
@@ -424,6 +424,7 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
     if (i == MI_TRACK_KNOB) value = settings_knob_swap ? "LEFT" : "RIGHT";
 #if MELODEE_LOOK
     if (i == MI_KNOBS) value = KNOBS_BAR ? "BAR" : "DIAL";
+    if (i == MI_LARGE) value = (const char *const[]){"AUTO", "ON", "OFF"}[LARGE_MODE];
 #endif
     if (i == MI_MIDI_OUT) value = (const char *const[]){"KEYS", "ALL", "OFF"}[settings_midi_out % MIDI_OUT_N];
     if (i == MI_CLOCK_OUT) value = settings_clock_out ? "ON" : "OFF";
@@ -748,6 +749,12 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_KNOBS) {      /* KNOB 2 right BAR, left DIAL; OCT+ toggles */
         KNOBS_SAVED = (uint8_t)((s > 0 ? 1 : s < 0 ? 0 : !KNOBS_BAR) ? KNOBS_BAR_TAG : 0u);
         ui.force = 1; ok = 0;                          /* (ui_mono.c mo_cols; saved with the favorites) */
+    }
+    if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_LARGE) {      /* KNOB 2 AUTO, ON, OFF; OCT+ steps round */
+        uint32_t m = LARGE_MODE;
+        m = s > 0 ? (m < LARGE_OFF ? m + 1u : m) : s < 0 ? (m ? m - 1u : m) : (m + 1u) % 3u;
+        LARGE_SAVED = (uint8_t)(m == LARGE_ON ? LARGE_ON_TAG : m == LARGE_OFF ? LARGE_OFF_TAG : 0u);
+        ui.force = 1; ok = 0;                          /* (ui_mono.c mo_turn, mo_stage_panel; saved with the favorites) */
     }
 #endif
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_TRACK_KNOB) {   /* KNOB 2 right RIGHT, left LEFT; OCT+ toggles */
