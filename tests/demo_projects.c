@@ -663,7 +663,8 @@ static void demo_undertow(void)
     sound(2, ENGI_TRIO, TR_WARM_PAD);
     sound(3, ENGI_TRIO, TR_SUB_BASS);
     scale(2, SCL_MIN, 0);
-    sends(116, 100, 111, 96);                         /* a big room; ECHO 321 ms, a dotted sixteenth at 70 BPM */
+    sends(100, 100, 111, 96);                         /* a room (SIZE 100: a bigger hall's late first reflections
+                                                   * sounded like a pre-delay, Theo 2026-11-06); ECHO 321 ms, a dotted sixteenth at 70 BPM */
 
     /* T1: the call, four bars of eighths: A, F, E, D held, C, D, F, G, A held, then a bar of nothing */
     {
@@ -1019,7 +1020,7 @@ static void demo_kites(void)
     sound(2, ENGI_TRIO, TR_SOFT_PAD);
     sound(3, ENGI_ORACLE, OR_GLASS_PAD);
     scale(5, SCL_PEN, 0);
-    sends(118, 105, 80, 60);
+    sends(100, 105, 80, 60);
 
     /* T1: STEP, 11 eighths: three notes (F, A, C') */
     {
@@ -1084,7 +1085,7 @@ static void demo_pier(void)
     sound(2, ENGI_DRUM, DK_808_KIT);
     sound(3, ENGI_TRIO, TR_SOFT_LEAD);
     scale(5, SCL_DOR, 0);
-    sends(118, 102, 117, 106);                        /* a big room; ECHO 342 ms, a dotted sixteenth at 66 BPM */
+    sends(100, 102, 117, 106);                        /* a big room; ECHO 342 ms, a dotted sixteenth at 66 BPM */
 
     /* T1: four bars of eighths, a chord on each bar's second beat held to the "and" (ORACLE's three units a voice: two
      * chords never overlap in the budget); a Cm7 leading home on the fourth bar's last beat every fourth time */
@@ -2176,6 +2177,9 @@ static void t_run(const char *out, void (*make)(void), const char *ink, const vc
     if (!t_want(c->name)) return;
     power_on();
     if (make) make();
+    song.batt_raw = 600;                                /* (a full battery in the header: the host reads none) */
+    if (getenv("TOUR_HALL")) song.g[G_MFXRATE] = (int16_t)atoi(getenv("TOUR_HALL"));   /* (A/B: the hall's SIZE) */
+    if (getenv("TOUR_SOLO")) t_solo((uint32_t)atoi(getenv("TOUR_SOLO")));   /* (checks: one track heard) */
     v_ink(ink);
     v_run(out, c);
 }
@@ -2207,6 +2211,60 @@ static void t_ember_perf(void)                          /* MCR1: the flute into 
 }
 static void t_scene_bounce(void) { v_scene(92, ENGI_FM6, V_KOTO_RING, TESS_ENG_BOUNCE, DIV_16); v_pad(); }
 static void t_scene_constel(void) { v_scene(90, ENGI_FM6, FX_KUGO_HARP, TESS_ENG_CONSTEL, DIV_8); v_pad(); }
+#ifndef T_LRATE1
+#define T_LRATE1 40
+#endif
+#ifndef T_LRATE2
+#define T_LRATE2 12
+#endif
+#ifndef T_SWEEP
+#define T_SWEEP 50
+#endif
+/* "Modulate the modulators" and PERF on one held chord (Theo 2026-11-06: inside the pieces the moves were buried): an
+ * ORACLE pad holding the scale's chord through its four-pole filter, so a cord on CUTOFF is heard as plainly as it is
+ * seen. M1: T1's LFO sweeps the cutoff; M2 (at fn_ms): T2's slow LFO on M1's amount, the sweep swelling and fading.
+ * PERF: MCR1 from a dark, dry chord to an open one thrown into the echo */
+static void t_chord_scene(void)
+{
+    v_scene(72, ENGI_ORACLE, OR_WARM_PAD, TESS_ENG_CHORD, DIV_16);
+    trk[0].p[P_CHRD] = 1;                               /* DIA3 */
+    tx(0, TX_CH_PROG, GEN_CH_DRONE); tx(0, TX_CH_BARS, 3); tx(0, TX_CH_HIT, GEN_CH_HOLD);
+    mixer(0, 104, 0, 70, 0);
+}
+static void t_scene_lfo(void)
+{
+    t_chord_scene();
+    trk[0].p[P_LRATE] = T_LRATE1; trk[1].p[P_LRATE] = T_LRATE2;
+    cord(0, CS_LFO, 0, CD_CUTOFF, 0, T_SWEEP, 0, 0);    /* M1: T1 LFO -> T1 CUT */
+    if (getenv("T_AMT_FROM_START")) cord(1, CS_LFO, 1, CD_M1_AMT, 0, 100, -50, 0);
+}
+static void t_scene_amt(void) { cord(1, CS_LFO, 1, CD_M1_AMT, 0, 100, -50, 0); ui.force = 1; }   /* M2: T2 LFO -> M1 AMT */
+static void t_scene_perf(void)
+{
+    t_chord_scene();
+    cord(0, CS_MACRO1, 0, CD_CUTOFF, 0, 100, -55, CU_UNI);  /* MCR1: the chord from dark to open .. */
+    cord(1, CS_MACRO1, 0, CD_FX_SEND2, 0, 90, 0, CU_UNI);   /* .. and into the echo */
+}
+/* the same screen (CEDAR RAIN's HOME, a minute in) in every ink: OUT/inks/<NAME>.ppm, for the demo's grids */
+static void t_inks(const char *out)
+{
+    char dir[600];
+    power_on(); demo_cedar(); song.batt_raw = 600;
+    transport_req = 1;
+    for (uint32_t f = 0; f < 60u * FS; f += CTL) { int32_t o[2 * CTL]; dm_f = f; mix_block(o, CTL); fm1_ms = f / (FS / 1000u); }
+    v_page(1, 0, 0);
+    snprintf(dir, sizeof dir, "%s/inks", out);
+    mkdir(dir, 0755);
+    for (uint32_t i = 0; i < NPALETTES; i++) {
+        char path[700];
+        settings.palette = (uint8_t)i; palette_set(i); ui.force = 1; ui_draw();
+        snprintf(path, sizeof path, "%s/inks/%02u-%s", out, i, UI_PALETTES[i].name);
+        mkdir(path, 0755);
+        v_ppm(path, 0);
+    }
+    transport_req = 2;
+    printf("tour: %u inks in %s\n", (unsigned)NPALETTES, dir);
+}
 static void tour(const char *out)
 {
     char cap[600];
@@ -2281,6 +2339,34 @@ static void tour(const char *out)
     T_CLIP(demo_light, "OCEAN", .name = "a09b-landscape", .secs = 25, .pre = 130, T_S({0, 0, 0, "LANDSCAPE", "LANDSCAPE"}));
     /* 10. The end card's music */
     T_CLIP(demo_light, "YELLOW", .name = "a10-end", .secs = 15, .pre = 60, T_S({0, 1, 0, 0, "SLOW LIGHT"}));
+    /* The captioned demo for the project page (tools/tour_video.py demo): UNDERTOW opens and closes, CEDAR RAIN the
+     * generators and the shaping, PAPER KITES the mods and the long form, a little of STONE PIER (Theo 2026-11-06) */
+    T_CLIP(demo_undertow, "OCEAN", .name = "b00-undertow-open", .secs = 16, .pre = 0, T_S({0, 0, 0, "LANDSCAPE", "LANDSCAPE"}));
+    T_CLIP(t_scene_constel, "GREEN", .name = "b03f-constellation", .secs = 10, T_S({0, 0, 0, "GEN", "CONSTELLATION"}),
+           T_T({1200, EN_K2, 5, 2000}, {4000, EN_K2, -9, 3000}, {7600, EN_K2, 4, 1500}));
+    T_CLIP(t_scene_lfo, "MOSAIC", .name = "b06a-lfo-on-lfo", .secs = 16,
+           T_S({0, 0, 0, "MODS", "MODS"}, {7000, 0, 0, "MODS", "M2 TO M1 AMT"}), .fn = t_scene_amt, .fn_ms = 7000);
+    T_CLIP(t_scene_perf, "MOSAIC", .name = "b06b-perf", .secs = 12, T_S({0, 0, 0, "PERF", "PERF  KNOB 1: MCR1"}),
+           T_T({1500, EN_K1, 100, 3500}, {6500, EN_K1, -100, 3500}));
+    if (t_want("b06c")) {                              /* a little of STONE PIER: its TIDES on the dub echo */
+        const vclip_t P = {.name = "b06c-stone-pier", .secs = 10, .pre = 87, T_S({0, 0, 0, "MODS", "MODS"})};
+        power_on(); demo_pier(); song.batt_raw = 600; v_ink("MOSAIC"); v_run(out, &P);
+    }
+    T_CLIP(demo_cedar, "SUNSET", .name = "b07a-chain-key", .secs = 20, .pre = 280, T_S({0, 0, 0, "CHAIN", "CHAIN"}));
+    if (t_want("b07b")) {
+        const vclip_t P = {.name = "b07b-kites-entries", .secs = 16, .pre = 224, T_S({0, 0, 1, "ENTRIES", "ENTRIES"})};
+        power_on(); demo_kites(); song.batt_raw = 600; v_ink("SUNSET"); v_run(out, &P);
+    }
+    static const uint32_t KP[] = {1, 420, 840, 1260, 1680};
+    for (uint32_t k = 0; k < 5u; k++) {
+        char nm[32];
+        snprintf(nm, sizeof nm, "b07c-kites-piece-%u", k);
+        if (!t_want(nm)) continue;
+        vclip_t P = {.name = nm, .secs = 5, .pre = KP[k], T_S({0, 0, 0, "PIECE", "PIECE"})};
+        power_on(); demo_kites(); song.batt_raw = 600; v_ink("SUNSET"); v_run(out, &P);
+    }
+    if (t_want("b09-inks")) t_inks(out);
+    T_CLIP(demo_undertow, "SUNSET", .name = "b09b-undertow-close", .secs = 30, .pre = 590, T_S({0, 0, 0, "LANDSCAPE", "LANDSCAPE"}));
     fclose(v_cap);
     printf("tour: %.0f s in %s\n", v_t0, out);
 }

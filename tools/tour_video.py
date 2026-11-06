@@ -45,7 +45,7 @@ CHAPTERS = {"a00": ("COLD OPEN", "OCEAN"), "a01": ("HELLO", "YELLOW"), "a02": ("
             "a05": ("TRACKS THAT LISTEN", "ORANGE"), "a06": ("MODULATE THE MODULATORS", "MOSAIC"),
             "a07": ("FROM A LOOP TO A PIECE", "SUNSET"), "a08": ("PLAYING IT", "NEON"),
             "a09": ("COLOUR, AND A PAGE TO WATCH", "OCEAN"), "a10": ("WHERE TO GET IT", "YELLOW")}
-LEVELLED = ("a03e", "a03f")                             # (scenes of their own, not a demo: levelled to the demos)
+LEVELLED = ("a03e", "a03f", "b03f", "b06a", "b06b")                           # (scenes of their own, not a demo: levelled to the demos)
 
 
 def mix(a, b, p):
@@ -144,7 +144,7 @@ def main(src, dst):
         (dst / sub).mkdir(parents=True, exist_ok=True)
     rows, parts = [], []
     for name, d, w, caps in clips(src):
-        chapter, ink_name = CHAPTERS[name[:3]]
+        chapter, ink_name = CHAPTERS["a" + name[1:3]]
         ink = INK[ink_name]
         ppm = sorted(d.glob("f*.ppm"))
         with wave.open(str(w)) as r:
@@ -192,40 +192,60 @@ def main(src, dst):
 # The demo (no voice): 1080 x 1080 as the 3.0 video, music only, a short caption at a time under the screen, a card
 # between chapters. Each entry: a card (title, line) or a part of a clip (clip, from s, for s, [(at s, caption)])
 CUT = [
-    ("a00-cold-open", 2, 10, [(0, "Play it by hand, or let it play")]),
+    ("b00-undertow-open", 0, 14, [(0, "Play it by hand, or let it play")]),
     ("Generators", "Thirteen ways to write a part"),
     ("a03b-turing-lock", 2, 12, [(0, "TURING: a loop that slowly drifts")]),
     ("a03c-euclid-pulses", 2, 9, [(0, "EUCLID: hits spread evenly")]),
     ("a03d-markov-then-all", 0, 16, [(0, "MARKOV: a wandering flute"), (8, "Together, one piece")]),
-    ("a03f-constellation", 0, 8, [(0, "CONSTELLATION: stars play as they pass")]),
+    ("b03f-constellation", 0, 10, [(0, "CONSTELLATION: stars play as the ship passes")]),
     ("Shaping", "How the notes are played"),
     ("a04c-split", 3, 12, [(0, "New: SPLIT breaks a step in two")]),
     ("a04d-adorn", 0, 8, [(0, "ADORN: drum ornaments, new each round")]),
     ("Tracks that listen", "Parts that answer and follow"),
     ("a05a-call-answer", 8, 18, [(0, "A melody you write: the call"), (6, "ANSWER replies, changed each time")]),
     ("a05c-follow", 4, 10, [(0, "A bass on its own note"), (3, "Now it follows the melody")]),
-    ("Modulate the modulators", "Slow movement over minutes"),
-    ("a06b-mod-on-mod", 2, 14, [(0, "A slow TIDE opens the filter"), (4, "New: one mod moves another")]),
-    ("a06c-perf-matrix", 1, 10, [(0, "New: PERF macros, one knob, many moves")]),
+    ("Modulate the modulators", "Movement, and hands on"),
+    ("b06a-lfo-on-lfo", 0, 16, [(0, "An LFO sweeps the filter"), (7, "New: a second mod swells the first")]),
+    ("b06b-perf", 1, 10, [(0, "New: PERF macros, one knob, many moves")]),
+    ("b06c-stone-pier", 0, 10, [(0, "STONE PIER: tides move the dub echo")]),
     ("From a loop to a piece", "New in 3.3: the long form"),
-    ("a07a-chain-key", 2, 14, [(0, "CHAIN: sections change together"), (6, "B, a fourth up")]),
-    ("a07b-entries", 0, 16, [(0, "ENTRIES: parts come and go")]),
-    ("a07c-piece-00", 2, 2.5, [(0, "PIECE: a shape for the whole piece")]),
-    ("a07c-piece-05", 2, 2.5, [(0, "PIECE: a shape for the whole piece")]),
-    ("a07c-piece-10", 2, 2.5, [(0, "PIECE: a shape for the whole piece")]),
-    ("a07c-piece-15", 2, 2.5, [(0, "PIECE: a shape for the whole piece")]),
-    ("a07c-piece-19", 2, 2.5, [(0, "PIECE: a shape for the whole piece")]),
-    ("a09a-color", 0, 10, [(0, "New inks: SUNSET, OCEAN, NEON")]),
-    ("a09b-landscape", 0, 16, [(0, "LANDSCAPE: rain on water, drawn by the music")]),
+    ("b07a-chain-key", 2, 14, [(0, "CHAIN: sections change together"), (6, "B, a fourth up")]),
+    ("b07b-kites-entries", 0, 14, [(0, "ENTRIES: parts come and go")]),
+    ("b07c-kites-piece-0", 1, 2.5, [(0, "PIECE: a shape for the whole piece")]),
+    ("b07c-kites-piece-1", 1, 2.5, [(0, "PIECE: a shape for the whole piece")]),
+    ("b07c-kites-piece-2", 1, 2.5, [(0, "PIECE: a shape for the whole piece")]),
+    ("b07c-kites-piece-3", 1, 2.5, [(0, "PIECE: a shape for the whole piece")]),
+    ("b07c-kites-piece-4", 1, 2.5, [(0, "PIECE: a shape for the whole piece")]),
+    ("b09b-undertow-close", 0, 6, [(0, "Nine inks"), (3, "Four-colour palettes, three new")], "grids"),
+    ("b09b-undertow-close", 6, 14, [(0, "LANDSCAPE: rain on water, drawn by the music")]),
 ]
+END_CLIP = ("b09b-undertow-close", 20)                  # the end card's music: UNDERTOW, on from the last clip
+GRID9 = ["YELLOW", "WHITE", "GREEN", "BLUE", "RED", "ORANGE", "PINK", "HOT PINK", "LILAC"]
+GRID4 = ["MOSAIC", "SUNSET", "OCEAN", "NEON"]
 DW = 1080                                               # the demo's square
 DS = 3                                                  # its screen, 3x: 720
 DX, DY = (DW - 240 * DS) // 2, 150
-CARD_S, TITLE_S, END_S, END_HOLD = 2.0, 3.0, 12.0, 2.0
+CARD_S, TITLE_S, END_S, END_HOLD = 2.0, 3.0, 10.0, 2.0
 CUT_FADE, CUT_FADE_CARD, CUT_FADE_FIRST = 0.3, 1.0, 2.0   # s: the music's fade between clips; out of and into a
                                                         # card; in after the intro and title
-CHAPTER_INK = {"a00": "OCEAN", "a03": "GREEN", "a04": "BLUE", "a05": "ORANGE", "a06": "MOSAIC", "a07": "SUNSET",
-               "a09": "OCEAN", "a10": "YELLOW"}
+CHAPTER_INK = {"00": "OCEAN", "03": "GREEN", "04": "BLUE", "05": "ORANGE", "06": "MOSAIC", "07": "SUNSET",
+               "09": "SUNSET", "10": "YELLOW"}      # (by a clip's chapter number, name[1:3])
+
+
+def grid(src, names, cols, tile, gap, caption, ink):
+    """the same screen in each ink (demo_projects tour: OUTDIR/inks/NN-NAME/), cols a row, the caption under them"""
+    from gen_brand import centred
+    im = Image.new("RGB", (DW, DW), (0, 0, 0))
+    d = ImageDraw.Draw(im)
+    found = {p.name.split("-", 1)[1]: p for p in (src / "inks").iterdir()}
+    rows = (len(names) + cols - 1) // cols
+    w = cols * tile + (cols - 1) * gap
+    x0, y0 = (DW - w) // 2, (DW - 120 - (rows * tile + (rows - 1) * gap)) // 2
+    for k, n in enumerate(names):
+        sc = Image.open(found[n] / "f00000.ppm").convert("RGB").resize((480, 480), Image.NEAREST)
+        im.paste(sc.resize((tile, tile), Image.LANCZOS), (x0 + (k % cols) * (tile + gap), y0 + (k // cols) * (tile + gap)))
+    centred(d, DW, DW - 100, caption, 5, ink)
+    return im
 
 
 def demo_card(lines, ink):
@@ -279,30 +299,40 @@ def demo(src, intro, out):
         big.paste(Image.open(intro / name).convert("RGB").resize((240 * 4, 240 * 4), Image.NEAREST), ((DW - 960) // 2,) * 2)
         plan.append(("still", big, n))
         silence(n)
-    title = demo_card([("TESSERA 3.3", 12, False), ("Generative firmware for the M-Vave FM-1", 4, True)], INK["YELLOW"])
+    title = demo_card([("TESSERA 3.3", 12, False), ("Composing through systems, on the M-Vave FM-1", 4, True)], INK["YELLOW"])
     plan.append(("still", title, nf(TITLE_S)))
     silence(nf(TITLE_S))
     ink = INK["YELLOW"]
     for e in CUT:
+        idx = CUT.index(e)
         if len(e) == 2:                                 # a card, in the next chapter's ink
-            nxt = CUT[CUT.index(e) + 1][0][:3]
+            nxt = CUT[idx + 1][0][1:3]
             c = demo_card([(e[0], 9, False), (e[1], 4, True)], INK[CHAPTER_INK.get(nxt, "YELLOW")])
             plan.append(("still", c, nf(CARD_S)))
             silence(nf(CARD_S))
             continue
-        name, start, dur, caps = e
-        ink = INK[CHAPTER_INK.get(name[:3], "YELLOW")]
+        name, start, dur, caps = e[:4]
+        ink = INK[CHAPTER_INK.get(name[1:3], "YELLOW")]
         f0, n = nf(start), nf(dur)
         ppm = sorted((src / name).glob("f*.ppm"))[f0:f0 + n]
+        if len(e) > 4:                                  # the ink grids over this part of the clip's sound
+            g9 = grid(src, GRID9, 3, 300, 15, caps[0][1], ink)
+            g4 = grid(src, GRID4, 2, 430, 24, caps[1][1], ink)
+            ppm = [g9 if i / float(FPS) < caps[1][0] else g4 for i in range(n)]
         with wave.open(str(src / f"{name}.wav")) as r:
             a = array.array("h", r.readframes(r.getnframes()))
         if name.startswith(LEVELLED):
             a = level(a)
         a = a[f0 * SPF * 2:(f0 + n) * SPF * 2]
         a.extend([0] * max(0, n * SPF * 2 - len(a)))
-        idx = CUT.index(e)                              # (fades: long out of and into silence, short between clips)
-        k_in = int((CUT_FADE_FIRST if idx == 0 else CUT_FADE_CARD if len(CUT[idx - 1]) == 2 else CUT_FADE) * FS)
-        k_out = int((CUT_FADE_CARD if idx + 1 == len(CUT) or len(CUT[idx + 1]) == 2 else CUT_FADE) * FS)
+        # (fades: long out of and into silence, short between clips, none where the same clip carries on)
+        def goes_on(a, b):
+            return len(a) > 2 and len(b) > 2 and a[0] == b[0] and abs(a[1] + a[2] - b[1]) < 1e-6
+        k_in = 0 if idx and goes_on(CUT[idx - 1], e) else int(
+            (CUT_FADE_FIRST if idx == 0 else CUT_FADE_CARD if len(CUT[idx - 1]) == 2 else CUT_FADE) * FS)
+        last = idx + 1 == len(CUT)
+        k_out = 0 if (last and (name, start + dur) == END_CLIP) or (not last and goes_on(e, CUT[idx + 1])) else int(
+            (CUT_FADE_CARD if last or len(CUT[idx + 1]) == 2 else CUT_FADE) * FS)
         m = len(a) // 2
         for i in range(max(k_in, k_out)):
             for kk, frm in ((k_in, i), (k_out, m - 1 - i)):
@@ -312,16 +342,17 @@ def demo(src, intro, out):
                     a[2 * frm + 1] = int(a[2 * frm + 1] * g)
         audio.extend(a)
         plan.append(("clip", (ppm, caps, ink), n))
-    # the end: SLOW LIGHT under the end card, fading out
-    with wave.open(str(src / "a10-end.wav")) as r:
+    # the end: the last clip's music carries on under the end card, fading out
+    with wave.open(str(src / f"{END_CLIP[0]}.wav")) as r:
         a = array.array("h", r.readframes(r.getnframes()))
     n = nf(END_S)
-    a = a[:n * SPF * 2]
+    s0 = nf(END_CLIP[1]) * SPF * 2
+    a = a[s0:s0 + n * SPF * 2]
     a.extend([0] * max(0, n * SPF * 2 - len(a)))
     m = len(a) // 2
     h = int(END_HOLD * FS)
     for i in range(m):
-        g = min(1.0, i / int(1.5 * FS)) * (1.0 if i < h else max(0.0, (m - 1 - i) / (m - h)) ** 1.6)
+        g = 1.0 if i < h else max(0.0, (m - 1 - i) / (m - h)) ** 1.6
         a[2 * i] = int(a[2 * i] * g)
         a[2 * i + 1] = int(a[2 * i + 1] * g)
     audio.extend(a)
@@ -342,6 +373,9 @@ def demo(src, intro, out):
             ppm, caps, ink = payload
             cards = {}
             for i, f in enumerate(ppm):
+                if isinstance(f, Image.Image):          # (an ink grid: the whole frame)
+                    yield f
+                    continue
                 t = i / float(FPS)
                 cap = [c for at, c in caps if at <= t][-1]
                 if cap not in cards:
