@@ -84,6 +84,17 @@
 #define MIDI_TIME_NOW() fm1_ticks()
 #define MIDI_TICKS_PER_MS (1000u * FM1_TICKS_PER_US)
 #include "usb.c"
+#if MELODEE_ACCESS && MELODEE_OTA                /* the screen reader (issue #430): fm1-reader's protocol, said by ui_speak.c */
+#define ANN_NAME "Tessera " MELODEE_VERSION
+#define ANN_MAX 160u                            /* (a SAY, (160 + 9) / 3 packets, fits usb.c's SysEx queue of 64 as it is) */
+#include "announce.c"
+static int ann_wire_send(const uint8_t *p, uint32_t n)   /* never waits: no room (nobody reading), not sent */
+{
+    if (!usb.config || usb.suspended || SXQ - (so_w - so_r) < (n + 2u) / 3u)
+        return -1;
+    return ota_wire_send(p, n);
+}
+#endif
 #if MELODEE_UART
 #include "midi_uart.c"
 #endif
@@ -105,6 +116,9 @@
 #include "ui_menu.c"
 #include "ui_input.c"
 #include "ui_layer.c"              /* the quick layers (GLO SCL held) */
+#ifdef ANN_VER
+#include "ui_speak.c"              /* the screen reader: what changed on the screen (MELODEE_ACCESS) */
+#endif
 
 /* --------------------------------------------- storage, update, editor --- */
 #if MELODEE_FLASH
