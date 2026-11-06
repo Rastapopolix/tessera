@@ -73,7 +73,9 @@ static int settings_import(persist_t *p, int n)
     settings_boot = (uint8_t)p->ext.boot;
     if (p->ext.drumch > 17u)
         p->ext.drumch = 0;
-    settings_drumch = (uint8_t)(!p->ext.drumch ? 10u : p->ext.drumch == 17u ? 0u : p->ext.drumch);
+    settings_drumch = (uint8_t)(p->ext.drumch == 17u || p->ext.drumch > 16u ? 0u : p->ext.drumch);   /* (0 or 17: OFF,
+                                                     * the default since 3.3.1: a drum track follows ROUT; 3.3 and
+                                                     * before read 0 as their default 10 and 17 as OFF) */
     settings_lights = (uint8_t)(p->ext.lights && p->ext.lights <= LIGHTS_N ? p->ext.lights - 1u : LIGHTS_MID);
     {
         uint32_t hz = p->ext.spare[1] & 0xFFFFu;
@@ -161,7 +163,7 @@ static void settings_export(persist_t *p)
     p->favorites.factory[15][25] = settings_knob_swap ? KNOB_SWAP_TAG : 0u;
     p->ext.usb_off=(p->ext.usb_off&3u)|(settings_budget!=VOICE_BUDGET_DEFAULT?WORK_BUDGET_TAG|((uint32_t)settings_budget<<8):0u);
     p->ext.boot = settings_boot;
-    p->ext.drumch = settings_drumch == 10u ? 0u : !settings_drumch ? 17u : settings_drumch;
+    p->ext.drumch = settings_drumch;                  /* (OFF 0; 10 now written as 10, so older firmware reads it too) */
     p->ext.lights = settings_lights == LIGHTS_MID ? 0u : settings_lights + 1u;
     p->ext.spare[1] = tuning_a4 == A4_DEFAULT ? 0u : A4_TAG | (uint32_t)tuning_a4;
     memcpy(p->ext.glo, settings_glo, sizeof settings_glo);

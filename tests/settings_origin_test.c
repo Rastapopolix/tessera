@@ -22,7 +22,7 @@ static uint32_t music_crc(void)
 static int defaults(void)
 {
     int ok = settings.palette == UI_DEFAULT_INDEX && !settings.zoom && !settings.lowcut &&
-        !settings_boot && settings_drumch == 10u && settings_hold == HOLD_DEF &&
+        !settings_boot && settings_drumch == 0u && settings_hold == HOLD_DEF &&
         settings_lights == LIGHTS_MID && tuning_a4 == A4_DEFAULT &&
         settings_autosave && !settings_screen && !settings_click && settings_click_level == 1u &&
         !settings_countin && settings_preview && !settings_chord_add &&
