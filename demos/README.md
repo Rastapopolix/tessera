@@ -1,7 +1,7 @@
 # Tessera demo projects
 
-Six projects that show what Tessera does, each music that keeps changing on its own. Press PLAY and leave it, then open
-the pages named below to see what is moving and turn things. The first three came with 3.0; the three after them came
+Seven projects that show what Tessera does, each music that keeps changing on its own. Press PLAY and leave it, then open
+the pages named below to see what is moving and turn things. The first three came with 3.0; the four after them came
 with 3.3 and are built round the long form: the **CHAIN** (one FORM for the whole project, with **KEY B** and **KEY
 C**), **ENTRIES** (tracks leaving and coming back on its phrase lines) and the **PIECE** (a length and the shape it
 takes). They need Tessera 3.3 or later.
@@ -14,6 +14,7 @@ takes). They need Tessera 3.3 or later.
 | `slow-light.tsp` | SLOW LIGHT | Drone: a TRIO fifth struck once and held, a wind, an ORACLE choir and a SOFT SWELL that change with the CHAIN's AABA; 15 minutes in WAVES |
 | `cedar-rain.tsp` | CEDAR RAIN | Plucked strings in KUMOI: a harp on TURING, a koto on EUCLID, an FM6 flute on MARKOV, 808 hand drums that ADORN varies; ABAC through three keys |
 | `undertow.tsp` | UNDERTOW | Call and answer in D minor: a STEP melody as ANSWER's SOURCE, answered on and on; minor chords and a sub bass in STEP |
+| `far-shore.tsp` | FAR SHORE | Deep dub, after Rhythm & Sound: one Gm stab drowned in echo and room, a round sub, an 808 rockers beat, air |
 
 They are made by the firmware's own code (`tests/demo_projects.c`), which saves each one to a slot, reads it back
 as the backup page does, loads it and plays it; `tests/run_tests.sh` checks that these files still load and play.
@@ -151,6 +152,28 @@ D minor, 70 BPM. A call and its answers.
   roots.
 - **CHAIN** ABAC (A twice), PHRASE 8: **KEY B −2** (C minor), **KEY C +5** (G minor). **ENTRIES** 45, FADE over 2 bars:
   the answers and the bass come and go. **PIECE** 12 minutes, **ARCH** peaking at 55 %, END **LOOP**. ENERGY ARC 30.
+
+## FAR SHORE
+
+G minor, 76 BPM. A deep dub after Rhythm & Sound: almost nothing moves, and the space is the music.
+
+- **T1 FM6 DX TINE**, STEP, two bars of sixteenths: one chord, Gm (B flat, D, F over the bass's G), a short stab just
+  after two in each bar, a softer one on the "and" of four every other time (1:2). Through a **FILTER** that T1's TIDE 2
+  opens and closes over minutes, nearly all of it into the **ECHO** (296 ms, a dotted sixteenth) and a big **REVERB**;
+  T1's SWARM 3 throws some stabs deeper into the echo.
+- **T2 TRIO SUB BASS**, STEP: a round line of long notes (TIEs): G, G again, B flat, C; D held, C, B flat, an F pickup
+  every other time. POLY, so a note never restarts the one still ringing out.
+- **T3 808 KIT**, STEP: NIGHT FERRY's beat (rockers: kick on one and three, rims on two and four, hats by **Condition**,
+  a tom pickup on the fourth bar, a clap on **FILL** that T3's SWARM 5 holds now and then).
+- **T4 TRIO WIND**, one note struck at PLAY and held by TIEs at 4 bars a step: air under everything; T4's TIDE 1 darkens
+  and brightens it. OWN in the CHAIN.
+- **CHAIN** AABA, PHRASE 16: **KEY B +5** takes the chord and the bass to C minor for B. **ENTRIES 50, CUT**, DWELL 1:
+  the chord and the bass drop out and come back on the phrase lines; the drums and the air are ANCHORs. **PIECE** 12
+  minutes in three **WAVES**, END **LOOP**.
+- Made not to crackle: the echo's feedback is fixed (no cord moves it), the stabs are FM6 (a third of ORACLE's CPU), no
+  sounding voice is ever struck again, no voice is taken.
+- **MODS**: T1 TIDE 2 → T1 FX1 RTE, T1 DRIFT → SF2 RTE (the echo's time bends a little, as tape), T1 SWARM 3 → T1 SEND
+  2, T3 SWARM 5 → FILL (a gate), T4 TIDE 1 → T4 CUT.
 
 ## Making them again
 
