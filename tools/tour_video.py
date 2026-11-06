@@ -279,7 +279,7 @@ def demo(src, intro, out):
         big.paste(Image.open(intro / name).convert("RGB").resize((240 * 4, 240 * 4), Image.NEAREST), ((DW - 960) // 2,) * 2)
         plan.append(("still", big, n))
         silence(n)
-    title = demo_card([("TESSERA 3.3", 12, False), ("Free firmware for the M-Vave FM-1", 4, True)], INK["YELLOW"])
+    title = demo_card([("TESSERA 3.3", 12, False), ("Generative firmware for the M-Vave FM-1", 4, True)], INK["YELLOW"])
     plan.append(("still", title, nf(TITLE_S)))
     silence(nf(TITLE_S))
     ink = INK["YELLOW"]
