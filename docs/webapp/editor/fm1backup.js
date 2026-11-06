@@ -208,6 +208,65 @@ export async function restoreBackup(request, file, onProgress = () => {}) {
   return archive;
 }
 
+// One project into one slot (A..D: 0..3), as the editor puts a demo (demos/*.tsp) on the FM-1: objects 2..5 alone, the
+// rest of the device as it was. The firmware writes the slot, its name shows in the slot list at once (editor_backup.c).
+const TSP_NAME = 10;                          // project_tsp.c's NAME part id (its 12 bytes, 0-padded)
+export function tspName(bytes) {              // a whole TSP1 record's name ("" when it has none); throws when not one
+  if (!isTsp(bytes)) throw new Error("Not a Tessera project record");
+  tspCheck(bytes);
+  const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.length);
+  let at = TSP_HEAD;
+  for (let k = v.getUint16(8, true); k > 0; k--) {
+    const len = v.getUint16(at + 2, true);
+    if (bytes[at] === TSP_NAME) { const n = bytes.subarray(at + 4, at + 4 + len), z = n.indexOf(0); return String.fromCharCode(...(z < 0 ? n : n.subarray(0, z))); }
+    at += 4 + len;
+  }
+  return "";
+}
+async function getObject(ask, id, size) {
+  const bytes = new Uint8Array(size);
+  for (let off = 0; off < size; off += BACKUP_CHUNK) {
+    const n = Math.min(BACKUP_CHUNK, size - off), a = await ask([BACKUP_CMD.GET, [id, ...bkU32(off), n & 127, n >>> 7]]);
+    bkCheck(a[1]);
+    if (a[0] !== id || bkR32(a, 2) !== off || (a[7] | a[8] << 7) !== n) throw new Error("Unexpected backup reply");
+    bytes.set(bkUnpack(a.slice(9), n), off);
+  }
+  return bytes;
+}
+// What the four slots hold: [{ used, name }] (name null: a project the firmware does not read). Stops playback.
+// Throws when the firmware is not of Tessera's own project format (2.0 and later).
+export async function readSlots(request) {
+  const ask = (r) => request(r, { timeout: 3000, retries: 1 });
+  const list = bkManifest(await ask([BACKUP_CMD.LIST, []]));
+  const live = list.find(o => o.id === 0);
+  if (!live || live.size < TSP_HEAD + 4 || new DataView((await getObject(ask, 0, 4)).buffer).getUint32(0, true) !== TSP_MAGIC) throw new Error("The demos need Tessera 2.0 or later on the FM-1");
+  const slots = [];
+  for (const id of [2, 3, 4, 5]) {            // (one request at a time)
+    const size = list.find(o => o.id === id)?.size || 0;
+    if (!size) { slots.push({ used: false, name: "" }); continue; }
+    const bytes = await getObject(ask, id, size);
+    let name = null;
+    try { name = tspName(bytes); } catch { /* a project of a format before Tessera's own */ }
+    slots.push({ used: true, name });
+  }
+  return slots;
+}
+export async function putProject(request, slot, bytes, onProgress = () => {}) {
+  tspName(bytes);                             // a whole record, or nothing is sent
+  if (!(slot >= 0 && slot <= 3) || bytes.length > maxSize(2)) throw new Error("Invalid slot or project");
+  const id = 2 + slot, ask = (args) => request([BACKUP_CMD.PUT, args], { timeout: 4000, retries: 0 });
+  let a = await ask([0, id, ...bkU32(bytes.length), ...bkU32(bkCrc(bytes))]); bkCheck(a[2]);
+  try {
+    for (let off = 0; off < bytes.length; off += BACKUP_CHUNK) {
+      a = await ask([1, id, ...bkU32(off), ...bkPack(bytes.subarray(off, off + BACKUP_CHUNK))]); bkCheck(a[2]);
+      onProgress(Math.min(bytes.length, off + BACKUP_CHUNK), bytes.length);
+    }
+    a = await ask([2, id]);
+  } catch (e) { await ask([3, id]).catch(() => {}); throw e; }
+  if (a[2] === 2) throw new Error("This firmware does not read the demo: install the Tessera release it came with (or later)");
+  bkCheck(a[2]);
+}
+
 // Installer connection: no editor page or watcher owns this input simultaneously.
 export class BackupConnection {
   constructor(input, output) {
