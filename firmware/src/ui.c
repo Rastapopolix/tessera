@@ -80,6 +80,15 @@ static uint8_t browse_loads, browse_mark;    /* sound loads so far; at the brows
 #define KNOBS_SAVED (favorites.factory[8][26])
 #define KNOBS_BAR_TAG 0xB1u
 #define KNOBS_BAR (KNOBS_SAVED == KNOBS_BAR_TAG)
+/* MENU > LARGE VALUE (Mono): the knob turning, its name and value large across the foot. AUTO (the default) only where
+ * the page has no picture of its own (ui_mono.c mo_pic_own: HOME and the pages showing the output), so it never covers
+ * what the knob is moving; ON on every page; OFF never, HOME too. favorites.factory[8][28] tagged ON or OFF, any other
+ * byte AUTO (Theo 2026-11-06: over CONSTELLATION's sky it hid the move being made) */
+#define LARGE_SAVED (favorites.factory[8][28])
+#define LARGE_ON_TAG 0xB3u
+#define LARGE_OFF_TAG 0xB4u
+enum { LARGE_AUTO, LARGE_ON, LARGE_OFF };
+#define LARGE_MODE (LARGE_SAVED == LARGE_ON_TAG ? LARGE_ON : LARGE_SAVED == LARGE_OFF_TAG ? LARGE_OFF : LARGE_AUTO)
 
 static uint8_t sync_reload;                  /* engine / preset / project / user preset loaded: editor RELOAD push */
 

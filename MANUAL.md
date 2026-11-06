@@ -278,9 +278,10 @@ generators on both pads stay within what the FM-1 can play: see [How many voices
 you patch it.
 
 On every page the four knobs' values sit under their dials (or bars: MENU > KNOBS). The value you turn is drawn
-inverted, and while you turn it its name and value show large across the foot of the screen, as on the home page, with
-a bar for where it sits in its range; they go when the knob rests. NOTES leaves that out so the steps stay in view: its
-values stay in their boxes at the top.
+inverted. On the home page and on pages without a picture of their own, while you turn it its name and value also show
+large across the foot of the screen, with a bar for where it sits in its range; they go when the knob rests. Pages with
+a picture (a generator's, an envelope, the LFO, PIECE and the rest) keep the picture in view, so you see what the knob
+does: MENU > **LARGE VALUE** shows it on every page (ON) or on none (OFF).
 
 <p align="center"><img src="assets/gallery/home.png" alt="HOME" width="320"> <img src="assets/gallery/mixer.png" alt="MIXER" width="320"></p>
 
@@ -1432,6 +1433,7 @@ Hold **HOME** for the menu. Its rows come in groups: the screen, the knobs and b
 |---|---|
 | **COLOR** | The screen's ink, on black: YELLOW (the default), WHITE, GREEN, BLUE, RED, ORANGE, PINK, HOT PINK or LILAC; or MOSAIC, SUNSET, OCEAN or NEON, a colour per track with the selection in white. Holding HOME opens the list; turn KNOB 2 on COLOR (or press OCT+) and it shows them all below it: ONE INK, then MOSAIC (the four-colour sets), the one chosen framed. KNOB 1 to another row or OCT- folds them away. |
 | **KNOBS** | How the four knobs' values are drawn on every page: **DIAL** (the default) or **BAR**, an upright bar that fills from the bottom. MIXER and the home page keep their dials. Saved. |
+| **LARGE VALUE** | The knob you turn, its name and value large across the foot of the screen. **AUTO** (the default): on the home page and pages without a picture of their own, so a picture (a generator's sky, an envelope, the LFO) stays in view while you turn; **ON**: on every page; **OFF**: never. The value always shows, inverted, in the knob's column. Saved. |
 | **BATTERY** | **ON** (the default): every page's header shows the battery, its bars (none to three) on the battery, solid with a bolt in it on external power (a computer, a hub or a charger). A long message takes its place for as long as it shows. **WHEN LOW**: only when it is down to a bar or none, on the battery. Saved. Either way, when the last bar goes the screen says **BATTERY LOW** once; with autosave on, the project is then saved as soon as you press STOP (no five seconds' wait), so a long piece is not lost to a flat battery. It never saves while playing. |
 | **PANEL GAMMA** | The screen's contrast curve: the panel chip's own **G2.2** (the default), G1.8, G2.5 and G1.0, or TUNED and TUNED+VCOM. The screen goes black for a moment and redraws. Saved. |
 | **TRACK KNOB** | RIGHT: the ALGORITHM knob picks the track and PRESETS browses sounds, as printed. LEFT: the two swap. |

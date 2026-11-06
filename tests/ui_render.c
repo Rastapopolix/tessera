@@ -2674,6 +2674,10 @@ int main(int argc, char **argv)
         fprintf(stderr, "ui_render: MENU > KNOBS\n");
         nfind++;
     }
+    if (test_large_menu()) {                    /* MENU > LARGE VALUE (ui_test.c): AUTO, ON, OFF; where it shows; saved */
+        fprintf(stderr, "ui_render: MENU > LARGE VALUE\n");
+        nfind++;
+    }
     if (test_landscape()) {                     /* LANDSCAPE (ui_test.c): the feed, the rings, drawn again only moving */
         fprintf(stderr, "ui_render: LANDSCAPE\n");
         nfind++;

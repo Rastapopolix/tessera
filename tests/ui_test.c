@@ -3942,6 +3942,53 @@ static int test_knobs_menu(void)
     ui.menu = 0;
     return bad;
 }
+/* MENU > LARGE VALUE: AUTO (default) shows the knob turning large only over the output, ON on every page, OFF never;
+ * saved with the favorites (row 8 byte 28, tagged); any other byte reads AUTO */
+static int test_large_menu(void)
+{
+    int bad = 0;
+    persist_t p;
+    ui_power_on();
+    LARGE_SAVED = 0;
+    hold(B_HOME);
+    ui.menu_sel = MI_LARGE;
+    turn(EN_K2, 1);
+    bad += check("LARGE VALUE: the menu's KNOB 2 right: ON", ui.menu == 1 && LARGE_MODE == LARGE_ON);
+    turn(EN_K2, 1);
+    bad += check("  right again: OFF", LARGE_MODE == LARGE_OFF);
+    turn(EN_K2, -1);
+    turn(EN_K2, -1);
+    bad += check("  left twice: AUTO", LARGE_MODE == LARGE_AUTO);
+    press(B_OCTUP);
+    bad += check("  OCT+ steps: ON", LARGE_MODE == LARGE_ON);
+    memset(&p, 0, sizeof p);
+    settings_export(&p);
+    LARGE_SAVED = 0;
+    bad += check("  saved with the settings", settings_import(&p, sizeof p) && LARGE_MODE == LARGE_ON);
+    p.favorites.factory[8][28] = 0x01u;
+    settings_import(&p, sizeof p);
+    bad += check("  an older record (no tag): AUTO", LARGE_MODE == LARGE_AUTO);
+    ui.menu = 0;
+    {   /* where it shows: a picture of the page's own keeps it away in AUTO; the output (TEMPO) does not */
+        static const char *const PG[2] = {"EVOLVE", "TEMPO"};
+        static const uint8_t WANT[3][2] = {{0, 1}, {1, 1}, {0, 0}};   /* AUTO, ON, OFF: EVOLVE, TEMPO */
+        static const uint8_t TAG[3] = {0, LARGE_ON_TAG, LARGE_OFF_TAG};
+        for (uint32_t m = 0; m < 3u; m++)
+            for (uint32_t k = 0; k < 2u; k++) {
+                char what[80];
+                LARGE_SAVED = TAG[m];
+                ui.home = 0; ui.page = (uint8_t)page_titled(PG[k]); page_entered(); ui.force = 1;
+                ui_draw();
+                memset(mo_col, 0, sizeof mo_col);
+                mo_col[1].used = 1; mo_col[1].hot = 1; str_cpy(mo_col[1].val, "42", sizeof mo_col[1].val);
+                snprintf(what, sizeof what, "  %s on %s: %s", (const char *const[]){"AUTO", "ON", "OFF"}[m], PG[k],
+                         WANT[m][k] ? "large" : "not");
+                bad += check(what, mo_turn() == WANT[m][k]);
+            }
+        LARGE_SAVED = 0;
+    }
+    return bad;
+}
 /* LANDSCAPE (ui_land.c): notes are drops only while the page shows; the still scene is not drawn again, a ring is */
 static uint32_t land_rings(void) { uint32_t n = 0; for (uint32_t i = 0; i < LAND_RIP; i++) n += land.used[i]; return n; }
 static int test_landscape(void)
@@ -6552,6 +6599,7 @@ int main(void)
     bad += test_track_knob();
 #if MELODEE_LOOK
     bad += test_knobs_menu();
+    bad += test_large_menu();
 #endif
     bad += test_layer();
     bad += test_name();
