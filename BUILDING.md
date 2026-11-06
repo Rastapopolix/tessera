@@ -98,7 +98,7 @@ Build options (environment; most use `0` or `1`; defaults in `firmware/src/build
 | `MELODEE_DUAL_CORE` | 1 | paired FM6 rendering on CPU1; `0` builds serial-only firmware |
 | `MELODEE_SLICE` | 1 | the SLICE engine |
 | `MELODEE_ICONS` | 1 | parameter icons on the knob cards |
-| `MELODEE_ACCESS` | 0 | the accessible build (issue #430): `1` leaves out the help cards (ARP held + a knob) and their texts, ~22 KB flash, room for a screen reader. MIDI LEARN and the mod shortcut still find a knob's parameter (`help_find`); the online reference keeps every text. Work in progress: no reader yet |
+| `MELODEE_ACCESS` | 1 (host tests: 0) | screen reader support in place of the help cards (issue #430): `1` leaves out the cards (ARP held + a knob) and their texts, ~22 KB flash. MIDI LEARN and the mod shortcut still find a knob's parameter (`help_find`); docs/PARAMETERS.md keeps every text. `0` builds the cards back in (no room left for much else) |
 | `MELODEE_COMPRESS_AUDIO` | 1 | the five SRAM load images (`.ram_text`, `.dsp_text`, `.dsp_tables`, `.data`, `.audio_text`) stored as raw LZMA1 (`tools/boot_audio.py`) and unpacked by `fm1_cstart` before anything runs from SRAM (`firmware/src/boot_lzma.h`; a record that does not unpack exactly enters update mode); `0` stores them raw and copies them by words |
 
 ## Samples
