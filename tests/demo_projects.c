@@ -662,7 +662,8 @@ static void demo_undertow(void)
     sound(2, ENGI_TRIO, TR_WARM_PAD);
     sound(3, ENGI_TRIO, TR_SUB_BASS);
     scale(2, SCL_MIN, 0);
-    sends(116, 100, 111, 96);                         /* a big room; ECHO 321 ms, a dotted sixteenth at 70 BPM */
+    sends(100, 100, 111, 96);                         /* a room (SIZE 100: a bigger hall's late first reflections
+                                                   * sounded like a pre-delay, Theo 2026-11-06); ECHO 321 ms, a dotted sixteenth at 70 BPM */
 
     /* T1: the call, four bars of eighths: A, F, E, D held, C, D, F, G, A held, then a bar of nothing */
     {
@@ -1018,7 +1019,7 @@ static void demo_kites(void)
     sound(2, ENGI_TRIO, TR_SOFT_PAD);
     sound(3, ENGI_ORACLE, OR_GLASS_PAD);
     scale(5, SCL_PEN, 0);
-    sends(118, 105, 80, 60);
+    sends(100, 105, 80, 60);
 
     /* T1: STEP, 11 eighths: three notes (F, A, C') */
     {
@@ -1083,7 +1084,7 @@ static void demo_pier(void)
     sound(2, ENGI_DRUM, DK_808_KIT);
     sound(3, ENGI_TRIO, TR_SOFT_LEAD);
     scale(5, SCL_DOR, 0);
-    sends(118, 102, 117, 106);                        /* a big room; ECHO 342 ms, a dotted sixteenth at 66 BPM */
+    sends(100, 102, 117, 106);                        /* a big room; ECHO 342 ms, a dotted sixteenth at 66 BPM */
 
     /* T1: four bars of eighths, a chord on each bar's second beat held to the "and" (ORACLE's three units a voice: two
      * chords never overlap in the budget); a Cm7 leading home on the fourth bar's last beat every fourth time */
