@@ -24,7 +24,7 @@ static void lcd_blit(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint1
 #include "../firmware/src/gfx.c"
 #include "../firmware/src/panel.c"
 static void settings_save(void) {}
-static uint8_t settings_boot, settings_drumch = 10;  /* (params.c) */
+static uint8_t settings_boot, settings_drumch = 0;   /* (params.c) */
 enum { MIDI_OUT_KEYS, MIDI_OUT_ALL, MIDI_OUT_OFF, MIDI_OUT_N };
 static uint8_t settings_midi_out, settings_clock_out;     /* (midi_out.c) */
 static uint8_t settings_cc_off;                           /* (midi_cc.c) */
@@ -159,10 +159,12 @@ int main(void)
         p = original;
         assert(!settings_import(&p, (int)sizeof p - 1));
     }
-    settings_drumch = 0; settings_export(&p);        /* DRUM OFF: 17 in the record; 10 (the default): 0 */
-    assert(p.ext.drumch == 17u && settings_import(&p, sizeof p) == 1 && !settings_drumch);
-    settings_drumch = 10; settings_export(&p); assert(!p.ext.drumch);
+    settings_drumch = 0; settings_export(&p);        /* DRUM OFF (the default since 3.3.1): 0 in the record */
+    assert(p.ext.drumch == 0u && settings_import(&p, sizeof p) == 1 && !settings_drumch);
+    settings_drumch = 10; settings_export(&p); assert(p.ext.drumch == 10u);   /* 10: written as 10 */
     settings_drumch = 3; assert(settings_import(&p, sizeof p) == 1 && settings_drumch == 10u);
+    p.ext.drumch = 17u;                              /* an older record's OFF */
+    settings_drumch = 3; assert(settings_import(&p, sizeof p) == 1 && !settings_drumch);
     p = original; p.ext.usb_off = 2;                /* PER5: ext kept by a build without USB audio */
     assert(settings_import(&p, sizeof p) == 1 && p.ext.usb_off == 2u);
     settings_export(&p); assert(p.ext.usb_off == 2u);

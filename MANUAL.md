@@ -1457,8 +1457,9 @@ Hold **HOME** for the menu. Its rows come in groups: the screen, the knobs and b
 **GLO > MIDI OUT** sets the channel each track's notes go out on, so every track can play its own instrument:
 **KNOB 1** to **4** for tracks 1 to 4.
 
-- **AUTO** (the default) works as before: the channel follows **SYSTEM > ROUT** (CH1-4: tracks on 1 to 4), and a
-  drum track uses the **DRUM** channel.
+- **AUTO** (the default) works as before: the channel follows **SYSTEM > ROUT** (CH1-4: tracks on 1 to 4). A drum
+  track does the same while **SYSTEM > DRUM** is **OFF** (the default since 3.3.1); set DRUM to a channel, **10** for
+  General MIDI's drums, and a drum track uses that one instead.
 - **1** to **16**: that channel, whatever ROUT and DRUM say.
 - **OFF**: none of the track's notes go out.
 
@@ -1488,7 +1489,7 @@ channel is OFF too); it is saved with the project, and firmware before it plays 
 
 External gear (a sequencer, a controller, norns or crow through a MIDI interface, a DAW) can turn Tessera's
 parameters. A track listens on the channel it plays on (**SYSTEM > ROUT**: CH1-4 is tracks 1 to 4 on channels 1 to 4;
-SEL the selected track; a drum track also on the **DRUM** channel). A CC's 0 to 127 spans the whole range of the
+SEL the selected track; a drum track also on the **DRUM** channel, when DRUM is not OFF). A CC's 0 to 127 spans the whole range of the
 parameter, as turning its knob all the way would; the knob carries on from there. While recording, **MOTION** keeps
 the moves as it keeps the knob's. Cords and MOD go on adding to the value the CC sets.
 
