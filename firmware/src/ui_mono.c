@@ -2088,9 +2088,12 @@ static void mo_pic_fm6(const track_t *t)
     }
     mo_text(b, 2, 56, hot == P_E0 || hot == P_E7 ? MO_INK : MO_DIM);
 }
+static uint8_t mo_pic_own;                             /* the page drew a picture of its own (LARGE VALUE AUTO), not
+                                                         * the output */
 static void mo_picture(void)
 {
     const page_t *pg = cur_page();
+    mo_pic_own = 1;
     track_t *t = TSEL;
     uint32_t tr = song.sel;
     if (pg->graph == GR_STEPS && pg->fam == FAM_GEN && tr < TESSERA_TRACKS && tessera.mode[tr] != TESS_ENG_OFF) {
@@ -2184,6 +2187,7 @@ static void mo_picture(void)
         if (pic == 5u) { mo_pic_arp(t); return; }
         if (pic == 9u) { mo_pic_fx(); return; }
     }
+    mo_pic_own = 0;
     mo_stage_wave(MO_PY0 + 4, 48, MO_INK);              /* the rest: the output */
 }
 
@@ -2342,11 +2346,14 @@ static uint32_t mo_signature(void)
 
 /* a knob turning: its name and value large across the foot, as HOME shows them (mo_stage_panel), over the page's
  * tabs and the picture's last rows until it rests (ui.hot_t); where the value sits in its range, a bar at the right.
- * Not on NOTES: it would cover the steps being placed (the column keeps the value, inverted) */
+ * Not on NOTES: it would cover the steps being placed (the column keeps the value, inverted). MENU > LARGE VALUE: AUTO
+ * only over the output (a page with a picture of its own keeps it in view), ON always, OFF never */
 static int mo_turn(void)
 {
     uint32_t i;
     char b[24];
+    if (LARGE_MODE == LARGE_OFF || (LARGE_MODE == LARGE_AUTO && mo_pic_own))
+        return 0;
     for (i = 0; i < 4u && !(mo_col[i].used && mo_col[i].hot); i++) ;
     if (i >= 4u || mo_col[i].val[0] == '[')
         return 0;
@@ -2734,7 +2741,7 @@ static void mo_stage_panel(void)
         }
         return;
     }
-    if (stage.out) {                                    /* a knob turning: its value, large */
+    if (stage.out && LARGE_MODE != LARGE_OFF) {         /* a knob turning: its value, large (LARGE VALUE OFF: not) */
         int16_t *vp;
         const char *unit;
         const page_t *sp = stage_page();
