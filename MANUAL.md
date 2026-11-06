@@ -419,7 +419,7 @@ filter envelope into A's pitch a sweep on each note. Its pages, on **EDIT**:
 
 As on FM6, **ENV** goes to FILT ENV and AMP ENV (ORACLE has no use for the track's ENV), and **LFO** to MODS and the
 track's LFO pages, then LFO MOD and LFO ROUTE. The sound lives in the project, a patch per track: a turned knob is
-saved with it, but an ORACLE sound cannot go to a USER slot, so keep one you like in a project. ORACLE takes more of the FM-1 than an FM6 voice (about
+saved with it, and SAVE > SOUND keeps one you like in a USER slot, as on the other engines. ORACLE takes more of the FM-1 than an FM6 voice (about
 one and a half times): one ORACLE track of pads or chords is fine; with two busy ones, keep BUDGET in mind (below).
 
 <p align="center"><img src="assets/gallery/oracle_osc.png" alt="ORACLE OSC A page" width="240"> <img src="assets/gallery/oracle_filter.png" alt="ORACLE FILTER page" width="240"> <img src="assets/gallery/oracle_env.png" alt="ORACLE AMP ENV page" width="240"></p>
