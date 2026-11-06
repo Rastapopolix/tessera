@@ -13,6 +13,7 @@
  *                                              and played (tools/demo_backup.py's test: the demos put into a backup)
  *   build/host/demo_projects levels [SECS]     each track alone: its level, to balance a demo by
  *   build/host/demo_projects video OUTDIR      the demo video's audio, screens and captions (tools/demo_video.py)
+ *   build/host/demo_projects tour OUTDIR       the 3.3 narrated tour's clips (tools/tour_video.py)
  *   build/host/demo_projects log N SECS        demo N's notes as CSV (time, track, note, velocity)
  *   build/host/demo_projects solo N T SECS [WAV] demo N with track T alone heard (0: all): the voices' cost, as a
  *                                              device CPU guide, and the render
@@ -1814,12 +1815,14 @@ typedef struct {
     const vkey_t *keys; uint32_t nkeys;
     const vbtn_t *btns; uint32_t nbtns;
     const vturn_t *turns; uint32_t nturns;
+    void (*fn)(void); uint32_t fn_ms;              /* (tour: a change of the project at fn_ms) */
 } vclip_t;
 #define VN(a) a, (uint32_t)(sizeof a / sizeof a[0])
 static void v_run(const char *out, const vclip_t *c)
 {
     char dir[600], wav[600];
     uint32_t frames = c->secs * FS, f, si = 0, ki = 0, bi = 0, b = 0, n = 0, done[16] = {0};
+    int fired = 0;
     memset(dm_notes, 0, sizeof dm_notes);
     snprintf(dir, sizeof dir, "%s/%s", out, c->name);
     mkdir(dir, 0755);
@@ -1863,6 +1866,7 @@ static void v_run(const char *out, const vclip_t *c)
                 done[t] = due, input = 1;
             }
         }
+        if (c->fn && !fired && ms >= c->fn_ms) c->fn(), fired = 1, input = 1;
         if (input) ui_input();
         dm_f = f;
         mix_block(o, CTL);
@@ -1875,6 +1879,7 @@ static void v_run(const char *out, const vclip_t *c)
 #if MELODEE_LOOK                                        /* (the suite builds the detailed look: no mo_col) */
         for (uint32_t k = 0; k < 4u; k++) printf(" [%s=%s]", mo_col[k].label, mo_col[k].val);
 #endif
+        printf(" SPLIT %d", tessera_param_get(song.sel, TX_SUB_SPLIT));
         printf(" GRAVITY %d DEVELOP %d SOURCE %d", tessera_param_get(0, TX_SD_GRAVITY), tessera_param_get(0, TX_FM_DEVELOP),
                tessera_param_get(0, TX_SD_SOURCE));
         printf("\n");
@@ -2148,6 +2153,230 @@ static void v_features(const char *out)
         V_CLIP("s2-timing", 10, VN(S), V_NO(V_NOKEYS), V_NO(V_NOBTNS), VN(T));
     }
 }
+/* the 3.3 tour (tour OUTDIR): the narrated video's clips, one per [PLAY] of the script (tessera-notes
+ * docs/video/3.3/script.md), each a 3.3 demo as made, from a time into it (pre), in its chapter's ink; frames, WAV and
+ * captions as video's (tools/tour_video.py: a 16:9 MP4 and a still a clip). TOUR_ONLY=prefix: those clips only */
+static void v_ink(const char *name)                     /* MENU > COLOR: the ink of that name */
+{
+    for (uint32_t i = 0; i < NPALETTES; i++)
+        if (str_eq(UI_PALETTES[i].name, name)) { settings.palette = (uint8_t)i; palette_set(i); return; }
+    fprintf(stderr, "tour: no ink %s\n", name);
+}
+static int16_t t_lv[NTRK];
+static void t_solo(uint32_t k)                          /* track k alone (the others still play, at LEVEL 0) */
+{
+    for (uint32_t j = 0; j < NTRK; j++) { t_lv[j] = trk[j].p[P_LEVEL]; if (j != k) trk[j].p[P_LEVEL] = 0; }
+}
+static void t_all(void) { for (uint32_t j = 0; j < NTRK; j++) trk[j].p[P_LEVEL] = t_lv[j]; }
+static void t_cord_on_amt(void) { cord(3, CS_OCHD2, 1, CD_M1_AMT, 1, 60, -30, 0); ui.force = 1; }   /* SWARM 2 -> M1 AMT */
+static void t_menu_color(void) { ui.menu = 1; ui.menu_sel = MI_COLOR; menu_cols = 1; ui.force = 1; }
+static const char *t_only;
+static int t_want(const char *name) { return !t_only || !strncmp(name, t_only, strlen(t_only)); }
+static void t_run(const char *out, void (*make)(void), const char *ink, const vclip_t *c)
+{
+    if (!t_want(c->name)) return;
+    power_on();
+    if (make) make();
+    song.batt_raw = 600;                                /* (a full battery in the header: the host reads none) */
+    if (getenv("TOUR_HALL")) song.g[G_MFXRATE] = (int16_t)atoi(getenv("TOUR_HALL"));   /* (A/B: the hall's SIZE) */
+    if (getenv("TOUR_SOLO")) t_solo((uint32_t)atoi(getenv("TOUR_SOLO")));   /* (checks: one track heard) */
+    v_ink(ink);
+    v_run(out, c);
+}
+#define T_CLIP(mk, ink, ...) do { const vclip_t C_ = {__VA_ARGS__}; t_run(out, mk, ink, &C_); } while (0)
+#define T_S(...) .st = (const vstep_t[]){__VA_ARGS__}, .nst = sizeof((const vstep_t[]){__VA_ARGS__}) / sizeof(vstep_t)
+#define T_T(...) .turns = (const vturn_t[]){__VA_ARGS__}, .nturns = sizeof((const vturn_t[]){__VA_ARGS__}) / sizeof(vturn_t)
+#define T_B(...) .btns = (const vbtn_t[]){__VA_ARGS__}, .nbtns = sizeof((const vbtn_t[]){__VA_ARGS__}) / sizeof(vbtn_t)
+static void t_cedar_t1(void) { demo_cedar(); t_solo(0); }
+static void t_cedar_t2(void) { demo_cedar(); t_solo(1); }
+static void t_cedar_t3(void) { demo_cedar(); t_solo(2); }
+static void t_cedar_t4(void) { demo_cedar(); t_solo(3); }
+static void t_light_t3(void) { demo_light(); t_solo(2); }
+static void t_under_t3(void) { demo_undertow(); t_solo(2); }
+static void t_cedar_drop(void) { demo_cedar(); t_solo(0); tx(0, TX_TW_DROP, 0); }
+static void t_under_follow(void)                        /* the bass on EUCLID, its own note, ready to FOLLOW T1 */
+{
+    demo_undertow();
+    tx(0, TX_ET_AMOUNT, 0);                             /* (every track in: the bass too) */
+    trk[3].p[P_SDIV] = DIV_8;
+    gen(3, TESS_ENG_EUCLID, 41);
+    tx(3, TX_EUC_STEPS, 8); tx(3, TX_EUC_PULSES, 3); tx(3, TX_EUC_ROT, 0);
+    tx(3, TX_TW_SHIFT, -7);                             /* (while following: a scale's octave under the call) */
+}
+static void t_ember_perf(void)                          /* MCR1: the flute into the hall, the ORACLE drone darker */
+{
+    demo_ember();
+    cord(5, CS_MACRO1, 0, CD_FX_SEND, 3, 100, 0, CU_UNI);
+    cord(6, CS_MACRO1, 0, CD_E1, 1, -40, 0, 0);
+}
+static void t_scene_bounce(void) { v_scene(92, ENGI_FM6, V_KOTO_RING, TESS_ENG_BOUNCE, DIV_16); v_pad(); }
+static void t_scene_constel(void) { v_scene(90, ENGI_FM6, FX_KUGO_HARP, TESS_ENG_CONSTEL, DIV_8); v_pad(); }
+#ifndef T_LRATE1
+#define T_LRATE1 40
+#endif
+#ifndef T_LRATE2
+#define T_LRATE2 12
+#endif
+#ifndef T_TREM_RATE
+#define T_TREM_RATE 88
+#endif
+#ifndef T_SWEEP
+#define T_SWEEP 50
+#endif
+/* "Modulate the modulators" and PERF on one held chord (Theo 2026-11-06: inside the pieces the moves were buried): an
+ * ORACLE pad holding the scale's chord through its four-pole filter, so a cord on CUTOFF is heard as plainly as it is
+ * seen. M1: T1's LFO sweeps the cutoff; M2 (at fn_ms): T2's slow LFO on M1's amount, the sweep swelling and fading.
+ * PERF: MCR1 from a dark, still chord to an open one pulsing (its filter, and a tremolo's depth) */
+static void t_chord_scene(void)
+{
+    v_scene(72, ENGI_ORACLE, OR_WARM_PAD, TESS_ENG_CHORD, DIV_16);
+    trk[0].p[P_CHRD] = 1;                               /* DIA3 */
+    tx(0, TX_CH_PROG, GEN_CH_DRONE); tx(0, TX_CH_BARS, 3); tx(0, TX_CH_HIT, GEN_CH_HOLD);
+    mixer(0, 104, 0, 70, 0);
+}
+static void t_scene_lfo(void)
+{
+    t_chord_scene();
+    trk[0].p[P_LRATE] = T_LRATE1; trk[1].p[P_LRATE] = T_LRATE2;
+    cord(0, CS_LFO, 0, CD_CUTOFF, 0, T_SWEEP, 0, 0);    /* M1: T1 LFO -> T1 CUT */
+    if (getenv("T_AMT_FROM_START")) cord(1, CS_LFO, 1, CD_M1_AMT, 0, 100, -50, 0);
+}
+static void t_scene_amt(void) { cord(1, CS_LFO, 1, CD_M1_AMT, 0, 100, -50, 0); ui.force = 1; }   /* M2: T2 LFO -> M1 AMT */
+static void t_scene_perf(void)
+{
+    t_chord_scene();
+    trk[0].p[P_LRATE] = T_TREM_RATE;
+    cord(0, CS_MACRO1, 0, CD_CUTOFF, 0, 100, -55, CU_UNI);  /* MCR1: the chord from dark to open .. */
+    cord(1, CS_MACRO1, 0, CD_M1_AMT + 2u, 0, 100, 0, CU_UNI);   /* .. and M3's depth from none to full: */
+    cord(2, CS_LFO, 0, CD_LEVEL, 0, 0, 0, 0);           /* M3: T1's LFO on its level, a tremolo (Theo: the echo
+                                                         * throw was lost under the filter) */
+}
+/* the same screen (CEDAR RAIN's HOME, a minute in) in every ink: OUT/inks/<NAME>.ppm, for the demo's grids */
+static void t_inks(const char *out)
+{
+    char dir[600];
+    power_on(); demo_cedar(); song.batt_raw = 600;
+    transport_req = 1;
+    for (uint32_t f = 0; f < 60u * FS; f += CTL) { int32_t o[2 * CTL]; dm_f = f; mix_block(o, CTL); fm1_ms = f / (FS / 1000u); }
+    v_page(1, 0, 0);
+    snprintf(dir, sizeof dir, "%s/inks", out);
+    mkdir(dir, 0755);
+    for (uint32_t i = 0; i < NPALETTES; i++) {
+        char path[700];
+        settings.palette = (uint8_t)i; palette_set(i); ui.force = 1; ui_draw();
+        snprintf(path, sizeof path, "%s/inks/%02u-%s", out, i, UI_PALETTES[i].name);
+        mkdir(path, 0755);
+        v_ppm(path, 0);
+    }
+    transport_req = 2;
+    printf("tour: %u inks in %s\n", (unsigned)NPALETTES, dir);
+}
+static void tour(const char *out)
+{
+    char cap[600];
+    mkdir(out, 0755);
+    snprintf(cap, sizeof cap, "%s/captions.txt", out);
+    if (!(v_cap = fopen(cap, t_only ? "a" : "w"))) return;
+    v_t0 = 0;
+    /* 0. Cold open: CEDAR RAIN five minutes in, on LANDSCAPE */
+    T_CLIP(demo_cedar, "OCEAN", .name = "a00-cold-open", .secs = 15, .pre = 300, T_S({0, 0, 0, "LANDSCAPE", "LANDSCAPE"}));
+    /* 1. Hello: HOME */
+    T_CLIP(demo_cedar, "YELLOW", .name = "a01-home", .secs = 8, .pre = 300, T_S({0, 1, 0, 0, "HOME"}));
+    /* 2. The sounds, a track each alone */
+    T_CLIP(t_cedar_t1, "YELLOW", .name = "a02a-fm6-harp", .secs = 6, .pre = 200, T_S({0, 1, 0, 0, "FM6: KUGO HARP"}));
+    T_CLIP(t_light_t3, "YELLOW", .name = "a02b-oracle-vox", .secs = 8, .pre = 60, T_S({0, 1, 2, 0, "ORACLE: VOX"}));
+    T_CLIP(t_under_t3, "YELLOW", .name = "a02c-trio-pad", .secs = 6, .pre = 60, T_S({0, 1, 2, 0, "TRIO: WARM PAD"}));
+    T_CLIP(t_cedar_t4, "YELLOW", .name = "a02e-808-hand-drums", .secs = 6, .pre = 200, T_S({0, 1, 3, 0, "808 KIT"}));
+    /* 3. Generators: CEDAR RAIN's three, then all four; BOUNCE and CONSTELLATION on a scene of their own */
+    T_CLIP(t_cedar_t1, "GREEN", .name = "a03a-turing-mode", .secs = 6, .pre = 200, T_S({0, 0, 0, "GEN", "GEN: MODE TURING"}));
+    T_CLIP(t_cedar_t1, "GREEN", .name = "a03b-turing-lock", .secs = 16, .pre = 200,
+           T_S({0, 0, 0, "EVOLVE", "EVOLVE  KNOB 1: LOCK"}), T_T({2500, EN_K1, -12, 5000}));
+    T_CLIP(t_cedar_t2, "GREEN", .name = "a03c-euclid-pulses", .secs = 12, .pre = 200,
+           T_S({0, 0, 1, "GEN", "EUCLID  KNOB 3: PULSES"}), T_T({3000, EN_K3, 2, 1500}));
+    T_CLIP(t_cedar_t3, "GREEN", .name = "a03d-markov-then-all", .secs = 16, .pre = 200,
+           T_S({0, 0, 2, "GEN", "MARKOV"}, {8000, 1, 2, 0, "ALL FOUR TRACKS"}), .fn = t_all, .fn_ms = 8000);
+    T_CLIP(t_scene_bounce, "GREEN", .name = "a03e-bounce", .secs = 8, T_S({0, 0, 0, "GEN", "BOUNCE"}));
+    T_CLIP(t_scene_constel, "GREEN", .name = "a03f-constellation", .secs = 8, T_S({0, 0, 0, "GEN", "CONSTELLATION"}));
+    /* 4. Shaping the line: the ARP button's pages */
+    T_CLIP(t_cedar_t1, "BLUE", .name = "a04a-arp-lane", .secs = 8, .pre = 200,
+           T_S({0, 0, 0, "EVOLVE", "ARP: EVOLVE"}, {1600, 0, 0, "FORM", "ARP: FORM"}, {3200, 0, 0, "TWEAK", "ARP: TWEAK"},
+               {4800, 0, 0, "LENGTH", "ARP: LENGTH"}, {6400, 0, 0, "TIMING", "ARP: TIMING"}));
+    T_CLIP(t_cedar_drop, "BLUE", .name = "a04b-drop", .secs = 12, .pre = 200,
+           T_S({0, 0, 0, "TWEAK", "TWEAK  KNOB 2: DROP"}), T_T({3000, EN_K2, 15, 3000}));
+    T_CLIP(t_cedar_t1, "BLUE", .name = "a04c-split", .secs = 16, .pre = 200,
+           T_S({0, 0, 0, "TIMING", "TIMING  SPLIT 0"}, {5000, 0, 0, "TIMING", "OCT+ HELD  KNOB 1: SPLIT"}),
+           T_B({4800, B_OCTUP, 1}, {9000, B_OCTUP, 0}), T_T({5000, EN_K1, 30, 2500}));
+    T_CLIP(t_cedar_t4, "BLUE", .name = "a04d-adorn", .secs = 12, .pre = 220, T_S({0, 0, 3, "EVOLVE", "STEP EVOLVE: ADORN"}));
+    /* 5. Tracks that listen: UNDERTOW */
+    T_CLIP(demo_undertow, "ORANGE", .name = "a05a-call-answer", .secs = 32, .pre = 41,
+           T_S({0, 0, 0, "NOTES", "TRACK 1: THE CALL"}, {13900, 0, 1, "GEN", "TRACK 2: ANSWER, SOURCE T1"}));
+    T_CLIP(demo_undertow, "ORANGE", .name = "a05b-answers-overlap", .secs = 15, .pre = 290,
+           T_S({0, 0, 1, "GEN", "ANSWER: FADE 100"}));
+    T_CLIP(t_under_follow, "ORANGE", .name = "a05c-follow", .secs = 16, .pre = 60,
+           T_S({0, 0, 3, "TWEAK", "TRACK 4  FOLLOW OFF"}, {7000, 0, 3, "TWEAK", "KNOB 4: FOLLOW T1"}),
+           T_T({7000, EN_K4, 1, 100}));
+    /* 6. Modulate the modulators: EMBER FIELD in MOSAIC */
+    T_CLIP(demo_ember, "MOSAIC", .name = "a06a-mods", .secs = 12, .pre = 200, T_S({0, 0, 1, "MODS", "MODS: TIDE 1 TO CUT"}));
+    T_CLIP(demo_ember, "MOSAIC", .name = "a06b-mod-on-mod", .secs = 22, .pre = 200,
+           T_S({0, 0, 1, "MODS", "MODS"}, {6000, 0, 1, "MODS", "SWARM 2 TO M1 AMT"}), .fn = t_cord_on_amt, .fn_ms = 6000);
+    T_CLIP(t_ember_perf, "MOSAIC", .name = "a06c-perf-matrix", .secs = 16, .pre = 200,
+           T_S({0, 0, 0, "PERF", "PERF  KNOB 1: MCR1"}, {11000, 0, 0, "MATRIX", "MATRIX"}),
+           T_T({1500, EN_K1, 60, 4000}, {6000, EN_K1, -60, 4000}));
+    /* 7. From a loop to a piece */
+    T_CLIP(demo_cedar, "SUNSET", .name = "a07a-chain-key", .secs = 20, .pre = 280, T_S({0, 0, 0, "CHAIN", "CHAIN: ABAC, KEY B +5"}));
+    T_CLIP(demo_ember, "SUNSET", .name = "a07b-entries", .secs = 22, .pre = 116,
+           T_S({0, 0, 3, "ENTRIES", "ENTRIES 45: TRACK 4 BACK IN"}));
+    T_CLIP(demo_ember, "SUNSET", .name = "a07c-piece-00", .secs = 6, .pre = 1, T_S({0, 0, 0, "PIECE", "PIECE: 20 MIN, PLATEAU"}));
+    T_CLIP(demo_ember, "SUNSET", .name = "a07c-piece-05", .secs = 6, .pre = 300, T_S({0, 0, 0, "PIECE", "PIECE: 5 MIN IN"}));
+    T_CLIP(demo_ember, "SUNSET", .name = "a07c-piece-10", .secs = 6, .pre = 600, T_S({0, 0, 0, "PIECE", "PIECE: 10 MIN IN"}));
+    T_CLIP(demo_ember, "SUNSET", .name = "a07c-piece-15", .secs = 6, .pre = 900, T_S({0, 0, 0, "PIECE", "PIECE: 15 MIN IN"}));
+    T_CLIP(demo_ember, "SUNSET", .name = "a07c-piece-19", .secs = 6, .pre = 1140, T_S({0, 0, 0, "PIECE", "PIECE: 19 MIN IN"}));
+    /* 8. Playing it: UNDERTOW on MIXER */
+    T_CLIP(demo_undertow, "NEON", .name = "a08-mixer", .secs = 14, .pre = 200, T_S({0, 0, 1, "MIXER", "MIXER"}),
+           T_T({2000, EN_K2, -40, 3000}, {8000, EN_K2, 40, 3000}));
+    /* 9. Colour, and a page to watch */
+    T_CLIP(demo_light, "YELLOW", .name = "a09a-color", .secs = 14, .pre = 60, T_S({0, 1, 0, 0, "MENU: COLOR"}),
+           .fn = t_menu_color, .fn_ms = 10,
+           T_B({1000, B_OCTUP, 1}, {1100, B_OCTUP, 0}, {2000, B_OCTUP, 1}, {2100, B_OCTUP, 0}, {3000, B_OCTUP, 1},
+               {3100, B_OCTUP, 0}, {4000, B_OCTUP, 1}, {4100, B_OCTUP, 0}, {5000, B_OCTUP, 1}, {5100, B_OCTUP, 0},
+               {6000, B_OCTUP, 1}, {6100, B_OCTUP, 0}, {7000, B_OCTUP, 1}, {7100, B_OCTUP, 0}, {8000, B_OCTUP, 1},
+               {8100, B_OCTUP, 0}, {9000, B_OCTUP, 1}, {9100, B_OCTUP, 0}, {10000, B_OCTUP, 1}, {10100, B_OCTUP, 0},
+               {11000, B_OCTUP, 1}, {11100, B_OCTUP, 0}, {12000, B_OCTUP, 1}, {12100, B_OCTUP, 0}));
+    T_CLIP(demo_light, "OCEAN", .name = "a09b-landscape", .secs = 25, .pre = 130, T_S({0, 0, 0, "LANDSCAPE", "LANDSCAPE"}));
+    /* 10. The end card's music */
+    T_CLIP(demo_light, "YELLOW", .name = "a10-end", .secs = 15, .pre = 60, T_S({0, 1, 0, 0, "SLOW LIGHT"}));
+    /* The captioned demo for the project page (tools/tour_video.py demo): UNDERTOW opens and closes, CEDAR RAIN the
+     * generators and the shaping, PAPER KITES the mods and the long form, a little of STONE PIER (Theo 2026-11-06) */
+    T_CLIP(demo_undertow, "OCEAN", .name = "b00-undertow-open", .secs = 16, .pre = 0, T_S({0, 0, 0, "LANDSCAPE", "LANDSCAPE"}));
+    T_CLIP(t_scene_constel, "GREEN", .name = "b03f-constellation", .secs = 10, T_S({0, 0, 0, "GEN", "CONSTELLATION"}),
+           T_T({1200, EN_K2, 5, 2000}, {4000, EN_K2, -9, 3000}, {7600, EN_K2, 4, 1500}));
+    T_CLIP(t_scene_lfo, "MOSAIC", .name = "b06a-lfo-on-lfo", .secs = 16,
+           T_S({0, 0, 0, "MODS", "MODS"}, {7000, 0, 0, "MODS", "M2 TO M1 AMT"}), .fn = t_scene_amt, .fn_ms = 7000);
+    T_CLIP(t_scene_perf, "MOSAIC", .name = "b06b-perf", .secs = 12, T_S({0, 0, 0, "PERF", "PERF  KNOB 1: MCR1"}),
+           T_T({1500, EN_K1, 100, 3500}, {6500, EN_K1, -100, 3500}));
+    if (t_want("b06c")) {                              /* a little of STONE PIER: its TIDES on the dub echo */
+        const vclip_t P = {.name = "b06c-stone-pier", .secs = 10, .pre = 87, T_S({0, 0, 0, "MODS", "MODS"})};
+        power_on(); demo_pier(); song.batt_raw = 600; v_ink("MOSAIC"); v_run(out, &P);
+    }
+    T_CLIP(demo_cedar, "SUNSET", .name = "b07a-chain-key", .secs = 20, .pre = 280, T_S({0, 0, 0, "CHAIN", "CHAIN"}));
+    if (t_want("b07b")) {
+        const vclip_t P = {.name = "b07b-kites-entries", .secs = 16, .pre = 224, T_S({0, 0, 1, "ENTRIES", "ENTRIES"})};
+        power_on(); demo_kites(); song.batt_raw = 600; v_ink("SUNSET"); v_run(out, &P);
+    }
+    /* PAPER KITES' second WAVE (30 min, 4 swells: troughs every 7:30, crests between): its foot, halfway up, its top */
+    static const uint32_t KP[] = {450, 516, 675};
+    for (uint32_t k = 0; k < 3u; k++) {
+        char nm[32];
+        snprintf(nm, sizeof nm, "b07c-kites-piece-%u", k);
+        if (!t_want(nm)) continue;
+        vclip_t P = {.name = nm, .secs = 5, .pre = KP[k], T_S({0, 0, 0, "PIECE", "PIECE"})};
+        power_on(); demo_kites(); song.batt_raw = 600; v_ink("SUNSET"); v_run(out, &P);
+    }
+    if (t_want("b09-inks")) t_inks(out);
+    T_CLIP(demo_undertow, "SUNSET", .name = "b09b-undertow-close", .secs = 36, .pre = 590, T_S({0, 0, 0, "LANDSCAPE", "LANDSCAPE"}));
+    fclose(v_cap);
+    printf("tour: %.0f s in %s\n", v_t0, out);
+}
 static int make(const char *dir, uint32_t secs);
 static int video(const char *out)
 {
@@ -2313,6 +2542,7 @@ int main(int argc, char **argv)
     }
     else if (argc >= 3 && !strcmp(argv[1], "restore")) bad = archive_restore(argv[2]);
     else if (argc >= 3 && !strcmp(argv[1], "video")) return video(argv[2]);
+    else if (argc >= 3 && !strcmp(argv[1], "tour")) { t_only = getenv("TOUR_ONLY"); tour(argv[2]); return 0; }
     else if (argc >= 2 && !strcmp(argv[1], "levels")) { levels(argc > 2 ? (uint32_t)atoi(argv[2]) : 60u); return 0; }
     else { fprintf(stderr, "demo_projects [checks] make DIR [SECS] | [checks] check DIR\n"); return 2; }
     printf(bad ? "demos: %d FAILED\n" : "demos passed\n", bad);
