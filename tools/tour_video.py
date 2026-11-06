@@ -5,6 +5,9 @@
 
   build/host/demo_projects tour build/tour          (tests/demo_projects.c, built with -DMELODEE_LOOK=1)
   python3 tools/tour_video.py build/tour OUTDIR      (needs Pillow and imageio-ffmpeg, or ffmpeg on the PATH)
+  python3 tools/tour_video.py demo build/tour INTRO OUT.mp4
+                                                     (the captioned demo for the project page, 1080 x 1080, music only;
+                                                      INTRO: the intro's frames, tessera-notes docs/video/3.3/intro_render.c)
 
 Each clip's 240 x 240 frames are drawn 4x, nearest, on a 1920 x 1080 card: the screen at the left, at the right the
 chapter's name and the clip's label (a page and a knob, as the script's captions), in the device's 5 x 7 font and the
@@ -186,5 +189,175 @@ def main(src, dst):
     print(f"{dst / 'rough-a.mp4'}: {len(rows)} clips, {total / 60:.1f} min with the leads")
 
 
+# The demo (no voice): 1080 x 1080 as the 3.0 video, music only, a short caption at a time under the screen, a card
+# between chapters. Each entry: a card (title, line) or a part of a clip (clip, from s, for s, [(at s, caption)])
+CUT = [
+    ("a00-cold-open", 2, 10, [(0, "Music that plays itself, and keeps changing")]),
+    ("Generators", "Thirteen ways to write a part"),
+    ("a03b-turing-lock", 2, 12, [(0, "TURING: a loop that slowly drifts")]),
+    ("a03c-euclid-pulses", 2, 9, [(0, "EUCLID: hits spread evenly")]),
+    ("a03d-markov-then-all", 0, 16, [(0, "MARKOV: a wandering flute"), (8, "Together, one piece")]),
+    ("a03f-constellation", 0, 8, [(0, "CONSTELLATION: stars play as they pass")]),
+    ("Shaping", "How the notes are played"),
+    ("a04c-split", 3, 12, [(0, "New: SPLIT breaks a step in two")]),
+    ("a04d-adorn", 0, 8, [(0, "ADORN: drum ornaments, new each round")]),
+    ("Tracks that listen", "Parts that answer and follow"),
+    ("a05a-call-answer", 8, 18, [(0, "A melody you write: the call"), (6, "ANSWER replies, changed each time")]),
+    ("a05c-follow", 4, 10, [(0, "A bass on its own note"), (3, "Now it follows the melody")]),
+    ("Modulate the modulators", "Slow movement over minutes"),
+    ("a06b-mod-on-mod", 2, 14, [(0, "A slow TIDE opens the filter"), (4, "New: one mod moves another")]),
+    ("a06c-perf-matrix", 1, 10, [(0, "New: PERF macros, one knob, many moves")]),
+    ("From a loop to a piece", "New in 3.3: the long form"),
+    ("a07a-chain-key", 2, 14, [(0, "CHAIN: sections change together"), (6, "B, a fourth up")]),
+    ("a07b-entries", 0, 16, [(0, "ENTRIES: parts come and go")]),
+    ("a07c-piece-00", 2, 2.5, [(0, "PIECE: a shape for the whole piece")]),
+    ("a07c-piece-05", 2, 2.5, [(0, "PIECE: a shape for the whole piece")]),
+    ("a07c-piece-10", 2, 2.5, [(0, "PIECE: a shape for the whole piece")]),
+    ("a07c-piece-15", 2, 2.5, [(0, "PIECE: a shape for the whole piece")]),
+    ("a07c-piece-19", 2, 2.5, [(0, "PIECE: a shape for the whole piece")]),
+    ("a09a-color", 0, 10, [(0, "New inks: SUNSET, OCEAN, NEON")]),
+    ("a09b-landscape", 0, 16, [(0, "LANDSCAPE: rain on water, drawn by the music")]),
+]
+DW = 1080                                               # the demo's square
+DS = 3                                                  # its screen, 3x: 720
+DX, DY = (DW - 240 * DS) // 2, 150
+CARD_S, TITLE_S, END_S, END_HOLD, CUT_FADE = 2.0, 3.0, 12.0, 2.0, 0.15
+CHAPTER_INK = {"a00": "OCEAN", "a03": "GREEN", "a04": "BLUE", "a05": "ORANGE", "a06": "MOSAIC", "a07": "SUNSET",
+               "a09": "OCEAN", "a10": "YELLOW"}
+
+
+def demo_card(lines, ink):
+    im = Image.new("RGB", (DW, DW), (0, 0, 0))
+    d = ImageDraw.Draw(im)
+    from gen_brand import centred
+    mark(d, DW // 2, 360, 56)
+    y = 540
+    for s, px, dimmed in lines:
+        for line in wrap(s, (DW - 120) // (6 * px)):
+            centred(d, DW, y, line, px, mix((0, 0, 0), ink, 70) if dimmed else ink)
+            y += 7 * px + max(10, 3 * px)
+        y += 2 * px
+    return im
+
+
+def demo_frame(caption, ink):
+    im = Image.new("RGB", (DW, DW), (0, 0, 0))
+    d = ImageDraw.Draw(im)
+    from gen_brand import centred
+    mark(d, 76, 76, 14)
+    text(d, 118, 62, "TESSERA 3.3", 4, mix((0, 0, 0), ink, 70))
+    d.rectangle([DX - 4, DY - 4, DX + 240 * DS + 3, DY + 240 * DS + 3], outline=mix((0, 0, 0), ink, 23), width=2)
+    y = DY + 240 * DS + 30
+    for line in wrap(caption, (DW - 80) // 30)[:2]:
+        centred(d, DW, y, line, 5, ink)
+        y += 52
+    return im
+
+
+def demo(src, intro, out):
+    src, intro, out = Path(src), Path(intro), Path(out)
+    work = out.with_suffix(".work")
+    work.mkdir(parents=True, exist_ok=True)
+    audio = array.array("h")
+    plan = []                                           # (kind, payload, frames)
+    nf = lambda s: round(s * float(FPS))
+
+    def silence(n):
+        audio.extend([0] * (n * SPF * 2))
+
+    # the intro (splash.c's own frames, 4x on black), in silence
+    im_t = 0.0
+    for line in (intro / "frames.txt").read_text().split("\n"):
+        if not line.strip():
+            continue
+        name, ms = line.split()
+        n = nf(im_t + int(ms) / 1000) - nf(im_t)
+        im_t += int(ms) / 1000
+        big = Image.new("RGB", (DW, DW), (0, 0, 0))
+        big.paste(Image.open(intro / name).convert("RGB").resize((240 * 4, 240 * 4), Image.NEAREST), ((DW - 960) // 2,) * 2)
+        plan.append(("still", big, n))
+        silence(n)
+    title = demo_card([("TESSERA 3.3", 12, False), ("Free firmware for the M-Vave FM-1", 4, True)], INK["YELLOW"])
+    plan.append(("still", title, nf(TITLE_S)))
+    silence(nf(TITLE_S))
+    ink = INK["YELLOW"]
+    for e in CUT:
+        if len(e) == 2:                                 # a card, in the next chapter's ink
+            nxt = CUT[CUT.index(e) + 1][0][:3]
+            c = demo_card([(e[0], 9, False), (e[1], 4, True)], INK[CHAPTER_INK.get(nxt, "YELLOW")])
+            plan.append(("still", c, nf(CARD_S)))
+            silence(nf(CARD_S))
+            continue
+        name, start, dur, caps = e
+        ink = INK[CHAPTER_INK.get(name[:3], "YELLOW")]
+        f0, n = nf(start), nf(dur)
+        ppm = sorted((src / name).glob("f*.ppm"))[f0:f0 + n]
+        with wave.open(str(src / f"{name}.wav")) as r:
+            a = array.array("h", r.readframes(r.getnframes()))
+        if name.startswith(LEVELLED):
+            a = level(a)
+        a = a[f0 * SPF * 2:(f0 + n) * SPF * 2]
+        a.extend([0] * max(0, n * SPF * 2 - len(a)))
+        k = int(CUT_FADE * FS)
+        for i in range(k):                              # (a short fade at each cut: no jump between pieces)
+            g = i / k
+            for j in (2 * i, 2 * i + 1, len(a) - 2 - 2 * i, len(a) - 1 - 2 * i):
+                a[j] = int(a[j] * g)
+        audio.extend(a)
+        plan.append(("clip", (ppm, caps, ink), n))
+    # the end: SLOW LIGHT under the end card, fading out
+    with wave.open(str(src / "a10-end.wav")) as r:
+        a = array.array("h", r.readframes(r.getnframes()))
+    n = nf(END_S)
+    a = a[:n * SPF * 2]
+    a.extend([0] * max(0, n * SPF * 2 - len(a)))
+    m = len(a) // 2
+    h = int(END_HOLD * FS)
+    for i in range(m):
+        g = min(1.0, i / int(1.5 * FS)) * (1.0 if i < h else max(0.0, (m - 1 - i) / (m - h)) ** 1.6)
+        a[2 * i] = int(a[2 * i] * g)
+        a[2 * i + 1] = int(a[2 * i + 1] * g)
+    audio.extend(a)
+    end = demo_card([("TESSERA 3.3", 12, False), ("rastapopolix.github.io/tessera", 4, True),
+                     ("Free, GPL-3.0. Installs from the browser.", 3, True)], INK["YELLOW"])
+    plan.append(("still", end, n))
+    total = sum(p[2] for p in plan)
+    assert len(audio) == total * SPF * 2, (len(audio), total * SPF * 2)
+    wav = work / "audio.wav"
+    write_wav(wav, audio)
+
+    def frames():
+        for kind, payload, n in plan:
+            if kind == "still":
+                for _ in range(n):
+                    yield payload
+                continue
+            ppm, caps, ink = payload
+            cards = {}
+            for i, f in enumerate(ppm):
+                t = i / float(FPS)
+                cap = [c for at, c in caps if at <= t][-1]
+                if cap not in cards:
+                    cards[cap] = demo_frame(cap, ink)
+                im = cards[cap].copy()
+                im.paste(Image.open(f).convert("RGB").resize((240 * DS, 240 * DS), Image.NEAREST), (DX, DY))
+                yield im
+
+    cmd = [ffmpeg(), "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{DW}x{DW}",
+           "-framerate", f"{FPS.numerator}/{FPS.denominator}", "-i", "-", "-i", str(wav),
+           "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-r", "30",
+           "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", str(out)]
+    p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    for im in frames():
+        p.stdin.write(im.tobytes())
+    p.stdin.close()
+    if p.wait():
+        raise SystemExit("ffmpeg failed")
+    print(f"{out}: {total / float(FPS):.1f} s")
+
+
 if __name__ == "__main__":
-    main(*sys.argv[1:3])
+    if sys.argv[1] == "demo":                           # demo CLIPS INTRO OUT.mp4: the captioned 1:1 cut
+        demo(*sys.argv[2:5])
+    else:
+        main(*sys.argv[1:3])
