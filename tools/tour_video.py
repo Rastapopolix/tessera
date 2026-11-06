@@ -211,15 +211,14 @@ CUT = [
     ("From a loop to a piece", "New in 3.3: the long form"),
     ("b07a-chain-key", 2, 14, [(0, "CHAIN: sections change together"), (6, "B, a fourth up")]),
     ("b07b-kites-entries", 0, 14, [(0, "ENTRIES: parts come and go")]),
-    ("b07c-kites-piece-0", 1, 2.5, [(0, "PIECE: a shape for the whole piece")]),
-    ("b07c-kites-piece-1", 1, 2.5, [(0, "PIECE: a shape for the whole piece")]),
-    ("b07c-kites-piece-2", 1, 2.5, [(0, "PIECE: a shape for the whole piece")]),
-    ("b07c-kites-piece-3", 1, 2.5, [(0, "PIECE: a shape for the whole piece")]),
-    ("b07c-kites-piece-4", 1, 2.5, [(0, "PIECE: a shape for the whole piece")]),
+    ("b07c-kites-piece-0", 1, 3.5, [(0, "PIECE: the foot of a wave...")]),
+    ("b07c-kites-piece-1", 1, 3.5, [(0, "...halfway up...")]),
+    ("b07c-kites-piece-2", 1, 4.5, [(0, "...and its top")]),
     ("b09b-undertow-close", 0, 6, [(0, "Nine inks"), (3, "Four-colour palettes, three new")], "grids"),
-    ("b09b-undertow-close", 6, 14, [(0, "LANDSCAPE: rain on water, drawn by the music")]),
+    ("b09b-undertow-close", 6, 18, [(0, "LANDSCAPE: rain on water, drawn by the music"),
+                                    (9, "It doesn't control anything. It's just nice to watch.")]),
 ]
-END_CLIP = ("b09b-undertow-close", 20)                  # the end card's music: UNDERTOW, on from the last clip
+END_CLIP = ("b09b-undertow-close", 24)                  # the end card's music: UNDERTOW, on from the last clip
 GRID9 = ["YELLOW", "WHITE", "GREEN", "BLUE", "RED", "ORANGE", "PINK", "HOT PINK", "LILAC"]
 GRID4 = ["MOSAIC", "SUNSET", "OCEAN", "NEON"]
 DW = 1080                                               # the demo's square

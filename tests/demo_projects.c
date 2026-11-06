@@ -2357,8 +2357,9 @@ static void tour(const char *out)
         const vclip_t P = {.name = "b07b-kites-entries", .secs = 16, .pre = 224, T_S({0, 0, 1, "ENTRIES", "ENTRIES"})};
         power_on(); demo_kites(); song.batt_raw = 600; v_ink("SUNSET"); v_run(out, &P);
     }
-    static const uint32_t KP[] = {1, 420, 840, 1260, 1680};
-    for (uint32_t k = 0; k < 5u; k++) {
+    /* PAPER KITES' second WAVE (30 min, 4 swells: troughs every 7:30, crests between): its foot, halfway up, its top */
+    static const uint32_t KP[] = {450, 516, 675};
+    for (uint32_t k = 0; k < 3u; k++) {
         char nm[32];
         snprintf(nm, sizeof nm, "b07c-kites-piece-%u", k);
         if (!t_want(nm)) continue;
@@ -2366,7 +2367,7 @@ static void tour(const char *out)
         power_on(); demo_kites(); song.batt_raw = 600; v_ink("SUNSET"); v_run(out, &P);
     }
     if (t_want("b09-inks")) t_inks(out);
-    T_CLIP(demo_undertow, "SUNSET", .name = "b09b-undertow-close", .secs = 30, .pre = 590, T_S({0, 0, 0, "LANDSCAPE", "LANDSCAPE"}));
+    T_CLIP(demo_undertow, "SUNSET", .name = "b09b-undertow-close", .secs = 36, .pre = 590, T_S({0, 0, 0, "LANDSCAPE", "LANDSCAPE"}));
     fclose(v_cap);
     printf("tour: %.0f s in %s\n", v_t0, out);
 }
