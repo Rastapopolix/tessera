@@ -577,8 +577,8 @@ static void demo_light(void)
 
 /* CEDAR RAIN: plucked strings and a bamboo flute again, as KOTO GARDEN, but in KUMOI on E at 80 BPM and built another
  * way: a KUGO harp on TURING turning a 12-step figure in eighths (locked, a note now and then new), a koto under it on
- * EUCLID 16 / 5 in sixteenths, an octave down, a breath flute on MARKOV in half notes that is the song, and a pair of
- * 808 toms and a rim written in STEP like hand drums, ADORN filling the rests a little differently each round. The
+ * EUCLID 16 / 5 in sixteenths, an octave down, an FM6 flute on MARKOV in half notes that is the song (TRIO's BREATH
+ * FLUTE hissed), and a pair of 808 toms and a rim written in STEP like hand drums, ADORN filling the rests a little differently each round. The
  * CHAIN goes to A (KEY B +5) and to D (KEY C -2) and home, ABAC in 8-bar phrases (A twice), each B and C a new figure;
  * ENTRIES at 45 with FADE; a 12-minute ARCH, played again. */
 static void demo_cedar(void)
@@ -586,7 +586,7 @@ static void demo_cedar(void)
     song.g[G_BPM] = 80;
     sound(0, ENGI_FM6, FX_KUGO_HARP);
     sound(1, ENGI_FM6, FX_KOTO_WARM);
-    sound(2, ENGI_TRIO, TR_BREATH_FLUTE);
+    sound(2, ENGI_FM6, FX_FLUTE);
     sound(3, ENGI_DRUM, DK_808_KIT);
     scale(4, SCL_KUMOI, 0);
     sends(96, 84, 82, 60);
@@ -616,7 +616,7 @@ static void demo_cedar(void)
     tx(2, TX_NL_MODE, 2); tx(2, TX_TW_HUMAN, 40); tx(2, TX_TW_SHIFT, 12);
     trk[2].p[P_VOICE] = 2;                            /* LEGATO */
     sections(2, 70, 35, 0);
-    mixer(2, 83, 5, 105, 55);
+    mixer(2, 101, 5, 105, 55);
 
     /* T4: 808 STEP, two bars of sixteenths: a low tom on one and the "and" of three, a high answer, rims; conditions
      * and ADORN (STEP EVOLVE) make each pass a little different */
@@ -647,92 +647,88 @@ static void demo_cedar(void)
     cord(2, CS_DRIFT, 1, CD_PAN, 1, 30, 0, 0);        /* T2 DRIFT -> T2 PAN */
 }
 
-/* STONE PIER: the ambient dub, after LOW HARBOUR but slower and emptier. Chords written in STEP on ORACLE's DUB
- * CHORD, one a bar on the second beat, held for a beat, through a FILTER a TIDE opens over minutes and into a dotted
- * echo whose time bends and whose feedback swells; Fm7 and Bb7 shells (no root: the bass has it); a sub bass written
- * in STEP that leaves most of each bar empty; an 808 one drop (kick and rim on three, a hat now and then); a soft lead
- * calling now and then into the echo. ENTRIES at 55, CUT: the mixer moves of a dub, parts dropped and back on the
- * phrase lines. The CHAIN takes it all to the fourth in B (KEY B +5), ABAB.. in 8-bar phrases (A twice); a 10-minute
- * piece in three WAVES, played again. F dorian, 66 BPM. */
-static void demo_pier(void)
+/* UNDERTOW: a call and its answers, in D minor at 70 BPM. A tine piano plays a melody written in STEP (eight notes over
+ * three bars, then a bar's silence); ANSWER on T2 takes that pattern as its call (SOURCE T1) and answers it on a soft
+ * lead, each answer moved a degree or two, varied, with echoes, and never forgetting (FADE 100: its notes run on as
+ * loops of unequal length), so the two talk over each other more and more. Under them minor chords written in STEP, Dm
+ * Bb Gm Am, two bars each, on a warm pad, and a sub bass on their roots. The CHAIN takes it all down to C minor in B
+ * (KEY B -2) and to G minor in C (KEY C +5); ENTRIES lets the call drop out while the answers go on; a 12-minute ARCH,
+ * played again. */
+static void demo_undertow(void)
 {
-    song.g[G_BPM] = 66;
-    sound(0, ENGI_ORACLE, OR_DUB_CHORD);
-    sound(1, ENGI_TRIO, TR_SUB_BASS);
-    sound(2, ENGI_DRUM, DK_808_KIT);
-    sound(3, ENGI_TRIO, TR_SOFT_LEAD);
-    scale(5, SCL_DOR, 0);
-    sends(118, 102, 117, 106);                        /* a big room; ECHO 342 ms, a dotted sixteenth at 66 BPM */
+    song.g[G_BPM] = 70;
+    sound(0, ENGI_FM6, FX_TINE_EP);
+    sound(1, ENGI_TRIO, TR_SOFT_LEAD);
+    sound(2, ENGI_TRIO, TR_WARM_PAD);
+    sound(3, ENGI_TRIO, TR_SUB_BASS);
+    scale(2, SCL_MIN, 0);
+    sends(116, 100, 111, 96);                         /* a big room; ECHO 321 ms, a dotted sixteenth at 70 BPM */
 
-    /* T1: four bars of eighths, a chord on each bar's second beat held to the "and" (ORACLE's three units a voice: two
-     * chords never overlap in the budget); a Cm7 leading home on the fourth bar's last beat every fourth time */
+    /* T1: the call, four bars of eighths: A, F, E, D held, C, D, F, G, A held, then a bar of nothing */
     {
-        static const uint8_t FM7[4] = {56, 60, 63, 0}, BB7[4] = {56, 62, 65, 0}, CM7[4] = {55, 58, 63, 0};
-        for (uint32_t i = 0; i < 32u; i++) step_note(0, i, 0, 0);
-        step_chord(0, 2, FM7, 96); step_tie(0, 3);
-        step_chord(0, 10, FM7, 90); step_tie(0, 11);
-        step_chord(0, 18, BB7, 96); step_tie(0, 19);
-        step_chord(0, 26, FM7, 90); step_tie(0, 27);
-        step_chord(0, 30, CM7, 60); step_set_cond(&trk[0].step[30], SC_2_4);
+        static const uint8_t MEL[32] = {69, 0, 0, 65, 64, 0, 62, 0, 0, 0, 0, 0, 60, 0, 62, 0,
+                                        65, 0, 0, 67, 69, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        static const uint8_t TIE[] = {1, 5, 7, 8, 9, 17, 21, 22, 23};
+        for (uint32_t i = 0; i < 32u; i++) step_note(0, i, MEL[i], i == 0u || i == 16u ? 96 : 80);
+        for (uint32_t i = 0; i < sizeof TIE; i++) step_tie(0, TIE[i]);
         trk[0].p[P_SLEN] = 32;
     }
     tx(0, TX_MODE, TESS_ENG_OFF);
     trk[0].p[P_SDIV] = DIV_8;
-    tx(0, TX_SUB_HUMAN, 10);
-    or_patch[0][OR_DECAY_AMP] = 80; or_patch[0][OR_RELEASE_AMP] = 50;   /* (AMP ENV: the echo is the tail) */
-    trk[0].p[P_FXTYPE] = 10; trk[0].p[P_FXMIX] = 127; trk[0].p[P_FXRATE] = 60; trk[0].p[P_FXCHAR] = 45;   /* FILTER */
-    mixer(0, 122, -10, 70, 118);
+    tx(0, TX_SUB_HUMAN, 15);
+    trk[0].p[P_VOICE] = 2;                            /* LEGATO: one line */
+    mixer(0, 104, -25, 85, 40);
 
-    /* T2: the sub, four bars of eighths: F held, a step up late in the second bar, Bb under the third, a pickup */
-    {
-        static const uint8_t LINE[32] = {41, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 43, 0, 44, 0,
-                                         34, 0, 0, 0, 0, 0, 0, 0, 41, 0, 0, 0, 0, 36, 0, 39};
-        for (uint32_t i = 0; i < 32u; i++) step_note(1, i, LINE[i], 100);
-        step_tie(1, 1); step_tie(1, 2); step_tie(1, 17); step_tie(1, 18); step_tie(1, 25);
-        step_set_cond(&trk[1].step[31], SC_1_2);
-    }
-    trk[1].p[P_SLEN] = 32;
-    tx(1, TX_MODE, TESS_ENG_OFF);
+    /* T2: the answers, ANSWER with SOURCE T1 in eighths: moved up to 2 degrees, VARY 40, ECHO 30, never forgetting */
     trk[1].p[P_SDIV] = DIV_8;
-    mixer(1, 99, 0, 5, 0);
+    gen(1, TESS_ENG_ANSWER, 57);
+    tx(1, TX_SD_SOURCE, 1);
+    tx(1, TX_AN_VARY, 40); tx(1, TX_AN_ECHO, 30); tx(1, TX_AN_FADE, 100); tx(1, TX_AN_LEN, 1);
+    tx(1, TX_AN_ORDER, 0); tx(1, TX_AN_SHIFT, 2); tx(1, TX_AN_SPACE, 30);
+    tx(1, TX_TW_HUMAN, 25);
+    trk[1].p[P_VOICE] = 2;                            /* LEGATO */
+    sections(1, 40, 30, 0);
+    mixer(1, 102, 25, 90, 100);
 
-    /* T3: 808 STEP, a bar of sixteenths: the one drop, the kick alone on three; a rim on four every other bar, a hat on
-     * some offbeats by condition, an open hat every fourth bar, a rim pickup on FILL */
+    /* T3: the chords, eight bars of quarter notes: Dm, Bb, Gm, Am, each held two bars but a beat, its tail in it */
     {
-        static const uint8_t L[16] = {0, 0, L_CH, 0, 0, 0, 0, 0, L_BD, 0, L_CH, 0, L_RS, 0, L_OH, L_RS};
-        for (uint32_t i = 0; i < 16u; i++) step_hits(2, i, L[i], i == 8u ? 112 : 66);
-        step_set_cond(&trk[2].step[2], SC_2_2);
-        step_set_cond(&trk[2].step[10], SC_1_2);
-        step_set_cond(&trk[2].step[12], SC_2_2);
-        step_set_cond(&trk[2].step[14], SC_4_4);
-        step_set_cond(&trk[2].step[15], SC_FILL);
-        trk[2].p[P_SLEN] = 16;
+        static const uint8_t DM[4] = {50, 53, 57, 0}, BB[4] = {50, 53, 58, 0}, GM[4] = {50, 55, 58, 0}, AM[4] = {52, 57, 60, 0};
+        const uint8_t *CH[4] = {DM, BB, GM, AM};
+        for (uint32_t c = 0; c < 4u; c++) {
+            step_chord(2, c * 8u, CH[c], 84);
+            for (uint32_t i = 1; i < 7u; i++) step_tie(2, c * 8u + i);   /* (the last beat: its tail) */
+        }
+        trk[2].p[P_SLEN] = 32;
     }
     tx(2, TX_MODE, TESS_ENG_OFF);
-    trk[2].p[P_SDIV] = DIV_16;
-    tx(2, TX_SUB_HUMAN, 10);
-    mixer(2, 101, 5, 35, 60);
+    trk[2].p[P_SDIV] = DIV_4;
+    trk[2].p[P_REL] = 45;                             /* (ENV: a chord's tail never crowds the next one's voices) */
+    mixer(2, 72, 0, 100, 10);
 
-    /* T4: the lead, AWAKE in half notes, mostly silent; into the echo */
-    trk[3].p[P_SDIV] = DIV_2;
-    gen(3, TESS_ENG_AWAKE, 74);
-    tx(3, TX_AWK_LENA, 6); tx(3, TX_AWK_LENB, 4); tx(3, TX_AWK_PROB, 30);
-    tx(3, TX_TW_DROP, 50); tx(3, TX_TW_HUMAN, 30);
-    trk[3].p[P_VOICE] = 2;                            /* LEGATO */
-    sections(3, 60, 30, 25);
-    mixer(3, 94, 30, 90, 120);
+    /* T4: the sub, the chords' roots held a bar and a half each */
+    {
+        static const uint8_t ROOT[4] = {38, 34, 31, 33};
+        for (uint32_t c = 0; c < 4u; c++) {
+            step_note(3, c * 8u, ROOT[c], 100);
+            for (uint32_t i = 1; i < 6u; i++) step_tie(3, c * 8u + i);
+        }
+        trk[3].p[P_SLEN] = 32;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF);
+    trk[3].p[P_SDIV] = DIV_4;
+    mixer(3, 92, 0, 10, 0);
 
     {
-        static const uint8_t REP[4] = {2, 1, 1, 1}, ROLE[4] = {RO_ANCHOR, RO_BASS, RO_RHYTHM, RO_MELODY};
-        chain_set(FC_AB, PH_8, 0, REP, 5, 0);
-        entries_set(55, 1, 0, 1, ROLE);
-        piece_set(LEN_10, SH_WAVES, 50, 3, END_LOOP);
+        static const uint8_t REP[4] = {2, 1, 1, 1}, ROLE[4] = {RO_ANCHOR, RO_MELODY, RO_ANCHOR, RO_BASS};
+        chain_set(FC_ABAC, PH_8, 0, REP, -2, 5);
+        entries_set(45, 2, 1, 2, ROLE);
+        piece_set(LEN_12, SH_ARCH, 55, 3, END_LOOP);
     }
     tx(0, TX_EN_ARC, 30);
-    cord(0, CS_INERTIA, 0, CD_FX1_RATE, 0, 40, 0, 0); /* T1 TIDE 2 -> T1 FX1 RTE: the chords' filter opens and closes */
-    cord(1, CS_DRIFT, 0, CD_SF2_RATE, 0, 8, 0, 0);    /* T1 DRIFT -> SF2 RTE: the echo's time bends as a tape's */
-    cord(2, CS_TORPOR, 0, CD_SF2_CHAR, 0, 20, 0, 0);  /* T1 TIDE 1 -> SF2 CHR: the echo's feedback swells and settles */
-    cord(3, CS_OCHD3, 3, CD_PAN, 3, 35, 0, 0);        /* T4 SWARM 3 -> T4 PAN */
+    cord(0, CS_TORPOR, 2, CD_CUTOFF, 2, 30, 0, 0);    /* T3 TIDE 1 -> T3 CUT: the chords darken and open over minutes */
+    cord(1, CS_DRIFT, 0, CD_SF2_RATE, 0, 6, 0, 0);    /* T1 DRIFT -> SF2 RTE: the echo's time bends a little */
+    cord(2, CS_OCHD3, 1, CD_PAN, 1, 35, 0, 0);        /* T2 SWARM 3 -> T2 PAN: the answers move across */
+    cord(3, CS_APATHY, 1, CD_FX_SEND2, 1, 25, 0, CU_UNI);   /* T2 TIDE 3 -> T2 SEND 2: the answers deeper into the echo */
 }
 
 typedef struct { const char *name, *file; void (*make)(void); } demo_t;
@@ -742,7 +738,7 @@ static const demo_t DEMO_LIST[] = {
     {"LOW HARBOUR", "low-harbour", demo_dub},
     {"SLOW LIGHT", "slow-light", demo_light},
     {"CEDAR RAIN", "cedar-rain", demo_cedar},
-    {"STONE PIER", "stone-pier", demo_pier},
+    {"UNDERTOW", "undertow", demo_undertow},
 };
 
 /* ------------------------------------------------------- the test projects --- */

@@ -6,9 +6,9 @@
     python3 tools/demo_backup.py MY-BACKUP.json OUT.json                  the three demos into slots B, C and D
     python3 tools/demo_backup.py MY-BACKUP.json OUT.json --slots C,D      the first two, into slots C and D
     python3 tools/demo_backup.py MY-BACKUP.json OUT.json --slots D demos/low-harbour.tsp
-    python3 tools/demo_backup.py MY-BACKUP.json OUT.json --slots A,B demos/slow-light.tsp demos/stone-pier.tsp
+    python3 tools/demo_backup.py MY-BACKUP.json OUT.json --slots A,B demos/slow-light.tsp demos/undertow.tsp
 
-The three 3.3 demos (SLOW LIGHT, CEDAR RAIN, STONE PIER: demos/README.md) go in by name, as in the last line; they need
+The three 3.3 demos (SLOW LIGHT, CEDAR RAIN, UNDERTOW: demos/README.md) go in by name, as in the last line; they need
 Tessera 3.3 or later (the CHAIN, ENTRIES and PIECE pages).
 
 MY-BACKUP.json is a backup the installer's backup page saved from your FM-1 (Tessera 2.0 or later: projects in the

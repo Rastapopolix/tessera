@@ -12,8 +12,8 @@ takes). They need Tessera 3.3 or later.
 | `koto-garden.tsp` | KOTO GARDEN | FM koto in HIRA on QUAD, an ORACLE flute in a FORM that develops, a STEP mokugyo with conditions and Accumulate |
 | `low-harbour.tsp` | LOW HARBOUR | Ambient dub: ORACLE chord stabs into a drifting echo, a sub bass, a 909 one drop, RESTS |
 | `slow-light.tsp` | SLOW LIGHT | Drone: a TRIO fifth struck once and held, a wind, an ORACLE choir and a SOFT SWELL that change with the CHAIN's AABA; 15 minutes in WAVES |
-| `cedar-rain.tsp` | CEDAR RAIN | Plucked strings in KUMOI: a harp on TURING, a koto on EUCLID, a MARKOV flute, 808 hand drums that ADORN varies; ABAC through three keys |
-| `stone-pier.tsp` | STONE PIER | Ambient dub 2: slow STEP chords into the echo, a sparse sub bass, an 808 one drop; ENTRIES cuts parts in and out |
+| `cedar-rain.tsp` | CEDAR RAIN | Plucked strings in KUMOI: a harp on TURING, a koto on EUCLID, an FM6 flute on MARKOV, 808 hand drums that ADORN varies; ABAC through three keys |
+| `undertow.tsp` | UNDERTOW | Call and answer in D minor: a STEP melody as ANSWER's SOURCE, answered on and on; minor chords and a sub bass in STEP |
 
 They are made by the firmware's own code (`tests/demo_projects.c`), which saves each one to a slot, reads it back
 as the backup page does, loads it and plays it; `tests/run_tests.sh` checks that these files still load and play.
@@ -102,7 +102,7 @@ each section, the tracks out, the notes in each.
 
 The editor's Demo projects lists them under the first three, set to **Leave out**: choose a slot for the ones you want.
 With the backup file, name them: `python3 tools/demo_backup.py my-backup.json out.json --slots A,B demos/slow-light.tsp
-demos/stone-pier.tsp`.
+demos/undertow.tsp`.
 
 They are made to play clean on the FM-1: no held note is struck again while it sounds, no voice is taken from another
 (0 in 15 minutes at the budget of 16), and the voices' CPU cost stays under STILL TIDE's and KOTO GARDEN's
@@ -129,31 +129,28 @@ E kumoi, 80 BPM. Plucked strings and a flute, as KOTO GARDEN, but made another w
 - **T1 FM6 KUGO HARP**, TURING over 12 eighths, PROB 6 (a note now and then new), DROP 30, LENGTH FIXED 1/4. ROLE
   ANCHOR. Each section its own figure (CONTRAST 55). T1's TIDE 3 thins and fills it (DROP).
 - **T2 FM6 KOTO WARM**, EUCLID 16 / 5 in sixteenths turned 3, an octave down: the pulse.
-- **T3 TRIO BREATH FLUTE**, MARKOV in half notes an octave up, LEGATO, close steps and rests: the song. B and C wander
+- **T3 FM6 FLUTE**, MARKOV in half notes an octave up, LEGATO, close steps and rests: the song. B and C wander
   further (CONTRAST 70, DEVELOP 35). T3's SWARM 4 moves its breath (CUT).
 - **T4 808 KIT**, STEP, two bars of sixteenths: low toms and rims like hand drums, **Conditions** (1:2, 2:4, 4:4), and
   **STEP EVOLVE** HOW **ADORN** (every 4 bars, AMOUNT 20): ornaments in the rests, a little different each round.
 - **CHAIN** ABAC (A twice), PHRASE 8, WANDER 15: **KEY B +5** (A), **KEY C −2** (D). **ENTRIES** 45, FADE over 2
   bars. **PIECE** 12 minutes, **ARCH** peaking at 55 %, END **LOOP**.
 
-## STONE PIER
+## UNDERTOW
 
-F dorian, 66 BPM. The second ambient dub: slower and emptier than LOW HARBOUR.
+D minor, 70 BPM. A call and its answers.
 
-- **T1 ORACLE DUB CHORD**, STEP, four bars of eighths: a chord on each bar's second beat held to the "and" (Fm7, Fm7,
-  Bb7, Fm7, shells with no root: the bass has it), a Cm7 leading home on the fourth bar every fourth time (2:4). Through
-  a **FILTER** that T1's TIDE 2 opens and closes over minutes, and nearly all of it into the **ECHO** (342 ms, a dotted
-  sixteenth). ROLE ANCHOR: the chords are always there.
-- **T2 TRIO SUB BASS**, STEP: F held for three eighths, then most of each bar empty; Bb under the third bar, a pickup
-  every other time.
-- **T3 808 KIT**, STEP: a one drop, the kick alone on three; a rim on four every other bar, hats by **Condition**, an open
-  hat every fourth bar, a rim pickup on **FILL**.
-- **T4 TRIO SOFT LEAD**, AWAKE in half notes, DROP 50, LEGATO, into the echo: a call now and then.
-- **CHAIN** AB, PHRASE 8 (A twice): **KEY B +5**, the fourth, as a dub's verse goes. **ENTRIES 55, CUT**, DWELL 1: bass,
-  drums and lead drop out and come back on the phrase lines, as a dub's mix does. **PIECE** 10 minutes in three
-  **WAVES**, END **LOOP**. ENERGY ARC 30.
-- **MODS**: T1 TIDE 2 → T1 FX1 RTE (the filter), T1 DRIFT → SF2 RTE (the echo's time bends like a tape's), T1 TIDE 1 →
-  SF2 CHR (its feedback swells and settles), T4 SWARM 3 → T4 PAN.
+- **T1 FM6 TINE EP**, STEP, four bars of eighths, LEGATO: the call, eight notes over three bars (A, F, E, D held, C,
+  D, F, G, A held) and a bar of silence. ROLE ANCHOR, so it is heard first.
+- **T2 TRIO SOFT LEAD**, **ANSWER** with **SOURCE T1**: T1's pattern is its call, read again before each answer. Each
+  answer is moved up to 2 degrees (SHIFT), varied (VARY 40), with echoes (ECHO 30), after a gap (SPACE 30); **FADE 100**
+  never forgets, so its notes run on as four loops of unequal length (LEN MID) and the answers talk over the call more and
+  more. It comes in after the first phrase. T2's SWARM 3 moves its PAN, TIDE 3 its echo send.
+- **T3 TRIO WARM PAD**, STEP, eight bars of quarter notes: **Dm, Bb, Gm, Am**, each held two bars but a beat (the tail in
+  that beat, so chords never crowd the voices); T3's TIDE 1 darkens and opens them. **T4 TRIO SUB BASS**, STEP, their
+  roots.
+- **CHAIN** ABAC (A twice), PHRASE 8: **KEY B −2** (C minor), **KEY C +5** (G minor). **ENTRIES** 45, FADE over 2 bars:
+  the answers and the bass come and go. **PIECE** 12 minutes, **ARCH** peaking at 55 %, END **LOOP**. ENERGY ARC 30.
 
 ## Making them again
 
