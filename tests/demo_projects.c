@@ -735,6 +735,98 @@ static void demo_pier(void)
     cord(3, CS_OCHD3, 3, CD_PAN, 3, 35, 0, 0);        /* T4 SWARM 3 -> T4 PAN */
 }
 
+
+/* FAR SHORE: a deep dub after Rhythm & Sound, on NIGHT FERRY's 808 part (Theo 2026-11-06: "the same percussion").
+ * Almost nothing moves: one minor chord, a stab on an electric piano just after two in each bar, low-passed by a FILTER
+ * a TIDE opens and closes over minutes and thrown into a dotted echo and a big room; a round sub bass written in STEP;
+ * a TRIO wind held under everything as air. The CHAIN takes the chord and the bass up a fourth for its B (KEY B +5),
+ * AABA in 16-bar phrases; ENTRIES cuts the chord and the bass out and back on the phrase lines, as a dub's mix does,
+ * while the drums and the air hold (ANCHOR). A 12-minute piece in three WAVES, played again. G minor, 76 BPM.
+ * Made not to crackle: the echo's feedback stays at 0.64 (no cord moves it), FM6 stabs instead of ORACLE (a third of
+ * the CPU), the bass POLY (no sounding voice struck again), the wind struck once at PLAY and held (63 TIEs, OWN in the CHAIN). */
+enum { FX_DX_TINE = 8 };
+static void demo_shore(void)
+{
+    song.g[G_BPM] = 76;
+    sound(0, ENGI_FM6, FX_DX_TINE);
+    sound(1, ENGI_TRIO, TR_SUB_BASS);
+    sound(2, ENGI_DRUM, DK_808_KIT);
+    sound(3, ENGI_TRIO, TR_WIND);
+    scale(7, SCL_MIN, 0);
+    sends(120, 100, 102, 96);                         /* a big room; ECHO 296 ms, a dotted sixteenth at 76 BPM */
+
+    /* T1: two bars of sixteenths: Gm (Bb D F over the bass's G) on the "and" of two, short; a softer one on the "and"
+     * of four every other time round */
+    {
+        static const uint8_t GM[4] = {58, 62, 65, 0};
+        for (uint32_t i = 0; i < 32u; i++) step_note(0, i, 0, 0);
+        step_chord(0, 6, GM, 92);
+        step_chord(0, 22, GM, 86);
+        step_chord(0, 30, GM, 58); step_set_cond(&trk[0].step[30], SC_1_2);
+        trk[0].p[P_SLEN] = 32;
+    }
+    tx(0, TX_MODE, TESS_ENG_OFF);
+    trk[0].p[P_SDIV] = DIV_16;
+    tx(0, TX_SUB_HUMAN, 8);
+    trk[0].p[P_FXTYPE] = 10; trk[0].p[P_FXMIX] = 127; trk[0].p[P_FXRATE] = 52; trk[0].p[P_FXCHAR] = 40;   /* FILTER */
+    mixer(0, 108, -12, 85, 120);
+
+    /* T2: the sub, two bars of sixteenths, long notes (TIEs): G, a G again, Bb, C; D held, C, Bb, an F pickup */
+    {
+        static const uint8_t LINE[32] = {31, 0, 0, 0, 0, 0, 0, 31, 0, 0, 34, 0, 36, 0, 0, 0,
+                                         38, 0, 0, 0, 0, 0, 36, 0, 34, 0, 0, 0, 0, 0, 29, 0};
+        static const uint8_t TIE[] = {1, 2, 3, 4, 8, 11, 13, 14, 17, 18, 19, 20, 23, 25, 26, 31};
+        for (uint32_t i = 0; i < 32u; i++) step_note(1, i, LINE[i], 104);
+        for (uint32_t i = 0; i < sizeof TIE; i++) step_tie(1, TIE[i]);
+        step_set_cond(&trk[1].step[30], SC_1_2);
+        trk[1].p[P_SLEN] = 32;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF);
+    trk[1].p[P_SDIV] = DIV_16;
+    trk[1].p[P_VOICE] = 0;                            /* POLY: a note never restarts the one still ringing out */
+    mixer(1, 94, 0, 5, 0);
+
+    /* T3: NIGHT FERRY's 808: rockers, kick on one and three, rims on two and four, hats on the offbeats by condition, a
+     * tom pickup on the fourth bar, a clap before beat four on FILL (T3's SWARM 5 holds it now and then) */
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_RS, 0, L_CH, 0, L_BD, 0, L_CH, 0, L_RS, L_TM, L_CH, L_TM};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(2, i, L[i], i % 8u == 0u ? 112 : 78);
+        step_set_cond(&trk[2].step[6], SC_1_2);
+        step_set_cond(&trk[2].step[10], SC_2_4);
+        step_set_cond(&trk[2].step[13], SC_4_4);
+        step_set_cond(&trk[2].step[15], SC_4_4);
+        step_hits(2, 11, L_CP, 90);
+        step_set_cond(&trk[2].step[11], SC_FILL);
+        trk[2].p[P_SLEN] = 16;
+    }
+    tx(2, TX_MODE, TESS_ENG_OFF);
+    trk[2].p[P_SDIV] = DIV_16;
+    tx(2, TX_SUB_HUMAN, 10);
+    mixer(2, 102, 5, 30, 55);
+
+    /* T4: the air, a TRIO wind held from PLAY (one note, then TIEs at 4 bars a step: struck once, never again) */
+    step_note(3, 0, 55, 70);
+    for (uint32_t i = 1; i < 64u; i++) step_tie(3, i);
+    trk[3].p[P_SLEN] = 64;
+    tx(3, TX_MODE, TESS_ENG_OFF);
+    trk[3].p[P_SDIV] = DIV_4BAR;
+    mixer(3, 78, 20, 110, 20);
+    tx(3, TX_FC_FOLLOW, 1);                           /* OWN: noise needs no key (and a step longer than a bar
+                                                     * must not follow the CHAIN's keys: form_chain.c fc_key) */
+
+    {
+        static const uint8_t REP[4] = {1, 1, 1, 1}, ROLE[4] = {RO_HARMONY, RO_BASS, RO_ANCHOR, RO_ANCHOR};
+        chain_set(FC_AABA, PH_16, 0, REP, 5, 0);
+        entries_set(50, 1, 0, 1, ROLE);
+        piece_set(LEN_12, SH_WAVES, 50, 3, END_LOOP);
+    }
+    cord(0, CS_INERTIA, 0, CD_FX1_RATE, 0, 35, 0, 0); /* T1 TIDE 2 -> T1 FX1 RTE: the stab's filter opens and closes */
+    cord(1, CS_DRIFT, 0, CD_SF2_RATE, 0, 6, 0, 0);    /* T1 DRIFT -> SF2 RTE: the echo's time bends a little, as tape */
+    cord(2, CS_OCHD3, 0, CD_FX_SEND2, 0, 25, 0, CU_UNI);  /* T1 SWARM 3 -> T1 SEND 2: some stabs thrown deeper */
+    cord(3, CS_OCHD5, 2, CD_FILL, 0, 100, 60, CU_GATE);   /* T3 SWARM 5 -> FILL: the clap now and then */
+    cord(4, CS_TORPOR, 3, CD_CUTOFF, 3, 30, 0, 0);    /* T4 TIDE 1 -> T4 CUT: the air darker and brighter */
+}
+
 typedef struct { const char *name, *file; void (*make)(void); } demo_t;
 static const demo_t DEMO_LIST[] = {
     {"STILL TIDE", "still-tide", demo_still},
@@ -743,6 +835,7 @@ static const demo_t DEMO_LIST[] = {
     {"SLOW LIGHT", "slow-light", demo_light},
     {"CEDAR RAIN", "cedar-rain", demo_cedar},
     {"STONE PIER", "stone-pier", demo_pier},
+    {"FAR SHORE", "far-shore", demo_shore},
 };
 
 /* ------------------------------------------------------- the test projects --- */
