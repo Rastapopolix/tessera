@@ -51,7 +51,8 @@ static int st_prog(uint32_t off, const void *src, uint32_t n)
 }
 static uint32_t irq_save(void) { return 0; }
 static void irq_restore(uint32_t f) { (void)f; }
-static uint32_t fl_jedec_ram(void) { return 0x856014u; }   /* (persist_boot: the expected part) */
+static uint32_t fl_jedec_id = 0x856014u;                   /* persist_boot's JEDEC gate; flash_id_test varies it */
+static uint32_t fl_jedec_ram(void) { return fl_jedec_id; } /* (persist_boot: the expected part by default) */
 static void fl_plain_window_init(void) {}
 #define FL_FAR(fn) (fn)
 #include "../firmware/src/storage.c"
@@ -98,9 +99,54 @@ static void reset(void)
     up_gen = erases = 0;
     boot_syncs = boot_trace = boot_trace_bad = 0;
     irq_start_race = irq_races = 0;
+    memset(mlearn, 0, sizeof mlearn);
+    mlearn_dirty = 0;
 }
 
 #ifndef PERSISTENCE_TEST_NO_MAIN
+/* MIDI LEARN's maps: saved at rest in their own object, back at power-on; bad maps left free */
+static int test_mlearn_save(void)
+{
+    int bad = 0;
+    reset(); persist_boot(); settings_init();
+    uint32_t before = erases;
+    mlearn[0] = (mlearn_t){21, 2, PID_TESS(0)}; mlearn[3] = (mlearn_t){85, 0, PID_TESS(1)};
+    mlearn_dirty = 1; song.playing = 1;
+    settings_poll();
+    bad += check("MIDI LEARN: a learned CC waits while playing", mlearn_dirty && erases == before);
+    song.playing = 0;
+    settings_poll();
+    bad += check("MIDI LEARN: saved at STOP, one erase, settings untouched",
+                 !mlearn_dirty && !persist_pending && erases == before + 1u && st_exists(OBJ_LEARN));
+    memset(mlearn, 0, sizeof mlearn);
+    persist_boot();
+    bad += check("MIDI LEARN: back after power-on", mlearn[0].cc == 21 && mlearn[0].track == 2 &&
+                 mlearn[0].pid == PID_TESS(0) && mlearn[3].cc == 85 && mlearn[3].pid == PID_TESS(1) &&
+                 !mlearn[1].cc && !mlearn_dirty);
+    before = erases; settings_poll();
+    bad += check("MIDI LEARN: nothing changed, no erase", erases == before);
+    {
+        mlearn_rec_t r = {MLEARN_MAGIC, {{0}}};
+        r.m[0] = (mlearn_t){64, 0, PID_TESS(0)};            /* the pedal: never learned */
+        r.m[1] = (mlearn_t){22, 7, PID_TESS(0)};            /* no such track */
+        r.m[2] = (mlearn_t){23, 1, 0x2FFu};                 /* no such parameter */
+        r.m[3] = (mlearn_t){24, 1, PID_TESS(2)};
+        st_save(OBJ_LEARN, &r, sizeof r);
+        persist_boot();
+        bad += check("MIDI LEARN: a map that does not check out is left free",
+                     !mlearn[0].cc && !mlearn[1].cc && !mlearn[2].cc && mlearn[3].cc == 24);
+        r.magic = 0x4B534554u;                               /* another layout (an old Tessera block) */
+        st_save(OBJ_LEARN, &r, sizeof r);
+        persist_boot();
+        bad += check("MIDI LEARN: an unknown record loads nothing", !mlearn_count());
+    }
+    erase_error = 1; mlearn[5] = (mlearn_t){30, 1, PID_TESS(0)}; mlearn_dirty = 1;
+    settings_poll();
+    bad += check("MIDI LEARN: a failed save keeps it to retry", mlearn_dirty && persist_pending == 2);
+    erase_error = 0; fm1_ms += 1000; settings_poll();
+    bad += check("MIDI LEARN: ... and the retry saves it", !mlearn_dirty && !persist_pending);
+    return bad;
+}
 static int staged_import_persistence(void)
 {
     int bad=0;reset();memset(&sx_import,0,sizeof sx_import);fm6_rx_ready=0;
@@ -158,12 +204,16 @@ static int test_tsp_record(void)
     tessera_param_set(1, TX_SUB_SHAPE, SUB_DECEL); tessera_param_set(0, TX_SUB_SHAPE, SUB_ACCEL);   /* (the record's SUB part) */
     tessera_param_set(2, TX_MIDI_CH, 9); tessera_param_set(3, TX_MIDI_CH, (int32_t)TESS_MIDI_OFF);   /* (its MIDI part) */
     tessera_param_set(0, TX_MIDI_TR, -36); tessera_param_set(3, TX_MIDI_TR, 7);   /* (its TRANSP part) */
+    tessera_param_set(2, TX_SOUND, 1);                                       /* (its SOUND part) */
+    tessera_param_set(1, TX_TW_HOLD, 3);                                     /* (its HOLD part) */
+    tessera_param_set(2, TX_FC_KEYB, -12); tessera_param_set(0, TX_FC_KEYC, 7);   /* (its FKEY part) */
     tessera_param_set(0, TX_KEY_LINK, 0);                                    /* (its KEY part: OWN, not the default) */
     tessera_param_set(1, TX_SD_SOURCE, 1); tessera_param_set(1, TX_SD_KEEP, TESS_SD_PITCH);   /* (its SEED part) */
     tessera.en_arc = 40u; tessera.en_rests = 60u;     /* (ENERGY: the block's project tail, TS18) */
     {
         cord_t c = {CS_LFO, 0, CD_CUTOFF, 1, 30, 0};
         cord_set(0, &c);
+        cord_cc_set(3, 74);                                                  /* (its CCN part) */
     }
     ok = !project_save_as(0, "TSP");
     memset(trk[0].step, 0, sizeof trk[0].step); tessera_reset();
@@ -172,10 +222,14 @@ static int test_tsp_record(void)
                  step_ratch(&trk[0].step[5]) == 3u && step_nudge(&trk[0].step[5]) == -6 && trk[0].step[5].note[0] == 62u &&
                  step_ratch(&trk[0].step[6]) == 8u && step_nudge(&trk[0].step[6]) == -6 &&
                  tessera.mode[1] == TESS_ENG_EUCLID && cord_count() == 1u && cord_get(0)->amount == 30 &&
+                 cord_cc_num(3) == 74u && cord_cc_num(0) == 1u &&
                  tessera.en_arc == 40u && tessera.en_rests == 60u &&
                  tessera.sub_shape[1] == SUB_DECEL && tessera.sub_shape[0] == SUB_ACCEL && tessera.sub_shape[2] == SUB_EVEN &&
                  tessera.midi_ch[2] == 9u && tessera.midi_ch[3] == TESS_MIDI_OFF && tessera.midi_ch[0] == 0u &&
                  tessera.midi_tr[0] == -36 && tessera.midi_tr[3] == 7 && tessera.midi_tr[1] == 0 &&
+                 tessera.sound_off[2] == 1u && tessera.sound_off[0] == 0u &&
+                 tessera.follow_hold[1] == 3u && tessera.follow_hold[0] == 0u &&
+                 tessera.fc_key[0] == -12 && tessera.fc_key[1] == 7 &&
                  tessera.key_link == 0u && tessera.sd_src[1] == 1u && tessera.sd_keep[1] == TESS_SD_PITCH &&
                  tessera.sd_src[0] == 0u && tessera.sd_keep[0] == TESS_SD_FREE);
     ok = project_rename(0, "TSP TWO") == 0;
@@ -183,6 +237,13 @@ static int test_tsp_record(void)
     project_load(0);
     bad += check("TSP1: a rename keeps the music and the generators", ok && project_name(0, name) && !strcmp(name, "TSP TWO") &&
                  step_ratch(&trk[0].step[5]) == 3u && tessera.mode[1] == TESS_ENG_EUCLID);
+    {                                                  /* (KEY B / C 0: no FKEY part, so older firmware sees none) */
+        tessera_param_set(0, TX_FC_KEYB, 0); tessera_param_set(0, TX_FC_KEYC, 0);
+        project_capture(&proj_scratch);
+        len = tsp_pack(raw, &proj_scratch, 1);
+        bad += check("TSP1: the CHAIN's KEY B / C at 0 write no FKEY part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_FKEY]);
+        tessera_param_set(0, TX_FC_KEYB, -12); tessera_param_set(0, TX_FC_KEYC, 7);
+    }
     project_capture(&proj_scratch);
     len = tsp_pack(raw, &proj_scratch, 1);             /* (with the generators: the TESSERA part) */
     ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_TESSERA];
@@ -262,6 +323,86 @@ static int test_tsp_record(void)
     tsp_resum(raw);
     bad += check("TSP1: a DEV part past 100 % is refused", ok && !tsp_valid(raw, len));
 
+    reset();                                           /* form chaining: the record's CHAIN part; a record without it */
+    tessera_param_set(0, TX_FC_FORM, 4); tessera_param_set(0, TX_FC_PHRASE, 2); tessera_param_set(0, TX_FC_WANDER, 35);
+    tessera_param_set(0, TX_FC_REP2, 3); tessera_param_set(0, TX_FC_REP4, 8);
+    tessera_param_set(1, TX_FC_FOLLOW, 1); tessera_param_set(3, TX_FC_SKIP, 20);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_CHAIN];
+    reset();
+    ok = ok && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: the CHAIN's FORM, PHRASE, WANDER, REPEATs and each track's FOLLOW and SKIP come back",
+                 ok && tessera.fc_form == 4u && tessera.fc_phrase == 2u && tessera.fc_wander == 35u &&
+                 tessera.fc_rep[0] == 1u && tessera.fc_rep[1] == 3u && tessera.fc_rep[3] == 8u &&
+                 tessera.fc_follow[1] == 2u && !tessera.fc_follow[0] && tessera.fc_skip[3] == 20u && !tessera.fc_skip[1]);
+    raw[tsp_seen.at[TSP_CHAIN] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (saved before it, or on a newer firmware: no
+                                                                     * CHAIN part known) */
+    tsp_resum(raw);
+    reset();
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_CHAIN] && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: a record without the CHAIN part loads with it OFF (8 bars, WANDER 0, counts 1, nothing set)",
+                 ok && !tessera.fc_form && tessera.fc_phrase == 1u && !tessera.fc_wander && tessera.fc_rep[1] == 1u &&
+                 !tessera.fc_follow[1] && !tessera.fc_skip[3]);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_CHAIN];
+    raw[tsp_seen.at[TSP_CHAIN] + 4u] = 0u;              /* (the second REPEAT 0) */
+    tsp_resum(raw);
+    bad += check("TSP1: a CHAIN part with a REPEAT of 0 is refused", ok && !tsp_valid(raw, len));
+
+    reset();                                           /* Entries: the record's ENTRY part; a record without it */
+    tessera_param_set(0, TX_ET_AMOUNT, 65); tessera_param_set(0, TX_ET_DWELL, 5); tessera_param_set(0, TX_ET_STYLE, 0);
+    tessera_param_set(0, TX_ET_FADE, 4); tessera_param_set(1, TX_ET_ROLE, 5); tessera_param_set(3, TX_ET_ROLE, 2);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_ENTRY];
+    reset();
+    ok = ok && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: ENTRIES, DWELL, STYLE, FADE and each track's ROLE come back",
+                 ok && tessera.et_amount == 65u && tessera.et_dwell == 5u && tessera.et_style == 0u && tessera.et_fade == 4u &&
+                 tessera.et_role[1] == 5u && tessera.et_role[3] == 2u && !tessera.et_role[0]);
+    raw[tsp_seen.at[TSP_ENTRY] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (saved before it: no ENTRY part known) */
+    tsp_resum(raw);
+    reset();
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_ENTRY] && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: a record without the ENTRY part loads with Entries off (DWELL 2, FADE over 2 bars, AUTO)",
+                 ok && !tessera.et_amount && tessera.et_dwell == 2u && tessera.et_style == 1u && tessera.et_fade == 2u &&
+                 !tessera.et_role[1]);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_ENTRY];
+    raw[tsp_seen.at[TSP_ENTRY] + 4u] = 6u;              /* (track 1's ROLE past ANCHOR) */
+    tsp_resum(raw);
+    bad += check("TSP1: an ENTRY part with a ROLE past ANCHOR is refused", ok && !tsp_valid(raw, len));
+
+    reset();                                           /* the planner: the record's PLAN part; a record without it */
+    tessera_param_set(0, TX_PL_LENGTH, 12); tessera_param_set(0, TX_PL_SHAPE, 5); tessera_param_set(0, TX_PL_PEAK, 30);
+    tessera_param_set(0, TX_PL_COUNT, 6); tessera_param_set(0, TX_PL_END, 2); tessera_param_set(0, TX_PL_USER7, 99);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_PLAN];
+    reset();
+    ok = ok && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: the planner's LENGTH, SHAPE, PEAK, COUNT, END and USER levels come back",
+                 ok && tessera.pl_length == 12u && tessera.pl_shape == 5u && tessera.pl_peak == 30u && tessera.pl_count == 6u &&
+                 tessera.pl_end == 2u && tessera.pl_user[6] == 99u && tessera.pl_user[0] == 10u);
+    raw[tsp_seen.at[TSP_PLAN] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (saved before it: no PLAN part known) */
+    tsp_resum(raw);
+    reset();
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_PLAN] && !project_restore_runtime(&proj_scratch);
+    tsp_restore(raw);
+    bad += check("TSP1: a record without the PLAN part loads FREE (ARCH, PEAK 62, COUNT 3, STOP)",
+                 ok && !tessera.pl_length && !tessera.pl_shape && tessera.pl_peak == 62u && tessera.pl_count == 3u && !tessera.pl_end);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_PLAN];
+    raw[tsp_seen.at[TSP_PLAN] + 3u] = 1u;              /* (COUNT 1) */
+    tsp_resum(raw);
+    bad += check("TSP1: a PLAN part with a COUNT of 1 is refused", ok && !tsp_valid(raw, len));
+
     reset();                                           /* ENERGY part 2: LEVEL and each DEPTH; a record without them */
     tessera_param_set(0, TX_EN_LEVEL, -40); tessera_param_set(2, TX_EN_DEPTH, 0); tessera_param_set(3, TX_EN_DEPTH, 55);
     project_capture(&proj_scratch);
@@ -307,6 +448,32 @@ static int test_tsp_record(void)
     tsp_resum(raw);
     bad += check("TSP1: a HOW part out of range is refused", ok && !tsp_valid(raw, len));
 
+    reset();                                           /* SPLIT: the record's SPLIT part; none at 0; a bad value refused */
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    bad += check("TSP1: SPLIT at 0 writes no SPLIT part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_SPLIT]);
+    tessera_param_set(1, TX_SUB_SPLIT, 35); tessera_param_set(1, TX_SUB_SPLIT_HOW, TESS_SPLIT_MIX);
+    tessera_param_set(3, TX_SUB_SPLIT_HOW, TESS_SPLIT_PUSH);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_SPLIT];
+    tessera_reset();
+    tsp_restore(raw);
+    bad += check("TSP1: SPLIT and HOW come back from their part", ok && tessera.sub_split[1] == 35u &&
+                 tessera.sub_split_how[1] == TESS_SPLIT_MIX && tessera.sub_split_how[3] == TESS_SPLIT_PUSH && tessera.sub_split[0] == 0u);
+    raw[tsp_seen.at[TSP_SPLIT] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (its id one this build does not know: skipped, as older firmware does) */
+    tsp_resum(raw);
+    tessera_param_set(1, TX_SUB_SPLIT, 50);
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_SPLIT];
+    if (ok) tsp_restore(raw);
+    bad += check("TSP1: a record without the part loads with SPLIT off", ok && tessera.sub_split[1] == 0u && tessera.sub_split_how[1] == 0u);
+    tessera_param_set(2, TX_SUB_SPLIT, 10);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_SPLIT];
+    raw[tsp_seen.at[TSP_SPLIT] + 2u] = 101u;           /* (past 100) */
+    tsp_resum(raw);
+    bad += check("TSP1: a SPLIT past 100 refused", ok && !tsp_valid(raw, len));
     reset();                                           /* HUMAN TIME: the record's HUMAN part; a record without it */
     song.sel = 1; tessera_knob(0, TESS_ENG_EUCLID);
     tessera_param_set(1, TX_TW_HUMAN, 60); tessera_param_set(0, TX_TW_HUMAN, 40);   /* (track 0: a STEP track) */
@@ -412,7 +579,7 @@ static int test_tsp_record(void)
 
 int main(void)
 {
-    int bad = test_boot_maintenance_writes() + test_tsp_record(), ok;
+    int bad = test_boot_maintenance_writes() + test_tsp_record() + test_mlearn_save(), ok;
     uint32_t before;
     persist_t p;
     static uint8_t old[TSP_MAX], keep[TSP_MAX];   /* (a slot's record as it was) */
@@ -471,7 +638,7 @@ int main(void)
     settings_poll();
     bad += check("STOP: latest settings saved and request cleared", !persist_pending && erases == 1u &&
                   st_load(OBJ_SETTINGS, &p, sizeof p) == (int)sizeof p && p.palette == palette_to_stored(2) &&
-                  p.lowcut == 0u && p.zoom == 1u && p.bold == 1u &&
+                  p.lowcut == 0u && (p.zoom & 0xFFu) == 1u && p.bold == 1u &&   /* (zoom's high half: the recording preferences) */
                   p.favorites.factory[8][0] == 1 && p.favorites.user == (1u << 31) &&
                   !memcmp(&p.panel, &panel, sizeof panel));
     settings_save();

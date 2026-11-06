@@ -37,10 +37,10 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x01A | SCALE | CHR, MAJ, MIN, DOR, MIX, PEN, MPEN, HARM, PHRY, LYD, LOC, MEL, BLUES, WHOLE, DIMHW, DIMWH, 5EDO, 7EDO, 9EDO, 10EDO, 13EDO, 14EDO, 15EDO, 16EDO, 17EDO, 18EDO, 19EDO, 20EDO, 21EDO, 22EDO, 23EDO, 24EDO, 26EDO, 27EDO, 29EDO, 31EDO, 34EDO, 36EDO, 41EDO, 53EDO, JI-MAJ, JI-MIN, JI-12, JI-7L, JI-7, HARM8, HARM16, PARTCH, HARRIS, PYTH, MT-1/4, MT-1/3, MT-1/6, WERCK3, KIRN3, VALLOT, YOUNG2, RAST-J, SABA-J, SHRUTI, SLENDR, PELOG, BP-ET, BP-JI, RAST, BAYATI, HIJAZ, SABA, HUSAYN, SIKAH, IN, YO, HIRA, IWATO, KUMOI, RYUK | CHR | The scale the keys and the generators play in. |
 | 0x01B | QUANTIZE | OFF, SNAP, WHITE, ALL, MPC, CHRD | OFF | How the keys meet the scale: OFF plays every key, SNAP moves a note into the scale, WHITE puts the scale on the white keys, ALL and MPC lay it out over the keys or MPC pads; CHRD snaps the keys, MIDI and the generators to the nearest note of the chord a CHORD track plays (no CHORD track: as SNAP). Not OFF: KNOB 2 on NOTES moves a note by the scale's notes (CHRD: the chord's). Notes already written stay: Snap to scale in the pattern's sheet (OCT+ held) moves them onto the scale, once. |
 | 0x01C | TRANSPOSE | -24 to 24 semitones | 0 | Moves the track's notes up or down by semitones. |
-| 0x01D | PATTERN LENGTH | 1 to 64 | 16 | How many steps the track's pattern has. |
-| 0x01E | PATTERN DIVISION | 1/4, 1/8, 1/16, 1/32, 8T, 16T, 1/2, 1/1, 2BAR, 4BAR | 1/16 | How long one step is. |
-| 0x01F | PATTERN SWING | 0 to 100 % | 0 | Delays every second step, for a swung feel. |
-| 0x020 | PATTERN GATE | 1 to 127 | 64 | How long each step's note lasts, as a share of the step. |
+| 0x01D | PATTERN LENGTH | 1 to 64 | 16 | How many steps the track's pattern has. Each of its 8 patterns keeps its own. |
+| 0x01E | PATTERN DIVISION | 1/4, 1/8, 1/16, 1/32, 8T, 16T, 1/2, 1/1, 2BAR, 4BAR | 1/16 | How long one step is. Each of the track's 8 patterns keeps its own. |
+| 0x01F | PATTERN SWING | 0 to 100 % | 0 | Delays every second step, for a swung feel. Each of the track's 8 patterns keeps its own. |
+| 0x020 | PATTERN GATE | 1 to 127 | 64 | How long each step's note lasts, as a share of the step. Each of the track's 8 patterns keeps its own. |
 | 0x025 | VOICE MODE | POLY, MONO, LEG, UNI | POLY | POLY plays chords; MONO one note at a time; LEG(ATO) one at a time, a note played while one is held not starting again; UNI stacks detuned voices on one note. |
 | 0x026 | GLIDE | 0 to 127 | 0 | How long a note takes to slide to the next. |
 | 0x027 | PAN | -64 to 63 | 0 | The track's place from left to right. |
@@ -139,7 +139,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 
 | ID | Name | Range | Default | What it does |
 | --- | --- | --- | --- | --- |
-| 0x200 | GENERATOR MODE | STEP, TURING, EUCLID, MARKOV, MORPH, ATLAS, BOUNCE, AWAKE, POLY, QUAD, CONSTL, SERIES, CHORD, ANSWER | STEP | SEQ shows the pages of the MODE only. STEP plays the track's own steps; ARP the keys held, as an arpeggio (the ARP button opens it too); CHORD plays a progression's chords in the track's scale (QNT CHRD: the other tracks follow them); TURING, EUCLID, MARKOV and MORPH make its notes; ATLAS plays kick, snare, hat and toms (best on a DRUM track); BOUNCE plays where a ball hits the walls of its box; AWAKE adds two loops of its own lengths; POLY steps four notes on four rhythms; QUAD plays the track's row of a four by four grid the tracks share; CONSTL (CONSTELLATION) plays the stars of a passing sky as they cross a ship's crosshair; SERIES plays Per Norgard's infinity series; ANSWER answers what you play on its keys. |
+| 0x200 | GENERATOR MODE | STEP, TURING, EUCLID, MARKOV, MORPH, ATLAS, BOUNCE, AWAKE, POLY, QUAD, CONSTL, SERIES, CHORD, ANSWER | STEP | SEQ and ARP show the pages of the MODE only. STEP plays the track's own steps; ARP the keys held, as an arpeggio; CHORD plays a progression's chords in the track's scale (QNT CHRD: the other tracks follow them); TURING, EUCLID, MARKOV and MORPH make its notes; ATLAS plays kick, snare, hat and toms (best on a DRUM track); BOUNCE plays where a ball hits the walls of its box; AWAKE adds two loops of its own lengths; POLY steps four notes on four rhythms; QUAD plays the track's row of a four by four grid the tracks share; CONSTL (CONSTELLATION) plays the stars of a passing sky as they cross a ship's crosshair; SERIES plays Per Norgard's infinity series; ANSWER answers what you play on its keys. |
 | 0x201 | TURING LENGTH | 2 to 16 steps | 16 | How many steps the register loops over before it comes round again. |
 | 0x202 | TURING PROB | 0 to 100 % | 0 | The chance a step changes as it comes round: 0 locks the loop, 100 is new every pass. |
 | 0x203 | TURING SPAN | 1 to 3 oct | 2 | How many octaves the notes spread over. |
@@ -235,7 +235,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x260 | ANSWER SPACE | 0 to 100 % | 25 | The rest before each answer: 0 answers straight away, 100 waits 4 bars. A bar without a key ends the phrase you play. OCT+ held on GEN, KNOB 4. |
 | 0x261 | ANSWER LEN | SHORT, MID, LONG | MID | With FADE at 100, the lengths of the four loops the notes play on, in steps: SHORT 5 7 11 13, MID 13 17 23 29, LONG 23 29 31 37. FADE turned past 16. |
 | 0x262 | TIMING SHAPE | EVEN, ACCEL, DECEL | EVEN | Where a ratchet's hits fall in their step: EVEN in equal parts, ACCEL closer and closer (a roll that speeds up), DECEL further and further apart (a bounce). The track's, for its RATCH and for every step's Ratchet on a STEP track. |
-| 0x263 | MIDI OUT CHANNEL | AUTO, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, OFF | AUTO | The MIDI channel this track's notes go out on over USB, so each track can play its own instrument. AUTO follows SYSTEM's ROUT (CH1-4: tracks on 1 to 4), a drum track the DRUM channel; OFF sends none of its notes. Saved with the project. Which notes go out at all is the menu's MIDI OUT: KEYS, ALL or OFF. GLO > MIDI OUT, a knob for each track. |
+| 0x263 | MIDI OUT CHANNEL | AUTO, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, OFF | AUTO | The MIDI channel this track's notes go out on over USB, so each track can play its own instrument. AUTO follows SYSTEM's ROUT (CH1-4: tracks on 1 to 4), a drum track the DRUM channel; OFF sends none of its notes. Saved with the project. Which notes go out at all is the menu's NOTES OUT: KEYS, ALL or OFF. GLO > MIDI OUT, a knob for each track. |
 | 0x264 | KEY LINK | OWN, LINKED | LINKED | LINKED: one key for the whole project. Changing ROOT on any melodic track sets it on the others too, as the scale always is; drum tracks keep theirs. OWN: each track its own ROOT. Turning it on gives every track the selected track's key. SCL's Key link row; on in a new project, saved with it. |
 | 0x265 | SOURCE | OFF, T1, T2, T3, T4 | OFF | A STEP pattern for TURING, EUCLID, MARKOV or MORPH to play from: T1 to T4 is that track's pattern playing now (this track's own too), which stays as written. TURING loops its first LEN steps and PROB changes them a step at a time; EUCLID plays its notes in order on its hits; MARKOV learns what follows what in it (LEAP: jumps anywhere); MORPH blends it (A) with a variation of it (B). OFF, or a pattern without notes: the generator's own. ANSWER: the pattern's first 8 notes are its call, read again before each answer; the keys then just play. OCT+ held on GEN, KNOB 1. |
 | 0x266 | KEEP | FREE, RHYTHM, PITCH | FREE | With a SOURCE, what stays as written. FREE: a step's pitch or its hit may change. RHYTHM: only the pitches change (EUCLID: the source's own rhythm, on EUCLID's pitches). PITCH: only the hits come and go (MARKOV: the notes in written order). OCT+ held on GEN, KNOB 2. |
@@ -249,6 +249,43 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x26E | FORM DEVELOP | 0 to 100 % | 0 | How far a section varies each time FORM comes back to it: it stays recognisable but is never quite the same. The section itself is kept, so the next return starts from it again. GRAVITY is the chance a return stays exact. 0: every return exact. OCT+ held on FORM, KNOB 1. |
 | 0x26F | MIDI OUT TRANSPOSE | -48 to 48 st | 0 | Moves this track's notes up or down on their way out over MIDI, in semitones (12 an octave), for an instrument or a MIDI-to-CV module that plays them too high or too low. The track's own sound is unchanged; a note moved past MIDI's range is not sent. 0: as played. Saved with the project. OCT+ held on GLO > MIDI OUT, a knob for each track. |
 | 0x270 | TUNING | OFF, USR1, USR2, USR3, USR4 | OFF | A tuning of your own for the whole project, as the scale is: USR1 to USR4 play the Scala (.scl) files sent from the web editor (PROJECTS, Tunings), saved with the project. The keys, the generators, QNT and chords play its degrees; ROOT and TRN move it. OFF, or an empty slot, plays SCL's scale. SCL > SCALES, the USER family. |
+| 0x271 | SOUND | ON, OFF | ON | OFF: this track plays no sound of its own, so it takes none of the FM-1's voices. Its notes still go out over MIDI on its channel, and its GATE, NOTE and CV still move the mods: a track for an outside synth, or a lane that only modulates the others. ON: as always. Saved with the project. OCT- held on GLO > MIDI OUT, a knob for each track. |
+| 0x272 | CHAIN FORM | OFF, AB, ABAC, ABCB, AABA, ABCA, AABC | OFF | One FORM for the whole project: on each phrase line it moves to its next letter, and every generator track that FOLLOWs moves with it to its own A, B or C, so the tracks' sections line up. OFF: each track as set (its own FORM, or none). GLO > CHAIN, KNOB 1. |
+| 0x273 | CHAIN PHRASE | 4, 8, 16 | 8 | How long a phrase of the CHAIN is: 4, 8 or 16 bars, counted from PLAY. The letters change on its lines. GLO > CHAIN, KNOB 2. |
+| 0x274 | CHAIN WANDER | 0 to 100 % | 0 | 0 plays the CHAIN's FORM as written, round and round. Up, the next letter is more often chosen than read: A comes back the longer the music is away, a new letter only after a return to A, and each phrase away makes the next new section more different. The same piece from PLAY each time. GLO > CHAIN, KNOB 3. |
+| 0x275 | CHAIN REPEAT 1 | 1 to 8 x | 1 | How many phrases the CHAIN's first letter plays, 1 to 8. GLO > CHAIN, OCT+ held, KNOB 1. |
+| 0x276 | CHAIN REPEAT 2 | 1 to 8 x | 1 | How many phrases the CHAIN's second letter plays, 1 to 8. GLO > CHAIN, OCT+ held, KNOB 2. |
+| 0x277 | CHAIN REPEAT 3 | 1 to 8 x | 1 | How many phrases the CHAIN's third letter plays, 1 to 8. GLO > CHAIN, OCT+ held, KNOB 3. |
+| 0x278 | CHAIN REPEAT 4 | 1 to 8 x | 1 | How many phrases the CHAIN's fourth letter plays, 1 to 8. GLO > CHAIN, OCT+ held, KNOB 4. |
+| 0x279 | FORM FOLLOW | FOLLOW, OWN | FOLLOW | FOLLOW: this track's sections change with the CHAIN's letters, on its phrase lines (its EVERY waits meanwhile). OWN: it keeps its own FORM. Not set, a track follows while its own FORM is OFF. Only while the CHAIN's FORM is on. OCT+ held on FORM, KNOB 2. |
+| 0x27A | FORM SKIP | 0 to 100 % | 0 | The chance this track stays in its section one phrase longer where the CHAIN moves on, then catches up; never twice running. 0: always with the CHAIN. OCT+ held on FORM, KNOB 3. |
+| 0x27B | ENTRIES | 0 to 100 % | 0 | 0: every track plays as set. Up, tracks drop out and come back on the CHAIN's phrase lines: how many may be out at once, up to all but one. Exits come where a section begins, melody first; entries one a phrase, bass first. Above 50 the phrase before a return to A thins to the anchors and A comes back full. A muted track stays muted; its key on GLO brings an out track back. GLO > ENTRIES, KNOB 1. |
+| 0x27C | ENTRIES DWELL | 1 to 8 ph | 2 | The phrases a track stays in or out at least before Entries moves it again, 1 to 8. GLO > ENTRIES, KNOB 2. |
+| 0x27D | ENTRIES STYLE | CUT, FADE | FADE | How a track leaves and comes back: CUT at once on the phrase line, or FADE over FADE bars from it. GLO > ENTRIES, KNOB 3. |
+| 0x27E | ENTRIES FADE | 1 to 4 bar | 2 | The bars a FADE takes, 1 to 4. GLO > ENTRIES, KNOB 4. |
+| 0x27F | ENTRIES ROLE | AUTO, BASS, RHYTHM, HARMONY, MELODY, ANCHOR | AUTO | What the track is to Entries: BASS comes in first and goes last, then RHYTHM, HARMONY, MELODY (a melody only over a bass or harmony). ANCHOR is never taken out. AUTO: CHORD is harmony, ATLAS or a drum sound rhythm, notes mostly below C3 bass, else melody. GLO > ENTRIES with OCT+ held, or OCT+ held on FORM, KNOB 4. |
+| 0x280 | PIECE LENGTH | FREE, 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 45, 60, 75, 90, 120, 180, 240 | FREE | FREE: the music plays on unplanned. A length, 1 minute to 4 hours: the piece is planned to it from PLAY, its SHAPE steering ENERGY (ARC how far), ENTRIES (how many tracks play) and the CHAIN (further away near the top, A in the last part). At the tempo now: a faster tempo, more bars. GLO > PIECE, KNOB 1. |
+| 0x281 | PIECE SHAPE | ARCH, RISE, FALL, PLATEAU, VALLEY, WAVES, BUILDS, STEPS, FLAT, USER | ARCH | The piece's arc from sparse to full: ARCH one climax at PEAK; RISE a build to the end; FALL starts full and dissolves; PLATEAU a long hold round PEAK; VALLEY full with a breakdown at PEAK; WAVES COUNT swells; BUILDS COUNT rises each dropped at once; STEPS terraces; FLAT steady; USER your eight levels. All but RISE and FALL begin and end sparse. GLO > PIECE, KNOB 2. |
+| 0x282 | PIECE PEAK | 0 to 100 % | 62 | Where the climax of ARCH, PLATEAU, VALLEY or STEPS sits, as a share of the length (62 %: the golden section). GLO > PIECE, KNOB 3. |
+| 0x283 | PIECE COUNT | 2 to 8  | 3 | How many swells (WAVES), builds (BUILDS) or terraces (STEPS), 2 to 8. GLO > PIECE, KNOB 3. |
+| 0x284 | PIECE END | STOP, LOOP, NEW, FREE | STOP | At the end of the LENGTH: STOP lets the tracks fade and the tails ring, then stops; LOOP plays the same piece again; NEW draws new SEEDs and plays a new piece; FREE plays on unplanned. GLO > PIECE, KNOB 4. |
+| 0x285 | PIECE USER 1 | 0 to 100 % | 10 | SHAPE USER: the level at the piece's start. GLO > PIECE, OCT+ held, KNOB 1. |
+| 0x286 | PIECE USER 2 | 0 to 100 % | 30 | SHAPE USER: the level a seventh in. GLO > PIECE, OCT+ held, KNOB 2. |
+| 0x287 | PIECE USER 3 | 0 to 100 % | 55 | SHAPE USER: the level two sevenths in. GLO > PIECE, OCT+ held, KNOB 3. |
+| 0x288 | PIECE USER 4 | 0 to 100 % | 80 | SHAPE USER: the level three sevenths in. GLO > PIECE, OCT+ held, KNOB 4. |
+| 0x289 | PIECE USER 5 | 0 to 100 % | 100 | SHAPE USER: the level four sevenths in. GLO > PIECE, OCT- held, KNOB 1. |
+| 0x28A | PIECE USER 6 | 0 to 100 % | 75 | SHAPE USER: the level five sevenths in. GLO > PIECE, OCT- held, KNOB 2. |
+| 0x28B | PIECE USER 7 | 0 to 100 % | 40 | SHAPE USER: the level six sevenths in. GLO > PIECE, OCT- held, KNOB 3. |
+| 0x28C | PIECE USER 8 | 0 to 100 % | 10 | SHAPE USER: the level at the end. GLO > PIECE, OCT- held, KNOB 4. |
+| 0x28D | MACRO 1 | 0 to 100 % | 0 | A hand control for the whole project, 0 to 100 %. On its own it does nothing: pick MACRO as a mod's SOURCE (MODS) and send it anywhere, to as many places as you like. GLO > PERF, KNOB 1 to 4. |
+| 0x28E | MACRO 2 | 0 to 100 % | 0 | A hand control for the whole project, 0 to 100 %. On its own it does nothing: pick MACRO as a mod's SOURCE (MODS) and send it anywhere, to as many places as you like. GLO > PERF, KNOB 1 to 4. |
+| 0x28F | MACRO 3 | 0 to 100 % | 0 | A hand control for the whole project, 0 to 100 %. On its own it does nothing: pick MACRO as a mod's SOURCE (MODS) and send it anywhere, to as many places as you like. GLO > PERF, KNOB 1 to 4. |
+| 0x290 | MACRO 4 | 0 to 100 % | 0 | A hand control for the whole project, 0 to 100 %. On its own it does nothing: pick MACRO as a mod's SOURCE (MODS) and send it anywhere, to as many places as you like. GLO > PERF, KNOB 1 to 4. |
+| 0x291 | FOLLOW HOLD | OFF, T1, T2, T3, T4 | OFF | Sample and hold for FOLLOW: the followed track's note is taken only when the HOLD track plays, and this track keeps playing it in its own rhythm until the next one. OFF: a new note on each of its own hits. TWEAK, OCT+ held, KNOB 4. |
+| 0x292 | KEY B | -12 to 12 semitones | 0 | A key change for the CHAIN's section: while the project plays it, every track that FOLLOWs the CHAIN moves its notes this many semitones, scale and all (+5 a fourth up, +7 a fifth, -2 a tone down). STEP tracks move too; drum tracks and OWN tracks keep theirs. A is the key as set. 0: no change. SCL's Key in B and Key in C rows; saved with the project. |
+| 0x293 | KEY C | -12 to 12 semitones | 0 | A key change for the CHAIN's section: while the project plays it, every track that FOLLOWs the CHAIN moves its notes this many semitones, scale and all (+5 a fourth up, +7 a fifth, -2 a tone down). STEP tracks move too; drum tracks and OWN tracks keep theirs. A is the key as set. 0: no change. SCL's Key in B and Key in C rows; saved with the project. |
+| 0x294 | TIMING SPLIT | 0 to 100 % | 0 | The chance a step plays at half its division: 1/8 to 1/16. HOW says what it does. Never the bar's first step, nor a step that ratchets or ties. The same each time the piece plays; ROLL gives new tosses. 0 off. OCT+ held on TIMING, KNOB 1. |
+| 0x295 | TIMING HOW | DOUBLE, PUSH, MIX | DOUBLE | What a SPLIT step does. DOUBLE: the note, then a neighbouring note of the scale halfway through the step (a drum: the same hit). PUSH: the note halfway through the step, late only. MIX: tosses for one or the other. OCT+ held on TIMING, KNOB 2. |
 
 ## Mods
 
@@ -282,6 +319,10 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | SWARM 7 | a free LFO, 3.8 s a turn |
 | SWARM 8 | a free LFO, 2.4 s a turn |
 | ENERGY | the project's slow tide (ENERGY ARC), every track's the same: -100 % sparse .. 100 % full |
+| MACRO 1 | GLO > PERF's KNOB 1, the project's: 0 .. 100 % |
+| MACRO 2 | GLO > PERF's KNOB 2, the project's: 0 .. 100 % |
+| MACRO 3 | GLO > PERF's KNOB 3, the project's: 0 .. 100 % |
+| MACRO 4 | GLO > PERF's KNOB 4, the project's: 0 .. 100 % |
 
 | Destination | Moved at | What it moves |
 | --- | --- | --- |
@@ -367,3 +408,23 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | SF3 RTE | the send effects' block (every track's) | SEND FX 3's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
 | SF3 CHR | the send effects' block (every track's) | SEND FX 3's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
 | RETURN | the send effects' block (every track's) | the send effects' RETURN: how loud they come back, for every track |
+| M1 AMT | another mod's move, each block | MOD 1's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M2 AMT | another mod's move, each block | MOD 2's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M3 AMT | another mod's move, each block | MOD 3's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M4 AMT | another mod's move, each block | MOD 4's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M5 AMT | another mod's move, each block | MOD 5's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M6 AMT | another mod's move, each block | MOD 6's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M7 AMT | another mod's move, each block | MOD 7's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M8 AMT | another mod's move, each block | MOD 8's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M9 AMT | another mod's move, each block | MOD 9's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M10 AMT | another mod's move, each block | MOD 10's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M11 AMT | another mod's move, each block | MOD 11's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M12 AMT | another mod's move, each block | MOD 12's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M13 AMT | another mod's move, each block | MOD 13's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M14 AMT | another mod's move, each block | MOD 14's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M15 AMT | another mod's move, each block | MOD 15's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M16 AMT | another mod's move, each block | MOD 16's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| FILL | the project's FILL, each block | the project's FILL (steps set to FILL / NOT FILL), held while the move is past half |
+| TEMPO | the project's tempo on CLK INT, each block | the project's tempo on CLK INT: a full move up doubles it, down halves it (BPM stays as set) |
+| CC | a MIDI CC out, each block | a MIDI CC out on the track's MIDI OUT channel, its number set with OCT+ held and KNOB 3 |
+| SPLIT | the generator's step | TIMING's SPLIT: the chance a step plays at half its division |

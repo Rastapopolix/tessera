@@ -152,6 +152,7 @@ static void pattern_key_release(void)
             if (pattern_request(TSEL, bank)) ui_message("STOP TO SWITCH");
             else { char b[12] = "PATTERN "; b[8] = (char)('1' + bank); b[9] = 0; ui_message(b); }
             ui.entry_open = 0; cursor_set(0); ui.force = 1;
+            if (song.playing) audition_request = 0;   /* (not a choice of note) */
         }
         ui.pat_key = ui.pat_copy = 0;
     }
@@ -218,8 +219,8 @@ static void ui_leds(void)
         memset(fm1_led_dim, 0, sizeof fm1_led_dim);
         return;
     }
-    if (fam == FAM_ARP && cur_page()->graph != GR_ARP && cur_page()->graph != GR_NONE)
-        fam = FAM_SEQ;                                  /* (GEN EVOLVE FORM TWEAK: SEQ's, ui.c fam_grp) */
+    if (fam == FAM_ARP && !arp_page(ui.page))
+        fam = FAM_SEQ;                                  /* (GEN, ARP: SEQ's; the shaping pages: ARP's, ui.c arp_page) */
     if (!ui.layer || FAM_BTN[fam] != layer_btn())
         led_put(nl, panel.btn[FAM_BTN[fam]], 1);
     if ((k = arp_led()) != 2u && (!ui.layer || layer_btn() != B_ARP))
@@ -593,14 +594,33 @@ static void jam_take(void)
     ui.force = 1;
 }
 
+/* Low battery: on the battery, down to no bars (ui_draw.c batt_level 0), BATTERY LOW once (again only after charging
+ * past one bar or on external power); from then autosave waits no five seconds: the next STOP saves at once */
+static uint8_t batt_low;
+static int project_has_slot(void);                      /* (project.c: loaded from or saved to a slot) */
+static void batt_poll(void)
+{
+    int32_t lvl = batt_level();
+    if (!song.batt_raw || batt_ext() || lvl >= 2) {
+        batt_low = 0;
+    } else if (!batt_low && !lvl) {
+        batt_low = 1;
+        ui_message("BATTERY LOW");
+        if (settings_autosave && project_has_slot()) str_cpy(ui.msg2, "SAVES AT STOP", sizeof ui.msg2);   /* (then, the */
+        else str_cpy(ui.msg2, "SAVE YOUR WORK", sizeof ui.msg2);   /* second line; no slot or AUTOSAVE off: yours) */
+        ui.msg_t = 120;
+    }
+}
+
 /* Autosave: stopped and untouched for AUTOSAVE_MS (no key, button, knob or MIDI), the project back to its slot when it
- * differs from what is there (project.c project_autosave); once per rest */
+ * differs from what is there (project.c project_autosave); once per rest. Battery low: as soon as stopped */
 #define AUTOSAVE_MS 5000u
 static void project_autosave(void);
 static void autosave_poll(uint32_t active)
 {
     static uint32_t t0, rx;
     static uint8_t done;
+    batt_poll();
 #if MELODEE_UART
     uint32_t r = usb.rx_pkts + um.bytes;
 #else
@@ -613,9 +633,10 @@ static void autosave_poll(uint32_t active)
         done = 0;
         return;
     }
-    if (!done && fm1_ms - t0 >= AUTOSAVE_MS) {
+    if (!done && fm1_ms - t0 >= (batt_low ? 0u : AUTOSAVE_MS)) {
         done = 1;
         project_autosave();
+        if (batt_low && ui.msg_t) str_cpy(ui.msg2, "BATTERY LOW", sizeof ui.msg2);   /* (SAVED B, then why) */
     }
 }
 
@@ -810,13 +831,16 @@ static void step_edit(uint32_t slot, int32_t steps)
     uint32_t at = notes_manual_start(TSEL);
     if (at >= NSTEP && (slot != 1u || (TSEL->step[ui.cursor].flags & SF_RECORDED))) { fm1_irq_on(); ui_message("SELECT A NOTE"); return; }
     step_t *st = &TSEL->step[at < NSTEP ? at : ui.cursor];
+    uint32_t heard = 0;                                 /* (KNOB 2: a note placed or moved sounds) */
     if (slot == 1u) {
         if (!st->n) {
             if (st->flags & SF_RECORDED) { fm1_irq_on(); ui_message("SELECT A NOTE"); return; }
             st->note[0] = last_note; st->n = 1; st->time = ST_NOTE;
+            heard = 1;
         } else {
-            uint32_t j = notes_manual_slot(st);
-            st->note[j] = (uint8_t)pitch_turn(st->note[j], steps);
+            uint32_t j = notes_manual_slot(st), old = st->note[j];
+            st->note[j] = (uint8_t)pitch_turn(old, steps);
+            heard = st->note[j] != old;
         }
         last_note = st->note[notes_manual_slot(st)];
     } else if (slot == 2u) {
@@ -830,6 +854,7 @@ static void step_edit(uint32_t slot, int32_t steps)
         st->flags &= (uint8_t)~SF_ACCENT;
     }
     fm1_irq_on();
+    if (heard && settings_preview) notes_preview_start(1);
 }
 
 /* REC armed, stopped: a knob that would record its moves says the transport has to run (motion lands on the step
@@ -861,6 +886,14 @@ static void edit_param(uint32_t slot, int32_t steps)
         return;
     }
     if (pg->graph == GR_CORDS) {                        /* CORDS (ui_cords.c) */
+        if (slot == 3u && ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) && cu_thresh_knob(steps)) {
+            oct_eat |= 2u;                              /* (OCT+ held: a GATE's threshold; its release no OCT+) */
+            return;
+        }
+        if (slot == 2u && ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) && cu_cc_knob(steps)) {
+            oct_eat |= 2u;                              /* (OCT+ held: a CC mod's number; its release no OCT+) */
+            return;
+        }
         cu_knob(slot, steps);
         return;
     }
@@ -923,8 +956,17 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
-    if (pg->graph == GR_TWEAK) {                    /* (a STEP track: HUMAN alone) */
-        if (slot == 2u || song.sel >= TESSERA_TRACKS || tessera.mode[song.sel] != TESS_ENG_OFF)
+    if (pg->graph == GR_TWEAK && tw_layer_on()) {   /* a generator's TWEAK, OCT+ held: FOLLOW's HOLD */
+        tessera_tw_layer_knob(slot, steps);
+        oct_eat |= 2u;
+        ui.oct_t0 |= 2u;
+        oct_deferred = 0;
+        ui.force = 1;
+        return;
+    }
+    if (pg->graph == GR_TWEAK) {                    /* (a STEP track: HUMAN alone; an ARP track: SHIFT and HUMAN) */
+        if (slot == 2u || (slot == 0u && seqm_get(song.sel) == 1u) || song.sel >= TESSERA_TRACKS ||
+            tessera.mode[song.sel] != TESS_ENG_OFF)
             tessera_tweak_knob(slot, steps);
         ui.force = 1;
         return;
@@ -945,6 +987,8 @@ static void edit_param(uint32_t slot, int32_t steps)
             tessera_param_set(0, TX_KEY_LINK, steps > 0);
             if (tessera.key_link) scale_share(TSEL);
         }
+        if ((slot == 1u || slot == 2u) && steps)        /* KEY B / C: a semitone a detent */
+            tessera_param_set(0, TX_FC_KEYB + slot - 1u, tessera.fc_key[slot - 1u] + steps);
         ui.force = 1;
         return;
     }
@@ -958,9 +1002,59 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
+    if (pg->graph == GR_MIDICH && midi_snd_layer_on()) {   /* MIDI OUT, OCT- held: KNOB k track k's SOUND (right OFF) */
+        if (slot < TESSERA_TRACKS && steps)
+            tessera_param_set(slot, TX_SOUND, steps > 0);
+        oct_eat |= 1u;                                  /* (its release is no OCT-) */
+        ui.force = 1;
+        return;
+    }
     if (pg->graph == GR_MIDICH) {                   /* MIDI OUT: KNOB k track k's channel, a step a detent */
         if (slot < TESSERA_TRACKS)
             tessera_param_set(slot, TX_MIDI_CH, tessera_param_get(slot, TX_MIDI_CH) + steps);
+        ui.force = 1;
+        return;
+    }
+    if (pg->graph == GR_CHAIN) {                    /* CHAIN, the project's: FORM, PHRASE a step a detent, WANDER a
+                                                     * percent; OCT+ held: KNOB k place k's REPEAT */
+        int layer = chain_layer_on();
+        tessera_chain_knob(slot, slot == 2u && !layer ? accel(EN_K1 + slot, steps, 100) : steps, layer);
+        if (layer) {
+            oct_eat |= 2u;
+            ui.oct_t0 |= 2u;
+            oct_deferred = 0;
+        }
+        ui.force = 1;
+        return;
+    }
+    if (pg->graph == GR_PERF) {                     /* PERF: KNOB k MACRO k, the project's, a percent a detent (faster
+                                                     * turned) */
+        tessera_param_set(0, TX_MACRO1 + slot, (int32_t)tessera.macro[slot & 3u] + accel(EN_K1 + slot, steps, 100));
+        ui.force = 1;
+        return;
+    }
+    if (pg->graph == GR_PIECE) {                    /* PIECE, the project's: LENGTH, SHAPE, END a step a detent, PEAK a
+                                                     * percent (COUNT a step); OCT+ / OCT- held: USER's levels */
+        int layer = piece_layer();
+        tessera_piece_knob(slot, layer || (slot == 2u && piece_k3() == 1) ? accel(EN_K1 + slot, steps, 100) : steps, layer);
+        if (layer == 1) {
+            oct_eat |= 2u;
+            ui.oct_t0 |= 2u;
+            oct_deferred = 0;
+        } else if (layer)
+            oct_eat |= 1u;                              /* (its release is no OCT-) */
+        ui.force = 1;
+        return;
+    }
+    if (pg->graph == GR_ENTRIES) {                  /* ENTRIES, the project's: ENTRIES 2 a detent, DWELL, STYLE, FADE a
+                                                     * step; OCT+ held: KNOB k track k's ROLE */
+        int layer = entries_layer_on();
+        tessera_entries_knob(slot, slot == 0u && !layer ? accel(EN_K1 + slot, steps, 50) : steps, layer);
+        if (layer) {
+            oct_eat |= 2u;
+            ui.oct_t0 |= 2u;
+            oct_deferred = 0;
+        }
         ui.force = 1;
         return;
     }
@@ -977,6 +1071,18 @@ static void edit_param(uint32_t slot, int32_t steps)
             uint32_t x = slot == 2u ? TX_EN_LEVEL : slot ? TX_EN_RESTS : TX_EN_ARC;
             tessera_param_set(0, x, tessera_param_get(0, x) + accel(EN_K1 + slot, steps, slot == 2u ? 200 : 100));
         }
+        ui.force = 1;
+        return;
+    }
+    if (pg->graph == GR_TIMING && tm_layer_on()) {  /* TIMING, OCT+ held: SPLIT as a percent, its HOW a step a turn */
+        if (slot < 2u) {
+            uint32_t x = slot ? TX_SUB_SPLIT_HOW : TX_SUB_SPLIT;
+            tessera_param_set(song.sel, x, tessera_param_get(song.sel, x) +
+                              (slot ? (steps > 0 ? 1 : steps < 0 ? -1 : 0) : accel(EN_K1, steps, 100)));
+        }
+        oct_eat |= 2u;
+        ui.oct_t0 |= 2u;
+        oct_deferred = 0;
         ui.force = 1;
         return;
     }
@@ -1295,16 +1401,33 @@ static void act_do(void)
 static uint8_t oct_eat;                                 /* OCT taps not to come (held for a sheet, used in a combo) */
 static uint8_t oct_deferred;                            /* OCT+ pressed on Stage (its sheet when held): the octave on
                                                          * release */
+/* on a page with OCT held layers (MIDI OUT's TRANSPOSE / SOUND, PIECE's USER levels, MODS' threshold and CC) an OCT button
+ * held past OCT_HOLD_MS is a hold, never a tap: let go without a knob turned it is neither Esc nor Enter (a peek never
+ * leaves the page or flips a mod's polarity) */
+#define OCT_HOLD_MS 700u
+static int oct_layer_page(void)
+{
+    uint32_t g = cur_page()->graph;
+    return !ui.home && !ui.menu && (g == GR_MIDICH || g == GR_PIECE || g == GR_CORDS);
+}
 static uint32_t oct_taps(uint32_t pressed, int here)
 {
     static uint8_t down, chord;
-    uint32_t dn = panel.btn[B_OCTDN], up = panel.btn[B_OCTUP];
+    static uint32_t t_down[2];
+    uint32_t dn = panel.btn[B_OCTDN], up = panel.btn[B_OCTUP], k;
     uint32_t now = ((fm1_in.buttons >> dn) & 1u) | ((fm1_in.buttons >> up) & 1u) << 1, tap;
+    uint32_t edge = ((pressed >> dn) & 1u) | ((pressed >> up) & 1u) << 1;
+    for (k = 0; k < 2u; k++)
+        if ((edge >> k) & 1u)
+            t_down[k] = fm1_ms;
     if (here)
-        down |= (uint8_t)(((pressed >> dn) & 1u) | ((pressed >> up) & 1u) << 1);
+        down |= (uint8_t)edge;
     if (now == 3u)
         chord = 1;
     tap = down & ~now;
+    for (k = 0; k < 2u; k++)
+        if (((tap >> k) & 1u) && fm1_ms - t_down[k] > OCT_HOLD_MS && oct_layer_page())
+            tap &= ~(1u << k);
     down &= (uint8_t)now;
     if (chord) {
         tap = 0;
@@ -1421,6 +1544,7 @@ static void notes_event_edit(uint32_t slot, int32_t delta)
     ui.note_pick = (uint16_t)(i + 1u); note_assign(&ui.note_identity,&after);
     ui.note_generation = recording_generation;
     fm1_irq_on(); ui.force = 1;
+    if (slot == 1u && settings_preview) notes_preview_start(1);   /* (KNOB 2: its new pitch) */
 }
 
 static void notes_delete_edit(void)
@@ -1669,32 +1793,24 @@ static void page_tap(uint32_t b)
         name_rename();                                  /* SAVE > USER / PROJECT: EDIT renames the slot */
         return;
     }
-    if (b == B_ARP) {                                   /* ARP: SEQ in ARP's MODE, its page (again: ARP 2, ARP) */
-        uint32_t i, a = NPAGES, a2 = NPAGES;
-        for (i = 0; i < NPAGES; i++)
-            if (PAGES[i].fam == FAM_ARP && PAGES[i].graph == GR_ARP) a = i;
-            else if (PAGES[i].fam == FAM_ARP && PAGES[i].graph == GR_NONE) a2 = i;
-        if (seqm_get(song.sel) >= 2u) {                 /* a generator's track: ARP leaves its MODE (only GEN's KNOB 1
-                                                         * changes it, so a playing generator never goes quiet), GEN */
-            for (i = 0; i < NPAGES && !(PAGES[i].graph == GR_STEPS && str_eq(PAGES[i].title, "GEN")); i++)
-                ;
-            if (i < NPAGES) {
-                ui.page = (uint8_t)i;
-                ui.fam_last[fam_grp(PAGES[i].fam)] = ui.page;
-                ui.home = 0;
-                page_entered();
+    if (b == B_ARP) {                                   /* ARP: the shaping lane (ui.c arp_page); again: its next page */
+        uint8_t pg[NPAGES];
+        uint32_t n = fam_pages(FAM_ARP, pg), k, last = ui.fam_last[FAM_ARP];
+        if (!n) return;
+        for (k = 0; k < n && pg[k] != ui.page; k++) {}
+        if (!ui.home && k < n) ui.page = pg[(k + 1u) % n];
+        else {
+            for (k = 0; k < n && pg[k] != last; k++) {}
+            if (k < n) ui.page = (uint8_t)last;
+            else {                                      /* first time: an ARP track's ARP 2, else the lane's first */
+                for (k = 0; k < n && PAGES[pg[k]].graph != GR_NONE; k++) {}
+                ui.page = pg[k < n ? k : 0u];
             }
-            ui_message("MODE IS ON GEN");
-            return;
         }
-        if (a < NPAGES && a2 < NPAGES) {
-            seqm_set(song.sel, 1);
-            ui.page = (uint8_t)(!ui.home && ui.page == a ? a2 : a);
-            ui.fam_last[FAM_SEQ] = ui.page;
-            ui.home = 0;
-            page_entered();
-            return;
-        }
+        ui.fam_last[FAM_ARP] = ui.page;
+        ui.home = 0;
+        page_entered();
+        return;
     }
     for (f = FAM_HOME + 1u; f < FAM_COUNT; f++)
         if (FAM_BTN[f] == b) {
@@ -1786,6 +1902,8 @@ static void page_knob(uint32_t k, int32_t s)
         return;
     if (!pop.on && msc_knob(k, s))                     /* FX held: the knob's mod amount, the value left (ui_modsc.c) */
         return;
+    if (mlearn_on && !pop.on)                          /* MIDI LEARN: this knob's parameter waits for a CC (ui_learn.c) */
+        mlearn_take(k);
     if (ui.home || pg->scope == SC_STEP || pg->scope == SC_TRK || ((pg->scope==SC_DRUM || pg->scope==SC_DRUMHIT) && pg->id[k]!=255) || page_desc(pg, k, &hv) ||
         (pg->graph == GR_USER && k == 0u) || (pg->graph == GR_MOD && k == 1u)
         || pg->graph == GR_SONG || pg->graph == GR_PATGRID || pg->graph == GR_SCALE_PICKER || (scale_settings_page(pg) && k == 1u)
@@ -1817,7 +1935,7 @@ static void page_knob(uint32_t k, int32_t s)
         edit_param(k, s);
         pg = cur_page();
         if (!(pg->graph == GR_EVOLVE || pg->graph == GR_FORM || pg->graph == GR_TWEAK || pg->graph == GR_TWEAK2 ||
-              pg->graph == GR_ORGANIC || pg->graph == GR_MATRIX || pg->graph == GR_TIMING || pg->graph == GR_ENERGY || pg->graph == GR_MIDICH || pg->graph == GR_KEYLINK || (pg->graph == GR_NOTELEN && k < 3u) ||   /* Tessera's own pages: no picker */
+              pg->graph == GR_ORGANIC || pg->graph == GR_MATRIX || pg->graph == GR_TIMING || pg->graph == GR_ENERGY || pg->graph == GR_MIDICH || pg->graph == GR_CHAIN || pg->graph == GR_ENTRIES || pg->graph == GR_PIECE || pg->graph == GR_LAND || pg->graph == GR_PERF || pg->graph == GR_KEYLINK || (pg->graph == GR_NOTELEN && k < 3u) ||   /* Tessera's own pages: no picker */
               (song.sel < TESSERA_TRACKS && pg->graph == GR_STEPS && pg->fam == FAM_GEN && (k == 0u || tessera.mode[song.sel] != TESS_ENG_OFF))))
             pick_touch(k);                              /* a name from a long list: its picker (ui_popup.c) */
     }
@@ -1962,6 +2080,10 @@ static void ui_confirm_accept(void)
 static void ui_input(void)
 {
     uint32_t pressed = fm1_input_edges(0), notes = fm1_input_note_edges(), now = fm1_ticks(), id, b, k;
+    mlearn_poll();                                      /* (MIDI LEARN: a CC for the knob picked) */
+    if (mlearn_end_key(pressed))                        /* (learning: OCT- ends it, nothing else) */
+        pressed &= ~(1u << panel.btn[B_OCTDN]);
+    mlearn_show();
     if (boot_work.state) {
         for (k = 0; k < NE; k++) (void)panel_enc(k);
         panel_moved = 0;
@@ -2089,7 +2211,7 @@ static void ui_input(void)
     if (!step_page() || drum_track(TSEL) || ui.menu || ui.confirm || name_on() || lay || live_rec_sel() || chain_busy())
         seq_midi_events(0);                         /* discard events during modal/layer input too */
     if (ui.seen_pattern_gen != TSEL->pattern_gen) {
-        if (ui.seen_pattern_gen) { seq_midi_reset(); ui.entry_open = ui.step_move = ui.note_move = ui.note_copy = 0; cursor_set(0); ui.force = 1; }
+        if (ui.seen_pattern_gen) { seq_midi_reset(); ui.entry_open = ui.step_move = ui.note_move = ui.note_copy = 0; cursor_set(0); ui.force = 1; if (song.playing) audition_request = 0; }
         ui.seen_pattern_gen = TSEL->pattern_gen;
     }
     if(bulk.on && (ui.home || slot_kind()==SK_PROJECT || bulk.track!=song.sel || bulk.pattern!=TSEL->pattern || bulk.engine!=library_engine() ||
@@ -2102,6 +2224,7 @@ static void ui_input(void)
         } else {
             ui.menu = 1;
             ui.menu_sel = 0;
+            menu_cols = 0;                              /* (the list first: COLOR's sheet on KNOB 2) */
             ui.confirm = 0;                             /* (a clear dialog is cancelled, NAME too) */
             name_close();
             new_close();
@@ -2445,7 +2568,7 @@ static void ui_input(void)
             if (pattern_request(TSEL, (uint32_t)clamp((int32_t)from + s, 0, NPAT - 1u))) ui_message("STOP TO SWITCH");
             ui.force = 1;
         } else if (step_gesture(s)) {                   /* ENV / SCL / a key held: the note's length, its place */
-        } else if (ui.home) {                           /* HOME: the tempo (GLO held: above; SEQ > TEMPO) */
+        } else if (ui.home || cur_page()->graph == GR_TRK) {   /* HOME, MIXER: the tempo (GLO held: above) */
             bpm_turn(s);
         } else {                                        /* the section's pages (the notes, the hits: KNOB 1) */
             page_scroll(s);

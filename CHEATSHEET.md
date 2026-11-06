@@ -21,14 +21,15 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | A sheet: **KNOB 1**, **OCT+** / **OCT-** | Picks the row / does it / closes |
 | A dialog: **OCT+** / **OCT-** | Yes / no |
 | Lists (menu, SCL, VOICE): **KNOB 1** / **KNOB 2** | The row / its value |
+| MENU > **LARGE VALUE** | The knob turning, large at the foot: AUTO (pages without a picture), ON, OFF |
 
 ## The page buttons
 
 | Tap (again: the next page) | Pages |
 |---|---|
-| **SEQ** | GEN, then the MODE's pages. STEP: NOTES (a DRUM track: NOTES, DRUM HIT), EVOLVE, TWEAK, TIMING. ARP: ARP, ARP 2, NOTES. A generator: EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY. All: PATTERN, TEMPO, PATTERNS, SONG |
+| **SEQ** | What plays: GEN, then STEP: NOTES (a DRUM track: NOTES, DRUM HIT). ARP: NOTES, ARP. A generator: PATTERN. All: TEMPO, PATTERNS, SONG |
 | **SEQ** held | PATTERNS |
-| **ARP** | STEP track: switches it to ARP, the ARP page (again: ARP 2). Generator track: GEN ("MODE IS ON GEN") |
+| **ARP** | How it is shaped. STEP: EVOLVE, TWEAK, TIMING. ARP: ARP 2, TWEAK. A generator: EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY |
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST; on FM6 then FM LFO; on ORACLE then LFO MOD, LFO ROUTE |
 | **ENV** | ENV, ENV DEST; on FM6 instead EG RATE, EG LVL, PITCH EG, PITCH LV; on ORACLE FILT ENV, AMP ENV |
 | **SCL** | SCALES, SCL, CHORD |
@@ -100,11 +101,15 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 
 | Do this | And this happens |
 |---|---|
-| **SEQ** + white keys F3 to F4 | Pattern 1 to 8 (playing: from the next bar) |
+| **SEQ** + white keys F3 to F4 | Pattern 1 to 8 (playing: when the pattern playing ends) |
 | **SEQ** + a pattern key held + another | Copies the first pattern onto the second |
 | **SEQ** + SELECT | The next / previous pattern |
 | PATTERNS: KNOB 1 to 4 | Track 1 to 4's next pattern |
 | PATTERNS: **OCT-** | Clears the queue (again: HOME) |
+| PATTERNS: **OCT+** | The pattern's sheet: Copy to, Delete pattern |
+| SONG: KNOB 1 to 4 | Section (**+** adds one), track, its pattern there, repeats (1 to 16) |
+| SONG: **PLAY** or **OCT+** | Plays the song; STOP brings back the patterns you had |
+| SONG: **OCT+** held | Insert, duplicate, delete section; take jam; clear song |
 
 ## Recording and transport
 
@@ -143,6 +148,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | GEN: **KNOB 1** | MODE: STEP, ARP or a generator |
 | GEN: **OCT+** held | The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD, CHORD, ATLAS, CONSTL, ANSWER (SOURCE, ORDER, SHIFT, SPACE) |
 | EVOLVE: **OCT+** held | GRAVITY (a generator); HOW: DRIFT, ADORN, SERIAL (a STEP track) |
+| TIMING: **OCT+** held | **KNOB 1** SPLIT, the chance a step plays at half its division; **KNOB 2** HOW: DOUBLE, PUSH, MIX |
 | ATLAS: **OCT+** + a black key | The fourth part's sound (TOM, CLAP, OPEN HAT, RIM, BELL) |
 | CHORD, PROG USER: **OCT+** + keys | One chord a key, its root the key's note |
 | AWAKE: a white key | Picks that step: KNOB 1 its A, KNOB 2 its B; the key again lets it go |

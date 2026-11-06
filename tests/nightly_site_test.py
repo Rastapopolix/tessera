@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""Nightly and synth-only site generation preserves releases/editor and rejects mismatched builds."""
+"""Beta, nightly and synth-only site generation preserves releases/editor and rejects mismatched builds."""
 import hashlib
 import json
 import sys
@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "web"))
 from make_site import main
 from publish_nightly import publish
 from publish_synth import publish as publish_synth
+from publish_beta import publish as publish_beta
 
 
 def package(path, product, variant):
@@ -26,16 +27,20 @@ class NightlySite(unittest.TestCase):
     def test_publish(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            dual = package(root / "release.fwsc", "FM-1_83771100", 1)
-            single = package(root / "single.fwsc", "FM-1_83771100", 2)
-            normal = package(root / "next.fwsc", "FM-1_83770000", 3)
-            slow = package(root / "slow.fwsc", "FM-1_83770000", 4)   # (the single-core nightly)
+            dual = package(root / "release.fwsc", "FM-1_811", 1)
+            single = package(root / "single.fwsc", "FM-1_811", 2)
+            normal = package(root / "next.fwsc", "FM-1_800", 3)
+            slow = package(root / "slow.fwsc", "FM-1_800", 4)   # (the single-core nightly)
             site = root / "site"
             main(dual, single, "1.1.0", site)
             home = (site / "index.html").read_text()   # the project page names the release and its packages
             self.assertIn("Install 1.1.0", home)
             self.assertIn("firmware/tessera-1.1.0-1core.fwsc", home)
             self.assertNotRegex(home, r"@[A-Z0-9]+@")
+            src = Path(__file__).resolve().parent.parent / "demos"   # (the editor's Demo projects, and the CHK projects)
+            for sub in ("", "checks"):
+                self.assertEqual(sorted(f.name for f in (site / "webapp/editor/demos" / sub).glob("*.tsp")),
+                                 sorted(f.name for f in (src / sub).glob("*.tsp")))
             editor = site / "webapp/editor/index.html"
             editor.write_text("existing published editor")
             # Exercise migration from the existing inline-only release metadata.
@@ -45,13 +50,13 @@ class NightlySite(unittest.TestCase):
             self.assertEqual((site / "firmware/tessera-1.1.0.fwsc").read_bytes(), dual.read_bytes())
             self.assertEqual((site / "firmware/tessera-1.1.0-1core.fwsc").read_bytes(), single.read_bytes())
             manifest = json.loads((site / "firmware/nightly.json").read_text())
-            self.assertEqual((manifest["product"], manifest["branch"]), ("FM-1_83770000", "next"))
+            self.assertEqual((manifest["product"], manifest["branch"]), ("FM-1_800", "next"))
             # Regenerating a release keeps both published nightly variants.
             main(dual, single, "1.1.0", site, installer_only=True)
             self.assertIn('"single": "../../firmware/melodee-nightly-1core.fwsc"', (site / "webapp/installer/index.html").read_text())
             self.assertEqual((site / "firmware/melodee-nightly-1core.fwsc").read_bytes(), slow.read_bytes())
             before = hashlib.sha256((site / "webapp/installer/index.html").read_bytes()).digest()
-            wrong = package(root / "wrong.fwsc", "FM-1_83771000", 5)
+            wrong = package(root / "wrong.fwsc", "FM-1_810", 5)
             official = package(root / "official.fwsc", "FM-1_015", 9)   # not a Tessera identity
             for other in (wrong, normal, official):
                 with self.assertRaises(SystemExit):
@@ -101,6 +106,59 @@ class NightlySite(unittest.TestCase):
                 with self.assertRaises(SystemExit):
                     publish_synth(site, str(synth), str(other), "synth-1234567", commit, "2026-10-12T08:00:00Z", str(web))
                 self.assertEqual(hashlib.sha256(installer.read_bytes()).digest(), before)
+
+    def test_beta(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            dual = package(root / "release.fwsc", "FM-1_83773022", 1)
+            single = package(root / "single.fwsc", "FM-1_83773022", 2)
+            beta = package(root / "beta.fwsc", "FM-1_833", 3)
+            beta1 = package(root / "beta-1core.fwsc", "FM-1_833", 4)
+            site = root / "site"
+            main(dual, single, "3.2.2", site)
+            editor, installer = site / "webapp/editor/index.html", site / "webapp/installer/index.html"
+            editor.write_text("existing published editor")
+            self.assertIn('"beta": null', installer.read_text())
+            commit = "89abcde" * 5 + "89abc"
+            publish_beta(site, str(beta), str(beta1), "3.3-beta1", commit, "2026-11-04T19:00:00Z")
+            self.assertEqual(editor.read_text(), "existing published editor")
+            # The beta's own editor (this checkout's web/) sits beside it, with the demo and CHK test projects.
+            beta_ed = site / "webapp/editor-beta"
+            self.assertIn("demosChecks", (beta_ed / "index.html").read_text())
+            self.assertTrue((beta_ed / "fm1backup.js").exists())
+            self.assertTrue(any(beta_ed.glob("demos/*.tsp")) and any(beta_ed.glob("demos/checks/chk-*.tsp")))
+            self.assertIn('"editor": "../editor-beta/"', installer.read_text())
+            self.assertEqual((site / "firmware/tessera-3.2.2.fwsc").read_bytes(), dual.read_bytes())
+            self.assertEqual((site / "firmware/tessera-3.3-beta1-1core.fwsc").read_bytes(), beta1.read_bytes())
+            manifest = json.loads((site / "firmware/beta.json").read_text())
+            self.assertEqual((manifest["version"], manifest["product"], manifest["branch"], manifest["commit"]),
+                             ("3.3-beta1", "FM-1_833", "develop", commit))
+            self.assertIn('"dual": "../../firmware/tessera-3.3-beta1.fwsc"', installer.read_text())
+            # A second beta replaces the first; a 3.2.x patch release keeps it.
+            publish_beta(site, str(beta), str(beta1), "3.3-beta2", commit, "2026-11-05T19:00:00Z")
+            self.assertFalse((site / "firmware/tessera-3.3-beta1.fwsc").exists())
+            main(dual, single, "3.2.3", site, installer_only=True)
+            self.assertIn('"version": "3.3-beta2"', installer.read_text())
+            self.assertTrue((site / "firmware/tessera-3.3-beta2.fwsc").exists())
+            self.assertTrue((site / "webapp/editor-beta/index.html").exists())
+            before = hashlib.sha256(installer.read_bytes()).digest()
+            wrong = package(root / "wrong.fwsc", "FM-1_834", 5)
+            for other, version in ((wrong, "3.3-beta3"), (beta, "3.3-beta3"), (beta1, "3.3")):
+                with self.assertRaises(SystemExit):   # (mixed identities, one build twice, no suffix)
+                    publish_beta(site, str(beta), str(other), version, commit, "2026-11-06T19:00:00Z")
+                self.assertEqual(hashlib.sha256(installer.read_bytes()).digest(), before)
+            # The release it leads to ends the beta: its packages and manifest go.
+            main(dual, single, "3.3", site, installer_only=True)
+            self.assertIn('"beta": null', installer.read_text())
+            self.assertFalse((site / "firmware/beta.json").exists())
+            self.assertFalse(any(site.glob("firmware/tessera-3.3-beta*.fwsc")))
+            self.assertFalse((site / "webapp/editor-beta").exists())
+            # --off takes a beta off before then.
+            publish_beta(site, str(beta), str(beta1), "3.4-beta1", commit, "2026-11-07T19:00:00Z")
+            publish_beta(site, off=True)
+            self.assertIn('"beta": null', installer.read_text())
+            self.assertFalse(any(site.glob("firmware/tessera-3.4-beta*.fwsc")))
+            self.assertFalse((site / "webapp/editor-beta").exists())
 
 
 if __name__ == "__main__":

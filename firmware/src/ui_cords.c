@@ -5,8 +5,9 @@
  * "2  [2] ENV -> [4] DECAY  -25 %" over the amount's bar from the middle; the cord KNOB 2 is on: a card. The knobs as
  * MOD's: KNOB 1 the source (--, then T1 LFO .. T4 NOTE), 2 the cord, 3 the destination (--, then T1 PITCH ..), 4 the
  * amount. A cord without a source is a fixed move: KNOB 4 its OFFSET. OCT+: a bipolar source's direction, +- (both
- * ways from the knob) or + (folded to 0..1: one way, "+" after its name); the mod's own (cord.h uni), not the LFO
- * page's POL BI/UNI (cord.c cord_lfo_raw). Included by ui_pages.c. */
+ * ways from the knob) or + (folded to 0..1: one way, "+" after its name), then GATE (">" after its name, Mono "^": all while the
+ * source is over a threshold, none under it; OCT+ held + KNOB 4 sets the threshold); the mod's own (cord.h uni), not
+ * the LFO page's POL BI/UNI (cord.c cord_lfo_raw). Included by ui_pages.c. */
 
 static int32_t accel(uint32_t role, int32_t s, int32_t range);                       /* ui_input.c */
 static int32_t list_accel(uint32_t role, int32_t s, uint32_t total, uint32_t *fast);
@@ -26,7 +27,7 @@ static void cu_adopt(void)
 #define CU_NSRC (1u + NTRK * (CS_N - 1u))               /* KNOB 1's list: --, then track by track */
 /* KNOB 3's list: --, a track's destinations track by track (none, the retired one: not listed), then the send
  * effects' once (CK_GLOBAL: every track's) */
-static int cu_global(uint32_t code) { return cord_dest(code) && cord_dest(code)->kind == CK_GLOBAL; }
+static int cu_global(uint32_t code) { return cord_dest(code) && cord_dest(code)->kind >= CK_GLOBAL; }   /* (CK_CORD too) */
 static uint32_t cu_count(uint32_t below, int global)    /* the listed codes 1 .. below - 1 of that kind */
 {
     uint32_t code, n = 0;
@@ -65,19 +66,46 @@ static const char *cu_src_name(const cord_t *c)
     if (!c->src) return "--";
     str_cpy(b, cord_src_name(c->src), sizeof b - 1u);
     if (cord_fold_on(c)) str_cpy(b + str_len(b), "+", 2);
+    else if (cord_gate(c)) str_cpy(b + str_len(b), LOOK(">", "^"), 2);   /* (Mono: its arrow is a ">") */
     return b;
 }
 
 /* a destination's name: E1..E8 by the destination track's engine (as MOD names them) */
 static const char *cu_dst_name(const cord_t *c)
 {
+    if (c->dst == CD_CC && c >= cord_get(0) && c < cord_get(0) + CORD_LIVE) {   /* CC OUT: "CC 74", its number */
+        static char b[8];
+        str_cpy(b, "CC ", sizeof b);
+        fmt_int(b + 3, (int32_t)cord_cc_num((uint32_t)(c - cord_get(0))));
+        return b;
+    }
     if (c->dst >= CD_E1 && c->dst <= CD_E8)
         return mod_dst_name(&trk[c->dst_trk % NTRK], MD_E1 + (c->dst - CD_E1));
     return cord_dest(c->dst) ? cord_dest(c->dst)->name : "--";
 }
 
+/* Mono's four characters for a destination: a mod's move "M3%" (M3 AMT: Mono's abbreviation would read "M3MT"), else
+ * the name, abbreviated where it is drawn */
+static const char *cu_dst_mono(const cord_t *c)
+{
+    static char b[8];
+    if (c->dst == CD_CC) {                              /* (CC OUT: "CC74", three digits "C119") */
+        const char *n = cu_dst_name(c) + 3;
+        b[0] = 'C'; b[1] = 'C';
+        str_cpy(b + (str_len(n) > 2u ? 1 : 2), n, 4);
+        return b;
+    }
+    if (c->dst < CD_M1_AMT || c->dst > CD_M16_AMT) return cu_dst_name(c);
+    b[0] = 'M';
+    fmt_int(b + 1, (int32_t)(c->dst - CD_M1_AMT + 1u));
+    str_cpy(b + str_len(b), "%", 2);
+    return b;
+}
+
 /* the move's percentage as "+40 %" (an amount, or a fixed cord's offset) */
 static int32_t cu_pct(const cord_t *c) { return c->src ? c->amount : c->offset; }
+/* the move now (the bar): as a mod of mods turns it (cord.c cord_move), else as set */
+static int32_t cu_now(const cord_t *c) { return cord_move((uint32_t)(c - cord_get(0))); }
 static void cu_pct_text(char *b, int32_t v)
 {
     char n[8];
@@ -105,6 +133,7 @@ static void cu_chip(int32_t x, int32_t y, int32_t w, uint32_t tr, const char *s,
 
 static uint8_t cu_led_was[4];                           /* (cu_leds: the step each light shows; a row redrawn: none) */
 static uint8_t cu_bar_was[4];                           /* (and where each row's live mark is) */
+static int8_t cu_mv_was[4];                             /* (and its move now: a mod of mods turns it) */
 #define CU_Y 22                                         /* the rows: 48 px each from y 22 (as MOD's), the chips at 220 */
 #define CU_H 48
 static void cu_rows(void)
@@ -116,6 +145,7 @@ static void cu_rows(void)
         uint32_t i;
         for (i = 0; i < sizeof(cord_t); i++)
             sg = (sg ^ b[i]) * 16777619u;
+        sg = (sg ^ cord_cc_num(k)) * 16777619u;         /* (a CC mod's number: "CC 74") */
     }
     for (k = 0; k < NTRK; k++)
         sg = (sg ^ trk[k].engine) * 16777619u;          /* (E1..E8's names) */
@@ -126,7 +156,7 @@ static void cu_rows(void)
     memset(cu_bar_was, 0xFF, sizeof cu_bar_was);
     for (k = 0; k < 4u; k++) {
         const cord_t *c = cord_get(top + k);
-        int sel = top + k == cord_ui_sel, on = c->dst != CD_OFF && (c->amount || c->offset);
+        int sel = top + k == cord_ui_sel, on = cord_live(c);
         uint16_t bg = sel ? T_LIFT : T_BG;
         int32_t a = cu_pct(c);
         char b[16];
@@ -166,7 +196,7 @@ static void cu_bar(uint32_t k, const cord_t *c, int sel, int32_t s)
 {
     uint16_t bg = sel ? T_LIFT : T_BG;
     int on = cord_live(c);
-    int32_t a = cu_pct(c), m = 104, x = 2 + (a + 100) * 206 / 200, lx = m + clamp(s, -32768, 32768) * 103 / 32768;
+    int32_t a = cu_now(c), m = 104, x = 2 + (a + 100) * 206 / 200, lx = m + clamp(s, -32768, 32768) * 103 / 32768;
     int32_t d = x < m ? m - x : x - m;
 #if MELODEE_LOOK
     mo_cu_bar(c, s);
@@ -194,8 +224,9 @@ static void cu_leds(void)
         uint8_t key = (uint8_t)(lv | (top + k == cord_ui_sel) << 4 | (ux.pal & 7u) << 5);
         uint8_t bk = (uint8_t)(clamp(s, -32768, 32768) * 103 / 32768 + 104);   /* (the mark's x, 1 .. 207) */
         uint16_t bg = top + k == cord_ui_sel ? T_LIFT : T_BG;
-        if (ui.force || bk != cu_bar_was[k]) {
+        if (ui.force || bk != cu_bar_was[k] || cu_now(c) != cu_mv_was[k]) {
             cu_bar_was[k] = bk;
+            cu_mv_was[k] = (int8_t)cu_now(c);
             cu_bar(k, c, top + k == cord_ui_sel, s);
         }
         if (!ui.force && key == was[k])
@@ -227,7 +258,7 @@ static void cu_columns(void)
     fmt_int(val, (int32_t)cord_ui_sel + 1);
     draw_column(1, "MOD", val, "/16", VAL(1u), (int32_t)cord_ui_sel * 1000 / (CORD_LIVE - 1u), ICON_NONE);
     if (c->dst && cu_global(c->dst))
-        str_cpy(val, cu_dst_name(c), sizeof val);
+        str_cpy(val, LOOK(cu_dst_name(c), cu_dst_mono(c)), sizeof val);
     else if (c->dst) {
         val[0] = 'T'; val[1] = (char)('1' + c->dst_trk); val[2] = ' ';
         str_cpy(val + 3, cu_dst_name(c), sizeof val - 3);
@@ -257,7 +288,7 @@ static const char *cu_pick_name(uint32_t col, int32_t i, int32_t *tr)
         return "--";
     if (col == 0u) {
         uint32_t s = (uint32_t)((i - 1) % (int32_t)(CS_N - 1u) + 1);
-        if (s != CS_ENERGY) *tr = (i - 1) / (int32_t)(CS_N - 1u);
+        if (s < CS_ENERGY) *tr = (i - 1) / (int32_t)(CS_N - 1u);   /* (ENERGY, the MACROs: the project's) */
         return cord_src_name(s);
     }
     cu_dst_set(&c, (uint32_t)i);
@@ -276,18 +307,55 @@ static void cu_pick_label(char *b, uint32_t col, int32_t i, int32_t *tr)
     str_cpy(b + str_len(b), s, 20u - str_len(b));
 }
 
-/* OCT+ on MODS: the cord's direction, +- <-> + (a source that is 0..1 already: nothing to fold) */
+/* OCT+ on MODS: how the cord reads its source, +- -> + -> GATE -> +- (a source that is 0..1 already: + <-> GATE). To
+ * GATE: the threshold (OFFSET) starts at the middle of a bipolar source, at 50 % of a 0..1 one */
 static void cu_polarity(void)
 {
     cord_t c = *cord_get(cord_ui_sel);
-    if (!c.src || !cord_bipolar(c.src, c.src_trk)) {
-        ui_message(c.src ? "ONE WAY ALREADY" : "NO SOURCE");
+    int bip;
+    if (!c.src) {
+        ui_message("NO SOURCE");
         return;
     }
-    c.uni = (uint8_t)!c.uni;
+    bip = cord_bipolar(c.src, c.src_trk);
+    c.uni = c.uni == CU_GATE ? (bip ? CU_BI : CU_UNI) : c.uni == CU_UNI || !bip ? CU_GATE : CU_UNI;
+    c.offset = c.uni == CU_GATE ? (bip ? 0 : 50) : 0;
     (void)cord_set(cord_ui_sel, &c);
-    ui_message(c.uni ? "+ ONE WAY" : "+- BOTH WAYS");
+    if (c.uni == CU_GATE) {
+        char b[24];
+        str_cpy(b, "GATE OVER ", sizeof b);
+        cu_pct_text(b + str_len(b), c.offset);
+        ui_message(b);
+    } else
+        ui_message(c.uni ? "+ ONE WAY" : "+- BOTH WAYS");
     ui.force = 1;
+}
+/* OCT+ held + KNOB 4 on a GATE mod: its threshold (ui_input.c: OCT+'s tap eaten) */
+static int cu_thresh_knob(int32_t steps)
+{
+    cord_t c = *cord_get(cord_ui_sel);
+    char b[24];
+    if (!cord_gate(&c)) return 0;
+    c.offset = (int8_t)clamp(c.offset + accel(EN_K1 + 3u, steps, 200), cord_bipolar(c.src, c.src_trk) ? -100 : 0, 100);
+    (void)cord_set(cord_ui_sel, &c);
+    str_cpy(b, "GATE OVER ", sizeof b);
+    cu_pct_text(b + str_len(b), c.offset);
+    ui_message(b);
+    return 1;
+}
+
+/* OCT+ held + KNOB 3 on a CC mod: its CC number, 0..119 (ui_input.c: OCT+'s tap eaten; KNOB 4 a GATE's threshold) */
+static int cu_cc_knob(int32_t steps)
+{
+    const cord_t *c = cord_get(cord_ui_sel);
+    char b[12];
+    if (c->dst != CD_CC) return 0;
+    cord_cc_set(cord_ui_sel, (uint32_t)clamp((int32_t)cord_cc_num(cord_ui_sel) + accel(EN_K1 + 2u, steps, 120), 0, 119));
+    str_cpy(b, "CC ", sizeof b);
+    fmt_int(b + 3, (int32_t)cord_cc_num(cord_ui_sel));
+    ui_message(b);                                      /* (no ui.force: the row redraws by its signature, which
+                                                         * holds the CC numbers; a whole frame flickered under the list) */
+    return 1;
 }
 
 /* a knob on CORDS (ui_input.c edit_param) */
@@ -304,7 +372,9 @@ static void cu_knob(uint32_t slot, int32_t steps)
         v = clamp((int32_t)cu_src_of(&c) + list_accel(EN_K1, steps, CU_NSRC, 0), 0, CU_NSRC - 1);
         c.src = v ? (uint8_t)((v - 1) % (CS_N - 1u) + 1u) : CS_OFF;
         c.src_trk = v ? (uint8_t)((v - 1) / (CS_N - 1u)) : 0u;
-        if (c.src && !c.amount) { c.amount = c.offset; c.offset = 0; }   /* (one move shown: a fixed move becomes */
+        if (c.uni == CU_GATE && !c.src) { c.uni = CU_BI; c.offset = 0; }   /* (no source: no gate, no threshold; */
+        if (c.uni == CU_GATE && c.offset < 0 && !cord_bipolar(c.src, c.src_trk)) c.offset = 0;   /* 0..1: none under 0) */
+        if (c.src && !c.amount && c.uni != CU_GATE) { c.amount = c.offset; c.offset = 0; }   /* (one move shown: a fixed move becomes */
         if (!c.src && c.amount) { c.offset = c.amount; c.amount = 0; }   /* the source's, and back) */
     } else if (slot == 2u) {
         int was = c.dst != CD_OFF;

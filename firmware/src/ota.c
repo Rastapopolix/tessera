@@ -14,7 +14,7 @@
  * Nothing is committed before the host's "success"; any failure erases the
  * staging area and Melodee carries on. A package whose flash.bin is not an
  * FM-1's size (another board's package) is refused in step 1, before anything
- * is erased (-15).
+ * is erased (-15); M-VAVE's V16 (OTA_FL_V16) only with the official loader.
  *
  * Portable core: the firmware (melodee.c) and the Mac test (ota_test.c)
  * supply these hooks:
@@ -32,6 +32,8 @@
 #define OTA_FL_LEN 0x93000u                      /* flash.bin = [0, the PRCT end): the head and the FM-1's app area, the */
                                                  /* size stock V15 and this firmware's loader write (ldr_core.c LDR_APP_HI) */
 #define OTA_FL_LEN_OLD 0x89000u                  /* an older Melodee's (2026-10-08..10): its own loader installs it */
+#define OTA_FL_V16 0xA9000u                      /* M-VAVE's V16 (FM-1_016, 2026-10-21): its PRCT reaches 0xA9000; the same
+                                                  * official loader as V15's writes it (after Skiff 2.0.2, #64) */
 #define OTA_LDR_HCRC 0xEBAAu                     /* official update loader (usb_hid_ota.bin) */
 #define OTA_LDR_DCRC 0x5881u
 #define OTA_LDR_LEN 0x4DE1u
@@ -279,7 +281,7 @@ static int ota_stage(void)                       /* steps 1..6; 0 = host said su
         return -3;
     /* (Felucca 1.6.1) only a package whose flash.bin is an FM-1's: stock V15, this firmware or an older Melodee.
      * Another board's package (an SMK-37's app area ends at 0x9D000) is refused here, before anything is erased */
-    if (fl_len != OTA_FL_LEN && fl_len != OTA_FL_LEN_OLD)
+    if (fl_len != OTA_FL_LEN && fl_len != OTA_FL_LEN_OLD && fl_len != OTA_FL_V16)
         return -15;
     /* 2. which loader: the official one (known CRCs; it rewrites the whole flash.bin
      *    including the head) or Melodee's own (app area only, checks the chip key) */
@@ -295,7 +297,10 @@ static int ota_stage(void)                       /* steps 1..6; 0 = host said su
         own = ota_memeq(b + i, (const uint8_t *)"FELUCCA-LOADER-1", 16) && ota_rd32(b + 0x20 + 4) <= 0x14000u;
     if (!official && !own)
         return -7;
-    if (official) {                    /* the official loader writes the head: it must equal ours */
+    if (!official && fl_len == OTA_FL_V16)
+        return -15;                                         /* V16's size: the official loader's alone */
+    if (official) {                    /* the official loader writes the head: it must equal ours (V15's on a unit
+                                        * V16 started, or back: -5, web/index_pkg.html names the version it needs) */
         ota_show(2, 0);
         for (i = 0; i < 0x4000u; i += 512u) {
             if (ota_read(fl_off + i, b, 512) || ota_fread(i, mine, 512))

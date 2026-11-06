@@ -40,10 +40,11 @@ from Tessera, and projects keep loading on both, please:
 
 - **Give it its own name and version line**, for example "Tessera MOAR 1.0", or a suffix on Tessera's version such
   as 2.0.2-moar1. A plain "Tessera 2.1" from a fork is confused with Tessera's own 2.1.
-- **Give its packages their own identity.** Tessera's releases are `FM-1_8377` followed by the version
-  (`FM-1_83772002` for 2.0.2), set in `tools/build.py` (`PRODUCT`) and `firmware/src/melodee.c` (`MELODEE_ID`).
-  The installer and the Firmware Hub tell firmware apart by this string, so a fork that keeps `FM-1_8377…` looks
-  like a Tessera release. Pick your own prefix (not `FM-1_8377`, nor Melodee's or M-Vave's).
+- **Give its packages their own identity.** Tessera's releases are `FM-1_8` followed by the version's X and Y
+  (`FM-1_833` for 3.3), set in `tools/build.py` (`PRODUCT`) and `firmware/src/melodee.c` (`MELODEE_ID`).
+  The installer and the Firmware Hub tell firmware apart by this string, so a fork that keeps `FM-1_8xx` looks
+  like a Tessera release. Pick your own (not `FM-1_8xx`, nor Melodee's, Felucca's, Skiff's or M-VAVE's), and keep
+  it to one to three digits after the `_`: M-UPGRADE 3.11 refuses anything longer.
 - **Open an issue before you take an engine id, a parameter id or a cord destination.** They are stored in saved
   projects and presets, and Tessera's lists are frozen (`firmware/src/core.h` for the engines, including reserved and
   retired ids, `tests/pid_ids.txt`, `tests/cord_dests.txt`). An id that means one thing in Tessera and another in a
@@ -67,6 +68,20 @@ enough. It saves you from writing code that cannot be merged, and I can often po
   plays.
 - Say in the pull request how the **device image size** changed (the build's size check prints it), and keep each
   pull request to one change.
+
+## Flash space is nearly full
+
+The firmware image has to fit in **573,440 bytes**. At 3.3 it is **572,368 bytes: about 1 KB is left.** That is
+enough for a fix or a small setting, not for a new feature. Anything bigger has to make room first, for example by:
+
+- building more files for size (`SIZE_FILES` in `tools/size_fns.py`; adding `editor_tune.c` saves 456 bytes,
+  measured);
+- shortening the help texts on the device and keeping the full text in the online reference (about 3.7 KB,
+  estimated);
+- packing the other strings more tightly (8 to 10 KB, estimated, and a large change).
+
+The build stops if the image is too big, so you can't overflow it by accident. If a change needs more than a few
+hundred bytes, say so in an issue first, so we can agree where the space comes from.
 
 ## Licence
 

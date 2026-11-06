@@ -93,7 +93,7 @@ nav .links a:hover { color: var(--bg); background: var(--ink); }
 .btn.main:hover { background: var(--bg); color: var(--ink); }
 .screens { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .screen { border: 2px solid var(--line); padding: 5px; }
-.screen img { width: 100%; height: auto; image-rendering: pixelated; }
+.screen img, .screen video { display: block; width: 100%; height: auto; image-rendering: pixelated; }
 @media (max-width: 860px) {
   .hero .wrap { grid-template-columns: 1fr; gap: 36px; }
   .hero { padding-top: 40px; }
@@ -206,8 +206,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       </div>
       <h1>TESSERA</h1>
       <div class="tag">Generative firmware for the M-Vave FM-1</div>
-      <p class="lede">Four tracks, thirteen generators. Evolve the phrases, build them into song forms, let the tracks
-        answer and follow each other, and modulate anything from anything. Small tiles, set into a larger pattern.</p>
+      <p class="lede">An instrument for composing through systems. Instead of programming every note, you set up how the music behaves, and it plays: four tracks of written steps or thirteen generators that listen to each other and grow into whole pieces.</p>
       <div class="cta">
         <a class="btn main" href="webapp/installer/">Install @VERSION@</a>
         <a class="btn" href="webapp/sim/">Try it in your browser</a>
@@ -216,10 +215,10 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       </div>
     </div>
     <div class="screens">
-      <div class="screen"><img src="media/gallery/gen_tweak2.png" alt="TWEAK 2: BRANCH, LOGIC and COND set" width="480" height="480"></div>
-      <div class="screen"><img src="media/gallery/gen_constel.png" alt="CONSTELLATION: stars play as they cross the crosshair" width="480" height="480"></div>
-      <div class="screen"><img src="media/gallery/gen_chord.png" alt="CHORD: a progression" width="480" height="480"></div>
-      <div class="screen"><img src="media/gallery/matrix.png" alt="MATRIX: the mods track by track" width="480" height="480"></div>
+      <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/gen_bounce.png" width="480" height="480" aria-label="BOUNCE: balls in a box, a note at every wall"><source src="media/gallery/loop_bounce.mp4" type="video/mp4"></video></div>
+      <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/gen_constel.png" width="480" height="480" aria-label="CONSTELLATION: stars play as they cross the crosshair"><source src="media/gallery/loop_constel.mp4" type="video/mp4"></video></div>
+      <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/gen_chord.png" width="480" height="480" aria-label="CHORD: a progression"><source src="media/gallery/loop_chord.mp4" type="video/mp4"></video></div>
+      <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/matrix.png" width="480" height="480" aria-label="MATRIX: the mods track by track"><source src="media/gallery/loop_matrix.mp4" type="video/mp4"></video></div>
     </div>
   </div>
 </div>
@@ -228,16 +227,39 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
   <div class="wrap">
     <header>
       <div class="kicker">Hear it</div>
-      <h2>Six minutes of Tessera</h2>
-      <p>The three demo projects, STILL TIDE, KOTO GARDEN and LOW HARBOUR, then every generator with its knobs turned,
-        then what is new in 3.0. Every sound and every screen in it is the firmware's own.</p>
+      <h2>Four minutes of Tessera 3.3</h2>
+      <p>The generators, the pages that shape them, tracks that listen to each other, mods and the long form, on
+        pieces made for 3.3. Every sound and every screen in it is the firmware's own.</p>
     </header>
     <div class="video">
-      <video controls playsinline preload="none" poster="media/video/tessera-3.0-demo.jpg" width="1080" height="1080">
-        <source src="media/video/tessera-3.0-demo.mp4" type="video/mp4">
-        <a href="media/video/tessera-3.0-demo.mp4">Download the demo video (MP4, 13 MB)</a>
+      <video controls playsinline preload="none" poster="media/video/tessera-3.3-demo.jpg" width="1080" height="1080">
+        <source src="media/video/tessera-3.3-demo.mp4" type="video/mp4">
+        <a href="media/video/tessera-3.3-demo.mp4">Download the demo video (MP4, 8 MB)</a>
       </video>
     </div>
+  </div>
+</section>
+
+<section id="why">
+  <div class="wrap">
+    <header>
+      <div class="kicker">What it is</div>
+      <h2>Composing through systems</h2>
+      <p>Generators write the notes, the tracks listen to each other, and the music grows. A bass follows a melody, a
+        written line seeds a generator, a chord track keeps every part in key, and any source can move almost any
+        setting. Phrases evolve while keeping their identity, sections form, parts drop out and come back in a musical
+        order, and a whole piece can follow a shape you choose, over minutes or hours, or never stop.</p>
+      <p><b>Between a groovebox and an autopilot.</b> A step-based groovebox has you write every note, then adds a
+        little chance on top: the pattern is still the music, and the dice only decorate it. A self-playing ambient
+        firmware does the opposite: the music writes itself, and you steer its mood. Tessera sits between them, and what
+        you get your hands on is the system itself.</p>
+    </header>
+    <div class="cards">
+      <div class="card" style="--c:var(--p1)"><b>You build it</b><span>Choose how each track makes its notes: written, generated or both. Decide which track follows which, what drives what, how sections form and when parts come and go.</span></div>
+      <div class="card" style="--c:var(--p2)"><b>Reach in anywhere</b><span>Write a single note, record a phrase, nudge one generator, or shape the arc of a three-hour piece.</span></div>
+      <div class="card" style="--c:var(--p3)"><b>Yours to switch on</b><span>Nothing runs until you turn it on. Every random choice comes from a seed, so PLAY replays a piece exactly and ROLL finds a new one.</span></div>
+    </div>
+    <div class="note">A groovebox lets you write the music. A self-playing firmware writes it for you. <b>Tessera lets you design how it gets written, then step in wherever you like.</b></div>
   </div>
 </section>
 
@@ -250,15 +272,16 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
         play, and every automatic layer starts off, so nothing moves until you ask it to.</p>
     </header>
     <div class="tiles">
-      <div class="tile" style="--c:var(--p1)"><h3>Thirteen generators</h3><p>Turing, Euclid, Markov, Morph, Atlas, Bounce and Fall, Awake, Poly, Quad, Constellation, Series, Chord and Answer.</p></div>
+      <div class="tile" style="--c:var(--p1)"><h3>Thirteen generators</h3><p>Turing, Euclid, Markov, Morph, Atlas, Bounce (with its Fall mode), Awake, Poly, Quad, Constellation, Series, Chord, and Answer.</p></div>
       <div class="tile" style="--c:var(--p2)"><h3>Evolve and form</h3><p>Mutate a phrase every few bars, or build sections A, B and C into forms such as AABA. STEP EVOLVE varies the steps you wrote.</p></div>
       <div class="tile" style="--c:var(--p3)"><h3>Tracks that talk</h3><p>Branch hits to another track's sound, combine tracks with AND, OR and XOR, follow another track's pitch, play only on certain bars.</p></div>
       <div class="tile" style="--c:var(--p4)"><h3>Harmony</h3><p>One key for every track with Key link. A Chord track plays a progression, or your own played in on the keys, and QNT CHRD makes every other track follow it.</p></div>
       <div class="tile" style="--c:var(--p1)"><h3>Sixteen cords</h3><p>Any source to any destination on any track, generators included. Slow organic sources, live marks on the knobs, and a MATRIX to see the patch.</p></div>
       <div class="tile" style="--c:var(--p2)"><h3>Record and print</h3><p>Play a pattern in layer by layer, and REC keeps overdubbing until you stop. Hold REC and what a generator just played becomes ordinary steps, ready to edit.</p></div>
       <div class="tile" style="--c:var(--p3)"><h3>Sounds</h3><p>Six-operator FM with three engine models, ORACLE (two oscillators, POLY MOD and a four-pole filter), the three-oscillator TRIO, PHYS physical models (bells, mallets, strings, drum heads), and 808 and 909 drum kits.</p></div>
-      <div class="tile" style="--c:var(--p4)"><h3>MIDI in and out</h3><p>Every track and generator on a channel of its own, and the clock. External gear sets Tessera's parameters by MIDI CC, and as a USB host the FM-1 can play a USB-MIDI synth or MIDI-to-CV module directly.</p></div>
+      <div class="tile" style="--c:var(--p4)"><h3>MIDI in and out</h3><p>Every track and generator on a channel of its own, and the clock. External gear sets Tessera’s parameters by MIDI CC. As a USB host, the FM-1 can play a USB-MIDI synth or MIDI-to-CV module directly. The FM-1 doesn’t power its USB port, so you’ll need a powered USB-C hub that also feeds 5V back to it.</p></div>
     </div>
+    <div class="note">Sheesh, there's a lot to take in here. Start with the <a href="#recipes">recipes</a>: your first generative patch takes a minute. No <span style="white-space:nowrap">FM-1</span> handy? <a href="webapp/sim/">Try it in your browser</a>.</div>
     <div class="bar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
   </div>
 </section>
@@ -285,6 +308,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_constel.png" alt="CONSTELLATION" loading="lazy" width="480" height="480"></div><figcaption><b>CONSTELLATION</b><span>Stars play as they cross the ship's crosshair. After the norns script Constellation.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_series.png" alt="SERIES" loading="lazy" width="480" height="480"></div><figcaption><b>SERIES</b><span>Per Nørgård's infinity series.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_chord.png" alt="CHORD" loading="lazy" width="480" height="480"></div><figcaption><b>CHORD</b><span>Progressions the other tracks can follow.</span></figcaption></figure></div>
+      <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_answer.png" alt="ANSWER" loading="lazy" width="480" height="480"></div><figcaption><b>ANSWER</b><span>Plays your phrase back in fading variations and echoes.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/gallery/step_evolve.png" alt="STEP EVOLVE" loading="lazy" width="480" height="480"></div><figcaption><b>STEP EVOLVE</b><span>Your own steps, varied as they play.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/gallery/cords.png" alt="MODS" loading="lazy" width="480" height="480"></div><figcaption><b>MODS</b><span>Sixteen cords, any source to any destination.</span></figcaption></figure></div>
     </div>
@@ -297,8 +321,9 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <div class="kicker">Inks</div>
       <h2>Your screen, your colour</h2>
       <p>One pixel face, one ink on black. Pick one of nine inks in MENU &gt; COLOR to suit your FM-1's shell or your
-        mood, or MOSAIC, which gives each of the four tracks its own colour so you can tell them apart at a glance,
-        right down to the mod lists.</p>
+        mood, or MOSAIC, SUNSET, OCEAN or NEON, which give each of the four tracks its own colour so you can tell them apart at a glance,
+        right down to the mod lists. The knob you turn can show large across the foot of the screen: MENU &gt; LARGE VALUE
+        keeps it off pages with a picture of their own (AUTO), or shows it everywhere, or nowhere.</p>
     </header>
     <div class="inks">
       <figure><div class="screen"><img src="media/gallery/ink_yellow.png" alt="HOME in Yellow" loading="lazy" width="480" height="480"></div><figcaption>Yellow<span>the default</span></figcaption></figure>
@@ -311,6 +336,9 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <figure><div class="screen"><img src="media/gallery/ink_hot_pink.png" alt="HOME in Hot pink" loading="lazy" width="480" height="480"></div><figcaption>Hot pink</figcaption></figure>
       <figure><div class="screen"><img src="media/gallery/ink_lilac.png" alt="HOME in Lilac" loading="lazy" width="480" height="480"></div><figcaption>Lilac</figcaption></figure>
       <figure><div class="screen"><img src="media/gallery/ink_mosaic.png" alt="HOME in Mosaic" loading="lazy" width="480" height="480"></div><figcaption>Mosaic<span>a colour per track</span></figcaption></figure>
+      <figure><div class="screen"><img src="media/gallery/ink_sunset.png" alt="HOME in Sunset" loading="lazy" width="480" height="480"></div><figcaption>Sunset</figcaption></figure>
+      <figure><div class="screen"><img src="media/gallery/ink_ocean.png" alt="HOME in Ocean" loading="lazy" width="480" height="480"></div><figcaption>Ocean</figcaption></figure>
+      <figure><div class="screen"><img src="media/gallery/ink_neon.png" alt="HOME in Neon" loading="lazy" width="480" height="480"></div><figcaption>Neon</figcaption></figure>
     </div>
   </div>
 </section>
@@ -377,8 +405,8 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
     </header>
     <div class="about">
       <div>
-        <p>I'm Theo Dainis, from New Zealand. I've been using and building synthesisers for the past 15 years, and I'm passionate about modular and open source. Elektron and Mutable Instruments are big influences on me. I love the DIY side: building things, and learning how music hardware works on the inside. Tessera is the sequencer I wanted on the FM-1: modular in a box, a small instrument that writes with you.</p>
-        <div class="note"><b>Built with Claude Code.</b> Tessera's code is written with <a href="https://claude.com/claude-code">Claude Code</a>, Anthropic's AI coding tool. I designed it, made the decisions, and test every release on my own FM-1 before it goes out. The source is open, so you can read every line and every change. Like any firmware, it comes with no warranty: save a <b>Complete backup</b> from the <a href="webapp/editor/">web editor</a> before you flash.</div>
+        <p>I'm Theo Dainis, from Aotearoa New Zealand. I've been using and building synthesisers for the past 15 years, and I'm passionate about modular and open source. I’m heavily influenced by Elektron, Mutable Instruments and the Monome and Whimsical Raps world. I love the DIY side: building things, and learning how music hardware works on the inside. Tessera is the sequencer I wanted on the FM-1: modular in a box, a small instrument that writes with you.</p>
+        <div class="note"><b>Built with Claude Code.</b> As much as I’d like to take the credit, Tessera's code is written with <a href="https://claude.com/claude-code">Claude Code</a>, Anthropic's AI coding tool. I designed it, made the decisions, and test it on my own FM-1. It’s experimental, so please report anything odd. The source is open, so you can read every line and every change. Like any firmware, it comes with no warranty: save a <b>Complete backup</b> from the <a href="webapp/editor/">web editor</a> before you flash.</div>
       </div>
     </div>
   </div>
@@ -405,6 +433,15 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
   for (var k = 0; k < 9; k++) tiles[order[k]].style.animationDelay = (k * 70 + (k === 8 ? 90 : 0)) + 'ms';
   m.classList.add('laid');
 })();
+</script>
+<script>/* the hero's screens: slow loops drawn by the firmware, playing only while on screen; with reduced motion, or no
+   script, the stills */
+if (!matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
+  const io = new IntersectionObserver((es) => es.forEach((e) => {
+    if (e.isIntersecting) e.target.play().catch(() => {}); else e.target.pause();
+  }));
+  document.querySelectorAll("video.loop").forEach((v) => io.observe(v));
+}
 </script>
 <script>/* LIGHT / DARK: names the other look; the choice is stored (tessera-theme) */
 (function () {

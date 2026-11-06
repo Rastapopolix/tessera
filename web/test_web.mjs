@@ -31,7 +31,7 @@ const E = vm.runInNewContext(proto + `
 ;({ frame, unframe, parse, req, Link, parseWav, resample, normalize, takeSample, autoTrim, zoomView, rootFromName, buildSlot, makeMockDevice, CMD, SMP,
    UP, bank, nativeBank, capturePatch, auditionPatch, startWatch, libraryFile, readLibraryFile, paramKeys, patternFromSteps, stepsFromPattern, upName,
    mixer, parseNotes, parseHits, hitsText, gridFromSteps, LANE_NOTE, LANE_OF, readDevicePreferences, devicePresetRows, engineOrder, ENGINE_ORDER, aliasOf, fmtValue, FM6,
-   FM4, fromDigital, nativeImportTargets, scaleRows, SCALE_INFO, parseScala, tuneName, tuneValid, TUNE })`,
+   FM4, fromDigital, nativeImportTargets, scaleRows, SCALE_INFO, parseScala, tuneName, tuneValid, TUNE, STATS, statsFields })`,
 { setTimeout, clearTimeout, setInterval, clearInterval, console });
 
 {
@@ -1077,6 +1077,32 @@ async function editorSong() {
 /* ------------------------------------------------- user tunings (Scala, command 80) --- */
 /* parseScala == tools/gen_scales.py on every catalogue .scl, the folds and refusals, and command 80 against the mock
    (its put / get / list / select / clear, and the tunings saved with a project) */
+/* settings > health: command 72's request, every schema's layout (as tools/usb_audio_stats.py), and the mock's reply */
+async function editorHealth() {
+  const C = E.CMD;
+  ok(C.STATS === 72 && eq(E.req.stats()[1], [126]) && eq(E.req.stats(E.STATS.ALL | 1)[1], [127]) && eq(E.req.stats(0)[1], []),
+     "health: command 72, all groups asked, bit 0 resets the maxima");
+  const py_len = JSON.parse(py(`import sys, json; sys.path.insert(0, "tools"); import types; sys.modules["mido"] = types.ModuleType("mido"); import usb_audio_stats as u
+f = u.FIELDS; g = [u.VOICE_FIELDS, u.CORE_FIELDS, u.MEMORY_FIELDS, u.PART_FIELDS, u.COMPLETE_FIELDS, u.STACK_FIELDS]
+print(json.dumps([list(f) + [x for grp in g[:n - 2] for x in grp] for n in range(2, 9)]))`).toString());
+  ok(py_len.every((names, i) => eq(E.statsFields(i + 2), names)) && E.statsFields(1) === null && E.statsFields(9) === null,
+     "health: schemas 2..8 name the fields as tools/usb_audio_stats.py does");
+  const n = E.statsFields(3).length, enc = (v) => [0, 1, 2, 3, 4].map((j) => Math.floor(v / 2 ** (7 * j)) & 0x7F);
+  const vals = Array.from({ length: n }, (_, i) => (i === 19 ? 128 : i === 18 ? 0xFFFFFFFF : i * 1000));
+  const r = E.parse[C.STATS]([3, ...vals.flatMap(enc)]);
+  ok(r && r.schema === 3 && r.values.cpu_q8 === 128 && r.values.audio_max_us === 0xFFFFFFFF && r.values.voices_given_up === 25000,
+     "health: 5 x 7-bit values decoded, 32 bits whole");
+  ok(E.parse[C.STATS]([3, ...vals.flatMap(enc), 0]) === null && E.parse[C.STATS]([9]) === null, "health: a reply of the wrong length or schema refused");
+  const m = E.makeMockDevice({ auto: false });
+  const link = new E.Link((d) => [...m.access.outputs.values()][0].send(d), { timeout: 100 });
+  [...m.access.inputs.values()][0].onmidimessage = (e) => link.receive(e.data);
+  const a = E.parse[C.STATS](await link.request(E.req.stats(E.STATS.ALL | 1)));
+  const b = E.parse[C.STATS](await link.request(E.req.stats()));
+  ok(a && a.schema === 8 && a.values.audio_full_max_us > 0 && b.values.audio_full_max_us === 0 && b.values.cpu_q8 > 0,
+     "health: the mock answers schema 8, and a reset clears its worst times");
+  link.close?.();
+}
+
 async function editorTunings() {
   const rows = JSON.parse(py(`import sys, json; sys.path.insert(0, "tools"); import gen_scales
 print(json.dumps([[r["file"], r["pitch"], r["name"]] for r in gen_scales.catalogue() if "file" in r]))`).toString());
@@ -1332,7 +1358,7 @@ sys.stdout.buffer.write(b"".join(raw[i * 48:i * 48 + 47] for i in range(20)) + r
   const product = py(`import sys; sys.path.insert(0, "tools")
 from fm1_install import product_of
 print(product_of(open(sys.argv[1], "rb").read()), end="")`, pkg).toString();
-  ok(/^FM-1_8377\d{4}$/.test(productOf(raw)) && productOf(raw) === product,
+  ok(/^FM-1_8\d\d$/.test(productOf(raw)) && productOf(raw) === product,
     "fm1pkg.js productOf == Python (development and release identities)");
 }
 
@@ -1474,7 +1500,7 @@ async function stockRestore() {
   const HEAD = {from:1024, to:1024 + 0x4000};
   // loader: the identity of the update loader the FM-1 is waiting in (false: running firmware);
   // button: "stock-go" (Return to official V15) or "go" (Install)
-  async function run({skip = false, loader = false, recovery = false, supported = false, confirm = true, backupError = false, version = "MELODEE 0.9", installError = null, button = "stock-go"} = {}) {
+  async function run({skip = false, loader = false, recovery = false, supported = false, confirm = true, backupError = false, version = "MELODEE 0.9", installError = null, button = "stock-go", product = "FM-1_015"} = {}) {
     const calls = [], writes = [], elements = new Map();
     const element = (id) => {
       if (!elements.has(id)) elements.set(id, {checked:false, disabled:false, textContent:"", value:0, listeners:{},
@@ -1513,7 +1539,7 @@ async function stockRestore() {
     });
     vm.runInContext(script, context);
     await new Promise(resolve => setImmediate(resolve));
-    vm.runInContext(`stock = {image:new Uint8Array(),product:"FM-1_015",head:${JSON.stringify(HEAD)}};`, context);
+    vm.runInContext(`stock = {image:new Uint8Array(),product:${JSON.stringify(product)},head:${JSON.stringify(HEAD)}};`, context);
     if (button === "go") vm.runInContext("image = new Uint8Array(1);", context);
     element("stock-skip-backup").checked = skip;
     element("stock-recovery").checked = recovery;
@@ -1562,7 +1588,16 @@ async function stockRestore() {
   r = await run({loader:"ota-FM-1_123", recovery:true});
   ok(r.writes.length === 0 && r.status.includes("ota-FM-1_123"), "stock: an unknown loader gets nothing, named");
   r = await run({skip:true, installError:fail("stopped", {lastRead:HEAD.from + 0x200})});
-  ok(r.status.includes("CHECK HEAD") && r.status.includes("Nothing was written"), "stock: stopped at CHECK HEAD -> FAILED -5 explained");
+  ok(r.status.includes("CHECK HEAD") && r.status.includes("Nothing was written") && r.status.includes("way back is V16"),
+    "stock: V15 stopped at CHECK HEAD -> FAILED -5 explained, the unit needs V16");
+  r = await run({skip:true, product:"FM-1_016", installError:fail("stopped", {lastRead:HEAD.from + 0x200})});
+  ok(r.status.includes("CHECK HEAD") && r.status.includes("way back is V15") && r.status.includes("fm1_open"),
+    "stock: V16 stopped at CHECK HEAD -> the unit needs V15, where to find it");
+  r = await run({skip:true, product:"FM-1_016", installError:fail("stopped", {lastRead:0x40})});
+  ok(r.status.includes("before 3.3") && same(r.writes, [["FM-1_016", STOCK_LOADER]]),
+    "stock: V16 stopped before the head (a Tessera before 3.3 refuses its size) -> update Tessera first");
+  r = await run({skip:true, installError:fail("stopped", {lastRead:0x40})});
+  ok(!r.status.includes("before 3.3") && r.status.includes("Stopped"), "stock: V15 stopped before the head -> the usual message");
   r = await run({skip:true, installError:fail("stopped", {lastRead:HEAD.to})});
   ok(!r.status.includes("CHECK HEAD") && r.status.includes("Stopped"), "stock: stopped elsewhere -> the usual message");
   r = await run({skip:true, installError:fail("wrongloader", {detail:TESSERA_LOADER})});
@@ -1579,11 +1614,13 @@ async function installerBuilds() {
   const script = installer.match(/<script type="module">([\s\S]*?)<\/script>/)[1]
     .replace("/*META*/", JSON.stringify({version:"1.0.2",product:"FM-1_91002",
       pkg:{dual:"melodee-1.0.2.fwsc",single:"melodee-1.0.2-1core.fwsc"},
+      beta:{version:"1.1-beta1",product:"FM-1_83771100",branch:"develop",commit:"fedcba9876543210fedcba9876543210fedcba98",
+        builtAt:"2026-10-13T09:00:00Z",pkg:{dual:"tessera-1.1-beta1.fwsc",single:"tessera-1.1-beta1-1core.fwsc"}},
       nightly:{version:"next-abcdef0",product:"FM-1_900",commit:"abcdef0123456789abcdef0123456789abcdef0123",builtAt:"2026-10-11T02:00:00Z",
         pkg:{dual:"melodee-nightly.fwsc",single:"melodee-nightly-1core.fwsc"}},
       synth:{version:"synth-1234567",product:"FM-1_900",branch:"synth-only",commit:"1234567890abcdef1234567890abcdef12345678",
         builtAt:"2026-10-12T08:00:00Z",pkg:{dual:"melodee-synth.fwsc",single:"melodee-synth-1core.fwsc"},editor:"../synth-editor/"}}));
-  const ALL = ["dual", "single", "nightly-dual", "nightly-single", "synth-dual", "synth-single"];
+  const ALL = ["dual", "single", "beta-dual", "beta-single", "nightly-dual", "nightly-single", "synth-dual", "synth-single"];
   const fetched = [], installed = [], elements = new Map();
   const element = (id) => {
     if (!elements.has(id)) elements.set(id, {checked:id === "build-dual", disabled:false, textContent:"", value:0, listeners:{},
@@ -1595,7 +1632,7 @@ async function installerBuilds() {
     document:{documentElement:{}, querySelectorAll:() => [], getElementById:element},
     window:{addEventListener() {}},
     fetch:async (url) => { fetched.push(url); return {ok:true, arrayBuffer:async () => new Uint8Array(Buffer.from(url)).buffer}; },
-    productOf:(pkg) => /nightly|synth/.test(String.fromCharCode(...pkg)) ? "FM-1_900" : "FM-1_91002", logicalImage:(pkg) => String.fromCharCode(...pkg),
+    productOf:(pkg) => /nightly|synth/.test(String.fromCharCode(...pkg)) ? "FM-1_900" : /beta/.test(String.fromCharCode(...pkg)) ? "FM-1_83771100" : "FM-1_91002", logicalImage:(pkg) => String.fromCharCode(...pkg),
     TESSERA_LOADER, STOCK_LOADER,
     Updater:class { async find() { return null; } async install(image, product) { installed.push([image, product]); } },
   });
@@ -1613,6 +1650,21 @@ async function installerBuilds() {
   await element("build-dual").listeners.change();
   await element("go").listeners.click();
   ok(fetched.length === 2 && installed[1][0] === "melodee-1.0.2.fwsc", "installer: back to standard, each package fetched once");
+  const betaRevision = "fedcba9876543210fedcba9876543210fedcba98";
+  for (const [kind, file, tag] of [["beta-dual", "tessera-1.1-beta1.fwsc", "dual core"], ["beta-single", "tessera-1.1-beta1-1core.fwsc", "single core"]]) {
+    for (const k of ALL) element("build-" + k).checked = k === kind;
+    await element("build-" + kind).listeners.change();
+    ok(element("status").textContent === `Tessera 1.1-beta1 (beta, ${tag})`, "installer: the beta's label names its own version");
+    await element("go").listeners.click();
+    const [image, product] = installed.at(-1);
+    ok(image === file + "?commit=" + betaRevision && product === "FM-1_83771100", "installer: each beta build installs the chosen package with its own identity");
+  }
+  ok(!element("beta-options").hidden && element("beta-version").textContent === "1.1-beta1"
+    && element("beta-info").textContent === "develop · fedcba9 · 2026-10-13T09:00:00Z", "installer: the beta shows its version, source and build time");
+  for (const k of ALL) element("build-" + k).checked = k === "dual";
+  await element("build-dual").listeners.change();
+  await element("go").listeners.click();
+  ok(installed.at(-1)[1] === "FM-1_91002" && fetched.length === 4, "installer: back from the beta to the release, without fetching again");
   const revision = "abcdef0123456789abcdef0123456789abcdef0123";
   for (const [kind, file, tag] of [["nightly-dual", "melodee-nightly.fwsc", "dual core"], ["nightly-single", "melodee-nightly-1core.fwsc", "single core"]]) {
     for (const k of ALL) element("build-" + k).checked = k === kind;
@@ -1626,7 +1678,7 @@ async function installerBuilds() {
   for (const k of ALL) element("build-" + k).checked = k === "dual";
   await element("build-dual").listeners.change();
   await element("go").listeners.click();
-  ok(installed.at(-1)[1] === "FM-1_91002" && fetched.length === 4, "installer: returning from nightly restores release identity without refetching");
+  ok(installed.at(-1)[1] === "FM-1_91002" && fetched.length === 6, "installer: returning from nightly restores release identity without refetching");
   const synthRevision = "1234567890abcdef1234567890abcdef12345678";
   for (const [kind, file, tag] of [["synth-dual", "melodee-synth.fwsc", "dual core"], ["synth-single", "melodee-synth-1core.fwsc", "single core"]]) {
     for (const k of ALL) element("build-" + k).checked = k === kind;
@@ -1641,7 +1693,7 @@ async function installerBuilds() {
   for (const k of ALL) element("build-" + k).checked = k === "dual";
   await element("build-dual").listeners.change();
   await element("go").listeners.click();
-  ok(installed.at(-1)[1] === "FM-1_91002" && fetched.length === 6, "installer: returning from synth only restores the release without refetching");
+  ok(installed.at(-1)[1] === "FM-1_91002" && fetched.length === 8, "installer: returning from synth only restores the release without refetching");
 }
 async function localBuild() {
   const script = readFileSync(join(HERE, "index_pkg.html"), "utf8").match(/<script type="module">([\s\S]*?)<\/script>/)[1]
@@ -1684,6 +1736,10 @@ async function localBuild() {
     "local: confirmed test build installs with the identity read from the file");
   r = await run(file("tessera-2.0.1.fwsc", "FM-1_83772001"));
   ok(r.enabled && r.installed.length === 1 && r.installed[0][1] === "FM-1_83772001", "local: Tessera's own identity (FM-1_8377) installs");
+  r = await run(file("tessera-3.3.fwsc", "FM-1_833"));
+  ok(r.enabled && r.installed.length === 1 && r.installed[0][1] === "FM-1_833", "local: Tessera's three-digit identity (FM-1_8XY, M-UPGRADE 3.11) installs");
+  r = await run(file("long.fwsc", "FM-1_8331"));
+  ok(!r.enabled && r.installed.length === 0, "local: FM-1_8 and four digits is no Tessera identity");
   r = await run(file("t.fwsc", "FM-1_91029"), {answer:false});
   ok(r.enabled && r.installed.length === 0 && r.unlocked, "local: cancelling the confirmation never flashes");
   r = await run(file("FM-1.fwsc", "FM-1_015"));
@@ -1712,7 +1768,8 @@ async function installerBuildRaces() {
   const finish = url => pending.get(url)({ok:true,arrayBuffer:async()=>Uint8Array.from(Buffer.from(url)).buffer});
   const tick = () => new Promise(resolve=>setImmediate(resolve));
   vm.runInContext(script, context);
-  ok(element("synth-options").hidden && element("nightly-options").hidden, "installer: no synth-only or nightly choices on a site without them");
+  ok(element("synth-options").hidden && element("nightly-options").hidden && element("beta-options").hidden,
+    "installer: no beta, synth-only or nightly choices on a site without them");
   element("build-dual").checked=false;element("build-single").checked=true;
   const single = element("build-single").listeners.change();
   ok(element("go").disabled,"installer: Install is disabled while the selected package loads");
@@ -1743,6 +1800,7 @@ await editorMixer();
 await editorTrackParam();
 await editorSong();
 await editorTunings();
+await editorHealth();
 await editorSessions();
 await editorFm6();
 await editorFm4();

@@ -92,6 +92,7 @@ static int32_t pick_bottom(void) { return pv_kind() == PV_CORDS || pv_kind() == 
 #include "ui_matrix.c"                                 /* MATRIX: the mods track by track (Tessera) */
 #include "ui_help.c"                                   /* ARP held + a knob: its help (Tessera) */
 #include "ui_modsc.c"                                  /* FX held + a knob: its mod amount (Tessera) */
+#include "ui_learn.c"                                  /* MIDI LEARN: a knob, then a CC (upstream 7bd7e4f) */
 
 /* MOD (docs/design: mock/r6_pages MOD): the matrix's four routes as rows, "1  LFO -> Cutoff  +62 %" over the amount's
  * bar (from the middle); the route KNOB 2 is on: a card in the track's colour; unused routes dim. The knobs' chips
@@ -895,6 +896,8 @@ static void pv_strip(uint32_t k)
 {
     track_t *t = &trk[k];
     uint32_t sel = k == song.sel, mute = t->p[P_MUTE] != 0, arm = (song.rec >> k) & 1u, lvl = trk_level(k), sig;
+    if ((mute_waiting() >> k) & 1u && (fm1_ms / 250u) & 1u)   /* (MENU MUTES: a mute waiting for its line blinks to */
+        mute = !mute;                                   /* what it will be) */
     uint32_t octp = (fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u;   /* (OCT+ held: the knobs are the pans) */
     uint32_t solo = (track_solo >> k) & 1u, quiet = mute || (track_solo && !solo);   /* (another's solo: silent) */
     uint32_t hot = ui.hot_t && ui.hot_col == k ? (octp ? 2u : 1u) : 0u;   /* this strip's knob: 1 LEVEL, 2 PAN */

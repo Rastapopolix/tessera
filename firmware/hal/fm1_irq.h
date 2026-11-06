@@ -112,8 +112,15 @@ static int fm1_core1_fault_c(const uint32_t *f)   /* 1: handled, CPU0 resumes */
         return 0;                                   /* CPU0's own */
     /* CPU1 took it too and cleared DBG_MSG first. Once per CPU1 fault, so a
      * genuine CPU0 exception with DBG_MSG clear that lands in that window is
-     * resumed once; it faults again and is reported then. */
+     * resumed once; it faults again and is reported then. CPU1 may still be
+     * on its way to counting it (its handler saves a frame first; issue #379:
+     * a CPU1 fault reported as CPU0's, PC in audio_worker_join, EMU and DBG
+     * 0): wait up to 1 ms for the count before calling it CPU0's own. */
     if (!cpu && !(dbg & FM1_DBG_C1)) {
+        uint32_t t0 = *(volatile uint32_t *)0x10804u;   /* TIMER4, 24 ticks a us */
+        while (fm1_core1_fault.echoes >= fm1_core1_fault.count &&
+               (uint32_t)(*(volatile uint32_t *)0x10804u - t0) < 1000u * 24u)
+            __asm__ volatile("csync" ::: "memory");
         if (fm1_core1_fault.echoes >= fm1_core1_fault.count)
             return 0;                               /* else CPU0's own */
         fm1_core1_fault.echoes++;

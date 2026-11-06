@@ -4,7 +4,7 @@
 # Natural-loop metric normalized against unchanged serial 27806bb disassembly; existing relative headroom retained.
 # Optional recording paths are checked separately from the audio interrupt.
 midi_parameter 47
-audition_tick 129
+audition_tick 146
 click_render 30
 sid_render 1204
 formant_render 314
@@ -69,7 +69,8 @@ fx_down 126
 fx_up 141
 # fx_time 249 -> 251 (2026-10-31): PHYS back in the device build moved its registers, +2 loop instructions (274),
 # its source unchanged.
-fx_time 251
+# fx_time 251 -> 303 (2026-11-02): ECHO and ROOM's wet interpolated back to FS, as fx_up's is (held, it whined around FS/4).
+fx_time 303
 fx_reverb 1016
 mix_fx_samples 82
 mix_extra_sends 94

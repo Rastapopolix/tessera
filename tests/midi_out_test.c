@@ -22,7 +22,7 @@ static void drain(void)
     }
 }
 static void blocks(uint32_t n) { while (n--) { events_block(CTL); drain(); } }
-static uint32_t beat_blocks(void) { return seq_beat_samples() / CTL; }
+static uint32_t beat_blocks(void) { return beat_samples() / CTL; }   /* (real time: blocks of samples) */
 
 static void reset(uint32_t out)
 {
@@ -37,6 +37,7 @@ static void reset(uint32_t out)
     settings_midi_out = (uint8_t)out; settings_clock_out = 0;
     memset(tessera.midi_ch, 0, sizeof tessera.midi_ch);
     memset(tessera.midi_tr, 0, sizeof tessera.midi_tr);
+    memset(tessera.sound_off, 0, sizeof tessera.sound_off);
     events_block(CTL); drain(); log_n = 0;
 }
 
@@ -181,10 +182,28 @@ static int echo_and_route_test(void)
     stop();
     bad += check("  nothing left on", balanced());
 
+    reset(MIDI_OUT_ALL);                                 /* SOUND OFF (OCT- held on GLO > MIDI OUT) */
+    tessera_param_set(0, TX_SOUND, 1); tessera_param_set(1, TX_SOUND, 5);
+    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 100};
+    trk[1].step[0] = (step_t){{64}, 1, ST_NOTE, 0, 0, 100};
+    play(1);
+    {
+        uint32_t v, voiced0 = 0, voiced1 = 0;
+        for (v = 0; v < NVOICE; v++) {
+            voiced0 |= trk[0].v[v].active;
+            voiced1 |= trk[1].v[v].active;
+        }
+        bad += check("SOUND OFF: the notes still go out over MIDI, no voice of their own; a value past OFF clamped",
+                     count(0x90, 0, 60) >= 1u && count(0x90, 1, 64) >= 1u && !voiced0 && !voiced1 &&
+                     tessera_param_get(1, TX_SOUND) == 1);
+    }
+    stop();
+    bad += check("  nothing left on", balanced());
+
     reset(MIDI_OUT_ALL);
     trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 100};
     trk[0].step[1] = (step_t){{62}, 1, ST_TIE, 0, 0, 100};
-    play(1);
+    play(1); blocks(beat_blocks() / 8u);              /* (mid-step: not the block a new loop starts its note in) */
     panic_req = 1u; blocks(1);
     bad += check("a panic ends the notes sent", balanced());
     stop();
@@ -279,9 +298,193 @@ static int settings_test(void)
     return bad;
 }
 
+/* CLK INT runs on exact musical units (mix.c, Melodee 1.6.1): over five minutes at each of seven tempos, through the
+ * tempo changes, the song keeps the true tempo to a unit, and the tracks at 1/16, 1/32 and 1/8T, the ARP and the
+ * clock out never slide against it (before: a 1/16 track drifted ~27 ms in five minutes, the ARP over a second) */
+static int no_drift_test(void)
+{
+    static const int16_t BPM[] = {97, 120, 137, 173, 40, 240, 101};
+    static const uint8_t DIV[3] = {2, 3, 5};
+    int bad = 0;
+    uint32_t pulses = 0, bad_tracks = 0, bad_arp = 0, bad_pulses = 0, bad_tempo = 0, k;
+    int64_t off[3], arp_off0, steps_arp = 0;
+    double exact = 0.0;
+    reset(MIDI_OUT_KEYS);
+    settings_clock_out = 1;
+    for (k = 0; k < 3u; k++) { trk[k].p[P_SDIV] = DIV[k]; trk[k].p[P_SLEN] = 16; }
+    track_t *a = &trk[3];
+    a->p[P_AMODE] = 1; a->p[P_ARATE] = 2; a->p[P_ASWING] = 0; a->nheld = 1; a->held[0] = 60; a->arp_phys = 1;
+    song.g[G_BPM] = BPM[0];
+    transport_req = 1; events_block(CTL);
+    mo_r = mo_w;
+    uint64_t u0 = ((uint64_t)bar_n * 4u + beat_n) * MIDI_BEAT_UNITS + beat_pos;
+    for (k = 0; k < 3u; k++)
+        off[k] = (int64_t)seq_run_step[k] * seq_div_samples(DIV[k]) + trk[k].seq_pos - (int64_t)u0;
+    uint32_t last_idx = a->arp_idx;
+    arp_off0 = (int64_t)a->arp_pos - (int64_t)u0;
+    for (uint32_t b = 0; b < sizeof BPM / sizeof BPM[0]; b++) {
+        song.g[G_BPM] = BPM[b];
+        uint32_t n = 300u * (uint32_t)FS / CTL;       /* five minutes */
+        for (uint32_t i = 0; i < n; i++) {
+            events_block(CTL);
+            exact += (double)CTL * MIDI_BEAT_UNITS * BPM[b] / (FS * 60.0);
+            while (mo_r != mo_w) { if (((midi_out_q[mo_r % MQ] >> 8) & 0xFFu) == 0xF8u) pulses++; mo_r++; }
+            if (a->arp_idx != last_idx) { steps_arp += (uint32_t)(a->arp_idx - last_idx); last_idx = a->arp_idx; }
+            uint64_t u = ((uint64_t)bar_n * 4u + beat_n) * MIDI_BEAT_UNITS + beat_pos;
+            if ((double)(u - u0) > exact + 1.0 || (double)(u - u0) + 1.0 < exact) bad_tempo++;
+            for (k = 0; k < 3u; k++)
+                if ((int64_t)seq_run_step[k] * seq_div_samples(DIV[k]) + trk[k].seq_pos - (int64_t)u != off[k]) bad_tracks++;
+            if (steps_arp * (int64_t)seq_div_samples(2) + a->arp_pos - (int64_t)u != arp_off0) bad_arp++;
+            /* the clock out: a pulse every 1,024 units from PLAY's first */
+            if (pulses != (uint32_t)((u - u0) / 1024u) + 1u && pulses != (uint32_t)((u - u0) / 1024u)) bad_pulses++;
+        }
+    }
+    transport_req = 2; blocks(2);
+    a->p[P_AMODE] = 0; a->nheld = 0; a->arp_phys = 0;
+    bad += check("CLK INT, 35 minutes over 7 tempos: the song keeps the true tempo to a unit", !bad_tempo);
+    bad += check("  tracks at 1/16, 1/32 and 1/8T never slide against it", !bad_tracks);
+    bad += check("  the ARP never slides", !bad_arp && steps_arp > 8000);
+    bad += check("  the clock out stays on the same unit", !bad_pulses && pulses > 50000u);
+    return bad;
+}
+
+/* TEMPO as a mod destination (issue #359): a fixed mod +100 doubles CLK INT, -100 halves it, +50 is half an octave;
+ * the clock out follows; the planner's piece stays in BPM's beats (no jump through its shape) */
+static int tempo_mod_test(void)
+{
+    static const int8_t OFF[4] = {100, -100, 50, 0};
+    static const double WANT[4] = {2.0, 0.5, 1.41421356, 1.0};
+    int bad = 0, ok = 1, pulses_ok = 1, plan_ok = 1;
+    reset(MIDI_OUT_KEYS);
+    settings_clock_out = 1;
+    song.g[G_BPM] = 120;
+    tessera.pl_length = 4;                              /* (a 4-minute piece planned) */
+    uint32_t beats0 = pl_beats();
+    transport_req = 1; events_block(CTL);
+    for (uint32_t c = 0; c < 4u; c++) {
+        cord_t cd = {0};
+        cd.dst = CD_TEMPO;
+        cd.offset = OFF[c];
+        cord_set(0, &cd);
+        cord_tick();
+        mo_r = mo_w;
+        uint64_t u0 = ((uint64_t)bar_n * 4u + beat_n) * MIDI_BEAT_UNITS + beat_pos;
+        uint32_t pulses = 0, n = 10u * (uint32_t)FS / CTL;   /* ten seconds */
+        for (uint32_t i = 0; i < n; i++) {
+            cord_tick();
+            events_block(CTL);
+            while (mo_r != mo_w) { if (((midi_out_q[mo_r % MQ] >> 8) & 0xFFu) == 0xF8u) pulses++; mo_r++; }
+        }
+        uint64_t u = ((uint64_t)bar_n * 4u + beat_n) * MIDI_BEAT_UNITS + beat_pos;
+        double got = (double)(u - u0) / ((double)n * CTL * MIDI_BEAT_UNITS * 120.0 / (FS * 60.0));
+        ok &= got > WANT[c] * 0.998 && got < WANT[c] * 1.002;
+        pulses_ok &= pulses + 2u >= (uint32_t)((u - u0) / 1024u) && pulses <= (uint32_t)((u - u0) / 1024u) + 2u;
+        plan_ok &= pl_beats() == beats0 && beats0 == 480u;
+    }
+    cord_t off = {0};
+    cord_set(0, &off);
+    cord_tick();
+    tessera.pl_length = 0;
+    transport_req = 2; blocks(2);
+    bad += check("TEMPO mod: +100 doubles CLK INT, -100 halves it, +50 half an octave", ok && seq_tempo_q12 == 4096u);
+    bad += check("  the clock out follows it", pulses_ok);
+    bad += check("  the planner's piece stays in BPM's beats (no jump through its shape)", plan_ok);
+    return bad;
+}
+
+/* CC OUT (cord.c cord_cc_tick): a mod onto a track's CC goes out on its channel with the cord's CC number, only when
+ * it changes and at most every 12 blocks; none with MIDI OUT OFF or the track muted */
+static uint32_t cc_count(uint32_t ch, uint32_t num, uint32_t *lo, uint32_t *hi)
+{
+    uint32_t n = 0;
+    *lo = 127; *hi = 0;
+    for (uint32_t i = 0; i < log_n; i++) {
+        uint32_t s = (log_pkt[i] >> 8) & 0xFFu, d1 = (log_pkt[i] >> 16) & 0x7Fu, d2 = log_pkt[i] >> 24;
+        if (s != (0xB0u | ch) || d1 != num || (log_pkt[i] & 15u) != 0x0Bu) continue;
+        n++;
+        if (d2 < *lo) *lo = d2;
+        if (d2 > *hi) *hi = d2;
+    }
+    return n;
+}
+static void cc_blocks(uint32_t n) { while (n--) { events_block(CTL); cord_tick(); drain(); } }   /* (mix.c's order) */
+static int cc_out_test(void)
+{
+    int bad = 0;
+    uint32_t lo, hi, n;
+    cord_t c = {0};
+    reset(MIDI_OUT_ALL);
+    cord_clear();
+    c.dst = CD_CC; c.dst_trk = 1; c.offset = 50;        /* (a fixed mod: half way) */
+    cord_set(0, &c);
+    cord_cc_set(0, 74);
+    cc_blocks(40);
+    n = cc_count(1, 74, &lo, &hi);
+    bad += check("CC OUT: a fixed mod sends its value once on its track's channel, with its CC number",
+                 n == 1u && lo == 64u && cord_cc_num(0) == 74u && cord_cc_num(1) == 1u);
+    c.src = CS_OCHD8; c.src_trk = 0; c.amount = 100; c.offset = 0;   /* (SWARM 8: 2.4 s a turn, no notes needed) */
+    cord_set(0, &c);
+    log_n = 0;
+    cc_blocks(5000);
+    n = cc_count(1, 74, &lo, &hi);
+    printf("    CC OUT: %u values, %u..%u\n", n, lo, hi);
+    bad += check("CC OUT: SWARM both ways sweeps around 64, at most every 12 blocks",
+                 n >= 20u && n <= 5000u / 12u + 1u && lo < 40u && hi > 88u);
+    settings_midi_out = MIDI_OUT_OFF; log_n = 0; cc_blocks(200);
+    n = cc_count(1, 74, &lo, &hi);
+    settings_midi_out = MIDI_OUT_ALL;
+    trk[1].p[P_MUTE] = 1; log_n = 0; cc_blocks(200);
+    n += cc_count(1, 74, &lo, &hi);
+    trk[1].p[P_MUTE] = 0;
+    bad += check("CC OUT: nothing with MIDI OUT OFF or the track muted", n == 0u);
+    cord_cc_set(0, 200);
+    bad += check("CC OUT: a CC number past 119 clamped", cord_cc_num(0) == 119u);
+    cord_clear();
+    bad += check("CC OUT: cleared mods start on CC 1", cord_cc_num(0) == 1u);
+    return bad;
+}
+
+/* NOTES KNOB 2's preview (NOTE PREVIEW on) goes out as a key's note does (KEYS, ALL; not OFF), with its note-off;
+   the cursor's never */
+static int preview_test(void)
+{
+    int bad = 0;
+    static const uint8_t OUT[3] = {MIDI_OUT_KEYS, MIDI_OUT_ALL, MIDI_OUT_OFF};
+    for (uint32_t k = 0; k < 3u; k++) {
+        reset(OUT[k]);
+        go_page(GR_ROLL);
+        step_t *st = &TSEL->step[0];
+        TSEL->p[P_QUANT] = Q_OFF;
+        st->time = ST_NOTE; st->n = 1; st->note[0] = 60; st->vel = 77;
+        cursor_set(0); frame(); drain(); log_n = 0;
+        settings_preview = 1;
+        turn(EN_K1 + 1, 1);
+        blocks(1);
+        uint32_t n = st->note[0], on = count(0x90, -1, (int)n);
+        blocks(FS / 6u / CTL + 2u);
+        uint32_t off = count(0x80, -1, (int)n);
+        bad += check(k < 2u ? "preview: KNOB 2's note and its note-off go out" : "preview: MIDI OUT OFF, nothing", k < 2u ? on == 1u && off == 1u : !on && !off);
+    }
+    reset(MIDI_OUT_ALL);
+    go_page(GR_ROLL);
+    settings_preview = 1;
+    TSEL->step[1].time = ST_NOTE; TSEL->step[1].n = 1; TSEL->step[1].note[0] = 64;
+    cursor_set(1); frame();
+    blocks(FS / 6u / CTL + 2u);
+    settings_preview = 0;
+    bad += check("preview: the cursor's sends nothing", !count(0x90, -1, 64));
+    TSEL->step[0].time = ST_NOTE; TSEL->step[0].n = 1; TSEL->step[0].note[0] = 60;
+    cursor_set(0); frame(); drain(); log_n = 0;
+    turn(EN_K1 + 1, 1);
+    blocks(FS / 6u / CTL + 2u);
+    bad += check("preview: NOTE PREVIEW off, KNOB 2's sends nothing", !count(0x90, -1, -1));
+    return bad;
+}
+
 int main(void)
 {
-    int bad = notes_test() + echo_and_route_test() + generator_test() + clock_out_test() + settings_test();
+    int bad = preview_test() + notes_test() + echo_and_route_test() + generator_test() + clock_out_test() + no_drift_test() + tempo_mod_test() +
+              cc_out_test() + settings_test();
     printf("%s\n", bad ? "MIDI OUT TEST FAILED" : "MIDI out tests passed");
     return bad != 0;
 }

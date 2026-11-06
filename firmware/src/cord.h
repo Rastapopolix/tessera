@@ -17,8 +17,18 @@
  *   CK_DEPTH  the track LFO's depth (mod.c's MD_DEPTH: a gain on the LFO wherever it goes)
  *   CK_STEP   a Tessera setting, in place around the track's generator step (tessera_clock_step)
  *   CK_GLOBAL a project setting of the send effects (SEND FX 1..3, RETURN), for the block (fx.c fx_bus_start): one
- *             for every track, so the cord's destination track means nothing (kept 0) */
-enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_GLOBAL };
+ *             for every track, so the cord's destination track means nothing (kept 0)
+ *   CK_CORD   another cord's move (M1 AMT .. M16 AMT: its AMOUNT, a fixed cord's OFFSET), for the block (cord.c
+ *             cord_tick): the project's, destination track 0 as CK_GLOBAL. One level: an M AMT cord's own move is
+ *             never moved
+ *   CK_FILL   the project's FILL (seq.c, the steps set to FILL / NOT FILL), held while the move is 50 % or more
+ *             (cord.c cord_fill_tick); destination track 0 as CK_GLOBAL
+ *   CK_TEMPO  the project's tempo on CLK INT (mix.c seq_tempo_q12, cord.c cord_tempo_tick): a full move doubles it, a
+ *             full move down halves it; BPM itself is left alone; destination track 0 as CK_GLOBAL
+ *   CK_CC     a MIDI CC out on the destination track's MIDI OUT channel (cord.c cord_cc_tick, issue #374): its number
+ *             the cord's own (cord_cc_num, OCT+ held + KNOB 3 on MODS); a track's, as CK_BLOCK (before CK_GLOBAL: the
+ *             kinds are not saved, only the codes) */
+enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO };
 
 /* Destination codes. FROZEN: saved cords keep them; new ones at the end, a retired one stays as a gap */
 enum {
@@ -54,6 +64,12 @@ enum {
     CD_SF2_MIX, CD_SF2_RATE, CD_SF2_CHAR,
     CD_SF3_MIX, CD_SF3_RATE, CD_SF3_CHAR,
     CD_FX_RETURN,
+    CD_M1_AMT,                                                      /* the cords' moves (CK_CORD): M1 AMT .. M16 AMT */
+    CD_M16_AMT = CD_M1_AMT + 15,
+    CD_FILL,                                                        /* the project's FILL (CK_FILL) */
+    CD_TEMPO,                                                       /* the project's tempo (CK_TEMPO), issue #359 */
+    CD_CC,                                                          /* a MIDI CC out (CK_CC), issue #374 */
+    CD_SUB_SPLIT,                                                   /* TIMING's SPLIT */
     CD_N
 };
 
@@ -82,21 +98,30 @@ enum {
     CS_TORPOR, CS_APATHY, CS_INERTIA,   /* the track's SLOTH (organic.c): chaos, ~17 min, ~1 min, ~3 min a turn */
     CS_OCHD1, CS_OCHD2, CS_OCHD3, CS_OCHD4, CS_OCHD5, CS_OCHD6, CS_OCHD7, CS_OCHD8,   /* its OCHD: 64 s .. 2.4 s */
     CS_ENERGY,                    /* the project's tide (ARC, energy.c), the same for every track: -1 sparse .. 1 full */
+    CS_MACRO1, CS_MACRO2, CS_MACRO3, CS_MACRO4,   /* GLO > PERF's knobs, the project's: 0..1 */
     CS_N
 };
 
-typedef struct {                  /* one cord, as saved (6 bytes: uni rides in src_trk's top bit) */
+typedef struct {                  /* one cord, as saved (6 bytes: uni rides in src_trk's top two bits) */
     uint8_t src, src_trk;         /* CS_*, 0..3 */
     uint8_t dst, dst_trk;         /* CD_*, 0..3 */
     int8_t amount;                /* -100..100 %: at a full source, the destination's whole range (pitch: an octave) */
     int8_t offset;                /* -100..100 %: added whatever the source (CS_OFF: a fixed setting) */
-    uint8_t uni;                  /* 1: a bipolar source folded to 0..1 (+: moves one way from the knob); 0 +- */
+    uint8_t uni;                  /* CU_*: how the source is read */
 } cord_t;
+/* a cord's uni: CU_BI the source as it is (+-), CU_UNI a bipolar source folded to 0..1 (+: one way from the knob),
+ * CU_GATE the source as a gate: all (1) while it is over the threshold OFFSET (-100..100 % of its range), else 0 (the
+ * OFFSET then moves nothing) */
+enum { CU_BI, CU_UNI, CU_GATE };
 
 const char *cord_src_name(uint32_t code);           /* <= 7 characters; 0: no such source */
 int cord_set(uint32_t i, const cord_t *c);          /* i < CORD_LIVE; out of range: refused (0), nothing changed */
+/* CC OUT: cord i's CC number (0..119; 1, the mod wheel, until set), and setting it (cord_reset: all 1 again) */
+uint32_t cord_cc_num(uint32_t i);
+void cord_cc_set(uint32_t i, uint32_t n);
 const cord_t *cord_get(uint32_t i);
 void cord_clear(void);                              /* every cord off */
+int32_t cord_move(uint32_t i);                      /* cord i's move as its M AMT cords make it now: -100..100 % */
 uint32_t cord_count(void);                          /* cords doing something (a destination and an amount or offset) */
 uint32_t cord_adopt(void);
 void cord_tick(void);                               /* an audio block (mix.c mix_block): DRIFT's clock, SLOTH, OCHD */

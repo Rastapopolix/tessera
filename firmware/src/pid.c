@@ -31,6 +31,7 @@ static const char *const TX_N_CHPROG[] = {"POP", "50S", "2-5-1", "CIRCLE", "TWO"
 static const char *const TX_N_CHBARS[] = {"1/2", "1", "2", "4"};
 static const char *const TX_N_CHHIT[] = {"HOLD", "BEAT", "STEP", "OFFBEAT"};   /* (GEN_CH_*) */
 static const char *const TX_N_GRP4[] = {"TOM", "CLAP", "HATOP", "RIM", "BELL"};
+static const char *const TX_N_SPLITHOW[] = {"DOUBLE", "PUSH", "MIX"};   /* (TESS_SPLIT_*) */
 static const char *const TX_N_RATCH[] = {"x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8"};
 static const char *const TX_N_SHAPE[] = {"EVEN", "ACCEL", "DECEL"};   /* (SUB_EVEN ..) */
 static const char *const TX_N_KEYLINK[] = {"OWN", "LINKED"};
@@ -40,6 +41,16 @@ static const char *const TX_N_ANORDER[] = {"PLAYED", "REVERSE", "SHUFFLE"};   /*
 static const char *const TX_N_ANLEN[] = {"SHORT", "MID", "LONG"};
 static const char *const TX_N_SDKEEP[] = {"FREE", "RHYTHM", "PITCH"};   /* (TESS_SD_*) */
 static const char *const TX_N_SVHOW[] = {"DRIFT", "ADORN", "SERIAL"};   /* (TESS_SV_*) */
+static const char *const TX_N_SOUND[] = {"ON", "OFF"};
+static const char *const TX_N_PHRASE[] = {"4", "8", "16"};   /* (form_chain.c FC_PHRASE_BARS) */
+static const char *const TX_N_FCFOLLOW[] = {"FOLLOW", "OWN"};
+static const char *const TX_N_ETSTYLE[] = {"CUT", "FADE"};   /* (entries.c) */
+static const char *const TX_N_ETROLE[] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "MELODY", "ANCHOR"};
+static const char *const TX_N_PLLEN[] = {"FREE", "1", "2", "3", "4", "5", "6", "8", "10", "12", "15", "20", "25", "30",
+                                         "40", "45", "60", "75", "90", "120", "180", "240"};   /* (planner.c PL_MIN) */
+static const char *const TX_N_PLSHAPE[] = {"ARCH", "RISE", "FALL", "PLATEAU", "VALLEY", "WAVES", "BUILDS", "STEPS",
+                                           "FLAT", "USER"};
+static const char *const TX_N_PLEND[] = {"STOP", "LOOP", "NEW", "FREE"};
 static const char *const TX_N_TUNE[] = {"OFF", "USR1", "USR2", "USR3", "USR4"};   /* (tune.h: the slots' own names
                                                                                    * where shown, params.c) */
 static const char *const TX_N_ACCMODE[] = {"WRAP", "PING", "CLAMP"};    /* (TESS_ACC_*) */
@@ -157,6 +168,43 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_FM_DEVELOP] = PD("DEVLP", F_PCT, 0, 100, 0),
     [TX_MIDI_TR] = {"TRANS", F_INT, -TESS_MIDI_TR, TESS_MIDI_TR, 0, 0, "st"},
     [TX_TUNE] = PE("TUNE", TX_N_TUNE, 0),
+    [TX_SOUND] = PE("SOUND", TX_N_SOUND, 0),
+    [TX_FC_FORM] = PE("FORM", TX_N_FORM, 0),
+    [TX_FC_PHRASE] = {"PHRASE", F_ENUM, 0, 2, 1, TX_N_PHRASE, "bar"},
+    [TX_FC_WANDER] = PD("WANDER", F_PCT, 0, 100, 0),
+    [TX_FC_REP1] = {"REP1", F_INT, 1, 8, 1, 0, "x"},
+    [TX_FC_REP2] = {"REP2", F_INT, 1, 8, 1, 0, "x"},
+    [TX_FC_REP3] = {"REP3", F_INT, 1, 8, 1, 0, "x"},
+    [TX_FC_REP4] = {"REP4", F_INT, 1, 8, 1, 0, "x"},
+    [TX_FC_FOLLOW] = PE("CHAIN", TX_N_FCFOLLOW, 0),
+    [TX_FC_SKIP] = PD("SKIP", F_PCT, 0, 100, 0),
+    [TX_ET_AMOUNT] = PD("ENTRIES", F_PCT, 0, 100, 0),
+    [TX_ET_DWELL] = {"DWELL", F_INT, 1, 8, 2, 0, "ph"},
+    [TX_ET_STYLE] = PE("STYLE", TX_N_ETSTYLE, 1),
+    [TX_ET_FADE] = {"FADE", F_INT, 1, 4, 2, 0, "bar"},
+    [TX_ET_ROLE] = PE("ROLE", TX_N_ETROLE, 0),
+    [TX_PL_LENGTH] = {"LENGTH", F_ENUM, 0, 21, 0, TX_N_PLLEN, "min"},
+    [TX_PL_SHAPE] = PE("SHAPE", TX_N_PLSHAPE, 0),
+    [TX_PL_PEAK] = PD("PEAK", F_PCT, 0, 100, 62),
+    [TX_PL_COUNT] = {"COUNT", F_INT, 2, 8, 3, 0, ""},
+    [TX_PL_END] = PE("END", TX_N_PLEND, 0),
+    [TX_PL_USER1] = PD("USER1", F_PCT, 0, 100, 10),
+    [TX_PL_USER2] = PD("USER2", F_PCT, 0, 100, 30),
+    [TX_PL_USER3] = PD("USER3", F_PCT, 0, 100, 55),
+    [TX_PL_USER4] = PD("USER4", F_PCT, 0, 100, 80),
+    [TX_PL_USER5] = PD("USER5", F_PCT, 0, 100, 100),
+    [TX_PL_USER6] = PD("USER6", F_PCT, 0, 100, 75),
+    [TX_PL_USER7] = PD("USER7", F_PCT, 0, 100, 40),
+    [TX_PL_USER8] = PD("USER8", F_PCT, 0, 100, 10),
+    [TX_MACRO1] = PD("MACRO 1", F_PCT, 0, 100, 0),
+    [TX_MACRO2] = PD("MACRO 2", F_PCT, 0, 100, 0),
+    [TX_MACRO3] = PD("MACRO 3", F_PCT, 0, 100, 0),
+    [TX_MACRO4] = PD("MACRO 4", F_PCT, 0, 100, 0),
+    [TX_TW_HOLD] = PE("HOLD", TX_N_FOLLOW, 0),
+    [TX_FC_KEYB] = PD("KEY B", F_SEMI, -12, 12, 0),
+    [TX_FC_KEYC] = PD("KEY C", F_SEMI, -12, 12, 0),
+    [TX_SUB_SPLIT] = PD("SPLIT", F_PCT, 0, 100, 0),
+    [TX_SUB_SPLIT_HOW] = PE("HOW", TX_N_SPLITHOW, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -208,10 +256,12 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
         "KNOB 2 on NOTES moves a note by the scale's notes (CHRD: the chord's). Notes already written stay: Snap to "
         "scale in the pattern's sheet (OCT+ held) moves them onto the scale, once."),
     T_(P_TRANS, "TRANSPOSE", "Moves the track's notes up or down by semitones."),
-    T_(P_SLEN, "PATTERN LENGTH", "How many steps the track's pattern has."),
-    T_(P_SDIV, "PATTERN DIVISION", "How long one step is."),
-    T_(P_SSWING, "PATTERN SWING", "Delays every second step, for a swung feel."),
-    T_(P_SGATE, "PATTERN GATE", "How long each step's note lasts, as a share of the step."),
+    T_(P_SLEN, "PATTERN LENGTH", "How many steps the track's pattern has. Each of its 8 patterns keeps its own."),
+    T_(P_SDIV, "PATTERN DIVISION", "How long one step is. Each of the track's 8 patterns keeps its own."),
+    T_(P_SSWING, "PATTERN SWING", "Delays every second step, for a swung feel. Each of the track's 8 patterns keeps "
+                                  "its own."),
+    T_(P_SGATE, "PATTERN GATE", "How long each step's note lasts, as a share of the step. Each of the track's 8 "
+                                "patterns keeps its own."),
     T_(P_VOICE, "VOICE MODE",
         "POLY plays chords; MONO one note at a time; LEG(ATO) one at a time, a note played while one is held "
         "not starting again; UNI stacks detuned voices on one note."),
@@ -334,8 +384,8 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
         "CHAIN: one send through all three effects in a row; SPLIT: a send to each effect of its own."),
     G_(G_BUDGET, PID_F_DEVICE, "VOICE BUDGET",
        "How much sound work the FM-1 shares out between the tracks; lower leaves more headroom, higher allows more voices."),
-    X_(TX_MODE, "GENERATOR MODE", "SEQ shows the pages of the MODE only. STEP plays the track's own steps; ARP the "
-                                  "keys held, as an arpeggio (the ARP button opens it too); CHORD plays a progression's chords in the track's scale "
+    X_(TX_MODE, "GENERATOR MODE", "SEQ and ARP show the pages of the MODE only. STEP plays the track's own steps; ARP the "
+                                  "keys held, as an arpeggio; CHORD plays a progression's chords in the track's scale "
                                   "(QNT CHRD: the other tracks follow them); TURING, EUCLID, MARKOV and MORPH make its notes; "
                                   "ATLAS plays kick, snare, hat and toms (best on a DRUM track); BOUNCE plays where a ball "
                                   "hits the walls of its box; AWAKE adds two loops of its own lengths; POLY steps four notes on four rhythms; "
@@ -532,7 +582,7 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_MIDI_CH, "MIDI OUT CHANNEL", "The MIDI channel this track's notes go out on over USB, so each track can play "
                                        "its own instrument. AUTO follows SYSTEM's ROUT (CH1-4: tracks on 1 to 4), a drum "
                                        "track the DRUM channel; OFF sends none of its notes. Saved with the project. "
-                                       "Which notes go out at all is the menu's MIDI OUT: KEYS, ALL or OFF. GLO > MIDI OUT, "
+                                       "Which notes go out at all is the menu's NOTES OUT: KEYS, ALL or OFF. GLO > MIDI OUT, "
                                        "a knob for each track."),
     XP_(TX_KEY_LINK, "KEY LINK", "LINKED: one key for the whole project. Changing ROOT on any melodic track sets it on "
                                 "the others too, as the scale always is; drum tracks keep theirs. OWN: each track its "
@@ -587,6 +637,96 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                            "Scala (.scl) files sent from the web editor (PROJECTS, Tunings), saved with the project. The "
                            "keys, the generators, QNT and chords play its degrees; ROOT and TRN move it. OFF, or an "
                            "empty slot, plays SCL's scale. SCL > SCALES, the USER family."),
+    X_(TX_SOUND, "SOUND", "OFF: this track plays no sound of its own, so it takes none of the FM-1's voices. Its notes "
+                          "still go out over MIDI on its channel, and its GATE, NOTE and CV still move the mods: a "
+                          "track for an outside synth, or a lane that only modulates the others. ON: as always. Saved "
+                          "with the project. OCT- held on GLO > MIDI OUT, a knob for each track."),
+    XP_(TX_FC_FORM, "CHAIN FORM", "One FORM for the whole project: on each phrase line it moves to its next letter, and "
+                                  "every generator track that FOLLOWs moves with it to its own A, B or C, so the tracks' "
+                                  "sections line up. OFF: each track as set (its own FORM, or none). GLO > CHAIN, KNOB 1."),
+    XP_(TX_FC_PHRASE, "CHAIN PHRASE", "How long a phrase of the CHAIN is: 4, 8 or 16 bars, counted from PLAY. The "
+                                      "letters change on its lines. GLO > CHAIN, KNOB 2."),
+    XP_(TX_FC_WANDER, "CHAIN WANDER", "0 plays the CHAIN's FORM as written, round and round. Up, the next letter is "
+                                      "more often chosen than read: A comes back the longer the music is away, a "
+                                      "new letter only after a return to A, and each phrase away makes the next new "
+                                      "section more different. The same piece from PLAY each time. GLO > CHAIN, KNOB 3."),
+    XP_(TX_FC_REP1, "CHAIN REPEAT 1", "How many phrases the CHAIN's first letter plays, 1 to 8. GLO > CHAIN, OCT+ "
+                                      "held, KNOB 1."),
+    XP_(TX_FC_REP2, "CHAIN REPEAT 2", "How many phrases the CHAIN's second letter plays, 1 to 8. GLO > CHAIN, OCT+ "
+                                      "held, KNOB 2."),
+    XP_(TX_FC_REP3, "CHAIN REPEAT 3", "How many phrases the CHAIN's third letter plays, 1 to 8. GLO > CHAIN, OCT+ "
+                                      "held, KNOB 3."),
+    XP_(TX_FC_REP4, "CHAIN REPEAT 4", "How many phrases the CHAIN's fourth letter plays, 1 to 8. GLO > CHAIN, OCT+ "
+                                      "held, KNOB 4."),
+    X_(TX_FC_FOLLOW, "FORM FOLLOW", "FOLLOW: this track's sections change with the CHAIN's letters, on its phrase "
+                                   "lines (its EVERY waits meanwhile). OWN: it keeps its own FORM. Not set, a track "
+                                   "follows while its own FORM is OFF. Only while the CHAIN's FORM is on. OCT+ held on "
+                                   "FORM, KNOB 2."),
+    X_(TX_FC_SKIP, "FORM SKIP", "The chance this track stays in its section one phrase longer where the CHAIN moves "
+                                "on, then catches up; never twice running. 0: always with the CHAIN. OCT+ held on "
+                                "FORM, KNOB 3."),
+    XP_(TX_ET_AMOUNT, "ENTRIES", "0: every track plays as set. Up, tracks drop out and come back on the CHAIN's phrase "
+                                 "lines: how many may be out at once, up to all but one. Exits come where a section "
+                                 "begins, melody first; entries one a phrase, bass first. Above 50 the phrase before a "
+                                 "return to A thins to the anchors and A comes back full. A muted track stays muted; "
+                                 "its key on GLO brings an out track back. GLO > ENTRIES, KNOB 1."),
+    XP_(TX_ET_DWELL, "ENTRIES DWELL", "The phrases a track stays in or out at least before Entries moves it again, 1 to "
+                                      "8. GLO > ENTRIES, KNOB 2."),
+    XP_(TX_ET_STYLE, "ENTRIES STYLE", "How a track leaves and comes back: CUT at once on the phrase line, or FADE over "
+                                      "FADE bars from it. GLO > ENTRIES, KNOB 3."),
+    XP_(TX_ET_FADE, "ENTRIES FADE", "The bars a FADE takes, 1 to 4. GLO > ENTRIES, KNOB 4."),
+    X_(TX_ET_ROLE, "ENTRIES ROLE", "What the track is to Entries: BASS comes in first and goes last, then RHYTHM, "
+                                   "HARMONY, MELODY (a melody only over a bass or harmony). ANCHOR is never taken out. "
+                                   "AUTO: CHORD is harmony, ATLAS or a drum sound rhythm, notes mostly below C3 bass, "
+                                   "else melody. GLO > ENTRIES with OCT+ held, or OCT+ held on FORM, KNOB 4."),
+    XP_(TX_PL_LENGTH, "PIECE LENGTH", "FREE: the music plays on unplanned. A length, 1 minute to 4 hours: the piece is "
+                                      "planned to it from PLAY, its SHAPE steering ENERGY (ARC how far), ENTRIES (how "
+                                      "many tracks play) and the CHAIN (further away near the top, A in the last part). "
+                                      "At the tempo now: a faster tempo, more bars. GLO > PIECE, KNOB 1."),
+    XP_(TX_PL_SHAPE, "PIECE SHAPE", "The piece's arc from sparse to full: ARCH one climax at PEAK; RISE a build to the "
+                                    "end; FALL starts full and dissolves; PLATEAU a long hold round PEAK; VALLEY full "
+                                    "with a breakdown at PEAK; WAVES COUNT swells; BUILDS COUNT rises each dropped at "
+                                    "once; STEPS terraces; FLAT steady; USER your eight levels. All but RISE and FALL "
+                                    "begin and end sparse. GLO > PIECE, KNOB 2."),
+    XP_(TX_PL_PEAK, "PIECE PEAK", "Where the climax of ARCH, PLATEAU, VALLEY or STEPS sits, as a share of the length "
+                                  "(62 %: the golden section). GLO > PIECE, KNOB 3."),
+    XP_(TX_PL_COUNT, "PIECE COUNT", "How many swells (WAVES), builds (BUILDS) or terraces (STEPS), 2 to 8. GLO > PIECE, "
+                                    "KNOB 3."),
+    XP_(TX_PL_END, "PIECE END", "At the end of the LENGTH: STOP lets the tracks fade and the tails ring, then stops; "
+                                "LOOP plays the same piece again; NEW draws new SEEDs and plays a new piece; FREE plays "
+                                "on unplanned. GLO > PIECE, KNOB 4."),
+    XP_(TX_PL_USER1, "PIECE USER 1", "SHAPE USER: the level at the piece's start. GLO > PIECE, OCT+ held, KNOB 1."),
+    XP_(TX_PL_USER2, "PIECE USER 2", "SHAPE USER: the level a seventh in. GLO > PIECE, OCT+ held, KNOB 2."),
+    XP_(TX_PL_USER3, "PIECE USER 3", "SHAPE USER: the level two sevenths in. GLO > PIECE, OCT+ held, KNOB 3."),
+    XP_(TX_PL_USER4, "PIECE USER 4", "SHAPE USER: the level three sevenths in. GLO > PIECE, OCT+ held, KNOB 4."),
+    XP_(TX_PL_USER5, "PIECE USER 5", "SHAPE USER: the level four sevenths in. GLO > PIECE, OCT- held, KNOB 1."),
+    XP_(TX_PL_USER6, "PIECE USER 6", "SHAPE USER: the level five sevenths in. GLO > PIECE, OCT- held, KNOB 2."),
+    XP_(TX_PL_USER7, "PIECE USER 7", "SHAPE USER: the level six sevenths in. GLO > PIECE, OCT- held, KNOB 3."),
+    XP_(TX_PL_USER8, "PIECE USER 8", "SHAPE USER: the level at the end. GLO > PIECE, OCT- held, KNOB 4."),
+#define MACRO_TEXT "A hand control for the whole project, 0 to 100 %. On its own it does nothing: pick MACRO as a mod's " \
+                   "SOURCE (MODS) and send it anywhere, to as many places as you like. GLO > PERF, KNOB 1 to 4."
+    XP_(TX_MACRO1, "MACRO 1", MACRO_TEXT),
+    XP_(TX_MACRO2, "MACRO 2", MACRO_TEXT),
+    XP_(TX_MACRO3, "MACRO 3", MACRO_TEXT),
+    XP_(TX_MACRO4, "MACRO 4", MACRO_TEXT),
+#undef MACRO_TEXT
+    X_(TX_TW_HOLD, "FOLLOW HOLD", "Sample and hold for FOLLOW: the followed track's note is taken only when the "
+                                  "HOLD track plays, and this track keeps playing it in its own rhythm until the next "
+                                  "one. OFF: a new note on each of its own hits. TWEAK, OCT+ held, KNOB 4."),
+#define FC_KEY_TEXT "A key change for the CHAIN's section: while the project plays it, every track that FOLLOWs the " \
+                    "CHAIN moves its notes this many semitones, scale and all (+5 a fourth up, +7 a fifth, -2 a tone " \
+                    "down). STEP tracks move too; drum tracks and OWN tracks keep theirs. A " \
+                    "is the key as set. 0: no change. SCL's Key in B and Key in C rows; saved with the project."
+    XP_(TX_FC_KEYB, "KEY B", FC_KEY_TEXT),
+    XP_(TX_FC_KEYC, "KEY C", FC_KEY_TEXT),
+    X_(TX_SUB_SPLIT, "TIMING SPLIT", "The chance a step plays at half its division: 1/8 to 1/16. HOW says what it does. "
+                                     "Never the bar's first step, nor a step that ratchets or ties. The same each "
+                                     "time the piece plays; ROLL gives new tosses. 0 off. OCT+ held on TIMING, KNOB 1."),
+    X_(TX_SUB_SPLIT_HOW, "TIMING HOW", "What a SPLIT step does. DOUBLE: the note, then a neighbouring note of the scale "
+                                       "halfway through the step (a drum: the same hit). PUSH: the note halfway "
+                                       "through the step, late only. MIX: tosses for one or the other. OCT+ held on "
+                                       "TIMING, KNOB 2."),
+#undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
 };

@@ -9,11 +9,19 @@
 <b><a href="https://github.com/Rastapopolix/tessera/releases/latest">Releases</a></b>
 </p>
 
-**Tessera** is generative firmware for the M-Vave FM-1: systems that generate musical relationships, not just notes.
-Four tracks and thirteen generators: evolve the phrases, build them into song forms and modulate anything from
-anything, while the tracks follow, answer and share one harmony. The FM-1 feels like a small generative modular system:
-one instrument with one musical idea behind it. Small tiles, set into a larger pattern. GPL-3.0-only.
-**Status: Experimental.**
+**Tessera** is generative firmware for the M-Vave FM-1: an instrument for composing through systems. Instead of
+programming every note, you set up how the music behaves, and it plays.
+
+Each of the four tracks plays written steps or one of thirteen generators. The tracks listen to each other: a bass
+follows a melody, a written line seeds a generator, a chord track keeps every part in key, and any source can move
+almost any setting. And the music grows: phrases evolve, sections form, parts drop out and come back, and a whole
+piece can follow a shape you choose over minutes or hours, or never stop.
+
+It sits between a step-based groovebox and a self-playing ambient firmware. You build the system yourself, you can
+reach into it at any level, from one note to the arc of a three-hour piece, and nothing runs unless you switch it on.
+Every random choice comes from a seed, so PLAY replays a piece exactly and ROLL finds a new one.
+
+GPL-3.0-only. **Status: Experimental.**
 By **Theo Dainis** ([Rastapopolix](https://github.com/Rastapopolix)).
 
 Tessera grew out of Melodee (Tess), a fork of [Melodee](https://github.com/keremimo/melodee) by **keremimo**,
@@ -36,7 +44,9 @@ Each release has two builds: `tessera-X.Y.fwsc` (standard, dual core: start here
 `tessera-X.Y-1core.fwsc` (single core, for FM-1s that crash with the standard build).
 
 Do not unplug the FM-1 while it is writing. Tessera is experimental in every sense of the word: use it at your own risk. The installer
-page also has a way back to the official V15 firmware, with a backup first.
+page also has a way back to the official firmware, with a backup first: V15 or V16, whichever the FM-1 had before
+Tessera (its start-up part decides; the page says which one it needs). M-VAVE's own updater (M-UPGRADE 3.11 and
+later) works with Tessera 3.3 and later only: earlier Tessera reports an identity it refuses.
 
 ---
 
@@ -63,8 +73,8 @@ page also has a way back to the official V15 firmware, with a backup first.
 * **MIDI OUT** of every track and the generators, each on a channel of its own (GLO > MIDI OUT), and **CLOCK OUT**,
   over USB.
 * **Its own look**: one ink on black and a 5 x 7 pixel font, as on a monochrome OLED; YELLOW by default, or
-  WHITE, GREEN, BLUE, RED, or ORANGE, PINK, HOT PINK or LILAC as the FM-1's shells, or MOSAIC: a colour per track
-  (MENU > COLOR).
+  WHITE, GREEN, BLUE, RED, or ORANGE, PINK, HOT PINK or LILAC as the FM-1's shells, or MOSAIC, SUNSET, OCEAN or NEON: a colour per
+  track (MENU > COLOR).
 
 The **[manual](MANUAL.md)** covers every page, knob and shortcut; **[RECIPES.md](RECIPES.md)** has step-by-step
 patches and tips.
@@ -120,7 +130,7 @@ patches and tips.
 </table>
 
 **The inks** (MENU > COLOR), the same HOME in each: YELLOW is the default; ORANGE, PINK, HOT PINK and LILAC match the
-FM-1's shells; MOSAIC gives each track its own colour and shows the selection in white.
+FM-1's shells; MOSAIC, SUNSET, OCEAN and NEON give each track its own colour and show the selection in white.
 
 <table>
 <tr>
@@ -136,6 +146,11 @@ FM-1's shells; MOSAIC gives each track its own colour and shows the selection in
 <td align="center"><img src="assets/gallery/ink_hot_pink.png" alt="HOT PINK" width="180"><br><b>HOT PINK</b></td>
 <td align="center"><img src="assets/gallery/ink_lilac.png" alt="LILAC" width="180"><br><b>LILAC</b></td>
 <td align="center"><img src="assets/gallery/ink_mosaic.png" alt="MOSAIC" width="180"><br><b>MOSAIC</b></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/gallery/ink_sunset.png" alt="SUNSET" width="180"><br><b>SUNSET</b></td>
+<td align="center"><img src="assets/gallery/ink_ocean.png" alt="OCEAN" width="180"><br><b>OCEAN</b></td>
+<td align="center"><img src="assets/gallery/ink_neon.png" alt="NEON" width="180"><br><b>NEON</b></td>
 </tr>
 </table>
 
@@ -156,7 +171,7 @@ I'm Theo Dainis, from New Zealand. I've been using and building synthesisers for
 
 ### Built with Claude Code
 
-Tessera's code is written with [Claude Code](https://claude.com/claude-code), Anthropic's AI coding tool. I designed it, made the decisions, and test every release on my own FM-1 before it goes out. The source is open, so you can read every line and every change. Like any firmware, it comes with no warranty: save a **Complete backup** from the web editor before you flash.
+As much as I'd like to take the credit, Tessera's code is written with [Claude Code](https://claude.com/claude-code), Anthropic's AI coding tool. I designed it, made the decisions, and test every release on my own FM-1 before it goes out. The source is open, so you can read every line and every change. Like any firmware, it comes with no warranty: save a **Complete backup** from the web editor before you flash.
 
 ---
 

@@ -84,6 +84,20 @@
 #                   trip; a generator picked or unmuted mid-bar plays as if it had run from PLAY (ATLAS, EUCLID 13,
 #                   16T, SWING); logs in build/tessera_log/. TESSERA_UPDATE=1 rewrites the baseline (only after an intended
 #                   change of what they play). tests/gen_test.c: each generator alone (gen.c without the firmware).
+# FORM CHAIN (tests/chain_test.c): form chaining (form_chain.c) through the sequencer: the letters in order with their
+#                   REPEATs, the change on the phrase's first step (tracks of other DIVs the same block), FOLLOW / OWN
+#                   and its default, an OWN track as without the CHAIN, SKIP, WANDER's rules and repeatability, FLOURISH
+#                   on the CHAIN's phrase, STOP and PLAY; FORM OFF with the rest turned plays the same notes.
+# ENTRIES (tests/entries_test.c): Entries (entries.c) through the sequencer: changes only on phrase lines, exits only where
+#                   a section begins, one entry a phrase, DWELL, at most ENTRIES out and one always playing, ANCHOR,
+#                   a melody over a bass or harmony, the breakdown before A and the full return, FORM OFF's sections,
+#                   PLAY again, CUT / FADE, no voice from a silent track, hand mutes and GLO's key, SOLO, AUTO's roles;
+#                   ENTRIES 0 with the rest turned plays the same notes.
+# SPLIT (tests/split_test.c): TIMING's SPLIT through the real sequencer, read off MIDI OUT.
+# PIECE (tests/planner_test.c): the piece planner (planner.c): the ten SHAPEs (range, PEAK, COUNT, USER, sparse ends),
+#                   LENGTH FREE with the rest turned plays the same notes, a 10-minute ARCH (intro, top, outro, the
+#                   CHAIN home for its last 15 %, ENERGY its curve, CONTRAST near the top), END STOP / LOOP / NEW / FREE,
+#                   a tempo change, the PIECE knobs.
 # LONG-FORM (tests/longform_test.c): eight hours of ten patches left playing (notes only: the sequencer without the
 #                   voices, checked against mix_block for the first two minutes): no long silence, no collapse to one
 #                   note, no loop replayed for minutes, not thinning out by the last hour; a table of every measure in
@@ -182,6 +196,13 @@ demo_tests() {                                    # the demos made again, the sh
     mkdir -p build/demos &&
         "$OUT/demo_projects" make build/demos 20 &&
         "$OUT/demo_projects" check demos &&
+        mkdir -p build/demos/checks &&            # the test projects (demos/checks/): made again, the shipped ones load
+        "$OUT/demo_projects" checks make build/demos/checks 20 &&
+        "$OUT/demo_projects" checks check demos/checks &&
+        for _d in demos/checks/*.tsp; do
+            cmp -s "$_d" "build/demos/checks/${_d#demos/checks/}" ||
+                echo "== note: $_d differs from the one made now: make the test projects again (demos/checks/README.md)"
+        done &&
         for _d in demos/*.tsp; do                 # (a note, not a failure: a new setting's default changes them too)
             cmp -s "$_d" "build/demos/${_d#demos/}" ||
                 echo "== note: $_d differs from the one made now: make the demos again (demos/README.md)"
@@ -272,7 +293,7 @@ if core; then
     t "cache RAM startup, memory faults and safe fallback" cache_ram_test
     t "system clock: read only, never written" clock_test -O1
     t "stock V15 supply startup, timeouts and read-back faults" power_test -O1
-    job step "nightly and synth-only site preserve release and editor" python3 tests/nightly_site_test.py
+    job step "beta, nightly and synth-only site preserve release and editor" python3 tests/nightly_site_test.py
     run "audio diagnostics schema compatibility" python3 tests/usb_audio_stats_test.py
     run "target budget: natural loops and FPU decoding" python3 tests/target_budget_test.py
     run "header messages: every literal fits the Mono header (15 characters)" python3 tests/msg_len_test.py
@@ -349,11 +370,12 @@ if core && [ $TABLES = 1 ]; then
     t "audio: silent bench keeps synthesis running and silences physical output" audio_silent_test:audio_test \
         -DMELODEE_BENCH_SILENT=1 $FW
     t "persistence: deferred settings, retry and failed-save rollback" persistence_test $FW
+    t "flash JEDEC gate: accepted parts (Puya, UCUN) enable writes, unknown IDs stay RAM-only" flash_id_test $FW
     t "first boot: foreign settings, safe defaults, ownership and interrupted cleanup" settings_origin_test $FW
     t "first boot: reset unsupported preset banks, preserve good entries and retry cuts" preset_boot_reset_test $FW
     t "storage safety: protect unreadable records until confirmed replacement" storage_safety_test $FW
     t "full backup: CRC before writes, stale runtime, USB reset / timeout, malformed objects, older projects" backup_test $FW
-    t "demo projects (demos/): made, saved, backed up, loaded and played; the shipped ones load; put into a backup" \
+    t "demo and test projects (demos/, demos/checks/): made, saved, backed up, loaded and played; the shipped ones load; put into a backup" \
         demo_projects -O2 $FW -DMELODEE_SID=0 -DMELODEE_SID_KIT=0 -DMELODEE_PHYS=0 -DTRK_START_TESS=1 -- demo_tests
     t "engines off (FM6, CZ-1, ORACLE left out): never offered, a project's tracks of them SID INIT, the parts play" \
         engine_switch_test $FW -DMELODEE_FM6=0 -DMELODEE_CZ=0 -DMELODEE_ORACLE=0
@@ -367,6 +389,14 @@ if core && [ $TABLES = 1 ]; then
     mkdir -p build/tessera_log
     t "TESSERA generators: notes per scenario against tests/tessera_baseline.txt, stops clean, saved block" tessera_test \
         -O2 $FW -- "$OUT/tessera_test" tests/tessera_baseline.txt build/tessera_log
+    t "FORM CHAIN: the project's FORM on the bar clock: order, counts, FOLLOW / OWN, SKIP, WANDER, OFF unchanged" \
+        chain_test -O2 $FW
+    t "ENTRIES: tracks out and back on the phrase lines: the rules, DWELL, anchors, breakdowns, CUT / FADE, hand, OFF unchanged" \
+        entries_test -O2 $FW
+    t "SPLIT: TIMING's SPLIT: DOUBLE, PUSH, MIX on generators, STEP and drums; SPLIT 0 and a generator's own notes unchanged" \
+        split_test -O1 $FW
+    t "PIECE: the planner: the SHAPEs, FREE unchanged, ENERGY / Entries / the CHAIN steered, END STOP LOOP NEW FREE, tempo" \
+        planner_test -O2 $FW
     t "GEN: each generator on its own (gen.c alone): ranges, rests, draws per step, determinism, mutation, sections" \
         gen_test -O2 $FW
     t "LONG-FORM: 8 hours of 10 patches: no long silence, one-note collapse, frozen loop or thinning out" longform_test \

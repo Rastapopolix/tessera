@@ -8,7 +8,9 @@
  * them as the step goes on (seq_sub_tick, from seq_grid_tick). x1, or nothing recorded: nothing armed, the step plays
  * as before. Generator tracks: the track's RATCH (the TIMING page); STEP tracks: each step's (step_ratch, its sheet).
  * Not repeated: notes NOTE LENGTH holds (FIXED, HIT), BRANCHed and LINKed notes (another track's voice), and a
- * step that slides or ties into the next. In MIDI clock mode the positions are its musical units, as seq_pos's */
+ * step that slides or ties into the next. In MIDI clock mode the positions are its musical units, as seq_pos's.
+ * SPLIT (TIMING, OCT+ held, any track's; below): a chance a step plays at half its division: DOUBLE two hits, the second
+ * a neighbouring note, PUSH the note halfway through the step, MIX tossing again for one or the other */
 #define SUB_NOTES (4u + NLANE)
 #define SUB_HITS_MAX 8u
 enum { SUB_EVEN, SUB_ACCEL, SUB_DECEL, SUB_SHAPES };   /* SHAPE: where the hits fall (tessera.sub_shape) */
@@ -45,12 +47,17 @@ static uint8_t seq_hum_due;         /* bit per track: a generator step held, to 
 static uint32_t seq_hum_at[NTRK], seq_hum_span[NTRK], seq_hum_n[NTRK], seq_humv_n[NTRK];
 static int32_t cord_tess_get(uint32_t tr, uint32_t x);   /* (cord.c) */
 static uint32_t seq_human_late(uint32_t tr, uint32_t span);
+enum { SPLIT_NONE, SPLIT_DOUBLE, SPLIT_PUSH };          /* what SPLIT made of this step (seq_split_toss) */
+static uint8_t seq_split[NTRK];
+static uint32_t seq_split_n[NTRK];                      /* SPLIT's draws since PLAY */
+static uint32_t seq_split_step(const track_t *t, const step_t *s, uint32_t tr);
+static void seq_split_done(track_t *t, uint32_t tr);
 
 /* PLAY, STOP: nothing recorded, armed or held on any track */
 static void seq_sub_clear(void)
 {
     seq_sub_rec = seq_sub_armed = seq_nudge_due = seq_nudge_early = seq_hum_due = 0;
-    for (uint32_t k = 0; k < NTRK; k++) seq_hum_n[k] = seq_humv_n[k] = 0;
+    for (uint32_t k = 0; k < NTRK; k++) seq_hum_n[k] = seq_humv_n[k] = seq_split_n[k] = seq_split[k] = arp_draws[k] = 0;
 }
 
 /* A step starts: what it plays is recorded from here, the last step's repeats are dropped */
@@ -114,7 +121,8 @@ static void seq_sub_arm(track_t *t, uint32_t hits, uint32_t span, int32_t start)
     s->span = span;
     s->start = start;
     s->hits = (uint8_t)hits;
-    s->shape = tr < TESSERA_TRACKS && tessera.sub_shape[tr] < SUB_SHAPES ? tessera.sub_shape[tr] : (uint8_t)SUB_EVEN;
+    s->shape = tr < TESSERA_TRACKS && tessera.sub_shape[tr] < SUB_SHAPES && seq_split[tr] != SPLIT_DOUBLE ?
+               tessera.sub_shape[tr] : (uint8_t)SUB_EVEN;   /* (SPLIT: halfway, whatever the SHAPE) */
     s->gate = t->seq_off / hits;                        /* (each hit's share, at most its gap: seq_sub_gap) */
     if (s->gate > span / hits && s->shape == SUB_EVEN) s->gate = span / hits;
     s->k = 1;
@@ -153,10 +161,11 @@ static void seq_step(track_t *t, const step_t *s, uint32_t period, uint32_t skip
 /* a STEP track's step s plays now, at samples into its span (0: on its line), its RATCH armed */
 static void seq_sub_play(track_t *t, const step_t *s, uint32_t period, uint32_t span, uint32_t skip, uint32_t at)
 {
-    uint32_t hits = step_ratch(s);
+    uint32_t tr = trk_index(t), hits = seq_split[tr] == SPLIT_DOUBLE ? 2u : step_ratch(s);
     if (hits > 1u) seq_sub_begin(t);
     seq_step(t, s, period, skip);
     if (hits > 1u) seq_sub_arm(t, seq_sub_can(t) ? hits : 1u, span - at, (int32_t)at);
+    seq_split_done(t, tr);
 }
 /* the step on its line (seq_grid_tick): played now, or held for its NUDGE (> 0) and HUMAN TIME, or, played early
  * already (< 0), its RATCH armed from where it played */
@@ -164,6 +173,7 @@ static void seq_nudge_step(track_t *t, const step_t *s, uint32_t period, uint32_
 {
     uint32_t tr = trk_index(t), at;
     int32_t ng = step_nudge(s);
+    seq_split[tr] = SPLIT_NONE;
     if (seq_nudge_early & (1u << tr)) {
         seq_nudge_early &= (uint8_t)~(1u << tr);
         if (seq_nudge[tr].hits > 1u)
@@ -171,8 +181,10 @@ static void seq_nudge_step(track_t *t, const step_t *s, uint32_t period, uint32_
         return;
     }
     seq_nudge_due &= (uint8_t)~(1u << tr);
+    seq_split[tr] = (uint8_t)seq_split_step(t, s, tr);
     at = (ng > 0 ? span * (uint32_t)ng / 16u : 0u) + (ng < 0 ? 0u : seq_human_late(tr, span));   /* (an early NUDGE:
                                                      * no HUMAN; it plays on its line here) */
+    if (seq_split[tr] == SPLIT_PUSH) at += span / 2u;
     if (at > span * 15u / 16u) at = span * 15u / 16u;   /* (no later than NUDGE's latest) */
     if (!at) {
         seq_sub_play(t, s, period, span, skip, 0);
@@ -235,7 +247,7 @@ static uint32_t seq_human_late(uint32_t tr, uint32_t span)   /* samples late, 0.
     uint32_t ms = tr < TESSERA_TRACKS ? (uint32_t)cord_tess_get(tr, TX_SUB_HUMAN) : 0u, x, most;
     if (!ms) return 0;
     x = seq_hum_draw(tr, seq_hum_n[tr]++, 0x48554Du);
-    most = 441u * ms / 10u;                             /* (44.1 samples a ms) */
+    most = seq_units_of(441u * ms / 10u);               /* (44.1 samples a ms, in the sequencer's units) */
     if (most > span / 4u) most = span / 4u;
     return most ? x % (most + 1u) : 0u;
 }
@@ -253,11 +265,65 @@ static int32_t seq_human_vel(uint32_t tr, uint32_t *cut)
     *cut = (x >> 16) % (h / 2u + 1u);
     return (int32_t)((x & 0xFFFFu) % (2u * j + 1u)) - (int32_t)j;
 }
+/* ---- SPLIT: the toss on the step's line, on a stream of its own (HUMAN's way: a generator picks the same notes with it
+ * on or off, a piece replays the same, ROLL's SEED gives new tosses). Never the bar's or the pattern's first step, nor
+ * while the track records. SPLIT 0, or a step left as written: no draw. Its gate halved, DOUBLE's by seq_sub_arm */
+static uint32_t tess_steps_per_bar(const track_t *t);   /* (tessera.c) */
+static uint32_t seq_split_toss(const track_t *t, uint32_t tr)
+{
+    uint32_t amt = tr < TESSERA_TRACKS ? (uint32_t)cord_tess_get(tr, TX_SUB_SPLIT) : 0u, x, how;
+    if (!amt || !t->seq_idx || !(seq_run_step[tr] % tess_steps_per_bar(t)) ||
+        ((recording_tracks | song.rec) & (1u << tr)) || seq_erase_active(t)) return SPLIT_NONE;
+    x = seq_hum_draw(tr, seq_split_n[tr]++, 0x53504Cu);
+    if ((x & 0xFFFFu) % 100u >= amt) return SPLIT_NONE;
+    how = tessera.sub_split_how[tr];
+    if (how == TESS_SPLIT_MIX) how = (x >> 16) & 1u;
+    return how == TESS_SPLIT_PUSH ? SPLIT_PUSH : SPLIT_DOUBLE;
+}
+/* a STEP track's step: as written if it ratchets, comes early, is a tie, rest or timed notes, slides or is slid into */
+static uint32_t seq_split_step(const track_t *t, const step_t *s, uint32_t tr)
+{
+    uint32_t len = t->p[P_SLEN] ? (uint32_t)t->p[P_SLEN] : 1u;
+    if (step_ratch(s) > 1u || step_nudge(s) < 0 || s->time != ST_NOTE || (!s->n && !s->hit) ||
+        (s->flags & (SF_SLIDE | SF_RECORDED)) || (t->seq_hold && t->seq_n) ||
+        seq_steps(t)[(t->seq_idx + 1u) % len].time == ST_TIE) return SPLIT_NONE;
+    return seq_split_toss(t, tr);
+}
+/* The step played. PUSH: half its gate. DOUBLE, armed: the second hit's notes a degree away (seq_sub[].note[] is only read
+ * for the repeats): a generator's up or down, tossed, a STEP track's toward the next written note, as ADORN; a drum hit
+ * the same hit again */
+static void seq_split_done(track_t *t, uint32_t tr)
+{
+    seq_sub_t *s = &seq_sub[tr];
+    uint32_t i;
+    int32_t deg = 1;
+    if (seq_split[tr] == SPLIT_PUSH) {
+        if (t->seq_n && !t->seq_hold) t->seq_off = t->seq_off / 2u < SUB_GATE_MIN ? SUB_GATE_MIN : t->seq_off / 2u;
+        return;
+    }
+    if (seq_split[tr] != SPLIT_DOUBLE || !(seq_sub_armed & (1u << tr)) || drum_track(t) ||
+        tessera.mode[tr] == TESS_ENG_GRIDS) return;
+    if (tessera.mode[tr] != TESS_ENG_OFF) {
+        if (!(seq_hum_draw(tr, seq_split_n[tr], 0x444547u) & 1u)) deg = -1;
+    } else {
+        uint32_t len = t->p[P_SLEN] ? (uint32_t)t->p[P_SLEN] : 1u;
+        for (i = 1; i < len; i++) {
+            const step_t *n = &seq_steps(t)[(t->seq_idx + i) % len];
+            if (n->time != ST_NOTE || !n->n) continue;
+            if ((int32_t)n->note[0] + tessera_key_now(tr) < (int32_t)s->note[0]) deg = -1;
+            break;
+        }
+    }
+    for (i = 0; i < s->n; i++) s->note[i] = (uint8_t)clamp(tessera_pitch_turn(t, s->note[i], deg, 0), 0, 127);
+}
+
 static void seq_gen_play(track_t *t, uint32_t tr, uint32_t span, uint32_t at)   /* the generator step, at samples in */
 {
     seq_sub_begin(t);                                   /* (SUB: the notes it plays recorded, its RATCH armed) */
     tessera_clock_step(t);
-    seq_sub_arm(t, seq_sub_can(t) ? tessera_ratchet(tr) : 1u, span > at ? span - at : 1u, (int32_t)at);
+    seq_sub_arm(t, !seq_sub_can(t) ? 1u : seq_split[tr] == SPLIT_DOUBLE ? 2u : tessera_ratchet(tr),
+                span > at ? span - at : 1u, (int32_t)at);
+    seq_split_done(t, tr);
 }
 /* a generator track's step on its line: played now, or held for HUMAN (one still held from the last step plays
  * first: its place did not come, a DIV change) */
@@ -266,9 +332,13 @@ static void seq_gen_step(track_t *t, uint32_t tr, uint32_t span)
     uint32_t late;
     if (seq_hum_due & (1u << tr)) {
         seq_hum_due &= (uint8_t)~(1u << tr);
+        seq_split[tr] = SPLIT_NONE;
         seq_gen_play(t, tr, 1u, 0u);
     }
+    seq_split[tr] = (uint8_t)(tessera.sub_ratch[tr] ? SPLIT_NONE : seq_split_toss(t, tr));   /* (RATCH wins; its CHANCE is
+                                                         * only drawn after the notes, so the whole track) */
     late = seq_human_late(tr, span);
+    if (seq_split[tr] == SPLIT_PUSH) late += span / 2u; /* (HUMAN's on top; at most 3/4 of the step) */
     if (!late) { seq_gen_play(t, tr, span, 0u); return; }
     seq_hum_at[tr] = late;
     seq_hum_span[tr] = span;

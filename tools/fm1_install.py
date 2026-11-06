@@ -11,13 +11,13 @@ device asks (SysEx read requests on the logical image) and we answer. Then
 the FM-1 restarts and the installed identity is checked.
 
   fm1_install.py PACKAGE.fwsc [--port NAME] [--yes] [--force]
-  fm1_install.py FM-1.fwsc            (the official V15 file: back to the stock firmware)
+  fm1_install.py FM-1.fwsc            (the official V15 or V16 file: back to the stock firmware)
   fm1_install.py --info [--port NAME]
 
 If the FM-1 is still in update mode (an earlier install was cut off), the
 install finishes the write, but only with the package's own loader: Tessera's
 (ota-FM-1_900, "Melodee Update") for a Tessera package, the official one
-(ota-FM-1_015) for the official V15. A package with --force never resumes.
+(ota-FM-1_015) for the official V15 or V16. A package with --force never resumes.
 Needs mido with python-rtmidi.
 
 Exit codes: 0 done, 1 cancelled or other error, 2 bad arguments or package,
@@ -41,6 +41,9 @@ LOADER_MARK = b"FELUCCA-LOADER-1"
 # the unmodified official FM-1 V15 (FM-1.fwsc from M-VAVE): returning to it is allowed without --force,
 # as the web installer's "Return to official V15" (web/fm1pkg.js validateStockPackage)
 STOCK_V15_SHA256 = "db1642b2b6fa5c2cccb11ffd13878068bb28601678d3644049f99dc40e7edb8a"
+# the unmodified official FM-1 V16 (M-VAVE's FM-1.fwsc since 2026-10-21, FM-1_016): a unit that ran V16 goes back to
+# it (firmware/src/ota.c stages an official package only when its head is the unit's; pin after Skiff 2.0.2, #64)
+STOCK_V16_SHA256 = "d017fb65e70aca97ee29d944470c3515a74581df5c0576bf70de917c7b2b61d5"
 # the update loaders on the handshake (web/fm1ota.js): Tessera's own (firmware/loader/loader.c, still Melodee's
 # identity) writes the app area only; the official one writes the whole package including the boot data and
 # reports the name in its update record (firmware/src/ota.c). Each package goes only to its own.
@@ -399,10 +402,10 @@ def load_package(path, force):
     product = product_of(raw)
     if not re.fullmatch(r"[^_]+_\d+", product):
         raise InstallError("badpkg", f"{path}: not an FM-1 package (identity {product!r})")
-    official = hashlib.sha256(raw).hexdigest() == STOCK_V15_SHA256
+    official = hashlib.sha256(raw).hexdigest() in (STOCK_V15_SHA256, STOCK_V16_SHA256)
     if LOADER_MARK not in raw and not official and not force:
         raise InstallError("badpkg", f"{path}: no Melodee update loader in this package; only Melodee's own "
-                                     "packages and the unmodified official V15 (FM-1.fwsc) are installed "
+                                     "packages and the unmodified official V15 or V16 (FM-1.fwsc) are installed "
                                      "(--force overrides)")
     loader = STOCK_LOADER if official else TESSERA_LOADER if LOADER_MARK in raw else None
     return product, logical_image(raw), loader

@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 /* ORACLE: two oscillators, Poly-Mod and a four-pole ladder, after the Prophet-5 (Rev 1 to Rev 4). The engine is the
  * Prophet engine of Melodee 1.4 (eng_prophet_test.c, retired here 2026-10-22), back under its own name with its own
- * sounds: no factory bank, no SysEx, no user bank. The sound is the track's patch (or_patch: the panel's values,
+ * sounds: no factory bank, no SysEx. The sound is the track's patch (or_patch: the panel's values,
  * 0..127, the Prophet's order), edited on ORACLE's pages (params.c, oracle_pages.c) and saved with the project
- * (project_tsp.c TSP_ORACLE).
+ * (project_tsp.c TSP_ORACLE) and in a SAVE > USER record (upreset.c UP_VER_ORACLE).
  *
  * Signal path: oscillator A (saw, pulse; sync to B) and B (saw, triangle, pulse; keyed or fixed, low range) and
  * noise into a mixer, a 4-pole ladder (LATE: the Rev 3 model, linear stages; EARLY: Rev 1/2, each stage saturating,

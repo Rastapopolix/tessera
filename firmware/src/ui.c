@@ -75,6 +75,20 @@ static uint8_t browse_loads, browse_mark;    /* sound loads so far; at the brows
  * 1.3.4: left as saved, never read); bits 5..7 MIDI OUT and CLOCK OUT (midi_out.c: written by settings_export). */
 #define PREF_BITS (favorites.factory[15][30])
 #define PREF_ACCEL_OFF 2u
+/* MENU > KNOBS (Mono): the four knob columns as dials (the default) or bars; favorites.factory[8][26] tagged BAR, any
+ * other byte DIAL (favorites.c) */
+#define KNOBS_SAVED (favorites.factory[8][26])
+#define KNOBS_BAR_TAG 0xB1u
+#define KNOBS_BAR (KNOBS_SAVED == KNOBS_BAR_TAG)
+/* MENU > LARGE VALUE (Mono): the knob turning, its name and value large across the foot. AUTO (the default) only where
+ * the page has no picture of its own (ui_mono.c mo_pic_own: HOME and the pages showing the output), so it never covers
+ * what the knob is moving; ON on every page; OFF never, HOME too. favorites.factory[8][28] tagged ON or OFF, any other
+ * byte AUTO (Theo 2026-11-06: over CONSTELLATION's sky it hid the move being made) */
+#define LARGE_SAVED (favorites.factory[8][28])
+#define LARGE_ON_TAG 0xB3u
+#define LARGE_OFF_TAG 0xB4u
+enum { LARGE_AUTO, LARGE_ON, LARGE_OFF };
+#define LARGE_MODE (LARGE_SAVED == LARGE_ON_TAG ? LARGE_ON : LARGE_SAVED == LARGE_OFF_TAG ? LARGE_OFF : LARGE_AUTO)
 
 static uint8_t sync_reload;                  /* engine / preset / project / user preset loaded: editor RELOAD push */
 
@@ -237,7 +251,18 @@ static int native_page(uint32_t i, uint32_t fam)       /* page i: one of fam's n
  * shows the track's MODE's only: STEP (NOTES), ARP (ARP, ARP 2), a generator (EVOLVE, FORM, TWEAK); GEN (MODE) and the
  * rest always. MODE: 0 STEP, 1 ARP (ARP's MODE not OFF), 2.. the generators (tessera.mode + 1) */
 static uint32_t fam_grp(uint32_t f) { return f == FAM_ARP ? FAM_SEQ : f; }
-static int in_fam(uint32_t i, uint32_t fam) { return fam_grp(PAGES[i].fam) == fam_grp(fam); }
+/* The ARP button's lane: how the track's notes are shaped (Theo, 3.3, after issue #441). A generator's EVOLVE, FORM,
+ * TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY; a STEP track's STEP EVOLVE, TWEAK, TIMING; an ARP track's ARP 2 and TWEAK.
+ * SEQ keeps what plays: GEN, NOTES, ARP (an ARP track's MODE RATE OCT GATE), PATTERN, TEMPO, PATTERNS, SONG */
+static int arp_page(uint32_t i)
+{
+    uint32_t g;
+    if (i >= NPAGES || PAGES[i].fam != FAM_ARP) return 0;
+    g = PAGES[i].graph;
+    return g == GR_NONE || g == GR_EVOLVE || g == GR_FORM || g == GR_TWEAK || g == GR_TWEAK2 || g == GR_NOTELEN ||
+           g == GR_TIMING || g == GR_ENERGY;
+}
+static int in_fam(uint32_t i, uint32_t fam) { return fam_grp(PAGES[i].fam) == fam_grp(fam) && !arp_page(i); }
 static uint32_t seqm_get(uint32_t tr)
 {
     tr %= NTRK;
@@ -291,8 +316,9 @@ static int seqm_page_ok(uint32_t i)                     /* (the page shown stays
     if (!ui.home && ui.page == i) return 1;
     if (p->graph == GR_EVOLVE || p->graph == GR_FORM || p->graph == GR_TWEAK || p->graph == GR_TWEAK2 ||
         p->graph == GR_NOTELEN || p->graph == GR_TIMING || p->graph == GR_ENERGY) return m >= 2u ||
-        ((p->graph == GR_EVOLVE || p->graph == GR_TIMING || p->graph == GR_TWEAK) && !m);   /* (STEP: STEP EVOLVE;
-                                                         * TIMING's SHAPE and HUMAN; TWEAK's HUMAN) */
+        ((p->graph == GR_EVOLVE || p->graph == GR_TIMING || p->graph == GR_TWEAK) && !m) ||
+        (p->graph == GR_TWEAK && m == 1u);              /* (STEP: STEP EVOLVE; TIMING's SHAPE and HUMAN; TWEAK's
+                                                         * HUMAN. ARP: TWEAK's SHIFT and HUMAN) */
     if (p->fam == FAM_ARP && (p->graph == GR_ARP || p->graph == GR_NONE)) return m == 1u;
     if (p->fam == FAM_SEQ && p->graph == GR_ROLL) return m < 2u;
     if (p->fam == FAM_SEQ && p->graph == GR_STEPS) return m >= 2u;   /* PATTERN: STEP and ARP have it on GEN */
@@ -307,6 +333,8 @@ static int page_visible(uint32_t i)
 {
     if (!seqm_page_ok(i))
         return 0;
+    if (PAGES[i].graph == GR_LAND || PAGES[i].graph == GR_PERF)                      /* LANDSCAPE: the Mono look's (ui_land.c) */
+        return MELODEE_LOOK;
     if (PAGES[i].graph == GR_MOD)                       /* Tessera: MODS (the cords) instead, MOD's routes become */
         return 0;                                       /* cords (cord.c cord_adopt) */
     if(PAGES[i].fam==FAM_FX && PAGES[i].scope==SC_TRACK && PAGES[i].id[0]==P_FXSEND)
@@ -517,6 +545,7 @@ static void grid_acc(track_t *t, uint32_t i, uint32_t l, uint32_t on)
 
 /* SEQ cursor: wraps inside the pattern length, the bank follows, a step entry ends */
 static void notes_preview(void);
+static void notes_preview_start(uint32_t midi);
 static uint32_t drum_hit_selected(void);
 static void cursor_set(int32_t c)
 {
@@ -559,6 +588,7 @@ static uint32_t page_nf(void)
 {
     uint32_t fam = fam_grp(cur_page()->fam);
     if ((ui.via == FAM_ENV || ui.via == FAM_LFO) && native_page(ui.page, ui.via)) return ui.via;
+    if (arp_page(ui.page)) return FAM_ARP;              /* (ARP, ARP 2: fam_pages) */
     return (fam == FAM_ENV || fam == FAM_LFO) && native_titles(fam) ? fam : 0u;
 }
 /* SELECT: the open section's pages, both ways (wraps; pages the track does not show skipped). On an engine with its
@@ -600,7 +630,7 @@ static uint32_t fam_pages(uint32_t fam, uint8_t *pg)
         if (native_page(i, fam) && page_visible(i))
             pg[n++] = (uint8_t)i;
     for (i = 0; i < NPAGES; i++)
-        if (PAGES[i].fam == fam && page_visible(i) && !native_page(i, fam))
+        if (PAGES[i].fam == fam && page_visible(i) && !native_page(i, fam) && (fam != FAM_ARP || arp_page(i)))
             pg[n++] = (uint8_t)i;
     for (i = 0; fam == FAM_LFO && i < NPAGES; i++)
         if (native_page(i, fam) && page_visible(i))

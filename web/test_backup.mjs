@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
 // fm1backup.js against a simulated device: 7-bit packing, CRC, manifest checks, a full capture,
 // validation before the first write, restore order (live music last) and abort on a failed chunk.
-import { BACKUP_IDS, BACKUP_CMD, bkU32, bkR32, bkPack, bkUnpack, bkCrc, bkManifest, readBackup, captureBackup, restoreBackup } from "./fm1backup.js";
+import { BACKUP_IDS, BACKUP_CMD, bkU32, bkR32, bkPack, bkUnpack, bkCrc, bkManifest, readBackup, captureBackup, restoreBackup, tspName, readSlots, putProject } from "./fm1backup.js";
 
 let fails = 0;
 const ok = (c, what) => { console.log(`${what.padEnd(72)} ${c ? "ok" : "FAIL"}`); if (!c) fails++; };
@@ -194,6 +194,32 @@ ok(await athrows(()=>restoreBackup(oldOwnedTarget.request,ownedFile)) && !oldOwn
   const ownOnOld = device([], { ids: tessIds });
   ok(await athrows(() => restoreBackup(ownOnOld.request, ownFile)) && !ownOnOld.log.length,
      "backup (own format): older firmware refuses an archive of TSP1 projects before any write");
+}
+
+{ /* the editor's Demo projects: the shipped demos, each into one slot alone; nothing else written */
+  const { readFileSync } = await import("node:fs");
+  const demo = (f) => new Uint8Array(readFileSync(new URL(`../demos/${f}.tsp`, import.meta.url)));
+  const still = demo("still-tide"), harbour = demo("low-harbour"), ids = Array.from({ length: 30 }, (_, i) => i);
+  ok(tspName(still) === "STILL TIDE" && tspName(harbour) === "LOW HARBOUR", "demos: the shipped records' names");
+  const torn = still.slice(); torn[200] ^= 1;
+  ok(throws(() => tspName(torn)) && throws(() => tspName(rnd(400, 3))), "demos: a damaged or foreign record is refused");
+  const mine = harbour.slice(); mine.set([77, 89, 32, 83, 79, 78, 71, 0, 0, 0, 0], Buffer.from(harbour).indexOf("LOW HARBOUR"));   /* "MY SONG" */
+  const sum = new DataView(mine.buffer); { let h = 0x811c9dc5; for (const b of mine.subarray(0, -4)) h = Math.imul(h ^ b, 16777619) >>> 0; sum.setUint32(mine.length - 4, h, true); }
+  const d = device([[0, still.slice()], [1, rnd(1200, 3)], [3, mine], [4, rnd(3388, 4)]], { ids });
+  const before = await readSlots(d.request);
+  ok(JSON.stringify(before) === JSON.stringify([{ used: false, name: "" }, { used: true, name: "MY SONG" }, { used: true, name: null }, { used: false, name: "" }]),
+     "demos: what the slots hold, named (an older format's: null)");
+  let last = 0;
+  await putProject(d.request, 1, still, (done) => { last = done; });
+  await putProject(d.request, 3, harbour);
+  ok(d.objs.get(3).every((x, i) => x === still[i]) && d.objs.get(5).every((x, i) => x === harbour[i]) && last === still.length,
+     "demos: each demo written into its slot, with progress");
+  ok(JSON.stringify(d.log) === "[3,5]" && d.objs.get(4).length === 3388, "demos: no other object written");
+  ok(await athrows(() => putProject(d.request, 4, still)) && await athrows(() => putProject(d.request, 0, torn)) && d.log.length === 2,
+     "demos: a bad slot or a damaged record sends nothing");
+  const refusing = device([[0, still.slice()]], { ids }); refusing.request = ((r0) => async (r) => { const a = await r0(r); return r[1][0] === 2 ? [2, a[1], 2] : a; })(refusing.request);
+  ok(await athrows(() => putProject(refusing.request, 0, still)), "demos: a firmware that cannot read the record says so");
+  ok(await athrows(() => readSlots(device([[0, rnd(3388, 2)]], { ids }).request)), "demos: firmware before Tessera's own format is refused");
 }
 
 console.log(fails ? `BACKUP WEB TESTS FAILED (${fails})` : "backup web tests passed");

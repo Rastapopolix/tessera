@@ -231,3 +231,40 @@
 0x26e FORM DEVELOP             track 0..100 def 0
 0x26f MIDI OUT TRANSPOSE       track -48..48 def 0
 0x270 TUNING                   global 0..4 def 0
+0x271 SOUND                    track 0..1 def 0
+0x272 CHAIN FORM               global 0..6 def 0
+0x273 CHAIN PHRASE             global 0..2 def 1
+0x274 CHAIN WANDER             global 0..100 def 0
+0x275 CHAIN REPEAT 1           global 1..8 def 1
+0x276 CHAIN REPEAT 2           global 1..8 def 1
+0x277 CHAIN REPEAT 3           global 1..8 def 1
+0x278 CHAIN REPEAT 4           global 1..8 def 1
+0x279 FORM FOLLOW              track 0..1 def 0
+0x27a FORM SKIP                track 0..100 def 0
+0x27b ENTRIES                  global 0..100 def 0
+0x27c ENTRIES DWELL            global 1..8 def 2
+0x27d ENTRIES STYLE            global 0..1 def 1
+0x27e ENTRIES FADE             global 1..4 def 2
+0x27f ENTRIES ROLE             track 0..5 def 0
+0x280 PIECE LENGTH             global 0..21 def 0
+0x281 PIECE SHAPE              global 0..9 def 0
+0x282 PIECE PEAK               global 0..100 def 62
+0x283 PIECE COUNT              global 2..8 def 3
+0x284 PIECE END                global 0..3 def 0
+0x285 PIECE USER 1             global 0..100 def 10
+0x286 PIECE USER 2             global 0..100 def 30
+0x287 PIECE USER 3             global 0..100 def 55
+0x288 PIECE USER 4             global 0..100 def 80
+0x289 PIECE USER 5             global 0..100 def 100
+0x28a PIECE USER 6             global 0..100 def 75
+0x28b PIECE USER 7             global 0..100 def 40
+0x28c PIECE USER 8             global 0..100 def 10
+0x28d MACRO 1                  global 0..100 def 0
+0x28e MACRO 2                  global 0..100 def 0
+0x28f MACRO 3                  global 0..100 def 0
+0x290 MACRO 4                  global 0..100 def 0
+0x291 FOLLOW HOLD              track 0..4 def 0
+0x292 KEY B                    global -12..12 def 0
+0x293 KEY C                    global -12..12 def 0
+0x294 TIMING SPLIT             track 0..100 def 0
+0x295 TIMING HOW               track 0..2 def 0

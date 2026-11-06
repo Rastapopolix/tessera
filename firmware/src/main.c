@@ -264,6 +264,8 @@ static void fm1_main(void)
     glo_restore();                            /* CLK TUNE MIDI ROUT as last used, */
     project_boot();                           /* then the BOOT project or the template (they keep them) */
     splash_lay(400, boot_work.state != 2u);   /* the mosaic set in the boot's wait (src/splash.c) */
+    fm1_audio_unmute();                       /* the codec settled on silent I2S since audio_init: no cold-boot click
+                                               * (upstream dea0e59) */
     if (boot_work.state != 2u)
         lcd_fill(0, 0, 240, 240, T_BG);
 

@@ -141,6 +141,11 @@ typedef struct {
     tessera_sec_t    sec[TESSERA_TRACKS][3];
     uint8_t          last_note[TESSERA_TRACKS];
     uint8_t          follow_mem[TESSERA_TRACKS];   /* FOLLOW of a STEP track: its last sounding note + 1, 0 none yet */
+    /* FOLLOW's HOLD (TWEAK, OCT+ held, KNOB 4): 0 off (the followed note on each of this track's own hits, as before),
+     * 1..4 that track's hits sample the followed note and this track plays it until the next one: a sample and hold.
+     * Not in the packed block: the record's HOLD part */
+    uint8_t          follow_hold[TESSERA_TRACKS];
+    uint8_t          hold_mem[TESSERA_TRACKS];     /* HOLD: the sampled note + 1, 0 none yet (not saved) */
     uint8_t          active_gate[TESSERA_TRACKS];
     uint8_t          hit[TESSERA_TRACKS];     /* its last step played on its own voice (LOGIC; seq.c sets a STEP track's) */
     uint8_t          br_in[TESSERA_TRACKS];   /* its seq_notes hold notes another track BRANCHed onto it */
@@ -168,6 +173,8 @@ typedef struct {
                                                   * (STEP ones too); not in the packed block: the record's SUB part */
     uint8_t          sub_human[TESSERA_TRACKS];  /* 0..TESS_HUMAN_MS: HUMAN TIME, a step up to this many ms late, any
                                                   * track's (STEP ones too); not in the packed block: the HUMAN part */
+    uint8_t          sub_split[TESSERA_TRACKS];  /* 0..100: SPLIT, the chance a step plays at half its division (0: off), */
+    uint8_t          sub_split_how[TESSERA_TRACKS]; /* TESS_SPLIT_*: any track's; not in the packed block: the SPLIT part */
     uint8_t          acc_limit[TESSERA_TRACKS];  /* 1..TESS_ACC_LIMIT: the pitch accumulator's reach in degrees from the
                                                   * written note, a STEP track's (step_acc.c; 0 reads as 7) */
     uint8_t          acc_mode[TESSERA_TRACKS];   /* TESS_ACC_WRAP / PING / CLAMP: what it does at LIMIT; both not in the
@@ -178,6 +185,10 @@ typedef struct {
     /* MIDI OUT's TRANSPOSE (OCT+ held on GLO > MIDI OUT): each track's notes go out this many semitones up (down when
      * negative), the sound itself unchanged; 0 as before. Not in the packed block: the record's TRANSP part */
     int8_t           midi_tr[TESSERA_TRACKS];
+    /* SOUND (OCT- held on GLO > MIDI OUT): 1 OFF, the track plays no voices of its own (voice.c trk_note_on); its notes
+     * still go out over MIDI and its GATE / NOTE / CV still feed the mods: a MIDI track, or a lane of modulation. 0 ON,
+     * as before. Not in the packed block: the record's SOUND part */
+    uint8_t          sound_off[TESSERA_TRACKS];
     /* KEY LINK (ui.c scale_share; SCL's sheet), the project's: 1 one ROOT for every melodic track, shared as SCL and
      * QNT always are; 0 each track its own ROOT (as before). On in a new project; a record without its part: off */
     uint8_t          key_link;
@@ -195,6 +206,34 @@ typedef struct {
     uint8_t          en_rests;                   /* 0..100: how often the notes rest, 0 off */
     int8_t           en_level;                   /* -100..100: the energy the tide swings round, 0 as set (part 2) */
     uint8_t          en_depth[TESSERA_TRACKS];   /* 0..100: a track's share of ENERGY, 100 all (as before), 0 an anchor */
+    /* Form chaining (form_chain.c; the CHAIN page under GLO), the project's FORM on the bar clock, and each track's part
+     * in it (OCT+ held on FORM): the record's CHAIN part, not the packed block. FORM OFF: nothing changes */
+    uint8_t          fc_form;                    /* 0 OFF, 1..6 AB .. AABC (TESS_FORMS) */
+    uint8_t          fc_phrase;                  /* 0, 1, 2: a phrase of 4, 8 (default), 16 bars */
+    uint8_t          fc_wander;                  /* 0..100: the chance the next letter is drawn, 0 as written */
+    uint8_t          fc_rep[4];                  /* 1..8: the phrases each place of the FORM holds (default 1) */
+    uint8_t          fc_follow[TESSERA_TRACKS];  /* 0 not set (FOLLOW where the track's own FORM is OFF, else OWN),
+                                                  * 1 FOLLOW, 2 OWN */
+    uint8_t          fc_skip[TESSERA_TRACKS];    /* 0..100: the chance the track holds its section a phrase longer */
+    /* KEY B, KEY C (the KEY page, SCL's KEY row): semitones every following track's notes move by in the CHAIN's B / C
+     * section, -12..12, 0 the saved key (A always is). The record's FKEY part (written only when one is not 0) */
+    int8_t           fc_key[2];
+    /* Entries (entries.c; the ENTRIES page under GLO): tracks out and back in on the CHAIN's phrase lines. The record's
+     * ENTRY part. ENTRIES 0: nothing changes */
+    uint8_t          et_amount;                  /* 0..100: how many tracks may be out at most (of those that may), 0 off */
+    uint8_t          et_dwell;                   /* 1..8: the phrases a track stays in or out at least (default 2) */
+    uint8_t          et_style;                   /* 0 CUT, 1 FADE (default) */
+    uint8_t          et_fade;                    /* 1..4: a FADE's bars (default 2) */
+    uint8_t          et_role[TESSERA_TRACKS];    /* 0 AUTO, 1 BASS, 2 RHYTHM, 3 HARMONY, 4 MELODY, 5 ANCHOR (never out) */
+    /* The piece planner (planner.c; the PIECE page under GLO): the piece's LENGTH and SHAPE, steering ENERGY, Entries and
+     * the CHAIN. The record's PLAN part. LENGTH FREE: nothing changes */
+    uint8_t          pl_length;                  /* 0 FREE, 1..21 minutes (planner.c PL_MIN: 1 .. 240) */
+    uint8_t          pl_shape;                   /* 0 ARCH .. 9 USER */
+    uint8_t          pl_peak;                    /* 0..100: ARCH's, PLATEAU's, VALLEY's centre, % of the length (62) */
+    uint8_t          pl_count;                   /* 2..8: WAVES' swells, BUILDS' builds, STEPS' terraces (3) */
+    uint8_t          pl_end;                     /* 0 STOP, 1 LOOP, 2 NEW, 3 FREE */
+    uint8_t          pl_user[8];                 /* 0..100: USER's levels, evenly along the piece */
+    uint8_t          macro[4];                   /* 0..100: PERF's MACRO 1..4 (cord.c CS_MACRO1..4) */
 } tessera_state_t;
 
 extern tessera_state_t tessera;
@@ -251,6 +290,8 @@ void tessera_mutate(uint32_t tr);
 void tessera_seed_turn(uint32_t tr, int32_t s);    /* ROLL (EVOLVE page): the next seed, on the bar line */
 void tessera_evolve_knob(uint32_t k, int32_t s);
 void tessera_ev_layer_knob(uint32_t k, int32_t s);
+void tessera_tw_layer_knob(uint32_t k, int32_t s);
+void tessera_hold_hit(uint32_t tr);
 void tessera_fm_layer_knob(uint32_t k, int32_t s);   /* OCT+ held on FORM: KNOB 1 DEVELOP */
 void tessera_en_layer_knob(uint32_t k, int32_t s);   /* OCT+ held on ENERGY: KNOB 1 the track's DEPTH */   /* OCT+ held on a generator's EVOLVE: KNOB 1 GRAVITY */
 uint32_t tessera_every_bars(uint32_t every);
@@ -264,6 +305,21 @@ void tessera_len_knob(uint32_t k, int32_t s);       /* LENGTH page: MODE LEN KEY
 void tessera_len_tick(track_t *t, uint32_t n);      /* seq.c, each block: FIXED's held notes end on time */
 void tessera_len_stop(track_t *t);                  /* the held notes end now (panic, a pattern change) */
 void organic_play(void);                            /* seq.c, PLAY: SLOTH and OCHD from each track's SEED */
+void fchain_play(void);                             /* seq.c, PLAY: form chaining from the top (form_chain.c) */
+uint32_t tessera_chain_get(uint8_t seq[4], uint32_t *pos, uint32_t *left);   /* the project FORM: letters, place, left */
+int32_t tessera_key_now(uint32_t tr);   /* KEY B / C: the semitones track tr's notes move by now (form_chain.c) */
+void tessera_chain_knob(uint32_t k, int32_t s, int layer);   /* the CHAIN page: KNOB k turned s (layer: OCT+ held) */
+void entries_play(void);                            /* seq.c, PLAY: Entries from the top, everything in (entries.c) */
+void entries_tick(uint32_t n);                      /* seq.c, each block before the steps: the lines, the fades */
+int entries_hand_in(uint32_t tr);                   /* GLO's mute key: an out track back in (1 if it was out) */
+void mute_press(uint32_t tr, int all);              /* GLO's mute key / UNMUTE ALL: now or on MENU MUTES' line */
+uint32_t mute_waiting(void);                        /* the mute keys waiting for their line (blinking) */
+uint32_t tessera_entries_get(uint32_t *warn, uint8_t role[4]);   /* the tracks out, those about to change, the roles */
+void tessera_entries_knob(uint32_t k, int32_t s, int layer);   /* the ENTRIES page: KNOB k turned s (layer: OCT+ held) */
+void planner_play(void);                            /* seq.c, PLAY: the planned piece from the top (planner.c) */
+int tessera_piece_get(uint32_t *x, uint32_t *left); /* the piece: where (Q16), seconds left; 1 while planned */
+int32_t tessera_piece_shape(uint32_t x);            /* the SHAPE at x (Q16): Q15 0 sparse .. 32767 full */
+void tessera_piece_knob(uint32_t k, int32_t s, int layer);   /* the PIECE page: KNOB k (layer 1 OCT+, 2 OCT-) */
 void energy_play(void);                             /* seq.c, PLAY: ENERGY's tide and rests from the SEEDs (energy.c) */
 int32_t energy_now(void);                           /* the tide now, Q15 -32767 sparse .. 32767 full (cord source) */
 int energy_resting(void);                           /* 1 while the notes rest */
@@ -346,8 +402,25 @@ enum {
     TX_FM_DEVELOP,                                  /* (0x26E: FORM's DEVELOP, a generator track's) */
     TX_MIDI_TR,                                     /* (0x26F: MIDI OUT's TRANSPOSE, any track's) */
     TX_TUNE,                                        /* (0x270: the user tuning, the project's: tune.h tune_sel) */
+    TX_SOUND,                                       /* (0x271: SOUND ON / OFF, any track's: OFF plays no voices) */
+    TX_FC_FORM, TX_FC_PHRASE, TX_FC_WANDER,         /* (0x272..0x274: form chaining, the project's: one value, whichever
+                                                     * track) */
+    TX_FC_REP1, TX_FC_REP2, TX_FC_REP3, TX_FC_REP4, /* (0x275..0x278: the repeats of the chain's four places) */
+    TX_FC_FOLLOW, TX_FC_SKIP,                       /* (0x279, 0x27A: FOLLOW / OWN and SKIP, a generator track's) */
+    TX_ET_AMOUNT, TX_ET_DWELL, TX_ET_STYLE, TX_ET_FADE,   /* (0x27B..0x27E: Entries, the project's: one value, whichever
+                                                     * track) */
+    TX_ET_ROLE,                                     /* (0x27F: Entries' ROLE, any track's) */
+    TX_PL_LENGTH, TX_PL_SHAPE, TX_PL_PEAK, TX_PL_COUNT, TX_PL_END,   /* (0x280..0x284: the piece planner, the project's) */
+    TX_PL_USER1, TX_PL_USER2, TX_PL_USER3, TX_PL_USER4,             /* (0x285..0x28C: SHAPE USER's eight levels) */
+    TX_PL_USER5, TX_PL_USER6, TX_PL_USER7, TX_PL_USER8,
+    TX_MACRO1, TX_MACRO2, TX_MACRO3, TX_MACRO4,     /* (0x28D..0x290: PERF's four MACROs, the project's: cord sources) */
+    TX_TW_HOLD,                                     /* (0x291: FOLLOW's HOLD, a generator track's: OFF, T1..T4) */
+    TX_FC_KEYB, TX_FC_KEYC,                         /* (0x292, 0x293: the CHAIN's B and C sections' key, the project's) */
+    TX_SUB_SPLIT, TX_SUB_SPLIT_HOW,                 /* (0x294, 0x295: TIMING's SPLIT and HOW, any track's) */
     TX_COUNT
 };
+_Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95, "parameter ids are stored: never renumbered");
+enum { TESS_SPLIT_DOUBLE, TESS_SPLIT_PUSH, TESS_SPLIT_MIX, TESS_SPLIT_HOWS };   /* TX_SUB_SPLIT_HOW */
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */
 #define TESS_ACC_LIMIT 14u                          /* TX_ACC_LIMIT: up to two octaves of a 7-note scale */
 #define TESS_ACC_LIMIT_DEF 7u

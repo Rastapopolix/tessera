@@ -19,7 +19,7 @@ static void check(const char *what, int ok)
     bad += !ok;
 }
 
-static const char *const KIND[] = {"voice", "block", "depth", "step", "send"};
+static const char *const KIND[] = {"voice", "block", "depth", "step", "cc", "send", "cord", "fill", "tempo"};
 
 static cord_t C(uint32_t src, uint32_t st, uint32_t dst, uint32_t dt, int32_t amount, int32_t offset)
 {
@@ -136,9 +136,132 @@ static int behaviour(void)
         check("...the LFO's POL UNI: BI still pulls down at its bottom, UNI leaves it, its top up",
               lo < 50u && uni == 50u && top > 50u);
         trk[0].p[P_LPOL] = 0;
-        c.uni = 2;
-        check("...a polarity past UNI: refused", !cord_set(1, &c));
+        c.uni = 3;
+        check("...a polarity past GATE: refused", !cord_set(1, &c));
         cord_clear();
+        trk[2].p[P_LEVEL] = 100;
+    }
+
+    /* mods of mods (CK_CORD): M3 AMT turns mod 3's AMOUNT, a fixed mod's OFFSET; one level */
+    {
+        uint32_t lv[4];
+        uint8_t pk[CORD_PK_BYTES];
+        cord_clear();
+        trk[0].p[P_LPOL] = 0;
+        trk[0].lfo_val = 32767; trk[0].lfo_fade = 32767;
+        trk[1].lfo_val = 32767; trk[1].lfo_fade = 32767; trk[1].p[P_LPOL] = 0;
+        trk[2].p[P_LEVEL] = 50;
+        c = C(CS_LFO, 0, CD_LEVEL, 2, 0, 0);          /* mod 3: T1 LFO -> T3 LEVEL, its amount 0 */
+        cord_set(2, &c);
+        cord_tick();
+        mod_begin(&trk[2]); lv[0] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        c = C(CS_LFO, 1, CD_M1_AMT + 2u, 0, 40, 0);   /* mod 5: T2 LFO -> M3 AMT +40 % */
+        cord_set(4, &c);
+        cord_tick();
+        mod_begin(&trk[2]); lv[1] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        check("mod of mods: mod 3 at 0 moves nothing; M3 AMT +40 % (its source at the top) makes it +40 %, live",
+              lv[0] == 50u && cord_move(2) == 40 && lv[1] > 50u && cord_live(cord_get(2)) && cord_count() == 2u);
+        trk[1].lfo_val = -32767;
+        cord_tick();
+        mod_begin(&trk[2]); lv[2] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        check("...its source at the bottom: -40 %, LEVEL down; the set amount itself never changes",
+              cord_move(2) == -40 && lv[2] < 50u && cord_get(2)->amount == 0);
+        c = C(CS_OFF, 0, CD_M1_AMT + 2u, 0, 0, 100);  /* mod 6: a fixed +100 % more: clamped */
+        cord_set(5, &c);
+        trk[1].lfo_val = 32767;
+        cord_tick();
+        check("...two onto one add up, at most 100 %", cord_move(2) == 100);
+        c = C(CS_LFO, 0, CD_M1_AMT + 4u, 0, 100, 0);  /* mod 7 onto mod 5 (an M AMT mod): one level, nothing */
+        cord_set(6, &c);
+        c = C(CS_LFO, 0, CD_M1_AMT + 7u, 0, 100, 0);  /* mod 8 onto itself: nothing */
+        cord_set(7, &c);
+        cord_tick();
+        check("...one level: a mod onto an M AMT mod, or onto itself, turns nothing",
+              cord_move(4) == 40 && cord_move(7) == 100 && cord_move(2) == 100);
+        c = C(CS_OFF, 0, CD_PAN, 1, 0, 20);           /* mod 9: a fixed PAN +20; mod 10 turns its OFFSET */
+        cord_set(8, &c);
+        c = C(CS_OFF, 0, CD_M1_AMT + 8u, 0, 0, -50);
+        cord_set(9, &c);
+        cord_tick();
+        check("...a fixed mod: its OFFSET turned (+20 -50: -30)", cord_move(8) == -30);
+        check("...the destination track kept 0 (the project's, as a send effect's)", cord_get(4)->dst_trk == 0u);
+        cord_pack(pk);
+        cord_clear();
+        cord_tick();
+        check("...saved and loaded: the same mods, the same moves",
+              cord_unpack(pk) && (cord_tick(), cord_move(2) == 100) && cord_move(8) == -30 &&
+              cord_get(4)->dst == CD_M1_AMT + 2u);
+        cord_clear();
+        cord_tick();
+        check("...cleared: every move back to 0", cord_move(2) == 0 && cord_move(8) == 0);
+        trk[2].p[P_LEVEL] = 100;
+    }
+
+    /* GATE (CU_GATE): all while the source is over the threshold (its OFFSET), none under it; FILL held past half */
+    {
+        uint32_t lv[4];
+        uint8_t pk[CORD_PK_BYTES];
+        cord_t got[CORD_MAX];
+        cord_clear();
+        trk[0].p[P_LPOL] = 0; trk[0].lfo_fade = 32767;
+        trk[2].p[P_LEVEL] = 50;
+        c = C(CS_LFO, 0, CD_LEVEL, 2, 40, 0);          /* mod 1: T1 LFO as a GATE over 0 -> T3 LEVEL +40 % */
+        c.uni = CU_GATE;
+        check("GATE: set", cord_set(0, &c));
+        trk[0].lfo_val = -16000; cord_tick();
+        mod_begin(&trk[2]); lv[0] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        trk[0].lfo_val = 16000; cord_tick();
+        mod_begin(&trk[2]); lv[1] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        trk[0].lfo_val = 32767; cord_tick();
+        mod_begin(&trk[2]); lv[2] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        check("...under the threshold nothing, over it the whole amount, however far over",
+              lv[0] == 50u && lv[1] > 50u && lv[1] == lv[2]);
+        trk[0].lfo_val = -32767; cord_tick();
+        trk[0].lfo_val = 200; cord_tick();
+        lv[0] = (uint32_t)cord_gate_on(cord_get(0));
+        trk[0].lfo_val = 400; cord_tick();
+        lv[1] = (uint32_t)cord_gate_on(cord_get(0));
+        trk[0].lfo_val = 200; cord_tick();
+        lv[2] = (uint32_t)cord_gate_on(cord_get(0));
+        trk[0].lfo_val = -10; cord_tick();
+        lv[3] = (uint32_t)cord_gate_on(cord_get(0));
+        check("...a step of hysteresis: opens past threshold + 256, closes at the threshold or under",
+              !lv[0] && lv[1] && lv[2] && !lv[3]);
+        c.offset = 50;                                  /* the threshold +50 %: the LFO at +25 % stays shut */
+        cord_set(0, &c);
+        trk[0].lfo_val = 8192; cord_tick();
+        mod_begin(&trk[2]); lv[0] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        trk[0].lfo_val = 24000; cord_tick();
+        mod_begin(&trk[2]); lv[1] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        check("...the OFFSET is the threshold and moves nothing itself", lv[0] == 50u && lv[1] > 50u);
+        cord_pack(pk);
+        check("...saved in src_trk's bit 6, the track kept", pk[1] == 0x40u && pk[2] == CD_LEVEL);
+        cord_clear();
+        check("...loaded back a GATE", cord_unpack(pk) && cord_get(0)->uni == CU_GATE && cord_get(0)->src_trk == 0u &&
+                                       cord_get(0)->offset == 50);
+        pk[1] = 0xC0u;
+        check("...both bits (no such polarity): the block refused", !cord_parse(pk, got));
+        cord_clear();
+        c = C(CS_LFO, 0, CD_FILL, 3, 100, 0);           /* mod 1: T1 LFO as a GATE -> FILL 100 % */
+        c.uni = CU_GATE;
+        cord_set(0, &c);
+        trk[0].lfo_val = 16000; cord_tick();
+        lv[0] = seq_fill_mod;
+        trk[0].lfo_val = -16000; cord_tick();
+        lv[1] = seq_fill_mod;
+        check("FILL: held while the GATE is open, the destination track kept 0",
+              lv[0] && !lv[1] && cord_get(0)->dst_trk == 0u);
+        c.amount = 40;
+        cord_set(0, &c);
+        trk[0].lfo_val = 16000; cord_tick();
+        check("...a move under half: not held", !seq_fill_mod);
+        c = C(CS_OFF, 0, CD_FILL, 0, 0, 60);            /* a fixed +60 %: held */
+        cord_set(0, &c);
+        cord_tick();
+        lv[0] = seq_fill_mod;
+        cord_clear();
+        cord_tick();
+        check("...a fixed move past half holds it; cleared, let go", lv[0] && !seq_fill_mod);
         trk[2].p[P_LEVEL] = 100;
     }
 
@@ -613,7 +736,15 @@ int main(int argc, char **argv)
         for (k = 0; k < c; k++)
             if (cord_dest(k) && !strcmp(cord_dest(k)->name, d->name)) names = 0;
         if (c == CD_OFF) continue;
-        if (d->kind == CK_VOICE || d->kind == CK_DEPTH) {
+        if (d->kind == CK_CORD) {                       /* (a mod's move: M1 AMT .. M16 AMT, no parameter) */
+            if (d->pid != PID_NONE || d->md || c != CD_M1_AMT + (c - CD_M1_AMT) % 16u || c > CD_M16_AMT) mods = 0;
+        } else if (d->kind == CK_FILL) {                /* (the project's FILL: no parameter) */
+            if (d->pid != PID_NONE || d->md || c != CD_FILL) mods = 0;
+        } else if (d->kind == CK_TEMPO) {               /* (the project's tempo: no parameter) */
+            if (d->pid != PID_NONE || d->md || c != CD_TEMPO) mods = 0;
+        } else if (d->kind == CK_CC) {                  /* (CC OUT: a MIDI CC, no parameter) */
+            if (d->pid != PID_NONE || d->md || c != CD_CC) mods = 0;
+        } else if (d->kind == CK_VOICE || d->kind == CK_DEPTH) {
             if (d->pid != PID_NONE || !d->md || d->md >= MD_N || (d->md >= MD_RESERVED6 && d->md <= MD_RESERVED9) ||
                 (d->kind == CK_VOICE) != (d->md <= MD_AMP) || (d->kind == CK_DEPTH) != (d->md == MD_DEPTH))
                 mods = 0;

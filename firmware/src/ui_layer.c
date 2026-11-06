@@ -279,23 +279,16 @@ static void glo_map_back(void)                           /* the map's keys or kn
 /* a key pressed in layer l (k: 0 = F3 .. 26 = G5) */
 static void layer_key(uint32_t l, uint32_t k)
 {
-    uint32_t p = key_place(k), i;
+    uint32_t p = key_place(k);
     glo_map_back();
 
     if (l == LAYER_GLO) {
         if (key_black(k)) {
-            if (p < NTRK) {
-                trk[p].p[P_MUTE] = (int16_t)!trk[p].p[P_MUTE];
-                if (trk[p].p[P_MUTE]) {
-                    extern void tessera_kill(track_t *t);
-                    tessera_kill(&trk[p]);
-                }
-            }
+            if (p < NTRK) mute_press(p, 0);              /* (MENU MUTES: now, or on the next bar / phrase) */
         } else if (p < NTRK) {
             lys.solo |= 1u << k;                        /* (layer_masks: track_solo while held) */
         } else if (p == 4u) {
-            for (i = 0; i < NTRK; i++)
-                trk[i].p[P_MUTE] = 0;
+            mute_press(0, 1);
         } else if (p == 6u) {
             lys.fill |= 1u << k;                        /* (layer_keys: FILL while held) */
         } else if (p == 7u) {
@@ -387,7 +380,13 @@ static uint32_t layer_oct(uint32_t pressed, uint32_t oct)
 static const char W_NOTE[16];
 /* --------------------------------------------------------- the LEDs --- */
 /* lit = in effect now (held, the value, a track sounding), slow blink = can be pressed, dark = nothing there */
-static int glo_sounding(uint32_t t) { return !trk[t].p[P_MUTE] && (!track_solo || ((track_solo >> t) & 1u)); }
+static int glo_sounding(uint32_t t)
+{
+    uint32_t warn = 0, out = tessera_entries_get(&warn, 0);
+    if (((warn | mute_waiting()) >> t) & 1u) return (fm1_ms / 125u) & 1u;   /* (Entries or a waiting mute key changes it
+                                                                            * on the next line: a quick blink) */
+    return !trk[t].p[P_MUTE] && !((out >> t) & 1u && !((track_solo >> t) & 1u)) && (!track_solo || ((track_solo >> t) & 1u));
+}
 static uint32_t layer_leds(void)
 {
     uint32_t k, m = 0, blink = ((fm1_ms / 250u) & 1u) == 0u, l = ui.layer ? ui.layer : mixer_live() ? (uint32_t)LAYER_GLO : 0u;
@@ -487,7 +486,7 @@ static void layer_glo(void)
     lcell(LC_X(3), 50, LC_H, n, ICON_TEMPO, 0, "TAP", song.g[G_CLOCK] ? LS_DIM : LS_OFF, 0);
     for (e = 0; e < NTRK; e++) {                        /* the black keys 1..4: MUTE, latched */
         bnote(n, e);
-        lcell(LC_X(e), LM_Y, LM_H, n, ICON_MUTE, trk_icon(e, 0), 0, trk[e].p[P_MUTE] ? LS_MUTE : LS_OFF, 0);
+        lcell(LC_X(e), LM_Y, LM_H, n, ICON_MUTE, trk_icon(e, 0), 0, (mute_waiting() >> e) & 1u ? LS_WAIT : trk[e].p[P_MUTE] ? LS_MUTE : LS_OFF, 0);
     }
 }
 static void layer_scl(void)                             /* KNOB 2's scales, 4 x 4, the one now selected */
@@ -513,7 +512,7 @@ static void layer_glo_keys(int32_t h)
     cv_text_on(8, 6, &AF_X, "Keys", T_MID, T_PANEL);
     for (i = 0; i < 8u; i++) {
         int32_t x = x0 + (int32_t)i * (kw + 1);
-        int on = (i < NTRK && ((track_solo >> i) & 1u)) || (i == 6u && seq_fill), none = !WL[i][0][0], dim = i == 7u && song.g[G_CLOCK];
+        int on = (i < NTRK && ((track_solo >> i) & 1u)) || (i == 6u && (seq_fill || seq_fill_mod)), none = !WL[i][0][0], dim = i == 7u && song.g[G_CLOCK];
         uint16_t f = on ? (i < NTRK ? T_TRK(i) : T_THEME) : none ? ux_mix(T_PANEL, T_SURF, 50) : T_SURF, ink = on ? T_INK : dim ? T_DIM : T_TEXT;
         cv_rrect(x, wy, kw, h - wy - 6, 4, f, T_PANEL);
         if (!none) {
@@ -587,8 +586,9 @@ static void mo_layer(uint32_t l)
     for (i = 0; i < sizeof mo_col; i++)
         sig = (sig ^ p[i]) * 16777619u;
     if (l == LAYER_GLO)
-        sig += track_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u + (uint32_t)seq_fill * 7u +
-               (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 | trk[3].p[P_MUTE] << 3) * 131u;
+        sig += track_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u + (uint32_t)(seq_fill | seq_fill_mod) * 7u +
+               (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 | trk[3].p[P_MUTE] << 3) * 131u +
+               (mute_waiting() ? 1u + ((fm1_ms / 250u) & 1u) : 0u) * 4099u;   /* (a waiting mute blinks) */
     else
         sig += (uint32_t)TSEL->p[P_SCALE] * 31u;
     if (!ui.force && sig == ui.layer_sig)
@@ -606,12 +606,12 @@ static void mo_layer(uint32_t l)
             for (c = 0; c < NTRK; c++) {                /* "MUTE" over "1 F#" */
                 n[0] = (char)('1' + c), n[1] = ' ';
                 bnote(n + 2, c);
-                mo_lcell((int32_t)c, 52, "MUTE", n, trk[c].p[P_MUTE] != 0, 0, 1);
+                mo_lcell((int32_t)c, 52, "MUTE", n, (trk[c].p[P_MUTE] != 0) ^ ((mute_waiting() >> c) & (fm1_ms / 250u) & 1u), 0, 1);
                 n[2] = W_NOTE[c], n[3] = 0;
                 mo_lcell((int32_t)c, 71, "SOLO", n, (track_solo >> c) & 1u, 0, 1);
             }
             mo_lcell(0, 90, "ALL", "C", 0, 0, 0);
-            mo_lcell(1, 90, "FILL", "E", seq_fill != 0, 0, 0);
+            mo_lcell(1, 90, "FILL", "E", (seq_fill || seq_fill_mod) != 0, 0, 0);
             mo_lcell(2, 90, "TAP", "F", 0, song.g[G_CLOCK] != 0, 0);
             x = mo_lhint(x, "OCT-", "UNDO");
             mo_lhint(x, "GLO", "DONE");
@@ -739,8 +739,9 @@ static void draw_layer(void)
         layer_cards(l);
     }
     if (l == LAYER_GLO)
-        sig += track_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u + (uint32_t)seq_fill * 7u +
-               (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 | trk[3].p[P_MUTE] << 3) * 131u;
+        sig += track_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u + (uint32_t)(seq_fill | seq_fill_mod) * 7u +
+               (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 | trk[3].p[P_MUTE] << 3) * 131u +
+               (mute_waiting() ? 1u + ((fm1_ms / 250u) & 1u) : 0u) * 4099u;   /* (a waiting mute blinks) */
     else if (l == LAYER_SCL)
         sig += (uint32_t)TSEL->p[P_SCALE] * 31u;
 

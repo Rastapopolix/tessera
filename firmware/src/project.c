@@ -298,6 +298,7 @@ static void project_quick_save(void)
 }
 /* autosave (ui_input.c autosave_poll: stopped, untouched a while): the music back to the slot it was loaded from or last
  * saved to when it differs from what that slot holds ("SAVED B"); a new project (no slot yet) waits for a save */
+static int project_has_slot(void) { return proj_cur < 4u; }
 static void project_autosave(void)
 {
     project_t *p = &proj_scratch;
@@ -790,13 +791,42 @@ static uint8_t persist_repair;                  /* boot repair must retry even w
 static uint32_t persist_retry_ms;
 #endif
 
+/* MIDI LEARN's maps (midi_learn.c), the device's: OBJ_LEARN holds "MLN1" and the MLEARN_N maps. A map that does not
+ * check out (an unknown CC or parameter, another layout) is left free; firmware before this never reads the object. */
+#define MLEARN_MAGIC 0x314E4C4Du                   /* "MLN1" */
+typedef struct { uint32_t magic; mlearn_t m[MLEARN_N]; } mlearn_rec_t;
+static void mlearn_load(void)
+{
+#if MELODEE_FLASH
+    mlearn_rec_t r;
+    memset(mlearn, 0, sizeof mlearn);
+    mlearn_dirty = 0;
+    if (st_load(OBJ_LEARN, &r, sizeof r) != (int)sizeof r || r.magic != MLEARN_MAGIC) return;
+    for (uint32_t k = 0; k < MLEARN_N; k++)
+        if (mlearn_ok(r.m[k].cc) && r.m[k].track < NTRK && pid_find(r.m[k].pid)) mlearn[k] = r.m[k];
+#endif
+}
+static int mlearn_store(void)                      /* settings_poll: 0 saved */
+{
+#if MELODEE_FLASH
+    mlearn_rec_t r;
+    r.magic = MLEARN_MAGIC;
+    memcpy(r.m, mlearn, sizeof r.m);
+    if (st_save(OBJ_LEARN, &r, sizeof r)) return -1;
+#endif
+    mlearn_dirty = 0;
+    return 0;
+}
+
 static void persist_boot(void)                    /* before settings_init / panel_init */
 {
 #if MELODEE_FLASH
     persist_t p;
     boot_work.state = 0;
     uint32_t f = irq_save();
-    flash_ok = FL_FAR(fl_jedec_ram)() == 0x856014u;       /* the expected 1 MiB part, else stay RAM-only */
+    uint32_t jid = FL_FAR(fl_jedec_ram)();
+    flash_ok = jid == 0x856014u || jid == 0xB36014u;      /* the expected 1 MiB parts (0x85 Puya, 0xB3 UCUN UC25HQ80;
+                                                        * upstream b8f9f9f), else stay RAM-only */
     irq_restore(f);
     if (!flash_ok)
         return;
@@ -859,6 +889,7 @@ static void persist_boot(void)                    /* before settings_init / pane
             }
         }
     }
+    mlearn_load();
     {   /* projects: fill empty RAM slots from flash, so the slot list is right after power-on */
         uint32_t i;
         for (i = 0; i < 4u; i++)
@@ -904,7 +935,7 @@ static void settings_poll(void)
 #if MELODEE_SLICE
     slc_store_poll();                              /* SLICE's slices edited on the SLICES page */
 #endif
-    if (!persist_pending || !flash_ok || transport_busy() ||
+    if ((!persist_pending && !mlearn_dirty) || !flash_ok || transport_busy() ||
         (persist_pending == 2u && (uint32_t)(fm1_ms - persist_retry_ms) < 1000u))
         return;
 #ifdef FM1_IRQ_TARGET
@@ -914,6 +945,12 @@ static void settings_poll(void)
     if(ua.play_alt || ua.cap_alt)return;
 #endif
 #endif
+    if (mlearn_dirty && mlearn_store()) {          /* (MIDI LEARN's maps: their own object) */
+        persist_pending = 2;
+        persist_retry_ms = fm1_ms;
+        return;
+    }
+    if (!persist_pending) return;
     if (template_old()) {
         if (!ui.confirm && !ui.name_active) {
             persist_pending = 0;

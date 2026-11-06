@@ -2,10 +2,9 @@
 
 Short, tested ways to get somewhere with Tessera. Each uses only what the firmware has; the page and knob names
 are the ones on the screen, and [MANUAL.md](MANUAL.md) explains each page in full. Where a step names a page, tap
-the button in brackets until it shows: GEN, EVOLVE, FORM, TWEAK, TWEAK 2 and LENGTH are under **SEQ**, MODS, MATRIX
+the button in brackets until it shows: GEN, NOTES and PATTERN are under **SEQ**; EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING
+and ENERGY under **ARP**; MODS, MATRIX
 and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
-
-The recipes from *A piece that plays itself* to *A bass that takes a note a bar* need Tessera 3.3 (in beta).
 
 **Recipes**
 
@@ -371,7 +370,7 @@ together: CHAIN gives the tracks shared sections, ENTRIES brings tracks in and o
 3. On each generator track, **FORM**: **CONTR** about 40, so B and C sound different from A.
 4. **GLO > ENTRIES**: **ENTRIES 50**, **STYLE FADE**. Hold **OCT+** and set the pad's ROLE to **ANCHOR** if it should
    never leave.
-5. **ENERGY** (on any generator track's SEQ pages): **ARC** about 60, so the shape is heard in how busy and loud the
+5. **ENERGY** (on any generator track's ARP pages): **ARC** about 60, so the shape is heard in how busy and loud the
    tracks play.
 6. **GLO > PIECE**: **LENGTH 30 min**, **SHAPE ARCH**, **PEAK** about 60 %, **END STOP**. Press **PLAY**.
 
@@ -452,6 +451,16 @@ copying every note.
 The bass now plays its own rhythm on the note the melody had at the bar line. HOLD on a track with random hits (DROP,
 BRANCH) samples at random moments instead.
 
+## Loosen a 1/8 line (TIMING SPLIT)
+
+A line on the grid, broken up now and then the way a player would: a quick pair of 1/16s here, a note pushed late there.
+
+1. Any melodic track at **DIV 1/8**: a generator, or a STEP track with a line written in.
+2. On **TIMING**, hold **OCT+**: **KNOB 1** sets **SPLIT 20 %**, **KNOB 2** sets **HOW** to **MIX**.
+3. Too busy, or not enough? Turn SPLIT. **ROLL** on EVOLVE gives a new set of tosses, and the generator's notes stay.
+
+The bar's first step stays on the grid. A mod on **SPLIT** (an LFO or TIDE) brings the looser bars in and out.
+
 ## Tips
 
 **Getting the most out of Tessera**
@@ -478,6 +487,9 @@ BRANCH) samples at random moments instead.
   page button leaves it for its own page.
 - In lists (the menu, SCL, VOICE, sheets), **KNOB 1 picks the row and KNOB 2 changes it**.
 - Prefer the left knob for picking tracks? MENU > **TRACK KNOB LEFT**.
+- The large value at the foot of the screen covering what you want to watch, or too small to read from where you
+  stand? MENU > **LARGE VALUE**: AUTO (the default) shows it only on pages without a picture, ON on every page, OFF
+  never. The knob's own column always shows its value.
 - Hold **GLO** and turn **PRESETS** to change the selected track's sound from any page. The sound's name shows large
   while GLO is held; let go to carry on where you were.
 

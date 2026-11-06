@@ -97,17 +97,20 @@ static const help_t HELP_PAGE[HP_COUNT] = {
                                        "darker)."),
     H_(HP_DRUM_LEVEL, "DRUM LEVEL", "The sound's level in the kit."),
     /* SEQ > PATTERNS (ui_patterns.c patgrid_edit), SONG (edit_param) */
-    H_(HP_PATTERNS, "PATTERN", "This track's pattern, one of its 8: stopped, it switches at once; playing, at the end "
-                               "of its bar (it breathes on the grid till then); while a song plays, not at all. OCT+ "
-                               "opens the sheet: Copy to (then any knob picks the place), Delete pattern."),
+    H_(HP_PATTERNS, "PATTERN", "This track's pattern, one of its 8: its steps, LEN, DIV, SWING and GATE (a generator's "
+                               "settings stay the track's). Stopped, it switches at once; playing, when the pattern "
+                               "playing ends (dashed till then); while a song plays, not at all. OCT+ opens the "
+                               "sheet: Copy to (then any knob picks the place), Delete pattern."),
     H_(HP_SONG_SECTION, "SONG SECTION", "Which section of the song, a row, the other knobs edit; the empty row after "
-                                        "the last adds one. PLAY (or OCT+) plays the song; REC held takes the "
-                                        "patterns playing as the song (TAKE JAM)."),
+                                        "the last adds one. PLAY (or OCT+) plays the song, STOP brings back the "
+                                        "patterns you had. REC held makes the patterns played since PLAY the song "
+                                        "(TAKE JAM). OCT+ held: the song's sheet."),
     H_(HP_SONG_TRACK, "SONG TRACK", "Which track KNOB 3 sets the pattern of (the track selected, as ALGORITHM "
                                     "does)."),
     H_(HP_SONG_PATTERN, "SONG PATTERN", "The pattern the track plays in this section. Turned on the empty row, it "
                                         "adds the section."),
-    H_(HP_SONG_REPEATS, "SONG REPEATS", "How many times the section plays before the next one, 1 to 16."),
+    H_(HP_SONG_REPEATS, "SONG REPEATS", "How many times the section plays before the next one, 1 to 16: a time is "
+                                          "one pass of track 1's pattern."),
     /* SAVE > PRESETS (the browser) */
     H_(HP_BROWSE_LIST, "PRESETS LIST", "Which list the sounds come from: all of them, the favourites, the recent "
                                        "ones, or a category (bass, lead, pad, keys, drums ..)."),
@@ -121,10 +124,12 @@ static const help_t HELP_PAGE[HP_COUNT] = {
     H_(HP_CORD_SRC, "MOD SOURCE", "What moves it: a track's LFO, envelope, velocity, key, random, controllers, its "
                                   "generator's gate, note or CV, or DRIFT, a slow wander, or its TIDE 1-3 or SWARM "
                                   "1-8 (LFO > ORGANIC). -- leaves the mod a fixed move. OCT+: BI swings both ways "
-                                  "from the knob, UNI (+) only one way."),
+                                  "from the knob, UNI (+) only one way, GATE (>) all or nothing: all while the "
+                                  "source is over a threshold (OCT+ held + KNOB 4)."),
     H_(HP_CORD_MOD, "MOD", "Which of the 16 mods the other knobs edit."),
     H_(HP_CORD_DST, "MOD DESTINATION", "What it moves, on which track: the voices' pitch, cutoff, shape, gain, a sound "
-                                       "setting, or a generator's."),
+                                       "setting, a generator's, another mod's amount (M1-M16 AMT) or the "
+                                       "project's FILL (held past half)."),
     H_(HP_CORD_AMT, "MOD AMOUNT", "How far, and which way: at a full source, 100 % is the destination's whole range "
                                   "(pitch: an octave)."),
     H_(HP_MX_FROM, "MATRIX FROM", "The track the mods come from: a row of the grid. A lit cell: a mod goes from this "
@@ -467,7 +472,7 @@ static void help_find(uint32_t k)
         else help_hp(HP_ORACLE + pg->id[k]);
         return;
     }
-    if (pg->graph == GR_TIMING && k < 2u && tr < TESSERA_TRACKS && tessera.mode[tr] == TESS_ENG_OFF) {
+    if (pg->graph == GR_TIMING && k < 2u && tr < TESSERA_TRACKS && tessera.mode[tr] == TESS_ENG_OFF && !tm_layer_on()) {
         help_hp(HP_TIMING_STEP);                        /* (a STEP track: SHAPE only, ui_input.c) */
         help.name = k ? "TIMING CHANCE" : "TIMING RATCH";
         return;
@@ -490,9 +495,40 @@ static void help_find(uint32_t k)
         else help.pid = (uint16_t)PID_TESS(TX_SD_GRAVITY);
         return;
     }
-    if (pg->graph == GR_FORM && fm_layer_on()) {       /* (a generator's FORM, OCT+ held: DEVELOP) */
-        if (k) help_unused(k);
-        else help.pid = (uint16_t)PID_TESS(TX_FM_DEVELOP);
+    if (pg->graph == GR_TWEAK && tw_layer_on()) {     /* (a generator's TWEAK, OCT+ held: FOLLOW's HOLD) */
+        if (k != 3u) help_unused(k);
+        else help.pid = (uint16_t)PID_TESS(TX_TW_HOLD);
+        return;
+    }
+    if (pg->graph == GR_FORM && fm_layer_on()) {       /* (a generator's FORM, OCT+ held: DEVELOP, the CHAIN's FOLLOW, SKIP,
+                                                        * Entries' ROLE) */
+        help.pid = (uint16_t)PID_TESS(k == 3u ? TX_ET_ROLE : k == 2u ? TX_FC_SKIP : k ? TX_FC_FOLLOW : TX_FM_DEVELOP);
+        return;
+    }
+    if (pg->graph == GR_PERF) {                        /* (the project's MACROs) */
+        help.pid = (uint16_t)PID_TESS(TX_MACRO1 + k);
+        return;
+    }
+    if (pg->graph == GR_PIECE) {                       /* (the project's: LENGTH, SHAPE, PEAK / COUNT, END; OCT+ / OCT- the
+                                                        * USER levels) */
+        if (piece_layer()) help.pid = (uint16_t)PID_TESS(TX_PL_USER1 + (piece_layer() == 2 ? 4u : 0u) + k);
+        else if (k == 2u && !piece_k3()) help_unused(k);
+        else help.pid = (uint16_t)PID_TESS(k == 3u ? TX_PL_END : k == 2u ? (piece_k3() == 2 ? TX_PL_COUNT : TX_PL_PEAK) :
+                                           k ? TX_PL_SHAPE : TX_PL_LENGTH);
+        return;
+    }
+    if (pg->graph == GR_ENTRIES) {                     /* (the project's: ENTRIES, DWELL, STYLE, FADE; OCT+ held the ROLEs) */
+        if (entries_layer_on()) {
+            help.pid = (uint16_t)PID_TESS(TX_ET_ROLE);
+            help_tr = k;
+        } else
+            help.pid = (uint16_t)PID_TESS(k == 3u ? TX_ET_FADE : k == 2u ? TX_ET_STYLE : k ? TX_ET_DWELL : TX_ET_AMOUNT);
+        return;
+    }
+    if (pg->graph == GR_CHAIN) {                       /* (the project's: FORM, PHRASE, WANDER; OCT+ held the REPEATs) */
+        if (chain_layer_on()) help.pid = (uint16_t)PID_TESS(TX_FC_REP1 + k);
+        else if (k == 3u) help_unused(k);
+        else help.pid = (uint16_t)PID_TESS(k == 2u ? TX_FC_WANDER : k ? TX_FC_PHRASE : TX_FC_FORM);
         return;
     }
     if (pg->graph == GR_EVOLVE && tessera_step_on(tr)) {   /* STEP EVOLVE */
@@ -506,12 +542,13 @@ static void help_find(uint32_t k)
     else if (pg->graph == GR_TWEAK) x = TW[k];
     else if (pg->graph == GR_TWEAK2) x = TW2[k];
     else if (pg->graph == GR_NOTELEN) x = NL[k];
+    else if (pg->graph == GR_TIMING && tm_layer_on()) x = k > 1u ? 0xFFu : k ? TX_SUB_SPLIT_HOW : TX_SUB_SPLIT;
     else if (pg->graph == GR_TIMING) x = k == 3u ? TX_SUB_HUMAN : k == 2u ? TX_SUB_SHAPE : k ? TX_SUB_CHANCE : TX_SUB_RATCH;
     else if (pg->graph == GR_ENERGY && en_layer_on()) x = k ? 0xFFu : TX_EN_DEPTH;
     else if (pg->graph == GR_ENERGY && k < 3u) x = k == 2u ? TX_EN_LEVEL : k ? TX_EN_RESTS : TX_EN_ARC;
-    else if (pg->graph == GR_MIDICH) { x = midi_layer_on() ? TX_MIDI_TR : TX_MIDI_CH; help_tr = k; }   /* (KNOB k:
+    else if (pg->graph == GR_MIDICH) { x = midi_layer_on() ? TX_MIDI_TR : midi_snd_layer_on() ? TX_SOUND : TX_MIDI_CH; help_tr = k; }   /* (KNOB k:
                                                                                                     * track k's) */
-    else if (pg->graph == GR_KEYLINK && k == 0u) x = TX_KEY_LINK;
+    else if (pg->graph == GR_KEYLINK && k < 3u) x = k ? TX_FC_KEYB + k - 1u : TX_KEY_LINK;
     else if (pg->graph == GR_ORGANIC && k < 2u) x = k ? TX_ORG_RATE : TX_ORG_SPEED;
     else if (pg->graph == GR_FORM) {
         x = FM[k];

@@ -33,7 +33,7 @@ static int32_t batt_shown(void)
         return 4;
     return batt_level();
 }
-/* the Mono header's battery: -1 none, 0..3 its level, 4 + the level on external power (a bolt before it). MENU
+/* the Mono header's battery: -1 none, 0..3 its level, 4 + the level on external power (solid, a bolt in it). MENU
  * BATTERY OFF hides it, except when it runs low (a bar or none, on the battery) */
 static int32_t batt_head(void)
 {
@@ -881,10 +881,16 @@ static void draw_columns(void)
             uint32_t dv = tessera.fm_dev[tr];
             fmt_int(f2, dv);
             col_mods(PID_TESS(TX_FM_DEVELOP));
-            draw_column(0, "DEVLP", f2, "%", ev->form ? VAL(0u) : T_DIM, (int32_t)dv * 10, ICON_AUTO);
-            draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
-            draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
-            draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(0, "DEVLP", f2, "%", ev->form || fc_follows(tr) ? VAL(0u) : T_DIM, (int32_t)dv * 10, ICON_AUTO);
+            {                                           /* (the CHAIN's FOLLOW / OWN and SKIP: lit with its FORM on) */
+                char w2[8];
+                int32_t own = tessera_param_get(tr, TX_FC_FOLLOW);
+                fmt_int(w2, tessera.fc_skip[tr]);
+                draw_column(1, "CHAIN", own ? "OWN" : "FOLLOW", "", tessera.fc_form ? VAL(1u) : T_DIM, own * 1000, ICON_AUTO);
+                draw_column(2, "SKIP", w2, "%", tessera.fc_form && !own ? VAL(2u) : T_DIM, (int32_t)tessera.fc_skip[tr] * 10, ICON_AUTO);
+            }
+            draw_column(3, "ROLE", ET_ROLE_NAME[tessera.et_role[tr] % ET_ROLES], "", tessera.et_amount ? VAL(3u) : T_DIM,
+                        (int32_t)tessera.et_role[tr] * 200, ICON_AUTO);   /* (Entries' ROLE: lit with ENTRIES on) */
             return;
         }
         fmt_int(f2, ev->contrast);
@@ -910,9 +916,24 @@ static void draw_columns(void)
         fmt_int(w0 + 1, (uint32_t)(sh < 0 ? -sh : sh));
         fmt_int(w1, ev->drop);
         fmt_int(w2, ev->human);
-        if (ev->follow) { w3[0] = 'T'; w3[1] = (char)('0' + ev->follow); w3[2] = 0; }
+        if (ev->follow) {                               /* (a HOLD set under OCT+: shown as T3H2) */
+            uint32_t h = tr < TESSERA_TRACKS ? tessera.follow_hold[tr] : 0u;
+            w3[0] = 'T'; w3[1] = (char)('0' + ev->follow); w3[2] = 0;
+            if (h) { w3[2] = 'H'; w3[3] = (char)('0' + h); w3[4] = 0; }
+        }
         else str_cpy(w3, "OFF", sizeof w3);
-        if (tr < TESSERA_TRACKS && tessera.mode[tr] == TESS_ENG_OFF) {   /* (a STEP track: HUMAN alone) */
+        if (tw_layer_on()) {                            /* OCT+ held: FOLLOW's HOLD (lit while following) */
+            uint32_t h = tessera.follow_hold[tr];
+            char w4[4] = {'T', (char)('0' + h), 0, 0};
+            for (uint32_t k = 0; k < 3u; k++) draw_column(k, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(3, "HOLD", h ? w4 : "OFF", "", ev->follow ? VAL(3u) : T_DIM, (int32_t)h * 1000 / 4, ICON_AUTO);
+            return;
+        }
+        if (tr < TESSERA_TRACKS && tessera.mode[tr] == TESS_ENG_OFF) {   /* (a STEP track: HUMAN alone; ARP: SHIFT too) */
+            if (seqm_get(tr) == 1u) {
+                col_mods(PID_TESS(TX_TW_SHIFT));
+                draw_column(0, "SHIFT", w0, "st", VAL(0u), (sh + 24) * 1000 / 48, ICON_AUTO);
+            } else
             draw_column(0, "SHIFT", "--", "", T_DIM, -1, ICON_NONE);
             draw_column(1, "DROP", "--", "", T_DIM, -1, ICON_NONE);
             col_mods(PID_TESS(TX_TW_HUMAN));
@@ -942,7 +963,86 @@ static void draw_columns(void)
     }
     if (cur_page()->graph == GR_KEYLINK) {               /* KEY (SCL's row): KEY LINK, the project's */
         draw_column(0, "KEY", tessera.key_link ? "LINKED" : "OWN", "", VAL(0u), tessera.key_link ? 1000 : 0, ICON_AUTO);
-        for (uint32_t k = 1; k < 4u; k++) draw_column(k, "", "", "", T_DIM, -1, ICON_NONE);
+        for (uint32_t k = 0; k < 2u; k++) {             /* (KEY B / C: the CHAIN's sections, form_chain.c; FORM OFF dim) */
+            char w[8];
+            int32_t v = tessera.fc_key[k];
+            midi_tr_text(w, v);
+            draw_column(k + 1u, k ? "KEY C" : "KEY B", w, "st", tessera.fc_form ? VAL(k + 1u) : T_DIM, (v + 12) * 1000 / 24, ICON_AUTO);
+        }
+        draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+        return;
+    }
+    if (cur_page()->graph == GR_PIECE && piece_layer_on()) {   /* PIECE, OCT+ / OCT- held: USER's levels 1-4 / 5-8 */
+        static const char *const NM[8] = {"USER 1", "USER 2", "USER 3", "USER 4", "USER 5", "USER 6", "USER 7", "USER 8"};
+        uint32_t o = piece_layer() == 2 ? 4u : 0u;
+        for (uint32_t k = 0; k < 4u; k++) {
+            char w[8];
+            fmt_int(w, tessera.pl_user[o + k]);
+            draw_column(k, NM[o + k], w, "%", tessera.pl_shape == PL_USER ? VAL(k) : T_DIM, (int32_t)tessera.pl_user[o + k] * 10, ICON_AUTO);
+        }
+        return;
+    }
+    if (cur_page()->graph == GR_PERF) {                  /* PERF: the four MACROs (cord.c CS_MACRO1) */
+        for (uint32_t k = 0; k < 4u; k++) {
+            char w[8];
+            fmt_int(w, tessera.macro[k]);
+            draw_column(k, cord_src_name(CS_MACRO1 + k), w, "%", VAL(k), (int32_t)tessera.macro[k] * 10, ICON_AUTO);
+        }
+        return;
+    }
+    if (cur_page()->graph == GR_PIECE) {                 /* PIECE (planner.c), the project's: LENGTH, SHAPE, PEAK / COUNT, END */
+        char w1[8], w3[8];
+        uint32_t set = tessera.pl_length != 0u, k3 = (uint32_t)piece_k3();
+        fmt_int(w1, PL_MIN[tessera.pl_length % PL_LENGTHS]);
+        fmt_int(w3, k3 == 2u ? tessera.pl_count : tessera.pl_peak);
+        draw_column(0, "LENGTH", set ? w1 : "FREE", set ? "min" : "", VAL(0u), (int32_t)tessera.pl_length * 1000 / 21, ICON_AUTO);
+        draw_column(1, "SHAPE", PL_SHAPE_NAME[tessera.pl_shape % PL_SHAPES], "", set ? VAL(1u) : T_DIM,
+                    (int32_t)tessera.pl_shape * 1000 / 9, ICON_AUTO);
+        draw_column(2, k3 == 2u ? "COUNT" : "PEAK", k3 ? w3 : "-", k3 == 1u ? "%" : "", set && k3 ? VAL(2u) : T_DIM,
+                    k3 == 2u ? ((int32_t)tessera.pl_count - 2) * 1000 / 6 : k3 ? (int32_t)tessera.pl_peak * 10 : -1, ICON_AUTO);
+        draw_column(3, "END", PL_END_NAME[tessera.pl_end % PL_ENDS], "", set ? VAL(3u) : T_DIM, (int32_t)tessera.pl_end * 333, ICON_AUTO);
+        return;
+    }
+    if (cur_page()->graph == GR_ENTRIES && entries_layer_on()) {   /* ENTRIES, OCT+ held: each track's ROLE */
+        static const char *const NM[TESSERA_TRACKS] = {"ROLE 1", "ROLE 2", "ROLE 3", "ROLE 4"};
+        for (uint32_t k = 0; k < TESSERA_TRACKS; k++)
+            draw_column(k, NM[k], ET_ROLE_NAME[tessera.et_role[k] % ET_ROLES], "", VAL(k), (int32_t)tessera.et_role[k] * 200,
+                        ICON_AUTO);
+        return;
+    }
+    if (cur_page()->graph == GR_ENTRIES) {               /* ENTRIES (entries.c), the project's: ENTRIES, DWELL, STYLE, FADE */
+        char w1[8], w2[4], w4[4];
+        uint32_t on = tessera.et_amount != 0u;
+        fmt_int(w1, tessera.et_amount);
+        fmt_int(w2, tessera.et_dwell);
+        fmt_int(w4, tessera.et_fade);
+        draw_column(0, "ENTRIES", on ? w1 : "OFF", on ? "%" : "", VAL(0u), (int32_t)tessera.et_amount * 10, ICON_AUTO);
+        draw_column(1, "DWELL", w2, "ph", on ? VAL(1u) : T_DIM, ((int32_t)tessera.et_dwell - 1) * 1000 / 7, ICON_AUTO);
+        draw_column(2, "STYLE", tessera.et_style ? "FADE" : "CUT", "", on ? VAL(2u) : T_DIM, (int32_t)tessera.et_style * 1000, ICON_AUTO);
+        draw_column(3, "FADE", w4, "bar", on && tessera.et_style ? VAL(3u) : T_DIM, ((int32_t)tessera.et_fade - 1) * 1000 / 3, ICON_AUTO);
+        return;
+    }
+    if (cur_page()->graph == GR_CHAIN && chain_layer_on()) {   /* CHAIN, OCT+ held: each place's REPEAT (past the FORM: dim) */
+        uint8_t sq[4];
+        uint32_t ps = 0, lf = 0, n = tessera_chain_get(sq, &ps, &lf);
+        for (uint32_t k = 0; k < 4u; k++) {
+            char nm[8] = {'R', 'E', 'P', ' ', (char)(k < n ? 'A' + sq[k] % 3u : '1' + k), 0}, w[4];
+            fmt_int(w, tessera.fc_rep[k]);
+            draw_column(k, nm, w, "x", k < n ? VAL(k) : T_DIM, ((int32_t)tessera.fc_rep[k] - 1) * 1000 / 7, ICON_AUTO);
+        }
+        return;
+    }
+    if (cur_page()->graph == GR_CHAIN) {                 /* CHAIN (form_chain.c), the project's: FORM, PHRASE, WANDER, now */
+        uint8_t sq[4];
+        uint32_t ps = 0, lf = 0, n = tessera_chain_get(sq, &ps, &lf);
+        char w1[4], w2[8], w3[4] = {'-', '-', 0, 0};
+        fmt_int(w1, fc_bars());
+        fmt_int(w2, tessera.fc_wander);
+        if (n && song.playing) w3[0] = (char)('A' + sq[ps] % 3u), w3[1] = 0;
+        draw_column(0, "FORM", tessera_form_name(tessera.fc_form), "", VAL(0u), (int32_t)tessera.fc_form * 1000 / 6, ICON_AUTO);
+        draw_column(1, "PHRASE", w1, "bar", n ? VAL(1u) : T_DIM, (int32_t)tessera.fc_phrase * 500, ICON_AUTO);
+        draw_column(2, "WANDER", w2, "%", n ? VAL(2u) : T_DIM, (int32_t)tessera.fc_wander * 10, ICON_AUTO);
+        draw_column(3, "NOW", w3, "", T_DIM, -1, ICON_NONE);
         return;
     }
     if (cur_page()->graph == GR_MIDICH && midi_layer_on()) {   /* MIDI OUT, OCT+ held: each track's TRANSPOSE */
@@ -952,6 +1052,15 @@ static void draw_columns(void)
             int32_t v = tessera.midi_tr[k];
             midi_tr_text(w, v);
             draw_column(k, NAME[k], w, "st", VAL(k), (v + TESS_MIDI_TR) * 1000 / (2 * TESS_MIDI_TR), ICON_AUTO);
+        }
+        return;
+    }
+    if (cur_page()->graph == GR_MIDICH && midi_snd_layer_on()) {   /* MIDI OUT, OCT- held: each track's SOUND */
+        static const char *const NAME[TESSERA_TRACKS] = {"SND 1", "SND 2", "SND 3", "SND 4"};
+        const param_desc_t *d = pid_desc(PID_TESS(TX_SOUND), 0);
+        for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
+            uint32_t v = tessera.sound_off[k] & 1u;
+            draw_column(k, NAME[k], d->names[v], "", VAL(k), (int32_t)v * 1000, ICON_AUTO);
         }
         return;
     }
@@ -990,6 +1099,17 @@ static void draw_columns(void)
         draw_column(2, "LEVEL", w2, "", VAL(2u), (lv + 100) * 5, ICON_AUTO);
         draw_column(3, "REST", song.playing && energy_resting() ? w3 : "--", song.playing && energy_resting() ? "s" : "",
                     song.playing && energy_resting() ? T_TEXT : T_MID, -1, ICON_NONE);
+        return;
+    }
+    if (cur_page()->graph == GR_TIMING && tm_layer_on()) {   /* TIMING, OCT+ held: SPLIT, HOW (dim at 0) */
+        char w0[8];
+        uint32_t tr = song.sel % TESSERA_TRACKS, sp = tessera.sub_split[tr], how = tessera.sub_split_how[tr] % TESS_SPLIT_HOWS;
+        fmt_int(w0, sp);
+        col_mods(PID_TESS(TX_SUB_SPLIT));
+        draw_column(0, "SPLIT", w0, "%", VAL(0u), (int32_t)sp * 10, ICON_AUTO);
+        draw_column(1, "HOW", pid_desc(PID_TESS(TX_SUB_SPLIT_HOW), 0)->names[how], "", sp ? VAL(1u) : T_DIM, (int32_t)how * 500, ICON_AUTO);
+        draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+        draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
         return;
     }
     if (cur_page()->graph == GR_TIMING) {                /* SUB (seq_sub.c): RATCH, its CHANCE (dim at x1), SHAPE, HUMAN */

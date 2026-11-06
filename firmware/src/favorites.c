@@ -4,14 +4,17 @@
 #define MELODEE_FAVORITES 1
 /* Stable engine/preset references; fixed capacity independent of optional engines.
  * Bytes no engine's presets reach hold other settings, kept with the favorites (settings_persist.c):
- *   row 8  (GRAIN, retired; Felucca 1.0's stars in bits 0..11) 16..25 the FX key map, 28..31 its tag (below)
+ *   row 8  (GRAIN, retired; Felucca 1.0's stars in bits 0..11) 4..7 tagged USB VOLUME (settings_persist.c),
+ *          16..25 the FX key map, 26 tagged KNOBS BAR (ui.c), 27 tagged NOTE PREVIEW OFF,
+ *          28..31 its tag (below)
  *   row 14 (OBXF, retired; its old stars in 0..15)             16..27 the scale favorites, 28..31 their tag
  *   row 15 (CZ-1: factory tones bits 0..64, native slots 65..192) 26 tagged USB INPUT (settings_persist.c), 27 SCREEN OFF,
  *          28 tagged AUTOSAVE OFF, 29 the PRESETS LIST (browse.c),
  *          30 bit 0 retired, bit 1 KNOB ACCEL OFF (ui.c PREF_BITS), bits 2..4 retired (OVERCLOCK until 1.3.4),
  *             bits 5..6 MIDI OUT, bit 7 CLOCK OUT (midi_out.c, settings_persist.c),
  *          31 the quick layers seen (ui_layer.c), 25 tagged TRACK KNOB LEFT (panel.c), 24 bits 1..3 PANEL GAMMA (gamma_get),
- *             bit 4 MIDI CC IN OFF (midi_cc.c), bit 5 BATTERY WHEN LOW (core.h); free: 24 bits 6..7
+ *             bit 4 MIDI CC IN OFF (midi_cc.c), bit 5 BATTERY WHEN LOW (core.h), bits 6..7 MUTES
+ *             (NOW BAR PHRASE, entries.c)
  *   row 0 bytes 2..27 hold all 201 Prophet factory stars, tagged in bytes 28..31;
  *         bytes 0..1 held retired ANALOG's stars.
  *   row 1 bytes 28..31 mark validated Melodee settings (MDS + version 1).

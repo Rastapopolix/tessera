@@ -31,7 +31,9 @@ archive. The complete file must have SHA-256
 `db1642b2b6fa5c2cccb11ffd13878068bb28601678d3644049f99dc40e7edb8a`.
 Modified V15 packages are refused before USB access. The recovery archives on the
 1.3.1 release were corrected on 2026-10-13 to accept V15's metadata layout. If an
-older download rejects V15, download the archive again.
+older download rejects V15, download the archive again. The recovery tool does not
+take V16; if V15 is no longer on M-VAVE's download page, it is in M-VAVE's
+`fm1_open` repository (`sdk/firmware/FM-1_015.fwsc`, the same file).
 
 For official recovery, substitute `FM-1.fwsc` in the commands below. Keep the full
 backup: recovery retains the bootloader and saved-data bytes, but official firmware
@@ -83,6 +85,13 @@ The direct-USB protocol has prior successful macOS recovery evidence. Each execu
 is built and smoke-tested on its native OS; automated tests model interruptions and
 protected flash regions. Those checks do not establish physical USB recovery on
 every OS.
+
+The tool accepts the two 1 MiB flash parts the firmware accepts: the Puya P25Q80H
+(JEDEC `0x856014`) and, on newer units, the UCUN UC25HQ80 (`0xB36014`). Any other ID
+the RAM helper reports stops the tool before it reads or writes flash. Recovery with
+`--write` has not yet been run on a UC25HQ80 unit, so on one the tool refuses
+`--write` unless `--allow-untested-flash` is added. Run a backup without `--write`
+first and keep it.
 
 Source: https://github.com/keremimo/melodee (tag v1.3.5).
 Protocol reference: https://github.com/kurogedelic/FM-1-transporter.
