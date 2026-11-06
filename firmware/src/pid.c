@@ -736,7 +736,8 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
 #undef X_
 #undef XP_
 
-#if MELODEE_HELP_PACKED
+#if MELODEE_HELP_PACKED && MELODEE_ACCESS        /* (the accessible device build: no help cards, no texts in flash) */
+#elif MELODEE_HELP_PACKED
 #include "pid_help_unpack.h"
 _Static_assert(NELEM(PIDS) == PID_HELP_N, "build/gen/pid_help.h is another pid.c's (tools/gen_help.py)");
 /* packed text i expanded: PIDS entry i's, from PID_HELP_N on the help card's page texts (ui_help.c HELP_PAGE) */
