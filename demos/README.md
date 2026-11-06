@@ -14,7 +14,6 @@ takes). They need Tessera 3.3 or later.
 | `slow-light.tsp` | SLOW LIGHT | Drone: a TRIO fifth struck once and held, a wind, an ORACLE choir and a SOFT SWELL that change with the CHAIN's AABA; 15 minutes in WAVES |
 | `cedar-rain.tsp` | CEDAR RAIN | Plucked strings in KUMOI: a harp on TURING, a koto on EUCLID, an FM6 flute on MARKOV, 808 hand drums that ADORN varies; ABAC through three keys |
 | `undertow.tsp` | UNDERTOW | Call and answer in D minor: a STEP melody as ANSWER's SOURCE, answered on and on; minor chords and a sub bass in STEP |
-| `far-shore.tsp` | FAR SHORE | Deep dub, after Rhythm & Sound: one Gm stab drowned in echo and room, a round sub, an 808 rockers beat, air |
 
 They are made by the firmware's own code (`tests/demo_projects.c`), which saves each one to a slot, reads it back
 as the backup page does, loads it and plays it; `tests/run_tests.sh` checks that these files still load and play.
@@ -165,15 +164,16 @@ G minor, 76 BPM. A deep dub after Rhythm & Sound: almost nothing moves, and the 
   every other time. POLY, so a note never restarts the one still ringing out.
 - **T3 808 KIT**, STEP: NIGHT FERRY's beat (rockers: kick on one and three, rims on two and four, hats by **Condition**,
   a tom pickup on the fourth bar, a clap on **FILL** that T3's SWARM 5 holds now and then).
-- **T4 TRIO WIND**, one note struck at PLAY and held by TIEs at 4 bars a step: air under everything; T4's TIDE 1 darkens
-  and brightens it. OWN in the CHAIN.
-- **CHAIN** AABA, PHRASE 16: **KEY B +5** takes the chord and the bass to C minor for B. **ENTRIES 50, CUT**, DWELL 1:
-  the chord and the bass drop out and come back on the phrase lines; the drums and the air are ANCHORs. **PIECE** 12
-  minutes in three **WAVES**, END **LOOP**.
-- Made not to crackle: the echo's feedback is fixed (no cord moves it), the stabs are FM6 (a third of ORACLE's CPU), no
-  sounding voice is ever struck again, no voice is taken.
+- **T4 FM6 ORGAN**, STEP: the bubble, sixteenths rocking between a low Gm (G, B flat, D) and a high one (D, G, B flat):
+  in each beat the low on its "e", the high on its "and", the low again on its "a" every other beat, some left out by
+  **Condition**. AEG −50 keeps each chord short.
+- **CHAIN** AABA, PHRASE 16: **KEY B +5** takes the stab, the bass and the bubble to C minor for B. **ENTRIES 50, CUT**,
+  DWELL 1: they drop out and come back on the phrase lines; the drums are the ANCHOR. **PIECE** 12 minutes in three
+  **WAVES**, END **LOOP**.
+- Made not to crackle: the echo's feedback is fixed (no cord moves it), FM6 rather than ORACLE (a third of the CPU),
+  short chords that never overlap, no sounding voice ever struck again, no voice taken.
 - **MODS**: T1 TIDE 2 → T1 FX1 RTE, T1 DRIFT → SF2 RTE (the echo's time bends a little, as tape), T1 SWARM 3 → T1 SEND
-  2, T3 SWARM 5 → FILL (a gate), T4 TIDE 1 → T4 CUT.
+  2, T3 SWARM 5 → FILL (a gate), T4 DRIFT → T4 PAN.
 
 ## Making them again
 
