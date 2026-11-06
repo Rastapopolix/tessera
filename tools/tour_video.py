@@ -192,7 +192,7 @@ def main(src, dst):
 # The demo (no voice): 1080 x 1080 as the 3.0 video, music only, a short caption at a time under the screen, a card
 # between chapters. Each entry: a card (title, line) or a part of a clip (clip, from s, for s, [(at s, caption)])
 CUT = [
-    ("a00-cold-open", 2, 10, [(0, "Music that plays itself, and keeps changing")]),
+    ("a00-cold-open", 2, 10, [(0, "Play it by hand, or let it play")]),
     ("Generators", "Thirteen ways to write a part"),
     ("a03b-turing-lock", 2, 12, [(0, "TURING: a loop that slowly drifts")]),
     ("a03c-euclid-pulses", 2, 9, [(0, "EUCLID: hits spread evenly")]),
@@ -222,7 +222,8 @@ DW = 1080                                               # the demo's square
 DS = 3                                                  # its screen, 3x: 720
 DX, DY = (DW - 240 * DS) // 2, 150
 CARD_S, TITLE_S, END_S, END_HOLD = 2.0, 3.0, 12.0, 2.0
-CUT_FADE, CUT_FADE_CARD = 0.3, 0.8                      # s: the music's fade between clips; out of and into a card
+CUT_FADE, CUT_FADE_CARD, CUT_FADE_FIRST = 0.3, 1.0, 2.0   # s: the music's fade between clips; out of and into a
+                                                        # card; in after the intro and title
 CHAPTER_INK = {"a00": "OCEAN", "a03": "GREEN", "a04": "BLUE", "a05": "ORANGE", "a06": "MOSAIC", "a07": "SUNSET",
                "a09": "OCEAN", "a10": "YELLOW"}
 
@@ -300,7 +301,7 @@ def demo(src, intro, out):
         a = a[f0 * SPF * 2:(f0 + n) * SPF * 2]
         a.extend([0] * max(0, n * SPF * 2 - len(a)))
         idx = CUT.index(e)                              # (fades: long out of and into silence, short between clips)
-        k_in = int((CUT_FADE_CARD if idx == 0 or len(CUT[idx - 1]) == 2 else CUT_FADE) * FS)
+        k_in = int((CUT_FADE_FIRST if idx == 0 else CUT_FADE_CARD if len(CUT[idx - 1]) == 2 else CUT_FADE) * FS)
         k_out = int((CUT_FADE_CARD if idx + 1 == len(CUT) or len(CUT[idx + 1]) == 2 else CUT_FADE) * FS)
         m = len(a) // 2
         for i in range(max(k_in, k_out)):
