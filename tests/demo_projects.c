@@ -1271,6 +1271,7 @@ static const demo_t DEMO_LIST[] = {
     {"CEDAR RAIN", "cedar-rain", demo_cedar},
     {"UNDERTOW", "undertow", demo_undertow},
     {"EMBER FIELD", "ember-field", demo_ember},
+    {"PAPER KITES", "paper-kites", demo_kites},   /* (Theo 2026-11-06: shipped with 3.3, after the video) */
 };
 /* kept in reserve, not shipped in demos/ (Theo 2026-11-06: their previews were heard, the parts may go in the demo
  * video): "reserve make DIR SECS" makes them */
@@ -1278,7 +1279,6 @@ static const demo_t RESERVE_LIST[] = {
     {"NIGHT FERRY", "night-ferry", demo_ferry},
     {"TIN ROOF", "tin-roof", demo_roof},
     {"COLD ORBIT", "cold-orbit", demo_orbit},
-    {"PAPER KITES", "paper-kites", demo_kites},
     {"STONE PIER", "stone-pier", demo_pier},
     {"FAR SHORE", "far-shore", demo_shore},
 };
