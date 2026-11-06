@@ -512,6 +512,9 @@ you tap **REC** again. Stopped, the first key you play starts the sequencer and 
 - **EDIT** + **REC** on NOTES (either first): **CLEAR PATTERN?** OCT+ clears it and REC stays on, so the next
   pass records a new take. With REC off, EDIT held undoes the clear.
 - **EDIT** held while recording on NOTES erases as the steps pass.
+- **EDIT** tapped on NOTES (not recording) deletes the note at the cursor with its ties, then the cursor moves on the
+  way **KNOB 1** last turned it: right as before, or left if you came from the right, so tap after tap clears a run either
+  way. On a DRUM track grid, the same for the step.
 - **OCT-** / **OCT+** on NOTES with REC on move the keys an octave down / up, as on HOME (both together: back to
   the middle). The header shows it (**KEYS OCT +1**). OCT+ held still opens the pattern's sheet.
 

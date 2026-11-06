@@ -2341,6 +2341,18 @@ static int test_grid(void)
     press(B_EDIT);
     bad += check("EDIT: the cursor step cleared, on to the next", t->step[2].time == ST_REST && !t->step[2].hit && ui.cursor == 3u &&
                  grid_on());
+    t->step[1].hit = t->step[2].hit = 1u << DV_CLAP;
+    t->step[1].time = t->step[2].time = ST_NOTE;
+    turn(EN_K1, -1);                                  /* (KNOB 1 to the left: 2) */
+    press(B_EDIT);
+    ok = !t->step[2].hit && t->step[1].hit && ui.cursor == 1u;
+    press(B_EDIT);
+    ok &= !t->step[1].hit && ui.cursor == 0u;
+    turn(EN_K1, 1);                                   /* (and right again: on to the right) */
+    press(B_EDIT);
+    ok &= ui.cursor == 2u;
+    bad += check("EDIT: on the way KNOB 1 last turned (left: the step before; right again: the next)", ok);
+    cursor_set(3); ui.cursor_dir = 1;                 /* (as the EDIT before left it, for the checks after) */
     /* pages: LEN 32, the page keys */
     t->p[P_SLEN] = 32;
     leds = grid_leds();
