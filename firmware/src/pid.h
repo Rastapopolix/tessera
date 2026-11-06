@@ -21,6 +21,10 @@ enum {                                              /* pid_entry_t.flags */
     PID_F_DEVICE = 4u                               /* the device's, not the project's (A4, MIDI routing ..) */
 };
 
+#ifndef MELODEE_ACCESS
+#define MELODEE_ACCESS 0                            /* 1: the accessible build (issue #430): no help cards, their texts
+                                                     * out of flash (help_find stays: MIDI LEARN, the mod shortcut) */
+#endif
 #ifndef MELODEE_HELP_PACKED
 #define MELODEE_HELP_PACKED 0                       /* 1 (the device build, tools/build.py): the help texts packed */
 #endif                                              /* (build/gen/pid_help.h, tools/gen_help.py), read by pid_help */

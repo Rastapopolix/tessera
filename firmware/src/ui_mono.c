@@ -3018,6 +3018,7 @@ static void mo_strip_col(uint32_t c, const char *label, const char *val, uint16_
     cv_blit((uint32_t)CARD_X(c), (uint32_t)y);
 }
 
+#if !MELODEE_ACCESS
 /* ---- the help card (ARP held + a knob; help_draw): 114 x 107 cells under the header ---- */
 /* the name inverted at the top, the value right of it; the text wrapped to 17 characters a line (help_wrap measures in
  * cells here), eight lines and a scroll bar; what turning does next under a line */
@@ -3063,6 +3064,7 @@ static void mo_help(const char *name, const char *val, const char *text)
         cv_blit(HELP_X, (uint32_t)(HELP_Y + top));
     }
 }
+#endif
 
 /* ---- SAVE > PRESETS, the sound browser (browser_draw): drawn whole when anything on it changes ---- */
 /* the header: the track and its list inverted, the list's length (or the message) at the right. Left, LIST: its names

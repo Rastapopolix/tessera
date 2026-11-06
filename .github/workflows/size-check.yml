@@ -51,6 +51,13 @@ jobs:
           cat flash_report.md >> "$GITHUB_STEP_SUMMARY"
           echo '----- flash_symbols.csv'
           cat flash_symbols.csv
+      - name: Build this branch, accessible (MELODEE_ACCESS=1, no help cards; dual core)
+        env:
+          MELODEE_DUAL_CORE: '1'
+          MELODEE_ACCESS: '1'
+        run: |
+          git worktree add --detach ../access HEAD
+          cd ../access && ./build.sh 2>&1 | tee "$GITHUB_WORKSPACE/access.log"
       - name: Build the base branch (dual core)
         if: github.event_name == 'pull_request'
         env:
@@ -61,7 +68,7 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          for f in head base; do
+          for f in head access base; do
             [ -f $f.log ] || continue
             echo "### $f" >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
@@ -75,6 +82,7 @@ jobs:
           path: |
             build/*.fwsc
             head.log
+            access.log
             base.log
             flash_report.md
             flash_symbols.csv

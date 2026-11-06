@@ -1682,6 +1682,34 @@ static int test_help_all(void)
     return check("help: every knob of every page has a text of its own (none falls through), its name fits", !bad);
 }
 
+#if MELODEE_ACCESS && !MELODEE_HELP_PACKED
+/* the accessible build (MELODEE_ACCESS 1, issue #430): no help cards. ARP held, a knob turns its value as without ARP
+ * and no card opens; help_find still names the knob's parameter (MIDI LEARN, the mod shortcut) */
+static int test_help_gesture(void)
+{
+    int bad = 0;
+    int32_t was;
+    ui_power_on();
+    tessera_param_set(0, TX_MODE, TESS_ENG_MARKOV);
+    go_title("EVOLVE");
+    frame();
+    was = tessera_param_get(0, TX_EV_AMOUNT);
+    fm1_in.buttons |= 1u << panel.btn[B_ARP];
+    frame();
+    turn(EN_K1 + 2u, 3);
+    frame();
+    bad += check("accessible build: ARP held, KNOB 3 on EVOLVE: no help card, AMOUNT turned",
+                 !help.on && tessera_param_get(0, TX_EV_AMOUNT) != was);
+    help_find(2);
+    bad += check("..help_find still names the knob's parameter (MIDI LEARN): EVOLVE AMOUNT",
+                 help.pid == PID_TESS(TX_EV_AMOUNT) && pid_find(help.pid));
+    fm1_in.buttons &= ~(1u << panel.btn[B_ARP]);
+    frame();
+    frame();
+    ui_power_on();
+    return bad;
+}
+#else
 /* help (ui_help.c): ARP held, a knob turned shows its help and changes nothing; letting ARP go opens no page */
 static int test_help_gesture(void)
 {
@@ -1791,6 +1819,7 @@ static int test_help_gesture(void)
     bad += check("ARP tapped alone still opens its lane", !ui.home && arp_page(ui.page));
     return bad;
 }
+#endif
 
 static int test_rec(void)
 {
