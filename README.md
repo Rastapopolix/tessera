@@ -110,7 +110,7 @@ patches and tips.
 <tr>
 <td align="center" valign="top"><img src="assets/gallery/cords.png" alt="MODS" width="240"><br><b>MODS</b><br><sub>16 cords, any source to any destination.</sub></td>
 <td align="center" valign="top"><img src="assets/gallery/matrix.png" alt="MATRIX" width="240"><br><b>MATRIX</b><br><sub>The cords track by track, lit as they move.</sub></td>
-<td align="center" valign="top"><img src="assets/gallery/help.png" alt="Help card" width="240"><br><b>Help card</b><br><sub>Hold ARP and turn a knob.</sub></td>
+<td align="center" valign="top"><img src="assets/gallery/mod_shortcut.png" alt="Mod shortcut" width="240"><br><b>Mod shortcut</b><br><sub>Hold FX and turn a knob.</sub></td>
 </tr>
 <tr>
 <td align="center" valign="top"><img src="assets/gallery/gen_answer.png" alt="ANSWER" width="240"><br><b>ANSWER</b><br><sub>Play a phrase; it answers, changing a little each time.</sub></td>

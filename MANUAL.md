@@ -39,7 +39,7 @@ would use it, then a table of goals and where to go for each.
 - [MATRIX](#matrix)
 - [ORGANIC: TIDE and SWARM](#organic-tide-and-swarm)
 - [Mod shortcut](#mod-shortcut)
-- [Help card](#help-card)
+- [What a knob does](#what-a-knob-does)
 - [Menu and settings](#menu-and-settings)
 - [Saving and older projects](#saving-and-older-projects)
 - [If something goes wrong](#if-something-goes-wrong)
@@ -148,8 +148,8 @@ lets you do and when you would want it. Follow a link for the full description.
 | [PATTERNS, SONG](#patterns-and-song) | Pick which of its 8 patterns each track plays, and line patterns up into a song. | You arrange written patterns into a song by hand. |
 | ARP | The arpeggiator's MODE, RATE, OCT and GATE, on an ARP track. | You want to play chords and hear them broken up. |
 
-**ARP**: how the selected track's notes are shaped (the pages its MODE uses); held, the [help card](#help-card) for any
-knob you turn. *Hold ARP whenever a knob's name puzzles you.*
+**ARP**: how the selected track's notes are shaped (the pages its MODE uses). *When a knob's name puzzles you, see
+[What a knob does](#what-a-knob-does).*
 
 | Page | What it lets you do | Reach for it when |
 |---|---|---|
@@ -243,7 +243,7 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 | Control Tessera from my MIDI controller | MENU > **MIDI LEARN** ([recipe](RECIPES.md#your-controllers-knobs-kept-midi-learn)) |
 | Play an outside synth from Tessera | [MIDI OUT channels](#midi-out-channels) and [Driving another synth](RECIPES.md#driving-another-synth-midi-out) |
 | Move an outside synth's filter from Tessera's LFOs | A mod onto **CC** ([recipe](RECIPES.md#an-lfo-for-another-synths-filter-mods-out-as-cc)) |
-| Find out what a knob does | Hold **ARP** and turn it ([Help card](#help-card)) |
+| Find out what a knob does | Its page in this manual, or the [parameter reference](docs/PARAMETERS.md) ([What a knob does](#what-a-knob-does)) |
 | Stop crackles | Lower **GLO > GLOBAL > BUDGET**, or thin a busy track ([How many voices at once](#how-many-voices-at-once)) |
 
 ---
@@ -257,7 +257,7 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 |---|---|---|
 | **HOME** | The home page: four tracks, their sounds and knobs | The menu |
 | **SEQ** | What the track plays: GEN, then NOTES or ARP or PATTERN (by its MODE), TEMPO, PATTERNS, SONG | PATTERNS (the song under it) |
-| **ARP** | How the track's notes are shaped: EVOLVE, FORM, TWEAK, TIMING and the rest (by its MODE) | The help card for any knob you turn |
+| **ARP** | How the track's notes are shaped: EVOLVE, FORM, TWEAK, TIMING and the rest (by its MODE) | |
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST (an FM6 track: then FM LFO) | |
 | **ENV** | ENV, ENV DEST (an FM6 track: EG RATE, EG LVL, PITCH EG, PITCH LV) | |
 | **SCL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
@@ -333,7 +333,7 @@ key skips it.
 
 ## Shortcuts
 
-> **In short:** the combinations worth learning first are SEQ for GEN, ARP held for help on any knob, FX held to make
+> **In short:** the combinations worth learning first are SEQ for GEN, FX held to make
 > a mod, REC held to keep what a generator played, and EDIT held with OCT- to undo.
 
 | Do this | And this happens |
@@ -346,7 +346,6 @@ key skips it.
 | Turn **PRESETS** with **GLO** held, on any page | Browses the selected track's sounds as PRESETS does on HOME. The GLO map gives way to the sound: the track, the list and the place in it, the sounds before and after, the sound's name large and its engine (a fast turn: the name the knob will load when it stops, with its speed, X4). It stays while GLO is held; a GLO key or knob brings the map back. Without GLO, PRESETS keeps the page's own job (or does nothing), so a stray turn never changes the sound. GLO + OCT- does not put the sound back. |
 | **GLO** + **E4** (on MIXER, E4) | Holds [FILL](#a-steps-condition-and-fill) for the steps whose condition is FILL or !FILL. |
 | **GEN** on an AWAKE track, a white key | Picks that step: KNOB 1 sets its A, KNOB 2 its B. The same key lets it go. |
-| Hold **ARP**, turn a knob | The [help card](#help-card) for that knob. Turn the same knob further to scroll a long text. |
 | Hold **FX**, turn a knob | Sets how far a cord moves that knob's parameter (see [Mod shortcut](#mod-shortcut)). |
 | Hold **REC** | On a generator track: prints its last bars into STEP. On STEP EVOLVE: keeps the changes. On a STEP track: captures what you just played. |
 | Hold **EDIT**, press **OCT-** / **OCT+** | Undo / redo. |
@@ -1413,15 +1412,15 @@ attenuverter beside a knob on a modular.
 
 ---
 
-## Help card
+## What a knob does
 
-> **In short:** hold ARP and turn any knob to read what it does, without changing it.
+> **In short:** each page's knobs are described in this manual under that page, and every parameter in the
+> [parameter reference](docs/PARAMETERS.md).
 
-Hold **ARP** and turn any knob: a card with its parameter, its value and what it does, on every page (on a page's own
-knobs, such as NOTES, SONG or PATTERNS, what that knob does there). The value does not change. Turn the **same knob**
-further to scroll a long text, back to scroll up. Let go of ARP to close it.
-
-<p align="center"><img src="assets/gallery/help.png" alt="Help card" width="240"></p>
+The [parameter reference](docs/PARAMETERS.md) lists every setting with its range, its default and what it does, the
+texts the help cards showed for them. Earlier versions had a help card on the device (hold ARP and turn a knob); it made
+way for screen reader support, so that the FM-1 can be played without seeing the screen (issue #430). Holding ARP
+and turning a knob now turns it as usual.
 
 ---
 
