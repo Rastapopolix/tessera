@@ -482,7 +482,8 @@ The bar's first step stays on the grid. A mod on **SPLIT** (an LFO or TIDE) brin
 
 **Finding your way**
 
-- Hold **ARP** and turn any knob for its help card. Keep turning the same knob to scroll a long text.
+- Every knob's job is in the [MANUAL](MANUAL.md) under its page, and every parameter in the
+  [parameter reference](docs/PARAMETERS.md).
 - **EDIT** on an EDIT page opens the map of the sound's pages: KNOB 1 across, KNOB 2 down, OCT+ opens. Any other
   page button leaves it for its own page.
 - In lists (the menu, SCL, VOICE, sheets), **KNOB 1 picks the row and KNOB 2 changes it**.
