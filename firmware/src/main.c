@@ -388,6 +388,9 @@ static void fm1_main(void)
         melodee_dbg.stage = 2;
         ui_leds();
         ui_draw();
+#ifdef ANN_VER
+        ui_speak(fm1_ms);                               /* the screen reader: what changed (ui_speak.c) */
+#endif
         melodee_dbg.stage = 9;
         while (fm1_ms - m < 15u) {                               /* ~60 UI frames/s at most */
             ui_input();

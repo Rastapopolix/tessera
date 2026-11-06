@@ -64,6 +64,9 @@
 #ifndef MELODEE_PHYS
 #define MELODEE_PHYS 1           /* PHYS (eng_phys.c), back 2026-10-18 after TRIO; out of device builds 2026-10-21 (build.py) */
 #endif
+#ifndef MELODEE_ACCESS
+#define MELODEE_ACCESS 0         /* 1 (the device build, tools/build.py): the screen reader, no help cards (pid.h) */
+#endif
 #ifndef MELODEE_LOOK
 #define MELODEE_LOOK 1           /* 1: Mono (ui_mono.c), what ships and the host tests build; 0: the detailed look,
                                   * no longer kept up (2026-10-31; branch detailed-look) */

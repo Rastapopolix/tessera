@@ -361,6 +361,8 @@ if core && [ $TABLES = 1 ]; then
         ui_test -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=0 $FW
     t "UI, accessible build (MELODEE_ACCESS 1): no help cards, ARP held turns the knob, help_find still finds (MIDI LEARN)" \
         ui_test_access:ui_test -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=0 -DMELODEE_ACCESS=1 $FW
+    t "screen reader (MELODEE_ACCESS, ui_speak.c): silent until HELLO, the screen, pages, knobs, menu rows, messages, PLAY/STOP, WHERE" \
+        speak_test -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=1 -DMELODEE_ACCESS=1 -Itests $FW
     t "Sound designer: native recipes, dependencies, compare, discard and save" designer_test -O2 -DMELODEE_USB_AUDIO=1 $FW
     t "Sequencer: tied length/move/delete, eight-level undo/redo, MIDI step entry and playing-step recording" seq_edit_test \
         -DMELODEE_USB_AUDIO=1 $FW

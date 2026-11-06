@@ -97,6 +97,27 @@ static struct { uint32_t magic, count, vec, pc, rets, emu, dbg, sp, psr, icfg, u
 #define MELODEE_VERSION "TEST"
 #endif
 #define UI_TEST_PALETTE 1                         /* + GRAY: every screen drawn in it must stay gray */
+#if MELODEE_ACCESS                                /* the screen reader (ui_speak.c): what it sends, kept for the tests */
+#define ANN_NAME "Tessera TEST"
+#define ANN_MAX 160u
+#include "../firmware/src/announce.c"
+static char host_said[4096];                      /* each SAY a line: "N text" (N NOW, Q queued, K kept), HELLO "H text" */
+static uint32_t host_said_n, host_said_frames;
+static int ann_wire_send(const uint8_t *p, uint32_t n)
+{
+    uint32_t i;
+    host_said_frames++;
+    if (n < 8u || p[0] != 0xF0u || p[n - 1u] != 0xF7u || host_said_n + n + 4u >= sizeof host_said)
+        return 0;
+    host_said[host_said_n++] = p[4] == ANN_HELLO ? 'H' : p[5] & ANN_KEEP ? 'K' : p[5] & ANN_NOW ? 'N' : 'Q';
+    host_said[host_said_n++] = ' ';
+    for (i = 6u; i + 1u < n; i++)
+        host_said[host_said_n++] = p[i] ? (char)p[i] : '|';
+    host_said[host_said_n++] = '\n';
+    host_said[host_said_n] = 0;
+    return 0;
+}
+#endif
 #include "../firmware/src/gfx.c"
 #include "../firmware/src/panel.c"
 #include "../firmware/src/ui.c"
@@ -106,6 +127,9 @@ static struct { uint32_t magic, count, vec, pc, rets, emu, dbg, sp, psr, icfg, u
 #include "../firmware/src/ui_menu.c"
 #include "../firmware/src/ui_input.c"
 #include "../firmware/src/ui_layer.c"
+#ifdef ANN_VER
+#include "../firmware/src/ui_speak.c"
+#endif
 #include "../firmware/src/upreset.c"
 #include "../firmware/src/project.c"
 #include "../firmware/src/fm6_store.c"
@@ -221,6 +245,9 @@ static void frame(void)
     fm1_ms += 16u;
     ui_input();
     ui_draw();
+#ifdef ANN_VER
+    ui_speak(fm1_ms);                             /* (as main.c: the screen reader after the drawing) */
+#endif
 }
 static void press(uint32_t label)                 /* a tap: down, a frame, up, a frame */
 {

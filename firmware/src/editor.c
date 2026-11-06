@@ -1058,6 +1058,12 @@ static void ed_service(void)
     uint32_t n;
     ed_sync();                                             /* v2 pushes (while watched) */
     if(!ota_frame_get(&p,&n))return;
+#ifdef ANN_VER
+    if (ann_frame(p, n, fm1_ms)) {                         /* a screen reader's HELLO, BYE or WHERE (announce.c) */
+        ota_frame_done();
+        return;
+    }
+#endif
     if(general_sysex_frame(p,n)){ota_frame_done();return;}
     if (n < 4u || p[0] != ED_HDR0 || p[1] != ED_HDR1 || p[2] != ED_HDR2)
         return;
