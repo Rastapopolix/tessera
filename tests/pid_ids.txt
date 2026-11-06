@@ -96,7 +96,7 @@
 0x102 CLOCK SOURCE             global 0..2 def 0
 0x103 TUNE                     global -50..50 def 0
 0x10c MIDI INPUT               global 0..1 def 0
-0x10d DRUM MIDI CHANNEL        global device 0..16 def 10
+0x10d DRUM MIDI CHANNEL        global device 0..16 def 0
 0x10e MIDI ROUTING             global 0..4 def 0
 0x110 PROJECT SLOT             global action 1..5 def 1
 0x111 BOOT PROJECT             global device 0..4 def 0

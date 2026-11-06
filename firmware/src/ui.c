@@ -122,6 +122,7 @@ static struct {
     uint8_t ptc_on, ptc_trk, ptc_src, ptc_dst;     /* PATTERNS' Copy to: track ptc_trk's pattern src to dst
                                                     * (ui_patterns.c) */
     uint8_t cursor;              /* SEQ: step being edited (STEP page KNOB 1 moves it) */
+    int8_t cursor_dir;           /* the way KNOB 1 last moved it (-1 left, else right): EDIT's delete moves on so */
     uint16_t note_pick;          /* NOTES: event index + 1; zero chooses the first hit */
     uint8_t erase_gesture, erase_owner; /* an EDIT press captures one track/bank until released */
     uint32_t erase_generation, erase_transport;
@@ -281,10 +282,13 @@ static uint32_t seqm_pos(uint32_t m)                    /* a MODE value's place 
         if (SEQM_ORDER[i] == m) return i;
     return 0;
 }
-static uint32_t gen_arc(uint32_t mode)                  /* a generator's arc on GEN's MODE column, 0..1000 */
+static uint32_t seqm_arc(uint32_t m)                    /* a MODE value's arc on GEN's MODE column, 0..1000: STEP at
+                                                         * 0, then ARP and the generators in the knob's order, the last
+                                                         * at 1000 (Theo, 3.3: STEP and ARP had a box, not a dial) */
 {
-    return (seqm_pos(1u + mode) - 1u) * 1000u / (TESS_ENG_COUNT - 1u);
+    return seqm_pos(m) * 1000u / TESS_ENG_COUNT;
 }
+static uint32_t gen_arc(uint32_t mode) { return seqm_arc(1u + mode); }   /* a generator's */
 static void seqm_set(uint32_t tr, int32_t v);
 static void seqm_step(uint32_t tr, int32_t steps)       /* the MODE knob: steps along SEQM_ORDER */
 {

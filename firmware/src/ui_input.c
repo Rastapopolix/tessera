@@ -658,7 +658,7 @@ static void page_go(int32_t d)
 static void grid_edit(uint32_t slot, int32_t steps)
 {
     if (slot == 0u)
-        cursor_set(ui.cursor + steps);
+        ui.cursor_dir = (int8_t)(steps < 0 ? -1 : 1), cursor_set(ui.cursor + steps);
     else if (slot == 1u)
         ui.lane = (uint8_t)clamp((int32_t)ui.lane + (steps > 0 ? 1 : -1), 0, NLANE - 1);
     else if (slot == 2u)
@@ -812,6 +812,7 @@ static uint32_t pitch_turn(uint32_t note, int32_t steps)
 static void step_edit(uint32_t slot, int32_t steps)
 {
     if (slot == 0u) {                                   /* KNOB 1: the notes one by one, the steps (empty ones too) */
+        if (steps) ui.cursor_dir = (int8_t)(steps < 0 ? -1 : 1);   /* (EDIT's delete then moves on this way) */
         if (!ui.entry_open) {
             if (cur_page()->graph == GR_ROLL && !grid_on()) {if(bulk.on||ui.note_move||ui.note_copy)step_move_edit(steps);else notes_step_jog(steps);}
             else cursor_set(ui.cursor + steps);
@@ -1604,7 +1605,7 @@ static void step_delete_edit(void)
     at = step_note_start(TSEL, ui.cursor);
     step_delete(TSEL, ui.cursor);
     fm1_irq_on();
-    cursor_set((int32_t)(at < NSTEP ? at : ui.cursor) + 1);
+    cursor_set((int32_t)(at < NSTEP ? at : ui.cursor) + (ui.cursor_dir < 0 ? -1 : 1));   /* (on the way KNOB 1 went) */
     ui_message(at < NSTEP ? "NOTE CLEARED" : "STEP CLEARED");
 }
 
@@ -1785,7 +1786,7 @@ static void page_tap(uint32_t b)
         else
             step_delete(TSEL, ui.cursor);
         fm1_irq_on();
-        cursor_set(ui.cursor + 1);
+        cursor_set(ui.cursor + (ui.cursor_dir < 0 ? -1 : 1));   /* (on the way KNOB 1 went) */
         ui_message("STEP CLEARED");
         return;
     }

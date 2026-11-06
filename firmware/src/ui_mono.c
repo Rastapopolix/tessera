@@ -181,12 +181,13 @@ static void mo_bar(int32_t cx, int32_t v, uint16_t c)
     if (h)
         mo_fill(cx - 5, 35 - h, 11, h, c);
 }
-/* a dial: the ring and a pointer, v 0..1000 over 270 degrees from the lower left */
+/* a dial: the ring and a pointer to it, v 0..1000 over 270 degrees from the lower left (to the ring at every angle:
+ * to r - 1 it stopped short of the ring only when level or upright, Theo 3.3.1) */
 static void mo_dial(int32_t cx, int32_t cy, int32_t r, int32_t v, uint16_t c)
 {
     int32_t a = -160 + v * 192 / 1000;                  /* -225 .. +45 degrees, 256 a turn */
     mo_circ(cx, cy, r, c);
-    mo_line(cx, cy, cx + mo_cos(a) * (r - 1) / 127, cy + mo_sin(a) * (r - 1) / 127, c);
+    mo_line(cx, cy, cx + mo_cos(a) * r / 127, cy + mo_sin(a) * r / 127, c);
 }
 
 /* ---- header, dials, footer ---- */

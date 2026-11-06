@@ -266,6 +266,7 @@ typedef struct {
     int8_t   shift[TESSERA_TRACKS];             /* this answer's SHIFT, scale degrees */
     uint8_t  slot[TESSERA_TRACKS];              /* the phrase's note just played + 1, 0 none (the picture) */
     uint16_t hclk[TESSERA_TRACKS];              /* listening: steps since the phrase's first note */
+    uint8_t  hlate[TESSERA_TRACKS];             /* the first note was past its step's middle: on the next step */
     uint32_t cnt[TESSERA_TRACKS];               /* steps in this phase (listening: since the last note) */
     uint32_t rnd[TESSERA_TRACKS];               /* its random stream (from the SEED at PLAY) */
     uint8_t  mut[TESSERA_TRACKS][TESS_AN_NOTES];   /* each place's change (vary.c) */
@@ -473,7 +474,9 @@ void tessera_chord_oct_knob(int32_t s);                    /* OCT+ held on GEN i
 void tessera_chord_breath_knob(int32_t s);                 /* OCT+ held on GEN in CHORD (not USER), KNOB 4: BREATH */
 const gen_series_t *tessera_series(uint32_t tr);
 const tessera_answer_t *tessera_answer(uint32_t tr);
-void tessera_answer_hear(track_t *t, uint32_t note, uint32_t vel);   /* seq.c: a key / MIDI note on the track */
+void tessera_answer_hear(track_t *t, uint32_t note, uint32_t vel);   /* a key / MIDI note on the track, on its step */
+void tessera_answer_hear_at(track_t *t, uint32_t note, uint32_t vel, uint32_t late);   /* seq.c: late, played past
+                                                     * the middle of the step playing: on the next, as REC places it */
 void tessera_answer_layer_knob(uint32_t k, int32_t s);  /* OCT+ held on GEN in ANSWER: ORDER, SHIFT, SPACE, LEN */
 uint32_t tessera_answer_count(uint32_t tr);             /* the answers FADE gives (1..16), 0: never forgets (loops) */
 const gen_chord_t *tessera_chord(uint32_t tr);

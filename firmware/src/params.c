@@ -35,7 +35,7 @@ static const char *const N_DRUMCH[] = {"OFF", "1", "2", "3", "4", "5", "6", "7",
 /* GLO > SYSTEM KNOB 2, DRUM: the MIDI channel that plays the first DRUM track within ROUT (none: normal
  * routing), 0 OFF, 1..16; 10 as General MIDI's. A device setting kept with the settings (ext.drumch), not the
  * project's: the column shows drumch_cell (seq.c midi_track) */
-static uint8_t settings_drumch = 10;
+static uint8_t settings_drumch = 0;   /* SYSTEM > DRUM: OFF since 3.3.1 (a drum track follows ROUT); was 10 */
 static int16_t drumch_cell;
 #define PROJ_TMPL 5                                      /* SLOT 5: the template (project.c tmpl) */
 /* SAVE > PROJECT KNOB 2, BOOT: the project power-on loads (OFF, A..D; OFF or an empty slot: the template, if one is
@@ -234,7 +234,7 @@ static const param_desc_t GP[G_COUNT] = {
     [G_RESERVED10] = PD("", F_INT, 0, 127, 0),
     [G_RESERVED11] = PD("", F_INT, 0, 127, 0),
     [G_MIDI] = PE("MIDI", N_MIDI_INPUT, 0),
-    [G_DRUMCH] = PE("DRUM", N_DRUMCH, 10),
+    [G_DRUMCH] = PE("DRUM", N_DRUMCH, 0),
     [G_ROUTE] = PE("ROUT", N_ROUTE, 0),          /* (was "--": stored 0 = CH1-4, as MIDI IN always was) */
     [G_INFO] = PD("CPU", F_INT, 0, 0, 0),
     [G_SLOT] = PD("SLOT", F_INT, 1, PROJ_TMPL, 1),     /* PROJ_TMPL: the template (param_format: TMPL) */
