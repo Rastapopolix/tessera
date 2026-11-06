@@ -736,14 +736,14 @@ static void demo_pier(void)
 }
 
 
-/* FAR SHORE: a deep dub after Rhythm & Sound, on NIGHT FERRY's 808 part (Theo 2026-11-06: "the same percussion").
- * Almost nothing moves: one minor chord, a stab on an electric piano just after two in each bar, low-passed by a FILTER
- * a TIDE opens and closes over minutes and thrown into a dotted echo and a big room; a round sub bass written in STEP;
- * a TRIO wind held under everything as air. The CHAIN takes the chord and the bass up a fourth for its B (KEY B +5),
- * AABA in 16-bar phrases; ENTRIES cuts the chord and the bass out and back on the phrase lines, as a dub's mix does,
- * while the drums and the air hold (ANCHOR). A 12-minute piece in three WAVES, played again. G minor, 76 BPM.
- * Made not to crackle: the echo's feedback stays at 0.64 (no cord moves it), FM6 stabs instead of ORACLE (a third of
- * the CPU), the bass POLY (no sounding voice struck again), the wind struck once at PLAY and held (63 TIEs, OWN in the CHAIN). */
+/* FAR SHORE: a deep dub after Rhythm & Sound, on NIGHT FERRY's 808 part (Theo 2026-11-06: "the same percussion", and
+ * the bubbling organ of their "Best Friend"). Almost nothing moves: one minor chord, a stab on an electric piano just
+ * after two in each bar, low-passed by a FILTER a TIDE opens and closes over minutes and thrown into a dotted echo and a
+ * big room; an organ bubbling the same chord in sixteenths; a round sub bass written in STEP. The CHAIN takes it all up
+ * a fourth for its B (KEY B +5), AABA in 16-bar phrases; ENTRIES cuts the stab, the bass and the bubble out and back on
+ * the phrase lines, as a dub's mix does, while the drums hold (ANCHOR). A 12-minute piece in three WAVES, played again.
+ * G minor, 76 BPM. Made not to crackle: the echo's feedback stays at 0.64 (no cord moves it), FM6 instead of ORACLE (a
+ * third of the CPU), short chords that never overlap, the bass POLY (no sounding voice struck again). */
 enum { FX_DX_TINE = 8 };
 static void demo_shore(void)
 {
@@ -751,7 +751,7 @@ static void demo_shore(void)
     sound(0, ENGI_FM6, FX_DX_TINE);
     sound(1, ENGI_TRIO, TR_SUB_BASS);
     sound(2, ENGI_DRUM, DK_808_KIT);
-    sound(3, ENGI_TRIO, TR_WIND);
+    sound(3, ENGI_FM6, FX_ORGAN);
     scale(7, SCL_MIN, 0);
     sends(120, 100, 102, 96);                         /* a big room; ECHO 296 ms, a dotted sixteenth at 76 BPM */
 
@@ -804,18 +804,31 @@ static void demo_shore(void)
     tx(2, TX_SUB_HUMAN, 10);
     mixer(2, 102, 5, 30, 55);
 
-    /* T4: the air, a TRIO wind held from PLAY (one note, then TIEs at 4 bars a step: struck once, never again) */
-    step_note(3, 0, 55, 70);
-    for (uint32_t i = 1; i < 64u; i++) step_tie(3, i);
-    trk[3].p[P_SLEN] = 64;
+    /* T4: the bubble, an organ in sixteenths rocking between a low Gm (G Bb D) and a high one (D G Bb), each chord
+     * short: in each beat the low on its "e", the high on its "and", the low again on its "a" every other beat; a beat
+     * left out now and then (conditions), so it breathes */
+    {
+        static const uint8_t LO[4] = {55, 58, 62, 0}, HI[4] = {62, 67, 70, 0};
+        for (uint32_t i = 0; i < 32u; i++) step_note(3, i, 0, 0);
+        for (uint32_t b = 0; b < 8u; b++) {
+            step_chord(3, b * 4u + 1u, LO, 74);
+            step_chord(3, b * 4u + 2u, HI, 66);
+            if (b & 1u) step_chord(3, b * 4u + 3u, LO, 60);
+        }
+        step_set_cond(&trk[3].step[13], SC_1_2);      /* (the fourth beat's low, every other time round) */
+        step_set_cond(&trk[3].step[29], SC_2_2);
+        step_set_cond(&trk[3].step[30], SC_2_2);
+        trk[3].p[P_SLEN] = 32;
+    }
     tx(3, TX_MODE, TESS_ENG_OFF);
-    trk[3].p[P_SDIV] = DIV_4BAR;
-    mixer(3, 78, 20, 110, 20);
-    tx(3, TX_FC_FOLLOW, 1);                           /* OWN: noise needs no key (and a step longer than a bar
-                                                     * must not follow the CHAIN's keys: form_chain.c fc_key) */
+    trk[3].p[P_SDIV] = DIV_16;
+    tx(3, TX_SUB_HUMAN, 6);
+    trk[3].p[P_E7] = -50;                             /* AEG: the organ's release short, a bubble's chop (and
+                                                     * no chord still sounding when the next comes) */
+    mixer(3, 98, 25, 40, 30);
 
     {
-        static const uint8_t REP[4] = {1, 1, 1, 1}, ROLE[4] = {RO_HARMONY, RO_BASS, RO_ANCHOR, RO_ANCHOR};
+        static const uint8_t REP[4] = {1, 1, 1, 1}, ROLE[4] = {RO_HARMONY, RO_BASS, RO_ANCHOR, RO_RHYTHM};
         chain_set(FC_AABA, PH_16, 0, REP, 5, 0);
         entries_set(50, 1, 0, 1, ROLE);
         piece_set(LEN_12, SH_WAVES, 50, 3, END_LOOP);
@@ -824,7 +837,7 @@ static void demo_shore(void)
     cord(1, CS_DRIFT, 0, CD_SF2_RATE, 0, 6, 0, 0);    /* T1 DRIFT -> SF2 RTE: the echo's time bends a little, as tape */
     cord(2, CS_OCHD3, 0, CD_FX_SEND2, 0, 25, 0, CU_UNI);  /* T1 SWARM 3 -> T1 SEND 2: some stabs thrown deeper */
     cord(3, CS_OCHD5, 2, CD_FILL, 0, 100, 60, CU_GATE);   /* T3 SWARM 5 -> FILL: the clap now and then */
-    cord(4, CS_TORPOR, 3, CD_CUTOFF, 3, 30, 0, 0);    /* T4 TIDE 1 -> T4 CUT: the air darker and brighter */
+    cord(4, CS_DRIFT, 3, CD_PAN, 3, 20, 0, 0);        /* T4 DRIFT -> T4 PAN: the bubble moves a little */
 }
 
 typedef struct { const char *name, *file; void (*make)(void); } demo_t;
