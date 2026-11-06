@@ -2849,6 +2849,7 @@ const TEXT = {
     demoLight: "ドローン: 一度だけ鳴らす TRIO の五度、TIDE で動く風、ORACLE の合唱、ときどき立ち上がる SOFT SWELL（15 分の WAVES）",
     demoCedar: "KUMOI の撥弦: TURING の KUGO ハープ、EUCLID の箏、MARKOV の笛、ADORN で変わる 808 のタム（CHAIN で転調）",
     demoUndertow: "ニ短調の呼びかけと応答: STEP のメロディを ANSWER が SOURCE にして答え続ける、短調のコード（Dm Bb Gm Am）とサブベース",
+    demoEmber: "ドローン: 動かない五度、タンプーラ風の STEP、CHAIN の AABA で変わる MARKOV の笛（20 分の PIECE）",
     deviceDisplay: "本体の画面",
     deviceDisplayHelp: "FM-1 の画面に反映し、保存します。再生中の変更は停止後に保存されます。",
     devicePresets: "本体のプリセット",
@@ -2964,6 +2965,7 @@ const TEXT = {
     demoLight: "Drone: a TRIO fifth struck once and held, a wind a TIDE moves, an ORACLE choir, a SOFT SWELL rising now and then (15 minutes in WAVES)",
     demoCedar: "Plucked strings in KUMOI: a KUGO harp on TURING, a koto on EUCLID, a MARKOV flute, 808 toms that ADORN varies; the CHAIN moves key",
     demoUndertow: "Call and answer in D minor: a STEP melody that ANSWER takes as its SOURCE and answers on and on, minor chords (Dm Bb Gm Am) and a sub bass",
+    demoEmber: "Drone: a fifth that never moves, a tanpura-like STEP cycle, a MARKOV flute changing with the CHAIN's AABA (a 20-minute PIECE)",
     deviceDisplay: "Device display",
     deviceDisplayHelp: "Changes apply to the FM-1 screen and save. Changes made while playing save after STOP.",
     devicePresets: "Device presets",
@@ -3886,7 +3888,7 @@ const DEMOS = [{ file: "still-tide.tsp", name: "STILL TIDE", about: "demoStill",
                { file: "slow-light.tsp", name: "SLOW LIGHT", about: "demoLight", slot: -1 },   /* (3.3: the long form) */
                { file: "cedar-rain.tsp", name: "CEDAR RAIN", about: "demoCedar", slot: -1 },
                { file: "undertow.tsp", name: "UNDERTOW", about: "demoUndertow", slot: -1 },
-               { file: "far-shore.tsp", name: "FAR SHORE", about: "demoShore", slot: -1 }];
+               { file: "ember-field.tsp", name: "EMBER FIELD", about: "demoEmber", slot: -1 }];
 /* the test projects (demos/checks/*.tsp, demos/checks/README.md): short, one feature each, for the device checks */
 const CHECKS = ["chain", "entries", "piece", "mods", "tempo", "midi", "cpu"].map((k) =>
   ({ file: `checks/chk-${k}.tsp`, name: `CHK ${k.toUpperCase()}`, about: "chk" + k[0].toUpperCase() + k.slice(1), slot: -1 }));

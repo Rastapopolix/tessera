@@ -14,6 +14,7 @@ takes). They need Tessera 3.3 or later.
 | `slow-light.tsp` | SLOW LIGHT | Drone: a TRIO fifth struck once and held, a wind, an ORACLE choir and a SOFT SWELL that change with the CHAIN's AABA; 15 minutes in WAVES |
 | `cedar-rain.tsp` | CEDAR RAIN | Plucked strings in KUMOI: a harp on TURING, a koto on EUCLID, an FM6 flute on MARKOV, 808 hand drums that ADORN varies; ABAC through three keys |
 | `undertow.tsp` | UNDERTOW | Call and answer in D minor: a STEP melody as ANSWER's SOURCE, answered on and on; minor chords and a sub bass in STEP |
+| `ember-field.tsp` | EMBER FIELD | Drone: a fifth that never moves (CHAIN: OWN), a tanpura cycle in STEP, a flute whose AABA sections differ; a 20-minute PIECE |
 
 They are made by the firmware's own code (`tests/demo_projects.c`), which saves each one to a slot, reads it back
 as the backup page does, loads it and plays it; `tests/run_tests.sh` checks that these files still load and play.
@@ -152,28 +153,19 @@ D minor, 70 BPM. A call and its answers.
 - **CHAIN** ABAC (A twice), PHRASE 8: **KEY B −2** (C minor), **KEY C +5** (G minor). **ENTRIES** 45, FADE over 2 bars:
   the answers and the bass come and go. **PIECE** 12 minutes, **ARCH** peaking at 55 %, END **LOOP**. ENERGY ARC 30.
 
-## FAR SHORE
+## EMBER FIELD
 
-G minor, 76 BPM. A deep dub after Rhythm & Sound: almost nothing moves, and the space is the music.
+E phrygian, 60 BPM. A drone.
 
-- **T1 FM6 DX TINE**, STEP, two bars of sixteenths: one chord, Gm (B flat, D, F over the bass's G), a short stab just
-  after two in each bar, a softer one on the "and" of four every other time (1:2). Through a **FILTER** that T1's TIDE 2
-  opens and closes over minutes, nearly all of it into the **ECHO** (296 ms, a dotted sixteenth) and a big **REVERB**;
-  T1's SWARM 3 throws some stabs deeper into the echo.
-- **T2 TRIO SUB BASS**, STEP: a round line of long notes (TIEs): G, G again, B flat, C; D held, C, B flat, an F pickup
-  every other time. POLY, so a note never restarts the one still ringing out.
-- **T3 808 KIT**, STEP: NIGHT FERRY's beat (rockers: kick on one and three, rims on two and four, hats by **Condition**,
-  a tom pickup on the fourth bar, a clap on **FILL** that T3's SWARM 5 holds now and then).
-- **T4 FM6 ORGAN**, STEP: the bubble, sixteenths rocking between a low Gm (G, B flat, D) and a high one (D, G, B flat):
-  in each beat the low on its "e", the high on its "and", the low again on its "a" every other beat, some left out by
-  **Condition**. AEG −50 keeps each chord short.
-- **CHAIN** AABA, PHRASE 16: **KEY B +5** takes the stab, the bass and the bubble to C minor for B. **ENTRIES 50, CUT**,
-  DWELL 1: they drop out and come back on the phrase lines; the drums are the ANCHOR. **PIECE** 12 minutes in three
-  **WAVES**, END **LOOP**.
-- Made not to crackle: the echo's feedback is fixed (no cord moves it), FM6 rather than ORACLE (a third of the CPU),
-  short chords that never overlap, no sounding voice ever struck again, no voice taken.
-- **MODS**: T1 TIDE 2 → T1 FX1 RTE, T1 DRIFT → SF2 RTE (the echo's time bends a little, as tape), T1 SWARM 3 → T1 SEND
-  2, T3 SWARM 5 → FILL (a gate), T4 DRIFT → T4 PAN.
+- **T1 TRIO FIFTH DRONE**, CHORD: PROG **DRONE**, HIT HOLD, chord **POW**, OCT −1, BREATH 45. Set **OWN** in the CHAIN
+  (OCT+ held on FORM), so the drone never moves; ROLE **ANCHOR**, so ENTRIES never takes it out.
+- **T2 ORACLE DRONE**, MORPH in whole notes, MONO, ringing on: a slow line inside the drone, new in B (CONTRAST 45).
+- **T3 FM6 KOTO WARM**, STEP: a tanpura's cycle in quarter notes (B, E', E', E, a rest, B, E', E).
+- **T4 TRIO BREATH FLUTE**, MARKOV in quarter notes, sparse (DENS 35), MONO: the voice of the piece. In A it keeps to
+  a few notes; **CONTRAST 70** makes B far from it, and **DEVELOP 30** varies each return of A.
+- **CHAIN** AABA, PHRASE 16 bars, WANDER 20. **ENTRIES** 45, DWELL 2, FADE over 4 bars. **PIECE** 20 minutes,
+  **PLATEAU**, END **LOOP**. ENERGY ARC 30.
+- **MODS**: T2 TIDE 1 → T2 CUT, T1 DRIFT → T1 PAN, T4 SWARM 1 → T4 FX SEND.
 
 ## Making them again
 
@@ -186,6 +178,9 @@ cp build/demos/*.tsp demos/
 
 A change of what the generators play, or of the project format, can change the records: make them again and check
 they still sound right (the WAVs) before committing.
+
+Six more pieces are kept in reserve, built but not shipped here (NIGHT FERRY, TIN ROOF, COLD ORBIT, PAPER KITES, STONE
+PIER, FAR SHORE): `build/host/demo_projects reserve make build/reserve 180` makes them.
 
 ## The demo video
 
