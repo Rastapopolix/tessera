@@ -12,6 +12,11 @@ DST#	destination #
 PART#	part #
 CH#	channel #
 USR#	user #
+F00#	slot #
+F0#	slot #
+F1#	slot 1#
+U0#	user slot #
+U1#	user slot 1#
 INT#	interval #
 INV#	inversion #
 FM6	F M 6
