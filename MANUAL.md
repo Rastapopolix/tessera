@@ -1445,6 +1445,19 @@ texts the help cards showed for them. Earlier versions had a help card on the de
 way for screen reader support, so that the FM-1 can be played without seeing the screen (issue #430). Holding ARP
 and turning a knob now turns it as usual.
 
+### Screen reader
+
+Tessera can say what is on its screen. Plug the FM-1 into a computer by USB, open the
+[FM-1 Screen Reader](https://charlesvestal.github.io/fm1-reader/) in Chrome or Edge and click Connect. It speaks with
+its own voice, or hands the words to your screen reader (VoiceOver, NVDA, JAWS, TalkBack). Tessera stays silent until
+the reader connects, so a DAW on the same port sees nothing.
+
+It says each page as you open it (its name, the track and the knobs), a knob's name and value once you stop turning it,
+the row of a list or menu with its place ("3 OF 8"), the messages in the header, PLAY and STOP, yes/no questions with
+their keys, the GLO and SCL layers while held, and a step when you press its key while stopped. PATTERNS, SONG, the
+sound browser, the slot pages and SCALES say what is selected. Tessera's abbreviations are said as words (T1 is
+"track 1", BP on SCALES is "Bohlen-Pierce").
+
 ---
 
 ## Menu and settings
