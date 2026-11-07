@@ -5,7 +5,9 @@
  *   every other setting turned plays the same notes, block for block;  ENERGY's tide is the SHAPE (ARC its swing);
  *   Entries follows it: the intro layers in, the outro out, and the top has every track;  the CHAIN: A for good in the
  *   last 15 %, a new section's CONTRAST higher near the top;  END STOP (everything out, then stopped), LOOP (the same
- *   piece again), NEW (new SEEDs), FREE (unplanned on);  a tempo change moves the plan;  the PIECE knobs. */
+ *   piece again), NEW (new SEEDs), FREE (unplanned on);  the piece counted in time played: a tempo change or a TEMPO
+ *   mod never jumps it;  the last 5 % drawn to the root and fifth, the same each PLAY;  RESTS short at the top;  the
+ *   PIECE knobs. */
 #define TESSERA_NOTE_HOOK pt_hook
 #define main hostsim_main
 #include "hostsim.c"
@@ -18,10 +20,19 @@ static void check(const char *what, int ok)
     if (!ok) fails++;
 }
 
-static uint32_t pt_blk, pt_hash, pt_n;
+static uint32_t pt_blk, pt_hash, pt_n, pt_home[2], pt_all[2];   /* (a melody's root and fifth: 80-95 %, the last 5 %) */
+static int pl_on(void);
+static uint32_t pl_at(uint32_t b);
 static void pt_hook(track_t *t, uint32_t note, uint32_t vel)   /* the sequencer's notes */
 {
     if (!vel) return;
+    if ((trk_index(t) == 0u || trk_index(t) == 3u) && pl_on()) {
+        uint32_t x = pl_at(bar_n * 4u + beat_n), w = x >= 62259u ? 1u : 0u;
+        if (x >= 52429u && x < 65536u) {
+            pt_all[w]++;
+            pt_home[w] += note % 12u == 0u || note % 12u == 7u;
+        }
+    }
     pt_hash = (pt_hash ^ (pt_blk * 131u + note * 7u + trk_index(t))) * 16777619u;
     pt_n++;
 }
@@ -257,20 +268,77 @@ static void test_end(void)
     check("END NEW: new SEEDs, from the top", song.playing && bar_n < 30u && tessera.seed[0] != seed0);
 }
 
+static void blocks_s(uint32_t s) { for (uint32_t b = 0; b < s * (uint32_t)FS / CTL; b++) block(); }
+static uint32_t udiff(uint32_t a, uint32_t b) { return a > b ? a - b : b - a; }
 static void test_tempo(void)
 {
-    uint32_t x120, x60, l;
+    uint32_t x0, x1, x2, x3, x4, l0, l2, l4;
     power_on(7);
     p_four();
-    px(0, TX_PL_LENGTH, 5);                           /* (5 minutes) */
+    px(0, TX_PL_LENGTH, 5);                           /* (5 minutes: 1 % is 3 s) */
     play();
-    for (uint32_t b = 0; b < 16u * bar_blocks(); b++) block();   /* (16 bars at 120: 32 s) */
-    (void)tessera_piece_get(&x120, &l);
+    blocks_s(32);                                     /* (16 bars at 120) */
+    (void)tessera_piece_get(&x0, &l0);
     song.g[G_BPM] = 60;
     block();
-    (void)tessera_piece_get(&x60, &l);
-    printf("piece:   at bar 16: %u %% at 120 BPM, %u %% at 60\n", x120 * 100u / 65536u, x60 * 100u / 65536u);
-    check("a tempo change moves the plan (the same bars, twice the time at half the tempo)", x60 > x120 * 3u / 2u);
+    (void)tessera_piece_get(&x1, &l0);
+    blocks_s(32);                                     /* (8 bars at 60: the same 32 s) */
+    (void)tessera_piece_get(&x2, &l2);
+    printf("piece:   32 s at 120 BPM: %u %%, then at 60: %u %%, 32 s later %u %% (%u s left)\n", x0 * 100u / 65536u,
+           x1 * 100u / 65536u, x2 * 100u / 65536u, l2);
+    check("BPM 120 to 60: the arc does not jump (it counts the time played)", udiff(x0, x1) < 300u);
+    check("  and goes on in time: 32 s more is as far again, the time left 236 s",
+          udiff(x2, 2u * x0) < 2u * 218u && l2 >= 235u && l2 <= 237u);
+    seq_tempo_q12 = 8192u;                            /* (a TEMPO mod: twice as fast) */
+    block();
+    (void)tessera_piece_get(&x3, &l2);
+    blocks_s(30);
+    (void)tessera_piece_get(&x4, &l4);
+    seq_tempo_q12 = 4096u;
+    printf("piece:   a TEMPO mod x2: %u %%, 30 s later %u %%\n", x3 * 100u / 65536u, x4 * 100u / 65536u);
+    check("a TEMPO mod x2: no jump, and 30 s are 10 % of the piece", udiff(x2, x3) < 600u &&
+          udiff(x4 - x3, 6554u) < 2u * 218u && l4 + 30u >= l2 - 1u && l4 + 30u <= l2 + 1u);
+}
+
+/* the end resolves home: the melodies' notes on the root or the fifth more often in the last 5 % than before it; the
+ * same notes each PLAY; RESTS shorter in the shape's upper half, none at its top */
+static void test_finish(void)
+{
+    uint32_t h0, n0, r0, r1, low, top, pull_mid, pull_end, b, n;
+    for (int k = 0; k < 2; k++) {
+        power_on(9);
+        p_four();
+        px(0, TX_PL_LENGTH, 2);                       /* (2 minutes) */
+        px(0, TX_PL_END, PL_END_FREE);
+        memset(pt_home, 0, sizeof pt_home);
+        memset(pt_all, 0, sizeof pt_all);
+        pt_hash = 2166136261u; pt_n = 0;
+        play();
+        for (b = 0, n = 125u * (uint32_t)FS / CTL; b < n; b++) block();
+        if (!k) h0 = pt_hash, n0 = pt_n;
+    }
+    r0 = pt_all[0] ? pt_home[0] * 100u / pt_all[0] : 0u;
+    r1 = pt_all[1] ? pt_home[1] * 100u / pt_all[1] : 0u;
+    printf("piece:   root or fifth: %u %% of %u notes at 80-95 %%, %u %% of %u in the last 5 %%\n", r0, pt_all[0], r1, pt_all[1]);
+    check("the last 5 %: the melodies drawn to the root and the fifth", pt_all[0] > 10u && pt_all[1] > 5u && r1 > r0 + 10u);
+    check("  the same notes each PLAY", h0 == pt_hash && n0 == pt_n);
+
+    power_on(10);
+    p_four();
+    px(0, TX_PL_LENGTH, 8);                       /* (10 minutes) */
+    px(0, TX_PL_PEAK, 50);
+    play();
+    block();
+    plan.at_b = 5u * 60u * (uint32_t)FS;              /* (the time played: the ARCH's top) */
+    plan.last_b = bar_n * 4u + beat_n;
+    top = planner_rest(1000u);
+    pull_mid = planner_pull();
+    plan.at_b = 30u * (uint32_t)FS;                   /* (5 % in: low) */
+    low = planner_rest(1000u);
+    plan.at_b = 594u * (uint32_t)FS;                  /* (99 %) */
+    pull_end = planner_pull();
+    check("RESTS: none at the top, as long as ever low down", top == 0u && low == 1000u);
+    check("the pull: none mid-piece, near half at its very end", pull_mid == 0u && pull_end >= 35u && pull_end <= 50u);
 }
 
 static void test_knobs(void)
@@ -301,6 +369,7 @@ int main(void)
     test_arch();
     test_end();
     test_tempo();
+    test_finish();
     if (fails) {
         printf("piece: %d FAILED\n", fails);
         return 1;

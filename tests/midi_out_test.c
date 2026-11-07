@@ -349,7 +349,8 @@ static int no_drift_test(void)
 }
 
 /* TEMPO as a mod destination (issue #359): a fixed mod +100 doubles CLK INT, -100 halves it, +50 is half an octave;
- * the clock out follows; the planner's piece stays in BPM's beats (no jump through its shape) */
+ * the clock out follows; the planner's piece never jumps through its shape and lasts its time (planner.c counts the
+ * time played) */
 static int tempo_mod_test(void)
 {
     static const int8_t OFF[4] = {100, -100, 50, 0};
@@ -359,14 +360,19 @@ static int tempo_mod_test(void)
     settings_clock_out = 1;
     song.g[G_BPM] = 120;
     tessera.pl_length = 4;                              /* (a 4-minute piece planned) */
-    uint32_t beats0 = pl_beats();
+    uint32_t xa, xb, left;
     transport_req = 1; events_block(CTL);
+    plan_ok &= pl_beats() == 480u;                      /* (4 minutes at 120 from PLAY) */
     for (uint32_t c = 0; c < 4u; c++) {
         cord_t cd = {0};
+        (void)tessera_piece_get(&xa, &left);
         cd.dst = CD_TEMPO;
         cd.offset = OFF[c];
         cord_set(0, &cd);
         cord_tick();
+        events_block(CTL);
+        (void)tessera_piece_get(&xb, &left);
+        plan_ok &= (xa > xb ? xa - xb : xb - xa) < 300u;   /* (the mod on: no jump; a beat is 137 at most) */
         mo_r = mo_w;
         uint64_t u0 = ((uint64_t)bar_n * 4u + beat_n) * MIDI_BEAT_UNITS + beat_pos;
         uint32_t pulses = 0, n = 10u * (uint32_t)FS / CTL;   /* ten seconds */
@@ -379,8 +385,9 @@ static int tempo_mod_test(void)
         double got = (double)(u - u0) / ((double)n * CTL * MIDI_BEAT_UNITS * 120.0 / (FS * 60.0));
         ok &= got > WANT[c] * 0.998 && got < WANT[c] * 1.002;
         pulses_ok &= pulses + 2u >= (uint32_t)((u - u0) / 1024u) && pulses <= (uint32_t)((u - u0) / 1024u) + 2u;
-        plan_ok &= pl_beats() == beats0 && beats0 == 480u;
     }
+    (void)tessera_piece_get(&xa, &left);
+    plan_ok &= left >= 199u && left <= 200u;           /* (40 s played of 240, whatever the tempo) */
     cord_t off = {0};
     cord_set(0, &off);
     cord_tick();
@@ -388,7 +395,7 @@ static int tempo_mod_test(void)
     transport_req = 2; blocks(2);
     bad += check("TEMPO mod: +100 doubles CLK INT, -100 halves it, +50 half an octave", ok && seq_tempo_q12 == 4096u);
     bad += check("  the clock out follows it", pulses_ok);
-    bad += check("  the planner's piece stays in BPM's beats (no jump through its shape)", plan_ok);
+    bad += check("  the planner's piece never jumps and lasts its time (40 s of 4 minutes played: 200 s left)", plan_ok);
     return bad;
 }
 
