@@ -6,6 +6,7 @@
 # url: https://rastapopolix.github.io/tessera/words/
 # tracks, operators, numbered things
 T#	track #
+T# AT	track # aftertouch
 OP#	operator #
 SRC#	source #
 DST#	destination #
@@ -272,11 +273,16 @@ WERCK3	Werckmeister three
 KIRN3	Kirnberger three
 VALLOT	Vallotti
 YOUNG2	Young two
-RAST-J	rast, just
-SABA-J	saba, just
+RAST-J	rast, just intonation
+SABA-J	saba, just intonation
 SLENDR	slendro
 BP-ET	Bohlen-Pierce equal
 BP-JI	Bohlen-Pierce just
+FAMILY BP	family Bohlen-Pierce
+FAMILY EDO	family E D O
+FAMILY FAV	family favourites
+FAMILY HIST	family historical
+FAMILY HARM	family harmonic series
 HIRA	hirajoshi
 SCALE IN	scale in sen
 SCALE YO	scale yo

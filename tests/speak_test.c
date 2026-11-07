@@ -84,6 +84,11 @@ static void dump_extra(void)
     dump_screen();
     scale_picker_edit(1, 3);
     dump_screen();
+    for (i = 0; i <= SCALE_FAMILIES + 1u; i++) {        /* each family's name */
+        ui.scale_family = (uint8_t)i;
+        dump_screen();
+    }
+    ui.scale_family = 0;
     go_title("ARP");                                    /* a knob's list */
     vlist_open(ui.page, 0);
     dump_screen();
@@ -238,6 +243,21 @@ int main(int argc, char **argv)
                  (said("POLAR") && !said("+")));
     printf("  said: %s", host_said);
     turn(EN_K1, -1);
+    {
+        cord_t c = *cord_get(cord_ui_sel);              /* MACRO 3 (the project's), then KNOB 1 to the next */
+        c.src = CS_MACRO3;
+        c.src_trk = 2;
+        cord_set(cord_ui_sel, &c);
+        said_clear();
+        turn(EN_K1, 1);
+        settle();
+        bad += check("speak: ..the project's source (MACRO 4) without a track", said("MOD SOURCE MACRO 4 ") &&
+                     !said("T3"));
+        printf("  said: %s", host_said);
+        c.src = CS_OFF;
+        c.src_trk = 0;
+        cord_set(cord_ui_sel, &c);
+    }
     said_clear();
     go_title("SCALES");
     settle();

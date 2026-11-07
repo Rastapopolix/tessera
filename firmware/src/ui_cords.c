@@ -24,7 +24,10 @@ static void cu_adopt(void)
     was = left;
 }
 
-#define CU_NSRC (1u + NTRK * (CS_N - 1u))               /* KNOB 1's list: --, then track by track */
+#define CU_SPT (CS_ENERGY - 1u)                         /* a track's sources (LFO .. DRIFT) */
+#define CU_NSRC (1u + NTRK * CU_SPT + (CS_N - CS_ENERGY))   /* KNOB 1's list: --, track by track, then the project's
+                                                         * (ENERGY, the MACROs) once */
+static int cu_src_trk(uint32_t s) { return s && s < CS_ENERGY; }   /* a track's source, not the project's */
 /* KNOB 3's list: --, a track's destinations track by track (none, the retired one: not listed), then the send
  * effects' once (CK_GLOBAL: every track's) */
 static int cu_global(uint32_t code) { return cord_dest(code) && cord_dest(code)->kind >= CK_GLOBAL; }   /* (CK_CORD too) */
@@ -37,7 +40,20 @@ static uint32_t cu_count(uint32_t below, int global)    /* the listed codes 1 ..
 }
 #define CU_DPT cu_count(CD_N, 0)
 #define CU_NDST (1u + NTRK * CU_DPT + cu_count(CD_N, 1))
-static uint32_t cu_src_of(const cord_t *c) { return c->src ? 1u + c->src_trk * (CS_N - 1u) + c->src - 1u : 0u; }
+static uint32_t cu_src_of(const cord_t *c)
+{
+    if (!c->src) return 0u;
+    return cu_src_trk(c->src) ? 1u + c->src_trk * CU_SPT + c->src - 1u : 1u + NTRK * CU_SPT + c->src - CS_ENERGY;
+}
+static uint32_t cu_src_at(uint32_t v, uint8_t *tr)     /* entry v of KNOB 1's list: its source, *tr its track */
+{
+    *tr = 0;
+    if (!v) return CS_OFF;
+    v--;
+    if (v >= NTRK * CU_SPT) return CS_ENERGY + v - NTRK * CU_SPT;
+    *tr = (uint8_t)(v / CU_SPT);
+    return 1u + v % CU_SPT;
+}
 static uint32_t cu_dst_k(uint32_t code) { return cu_count(code, cu_global(code)); }   /* code -> its place, in its kind */
 static uint32_t cu_dst_code(uint32_t k, int global)
 {
@@ -172,7 +188,7 @@ static void cu_rows(void)
         }
         fmt_int(b, (int32_t)(top + k + 1u));
         cv_text_on(top + k + 1u >= 10u ? 8 : 12, 7, &AF_S, b, sel ? T_THEME : T_MID, bg);
-        cu_chip(26, 6, 74, c->src_trk, cu_src_name(c), c->src != CS_OFF, c->src != CS_OFF, bg);
+        cu_chip(26, 6, 74, c->src_trk, cu_src_name(c), c->src != CS_OFF, cu_src_trk(c->src), bg);
         cv_rect(104, 14, 10, 2, on ? T_MID : T_DIM);    /* an arrow */
         cv_line(110, 11, 113, 14, on ? T_MID : T_DIM);
         cv_line(110, 17, 113, 14, on ? T_MID : T_DIM);
@@ -248,7 +264,9 @@ static void cu_columns(void)
 {
     const cord_t *c = cord_get(cord_ui_sel);
     char val[24], src[16];
-    if (c->src) {
+    if (c->src && !cu_src_trk(c->src))                  /* (the project's: no track) */
+        str_cpy(src, cord_src_name(c->src), sizeof src);
+    else if (c->src) {
         src[0] = 'T'; src[1] = (char)('1' + c->src_trk); src[2] = ' ';
         str_cpy(src + 3, cord_src_name(c->src), sizeof src - 3);
     } else
@@ -287,8 +305,9 @@ static const char *cu_pick_name(uint32_t col, int32_t i, int32_t *tr)
     if (i <= 0)
         return "--";
     if (col == 0u) {
-        uint32_t s = (uint32_t)((i - 1) % (int32_t)(CS_N - 1u) + 1);
-        if (s < CS_ENERGY) *tr = (i - 1) / (int32_t)(CS_N - 1u);   /* (ENERGY, the MACROs: the project's) */
+        uint8_t t;
+        uint32_t s = cu_src_at((uint32_t)i, &t);
+        if (cu_src_trk(s)) *tr = t;                     /* (ENERGY, the MACROs: the project's) */
         return cord_src_name(s);
     }
     cu_dst_set(&c, (uint32_t)i);
@@ -370,8 +389,7 @@ static void cu_knob(uint32_t slot, int32_t steps)
     }
     if (slot == 0u) {
         v = clamp((int32_t)cu_src_of(&c) + list_accel(EN_K1, steps, CU_NSRC, 0), 0, CU_NSRC - 1);
-        c.src = v ? (uint8_t)((v - 1) % (CS_N - 1u) + 1u) : CS_OFF;
-        c.src_trk = v ? (uint8_t)((v - 1) / (CS_N - 1u)) : 0u;
+        c.src = (uint8_t)cu_src_at((uint32_t)v, &c.src_trk);
         if (c.uni == CU_GATE && !c.src) { c.uni = CU_BI; c.offset = 0; }   /* (no source: no gate, no threshold; */
         if (c.uni == CU_GATE && c.offset < 0 && !cord_bipolar(c.src, c.src_trk)) c.offset = 0;   /* 0..1: none under 0) */
         if (c.src && !c.amount && c.uni != CU_GATE) { c.amount = c.offset; c.offset = 0; }   /* (one move shown: a fixed move becomes */

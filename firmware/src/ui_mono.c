@@ -2947,7 +2947,7 @@ static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on)
         mo_box(1, 0, 118, CU_H / 2 - 1, MO_INK);
     fmt_int(b, (int32_t)n);
     mo_text(b, n >= 10u ? 3 : 5, 3, sel ? MO_INK : MO_DIM);
-    mo_cu_side(13, c->src_trk, cu_src_name(c), 1, c->src != CS_OFF);
+    mo_cu_side(13, c->src_trk, cu_src_name(c), cu_src_trk(c->src), c->src != CS_OFF);
     mo_text(">", 47, 3, ink);
     mo_cu_side(54, c->dst_trk, cu_dst_mono(c), !cu_global(c->dst), c->dst != CD_OFF);
     fmt_int(b + 1, cu_pct(c) < 0 ? -cu_pct(c) : cu_pct(c));
