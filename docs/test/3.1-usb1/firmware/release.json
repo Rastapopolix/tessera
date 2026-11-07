@@ -1,0 +1,8 @@
+{
+  "version": "3.1-usb1",
+  "product": "FM-1_83773010",
+  "pkg": {
+    "dual": "../../firmware/tessera-3.1-usb1.fwsc",
+    "single": "../../firmware/tessera-3.1-usb1-1core.fwsc"
+  }
+}
