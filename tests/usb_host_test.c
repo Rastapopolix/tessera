@@ -835,7 +835,7 @@ static void test_host_output(int via_hub)
     assert(uh.fault); recover_host();
     /* Device audio/capture preferences wait for HOST OFF, never resetting active host DMA. */
     uint32_t off = off_count, type = regs[1][24];
-    ua_off_set(UA_OFF_IN, !!(ua_off & UA_OFF_IN), fm1_ms); fm1_ms += 1000;
+    ua_off_set(UA_OFF_REC, !!(ua_off & UA_OFF_REC), fm1_ms); fm1_ms += 1000;
     assert(!ua_off_apply(fm1_ms) && uh.run && off_count == off && regs[1][24] == type);
     usb_replug(fm1_ms); assert(uh.run && off_count == off);
     uh.want = 0; uh_task(fm1_ms);

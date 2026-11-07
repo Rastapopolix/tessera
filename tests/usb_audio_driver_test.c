@@ -142,11 +142,13 @@ static void controls(void)
     assert(ep0_command == 0x60);
     setup(0x81, 10, 0, 6, 1);
     assert(ep0_command == 0x60);
-    /* Device names of the two functions (iFunction / iInterface 3 and 4). */
+    /* Device names of the two functions (iFunction / iInterface 3 and 4), from the FM-1's side (#494): playback is
+     * "Tessera In", recording "Tessera Out"; bcdDevice 3.08 so hosts read them again. */
+    assert(DEV_DESC[12] == 0x08 && DEV_DESC[13] == 0x03);
     setup(0x80, 6, 0x0303, 0x0409, 255);
-    assert(ep_cnt[0] == 24 && ep0buf[1] == 3 && !memcmp(ep0buf + 18, "O\0u\0t\0", 6));
+    assert(ep_cnt[0] == 22 && ep0buf[1] == 3 && !memcmp(ep0buf + 16, " \0I\0n\0", 6));
     setup(0x80, 6, 0x0304, 0x0409, 255);
-    assert(ep_cnt[0] == 22 && ep0buf[1] == 3 && !memcmp(ep0buf + 18, "I\0n\0", 4));
+    assert(ep_cnt[0] == 24 && ep0buf[1] == 3 && !memcmp(ep0buf + 16, " \0O\0u\0t\0", 8));
     setup(0x80, 6, 0x0305, 0x0409, 255);
     assert(ep0_command == 0x60);
     ua.pw = 600;
@@ -350,25 +352,25 @@ static void layouts(void)
 static void replug(void)
 {
     assert(!ua_off_apply(100000));              /* nothing wanted */
-    ua_off_set(UA_OFF_OUT, 0, 1000);
-    ua_off_set(UA_OFF_OUT, 0, 1300);            /* already wanted: the rest timer keeps running */
-    assert(ua_off_want == UA_OFF_OUT && ua_off == 0 && usb.up);
+    ua_off_set(UA_OFF_PLAY, 0, 1000);
+    ua_off_set(UA_OFF_PLAY, 0, 1300);            /* already wanted: the rest timer keeps running */
+    assert(ua_off_want == UA_OFF_PLAY && ua_off == 0 && usb.up);
     assert(!ua_off_apply(1599) && usb.up && ua_cfg_len == 411);
-    assert(ua_off_apply(1600) && ua_off == UA_OFF_OUT && !usb.up && !usb.config);
+    assert(ua_off_apply(1600) && ua_off == UA_OFF_PLAY && !usb.up && !usb.config);
     usb_retry(2599);
     assert(!usb.up);
     usb_retry(2600);
     assert(usb.up && ua_cfg_len == 251 && ua_if_play == UA_NO_IF && ua_if_cap == 3);
-    ua_off_set(UA_OFF_IN, 0, 3000);             /* through OFF and back on: no replug */
-    ua_off_set(UA_OFF_IN, 1, 3200);
+    ua_off_set(UA_OFF_REC, 0, 3000);             /* through OFF and back on: no replug */
+    ua_off_set(UA_OFF_REC, 1, 3200);
     assert(!ua_off_apply(9000) && usb.up);
-    ua_off_set(UA_OFF_OUT, 1, 9000);
-    ua_off_set(UA_OFF_IN, 0, 9100);
-    assert(!ua_off_apply(9699) && ua_off_apply(9700) && ua_off == UA_OFF_IN && !usb.up);
+    ua_off_set(UA_OFF_PLAY, 1, 9000);
+    ua_off_set(UA_OFF_REC, 0, 9100);
+    assert(!ua_off_apply(9699) && ua_off_apply(9700) && ua_off == UA_OFF_REC && !usb.up);
     usb_retry(10700);
     assert(usb.up && ua_cfg_len == 269 && ua_if_play == 3 && ua_if_cap == UA_NO_IF);
     usb.detached = 1;                           /* on its way to UBOOT: stays off */
-    ua_off_set(UA_OFF_IN, 1, 11000);
+    ua_off_set(UA_OFF_REC, 1, 11000);
     assert(ua_off_apply(11600) && usb.up);
     usb.detached = 0;
     puts("USB audio on/off: debounced, replug, re-enumeration with the new layout: OK");

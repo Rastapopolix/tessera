@@ -1972,7 +1972,7 @@ static void setup(int s)
     case S_MENU_AUTOSAVE_OFF: ui.menu=1;ui.menu_sel=MI_AUTOSAVE;settings_autosave=0;break;
     case S_MENU_HOLD: ui.menu = 1; ui.menu_sel = MI_HOLD; settings_hold = 2; break;
 #if MELODEE_USB_AUDIO
-    case S_MENU_USB: ui.menu = 1; ui.menu_sel = MI_USB; ua_off_want = UA_OFF_IN; break;   /* (OUT only) */
+    case S_MENU_USB: ui.menu = 1; ui.menu_sel = MI_USB; ua_off_want = UA_OFF_PLAY; break;  /* (OUT only) */
     case S_MENU_USB_STEREO: ui.menu = 1; ui.menu_sel = MI_USB_INPUT; ua_tracks_want = 0; break;
     case S_MENU_USB_TRACKS: ui.menu = 1; ui.menu_sel = MI_USB_INPUT; ua_tracks_want = 1; break;
 #endif
