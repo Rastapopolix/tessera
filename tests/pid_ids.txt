@@ -270,3 +270,4 @@
 0x295 TIMING HOW               track 0..2 def 0
 0x296 FOLLOW HOW               track 0..11 def 0
 0x297 FOLLOW RHYTHM            track 0..2 def 0
+0x298 PAT GEN                  track 0..1 def 0

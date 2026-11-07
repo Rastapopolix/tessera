@@ -424,6 +424,7 @@ static int pattern_copy(track_t *t, uint32_t source, uint32_t dest)
     pattern_commit(t);
     recording_copy(t, source, dest, 1);
     *pattern_at(k, dest) = *pattern_at(k, source);
+    tessera_pg_copy(k, source, dest);                   /* (PAT GEN's slot with it) */
     n = 0;
     for (i = 0; i < motion.count; i++) if ((motion.event[i].place >> 6) != k || motion_pattern[i] != dest) {
         motion_pattern[n] = motion_pattern[i]; motion.event[n++] = motion.event[i];

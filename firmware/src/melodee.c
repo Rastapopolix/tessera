@@ -104,6 +104,7 @@ static int ann_wire_send(const uint8_t *p, uint32_t n)   /* never waits: no room
 #include "song_chain.c"
 #include "seq.c"
 #include "tessera.c"
+#include "pat_gen.c"               /* PAT GEN: each pattern its own generator setup */
 #include "pid.c"                 /* the central parameter ids (pid.h) */
 #include "cord.c"                /* cords: the signal bus (cord.h) */
 #include "audio.c"

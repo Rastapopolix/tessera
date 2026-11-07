@@ -1184,14 +1184,17 @@ static void draw_columns(void)
         const tessera_evolve_t *ev = &tessera.evolve[tr < TESSERA_TRACKS ? tr : 0u];
         char e0[16], e1[16], e2[16], e3[16], e0u[8] = "", e1u[8] = "", e2u[8] = "%";
         int lk = tessera_lock_get(tr);
-        if (sv_layer_on()) {                            /* STEP EVOLVE, OCT+ held: HOW */
+        uint32_t pg;                                    /* (PAT GEN: KNOB 4 of both OCT+ layers) */
+        if (sv_layer_on()) {                            /* STEP EVOLVE, OCT+ held: HOW, PAT GEN */
             uint32_t how = tessera.sv_how[tr] % TESS_SV_HOWS;
             col_mods(PID_TESS(TX_SV_HOW));
             draw_column(0, "HOW", pid_desc(PID_TESS(TX_SV_HOW), tr)->names[how], "", VAL(0u),
                         (int32_t)how * 1000 / (TESS_SV_HOWS - 1), ICON_AUTO);
             draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
             draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
-            draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+            pg = tessera.pat_gen[tr] ? 1u : 0u;
+            col_mods(PID_TESS(TX_PAT_GEN));
+            draw_column(3, "PAT GEN", pg ? "ON" : "OFF", "", pg ? VAL(3u) : T_DIM, (int32_t)pg * 1000, ICON_AUTO);
             return;
         }
         if (ev_layer_on()) {                            /* a generator's EVOLVE, OCT+ held: GRAVITY (lit with EVERY on) */
@@ -1201,7 +1204,9 @@ static void draw_columns(void)
             draw_column(0, "GRAVITY", e0, "%", ev->every && !ev->form ? VAL(0u) : T_DIM, (int32_t)gv * 10, ICON_AUTO);
             draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
             draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
-            draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+            pg = tessera.pat_gen[tr] ? 1u : 0u;
+            col_mods(PID_TESS(TX_PAT_GEN));
+            draw_column(3, "PAT GEN", pg ? "ON" : "OFF", "", pg ? VAL(3u) : T_DIM, (int32_t)pg * 1000, ICON_AUTO);
             return;
         }
         if (tessera_step_on(tr)) {                      /* STEP EVOLVE: LOCK, EVERY, AMOUNT, CLEAR (the steps changed) */

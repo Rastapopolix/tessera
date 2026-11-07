@@ -567,10 +567,15 @@ What a pattern changes depends on the track's MODE:
 | **ARP** | Its LEN, DIV, GATE and its notes. The ARP and ARP 2 settings belong to the track. |
 | a generator | Only LEN, DIV, GATE, and the steps the generator can take as its seed (SOURCE, see [STEP as seed](#turing-euclid-markov-and-morph-source-keep-gravity-step-as-seed)). |
 
-The generator itself, its MODE, its knobs, EVOLVE, FORM, TWEAK and the rest, belongs to the track, not to a pattern.
-Switching pattern on a generator track does not give it other settings. To change a generator over a piece, use
-[FORM](#form) and [CHAIN](#chain-one-form-for-the-project) sections, [cords](#mods-the-modulation-cords), or
-separate projects.
+The generator itself, its MODE, its knobs, EVOLVE, FORM, TWEAK and the rest, belongs to the track, not to a pattern,
+unless **PAT GEN** is ON (EVOLVE page, hold **OCT+**, KNOB 4). With PAT GEN ON each pattern keeps its own MODE, the
+generator's knobs, SEED and EVOLVE's EVERY, AMOUNT and LOCK, so switching pattern (by hand, PATTERNS or SONG)
+switches the generator too, and it starts again from that pattern's SEED. A pattern can be STEP while another is a
+generator. Turning PAT GEN ON gives all 8 patterns the settings as they are; edit a pattern's generator while it
+plays. COPY copies it with the steps. FORM, TWEAK, TWEAK 2, NOTE LENGTH, TIMING and the rest stay the track's.
+Firmware before 3.5 loads such a project with every pattern playing the generator of the pattern that was playing
+when it was saved. To change a generator over a piece without PAT GEN, use [FORM](#form) and
+[CHAIN](#chain-one-form-for-the-project) sections, [cords](#mods-the-modulation-cords), or separate projects.
 
 **PATTERNS.** Hold **SEQ** (or turn to its page). A row per track, a cell per pattern, 1 to 8:
 
