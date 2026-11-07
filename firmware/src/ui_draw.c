@@ -922,10 +922,15 @@ static void draw_columns(void)
             if (h) { w3[2] = 'H'; w3[3] = (char)('0' + h); w3[4] = 0; }
         }
         else str_cpy(w3, "OFF", sizeof w3);
-        if (tw_layer_on()) {                            /* OCT+ held: FOLLOW's HOLD (lit while following) */
-            uint32_t h = tessera.follow_hold[tr];
+        if (tw_layer_on()) {                            /* OCT+ held: FOLLOW's HOW, RHYTHM, HOLD (lit while following) */
+            uint32_t h = tessera.follow_hold[tr], fh = tessera.follow_how[tr] % TESS_FH_COUNT;
+            uint32_t fr = tessera.follow_rhy[tr] % TESS_FR_COUNT;
             char w4[4] = {'T', (char)('0' + h), 0, 0};
-            for (uint32_t k = 0; k < 3u; k++) draw_column(k, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(0, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(1, "HOW", pid_desc(PID_TESS(TX_TW_FHOW), 0)->names[fh], "", ev->follow ? VAL(1u) : T_DIM,
+                        (int32_t)fh * 1000 / (TESS_FH_COUNT - 1), ICON_AUTO);
+            draw_column(2, "RHYTHM", pid_desc(PID_TESS(TX_TW_FRHY), 0)->names[fr], "", ev->follow ? VAL(2u) : T_DIM,
+                        (int32_t)fr * 500, ICON_AUTO);
             draw_column(3, "HOLD", h ? w4 : "OFF", "", ev->follow ? VAL(3u) : T_DIM, (int32_t)h * 1000 / 4, ICON_AUTO);
             return;
         }
