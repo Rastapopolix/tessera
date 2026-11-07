@@ -77,6 +77,8 @@ SOURCE INT	source internal
 MODE LEG	mode legato
 VOICE LEG	voice legato
 COND	condition
+CONTRA	contrary
+CANON#	canon #
 QUAD EVERY # EVERY	quad column # every
 RAM	R A M
 CCS	controllers
