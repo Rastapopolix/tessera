@@ -157,11 +157,88 @@ static int dump(const char *path)
     return 0;
 }
 
+/* speak_test compare FILE: each knob on each page, every engine and MODE, as the screen draws it (draw_columns, the
+ * columns a list row takes) and as the reader says it (sp_knob): MODE<TAB>ENGINE<TAB>PAGE<TAB>KNOB<TAB>LABEL<TAB>VALUE
+ * UNIT<TAB>SAID. tools/speak_screen.py reads it: a value said differently from the one drawn is a reader bug (the ARP
+ * GEN MODE said STEP, 3.4) */
+static FILE *cmp_f;
+static const char *cmp_mode, *cmp_eng;
+static void cmp_pages(void)
+{
+    char b[64];
+    uint32_t i, k;
+    for (i = 0; i < NPAGES; i++) {
+        uint8_t cs;
+        if (!page_visible(i)) continue;
+        ui.home = 0;
+        ui.page = (uint8_t)i;
+        if (own_screen() || list_on()) continue;        /* (their own screens: sp_own; a list page says its row) */
+        ui.force = 1;
+        ui_draw();
+        cs = col_style;
+        memset(lcap, 0, sizeof lcap);
+        col_style = CS_CAPTURE;
+        draw_columns();
+        col_style = cs;
+        for (k = 0; k < 4u; k++) {
+            char lab[12], val[16], unit[8];
+            int on = lcap[k].on;
+            str_cpy(lab, lcap[k].label, sizeof lab);
+            str_cpy(val, lcap[k].val, sizeof val);
+            str_cpy(unit, lcap[k].unit, sizeof unit);
+            if (!sp_knob(k, b, sizeof b)) b[0] = 0;
+            if (!on && !b[0]) continue;
+            fprintf(cmp_f, "%s\t%s\t%s\t%u\t%s\t%s %s\t%s\n", cmp_mode, cmp_eng, PAGES[i].title, (unsigned)k + 1u,
+                    on ? lab : "(none)", on ? val : "", on ? unit : "", b);
+        }
+    }
+}
+static int compare(const char *path)
+{
+    static const char *const MODE[] = {"STEP", "ARP", "TURING", "EUCLID", "MARKOV", "MORPH", "ATLAS", "BOUNCE", "AWAKE",
+                                       "POLY", "QUAD", "CONSTL", "SERIES", "CHORD", "ANSWER"};
+    uint32_t e, m;
+    if (!(cmp_f = fopen(path, "w"))) return 1;
+    ui_power_on();
+    for (e = 0; e < NENGINES; e++) {                    /* every engine, on STEP, ARP and a generator */
+        if (!ENGINES[e] || !ENGINES[e]->name || str_eq(ENGINES[e]->name, "-")) continue;
+        set_engine_of(TSEL, e);
+        TSEL->engine = TSEL->eng_req;
+        cmp_eng = ENGINES[e]->name;
+        for (m = 0; m <= 2u; m++) {
+            seqm_set(0, (int32_t)m);
+            cmp_mode = MODE[m];
+            cmp_pages();
+        }
+    }
+    set_engine_of(TSEL, ENGI_FM6);
+    TSEL->engine = TSEL->eng_req;
+    cmp_eng = "FM6";
+    for (m = 0; m <= TESS_ENG_COUNT && m < sizeof MODE / sizeof MODE[0]; m++) {   /* every MODE */
+        seqm_set(0, (int32_t)m);
+        cmp_mode = MODE[m];
+        cmp_pages();
+    }
+    seqm_set(0, 0);
+    song.sel = 3;                                       /* a DRUM track: STEP, ATLAS */
+    set_engine_of(TSEL, ENGI_DRUM);
+    TSEL->engine = TSEL->eng_req;
+    cmp_eng = "DRUM";
+    seqm_set(3, 0); cmp_mode = "STEP"; cmp_pages();
+    seqm_set(3, 1 + TESS_ENG_GRIDS); cmp_mode = "ATLAS"; cmp_pages();
+    seqm_set(3, 0);
+    song.sel = 0;
+    fclose(cmp_f);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     int bad = 0;
     if (argc > 2 && str_eq(argv[1], "dump"))
         return dump(argv[2]);
+    if (argc > 2 && str_eq(argv[1], "compare"))
+        return compare(argv[2]);
     ui_power_on();
     usb.config = 1;
     go_title("EVOLVE");
