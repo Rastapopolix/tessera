@@ -899,14 +899,18 @@ system of its own; it steers ENERGY, [CHAIN](#chain-one-form-for-the-project) an
 With **SHAPE** USER, hold **OCT+** for its points 1 to 4 and **OCT-** for 5 to 8 (KNOB 1 to 4, 0–100 %): eight levels
 evenly along the piece. The picture shows the shape, where the piece is while playing, and the time left.
 
-The shape is read in phrases (the CHAIN's PHRASE) from PLAY, at the tempo now, so a tempo change moves the plan with it.
+The piece is counted in the time played since PLAY: a tempo change, a TEMPO mod or an external clock that drifts never
+jumps it to another place in its shape, and it lasts its LENGTH whatever the tempo (a faster tempo plays more bars).
 Every shape but RISE and FALL begins and ends sparse: an intro and an outro. While a LENGTH is set:
 
-- ENERGY's tide is the shape (ARC is how far it swings; LEVEL and RESTS work as before).
+- ENERGY's tide is the shape (ARC is how far it swings; LEVEL as before). RESTS' rests grow shorter in the shape's
+  upper half, and none comes at its top: the climax plays on.
 - ENTRIES keeps out as many tracks as the shape is low, of the most ENTRIES allows, one change a phrase, so the piece
   layers in, thins and fills, and layers out at its end. At ENTRIES 0 no track moves.
 - The CHAIN's new sections depart further near the top (up to +20 CONTR), and the last 15 % of the piece (12 phrases
   at most) stays on A, its home.
+- In its last 5 % the generators' notes are drawn more and more to the key's root and fifth (up to half of them at the
+  very end, a note at most two semitones away), so the piece resolves home.
 
 The piece comes from the tracks' SEEDs, so PLAY plays it again the same.
 
