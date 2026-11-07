@@ -143,8 +143,11 @@ static void controls(void)
     setup(0x81, 10, 0, 6, 1);
     assert(ep0_command == 0x60);
     /* Device names of the two functions (iFunction / iInterface 3 and 4), from the FM-1's side (#494): playback is
-     * "Tessera In", recording "Tessera Out"; bcdDevice 3.08 so hosts read them again. */
-    assert(DEV_DESC[12] == 0x08 && DEV_DESC[13] == 0x03);
+     * "Tessera In", recording "Tessera Out"; bcdDevice 3.09 so hosts read the names again. The device itself is
+     * "Tessera FM-1" (iProduct 2), so other FM-1 firmwares' installers, which look for "FM-1", find it (3.4.1). */
+    assert(DEV_DESC[12] == 0x09 && DEV_DESC[13] == 0x03);
+    setup(0x80, 6, 0x0302, 0x0409, 255);
+    assert(ep_cnt[0] == 26 && ep0buf[1] == 3 && !memcmp(ep0buf + 2, "T\0e\0s\0s\0e\0r\0a\0 \0F\0M\0-\0" "1\0", 24));
     setup(0x80, 6, 0x0303, 0x0409, 255);
     assert(ep_cnt[0] == 22 && ep0buf[1] == 3 && !memcmp(ep0buf + 16, " \0I\0n\0", 6));
     setup(0x80, 6, 0x0304, 0x0409, 255);
