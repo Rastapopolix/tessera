@@ -148,20 +148,22 @@ static void midi_out_event(uint32_t pkt)            /* from the audio ISR */
 
 /* ------------------------------------------------------- descriptors --- */
 /* interfaces: 0 audio control, 1 MIDI streaming, then CDC's two, or the USB audio functions' four (usb_audio_desc.h).
- * bcdDevice: 3.00 MIDI, 3.02 with CDC, 3.08 with USB audio (hosts cache descriptors per version: 3.01 / 3.06 named
- * the device Melodee; 3.07 had the audio names from the computer's side, swapped for #494: the hosts read them again) */
+ * bcdDevice: 3.00 MIDI (and the update loader: left as it is), 3.04 with CDC, 3.09 with USB audio (hosts cache descriptors per version: 3.01 / 3.06 named
+ * the device Melodee; 3.07 had the audio names from the computer's side, swapped for #494; 3.02 / 3.08 named it
+ * "Tessera", which the other FM-1 firmwares' installers (fm1-base's fm1ports.js: "fm-1", "fm1", ..) do not look for,
+ * so they could not find an FM-1 running Tessera (keremimo, 2026-11-08): "Tessera FM-1" since 3.4.1) */
 #if MELODEE_USB_AUDIO
 #include "usb_audio_stream.c"
 #define CFG_LEN 411
-static const uint8_t DEV_DESC[18] = {18, 1, 0x00, 0x02, 0xEF, 0x02, 0x01, 64, 0x09, 0x12, 0x01, 0x00, 0x08, 0x03,
-                                     1, 2, 0, 1};        /* misc/IAD, bcdDevice 3.08: native 44.1 kHz only */
+static const uint8_t DEV_DESC[18] = {18, 1, 0x00, 0x02, 0xEF, 0x02, 0x01, 64, 0x09, 0x12, 0x01, 0x00, 0x09, 0x03,
+                                     1, 2, 0, 1};        /* misc/IAD, bcdDevice 3.09: native 44.1 kHz only */
 static const uint8_t CFG_DESC[] = {
     9, 2, 0x9B, 0x01, 6, 1, 0, 0x80, 50,                /* 411 bytes, six interfaces */
     8, 0x0B, 0, 2, 1, 1, 0, 0,                          /* IAD: MIDI (IF 0-1) */
 #elif MELODEE_CDC
 #define CFG_LEN 175
-static const uint8_t DEV_DESC[18] = {18, 1, 0x00, 0x02, 0xEF, 0x02, 0x01, 64, 0x09, 0x12, 0x01, 0x00, 0x02, 0x03,
-                                     1, 2, 0, 1};        /* misc/IAD, bcdDevice 3.02 */
+static const uint8_t DEV_DESC[18] = {18, 1, 0x00, 0x02, 0xEF, 0x02, 0x01, 64, 0x09, 0x12, 0x01, 0x00, 0x04, 0x03,
+                                     1, 2, 0, 1};        /* misc/IAD, bcdDevice 3.04 */
 static const uint8_t CFG_DESC[] = {
     9, 2, 175, 0, 4, 1, 0, 0x80, 50,
     8, 0x0B, 0, 2, 1, 1, 0, 0,                          /* IAD: MIDI (IF 0-1) */
@@ -211,8 +213,11 @@ static const uint8_t STR1[] = {26, 3, 'E', 0, 'l', 0, 'l', 0, 'i', 0, 'c', 0, ' 
 #ifdef MELODEE_LOADER
 static const uint8_t STR2[] = {30, 3, 'M', 0, 'e', 0, 'l', 0, 'o', 0, 'd', 0, 'e', 0, 'e', 0, ' ', 0, 'U', 0, 'p', 0,
                                'd', 0, 'a', 0, 't', 0, 'e', 0};
-#else                                                   /* (the update loader stays "Melodee Update": the tools find it so) */
-static const uint8_t STR2[] = {16, 3, 'T', 0, 'e', 0, 's', 0, 's', 0, 'e', 0, 'r', 0, 'a', 0};
+#else                                                   /* (the update loader stays "Melodee Update": the tools find it so).
+                                                         * "Tessera FM-1": Tessera's tools look for "Tessera", every other
+                                                         * FM-1 firmware's installer for "FM-1" */
+static const uint8_t STR2[] = {26, 3, 'T', 0, 'e', 0, 's', 0, 's', 0, 'e', 0, 'r', 0, 'a', 0, ' ', 0, 'F', 0, 'M', 0,
+                               '-', 0, '1', 0};
 #endif
 #if MELODEE_USB_AUDIO                                   /* the audio functions: host device names */
 /* named from the FM-1's side, like the menu's USB AUDIO (#494): the computer plays into "Tessera In", records "Tessera Out" */

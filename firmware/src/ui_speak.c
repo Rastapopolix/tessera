@@ -156,6 +156,25 @@ static int sp_own(uint32_t k, char *b, uint32_t size)
 /* knob k on the page shown, "NAME VALUE" into b; 0: it does nothing here (or nothing to say). A parameter's whole
  * name (pid.c; an engine's own knobs by the engine's label, not "ENGINE 4") and its value as help_value words it
  * (enum names whole); a page's own knob by its column (draw_columns, not on HOME) */
+/* the drawn value's numbers all in the said one (each run of digits, as a word of its own) */
+static int sp_nums_in(const char *drawn, const char *said)
+{
+    while (*drawn) {
+        char n[8];
+        uint32_t i = 0;
+        const char *p;
+        if (*drawn < '0' || *drawn > '9') { drawn++; continue; }
+        while (*drawn >= '0' && *drawn <= '9' && i < 7u) n[i++] = *drawn++;
+        n[i] = 0;
+        for (p = said; *p; p++) {                       /* (the firmware's libc has no strstr) */
+            uint32_t j = 0;
+            while (j < i && p[j] == n[j]) j++;
+            if (j == i && (p == said || p[-1] < '0' || p[-1] > '9') && (p[i] < '0' || p[i] > '9')) break;
+        }
+        if (!*p) return 0;
+    }
+    return 1;
+}
 static int sp_knob(uint32_t k, char *b, uint32_t size)
 {
     __typeof__(help) keep = help;                       /* (MIDI LEARN and the mod shortcut use help_find too) */
@@ -208,6 +227,9 @@ static int sp_knob(uint32_t k, char *b, uint32_t size)
         if (d && d->label && d->label[0]) name = d->label;
     }
     if (e) help_value(e, v, sizeof v);
+    if (e && e->pid == PID_TESS(TX_MODE) && help_tr < NTRK && seqm_get(help_tr) == 1u)
+        str_cpy(v, "ARP", sizeof v);                    /* (GEN's MODE: ARP lives in ARP's MODE, not tessera.mode, so the
+                                                         * value's name says STEP; the screen says ARP, ui_draw.c) */
     if (v[0] == '/') {                                  /* "/4": every 4 steps (POLY RHYTHM, QUAD EVERY) */
         char n[8];
         str_cpy(n, v + 1, sizeof n);
@@ -222,7 +244,6 @@ static int sp_knob(uint32_t k, char *b, uint32_t size)
     unused = !e && help.hp == HP_UNUSED;
     help = keep;
     help_tr = keep_tr;
-    if (unused) return 0;
     col = 0;
     if (!ui.home && !own_screen()) {                    /* the page's own column (draw_columns, as a list row takes
                                                          * it: ui_list.c CS_CAPTURE) */
@@ -233,7 +254,17 @@ static int sp_knob(uint32_t k, char *b, uint32_t size)
         col_style = cs;
         col = lcap[k & 3u].on;
     }
-    if (!name && col) name = lcap[k & 3u].label;
+    if (unused && (!col || list_on())) return 0;                       /* (a knob the help calls unused but the page draws, as FM6
+                                                         * STORE's SEND and INIT: said as drawn) */
+    if ((!name || unused) && col) name = lcap[k & 3u].label;
+    if (v[0] && col && !list_on()) {                    /* what is said is what the screen draws: a word drawn where the
+                                                         * value would be a number (LOCK, OFF), or other numbers than the
+                                                         * value's (a step 1 OF 8, a position 64 OF 127): the column's */
+        const char *cv = lcap[k & 3u].val;
+        while (*cv == ' ') cv++;
+        if (cv[0] && !str_eq(cv, "--") && (sp_digit(cv) != sp_digit(v) || (sp_digit(cv) && !sp_nums_in(cv, v))))
+            v[0] = 0;
+    }
     if (!v[0] && col) {
         const char *u = lcap[k & 3u].unit;
         const char *cv = lcap[k & 3u].val;
