@@ -6496,6 +6496,8 @@ static int test_new_song(void)
     bad += check("  OCT+ creates it: HOME, every pattern empty, D on every track, the tempo, track 2 a BASS sound, no slot",
                  !new_on() && ui.home && empty && trk[0].p[P_ROOT] == 2 && trk[3].p[P_ROOT] == 2 && song.g[G_BPM] == nw.bpm &&
                  entry_cat(src, k) == CAT_BASS && proj_cur == PROJ_NO_SLOT && msg_is("NEW SONG"));
+    bad += check("  .. and ENTRIES' ROLE: track 2 BASS, the KEEP tracks left as they were (AUTO)",
+                 tessera.et_role[1] == 1u && tessera.et_role[0] == 0u && tessera.et_role[2] == 0u && tessera.et_role[3] == 0u);
     go_page(GR_SLOTS);
     for (i = 0; i < 6u; i++) turn(EN_K1, 1);
     turn(EN_K3, 1);

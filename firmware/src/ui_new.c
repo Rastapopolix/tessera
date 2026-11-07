@@ -2,7 +2,8 @@
 /* NEW SONG (SAVE > PROJECT, KNOB 1 past TMPL: NEW, then LOAD's OCT+): a new project from the template (none saved:
  * the power-on sounds), every pattern empty, in two screens. KEY: KNOB 1 ROOT, 2 SCALE, 3 TEMPO. ROLES: KNOB k track
  * k's role: KEEP (the template's sound) or DRUMS BASS CHORDS LEAD PAD: the first sound of that category, unless the
- * template's sound already is one. OCT+ next / create, OCT- back / cancel. Stopped only: the base loads like a project */
+ * template's sound already is one; it also sets the track's ENTRIES ROLE (DRUMS RHYTHM, BASS BASS, CHORDS and PAD
+ * HARMONY, LEAD MELODY; KEEP leaves it), so ENTRIES takes the parts out in a musical order without AUTO's guess. OCT+ next / create, OCT- back / cancel. Stopped only: the base loads like a project */
 static void template_key(uint32_t *root, uint32_t *scale, int32_t *bpm);   /* project.c */
 static int32_t accel(uint32_t role, int32_t s, int32_t range);            /* ui_input.c */
 static void project_new_blank(void);
@@ -10,6 +11,7 @@ static int project_dirty(void);
 enum { NR_KEEP, NR_DRUMS, NR_BASS, NR_CHORDS, NR_LEAD, NR_PAD, NR_N };
 static const char *const NR_NAME[NR_N] = {"KEEP", "DRUMS", "BASS", "CHORDS", "LEAD", "PAD"};
 static const uint8_t NR_CAT[NR_N] = {CAT_NONE, CAT_DRUM, CAT_BASS, CAT_KEYS, CAT_LEAD, CAT_PAD};
+static const uint8_t NR_ET[NR_N] = {0, 2, 1, 3, 4, 3};   /* ENTRIES ROLE (entries.c ET_*): RHYTHM BASS HARMONY MELODY */
 static struct {
     uint8_t on;                                     /* 0 closed, 1 KEY, 2 ROLES */
     uint8_t root, scale, role[NTRK];
@@ -61,6 +63,7 @@ static void new_create(void)
         track_t *t = &trk[k];
         if (nw.role[k] == NR_KEEP)
             continue;
+        if (k < TESSERA_TRACKS) tessera_param_set(k, TX_ET_ROLE, NR_ET[nw.role[k]]);
         song.sel = (uint8_t)k;
         cur_entry(&cs, &ck);
         if (entry_cat(cs, ck) == NR_CAT[nw.role[k]])

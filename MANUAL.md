@@ -1593,8 +1593,9 @@ them. Melodee's own preset banks are not carried over.
 **OCT+** (playback stops; with unsaved changes, **OCT+** again answers Yes to "Start a new song?"). The NEW SONG
 screen asks for the key (**KNOB 1** root, **2** scale, **3** tempo), then,
 after **OCT+**, a role per track (**KNOB 1** to **4**): **KEEP** its sound, or **DRUMS**, **BASS**, **CHORDS**,
-**LEAD** or **PAD** for the first sound of that kind. **OCT+** creates it with every pattern empty; **OCT-** goes back
-or cancels. It starts from the template when one is saved in TMPL, else from the power-on sounds, and has no slot
+**LEAD** or **PAD** for the first sound of that kind. The role also sets the track's ENTRIES **ROLE** (DRUMS: RHYTHM,
+BASS: BASS, CHORDS and PAD: HARMONY, LEAD: MELODY), so ENTRIES takes the parts out and back in a musical order; KEEP
+leaves it as it was. **OCT+** creates it with every pattern empty; **OCT-** goes back or cancels. It starts from the template when one is saved in TMPL, else from the power-on sounds, and has no slot
 until you save it.
 
 The web editor's **Complete backup** saves and restores the music, slots A to D, the sound banks and the settings.
