@@ -146,6 +146,14 @@ typedef struct {
      * Not in the packed block: the record's HOLD part */
     uint8_t          follow_hold[TESSERA_TRACKS];
     uint8_t          hold_mem[TESSERA_TRACKS];     /* HOLD: the sampled note + 1, 0 none yet (not saved) */
+    /* FOLLOW's HOW and RHYTHM (TWEAK, OCT+ held, KNOBs 2 and 3): TESS_FH_*, TESS_FR_*; 0 (SAME, OWN) as before. Not in
+     * the packed block: the record's FMODE part */
+    uint8_t          follow_how[TESSERA_TRACKS];
+    uint8_t          follow_rhy[TESSERA_TRACKS];
+    uint8_t          f_anchor[TESSERA_TRACKS];     /* CONTRA: the first note followed + 1, 0 none yet (not saved) */
+    uint8_t          f_seen[TESSERA_TRACKS];       /* RHYTHM: the source's f_cnt when this track last looked */
+    uint8_t          f_cnt[TESSERA_TRACKS];        /* the notes this track has played since PLAY, mod 256 */
+    uint8_t          f_hist[TESSERA_TRACKS][16];   /* CANON: its last 16 notes + 1 (slot f_cnt % 16), 0 none */
     uint8_t          active_gate[TESSERA_TRACKS];
     uint8_t          hit[TESSERA_TRACKS];     /* its last step played on its own voice (LOGIC; seq.c sets a STEP track's) */
     uint8_t          br_in[TESSERA_TRACKS];   /* its seq_notes hold notes another track BRANCHed onto it */
@@ -418,9 +426,14 @@ enum {
     TX_TW_HOLD,                                     /* (0x291: FOLLOW's HOLD, a generator track's: OFF, T1..T4) */
     TX_FC_KEYB, TX_FC_KEYC,                         /* (0x292, 0x293: the CHAIN's B and C sections' key, the project's) */
     TX_SUB_SPLIT, TX_SUB_SPLIT_HOW,                 /* (0x294, 0x295: TIMING's SPLIT and HOW, any track's) */
+    TX_TW_FHOW, TX_TW_FRHY,                         /* (0x296, 0x297: FOLLOW's HOW and RHYTHM, a generator track's) */
     TX_COUNT
 };
-_Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95, "parameter ids are stored: never renumbered");
+_Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95 && TX_TW_FRHY == 0x97,
+               "parameter ids are stored: never renumbered");
+/* TX_TW_FHOW: the source's note as it is, the nearest chord tone, mirrored, a bass, or CANON 1..8 notes back */
+enum { TESS_FH_SAME, TESS_FH_CHORD, TESS_FH_CONTRA, TESS_FH_BASS, TESS_FH_CANON, TESS_FH_COUNT = TESS_FH_CANON + 8 };
+enum { TESS_FR_OWN, TESS_FR_SOURCE, TESS_FR_BOTH, TESS_FR_COUNT };   /* TX_TW_FRHY */
 enum { TESS_SPLIT_DOUBLE, TESS_SPLIT_PUSH, TESS_SPLIT_MIX, TESS_SPLIT_HOWS };   /* TX_SUB_SPLIT_HOW */
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */
 #define TESS_ACC_LIMIT 14u                          /* TX_ACC_LIMIT: up to two octaves of a 7-note scale */

@@ -14,6 +14,7 @@ and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
 - [Your own progression (CHORD USER)](#your-own-progression-chord-user)
 - [Two tracks answering each other (BRANCH)](#two-tracks-answering-each-other-branch)
 - [A harmony line that follows (FOLLOW)](#a-harmony-line-that-follows-follow)
+- [A harmony on your own melody (FOLLOW CHORD)](#a-harmony-on-your-own-melody-follow-chord)
 - [Atlas: a groove with fills](#atlas-a-groove-with-fills)
 - [Atlas: variations that repeat (FORM)](#atlas-variations-that-repeat-form)
 - [Atlas: movement that repeats (an LFO on X or Y)](#atlas-movement-that-repeats-an-lfo-on-x-or-y)
@@ -99,6 +100,22 @@ A held chord that changes slowly, for ambient beds.
    steps up, in its own scale and its own rhythm.
 3. **SHIFT −7** for a line an octave below in a seven-note scale. **DROP 50** thins the harmony so it only answers
    now and then.
+
+## A harmony on your own melody (FOLLOW CHORD)
+
+Write or play in a melody, and let another track harmonise it, note for note, without a wrong note.
+
+1. Track 1 holds your melody: a STEP track with the notes written in on **NOTES**, or played in with **REC**.
+2. Track 2: any generator (its own notes are not used; **EUCLID** is fine), in the same key on **SCL**. On
+   **TWEAK**: **FOLLOW T1**.
+3. Still on **TWEAK**, hold **OCT+**: **KNOB 2** sets **HOW** to **CHORD**, **KNOB 3** sets **RHYTHM** to **SOURCE**.
+   Track 2 now plays with each note of your melody a third, fifth or seventh of the chord on it, the one nearest its
+   last note, so the harmony moves smoothly.
+4. Other ways to go: **HOW CONTRA** for a line that moves against yours, **CANON2** for your melody again two notes
+   later (a round), **BASS** for a bass on beats 1 and 3. **RHYTHM BOTH** lets the generator add notes of its own in
+   between.
+
+Keep the melody on a lower track number than the harmony: the harmony then lands on the same step.
 
 ## Atlas: a groove with fills
 

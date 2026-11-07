@@ -627,6 +627,25 @@ static int test_gen_family(void)
         tessera_param_set(tr, TX_SUB_SPLIT, 0);
         tessera_param_set(tr, TX_SUB_SPLIT_HOW, 0);
     }
+    if (tessera.mode[song.sel] != TESS_ENG_OFF && tessera.mode[song.sel] != TESS_ENG_GRIDS) {
+        uint32_t tr = song.sel, oct = song.octave;    /* TWEAK, OCT+ held: KNOB 2 HOW, KNOB 3 RHYTHM; KNOB 1 nothing */
+        int8_t sh = tessera.evolve[tr].shift;
+        go_title("TWEAK");
+        btn_down(B_OCTUP);
+        frame();
+        turn(EN_K1, 3);
+        turn(EN_K2, 1);
+        turn(EN_K2, 1);
+        turn(EN_K3, 1);
+        btn_up(B_OCTUP);
+        frame();
+        bad += check("TWEAK, OCT+ held: HOW CONTRA a step a turn, RHYTHM SOURCE, SHIFT untouched, no octave",
+                     tessera.follow_how[tr] == TESS_FH_CONTRA && tessera.follow_rhy[tr] == TESS_FR_SOURCE &&
+                     tessera.evolve[tr].shift == sh && song.octave == oct);
+        tessera_param_set(tr, TX_TW_FHOW, 0);
+        tessera_param_set(tr, TX_TW_FRHY, 0);
+    } else
+        bad += check("TWEAK, OCT+ held: a generator track to test on", 0);
     go_title("ENERGY");                           /* ENERGY, the project's: KNOB 1 ARC, KNOB 2 RESTS; 3 and 4 nothing */
     {
         turn(EN_K1, 3);

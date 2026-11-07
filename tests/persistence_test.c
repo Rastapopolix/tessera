@@ -474,6 +474,34 @@ static int test_tsp_record(void)
     raw[tsp_seen.at[TSP_SPLIT] + 2u] = 101u;           /* (past 100) */
     tsp_resum(raw);
     bad += check("TSP1: a SPLIT past 100 refused", ok && !tsp_valid(raw, len));
+    reset();                                           /* FOLLOW's HOW, RHYTHM: the FMODE part; none at SAME, OWN */
+    tessera_param_set(1, TX_TW_FOLLOW, 1);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    bad += check("TSP1: FOLLOW at SAME, OWN writes no FMODE part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_FMODE]);
+    tessera_param_set(1, TX_TW_FHOW, TESS_FH_CANON + 2); tessera_param_set(1, TX_TW_FRHY, TESS_FR_SOURCE);
+    tessera_param_set(3, TX_TW_FRHY, TESS_FR_BOTH);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_FMODE];
+    tessera_reset();
+    tsp_restore(raw);
+    bad += check("TSP1: HOW and RHYTHM come back from their part", ok && tessera.follow_how[1] == TESS_FH_CANON + 2u &&
+                 tessera.follow_rhy[1] == TESS_FR_SOURCE && tessera.follow_rhy[3] == TESS_FR_BOTH && !tessera.follow_how[0] &&
+                 tessera.evolve[1].follow == 1u);
+    raw[tsp_seen.at[TSP_FMODE] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (an id this build does not know: skipped, as 3.3 does) */
+    tsp_resum(raw);
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_FMODE];
+    if (ok) tsp_restore(raw);
+    bad += check("TSP1: a record without the part loads with FOLLOW SAME, OWN, still following", ok &&
+                 !tessera.follow_how[1] && !tessera.follow_rhy[1] && !tessera.follow_rhy[3] && tessera.evolve[1].follow == 1u);
+    tessera_param_set(2, TX_TW_FHOW, TESS_FH_CHORD);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_FMODE];
+    raw[tsp_seen.at[TSP_FMODE] + 1u] = TESS_FH_COUNT;  /* (track 2's HOW past CANON8) */
+    tsp_resum(raw);
+    bad += check("TSP1: a HOW past CANON8 refused", ok && !tsp_valid(raw, len));
     reset();                                           /* HUMAN TIME: the record's HUMAN part; a record without it */
     song.sel = 1; tessera_knob(0, TESS_ENG_EUCLID);
     tessera_param_set(1, TX_TW_HUMAN, 60); tessera_param_set(0, TX_TW_HUMAN, 40);   /* (track 0: a STEP track) */
@@ -546,6 +574,7 @@ static int test_tsp_record(void)
                 if (b == trk[k].pattern) trk[k].step[i] = s; else pattern_at(k, b)->step[i] = s;
             }
         song.sel = (uint8_t)k; tessera_knob(0, TESS_ENG_TURING);
+        tessera_param_set(k, TX_TW_FHOW, TESS_FH_CHORD);   /* (FOLLOW's FMODE part too) */
     }
     for (i = 0; i < RECORD_MAX; i++) recording[i] = (recorded_note_t){(uint16_t)(i * 61u), 1234, 60, 100, (uint8_t)(i % 32u), 3};
     recording_reindex();

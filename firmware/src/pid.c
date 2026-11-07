@@ -32,6 +32,9 @@ static const char *const TX_N_CHBARS[] = {"1/2", "1", "2", "4"};
 static const char *const TX_N_CHHIT[] = {"HOLD", "BEAT", "STEP", "OFFBEAT"};   /* (GEN_CH_*) */
 static const char *const TX_N_GRP4[] = {"TOM", "CLAP", "HATOP", "RIM", "BELL"};
 static const char *const TX_N_SPLITHOW[] = {"DOUBLE", "PUSH", "MIX"};   /* (TESS_SPLIT_*) */
+static const char *const TX_N_FHOW[] = {"SAME", "CHORD", "CONTRA", "BASS", "CANON1", "CANON2", "CANON3", "CANON4",
+                                        "CANON5", "CANON6", "CANON7", "CANON8"};   /* (TESS_FH_*) */
+static const char *const TX_N_FRHY[] = {"OWN", "SOURCE", "BOTH"};   /* (TESS_FR_*) */
 static const char *const TX_N_RATCH[] = {"x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8"};
 static const char *const TX_N_SHAPE[] = {"EVEN", "ACCEL", "DECEL"};   /* (SUB_EVEN ..) */
 static const char *const TX_N_KEYLINK[] = {"OWN", "LINKED"};
@@ -205,6 +208,8 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_FC_KEYC] = PD("KEY C", F_SEMI, -12, 12, 0),
     [TX_SUB_SPLIT] = PD("SPLIT", F_PCT, 0, 100, 0),
     [TX_SUB_SPLIT_HOW] = PE("HOW", TX_N_SPLITHOW, 0),
+    [TX_TW_FHOW] = PE("HOW", TX_N_FHOW, 0),
+    [TX_TW_FRHY] = PE("RHYTHM", TX_N_FRHY, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -727,6 +732,15 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                        "halfway through the step (a drum: the same hit). PUSH: the note halfway "
                                        "through the step, late only. MIX: tosses for one or the other. OCT+ held on "
                                        "TIMING, KNOB 2."),
+    X_(TX_TW_FHOW, "FOLLOW HOW", "How FOLLOW turns the other track's note. SAME: that note, SHIFT degrees away. "
+                                 "CHORD: the third, fifth or seventh of the chord on it, whichever is nearest this "
+                                 "track's last note. CONTRA: moves the other way, mirrored around the first note "
+                                 "followed. BASS: an octave or two down, on beats 1 and 3 only. CANON1..8: its note "
+                                 "that many notes back. TWEAK, OCT+ held, KNOB 2."),
+    X_(TX_TW_FRHY, "FOLLOW RHYTHM", "When a following track plays. OWN: on its own hits. SOURCE: only when the "
+                                    "followed track has played a note, so the two move together (a lower track "
+                                    "number lands on the same step). BOTH: its own hits and the other's. TWEAK, OCT+ "
+                                    "held, KNOB 3."),
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT

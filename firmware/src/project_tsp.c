@@ -17,7 +17,7 @@
 enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TSP_FM6, TSP_DRUM, TSP_REC, TSP_NAME,
        TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_HOW, TSP_ORACLE,
        TSP_ENERGY, TSP_DEV, TSP_TRANSP, TSP_TUNE, TSP_SOUND, TSP_CHAIN, TSP_ENTRY, TSP_PLAN, TSP_PERF, TSP_HOLD,
-       TSP_CCN, TSP_FKEY, TSP_SPLIT, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
+       TSP_CCN, TSP_FKEY, TSP_SPLIT, TSP_FMODE, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
                                               * TSP_HUMAN: each track's HUMAN TIME; none: TWEAK HUMAN's timing, as it was;
@@ -43,10 +43,12 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * TSP_FKEY: the CHAIN's KEY B, KEY C, each + 12, written only when one is
                                               * not 0; none: 0, 0;
                                               * TSP_SPLIT: each track's SPLIT, then each one's HOW, written only when one
-                                              * is not 0; none: 0, DOUBLE) */
+                                              * is not 0; none: 0, DOUBLE;
+                                              * TSP_FMODE: each track's FOLLOW HOW, then each one's RHYTHM, written only
+                                              * when one is not 0; none: SAME, OWN) */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
                TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_PERF == 30 &&
-               TSP_HOLD == 31 && TSP_CCN == 32 && TSP_FKEY == 33 && TSP_SPLIT == 34,
+               TSP_HOLD == 31 && TSP_CCN == 32 && TSP_FKEY == 33 && TSP_SPLIT == 34 && TSP_FMODE == 35,
                "the parts' numbers are stored: never renumbered");
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -372,6 +374,14 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
                 tsp_end(&w);
                 break;
             }
+        for (t = 0; t < NTRK; t++)                     /* (FOLLOW's HOW, RHYTHM: only when set, as PERF) */
+            if (tessera.follow_how[t] | tessera.follow_rhy[t]) {
+                tsp_begin(&w, TSP_FMODE, 1);
+                tsp_bytes(&w, tessera.follow_how, NTRK);
+                tsp_bytes(&w, tessera.follow_rhy, NTRK);
+                tsp_end(&w);
+                break;
+            }
         tsp_begin(&w, TSP_HOLD, 1);                    /* (FOLLOW's HOLD: each track's) */
         tsp_bytes(&w, tessera.follow_hold, NTRK);
         tsp_end(&w);
@@ -642,6 +652,11 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (tsp_seen.ver[TSP_SPLIT] != 1u || tsp_seen.len[TSP_SPLIT] != 2u * NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (p[k] > 100u || p[NTRK + k] >= TESS_SPLIT_HOWS) return 0;
     }
+    if (tsp_seen.at[TSP_FMODE]) {
+        const uint8_t *p = raw + tsp_seen.at[TSP_FMODE];
+        if (tsp_seen.ver[TSP_FMODE] != 1u || tsp_seen.len[TSP_FMODE] != 2u * NTRK) return 0;
+        for (uint32_t k = 0; k < NTRK; k++) if (p[k] >= TESS_FH_COUNT || p[NTRK + k] >= TESS_FR_COUNT) return 0;
+    }
     if (tsp_seen.at[TSP_HUMAN]) {
         if (tsp_seen.ver[TSP_HUMAN] != 1u || tsp_seen.len[TSP_HUMAN] != NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_HUMAN] + k] > TESS_HUMAN_MS) return 0;
@@ -745,6 +760,14 @@ static void tsp_restore(const uint8_t *raw)
         memset(tessera.sub_split, 0, sizeof tessera.sub_split);
         memset(tessera.sub_split_how, 0, sizeof tessera.sub_split_how);
     }
+    if (tsp_seen.at[TSP_FMODE]) {
+        memcpy(tessera.follow_how, raw + tsp_seen.at[TSP_FMODE], NTRK);
+        memcpy(tessera.follow_rhy, raw + tsp_seen.at[TSP_FMODE] + NTRK, NTRK);
+    } else {                                           /* (saved without them: SAME, OWN) */
+        memset(tessera.follow_how, 0, sizeof tessera.follow_how);
+        memset(tessera.follow_rhy, 0, sizeof tessera.follow_rhy);
+    }
+    memset(tessera.f_anchor, 0, sizeof tessera.f_anchor);
     memset(tessera.hold_mem, 0, sizeof tessera.hold_mem);
     tune_clear_all();                                  /* (the tunings are the project's; saved before them: none) */
     if (tsp_seen.at[TSP_TUNE]) (void)tsp_tune_read(raw + tsp_seen.at[TSP_TUNE], tsp_seen.len[TSP_TUNE], 1);

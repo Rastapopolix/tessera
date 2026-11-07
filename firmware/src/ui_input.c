@@ -957,7 +957,7 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
-    if (pg->graph == GR_TWEAK && tw_layer_on()) {   /* a generator's TWEAK, OCT+ held: FOLLOW's HOLD */
+    if (pg->graph == GR_TWEAK && tw_layer_on()) {   /* a generator's TWEAK, OCT+ held: FOLLOW's HOW, RHYTHM, HOLD */
         tessera_tw_layer_knob(slot, steps);
         oct_eat |= 2u;
         ui.oct_t0 |= 2u;
