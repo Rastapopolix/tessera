@@ -192,6 +192,21 @@ int main(int argc, char **argv)
     printf("  said: %s", host_said);
 
     said_clear();
+    TSEL->p[P_AMODE] = 1;                               /* an ARP track: GEN's MODE says ARP, as the screen shows it */
+    go_title("GEN");
+    settle();
+    bad += check("speak: GEN on an ARP track: MODE ARP, not STEP", said("MODE ARP") && !said("MODE STEP"));
+    if (!said("MODE ARP")) printf("  said: %s", host_said);
+    TSEL->p[P_AMODE] = 0;
+    go_title("TEMPO");
+    settle();
+    said_clear();
+    go_title("GEN");
+    settle();
+    bad += check("speak: ..and on a STEP track: MODE STEP", said("MODE STEP"));
+    if (!said("MODE STEP")) printf("  said: %s", host_said);
+
+    said_clear();
     go_title("EDIT 1");
     settle();
     bad += check("speak: an engine's knobs by the engine's own names, not ENGINE 1",

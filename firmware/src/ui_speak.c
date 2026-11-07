@@ -208,6 +208,9 @@ static int sp_knob(uint32_t k, char *b, uint32_t size)
         if (d && d->label && d->label[0]) name = d->label;
     }
     if (e) help_value(e, v, sizeof v);
+    if (e && e->pid == PID_TESS(TX_MODE) && help_tr < NTRK && seqm_get(help_tr) == 1u)
+        str_cpy(v, "ARP", sizeof v);                    /* (GEN's MODE: ARP lives in ARP's MODE, not tessera.mode, so the
+                                                         * value's name says STEP; the screen says ARP, ui_draw.c) */
     if (v[0] == '/') {                                  /* "/4": every 4 steps (POLY RHYTHM, QUAD EVERY) */
         char n[8];
         str_cpy(n, v + 1, sizeof n);
