@@ -34,7 +34,6 @@ static void dump_pages(void)
             ui.page = (uint8_t)i;
         }
         ui.force = 1;
-        mo_fresh = 0;
         ui_draw();
         sp_screen();
         fprintf(dump_f, "SCREEN\t%s\n", sp_buf);
@@ -47,6 +46,54 @@ static void dump_pages(void)
         }
     }
     ui.home = 0;
+}
+static void dump_screen(void) { sp_screen(); fprintf(dump_f, "SCREEN\t%s\n", sp_buf); }
+/* screens a state makes: a song, a pattern queued, each question, the layers, a page's sheet, a knob's list */
+static void dump_extra(void)
+{
+    char b[48];
+    uint32_t i, k;
+    trk[0].pattern_next = 2;                            /* PATTERNS: a pattern waiting */
+    go_title("PATTERNS");
+    dump_screen();
+    page_sheet_open();
+    dump_screen();
+    for (pop.sel = 0; pop.sel < pop.n; pop.sel++)
+        if (sp_pop_row(b, sizeof b)) fprintf(dump_f, "ROW\t%s\n", b);
+    pop_close();
+    trk[0].pattern_next = NPAT;
+    chain_config.count = 2;                             /* SONG: two sections */
+    chain_config.row[0].repeat = 2;
+    chain_config.row[1].repeat = 1;
+    chain_patterns[1][0] = 1;
+    go_title("SONG");
+    for (ui.song_row = 0; ui.song_row <= 2u; ui.song_row++) {
+        dump_screen();
+        for (k = 0; k < 4u; k++)
+            if (sp_knob(k, b, sizeof b)) fprintf(dump_f, "KNOB\t%s\n", b);
+    }
+    ui.song_row = 0;
+    chain_config.count = 0;
+    go_title("PROJECT");                                /* a slot page's sheet */
+    page_sheet_open();
+    dump_screen();
+    for (pop.sel = 0; pop.sel < pop.n; pop.sel++)
+        if (sp_pop_row(b, sizeof b)) fprintf(dump_f, "ROW\t%s\n", b);
+    pop_close();
+    go_title("ARP");                                    /* a knob's list */
+    vlist_open(ui.page, 0);
+    dump_screen();
+    pop_close();
+    for (i = CF_NONE + 1u; i <= CF_PRINT; i++) {        /* each question */
+        ui.confirm = (uint8_t)i;
+        dump_screen();
+    }
+    ui.confirm = 0;
+    for (i = LAYER_GLO; i < LAYER_N; i++) {             /* the layers */
+        ui.layer = (uint8_t)i;
+        dump_screen();
+    }
+    ui.layer = 0;
 }
 static int dump(const char *path)
 {
@@ -88,6 +135,7 @@ static int dump(const char *path)
     dump_pages();
     seqm_set(3, 0);
     song.sel = 0;
+    dump_extra();
     ui.menu = 1;                                        /* the menu's rows */
     for (i = 0; i < MI_COUNT; i++) {
         ui.menu_sel = (uint8_t)i;
@@ -161,6 +209,59 @@ int main(int argc, char **argv)
     ui.home = 0;
     ui.force = 1;
 
+    reader(ANN_HELLO);                                  /* (a reader says HELLO every few seconds) */
+    said_clear();                                       /* the pages that drew their own grid (slice 3) */
+    go_title("PATTERNS");
+    settle();
+    bad += check("speak: PATTERNS: each track's pattern", said("N PATTERNS. T1 PATTERN 1 ") && said(", T4 PATTERN "));
+    said_clear();
+    chain_config.count = 1;
+    chain_config.row[0].repeat = 2;
+    go_title("SONG");
+    settle();
+    bad += check("speak: SONG: its length, then the section", said("N SONG. 1 SECTION, ") &&
+                 said("SECTION A x2, 1 OF 1"));
+    printf("  said: %s", host_said);
+    chain_config.count = 0;
+    said_clear();
+    go_title("MODS");
+    settle();
+    bad += check("speak: MODS: its knobs as the page shows them", said("N MODS. T1. MOD SOURCE ") && said("MOD 1 OF "));
+    said_clear();
+    go_title("PRESETS");
+    settle();
+    bad += check("speak: PRESETS: the list, the sound with its place", said("N PRESETS. T1. LIST ") && said(" OF "));
+    printf("  said: %s", host_said);
+    said_clear();
+    go_title("PROJECT");
+    settle();
+    bad += check("speak: a slot page: the slot with its place", said("N PROJECT. T1. A, ") && said(", 1 OF 6"));
+    reader(ANN_HELLO);
+    said_clear();
+    ui.confirm = CF_CLEAR_SEQ;
+    settle();
+    bad += check("speak: a question: its words, then the keys", said("N Clear t1 sequence?") &&
+                 said(" OCT+ YES, OCT- NO"));
+    printf("  said: %s", host_said);
+    ui.confirm = 0;
+    said_clear();
+    btn_down(B_GLO);                                    /* GLO held: its map */
+    settle();
+    settle();
+    bad += check("speak: a layer: its name, its knobs", said("N GLO SET. T1 ") && said(", T4 "));
+    printf("  said: %s", host_said);
+    btn_up(B_GLO);
+    settle();
+    go_title("NOTES");
+    settle();
+    said_clear();
+    ui.cursor = 3;
+    settle();
+    bad += check("speak: a step key, stopped: the step, as the knobs show it", said("STEP 4 OF "));
+    printf("  said: %s", host_said);
+    ui.cursor = 0;
+
+    reader(ANN_HELLO);
     said_clear();
     ui_message("SAVED");
     bad += check("speak: a message in the header is said at once", said("N SAVED"));
