@@ -1050,6 +1050,15 @@ static void draw_columns(void)
         draw_column(3, "NOW", w3, "", T_DIM, -1, ICON_NONE);
         return;
     }
+    if (cur_page()->graph == GR_MIDICH && midi_dm_layer_on()) {   /* MIDI OUT, OCT+ and OCT- held: each DRUM MAP */
+        static const char *const NAME[TESSERA_TRACKS] = {"MAP 1", "MAP 2", "MAP 3", "MAP 4"};
+        const param_desc_t *d = pid_desc(PID_TESS(TX_MIDI_DMAP), 0);
+        for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
+            uint32_t v = tessera.midi_dmap[k] % TESS_DM_COUNT;
+            draw_column(k, NAME[k], d->names[v], "", v ? VAL(k) : T_DIM, (int32_t)v * 1000, ICON_AUTO);
+        }
+        return;
+    }
     if (cur_page()->graph == GR_MIDICH && midi_layer_on()) {   /* MIDI OUT, OCT+ held: each track's TRANSPOSE */
         static const char *const NAME[TESSERA_TRACKS] = {"TRACK 1", "TRACK 2", "TRACK 3", "TRACK 4"};
         for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {

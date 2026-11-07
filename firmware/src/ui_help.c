@@ -550,7 +550,7 @@ static void help_find(uint32_t k)
     else if (pg->graph == GR_TIMING) x = k == 3u ? TX_SUB_HUMAN : k == 2u ? TX_SUB_SHAPE : k ? TX_SUB_CHANCE : TX_SUB_RATCH;
     else if (pg->graph == GR_ENERGY && en_layer_on()) x = k ? 0xFFu : TX_EN_DEPTH;
     else if (pg->graph == GR_ENERGY && k < 3u) x = k == 2u ? TX_EN_LEVEL : k ? TX_EN_RESTS : TX_EN_ARC;
-    else if (pg->graph == GR_MIDICH) { x = midi_layer_on() ? TX_MIDI_TR : midi_snd_layer_on() ? TX_SOUND : TX_MIDI_CH; help_tr = k; }   /* (KNOB k:
+    else if (pg->graph == GR_MIDICH) { x = midi_dm_layer_on() ? TX_MIDI_DMAP : midi_layer_on() ? TX_MIDI_TR : midi_snd_layer_on() ? TX_SOUND : TX_MIDI_CH; help_tr = k; }   /* (KNOB k:
                                                                                                     * track k's) */
     else if (pg->graph == GR_KEYLINK && k < 3u) x = k ? TX_FC_KEYB + k - 1u : TX_KEY_LINK;
     else if (pg->graph == GR_ORGANIC && k < 2u) x = k ? TX_ORG_RATE : TX_ORG_SPEED;
