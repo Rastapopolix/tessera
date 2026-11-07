@@ -4216,7 +4216,7 @@ static int test_layer(void)
     ui_power_on();
     ua_off = ua_off_want = 0;
     hold(B_HOME); ui.menu_sel = MI_USB; turn(EN_K2, 1); turn(EN_K2, 1);
-    ok = ua_off_want == UA_OFF_IN && !ua_off;
+    ok = ua_off_want == UA_OFF_PLAY && !ua_off;
     hold(B_HOME);
     ua_off = ua_off_want;                            /* (ua_off_apply) */
     {
@@ -4224,8 +4224,8 @@ static int test_layer(void)
         p.magic = PERSIST_MAGIC; p.panel = panel;
         settings_export(&p); ua_off = ua_off_want = 0;
         bad += check("menu USB AUDIO (KNOB 2 twice: OUT only): wanted at once, the settings keep it",
-                     ok && p.ext.usb_off == UA_OFF_IN && settings_import(&p, sizeof p) && ua_off == UA_OFF_IN &&
-                     ua_off_want == UA_OFF_IN);
+                     ok && p.ext.usb_off == UA_OFF_PLAY && settings_import(&p, sizeof p) && ua_off == UA_OFF_PLAY &&
+                     ua_off_want == UA_OFF_PLAY);
     }
     ua_off = ua_off_want = 0;
     ua_tracks = ua_tracks_want = 0;
@@ -4236,10 +4236,10 @@ static int test_layer(void)
     {
         persist_t p = {.magic = PERSIST_MAGIC, .panel = panel};
         settings_export(&p); ua_tracks = ua_tracks_want = 0;
-        bad += check("USB INPUT menu and persisted four-track mode",
+        bad += check("USB OUTPUT menu and persisted four-track mode",
                      ok && p.favorites.factory[15][26] == 0xA1u && settings_import(&p, sizeof p) && ua_tracks && ua_tracks_want);
         p.favorites.factory[15][26] = 1;
-        bad += check("old/unknown USB INPUT setting defaults to stereo",
+        bad += check("old/unknown USB OUTPUT setting defaults to stereo",
                      settings_import(&p, sizeof p) && !ua_tracks && !ua_tracks_want);
         settings_export(&p);
         bad += check("stereo setting saves without changing PER5 layout",

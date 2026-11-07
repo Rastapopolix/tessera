@@ -9,8 +9,8 @@
  * reset handling; register access goes through hal/fm1_usb.h. */
 #define UA_IF_PLAY 3u                           /* streaming interfaces in CFG_DESC (usb_audio_desc.h) */
 #define UA_IF_CAP 5u
-#define UA_OFF_OUT 1u                           /* ua_off: functions left out of the configuration */
-#define UA_OFF_IN 2u
+#define UA_OFF_PLAY 1u                          /* ua_off: functions left out of the configuration (saved as is): */
+#define UA_OFF_REC 2u                           /* playback (menu IN, "Tessera In"), recording (OUT, "Tessera Out") */
 #define UA_NO_IF 0xFFu
 static uint8_t ua_off;                          /* what the host is given (ua_cfg_build at usb_start) */
 static uint8_t ua_tracks, ua_tracks_want;       /* 0 stereo master (default), 1 four mono stems */
@@ -40,7 +40,7 @@ static void ua_cfg_build(void)
         const uint8_t *d = CFG_DESC + i;
         uint8_t *o = ua_cfg + n;
         if (d[1] == 0x0Bu) {                    /* IAD: a function starts */
-            skip = ua_off & (d[2] + 1u == UA_IF_PLAY ? UA_OFF_OUT : d[2] + 1u == UA_IF_CAP ? UA_OFF_IN : 0u);
+            skip = ua_off & (d[2] + 1u == UA_IF_PLAY ? UA_OFF_PLAY : d[2] + 1u == UA_IF_CAP ? UA_OFF_REC : 0u);
             if (skip)
                 shift += d[3];
         }
