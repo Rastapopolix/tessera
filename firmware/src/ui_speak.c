@@ -82,10 +82,14 @@ static int sp_own(uint32_t k, char *b, uint32_t size)
         b[2] = 0;
         sp_cat(b, size, "PATTERN");
         sp_num(b, size, (int32_t)t->pattern + 1);
+        if (tessera.pat_gen[k % NTRK])                  /* (PAT GEN: the pattern's own generator) */
+            sp_cat(b, size, pid_desc(PID_TESS(TX_MODE), k % NTRK)->names[tessera_pg_mode(k % NTRK, t->pattern)]);
         if (!pattern_used(k % NTRK, t->pattern)) sp_cat(b, size, "EMPTY");
         if (t->pattern_next < NPAT && t->pattern_next != t->pattern) {
             sp_cat(b, size, "NEXT");
             sp_num(b, size, (int32_t)t->pattern_next + 1);
+            if (tessera.pat_gen[k % NTRK])
+                sp_cat(b, size, pid_desc(PID_TESS(TX_MODE), k % NTRK)->names[tessera_pg_mode(k % NTRK, t->pattern_next)]);
         }
         return 1;
     }

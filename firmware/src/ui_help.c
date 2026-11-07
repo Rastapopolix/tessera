@@ -488,12 +488,14 @@ static void help_find(uint32_t k)
         return;
     }
     if (pg->graph == GR_EVOLVE && sv_layer_on()) {     /* (STEP EVOLVE, OCT+ held: HOW) */
-        if (k) help_unused(k);
+        if (k == 3u) help.pid = (uint16_t)PID_TESS(TX_PAT_GEN);
+        else if (k) help_unused(k);
         else help.pid = (uint16_t)PID_TESS(TX_SV_HOW);
         return;
     }
     if (pg->graph == GR_EVOLVE && ev_layer_on()) {     /* (a generator's EVOLVE, OCT+ held: GRAVITY) */
-        if (k) help_unused(k);
+        if (k == 3u) help.pid = (uint16_t)PID_TESS(TX_PAT_GEN);
+        else if (k) help_unused(k);
         else help.pid = (uint16_t)PID_TESS(TX_SD_GRAVITY);
         return;
     }
