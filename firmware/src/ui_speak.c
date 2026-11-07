@@ -28,40 +28,111 @@ static void sp_add(const char *s)                       /* s after what sp_buf h
         str_cpy(sp_buf + n, s, ANN_MAX + 1u - n);
 }
 
-/* knob k on the page shown, "NAME VALUE" into b; 0: it does nothing here (or nothing to say) */
+static int sp_digit(const char *s) { for (; *s; s++) if (*s >= '0' && *s <= '9') return 1; return 0; }
+
+static void sp_cat(char *b, uint32_t size, const char *s)   /* " s" after b (nothing for an empty s or "--") */
+{
+    uint32_t n = str_len(b);
+    if (!s || !s[0] || str_eq(s, "--") || n + 2u >= size)
+        return;
+    if (n) b[n++] = ' ';
+    str_cpy(b + n, s, size - n);
+}
+
+/* knob k on the page shown, "NAME VALUE" into b; 0: it does nothing here (or nothing to say). A parameter's whole
+ * name (pid.c; an engine's own knobs by the engine's label, not "ENGINE 4") and its value as help_value words it
+ * (enum names whole); a page's own knob by its column (the Mono look's mo_col, not on HOME) */
 static int sp_knob(uint32_t k, char *b, uint32_t size)
 {
     __typeof__(help) keep = help;                       /* (MIDI LEARN and the mod shortcut use help_find too) */
     uint32_t keep_tr = help_tr;
     const pid_entry_t *e;
     const char *name;
-    int unused;
-    b[0] = 0;
+    char v[24];
+    int unused, col;
+    b[0] = v[0] = 0;
     help_find(k);
     e = help.pid != PID_NONE ? pid_find(help.pid) : 0;
     name = e ? e->name : help.name;                     /* (HP_NONE: the column's own label, or none) */
+    if (e && e->pid >= PID_TRACK(P_E0) && e->pid < PID_TRACK(P_E0 + 8)) {   /* (the engine's eight: its own names) */
+        const param_desc_t *d = pid_desc(e->pid, help_tr);
+        if (d && d->label && d->label[0]) name = d->label;
+    }
+    if (e) help_value(e, v, sizeof v);
+    if (v[0] == '/') {                                  /* "/4": every 4 steps (POLY RHYTHM, QUAD EVERY) */
+        char n[8];
+        str_cpy(n, v + 1, sizeof n);
+        str_cpy(v, "EVERY", sizeof v);
+        sp_cat(v, sizeof v, n);
+        sp_cat(v, sizeof v, str_eq(n, "1") ? "STEP" : "STEPS");
+    } else if (!sp_digit(v)) {                          /* no unit after a word: "OFF", not "OFF bar" */
+        char *u = v + str_len(v);
+        while (u > v && u[-1] != ' ') u--;
+        if (u > v && *u >= 'a' && *u <= 'z') u[-1] = 0;
+    }
     unused = !e && help.hp == HP_UNUSED;
     help = keep;
     help_tr = keep_tr;
     if (unused) return 0;
 #if MELODEE_LOOK
-    if (!name && mo_col[k & 3u].used) name = mo_col[k & 3u].label;
-    if (!name || !mo_col[k & 3u].used) return 0;
-    str_cpy(b, name, size);
-    if (mo_col[k & 3u].val[0] && !str_eq(mo_col[k & 3u].val, "--")) {   /* ("--": nothing set, not said) */
-        str_cpy(b + str_len(b), " ", size - str_len(b));
-        str_cpy(b + str_len(b), mo_col[k & 3u].val, size - str_len(b));
+    col = !ui.home && mo_fresh && mo_col[k & 3u].used;  /* (this frame's columns: a page of its own has none) */
+    if (!name && col) name = mo_col[k & 3u].label;
+    if (!v[0] && col) {
+        const char *u = mo_col[k & 3u].unit;
+        str_cpy(v, mo_col[k & 3u].val, sizeof v);
+        if (u[0] == '/') {                              /* "1" "/16": 1 OF 16 (a step, a cord) */
+            sp_cat(v, sizeof v, "OF");
+            sp_cat(v, sizeof v, u + 1);
+        }
+        else if (sp_digit(v)) sp_cat(v, sizeof v, u);   /* (no unit after a word: "OFF", not "OFF bar") */
     }
-    if (mo_col[k & 3u].unit[0]) {
-        str_cpy(b + str_len(b), " ", size - str_len(b));
-        str_cpy(b + str_len(b), mo_col[k & 3u].unit, size - str_len(b));
-    }
-    return 1;
 #else
-    if (!name) return 0;
-    str_cpy(b, name, size);
-    return 1;
+    col = 0;
 #endif
+    if (!name || !name[0] || str_eq(name, "-") || (!v[0] && !col && !e)) return 0;   /* ("-": an engine's unused knob) */
+    if (!ui.home && (cur_page()->scope == SC_TRK || cur_page()->graph == GR_MIDICH)) {   /* MIXER, MIDI OUT: knob k
+                                                         * is track k's */
+        b[0] = 'T';
+        b[1] = (char)('1' + k);
+        b[2] = ' ';
+        b += 3;
+        size -= 3u;
+    }
+    str_cpy(b, name, size);
+    sp_cat(b, size, v);
+    return 1;
+}
+
+/* a list page's row (ui_list.c): "GLIDE MODE TIME, 2 OF 9"; 0: not a list page */
+static int sp_list_row(char *b, uint32_t size)
+{
+    const list_t *l = list_on();
+    char lb[16], v[16];
+    uint16_t vc;
+    if (!l) return 0;
+    list_cap(list_at(l, lst.row), lb, v, &vc);
+    str_cpy(b, lb, size);
+    sp_cat(b, size, v);
+    str_cpy(b + str_len(b), ", ", size - str_len(b));
+    fmt_int(v, (int32_t)lst.row + 1);
+    str_cpy(b + str_len(b), v, size - str_len(b));
+    str_cpy(b + str_len(b), " OF ", size - str_len(b));
+    fmt_int(v, (int32_t)list_n(l));
+    str_cpy(b + str_len(b), v, size - str_len(b));
+    return 1;
+}
+
+/* ui.c ui_say: a message, said as shown, keycaps' brackets left out ("[SEQ] TO RECORD") */
+static void sp_msg(const char *a, const char *b)
+{
+    char m[48];
+    uint32_t i, n = 0;
+    str_cpy(m, a, sizeof m);
+    str_cpy(m + str_len(m), b ? b : "", sizeof m - str_len(m));
+    for (i = 0; m[i]; i++)
+        if (m[i] != '[' && m[i] != ']') m[n++] = m[i];
+    m[n] = 0;
+    ann_say(m, 0, ANN_NOW);
 }
 
 /* the menu's row: "COLOR YELLOW, 1 OF 26" */
@@ -92,7 +163,7 @@ static uint32_t sp_context(void)
 static void sp_screen(void)
 {
     char b[48];
-    uint32_t k;
+    uint32_t k, n;
     sp_buf[0] = 0;
     if (ui.menu) {
         sp_add(ui.menu == 2 ? "ABOUT" : "MENU. ");
@@ -103,13 +174,29 @@ static void sp_screen(void)
         return;
     }
     sp_add(ui.home ? "HOME" : cur_page()->title);
-    sp_add(". T");
-    b[0] = (char)('1' + song.sel % NTRK);
-    b[1] = 0;
-    sp_add(b);
-    for (k = 0; k < 4u; k++)
+    if (ui.home || (cur_page()->scope != SC_TRK && cur_page()->graph != GR_MIDICH)) {   /* (MIXER, MIDI OUT: each
+                                                         * knob says its track) */
+        sp_add(". T");
+        b[0] = (char)('1' + song.sel % NTRK);
+        b[1] = 0;
+        sp_add(b);
+    }
+    if (sp_list_row(b, sizeof b)) {                    /* a list: its row */
+        sp_add(". ");
+        sp_add(b);
+    } else for (k = n = 0; k < 4u; k++)
         if (sp_knob(k, b, sizeof b)) {
-            sp_add(k ? ", " : ". ");
+            sp_add(n++ ? ", " : ". ");
+            sp_add(b);
+        }
+    if (ui.home)                                        /* (HOME: the four tracks' sounds too, as it shows them) */
+        for (k = 0; k < NTRK; k++) {
+            char nm[16];
+            trk_short_name(k, nm);
+            sp_add(k ? ", T" : ". SOUNDS T");
+            b[0] = (char)('1' + k);
+            b[1] = ' ';
+            str_cpy(b + 2, nm, sizeof b - 2u);
             sp_add(b);
         }
 }
@@ -129,11 +216,12 @@ static void ui_speak(uint32_t now)
             ann_later(sp_buf, ANN_NOW, SP_PAGE_MS, now);
             sp.knob[0] = 0;
             if (ui.menu == 1) sp_menu_row(sp.knob, sizeof sp.knob);   /* (its row is in what was said) */
+            else sp_list_row(sp.knob, sizeof sp.knob);
         } else if (ui.menu == 1 || sp.turned) {         /* a menu row or a knob turned: its name and value, when
                                                          * they change (a value moving by itself is not said) */
             char b[48];
             if (ui.menu == 1) sp_menu_row(b, sizeof b);
-            else if (!sp_knob(sp.turned - 1u, b, sizeof b)) b[0] = 0;
+            else if (!sp_list_row(b, sizeof b) && !sp_knob(sp.turned - 1u, b, sizeof b)) b[0] = 0;
             if (b[0] && !str_eq(b, sp.knob)) {
                 str_cpy(sp.knob, b, sizeof sp.knob);
                 ann_later(b, ANN_NOW, SP_KNOB_MS, now);
@@ -147,6 +235,9 @@ static void ui_speak(uint32_t now)
     }
     sp.ctx = ctx;
     sp.turned = 0;
+#if MELODEE_LOOK
+    mo_fresh = 0;                                       /* (the next frame's drawing says again) */
+#endif
     sp.playing = (uint8_t)playing;
     ann_tick(now);
 }
