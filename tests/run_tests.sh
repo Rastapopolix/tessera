@@ -364,6 +364,9 @@ if core && [ $TABLES = 1 ]; then
         ui_test_access:ui_test -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=0 -DMELODEE_ACCESS=1 $FW
     t "screen reader (MELODEE_ACCESS, ui_speak.c): silent until HELLO, the screen, pages, knobs, menu rows, messages, PLAY/STOP, WHERE" \
         speak_test -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=1 -DMELODEE_ACCESS=1 -Itests $FW
+    t "screen reader against the screen: every knob, every page, engine and MODE, said as drawn (tools/speak_screen.py)" \
+        speak_screen:speak_test -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=1 -DMELODEE_ACCESS=1 -Itests $FW -- \
+        sh -c "\"$OUT/speak_screen\" compare \"$OUT/speak_screen.tsv\" && python3 tools/speak_screen.py \"$OUT/speak_screen.tsv\""
     t "Sound designer: native recipes, dependencies, compare, discard and save" designer_test -O2 -DMELODEE_USB_AUDIO=1 $FW
     t "Sequencer: tied length/move/delete, eight-level undo/redo, MIDI step entry and playing-step recording" seq_edit_test \
         -DMELODEE_USB_AUDIO=1 $FW
