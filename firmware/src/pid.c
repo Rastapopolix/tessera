@@ -417,7 +417,8 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_EV_EVERY, "EVOLVE EVERY", "Bars between mutations; OFF keeps the phrase as it is."),
     X_(TX_EV_AMOUNT, "EVOLVE AMOUNT", "How much changes at each mutation."),
     X_(TX_EV_SEED, "EVOLVE ROLL", "The track's seed, 1 to 128: each one a line of its own, the same every time. "
-                                  "Playing, a new one starts on the next bar line."),
+                                  "Playing, a new one starts on the next bar line. OCT- held: ROLL ALL, every "
+                                  "generator track a new seed at once; turn left to get the last ones back."),
     X_(TX_FM_FORM, "FORM", "The order the sections play in (A, B, C), each EVERY bars long; OFF plays one phrase."),
     X_(TX_FM_CONTRAST, "FORM CONTRAST", "How different a new section is from the one before it."),
     X_(TX_FM_FLOURISH, "FORM FLOURISH", "Semitones added on the last beat of every phrase; 0 is off."),

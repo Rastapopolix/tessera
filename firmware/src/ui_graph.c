@@ -124,6 +124,12 @@ static int midi_snd_layer_on(void)
     return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_MIDICH &&
            ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) && !((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
+/* the EVOLVE page with OCT- held: KNOB 4 is ROLL ALL, every generator track's seed (tessera.c tessera_roll_all) */
+static int rall_layer_on(void)
+{
+    return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_EVOLVE &&
+           ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) && !((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+}
 /* the CHAIN page with OCT+ held: KNOB k is place k's REPEAT (form_chain.c) */
 static int chain_layer_on(void)
 {
