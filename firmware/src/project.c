@@ -45,7 +45,7 @@ _Static_assert(G_MFXTYPE == PROJ_GLOBALS && G_FXMODE==40u && G_BUDGET==41u && G_
 #define PROJ_DEF_SOUND 0xFFu                   /* preset byte: the track's power-on sound, no steps (kept from an
                                                 * import of before 1.0) */
 #define PROJ_DEF_KEEP 0xFEu                    /* .. the 808 DRUM sound, steps and the rest kept (old drums) */
-#define TSP_MAX 32768u                         /* a TSP1 record at most (project_tsp.c): its RAM buffers are in the pool, beside the audio arena */
+#define TSP_MAX 34816u                         /* a TSP1 record at most (project_tsp.c): its RAM buffers are in the pool, beside the audio arena */
 #if !defined(FM1_IRQ_TARGET)
 static uint8_t proj_bank_slot[4][TSP_MAX];    /* host-only: each slot's TSP1 record (MELODEE_FLASH 0: the slots) */
 static uint32_t proj_bank_len[4];             /* (0: empty) */

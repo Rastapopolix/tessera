@@ -606,9 +606,61 @@ static int test_tsp_record(void)
     return bad;
 }
 
+/* PAT GEN (pat_gen.c): each pattern its own generator setup; switched with the pattern, saved in the PGEN part */
+static int test_pat_gen(void)
+{
+    static uint8_t raw[TSP_MAX];
+    uint32_t len;
+    int bad = 0, ok;
+    track_t *t = &trk[1];
+    reset();
+    tessera_param_set(1, TX_MODE, TESS_ENG_TURING);
+    tessera_param_set(1, TX_TUR_LEN, 5);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    bad += check("PAT GEN: OFF writes no PGEN part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_PGEN]);
+    pattern_switch(t, 1);
+    bad += check("PAT GEN: OFF, a pattern switch keeps the generator", tessera.mode[1] == TESS_ENG_TURING &&
+                 tessera.turing[1].len == 5u);
+    pattern_switch(t, 0);
+    tessera_param_set(1, TX_PAT_GEN, 1);
+    pattern_switch(t, 2);
+    ok = tessera.mode[1] == TESS_ENG_TURING && tessera.turing[1].len == 5u;   /* (turned on: all 8 as they were) */
+    tessera_param_set(1, TX_MODE, TESS_ENG_EUCLID);
+    tessera_param_set(1, TX_EUC_PULSES, 3);
+    pattern_switch(t, 0);
+    ok &= tessera.mode[1] == TESS_ENG_TURING && tessera.turing[1].len == 5u;
+    pattern_switch(t, 2);
+    ok &= tessera.mode[1] == TESS_ENG_EUCLID && tessera.euclid[1].pulses == 3u;
+    bad += check("PAT GEN: ON, each pattern brings its own MODE and knobs back", ok);
+    ok = !pattern_copy(t, 2, 5) && tessera_pg_mode(1, 5) == TESS_ENG_EUCLID && tessera_pg_mode(1, 0) == TESS_ENG_TURING;
+    bad += check("PAT GEN: COPY copies the pattern's generator", ok);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_PGEN];
+    tessera_reset();
+    tsp_restore(raw);
+    ok &= tessera.pat_gen[1] == 1u && !tessera.pat_gen[0] && tessera.mode[1] == TESS_ENG_EUCLID;
+    pattern_switch(t, 0);
+    ok &= tessera.mode[1] == TESS_ENG_TURING && tessera.turing[1].len == 5u;
+    bad += check("PAT GEN: the PGEN part brings every pattern's generator back", ok);
+    tsp_valid(raw, len);
+    raw[tsp_seen.at[TSP_PGEN] + NTRK + (NPAT + 2u) * TESS_PG_BYTES] = TESS_ENG_COUNT;   /* (track 2's pattern 3: no MODE) */
+    tsp_resum(raw);
+    bad += check("PAT GEN: a slot with a MODE past the last refuses the record", !tsp_valid(raw, len));
+    raw[tsp_seen.at[TSP_PGEN] + NTRK + (NPAT + 2u) * TESS_PG_BYTES] = TESS_ENG_EUCLID;
+    raw[tsp_seen.at[TSP_PGEN] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (an id 3.4 does not know: skipped) */
+    tsp_resum(raw);
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_PGEN];
+    if (ok) tsp_restore(raw);
+    bad += check("PAT GEN: a record without the part loads with PAT GEN OFF", ok && !tessera.pat_gen[1]);
+    reset();
+    return bad;
+}
+
 int main(void)
 {
-    int bad = test_boot_maintenance_writes() + test_tsp_record() + test_mlearn_save(), ok;
+    int bad = test_boot_maintenance_writes() + test_tsp_record() + test_mlearn_save() + test_pat_gen(), ok;
     uint32_t before;
     persist_t p;
     static uint8_t old[TSP_MAX], keep[TSP_MAX];   /* (a slot's record as it was) */

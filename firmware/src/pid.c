@@ -45,6 +45,7 @@ static const char *const TX_N_ANLEN[] = {"SHORT", "MID", "LONG"};
 static const char *const TX_N_SDKEEP[] = {"FREE", "RHYTHM", "PITCH"};   /* (TESS_SD_*) */
 static const char *const TX_N_SVHOW[] = {"DRIFT", "ADORN", "SERIAL"};   /* (TESS_SV_*) */
 static const char *const TX_N_SOUND[] = {"ON", "OFF"};
+static const char *const TX_N_PATGEN[] = {"OFF", "ON"};
 static const char *const TX_N_PHRASE[] = {"4", "8", "16"};   /* (form_chain.c FC_PHRASE_BARS) */
 static const char *const TX_N_FCFOLLOW[] = {"FOLLOW", "OWN"};
 static const char *const TX_N_ETSTYLE[] = {"CUT", "FADE"};   /* (entries.c) */
@@ -210,6 +211,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_SUB_SPLIT_HOW] = PE("HOW", TX_N_SPLITHOW, 0),
     [TX_TW_FHOW] = PE("HOW", TX_N_FHOW, 0),
     [TX_TW_FRHY] = PE("RHYTHM", TX_N_FRHY, 0),
+    [TX_PAT_GEN] = PE("PAT GEN", TX_N_PATGEN, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -741,6 +743,12 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                     "followed track has played a note, so the two move together (a lower track "
                                     "number lands on the same step). BOTH: its own hits and the other's. TWEAK, OCT+ "
                                     "held, KNOB 3."),
+    X_(TX_PAT_GEN, "PAT GEN", "ON: each of the track's 8 patterns keeps its own MODE, the generator's knobs, "
+                              "SEED and EVOLVE's EVERY, AMOUNT and LOCK, so switching pattern (by hand, "
+                              "PATTERNS, SONG) switches the generator, which starts again from the pattern's "
+                              "SEED. Turning it ON gives all 8 the settings as they are; COPY copies them "
+                              "with the steps. FORM, TWEAK and the rest stay the track's. OFF: the "
+                              "generator's settings are the track's. EVOLVE, OCT+ held, KNOB 4."),
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT

@@ -242,6 +242,7 @@ typedef struct {
     uint8_t          pl_end;                     /* 0 STOP, 1 LOOP, 2 NEW, 3 FREE */
     uint8_t          pl_user[8];                 /* 0..100: USER's levels, evenly along the piece */
     uint8_t          macro[4];                   /* 0..100: PERF's MACRO 1..4 (cord.c CS_MACRO1..4) */
+    uint8_t          pat_gen[TESSERA_TRACKS];    /* PAT GEN: 1 each pattern keeps its own generator setup (pat_gen.c) */
 } tessera_state_t;
 
 extern tessera_state_t tessera;
@@ -356,6 +357,14 @@ const char *tessera_form_name(uint32_t form);
 #define TESSERA_PK_BYTES_V2 188u                    /* version 2 (before GRIDS) */
 #define TESSERA_PK_BYTES_V1 180u                    /* version 1 (before SEED) */
 uint32_t tessera_pack(uint8_t *out);                /* live state -> TESSERA_PK_BYTES */
+#define TESS_PG_BYTES 40u                           /* PAT GEN: a pattern's generator setup (pat_gen.c) */
+void tessera_pg_store(uint32_t tr, uint32_t b);
+void tessera_pg_load(uint32_t tr, uint32_t b);
+void tessera_pg_copy(uint32_t tr, uint32_t from, uint32_t to);
+int tessera_pg_check(uint32_t tr, const uint8_t *slot);
+uint32_t tessera_pg_mode(uint32_t tr, uint32_t b);
+const uint8_t *tessera_pg_slots(uint32_t tr);
+void tessera_pg_put(uint32_t tr, const uint8_t *slots);
 int tessera_unpack(const uint8_t *in);              /* 1 loaded; 0 refused (range check), nothing changed */
 int tessera_unpack_ver(uint32_t ver, const uint8_t *in);   /* the same for a block of version ver (1..19) */
 int tessera_check(uint32_t ver, const uint8_t *in);        /* the same checks, nothing loaded: 1 it would load */
@@ -427,9 +436,11 @@ enum {
     TX_FC_KEYB, TX_FC_KEYC,                         /* (0x292, 0x293: the CHAIN's B and C sections' key, the project's) */
     TX_SUB_SPLIT, TX_SUB_SPLIT_HOW,                 /* (0x294, 0x295: TIMING's SPLIT and HOW, any track's) */
     TX_TW_FHOW, TX_TW_FRHY,                         /* (0x296, 0x297: FOLLOW's HOW and RHYTHM, a generator track's) */
+    TX_PAT_GEN,                                     /* (0x298: PAT GEN, any track's: each pattern its own generator) */
     TX_COUNT
 };
-_Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95 && TX_TW_FRHY == 0x97,
+_Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95 && TX_TW_FRHY == 0x97 &&
+               TX_PAT_GEN == 0x98,
                "parameter ids are stored: never renumbered");
 /* TX_TW_FHOW: the source's note as it is, the nearest chord tone, mirrored, a bass, or CANON 1..8 notes back */
 enum { TESS_FH_SAME, TESS_FH_CHORD, TESS_FH_CONTRA, TESS_FH_BASS, TESS_FH_CANON, TESS_FH_COUNT = TESS_FH_CANON + 8 };

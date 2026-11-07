@@ -247,8 +247,9 @@ void tessera_sv_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;
     tessera_ensure_init();
-    if (tr >= TESSERA_TRACKS || !s || k) return;
+    if (tr >= TESSERA_TRACKS || !s || (k && k != 3u)) return;
     TESS_IRQ_OFF();
-    tess_param_set_body(tr, TX_SV_HOW, (int32_t)tessera.sv_how[tr] + (s > 0 ? 1 : -1));
+    if (k) tess_param_set_body(tr, TX_PAT_GEN, s > 0);   /* (KNOB 4 PAT GEN, as a generator's EVOLVE) */
+    else tess_param_set_body(tr, TX_SV_HOW, (int32_t)tessera.sv_how[tr] + (s > 0 ? 1 : -1));
     TESS_IRQ_ON();
 }

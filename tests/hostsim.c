@@ -61,6 +61,7 @@ static void TESSERA_NOTE_HOOK(track_t *t, uint32_t note, uint32_t vel);
 #define TESS_IRQ_ON() ((void)0)
 #define TESS_ENTROPY() 0x5EEDu                     /* (a fresh Turing register: fixed on the host, repeatable tests) */
 #include "../firmware/src/tessera.c"
+#include "../firmware/src/pat_gen.c"
 #include "../firmware/src/pid.c"
 #include "../firmware/src/cord.c"
 #ifdef TESSERA_NOTE_HOOK
