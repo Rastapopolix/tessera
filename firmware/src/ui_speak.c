@@ -184,6 +184,21 @@ static int sp_knob(uint32_t k, char *b, uint32_t size)
         if (sp_digit(lcap[k & 3u].val)) sp_cat(b, size, lcap[k & 3u].unit);
         return 1;
     }
+    if (!ui.home && cur_page()->graph == GR_SCALE_PICKER) {   /* SCALES: its columns as drawn (the scale under the
+                                                         * cursor, not the one in use) */
+        const char *cv;
+        uint8_t cs = col_style;
+        memset(lcap, 0, sizeof lcap);
+        col_style = CS_CAPTURE;
+        draw_columns();
+        col_style = cs;
+        if (!lcap[k & 3u].on) return 0;
+        for (cv = lcap[k & 3u].val; *cv == ' '; cv++) ;
+        str_cpy(b, lcap[k & 3u].label, size);
+        sp_cat(b, size, cv);
+        if (sp_digit(cv)) sp_cat(b, size, lcap[k & 3u].unit);
+        return 1;
+    }
     if (!ui.home && own_screen()) return sp_own(k, b, size);
     help_find(k);
     e = help.pid != PID_NONE ? pid_find(help.pid) : 0;
@@ -228,6 +243,8 @@ static int sp_knob(uint32_t k, char *b, uint32_t size)
             sp_cat(v, sizeof v, "OF");
             sp_cat(v, sizeof v, u + 1);
         }
+        else if (str_eq(u, "+-") || str_eq(u, "+"))   /* (a mod source's bar: both ways, or one) */
+            sp_cat(v, sizeof v, u[1] ? "BIPOLAR" : "UNIPOLAR");
         else if (sp_digit(v)) sp_cat(v, sizeof v, u);   /* (no unit after a word: "OFF", not "OFF bar") */
     }
     if (!name || !name[0] || str_eq(name, "-") || (!v[0] && !col && !e)) return 0;   /* ("-": an engine's unused knob) */
