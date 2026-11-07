@@ -21,6 +21,8 @@
   webapp/editor/index.html          editor.html (+ fukiai.ttf, FUKIAI-LICENSE.txt, fm1backup.js, demos/*.tsp)
   webapp/editor-beta/               the beta's editor, the same files from the beta's own web/ and demos/ (its Demo
                                     projects hold the CHK test projects); goes with the beta
+  words/                            the screen reader's words files (web/words: tools/gen_words.py), every one ever
+                                    made: a device points the reader at its own, so none is changed or dropped
   webapp/sim/                       the web simulator (web/sim/build.sh: build/sim/), when given; else kept as published
   src/                              not touched
 
@@ -217,6 +219,9 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
         encoding="utf-8")
     for doc in ("LICENSE", "LICENSING.md"):
         shutil.copy(HERE.parent / doc, fw / doc)
+    (out / "words").mkdir(exist_ok=True)            # the screen reader's words (a beta's too): added, never removed
+    for f in (HERE / "words").glob("*.json"):
+        shutil.copy(f, out / "words" / f.name)
     if not installer_only:
         copy_editor(ed)
     bed = out / "webapp" / "editor-beta"

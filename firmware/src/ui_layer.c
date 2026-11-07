@@ -203,8 +203,10 @@ static void layer_tap(uint32_t l)
     uint8_t m = ui.msg_t;
     page_tap(LAYERS[l].btn);
     if (!((layer_seen >> l) & 1u) && ui.msg_t == m && !name_on() && !ui.confirm && !ui.menu) {
-        ui_say("HOLD [", KC[LY_KC[l]].label);
-        str_cpy(ui.msg + str_len(ui.msg), "] QUICK", sizeof ui.msg - str_len(ui.msg));
+        char hq[24] = "HOLD [";                         /* (whole, so the screen reader hears the end too) */
+        str_cpy(hq + 6, KC[LY_KC[l]].label, sizeof hq - 6u);
+        str_cpy(hq + str_len(hq), "] QUICK", sizeof hq - str_len(hq));
+        ui_message(hq);
         ui.msg_t = 90;                                  /* ~1.5 s */
     }
 }

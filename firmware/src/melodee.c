@@ -87,6 +87,7 @@
 #if MELODEE_ACCESS && MELODEE_OTA                /* the screen reader (issue #430): fm1-reader's protocol, said by ui_speak.c */
 #define ANN_NAME "Tessera " MELODEE_VERSION
 #define ANN_MAX 160u                            /* (a SAY, (160 + 9) / 3 packets, fits usb.c's SysEx queue of 64 as it is) */
+#include "ann_words.h"                                  /* ANN_WORDS_URL: firmware/words.tsv's link (tools/gen_words.py) */
 #include "announce.c"
 static int ann_wire_send(const uint8_t *p, uint32_t n)   /* never waits: no room (nobody reading), not sent */
 {

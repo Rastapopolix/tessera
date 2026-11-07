@@ -35,6 +35,7 @@ static struct {
     uint8_t used, dim, hot;
 } mo_col[4];
 static uint32_t mo_sig;
+static uint8_t mo_fresh;                                /* mo_col is this frame's (the screen reader, ui_speak.c) */
 
 static void mo_capture(uint32_t c, const char *label, const char *val, const char *unit, uint16_t vc, int32_t ratio,
                        int hot)
@@ -46,6 +47,7 @@ static void mo_capture(uint32_t c, const char *label, const char *val, const cha
     str_cpy(mo_col[c].unit, str_eq(unit, label) ? "" : unit, sizeof mo_col[c].unit);
     mo_col[c].ratio = ratio > 1000 ? 1000 : ratio;
     mo_col[c].used = 1;
+    mo_fresh = 1;
     mo_col[c].dim = vc == T_DIM;
     mo_col[c].hot = (uint8_t)hot;
 }

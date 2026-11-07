@@ -100,6 +100,7 @@ static struct { uint32_t magic, count, vec, pc, rets, emu, dbg, sp, psr, icfg, u
 #if MELODEE_ACCESS                                /* the screen reader (ui_speak.c): what it sends, kept for the tests */
 #define ANN_NAME "Tessera TEST"
 #define ANN_MAX 160u
+#include "ann_words.h"                          /* (the words link in the HELLO: speak_test checks it) */
 #include "../firmware/src/announce.c"
 static char host_said[4096];                      /* each SAY a line: "N text" (N NOW, Q queued, K kept), HELLO "H text" */
 static uint32_t host_said_n, host_said_frames;

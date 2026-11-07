@@ -18,9 +18,93 @@ static void said_clear(void) { host_said_n = 0; host_said[0] = 0; host_said_fram
 static int said(const char *s) { return strstr(host_said, s) != 0; }
 static void settle(void) { uint32_t i; for (i = 0; i < 20u; i++) frame(); }   /* 320 ms: what waits is said */
 
-int main(void)
+/* speak_test dump FILE: what the reader would hear on every screen (the audit's input, fm1-reader tools/audit.mjs):
+ * SCREEN each page as a page change says it, for every engine and MODE (as ui_test's help check walks them) and
+ * HOME; KNOB each knob; ROW each menu row; VALUE every name a list value can take (each parameter's, each engine's).
+ * The messages (MSG) come from the sources (tools/speak_dump.py). Sorted and made unique by the caller. */
+static FILE *dump_f;
+static void dump_pages(void)
+{
+    char b[48];
+    uint32_t i, k;
+    for (i = 0; i <= NPAGES; i++) {
+        ui.home = i == NPAGES;
+        if (!ui.home) {
+            if (!page_visible(i)) continue;
+            ui.page = (uint8_t)i;
+        }
+        ui.force = 1;
+        mo_fresh = 0;
+        ui_draw();
+        sp_screen();
+        fprintf(dump_f, "SCREEN\t%s\n", sp_buf);
+        for (k = 0; k < 4u; k++)
+            if (sp_knob(k, b, sizeof b)) fprintf(dump_f, "KNOB\t%s\n", b);
+        if (list_on()) {                                /* a list page: each row */
+            for (lst.row = 0; lst.row < list_n(list_on()); lst.row++)
+                if (sp_list_row(b, sizeof b)) fprintf(dump_f, "ROW\t%s\n", b);
+            lst.row = 0;
+        }
+    }
+    ui.home = 0;
+}
+static int dump(const char *path)
+{
+    char b[48];
+    uint32_t e, m, i, tr;
+    int32_t v;
+    if (!(dump_f = fopen(path, "w"))) return 1;
+    ui_power_on();
+    for (e = 0; e < NENGINES; e++) {                    /* every engine on STEP */
+        if (!ENGINES[e] || !ENGINES[e]->name || str_eq(ENGINES[e]->name, "-")) continue;   /* (retired) */
+        set_engine_of(TSEL, e);
+        TSEL->engine = TSEL->eng_req;
+        seqm_set(0, 0);
+        fprintf(dump_f, "# engine %s\n", ENGINES[e]->name);
+        dump_pages();
+        for (i = 0; i < pid_count(); i++) {             /* the engine's list values */
+            const param_desc_t *d = pid_desc(pid_at(i)->pid, 0);
+            if (!d || d->fmt != F_ENUM || !d->names) continue;
+            for (v = d->min; v <= d->max; v++)
+                if (d->names[v] && d->names[v][0])
+                    fprintf(dump_f, "VALUE\t%s %s%s%s\n", pid_at(i)->pid >= PID_TRACK(P_E0) && pid_at(i)->pid <
+                            PID_TRACK(P_E0 + 8) && d->label ? d->label : pid_at(i)->name, d->names[v][0] == '/' ? "EVERY " : "",
+                            d->names[v] + (d->names[v][0] == '/'), d->names[v][0] == '/' ? " STEPS" : "");   /* (as sp_knob says it) */
+        }
+    }
+    set_engine_of(TSEL, ENGI_FM6);
+    TSEL->engine = TSEL->eng_req;
+    for (m = 0; m <= TESS_ENG_COUNT; m++) {            /* STEP, ARP, then every generator */
+        seqm_set(0, (int32_t)m);
+        dump_pages();
+    }
+    seqm_set(0, 0);
+    song.sel = 3;                                       /* a DRUM track: STEP, ATLAS */
+    set_engine_of(TSEL, ENGI_DRUM);
+    TSEL->engine = TSEL->eng_req;
+    seqm_set(3, 0);
+    dump_pages();
+    seqm_set(3, 1 + TESS_ENG_GRIDS);
+    dump_pages();
+    seqm_set(3, 0);
+    song.sel = 0;
+    ui.menu = 1;                                        /* the menu's rows */
+    for (i = 0; i < MI_COUNT; i++) {
+        ui.menu_sel = (uint8_t)i;
+        sp_menu_row(b, sizeof b);
+        fprintf(dump_f, "ROW\t%s\n", b);
+    }
+    ui.menu = 0;
+    (void)tr;
+    fclose(dump_f);
+    return 0;
+}
+
+int main(int argc, char **argv)
 {
     int bad = 0;
+    if (argc > 2 && str_eq(argv[1], "dump"))
+        return dump(argv[2]);
     ui_power_on();
     usb.config = 1;
     go_title("EVOLVE");
@@ -31,7 +115,8 @@ int main(void)
 
     reader(ANN_HELLO);
     frame();
-    bad += check("speak: HELLO answered with the firmware's name", said("H Tessera TEST|"));
+    bad += check("speak: HELLO answered with the firmware's name and its words file (firmware/words.tsv)",
+                 said("H Tessera TEST|" ANN_WORDS_URL "\n") && !strncmp(ANN_WORDS_URL, "https://", 8u));
     bad += check("speak: the first HELLO says the screen at once: page, track, knobs by their whole names",
                  said("N EVOLVE. T1. ") && said("AMOUNT"));
     printf("  said: %s", host_said);
@@ -48,6 +133,33 @@ int main(void)
     settle();
     bad += check("speak: another page: its name and knobs, once it settles", said("N TIMING. T1. "));
     printf("  said: %s", host_said);
+
+    said_clear();
+    go_title("EDIT 1");
+    settle();
+    bad += check("speak: an engine's knobs by the engine's own names, not ENGINE 1",
+                 said("N EDIT 1. T1. ") && !said("ENGINE 1"));
+    said_clear();
+    go_title("MIXER");
+    settle();
+    bad += check("speak: MIXER: each knob says its track", said("N MIXER. T1 LEVEL ") && said(", T4 LEVEL "));
+    said_clear();
+    go_title("VOICE");
+    settle();
+    bad += check("speak: a list page: its row, with its place", said("N VOICE. T1. ") && said(", 1 OF "));
+    said_clear();
+    turn(EN_K1, 1);
+    settle();
+    bad += check("speak: ..KNOB 1 to the next row", said(", 2 OF "));
+    said_clear();
+    ui.home = 1;
+    ui.force = 1;
+    settle();
+    bad += check("speak: HOME: its knobs and the four tracks' sounds", said("N HOME. T1. ") && said(". SOUNDS T1 ") &&
+                 said(", T4 "));
+    printf("  said: %s", host_said);
+    ui.home = 0;
+    ui.force = 1;
 
     said_clear();
     ui_message("SAVED");
@@ -74,6 +186,8 @@ int main(void)
     press(B_OCTDN);
     settle();
 
+    reader(ANN_HELLO);                                  /* (a reader says HELLO every few seconds) */
+    frame();
     said_clear();
     reader(ANN_WHERE);
     frame();
