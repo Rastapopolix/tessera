@@ -63,7 +63,6 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 
 | Do this | And this happens |
 |---|---|
-| **ARP** + a knob | The help card for that knob; turn on: scroll |
 | **FX** + a knob | Mod shortcut: a cord from the track's LFO to that parameter, the turn sets its amount |
 | **FX** + SELECT | The mod shortcut's source |
 | **LFO** + a knob | A momentary change: back as it was when LFO is let go |
@@ -157,6 +156,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | FORM: **OCT+** held, **KNOB 1** | DEVELOP: each return of a section varies a little (0: exact) |
 | FORM: **OCT+** held, **KNOB 2** / **3** | The CHAIN: FOLLOW or OWN; SKIP, the chance it lags a phrase |
 | FORM: **OCT+** held, **KNOB 4** | ROLE: this track's part for ENTRIES |
+| TWEAK: **OCT+** held, **KNOB 2** / **3** | FOLLOW's HOW (SAME, CHORD, CONTRA, BASS, CANON1 to 8); RHYTHM (OWN, SOURCE, BOTH) |
 | TWEAK: **OCT+** held, **KNOB 4** | FOLLOW's HOLD (shown as T3H2 on FOLLOW) |
 | MODS: **OCT+** | The picked mod: +- (both ways) / + (one way) / GATE |
 | MODS: **OCT+** held, **KNOB 4** / **KNOB 3** | A GATE's threshold / a CC mod's CC number |

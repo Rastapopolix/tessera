@@ -97,6 +97,28 @@ static struct { uint32_t magic, count, vec, pc, rets, emu, dbg, sp, psr, icfg, u
 #define MELODEE_VERSION "TEST"
 #endif
 #define UI_TEST_PALETTE 1                         /* + GRAY: every screen drawn in it must stay gray */
+#if MELODEE_ACCESS                                /* the screen reader (ui_speak.c): what it sends, kept for the tests */
+#define ANN_NAME "Tessera TEST"
+#define ANN_MAX 160u
+#include "ann_words.h"                          /* (the words link in the HELLO: speak_test checks it) */
+#include "../firmware/src/announce.c"
+static char host_said[4096];                      /* each SAY a line: "N text" (N NOW, Q queued, K kept), HELLO "H text" */
+static uint32_t host_said_n, host_said_frames;
+static int ann_wire_send(const uint8_t *p, uint32_t n)
+{
+    uint32_t i;
+    host_said_frames++;
+    if (n < 8u || p[0] != 0xF0u || p[n - 1u] != 0xF7u || host_said_n + n + 4u >= sizeof host_said)
+        return 0;
+    host_said[host_said_n++] = p[4] == ANN_HELLO ? 'H' : p[5] & ANN_KEEP ? 'K' : p[5] & ANN_NOW ? 'N' : 'Q';
+    host_said[host_said_n++] = ' ';
+    for (i = 6u; i + 1u < n; i++)
+        host_said[host_said_n++] = p[i] ? (char)p[i] : '|';
+    host_said[host_said_n++] = '\n';
+    host_said[host_said_n] = 0;
+    return 0;
+}
+#endif
 #include "../firmware/src/gfx.c"
 #include "../firmware/src/panel.c"
 #include "../firmware/src/ui.c"
@@ -106,6 +128,9 @@ static struct { uint32_t magic, count, vec, pc, rets, emu, dbg, sp, psr, icfg, u
 #include "../firmware/src/ui_menu.c"
 #include "../firmware/src/ui_input.c"
 #include "../firmware/src/ui_layer.c"
+#ifdef ANN_VER
+#include "../firmware/src/ui_speak.c"
+#endif
 #include "../firmware/src/upreset.c"
 #include "../firmware/src/project.c"
 #include "../firmware/src/fm6_store.c"
@@ -221,6 +246,9 @@ static void frame(void)
     fm1_ms += 16u;
     ui_input();
     ui_draw();
+#ifdef ANN_VER
+    ui_speak(fm1_ms);                             /* (as main.c: the screen reader after the drawing) */
+#endif
 }
 static void press(uint32_t label)                 /* a tap: down, a frame, up, a frame */
 {
@@ -599,6 +627,25 @@ static int test_gen_family(void)
         tessera_param_set(tr, TX_SUB_SPLIT, 0);
         tessera_param_set(tr, TX_SUB_SPLIT_HOW, 0);
     }
+    if (tessera.mode[song.sel] != TESS_ENG_OFF && tessera.mode[song.sel] != TESS_ENG_GRIDS) {
+        uint32_t tr = song.sel, oct = song.octave;    /* TWEAK, OCT+ held: KNOB 2 HOW, KNOB 3 RHYTHM; KNOB 1 nothing */
+        int8_t sh = tessera.evolve[tr].shift;
+        go_title("TWEAK");
+        btn_down(B_OCTUP);
+        frame();
+        turn(EN_K1, 3);
+        turn(EN_K2, 1);
+        turn(EN_K2, 1);
+        turn(EN_K3, 1);
+        btn_up(B_OCTUP);
+        frame();
+        bad += check("TWEAK, OCT+ held: HOW CONTRA a step a turn, RHYTHM SOURCE, SHIFT untouched, no octave",
+                     tessera.follow_how[tr] == TESS_FH_CONTRA && tessera.follow_rhy[tr] == TESS_FR_SOURCE &&
+                     tessera.evolve[tr].shift == sh && song.octave == oct);
+        tessera_param_set(tr, TX_TW_FHOW, 0);
+        tessera_param_set(tr, TX_TW_FRHY, 0);
+    } else
+        bad += check("TWEAK, OCT+ held: a generator track to test on", 0);
     go_title("ENERGY");                           /* ENERGY, the project's: KNOB 1 ARC, KNOB 2 RESTS; 3 and 4 nothing */
     {
         turn(EN_K1, 3);
@@ -1682,6 +1729,34 @@ static int test_help_all(void)
     return check("help: every knob of every page has a text of its own (none falls through), its name fits", !bad);
 }
 
+#if MELODEE_ACCESS && !MELODEE_HELP_PACKED
+/* the accessible build (MELODEE_ACCESS 1, issue #430): no help cards. ARP held, a knob turns its value as without ARP
+ * and no card opens; help_find still names the knob's parameter (MIDI LEARN, the mod shortcut) */
+static int test_help_gesture(void)
+{
+    int bad = 0;
+    int32_t was;
+    ui_power_on();
+    tessera_param_set(0, TX_MODE, TESS_ENG_MARKOV);
+    go_title("EVOLVE");
+    frame();
+    was = tessera_param_get(0, TX_EV_AMOUNT);
+    fm1_in.buttons |= 1u << panel.btn[B_ARP];
+    frame();
+    turn(EN_K1 + 2u, 3);
+    frame();
+    bad += check("accessible build: ARP held, KNOB 3 on EVOLVE: no help card, AMOUNT turned",
+                 !help.on && tessera_param_get(0, TX_EV_AMOUNT) != was);
+    help_find(2);
+    bad += check("..help_find still names the knob's parameter (MIDI LEARN): EVOLVE AMOUNT",
+                 help.pid == PID_TESS(TX_EV_AMOUNT) && pid_find(help.pid));
+    fm1_in.buttons &= ~(1u << panel.btn[B_ARP]);
+    frame();
+    frame();
+    ui_power_on();
+    return bad;
+}
+#else
 /* help (ui_help.c): ARP held, a knob turned shows its help and changes nothing; letting ARP go opens no page */
 static int test_help_gesture(void)
 {
@@ -1791,6 +1866,7 @@ static int test_help_gesture(void)
     bad += check("ARP tapped alone still opens its lane", !ui.home && arp_page(ui.page));
     return bad;
 }
+#endif
 
 static int test_rec(void)
 {
@@ -4140,7 +4216,7 @@ static int test_layer(void)
     ui_power_on();
     ua_off = ua_off_want = 0;
     hold(B_HOME); ui.menu_sel = MI_USB; turn(EN_K2, 1); turn(EN_K2, 1);
-    ok = ua_off_want == UA_OFF_IN && !ua_off;
+    ok = ua_off_want == UA_OFF_PLAY && !ua_off;
     hold(B_HOME);
     ua_off = ua_off_want;                            /* (ua_off_apply) */
     {
@@ -4148,8 +4224,8 @@ static int test_layer(void)
         p.magic = PERSIST_MAGIC; p.panel = panel;
         settings_export(&p); ua_off = ua_off_want = 0;
         bad += check("menu USB AUDIO (KNOB 2 twice: OUT only): wanted at once, the settings keep it",
-                     ok && p.ext.usb_off == UA_OFF_IN && settings_import(&p, sizeof p) && ua_off == UA_OFF_IN &&
-                     ua_off_want == UA_OFF_IN);
+                     ok && p.ext.usb_off == UA_OFF_PLAY && settings_import(&p, sizeof p) && ua_off == UA_OFF_PLAY &&
+                     ua_off_want == UA_OFF_PLAY);
     }
     ua_off = ua_off_want = 0;
     ua_tracks = ua_tracks_want = 0;
@@ -4160,10 +4236,10 @@ static int test_layer(void)
     {
         persist_t p = {.magic = PERSIST_MAGIC, .panel = panel};
         settings_export(&p); ua_tracks = ua_tracks_want = 0;
-        bad += check("USB INPUT menu and persisted four-track mode",
+        bad += check("USB OUTPUT menu and persisted four-track mode",
                      ok && p.favorites.factory[15][26] == 0xA1u && settings_import(&p, sizeof p) && ua_tracks && ua_tracks_want);
         p.favorites.factory[15][26] = 1;
-        bad += check("old/unknown USB INPUT setting defaults to stereo",
+        bad += check("old/unknown USB OUTPUT setting defaults to stereo",
                      settings_import(&p, sizeof p) && !ua_tracks && !ua_tracks_want);
         settings_export(&p);
         bad += check("stereo setting saves without changing PER5 layout",
@@ -6420,6 +6496,8 @@ static int test_new_song(void)
     bad += check("  OCT+ creates it: HOME, every pattern empty, D on every track, the tempo, track 2 a BASS sound, no slot",
                  !new_on() && ui.home && empty && trk[0].p[P_ROOT] == 2 && trk[3].p[P_ROOT] == 2 && song.g[G_BPM] == nw.bpm &&
                  entry_cat(src, k) == CAT_BASS && proj_cur == PROJ_NO_SLOT && msg_is("NEW SONG"));
+    bad += check("  .. and ENTRIES' ROLE: track 2 BASS, the KEEP tracks left as they were (AUTO)",
+                 tessera.et_role[1] == 1u && tessera.et_role[0] == 0u && tessera.et_role[2] == 0u && tessera.et_role[3] == 0u);
     go_page(GR_SLOTS);
     for (i = 0; i < 6u; i++) turn(EN_K1, 1);
     turn(EN_K3, 1);

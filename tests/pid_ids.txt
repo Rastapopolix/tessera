@@ -268,3 +268,5 @@
 0x293 KEY C                    global -12..12 def 0
 0x294 TIMING SPLIT             track 0..100 def 0
 0x295 TIMING HOW               track 0..2 def 0
+0x296 FOLLOW HOW               track 0..11 def 0
+0x297 FOLLOW RHYTHM            track 0..2 def 0

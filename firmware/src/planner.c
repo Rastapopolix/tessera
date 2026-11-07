@@ -5,14 +5,16 @@
  * BUILDS, STEPS, FLAT or USER; PEAK (where ARCH, PLATEAU and VALLEY have their centre, a share of the length) or COUNT
  * (WAVES' swells, BUILDS' builds, STEPS' terraces, 2-8); END STOP, LOOP, NEW or FREE. OCT+ held: USER's points 1-4,
  * OCT- held: 5-8 (eight levels evenly along the piece).
- *   The shape, 0 sparse .. 1 full along the piece, is read where the music is: in phrases (the CHAIN's PHRASE) from
- *   PLAY, at the tempo now, so a tempo change moves the plan with it. It steers what slices 1 and 2 do, adding no system
+ *   The shape, 0 sparse .. 1 full along the piece, is read where the music is: in the time played since PLAY (each
+ *   beat as long as it really took), the beats ahead at the tempo now, so a tempo change, a TEMPO mod or an external
+ *   clock's drift never jumps the arc: the piece lasts its LENGTH. It steers what slices 1 and 2 do, adding no system
  *   of its own: ENERGY's tide is the shape while a length is set (ARC how far it swings, LEVEL and RESTS as before);
  *   Entries keeps out as many tracks as the shape is low (of what ENTRIES allows: at 0 no track moves), so a piece
  *   layers in, thins and fills with it, and layers out at its end, one track a phrase between sections; the CHAIN's new
  *   sections depart further near the top (up to +20 CONTRAST) and the last 15 % of the piece (12 phrases at most) is
  *   A, its home. Every shape
- *   but RISE and FALL begins and ends sparse (the intro, the outro).
+ *   but RISE and FALL begins and ends sparse (the intro, the outro). Its last 5 % draws the generators' notes toward
+ *   the root and the fifth, and ENERGY's RESTS shorten in the shape's upper half (none at its top).
  *   At the end, on a phrase line: STOP lets the tracks fade out and the tails ring, then stops; LOOP plays the same piece
  *   again from the top; NEW draws new SEEDs and plays a new one; FREE carries on unplanned (the tide back) until STOP.
  *   Included by tessera.c after form_chain.c, before entries.c. */
@@ -29,21 +31,38 @@ static struct {
     uint8_t done;                                     /* this PLAY's piece is over, END FREE: unplanned from here */
     uint8_t ending;                                   /* END STOP: the tails ringing */
     uint32_t stop_in;                                 /* blocks to the stop */
+    uint32_t run, frac;                               /* samples played since PLAY (and 1/MIDI_BEAT_UNITS ones) */
+    uint32_t at_b, last_b;                            /* beat last_b (since PLAY) began at sample at_b */
 } plan;
 
 static uint32_t pl_secs(void) { return tessera.pl_length < PL_LENGTHS ? PL_MIN[tessera.pl_length] * 60u : 0u; }
 /* a piece is planned now: a LENGTH set, and this PLAY's not over */
 static int pl_on(void) { return pl_secs() && !plan.done; }
-static uint32_t pl_beats(void) { uint32_t b = beat_samples_set(); return pl_secs() * (uint32_t)FS / (b ? b : 1u); }   /* (at the tempo now:
-                                                                * BPM's, a TEMPO mod plays the piece faster or slower, never jumps it) */
-
+static uint32_t pl_bs(void) { uint32_t b = beat_samples(); return b ? b : 1u; }   /* (a beat now: a TEMPO mod's too) */
+/* the beats the piece has: those played, and the time left at the tempo now */
+static uint32_t pl_beats(void)
+{
+    uint32_t n = pl_secs() * (uint32_t)FS;            /* (4 hours: 635 M samples, 32 bits) */
+    return n ? plan.last_b + (n > plan.at_b ? (n - plan.at_b) / pl_bs() : 0u) : 0u;
+}
+/* beat b's time since PLAY in samples: a beat played when it began, one ahead at the tempo now */
+static uint32_t pl_t(uint32_t b)
+{
+    uint32_t bs = pl_bs(), d;
+    if (b < plan.last_b) {
+        d = plan.last_b - b;
+        return d < plan.at_b / bs ? plan.at_b - d * bs : 0u;
+    }
+    d = b - plan.last_b;
+    return d < (0xFFFFFFFFu - plan.at_b) / bs ? plan.at_b + d * bs : 0xFFFFFFFFu;
+}
 /* where beat b (since PLAY) is in the piece, Q16: 0 .. 65536 its end (and past it, 65536) */
 static uint32_t pl_at(uint32_t b)
 {
-    uint32_t n = pl_beats();
+    uint32_t n = pl_secs() * (uint32_t)FS, t;
     if (!n) return 0;
-    if (b >= n) return 65536u;
-    return en_frac(b, n, 65536u);
+    t = pl_t(b);
+    return t >= n ? 65536u : en_frac(t, n, 65536u);
 }
 static uint32_t pl_phrase_at(uint32_t p) { return pl_at((p * 2u + 1u) * fc_bars() * 2u); }   /* (a phrase's middle) */
 
@@ -134,16 +153,39 @@ static int planner_home(uint32_t p)
 }
 /* form_chain.c: a new section at phrase p departs further near the top: up to +20 CONTRAST */
 static uint32_t planner_contrast(uint32_t p) { return pl_on() ? (uint32_t)pl_shape(pl_phrase_at(p)) * 20u / 32767u : 0u; }
+/* energy.c: a RESTS rest of len blocks, shorter in the shape's upper half, none at its top (the climax plays on) */
+static uint32_t planner_rest(uint32_t len)
+{
+    int32_t s;
+    if (!pl_on() || !song.playing) return len;
+    s = 2 * pl_shape(pl_at(bar_n * 4u + beat_n)) - 32767;
+    return s > 0 ? len * (uint32_t)(32767 - s) / 32767u : len;
+}
+/* tessera.c: the chance, 0..50 %, a generator's note is drawn to the root or the fifth: from 95 % of the piece, more
+ * toward its end, so it resolves home */
+static uint32_t planner_pull(void)
+{
+    uint32_t x;
+    if (!pl_on() || !song.playing) return 0;
+    x = pl_at(bar_n * 4u + beat_n);
+    return x > 62259u ? (x - 62259u) * 50u / 3277u : 0u;
+}
 /* entries.c: of `most` tracks Entries may take out, how many the shape wants out at phrase p */
 static uint32_t planner_out(uint32_t p, uint32_t most) { return (uint32_t)((32767 - pl_shape(pl_phrase_at(p))) * (int32_t)most + 16383) / 32767u; }
 
 /* seq.c seq_start */
 void planner_play(void) { memset(&plan, 0, sizeof plan); }
 
-/* each block (entries_tick): the end, on the phrase line at or past the LENGTH */
+/* each block (entries_tick, n the sequencer's units): the end, on the phrase line at or past the LENGTH */
 static void planner_tick(uint32_t n)
 {
-    uint32_t b = bar_n, bars = fc_bars(), tr;
+    uint32_t b = bar_n, bars = fc_bars(), tr, nb = bar_n * 4u + beat_n;
+    if (song.playing) {                               /* (the time played: counted with or without a LENGTH) */
+        plan.frac += n * beat_samples();              /* (units to samples at the tempo playing, the rest carried) */
+        plan.run += plan.frac / MIDI_BEAT_UNITS;
+        plan.frac %= MIDI_BEAT_UNITS;
+        if (nb != plan.last_b) { plan.last_b = nb; plan.at_b = plan.run; }
+    }
     if (!song.playing || !pl_secs() || plan.done) return;
     if (plan.ending) {                                /* (END STOP: the fades and tails, then the stop) */
         if (plan.stop_in > n) plan.stop_in -= n;
@@ -176,14 +218,13 @@ static void planner_tick(uint32_t n)
 /* the PIECE page: where the piece is (Q16, 0 when FREE or stopped), the seconds left, 1 while planned */
 int tessera_piece_get(uint32_t *x, uint32_t *left)
 {
-    uint32_t s = pl_secs(), beats = bar_n * 4u + beat_n, el;
+    uint32_t s = pl_secs(), beats = bar_n * 4u + beat_n, el = plan.run / (uint32_t)FS;   /* (seconds played) */
     *x = 0;
     *left = s;
     if (!s) return 0;
     if (!song.playing) return 1;
     if (plan.done) { *x = 65536u; *left = 0; return 0; }
     *x = pl_at(beats);
-    el = beats * (beat_samples_set() / 441u) / 100u;  /* (seconds played, at the tempo set) */
     *left = el < s ? s - el : 0u;
     return 1;
 }

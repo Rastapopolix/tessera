@@ -353,6 +353,7 @@ static int list_help_row(uint32_t *page, uint32_t *slot);   /* ui_list.c */
 static uint32_t slot_kind(void);                        /* ui_slots.c */
 static int motion_page(void);                           /* ui_motion.c */
 
+#if !MELODEE_ACCESS
 /* HELP_PAGE[hp]'s text (packed: pid.c's buffer, expanded after pid.c's texts, kept until another one's) */
 static const char *help_page_text(uint32_t hp)
 {
@@ -363,6 +364,7 @@ static const char *help_page_text(uint32_t hp)
     return HELP_PAGE[hp % HP_COUNT].text;
 #endif
 }
+#endif
 static void help_hp(uint32_t hp)
 {
     help.pid = PID_NONE;
@@ -495,9 +497,9 @@ static void help_find(uint32_t k)
         else help.pid = (uint16_t)PID_TESS(TX_SD_GRAVITY);
         return;
     }
-    if (pg->graph == GR_TWEAK && tw_layer_on()) {     /* (a generator's TWEAK, OCT+ held: FOLLOW's HOLD) */
-        if (k != 3u) help_unused(k);
-        else help.pid = (uint16_t)PID_TESS(TX_TW_HOLD);
+    if (pg->graph == GR_TWEAK && tw_layer_on()) {     /* (a generator's TWEAK, OCT+ held: FOLLOW's HOW, RHYTHM, HOLD) */
+        if (!k) help_unused(k);
+        else help.pid = (uint16_t)PID_TESS(k == 3u ? TX_TW_HOLD : k == 2u ? TX_TW_FRHY : TX_TW_FHOW);
         return;
     }
     if (pg->graph == GR_FORM && fm_layer_on()) {       /* (a generator's FORM, OCT+ held: DEVELOP, the CHAIN's FOLLOW, SKIP,
@@ -632,6 +634,25 @@ static void help_find(uint32_t k)
     }
 }
 
+/* the card's value (the screen reader will want it too): as the knobs' columns show it, a name whole ("TURING": the columns cut one to 5) */
+static void help_value(const pid_entry_t *e, char *val, uint32_t size)
+{
+    const param_desc_t *d = e && !(e->flags & PID_F_ACTION) ? pid_desc(e->pid, help_tr) : 0;
+    const char *unit = "";
+    int32_t v;
+    val[0] = 0;
+    if (!d)
+        return;
+    v = pid_get(e->pid, help_tr);
+    param_format(d, v, val, &unit);
+    if (d->fmt == F_ENUM && d->names && d->names != N_ROUTE)
+        str_cpy(val, d->names[clamp(v, d->min, d->max)], size);
+    if (unit[0] && str_len(val) + str_len(unit) + 2u < size) {
+        str_cpy(val + str_len(val), " ", 2);
+        str_cpy(val + str_len(val), unit, 8);
+    }
+}
+#if !MELODEE_ACCESS
 /* The card: 228 x 214 under the header, over the page. Its text in one size, 15 px (Theo 2026-10-23: 10 and 12 px were
  * too small to read); a text longer than the card scrolls */
 #define HELP_X 6
@@ -751,24 +772,6 @@ static void help_strip(int32_t top, int32_t h, const char *name, const char *val
     cv_oy = 0;
     cv_blit(HELP_X, (uint32_t)(HELP_Y + top));
 }
-/* the card's value: as the knobs' columns show it, a name whole ("TURING": the columns cut one to 5) */
-static void help_value(const pid_entry_t *e, char *val, uint32_t size)
-{
-    const param_desc_t *d = e && !(e->flags & PID_F_ACTION) ? pid_desc(e->pid, help_tr) : 0;
-    const char *unit = "";
-    int32_t v;
-    val[0] = 0;
-    if (!d)
-        return;
-    v = pid_get(e->pid, help_tr);
-    param_format(d, v, val, &unit);
-    if (d->fmt == F_ENUM && d->names && d->names != N_ROUTE)
-        str_cpy(val, d->names[clamp(v, d->min, d->max)], size);
-    if (unit[0] && str_len(val) + str_len(unit) + 2u < size) {
-        str_cpy(val + str_len(val), " ", 2);
-        str_cpy(val + str_len(val), unit, 8);
-    }
-}
 static void help_draw(void)
 {
     const pid_entry_t *e = help.pid != PID_NONE ? pid_find(help.pid) : 0;
@@ -784,3 +787,7 @@ static void help_draw(void)
     help_strip(0, 124, e ? e->name : help.name, val, help_text());
     help_strip(124, HELP_H - 124, e ? e->name : help.name, val, help_text());
 }
+#else                                                   /* the accessible build: ARP held + a knob turns it as ever */
+static int help_knob(uint32_t k, int32_t s) { (void)k; (void)s; return 0; }
+static void help_draw(void) {}
+#endif

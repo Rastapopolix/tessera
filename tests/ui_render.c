@@ -1972,7 +1972,7 @@ static void setup(int s)
     case S_MENU_AUTOSAVE_OFF: ui.menu=1;ui.menu_sel=MI_AUTOSAVE;settings_autosave=0;break;
     case S_MENU_HOLD: ui.menu = 1; ui.menu_sel = MI_HOLD; settings_hold = 2; break;
 #if MELODEE_USB_AUDIO
-    case S_MENU_USB: ui.menu = 1; ui.menu_sel = MI_USB; ua_off_want = UA_OFF_IN; break;   /* (OUT only) */
+    case S_MENU_USB: ui.menu = 1; ui.menu_sel = MI_USB; ua_off_want = UA_OFF_PLAY; break;  /* (OUT only) */
     case S_MENU_USB_STEREO: ui.menu = 1; ui.menu_sel = MI_USB_INPUT; ua_tracks_want = 0; break;
     case S_MENU_USB_TRACKS: ui.menu = 1; ui.menu_sel = MI_USB_INPUT; ua_tracks_want = 1; break;
 #endif
@@ -2599,15 +2599,19 @@ static uint32_t mono_bounce_check(void)
 static uint32_t mono_mods_pick_check(void)
 {
     uint32_t bad = 0, p, x, y, mosaic = UI_NPALETTES;
-    int32_t tr, gate = 1 + 1 * (int32_t)(CS_N - 1u) + CS_GATE - 1, energy = (int32_t)CS_ENERGY,
-            macro = 1 + 2 * (int32_t)(CS_N - 1u) + CS_MACRO3 - 1;
+    int32_t tr, gate = 1 + 1 * (int32_t)CU_SPT + CS_GATE - 1, energy = 1 + NTRK * (int32_t)CU_SPT,
+            macro = energy + CS_MACRO3 - CS_ENERGY;
     char b[20];
     cu_pick_label(b, 0, gate, &tr);
     if (strcmp(b, "T2 GATE") || tr != 1) { fprintf(stderr, "ui_render: MODS list: \"%s\" for track 2's GATE\n", b); bad++; }
     cu_pick_label(b, 0, energy, &tr);
     if (strcmp(b, "ENERGY") || tr != -1) { fprintf(stderr, "ui_render: MODS list: \"%s\" for ENERGY\n", b); bad++; }
-    cu_pick_label(b, 0, macro, &tr);                    /* (PERF's MACROs: the project's, whichever track's block) */
+    cu_pick_label(b, 0, macro, &tr);                    /* (PERF's MACROs: the project's) */
     if (strcmp(b, "MACRO 3") || tr != -1) { fprintf(stderr, "ui_render: MODS list: \"%s\" for MACRO 3\n", b); bad++; }
+    cu_pick_label(b, 0, (int32_t)CU_NSRC - 1, &tr);     /* (the project's: once, after the tracks') */
+    if (strcmp(b, "MACRO 4") || tr != -1) { fprintf(stderr, "ui_render: MODS list: \"%s\" last, not MACRO 4\n", b); bad++; }
+    cu_pick_label(b, 0, energy - 1, &tr);
+    if (b[0] != 'T' || b[1] != '4' || tr != 3) { fprintf(stderr, "ui_render: MODS list: \"%s\" before ENERGY\n", b); bad++; }
     cu_pick_label(b, 2, (int32_t)CU_NDST - 1, &tr);
     if (tr != -1 || (b[0] == 'T' && b[1] >= '1' && b[1] <= '4'))   /* (the last, TEMPO: the project's, no "T1 ") */
         { fprintf(stderr, "ui_render: MODS list: \"%s\" for the project's last\n", b); bad++; }

@@ -3,7 +3,7 @@
 /* Melodee menu (HOME held): COLOR, HOLD (the layer threshold), LIGHTS (the keys' and buttons'
  * glow: ui_input.c ui_leds), KNOB ACCEL (ui_input.c accel_by), TRACK KNOB (RIGHT: ALGORITHM picks the track, LEFT:
  * PRESETS does; panel.c), USB AUDIO (IN+OUT, IN, OUT or OFF; usb.c ua_off_set),
- * USB INPUT (the stereo mix or four track stems, both before MASTER; usb.c ua_tracks_set),
+ * USB OUTPUT (what the FM-1 sends: the stereo mix or four track stems, both before MASTER; usb.c ua_tracks_set),
  * USB VOLUME (the computer's audio through the FM-1, 0..100 %, apart from MASTER; usb_audio_stream.c),
  * NOTES OUT (KEYS, ALL or OFF: the notes sent over USB MIDI; MIDI OUT until 3.3, renamed apart from GLO > MIDI OUT)
  * and CLOCK OUT (midi_out.c), MIDI CC IN (ON or OFF: CCs and
@@ -44,7 +44,7 @@ static const char *const MI_NAME[MI_COUNT] = {"COLOR",
                                               "AUTOSAVE",
                                               "NOTES OUT", "CLOCK OUT", "MIDI CC IN", "MIDI LEARN",
 #if MELODEE_USB_AUDIO
-                                              "USB AUDIO", "USB INPUT", "USB VOLUME",
+                                              "USB AUDIO", "USB OUTPUT", "USB VOLUME",
 #endif
 #if MELODEE_USB_HOST
                                               "USB HOST",
@@ -54,8 +54,10 @@ _Static_assert(MI_ADD - MI_CLICK == 4, "MI_CLICK .. MI_ADD in a row");
 static uint8_t menu_cols;   /* Mono: the COLOR sheet open (KNOB 2 or OCT+ on COLOR; KNOB 1 off it, OCT- or closing folds it:
                              * HOME held shows the list first, beta3 Theo) */
 #if MELODEE_USB_AUDIO
-/* USB AUDIO's four settings, as ua_off_want (UA_OFF_OUT | UA_OFF_IN) */
-static const char *const MI_USB_NAME[4] = {"IN+OUT", "IN", "OUT", "OFF"};
+/* USB AUDIO's four settings, named from the FM-1's side (#494): IN+OUT, IN (the computer plays into the FM-1, so
+ * recording is off: UA_OFF_REC), OUT (the FM-1 records into the computer: UA_OFF_PLAY), OFF. The bits are what the
+ * settings keep, unchanged since 1.3: the two middle settings swap places, so each saved choice still does the same. */
+static uint32_t mi_usb_swap(uint32_t v) { return v == 1u || v == 2u ? v ^ 3u : v; }
 #endif
 
 static void hexs(char *b, uint32_t v)                /* v as 8 hex digits (the crash screen, ABOUT) */
@@ -448,7 +450,7 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
 #if MELODEE_USB_AUDIO
     if (i == MI_USB_INPUT) value = ua_tracks_want ? "4 TRACKS" : "STEREO";
     if (i == MI_USB_VOLUME) { fmt_int(b, settings_usb_volume); str_cpy(b + str_len(b), "%", 2); value = b; }
-    if (i == MI_USB) value = (const char *const[]){"In + Out", "In", "Out", "Off"}[ua_off_want & 3u];
+    if (i == MI_USB) value = (const char *const[]){"In + Out", "In", "Out", "Off"}[mi_usb_swap(ua_off_want & 3u)];
 #endif
     if (i == MI_HOLD) {                         /* "0.4 s" */
         str_cpy(b, "0.4 s", size);
@@ -710,10 +712,10 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
     }
     if ((s != 0 || ok) && ui.menu == 1 && ui.menu_sel == MI_USB) {
         /* KNOB 2 steps IN+OUT IN OUT OFF, OCT+ steps and wraps; the host gets it once it rests (main.c) */
-        uint32_t v = ua_off_want & 3u;
-        v = s > 0 ? (v < 3u ? v + 1u : 3u) : s < 0 ? (v ? v - 1u : 0u) : (v + 1u) % 4u;
-        ua_off_set(UA_OFF_OUT, !(v & UA_OFF_OUT), fm1_ms);
-        ua_off_set(UA_OFF_IN, !(v & UA_OFF_IN), fm1_ms);
+        uint32_t v = mi_usb_swap(ua_off_want & 3u);
+        v = mi_usb_swap(s > 0 ? (v < 3u ? v + 1u : 3u) : s < 0 ? (v ? v - 1u : 0u) : (v + 1u) % 4u);
+        ua_off_set(UA_OFF_PLAY, !(v & UA_OFF_PLAY), fm1_ms);
+        ua_off_set(UA_OFF_REC, !(v & UA_OFF_REC), fm1_ms);
         ok = 0;
     }
 #endif

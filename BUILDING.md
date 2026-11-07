@@ -91,13 +91,14 @@ Build options (environment; most use `0` or `1`; defaults in `firmware/src/build
 | --- | --- | --- |
 | `MELODEE_FLASH` | 1 | settings, presets and projects in flash |
 | `MELODEE_OTA` | 1 | update entry (needs `MELODEE_FLASH`) |
-| `MELODEE_USB_AUDIO` | 1 | USB audio: "Tessera Out" plays the computer through the FM-1, "Tessera In" records the four tracks (16 / 24 bit, 44.1 kHz) |
+| `MELODEE_USB_AUDIO` | 1 | USB audio, named from the FM-1's side: "Tessera In" plays the computer through the FM-1, "Tessera Out" records the four tracks (16 / 24 bit, 44.1 kHz) |
 | `MELODEE_USB_HOST` | 1 | Menu USB HOST: the USB-C port hosts a USB-MIDI device (usb_host.c; ~3.6 KB flash, ~430 B RAM). Never saved, never in the update loader |
 | `MELODEE_CDC` | 0 (1 without USB audio) | USB serial console; it shares EP2 / EP3 with USB audio, so `MELODEE_USB_AUDIO=0` |
 | `MELODEE_UART` | 1 | TRS MIDI IN |
 | `MELODEE_DUAL_CORE` | 1 | paired FM6 rendering on CPU1; `0` builds serial-only firmware |
 | `MELODEE_SLICE` | 1 | the SLICE engine |
 | `MELODEE_ICONS` | 1 | parameter icons on the knob cards |
+| `MELODEE_ACCESS` | 1 (host tests: 0) | screen reader support in place of the help cards (issue #430): `1` leaves out the cards (ARP held + a knob) and their texts, ~22 KB flash. MIDI LEARN and the mod shortcut still find a knob's parameter (`help_find`); docs/PARAMETERS.md keeps every text. `0` builds the cards back in (no room left for much else). What it says is put into words by `firmware/words.tsv` (`tools/gen_words.py`: `web/words/<id>.json`, published on the site, never changed); `tools/speak_audit.sh [../fm1-reader]` checks every page, knob, row, value and message with fm1-reader's audit |
 | `MELODEE_COMPRESS_AUDIO` | 1 | the five SRAM load images (`.ram_text`, `.dsp_text`, `.dsp_tables`, `.data`, `.audio_text`) stored as raw LZMA1 (`tools/boot_audio.py`) and unpacked by `fm1_cstart` before anything runs from SRAM (`firmware/src/boot_lzma.h`; a record that does not unpack exactly enters update mode); `0` stores them raw and copies them by words |
 
 ## Samples

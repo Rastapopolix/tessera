@@ -94,6 +94,7 @@
 #                   PLAY again, CUT / FADE, no voice from a silent track, hand mutes and GLO's key, SOLO, AUTO's roles;
 #                   ENTRIES 0 with the rest turned plays the same notes.
 # SPLIT (tests/split_test.c): TIMING's SPLIT through the real sequencer, read off MIDI OUT.
+# FOLLOW (tests/follow_test.c): FOLLOW's HOW and RHYTHM through the real sequencer, read off MIDI OUT.
 # PIECE (tests/planner_test.c): the piece planner (planner.c): the ten SHAPEs (range, PEAK, COUNT, USER, sparse ends),
 #                   LENGTH FREE with the rest turned plays the same notes, a 10-minute ARCH (intro, top, outro, the
 #                   CHAIN home for its last 15 %, ENERGY its curve, CONTRAST near the top), END STOP / LOOP / NEW / FREE,
@@ -359,6 +360,10 @@ if core && [ $TABLES = 1 ]; then
     # (ui_test's own checks still draw the detailed look: built with it until they are moved to Mono)
     t "UI: sounds keep steps, undo, recording, MIDI overflow, pending saves, panel recovery, drum grid, song chain, MONO gray" \
         ui_test -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=0 $FW
+    t "UI, accessible build (MELODEE_ACCESS 1): no help cards, ARP held turns the knob, help_find still finds (MIDI LEARN)" \
+        ui_test_access:ui_test -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=0 -DMELODEE_ACCESS=1 $FW
+    t "screen reader (MELODEE_ACCESS, ui_speak.c): silent until HELLO, the screen, pages, knobs, menu rows, messages, PLAY/STOP, WHERE" \
+        speak_test -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=1 -DMELODEE_ACCESS=1 -Itests $FW
     t "Sound designer: native recipes, dependencies, compare, discard and save" designer_test -O2 -DMELODEE_USB_AUDIO=1 $FW
     t "Sequencer: tied length/move/delete, eight-level undo/redo, MIDI step entry and playing-step recording" seq_edit_test \
         -DMELODEE_USB_AUDIO=1 $FW
@@ -395,6 +400,8 @@ if core && [ $TABLES = 1 ]; then
         entries_test -O2 $FW
     t "SPLIT: TIMING's SPLIT: DOUBLE, PUSH, MIX on generators, STEP and drums; SPLIT 0 and a generator's own notes unchanged" \
         split_test -O1 $FW
+    t "FOLLOW: HOW and RHYTHM on a STEP melody: SAME / OWN unchanged, SOURCE, BOTH, CHORD, CONTRA, BASS, CANON" \
+        follow_test -O1 $FW
     t "PIECE: the planner: the SHAPEs, FREE unchanged, ENERGY / Entries / the CHAIN steered, END STOP LOOP NEW FREE, tempo" \
         planner_test -O2 $FW
     t "GEN: each generator on its own (gen.c alone): ranges, rests, draws per step, determinism, mutation, sections" \

@@ -8,7 +8,7 @@
  *          16..25 the FX key map, 26 tagged KNOBS BAR (ui.c), 27 tagged NOTE PREVIEW OFF,
  *          28..31 its tag (below)
  *   row 14 (OBXF, retired; its old stars in 0..15)             16..27 the scale favorites, 28..31 their tag
- *   row 15 (CZ-1: factory tones bits 0..64, native slots 65..192) 26 tagged USB INPUT (settings_persist.c), 27 SCREEN OFF,
+ *   row 15 (CZ-1: factory tones bits 0..64, native slots 65..192) 26 tagged USB OUTPUT (was USB INPUT) (settings_persist.c), 27 SCREEN OFF,
  *          28 tagged AUTOSAVE OFF, 29 the PRESETS LIST (browse.c),
  *          30 bit 0 retired, bit 1 KNOB ACCEL OFF (ui.c PREF_BITS), bits 2..4 retired (OVERCLOCK until 1.3.4),
  *             bits 5..6 MIDI OUT, bit 7 CLOCK OUT (midi_out.c, settings_persist.c),

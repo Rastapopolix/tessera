@@ -378,6 +378,9 @@ static uint32_t page_first(uint32_t fam)
 }
 
 /* transient message in the top bar, right of the transport and the BPM: a + b */
+#ifdef ANN_VER
+static void sp_msg(const char *a, const char *b);      /* ui_speak.c */
+#endif
 static void ui_say(const char *a, const char *b)
 {
     uint32_t n;
@@ -386,6 +389,9 @@ static void ui_say(const char *a, const char *b)
     str_cpy(ui.msg + n, b, sizeof ui.msg - n);
     ui.msg_t = 40;
     ui.msg2[0] = 0;
+#ifdef ANN_VER
+    sp_msg(a, b);                                       /* (the screen reader hears it too: ui_speak.c) */
+#endif
 }
 
 static void ui_message(const char *s) { ui_say(s, ""); }

@@ -75,6 +75,7 @@ static int32_t en_sin(uint32_t ph, uint32_t per)
     return x & 32768u ? -v : v;
 }
 static int planner_energy(int32_t *e);               /* (planner.c: the planned piece's curve, in the tide's place) */
+static uint32_t planner_rest(uint32_t len);          /* (planner.c: no long rest at the piece's top) */
 static void energy_tick(void)                         /* an audio block (cord_tick) */
 {
     int32_t pe;
@@ -90,7 +91,7 @@ static void energy_tick(void)                         /* an audio block (cord_ti
     else if (energy.rest_left)
         energy.rest_left--;
     else if (!energy.rest_next || !--energy.rest_next) {
-        energy.rest_left = (8u + en_rnd(11u)) * EN_BPS;   /* 8-18 s */
+        energy.rest_left = planner_rest((8u + en_rnd(11u)) * EN_BPS);   /* 8-18 s (a planned piece's top: shorter) */
         en_rest_draw();
     }
 }

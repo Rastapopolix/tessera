@@ -39,7 +39,7 @@ would use it, then a table of goals and where to go for each.
 - [MATRIX](#matrix)
 - [ORGANIC: TIDE and SWARM](#organic-tide-and-swarm)
 - [Mod shortcut](#mod-shortcut)
-- [Help card](#help-card)
+- [What a knob does](#what-a-knob-does)
 - [Menu and settings](#menu-and-settings)
 - [Saving and older projects](#saving-and-older-projects)
 - [If something goes wrong](#if-something-goes-wrong)
@@ -148,8 +148,8 @@ lets you do and when you would want it. Follow a link for the full description.
 | [PATTERNS, SONG](#patterns-and-song) | Pick which of its 8 patterns each track plays, and line patterns up into a song. | You arrange written patterns into a song by hand. |
 | ARP | The arpeggiator's MODE, RATE, OCT and GATE, on an ARP track. | You want to play chords and hear them broken up. |
 
-**ARP**: how the selected track's notes are shaped (the pages its MODE uses); held, the [help card](#help-card) for any
-knob you turn. *Hold ARP whenever a knob's name puzzles you.*
+**ARP**: how the selected track's notes are shaped (the pages its MODE uses). *When a knob's name puzzles you, see
+[What a knob does](#what-a-knob-does).*
 
 | Page | What it lets you do | Reach for it when |
 |---|---|---|
@@ -243,7 +243,7 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 | Control Tessera from my MIDI controller | MENU > **MIDI LEARN** ([recipe](RECIPES.md#your-controllers-knobs-kept-midi-learn)) |
 | Play an outside synth from Tessera | [MIDI OUT channels](#midi-out-channels) and [Driving another synth](RECIPES.md#driving-another-synth-midi-out) |
 | Move an outside synth's filter from Tessera's LFOs | A mod onto **CC** ([recipe](RECIPES.md#an-lfo-for-another-synths-filter-mods-out-as-cc)) |
-| Find out what a knob does | Hold **ARP** and turn it ([Help card](#help-card)) |
+| Find out what a knob does | Its page in this manual, or the [parameter reference](docs/PARAMETERS.md) ([What a knob does](#what-a-knob-does)) |
 | Stop crackles | Lower **GLO > GLOBAL > BUDGET**, or thin a busy track ([How many voices at once](#how-many-voices-at-once)) |
 
 ---
@@ -257,7 +257,7 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 |---|---|---|
 | **HOME** | The home page: four tracks, their sounds and knobs | The menu |
 | **SEQ** | What the track plays: GEN, then NOTES or ARP or PATTERN (by its MODE), TEMPO, PATTERNS, SONG | PATTERNS (the song under it) |
-| **ARP** | How the track's notes are shaped: EVOLVE, FORM, TWEAK, TIMING and the rest (by its MODE) | The help card for any knob you turn |
+| **ARP** | How the track's notes are shaped: EVOLVE, FORM, TWEAK, TIMING and the rest (by its MODE) | |
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST (an FM6 track: then FM LFO) | |
 | **ENV** | ENV, ENV DEST (an FM6 track: EG RATE, EG LVL, PITCH EG, PITCH LV) | |
 | **SCL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
@@ -333,7 +333,7 @@ key skips it.
 
 ## Shortcuts
 
-> **In short:** the combinations worth learning first are SEQ for GEN, ARP held for help on any knob, FX held to make
+> **In short:** the combinations worth learning first are SEQ for GEN, FX held to make
 > a mod, REC held to keep what a generator played, and EDIT held with OCT- to undo.
 
 | Do this | And this happens |
@@ -346,7 +346,6 @@ key skips it.
 | Turn **PRESETS** with **GLO** held, on any page | Browses the selected track's sounds as PRESETS does on HOME. The GLO map gives way to the sound: the track, the list and the place in it, the sounds before and after, the sound's name large and its engine (a fast turn: the name the knob will load when it stops, with its speed, X4). It stays while GLO is held; a GLO key or knob brings the map back. Without GLO, PRESETS keeps the page's own job (or does nothing), so a stray turn never changes the sound. GLO + OCT- does not put the sound back. |
 | **GLO** + **E4** (on MIXER, E4) | Holds [FILL](#a-steps-condition-and-fill) for the steps whose condition is FILL or !FILL. |
 | **GEN** on an AWAKE track, a white key | Picks that step: KNOB 1 sets its A, KNOB 2 its B. The same key lets it go. |
-| Hold **ARP**, turn a knob | The [help card](#help-card) for that knob. Turn the same knob further to scroll a long text. |
 | Hold **FX**, turn a knob | Sets how far a cord moves that knob's parameter (see [Mod shortcut](#mod-shortcut)). |
 | Hold **REC** | On a generator track: prints its last bars into STEP. On STEP EVOLVE: keeps the changes. On a STEP track: captures what you just played. |
 | Hold **EDIT**, press **OCT-** / **OCT+** | Undo / redo. |
@@ -900,14 +899,18 @@ system of its own; it steers ENERGY, [CHAIN](#chain-one-form-for-the-project) an
 With **SHAPE** USER, hold **OCT+** for its points 1 to 4 and **OCT-** for 5 to 8 (KNOB 1 to 4, 0–100 %): eight levels
 evenly along the piece. The picture shows the shape, where the piece is while playing, and the time left.
 
-The shape is read in phrases (the CHAIN's PHRASE) from PLAY, at the tempo now, so a tempo change moves the plan with it.
+The piece is counted in the time played since PLAY: a tempo change, a TEMPO mod or an external clock that drifts never
+jumps it to another place in its shape, and it lasts its LENGTH whatever the tempo (a faster tempo plays more bars).
 Every shape but RISE and FALL begins and ends sparse: an intro and an outro. While a LENGTH is set:
 
-- ENERGY's tide is the shape (ARC is how far it swings; LEVEL and RESTS work as before).
+- ENERGY's tide is the shape (ARC is how far it swings; LEVEL as before). RESTS' rests grow shorter in the shape's
+  upper half, and none comes at its top: the climax plays on.
 - ENTRIES keeps out as many tracks as the shape is low, of the most ENTRIES allows, one change a phrase, so the piece
   layers in, thins and fills, and layers out at its end. At ENTRIES 0 no track moves.
 - The CHAIN's new sections depart further near the top (up to +20 CONTR), and the last 15 % of the piece (12 phrases
   at most) stays on A, its home.
+- In its last 5 % the generators' notes are drawn more and more to the key's root and fifth (up to half of them at the
+  very end, a note at most two semitones away), so the piece resolves home.
 
 The piece comes from the tracks' SEEDs, so PLAY plays it again the same.
 
@@ -1033,6 +1036,25 @@ again. So a bass can take a TURING line's note once a bar: FOLLOW the TURING tra
 a bar (a STEP track, or a EUCLID with one pulse; set it to SOUND OFF with its channel OFF to keep it silent). HOLD on a
 track with random hits (DROP, BRANCH) samples at random moments. OFF: a new note on each of this track's own hits, as
 before. HOLD is saved with the project; older firmware loads the project without it.
+
+**HOW** (OCT+ held, KNOB 2) says what FOLLOW does with the other track's note. SHIFT still moves the result by scale
+steps.
+
+| HOW | What the following track plays |
+|---|---|
+| **SAME** | The other track's note (as before). |
+| **CHORD** | The third, fifth or seventh of the chord built on that note in this track's scale, whichever lies nearest this track's last note: a harmony that moves smoothly instead of jumping. |
+| **CONTRA** | Contrary motion: it goes down as many scale steps as the other track goes up, and the other way, mirrored around the first note it followed. |
+| **BASS** | The note one octave down (two from middle C up), on beats 1 and 3 of the bar only. |
+| **CANON1** to **CANON8** | The other track's note from that many notes ago: a round. It stays silent until the other track has played that many. HOLD does nothing here. |
+
+**RHYTHM** (OCT+ held, KNOB 3) says when it plays. **OWN**: on this track's own hits (as before). **SOURCE**: only
+when the followed track has played a note, so the two move together; this track's own rhythm is left out. **BOTH**:
+its own hits and the other track's. Follow a track with a lower number for the tightest timing: a lower track's note
+is that step's, a higher one's lands a step later. With BASS, the beats 1 and 3 still decide.
+
+SAME and OWN are the defaults: a track set to them plays exactly as before. HOW and RHYTHM are saved with the project;
+older firmware (3.3 and before) loads it with SAME and OWN.
 
 On an ATLAS track only DROP and HUMAN apply: SHIFT, FOLLOW and FLRSH would change which drum plays. On a STEP track
 TWEAK holds HUMAN alone.
@@ -1413,15 +1435,28 @@ attenuverter beside a knob on a modular.
 
 ---
 
-## Help card
+## What a knob does
 
-> **In short:** hold ARP and turn any knob to read what it does, without changing it.
+> **In short:** each page's knobs are described in this manual under that page, and every parameter in the
+> [parameter reference](docs/PARAMETERS.md).
 
-Hold **ARP** and turn any knob: a card with its parameter, its value and what it does, on every page (on a page's own
-knobs, such as NOTES, SONG or PATTERNS, what that knob does there). The value does not change. Turn the **same knob**
-further to scroll a long text, back to scroll up. Let go of ARP to close it.
+The [parameter reference](docs/PARAMETERS.md) lists every setting with its range, its default and what it does, the
+texts the help cards showed for them. Earlier versions had a help card on the device (hold ARP and turn a knob); it made
+way for screen reader support, so that the FM-1 can be played without seeing the screen (issue #430). Holding ARP
+and turning a knob now turns it as usual.
 
-<p align="center"><img src="assets/gallery/help.png" alt="Help card" width="240"></p>
+### Screen reader
+
+Tessera can say what is on its screen. Plug the FM-1 into a computer by USB, open the
+[FM-1 Screen Reader](https://charlesvestal.github.io/fm1-reader/) in Chrome or Edge and click Connect. It speaks with
+its own voice, or hands the words to your screen reader (VoiceOver, NVDA, JAWS, TalkBack). Tessera stays silent until
+the reader connects, so a DAW on the same port sees nothing.
+
+It says each page as you open it (its name, the track and the knobs), a knob's name and value once you stop turning it,
+the row of a list or menu with its place ("3 OF 8"), the messages in the header, PLAY and STOP, yes/no questions with
+their keys, the GLO and SCL layers while held, and a step when you press its key while stopped. PATTERNS, SONG, the
+sound browser, the slot pages and SCALES say what is selected. Tessera's abbreviations are said as words (T1 is
+"track 1", BP on SCALES is "Bohlen-Pierce").
 
 ---
 
@@ -1445,7 +1480,9 @@ Hold **HOME** for the menu. Its rows come in groups: the screen, the knobs and b
 | **CLOCK OUT** | 24 pulses a beat with START and STOP over USB, while the clock is INT. |
 | **MIDI CC IN** | **ON** (the default): CCs and NRPNs set the tracks' parameters (see [MIDI CC control](#midi-cc-control)). **OFF**: they move nothing, for a sequencer that sends CCs to other gear on the same channels. Bend, mod wheel, expression, sustain and aftertouch always play. Saved. |
 | **MIDI LEARN** | Puts any knob on a CC of your controller. Turn KNOB 2 right (or press OCT+): the menu closes and the screen says **LEARN: A KNOB**. Turn a knob on any page (it still edits; the screen names it and asks **SEND A CC**), then move the controller's knob: **CC 21 =** then **T1 CUTOFF**. Repeat for as many as 16 knobs. While learning, the header says **MIDI LEARN ON**; OCT- ends it, as does holding HOME for the menu. A learned CC works from any channel, on whatever page is shown, and takes over what the [fixed CC map](#midi-cc-control) gave it, even with MIDI CC IN OFF. The row shows how many are learned; KNOB 2 left asks **FORGET? OCT+**: OCT+ forgets them all, OCT- keeps them. They are the device's, not a project's: kept through power-off and project loads (saved once the music stops). |
-| **USB VOLUME** | The level of the computer's audio played through the FM-1, **0 to 100 %** in 5 % steps, apart from MASTER: the volume pot sets the FM-1's own sound, this the computer's. 50 % (the default) is the old level at MASTER's default. What the FM-1 records over USB (USB INPUT: stereo or four tracks) is taken before MASTER too, so the pot never changes a recording's level. Saved. |
+| **USB AUDIO** | Which USB audio devices the computer sees, named from the FM-1's side: **IN + OUT** (the default), **IN** (the computer plays into the FM-1, through device **Tessera In**), **OUT** (the computer records the FM-1 from device **Tessera Out**) or **OFF**. The computer gets the change once the knob rests for a moment (the FM-1 reconnects). Saved. |
+| **USB OUTPUT** | What the FM-1 sends to the computer on **Tessera Out**: **STEREO** (the default: the mix, two channels) or **4 TRACKS** (each track on its own channel). Both are taken before MASTER. Saved. |
+| **USB VOLUME** | The level of the computer's audio played through the FM-1, **0 to 100 %** in 5 % steps, apart from MASTER: the volume pot sets the FM-1's own sound, this the computer's. 50 % (the default) is the old level at MASTER's default. What the FM-1 records over USB (USB OUTPUT: stereo or four tracks) is taken before MASTER too, so the pot never changes a recording's level. Saved. |
 | **USB HOST** | **ON**: the USB-C port hosts a USB-MIDI keyboard, controller, synth or MIDI-to-CV module, with no computer in between (see [USB host](#usb-host)). **OFF** (the default): the port talks to a computer. Not saved: every start is OFF. |
 | **ABOUT** | Version, credits, **POWER** (the battery's reading and bars, whether 5 V comes in), and, after a crash, LAST CRASH (until power-off). |
 
@@ -1569,8 +1606,9 @@ them. Melodee's own preset banks are not carried over.
 **OCT+** (playback stops; with unsaved changes, **OCT+** again answers Yes to "Start a new song?"). The NEW SONG
 screen asks for the key (**KNOB 1** root, **2** scale, **3** tempo), then,
 after **OCT+**, a role per track (**KNOB 1** to **4**): **KEEP** its sound, or **DRUMS**, **BASS**, **CHORDS**,
-**LEAD** or **PAD** for the first sound of that kind. **OCT+** creates it with every pattern empty; **OCT-** goes back
-or cancels. It starts from the template when one is saved in TMPL, else from the power-on sounds, and has no slot
+**LEAD** or **PAD** for the first sound of that kind. The role also sets the track's ENTRIES **ROLE** (DRUMS: RHYTHM,
+BASS: BASS, CHORDS and PAD: HARMONY, LEAD: MELODY), so ENTRIES takes the parts out and back in a musical order; KEEP
+leaves it as it was. **OCT+** creates it with every pattern empty; **OCT-** goes back or cancels. It starts from the template when one is saved in TMPL, else from the power-on sounds, and has no slot
 until you save it.
 
 The web editor's **Complete backup** saves and restores the music, slots A to D, the sound banks and the settings.

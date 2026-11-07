@@ -957,7 +957,7 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
-    if (pg->graph == GR_TWEAK && tw_layer_on()) {   /* a generator's TWEAK, OCT+ held: FOLLOW's HOLD */
+    if (pg->graph == GR_TWEAK && tw_layer_on()) {   /* a generator's TWEAK, OCT+ held: FOLLOW's HOW, RHYTHM, HOLD */
         tessera_tw_layer_knob(slot, steps);
         oct_eat |= 2u;
         ui.oct_t0 |= 2u;
@@ -1895,10 +1895,16 @@ static void seq_erase_update(uint32_t pressed)
 }
 
 /* KNOB k turned s on the page shown (the sound designer's pages too): what it edits there, its card hot */
+#ifdef ANN_VER
+static void sp_turn(uint32_t k);                       /* ui_speak.c */
+#endif
 static void page_knob(uint32_t k, int32_t s)
 {
     const page_t *pg = cur_page();
     int16_t *hv;
+#ifdef ANN_VER
+    sp_turn(k);                                         /* (the screen reader says it once it is still) */
+#endif
     if (!pop.on && help_knob(k, s))                    /* ARP held: the knob's help, the value left (ui_help.c) */
         return;
     if (!pop.on && msc_knob(k, s))                     /* FX held: the knob's mod amount, the value left (ui_modsc.c) */
