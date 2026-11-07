@@ -1033,6 +1033,25 @@ a bar (a STEP track, or a EUCLID with one pulse; set it to SOUND OFF with its ch
 track with random hits (DROP, BRANCH) samples at random moments. OFF: a new note on each of this track's own hits, as
 before. HOLD is saved with the project; older firmware loads the project without it.
 
+**HOW** (OCT+ held, KNOB 2) says what FOLLOW does with the other track's note. SHIFT still moves the result by scale
+steps.
+
+| HOW | What the following track plays |
+|---|---|
+| **SAME** | The other track's note (as before). |
+| **CHORD** | The third, fifth or seventh of the chord built on that note in this track's scale, whichever lies nearest this track's last note: a harmony that moves smoothly instead of jumping. |
+| **CONTRA** | Contrary motion: it goes down as many scale steps as the other track goes up, and the other way, mirrored around the first note it followed. |
+| **BASS** | The note one octave down (two from middle C up), on beats 1 and 3 of the bar only. |
+| **CANON1** to **CANON8** | The other track's note from that many notes ago: a round. It stays silent until the other track has played that many. HOLD does nothing here. |
+
+**RHYTHM** (OCT+ held, KNOB 3) says when it plays. **OWN**: on this track's own hits (as before). **SOURCE**: only
+when the followed track has played a note, so the two move together; this track's own rhythm is left out. **BOTH**:
+its own hits and the other track's. Follow a track with a lower number for the tightest timing: a lower track's note
+is that step's, a higher one's lands a step later. With BASS, the beats 1 and 3 still decide.
+
+SAME and OWN are the defaults: a track set to them plays exactly as before. HOW and RHYTHM are saved with the project;
+older firmware (3.3 and before) loads it with SAME and OWN.
+
 On an ATLAS track only DROP and HUMAN apply: SHIFT, FOLLOW and FLRSH would change which drum plays. On a STEP track
 TWEAK holds HUMAN alone.
 
