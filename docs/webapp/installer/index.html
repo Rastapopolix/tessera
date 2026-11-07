@@ -1205,7 +1205,7 @@ const selection = () => {     /* the release, or a channel ("nightly-dual": meta
 const ready = () => { lastKey = "ready"; $("status").textContent = `Tessera ${selection().channel.version} (${t(build() + "Tag")})`; };
 const log = (t) => { $("log").textContent += t + "\n"; };
 let image = null;
-const meta = {"version": "3.3.2", "product": "FM-1_833", "pkg": {"dual": "../../firmware/tessera-3.3.2.fwsc", "single": "../../firmware/tessera-3.3.2-1core.fwsc"}, "beta": {"version": "3.4-beta5", "product": "FM-1_834", "branch": "develop", "commit": "2340593ee4dc271066c23a2337f736175b0541e5", "builtAt": "2026-11-07T04:56:57Z", "pkg": {"dual": "../../firmware/tessera-3.4-beta5.fwsc", "single": "../../firmware/tessera-3.4-beta5-1core.fwsc"}, "editor": "../editor-beta/"}, "nightly": null, "synth": null};
+const meta = {"version": "3.3.2", "product": "FM-1_833", "pkg": {"dual": "../../firmware/tessera-3.3.2.fwsc", "single": "../../firmware/tessera-3.3.2-1core.fwsc"}, "beta": {"version": "3.4-beta6", "product": "FM-1_834", "branch": "develop", "commit": "e4d3998fdc7a21d2a4e5480cabb8a5e76c025dcf", "builtAt": "2026-11-07T06:43:51Z", "pkg": {"dual": "../../firmware/tessera-3.4-beta6.fwsc", "single": "../../firmware/tessera-3.4-beta6-1core.fwsc"}, "editor": "../editor-beta/"}, "nightly": null, "synth": null};
 $("ver").textContent = `FM-1 · ${meta.version}`;
 $("beta-options").hidden = !meta.beta;
 if (meta.beta) {

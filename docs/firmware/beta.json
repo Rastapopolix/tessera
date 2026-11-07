@@ -1,12 +1,12 @@
 {
-  "version": "3.4-beta5",
+  "version": "3.4-beta6",
   "product": "FM-1_834",
   "branch": "develop",
-  "commit": "2340593ee4dc271066c23a2337f736175b0541e5",
-  "builtAt": "2026-11-07T04:56:57Z",
+  "commit": "e4d3998fdc7a21d2a4e5480cabb8a5e76c025dcf",
+  "builtAt": "2026-11-07T06:43:51Z",
   "pkg": {
-    "dual": "../../firmware/tessera-3.4-beta5.fwsc",
-    "single": "../../firmware/tessera-3.4-beta5-1core.fwsc"
+    "dual": "../../firmware/tessera-3.4-beta6.fwsc",
+    "single": "../../firmware/tessera-3.4-beta6-1core.fwsc"
   },
   "editor": "../editor-beta/"
 }
