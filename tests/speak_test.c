@@ -80,6 +80,10 @@ static void dump_extra(void)
     for (pop.sel = 0; pop.sel < pop.n; pop.sel++)
         if (sp_pop_row(b, sizeof b)) fprintf(dump_f, "ROW\t%s\n", b);
     pop_close();
+    go_title("SCALES");                                 /* the scale picker: the scale under the cursor */
+    dump_screen();
+    scale_picker_edit(1, 3);
+    dump_screen();
     go_title("ARP");                                    /* a knob's list */
     vlist_open(ui.page, 0);
     dump_screen();
@@ -227,6 +231,23 @@ int main(int argc, char **argv)
     go_title("MODS");
     settle();
     bad += check("speak: MODS: its knobs as the page shows them", said("N MODS. T1. MOD SOURCE ") && said("MOD 1 OF "));
+    said_clear();
+    turn(EN_K1, 1);
+    settle();
+    bad += check("speak: ..a source: its name and its bar in words, not +-", said("MOD SOURCE T1 ") &&
+                 (said("POLAR") && !said("+")));
+    printf("  said: %s", host_said);
+    turn(EN_K1, -1);
+    said_clear();
+    go_title("SCALES");
+    settle();
+    bad += check("speak: SCALES: the scale under the cursor", said("N SCALES. T1. FAMILY ") && said(", SCALE "));
+    said_clear();
+    turn(EN_K1 + 1u, 2);
+    settle();
+    bad += check("speak: ..KNOB 2: the next scale", said("N SCALE ") && !said("CHROMATIC"));
+    printf("  said: %s", host_said);
+    turn(EN_K1 + 1u, -2);
     said_clear();
     go_title("PRESETS");
     settle();
