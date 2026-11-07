@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Words the screen reader says as they are (tools/speak_audit.sh): names, scale names, words the dictionary lacks.
+exciter
+morph
+poly
+formant
+favourite
+init
+sid
+phys
+partch
+pelog
+bayati
+hijaz
+husayn
+sikah
+rast
+saba
+shruti
+iwato
+kumoi
+minyo
+ryukyu
+yo
+sen
+slendro
+hirajoshi
+vallotti
+werckmeister
+kirnberger
+glissando
+diatonic
+unipolar
+bohlen-pierce
+bohlen
+pierce
+meantone
