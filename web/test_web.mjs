@@ -1372,7 +1372,7 @@ class FakeFM1 {
     this.afterWrite = afterWrite; this.loader = loader;     // the loader step 1 starts (the package's own)
     this.image = image; this.unplugAfter = unplugAfter; this.served = 0; this.bad = 0;
     this.access = { inputs: new Map(), outputs: new Map() };
-    this.boot(identity, identity === "FM-1_015" ? "FM-1" : "Tessera");
+    this.boot(identity, identity === "FM-1_015" ? "FM-1" : "Tessera FM-1");
   }
   boot(identity, name) {
     this.identity = identity; this.waiting = null; this.queue = [];
@@ -1407,7 +1407,7 @@ class FakeFM1 {
       this.served++;
       if (this.served >= this.unplugAfter) { this.input.state = this.output.state = "disconnected"; return; }
       if (addr === 0xE0000000) setTimeout(() => this.boot(this.loader, this.loader === STOCK_LOADER ? "FM-1" : "Melodee Update"), 300);
-      else if (addr === 0xF0000000) setTimeout(() => this.boot(this.afterWrite, this.afterWrite === "FM-1_015" ? "FM-1" : "Tessera"), 300);
+      else if (addr === 0xF0000000) setTimeout(() => this.boot(this.afterWrite, this.afterWrite === "FM-1_015" ? "FM-1" : "Tessera FM-1"), 300);
       else this.next();
     }
   }
