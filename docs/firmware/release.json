@@ -1,0 +1,8 @@
+{
+  "version": "3.4",
+  "product": "FM-1_834",
+  "pkg": {
+    "dual": "../../firmware/tessera-3.4.fwsc",
+    "single": "../../firmware/tessera-3.4-1core.fwsc"
+  }
+}
