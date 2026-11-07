@@ -1170,6 +1170,25 @@ static int32_t tess_follow_how(const track_t *t, uint32_t tr, int32_t s, int32_t
     return tess_scale_steps(t, s, shift);
 }
 
+static uint32_t planner_pull(void);                    /* (planner.c: the piece's last 5 %) */
+/* a planned piece's end: note n moved to the root or the fifth (in the scale) when one is two semitones away or less,
+ * at the chance planner_pull gives, tossed on a hash of the SEED and the step (PLAY replays it, the stream untouched) */
+static int32_t tess_resolve(const track_t *t, uint32_t tr, int32_t n)
+{
+    static const int8_t D[5] = {0, -1, 1, -2, 2};
+    uint32_t pull = planner_pull(), h, i;
+    int32_t trn = tess_trn(t, tr), r = ((int32_t)(t->p[P_ROOT] % 12) + trn % 12 + 24) % 12;
+    if (!pull) return n;
+    h = ((uint32_t)tessera.seed[tr] + 1u) * 2654435761u ^ (bar_n * 64u + tessera.evolve[tr].step_cnt) * 2246822519u ^ tr;
+    h ^= h >> 15;
+    if (h % 100u >= pull) return n;
+    for (i = 0; i < 5u; i++) {
+        int32_t m = n + D[i], pc = m % 12;
+        if (m < 0 || m > 127 || (pc != r && pc != (r + 7) % 12)) continue;
+        if (tessera_snap_note(t, m - trn) == m - trn) return m;   /* (the fifth only where the scale has it) */
+    }
+    return n;
+}
 static void tess_clock_step_body(track_t *t, uint32_t tr);
 /* The key a generator's note moves up by before the snap: the generators write C minor (MARKOV adds ROOT itself), so
  * ROOT on another note plays its whole scale, not C minor's notes snapped into it (ANSWER plays the keys' notes) */
@@ -1610,6 +1629,7 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
         if (!following) final_note += (int32_t)tw2->shift;
         if (final_note < 0) final_note = 0;
         if (final_note > 127) final_note = 127;
+        if (tessera.pl_length) final_note = tess_resolve(t, tr, final_note);   /* (PIECE: the end resolves home) */
 
         uint32_t to = tess_branch(tr);
         if (to != tr) {                                    /* BRANCH: the hit plays on track to's voice instead */
