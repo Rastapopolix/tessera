@@ -94,7 +94,7 @@ jobs:
           cd ../page
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/webapp/installer docs/firmware docs/words   # (words: the screen reader's, make_site.py)
+          git add docs/webapp/installer docs/webapp/editor-beta docs/firmware docs/words   # (words: the screen reader's, make_site.py; editor-beta: the Beta choice links to it)
           git add -f docs/firmware/*.fwsc
           git commit -q -m "Installer: beta $V (${commit:0:7})" -m "Built by .github/workflows/beta.yml from $GITHUB_REF_NAME."
           git show --stat HEAD | tail -5
