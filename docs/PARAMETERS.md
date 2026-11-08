@@ -155,7 +155,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x20D | EVOLVE LOCK | 0 to 100 % | 0 | How much of the phrase stays when EVOLVE mutates it: 100 loops it, 0 is new every time. Turing's is its PROB turned round, Atlas' its CHAOS; Constellation's the chance a step plays its loop instead of the sky; Euclid, Bounce, Awake, Poly and Quad have none. |
 | 0x20E | EVOLVE EVERY | OFF, 1, 2, 4, 8, 16 | OFF | Bars between mutations; OFF keeps the phrase as it is. |
 | 0x20F | EVOLVE AMOUNT | 0 to 100 % | 30 | How much changes at each mutation. |
-| 0x210 | EVOLVE ROLL | 1 to 128 | 1 | The track's seed, 1 to 128: each one a line of its own, the same every time. Playing, a new one starts on the next bar line. |
+| 0x210 | EVOLVE ROLL | 1 to 128 | 1 | The track's seed, 1 to 128: each one a line of its own, the same every time. Playing, a new one starts on the next bar line. OCT- held: ROLL ALL, every generator track a new seed at once; turn left to get the last ones back. |
 | 0x211 | FORM | OFF, AB, ABAC, ABCB, AABA, ABCA, AABC | OFF | The order the sections play in (A, B, C), each EVERY bars long; OFF plays one phrase. |
 | 0x212 | FORM CONTRAST | 0 to 100 % | 60 | How different a new section is from the one before it. |
 | 0x213 | FORM FLOURISH | -12 to 12 semitones | 0 | Semitones added on the last beat of every phrase; 0 is off. |

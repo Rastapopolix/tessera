@@ -3254,6 +3254,28 @@ static void develop_run(char *res, size_t cap)
     snprintf(res, cap, "%u %u %u %u %u %u", exact, varied, kept, grav, hand, markov);
 }
 
+/* ROLL ALL (EVOLVE, OCT- held, KNOB 4): every generator track a new seed, STEP tracks untouched; left puts them back */
+static int test_roll_all(void)
+{
+    uint16_t before[TESSERA_TRACKS];
+    int ok = 1, back = 1;
+    tessera_reset();
+    song.playing = 0;
+    tessera_param_set(0, TX_MODE, TESS_ENG_TURING); tessera_param_set(1, TX_MODE, TESS_ENG_EUCLID);
+    tessera_param_set(3, TX_MODE, TESS_ENG_ANSWER);
+    tessera_param_set(0, TX_EV_SEED, 7); tessera_param_set(1, TX_EV_SEED, 9); tessera_param_set(3, TX_EV_SEED, 11);
+    for (uint32_t t = 0; t < TESSERA_TRACKS; t++) before[t] = tessera.seed[t];
+    ok &= tessera_roll_all(1) == 3u && tessera_roll_all_back();
+    for (uint32_t t = 0; t < TESSERA_TRACKS; t++)
+        ok &= t == 2u ? tessera.seed[t] == before[t] : tessera.seed[t] != before[t] && tessera.seed[t] >= 1u &&
+              tessera.seed[t] <= TESS_SEED_MAX;
+    tessera_roll_all(-1);
+    for (uint32_t t = 0; t < TESSERA_TRACKS; t++) back &= tessera.seed[t] == before[t];
+    back &= !tessera_roll_all_back() && tessera_roll_all(-1) == 0u;
+    return check("ROLL ALL: 3 generator tracks new seeds, the STEP track its own; turned back, all as before (once)",
+                 ok && back);
+}
+
 int main(int argc, char **argv)
 {
     const char *base = argc > 1 ? argv[1] : "tests/tessera_baseline.txt", *logdir = argc > 2 ? argv[2] : 0;
@@ -3261,6 +3283,7 @@ int main(int argc, char **argv)
     char res[96], again[96], line[160], want[128], got[128];
     FILE *out = 0;
     uint32_t i;
+    bad += test_roll_all();
     if (update && !(out = fopen(base, "w"))) {
         printf("tessera: cannot write %s\n", base);
         return 1;

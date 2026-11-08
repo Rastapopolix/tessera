@@ -487,6 +487,11 @@ static void help_find(uint32_t k)
         help_hp((pg->graph == GR_CORDS ? HP_CORD_SRC : HP_MX_FROM) + k);
         return;
     }
+    if (pg->graph == GR_EVOLVE && rall_layer_on()) {   /* (EVOLVE, OCT- held: ROLL ALL, ROLL's help) */
+        if (k == 3u) help.pid = (uint16_t)PID_TESS(TX_EV_SEED);
+        else help_unused(k);
+        return;
+    }
     if (pg->graph == GR_EVOLVE && sv_layer_on()) {     /* (STEP EVOLVE, OCT+ held: HOW) */
         if (k == 3u) help.pid = (uint16_t)PID_TESS(TX_PAT_GEN);
         else if (k) help_unused(k);

@@ -298,6 +298,8 @@ uint32_t tessera_euclid_pitch(const track_t *t, uint32_t step);
 uint32_t tessera_sig(uint32_t tr);
 void tessera_kill(track_t *t);
 void tessera_mutate(uint32_t tr);
+uint32_t tessera_roll_all(int32_t dir);           /* ROLL ALL: the tracks rolled (or put back) */
+int tessera_roll_all_back(void);
 void tessera_seed_turn(uint32_t tr, int32_t s);    /* ROLL (EVOLVE page): the next seed, on the bar line */
 void tessera_evolve_knob(uint32_t k, int32_t s);
 void tessera_ev_layer_knob(uint32_t k, int32_t s);
