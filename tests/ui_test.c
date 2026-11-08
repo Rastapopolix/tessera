@@ -4301,16 +4301,23 @@ static int test_layer(void)
         ok &= trk[tr].p[pid] == d->max;                 /* (forgotten: CC 85 is no parameter of the fixed map) */
         bad += check("MIDI LEARN: a knob, then a CC from any channel; the menu ends it, KNOB 2 left asks, OCT+ forgets", ok);
         {                                               /* OCT held layers: a peek let go untouched stays */
-            static const char *const PG[3] = {"MIDI OUT", "PIECE", "MODS"};
+            static const char *const PG[5] = {"MIDI OUT", "PIECE", "MODS", "EVOLVE", "ENTRIES"};
             ok = 1;
-            for (uint32_t q = 0; q < 3u; q++) {
+            for (uint32_t q = 0; q < 5u; q++) {
                 go_title(PG[q]); frame();
                 btn_down(B_OCTDN); frames(900); btn_up(B_OCTDN); frame(); frame();
                 ok &= !ui.home && str_eq(cur_page()->title, PG[q]);
                 press(B_OCTDN);
                 ok &= ui.home;                          /* (a tap is still Back) */
             }
-            bad += check("OCT- held on MIDI OUT, PIECE, MODS and let go untouched: the page stays (a tap: HOME)", ok);
+            bad += check("OCT- held on MIDI OUT, PIECE, MODS, EVOLVE, ENTRIES and let go untouched: the page stays (a tap: HOME)", ok);
+            ok = 1;                                     /* (#519: a knob turned under OCT-, then let go: the page stays) */
+            for (uint32_t q = 3; q < 5u; q++) {
+                go_title(PG[q]); frame();
+                btn_down(B_OCTDN); frame(); turn(EN_K1 + 3u, 1); btn_up(B_OCTDN); frame(); frame();
+                ok &= !ui.home && str_eq(cur_page()->title, PG[q]);
+            }
+            bad += check("OCT- held on EVOLVE and ENTRIES, a knob turned, let go: the page stays (#519)", ok);
         }
         hold(B_HOME); ui.menu_sel = MI_MIDI_LEARN; turn(EN_K2, 1);
         go_title("PIECE"); frame(); frames(1500);
