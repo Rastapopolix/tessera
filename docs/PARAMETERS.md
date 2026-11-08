@@ -288,6 +288,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x295 | TIMING HOW | DOUBLE, PUSH, MIX | DOUBLE | What a SPLIT step does. DOUBLE: the note, then a neighbouring note of the scale halfway through the step (a drum: the same hit). PUSH: the note halfway through the step, late only. MIX: tosses for one or the other. OCT+ held on TIMING, KNOB 2. |
 | 0x296 | FOLLOW HOW | SAME, CHORD, CONTRA, BASS, CANON1, CANON2, CANON3, CANON4, CANON5, CANON6, CANON7, CANON8 | SAME | How FOLLOW turns the other track's note. SAME: that note, SHIFT degrees away. CHORD: the third, fifth or seventh of the chord on it, whichever is nearest this track's last note. CONTRA: moves the other way, mirrored around the first note followed. BASS: an octave or two down, on beats 1 and 3 only. CANON1..8: its note that many notes back. TWEAK, OCT+ held, KNOB 2. |
 | 0x297 | FOLLOW RHYTHM | OWN, SOURCE, BOTH | OWN | When a following track plays. OWN: on its own hits. SOURCE: only when the followed track has played a note, so the two move together (a lower track number lands on the same step). BOTH: its own hits and the other's. TWEAK, OCT+ held, KNOB 3. |
+| 0x29A | ENTRIES ORDER | AUTO, 1ST, 2ND, 3RD, 4TH | AUTO | When the track comes in: 1ST to 4TH, one a phrase in that order, and out the other way round (last in, first out). AUTO: by ROLE, after the numbered tracks. ANCHOR still never goes out; only AUTO tracks wait for a bass or harmony. GLO > ENTRIES with OCT- held, KNOB k track k's. |
 
 ## Mods
 

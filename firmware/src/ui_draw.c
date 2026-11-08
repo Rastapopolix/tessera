@@ -1008,6 +1008,13 @@ static void draw_columns(void)
         draw_column(3, "END", PL_END_NAME[tessera.pl_end % PL_ENDS], "", set ? VAL(3u) : T_DIM, (int32_t)tessera.pl_end * 333, ICON_AUTO);
         return;
     }
+    if (cur_page()->graph == GR_ENTRIES && entries_layer_on() == 2) {   /* ENTRIES, OCT- held: each track's ORDER */
+        static const char *const NM[TESSERA_TRACKS] = {"ORDER 1", "ORDER 2", "ORDER 3", "ORDER 4"};
+        for (uint32_t k = 0; k < TESSERA_TRACKS; k++)
+            draw_column(k, NM[k], ET_ORDER_NAME[tessera.et_order[k] % ET_ORDERS], "", VAL(k), (int32_t)tessera.et_order[k] * 250,
+                        ICON_AUTO);
+        return;
+    }
     if (cur_page()->graph == GR_ENTRIES && entries_layer_on()) {   /* ENTRIES, OCT+ held: each track's ROLE */
         static const char *const NM[TESSERA_TRACKS] = {"ROLE 1", "ROLE 2", "ROLE 3", "ROLE 4"};
         for (uint32_t k = 0; k < TESSERA_TRACKS; k++)

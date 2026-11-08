@@ -968,11 +968,20 @@ Hold **OCT+** for each track's **ROLE** (KNOB 1 to 4; also OCT+ held on FORM, KN
 track whose notes sit mostly below C3 bass, anything else melody. The picture shows each track's role (AUTO's guess
 marked), whether it is IN, OUT or muted by hand, and its level.
 
+Hold **OCT-** for each track's **ORDER** (KNOB 1 to 4): **AUTO** (the default) or **1ST**, **2ND**, **3RD**, **4TH**,
+to choose the order tracks come in, for example the bass third instead of first. Numbered tracks come in first, one a
+phrase, lowest number first; the AUTO tracks follow by ROLE as below. They leave the other way round: last in, first
+out, so the AUTO tracks leave before the numbered ones and 1ST leaves last. Two tracks on one number take turns. An
+ANCHOR still never leaves, and only an AUTO melody waits for a bass or harmony (a numbered one comes in when its turn
+comes). With every track on AUTO, ENTRIES works exactly as before. While OCT- is held the picture shows each track's
+ORDER in place of its role. ORDER is saved with the project; a project from before it loads as AUTO, and firmware
+before 3.5 loads a project that uses it with every track on AUTO (the rest of the project as saved).
+
 How it moves, in the ways music is usually built:
 
 - Where a section begins (the CHAIN moves on), a new number of tracks to leave out is chosen, one more or one fewer;
   away from A mostly thinner, back on A fuller. Exits happen there, all at once, MELODY first, then HARMONY, RHYTHM
-  and BASS last.
+  and BASS last (with ORDER set: the highest number first).
 - Entries come one a phrase the other way round, BASS first; a melody comes in only over a bass or harmony that is
   playing.
 - With ENTRIES above 50, the phrase before a return to A (after two phrases away or more) drops to the anchors, and A

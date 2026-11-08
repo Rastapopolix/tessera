@@ -4,12 +4,13 @@
  * ENTRIES 0..100 (0 off: every track as set), DWELL 1-8 phrases a track stays in or out at least, STYLE CUT / FADE and
  * FADE 1-4 bars; OCT+ held, KNOB k track k's ROLE (also OCT+ held on FORM, KNOB 4): AUTO, BASS, RHYTHM, HARMONY,
  * MELODY or ANCHOR (never taken out). AUTO: CHORD harmony; ATLAS or a drum sound rhythm; notes mostly below C3 bass;
- * else melody.
+ * else melody. OCT- held, KNOB k track k's ORDER: AUTO, 1ST..4TH (et_rank: the order it comes in).
  *   The phrase is the CHAIN's (PHRASE, counted from PLAY, its FORM on or OFF). A section begins where the CHAIN moves
  *   on to its next place (FORM OFF: every 4 phrases). There a number of tracks wanted out is drawn (ENTRIES: how many
  *   may be at most, of the tracks that have played, not ANCHOR, not muted by hand); one more on leaving A. Exits come
  *   on a section's line, all at once, MELODY first, then HARMONY, RHYTHM, BASS; entries one a phrase the other way
- *   round, a melody only over a bass or harmony playing. With ENTRIES above 50 the phrase before a return to A (after two
+ *   round, a melody only over a bass or harmony playing. ORDER set: the numbered tracks come in first, 1ST to 4TH, then
+ *   the AUTO ones by ROLE; out the other way round (last in, first out); only an AUTO melody waits for its ground. With ENTRIES above 50 the phrase before a return to A (after two
  *   phrases away or more) drops to the anchors (or the one track lowest in that order), and A comes back with
  *   everything. At least one track always
  *   plays. Each change is decided a bar ahead: the track's mute key on GLO blinks quickly through that bar, and a track
@@ -20,6 +21,10 @@
  *   tessera.c after form_chain.c. */
 
 enum { ET_AUTO, ET_BASS, ET_RHYTHM, ET_HARMONY, ET_MELODY, ET_ANCHOR, ET_ROLES };
+#define ET_ORDERS 5u                                  /* ORDER: 0 AUTO, 1ST..4TH */
+#define ET_RANK_LO 1u                                 /* the layering order, low (in first, out last) to high */
+#define ET_RANK_MEL (4u + ET_MELODY)                  /* an AUTO melody's: the top (it waits for a bass or harmony) */
+#define ET_RANK_HI ET_RANK_MEL
 #define ET_SECTION 4u                                 /* FORM OFF: a section every 4 phrases */
 
 static struct {
@@ -58,6 +63,15 @@ static uint32_t et_role(uint32_t tr)
     if (tessera.mode[tr] == TESS_ENG_GRIDS || drum_track(&trk[tr])) return ET_RHYTHM;
     if (et.avg[tr] && et.avg[tr] < 48u * 16u) return ET_BASS;
     return ET_MELODY;
+}
+/* track tr's place in the layering order, ET_RANK_LO..ET_RANK_HI: an ORDER set, 1..4; AUTO, after them by ROLE, 4 +
+ * BASS..MELODY (no ORDER set anywhere: the role order, as before ORDER); ANCHOR none (ET_RANK_HI + 1: never moved).
+ * Tracks of one place take turns as the draw says */
+static uint32_t et_rank(uint32_t tr)
+{
+    uint32_t o = tessera.et_order[tr], r = et_role(tr);
+    if (r == ET_ANCHOR) return ET_RANK_HI + 1u;
+    return o && o < ET_ORDERS ? o : 4u + r;
 }
 static uint32_t et_mask(uint32_t role)                /* the tracks of a role */
 {
@@ -135,8 +149,10 @@ static void et_decide(uint32_t p)
     uint32_t sec, home, home_next, tr, i, r, n, h;
     uint32_t mute = et_hand_muted(), anchor = et_mask(ET_ANCHOR), lock = et.lock;
     uint32_t dwell = tessera.et_dwell < 1u ? 1u : tessera.et_dwell > 8u ? 8u : tessera.et_dwell;
-    uint32_t can, ready = 0, play, sup = et_mask(ET_BASS) | et_mask(ET_HARMONY), mel = et_mask(ET_MELODY);
+    uint32_t can, ready = 0, play, sup = et_mask(ET_BASS) | et_mask(ET_HARMONY), mel = 0;
     uint32_t go_out = 0, come_in = 0, most, wanted;
+    for (tr = 0; tr < TESSERA_TRACKS; tr++)
+        if (et_rank(tr) == ET_RANK_MEL) mel |= 1u << tr;   /* (the melodies that wait for their ground: AUTO's) */
     et_chain(p, &sec, &home, &home_next);
     if (sec) lock = 0;                                /* (a new section: the hand's tracks are the rules' again) */
     can = et_present() & ~mute & ~anchor & ~lock;     /* (the tracks the rules may move) */
@@ -152,9 +168,9 @@ static void et_decide(uint32_t p)
     } else if (home_next && tessera.et_amount > 50u && !pl_on()) {   /* the phrase before A: down to the anchors */
         uint32_t keep = play & anchor;
         if (!keep)                                    /* (none: the one lowest in the layering order plays on) */
-            for (r = ET_BASS; r <= ET_MELODY && !keep; r++)
+            for (r = ET_RANK_LO; r <= ET_RANK_HI && !keep; r++)
                 for (tr = 0; tr < TESSERA_TRACKS && !keep; tr++)
-                    if (((play & can) >> tr & 1u) && et_role(tr) == r) keep = 1u << tr;
+                    if (((play & can) >> tr & 1u) && et_rank(tr) == r) keep = 1u << tr;
         go_out = play & can & ~keep;
     } else {
         if (pl_on()) {                                /* a planned piece: as many out as its SHAPE is low */
@@ -171,21 +187,21 @@ static void et_decide(uint32_t p)
         wanted = et.want;
         n = et_count(et.out & ~mute);
         if (sec && n == wanted && wanted && (h >> 8) % 2u) {   /* (as many as wanted out already: now and then one swaps) */
-            for (r = ET_BASS; r <= ET_MELODY && !come_in; r++)
+            for (r = ET_RANK_LO; r <= ET_RANK_HI && !come_in; r++)
                 for (i = 0; i < TESSERA_TRACKS && !come_in; i++) {
                     tr = (i + h) % TESSERA_TRACKS;
-                    if ((et.out & can & ready) >> tr & 1u && et_role(tr) == r && (r != ET_MELODY || (play & sup)))
+                    if ((et.out & can & ready) >> tr & 1u && et_rank(tr) == r && (r != ET_RANK_MEL || (play & sup)))
                         come_in = 1u << tr;
                 }
             if (come_in) n--;
         }
         if (n < wanted && (sec || pl_on()))           /* exits: on a section's line (planned: one a phrase between),
                                                        * the top of the order first */
-            for (r = ET_MELODY; r >= ET_BASS && n < wanted && (sec || !go_out); r--)
+            for (r = ET_RANK_HI; r >= ET_RANK_LO && n < wanted && (sec || !go_out); r--)
                 for (i = 0; i < TESSERA_TRACKS && n < wanted && (sec || !go_out); i++) {
                     uint32_t left;
                     tr = (i + (h >> 4)) % TESSERA_TRACKS;
-                    if (!((play & can & ready & ~come_in) >> tr & 1u) || et_role(tr) != r) continue;
+                    if (!((play & can & ready & ~come_in) >> tr & 1u) || et_rank(tr) != r) continue;
                     left = (play | come_in) & ~go_out & ~(1u << tr);
                     if (!left) continue;              /* (one always plays) */
                     if ((sup >> tr & 1u) && (left & mel) && !(left & sup)) continue;   /* (a melody keeps its ground) */
@@ -193,11 +209,11 @@ static void et_decide(uint32_t p)
                     n++;
                 }
         if (n > wanted && !come_in)                   /* entries: one a phrase, the ground first */
-            for (r = ET_BASS; r <= ET_MELODY && !come_in; r++)
+            for (r = ET_RANK_LO; r <= ET_RANK_HI && !come_in; r++)
                 for (i = 0; i < TESSERA_TRACKS && !come_in; i++) {
                     tr = (i + (h >> 12)) % TESSERA_TRACKS;
-                    if (!((et.out & ~mute & ready) >> tr & 1u) || et_role(tr) != r) continue;
-                    if (r == ET_MELODY && !(play & sup)) continue;   /* (a melody over a bass or harmony) */
+                    if (!((et.out & ~mute & ready) >> tr & 1u) || et_rank(tr) != r) continue;
+                    if (r == ET_RANK_MEL && !(play & sup)) continue;   /* (an AUTO melody over a bass or harmony) */
                     come_in = 1u << tr;
                 }
     }
@@ -231,9 +247,9 @@ static void et_intro(void)
     uint32_t most = (et_count(can) * tessera.et_amount + 50u) / 100u, want, r, tr, n = 0;
     if (!(play & et_mask(ET_ANCHOR)) && most >= et_count(can)) most = et_count(can) ? et_count(can) - 1u : 0u;
     want = planner_out(0, most);
-    for (r = ET_MELODY; r >= ET_BASS && n < want; r--)
+    for (r = ET_RANK_HI; r >= ET_RANK_LO && n < want; r--)
         for (tr = 0; tr < TESSERA_TRACKS && n < want; tr++)
-            if ((can >> tr & 1u) && et_role(tr) == r) {
+            if ((can >> tr & 1u) && et_rank(tr) == r) {
                 et.out |= (uint8_t)(1u << tr);
                 entry_gain[tr] = 0;
                 n++;
