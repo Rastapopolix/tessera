@@ -24,6 +24,7 @@ static void pattern_commit(track_t *t)
     pattern_t *p = pattern_at(t - trk, t->pattern);
     memcpy(p->step, t->step, sizeof p->step);
     memcpy(p->timing, &t->p[P_SLEN], sizeof p->timing);
+    if (tessera.pat_gen[(t - trk) % TESSERA_TRACKS]) tessera_pg_store((uint32_t)(t - trk), t->pattern);
 }
 static void pattern_apply(track_t *t, uint32_t bank)
 {
@@ -40,6 +41,7 @@ static void pattern_apply(track_t *t, uint32_t bank)
     t->rh_n = t->rskip_n = 0;
     t->pattern_gen++;
     tessera_step_clear((uint32_t)(t - trk));        /* (STEP EVOLVE: the new steps as written) */
+    tessera_pg_load((uint32_t)(t - trk), bank);     /* (PAT GEN: the pattern's generator, pat_gen.c) */
 }
 static void pattern_init(void)
 {

@@ -17,7 +17,7 @@
 enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TSP_FM6, TSP_DRUM, TSP_REC, TSP_NAME,
        TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_HOW, TSP_ORACLE,
        TSP_ENERGY, TSP_DEV, TSP_TRANSP, TSP_TUNE, TSP_SOUND, TSP_CHAIN, TSP_ENTRY, TSP_PLAN, TSP_PERF, TSP_HOLD,
-       TSP_CCN, TSP_FKEY, TSP_SPLIT, TSP_FMODE, TSP_EORDER = 38, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
+       TSP_CCN, TSP_FKEY, TSP_SPLIT, TSP_FMODE, TSP_PGEN, TSP_DMAP, TSP_EORDER, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
                                               * TSP_HUMAN: each track's HUMAN TIME; none: TWEAK HUMAN's timing, as it was;
@@ -46,13 +46,16 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * is not 0; none: 0, DOUBLE;
                                               * TSP_FMODE: each track's FOLLOW HOW, then each one's RHYTHM, written only
                                               * when one is not 0; none: SAME, OWN;
-                                              * (36, 37: claimed by PAT GEN and the drum map, open PRs)
+                                              * TSP_PGEN: each track's PAT GEN, then each track's 8 slots of
+                                              * TESS_PG_BYTES (pat_gen.c), written only when one is ON; none: OFF;
+                                              * TSP_DMAP: each track's MIDI OUT DRUM MAP, written only when one is
+                                              * not GM; none: GM;
                                               * TSP_EORDER: each track's Entries ORDER, 0 AUTO, 1..4, written only when
                                               * one is not 0; none: AUTO) */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
                TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_PERF == 30 &&
                TSP_HOLD == 31 && TSP_CCN == 32 && TSP_FKEY == 33 && TSP_SPLIT == 34 && TSP_FMODE == 35 &&
-               TSP_EORDER == 38,
+               TSP_PGEN == 36 && TSP_DMAP == 37 && TSP_EORDER == 38,
                "the parts' numbers are stored: never renumbered");
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -386,6 +389,21 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
                 tsp_end(&w);
                 break;
             }
+        for (t = 0; t < NTRK; t++)                     /* (PAT GEN: only when on, the patterns' slots) */
+            if (tessera.pat_gen[t]) {
+                tsp_begin(&w, TSP_PGEN, 1);
+                tsp_bytes(&w, tessera.pat_gen, NTRK);
+                for (uint32_t k = 0; k < NTRK; k++) tsp_bytes(&w, tessera_pg_slots(k), NPAT * TESS_PG_BYTES);
+                tsp_end(&w);
+                break;
+            }
+        for (t = 0; t < NTRK; t++)                     /* (MIDI OUT's DRUM MAP: only when one is not GM) */
+            if (tessera.midi_dmap[t]) {
+                tsp_begin(&w, TSP_DMAP, 1);
+                tsp_bytes(&w, tessera.midi_dmap, NTRK);
+                tsp_end(&w);
+                break;
+            }
         for (t = 0; t < NTRK; t++)                     /* (Entries' ORDER: only when set, as PERF) */
             if (tessera.et_order[t]) {
                 tsp_begin(&w, TSP_EORDER, 1);
@@ -668,6 +686,19 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (tsp_seen.ver[TSP_FMODE] != 1u || tsp_seen.len[TSP_FMODE] != 2u * NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (p[k] >= TESS_FH_COUNT || p[NTRK + k] >= TESS_FR_COUNT) return 0;
     }
+    if (tsp_seen.at[TSP_DMAP]) {
+        if (tsp_seen.ver[TSP_DMAP] != 1u || tsp_seen.len[TSP_DMAP] != NTRK) return 0;
+        for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_DMAP] + k] >= TESS_DM_COUNT) return 0;
+    }
+    if (tsp_seen.at[TSP_PGEN]) {
+        const uint8_t *p = raw + tsp_seen.at[TSP_PGEN];
+        if (tsp_seen.ver[TSP_PGEN] != 1u || tsp_seen.len[TSP_PGEN] != NTRK * (1u + NPAT * TESS_PG_BYTES)) return 0;
+        for (uint32_t k = 0; k < NTRK; k++) {
+            if (p[k] > 1u) return 0;
+            for (uint32_t b = 0; b < NPAT && p[k]; b++)
+                if (!tessera_pg_check(k, p + NTRK + (k * NPAT + b) * TESS_PG_BYTES)) return 0;
+        }
+    }
     if (tsp_seen.at[TSP_EORDER]) {
         if (tsp_seen.ver[TSP_EORDER] != 1u || tsp_seen.len[TSP_EORDER] != NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_EORDER] + k] >= ET_ORDERS) return 0;
@@ -784,6 +815,12 @@ static void tsp_restore(const uint8_t *raw)
         memset(tessera.follow_how, 0, sizeof tessera.follow_how);
         memset(tessera.follow_rhy, 0, sizeof tessera.follow_rhy);
     }
+    if (tsp_seen.at[TSP_PGEN]) {                       /* (saved without it: OFF, as before) */
+        memcpy(tessera.pat_gen, raw + tsp_seen.at[TSP_PGEN], NTRK);
+        for (uint32_t k = 0; k < NTRK; k++) tessera_pg_put(k, raw + tsp_seen.at[TSP_PGEN] + NTRK + k * NPAT * TESS_PG_BYTES);
+    } else memset(tessera.pat_gen, 0, sizeof tessera.pat_gen);
+    if (tsp_seen.at[TSP_DMAP]) memcpy(tessera.midi_dmap, raw + tsp_seen.at[TSP_DMAP], NTRK);
+    else memset(tessera.midi_dmap, 0, sizeof tessera.midi_dmap);   /* (saved without it: GM, as before) */
     memset(tessera.f_anchor, 0, sizeof tessera.f_anchor);
     memset(tessera.hold_mem, 0, sizeof tessera.hold_mem);
     tune_clear_all();                                  /* (the tunings are the project's; saved before them: none) */

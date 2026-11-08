@@ -1057,6 +1057,15 @@ static void draw_columns(void)
         draw_column(3, "NOW", w3, "", T_DIM, -1, ICON_NONE);
         return;
     }
+    if (cur_page()->graph == GR_MIDICH && midi_dm_layer_on()) {   /* MIDI OUT, OCT+ and OCT- held: each DRUM MAP */
+        static const char *const NAME[TESSERA_TRACKS] = {"MAP 1", "MAP 2", "MAP 3", "MAP 4"};
+        const param_desc_t *d = pid_desc(PID_TESS(TX_MIDI_DMAP), 0);
+        for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
+            uint32_t v = tessera.midi_dmap[k] % TESS_DM_COUNT;
+            draw_column(k, NAME[k], d->names[v], "", v ? VAL(k) : T_DIM, (int32_t)v * 1000, ICON_AUTO);
+        }
+        return;
+    }
     if (cur_page()->graph == GR_MIDICH && midi_layer_on()) {   /* MIDI OUT, OCT+ held: each track's TRANSPOSE */
         static const char *const NAME[TESSERA_TRACKS] = {"TRACK 1", "TRACK 2", "TRACK 3", "TRACK 4"};
         for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
@@ -1191,6 +1200,7 @@ static void draw_columns(void)
         const tessera_evolve_t *ev = &tessera.evolve[tr < TESSERA_TRACKS ? tr : 0u];
         char e0[16], e1[16], e2[16], e3[16], e0u[8] = "", e1u[8] = "", e2u[8] = "%";
         int lk = tessera_lock_get(tr);
+        uint32_t pg;                                    /* (PAT GEN: KNOB 4 of both OCT+ layers) */
         if (rall_layer_on()) {                          /* EVOLVE, OCT- held: ROLL ALL */
             uint32_t g = 0;
             for (uint32_t i = 0; i < TESSERA_TRACKS; i++) g += tessera.mode[i] != TESS_ENG_OFF;
@@ -1201,14 +1211,16 @@ static void draw_columns(void)
             draw_column(3, "ROLL ALL", tessera_roll_all_back() ? "BACK <" : "NEW >", "", g ? VAL(3u) : T_DIM, -1, ICON_AUTO);
             return;
         }
-        if (sv_layer_on()) {                            /* STEP EVOLVE, OCT+ held: HOW */
+        if (sv_layer_on()) {                            /* STEP EVOLVE, OCT+ held: HOW, PAT GEN */
             uint32_t how = tessera.sv_how[tr] % TESS_SV_HOWS;
             col_mods(PID_TESS(TX_SV_HOW));
             draw_column(0, "HOW", pid_desc(PID_TESS(TX_SV_HOW), tr)->names[how], "", VAL(0u),
                         (int32_t)how * 1000 / (TESS_SV_HOWS - 1), ICON_AUTO);
             draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
             draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
-            draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+            pg = tessera.pat_gen[tr] ? 1u : 0u;
+            col_mods(PID_TESS(TX_PAT_GEN));
+            draw_column(3, "PAT GEN", pg ? "ON" : "OFF", "", pg ? VAL(3u) : T_DIM, (int32_t)pg * 1000, ICON_AUTO);
             return;
         }
         if (ev_layer_on()) {                            /* a generator's EVOLVE, OCT+ held: GRAVITY (lit with EVERY on) */
@@ -1218,7 +1230,9 @@ static void draw_columns(void)
             draw_column(0, "GRAVITY", e0, "%", ev->every && !ev->form ? VAL(0u) : T_DIM, (int32_t)gv * 10, ICON_AUTO);
             draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
             draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
-            draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+            pg = tessera.pat_gen[tr] ? 1u : 0u;
+            col_mods(PID_TESS(TX_PAT_GEN));
+            draw_column(3, "PAT GEN", pg ? "ON" : "OFF", "", pg ? VAL(3u) : T_DIM, (int32_t)pg * 1000, ICON_AUTO);
             return;
         }
         if (tessera_step_on(tr)) {                      /* STEP EVOLVE: LOCK, EVERY, AMOUNT, CLEAR (the steps changed) */

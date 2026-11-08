@@ -567,10 +567,15 @@ What a pattern changes depends on the track's MODE:
 | **ARP** | Its LEN, DIV, GATE and its notes. The ARP and ARP 2 settings belong to the track. |
 | a generator | Only LEN, DIV, GATE, and the steps the generator can take as its seed (SOURCE, see [STEP as seed](#turing-euclid-markov-and-morph-source-keep-gravity-step-as-seed)). |
 
-The generator itself, its MODE, its knobs, EVOLVE, FORM, TWEAK and the rest, belongs to the track, not to a pattern.
-Switching pattern on a generator track does not give it other settings. To change a generator over a piece, use
-[FORM](#form) and [CHAIN](#chain-one-form-for-the-project) sections, [cords](#mods-the-modulation-cords), or
-separate projects.
+The generator itself, its MODE, its knobs, EVOLVE, FORM, TWEAK and the rest, belongs to the track, not to a pattern,
+unless **PAT GEN** is ON (EVOLVE page, hold **OCT+**, KNOB 4). With PAT GEN ON each pattern keeps its own MODE, the
+generator's knobs, SEED and EVOLVE's EVERY, AMOUNT and LOCK, so switching pattern (by hand, PATTERNS or SONG)
+switches the generator too, and it starts again from that pattern's SEED. A pattern can be STEP while another is a
+generator. Turning PAT GEN ON gives all 8 patterns the settings as they are; edit a pattern's generator while it
+plays. COPY copies it with the steps. FORM, TWEAK, TWEAK 2, NOTE LENGTH, TIMING and the rest stay the track's.
+Firmware before 3.5 loads such a project with every pattern playing the generator of the pattern that was playing
+when it was saved. To change a generator over a piece without PAT GEN, use [FORM](#form) and
+[CHAIN](#chain-one-form-for-the-project) sections, [cords](#mods-the-modulation-cords), or separate projects.
 
 **PATTERNS.** Hold **SEQ** (or turn to its page). A row per track, a cell per pattern, 1 to 8:
 
@@ -1508,6 +1513,11 @@ Hold **HOME** for the menu. Its rows come in groups: the screen, the knobs and b
   General MIDI's drums, and a drum track uses that one instead.
 - **1** to **16**: that channel, whatever ROUT and DRUM say.
 - **OFF**: none of the track's notes go out.
+
+Hold **OCT+** and **OCT-** together for each track's **DRUM MAP** (KNOB 1 to 4), the notes a drum track or ATLAS
+sends: **GM** (the default) General MIDI's drum notes, kick 36, snare 38, closed hat 42; **ROW** one note a drum in a
+row from 36, in the order of a drum machine's tracks such as the Analog Rytm's (kick, snare, rim, clap, -, low tom,
+-, -, closed hat, open hat, -, bell). Then move the row onto the machine's first note with **TRANSPOSE**.
 
 The page lists each track's channel as it is now, AUTO's included. The channels are saved with the project. Which
 notes go out at all is still the menu's **NOTES OUT** (KEYS, ALL or OFF): for the steps and the generators, set it to

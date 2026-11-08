@@ -999,6 +999,15 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
+    if (pg->graph == GR_MIDICH && midi_dm_layer_on()) {   /* MIDI OUT, OCT+ and OCT- held: KNOB k track k's DRUM MAP */
+        if (slot < TESSERA_TRACKS && steps)
+            tessera_param_set(slot, TX_MIDI_DMAP, steps > 0);
+        oct_eat |= 3u;
+        ui.oct_t0 |= 2u;
+        oct_deferred = 0;
+        ui.force = 1;
+        return;
+    }
     if (pg->graph == GR_MIDICH && midi_layer_on()) {   /* MIDI OUT, OCT+ held: KNOB k track k's TRANSPOSE, a
                                                         * semitone a detent */
         if (slot < TESSERA_TRACKS)

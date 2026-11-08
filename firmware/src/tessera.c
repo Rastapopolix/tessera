@@ -934,14 +934,15 @@ void tessera_evolve_knob(uint32_t k, int32_t s)
     TESS_IRQ_ON();
 }
 
-/* OCT+ held on a generator track's EVOLVE page: KNOB 1 GRAVITY (ui_input.c; the SOURCE layer's too) */
+/* OCT+ held on a generator track's EVOLVE page: KNOB 1 GRAVITY (ui_input.c; the SOURCE layer's too), KNOB 4 PAT GEN */
 void tessera_ev_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;
     tessera_ensure_init();
-    if (tr >= TESSERA_TRACKS || !s || k) return;
+    if (tr >= TESSERA_TRACKS || !s || (k && k != 3u)) return;
     TESS_IRQ_OFF();
-    tess_param_set_body(tr, TX_SD_GRAVITY, (int32_t)tessera.sd_grav[tr] + s);
+    if (k) tess_param_set_body(tr, TX_PAT_GEN, s > 0);   /* (KNOB 4 PAT GEN: right ON, left OFF) */
+    else tess_param_set_body(tr, TX_SD_GRAVITY, (int32_t)tessera.sd_grav[tr] + s);
     TESS_IRQ_ON();
 }
 
@@ -982,6 +983,7 @@ void tessera_fm_layer_knob(uint32_t k, int32_t s)
     TESS_IRQ_ON();
 }
 
+static void pg_fill(uint32_t tr);                      /* (pat_gen.c) */
 /* the PIECE page (GLO), the project's: KNOB 1 LENGTH, 2 SHAPE, 3 PEAK (ARCH, PLATEAU, VALLEY, STEPS) or COUNT (WAVES,
  * BUILDS, STEPS: COUNT), 4 END; layer 1 (OCT+ held) USER's levels 1-4, layer 2 (OCT- held) 5-8 */
 void tessera_piece_knob(uint32_t k, int32_t s, int layer)
@@ -2454,48 +2456,52 @@ static uint8_t *tess_put_v19(uint8_t *o, const tessera_answer_t *a)
     memcpy(o, a->at, TESS_AN_NOTES);
     return o + TESS_AN_NOTES;
 }
+/* one track's record (TESS_PK_TRACK bytes; PAT GEN packs one track: pat_gen.c) */
+static uint8_t *tess_pack_track(uint8_t *o, uint32_t tr)
+{
+    const tessera_turing_t *tu = &tessera.turing[tr];
+    const tessera_euclid_t *eu = &tessera.euclid[tr];
+    const tessera_markov_t *mk = &tessera.markov[tr];
+    const tessera_morph_t *mo = &tessera.morph[tr];
+    const tessera_evolve_t *ev = &tessera.evolve[tr];
+    *o++ = tessera.mode[tr];
+    o = tess_put16(o, tu->reg); *o++ = tu->len; *o++ = tu->prob; *o++ = tu->oct_span;
+    *o++ = eu->steps; *o++ = eu->pulses; *o++ = eu->rot; *o++ = eu->pitch_seed;
+    *o++ = mk->tension; *o++ = mk->density; *o++ = mk->oct_span;
+    *o++ = mo->morph_pos; o = tess_put16(o, mo->snap_a); o = tess_put16(o, mo->snap_b);
+    *o++ = mo->oct_span; *o++ = (uint8_t)(mo->step_idx >> 4);     /* (the high nibble: the A preset) */
+    *o++ = ev->every; *o++ = ev->amount; *o++ = ev->lock; *o++ = ev->form; *o++ = ev->contrast;
+    *o++ = (uint8_t)ev->shift; *o++ = ev->drop; *o++ = ev->human; *o++ = ev->follow; *o++ = (uint8_t)ev->flourish;
+    o = tess_put16(o, ev->base_reg); *o++ = ev->visited;
+    for (uint32_t s = 0; s < 3u; s++) {
+        const tessera_sec_t *sc = &tessera.sec[tr][s];
+        o = tess_put16(o, sc->reg); *o++ = sc->p0; *o++ = sc->p1;
+    }
+    o = tess_put16(o, tessera.seed[tr]);
+    *o++ = tessera.grids[tr].x; *o++ = tessera.grids[tr].y; *o++ = tessera.grids[tr].dens;
+    *o++ = tessera.grids[tr].chaos;
+    o = tess_put_v4(o, &tessera.bounce[tr], &tessera.awake[tr], &tessera.poly[tr]);
+    *o++ = ev->branch; *o++ = ev->br_to; *o++ = ev->br_mode; *o++ = ev->logic; *o++ = ev->lg_with; *o++ = ev->cond;
+    *o++ = tessera.org_speed[tr]; *o++ = tessera.org_rate[tr];
+    o = tess_put_v6(o, &tessera.quad[tr]);
+    *o++ = tessera.nl_mode[tr]; *o++ = tessera.nl_len[tr]; *o++ = tessera.nl_keys[tr];
+    o = tess_put_v8(o, &tessera.constel[tr]);
+    o = tess_put_v9(o, &tessera.series[tr]);
+    o = tess_put_v10(o, &tessera.quad[tr], tessera.qcol[tr]);
+    o = tess_put_v11(o, &tessera.constel[tr]);
+    o = tess_put_v12(o, &tessera.chord[tr]);
+    o = tess_put_v13(o, &tessera.grids[tr], &tessera.chord[tr]);
+    o = tess_put_v14(o, tr);
+    o = tess_put_v15(o, &tessera.grids[tr]);
+    o = tess_put_v16(o, tr);
+    o = tess_put_v17(o, tr);
+    o = tess_put_v19(o, &tessera.answer[tr]);
+    return o;
+}
 uint32_t tessera_pack(uint8_t *o)
 {
     tessera_ensure_init();
-    for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) {
-        const tessera_turing_t *tu = &tessera.turing[tr];
-        const tessera_euclid_t *eu = &tessera.euclid[tr];
-        const tessera_markov_t *mk = &tessera.markov[tr];
-        const tessera_morph_t *mo = &tessera.morph[tr];
-        const tessera_evolve_t *ev = &tessera.evolve[tr];
-        *o++ = tessera.mode[tr];
-        o = tess_put16(o, tu->reg); *o++ = tu->len; *o++ = tu->prob; *o++ = tu->oct_span;
-        *o++ = eu->steps; *o++ = eu->pulses; *o++ = eu->rot; *o++ = eu->pitch_seed;
-        *o++ = mk->tension; *o++ = mk->density; *o++ = mk->oct_span;
-        *o++ = mo->morph_pos; o = tess_put16(o, mo->snap_a); o = tess_put16(o, mo->snap_b);
-        *o++ = mo->oct_span; *o++ = (uint8_t)(mo->step_idx >> 4);     /* (the high nibble: the A preset) */
-        *o++ = ev->every; *o++ = ev->amount; *o++ = ev->lock; *o++ = ev->form; *o++ = ev->contrast;
-        *o++ = (uint8_t)ev->shift; *o++ = ev->drop; *o++ = ev->human; *o++ = ev->follow; *o++ = (uint8_t)ev->flourish;
-        o = tess_put16(o, ev->base_reg); *o++ = ev->visited;
-        for (uint32_t s = 0; s < 3u; s++) {
-            const tessera_sec_t *sc = &tessera.sec[tr][s];
-            o = tess_put16(o, sc->reg); *o++ = sc->p0; *o++ = sc->p1;
-        }
-        o = tess_put16(o, tessera.seed[tr]);
-        *o++ = tessera.grids[tr].x; *o++ = tessera.grids[tr].y; *o++ = tessera.grids[tr].dens;
-        *o++ = tessera.grids[tr].chaos;
-        o = tess_put_v4(o, &tessera.bounce[tr], &tessera.awake[tr], &tessera.poly[tr]);
-        *o++ = ev->branch; *o++ = ev->br_to; *o++ = ev->br_mode; *o++ = ev->logic; *o++ = ev->lg_with; *o++ = ev->cond;
-        *o++ = tessera.org_speed[tr]; *o++ = tessera.org_rate[tr];
-        o = tess_put_v6(o, &tessera.quad[tr]);
-        *o++ = tessera.nl_mode[tr]; *o++ = tessera.nl_len[tr]; *o++ = tessera.nl_keys[tr];
-        o = tess_put_v8(o, &tessera.constel[tr]);
-        o = tess_put_v9(o, &tessera.series[tr]);
-        o = tess_put_v10(o, &tessera.quad[tr], tessera.qcol[tr]);
-        o = tess_put_v11(o, &tessera.constel[tr]);
-        o = tess_put_v12(o, &tessera.chord[tr]);
-        o = tess_put_v13(o, &tessera.grids[tr], &tessera.chord[tr]);
-        o = tess_put_v14(o, tr);
-        o = tess_put_v15(o, &tessera.grids[tr]);
-        o = tess_put_v16(o, tr);
-        o = tess_put_v17(o, tr);
-        o = tess_put_v19(o, &tessera.answer[tr]);
-    }
+    for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) o = tess_pack_track(o, tr);
     *o++ = tessera.en_arc; *o++ = tessera.en_rests;      /* (version 18's tail: the project's ENERGY) */
     return TESSERA_PK_BYTES;
 }
@@ -2968,6 +2974,8 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_TW_HOLD: return tessera.follow_hold[tr];
     case TX_TW_FHOW: return tessera.follow_how[tr];
     case TX_TW_FRHY: return tessera.follow_rhy[tr];
+    case TX_PAT_GEN: return tessera.pat_gen[tr];
+    case TX_MIDI_DMAP: return tessera.midi_dmap[tr];
     case TX_GRD_X: return tessera.grids[tr].x;
     case TX_GRD_Y: return tessera.grids[tr].y;
     case TX_GRD_DENS: return tessera.grids[tr].dens;
@@ -3170,6 +3178,12 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
         tessera.f_anchor[tr] = 0;                               /* (CONTRA: mirrored around the next note) */
         return;
     case TX_TW_FRHY: tessera.follow_rhy[tr] = (uint8_t)tess_clampi(v, 0, TESS_FR_COUNT - 1); return;
+    case TX_PAT_GEN:                                   /* (turned on: every pattern gets the settings as they are) */
+        v = tess_clampi(v, 0, 1);
+        if (v && !tessera.pat_gen[tr]) pg_fill(tr);
+        tessera.pat_gen[tr] = (uint8_t)v;
+        return;
+    case TX_MIDI_DMAP: tessera.midi_dmap[tr] = (uint8_t)tess_clampi(v, 0, TESS_DM_COUNT - 1); return;
     case TX_GRD_X: tessera.grids[tr].x = (uint8_t)tess_clampi(v, 0, 255); eng = TESS_ENG_GRIDS; break;
     case TX_GRD_Y: tessera.grids[tr].y = (uint8_t)tess_clampi(v, 0, 255); eng = TESS_ENG_GRIDS; break;
     case TX_GRD_DENS: tessera.grids[tr].dens = (uint8_t)tess_clampi(v, 0, 100); eng = TESS_ENG_GRIDS; break;
