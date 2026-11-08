@@ -57,6 +57,9 @@
   .needs li::before, .panel::before, .next::before { content: ""; position: absolute; left: -2px; top: -2px; bottom: -2px;
     width: 6px; background: var(--c, var(--p1)); }
   .small { color: var(--mid); font-size: 14px; line-height: 1.5; }
+  #beta-notes ul { margin: 0 0 8px; padding-left: 20px; }
+  #beta-notes li { margin: 2px 0; }
+  .beta-notes-head { color: var(--text); margin: 8px 0 2px; }
   .panel { position: relative; border: 2px solid var(--line); padding: 18px 20px 6px 24px; margin: 0 0 var(--gap); }
   .warn { color: var(--text); font-weight: 600; }
   /* the tip under the stripes: where to start (GEN's MODE) */
@@ -163,6 +166,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <label><input type="radio" name="build" id="build-beta-single"> <span data-t="beta-single"></span></label></p>
     <p class="small" data-t="betaWhy"></p>
     <p class="small" id="beta-info"></p>
+    <details id="beta-notes" class="small" hidden><summary data-t="betaNotes"></summary><div id="beta-notes-body"></div></details>
     <p class="small"><a id="beta-editor" href="../editor-beta/" data-t="betaEditor" hidden></a></p>
     <p class="small"><a href="https://github.com/Rastapopolix/tessera/issues" data-t="betaReport"></a></p>
   </section>
@@ -1057,6 +1061,7 @@ const TEXT = {
     "beta-dualTag": "ベータ・デュアルコア", "beta-singleTag": "ベータ・シングルコア",
     betaWhy: "次のアップデートを正式リリースの前に試せます。まだ不具合があるかもしれません。インストール前にエディタで全体バックアップを保存してください。ベータで保存したプロジェクトや音色は、古いリリースでは読めないことがあります。標準を選んでインストールするとリリース版へ戻せます。",
     betaReport: "不具合の報告・感想（GitHub Issues）",
+    betaNotes: "このベータの変更点（英語）",
     nightlyTitle: "Nightly（next）", "nightly-dual": "Nightly（デュアルコア）",
     "nightly-single": "Nightly（シングルコア）", "nightly-dualTag": "nightly・デュアルコア", "nightly-singleTag": "nightly・シングルコア",
     nightlyWhy: "next の開発版です。インストール前にエディタで全体バックアップを保存してください。標準版を選ぶとリリース版へ戻せます。",
@@ -1122,6 +1127,7 @@ const TEXT = {
     "beta-dualTag": "beta, dual core", "beta-singleTag": "beta, single core",
     betaWhy: "The next update, to try before its stable release. It may still have bugs: save a complete backup in the editor before installing. Projects and sounds saved on the beta may not all load on an older release. To go back, choose Standard and install again.",
     betaReport: "Report a problem or tell us how it went (GitHub issues)",
+    betaNotes: "What's new in this beta",
     nightlyTitle: "Nightly (next)", "nightly-dual": "Nightly — dual core",
     "nightly-single": "Nightly — single core", "nightly-dualTag": "nightly, dual core", "nightly-singleTag": "nightly, single core",
     nightlyWhy: "Development builds from next. Save a complete backup in the editor before installing. Choose Standard to return to the release.",
@@ -1205,13 +1211,23 @@ const selection = () => {     /* the release, or a channel ("nightly-dual": meta
 const ready = () => { lastKey = "ready"; $("status").textContent = `Tessera ${selection().channel.version} (${t(build() + "Tag")})`; };
 const log = (t) => { $("log").textContent += t + "\n"; };
 let image = null;
-const meta = {"version": "3.4.1", "product": "FM-1_834", "pkg": {"dual": "../../firmware/tessera-3.4.1.fwsc", "single": "../../firmware/tessera-3.4.1-1core.fwsc"}, "beta": {"version": "3.5-beta2", "product": "FM-1_835", "branch": "develop", "commit": "33228169d7690952f367807cb0486e7ad591ba7c", "builtAt": "2026-11-08T11:59:38Z", "pkg": {"dual": "../../firmware/tessera-3.5-beta2.fwsc", "single": "../../firmware/tessera-3.5-beta2-1core.fwsc"}, "editor": "../editor-beta/"}, "nightly": null, "synth": null};
+const meta = {"version": "3.4.1", "product": "FM-1_834", "pkg": {"dual": "../../firmware/tessera-3.4.1.fwsc", "single": "../../firmware/tessera-3.4.1-1core.fwsc"}, "beta": {"version": "3.5-beta2", "product": "FM-1_835", "branch": "develop", "commit": "33228169d7690952f367807cb0486e7ad591ba7c", "builtAt": "2026-11-08T11:59:38Z", "pkg": {"dual": "../../firmware/tessera-3.5-beta2.fwsc", "single": "../../firmware/tessera-3.5-beta2-1core.fwsc"}, "notes": [["New since 3.4.1", ["PAT GEN: each of a track's 8 patterns can keep its own generator setup, so switching pattern switches the generator. Off by default: EVOLVE, OCT+ held, KNOB 4.", "ROLL ALL: every generator track gets a new seed at once, and one step back undoes it. EVOLVE, OCT- held, KNOB 4.", "ENTRIES ORDER: choose the order tracks come in (AUTO, 1ST to 4TH); they leave in reverse. ENTRIES, OCT- held.", "MIDI OUT DRUM MAP: GM or ROW, for drum machines that take their tracks as a row of notes (such as the Analog Rytm). MIDI OUT, OCT+ and OCT- held."]], ["Fixed", ["Holding OCT- on EVOLVE or ENTRIES and letting go no longer takes you to HOME (#519)."]], ["Good to know", ["Projects saved with these new settings lose them on 3.4.x."]], ["Please try", ["PAT GEN with different generators on two patterns: switch by hand and with SONG, save, power off and on, load.", "ENTRIES ORDER with the bass set to come in later.", "A project from 3.4.1 loads and plays the same."]]], "editor": "../editor-beta/"}, "nightly": null, "synth": null};
 $("ver").textContent = `FM-1 · ${meta.version}`;
 $("beta-options").hidden = !meta.beta;
 if (meta.beta) {
   $("beta-version").textContent = meta.beta.version;
   $("beta-info").textContent = `${meta.beta.branch} · ${meta.beta.commit.slice(0, 7)} · ${meta.beta.builtAt}`;
   if (meta.beta.editor) { $("beta-editor").href = meta.beta.editor; $("beta-editor").hidden = false; }
+  if (Array.isArray(meta.beta.notes) && meta.beta.notes.length) {   // (docs/BETA_NOTES.md: headings and their lines, as text)
+    const body = $("beta-notes-body");
+    for (const [head, lines] of meta.beta.notes) {
+      const h = document.createElement("p"); h.className = "beta-notes-head"; h.textContent = String(head);
+      const ul = document.createElement("ul");
+      for (const line of lines) { const li = document.createElement("li"); li.textContent = String(line); ul.append(li); }
+      body.append(h, ul);
+    }
+    $("beta-notes").hidden = false;
+  }
 }
 $("nightly-options").hidden = !meta.nightly;
 if (meta.nightly) $("nightly-info").textContent = `next · ${meta.nightly.commit.slice(0, 7)} · ${meta.nightly.builtAt}`;
