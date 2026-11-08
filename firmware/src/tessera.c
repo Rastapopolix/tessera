@@ -113,6 +113,40 @@ void tessera_seed_turn(uint32_t tr, int32_t s)
     if (!song.playing) tess_roll_apply(tr);
 }
 
+/* ROLL ALL (EVOLVE, OCT- held, KNOB 4): right, every generator track a new seed at once, as its own ROLL would
+ * (playing: on each track's next bar line); left, the seeds from before the last ROLL ALL, once. STEP tracks keep theirs */
+static uint16_t tess_rall_prev[TESSERA_TRACKS];          /* the seeds before the last ROLL ALL, 0 none to go back to */
+static uint32_t tess_rall_n;                             /* (each ROLL ALL draws anew: on the host too) */
+uint32_t tessera_roll_all(int32_t dir)
+{
+    uint32_t tr, n = 0;
+    if (!dir) return 0;
+    for (tr = 0; tr < TESSERA_TRACKS; tr++) {
+        if (tessera.mode[tr] == TESS_ENG_OFF) continue;
+        uint32_t now = tessera.roll[tr] ? tessera.roll[tr] : tessera.seed[tr], to;
+        if (dir > 0) {
+            to = 1u + gen_stream(TESS_ENTROPY() + (tess_rall_n + 1u) * 0x9E3779B9u + tr * 0x85EBCA6Bu) % TESS_SEED_MAX;
+            if (to == now) to = to % TESS_SEED_MAX + 1u;
+            tess_rall_prev[tr] = (uint16_t)now;
+        } else {
+            if (!tess_rall_prev[tr]) continue;
+            to = tess_rall_prev[tr];
+            tess_rall_prev[tr] = 0;
+        }
+        tessera.roll[tr] = to == tessera.seed[tr] ? 0u : (uint16_t)to;
+        if (!song.playing) tess_roll_apply(tr);
+        n++;
+    }
+    if (dir > 0 && n) tess_rall_n++;
+    return n;
+}
+/* 1 a ROLL ALL can be turned back */
+int tessera_roll_all_back(void)
+{
+    for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) if (tess_rall_prev[tr]) return 1;
+    return 0;
+}
+
 void tessera_markov_recalc(uint32_t tr) { (void)tr; }   /* matrix is derived per step now */
 
 /* CHORD's USER before any key: POP's four chords (I V vi IV), so it plays from the start */

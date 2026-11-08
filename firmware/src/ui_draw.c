@@ -1184,6 +1184,16 @@ static void draw_columns(void)
         const tessera_evolve_t *ev = &tessera.evolve[tr < TESSERA_TRACKS ? tr : 0u];
         char e0[16], e1[16], e2[16], e3[16], e0u[8] = "", e1u[8] = "", e2u[8] = "%";
         int lk = tessera_lock_get(tr);
+        if (rall_layer_on()) {                          /* EVOLVE, OCT- held: ROLL ALL */
+            uint32_t g = 0;
+            for (uint32_t i = 0; i < TESSERA_TRACKS; i++) g += tessera.mode[i] != TESS_ENG_OFF;
+            draw_column(0, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
+            draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+            col_mods(PID_TESS(TX_EV_SEED));
+            draw_column(3, "ROLL ALL", tessera_roll_all_back() ? "BACK <" : "NEW >", "", g ? VAL(3u) : T_DIM, -1, ICON_AUTO);
+            return;
+        }
         if (sv_layer_on()) {                            /* STEP EVOLVE, OCT+ held: HOW */
             uint32_t how = tessera.sv_how[tr] % TESS_SV_HOWS;
             col_mods(PID_TESS(TX_SV_HOW));

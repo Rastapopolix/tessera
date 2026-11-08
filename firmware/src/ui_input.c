@@ -952,6 +952,12 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
+    if (pg->graph == GR_EVOLVE && rall_layer_on()) {   /* EVOLVE, OCT- held: KNOB 4 ROLL ALL (right new, left back) */
+        if (slot == 3u && steps) tessera_roll_all(steps > 0 ? 1 : -1);
+        oct_eat |= 1u;                                  /* (its release is no OCT-) */
+        ui.force = 1;
+        return;
+    }
     if (pg->graph == GR_EVOLVE) {                   /* (ROLL: 128 seeds, a quick turn across them) */
         tessera_evolve_knob(slot, slot == 3u ? accel(EN_K1 + slot, steps, 128) : steps);
         ui.force = 1;
