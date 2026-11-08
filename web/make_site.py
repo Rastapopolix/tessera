@@ -111,8 +111,11 @@ def channel(spec, label, stem, branch):
         raise SystemExit(f"{label} variants must have the same package identity")
     if files["dual"][1] == files["single"][1]:
         raise SystemExit(f"{label} variants must be distinct builds")
-    return files, {"version": spec["version"], "product": files["dual"][2], "branch": branch, "commit": spec["commit"],
-                   "builtAt": spec["builtAt"], "pkg": {k: "../../firmware/" + f[3] for k, f in files.items()}}
+    meta = {"version": spec["version"], "product": files["dual"][2], "branch": branch, "commit": spec["commit"],
+            "builtAt": spec["builtAt"], "pkg": {k: "../../firmware/" + f[3] for k, f in files.items()}}
+    if spec.get("notes"):                           # (a beta's: what is new, docs/BETA_NOTES.md, publish_beta.py)
+        meta["notes"] = spec["notes"]
+    return files, meta
 
 
 def copy_editor(ed):

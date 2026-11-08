@@ -90,7 +90,7 @@ jobs:
           commit=$(git rev-parse HEAD)
           git worktree add -B "site-beta-$V" ../page origin/main
           python web/publish_beta.py ../page/docs --dual "$RUNNER_TEMP/pkgs/tessera-$V.fwsc" --single "$RUNNER_TEMP/pkgs/tessera-$V-1core.fwsc" \
-            --version "$V" --commit "$commit" --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            --version "$V" --commit "$commit" --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --notes docs/BETA_NOTES.md
           cd ../page
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
