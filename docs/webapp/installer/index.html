@@ -763,7 +763,7 @@ const BACKUP_IDS_OWN = Array.from({length:21},(_,i)=>i);
 const BACKUP_IDS_NATIVE = Array.from({length:23},(_,i)=>i);
 const BACKUP_IDS_P5 = Array.from({length:28},(_,i)=>i);
 const BACKUP_IDS_TESS = Array.from({length:30},(_,i)=>i);   // melodee-tess: 28 the generators of the saved slots, 29 the live ones
-const maxSize = id => id >= 32 ? 81920 : (id === 0 || (id >= 2 && id <= 5)) ? 32768 : id>=23&&id<=27?3600:3840;
+const maxSize = id => id >= 32 ? 81920 : (id === 0 || (id >= 2 && id <= 5)) ? 34816 : id>=23&&id<=27?3600:3840;
 const idsOf = (n) => (n === BACKUP_IDS.length ? BACKUP_IDS : n === BACKUP_IDS_V1.length ? BACKUP_IDS_V1 : n === 9 ? BACKUP_IDS_BANKS : n === 17 ? BACKUP_IDS_CZ : n === 21 ? BACKUP_IDS_OWN : n === 23 ? BACKUP_IDS_NATIVE : n === 28 ? BACKUP_IDS_P5 : n === 30 ? BACKUP_IDS_TESS : null);
 const BACKUP_CMD = { LIST: 65, GET: 66, PUT: 67 };
 // melodee-tess, the own project format: the projects (0 the live music, 2..5 the slots) are TSP1 records (project_tsp.c):
@@ -1205,7 +1205,7 @@ const selection = () => {     /* the release, or a channel ("nightly-dual": meta
 const ready = () => { lastKey = "ready"; $("status").textContent = `Tessera ${selection().channel.version} (${t(build() + "Tag")})`; };
 const log = (t) => { $("log").textContent += t + "\n"; };
 let image = null;
-const meta = {"version": "3.4.1", "product": "FM-1_834", "pkg": {"dual": "../../firmware/tessera-3.4.1.fwsc", "single": "../../firmware/tessera-3.4.1-1core.fwsc"}, "beta": null, "nightly": null, "synth": null};
+const meta = {"version": "3.4.1", "product": "FM-1_834", "pkg": {"dual": "../../firmware/tessera-3.4.1.fwsc", "single": "../../firmware/tessera-3.4.1-1core.fwsc"}, "beta": {"version": "3.5-beta1", "product": "FM-1_835", "branch": "develop", "commit": "f21cc6915fc91bb2c834b5892fb6203fe31faa16", "builtAt": "2026-11-08T02:04:58Z", "pkg": {"dual": "../../firmware/tessera-3.5-beta1.fwsc", "single": "../../firmware/tessera-3.5-beta1-1core.fwsc"}, "editor": "../editor-beta/"}, "nightly": null, "synth": null};
 $("ver").textContent = `FM-1 · ${meta.version}`;
 $("beta-options").hidden = !meta.beta;
 if (meta.beta) {

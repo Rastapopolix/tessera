@@ -1,0 +1,12 @@
+{
+  "version": "3.5-beta1",
+  "product": "FM-1_835",
+  "branch": "develop",
+  "commit": "f21cc6915fc91bb2c834b5892fb6203fe31faa16",
+  "builtAt": "2026-11-08T02:04:58Z",
+  "pkg": {
+    "dual": "../../firmware/tessera-3.5-beta1.fwsc",
+    "single": "../../firmware/tessera-3.5-beta1-1core.fwsc"
+  },
+  "editor": "../editor-beta/"
+}
