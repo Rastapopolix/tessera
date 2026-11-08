@@ -524,9 +524,10 @@ static void help_find(uint32_t k)
                                            k ? TX_PL_SHAPE : TX_PL_LENGTH);
         return;
     }
-    if (pg->graph == GR_ENTRIES) {                     /* (the project's: ENTRIES, DWELL, STYLE, FADE; OCT+ held the ROLEs) */
+    if (pg->graph == GR_ENTRIES) {                     /* (the project's: ENTRIES, DWELL, STYLE, FADE; OCT+ held the ROLEs,
+                                                        * OCT- the ORDERs) */
         if (entries_layer_on()) {
-            help.pid = (uint16_t)PID_TESS(TX_ET_ROLE);
+            help.pid = (uint16_t)PID_TESS(entries_layer_on() == 2 ? TX_ET_ORDER : TX_ET_ROLE);
             help_tr = k;
         } else
             help.pid = (uint16_t)PID_TESS(k == 3u ? TX_ET_FADE : k == 2u ? TX_ET_STYLE : k ? TX_ET_DWELL : TX_ET_AMOUNT);

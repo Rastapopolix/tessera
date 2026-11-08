@@ -1648,8 +1648,8 @@ static void mo_pic_perf(void)
         mo_text(n ? b : "NO MOD", 82, y, n ? MO_INK : MO_DIM);
     }
 }
-/* ENTRIES: a row a track: its number, its role (AUTO's guess), IN / OUT / MUTE, its level as a bar; a row about
- * to change on the next line blinks; off: dim */
+/* ENTRIES: a row a track: its number, its role (AUTO's guess; OCT- held: its ORDER), IN / OUT / MUTE, its level as
+ * a bar; a row about to change on the next line blinks; off: dim */
 static void mo_pic_entries(void)
 {
     uint8_t role[TESSERA_TRACKS];
@@ -1659,7 +1659,8 @@ static void mo_pic_entries(void)
         char n[3] = {'T', (char)('1' + k), 0}, b[12];
         uint16_t ink = !on || ((warn >> k & 1u) && blink) ? mo_tdim(k) : MO_TRK(k);
         mo_invc(n, 3, y, MO_TRK(k));
-        str_cpy(b, ET_ROLE_NAME[role[k] % ET_ROLES], sizeof b);
+        str_cpy(b, entries_layer_on() == 2 ? ET_ORDER_NAME[tessera.et_order[k] % ET_ORDERS] : ET_ROLE_NAME[role[k] % ET_ROLES],
+                sizeof b);
         mo_text(b, 18, y, ink);
         mo_text(trk[k].p[P_MUTE] ? "MUTE" : (out >> k & 1u) ? "OUT" : "IN", 72, y, ink);
         mo_hl(98, y + 3, 20, MO_DIM);

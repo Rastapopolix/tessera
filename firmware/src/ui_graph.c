@@ -136,11 +136,12 @@ static int chain_layer_on(void)
     return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_CHAIN &&
            ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
-/* the ENTRIES page with OCT+ held: KNOB k is track k's ROLE (entries.c) */
+/* the ENTRIES page with OCT+ held: KNOB k is track k's ROLE; with OCT- held, its ORDER (entries.c). 1, 2, or 0 */
 static int entries_layer_on(void)
 {
-    return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_ENTRIES &&
-           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+    if (ui.home || ui.menu || ui.confirm || cur_page()->graph != GR_ENTRIES) return 0;
+    if ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) return 1;
+    return ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) ? 2 : 0;
 }
 /* the PIECE page with OCT+ held: KNOB k is USER's level k; with OCT- held, level 4 + k (planner.c). 1, 2, or 0 */
 static int piece_layer(void)
@@ -179,6 +180,7 @@ static void piece_time(char *b, uint32_t s)
     *o = 0;
 }
 static const char *const ET_ROLE_NAME[ET_ROLES] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "MELODY", "ANCHOR"};
+static const char *const ET_ORDER_NAME[ET_ORDERS] = {"AUTO", "1ST", "2ND", "3RD", "4TH"};
 /* a TRANSPOSE as its knob and the MIDI OUT picture say it: "+12", "0", "-24" */
 static void midi_tr_text(char *b, int32_t v)
 {
@@ -1333,6 +1335,10 @@ static void graph_entries(void)
         cv_text_c(PANEL_X0 + 15, y + 3, &AF_X, n, T_BG, T_TRK(k));
         str_cpy(b, ET_ROLE_NAME[role[k] % ET_ROLES], sizeof b);
         if (!tessera.et_role[k]) str_cpy(b + str_len(b), " (AUTO)", 8);
+        if (tessera.et_order[k]) {
+            str_cpy(b + str_len(b), " ", 2);
+            str_cpy(b + str_len(b), ET_ORDER_NAME[tessera.et_order[k] % ET_ORDERS], 4);
+        }
         cv_text(PANEL_X0 + 32, y + 3, &AF_X, b, ink);
         cv_text(PANEL_X0 + 136, y + 3, &AF_X, st, ink);
         cv_rect(PANEL_X0 + PANEL_W - 6 - bw, y + 7, bw, 3, T_RAISE);

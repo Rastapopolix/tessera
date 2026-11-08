@@ -233,6 +233,7 @@ typedef struct {
     uint8_t          et_style;                   /* 0 CUT, 1 FADE (default) */
     uint8_t          et_fade;                    /* 1..4: a FADE's bars (default 2) */
     uint8_t          et_role[TESSERA_TRACKS];    /* 0 AUTO, 1 BASS, 2 RHYTHM, 3 HARMONY, 4 MELODY, 5 ANCHOR (never out) */
+    uint8_t          et_order[TESSERA_TRACKS];   /* 0 AUTO (by ROLE), 1..4 comes in 1st..4th (entries.c et_rank) */
     /* The piece planner (planner.c; the PIECE page under GLO): the piece's LENGTH and SHAPE, steering ENERGY, Entries and
      * the CHAIN. The record's PLAN part. LENGTH FREE: nothing changes */
     uint8_t          pl_length;                  /* 0 FREE, 1..21 minutes (planner.c PL_MIN: 1 .. 240) */
@@ -429,9 +430,13 @@ enum {
     TX_FC_KEYB, TX_FC_KEYC,                         /* (0x292, 0x293: the CHAIN's B and C sections' key, the project's) */
     TX_SUB_SPLIT, TX_SUB_SPLIT_HOW,                 /* (0x294, 0x295: TIMING's SPLIT and HOW, any track's) */
     TX_TW_FHOW, TX_TW_FRHY,                         /* (0x296, 0x297: FOLLOW's HOW and RHYTHM, a generator track's) */
+    TX_PGEN_RESERVED, TX_DMAP_RESERVED,             /* (0x298, 0x299: claimed by PAT GEN and the drum map, open PRs:
+                                                     * gaps, no parameter, until they land) */
+    TX_ET_ORDER,                                    /* (0x29A: Entries' ORDER, any track's: AUTO, 1ST..4TH) */
     TX_COUNT
 };
-_Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95 && TX_TW_FRHY == 0x97,
+_Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95 && TX_TW_FRHY == 0x97 &&
+               TX_ET_ORDER == 0x9A,
                "parameter ids are stored: never renumbered");
 /* TX_TW_FHOW: the source's note as it is, the nearest chord tone, mirrored, a bass, or CANON 1..8 notes back */
 enum { TESS_FH_SAME, TESS_FH_CHORD, TESS_FH_CONTRA, TESS_FH_BASS, TESS_FH_CANON, TESS_FH_COUNT = TESS_FH_CANON + 8 };
