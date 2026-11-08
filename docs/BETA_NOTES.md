@@ -12,6 +12,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 
 ## Fixed
 - Holding OCT- on EVOLVE or ENTRIES and letting go no longer takes you to HOME (#519).
+- Web editor: ORACLE, TRIO and other user presets now show in the Sound tab's preset list, and Save to file names an FM6 user preset after itself, not after TINE EP (#526).
 
 ## Good to know
 - Projects saved with these new settings lose them on 3.4.x.
