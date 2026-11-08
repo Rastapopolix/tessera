@@ -2940,6 +2940,7 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_TW_FHOW: return tessera.follow_how[tr];
     case TX_TW_FRHY: return tessera.follow_rhy[tr];
     case TX_PAT_GEN: return tessera.pat_gen[tr];
+    case TX_MIDI_DMAP: return tessera.midi_dmap[tr];
     case TX_GRD_X: return tessera.grids[tr].x;
     case TX_GRD_Y: return tessera.grids[tr].y;
     case TX_GRD_DENS: return tessera.grids[tr].dens;
@@ -3146,6 +3147,7 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
         if (v && !tessera.pat_gen[tr]) pg_fill(tr);
         tessera.pat_gen[tr] = (uint8_t)v;
         return;
+    case TX_MIDI_DMAP: tessera.midi_dmap[tr] = (uint8_t)tess_clampi(v, 0, TESS_DM_COUNT - 1); return;
     case TX_GRD_X: tessera.grids[tr].x = (uint8_t)tess_clampi(v, 0, 255); eng = TESS_ENG_GRIDS; break;
     case TX_GRD_Y: tessera.grids[tr].y = (uint8_t)tess_clampi(v, 0, 255); eng = TESS_ENG_GRIDS; break;
     case TX_GRD_DENS: tessera.grids[tr].dens = (uint8_t)tess_clampi(v, 0, 100); eng = TESS_ENG_GRIDS; break;

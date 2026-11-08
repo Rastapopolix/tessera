@@ -654,6 +654,21 @@ static int test_pat_gen(void)
     ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_PGEN];
     if (ok) tsp_restore(raw);
     bad += check("PAT GEN: a record without the part loads with PAT GEN OFF", ok && !tessera.pat_gen[1]);
+    reset();                                           /* MIDI OUT's DRUM MAP: the DMAP part; ROW's notes */
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    bad += check("DRUM MAP: all GM writes no DMAP part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_DMAP]);
+    tessera_param_set(2, TX_MIDI_DMAP, TESS_DM_ROW);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_DMAP];
+    tessera_reset();
+    tsp_restore(raw);
+    bad += check("DRUM MAP: ROW comes back from its part", ok && tessera.midi_dmap[2] == TESS_DM_ROW && !tessera.midi_dmap[0]);
+    bad += check("DRUM MAP: ROW sends kick snare closed hat as 36 37 44, GM as they are, other notes as they are",
+                 midi_out_map(TESS_DM_ROW, 36) == 36u && midi_out_map(TESS_DM_ROW, 38) == 37u &&
+                 midi_out_map(TESS_DM_ROW, 42) == 44u && midi_out_map(TESS_DM_GM, 38) == 38u &&
+                 midi_out_map(TESS_DM_ROW, 60) == 60u);
     reset();
     return bad;
 }

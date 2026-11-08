@@ -43,21 +43,38 @@ static void midi_out_flush(uint32_t k)
     memset(midi_out_held[k], 0, sizeof midi_out_held[k]);
 }
 
+/* DRUM MAP ROW: a General MIDI drum note (the drum grid's and ATLAS's: eng_drum.c DRUM_LANE_NOTE) as one note a drum
+ * in a row from 36, in a drum machine's track order (BD SD RS CP BT LT MT HT CH OH CY CB); any other note as it is */
+static uint32_t midi_out_map(uint32_t dm, uint32_t note)
+{
+    static const uint8_t GM[8] = {36, 38, 37, 39, 45, 42, 46, 56}, ROW[8] = {0, 1, 2, 3, 5, 8, 9, 11};
+    if (dm == TESS_DM_ROW)
+        for (uint32_t i = 0; i < 8u; i++)
+            if (note == GM[i]) return 36u + ROW[i];
+    return note;
+}
+static uint8_t midi_out_dm[NTRK];                        /* the DRUM MAP the notes held went out with */
+
 static void midi_out_note(const track_t *t, uint32_t note, uint32_t vel)
 {
-    uint32_t k = trk_index(t), ch = midi_out_channel(t), bit = 1u << (note & 31u), *w = &midi_out_held[k][(note >> 5) & 3u];
+    uint32_t k = trk_index(t), ch = midi_out_channel(t), bit, *w;
+    uint32_t dm = k < TESSERA_TRACKS && (drum_track(t) || tessera.mode[k] == TESS_ENG_GRIDS) ? tessera.midi_dmap[k] : 0u;
     int32_t tr = k < TESSERA_TRACKS ? tessera.midi_tr[k] : 0, s;
-    note &= 127u;
+    note = midi_out_map(vel ? dm : midi_out_dm[k], note & 127u);
+    bit = 1u << (note & 31u);
+    w = &midi_out_held[k][(note >> 5) & 3u];
     if (!vel) {
         if (*w & bit)
             midi_out_send(midi_out_chan[k], (uint32_t)((int32_t)note + midi_out_tr[k]), 0);
         *w &= ~bit;
         return;
     }
-    if (ch != midi_out_chan[k] || tr != midi_out_tr[k]) {   /* the channel or TRANSPOSE changed: end the notes sent */
+    if (ch != midi_out_chan[k] || tr != midi_out_tr[k] || dm != midi_out_dm[k]) {   /* the channel, TRANSPOSE or DRUM
+                                                                                      * MAP changed: end the notes sent */
         midi_out_flush(k);                                    /* with the old ones */
         midi_out_chan[k] = (uint8_t)ch;
         midi_out_tr[k] = (int8_t)tr;
+        midi_out_dm[k] = (uint8_t)dm;
     }
     s = (int32_t)note + tr;
     if (ch == MIDI_OUT_NONE || s < 0 || s > 127)  /* (OFF, or moved out of MIDI's range: nothing held to end later) */

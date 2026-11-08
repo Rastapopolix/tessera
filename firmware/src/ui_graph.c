@@ -119,6 +119,12 @@ static int midi_layer_on(void)
            ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
 }
 /* the MIDI OUT page with OCT- held (and not OCT+): KNOB k is track k's SOUND, ON or OFF (voice.c trk_note_on) */
+/* the MIDI OUT page with OCT+ and OCT- held: KNOB k is track k's DRUM MAP (midi_out.c) */
+static int midi_dm_layer_on(void)
+{
+    return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_MIDICH &&
+           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) && ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u);
+}
 static int midi_snd_layer_on(void)
 {
     return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_MIDICH &&

@@ -46,6 +46,7 @@ static const char *const TX_N_SDKEEP[] = {"FREE", "RHYTHM", "PITCH"};   /* (TESS
 static const char *const TX_N_SVHOW[] = {"DRIFT", "ADORN", "SERIAL"};   /* (TESS_SV_*) */
 static const char *const TX_N_SOUND[] = {"ON", "OFF"};
 static const char *const TX_N_PATGEN[] = {"OFF", "ON"};
+static const char *const TX_N_DMAP[] = {"GM", "ROW"};
 static const char *const TX_N_PHRASE[] = {"4", "8", "16"};   /* (form_chain.c FC_PHRASE_BARS) */
 static const char *const TX_N_FCFOLLOW[] = {"FOLLOW", "OWN"};
 static const char *const TX_N_ETSTYLE[] = {"CUT", "FADE"};   /* (entries.c) */
@@ -212,6 +213,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_TW_FHOW] = PE("HOW", TX_N_FHOW, 0),
     [TX_TW_FRHY] = PE("RHYTHM", TX_N_FRHY, 0),
     [TX_PAT_GEN] = PE("PAT GEN", TX_N_PATGEN, 0),
+    [TX_MIDI_DMAP] = PE("MAP", TX_N_DMAP, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -749,6 +751,12 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                               "SEED. Turning it ON gives all 8 the settings as they are; COPY copies them "
                               "with the steps. FORM, TWEAK and the rest stay the track's. OFF: the "
                               "generator's settings are the track's. EVOLVE, OCT+ held, KNOB 4."),
+    X_(TX_MIDI_DMAP, "MIDI OUT DRUM MAP", "The notes a drum track or ATLAS sends out over MIDI. GM: General "
+                                        "MIDI's drum notes (kick 36, snare 38, closed hat 42). ROW: one note "
+                                        "a drum in a row from 36, in the order of a drum machine's tracks such "
+                                        "as the Analog Rytm's: kick, snare, rim, clap, -, low tom, -, -, closed "
+                                        "hat, open hat, -, bell. TRANSPOSE moves the row onto the machine's "
+                                        "first note. MIDI OUT, OCT+ and OCT- held, KNOB k."),
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
