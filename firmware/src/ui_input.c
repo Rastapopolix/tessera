@@ -1418,14 +1418,15 @@ static void act_do(void)
 static uint8_t oct_eat;                                 /* OCT taps not to come (held for a sheet, used in a combo) */
 static uint8_t oct_deferred;                            /* OCT+ pressed on Stage (its sheet when held): the octave on
                                                          * release */
-/* on a page with OCT held layers (MIDI OUT's TRANSPOSE / SOUND, PIECE's USER levels, MODS' threshold and CC) an OCT button
+/* on a page with OCT held layers (MIDI OUT's TRANSPOSE / SOUND / DRUM MAP, PIECE's USER levels, MODS' threshold and CC,
+ * EVOLVE's ROLL ALL and PAT GEN, ENTRIES' ROLE and ORDER: issue #519, 3.5-beta1 took you HOME) an OCT button
  * held past OCT_HOLD_MS is a hold, never a tap: let go without a knob turned it is neither Esc nor Enter (a peek never
  * leaves the page or flips a mod's polarity) */
 #define OCT_HOLD_MS 700u
 static int oct_layer_page(void)
 {
     uint32_t g = cur_page()->graph;
-    return !ui.home && !ui.menu && (g == GR_MIDICH || g == GR_PIECE || g == GR_CORDS);
+    return !ui.home && !ui.menu && (g == GR_MIDICH || g == GR_PIECE || g == GR_CORDS || g == GR_EVOLVE || g == GR_ENTRIES);
 }
 static uint32_t oct_taps(uint32_t pressed, int here)
 {
