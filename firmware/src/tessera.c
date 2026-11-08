@@ -1002,14 +1002,15 @@ void tessera_piece_knob(uint32_t k, int32_t s, int layer)
     TESS_IRQ_ON();
 }
 
-/* the ENTRIES page (GLO), the project's: KNOB 1 ENTRIES, 2 DWELL, 3 STYLE, 4 FADE; OCT+ held (layer): KNOB k track k's
- * ROLE */
+/* the ENTRIES page (GLO), the project's: KNOB 1 ENTRIES, 2 DWELL, 3 STYLE, 4 FADE; OCT+ held (layer 1): KNOB k track
+ * k's ROLE; OCT- held (layer 2): its ORDER */
 void tessera_entries_knob(uint32_t k, int32_t s, int layer)
 {
     tessera_ensure_init();
     if (!s || k > 3u) return;
     TESS_IRQ_OFF();
-    if (layer) tess_param_set_body(k, TX_ET_ROLE, (int32_t)tessera.et_role[k] + (s > 0 ? 1 : -1));
+    if (layer == 2) tess_param_set_body(k, TX_ET_ORDER, (int32_t)tessera.et_order[k] + (s > 0 ? 1 : -1));
+    else if (layer) tess_param_set_body(k, TX_ET_ROLE, (int32_t)tessera.et_role[k] + (s > 0 ? 1 : -1));
     else if (k == 0u) tess_param_set_body(0, TX_ET_AMOUNT, (int32_t)tessera.et_amount + s * 2);
     else if (k == 1u) tess_param_set_body(0, TX_ET_DWELL, (int32_t)tessera.et_dwell + s);
     else if (k == 2u) tess_param_set_body(0, TX_ET_STYLE, s > 0 ? 1 : 0);   /* (right FADE, left CUT) */
@@ -3009,6 +3010,7 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_ET_STYLE: return tessera.et_style;
     case TX_ET_FADE: return tessera.et_fade;
     case TX_ET_ROLE: return tessera.et_role[tr];
+    case TX_ET_ORDER: return tessera.et_order[tr];
     case TX_PL_LENGTH: return tessera.pl_length;        /* (the planner's: the project's, whichever track) */
     case TX_PL_SHAPE: return tessera.pl_shape;
     case TX_PL_PEAK: return tessera.pl_peak;
@@ -3231,6 +3233,7 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
     case TX_ET_STYLE: tessera.et_style = (uint8_t)tess_clampi(v, 0, 1); return;
     case TX_ET_FADE: tessera.et_fade = (uint8_t)tess_clampi(v, 1, 4); return;
     case TX_ET_ROLE: tessera.et_role[tr] = (uint8_t)tess_clampi(v, 0, ET_ROLES - 1); return;
+    case TX_ET_ORDER: tessera.et_order[tr] = (uint8_t)tess_clampi(v, 0, ET_ORDERS - 1); return;
     case TX_PL_LENGTH: tessera.pl_length = (uint8_t)tess_clampi(v, 0, (int32_t)PL_LENGTHS - 1); return;
     case TX_PL_SHAPE: tessera.pl_shape = (uint8_t)tess_clampi(v, 0, PL_SHAPES - 1); return;
     case TX_PL_PEAK: tessera.pl_peak = (uint8_t)tess_clampi(v, 0, 100); return;

@@ -138,6 +138,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | GLO > PIECE: **OCT+** / **OCT-** held, **KNOB 1** to **4** | SHAPE USER's points 1 to 4 / 5 to 8 |
 | GLO > CHAIN: **OCT+** held, **KNOB 1** to **4** | Each place's REPEAT, 1 to 8 phrases |
 | GLO > ENTRIES: **OCT+** held, **KNOB 1** to **4** | Each track's ROLE for ENTRIES: AUTO, BASS, RHYTHM, HARMONY, MELODY, ANCHOR |
+| GLO > ENTRIES: **OCT-** held, **KNOB 1** to **4** | Each track's ORDER for ENTRIES: AUTO (by ROLE), 1ST to 4TH (in in that order, out the other way) |
 | GLO: a black key on a track ENTRIES took out | Brings it back now, left alone until the next section |
 
 ## Generators

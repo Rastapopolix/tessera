@@ -51,6 +51,7 @@ static const char *const TX_N_PHRASE[] = {"4", "8", "16"};   /* (form_chain.c FC
 static const char *const TX_N_FCFOLLOW[] = {"FOLLOW", "OWN"};
 static const char *const TX_N_ETSTYLE[] = {"CUT", "FADE"};   /* (entries.c) */
 static const char *const TX_N_ETROLE[] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "MELODY", "ANCHOR"};
+static const char *const TX_N_ETORDER[] = {"AUTO", "1ST", "2ND", "3RD", "4TH"};
 static const char *const TX_N_PLLEN[] = {"FREE", "1", "2", "3", "4", "5", "6", "8", "10", "12", "15", "20", "25", "30",
                                          "40", "45", "60", "75", "90", "120", "180", "240"};   /* (planner.c PL_MIN) */
 static const char *const TX_N_PLSHAPE[] = {"ARCH", "RISE", "FALL", "PLATEAU", "VALLEY", "WAVES", "BUILDS", "STEPS",
@@ -188,6 +189,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_ET_STYLE] = PE("STYLE", TX_N_ETSTYLE, 1),
     [TX_ET_FADE] = {"FADE", F_INT, 1, 4, 2, 0, "bar"},
     [TX_ET_ROLE] = PE("ROLE", TX_N_ETROLE, 0),
+    [TX_ET_ORDER] = PE("ORDER", TX_N_ETORDER, 0),
     [TX_PL_LENGTH] = {"LENGTH", F_ENUM, 0, 21, 0, TX_N_PLLEN, "min"},
     [TX_PL_SHAPE] = PE("SHAPE", TX_N_PLSHAPE, 0),
     [TX_PL_PEAK] = PD("PEAK", F_PCT, 0, 100, 62),
@@ -758,6 +760,10 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                         "as the Analog Rytm's: kick, snare, rim, clap, -, low tom, -, -, closed "
                                         "hat, open hat, -, bell. TRANSPOSE moves the row onto the machine's "
                                         "first note. MIDI OUT, OCT+ and OCT- held, KNOB k."),
+    X_(TX_ET_ORDER, "ENTRIES ORDER", "When the track comes in: 1ST to 4TH, one a phrase in that order, and out the "
+                                     "other way round (last in, first out). AUTO: by ROLE, after the numbered tracks. "
+                                     "ANCHOR still never goes out; only AUTO tracks wait for a bass or harmony. GLO > "
+                                     "ENTRIES with OCT- held, KNOB k track k's."),
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT

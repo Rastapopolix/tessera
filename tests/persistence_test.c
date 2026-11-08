@@ -502,6 +502,31 @@ static int test_tsp_record(void)
     raw[tsp_seen.at[TSP_FMODE] + 1u] = TESS_FH_COUNT;  /* (track 2's HOW past CANON8) */
     tsp_resum(raw);
     bad += check("TSP1: a HOW past CANON8 refused", ok && !tsp_valid(raw, len));
+    reset();                                           /* Entries' ORDER: the EORDER part; none at AUTO */
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    bad += check("TSP1: ORDER all AUTO writes no EORDER part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_EORDER]);
+    tessera_param_set(0, TX_ET_ORDER, 3); tessera_param_set(2, TX_ET_ORDER, 1);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_EORDER];
+    tessera_reset();
+    tsp_restore(raw);
+    bad += check("TSP1: ORDER comes back from its part", ok && tessera.et_order[0] == 3u && tessera.et_order[2] == 1u &&
+                 !tessera.et_order[1] && !tessera.et_order[3]);
+    raw[tsp_seen.at[TSP_EORDER] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (an id this build does not know: as a record from
+                                                                       * before ORDER, which 3.4 skips the same way) */
+    tsp_resum(raw);
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_EORDER];
+    if (ok) tsp_restore(raw);
+    bad += check("TSP1: a record without the part loads with ORDER AUTO", ok && !tessera.et_order[0] && !tessera.et_order[2]);
+    tessera_param_set(1, TX_ET_ORDER, 4);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_EORDER];
+    raw[tsp_seen.at[TSP_EORDER] + 1u] = ET_ORDERS;     /* (track 2's ORDER past 4TH) */
+    tsp_resum(raw);
+    bad += check("TSP1: an ORDER past 4TH refused", ok && !tsp_valid(raw, len));
     reset();                                           /* HUMAN TIME: the record's HUMAN part; a record without it */
     song.sel = 1; tessera_knob(0, TESS_ENG_EUCLID);
     tessera_param_set(1, TX_TW_HUMAN, 60); tessera_param_set(0, TX_TW_HUMAN, 40);   /* (track 0: a STEP track) */

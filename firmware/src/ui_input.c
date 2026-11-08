@@ -1063,14 +1063,15 @@ static void edit_param(uint32_t slot, int32_t steps)
         return;
     }
     if (pg->graph == GR_ENTRIES) {                  /* ENTRIES, the project's: ENTRIES 2 a detent, DWELL, STYLE, FADE a
-                                                     * step; OCT+ held: KNOB k track k's ROLE */
+                                                     * step; OCT+ held: KNOB k track k's ROLE; OCT- held: its ORDER */
         int layer = entries_layer_on();
         tessera_entries_knob(slot, slot == 0u && !layer ? accel(EN_K1 + slot, steps, 50) : steps, layer);
-        if (layer) {
+        if (layer == 1) {
             oct_eat |= 2u;
             ui.oct_t0 |= 2u;
             oct_deferred = 0;
-        }
+        } else if (layer)
+            oct_eat |= 1u;                              /* (its release is no OCT-) */
         ui.force = 1;
         return;
     }
