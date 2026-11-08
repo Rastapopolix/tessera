@@ -57,6 +57,9 @@
   .needs li::before, .panel::before, .next::before { content: ""; position: absolute; left: -2px; top: -2px; bottom: -2px;
     width: 6px; background: var(--c, var(--p1)); }
   .small { color: var(--mid); font-size: 14px; line-height: 1.5; }
+  #beta-notes ul { margin: 0 0 8px; padding-left: 20px; }
+  #beta-notes li { margin: 2px 0; }
+  .beta-notes-head { color: var(--text); margin: 8px 0 2px; }
   .panel { position: relative; border: 2px solid var(--line); padding: 18px 20px 6px 24px; margin: 0 0 var(--gap); }
   .warn { color: var(--text); font-weight: 600; }
   /* the tip under the stripes: where to start (GEN's MODE) */
@@ -163,6 +166,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <label><input type="radio" name="build" id="build-beta-single"> <span data-t="beta-single"></span></label></p>
     <p class="small" data-t="betaWhy"></p>
     <p class="small" id="beta-info"></p>
+    <details id="beta-notes" class="small" hidden><summary data-t="betaNotes"></summary><div id="beta-notes-body"></div></details>
     <p class="small"><a id="beta-editor" href="../editor-beta/" data-t="betaEditor" hidden></a></p>
     <p class="small"><a href="https://github.com/Rastapopolix/tessera/issues" data-t="betaReport"></a></p>
   </section>
@@ -242,6 +246,7 @@ const TEXT = {
     "beta-dualTag": "ベータ・デュアルコア", "beta-singleTag": "ベータ・シングルコア",
     betaWhy: "次のアップデートを正式リリースの前に試せます。まだ不具合があるかもしれません。インストール前にエディタで全体バックアップを保存してください。ベータで保存したプロジェクトや音色は、古いリリースでは読めないことがあります。標準を選んでインストールするとリリース版へ戻せます。",
     betaReport: "不具合の報告・感想（GitHub Issues）",
+    betaNotes: "このベータの変更点（英語）",
     nightlyTitle: "Nightly（next）", "nightly-dual": "Nightly（デュアルコア）",
     "nightly-single": "Nightly（シングルコア）", "nightly-dualTag": "nightly・デュアルコア", "nightly-singleTag": "nightly・シングルコア",
     nightlyWhy: "next の開発版です。インストール前にエディタで全体バックアップを保存してください。標準版を選ぶとリリース版へ戻せます。",
@@ -307,6 +312,7 @@ const TEXT = {
     "beta-dualTag": "beta, dual core", "beta-singleTag": "beta, single core",
     betaWhy: "The next update, to try before its stable release. It may still have bugs: save a complete backup in the editor before installing. Projects and sounds saved on the beta may not all load on an older release. To go back, choose Standard and install again.",
     betaReport: "Report a problem or tell us how it went (GitHub issues)",
+    betaNotes: "What's new in this beta",
     nightlyTitle: "Nightly (next)", "nightly-dual": "Nightly — dual core",
     "nightly-single": "Nightly — single core", "nightly-dualTag": "nightly, dual core", "nightly-singleTag": "nightly, single core",
     nightlyWhy: "Development builds from next. Save a complete backup in the editor before installing. Choose Standard to return to the release.",
@@ -397,6 +403,16 @@ if (meta.beta) {
   $("beta-version").textContent = meta.beta.version;
   $("beta-info").textContent = `${meta.beta.branch} · ${meta.beta.commit.slice(0, 7)} · ${meta.beta.builtAt}`;
   if (meta.beta.editor) { $("beta-editor").href = meta.beta.editor; $("beta-editor").hidden = false; }
+  if (Array.isArray(meta.beta.notes) && meta.beta.notes.length) {   // (docs/BETA_NOTES.md: headings and their lines, as text)
+    const body = $("beta-notes-body");
+    for (const [head, lines] of meta.beta.notes) {
+      const h = document.createElement("p"); h.className = "beta-notes-head"; h.textContent = String(head);
+      const ul = document.createElement("ul");
+      for (const line of lines) { const li = document.createElement("li"); li.textContent = String(line); ul.append(li); }
+      body.append(h, ul);
+    }
+    $("beta-notes").hidden = false;
+  }
 }
 $("nightly-options").hidden = !meta.nightly;
 if (meta.nightly) $("nightly-info").textContent = `next · ${meta.nightly.commit.slice(0, 7)} · ${meta.nightly.builtAt}`;
