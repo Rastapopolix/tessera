@@ -3136,6 +3136,34 @@ static void pack_run(char *res, size_t cap)
         ok &= sok;
         tessera_unpack(a);
     }
+    {   /* ANSWER SOURCE a generator track (Theo, 3.5-beta4: BOUNCE on T1 drew one note): the notes it plays are the
+         * call, heard while ANSWER listens or rests, not while it answers; its STEP pattern not read; T1 a STEP track
+         * again: the pattern */
+        const tessera_answer_t *an = tessera_answer(1);
+        uint32_t gok = 1;
+        tessera_reset();
+        s_follow_step();                              /* (T1's pattern 60 62 64 - 67 65 - 72, under BOUNCE) */
+        gen(0, TESS_ENG_BOUNCE);
+        gen(1, TESS_ENG_ANSWER);
+        tessera_param_set(1, TX_SD_SOURCE, 1);
+        gok &= an->n == 0u && tess_an.phase[1] == TESS_AN_IDLE;
+        tessera.last_note[0] = 64;
+        tessera_hold_hit(0);                          /* (BOUNCE plays 64) */
+        tess_an.hclk[1] = 3;
+        tessera.last_note[0] = 69;
+        tessera_hold_hit(0);
+        gok &= an->n == 2u && an->note[0] == 64u && an->note[1] == 69u && an->at[1] == 3u && an->vel[0] == 100u &&
+               tess_an.phase[1] == TESS_AN_HEAR;
+        tess_an.phase[1] = TESS_AN_PLAY;              /* (answering: not heard) */
+        tessera.last_note[0] = 50;
+        tessera_hold_hit(0);
+        gok &= an->n == 2u;
+        tessera_param_set(0, TX_MODE, TESS_ENG_OFF);  /* (T1 a STEP track: its pattern the call) */
+        tessera_param_set(1, TX_SD_SOURCE, 1);
+        gok &= an->n == 6u && an->note[0] == 60u;
+        ok &= gok;
+        tessera_unpack(a);
+    }
     {   /* ANSWER FADE on GEN's KNOB 4: a count a click, 1 .. 16, then LOOPS SHORT MID LONG (LEN) and no further; back
          * down the same way */
         uint32_t i, up = 1;

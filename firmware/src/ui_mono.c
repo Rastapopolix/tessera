@@ -1192,7 +1192,7 @@ static void mo_pic_chord(uint32_t tr)
 }
 /* ANSWER: the phrase on a staff of its steps, a note a square at its height, lines joining them, the one playing
  * ringed; under it what it does now: LISTENING, an answer of FADE's count (a square an answer, the played ones dim),
- * LOOPS or PLAY KEYS. The squares outlined once the answers fade past half */
+ * LOOPS or PLAY KEYS (a generator SOURCE: LISTENING). The squares outlined once the answers fade past half */
 static void mo_pic_answer(uint32_t tr)
 {
     const tessera_answer_t *a = tessera_answer(tr);
@@ -1221,7 +1221,7 @@ static void mo_pic_answer(uint32_t tr)
             else mo_fill(x - 1, y - 1, 3, 3, MO_INK);
             if (song.playing && now == i + 1u && (ph == TESS_AN_PLAY || ph == TESS_AN_LOOP)) mo_circ(x, y, 3, MO_INK);
         }
-    if (ph == TESS_AN_HEAR) str_cpy(b, "LISTENING", sizeof b);
+    if (ph == TESS_AN_HEAR || (ph == TESS_AN_IDLE && answer_gen_src(tr))) str_cpy(b, "LISTENING", sizeof b);
     else if (!n || ph == TESS_AN_IDLE) str_cpy(b, "PLAY KEYS", sizeof b);
     else if (!cnt) str_cpy(b, "LOOPS", sizeof b);
     else {
