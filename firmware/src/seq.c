@@ -87,6 +87,7 @@ static uint32_t scale_mask(const track_t *t)
             mask |= 1u << ((s->pitch[i] + 5000) / 10000 % 12);
         return mask;
     }
+    if (uscale_on()) return uscale_on();            /* (a USER scale stands for SCL, uscale.h) */
     return SCALE_MASK[clamp(t->p[P_SCALE], 0, SCALE_LEGACY - 1)];
 }
 

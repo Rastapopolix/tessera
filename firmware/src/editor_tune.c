@@ -49,7 +49,7 @@ static int ed_tune_handle(uint32_t cmd, const uint8_t *a, uint32_t na)
         tune_clear(k);
         if (tune_sel == k + 1u) tune_sel = 0;
     }
-    if (!rc && op == 4u) tune_sel = (uint8_t)k;
+    if (!rc && op == 4u && (tune_sel = (uint8_t)k) != 0u) uscale_sel = 0;
     if (!rc && op != 0u && op != 1u) ui.force = 1;
     ed_b(op); ed_b(rc);
     if (rc) return 1;

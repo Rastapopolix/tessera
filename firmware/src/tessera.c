@@ -3259,7 +3259,7 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
         return;
     case TX_SD_GRAVITY: tessera.sd_grav[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_FM_DEVELOP: tessera.fm_dev[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
-    case TX_TUNE: tune_sel = (uint8_t)tess_clampi(v, 0, (int32_t)TUNE_SLOTS); return;
+    case TX_TUNE: tune_sel = (uint8_t)tess_clampi(v, 0, (int32_t)TUNE_SLOTS); if (tune_sel) uscale_sel = 0; return;
     case TX_CH_BREATH: tessera.ch_breath[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_AN_VARY: tessera.answer[tr].vary = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_AN_ECHO: tessera.answer[tr].echo = (uint8_t)tess_clampi(v, 0, 100); return;

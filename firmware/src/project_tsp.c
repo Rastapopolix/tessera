@@ -17,7 +17,8 @@
 enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TSP_FM6, TSP_DRUM, TSP_REC, TSP_NAME,
        TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_HOW, TSP_ORACLE,
        TSP_ENERGY, TSP_DEV, TSP_TRANSP, TSP_TUNE, TSP_SOUND, TSP_CHAIN, TSP_ENTRY, TSP_PLAN, TSP_PERF, TSP_HOLD,
-       TSP_CCN, TSP_FKEY, TSP_SPLIT, TSP_FMODE, TSP_PGEN, TSP_DMAP, TSP_EORDER, TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
+       TSP_CCN, TSP_FKEY, TSP_SPLIT, TSP_FMODE, TSP_PGEN, TSP_DMAP, TSP_EORDER, TSP_USCALE,
+       TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
                                               * TSP_HUMAN: each track's HUMAN TIME; none: TWEAK HUMAN's timing, as it was;
@@ -50,12 +51,15 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * TESS_PG_BYTES (pat_gen.c), written only when one is ON; none: OFF;
                                               * TSP_DMAP: each track's MIDI OUT DRUM MAP, written only when one is
                                               * not GM; none: GM;
+                                              * TSP_USCALE: the USER scale playing (1..4), then the four USER
+                                              * scales, 16 bits each (uscale.h), written only when one plays;
+                                              * none: SCL's scale, the device's USER scales kept;
                                               * TSP_EORDER: each track's Entries ORDER, 0 AUTO, 1..4, written only when
                                               * one is not 0; none: AUTO) */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
                TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_PERF == 30 &&
                TSP_HOLD == 31 && TSP_CCN == 32 && TSP_FKEY == 33 && TSP_SPLIT == 34 && TSP_FMODE == 35 &&
-               TSP_PGEN == 36 && TSP_DMAP == 37 && TSP_EORDER == 38,
+               TSP_PGEN == 36 && TSP_DMAP == 37 && TSP_EORDER == 38 && TSP_USCALE == 39,
                "the parts' numbers are stored: never renumbered");
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -414,6 +418,12 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
         tsp_begin(&w, TSP_HOLD, 1);                    /* (FOLLOW's HOLD: each track's) */
         tsp_bytes(&w, tessera.follow_hold, NTRK);
         tsp_end(&w);
+        if (uscale_on()) {                             /* (a USER scale playing: it, then all four) */
+            tsp_begin(&w, TSP_USCALE, 1);
+            tsp_byte(&w, uscale_sel);
+            for (t = 0; t < USCALE_SLOTS; t++) tsp_u16(&w, uscale_mask[t]);
+            tsp_end(&w);
+        }
         tsp_begin(&w, TSP_TUNE, 1);                    /* (TUNE, then each user tuning: its degree count, 0 empty, */
         tsp_byte(&w, tune_sel);                        /* else its name, title and degrees as int32) */
         for (t = 0; t < TUNE_SLOTS; t++) {
@@ -699,6 +709,12 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
                 if (!tessera_pg_check(k, p + NTRK + (k * NPAT + b) * TESS_PG_BYTES)) return 0;
         }
     }
+    if (tsp_seen.at[TSP_USCALE]) {
+        const uint8_t *p = raw + tsp_seen.at[TSP_USCALE];
+        if (tsp_seen.ver[TSP_USCALE] != 1u || tsp_seen.len[TSP_USCALE] != 1u + 2u * USCALE_SLOTS || !p[0] ||
+            p[0] > USCALE_SLOTS) return 0;
+        for (uint32_t k = 0; k < USCALE_SLOTS; k++) if (!uscale_ok(tsp_u16_at(p + 1u + 2u * k))) return 0;
+    }
     if (tsp_seen.at[TSP_EORDER]) {
         if (tsp_seen.ver[TSP_EORDER] != 1u || tsp_seen.len[TSP_EORDER] != NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_EORDER] + k] >= ET_ORDERS) return 0;
@@ -825,6 +841,12 @@ static void tsp_restore(const uint8_t *raw)
     memset(tessera.hold_mem, 0, sizeof tessera.hold_mem);
     tune_clear_all();                                  /* (the tunings are the project's; saved before them: none) */
     if (tsp_seen.at[TSP_TUNE]) (void)tsp_tune_read(raw + tsp_seen.at[TSP_TUNE], tsp_seen.len[TSP_TUNE], 1);
+    uscale_sel = 0;                                    /* (saved without one: SCL's scale, the device's USER scales) */
+    if (tsp_seen.at[TSP_USCALE]) {                     /* (its USER scale and the other three, until power-off or a */
+        const uint8_t *p = raw + tsp_seen.at[TSP_USCALE];   /* settings save keeps them) */
+        for (uint32_t k = 0; k < USCALE_SLOTS; k++) uscale_mask[k] = (uint16_t)tsp_u16_at(p + 1u + 2u * k);
+        uscale_sel = p[0];
+    }
     if (tsp_seen.at[TSP_ACC]) {
         memcpy(tessera.acc_limit, raw + tsp_seen.at[TSP_ACC], NTRK);
         memcpy(tessera.acc_mode, raw + tsp_seen.at[TSP_ACC] + NTRK, NTRK);

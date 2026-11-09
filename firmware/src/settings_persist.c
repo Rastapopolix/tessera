@@ -1,4 +1,5 @@
 #include "recording_preferences.h"
+#include "uscale.h"                              /* (the USER scales, kept here) */
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Kerem Kilic (Ellic Studio)
  * Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
@@ -16,6 +17,8 @@
  * favorites.factory[15][24] bit 4: MIDI CC IN OFF (midi_cc.c); zero keeps it ON. Bits 6..7: MENU MUTES (0 NOW).
  * favorites.factory[15][25]: tagged TRACK KNOB LEFT (panel.c KNOB_SWAP_TAG); zero/unknown keeps it on the right.
  * favorites.factory[8] bytes 4..7: 'U', 'V', 1, USB VOLUME 0..100 % (upstream's place); untagged = UA_VOLUME_DEFAULT.
+ * favorites.factory[8] bytes 8..15: the four USER scales (uscale.h), 16 bits each, low byte first; 0 (any value without
+ * the root, or above 12 bits) a slot never set: MAJ. Older firmware keeps them with the favorites, unread.
  * favorites.factory[8][27]: tagged NOTE PREVIEW OFF (since 3.3); any other byte ON, so units that never chose get it
  * ON. The old recording-preferences bit 6 is still written for older firmware, and no longer read.
  * bold: no longer used (one font weight); kept as it was saved, unless it holds the HOLD setting (panel.c). */
@@ -35,6 +38,7 @@ _Static_assert(sizeof(persist_t) == 604u, "the record's layout: new settings tak
 static int16_t settings_glo[4];                     /* ext.glo: project.c GLO_KEPT (glo_restore, glo_poll) */
 #define USB_VOLUME_ROW 8u                           /* (favorites.c: GRAIN's retired row, past Felucca 1.0's stars) */
 #define USB_VOLUME_BYTE 4u
+#define USCALE_BYTE 8u                              /* (row USB_VOLUME_ROW: the USER scales, 2 bytes each) */
 #define RECORD_PREF_TAG 0x52500000u /* RP, high half of the old zoom word */
 #define A4_TAG 0x41340000u                          /* "A4": old spare contents are not tuning */
 #define AUTOSAVE_OFF_TAG 0xA1u                     /* CZ row byte 28: only this tag disables autosave */
@@ -111,6 +115,11 @@ static int settings_import(persist_t *p, int n)
     uint32_t level = (rp >> 2) & 3u;
     settings_click_level = (uint8_t)(level == 1u ? 0u : level == 2u ? 2u : 1u);
     settings_countin = (uint8_t)(((rp >> 4) & 3u) < 3u ? (rp >> 4) & 3u : 0u);
+    for (uint32_t k = 0; k < USCALE_SLOTS; k++) {
+        const uint8_t *u = p->favorites.factory[USB_VOLUME_ROW] + USCALE_BYTE + 2u * k;
+        uint32_t m = u[0] | (uint32_t)u[1] << 8;
+        uscale_mask[k] = (uint16_t)(uscale_ok(m) ? m : USCALE_DEF);
+    }
     settings_preview = p->favorites.factory[8][27] != PREVIEW_OFF_TAG;   /* (rp bit 6: older firmware's, not read) */
     settings_chord_add = (uint8_t)((rp >> 7) & 1u);
     settings_hold = (uint8_t)hold_from_stored(p->bold);
@@ -155,6 +164,11 @@ static void settings_export(persist_t *p)
 #endif
     p->favorites.factory[15][27]=settings_screen;
     p->favorites.factory[8][27] = settings_preview ? 0u : PREVIEW_OFF_TAG;
+    for (uint32_t k = 0; k < USCALE_SLOTS; k++) {
+        uint8_t *u = p->favorites.factory[USB_VOLUME_ROW] + USCALE_BYTE + 2u * k;
+        uint32_t m = uscale_mask[k] == USCALE_DEF ? 0u : uscale_mask[k];
+        u[0] = (uint8_t)m; u[1] = (uint8_t)(m >> 8);
+    }
     p->favorites.factory[15][28] = settings_autosave ? 0u : AUTOSAVE_OFF_TAG;
     p->favorites.factory[15][30] = (uint8_t)((p->favorites.factory[15][30] & 0x1Fu) | settings_midi_out << 5 |
                                              (settings_clock_out != 0u) << 7);

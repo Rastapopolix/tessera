@@ -335,6 +335,8 @@ if core && [ $TABLES = 1 ]; then
     t "scale picker: families, favorites, empty lists, shared settings and navigation" scale_picker_test -O1 $FW
     t "user tunings: checks, the catalogue's pitch as a slot, TUNING over SCL, the USER family, the project's part" tune_test \
         -O1 $FW
+    t "USER scales: picked on the keys, QNT and a generator in one, the settings record, the project part, older firmware" \
+        uscale_test -O1 $FW
     t "chord keys: diatonic and fixed chords, voicings, MONO root, releases, recording, ARP, MIDI IN, kits" chord_test $FW
     t "motion, whole-step chance, an older parameter count, song restore and ARP repeat" motion_test -O1 $FW
     t "32 pattern banks: chords, ties, independent loop switching, copy and persistence" pattern_test \
