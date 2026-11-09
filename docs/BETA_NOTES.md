@@ -28,6 +28,8 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - PAT GEN with different generators on two patterns: switch by hand and with SONG, save, power off and on, load.
 - ENTRIES ORDER with the bass set to come in later.
 - PRINT ARP: an ARP track with a chord held, hold REC after two bars; then EDIT held.
+- ROLL and ROLL ALL on EVOLVE, stopped and playing: the screen says NEW LINE (NEW LINE AT BAR while playing).
+- Web editor: an ORACLE or TRIO user preset shows in the Sound list; Save to file on an FM6 user preset uses its own name.
 - RANDOM on GEN with a few generators, stopped and playing; then turn back.
 - USER scales: make one on the keys, play a generator in it, save, power off and on, load; load that project on 3.4.1 (it plays the scale picked under it).
 - ARP DNUP and RND1 with a chord held: RND1 keeps its order, changes when a key is added, and is the same after STOP and PLAY.
