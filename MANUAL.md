@@ -354,7 +354,7 @@ key skips it.
 | **SAVE** + **REC**, or hold **SAVE** | Saves the project to its slot (stops playback first). |
 | **EVOLVE**, KNOB 4 (**ROLL**) | Each click is a new seed (1 to 128), so a new line; turn back for the last one, note for note. |
 | **FORM**, KNOB 3 (**CLEAR**) | Forgets B and C: the section playing becomes A. |
-| **MODS**, **OCT+** | Switches the picked mod between **+-** (both ways), **+** (one way) and **^** (GATE). |
+| **MODS**, **OCT+** | Switches the picked mod between **+-** (both ways), **+** (one way), **^** (GATE) and **=** (HOLD). |
 | **MODS**, **OCT+** held + **KNOB 4** | Sets a GATE mod's threshold. |
 | **MATRIX**, **OCT+** | Opens the picked mod in MODS. |
 | **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across a row, KNOB 2 between rows, OCT+ opens the page, OCT- or EDIT closes it. Any other page button leaves it for its page. |
@@ -1408,12 +1408,20 @@ at a time, each with an activity light and a moving mark.
   way only), and its bar says the same: a +- mod's bar reaches as far below the middle as above it. A bipolar source
   (LFO, KEY, RAND, S&H, SLEW, NOTE, DRIFT, TIDE, SWARM, ENERGY) is +-. Press **OCT+** on MODS to make the picked mod
   **+**: the source folded to 0 to 1, so it moves one way only, as ENV does ("+" after the source's name). OCT+ again
-  makes it a GATE, and once more +- again (a 0 to 1 source goes between + and GATE).
+  makes it a GATE, then HOLD, and once more +- again (a 0 to 1 source goes +, GATE, HOLD).
 - **GATE: all or nothing.** A GATE mod ("^" after the source's name) moves its destination by its whole amount while
   the source is over a threshold, and not at all under it, like a comparator on a modular. Hold **OCT+** and turn
   **KNOB 4** to set the threshold (it starts at the middle of a +- source, at 50 % of a 0 to 1 one). Two GATE mods from
   one source, one at -20 % with +50 and one at +20 % with -50, open a window: the destination moves only while the
   source is between them. A little hysteresis keeps a slow source near the threshold from chattering.
+- **HOLD: once a bar.** A HOLD mod ("=" after the source's name) takes its source on the first step of each bar of
+  its destination's track and holds it until the next bar, like a sample and hold clocked by the bar. So TIDE, ENERGY,
+  a generator's CV or an LFO moves a setting in steps, a bar at a time, instead of sweeping it; onto DIR or a
+  generator's setting it changes the line on the bar line. It reads the source as +- does (a 0 to 1 source one way);
+  AMOUNT and OFFSET work as for +-. A destination of the project's (FILL, TEMPO, the send effects, M AMT) takes track
+  1's bar. Set while stopped, it takes the source at once; PLAY takes it again on the first step. (S&H, a source, holds
+  random values for an LFO cycle; FOLLOW HOLD takes another track's pitch on its notes.) Saved with the project;
+  firmware before it plays a HOLD mod as +-.
 - **DIR.** A mod onto a track's **DIR** picks the direction its STEP pattern plays in (see *Direction* on the
   pattern's sheet), in whole steps from the pattern's own along FWD, BACK, PEND, PONG, RAND, DRUNK: each 20 % of move
   is one more, and it stops at the ends. So the amount and the offset say which directions it can reach: from FWD, a +

@@ -1275,6 +1275,7 @@ static void seq_grid_tick(track_t *t, uint32_t n)
         }
         cap_step[trk_index(t)]++;
         seq_run_step[trk_index(t)]++;
+        if (!(seq_run_step[trk_index(t)] % tess_steps_per_bar(t))) cord_hold_bar(trk_index(t));   /* (HOLD mods) */
         if (!SEQ_D(t).slot && t == &trk[0] && !chain.running)
             jam_loop();
         motion_step(t, t->seq_idx, &motion);

@@ -7,7 +7,8 @@
  * amount. A cord without a source is a fixed move: KNOB 4 its OFFSET. OCT+: a bipolar source's direction, +- (both
  * ways from the knob) or + (folded to 0..1: one way, "+" after its name), then GATE (">" after its name, Mono "^": all while the
  * source is over a threshold, none under it; OCT+ held + KNOB 4 sets the threshold); the mod's own (cord.h uni), not
- * the LFO page's POL BI/UNI (cord.c cord_lfo_raw). Included by ui_pages.c. */
+ * the LFO page's POL BI/UNI (cord.c cord_lfo_raw); then HOLD ("=" after its name: the source as +-, sampled once a
+ * bar of the destination's track and held). Included by ui_pages.c. */
 
 static int32_t accel(uint32_t role, int32_t s, int32_t range);                       /* ui_input.c */
 static int32_t list_accel(uint32_t role, int32_t s, uint32_t total, uint32_t *fast);
@@ -83,6 +84,7 @@ static const char *cu_src_name(const cord_t *c)
     str_cpy(b, cord_src_name(c->src), sizeof b - 1u);
     if (cord_fold_on(c)) str_cpy(b + str_len(b), "+", 2);
     else if (cord_gate(c)) str_cpy(b + str_len(b), LOOK(">", "^"), 2);   /* (Mono: its arrow is a ">") */
+    else if (c->uni == CU_HOLD) str_cpy(b + str_len(b), "=", 2);
     return b;
 }
 
@@ -326,7 +328,8 @@ static void cu_pick_label(char *b, uint32_t col, int32_t i, int32_t *tr)
     str_cpy(b + str_len(b), s, 20u - str_len(b));
 }
 
-/* OCT+ on MODS: how the cord reads its source, +- -> + -> GATE -> +- (a source that is 0..1 already: + <-> GATE). To
+/* OCT+ on MODS: how the cord reads its source, +- -> + -> GATE -> HOLD -> +- (a source that is 0..1 already: + ->
+ * GATE -> HOLD -> +). To
  * GATE: the threshold (OFFSET) starts at the middle of a bipolar source, at 50 % of a 0..1 one */
 static void cu_polarity(void)
 {
@@ -337,7 +340,7 @@ static void cu_polarity(void)
         return;
     }
     bip = cord_bipolar(c.src, c.src_trk);
-    c.uni = c.uni == CU_GATE ? (bip ? CU_BI : CU_UNI) : c.uni == CU_UNI || !bip ? CU_GATE : CU_UNI;
+    c.uni = c.uni == CU_HOLD ? (bip ? CU_BI : CU_UNI) : c.uni == CU_GATE ? CU_HOLD : c.uni == CU_UNI || !bip ? CU_GATE : CU_UNI;
     c.offset = c.uni == CU_GATE ? (bip ? 0 : 50) : 0;
     (void)cord_set(cord_ui_sel, &c);
     if (c.uni == CU_GATE) {
@@ -346,7 +349,7 @@ static void cu_polarity(void)
         cu_pct_text(b + str_len(b), c.offset);
         ui_message(b);
     } else
-        ui_message(c.uni ? "+ ONE WAY" : "+- BOTH WAYS");
+        ui_message(c.uni == CU_HOLD ? "HOLD A BAR" : c.uni ? "+ ONE WAY" : "+- BOTH WAYS");
     ui.force = 1;
 }
 /* OCT+ held + KNOB 4 on a GATE mod: its threshold (ui_input.c: OCT+'s tap eaten) */
@@ -390,7 +393,7 @@ static void cu_knob(uint32_t slot, int32_t steps)
     if (slot == 0u) {
         v = clamp((int32_t)cu_src_of(&c) + list_accel(EN_K1, steps, CU_NSRC, 0), 0, CU_NSRC - 1);
         c.src = (uint8_t)cu_src_at((uint32_t)v, &c.src_trk);
-        if (c.uni == CU_GATE && !c.src) { c.uni = CU_BI; c.offset = 0; }   /* (no source: no gate, no threshold; */
+        if (c.uni >= CU_GATE && !c.src) { c.uni = CU_BI; c.offset = 0; }   /* (no source: no gate, no threshold; */
         if (c.uni == CU_GATE && c.offset < 0 && !cord_bipolar(c.src, c.src_trk)) c.offset = 0;   /* 0..1: none under 0) */
         if (c.src && !c.amount && c.uni != CU_GATE) { c.amount = c.offset; c.offset = 0; }   /* (one move shown: a fixed move becomes */
         if (!c.src && c.amount) { c.offset = c.amount; c.amount = 0; }   /* the source's, and back) */

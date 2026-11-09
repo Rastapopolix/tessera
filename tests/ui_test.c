@@ -1353,7 +1353,10 @@ static int test_cords_page(void)
     bad += check("..OCT+ held + KNOB 4: the GATE's threshold (+5 %), the amount kept, its release no OCT+",
                  c->uni == CU_GATE && c->offset == 5 && c->amount == 25);
     press(B_OCTUP);
-    bad += check("..OCT+ again: BI, the threshold gone", !c->uni && !c->offset && pop.on != POP_SHEET);
+    bad += check("..OCT+ again: HOLD, the threshold gone", c->uni == CU_HOLD && !c->offset && pop.on != POP_SHEET &&
+                 msg_is("HOLD A BAR"));
+    press(B_OCTUP);
+    bad += check("..OCT+ again: BI", !c->uni && !c->offset && pop.on != POP_SHEET);
     fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
     host_pressed |= 1u << panel.btn[B_OCTUP];
     for (i = 0; i < 6u; i++) { frame(); fm1_ms += 200u; host_ticks += 200000u; }   /* (held 1.2 s) */
@@ -3581,6 +3584,42 @@ static int test_step_dir(void)
     project_load(1);
     ok &= tessera_param_get(0, TX_SEQ_DIR) == SEQ_FWD;
     bad += check("DIR: saved with the pattern (part 40 only when one is not FWD)", ok);
+    return bad;
+}
+/* HOLD mods: a source sampled on the first step of each bar of the destination's track, held between; saved */
+static int test_mod_hold(void)
+{
+    track_t *t = &trk[0];
+    cord_t c = {0};
+    uint32_t i, period, spb, ok = 1;
+    int bad = 0;
+    int16_t v[3];
+    ui_power_on();
+    cord_clear();
+    tessera_param_set(0, TX_MACRO1, 20);
+    c.src = CS_MACRO1; c.dst = CD_LEVEL; c.dst_trk = 0; c.amount = 50; c.uni = CU_HOLD;
+    cord_set(0, &c);
+    seq_start();
+    events_block(32);
+    period = seq_div_samples((uint32_t)t->p[P_SDIV]);
+    spb = tess_steps_per_bar(t);
+    v[0] = cord_hval[0];
+    tessera_param_set(0, TX_MACRO1, 80);
+    for (i = 1; i < spb; i++) { units_block(period); ok &= cord_hval[0] == v[0]; }
+    units_block(period);
+    v[1] = cord_hval[0];
+    bad += check("HOLD: MACRO 1 held through the bar, sampled again on the next bar's first step", ok && v[1] > v[0]);
+    stop_transport();
+    project_save(1);
+    cord_clear();
+    project_load(1);
+    v[2] = (int16_t)cord_get(0)->uni;
+    bad += check("HOLD: saved with the project (part 41)", v[2] == CU_HOLD && cord_hold_mask() == 1u);
+    cord_clear();
+    project_save(1);
+    project_load(1);
+    bad += check("..none: no HOLD after a load", !cord_hold_mask());
+    tessera_param_set(0, TX_MACRO1, 0);
     return bad;
 }
 static int test_patterns_queue(void)
@@ -7007,6 +7046,7 @@ int main(void)
     /* (test_mod_rows: MOD hidden in Tessera, its routes mods: test_mods_page) */
     bad += test_patterns_queue();
     bad += test_step_dir();
+    bad += test_mod_hold();
     bad += test_init_scales_patterns();
     bad += test_bughunt_ui();
     bad += test_bughunt_ui2();

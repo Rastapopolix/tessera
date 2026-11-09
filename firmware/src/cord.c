@@ -199,10 +199,11 @@ static int cord_bipolar(uint32_t s, uint32_t tr)
 
 /* a cord's polarity: its source bipolar, unless UNI folds it to 0..1. For the LFO the mod's BI/UNI alone decides: the
  * LFO page's POL shapes its own DEPTH routes, not the mods */
-static int cord_bip(const cord_t *c) { return !c->uni && cord_bipolar(c->src, c->src_trk); }
+static int cord_bip(const cord_t *c) { return (!c->uni || c->uni == CU_HOLD) && cord_bipolar(c->src, c->src_trk); }
 static int cord_fold_on(const cord_t *c) { return c->uni == CU_UNI && cord_bipolar(c->src, c->src_trk); }
 static int cord_gate(const cord_t *c) { return c->uni == CU_GATE && c->src; }
 static int cord_gate_on(const cord_t *c);
+static int32_t cord_hold_val(const cord_t *c);
 static int32_t cord_fold(const cord_t *c, int32_t x) { return cord_fold_on(c) ? (x + 32768) >> 1 : x; }
 /* a cord's source now, folded when UNI. A track's LFO is folded before its FADE and (own: the DEPTH gain of the track
  * the cord is on, 32767 none) its DEPTH scale it, as the LFO's own POL UNI is (voice.c): faded in or turned down, a UNI
@@ -211,6 +212,7 @@ static int32_t cord_val(const cord_t *c, int32_t own)
 {
     if (!c->src) return 0;
     if (cord_gate(c)) return cord_gate_on(c) ? 32767 : 0;
+    if (c->uni == CU_HOLD) return cord_hold_val(c);
     if (c->src == CS_LFO && cord_fold_on(c)) {
         const track_t *s = &trk[c->src_trk % NTRK];
         int32_t x = mulq15((cord_lfo_raw(s) + 32768) >> 1, s->lfo_fade);
@@ -244,6 +246,9 @@ static int8_t cord_now[CORD_MAX];
 /* cord_adopt: bit i, cords[i] came with track t's sound (a route of it, unedited since) and goes with it; sig the
  * sound it came with; fresh: the cords just loaded (a project's routes are the project's: kept) */
 static uint16_t cord_adopted[NTRK];
+/* HOLD (cord.h CU_HOLD): hmask bit i, cords[i] is one; hval[i], its source as its destination track's bar began */
+static uint16_t cord_hmask;
+static int16_t cord_hval[CORD_LIVE];
 static uint32_t cord_adopt_sig[NTRK];
 static uint8_t cord_fresh = 1;
 
@@ -286,6 +291,27 @@ static __attribute__((noinline)) void cord_gates_tick(void)
         if ((m & 1u) && cord_gate_now(&cords[i], (int)((cord_gates >> i) & 1u))) g |= 1u << i;
     cord_gates = g;
 }
+static void cord_masks(void);
+static int32_t cord_hold_val(const cord_t *c)
+{
+    return cord_bit(cord_hmask, c) ? cord_hval[c - cords] : cord_src(c->src, c->src_trk);
+}
+void cord_hold_bar(uint32_t tr)
+{
+    uint32_t m = cord_hmask, i;
+    for (i = 0; m; i++, m >>= 1)
+        if ((m & 1u) && cords[i].dst_trk == tr) cord_hval[i] = (int16_t)cord_src(cords[i].src, cords[i].src_trk);
+}
+uint32_t cord_hold_mask(void) { return cord_hmask; }
+void cord_hold_load(uint32_t m)
+{
+    uint32_t i;
+    TESS_IRQ_OFF();
+    for (i = 0; i < CORD_LIVE; i++)
+        if (((m >> i) & 1u) && cords[i].src && cords[i].uni == CU_BI) cords[i].uni = CU_HOLD;
+    cord_masks();
+    TESS_IRQ_ON();
+}
 int32_t cord_move(uint32_t i)
 {
     const cord_t *c = cord_get(i);
@@ -299,6 +325,12 @@ static void cord_masks(void)
     cord_gmask = 0;
     cord_cmask = cord_amask = 0;
     cord_tmask = cord_fmask = cord_pmask = cord_ccmask = 0;
+    for (i = 0, t = 0; i < CORD_LIVE; i++)              /* (HOLD: a new one samples now, not 0 until its bar) */
+        if (cords[i].uni == CU_HOLD && cords[i].src) {
+            if (!((cord_hmask >> i) & 1u)) cord_hval[i] = (int16_t)cord_src(cords[i].src, cords[i].src_trk);
+            t |= 1u << i;
+        }
+    cord_hmask = (uint16_t)t;
     for (i = 0; i < CORD_LIVE; i++) {                   /* (the mods of mods first: the cords they turn are live) */
         const cord_t *c = &cords[i];
         uint32_t j = (uint32_t)c->dst - CD_M1_AMT;
@@ -339,7 +371,7 @@ int cord_set(uint32_t i, const cord_t *c)
 {
     uint32_t t;
     if (i >= CORD_LIVE || c->src >= CS_N || c->src_trk >= NTRK || !cord_dest(c->dst) || c->dst_trk >= NTRK ||
-        c->amount < -100 || c->amount > 100 || c->offset < -100 || c->offset > 100 || c->uni > CU_GATE)
+        c->amount < -100 || c->amount > 100 || c->offset < -100 || c->offset > 100 || c->uni > CU_HOLD)
         return 0;
     TESS_IRQ_OFF();
     cords[i] = *c;
@@ -361,6 +393,7 @@ static void cord_reset(void)
     cord_gmask = 0;
     cord_cmask = cord_amask = 0;
     cord_tmask = cord_gates = cord_fmask = cord_pmask = cord_ccmask = 0;
+    cord_hmask = 0;
     cord_fresh = 1;
     memset(cords, 0, sizeof cords);
     memset(cord_now, 0, sizeof cord_now);
@@ -384,7 +417,8 @@ static void cord_pack(uint8_t *out)
     uint32_t i;
     for (i = 0; i < CORD_MAX; i++, out += 6) {
         const cord_t *c = &cords[i];
-        out[0] = c->src; out[1] = (uint8_t)(c->src_trk | (c->uni & 1u) << 7 | (c->uni >> 1) << 6); out[2] = c->dst; out[3] = c->dst_trk;
+        uint32_t u = c->uni == CU_HOLD ? CU_BI : c->uni;   /* (HOLD: BI, the part TSP_MHOLD marks it) */
+        out[0] = c->src; out[1] = (uint8_t)(c->src_trk | (u & 1u) << 7 | (u >> 1) << 6); out[2] = c->dst; out[3] = c->dst_trk;
         out[4] = (uint8_t)c->amount; out[5] = (uint8_t)c->offset;
     }
 }
@@ -497,6 +531,7 @@ static __attribute__((noinline)) void cord_block(track_t *t, int32_t *off, int32
             int32_t a = cord_amount(c), o = cord_offset(c);
             mod.amp |= d->md == MD_AMP;
             if (c->src && a && MS_VOICE(c->src) && c->src_trk == (uint8_t)(t - trk) && !cord_fold_on(c) && !cord_gate(c) &&
+                c->uni != CU_HOLD &&
                 mod.nv < NMSLOT + CORD_LIVE) {          /* its own voices' ENV VEL KEY RAND: each voice its own, as */
                 mod.vsrc[mod.nv] = c->src;              /* MOD's routes (mod_voice) */
                 mod.vdst[mod.nv] = (uint8_t)d->md;

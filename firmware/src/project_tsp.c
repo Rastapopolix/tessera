@@ -17,7 +17,7 @@
 enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TSP_FM6, TSP_DRUM, TSP_REC, TSP_NAME,
        TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_HOW, TSP_ORACLE,
        TSP_ENERGY, TSP_DEV, TSP_TRANSP, TSP_TUNE, TSP_SOUND, TSP_CHAIN, TSP_ENTRY, TSP_PLAN, TSP_PERF, TSP_HOLD,
-       TSP_CCN, TSP_FKEY, TSP_SPLIT, TSP_FMODE, TSP_PGEN, TSP_DMAP, TSP_EORDER, TSP_USCALE, TSP_SDIR,
+       TSP_CCN, TSP_FKEY, TSP_SPLIT, TSP_FMODE, TSP_PGEN, TSP_DMAP, TSP_EORDER, TSP_USCALE, TSP_SDIR, TSP_MHOLD,
        TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
@@ -57,12 +57,14 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * TSP_EORDER: each track's Entries ORDER, 0 AUTO, 1..4, written only when
                                               * one is not 0; none: AUTO;
                                               * TSP_SDIR: each track's 8 patterns' DIR (SEQ_*), written only when one
-                                              * is not FWD; none: FWD) */
+                                              * is not FWD; none: FWD;
+                                              * TSP_MHOLD: the HOLD mods, a u16 mask (bit i: cord i, saved in TSP_CORDS
+                                              * as BI), written only when one is; none: no HOLD) */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
                TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_PERF == 30 &&
                TSP_HOLD == 31 && TSP_CCN == 32 && TSP_FKEY == 33 && TSP_SPLIT == 34 && TSP_FMODE == 35 &&
                TSP_PGEN == 36 && TSP_DMAP == 37 && TSP_EORDER == 38 && TSP_USCALE == 39 &&
-               TSP_SDIR == 40,
+               TSP_SDIR == 40 && TSP_MHOLD == 41,
                "the parts' numbers are stored: never renumbered");
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -302,6 +304,11 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
             tsp_bytes(&w, c, sizeof c);
         }
         tsp_end(&w);
+        if (cord_hold_mask()) {                        /* (HOLD mods: only when one is) */
+            tsp_begin(&w, TSP_MHOLD, 1);
+            tsp_u16(&w, cord_hold_mask());
+            tsp_end(&w);
+        }
         tsp_begin(&w, TSP_CCN, 1);                     /* (CC OUT: each cord's CC number) */
         for (uint32_t i = 0; i < CORD_MAX; i++) tsp_byte(&w, cord_cc_num(i));   /* (past CORD_LIVE: 1) */
         tsp_end(&w);
@@ -725,6 +732,7 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
             p[0] > USCALE_SLOTS) return 0;
         for (uint32_t k = 0; k < USCALE_SLOTS; k++) if (!uscale_ok(tsp_u16_at(p + 1u + 2u * k))) return 0;
     }
+    if (tsp_seen.at[TSP_MHOLD] && (tsp_seen.ver[TSP_MHOLD] != 1u || tsp_seen.len[TSP_MHOLD] != 2u)) return 0;
     if (tsp_seen.at[TSP_SDIR]) {
         if (tsp_seen.ver[TSP_SDIR] != 1u || tsp_seen.len[TSP_SDIR] != NTRK * NPAT) return 0;
         for (uint32_t k = 0; k < NTRK * NPAT; k++) if (raw[tsp_seen.at[TSP_SDIR] + k] >= SEQ_DIRS) return 0;
@@ -781,6 +789,7 @@ static void tsp_restore(const uint8_t *raw)
     tessera_reset();                                   /* (generators OFF, no cords: a record without them) */
     if (tsp_seen.at[TSP_TESSERA]) tessera_unpack_ver(raw[tsp_seen.at[TSP_TESSERA]], raw + tsp_seen.at[TSP_TESSERA] + 1u);
     if (tsp_seen.at[TSP_CORDS]) (void)cord_unpack(raw + tsp_seen.at[TSP_CORDS]);
+    if (tsp_seen.at[TSP_MHOLD]) cord_hold_load(tsp_u16_at(raw + tsp_seen.at[TSP_MHOLD]));
     if (tsp_seen.at[TSP_CCN])                          /* (saved before CC OUT: tessera_reset's 1 each) */
         for (uint32_t i = 0; i < CORD_LIVE; i++) cord_cc_set(i, raw[tsp_seen.at[TSP_CCN] + i]);
     if (tsp_seen.at[TSP_SUB]) memcpy(tessera.sub_shape, raw + tsp_seen.at[TSP_SUB], NTRK);
