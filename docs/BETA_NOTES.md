@@ -18,6 +18,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - DIR as a mod destination: a cord can move a pattern's direction at each step; a GATE mod switches direction while its source is high.
 - NOTES: OCT+ on an empty step no longer places a note (on the drum grid, no longer sets a hit); it says NOTHING THERE. KNOB 2 or a key places a note (the grid: KNOB 3 or a white key). OCT+ on a note still opens its sheet; held, OCT+ opens the pattern's sheet and the screen says PATTERN SHEET once the hold counts.
 - HOLD mods: OCT+ on MODS cycles +- / + / GATE / HOLD. HOLD takes the source at the start of each bar and keeps it until the next.
+- Chord kinds SUS2, 7SUS4, ADD9 and MAJ6 on CHRD (SCL > CHORD, or the CHORD track's layer), after POW: fixed shapes on any note, for the chord keys, MIDI in, step entry, the arp and the CHORD generator.
 
 ## Fixed
 - ARP MODE ORD plays the notes in the order the keys were pressed; it played them low to high (as UP) unless ARP 2's ORDER was PLAY.
@@ -30,6 +31,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - Projects saved with these new settings lose them on 3.4.x.
 - A project with ARP MODE DNUP or RND1 plays REPEAT on 3.4.x and earlier betas (the last note held).
 - On older firmware, a strummed project plays its chords together, a pattern with a direction plays FWD, and a HOLD mod plays as +-.
+- A project with CHRD SUS2, 7SUS4, ADD9 or MAJ6 plays POW (power chords) on 3.4.x and earlier betas. A cord or MIDI CC on CHRD now spreads over 14 kinds, not 10, so it lands on slightly different ones.
 
 ## Please try
 - PAT GEN with different generators on two patterns: switch by hand and with SONG, save, power off and on, load.
@@ -43,5 +45,6 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - ARP DNUP and RND1 with a chord held: RND1 keeps its order, changes when a key is added, and is the same after STOP and PLAY.
 - CHORD STRUM on a CHORD track: STRUM 20 ms and up, DIR UP, DOWN and ALT, with BEAT or STEP stabs; MIDI OUT gets the notes spread too.
 - STEP direction: PONG and DRUNK on a melody, with SONG and a pattern change; save, load, and STOP and PLAY replays RAND.
+- CHRD SUS2, 7SUS4, ADD9, MAJ6 on the chord keys and on a CHORD track (the name on the CHORD page: Csus2, C7sus4, Cadd9, C6), with OPEN and +OCT.
 - HOLD mod: an LFO into a filter or pitch held per bar; a cord to DIR.
 - A project from 3.4.1 loads and plays the same.
