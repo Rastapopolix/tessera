@@ -153,6 +153,13 @@ static void nt_accmode(int32_t s)                      /* (round: OCT+ goes on p
     tessera_param_set(tr, TX_ACC_MODE, (tessera_param_get(tr, TX_ACC_MODE) + (s > 0 ? 1 : TESS_ACC_MODES - 1)) %
                                        TESS_ACC_MODES);
 }
+/* .. its DIR (TX_SEQ_DIR: the pattern's) */
+static void nt_dir_v(char *b) { str_cpy(b, pid_desc(PID_TESS(TX_SEQ_DIR), 0)->names[tessera_param_get(trk_index(TSEL), TX_SEQ_DIR) % SEQ_DIRS], 8); }
+static void nt_dir(int32_t s)                          /* (round: OCT+ goes on past DRUNK to FWD) */
+{
+    uint32_t tr = trk_index(TSEL);
+    tessera_param_set(tr, TX_SEQ_DIR, (tessera_param_get(tr, TX_SEQ_DIR) + (s > 0 ? 1 : SEQ_DIRS - 1)) % SEQ_DIRS);
+}
 /* .. the track's SWING (STEP and ARP: not on GEN's knobs) */
 static void nt_swing_v(char *b) { fmt_int(b, TSEL->p[P_SSWING]); str_cpy(b + str_len(b), "%", 2); }
 static void nt_swing(int32_t s)
@@ -167,6 +174,7 @@ static void nt_swing(int32_t s)
 #define SHEET_PATTERN_ROWS \
     {"Double", seqt_double_v, 0, seqt_double, 0}, {"Half", seqt_half_v, 0, seqt_half, 0}, \
     {"Euclid", seqt_hits_v, seqt_hits_turn, seqt_euclid, 0}, {"Euclid turn", seqt_rot_v, seqt_rot_turn, seqt_euclid, 0}, \
+    {"Direction", nt_dir_v, nt_dir, 0, 0}, \
     {"Accum limit", nt_acclim_v, nt_acclim, 0, 0}, {"Accum mode", nt_accmode_v, nt_accmode, 0, 0}, \
     {"Swing", nt_swing_v, nt_swing, 0, 0}, {"Clear pattern", 0, 0, 0, CF_CLEAR_SEQ}, {"Clear motion", 0, 0, 0, CF_CLEAR_MOTION}
 static const sheet_row_t SHEET_PATTERN[] = {{"Quantize",nt_quantize_v,nt_quantize_grid,nt_quantize,0},

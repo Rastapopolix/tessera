@@ -561,6 +561,24 @@ Swing (the track's, KNOB 2), Clear pattern and Clear motion it has:
 
 Each one is undone with **EDIT** held, one at a time.
 
+**Direction** (KNOB 2, or OCT+ for the next) sets the order the pattern plays its steps in. Each of the track's 8
+patterns keeps its own, saved with it:
+
+- **FWD** (the default): step 1 to the last, as always.
+- **BACK**: the last step to step 1.
+- **PEND**: there and back, the end steps once (1 2 3 4 3 2 1 2 ..).
+- **PONG**: there and back, the end steps twice (1 2 3 4 4 3 2 1 1 2 ..).
+- **RAND**: any step, each time.
+- **DRUNK**: one step on or one back, at random; past the ends it goes round.
+
+A pass is still LEN steps of time, whatever the direction. So step Conditions (1:2 ..), Accumulate, pattern
+changes, the SONG and STEP EVOLVE's rounds stay on the bar line, in time with the other tracks; a PEND of 16 steps
+goes on into the next pass. SWING swings the off-beats, whichever step is on them. RAND and DRUNK draw from the
+track's SEED, so PLAY plays the same line again. Changing the direction while it plays never moves the playhead: the
+next step comes from the one playing, the new way. A new pattern starts at its own direction's start (BACK: its last
+step). Capture and print write the notes in the order they sounded and set the pattern to FWD. A generator track
+does not use it.
+
 Two rows set the track's pitch accumulator (a step's Accumulate, below):
 
 - **Accum limit** (1–14, 7): how far a step's notes go, in scale degrees from the notes as written. 7 is an octave

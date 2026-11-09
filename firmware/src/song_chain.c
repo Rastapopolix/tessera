@@ -50,7 +50,7 @@ static void chain_apply(void)
         seq_release(t);
         motion_restore(t);
         pattern_apply(t, chain_patterns[chain.row][i]);
-        t->seq_idx = (uint16_t)(t->p[P_SLEN] - 1);
+        seq_dir_top(t);
         t->seq_pass = 0;
         t->seq_pos = 0x7FFFFFFFu;
         t->rh_n = t->rskip_n = 0;
@@ -91,9 +91,9 @@ static void chain_tick(uint32_t n)
 {
     const track_t *t = &trk[0];
     uint32_t length;
-    if (!chain.running || t->seq_pos >= 0x7FFFFFFFu || t->seq_idx + 1u != (uint32_t)t->p[P_SLEN])
+    if (!chain.running || t->seq_pos >= 0x7FFFFFFFu || SEQ_D(t).slot + 1u != (uint32_t)t->p[P_SLEN])
         return;
-    length = step_samples(t, seq_div_samples((uint32_t)t->p[P_SDIV]), t->seq_idx);
+    length = step_samples(t, seq_div_samples((uint32_t)t->p[P_SDIV]), SEQ_D(t).slot);
     if (t->seq_pos + n < length)
         return;
     if (chain.remaining > 1u) {

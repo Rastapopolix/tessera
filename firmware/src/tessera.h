@@ -443,11 +443,14 @@ enum {
     TX_PAT_GEN,                                     /* (0x298: PAT GEN, any track's: each pattern its own generator) */
     TX_MIDI_DMAP,                                   /* (0x299: MIDI OUT's DRUM MAP, any track's: midi_out.c) */
     TX_ET_ORDER,                                    /* (0x29A: Entries' ORDER, any track's: AUTO, 1ST..4TH) */
+    TX_SEQ_DIR,                                     /* (0x29B: the STEP pattern's DIR, the playing one's: pattern.c) */
     TX_COUNT
 };
 _Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95 && TX_TW_FRHY == 0x97 &&
-               TX_PAT_GEN == 0x98 && TX_MIDI_DMAP == 0x99 && TX_ET_ORDER == 0x9A,
+               TX_PAT_GEN == 0x98 && TX_MIDI_DMAP == 0x99 && TX_ET_ORDER == 0x9A && TX_SEQ_DIR == 0x9B,
                "parameter ids are stored: never renumbered");
+/* TX_SEQ_DIR: the order a STEP pattern plays its steps in (seq_dir.c) */
+enum { SEQ_FWD, SEQ_BACK, SEQ_PEND, SEQ_PONG, SEQ_RAND, SEQ_DRUNK, SEQ_DIRS };
 /* TX_TW_FHOW: the source's note as it is, the nearest chord tone, mirrored, a bass, or CANON 1..8 notes back */
 enum { TESS_FH_SAME, TESS_FH_CHORD, TESS_FH_CONTRA, TESS_FH_BASS, TESS_FH_CANON, TESS_FH_COUNT = TESS_FH_CANON + 8 };
 enum { TESS_FR_OWN, TESS_FR_SOURCE, TESS_FR_BOTH, TESS_FR_COUNT };   /* TX_TW_FRHY */

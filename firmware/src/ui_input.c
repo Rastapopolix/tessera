@@ -556,8 +556,10 @@ static void capture_take(int over)
             notes_rebuild(t, i);
             fm1_irq_on();
         }
-    if (put)
+    if (put) {
         t->seq_active = 1;
+        pattern_dir[k][t->pattern % NPAT] = SEQ_FWD;    /* (written as it sounded: played FWD) */
+    }
     if (put && pr) {                                    /* print: the steps play on from the place they were taken */
         fm1_irq_off();
         if (arp) {                                      /* (the ARP off: seq.c lets its notes go) */
@@ -567,7 +569,7 @@ static void capture_take(int over)
             undo.gmode = (uint8_t)(gen + 1u);
             tessera_mode_set(k, TESS_ENG_OFF);
         }
-        t->seq_idx = (uint16_t)((uint16_t)(cap_step[k] - start) % w);
+        t->seq_idx = SEQ_D(t).slot = (uint16_t)((uint16_t)(cap_step[k] - start) % w);
         fm1_irq_on();
     }
     load_end(t);
