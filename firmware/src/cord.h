@@ -74,12 +74,23 @@ enum {
     CD_N
 };
 
+/* The device build (MELODEE_ACCESS 1: no help cards) leaves the destinations' sentences out of flash (5 KB), as pid.c
+ * leaves its help texts out; the host builds (tests, docs/PARAMETERS.md) keep them */
+#if defined(MELODEE_ACCESS) && MELODEE_ACCESS
+#define CD_FULL_ON 1
+#define CD_FULL(f)
+#else
+#define CD_FULL_ON 0
+#define CD_FULL(f) , f
+#endif
 typedef struct {
     uint8_t code, kind;
     uint8_t md;                   /* CK_VOICE / CK_DEPTH: mod.c's MD_* it shares; else 0 */
     uint16_t pid;                 /* CK_BLOCK / CK_STEP / CK_GLOBAL: the parameter (pid.h); else PID_NONE */
     const char *name;             /* as a cord shows it: <= 7 characters */
-    const char *full;             /* for the help and the reference */
+#if !CD_FULL_ON
+    const char *full;             /* for the help and the reference (host builds: tests, docs/PARAMETERS.md) */
+#endif
 } cord_dest_t;
 
 const cord_dest_t *cord_dest(uint32_t code);        /* 0: no such destination (a gap, past the end) */

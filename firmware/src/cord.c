@@ -9,14 +9,14 @@
  * tests/cord_test.c keeps the codes against tests/cord_dests.txt (frozen). */
 #include "cord.h"
 
-#define V_(c, md, n, f) {c, CK_VOICE, md, PID_NONE, n, f}
-#define B_(c, p, n, f) {c, CK_BLOCK, 0, PID_TRACK(p), n, f}
-#define S_(c, x, n, f) {c, CK_STEP, 0, PID_TESS(x), n, f}
-#define G_(c, g, n, f) {c, CK_GLOBAL, 0, PID_GLOBAL(g), n, f}
-#define M_(k) [CD_M1_AMT + k - 1] = {CD_M1_AMT + k - 1, CK_CORD, 0, PID_NONE, "M" #k " AMT", \
-                                     "MOD " #k "'s AMOUNT (a fixed mod's OFFSET), turned by another mod"}
+#define V_(c, md, n, f) {c, CK_VOICE, md, PID_NONE, n CD_FULL(f)}
+#define B_(c, p, n, f) {c, CK_BLOCK, 0, PID_TRACK(p), n CD_FULL(f)}
+#define S_(c, x, n, f) {c, CK_STEP, 0, PID_TESS(x), n CD_FULL(f)}
+#define G_(c, g, n, f) {c, CK_GLOBAL, 0, PID_GLOBAL(g), n CD_FULL(f)}
+#define M_(k) [CD_M1_AMT + k - 1] = {CD_M1_AMT + k - 1, CK_CORD, 0, PID_NONE, "M" #k " AMT" \
+                                     CD_FULL("MOD " #k "'s AMOUNT (a fixed mod's OFFSET), turned by another mod")}
 static const cord_dest_t CORD_DESTS[CD_N] = {
-    [CD_OFF] = {CD_OFF, CK_VOICE, 0, PID_NONE, "--", "nothing"},
+    [CD_OFF] = {CD_OFF, CK_VOICE, 0, PID_NONE, "--" CD_FULL("nothing")},
     [CD_PITCH] = V_(CD_PITCH, MD_PITCH, "PITCH", "the pitch of each voice: 100 % at a full source is an octave"),
     [CD_CUTOFF] = V_(CD_CUTOFF, MD_CUT, "CUTOFF", "the filter (or the engine's brightness) of each voice"),
     [CD_SHAPE] = V_(CD_SHAPE, MD_SHP, "SHAPE", "the engine's SHAPE of each voice, as ENV DEST SHP moves it"),
@@ -32,7 +32,7 @@ static const cord_dest_t CORD_DESTS[CD_N] = {
     [CD_ENV_PIT] = B_(CD_ENV_PIT, P_ED_PIT, "ENV PIT", "how far the envelope moves the pitch"),
     [CD_ENV_SHP] = B_(CD_ENV_SHP, P_ED_SHP, "ENV SHP", "how far the envelope moves SHAPE"),
     [CD_LFO_RATE] = B_(CD_LFO_RATE, P_LRATE, "LFO RTE", "the track LFO's speed"),
-    [CD_LFO_DEPTH] = {CD_LFO_DEPTH, CK_DEPTH, MD_DEPTH, PID_NONE, "LFO DEP", "the track LFO's depth, wherever it goes"},
+    [CD_LFO_DEPTH] = {CD_LFO_DEPTH, CK_DEPTH, MD_DEPTH, PID_NONE, "LFO DEP" CD_FULL("the track LFO's depth, wherever it goes")},
     [CD_LFO_PIT] = B_(CD_LFO_PIT, P_LD_PIT, "LFO PIT", "how far the LFO moves the pitch (vibrato)"),
     [CD_LFO_FLT] = B_(CD_LFO_FLT, P_LD_FLT, "LFO FLT", "how far the LFO moves the filter"),
     [CD_LFO_SHP] = B_(CD_LFO_SHP, P_LD_SHP, "LFO SHP", "how far the LFO moves SHAPE"),
@@ -100,9 +100,9 @@ static const cord_dest_t CORD_DESTS[CD_N] = {
     [CD_SF3_CHAR] = G_(CD_SF3_CHAR, G_MFX3CHAR, "SF3 CHR", "SEND FX 3's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's)"),
     [CD_FX_RETURN] = G_(CD_FX_RETURN, G_FXRETURN, "RETURN", "the send effects' RETURN: how loud they come back, for every track"),
     M_(1), M_(2), M_(3), M_(4), M_(5), M_(6), M_(7), M_(8), M_(9), M_(10), M_(11), M_(12), M_(13), M_(14), M_(15), M_(16),
-    [CD_FILL] = {CD_FILL, CK_FILL, 0, PID_NONE, "FILL", "the project's FILL (steps set to FILL / NOT FILL), held while the move is past half"},
-    [CD_TEMPO] = {CD_TEMPO, CK_TEMPO, 0, PID_NONE, "TEMPO", "the project's tempo on CLK INT: a full move up doubles it, down halves it (BPM stays as set)"},
-    [CD_CC] = {CD_CC, CK_CC, 0, PID_NONE, "CC", "a MIDI CC out on the track's MIDI OUT channel, its number set with OCT+ held and KNOB 3"},
+    [CD_FILL] = {CD_FILL, CK_FILL, 0, PID_NONE, "FILL" CD_FULL("the project's FILL (steps set to FILL / NOT FILL), held while the move is past half")},
+    [CD_TEMPO] = {CD_TEMPO, CK_TEMPO, 0, PID_NONE, "TEMPO" CD_FULL("the project's tempo on CLK INT: a full move up doubles it, down halves it (BPM stays as set)")},
+    [CD_CC] = {CD_CC, CK_CC, 0, PID_NONE, "CC" CD_FULL("a MIDI CC out on the track's MIDI OUT channel, its number set with OCT+ held and KNOB 3")},
     [CD_SUB_SPLIT] = S_(CD_SUB_SPLIT, TX_SUB_SPLIT, "SPLIT", "TIMING's SPLIT: the chance a step plays at half its division"),
     [CD_SEQ_DIR] = S_(CD_SEQ_DIR, TX_SEQ_DIR, "DIR", "the STEP pattern's DIR, stepped: FWD BACK PEND PONG RAND DRUNK from the pattern's own"),
 };
