@@ -107,7 +107,7 @@ static void picker(void)
     static const int32_t P[6] = {0, 23100, 47400, 71700, 95500, 120800};
     track_t *t = setup();
     ui.scale_family = SCALE_FAM_USER;
-    verify("USER with nothing sent: no scales", scale_picker_count() == 0u);
+    verify("USER with nothing sent: the USER scales only", scale_picker_count() == USCALE_SLOTS);
     ui.scale_family = 0;
     uint32_t all = scale_picker_count();
     assert(put(3, "SLEN-2", "My slendro", 5, P));
@@ -115,7 +115,7 @@ static void picker(void)
            scale_picker_at(all) == SCALE_TOTAL + 3u);
     ui.scale_family = SCALE_FAM_USER;
     scale_picker_edit(1, 1);
-    verify("picked in USER: TUNING is its slot, SCL kept", scale_picker_count() == 1u && tune_sel == 4u &&
+    verify("picked in USER: TUNING is its slot, SCL kept", scale_picker_count() == 1u + USCALE_SLOTS && tune_sel == 4u &&
            t->p[P_SCALE] == 0 && scale_picker_selected() == SCALE_TOTAL + 3u && scale_count(t) == 5u);
     char val[8]; const char *unit = "";
     param_format(&TP[P_SCALE], t->p[P_SCALE], val, &unit);
