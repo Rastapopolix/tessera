@@ -104,6 +104,7 @@ FENV	filter envelope
 RHY	rhythm
 INTV	interval
 RATCH	ratchet
+DIR	direction
 PW	pulse width
 EG	envelope
 LV	level
