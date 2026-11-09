@@ -65,7 +65,8 @@ static const help_t HELP_PAGE[HP_COUNT] = {
     /* SEQ > NOTES (ui_input.c step_edit, notes_event_edit); on a DRUM track the grid (grid_edit) */
     H_(HP_NOTES_STEP, "NOTES STEP", "Moves along the pattern: one note at a time where notes are, one step at a time "
                                     "between them, empty steps too. OCT+ on a note opens its sheet: length, velocity, "
-                                    "chance, ratchet, nudge, slide, move, copy, delete. The PRESETS knob zooms."),
+                                    "chance, ratchet, nudge, slide, move, copy, delete; held: the pattern's sheet. "
+                                    "The PRESETS knob zooms."),
     H_(HP_NOTES_NOTE, "NOTES NOTE", "The picked note's pitch. QNT OFF: a semitone a detent; QNT on: a note of the "
                                     "scale (CHRD: of the chord), a note off it going to the next one first; with ENV "
                                     "held, a semitone. On an empty step the first turn writes the last note played there."),

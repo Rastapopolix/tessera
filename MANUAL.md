@@ -1243,7 +1243,10 @@ How they combine:
 > **In short:** per-step details for written patterns: a roll on one step (Ratchet), a step pushed slightly early or
 > late (Nudge), and a note that climbs a little higher each time round (Accumulate).
 
-On a STEP track's NOTES page, **OCT+** on a note opens its sheet (on the drum grid, OCT+ on a hit). Besides Length,
+On a STEP track's NOTES page, **OCT+** on a note opens its sheet (on the drum grid, OCT+ on a hit). On an empty
+step it opens nothing and the screen says **NOTHING THERE**: KNOB 2 or a key places a note (on the grid, KNOB 3 or a
+white key sets a hit). Held, OCT+ opens the pattern's sheet instead; once the hold is long enough the screen says
+**PATTERN SHEET**, so you know which one you get when you let go. Besides Length,
 Velocity and Chance it holds:
 
 - **Ratchet** (x1–x8): the step plays that many times in its own step, placed by TIMING's SHAPE.

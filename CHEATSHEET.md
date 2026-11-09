@@ -78,11 +78,11 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **ENV** + SELECT or KNOB 1 | The cursor's note longer / shorter |
 | **SCL** + SELECT or KNOB 1 | Moves the note (ties, chord and velocity with it) |
 | **EDIT** tapped | Deletes the note and its ties; the cursor moves on the way KNOB 1 last turned |
-| **OCT+** | The note's sheet (length, velocity, chance, ratchet x1–x8, nudge ±/16, accumulate ±7, condition 1:2..8:8, FILL...) |
+| **OCT+** | The note's sheet (length, velocity, chance, ratchet x1–x8, nudge ±/16, accumulate ±7, condition 1:2..8:8, FILL...); an empty step: NOTHING THERE |
 | **OCT+** + SELECT, KNOB 1 or 2 | Selects a run of notes; let go: the Selected notes sheet (move, copy, quantize, delete) |
 | **OCT-** | Clears the selection |
 | **PRESETS** | Zooms the notes |
-| **OCT+** held | The pattern's sheet: Snap to scale, Double, Half, Euclid (hits, turn), Accum limit / mode, Quantize, Clear |
+| **OCT+** held | (PATTERN SHEET) The pattern's sheet: Snap to scale, Double, Half, Euclid (hits, turn), Accum limit / mode, Quantize, Clear |
 
 ## The drum grid (NOTES on a DRUM track)
 
@@ -94,7 +94,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | D#5 / F#5 | Page down / up (patterns over 16 steps) |
 | KNOB 1 to 4 | STEP, LANE, HIT, ACC |
 | **EDIT** | Clears the cursor step |
-| **OCT+** | The hit's sheet (accent, chance, ratchet, nudge, condition) |
+| **OCT+** | The hit's sheet (accent, chance, ratchet, nudge, condition); an empty place: NOTHING THERE |
 
 ## Patterns
 
