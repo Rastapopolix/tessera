@@ -4389,6 +4389,39 @@ static int test_landscape(void)
     for (i = 0; i < 20u; i++) trk_note_on(&trk[0], 40u + i, 100);
     frame();
     bad += check("  a burst: no more rings than LAND_RIP, the newest kept", land_rings() == LAND_RIP && !land_stars());
+    frame();
+    bad += check("  the moon: still where it always was while LENGTH is FREE", land.mx == LAND_MX * 16 && land.my == LAND_MY * 16);
+    tessera.pl_length = 1;                              /* (1 minute) */
+    go_title("PIECE");
+    frame();
+    go_title("LANDSCAPE");
+    frame();
+    bad += check("  a LENGTH, stopped: the moon rising at the left", land.mx == LAND_ML * 16 && land.my == LAND_MB * 16);
+    memset(&plan, 0, sizeof plan);
+    song.playing = 1;
+    bar_n = 0, beat_n = 0;
+    plan.at_b = 30u * (uint32_t)FS;                     /* (half the minute played) */
+    for (i = 0; i < 400u; i++) frame();
+    bad += check("  half the piece played: the moon glided to the top of its arc, half way across",
+                 (land.mx >> 4) >= (LAND_ML + LAND_MR) / 2 - 1 && (land.mx >> 4) <= (LAND_ML + LAND_MR) / 2 + 1 &&
+                 (land.my >> 4) <= LAND_MT + 1);
+    plan.at_b = 60u * (uint32_t)FS;
+    plan.ending = 1;
+    for (i = 0; i < 300u; i++) frame();
+    bad += check("  END STOP's tails: the moon set in the water at the right, its reflection gone",
+                 (land.my >> 4) > LAND_H + 5 && (land.mx >> 4) >= LAND_MR - 1);
+    song.playing = 0;
+    i = (uint32_t)land.my;
+    for (sig = 0; sig < 50u; sig++) frame();
+    bad += check("  stopped: it stays where it was", (uint32_t)land.my == i);
+    memset(&plan, 0, sizeof plan);
+    song.playing = 1;
+    frame();
+    bad += check("  played again: rising at the left at once", land.mx == LAND_ML * 16 && land.my == LAND_MB * 16);
+    song.playing = 0;
+    tessera.pl_length = 0;
+    memset(&plan, 0, sizeof plan);
+    frame();
     go_title("PIECE");
     frame();
     i = land_ev_at;
