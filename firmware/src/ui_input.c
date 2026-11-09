@@ -176,9 +176,15 @@ static void pattern_keys(uint32_t notes)
     pattern_key_release();
 }
 /* key k of track t as the keys play now (LIGHTS): bright while it sounds (pressed, or its note held on the track by
- * a key or MIDI), dim when it plays something (a kit's or the slices' own map: every key; QNT OFF: the notes in the
- * scale; the layouts: the keys not silent), else dark */
+ * a key or MIDI), dim when it plays something (a kit's or the slices' own map: every key; QNT OFF or a USER scale
+ * being edited: the notes in the scale; the layouts: the keys not silent), else dark */
 enum { KL_OFF, KL_DIM, KL_ON };
+/* SCALES up with a USER scale picked: the keys edit it (scale_picker.c uscale_keys), each plays and lights by its own
+ * note (seq.c kb_chrom) */
+static uint8_t uscale_edit(void)
+{
+    return (uint8_t)(!ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_SCALE_PICKER && uscale_on());
+}
 static uint32_t play_key_led(const track_t *t, uint32_t k)
 {
     const engine_t *e = ENGINES[eng_idx(t->eng_req)];
@@ -189,7 +195,7 @@ static uint32_t play_key_led(const track_t *t, uint32_t k)
         return KL_OFF;
     if (e->keys && e->keys(t, k) >= 0)
         return KL_DIM;
-    if (t->p[P_QUANT] == Q_OFF)
+    if (t->p[P_QUANT] == Q_OFF || kb_chrom)
         return (scale_mask(t) >> ((n + 120u - (uint32_t)t->p[P_ROOT]) % 12u)) & 1u ? KL_DIM : KL_OFF;
     return KL_DIM;
 }
@@ -2264,6 +2270,7 @@ static void ui_input(void)
             ui.hot_t = 40;
         }
     song.grid = (uint8_t)keys_mode();                 /* (the menu, a dialog: the keys play again; NAME: silent) */
+    kb_chrom = uscale_edit();
     if (!step_page() || drum_track(TSEL) || ui.menu || ui.confirm || name_on() || lay || live_rec_sel() || chain_busy())
         seq_midi_events(0);                         /* discard events during modal/layer input too */
     if (ui.seen_pattern_gen != TSEL->pattern_gen) {
@@ -2561,7 +2568,7 @@ static void ui_input(void)
     if (notes && slice_page_on())                       /* SLICES: a key picks the slice it plays */
         slice_keys_pick(notes);
 #endif
-    if (notes && !ui.home && cur_page()->graph == GR_SCALE_PICKER && uscale_on())
+    if (notes && (kb_chrom = uscale_edit()))
         uscale_keys(notes);                             /* SCALES, a USER scale: the keys edit it (scale_picker.c) */
     pattern_keys(bank_notes);
     if (pattern_keys_on() || ui.pat_key) {

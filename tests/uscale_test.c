@@ -193,9 +193,39 @@ static void project(void)
     verify("a USER scale past 4: refused", !tsp_valid(old, len));
 }
 
+/* #559: on SCALES with a USER scale picked the keys light by their own note whatever QNT is, and play it (QNT SNAP
+ * would round C# down to C); off SCALES QNT maps them again */
+static void edit_leds(void)
+{
+    track_t *t = setup();
+    uint32_t c = 60u - 53u, cs = 61u - 53u;
+    ui_leds();                                          /* (its led_pos_init first, then the test's map: test_key_lights) */
+    for (uint32_t k = 0; k < 41u; k++)
+        led_pos[k] = (uint8_t)((k % FM1_NCOL) << 3 | (1u + k / FM1_NCOL));
+    settings_lights = LIGHTS_MID;
+    go_page(GR_SCALE_PICKER);
+    ui.scale_family = SCALE_FAM_USER;
+    scale_picker_edit(0, 0);                            /* USER1: MAJ */
+    frame(); ui_leds();
+    verify("SCALES USER1, QNT SNAP: C glows, C# dark, C# plays C#", uscale_sel == 1u && t->p[P_QUANT] == Q_SNAP &&
+           key_light(14u + c) == 1u && !key_light(14u + cs) && kb_map(t, cs) == 61u);
+    tap_key(cs); ui_leds();
+    verify("  C# in: it glows", (uscale_mask[0] >> 1) & 1u && key_light(14u + cs) == 1u);
+    tap_key(cs); ui_leds();
+    verify("  C# out: dark again", !((uscale_mask[0] >> 1) & 1u) && !key_light(14u + cs));
+    t->p[P_QUANT] = Q_WHITE;
+    frame(); ui_leds();
+    verify("  QNT WHITE: the same", key_light(14u + c) == 1u && !key_light(14u + cs) && kb_map(t, cs) == 61u);
+    t->p[P_QUANT] = Q_SNAP;
+    ui.page = (uint8_t)page_titled("SCL"); page_entered();
+    frame(); ui_leds();
+    verify("off SCALES: QNT SNAP again (C# plays C), every key glows", kb_map(t, cs) == 60u && key_light(14u + cs) == 1u);
+}
+
 int main(void)
 {
     keys();
+    edit_leds();
     generator();
     record();
     project();
