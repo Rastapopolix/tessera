@@ -445,8 +445,8 @@ static void help_find(uint32_t k)
         else help_hp(HP_DRUM_SOUND + pg->id[k]);
         return;
     }
-    if (pg->scope == SC_TRK) {                          /* MIXER: KNOB k track k's LEVEL, OCT+ held its PAN */
-        help.pid = (uint16_t)PID_TRACK(((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) ? P_PAN : P_LEVEL);
+    if (pg->scope == SC_TRK) {                          /* MIXER: KNOB k track k's LEVEL, OCT- held its PAN */
+        help.pid = (uint16_t)PID_TRACK(oct_dn_only() ? P_PAN : P_LEVEL);
         help_tr = k;
         return;
     }

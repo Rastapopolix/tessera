@@ -434,6 +434,6 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | M16 AMT | another mod's move, each block | MOD 16's AMOUNT (a fixed mod's OFFSET), turned by another mod |
 | FILL | the project's FILL, each block | the project's FILL (steps set to FILL / NOT FILL), held while the move is past half |
 | TEMPO | the project's tempo on CLK INT, each block | the project's tempo on CLK INT: a full move up doubles it, down halves it (BPM stays as set) |
-| CC | a MIDI CC out, each block | a MIDI CC out on the track's MIDI OUT channel, its number set with OCT+ held and KNOB 3 |
+| CC | a MIDI CC out, each block | a MIDI CC out on the track's MIDI OUT channel, its number set with OCT- held and KNOB 3 |
 | SPLIT | the generator's step | TIMING's SPLIT: the chance a step plays at half its division |
 | DIR | the generator's step | the STEP pattern's DIR, stepped: FWD BACK PEND PONG RAND DRUNK from the pattern's own |
