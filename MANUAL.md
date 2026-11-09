@@ -180,6 +180,7 @@ sound pluck, swell or sustain.*
 |---|---|---|
 | SCALES, SCL | Choose the project's scale and key, how notes are snapped to it (QNT), and transpose a track. | Always, early on: every generator plays in this scale. |
 | CHORD | Set the chord kind and voicing a CHORD track (or QNT CHRD) uses. | You want sevenths, open voicings or power chords. |
+| [USER scales](#your-own-scales-user1-to-user4) | Make up to four 12-note scales of your own on the keys. | No built-in scale is the one you hear. |
 | [Scala tunings](#your-own-tunings-scala-files) | Load your own microtonal tunings from the web editor. | You want to leave twelve-note tuning behind. |
 
 **EDIT**: the sound's own pages ([Sounds](#sounds)). Tap EDIT again for a map of them. *Use it to design or adjust a
@@ -1301,6 +1302,26 @@ A **CHORD** track plays a progression; with **QNT CHRD** the other tracks follow
   note of the chord playing now, and KNOB 2 on NOTES steps through its notes. With no CHORD track, CHRD acts as
   SNAP.
 - **CH PROG** is a mod destination, so a slow source can change progressions.
+
+### Your own scales (USER1 to USER4)
+
+> **In short:** four 12-note scales of your own, made on the keys, played by every track and generator like a
+> built-in scale.
+
+1. **SCL > SCALES**, KNOB 1 to the **USER** family (after the favourites), KNOB 2 to **USER1** to **USER4**. They
+   are always listed (after any Scala tunings); one never set is the major scale.
+2. With one picked, each **key** adds its note to the scale or takes it out (the screen says, e.g. USER1 F# IN).
+   The root (ROOT, KNOB 3) always stays. The key still plays, so you hear the note.
+3. **ROOT** moves the scale as for a built-in one: the notes are counted from the root.
+
+- The USER scale is the project's, like SCL: every melodic track plays it. The keys, MIDI input, every generator,
+  QNT, chords and FOLLOW use it as a built-in scale.
+- Picking a built-in scale or a tuning, or turning **SCL** itself, goes back to it. The USER scale stays as you made it.
+- The four are the **FM-1's**: kept with the settings, so they are there after power-off and in every project.
+- A project that plays a USER scale is **saved with it** and the other three, so it plays the same on another FM-1;
+  loading it brings them (until power-off, or kept for good at the next settings change). A project that plays a
+  built-in scale leaves your USER scales as they are. Firmware before USER scales plays the scale picked on SCL
+  under it.
 
 ### Your own tunings (Scala files)
 

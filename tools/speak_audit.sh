@@ -17,7 +17,7 @@ ${CC:-cc} -O1 -w -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_USB_AUDIO=1 -DMELO
 $OUT/speak_test dump $OUT/dump.tsv
 grep -hoE 'ui_(message|say)\("[^"]*"(, *"[^"]*")?' firmware/src/*.c |
     sed -E 's/ui_(message|say)\(//; s/", *"/ /; s/"//g; s/[][]//g; s/^/MSG\t/' >> $OUT/dump.tsv
-printf 'MSG\t%s\n' "MIDI IN -> T2" "HOLD GLO QUICK" "HOLD SCL QUICK" "PLAY" "STOP" >> $OUT/dump.tsv   # (made as they go)
+printf 'MSG\t%s\n' "MIDI IN -> T2" "HOLD GLO QUICK" "HOLD SCL QUICK" "PLAY" "STOP" "USER1 F# IN" "USER4 C OUT" >> $OUT/dump.tsv   # (made as they go)
 grep -v '^#' $OUT/dump.tsv | sort -u > $OUT/said.tsv
 WORDS=$(sed -n 's/.*words\/\([0-9a-f]*\.json\).*/\1/p' $OUT/ann_words.h)
 exec node "$READER/tools/audit.mjs" $OUT/said.tsv --words $OUT/words/$WORDS --allow firmware/words_allow.txt "$@"

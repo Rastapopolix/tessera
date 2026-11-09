@@ -45,7 +45,9 @@ static const help_t HELP_PAGE[HP_COUNT] = {
                                  "note: its sheet). KNOB 3, SHAPE, shapes the steps' ratchets here too."),
     H_(HP_SCALE_FAMILY, "SCALE FAMILY", "Narrows the scales KNOB 2 picks from: all of them, Western, EDO, just, "
                                         "harmonic, historical, regional, non-octave, maqam, the favourites, or "
-                                        "USER: the tunings sent from the web editor (TUNING, the project's)."),
+                                        "USER: the tunings sent from the web editor (TUNING, the project's), then "
+                                        "USER1 to USER4, scales of your own: with one picked, a key adds its "
+                                        "note or takes it out (the root stays)."),
     H_(HP_SCALE_FAV, "SCALE FAVOURITE", "Right marks the track's scale a favourite, left unmarks it; SCALES lists the "
                                         "favourites together."),
     H_(HP_SLOT_PROJECT, "PROJECT SLOT", "Which project slot, A to D, then the template and New song. OCT+ opens its "
