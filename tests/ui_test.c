@@ -3476,8 +3476,8 @@ static void chain_screens(const char *dir)
 }
 
 /* PATTERNS and SONG (ui_patterns.c): a row's letter is its set of patterns; a pattern's bars follow LEN and DIV */
-/* NOTES / the drum grid (ui_popup.c step_enter): OCT+ on an empty place puts a note / the lane's hit there, on one
- * its sheet; OCT+ held: the pattern's sheet */
+/* NOTES / the drum grid (ui_popup.c step_enter): OCT+ on a note / hit its sheet, on an empty place NOTHING THERE
+ * (Enter opens, never makes: Theo 2026-11-10); OCT+ held: the pattern's sheet */
 static int test_step_sheets(void)
 {
     int bad = 0;
@@ -3488,9 +3488,12 @@ static int test_step_sheets(void)
     t->p[P_SLEN] = 16;
     go_title("NOTES"); cursor_set(4); frame();
     last_note = 62;
+    ui.msg_t = 0;
     press(B_OCTUP);
-    bad += check("NOTES: OCT+ on an empty step places the last note played, no sheet", t->step[4].n == 1u &&
-                 t->step[4].note[0] == 62u && !pop.on && song.octave == 0);
+    bad += check("NOTES: OCT+ on an empty step places nothing, no sheet: NOTHING THERE", !t->step[4].n && !pop.on &&
+                 song.octave == 0 && msg_is("NOTHING THERE") && !ui.home);
+    turn(EN_K2, 1);
+    bad += check("..KNOB 2 places the note", t->step[4].n == 1u);
     press(B_OCTUP);
     bad += check("..OCT+ on the note: its sheet (Length, Velocity, Chance, Condition, .., Delete note)", pop.on == POP_SHEET &&
                  pop.rows == SHEET_NOTE && !memcmp(pop.title, "Note ", 5));
@@ -3514,8 +3517,10 @@ static int test_step_sheets(void)
     bad += check("..Slide: on, the sheet closed", (t->step[4].flags & SF_SLIDE) && !pop.on);
     sheet_do("Delete note");
     bad += check("..Delete note: gone", !step_on(&t->step[4]));
+    ui.msg_t = 0;
     hold(B_OCTUP);
-    bad += check("NOTES: OCT+ held: the pattern's sheet", pop.on == POP_SHEET && pop.rows == SHEET_PATTERN);
+    bad += check("NOTES: OCT+ held: the pattern's sheet, named once the hold is past (PATTERN SHEET)",
+                 pop.on == POP_SHEET && pop.rows == SHEET_PATTERN && msg_is("PATTERN SHEET"));
     sheet_do("Accum mode");
     bad += check("..Accum mode: OCT+ steps WRAP to PING", tessera.acc_mode[trk_index(t)] == TESS_ACC_PING && !pop.on);
     hold(B_OCTUP);
@@ -3530,9 +3535,12 @@ static int test_step_sheets(void)
     t = TSEL;
     track_defaults_steps(t);
     go_title("NOTES"); cursor_set(2); ui.lane = 1; frame();
+    ui.msg_t = 0;
     press(B_OCTUP);
-    bad += check("drum grid: OCT+ on an empty place sets the lane's hit", grid_on() &&
-                 ((step_lanes(&seq_steps(t)[2]) >> 1) & 1u) && !pop.on);
+    bad += check("drum grid: OCT+ on an empty place sets nothing, no sheet: NOTHING THERE", grid_on() &&
+                 !((step_lanes(&seq_steps(t)[2]) >> 1) & 1u) && !pop.on && msg_is("NOTHING THERE"));
+    turn(EN_K1 + 2u, 1);
+    bad += check("..KNOB 3 sets the lane's hit", (step_lanes(&seq_steps(t)[2]) >> 1) & 1u);
     press(B_OCTUP);
     bad += check("..OCT+ on the hit: its sheet (Accent, Chance, Clear hit)", pop.on == POP_SHEET && pop.rows == SHEET_HIT);
     press(B_OCTUP);                                     /* (Accent: on) */
@@ -4254,7 +4262,7 @@ static int test_product_ux(void)
             ok &= !page_visible(i);
     bad += check("DIGITAL retired: engine 1 asked for loads FM6; the OP ENV / OP LEVEL pages never show", ok);
     ui_power_on(); track_defaults_steps(TSEL); go_title("NOTES"); cursor_set(0); frame();
-    press(B_OCTUP); press(B_OCTUP); turn(EN_K1, 1); turn(EN_K1, 1); turn(EN_K2, -35);   /* (a note placed; its sheet: Chance) */
+    turn(EN_K2, 1); press(B_OCTUP); turn(EN_K1, 1); turn(EN_K1, 1); turn(EN_K2, -35);   /* (a note placed; its sheet: Chance) */
     bad += check("CHANCE (the note's sheet) is per step and starts at backward-compatible 100 percent", step_chance(&TSEL->step[0]) == 65 && step_chance(&TSEL->step[1]) == 100);
     turn(EN_K2, -1000); ok = step_chance(&TSEL->step[0]) == 0;
     turn(EN_K2, 1000); ok &= step_chance(&TSEL->step[0]) == 100;
