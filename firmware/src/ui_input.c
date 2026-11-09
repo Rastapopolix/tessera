@@ -1335,7 +1335,7 @@ static void edit_param(uint32_t slot, int32_t steps)
             motion_unplayed();
     }
     if (pg->scope == SC_TRACK && vp - TSEL->p == P_SCALE)
-        tune_sel = 0;                                   /* (SCL turned: its scale again, not TUNING's) */
+        tune_sel = uscale_sel = 0;                      /* (SCL turned: its scale again, not TUNING's or USER's) */
     if (pg->scope == SC_TRACK && scale_shared((uint32_t)(vp - TSEL->p)))
         scale_share(TSEL);
 }
@@ -2546,6 +2546,8 @@ static void ui_input(void)
     if (notes && slice_page_on())                       /* SLICES: a key picks the slice it plays */
         slice_keys_pick(notes);
 #endif
+    if (notes && !ui.home && cur_page()->graph == GR_SCALE_PICKER && uscale_on())
+        uscale_keys(notes);                             /* SCALES, a USER scale: the keys edit it (scale_picker.c) */
     pattern_keys(bank_notes);
     if (pattern_keys_on() || ui.pat_key) {
         seq_midi_events(0);

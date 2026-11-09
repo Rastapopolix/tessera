@@ -443,6 +443,8 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
             str_cpy(val, d->names[v] + (v == 1 ? 0 : 2), 6);
         } else if (d->names == N_SCALE && tune_scale())   /* (TUNING: its tuning stands for every SCL, tune.h) */
             str_cpy(val, tune_name(tune_sel - 1u), 6);
+        else if (d->names == N_SCALE && uscale_on())  /* (and a USER scale, uscale.h) */
+            str_cpy(val, USCALE_NAME[uscale_sel - 1u], 6);
         else
             str_cpy(val, d->names[v < d->min ? d->min : v > d->max ? d->max : v], 6);
         if (d->unit)
