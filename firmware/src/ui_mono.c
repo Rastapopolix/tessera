@@ -287,12 +287,40 @@ static int32_t mo_batt_right(int32_t bat)
     mo_battery(120 - MO_BATT_W, bat);
     return 120 - MO_BATT_W - 2;
 }
+/* OCT+ held where it opens a sheet (the key grammar's rule 5): from 150 ms the sheet's name in the header's title place,
+ * the header's line filling under it until the sheet opens (OCT_HOLD_MS); 0..1000, -1 none */
+static int32_t mo_sheet_hold(const char **name)
+{
+    static const char *const NM[5] = {"", "SOUND", "SONG", "PATTERN", "PATTERNS"};
+    uint32_t k, ms;
+    if (!ui.oct_t0 || (ui.oct_t0 & 2u) || !((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) || gen_layer_on())
+        return -1;
+    k = page_sheet();
+    if (!k || k > 4u)
+        return -1;
+    ms = (fm1_ticks() - (ui.oct_t0 & ~3u)) / (1000u * FM1_TICKS_PER_US);
+    if (ms < 150u)
+        return -1;
+    *name = NM[k];
+    return ms >= OCT_HOLD_MS ? 1000 : (int32_t)((ms - 150u) * 1000u / (OCT_HOLD_MS - 150u));
+}
+/* the header's line: whole, or (a sheet's hold) solid as far as it has been held, dotted for the rest */
+static void mo_head_line(int32_t y, int32_t hold)
+{
+    int32_t x, w = hold < 0 ? 120 : 120 * hold / 1000;
+    if (w)
+        mo_hl(0, y, w, MO_INK);
+    for (x = w + 1; x < 120; x += 2)
+        mo_fill(x, y, 1, 1, MO_INK);
+}
 static void mo_head(void)
 {
     const page_t *pg = cur_page();
     char t[24], sub[8], at[8];
     uint32_t i;
-    int32_t room, bat = batt_head(), right;
+    int32_t room, bat = batt_head(), right, hold;
+    const char *hn = "";
+    hold = mo_sheet_hold(&hn);
     if (ui.msg_t && ui.msg[0] && (int32_t)str_len(ui.msg) * 6 + 2 > 96 - MO_BATT_W - 2)
         bat = -1;                                       /* (a message too long beside it: for as long as it shows) */
     right = bat >= 0 ? 96 - MO_BATT_W - 2 : 94;         /* (the title and the engine end here) */
@@ -305,6 +333,8 @@ static void mo_head(void)
         mo_cut(t, ui.msg, 15);                          /* position and the engine (they would show through) */
         mo_inv(t, 2, 1);
         at[0] = sub[0] = 0;
+    } else if (hold >= 0) {                             /* OCT+ held: the sheet it opens */
+        mo_text(hn, 1, 1, MO_INK);
     } else {
         str_cpy(t, mo_title(pg), sizeof t);
         if (pg->fam == FAM_GEN && pg->graph == GR_STEPS && song.sel < TESSERA_TRACKS) {
@@ -337,7 +367,7 @@ static void mo_head(void)
     }
     if (song.rec & (1u << song.sel))                    /* REC: a bar under the track's dot */
         mo_hl(97 + (int32_t)song.sel * 6, 8, 5, MO_INK);
-    mo_hl(0, 9, 120, MO_INK);
+    mo_head_line(9, hold);
 }
 /* a value as its column shows it: five characters at most (MORPH, 0.25); longer, a number loses its last decimals
  * (128.00: 128.0) and a word its vowels from the end (MARKOV: MARKV, REVERB: REVRB), then an H; still longer, cut (1: the Mono
@@ -2320,6 +2350,11 @@ static void mo_sheet(void)
 }
 
 /* what the page shows: drawn again only when it changes */
+static uint32_t mo_hold_sig(void)
+{
+    const char *hn;
+    return (uint32_t)(mo_sheet_hold(&hn) / 25 + 1);
+}
 static uint32_t mo_signature(void)
 {
     const track_t *t = TSEL;
@@ -2342,6 +2377,7 @@ static uint32_t mo_signature(void)
     if (cur_page()->graph == GR_LFO)                    /* the LFO's dot: 116 places a cycle */
         h = (h ^ (t->lfo_ph / (0xFFFFFFFFu / 116u))) * 16777619u;
     h = (h ^ (uint32_t)(batt_head() + 1)) * 16777619u;   /* (the header's battery) */
+    h = (h ^ mo_hold_sig()) * 16777619u;                 /* (OCT+ held: the sheet's line filling) */
     if (ui.msg_t)
         h = (h ^ str_hash(1u, ui.msg)) * 16777619u;
     if (cur_page()->graph == GR_LAND)                   /* LANDSCAPE: the scene, a step on */
@@ -2418,7 +2454,7 @@ static void mono_page(void)
 static void mo_dhead(const char *chip, const char *msg, int32_t bat)
 {
     char b[24], t[24];
-    int32_t x = 119;
+    int32_t x = 119, hold = msg ? -1 : mo_sheet_hold(&chip);   /* (OCT+ held: the sheet it opens, in the chip) */
     cv_begin(240, H_HEAD, MO_BG);
     fmt_int(b, song.g[G_BPM]);
     x = 119 - mo_tw(b);
@@ -2461,7 +2497,7 @@ static void mo_dhead(const char *chip, const char *msg, int32_t bat)
         fmt_int(t + 1, song.octave < 0 ? -song.octave : song.octave);
         mo_text(t, mo_tw(b) + 6, 1, MO_INK);
     }
-    mo_hl(0, 8, 120, MO_INK);
+    mo_head_line(8, hold);
     cv_blit(0, Y_HEAD);
 }
 /* a list page's rows (list_rows; 22 px = 11 cells apart): the label at the left, the value at the right (dim), the
@@ -2691,10 +2727,14 @@ static void mo_stage_col(uint32_t k, int top)
 static void mo_stage_head(void)
 {
     char b[16];
-    int32_t right = mo_batt_right(batt_head()), msg = ui.msg_t && ui.msg[0];
+    int32_t right = mo_batt_right(batt_head()), msg = ui.msg_t && ui.msg[0], hold;
+    const char *hn = "";
+    hold = msg ? -1 : mo_sheet_hold(&hn);
     if (msg) {
         mo_cut(b, ui.msg, 15);
         mo_inv(b, 2, 1);
+    } else if (hold >= 0) {                             /* OCT+ held: the sheet it opens */
+        mo_text(hn, 1, 1, MO_INK);
     } else {
         if (song.playing) {                             /* PLAY: a triangle; STOP: a square */
             int32_t r;
@@ -2710,7 +2750,7 @@ static void mo_stage_head(void)
         str_cpy(b, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), 8);
         mo_textr(b, right < 119 ? right : 118, 1, MO_DIM);
     }
-    mo_hl(0, 9, 120, MO_INK);
+    mo_head_line(9, hold);
 }
 static void mo_stage_wave(int32_t top, int32_t h, uint16_t c)   /* the output, triggered on a rising zero crossing */
 {
@@ -2818,7 +2858,7 @@ static uint32_t mo_stage_signature(void)
         for (k = 0; k < sizeof mo_col; k++)
             h = (h ^ p[k]) * 16777619u;
     }
-    return h;
+    return (h ^ mo_hold_sig()) * 16777619u;             /* (OCT+ held: the sheet's line filling) */
 }
 static void mono_stage(void)
 {

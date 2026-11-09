@@ -74,6 +74,13 @@ static int oct_enter_ok(void)                           /* OCT+ would do somethi
 /* the OCT LEDs, bit 0 OCT-, bit 1 OCT+. In the dialogs, the menu and on action pages OCT- (back) is
  * lit and OCT+ blinks while it would do something; off Stage OCT- lit, OCT+ lit where it enters; on Stage
  * they show the octave shift */
+static int oct_dn_page(void)                            /* the page shown has an OCT- layer for the track shown */
+{
+    uint32_t g = cur_page()->graph;
+    if (g == GR_TWEAK || (g == GR_STEPS && cur_page()->fam == FAM_GEN))
+        return pr_gen_track(song.sel);                  /* RANDOM (page_random.c; CHORD: STRUM too) */
+    return g == GR_EVOLVE || g == GR_MIDICH || g == GR_ENTRIES || g == GR_PIECE;   /* ROLL ALL, SOUND, ORDER, USER 5-8 */
+}
 static uint32_t oct_leds(void)
 {
     if (designer_on() && !name_on() && !ui.confirm) return 3u;
@@ -84,8 +91,9 @@ static uint32_t oct_leds(void)
         return 1u;
     if (ui.confirm || ui.menu || act_cols())
         return 1u | (blink && (ui.confirm || (ui.menu ? ui.menu == 1u : act_ready())) ? 2u : 0u);
-    if (oct_nav())
-        return 1u | (oct_enter_ok() ? 2u : 0u);
+    if (oct_nav())                                      /* a page: OCT- lit where it has a layer (the key grammar's
+                                                         * rule 6; Back works on every page); a sheet, the map: lit */
+        return (pop.on || smap.on || ui.home || oct_dn_page() ? 1u : 0u) | (oct_enter_ok() ? 2u : 0u);
     return (song.octave < 0 ? 1u : 0u) | (song.octave > 0 ? 2u : 0u);
 }
 
@@ -1448,16 +1456,17 @@ static void act_do(void)
 static uint8_t oct_eat;                                 /* OCT taps not to come (held for a sheet, used in a combo) */
 static uint8_t oct_deferred;                            /* OCT+ pressed on Stage (its sheet when held): the octave on
                                                          * release */
-/* on a page with OCT held layers (MIDI OUT's TRANSPOSE / SOUND / DRUM MAP, PIECE's USER levels, MODS' threshold and CC,
- * EVOLVE's ROLL ALL and PAT GEN, ENTRIES' ROLE and ORDER, GEN's and TWEAK's RANDOM: issue #519, 3.5-beta1 took you HOME) an OCT button
- * held past OCT_HOLD_MS is a hold, never a tap: let go without a knob turned it is neither Esc nor Enter (a peek never
- * leaves the page or flips a mod's polarity) */
-#define OCT_HOLD_MS 700u
-static int oct_layer_page(void)
+/* a held OCT is a hold, never a tap (the key grammar, M0; issue #519 had it on seven pages): OCT- held past OCT_HOLD_MS
+ * on any page is never Back (its layer, or a peek: letting go returns); OCT+ held is never Enter where holding it means
+ * something (a layer's knobs here; a sheet's pages eat it when it opens, btn_hold), and elsewhere still Enters on
+ * release however long (PATTERNS' Copy to: OCT+ pastes). The menu, dialogs, sheets and the map keep their taps */
+static int oct_hold_page(uint32_t k)                    /* k 0 OCT-, 1 OCT+ */
 {
     uint32_t g = cur_page()->graph;
-    return !ui.home && !ui.menu && (g == GR_MIDICH || g == GR_PIECE || g == GR_CORDS || g == GR_EVOLVE || g == GR_ENTRIES ||
-                                       g == GR_TWEAK || (g == GR_STEPS && cur_page()->fam == FAM_GEN));
+    if (ui.home || ui.menu || ui.confirm || pop.on || smap.on || name_on() || new_on() || designer_on())
+        return 0;
+    return !k || g == GR_STEPS || g == GR_EVOLVE || g == GR_FORM || g == GR_TWEAK || g == GR_TIMING || g == GR_ENERGY ||
+           g == GR_MIDICH || g == GR_CHAIN || g == GR_ENTRIES || g == GR_PIECE || g == GR_CORDS || g == GR_TRK;
 }
 static uint32_t oct_taps(uint32_t pressed, int here)
 {
@@ -1475,7 +1484,7 @@ static uint32_t oct_taps(uint32_t pressed, int here)
         chord = 1;
     tap = down & ~now;
     for (k = 0; k < 2u; k++)
-        if (((tap >> k) & 1u) && fm1_ms - t_down[k] > OCT_HOLD_MS && oct_layer_page())
+        if (((tap >> k) & 1u) && fm1_ms - t_down[k] > OCT_HOLD_MS && oct_hold_page(k))
             tap &= ~(1u << k);
     down &= (uint8_t)now;
     if (chord) {
@@ -1777,7 +1786,7 @@ static uint32_t btn_hold(uint32_t *t0, uint32_t label, uint32_t now, int hold_ok
     if ((fm1_in.buttons >> panel.btn[label]) & 1u) {
         if (!*t0)
             *t0 = (now | 1u) & ~2u;
-        else if (hold_ok && !(*t0 & 2u) && now - (*t0 & ~3u) > 700u * 1000u * FM1_TICKS_PER_US) {
+        else if (hold_ok && !(*t0 & 2u) && now - (*t0 & ~3u) > OCT_HOLD_MS * 1000u * FM1_TICKS_PER_US) {
             *t0 |= 2u;
             return BT_HOLD;
         }
@@ -2636,6 +2645,8 @@ static void ui_input(void)
         if ((s = panel_enc(EN_K1 + k)) == 0)
             continue;
         step_edit_combo();
+        oct_eat |= (uint8_t)(((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) |   /* (an OCT held: a combo, its release no tap) */
+                             (((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) << 1));
         if(k<2u && bulk_jog(s))continue;
         if (k == 0u && cur_page()->graph == GR_ROLL && step_gesture(s))   /* KNOB 1 too, as SELECT (ENV / SCL / a key
                                                                          * held) */
