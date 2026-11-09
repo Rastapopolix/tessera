@@ -118,7 +118,21 @@ static struct {
 #else
 #define UI_PAL_ENTRIES UI_NPALETTES
 #endif
-#define T_TRK(k) UI_PALETTES[ux.pal].trk[(k) & 3u]   /* track k's colour (the mixer, lanes, track chips) */
+#if MELODEE_LOOK
+/* MENU > GROUND (#557): 0 DARK (the inks on black), 1 LIGHT: the palette's light version, its light inks on paper
+ * (tools/gen_ui_palettes.py UI_LIGHT_*; saved in settings_persist.c) */
+static uint8_t ux_ground;
+static ui_pal_t ux_lpal;                             /* the palette's light version while LIGHT */
+static const ui_pal_t *ux_p = UI_PALETTES;           /* the palette drawn */
+static uint16_t pal_light(uint32_t i, uint32_t j)    /* palette i's light ink for track j (4: ACCENT) */
+{
+    return UI_LIGHT_INKS[(UI_LIGHT_MAP[i % UI_NPALETTES] >> 3u * j) & 7u];
+}
+#define UX_PAL (*ux_p)
+#else
+#define UX_PAL UI_PALETTES[ux.pal]
+#endif
+#define T_TRK(k) UX_PAL.trk[(k) & 3u]                  /* track k's colour (the mixer, lanes, track chips) */
 
 static inline uint16_t ux_gray(uint32_t x5) { return (uint16_t)((x5 << 11) | (x5 << 6) | x5); }
 /* a + (b - a) * pct / 100 per channel, rounded; MONO on the red channel, so it stays gray */
@@ -158,7 +172,7 @@ static void palette_text(const ui_pal_t *p, uint16_t text)   /* MOSAIC: TEXT and
 #endif
 static void palette_theme(void)                    /* THEME and what is mixed from it: the track's colour */
 {
-    const ui_pal_t *p = &UI_PALETTES[ux.pal];
+    const ui_pal_t *p = &UX_PAL;
     ux.theme = p->trk[ux.trk & 3u];
 #if MELODEE_LOOK
     if (ux_multi)
@@ -172,6 +186,19 @@ static void palette_theme(void)                    /* THEME and what is mixed fr
 static void palette_set(uint32_t i)
 {
     const ui_pal_t *p = &UI_PALETTES[ux.pal = (uint8_t)(i < UI_PAL_ENTRIES ? i : UI_DEFAULT_INDEX)];
+#if MELODEE_LOOK
+    ux_p = p;
+    if (ux_ground && ux.pal < UI_NPALETTES) {        /* LIGHT (GRAY, the tests': as it is) */
+        uint32_t j;
+        ux_lpal.name = p->name;
+        ux_lpal.bg = UI_LIGHT_BG; ux_lpal.surf = UI_LIGHT_SURF;
+        for (j = 0; j < 4u; j++)
+            ux_lpal.trk[j] = pal_light(ux.pal, j);
+        ux_lpal.text = ux_lpal.trk[0];
+        ux_lpal.accent = pal_light(ux.pal, 4u);
+        p = ux_p = &ux_lpal;
+    }
+#endif
 #ifdef UI_TEST_PALETTE
     ux.mono = ux.pal == UI_GRAY_INDEX;
 #else
