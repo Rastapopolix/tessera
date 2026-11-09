@@ -13,6 +13,10 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - RANDOM: hold OCT- on GEN or TWEAK and turn KNOB 1 right for new values on the page's knobs, each inside its range; turn left to put them back. MODE, the seed and FOLLOW never change (#529).
 - ARP modes: DNUP (down, then up) and RND1 (one random order, repeated until the held notes change; from the track's SEED, so PLAY replays it). SEQ > ARP, KNOB 1.
 - MIDI OUT DRUM MAP: GM or ROW, for drum machines that take their tracks as a row of notes (such as the Analog Rytm). MIDI OUT, OCT+ and OCT- held.
+- CHORD STRUM: a CHORD track's notes start a few ms apart, like a played chord. STRUM (OFF, 5 to 60 ms) and DIR (UP, DOWN, ALT) on GEN, OCT- held, KNOB 2 and 3. Short strikes strum tighter; all notes end together.
+- STEP direction: each pattern plays FWD, BACK, PEND, PONG, RAND or DRUNK. Direction row on the pattern's sheet (OCT+ held on PATTERN, NOTES or GEN). RAND and DRUNK follow the SEED, so PLAY replays them.
+- DIR as a mod destination: a cord can move a pattern's direction at each step; a GATE mod switches direction while its source is high.
+- HOLD mods: OCT+ on MODS cycles +- / + / GATE / HOLD. HOLD takes the source at the start of each bar and keeps it until the next.
 
 ## Fixed
 - ARP MODE ORD plays the notes in the order the keys were pressed; it played them low to high (as UP) unless ARP 2's ORDER was PLAY.
@@ -23,6 +27,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 ## Good to know
 - Projects saved with these new settings lose them on 3.4.x.
 - A project with ARP MODE DNUP or RND1 plays REPEAT on 3.4.x and earlier betas (the last note held).
+- On older firmware, a strummed project plays its chords together, a pattern with a direction plays FWD, and a HOLD mod plays as +-.
 
 ## Please try
 - PAT GEN with different generators on two patterns: switch by hand and with SONG, save, power off and on, load.
@@ -33,4 +38,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - RANDOM on GEN with a few generators, stopped and playing; then turn back.
 - USER scales: make one on the keys, play a generator in it, save, power off and on, load; load that project on 3.4.1 (it plays the scale picked under it).
 - ARP DNUP and RND1 with a chord held: RND1 keeps its order, changes when a key is added, and is the same after STOP and PLAY.
+- CHORD STRUM on a CHORD track: STRUM 20 ms and up, DIR UP, DOWN and ALT, with BEAT or STEP stabs; MIDI OUT gets the notes spread too.
+- STEP direction: PONG and DRUNK on a melody, with SONG and a pattern change; save, load, and STOP and PLAY replays RAND.
+- HOLD mod: an LFO into a filter or pitch held per bar; a cord to DIR.
 - A project from 3.4.1 loads and plays the same.
