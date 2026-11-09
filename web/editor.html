@@ -3525,13 +3525,15 @@ function updateBrowser() {
   const ps = $("preset");
   const names = dev.names[e] || [];
   const currentNative=null;
-  const pool=dev.nativePools?.[e],sig=JSON.stringify([e,pool,currentNative]);
+  const pool=dev.nativePools?.[e],gen=(dev.bank?.slots||[]).filter(x=>x.used&&x.engine===e),sig=JSON.stringify([e,pool,gen,currentNative]);
   if(ps.dataset.engine!==sig){
-    ps.replaceChildren(...names.map((n,i)=>el("option",{value:i,text:n,hidden:aliasOf(names,i)!==i})),...(pool?.slots||[]).filter(x=>x.used).map(x=>el("option",{value:`u:${x.slot}`,text:`${slotName(x.slot,e)} ${x.name}`})));
+    ps.replaceChildren(...names.map((n,i)=>el("option",{value:i,text:n,hidden:aliasOf(names,i)!==i})),...(pool?.slots||[]).filter(x=>x.used).map(x=>el("option",{value:`u:${x.slot}`,text:`${slotName(x.slot,e)} ${x.name}`})),
+      ...gen.map(x=>el("option",{value:`g:${x.slot}`,text:`${slotName(x.slot)} ${x.name}`})));
     if(currentNative)ps.append(el("option",{value:"current-native",text:`${currentNative} (current)`,disabled:true}));
     ps.dataset.engine=sig;
   }
-  if(document.activeElement!==ps)ps.value=dev.dump.user?`u:${dev.dump.user-1}`:currentNative?"current-native":String(dev.dump.preset);
+  const g=userGeneral(dev);
+  if(document.activeElement!==ps)ps.value=dev.dump.user?`u:${dev.dump.user-1}`:g!=null?`g:${g}`:currentNative?"current-native":String(dev.dump.preset);
 }
 
 function visible(d) { return d && d.max > d.min && !!d.label && d.label !== "-"; }
@@ -3739,13 +3741,25 @@ async function sendSet(s, id, k) {
 /* engine / preset browser */
 $("engine").addEventListener("change", () => choosePreset(+$("engine").value, 0));
 $("preset").addEventListener("change", () => { if (dev) choosePreset(dev.dump.engine, $("preset").value); });
+/* the general user preset (slot) the editor loaded on the selected track, if the sound is still that one (DUMP
+   reports only native user presets; a load on the device clears it) */
+function userGeneral(d) { const u=d?.userGen; return u&&u.track===(d.sel||0)&&d.bank?.slots?.[u.slot]?.used&&d.bank.slots[u.slot].engine===d.dump?.engine?u.slot:null; }
+/* the name of the sound on the selected track: a user preset's own, else the factory preset's */
+function soundName(d) {
+  const e=d.dump.engine,g=userGeneral(d);
+  if(d.dump.user)return d.nativePools?.[e]?.slots?.[d.dump.user-1]?.name||(d.names[e]||[])[d.dump.preset];
+  return g!=null?d.bank.slots[g].name:(d.names[e]||[])[d.dump.preset];
+}
 async function choosePreset(e, p) {
   if (!dev) return;
   const releaseBusy = beginBusy();
   try {
     selfLoad();
-    if(String(p).startsWith("u:"))checkRc(await nativeBank.load(rq,e,+String(p).slice(2),dev.sel||0));
+    const d=dev;
+    if(String(p).startsWith("u:"))checkRc(await nativeBank.load(rq,e,+String(p).slice(2),d.sel||0));
+    else if(String(p).startsWith("g:"))checkRc(await bank.load(rq,+String(p).slice(2)));
     else parse[CMD.PRESET](await rq(req.preset(e, +p)));
+    d.userGen=String(p).startsWith("g:")?{track:d.sel||0,slot:+String(p).slice(2)}:null;
     await afterSoundChange();
   } catch (err) { report(err); } finally { releaseBusy(); }
 }
@@ -4426,6 +4440,7 @@ function onPush(f) {
     } else if (f.cmd === CMD.RELOAD) {
       d.sel = parse[CMD.RELOAD](f.a).track;          /* v3: another track may be selected on the device */
       if (selfReload.n > 0 && Date.now() < selfReload.until) { selfReload.n--; return; }
+      d.userGen = null;
       needReload = true;
       maybeReload();
     } else if (f.cmd === CMD.STEP_CHANGED) {
@@ -4636,7 +4651,7 @@ $("savefile").addEventListener("click", () => op(async () => {
   if (!dev) return;
   const engine = dev.dump.engine, preset = dev.dump.preset;
   const data = { format: "felucca-patch", version: 1, firmware: dev.info.version,
-    engineName: dev.info.engines[engine], presetName: (dev.names[engine] || [])[preset],
+    engineName: dev.info.engines[engine], presetName: soundName(dev),
     engine, preset, p: dev.dump.p.slice(), g: dev.dump.g.slice(),
     steps: dev.steps.map((s) => ({ n: s.n, notes: s.notes.slice(), time: s.time, flags: s.flags, vel: s.vel })) };
   if(data.engineName === "FM6") { const r=parse[CMD.FM6_GET](await rq(req.fm6Get(FM6.TARGET.TRACK,dev.sel||0)));if(r.rc)throw new Error("Cannot read FM6 voice");data.fm6=Array.from(r.packed); }
@@ -4956,6 +4971,11 @@ $("factlib").addEventListener("click", () => libOp(async (d, rqf) => {
     const pt=await nativeBank.get(rqf,d.info,d.dump.engine,+$("preset").value.slice(2));
     await libAdd([{...pt,engineName:d.info.engines[pt.engine],tags:["device"]}]);sayK("copiedLib",pt.name);return;
   }
+  if($("preset").value.startsWith("g:")){
+    const u=await bank.get(rqf,d.info,+$("preset").value.slice(2));
+    if(!u.used){sayK("emptySlot",slotName(u.slot));return;}
+    await libAdd([{name:u.name,engine:u.engine,engineName:d.info.engines[u.engine],p:u.p,fm6:u.fm6,pattern:u.pattern,grid:u.grid,tags:["device"]}]);sayK("copiedLib",u.name);return;
+  }
   const e = dev.dump.engine, pi = $("preset").value === "" ? dev.dump.preset : +$("preset").value;
   const name = (dev.names[e] || [])[pi] || "PRESET";
   selfLoad();
@@ -5061,6 +5081,7 @@ function bankLoad(slot,engine=poolEngine()) {
     selfLoad();
     const rc = engine?await nativeBank.load(rqf,engine,slot,d.sel||0):await bank.load(rqf,slot);
     if (rc) { sayK("emptySlot", slotName(slot)); return; }
+    d.userGen = engine ? null : { track: d.sel || 0, slot };
     await afterSoundChange("ready", d);
     sayK("loadedUser", `${slotName(slot,engine)} ${s.name}`);
   });
