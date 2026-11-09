@@ -2167,7 +2167,8 @@ static void ui_input(void)
     if (octup == BT_HOLD) {
         oct_eat |= 2u;                                  /* (its release is no OCT+) */
         oct_deferred = 0;
-        if(bulk_context())ui.bulk_hold=1;else if(!gen_layer_on())page_sheet_open();   /* (QUAD, CONSTELLATION on GEN: their layer) */
+        if(bulk_context()){ui.bulk_hold=1;if(!slot_kind()&&!bulk.on)ui_message("PATTERN SHEET");}else if(!gen_layer_on())page_sheet_open();   /* (QUAD, CONSTELLATION on
+                                                         * GEN: their layer; NOTES: the sheet named, a hold told from a tap) */
     } else if (octup == BT_TAP && oct_deferred) {
         song.octave += song.octave < 3 ? 1 : 0;         /* (OCT+ pressed on a page with a sheet: on release) */
         notes_oct_say();

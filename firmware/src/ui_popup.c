@@ -313,8 +313,8 @@ static void ht_clear(void) { edit_param(2u, -1); }
 static const sheet_row_t SHEET_HIT[] = {{"Accent", ht_acc_v, 0, ht_acc, 0}, {"Chance", nt_chance_v, nt_chance, 0, 0},
     {"Condition", nt_cond_v, nt_cond, 0, 0}, {"Ratchet", nt_ratch_v, nt_ratch, 0, 0}, {"Nudge", nt_nudge_v, nt_nudge, 0, 0}, {"Clear hit", 0, 0, ht_clear, SR_RED}};
 
-/* OCT+ on NOTES / the drum grid: an empty place gets a note (the last one played) / the lane's hit; on a note or a
- * hit: its sheet. 0: not such a page */
+/* OCT+ on NOTES / the drum grid: on a note or a hit its sheet; an empty place NOTHING THERE (Enter opens, never
+ * makes). 0: not such a page */
 static int step_enter(void)
 {
     char t[24], sub[12];
@@ -324,10 +324,8 @@ static int step_enter(void)
     str_cpy(sub, "step ", sizeof sub);
     fmt_int(sub + 5, (int32_t)ui.cursor + 1);
     if (grid_on()) {
-        if (!((step_lanes(&seq_steps(TSEL)[ui.cursor]) >> ui.lane) & 1u)) {
-            edit_param(2u, 1);                          /* (the grid's HIT: its checks) */
-            return 1;
-        }
+        if (!((step_lanes(&seq_steps(TSEL)[ui.cursor]) >> ui.lane) & 1u))
+            goto none;                                  /* (Enter opens, never makes: KNOB 3 or a key sets a hit) */
         str_cpy(t, drum_lane_abbr(TSEL, ui.lane), sizeof t);   /* "SD \xB7 step 5" */
         str_cpy(t + str_len(t), " \xB7 ", 4);
         str_cpy(t + str_len(t), sub, sizeof t - str_len(t));
@@ -337,7 +335,8 @@ static int step_enter(void)
     chosen = notes_selected(TSEL);
     start = notes_manual_start(TSEL);
     if (chosen >= RECORD_MAX && !(start < NSTEP && TSEL->step[start].n)) {
-        edit_param(1u, 0);                              /* (NOTES' PITCH on an empty step: the last note there) */
+none:                                                   /* (KNOB 2 or a key places a note; Theo 2026-11-10) */
+        ui_message("NOTHING THERE");
         return 1;
     }
     str_cpy(t, "Note ", sizeof t);
