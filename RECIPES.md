@@ -6,6 +6,9 @@ the button in brackets until it shows: GEN, NOTES and PATTERN are under **SEQ**;
 and ENERGY under **ARP**; MODS, MATRIX
 and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
 
+For the ideas behind these patches (controlled randomness, feedback, slow modulation) and where each generator
+comes from, see [GENERATIVE.md](GENERATIVE.md).
+
 **Recipes**
 
 - [A first generative patch in a minute](#a-first-generative-patch-in-a-minute)

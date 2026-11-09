@@ -6,6 +6,7 @@
 <b><a href="https://rastapopolix.github.io/tessera/webapp/sim/">Try it in your browser</a></b> ·
 <b><a href="MANUAL.md">Manual</a></b> ·
 <b><a href="RECIPES.md">Recipes</a></b> ·
+<b><a href="GENERATIVE.md">Generative patching</a></b> ·
 <b><a href="https://github.com/Rastapopolix/tessera/releases/latest">Releases</a></b>
 </p>
 
@@ -77,7 +78,8 @@ later) works with Tessera 3.3 and later only: earlier Tessera reports an identit
   track (MENU > COLOR).
 
 The **[manual](MANUAL.md)** covers every page, knob and shortcut; **[RECIPES.md](RECIPES.md)** has step-by-step
-patches and tips.
+patches and tips; **[GENERATIVE.md](GENERATIVE.md)** explains the ideas behind generative patching, from modular
+synths to norns, and where each generator comes from.
 
 ---
 
