@@ -445,13 +445,15 @@ static void capture_take(int over)
     track_t *t = TSEL;
     uint32_t k = song.sel, n = 0, i, now, first = 0xFFFFu, last = 0, end, w, start, put = 0, full = 0, j = 0, from;
     uint32_t gen = k < TESSERA_TRACKS ? tessera.mode[k] : TESS_ENG_OFF;
+    uint32_t arp = gen == TESS_ENG_OFF ? (uint32_t)t->p[P_AMODE] : 0u, pr = gen != TESS_ENG_OFF || arp;   /* (a print:
+                                                         * a generator's notes, or the ARP's, issue #530) */
     uint64_t touched = 0;
     int empty;
     cap_ev_t captured[CAP_N];
     uint32_t until;
     if (chain_busy()) { ui_message("STOP TO CAPTURE"); return; }
     if ((song.rec >> k) & 1u) { ui_message("RECORDING"); return; }
-    if (gen == TESS_ENG_OFF && tessera_step_varied(k)) {   /* STEP EVOLVE: the changes playing become the steps */
+    if (!pr && tessera_step_varied(k)) {   /* STEP EVOLVE: the changes playing become the steps */
         char b[16];
         load_begin(t, UNDO_PAT);
         fm1_irq_off();
@@ -484,25 +486,25 @@ static void capture_take(int over)
         if (back < first) first = back;
     }
     if (!n) { ui_message("NOTHING PLAYED"); return; }
-    if (gen != TESS_ENG_OFF && notes_have_recording(t)) {
+    if (pr && notes_have_recording(t)) {
         ui_message("CLEAR TO PRINT");
         return;
     }
-    if (gen != TESS_ENG_OFF && !seq_is_empty(t) && !over) {
+    if (pr && !seq_is_empty(t) && !over) {
         confirm_open(CF_PRINT, k);                      /* (a print never mixes into steps written by hand) */
         return;
     }
     {   /* (16-bit step counts: they wrap) */
         uint32_t cur = (now >> 8) & 0xFFFFu, pos = cur & 15u, span;
-        end = (uint16_t)(cur - pos + (first <= pos && gen == TESS_ENG_OFF ? 16u : 0u));   /* a bar's start (a print:
+        end = (uint16_t)(cur - pos + (first <= pos && !pr ? 16u : 0u));   /* a bar's start (a print:
                                                                          * whole bars, the one playing is not done) */
         span = (uint16_t)(end - (uint16_t)(cur - last));
-        empty = gen != TESS_ENG_OFF || (seq_is_empty(t) && !notes_have_recording(t));
+        empty = pr || (seq_is_empty(t) && !notes_have_recording(t));
         w = empty ? (span <= 16u ? 16u : span <= 32u ? 32u : 64u) : (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP);
         start = (uint16_t)(end - w);
     }
     load_begin(t, UNDO_PAT);
-    if (gen != TESS_ENG_OFF && !seq_is_empty(t)) {      /* REPLACE STEPS? accepted: in this undo level */
+    if (pr && !seq_is_empty(t)) {                       /* REPLACE STEPS? accepted: in this undo level */
         fm1_irq_off();
         track_defaults_steps(t);
         fm1_irq_on();
@@ -556,10 +558,15 @@ static void capture_take(int over)
         }
     if (put)
         t->seq_active = 1;
-    if (put && gen != TESS_ENG_OFF) {                   /* print: the steps play on from the place they were taken */
+    if (put && pr) {                                    /* print: the steps play on from the place they were taken */
         fm1_irq_off();
-        undo.gmode = (uint8_t)(gen + 1u);
-        tessera_mode_set(k, TESS_ENG_OFF);
+        if (arp) {                                      /* (the ARP off: seq.c lets its notes go) */
+            undo.gmode = (uint8_t)(0x80u | arp);
+            t->p[P_AMODE] = 0;
+        } else {
+            undo.gmode = (uint8_t)(gen + 1u);
+            tessera_mode_set(k, TESS_ENG_OFF);
+        }
         t->seq_idx = (uint16_t)((uint16_t)(cap_step[k] - start) % w);
         fm1_irq_on();
     }
@@ -569,7 +576,7 @@ static void capture_take(int over)
         char b[16];
         fmt_int(b, (int32_t)(w % 16u ? w : w / 16u));
         str_cpy(b + str_len(b), w % 16u ? " STEPS" : w > 16u ? " BARS" : " BAR", 8);
-        ui_say(full ? "FULL: " : gen != TESS_ENG_OFF ? "PRINTED " : "CAPTURED ", b);
+        ui_say(full ? "FULL: " : pr ? "PRINTED " : "CAPTURED ", b);
     }
     ui.force = 1;
 }

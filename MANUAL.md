@@ -347,7 +347,7 @@ key skips it.
 | **GLO** + **E4** (on MIXER, E4) | Holds [FILL](#a-steps-condition-and-fill) for the steps whose condition is FILL or !FILL. |
 | **GEN** on an AWAKE track, a white key | Picks that step: KNOB 1 sets its A, KNOB 2 its B. The same key lets it go. |
 | Hold **FX**, turn a knob | Sets how far a cord moves that knob's parameter (see [Mod shortcut](#mod-shortcut)). |
-| Hold **REC** | On a generator track: prints its last bars into STEP. On STEP EVOLVE: keeps the changes. On a STEP track: captures what you just played. |
+| Hold **REC** | On a generator or ARP track: prints its last bars into STEP. On STEP EVOLVE: keeps the changes. On a STEP track: captures what you just played. |
 | Hold **EDIT**, press **OCT-** / **OCT+** | Undo / redo. |
 | **SAVE** + **REC**, or hold **SAVE** | Saves the project to its slot (stops playback first). |
 | **EVOLVE**, KNOB 4 (**ROLL**) | Each click is a new seed (1 to 128), so a new line; turn back for the last one, note for note. |
@@ -1270,6 +1270,9 @@ MODS: send it to a filter or a send and the sound follows the tide too.
 Hold **REC** on a generator track to **print**: what the generator played in its last bars goes into the track's
 STEP pattern (1, 2 or 4 bars, as many as the notes span), and the track switches to STEP and plays on from the same
 place. Hold EDIT to undo, which puts the generator back.
+
+On an **ARP** track it prints what the arpeggio played (not the keys you held) the same way: the track switches
+to STEP, and EDIT held brings the ARP back (hold the keys again to restart it).
 
 - Steps written by hand already there: **REPLACE STEPS?** OCT+ prints over them, OCT- keeps them.
 - Recorded notes there: **CLEAR TO PRINT**.

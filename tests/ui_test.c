@@ -6354,6 +6354,44 @@ static int test_capture(void)
         cap_w = cap_from = 0;
         memset(cap_ev, 0, sizeof cap_ev);
     }
+    {   /* print the ARP (issue #530): REC held on an ARP track takes what the arp played, not the keys, into STEP */
+        uint32_t ok = 1, played = 0;
+        static const uint8_t HELD[3] = {60, 64, 67};
+        ui_power_on();
+        recording_reset();
+        track_defaults_steps(TSEL);
+        TSEL->p[P_SLEN] = 16;
+        cap_w = cap_from = 0;
+        memset(cap_ev, 0, sizeof cap_ev);
+        TSEL->p[P_AMODE] = 1;                           /* (UP) */
+        transport_req = 1;
+        events_block(1);
+        for (i = 0; i < 3u; i++) input_on(TSEL, HELD[i], 100);
+        while (cap_step[0] != 37u) events_block(1);     /* two bars and five steps */
+        for (i = 0; i < CAP_N; i++)
+            if (cap_ev[i].vel && (cap_ev[i].tr & 127u) == 0u && cap_ev[i].step < 32u) {
+                played++;
+                ok &= !(cap_ev[i].tr & 128u) && cap_ev[i].dur > 0u && cap_ev[i].note % 12u != 1u;
+            }
+        bad += check("print ARP: the arp's notes go to Capture closed, with a length; the keys held don't",
+                     ok && played >= 8u);
+        hold(B_REC);
+        ok = 1;
+        for (i = 0; i < CAP_N; i++)
+            if (cap_ev[i].vel && (cap_ev[i].tr & 127u) == 0u && cap_ev[i].step < 32u)
+                ok &= TSEL->step[cap_ev[i].step].n >= 1u;
+        bad += check("  REC held: two whole bars on their steps, LEN 32, then STEP (ARP off)",
+                     ok && msg_is("PRINTED 2 BARS") && TSEL->p[P_SLEN] == 32 && !TSEL->p[P_AMODE] && !seq_is_empty(TSEL));
+        hold(B_EDIT);
+        bad += check("  EDIT held: the ARP back (UP), steps and LEN too", TSEL->p[P_AMODE] == 1 && TSEL->p[P_SLEN] == 16 &&
+                     seq_is_empty(TSEL));
+        stop_transport();
+        for (i = 0; i < 3u; i++) input_off(TSEL, HELD[i]);
+        TSEL->p[P_AMODE] = 0;
+        track_defaults_steps(TSEL);
+        cap_w = cap_from = 0;
+        memset(cap_ev, 0, sizeof cap_ev);
+    }
     {   /* the jam log: track 1's loop with pattern 1, then 2 twice, then 1 */
         ui_power_on();
         stop_transport();

@@ -304,6 +304,7 @@ static uint32_t arp_rand(const track_t *t, uint32_t salt)
     uint32_t tr = trk_index(t);
     return tr < TESSERA_TRACKS ? seq_hum_draw(tr, arp_draws[tr]++, salt) : rng();
 }
+static void cap_gen(const track_t *t, uint32_t note, uint32_t vel, uint32_t dur);
 static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
 {
     uint32_t period, cnt, list[64], len = 0, i, j, o;
@@ -388,6 +389,10 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
             if (rec_on(t))
                 rec_note(t, t->arp_note, vel);           /* recording: what the arp plays */
             trk_note_on(t, t->arp_note, vel);
+            {   /* Capture: what the arp plays, so REC held prints it (issue #530; its gate in 1/256 of a step) */
+                uint32_t sp = seq_div_samples((uint32_t)t->p[P_SDIV]);
+                cap_gen(t, t->arp_note, vel, sp ? (uint32_t)((uint64_t)t->arp_off * 256u / sp) : 256u);
+            }
         }
         /* A recovered clock burst may cross several ARP steps. Consume them all
          * and retain the residual phase, just as the sequencer does. */
@@ -734,7 +739,8 @@ static void input_on(track_t *t, uint32_t note, uint32_t vel)
     countin_note(t,note,vel);
     last_note = (uint8_t)note;
     live_note_on(t, note, vel);
-    cap_on(t, note, vel);
+    if (!t->p[P_AMODE])
+        cap_on(t, note, vel);                       /* (ARP on: Capture takes what it plays, arp_step) */
     {   /* (an ANSWER track: the note joins its phrase, on the nearest step as rec_note's) */
         uint32_t late = 0, len = t->p[P_SLEN] > 0 ? (uint32_t)t->p[P_SLEN] : 1u;
         if (song.playing && t->seq_pos != 0x7FFFFFFFu)
