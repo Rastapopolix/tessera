@@ -287,7 +287,7 @@ does: MENU > **LARGE VALUE** shows it on every page (ON) or on none (OFF).
 <p align="center"><img src="assets/gallery/home.png" alt="HOME" width="320"> <img src="assets/gallery/mixer.png" alt="MIXER" width="320"></p>
 
 **MIXER** (tap GLO) is the four tracks as a mixer: **KNOB 1 to 4** set the levels of tracks 1 to 4, and with
-**OCT+** held they set the pans. The keys are the mixer's while it is shown: the **black keys** F#3 G#3 A#3 C#4 mute
+**OCT-** held they set the pans. The keys are the mixer's while it is shown: the **black keys** F#3 G#3 A#3 C#4 mute
 and unmute tracks 1 to 4, the **white keys** F3 G3 A3 B3 solo a track while held, **C4** unmutes them all, **E4**
 holds FILL and **F4** taps the tempo, the same as with GLO held on any other page. Each strip shows MUTE or SOLO; a track silenced by
 another's solo dims. Any page button leaves the mixer, and the keys play notes again.
@@ -363,7 +363,7 @@ key skips it.
 | **EVOLVE**, KNOB 4 (**ROLL**) | Each click is a new seed (1 to 128), so a new line; turn back for the last one, note for note. |
 | **FORM**, KNOB 3 (**CLEAR**) | Forgets B and C: the section playing becomes A. |
 | **MODS**, **OCT+** | Switches the picked mod between **+-** (both ways), **+** (one way), **^** (GATE) and **=** (HOLD). |
-| **MODS**, **OCT+** held + **KNOB 4** | Sets a GATE mod's threshold. |
+| **MODS**, **OCT-** held + **KNOB 4** | Sets a GATE mod's threshold. |
 | **MATRIX**, **OCT+** | Opens the picked mod in MODS. |
 | **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across a row, KNOB 2 between rows, OCT+ opens the page, OCT- or EDIT closes it. Any other page button leaves it for its page. |
 | **PLAY** | Every generator starts its random choices from the top of its seed, and TIDE and SWARM restart: with EVOLVE's EVERY off, a project plays the same way each time. |
@@ -933,19 +933,19 @@ FORM strings mutated phrases into a short song form of sections A, B and C, each
 B and C are made from the section before, by CONTR, the first time they are reached. Changing MODE or ROLL starts
 the form again at A.
 
-**DEVELOP** (OCT+ held, KNOB 1, 0–100 %): how far a section varies each time the form comes back to it. At 0 (the
+**DEVELOP** (OCT- held, KNOB 1, 0–100 %): how far a section varies each time the form comes back to it. At 0 (the
 default) a section played again comes back exactly, as before. Above 0 each return is the section with one change of
 that size, so it stays recognisable but is never quite the same; the section itself is kept, so the next return
 starts from it again and the form never drifts away over hours. GRAVITY (OCT+ held on EVOLVE) is the chance a return
 stays exact. A knob turned while a section plays is kept in it, as without DEVELOP.
 
-**CHAIN** (OCT+ held, KNOB 2, FOLLOW or OWN) and **SKIP** (OCT+ held, KNOB 3, 0–100 %): this track's part in the
+**CHAIN** (OCT- held, KNOB 2, FOLLOW or OWN) and **SKIP** (OCT- held, KNOB 3, 0–100 %): this track's part in the
 project's [CHAIN](#chain-one-form-for-the-project). FOLLOW: its sections change with the CHAIN's letters. OWN: it keeps
 its own FORM. Until you set it, a track follows when its own FORM is OFF and keeps its own when it has one. SKIP is the
 chance the track stays in its section one phrase longer where the CHAIN moves on (then it catches up; never twice
 running). Both are lit only while the CHAIN's FORM is on.
 
-**ROLE** (OCT+ held, KNOB 4): this track's part for [ENTRIES](#entries-tracks-out-and-back-in), the same setting as
+**ROLE** (OCT- held, KNOB 4): this track's part for [ENTRIES](#entries-tracks-out-and-back-in), the same setting as
 on the ENTRIES page.
 
 ### PIECE: a length and a shape
@@ -998,7 +998,7 @@ lands on a downbeat, whatever each track's DIV.
 | 2 | **PHRASE** | 4, 8 or 16 bars a phrase. |
 | 3 | **WANDER** (0–100 %) | 0 plays the FORM as written, round and round. Up, the next letter is more often chosen than read. |
 
-Hold **OCT+** for each place's **REPEAT** (KNOB 1 to 4, 1 to 8 phrases): ABAC with A at 2 and C at 3 plays
+Hold **OCT-** for each place's **REPEAT** (KNOB 1 to 4, 1 to 8 phrases): ABAC with A at 2 and C at 3 plays
 A A B A C C C, then again. The picture shows the places as blocks as long as their repeats, the one playing filled with
 its phrases along the foot, and the tracks that follow.
 
@@ -1031,7 +1031,7 @@ section every 4 phrases), and on every track, STEP tracks too.
 | 3 | **STYLE** | CUT: in or out at once on the line. FADE (the default): its level fades over FADE bars from the line. |
 | 4 | **FADE** (1–4 bars) | How long a FADE takes. |
 
-Hold **OCT+** for each track's **ROLE** (KNOB 1 to 4; also OCT+ held on FORM, KNOB 4): **BASS**, **RHYTHM**,
+Hold **OCT+** for each track's **ROLE** (KNOB 1 to 4; also OCT- held on FORM, KNOB 4): **BASS**, **RHYTHM**,
 **HARMONY**, **MELODY** or **ANCHOR**. AUTO (the default) guesses: CHORD is harmony, ATLAS or a drum sound rhythm, a
 track whose notes sit mostly below C3 bass, anything else melody. The picture shows each track's role (AUTO's guess
 marked), whether it is IN, OUT or muted by hand, and its level.
@@ -1180,7 +1180,7 @@ How long a generator holds its notes.
 ## TIMING
 
 > **In short:** rolls and feel. Ratchets repeat a step quickly (a drum roll, a stutter); HUMAN plays steps a touch
-> late, like a player sitting behind the beat; SPLIT (OCT+ held) breaks some steps into the next finer division.
+> late, like a player sitting behind the beat; SPLIT (OCT- held) breaks some steps into the next finer division.
 
 Ratchets: a step's notes played again within the step. And HUMAN: each step a little late.
 
@@ -1199,7 +1199,7 @@ fifth of it (TWEAK 100: 20 ms).
 
 <p align="center"><img src="assets/gallery/gen_timing.png" alt="TIMING, x4 ACCEL" width="240"></p>
 
-**SPLIT.** Hold **OCT+** on TIMING, on a generator or a STEP track, and the knobs set how often a step breaks out of the
+**SPLIT.** Hold **OCT-** on TIMING, on a generator or a STEP track, and the knobs set how often a step breaks out of the
 grid: a 1/8 track now and then plays a pair of 1/16s, or a note pushed onto the off-1/16, as a player does.
 
 | Knob (OCT+ held) | Setting | What it does |
@@ -1232,7 +1232,7 @@ firmware at all, as with every new cord destination.
 | **RATCH**, CHANCE, SHAPE | TIMING, KNOB 1 to 3 | Generators | A step plays 2 to 8 times within itself, the same note; SHAPE spaces the hits evenly, faster or slower | CHANCE picks which steps (replays from PLAY) | Rolls, stutters, drum fills |
 | A step's **Ratchet** | NOTES, the note's sheet | STEP | The same for one written step; TIMING's SHAPE places the hits | No, it is written | A roll on the step you choose |
 | **ADORN** | EVOLVE on a STEP track | STEP | Each round adds a little: an extra hit, an octave jump, a neighbour note, a passing note in a rest | Yes, while EVOLVE runs | A written line that decorates itself |
-| **SPLIT**, HOW | TIMING, OCT+ held | Both | Some steps play at half their division: two notes (DOUBLE) or one note late (PUSH) | Yes (replays from PLAY) | Now and then breaking out of the grid |
+| **SPLIT**, HOW | TIMING, OCT- held | Both | Some steps play at half their division: two notes (DOUBLE) or one note late (PUSH) | Yes (replays from PLAY) | Now and then breaking out of the grid |
 | **HUMAN** (timing) | TIMING | Both | Each step up to 60 ms late, never more than a quarter of a step | Yes (replays from PLAY) | A relaxed, behind-the-beat feel |
 | **HUMAN** (velocity) | TWEAK | Both | Each note a little softer or louder, and shorter | Yes (replays from PLAY) | Dynamics that sound played |
 | A step's **Nudge** | NOTES, the note's sheet | STEP | One step early or late, in sixteenths of a step | No, it is written | A push or a lay-back on one note |
@@ -1318,7 +1318,7 @@ off at 0.
 
 Energy also sets how much EVOLVE changes: half its AMOUNT at the sparse end, half as much again at the full end.
 
-Hold **OCT+** for **DEPTH** (KNOB 1, 0–100 %): how much energy moves the selected track. 100 is all of it. 0 makes
+Hold **OCT-** for **DEPTH** (KNOB 1, 0–100 %): how much energy moves the selected track. 100 is all of it. 0 makes
 the track an anchor, a drone or a bass that plays as set through the tide, LEVEL and the rests.
 
 The picture shows a turn of the tide round LEVEL and, while playing, where it is now.
@@ -1444,7 +1444,7 @@ at a time, each with an activity light and a moving mark.
   **+**: the source folded to 0 to 1, so it moves one way only, as ENV does ("+" after the source's name). OCT+ again
   makes it a GATE, then HOLD, and once more +- again (a 0 to 1 source goes +, GATE, HOLD).
 - **GATE: all or nothing.** A GATE mod ("^" after the source's name) moves its destination by its whole amount while
-  the source is over a threshold, and not at all under it, like a comparator on a modular. Hold **OCT+** and turn
+  the source is over a threshold, and not at all under it, like a comparator on a modular. Hold **OCT-** and turn
   **KNOB 4** to set the threshold (it starts at the middle of a +- source, at 50 % of a 0 to 1 one). Two GATE mods from
   one source, one at -20 % with +50 and one at +20 % with -50, open a window: the destination moves only while the
   source is between them. A little hysteresis keeps a slow source near the threshold from chattering.
@@ -1472,7 +1472,7 @@ at a time, each with an activity light and a moving mark.
   so a TEMPO mod plays it faster or slower and it lasts shorter or longer; it never jumps through the shape. With CLK
   on USB or TRS the external clock sets the tempo and TEMPO does nothing.
 - **CC out.** A mod onto a track's **CC** sends its move over USB MIDI as a control change on that track's MIDI OUT
-  channel, so an LFO, TIDE, SWARM or a generator's CV can play an outside synth's filter or any other CC. Hold **OCT+**
+  channel, so an LFO, TIDE, SWARM or a generator's CV can play an outside synth's filter or any other CC. Hold **OCT-**
   and turn **KNOB 3** to pick the CC number (0 to 119; a new one starts on 1, the mod wheel); the destination shows it
   (**T2 CC 74**). A +- source sends 0 to 127 around 64 (its whole range at 100 %), a + source and a fixed mod (no
   source) from 0 up. A value goes out only when it changes, and at most about every 9 ms. Nothing is sent with

@@ -20,8 +20,10 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - GROUND: MENU > GROUND, below COLOR, puts the screen on warm paper (LIGHT) instead of black (DARK, the default). Each ink becomes a darker version that reads well on paper; the MOSAIC sets keep four different inks. COLOR's sheet shows them on paper while LIGHT is on (#557).
 - HOLD mods: OCT+ on MODS cycles +- / + / GATE / HOLD. HOLD takes the source at the start of each bar and keeps it until the next.
 - Chord kinds SUS2, 7SUS4, ADD9 and MAJ6 on CHRD (SCL > CHORD, or the CHORD track's layer), after POW: fixed shapes on any note, for the chord keys, MIDI in, step entry, the arp and the CHORD generator.
+- Keys: OCT+ goes in, OCT- goes back. Held, OCT+ opens the page's sheet (the header shows its name and a line filling until it opens; a page without one says NO SHEET) and OCT- gives the page's second set of knobs while held. Moved from OCT+ held to OCT- held: FORM (DEVELOP, CHAIN, SKIP, ROLE), TIMING (SPLIT, HOW), ENERGY (DEPTH), CHAIN (REPEAT), MIXER (PAN) and MODS (a GATE's threshold, a CC mod's number). The OCT- LED is lit on pages that have such a layer. GEN, EVOLVE, TWEAK, MIDI OUT, ENTRIES and PIECE move in a later beta.
 
 ## Fixed
+- A long OCT- press no longer goes back on any page (it did on FORM, TIMING, ENERGY, CHAIN, MIXER and the sound pages), and a knob turned while an OCT key is held no longer counts as a tap of it.
 - ARP MODE ORD plays the notes in the order the keys were pressed; it played them low to high (as UP) unless ARP 2's ORDER was PLAY.
 - Holding OCT- on EVOLVE or ENTRIES and letting go no longer takes you to HOME (#519).
 - EVOLVE's ROLL and ROLL ALL say NEW LINE on the screen (NEW LINE AT BAR while playing), so a turn is no longer silent when stopped (#528).
