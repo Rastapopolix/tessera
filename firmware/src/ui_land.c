@@ -17,6 +17,8 @@
 #define LAND_MR 111                                     /* half way, setting at the right */
 #define LAND_MT (LAND_TOP + 7)
 #define LAND_MB (LAND_H - 4)
+#define LAND_FISH_MS 30000u                             /* a fish jumps once the page has been quiet this long */
+#define LAND_FISH_T 900u                                /* ms in the air */
 
 /* a MOSAIC kind of palette: each part of the scene an ink of its four that suits it (Theo, beta3): the moon, the far
  * hills, the water (its line and the moon in it), as track ink 0..3, or 4 the palette's white; the stars white. A one-ink
@@ -44,6 +46,8 @@ static struct {
     uint8_t rd;                                         /* the feed read up to here */
     int32_t mx, my;                                     /* the moon (1/16 cells) */
     uint8_t mset;                                       /* placed since the page opened */
+    uint32_t quiet, ft0;                                /* ms since the last note (page open), the fish's jump */
+    uint8_t fish, fx;                                   /* 0 none this silence, 1 in the air, 2 jumped; where from */
 } land;
 
 /* the moon: still while LENGTH is FREE; a planned piece's time played moves it on an arc, left to right (planner.c's
@@ -83,6 +87,18 @@ static void land_disc(int32_t cx, int32_t cy, int32_t r, uint16_t c)   /* mo_dis
     }
 }
 
+/* a ring of its own (a fish's splash): no drop, no note, dim */
+static void land_splash(int32_t x, int32_t y)
+{
+    uint32_t i, k = 0;
+    for (i = 0; i < LAND_RIP; i++) {
+        if (!land.used[i]) { k = i; break; }
+        if (fm1_ms - land.t0[i] > fm1_ms - land.t0[k]) k = i;
+    }
+    land.used[k] = 1, land.t0[k] = fm1_ms - 180u;       /* (past the drop) */
+    land.x[k] = (uint8_t)x, land.y[k] = (uint8_t)y, land.r[k] = 6, land.tr[k] = 4, land.vel[k] = 0;
+}
+
 /* where a drop lands: across by pitch (C1 .. C7), the track a band deeper and nearer, a little apart from the last */
 static void land_drop(uint32_t tr, uint32_t note, uint32_t vel)
 {
@@ -101,6 +117,7 @@ static void land_drop(uint32_t tr, uint32_t note, uint32_t vel)
     land.vel[k] = (uint8_t)vel;
     land.n++;
     land.act += 256u;
+    land.quiet = 0, land.fish = 0;
 }
 
 /* a frame on: the drops since the last, the rings gone, how busy the music has been (falls back over ~4 s), the drift */
@@ -112,6 +129,7 @@ static void land_step(void)
         land_open = 1;
         land.rd = (uint8_t)at;
         land.mset = 0;
+        land.quiet = 0, land.fish = 0;
         dt = 0;
     }
     if ((uint8_t)(at - land.rd) > LAND_EV)              /* (fallen behind: the newest ring's worth) */
@@ -127,12 +145,21 @@ static void land_step(void)
     if (song.playing)
         land.drift += dt > 200u ? 200u : dt;
     land_moon(dt);
+    if (land.quiet < LAND_FISH_MS) land.quiet += dt;
+    if (!land.fish && land.quiet >= LAND_FISH_MS) {     /* a long silence: a fish, somewhere along the near water */
+        land.fish = 1, land.ft0 = fm1_ms;
+        land.fx = (uint8_t)(16u + (land.n * 37u + land.drift / 16u) % 72u);
+        land_splash(land.fx, LAND_H + 5);
+    } else if (land.fish == 1u && fm1_ms - land.ft0 >= LAND_FISH_T) {
+        land.fish = 2;
+        land_splash(land.fx + 18, LAND_H + 5);
+    }
 }
 static int land_moving(void)
 {
     for (uint32_t i = 0; i < LAND_RIP; i++)
         if (land.used[i]) return 1;
-    return 0;
+    return land.fish == 1u;
 }
 static uint32_t land_stars(void)                        /* none at four notes a second, all once quiet */
 {
@@ -196,6 +223,13 @@ static void mo_pic_land(void)
         if (w < 2) break;
         for (x = 0; x < w; x += 2) mo_px(mx - w / 2 + x + sh, y, deep);
     }
+    if (land.fish == 1u) {                              /* the fish: out, over and back, nose first */
+        uint32_t a = fm1_ms - land.ft0;
+        int32_t fx = land.fx + (int32_t)(a * 18u / LAND_FISH_T), s = a * 2u < LAND_FISH_T ? -1 : 1,
+                fy = LAND_H - 1 - 10 * mo_sin((int32_t)(a * 128u / LAND_FISH_T)) / 127;
+        mo_px(fx + 1, fy + s, MO_INK), mo_px(fx, fy, MO_INK), mo_px(fx - 1, fy - s, MO_INK);
+        mo_px(fx - 2, fy - s - 1, MO_INK), mo_px(fx - 2, fy - s + 1, MO_INK);
+    }
     for (i = 0; i < LAND_RIP; i++) {                    /* the rings: open fast, slow down, go to dashes and fade */
         uint32_t a, e;
         int32_t r, b;
@@ -207,7 +241,7 @@ static void mo_pic_land(void)
         if (a < 90u) mo_vl(land.x[i], land.y[i] - 7 + (int32_t)a / 15, 3, MO_TRK(land.tr[i]));   /* (the drop) */
         else if (a < 180u) mo_px(land.x[i] - 1, land.y[i] - 2, MO_INK), mo_px(land.x[i] + 1, land.y[i] - 2, MO_INK);
         land_ring(land.x[i], land.y[i], r, 1 + r * (b + 12) / 100, a > LAND_LIFE / 2u,
-                  a > LAND_LIFE * 2u / 3u ? MO_DIM : MO_TRK(land.tr[i]));
+                  a > LAND_LIFE * 2u / 3u || land.tr[i] > 3u ? MO_DIM : MO_TRK(land.tr[i]));
         if (land.vel[i] > 80u && a > 200u && a < LAND_LIFE * 2u / 3u && r > 5)
             land_ring(land.x[i], land.y[i], r / 2, 1 + r / 2 * (b + 12) / 100, 0, MO_DIM);
     }
