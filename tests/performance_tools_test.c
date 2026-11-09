@@ -221,8 +221,66 @@ static void test_arp_shape(void)
     tessera.evolve[tr].human=0;
     t->p[P_AMODE]=0;
 }
+/* ARP MODE's orders for C E G (pressed E C G for ORD), RND1 repeating and replaying, the old values' meaning kept */
+static uint32_t arp_keys(track_t *t, const uint8_t *keys, uint32_t nk, uint8_t *notes, uint32_t n)
+{
+    uint32_t got = 0, guard = 0, period = seq_div_samples((uint32_t)t->p[P_ARATE]);
+    seq_sub_clear();
+    arp_off(t); t->nheld = 0; t->arp_pos = 0xFFFFFFF; t->arp_idx = 0xFFFFFFFFu;
+    for (uint32_t i = 0; i < nk; i++) arp_add(t, keys[i]);
+    while (got < n && guard++ < 400u) {
+        arp_tick(t, period);
+        if (t->arp_note) { notes[got++] = t->arp_note; arp_off(t); }
+    }
+    t->nheld = 0;
+    return got;
+}
+static void test_arp_modes(void)
+{
+    static const uint8_t CEG[3] = {60, 64, 67}, ECG[3] = {64, 60, 67}, CEGC[4] = {60, 64, 67, 72};
+    static const struct { int16_t mode; const uint8_t *keys; uint8_t want[6]; } W[] = {
+        {1, ECG, {60, 64, 67, 60, 64, 67}},             /* UP: low to high, whatever the order pressed */
+        {2, ECG, {67, 64, 60, 67, 64, 60}},             /* DN */
+        {3, CEG, {60, 64, 67, 64, 60, 64}},             /* UPDN: the ends once */
+        {7, CEG, {67, 64, 60, 64, 67, 64}},             /* DNUP: the ends once */
+        {5, ECG, {64, 60, 67, 64, 60, 67}},             /* ORD: as pressed (ORDER NOTE too) */
+        {6, ECG, {67, 67, 67, 67, 67, 67}},             /* REPEAT: the last pressed */
+    };
+    reset_tools(); track_t *t = TSEL; uint32_t tr = song.sel, i, k;
+    uint8_t a[12], b[12];
+    t->p[P_APROB] = 127; t->p[P_AOCT] = 1; t->p[P_AORDER] = 0;
+    for (k = 0; k < sizeof W / sizeof W[0]; k++) {
+        t->p[P_AMODE] = W[k].mode;
+        assert(arp_keys(t, W[k].keys, 3, a, 6) == 6 && !memcmp(a, W[k].want, 6));
+    }
+    t->p[P_AORDER] = 1; t->p[P_AMODE] = 1;              /* ORDER PLAY: UP as pressed, as before */
+    assert(arp_keys(t, ECG, 3, a, 3) == 3 && a[0] == 64 && a[1] == 60 && a[2] == 67);
+    t->p[P_AORDER] = 0; t->p[P_AMODE] = 8;              /* RND1: one order of C E G, repeated */
+    assert(arp_keys(t, CEG, 3, a, 12) == 12);
+    assert((1u << (a[0] - 60)) + (1u << (a[1] - 60)) + (1u << (a[2] - 60)) == (1u << 0) + (1u << 4) + (1u << 7));
+    for (i = 3; i < 12u; i++) assert(a[i] == a[i - 3]);
+    assert(arp_keys(t, CEG, 3, b, 12) == 12 && !memcmp(a, b, 12));   /* PLAY again: the same order */
+    assert(arp_keys(t, CEGC, 4, b, 12) == 12);          /* a note added: an order of the four, repeated */
+    for (i = 4; i < 12u; i++) assert(b[i] == b[i - 4]);
+    uint32_t differs = 0;                               /* other SEEDs: other orders */
+    uint16_t seed = tessera.seed[tr];
+    for (k = 1; k < 12u; k++) {
+        tessera.seed[tr] = (uint16_t)(seed + k);
+        assert(arp_keys(t, CEG, 3, b, 3) == 3);
+        differs += memcmp(a, b, 3) != 0;
+    }
+    tessera.seed[tr] = seed;
+    assert(differs);
+    /* the stored values keep their meaning, the new ones appended: an older project plays as it did */
+    const param_desc_t *d = param_desc_of(t->eng_req, P_AMODE);
+    static const char *const OLD[] = {"OFF", "UP", "DN", "UPDN", "RND", "ORD", "REPEAT", "DNUP", "RND1"};
+    assert(d->max == 8);
+    for (k = 0; k <= 8u; k++) assert(!strcmp(d->names[k], OLD[k]));
+    t->p[P_AMODE] = 0;
+}
 int main(void)
 {
+    test_arp_modes();
     test_recording_tools();test_click_volume();test_editing_tools();test_knob_preview();test_arp_shape();test_midi_and_levels();test_compatibility();
     puts("performance tools: count-in, click, additive entry, audition, momentary restore/keep, MIDI, drum levels and inert legacy effect values passed");return 0;
 }

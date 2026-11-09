@@ -305,6 +305,31 @@ static uint32_t arp_rand(const track_t *t, uint32_t salt)
     uint32_t tr = trk_index(t);
     return tr < TESSERA_TRACKS ? seq_hum_draw(tr, arp_draws[tr]++, salt) : rng();
 }
+/* RND1's order: one shuffle of the note list from the track's SEED and the notes themselves, kept while they stay the
+ * same (a held note added or let go, OCT, ORDER or the SEED turned: a new one). The same notes on the same SEED
+ * shuffle the same way, so PLAY replays it. */
+static uint8_t arp_once[NTRK][64];
+static uint32_t arp_once_key[NTRK];
+static void arp_shuffle_once(const track_t *t, uint32_t *list, uint32_t len)
+{
+    uint32_t tr = trk_index(t), key = 0x811C9DC5u ^ len, i, j;
+    uint32_t tmp[64];
+    if (tr >= NTRK) return;
+    if (tr < TESSERA_TRACKS) key ^= (uint32_t)tessera.seed[tr] << 8;   /* (a new SEED: a new order) */
+    for (i = 0; i < len; i++) key = (key ^ list[i]) * 0x01000193u;
+    if (!key) key = 1u;
+    if (key != arp_once_key[tr]) {                     /* a Fisher-Yates over the positions */
+        for (i = 0; i < len; i++) arp_once[tr][i] = (uint8_t)i;
+        for (i = len; i > 1u; i--) {
+            uint8_t x;
+            j = (tr < TESSERA_TRACKS ? seq_hum_draw(tr, i, 0x524E31u ^ key) : rng()) % i;
+            x = arp_once[tr][i - 1u]; arp_once[tr][i - 1u] = arp_once[tr][j]; arp_once[tr][j] = x;
+        }
+        arp_once_key[tr] = key;
+    }
+    for (i = 0; i < len; i++) tmp[i] = list[arp_once[tr][i]];
+    for (i = 0; i < len; i++) list[i] = tmp[i];
+}
 static void cap_gen(const track_t *t, uint32_t note, uint32_t vel, uint32_t dur);
 static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
 {
@@ -336,7 +361,7 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
         for (i = 0; i < t->nheld; i++)
             list[i] = t->held[i];
         cnt = t->nheld;
-        if (!t->p[P_AORDER])
+        if (!t->p[P_AORDER] && t->p[P_AMODE] != 5)     /* (ORD: always as pressed) */
             for (i = 1; i < cnt; i++)
                 for (j = i; j > 0 && list[j - 1] > list[j]; j--) {
                     uint32_t x = list[j];
@@ -353,6 +378,7 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
                 }
         if (!len) return;
         if (t->p[P_AMODE] == 6) { list[0] = t->held[t->nheld - 1u]; len = 1; } /* REPEAT: last played note, no octave traversal */
+        if (t->p[P_AMODE] == 8) arp_shuffle_once(t, list, len);   /* RND1: one shuffle, then played as UP */
         t->arp_idx++;
         switch (t->p[P_AMODE]) {
         case 2:
@@ -366,6 +392,11 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
         case 4:
             j = arp_rand(t, 0x41524Fu) % len;
             break;
+        case 7: {                                       /* DNUP: down, then up; the ends once (as UPDN) */
+            uint32_t cyc = len > 1u ? 2u * len - 2u : 1u, k = t->arp_idx % cyc;
+            j = k < len ? len - 1u - k : k - (len - 1u);
+            break;
+        }
         default:
             j = t->arp_idx % len;
             break;

@@ -692,12 +692,16 @@ static void pv_arp(void)
             for (j = i; j > 0 && base[j - 1] > base[j]; j--) { uint8_t x = base[j]; base[j] = base[j - 1]; base[j - 1] = x; }
     for (o = 0; o < oct; o++)
         for (i = 0; i < nb && n < 16u; i++) seq[n++] = (uint8_t)clamp(base[i] + 12 * (int32_t)o, 0, 127);
-    if (mode == 2u)                                     /* DN */
+    if (mode == 2u || mode == 7u)                       /* DN; DNUP from the top */
         for (i = 0; i < n / 2u; i++) { uint8_t x = seq[i]; seq[i] = seq[n - 1u - i]; seq[n - 1u - i] = x; }
-    else if (mode == 3u)                                /* UPDN: up, then down without the ends again */
+    if (mode == 3u || mode == 7u)                       /* UPDN, DNUP: back without the ends again */
         for (i = n >= 2u ? n - 2u : 0u; i > 0u && n < 16u; i--) seq[n++] = seq[i];
     else if (mode == 4u)                                /* RND: a shuffle (as a picture: one of its orders) */
         for (i = n; i > 1u; i--) { j = (i * 7u + 3u) % i; uint8_t x = seq[i - 1u]; seq[i - 1u] = seq[j]; seq[j] = x; }
+    else if (mode == 8u) {                              /* RND1: one shuffle, played again */
+        for (i = n; i > 1u; i--) { j = (i * 5u + 1u) % i; uint8_t x = seq[i - 1u]; seq[i - 1u] = seq[j]; seq[j] = x; }
+        for (i = 0, j = n; i < j && n < 16u; i++) seq[n++] = seq[i];
+    }
     for (i = 0; i < n; i++) { lo = seq[i] < lo ? seq[i] : lo; hi = seq[i] > hi ? seq[i] : hi; }
     w = n ? 208 / (int32_t)n : 208;
     for (i = 0; i < n; i++) {
