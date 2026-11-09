@@ -145,6 +145,9 @@ static uint32_t scale_map(const track_t *t, int32_t n, int32_t offset)
     return (uint32_t)clamp(n + offset + t->p[P_TRANS], 0, 127);
 }
 
+/* 1 while SCALES is up with a USER scale picked (ui_input.c): the keys edit the scale, so each plays its own note,
+ * unquantized, and lights by it (#559) */
+static uint8_t kb_chrom;
 static uint32_t kb_map(const track_t *t, uint32_t k)
 {
     const engine_t *e = ENGINES[eng_idx(t->eng_req)];   /* (the engine it switches to) */
@@ -152,6 +155,8 @@ static uint32_t kb_map(const track_t *t, uint32_t k)
     if (e->keys && (n = e->keys(t, k)) >= 0)           /* the engine's own key map (GM kit, slices) */
         return (uint32_t)n;
     n = 53 + (int32_t)k;
+    if (kb_chrom)
+        return (uint32_t)clamp(n + 12 * song.octave, 0, 127);
     if (t->p[P_QUANT] == Q_SNAP || t->p[P_QUANT] == Q_CHRD) {   /* SNAP: every key, rounded down to the scale; CHRD:
                                                                  * then to the nearest note of the CHORD track's chord */
         uint32_t pcs = t->p[P_QUANT] == Q_CHRD ? tessera_chord_pcs() : 0u;
