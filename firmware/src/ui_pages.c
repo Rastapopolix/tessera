@@ -65,7 +65,7 @@ static uint32_t pv_kind(void)
         return PV_MIXER;
     if (pg->graph == GR_ROLL && !drum_track(TSEL))
         return PV_NOTES;
-    if (pg->graph == GR_MOD)
+    if (!MELODEE_LOOK && pg->graph == GR_MOD)
         return PV_MOD;
     if (pg->graph == GR_CORDS)
         return PV_CORDS;

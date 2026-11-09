@@ -1586,7 +1586,7 @@ static void draw_columns(void)
         mx_columns();
         return;
     }
-    if (cur_page()->graph == GR_MOD) {                   /* the route's SRC, the route, its DST AMT */
+    if (!MELODEE_LOOK && cur_page()->graph == GR_MOD) {  /* the route's SRC, the route, its DST AMT */
         const track_t *t = TSEL;
         uint32_t id = P_M1SRC + 3u * mod_ui_slot;
         int32_t s = t->p[id], d = t->p[id + 1u], a = t->p[id + 2u];
