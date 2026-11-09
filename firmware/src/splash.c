@@ -57,6 +57,8 @@ static void splash(const char *line)          /* the boot screen: the mosaic's b
         spl_tile(i, 0, T_LINE);
     draw_text_box(0, 120, 240, &AF_L, "TESSERA", T_TEXT, 1);
     draw_text_box(0, 160, 240, &AF_S, line, T_MID, 1);
+    draw_text_box(8, 240 - 8 - AF_X.h, 224, &AF_X, MELODEE_VERSION, T_DIM, 2);   /* the version, small at the bottom
+                                                 * right: below the outro's band, so it stays until the screen clears */
 }
 
 static void spl_wait(uint32_t ms)              /* (the boot's wait, the watchdog fed) */
