@@ -801,15 +801,25 @@ static void draw_foot(void)
 #include "ui_stage.c"                                   /* Stage (HOME) */
 #include "ui_browser.c"                                 /* SAVE > PRESETS, the sound browser */
 #include "ui_patterns.c"                                /* SEQ > PATTERNS, SEQ > SONG */
-/* the layer's columns: KNOB 1 RANDOM (NEW >, BACK < with values kept), the others empty */
+/* the layer's columns: KNOB 1 RANDOM (NEW >, BACK < with values kept); CHORD on GEN: KNOB 2 STRUM, KNOB 3 its DIR (dim
+ * while OFF; seq_strum.c); the others empty */
 static void pr_draw(void)
 {
-    uint32_t tr = song.sel;
+    uint32_t tr = song.sel, c = 1;
     draw_column(0, "RANDOM", pr_gen_track(tr) && pr_back_ok(tr) ? "BACK <" : "NEW >", "", pr_gen_track(tr) ? VAL(0u) : T_DIM,
                 -1, ICON_AUTO);
-    draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
-    draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
-    draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+    if (ch_st_layer_on()) {
+        char v[8];
+        uint32_t sm = tessera.ch_strum[tr], sd = tessera.ch_sdir[tr] % TESS_STR_DIRS;
+        fmt_int(v, (int32_t)sm);
+        col_mods(PID_TESS(TX_CH_STRUM));
+        draw_column(1, "STRUM", sm ? v : "OFF", sm ? "ms" : "", VAL(1u), (int32_t)(sm * 1000u / TESS_STRUM_MS), ICON_AUTO);
+        col_mods(PID_TESS(TX_CH_SDIR));
+        draw_column(2, "DIR", pid_desc(PID_TESS(TX_CH_SDIR), tr)->names[sd], "", sm ? VAL(2u) : T_DIM, (int32_t)sd * 500,
+                    ICON_AUTO);
+        c = 3;
+    }
+    for (; c < 4u; c++) draw_column(c, "", "", "", T_DIM, -1, ICON_NONE);
 }
 static void draw_columns(void)
 {
@@ -1439,7 +1449,7 @@ static void draw_columns(void)
                 draw_column(3, "LOOP", v3, "", VAL(3u), (int32_t)g->loop * 1000 / GEN_SR_LOOP, ICON_AUTO);
             } else if (m == TESS_ENG_CHORD) {
                 const gen_chord_t *g = tessera_chord(tr);
-                if (ch_layer_on()) {                            /* OCT+ held: OCT, the track's CHRD and VOIC */
+                if (ch_layer_on()) {                          /* OCT+ held: OCT, the track's CHRD and VOIC */
                     const param_desc_t *dc = pid_desc(PID_TRACK(P_CHRD), tr), *dv = pid_desc(PID_TRACK(P_VOIC), tr);
                     uint32_t cv = (uint32_t)TSEL->p[P_CHRD], vv = (uint32_t)TSEL->p[P_VOIC];
                     v1[0] = g->oct > 0 ? '+' : g->oct < 0 ? '-' : '0';

@@ -53,6 +53,7 @@ static const char *const TX_N_ETSTYLE[] = {"CUT", "FADE"};   /* (entries.c) */
 static const char *const TX_N_ETROLE[] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "MELODY", "ANCHOR"};
 static const char *const TX_N_ETORDER[] = {"AUTO", "1ST", "2ND", "3RD", "4TH"};
 static const char *const TX_N_SEQDIR[] = {"FWD", "BACK", "PEND", "PONG", "RAND", "DRUNK"};   /* (SEQ_*) */
+static const char *const TX_N_SDIR[] = {"UP", "DOWN", "ALT"};   /* (TESS_STR_*) */
 static const char *const TX_N_PLLEN[] = {"FREE", "1", "2", "3", "4", "5", "6", "8", "10", "12", "15", "20", "25", "30",
                                          "40", "45", "60", "75", "90", "120", "180", "240"};   /* (planner.c PL_MIN) */
 static const char *const TX_N_PLSHAPE[] = {"ARCH", "RISE", "FALL", "PLATEAU", "VALLEY", "WAVES", "BUILDS", "STEPS",
@@ -218,6 +219,8 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_TW_FRHY] = PE("RHYTHM", TX_N_FRHY, 0),
     [TX_PAT_GEN] = PE("PAT GEN", TX_N_PATGEN, 0),
     [TX_MIDI_DMAP] = PE("MAP", TX_N_DMAP, 0),
+    [TX_CH_STRUM] = {"STRUM", F_INT, 0, TESS_STRUM_MS, 0, 0, "ms"},
+    [TX_CH_SDIR] = PE("DIR", TX_N_SDIR, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -773,6 +776,10 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                   "back, the ends twice. RAND: any step. DRUNK: a step on or back at random. A pass "
                                   "is still LEN steps, so conditions, Accumulate and pattern changes keep the bar. "
                                   "The pattern's sheet (OCT+ held), Direction."),
+    X_(TX_CH_STRUM, "CHORD STRUM", "A chord's notes start this many ms apart, as a strummed chord (in all at most "
+                                   "half its length). OFF: together. OCT- held on GEN, KNOB 2."),
+    X_(TX_CH_SDIR, "CHORD DIR", "A strum's first note: UP the lowest, DOWN the highest, ALT turns round each "
+                                "strike. OCT- held on GEN, KNOB 3."),
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT

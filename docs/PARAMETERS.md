@@ -292,6 +292,8 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x299 | MIDI OUT DRUM MAP | GM, ROW | GM | The notes a drum track or ATLAS sends out over MIDI. GM: General MIDI's drum notes (kick 36, snare 38, closed hat 42). ROW: one note a drum in a row from 36, in the order of a drum machine's tracks such as the Analog Rytm's: kick, snare, rim, clap, -, low tom, -, -, closed hat, open hat, -, bell. TRANSPOSE moves the row onto the machine's first note. MIDI OUT, OCT+ and OCT- held, KNOB k. |
 | 0x29A | ENTRIES ORDER | AUTO, 1ST, 2ND, 3RD, 4TH | AUTO | When the track comes in: 1ST to 4TH, one a phrase in that order, and out the other way round (last in, first out). AUTO: by ROLE, after the numbered tracks. ANCHOR still never goes out; only AUTO tracks wait for a bass or harmony. GLO > ENTRIES with OCT- held, KNOB k track k's. |
 | 0x29B | PATTERN DIR | FWD, BACK, PEND, PONG, RAND, DRUNK | FWD | The order the STEP pattern plays its steps in, each pattern its own. FWD: 1 to the end. BACK: the end to 1. PEND: there and back, the ends once. PONG: there and back, the ends twice. RAND: any step. DRUNK: a step on or back at random. A pass is still LEN steps, so conditions, Accumulate and pattern changes keep the bar. The pattern's sheet (OCT+ held), Direction. |
+| 0x29C | CHORD STRUM | 0 to 60 ms | 0 | A chord's notes start this many ms apart, as a strummed chord (in all at most half its length). OFF: together. OCT- held on GEN, KNOB 2. |
+| 0x29D | CHORD DIR | UP, DOWN, ALT | UP | A strum's first note: UP the lowest, DOWN the highest, ALT turns round each strike. OCT- held on GEN, KNOB 3. |
 
 ## Mods
 

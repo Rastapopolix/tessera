@@ -343,7 +343,7 @@ key skips it.
 | Tap **ARP** | The track's shaping pages (EVOLVE, TWEAK, TIMING and so on); tap again for the next. It never changes the track's MODE: that is GEN's KNOB 1. |
 | Hold **OCT+** on GEN | The generator's second layer, for TURING, EUCLID, MARKOV, MORPH, QUAD, CHORD, ATLAS, CONSTELLATION and ANSWER (see [OCT+ layers](#oct-layers-on-gen)). |
 | Hold **OCT+** on EVOLVE | A generator's GRAVITY; on a STEP track, STEP EVOLVE's HOW (see [EVOLVE](#evolve)). |
-| Hold **OCT-** on GEN or TWEAK, turn **KNOB 1** | **RANDOM**: turn right and the page's knobs get new values, each inside its range (GEN: the generator's KNOB 2 to 4; TWEAK: SHIFT, DROP and HUMAN). The screen says **RANDOMIZED**. Turn left to put back the values from before the last turn (**PUT BACK**, once). MODE, the seed, FOLLOW, QUAD's LINK and CONSTELLATION's AUTO never change. A STEP or ARP track says **NO GENERATOR**. |
+| Hold **OCT-** on GEN or TWEAK, turn **KNOB 1** | **RANDOM**: turn right and the page's knobs get new values, each inside its range (GEN: the generator's KNOB 2 to 4; TWEAK: SHIFT, DROP and HUMAN). The screen says **RANDOMIZED**. Turn left to put back the values from before the last turn (**PUT BACK**, once). On a CHORD track KNOB 2 and 3 of this layer are **STRUM** and **DIR** ([CHORD: STRUM and DIR](#chord-strum-and-dir)). MODE, the seed, FOLLOW, QUAD's LINK and CONSTELLATION's AUTO never change. A STEP or ARP track says **NO GENERATOR**. |
 | Turn **SELECT** on HOME or MIXER, or with **GLO** held | Sets the tempo (BPM), as SEQ > TEMPO does; F4 with GLO held taps it. With CLK on USB or TRS the tempo is the clock's, and a Song Position from it (a DAW's PLAY from mid-song) starts the steps, the ARP and the generators where that song is, as if they had played from the top. |
 | Turn **PRESETS** with **GLO** held, on any page | Browses the selected track's sounds as PRESETS does on HOME. The GLO map gives way to the sound: the track, the list and the place in it, the sounds before and after, the sound's name large and its engine (a fast turn: the name the knob will load when it stops, with its speed, X4). It stays while GLO is held; a GLO key or knob brings the map back. Without GLO, PRESETS keeps the page's own job (or does nothing), so a stray turn never changes the sound. GLO + OCT- does not put the sound back. |
 | **GLO** + **E4** (on MIXER, E4) | Holds [FILL](#a-steps-condition-and-fill) for the steps whose condition is FILL or !FILL. |
@@ -760,6 +760,25 @@ BELL. The parts are also mod destinations: AT KICK, AT SNR, AT HAT, AT TOMS.
 **USER progressions.** Set PROG to USER, hold OCT+ on GEN and play the roots on the keys, one key a chord (the keys
 are silent while OCT+ is held; notes outside the scale round down to it). Letting OCT+ go ends the entry, and the
 number of chords played sets LENGTH.
+
+### CHORD: STRUM and DIR
+
+Hold **OCT-** on GEN with a CHORD track: KNOB 1 is RANDOM, as on every generator, and KNOB 2 and 3 set how the
+chord is struck.
+
+| Knob | Setting | What it does |
+|---|---|---|
+| 2 | **STRUM** (OFF, 5 to 60 ms, 5 ms a detent) | The time between one note of the chord and the next, as a strummed chord. A four-note chord at 40 ms spreads over 120 ms. OFF strikes them together, as before. |
+| 3 | **DIR** | **UP**: the lowest note first. **DOWN**: the highest first. **ALT**: up, down, up and so on, a strike each, like strumming (from PLAY, so a piece replays the same). |
+
+- The strum fits in half the chord's length: a short BEAT, STEP or OFFBEAT stab strums tighter and keeps every
+  note. HOLD strums once for each chord; the other HITs every strike. All the notes end together.
+- **HUMAN** time moves the strike late as before; the strum starts from there. A **RATCH** strums its first hit;
+  the repeats strike the chord together. BREATH's single voices are not strummed.
+- **MIDI OUT** sends each note when it sounds, so the notes go out strummed too (also with SOUND OFF).
+- Each note takes its voice when it starts. With fewer voices than notes the last ones steal, so DIR decides which
+  note may take another's voice.
+- STRUM and DIR are saved with the project; firmware before STRUM plays the chords together.
 
 ### QUAD: columns and RANGE
 
@@ -1339,6 +1358,8 @@ A **CHORD** track plays a progression; with **QNT CHRD** the other tracks follow
   note of the chord playing now, and KNOB 2 on NOTES steps through its notes. With no CHORD track, CHRD acts as
   SNAP.
 - **CH PROG** is a mod destination, so a slow source can change progressions.
+- **STRUM** (hold **OCT-** on GEN, KNOB 2 and 3): the chord's notes start a few ms apart instead of together, as a
+  played guitar or keyboard chord. See [CHORD: STRUM and DIR](#chord-strum-and-dir).
 
 ### Your own scales (USER1 to USER4)
 

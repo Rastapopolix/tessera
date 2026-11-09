@@ -1519,7 +1519,7 @@ static void tess_chord_play(track_t *t, uint32_t tr, uint32_t gate)
         x = (int32_t)out[i] + 12 * g->oct + tess_trn(t, tr) + tw->shift;
         x = x < 0 ? 0 : x > 127 ? 127 : x;
         if (t->seq_n && t->seq_notes[t->seq_n - 1u] == (uint8_t)x) continue;
-        trk_note_on(t, (uint32_t)x, vel);
+        if (!tessera.ch_strum[tr]) trk_note_on(t, (uint32_t)x, vel);   /* (STRUM: seq_strum_strike, below) */
         seq_sub_note(t, (uint32_t)x, vel);
         t->seq_notes[t->seq_n++] = (uint8_t)x;
     }
@@ -1531,6 +1531,7 @@ static void tess_chord_play(track_t *t, uint32_t tr, uint32_t gate)
     tessera_hold_hit(tr);
     /* (BREATH: held a step past the next chord, which ties it over or lets it go) */
     t->seq_off = br ? period * g->hold + period : g->hold ? period * g->hold - period / 16u : tess_gate_len(t, period, 0);
+    if (tessera.ch_strum[tr]) seq_strum_strike(t, tr, vel);   /* (STRUM: its notes a few ms apart, seq_strum.c) */
     for (i = 0; i < t->seq_n; i++)
         tess_cap(t, t->seq_notes[i], vel, t->seq_off);
 }
@@ -3028,6 +3029,8 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_FM_DEVELOP: return tessera.fm_dev[tr];
     case TX_TUNE: return tune_sel;                      /* (the project's, whichever track) */
     case TX_CH_BREATH: return tessera.ch_breath[tr];
+    case TX_CH_STRUM: return tessera.ch_strum[tr];
+    case TX_CH_SDIR: return tessera.ch_sdir[tr];
     case TX_EN_ARC: return tessera.en_arc;              /* (the project's, whichever track) */
     case TX_EN_RESTS: return tessera.en_rests;
     case TX_EN_LEVEL: return tessera.en_level;
@@ -3263,6 +3266,8 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
     case TX_FM_DEVELOP: tessera.fm_dev[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_TUNE: tune_sel = (uint8_t)tess_clampi(v, 0, (int32_t)TUNE_SLOTS); if (tune_sel) uscale_sel = 0; return;
     case TX_CH_BREATH: tessera.ch_breath[tr] = (uint8_t)tess_clampi(v, 0, 100); return;
+    case TX_CH_STRUM: tessera.ch_strum[tr] = (uint8_t)tess_clampi(v, 0, TESS_STRUM_MS); return;
+    case TX_CH_SDIR: tessera.ch_sdir[tr] = (uint8_t)tess_clampi(v, 0, TESS_STR_DIRS - 1); return;
     case TX_AN_VARY: tessera.answer[tr].vary = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_AN_ECHO: tessera.answer[tr].echo = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_AN_FADE: tessera.answer[tr].fade = (uint8_t)tess_clampi(v, 0, 100); return;

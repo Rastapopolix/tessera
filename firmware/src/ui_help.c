@@ -490,8 +490,10 @@ static void help_find(uint32_t k)
         help_hp((pg->graph == GR_CORDS ? HP_CORD_SRC : HP_MX_FROM) + k);
         return;
     }
-    if (pr_layer_on() && k) {                          /* (GEN, TWEAK, OCT- held: KNOB 1 RANDOM alone) */
-        help_unused(k);
+    if (pr_layer_on() && k) {                          /* (GEN, TWEAK, OCT- held: KNOB 1 RANDOM alone; CHORD on GEN: KNOB 2
+                                                        * STRUM, KNOB 3 DIR) */
+        if (k < 3u && ch_st_layer_on()) help.pid = (uint16_t)PID_TESS(k == 1u ? TX_CH_STRUM : TX_CH_SDIR);
+        else help_unused(k);
         return;
     }
     if (pg->graph == GR_EVOLVE && rall_layer_on()) {   /* (EVOLVE, OCT- held: ROLL ALL, ROLL's help) */

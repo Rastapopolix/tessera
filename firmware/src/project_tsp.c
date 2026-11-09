@@ -18,6 +18,7 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
        TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_HOW, TSP_ORACLE,
        TSP_ENERGY, TSP_DEV, TSP_TRANSP, TSP_TUNE, TSP_SOUND, TSP_CHAIN, TSP_ENTRY, TSP_PLAN, TSP_PERF, TSP_HOLD,
        TSP_CCN, TSP_FKEY, TSP_SPLIT, TSP_FMODE, TSP_PGEN, TSP_DMAP, TSP_EORDER, TSP_USCALE, TSP_SDIR, TSP_MHOLD,
+       TSP_STRUM,
        TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
@@ -59,12 +60,14 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * TSP_SDIR: each track's 8 patterns' DIR (SEQ_*), written only when one
                                               * is not FWD; none: FWD;
                                               * TSP_MHOLD: the HOLD mods, a u16 mask (bit i: cord i, saved in TSP_CORDS
-                                              * as BI), written only when one is; none: no HOLD) */
+                                              * as BI), written only when one is; none: no HOLD;
+                                              * TSP_STRUM: each track's CHORD STRUM (ms), then each one's DIR, written
+                                              * only when one STRUM is not 0; none: OFF, UP) */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
                TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_PERF == 30 &&
                TSP_HOLD == 31 && TSP_CCN == 32 && TSP_FKEY == 33 && TSP_SPLIT == 34 && TSP_FMODE == 35 &&
                TSP_PGEN == 36 && TSP_DMAP == 37 && TSP_EORDER == 38 && TSP_USCALE == 39 &&
-               TSP_SDIR == 40 && TSP_MHOLD == 41,
+               TSP_SDIR == 40 && TSP_MHOLD == 41 && TSP_STRUM == 42,
                "the parts' numbers are stored: never renumbered");
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -432,6 +435,13 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
                 tsp_end(&w);
                 break;
             }
+        for (t = 0; t < NTRK; t++)                     /* (CHORD's STRUM and DIR: only when one strums, as PERF) */
+            if (tessera.ch_strum[t]) {
+                tsp_begin(&w, TSP_STRUM, 1);
+                tsp_bytes(&w, tessera.ch_strum, 2u * NTRK);   /* (then ch_sdir, next to it) */
+                tsp_end(&w);
+                break;
+            }
         tsp_begin(&w, TSP_HOLD, 1);                    /* (FOLLOW's HOLD: each track's) */
         tsp_bytes(&w, tessera.follow_hold, NTRK);
         tsp_end(&w);
@@ -741,6 +751,11 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (tsp_seen.ver[TSP_EORDER] != 1u || tsp_seen.len[TSP_EORDER] != NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_EORDER] + k] >= ET_ORDERS) return 0;
     }
+    if (tsp_seen.at[TSP_STRUM]) {
+        const uint8_t *p = raw + tsp_seen.at[TSP_STRUM];
+        if (tsp_seen.ver[TSP_STRUM] != 1u || tsp_seen.len[TSP_STRUM] != 2u * NTRK) return 0;
+        for (uint32_t k = 0; k < NTRK; k++) if (p[k] > TESS_STRUM_MS || p[NTRK + k] >= TESS_STR_DIRS) return 0;
+    }
     if (tsp_seen.at[TSP_HUMAN]) {
         if (tsp_seen.ver[TSP_HUMAN] != 1u || tsp_seen.len[TSP_HUMAN] != NTRK) return 0;
         for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_HUMAN] + k] > TESS_HUMAN_MS) return 0;
@@ -847,6 +862,8 @@ static void tsp_restore(const uint8_t *raw)
     }
     if (tsp_seen.at[TSP_EORDER]) memcpy(tessera.et_order, raw + tsp_seen.at[TSP_EORDER], NTRK);
     else memset(tessera.et_order, 0, sizeof tessera.et_order);   /* (saved before ORDER, or none set: AUTO) */
+    if (tsp_seen.at[TSP_STRUM]) memcpy(tessera.ch_strum, raw + tsp_seen.at[TSP_STRUM], 2u * NTRK);   /* (and ch_sdir) */
+    else memset(tessera.ch_strum, 0, 2u * NTRK);       /* (saved before STRUM, or none set: OFF, UP) */
     if (tsp_seen.at[TSP_FMODE]) {
         memcpy(tessera.follow_how, raw + tsp_seen.at[TSP_FMODE], NTRK);
         memcpy(tessera.follow_rhy, raw + tsp_seen.at[TSP_FMODE] + NTRK, NTRK);
