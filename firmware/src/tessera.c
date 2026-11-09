@@ -3012,6 +3012,7 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_ET_FADE: return tessera.et_fade;
     case TX_ET_ROLE: return tessera.et_role[tr];
     case TX_ET_ORDER: return tessera.et_order[tr];
+    case TX_SEQ_DIR: return pattern_dir[tr][trk[tr].pattern % NPAT];
     case TX_PL_LENGTH: return tessera.pl_length;        /* (the planner's: the project's, whichever track) */
     case TX_PL_SHAPE: return tessera.pl_shape;
     case TX_PL_PEAK: return tessera.pl_peak;
@@ -3237,6 +3238,7 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
     case TX_ET_FADE: tessera.et_fade = (uint8_t)tess_clampi(v, 1, 4); return;
     case TX_ET_ROLE: tessera.et_role[tr] = (uint8_t)tess_clampi(v, 0, ET_ROLES - 1); return;
     case TX_ET_ORDER: tessera.et_order[tr] = (uint8_t)tess_clampi(v, 0, ET_ORDERS - 1); return;
+    case TX_SEQ_DIR: pattern_dir[tr][trk[tr].pattern % NPAT] = (uint8_t)tess_clampi(v, 0, SEQ_DIRS - 1); return;
     case TX_PL_LENGTH: tessera.pl_length = (uint8_t)tess_clampi(v, 0, (int32_t)PL_LENGTHS - 1); return;
     case TX_PL_SHAPE: tessera.pl_shape = (uint8_t)tess_clampi(v, 0, PL_SHAPES - 1); return;
     case TX_PL_PEAK: tessera.pl_peak = (uint8_t)tess_clampi(v, 0, 100); return;
@@ -3355,6 +3357,7 @@ void tessera_param_poke(uint32_t tr, uint32_t x, int32_t v)
     if (tr >= TESSERA_TRACKS) return;
     ev = &tessera.evolve[tr];
     switch (x) {
+    case TX_SEQ_DIR: pattern_dir[tr][trk[tr].pattern % NPAT] = (uint8_t)tess_clampi(v, 0, SEQ_DIRS - 1); break;
     case TX_TUR_PROB: tessera.turing[tr].prob = (uint8_t)tess_clampi(v, 0, 100); break;
     case TX_TUR_LEN: tessera.turing[tr].len = (uint8_t)tess_clampi(v, 2, 16); break;
     case TX_EUC_PULSES: tessera.euclid[tr].pulses = (uint8_t)tess_clampi(v, 0, tessera.euclid[tr].steps); break;

@@ -127,7 +127,8 @@ static const help_t HELP_PAGE[HP_COUNT] = {
                                   "generator's gate, note or CV, or DRIFT, a slow wander, or its TIDE 1-3 or SWARM "
                                   "1-8 (LFO > ORGANIC). -- leaves the mod a fixed move. OCT+: BI swings both ways "
                                   "from the knob, UNI (+) only one way, GATE (>) all or nothing: all while the "
-                                  "source is over a threshold (OCT+ held + KNOB 4)."),
+                                  "source is over a threshold (OCT+ held + KNOB 4), HOLD (=) the source taken on "
+                                  "each bar of the destination's track and held to the next."),
     H_(HP_CORD_MOD, "MOD", "Which of the 16 mods the other knobs edit."),
     H_(HP_CORD_DST, "MOD DESTINATION", "What it moves, on which track: the voices' pitch, cutoff, shape, gain, a sound "
                                        "setting, a generator's, another mod's amount (M1-M16 AMT) or the "

@@ -146,7 +146,7 @@ const step_t *tessera_step_vary(track_t *t, const step_t *s, step_t *out)
     if (!sv_on(t, tr)) return s;
     len = t->p[P_SLEN] ? (uint32_t)t->p[P_SLEN] : 1u;
     if (tess_sv.flash[tr]) tess_sv.flash[tr]--;
-    if (!i && tess_sv.steps[tr] >= tessera_every_bars(tessera.sv_every[tr]) * tess_steps_per_bar(t)) {
+    if (!SEQ_D(t).slot && tess_sv.steps[tr] >= tessera_every_bars(tessera.sv_every[tr]) * tess_steps_per_bar(t)) {
         uint8_t kind[NSTEP];
         const step_t *st = seq_steps(t);
         for (k = 0; k < len && k < NSTEP; k++) kind[k] = (uint8_t)sv_kind(&st[k]);

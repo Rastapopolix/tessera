@@ -2272,7 +2272,7 @@ static uint32_t sv_play(uint32_t n, step_t *out, uint32_t *fail)
     for (i = 0; i < n; i++) {
         step_t o;
         const step_t *s = &t->step[i % len], *r;
-        t->seq_idx = (uint16_t)(i % len);
+        t->seq_idx = SEQ_D(t).slot = (uint16_t)(i % len);
         r = tessera_step_vary(t, s, &o);
         if (r != s) changed++;
         if (r->n && ((0xab5u >> (r->note[0] % 12u)) & 1u) == 0u) *fail |= 1u << 3;

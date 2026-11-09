@@ -136,8 +136,8 @@ static int behaviour(void)
         check("...the LFO's POL UNI: BI still pulls down at its bottom, UNI leaves it, its top up",
               lo < 50u && uni == 50u && top > 50u);
         trk[0].p[P_LPOL] = 0;
-        c.uni = 3;
-        check("...a polarity past GATE: refused", !cord_set(1, &c));
+        c.uni = CU_HOLD + 1;
+        check("...a polarity past HOLD: refused", !cord_set(1, &c));
         cord_clear();
         trk[2].p[P_LEVEL] = 100;
     }
@@ -194,6 +194,78 @@ static int behaviour(void)
         cord_clear();
         cord_tick();
         check("...cleared: every move back to 0", cord_move(2) == 0 && cord_move(8) == 0);
+        trk[2].p[P_LEVEL] = 100;
+    }
+
+    /* DIR (CD_SEQ_DIR): the pattern's DIR moved in whole values at each step, stepped, clamped; the stored one kept */
+    {
+        uint32_t d[4];
+        cord_clear();
+        tessera_param_set(0, TX_SEQ_DIR, SEQ_FWD);
+        trk[0].p[P_LPOL] = 0; trk[0].lfo_fade = 32767;
+        check("DIR: no mod, the pattern's", seq_dir_now(&trk[0]) == SEQ_FWD);
+        c = C(CS_OFF, 0, CD_SEQ_DIR, 0, 0, 20);        /* a fixed +20 %: one value on, BACK */
+        cord_set(0, &c);
+        check("...a fixed +20 %: BACK, the pattern's own still FWD", seq_dir_now(&trk[0]) == SEQ_BACK &&
+              tessera_param_get(0, TX_SEQ_DIR) == SEQ_FWD);
+        c = C(CS_LFO, 0, CD_SEQ_DIR, 0, 40, 0);        /* T1 LFO + (UNI) 40 %: FWD .. PEND */
+        c.uni = CU_UNI;
+        cord_set(0, &c);
+        trk[0].lfo_val = -32767; d[0] = seq_dir_now(&trk[0]);
+        trk[0].lfo_val = 0; d[1] = seq_dir_now(&trk[0]);
+        trk[0].lfo_val = 32767; d[2] = seq_dir_now(&trk[0]);
+        check("...LFO + at 40 %: FWD, BACK, PEND as it rises", d[0] == SEQ_FWD && d[1] == SEQ_BACK && d[2] == SEQ_PEND);
+        c.uni = CU_GATE;                               /* a GATE at 20 %: BACK while the LFO is over 0 */
+        c.amount = 20;
+        cord_set(0, &c);
+        trk[0].lfo_val = 16000; cord_tick(); d[0] = seq_dir_now(&trk[0]);
+        trk[0].lfo_val = -16000; cord_tick(); d[1] = seq_dir_now(&trk[0]);
+        check("...a GATE at 20 %: BACK while open, FWD shut", d[0] == SEQ_BACK && d[1] == SEQ_FWD);
+        tessera_param_set(0, TX_SEQ_DIR, SEQ_PONG);
+        c = C(CS_OFF, 0, CD_SEQ_DIR, 0, 0, 100);
+        cord_set(0, &c);
+        d[0] = seq_dir_now(&trk[0]);
+        c.offset = -100;
+        cord_set(0, &c);
+        d[1] = seq_dir_now(&trk[0]);
+        check("...from PONG, +100 % stops at DRUNK, -100 % at FWD", d[0] == SEQ_DRUNK && d[1] == SEQ_FWD &&
+              tessera_param_get(0, TX_SEQ_DIR) == SEQ_PONG);
+        tessera_param_set(0, TX_SEQ_DIR, SEQ_FWD);
+        cord_clear();
+    }
+
+    /* HOLD (CU_HOLD): the source as it is, sampled when set and at each bar of the destination's track, held between */
+    {
+        uint32_t lv[4];
+        uint8_t pk[CORD_PK_BYTES];
+        cord_clear();
+        trk[0].p[P_LPOL] = 0; trk[0].lfo_fade = 32767;
+        trk[2].p[P_LEVEL] = 50;
+        trk[0].lfo_val = 16000;
+        c = C(CS_LFO, 0, CD_LEVEL, 2, 40, 0);          /* mod 1: T1 LFO HOLD -> T3 LEVEL +-40 % */
+        c.uni = CU_HOLD;
+        check("HOLD: set", cord_set(0, &c) && cord_hold_mask() == 1u);
+        mod_begin(&trk[2]); lv[0] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        trk[0].lfo_val = -16000; cord_tick();
+        mod_begin(&trk[2]); lv[1] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        cord_hold_bar(0); cord_hold_bar(1);            /* (another track's bar: nothing) */
+        mod_begin(&trk[2]); lv[2] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        cord_hold_bar(2);
+        mod_begin(&trk[2]); lv[3] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        check("...sampled when set, held while the LFO falls, sampled again on T3's bar, both ways (+-)",
+              lv[0] > 50u && lv[1] == lv[0] && lv[2] == lv[0] && lv[3] < 50u);
+        cord_pack(pk);
+        check("...saved as BI (older firmware: a live +- mod), the mask apart", pk[1] == 0x00u && cord_hold_mask() == 1u);
+        cord_clear();
+        lv[0] = (uint32_t)cord_unpack(pk) && cord_get(0)->uni == CU_BI;
+        cord_hold_load(1u);
+        check("...loaded back: BI, then HOLD from the mask", lv[0] && cord_get(0)->uni == CU_HOLD);
+        c = C(CS_OFF, 0, CD_LEVEL, 2, 0, 30);           /* (no source: never HOLD) */
+        cord_set(1, &c);
+        cord_hold_load(3u);
+        check("...a mod without a source stays as it is", cord_get(1)->uni == CU_BI && cord_hold_mask() == 1u);
+        cord_clear();
+        check("...cleared: no HOLD", !cord_hold_mask());
         trk[2].p[P_LEVEL] = 100;
     }
 

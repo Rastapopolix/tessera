@@ -52,6 +52,7 @@ static const char *const TX_N_FCFOLLOW[] = {"FOLLOW", "OWN"};
 static const char *const TX_N_ETSTYLE[] = {"CUT", "FADE"};   /* (entries.c) */
 static const char *const TX_N_ETROLE[] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "MELODY", "ANCHOR"};
 static const char *const TX_N_ETORDER[] = {"AUTO", "1ST", "2ND", "3RD", "4TH"};
+static const char *const TX_N_SEQDIR[] = {"FWD", "BACK", "PEND", "PONG", "RAND", "DRUNK"};   /* (SEQ_*) */
 static const char *const TX_N_SDIR[] = {"UP", "DOWN", "ALT"};   /* (TESS_STR_*) */
 static const char *const TX_N_PLLEN[] = {"FREE", "1", "2", "3", "4", "5", "6", "8", "10", "12", "15", "20", "25", "30",
                                          "40", "45", "60", "75", "90", "120", "180", "240"};   /* (planner.c PL_MIN) */
@@ -191,6 +192,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_ET_FADE] = {"FADE", F_INT, 1, 4, 2, 0, "bar"},
     [TX_ET_ROLE] = PE("ROLE", TX_N_ETROLE, 0),
     [TX_ET_ORDER] = PE("ORDER", TX_N_ETORDER, 0),
+    [TX_SEQ_DIR] = PE("DIR", TX_N_SEQDIR, 0),
     [TX_PL_LENGTH] = {"LENGTH", F_ENUM, 0, 21, 0, TX_N_PLLEN, "min"},
     [TX_PL_SHAPE] = PE("SHAPE", TX_N_PLSHAPE, 0),
     [TX_PL_PEAK] = PD("PEAK", F_PCT, 0, 100, 62),
@@ -769,6 +771,11 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                      "other way round (last in, first out). AUTO: by ROLE, after the numbered tracks. "
                                      "ANCHOR still never goes out; only AUTO tracks wait for a bass or harmony. GLO > "
                                      "ENTRIES with OCT- held, KNOB k track k's."),
+    X_(TX_SEQ_DIR, "PATTERN DIR", "The order the STEP pattern plays its steps in, each pattern its own. FWD: 1 to the "
+                                  "end. BACK: the end to 1. PEND: there and back, the ends once. PONG: there and "
+                                  "back, the ends twice. RAND: any step. DRUNK: a step on or back at random. A pass "
+                                  "is still LEN steps, so conditions, Accumulate and pattern changes keep the bar. "
+                                  "The pattern's sheet (OCT+ held), Direction."),
     X_(TX_CH_STRUM, "CHORD STRUM", "A chord's notes start this many ms apart, as a strummed chord (in all at most "
                                    "half its length). OFF: together. OCT- held on GEN, KNOB 2."),
     X_(TX_CH_SDIR, "CHORD DIR", "A strum's first note: UP the lowest, DOWN the highest, ALT turns round each "

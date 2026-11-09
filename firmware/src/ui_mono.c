@@ -2930,7 +2930,7 @@ static void mo_cu_side(int32_t x, uint32_t tr, const char *name, int has_trk, in
     {                                                   /* the mark (+ one way, ^ GATE) outlasts the abbreviation */
         char w[16];
         uint32_t n = str_len(name);
-        char mk = n > 1u && (name[n - 1u] == '+' || name[n - 1u] == '^') ? name[n - 1u] : 0;
+        char mk = n > 1u && (name[n - 1u] == '+' || name[n - 1u] == '^' || name[n - 1u] == '=') ? name[n - 1u] : 0;
         str_cpy(w, name, sizeof w);
         if (mk)
             w[n - 1u < sizeof w - 1u ? n - 1u : sizeof w - 1u] = 0;

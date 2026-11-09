@@ -273,5 +273,6 @@
 0x298 PAT GEN                  track 0..1 def 0
 0x299 MIDI OUT DRUM MAP        track 0..1 def 0
 0x29a ENTRIES ORDER            track 0..4 def 0
+0x29b PATTERN DIR              track 0..5 def 0
 0x29c CHORD STRUM              track 0..60 def 0
 0x29d CHORD DIR                track 0..2 def 0

@@ -1353,7 +1353,10 @@ static int test_cords_page(void)
     bad += check("..OCT+ held + KNOB 4: the GATE's threshold (+5 %), the amount kept, its release no OCT+",
                  c->uni == CU_GATE && c->offset == 5 && c->amount == 25);
     press(B_OCTUP);
-    bad += check("..OCT+ again: BI, the threshold gone", !c->uni && !c->offset && pop.on != POP_SHEET);
+    bad += check("..OCT+ again: HOLD, the threshold gone", c->uni == CU_HOLD && !c->offset && pop.on != POP_SHEET &&
+                 msg_is("HOLD A BAR"));
+    press(B_OCTUP);
+    bad += check("..OCT+ again: BI", !c->uni && !c->offset && pop.on != POP_SHEET);
     fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
     host_pressed |= 1u << panel.btn[B_OCTUP];
     for (i = 0; i < 6u; i++) { frame(); fm1_ms += 200u; host_ticks += 200000u; }   /* (held 1.2 s) */
@@ -3494,6 +3497,131 @@ static int test_step_sheets(void)
 }
 
 /* PATTERNS: OCT- clears what is queued first, then goes to Stage */
+/* DIR (seq_dir.c): each direction's order over passes of 5 steps, the pass by time, RAND / DRUNK replayed from PLAY,
+ * a new DIR on from the step playing, a song position, NUDGE's next step, saved with the pattern */
+static uint32_t dir_run(uint32_t d, uint32_t n, uint8_t *idx, uint32_t *pass)
+{
+    track_t *t = &trk[0];
+    uint32_t i, period;
+    stop_transport();
+    tessera_param_set(0, TX_SEQ_DIR, (int32_t)d);
+    seq_start();
+    events_block(32);
+    period = seq_div_samples((uint32_t)t->p[P_SDIV]);
+    for (i = 0; i < n; i++) {
+        if (i) units_block(period);
+        idx[i] = (uint8_t)t->seq_idx;
+        if (pass) pass[i] = t->seq_pass;
+    }
+    return period;
+}
+static int test_step_dir(void)
+{
+    static const uint8_t WANT[4][12] = {{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1}, {4, 3, 2, 1, 0, 4, 3, 2, 1, 0, 4, 3},
+                                        {0, 1, 2, 3, 4, 3, 2, 1, 0, 1, 2, 3}, {0, 1, 2, 3, 4, 4, 3, 2, 1, 0, 0, 1}};
+    track_t *t = &trk[0];
+    uint8_t got[24], again[24];
+    uint32_t pass[12], i, d, period;
+    int bad = 0, ok;
+    ui_power_on();
+    track_defaults_steps(t);
+    t->p[P_SLEN] = 5;
+    for (i = 0; i < 5u; i++) t->step[i] = (step_t){{(uint8_t)(60u + i)}, 1, ST_NOTE, 0, 0, 96};
+    bad += check("DIR: FWD by default, the pattern's sheet has Direction",
+                 tessera_param_get(0, TX_SEQ_DIR) == SEQ_FWD && pid_find(PID_TESS(TX_SEQ_DIR)));
+    for (d = 0; d < 4u; d++) {
+        dir_run(d, 12, got, pass);
+        ok = !memcmp(got, WANT[d], 12);
+        for (i = 0; i < 12u; i++) ok &= pass[i] == i / 5u;
+        bad += check(d == 0 ? "DIR FWD: 1 2 3 4 5, a pass every 5 steps" : d == 1 ? "DIR BACK: 5 4 3 2 1, a pass every 5 steps" :
+                     d == 2 ? "DIR PEND: there and back, the ends once; the pass by time" :
+                              "DIR PONG: there and back, the ends twice; the pass by time", ok);
+    }
+    dir_run(SEQ_RAND, 24, got, 0);
+    dir_run(SEQ_RAND, 24, again, 0);
+    ok = !memcmp(got, again, 24);
+    for (i = 1; i < 24u; i++) ok &= got[i] < 5u;
+    for (i = 1, d = 0; i < 24u; i++) d |= 1u << got[i];
+    bad += check("DIR RAND: any step, the same again after PLAY", ok && d == 0x1Fu);
+    dir_run(SEQ_DRUNK, 24, got, 0);
+    dir_run(SEQ_DRUNK, 24, again, 0);
+    ok = !memcmp(got, again, 24);
+    for (i = 1; i < 24u; i++) ok &= (got[i] + 1u) % 5u == got[i - 1] || (got[i - 1] + 1u) % 5u == got[i];
+    bad += check("DIR DRUNK: a step on or back each time, the same again after PLAY", ok);
+    period = dir_run(SEQ_FWD, 3, got, 0);
+    tessera_param_set(0, TX_SEQ_DIR, SEQ_BACK);
+    units_block(period);
+    ok = t->seq_idx == 1u;
+    units_block(period);
+    ok &= t->seq_idx == 0u;
+    units_block(period);
+    ok &= t->seq_idx == 4u && t->seq_pass == 1u;
+    bad += check("DIR FWD -> BACK on step 3: on from it (2, 1, 5), the pass on time", ok);
+    stop_transport();
+    tessera_param_set(0, TX_SEQ_DIR, SEQ_PEND);
+    seq_dir_seek(t, 5, 7);
+    ok = t->seq_idx == 1u && SEQ_D(t).slot == 2u && SEQ_D(t).back;
+    seq_dir_seek(t, 5, 4);
+    ok &= t->seq_idx == 4u && SEQ_D(t).back;
+    tessera_param_set(0, TX_SEQ_DIR, SEQ_PONG);
+    seq_dir_seek(t, 5, 5);
+    ok &= t->seq_idx == 4u && SEQ_D(t).back;
+    bad += check("DIR: a song position lands where the direction plays", ok);
+    t->step[3].sub = 0;
+    step_set_nudge(&t->step[3], -8);
+    dir_run(SEQ_BACK, 1, got, 0);
+    ok = seq_dir_next(t, 5) == 3u;
+    t->step[3].sub = 0;
+    bad += check("DIR BACK: the next step (a TIE, NUDGE early) is the one before", ok);
+    stop_transport();
+    tessera_param_set(0, TX_SEQ_DIR, SEQ_PONG);
+    project_save(1);
+    tessera_param_set(0, TX_SEQ_DIR, SEQ_FWD);
+    project_load(1);
+    ok = tessera_param_get(0, TX_SEQ_DIR) == SEQ_PONG;
+    tessera_param_set(0, TX_SEQ_DIR, SEQ_FWD);
+    project_save(1);
+    project_load(1);
+    ok &= tessera_param_get(0, TX_SEQ_DIR) == SEQ_FWD;
+    bad += check("DIR: saved with the pattern (part 40 only when one is not FWD)", ok);
+    return bad;
+}
+/* HOLD mods: a source sampled on the first step of each bar of the destination's track, held between; saved */
+static int test_mod_hold(void)
+{
+    track_t *t = &trk[0];
+    cord_t c = {0};
+    uint32_t i, period, spb, ok = 1;
+    int bad = 0;
+    int16_t v[3];
+    ui_power_on();
+    cord_clear();
+    tessera_param_set(0, TX_MACRO1, 20);
+    c.src = CS_MACRO1; c.dst = CD_LEVEL; c.dst_trk = 0; c.amount = 50; c.uni = CU_HOLD;
+    cord_set(0, &c);
+    seq_start();
+    events_block(32);
+    period = seq_div_samples((uint32_t)t->p[P_SDIV]);
+    spb = tess_steps_per_bar(t);
+    v[0] = cord_hval[0];
+    tessera_param_set(0, TX_MACRO1, 80);
+    for (i = 1; i < spb; i++) { units_block(period); ok &= cord_hval[0] == v[0]; }
+    units_block(period);
+    v[1] = cord_hval[0];
+    bad += check("HOLD: MACRO 1 held through the bar, sampled again on the next bar's first step", ok && v[1] > v[0]);
+    stop_transport();
+    project_save(1);
+    cord_clear();
+    project_load(1);
+    v[2] = (int16_t)cord_get(0)->uni;
+    bad += check("HOLD: saved with the project (part 41)", v[2] == CU_HOLD && cord_hold_mask() == 1u);
+    cord_clear();
+    project_save(1);
+    project_load(1);
+    bad += check("..none: no HOLD after a load", !cord_hold_mask());
+    tessera_param_set(0, TX_MACRO1, 0);
+    return bad;
+}
 static int test_patterns_queue(void)
 {
     int bad = 0;
@@ -3922,7 +4050,7 @@ static int test_chain(void)
     bad += check("SONG source banks stay unchanged", pattern_at(0, 0)->step[0].note[0] == 60 && pattern_at(0, 1)->step[0].n == 3);
     chain_config.row[0].repeat = 1;
     chain_prepare(); events_block(n);
-    trk[0].seq_idx = 1;
+    trk[0].seq_idx = SEQ_D(&trk[0]).slot = 1;
     last = step_samples(&trk[0], seq_div_samples((uint32_t)trk[0].p[P_SDIV]), 1);
     trk[0].seq_pos = last - n + 19u;
     units_block(n);
@@ -6917,6 +7045,8 @@ int main(void)
     bad += test_step_sheets();
     /* (test_mod_rows: MOD hidden in Tessera, its routes mods: test_mods_page) */
     bad += test_patterns_queue();
+    bad += test_step_dir();
+    bad += test_mod_hold();
     bad += test_init_scales_patterns();
     bad += test_bughunt_ui();
     bad += test_bughunt_ui2();

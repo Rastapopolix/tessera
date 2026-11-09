@@ -70,6 +70,7 @@ enum {
     CD_TEMPO,                                                       /* the project's tempo (CK_TEMPO), issue #359 */
     CD_CC,                                                          /* a MIDI CC out (CK_CC), issue #374 */
     CD_SUB_SPLIT,                                                   /* TIMING's SPLIT */
+    CD_SEQ_DIR,                                                     /* the STEP pattern's DIR (seq_dir.c) */
     CD_N
 };
 
@@ -111,8 +112,9 @@ typedef struct {                  /* one cord, as saved (6 bytes: uni rides in s
 } cord_t;
 /* a cord's uni: CU_BI the source as it is (+-), CU_UNI a bipolar source folded to 0..1 (+: one way from the knob),
  * CU_GATE the source as a gate: all (1) while it is over the threshold OFFSET (-100..100 % of its range), else 0 (the
- * OFFSET then moves nothing) */
-enum { CU_BI, CU_UNI, CU_GATE };
+ * OFFSET then moves nothing), CU_HOLD the source as it is (as BI), sampled once a bar of the destination's track and
+ * held to the next (cord_hold_bar; saved as BI, the project's part TSP_MHOLD marks it: older firmware plays it live) */
+enum { CU_BI, CU_UNI, CU_GATE, CU_HOLD };
 
 const char *cord_src_name(uint32_t code);           /* <= 7 characters; 0: no such source */
 int cord_set(uint32_t i, const cord_t *c);          /* i < CORD_LIVE; out of range: refused (0), nothing changed */
@@ -120,6 +122,9 @@ int cord_set(uint32_t i, const cord_t *c);          /* i < CORD_LIVE; out of ran
 uint32_t cord_cc_num(uint32_t i);
 void cord_cc_set(uint32_t i, uint32_t n);
 const cord_t *cord_get(uint32_t i);
+void cord_hold_bar(uint32_t tr);                    /* seq.c: track tr's bar begins (its HOLD mods sample) */
+uint32_t cord_hold_mask(void);                      /* bit i: cord i is HOLD (the project's part TSP_MHOLD) */
+void cord_hold_load(uint32_t m);                    /* .. and back, after cord_unpack */
 void cord_clear(void);                              /* every cord off */
 int32_t cord_move(uint32_t i);                      /* cord i's move as its M AMT cords make it now: -100..100 % */
 uint32_t cord_count(void);                          /* cords doing something (a destination and an amount or offset) */
