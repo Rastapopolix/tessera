@@ -17,7 +17,7 @@
 0x00e LFO TO FILTER            track -64..63 def 0
 0x00f LFO TO SHAPE             track -64..63 def 0
 0x010 LFO TO LEVEL             track 0..127 def 0
-0x011 ARP MODE                 track 0..6 def 0
+0x011 ARP MODE                 track 0..8 def 0
 0x012 ARP RATE                 track 0..9 def 2
 0x013 ARP OCTAVES              track 1..4 def 1
 0x014 ARP GATE                 track 1..127 def 64

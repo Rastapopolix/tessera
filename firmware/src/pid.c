@@ -250,14 +250,15 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     T_(P_LD_SHP, "LFO TO SHAPE", "How far the LFO moves the engine's SHAPE."),
     T_(P_LD_AMP, "LFO TO LEVEL", "How far the LFO moves the level (tremolo)."),
     T_(P_AMODE, "ARP MODE",
-        "The arpeggio: up, down, up and down, random, in ARP ORDER, or the last note played repeated; OFF: none."),
+        "The arpeggio: UP, DN down, UPDN up then down, DNUP down then up, RND a new random note each step, RND1 one "
+        "random order kept until the held notes change, ORD as the keys were pressed, REPEAT the last note; OFF: none."),
     T_(P_ARATE, "ARP RATE", "How often the arpeggiator plays a note."),
     T_(P_AOCT, "ARP OCTAVES", "How many octaves the arpeggio climbs through."),
     T_(P_AGATE, "ARP GATE", "How long each arpeggio note lasts, as a share of its step."),
     T_(P_ASWING, "ARP SWING", "Delays every second arpeggio note, for a swung feel."),
     T_(P_APROB, "ARP PROBABILITY", "The chance each arpeggio note plays."),
     T_(P_AHOLD, "ARP HOLD", "ON keeps the arpeggio going after the keys are let go."),
-    T_(P_AORDER, "ARP ORDER", "NOTE: the held notes from low to high; PLAY: in the order they were pressed."),
+    T_(P_AORDER, "ARP ORDER", "NOTE: the held notes from low to high; PLAY: in the order they were pressed. MODE ORD always plays them as pressed."),
     T_(P_ROOT, "ROOT", "The scale's key note."),
     T_(P_SCALE, "SCALE", "The scale the keys and the generators play in. SCALES' USER family has four of "
                          "your own, USER1 to USER4, made on the keys."),

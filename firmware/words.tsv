@@ -228,6 +228,8 @@ SOURCE AT	source aftertouch
 RAND	random
 DN	down
 UPDN	up down
+DNUP	down up
+RND1	random once
 
 
 # chords and forms
