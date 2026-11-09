@@ -14,7 +14,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - ARP modes: DNUP (down, then up) and RND1 (one random order, repeated until the held notes change; from the track's SEED, so PLAY replays it). SEQ > ARP, KNOB 1.
 - MIDI OUT DRUM MAP: GM or ROW, for drum machines that take their tracks as a row of notes (such as the Analog Rytm). MIDI OUT, OCT+ and OCT- held.
 - CHORD STRUM: a CHORD track's notes start a few ms apart, like a played chord. STRUM (OFF, 5 to 60 ms) and DIR (UP, DOWN, ALT) on GEN, OCT- held, KNOB 2 and 3. Short strikes strum tighter; all notes end together.
-- STEP direction: each pattern plays FWD, BACK, PEND, PONG, RAND or DRUNK. Direction row on the pattern's sheet (OCT+ held on PATTERN, NOTES or GEN). RAND and DRUNK follow the SEED, so PLAY replays them.
+- STEP direction: each pattern plays FWD, BACK, PEND, PONG, RAND or DRUNK. Direction row on the pattern's sheet (OCT+ held on PATTERN, NOTES, or GEN with STEP or ARP). RAND and DRUNK follow the SEED, so PLAY replays them.
 - DIR as a mod destination: a cord can move a pattern's direction at each step; a GATE mod switches direction while its source is high.
 - HOLD mods: OCT+ on MODS cycles +- / + / GATE / HOLD. HOLD takes the source at the start of each bar and keeps it until the next.
 
