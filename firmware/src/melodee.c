@@ -114,6 +114,7 @@ static int ann_wire_send(const uint8_t *p, uint32_t n)   /* never waits: no room
 #include "ui.c"
 #include "icons.c"               /* parameter icons (MELODEE_ICONS), used by ui_draw.c */
 #include "ui_graph.c"
+#include "page_random.c"           /* GEN / TWEAK, OCT- + KNOB 1: page randomize (#529) */
 #include "ui_draw.c"
 #include "ui_menu.c"
 #include "ui_input.c"

@@ -153,6 +153,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | CHORD, PROG USER: **OCT+** + keys | One chord a key, its root the key's note |
 | AWAKE: a white key | Picks that step: KNOB 1 its A, KNOB 2 its B; the key again lets it go |
 | EVOLVE: **KNOB 4** (ROLL) | A new seed a click; turn back for the last one |
+| GEN, TWEAK: **OCT-** held, **KNOB 1** | RANDOM: new values for the page's knobs; turn back to put them back |
 | FORM: **KNOB 3** (CLEAR) | Forgets B and C |
 | FORM: **OCT+** held, **KNOB 1** | DEVELOP: each return of a section varies a little (0: exact) |
 | FORM: **OCT+** held, **KNOB 2** / **3** | The CHAIN: FOLLOW or OWN; SKIP, the chance it lags a phrase |

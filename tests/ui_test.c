@@ -124,6 +124,7 @@ static int ann_wire_send(const uint8_t *p, uint32_t n)
 #include "../firmware/src/ui.c"
 #include "../firmware/src/icons.c"
 #include "../firmware/src/ui_graph.c"
+#include "../firmware/src/page_random.c"
 #include "../firmware/src/ui_draw.c"
 #include "../firmware/src/ui_menu.c"
 #include "../firmware/src/ui_input.c"
@@ -1120,6 +1121,117 @@ static int test_roll_said(void)
     frame();
     stop_transport();
     tessera_param_set(tr, TX_MODE, TESS_ENG_OFF);
+    return bad;
+}
+
+/* Page randomize (#529): GEN and TWEAK with OCT- held, KNOB 1 right draws the page's knobs inside their ranges (every
+ * MODE; never MODE, the seed, QUAD LINK, CONSTELLATION AUTO, FOLLOW), left puts them back once; a STEP track: NO
+ * GENERATOR and nothing changed; the octave stays */
+static int pr_in_range(uint32_t tr, const uint8_t *tx)
+{
+    for (uint32_t k = 0; k < 3u; k++) {
+        const param_desc_t *d;
+        int32_t v;
+        if (tx[k] == 0xFFu) continue;
+        d = pid_desc(PID_TESS(tx[k]), tr);
+        v = tessera_param_get(tr, tx[k]);
+        if (!d || v < d->min || v > d->max) return 0;
+    }
+    return tessera.mode[tr] != TESS_ENG_EUCLID ||
+           (tessera.euclid[tr].pulses <= tessera.euclid[tr].steps && tessera.euclid[tr].rot < tessera.euclid[tr].steps);
+}
+static void pr_hold(int on)
+{
+    if (on) fm1_in.buttons |= 1u << panel.btn[B_OCTDN], host_pressed |= 1u << panel.btn[B_OCTDN];
+    else fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
+    frame();
+}
+static int test_page_random(void)
+{
+    int bad = 0, range = 1, kept = 1;
+    uint32_t tr, m, i, k, seed;
+    int32_t oct, was[3], v0 = 0, v1 = 0, v2 = 0, follow;
+    ui_power_on();
+    go_title("GEN");
+    tr = song.sel;
+    tessera_param_set(tr, TX_MODE, TESS_ENG_TURING);
+    tessera_param_set(tr, TX_TUR_LEN, 8);
+    tessera_param_set(tr, TX_TUR_PROB, 50);
+    tessera_param_set(tr, TX_TUR_SPAN, 2);
+    frame();
+    oct = song.octave;
+    seed = tessera.seed[tr];
+    pr_hold(1);
+    ui.msg_t = 0;
+    turn(EN_K1, 1);
+    bad += check("GEN, OCT- + KNOB 1 right: RANDOMIZED, Turing's LENGTH PROB SPAN in range, MODE and seed kept",
+                 msg_is("RANDOMIZED") && tessera.mode[tr] == TESS_ENG_TURING && tessera.seed[tr] == seed &&
+                 pr_in_range(tr, GEN_KNOB_TX[TESS_ENG_TURING]) &&
+                 (tessera_param_get(tr, TX_TUR_LEN) != 8 || tessera_param_get(tr, TX_TUR_PROB) != 50 ||
+                  tessera_param_get(tr, TX_TUR_SPAN) != 2));
+    turn(EN_K1, 1);
+    ui.msg_t = 0;
+    turn(EN_K1, -1);
+    bad += check("..left: PUT BACK, the values before the last draw", msg_is("PUT BACK") && pr_in_range(tr, GEN_KNOB_TX[1]));
+    tessera_param_set(tr, TX_TUR_LEN, 8);               /* (one level: from known values) */
+    tessera_param_set(tr, TX_TUR_PROB, 50);
+    tessera_param_set(tr, TX_TUR_SPAN, 2);
+    turn(EN_K1, 1);
+    turn(EN_K1, -1);
+    bad += check("..a draw and back: LENGTH 8, PROB 50, SPAN 2 again", tessera_param_get(tr, TX_TUR_LEN) == 8 &&
+                 tessera_param_get(tr, TX_TUR_PROB) == 50 && tessera_param_get(tr, TX_TUR_SPAN) == 2);
+    ui.msg_t = 0;
+    turn(EN_K1, -1);
+    bad += check("..left again: NOTHING TO UNDO", msg_is("NOTHING TO UNDO"));
+    for (m = 1; m < TESS_ENG_COUNT; m++) {              /* every MODE, many draws: in range, the excluded ones kept */
+        pr_hold(0);
+        tessera_param_set(tr, TX_MODE, m);
+        frame();
+        pr_hold(1);
+        seed = tessera.seed[tr];
+        for (k = 0; k < 3u; k++) was[k] = GEN_KNOB_TX[m][k] == 0xFFu ? 0 : tessera_param_get(tr, GEN_KNOB_TX[m][k]);
+        for (i = 0; i < 24u; i++) {
+            turn(EN_K1, 1);
+            if (!pr_in_range(tr, GEN_KNOB_TX[m])) range = 0;
+            if (tessera.mode[tr] != m || tessera.seed[tr] != seed) kept = 0;
+            for (k = 0; k < 3u; k++)
+                if ((GEN_KNOB_TX[m][k] == TX_QD_LINK || GEN_KNOB_TX[m][k] == TX_CS_AUTO) &&
+                    tessera_param_get(tr, GEN_KNOB_TX[m][k]) != was[k]) kept = 0;
+        }
+    }
+    bad += check("..every MODE, 24 draws: each value in its range (Euclid's inside STEPS)", range);
+    bad += check("..MODE, seed, QUAD LINK and CONSTELLATION AUTO never drawn", kept);
+    pr_hold(0);
+    bad += check("..OCT- let go after the turns: the octave as it was", song.octave == oct);
+    go_title("TWEAK");
+    tessera_param_set(tr, TX_MODE, TESS_ENG_MARKOV);
+    tessera_param_set(tr, TX_TW_FOLLOW, 2);
+    follow = tessera_param_get(tr, TX_TW_FOLLOW);
+    pr_hold(1);
+    {
+        static const uint8_t TW[3] = {TX_TW_SHIFT, TX_TW_DROP, TX_TW_HUMAN};
+        ui.msg_t = 0;
+        turn(EN_K1, 1);
+        bad += check("TWEAK, OCT- + KNOB 1: RANDOMIZED, SHIFT DROP HUMAN in range, FOLLOW kept",
+                     msg_is("RANDOMIZED") && pr_in_range(tr, TW) && tessera_param_get(tr, TX_TW_FOLLOW) == follow);
+    }
+    pr_hold(0);
+    tessera_param_set(tr, TX_TW_FOLLOW, 0);
+    tessera_param_set(tr, TX_MODE, TESS_ENG_OFF);       /* a STEP track */
+    tessera_param_set(tr, TX_TW_SHIFT, 3);
+    tessera_param_set(tr, TX_TW_DROP, 10);
+    tessera_param_set(tr, TX_TW_HUMAN, 20);
+    frame();
+    pr_hold(1);
+    ui.msg_t = 0;
+    turn(EN_K1, 1);
+    v0 = tessera_param_get(tr, TX_TW_SHIFT), v1 = tessera_param_get(tr, TX_TW_DROP), v2 = tessera_param_get(tr, TX_TW_HUMAN);
+    bad += check("..a STEP track: NO GENERATOR, nothing changed", msg_is("NO GENERATOR") && v0 == 3 && v1 == 10 && v2 == 20 &&
+                 tessera.mode[tr] == TESS_ENG_OFF);
+    pr_hold(0);
+    tessera_param_set(tr, TX_TW_SHIFT, 0);
+    tessera_param_set(tr, TX_TW_DROP, 0);
+    tessera_param_set(tr, TX_TW_HUMAN, 0);
     return bad;
 }
 
@@ -6757,6 +6869,7 @@ int main(void)
     bad += test_grids_layer();
     bad += test_seed_layer();
     bad += test_roll_said();
+    bad += test_page_random();
     bad += test_chord_user();
     bad += test_step_evolve();
     bad += test_div_order();

@@ -949,6 +949,12 @@ static void edit_param(uint32_t slot, int32_t steps)
         0)) {
         ui_message("STOP TO EDIT"); return;
     }
+    if (pr_layer_on()) {                            /* GEN, TWEAK, OCT- held: KNOB 1 page randomize (page_random.c) */
+        if (slot == 0u && steps) page_random(steps > 0 ? 1 : -1);
+        oct_eat |= 1u;                                  /* (its release is no OCT-) */
+        ui.force = 1;
+        return;
+    }
     if (pg->graph == GR_EVOLVE && sv_layer_on()) {  /* STEP EVOLVE, OCT+ held: HOW */
         tessera_sv_layer_knob(slot, steps);
         oct_eat |= 2u;
@@ -1436,14 +1442,15 @@ static uint8_t oct_eat;                                 /* OCT taps not to come 
 static uint8_t oct_deferred;                            /* OCT+ pressed on Stage (its sheet when held): the octave on
                                                          * release */
 /* on a page with OCT held layers (MIDI OUT's TRANSPOSE / SOUND / DRUM MAP, PIECE's USER levels, MODS' threshold and CC,
- * EVOLVE's ROLL ALL and PAT GEN, ENTRIES' ROLE and ORDER: issue #519, 3.5-beta1 took you HOME) an OCT button
+ * EVOLVE's ROLL ALL and PAT GEN, ENTRIES' ROLE and ORDER, GEN's and TWEAK's RANDOM: issue #519, 3.5-beta1 took you HOME) an OCT button
  * held past OCT_HOLD_MS is a hold, never a tap: let go without a knob turned it is neither Esc nor Enter (a peek never
  * leaves the page or flips a mod's polarity) */
 #define OCT_HOLD_MS 700u
 static int oct_layer_page(void)
 {
     uint32_t g = cur_page()->graph;
-    return !ui.home && !ui.menu && (g == GR_MIDICH || g == GR_PIECE || g == GR_CORDS || g == GR_EVOLVE || g == GR_ENTRIES);
+    return !ui.home && !ui.menu && (g == GR_MIDICH || g == GR_PIECE || g == GR_CORDS || g == GR_EVOLVE || g == GR_ENTRIES ||
+                                       g == GR_TWEAK || (g == GR_STEPS && cur_page()->fam == FAM_GEN));
 }
 static uint32_t oct_taps(uint32_t pressed, int here)
 {

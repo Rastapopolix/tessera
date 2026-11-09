@@ -76,6 +76,7 @@ static struct { uint32_t magic, count, vec, pc, rets, emu, dbg, sp, psr, icfg, u
 #include "../firmware/src/ui.c"
 #include "../firmware/src/icons.c"                       /* (the drawing: the video mode's screens) */
 #include "../firmware/src/ui_graph.c"
+#include "../firmware/src/page_random.c"
 #include "../firmware/src/ui_draw.c"
 #include "../firmware/src/ui_menu.c"
 #include "../firmware/src/ui_input.c"
