@@ -4408,7 +4408,7 @@ static int test_landscape(void)
     plan.at_b = 60u * (uint32_t)FS;
     plan.ending = 1;
     for (i = 0; i < 300u; i++) frame();
-    bad += check("  END STOP's tails: the moon set in the water at the right, its reflection gone",
+    bad += check("  END STOP's tails: the moon set behind the hills at the right, its reflection gone",
                  (land.my >> 4) > LAND_H + 5 && (land.mx >> 4) >= LAND_MR - 1);
     song.playing = 0;
     i = (uint32_t)land.my;

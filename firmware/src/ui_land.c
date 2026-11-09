@@ -47,8 +47,8 @@ static struct {
 } land;
 
 /* the moon: still while LENGTH is FREE; a planned piece's time played moves it on an arc, left to right (planner.c's
- * time, so a tempo change never jumps it), gliding where the plan is drawn again; END STOP: it sets in the water with
- * the tails; stopped: where it was (just opened: rising); a new start, LOOP's or NEW's: rising again at once */
+ * time, so a tempo change never jumps it), gliding where the plan is drawn again; END STOP: it sets behind the hills
+ * with the tails; stopped: where it was (just opened: rising); a new start, LOOP's or NEW's: rising again at once */
 static void land_moon(uint32_t dt)
 {
     uint32_t p = 0, left;
@@ -73,13 +73,19 @@ static void land_moon(uint32_t dt)
     d = (ty - land.my) * (int32_t)dt / 1000;
     land.my += d ? d : (ty > land.my) - (ty < land.my);
 }
-static void land_disc(int32_t cx, int32_t cy, int32_t r, uint16_t c)   /* mo_disc, above the water only */
+static int32_t land_hill(int32_t x)                    /* the far shore's top at x */
+{
+    int32_t h = 3 + (mo_sin(x * 3) + mo_sin(x * 7 + 40) / 2) * 3 / 127;
+    return LAND_H - (h < 1 ? 1 : h);
+}
+static void land_disc(int32_t cx, int32_t cy, int32_t r, uint16_t c)   /* mo_disc, behind the hills */
 {
     for (int32_t y = -r; y <= r; y++) {
-        int32_t w = 0;
+        int32_t w = 0, x;
         while ((w + 1) * (w + 1) + y * y <= r * r + r)
             w++;
-        if (cy + y < LAND_H) mo_hl(cx - w, cy + y, 2 * w + 1, c);
+        for (x = cx - w; x <= cx + w; x++)
+            if (cy + y < land_hill(x)) mo_px(x, cy + y, c);
     }
 }
 
@@ -186,12 +192,12 @@ static void mo_pic_land(void)
         }
     }
     for (x = 0; x < 120; x++) {                         /* the far shore: low hills */
-        int32_t h = 3 + (mo_sin(x * 3) + mo_sin(x * 7 + 40) / 2) * 3 / 127, y0 = LAND_H - (h < 1 ? 1 : h);
+        int32_t y0 = land_hill(x);
         mo_px(x, y0, hills);
         for (y = y0 + 1 + ((x ^ y0) & 1); y < LAND_H; y += 2) mo_px(x, y, hills);   /* (dithered) */
     }
     mo_hl(0, LAND_H, 120, water);
-    for (y = LAND_H + 3, i = 0; my < LAND_H && y < MO_PY1 - 2; y += 4, i++) {   /* the moon in the water (it shivers under rings) */
+    for (y = LAND_H + 3, i = 0; my - 5 < land_hill(mx) && y < MO_PY1 - 2; y += 4, i++) {   /* the moon in the water (it shivers under rings) */
         int32_t w = 7 - (int32_t)i, sh = land_moving() ? (int32_t)((fm1_ms / 80u + i) % 3u) - 1 : 0;
         if (w < 2) break;
         for (x = 0; x < w; x += 2) mo_px(mx - w / 2 + x + sh, y, deep);
