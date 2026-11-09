@@ -537,6 +537,10 @@ static void draw_column(uint32_t c, const char *label, const char *val, const ch
         pv_live = -1;
         return;
     }
+#if MELODEE_LOOK
+    return;                                             /* (Mono: every card goes to mo_capture, a list row or a
+                                                         * redesign cell above; the card below is the detailed look's) */
+#endif
     roll_bg = cbg;
     if (strip) {                                        /* rolling: the value strip only */
         cv_begin(COL_W, ROLL_H, cbg);
