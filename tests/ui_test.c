@@ -4364,6 +4364,58 @@ static int test_knobs_menu(void)
     ui.menu = 0;
     return bad;
 }
+/* MENU > GROUND (#557): DARK (default) the inks on black, LIGHT each palette's light version on paper; saved in the
+ * settings (row 8 byte 29, tagged; any other byte DARK), the palette id unchanged; DARK draws exactly as before */
+static int test_ground_menu(void)
+{
+    int bad = 0;
+    persist_t p;
+    uint32_t i, pal, ok;
+    static uint16_t before[240 * 240];
+    ui_power_on();
+    ux_ground = 0;
+    settings.palette = UI_DEFAULT_INDEX; palette_set(settings.palette);
+    ui.force = 1; ui_draw();
+    memcpy(before, host_screen, sizeof before);
+    hold(B_HOME);
+    ui.menu_sel = MI_GROUND;
+    turn(EN_K2, 1);
+    bad += check("GROUND: the menu's KNOB 2 right: LIGHT, on paper in the ink's light version",
+                 ui.menu == 1 && ux_ground && ux.light && T_BG == UI_LIGHT_BG &&
+                 T_TEXT == pal_light(UI_DEFAULT_INDEX, 0) && T_TEXT != UI_PALETTES[UI_DEFAULT_INDEX].text);
+    for (pal = 0, ok = 1; pal < UI_NPALETTES; pal++) {   /* every palette: its light inks; a MOSAIC's four differ */
+        palette_set(pal);
+        ok &= T_BG == UI_LIGHT_BG && ux.light && T_TRK(0) == pal_light(pal, 0) && T_ACCENT == pal_light(pal, 4);
+        if (UI_PALETTES[pal].trk[0] != UI_PALETTES[pal].trk[1])
+            for (i = 1; i < 4u; i++)
+                ok &= T_TRK(i) == pal_light(pal, i) && T_TRK(i) != T_TRK(i - 1u) && T_TRK(i) != T_TRK(0);
+    }
+    bad += check("  every palette has its light inks, a MOSAIC's four all different", ok);
+    palette_set(settings.palette);
+    turn(EN_K2, -1);
+    bad += check("  left: DARK, the palette as it was", !ux_ground && !ux.light &&
+                 T_BG == UI_PALETTES[UI_DEFAULT_INDEX].bg && T_TEXT == UI_PALETTES[UI_DEFAULT_INDEX].text);
+    press(B_OCTUP);
+    bad += check("  OCT+ toggles: LIGHT", ux_ground && T_BG == UI_LIGHT_BG);
+    memset(&p, 0, sizeof p);
+    settings_export(&p);
+    ux_ground = 0;
+    bad += check("  saved with the settings, the palette id unchanged (older firmware keeps the ink)",
+                 settings_import(&p, sizeof p) && ux_ground && p.favorites.factory[8][29] == GROUND_LIGHT_TAG &&
+                 p.palette == palette_to_stored(UI_DEFAULT_INDEX));
+    p.favorites.factory[8][29] = 0x01u;
+    settings_import(&p, sizeof p);
+    bad += check("  an older record (no tag): DARK", !ux_ground);
+    ux_ground = 1;
+    press(B_OCTUP);                                     /* LIGHT -> DARK in the menu, then back home */
+    press(B_OCTDN);
+    ui.force = 1; ui_draw();
+    bad += check("  DARK again: HOME draws exactly as before", !ux_ground && ui.menu == 0 &&
+                 !memcmp(before, host_screen, sizeof before));
+    ux_ground = 0;
+    palette_set(settings.palette);
+    return bad;
+}
 /* MENU > LARGE VALUE: AUTO (default) shows the knob turning large only over the output, ON on every page, OFF never;
  * saved with the favorites (row 8 byte 28, tagged); any other byte reads AUTO */
 static int test_large_menu(void)
@@ -7122,6 +7174,7 @@ int main(void)
     bad += test_track_knob();
 #if MELODEE_LOOK
     bad += test_knobs_menu();
+    bad += test_ground_menu();
     bad += test_large_menu();
 #endif
     bad += test_layer();
