@@ -1259,13 +1259,13 @@ static void setup(int s)
         go_title("TIMING");
         break;
     case S_GEN_TIMING_SPLIT: case S_GEN_TIMING_PUSH: case S_GEN_TIMING_MIX: case S_STEP_TIMING_SPLIT:
-        tessera_reset();                            /* (OCT+ held: SPLIT 60, each HOW; a STEP track's too) */
+        tessera_reset();                            /* (OCT- held: SPLIT 60, each HOW; a STEP track's too) */
         song.sel = 0;
         if (s != S_STEP_TIMING_SPLIT) tessera_knob(0, TESS_ENG_EUCLID);
         tessera_param_set(0, TX_SUB_SPLIT, 60);
         tessera_param_set(0, TX_SUB_SPLIT_HOW, s == S_GEN_TIMING_PUSH ? TESS_SPLIT_PUSH : s == S_GEN_TIMING_MIX ? TESS_SPLIT_MIX : TESS_SPLIT_DOUBLE);
         go_title("TIMING");
-        fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+        fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
         break;
     case S_GEN_FORM:                                /* FORM: sections A A B A, CONTRAST 50 */
         tessera_reset();
@@ -1315,7 +1315,7 @@ static void setup(int s)
             (void)fc_at(4);
         }
         go_title(s == S_GEN_FORM_CHAIN ? "FORM" : "CHAIN");
-        if (s == S_GLO_CHAIN_REPS || s == S_GEN_FORM_CHAIN) fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+        if (s == S_GLO_CHAIN_REPS || s == S_GEN_FORM_CHAIN) fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
         break;
     case S_GLO_ENTRIES:                             /* ENTRIES 60, DWELL 2, FADE 2: playing, track 4 out, track 2 fading
                                                      * out, track 3 about to change, track 1 muted by hand */
@@ -1416,7 +1416,7 @@ static void setup(int s)
         if (s == S_GEN_ENERGY_LEVEL) tessera_param_set(0, TX_EN_LEVEL, -35);
         if (s == S_GEN_ENERGY_DEPTH) tessera_param_set(0, TX_EN_DEPTH, 40);
         go_title("ENERGY");
-        if (s == S_GEN_ENERGY_DEPTH) fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+        if (s == S_GEN_ENERGY_DEPTH) fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
         break;
     case S_GEN_PATTERN_CONSTEL:                     /* PATTERN of a CONSTELLATION track: its steps, not GEN's sky */
         tessera_reset();

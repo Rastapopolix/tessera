@@ -74,12 +74,22 @@ static int oct_enter_ok(void)                           /* OCT+ would do somethi
 /* the OCT LEDs, bit 0 OCT-, bit 1 OCT+. In the dialogs, the menu and on action pages OCT- (back) is
  * lit and OCT+ blinks while it would do something; off Stage OCT- lit, OCT+ lit where it enters; on Stage
  * they show the octave shift */
+/* a page whose OCT+ held opens nothing and whose OCT+ tapped does nothing either (the key grammar's rule 1: "NO SHEET";
+ * a list, a slot, MOTION, SCALES, the browser, Copy to and SONG keep their Enter on a slow press) */
+static int oct_no_sheet(void)
+{
+    return !ui.home && !ui.menu && !ui.confirm && !ui.layer && !name_on() && !new_on() && !designer_on() && !oct_enter_ok() &&
+           !act_cols();
+}
 static int oct_dn_page(void)                            /* the page shown has an OCT- layer for the track shown */
 {
     uint32_t g = cur_page()->graph;
     if (g == GR_TWEAK || (g == GR_STEPS && cur_page()->fam == FAM_GEN))
         return pr_gen_track(song.sel);                  /* RANDOM (page_random.c; CHORD: STRUM too) */
-    return g == GR_EVOLVE || g == GR_MIDICH || g == GR_ENTRIES || g == GR_PIECE;   /* ROLL ALL, SOUND, ORDER, USER 5-8 */
+    if (g == GR_FORM)
+        return song.sel < TESSERA_TRACKS && tessera.mode[song.sel] != TESS_ENG_OFF;   /* DEVELOP, CHAIN, SKIP, ROLE */
+    return g == GR_EVOLVE || g == GR_MIDICH || g == GR_ENTRIES || g == GR_PIECE ||   /* ROLL ALL, SOUND, ORDER, USER 5-8, */
+           g == GR_TIMING || g == GR_ENERGY || g == GR_CHAIN || g == GR_TRK || g == GR_CORDS;   /* SPLIT, DEPTH, REPEAT, PAN, CC */
 }
 static uint32_t oct_leds(void)
 {
@@ -347,7 +357,7 @@ static int32_t list_accel(uint32_t role, int32_t s, uint32_t total, uint32_t *fa
 static void tracks_edit(uint32_t slot, int32_t steps)
 {
     track_t *t = &trk[slot % NTRK];
-    uint32_t pan = (fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u, id = pan ? P_PAN : P_LEVEL;
+    uint32_t pan = (uint32_t)oct_dn_only(), id = pan ? P_PAN : P_LEVEL;
     int16_t *vp = &t->p[id];
     const param_desc_t *d = &TP[id];
     if (pan) {
@@ -916,12 +926,12 @@ static void edit_param(uint32_t slot, int32_t steps)
         return;
     }
     if (pg->graph == GR_CORDS) {                        /* CORDS (ui_cords.c) */
-        if (slot == 3u && ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) && cu_thresh_knob(steps)) {
-            oct_eat |= 2u;                              /* (OCT+ held: a GATE's threshold; its release no OCT+) */
+        if (slot == 3u && oct_dn_only() && cu_thresh_knob(steps)) {
+            oct_eat |= 1u;                              /* (OCT- held: a GATE's threshold; its release no Back) */
             return;
         }
-        if (slot == 2u && ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) && cu_cc_knob(steps)) {
-            oct_eat |= 2u;                              /* (OCT+ held: a CC mod's number; its release no OCT+) */
+        if (slot == 2u && oct_dn_only() && cu_cc_knob(steps)) {
+            oct_eat |= 1u;                              /* (OCT- held: a CC mod's number; its release no Back) */
             return;
         }
         cu_knob(slot, steps);
@@ -1471,8 +1481,8 @@ static int oct_hold_page(uint32_t k)                    /* k 0 OCT-, 1 OCT+ */
     uint32_t g = cur_page()->graph;
     if (ui.home || ui.menu || ui.confirm || pop.on || smap.on || name_on() || new_on() || designer_on())
         return 0;
-    return !k || g == GR_STEPS || g == GR_EVOLVE || g == GR_FORM || g == GR_TWEAK || g == GR_TIMING || g == GR_ENERGY ||
-           g == GR_MIDICH || g == GR_CHAIN || g == GR_ENTRIES || g == GR_PIECE || g == GR_CORDS || g == GR_TRK;
+    return !k || g == GR_STEPS || g == GR_EVOLVE || g == GR_TWEAK || g == GR_MIDICH || g == GR_ENTRIES || g == GR_PIECE ||
+           g == GR_CORDS;                               /* (OCT+'s layers until M3; MODS: its BI / UNI) */
 }
 static uint32_t oct_taps(uint32_t pressed, int here)
 {
@@ -2177,12 +2187,12 @@ static void ui_input(void)
     uint32_t seq = btn_hold(&ui.seq_t0, B_SEQ, now, !ui.menu && !ui.confirm);
     uint32_t save = btn_hold(&ui.save_t0, B_SAVE, now, !ui.menu && !ui.confirm);
     uint32_t edit = btn_hold(&ui.edit_t0, B_EDIT, now, !ui.menu && !ui.confirm && !name_on() && !new_on() && !ui.ly);
-    uint32_t octup = btn_hold(&ui.oct_t0, B_OCTUP, now, page_sheet() != 0u);   /* held: the page's sheet */
+    uint32_t octup = btn_hold(&ui.oct_t0, B_OCTUP, now, page_sheet() != 0u || oct_no_sheet());   /* held: the page's sheet */
     uint32_t oct;
     if (octup == BT_HOLD) {
         oct_eat |= 2u;                                  /* (its release is no OCT+) */
         oct_deferred = 0;
-        if(bulk_context()){ui.bulk_hold=1;if(!slot_kind()&&!bulk.on)ui_message("PATTERN SHEET");}else if(!gen_layer_on())page_sheet_open();   /* (QUAD, CONSTELLATION on
+        if(bulk_context()){ui.bulk_hold=1;if(!slot_kind()&&!bulk.on)ui_message("PATTERN SHEET");}else if(!gen_layer_on()){if(page_sheet())page_sheet_open();else ui_message("NO SHEET");}   /* (QUAD, CONSTELLATION on
                                                          * GEN: their layer; NOTES: the sheet named, a hold told from a tap) */
     } else if (octup == BT_TAP && oct_deferred) {
         song.octave += song.octave < 3 ? 1 : 0;         /* (OCT+ pressed on a page with a sheet: on release) */

@@ -314,7 +314,7 @@ never repeats itself note for note.
 1. A melodic track: MODE **TURING**, **PROB 0** so the loop itself holds still.
 2. **EVOLVE**: **EVERY 4**. **FORM**: **ABAC**, **CONTR 40**: four sections of four bars, A coming back every
    eight bars.
-3. Hold **OCT+** on FORM: **DEVELOP 40**. Each time A comes back it is A varied by about that much: a note or two
+3. Hold **OCT-** on FORM: **DEVELOP 40**. Each time A comes back it is A varied by about that much: a note or two
    changed. The section itself is kept, so the next return starts from A again: after an hour
    it is still the same A, varied, not something that has drifted away.
 4. Hold **OCT+** on EVOLVE: **GRAVITY 30**. About one return in three is exact, so the original comes back now and
@@ -473,7 +473,7 @@ BRANCH) samples at random moments instead.
 A line on the grid, broken up now and then the way a player would: a quick pair of 1/16s here, a note pushed late there.
 
 1. Any melodic track at **DIV 1/8**: a generator, or a STEP track with a line written in.
-2. On **TIMING**, hold **OCT+**: **KNOB 1** sets **SPLIT 20 %**, **KNOB 2** sets **HOW** to **MIX**.
+2. On **TIMING**, hold **OCT-**: **KNOB 1** sets **SPLIT 20 %**, **KNOB 2** sets **HOW** to **MIX**.
 3. Too busy, or not enough? Turn SPLIT. **ROLL** on EVOLVE gives a new set of tosses, and the generator's notes stay.
 
 The bar's first step stays on the grid. A mod on **SPLIT** (an LFO or TIDE) brings the looser bars in and out.
@@ -491,7 +491,7 @@ The bar's first step stays on the grid. A mod on **SPLIT** (an LFO or TIDE) brin
   a loop alive for much longer than a fast one.
 - When EVOLVE wanders too far, turn up **GRAVITY** (OCT+ on EVOLVE) rather than turning EVOLVE off: it still moves,
   but comes home.
-- A drone or a bass that should stay steady through ENERGY's tide: hold OCT+ on ENERGY and set **DEPTH 0** on it.
+- A drone or a bass that should stay steady through ENERGY's tide: hold OCT- on ENERGY and set **DEPTH 0** on it.
 - A track at SOUND OFF (OCT- held on GLO > MIDI OUT) is a free modulation lane: its generator's GATE, NOTE and CV
   still drive mods on the other tracks.
 - For long pieces, try the plan on a short PIECE LENGTH first, to hear the whole shape, then make it longer.

@@ -859,9 +859,9 @@ static void draw_columns(void)
     uint32_t c;
     char val[12];
     const char *unit;
-    if (cur_page()->scope == SC_TRK) {                 /* MIXER: KNOB k track k's LEVEL, OCT+ held its PAN */
+    if (cur_page()->scope == SC_TRK) {                 /* MIXER: KNOB k track k's LEVEL, OCT- held its PAN */
         static const char *const NAME[2][4] = {{"T1 LVL", "T2 LVL", "T3 LVL", "T4 LVL"}, {"T1 PAN", "T2 PAN", "T3 PAN", "T4 PAN"}};
-        uint32_t pan = (fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u;
+        uint32_t pan = (uint32_t)oct_dn_only();
         for (c = 0; c < 4u; c++) {
             const track_t *t = &trk[c];
             if (pan) {
