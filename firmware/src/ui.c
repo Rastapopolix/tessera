@@ -739,7 +739,8 @@ typedef struct {
     uint8_t keep;                /* the track is as the last load left it (after): a next load keeps the copy */
     uint8_t what;                /* UNDO_SOUND | UNDO_PAT: what the loads since the copy changed (undo_step) */
     uint8_t eng, preset, user, user_native, patn;
-    uint8_t gmode;               /* a print (capture_take on a generator track): its SEQ MODE + 1; 0 = not one */
+    uint8_t gmode;               /* a print (capture_take on a generator track): its SEQ MODE + 1; on an ARP track
+                                  * 0x80 | ARP's MODE (0x80 alone: STEP, the redo's); 0 = not one */
     uint8_t fm6[FP_SIZE + 1u];   /* the track's complete patch */
     uint8_t oracle[OR_N];        /* .. and its ORACLE patch */
     drum_patch_t drum;
@@ -963,7 +964,11 @@ static void undo_step(int redo)
             t->step[i] = step_snapshot_get(&u->step[i]);
             step_snapshot_put(&u->step[i], &s);
         }
-        if (u->gmode && trk_index(t) < TESSERA_TRACKS) {   /* a print: the generator back (its redo: STEP again) */
+        if (u->gmode & 0x80u) {                         /* a print of the ARP: the ARP back (its redo: STEP again) */
+            uint8_t m = (uint8_t)t->p[P_AMODE];
+            t->p[P_AMODE] = (int16_t)(u->gmode & 0x7Fu);
+            u->gmode = (uint8_t)(0x80u | m);
+        } else if (u->gmode && trk_index(t) < TESSERA_TRACKS) {   /* a print: the generator back (its redo: STEP again) */
             uint8_t m = tessera.mode[trk_index(t)];
             tessera_mode_set(trk_index(t), u->gmode - 1u);
             u->gmode = (uint8_t)(m + 1u);
