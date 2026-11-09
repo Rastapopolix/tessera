@@ -1420,7 +1420,7 @@ static uint32_t tess_chord_build(const track_t *t, uint32_t deg, uint8_t *out, i
     if (m == 0xFFFu || !m) m = SCALE_MASK[1];
     while (deg && guard--)
         if ((m >> (uint32_t)((++x - t->p[P_ROOT] + 1200) % 12)) & 1u) deg--;
-    return chord_make_as(t, mode && mode <= CH_POW ? mode : CH_DIA3, (uint32_t)x, out, rp, maskp);
+    return chord_make_as(t, mode && mode < CH_N ? mode : CH_DIA3, (uint32_t)x, out, rp, maskp);
 }
 /* chord i of the track's progression: its name ("Am", 12 bytes) -> its pitch classes (bit 0 C), its root's << 12 */
 uint32_t tessera_chord_at(uint32_t tr, uint32_t i, char *name)
