@@ -61,7 +61,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x03A | MOD 4 SOURCE | OFF, LFO, ENV, VEL, KEY, RAND, MODW, AT, EXPR, S&H, SLEW | OFF | MOD route 4: what moves the destination (LFO, envelope, velocity, key, random, the controllers). |
 | 0x03B | MOD 4 DESTINATION | OFF, PITCH, CUT, SHP, AMP, PAN, RATE, VIB, E1, E2, E3, E4, E5, E6, E7, E8, DEPTH | OFF | MOD route 4: what is moved (pitch, filter, shape, level, pan, LFO rate or depth, the engine's own). |
 | 0x03C | MOD 4 AMOUNT | -64 to 63 | 0 | MOD route 4: how far, and which way. |
-| 0x051 | CHORD | OFF, DIA3, DIA7, MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW | OFF | One key plays a chord: in the scale (DIA3, DIA7) or a fixed kind (MAJ, MIN, 7ths, SUS4, POWER); OFF plays one note. |
+| 0x051 | CHORD | OFF, DIA3, DIA7, MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9, MAJ6 | OFF | One key plays a chord: in the scale (DIA3, DIA7) or a fixed kind (MAJ, MIN, 7ths, SUS4, POWER, SUS2, 7SUS4, ADD9, MAJ6); OFF plays one note. |
 | 0x052 | CHORD VOICING | CLOSE, OPEN, INV1, INV2, +OCT | CLOSE | How the chord's notes are spread: close, open, an inversion, or with the root an octave down. |
 | 0x053 | MPC DEGREE | 1 to 12 | 1 | With QUANTIZE MPC: the scale degree the pad H02 plays. |
 | 0x054 | DRUM KICK | 0 to 127 | 127 | The kick's level in the kit. |
