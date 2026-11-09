@@ -24,6 +24,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - Holding OCT- on EVOLVE or ENTRIES and letting go no longer takes you to HOME (#519).
 - EVOLVE's ROLL and ROLL ALL say NEW LINE on the screen (NEW LINE AT BAR while playing), so a turn is no longer silent when stopped (#528).
 - Web editor: ORACLE, TRIO and other user presets now show in the Sound tab's preset list, and Save to file names an FM6 user preset after itself, not after TINE EP (#526).
+- ANSWER with a SOURCE track that runs a generator (BOUNCE, TURING ...) now answers the notes that track plays; it read that track's hidden STEP pattern instead, often one note or none.
 
 ## Good to know
 - Projects saved with these new settings lose them on 3.4.x.
@@ -38,6 +39,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - Web editor: an ORACLE or TRIO user preset shows in the Sound list; Save to file on an FM6 user preset uses its own name.
 - RANDOM on GEN with a few generators, stopped and playing; then turn back.
 - USER scales: make one on the keys, play a generator in it, save, power off and on, load; load that project on 3.4.1 (it plays the scale picked under it).
+- ANSWER on T2 with SOURCE T1, BOUNCE on T1: it shows LISTENING, takes up to 8 of the balls' notes, then answers them.
 - ARP DNUP and RND1 with a chord held: RND1 keeps its order, changes when a key is added, and is the same after STOP and PLAY.
 - CHORD STRUM on a CHORD track: STRUM 20 ms and up, DIR UP, DOWN and ALT, with BEAT or STEP stabs; MIDI OUT gets the notes spread too.
 - STEP direction: PONG and DRUNK on a melody, with SONG and a pattern change; save, load, and STOP and PLAY replays RAND.

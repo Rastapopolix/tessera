@@ -614,7 +614,8 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                "notes in order on its hits; MARKOV learns what follows what in it (LEAP: jumps "
                                "anywhere); MORPH blends it (A) with a variation of it (B). OFF, or a pattern without "
                                "notes: the generator's own. ANSWER: the pattern's first 8 notes are its call, read "
-                               "again before each answer; the keys then just play. OCT+ held on GEN, KNOB 1."),
+                               "again before each answer; the keys then just play. A track with a generator: the notes it plays "
+                               "are the call. OCT+ held on GEN, KNOB 1."),
     X_(TX_SD_KEEP, "KEEP", "With a SOURCE, what stays as written. FREE: a step's pitch or its hit may change. "
                            "RHYTHM: only the pitches change (EUCLID: the source's own rhythm, on EUCLID's pitches). "
                            "PITCH: only the hits come and go (MARKOV: the notes in written order). OCT+ held on GEN, "

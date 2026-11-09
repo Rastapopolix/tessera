@@ -1128,6 +1128,7 @@ void tessera_tweak2_knob(uint32_t k, int32_t s)
 
 static int32_t tess_scale_steps(const track_t *t, int32_t n, int32_t k);
 static int32_t tess_follow_source(uint32_t src, uint32_t tr);
+static void tessera_answer_heard(uint32_t src, uint32_t note);   /* (answer.c) */
 
 /* FOLLOW HOLD: track tr has just played a note. Each track that FOLLOWs with HOLD on tr samples its followed note now
  * (the tracks step in index order: a lower source's note is this step's, a higher one's the step before) */
@@ -1138,6 +1139,7 @@ void tessera_hold_hit(uint32_t tr)
         for (uint32_t i = n = 0; i < trk[tr].seq_n; i++) if ((int32_t)trk[tr].seq_notes[i] > n) n = trk[tr].seq_notes[i];
     tessera.f_hist[tr][tessera.f_cnt[tr] & 15u] = (uint8_t)(n + 1);   /* (CANON's memory, RHYTHM's count) */
     tessera.f_cnt[tr]++;
+    if (tessera.mode[tr] != TESS_ENG_OFF) tessera_answer_heard(tr, (uint32_t)n);   /* (an ANSWER with it as SOURCE) */
     for (uint32_t f = 0; f < TESSERA_TRACKS; f++) {
         int32_t n;
         if (tessera.follow_hold[f] != tr + 1u || !tessera.evolve[f].follow || f == tr) continue;
