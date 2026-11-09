@@ -527,6 +527,34 @@ static int test_tsp_record(void)
     raw[tsp_seen.at[TSP_EORDER] + 1u] = ET_ORDERS;     /* (track 2's ORDER past 4TH) */
     tsp_resum(raw);
     bad += check("TSP1: an ORDER past 4TH refused", ok && !tsp_valid(raw, len));
+    reset();                                           /* CHORD's STRUM: the STRUM part; none while OFF */
+    tessera_param_set(1, TX_CH_SDIR, TESS_STR_ALT);    /* (a DIR alone: STRUM OFF, no part) */
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    bad += check("TSP1: STRUM OFF everywhere writes no STRUM part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_STRUM]);
+    tessera_param_set(1, TX_CH_STRUM, 25); tessera_param_set(3, TX_CH_STRUM, 60); tessera_param_set(3, TX_CH_SDIR, TESS_STR_DOWN);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_STRUM];
+    tessera_reset();
+    tsp_restore(raw);
+    bad += check("TSP1: STRUM and DIR come back from their part", ok && tessera.ch_strum[1] == 25u &&
+                 tessera.ch_strum[3] == 60u && !tessera.ch_strum[0] && tessera.ch_sdir[1] == TESS_STR_ALT &&
+                 tessera.ch_sdir[3] == TESS_STR_DOWN && tessera.ch_sdir[0] == TESS_STR_UP);
+    raw[tsp_seen.at[TSP_STRUM] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (an id this build does not know: as older firmware
+                                                                      * sees the part, skipped) */
+    tsp_resum(raw);
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_STRUM];
+    if (ok) tsp_restore(raw);
+    bad += check("TSP1: a record without the part loads with STRUM OFF, UP", ok && !tessera.ch_strum[1] &&
+                 !tessera.ch_strum[3] && !tessera.ch_sdir[1]);
+    tessera_param_set(2, TX_CH_STRUM, 10);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_STRUM];
+    raw[tsp_seen.at[TSP_STRUM] + NTRK + 2u] = TESS_STR_DIRS;   /* (track 3's DIR past ALT) */
+    tsp_resum(raw);
+    bad += check("TSP1: a DIR past ALT refused", ok && !tsp_valid(raw, len));
     reset();                                           /* HUMAN TIME: the record's HUMAN part; a record without it */
     song.sel = 1; tessera_knob(0, TESS_ENG_EUCLID);
     tessera_param_set(1, TX_TW_HUMAN, 60); tessera_param_set(0, TX_TW_HUMAN, 40);   /* (track 0: a STEP track) */

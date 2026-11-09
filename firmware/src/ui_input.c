@@ -949,8 +949,13 @@ static void edit_param(uint32_t slot, int32_t steps)
         0)) {
         ui_message("STOP TO EDIT"); return;
     }
-    if (pr_layer_on()) {                            /* GEN, TWEAK, OCT- held: KNOB 1 page randomize (page_random.c) */
+    if (pr_layer_on()) {                            /* GEN, TWEAK, OCT- held: KNOB 1 page randomize (page_random.c); CHORD
+                                                     * on GEN: KNOB 2 STRUM 5 ms a detent, KNOB 3 its DIR (seq_strum.c) */
         if (slot == 0u && steps) page_random(steps > 0 ? 1 : -1);
+        else if (slot - 1u < 2u && steps && ch_st_layer_on()) {
+            uint32_t x = slot == 1u ? TX_CH_STRUM : TX_CH_SDIR;
+            tessera_param_set(song.sel, x, tessera_param_get(song.sel, x) + (steps > 0 ? 1 : -1) * (slot == 1u ? 5 : 1));
+        }
         oct_eat |= 1u;                                  /* (its release is no OCT-) */
         ui.force = 1;
         return;

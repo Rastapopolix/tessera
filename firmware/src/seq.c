@@ -1040,6 +1040,7 @@ static void seq_release(track_t *t)
 
 #include "seq_erase.c"
 #include "step_acc.c"                               /* the pitch accumulator: a step's notes climbing each pass */
+#include "seq_strum.c"                             /* STRUM: a CHORD strike's notes a few ms apart */
 #include "seq_sub.c"                               /* SUB: a step's notes again within it (RATCH) */
 
 /* Map a quantized onset back to the compact tempo-relative event format. The
@@ -1236,6 +1237,7 @@ static void seq_grid_tick(track_t *t, uint32_t n)
         *sw_was = (uint8_t)sw;
     }
     t->seq_pos += n;
+    seq_strum_tick(t, n);                               /* (STRUM: a chord's queued notes due) */
     seq_sub_tick(t, step_samples(t, period, t->seq_idx));   /* (SUB: this step's repeats due, before the next step) */
     if (trk_index(t) >= TESSERA_TRACKS || tessera.mode[trk_index(t)] == TESS_ENG_OFF)
         seq_nudge_tick(t, period, step_samples(t, period, t->seq_idx), len);   /* (NUDGE: a held step, the next early) */
