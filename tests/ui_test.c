@@ -1192,6 +1192,45 @@ static int test_gen_oct_hold(void)
     frame();
     return bad;
 }
+/* the key grammar's M0 (tessera-notes audit-2026-11): a held OCT is never a tap on any page; a knob turned while an OCT is
+ * held eats its release; the OCT- LED lit where the page has an OCT- layer */
+static int test_oct_grammar_m0(void)
+{
+    int bad = 0;
+    uint32_t tr;
+    ui_power_on();
+    go_title("GEN");
+    tr = song.sel;
+    tessera_param_set(tr, TX_MODE, TESS_ENG_TURING);
+    frame();
+    bad += check("M0: GEN with a generator: the OCT- LED lit (RANDOM's layer)", (oct_leds() & 1u) != 0u);
+    go_title("EVOLVE");
+    frame();
+    bad += check("M0: EVOLVE: the OCT- LED lit (ROLL ALL)", (oct_leds() & 1u) != 0u);
+    go_title("FORM");
+    frame();
+    bad += check("M0: FORM: no OCT- layer, the OCT- LED dark", (oct_leds() & 1u) == 0u);
+    hold(B_OCTDN);
+    bad += check("M0: FORM, OCT- held and let go: still FORM (once Back, #519 covered only 7 pages)",
+                 !ui.home && str_eq(cur_page()->title, "FORM"));
+    go_title("ENV");
+    frame();
+    hold(B_OCTDN);
+    bad += check("M0: ENV, OCT- held and let go: still ENV", !ui.home && str_eq(cur_page()->title, "ENV") && !pop.on);
+    btn_down(B_OCTUP);
+    frame();
+    turn(EN_K1, 1);
+    btn_up(B_OCTUP);
+    frame();
+    bad += check("M0: ENV, OCT+ down, a knob turned, let go before the hold: no Enter (no sheet)",
+                 !pop.on && str_eq(cur_page()->title, "ENV"));
+    press(B_OCTUP);
+    bad += check("M0: ENV, OCT+ tapped: Enter, the sound's sheet", pop.on == POP_SHEET);
+    press(B_OCTDN);
+    press(B_OCTDN);
+    bad += check("M0: OCT- tapped: the sheet closed, then Back to Stage", !pop.on && ui.home);
+    return bad;
+}
 static int test_page_random(void)
 {
     int bad = 0, range = 1, kept = 1;
@@ -2468,8 +2507,8 @@ static int test_actions(void)
     fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
     frame();
     bad += check("..OCT+ let go: cleared", ui.confirm == CF_NONE && seq_is_empty(t));
-    bad += check("back on SEQ (NOTES): OCT- lit (Esc), OCT+ lit (a note, its sheet), not the octave",
-                 oct_leds() == 3u && song.octave);
+    bad += check("back on SEQ (NOTES): OCT- dark (no layer: the key grammar's rule 6; Back still works), OCT+ lit (a note, "
+                 "its sheet), not the octave", oct_leds() == 2u && song.octave);
     return bad;
 }
 
@@ -7155,6 +7194,7 @@ int main(void)
     bad += test_seed_layer();
     bad += test_roll_said();
     bad += test_page_random();
+    bad += test_oct_grammar_m0();
     bad += test_gen_oct_hold();
     bad += test_chord_user();
     bad += test_step_evolve();
