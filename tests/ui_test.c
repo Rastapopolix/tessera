@@ -854,7 +854,8 @@ static int test_quad_cols(void)
                  tessera_quad(song.sel)->prob == 98u && song.octave == oct && tessera_quad_every(2) == 8u);
     turn(EN_K1 + 2u, 1);
     press(B_OCTUP);
-    bad += check("OCT+ tapped on QUAD's GEN: its sheet, as on any GEN", pop.on == POP_SHEET && song.octave == oct);
+    bad += check("OCT+ tapped on QUAD's GEN: no sheet (a generator's pattern sheet is on PATTERN), the octave kept",
+                 pop.on != POP_SHEET && song.octave == oct);
     pop_close();
     frame();
     tessera.qcol[2] = 3u << 2;
@@ -1145,6 +1146,51 @@ static void pr_hold(int on)
     if (on) fm1_in.buttons |= 1u << panel.btn[B_OCTDN], host_pressed |= 1u << panel.btn[B_OCTDN];
     else fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
     frame();
+}
+/* OCT+ held on GEN: the pattern's sheet only with STEP or ARP (GEN is their pattern page); a generator's
+ * pattern is on PATTERN, so GEN opens nothing (Theo 2026-11-10: it opened STEP's sheet) */
+static int oct_hold_sheet(void)
+{
+    uint32_t i;
+    pop.on = 0;
+    btn_down(B_OCTUP);
+    for (i = 0; i < 6u; i++) { frame(); fm1_ms += 200u; host_ticks += 200000u; }   /* (held 1.2 s) */
+    btn_up(B_OCTUP);
+    frame();
+    i = pop.on == POP_SHEET && str_eq(pop.title, "Pattern");
+    pop.on = 0;
+    ui.force = 1;
+    frame();
+    return (int)i;
+}
+static int test_gen_oct_hold(void)
+{
+    static const uint8_t GENS[] = {TESS_ENG_TURING, TESS_ENG_EUCLID, TESS_ENG_MARKOV, TESS_ENG_MORPH, TESS_ENG_BOUNCE,
+                                   TESS_ENG_AWAKE, TESS_ENG_POLY, TESS_ENG_SERIES};
+    int bad = 0, none = 1;
+    uint32_t tr, i, oct;
+    ui_power_on();
+    go_title("GEN");
+    tr = song.sel;
+    tessera_param_set(tr, TX_MODE, TESS_ENG_OFF);
+    frame();
+    bad += check("GEN, STEP: OCT+ held opens the pattern's sheet", oct_hold_sheet());
+    for (i = 0; i < NELEM(GENS); i++) {
+        tessera_param_set(tr, TX_MODE, GENS[i]);
+        frame();
+        none &= !oct_hold_sheet() && str_eq(cur_page()->title, "GEN");
+    }
+    bad += check("GEN, a generator (TURING .. SERIES): OCT+ held opens no pattern sheet", none);
+    oct = (uint32_t)(song.octave + 3);
+    press(B_OCTUP);
+    bad += check("..OCT+ tapped there: no sheet either, the octave as it was",
+                 pop.on != POP_SHEET && (uint32_t)(song.octave + 3) == oct && str_eq(cur_page()->title, "GEN"));
+    go_title("PATTERN");
+    bad += check("PATTERN, a generator: OCT+ held still opens the pattern's sheet (SWING, Clear motion)",
+                 str_eq(cur_page()->title, "PATTERN") && oct_hold_sheet());
+    tessera_param_set(tr, TX_MODE, TESS_ENG_OFF);
+    frame();
+    return bad;
 }
 static int test_page_random(void)
 {
@@ -7049,6 +7095,7 @@ int main(void)
     bad += test_seed_layer();
     bad += test_roll_said();
     bad += test_page_random();
+    bad += test_gen_oct_hold();
     bad += test_chord_user();
     bad += test_step_evolve();
     bad += test_div_order();
