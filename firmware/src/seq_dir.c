@@ -11,7 +11,8 @@
 #define SEQ_NXT_AGAIN 0xFFFEu           /* .. chosen again from seq_idx (moved by hand: song position) */
 
 static uint32_t seq_dir_of(const track_t *t) { return pattern_dir[(t - trk) % NTRK][t->pattern % NPAT]; }
-static uint32_t seq_dir_now(const track_t *t) { return seq_dir_of(t); }
+static int32_t cord_tess_get(uint32_t tr, uint32_t x);  /* (cord.c: the pattern's DIR as its mods make it) */
+static uint32_t seq_dir_now(const track_t *t) { return (uint32_t)cord_tess_get((uint32_t)(t - trk), TX_SEQ_DIR); }
 
 /* step k of track tr since PLAY: its RAND / DRUNK draw */
 static uint32_t seq_dir_hash(uint32_t tr, uint32_t k)

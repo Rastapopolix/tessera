@@ -197,6 +197,43 @@ static int behaviour(void)
         trk[2].p[P_LEVEL] = 100;
     }
 
+    /* DIR (CD_SEQ_DIR): the pattern's DIR moved in whole values at each step, stepped, clamped; the stored one kept */
+    {
+        uint32_t d[4];
+        cord_clear();
+        tessera_param_set(0, TX_SEQ_DIR, SEQ_FWD);
+        trk[0].p[P_LPOL] = 0; trk[0].lfo_fade = 32767;
+        check("DIR: no mod, the pattern's", seq_dir_now(&trk[0]) == SEQ_FWD);
+        c = C(CS_OFF, 0, CD_SEQ_DIR, 0, 0, 20);        /* a fixed +20 %: one value on, BACK */
+        cord_set(0, &c);
+        check("...a fixed +20 %: BACK, the pattern's own still FWD", seq_dir_now(&trk[0]) == SEQ_BACK &&
+              tessera_param_get(0, TX_SEQ_DIR) == SEQ_FWD);
+        c = C(CS_LFO, 0, CD_SEQ_DIR, 0, 40, 0);        /* T1 LFO + (UNI) 40 %: FWD .. PEND */
+        c.uni = CU_UNI;
+        cord_set(0, &c);
+        trk[0].lfo_val = -32767; d[0] = seq_dir_now(&trk[0]);
+        trk[0].lfo_val = 0; d[1] = seq_dir_now(&trk[0]);
+        trk[0].lfo_val = 32767; d[2] = seq_dir_now(&trk[0]);
+        check("...LFO + at 40 %: FWD, BACK, PEND as it rises", d[0] == SEQ_FWD && d[1] == SEQ_BACK && d[2] == SEQ_PEND);
+        c.uni = CU_GATE;                               /* a GATE at 20 %: BACK while the LFO is over 0 */
+        c.amount = 20;
+        cord_set(0, &c);
+        trk[0].lfo_val = 16000; cord_tick(); d[0] = seq_dir_now(&trk[0]);
+        trk[0].lfo_val = -16000; cord_tick(); d[1] = seq_dir_now(&trk[0]);
+        check("...a GATE at 20 %: BACK while open, FWD shut", d[0] == SEQ_BACK && d[1] == SEQ_FWD);
+        tessera_param_set(0, TX_SEQ_DIR, SEQ_PONG);
+        c = C(CS_OFF, 0, CD_SEQ_DIR, 0, 0, 100);
+        cord_set(0, &c);
+        d[0] = seq_dir_now(&trk[0]);
+        c.offset = -100;
+        cord_set(0, &c);
+        d[1] = seq_dir_now(&trk[0]);
+        check("...from PONG, +100 % stops at DRUNK, -100 % at FWD", d[0] == SEQ_DRUNK && d[1] == SEQ_FWD &&
+              tessera_param_get(0, TX_SEQ_DIR) == SEQ_PONG);
+        tessera_param_set(0, TX_SEQ_DIR, SEQ_FWD);
+        cord_clear();
+    }
+
     /* GATE (CU_GATE): all while the source is over the threshold (its OFFSET), none under it; FILL held past half */
     {
         uint32_t lv[4];

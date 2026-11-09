@@ -3352,6 +3352,7 @@ void tessera_param_poke(uint32_t tr, uint32_t x, int32_t v)
     if (tr >= TESSERA_TRACKS) return;
     ev = &tessera.evolve[tr];
     switch (x) {
+    case TX_SEQ_DIR: pattern_dir[tr][trk[tr].pattern % NPAT] = (uint8_t)tess_clampi(v, 0, SEQ_DIRS - 1); break;
     case TX_TUR_PROB: tessera.turing[tr].prob = (uint8_t)tess_clampi(v, 0, 100); break;
     case TX_TUR_LEN: tessera.turing[tr].len = (uint8_t)tess_clampi(v, 2, 16); break;
     case TX_EUC_PULSES: tessera.euclid[tr].pulses = (uint8_t)tess_clampi(v, 0, tessera.euclid[tr].steps); break;

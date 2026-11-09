@@ -104,3 +104,4 @@
 101 TEMPO    tempo -
 102 CC       cc    -
 103 SPLIT    step  TIMING SPLIT
+104 DIR      step  PATTERN DIR
