@@ -469,8 +469,24 @@ the **ARP** button holds how its notes are shaped. SELECT turns the pages of the
 | **ARP** | GEN, NOTES, ARP (MODE, RATE, OCT, GATE), TEMPO, PATTERNS, SONG | ARP 2 (SWING, PROB, HOLD, ORDER), TWEAK (SHIFT and HUMAN) |
 | a generator | GEN, PATTERN, TEMPO, PATTERNS, SONG | EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY |
 
+ARP's **MODE** is the order the held notes play in, over OCT octaves:
+
+| MODE | Plays C E G as |
+|---|---|
+| **UP** | C E G, C E G (low to high) |
+| **DN** | G E C, G E C (high to low) |
+| **UPDN** | C E G E, C E G E (up, then down; the top and bottom notes once) |
+| **DNUP** | G E C E, G E C E (down, then up; the top and bottom notes once) |
+| **RND** | a new random note each step |
+| **RND1** | one random order, such as E C G, then the same again; a new one when the held notes change (or OCT or ORDER) |
+| **ORD** | in the order the keys were pressed (or the notes came in over MIDI) |
+| **REPEAT** | the last note pressed, again and again |
+
+ARP 2's **ORDER** (NOTE or PLAY) decides what UP, DN, UPDN, DNUP and RND1 start from: the notes low to high, or as
+pressed. ORD always plays them as pressed.
+
 On an ARP track, TWEAK's **SHIFT** moves the arpeggio by semitones and **HUMAN** makes its notes a little softer or
-louder and shorter, as on a generator. The arpeggio's tosses (RANDOM's order, PROB) come from the track's SEED, so PLAY
+louder and shorter, as on a generator. The arpeggio's tosses (RND's notes, RND1's order, PROB) come from the track's SEED, so PLAY
 plays it the same again.
 
 **MOTION**, the knob moves recorded on the pattern (see [Recording live](#recording-live)), shows once a track has
