@@ -1,12 +1,12 @@
 {
-  "version": "3.5-beta2",
+  "version": "3.5-beta3",
   "product": "FM-1_835",
   "branch": "develop",
-  "commit": "33228169d7690952f367807cb0486e7ad591ba7c",
-  "builtAt": "2026-11-08T11:59:38Z",
+  "commit": "fe13146431a78f5dc208f00978013e2f65d4e0a6",
+  "builtAt": "2026-11-09T01:12:42Z",
   "pkg": {
-    "dual": "../../firmware/tessera-3.5-beta2.fwsc",
-    "single": "../../firmware/tessera-3.5-beta2-1core.fwsc"
+    "dual": "../../firmware/tessera-3.5-beta3.fwsc",
+    "single": "../../firmware/tessera-3.5-beta3-1core.fwsc"
   },
   "notes": [
     [
@@ -15,13 +15,16 @@
         "PAT GEN: each of a track's 8 patterns can keep its own generator setup, so switching pattern switches the generator. Off by default: EVOLVE, OCT+ held, KNOB 4.",
         "ROLL ALL: every generator track gets a new seed at once, and one step back undoes it. EVOLVE, OCT- held, KNOB 4.",
         "ENTRIES ORDER: choose the order tracks come in (AUTO, 1ST to 4TH); they leave in reverse. ENTRIES, OCT- held.",
+        "PRINT ARP: hold REC on an ARP track to print what the arpeggio played into STEP, as on a generator track; EDIT held brings the ARP back (#530).",
         "MIDI OUT DRUM MAP: GM or ROW, for drum machines that take their tracks as a row of notes (such as the Analog Rytm). MIDI OUT, OCT+ and OCT- held."
       ]
     ],
     [
       "Fixed",
       [
-        "Holding OCT- on EVOLVE or ENTRIES and letting go no longer takes you to HOME (#519)."
+        "Holding OCT- on EVOLVE or ENTRIES and letting go no longer takes you to HOME (#519).",
+        "EVOLVE's ROLL and ROLL ALL say NEW LINE on the screen (NEW LINE AT BAR while playing), so a turn is no longer silent when stopped (#528).",
+        "Web editor: ORACLE, TRIO and other user presets now show in the Sound tab's preset list, and Save to file names an FM6 user preset after itself, not after TINE EP (#526)."
       ]
     ],
     [
@@ -35,6 +38,7 @@
       [
         "PAT GEN with different generators on two patterns: switch by hand and with SONG, save, power off and on, load.",
         "ENTRIES ORDER with the bass set to come in later.",
+        "PRINT ARP: an ARP track with a chord held, hold REC after two bars; then EDIT held.",
         "A project from 3.4.1 loads and plays the same."
       ]
     ]
