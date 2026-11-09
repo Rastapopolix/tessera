@@ -4422,6 +4422,24 @@ static int test_landscape(void)
     tessera.pl_length = 0;
     memset(&plan, 0, sizeof plan);
     frame();
+    {   /* a fish: once the page has been quiet LAND_FISH_MS, one jump, two dim splashes; a note lets another come */
+        uint32_t seen = 0, jumps = 0, was = land.fish;
+        trk_note_on(&trk[0], 60, 100);
+        frame();
+        for (i = 0; i < LAND_FISH_MS / 16u + 200u; i++) {
+            frame();
+            if (land.fish == 1u && was != 1u) jumps++;
+            seen |= land.fish == 1u && land_moving();
+            was = land.fish;
+        }
+        bad += check("  a long silence: a fish jumps, once, drawn again while in the air",
+                     jumps == 1u && seen && land.fish == 2u && land_stars() == LAND_STARS);
+        for (i = 0; i < 400u; i++) frame();
+        bad += check("  then still: no second fish in the same silence", land.fish == 2u && !land_moving());
+        trk_note_on(&trk[0], 60, 100);
+        frame();
+        bad += check("  a note: the next silence may bring one again", land.fish == 0u);
+    }
     go_title("PIECE");
     frame();
     i = land_ev_at;
