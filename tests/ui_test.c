@@ -1083,6 +1083,46 @@ static int test_seed_layer(void)
     return bad;
 }
 
+/* EVOLVE's ROLL says what it did (issue #528): stopped, NEW LINE and the seed at once; playing, NEW LINE AT BAR while
+ * the seed waits, and nothing when turned back to the seed playing; ROLL ALL the same */
+static int test_roll_said(void)
+{
+    int bad = 0;
+    uint32_t tr;
+    int32_t s0;
+    ui_power_on();
+    go_title("GEN");
+    tr = song.sel;
+    tessera_param_set(tr, TX_MODE, TESS_ENG_TURING);
+    frame();
+    go_title("EVOLVE");
+    s0 = tessera_param_get(tr, TX_EV_SEED);
+    ui.msg_t = 0;
+    turn(EN_K4, 1);
+    bad += check("ROLL stopped: a new seed at once, NEW LINE said", tessera.seed[tr] == (uint32_t)s0 + 1u &&
+                 !tessera.roll[tr] && msg_is("NEW LINE"));
+    song.playing = 1;
+    ui.msg_t = 0;
+    turn(EN_K4, 1);
+    bad += check("..playing: the seed waits for the bar, NEW LINE AT BAR said", tessera.roll[tr] == (uint32_t)s0 + 2u &&
+                 msg_is("NEW LINE AT BAR"));
+    ui.msg_t = 0;
+    turn(EN_K4, -1);
+    bad += check("..turned back to the seed playing: nothing waits, nothing said", !tessera.roll[tr] && !ui.msg_t);
+    song.playing = 0;
+    fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+    frame();
+    ui.msg_t = 0;
+    turn(EN_K4, 1);
+    bad += check("ROLL ALL stopped: NEW LINE said", tessera.seed[tr] != (uint32_t)s0 + 1u && msg_is("NEW LINE"));
+    turn(EN_K4, -1);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
+    frame();
+    stop_transport();
+    tessera_param_set(tr, TX_MODE, TESS_ENG_OFF);
+    return bad;
+}
+
 /* GRIDS on GEN with OCT+ held: KNOB 1..4 KICK, SNR, HAT, TOMS (2 % a click), their help; no octave, no sheet; let go,
  * the knobs are MODE, X, Y, DENS again */
 static int test_grids_layer(void)
@@ -6678,6 +6718,7 @@ int main(void)
     bad += test_constel_layer();
     bad += test_grids_layer();
     bad += test_seed_layer();
+    bad += test_roll_said();
     bad += test_chord_user();
     bad += test_step_evolve();
     bad += test_div_order();

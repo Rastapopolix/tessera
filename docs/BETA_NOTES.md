@@ -12,6 +12,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 
 ## Fixed
 - Holding OCT- on EVOLVE or ENTRIES and letting go no longer takes you to HOME (#519).
+- EVOLVE's ROLL and ROLL ALL say NEW LINE on the screen (NEW LINE AT BAR while playing), so a turn is no longer silent when stopped (#528).
 
 ## Good to know
 - Projects saved with these new settings lose them on 3.4.x.
