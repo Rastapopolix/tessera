@@ -53,7 +53,7 @@
 0x03a MOD 4 SOURCE             track 0..10 def 0
 0x03b MOD 4 DESTINATION        track 0..20 def 0
 0x03c MOD 4 AMOUNT             track -64..63 def 0
-0x051 CHORD                    track 0..9 def 0
+0x051 CHORD                    track 0..13 def 0
 0x052 CHORD VOICING            track 0..4 def 0
 0x053 MPC DEGREE               track 1..12 def 1
 0x054 DRUM KICK                track 0..127 def 127

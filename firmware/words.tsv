@@ -241,6 +241,10 @@ DOM7	dominant seventh
 MAJ7	major seventh
 MIN7	minor seventh
 SUS4	suspended fourth
+SUS2	suspended second
+7SUS4	seventh, suspended fourth
+ADD9	added ninth
+MAJ6	major sixth chord
 AABA	A, A, B, A
 AABC	A, A, B, C
 ABAC	A, B, A, C

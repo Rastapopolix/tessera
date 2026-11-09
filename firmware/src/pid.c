@@ -313,8 +313,8 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
         "MOD route 4: what is moved (pitch, filter, shape, level, pan, LFO rate or depth, the engine's own)."),
     T_(P_M4AMT, "MOD 4 AMOUNT", "MOD route 4: how far, and which way."),
     T_(P_CHRD, "CHORD",
-        "One key plays a chord: in the scale (DIA3, DIA7) or a fixed kind (MAJ, MIN, 7ths, SUS4, POWER); OFF "
-        "plays one note."),
+        "One key plays a chord: in the scale (DIA3, DIA7) or a fixed kind (MAJ, MIN, 7ths, SUS4, POWER, SUS2, "
+        "7SUS4, ADD9, MAJ6); OFF plays one note."),
     T_(P_VOIC, "CHORD VOICING",
         "How the chord's notes are spread: close, open, an inversion, or with the root an octave down."),
     T_(P_MPCDEG, "MPC DEGREE", "With QUANTIZE MPC: the scale degree the pad H02 plays."),

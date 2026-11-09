@@ -179,7 +179,7 @@ sound pluck, swell or sustain.*
 | Page | What it lets you do | Reach for it when |
 |---|---|---|
 | SCALES, SCL | Choose the project's scale and key, how notes are snapped to it (QNT), and transpose a track. | Always, early on: every generator plays in this scale. |
-| CHORD | Set the chord kind and voicing a CHORD track (or QNT CHRD) uses. | You want sevenths, open voicings or power chords. |
+| CHORD | Set the chord kind and voicing a CHORD track (or QNT CHRD) uses. | You want sevenths, sus or add9 chords, open voicings or power chords. |
 | [USER scales](#your-own-scales-user1-to-user4) | Make up to four 12-note scales of your own on the keys. | No built-in scale is the one you hear. |
 | [Scala tunings](#your-own-tunings-scala-files) | Load your own microtonal tunings from the web editor. | You want to leave twelve-note tuning behind. |
 
@@ -760,7 +760,7 @@ BELL. The parts are also mod destinations: AT KICK, AT SNR, AT HAT, AT TOMS.
 | Knob | Setting | What it does |
 |---|---|---|
 | 1 | **OCTAVES** (−2 to +2) | The chords' register from their home around C3. |
-| 2 | **CHRD** | SCL > CHORD's chord kind: OFF plays triads; DIA3 and DIA7 triads and sevenths in the scale; MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW. |
+| 2 | **CHRD** | SCL > CHORD's chord kind: OFF plays triads; DIA3 and DIA7 triads and sevenths in the scale; MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9, MAJ6 (fixed shapes on any note). |
 | 3 | **VOICING** | CLOSE, OPEN, INV1, INV2 or +OCT. |
 | 4 | **BREATH** (0–100 %) | With HIT HOLD the chord breathes: each voice is struck again, softer, on a slow cycle of its own (11 to 19 s), and the same chord again is tied over. BREATH is the chance a voice above the lowest sits a cycle out; 0 (OFF) is off. |
 | 4 | **LENGTH** (USER only, in BREATH's place) | How many of USER's chords play, 1 to 8. |
@@ -1364,7 +1364,9 @@ link is saved with the project (a project saved before it loads as OWN). TRN sti
 A **CHORD** track plays a progression; with **QNT CHRD** the other tracks follow it.
 
 - On the CHORD track: GEN, MODE **CHORD**, then **PROG**, **BARS** and **HIT**. The chord's kind and voicing come
-  from **SCL > CHORD** (CHRD, VOIC), or the OCT+ layer. CHRD OFF plays triads.
+  from **SCL > CHORD** (CHRD, VOIC), or the OCT+ layer. CHRD OFF plays triads; DIA3 and DIA7
+  stay in the scale, the fixed kinds (MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9, MAJ6) lay the same shape
+  on every chord of the progression, so some may leave the key.
 - On any other track: **SCL**, **QNT** to **CHRD**. Its keys, its MIDI input and its generator snap to the nearest
   note of the chord playing now, and KNOB 2 on NOTES steps through its notes. With no CHORD track, CHRD acts as
   SNAP.
