@@ -65,7 +65,7 @@ Generators can be developed and tested on the PC; flash the device only to check
 
 - Follow the existing code conventions: the unity build (`melodee.c` and `tests/hostsim.c`
   `#include` the `.c` files), C style, naming, comment density. New sources go in both.
-- Prefer new files over heavy rewrites of shared upstream files, to keep upstream syncing easy.
+- Tessera is a hard fork. Rewrite or fold shared Melodee code when it makes Tessera cleaner or smaller. Port upstream fixes to low-level code (USB, audio, bootloader, flash) by hand when one turns up; don't merge upstream.
 - All hardware access stays behind the platform layer (`firmware/hal/`), so generator,
   sequencer, mod and UI code compiles for host tests and the web simulator.
 - Every automatic layer (Energy, Entries, Wander, Evolve, Gravity, the piece planner) has an
