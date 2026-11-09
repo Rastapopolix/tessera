@@ -801,6 +801,16 @@ static void draw_foot(void)
 #include "ui_stage.c"                                   /* Stage (HOME) */
 #include "ui_browser.c"                                 /* SAVE > PRESETS, the sound browser */
 #include "ui_patterns.c"                                /* SEQ > PATTERNS, SEQ > SONG */
+/* the layer's columns: KNOB 1 RANDOM (NEW >, BACK < with values kept), the others empty */
+static void pr_draw(void)
+{
+    uint32_t tr = song.sel;
+    draw_column(0, "RANDOM", pr_gen_track(tr) && pr_back_ok(tr) ? "BACK <" : "NEW >", "", pr_gen_track(tr) ? VAL(0u) : T_DIM,
+                -1, ICON_AUTO);
+    draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
+    draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+    draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+}
 static void draw_columns(void)
 {
     if (ui.home)                                        /* Stage: its knobs drop in when turned (ui_stage.c stage_knobs);
@@ -822,6 +832,10 @@ static void draw_columns(void)
         if(r && r->length){uint32_t x=((uint32_t)r->duration*(1u<<(r->owner>>5))*100u+RECORD_UNIT/2)/RECORD_UNIT;fmt_int(v,x/100);str_cpy(v+str_len(v),".",2);if(x%100<10)str_cpy(v+str_len(v),"0",2);fmt_int(v+str_len(v),x%100);}
         else str_cpy(v,"FREE",sizeof v);
         draw_column(3,"LENGTH",v,"",VAL(3u),-1,ICON_GATE);return;
+    }
+    if (pr_layer_on()) {                                /* GEN, TWEAK, OCT- held: RANDOM (page_random.c) */
+        pr_draw();
+        return;
     }
 
     uint32_t c;
