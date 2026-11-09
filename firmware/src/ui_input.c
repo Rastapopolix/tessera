@@ -871,6 +871,12 @@ static void native_motion(const uint8_t *old)
     if (!designer_on() && !momentary.active && motion_native_edited(TSEL, old))
         motion_unplayed();
 }
+/* ROLL and ROLL ALL said on the screen (issue #528: a new seed changes values on the other pages, so this one gave
+ * no sign): stopped, the new line is there at once; playing, it starts on the next bar line */
+static void roll_said(void)
+{
+    ui_say("NEW LINE", song.playing ? " AT BAR" : "");
+}
 static void edit_param(uint32_t slot, int32_t steps)
 {
     int16_t *vp;
@@ -953,13 +959,17 @@ static void edit_param(uint32_t slot, int32_t steps)
         return;
     }
     if (pg->graph == GR_EVOLVE && rall_layer_on()) {   /* EVOLVE, OCT- held: KNOB 4 ROLL ALL (right new, left back) */
-        if (slot == 3u && steps) tessera_roll_all(steps > 0 ? 1 : -1);
+        if (slot == 3u && steps && tessera_roll_all(steps > 0 ? 1 : -1)) roll_said();
         oct_eat |= 1u;                                  /* (its release is no OCT-) */
         ui.force = 1;
         return;
     }
     if (pg->graph == GR_EVOLVE) {                   /* (ROLL: 128 seeds, a quick turn across them) */
+        int32_t was = slot == 3u ? tessera_param_get(song.sel, TX_EV_SEED) : 0;
         tessera_evolve_knob(slot, slot == 3u ? accel(EN_K1 + slot, steps, 128) : steps);
+        if (slot == 3u && !tessera_step_on(song.sel) && tessera_param_get(song.sel, TX_EV_SEED) != was &&
+            (!song.playing || tessera.roll[song.sel % TESSERA_TRACKS]))
+            roll_said();                            /* (playing, turned back to the seed playing: nothing waits) */
         ui.force = 1;
         return;
     }
