@@ -96,6 +96,51 @@ int main(int argc, char **argv)
         draw(S_HOME);
         write_ppm(out, UI_PALETTES[i].name, name);
     }
-    printf("gallery_render: %u screens and the inks in %s\n", (unsigned)NELEM(SHOTS), out);
+    /* GROUND LIGHT (MENU > GROUND): HOME in each ink's light version, paper_<name>, and a few screens on paper in the
+     * default ink's, paper_<screen> (the landscape, the menu and COLOR's sheet: where the dark look was assumed) */
+    ux_ground = 1;
+    for (i = 0; i < UI_NPALETTES; i++) {
+        char name[32], *c;
+        snprintf(name, sizeof name, "paper_%s", UI_PALETTES[i].name);
+        for (c = name; *c; c++) *c = *c == ' ' ? '_' : *c >= 'A' && *c <= 'Z' ? (char)(*c + 32) : *c;
+        cur_name = name;
+        setup(S_HOME);
+        pal(i);
+        draw(S_HOME);
+        write_ppm(out, UI_PALETTES[i].name, name);
+    }
+    {
+        static const gshot_t LIGHT[] = {
+            {"paper_menu", G_SCENE, S_MENU}, {"paper_colors", G_SCENE, S_MENU_COLORS},
+            {"paper_land", G_SCENE, S_GLO_LAND}, {"paper_land_rain", G_SCENE, S_GLO_LAND_RAIN},
+            {"paper_turing", G_SCENE, S_GEN_TURING}, {"paper_constel", G_SCENE, S_GEN_CONSTEL},
+            {"paper_cords", G_SCENE, S_CORDS}, {"paper_mixer", G_SCENE, S_MIXER}, {"paper_drum", G_SCENE, S_DRUM},
+            {"paper_patterns", G_SCENE, S_PATGRID}, {"paper_notes", G_SCENE, S_NOTES_MIXED},
+            {"paper_help", G_SCENE, S_HELP}, {"paper_about", G_SCENE, S_ABOUT}, {"paper_knobs_bar", G_SCENE, S_KNOBS_BAR},
+        };
+        for (i = 0; i < NELEM(LIGHT); i++) {
+            cur_name = LIGHT[i].name;
+            setup(LIGHT[i].scene);
+            pal(UI_DEFAULT_INDEX);
+            draw(LIGHT[i].scene);
+            write_ppm(out, UI_PALETTES[UI_DEFAULT_INDEX].name, LIGHT[i].name);
+        }
+        for (i = 0; i < UI_NPALETTES; i++)              /* each MOSAIC's landscape and COLOR's sheet */
+            if (UI_PALETTES[i].trk[0] != UI_PALETTES[i].trk[1]) {
+                char name[40], *c;
+                int k;
+                for (k = 0; k < 2; k++) {
+                    snprintf(name, sizeof name, "paper_%s_%s", k ? "colors" : "land", UI_PALETTES[i].name);
+                    for (c = name; *c; c++) *c = *c >= 'A' && *c <= 'Z' ? (char)(*c + 32) : *c;
+                    cur_name = name;
+                    setup(k ? S_MENU_COLORS : S_GLO_LAND_RAIN);
+                    pal(i);
+                    draw(k ? S_MENU_COLORS : S_GLO_LAND_RAIN);
+                    write_ppm(out, UI_PALETTES[i].name, name);
+                }
+            }
+    }
+    ux_ground = 0;
+    printf("gallery_render: %u screens, the inks and the light ground in %s\n", (unsigned)NELEM(SHOTS), out);
     return 0;
 }

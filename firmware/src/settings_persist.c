@@ -21,6 +21,8 @@
  * the root, or above 12 bits) a slot never set: MAJ. Older firmware keeps them with the favorites, unread.
  * favorites.factory[8][27]: tagged NOTE PREVIEW OFF (since 3.3); any other byte ON, so units that never chose get it
  * ON. The old recording-preferences bit 6 is still written for older firmware, and no longer read.
+ * favorites.factory[8][29]: tagged GROUND LIGHT (Mono, gfx.c ux_ground; since 3.5); any other byte DARK. The palette id
+ * stays as it was, so older firmware keeps the ink (on black).
  * bold: no longer used (one font weight); kept as it was saved, unless it holds the HOLD setting (panel.c). */
 typedef struct {
     uint32_t magic, palette, lowcut, zoom;
@@ -43,6 +45,7 @@ static int16_t settings_glo[4];                     /* ext.glo: project.c GLO_KE
 #define A4_TAG 0x41340000u                          /* "A4": old spare contents are not tuning */
 #define AUTOSAVE_OFF_TAG 0xA1u                     /* CZ row byte 28: only this tag disables autosave */
 #define PREVIEW_OFF_TAG 0xB2u                      /* GRAIN row byte 27: only this tag turns NOTE PREVIEW off */
+#define GROUND_LIGHT_TAG 0xB5u                     /* GRAIN row byte 29: only this tag puts the screen on paper */
 /* Retired DIGITAL row, outside all live preset/settings bits. Kept by older
  * Melodee builds along with the other favorites; no layout or magic change. */
 static const uint8_t SETTINGS_OWNER[4] = {'M', 'D', 'S', 1};
@@ -121,6 +124,9 @@ static int settings_import(persist_t *p, int n)
         uscale_mask[k] = (uint16_t)(uscale_ok(m) ? m : USCALE_DEF);
     }
     settings_preview = p->favorites.factory[8][27] != PREVIEW_OFF_TAG;   /* (rp bit 6: older firmware's, not read) */
+#if MELODEE_LOOK
+    ux_ground = p->favorites.factory[8][29] == GROUND_LIGHT_TAG;
+#endif
     settings_chord_add = (uint8_t)((rp >> 7) & 1u);
     settings_hold = (uint8_t)hold_from_stored(p->bold);
 #ifdef MELODEE_FAVORITES
@@ -164,6 +170,9 @@ static void settings_export(persist_t *p)
 #endif
     p->favorites.factory[15][27]=settings_screen;
     p->favorites.factory[8][27] = settings_preview ? 0u : PREVIEW_OFF_TAG;
+#if MELODEE_LOOK
+    p->favorites.factory[8][29] = ux_ground ? GROUND_LIGHT_TAG : 0u;
+#endif
     for (uint32_t k = 0; k < USCALE_SLOTS; k++) {
         uint8_t *u = p->favorites.factory[USB_VOLUME_ROW] + USCALE_BYTE + 2u * k;
         uint32_t m = uscale_mask[k] == USCALE_DEF ? 0u : uscale_mask[k];
