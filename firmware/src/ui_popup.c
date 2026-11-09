@@ -363,8 +363,8 @@ static uint32_t page_sheet(void)
         return 2;
     if (cur_page()->graph == GR_PATGRID)
         return 4;
-    if (cur_page()->graph == GR_ROLL || cur_page()->graph == GR_STEPS)
-        return 3;
+    if (cur_page()->graph == GR_ROLL || (cur_page()->graph == GR_STEPS && (cur_page()->fam != FAM_GEN || gen_pattern_page(cur_page()))))
+        return 3;                                       /* (GEN: only STEP and ARP's pattern page; a generator's is PATTERN) */
     fam = cur_page()->fam;
     return fam == FAM_EDIT || fam == FAM_ENV || fam == FAM_LFO || fam == FAM_FX ? 1u : 0u;
 }
