@@ -1504,6 +1504,106 @@ static void br_check(char *res, size_t cap)
     snprintf(res, cap, "%u", (unsigned)ok);
 }
 
+/* ------------------------------------------------------------- STRUM --- */
+/* CHORD on track 0, POP a chord a bar (2 s at 120 BPM), HIT hit, for 8 s with STRUM ms, DIR dir (RATCH ratch); the log
+ * of its notes (tt_ev). Returns its voices still gated after the STOP */
+static uint32_t st_play(uint32_t ms, uint32_t dir, uint32_t hit, uint32_t ratch)
+{
+    uint32_t f, total, i;
+    int32_t o[2 * CTL];
+    host_tracks_init();
+    tessera_reset();
+    song.g[G_BPM] = 120;
+    for (i = 0; i < NTRK; i++) tt_open[i] = -1;
+    tt_n = tt_blk = 0;
+    gen(0, TESS_ENG_CHORD);
+    tessera_param_set(0, TX_CH_PROG, GEN_CH_POP);
+    tessera_param_set(0, TX_CH_BARS, 1);
+    tessera_param_set(0, TX_CH_HIT, (int32_t)hit);
+    tessera_param_set(0, TX_CH_STRUM, (int32_t)ms);
+    tessera_param_set(0, TX_CH_SDIR, (int32_t)dir);
+    tessera_param_set(0, TX_SUB_RATCH, (int32_t)ratch);
+    rng_state = 0x5354u;
+    total = 8u * FS / CTL * CTL;
+    transport_req = 1;
+    for (f = 0; f < total + 4u * CTL; f += CTL) {
+        if (f >= total) transport_req = 2;
+        mix_block(o, CTL);
+        tt_blk++;
+    }
+    return nl_gates(0);
+}
+/* the log's strikes: a new one after a gap of more than `gap` blocks, or (gap 0) where the pitch stops rising. Each
+ * strike's notes in order: their first event into first[] (up to 64); returns how many */
+static uint32_t st_strikes(uint32_t gap, uint32_t *first)
+{
+    uint32_t i, n = 0;
+    for (i = 0; i < tt_n && n < 64u; i++)
+        if (!i || (gap ? tt_ev[i].blk - tt_ev[i - 1u].blk > gap : tt_ev[i].note <= tt_ev[i - 1u].note)) first[n++] = i;
+    first[n] = tt_n;
+    return n;
+}
+/* strike s: its notes rising (1), falling (-1), or neither (0); *gmin, *gmax the blocks between its notes; *spread first
+ * to last; *same 1 when all of one velocity */
+static int st_shape(const uint32_t *first, uint32_t s, uint32_t *gmin, uint32_t *gmax, uint32_t *spread, uint32_t *same)
+{
+    uint32_t i, up = 1, dn = 1;
+    *gmin = 0xFFFFFFFFu; *gmax = 0; *same = 1;
+    for (i = first[s] + 1u; i < first[s + 1u]; i++) {
+        uint32_t d = tt_ev[i].blk - tt_ev[i - 1u].blk;
+        *gmin = d < *gmin ? d : *gmin;
+        *gmax = d > *gmax ? d : *gmax;
+        up &= tt_ev[i].note > tt_ev[i - 1u].note;
+        dn &= tt_ev[i].note < tt_ev[i - 1u].note;
+        *same &= tt_ev[i].vel == tt_ev[first[s]].vel;
+    }
+    *spread = tt_ev[first[s + 1u] - 1u].blk - tt_ev[first[s]].blk;
+    return up ? 1 : dn ? -1 : 0;
+}
+/* "1": OFF strikes each chord in one block; 20 ms UP: lowest first, 28 blocks (20 ms) apart, one velocity; DOWN
+ * highest first; ALT up, down, up ..; HIT STEP at 60 ms: every note of every strike, the spread kept to half the
+ * gate; with RATCH x2 too; nothing held after STOP */
+static void st_check(char *res, size_t cap)
+{
+    uint32_t ok = 1, first[65], n, s, gmin, gmax, spread, same, held, bad = 0;
+    held = st_play(0, TESS_STR_UP, GEN_CH_HOLD, 0);
+    n = st_strikes(60u, first);
+    for (s = 0; s < n; s++) bad += st_shape(first, s, &gmin, &gmax, &spread, &same) == 0 || spread || first[s + 1u] - first[s] != 3u;
+    printf("strum: OFF: %u strikes, %u not at once, %u held\n", (unsigned)n, (unsigned)bad, (unsigned)held);
+    ok &= n == 4u && !bad && !held;
+    for (uint32_t d = 0; d < TESS_STR_DIRS; d++) {
+        held = st_play(20, d, GEN_CH_HOLD, 0);
+        n = st_strikes(60u, first);
+        bad = 0;
+        for (s = 0; s < n; s++) {
+            int sh = st_shape(first, s, &gmin, &gmax, &spread, &same), want = d == TESS_STR_UP ? 1 : d == TESS_STR_DOWN ? -1 :
+                (s & 1u) ? -1 : 1;
+            bad += sh != want || gmin < 27u || gmax > 29u || !same || first[s + 1u] - first[s] != 3u;
+        }
+        printf("strum: 20 ms %s: %u strikes, %u wrong, gaps %u..%u blocks, %u held\n",
+               d == TESS_STR_UP ? "UP" : d == TESS_STR_DOWN ? "DOWN" : "ALT", (unsigned)n, (unsigned)bad, (unsigned)gmin,
+               (unsigned)gmax, (unsigned)held);
+        ok &= n == 4u && !bad && !held;
+    }
+    for (uint32_t r = 0; r < 2u; r++) {                 /* (HIT STEP, 1/16: 172 blocks a step; RATCH x1, x2) */
+        uint32_t most = 0;
+        held = st_play(60, TESS_STR_UP, GEN_CH_STEP, r);
+        n = st_strikes(0, first);
+        bad = 0;
+        for (s = 0; s < n; s++) {
+            st_shape(first, s, &gmin, &gmax, &spread, &same);
+            most = spread > most ? spread : most;
+            bad += first[s + 1u] - first[s] != 3u && (r == 0u || first[s + 1u] - first[s] == 0u);
+        }
+        printf("strum: 60 ms, HIT STEP, RATCH x%u: %u notes, %u strikes, %u short, spread at most %u blocks, %u held\n",
+               (unsigned)(r + 1u), (unsigned)tt_n, (unsigned)n, (unsigned)bad, (unsigned)most, (unsigned)held);
+        if (r) ok &= tt_n >= 4u * 60u && !held;        /* (x2: the repeat strikes all of it, the notes still queued
+                                                        * with it: every hit at least its first note and the repeat) */
+        else ok &= n >= 60u && !bad && most > 0u && most <= 86u && !held;
+    }
+    snprintf(res, cap, "%u", (unsigned)ok);
+}
+
 /* ------------------------------------------------- PITCH ACCUMULATOR --- */
 /* a STEP track (C major, 1/16, LEN 4) for `passes` passes: step 1 C4 Accumulate +2, step 2 E4 + G4 -1, step 3 a TIE,
  * step 4 C5 none; LIMIT lim, MODE mode, QNT q. Its notes in order into out[] (up to max); returns how many. stop_at: a
@@ -3742,6 +3842,27 @@ int main(int argc, char **argv)
         }
         bad += check("BREATH: the drone tied over, its voices breathing on their own slow cycles; 0 strikes it as before; "
                      "the same with the same SEED; STOP releases", ok);
+    }
+    {   /* STRUM (CHORD) */
+        unsigned ok = 0;
+        pid_t pid;
+        int fd[2];
+        fflush(stdout);
+        if (!pipe(fd) && (pid = fork()) >= 0) {
+            if (!pid) {
+                close(fd[0]);
+                st_check(res, sizeof res);
+                fflush(stdout);
+                if (write(fd[1], res, strlen(res) + 1u) < 0) _exit(1);
+                _exit(0);
+            }
+            close(fd[1]);
+            if (read(fd[0], res, sizeof res - 1u) > 0) sscanf(res, "%u", &ok);
+            close(fd[0]);
+            waitpid(pid, 0, 0);
+        }
+        bad += check("STRUM: OFF strikes at once; UP, DOWN, ALT a chord's notes 20 ms apart in order; short HIT STEP "
+                     "strikes keep every note, the spread kept to half the gate, with RATCH too; STOP releases", ok);
     }
     {   /* ENERGY (energy.c) */
         unsigned ok = 0;

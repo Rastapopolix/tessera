@@ -53,11 +53,12 @@ static uint32_t seq_split_n[NTRK];                      /* SPLIT's draws since P
 static uint32_t seq_split_step(const track_t *t, const step_t *s, uint32_t tr);
 static void seq_split_done(track_t *t, uint32_t tr);
 
-/* PLAY, STOP: nothing recorded, armed or held on any track */
+/* PLAY, STOP: nothing recorded, armed or held on any track (STRUM: nothing queued, ALT from UP) */
 static void seq_sub_clear(void)
 {
-    seq_sub_rec = seq_sub_armed = seq_nudge_due = seq_nudge_early = seq_hum_due = 0;
-    for (uint32_t k = 0; k < NTRK; k++) seq_hum_n[k] = seq_humv_n[k] = seq_split_n[k] = seq_split[k] = arp_draws[k] = 0;
+    seq_sub_rec = seq_sub_armed = seq_nudge_due = seq_nudge_early = seq_hum_due = seq_st_alt = 0;
+    for (uint32_t k = 0; k < NTRK; k++)
+        seq_hum_n[k] = seq_humv_n[k] = seq_split_n[k] = seq_split[k] = arp_draws[k] = seq_st[k].n = 0;
 }
 
 /* A step starts: what it plays is recorded from here, the last step's repeats are dropped */
@@ -142,6 +143,7 @@ static void seq_sub_tick(track_t *t, uint32_t cur_len)
     if (!(seq_sub_armed & (1u << tr))) return;
     while (s->left && t->seq_pos >= s->next && s->next < cur_len) {
         seq_release(t);
+        seq_st[tr].n = 0;                               /* (STRUM: the repeat strikes all of it) */
         for (i = 0; i < s->n; i++) {
             SUB_NOTE_ON(t, s->note[i], s->vel[i]);
             t->seq_notes[i] = s->note[i];

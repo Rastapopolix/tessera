@@ -20,7 +20,8 @@ static void check(const char *what, int ok)
 
 static int tx_retired(uint32_t x)                 /* CELLS' (cut 2026-10-20): gaps in the TX ids */
 {
-    return x == TX_CL_RULE_RETIRED || x == TX_CL_TAP_RETIRED || x == TX_CL_SPAN_RETIRED;
+    return x == TX_CL_RULE_RETIRED || x == TX_CL_TAP_RETIRED || x == TX_CL_SPAN_RETIRED ||
+           x == TX_SEQ_DIR_RESERVED;                  /* (claimed by feat/step-dir: a gap until it lands) */
 }
 static int retired(uint32_t p)                    /* DIGITAL's OP ENV / OP LEVEL (params.c: inert, on no page) */
 {
@@ -158,7 +159,7 @@ int main(int argc, char **argv)
     check("pid_find: nothing for a gap (a reserved id, past the end)",
           !pid_find(PID_TRACK(P_RESERVED33)) && !pid_find(PID_GLOBAL(G_COUNT)) && !pid_find(PID_TESS(TX_COUNT)));
     snprintf(what, sizeof what, "help: every one of the %u has its text (Tessera's %u among them)", n, helped_x);
-    check(what, helped == n && helped_x == TX_COUNT - 3u);   /* (CELLS' three retired) */
+    check(what, helped == n && helped_x == TX_COUNT - 4u);   /* (CELLS' three retired, one reserved) */
 
     /* get and set: both ends, and past them clamped (every track: PULSES and ROT need STEPS 32 first) */
     pid_set(PID_TESS(TX_MODE), 1, TESS_ENG_MARKOV);           /* (LOCK: Markov's own) */
