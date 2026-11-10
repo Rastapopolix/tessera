@@ -27,6 +27,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - PIECE, SHAPE USER: hold OCT-, KNOB 1 picks one of the eight points, KNOB 2 sets its level, with the shape in view (was OCT+ / OCT- held for points 1 to 4 / 5 to 8).
 - Manual: recording the four tracks as separate stems over USB (USB OUTPUT 4 TRACKS), for macOS and Windows; on Windows, Live needs an ASIO wrapper such as FlexASIO for more than two channels.
 - MIX buses: BUS A and BUS B, two mixers for mods. Send any mods into a bus (the end of KNOB 3's list on MODS) and use the bus as a source (the end of KNOB 1's list). Hold OCT+ on MODS for its sheet: each bus's Mode (SUM, MAX, MIN, DIFF: with gates OR, AND, XOR) and Lag (OFF, 10 ms to 20 s: a gate into a lagged bus is an envelope). A bus can feed itself, one block late, safely.
+- EOC: a new source on every track, the LFO's cycle start as a gate (high from each wrap until an eighth of the cycle has passed). Last in a track's source list on MODS. Use it as a GATE mod: onto FILL, a bus, a mod's amount. A project that uses it does not load on older firmware.
 
 ## Fixed
 - SCL > SCALES with a USER scale picked: the keys light and play by their own note whatever QNT is; with QNT on they were snapped and lit wrong (#559).

@@ -125,7 +125,7 @@ static const char *const CORD_SRC_NAME[CS_N] = {"--", "LFO", "ENV", "VEL", "KEY"
                                                 "SLEW", "GATE", "NOTE", "CV", "DRIFT", "TIDE 1", "TIDE 3",
                                                 "TIDE 2", "SWARM 1", "SWARM 2", "SWARM 3", "SWARM 4", "SWARM 5", "SWARM 6",
                                                 "SWARM 7", "SWARM 8", "ENERGY", "MACRO 1",
-                                                "MACRO 2", "MACRO 3", "MACRO 4", "BUS A", "BUS B"};   /* (TIDE by speed: CS_TORPOR 1, CS_INERTIA 2, CS_APATHY 3) */
+                                                "MACRO 2", "MACRO 3", "MACRO 4", "BUS A", "BUS B", "EOC"};   /* (TIDE by speed: CS_TORPOR 1, CS_INERTIA 2, CS_APATHY 3) */
 const char *cord_src_name(uint32_t code) { return code < CS_N ? CORD_SRC_NAME[code] : 0; }
 
 /* DRIFT: each track's slow wander, -1..1: a point every 2^14 audio blocks (11.9 s), the way between them eased
@@ -191,6 +191,8 @@ static int32_t cord_src(uint32_t s, uint32_t tr)
         return cord_drift(tr % NTRK);
     if (s == CS_ENERGY)
         return energy_now();
+    if (s == CS_EOC)                                    /* (the LFO's cycle start: voice.c lfo_eoc, the first eighth) */
+        return lfo_eoc_now(t) ? 32767 : 0;
     if (s >= CS_BUSA)                                   /* (the MIX buses, the project's: one block late) */
         return cord_bus_out[(s - CS_BUSA) & 1u];
     if (s >= CS_MACRO1)                                 /* (PERF's, the project's: 0..1) */
@@ -205,7 +207,7 @@ static int32_t cord_src(uint32_t s, uint32_t tr)
 static int cord_bipolar(uint32_t s, uint32_t tr)
 {
     (void)tr;
-    return s == CS_NOTE || s == CS_DRIFT || (s >= CS_TORPOR && s < CS_MACRO1) || s == CS_LFO || s >= CS_BUSA ||
+    return s == CS_NOTE || s == CS_DRIFT || (s >= CS_TORPOR && s < CS_MACRO1) || s == CS_LFO || (s >= CS_BUSA && s != CS_EOC) ||
            (s < CS_GATE && MS_BIPOLAR(s));             /* (CV: 0..1) */
 }
 
@@ -236,7 +238,7 @@ static int32_t cord_val(const cord_t *c, int32_t own)
 /* ------------------------------------------------------------ the cords --- */
 static cord_t cords[CORD_MAX];
 _Static_assert(CD_FILL == 100 && CD_TEMPO == 101 && CD_CC == 102 && CD_SUB_SPLIT == 103 && CD_SEQ_DIR == 104 &&
-               CD_BUS_A == 105 && CD_BUS_B == 106 && CS_MACRO4 == 30 && CS_BUSA == 31 && CS_BUSB == 32,
+               CD_BUS_A == 105 && CD_BUS_B == 106 && CS_MACRO4 == 30 && CS_BUSA == 31 && CS_BUSB == 32 && CS_EOC == 33,
                "cord codes are saved: never renumbered");
 /* CC OUT: each cord's CC number (0..119), the value it last sent (0xFF none yet) and the block it went at */
 static uint8_t cord_ccn[CORD_LIVE] = {[0 ... CORD_LIVE - 1] = 1}, cord_cc_was[CORD_LIVE] = {[0 ... CORD_LIVE - 1] = 0xFF};

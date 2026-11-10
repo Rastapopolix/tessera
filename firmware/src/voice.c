@@ -70,6 +70,8 @@ static __attribute__((noinline)) uint32_t lfo_sync_inc(const track_t *t)   /* (n
     return inc;
 }
 
+static uint8_t lfo_eoc;                              /* bit tr: its LFO wrapped and the first eighth of the cycle is not over */
+static int lfo_eoc_now(const track_t *t) { return (lfo_eoc >> ((uint32_t)(t - trk) % NTRK)) & 1u; }   /* (cord.c CS_EOC) */
 static void track_lfo_tick(track_t *t)
 {
     uint32_t old = t->lfo_ph;
@@ -77,7 +79,9 @@ static void track_lfo_tick(track_t *t)
     if (t->lfo_ph < old) {
         t->lfo_prev = (int16_t)mod_sh(t);               /* mod.c SLEW: it glides on from there */
         t->lfo_rnd = lfo_rand(t);
-    }
+        lfo_eoc |= (uint8_t)(1u << ((uint32_t)(t - trk) % NTRK));   /* (EOC: a wrap, not a TRIG or PLAY phase set) */
+    } else if (t->lfo_ph >= 0x20000000u)
+        lfo_eoc &= (uint8_t)~(1u << ((uint32_t)(t - trk) % NTRK));
     t->lfo_val = lfo_wave(t, t->lfo_ph);
     if (t->p[P_LPOL])                                   /* UNI: 0..+1 (the depths reach as far, one way only) */
         t->lfo_val = (t->lfo_val + 32768) >> 1;
