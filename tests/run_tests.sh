@@ -99,6 +99,9 @@
 #                   ENTRIES 0 with the rest turned plays the same notes.
 # SPLIT (tests/split_test.c): TIMING's SPLIT through the real sequencer, read off MIDI OUT.
 # FOLLOW (tests/follow_test.c): FOLLOW's HOW and RHYTHM through the real sequencer, read off MIDI OUT.
+# CLOCK (tests/cordclock_test.c): a generator track stepped by a CLOCK cord (cord.c, seq.c seq_grid_tick): the DIV clock
+#                   replaced, the first step at PLAY, the division and the edge, hits, the wait for DIV, STOP, a cord
+#                   put on and taken off, no cord / AMOUNT 0 as before.
 # PIECE (tests/planner_test.c): the piece planner (planner.c): the ten SHAPEs (range, PEAK, COUNT, USER, sparse ends),
 #                   LENGTH FREE with the rest turned plays the same notes, a 10-minute ARCH (intro, top, outro, the
 #                   CHAIN home for its last 15 %, ENERGY its curve, CONTRAST near the top), END STOP / LOOP / NEW / FREE,
@@ -133,8 +136,8 @@ start=$(date +%s)
 # ------------------------------------------------------------------ QUICK ---
 # qmap FILE: the jobs (QSEL) and regress's engines (QENG) for a changed file; returns 1 when no rule covers it.
 G_UI="ui_renders ui_test speak_test layer_screen_test theme_test text_ref_test text_spacing_test msg_len_test"
-G_SEQ="seq_edit_test seq_notes_test pattern_test note_tools_test swing_test split_test follow_test motion_test recording_test"
-G_GEN="gen_test tessera_test chain_test entries_test planner_test split_test follow_test"
+G_SEQ="seq_edit_test seq_notes_test pattern_test note_tools_test swing_test split_test follow_test cordclock_test motion_test recording_test"
+G_GEN="gen_test tessera_test chain_test entries_test planner_test split_test follow_test cordclock_test"
 G_STORE="storage_test persistence_test upgrade_test backup_test demo_projects settings_test upreset_test storage_safety_test
     settings_origin_test preset_boot_reset_test fm6_preset_test"
 G_MIDI="midi_control_test midi_out_test midi_timing_test midi_scale_test midi_uart_test recording_test"
@@ -561,6 +564,8 @@ if core && [ $TABLES = 1 ]; then
         split_test -O1 $FW
     t "FOLLOW: HOW and RHYTHM on a STEP melody: SAME / OWN unchanged, SOURCE, BOTH, CHORD, CONTRA, BASS, CANON; a muted lead" \
         follow_test -O1 $FW
+    t "CLOCK cord: a generator stepped by its CLOCK cord: replaced DIV, PLAY, division, edge, hits, wait, STOP; no cord unchanged" \
+        cordclock_test -O1 $FW
     t "PIECE: the planner: the SHAPEs, FREE unchanged, ENERGY / Entries / the CHAIN steered, END STOP LOOP NEW FREE, tempo" \
         planner_test -O2 $FW
     t "GEN: each generator on its own (gen.c alone): ranges, rests, draws per step, determinism, mutation, sections" \

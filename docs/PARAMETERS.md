@@ -413,36 +413,37 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | FX3 CHR | the audio block | the track's FX 3 fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
 | SEND 2 | the audio block | how much of the track goes to SEND FX 2 (FX MODE SPLIT) |
 | SEND 3 | the audio block | how much of the track goes to SEND FX 3 (FX MODE SPLIT) |
-| SF1 MIX | the send effects' block (every track's) | SEND FX 1's MIX, for every track (the project's) |
-| SF1 RTE | the send effects' block (every track's) | SEND FX 1's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
-| SF1 CHR | the send effects' block (every track's) | SEND FX 1's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
-| SF2 MIX | the send effects' block (every track's) | SEND FX 2's MIX, for every track (the project's) |
-| SF2 RTE | the send effects' block (every track's) | SEND FX 2's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
-| SF2 CHR | the send effects' block (every track's) | SEND FX 2's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
-| SF3 MIX | the send effects' block (every track's) | SEND FX 3's MIX, for every track (the project's) |
-| SF3 RTE | the send effects' block (every track's) | SEND FX 3's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
-| SF3 CHR | the send effects' block (every track's) | SEND FX 3's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
-| RETURN | the send effects' block (every track's) | the send effects' RETURN: how loud they come back, for every track |
-| M1 AMT | another mod's move, each block | MOD 1's AMOUNT (a fixed mod's OFFSET), turned by another mod |
-| M2 AMT | another mod's move, each block | MOD 2's AMOUNT (a fixed mod's OFFSET), turned by another mod |
-| M3 AMT | another mod's move, each block | MOD 3's AMOUNT (a fixed mod's OFFSET), turned by another mod |
-| M4 AMT | another mod's move, each block | MOD 4's AMOUNT (a fixed mod's OFFSET), turned by another mod |
-| M5 AMT | another mod's move, each block | MOD 5's AMOUNT (a fixed mod's OFFSET), turned by another mod |
-| M6 AMT | another mod's move, each block | MOD 6's AMOUNT (a fixed mod's OFFSET), turned by another mod |
-| M7 AMT | another mod's move, each block | MOD 7's AMOUNT (a fixed mod's OFFSET), turned by another mod |
-| M8 AMT | another mod's move, each block | MOD 8's AMOUNT (a fixed mod's OFFSET), turned by another mod |
-| M9 AMT | another mod's move, each block | MOD 9's AMOUNT (a fixed mod's OFFSET), turned by another mod |
-| M10 AMT | another mod's move, each block | MOD 10's AMOUNT (a fixed mod's OFFSET), turned by another mod |
-| M11 AMT | another mod's move, each block | MOD 11's AMOUNT (a fixed mod's OFFSET), turned by another mod |
-| M12 AMT | another mod's move, each block | MOD 12's AMOUNT (a fixed mod's OFFSET), turned by another mod |
-| M13 AMT | another mod's move, each block | MOD 13's AMOUNT (a fixed mod's OFFSET), turned by another mod |
-| M14 AMT | another mod's move, each block | MOD 14's AMOUNT (a fixed mod's OFFSET), turned by another mod |
-| M15 AMT | another mod's move, each block | MOD 15's AMOUNT (a fixed mod's OFFSET), turned by another mod |
-| M16 AMT | another mod's move, each block | MOD 16's AMOUNT (a fixed mod's OFFSET), turned by another mod |
-| FILL | the project's FILL, each block | the project's FILL (steps set to FILL / NOT FILL), held while the move is past half |
-| TEMPO | the project's tempo on CLK INT, each block | the project's tempo on CLK INT: a full move up doubles it, down halves it (BPM stays as set) |
+| SF1 MIX | another mod's move, each block | SEND FX 1's MIX, for every track (the project's) |
+| SF1 RTE | another mod's move, each block | SEND FX 1's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
+| SF1 CHR | another mod's move, each block | SEND FX 1's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
+| SF2 MIX | another mod's move, each block | SEND FX 2's MIX, for every track (the project's) |
+| SF2 RTE | another mod's move, each block | SEND FX 2's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
+| SF2 CHR | another mod's move, each block | SEND FX 2's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
+| SF3 MIX | another mod's move, each block | SEND FX 3's MIX, for every track (the project's) |
+| SF3 RTE | another mod's move, each block | SEND FX 3's RATE (ECHO: its TIME, gliding; ROOM, REVERB: SIZE) |
+| SF3 CHR | another mod's move, each block | SEND FX 3's fourth knob (DEPTH, REPEAT, DECAY ..: the effect's) |
+| RETURN | another mod's move, each block | the send effects' RETURN: how loud they come back, for every track |
+| M1 AMT | the project's FILL, each block | MOD 1's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M2 AMT | the project's FILL, each block | MOD 2's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M3 AMT | the project's FILL, each block | MOD 3's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M4 AMT | the project's FILL, each block | MOD 4's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M5 AMT | the project's FILL, each block | MOD 5's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M6 AMT | the project's FILL, each block | MOD 6's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M7 AMT | the project's FILL, each block | MOD 7's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M8 AMT | the project's FILL, each block | MOD 8's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M9 AMT | the project's FILL, each block | MOD 9's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M10 AMT | the project's FILL, each block | MOD 10's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M11 AMT | the project's FILL, each block | MOD 11's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M12 AMT | the project's FILL, each block | MOD 12's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M13 AMT | the project's FILL, each block | MOD 13's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M14 AMT | the project's FILL, each block | MOD 14's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M15 AMT | the project's FILL, each block | MOD 15's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| M16 AMT | the project's FILL, each block | MOD 16's AMOUNT (a fixed mod's OFFSET), turned by another mod |
+| FILL | the project's tempo on CLK INT, each block | the project's FILL (steps set to FILL / NOT FILL), held while the move is past half |
+| TEMPO | the project's MIX bus, each block | the project's tempo on CLK INT: a full move up doubles it, down halves it (BPM stays as set) |
 | CC | a MIDI CC out, each block | a MIDI CC out on the track's MIDI OUT channel, its number set with OCT- held and KNOB 3 |
 | SPLIT | the generator's step | TIMING's SPLIT: the chance a step plays at half its division |
 | DIR | the generator's step | the STEP pattern's DIR, stepped: FWD BACK PEND PONG RAND DRUNK from the pattern's own |
-| BUS A | the project's MIX bus, each block | the project's MIX bus A: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS A |
-| BUS B | the project's MIX bus, each block | the project's MIX bus B: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS B |
+| BUS A | (null) | the project's MIX bus A: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS A |
+| BUS B | (null) | the project's MIX bus B: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS B |
+| CLOCK | the send effects' block (every track's) | steps the track's generator on each edge of the source, in place of its DIV (a GATE cord: OFFSET the threshold, a GATE source counts hits); AMOUNT is the division, 100 % every edge, 50 % every second, 33 % every third; negative: the gate closing |
