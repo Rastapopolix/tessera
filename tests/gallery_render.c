@@ -28,6 +28,7 @@ static const gshot_t SHOTS[] = {
     {"form", G_FORM, 0}, {"gen_tweak", G_SCENE, S_GEN_TWEAK}, {"gen_tweak2", G_SCENE, S_GEN_TWEAK2},
     {"gen_length", G_SCENE, S_GEN_LENGTH}, {"gen_seed", G_SCENE, S_GEN_SEED},
     {"cords", G_SCENE, S_CORDS}, {"mods_live", G_SCENE, S_MODS_LIVE_GEN}, {"matrix", G_SCENE, S_MATRIX},
+    {"mods_scope", G_SCENE, S_MODS_SCOPE}, {"mods_scope_gate", G_SCENE, S_MODS_SCOPE_GATE}, {"mods_scope_bus", G_SCENE, S_MODS_SCOPE_BUS},
     {"organic", G_SCENE, S_ORGANIC}, {"mod_shortcut", G_SCENE, S_MOD_SHORTCUT},
     {"help", G_SCENE, S_HELP},
     {"oracle_osc", G_ORACLE, 0}, {"oracle_filter", G_ORACLE, 1}, {"oracle_env", G_ORACLE, 2},
@@ -114,7 +115,7 @@ int main(int argc, char **argv)
             {"paper_menu", G_SCENE, S_MENU}, {"paper_colors", G_SCENE, S_MENU_COLORS},
             {"paper_land", G_SCENE, S_GLO_LAND}, {"paper_land_rain", G_SCENE, S_GLO_LAND_RAIN},
             {"paper_turing", G_SCENE, S_GEN_TURING}, {"paper_constel", G_SCENE, S_GEN_CONSTEL},
-            {"paper_cords", G_SCENE, S_CORDS}, {"paper_mixer", G_SCENE, S_MIXER}, {"paper_drum", G_SCENE, S_DRUM},
+            {"paper_cords", G_SCENE, S_CORDS}, {"paper_mods_scope", G_SCENE, S_MODS_SCOPE_GATE}, {"paper_mixer", G_SCENE, S_MIXER}, {"paper_drum", G_SCENE, S_DRUM},
             {"paper_patterns", G_SCENE, S_PATGRID}, {"paper_notes", G_SCENE, S_NOTES_MIXED},
             {"paper_help", G_SCENE, S_HELP}, {"paper_about", G_SCENE, S_ABOUT}, {"paper_knobs_bar", G_SCENE, S_KNOBS_BAR},
         };

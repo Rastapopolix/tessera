@@ -91,6 +91,11 @@ static int oct_dn_page(void)                            /* the page shown has an
     return g == GR_EVOLVE || g == GR_MIDICH || g == GR_ENTRIES || g == GR_PIECE ||   /* ROLL ALL, SOUND, ORDER, USER 5-8, */
            g == GR_TIMING || g == GR_ENERGY || g == GR_CHAIN || g == GR_TRK || g == GR_CORDS;   /* SPLIT, DEPTH, REPEAT, PAN, CC */
 }
+/* MODS' scope (ui_cords.c cu_scope_draw): OCT- held, nothing over the page */
+static int cu_scope_held(void)
+{
+    return ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) && !ui.menu && !ui.confirm && !pop.on && !ui.layer && !help.on;
+}
 static uint32_t oct_leds(void)
 {
     if (designer_on() && !name_on() && !ui.confirm) return 3u;
