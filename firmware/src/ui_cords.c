@@ -390,7 +390,8 @@ static void cu_polarity(void)
         cu_pct_text(b + str_len(b), c.offset);
         ui_message(b);
     } else
-        ui_message(c.uni == CU_HOLD ? "HOLD A BAR" : c.uni ? "+ ONE WAY" : "+- BOTH WAYS");
+        ui_message(c.uni == CU_HOLD ? "HOLD A BAR" : c.uni ? "+ ONE WAY" : "+- BOTH WAYS");   /* (HOLD: OCT- held +
+                                                         * KNOB 1 its clock, HOLD ON T1 NOTES ..) */
     ui.force = 1;
 }
 /* OCT- held + KNOB 4 on a GATE mod: its threshold (ui_input.c: OCT-'s tap eaten) */
@@ -418,6 +419,24 @@ static int cu_cc_knob(int32_t steps)
     fmt_int(b + 3, (int32_t)cord_cc_num(cord_ui_sel));
     ui_message(b);                                      /* (no ui.force: the row redraws by its signature, which
                                                          * holds the CC numbers; a whole frame flickered under the list) */
+    return 1;
+}
+
+/* OCT- held + KNOB 1 on a HOLD mod: its clock, BAR (its destination track's) or T1 .. T4's notes (cord.c cord_hold_clk;
+ * ui_input.c: OCT-'s tap eaten). Another mod: KNOB 1 its source, as without OCT- */
+static __attribute__((noinline)) int cu_hclk_knob(int32_t steps)
+{
+    char b[20];
+    uint32_t v;
+    if (cord_get(cord_ui_sel)->uni != CU_HOLD || !steps) return 0;
+    v = (uint32_t)clamp((int32_t)cord_hold_clk(cord_ui_sel) + (steps > 0 ? 1 : -1), 0, 4);
+    cord_hold_clk_set(cord_ui_sel, v);
+    if (!v) str_cpy(b, "HOLD A BAR", sizeof b);
+    else {
+        str_cpy(b, "HOLD ON T1 NOTES", sizeof b);
+        b[9] = (char)('0' + v);
+    }
+    ui_message(b);
     return 1;
 }
 
