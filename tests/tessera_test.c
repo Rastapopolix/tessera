@@ -1608,8 +1608,7 @@ static void st_check(char *res, size_t cap)
     for (s = 0; s < n; s++)
         bad += st_shape(first, s, &gmin, &gmax, &spread, &same) != 1 || gmin < 275u || gmax > 277u || !same ||
                first[s + 1u] - first[s] != 3u;
-    printf("strum: 200 ms UP: %u strikes, %u wrong, %u held
-", (unsigned)n, (unsigned)bad, (unsigned)held);
+    printf("strum: 200 ms UP: %u strikes, %u wrong, %u held\n", (unsigned)n, (unsigned)bad, (unsigned)held);
     ok &= n == 4u && !bad && !held;
     {                                                   /* the knob: 1 ms detents to 10, 5 to 60, 10 to 250, and back */
         static const uint8_t want[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80,
@@ -1626,8 +1625,7 @@ static void st_check(char *res, size_t cap)
         tessera_strum_knob(1); kb += tessera.ch_strum[0] != 70u;
         tessera_param_set(0, TX_CH_STRUM, 62);
         tessera_strum_knob(-1); kb += tessera.ch_strum[0] != 60u;
-        printf("strum: knob detents: %u wrong
-", (unsigned)kb);
+        printf("strum: knob detents: %u wrong\n", (unsigned)kb);
         ok &= !kb;
     }
     snprintf(res, cap, "%u", (unsigned)ok);
