@@ -442,7 +442,7 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
 #if MELODEE_USB_HOST
     if (i == MI_USB_HOST) value = uh.want ? "ON" : "OFF";
 #endif
-    if (i == MI_MUTES) value = (const char *const[]){"NOW", "BAR", "PHRASE"}[settings_mute_q % 3u];
+    if (i == MI_MUTES) value = MUTE_Q_NAME[settings_mute_q % 3u];   /* (ui_popup.c: MIXER's sheet turns it too) */
     if (i == MI_AUTOSAVE) value = settings_autosave ? "ON" : "OFF";
     if (i == MI_BATTERY) value = settings_batt_off ? "WHEN LOW" : "ON";
     if (i == MI_SCREEN) value = (const char *const[]){"NEVER", "5 MIN", "15 MIN", "30 MIN", "60 MIN"}[scr_get()];
@@ -794,8 +794,7 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         ui.force = 1; ok = 0;
     }
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_MUTES) {      /* KNOB 2 steps NOW BAR PHRASE, OCT+ wraps */
-        uint32_t v = settings_mute_q % 3u;
-        settings_mute_q = (uint8_t)(s > 0 ? (v < 2u ? v + 1u : v) : s < 0 ? (v ? v - 1u : 0u) : (v + 1u) % 3u);
+        mute_q_step(s);
         ui.force = 1; ok = 0;                          /* (entries.c mute_press: GLO's mute keys while playing) */
     }
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_BATTERY) {   /* KNOB 2 right ON, left WHEN LOW; OCT+ toggles */

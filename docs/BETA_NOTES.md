@@ -33,6 +33,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - PLAY: a mod destination on each track that decides whether it is heard. While its mods reach half its notes sound, under half they don't; a GATE mod onto PLAY makes a gated voice in one cord. A shut track plays on unheard (it still leads, as MUTE).
 - CLOCK: a new destination. A generator track with a mod onto CLOCK steps on the source's edges and not on its DIV: with EOC as the source, a note each LFO cycle (a Krell: add S&H onto the LFO's rate). AMOUNT is the division (50 % every second edge), negative the gate closing; a GATE source counts hits. First step at PLAY; DIV is the step's length and the fastest it steps. A project that uses it does not load on older firmware.
 - HOLD on notes: hold OCT- on a HOLD mod and turn KNOB 1 to clock it by a track's notes (HOLD ON T1 NOTES .. T4) instead of the bar: the source is taken on each note that track plays.
+- MIXER's sheet: hold OCT+ on MIXER for Mutes (NOW, BAR, PHRASE), the same setting as MENU > MUTES, at hand while you play the mute keys.
 
 ## Fixed
 - SCL > SCALES with a USER scale picked: the keys light and play by their own note whatever QNT is; with QNT on they were snapped and lit wrong (#559).
