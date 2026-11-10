@@ -10,11 +10,12 @@ can try in a minute or two and the classic modular patch it comes from. **Where 
 story behind each generator: the module, script, composer or mathematician it is adapted from, and how it works.
 
 You don't need a modular to follow either part. Where a recipe says **MODS**, see
-[MANUAL: MODS](MANUAL.md#mods-the-modulation-cords); for a quick start, see [RECIPES.md](RECIPES.md). Every recipe
-here also works in the [browser simulator](https://rastapopolix.github.io/tessera/webapp/sim/).
+[MANUAL: MODS](MANUAL.md#mods-the-modulation-cords); for a quick start, see [RECIPES.md](RECIPES.md). The recipes
+need Tessera 3.5 (the MIX buses, EOC, CLOCK, PLAY, MOD DEPTH, scaling and HOLD mods and the mod scope are new in it).
 
 **Contents**
 
+- [How the recipes are written](#how-the-recipes-are-written)
 - [Six ideas](#six-ideas)
   - [1. Randomness you can lock](#1-randomness-you-can-lock)
   - [2. Many speeds at once](#2-many-speeds-at-once)
@@ -26,11 +27,28 @@ here also works in the [browser simulator](https://rastapopolix.github.io/tesser
 - [Tessera's limits, and why they help](#tesseras-limits-and-why-they-help)
 - [Further reading](#further-reading)
 
-**How the recipes are written.** A mod is written as source, destination and amount: **T1 S&H** to **T1 LFO RTE**,
-**+40** means a cord from track 1's S&H to track 1's LFO rate, at +40 %. Pick the source with **KNOB 1**, the mod
-with **KNOB 2**, the destination with **KNOB 3** and the amount with **KNOB 4**. **OCT+** on MODS cycles a mod
-between **+-** (both ways), **+** (one way) and **GATE** (on or off at a threshold). Each recipe starts from a new
-project: track 1 **GLASS PAD**, track 2 **STRING MACH**, track 3 **BELLS**, track 4 the **808 KIT**.
+## How the recipes are written
+
+Each recipe starts from a new project: track 1 **GLASS PAD**, track 2 **STRING MACH**, track 3 **BELLS**, track 4
+the **808 KIT**, every track on STEP with nothing in it, no mods. Then:
+
+- **What you hear**, and why it's worth trying.
+- **Cords**: each mod as source, destination and amount. `T1 S&H → T1 LFO RTE, +40` is a mod from track 1's S&H
+  to track 1's LFO rate, at +40 %. A mark after the source is the mod's kind: **+** one way only, **^** GATE (on or off
+  at a threshold), **=** HOLD (sampled and held). No mark: **+-**, both ways, a new mod's default.
+- **Keys**: the steps on the FM-1. To make a mod, tap **LFO** for **MODS**, then **KNOB 2** picks the mod (1 to 16),
+  **KNOB 1** its source, **KNOB 3** its destination and **KNOB 4** its amount (a new destination starts at 50 %).
+  **OCT+** (tapped) steps the picked mod through **+-**, **+**, **^** and **=** (a source that is already 0 to 1,
+  such as ENV, GATE or EOC, starts at +). The keys follow one rule on every page: **hold OCT+** for the page's sheet
+  (KNOB 1 the row, KNOB 2 its value, OCT- closes it); **hold OCT-** for the page's second knobs, only while held.
+- **Watch it**: what to look for on the **mod scope**. Hold **OCT-** on MODS and the picked mod's move is drawn over
+  time (the solid line) over its source (the dashed one); a GATE mod draws its threshold across the source. Let go and
+  the rows come back. The same hold gives MODS' second knobs, so you can turn a threshold and watch it move.
+- **Variation**: one change to try next.
+
+Most recipes take three cords or fewer, and every cord is one you'd want to turn while it plays. Pages are named as
+the buttons reach them: **SEQ** for GEN and PATTERN; **ARP** for EVOLVE, TWEAK, TWEAK 2, LENGTH and ENERGY; **LFO**
+for MODS, LFO, LFO 2 and ORGANIC; **GLO** for MIXER and PERF.
 
 ---
 
@@ -46,36 +64,53 @@ recognised, then changes a little, then settles. Most generative tools are built
 
 *On a modular: a Turing Machine into a quantizer into an oscillator, its knob just off Lock.*
 
-**Why try it:** it's the quickest way to hear what "controlled randomness" means. A melody that is yours for a
-while, then drifts, and that you can freeze the moment you like it.
+**What you hear:** a melody that is yours for a while, then drifts, and that you can freeze the moment you like it.
+It's the quickest way to hear what "controlled randomness" means.
 
-1. Track 3 (BELLS): **SEQ** for GEN, **MODE TURING**, **LENGTH 8**, **PROB 0** (the knob reads Lock). Press **PLAY**.
-   Eight steps loop exactly.
-2. Turn **PROB** to **10**: now and then one step changes as it comes round, and stays changed. The loop drifts
-   slowly. At 50 it changes all the time; back at 0 it locks wherever it is.
-3. A second voice from the same idea: track 2, any generator, **TWEAK**: **FOLLOW T3**, and hold **OCT+** for
-   **HOW CHORD**. Track 2 harmonises every change track 3 makes.
+**Cords:** none.
 
-**Listen for:** the moment a changed step becomes part of the tune. That's a shift register remembering (see
-[TURING](#turing-shift-registers)). There's no quantizer to patch: every generator plays in the track's scale.
+**Keys:**
+1. Select track 3 (BELLS). **SEQ** for GEN: **KNOB 1** MODE **TURING**, **KNOB 2** LENGTH **8**, **KNOB 3** PROB
+   **0** (the knob reads Lock). Press **PLAY**: eight steps loop exactly.
+2. Turn PROB to **10**: now and then a step changes as it comes round, and stays changed. At 50 it changes all the
+   time; back at 0 it locks wherever it is.
+3. A second voice from the same idea: select track 2, **ARP** for TWEAK, **KNOB 4** FOLLOW **T3**; hold **OCT-** and
+   turn **KNOB 2** to HOW **CHORD**. Track 2 harmonises every change track 3 makes.
+
+**Watch it:** a generator's register is a mod source. Make `T3 CV → T3 PAN, +30` and hold OCT- on it: the dashed
+line is the register as a stepped shape, the same every pass at PROB 0, a step at a time new at 10.
+
+**Variation:** HOW **CANON2** in place of CHORD: track 2 plays track 3's line two notes late, a round.
+
+There's no quantizer to patch: every generator plays in the track's scale. The changed step that becomes part of
+the tune is a shift register remembering (see [TURING](#turing-shift-registers)).
 
 #### Randomness on a knob
 
 *On a modular: Marbles' DEJA VU, which slides between repeating the last random choices and making new ones; its
 jitter, which loosens the clock.*
 
-**Why try it:** to perform with randomness. One knob decides whether the piece repeats or wanders, so you can hold a
-good passage and let go when you're ready.
+**What you hear:** one knob decides whether the piece repeats or wanders, so you can hold a good passage and let go
+when you're ready; now and then a step breaks into two quicker notes.
 
-1. Start from the recipe above, track 3 TURING at **PROB 0**.
-2. **MODS**: **MACRO 1** to **T3 T PROB**, **+60**. On **GLO > PERF**, **KNOB 1** is now the "again or new" dial:
-   down, the loop holds; up, it changes almost every pass.
-3. Loosen the timing too: **T1 SWARM 3** to **T3 SPLIT**, **+40**. Every so often a step breaks into two quicker
-   notes, more often as SWARM 3 rises.
-4. **EVOLVE**, hold **OCT+**: **GRAVITY 30**. Now the drift is pulled back towards home.
+**Cords:**
+- `MACRO 1 → T3 T PROB, +60`
+- `T1 SWARM 3 → T3 SPLIT, +40`
 
-**Listen for:** how PROB, SPLIT and GRAVITY each act on a different thing: which notes, when they play, and how far
-from home they go.
+**Keys:**
+1. Track 3 TURING at PROB 0, as above.
+2. **MODS**: mod 1 from **MACRO 1** (after the tracks' sources in KNOB 1's list) to **T3 T PROB**, **+60**. On
+   **GLO > PERF**, **KNOB 1** is now the "again or new" dial: down, the loop holds; up, it changes almost every pass.
+3. Mod 2 from **T1 SWARM 3** to **T3 SPLIT**, **+40**: SPLIT comes and goes with SWARM 3.
+4. A pull back home: on track 3, **ARP** for EVOLVE, **KNOB 2** EVERY **2**; hold **OCT-** and turn **KNOB 4** to
+   GRAVITY **30**. Each round the drift steps back toward the loop you set.
+
+**Watch it:** pick mod 2 and hold OCT-: SWARM 3 (dashed) rising and falling over 16 bars, and the chance of a split
+(solid) following it.
+
+**Variation:** turn MACRO 1 up for eight bars, then down: the loop locks on whatever it became. That's deja vu.
+
+PROB, SPLIT and GRAVITY each act on a different thing: which notes, when they play, and how far from home they go.
 
 ### 2. Many speeds at once
 
@@ -87,84 +122,173 @@ ready-made.
 #### A tide over the whole piece
 
 *On a modular: a very slow LFO or a long function generator, minutes per cycle, into the VCAs and filters; often a
-second, slower one moving the first one's depth.*
+second, slower one opening and closing the first one's depth.*
 
-**Why try it:** to make a piece that can play for an hour and still go somewhere: busier, quieter, resting, coming
-back.
+**What you hear:** a piece that can play for an hour and still go somewhere: busier, quieter, resting, coming back,
+the drone's filter following the tide more in some quarter-hours than in others.
 
-1. Tracks 3 and 4 play generators (TURING and ATLAS, say). Track 1 plays a drone or a slow CHORD.
-2. **ARP > ENERGY**: **ARC 60**, **RESTS 20**. The generators now thin out and fill up over 3 to 6 minutes, and rest
-   now and then. On track 1, hold **OCT+** on ENERGY: **DEPTH 0**, so the drone stays steady through it all.
-3. The sound follows: **ENERGY** to **T1 CUTOFF**, **+40**.
-4. A slower hand on top: **LFO > ORGANIC** on track 1, **SPEED 50**. **MODS**: **T1 TIDE 1** (about 17 minutes a turn)
-   to **M1 AMT**, **+50**, where mod 1 is the ENERGY cord from step 3. The tide's pull on the filter now grows and fades over
-   a quarter of an hour.
+**Cords:**
+- `ENERGY → T1 CUTOFF, +40`
+- `T1 TIDE 1+ → M1 AMT, +100`, scaling
 
-**Listen for:** three speeds: the notes, the tide (minutes), and the slow change in how much the tide matters.
-For a planned shape (intro, build, peak, ending), see
-[A piece that plays itself](RECIPES.md#a-piece-that-plays-itself-piece-chain-and-entries).
+**Keys:**
+1. Tracks 3 and 4 play generators (**SEQ** for GEN: TURING on track 3, ATLAS on track 4). Track 1 plays a slow
+   **CHORD** (MODE CHORD, HIT HOLD) as a drone.
+2. Track 3, **ARP** for ENERGY: **KNOB 1** ARC **60**, **KNOB 2** RESTS **20**. The generators thin out and fill up
+   over 3 to 6 minutes, and rest now and then. On track 1, hold **OCT-** on ENERGY and turn **KNOB 1** to DEPTH **0**,
+   so the drone stays steady through it all.
+3. **MODS**: mod 1 from **ENERGY** (after MACRO 4 in KNOB 1's list) to **T1 CUTOFF**, **+40**. The drone opens as
+   the piece gets busy.
+4. Mod 2 from **T1 TIDE 1** to **M1 AMT** (near the end of KNOB 3's list), **+100**; tap **OCT+** once for **+**.
+   Hold **OCT-** and turn **KNOB 3** right: **M1*** on the row, mod 2 now scales mod 1 between nothing and all of it,
+   over TIDE 1's 17 minutes a turn.
+
+**Watch it:** pick mod 1 and hold OCT-: 64 bars of ENERGY dashed, and the filter's move solid inside it, a wide copy
+when TIDE 1 is high and almost flat when it is low.
+
+**Variation:** for a planned shape (intro, build, peak, ending) instead of an endless one, add **GLO > PIECE** with a
+LENGTH: see [A piece that plays itself](RECIPES.md#a-piece-that-plays-itself-piece-chain-and-entries).
+
+Three speeds: the notes, the tide (minutes), and the slow change in how much the tide matters.
 
 ### 3. Feedback: a system that plays itself
 
 Patch a module's output back into its own control and it starts to steer itself: an LFO that speeds up when it's
 high and slows down when it's low, a random voltage that decides how soon the next random voltage comes. Feedback
 is what makes a patch feel less like a machine running a program and more like something with a will of its own.
-The art is keeping it from running away or freezing.
+The art is keeping it from running away or freezing; the last recipe here is the brake.
 
 #### An envelope that plays itself
 
 *On a modular: the Krell patch, which Todd Barton built on a Buchla 200e as a homage to Louis and Bebe Barron's
-soundtrack for* Forbidden Planet *(1956). One LFO is the whole patch: each cycle it triggers sample & holds whose
-random voltages set the LFO's own speed and shape, and the sound's pitch and colour.*
+soundtrack for* Forbidden Planet *(1956). A looping envelope whose end of cycle fires the next one; at each cycle,
+random voltages set its own rise and fall, and the sound's pitch and colour.*
 
-**Why try it:** it's the classic self-playing patch, and it shows feedback in one cord: the random value decides
-how long the next swell lasts, so the music sets its own rhythm.
+**What you hear:** a pad that breathes in and out, a new note on each breath, every breath its own length. Nothing
+here runs on the clock: the patch decides when the next note comes.
 
-1. Track 1 (GLASS PAD): **MODE MARKOV**, **DENS 30**; **LENGTH**: **HIT**, so each note rings until the next.
-2. **LFO**: **WAVE TRI**, **RATE** low (a cycle of a few seconds). **LFO 2**: **TRIG FREE**, so notes don't restart it.
-3. **MODS**: **T1 LFO** to **T1 GAIN**, **+100**, and press **OCT+** once to make it **+**. The LFO is now the
-   pad's envelope: it swells from silence and fades back, over and over.
-4. **T1 S&H** to **T1 LFO RTE**, **+40**. S&H draws a new random value at each LFO cycle: every swell now has its
-   own length.
-5. **T1 S&H** to **T1 CUTOFF**, **+30**: each swell its own colour.
+**Cords:**
+- `T1 EOC → T1 CLOCK, +100`
+- `T1 S&H → T1 LFO RTE, +40`
+- `T1 LFO → T1 GAIN, +100`
 
-**Listen for:** irregular breathing that never quite repeats. The swells' lengths come from the patch, not from the
-clock.
+**Keys:**
+1. Track 1 (GLASS PAD), **SEQ** for GEN: MODE **MARKOV**, **KNOB 3** DENS **100** (a note every step). **ARP** for
+   LENGTH: **KNOB 1** LENGTH **HIT**, so each note rings until the next.
+2. **LFO** for LFO: **KNOB 1** RATE **30** (about four seconds a cycle), **KNOB 2** WAVE **TRI**.
+3. **MODS**: mod 1 from **T1 EOC** (the last of track 1's sources) to **T1 CLOCK**, **+100**. EOC is a short gate
+   at the start of each LFO cycle; CLOCK steps the generator on each one instead of on its DIV. Press **PLAY**: a note
+   at the top of every cycle.
+4. Mod 2 from **T1 S&H** to **T1 LFO RTE**, **+40**. S&H draws a new value as each cycle starts, and sets that
+   cycle's speed: the notes come at irregular, self-made times.
+5. Mod 3 from **T1 LFO** to **T1 GAIN**, **+100**. GAIN at +100 is a VCA: silent at the bottom of the LFO, full at
+   the top. The triangle starts each cycle at the bottom, so each note swells up from silence and fades away just as
+   the next one comes.
+
+**Watch it:** pick mod 3 and hold OCT-: the swells drawn one after another, each a different width.
+
+**Variation:** mod 3 at **−100** and LFO **WAVE SAW**: each note starts at full and dies away, a plucked Krell. Or
+add `T1 S&H → T1 CUTOFF, +30` for a colour of its own on each note.
+
+#### Stepped chaos
+
+*On a modular: Rob Hordijk's Rungler (in his Benjolin and Blippoo Box): a shift register clocked by one oscillator,
+fed by another, its stepped output patched back into the oscillators' rates. A melody that half-repeats and keeps
+pulling on its own clock.*
+
+**What you hear:** a stepped bell line that almost repeats, speeding up and slowing down as it goes, now settling
+into a figure, now breaking out of it.
+
+**Cords:**
+- `T1 EOC → T3 CLOCK, +100`
+- `T3 CV → T1 LFO RTE, +40`
+- `T1 S&H → T3 T PROB, +40`
+
+**Keys:**
+1. Track 3 (BELLS), **SEQ** for GEN: MODE **TURING**, LENGTH **8**, PROB **10**. Track 1's LFO is the clock
+   (track 1 plays nothing; leave its LFO at its own RATE).
+2. **MODS**: mod 1 from **T1 EOC** to **T3 CLOCK**, **+100**. The register steps once each cycle of track 1's LFO.
+3. Mod 2 from **T3 CV** (the register) to **T1 LFO RTE**, **+40**. The register sets the speed of its own clock: high
+   values step faster.
+4. Mod 3 from **T1 S&H** to **T3 T PROB**, **+40**. The clock's own random value decides how often the register
+   flips a bit.
+
+**Watch it:** pick mod 2 and hold OCT-: a bar of the register, stepped (dashed), and the clock rate it sets (solid);
+the high steps are the short ones.
+
+**Variation:** mod 2 at **−40**: high values slow the clock, so the line lingers on its top notes.
 
 #### Two LFOs pulling on each other
 
 *On a modular: two LFOs, each one's output into the other's rate input.*
 
-**Why try it:** two simple, regular motions become one that's hard to predict but never jumpy: good for pads and
+**What you hear:** two simple, regular motions become one that's hard to predict but never jumpy: good for pads and
 anything that should drift.
 
-1. **MODS**: **T1 LFO** to **T2 LFO RTE**, **+40**, and **T2 LFO** to **T1 LFO RTE**, **+40**.
-2. Hear them: **T1 LFO** to **T1 CUTOFF**, **+30**; **T2 LFO** to **T2 PAN**, **+50**.
-3. Push it: **+70** on both rate cords and they lurch; **−40** on one makes them chase instead of push.
-4. A ring of four: **T2 LFO** to **T3 LFO RTE**, **T3 LFO** to **T4 LFO RTE**, **T4 LFO** to **T1 LFO RTE**
-   (track 2's to track 1's replaced). Each LFO is pushed by the one before it.
+**Cords:**
+- `T1 LFO → T2 LFO RTE, +40`
+- `T2 LFO → T1 LFO RTE, +40`
+- `T1 LFO → T1 CUTOFF, +30`
+- `T2 LFO → T2 PAN, +50`
 
-**Listen for:** the two motions catching each other and drifting apart. Each LFO alone is plain; together they
-are not.
+**Keys:**
+1. Tracks 1 and 2 play long notes (a held chord on each, or **CHORD** with HIT HOLD).
+2. **MODS**: mods 1 and 2, each LFO onto the other's **LFO RTE**, **+40**. Mods 3 and 4 let you hear them: track 1's
+   LFO on its **CUTOFF**, track 2's on its **PAN**.
+3. Push it: **+70** on both rate mods and they lurch; **−40** on one makes them chase instead of push.
+
+**Watch it:** pick mod 3 and hold OCT-: the filter's sweep stretches and squeezes, never quite the same twice.
+
+**Variation:** a ring of four: mod 2 becomes `T2 LFO → T3 LFO RTE`, and add `T3 LFO → T4 LFO RTE` and
+`T4 LFO → T1 LFO RTE`. Each LFO is pushed by the one before it. It takes every track's LFO.
 
 #### Two generators steering each other
 
 *On a modular: two sequencers or random sources cross-patched: one's CV moves the other's probability, the other's
 moves the first one's.*
 
-**Why try it:** to hear a system that never quite settles, and to learn the most useful habit with feedback: a
-brake.
+**What you hear:** a system that never quite settles: stretches where the two lock into a pattern, and moments where
+one change starts a cascade.
 
-1. Track 3 **TURING** (**PROB 10**), track 2 **MARKOV**.
-2. **MODS**: **T3 CV** to **T2 M LEAP**, **+40** (Turing's register widens Markov's leaps) and **T2 CV** to
-   **T3 T PROB**, **+30** (Markov's note unlocks Turing's loop).
-3. The brake: **MACRO 1** to **M1 AMT**, **−100**, and **MACRO 1** to **M2 AMT**, **−100** (with the first two cords
-   as mods 1 and 2). On **GLO > PERF**, turning **KNOB 1** up turns both cords down: the system calms, and each
-   generator plays on its own.
+**Cords:**
+- `T3 CV → T2 M LEAP, +40`
+- `T2 CV → T3 T PROB, +30`
 
-**Listen for:** stretches where the two lock into a pattern, and moments where one change starts a cascade. A
-generator reads its settings only at its own step, so the loop has a built-in delay: it wanders, but it doesn't
+**Keys:**
+1. Track 3 **TURING**, PROB **10**; track 2 **MARKOV**.
+2. **MODS**: mod 1 from **T3 CV** to **T2 M LEAP**, **+40** (Turing's register widens Markov's leaps); mod 2 from
+   **T2 CV** to **T3 T PROB**, **+30** (Markov's note unlocks Turing's loop).
+
+**Watch it:** pick mod 2 and hold OCT-: Markov's note (dashed) and the push on Turing's PROB (solid); a calm
+stretch is a short, flat line.
+
+**Variation:** brake it, below.
+
+A generator reads its settings only at its own step, so the loop has a built-in delay: it wanders, but it doesn't
 explode.
+
+#### A brake for any feedback patch
+
+*On a modular: a VCA on every feedback path, all on one control voltage, so one knob takes the patch from dry to
+wild.*
+
+**What you hear:** the same patch from calm to tangled on one control: each generator on its own, then a little
+influence, then the whole web.
+
+**Cords:** none (or `MACRO 1 → MOD DEP, −100` to play it from a knob).
+
+**Keys:**
+1. Any feedback patch above, playing.
+2. **GLO** for PERF (the page after MIXER); hold **OCT+** for PERF's sheet: **Mod depth**, **KNOB 2** from 100 % down. MOD DEPTH scales the
+   moving part of every mod at once (never an OFFSET): at 0 the patch is dry, every generator as you set it.
+3. To ride it while you play: on MODS, a mod from **MACRO 1** to **MOD DEP** (the end of KNOB 3's list), **−100**.
+   On PERF, **KNOB 1** up brakes the whole patch.
+
+**Watch it:** set Mod depth to 30 %, go back to MODS and hold OCT- on a feedback mod: the solid line is a third of
+the height it was, the dashed source as busy as ever.
+
+**Variation:** brake the Krell: its notes keep coming (a CLOCK mod keeps its division), but the swells flatten and
+every breath takes the same time.
 
 ### 4. From a curve to an event
 
@@ -177,24 +301,59 @@ pitch, turning a gliding voltage into notes of a scale.
 
 *On a modular: a slow random voltage into a comparator; its gate opens a VCA on a voice.*
 
-**Why try it:** to bring parts in and out without writing an arrangement. The slow source decides, so the entries
-are never on a schedule, and never random either.
+**What you hear:** a part that comes in and out without an arrangement: a few minutes in, a few minutes out, never
+on a schedule and never random either.
 
-1. Track 2 plays a generator, and **TWEAK > DROP 100**: it's silent.
-2. **LFO > ORGANIC** on track 2: **SPEED 50**.
-3. **MODS**: **T2 TIDE 2** to **T2 DROP**, **−100**. Press **OCT+** twice: **GATE** (a **^** after the source).
-   Hold **OCT+** and turn **KNOB 4** for the threshold: **0**.
-4. Track 2 plays only while TIDE 2 is above the middle: a few minutes in, a few minutes out, never the same twice.
+**Cords:**
+- `T2 TIDE 2^ → T2 PLAY, +100`
 
-**Listen for:** the rhythm of the arrangement: long, uneven stretches that still feel planned.
+**Keys:**
+1. Track 2 plays a generator (MARKOV, say).
+2. **MODS**: mod 1 from **T2 TIDE 2** to **T2 PLAY** (near the end of track 2's destinations), **+100**. Tap **OCT+**
+   twice: **^**, a GATE. PLAY lets track 2 be heard while its mods reach half: now only while TIDE 2 is above the
+   middle. (A shut track plays on unheard, so a track following it keeps its place.)
+
+**Watch it:** hold OCT- on mod 1: 64 bars of TIDE 2 (dashed), the threshold across it, and the gate (solid) high
+while track 2 is heard. Turn **KNOB 4** while holding to move the threshold: higher, shorter visits.
+
+**Variation:** a window. Set the first mod's threshold to **−20** (hold OCT-, **KNOB 4**) and add `T2 TIDE 2^ → T2 PLAY, −100` at threshold
+**+20**: track 2 plays only while TIDE 2 sits between them.
+
+#### Long gates
+
+*On a modular: two LFOs at unrelated rates mixed, the sum into a comparator: the gate pattern repeats only after the
+LFOs' common period, minutes away. A staple of Serge and Buchla generative patches.*
+
+**What you hear:** a voice that comes in for a few seconds, rests, comes back for longer, in a rhythm that takes
+minutes to repeat, from two plain LFOs.
+
+**Cords:**
+- `T1 LFO → BUS A, +50`
+- `T2 LFO → BUS A, +50`
+- `BUS A^ → T3 PLAY, +100`
+
+**Keys:**
+1. Track 3 plays a generator (TURING on BELLS). Tracks 1 and 2 are the LFOs: track 1 **LFO** RATE **20** (about 7 s a
+   cycle), track 2 RATE **25** (about 5 s).
+2. **MODS**: mods 1 and 2 from **T1 LFO** and **T2 LFO** to **BUS A** (the end of KNOB 3's list), **+50** each. BUS A
+   adds them (its MODE is SUM).
+3. Mod 3 from **BUS A** (the end of KNOB 1's list) to **T3 PLAY**, **+100**; tap **OCT+** twice for **^**. Track 3
+   plays while the sum is above the middle.
+
+**Watch it:** hold OCT- on mod 3: four bars of the sum (dashed) against the threshold, swelling high when the two
+LFOs agree and staying near the middle when they don't; the gate (solid) is long, then short, then long again. Keep
+holding for a few sweeps: no two are alike.
+
+**Variation:** hold OCT- on mod 3 and raise the threshold (**KNOB 4**) to **+40**: track 3 comes in only when both LFOs are
+high together, rarely and briefly.
 
 **Try next:**
-- **A window.** Two GATE mods from one source, one at threshold **−20** with **+50** and one at **+20** with
-  **−50**, move the destination only while the source sits between them.
-- **Fills that come and go.** **ENERGY** to **FILL**, **+100**, as a **GATE** at **40**: steps set to FILL play
-  while the piece is at its busiest.
-- **A gate on a mod.** **T1 SLEW** to **M3 AMT**, **+100**, as a GATE, with mod 3's own amount at 0: mod 3 works only
-  while SLEW is up.
+- **Fills that come and go.** `ENERGY^ → FILL, +100`, threshold **+40**: steps set to FILL play while the piece is at
+  its busiest.
+- **Logic of two gates.** Two GATE mods into a bus at **+100**, and on MODS' sheet (hold **OCT+**) the bus's **Mode**:
+  MAX is OR (either open), MIN is AND (both), DIFF is XOR (one or the other). Read the bus as a GATE mod.
+- **A gate on a mod.** `T1 SLEW^ → M3 AMT, +100`, scaling (hold OCT-, **KNOB 3** right): mod 3 keeps its own amount
+  and works only while SLEW is up.
 
 ### 5. Parts that listen to each other
 
@@ -206,17 +365,71 @@ can hear every other.
 
 *On a modular: the kick's envelope into a VCA on the pad (sidechain ducking).*
 
-**Why try it:** it's the simplest cross-patch, and you hear it at once: the pad breathes with the drums.
+**What you hear:** the pad breathing with the drums. It's the simplest cross-patch, and you hear it at once.
 
-1. Track 4 (808 KIT): **MODE ATLAS**, **DENS 40**. Track 1 plays a long pad (LENGTH HIT, or CHORD with HIT HOLD).
-2. **MODS**: **T4 ENV** to **T1 LEVEL**, **−60**. Each hit pushes the pad down for the length of its envelope.
-3. A subtler version: **T4 ENV** to **T1 CUTOFF**, **−40**.
+**Cords:**
+- `T4 ENV → T1 LEVEL, −60`
 
-**Listen for:** the pad pumping with the groove; turn the amount down until you feel it more than hear it.
+**Keys:**
+1. Track 4 (808 KIT): **SEQ** for GEN, MODE **ATLAS**, **KNOB 4** DENS **40**. Track 1 plays a long pad (LENGTH HIT,
+   or CHORD with HIT HOLD).
+2. **MODS**: mod 1 from **T4 ENV** to **T1 LEVEL**, **−60**. Each hit pushes the pad down for the length of its
+   envelope.
 
-**Try next: one track's notes deepen another's mod.** **T3 ENV** to **M2 AMT**, **+60**, where mod 2 is step 3's cord to
-track 1's CUTOFF: each note of track 3 makes the pad's filter move further for a moment. That's a VCA on a modulation, done
-with a mod of a mod.
+**Watch it:** hold OCT- on mod 1: a bar of the kit's envelopes (dashed) and the dips they cut in the pad (solid).
+
+**Variation:** `T4 ENV → T1 CUTOFF, −40` in place of LEVEL, a filter duck you feel more than hear.
+
+#### An envelope from another track's notes
+
+*On a modular: a gate into a slew limiter (Maths' rise and fall): every gate becomes a smooth envelope, sent to as
+many places as you like.*
+
+**What you hear:** track 3's notes opening track 1's filter, each with a soft rise and fall; notes in a row hold it
+open.
+
+**Cords:**
+- `T3 GATE → BUS B, +100`
+- `BUS B → T1 CUTOFF, +60`
+
+**Keys:**
+1. Track 3 plays a sparse generator (MARKOV, DENS **40**); **SEQ** for PATTERN, **KNOB 2** DIV **1/8**. Track 1 plays
+   a long pad.
+2. **MODS**: mod 1 from **T3 GATE** to **BUS B**, **+100**. Hold **OCT+** for MODS' sheet: **Bus B lag 100 ms**
+   (KNOB 1 the row, KNOB 2 the value), then **OCT-** to close it. The bus now rises and falls over 100 ms with each
+   gate: an attack and a release.
+3. Mod 2 from **BUS B** to **T1 CUTOFF**, **+60**.
+
+**Watch it:** hold OCT- on mod 2: the bus's ramps (dashed), each one a gate rounded off, and the filter following.
+
+**Variation:** send the same envelope somewhere else, with no amounts to keep in step: `BUS B → T2 LEVEL, +40`. Or a
+longer Lag (**500 ms**) for a slow swell that only the busiest phrases open fully.
+
+#### A sample and hold clocked by another voice
+
+*On a modular: a random or slow voltage into a sample and hold whose clock is another sequencer's gate (the
+Wogglebug's stepped output, clocked from outside).*
+
+**What you hear:** track 3's filter taking a new place on each of track 2's notes, and staying there: the two parts
+move together without playing together.
+
+**Cords:**
+- `T1 SWARM 5= → T3 CUTOFF, +50`, held on track 2's notes
+
+**Keys:**
+1. Track 3 plays a generator; track 2 a sparser one (EUCLID, STEPS **16**, PULSE **3**).
+2. **MODS**: mod 1 from **T1 SWARM 5** to **T3 CUTOFF**, **+50**. Tap **OCT+** three times: **=**, HOLD.
+3. Hold **OCT-** and turn **KNOB 1** to **HOLD ON T2 NOTES**: SWARM 5 is taken on each of track 2's notes and held
+   until the next.
+
+**Watch it:** hold OCT- on mod 1: SWARM 5's smooth wave (dashed) and the steps cut from it (solid), one at each of
+track 2's notes.
+
+**Variation:** a second mod from the same source to **T3 SHIFT** (+30, HOLD on T2's notes): track 3 is transposed
+in its scale at the same moments.
+
+**Try next: one track's notes open another's mod.** `T3 ENV → M2 AMT, +100`, scaling (hold OCT-, KNOB 3 right),
+where mod 2 is `T1 LFO → T1 CUTOFF, +40`: the pad's filter moves only while track 3's notes ring.
 
 ### 6. How much, not which
 
@@ -229,20 +442,27 @@ and changing a density by hand (or by a slow source) changes the feel more than 
 *On a modular: one clock into dividers (/2, /3, /5) and Euclidean modules, their gates combined with logic (AND,
 XOR), the web patched back so one rhythm moves another's fill or rotation.*
 
-**Why try it:** to build an interlocking groove from three simple parts, and hear how logic and a little
-cross-modulation make it shift without ever losing the beat.
+**What you hear:** an interlocking groove from three simple parts that keeps finding new shapes without ever losing
+the beat.
 
-1. Track 2: **MODE EUCLID**, **STEPS 16**, **PULSE 5**. Track 3: **EUCLID**, **STEPS 12**, **PULSE 4** (12 against 16:
-   the two meet every three bars).
-2. Track 3, **TWEAK 2**: **LOGIC XOR T2**. Track 3 now plays only where the two rhythms *don't* land together: they
-   interlock.
-3. Cross-patch: **T2 GATE** to **T3 E ROT**, **+25**. Each of track 2's hits turns track 3's pattern a little.
-4. A slow hand: **T1 SWARM 1** to **T2 E PULSE**, **+30**. Over a minute, track 2 thins out and fills up again.
-5. Different speeds: **PATTERN**: **DIV 1/8** on track 2 and **1/16** on track 3. Or try **MODE POLY** on one track:
-   four rhythms at their own divisions (/4 against /3) in a single track.
+**Cords:**
+- `T2 GATE → T3 E ROT, +25`
+- `T1 SWARM 1 → T2 E PULSE, +30`
 
-**Listen for:** the beat never breaks, but the groove keeps finding new shapes. AND, OR and NOT on LOGIC do the
-other classic things: play only together, either, or only when the other rests.
+**Keys:**
+1. Track 2: **SEQ** for GEN, MODE **EUCLID**, **KNOB 2** STEPS **16**, **KNOB 3** PULSE **5**. Track 3: EUCLID,
+   STEPS **12**, PULSE **4** (12 against 16: the two meet every three bars).
+2. Track 3, **ARP** for TWEAK 2: **KNOB 3** LOGIC **XOR T2**. Track 3 plays only where the two rhythms *don't* land
+   together: they interlock.
+3. **MODS**: mod 1 from **T2 GATE** to **T3 E ROT**, **+25**: each of track 2's hits turns track 3's pattern a little.
+   Mod 2 from **T1 SWARM 1** to **T2 E PULSE**, **+30**: over a minute, track 2 thins out and fills up again.
+
+**Watch it:** hold OCT- on mod 2: SWARM 1's slow wave over 16 bars, and the pulses it adds and takes away.
+
+**Variation:** a clock divider with nothing to line up: set track 3's LOGIC back to OFF and add
+`T2 GATE → T3 CLOCK, +33`. Track 3 now steps on every third of track 2's hits instead of on its DIV (50 % every
+second, 25 % every fourth). AND, OR and NOT on LOGIC do the other
+classic things: play only together, either, or only when the other rests.
 
 ---
 
@@ -277,7 +497,8 @@ mutates, and a changed bit stays changed: the machine remembers its mistakes.
 **In Tessera:** TURING keeps a 16-bit register, loops its first LENGTH bits (2 to 16), flips at PROB and plays a note
 from the low eight bits, in the track's scale over SPAN octaves; its lowest bit decides whether the step plays.
 The register is also the generator's CV, a mod source. Tessera adds SOURCE (your own STEP pattern as the loop),
-GRAVITY (a pull back home) and seeds that replay. Recipe: [A loop you can lock and loosen](#a-loop-you-can-lock-and-loosen).
+GRAVITY (a pull back home) and seeds that replay. Recipes: [A loop you can lock and loosen](#a-loop-you-can-lock-and-loosen),
+[Stepped chaos](#stepped-chaos).
 
 ### MARKOV: chains of chance
 
@@ -367,6 +588,18 @@ The two ORGANIC mod sources come from two modules:
 - **SWARM**, after *ochd* by Instruō and DivKid: eight free-running LFOs, each faster than the one before, chosen so
   that no two ever line up. Eight related motions, from a minute to a couple of seconds a turn.
 
+### The utility modules: buses, EOC, CLOCK, HOLD
+
+The mods' own building blocks restate a modular's utility modules, ideas only:
+
+- **BUS A and BUS B** are a mixer and a slew limiter in one: mods summed, or combined as MAX, MIN and DIFF (the OR,
+  AND and XOR of gates), with a LAG that turns a gate into a rise and fall, as Make Noise's Maths does.
+- **EOC** is the end-of-cycle pulse of a cycling envelope (Maths again, and Buchla's function generators), and
+  **CLOCK** is the clock input it is patched into: a generator stepped by any gate, divided by its amount.
+- **HOLD** is a sample and hold, clocked by the bar or by a track's notes; **S&H** and **SLEW** are one clocked by
+  the track's LFO, stepped and smoothed, as on Make Noise's Wogglebug (after Ken Stone's design).
+- **GATE** is a comparator, with a little hysteresis, as Ken Stone's Gated Comparator has.
+
 ### And Tessera's own
 
 BOUNCE (balls in a box, a note at each wall), POLY (four notes on four rhythms), CHORD (progressions in the
@@ -380,13 +613,18 @@ same principles: a system you set up, with an off position for everything automa
 Coming from a modular, a few differences matter:
 
 - **Four tracks, four LFOs.** Each track has one LFO, so a ring of four cross-modulated LFOs uses them all. The slow
-  sources (DRIFT, TIDE, SWARM, ENERGY) and each generator's GATE, NOTE and CV are extra sources that cost no LFO.
-- **Sixteen cords.** The biggest recipe here uses six. A limit like this keeps a patch readable; **MATRIX** shows
-  who moves whom.
+  sources (DRIFT, TIDE, SWARM, ENERGY), each generator's GATE, NOTE and CV, the two buses and each LFO's EOC are extra
+  sources that cost no LFO.
+- **Sixteen cords.** Most recipes here use three or fewer. A limit like this keeps a patch readable; **MATRIX**
+  shows who moves whom, and the mod scope shows how.
 - **Control rate.** Mods move about 1,400 times a second, plenty for anything but audio-rate modulation, which the
   engines (FM6, ORACLE's POLY MOD) do inside the voice.
-- **Events on the grid.** A mod can open, close or thin a part (DROP, FILL, density), but notes still come on the
-  track's steps. TIMING's SPLIT and HUMAN loosen that grid when you want it looser.
+- **Events.** A mod can open, close or thin a part (PLAY, DROP, FILL, density), and **CLOCK** steps a generator on
+  any gate, so notes can come off the grid, at the patch's own times; a track's DIV is then the fastest it steps.
+- **Intervals.** A mod onto PITCH moves in small, unquantized steps: right for vibrato and drift, wrong for a fifth.
+  For an interval, use **SHIFT** (a mod onto it moves in whole scale steps) or FOLLOW.
+- **One brake.** MOD DEPTH (GLO > PERF's sheet) scales every mod at once, so a feedback patch always has a way back
+  to dry.
 - **Everything replays.** Every random choice comes from a seed, so PLAY plays a piece the same way again and ROLL
   finds a new one. A modular patch is gone when you pull the cables; a Tessera patch can be saved, replayed and
   shared.
@@ -399,4 +637,5 @@ Coming from a modular, a few differences matter:
   <https://cgm.cs.mcgill.ca/~godfried/publications/banff.pdf>
 - monome norns and its scripts: <https://monome.org/docs/norns/>, <https://norns.community/>
 - Nonlinear Circuits: <https://www.nonlinearcircuits.com/>
+- Make Noise (Maths, Wogglebug): <https://www.makenoisemusic.com/>
 - Todd Barton building the Krell patch on a Buchla: <https://vimeo.com/48466272>
