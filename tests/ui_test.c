@@ -1247,7 +1247,9 @@ static int test_oct_grammar_m0(void)
     frame();
     ui.msg_t = 0;
     hold(B_OCTUP);
-    bad += check("M1: MODS, OCT+ held: NO SHEET, the mod's BI / UNI unchanged", msg_is("NO SHEET") && !cord_get(0)->uni);
+    bad += check("M1: MODS, OCT+ held: MODS' sheet (the MIX buses), the mod's BI / UNI unchanged",
+                 pop.on == POP_SHEET && str_eq(pop.title, "Mods") && !msg_is("NO SHEET") && !cord_get(0)->uni);
+    press(B_OCTDN);
     press(B_OCTUP);
     bad += check("M1: MODS, OCT+ tapped: still the mod's BI / UNI", cord_get(0)->uni != 0u);
     cord_clear();
