@@ -56,6 +56,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - On older firmware, MOD DEPTH plays at 100 %; a project with a mod onto MOD DEP does not load there.
 - A project with a mod onto PLAY does not load on 3.4.x or earlier betas.
 - On older firmware, a HOLD mod clocked by a track's notes holds by the bar.
+- A project with EOC as a source or a mod onto CLOCK does not load on 3.4.x or earlier betas.
 
 ## Please try
 - PAT GEN with different generators on two patterns: switch by hand and with SONG, save, power off and on, load.
@@ -77,8 +78,10 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - The keys on every page: OCT+ held opens a sheet or says NO SHEET; OCT- held gives the second knobs and goes back to the page when let go; the OCT- LED is lit where it does something.
 - FOLLOW: T2 FOLLOW T1, mute T1 on MIXER: T2 keeps playing.
 - USB stems: USB OUTPUT 4 TRACKS, record the four channels in a DAW (Windows with FlexASIO or ASIO4ALL).
-- A project from 3.4.1 loads and plays the same.
 - Scaling mods of mods: T2 GATE scaling M3 (mod 3 an LFO onto CUTOFF at 60 %); then T4 ENV at -100 scaling it; watch it with MOD SCOPE.
 - MOD DEPTH: a feedback patch (two generators onto each other) braked with MOD DEPTH; a MACRO onto MOD DEP at -100 %; a GATE onto FILL as MOD DEPTH passes 50 %.
 - PLAY: a TIDE or an LFO GATE onto a pad's PLAY; a FOLLOW track behind a shut leader keeps playing.
 - HOLD on notes: T1 RAND as HOLD onto T3 CUTOFF, clocked by T2's notes; save, load.
+- EOC: an LFO's EOC as a GATE mod onto FILL or a bus; on a slow LFO the gate is a short pulse each cycle.
+- CLOCK: EOC onto a generator's CLOCK, then S&H onto that LFO's rate; AMOUNT 50 % for every second edge; a GATE source counting hits; STOP and PLAY start it again.
+- A project from 3.4.1 loads and plays the same.
