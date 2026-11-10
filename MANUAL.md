@@ -364,6 +364,7 @@ key skips it.
 | **FORM**, KNOB 3 (**CLEAR**) | Forgets B and C: the section playing becomes A. |
 | **MODS**, **OCT+** | Switches the picked mod between **+-** (both ways), **+** (one way), **^** (GATE) and **=** (HOLD). |
 | **MODS**, **OCT+** held + **KNOB 4** | Sets a GATE mod's threshold. |
+| **MODS**, hold **OCT-** | Shows the picked mod's scope: its move over time over its source (see [MODS](#mods-the-modulation-cords)). |
 | **MATRIX**, **OCT+** | Opens the picked mod in MODS. |
 | **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across a row, KNOB 2 between rows, OCT+ opens the page, OCT- or EDIT closes it. Any other page button leaves it for its page. |
 | **PLAY** | Every generator starts its random choices from the top of its seed, and TIDE and SWARM restart: with EVOLVE's EVERY off, a project plays the same way each time. |
@@ -1486,6 +1487,16 @@ at a time, each with an activity light and a moving mark.
   ENERGY and the send effects' have none. On the MOSAIC colours an entry is in its track's colour.
 - Choosing a destination on a new cord sets the amount to 50 % (or a fixed move of 25 % with no source), so you hear
   it at once.
+- **The scope.** Hold **OCT-** on MODS to see how the picked mod moves: its row stays at the top and, in the other
+  rows' place, its move over time (the solid line) over its source (the dashed one), the dotted middle line 0, the top
+  +100 % of the destination's range. With AMOUNT under 100 % the gap between the two lines is the amount; a mod of
+  mods swells and shrinks inside its source. A GATE mod draws its threshold as a dashed line across the source, so you
+  see where it opens; a HOLD mod steps once a bar. It sweeps left to right (a gap marks now) over a window that suits
+  the source, with ticks at the bars: a bar for the notes' own (ENV, VEL, GATE, NOTE, CV, S&H ...), 2 to 16 bars for
+  an LFO (it keeps 2 to 6 cycles in view), 4 for a MACRO, 16 for DRIFT and SWARM, 64 for TIDE and ENERGY. Let go and
+  the four rows come back. With the screen reader, holding OCT- says it once: the window, the shape and the lowest and
+  highest move ("SCOPE 2 BARS, CYCLING 2 A BAR, LOW -60 HIGH 60 %"; a GATE: how often it opens and whether it is open
+  now). Nothing is saved; nothing changes until you hold it.
 - **Live marks**: a knob a cord reaches shows a mark where the cords move it now.
 - **DRIFT** is each track's slow wander, a new point about every 12 seconds, eased between.
 - **Effects.** RTE is the effect's third knob (RATE; ECHO's TIME, ROOM's and REVERB's SIZE, FILTER's CUT), CHR its
@@ -1504,6 +1515,7 @@ at a time, each with an activity light and a moving mark.
   says **MODS FULL**.
 
 <p align="center"><img src="assets/gallery/cords.png" alt="MODS" width="240"> <img src="assets/gallery/mods_live.png" alt="A live mod mark on BRANCH" width="240"></p>
+<p align="center"><img src="assets/gallery/mods_scope.png" alt="MODS with OCT- held: the scope of a mod whose amount another mod turns" width="240"> <img src="assets/gallery/mods_scope_gate.png" alt="The scope of a GATE mod: its threshold across the source" width="240"></p>
 
 ---
 

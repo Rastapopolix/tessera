@@ -19,6 +19,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - NOTES: OCT+ on an empty step no longer places a note (on the drum grid, no longer sets a hit); it says NOTHING THERE. KNOB 2 or a key places a note (the grid: KNOB 3 or a white key). OCT+ on a note still opens its sheet; held, OCT+ opens the pattern's sheet and the screen says PATTERN SHEET once the hold counts.
 - GROUND: MENU > GROUND, below COLOR, puts the screen on warm paper (LIGHT) instead of black (DARK, the default). Each ink becomes a darker version that reads well on paper; the MOSAIC sets keep four different inks. COLOR's sheet shows them on paper while LIGHT is on (#557).
 - HOLD mods: OCT+ on MODS cycles +- / + / GATE / HOLD. HOLD takes the source at the start of each bar and keeps it until the next.
+- MOD SCOPE: hold OCT- on MODS to see the picked mod move over time (solid) over its source (dashed), a GATE's threshold as a line across it. The window follows the source: a bar for the notes' own, 2 to 16 bars for an LFO, up to 64 for TIDE and ENERGY. Let go and the rows come back. The screen reader says its shape once as it opens.
 - Chord kinds SUS2, 7SUS4, ADD9 and MAJ6 on CHRD (SCL > CHORD, or the CHORD track's layer), after POW: fixed shapes on any note, for the chord keys, MIDI in, step entry, the arp and the CHORD generator.
 
 ## Fixed
@@ -50,4 +51,5 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - STEP direction: PONG and DRUNK on a melody, with SONG and a pattern change; save, load, and STOP and PLAY replays RAND.
 - CHRD SUS2, 7SUS4, ADD9, MAJ6 on the chord keys and on a CHORD track (the name on the CHORD page: Csus2, C7sus4, Cadd9, C6), with OPEN and +OCT.
 - HOLD mod: an LFO into a filter or pitch held per bar; a cord to DIR.
+- MOD SCOPE: hold OCT- on MODS with an LFO mod, a GATE mod (turn its threshold) and a mod of mods; does the picture keep up, and is it readable on the panel (a light GROUND too)?
 - A project from 3.4.1 loads and plays the same.

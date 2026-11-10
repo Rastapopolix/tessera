@@ -350,6 +350,52 @@ int main(int argc, char **argv)
         c.src_trk = 0;
         cord_set(cord_ui_sel, &c);
     }
+#if MELODEE_LOOK
+    {                                                   /* MOD SCOPE (mscope.c): OCT- held on MODS says it once */
+        static const cord_t C2[2] = {{CS_LFO, 0, CD_CUTOFF, 2, 60, 0}, {CS_LFO, 0, CD_TW_DROP, 1, 100, 20, CU_GATE}};
+        uint32_t b, k;
+        pop.on = 0;                                     /* (KNOB 1's list closed: over the page, no scope) */
+        go_title("MODS");
+        settle();
+        cord_clear();
+        cord_set(0, &C2[0]);
+        cord_set(1, &C2[1]);
+        trk[0].lfo_fade = 32767;
+        trk[0].p[P_LPOL] = 0;
+        for (k = 0; k < 2u; k++) {
+            cord_ui_sel = (uint8_t)k;
+            frame();                                    /* (MODS asks for the picked mod) */
+            for (b = 0; b < 375u; b++) {                /* T1's LFO a cycle every half bar, three bars of 16 ms */
+                int32_t x = (int32_t)((b % 62u) * 65536u / 62u) - 32768, a = x < 0 ? -x : x;   /* frames at 120 BPM */
+                trk[0].lfo_val = (int32_t)(-(int64_t)x * (32768 - a) / 8192);
+                lfo_units_run += 786u;
+                cord_tick();
+                mscope_take(k);
+            }
+            reader(ANN_HELLO);
+            said_clear();
+            fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+            settle();
+            if (!k) {
+                bad += check("speak: MODS, OCT- held: the scope in words", said("SCOPE 2 BARS, CYCLING 2 A BAR, LOW -60 HIGH 60 %"));
+                printf("  said: %s", host_said);
+                said_clear();
+                settle();
+                settle();
+                bad += check("speak: ..said once, not as it moves", host_said_frames == 0u);
+            } else
+                bad += check("speak: ..a GATE: how often it opens", said("SCOPE 2 BARS, GATE OPENS 2 A BAR, ") &&
+                             said(" NOW, LOW 0 HIGH 100 %"));
+            settle();
+            settle();
+            fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
+            reader(ANN_HELLO);                          /* (a reader says HELLO every few seconds) */
+            frame();
+        }
+        bad += check("speak: ..OCT- let go: MODS as before", !cu_scope && !ui.home && str_eq(PAGES[ui.page].title, "MODS"));
+        cord_clear();
+    }
+#endif
     said_clear();
     go_title("SCALES");
     settle();
