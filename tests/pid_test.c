@@ -77,7 +77,8 @@ static int reference(FILE *f)
         static const char *const KIND[] = {"each voice", "the audio block", "the LFO's depth", "the generator's step",
                                              "a MIDI CC out, each block", "the send effects' block (every track's)", "another mod's move, each block", "the project's FILL, each block",
                                              "the project's tempo on CLK INT, each block",
-                                             "the project's MIX bus, each block"};
+                                             "the project's MIX bus, each block", "the project's MOD DEPTH, each block"};
+        _Static_assert(sizeof KIND / sizeof KIND[0] == CK_MDEPTH + 1u, "a description for each kind of destination");
         static const char *const SRC_HELP[CS_N] = {"", "the track's LFO, both ways whatever its POL (the mod's +- or + "
             "decides)", "the envelope of the track's latest note",
             "the latest note's velocity", "the latest note's pitch (C4 = 0)", "a new random value at each note",

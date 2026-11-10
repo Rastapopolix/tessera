@@ -447,4 +447,4 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | DIR | the generator's step | the STEP pattern's DIR, stepped: FWD BACK PEND PONG RAND DRUNK from the pattern's own |
 | BUS A | the project's MIX bus, each block | the project's MIX bus A: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS A |
 | BUS B | the project's MIX bus, each block | the project's MIX bus B: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS B |
-| MOD DEP | (null) | the project's MOD DEPTH (GLO > PERF's sheet): how much of every mod's move plays, 0..100 %; a MACRO onto it at -100 % turns the patch dry |
+| MOD DEP | the project's MOD DEPTH, each block | the project's MOD DEPTH (GLO > PERF's sheet): how much of every mod's move plays, 0..100 %; a MACRO onto it at -100 % turns the patch dry |
