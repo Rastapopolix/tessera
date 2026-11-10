@@ -169,18 +169,18 @@ here runs on the clock: the patch decides when the next note comes.
 
 **Cords:**
 - `T1 EOC → T1 CLOCK, +100`
-- `T1 S&H → T1 LFO RTE, +40`
+- `T1 S&H → T1 LFO RTE, +20`
 - `T1 LFO → T1 GAIN, +100`
 
 **Keys:**
 1. Track 1 (GLASS PAD), **SEQ** for GEN: MODE **MARKOV**, **KNOB 3** DENS **100** (a note every step). **ARP** for
    LENGTH: **KNOB 1** LENGTH **HIT**, so each note rings until the next.
-2. **LFO** for LFO: **KNOB 1** RATE **30** (about four seconds a cycle), **KNOB 2** WAVE **TRI**.
+2. **LFO** for LFO: **KNOB 1** RATE **35** (about three seconds a cycle), **KNOB 2** WAVE **TRI**.
 3. **MODS**: mod 1 from **T1 EOC** (the last of track 1's sources) to **T1 CLOCK**, **+100**. EOC is a short gate
    at the start of each LFO cycle; CLOCK steps the generator on each one instead of on its DIV. Press **PLAY**: a note
    at the top of every cycle.
-4. Mod 2 from **T1 S&H** to **T1 LFO RTE**, **+40**. S&H draws a new value as each cycle starts, and sets that
-   cycle's speed: the notes come at irregular, self-made times.
+4. Mod 2 from **T1 S&H** to **T1 LFO RTE**, **+20**. S&H draws a new value as each cycle starts, and sets that
+   cycle's speed: the notes come at irregular, self-made times, from about one second apart to ten.
 5. Mod 3 from **T1 LFO** to **T1 GAIN**, **+100**. GAIN at +100 is a VCA: silent at the bottom of the LFO, full at
    the top. The triangle starts each cycle at the bottom, so each note swells up from silence and fades away just as
    the next one comes.
@@ -201,22 +201,22 @@ into a figure, now breaking out of it.
 
 **Cords:**
 - `T1 EOC → T3 CLOCK, +100`
-- `T3 CV → T1 LFO RTE, +40`
+- `T3 CV → T1 LFO RTE, +25`
 - `T1 S&H → T3 T PROB, +40`
 
 **Keys:**
 1. Track 3 (BELLS), **SEQ** for GEN: MODE **TURING**, LENGTH **8**, PROB **10**. Track 1's LFO is the clock
-   (track 1 plays nothing; leave its LFO at its own RATE).
+   (track 1 plays nothing): **LFO** for LFO, **KNOB 1** RATE **40**, a cycle every two and a half seconds.
 2. **MODS**: mod 1 from **T1 EOC** to **T3 CLOCK**, **+100**. The register steps once each cycle of track 1's LFO.
-3. Mod 2 from **T3 CV** (the register) to **T1 LFO RTE**, **+40**. The register sets the speed of its own clock: high
-   values step faster.
+3. Mod 2 from **T3 CV** (the register) to **T1 LFO RTE**, **+25**. The register sets the speed of its own clock: high
+   values step faster, up to about two steps a second.
 4. Mod 3 from **T1 S&H** to **T3 T PROB**, **+40**. The clock's own random value decides how often the register
    flips a bit.
 
 **Watch it:** pick mod 2 and hold OCT-: a bar of the register, stepped (dashed), and the clock rate it sets (solid);
 the high steps are the short ones.
 
-**Variation:** mod 2 at **−40**: high values slow the clock, so the line lingers on its top notes.
+**Variation:** mod 2 at **−25**: high values slow the clock, so the line lingers on its top notes.
 
 #### Two LFOs pulling on each other
 

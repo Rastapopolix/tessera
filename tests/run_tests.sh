@@ -102,6 +102,9 @@
 # CLOCK (tests/cordclock_test.c): a generator track stepped by a CLOCK cord (cord.c, seq.c seq_grid_tick): the DIV clock
 #                   replaced, the first step at PLAY, the division and the edge, hits, the wait for DIV, STOP, a cord
 #                   put on and taken off, no cord / AMOUNT 0 as before.
+# RECIPES (tests/recipes_test.c): two of GENERATIVE.md's patches as the guide sets them up, rendered through mix_block:
+#                   the Krell (a step on each LFO cycle start, each cycle its own length) and Long gates (two LFOs
+#                   summed in BUS A, compared onto PLAY: heard in stretches of different lengths; no mod: always).
 # PIECE (tests/planner_test.c): the piece planner (planner.c): the ten SHAPEs (range, PEAK, COUNT, USER, sparse ends),
 #                   LENGTH FREE with the rest turned plays the same notes, a 10-minute ARCH (intro, top, outro, the
 #                   CHAIN home for its last 15 %, ENERGY its curve, CONTRAST near the top), END STOP / LOOP / NEW / FREE,
@@ -137,7 +140,7 @@ start=$(date +%s)
 # qmap FILE: the jobs (QSEL) and regress's engines (QENG) for a changed file; returns 1 when no rule covers it.
 G_UI="ui_renders ui_test speak_test layer_screen_test theme_test text_ref_test text_spacing_test msg_len_test"
 G_SEQ="seq_edit_test seq_notes_test pattern_test note_tools_test swing_test split_test follow_test cordclock_test motion_test recording_test"
-G_GEN="gen_test tessera_test chain_test entries_test planner_test split_test follow_test cordclock_test"
+G_GEN="gen_test tessera_test chain_test entries_test planner_test split_test follow_test cordclock_test recipes_test"
 G_STORE="storage_test persistence_test upgrade_test backup_test demo_projects settings_test upreset_test storage_safety_test
     settings_origin_test preset_boot_reset_test fm6_preset_test"
 G_MIDI="midi_control_test midi_out_test midi_timing_test midi_scale_test midi_uart_test recording_test"
@@ -168,7 +171,7 @@ qmap() {
         firmware/src/mod.c) QREG=1; QSEL="$QSEL $G_AUDIO mod_test mod_spread_test" ;;
         firmware/src/voice.c | firmware/src/mix.c | firmware/src/dsp.c | firmware/src/audio*.[ch] | firmware/src/engines.c | \
             firmware/src/resources.c | firmware/src/native_presets.c) QREG=1; QSEL="$QSEL $G_AUDIO designer_test" ;;
-        firmware/src/ui_cords.c | firmware/src/cord.[ch]) QSEL="$QSEL $G_UI cord_test mod_test" ;;
+        firmware/src/ui_cords.c | firmware/src/cord.[ch]) QSEL="$QSEL $G_UI cord_test mod_test recipes_test" ;;
         firmware/src/ui_speak.c) QSEL="$QSEL $G_UI" ;;
         firmware/src/ui_designer*) QSEL="$QSEL $G_UI designer_test" ;;
         firmware/src/ui_help.c | firmware/src/pid.[ch] | firmware/src/pid_help_unpack.h | firmware/src/params.c)
@@ -566,6 +569,7 @@ if core && [ $TABLES = 1 ]; then
         follow_test -O1 $FW
     t "CLOCK cord: a generator stepped by its CLOCK cord: replaced DIV, PLAY, division, edge, hits, wait, STOP; no cord unchanged" \
         cordclock_test -O1 $FW
+    t "RECIPES: GENERATIVE.md's Krell and Long gates played: a note each LFO cycle; a voice in and out with a bus's sum"         recipes_test -O2 $FW
     t "PIECE: the planner: the SHAPEs, FREE unchanged, ENERGY / Entries / the CHAIN steered, END STOP LOOP NEW FREE, tempo" \
         planner_test -O2 $FW
     t "GEN: each generator on its own (gen.c alone): ranges, rests, draws per step, determinism, mutation, sections" \
