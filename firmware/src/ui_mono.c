@@ -291,12 +291,13 @@ static int32_t mo_batt_right(int32_t bat)
  * the header's line filling under it until the sheet opens (OCT_HOLD_MS); 0..1000, -1 none */
 static int32_t mo_sheet_hold(const char **name)
 {
-    static const char *const NM[6] = {"", "SOUND", "SONG", "PATTERN", "PATTERNS", "MODS"};
+    static const char *const NM[9] = {"", "SOUND", "SONG", "PATTERN", "PATTERNS", "MODS", "GENERATOR", "MIDI OUT",
+                                      "ENTRIES"};
     uint32_t k, ms;
-    if (!ui.oct_t0 || (ui.oct_t0 & 2u) || !((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) || gen_layer_on())
+    if (!ui.oct_t0 || (ui.oct_t0 & 2u) || !((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u))
         return -1;
     k = page_sheet();
-    if (!k || k > 5u)
+    if (!k || k > 8u)
         return -1;
     ms = (fm1_ticks() - (ui.oct_t0 & ~3u)) / (1000u * FM1_TICKS_PER_US);
     if (ms < 150u)
@@ -1634,7 +1635,7 @@ static void mo_pic_chain(void)
         if (fc_follows(i)) mo_invc(t, 3 + (int32_t)i * 16, 93, MO_TRK(i));
     }
 }
-/* PIECE: the SHAPE over the piece (USER: its points, the layer's four filled); playing, the play head; the time left
+/* PIECE: the SHAPE over the piece (USER: its points, OCT- held the one picked bigger); playing, the play head; the time left
  * (or FREE, or ENDED) on the foot row */
 static void mo_pic_piece(void)
 {
@@ -1650,7 +1651,7 @@ static void mo_pic_piece(void)
     if (tessera.pl_shape == PL_USER)
         for (i = 0; i < 8; i++) {
             int32_t x = 2 + i * 115 / 7, y = 86 - (int32_t)tessera.pl_user[i] * 32 / 100;
-            mo_disc(x, y, lay && (i >> 2) == lay - 1 ? 3 : 2, MO_INK);
+            mo_disc(x, y, lay && i == (int32_t)(pl_pt & 7u) ? 3 : 2, MO_INK);
         }
     if (on && song.playing) mo_vl(2 + (int32_t)(at * 115u >> 16), 52, 36, MO_INK);
     if (!set) str_cpy(b, "FREE", sizeof b);
@@ -1678,7 +1679,7 @@ static void mo_pic_perf(void)
         mo_text(n ? b : "NO MOD", 82, y, n ? MO_INK : MO_DIM);
     }
 }
-/* ENTRIES: a row a track: its number, its role (AUTO's guess; OCT- held: its ORDER), IN / OUT / MUTE, its level as
+/* ENTRIES: a row a track: its number, its role (AUTO's guess), IN / OUT / MUTE, its level as
  * a bar; a row about to change on the next line blinks; off: dim */
 static void mo_pic_entries(void)
 {
@@ -1689,8 +1690,7 @@ static void mo_pic_entries(void)
         char n[3] = {'T', (char)('1' + k), 0}, b[12];
         uint16_t ink = !on || ((warn >> k & 1u) && blink) ? mo_tdim(k) : MO_TRK(k);
         mo_invc(n, 3, y, MO_TRK(k));
-        str_cpy(b, entries_layer_on() == 2 ? ET_ORDER_NAME[tessera.et_order[k] % ET_ORDERS] : ET_ROLE_NAME[role[k] % ET_ROLES],
-                sizeof b);
+        str_cpy(b, ET_ROLE_NAME[role[k] % ET_ROLES], sizeof b);
         mo_text(b, 18, y, ink);
         mo_text(trk[k].p[P_MUTE] ? "MUTE" : (out >> k & 1u) ? "OUT" : "IN", 72, y, ink);
         mo_hl(98, y + 3, 20, MO_DIM);

@@ -4,7 +4,7 @@ The buttons and combinations of Tessera on one sheet, a supplement to the **[man
 two-page version is [docs/cheatsheet/tessera-cheatsheet.pdf](docs/cheatsheet/tessera-cheatsheet.pdf).
 
 **A + B**: hold A, then press or turn B. **Held**: about 0.7 s (the GLO and SCL layers: MENU > HOLD, 0.3 to 0.6 s);
-ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act when let go. KNOB 1 to 4 are the four knobs from the left.
+ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act when let go. KNOB 1 to 4 are the four knobs from the left.
 
 ## Getting around
 
@@ -17,7 +17,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | A page button again | That section's next page (from elsewhere most return to the page last used) |
 | **OCT-** (off HOME) | Back: closes a list, sheet or map, else HOME |
 | **OCT+** (off HOME) | Enter: opens the row, slot or note picked; does the action picked |
-| **OCT+** held | The page's sheet: the sound's (HOME, EDIT, ENV, LFO, FX), the pattern's (GEN, NOTES, PATTERN; Swing there), the song's (SONG), the pattern's on PATTERNS |
+| **OCT+** held | The page's sheet: the sound's (HOME, EDIT, ENV, LFO, FX), the pattern's (GEN, NOTES, PATTERN; Swing there), the song's (SONG), the pattern's on PATTERNS; a generator's (GEN: QUAD, CONSTL, ATLAS, ANSWER, CHORD), MIDI OUT's, ENTRIES', MODS'; elsewhere NO SHEET |
 | A sheet: **KNOB 1**, **OCT+** / **OCT-** | Picks the row / does it / closes |
 | A dialog: **OCT+** / **OCT-** | Yes / no |
 | Lists (menu, SCL, VOICE): **KNOB 1** / **KNOB 2** | The row / its value |
@@ -134,12 +134,12 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **SAVE** | USER, its Save sheet ready: OCT+ saves the sound |
 | **EDIT** on USER or PROJECT | Renames the slot |
 | **OCT+** on a PROJECT slot | Load, Save here, Rename, Boot, Erase |
-| GLO > MIDI OUT: **OCT+** held, **KNOB 1** to **4** | Each track's MIDI OUT TRANSPOSE, a semitone a click |
-| GLO > MIDI OUT: **OCT-** held, **KNOB 1** to **4** | Each track's SOUND, ON or OFF (OFF: MIDI only) |
-| GLO > PIECE: **OCT+** / **OCT-** held, **KNOB 1** to **4** | SHAPE USER's points 1 to 4 / 5 to 8 |
+| GLO > MIDI OUT: **OCT-** held, **KNOB 1** to **4** | Each track's MIDI OUT TRANSPOSE, a semitone a click |
+| GLO > MIDI OUT: **OCT+** held | Its sheet: each track's SOUND (OFF: MIDI only) and DRUM MAP (GM, ROW) |
+| GLO > PIECE, SHAPE USER: **OCT-** held, **KNOB 1** / **2** | Picks one of its eight points / sets its level |
 | GLO > CHAIN: **OCT-** held, **KNOB 1** to **4** | Each place's REPEAT, 1 to 8 phrases |
-| GLO > ENTRIES: **OCT+** held, **KNOB 1** to **4** | Each track's ROLE for ENTRIES: AUTO, BASS, RHYTHM, HARMONY, MELODY, ANCHOR |
-| GLO > ENTRIES: **OCT-** held, **KNOB 1** to **4** | Each track's ORDER for ENTRIES: AUTO (by ROLE), 1ST to 4TH (in in that order, out the other way) |
+| GLO > ENTRIES: **OCT-** held, **KNOB 1** to **4** | Each track's ROLE for ENTRIES: AUTO, BASS, RHYTHM, HARMONY, MELODY, ANCHOR |
+| GLO > ENTRIES: **OCT+** held | Its sheet: each track's ORDER: AUTO (by ROLE), 1ST to 4TH (in in that order, out the other way) |
 | GLO: a black key on a track ENTRIES took out | Brings it back now, left alone until the next section |
 
 ## Generators
@@ -147,11 +147,12 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | Do this | And this happens |
 |---|---|
 | GEN: **KNOB 1** | MODE: STEP, ARP or a generator |
-| GEN: **OCT+** held | The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD, CHORD, ATLAS, CONSTL, ANSWER (SOURCE, ORDER, SHIFT, SPACE) |
-| EVOLVE: **OCT+** held | GRAVITY (a generator); HOW: DRIFT, ADORN, SERIAL (a STEP track) |
+| GEN: **OCT-** held, **KNOB 2** to **4** | The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD (COL, MOVE, EVERY), CHORD (STRUM, DIR, OCT), ATLAS (KICK, SNR, HAT), CONSTL (LOCK, LEN, FILL), ANSWER (SOURCE, ORDER, SHIFT) |
+| GEN: **OCT+** held | The GEN sheet: QUAD's RANGE, CONSTL's SIZE, ATLAS' fourth part, ANSWER's SPACE, CHORD's CHRD, VOIC and BREATH / LEN |
+| EVOLVE: **OCT-** held | **KNOB 1** ROLL ALL; **KNOB 3** PAT GEN; **KNOB 4** GRAVITY (a generator) or HOW: DRIFT, ADORN, SERIAL (a STEP track) |
 | TIMING: **OCT-** held | **KNOB 1** SPLIT, the chance a step plays at half its division; **KNOB 2** HOW: DOUBLE, PUSH, MIX |
-| ATLAS: **OCT+** + a black key | The fourth part's sound (TOM, CLAP, OPEN HAT, RIM, BELL) |
-| CHORD, PROG USER: **OCT+** + keys | One chord a key, its root the key's note |
+| ATLAS: **OCT-** + a black key | The fourth part's sound (TOM, CLAP, OPEN HAT, RIM, BELL) |
+| CHORD, PROG USER: **OCT-** + keys | One chord a key, its root the key's note |
 | AWAKE: a white key | Picks that step: KNOB 1 its A, KNOB 2 its B; the key again lets it go |
 | EVOLVE: **KNOB 4** (ROLL) | A new seed a click; turn back for the last one |
 | GEN, TWEAK: **OCT-** held, **KNOB 1** | RANDOM: new values for the page's knobs; turn back to put them back |
@@ -159,8 +160,8 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | FORM: **OCT-** held, **KNOB 1** | DEVELOP: each return of a section varies a little (0: exact) |
 | FORM: **OCT-** held, **KNOB 2** / **3** | The CHAIN: FOLLOW or OWN; SKIP, the chance it lags a phrase |
 | FORM: **OCT-** held, **KNOB 4** | ROLE: this track's part for ENTRIES |
-| TWEAK: **OCT+** held, **KNOB 2** / **3** | FOLLOW's HOW (SAME, CHORD, CONTRA, BASS, CANON1 to 8); RHYTHM (OWN, SOURCE, BOTH) |
-| TWEAK: **OCT+** held, **KNOB 4** | FOLLOW's HOLD (shown as T3H2 on FOLLOW) |
+| TWEAK: **OCT-** held, **KNOB 2** / **3** | FOLLOW's HOW (SAME, CHORD, CONTRA, BASS, CANON1 to 8); RHYTHM (OWN, SOURCE, BOTH) |
+| TWEAK: **OCT-** held, **KNOB 4** | FOLLOW's HOLD (shown as T3H2 on FOLLOW) |
 | MODS: **OCT+** | The picked mod: +- (both ways) / + (one way) / GATE |
 | MODS: **OCT-** held, **KNOB 4** / **KNOB 3** | A GATE's threshold / a CC mod's CC number |
 | MODS: **OCT+** held | MODS' sheet: each MIX bus's Mode (SUM, MAX, MIN, DIFF) and Lag |

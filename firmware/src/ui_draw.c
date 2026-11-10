@@ -462,9 +462,12 @@ static uint8_t mo_on;                                   /* a Mono page being dra
 static void mo_capture(uint32_t c, const char *label, const char *val, const char *unit, uint16_t vc, int32_t ratio,
                        int hot);
 #endif
-static void draw_column(uint32_t c, const char *label, const char *val, const char *unit, uint16_t vc,
+static uint8_t col_sh;                                  /* the cards drawn this many to the right (a GEN engine's OCT- layer
+                                                         * behind RANDOM, pr_draw); past the fourth: none */
+static void draw_column(uint32_t c0, const char *label, const char *val, const char *unit, uint16_t vc,
                         int32_t ratio, uint32_t icon)
 {
+    uint32_t c = c0 + col_sh;
     char key[48];
     int hot = c == ui.hot_col && ui.hot_t, named = fmt_named, strip, snap;
     uint8_t sig;
@@ -478,6 +481,10 @@ static void draw_column(uint32_t c, const char *label, const char *val, const ch
     if (col_pid != PID_NONE && ratio >= 0 && cord_moves(col_pid, song.sel, &sh))   /* the mods on it, now */
         live = clamp(ratio + sh * 1000 / 32768, 0, 1000);
     col_pid = PID_NONE;
+    if (c > 3u) {
+        fmt_named = 0;
+        return;
+    }
 #if MELODEE_LOOK
     if (mo_on) {                                        /* Mono: the knob's texts to its dial (ui_mono.c) */
         mo_capture(c, label, val, unit, vc, ratio, hot);
@@ -810,9 +817,10 @@ static void draw_foot(void)
 #include "ui_stage.c"                                   /* Stage (HOME) */
 #include "ui_browser.c"                                 /* SAVE > PRESETS, the sound browser */
 #include "ui_patterns.c"                                /* SEQ > PATTERNS, SEQ > SONG */
-/* the layer's columns: KNOB 1 RANDOM (NEW >, BACK < with values kept); CHORD on GEN: KNOB 2 STRUM, KNOB 3 its DIR (dim
- * while OFF; seq_strum.c); the others empty */
-static void pr_draw(void)
+/* the OCT- layer's columns (the key grammar, M3): KNOB 1 RANDOM (NEW >, BACK < with values kept); CHORD on GEN: KNOB 2
+ * STRUM, KNOB 3 its DIR (dim while OFF; seq_strum.c), KNOB 4 OCT. 0: the page's own layer draws KNOB 2-4 (TWEAK's; a GEN
+ * engine's, its cards one to the right, col_sh); 1 drawn */
+static int pr_draw(void)
 {
     uint32_t tr = song.sel, c = 1;
     draw_column(0, "RANDOM", pr_gen_track(tr) && pr_back_ok(tr) ? "BACK <" : "NEW >", "", pr_gen_track(tr) ? VAL(0u) : T_DIM,
@@ -826,11 +834,24 @@ static void pr_draw(void)
         col_mods(PID_TESS(TX_CH_SDIR));
         draw_column(2, "DIR", pid_desc(PID_TESS(TX_CH_SDIR), tr)->names[sd], "", sm ? VAL(2u) : T_DIM, (int32_t)sd * 500,
                     ICON_AUTO);
-        c = 3;
+        int32_t o = tessera_chord(tr)->oct;
+        v[0] = o > 0 ? '+' : o < 0 ? '-' : '0';
+        v[1] = o ? (char)('0' + (o < 0 ? -o : o)) : 0;
+        v[2] = 0;
+        col_mods(PID_TESS(TX_CH_OCT));
+        draw_column(3, "OCT", v, "", VAL(3u), (o + 2) * 1000 / 4, ICON_AUTO);
+        return 1;
+    }
+    if (tw_layer_on())
+        return 0;
+    if (quad_cols_on() || cs_layer_on() || gr_layer_on() || an_layer_on() || sd_layer_on()) {
+        col_sh = 1;
+        return 0;
     }
     for (; c < 4u; c++) draw_column(c, "", "", "", T_DIM, -1, ICON_NONE);
+    return 1;
 }
-static void draw_columns(void)
+static void draw_columns_(void)
 {
     if (ui.home)                                        /* Stage: its knobs drop in when turned (ui_stage.c stage_knobs);
                                                          * the page left (DRUM SOUND ..) draws none under them */
@@ -852,10 +873,8 @@ static void draw_columns(void)
         else str_cpy(v,"FREE",sizeof v);
         draw_column(3,"LENGTH",v,"",VAL(3u),-1,ICON_GATE);return;
     }
-    if (pr_layer_on()) {                                /* GEN, TWEAK, OCT- held: RANDOM (page_random.c) */
-        pr_draw();
+    if (pr_layer_on() && pr_draw())                     /* GEN, TWEAK, OCT- held: RANDOM (page_random.c) and the layer */
         return;
-    }
 
     uint32_t c;
     char val[12];
@@ -949,17 +968,17 @@ static void draw_columns(void)
         fmt_int(w0 + 1, (uint32_t)(sh < 0 ? -sh : sh));
         fmt_int(w1, ev->drop);
         fmt_int(w2, ev->human);
-        if (ev->follow) {                               /* (a HOLD set under OCT+: shown as T3H2) */
+        if (ev->follow) {                               /* (a HOLD set under OCT-: shown as T3H2) */
             uint32_t h = tr < TESSERA_TRACKS ? tessera.follow_hold[tr] : 0u;
             w3[0] = 'T'; w3[1] = (char)('0' + ev->follow); w3[2] = 0;
             if (h) { w3[2] = 'H'; w3[3] = (char)('0' + h); w3[4] = 0; }
         }
         else str_cpy(w3, "OFF", sizeof w3);
-        if (tw_layer_on()) {                            /* OCT+ held: FOLLOW's HOW, RHYTHM, HOLD (lit while following) */
+        if (tw_layer_on()) {                            /* OCT- held: FOLLOW's HOW, RHYTHM, HOLD (lit while following;
+                                                         * KNOB 1 RANDOM, pr_draw) */
             uint32_t h = tessera.follow_hold[tr], fh = tessera.follow_how[tr] % TESS_FH_COUNT;
             uint32_t fr = tessera.follow_rhy[tr] % TESS_FR_COUNT;
             char w4[4] = {'T', (char)('0' + h), 0, 0};
-            draw_column(0, "", "", "", T_DIM, -1, ICON_NONE);
             draw_column(1, "HOW", pid_desc(PID_TESS(TX_TW_FHOW), 0)->names[fh], "", ev->follow ? VAL(1u) : T_DIM,
                         (int32_t)fh * 1000 / (TESS_FH_COUNT - 1), ICON_AUTO);
             draw_column(2, "RHYTHM", pid_desc(PID_TESS(TX_TW_FRHY), 0)->names[fr], "", ev->follow ? VAL(2u) : T_DIM,
@@ -1010,14 +1029,16 @@ static void draw_columns(void)
         draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
         return;
     }
-    if (cur_page()->graph == GR_PIECE && piece_layer_on()) {   /* PIECE, OCT+ / OCT- held: USER's levels 1-4 / 5-8 */
-        static const char *const NM[8] = {"USER 1", "USER 2", "USER 3", "USER 4", "USER 5", "USER 6", "USER 7", "USER 8"};
-        uint32_t o = piece_layer() == 2 ? 4u : 0u;
-        for (uint32_t k = 0; k < 4u; k++) {
-            char w[8];
-            fmt_int(w, tessera.pl_user[o + k]);
-            draw_column(k, NM[o + k], w, "%", tessera.pl_shape == PL_USER ? VAL(k) : T_DIM, (int32_t)tessera.pl_user[o + k] * 10, ICON_AUTO);
-        }
+    if (cur_page()->graph == GR_PIECE && piece_layer()) {   /* PIECE, SHAPE USER, OCT- held: KNOB 1 a point, KNOB 2 its
+                                                             * level (the point marked on the arc) */
+        uint32_t p = pl_pt & 7u;
+        char w0[4], w1[8];
+        fmt_int(w0, (int32_t)p + 1);
+        fmt_int(w1, tessera.pl_user[p]);
+        draw_column(0, "POINT", w0, "", VAL(0u), (int32_t)p * 1000 / 7, ICON_AUTO);
+        draw_column(1, "LEVEL", w1, "%", VAL(1u), (int32_t)tessera.pl_user[p] * 10, ICON_AUTO);
+        draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+        draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
         return;
     }
     if (cur_page()->graph == GR_PERF) {                  /* PERF: the four MACROs (cord.c CS_MACRO1) */
@@ -1041,14 +1062,7 @@ static void draw_columns(void)
         draw_column(3, "END", PL_END_NAME[tessera.pl_end % PL_ENDS], "", set ? VAL(3u) : T_DIM, (int32_t)tessera.pl_end * 333, ICON_AUTO);
         return;
     }
-    if (cur_page()->graph == GR_ENTRIES && entries_layer_on() == 2) {   /* ENTRIES, OCT- held: each track's ORDER */
-        static const char *const NM[TESSERA_TRACKS] = {"ORDER 1", "ORDER 2", "ORDER 3", "ORDER 4"};
-        for (uint32_t k = 0; k < TESSERA_TRACKS; k++)
-            draw_column(k, NM[k], ET_ORDER_NAME[tessera.et_order[k] % ET_ORDERS], "", VAL(k), (int32_t)tessera.et_order[k] * 250,
-                        ICON_AUTO);
-        return;
-    }
-    if (cur_page()->graph == GR_ENTRIES && entries_layer_on()) {   /* ENTRIES, OCT+ held: each track's ROLE */
+    if (cur_page()->graph == GR_ENTRIES && entries_layer_on()) {   /* ENTRIES, OCT- held: each track's ROLE */
         static const char *const NM[TESSERA_TRACKS] = {"ROLE 1", "ROLE 2", "ROLE 3", "ROLE 4"};
         for (uint32_t k = 0; k < TESSERA_TRACKS; k++)
             draw_column(k, NM[k], ET_ROLE_NAME[tessera.et_role[k] % ET_ROLES], "", VAL(k), (int32_t)tessera.et_role[k] * 200,
@@ -1090,31 +1104,13 @@ static void draw_columns(void)
         draw_column(3, "NOW", w3, "", T_DIM, -1, ICON_NONE);
         return;
     }
-    if (cur_page()->graph == GR_MIDICH && midi_dm_layer_on()) {   /* MIDI OUT, OCT+ and OCT- held: each DRUM MAP */
-        static const char *const NAME[TESSERA_TRACKS] = {"MAP 1", "MAP 2", "MAP 3", "MAP 4"};
-        const param_desc_t *d = pid_desc(PID_TESS(TX_MIDI_DMAP), 0);
-        for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
-            uint32_t v = tessera.midi_dmap[k] % TESS_DM_COUNT;
-            draw_column(k, NAME[k], d->names[v], "", v ? VAL(k) : T_DIM, (int32_t)v * 1000, ICON_AUTO);
-        }
-        return;
-    }
-    if (cur_page()->graph == GR_MIDICH && midi_layer_on()) {   /* MIDI OUT, OCT+ held: each track's TRANSPOSE */
+    if (cur_page()->graph == GR_MIDICH && midi_layer_on()) {   /* MIDI OUT, OCT- held: each track's TRANSPOSE */
         static const char *const NAME[TESSERA_TRACKS] = {"TRACK 1", "TRACK 2", "TRACK 3", "TRACK 4"};
         for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
             char w[8];
             int32_t v = tessera.midi_tr[k];
             midi_tr_text(w, v);
             draw_column(k, NAME[k], w, "st", VAL(k), (v + TESS_MIDI_TR) * 1000 / (2 * TESS_MIDI_TR), ICON_AUTO);
-        }
-        return;
-    }
-    if (cur_page()->graph == GR_MIDICH && midi_snd_layer_on()) {   /* MIDI OUT, OCT- held: each track's SOUND */
-        static const char *const NAME[TESSERA_TRACKS] = {"SND 1", "SND 2", "SND 3", "SND 4"};
-        const param_desc_t *d = pid_desc(PID_TESS(TX_SOUND), 0);
-        for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
-            uint32_t v = tessera.sound_off[k] & 1u;
-            draw_column(k, NAME[k], d->names[v], "", VAL(k), (int32_t)v * 1000, ICON_AUTO);
         }
         return;
     }
@@ -1233,39 +1229,33 @@ static void draw_columns(void)
         const tessera_evolve_t *ev = &tessera.evolve[tr < TESSERA_TRACKS ? tr : 0u];
         char e0[16], e1[16], e2[16], e3[16], e0u[8] = "", e1u[8] = "", e2u[8] = "%";
         int lk = tessera_lock_get(tr);
-        uint32_t pg;                                    /* (PAT GEN: KNOB 4 of both OCT+ layers) */
-        if (rall_layer_on()) {                          /* EVOLVE, OCT- held: ROLL ALL */
-            uint32_t g = 0;
+        uint32_t pg;                                    /* (PAT GEN: KNOB 4 of the OCT- layer) */
+        if (rall_layer_on()) {                          /* EVOLVE, OCT- held: ROLL ALL; PAT GEN; HOW (STEP EVOLVE) or GRAVITY
+                                                         * (lit with EVERY on) at the edge, where HOW's names fit */
+            uint32_t g = 0, sv = (uint32_t)sv_layer_on(), lay = sv || ev_layer_on();
             for (uint32_t i = 0; i < TESSERA_TRACKS; i++) g += tessera.mode[i] != TESS_ENG_OFF;
-            draw_column(0, "", "", "", T_DIM, -1, ICON_NONE);
-            draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
-            draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
             col_mods(PID_TESS(TX_EV_SEED));
-            draw_column(3, "ROLL ALL", tessera_roll_all_back() ? "BACK <" : "NEW >", "", g ? VAL(3u) : T_DIM, -1, ICON_AUTO);
-            return;
-        }
-        if (sv_layer_on()) {                            /* STEP EVOLVE, OCT+ held: HOW, PAT GEN */
-            uint32_t how = tessera.sv_how[tr] % TESS_SV_HOWS;
-            col_mods(PID_TESS(TX_SV_HOW));
-            draw_column(0, "HOW", pid_desc(PID_TESS(TX_SV_HOW), tr)->names[how], "", VAL(0u),
-                        (int32_t)how * 1000 / (TESS_SV_HOWS - 1), ICON_AUTO);
+            draw_column(0, "ROLL ALL", tessera_roll_all_back() ? "BACK <" : "NEW >", "", g ? VAL(0u) : T_DIM, -1, ICON_AUTO);
             draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
-            draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+            if (!lay) {
+                draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
+                draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+                return;
+            }
             pg = tessera.pat_gen[tr] ? 1u : 0u;
             col_mods(PID_TESS(TX_PAT_GEN));
-            draw_column(3, "PAT GEN", pg ? "ON" : "OFF", "", pg ? VAL(3u) : T_DIM, (int32_t)pg * 1000, ICON_AUTO);
-            return;
-        }
-        if (ev_layer_on()) {                            /* a generator's EVOLVE, OCT+ held: GRAVITY (lit with EVERY on) */
-            uint32_t gv = tessera.sd_grav[tr];
-            fmt_int(e0, gv);
-            col_mods(PID_TESS(TX_SD_GRAVITY));
-            draw_column(0, "GRAVITY", e0, "%", ev->every && !ev->form ? VAL(0u) : T_DIM, (int32_t)gv * 10, ICON_AUTO);
-            draw_column(1, "", "", "", T_DIM, -1, ICON_NONE);
-            draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
-            pg = tessera.pat_gen[tr] ? 1u : 0u;
-            col_mods(PID_TESS(TX_PAT_GEN));
-            draw_column(3, "PAT GEN", pg ? "ON" : "OFF", "", pg ? VAL(3u) : T_DIM, (int32_t)pg * 1000, ICON_AUTO);
+            draw_column(2, "PAT GEN", pg ? "ON" : "OFF", "", pg ? VAL(2u) : T_DIM, (int32_t)pg * 1000, ICON_AUTO);
+            if (sv) {
+                uint32_t how = tessera.sv_how[tr] % TESS_SV_HOWS;
+                col_mods(PID_TESS(TX_SV_HOW));
+                draw_column(3, "HOW", pid_desc(PID_TESS(TX_SV_HOW), tr)->names[how], "", VAL(3u),
+                            (int32_t)how * 1000 / (TESS_SV_HOWS - 1), ICON_AUTO);
+            } else {
+                uint32_t gv = tessera.sd_grav[tr];
+                fmt_int(e0, gv);
+                col_mods(PID_TESS(TX_SD_GRAVITY));
+                draw_column(3, "GRAVITY", e0, "%", ev->every && !ev->form ? VAL(3u) : T_DIM, (int32_t)gv * 10, ICON_AUTO);
+            }
             return;
         }
         if (tessera_step_on(tr)) {                      /* STEP EVOLVE: LOCK, EVERY, AMOUNT, CLEAR (the steps changed) */
@@ -1318,7 +1308,8 @@ static void draw_columns(void)
                     }
                 }
                 return;
-            } else if (sd_layer_on()) {                     /* TURING .. MORPH, OCT+ held: SOURCE, KEEP, GRAVITY */
+            } else if (sd_layer_on()) {                     /* TURING .. MORPH, OCT- held: SOURCE, KEEP, GRAVITY (KNOB 2-4:
+                                                             * col_sh) */
                 uint32_t src = tessera.sd_src[tr], kp = tessera.sd_keep[tr], gv = tessera.sd_grav[tr];
                 col_mods(PID_TESS(TX_SD_SOURCE));
                 draw_column(0, "SOURCE", pid_desc(PID_TESS(TX_SD_SOURCE), tr)->names[src % (TESSERA_TRACKS + 1u)], "",
@@ -1427,7 +1418,8 @@ static void draw_columns(void)
                 static const char *const QMOVE[GEN_QC_COUNT] = {"STOP", "DOWN", "UP", "RAND"};
                 static const char *const QRANGE[GEN_QR_COUNT] = {"3 OCT", "1 OCT", "2 OCT", "+-1"};
                 const gen_quad_t *q = tessera_quad(tr);
-                if (quad_cols_on()) {                           /* OCT+ held: the columns' and RANGE */
+                if (quad_cols_on()) {                           /* OCT- held: the columns' (KNOB 2-4, col_sh; RANGE: the
+                                                                 * sheet) */
                     uint32_t c = tessera.qcol_sel & 3u, mv = tessera.qcol[c] & 3u, ev = tessera.qcol[c] >> 2;
                     fmt_int(v1, c + 1u);
                     draw_column(0, "COL", v1, "", VAL(0u), (int32_t)c * 1000 / 3, ICON_AUTO);
@@ -1458,30 +1450,6 @@ static void draw_columns(void)
                 draw_column(3, "LOOP", v3, "", VAL(3u), (int32_t)g->loop * 1000 / GEN_SR_LOOP, ICON_AUTO);
             } else if (m == TESS_ENG_CHORD) {
                 const gen_chord_t *g = tessera_chord(tr);
-                if (ch_layer_on()) {                          /* OCT+ held: OCT, the track's CHRD and VOIC */
-                    const param_desc_t *dc = pid_desc(PID_TRACK(P_CHRD), tr), *dv = pid_desc(PID_TRACK(P_VOIC), tr);
-                    uint32_t cv = (uint32_t)TSEL->p[P_CHRD], vv = (uint32_t)TSEL->p[P_VOIC];
-                    v1[0] = g->oct > 0 ? '+' : g->oct < 0 ? '-' : '0';
-                    v1[1] = g->oct ? (char)('0' + (g->oct < 0 ? -g->oct : g->oct)) : 0;
-                    v1[2] = 0;
-                    draw_column(0, "OCT", v1, "", VAL(0u), ((int32_t)g->oct + 2) * 1000 / 4, ICON_AUTO);
-                    col_mods(PID_TRACK(P_CHRD));
-                    draw_column(1, "CHRD", cv <= (uint32_t)dc->max ? dc->names[cv] : "?", "", VAL(1u),
-                                (int32_t)cv * 1000 / (dc->max ? dc->max : 1), ICON_AUTO);
-                    col_mods(PID_TRACK(P_VOIC));
-                    draw_column(2, "VOIC", vv <= (uint32_t)dv->max ? dv->names[vv] : "?", "", VAL(2u),
-                                (int32_t)vv * 1000 / (dv->max ? dv->max : 1), ICON_AUTO);
-                    if (g->prog == GEN_CH_USER) {             /* USER: its LEN (the keys play its chords in) */
-                        fmt_int(v3, (int32_t)gen_chord_ulen(g));
-                        draw_column(3, "LEN", v3, "", VAL(3u), ((int32_t)gen_chord_ulen(g) - 1) * 1000 / 7, ICON_AUTO);
-                    } else {                                  /* the others: BREATH */
-                        uint32_t b = tessera.ch_breath[tr];
-                        fmt_int(v3, (int32_t)b);
-                        col_mods(PID_TESS(TX_CH_BREATH));
-                        draw_column(3, "BREATH", b ? v3 : "OFF", b ? "%" : "", VAL(3u), (int32_t)b * 10, ICON_AUTO);
-                    }
-                    return;
-                }
                 draw_column(0, "MODE", "CHORD", "", VAL(0u), (int32_t)gen_arc(TESS_ENG_CHORD), ICON_AUTO);
                 col_mods(PID_TESS(TX_CH_PROG));
                 draw_column(1, "PROG", pid_desc(PID_TESS(TX_CH_PROG), tr)->names[g->prog % GEN_CH_PROGS], "", VAL(1u),
@@ -1492,7 +1460,7 @@ static void draw_columns(void)
                             (int32_t)(g->hit % GEN_CH_HITS) * 1000 / (GEN_CH_HITS - 1), ICON_AUTO);
             } else if (m == TESS_ENG_ANSWER) {
                 const tessera_answer_t *a = tessera_answer(tr);
-                if (an_layer_on()) {                            /* OCT+ held: SOURCE, ORDER, SHIFT, SPACE */
+                if (an_layer_on()) {                            /* OCT- held: SOURCE, ORDER, SHIFT (SPACE: the sheet) */
                     const param_desc_t *dor = pid_desc(PID_TESS(TX_AN_ORDER), tr);
                     uint32_t src = tessera.sd_src[tr] % (TESSERA_TRACKS + 1u);
                     draw_column(0, "SOURCE", pid_desc(PID_TESS(TX_SD_SOURCE), tr)->names[src], "", VAL(0u),
@@ -1516,7 +1484,7 @@ static void draw_columns(void)
                 draw_column(3, tessera_answer_count(tr) ? "FADE" : "LOOPS", v3, "", VAL(3u), (int32_t)a->fade * 10, ICON_AUTO);
             } else if (m == TESS_ENG_CONSTEL) {
                 const gen_constel_t *c = tessera_constel(tr);
-                if (cs_layer_on()) {                            /* OCT+ held: LOCK, LEN, FILL, SIZE */
+                if (cs_layer_on()) {                            /* OCT- held: LOCK, LEN, FILL (SIZE: the sheet) */
                     uint32_t lk = tessera.evolve[tr].lock;
                     fmt_int(v1, lk);
                     col_mods(PID_TESS(TX_EV_LOCK));
@@ -1541,7 +1509,7 @@ static void draw_columns(void)
                 draw_column(3, "SPEED", v3, "", VAL(3u), (int32_t)tessera_cs_speed(tr) * 1000 / (TESS_CS_SPEEDS - 1u), ICON_AUTO);
             } else if (m == TESS_ENG_GRIDS) {
                 const gen_grids_t *g = tessera_grids(tr);
-                if (gr_layer_on()) {                            /* OCT+ held: KICK, SNR, HAT, the fourth part */
+                if (gr_layer_on()) {                            /* OCT- held: KICK, SNR, HAT (the fourth part: the sheet) */
                     const char *p4 = tessera_grids_part4_name(tr);
                     static const char *const GRL[3] = {"KICK", "SNR", "HAT"};
                     for (uint32_t k = 0; k < 3u; k++) {
@@ -1731,6 +1699,11 @@ static void draw_columns(void)
                     vp == &TSEL->p[P_LRATE] && TSEL->p[P_LSYNC] ? T_DIM : VAL(c),   /* LFO 2 SYNC on: RATE does nothing */
                     d->fmt == F_ENUM && d->max < 2 ? -1 : RATIO(d, *vp), param_icon(d, *vp));
     }
+}
+static void draw_columns(void)
+{
+    draw_columns_();
+    col_sh = 0;
 }
 
 

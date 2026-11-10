@@ -88,8 +88,32 @@ static int oct_dn_page(void)                            /* the page shown has an
         return pr_gen_track(song.sel);                  /* RANDOM (page_random.c; CHORD: STRUM too) */
     if (g == GR_FORM)
         return song.sel < TESSERA_TRACKS && tessera.mode[song.sel] != TESS_ENG_OFF;   /* DEVELOP, CHAIN, SKIP, ROLE */
-    return g == GR_EVOLVE || g == GR_MIDICH || g == GR_ENTRIES || g == GR_PIECE ||   /* ROLL ALL, SOUND, ORDER, USER 5-8, */
+    if (g == GR_PIECE)
+        return tessera.pl_shape == PL_USER;             /* USER's points */
+    return g == GR_EVOLVE || g == GR_MIDICH || g == GR_ENTRIES ||   /* ROLL ALL, TRANSPOSE, ROLE, */
            g == GR_TIMING || g == GR_ENERGY || g == GR_CHAIN || g == GR_TRK || g == GR_CORDS;   /* SPLIT, DEPTH, REPEAT, PAN, CC */
+}
+/* GEN or TWEAK, OCT- held (the key grammar, M3): KNOB 2-4 (slot 1-3; KNOB 1 is RANDOM). TWEAK: FOLLOW's HOW,
+ * RHYTHM, HOLD; CHORD: STRUM 5 ms a detent, its DIR (seq_strum.c), OCT; the other engines with a layer: its settings
+ * 1-3 (a fourth: the GEN sheet, ui_popup.c) */
+static void gen_dn_knob(uint32_t slot, int32_t steps)
+{
+    if (cur_page()->graph == GR_TWEAK) {
+        if (tw_layer_on()) tessera_tw_layer_knob(slot, steps);
+    } else if (ch_st_layer_on()) {
+        uint32_t x = slot == 1u ? TX_CH_STRUM : TX_CH_SDIR;
+        if (slot == 3u) tessera_chord_oct_knob(steps);
+        else tessera_param_set(song.sel, x, tessera_param_get(song.sel, x) + (steps > 0 ? 1 : -1) * (slot == 1u ? 5 : 1));
+    } else if (quad_cols_on())
+        tessera_quad_cols_knob(slot - 1u, steps);
+    else if (cs_layer_on())
+        tessera_constel_layer_knob(slot - 1u, steps);
+    else if (gr_layer_on())
+        tessera_grids_layer_knob(slot - 1u, steps);
+    else if (an_layer_on())
+        tessera_answer_layer_knob(slot - 1u, steps);
+    else if (sd_layer_on())
+        tessera_sd_layer_knob(slot - 1u, steps);
 }
 /* MODS' scope (ui_cords.c cu_scope_draw): OCT- held, nothing over the page */
 static int cu_scope_held(void)
@@ -980,35 +1004,23 @@ static void edit_param(uint32_t slot, int32_t steps)
         0)) {
         ui_message("STOP TO EDIT"); return;
     }
-    if (pr_layer_on()) {                            /* GEN, TWEAK, OCT- held: KNOB 1 page randomize (page_random.c); CHORD
-                                                     * on GEN: KNOB 2 STRUM 5 ms a detent, KNOB 3 its DIR (seq_strum.c) */
+    if (pr_layer_on()) {                            /* GEN, TWEAK, OCT- held: KNOB 1 page randomize (page_random.c), KNOB
+                                                     * 2-4 the page's layer (the key grammar, M3) */
         if (slot == 0u && steps) page_random(steps > 0 ? 1 : -1);
-        else if (slot - 1u < 2u && steps && ch_st_layer_on()) {
-            uint32_t x = slot == 1u ? TX_CH_STRUM : TX_CH_SDIR;
-            tessera_param_set(song.sel, x, tessera_param_get(song.sel, x) + (steps > 0 ? 1 : -1) * (slot == 1u ? 5 : 1));
-        }
+        else if (slot && steps) gen_dn_knob(slot, steps);
         oct_eat |= 1u;                                  /* (its release is no OCT-) */
         ui.force = 1;
         return;
     }
-    if (pg->graph == GR_EVOLVE && sv_layer_on()) {  /* STEP EVOLVE, OCT+ held: HOW */
-        tessera_sv_layer_knob(slot, steps);
-        oct_eat |= 2u;
-        ui.oct_t0 |= 2u;
-        oct_deferred = 0;
-        ui.force = 1;
-        return;
-    }
-    if (pg->graph == GR_EVOLVE && ev_layer_on()) {  /* a generator's EVOLVE, OCT+ held: GRAVITY */
-        tessera_ev_layer_knob(slot, steps);
-        oct_eat |= 2u;
-        ui.oct_t0 |= 2u;
-        oct_deferred = 0;
-        ui.force = 1;
-        return;
-    }
-    if (pg->graph == GR_EVOLVE && rall_layer_on()) {   /* EVOLVE, OCT- held: KNOB 4 ROLL ALL (right new, left back) */
-        if (slot == 3u && steps && tessera_roll_all(steps > 0 ? 1 : -1)) roll_said();
+    if (pg->graph == GR_EVOLVE && rall_layer_on()) {   /* EVOLVE, OCT- held: KNOB 1 ROLL ALL (right new, left back); KNOB 3
+                                                        * PAT GEN, KNOB 4 HOW (STEP EVOLVE) or GRAVITY (the layer's 3, 0) */
+        uint32_t k = slot == 3u ? 0u : slot == 2u ? 3u : 1u;
+        if (slot == 0u) {
+            if (steps && tessera_roll_all(steps > 0 ? 1 : -1)) roll_said();
+        } else if (sv_layer_on())
+            tessera_sv_layer_knob(k, steps);
+        else if (ev_layer_on())
+            tessera_ev_layer_knob(k, steps);
         oct_eat |= 1u;                                  /* (its release is no OCT-) */
         ui.force = 1;
         return;
@@ -1019,14 +1031,6 @@ static void edit_param(uint32_t slot, int32_t steps)
         if (slot == 3u && !tessera_step_on(song.sel) && tessera_param_get(song.sel, TX_EV_SEED) != was &&
             (!song.playing || tessera.roll[song.sel % TESSERA_TRACKS]))
             roll_said();                            /* (playing, turned back to the seed playing: nothing waits) */
-        ui.force = 1;
-        return;
-    }
-    if (pg->graph == GR_TWEAK && tw_layer_on()) {   /* a generator's TWEAK, OCT+ held: FOLLOW's HOW, RHYTHM, HOLD */
-        tessera_tw_layer_knob(slot, steps);
-        oct_eat |= 2u;
-        ui.oct_t0 |= 2u;
-        oct_deferred = 0;
         ui.force = 1;
         return;
     }
@@ -1058,28 +1062,10 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
-    if (pg->graph == GR_MIDICH && midi_dm_layer_on()) {   /* MIDI OUT, OCT+ and OCT- held: KNOB k track k's DRUM MAP */
-        if (slot < TESSERA_TRACKS && steps)
-            tessera_param_set(slot, TX_MIDI_DMAP, steps > 0);
-        oct_eat |= 3u;
-        ui.oct_t0 |= 2u;
-        oct_deferred = 0;
-        ui.force = 1;
-        return;
-    }
-    if (pg->graph == GR_MIDICH && midi_layer_on()) {   /* MIDI OUT, OCT+ held: KNOB k track k's TRANSPOSE, a
-                                                        * semitone a detent */
+    if (pg->graph == GR_MIDICH && midi_layer_on()) {   /* MIDI OUT, OCT- held: KNOB k track k's TRANSPOSE, a semitone a
+                                                        * detent (SOUND, DRUM MAP: the MIDI OUT sheet) */
         if (slot < TESSERA_TRACKS)
             tessera_param_set(slot, TX_MIDI_TR, tessera_param_get(slot, TX_MIDI_TR) + steps);
-        oct_eat |= 2u;
-        ui.oct_t0 |= 2u;
-        oct_deferred = 0;
-        ui.force = 1;
-        return;
-    }
-    if (pg->graph == GR_MIDICH && midi_snd_layer_on()) {   /* MIDI OUT, OCT- held: KNOB k track k's SOUND (right OFF) */
-        if (slot < TESSERA_TRACKS && steps)
-            tessera_param_set(slot, TX_SOUND, steps > 0);
         oct_eat |= 1u;                                  /* (its release is no OCT-) */
         ui.force = 1;
         return;
@@ -1109,27 +1095,24 @@ static void edit_param(uint32_t slot, int32_t steps)
         return;
     }
     if (pg->graph == GR_PIECE) {                    /* PIECE, the project's: LENGTH, SHAPE, END a step a detent, PEAK a
-                                                     * percent (COUNT a step); OCT+ / OCT- held: USER's levels */
-        int layer = piece_layer();
-        tessera_piece_knob(slot, layer || (slot == 2u && piece_k3() == 1) ? accel(EN_K1 + slot, steps, 100) : steps, layer);
-        if (layer == 1) {
-            oct_eat |= 2u;
-            ui.oct_t0 |= 2u;
-            oct_deferred = 0;
-        } else if (layer)
+                                                     * percent (COUNT a step); SHAPE USER, OCT- held: KNOB 1 a point of
+                                                     * the eight, KNOB 2 its level (USER 1-4 layer 1, 5-8 layer 2) */
+        if (piece_layer()) {
+            if (slot == 0u && steps)
+                pl_pt = (uint8_t)clamp((int32_t)pl_pt + steps, 0, 7);
+            else if (slot == 1u)
+                tessera_piece_knob(pl_pt & 3u, accel(EN_K1 + slot, steps, 100), 1 + ((pl_pt >> 2) & 1));
             oct_eat |= 1u;                              /* (its release is no OCT-) */
+        } else
+            tessera_piece_knob(slot, slot == 2u && piece_k3() == 1 ? accel(EN_K1 + slot, steps, 100) : steps, 0);
         ui.force = 1;
         return;
     }
     if (pg->graph == GR_ENTRIES) {                  /* ENTRIES, the project's: ENTRIES 2 a detent, DWELL, STYLE, FADE a
-                                                     * step; OCT+ held: KNOB k track k's ROLE; OCT- held: its ORDER */
+                                                     * step; OCT- held: KNOB k track k's ROLE (ORDER: the sheet) */
         int layer = entries_layer_on();
         tessera_entries_knob(slot, slot == 0u && !layer ? accel(EN_K1 + slot, steps, 50) : steps, layer);
-        if (layer == 1) {
-            oct_eat |= 2u;
-            ui.oct_t0 |= 2u;
-            oct_deferred = 0;
-        } else if (layer)
+        if (layer)
             oct_eat |= 1u;                              /* (its release is no OCT-) */
         ui.force = 1;
         return;
@@ -1202,64 +1185,6 @@ static void edit_param(uint32_t slot, int32_t steps)
     }
     if (pg->graph == GR_STEPS && pg->fam == FAM_GEN) {   /* GEN: the generator's knobs (PATTERN: upstream's) */
         uint32_t sel_tr = song.sel;
-        if (quad_cols_on()) {                           /* QUAD, OCT+ held: the columns and RANGE (no octave, no sheet) */
-            tessera_quad_cols_knob(slot, steps);
-            oct_eat |= 2u;
-            ui.oct_t0 |= 2u;
-            oct_deferred = 0;
-            ui.force = 1;
-            return;
-        }
-        if (ch_layer_on()) {                            /* CHORD, OCT+ held: OCT, the track's CHRD and VOIC, LEN / BREATH */
-            if (slot == 0u) {
-                tessera_chord_oct_knob(steps);
-            } else if (slot < 3u) {
-                uint32_t p = slot == 1u ? P_CHRD : P_VOIC;
-                const param_desc_t *dp = track_desc(TSEL, p);
-                TSEL->p[p] = (int16_t)clamp(TSEL->p[p] + (steps > 0 ? 1 : -1), dp->min, dp->max);
-            } else if (tessera_chord(sel_tr)->prog == GEN_CH_USER) {
-                tessera_chord_ulen_knob(steps);         /* (USER: its LEN) */
-            } else {
-                tessera_chord_breath_knob(steps);       /* (the others: BREATH) */
-            }
-            oct_eat |= 2u;
-            ui.oct_t0 |= 2u;
-            oct_deferred = 0;
-            ui.force = 1;
-            return;
-        }
-        if (gr_layer_on()) {                            /* GRIDS, OCT+ held: KICK, SNR, HAT, TOMS */
-            tessera_grids_layer_knob(slot, steps);
-            oct_eat |= 2u;
-            ui.oct_t0 |= 2u;
-            oct_deferred = 0;
-            ui.force = 1;
-            return;
-        }
-        if (sd_layer_on()) {                            /* TURING .. MORPH, OCT+ held: SOURCE, KEEP, GRAVITY */
-            tessera_sd_layer_knob(slot, steps);
-            oct_eat |= 2u;
-            ui.oct_t0 |= 2u;
-            oct_deferred = 0;
-            ui.force = 1;
-            return;
-        }
-        if (an_layer_on()) {                            /* ANSWER, OCT+ held: ORDER, SHIFT, SPACE, LEN */
-            tessera_answer_layer_knob(slot, steps);
-            oct_eat |= 2u;
-            ui.oct_t0 |= 2u;
-            oct_deferred = 0;
-            ui.force = 1;
-            return;
-        }
-        if (cs_layer_on()) {                            /* CONSTELLATION, OCT+ held: LOCK, LEN, FILL, SIZE */
-            tessera_constel_layer_knob(slot, steps);
-            oct_eat |= 2u;
-            ui.oct_t0 |= 2u;
-            oct_deferred = 0;
-            ui.force = 1;
-            return;
-        }
         if (sel_tr < TESSERA_TRACKS) {
             if (slot == 0u && !(tessera.mode[sel_tr] == TESS_ENG_AWAKE && tessera_awake(sel_tr)->edit)) {
                 seqm_step(sel_tr, steps);                      /* MODE: STEP ARP and the generators (ui.c) */
@@ -1477,17 +1402,13 @@ static void act_do(void)
 static uint8_t oct_eat;                                 /* OCT taps not to come (held for a sheet, used in a combo) */
 static uint8_t oct_deferred;                            /* OCT+ pressed on Stage (its sheet when held): the octave on
                                                          * release */
-/* a held OCT is a hold, never a tap (the key grammar, M0; issue #519 had it on seven pages): OCT- held past OCT_HOLD_MS
- * on any page is never Back (its layer, or a peek: letting go returns); OCT+ held is never Enter where holding it means
- * something (a layer's knobs here; a sheet's pages eat it when it opens, btn_hold), and elsewhere still Enters on
- * release however long (PATTERNS' Copy to: OCT+ pastes). The menu, dialogs, sheets and the map keep their taps */
+/* a held OCT- is a hold, never a tap (the key grammar, M0; issue #519 had it on seven pages): held past OCT_HOLD_MS on
+ * any page it is never Back (its layer, or a peek: letting go returns). OCT+ has no layer since M3: held, it opens the
+ * page's sheet or says NO SHEET (btn_hold eats its release), and where it Enters it still does on release however long
+ * (PATTERNS' Copy to: OCT+ pastes). The menu, dialogs, sheets and the map keep their taps */
 static int oct_hold_page(uint32_t k)                    /* k 0 OCT-, 1 OCT+ */
 {
-    uint32_t g = cur_page()->graph;
-    if (ui.home || ui.menu || ui.confirm || pop.on || smap.on || name_on() || new_on() || designer_on())
-        return 0;
-    return !k || g == GR_STEPS || g == GR_EVOLVE || g == GR_TWEAK || g == GR_MIDICH || g == GR_ENTRIES || g == GR_PIECE ||
-           g == GR_CORDS;                               /* (OCT+'s layers until M3; MODS: its BI / UNI) */
+    return !k && !(ui.home || ui.menu || ui.confirm || pop.on || smap.on || name_on() || new_on() || designer_on());
 }
 static uint32_t oct_taps(uint32_t pressed, int here)
 {
@@ -2027,7 +1948,7 @@ static void page_knob(uint32_t k, int32_t s)
 }
 
 /* CHORD USER with OCT+ held on GEN: each key pressed the next chord, its root the key's note (rounded down to the
- * scale: tessera.c); the first key of a hold starts a new progression. Silent (keys_mode); OCT+'s release then does
+ * scale: tessera.c); the first key of a hold starts a new progression. Silent (keys_mode); OCT-'s release then does
  * nothing else */
 static uint8_t ch_user_first = 1;
 static void chord_user_keys(uint32_t pressed)
@@ -2038,9 +1959,7 @@ static void chord_user_keys(uint32_t pressed)
         if (!((pressed >> k) & 1u)) continue;
         n = tessera_chord_user_key(song.sel, 53u + k, ch_user_first);
         ch_user_first = 0;
-        oct_eat |= 2u;
-        ui.oct_t0 |= 2u;
-        oct_deferred = 0;
+        oct_eat |= 1u;
         if (!n) {
             ui_message("USER FULL: 8");
         } else {
@@ -2053,16 +1972,14 @@ static void chord_user_keys(uint32_t pressed)
     }
 }
 
-/* GRIDS, OCT+ held on GEN: a black key picks the fourth part's sound, the drum grid's lane of that key (TOM, CLAP, OPEN
+/* GRIDS, OCT- held on GEN: a black key picks the fourth part's sound, the drum grid's lane of that key (TOM, CLAP, OPEN
  * HAT, RIM, BELL; the kick, snare and closed hat are the other three parts) */
 static void grids_part4_keys(uint32_t pressed)
 {
     for (uint32_t k = 0; k < 27u; k++) {
         char m[20];
         if (!((pressed >> k) & 1u)) continue;
-        oct_eat |= 2u;
-        ui.oct_t0 |= 2u;
-        oct_deferred = 0;
+        oct_eat |= 1u;
         if (key_black(k) && key_place(k) < NLANE && tessera_grids_part4_note(song.sel, DRUM_LANE_NOTE[key_place(k)])) {
             str_cpy(m, "PART4: ", sizeof m);
             str_cpy(m + 7, tessera_grids_part4_name(song.sel), sizeof m - 7);
@@ -2197,7 +2114,7 @@ static void ui_input(void)
     if (octup == BT_HOLD) {
         oct_eat |= 2u;                                  /* (its release is no OCT+) */
         oct_deferred = 0;
-        if(bulk_context()){ui.bulk_hold=1;if(!slot_kind()&&!bulk.on)ui_message("PATTERN SHEET");}else if(!gen_layer_on()){if(page_sheet())page_sheet_open();else ui_message("NO SHEET");}   /* (QUAD, CONSTELLATION on
+        if(bulk_context()){ui.bulk_hold=1;if(!slot_kind()&&!bulk.on)ui_message("PATTERN SHEET");}else if(page_sheet())page_sheet_open();else ui_message("NO SHEET");   /* (QUAD, CONSTELLATION on
                                                          * GEN: their layer; NOTES: the sheet named, a hold told from a tap) */
     } else if (octup == BT_TAP && oct_deferred) {
         song.octave += song.octave < 3 ? 1 : 0;         /* (OCT+ pressed on a page with a sheet: on release) */
@@ -2586,7 +2503,7 @@ static void ui_input(void)
             go_home();
         }
     }
-    if (!ch_user_entry_on()) ch_user_first = 1;       /* (OCT+ let go: the next key starts a new progression) */
+    if (!ch_user_entry_on()) ch_user_first = 1;       /* (OCT- let go: the next key starts a new progression) */
     song.grid = (uint8_t)keys_mode();                 /* (seq.c: the keys are the grid's) */
 #if MELODEE_SLICE
     if (notes && slice_page_on())                       /* SLICES: a key picks the slice it plays */
@@ -2600,10 +2517,10 @@ static void ui_input(void)
     } else if (awake_entry_on()) {                     /* AWAKE's steps (ui_awake.c) */
         awake_keys(notes);
         seq_midi_events(0);
-    } else if (ch_user_entry_on()) {                   /* CHORD USER, OCT+ held: its chords */
+    } else if (ch_user_entry_on()) {                   /* CHORD USER, OCT- held: its chords */
         chord_user_keys(notes);
         seq_midi_events(0);
-    } else if (gr_layer_on()) {                        /* GRIDS, OCT+ held: the fourth part's sound */
+    } else if (gr_layer_on()) {                        /* GRIDS, OCT- held: the fourth part's sound */
         grids_part4_keys(notes);
         seq_midi_events(0);
     } else if (song.grid) {

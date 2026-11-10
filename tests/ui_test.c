@@ -629,24 +629,23 @@ static int test_gen_family(void)
         tessera_param_set(tr, TX_SUB_SPLIT_HOW, 0);
     }
     if (tessera.mode[song.sel] != TESS_ENG_OFF && tessera.mode[song.sel] != TESS_ENG_GRIDS) {
-        uint32_t tr = song.sel, oct = song.octave;    /* TWEAK, OCT+ held: KNOB 2 HOW, KNOB 3 RHYTHM; KNOB 1 nothing */
+        uint32_t tr = song.sel, oct = song.octave;    /* TWEAK, OCT- held: KNOB 2 HOW, KNOB 3 RHYTHM (KNOB 1 RANDOM) */
         int8_t sh = tessera.evolve[tr].shift;
         go_title("TWEAK");
-        btn_down(B_OCTUP);
+        btn_down(B_OCTDN);
         frame();
-        turn(EN_K1, 3);
         turn(EN_K2, 1);
         turn(EN_K2, 1);
         turn(EN_K3, 1);
-        btn_up(B_OCTUP);
+        btn_up(B_OCTDN);
         frame();
-        bad += check("TWEAK, OCT+ held: HOW CONTRA a step a turn, RHYTHM SOURCE, SHIFT untouched, no octave",
+        bad += check("TWEAK, OCT- held: HOW CONTRA a step a turn, RHYTHM SOURCE, SHIFT untouched, no octave, no Back",
                      tessera.follow_how[tr] == TESS_FH_CONTRA && tessera.follow_rhy[tr] == TESS_FR_SOURCE &&
-                     tessera.evolve[tr].shift == sh && song.octave == oct);
+                     tessera.evolve[tr].shift == sh && song.octave == oct && !ui.home);
         tessera_param_set(tr, TX_TW_FHOW, 0);
         tessera_param_set(tr, TX_TW_FRHY, 0);
     } else
-        bad += check("TWEAK, OCT+ held: a generator track to test on", 0);
+        bad += check("TWEAK, OCT- held: a generator track to test on", 0);
     go_title("ENERGY");                           /* ENERGY, the project's: KNOB 1 ARC, KNOB 2 RESTS; 3 and 4 nothing */
     {
         turn(EN_K1, 3);
@@ -820,8 +819,8 @@ static int test_form_develop(void)
     return bad;
 }
 
-/* QUAD on GEN, OCT+ held: KNOB 1 the column, 2 its MOVE, 3 its EVERY, 4 the row's RANGE; the octave stays, no sheet
- * opens; let go, the generator's knobs again; a tap of OCT+ still raises the octave */
+/* QUAD on GEN, OCT- held (the key grammar, M3): KNOB 2 the column, 3 its MOVE, 4 its EVERY; the octave stays, no sheet
+ * opens, its release no Back; let go, the generator's knobs again; the row's RANGE on the GEN sheet (OCT+) */
 static int test_quad_cols(void)
 {
     int bad = 0;
@@ -832,30 +831,33 @@ static int test_quad_cols(void)
     tessera_param_set(song.sel, TX_MODE, TESS_ENG_QUAD);
     frame();
     oct = song.octave;
-    fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
-    host_pressed |= 1u << panel.btn[B_OCTUP];
+    fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+    host_pressed |= 1u << panel.btn[B_OCTDN];
     frame();
-    turn(EN_K1, 1);
-    turn(EN_K1, 1);                                     /* COL 3 */
-    turn(EN_K1 + 1u, 1);                                /* its MOVE: DOWN */
-    turn(EN_K1 + 2u, 1);
-    turn(EN_K1 + 2u, 1);                                /* its EVERY: /4 -> /8 */
-    turn(EN_K1 + 3u, 1);                                /* RANGE 1 OCT */
+    turn(EN_K1 + 1u, 1);
+    turn(EN_K1 + 1u, 1);                                /* COL 3 */
+    turn(EN_K1 + 2u, 1);                                /* its MOVE: DOWN */
+    turn(EN_K1 + 3u, 1);
+    turn(EN_K1 + 3u, 1);                                /* its EVERY: /4 -> /8 */
     for (i = 0; i < 6u; i++) { frame(); fm1_ms += 200u; host_ticks += 200000u; }   /* (held 1.2 s) */
-    help_find(1);
-    bad += check("QUAD, OCT+ held: KNOB 1 column 3, KNOB 2 its MOVE DOWN, KNOB 3 EVERY /8, KNOB 4 RANGE 1 OCT; its help",
+    help_find(2);
+    bad += check("QUAD, OCT- held: KNOB 2 column 3, KNOB 3 its MOVE DOWN, KNOB 4 EVERY /8; its help",
                  tessera.qcol_sel == 2u && (tessera.qcol[2] & 3u) == GEN_QC_DOWN && tessera_quad_every(2) == 8u &&
-                 tessera_quad(song.sel)->range == GEN_QR_ONE && help.pid == PID_TESS(TX_QD_MOVE3) && pid_find(help.pid));
+                 help.pid == PID_TESS(TX_QD_MOVE3) && pid_find(help.pid));
     bad += check("..the octave as it was, no sheet open", song.octave == oct && pop.on != POP_SHEET);
-    fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
     frame();
+    bad += check("..its release no Back: still GEN", !ui.home && str_eq(cur_page()->title, "GEN"));
     turn(EN_K1 + 2u, -1);
-    bad += check("OCT+ let go: KNOB 3 is PROB again, the octave still as it was",
+    bad += check("OCT- let go: KNOB 3 is PROB again, the octave still as it was",
                  tessera_quad(song.sel)->prob == 98u && song.octave == oct && tessera_quad_every(2) == 8u);
     turn(EN_K1 + 2u, 1);
     press(B_OCTUP);
-    bad += check("OCT+ tapped on QUAD's GEN: no sheet (a generator's pattern sheet is on PATTERN), the octave kept",
-                 pop.on != POP_SHEET && song.octave == oct);
+    bad += check("OCT+ tapped on QUAD's GEN: the generator's sheet, its one row RANGE, the octave kept",
+                 pop.on == POP_SHEET && str_eq(pop.title, "Generator") && pop.n == 1u && str_eq(pop.rows[0].label, "Range") &&
+                 song.octave == oct);
+    turn(EN_K2, 1);
+    bad += check("..KNOB 2 there: RANGE 1 OCT", tessera_quad(song.sel)->range == GEN_QR_ONE);
     pop_close();
     frame();
     tessera.qcol[2] = 3u << 2;
@@ -898,8 +900,8 @@ static int test_div_order(void)
     return bad;
 }
 
-/* CONSTELLATION on GEN, OCT+ held: KNOB 1 LOCK, 2 LEN, 3 FILL, 4 SIZE; the octave stays, no sheet opens; let go,
- * the generator's knobs again */
+/* CONSTELLATION on GEN, OCT- held: KNOB 2 LOCK, 3 LEN, 4 FILL; the octave stays, no sheet opens; let go, the
+ * generator's knobs again; SIZE on the GEN sheet */
 static int test_constel_layer(void)
 {
     int bad = 0;
@@ -913,25 +915,30 @@ static int test_constel_layer(void)
     tessera_param_set(tr, TX_CS_SIZE, 2);
     frame();
     oct = song.octave;
-    fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
-    host_pressed |= 1u << panel.btn[B_OCTUP];
+    fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+    host_pressed |= 1u << panel.btn[B_OCTDN];
     frame();
-    for (i = 0; i < 5u; i++) turn(EN_K1, 1);            /* LOCK 10 */
-    for (i = 0; i < 8u; i++) turn(EN_K1 + 1u, -1);      /* LEN 8 */
-    turn(EN_K1 + 2u, 1);                                /* FILL ARP */
-    turn(EN_K1 + 3u, 1);                                /* SIZE 3 */
+    for (i = 0; i < 5u; i++) turn(EN_K1 + 1u, 1);       /* LOCK 10 */
+    for (i = 0; i < 8u; i++) turn(EN_K1 + 2u, -1);      /* LEN 8 */
+    turn(EN_K1 + 3u, 1);                                /* FILL ARP */
     for (i = 0; i < 6u; i++) { frame(); fm1_ms += 200u; host_ticks += 200000u; }   /* (held 1.2 s) */
-    help_find(2);
-    bad += check("CONSTELLATION, OCT+ held: KNOB 1 LOCK 10, KNOB 2 LEN 8, KNOB 3 FILL ARP, KNOB 4 SIZE 3; its help",
+    help_find(3);
+    bad += check("CONSTELLATION, OCT- held: KNOB 2 LOCK 10, KNOB 3 LEN 8, KNOB 4 FILL ARP, SIZE kept; its help",
                  tessera.evolve[tr].lock == 10u && tessera_constel(tr)->len == 8u &&
-                 tessera_constel(tr)->fill == GEN_CS_FILL_ARP && tessera_constel(tr)->size == 3u &&
+                 tessera_constel(tr)->fill == GEN_CS_FILL_ARP && tessera_constel(tr)->size == 2u &&
                  help.pid == PID_TESS(TX_CS_FILL) && pid_find(help.pid));
     bad += check("..the octave as it was, no sheet open", song.octave == oct && pop.on != POP_SHEET);
-    fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
     frame();
     turn(EN_K1 + 2u, 1);
-    bad += check("OCT+ let go: KNOB 3 is DENS again, FILL kept", tessera_constel(tr)->dens == 52u &&
-                 tessera_constel(tr)->fill == GEN_CS_FILL_ARP && song.octave == oct);
+    bad += check("OCT- let go: KNOB 3 is DENS again, FILL kept", tessera_constel(tr)->dens == 52u &&
+                 tessera_constel(tr)->fill == GEN_CS_FILL_ARP && song.octave == oct && !ui.home);
+    press(B_OCTUP);
+    turn(EN_K2, 1);
+    bad += check("..the GEN sheet: Size, KNOB 2 SIZE 3", pop.on == POP_SHEET && str_eq(pop.rows[0].label, "Size") &&
+                 tessera_constel(tr)->size == 3u);
+    pop_close();
+    frame();
     tessera_param_set(tr, TX_CS_DENS, 50);
     tessera_param_set(tr, TX_CS_LEN, 16);
     tessera_param_set(tr, TX_CS_FILL, 0);
@@ -940,8 +947,8 @@ static int test_constel_layer(void)
     return bad;
 }
 
-/* CHORD USER on GEN with OCT+ held: the keys play its chords in, silent (a key's note rounded down to the scale, the
- * first key of a hold a new progression, up to eight), KNOB 4 its LEN; no octave, no sheet */
+/* CHORD USER on GEN with OCT- held: the keys play its chords in, silent (a key's note rounded down to the scale, the
+ * first key of a hold a new progression, up to eight), KNOB 4 OCT; no octave, no sheet; its LEN on the GEN sheet */
 /* STEP EVOLVE: a STEP track's EVOLVE page: LOCK, EVERY, AMOUNT, CLEAR; the steps as written while it plays, REC held
  * keeps the changes (EDIT held undoes it) */
 static int test_step_evolve(void)
@@ -1013,25 +1020,33 @@ static int test_chord_user(void)
     g = tessera_chord(tr);
     frame();
     oct = song.octave;
-    fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
-    host_pressed |= 1u << panel.btn[B_OCTUP];
+    fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+    host_pressed |= 1u << panel.btn[B_OCTDN];
     frame();
-    bad += check("CHORD USER, OCT+ held: the keys are its chords, silent (keys mode 2)", ch_user_entry_on() && song.grid == 2u);
+    bad += check("CHORD USER, OCT- held: the keys are its chords, silent (keys mode 2)", ch_user_entry_on() && song.grid == 2u);
     for (i = 0; i < 5u; i++) {
         fm1_in.notes |= 1u << K1[i]; host_notes |= 1u << K1[i]; frame();
         fm1_in.notes &= ~(1u << K1[i]); frame();
     }
     bad += check("..C A F G F#: I vi IV V IV, five chords", g->ulen == 5u && g->user[0] == 0u && g->user[1] == 5u &&
                  g->user[2] == 3u && g->user[3] == 4u && g->user[4] == 3u && tessera_param_get(tr, TX_CH_ULEN) == 5);
-    turn(EN_K1 + 3u, -1);
+    turn(EN_K1 + 3u, 1);
     help_find(3);
-    bad += check("..KNOB 4 LEN 4; its help", g->ulen == 4u && help.pid == PID_TESS(TX_CH_ULEN) && pid_find(help.pid));
+    bad += check("..KNOB 4 OCT +1; its help", g->oct == 1 && help.pid == PID_TESS(TX_CH_OCT) && pid_find(help.pid));
     bad += check("..the octave as it was, no sheet open", song.octave == oct && pop.on != POP_SHEET);
-    fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
     frame();
-    bad += check("OCT+ let go: the keys play again", !ch_user_entry_on() && song.grid != 2u && g->ulen == 4u);
-    fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
-    host_pressed |= 1u << panel.btn[B_OCTUP];
+    bad += check("OCT- let go: the keys play again, no Back", !ch_user_entry_on() && song.grid != 2u && !ui.home);
+    press(B_OCTUP);
+    turn(EN_K1, 1);
+    turn(EN_K1, 1);                                     /* (a row a detent) */
+    turn(EN_K2, -1);
+    bad += check("..the GEN sheet: Chord, Voicing, Length; KNOB 2 on Length: LEN 4", pop.on == POP_SHEET && pop.n == 3u &&
+                 str_eq(pop.rows[2].label, "Length") && g->ulen == 4u);
+    pop_close();
+    frame();
+    fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+    host_pressed |= 1u << panel.btn[B_OCTDN];
     frame();
     fm1_in.notes |= 1u << 9; host_notes |= 1u << 9; frame();   /* D */
     fm1_in.notes = 0; frame();
@@ -1041,14 +1056,15 @@ static int test_chord_user(void)
         fm1_in.notes = 0; frame();
     }
     bad += check("..eight at most", g->ulen == GEN_CH_USER_N && g->user[7] == 0u);
-    fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
     frame();
-    bad += check("..OCT+'s release changed no octave", song.octave == oct);
+    bad += check("..OCT-'s release: no octave, no Back", song.octave == oct && !ui.home && str_eq(cur_page()->title, "GEN"));
+    tessera_param_set(tr, TX_CH_OCT, 0);
     tessera_param_set(tr, TX_CH_PROG, GEN_CH_POP);
     return bad;
 }
 
-/* TURING / EUCLID on GEN with OCT+ held: KNOB 1 SOURCE, KNOB 2 KEEP (STEP as seed), their help; no octave, no sheet;
+/* TURING / EUCLID on GEN with OCT- held: KNOB 2 SOURCE, KNOB 3 KEEP (STEP as seed), their help; no octave, no sheet;
  * let go, KNOB 2 is LEN again */
 static int test_seed_layer(void)
 {
@@ -1062,21 +1078,21 @@ static int test_seed_layer(void)
     frame();
     oct = song.octave;
     len = tessera_param_get(tr, TX_TUR_LEN);
-    fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
-    host_pressed |= 1u << panel.btn[B_OCTUP];
+    fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+    host_pressed |= 1u << panel.btn[B_OCTDN];
     frame();
-    for (i = 0; i < 3u; i++) turn(EN_K1, 1);           /* SOURCE T3 */
-    for (i = 0; i < 2u; i++) turn(EN_K1 + 1u, 1);      /* KEEP PITCH */
+    for (i = 0; i < 3u; i++) turn(EN_K1 + 1u, 1);      /* SOURCE T3 */
+    for (i = 0; i < 2u; i++) turn(EN_K1 + 2u, 1);      /* KEEP PITCH */
     for (i = 0; i < 6u; i++) { frame(); fm1_ms += 200u; host_ticks += 200000u; }   /* (held 1.2 s) */
-    help_find(1);
-    bad += check("TURING, OCT+ held: KNOB 1 SOURCE T3, KNOB 2 KEEP PITCH; its help; LEN as it was",
+    help_find(2);
+    bad += check("TURING, OCT- held: KNOB 2 SOURCE T3, KNOB 3 KEEP PITCH; its help; LEN as it was",
                  tessera_param_get(tr, TX_SD_SOURCE) == 3 && tessera_param_get(tr, TX_SD_KEEP) == TESS_SD_PITCH &&
                  help.pid == PID_TESS(TX_SD_KEEP) && pid_find(help.pid) && tessera_param_get(tr, TX_TUR_LEN) == len);
     bad += check("..the octave as it was, no sheet open", song.octave == oct && pop.on != POP_SHEET);
-    fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
     frame();
     turn(EN_K1 + 1u, -1);
-    bad += check("OCT+ let go: KNOB 2 is LEN again, SOURCE kept", tessera_param_get(tr, TX_TUR_LEN) == len - 1 &&
+    bad += check("OCT- let go: KNOB 2 is LEN again, SOURCE kept", tessera_param_get(tr, TX_TUR_LEN) == len - 1 &&
                  tessera_param_get(tr, TX_SD_SOURCE) == 3 && song.octave == oct);
     tessera_param_set(tr, TX_SD_SOURCE, 0);
     tessera_param_set(tr, TX_SD_KEEP, TESS_SD_FREE);
@@ -1086,7 +1102,7 @@ static int test_seed_layer(void)
 }
 
 /* EVOLVE's ROLL says what it did (issue #528): stopped, NEW LINE and the seed at once; playing, NEW LINE AT BAR while
- * the seed waits, and nothing when turned back to the seed playing; ROLL ALL the same */
+ * the seed waits, and nothing when turned back to the seed playing; ROLL ALL (OCT- held, KNOB 1) the same */
 static int test_roll_said(void)
 {
     int bad = 0;
@@ -1115,9 +1131,9 @@ static int test_roll_said(void)
     fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
     frame();
     ui.msg_t = 0;
-    turn(EN_K4, 1);
+    turn(EN_K1, 1);
     bad += check("ROLL ALL stopped: NEW LINE said", tessera.seed[tr] != (uint32_t)s0 + 1u && msg_is("NEW LINE"));
-    turn(EN_K4, -1);
+    turn(EN_K1, -1);
     fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
     frame();
     stop_transport();
@@ -1188,6 +1204,17 @@ static int test_gen_oct_hold(void)
     go_title("PATTERN");
     bad += check("PATTERN, a generator: OCT+ held still opens the pattern's sheet (SWING, Clear motion)",
                  str_eq(cur_page()->title, "PATTERN") && oct_hold_sheet());
+    go_title("GEN");
+    tessera_param_set(tr, TX_MODE, TESS_ENG_ANSWER);
+    frame();
+    btn_down(B_OCTUP);
+    for (i = 0; i < 6u; i++) { frame(); fm1_ms += 200u; host_ticks += 200000u; }
+    btn_up(B_OCTUP);
+    frame();
+    bad += check("GEN, ANSWER: OCT+ held opens the generator's sheet (Space)", pop.on == POP_SHEET &&
+                 str_eq(pop.title, "Generator") && str_eq(pop.rows[0].label, "Space"));
+    pop_close();
+    frame();
     tessera_param_set(tr, TX_MODE, TESS_ENG_OFF);
     frame();
     return bad;
@@ -1344,8 +1371,8 @@ static int test_page_random(void)
     return bad;
 }
 
-/* GRIDS on GEN with OCT+ held: KNOB 1..4 KICK, SNR, HAT, TOMS (2 % a click), their help; no octave, no sheet; let go,
- * the knobs are MODE, X, Y, DENS again */
+/* GRIDS on GEN with OCT- held: KNOB 2..4 KICK, SNR, HAT (2 % a click), their help; no octave, no sheet; a black key
+ * picks the fourth part's sound; let go, the knobs are MODE, X, Y, DENS again; the fourth part's level on the GEN sheet */
 static int test_grids_layer(void)
 {
     int bad = 0;
@@ -1357,24 +1384,22 @@ static int test_grids_layer(void)
     tessera_param_set(tr, TX_MODE, TESS_ENG_GRIDS);
     frame();
     oct = song.octave;
-    fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
-    host_pressed |= 1u << panel.btn[B_OCTUP];
+    fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+    host_pressed |= 1u << panel.btn[B_OCTDN];
     frame();
-    for (i = 0; i < 10u; i++) turn(EN_K1, -1);         /* KICK 80 */
-    turn(EN_K1 + 1u, -1);                               /* SNR 98 */
-    turn(EN_K1 + 2u, 1);                                /* HAT 100 (its top) */
-    for (i = 0; i < 5u; i++) turn(EN_K1 + 3u, 1);       /* TOMS 10 */
+    for (i = 0; i < 10u; i++) turn(EN_K1 + 1u, -1);    /* KICK 80 */
+    turn(EN_K1 + 2u, -1);                               /* SNR 98 */
+    turn(EN_K1 + 3u, 1);                                /* HAT 100 (its top) */
     for (i = 0; i < 6u; i++) { frame(); fm1_ms += 200u; host_ticks += 200000u; }   /* (held 1.2 s) */
     help_find(3);
-    bad += check("ATLAS, OCT+ held: KNOB 1 KICK 80, KNOB 2 SNR 98, KNOB 3 HAT 100, KNOB 4 TOMS 10; its help",
+    bad += check("ATLAS, OCT- held: KNOB 2 KICK 80, KNOB 3 SNR 98, KNOB 4 HAT 100; its help",
                  tessera_param_get(tr, TX_GRD_KICK) == 80 && tessera_param_get(tr, TX_GRD_SNR) == 98 &&
-                 tessera_param_get(tr, TX_GRD_HAT) == 100 && tessera_grids(tr)->toms == 10u &&
-                 help.pid == PID_TESS(TX_GRD_TOMS) && pid_find(help.pid));
+                 tessera_param_get(tr, TX_GRD_HAT) == 100 && help.pid == PID_TESS(TX_GRD_HAT) && pid_find(help.pid));
     bad += check("..the octave as it was, no sheet open", song.octave == oct && pop.on != POP_SHEET);
     {   /* black keys 1 3 5 8 10 13 15 17: the drum grid's lanes BD SD CP CH OH TM RS CB */
         static const uint8_t K[4] = {5, 1, 17, 0};
         static const int8_t P4[4] = {1, 1, 4, 4};       /* (CP CLAP; BD, a white key refused) */
-        bad += check("..the keys silent (keys mode 2), KNOB 4's column TOM", song.grid == 2u &&
+        bad += check("..the keys silent (keys mode 2), the fourth part TOM", song.grid == 2u &&
                      !strcmp(tessera_grids_part4_name(tr), "TOM"));
         for (i = 0; i < 4u; i++) {
             fm1_in.notes |= 1u << K[i]; host_notes |= 1u << K[i]; frame();
@@ -1386,11 +1411,17 @@ static int test_grids_layer(void)
         bad += check("..a black key picks the fourth part's sound (CP CLAP, CB BELL); BD, a white key refused", i == 4u);
     }
     bad += check("..the octave still as it was", song.octave == oct);
-    fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
     frame();
     turn(EN_K1 + 3u, 1);
-    bad += check("OCT+ let go: KNOB 4 is DENS again, the shares kept", tessera_grids(tr)->dens == 52u &&
-                 tessera_param_get(tr, TX_GRD_KICK) == 80 && tessera_grids(tr)->toms == 10u && song.octave == oct);
+    bad += check("OCT- let go: KNOB 4 is DENS again, the shares kept, no Back", tessera_grids(tr)->dens == 52u &&
+                 tessera_param_get(tr, TX_GRD_KICK) == 80 && song.octave == oct && !ui.home);
+    press(B_OCTUP);
+    for (i = 0; i < 5u; i++) turn(EN_K2, 2);
+    bad += check("..the GEN sheet: Fourth part, KNOB 2 its level 10", pop.on == POP_SHEET &&
+                 str_eq(pop.rows[0].label, "Fourth part") && tessera_grids(tr)->toms == 10u);
+    pop_close();
+    frame();
     tessera_param_set(tr, TX_GRD_DENS, 50);
     for (i = 0; i < 3u; i++) tessera_param_set(tr, TX_GRD_KICK + i, 100);
     tessera_param_set(tr, TX_GRD_TOMS, 0);
@@ -4280,14 +4311,27 @@ static int test_product_ux(void)
     press(B_GLO); ok &= str_eq(cur_page()->title, "ENTRIES");
     press(B_GLO); ok &= cur_page()->graph == GR_TRK;
     bad += check("GLO cycles MIXER > GLOBAL > SYSTEM > MIDI OUT > PIECE > CHAIN > ENTRIES > MIXER", ok);
-    go_title("PIECE");                            /* the planner: LENGTH, SHAPE, PEAK / COUNT, END; OCT+ / OCT- USER */
+    go_title("PIECE");                            /* the planner: LENGTH, SHAPE, PEAK / COUNT, END; USER, OCT- held: a
+                                                   * point (KNOB 1), its level (KNOB 2) */
     turn(EN_K1, 2); turn(EN_K2, 5); turn(EN_K3, 1); turn(EN_K4, 1);
     ok = tessera.pl_length == 2u && tessera.pl_shape == 5u && tessera.pl_count == 4u && tessera.pl_end == 1u;
     fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
     turn(EN_K2, -1);
+    ok &= tessera.pl_shape == 4u && (oct_leds() & 1u) == 0u;   /* (WAVES: no layer, KNOB 2 SHAPE, the OCT- LED dark) */
     fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
-    ok &= tessera.pl_user[5] < 75u;
-    bad += check("PIECE: KNOB 1 LENGTH, 2 SHAPE (WAVES), 3 its COUNT, 4 END; OCT- held KNOB 2 USER's sixth level", ok);
+    frame();
+    tessera.pl_shape = PL_USER;
+    fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+    frame();
+    ok &= (oct_leds() & 1u) != 0u;
+    turn(EN_K1, -9);
+    turn(EN_K1, 5);
+    turn(EN_K2, -1);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
+    frame();
+    ok &= tessera.pl_user[5] < 75u &&tessera.pl_shape == PL_USER && !ui.home;
+    bad += check("PIECE: KNOB 1 LENGTH, 2 SHAPE (WAVES), 3 its COUNT, 4 END; SHAPE USER, OCT- held (its LED lit) KNOB 1 the "
+                 "sixth point, KNOB 2 its level", ok);
     tessera.pl_length = 0; tessera.pl_shape = 0; tessera.pl_count = 3; tessera.pl_end = 0; tessera.pl_user[5] = 75;
     go_title("CHAIN");                            /* the project's FORM, PHRASE, WANDER (form_chain.c) */
     turn(EN_K1, 2); turn(EN_K2, 1); turn(EN_K3, 5);
@@ -4296,14 +4340,24 @@ static int test_product_ux(void)
     bad += check("CHAIN: KNOB 1 FORM and KNOB 2 PHRASE a step a detent, KNOB 3 WANDER; back to OFF and 4 bars",
                  ok && !tessera.fc_form && !tessera.fc_phrase);
     tessera.fc_wander = 0; tessera.fc_phrase = 1;
-    go_title("ENTRIES");                          /* Entries: ENTRIES, DWELL, STYLE, FADE; OCT+ held the ROLEs (entries.c) */
+    go_title("ENTRIES");                          /* Entries: ENTRIES, DWELL, STYLE, FADE; OCT- held the ROLEs (entries.c),
+                                                   * the ORDERs on its sheet */
     turn(EN_K1, 1); turn(EN_K2, 2); turn(EN_K3, -1); turn(EN_K4, 1);
     ok = tessera.et_amount > 0u && tessera.et_dwell == 4u && tessera.et_style == 0u && tessera.et_fade == 3u;
-    fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+    fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
     turn(EN_K3, 2);
-    fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
-    ok &= tessera.et_role[2] == 1u;
-    bad += check("ENTRIES: KNOB 1 ENTRIES, 2 DWELL, 3 STYLE, 4 FADE; OCT+ held KNOB 3 track 3's ROLE a step a detent", ok);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
+    frame();
+    ok &= tessera.et_role[2] == 1u && !ui.home;
+    press(B_OCTUP);
+    for (i = 0; i < 3u; i++) turn(EN_K1, 1);            /* (a row a detent) */
+    turn(EN_K2, 1);
+    ok &= pop.on == POP_SHEET && pop.n == 4u && str_eq(pop.rows[3].label, "Order T4") && tessera.et_order[3] == 1u;
+    pop_close();
+    frame();
+    bad += check("ENTRIES: KNOB 1 ENTRIES, 2 DWELL, 3 STYLE, 4 FADE; OCT- held KNOB 3 track 3's ROLE a step a detent; "
+                 "the sheet's Order T4", ok);
+    tessera.et_order[3] = 0;
     tessera.et_amount = 0; tessera.et_dwell = 2; tessera.et_style = 1; tessera.et_fade = 2; tessera.et_role[2] = 0;
     go_title("MIDI OUT");                         /* KNOB k track k's MIDI OUT channel: AUTO, 1..16, OFF, a step a turn */
     turn(EN_K2, 3);
@@ -4323,6 +4377,21 @@ static int test_product_ux(void)
                      help.pid == PID_TESS(TX_MIDI_CH) && str_eq(v, "3"));
     }
     tessera.midi_ch[1] = 0;
+    fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+    turn(EN_K2, 2);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
+    frame();
+    ok = tessera.midi_tr[1] == 2 && tessera.midi_ch[1] == 0u && !ui.home;
+    press(B_OCTUP);
+    turn(EN_K1, 1);
+    turn(EN_K2, 1);
+    for (i = 0; i < 4u; i++) turn(EN_K1, 1);            /* (Drum map T2) */
+    press(B_OCTUP);
+    ok &= tessera.sound_off[1] == 1u && tessera.midi_dmap[1] == 1u && !pop.on;
+    bad += check("MIDI OUT: OCT- held KNOB 2 track 2's TRANSPOSE; the sheet: Sound T2 OFF (KNOB 2), Drum map T2 (OCT+)", ok);
+    tessera_param_set(1, TX_MIDI_TR, 0);
+    tessera_param_set(1, TX_SOUND, 0);
+    tessera_param_set(1, TX_MIDI_DMAP, 0);
     go_home(); hold(B_SEQ);
     bad += check("long SEQ goes directly to PATTERNS (the song under it) with no tap on release", cur_page()->graph == GR_PATGRID);
     turn(EN_SELECT, 1);
@@ -4829,9 +4898,10 @@ static int test_layer(void)
             ok = 1;                                     /* (#519: a knob turned under OCT-, then let go: the page stays) */
             for (uint32_t q = 3; q < 5u; q++) {
                 go_title(PG[q]); frame();
-                btn_down(B_OCTDN); frame(); turn(EN_K1 + 3u, 1); btn_up(B_OCTDN); frame(); frame();
+                btn_down(B_OCTDN); frame(); turn(EN_K1 + 2u, 1); btn_up(B_OCTDN); frame(); frame();
                 ok &= !ui.home && str_eq(cur_page()->title, PG[q]);
             }
+            tessera.et_role[2] = 0;
             bad += check("OCT- held on EVOLVE and ENTRIES, a knob turned, let go: the page stays (#519)", ok);
         }
         hold(B_HOME); ui.menu_sel = MI_MIDI_LEARN; turn(EN_K2, 1);
