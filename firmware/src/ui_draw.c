@@ -2044,10 +2044,13 @@ static void ui_draw_frame(void)
             cv_dim = cv_under = 1;
             draw_page();
             cv_dim = cv_under = 0;
+        }
+        if (ui.force || msc.card) {                     /* (a turn: the card alone, no flicker) */
             ui.force = 1;
             msc_draw();
             ui.force = 0;
         }
+        msc.card = 0;
         draw_head();
         return;
     }

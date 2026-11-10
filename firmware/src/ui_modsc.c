@@ -12,10 +12,11 @@
 
 static struct {
     uint8_t on;                   /* the map shown (a knob or SELECT turned with FX held) */
+    uint8_t card;                 /* the card alone to draw again, the page under it left as it is (ui_draw.c) */
     uint8_t knob;                 /* the last knob turned */
     int8_t slot;                  /* the cord it edited, -1: none */
     uint8_t src[NTRK];            /* each track's shortcut source (0: CS_LFO) */
-} msc = {0, 0, -1, {0}};
+} msc = {0, 0, 0, -1, {0}};
 
 static int msc_held(void)
 {
@@ -64,6 +65,15 @@ static int32_t msc_free(void)
     return -1;
 }
 
+/* a turn with FX held: the map opened over the page dimmed (ui.force), or, open, its card alone drawn again (each turn
+ * sent the whole page, then the card over it: 3.5-beta5's card flickered while a knob turned) */
+static void msc_show(void)
+{
+    if (msc.on) msc.card = 1;
+    else ui.force = 1;
+    msc.on = 1;
+}
+
 /* ui_input.c: KNOB k turned s with FX held; 1 = taken (the parameter's own value left as it is) */
 static int msc_knob(uint32_t k, int32_t s)
 {
@@ -72,10 +82,9 @@ static int msc_knob(uint32_t k, int32_t s)
     cord_t c;
     if (!msc_held())
         return 0;
-    msc.on = 1;
+    msc_show();
     msc.knob = (uint8_t)(k & 3u);
     msc.slot = -1;
-    ui.force = 1;
     if ((dst = msc_dest(k)) == CD_OFF)
         return 1;
     if ((i = msc_find(dst, tr)) >= 0) {
@@ -115,8 +124,7 @@ static int msc_select(int32_t s)
         c.src = (uint8_t)v;
         cord_set((uint32_t)msc.slot, &c);
     }
-    msc.on = 1;
-    ui.force = 1;
+    msc_show();
     return 1;
 }
 
@@ -127,7 +135,7 @@ static void msc_frame(void)
         return;
     ui.pg_down &= (uint16_t)~(1u << panel.btn[MSC_BTN]);
     if (!(fm1_in.buttons & (1u << panel.btn[MSC_BTN]))) {
-        msc.on = 0;
+        msc.on = msc.card = 0;
         msc.slot = -1;
         ui.force = 1;
     }
