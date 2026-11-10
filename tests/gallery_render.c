@@ -140,6 +140,16 @@ int main(int argc, char **argv)
             draw(LIGHT[i].scene);
             write_ppm(out, UI_PALETTES[UI_DEFAULT_INDEX].name, LIGHT[i].name);
         }
+        for (i = 0; i < UI_NPALETTES; i++)              /* COLOR's sheet with WHITE (named BLACK), RED (as PINK), ORANGE (as YELLOW) */
+            if (str_eq(UI_PALETTES[i].name, "WHITE") || str_eq(UI_PALETTES[i].name, "RED") ||
+                str_eq(UI_PALETTES[i].name, "ORANGE")) {
+                cur_name = str_eq(UI_PALETTES[i].name, "WHITE") ? "paper_colors_white" :
+                           str_eq(UI_PALETTES[i].name, "RED") ? "paper_colors_red" : "paper_colors_orange";
+                setup(S_MENU_COLORS);
+                pal(i);
+                draw(S_MENU_COLORS);
+                write_ppm(out, UI_PALETTES[i].name, cur_name);
+            }
         for (i = 0; i < UI_NPALETTES; i++)              /* each MOSAIC's landscape and COLOR's sheet */
             if (UI_PALETTES[i].trk[0] != UI_PALETTES[i].trk[1]) {
                 char name[40], *c;

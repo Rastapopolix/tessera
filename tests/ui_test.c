@@ -4723,6 +4723,36 @@ static int test_ground_menu(void)
     p.favorites.factory[8][29] = 0x01u;
     settings_import(&p, sizeof p);
     bad += check("  an older record (no tag): DARK", !ux_ground);
+    {   /* COLOR on LIGHT (beta5): WHITE named BLACK, pure black; RED and HOT PINK hidden, a saved one shown as PINK and
+         * itself again on DARK; KNOB 2 skips the hidden */
+        uint32_t red = 0, pink = 0, white = 0, orange = 0, k, row = 0;
+        for (k = 0; k < UI_NPALETTES; k++) {
+            if (str_eq(UI_PALETTES[k].name, "RED")) red = k;
+            if (str_eq(UI_PALETTES[k].name, "PINK")) pink = k;
+            if (str_eq(UI_PALETTES[k].name, "WHITE")) white = k;
+            if (str_eq(UI_PALETTES[k].name, "ORANGE")) orange = k;
+        }
+        ux_ground = 1;
+        settings.palette = (uint8_t)white; palette_set(white);
+        ui.menu = 1; ui.menu_sel = MI_COLOR;
+        bad += check("  LIGHT: WHITE is pure black, named BLACK (the row too)", T_TEXT == 0x0000u &&
+                     str_eq(pal_name(white), "BLACK") && str_eq(menu_value(MI_COLOR, (char[24]){0}, 24), "BLACK"));
+        settings.palette = (uint8_t)red; palette_set(red);
+        bad += check("  LIGHT: a saved RED shows as PINK, drawn as PINK, still RED", settings.palette == red &&
+                     str_eq(pal_name(red), "PINK") && T_TEXT == pal_light(pink, 0));
+        bad += check("  LIGHT: ORANGE shows as YELLOW", str_eq(pal_name(orange), "YELLOW"));
+        for (k = 0; k < 12u; k++) {                     /* round the inks once with KNOB 2: never RED or HOT PINK */
+            turn(EN_K2, 1);
+            row |= pal_shown(settings.palette) != settings.palette;
+        }
+        bad += check("  LIGHT: KNOB 2 on COLOR skips RED, HOT PINK and ORANGE", !row && menu_cols);
+        settings.palette = (uint8_t)red;
+        ux_ground = 0; palette_set(red);
+        bad += check("  DARK: RED is RED again", settings.palette == red && str_eq(pal_name(red), "RED") &&
+                     T_TEXT == UI_PALETTES[red].text);
+        menu_cols = 0; ui.menu_sel = MI_GROUND;
+        settings.palette = UI_DEFAULT_INDEX; palette_set(UI_DEFAULT_INDEX);
+    }
     ux_ground = 1;
     press(B_OCTUP);                                     /* LIGHT -> DARK in the menu, then back home */
     press(B_OCTDN);

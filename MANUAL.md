@@ -311,8 +311,10 @@ the one chosen framed and its name large; KNOB 2 or OCT+ steps through them.
 
 **GROUND.** MENU > GROUND, just below COLOR, sets what the ink is drawn on: **DARK** (the default, black, as above) or
 **LIGHT**, warm paper. On paper each ink becomes a darker version of itself that reads well there, and several inks
-share one: WHITE becomes CHARCOAL, YELLOW and ORANGE become SEPIA, GREEN FOREST, BLUE NAVY, RED, PINK and HOT PINK
-CRIMSON, and LILAC PLUM. The four-colour sets keep four different inks: MOSAIC SEPIA, NAVY, CRIMSON and FOREST; SUNSET
+share one: WHITE becomes pure BLACK (and COLOR calls it BLACK), YELLOW and ORANGE become SEPIA, GREEN FOREST, BLUE NAVY,
+RED, PINK and HOT PINK CRIMSON, and LILAC PLUM. On paper RED, PINK and HOT PINK look nearly the same, and so do YELLOW
+and ORANGE, so COLOR shows only PINK and YELLOW: a RED, HOT PINK or ORANGE you chose on DARK is shown and drawn as PINK
+or YELLOW, and is itself again on DARK. The four-colour sets keep four different inks: MOSAIC SEPIA, NAVY, CRIMSON and FOREST; SUNSET
 SEPIA, CRIMSON, PLUM and CHARCOAL; OCEAN NAVY, TEAL, FOREST and PLUM; NEON TEAL, PLUM, FOREST and SEPIA; the selection
 in CHARCOAL. While LIGHT is on, COLOR's sheet shows the light versions on paper, so you see what you pick. Older
 firmware keeps the ink you chose and draws it on black.
