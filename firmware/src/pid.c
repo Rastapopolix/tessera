@@ -52,7 +52,7 @@ static const char *const TX_N_FCFOLLOW[] = {"FOLLOW", "OWN"};
 static const char *const TX_N_ETSTYLE[] = {"CUT", "FADE"};   /* (entries.c) */
 static const char *const TX_N_ETROLE[] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "MELODY", "ANCHOR"};
 static const char *const TX_N_ETORDER[] = {"AUTO", "1ST", "2ND", "3RD", "4TH"};
-static const char *const TX_N_SEQDIR[] = {"FWD", "BACK", "PEND", "PONG", "RAND", "DRUNK"};   /* (SEQ_*) */
+static const char *const TX_N_SEQDIR[] = {"FWD", "BACK", "PEND", "FOLD", "RAND", "DRUNK"};   /* (SEQ_*) */
 static const char *const TX_N_SDIR[] = {"UP", "DOWN", "ALT"};   /* (TESS_STR_*) */
 static const char *const TX_N_BUSMODE[] = {"SUM", "MAX", "MIN", "DIFF"};   /* (cord.h CB_*) */
 static const char *const TX_N_BUSLAG[] = {"OFF", "10 ms", "20 ms", "50 ms", "100 ms", "200 ms", "500 ms", "1 s", "2 s",
@@ -781,8 +781,8 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                      "ANCHOR still never goes out; only AUTO tracks wait for a bass or harmony. GLO > "
                                      "ENTRIES' sheet (OCT+ held), Order T1 to T4."),
     X_(TX_SEQ_DIR, "PATTERN DIR", "The order the STEP pattern plays its steps in, each pattern its own. FWD: 1 to the "
-                                  "end. BACK: the end to 1. PEND: there and back, the ends once. PONG: there and "
-                                  "back, the ends twice. RAND: any step. DRUNK: a step on or back at random. A pass "
+                                  "end. BACK: the end to 1. PEND: there and back, the ends once. FOLD: from "
+                                  "the ends inwards, 1, the end, 2, .. RAND: any step. DRUNK: a step on or back at random. A pass "
                                   "is still LEN steps, so conditions, Accumulate and pattern changes keep the bar. "
                                   "The pattern's sheet (OCT+ held), Direction."),
     X_(TX_CH_STRUM, "CHORD STRUM", "A chord's notes start this many ms apart, as a strummed chord (in all at most "
