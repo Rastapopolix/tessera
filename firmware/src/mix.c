@@ -359,6 +359,11 @@ static __attribute__((noinline)) void mix_block(int32_t *out,uint32_t n)
 #if MELODEE_BATCH_AUDIO && !MELODEE_LEGACY_EXTRAS
     batch_ready=0;part_buf=part_storage;spread_buf=spread_storage;
 #endif
+#if MELODEE_USB_AUDIO
+    /* The stems at the stereo recording's gain (half: a centred track at MASTER's default) through the outputs'
+     * soft clip: a POLY chord's stem reached +5 dBFS and the 16-bit capture cut it hard (issue #586, a crackle). */
+    if(track_capture_on)for(uint32_t i=0;i<n*NTRK;i++)track_capture[i]=output_clip(track_capture[i]>>1);
+#endif
     fx_bus_start(n);
     /* Dry gain overlaps the shared wet processing; limiter sees their sum. */
 #if MELODEE_USB_AUDIO
