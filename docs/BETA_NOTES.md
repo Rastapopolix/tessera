@@ -4,6 +4,8 @@ Shown on the installer under the Beta choice (web/publish_beta.py --notes, from 
 "## " headings and the "- " lines are shown, as plain text. Update it when a change merges into develop; at the
 release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again for the next beta.
 
+Want to help test? The steps, by area, and how to report a problem: [BETA_TESTING.md](BETA_TESTING.md).
+
 ## New since 3.4.1
 - PAT GEN: each of a track's 8 patterns can keep its own generator setup, so switching pattern switches the generator. Off by default: EVOLVE, OCT- held, KNOB 3.
 - ROLL ALL: every generator track gets a new seed at once, and one step back undoes it. EVOLVE, OCT- held, KNOB 1.
