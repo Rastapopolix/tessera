@@ -37,6 +37,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - MIXER's sheet: hold OCT+ on MIXER for Mutes (NOW, BAR, PHRASE), the same setting as MENU > MUTES, at hand while you play the mute keys.
 
 ## Fixed
+- KNOBS BARS: a bar at its maximum no longer touches the top of its outline; it keeps the same one-pixel gap there as at the sides and bottom (13 pixels of travel, not 15).
 - STEP direction: a pattern of recorded notes (REC) played them forwards while BACK or PEND moved the playhead backwards; each step now plays its own recorded notes. A tied note going backwards plays once, from the tie's last step, as long as the tie (it played again on its own step). The pattern sheet's Direction row shows a mod moving it as FWD>PEND: the pattern's own, then the one playing.
 - SCL > SCALES with a USER scale picked: the keys light and play by their own note whatever QNT is; with QNT on they were snapped and lit wrong (#559).
 - OCT+ on GEN with a generator no longer opens the STEP pattern's sheet (GEN keeps it for STEP and ARP; PATTERN for all).
