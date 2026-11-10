@@ -43,7 +43,7 @@ cp web/sim/worklet.js "$OUT/"
 {   # index.html is written as a page body (it also publishes as is): the document around it for a plain server
     printf '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
     printf '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n</head>\n<body>\n'
-    sed "s/@VERSION@/$LABEL/" web/sim/index.html
+    sed -e "s/@VERSION@/$LABEL/" -e "s/@BUILD@/$VERSION/" web/sim/index.html
     printf '</body>\n</html>\n'
 } > "$OUT/index.html"
 echo "sim      $OUT/melodee.wasm  $(wc -c < "$OUT/melodee.wasm") B   (serve $OUT/ and open index.html)"
