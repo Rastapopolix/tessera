@@ -265,6 +265,8 @@ static uint16_t cord_adopted[NTRK];
 /* HOLD (cord.h CU_HOLD): hmask bit i, cords[i] is one; hval[i], its source as its destination track's bar began */
 static uint16_t cord_hmask;
 static int16_t cord_hval[CORD_LIVE];
+/* SCALE (cord.h cord_vca_mask): vmask bit i, cords[i] (a mod of mods) multiplies its target's move */
+static uint16_t cord_vmask;
 static uint32_t cord_adopt_sig[NTRK];
 static uint8_t cord_fresh = 1;
 
@@ -328,6 +330,14 @@ void cord_hold_load(uint32_t m)
     cord_masks();
     TESS_IRQ_ON();
 }
+uint32_t cord_vca_mask(void) { return cord_vmask; }
+void cord_vca_load(uint32_t m)
+{
+    TESS_IRQ_OFF();
+    cord_vmask = (uint16_t)m;
+    cord_masks();
+    TESS_IRQ_ON();
+}
 int32_t cord_move(uint32_t i)
 {
     const cord_t *c = cord_get(i);
@@ -352,6 +362,7 @@ static void cord_masks(void)
         const cord_t *c = &cords[i];
         uint32_t j = (uint32_t)c->dst - CD_M1_AMT;
         cord_now[i] = (int8_t)(c->src ? c->amount : c->offset);
+        if (j >= CORD_LIVE) cord_vmask &= (uint16_t)~(1u << i);   /* (SCALE: only onto an M AMT) */
         if (j < CORD_LIVE && (c->amount || c->offset) && j != i &&
             !(cords[j].dst >= CD_M1_AMT && cords[j].dst <= CD_M16_AMT)) {   /* (one level: not onto an M AMT cord) */
             cord_cmask |= 1u << i;
@@ -414,7 +425,7 @@ static void cord_reset(void)
     cord_gmask = 0;
     cord_cmask = cord_amask = 0;
     cord_tmask = cord_gates = cord_fmask = cord_pmask = cord_ccmask = 0;
-    cord_hmask = 0;
+    cord_hmask = cord_vmask = 0;
     cord_busm[0] = cord_busm[1] = 0;                    /* (the buses: SUM, no LAG, at rest) */
     cord_bus_out[0] = cord_bus_out[1] = cord_bus_y[0] = cord_bus_y[1] = 0;
     memset(cord_bus_cfg, 0, sizeof cord_bus_cfg);
@@ -477,6 +488,7 @@ static int cord_unpack(const uint8_t *in)
     if (!cord_parse(in, got)) return 0;
     TESS_IRQ_OFF();
     memcpy(cords, got, sizeof cords);
+    cord_vmask = 0;                                     /* (SCALE: the part TSP_MVCA, after) */
     cord_masks();
     TESS_IRQ_ON();
     for (i = 0; i < NTRK; i++) cord_adopted[i] = 0;
@@ -584,18 +596,28 @@ static __attribute__((noinline)) void cord_block(track_t *t, int32_t *off, int32
     }
 }
 
-/* each block with a mod of mods (cord_tick): the moves it turns, the set one and its share (all of it: 100 %) */
+/* each block with a mod of mods (cord_tick): the moves it turns, the set one and its share (all of it: 100 %); then
+ * times the SCALE mods' gains (Q15, 0..1: their share, AMOUNT +; 1 + it, AMOUNT -: a source that closes it) */
 static __attribute__((noinline)) void cord_amounts(void)
 {
-    int32_t add[CORD_LIVE] = {0};
+    int32_t add[CORD_LIVE] = {0}, g[CORD_LIVE];
     uint32_t m = cord_cmask, i;
+    for (i = 0; i < CORD_LIVE; i++) g[i] = 32768;
     for (i = 0; m; i++, m >>= 1)
-        if (m & 1u) add[cords[i].dst - CD_M1_AMT] += cord_share(&cords[i]);
+        if (m & 1u) {
+            const cord_t *c = &cords[i];
+            int32_t s = cord_share(c), *a = &add[c->dst - CD_M1_AMT];
+            if ((cord_vmask >> i) & 1u)
+                a = &g[c->dst - CD_M1_AMT], *a = (*a * clamp((c->src ? c->amount : c->offset) < 0 ? 32768 + s : s, 0, 32768)) >> 15;
+            else
+                *a += s;
+        }
     for (i = 0, m = cord_amask; m; i++, m >>= 1)
         if (m & 1u) {
             const cord_t *c = &cords[i];
-            cord_now[i] = (int8_t)clamp((c->src ? c->amount : c->offset) + (add[i] * 100 + (add[i] < 0 ? -16384 : 16384)) / 32768,
-                                        -100, 100);
+            int32_t v = clamp((c->src ? c->amount : c->offset) + (add[i] * 100 + (add[i] < 0 ? -16384 : 16384)) / 32768,
+                              -100, 100);
+            cord_now[i] = (int8_t)((v * g[i] + (v < 0 ? -16384 : 16384)) / 32768);
         }
 }
 

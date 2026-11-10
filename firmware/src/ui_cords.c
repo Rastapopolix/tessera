@@ -8,7 +8,8 @@
  * ways from the knob) or + (folded to 0..1: one way, "+" after its name), then GATE (">" after its name, Mono "^": all while the
  * source is over a threshold, none under it; OCT- held + KNOB 4 sets the threshold); the mod's own (cord.h uni), not
  * the LFO page's POL BI/UNI (cord.c cord_lfo_raw); then HOLD ("=" after its name: the source as +-, sampled once a
- * bar of the destination's track and held). Included by ui_pages.c. */
+ * bar of the destination's track and held). A mod of mods (onto M1 AMT ..) adds to its mod's move, or with OCT- held +
+ * KNOB 3 right SCALEs it ("M3*": times 0..1, a VCA; cord.c cord_vca_mask). Included by ui_pages.c. */
 
 static int32_t accel(uint32_t role, int32_t s, int32_t range);                       /* ui_input.c */
 static int32_t list_accel(uint32_t role, int32_t s, uint32_t total, uint32_t *fast);
@@ -116,7 +117,8 @@ static const char *cu_dst_mono(const cord_t *c)
     if (c->dst < CD_M1_AMT || c->dst > CD_M16_AMT) return cu_dst_name(c);
     b[0] = 'M';
     fmt_int(b + 1, (int32_t)(c->dst - CD_M1_AMT + 1u));
-    str_cpy(b + str_len(b), "%", 2);
+    str_cpy(b + str_len(b), cord_vca_mask() >> (uint32_t)(c - cord_get(0)) & 1u ? "*" : "%", 2);   /* (SCALE: "M3*",
+                                                         * times; c: one of cords[], as every row's) */
     return b;
 }
 
@@ -416,6 +418,18 @@ static int cu_cc_knob(int32_t steps)
     fmt_int(b + 3, (int32_t)cord_cc_num(cord_ui_sel));
     ui_message(b);                                      /* (no ui.force: the row redraws by its signature, which
                                                          * holds the CC numbers; a whole frame flickered under the list) */
+    return 1;
+}
+
+/* OCT- held + KNOB 3 on a mod of mods: ADD (left; its share added to the mod's move) or SCALE (right; the move times
+ * it, a VCA) (ui_input.c: OCT-'s tap eaten; a CC mod's KNOB 3 its number) */
+static __attribute__((noinline)) int cu_vca_knob(int32_t steps)
+{
+    uint32_t bit = 1u << cord_ui_sel;
+    if ((uint32_t)(cord_get(cord_ui_sel)->dst - CD_M1_AMT) >= CORD_LIVE) return 0;
+    cord_vca_load(steps > 0 ? cord_vca_mask() | bit : cord_vca_mask() & ~bit);
+    ui_message(steps > 0 ? "SCALES IT" : "ADDS TO IT");
+    ui.force = 1;
     return 1;
 }
 

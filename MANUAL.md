@@ -1536,7 +1536,13 @@ at a time, each with an activity light and a moving mark.
   one track's playing spreads into another's sound. What the mods add goes on top of the amount you set, up to 100 %
   either way; set mod 3 to 0 and only the mods of mods move it, so it comes and goes. The bar under a moved mod shows
   its amount as it is now. One level only: a mod that moves an M AMT mod, or itself, does nothing. They are the
-  project's (no track) and MATRIX leaves them out. **FX held** + **KNOB 4** on MODS makes one for the picked mod, from
+  project's (no track) and MATRIX leaves them out.
+  **Scale (a VCA on a mod).** Hold **OCT-** on a mod of mods and turn **KNOB 3** right: it no longer adds, it
+  **scales** the other mod's move from 0 to 1 (**M3*** on the row; left adds again). Mod 3 keeps
+  the amount you set and the scaler opens and closes it: T2 GATE at +100 lets mod 3 through only while track 2
+  plays, T4 ENV at +100 shapes it with each note, +50 lets half through. At a negative amount the source closes it
+  instead (a duck: T1 GATE at -100 silences mod 3 while track 1 plays). Mods that add come first, then the scalers
+  multiply. A scaler at 0 does nothing. A project with one plays it as adding on older firmware. **FX held** + **KNOB 4** on MODS makes one for the picked mod, from
   the track's shortcut source. A project with them does not load in firmware before them.
 - Melodee's MOD routes, in old projects and sounds, become cords when they load. If all 16 are in use the screen
   says **MODS FULL**.

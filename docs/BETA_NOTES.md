@@ -28,6 +28,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - Manual: recording the four tracks as separate stems over USB (USB OUTPUT 4 TRACKS), for macOS and Windows; on Windows, Live needs an ASIO wrapper such as FlexASIO for more than two channels.
 - MIX buses: BUS A and BUS B, two mixers for mods. Send any mods into a bus (the end of KNOB 3's list on MODS) and use the bus as a source (the end of KNOB 1's list). Hold OCT+ on MODS for its sheet: each bus's Mode (SUM, MAX, MIN, DIFF: with gates OR, AND, XOR) and Lag (OFF, 10 ms to 20 s: a gate into a lagged bus is an envelope). A bus can feed itself, one block late, safely.
 - EOC: a new source on every track, the LFO's cycle start as a gate (high from each wrap until an eighth of the cycle has passed). Last in a track's source list on MODS. Use it as a GATE mod: onto FILL, a bus, a mod's amount. A project that uses it does not load on older firmware.
+- Mods of mods can scale: hold OCT- on a mod of mods (M1 AMT .. M16 AMT) and turn KNOB 3 right. It then multiplies the other mod's move by 0 to 1 instead of adding to it (M3* on the row), so a GATE or an envelope opens and closes a mod that keeps its own amount; a negative amount closes it instead. KNOB 3 left adds again.
 
 ## Fixed
 - SCL > SCALES with a USER scale picked: the keys light and play by their own note whatever QNT is; with QNT on they were snapped and lit wrong (#559).
@@ -47,6 +48,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - On older firmware, a strummed project plays its chords together, a pattern with a direction plays FWD, and a HOLD mod plays as +-.
 - A project with CHRD SUS2, 7SUS4, ADD9 or MAJ6 plays POW (power chords) on 3.4.x and earlier betas. A cord or MIDI CC on CHRD now spreads over 14 kinds, not 10, so it lands on slightly different ones.
 - A project with a mod into or out of a MIX bus does not load on 3.4.x or earlier betas; the bus settings alone are ignored there.
+- On older firmware, a mod of mods that scales plays as one that adds (mod 3's amount plus its move).
 
 ## Please try
 - PAT GEN with different generators on two patterns: switch by hand and with SONG, save, power off and on, load.
@@ -69,3 +71,4 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - FOLLOW: T2 FOLLOW T1, mute T1 on MIXER: T2 keeps playing.
 - USB stems: USB OUTPUT 4 TRACKS, record the four channels in a DAW (Windows with FlexASIO or ASIO4ALL).
 - A project from 3.4.1 loads and plays the same.
+- Scaling mods of mods: T2 GATE scaling M3 (mod 3 an LFO onto CUTOFF at 60 %); then T4 ENV at -100 scaling it; watch it with MOD SCOPE.
