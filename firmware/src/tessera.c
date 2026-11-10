@@ -2108,6 +2108,30 @@ void tessera_chord_breath_knob(int32_t s)
 }
 
 /* CHORD with OCT+ held on GEN, KNOB 1: OCT (KNOB 2 and 3 are the track's CHRD and VOIC: ui_input.c) */
+/* STRUM's knob: fine where a strum is a flam, coarser where it is a slow roll (the value stays ms, as saved) */
+uint32_t tess_strum_at(uint32_t i)
+{
+    return i <= 10u ? i : i <= 20u ? 5u * i - 40u : 10u * i - 140u;
+}
+uint32_t tess_strum_detent(uint32_t ms)
+{
+    uint32_t i = TESS_STRUM_DETENTS;
+    while (i && tess_strum_at(i) > ms) i--;
+    return i;
+}
+void tessera_strum_knob(int32_t s)
+{
+    uint32_t tr = song.sel, v, i;
+    tessera_ensure_init();
+    if (tr >= TESSERA_TRACKS || !s) return;
+    v = tessera.ch_strum[tr];
+    i = tess_strum_detent(v);                          /* (a value between detents, from a mod or an older knob: */
+    if (s > 0) i = i < TESS_STRUM_DETENTS ? i + 1u : i;   /*  up to the next one, down to the one below it) */
+    else if (tess_strum_at(i) == v && i) i--;
+    TESS_IRQ_OFF();
+    tess_param_set_body(tr, TX_CH_STRUM, (int32_t)tess_strum_at(i));
+    TESS_IRQ_ON();
+}
 void tessera_chord_oct_knob(int32_t s)
 {
     uint32_t tr = song.sel;
