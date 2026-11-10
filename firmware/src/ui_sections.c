@@ -205,6 +205,7 @@ static void smap_open(void)
     uint8_t pg[8];
     uint32_t n, c;
     sec_build();
+    sec_note();                                         /* (Mono draws no tabs: the page shown noted here) */
     smap.on = 1;
     smap.row = (uint8_t)sec_of(ui.page);
     n = smap_pages(smap.row, pg);
@@ -222,10 +223,16 @@ static void smap_close(void)
 static void smap_input(int32_t k1, int32_t k2, uint32_t oct)
 {
     uint8_t pg[8];
-    uint32_t n;
+    uint32_t n, c;
     if (k2)
         smap.row = (uint8_t)clamp((int32_t)smap.row + k2, 0, (int32_t)sec.n - 1);   /* (a detent a row: none lost) */
     n = smap_pages(smap.row, pg);
+    if (k2) {                                           /* a new row: on the page last used in it (an OP row's tiles
+                                                         * have no names; the column of the row before was a guess) */
+        for (c = 0; c < n && pg[c] != sec.last[smap.row]; c++)
+            ;
+        smap.col = (uint8_t)(c < n ? c : 0u);
+    }
     if (k1)
         smap.col = (uint8_t)clamp((int32_t)smap.col + k1, 0, (int32_t)n - 1);
     if (smap.col >= n)
@@ -241,6 +248,8 @@ static void smap_input(int32_t k1, int32_t k2, uint32_t oct)
         page_entered();
         ui.via = FAM_EDIT;
         smap_close();
+        drill_to = 1;                                   /* (OCT- there: back to the map) */
+        drill_pg = ui.page;
     }
 }
 /* a row a section (its name), a tile a page; the cursor lifted, outlined; the page open a dot in its tile */

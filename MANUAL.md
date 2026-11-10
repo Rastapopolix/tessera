@@ -267,7 +267,8 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 | **GLO** | MIXER, [PERF](#perf-four-macros), GLOBAL, SYSTEM, MIDI OUT, [PIECE](#piece-a-length-and-a-shape), [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in), [LANDSCAPE](#landscape-rain-on-water) | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
 | **SAVE** | USER (ready to save the sound), PROJECT, PRESETS | Save the project to its slot (as SAVE + REC) |
 | **REC** | Records the selected track until REC again (see [Recording live](#recording-live)) | Capture or print the last bars (see [Print and keep](#print-and-keep)) |
-| **OCT+** | Octave up; on some pages, an action (shown on screen) | The page's sheet; a page without one says NO SHEET (its second knobs are on OCT- held: see [The GEN layer](#the-gen-layer)) |
+| **OCT+** | On HOME: octave up. Elsewhere Enter: the row, slot, note or mod under the cursor, the action picked; where there is nothing to enter, nothing (the sheet is a hold) | The page's sheet; a page without one says NO SHEET (its second knobs are on OCT- held: see [The GEN layer](#the-gen-layer)) |
+| **OCT-** | On HOME: octave down. Elsewhere Back: closes a sheet, list, map or selection; a page opened from the EDIT map or from MATRIX goes back there. On a page with nothing open, nothing (HOME goes to the home page) | The page's second knobs while held; letting go returns to the page, never back |
 
 On the home page each track's tile shows its sound and engine. **ALGORITHM** picks the track on every page (or
 the left knob, with MENU > TRACK KNOB set to LEFT), and **SELECT** turns the pages of the section shown (on the home
@@ -639,8 +640,8 @@ when it was saved. To change a generator over a piece without PAT GEN, use [FORM
 | Do this | And this happens |
 |---|---|
 | **KNOB 1** to **KNOB 4** | Track 1 to 4's next pattern. Stopped: it changes at once. Playing: it waits (dashed) and changes when the pattern playing reaches its end. While a song plays it does not change: **STOP TO SWITCH**. |
-| **OCT-** | Clears the queue. Again: HOME. |
-| **OCT+** | The selected track's pattern's sheet: **Copy to** and **Delete pattern** (its notes and motion). |
+| **OCT-** | Clears the queue. |
+| **OCT+** held | The selected track's pattern's sheet: **Copy to** and **Delete pattern** (its notes and motion). |
 
 Copy to frames a place on the track's row, the first empty one first. Any knob moves it, **OCT+** copies (over a
 pattern in use it asks first), **OCT-** leaves. It works only while no song plays.

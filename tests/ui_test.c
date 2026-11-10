@@ -301,12 +301,17 @@ static void turn(uint32_t role, int32_t s)
     fm1_ms += 200u;                               /* each one a slow detent, loaded at once) */
 }
 static void stop_transport(void) { transport_req = 0; song.playing = 0; }
-/* a slot page (ui_slots.c): OCT+ its slot's sheet (unless open), KNOB 1 to the row labelled so, OCT+ does it */
+/* a sheet: the slot's or the note's (OCT+ tapped: Enter) or the page's (OCT+ held) unless open, KNOB 1 to the row
+ * labelled so, OCT+ does it */
 static void sheet_do(const char *label)
 {
     uint32_t i, n;
-    if (pop.on != POP_SHEET)
-        press(B_OCTUP);
+    if (pop.on != POP_SHEET) {
+        if (oct_enter_ok())
+            press(B_OCTUP);
+        else
+            hold(B_OCTUP);
+    }
     if (pop.on != POP_SHEET)
         return;
     for (i = 0; i < pop.n && !str_eq(pop.rows[i].label, label); i++)
@@ -864,7 +869,9 @@ static int test_quad_cols(void)
                  tessera_quad(song.sel)->prob == 98u && song.octave == oct && tessera_quad_every(2) == 8u);
     turn(EN_K1 + 2u, 1);
     press(B_OCTUP);
-    bad += check("OCT+ tapped on QUAD's GEN: the generator's sheet, its one row RANGE, the octave kept",
+    bad += check("OCT+ tapped on QUAD's GEN: nothing to enter, no sheet", !pop.on && song.octave == oct);
+    hold(B_OCTUP);
+    bad += check("OCT+ held on QUAD's GEN: the generator's sheet, its one row RANGE, the octave kept",
                  pop.on == POP_SHEET && str_eq(pop.title, "Generator") && pop.n == 1u && str_eq(pop.rows[0].label, "Range") &&
                  song.octave == oct);
     turn(EN_K2, 1);
@@ -944,7 +951,7 @@ static int test_constel_layer(void)
     turn(EN_K1 + 2u, 1);
     bad += check("OCT- let go: KNOB 3 is DENS again, FILL kept", tessera_constel(tr)->dens == 52u &&
                  tessera_constel(tr)->fill == GEN_CS_FILL_ARP && song.octave == oct && !ui.home);
-    press(B_OCTUP);
+    hold(B_OCTUP);
     turn(EN_K2, 1);
     bad += check("..the GEN sheet: Size, KNOB 2 SIZE 3", pop.on == POP_SHEET && str_eq(pop.rows[0].label, "Size") &&
                  tessera_constel(tr)->size == 3u);
@@ -1048,7 +1055,7 @@ static int test_chord_user(void)
     fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
     frame();
     bad += check("OCT- let go: the keys play again, no Back", !ch_user_entry_on() && song.grid != 2u && !ui.home);
-    press(B_OCTUP);
+    hold(B_OCTUP);
     turn(EN_K1, 1);
     turn(EN_K1, 1);                                     /* (a row a detent) */
     turn(EN_K2, -1);
@@ -1268,10 +1275,25 @@ static int test_oct_grammar_m0(void)
     bad += check("M0: ENV, OCT+ down, a knob turned, let go before the hold: no Enter (no sheet)",
                  !pop.on && str_eq(cur_page()->title, "ENV"));
     press(B_OCTUP);
-    bad += check("M0: ENV, OCT+ tapped: Enter, the sound's sheet", pop.on == POP_SHEET);
+    bad += check("oct-taps: ENV, OCT+ tapped: nothing to enter, no sheet; the OCT+ LED dark (only held opens it)",
+                 !pop.on && !(oct_leds() & 2u));
+    hold(B_OCTUP);
+    bad += check("oct-taps: ENV, OCT+ held: the sound's sheet", pop.on == POP_SHEET);
     press(B_OCTDN);
     press(B_OCTDN);
-    bad += check("M0: OCT- tapped: the sheet closed, then Back to Stage", !pop.on && ui.home);
+    bad += check("oct-taps: OCT- tapped: the sheet closed, then nothing (still ENV; HOME goes to Stage)",
+                 !pop.on && !ui.home && str_eq(cur_page()->title, "ENV"));
+    go_title("TWEAK");
+    tessera_param_set(song.sel, TX_MODE, TESS_ENG_TURING);
+    frame();
+    fm1_ms += 320u;
+    btn_down(B_OCTDN);
+    for (i = 0; i < 25u; i++)                           /* 0.4 s: the layer on screen, no knob turned */
+        frame();
+    btn_up(B_OCTDN);
+    frame();
+    bad += check("oct-taps: TWEAK, OCT- held 0.4 s (its layer shown) and let go: still TWEAK, never Back (beta5 went to Stage)",
+                 !ui.home && str_eq(cur_page()->title, "TWEAK"));
     go_title("FORM");
     frame();
     ui.msg_t = 0;
@@ -1459,7 +1481,7 @@ static int test_grids_layer(void)
     turn(EN_K1 + 3u, 1);
     bad += check("OCT- let go: KNOB 4 is DENS again, the shares kept, no Back", tessera_grids(tr)->dens == 52u &&
                  tessera_param_get(tr, TX_GRD_KICK) == 80 && song.octave == oct && !ui.home);
-    press(B_OCTUP);
+    hold(B_OCTUP);
     for (i = 0; i < 5u; i++) turn(EN_K2, 2);
     bad += check("..the GEN sheet: Fourth part, KNOB 2 its level 10", pop.on == POP_SHEET &&
                  str_eq(pop.rows[0].label, "Fourth part") && tessera_grids(tr)->toms == 10u);
@@ -1839,6 +1861,11 @@ static int test_matrix(void)
     turn(EN_K3, 1);
     press(B_OCTUP);
     bad += check("OCT+: that mod in MODS", !ui.home && cur_page()->graph == GR_CORDS && cord_ui_sel == 1u);
+    press(B_OCTDN);
+    bad += check("..OCT- there: back to MATRIX (opened from it; tessera-notes oct-taps.md)",
+                 !ui.home && cur_page()->graph == GR_MATRIX);
+    press(B_OCTDN);
+    bad += check("..OCT- on MATRIX: nothing (HOME goes to Stage)", !ui.home && cur_page()->graph == GR_MATRIX);
     go_title("MATRIX");
     turn(EN_K1, 1);
     press(B_OCTUP);
@@ -2333,7 +2360,8 @@ static int test_rec(void)
         song.rec = 0;
         song.octave = 0;
         press(B_OCTDN);
-        bad += check("NOTES, REC off: OCT- back to Stage, the octave as it was", ui.home && song.octave == 0);
+        bad += check("NOTES, REC off: OCT- does nothing (nothing open; HOME goes to Stage), the octave as it was",
+                     !ui.home && song.octave == 0);
     }
     song.rec = 0;
     song.playing = 0;
@@ -2616,7 +2644,8 @@ static int test_actions(void)
     frame();
     bad += check("a press that began elsewhere does nothing there", !pop.on && song.octave == 2 && !ui.home);
     press(B_OCTDN);
-    bad += check("PATTERN: OCT- goes HOME (the octave stays)", ui.home && song.octave == 2);
+    bad += check("PATTERN: OCT- does nothing (nothing open; HOME goes to Stage), the octave stays",
+                 !ui.home && song.octave == 2);
     /* TOOLS is gone: Clear pattern in the pattern's sheet, Init sound in the sound's */
     for (i = 0; i < NPAGES; i++)
         found |= str_eq(PAGES[i].title, "TOOLS");
@@ -2624,7 +2653,9 @@ static int test_actions(void)
     my_steps(t);
     go_title("PATTERN");
     press(B_OCTUP);
-    bad += check("PATTERN: OCT+ the pattern's sheet (Clear pattern, Clear motion)", pop.on == POP_SHEET &&
+    bad += check("PATTERN: OCT+ tapped: nothing to enter, no sheet (tessera-notes oct-taps.md)", !pop.on);
+    hold(B_OCTUP);
+    bad += check("PATTERN: OCT+ held the pattern's sheet (Clear pattern, Clear motion)", pop.on == POP_SHEET &&
                  pop.rows == SHEET_PATTERN && !seq_is_empty(t));
     sheet_do("Clear pattern");
     bad += check("Clear pattern first asks", ui.confirm == CF_CLEAR_SEQ && !seq_is_empty(t));
@@ -2637,7 +2668,7 @@ static int test_actions(void)
     press(B_OCTUP);
     bad += check("OCT+: SOUND INIT", msg_is("SOUND INIT"));
     press(B_OCTDN);
-    bad += check("OCT- on a sound page: HOME", ui.home);
+    bad += check("OCT- on a sound page: nothing (HOME goes to Stage)", !ui.home && str_eq(cur_page()->title, "EDIT 1"));
     /* the dialogs and the menu */
     open_family(FAM_SEQ);
     my_steps(t);
@@ -2651,8 +2682,9 @@ static int test_actions(void)
     fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
     frame();
     bad += check("..OCT+ let go: cleared", ui.confirm == CF_NONE && seq_is_empty(t));
-    bad += check("back on SEQ (NOTES): OCT- dark (no layer: the key grammar's rule 6; Back still works), OCT+ lit (a note, "
-                 "its sheet), not the octave", oct_leds() == 2u && song.octave);
+    bad += check("back on SEQ (a STEP track's GEN): OCT- dark (no layer: the key grammar's rule 6), OCT+ dark (nothing to "
+                 "enter; held: the pattern's sheet), not the octave", str_eq(cur_page()->title, "GEN") && oct_leds() == 0u &&
+                 song.octave);
     return bad;
 }
 
@@ -3888,7 +3920,7 @@ static int test_patterns_queue(void)
     bad += check("..OCT-: the queue cleared, PATTERNS stays", trk[0].pattern_next == 0xFFu && !ui.home &&
                  msg_is("QUEUE CLEARED"));
     press(B_OCTDN);
-    bad += check("..OCT- again: Stage", ui.home);
+    bad += check("..OCT- again: nothing (PATTERNS stays; HOME goes to Stage)", !ui.home && str_eq(cur_page()->title, "PATTERNS"));
     stop_transport();
     return bad;
 }
@@ -3945,8 +3977,8 @@ static int test_init_scales_patterns(void)
     go_title("PATTERNS"); frame();
     t = TSEL;
     my_steps(t);
-    press(B_OCTUP);
-    bad += check("PATTERNS: OCT+ the pattern's sheet (Copy to, Delete pattern)", pop.on == POP_SHEET &&
+    hold(B_OCTUP);
+    bad += check("PATTERNS: OCT+ held: the pattern's sheet (Copy to, Delete pattern)", pop.on == POP_SHEET &&
                  pop.rows == SHEET_PATTERNS);
     for (first = 1; first < NPAT && !pattern_empty(song.sel, first); first++)
         ;
@@ -4067,7 +4099,9 @@ static int test_native_env_lfo(void)
     open_family(FAM_ENV);
     o = song.octave;
     press(B_OCTDN);
-    bad += check("OCT- on a sound page: Stage, no octave", ui.home && song.octave == o);
+    bad += check("OCT- on a sound page: nothing (HOME goes to Stage), no octave", !ui.home && song.octave == o);
+    go_home();
+    frame();
     press(B_OCTDN);
     bad += check("OCT- on Stage: an octave down", ui.home && song.octave == o - 1);
     go_title("SCALES");
@@ -4076,7 +4110,7 @@ static int test_native_env_lfo(void)
     return bad;
 }
 
-/* popups (ui_popup.c): OCT+ on a sound page its sheet (tapped: Enter, held too), never the octave (Stage only); the
+/* popups (ui_popup.c): OCT+ held on a sound page its sheet (tapped: nothing to enter), never the octave (Stage only); the
  * sheet's rows; a list knob's picker */
 static int test_popups(void)
 {
@@ -4085,7 +4119,8 @@ static int test_popups(void)
     ui.home = 0; ui.page = (uint8_t)page_first(FAM_EDIT); page_entered(); frame();
     o = song.octave;
     press(B_OCTUP);
-    bad += check("POPUPS: OCT+ tapped on a sound page: the sound's sheet (Enter), no octave", pop.on == POP_SHEET && song.octave == o);
+    bad += check("POPUPS: OCT+ tapped on a sound page: nothing to enter, no sheet, no octave", !pop.on && song.octave == o);
+    hold(B_OCTUP);
     press(B_OCTDN);
     bad += check("POPUPS: OCT- closes it, the page stays", !pop.on && !ui.home && song.octave == o);
     hold(B_OCTUP);
@@ -4138,7 +4173,7 @@ static int test_popups(void)
         bad += check("LISTS: SCL's Scale row (after Root and Key link), OCT+: the SCALES page", str_eq(cur_page()->title, "SCALES"));
         go_title("SCL"); frame();
         press(B_OCTDN);
-        bad += check("LISTS: OCT- on a list: Stage", ui.home);
+        bad += check("LISTS: OCT- on a list: nothing (HOME goes to Stage)", !ui.home && str_eq(cur_page()->title, "SCL"));
     }
     {   /* KEY LINK (SCL's Key link row, the project's): one ROOT for every melodic track; a drum track keeps its own */
         uint32_t d = NTRK, m = NTRK, k;
@@ -4209,6 +4244,37 @@ static int test_popups(void)
         o = smap.on;
         press(B_HOME);
         bad += check("..HOME from the map: HOME, the map closed", o && !smap.on && ui.home);
+        {   /* tessera-notes oct-taps.md: OCT- on a page the map opened goes back to the map; a row lands on the page
+             * last used in it (an OP row's tiles have no names) */
+            uint8_t pg[8];
+            sec.ok = 0; fm6_opsel = 0;                  /* (the sections again: no page used in them yet) */
+            ui.home = 0; ui.page = (uint8_t)page_first(FAM_EDIT); page_entered(); frame();
+            press(B_EDIT);
+            turn(EN_K2, 2);
+            smap_pages(smap.row, pg);
+            o = sec.op[smap.row] == 1u && str_eq(PAGES[pg[smap.col]].title, "FREQ");
+            turn(EN_K1, 2);
+            press(B_OCTUP);
+            o &= !smap.on && str_eq(cur_page()->title, "EG RATE") && fm6_opsel == 0u;
+            press(B_OCTDN);
+            smap_pages(smap.row, pg);
+            bad += check("MAP: OP1's row on FREQ (first), its EG RATE opened; OCT- there: the map again, on EG RATE",
+                         o && smap.on && sec.op[smap.row] == 1u && pg[smap.col] == ui.page);
+            press(B_OCTDN);
+            o = !smap.on && str_eq(cur_page()->title, "EG RATE");
+            press(B_OCTDN);
+            bad += check("..OCT- closes the map; OCT- again: nothing (still EG RATE)", o && !ui.home && !smap.on &&
+                         str_eq(cur_page()->title, "EG RATE"));
+            press(B_EDIT);
+            turn(EN_K2, 1);
+            smap_pages(smap.row, pg);
+            o = sec.op[smap.row] == 2u && str_eq(PAGES[pg[smap.col]].title, "FREQ");
+            turn(EN_K2, -1);
+            smap_pages(smap.row, pg);
+            bad += check("..KNOB 2 to OP2: on FREQ (never used), back to OP1: on EG RATE (last used), not the column before",
+                         o && sec.op[smap.row] == 1u && str_eq(PAGES[pg[smap.col]].title, "EG RATE"));
+            press(B_EDIT);
+        }
     }
     go_page(GR_SONG); frame();
     hold(B_OCTUP);
@@ -4440,7 +4506,7 @@ static int test_product_ux(void)
     fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
     frame();
     ok &= tessera.et_role[2] == 1u && !ui.home;
-    press(B_OCTUP);
+    hold(B_OCTUP);
     for (i = 0; i < 3u; i++) turn(EN_K1, 1);            /* (a row a detent) */
     turn(EN_K2, 1);
     ok &= pop.on == POP_SHEET && pop.n == 4u && str_eq(pop.rows[3].label, "Order T4") && tessera.et_order[3] == 1u;
@@ -4473,7 +4539,7 @@ static int test_product_ux(void)
     fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
     frame();
     ok = tessera.midi_tr[1] == 2 && tessera.midi_ch[1] == 0u && !ui.home;
-    press(B_OCTUP);
+    hold(B_OCTUP);
     turn(EN_K1, 1);
     turn(EN_K2, 1);
     for (i = 0; i < 4u; i++) turn(EN_K1, 1);            /* (Drum map T2) */
@@ -4983,9 +5049,9 @@ static int test_layer(void)
                 btn_down(B_OCTDN); frames(900); btn_up(B_OCTDN); frame(); frame();
                 ok &= !ui.home && str_eq(cur_page()->title, PG[q]);
                 press(B_OCTDN);
-                ok &= ui.home;                          /* (a tap is still Back) */
+                ok &= !ui.home && str_eq(cur_page()->title, PG[q]);   /* (a tap: nothing open, nothing to go back to) */
             }
-            bad += check("OCT- held on MIDI OUT, PIECE, MODS, EVOLVE, ENTRIES and let go untouched: the page stays (a tap: HOME)", ok);
+            bad += check("OCT- held on MIDI OUT, PIECE, MODS, EVOLVE, ENTRIES and let go untouched: the page stays (a tap too)", ok);
             ok = 1;                                     /* (#519: a knob turned under OCT-, then let go: the page stays) */
             for (uint32_t q = 3; q < 5u; q++) {
                 go_title(PG[q]); frame();
