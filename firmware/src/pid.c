@@ -54,6 +54,9 @@ static const char *const TX_N_ETROLE[] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "
 static const char *const TX_N_ETORDER[] = {"AUTO", "1ST", "2ND", "3RD", "4TH"};
 static const char *const TX_N_SEQDIR[] = {"FWD", "BACK", "PEND", "PONG", "RAND", "DRUNK"};   /* (SEQ_*) */
 static const char *const TX_N_SDIR[] = {"UP", "DOWN", "ALT"};   /* (TESS_STR_*) */
+static const char *const TX_N_BUSMODE[] = {"SUM", "MAX", "MIN", "DIFF"};   /* (cord.h CB_*) */
+static const char *const TX_N_BUSLAG[] = {"OFF", "10 ms", "20 ms", "50 ms", "100 ms", "200 ms", "500 ms", "1 s", "2 s",
+                                          "5 s", "10 s", "20 s"};   /* (cord.c CORD_LAG_STEP) */
 static const char *const TX_N_PLLEN[] = {"FREE", "1", "2", "3", "4", "5", "6", "8", "10", "12", "15", "20", "25", "30",
                                          "40", "45", "60", "75", "90", "120", "180", "240"};   /* (planner.c PL_MIN) */
 static const char *const TX_N_PLSHAPE[] = {"ARCH", "RISE", "FALL", "PLATEAU", "VALLEY", "WAVES", "BUILDS", "STEPS",
@@ -221,6 +224,10 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_MIDI_DMAP] = PE("MAP", TX_N_DMAP, 0),
     [TX_CH_STRUM] = {"STRUM", F_INT, 0, TESS_STRUM_MS, 0, 0, "ms"},
     [TX_CH_SDIR] = PE("DIR", TX_N_SDIR, 0),
+    [TX_BUSA_MODE] = PE("MODE", TX_N_BUSMODE, 0),
+    [TX_BUSA_LAG] = PE("LAG", TX_N_BUSLAG, 0),
+    [TX_BUSB_MODE] = PE("MODE", TX_N_BUSMODE, 0),
+    [TX_BUSB_LAG] = PE("LAG", TX_N_BUSLAG, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -781,6 +788,20 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                    "half its length). OFF: together. OCT- held on GEN, KNOB 2."),
     X_(TX_CH_SDIR, "CHORD DIR", "A strum's first note: UP the lowest, DOWN the highest, ALT turns round each "
                                 "strike. OCT- held on GEN, KNOB 3."),
+    XP_(TX_BUSA_MODE, "BUS A MODE", "How the mods into BUS A combine. SUM: added, -1..1. MAX: the highest (two "
+                                     "gates: either, OR). MIN: the lowest (both, AND). DIFF: how far apart the first "
+                                     "two are (two gates: one or the other, XOR). The source BUS A reads the result "
+                                     "a block later. MODS' sheet (OCT+ held)."),
+    XP_(TX_BUSA_LAG, "BUS A LAG", "A slew on BUS A: the time a whole move from 0 to 1 takes, up or down. A "
+                                   "gate into a lagged bus rises and falls as an envelope. OFF: none. MODS' sheet "
+                                   "(OCT+ held)."),
+    XP_(TX_BUSB_MODE, "BUS B MODE", "How the mods into BUS B combine. SUM: added, -1..1. MAX: the highest (two "
+                                     "gates: either, OR). MIN: the lowest (both, AND). DIFF: how far apart the first "
+                                     "two are (two gates: one or the other, XOR). The source BUS B reads the result "
+                                     "a block later. MODS' sheet (OCT+ held)."),
+    XP_(TX_BUSB_LAG, "BUS B LAG", "A slew on BUS B: the time a whole move from 0 to 1 takes, up or down. A "
+                                   "gate into a lagged bus rises and falls as an envelope. OFF: none. MODS' sheet "
+                                   "(OCT+ held)."),
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT

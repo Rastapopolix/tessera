@@ -555,6 +555,44 @@ static int test_tsp_record(void)
     raw[tsp_seen.at[TSP_STRUM] + NTRK + 2u] = TESS_STR_DIRS;   /* (track 3's DIR past ALT) */
     tsp_resum(raw);
     bad += check("TSP1: a DIR past ALT refused", ok && !tsp_valid(raw, len));
+    reset();                                           /* the MIX buses: the BUS part; none at SUM, OFF */
+    {
+        cord_t c = {CS_BUSA, 0, CD_BUS_B, 0, 50, 0, CU_BI};
+        cord_set(3, &c);                               /* (a mod from bus A into bus B: codes 31 and 106 in CORDS) */
+        project_capture(&proj_scratch);
+        len = tsp_pack(raw, &proj_scratch, 1);
+        bad += check("TSP1: the buses at SUM, OFF write no BUS part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_BUS]);
+        tessera_param_set(0, TX_BUSA_MODE, CB_DIFF); tessera_param_set(0, TX_BUSA_LAG, 7);
+        tessera_param_set(0, TX_BUSB_MODE, CB_MIN);
+        project_capture(&proj_scratch);
+        len = tsp_pack(raw, &proj_scratch, 1);
+        ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_BUS];
+        tessera_reset();
+        tsp_restore(raw);
+        bad += check("TSP1: the buses' MODE and LAG come back from their part, the bus mod from CORDS",
+                     ok && cord_bus_get(0) == CB_DIFF && cord_bus_get(1) == 7u && cord_bus_get(2) == CB_MIN &&
+                     !cord_bus_get(3) && cord_get(3)->src == CS_BUSA && cord_get(3)->dst == CD_BUS_B &&
+                     cord_get(3)->amount == 50);
+        raw[tsp_seen.at[TSP_BUS] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (an id this build does not know: as older
+                                                                        * firmware sees the part, skipped) */
+        tsp_resum(raw);
+        ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_BUS];
+        if (ok) tsp_restore(raw);
+        bad += check("TSP1: a record without the part loads with the buses at SUM, OFF", ok && !cord_bus_get(0) &&
+                     !cord_bus_get(1) && !cord_bus_get(2) && cord_get(3)->dst == CD_BUS_B);
+        tessera_param_set(0, TX_BUSB_LAG, 2);
+        project_capture(&proj_scratch);
+        len = tsp_pack(raw, &proj_scratch, 1);
+        ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_BUS];
+        raw[tsp_seen.at[TSP_BUS] + 3u] = CB_LAGS;     /* (bus B's LAG past 20 s) */
+        tsp_resum(raw);
+        bad += check("TSP1: a LAG past 20 s refused", ok && !tsp_valid(raw, len));
+        raw[tsp_seen.at[TSP_BUS] + 3u] = 2u;
+        raw[tsp_seen.at[TSP_BUS]] = CB_MODES;          /* (bus A's MODE past DIFF) */
+        tsp_resum(raw);
+        bad += check("TSP1: a MODE past DIFF refused", !tsp_valid(raw, len));
+        cord_clear();
+    }
     reset();                                           /* HUMAN TIME: the record's HUMAN part; a record without it */
     song.sel = 1; tessera_knob(0, TESS_ENG_EUCLID);
     tessera_param_set(1, TX_TW_HUMAN, 60); tessera_param_set(0, TX_TW_HUMAN, 40);   /* (track 0: a STEP track) */

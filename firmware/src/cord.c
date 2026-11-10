@@ -105,6 +105,8 @@ static const cord_dest_t CORD_DESTS[CD_N] = {
     [CD_CC] = {CD_CC, CK_CC, 0, PID_NONE, "CC" CD_FULL("a MIDI CC out on the track's MIDI OUT channel, its number set with OCT- held and KNOB 3")},
     [CD_SUB_SPLIT] = S_(CD_SUB_SPLIT, TX_SUB_SPLIT, "SPLIT", "TIMING's SPLIT: the chance a step plays at half its division"),
     [CD_SEQ_DIR] = S_(CD_SEQ_DIR, TX_SEQ_DIR, "DIR", "the STEP pattern's DIR, stepped: FWD BACK PEND PONG RAND DRUNK from the pattern's own"),
+    [CD_BUS_A] = {CD_BUS_A, CK_BUS, 0, PID_NONE, "BUS A" CD_FULL("the project's MIX bus A: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS A")},
+    [CD_BUS_B] = {CD_BUS_B, CK_BUS, 0, PID_NONE, "BUS B" CD_FULL("the project's MIX bus B: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS B")},
 };
 #undef V_
 #undef B_
@@ -123,7 +125,7 @@ static const char *const CORD_SRC_NAME[CS_N] = {"--", "LFO", "ENV", "VEL", "KEY"
                                                 "SLEW", "GATE", "NOTE", "CV", "DRIFT", "TIDE 1", "TIDE 3",
                                                 "TIDE 2", "SWARM 1", "SWARM 2", "SWARM 3", "SWARM 4", "SWARM 5", "SWARM 6",
                                                 "SWARM 7", "SWARM 8", "ENERGY", "MACRO 1",
-                                                "MACRO 2", "MACRO 3", "MACRO 4"};   /* (TIDE by speed: CS_TORPOR 1, CS_INERTIA 2, CS_APATHY 3) */
+                                                "MACRO 2", "MACRO 3", "MACRO 4", "BUS A", "BUS B"};   /* (TIDE by speed: CS_TORPOR 1, CS_INERTIA 2, CS_APATHY 3) */
 const char *cord_src_name(uint32_t code) { return code < CS_N ? CORD_SRC_NAME[code] : 0; }
 
 /* DRIFT: each track's slow wander, -1..1: a point every 2^14 audio blocks (11.9 s), the way between them eased
@@ -132,13 +134,20 @@ static uint32_t cord_blocks;
 static uint32_t cord_cmask, cord_amask;                 /* (the mods of mods: below, at cord_now) */
 static uint32_t cord_tmask, cord_gates, cord_fmask, cord_pmask;   /* (GATE, FILL, TEMPO: below, at cord_now) */
 static void cord_amounts(void), cord_gates_tick(void), cord_fill_tick(void), cord_tempo_tick(void), cord_cc_tick(void);
+static void cord_bus_tick(void);
+/* MIX buses (below, at cord_bus_tick): busm[b] bit i, cords[i] goes into bus b; out[b], its value now (Q15, the source
+ * BUS A / B); y[b] the same, lagged, in Q23 (its fraction kept); set: A MODE, A LAG, B MODE, B LAG */
+static uint32_t cord_busm[2];
+static int32_t cord_bus_out[2], cord_bus_y[2];
+static uint8_t cord_bus_cfg[4];
 static uint32_t cord_ccmask;                            /* (CC OUT: bit i, cords[i] goes out as a CC; at cord_cc_tick) */
 void cord_tick(void)
 {
     cord_blocks++;
     if (cord_tmask) cord_gates_tick();
     if (cord_cmask) cord_amounts();
-    if (cord_fmask) cord_fill_tick();
+    if (cord_busm[0] | cord_busm[1] | cord_bus_out[0] | cord_bus_out[1]) cord_bus_tick();   /* (no cord in: to 0, */
+    if (cord_fmask) cord_fill_tick();                                                        /* then nothing) */
     else seq_fill_mod = 0;
     if (cord_pmask) cord_tempo_tick();
     else seq_tempo_q12 = 4096;
@@ -182,6 +191,8 @@ static int32_t cord_src(uint32_t s, uint32_t tr)
         return cord_drift(tr % NTRK);
     if (s == CS_ENERGY)
         return energy_now();
+    if (s >= CS_BUSA)                                   /* (the MIX buses, the project's: one block late) */
+        return cord_bus_out[(s - CS_BUSA) & 1u];
     if (s >= CS_MACRO1)                                 /* (PERF's, the project's: 0..1) */
         return (int32_t)tessera.macro[(s - CS_MACRO1) & 3u] * 32767 / 100;
     if (s >= CS_TORPOR)
@@ -194,7 +205,8 @@ static int32_t cord_src(uint32_t s, uint32_t tr)
 static int cord_bipolar(uint32_t s, uint32_t tr)
 {
     (void)tr;
-    return s == CS_NOTE || s == CS_DRIFT || (s >= CS_TORPOR && s < CS_MACRO1) || s == CS_LFO || (s < CS_GATE && MS_BIPOLAR(s));   /* (CV: 0..1) */
+    return s == CS_NOTE || s == CS_DRIFT || (s >= CS_TORPOR && s < CS_MACRO1) || s == CS_LFO || s >= CS_BUSA ||
+           (s < CS_GATE && MS_BIPOLAR(s));             /* (CV: 0..1) */
 }
 
 /* a cord's polarity: its source bipolar, unless UNI folds it to 0..1. For the LFO the mod's BI/UNI alone decides: the
@@ -223,7 +235,9 @@ static int32_t cord_val(const cord_t *c, int32_t own)
 
 /* ------------------------------------------------------------ the cords --- */
 static cord_t cords[CORD_MAX];
-_Static_assert(CD_FILL == 100 && CD_TEMPO == 101 && CD_CC == 102 && CD_SUB_SPLIT == 103 && CD_SEQ_DIR == 104, "cord codes are saved: never renumbered");
+_Static_assert(CD_FILL == 100 && CD_TEMPO == 101 && CD_CC == 102 && CD_SUB_SPLIT == 103 && CD_SEQ_DIR == 104 &&
+               CD_BUS_A == 105 && CD_BUS_B == 106 && CS_MACRO4 == 30 && CS_BUSA == 31 && CS_BUSB == 32,
+               "cord codes are saved: never renumbered");
 /* CC OUT: each cord's CC number (0..119), the value it last sent (0xFF none yet) and the block it went at */
 static uint8_t cord_ccn[CORD_LIVE] = {[0 ... CORD_LIVE - 1] = 1}, cord_cc_was[CORD_LIVE] = {[0 ... CORD_LIVE - 1] = 0xFF};
 static uint16_t cord_cc_at[CORD_LIVE];
@@ -325,6 +339,7 @@ static void cord_masks(void)
     cord_gmask = 0;
     cord_cmask = cord_amask = 0;
     cord_tmask = cord_fmask = cord_pmask = cord_ccmask = 0;
+    cord_busm[0] = cord_busm[1] = 0;
     for (i = 0, t = 0; i < CORD_LIVE; i++)              /* (HOLD: a new one samples now, not 0 until its bar) */
         if (cords[i].uni == CU_HOLD && cords[i].src) {
             if (!((cord_hmask >> i) & 1u)) cord_hval[i] = (int16_t)cord_src(cords[i].src, cords[i].src_trk);
@@ -361,6 +376,10 @@ static void cord_masks(void)
             cord_ccmask |= 1u << i;
             continue;
         }
+        if (kind == CK_BUS) {                           /* (cord_bus_tick) */
+            cord_busm[c->dst - CD_BUS_A] |= 1u << i;
+            continue;
+        }
         if (kind == CK_STEP) cord_smask[c->dst_trk] |= 1u << i;
         else if (kind == CK_GLOBAL) cord_gmask |= 1u << i;
         else cord_mask[c->dst_trk] |= 1u << i;
@@ -394,6 +413,9 @@ static void cord_reset(void)
     cord_cmask = cord_amask = 0;
     cord_tmask = cord_gates = cord_fmask = cord_pmask = cord_ccmask = 0;
     cord_hmask = 0;
+    cord_busm[0] = cord_busm[1] = 0;                    /* (the buses: SUM, no LAG, at rest) */
+    cord_bus_out[0] = cord_bus_out[1] = cord_bus_y[0] = cord_bus_y[1] = 0;
+    memset(cord_bus_cfg, 0, sizeof cord_bus_cfg);
     cord_fresh = 1;
     memset(cords, 0, sizeof cords);
     memset(cord_now, 0, sizeof cord_now);
@@ -627,6 +649,50 @@ static __attribute__((noinline)) void cord_cc_tick(void)
         midi_out_event(0x0Bu | (0xB0u | ch) << 8 | (uint32_t)cord_ccn[i] << 16 | (uint32_t)v << 24);
     }
 }
+
+/* each block with a mod into a bus, or a bus not yet at rest (cord_tick): each bus's cords combined by its MODE
+ * (their shares, as cord_share: SUM clamped to -1..1, MAX, MIN, DIFF |a - b| of the first two), then slewed by its
+ * LAG. Both are worked out from the cords first and only then stored: a cord reading a bus (into a bus too) reads
+ * it as it was the block before, so a bus fed back into itself is a stable one-block loop (with a negative amount
+ * a slow swing, bounded by the clamp). LAG: the steps of a whole 0..1 move a block, Q23 (CTL samples at 44.1 kHz) */
+#define CORD_LAG_(ms) ((int32_t)(8388352LL * 1000 / ((FS / CTL) * (int64_t)(ms))))
+static const int32_t CORD_LAG_STEP[CB_LAGS] = {0, CORD_LAG_(10), CORD_LAG_(20), CORD_LAG_(50), CORD_LAG_(100),
+    CORD_LAG_(200), CORD_LAG_(500), CORD_LAG_(1000), CORD_LAG_(2000), CORD_LAG_(5000), CORD_LAG_(10000),
+    CORD_LAG_(20000)};
+#undef CORD_LAG_
+static __attribute__((noinline)) void cord_bus_tick(void)
+{
+    int32_t now[2];
+    uint32_t b;
+    for (b = 0; b < 2u; b++) {
+        uint32_t m = cord_busm[b], mode = cord_bus_cfg[2u * b], i, n = 0;
+        int32_t v = 0;
+        for (i = 0; m; i++, m >>= 1) {
+            int32_t s;
+            if (!(m & 1u)) continue;
+            s = cord_share(&cords[i]);
+            if (!n++ || mode == CB_SUM) v = n > 1u ? v + s : s;
+            else if (mode == CB_MAX) v = s > v ? s : v;
+            else if (mode == CB_MIN) v = s < v ? s : v;
+            else if (n == 2u) v -= s;                   /* (DIFF: the first two) */
+        }
+        if (mode == CB_DIFF && v < 0) v = -v;
+        now[b] = clamp(v, -32767, 32767);
+    }
+    for (b = 0; b < 2u; b++) {
+        int32_t st = CORD_LAG_STEP[cord_bus_cfg[2u * b + 1u] % CB_LAGS], y = cord_bus_y[b], t = now[b] * 256;
+        if (!st || (t > y ? t - y : y - t) <= st) y = t;
+        else y += t > y ? st : -st;
+        cord_bus_y[b] = y;
+        cord_bus_out[b] = y / 256;
+    }
+}
+uint32_t cord_bus_get(uint32_t k) { return k < 4u ? cord_bus_cfg[k] : 0u; }
+void cord_bus_set(uint32_t k, int32_t v)
+{
+    if (k < 4u) cord_bus_cfg[k] = (uint8_t)clamp(v, 0, (k & 1u) ? (int32_t)CB_LAGS - 1 : CB_MODES - 1);
+}
+int32_t cord_bus_now(uint32_t b) { return cord_bus_out[b & 1u]; }
 
 /* fx.c fx_bus_settings (cord_gmask: some cord reaches them): the send effects' settings g (song.g from G_MFXTYPE to
  * G_FXRETURN) as their cords move them this block, within each one's range */
