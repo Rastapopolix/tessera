@@ -501,7 +501,7 @@ if core && [ $TABLES = 1 ]; then
     t "recording/performance tools and legacy migrations" performance_tools_test -O1 $FW
     t "USB/TRS clock, bend, sustain, ownership and panic recovery" midi_control_test -O1 $FW
     t "MIDI OUT: steps, generators, ARP and keys per track channel, no echo, note-offs, clock out, settings" midi_out_test -O1 $FW
-    t "STEP DIR heard: PEND, PONG, BACK play each step's own note; a TIE backwards plays once" seq_dir_test -O1 $FW
+    t "STEP DIR heard: PEND, FOLD, BACK play each step's own note; a TIE backwards plays once" seq_dir_test -O1 $FW
     t "MIDI timing: quantized TRS/USB recording, audio timeline, tempo changes and timer wrap" midi_timing_test -O1 $FW
     t "MIDI recording: raw events, quantization at take end, independent releases, banks and capacity" recording_test \
         -O1 $FW

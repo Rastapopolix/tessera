@@ -459,7 +459,7 @@ _Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0
                TX_PAT_GEN == 0x98 && TX_MIDI_DMAP == 0x99 && TX_ET_ORDER == 0x9A && TX_SEQ_DIR == 0x9B &&
                TX_CH_SDIR == 0x9D && TX_BUSB_LAG == 0xA1 && TX_MOD_DEPTH == 0xA2, "parameter ids are stored: never renumbered");
 /* TX_SEQ_DIR: the order a STEP pattern plays its steps in (seq_dir.c) */
-enum { SEQ_FWD, SEQ_BACK, SEQ_PEND, SEQ_PONG, SEQ_RAND, SEQ_DRUNK, SEQ_DIRS };
+enum { SEQ_FWD, SEQ_BACK, SEQ_PEND, SEQ_FOLD, SEQ_RAND, SEQ_DRUNK, SEQ_DIRS };
 #define TESS_STRUM_MS 60u                           /* TX_CH_STRUM: up to 60 ms between a chord's notes */
 enum { TESS_STR_UP, TESS_STR_DOWN, TESS_STR_ALT, TESS_STR_DIRS };   /* TX_CH_SDIR (saved: append only) */
 /* TX_TW_FHOW: the source's note as it is, the nearest chord tone, mirrored, a bass, or CANON 1..8 notes back */

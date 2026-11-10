@@ -580,8 +580,7 @@ patterns keeps its own, saved with it:
 - **FWD** (the default): step 1 to the last, as always.
 - **BACK**: the last step to step 1.
 - **PEND**: there and back, turning on the end steps: each end plays once (1 2 3 4 3 2 1 2 ..).
-- **PONG**: there and back, each end step played again as it turns, so its note is heard twice in a row
-  (1 2 3 4 4 3 2 1 1 2 ..). A pass of PONG is two steps longer than one of PEND.
+- **FOLD**: from the ends inwards, the first and last steps in turn (1 8 2 7 3 6 4 5 on 8 steps), then again.
 - **RAND**: any step, each time.
 - **DRUNK**: one step on or one back, at random; past the ends it goes round.
 
@@ -593,7 +592,7 @@ next step comes from the one playing, the new way. A new pattern starts at its o
 step). Capture and print write the notes in the order they sounded and set the pattern to FWD. A generator track
 does not use it.
 
-Going backwards (BACK, the way back of PEND and PONG, DRUNK's steps back), a tied note plays once: a run of a note
+Going backwards (BACK, the way back of PEND, DRUNK's steps back), a tied note plays once: a run of a note
 and the TIEs after it starts on the run's last step and lasts the whole run, as it does forwards (it does not play
 again on the note's own step). Recorded notes (REC) follow the direction too: each step plays the notes recorded
 on it, whichever way the playhead goes. While a mod moves the direction, the Direction row shows both, the
@@ -1492,7 +1491,7 @@ at a time, each with an activity light and a moving mark.
   notes a new filter for track 3, as a sample and hold fed a gate. A note of the clock track a mod onto PLAY shuts
   still counts. Firmware before it holds by the bar.
 - **DIR.** A mod onto a track's **DIR** picks the direction its STEP pattern plays in (see *Direction* on the
-  pattern's sheet), in whole steps from the pattern's own along FWD, BACK, PEND, PONG, RAND, DRUNK: each 20 % of move
+  pattern's sheet), in whole steps from the pattern's own along FWD, BACK, PEND, FOLD, RAND, DRUNK: each 20 % of move
   is one more, and it stops at the ends. So the amount and the offset say which directions it can reach: from FWD, a +
   mod at 40 % goes FWD, BACK, PEND as its source rises. A GATE mod at 20 % plays BACK while its source is over the
   threshold and FWD under it; S&H from the track's LFO synced to a bar or two picks a new direction at random. It is

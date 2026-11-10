@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis (melodee-tess) */
 /* STEP DIR (firmware/src/seq_dir.c), heard: the notes a STEP pattern plays, through the real sequencer and MIDI OUT
- * (ALL), each step with its own note. PEND and PONG play the steps' notes back the way they came (the note heard is the
- * step under the playhead), BACK too; a TIE going backwards: the tied run plays once, from the run's last step, as long
- * as the run (not a note per step).
+ * (ALL), each step with its own note. BACK and PEND play the steps' notes back the way they came, FOLD from the ends
+ * inwards (the note heard is the step under the playhead); a TIE going backwards: the tied run plays once, from the
+ * run's last step, as long as the run (not a note per step).
  * Run by tests/run_tests.sh (needs build/gen from one firmware build). */
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
@@ -96,8 +96,8 @@ static void show(const char *what, const uint8_t *got, uint32_t n)
 static int heard_test(void)
 {
     static const uint8_t WANT[4][12] = {{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1}, {4, 3, 2, 1, 0, 4, 3, 2, 1, 0, 4, 3},
-                                        {0, 1, 2, 3, 4, 3, 2, 1, 0, 1, 2, 3}, {0, 1, 2, 3, 4, 4, 3, 2, 1, 0, 0, 1}};
-    static const char *const NAME[4] = {"FWD", "BACK", "PEND", "PONG"};
+                                        {0, 1, 2, 3, 4, 3, 2, 1, 0, 1, 2, 3}, {0, 4, 1, 3, 2, 0, 4, 1, 3, 2, 0, 4}};
+    static const char *const NAME[4] = {"FWD", "BACK", "PEND", "FOLD"};
     uint8_t got[64], idx[64];
     char what[96];
     int bad = 0;
@@ -158,8 +158,8 @@ static int tie_test(void)
 static int recorded_test(void)
 {
     static const uint8_t WANT[4][12] = {{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1}, {4, 3, 2, 1, 0, 4, 3, 2, 1, 0, 4, 3},
-                                        {0, 1, 2, 3, 4, 3, 2, 1, 0, 1, 2, 3}, {0, 1, 2, 3, 4, 4, 3, 2, 1, 0, 0, 1}};
-    static const char *const NAME[4] = {"FWD", "BACK", "PEND", "PONG"};
+                                        {0, 1, 2, 3, 4, 3, 2, 1, 0, 1, 2, 3}, {0, 4, 1, 3, 2, 0, 4, 1, 3, 2, 0, 4}};
+    static const char *const NAME[4] = {"FWD", "BACK", "PEND", "FOLD"};
     uint8_t got[64], idx[64];
     char what[96];
     int bad = 0;

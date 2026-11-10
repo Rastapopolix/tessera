@@ -22,31 +22,34 @@ static uint32_t seq_dir_hash(uint32_t tr, uint32_t k)
     x ^= x >> 15; x *= 0x85EBCA77u; x ^= x >> 13; x *= 0xC2B2AE35u;
     return x ^ x >> 16;
 }
-/* the step after idx going d, for step k since PLAY (fresh: d's first step); PEND / PONG turn at the ends */
+/* FOLD: the step at place p of its pass, from the ends inwards (1, the last, 2, the one before ..) */
+static uint32_t seq_dir_fold(uint32_t p, uint32_t len) { return p & 1u ? len - 1u - p / 2u : p / 2u; }
+/* the step after idx going d, for step k since PLAY (fresh: d's first step); PEND turns at the ends */
 static uint32_t seq_dir_pick(track_t *t, uint32_t d, uint32_t idx, uint32_t len, uint32_t k, int fresh)
 {
     uint32_t h = seq_dir_hash((uint32_t)(t - trk), k);
     idx %= len;
     switch (d) {
     case SEQ_BACK: return fresh ? len - 1u : (idx ? idx : len) - 1u;
-    case SEQ_PEND: case SEQ_PONG:
+    case SEQ_PEND:
         if (fresh) { SEQ_D(t).back = 0; return 0; }
-        if (SEQ_D(t).back ? !idx : idx + 1u >= len) {     /* (an end: back the other way; PONG plays the end again) */
+        if (SEQ_D(t).back ? !idx : idx + 1u >= len) {     /* (an end: back the other way) */
             SEQ_D(t).back ^= 1u;
-            if (d == SEQ_PONG || len < 2u) return idx;
+            if (len < 2u) return idx;
         }
         return SEQ_D(t).back ? idx - 1u : idx + 1u;
+    case SEQ_FOLD:                                      /* (idx's place in the pass, the next place's step) */
+        return fresh ? 0u : seq_dir_fold(((idx <= len - 1u - idx ? 2u * idx : 2u * (len - 1u - idx) + 1u) + 1u) % len, len);
     case SEQ_RAND: return h % len;
     case SEQ_DRUNK: return fresh ? h % len : (idx + ((h >> 8) & 1u ? 1u : len - 1u)) % len;
     default: return fresh ? 0u : (idx + 1u) % len;
     }
 }
-/* the move from step `from` to `to` went backwards (d: the DIR that made it; PEND / PONG by their way, a repeated end
- * too: PONG's turn) */
+/* the move from step `from` to `to` went backwards (d: the DIR that made it; PEND by its way; FOLD jumps) */
 static uint32_t seq_dir_rev(const track_t *t, uint32_t d, uint32_t from, uint32_t to, uint32_t len)
 {
     if (d == SEQ_BACK) return 1u;
-    if (d == SEQ_PEND || d == SEQ_PONG) return SEQ_D(t).back;
+    if (d == SEQ_PEND) return SEQ_D(t).back;
     return d >= SEQ_RAND && len > 2u && to == (from + len - 1u) % len;
 }
 /* a tied run (a NOTE, the TIEs after it) backwards: the move from `from` to `to` (the step before it) goes on along
@@ -126,12 +129,12 @@ static void seq_dir_seek(track_t *t, uint32_t len, uint32_t k)
     SEQ_D(t).nxt = SEQ_NXT_AGAIN;
     SEQ_D(t).back = SEQ_D(t).nrev = SEQ_D(t).cont = 0;
     if (d == SEQ_BACK) i = len - 1u - s;
-    else if ((d == SEQ_PEND || d == SEQ_PONG) && len > 1u) {
-        p = d == SEQ_PEND ? 2u * len - 2u : 2u * len;
-        p = k % p;
-        SEQ_D(t).back = (uint8_t)(p >= len - (d == SEQ_PEND));
-        i = p < len ? p : (d == SEQ_PEND ? 2u * len - 2u : 2u * len - 1u) - p;
-    } else if (d >= SEQ_RAND) i = seq_dir_hash((uint32_t)(t - trk), k) % len;
+    else if (d == SEQ_PEND && len > 1u) {
+        p = k % (2u * len - 2u);
+        SEQ_D(t).back = (uint8_t)(p >= len - 1u);
+        i = p < len ? p : 2u * len - 2u - p;
+    } else if (d == SEQ_FOLD) i = seq_dir_fold(s, len);
+    else if (d >= SEQ_RAND) i = seq_dir_hash((uint32_t)(t - trk), k) % len;
     else i = s;
     t->seq_idx = (uint16_t)i;
     SEQ_D(t).rev = (uint8_t)(d == SEQ_BACK || SEQ_D(t).back);
