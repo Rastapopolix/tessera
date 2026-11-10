@@ -578,7 +578,7 @@ if core && [ $TABLES = 1 ]; then
     t "TABLES: the computed readouts (TIME, LFO Hz, CUTOFF, dB) equal the tables they replace" tables_test -O1 $FW
     t "CORDS: the destination table, frozen against tests/cord_dests.txt" cord_test \
         -O1 $FW -- "$OUT/cord_test" tests/cord_dests.txt
-    t "double-tap layers, SCREEN OFF, LFO 2 SYNC / TRIG / POL, MODS scrolled without a pixel sent twice" layer_screen_test \
+    t "double-tap layers, SCREEN OFF, LFO 2 SYNC / TRIG / POL; MODS scrolled, FX + knobs, MODS AMOUNT: no pixel sent twice" layer_screen_test \
         -O1 -DMELODEE_USB_AUDIO=1 $FW
     t "DRUM EDITOR: synthesized 909, sound controls, individual pitch/length, undo and storage" drum_editor_test -O2 $FW
 fi
