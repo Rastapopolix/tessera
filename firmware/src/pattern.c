@@ -19,6 +19,8 @@ static int recording_owns(const track_t *t, uint32_t note);
 static void motion_restore(track_t *t);
 static void seq_dir_top(track_t *t);                /* (seq_dir.c) */
 static uint32_t seq_dir_next(const track_t *t, uint32_t len);
+static uint32_t seq_dir_cont(const track_t *t, uint32_t from, uint32_t to, uint32_t len);
+static const step_t *seq_dir_tie(const track_t *t, const step_t *s, step_t *tv, uint32_t len);
 static pattern_t *pattern_at(uint32_t track, uint32_t bank)
 {
     return track < 2u ? &pattern_pool[track][bank] : track == 2u ? &pattern_bss[bank] : &pattern_noinit[bank];

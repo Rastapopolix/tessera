@@ -36,6 +36,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - MIXER's sheet: hold OCT+ on MIXER for Mutes (NOW, BAR, PHRASE), the same setting as MENU > MUTES, at hand while you play the mute keys.
 
 ## Fixed
+- STEP direction: a pattern of recorded notes (REC) played them forwards while BACK, PEND or PONG moved the playhead backwards; each step now plays its own recorded notes. A tied note going backwards plays once, from the tie's last step, as long as the tie (it played again on its own step). The pattern sheet's Direction row shows a mod moving it as FWD>PEND: the pattern's own, then the one playing.
 - SCL > SCALES with a USER scale picked: the keys light and play by their own note whatever QNT is; with QNT on they were snapped and lit wrong (#559).
 - OCT+ on GEN with a generator no longer opens the STEP pattern's sheet (GEN keeps it for STEP and ARP; PATTERN for all).
 - OCT- held for a short look at a page's second knobs (TWEAK, GEN, MIXER, EVOLVE ..) went to HOME when let go under 0.7 s; now only a quick tap is a tap.
@@ -75,6 +76,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - ARP DNUP and RND1 with a chord held: RND1 keeps its order, changes when a key is added, and is the same after STOP and PLAY.
 - CHORD STRUM on a CHORD track: STRUM 20 ms and up, DIR UP, DOWN and ALT, with BEAT or STEP stabs; MIDI OUT gets the notes spread too.
 - STEP direction: PONG and DRUNK on a melody, with SONG and a pattern change; save, load, and STOP and PLAY replays RAND.
+- STEP direction backwards: a REC-recorded pattern on BACK and PEND (each step its own notes on the way back), a tied note on BACK (once, as long as the tie), and a mod onto DIR with the pattern's sheet open (Direction reads FWD>PEND).
 - CHRD SUS2, 7SUS4, ADD9, MAJ6 on the chord keys and on a CHORD track (the name on the CHORD page: Csus2, C7sus4, Cadd9, C6), with OPEN and +OCT.
 - HOLD mod: an LFO into a filter or pitch held per bar; a cord to DIR.
 - MOD SCOPE: hold OCT- on MODS with an LFO mod, a GATE mod (turn its threshold) and a mod of mods; does the picture keep up, and is it readable on the panel (one ink, a MOSAIC set, a light GROUND)? Fast mods should draw a calm line, not a smear.

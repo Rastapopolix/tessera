@@ -346,24 +346,36 @@ static void recording_fire(track_t *t, uint32_t i, uint32_t period, uint32_t lat
         recording_off(t, r->note);
     }
 }
+/* the loop's top (PLAY, step 0): every note played again, those due by now played. DIR not FWD (seq_dir.c): only the
+ * step playing's (the take's time is the steps', not the pass's) */
 static void recording_zero(track_t *t)
 {
     uint32_t period = seq_div_samples((uint32_t)t->p[P_SDIV]);
+    uint32_t from = SEQ_D(t).ndir != SEQ_FWD ? recording_prefix(t, period, t->seq_idx) : 0u;
     uint32_t phase = recording_prefix(t, period, t->seq_idx) + t->seq_pos;
     recording_sync(t, period);
     for (uint32_t i = recording_head[recording_owner(t)]; i < RECORD_MAX; i = recording_next[i]) {
         recording_flags[i] &= (uint8_t)~4u;
         if (recording_active(t, i)) {
             uint32_t on = recording_play_on(t, i, period);
-            if (on <= phase) recording_fire(t, i, period, phase - on);
+            if (on >= from && on <= phase) recording_fire(t, i, period, phase - on);
         }
     }
+}
+/* DIR not FWD, a step begun: its notes may play again (BACK, PEND and PONG come back to a step within the pass) */
+static void recording_rearm(track_t *t)
+{
+    for (uint32_t i = recording_head[recording_owner(t)]; i < RECORD_MAX; i = recording_next[i]) recording_flags[i] &= (uint8_t)~4u;
 }
 static void recording_tick(track_t *t, uint32_t n)
 {
     uint32_t period = seq_div_samples((uint32_t)t->p[P_SDIV]), tr = trk_index(t);
-    uint32_t a = recording_prefix(t, period, t->seq_idx) + t->seq_pos, b = a + n;
+    uint32_t a = recording_prefix(t, period, t->seq_idx) + t->seq_pos, b = a + n, dir = SEQ_D(t).ndir != SEQ_FWD;
     uint32_t elapsed;
+    if (dir) {                                     /* (DIR: the step's own notes, from its start: not the next's) */
+        uint32_t end = recording_prefix(t, period, t->seq_idx + 1u);
+        if (b > end) b = end;
+    }
     if (n <= CTL) {
         /* At most CTL * 65536 plus one sequencer period: the ordinary
          * audio tick fits 32 bits, including the slowest supported division. */
@@ -387,7 +399,7 @@ static void recording_tick(track_t *t, uint32_t n)
             uint32_t on = recording_play_on(t, i, period);
             /* Most retained events are nowhere near this block. Avoid
              * looking up their STEP ownership until their onset is due. */
-            if (on > a && on <= b && recording_active(t, i)) recording_fire(t, i, period, b - on);
+            if ((dir ? on >= a && on < b : on > a && on <= b) && recording_active(t, i)) recording_fire(t, i, period, b - on);
         }
     }
 }
