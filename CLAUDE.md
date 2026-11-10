@@ -10,9 +10,11 @@ notes in `docs/design/`. This repo is public: keep plans, reviews and decisions 
 
 ## Start and end of each session
 
-Read `~/src/tessera-notes/ROADMAP.md` first (`git -C ~/src/tessera-notes pull`) and claim the task under
-"In progress" (branch, session), along with any new save-format part, parameter ID, cord code or test-page number.
-At the end, update it (tick tasks, record decisions) and commit and push it there; commit code here as usual.
+Read the short `~/src/tessera-notes/ROADMAP.md` first (`git -C ~/src/tessera-notes pull`; about 250 lines: "Number
+claims", standing decisions, "In progress", open tasks) and claim the task under "In progress" (branch, session),
+along with any new save-format part, parameter ID, cord code or test-page number. Everything finished or historical
+is in `docs/archive/roadmap-2026.md` there: grep it when you need a past decision, never read it whole.
+At the end, update the ROADMAP (tick tasks, record decisions) and commit and push it there; commit code here as usual.
 
 Branches: feature branches from `develop`, PRs into `develop`. `main` holds releases and the site (`docs/`):
 release and site PRs only. Betas: push `beta/X.Y-betaN` from develop (`.github/workflows/beta.yml`), then a site PR
@@ -29,13 +31,21 @@ MELODEE_DUAL_CORE=0 ./build.sh   # serial (one-core) variant
 WSL Ubuntu, Linux x86-64: the JieLi toolchain runs natively (`~/.jieli/toolchain`), no Docker.
 The AC79 SDK is at `~/fw-AC79_AIoT_SDK`. Build options are listed in `BUILDING.md`.
 
+From Windows (Git Bash or PowerShell) run anything in WSL, in the matching checkout, with `tools/wsl.sh <cmd>` /
+`.\tools\w.ps1 <cmd>` (e.g. `tools/wsl.sh ./build.sh`, `tools/wsl.sh gh pr list`). `gh` and `node` exist only in WSL;
+use Windows git for git (WSL git cannot read a Windows worktree's `.git`).
+
 ## Test
 
 ```
-tests/run_tests.sh                       # host tests; run after ./build.sh
+tests/run_tests.sh --quick               # while working: the tests of the files changed since origin/develop
+tests/run_tests.sh                       # the full suite; run after ./build.sh, and always before a PR
 GOLDEN_UPDATE=1 sh tests/run_tests.sh    # only after an intended change of the sound
 BUDGET_UPDATE=1 sh tests/run_tests.sh    # only after an intended change of the CPU cost
 ```
+
+The output is one line per job; a failure prints its own output and the path of its log
+(`-v`: everything). `--quick` is not the gate: run the full suite before opening a PR.
 
 The suite renders every engine against `tests/golden.txt`, checks CPU cost, and renders the UI.
 Generators can be developed and tested on the PC; flash the device only to check how it plays.
@@ -65,7 +75,7 @@ Generators can be developed and tested on the PC; flash the device only to check
 
 - Follow the existing code conventions: the unity build (`melodee.c` and `tests/hostsim.c`
   `#include` the `.c` files), C style, naming, comment density. New sources go in both.
-- Prefer new files over heavy rewrites of shared upstream files, to keep upstream syncing easy.
+- Tessera is a hard fork. Rewrite or fold shared Melodee code when it makes Tessera cleaner or smaller. Port upstream fixes to low-level code (USB, audio, bootloader, flash) by hand when one turns up; don't merge upstream.
 - All hardware access stays behind the platform layer (`firmware/hal/`), so generator,
   sequencer, mod and UI code compiles for host tests and the web simulator.
 - Every automatic layer (Energy, Entries, Wander, Evolve, Gravity, the piece planner) has an

@@ -19,7 +19,7 @@
  * together (menu_value, menu_input take them as a range) */
 enum { MI_COLOR,
 #if MELODEE_LOOK
-       MI_KNOBS, MI_LARGE,
+       MI_GROUND, MI_KNOBS, MI_LARGE,
 #endif
        MI_LIGHTS, MI_SCREEN, MI_BATTERY, MI_GAMMA,
        MI_HOLD, MI_ACCEL, MI_TRACK_KNOB,
@@ -36,7 +36,7 @@ enum { MI_COLOR,
 static const char *const GAMMA_NAME[GAMMA_N] = {"G2.2", "G1.8", "G2.5", "G1.0", "TUNED", "TUNED+VCOM"};   /* (lcd.c) */
 static const char *const MI_NAME[MI_COUNT] = {"COLOR",
 #if MELODEE_LOOK
-                                              "KNOBS", "LARGE VALUE",
+                                              "GROUND", "KNOBS", "LARGE VALUE",
 #endif
                                               "LIGHTS", "SCREEN OFF", "BATTERY", "PANEL GAMMA",
                                               "HOLD", "KNOB ACCEL", "TRACK KNOB",
@@ -425,6 +425,7 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
     if (i == MI_ACCEL) value = PREF_BITS & PREF_ACCEL_OFF ? "OFF" : "ON";
     if (i == MI_TRACK_KNOB) value = settings_knob_swap ? "LEFT" : "RIGHT";
 #if MELODEE_LOOK
+    if (i == MI_GROUND) value = ux_ground ? "LIGHT" : "DARK";
     if (i == MI_KNOBS) value = KNOBS_BAR ? "BAR" : "DIAL";
     if (i == MI_LARGE) value = (const char *const[]){"AUTO", "ON", "OFF"}[LARGE_MODE];
 #endif
@@ -441,7 +442,7 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
 #if MELODEE_USB_HOST
     if (i == MI_USB_HOST) value = uh.want ? "ON" : "OFF";
 #endif
-    if (i == MI_MUTES) value = (const char *const[]){"NOW", "BAR", "PHRASE"}[settings_mute_q % 3u];
+    if (i == MI_MUTES) value = MUTE_Q_NAME[settings_mute_q % 3u];   /* (ui_popup.c: MIXER's sheet turns it too) */
     if (i == MI_AUTOSAVE) value = settings_autosave ? "ON" : "OFF";
     if (i == MI_BATTERY) value = settings_batt_off ? "WHEN LOW" : "ON";
     if (i == MI_SCREEN) value = (const char *const[]){"NEVER", "5 MIN", "15 MIN", "30 MIN", "60 MIN"}[scr_get()];
@@ -465,7 +466,7 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
  * it (menu_colors) */
 /* MENU > COLOR's sheet: ONE INK, a box in each ink, and MOSAIC, a tile of four stripes in each palette's track colours
  * (tools/gen_ui_palettes.py keeps them to a row each, inks first); the one chosen framed, a cell clear round it, and
- * its name large below */
+ * its name large below. GROUND LIGHT: the light inks, on paper */
 static void menu_colors(void)
 {
     uint32_t k, cur = settings.palette % NPALETTES, ni = 0, nm = 0;
@@ -476,11 +477,11 @@ static void menu_colors(void)
         int32_t x, y, w, j;
         if (q->trk[0] == q->trk[1]) {                   /* one ink: a box 10 x 11 (the frames clear of the scroll bar) */
             x = 2 + (int32_t)ni++ * 13, y = 27, w = 10;
-            mo_fill(x, y, w, 11, q->text);
+            mo_fill(x, y, w, 11, ux_ground ? pal_light(k, 0) : q->text);
         } else {                                        /* MOSAIC: its four, 6 cells each */
             x = 2 + (int32_t)nm++ * 29, y = 61, w = 24;
             for (j = 0; j < 4; j++)
-                mo_fill(x + j * 6, y, 6, 11, q->trk[j]);
+                mo_fill(x + j * 6, y, 6, 11, ux_ground ? pal_light(k, (uint32_t)j) : q->trk[j]);
         }
         if (k == cur)
             mo_box(x - 2, y - 2, w + 4, 15, MO_HOT);
@@ -748,6 +749,11 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         ui.force=1; ok=0;
     }
 #if MELODEE_LOOK
+    if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_GROUND) {     /* KNOB 2 right LIGHT, left DARK; OCT+ toggles */
+        ux_ground = (uint8_t)(s > 0 ? 1 : s < 0 ? 0 : !ux_ground);
+        palette_set(settings.palette);              /* (saved when the menu closes) */
+        ui.force = 1; ok = 0;
+    }
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_KNOBS) {      /* KNOB 2 right BAR, left DIAL; OCT+ toggles */
         KNOBS_SAVED = (uint8_t)((s > 0 ? 1 : s < 0 ? 0 : !KNOBS_BAR) ? KNOBS_BAR_TAG : 0u);
         ui.force = 1; ok = 0;                          /* (ui_mono.c mo_cols; saved with the favorites) */
@@ -788,8 +794,7 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         ui.force = 1; ok = 0;
     }
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_MUTES) {      /* KNOB 2 steps NOW BAR PHRASE, OCT+ wraps */
-        uint32_t v = settings_mute_q % 3u;
-        settings_mute_q = (uint8_t)(s > 0 ? (v < 2u ? v + 1u : v) : s < 0 ? (v ? v - 1u : 0u) : (v + 1u) % 3u);
+        mute_q_step(s);
         ui.force = 1; ok = 0;                          /* (entries.c mute_press: GLO's mute keys while playing) */
     }
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_BATTERY) {   /* KNOB 2 right ON, left WHEN LOW; OCT+ toggles */

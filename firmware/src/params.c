@@ -16,7 +16,8 @@ static const char *const N_FX[] = {"OFF", "PHASER", "WIDTH", "FORMANT", "TAPE", 
 static const char *const N_ONOFF[] = {"OFF", "ON"};
 static const char *const N_QUANT[] = {"OFF", "SNAP", "WHITE", "ALL", "MPC", "CHRD"};   /* Q_OFF .. Q_CHRD (seq.c kb_map, midi_map) */
 /* chord keys (chord.c): OFF, the diatonic triad / seventh of the track's ROOT and SCALE on the key, fixed shapes */
-static const char *const N_CHRD[] = {"OFF", "DIA3", "DIA7", "MAJ", "MIN", "DOM7", "MAJ7", "MIN7", "SUS4", "POW"};
+static const char *const N_CHRD[] = {"OFF", "DIA3", "DIA7", "MAJ", "MIN", "DOM7", "MAJ7", "MIN7", "SUS4", "POW",
+                                            "SUS2", "7SUS4", "ADD9", "MAJ6"};   /* CH_OFF .. CH_MAJ6 (chord.c; saved: append only) */
 static const char *const N_VOIC[] = {"CLOSE", "OPEN", "INV1", "INV2", "+OCT"};   /* VC_CLOSE .. VC_BASS */
 static const char *const N_VOICE[] = {"POLY", "MONO", "LEG", "UNI"};   /* V_POLY .. V_UNISON */
 static const char *const N_GLMODE[] = {"RATE", "TIME"};
@@ -536,7 +537,8 @@ static const page_t PAGES[] = {
     {"MATRIX", FAM_LFO, SC_GLOBAL, GR_MATRIX, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: the mods track by track (ui_matrix.c) */
     {"LFO", FAM_LFO, SC_TRACK, GR_LFO, {P_LRATE, P_LWAVE, P_LPHASE, P_LFADE}},
     {"LFO 2", FAM_LFO, SC_TRACK, GR_LFO, {P_LSYNC, P_LTRIG, P_LPOL, 0xFF}},
-    {"MOD", FAM_LFO, SC_TRACK, GR_MOD, {P_M1SRC, 0xFF, P_M1DST, P_M1AMT}},   /* KNOB 2: the route (mod_ui_slot) */
+    {"MOD", FAM_LFO, SC_TRACK, GR_MOD, {P_M1SRC, 0xFF, P_M1DST, P_M1AMT}},   /* KNOB 2: the route (mod_ui_slot); hidden (ui.c), its code
+                                                                      * only in the detailed look */
     {"ORGANIC", FAM_LFO, SC_TRACK, GR_ORGANIC, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: SLOTH SPEED, OCHD RATE (organic.c) */
     {"LFO DEST", FAM_LFO, SC_TRACK, GR_NONE, {P_LD_PIT, P_LD_FLT, P_LD_SHP, P_LD_AMP}},
     {"SCALES", FAM_SCL, SC_TRACK, GR_SCALE_PICKER, {0xFF, P_SCALE, P_ROOT, P_QUANT}},
@@ -743,7 +745,7 @@ static const param_desc_t *page_desc(const page_t *pg, uint32_t slot, int16_t **
         *valp = &song.g[id];
         return global_desc(id);
     }
-    if (pg->graph == GR_MOD)                          /* SRC DST AMT of the slot shown */
+    if (!MELODEE_LOOK && pg->graph == GR_MOD)         /* SRC DST AMT of the slot shown */
         id += 3u * mod_ui_slot;
     *valp = &TSEL->p[id];
     return track_desc(TSEL, id);

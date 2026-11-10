@@ -19,7 +19,11 @@ static uint32_t worker_clock(void)
 #define AW_LOAD(p) atomic_load_explicit(p, memory_order_acquire)
 #define AW_STORE(p,v) atomic_store_explicit(p,v,memory_order_release)
 #define AW_TICKS() worker_clock()
-#define AW_TIMEOUT_TICKS 2000000u
+/* The device retires a CPU1 that stalls 10 ms; tests/audio_worker_test.c checks that path on a counted clock. Here
+ * the worker is a host thread the OS may leave unscheduled for seconds on a loaded machine (suites and builds in
+ * parallel), and a retirement mid-case breaks the sample parity this test is for. So the host deadline only catches
+ * a worker that never answers: 60 s of wall time (well inside the 32-bit microsecond wrap). */
+#define AW_TIMEOUT_TICKS 60000000u
 #define AW_RAM_LOOP static
 #define AW_IDLE() pthread_testcancel()
 /* The host cannot stop the thread mid-job: holding waits until it touches nothing more. */
@@ -113,7 +117,8 @@ static void render_case(int parallel, uint32_t alg, uint32_t eng, uint32_t voice
         assert(AW_LOAD(&audio_worker.request) == AW_LOAD(&audio_worker.complete));
         if (!parallel) memcpy(reference + 2u * pos, out, sizeof out);
         else if (memcmp(reference + 2u * pos, out, sizeof out)) {
-            fprintf(stderr, "difference: algorithm %u engine %u voices %u block %u\n", alg, eng, voices, pos/CTL);
+            fprintf(stderr, "difference: algorithm %u engine %u voices %u block %u (worker timeouts %u)\n", alg, eng, voices,
+                pos/CTL, audio_worker.timeouts);
             abort();
         }
     }

@@ -53,6 +53,7 @@ static uint32_t lfo_rand(track_t *t)
  * burst goes in 512 units at a time to stay in 32 bits. OFF: RATE's table, as before */
 static uint32_t seq_div_samples(uint32_t div);     /* (mix.c) */
 static uint32_t lfo_block_units;                   /* events_block, before the tracks render */
+static uint32_t lfo_units_run;                     /* .. all of them since power-on (MODS' scope: mscope.c) */
 static uint16_t lfo_sync_rem[NTRK];
 static __attribute__((noinline)) uint32_t lfo_sync_inc(const track_t *t)   /* (not inlined: its divides stay out of
                                                                            * the audio ISR's loop over the tracks) */
@@ -69,6 +70,8 @@ static __attribute__((noinline)) uint32_t lfo_sync_inc(const track_t *t)   /* (n
     return inc;
 }
 
+static uint8_t lfo_eoc;                              /* bit tr: its LFO wrapped and the first eighth of the cycle is not over */
+static int lfo_eoc_now(const track_t *t) { return (lfo_eoc >> ((uint32_t)(t - trk) % NTRK)) & 1u; }   /* (cord.c CS_EOC) */
 static void track_lfo_tick(track_t *t)
 {
     uint32_t old = t->lfo_ph;
@@ -76,7 +79,9 @@ static void track_lfo_tick(track_t *t)
     if (t->lfo_ph < old) {
         t->lfo_prev = (int16_t)mod_sh(t);               /* mod.c SLEW: it glides on from there */
         t->lfo_rnd = lfo_rand(t);
-    }
+        lfo_eoc |= (uint8_t)(1u << ((uint32_t)(t - trk) % NTRK));   /* (EOC: a wrap, not a TRIG or PLAY phase set) */
+    } else if (t->lfo_ph >= 0x20000000u)
+        lfo_eoc &= (uint8_t)~(1u << ((uint32_t)(t - trk) % NTRK));
     t->lfo_val = lfo_wave(t, t->lfo_ph);
     if (t->p[P_LPOL])                                   /* UNI: 0..+1 (the depths reach as far, one way only) */
         t->lfo_val = (t->lfo_val + 32768) >> 1;
@@ -533,7 +538,7 @@ static int entries_note(const track_t *t, uint32_t note);   /* tessera.c entries
 static void land_note(const track_t *t, uint32_t note, uint32_t vel);   /* land_feed.c: LANDSCAPE's drops */
 static void trk_note_on(track_t *t,uint32_t note,uint32_t vel)
 {
-    if (!entries_note(t, note))
+    if (!entries_note(t, note) || cord_play_shut((uint32_t)(t - trk)))   /* (PLAY shut by its mods: cord.c) */
         return;
     land_note(t, note, vel);
     midi_out_on(t, note, vel);

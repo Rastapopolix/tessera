@@ -62,6 +62,7 @@ C64	C 64
 IN ->	in, to
 PROJ	project
 EXT	external
+EOC	end of cycle
 CLK	clock
 QNT	quantize
 HOLD GLO QUICK	hold global for its quick page
@@ -104,6 +105,7 @@ FENV	filter envelope
 RHY	rhythm
 INTV	interval
 RATCH	ratchet
+DIR	direction
 PW	pulse width
 EG	envelope
 LV	level
@@ -240,6 +242,10 @@ DOM7	dominant seventh
 MAJ7	major seventh
 MIN7	minor seventh
 SUS4	suspended fourth
+SUS2	suspended second
+7SUS4	seventh, suspended fourth
+ADD9	added ninth
+MAJ6	major sixth chord
 AABA	A, A, B, A
 AABC	A, A, B, C
 ABAC	A, B, A, C
@@ -297,3 +303,7 @@ MPC	M P C
 2ND	second
 3RD	third
 4TH	fourth
+# MIX buses (MODS sheet: MODE)
+DIFF	difference
+# MOD DEPTH (MODS destination)
+MOD DEP	mod depth

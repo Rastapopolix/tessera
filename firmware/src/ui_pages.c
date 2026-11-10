@@ -65,7 +65,7 @@ static uint32_t pv_kind(void)
         return PV_MIXER;
     if (pg->graph == GR_ROLL && !drum_track(TSEL))
         return PV_NOTES;
-    if (pg->graph == GR_MOD)
+    if (!MELODEE_LOOK && pg->graph == GR_MOD)
         return PV_MOD;
     if (pg->graph == GR_CORDS)
         return PV_CORDS;
@@ -75,6 +75,8 @@ static uint32_t pv_kind(void)
 /* a knob's picker open (ui_draw.c): MODS' and MOD's chips under it as they change, the rest of the page as it was
  * (drawn again when the picker goes); the picker's lowest row: above the chips (220), else above the strips (188) */
 static void cu_columns(void);
+static void cu_scope_draw(int held);
+static int cu_scope_held(void);                         /* (ui_input.c) */
 static void pv_mod_chips(void)
 {
     uint32_t kind = pv_kind();
@@ -902,7 +904,7 @@ static void pv_strip(uint32_t k)
     uint32_t sel = k == song.sel, mute = t->p[P_MUTE] != 0, arm = (song.rec >> k) & 1u, lvl = trk_level(k), sig;
     if ((mute_waiting() >> k) & 1u && (fm1_ms / 250u) & 1u)   /* (MENU MUTES: a mute waiting for its line blinks to */
         mute = !mute;                                   /* what it will be) */
-    uint32_t octp = (fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u;   /* (OCT+ held: the knobs are the pans) */
+    uint32_t octp = (uint32_t)oct_dn_only();                /* (OCT- held: the knobs are the pans) */
     uint32_t solo = (track_solo >> k) & 1u, quiet = mute || (track_solo && !solo);   /* (another's solo: silent) */
     uint32_t hot = ui.hot_t && ui.hot_col == k ? (octp ? 2u : 1u) : 0u;   /* this strip's knob: 1 LEVEL, 2 PAN */
     int32_t pk = t->peak, m, pan = clamp(t->p[P_PAN], -64, 63);
@@ -1055,6 +1057,7 @@ static void pv_draw(void)
         if (ui.force)
             lcd_fill(0, H_HEAD, 240, 240 - H_HEAD, T_BG);
         draw_head();
+        cu_scope_draw(cu_scope_held());                 /* (MOD SCOPE while OCT- is held: first, the rows follow) */
         cu_rows();
         cu_leds();
         col_style = CS_CHIP;

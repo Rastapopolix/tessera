@@ -213,6 +213,14 @@ static uint32_t drum_hit_selected(void);
 static const page_t *cur_page(void) { return page_over ? page_over : &PAGES[ui.page]; }
 
 /* the quick layers (ui_layer.c): a button held, the keys and KNOB 1..4 are its shortcuts, its map over the page */
+/* the one hold time (the key grammar, tessera-notes audit-2026-11 M0): a button held this long is a hold (btn_hold:
+ * OCT+'s sheet, HOME's menu, REC's take ..), and an OCT held this long is never a tap (ui_input.c oct_taps) */
+#define OCT_HOLD_MS 700u
+/* OCT- held, not OCT+: a page's second set of knobs (the key grammar's rule 2: FORM, TIMING, ENERGY, CHAIN, MIXER, MODS ..) */
+static int oct_dn_only(void)
+{
+    return ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) && !((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+}
 enum { LAYER_NONE, LAYER_RESERVED, LAYER_GLO, LAYER_SCL, LAYER_N };
 static void draw_layer(void);
 static const char *layer_head(void);

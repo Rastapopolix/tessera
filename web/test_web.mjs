@@ -27,12 +27,17 @@ const HERE = new URL(".", import.meta.url).pathname;
 /* ------------------------------------------------------------ editor protocol --- */
 const html = readFileSync(join(HERE, "editor.html"), "utf8");
 const proto = html.slice(html.indexOf("/*PROTO-BEGIN*/"), html.indexOf("/*PROTO-END*/"));
+/* The protocol section's clock (Date.now: the mock's WATCH window, the Link's keep-alive gap). A mock with a WATCH
+   window runs on a stopped clock that only clock.advance moves (attachMock), so a busy machine that holds the test
+   process longer than the window cannot end a WATCH the test keeps alive. Timers (replies, Link timeouts) stay real. */
+const clock = { t: null, stop() { this.t = Date.now(); }, advance(ms) { this.t += ms; }, run() { this.t = null; } };
+class TestDate extends Date { static now() { return clock.t ?? Date.now(); } }
 const E = vm.runInNewContext(proto + `
 ;({ frame, unframe, parse, req, Link, parseWav, resample, normalize, takeSample, autoTrim, zoomView, rootFromName, buildSlot, makeMockDevice, CMD, SMP,
    UP, bank, nativeBank, capturePatch, auditionPatch, startWatch, libraryFile, readLibraryFile, paramKeys, patternFromSteps, stepsFromPattern, upName,
    mixer, parseNotes, parseHits, hitsText, gridFromSteps, LANE_NOTE, LANE_OF, readDevicePreferences, devicePresetRows, engineOrder, ENGINE_ORDER, aliasOf, fmtValue, FM6,
    FM4, fromDigital, nativeImportTargets, scaleRows, SCALE_INFO, parseScala, tuneName, tuneValid, TUNE, STATS, statsFields })`,
-{ setTimeout, clearTimeout, setInterval, clearInterval, console });
+{ setTimeout, clearTimeout, setInterval, clearInterval, console, Date: TestDate });
 
 {
   const d = {min: 0, max: E.SCALE_INFO.length - 1, names: E.SCALE_INFO.map(r => r.name)};
@@ -77,7 +82,7 @@ await prophetBackupTests();
 
 
 async function nativeTests() {
-  const m=E.makeMockDevice(), inp=[...m.access.inputs.values()][0], out=[...m.access.outputs.values()][0];
+  const m=E.makeMockDevice({ auto: false }), inp=[...m.access.inputs.values()][0], out=[...m.access.outputs.values()][0];
   const link=new E.Link(d=>out.send(d),{timeout:500});inp.onmidimessage=e=>link.receive(e.data);const rq=(r,o)=>link.request(r,o);
   const info=E.parse[E.CMD.INFO](await rq(E.req.info()));
   const fm=Array.from(E.FM6.INIT_PK);
@@ -109,7 +114,8 @@ async function nativeTests() {
 await nativeTests();
 
 async function editorMock() {
-  const m = E.makeMockDevice();
+  /* no simulated knobs: their 3 s timer would move parameters (33 and 35 among them) while a slow run reads them */
+  const m = E.makeMockDevice({ auto: false });
   const inp = [...m.access.inputs.values()][0], out = [...m.access.outputs.values()][0];
   const link = new E.Link((d) => out.send(d), { timeout: 300 });
   inp.onmidimessage = (e) => link.receive(e.data);
@@ -150,7 +156,7 @@ async function editorMock() {
     /* the chord keys (core.h P_CHRD, P_VOIC = 81, 82, just before P_E0 83): the track's, a factory preset keeps them */
     const c0 = E.parse[E.CMD.DESC](await rq(E.req.desc(0, 81)));
     const c1 = E.parse[E.CMD.DESC](await rq(E.req.desc(0, 82)));
-    ok(c0.label === "CHRD" && c0.names.join() === "OFF,DIA3,DIA7,MAJ,MIN,DOM7,MAJ7,MIN7,SUS4,POW" && c0.def === 0 &&
+    ok(c0.label === "CHRD" && c0.names.join() === "OFF,DIA3,DIA7,MAJ,MIN,DOM7,MAJ7,MIN7,SUS4,POW,SUS2,7SUS4,ADD9,MAJ6" && c0.def === 0 &&
        c1.label === "VOIC" && c1.names.join() === "CLOSE,OPEN,INV1,INV2,+OCT" && c1.def === 0,
       "editor: the chord keys 81, 82 over DESC");
     await rq(E.req.set(0, 81, 2));
@@ -459,7 +465,9 @@ async function editorFm4() {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const js = (x) => JSON.stringify(x);
 /* a mock + Link pair; counts frames sent per cmd and timeouts reported */
-function attachMock(opt, linkOpt = {}) {
+/* opt.watchMs: the WATCH window on the stopped clock (clock.advance moves it, done() lets it run again) */
+function attachMock(opt = {}, linkOpt = {}) {
+  if (opt.watchMs) clock.stop();
   const m = E.makeMockDevice({ auto: false, ...opt });
   const inp = [...m.access.inputs.values()][0], out = [...m.access.outputs.values()][0];
   const sent = {}, ev = { timeouts: 0, unknown: [], pushes: [] };
@@ -468,7 +476,7 @@ function attachMock(opt, linkOpt = {}) {
     onPush: (f) => ev.pushes.push({ ...f, pending: link.cur ? link.cur.cmd : 0 }), ...linkOpt });
   inp.onmidimessage = (e) => link.receive(e.data);
   const rq = (r, o) => link.request(r, o);
-  return { m, link, rq, sent, ev, done: () => { link.close(); m.stop(); } };
+  return { m, link, rq, sent, ev, done: () => { link.close(); m.stop(); if (opt.watchMs) clock.run(); } };
 }
 const emptyStep = { n: 0, notes: [0, 0, 0, 0], time: 2, flags: 0, vel: 0 };
 
@@ -730,13 +738,13 @@ async function editorLive() {
   ok(ev.pushes.filter((f) => f.cmd === C.RELOAD).length === nr + 1 && !ev.pushes.some((f) => f.cmd === C.STEP_CHANGED && f.a[0] === 9),
     "live: RELOAD after an editor PRESET too, nothing after its STEP_SET");
 
-  /* PING keeps the watch on; without requests it ends */
-  for (let i = 0; i < 4; i++) { await sleep(120); await rq(E.req.ping()); }
+  /* PING keeps the watch on; without requests it ends (the window: 250 ms on the test's clock) */
+  for (let i = 0; i < 4; i++) { clock.advance(120); await rq(E.req.ping()); }
   let n0 = ev.pushes.length;
   m.sim.knob();
   await sleep(10);
   ok(ev.pushes.length === n0 + 1, "live: PING keeps WATCH on");
-  await sleep(320);
+  clock.advance(320);
   n0 = ev.pushes.length;
   m.sim.knob();
   await sleep(10);

@@ -65,7 +65,8 @@ static const help_t HELP_PAGE[HP_COUNT] = {
     /* SEQ > NOTES (ui_input.c step_edit, notes_event_edit); on a DRUM track the grid (grid_edit) */
     H_(HP_NOTES_STEP, "NOTES STEP", "Moves along the pattern: one note at a time where notes are, one step at a time "
                                     "between them, empty steps too. OCT+ on a note opens its sheet: length, velocity, "
-                                    "chance, ratchet, nudge, slide, move, copy, delete. The PRESETS knob zooms."),
+                                    "chance, ratchet, nudge, slide, move, copy, delete; held: the pattern's sheet. "
+                                    "The PRESETS knob zooms."),
     H_(HP_NOTES_NOTE, "NOTES NOTE", "The picked note's pitch. QNT OFF: a semitone a detent; QNT on: a note of the "
                                     "scale (CHRD: of the chord), a note off it going to the next one first; with ENV "
                                     "held, a semitone. On an empty step the first turn writes the last note played there."),
@@ -127,7 +128,8 @@ static const help_t HELP_PAGE[HP_COUNT] = {
                                   "generator's gate, note or CV, or DRIFT, a slow wander, or its TIDE 1-3 or SWARM "
                                   "1-8 (LFO > ORGANIC). -- leaves the mod a fixed move. OCT+: BI swings both ways "
                                   "from the knob, UNI (+) only one way, GATE (>) all or nothing: all while the "
-                                  "source is over a threshold (OCT+ held + KNOB 4)."),
+                                  "source is over a threshold (OCT+ held + KNOB 4), HOLD (=) the source taken on "
+                                  "each bar of the destination's track and held to the next."),
     H_(HP_CORD_MOD, "MOD", "Which of the 16 mods the other knobs edit."),
     H_(HP_CORD_DST, "MOD DESTINATION", "What it moves, on which track: the voices' pitch, cutoff, shape, gain, a sound "
                                        "setting, a generator's, another mod's amount (M1-M16 AMT) or the "
@@ -443,8 +445,8 @@ static void help_find(uint32_t k)
         else help_hp(HP_DRUM_SOUND + pg->id[k]);
         return;
     }
-    if (pg->scope == SC_TRK) {                          /* MIXER: KNOB k track k's LEVEL, OCT+ held its PAN */
-        help.pid = (uint16_t)PID_TRACK(((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) ? P_PAN : P_LEVEL);
+    if (pg->scope == SC_TRK) {                          /* MIXER: KNOB k track k's LEVEL, OCT- held its PAN */
+        help.pid = (uint16_t)PID_TRACK(oct_dn_only() ? P_PAN : P_LEVEL);
         help_tr = k;
         return;
     }
@@ -489,33 +491,33 @@ static void help_find(uint32_t k)
         help_hp((pg->graph == GR_CORDS ? HP_CORD_SRC : HP_MX_FROM) + k);
         return;
     }
-    if (pr_layer_on() && k) {                          /* (GEN, TWEAK, OCT- held: KNOB 1 RANDOM alone) */
-        help_unused(k);
-        return;
+    if (pr_layer_on() && k) {                          /* (GEN, TWEAK, OCT- held: KNOB 1 RANDOM; CHORD on GEN: KNOB 2 STRUM,
+                                                        * 3 DIR, 4 OCT; TWEAK's layer below; a GEN engine's: its knob k
+                                                        * on KNOB k + 1) */
+        if (ch_st_layer_on()) {
+            help.pid = (uint16_t)PID_TESS(k == 1u ? TX_CH_STRUM : k == 2u ? TX_CH_SDIR : TX_CH_OCT);
+            return;
+        }
+        if (!tw_layer_on() && !quad_cols_on() && !cs_layer_on() && !gr_layer_on() && !an_layer_on() && !sd_layer_on()) {
+            help_unused(k);
+            return;
+        }
+        if (pg->graph != GR_TWEAK) k--;
     }
-    if (pg->graph == GR_EVOLVE && rall_layer_on()) {   /* (EVOLVE, OCT- held: ROLL ALL, ROLL's help) */
-        if (k == 3u) help.pid = (uint16_t)PID_TESS(TX_EV_SEED);
+    if (pg->graph == GR_EVOLVE && rall_layer_on()) {   /* (EVOLVE, OCT- held: ROLL ALL, ROLL's help; PAT GEN, HOW or GRAVITY) */
+        int lay = sv_layer_on() || ev_layer_on();
+        if (!k) help.pid = (uint16_t)PID_TESS(TX_EV_SEED);
+        else if (k == 2u && lay) help.pid = (uint16_t)PID_TESS(TX_PAT_GEN);
+        else if (k == 3u && lay) help.pid = (uint16_t)PID_TESS(sv_layer_on() ? TX_SV_HOW : TX_SD_GRAVITY);
         else help_unused(k);
         return;
     }
-    if (pg->graph == GR_EVOLVE && sv_layer_on()) {     /* (STEP EVOLVE, OCT+ held: HOW) */
-        if (k == 3u) help.pid = (uint16_t)PID_TESS(TX_PAT_GEN);
-        else if (k) help_unused(k);
-        else help.pid = (uint16_t)PID_TESS(TX_SV_HOW);
-        return;
-    }
-    if (pg->graph == GR_EVOLVE && ev_layer_on()) {     /* (a generator's EVOLVE, OCT+ held: GRAVITY) */
-        if (k == 3u) help.pid = (uint16_t)PID_TESS(TX_PAT_GEN);
-        else if (k) help_unused(k);
-        else help.pid = (uint16_t)PID_TESS(TX_SD_GRAVITY);
-        return;
-    }
-    if (pg->graph == GR_TWEAK && tw_layer_on()) {     /* (a generator's TWEAK, OCT+ held: FOLLOW's HOW, RHYTHM, HOLD) */
+    if (pg->graph == GR_TWEAK && tw_layer_on()) {     /* (a generator's TWEAK, OCT- held: FOLLOW's HOW, RHYTHM, HOLD) */
         if (!k) help_unused(k);
         else help.pid = (uint16_t)PID_TESS(k == 3u ? TX_TW_HOLD : k == 2u ? TX_TW_FRHY : TX_TW_FHOW);
         return;
     }
-    if (pg->graph == GR_FORM && fm_layer_on()) {       /* (a generator's FORM, OCT+ held: DEVELOP, the CHAIN's FOLLOW, SKIP,
+    if (pg->graph == GR_FORM && fm_layer_on()) {       /* (a generator's FORM, OCT- held: DEVELOP, the CHAIN's FOLLOW, SKIP,
                                                         * Entries' ROLE) */
         help.pid = (uint16_t)PID_TESS(k == 3u ? TX_ET_ROLE : k == 2u ? TX_FC_SKIP : k ? TX_FC_FOLLOW : TX_FM_DEVELOP);
         return;
@@ -524,24 +526,26 @@ static void help_find(uint32_t k)
         help.pid = (uint16_t)PID_TESS(TX_MACRO1 + k);
         return;
     }
-    if (pg->graph == GR_PIECE) {                       /* (the project's: LENGTH, SHAPE, PEAK / COUNT, END; OCT+ / OCT- the
-                                                        * USER levels) */
-        if (piece_layer()) help.pid = (uint16_t)PID_TESS(TX_PL_USER1 + (piece_layer() == 2 ? 4u : 0u) + k);
+    if (pg->graph == GR_PIECE) {                       /* (the project's: LENGTH, SHAPE, PEAK / COUNT, END; SHAPE USER,
+                                                        * OCT- held: the point picked, its level) */
+        if (piece_layer()) {
+            if (k < 2u) help.pid = (uint16_t)PID_TESS(TX_PL_USER1 + (pl_pt & 7u));
+            else help_unused(k);
+        }
         else if (k == 2u && !piece_k3()) help_unused(k);
         else help.pid = (uint16_t)PID_TESS(k == 3u ? TX_PL_END : k == 2u ? (piece_k3() == 2 ? TX_PL_COUNT : TX_PL_PEAK) :
                                            k ? TX_PL_SHAPE : TX_PL_LENGTH);
         return;
     }
-    if (pg->graph == GR_ENTRIES) {                     /* (the project's: ENTRIES, DWELL, STYLE, FADE; OCT+ held the ROLEs,
-                                                        * OCT- the ORDERs) */
+    if (pg->graph == GR_ENTRIES) {                     /* (the project's: ENTRIES, DWELL, STYLE, FADE; OCT- held the ROLEs) */
         if (entries_layer_on()) {
-            help.pid = (uint16_t)PID_TESS(entries_layer_on() == 2 ? TX_ET_ORDER : TX_ET_ROLE);
+            help.pid = (uint16_t)PID_TESS(TX_ET_ROLE);
             help_tr = k;
         } else
             help.pid = (uint16_t)PID_TESS(k == 3u ? TX_ET_FADE : k == 2u ? TX_ET_STYLE : k ? TX_ET_DWELL : TX_ET_AMOUNT);
         return;
     }
-    if (pg->graph == GR_CHAIN) {                       /* (the project's: FORM, PHRASE, WANDER; OCT+ held the REPEATs) */
+    if (pg->graph == GR_CHAIN) {                       /* (the project's: FORM, PHRASE, WANDER; OCT- held the REPEATs) */
         if (chain_layer_on()) help.pid = (uint16_t)PID_TESS(TX_FC_REP1 + k);
         else if (k == 3u) help_unused(k);
         else help.pid = (uint16_t)PID_TESS(k == 2u ? TX_FC_WANDER : k ? TX_FC_PHRASE : TX_FC_FORM);
@@ -562,7 +566,7 @@ static void help_find(uint32_t k)
     else if (pg->graph == GR_TIMING) x = k == 3u ? TX_SUB_HUMAN : k == 2u ? TX_SUB_SHAPE : k ? TX_SUB_CHANCE : TX_SUB_RATCH;
     else if (pg->graph == GR_ENERGY && en_layer_on()) x = k ? 0xFFu : TX_EN_DEPTH;
     else if (pg->graph == GR_ENERGY && k < 3u) x = k == 2u ? TX_EN_LEVEL : k ? TX_EN_RESTS : TX_EN_ARC;
-    else if (pg->graph == GR_MIDICH) { x = midi_dm_layer_on() ? TX_MIDI_DMAP : midi_layer_on() ? TX_MIDI_TR : midi_snd_layer_on() ? TX_SOUND : TX_MIDI_CH; help_tr = k; }   /* (KNOB k:
+    else if (pg->graph == GR_MIDICH) { x = midi_layer_on() ? TX_MIDI_TR : TX_MIDI_CH; help_tr = k; }   /* (KNOB k:
                                                                                                     * track k's) */
     else if (pg->graph == GR_KEYLINK && k < 3u) x = k ? TX_FC_KEYB + k - 1u : TX_KEY_LINK;
     else if (pg->graph == GR_ORGANIC && k < 2u) x = k ? TX_ORG_RATE : TX_ORG_SPEED;
@@ -587,32 +591,27 @@ static void help_find(uint32_t k)
             help_hp(HP_POLY_RHY);
             return;
         }
-        if (k && quad_cols_on()) {                      /* (QUAD, OCT+ held: the columns' and RANGE) */
+        if (k && quad_cols_on()) {                      /* (QUAD, OCT- held: the columns') */
             uint32_t c = tessera.qcol_sel & 3u;
             help.pid = (uint16_t)PID_TESS(k == 1u ? TX_QD_MOVE1 + c : k == 2u ? TX_QD_EVERY1 + c : TX_QD_RANGE);
             return;
         }
-        if (ch_layer_on()) {                            /* (CHORD, OCT+ held: OCT, the track's CHRD and VOIC) */
-            if (k < 3u) help.pid = (uint16_t)(k == 0u ? PID_TESS(TX_CH_OCT) : k == 1u ? PID_TRACK(P_CHRD) : PID_TRACK(P_VOIC));
-            else help.pid = (uint16_t)PID_TESS(tessera_chord(tr)->prog == GEN_CH_USER ? TX_CH_ULEN : TX_CH_BREATH);
-            return;
-        }
-        if (gr_layer_on()) {                            /* (GRIDS, OCT+ held: KICK, SNR, HAT, TOMS) */
+        if (gr_layer_on()) {                            /* (GRIDS, OCT- held: KICK, SNR, HAT) */
             help.pid = (uint16_t)PID_TESS(TX_GRD_KICK + (k & 3u));
             return;
         }
-        if (sd_layer_on()) {                            /* (TURING, EUCLID, MARKOV, MORPH, OCT+ held: SOURCE, KEEP,
+        if (sd_layer_on()) {                            /* (TURING, EUCLID, MARKOV, MORPH, OCT- held: SOURCE, KEEP,
                                                          * GRAVITY) */
             if (k < 2u) help.pid = (uint16_t)PID_TESS(TX_SD_SOURCE + k);
             else if (k == 2u) help.pid = (uint16_t)PID_TESS(TX_SD_GRAVITY);
             else help_unused(k);
             return;
         }
-        if (an_layer_on()) {                            /* (ANSWER, OCT+ held: SOURCE, ORDER, SHIFT, SPACE) */
+        if (an_layer_on()) {                            /* (ANSWER, OCT- held: SOURCE, ORDER, SHIFT) */
             help.pid = (uint16_t)(k ? PID_TESS(TX_AN_ORDER + (k - 1u)) : PID_TESS(TX_SD_SOURCE));
             return;
         }
-        if (cs_layer_on()) {                            /* (CONSTELLATION, OCT+ held: LOCK, LEN, FILL, SIZE) */
+        if (cs_layer_on()) {                            /* (CONSTELLATION, OCT- held: LOCK, LEN, FILL) */
             static const uint8_t CSL[4] = {TX_EV_LOCK, TX_CS_LEN, TX_CS_FILL, TX_CS_SIZE};
             help.pid = (uint16_t)PID_TESS(CSL[k & 3u]);
             return;

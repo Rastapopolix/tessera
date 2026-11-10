@@ -19,7 +19,8 @@ static void check(const char *what, int ok)
     bad += !ok;
 }
 
-static const char *const KIND[] = {"voice", "block", "depth", "step", "cc", "send", "cord", "fill", "tempo"};
+static const char *const KIND[] = {"voice", "block", "depth", "step", "cc", "clock", "play", "send", "cord", "fill", "tempo", "bus",
+                                   "mdepth"};
 
 static cord_t C(uint32_t src, uint32_t st, uint32_t dst, uint32_t dt, int32_t amount, int32_t offset)
 {
@@ -136,8 +137,8 @@ static int behaviour(void)
         check("...the LFO's POL UNI: BI still pulls down at its bottom, UNI leaves it, its top up",
               lo < 50u && uni == 50u && top > 50u);
         trk[0].p[P_LPOL] = 0;
-        c.uni = 3;
-        check("...a polarity past GATE: refused", !cord_set(1, &c));
+        c.uni = CU_HOLD + 1;
+        check("...a polarity past HOLD: refused", !cord_set(1, &c));
         cord_clear();
         trk[2].p[P_LEVEL] = 100;
     }
@@ -194,6 +195,268 @@ static int behaviour(void)
         cord_clear();
         cord_tick();
         check("...cleared: every move back to 0", cord_move(2) == 0 && cord_move(8) == 0);
+        trk[2].p[P_LEVEL] = 100;
+    }
+
+    /* DIR (CD_SEQ_DIR): the pattern's DIR moved in whole values at each step, stepped, clamped; the stored one kept */
+    {
+        uint32_t d[4];
+        cord_clear();
+        tessera_param_set(0, TX_SEQ_DIR, SEQ_FWD);
+        trk[0].p[P_LPOL] = 0; trk[0].lfo_fade = 32767;
+        check("DIR: no mod, the pattern's", seq_dir_now(&trk[0]) == SEQ_FWD);
+        c = C(CS_OFF, 0, CD_SEQ_DIR, 0, 0, 20);        /* a fixed +20 %: one value on, BACK */
+        cord_set(0, &c);
+        check("...a fixed +20 %: BACK, the pattern's own still FWD", seq_dir_now(&trk[0]) == SEQ_BACK &&
+              tessera_param_get(0, TX_SEQ_DIR) == SEQ_FWD);
+        c = C(CS_LFO, 0, CD_SEQ_DIR, 0, 40, 0);        /* T1 LFO + (UNI) 40 %: FWD .. PEND */
+        c.uni = CU_UNI;
+        cord_set(0, &c);
+        trk[0].lfo_val = -32767; d[0] = seq_dir_now(&trk[0]);
+        trk[0].lfo_val = 0; d[1] = seq_dir_now(&trk[0]);
+        trk[0].lfo_val = 32767; d[2] = seq_dir_now(&trk[0]);
+        check("...LFO + at 40 %: FWD, BACK, PEND as it rises", d[0] == SEQ_FWD && d[1] == SEQ_BACK && d[2] == SEQ_PEND);
+        c.uni = CU_GATE;                               /* a GATE at 20 %: BACK while the LFO is over 0 */
+        c.amount = 20;
+        cord_set(0, &c);
+        trk[0].lfo_val = 16000; cord_tick(); d[0] = seq_dir_now(&trk[0]);
+        trk[0].lfo_val = -16000; cord_tick(); d[1] = seq_dir_now(&trk[0]);
+        check("...a GATE at 20 %: BACK while open, FWD shut", d[0] == SEQ_BACK && d[1] == SEQ_FWD);
+        tessera_param_set(0, TX_SEQ_DIR, SEQ_PONG);
+        c = C(CS_OFF, 0, CD_SEQ_DIR, 0, 0, 100);
+        cord_set(0, &c);
+        d[0] = seq_dir_now(&trk[0]);
+        c.offset = -100;
+        cord_set(0, &c);
+        d[1] = seq_dir_now(&trk[0]);
+        check("...from PONG, +100 % stops at DRUNK, -100 % at FWD", d[0] == SEQ_DRUNK && d[1] == SEQ_FWD &&
+              tessera_param_get(0, TX_SEQ_DIR) == SEQ_PONG);
+        tessera_param_set(0, TX_SEQ_DIR, SEQ_FWD);
+        cord_clear();
+    }
+
+    /* SCALE (G7, cord_vca_mask): a mod of mods that multiplies its mod's move by 0..1 (a VCA), the mod keeping its own
+     * amount; AMOUNT -: the source closes it; after the ADD mods; at 0 nothing; saved as a mask apart */
+    {
+        uint8_t pk[CORD_PK_BYTES];
+        int32_t mv[4];
+        cord_clear();
+        trk[0].p[P_LPOL] = 0; trk[0].lfo_val = 32767; trk[0].lfo_fade = 32767;
+        trk[1].p[P_LPOL] = 0; trk[1].lfo_val = 32767; trk[1].lfo_fade = 32767;
+        c = C(CS_LFO, 0, CD_LEVEL, 2, 60, 0);          /* mod 3: T1 LFO -> T3 LEVEL +60 % */
+        cord_set(2, &c);
+        c = C(CS_LFO, 1, CD_M1_AMT + 2u, 0, 100, 0);  /* mod 5: T2 LFO+ SCALEs M3 */
+        c.uni = CU_UNI;
+        cord_set(4, &c);
+        cord_vca_load(0x10u);
+        cord_tick(); mv[0] = cord_move(2);
+        trk[1].lfo_val = 0; cord_tick(); mv[1] = cord_move(2);
+        trk[1].lfo_val = -32767; cord_tick(); mv[2] = cord_move(2);
+        check("SCALE: mod 3 keeps +60 %, times its scaler's source (0..1): open 60, half 30, shut 0",
+              cord_vca_mask() == 0x10u && mv[0] == 60 && mv[1] == 30 && mv[2] == 0 && cord_get(2)->amount == 60);
+        c.amount = -100;
+        cord_set(4, &c);
+        cord_tick(); mv[0] = cord_move(2);
+        trk[1].lfo_val = 32767; cord_tick(); mv[1] = cord_move(2);
+        check("...AMOUNT -: the source closes it (shut at the top, open at the bottom); kept SCALE through an edit",
+              mv[0] == 60 && mv[1] == 0 && cord_vca_mask() == 0x10u);
+        c.amount = 100;
+        cord_set(4, &c);
+        c = C(CS_OFF, 0, CD_M1_AMT + 2u, 0, 0, 20);   /* mod 6: a fixed +20 % ADDed to M3, before the scale */
+        cord_set(5, &c);
+        trk[1].lfo_val = 0; cord_tick(); mv[0] = cord_move(2);
+        c = C(CS_OFF, 0, CD_M1_AMT + 2u, 0, 0, 50);   /* mod 7: a fixed SCALE of half: two scalers multiply */
+        cord_set(6, &c);
+        cord_vca_load(cord_vca_mask() | 0x40u);
+        cord_tick(); mv[1] = cord_move(2);
+        check("...ADD first, then the scalers multiply: (60 + 20) x 0.5 = 40, x 0.5 again = 20", mv[0] == 40 && mv[1] == 20);
+        c.offset = 0;                                   /* (mod 7 at 0: off, nothing scaled) */
+        cord_set(6, &c);
+        cord_tick(); mv[2] = cord_move(2);
+        check("...a scaler at 0 does nothing (its off position)", mv[2] == 40);
+        cord_pack(pk);
+        cord_clear();
+        check("...cleared: no SCALE", !cord_vca_mask());
+        mv[0] = cord_unpack(pk);
+        check("...loaded without the mask: ADD (older firmware), nothing marked", mv[0] && !cord_vca_mask() &&
+              (cord_tick(), cord_move(2) == 100));
+        cord_vca_load(0x50u);
+        cord_tick();
+        check("...the mask back: SCALE as saved", cord_vca_mask() == 0x50u && cord_move(2) == 40);
+        c = C(CS_LFO, 1, CD_LEVEL, 2, 40, 0);          /* (mod 5 moved off M AMT: SCALE gone with it) */
+        cord_set(4, &c);
+        check("...a mod moved off M AMT is no longer SCALE", cord_vca_mask() == 0x40u);
+        cord_clear();
+        cord_tick();
+        trk[2].p[P_LEVEL] = 100;
+    }
+
+    /* MOD DEPTH (G9): the moving part of every mod with a source scaled, never an OFFSET; mods of mods and bus inputs
+     * once, where they land; its own mods unscaled; 100 the off position */
+    {
+        int32_t mv[6];
+        cord_clear();
+        trk[0].p[P_LPOL] = 0; trk[0].lfo_val = 32767; trk[0].lfo_fade = 32767;
+        check("MOD DEPTH: 100 % after a clear (the off position)", cord_mdepth_get() == 100u &&
+              tessera_param_get(0, TX_MOD_DEPTH) == 100);
+        c = C(CS_LFO, 0, CD_LEVEL, 2, 60, 0);          /* mod 1: T1 LFO -> T3 LEVEL +60 % */
+        cord_set(0, &c);
+        c = C(CS_OFF, 0, CD_PAN, 2, 0, 30);            /* mod 2: a fixed PAN +30 % */
+        cord_set(1, &c);
+        cord_tick(); mv[0] = cord_move(0);
+        tessera_param_set(0, TX_MOD_DEPTH, 50);
+        cord_tick(); mv[1] = cord_move(0); mv[2] = cord_move(1);
+        tessera_param_set(0, TX_MOD_DEPTH, 0);
+        cord_tick(); mv[3] = cord_move(0); mv[4] = cord_move(1);
+        check("...a mod's move 60, at 50 % 30, at 0 none; a fixed mod's OFFSET stays 30",
+              mv[0] == 60 && mv[1] == 30 && mv[3] == 0 && mv[2] == 30 && mv[4] == 30);
+        c = C(CS_LFO, 0, CD_M1_AMT, 0, 40, 0);         /* mod 3: T1 LFO adds 40 to mod 1: 100 */
+        cord_set(2, &c);
+        tessera_param_set(0, TX_MOD_DEPTH, 50);
+        cord_tick(); mv[0] = cord_move(0);
+        c = C(CS_LFO, 0, CD_M1_AMT + 1u, 0, 40, 0);    /* mod 4: T1 LFO adds 40 to the fixed mod 2 */
+        cord_set(3, &c);
+        cord_tick(); mv[1] = cord_move(1);
+        c = C(CS_OFF, 0, CD_M1_AMT + 1u, 0, 0, 40);    /* (a fixed one instead: not a moving part) */
+        cord_set(3, &c);
+        cord_tick(); mv[2] = cord_move(1);
+        check("...a mod of mods once, not twice: (60 + 40) x 0.5 = 50; onto a fixed mod 30 + 40 x 0.5 = 50; a fixed one "
+              "onto it 70", mv[0] == 50 && mv[1] == 50 && mv[2] == 70);
+        cord_clear();
+        c = C(CS_LFO, 0, CD_FILL, 0, 100, 0);          /* a GATE onto FILL at 100 */
+        c.uni = CU_GATE;
+        cord_set(0, &c);
+        tessera_param_set(0, TX_MOD_DEPTH, 60);
+        cord_tick(); cord_tick(); mv[0] = seq_fill_mod;
+        tessera_param_set(0, TX_MOD_DEPTH, 40);
+        cord_tick(); mv[1] = seq_fill_mod;
+        check("...a GATE onto FILL at 100: held at 60 %, no longer under 50 % (the documented consequence)",
+              mv[0] == 1 && mv[1] == 0);
+        c = C(CS_LFO, 0, CD_TEMPO, 0, 100, 0);
+        cord_set(0, &c);
+        tessera_param_set(0, TX_MOD_DEPTH, 0);
+        cord_tick(); mv[0] = seq_tempo_q12;
+        check("...TEMPO at 0: back to BPM", mv[0] == 4096);
+        c = C(CS_MACRO1, 0, CD_MOD_DEPTH, 0, -100, 0); /* a MACRO onto MOD DEP: rides it, itself unscaled */
+        cord_set(1, &c);
+        c = C(CS_LFO, 0, CD_LEVEL, 2, 60, 0);
+        cord_set(0, &c);
+        tessera_param_set(0, TX_MOD_DEPTH, 100);
+        tessera_param_set(0, TX_MACRO1, 25);
+        cord_tick(); mv[0] = cord_move(0); mv[1] = cord_move(1);
+        tessera_param_set(0, TX_MACRO1, 100);
+        cord_tick(); mv[2] = cord_move(0);
+        check("...a MACRO onto MOD DEP at -100: 25 % up plays 75 % (45), all up dry; its own mod not scaled",
+              mv[0] == 44 || mv[0] == 45);
+        check("...its own mod's move as set, the patch dry at the top", mv[1] == -100 && mv[2] == 0);
+        tessera_param_set(0, TX_MACRO1, 0);
+        cord_clear();
+        cord_tick();
+        check("...cleared: 100 % again", cord_mdepth_get() == 100u);
+    }
+
+    /* PLAY (G8): a track's notes heard while its mods together reach half, shut under it (its notes go nowhere: no
+     * voice); no mod onto it: plays; MOD DEPTH 0: every track plays */
+    {
+        uint32_t n[4];
+        cord_clear();
+        trk[0].p[P_LPOL] = 0; trk[0].lfo_val = 32767; trk[0].lfo_fade = 32767;
+        cord_tick();
+        check("PLAY: no mod onto it: every track plays", !cord_play_shut(0) && !cord_play_shut(2));
+        c = C(CS_LFO, 0, CD_PLAY, 2, 100, 0);          /* T1 LFO GATE -> T3 PLAY +100 */
+        c.uni = CU_GATE;
+        cord_set(0, &c);
+        cord_tick(); n[0] = (uint32_t)cord_play_shut(2);
+        trk[0].lfo_val = -32767;
+        cord_tick(); cord_tick(); n[1] = (uint32_t)cord_play_shut(2);
+        check("...a GATE onto T3 PLAY: plays while open, shut when closed; the other tracks untouched",
+              !n[0] && n[1] && !cord_play_shut(0) && cord_get(0)->dst_trk == 2u);
+        n[2] = voices_busy();
+        trk_note_on(&trk[2], 60, 100);
+        n[3] = voices_busy();
+        check("...shut: a note on T3 sounds no voice", n[3] == n[2]);
+        tessera_param_set(0, TX_MOD_DEPTH, 0);
+        cord_tick();
+        check("...MOD DEPTH 0: plays (the patch dry)", !cord_play_shut(2));
+        tessera_param_set(0, TX_MOD_DEPTH, 100);
+        cord_tick();
+        trk[0].lfo_val = 32767;
+        cord_tick(); cord_tick();
+        n[2] = voices_busy();
+        trk_note_on(&trk[2], 62, 100);
+        n[3] = voices_busy();
+        check("...open again: the note sounds", !cord_play_shut(2) && n[3] > n[2]);
+        trk_note_off(&trk[2], 62);
+        cord_clear();
+        cord_tick();
+        check("...cleared: nothing shut", !cord_play_shut(2));
+    }
+
+    /* HOLD (CU_HOLD): the source as it is, sampled when set and at each bar of the destination's track, held between */
+    {
+        uint32_t lv[4];
+        uint8_t pk[CORD_PK_BYTES];
+        cord_clear();
+        trk[0].p[P_LPOL] = 0; trk[0].lfo_fade = 32767;
+        trk[2].p[P_LEVEL] = 50;
+        trk[0].lfo_val = 16000;
+        c = C(CS_LFO, 0, CD_LEVEL, 2, 40, 0);          /* mod 1: T1 LFO HOLD -> T3 LEVEL +-40 % */
+        c.uni = CU_HOLD;
+        check("HOLD: set", cord_set(0, &c) && cord_hold_mask() == 1u);
+        mod_begin(&trk[2]); lv[0] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        trk[0].lfo_val = -16000; cord_tick();
+        mod_begin(&trk[2]); lv[1] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        cord_hold_bar(0); cord_hold_bar(1);            /* (another track's bar: nothing) */
+        mod_begin(&trk[2]); lv[2] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        cord_hold_bar(2);
+        mod_begin(&trk[2]); lv[3] = (uint32_t)trk[2].p[P_LEVEL]; mod_end(&trk[2]);
+        check("...sampled when set, held while the LFO falls, sampled again on T3's bar, both ways (+-)",
+              lv[0] > 50u && lv[1] == lv[0] && lv[2] == lv[0] && lv[3] < 50u);
+        cord_pack(pk);
+        check("...saved as BI (older firmware: a live +- mod), the mask apart", pk[1] == 0x00u && cord_hold_mask() == 1u);
+        cord_clear();
+        lv[0] = (uint32_t)cord_unpack(pk) && cord_get(0)->uni == CU_BI;
+        cord_hold_load(1u);
+        check("...loaded back: BI, then HOLD from the mask", lv[0] && cord_get(0)->uni == CU_HOLD);
+        c = C(CS_OFF, 0, CD_LEVEL, 2, 0, 30);           /* (no source: never HOLD) */
+        cord_set(1, &c);
+        cord_hold_load(3u);
+        check("...a mod without a source stays as it is", cord_get(1)->uni == CU_BI && cord_hold_mask() == 1u);
+        cord_clear();
+        check("...cleared: no HOLD", !cord_hold_mask());
+        trk[2].p[P_LEVEL] = 100;
+    }
+
+    /* HOLD on a track's notes (G2, cord_hold_clk): sampled on each note of the clock track, not on the bar */
+    {
+        uint32_t lv[4];
+        uint8_t hc[CORD_HCLK_BYTES];
+        cord_clear();
+        trk[0].p[P_LPOL] = 0; trk[0].lfo_fade = 32767;
+        trk[0].lfo_val = 16000;
+        c = C(CS_LFO, 0, CD_LEVEL, 2, 40, 0);          /* mod 1: T1 LFO HOLD -> T3 LEVEL, clocked by T2's notes */
+        c.uni = CU_HOLD;
+        cord_set(0, &c);
+        cord_hold_clk_set(0, 2u);
+        lv[0] = (uint32_t)cord_hval[0];
+        trk[0].lfo_val = -16000;
+        cord_hold_bar(2);                               /* (its destination's bar: no longer its clock) */
+        cord_hold_note(0);                              /* (another track's note: nothing) */
+        lv[1] = (uint32_t)cord_hval[0];
+        tessera_hold_hit(1);                            /* (T2 plays a note) */
+        lv[2] = (uint32_t)cord_hval[0];
+        check("HOLD on T2's notes: not on T3's bar nor T1's note, taken on T2's",
+              cord_hold_clk(0) == 2u && lv[1] == lv[0] && (int16_t)lv[2] < 0);
+        check("...saved apart (a nibble a mod), loaded back", cord_hold_clk_pack(hc) && hc[0] == 2u);
+        cord_hold_clk_set(0, 0);
+        check("...nothing to save by the bar", !cord_hold_clk_pack(hc));
+        hc[0] = 0x32u;                                  /* (mod 1 T2, mod 2 T3: mod 2 not HOLD) */
+        cord_hold_clk_load(hc);
+        check("...a mod that is not HOLD takes no clock", cord_hold_clk(0) == 2u && cord_hold_clk(1) == 0u);
+        c.uni = CU_BI;
+        cord_set(0, &c);
+        check("...no longer HOLD: its clock gone", cord_hold_clk(0) == 0u);
+        cord_clear();
         trk[2].p[P_LEVEL] = 100;
     }
 
@@ -361,6 +624,169 @@ static int behaviour(void)
 /* the effects (2026-10-28): an insert's MIX / RATE / CHAR and SEND 2 / 3 for the track's block, the send effects'
  * for every track (CK_GLOBAL, its track ignored); ECHO's TIME glides, REVERB's SIZE a sample at a time (ROOM's
  * jumps: a glide measured no better on its short combs) */
+/* the MIX buses (CK_BUS, CS_BUSA): each MODE, LAG, the one-block delay, a bus fed into itself, off with no cord */
+static int32_t bus_after(uint32_t blocks)
+{
+    while (blocks--) cord_tick();
+    return cord_bus_now(0);
+}
+/* EOC (CS_EOC): high from a wrap of the track's LFO to an eighth of the cycle, a track's source; a phase set is not a wrap */
+static int eoc(void)
+{
+    int fails = bad;
+    track_t *t;
+    uint32_t i, n_blk, high = 0, rises = 0, prev = 0, cyc = 0;
+    host_tracks_init();
+    tessera_reset();
+    t = &trk[1];
+    t->p[P_LRATE] = 100;
+    t->p[P_LSYNC] = 0;
+    check("eoc: the source after the buses, a track's, 0..1, named EOC",
+          !strcmp(cord_src_name(CS_EOC), "EOC") && CS_EOC == CS_BUSB + 1u && !CS_PROJECT(CS_EOC) && CS_PROJECT(CS_BUSB) &&
+          !cord_bipolar(CS_EOC, 1));
+    t->lfo_ph = 0xFFFFFFFFu - LFO_INC[100] * 3u;   /* three blocks to the wrap */
+    for (i = 0; i < 4u; i++) {
+        track_lfo_tick(t);
+        check("...low until the wrap", i == 3u ? cord_src(CS_EOC, 1) == 32767 : cord_src(CS_EOC, 1) == 0);
+    }
+    check("...another track's EOC stays low (its own LFO)", cord_src(CS_EOC, 0) == 0);
+    n_blk = 3u * (0xFFFFFFFFu / LFO_INC[100]);
+    for (i = 0; i < n_blk; i++) {
+        uint32_t now;
+        track_lfo_tick(t);
+        now = cord_src(CS_EOC, 1) != 0;
+        high += now;
+        rises += now && !prev;
+        cyc += t->lfo_ph < LFO_INC[100];
+        check("...never high past an eighth of the cycle", !now || t->lfo_ph < 0x20000000u + LFO_INC[100]);
+        prev = now;
+    }
+    check("...one rise a cycle (3 cycles)", rises + 1u >= cyc && rises <= cyc + 1u && rises >= 2u && rises <= 4u);
+    check("...high for about an eighth of the time", high * 8u + 16u * cyc >= n_blk && high * 8u <= n_blk + 16u * cyc);
+    t->lfo_ph = 0x30000000u;                          /* a TRIG / PLAY phase set mid-cycle: not a wrap */
+    track_lfo_tick(t);
+    t->lfo_ph = 0;
+    check("...a phase reset to 0 makes no pulse", cord_src(CS_EOC, 1) == 0);
+    track_lfo_tick(t);
+    check("...nor the block after", cord_src(CS_EOC, 1) == 0);
+    return bad - fails;
+}
+static int buses(void)
+{
+    int fails = bad;
+    cord_t c;
+    int32_t v[6];
+    uint32_t i;
+    host_tracks_init();
+    tessera_reset();
+    check("buses: BUS A / B the sources after MACRO 4, bipolar, the project's (none of a track's)",
+          !strcmp(cord_src_name(CS_BUSA), "BUS A") && !strcmp(cord_src_name(CS_BUSB), "BUS B") && cord_bipolar(CS_BUSA, 0) &&
+          cord_bipolar(CS_BUSB, 3) && CS_BUSA == CS_MACRO4 + 1u && CS_EOC == CS_BUSB + 1u && CS_N == CS_EOC + 1u);
+    check("...a new project: SUM, LAG OFF, both at 0", !cord_bus_get(0) && !cord_bus_get(1) && !cord_bus_get(2) &&
+          !cord_bus_get(3) && !cord_bus_now(0) && !cord_bus_now(1));
+    cord_tick();
+    check("...no cord into them: they stay at 0 (the off position)", !cord_bus_now(0) && !cord_bus_now(1));
+    c = C(CS_OFF, 0, CD_BUS_A, 2, 0, 30);               /* fixed +30 % and +50 % into A */
+    cord_set(0, &c);
+    check("...a bus cord is the project's: its destination track kept 0", cord_get(0)->dst_trk == 0u);
+    c = C(CS_OFF, 0, CD_BUS_A, 0, 0, 50);
+    cord_set(1, &c);
+    check("...nothing moves it before its block", !cord_bus_now(0));
+    v[0] = bus_after(1);
+    check("SUM: +30 % and +50 % make +80 %", v[0] == 32768 * 30 / 100 + 32768 * 50 / 100);
+    c.offset = 90;
+    cord_set(1, &c);
+    check("...+30 % and +90 %: clamped to 1", bus_after(1) == 32767);
+    c.offset = -60;
+    cord_set(1, &c);
+    check("...+30 % and -60 %: -30 %", bus_after(1) == 32768 * 30 / 100 - 32768 * 60 / 100);
+    tessera_param_set(0, TX_BUSA_MODE, CB_MAX);
+    check("MAX: the higher of +30 % and -60 %", bus_after(1) == 32768 * 30 / 100);
+    tessera_param_set(0, TX_BUSA_MODE, CB_MIN);
+    check("MIN: the lower", bus_after(1) == -(32768 * 60) / 100);
+    tessera_param_set(0, TX_BUSA_MODE, CB_DIFF);
+    check("DIFF: how far apart the first two, |+30 - -60| = 90 %", bus_after(1) == 32768 * 30 / 100 + 32768 * 60 / 100);
+    c = C(CS_OFF, 0, CD_BUS_A, 0, 0, 100);              /* a third cord: DIFF reads only the first two */
+    cord_set(2, &c);
+    check("...a third cord left out", bus_after(1) == 32768 * 30 / 100 + 32768 * 60 / 100);
+    cord_clear();
+    /* gates as logic: T1 and T2 LFO as GATEs (over 0) at 100 % into bus A */
+    c = C(CS_LFO, 0, CD_BUS_A, 0, 100, 0); c.uni = CU_GATE; cord_set(0, &c);
+    c = C(CS_LFO, 1, CD_BUS_A, 0, 100, 0); c.uni = CU_GATE; cord_set(1, &c);
+    for (i = 0; i < 4u; i++) {                          /* (00 01 10 11) */
+        uint32_t m;
+        int32_t o[4];
+        trk[0].lfo_val = (i & 1u) ? 20000 : -20000;
+        trk[1].lfo_val = (i & 2u) ? 20000 : -20000;
+        trk[0].lfo_fade = trk[1].lfo_fade = 32767;
+        for (m = 0; m < 4u; m++) {
+            tessera_param_set(0, TX_BUSA_MODE, (int32_t)m);
+            o[m] = bus_after(1) >= 16384;
+        }
+        v[i] = o[1] | o[2] << 1 | o[3] << 2;            /* (MAX MIN DIFF, as gates past half) */
+    }
+    check("...two gates: MAX is OR, MIN is AND, DIFF is XOR", v[0] == 0 && v[1] == 5 && v[2] == 5 && v[3] == 3);
+    trk[0].lfo_val = trk[1].lfo_val = 0;
+    cord_clear();
+    /* LAG: a fixed +100 % into A at LAG 10 ms rises over ~14 blocks (1378 a second), and falls as slowly */
+    tessera_param_set(0, TX_BUSA_LAG, 1);
+    c = C(CS_OFF, 0, CD_BUS_A, 0, 0, 100);
+    cord_set(0, &c);
+    v[0] = bus_after(1);
+    v[1] = bus_after(5);
+    v[2] = bus_after(10);
+    check("LAG 10 ms: a whole move takes 14 blocks, in even steps", v[0] > 0 && v[0] < 32767 / 10 && v[1] - 6 * v[0] >= 0 && v[1] - 6 * v[0] <= 6 &&
+          v[2] == 32767);
+    c.offset = 0;
+    cord_set(0, &c);
+    v[3] = bus_after(7);
+    v[4] = bus_after(10);
+    check("...its cord at 0: it falls back as slowly, then rests", v[3] > 32767 / 3 && v[3] < 2 * 32767 / 3 && v[4] == 0);
+    tessera_param_set(0, TX_BUSA_LAG, 11);              /* 20 s */
+    c.offset = 100;
+    cord_set(0, &c);
+    v[0] = bus_after(1378);
+    check("...LAG 20 s: a second rises 1/20", v[0] > 32767 / 20 - 64 && v[0] < 32767 / 20 + 64);
+    tessera_param_set(0, TX_BUSA_LAG, 0);
+    check("...LAG OFF: at once", bus_after(1) == 32767);
+    tessera_param_set(0, TX_BUSA_LAG, 99);
+    tessera_param_set(0, TX_BUSA_MODE, -3);
+    check("MODE and LAG kept in range (20 s, SUM), any track's the same", tessera_param_get(0, TX_BUSA_LAG) ==
+          (int32_t)CB_LAGS - 1 && tessera_param_get(2, TX_BUSA_LAG) == (int32_t)CB_LAGS - 1 &&
+          tessera_param_get(0, TX_BUSA_MODE) == CB_SUM);
+    tessera_reset();
+    check("...a new project: back to SUM, OFF, at rest", !cord_bus_get(1) && !cord_bus_get(0) && !cord_bus_now(0));
+    /* the one-block delay: +10 % and BUS A at 100 % into A integrates, a block a step */
+    c = C(CS_OFF, 0, CD_BUS_A, 0, 0, 10); cord_set(0, &c);
+    c = C(CS_BUSA, 0, CD_BUS_A, 0, 100, 0); cord_set(1, &c);
+    v[0] = bus_after(1); v[1] = bus_after(1); v[2] = bus_after(1);
+    check("one block late: a bus into itself adds its last value (+10 %, +20 %, +30 %)",
+          v[0] == 3276 && v[1] == 2 * 3276 && v[2] == 3 * 3276);
+    v[3] = bus_after(100);
+    check("...and stops at the clamp, stable", v[3] == 32767 && bus_after(10) == 32767);
+    c.amount = -100; cord_set(1, &c);                   /* -100 %: x = 10 % - x, a block each way */
+    for (i = 0, v[0] = 40000, v[1] = -40000; i < 200u; i++) {
+        int32_t x = bus_after(1);
+        if (i > 4u) v[0] = x < v[0] ? x : v[0], v[1] = x > v[1] ? x : v[1];
+    }
+    v[2] = bus_after(1); v[3] = bus_after(1); v[4] = bus_after(1);
+    check("...at -100 %: a swing a block each way round +5 %, bounded by the clamp", v[0] >= -32767 && v[1] <= 32767 &&
+          v[1] > v[0] && v[2] == v[4] && v[2] != v[3] && v[2] + v[3] == 3276);
+    c.amount = -50; cord_set(1, &c);
+    v[0] = bus_after(300);
+    check("...at -50 %: settles at 10 / 1.5 = 6.7 %", v[0] > 2150 && v[0] < 2220 && bus_after(1) == v[0]);
+    c = C(CS_BUSA, 0, CD_BUS_B, 0, 100, 0); cord_set(2, &c);   /* A into B: B one block behind A */
+    v[0] = cord_bus_now(0);
+    cord_tick();
+    check("A into B: B reads A as it was the block before", cord_bus_now(1) == v[0]);
+    c = C(CS_BUSB, 0, CD_PAN, 1, 100, 0); cord_set(3, &c);    /* B onto track 2's PAN: as any source */
+    trk[1].p[P_PAN] = 0;
+    mod_begin(&trk[1]); v[1] = trk[1].p[P_PAN]; mod_end(&trk[1]);
+    check("...a bus moves a track's parameter as any source", v[1] > 0 && trk[1].p[P_PAN] == 0);
+    cord_clear();
+    return bad - fails;
+}
+
 static void fresh_tracks(void);
 static int fx_dests(void)
 {
@@ -731,6 +1157,7 @@ int main(int argc, char **argv)
     for (c = 0; c < CD_N; c++) {
         const cord_dest_t *d = cord_dest(c);
         if (c == CD_RETIRED_CL_RULE) { placed &= !d; continue; }   /* (CELLS' RULE, cut: a gap) */
+        if (c == 107u || c == 108u) { placed &= !d || d->code == c; continue; }   /* (MOD DEPTH, PLAY: claimed, not yet here) */
         if (!d || d->code != c) { placed = 0; continue; }
         if (!d->name[0] || strlen(d->name) > 7u || !d->full[0]) names = 0;
         for (k = 0; k < c; k++)
@@ -744,6 +1171,14 @@ int main(int argc, char **argv)
             if (d->pid != PID_NONE || d->md || c != CD_TEMPO) mods = 0;
         } else if (d->kind == CK_CC) {                  /* (CC OUT: a MIDI CC, no parameter) */
             if (d->pid != PID_NONE || d->md || c != CD_CC) mods = 0;
+        } else if (d->kind == CK_CLOCK) {               /* (the generator's clock: no parameter) */
+            if (d->pid != PID_NONE || d->md || c != CD_CLOCK) mods = 0;
+        } else if (d->kind == CK_BUS) {                 /* (the MIX buses: no parameter) */
+            if (d->pid != PID_NONE || d->md || (c != CD_BUS_A && c != CD_BUS_B)) mods = 0;
+        } else if (d->kind == CK_PLAY) {                /* (PLAY: a track's, no parameter) */
+            if (d->pid != PID_NONE || d->md || c != CD_PLAY) mods = 0;
+        } else if (d->kind == CK_MDEPTH) {              /* (MOD DEPTH: the project's, no parameter of a track) */
+            if (d->pid != PID_NONE || d->md || c != CD_MOD_DEPTH) mods = 0;
         } else if (d->kind == CK_VOICE || d->kind == CK_DEPTH) {
             if (d->pid != PID_NONE || !d->md || d->md >= MD_N || (d->md >= MD_RESERVED6 && d->md <= MD_RESERVED9) ||
                 (d->kind == CK_VOICE) != (d->md <= MD_AMP) || (d->kind == CK_DEPTH) != (d->md == MD_DEPTH))
@@ -775,6 +1210,8 @@ int main(int argc, char **argv)
     (void)fx_dests();
     (void)adoption();
     (void)drift_and_defaults();
+    (void)buses();
+    (void)eoc();
 
     {
         FILE *f = fopen(golden, update ? "w" : "r");

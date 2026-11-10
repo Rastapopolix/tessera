@@ -6,8 +6,10 @@
  * MOD's: KNOB 1 the source (--, then T1 LFO .. T4 NOTE), 2 the cord, 3 the destination (--, then T1 PITCH ..), 4 the
  * amount. A cord without a source is a fixed move: KNOB 4 its OFFSET. OCT+: a bipolar source's direction, +- (both
  * ways from the knob) or + (folded to 0..1: one way, "+" after its name), then GATE (">" after its name, Mono "^": all while the
- * source is over a threshold, none under it; OCT+ held + KNOB 4 sets the threshold); the mod's own (cord.h uni), not
- * the LFO page's POL BI/UNI (cord.c cord_lfo_raw). Included by ui_pages.c. */
+ * source is over a threshold, none under it; OCT- held + KNOB 4 sets the threshold); the mod's own (cord.h uni), not
+ * the LFO page's POL BI/UNI (cord.c cord_lfo_raw); then HOLD ("=" after its name: the source as +-, sampled once a
+ * bar of the destination's track and held). A mod of mods (onto M1 AMT ..) adds to its mod's move, or with OCT- held +
+ * KNOB 3 right SCALEs it ("M3*": times 0..1, a VCA; cord.c cord_vca_mask). Included by ui_pages.c. */
 
 static int32_t accel(uint32_t role, int32_t s, int32_t range);                       /* ui_input.c */
 static int32_t list_accel(uint32_t role, int32_t s, uint32_t total, uint32_t *fast);
@@ -24,10 +26,10 @@ static void cu_adopt(void)
     was = left;
 }
 
-#define CU_SPT (CS_ENERGY - 1u)                         /* a track's sources (LFO .. DRIFT) */
-#define CU_NSRC (1u + NTRK * CU_SPT + (CS_N - CS_ENERGY))   /* KNOB 1's list: --, track by track, then the project's
+#define CU_SPT CS_ENERGY                                /* a track's sources (LFO .. OCHD8, then EOC, added later) */
+#define CU_NSRC (1u + NTRK * CU_SPT + (CS_EOC - CS_ENERGY))   /* KNOB 1's list: --, track by track, then the project's
                                                          * (ENERGY, the MACROs) once */
-static int cu_src_trk(uint32_t s) { return s && s < CS_ENERGY; }   /* a track's source, not the project's */
+static int cu_src_trk(uint32_t s) { return s && !CS_PROJECT(s); }   /* a track's source, not the project's */
 /* KNOB 3's list: --, a track's destinations track by track (none, the retired one: not listed), then the send
  * effects' once (CK_GLOBAL: every track's) */
 static int cu_global(uint32_t code) { return cord_dest(code) && cord_dest(code)->kind >= CK_GLOBAL; }   /* (CK_CORD too) */
@@ -43,7 +45,7 @@ static uint32_t cu_count(uint32_t below, int global)    /* the listed codes 1 ..
 static uint32_t cu_src_of(const cord_t *c)
 {
     if (!c->src) return 0u;
-    return cu_src_trk(c->src) ? 1u + c->src_trk * CU_SPT + c->src - 1u : 1u + NTRK * CU_SPT + c->src - CS_ENERGY;
+    return cu_src_trk(c->src) ? 1u + c->src_trk * CU_SPT + (c->src == CS_EOC ? CS_ENERGY - 1u : c->src - 1u) : 1u + NTRK * CU_SPT + c->src - CS_ENERGY;
 }
 static uint32_t cu_src_at(uint32_t v, uint8_t *tr)     /* entry v of KNOB 1's list: its source, *tr its track */
 {
@@ -52,7 +54,7 @@ static uint32_t cu_src_at(uint32_t v, uint8_t *tr)     /* entry v of KNOB 1's li
     v--;
     if (v >= NTRK * CU_SPT) return CS_ENERGY + v - NTRK * CU_SPT;
     *tr = (uint8_t)(v / CU_SPT);
-    return 1u + v % CU_SPT;
+    return v % CU_SPT == CS_ENERGY - 1u ? (uint32_t)CS_EOC : 1u + v % CU_SPT;
 }
 static uint32_t cu_dst_k(uint32_t code) { return cu_count(code, cu_global(code)); }   /* code -> its place, in its kind */
 static uint32_t cu_dst_code(uint32_t k, int global)
@@ -83,6 +85,7 @@ static const char *cu_src_name(const cord_t *c)
     str_cpy(b, cord_src_name(c->src), sizeof b - 1u);
     if (cord_fold_on(c)) str_cpy(b + str_len(b), "+", 2);
     else if (cord_gate(c)) str_cpy(b + str_len(b), LOOK(">", "^"), 2);   /* (Mono: its arrow is a ">") */
+    else if (c->uni == CU_HOLD) str_cpy(b + str_len(b), "=", 2);
     return b;
 }
 
@@ -114,7 +117,8 @@ static const char *cu_dst_mono(const cord_t *c)
     if (c->dst < CD_M1_AMT || c->dst > CD_M16_AMT) return cu_dst_name(c);
     b[0] = 'M';
     fmt_int(b + 1, (int32_t)(c->dst - CD_M1_AMT + 1u));
-    str_cpy(b + str_len(b), "%", 2);
+    str_cpy(b + str_len(b), cord_vca_mask() >> (uint32_t)(c - cord_get(0)) & 1u ? "*" : "%", 2);   /* (SCALE: "M3*",
+                                                         * times; c: one of cords[], as every row's) */
     return b;
 }
 
@@ -147,6 +151,16 @@ static void cu_chip(int32_t x, int32_t y, int32_t w, uint32_t tr, const char *s,
                  on ? T_TEXT : T_DIM, fill, w - 8);
 }
 
+/* MOD SCOPE (gap G14; mscope.c samples, ui_mono.c mo_scope draws): OCT- held on MODS shows the picked mod's move over
+ * time under its row, in the other three rows' place; letting go, the rows again. 1 while shown (cu_scope_draw) */
+static uint8_t cu_scope;
+/* the cord shown in row k of four: the screenful, or with the scope under it the picked one alone; CORD_LIVE none */
+static uint32_t cu_slot(uint32_t k)
+{
+    if (cu_scope) return k ? CORD_LIVE : cord_ui_sel;
+    return cord_ui_sel / 4u * 4u + k;
+}
+
 static uint8_t cu_led_was[4];                           /* (cu_leds: the step each light shows; a row redrawn: none) */
 static uint8_t cu_bar_was[4];                           /* (and where each row's live mark is) */
 static int8_t cu_mv_was[4];                             /* (and its move now: a mod of mods turns it) */
@@ -155,7 +169,7 @@ static int8_t cu_mv_was[4];                             /* (and its move now: a 
 static void cu_rows(void)
 {
     static uint32_t sig;
-    uint32_t k, top = cord_ui_sel / 4u * 4u, sg = cord_ui_sel * 7u + ux.gen * 977u + ux.pal * 31u;
+    uint32_t k, sg = cord_ui_sel * 7u + ux.gen * 977u + ux.pal * 31u + cu_scope * 7919u;
     for (k = 0; k < CORD_LIVE; k++) {
         const uint8_t *b = (const uint8_t *)cord_get(k);
         uint32_t i;
@@ -171,13 +185,16 @@ static void cu_rows(void)
     memset(cu_led_was, 0xFF, sizeof cu_led_was);        /* (the rows over their lights and moves: cu_leds again) */
     memset(cu_bar_was, 0xFF, sizeof cu_bar_was);
     for (k = 0; k < 4u; k++) {
-        const cord_t *c = cord_get(top + k);
-        int sel = top + k == cord_ui_sel, on = cord_live(c);
+        uint32_t i = cu_slot(k);
+        const cord_t *c = cord_get(i);
+        int sel = i == cord_ui_sel, on;
+        if (i >= CORD_LIVE) continue;
+        on = cord_live(c);
         uint16_t bg = sel ? T_LIFT : T_BG;
         int32_t a = cu_pct(c);
         char b[16];
 #if MELODEE_LOOK
-        mo_cu_row(top + k + 1u, c, sel, on);
+        mo_cu_row(i + 1u, c, sel, on);
         cv_blit(0, (uint32_t)(CU_Y + (int32_t)k * CU_H));
         continue;
 #endif
@@ -186,8 +203,8 @@ static void cu_rows(void)
             cv_rrect(4, 1, 232, CU_H - 4, 7, T_THEME, T_BG);
             cv_rrect(5, 2, 230, CU_H - 6, 6, bg, T_THEME);
         }
-        fmt_int(b, (int32_t)(top + k + 1u));
-        cv_text_on(top + k + 1u >= 10u ? 8 : 12, 7, &AF_S, b, sel ? T_THEME : T_MID, bg);
+        fmt_int(b, (int32_t)(i + 1u));
+        cv_text_on(i + 1u >= 10u ? 8 : 12, 7, &AF_S, b, sel ? T_THEME : T_MID, bg);
         cu_chip(26, 6, 74, c->src_trk, cu_src_name(c), c->src != CS_OFF, cu_src_trk(c->src), bg);
         cv_rect(104, 14, 10, 2, on ? T_MID : T_DIM);    /* an arrow */
         cv_line(110, 11, 113, 14, on ? T_MID : T_DIM);
@@ -232,18 +249,20 @@ static void cu_bar(uint32_t k, const cord_t *c, int sel, int32_t s)
 static void cu_leds(void)
 {
     uint8_t *was = cu_led_was;
-    uint32_t k, top = cord_ui_sel / 4u * 4u;
+    uint32_t k;
     for (k = 0; k < 4u; k++) {
-        const cord_t *c = cord_get(top + k);
+        uint32_t i = cu_slot(k);
+        const cord_t *c = cord_get(i);
+        if (i >= CORD_LIVE) continue;
         int32_t s = cord_live(c) ? cord_share(c) : 0;
         uint8_t lv = (uint8_t)(cord_live(c) ? 1 + clamp((s < 0 ? -s : s) * 7 / 32768, 0, 7) : 0);
-        uint8_t key = (uint8_t)(lv | (top + k == cord_ui_sel) << 4 | (ux.pal & 7u) << 5);
+        uint8_t key = (uint8_t)(lv | (i == cord_ui_sel) << 4 | (ux.pal & 7u) << 5);
         uint8_t bk = (uint8_t)(clamp(s, -32768, 32768) * 103 / 32768 + 104);   /* (the mark's x, 1 .. 207) */
-        uint16_t bg = top + k == cord_ui_sel ? T_LIFT : T_BG;
+        uint16_t bg = i == cord_ui_sel ? T_LIFT : T_BG;
         if (ui.force || bk != cu_bar_was[k] || cu_now(c) != cu_mv_was[k]) {
             cu_bar_was[k] = bk;
             cu_mv_was[k] = (int8_t)cu_now(c);
-            cu_bar(k, c, top + k == cord_ui_sel, s);
+            cu_bar(k, c, i == cord_ui_sel, s);
         }
         if (!ui.force && key == was[k])
             continue;
@@ -257,6 +276,30 @@ static void cu_leds(void)
 #endif
         cv_blit(CU_LED_X, (uint32_t)(CU_Y + (int32_t)k * CU_H + CU_LED_Y));
     }
+}
+
+/* every frame on MODS, before the rows: the picked mod sampled (mscope.c; off MODS not), and while OCT- is held
+ * the scope under its row, drawn when a column came in */
+static void cu_scope_draw(int held)                     /* held: OCT- held, nothing over the page (ui_pages.c) */
+{
+    static uint32_t was;
+    uint32_t key;
+    mscope_take(cord_ui_sel);
+    cu_scope = (uint8_t)(MELODEE_LOOK && held);
+#if MELODEE_LOOK
+    key = mscope.col | (uint32_t)mscope.bars << 8 | (uint32_t)cord_ui_sel << 16 | (ux.pal & 7u) << 21 |
+          (uint32_t)mscope.full << 24 | (uint32_t)cu_scope << 25 | (ux.gen & 15u) << 26;
+    if (!cu_scope || (!ui.force && key == was)) {
+        was = cu_scope ? key : 0u;
+        return;
+    }
+    was = key;
+    cv_begin(240, 3 * CU_H, T_BG);
+    mo_scope(3, 3 * CU_H / 2 - 6);
+    cv_blit(0, (uint32_t)(CU_Y + CU_H));
+#else
+    (void)was, (void)key;
+#endif
 }
 
 /* the chips under the rows (ui_draw.c draw_columns): KNOB 1 the source, 2 the cord, 3 the destination, 4 the move */
@@ -326,7 +369,8 @@ static void cu_pick_label(char *b, uint32_t col, int32_t i, int32_t *tr)
     str_cpy(b + str_len(b), s, 20u - str_len(b));
 }
 
-/* OCT+ on MODS: how the cord reads its source, +- -> + -> GATE -> +- (a source that is 0..1 already: + <-> GATE). To
+/* OCT+ on MODS: how the cord reads its source, +- -> + -> GATE -> HOLD -> +- (a source that is 0..1 already: + ->
+ * GATE -> HOLD -> +). To
  * GATE: the threshold (OFFSET) starts at the middle of a bipolar source, at 50 % of a 0..1 one */
 static void cu_polarity(void)
 {
@@ -337,7 +381,7 @@ static void cu_polarity(void)
         return;
     }
     bip = cord_bipolar(c.src, c.src_trk);
-    c.uni = c.uni == CU_GATE ? (bip ? CU_BI : CU_UNI) : c.uni == CU_UNI || !bip ? CU_GATE : CU_UNI;
+    c.uni = c.uni == CU_HOLD ? (bip ? CU_BI : CU_UNI) : c.uni == CU_GATE ? CU_HOLD : c.uni == CU_UNI || !bip ? CU_GATE : CU_UNI;
     c.offset = c.uni == CU_GATE ? (bip ? 0 : 50) : 0;
     (void)cord_set(cord_ui_sel, &c);
     if (c.uni == CU_GATE) {
@@ -346,10 +390,11 @@ static void cu_polarity(void)
         cu_pct_text(b + str_len(b), c.offset);
         ui_message(b);
     } else
-        ui_message(c.uni ? "+ ONE WAY" : "+- BOTH WAYS");
+        ui_message(c.uni == CU_HOLD ? "HOLD A BAR" : c.uni ? "+ ONE WAY" : "+- BOTH WAYS");   /* (HOLD: OCT- held +
+                                                         * KNOB 1 its clock, HOLD ON T1 NOTES ..) */
     ui.force = 1;
 }
-/* OCT+ held + KNOB 4 on a GATE mod: its threshold (ui_input.c: OCT+'s tap eaten) */
+/* OCT- held + KNOB 4 on a GATE mod: its threshold (ui_input.c: OCT-'s tap eaten) */
 static int cu_thresh_knob(int32_t steps)
 {
     cord_t c = *cord_get(cord_ui_sel);
@@ -363,7 +408,7 @@ static int cu_thresh_knob(int32_t steps)
     return 1;
 }
 
-/* OCT+ held + KNOB 3 on a CC mod: its CC number, 0..119 (ui_input.c: OCT+'s tap eaten; KNOB 4 a GATE's threshold) */
+/* OCT- held + KNOB 3 on a CC mod: its CC number, 0..119 (ui_input.c: OCT-'s tap eaten; KNOB 4 a GATE's threshold) */
 static int cu_cc_knob(int32_t steps)
 {
     const cord_t *c = cord_get(cord_ui_sel);
@@ -374,6 +419,36 @@ static int cu_cc_knob(int32_t steps)
     fmt_int(b + 3, (int32_t)cord_cc_num(cord_ui_sel));
     ui_message(b);                                      /* (no ui.force: the row redraws by its signature, which
                                                          * holds the CC numbers; a whole frame flickered under the list) */
+    return 1;
+}
+
+/* OCT- held + KNOB 1 on a HOLD mod: its clock, BAR (its destination track's) or T1 .. T4's notes (cord.c cord_hold_clk;
+ * ui_input.c: OCT-'s tap eaten). Another mod: KNOB 1 its source, as without OCT- */
+static __attribute__((noinline)) int cu_hclk_knob(int32_t steps)
+{
+    char b[20];
+    uint32_t v;
+    if (cord_get(cord_ui_sel)->uni != CU_HOLD || !steps) return 0;
+    v = (uint32_t)clamp((int32_t)cord_hold_clk(cord_ui_sel) + (steps > 0 ? 1 : -1), 0, 4);
+    cord_hold_clk_set(cord_ui_sel, v);
+    if (!v) str_cpy(b, "HOLD A BAR", sizeof b);
+    else {
+        str_cpy(b, "HOLD ON T1 NOTES", sizeof b);
+        b[9] = (char)('0' + v);
+    }
+    ui_message(b);
+    return 1;
+}
+
+/* OCT- held + KNOB 3 on a mod of mods: ADD (left; its share added to the mod's move) or SCALE (right; the move times
+ * it, a VCA) (ui_input.c: OCT-'s tap eaten; a CC mod's KNOB 3 its number) */
+static __attribute__((noinline)) int cu_vca_knob(int32_t steps)
+{
+    uint32_t bit = 1u << cord_ui_sel;
+    if ((uint32_t)(cord_get(cord_ui_sel)->dst - CD_M1_AMT) >= CORD_LIVE) return 0;
+    cord_vca_load(steps > 0 ? cord_vca_mask() | bit : cord_vca_mask() & ~bit);
+    ui_message(steps > 0 ? "SCALES IT" : "ADDS TO IT");
+    ui.force = 1;
     return 1;
 }
 
@@ -390,7 +465,7 @@ static void cu_knob(uint32_t slot, int32_t steps)
     if (slot == 0u) {
         v = clamp((int32_t)cu_src_of(&c) + list_accel(EN_K1, steps, CU_NSRC, 0), 0, CU_NSRC - 1);
         c.src = (uint8_t)cu_src_at((uint32_t)v, &c.src_trk);
-        if (c.uni == CU_GATE && !c.src) { c.uni = CU_BI; c.offset = 0; }   /* (no source: no gate, no threshold; */
+        if (c.uni >= CU_GATE && !c.src) { c.uni = CU_BI; c.offset = 0; }   /* (no source: no gate, no threshold; */
         if (c.uni == CU_GATE && c.offset < 0 && !cord_bipolar(c.src, c.src_trk)) c.offset = 0;   /* 0..1: none under 0) */
         if (c.src && !c.amount && c.uni != CU_GATE) { c.amount = c.offset; c.offset = 0; }   /* (one move shown: a fixed move becomes */
         if (!c.src && c.amount) { c.offset = c.amount; c.amount = 0; }   /* the source's, and back) */

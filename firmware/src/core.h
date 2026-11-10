@@ -492,6 +492,15 @@ typedef struct track {
     int16_t m_rnd;               /* .. its RAND */
     int32_t m_env;               /* the amp envelope of voice m_vi, last block (Q15) */
 } track_t;
+/* DIR (seq_dir.c): each track's, apart from track_t (growing it costs flash everywhere a track is indexed) */
+typedef struct {
+    uint16_t slot;               /* the step of time in the pass (0..LEN-1); seq_idx the step playing on it: the same
+                                  * on FWD, else as DIR takes them */
+    uint16_t nxt;                /* DIR not FWD: the step after seq_idx, chosen a step ahead (SEQ_NXT_*: none yet) */
+    uint8_t ndir, back;          /* the DIR nxt was chosen by; PEND / PONG going back */
+} seq_dir_t;
+static seq_dir_t seq_dirs[NTRK];
+#define SEQ_D(t) seq_dirs[(t) - trk]
 
 typedef struct {
     int16_t g[G_COUNT];

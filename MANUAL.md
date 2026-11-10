@@ -25,7 +25,7 @@ would use it, then a table of goals and where to go for each.
 - [Sounds](#sounds)
 - [SEQ: the MODE and its pages](#seq-the-mode-and-its-pages)
 - [The generators](#the-generators)
-- [OCT+ layers on GEN](#oct-layers-on-gen)
+- [The GEN layer](#the-gen-layer)
 - [EVOLVE](#evolve)
 - [FORM](#form)
 - [TWEAK](#tweak)
@@ -179,7 +179,7 @@ sound pluck, swell or sustain.*
 | Page | What it lets you do | Reach for it when |
 |---|---|---|
 | SCALES, SCL | Choose the project's scale and key, how notes are snapped to it (QNT), and transpose a track. | Always, early on: every generator plays in this scale. |
-| CHORD | Set the chord kind and voicing a CHORD track (or QNT CHRD) uses. | You want sevenths, open voicings or power chords. |
+| CHORD | Set the chord kind and voicing a CHORD track (or QNT CHRD) uses. | You want sevenths, sus or add9 chords, open voicings or power chords. |
 | [USER scales](#your-own-scales-user1-to-user4) | Make up to four 12-note scales of your own on the keys. | No built-in scale is the one you hear. |
 | [Scala tunings](#your-own-tunings-scala-files) | Load your own microtonal tunings from the web editor. | You want to leave twelve-note tuning behind. |
 
@@ -267,7 +267,7 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 | **GLO** | MIXER, [PERF](#perf-four-macros), GLOBAL, SYSTEM, MIDI OUT, [PIECE](#piece-a-length-and-a-shape), [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in), [LANDSCAPE](#landscape-rain-on-water) | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
 | **SAVE** | USER (ready to save the sound), PROJECT, PRESETS | Save the project to its slot (as SAVE + REC) |
 | **REC** | Records the selected track until REC again (see [Recording live](#recording-live)) | Capture or print the last bars (see [Print and keep](#print-and-keep)) |
-| **OCT+** | Octave up; on some pages, an action (shown on screen) | A page's extra layer (see [OCT+ layers](#oct-layers-on-gen)) |
+| **OCT+** | Octave up; on some pages, an action (shown on screen) | The page's sheet; a page without one says NO SHEET (its second knobs are on OCT- held: see [The GEN layer](#the-gen-layer)) |
 
 On the home page each track's tile shows its sound and engine. **ALGORITHM** picks the track on every page (or
 the left knob, with MENU > TRACK KNOB set to LEFT), and **SELECT** turns the pages of the section shown (on the home
@@ -287,10 +287,13 @@ does: MENU > **LARGE VALUE** shows it on every page (ON) or on none (OFF).
 <p align="center"><img src="assets/gallery/home.png" alt="HOME" width="320"> <img src="assets/gallery/mixer.png" alt="MIXER" width="320"></p>
 
 **MIXER** (tap GLO) is the four tracks as a mixer: **KNOB 1 to 4** set the levels of tracks 1 to 4, and with
-**OCT+** held they set the pans. The keys are the mixer's while it is shown: the **black keys** F#3 G#3 A#3 C#4 mute
+**OCT-** held they set the pans. The keys are the mixer's while it is shown: the **black keys** F#3 G#3 A#3 C#4 mute
 and unmute tracks 1 to 4, the **white keys** F3 G3 A3 B3 solo a track while held, **C4** unmutes them all, **E4**
 holds FILL and **F4** taps the tempo, the same as with GLO held on any other page. Each strip shows MUTE or SOLO; a track silenced by
-another's solo dims. Any page button leaves the mixer, and the keys play notes again.
+another's solo dims. Any page button leaves the mixer, and the keys play notes again. A mute only silences the track: a
+muted track still leads the tracks that follow it (FOLLOW, an ANSWER's SOURCE, QNT CHRD's chord, QUAD's LINK, the cords).
+Hold **OCT+** on MIXER for its sheet: **Mutes**, when the mute keys take effect while playing (NOW, BAR or PHRASE),
+the same setting as MENU > MUTES.
 
 **Lists** (the HOME menu, SCL, VOICE, the sheets and the sound designer): KNOB 1 picks the row, KNOB 2 changes its
 value.
@@ -304,6 +307,14 @@ FOLLOW, MATRIX, MIDI OUT, the cords) draw each in its own, and the value you tur
 **SUNSET** (orange, hot pink, lilac, yellow), **OCEAN** (blue, teal, green, lilac) and **NEON** (cyan, magenta, lime,
 orange) do the same in other colours. With COLOR picked in the menu, the inks and the four-colour sets show below it,
 the one chosen framed and its name large; KNOB 2 or OCT+ steps through them.
+
+**GROUND.** MENU > GROUND, just below COLOR, sets what the ink is drawn on: **DARK** (the default, black, as above) or
+**LIGHT**, warm paper. On paper each ink becomes a darker version of itself that reads well there, and several inks
+share one: WHITE becomes CHARCOAL, YELLOW and ORANGE become SEPIA, GREEN FOREST, BLUE NAVY, RED, PINK and HOT PINK
+CRIMSON, and LILAC PLUM. The four-colour sets keep four different inks: MOSAIC SEPIA, NAVY, CRIMSON and FOREST; SUNSET
+SEPIA, CRIMSON, PLUM and CHARCOAL; OCEAN NAVY, TEAL, FOREST and PLUM; NEON TEAL, PLUM, FOREST and SEPIA; the selection
+in CHARCOAL. While LIGHT is on, COLOR's sheet shows the light versions on paper, so you see what you pick. Older
+firmware keeps the ink you chose and draws it on black.
 
 <table>
 <tr>
@@ -341,9 +352,9 @@ key skips it.
 |---|---|
 | Tap **SEQ** | **GEN** first: KNOB 1 (**MODE**) picks what the track plays. SEQ then shows only what that mode plays, ARP how it is shaped. |
 | Tap **ARP** | The track's shaping pages (EVOLVE, TWEAK, TIMING and so on); tap again for the next. It never changes the track's MODE: that is GEN's KNOB 1. |
-| Hold **OCT+** on GEN | The generator's second layer, for TURING, EUCLID, MARKOV, MORPH, QUAD, CHORD, ATLAS, CONSTELLATION and ANSWER (see [OCT+ layers](#oct-layers-on-gen)). |
-| Hold **OCT+** on EVOLVE | A generator's GRAVITY; on a STEP track, STEP EVOLVE's HOW (see [EVOLVE](#evolve)). |
-| Hold **OCT-** on GEN or TWEAK, turn **KNOB 1** | **RANDOM**: turn right and the page's knobs get new values, each inside its range (GEN: the generator's KNOB 2 to 4; TWEAK: SHIFT, DROP and HUMAN). The screen says **RANDOMIZED**. Turn left to put back the values from before the last turn (**PUT BACK**, once). MODE, the seed, FOLLOW, QUAD's LINK and CONSTELLATION's AUTO never change. A STEP or ARP track says **NO GENERATOR**. |
+| Hold **OCT-** on GEN | KNOB 1 RANDOM; KNOB 2 to 4 the generator's second layer, for TURING, EUCLID, MARKOV, MORPH, QUAD, CHORD, ATLAS, CONSTELLATION and ANSWER (see [The GEN layer](#the-gen-layer)). Hold **OCT+** for the GEN sheet, where a generator has a setting past those. |
+| Hold **OCT-** on EVOLVE | KNOB 1 ROLL ALL; KNOB 3 PAT GEN; KNOB 4 a generator's GRAVITY (a STEP track: STEP EVOLVE's HOW) (see [EVOLVE](#evolve)). |
+| Hold **OCT-** on GEN or TWEAK, turn **KNOB 1** | **RANDOM**: turn right and the page's knobs get new values, each inside its range (GEN: the generator's KNOB 2 to 4; TWEAK: SHIFT, DROP and HUMAN). The screen says **RANDOMIZED**. Turn left to put back the values from before the last turn (**PUT BACK**, once). KNOB 2 to 4 of this layer are the generator's own ([The GEN layer](#the-gen-layer)); on TWEAK, FOLLOW's HOW, RHYTHM and HOLD. MODE, the seed, FOLLOW, QUAD's LINK and CONSTELLATION's AUTO never change. A STEP or ARP track says **NO GENERATOR**. |
 | Turn **SELECT** on HOME or MIXER, or with **GLO** held | Sets the tempo (BPM), as SEQ > TEMPO does; F4 with GLO held taps it. With CLK on USB or TRS the tempo is the clock's, and a Song Position from it (a DAW's PLAY from mid-song) starts the steps, the ARP and the generators where that song is, as if they had played from the top. |
 | Turn **PRESETS** with **GLO** held, on any page | Browses the selected track's sounds as PRESETS does on HOME. The GLO map gives way to the sound: the track, the list and the place in it, the sounds before and after, the sound's name large and its engine (a fast turn: the name the knob will load when it stops, with its speed, X4). It stays while GLO is held; a GLO key or knob brings the map back. Without GLO, PRESETS keeps the page's own job (or does nothing), so a stray turn never changes the sound. GLO + OCT- does not put the sound back. |
 | **GLO** + **E4** (on MIXER, E4) | Holds [FILL](#a-steps-condition-and-fill) for the steps whose condition is FILL or !FILL. |
@@ -354,8 +365,9 @@ key skips it.
 | **SAVE** + **REC**, or hold **SAVE** | Saves the project to its slot (stops playback first). |
 | **EVOLVE**, KNOB 4 (**ROLL**) | Each click is a new seed (1 to 128), so a new line; turn back for the last one, note for note. |
 | **FORM**, KNOB 3 (**CLEAR**) | Forgets B and C: the section playing becomes A. |
-| **MODS**, **OCT+** | Switches the picked mod between **+-** (both ways), **+** (one way) and **^** (GATE). |
-| **MODS**, **OCT+** held + **KNOB 4** | Sets a GATE mod's threshold. |
+| **MODS**, **OCT+** | Switches the picked mod between **+-** (both ways), **+** (one way), **^** (GATE) and **=** (HOLD). |
+| **MODS**, **OCT-** held + **KNOB 4** | Sets a GATE mod's threshold. |
+| **MODS**, hold **OCT-** | Shows the picked mod's scope: its move over time over its source (see [MODS](#mods-the-modulation-cords)). |
 | **MATRIX**, **OCT+** | Opens the picked mod in MODS. |
 | **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across a row, KNOB 2 between rows, OCT+ opens the page, OCT- or EDIT closes it. Any other page button leaves it for its page. |
 | **PLAY** | Every generator starts its random choices from the top of its seed, and TIDE and SWARM restart: with EVOLVE's EVERY off, a project plays the same way each time. |
@@ -495,8 +507,9 @@ LENGTH, DIVISION and GATE, and the track's SWING is a row of the pattern's sheet
 these on PATTERN instead. The generators run at the track's DIV and play in the track's scale (SCL). Choosing STEP or a
 generator turns the arpeggiator off; choosing ARP again brings back its last setting.
 
-A generator picked (or a track unmuted) while the others play **joins in time**: it starts where it would be had it
+A generator picked while the others play **joins in time**: it starts where it would be had it
 played since PLAY, on the same steps and bars, so an ATLAS groove picked under a playing chord lands on the beat.
+A muted track plays on unheard, so unmuted it comes back in time.
 BOUNCE, QUAD, CONSTELLATION and SERIES run free and simply carry on.
 
 On NOTES, **KNOB 2** sets the picked note's pitch. With **QNT OFF** it moves a semitone a detent. With QNT on
@@ -561,6 +574,24 @@ Swing (the track's, KNOB 2), Clear pattern and Clear motion it has:
 
 Each one is undone with **EDIT** held, one at a time.
 
+**Direction** (KNOB 2, or OCT+ for the next) sets the order the pattern plays its steps in. Each of the track's 8
+patterns keeps its own, saved with it:
+
+- **FWD** (the default): step 1 to the last, as always.
+- **BACK**: the last step to step 1.
+- **PEND**: there and back, the end steps once (1 2 3 4 3 2 1 2 ..).
+- **PONG**: there and back, the end steps twice (1 2 3 4 4 3 2 1 1 2 ..).
+- **RAND**: any step, each time.
+- **DRUNK**: one step on or one back, at random; past the ends it goes round.
+
+A pass is still LEN steps of time, whatever the direction. So step Conditions (1:2 ..), Accumulate, pattern
+changes, the SONG and STEP EVOLVE's rounds stay on the bar line, in time with the other tracks; a PEND of 16 steps
+goes on into the next pass. SWING swings the off-beats, whichever step is on them. RAND and DRUNK draw from the
+track's SEED, so PLAY plays the same line again. Changing the direction while it plays never moves the playhead: the
+next step comes from the one playing, the new way. A new pattern starts at its own direction's start (BACK: its last
+step). Capture and print write the notes in the order they sounded and set the pattern to FWD. A generator track
+does not use it.
+
 Two rows set the track's pitch accumulator (a step's Accumulate, below):
 
 - **Accum limit** (1–14, 7): how far a step's notes go, in scale degrees from the notes as written. 7 is an octave
@@ -586,7 +617,7 @@ What a pattern changes depends on the track's MODE:
 | a generator | Only LEN, DIV, GATE, and the steps the generator can take as its seed (SOURCE, see [STEP as seed](#turing-euclid-markov-and-morph-source-keep-gravity-step-as-seed)). |
 
 The generator itself, its MODE, its knobs, EVOLVE, FORM, TWEAK and the rest, belongs to the track, not to a pattern,
-unless **PAT GEN** is ON (EVOLVE page, hold **OCT+**, KNOB 4). With PAT GEN ON each pattern keeps its own MODE, the
+unless **PAT GEN** is ON (EVOLVE page, hold **OCT-**, KNOB 3). With PAT GEN ON each pattern keeps its own MODE, the
 generator's knobs, SEED and EVOLVE's EVERY, AMOUNT and LOCK, so switching pattern (by hand, PATTERNS or SONG)
 switches the generator too, and it starts again from that pattern's SEED. A pattern can be STEP while another is a
 generator. Turning PAT GEN ON gives all 8 patterns the settings as they are; edit a pattern's generator while it
@@ -707,56 +738,80 @@ saved project keeps its seeds.
 
 ---
 
-## OCT+ layers on GEN
+## The GEN layer
 
-> **In short:** holding OCT+ on GEN gives a generator four more knobs. This lets you shape the finer details without
-> crowding the main page.
+> **In short:** holding OCT- on GEN gives a generator a second set of knobs: KNOB 1 RANDOM, KNOB 2 to 4 its finer
+> settings. This lets you shape the details without crowding the main page. A setting past those, where a generator
+> has one, is on the GEN sheet (hold OCT+).
 
-Some generators have more settings than three knobs. Hold **OCT+** on GEN: the knobs' labels change to the layer's, an OCT+
-key shows in the header, and the four knobs set the layer. Let go to return.
+Hold **OCT-** on GEN: the knobs' labels change to the layer's, KNOB 1 is **RANDOM** as on every generator (see
+[Shortcuts](#shortcuts)) and KNOB 2 to 4 set the layer. Let go to return; letting go never goes back a page. A
+generator with more settings than that has them on the **GEN sheet**: hold **OCT+** (or tap it) on GEN, pick the row
+with KNOB 1 and turn its value with KNOB 2. (Until 3.5's betas these layers were on OCT+ held, KNOB 1 to 4.)
 
-<p align="center"><img src="assets/gallery/gen_grids_oct.png" alt="ATLAS with OCT+ held" width="240"> <img src="assets/gallery/gen_chord_oct.png" alt="CHORD with OCT+ held" width="240"> <img src="assets/gallery/gen_chord_user.png" alt="CHORD USER with OCT+ held" width="240"></p>
+<p align="center"><img src="assets/gallery/gen_grids_oct.png" alt="ATLAS with OCT- held" width="240"> <img src="assets/gallery/gen_chord_oct.png" alt="CHORD with OCT- held" width="240"> <img src="assets/gallery/gen_chord_user.png" alt="CHORD USER with OCT- held" width="240"></p>
 
-### ATLAS: KICK, SNR, HAT, TOMS
+### ATLAS: KICK, SNR, HAT; the fourth part
 
-| Knob | Setting | What it does |
+| Knob (OCT- held) | Setting | What it does |
 |---|---|---|
-| 1 | **KICK** (0–100 %) | How much of DENS the kick gets: 0 silences it. |
-| 2 | **SNR** | The same for the snare. |
-| 3 | **HAT** | The same for the closed hat. |
-| 4 | **TOMS** (0–100 %; labelled with the part's sound, TOM at first) | A fourth part: the hits the kick and snare only just miss, so fills follow the groove. 0 (OFF) none. |
+| 2 | **KICK** (0–100 %) | How much of DENS the kick gets: 0 silences it. |
+| 3 | **SNR** | The same for the snare. |
+| 4 | **HAT** | The same for the closed hat. |
+| GEN sheet | **Fourth part** (0–100 %) | A fourth part, on the tom at first: the hits the kick and snare only just miss, so fills follow the groove. 0 (OFF) none. |
 
-With OCT+ held, a **black key** picks the fourth part's sound, as on the drum grid: TOM, CLAP, OPEN HAT, RIM or
+With OCT- held, a **black key** picks the fourth part's sound, as on the drum grid: TOM, CLAP, OPEN HAT, RIM or
 BELL. The parts are also mod destinations: AT KICK, AT SNR, AT HAT, AT TOMS.
 
-### CHORD: OCT, CHRD, VOIC, BREATH (or LEN)
+### CHORD: STRUM, DIR, OCT; CHRD, VOIC, BREATH (or LEN)
 
-| Knob | Setting | What it does |
+Hold **OCT-** on GEN with a CHORD track: KNOB 1 is RANDOM, KNOB 2 and 3 set how the chord is struck, KNOB 4 its
+register. The chord's kind and voicing are on the GEN sheet (and on SCL > CHORD).
+
+| Knob (OCT- held) | Setting | What it does |
 |---|---|---|
-| 1 | **OCTAVES** (−2 to +2) | The chords' register from their home around C3. |
-| 2 | **CHRD** | SCL > CHORD's chord kind: OFF plays triads; DIA3 and DIA7 triads and sevenths in the scale; MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW. |
-| 3 | **VOICING** | CLOSE, OPEN, INV1, INV2 or +OCT. |
-| 4 | **BREATH** (0–100 %) | With HIT HOLD the chord breathes: each voice is struck again, softer, on a slow cycle of its own (11 to 19 s), and the same chord again is tied over. BREATH is the chance a voice above the lowest sits a cycle out; 0 (OFF) is off. |
-| 4 | **LENGTH** (USER only, in BREATH's place) | How many of USER's chords play, 1 to 8. |
+| 2 | **STRUM** (OFF, 5 to 60 ms, 5 ms a detent) | The time between one note of the chord and the next, as a strummed chord. A four-note chord at 40 ms spreads over 120 ms. OFF strikes them together, as before. |
+| 3 | **DIR** | **UP**: the lowest note first. **DOWN**: the highest first. **ALT**: up, down, up and so on, a strike each, like strumming (from PLAY, so a piece replays the same). |
+| 4 | **OCT** (−2 to +2) | The chords' register from their home around C3. |
+| GEN sheet | **Chord** | SCL > CHORD's chord kind: OFF plays triads; DIA3 and DIA7 triads and sevenths in the scale; MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9, MAJ6 (fixed shapes on any note). |
+| GEN sheet | **Voicing** | CLOSE, OPEN, INV1, INV2 or +OCT. |
+| GEN sheet | **Breath** (0–100 %) | With HIT HOLD the chord breathes: each voice is struck again, softer, on a slow cycle of its own (11 to 19 s), and the same chord again is tied over. BREATH is the chance a voice above the lowest sits a cycle out; 0 (OFF) is off. |
+| GEN sheet | **Length** (USER only, in Breath's place) | How many of USER's chords play, 1 to 8. |
 
-**USER progressions.** Set PROG to USER, hold OCT+ on GEN and play the roots on the keys, one key a chord (the keys
-are silent while OCT+ is held; notes outside the scale round down to it). Letting OCT+ go ends the entry, and the
-number of chords played sets LENGTH.
+**USER progressions.** Set PROG to USER, hold OCT- on GEN and play the roots on the keys, one key a chord (the keys
+are silent while OCT- is held; notes outside the scale round down to it). Letting OCT- go ends the entry, and the
+number of chords played sets Length.
+
+- The strum fits in half the chord's length: a short BEAT, STEP or OFFBEAT stab strums tighter and keeps every
+  note. HOLD strums once for each chord; the other HITs every strike. All the notes end together.
+- **HUMAN** time moves the strike late as before; the strum starts from there. A **RATCH** strums its first hit;
+  the repeats strike the chord together. BREATH's single voices are not strummed.
+- **MIDI OUT** sends each note when it sounds, so the notes go out strummed too (also with SOUND OFF).
+- Each note takes its voice when it starts. With fewer voices than notes the last ones steal, so DIR decides which
+  note may take another's voice.
+- STRUM and DIR are saved with the project; firmware before STRUM plays the chords together.
 
 ### QUAD: columns and RANGE
 
-The grid's columns can turn between the rows, so notes travel from track to track. With OCT+ held:
-KNOB 1 picks the column, KNOB 2 its **MOVE** (STOP, DOWN, UP or RAND), KNOB 3 its **EVERY** (/1 to /16 steps of
-the first QUAD track), and KNOB 4 **RANGE** (3 OCT, 1 OCT, 2 OCT or ±1: the octaves the row's notes fold into).
+The grid's columns can turn between the rows, so notes travel from track to track. With OCT- held:
+KNOB 2 picks the column, KNOB 3 its **MOVE** (STOP, DOWN, UP or RAND), KNOB 4 its **EVERY** (/1 to /16 steps of
+the first QUAD track). **Range** on the GEN sheet (3 OCT, 1 OCT, 2 OCT or ±1) sets the octaves the row's notes fold
+into.
 
-### CONSTELLATION: LOCK, LEN, FILL, SIZE
+### CONSTELLATION: LOCK, LEN, FILL; SIZE
 
-| Knob | Setting | What it does |
+| Knob (OCT- held) | Setting | What it does |
 |---|---|---|
-| 1 | **LOCK** | The chance a step plays the loop of stars already caught instead of the sky: high LOCK repeats a phrase. |
-| 2 | **LEN** (1–16) | The loop's length. |
-| 3 | **FILL** | OFF: the steps between stars rest. ARP: the last four stars again, low to high and softer. |
-| 4 | **SIZE** (0–7) | How many rows either side of the crosshair a star still plays in. |
+| 2 | **LOCK** | The chance a step plays the loop of stars already caught instead of the sky: high LOCK repeats a phrase. |
+| 3 | **LEN** (1–16) | The loop's length. |
+| 4 | **FILL** | OFF: the steps between stars rest. ARP: the last four stars again, low to high and softer. |
+| GEN sheet | **Size** (0–7) | How many rows either side of the crosshair a star still plays in. |
+
+### ANSWER: SOURCE, ORDER, SHIFT; SPACE
+
+With OCT- held, KNOB 2 is **SOURCE** (the call: the keys, or T1 to T4's pattern), KNOB 3 **ORDER** (PLAYED,
+REVERSE or SHUFFLE) and KNOB 4 **SHIFT** (each answer moved by up to this many scale degrees). **Space** on the GEN
+sheet is the rest before each answer.
 
 **AUTO** steers the ship for you: OFF follows Y, 1 to 9 is a wander of its own (faster further up), SEEK flies to
 the next star. It has no knob: set it with a mod to **C AUTO** (a cord with no source is a fixed value).
@@ -770,7 +825,7 @@ constellation and the crosshair colours of their own, the ship white.
 > at the centre while it grows new versions of itself. KEEP says what must stay (the rhythm or the notes), GRAVITY how
 > close to the original it stays.
 
-**SOURCE** (KNOB 1) lets TURING, EUCLID, MARKOV or MORPH play from a STEP pattern you wrote. T1 to T4 is that
+**SOURCE** (OCT- held, KNOB 2) lets TURING, EUCLID, MARKOV or MORPH play from a STEP pattern you wrote. T1 to T4 is that
 track's pattern playing now, and it can be this track's own. The pattern itself never changes. OFF, or a pattern
 with no notes, plays the generator as usual.
 
@@ -786,7 +841,7 @@ with no notes, plays the generator as usual.
   PLAY: about half of its steps changed the way TURING changes them. MORPH's position is B's share, and EVOLVE
   changes a few more of B's steps each time.
 
-**KEEP** (KNOB 2) says what stays as written:
+**KEEP** (KNOB 3) says what stays as written:
 
 | KEEP | TURING, MORPH's B | EUCLID | MARKOV |
 |---|---|---|---|
@@ -794,7 +849,7 @@ with no notes, plays the generator as usual.
 | **RHYTHM** | only the pitches change (to another of your notes, or any note of the scale over SPAN octaves up from your lowest) | the source's own rhythm, on EUCLID's pitches | the source's rhythm, the notes from the chain |
 | **PITCH** | only the hits come and go | as FREE | the chain's rhythm, the notes in written order |
 
-**GRAVITY** (KNOB 3) pulls it all back home: at GRAVITY %, a step plays the source exactly as written at its place.
+**GRAVITY** (KNOB 4) pulls it all back home: at GRAVITY %, a step plays the source exactly as written at its place.
 TURING's changed step goes back to how you wrote it, MARKOV's chain carries on from there, EUCLID plays the
 source's own hit or rest, and MORPH plays A. 0 is off; 100 plays your pattern as written whatever the rest says.
 Drift with PROB, LEAP or MORPH, and let GRAVITY decide how far it may wander.
@@ -822,11 +877,11 @@ On a generator track, EVOLVE mutates the phrase every few bars.
 | 1 | **LOCK** (0–100 %) | How much of the phrase stays: 100 loops it, 0 is new every pass. Turing's LOCK is its PROB turned round, Atlas' its CHAOS turned round, Constellation's the chance of its loop. The other generators (Euclid, Bounce, Awake, Poly, Quad, Series, Chord, Answer) have none. |
 | 2 | **EVERY** | Mutates every OFF, 1, 2, 4, 8 or 16 bars. OFF keeps the phrase. |
 | 3 | **AMOUNT** (0–100 %) | How much changes each time. |
-| 4 | **ROLL** (1–128) | The track's seed. While playing, a new seed starts on the track's next bar line (the number blinks until then). The screen says **NEW LINE** (**NEW LINE AT BAR** while playing), as the new seed also changes values on the generator's other pages. Hold **OCT-** for **ROLL ALL**: turn right and every generator track gets a new seed at once; turn left to get the seeds from before it back (once). STEP tracks keep theirs. |
+| 4 | **ROLL** (1–128) | The track's seed. While playing, a new seed starts on the track's next bar line (the number blinks until then). The screen says **NEW LINE** (**NEW LINE AT BAR** while playing), as the new seed also changes values on the generator's other pages. Hold **OCT-** and turn **KNOB 1** for **ROLL ALL**: right and every generator track gets a new seed at once; turn left to get the seeds from before it back (once). STEP tracks keep theirs. |
 
 With LOCK up, Turing's loop is its LENGTH long; Markov's and Morph's loops are as long as PATTERN's **LEN**.
 
-**GRAVITY** (OCT+ held, KNOB 1; the same GRAVITY as the SOURCE layer's) lets the phrase drift and then come home.
+**GRAVITY** (OCT- held, KNOB 4; the same GRAVITY as the SOURCE layer's) lets the phrase drift and then come home.
 Home is the generator as you last set it: a knob, ROLL, MODE or a loaded project. At GRAVITY %, a round of EVERY
 moves the generator a step back toward home instead of changing it. Turing flips a changed bit back, Euclid's
 rotation and pulses step back, Markov's LEAP, Atlas' X and Y, Bounce's angle and Morph's position move back. Awake,
@@ -851,7 +906,7 @@ On a **STEP** track, EVOLVE varies the steps you wrote, as they play, without ch
 Hold **REC** to keep the changes playing: they become the steps (KEPT n STEPS). EDIT held undoes it. Switching
 pattern clears the changes.
 
-**HOW** (OCT+ held on EVOLVE, KNOB 1) says what kind of change a round makes. It is saved with the project.
+**HOW** (OCT- held on EVOLVE, KNOB 4) says what kind of change a round makes. It is saved with the project.
 
 | HOW | A round |
 |---|---|
@@ -888,19 +943,19 @@ FORM strings mutated phrases into a short song form of sections A, B and C, each
 B and C are made from the section before, by CONTR, the first time they are reached. Changing MODE or ROLL starts
 the form again at A.
 
-**DEVELOP** (OCT+ held, KNOB 1, 0–100 %): how far a section varies each time the form comes back to it. At 0 (the
+**DEVELOP** (OCT- held, KNOB 1, 0–100 %): how far a section varies each time the form comes back to it. At 0 (the
 default) a section played again comes back exactly, as before. Above 0 each return is the section with one change of
 that size, so it stays recognisable but is never quite the same; the section itself is kept, so the next return
-starts from it again and the form never drifts away over hours. GRAVITY (OCT+ held on EVOLVE) is the chance a return
+starts from it again and the form never drifts away over hours. GRAVITY (OCT- held on EVOLVE) is the chance a return
 stays exact. A knob turned while a section plays is kept in it, as without DEVELOP.
 
-**CHAIN** (OCT+ held, KNOB 2, FOLLOW or OWN) and **SKIP** (OCT+ held, KNOB 3, 0–100 %): this track's part in the
+**CHAIN** (OCT- held, KNOB 2, FOLLOW or OWN) and **SKIP** (OCT- held, KNOB 3, 0–100 %): this track's part in the
 project's [CHAIN](#chain-one-form-for-the-project). FOLLOW: its sections change with the CHAIN's letters. OWN: it keeps
 its own FORM. Until you set it, a track follows when its own FORM is OFF and keeps its own when it has one. SKIP is the
 chance the track stays in its section one phrase longer where the CHAIN moves on (then it catches up; never twice
 running). Both are lit only while the CHAIN's FORM is on.
 
-**ROLE** (OCT+ held, KNOB 4): this track's part for [ENTRIES](#entries-tracks-out-and-back-in), the same setting as
+**ROLE** (OCT- held, KNOB 4): this track's part for [ENTRIES](#entries-tracks-out-and-back-in), the same setting as
 on the ENTRIES page.
 
 ### PIECE: a length and a shape
@@ -919,8 +974,9 @@ system of its own; it steers ENERGY, [CHAIN](#chain-one-form-for-the-project) an
 | 3 | **PEAK** (10–90 %) or **COUNT** (2–8) | PEAK: where ARCH, PLATEAU and VALLEY have their centre. COUNT: WAVES' swells, BUILDS' builds, STEPS' terraces. |
 | 4 | **END** | What happens at the end, on a phrase line: STOP (the tracks fade out, the tails ring, then it stops), LOOP (the same piece again from the top), NEW (new SEEDs, a new piece) or FREE (it carries on unplanned until STOP). |
 
-With **SHAPE** USER, hold **OCT+** for its points 1 to 4 and **OCT-** for 5 to 8 (KNOB 1 to 4, 0–100 %): eight levels
-evenly along the piece. The picture shows the shape, where the piece is while playing, and the time left.
+With **SHAPE** USER, hold **OCT-**: **KNOB 1** picks one of its eight points (drawn bigger on the shape) and
+**KNOB 2** sets its level (0–100 %). The eight sit evenly along the piece, and the shape stays in view while you
+draw it. The picture shows the shape, where the piece is while playing, and the time left.
 
 The piece is counted in the time played since PLAY: a tempo change, a TEMPO mod or an external clock that drifts never
 jumps it to another place in its shape, and it lasts its LENGTH whatever the tempo (a faster tempo plays more bars).
@@ -953,7 +1009,7 @@ lands on a downbeat, whatever each track's DIV.
 | 2 | **PHRASE** | 4, 8 or 16 bars a phrase. |
 | 3 | **WANDER** (0–100 %) | 0 plays the FORM as written, round and round. Up, the next letter is more often chosen than read. |
 
-Hold **OCT+** for each place's **REPEAT** (KNOB 1 to 4, 1 to 8 phrases): ABAC with A at 2 and C at 3 plays
+Hold **OCT-** for each place's **REPEAT** (KNOB 1 to 4, 1 to 8 phrases): ABAC with A at 2 and C at 3 plays
 A A B A C C C, then again. The picture shows the places as blocks as long as their repeats, the one playing filled with
 its phrases along the foot, and the tracks that follow.
 
@@ -986,12 +1042,12 @@ section every 4 phrases), and on every track, STEP tracks too.
 | 3 | **STYLE** | CUT: in or out at once on the line. FADE (the default): its level fades over FADE bars from the line. |
 | 4 | **FADE** (1–4 bars) | How long a FADE takes. |
 
-Hold **OCT+** for each track's **ROLE** (KNOB 1 to 4; also OCT+ held on FORM, KNOB 4): **BASS**, **RHYTHM**,
+Hold **OCT-** for each track's **ROLE** (KNOB 1 to 4; also OCT- held on FORM, KNOB 4): **BASS**, **RHYTHM**,
 **HARMONY**, **MELODY** or **ANCHOR**. AUTO (the default) guesses: CHORD is harmony, ATLAS or a drum sound rhythm, a
 track whose notes sit mostly below C3 bass, anything else melody. The picture shows each track's role (AUTO's guess
 marked), whether it is IN, OUT or muted by hand, and its level.
 
-Hold **OCT-** for each track's **ORDER** (KNOB 1 to 4): **AUTO** (the default) or **1ST**, **2ND**, **3RD**, **4TH**,
+The ENTRIES sheet (hold **OCT+**) has each track's **ORDER** (Order T1 to T4, KNOB 2): **AUTO** (the default) or **1ST**, **2ND**, **3RD**, **4TH**,
 to choose the order tracks come in, for example the bass third instead of first. Numbered tracks come in first, one a
 phrase, lowest number first; the AUTO tracks follow by ROLE as below. They leave the other way round: last in, first
 out, so the AUTO tracks leave before the numbered ones and 1ST leaves last. Two tracks on one number take turns. An
@@ -1048,6 +1104,18 @@ reverb and push the tempo together.
 The page shows each macro as a bar and how many mods it drives. The macros are saved with the project. A project
 with a mod from a macro loses that mod on older firmware.
 
+**MOD DEPTH** (hold **OCT+** on PERF for its sheet) is one control for how much of the whole patch plays, 0 to
+100 % (100, the default, plays every mod as set). It scales the moving part of every mod with a source (AMOUNT times
+the source), onto any destination, FILL, TEMPO and CC included; it never scales an OFFSET, so fixed mods, a CC's base
+value and a GATE's threshold stay where they are. At 0 the patch is dry: FILL is no longer held by mods, TEMPO is
+back at BPM, CCs sit at their offsets. It is the brake for a feedback patch and a dry / patched control for playing.
+A mod of mods and a mod into a MIX bus are scaled once, where what they move lands, so a chain is not scaled twice.
+A CLOCK mod is left as it is (its AMOUNT is a division, not a move).
+It is also a destination, **MOD DEP** at the end of KNOB 3's list on MODS: a MACRO onto it at -100 % turns the patch
+dry as the knob goes up. Mods onto MOD DEP are not scaled by it. Note: a GATE mod onto FILL at AMOUNT 100 stops holding
+FILL once MOD DEPTH is under 50 %. Saved with the project; older firmware plays it at 100 % and does not load a
+project with a mod onto MOD DEP.
+
 ---
 
 ## TWEAK
@@ -1060,18 +1128,18 @@ with a mod from a macro loses that mod on older firmware.
 | 1 | **SHIFT** (±24) | Transposes by semitones; while following, by scale steps from the followed note. |
 | 2 | **DROP** (0–100 %) | The chance a hit is left out, whatever the generator. |
 | 3 | **HUMAN** (0–100 %) | Varies each note's velocity and length a little, as a player would: at 100 up to 20 softer or louder and up to half as long, the same each time the piece plays. The timing is TIMING's **HUMAN**. |
-| 4 | **FOLLOW** | OFF, or T1 to T4: plays that track's pitch, SHIFT away, in this track's scale. STEP tracks can be followed too. |
+| 4 | **FOLLOW** | OFF, or T1 to T4: plays that track's pitch, SHIFT away, in this track's scale. STEP tracks can be followed too. A muted track still leads the tracks that follow it. |
 
 Hold **OCT-** and turn **KNOB 1** right for random SHIFT, DROP and HUMAN; turn it left to put them back (as on GEN).
 
-**HOLD** (OCT+ held, KNOB 4: OFF, or T1 to T4): a sample and hold for FOLLOW. The followed note is taken only when
+**HOLD** (OCT- held, KNOB 4: OFF, or T1 to T4): a sample and hold for FOLLOW. The followed note is taken only when
 the HOLD track plays a note, and this track keeps playing that note, in its own rhythm, until the HOLD track plays
 again. So a bass can take a TURING line's note once a bar: FOLLOW the TURING track, and HOLD on a track that plays once
 a bar (a STEP track, or a EUCLID with one pulse; set it to SOUND OFF with its channel OFF to keep it silent). HOLD on a
 track with random hits (DROP, BRANCH) samples at random moments. OFF: a new note on each of this track's own hits, as
 before. HOLD is saved with the project; older firmware loads the project without it.
 
-**HOW** (OCT+ held, KNOB 2) says what FOLLOW does with the other track's note. SHIFT still moves the result by scale
+**HOW** (OCT- held, KNOB 2) says what FOLLOW does with the other track's note. SHIFT still moves the result by scale
 steps.
 
 | HOW | What the following track plays |
@@ -1082,7 +1150,7 @@ steps.
 | **BASS** | The note one octave down (two from middle C up), on beats 1 and 3 of the bar only. |
 | **CANON1** to **CANON8** | The other track's note from that many notes ago: a round. It stays silent until the other track has played that many. HOLD does nothing here. |
 
-**RHYTHM** (OCT+ held, KNOB 3) says when it plays. **OWN**: on this track's own hits (as before). **SOURCE**: only
+**RHYTHM** (OCT- held, KNOB 3) says when it plays. **OWN**: on this track's own hits (as before). **SOURCE**: only
 when the followed track has played a note, so the two move together; this track's own rhythm is left out. **BOTH**:
 its own hits and the other track's. Follow a track with a lower number for the tightest timing: a lower track's note
 is that step's, a higher one's lands a step later. With BASS, the beats 1 and 3 still decide.
@@ -1135,7 +1203,7 @@ How long a generator holds its notes.
 ## TIMING
 
 > **In short:** rolls and feel. Ratchets repeat a step quickly (a drum roll, a stutter); HUMAN plays steps a touch
-> late, like a player sitting behind the beat; SPLIT (OCT+ held) breaks some steps into the next finer division.
+> late, like a player sitting behind the beat; SPLIT (OCT- held) breaks some steps into the next finer division.
 
 Ratchets: a step's notes played again within the step. And HUMAN: each step a little late.
 
@@ -1154,10 +1222,10 @@ fifth of it (TWEAK 100: 20 ms).
 
 <p align="center"><img src="assets/gallery/gen_timing.png" alt="TIMING, x4 ACCEL" width="240"></p>
 
-**SPLIT.** Hold **OCT+** on TIMING, on a generator or a STEP track, and the knobs set how often a step breaks out of the
+**SPLIT.** Hold **OCT-** on TIMING, on a generator or a STEP track, and the knobs set how often a step breaks out of the
 grid: a 1/8 track now and then plays a pair of 1/16s, or a note pushed onto the off-1/16, as a player does.
 
-| Knob (OCT+ held) | Setting | What it does |
+| Knob (OCT- held) | Setting | What it does |
 |---|---|---|
 | 1 | **SPLIT** (0–100 %) | The chance a step plays at half its division: 1/4 to 1/8, 1/8 to 1/16, a triplet to its half. 0 is off, and the track plays exactly as without it. Also a cord destination (SPLIT), so an LFO, TIDE or ENERGY can bring it in and out. |
 | 2 | **HOW** | **DOUBLE**: the note, then a second note halfway through the step. **PUSH**: the note plays halfway through the step instead of on its line; late only. **MIX**: each split tosses again for one or the other. |
@@ -1187,7 +1255,7 @@ firmware at all, as with every new cord destination.
 | **RATCH**, CHANCE, SHAPE | TIMING, KNOB 1 to 3 | Generators | A step plays 2 to 8 times within itself, the same note; SHAPE spaces the hits evenly, faster or slower | CHANCE picks which steps (replays from PLAY) | Rolls, stutters, drum fills |
 | A step's **Ratchet** | NOTES, the note's sheet | STEP | The same for one written step; TIMING's SHAPE places the hits | No, it is written | A roll on the step you choose |
 | **ADORN** | EVOLVE on a STEP track | STEP | Each round adds a little: an extra hit, an octave jump, a neighbour note, a passing note in a rest | Yes, while EVOLVE runs | A written line that decorates itself |
-| **SPLIT**, HOW | TIMING, OCT+ held | Both | Some steps play at half their division: two notes (DOUBLE) or one note late (PUSH) | Yes (replays from PLAY) | Now and then breaking out of the grid |
+| **SPLIT**, HOW | TIMING, OCT- held | Both | Some steps play at half their division: two notes (DOUBLE) or one note late (PUSH) | Yes (replays from PLAY) | Now and then breaking out of the grid |
 | **HUMAN** (timing) | TIMING | Both | Each step up to 60 ms late, never more than a quarter of a step | Yes (replays from PLAY) | A relaxed, behind-the-beat feel |
 | **HUMAN** (velocity) | TWEAK | Both | Each note a little softer or louder, and shorter | Yes (replays from PLAY) | Dynamics that sound played |
 | A step's **Nudge** | NOTES, the note's sheet | STEP | One step early or late, in sixteenths of a step | No, it is written | A push or a lay-back on one note |
@@ -1206,7 +1274,10 @@ How they combine:
 > **In short:** per-step details for written patterns: a roll on one step (Ratchet), a step pushed slightly early or
 > late (Nudge), and a note that climbs a little higher each time round (Accumulate).
 
-On a STEP track's NOTES page, **OCT+** on a note opens its sheet (on the drum grid, OCT+ on a hit). Besides Length,
+On a STEP track's NOTES page, **OCT+** on a note opens its sheet (on the drum grid, OCT+ on a hit). On an empty
+step it opens nothing and the screen says **NOTHING THERE**: KNOB 2 or a key places a note (on the grid, KNOB 3 or a
+white key sets a hit). Held, OCT+ opens the pattern's sheet instead; once the hold is long enough the screen says
+**PATTERN SHEET**, so you know which one you get when you let go. Besides Length,
 Velocity and Chance it holds:
 
 - **Ratchet** (x1–x8): the step plays that many times in its own step, placed by TIMING's SHAPE.
@@ -1270,7 +1341,7 @@ off at 0.
 
 Energy also sets how much EVOLVE changes: half its AMOUNT at the sparse end, half as much again at the full end.
 
-Hold **OCT+** for **DEPTH** (KNOB 1, 0–100 %): how much energy moves the selected track. 100 is all of it. 0 makes
+Hold **OCT-** for **DEPTH** (KNOB 1, 0–100 %): how much energy moves the selected track. 100 is all of it. 0 makes
 the track an anchor, a drone or a bass that plays as set through the tide, LEVEL and the rests.
 
 The picture shows a turn of the tide round LEVEL and, while playing, where it is now.
@@ -1316,11 +1387,15 @@ link is saved with the project (a project saved before it loads as OWN). TRN sti
 A **CHORD** track plays a progression; with **QNT CHRD** the other tracks follow it.
 
 - On the CHORD track: GEN, MODE **CHORD**, then **PROG**, **BARS** and **HIT**. The chord's kind and voicing come
-  from **SCL > CHORD** (CHRD, VOIC), or the OCT+ layer. CHRD OFF plays triads.
+  from **SCL > CHORD** (CHRD, VOIC), or the GEN sheet. CHRD OFF plays triads; DIA3 and DIA7
+  stay in the scale, the fixed kinds (MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9, MAJ6) lay the same shape
+  on every chord of the progression, so some may leave the key.
 - On any other track: **SCL**, **QNT** to **CHRD**. Its keys, its MIDI input and its generator snap to the nearest
   note of the chord playing now, and KNOB 2 on NOTES steps through its notes. With no CHORD track, CHRD acts as
   SNAP.
 - **CH PROG** is a mod destination, so a slow source can change progressions.
+- **STRUM** (hold **OCT-** on GEN, KNOB 2 and 3): the chord's notes start a few ms apart instead of together, as a
+  played guitar or keyboard chord. See [CHORD: STRUM, DIR, OCT](#chord-strum-dir-oct-chrd-voic-breath-or-len).
 
 ### Your own scales (USER1 to USER4)
 
@@ -1381,31 +1456,80 @@ at a time, each with an activity light and a moving mark.
 
 | Knob | What it sets |
 |---|---|
-| 1 | **Source**: `--`, then per track (T1 to T4) LFO, ENV, VEL, KEY, RAND, MODW, AT, EXPR, S&H, SLEW, the generator's GATE, NOTE and CV, DRIFT, TIDE 1 to 3, and SWARM 1 to 8; and the project's ENERGY and [PERF](#perf-four-macros)'s MACRO 1 to 4. |
+| 1 | **Source**: `--`, then per track (T1 to T4) LFO, ENV, VEL, KEY, RAND, MODW, AT, EXPR, S&H, SLEW, the generator's GATE, NOTE and CV, DRIFT, TIDE 1 to 3, SWARM 1 to 8 and EOC (the track's LFO cycle start: high from each wrap of the LFO until an eighth of the cycle has passed, a gate for GATE mods, FILL and the buses; setting its phase with TRIG or PLAY is not a wrap; the last of a track's sources in KNOB 1's list); and the project's ENERGY, [PERF](#perf-four-macros)'s MACRO 1 to 4 and the MIX buses BUS A and BUS B (see *MIX buses*). |
 | 2 | **Mod**: which of the 16 the other knobs edit. |
-| 3 | **Destination**, on a track: the voice (PITCH, CUTOFF, SHAPE, GAIN), the mix (LEVEL, PAN, SPREAD, FX SEND, SEND 2, SEND 3), the track's effects (FX1 MIX, FX1 RTE, FX1 CHR, the same for FX2 and FX3), the envelope and LFO settings, the engine's E1 to E8, and the generators' settings (T PROB, T LEN, E PULSE, E ROT, M LEAP, M DENS, MP POS, SHIFT, DROP, HUMAN, BRANCH, EV AMT, CONTR, AT X, AT Y, AT DENS, AT KICK, AT SNR, AT HAT, AT TOMS, B SPEED, B ANGLE, A PROB, Q PROB, C Y, C SIZE, C DENS, C AUTO, S START, CH PROG, AN VARY, H TIME, SPLIT) and **CC** (a MIDI CC out, see *CC out*). After the tracks' come the send effects', once, for every track: SF1 MIX, SF1 RTE, SF1 CHR (the same for SF2 and SF3) and RETURN; then the mods' own moves, **M1 AMT** to **M16 AMT** (see *Mods of mods* below), **FILL** (see *FILL*) and **TEMPO** (see *TEMPO*). |
+| 3 | **Destination**, on a track: the voice (PITCH, CUTOFF, SHAPE, GAIN), the mix (LEVEL, PAN, SPREAD, FX SEND, SEND 2, SEND 3), the track's effects (FX1 MIX, FX1 RTE, FX1 CHR, the same for FX2 and FX3), the envelope and LFO settings, the engine's E1 to E8, and the generators' settings (T PROB, T LEN, E PULSE, E ROT, M LEAP, M DENS, MP POS, SHIFT, DROP, HUMAN, BRANCH, EV AMT, CONTR, AT X, AT Y, AT DENS, AT KICK, AT SNR, AT HAT, AT TOMS, B SPEED, B ANGLE, A PROB, Q PROB, C Y, C SIZE, C DENS, C AUTO, S START, CH PROG, AN VARY, H TIME, SPLIT), **CLOCK** (see *CLOCK* below), the STEP pattern's **DIR** (see *DIR* below), **CC** (a MIDI CC out, see *CC out*), **PLAY** (see *PLAY* below) and **CLOCK** (see *CLOCK* below). After the tracks' come the send effects', once, for every track: SF1 MIX, SF1 RTE, SF1 CHR (the same for SF2 and SF3) and RETURN; then the mods' own moves, **M1 AMT** to **M16 AMT** (see *Mods of mods* below), **FILL** (see *FILL*), **TEMPO** (see *TEMPO*) the MIX buses **BUS A** and **BUS B** (see *MIX buses*) and **MOD DEP** (see [PERF](#perf-four-macros)'s MOD DEPTH). |
 | 4 | **Amount**, −100 to +100 %. With no source (`--`) the cord is a fixed move and KNOB 4 sets its offset. |
 
 - **+- and +: the mod's direction.** Under KNOB 1 a mod shows **+-** (it moves both ways from the knob) or **+** (one
   way only), and its bar says the same: a +- mod's bar reaches as far below the middle as above it. A bipolar source
   (LFO, KEY, RAND, S&H, SLEW, NOTE, DRIFT, TIDE, SWARM, ENERGY) is +-. Press **OCT+** on MODS to make the picked mod
   **+**: the source folded to 0 to 1, so it moves one way only, as ENV does ("+" after the source's name). OCT+ again
-  makes it a GATE, and once more +- again (a 0 to 1 source goes between + and GATE).
+  makes it a GATE, then HOLD, and once more +- again (a 0 to 1 source goes +, GATE, HOLD).
 - **GATE: all or nothing.** A GATE mod ("^" after the source's name) moves its destination by its whole amount while
-  the source is over a threshold, and not at all under it, like a comparator on a modular. Hold **OCT+** and turn
+  the source is over a threshold, and not at all under it, like a comparator on a modular. Hold **OCT-** and turn
   **KNOB 4** to set the threshold (it starts at the middle of a +- source, at 50 % of a 0 to 1 one). Two GATE mods from
   one source, one at -20 % with +50 and one at +20 % with -50, open a window: the destination moves only while the
   source is between them. A little hysteresis keeps a slow source near the threshold from chattering.
+- **HOLD: once a bar.** A HOLD mod ("=" after the source's name) takes its source on the first step of each bar of
+  its destination's track and holds it until the next bar, like a sample and hold clocked by the bar. So TIDE, ENERGY,
+  a generator's CV or an LFO moves a setting in steps, a bar at a time, instead of sweeping it; onto DIR or a
+  generator's setting it changes the line on the bar line. It reads the source as +- does (a 0 to 1 source one way);
+  AMOUNT and OFFSET work as for +-. A destination of the project's (FILL, TEMPO, the send effects, M AMT) takes track
+  1's bar. Set while stopped, it takes the source at once; PLAY takes it again on the first step. (S&H, a source, holds
+  random values for an LFO cycle; FOLLOW HOLD takes another track's pitch on its notes.) Saved with the project;
+  firmware before it plays a HOLD mod as +-.
+  **On a track's notes.** Hold **OCT-** on a HOLD mod and turn **KNOB 1**: **HOLD ON T1 NOTES** to **T4**, and it
+  takes its source on each note that track plays instead of on the bar (left back to **HOLD A BAR**). So a random or
+  slow source steps with another voice's rhythm: `T1 RAND= -> T3 CUTOFF`, clocked by T2's notes, gives each of T2's
+  notes a new filter for track 3, as a sample and hold fed a gate. A note of the clock track a mod onto PLAY shuts
+  still counts. Firmware before it holds by the bar.
+- **DIR.** A mod onto a track's **DIR** picks the direction its STEP pattern plays in (see *Direction* on the
+  pattern's sheet), in whole steps from the pattern's own along FWD, BACK, PEND, PONG, RAND, DRUNK: each 20 % of move
+  is one more, and it stops at the ends. So the amount and the offset say which directions it can reach: from FWD, a +
+  mod at 40 % goes FWD, BACK, PEND as its source rises. A GATE mod at 20 % plays BACK while its source is over the
+  threshold and FWD under it; S&H from the track's LFO synced to a bar or two picks a new direction at random. It is
+  read at each step and never moves the playhead: the next step comes from the one playing. With no mod, the
+  pattern's own. A generator track does not use it.
 - **FILL.** Near the end of KNOB 3's list is the project's **FILL**: held while the mod's move is past half, as if
   you held FILL on the GLO layer (steps set to FILL play, NOT FILL steps rest). A GATE mod onto FILL turns an LFO,
   TIDE or ENERGY into fills that come and go; the GLO layer's FILL lights while a mod holds it.
-- **TEMPO.** The last entry moves the project's tempo on CLK INT: a full move up doubles it, a full move down halves
+- **TEMPO.** After FILL, **TEMPO** moves the project's tempo on CLK INT: a full move up doubles it, a full move down halves
   it, half a move is half an octave (120 BPM: 170 or 85). BPM stays as you set it. The steps, ARP, synced LFOs and
   CLOCK OUT all follow, with no step skipped or repeated. A planned piece (PIECE's LENGTH) is read in beats at BPM,
   so a TEMPO mod plays it faster or slower and it lasts shorter or longer; it never jumps through the shape. With CLK
   on USB or TRS the external clock sets the tempo and TEMPO does nothing.
+- **MIX buses.** **BUS A** and **BUS B**, at the end of KNOB 3's list, are two mixers of the project's. Every mod
+  into a bus is combined there, and the bus is then a source of its own (BUS A, BUS B at the end of KNOB 1's list) for
+  as many mods as you like. So a sum of two LFOs can drive a GATE, or one envelope can move four destinations without
+  setting four amounts that must match. Hold **OCT+** on MODS for MODS' sheet, where each bus
+  has two settings (KNOB 1 the row, KNOB 2 its value, OCT- closes):
+  - **Mode**, how its mods combine: **SUM** adds them (clamped to -100 .. 100 %, the default), **MAX** takes the
+    highest, **MIN** the lowest, **DIFF** how far apart the first two are. With GATE mods at +100 into a bus, MAX is
+    OR (either open), MIN is AND (both), DIFF is XOR (one or the other, not both): logic with no exact amounts to
+    remember. Read the bus as a GATE mod (threshold 50 %) to use the result as a gate.
+  - **Lag**, a slew on the result: OFF, or the time a whole move from 0 to 100 % takes, up and down (10 ms to 20 s). A
+    track's GATE into a lagged bus rises and falls as an envelope (Maths' slew), and a stepped source (S&H, a HOLD mod)
+    glides.
+
+  A bus is read one block (0.7 ms) after its mods, so it can feed itself or the other bus: BUS A into BUS A at +100 %
+  with a small fixed mod adds up (an integrator, stopping at 100 %); at a negative amount it settles or swings,
+  always within the clamp. With no mod into a bus it stays at 0 and nothing changes. Buses come from no track, so
+  MATRIX leaves their mods out. The settings are saved with the project. Firmware before the buses does not load a
+  project with a mod to or from a bus (it ignores the bus settings alone).
+- **CLOCK.** A generator track with a mod onto **CLOCK** is stepped by the mod's edges and no longer by its DIV: a
+  note, a step of its pattern or sequence, each time the source's gate opens. The mod is always a GATE mod (OCT- held,
+  KNOB 4: the threshold; a GATE source, the generator's GATE, counts its hits instead, so notes that run into each
+  other still count). **AMOUNT is the division**: 100 % every edge, 50 % every second, 33 % every third, down to
+  every sixteenth; a negative AMOUNT steps when the gate closes. The track plays its first step at PLAY. DIV stays the
+  step's length (GATE, RATCH, HUMAN) and is also the fastest it steps: an edge sooner than a DIV after the last step
+  waits for it. SWING does nothing on it; a bar of its own (EVERY, COND) is the number of steps a bar of its DIV
+  holds. Print flattens it onto the grid, one step each. A STEP or ARP track ignores the mod. No mod, or AMOUNT 0:
+  the track plays as before. **EOC** as the source (a track's last): a note at the top of every cycle of an LFO; with
+  `T1 S&H` onto `T1 LFO RTE` each cycle has its own length (a Krell: a note each swell). Firmware before CLOCK does
+  not load a project with the mod.
 - **CC out.** A mod onto a track's **CC** sends its move over USB MIDI as a control change on that track's MIDI OUT
-  channel, so an LFO, TIDE, SWARM or a generator's CV can play an outside synth's filter or any other CC. Hold **OCT+**
+  channel, so an LFO, TIDE, SWARM or a generator's CV can play an outside synth's filter or any other CC. Hold **OCT-**
   and turn **KNOB 3** to pick the CC number (0 to 119; a new one starts on 1, the mod wheel); the destination shows it
   (**T2 CC 74**). A +- source sends 0 to 127 around 64 (its whole range at 100 %), a + source and a fixed mod (no
   source) from 0 up. A value goes out only when it changes, and at most about every 9 ms. Nothing is sent with
@@ -1419,6 +1543,17 @@ at a time, each with an activity light and a moving mark.
   ENERGY and the send effects' have none. On the MOSAIC colours an entry is in its track's colour.
 - Choosing a destination on a new cord sets the amount to 50 % (or a fixed move of 25 % with no source), so you hear
   it at once.
+- **The scope.** Hold **OCT-** on MODS to see how the picked mod moves: its row stays at the top and, in the other
+  rows' place, its move over time (the solid line) over its source (the dashed one), the dotted middle line 0, the top
+  +100 % of the destination's range. With AMOUNT under 100 % the gap between the two lines is the amount; a mod of
+  mods swells and shrinks inside its source. A GATE mod draws its threshold as a dashed line across the source, so you
+  see where it opens; a HOLD mod steps once a bar. It sweeps left to right (a gap marks now) over a window that suits
+  the source, with ticks at the bars: a bar for the notes' own (ENV, VEL, GATE, NOTE, CV, S&H ...), 2 to 16 bars for
+  an LFO (it keeps 2 to 6 cycles in view), 4 for a MACRO, 16 for DRIFT and SWARM, 64 for TIDE and ENERGY. Let go and
+  the four rows come back. With the screen reader, holding OCT- says it once: the window, the shape and the lowest and
+  highest move ("SCOPE 2 BARS, CYCLING 2 A BAR, LOW -60 HIGH 60 %"; a GATE: how often it opens and whether it is open
+  now). The same hold turns a GATE's threshold (KNOB 4), so you watch the line move against the source. A cord
+  from BUS A or BUS B draws the bus as its source. Nothing is saved; nothing changes until you hold it.
 - **Live marks**: a knob a cord reaches shows a mark where the cords move it now.
 - **DRIFT** is each track's slow wander, a new point about every 12 seconds, eased between.
 - **Effects.** RTE is the effect's third knob (RATE; ECHO's TIME, ROOM's and REVERB's SIZE, FILTER's CUT), CHR its
@@ -1433,10 +1568,24 @@ at a time, each with an activity light and a moving mark.
   its amount as it is now. One level only: a mod that moves an M AMT mod, or itself, does nothing. They are the
   project's (no track) and MATRIX leaves them out. **FX held** + **KNOB 4** on MODS makes one for the picked mod, from
   the track's shortcut source. A project with them does not load in firmware before them.
+  **Scale (a VCA on a mod).** Hold **OCT-** on a mod of mods and turn **KNOB 3** right: it no longer adds, it
+  **scales** the other mod's move from 0 to 1 (**M3*** on the row; left adds again). Mod 3 keeps
+  the amount you set and the scaler opens and closes it: T2 GATE at +100 lets mod 3 through only while track 2
+  plays, T4 ENV at +100 shapes it with each note, +50 lets half through. At a negative amount the source closes it
+  instead (a duck: T1 GATE at -100 silences mod 3 while track 1 plays). Mods that add come first, then the scalers
+  multiply. A scaler at 0 does nothing. A project with one plays it as adding on older firmware.
+- **PLAY.** **PLAY**, near the end of a track's destinations, decides whether the track is heard: while its mods together
+  are at half or more its notes sound, under half they don't (new notes only: a note already sounding ends as it
+  would). No mod onto PLAY: the track plays as always. One GATE mod makes a gated voice: `T1 TIDE 2^ -> T2 PLAY +100`
+  plays track 2 only while TIDE 2 is high, with no base DROP and no cord to cancel it. A shut track plays on unheard,
+  as with MUTE: FOLLOW, an ANSWER's SOURCE and the GATE / NOTE mods still hear its notes, and it comes back in time.
+  It shuts MIDI OUT's notes too. At MOD DEPTH 0 every track plays. A project with a PLAY mod does not load on older
+  firmware.
 - Melodee's MOD routes, in old projects and sounds, become cords when they load. If all 16 are in use the screen
   says **MODS FULL**.
 
 <p align="center"><img src="assets/gallery/cords.png" alt="MODS" width="240"> <img src="assets/gallery/mods_live.png" alt="A live mod mark on BRANCH" width="240"></p>
+<p align="center"><img src="assets/gallery/mods_scope.png" alt="MODS with OCT- held: the scope of a mod whose amount another mod turns" width="240"> <img src="assets/gallery/mods_scope_gate.png" alt="The scope of a GATE mod: its threshold across the source" width="240"></p>
 
 ---
 
@@ -1445,7 +1594,8 @@ at a time, each with an activity light and a moving mark.
 > **In short:** an overview of the patch: which track moves which. Use it to find and open a cord once there are many.
 
 MATRIX, after MODS, shows the cords as a 4 x 4 grid: source track down the left (FROM), destination track along the
-top (TO). A cell is lit when a cord goes that way, brighter the more the cords move it now.
+top (TO). A cell is lit when a cord goes that way, brighter the more the cords move it now. Mods of the project's
+(the send effects', M AMT, FILL, TEMPO) and those to or from a MIX bus belong to no track: they are on MODS only.
 
 | Knob | What it does |
 |---|---|
@@ -1527,18 +1677,19 @@ Hold **HOME** for the menu. Its rows come in groups: the screen, the knobs and b
 | Item | What it does |
 |---|---|
 | **COLOR** | The screen's ink, on black: YELLOW (the default), WHITE, GREEN, BLUE, RED, ORANGE, PINK, HOT PINK or LILAC; or MOSAIC, SUNSET, OCEAN or NEON, a colour per track with the selection in white. Holding HOME opens the list; turn KNOB 2 on COLOR (or press OCT+) and it shows them all below it: ONE INK, then MOSAIC (the four-colour sets), the one chosen framed. KNOB 1 to another row or OCT- folds them away. |
+| **GROUND** | What the ink is drawn on: **DARK** (the default), black, or **LIGHT**, warm paper with each ink's darker light version (see *The look*). KNOB 2 right LIGHT, left DARK; OCT+ switches. Saved. |
 | **KNOBS** | How the four knobs' values are drawn on every page: **DIAL** (the default) or **BAR**, an upright bar that fills from the bottom. MIXER and the home page keep their dials. Saved. |
 | **LARGE VALUE** | The knob you turn, its name and value large across the foot of the screen. **AUTO** (the default): on the home page and pages without a picture of their own, so a picture (a generator's sky, an envelope, the LFO) stays in view while you turn; **ON**: on every page; **OFF**: never. The value always shows, inverted, in the knob's column. Saved. |
 | **BATTERY** | **ON** (the default): every page's header shows the battery, its bars (none to three) on the battery, solid with a bolt in it on external power (a computer, a hub or a charger). A long message takes its place for as long as it shows. **WHEN LOW**: only when it is down to a bar or none, on the battery. Saved. Either way, when the last bar goes the screen says **BATTERY LOW** once; with autosave on, the project is then saved as soon as you press STOP (no five seconds' wait), so a long piece is not lost to a flat battery. It never saves while playing. |
 | **PANEL GAMMA** | The screen's contrast curve: the panel chip's own **G2.2** (the default), G1.8, G2.5 and G1.0, or TUNED and TUNED+VCOM. The screen goes black for a moment and redraws. Saved. |
 | **TRACK KNOB** | RIGHT: the ALGORITHM knob picks the track and PRESETS browses sounds, as printed. LEFT: the two swap. |
-| **MUTES** | When GLO's mute keys (and C4's UNMUTE ALL) take effect while playing. **NOW** (the default): at once. **BAR**: on the next bar line. **PHRASE**: on the next phrase line (the CHAIN's PHRASE, counted from PLAY). A key waiting blinks quickly; press it again before the line to call it off. Stopped, a press is at once. Saved. |
+| **MUTES** | When GLO's mute keys (and C4's UNMUTE ALL) take effect while playing. **NOW** (the default): at once. **BAR**: on the next bar line. **PHRASE**: on the next phrase line (the CHAIN's PHRASE, counted from PLAY). A key waiting blinks quickly; press it again before the line to call it off. Stopped, a press is at once. Saved. Also on MIXER's sheet (OCT+ held). |
 | **NOTES OUT** | What goes out over USB MIDI: **KEYS** (only the notes you play on the keys), **ALL** (also the steps, the ARP, recordings and every generator) or **OFF**. Each track on its own channel: see [MIDI OUT channels](#midi-out-channels). |
 | **CLOCK OUT** | 24 pulses a beat with START and STOP over USB, while the clock is INT. |
 | **MIDI CC IN** | **ON** (the default): CCs and NRPNs set the tracks' parameters (see [MIDI CC control](#midi-cc-control)). **OFF**: they move nothing, for a sequencer that sends CCs to other gear on the same channels. Bend, mod wheel, expression, sustain and aftertouch always play. Saved. |
 | **MIDI LEARN** | Puts any knob on a CC of your controller. Turn KNOB 2 right (or press OCT+): the menu closes and the screen says **LEARN: A KNOB**. Turn a knob on any page (it still edits; the screen names it and asks **SEND A CC**), then move the controller's knob: **CC 21 =** then **T1 CUTOFF**. Repeat for as many as 16 knobs. While learning, the header says **MIDI LEARN ON**; OCT- ends it, as does holding HOME for the menu. A learned CC works from any channel, on whatever page is shown, and takes over what the [fixed CC map](#midi-cc-control) gave it, even with MIDI CC IN OFF. The row shows how many are learned; KNOB 2 left asks **FORGET? OCT+**: OCT+ forgets them all, OCT- keeps them. They are the device's, not a project's: kept through power-off and project loads (saved once the music stops). |
 | **USB AUDIO** | Which USB audio devices the computer sees, named from the FM-1's side: **IN + OUT** (the default), **IN** (the computer plays into the FM-1, through device **Tessera In**), **OUT** (the computer records the FM-1 from device **Tessera Out**) or **OFF**. The computer gets the change once the knob rests for a moment (the FM-1 reconnects). Saved. |
-| **USB OUTPUT** | What the FM-1 sends to the computer on **Tessera Out**: **STEREO** (the default: the mix, two channels) or **4 TRACKS** (each track on its own channel). Both are taken before MASTER. Saved. |
+| **USB OUTPUT** | What the FM-1 sends to the computer on **Tessera Out**: **STEREO** (the default: the mix, two channels) or **4 TRACKS** (each track on its own channel). Both are taken before MASTER. For stems in a DAW see [Recording the four tracks as separate stems](#recording-the-four-tracks-as-separate-stems). Saved. |
 | **USB VOLUME** | The level of the computer's audio played through the FM-1, **0 to 100 %** in 5 % steps, apart from MASTER: the volume pot sets the FM-1's own sound, this the computer's. 50 % (the default) is the old level at MASTER's default. What the FM-1 records over USB (USB OUTPUT: stereo or four tracks) is taken before MASTER too, so the pot never changes a recording's level. Saved. |
 | **USB HOST** | **ON**: the USB-C port hosts a USB-MIDI keyboard, controller, synth or MIDI-to-CV module, with no computer in between (see [USB host](#usb-host)). **OFF** (the default): the port talks to a computer. Not saved: every start is OFF. |
 | **ABOUT** | Version, credits, **POWER** (the battery's reading and bars, whether 5 V comes in), and, after a crash, LAST CRASH (until power-off). |
@@ -1557,7 +1708,7 @@ Hold **HOME** for the menu. Its rows come in groups: the screen, the knobs and b
 - **1** to **16**: that channel, whatever ROUT and DRUM say.
 - **OFF**: none of the track's notes go out.
 
-Hold **OCT+** and **OCT-** together for each track's **DRUM MAP** (KNOB 1 to 4), the notes a drum track or ATLAS
+The MIDI OUT sheet (hold **OCT+**) sets each track's **DRUM MAP** (Drum map T1 to T4), the notes a drum track or ATLAS
 sends: **GM** (the default) General MIDI's drum notes, kick 36, snare 38, closed hat 42; **ROW** one note a drum in a
 row from 36, in the order of a drum machine's tracks such as the Analog Rytm's (kick, snare, rim, clap, -, low tom,
 -, -, closed hat, open hat, -, bell). Then move the row onto the machine's first note with **TRANSPOSE**.
@@ -1566,13 +1717,13 @@ The page lists each track's channel as it is now, AUTO's included. The channels 
 notes go out at all is still the menu's **NOTES OUT** (KEYS, ALL or OFF): for the steps and the generators, set it to
 **ALL**.
 
-**TRANSPOSE**: hold **OCT+** on **GLO > MIDI OUT** and turn **KNOB 1** to **4** to move a track's notes up or down
+**TRANSPOSE**: hold **OCT-** on **GLO > MIDI OUT** and turn **KNOB 1** to **4** to move a track's notes up or down
 on their way out, a semitone a detent (12 an octave), up to four octaves either way. For a synth or a MIDI-to-CV
 module that plays them too high or too low: **-12** an octave down, **-24** two. Only what goes out over MIDI moves;
 the track's own sound stays where it is. A note moved past MIDI's range (0 to 127) is not sent. The page shows a
 track's TRANSPOSE after its channel when it is not 0 (**CH 1 ROUT -24**); it is saved with the project.
 
-**SOUND**: hold **OCT-** on **GLO > MIDI OUT** and turn **KNOB 1** to **4** (right OFF, left ON). A track at SOUND
+**SOUND**: on the MIDI OUT sheet (hold **OCT+** on **GLO > MIDI OUT**), Sound T1 to T4 (KNOB 2 right OFF, left ON). A track at SOUND
 OFF plays nothing on the FM-1 and takes none of its voices, but its notes still go out over MIDI on its channel, and
 its GATE, NOTE and CV still move the mods. So a track can play an outside synth alone, or, with its channel OFF too,
 be a lane that only modulates the other tracks (a generator driving their filters, say, through MODS). The keys
@@ -1651,6 +1802,24 @@ directly or through a USB hub, and after a moment the screen says **USB MIDI REA
 - Unplugging shows **DEVICE LOST** and ends every note held from MIDI; plug it in again and it is found again.
 - While USB HOST is ON there is no computer link: no USB audio, no web editor, no updates. Turn it OFF, or restart the
   FM-1 (it always starts OFF), to get them back.
+
+### Recording the four tracks as separate stems
+
+> **In short:** set USB OUTPUT to 4 TRACKS and the computer sees **Tessera Out** as a four-channel input, one mono channel per track, so each track records on its own DAW track.
+
+1. Hold **HOME** for the menu and set **USB OUTPUT** to **4 TRACKS**. The FM-1 reconnects to the computer. (It is saved; **STEREO** takes you back to the mix.)
+2. In your DAW choose **Tessera Out** as the audio input device and enable its inputs 1 to 4. Inputs 1 to 4 are tracks 1 to 4.
+3. Make four audio tracks, each set to one input, and arm and record. Recording works while the FM-1 plays.
+
+**What is in a stem.** A track's own sound after its insert effects, its LEVEL, MUTE/SOLO and [Entries](#entries-tracks-out-and-back-in), so a muted track is silent in its stem. It is taken before PAN and SPREAD, so each stem is mono, and without the shared SEND and RETURN effects, MASTER and the limiter. The stems are dry of the shared reverb and delay; USB VOLUME and the volume pot do not change them.
+
+**Ableton Live.**
+
+- **macOS** (all four channels show natively): Settings > Audio, Audio Input Device = **Tessera Out**. Under Input Config enable inputs 1 to 4 as four mono inputs. On each audio track set Audio From to Ext. In and the channel 1, 2, 3 or 4.
+- **Windows:** Live's MME/DirectX driver type opens only two channels of a device, so Input Config offers just 1/2. For four stems use an ASIO wrapper: **FlexASIO** (backend WASAPI, input *Synthesizer (Tessera Out)*, 4 channels) or **ASIO4ALL**; Live opens one ASIO device, so the wrapper also carries your output. Set Live to 44100 Hz. Then enable Input Config as on macOS. Windows lists the FM-1's recording device as *Synthesizer (...)*, not Microphone. A unit that once ran Melodee can show an old name or a disabled device, which Live leaves out: open the Sound control panel > Recording, right-click and choose Show Disabled Devices, and enable it. (Wrappers are not yet tested with the FM-1.)
+- **Other DAWs:** pick **Tessera Out** as the input device, enable all four channels as mono inputs (not as two stereo pairs), and send channel 1 to 4 to one track each. The sample rate is 44.1 kHz; set the project to match.
+
+**Reverb and delay.** The shared effects are not in the stems. Record dry and add your DAW's own reverb on a return, or record a second pass with USB OUTPUT on **STEREO** to keep the FM-1's wet mix.
 
 ---
 
