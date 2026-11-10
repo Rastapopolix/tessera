@@ -178,6 +178,7 @@ static uint8_t cu_state(uint32_t i, const cord_t *c, int32_t *s, uint8_t *bk)
 static uint8_t cu_led_was[4];                           /* (cu_leds: the step each light shows; a row redrawn: none) */
 static uint8_t cu_bar_was[4];                           /* (and where each row's live mark is) */
 static int8_t cu_mv_was[4];                             /* (and its move now: a mod of mods turns it) */
+static uint8_t cu_rows_sent;                            /* (Mono: cu_rows sent the rows, their moves and lights in them) */
 #define CU_Y 22                                         /* the rows: 48 px each from y 22 (as MOD's), the chips at 220 */
 #define CU_H 48
 static void cu_rows(void)
@@ -224,6 +225,7 @@ static void cu_rows(void)
             cv_oy = 0;
         }
         cv_blit(0, (uint32_t)(CU_Y + (int32_t)k * CU_H));
+        cu_rows_sent = 1;
         continue;
 #endif
         cv_begin(240, CU_H, T_BG);
@@ -275,6 +277,12 @@ static void cu_leds(void)
 {
     uint8_t *was = cu_led_was;
     uint32_t k;
+    if (cu_rows_sent) {                                 /* (Mono: in the rows just sent. Not again: a mark moved on
+                                                         * since went out twice, the selected row flickered as KNOB 4
+                                                         * turned its AMOUNT, 3.5-beta5) */
+        cu_rows_sent = 0;
+        return;
+    }
     for (k = 0; k < 4u; k++) {
         uint32_t i = cu_slot(k);
         const cord_t *c = cord_get(i);
