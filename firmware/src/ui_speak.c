@@ -16,6 +16,7 @@ static struct {
     uint32_t ctx;                                       /* what screen: page, track, menu, layer (sp_context) */
     uint32_t step;                                      /* the step under the cursor (sp_step_sig) */
     uint8_t started, playing, turned;                   /* turned: 1 + the knob turned (ui_input.c page_knob) */
+    uint8_t scope;                                      /* MODS' scope was shown (said once as it opens) */
     char knob[48];                                      /* the knob last said ("CUTOFF 64") */
 } sp;
 static char sp_buf[ANN_MAX + 1];
@@ -395,6 +396,44 @@ static uint32_t sp_context(void)
            (uint32_t)(pop.on == POP_SHEET) * str_hash(0, pop.title) << 27;
 }
 
+/* MODS' scope (ui_cords.c cu_scope, mscope.c) in words, said as it opens and on WHERE, never as it moves: the window,
+ * the shape (a GATE: how often it opens and whether it is open now; else CYCLING n A BAR or n TIMES, STEADY, RISING,
+ * FALLING, WANDERING) and the move's lowest and highest, as % of the destination */
+static void sp_scope(char *b, uint32_t size)
+{
+    const cord_t *c = cord_get(mscope.cord);
+    uint32_t n = mscope.full ? MSC_W : mscope.col, j, bars = mscope.bars, k = mscope.cross_was, q = n / 4u;
+    int32_t lo = 0, hi = 0, d = 0, half = cord_amount(c) * 127 / 200, was = 0, on;
+    const char *w;
+    for (j = 0; j < n; j++) {                           /* oldest first */
+        uint32_t i = mscope.full ? (mscope.col + 1u + j) % MSC_W : j;
+        int32_t m = (mscope.lo[i] + mscope.hi[i]) / 2;
+        if (!j || mscope.lo[i] < lo) lo = mscope.lo[i];
+        if (!j || mscope.hi[i] > hi) hi = mscope.hi[i];
+        d += j < q ? -m : j >= n - q ? m : 0;
+        on = half < 0 ? m < half : m > half;
+        if (on && !was && j) k += cord_gate(c) ? 1u : 0u;
+        was = on;
+    }
+    if (cord_gate(c)) k -= mscope.cross_was;            /* (a GATE: its openings, not the source's cycles) */
+    w = !cord_live(c) || !n ? "STILL," : cord_gate(c) ? "GATE OPENS" : hi - lo < 7 ? "STEADY," : k >= 2u ? "CYCLING" :
+        d * 3 > (hi - lo) * (int32_t)q ? "RISING," : -d * 3 > (hi - lo) * (int32_t)q ? "FALLING," : "WANDERING,";
+    str_cpy(b, "SCOPE", size);
+    sp_num(b, size, (int32_t)bars);
+    sp_cat(b, size, bars == 1u ? "BAR," : "BARS,");
+    sp_cat(b, size, w);
+    if (w[str_len(w) - 1u] != ',') {                    /* (GATE OPENS, CYCLING: how often) */
+        sp_num(b, size, (int32_t)(k >= bars ? (k + bars / 2u) / bars : k));
+        sp_cat(b, size, k >= bars ? "A BAR," : "TIMES,");
+        if (cord_gate(c)) sp_cat(b, size, cord_gate_on(c) ? "OPEN NOW," : "SHUT NOW,");
+    }
+    sp_cat(b, size, "LOW");
+    sp_num(b, size, (lo * 100 + (lo < 0 ? -63 : 63)) / 127);
+    sp_cat(b, size, "HIGH");
+    sp_num(b, size, (hi * 100 + (hi < 0 ? -63 : 63)) / 127);
+    sp_cat(b, size, "%");
+}
+
 /* the screen whole into sp_buf: its name, the track, then each knob that does something */
 static void sp_screen(void)
 {
@@ -483,6 +522,12 @@ static void sp_screen(void)
             sp_add(n++ ? ", " : ". ");
             sp_add(b);
         }
+    if (cu_scope) {                                     /* (MODS' scope shown: what it draws) */
+        char w[96];
+        sp_scope(w, sizeof w);
+        sp_add(". ");
+        sp_add(w);
+    }
     if (ui.home)                                        /* (HOME: the four tracks' sounds too, as it shows them) */
         for (k = 0; k < NTRK; k++) {
             char nm[16];
@@ -548,6 +593,11 @@ static void ui_speak(uint32_t now)
             }
             if (sp_buf[0]) ann_later(sp_buf, ANN_NOW, SP_KNOB_MS, now);
         }
+        if (cu_scope && !sp.scope) {                    /* MODS' scope opened: once, until it opens again */
+            char w[96];
+            sp_scope(w, sizeof w);
+            ann_later(w, ANN_NOW, SP_KNOB_MS, now);
+        }
         if (playing != sp.playing)
             ann_say(playing ? "PLAY" : "STOP", 0, ANN_NOW);
         sp.started = 1;
@@ -557,6 +607,7 @@ static void ui_speak(uint32_t now)
     sp.ctx = ctx;
     sp.step = sp_step_sig();
     sp.turned = 0;
+    sp.scope = cu_scope;
     sp.playing = (uint8_t)playing;
     ann_tick(now);
 }
