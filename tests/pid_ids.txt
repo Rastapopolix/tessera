@@ -280,3 +280,4 @@
 0x29f BUS A LAG                global 0..11 def 0
 0x2a0 BUS B MODE               global 0..3 def 0
 0x2a1 BUS B LAG                global 0..11 def 0
+0x2a2 MOD DEPTH                global 0..100 def 100

@@ -105,6 +105,7 @@ static const cord_dest_t CORD_DESTS[CD_N] = {
     [CD_CC] = {CD_CC, CK_CC, 0, PID_NONE, "CC" CD_FULL("a MIDI CC out on the track's MIDI OUT channel, its number set with OCT- held and KNOB 3")},
     [CD_SUB_SPLIT] = S_(CD_SUB_SPLIT, TX_SUB_SPLIT, "SPLIT", "TIMING's SPLIT: the chance a step plays at half its division"),
     [CD_SEQ_DIR] = S_(CD_SEQ_DIR, TX_SEQ_DIR, "DIR", "the STEP pattern's DIR, stepped: FWD BACK PEND PONG RAND DRUNK from the pattern's own"),
+    [CD_MOD_DEPTH] = {CD_MOD_DEPTH, CK_MDEPTH, 0, PID_NONE, "MOD DEP" CD_FULL("the project's MOD DEPTH (GLO > PERF's sheet): how much of every mod's move plays, 0..100 %; a MACRO onto it at -100 % turns the patch dry")},
     [CD_BUS_A] = {CD_BUS_A, CK_BUS, 0, PID_NONE, "BUS A" CD_FULL("the project's MIX bus A: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS A")},
     [CD_CLOCK] = {CD_CLOCK, CK_CLOCK, 0, PID_NONE, "CLOCK" CD_FULL("steps the track's generator on each edge of the source, in place of its DIV (a GATE cord: OFFSET the threshold, a GATE source counts hits); AMOUNT is the division, 100 % every edge, 50 % every second, 33 % every third; negative: the gate closing")},
     [CD_BUS_B] = {CD_BUS_B, CK_BUS, 0, PID_NONE, "BUS B" CD_FULL("the project's MIX bus B: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS B")},
@@ -144,10 +145,19 @@ static uint32_t cord_busm[2];
 static int32_t cord_bus_out[2], cord_bus_y[2];
 static uint8_t cord_bus_cfg[4];
 static uint32_t cord_ccmask;                            /* (CC OUT: bit i, cords[i] goes out as a CC; at cord_cc_tick) */
+/* MOD DEPTH (cord.h cord_mdepth_get): mdmask bit i, cords[i] goes onto it; nsmask, the cords it leaves alone (onto it,
+ * a mod of mods, into a bus: what they move is scaled where it lands); set, the setting (0..100); md, it now with
+ * its mods (Q15, 32768 all: cord_mdepth_tick) */
+static uint32_t cord_mdmask, cord_nsmask;
+static uint8_t cord_mdset = 100;
+static int32_t cord_md = 32768;
+static void cord_mdepth_tick(void);
 void cord_tick(void)
 {
     uint32_t was = cord_gates;
     cord_blocks++;
+    if (cord_mdmask || cord_mdset < 100u) cord_mdepth_tick();   /* (first: every move below scaled by it) */
+    else cord_md = 32768;
     if (cord_tmask) cord_gates_tick();
     if (cord_clmask) cord_clock_tick(was);
     if (cord_cmask) cord_amounts();
@@ -243,7 +253,7 @@ static int32_t cord_val(const cord_t *c, int32_t own)
 /* ------------------------------------------------------------ the cords --- */
 static cord_t cords[CORD_MAX];
 _Static_assert(CD_FILL == 100 && CD_TEMPO == 101 && CD_CC == 102 && CD_SUB_SPLIT == 103 && CD_SEQ_DIR == 104 &&
-               CD_BUS_A == 105 && CD_BUS_B == 106 && CS_MACRO4 == 30 && CS_BUSA == 31 && CS_BUSB == 32 && CS_EOC == 33,
+               CD_BUS_A == 105 && CD_BUS_B == 106 && CD_MOD_DEPTH == 107 && CS_MACRO4 == 30 && CS_BUSA == 31 && CS_BUSB == 32 && CS_EOC == 33,
                "cord codes are saved: never renumbered");
 /* CC OUT: each cord's CC number (0..119), the value it last sent (0xFF none yet) and the block it went at */
 static uint8_t cord_ccn[CORD_LIVE] = {[0 ... CORD_LIVE - 1] = 1}, cord_cc_was[CORD_LIVE] = {[0 ... CORD_LIVE - 1] = 0xFF};
@@ -286,7 +296,11 @@ static int cord_live(const cord_t *c)
     return c->dst != CD_OFF && (c->amount || c->offset || cord_bit(cord_amask, c)) && cord_dest(c->dst);
 }
 /* cord c's move now (-100..100 %): its AMOUNT with a source, its OFFSET without, as the mods of mods turn it */
-static int32_t cord_amount(const cord_t *c) { return !c->src ? 0 : cord_bit(cord_amask, c) ? cord_now[c - cords] : c->amount; }
+static int32_t cord_amount(const cord_t *c)
+{
+    int32_t a = !c->src ? 0 : cord_bit(cord_amask, c) ? cord_now[c - cords] : c->amount;
+    return cord_md < 32768 && !cord_bit(cord_nsmask, c) ? a * cord_md / 32768 : a;   /* (MOD DEPTH) */
+}
 static int32_t cord_offset(const cord_t *c)
 {
     if (c->src) return cord_gate(c) ? 0 : c->offset;    /* (a GATE's OFFSET is its threshold) */
@@ -357,6 +371,7 @@ static void cord_masks(void)
     cord_cmask = cord_amask = 0;
     cord_tmask = cord_fmask = cord_pmask = cord_ccmask = 0;
     cord_busm[0] = cord_busm[1] = 0;
+    cord_mdmask = 0;
     cord_clmask = 0;
     cord_clk_trk = 0;
     memset(cord_clcnt, 0, sizeof cord_clcnt);              /* (a cord edited: its divisions count afresh) */
@@ -406,11 +421,17 @@ static void cord_masks(void)
             cord_busm[c->dst - CD_BUS_A] |= 1u << i;
             continue;
         }
+        if (kind == CK_MDEPTH) {                        /* (cord_mdepth_tick) */
+            cord_mdmask |= 1u << i;
+            continue;
+        }
         if (kind == CK_STEP) cord_smask[c->dst_trk] |= 1u << i;
         else if (kind == CK_GLOBAL) cord_gmask |= 1u << i;
         else cord_mask[c->dst_trk] |= 1u << i;
     }
     cord_clk_pend &= cord_clk_trk;
+    cord_nsmask = cord_mdmask | cord_cmask | cord_busm[0] | cord_busm[1] | cord_clmask;   /* (CLOCK: AMOUNT a division,
+                                                         * not a move) */
 }
 
 int cord_set(uint32_t i, const cord_t *c)
@@ -441,6 +462,9 @@ static void cord_reset(void)
     cord_tmask = cord_gates = cord_fmask = cord_pmask = cord_ccmask = cord_clmask = 0;
     cord_clk_trk = cord_clk_pend = 0;
     cord_hmask = cord_vmask = 0;
+    cord_mdmask = cord_nsmask = 0;
+    cord_mdset = 100;
+    cord_md = 32768;
     cord_busm[0] = cord_busm[1] = 0;                    /* (the buses: SUM, no LAG, at rest) */
     cord_bus_out[0] = cord_bus_out[1] = cord_bus_y[0] = cord_bus_y[1] = 0;
     memset(cord_bus_cfg, 0, sizeof cord_bus_cfg);
@@ -621,11 +645,18 @@ static __attribute__((noinline)) void cord_amounts(void)
     for (i = 0; m; i++, m >>= 1)
         if (m & 1u) {
             const cord_t *c = &cords[i];
-            int32_t s = cord_share(c), *a = &add[c->dst - CD_M1_AMT];
-            if ((cord_vmask >> i) & 1u)
-                a = &g[c->dst - CD_M1_AMT], *a = (*a * clamp((c->src ? c->amount : c->offset) < 0 ? 32768 + s : s, 0, 32768)) >> 15;
-            else
-                *a += s;
+            uint32_t j = c->dst - CD_M1_AMT;
+            int32_t s = cord_share(c), o = (32768 * cord_offset(c)) / 100, f;
+            int dry = cord_md < 32768 && c->src && !cords[j].src;   /* (MOD DEPTH onto a fixed mod: here; onto one
+                                                                     * with a source: at its use, cord_amount) */
+            if (dry) s = o + (((s - o) * cord_md) >> 15);
+            if (!((cord_vmask >> i) & 1u)) {
+                add[j] += s;
+                continue;
+            }
+            f = clamp((c->src ? c->amount : c->offset) < 0 ? 32768 + s : s, 0, 32768);
+            if (dry) f = 32768 - (((32768 - f) * cord_md) >> 15);   /* (at 0: open, the fixed mod as set) */
+            g[j] = (g[j] * f) >> 15;
         }
     for (i = 0, m = cord_amask; m; i++, m >>= 1)
         if (m & 1u) {
@@ -774,6 +805,19 @@ void cord_bus_set(uint32_t k, int32_t v)
     if (k < 4u) cord_bus_cfg[k] = (uint8_t)clamp(v, 0, (k & 1u) ? (int32_t)CB_LAGS - 1 : CB_MODES - 1);
 }
 int32_t cord_bus_now(uint32_t b) { return cord_bus_out[b & 1u]; }
+
+/* each block with MOD DEPTH under 100 % or a mod onto it (cord_tick): the setting plus its mods' shares (theirs
+ * unscaled: cord_nsmask), 0..100 % */
+static __attribute__((noinline)) void cord_mdepth_tick(void)
+{
+    int32_t s = (int32_t)cord_mdset * 32768 / 100;
+    uint32_t m = cord_mdmask, i;
+    for (i = 0; m; i++, m >>= 1)
+        if (m & 1u) s += cord_share(&cords[i]);
+    cord_md = clamp(s, 0, 32768);
+}
+uint32_t cord_mdepth_get(void) { return cord_mdset; }
+void cord_mdepth_set(int32_t v) { cord_mdset = (uint8_t)clamp(v, 0, 100); }
 
 /* fx.c fx_bus_settings (cord_gmask: some cord reaches them): the send effects' settings g (song.g from G_MFXTYPE to
  * G_FXRETURN) as their cords move them this block, within each one's range */

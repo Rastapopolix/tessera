@@ -452,11 +452,12 @@ enum {
     TX_SEQ_DIR,                                     /* (0x29B: the STEP pattern's DIR, the playing one's: pattern.c) */
     TX_CH_STRUM, TX_CH_SDIR,                        /* (0x29C, 0x29D: CHORD's STRUM and its DIR, a CHORD track's) */
     TX_BUSA_MODE, TX_BUSA_LAG, TX_BUSB_MODE, TX_BUSB_LAG,   /* (0x29E..0x2A1: the MIX buses', the project's: cord.c) */
+    TX_MOD_DEPTH,                                   /* (0x2A2: MOD DEPTH, the project's: cord.c cord_mdepth_get) */
     TX_COUNT
 };
 _Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95 && TX_TW_FRHY == 0x97 &&
                TX_PAT_GEN == 0x98 && TX_MIDI_DMAP == 0x99 && TX_ET_ORDER == 0x9A && TX_SEQ_DIR == 0x9B &&
-               TX_CH_SDIR == 0x9D && TX_BUSB_LAG == 0xA1, "parameter ids are stored: never renumbered");
+               TX_CH_SDIR == 0x9D && TX_BUSB_LAG == 0xA1 && TX_MOD_DEPTH == 0xA2, "parameter ids are stored: never renumbered");
 /* TX_SEQ_DIR: the order a STEP pattern plays its steps in (seq_dir.c) */
 enum { SEQ_FWD, SEQ_BACK, SEQ_PEND, SEQ_PONG, SEQ_RAND, SEQ_DRUNK, SEQ_DIRS };
 #define TESS_STRUM_MS 60u                           /* TX_CH_STRUM: up to 60 ms between a chord's notes */

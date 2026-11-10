@@ -434,7 +434,7 @@ none:                                                   /* (KNOB 2 or a key plac
 }
 
 /* the page's sheet: 0 none, 1 the sound's, 2 the song's, 3 the pattern's, 4 PATTERNS', 5 MODS', 6 a generator's (GEN),
- * 7 MIDI OUT's, 8 ENTRIES' */
+ * 7 MIDI OUT's, 8 ENTRIES', 9 PERF's (MOD DEPTH) */
 static uint32_t page_sheet(void)
 {
     uint32_t fam;
@@ -452,6 +452,8 @@ static uint32_t page_sheet(void)
         return 7;                                       /* (each track's SOUND and DRUM MAP) */
     if (cur_page()->graph == GR_ENTRIES)
         return 8;                                       /* (each track's ORDER) */
+    if (cur_page()->graph == GR_PERF)
+        return 9;                                       /* (the project's MOD DEPTH) */
     if (cur_page()->graph == GR_PATGRID)
         return 4;
     if (cur_page()->graph == GR_ROLL || (cur_page()->graph == GR_STEPS && (cur_page()->fam != FAM_GEN || gen_pattern_page(cur_page()))))
@@ -508,6 +510,11 @@ static void page_sheet_open(void)
         sr.n = 0;
         sr_tracks("Order T1", TX_ET_ORDER);
         sheet_open("Entries", "order", SHEET_SR, sr.n);
+        break;
+    case 9:
+        sr.n = 0;
+        sr_add("Mod depth", PID_TESS(TX_MOD_DEPTH), 0);
+        sheet_open("Perf", "the project's", SHEET_SR, sr.n);
         break;
     default:
         break;

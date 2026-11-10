@@ -1224,7 +1224,7 @@ static int test_gen_oct_hold(void)
 static int test_oct_grammar_m0(void)
 {
     int bad = 0;
-    uint32_t tr;
+    uint32_t tr, i;
     ui_power_on();
     go_title("GEN");
     tr = song.sel;
@@ -1280,6 +1280,25 @@ static int test_oct_grammar_m0(void)
     press(B_OCTUP);
     bad += check("M1: MODS, OCT+ tapped: still the mod's BI / UNI", cord_get(0)->uni != 0u);
     cord_clear();
+    for (i = 0; i < NPAGES && PAGES[i].graph != GR_PERF; i++)   /* PERF: its sheet, MOD DEPTH (G9); the page set */
+        ;                                               /* by hand (the detailed look this test builds hides PERF) */
+    ui.home = 0;
+    ui.page = (uint8_t)i;
+    page_sheet_open();
+    bad += check("G9: PERF's sheet (OCT+ held): Mod depth at 100 %", pop.on == POP_SHEET && str_eq(pop.title, "Perf") &&
+                 pop.n == 1u && !msg_is("NO SHEET"));
+    turn(EN_K1 + 1u, -30);
+    bad += check("G9: KNOB 2 turns it down a percent a detent (70 %)", cord_mdepth_get() == 70u);
+    press(B_OCTDN);
+    stop_transport();
+    project_save(1);
+    cord_mdepth_set(100);
+    project_load(1);
+    bad += check("G9: MOD DEPTH saved with the project (part 45)", cord_mdepth_get() == 70u);
+    cord_clear();
+    project_save(1);
+    project_load(1);
+    bad += check("G9: ..none saved: 100 % after a load", cord_mdepth_get() == 100u);
     return bad;
 }
 static int test_page_random(void)
@@ -1658,8 +1677,8 @@ static int test_cords_scroll_playing(void)
         cords_blocks(24);
     }
     bad += check("..KNOB 3 a detent at a time through every track's destinations, then the send effects' and the mods' "
-                 "moves, FILL, TEMPO and the MIX buses (once, no track), playing between: the last reached (BUS B)",
-                 k->dst == CD_BUS_B && k->dst_trk == 0u && (seen & 1u) && pop.on == POP_PICK);
+                 "moves, FILL, TEMPO, the MIX buses and MOD DEP (once, no track), playing between: the last reached (MOD DEP)",
+                 k->dst == CD_MOD_DEPTH && k->dst_trk == 0u && (seen & 1u) && pop.on == POP_PICK);
     {                                                   /* the list: each entry back to itself, the send effects' last */
         uint32_t v, round = 1, globals = 0;
         int32_t tr;
@@ -1672,7 +1691,7 @@ static int test_cords_scroll_playing(void)
             else round &= tr == (int32_t)e.dst_trk;
         }
         bad += check("..its list: every entry to its destination and back, the 10 send effects', 16 M AMT, FILL, "
-                     "TEMPO, BUS A and B once, with no track", round && globals == 30u && CU_NDST == 1u + NTRK * CU_DPT + 30u);
+                     "TEMPO, BUS A and B, MOD DEP once, with no track", round && globals == 31u && CU_NDST == 1u + NTRK * CU_DPT + 31u);
     }
     for (i = 0; i < CU_NDST + 4u; i++) {
         turn(EN_K1 + 2u, -1);

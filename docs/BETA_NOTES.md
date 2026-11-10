@@ -29,6 +29,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - MIX buses: BUS A and BUS B, two mixers for mods. Send any mods into a bus (the end of KNOB 3's list on MODS) and use the bus as a source (the end of KNOB 1's list). Hold OCT+ on MODS for its sheet: each bus's Mode (SUM, MAX, MIN, DIFF: with gates OR, AND, XOR) and Lag (OFF, 10 ms to 20 s: a gate into a lagged bus is an envelope). A bus can feed itself, one block late, safely.
 - EOC: a new source on every track, the LFO's cycle start as a gate (high from each wrap until an eighth of the cycle has passed). Last in a track's source list on MODS. Use it as a GATE mod: onto FILL, a bus, a mod's amount. A project that uses it does not load on older firmware.
 - Mods of mods can scale: hold OCT- on a mod of mods (M1 AMT .. M16 AMT) and turn KNOB 3 right. It then multiplies the other mod's move by 0 to 1 instead of adding to it (M3* on the row), so a GATE or an envelope opens and closes a mod that keeps its own amount; a negative amount closes it instead. KNOB 3 left adds again.
+- MOD DEPTH: one control for how much of the whole patch plays, 0 to 100 % (GLO > PERF, hold OCT+ for its sheet). It scales every mod's movement, FILL, TEMPO and CC included, but never an OFFSET: at 0 the patch is dry. MOD DEP is also a mod destination, so a MACRO can ride it. A GATE mod onto FILL at 100 % stops holding FILL once MOD DEPTH is under 50 %.
 - CLOCK: a new destination. A generator track with a mod onto CLOCK steps on the source's edges and not on its DIV: with EOC as the source, a note each LFO cycle (a Krell: add S&H onto the LFO's rate). AMOUNT is the division (50 % every second edge), negative the gate closing; a GATE source counts hits. First step at PLAY; DIV is the step's length and the fastest it steps. A project that uses it does not load on older firmware.
 
 ## Fixed
@@ -50,6 +51,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - A project with CHRD SUS2, 7SUS4, ADD9 or MAJ6 plays POW (power chords) on 3.4.x and earlier betas. A cord or MIDI CC on CHRD now spreads over 14 kinds, not 10, so it lands on slightly different ones.
 - A project with a mod into or out of a MIX bus does not load on 3.4.x or earlier betas; the bus settings alone are ignored there.
 - On older firmware, a mod of mods that scales plays as one that adds (mod 3's amount plus its move).
+- On older firmware, MOD DEPTH plays at 100 %; a project with a mod onto MOD DEP does not load there.
 
 ## Please try
 - PAT GEN with different generators on two patterns: switch by hand and with SONG, save, power off and on, load.
@@ -73,3 +75,4 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - USB stems: USB OUTPUT 4 TRACKS, record the four channels in a DAW (Windows with FlexASIO or ASIO4ALL).
 - A project from 3.4.1 loads and plays the same.
 - Scaling mods of mods: T2 GATE scaling M3 (mod 3 an LFO onto CUTOFF at 60 %); then T4 ENV at -100 scaling it; watch it with MOD SCOPE.
+- MOD DEPTH: a feedback patch (two generators onto each other) braked with MOD DEPTH; a MACRO onto MOD DEP at -100 %; a GATE onto FILL as MOD DEPTH passes 50 %.

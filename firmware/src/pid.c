@@ -228,6 +228,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_BUSA_LAG] = PE("LAG", TX_N_BUSLAG, 0),
     [TX_BUSB_MODE] = PE("MODE", TX_N_BUSMODE, 0),
     [TX_BUSB_LAG] = PE("LAG", TX_N_BUSLAG, 0),
+    [TX_MOD_DEPTH] = PD("MOD DEPTH", F_PCT, 0, 100, 100),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -802,6 +803,11 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     XP_(TX_BUSB_LAG, "BUS B LAG", "A slew on BUS B: the time a whole move from 0 to 1 takes, up or down. A "
                                    "gate into a lagged bus rises and falls as an envelope. OFF: none. MODS' sheet "
                                    "(OCT+ held)."),
+    XP_(TX_MOD_DEPTH, "MOD DEPTH", "How much of every mod's move plays, 0 to 100 %: the moving part (AMOUNT times its "
+                                   "source) of each mod, FILL, TEMPO and CC ones too; never an OFFSET, so fixed mods, a "
+                                   "CC's base and a GATE's threshold stay. 0: the patch dry. A mod onto MOD DEP (a MACRO) "
+                                   "rides it. A GATE onto FILL at 100 % stops holding FILL under 50 %. GLO > PERF's "
+                                   "sheet (OCT+ held)."),
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
