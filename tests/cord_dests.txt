@@ -108,3 +108,5 @@
 105 BUS A    bus   -
 106 BUS B    bus   -
 107 MOD DEP  mdepth -
+108 ?        ?     -
+109 CLOCK    clock -

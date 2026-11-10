@@ -19,7 +19,7 @@ static void check(const char *what, int ok)
     bad += !ok;
 }
 
-static const char *const KIND[] = {"voice", "block", "depth", "step", "cc", "send", "cord", "fill", "tempo", "bus",
+static const char *const KIND[] = {"voice", "block", "depth", "step", "cc", "clock", "send", "cord", "fill", "tempo", "bus",
                                    "mdepth"};
 
 static cord_t C(uint32_t src, uint32_t st, uint32_t dst, uint32_t dt, int32_t amount, int32_t offset)
@@ -1087,6 +1087,7 @@ int main(int argc, char **argv)
     for (c = 0; c < CD_N; c++) {
         const cord_dest_t *d = cord_dest(c);
         if (c == CD_RETIRED_CL_RULE) { placed &= !d; continue; }   /* (CELLS' RULE, cut: a gap) */
+        if (c == 107u || c == 108u) { placed &= !d || d->code == c; continue; }   /* (MOD DEPTH, PLAY: claimed, not yet here) */
         if (!d || d->code != c) { placed = 0; continue; }
         if (!d->name[0] || strlen(d->name) > 7u || !d->full[0]) names = 0;
         for (k = 0; k < c; k++)
@@ -1100,6 +1101,8 @@ int main(int argc, char **argv)
             if (d->pid != PID_NONE || d->md || c != CD_TEMPO) mods = 0;
         } else if (d->kind == CK_CC) {                  /* (CC OUT: a MIDI CC, no parameter) */
             if (d->pid != PID_NONE || d->md || c != CD_CC) mods = 0;
+        } else if (d->kind == CK_CLOCK) {               /* (the generator's clock: no parameter) */
+            if (d->pid != PID_NONE || d->md || c != CD_CLOCK) mods = 0;
         } else if (d->kind == CK_BUS) {                 /* (the MIX buses: no parameter) */
             if (d->pid != PID_NONE || d->md || (c != CD_BUS_A && c != CD_BUS_B)) mods = 0;
         } else if (d->kind == CK_MDEPTH) {              /* (MOD DEPTH: the project's, no parameter of a track) */

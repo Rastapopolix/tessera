@@ -107,6 +107,7 @@ static const cord_dest_t CORD_DESTS[CD_N] = {
     [CD_SEQ_DIR] = S_(CD_SEQ_DIR, TX_SEQ_DIR, "DIR", "the STEP pattern's DIR, stepped: FWD BACK PEND PONG RAND DRUNK from the pattern's own"),
     [CD_MOD_DEPTH] = {CD_MOD_DEPTH, CK_MDEPTH, 0, PID_NONE, "MOD DEP" CD_FULL("the project's MOD DEPTH (GLO > PERF's sheet): how much of every mod's move plays, 0..100 %; a MACRO onto it at -100 % turns the patch dry")},
     [CD_BUS_A] = {CD_BUS_A, CK_BUS, 0, PID_NONE, "BUS A" CD_FULL("the project's MIX bus A: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS A")},
+    [CD_CLOCK] = {CD_CLOCK, CK_CLOCK, 0, PID_NONE, "CLOCK" CD_FULL("steps the track's generator on each edge of the source, in place of its DIV (a GATE cord: OFFSET the threshold, a GATE source counts hits); AMOUNT is the division, 100 % every edge, 50 % every second, 33 % every third; negative: the gate closing")},
     [CD_BUS_B] = {CD_BUS_B, CK_BUS, 0, PID_NONE, "BUS B" CD_FULL("the project's MIX bus B: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS B")},
 };
 #undef V_
@@ -135,7 +136,9 @@ static uint32_t cord_blocks;
 static uint32_t cord_cmask, cord_amask;                 /* (the mods of mods: below, at cord_now) */
 static uint32_t cord_tmask, cord_gates, cord_fmask, cord_pmask;   /* (GATE, FILL, TEMPO: below, at cord_now) */
 static void cord_amounts(void), cord_gates_tick(void), cord_fill_tick(void), cord_tempo_tick(void), cord_cc_tick(void);
-static void cord_bus_tick(void);
+static void cord_bus_tick(void), cord_clock_tick(uint32_t was);
+static uint32_t cord_clmask;                            /* CLOCK: bit i, cords[i] is one (cord_clock_tick; seq.c cord_clk_trk) */
+static uint8_t cord_clcnt[CORD_LIVE];                   /* ... its edges counted towards its division */
 /* MIX buses (below, at cord_bus_tick): busm[b] bit i, cords[i] goes into bus b; out[b], its value now (Q15, the source
  * BUS A / B); y[b] the same, lagged, in Q23 (its fraction kept); set: A MODE, A LAG, B MODE, B LAG */
 static uint32_t cord_busm[2];
@@ -151,10 +154,12 @@ static int32_t cord_md = 32768;
 static void cord_mdepth_tick(void);
 void cord_tick(void)
 {
+    uint32_t was = cord_gates;
     cord_blocks++;
     if (cord_mdmask || cord_mdset < 100u) cord_mdepth_tick();   /* (first: every move below scaled by it) */
     else cord_md = 32768;
     if (cord_tmask) cord_gates_tick();
+    if (cord_clmask) cord_clock_tick(was);
     if (cord_cmask) cord_amounts();
     if (cord_busm[0] | cord_busm[1] | cord_bus_out[0] | cord_bus_out[1]) cord_bus_tick();   /* (no cord in: to 0, */
     if (cord_fmask) cord_fill_tick();                                                        /* then nothing) */
@@ -225,7 +230,7 @@ static int cord_bipolar(uint32_t s, uint32_t tr)
  * LFO page's POL shapes its own DEPTH routes, not the mods */
 static int cord_bip(const cord_t *c) { return (!c->uni || c->uni == CU_HOLD) && cord_bipolar(c->src, c->src_trk); }
 static int cord_fold_on(const cord_t *c) { return c->uni == CU_UNI && cord_bipolar(c->src, c->src_trk); }
-static int cord_gate(const cord_t *c) { return c->uni == CU_GATE && c->src; }
+static int cord_gate(const cord_t *c) { return c->src && (c->uni == CU_GATE || c->dst == CD_CLOCK); }   /* (CLOCK: always) */
 static int cord_gate_on(const cord_t *c);
 static int32_t cord_hold_val(const cord_t *c);
 static int32_t cord_fold(const cord_t *c, int32_t x) { return cord_fold_on(c) ? (x + 32768) >> 1 : x; }
@@ -367,6 +372,9 @@ static void cord_masks(void)
     cord_tmask = cord_fmask = cord_pmask = cord_ccmask = 0;
     cord_busm[0] = cord_busm[1] = 0;
     cord_mdmask = 0;
+    cord_clmask = 0;
+    cord_clk_trk = 0;
+    memset(cord_clcnt, 0, sizeof cord_clcnt);              /* (a cord edited: its divisions count afresh) */
     for (i = 0, t = 0; i < CORD_LIVE; i++)              /* (HOLD: a new one samples now, not 0 until its bar) */
         if (cords[i].uni == CU_HOLD && cords[i].src) {
             if (!((cord_hmask >> i) & 1u)) cord_hval[i] = (int16_t)cord_src(cords[i].src, cords[i].src_trk);
@@ -391,6 +399,11 @@ static void cord_masks(void)
         kind = cord_dest(c->dst)->kind;
         if (cord_gate(c)) cord_tmask |= 1u << i;
         if (c->src == CS_ENV) cord_envsrc |= (uint8_t)(1u << c->src_trk);
+        if (kind == CK_CLOCK) {                         /* (cord_clock_tick; a track with one live is clocked by it) */
+            cord_clmask |= 1u << i;
+            if (c->amount || cord_bit(cord_amask, c)) cord_clk_trk |= (uint8_t)(1u << c->dst_trk);
+            continue;
+        }
         if (kind == CK_CORD) continue;                  /* (cord_amounts: cord_cmask) */
         if (kind == CK_FILL) {                          /* (cord_fill_tick) */
             cord_fmask |= 1u << i;
@@ -416,7 +429,9 @@ static void cord_masks(void)
         else if (kind == CK_GLOBAL) cord_gmask |= 1u << i;
         else cord_mask[c->dst_trk] |= 1u << i;
     }
-    cord_nsmask = cord_mdmask | cord_cmask | cord_busm[0] | cord_busm[1];
+    cord_clk_pend &= cord_clk_trk;
+    cord_nsmask = cord_mdmask | cord_cmask | cord_busm[0] | cord_busm[1] | cord_clmask;   /* (CLOCK: AMOUNT a division,
+                                                         * not a move) */
 }
 
 int cord_set(uint32_t i, const cord_t *c)
@@ -444,7 +459,8 @@ static void cord_reset(void)
     cord_envsrc = 0;
     cord_gmask = 0;
     cord_cmask = cord_amask = 0;
-    cord_tmask = cord_gates = cord_fmask = cord_pmask = cord_ccmask = 0;
+    cord_tmask = cord_gates = cord_fmask = cord_pmask = cord_ccmask = cord_clmask = 0;
+    cord_clk_trk = cord_clk_pend = 0;
     cord_hmask = cord_vmask = 0;
     cord_mdmask = cord_nsmask = 0;
     cord_mdset = 100;
@@ -649,6 +665,48 @@ static __attribute__((noinline)) void cord_amounts(void)
                               -100, 100);
             cord_now[i] = (int8_t)((v * g[i] + (v < 0 ? -16384 : 16384)) / 32768);
         }
+}
+
+/* CLOCK (cord.h CK_CLOCK): an edge of cords[i]'s gate counts towards its division n (AMOUNT: 100 % every edge, 50 % every
+ * second, 33 % every third .. 6 % every 16th; a mod of mods on the AMOUNT turns it live); every n-th arms the track's
+ * step (seq.c cord_clk_pend, taken by seq_grid_tick). Only while the transport plays */
+static void cord_clock_edge(uint32_t i)
+{
+    int32_t a = cord_amount(&cords[i]);
+    uint32_t n;
+    if (a < 0) a = -a;
+    if (!a || !song.playing || ((cord_clk_new >> cords[i].dst_trk) & 1u)) return;
+    n = (100u + (uint32_t)a / 2u) / (uint32_t)a;
+    if (++cord_clcnt[i] >= (n > 16u ? 16u : n)) {
+        cord_clcnt[i] = 0;
+        cord_clk_pend |= (uint8_t)(1u << cords[i].dst_trk);
+    }
+}
+/* tessera_hold_hit: track tr played a note. A positive CLOCK cord from its GATE counts the hit (the gate's level would
+ * lose notes that run into each other); the clocked track steps at once if it comes later in the block's order */
+static void cord_clock_hit(uint32_t tr)
+{
+    uint32_t m = cord_clmask, i;
+    for (i = 0; m; i++, m >>= 1)
+        if ((m & 1u) && cords[i].src == CS_GATE && cords[i].src_trk == tr && cord_amount(&cords[i]) > 0) cord_clock_edge(i);
+}
+/* each block with a CLOCK cord (cord_tick, after the gates): its gate opened (a positive AMOUNT) or closed (negative)
+ * since the block before; was: cord_gates then. Stopped: nothing armed, the divisions at 0, and the gates' state goes on,
+ * so a gate already open at PLAY is no edge */
+static __attribute__((noinline)) void cord_clock_tick(uint32_t was)
+{
+    uint32_t m = cord_clmask, i;
+    cord_clk_new = 0;
+    if (!song.playing) {
+        cord_clk_pend = 0;
+        memset(cord_clcnt, 0, sizeof cord_clcnt);
+        return;
+    }
+    for (i = 0; m; i++, m >>= 1) {
+        int32_t a = cord_amount(&cords[i]);
+        if (!(m & 1u) || (cords[i].src == CS_GATE && a > 0)) continue;
+        if ((((cord_gates ^ was) >> i) & 1u) && (((cord_gates >> i) & 1u) == (a > 0 ? 1u : 0u))) cord_clock_edge(i);
+    }
 }
 
 /* each block with a mod onto FILL (cord_tick): FILL held while their moves together reach half (seq.c seq_fill_mod,

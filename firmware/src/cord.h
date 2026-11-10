@@ -28,11 +28,14 @@
  *   CK_CC     a MIDI CC out on the destination track's MIDI OUT channel (cord.c cord_cc_tick, issue #374): its number
  *             the cord's own (cord_cc_num, OCT+ held + KNOB 3 on MODS); a track's, as CK_BLOCK (before CK_GLOBAL: the
  *             kinds are not saved, only the codes)
+ *   CK_CLOCK  the track's generator clock (cord.c cord_clock_tick, seq.c seq_grid_tick): a track with a live one is
+ *             stepped by the cord's edges alone, not by its DIV (always a GATE cord: its OFFSET the threshold; AMOUNT
+ *             is the division, every n-th edge, its sign the edge); a track's, before CK_GLOBAL
  *   CK_BUS    a project MIX bus, BUS A or B (cord.c cord_bus_tick): its cords combined by its MODE, then its LAG, each
  *             block; read back as the source BUS A / BUS B one block later; destination track 0 as CK_GLOBAL
  *   CK_MDEPTH the project's MOD DEPTH (cord.c cord_mdepth_tick): added to its setting, each block; destination track 0
  *             as CK_GLOBAL; its own cords are never scaled by it */
-enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO, CK_BUS, CK_MDEPTH };
+enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_CLOCK, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO, CK_BUS, CK_MDEPTH };
 
 /* Destination codes. FROZEN: saved cords keep them; new ones at the end, a retired one stays as a gap */
 enum {
@@ -77,6 +80,7 @@ enum {
     CD_SEQ_DIR,                                                     /* the STEP pattern's DIR (seq_dir.c) */
     CD_BUS_A, CD_BUS_B,                                             /* the project's MIX buses (CK_BUS) */
     CD_MOD_DEPTH,                                                   /* the project's MOD DEPTH (CK_MDEPTH, G9) */
+    CD_CLOCK = 109,                                                 /* the track's generator clock (CK_CLOCK); 108: PLAY */
     CD_N
 };
 
@@ -147,7 +151,7 @@ uint32_t cord_bus_get(uint32_t k);
 void cord_bus_set(uint32_t k, int32_t v);
 int32_t cord_bus_now(uint32_t b);                   /* bus b's value now (Q15), as the source BUS A / B reads it */
 /* MOD DEPTH (G9, TX_MOD_DEPTH): 0..100 %, 100 the off position (every mod as set). It scales the moving part of every
- * mod with a source (AMOUNT x source; never an OFFSET) where it lands: a mod of mods and a mod into a bus are scaled
+ * mod with a source (AMOUNT x source; never an OFFSET; not CLOCK's, a division) where it lands: a mod of mods and a mod into a bus are scaled
  * once, by the mod they turn or read them; a fixed mod's mods of mods by it here. Its own mods (CD_MOD_DEPTH) add to
  * it, unscaled. The project's (cord_reset: 100) */
 uint32_t cord_mdepth_get(void);

@@ -75,7 +75,7 @@ static int reference(FILE *f)
     }
     {                                                   /* the cords' (firmware/src/cord.c) */
         static const char *const KIND[] = {"each voice", "the audio block", "the LFO's depth", "the generator's step",
-                                             "a MIDI CC out, each block", "the send effects' block (every track's)", "another mod's move, each block", "the project's FILL, each block",
+                                             "a MIDI CC out, each block", "the generator's clock, on the source's edges", "the send effects' block (every track's)", "another mod's move, each block", "the project's FILL, each block",
                                              "the project's tempo on CLK INT, each block",
                                              "the project's MIX bus, each block", "the project's MOD DEPTH, each block"};
         _Static_assert(sizeof KIND / sizeof KIND[0] == CK_MDEPTH + 1u, "a description for each kind of destination");
