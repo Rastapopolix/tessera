@@ -96,16 +96,16 @@ static int oct_dn_page(void)                            /* the page shown has an
            g == GR_TIMING || g == GR_ENERGY || g == GR_CHAIN || g == GR_TRK || g == GR_CORDS;   /* SPLIT, DEPTH, REPEAT, PAN, CC */
 }
 /* GEN or TWEAK, OCT- held (the key grammar, M3): KNOB 2-4 (slot 1-3; KNOB 1 is RANDOM). TWEAK: FOLLOW's HOW,
- * RHYTHM, HOLD; CHORD: STRUM 5 ms a detent, its DIR (seq_strum.c), OCT; the other engines with a layer: its settings
+ * RHYTHM, HOLD; CHORD: STRUM (1 ms detents low, 10 ms high: tessera_strum_knob), its DIR (seq_strum.c), OCT; the other engines with a layer: its settings
  * 1-3 (a fourth: the GEN sheet, ui_popup.c) */
 static void gen_dn_knob(uint32_t slot, int32_t steps)
 {
     if (cur_page()->graph == GR_TWEAK) {
         if (tw_layer_on()) tessera_tw_layer_knob(slot, steps);
     } else if (ch_st_layer_on()) {
-        uint32_t x = slot == 1u ? TX_CH_STRUM : TX_CH_SDIR;
         if (slot == 3u) tessera_chord_oct_knob(steps);
-        else tessera_param_set(song.sel, x, tessera_param_get(song.sel, x) + (steps > 0 ? 1 : -1) * (slot == 1u ? 5 : 1));
+        else if (slot == 1u) tessera_strum_knob(steps);
+        else tessera_param_set(song.sel, TX_CH_SDIR, tessera_param_get(song.sel, TX_CH_SDIR) + (steps > 0 ? 1 : -1));
     } else if (quad_cols_on())
         tessera_quad_cols_knob(slot - 1u, steps);
     else if (cs_layer_on())

@@ -830,7 +830,8 @@ static int pr_draw(void)
         uint32_t sm = tessera.ch_strum[tr], sd = tessera.ch_sdir[tr] % TESS_STR_DIRS;
         fmt_int(v, (int32_t)sm);
         col_mods(PID_TESS(TX_CH_STRUM));
-        draw_column(1, "STRUM", sm ? v : "OFF", sm ? "ms" : "", VAL(1u), (int32_t)(sm * 1000u / TESS_STRUM_MS), ICON_AUTO);
+        draw_column(1, "STRUM", sm ? v : "OFF", sm ? "ms" : "", VAL(1u),     /* (the bar by detent: the fine low end shows) */
+                    (int32_t)(tess_strum_detent(sm) * 1000u / TESS_STRUM_DETENTS), ICON_AUTO);
         col_mods(PID_TESS(TX_CH_SDIR));
         draw_column(2, "DIR", pid_desc(PID_TESS(TX_CH_SDIR), tr)->names[sd], "", sm ? VAL(2u) : T_DIM, (int32_t)sd * 500,
                     ICON_AUTO);
