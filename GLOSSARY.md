@@ -141,7 +141,7 @@ source (its note value as a smooth movement) beside its **GATE** and **NOTE**.
 **DIV** (division). A track's step length as a fraction of the beat (1/4, 1/8, 1/16, triplets). Smaller is faster.
 Each track and pattern has its own, which is how you get polymeter.
 
-**DIR** (direction). Four meanings: the way a pattern plays (**STEP direction**: FWD, BACK, PEND, PONG, RAND, DRUNK
+**DIR** (direction). Four meanings: the way a pattern plays (**STEP direction**: FWD, BACK, PEND, FOLD, RAND, DRUNK
 **(3.5 beta)**); the order a CHORD strum goes (UP, DOWN, ALT **(3.5 beta)**); how a QUAD track walks its grid; and
 **DIR**, a mod destination that changes a pattern's direction **(3.5 beta)**.
 

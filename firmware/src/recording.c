@@ -362,7 +362,7 @@ static void recording_zero(track_t *t)
         }
     }
 }
-/* DIR not FWD, a step begun: its notes may play again (BACK, PEND and PONG come back to a step within the pass) */
+/* DIR not FWD, a step begun: its notes may play again (BACK, PEND, FOLD .. come to a step again) */
 static void recording_rearm(track_t *t)
 {
     for (uint32_t i = recording_head[recording_owner(t)]; i < RECORD_MAX; i = recording_next[i]) recording_flags[i] &= (uint8_t)~4u;

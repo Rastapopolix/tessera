@@ -3806,7 +3806,7 @@ static uint32_t dir_run(uint32_t d, uint32_t n, uint8_t *idx, uint32_t *pass)
 static int test_step_dir(void)
 {
     static const uint8_t WANT[4][12] = {{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1}, {4, 3, 2, 1, 0, 4, 3, 2, 1, 0, 4, 3},
-                                        {0, 1, 2, 3, 4, 3, 2, 1, 0, 1, 2, 3}, {0, 1, 2, 3, 4, 4, 3, 2, 1, 0, 0, 1}};
+                                        {0, 1, 2, 3, 4, 3, 2, 1, 0, 1, 2, 3}, {0, 4, 1, 3, 2, 0, 4, 1, 3, 2, 0, 4}};
     track_t *t = &trk[0];
     uint8_t got[24], again[24];
     uint32_t pass[12], i, d, period;
@@ -3823,7 +3823,7 @@ static int test_step_dir(void)
         for (i = 0; i < 12u; i++) ok &= pass[i] == i / 5u;
         bad += check(d == 0 ? "DIR FWD: 1 2 3 4 5, a pass every 5 steps" : d == 1 ? "DIR BACK: 5 4 3 2 1, a pass every 5 steps" :
                      d == 2 ? "DIR PEND: there and back, the ends once; the pass by time" :
-                              "DIR PONG: there and back, the ends twice; the pass by time", ok);
+                              "DIR FOLD: 1 5 2 4 3, from the ends inwards, a pass every 5 steps", ok);
     }
     dir_run(SEQ_RAND, 24, got, 0);
     dir_run(SEQ_RAND, 24, again, 0);
@@ -3851,9 +3851,9 @@ static int test_step_dir(void)
     ok = t->seq_idx == 1u && SEQ_D(t).slot == 2u && SEQ_D(t).back;
     seq_dir_seek(t, 5, 4);
     ok &= t->seq_idx == 4u && SEQ_D(t).back;
-    tessera_param_set(0, TX_SEQ_DIR, SEQ_PONG);
-    seq_dir_seek(t, 5, 5);
-    ok &= t->seq_idx == 4u && SEQ_D(t).back;
+    tessera_param_set(0, TX_SEQ_DIR, SEQ_FOLD);
+    seq_dir_seek(t, 5, 6);
+    ok &= t->seq_idx == 4u && SEQ_D(t).slot == 1u;
     bad += check("DIR: a song position lands where the direction plays", ok);
     t->step[3].sub = 0;
     step_set_nudge(&t->step[3], -8);
@@ -3862,11 +3862,11 @@ static int test_step_dir(void)
     t->step[3].sub = 0;
     bad += check("DIR BACK: the next step (a TIE, NUDGE early) is the one before", ok);
     stop_transport();
-    tessera_param_set(0, TX_SEQ_DIR, SEQ_PONG);
+    tessera_param_set(0, TX_SEQ_DIR, SEQ_FOLD);
     project_save(1);
     tessera_param_set(0, TX_SEQ_DIR, SEQ_FWD);
     project_load(1);
-    ok = tessera_param_get(0, TX_SEQ_DIR) == SEQ_PONG;
+    ok = tessera_param_get(0, TX_SEQ_DIR) == SEQ_FOLD;
     tessera_param_set(0, TX_SEQ_DIR, SEQ_FWD);
     project_save(1);
     project_load(1);
