@@ -19,7 +19,7 @@ static void check(const char *what, int ok)
     bad += !ok;
 }
 
-static const char *const KIND[] = {"voice", "block", "depth", "step", "cc", "send", "cord", "fill", "tempo"};
+static const char *const KIND[] = {"voice", "block", "depth", "step", "cc", "send", "cord", "fill", "tempo", "bus"};
 
 static cord_t C(uint32_t src, uint32_t st, uint32_t dst, uint32_t dt, int32_t amount, int32_t offset)
 {
@@ -433,6 +433,128 @@ static int behaviour(void)
 /* the effects (2026-10-28): an insert's MIX / RATE / CHAR and SEND 2 / 3 for the track's block, the send effects'
  * for every track (CK_GLOBAL, its track ignored); ECHO's TIME glides, REVERB's SIZE a sample at a time (ROOM's
  * jumps: a glide measured no better on its short combs) */
+/* the MIX buses (CK_BUS, CS_BUSA): each MODE, LAG, the one-block delay, a bus fed into itself, off with no cord */
+static int32_t bus_after(uint32_t blocks)
+{
+    while (blocks--) cord_tick();
+    return cord_bus_now(0);
+}
+static int buses(void)
+{
+    int fails = bad;
+    cord_t c;
+    int32_t v[6];
+    uint32_t i;
+    host_tracks_init();
+    tessera_reset();
+    check("buses: BUS A / B the sources after MACRO 4, bipolar, the project's (none of a track's)",
+          !strcmp(cord_src_name(CS_BUSA), "BUS A") && !strcmp(cord_src_name(CS_BUSB), "BUS B") && cord_bipolar(CS_BUSA, 0) &&
+          cord_bipolar(CS_BUSB, 3) && CS_BUSA == CS_MACRO4 + 1u && CS_N == CS_BUSB + 1u);
+    check("...a new project: SUM, LAG OFF, both at 0", !cord_bus_get(0) && !cord_bus_get(1) && !cord_bus_get(2) &&
+          !cord_bus_get(3) && !cord_bus_now(0) && !cord_bus_now(1));
+    cord_tick();
+    check("...no cord into them: they stay at 0 (the off position)", !cord_bus_now(0) && !cord_bus_now(1));
+    c = C(CS_OFF, 0, CD_BUS_A, 2, 0, 30);               /* fixed +30 % and +50 % into A */
+    cord_set(0, &c);
+    check("...a bus cord is the project's: its destination track kept 0", cord_get(0)->dst_trk == 0u);
+    c = C(CS_OFF, 0, CD_BUS_A, 0, 0, 50);
+    cord_set(1, &c);
+    check("...nothing moves it before its block", !cord_bus_now(0));
+    v[0] = bus_after(1);
+    check("SUM: +30 % and +50 % make +80 %", v[0] == 32768 * 30 / 100 + 32768 * 50 / 100);
+    c.offset = 90;
+    cord_set(1, &c);
+    check("...+30 % and +90 %: clamped to 1", bus_after(1) == 32767);
+    c.offset = -60;
+    cord_set(1, &c);
+    check("...+30 % and -60 %: -30 %", bus_after(1) == 32768 * 30 / 100 - 32768 * 60 / 100);
+    tessera_param_set(0, TX_BUSA_MODE, CB_MAX);
+    check("MAX: the higher of +30 % and -60 %", bus_after(1) == 32768 * 30 / 100);
+    tessera_param_set(0, TX_BUSA_MODE, CB_MIN);
+    check("MIN: the lower", bus_after(1) == -(32768 * 60) / 100);
+    tessera_param_set(0, TX_BUSA_MODE, CB_DIFF);
+    check("DIFF: how far apart the first two, |+30 - -60| = 90 %", bus_after(1) == 32768 * 30 / 100 + 32768 * 60 / 100);
+    c = C(CS_OFF, 0, CD_BUS_A, 0, 0, 100);              /* a third cord: DIFF reads only the first two */
+    cord_set(2, &c);
+    check("...a third cord left out", bus_after(1) == 32768 * 30 / 100 + 32768 * 60 / 100);
+    cord_clear();
+    /* gates as logic: T1 and T2 LFO as GATEs (over 0) at 100 % into bus A */
+    c = C(CS_LFO, 0, CD_BUS_A, 0, 100, 0); c.uni = CU_GATE; cord_set(0, &c);
+    c = C(CS_LFO, 1, CD_BUS_A, 0, 100, 0); c.uni = CU_GATE; cord_set(1, &c);
+    for (i = 0; i < 4u; i++) {                          /* (00 01 10 11) */
+        uint32_t m;
+        int32_t o[4];
+        trk[0].lfo_val = (i & 1u) ? 20000 : -20000;
+        trk[1].lfo_val = (i & 2u) ? 20000 : -20000;
+        trk[0].lfo_fade = trk[1].lfo_fade = 32767;
+        for (m = 0; m < 4u; m++) {
+            tessera_param_set(0, TX_BUSA_MODE, (int32_t)m);
+            o[m] = bus_after(1) >= 16384;
+        }
+        v[i] = o[1] | o[2] << 1 | o[3] << 2;            /* (MAX MIN DIFF, as gates past half) */
+    }
+    check("...two gates: MAX is OR, MIN is AND, DIFF is XOR", v[0] == 0 && v[1] == 5 && v[2] == 5 && v[3] == 3);
+    trk[0].lfo_val = trk[1].lfo_val = 0;
+    cord_clear();
+    /* LAG: a fixed +100 % into A at LAG 10 ms rises over ~14 blocks (1378 a second), and falls as slowly */
+    tessera_param_set(0, TX_BUSA_LAG, 1);
+    c = C(CS_OFF, 0, CD_BUS_A, 0, 0, 100);
+    cord_set(0, &c);
+    v[0] = bus_after(1);
+    v[1] = bus_after(5);
+    v[2] = bus_after(10);
+    check("LAG 10 ms: a whole move takes 14 blocks, in even steps", v[0] > 0 && v[0] < 32767 / 10 && v[1] - 6 * v[0] >= 0 && v[1] - 6 * v[0] <= 6 &&
+          v[2] == 32767);
+    c.offset = 0;
+    cord_set(0, &c);
+    v[3] = bus_after(7);
+    v[4] = bus_after(10);
+    check("...its cord at 0: it falls back as slowly, then rests", v[3] > 32767 / 3 && v[3] < 2 * 32767 / 3 && v[4] == 0);
+    tessera_param_set(0, TX_BUSA_LAG, 11);              /* 20 s */
+    c.offset = 100;
+    cord_set(0, &c);
+    v[0] = bus_after(1378);
+    check("...LAG 20 s: a second rises 1/20", v[0] > 32767 / 20 - 64 && v[0] < 32767 / 20 + 64);
+    tessera_param_set(0, TX_BUSA_LAG, 0);
+    check("...LAG OFF: at once", bus_after(1) == 32767);
+    tessera_param_set(0, TX_BUSA_LAG, 99);
+    tessera_param_set(0, TX_BUSA_MODE, -3);
+    check("MODE and LAG kept in range (20 s, SUM), any track's the same", tessera_param_get(0, TX_BUSA_LAG) ==
+          (int32_t)CB_LAGS - 1 && tessera_param_get(2, TX_BUSA_LAG) == (int32_t)CB_LAGS - 1 &&
+          tessera_param_get(0, TX_BUSA_MODE) == CB_SUM);
+    tessera_reset();
+    check("...a new project: back to SUM, OFF, at rest", !cord_bus_get(1) && !cord_bus_get(0) && !cord_bus_now(0));
+    /* the one-block delay: +10 % and BUS A at 100 % into A integrates, a block a step */
+    c = C(CS_OFF, 0, CD_BUS_A, 0, 0, 10); cord_set(0, &c);
+    c = C(CS_BUSA, 0, CD_BUS_A, 0, 100, 0); cord_set(1, &c);
+    v[0] = bus_after(1); v[1] = bus_after(1); v[2] = bus_after(1);
+    check("one block late: a bus into itself adds its last value (+10 %, +20 %, +30 %)",
+          v[0] == 3276 && v[1] == 2 * 3276 && v[2] == 3 * 3276);
+    v[3] = bus_after(100);
+    check("...and stops at the clamp, stable", v[3] == 32767 && bus_after(10) == 32767);
+    c.amount = -100; cord_set(1, &c);                   /* -100 %: x = 10 % - x, a block each way */
+    for (i = 0, v[0] = 40000, v[1] = -40000; i < 200u; i++) {
+        int32_t x = bus_after(1);
+        if (i > 4u) v[0] = x < v[0] ? x : v[0], v[1] = x > v[1] ? x : v[1];
+    }
+    v[2] = bus_after(1); v[3] = bus_after(1); v[4] = bus_after(1);
+    check("...at -100 %: a swing a block each way round +5 %, bounded by the clamp", v[0] >= -32767 && v[1] <= 32767 &&
+          v[1] > v[0] && v[2] == v[4] && v[2] != v[3] && v[2] + v[3] == 3276);
+    c.amount = -50; cord_set(1, &c);
+    v[0] = bus_after(300);
+    check("...at -50 %: settles at 10 / 1.5 = 6.7 %", v[0] > 2150 && v[0] < 2220 && bus_after(1) == v[0]);
+    c = C(CS_BUSA, 0, CD_BUS_B, 0, 100, 0); cord_set(2, &c);   /* A into B: B one block behind A */
+    v[0] = cord_bus_now(0);
+    cord_tick();
+    check("A into B: B reads A as it was the block before", cord_bus_now(1) == v[0]);
+    c = C(CS_BUSB, 0, CD_PAN, 1, 100, 0); cord_set(3, &c);    /* B onto track 2's PAN: as any source */
+    trk[1].p[P_PAN] = 0;
+    mod_begin(&trk[1]); v[1] = trk[1].p[P_PAN]; mod_end(&trk[1]);
+    check("...a bus moves a track's parameter as any source", v[1] > 0 && trk[1].p[P_PAN] == 0);
+    cord_clear();
+    return bad - fails;
+}
+
 static void fresh_tracks(void);
 static int fx_dests(void)
 {
@@ -816,6 +938,8 @@ int main(int argc, char **argv)
             if (d->pid != PID_NONE || d->md || c != CD_TEMPO) mods = 0;
         } else if (d->kind == CK_CC) {                  /* (CC OUT: a MIDI CC, no parameter) */
             if (d->pid != PID_NONE || d->md || c != CD_CC) mods = 0;
+        } else if (d->kind == CK_BUS) {                 /* (the MIX buses: no parameter) */
+            if (d->pid != PID_NONE || d->md || (c != CD_BUS_A && c != CD_BUS_B)) mods = 0;
         } else if (d->kind == CK_VOICE || d->kind == CK_DEPTH) {
             if (d->pid != PID_NONE || !d->md || d->md >= MD_N || (d->md >= MD_RESERVED6 && d->md <= MD_RESERVED9) ||
                 (d->kind == CK_VOICE) != (d->md <= MD_AMP) || (d->kind == CK_DEPTH) != (d->md == MD_DEPTH))
@@ -847,6 +971,7 @@ int main(int argc, char **argv)
     (void)fx_dests();
     (void)adoption();
     (void)drift_and_defaults();
+    (void)buses();
 
     {
         FILE *f = fopen(golden, update ? "w" : "r");

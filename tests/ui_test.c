@@ -1247,7 +1247,9 @@ static int test_oct_grammar_m0(void)
     frame();
     ui.msg_t = 0;
     hold(B_OCTUP);
-    bad += check("M1: MODS, OCT+ held: NO SHEET, the mod's BI / UNI unchanged", msg_is("NO SHEET") && !cord_get(0)->uni);
+    bad += check("M1: MODS, OCT+ held: MODS' sheet (the MIX buses), the mod's BI / UNI unchanged",
+                 pop.on == POP_SHEET && str_eq(pop.title, "Mods") && !msg_is("NO SHEET") && !cord_get(0)->uni);
+    press(B_OCTDN);
     press(B_OCTUP);
     bad += check("M1: MODS, OCT+ tapped: still the mod's BI / UNI", cord_get(0)->uni != 0u);
     cord_clear();
@@ -1469,8 +1471,23 @@ static int test_cords_page(void)
     for (i = 0; i < 6u; i++) { frame(); fm1_ms += 200u; host_ticks += 200000u; }   /* (held 1.2 s) */
     fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
     frame();
-    bad += check("..OCT+ held on MODS, let go untouched: no sound sheet (MODS is not a sound page), the mod as it was (BI)",
-                 pop.on != POP_SHEET && !c->uni);
+    bad += check("..OCT+ held on MODS, let go untouched: MODS' sheet (the MIX buses), the mod as it was (BI)",
+                 pop.on == POP_SHEET && str_eq(pop.title, "Mods") && pop.n == 4u && !c->uni);
+    turn(EN_K1 + 1u, 1);
+    bad += check("..the sheet's KNOB 2 on its first row: BUS A's MODE, SUM to MAX", cord_bus_get(0) == CB_MAX &&
+                 tessera_param_get(0, TX_BUSA_MODE) == CB_MAX && pop.on == POP_SHEET);
+    turn(EN_K1 + 1u, -1);
+    turn(EN_K1 + 1u, -1);
+    bad += check("..a MODE goes round: MAX, SUM, back to DIFF", cord_bus_get(0) == CB_DIFF);
+    turn(EN_K1, 1);
+    turn(EN_K1 + 1u, -1);
+    bad += check("..its second row: BUS A's LAG, stops at OFF", pop.sel == 1u && !cord_bus_get(1));
+    turn(EN_K1 + 1u, 1);
+    turn(EN_K1 + 1u, 1);
+    press(B_OCTUP);
+    bad += check("..KNOB 2 to 20 ms, OCT+ steps it on (50 ms) and closes the sheet, the mod as it was",
+                 cord_bus_get(1) == 3u && pop.on != POP_SHEET && !c->uni && cur_page()->graph == GR_CORDS);
+    cord_bus_set(0, CB_SUM); cord_bus_set(1, 0);
     press(B_OCTUP);
     turn(EN_K1 + 3u, -3);
     bad += check("KNOB 4: the amount down by 3 (22 %)", c->amount == 22);
@@ -1579,8 +1596,8 @@ static int test_cords_scroll_playing(void)
         cords_blocks(24);
     }
     bad += check("..KNOB 3 a detent at a time through every track's destinations, then the send effects' and the mods' "
-                 "moves, FILL and TEMPO (once, no track), playing between: the last reached (TEMPO)",
-                 k->dst == CD_TEMPO && k->dst_trk == 0u && (seen & 1u) && pop.on == POP_PICK);
+                 "moves, FILL, TEMPO and the MIX buses (once, no track), playing between: the last reached (BUS B)",
+                 k->dst == CD_BUS_B && k->dst_trk == 0u && (seen & 1u) && pop.on == POP_PICK);
     {                                                   /* the list: each entry back to itself, the send effects' last */
         uint32_t v, round = 1, globals = 0;
         int32_t tr;
@@ -1592,8 +1609,8 @@ static int test_cords_scroll_playing(void)
             if (cu_global(e.dst)) globals++, round &= tr == -1 && v > NTRK * CU_DPT;
             else round &= tr == (int32_t)e.dst_trk;
         }
-        bad += check("..its list: every entry to its destination and back, the 10 send effects', 16 M AMT, FILL and "
-                     "TEMPO once, with no track", round && globals == 28u && CU_NDST == 1u + NTRK * CU_DPT + 28u);
+        bad += check("..its list: every entry to its destination and back, the 10 send effects', 16 M AMT, FILL, "
+                     "TEMPO, BUS A and B once, with no track", round && globals == 30u && CU_NDST == 1u + NTRK * CU_DPT + 30u);
     }
     for (i = 0; i < CU_NDST + 4u; i++) {
         turn(EN_K1 + 2u, -1);
