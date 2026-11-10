@@ -1135,6 +1135,7 @@ static void tessera_answer_heard(uint32_t src, uint32_t note);   /* (answer.c) *
 void tessera_hold_hit(uint32_t tr)
 {
     cord_clock_hit(tr);                                     /* (a CLOCK cord from its GATE: a hit is a step) */
+    cord_hold_note(tr);                                     /* (HOLD mods clocked by its notes) */
     int32_t n = tessera.last_note[tr];                      /* (its note, as FOLLOW takes it: a STEP track's highest) */
     if (tessera.mode[tr] == TESS_ENG_OFF)
         for (uint32_t i = n = 0; i < trk[tr].seq_n; i++) if ((int32_t)trk[tr].seq_notes[i] > n) n = trk[tr].seq_notes[i];

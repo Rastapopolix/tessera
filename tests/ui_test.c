@@ -3841,6 +3841,23 @@ static int test_mod_hold(void)
     project_load(1);
     v[2] = (int16_t)cord_get(0)->uni;
     bad += check("HOLD: saved with the project (part 41)", v[2] == CU_HOLD && cord_hold_mask() == 1u);
+    cord_hold_clk_set(0, 3u);                           /* (G2: clocked by T3's notes, saved apart) */
+    project_save(1);
+    cord_clear();
+    project_load(1);
+    bad += check("HOLD on T3's notes: saved with the project (part 46)", cord_get(0)->uni == CU_HOLD && cord_hold_clk(0) == 3u);
+    go_page(GR_CORDS);
+    cord_ui_sel = 0;
+    frame();
+    fm1_ms += 3000u; host_ticks += 3000000u;
+    fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+    host_pressed |= 1u << panel.btn[B_OCTDN];
+    frame();
+    turn(EN_K1, 1);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
+    frame();
+    bad += check("..OCT- held + KNOB 1: T4's notes, the source kept, no Back", cord_hold_clk(0) == 4u &&
+                 cord_get(0)->src == CS_MACRO1 && cur_page()->graph == GR_CORDS);
     cord_clear();
     project_save(1);
     project_load(1);

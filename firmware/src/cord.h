@@ -170,6 +170,14 @@ const cord_t *cord_get(uint32_t i);
 void cord_hold_bar(uint32_t tr);                    /* seq.c: track tr's bar begins (its HOLD mods sample) */
 uint32_t cord_hold_mask(void);                      /* bit i: cord i is HOLD (the project's part TSP_MHOLD) */
 void cord_hold_load(uint32_t m);                    /* .. and back, after cord_unpack */
+/* a HOLD mod's clock (G2): 0 its destination track's bar (cord_hold_bar), 1..4 each note of track 1..4 (cord_hold_note,
+ * from tessera.c tessera_hold_hit); kept only while the mod is HOLD. Saved: the project's part TSP_MHCLK, CORD_LIVE
+ * nibbles (older firmware: by the bar) */
+#define CORD_HCLK_BYTES (CORD_LIVE / 2u)
+uint32_t cord_hold_clk(uint32_t i);
+void cord_hold_clk_set(uint32_t i, uint32_t v);
+int cord_hold_clk_pack(uint8_t *out);               /* 0: every one by the bar (nothing to save) */
+void cord_hold_clk_load(const uint8_t *in);         /* after cord_hold_load; a nibble past 4: by the bar */
 /* SCALE (G7): a mod onto M1 AMT .. M16 AMT that multiplies that mod's move by its own, 0..1 (AMOUNT +: the source
  * opens it; -: closes it) in place of adding to it. Bit i: cord i (only one onto an M AMT; the project's part
  * TSP_MVCA: older firmware adds) */

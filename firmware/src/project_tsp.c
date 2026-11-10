@@ -18,7 +18,7 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
        TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_HOW, TSP_ORACLE,
        TSP_ENERGY, TSP_DEV, TSP_TRANSP, TSP_TUNE, TSP_SOUND, TSP_CHAIN, TSP_ENTRY, TSP_PLAN, TSP_PERF, TSP_HOLD,
        TSP_CCN, TSP_FKEY, TSP_SPLIT, TSP_FMODE, TSP_PGEN, TSP_DMAP, TSP_EORDER, TSP_USCALE, TSP_SDIR, TSP_MHOLD,
-       TSP_STRUM, TSP_BUS, TSP_MVCA, TSP_MDEPTH,
+       TSP_STRUM, TSP_BUS, TSP_MVCA, TSP_MDEPTH, TSP_MHCLK,
        TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
@@ -68,13 +68,16 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * TSP_MVCA: the mods of mods that SCALE (G7), a u16 mask (bit i: cord
                                               * i), written only when one is; none: all ADD (older firmware: ADD);
                                               * TSP_MDEPTH: MOD DEPTH (G9, 0..100), written only when not 100;
-                                              * none: 100 */
+                                              * none: 100;
+                                              * TSP_MHCLK: each HOLD mod's clock (G2), a nibble each (cord i: byte
+                                              * i / 2, its low nibble when even), 0 the bar, 1..4 a track's notes,
+                                              * written only when one is not 0; none: every one by the bar */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
                TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_PERF == 30 &&
                TSP_HOLD == 31 && TSP_CCN == 32 && TSP_FKEY == 33 && TSP_SPLIT == 34 && TSP_FMODE == 35 &&
                TSP_PGEN == 36 && TSP_DMAP == 37 && TSP_EORDER == 38 && TSP_USCALE == 39 &&
                TSP_SDIR == 40 && TSP_MHOLD == 41 && TSP_STRUM == 42 && TSP_BUS == 43 &&
-               TSP_MVCA == 44 && TSP_MDEPTH == 45,
+               TSP_MVCA == 44 && TSP_MDEPTH == 45 && TSP_MHCLK == 46,
                "the parts' numbers are stored: never renumbered");
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -323,6 +326,14 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
             tsp_begin(&w, TSP_MVCA, 1);
             tsp_u16(&w, cord_vca_mask());
             tsp_end(&w);
+        }
+        {
+            uint8_t hc[CORD_HCLK_BYTES];
+            if (cord_hold_clk_pack(hc)) {              /* (HOLD's clocks: only when one is a track's notes) */
+                tsp_begin(&w, TSP_MHCLK, 1);
+                tsp_bytes(&w, hc, sizeof hc);
+                tsp_end(&w);
+            }
         }
         if (cord_mdepth_get() < 100u) {                /* (MOD DEPTH: only when turned down) */
             tsp_begin(&w, TSP_MDEPTH, 1);
@@ -766,6 +777,7 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
     }
     if (tsp_seen.at[TSP_MHOLD] && (tsp_seen.ver[TSP_MHOLD] != 1u || tsp_seen.len[TSP_MHOLD] != 2u)) return 0;
     if (tsp_seen.at[TSP_MVCA] && (tsp_seen.ver[TSP_MVCA] != 1u || tsp_seen.len[TSP_MVCA] != 2u)) return 0;
+    if (tsp_seen.at[TSP_MHCLK] && (tsp_seen.ver[TSP_MHCLK] != 1u || tsp_seen.len[TSP_MHCLK] != CORD_HCLK_BYTES)) return 0;
     if (tsp_seen.at[TSP_MDEPTH] && (tsp_seen.ver[TSP_MDEPTH] != 1u || tsp_seen.len[TSP_MDEPTH] != 1u ||
                                     raw[tsp_seen.at[TSP_MDEPTH]] > 100u)) return 0;
     if (tsp_seen.at[TSP_BUS]) {
@@ -835,6 +847,7 @@ static void tsp_restore(const uint8_t *raw)
     if (tsp_seen.at[TSP_TESSERA]) tessera_unpack_ver(raw[tsp_seen.at[TSP_TESSERA]], raw + tsp_seen.at[TSP_TESSERA] + 1u);
     if (tsp_seen.at[TSP_CORDS]) (void)cord_unpack(raw + tsp_seen.at[TSP_CORDS]);
     if (tsp_seen.at[TSP_MHOLD]) cord_hold_load(tsp_u16_at(raw + tsp_seen.at[TSP_MHOLD]));
+    if (tsp_seen.at[TSP_MHCLK]) cord_hold_clk_load(raw + tsp_seen.at[TSP_MHCLK]);   /* (after HOLD's mask) */
     if (tsp_seen.at[TSP_MVCA]) cord_vca_load(tsp_u16_at(raw + tsp_seen.at[TSP_MVCA]));
     if (tsp_seen.at[TSP_MDEPTH]) cord_mdepth_set(raw[tsp_seen.at[TSP_MDEPTH]]);   /* (none: cord_reset's 100) */
     if (tsp_seen.at[TSP_BUS])                          /* (none: tessera_reset's SUM, OFF) */

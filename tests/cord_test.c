@@ -427,6 +427,39 @@ static int behaviour(void)
         trk[2].p[P_LEVEL] = 100;
     }
 
+    /* HOLD on a track's notes (G2, cord_hold_clk): sampled on each note of the clock track, not on the bar */
+    {
+        uint32_t lv[4];
+        uint8_t hc[CORD_HCLK_BYTES];
+        cord_clear();
+        trk[0].p[P_LPOL] = 0; trk[0].lfo_fade = 32767;
+        trk[0].lfo_val = 16000;
+        c = C(CS_LFO, 0, CD_LEVEL, 2, 40, 0);          /* mod 1: T1 LFO HOLD -> T3 LEVEL, clocked by T2's notes */
+        c.uni = CU_HOLD;
+        cord_set(0, &c);
+        cord_hold_clk_set(0, 2u);
+        lv[0] = (uint32_t)cord_hval[0];
+        trk[0].lfo_val = -16000;
+        cord_hold_bar(2);                               /* (its destination's bar: no longer its clock) */
+        cord_hold_note(0);                              /* (another track's note: nothing) */
+        lv[1] = (uint32_t)cord_hval[0];
+        tessera_hold_hit(1);                            /* (T2 plays a note) */
+        lv[2] = (uint32_t)cord_hval[0];
+        check("HOLD on T2's notes: not on T3's bar nor T1's note, taken on T2's",
+              cord_hold_clk(0) == 2u && lv[1] == lv[0] && (int16_t)lv[2] < 0);
+        check("...saved apart (a nibble a mod), loaded back", cord_hold_clk_pack(hc) && hc[0] == 2u);
+        cord_hold_clk_set(0, 0);
+        check("...nothing to save by the bar", !cord_hold_clk_pack(hc));
+        hc[0] = 0x32u;                                  /* (mod 1 T2, mod 2 T3: mod 2 not HOLD) */
+        cord_hold_clk_load(hc);
+        check("...a mod that is not HOLD takes no clock", cord_hold_clk(0) == 2u && cord_hold_clk(1) == 0u);
+        c.uni = CU_BI;
+        cord_set(0, &c);
+        check("...no longer HOLD: its clock gone", cord_hold_clk(0) == 0u);
+        cord_clear();
+        trk[2].p[P_LEVEL] = 100;
+    }
+
     /* GATE (CU_GATE): all while the source is over the threshold (its OFFSET), none under it; FILL held past half */
     {
         uint32_t lv[4];
