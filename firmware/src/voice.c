@@ -53,6 +53,7 @@ static uint32_t lfo_rand(track_t *t)
  * burst goes in 512 units at a time to stay in 32 bits. OFF: RATE's table, as before */
 static uint32_t seq_div_samples(uint32_t div);     /* (mix.c) */
 static uint32_t lfo_block_units;                   /* events_block, before the tracks render */
+static uint32_t lfo_units_run;                     /* .. all of them since power-on (MODS' scope: mscope.c) */
 static uint16_t lfo_sync_rem[NTRK];
 static __attribute__((noinline)) uint32_t lfo_sync_inc(const track_t *t)   /* (not inlined: its divides stay out of
                                                                            * the audio ISR's loop over the tracks) */

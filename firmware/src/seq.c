@@ -1578,6 +1578,7 @@ static void events_block(uint32_t n)
         if(left) { uint32_t units = int_clock_units(left); seq_advance(units); lfo_units += units; }   /* (mix.c) */
     }
     lfo_block_units = lfo_units;
+    lfo_units_run += lfo_units;
     if (song.playing)
         song.tick++;
 }

@@ -64,6 +64,7 @@ static void TESSERA_NOTE_HOOK(track_t *t, uint32_t note, uint32_t vel);
 #include "../firmware/src/pat_gen.c"
 #include "../firmware/src/pid.c"
 #include "../firmware/src/cord.c"
+#include "../firmware/src/mscope.c"
 #ifdef TESSERA_NOTE_HOOK
 #undef trk_note_on
 #endif
