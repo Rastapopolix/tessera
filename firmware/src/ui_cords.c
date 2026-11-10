@@ -154,6 +154,7 @@ static void cu_chip(int32_t x, int32_t y, int32_t w, uint32_t tr, const char *s,
 /* MOD SCOPE (gap G14; mscope.c samples, ui_mono.c mo_scope draws): OCT- held on MODS shows the picked mod's move over
  * time under its row, in the other three rows' place; letting go, the rows again. 1 while shown (cu_scope_draw) */
 static uint8_t cu_scope;
+static uint8_t cu_thr_t;                                /* frames left of a GATE's threshold drawn across (KNOB 4) */
 /* the cord shown in row k of four: the screenful, or with the scope under it the picked one alone; CORD_LIVE none */
 static uint32_t cu_slot(uint32_t k)
 {
@@ -307,22 +308,26 @@ static void cu_leds(void)
 static void cu_scope_draw(int held)                     /* held: OCT- held, nothing over the page (ui_pages.c) */
 {
     static uint32_t was;
+    const cord_t *c = cord_get(cord_ui_sel);
     uint32_t key;
     mscope_take(cord_ui_sel);
     cu_scope = (uint8_t)(MELODEE_LOOK && held);
+    cu_thr_t -= (uint8_t)(cu_thr_t != 0u);
 #if MELODEE_LOOK
     key = mscope.col | (uint32_t)mscope.bars << 8 | (uint32_t)cord_ui_sel << 16 | (ux.pal & 7u) << 21 |
           (uint32_t)mscope.full << 24 | (uint32_t)cu_scope << 25 | (ux.gen & 15u) << 26;
+    if (cord_gate(c))                                   /* (its threshold, shut or open, across or the wedges) */
+        key = key * 31u + (uint8_t)c->offset * 4u + (uint32_t)cord_gate_on(c) * 2u + (cu_thr_t != 0u);
     if (!cu_scope || (!ui.force && key == was)) {
         was = cu_scope ? key : 0u;
         return;
     }
     was = key;
-    cv_begin(240, 3 * CU_H, T_BG);
-    mo_scope(3, 3 * CU_H / 2 - 6);
-    cv_blit(0, (uint32_t)(CU_Y + CU_H));
+    cv_begin(240, 124, T_BG);                           /* (the canvas's most, gfx.c CV_MAX: 124 of the rows' 144, */
+    mo_scope(2, 58, cu_src_trk(c->src) ? (int32_t)c->src_trk : -1, cu_thr_t != 0u);   /* centred) */
+    cv_blit(0, (uint32_t)(CU_Y + CU_H + 10));
 #else
-    (void)was, (void)key;
+    (void)was, (void)key, (void)c;
 #endif
 }
 
@@ -429,6 +434,7 @@ static int cu_thresh_knob(int32_t steps)
     str_cpy(b, "GATE OVER ", sizeof b);
     cu_pct_text(b + str_len(b), c.offset);
     ui_message(b);
+    cu_thr_t = 64;                                      /* (about a second, then the wedges at the edges again) */
     return 1;
 }
 
