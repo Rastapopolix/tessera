@@ -428,6 +428,40 @@ track 2's notes.
 **Variation:** a second mod from the same source to **T3 SHIFT** (+30, HOLD on T2's notes): track 3 is transposed
 in its scale at the same moments.
 
+#### Passing the phrase
+
+*On a modular: a chain of sequencers that each record what the one before played and play it back, changed, the last
+one patched round to the first: a phrase handed along a line of players, then round a circle (and, without any
+modules, a round of "telephone").*
+
+**What you hear:** a phrase that travels: track 1 plays it, track 2 answers it, track 3 answers track 2, track 4
+answers track 3, each a little changed. Close the line into a ring and the phrase goes round and round on its own,
+drifting a step at a time, with no new material and no cords.
+
+**Cords:** none. It's a generator-only patch: each ANSWER's SOURCE is the track before it.
+
+**Keys:**
+1. Track 1 plays a generator (TURING on GLASS PAD, LENGTH **8**, PROB **10**), or a STEP pattern.
+2. Track 2, **SEQ** for GEN: MODE **ANSWER**, **KNOB 4** FADE **1** (one answer, then it listens again). Hold
+   **OCT-** and turn **KNOB 2** to SOURCE **T1**. Track 2 takes in up to 8 of track 1's notes, rests, and answers.
+3. Track 3: ANSWER, FADE **1**, SOURCE **T2**. Track 4 (808 KIT or any sound): ANSWER, FADE **1**, SOURCE **T3**.
+   Press **PLAY**: the phrase runs down the line.
+4. Close the ring while it plays: track 2's SOURCE to **T4**. Track 2 starts again and listens to track 4; tracks 3
+   and 4 are still busy, so the ring starts itself. Track 1 now plays to nobody: mute it on **MIXER**, or let it be a
+   bass under the ring.
+
+**Watch it:** there's no mod to scope here. On GEN, ANSWER draws what it is doing: select tracks 2, 3 and 4 in turn
+and each one shows **LISTENING** while it takes the phrase in, then its answer playing.
+
+**Variation:** mute two of the three ANSWER tracks on MIXER: a muted track still listens and passes its notes on, so
+you hear one voice of the turning ring. Or a conversation of two: track 3's SOURCE **T2** and track 2's **T3**.
+
+Each ANSWER listens only while it isn't answering, so with FADE 1 the phrase moves on after every answer. VARY
+(KNOB 2) sets how much each hop changes it: low, it drifts slowly; high, notes move, swap and drop out, and the phrase
+can thin away. Point track 2 back at **T1** to feed the ring fresh material. FADE at its top (**LOOPS**) does the
+opposite: each track keeps looping the last phrase it heard and stops listening, so the ring freezes, each
+track's phrase running on as loops of its own.
+
 **Try next: one track's notes open another's mod.** `T3 ENV → M2 AMT, +100`, scaling (hold OCT-, KNOB 3 right),
 where mod 2 is `T1 LFO → T1 CUTOFF, +40`: the pad's filter moves only while track 3's notes ring.
 
