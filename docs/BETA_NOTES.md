@@ -21,6 +21,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - HOLD mods: OCT+ on MODS cycles +- / + / GATE / HOLD. HOLD takes the source at the start of each bar and keeps it until the next.
 - Chord kinds SUS2, 7SUS4, ADD9 and MAJ6 on CHRD (SCL > CHORD, or the CHORD track's layer), after POW: fixed shapes on any note, for the chord keys, MIDI in, step entry, the arp and the CHORD generator.
 - Keys: OCT+ goes in, OCT- goes back. Held, OCT+ opens the page's sheet (the header shows its name and a line filling until it opens; a page without one says NO SHEET) and OCT- gives the page's second set of knobs while held. Moved from OCT+ held to OCT- held: FORM (DEVELOP, CHAIN, SKIP, ROLE), TIMING (SPLIT, HOW), ENERGY (DEPTH), CHAIN (REPEAT), MIXER (PAN) and MODS (a GATE's threshold, a CC mod's number). The OCT- LED is lit on pages that have such a layer. GEN, EVOLVE, TWEAK, MIDI OUT, ENTRIES and PIECE move in a later beta.
+- MIX buses: BUS A and BUS B, two mixers for mods. Send any mods into a bus (the end of KNOB 3's list on MODS) and use the bus as a source (the end of KNOB 1's list). Hold OCT+ on MODS for its sheet: each bus's Mode (SUM, MAX, MIN, DIFF: with gates OR, AND, XOR) and Lag (OFF, 10 ms to 20 s: a gate into a lagged bus is an envelope). A bus can feed itself, one block late, safely.
 
 ## Fixed
 - A long OCT- press no longer goes back on any page (it did on FORM, TIMING, ENERGY, CHAIN, MIXER and the sound pages), and a knob turned while an OCT key is held no longer counts as a tap of it.
@@ -36,6 +37,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - GROUND is kept with the settings, not in the palette: older firmware keeps your ink and draws it on black.
 - On older firmware, a strummed project plays its chords together, a pattern with a direction plays FWD, and a HOLD mod plays as +-.
 - A project with CHRD SUS2, 7SUS4, ADD9 or MAJ6 plays POW (power chords) on 3.4.x and earlier betas. A cord or MIDI CC on CHRD now spreads over 14 kinds, not 10, so it lands on slightly different ones.
+- A project with a mod into or out of a MIX bus does not load on 3.4.x or earlier betas; the bus settings alone are ignored there.
 
 ## Please try
 - PAT GEN with different generators on two patterns: switch by hand and with SONG, save, power off and on, load.
@@ -43,6 +45,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - PRINT ARP: an ARP track with a chord held, hold REC after two bars; then EDIT held.
 - ROLL and ROLL ALL on EVOLVE, stopped and playing: the screen says NEW LINE (NEW LINE AT BAR while playing).
 - Web editor: an ORACLE or TRIO user preset shows in the Sound list; Save to file on an FM6 user preset uses its own name.
+- MIX buses: two LFOs into BUS A at SUM, BUS A as a GATE onto FILL; a track's GATE into BUS B with Lag 200 ms onto CUTOFF; save, load.
 - RANDOM on GEN with a few generators, stopped and playing; then turn back.
 - GROUND LIGHT with a few inks and a MOSAIC set: HOME, the pages, LANDSCAPE, the boot screen after a power cycle; is everything readable on the device's panel?
 - USER scales: make one on the keys, play a generator in it, save, power off and on, load; load that project on 3.4.1 (it plays the scale picked under it).
