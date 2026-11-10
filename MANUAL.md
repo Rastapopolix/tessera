@@ -770,7 +770,7 @@ register. The chord's kind and voicing are on the GEN sheet (and on SCL > CHORD)
 
 | Knob (OCT- held) | Setting | What it does |
 |---|---|---|
-| 2 | **STRUM** (OFF, 5 to 60 ms, 5 ms a detent) | The time between one note of the chord and the next, as a strummed chord. A four-note chord at 40 ms spreads over 120 ms. OFF strikes them together, as before. |
+| 2 | **STRUM** (OFF, 1 to 250 ms) | The time between one note of the chord and the next, as a strummed chord. A four-note chord at 40 ms spreads over 120 ms. The knob goes by 1 ms up to 10 (a flam), by 5 up to 60, then by 10: 100 ms and more is a slow roll that slow pads and strings let you hear. OFF strikes them together, as before. |
 | 3 | **DIR** | **UP**: the lowest note first. **DOWN**: the highest first. **ALT**: up, down, up and so on, a strike each, like strumming (from PLAY, so a piece replays the same). |
 | 4 | **OCT** (−2 to +2) | The chords' register from their home around C3. |
 | GEN sheet | **Chord** | SCL > CHORD's chord kind: OFF plays triads; DIA3 and DIA7 triads and sevenths in the scale; MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9, MAJ6 (fixed shapes on any note). |
@@ -789,7 +789,8 @@ number of chords played sets Length.
 - **MIDI OUT** sends each note when it sounds, so the notes go out strummed too (also with SOUND OFF).
 - Each note takes its voice when it starts. With fewer voices than notes the last ones steal, so DIR decides which
   note may take another's voice.
-- STRUM and DIR are saved with the project; firmware before STRUM plays the chords together.
+- STRUM and DIR are saved with the project; firmware before STRUM plays the chords together. 3.5-beta4 and beta5
+  took STRUM up to 60 ms only: they do not load a project with a longer STRUM.
 
 ### QUAD: columns and RANGE
 

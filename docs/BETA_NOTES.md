@@ -13,7 +13,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - RANDOM: hold OCT- on GEN or TWEAK and turn KNOB 1 right for new values on the page's knobs, each inside its range; turn left to put them back. MODE, the seed and FOLLOW never change (#529).
 - ARP modes: DNUP (down, then up) and RND1 (one random order, repeated until the held notes change; from the track's SEED, so PLAY replays it). SEQ > ARP, KNOB 1.
 - MIDI OUT DRUM MAP: GM or ROW, for drum machines that take their tracks as a row of notes (such as the Analog Rytm). MIDI OUT's sheet (OCT+ held).
-- CHORD STRUM: a CHORD track's notes start a few ms apart, like a played chord. STRUM (OFF, 5 to 60 ms) and DIR (UP, DOWN, ALT) on GEN, OCT- held, KNOB 2 and 3. Short strikes strum tighter; all notes end together.
+- CHORD STRUM: a CHORD track's notes start a few ms apart, like a played chord. STRUM (OFF, 1 to 250 ms: by 1 ms to 10, by 5 to 60, then by 10) and DIR (UP, DOWN, ALT) on GEN, OCT- held, KNOB 2 and 3. Short strikes strum tighter; all notes end together.
 - STEP direction: each pattern plays FWD, BACK, PEND, PONG, RAND or DRUNK. Direction row on the pattern's sheet (OCT+ held on PATTERN, NOTES, or GEN with STEP or ARP). RAND and DRUNK follow the SEED, so PLAY replays them.
 - DIR as a mod destination: a cord can move a pattern's direction at each step; a GATE mod switches direction while its source is high.
 - NOTES: OCT+ on an empty step no longer places a note (on the drum grid, no longer sets a hit); it says NOTHING THERE. KNOB 2 or a key places a note (the grid: KNOB 3 or a white key). OCT+ on a note still opens its sheet; held, OCT+ opens the pattern's sheet and the screen says PATTERN SHEET once the hold counts.
@@ -50,7 +50,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - Projects saved with these new settings lose them on 3.4.x.
 - A project with ARP MODE DNUP or RND1 plays REPEAT on 3.4.x and earlier betas (the last note held).
 - GROUND is kept with the settings, not in the palette: older firmware keeps your ink and draws it on black.
-- On older firmware, a strummed project plays its chords together, a pattern with a direction plays FWD, and a HOLD mod plays as +-.
+- On older firmware, a strummed project plays its chords together (3.5-beta4 and beta5 do not load a project with STRUM over 60 ms), a pattern with a direction plays FWD, and a HOLD mod plays as +-.
 - A project with CHRD SUS2, 7SUS4, ADD9 or MAJ6 plays POW (power chords) on 3.4.x and earlier betas. A cord or MIDI CC on CHRD now spreads over 14 kinds, not 10, so it lands on slightly different ones.
 - A project with a mod into or out of a MIX bus does not load on 3.4.x or earlier betas; the bus settings alone are ignored there.
 - On older firmware, a mod of mods that scales plays as one that adds (mod 3's amount plus its move).
@@ -71,7 +71,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - USER scales: make one on the keys, play a generator in it, save, power off and on, load; load that project on 3.4.1 (it plays the scale picked under it).
 - ANSWER on T2 with SOURCE T1, BOUNCE on T1: it shows LISTENING, takes up to 8 of the balls' notes, then answers them.
 - ARP DNUP and RND1 with a chord held: RND1 keeps its order, changes when a key is added, and is the same after STOP and PLAY.
-- CHORD STRUM on a CHORD track: STRUM 20 ms and up, DIR UP, DOWN and ALT, with BEAT or STEP stabs; MIDI OUT gets the notes spread too.
+- CHORD STRUM on a CHORD track: STRUM 20 ms and up, and 100 to 250 ms on a slow pad, DIR UP, DOWN and ALT, with BEAT or STEP stabs; MIDI OUT gets the notes spread too.
 - STEP direction: PONG and DRUNK on a melody, with SONG and a pattern change; save, load, and STOP and PLAY replays RAND.
 - CHRD SUS2, 7SUS4, ADD9, MAJ6 on the chord keys and on a CHORD track (the name on the CHORD page: Csus2, C7sus4, Cadd9, C6), with OPEN and +OCT.
 - HOLD mod: an LFO into a filter or pitch held per bar; a cord to DIR.

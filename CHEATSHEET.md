@@ -147,7 +147,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | Do this | And this happens |
 |---|---|
 | GEN: **KNOB 1** | MODE: STEP, ARP or a generator |
-| GEN: **OCT-** held, **KNOB 2** to **4** | The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD (COL, MOVE, EVERY), CHORD (STRUM, DIR, OCT), ATLAS (KICK, SNR, HAT), CONSTL (LOCK, LEN, FILL), ANSWER (SOURCE, ORDER, SHIFT) |
+| GEN: **OCT-** held, **KNOB 2** to **4** | The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD (COL, MOVE, EVERY), CHORD (STRUM 1-250 ms, DIR, OCT), ATLAS (KICK, SNR, HAT), CONSTL (LOCK, LEN, FILL), ANSWER (SOURCE, ORDER, SHIFT) |
 | GEN: **OCT+** held | The GEN sheet: QUAD's RANGE, CONSTL's SIZE, ATLAS' fourth part, ANSWER's SPACE, CHORD's CHRD, VOIC and BREATH / LEN |
 | EVOLVE: **OCT-** held | **KNOB 1** ROLL ALL; **KNOB 3** PAT GEN; **KNOB 4** GRAVITY (a generator) or HOW: DRIFT, ADORN, SERIAL (a STEP track) |
 | TIMING: **OCT-** held | **KNOB 1** SPLIT, the chance a step plays at half its division; **KNOB 2** HOW: DOUBLE, PUSH, MIX |
