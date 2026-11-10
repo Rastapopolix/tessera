@@ -579,8 +579,9 @@ patterns keeps its own, saved with it:
 
 - **FWD** (the default): step 1 to the last, as always.
 - **BACK**: the last step to step 1.
-- **PEND**: there and back, the end steps once (1 2 3 4 3 2 1 2 ..).
-- **PONG**: there and back, the end steps twice (1 2 3 4 4 3 2 1 1 2 ..).
+- **PEND**: there and back, turning on the end steps: each end plays once (1 2 3 4 3 2 1 2 ..).
+- **PONG**: there and back, each end step played again as it turns, so its note is heard twice in a row
+  (1 2 3 4 4 3 2 1 1 2 ..). A pass of PONG is two steps longer than one of PEND.
 - **RAND**: any step, each time.
 - **DRUNK**: one step on or one back, at random; past the ends it goes round.
 
@@ -591,6 +592,12 @@ track's SEED, so PLAY plays the same line again. Changing the direction while it
 next step comes from the one playing, the new way. A new pattern starts at its own direction's start (BACK: its last
 step). Capture and print write the notes in the order they sounded and set the pattern to FWD. A generator track
 does not use it.
+
+Going backwards (BACK, the way back of PEND and PONG, DRUNK's steps back), a tied note plays once: a run of a note
+and the TIEs after it starts on the run's last step and lasts the whole run, as it does forwards (it does not play
+again on the note's own step). Recorded notes (REC) follow the direction too: each step plays the notes recorded
+on it, whichever way the playhead goes. While a mod moves the direction, the Direction row shows both, the
+pattern's own and the one playing: FWD>PEND.
 
 Two rows set the track's pitch accumulator (a step's Accumulate, below):
 
