@@ -164,7 +164,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | TWEAK: **OCT-** held, **KNOB 4** | FOLLOW's HOLD (shown as T3H2 on FOLLOW) |
 | MODS: **OCT+** | The picked mod: +- (both ways) / + (one way) / GATE |
 | MODS: **OCT-** held, **KNOB 4** / **KNOB 3** | A GATE's threshold / a CC mod's CC number |
-| MODS: **OCT+** held | MODS' sheet: each MIX bus's Mode (SUM, MAX, MIN, DIFF) and Lag |
+| MODS: **OCT+** held | MODS' sheet (the picked mod named): Clear mod, then each MIX bus's Mode (SUM, MAX, MIN, DIFF) and Lag |
 | MATRIX: **OCT+** | Opens the picked mod in MODS |
 
 ## MIDI LEARN
