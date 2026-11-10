@@ -448,4 +448,5 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | BUS A | the project's MIX bus, each block | the project's MIX bus A: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS A |
 | BUS B | the project's MIX bus, each block | the project's MIX bus B: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS B |
 | MOD DEP | the project's MOD DEPTH, each block | the project's MOD DEPTH (GLO > PERF's sheet): how much of every mod's move plays, 0..100 %; a MACRO onto it at -100 % turns the patch dry |
+| PLAY | whether the track is heard, each block | whether the track's notes sound: while its mods together are at half or more; under it the track plays on unheard (it still leads, as MUTE) |
 | CLOCK | the generator's clock, on the source's edges | steps the track's generator on each edge of the source, in place of its DIV (a GATE cord: OFFSET the threshold, a GATE source counts hits); AMOUNT is the division, 100 % every edge, 50 % every second, 33 % every third; negative: the gate closing |

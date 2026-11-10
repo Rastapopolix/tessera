@@ -31,11 +31,13 @@
  *   CK_CLOCK  the track's generator clock (cord.c cord_clock_tick, seq.c seq_grid_tick): a track with a live one is
  *             stepped by the cord's edges alone, not by its DIV (always a GATE cord: its OFFSET the threshold; AMOUNT
  *             is the division, every n-th edge, its sign the edge); a track's, before CK_GLOBAL
+ *   CK_PLAY   whether the destination track's notes sound (cord.c cord_play_tick, voice.c trk_note_on): shut while its
+ *             mods together are under half, its generator playing on unheard (as MUTE: it still leads); a track's
  *   CK_BUS    a project MIX bus, BUS A or B (cord.c cord_bus_tick): its cords combined by its MODE, then its LAG, each
  *             block; read back as the source BUS A / BUS B one block later; destination track 0 as CK_GLOBAL
  *   CK_MDEPTH the project's MOD DEPTH (cord.c cord_mdepth_tick): added to its setting, each block; destination track 0
  *             as CK_GLOBAL; its own cords are never scaled by it */
-enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_CLOCK, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO, CK_BUS, CK_MDEPTH };
+enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_CLOCK, CK_PLAY, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO, CK_BUS, CK_MDEPTH };
 
 /* Destination codes. FROZEN: saved cords keep them; new ones at the end, a retired one stays as a gap */
 enum {
@@ -80,7 +82,8 @@ enum {
     CD_SEQ_DIR,                                                     /* the STEP pattern's DIR (seq_dir.c) */
     CD_BUS_A, CD_BUS_B,                                             /* the project's MIX buses (CK_BUS) */
     CD_MOD_DEPTH,                                                   /* the project's MOD DEPTH (CK_MDEPTH, G9) */
-    CD_CLOCK = 109,                                                 /* the track's generator clock (CK_CLOCK); 108: PLAY */
+    CD_PLAY,                                                        /* a track's notes heard or not (CK_PLAY, G8) */
+    CD_CLOCK = 109,                                                 /* the track's generator clock (CK_CLOCK) */
     CD_N
 };
 
@@ -155,6 +158,7 @@ int32_t cord_bus_now(uint32_t b);                   /* bus b's value now (Q15), 
  * once, by the mod they turn or read them; a fixed mod's mods of mods by it here. Its own mods (CD_MOD_DEPTH) add to
  * it, unscaled. The project's (cord_reset: 100) */
 uint32_t cord_mdepth_get(void);
+int cord_play_shut(uint32_t tr);                    /* PLAY (G8): track tr's notes shut by its mods now (voice.c) */
 void cord_mdepth_set(int32_t v);
 
 const char *cord_src_name(uint32_t code);           /* <= 7 characters; 0: no such source */
