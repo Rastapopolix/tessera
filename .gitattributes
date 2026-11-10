@@ -1,4 +1,5 @@
 # Keep recovery source provenance identical across native build runners.
 tools/*.py text eol=lf
-# Shell scripts run in WSL from Windows checkouts: LF always (CRLF breaks the shebang).
-*.sh text eol=lf
+# LF in every checkout: the host tests and shell scripts run in WSL from Windows worktrees, where CRLF breaks
+# the shebangs and the frozen fixtures (tests/*.txt).
+* text=auto eol=lf
