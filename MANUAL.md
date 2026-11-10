@@ -1456,7 +1456,7 @@ at a time, each with an activity light and a moving mark.
 |---|---|
 | 1 | **Source**: `--`, then per track (T1 to T4) LFO, ENV, VEL, KEY, RAND, MODW, AT, EXPR, S&H, SLEW, the generator's GATE, NOTE and CV, DRIFT, TIDE 1 to 3, SWARM 1 to 8 and EOC (the track's LFO cycle start: high from each wrap of the LFO until an eighth of the cycle has passed, a gate for GATE mods, FILL and the buses; setting its phase with TRIG or PLAY is not a wrap; the last of a track's sources in KNOB 1's list); and the project's ENERGY, [PERF](#perf-four-macros)'s MACRO 1 to 4 and the MIX buses BUS A and BUS B (see *MIX buses*). |
 | 2 | **Mod**: which of the 16 the other knobs edit. |
-| 3 | **Destination**, on a track: the voice (PITCH, CUTOFF, SHAPE, GAIN), the mix (LEVEL, PAN, SPREAD, FX SEND, SEND 2, SEND 3), the track's effects (FX1 MIX, FX1 RTE, FX1 CHR, the same for FX2 and FX3), the envelope and LFO settings, the engine's E1 to E8, and the generators' settings (T PROB, T LEN, E PULSE, E ROT, M LEAP, M DENS, MP POS, SHIFT, DROP, HUMAN, BRANCH, EV AMT, CONTR, AT X, AT Y, AT DENS, AT KICK, AT SNR, AT HAT, AT TOMS, B SPEED, B ANGLE, A PROB, Q PROB, C Y, C SIZE, C DENS, C AUTO, S START, CH PROG, AN VARY, H TIME, SPLIT), **CLOCK** (see *CLOCK* below), the STEP pattern's **DIR** (see *DIR* below) and **CC** (a MIDI CC out, see *CC out*). After the tracks' come the send effects', once, for every track: SF1 MIX, SF1 RTE, SF1 CHR (the same for SF2 and SF3) and RETURN; then the mods' own moves, **M1 AMT** to **M16 AMT** (see *Mods of mods* below), **FILL** (see *FILL*), **TEMPO** (see *TEMPO*) the MIX buses **BUS A** and **BUS B** (see *MIX buses*) and **MOD DEP** (see [PERF](#perf-four-macros)'s MOD DEPTH). |
+| 3 | **Destination**, on a track: the voice (PITCH, CUTOFF, SHAPE, GAIN), the mix (LEVEL, PAN, SPREAD, FX SEND, SEND 2, SEND 3), the track's effects (FX1 MIX, FX1 RTE, FX1 CHR, the same for FX2 and FX3), the envelope and LFO settings, the engine's E1 to E8, and the generators' settings (T PROB, T LEN, E PULSE, E ROT, M LEAP, M DENS, MP POS, SHIFT, DROP, HUMAN, BRANCH, EV AMT, CONTR, AT X, AT Y, AT DENS, AT KICK, AT SNR, AT HAT, AT TOMS, B SPEED, B ANGLE, A PROB, Q PROB, C Y, C SIZE, C DENS, C AUTO, S START, CH PROG, AN VARY, H TIME, SPLIT), **CLOCK** (see *CLOCK* below), the STEP pattern's **DIR** (see *DIR* below), **CC** (a MIDI CC out, see *CC out*), **PLAY** (see *PLAY* below) and **CLOCK** (see *CLOCK* below). After the tracks' come the send effects', once, for every track: SF1 MIX, SF1 RTE, SF1 CHR (the same for SF2 and SF3) and RETURN; then the mods' own moves, **M1 AMT** to **M16 AMT** (see *Mods of mods* below), **FILL** (see *FILL*), **TEMPO** (see *TEMPO*) the MIX buses **BUS A** and **BUS B** (see *MIX buses*) and **MOD DEP** (see [PERF](#perf-four-macros)'s MOD DEPTH). |
 | 4 | **Amount**, −100 to +100 %. With no source (`--`) the cord is a fixed move and KNOB 4 sets its offset. |
 
 - **+- and +: the mod's direction.** Under KNOB 1 a mod shows **+-** (it moves both ways from the knob) or **+** (one
@@ -1567,6 +1567,13 @@ at a time, each with an activity light and a moving mark.
   plays, T4 ENV at +100 shapes it with each note, +50 lets half through. At a negative amount the source closes it
   instead (a duck: T1 GATE at -100 silences mod 3 while track 1 plays). Mods that add come first, then the scalers
   multiply. A scaler at 0 does nothing. A project with one plays it as adding on older firmware.
+- **PLAY.** **PLAY**, near the end of a track's destinations, decides whether the track is heard: while its mods together
+  are at half or more its notes sound, under half they don't (new notes only: a note already sounding ends as it
+  would). No mod onto PLAY: the track plays as always. One GATE mod makes a gated voice: `T1 TIDE 2^ -> T2 PLAY +100`
+  plays track 2 only while TIDE 2 is high, with no base DROP and no cord to cancel it. A shut track plays on unheard,
+  as with MUTE: FOLLOW, an ANSWER's SOURCE and the GATE / NOTE mods still hear its notes, and it comes back in time.
+  It shuts MIDI OUT's notes too. At MOD DEPTH 0 every track plays. A project with a PLAY mod does not load on older
+  firmware.
 - Melodee's MOD routes, in old projects and sounds, become cords when they load. If all 16 are in use the screen
   says **MODS FULL**.
 

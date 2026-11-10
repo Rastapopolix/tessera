@@ -19,7 +19,7 @@ static void check(const char *what, int ok)
     bad += !ok;
 }
 
-static const char *const KIND[] = {"voice", "block", "depth", "step", "cc", "clock", "send", "cord", "fill", "tempo", "bus",
+static const char *const KIND[] = {"voice", "block", "depth", "step", "cc", "clock", "play", "send", "cord", "fill", "tempo", "bus",
                                    "mdepth"};
 
 static cord_t C(uint32_t src, uint32_t st, uint32_t dst, uint32_t dt, int32_t amount, int32_t offset)
@@ -353,6 +353,43 @@ static int behaviour(void)
         cord_clear();
         cord_tick();
         check("...cleared: 100 % again", cord_mdepth_get() == 100u);
+    }
+
+    /* PLAY (G8): a track's notes heard while its mods together reach half, shut under it (its notes go nowhere: no
+     * voice); no mod onto it: plays; MOD DEPTH 0: every track plays */
+    {
+        uint32_t n[4];
+        cord_clear();
+        trk[0].p[P_LPOL] = 0; trk[0].lfo_val = 32767; trk[0].lfo_fade = 32767;
+        cord_tick();
+        check("PLAY: no mod onto it: every track plays", !cord_play_shut(0) && !cord_play_shut(2));
+        c = C(CS_LFO, 0, CD_PLAY, 2, 100, 0);          /* T1 LFO GATE -> T3 PLAY +100 */
+        c.uni = CU_GATE;
+        cord_set(0, &c);
+        cord_tick(); n[0] = (uint32_t)cord_play_shut(2);
+        trk[0].lfo_val = -32767;
+        cord_tick(); cord_tick(); n[1] = (uint32_t)cord_play_shut(2);
+        check("...a GATE onto T3 PLAY: plays while open, shut when closed; the other tracks untouched",
+              !n[0] && n[1] && !cord_play_shut(0) && cord_get(0)->dst_trk == 2u);
+        n[2] = voices_busy();
+        trk_note_on(&trk[2], 60, 100);
+        n[3] = voices_busy();
+        check("...shut: a note on T3 sounds no voice", n[3] == n[2]);
+        tessera_param_set(0, TX_MOD_DEPTH, 0);
+        cord_tick();
+        check("...MOD DEPTH 0: plays (the patch dry)", !cord_play_shut(2));
+        tessera_param_set(0, TX_MOD_DEPTH, 100);
+        cord_tick();
+        trk[0].lfo_val = 32767;
+        cord_tick(); cord_tick();
+        n[2] = voices_busy();
+        trk_note_on(&trk[2], 62, 100);
+        n[3] = voices_busy();
+        check("...open again: the note sounds", !cord_play_shut(2) && n[3] > n[2]);
+        trk_note_off(&trk[2], 62);
+        cord_clear();
+        cord_tick();
+        check("...cleared: nothing shut", !cord_play_shut(2));
     }
 
     /* HOLD (CU_HOLD): the source as it is, sampled when set and at each bar of the destination's track, held between */
@@ -1105,6 +1142,8 @@ int main(int argc, char **argv)
             if (d->pid != PID_NONE || d->md || c != CD_CLOCK) mods = 0;
         } else if (d->kind == CK_BUS) {                 /* (the MIX buses: no parameter) */
             if (d->pid != PID_NONE || d->md || (c != CD_BUS_A && c != CD_BUS_B)) mods = 0;
+        } else if (d->kind == CK_PLAY) {                /* (PLAY: a track's, no parameter) */
+            if (d->pid != PID_NONE || d->md || c != CD_PLAY) mods = 0;
         } else if (d->kind == CK_MDEPTH) {              /* (MOD DEPTH: the project's, no parameter of a track) */
             if (d->pid != PID_NONE || d->md || c != CD_MOD_DEPTH) mods = 0;
         } else if (d->kind == CK_VOICE || d->kind == CK_DEPTH) {
