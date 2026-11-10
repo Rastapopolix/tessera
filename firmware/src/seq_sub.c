@@ -221,11 +221,15 @@ static void seq_nudge_tick(track_t *t, uint32_t period, uint32_t cur_len, uint32
     if (t->seq_pos + lead < cur_len) return;
     {   /* its turn: played as if on its line (seq_idx and, step 0, seq_pass: the next pass's; STEP EVOLVE's change),
          * its RATCH armed on the line */
-        step_t sv;
+        step_t sv, tv;
         uint16_t was = t->seq_idx, was_slot = SEQ_D(t).slot;
+        uint8_t rev = SEQ_D(t).rev, cont = SEQ_D(t).cont;
+        SEQ_D(t).rev = SEQ_D(t).nrev;                    /* (a tied run backwards: as on its line, seq_dir.c) */
+        SEQ_D(t).cont = (uint8_t)(SEQ_D(t).nrev && seq_dir_cont(t, was % (len ? len : 1u), ni, len ? len : 1u));
         t->seq_idx = (uint16_t)ni;
         SEQ_D(t).slot = (uint16_t)ns;
         t->seq_pass += !ns;
+        s = seq_dir_tie(t, s, &tv, len ? len : 1u);
         s = tessera_step_vary(t, s, &sv);
         s = step_acc(t, s, &sv, t->seq_pass);
         seq_nudge[tr].s = *s;
@@ -235,6 +239,7 @@ static void seq_nudge_tick(track_t *t, uint32_t period, uint32_t cur_len, uint32
         seq_step(t, &seq_nudge[tr].s, step_gate(s) ? next_len : period, 0);
         t->seq_idx = was;
         SEQ_D(t).slot = was_slot;
+        SEQ_D(t).rev = rev; SEQ_D(t).cont = cont;
         t->seq_pass -= !ns;
         seq_nudge_early |= (uint8_t)(1u << tr);
     }

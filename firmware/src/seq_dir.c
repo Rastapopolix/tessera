@@ -41,11 +41,49 @@ static uint32_t seq_dir_pick(track_t *t, uint32_t d, uint32_t idx, uint32_t len,
     default: return fresh ? 0u : (idx + 1u) % len;
     }
 }
+/* the move from step `from` to `to` went backwards (d: the DIR that made it; PEND / PONG by their way, a repeated end
+ * too: PONG's turn) */
+static uint32_t seq_dir_rev(const track_t *t, uint32_t d, uint32_t from, uint32_t to, uint32_t len)
+{
+    if (d == SEQ_BACK) return 1u;
+    if (d == SEQ_PEND || d == SEQ_PONG) return SEQ_D(t).back;
+    return d >= SEQ_RAND && len > 2u && to == (from + len - 1u) % len;
+}
+/* a tied run (a NOTE, the TIEs after it) backwards: the move from `from` to `to` (the step before it) goes on along
+ * the run, from one of its TIEs */
+static uint32_t seq_dir_cont(const track_t *t, uint32_t from, uint32_t to, uint32_t len)
+{
+    return from != to && to == (from + len - 1u) % len && seq_steps(t)[from].time == ST_TIE;
+}
+/* the step to play on seq_idx (s), a tied run going backwards: it plays once, from its last step, as long as the run
+ * (its NOTE's notes there, the run's other steps hold them: a TIE; tv the copy); otherwise s */
+static const step_t *seq_dir_tie(const track_t *t, const step_t *s, step_t *tv, uint32_t len)
+{
+    uint32_t k, i = t->seq_idx % len;
+    if (!SEQ_D(t).rev || (s->time != ST_TIE && !SEQ_D(t).cont)) return s;
+    if (SEQ_D(t).cont) {                                /* (on along it: hold, its NOTE too) */
+        if (s->time != ST_NOTE) return s;
+        *tv = *s; tv->time = ST_TIE;
+        return tv;
+    }
+    for (k = 1; k < len; k++) {                         /* (its last step: the run's NOTE) */
+        const step_t *h = &seq_steps(t)[(i + len - k) % len];
+        if (h->time != ST_TIE) return h->time == ST_NOTE ? h : s;
+    }
+    return s;
+}
 /* the step after the one playing (a TIE, NUDGE, motion's next step) */
 static uint32_t seq_dir_next(const track_t *t, uint32_t len)
 {
     if (!len) len = 1u;
     return SEQ_D(t).ndir != SEQ_FWD && SEQ_D(t).nxt < len ? SEQ_D(t).nxt : (t->seq_idx + 1u) % len;
+}
+/* seq_step: the step coming holds the notes playing (a TIE forwards; backwards, a run's step before the TIE playing) */
+static uint32_t seq_dir_next_tie(const track_t *t, uint32_t len)
+{
+    uint32_t n = seq_dir_next(t, len);
+    if (!len) len = 1u;
+    return SEQ_D(t).nrev ? seq_dir_cont(t, t->seq_idx % len, n, len) : seq_steps(t)[n].time == ST_TIE;
 }
 /* the transport, a pattern change: the pattern from its top, its last step of time playing */
 static void seq_dir_top(track_t *t)
@@ -62,13 +100,22 @@ static void seq_dir_step(track_t *t, uint32_t len, uint32_t k)
         SEQ_D(t).slot = (uint16_t)((SEQ_D(t).slot + 1u) % len);   /* (always FWD: the same as seq_idx) */
         SEQ_D(t).ndir = SEQ_FWD;
         SEQ_D(t).nxt = SEQ_NXT_AGAIN;                     /* (another DIR later: on from here) */
+        SEQ_D(t).rev = SEQ_D(t).nrev = SEQ_D(t).cont = 0;
         return;
     }
+    uint32_t from = t->seq_idx % len;
     SEQ_D(t).slot = (uint16_t)(was == SEQ_NXT_FRESH ? 0u : (SEQ_D(t).slot + 1u) % len);
-    if (was < len && (d == SEQ_D(t).ndir || (seq_nudge_early & (1u << (t - trk))))) t->seq_idx = (uint16_t)was;
-    else t->seq_idx = (uint16_t)seq_dir_pick(t, d, t->seq_idx, len, k, was == SEQ_NXT_FRESH);
+    if (was < len && (d == SEQ_D(t).ndir || (seq_nudge_early & (1u << (t - trk))))) {
+        t->seq_idx = (uint16_t)was;
+        SEQ_D(t).rev = SEQ_D(t).nrev;
+    } else {
+        t->seq_idx = (uint16_t)seq_dir_pick(t, d, t->seq_idx, len, k, was == SEQ_NXT_FRESH);
+        SEQ_D(t).rev = (uint8_t)seq_dir_rev(t, d, from, t->seq_idx, len);
+    }
+    SEQ_D(t).cont = (uint8_t)(was != SEQ_NXT_FRESH && SEQ_D(t).rev && seq_dir_cont(t, from, t->seq_idx, len));
     SEQ_D(t).ndir = (uint8_t)d;
     SEQ_D(t).nxt = (uint16_t)seq_dir_pick(t, d, t->seq_idx, len, k + 1u, 0);
+    SEQ_D(t).nrev = (uint8_t)seq_dir_rev(t, d, t->seq_idx, SEQ_D(t).nxt, len);
 }
 /* song position: step k since PLAY, as the pattern's DIR would have it from the top (DRUNK: RAND's step, a walk is
  * not replayed) */
@@ -77,7 +124,7 @@ static void seq_dir_seek(track_t *t, uint32_t len, uint32_t k)
     uint32_t d = seq_dir_of(t), s = k % len, p, i;
     SEQ_D(t).slot = (uint16_t)s;
     SEQ_D(t).nxt = SEQ_NXT_AGAIN;
-    SEQ_D(t).back = 0;
+    SEQ_D(t).back = SEQ_D(t).nrev = SEQ_D(t).cont = 0;
     if (d == SEQ_BACK) i = len - 1u - s;
     else if ((d == SEQ_PEND || d == SEQ_PONG) && len > 1u) {
         p = d == SEQ_PEND ? 2u * len - 2u : 2u * len;
@@ -87,6 +134,7 @@ static void seq_dir_seek(track_t *t, uint32_t len, uint32_t k)
     } else if (d >= SEQ_RAND) i = seq_dir_hash((uint32_t)(t - trk), k) % len;
     else i = s;
     t->seq_idx = (uint16_t)i;
+    SEQ_D(t).rev = (uint8_t)(d == SEQ_BACK || SEQ_D(t).back);
 }
 /* a new pattern on the bar line (seq_grid_tick): its first step, by its own DIR */
 static void seq_dir_first(track_t *t, uint32_t len, uint32_t k)

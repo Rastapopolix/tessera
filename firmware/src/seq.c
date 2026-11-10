@@ -1169,7 +1169,7 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
     uint32_t vel = (s->flags & SF_ACCENT) ? 127u : (s->vel ? s->vel : 96u);
     uint32_t slide_in = t->seq_hold && t->seq_n;
     uint32_t len = t->p[P_SLEN] ? (uint32_t)t->p[P_SLEN] : 1u;
-    uint32_t next_tie = seq_steps(t)[seq_dir_next(t, len)].time == ST_TIE;
+    uint32_t next_tie = seq_dir_next_tie(t, len);   /* (backwards: a tied run's step before, seq_dir.c) */
     uint8_t nn[4 + NLANE], vv[4 + NLANE];           /* the notes it plays: its notes, then its hits */
     uint32_t m = 0, sk = 0;
     if (!seq_cond_met(t, s) || (step_chance(s) < 100u && rng() % 100u >= step_chance(s))) {
@@ -1318,7 +1318,8 @@ static void seq_grid_tick(track_t *t, uint32_t n)
         seq_erase_pass(t, t->seq_idx, 1);
         if (!seq_erase_active(t)) rec_hold(t, t->seq_idx, len ? len : 1u);
         {
-            const step_t *s = &seq_steps(t)[t->seq_idx];
+            step_t tv;
+            const step_t *s = seq_dir_tie(t, &seq_steps(t)[t->seq_idx], &tv, len ? len : 1u);   /* (a tied run backwards) */
             uint32_t skip = 0, i, k;
             if (t->rskip_n && t->rskip_idx == t->seq_idx) {
                 for (k = 0; k < t->rskip_n; k++) {
@@ -1379,6 +1380,7 @@ static void seq_tick(track_t *t, uint32_t n)
         uint32_t before = t->seq_idx;
         if (recording_tracks & (1u << trk_index(t))) recording_tick(t, chunk);
         seq_grid_tick(t, chunk);
+        if (SEQ_D(t).ndir != SEQ_FWD && t->seq_pos < chunk) recording_rearm(t);   /* (DIR: each step its own notes) */
         if (!t->seq_idx && (before || t->p[P_SLEN] == 1) && t->seq_pos < chunk) recording_zero(t);
         n -= chunk;
     }

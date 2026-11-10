@@ -498,6 +498,8 @@ typedef struct {
                                   * on FWD, else as DIR takes them */
     uint16_t nxt;                /* DIR not FWD: the step after seq_idx, chosen a step ahead (SEQ_NXT_*: none yet) */
     uint8_t ndir, back;          /* the DIR nxt was chosen by; PEND / PONG going back */
+    uint8_t rev, nrev, cont;     /* the step playing came backwards (seq_idx one before the last), the next will;
+                                  * it goes on a tied run backwards (seq_dir_tie) */
 } seq_dir_t;
 static seq_dir_t seq_dirs[NTRK];
 #define SEQ_D(t) seq_dirs[(t) - trk]

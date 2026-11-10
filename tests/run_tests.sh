@@ -140,7 +140,7 @@ G_SEQ="seq_edit_test seq_notes_test pattern_test note_tools_test swing_test spli
 G_GEN="gen_test tessera_test chain_test entries_test planner_test split_test follow_test cordclock_test"
 G_STORE="storage_test persistence_test upgrade_test backup_test demo_projects settings_test upreset_test storage_safety_test
     settings_origin_test preset_boot_reset_test fm6_preset_test"
-G_MIDI="midi_control_test midi_out_test midi_timing_test midi_scale_test midi_uart_test recording_test"
+G_MIDI="midi_control_test midi_out_test seq_dir_test midi_timing_test midi_scale_test midi_uart_test recording_test"
 G_USB="usb_audio_test usb_audio_driver_test usb_audio_tracks_test usb_host_test usb_audio_desc_test"
 G_SCALE="scale_test microtonal_test scale_picker_test tune_test uscale_test tuning_test midi_scale_test"
 G_AUDIO="regress audio_test audio_matrix_test ram_audio_test ram_voice_budget_test audio_admission_test resources_test
@@ -501,6 +501,7 @@ if core && [ $TABLES = 1 ]; then
     t "recording/performance tools and legacy migrations" performance_tools_test -O1 $FW
     t "USB/TRS clock, bend, sustain, ownership and panic recovery" midi_control_test -O1 $FW
     t "MIDI OUT: steps, generators, ARP and keys per track channel, no echo, note-offs, clock out, settings" midi_out_test -O1 $FW
+    t "STEP DIR heard: PEND, PONG, BACK play each step's own note; a TIE backwards plays once" seq_dir_test -O1 $FW
     t "MIDI timing: quantized TRS/USB recording, audio timeline, tempo changes and timer wrap" midi_timing_test -O1 $FW
     t "MIDI recording: raw events, quantization at take end, independent releases, banks and capacity" recording_test \
         -O1 $FW
