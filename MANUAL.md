@@ -400,7 +400,7 @@ MODAL's overtones in tune from 16 to 48, a chime's near 84 and a marimba's at th
 is); a dull, short or bowed sound is as loud as a bright one. An old project's PHYS track (one not saved again
 since 2.0, which turned it into FM6) plays PHYS again, a little differently towards the ends of the knobs. **SID** is no longer in the device build, and neither is CZ-1: a track saved
 with SID loads FM6's INIT. DRUM's SID KIT
-and SID DIGI are out too (2.2, for flash room): a track saved with KIT SID loads as the 909. FM6 and TRIO presets have
+and SID DIGI are out too (3.0, for flash room): a track saved with KIT SID loads as the 909. FM6 and TRIO presets have
 releases that ring out, so short sequenced notes are not cut off. The slow pads (GLASS PAD, SOFT PAD, DEEP PAD, PAD,
 STRINGS) swell in slowly: they speak on long notes and drones, and stay quiet on short steps.
 

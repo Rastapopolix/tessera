@@ -48,6 +48,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - Web editor: ORACLE, TRIO and other user presets now show in the Sound tab's preset list, and Save to file names an FM6 user preset after itself, not after TINE EP (#526).
 - ANSWER with a SOURCE track that runs a generator (BOUNCE, TURING ...) now answers the notes that track plays; it read that track's hidden STEP pattern instead, often one note or none.
 - Muting a generator track (MIXER or GLO's mute keys) no longer stops the tracks that follow it: a muted track plays on unheard, so FOLLOW, an ANSWER's SOURCE, QNT CHRD, QUAD's LINK and the cords still hear its notes, and unmuted it comes back in time.
+- Web simulator: DRUM no longer lists SID KIT and SID DIGI, which the FM-1 hasn't had since 3.0 (taken out for flash room; a project saved with them plays the 909). The simulator now has the same sounds as the device (#593).
 
 ## Good to know
 - Projects saved with these new settings lose them on 3.4.x.
