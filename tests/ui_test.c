@@ -14,7 +14,7 @@
  *              Long REC never clears. On STEP, armed and playing: keys do not write the
  *              cursor step. With the ARP on, the arp's notes are recorded, not the keys.
  *   MIDI IN    GLO > SYSTEM ROUT: four-channel ranges / SEL, note-offs follow their note-ons.
- *   SAVE       refused while playing ("STOP TO SAVE"); a used slot asks OVERWRITE? (OCT+ / OCT-).
+ *   SAVE       NAME opens while playing, the write says "STOP TO SAVE"; a used slot asks OVERWRITE? (OCT+ / OCT-).
  *   ACTIONS    OCT- / OCT+ Esc / Enter off Stage, on release, never both together; the sheets (USER, PROJECT:
  *              a slot's; the pattern's: Clear pattern, TOOLS gone); the OCT LEDs (OCT- lit, OCT+ blinks).
  *   TRACKS     the PRESETS knob does nothing there; KNOB 1 is MUTE.
@@ -2563,8 +2563,11 @@ static int test_save(void)
     press(B_OCTUP);
     bad += check("PROJECT: OCT+ opens the slot's sheet, saves nothing", pop.on == POP_SHEET && !project_used(0) && !ui.msg_t);
     sheet_do("Save here");
-    bad += check("Save here while playing: STOP TO SAVE, no NAME", msg_is("STOP TO SAVE") && !project_used(0) &&
-                 song.g[G_SAVE] == 0 && !name_on());
+    bad += check("Save here while playing: NAME opens, nothing written", name_on() && nm.kind == NK_PROJ_SAVE && !project_used(0));
+    press(B_OCTUP);
+    bad += check("..OCT+ while playing: STOP TO SAVE, NAME stays", name_on() && msg_is("STOP TO SAVE") && !project_used(0));
+    press(B_OCTDN);
+    bad += check("..OCT- cancels, nothing written", !name_on() && !project_used(0));
     stop_transport();
     sheet_do("Save here");
     bad += check("stopped, an empty slot: Save here opens NAME (no name yet: PROJECT A)", name_on() && nm.kind == NK_PROJ_SAVE &&
@@ -2582,6 +2585,13 @@ static int test_save(void)
     bad += check("OCT+ (YES): NAME, the slot not written yet", name_on() && stored_param(0, 0, P_E1) != 5);
     press(B_OCTUP);
     bad += check("OCT+ overwrites it", ui.confirm == CF_NONE && !name_on() && stored_param(0, 0, P_E1) == 5);
+    song.playing = 1;
+    sheet_do("Rename");
+    bad += check("PROJECT Rename while playing: NAME opens (no silent exit)", name_on() && nm.kind == NK_PROJ_RENAME);
+    press(B_OCTUP);
+    bad += check("..OCT+ while playing: STOP TO SAVE, NAME stays", name_on() && msg_is("STOP TO SAVE"));
+    press(B_OCTDN);
+    stop_transport();
     trk[0].p[P_LEVEL] = 11;
     sheet_do("Load");
     bad += check("Load: the project back", trk[0].p[P_LEVEL] != 11 && trk[0].p[P_LEVEL] == stored_param(0, 0, P_LEVEL) &&

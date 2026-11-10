@@ -1354,8 +1354,6 @@ static void act_do(void)
             confirm_open(CF_ERASE_USER, ui.uslot);        /* ERASE: the dialog first */
         else if (c != 3u)
             user_ui_named(c - 1u, ui.uslot, 0);
-        else if (transport_busy())
-            ui_message("STOP TO SAVE");
         else if (user_used(ui.uslot) || user_old(ui.uslot))
             confirm_open(CF_OVR_USER, ui.uslot);
         else
@@ -1385,9 +1383,7 @@ static void act_do(void)
         project_load(k);
         break;
     case G_SAVE:                                          /* the NAME screen writes it */
-        if (transport_busy())
-            ui_message("STOP TO SAVE");
-        else if (project_used(k) || project_old(k))     /* (an old record too: only replaced when asked) */
+        if (project_used(k) || project_old(k))     /* (an old record too: only replaced when asked) */
             confirm_open(CF_OVR_PROJ, k);
         else
             name_open(NK_PROJ_SAVE, k);

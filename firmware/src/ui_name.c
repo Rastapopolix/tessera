@@ -7,7 +7,8 @@
  * written). EDIT on those pages renames the selected slot (only its name is written). The name is prefilled:
  * USER the sound's own (the user preset it came from) or the automatic one ("DIGITAL 14"), PROJECT the current
  * project's (as loaded or last saved; none: "PROJECT A"), so SAVE, OCT+, OCT+ saves with the default name.
- * Writing needs the transport stopped (STOP TO SAVE; the screen stays).
+ * The screen opens while playing too (the keys type, never sound); only the write needs the transport stopped: OCT+
+ * says STOP TO SAVE and the screen stays, PLAY stops the transport, OCT+ again writes.
  *
  * The keys type and never sound, record or send MIDI (seq.c keyboard_block: song.grid 2). Upper case, at most 12:
  *   white keys   ABC (letters): AB CD EF GH IJK LM NO PQ RS TU VW XYZ, then 123 456 789 0-. ; phone style: a tap
@@ -125,8 +126,6 @@ static void name_rename(void)
         return;                                       /* (the template has no name) */
     if (!(user ? user_used(k) : project_used(k)))
         ui_message("EMPTY SLOT");
-    else if (transport_busy())
-        ui_message("STOP TO SAVE");
     else
         name_open(user ? NK_USER_RENAME : NK_PROJ_RENAME, k);
 }
