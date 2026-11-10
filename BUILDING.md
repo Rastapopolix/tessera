@@ -159,6 +159,18 @@ in order as it ends and the failures are listed again at the end. `SOUND=0` leav
 sound tests (the regression suite, TRACKS and the tests of every engine's and effect's rendered
 signal), `SOUND=only` runs them alone.
 
+The output is one line per job (`ok` or `FAIL` and its seconds); a failed job prints its own
+output (about 60 lines at most) and the path of its whole log in `build/host/log/`. `-v` (or
+`QUIET=0`) prints every job's whole output as before.
+
+`tests/run_tests.sh --quick` (or `QUICK=1`) runs only the jobs that test the files changed since
+`origin/develop` (`QUICK_BASE` sets another base) and a small smoke set: an engine's file runs
+its own tests and the regression suite for that engine alone (`REGRESS_ONLY`), a UI file the UI
+renders (the lint, without writing the pictures: `UI_PPM=1` keeps them) and the UI tests, prose
+nothing. A file without a rule (the platform layer, the loader, tools, the build) runs the full
+suite, and so does any `*_UPDATE` setting. It is for the edit-and-check loop: the full suite is
+the check before a pull request.
+
 ## Install
 
 Use the web installer in Chrome or Edge:

@@ -438,20 +438,30 @@ static void mono_check(void)
         }
     }
 }
+static int no_pictures(void)                     /* UI_PPM=0 (run_tests.sh --quick): the lint without the pictures */
+{
+    const char *e = getenv("UI_PPM");
+    return e && !strcmp(e, "0");
+}
 static void write_ppm(const char *dir, const char *pal, const char *name)
 {
+    static uint8_t b[240u * 240u * 3u];          /* the image whole, then one write */
     char path[512];
     uint32_t i;
     FILE *f;
+    if (no_pictures())
+        return;
     snprintf(path, sizeof path, "%s/ppm/%s_%s.ppm", dir, pal, name);
     f = fopen(path, "wb");
     if (!f) { fprintf(stderr, "cannot write %s\n", path); return; }
     fprintf(f, "P6\n240 240\n255\n");
     for (i = 0; i < 240u * 240u; i++) {
         uint16_t c = swap16(host_screen[i]);
-        uint8_t b[3] = {(uint8_t)((c >> 11) * 255u / 31u), (uint8_t)(((c >> 5) & 63u) * 255u / 63u), (uint8_t)((c & 31u) * 255u / 31u)};
-        fwrite(b, 1, 3, f);
+        b[i * 3u] = (uint8_t)((c >> 11) * 255u / 31u);
+        b[i * 3u + 1u] = (uint8_t)(((c >> 5) & 63u) * 255u / 63u);
+        b[i * 3u + 2u] = (uint8_t)((c & 31u) * 255u / 31u);
     }
+    fwrite(b, 1, sizeof b, f);
     fclose(f);
 }
 
@@ -2189,6 +2199,8 @@ static void roll_film_save(const char *dir, const char *pal, const char *name, c
 {
     char path[512];
     FILE *f;
+    if (no_pictures())
+        return;
     snprintf(path, sizeof path, "%s/%s_%s.ppm", dir, pal, name);
     f = fopen(path, "wb");
     if (!f) { fprintf(stderr, "cannot write %s\n", path); return; }
@@ -2504,7 +2516,7 @@ static void library_note_sweep(const char *out)
 #ifndef UI_RENDER_NO_MAIN                           /* (tests/gallery_render.c: the scenes without this main) */
 #if MELODEE_LOOK
 /* MENU BATTERY WHEN LOW: hidden on every kind of header with charge left or on external power, shown when low; and the
- * header's battery in each ink, every level, on the battery and on power (build/ui_mono/ppm/INK_batt_L_E.ppm) */
+ * header's battery in each ink, every level, on the battery and on power (build/ui_new/ppm/INK_batt_L_E.ppm) */
 static uint32_t mono_batt_check(const char *out)
 {
     static const int32_t RAW[4] = {500, 540, 570, 600};

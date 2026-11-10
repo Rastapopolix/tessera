@@ -3,15 +3,19 @@
 # Copyright (C) 2026 Kerem Kilic (Ellic Studio)
 # Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
 # Host tests of the Melodee sources (no hardware). Run from the repo root after ./build.sh:
-#   tests/run_tests.sh               everything
+#   tests/run_tests.sh               everything (the gate before a pull request)
 #   SOUND=0 tests/run_tests.sh       everything but the sound tests
 #   SOUND=only tests/run_tests.sh    the sound tests alone
+#   tests/run_tests.sh --quick       QUICK=1: the jobs for the files changed since origin/develop (QUICK_BASE=ref) and a
+#                                    smoke set (qmap below); a file without a rule, or any *_UPDATE, runs everything
+#   tests/run_tests.sh -v            QUIET=0: every job's whole output (default: a line per job; a failure prints its
+#                                    own output, 60 lines at most, and the path of its log)
 # Sound tests: the regression suite, the DSP render and TRACKS, and every test of an engine's or an effect's rendered
 #   signal (native fp32, SPEAKER, MOD, SLICER, the FX layer, REVERB, DELAY, MOD / SPREAD, SID, PHYS, DRUM, NOISE,
 #   FM6, the dual-core pairing). The rest (storage, UI, MIDI, USB, editor, web) always runs.
 # Each test (its compile and its runs) is a job; PARALLEL=n jobs run at once (default: the CPU count; 1: one by one).
-# A job's output goes to build/host/log/<n>.log and is printed in the order of this file as the jobs end; the
-# failures are listed again at the end. The cost gates count instructions, which the load leaves alone; the ns
+# A job's output goes to build/host/log/<n>.log and is printed (QUIET=0; QUIET=1: its line) in the order of this file as
+# the jobs end; the failures are listed again at the end. The cost gates count instructions, which the load leaves alone; the ns
 # figures printed beside them are noisier in parallel (PARALLEL=1 for quiet ones).
 #
 # Regression suite (tests/regress.c, tests/target_budget.py; details at the top of regress.c):
@@ -126,6 +130,120 @@ mkdir -p "$OUT" "$LOG"
 rm -f "$LOG"/*
 start=$(date +%s)
 
+# ------------------------------------------------------------------ QUICK ---
+# qmap FILE: the jobs (QSEL) and regress's engines (QENG) for a changed file; returns 1 when no rule covers it.
+G_UI="ui_renders ui_test speak_test layer_screen_test theme_test text_ref_test text_spacing_test msg_len_test"
+G_SEQ="seq_edit_test seq_notes_test pattern_test note_tools_test swing_test split_test follow_test motion_test recording_test"
+G_GEN="gen_test tessera_test chain_test entries_test planner_test split_test follow_test"
+G_STORE="storage_test persistence_test upgrade_test backup_test demo_projects settings_test upreset_test storage_safety_test
+    settings_origin_test preset_boot_reset_test fm6_preset_test"
+G_MIDI="midi_control_test midi_out_test midi_timing_test midi_scale_test midi_uart_test recording_test"
+G_USB="usb_audio_test usb_audio_driver_test usb_audio_tracks_test usb_host_test usb_audio_desc_test"
+G_SCALE="scale_test microtonal_test scale_picker_test tune_test uscale_test tuning_test midi_scale_test"
+G_AUDIO="regress audio_test audio_matrix_test ram_audio_test ram_voice_budget_test audio_admission_test resources_test
+    dsp_tracks dual_core_test target_budget"
+eng() { QENG="$QENG $1"; shift; QSEL="$QSEL regress target_budget $*"; }
+qmap() {
+    case $1 in
+        docs/PARAMETERS.md) QSEL="$QSEL pid_test" ;;
+        *.md | LICENSE* | LICENSES/* | docs/design/* | docs/*.txt) ;;  # prose: nothing to run
+        docs/* | web/*) QSEL="$QSEL web_tests nightly_site_test" ;;
+        demos/*) QSEL="$QSEL demo_projects" ;;
+        firmware/words.tsv | firmware/words_allow.txt) QSEL="$QSEL speak_test" ;;
+        firmware/src/eng_fm6* | firmware/src/fm6_core.c) eng FM6 fm6_test fm6_ams_test synth_fpu_test dual_core_test ;;
+        firmware/src/eng_sid.c) eng SID sid_test ;;
+        firmware/src/drum_sid.c) eng DRUM drum_sid_test ;;
+        firmware/src/eng_phys.c | firmware/src/phys_*) eng PHYS phys_test phys_ref ;;
+        firmware/src/eng_drum.c | firmware/src/drum_808.c | firmware/src/x0x/*) eng DRUM drum_test drum_editor_test ;;
+        firmware/src/eng_noise.c) eng NOISE noise_test ;;
+        firmware/src/eng_macro.c | firmware/src/macro_glue.* | firmware/third_party/mi/*) eng MACRO macro_tests ;;
+        firmware/src/eng_oracle.c | firmware/src/oracle_*) eng ORACLE oracle_test ;;
+        firmware/src/eng_trio.c) eng TRIO ;;
+        firmware/src/eng_wheel.c) eng WHEEL ;;
+        firmware/src/eng_formant.c) eng VOICE ;;
+        firmware/src/fx.c) QREG=1; QSEL="$QSEL $G_AUDIO fx_test fx_performance no_effects_test" ;;
+        firmware/src/mod.c) QREG=1; QSEL="$QSEL $G_AUDIO mod_test mod_spread_test" ;;
+        firmware/src/voice.c | firmware/src/mix.c | firmware/src/dsp.c | firmware/src/audio*.[ch] | firmware/src/engines.c | \
+            firmware/src/resources.c | firmware/src/native_presets.c) QREG=1; QSEL="$QSEL $G_AUDIO designer_test" ;;
+        firmware/src/ui_cords.c | firmware/src/cord.[ch]) QSEL="$QSEL $G_UI cord_test mod_test" ;;
+        firmware/src/ui_speak.c) QSEL="$QSEL $G_UI" ;;
+        firmware/src/ui_designer*) QSEL="$QSEL $G_UI designer_test" ;;
+        firmware/src/ui_help.c | firmware/src/pid.[ch] | firmware/src/pid_help_unpack.h | firmware/src/params.c)
+            QSEL="$QSEL $G_UI pid_test help_pack_test cord_test" ;;
+        firmware/src/ui*.c | firmware/src/gfx.c | firmware/src/icons.c | firmware/src/screen.c | firmware/src/splash.c | \
+            firmware/src/panel.c | firmware/src/browse.c) QSEL="$QSEL $G_UI" ;;
+        firmware/src/lcd.c) QSEL="$QSEL $G_UI lcd_overlap_test" ;;
+        firmware/src/chord.c) QSEL="$QSEL chord_test" ;;
+        firmware/src/seq*.c | firmware/src/step_*.[ch] | firmware/src/note_*.c | firmware/src/pattern.c | \
+            firmware/src/recording*) QSEL="$QSEL $G_SEQ" ;;
+        firmware/src/song_chain.c) QSEL="$QSEL $G_SEQ ui_test" ;;
+        firmware/src/gen*.[ch] | firmware/src/tessera.[ch] | firmware/src/pat_gen.c | firmware/src/answer.c | \
+            firmware/src/organic.c | firmware/src/vary.c | firmware/src/page_random.c) QSEL="$QSEL $G_GEN" ;;
+        firmware/src/form_chain.c) QSEL="$QSEL chain_test entries_test planner_test" ;;
+        firmware/src/entries.c | firmware/src/energy.c | firmware/src/planner.c) QSEL="$QSEL entries_test planner_test" ;;
+        firmware/src/storage*.c | firmware/src/project*.c | firmware/src/settings_persist.c | firmware/src/fm6_store.c | \
+            firmware/src/upreset.c | firmware/src/favorites.c) QSEL="$QSEL $G_STORE" ;;
+        firmware/src/midi_*.c) QSEL="$QSEL $G_MIDI" ;;
+        firmware/src/usb*) QSEL="$QSEL $G_USB" ;;
+        firmware/src/editor*.c | firmware/src/sysex_library.c) QSEL="$QSEL editor_test fm6_sysex_test web_tests designer_test" ;;
+        firmware/src/scale*.[ch] | firmware/src/microtonal.h | firmware/src/tun*.h | firmware/src/uscale.h) QSEL="$QSEL $G_SCALE" ;;
+        tests/golden.txt | tests/cpu_baseline.txt | tests/regress.c) QREG=1; QSEL="$QSEL regress" ;;
+        tests/tessera_baseline.txt) QSEL="$QSEL tessera_test" ;;
+        tests/pid_ids.txt) QSEL="$QSEL pid_test" ;;
+        tests/cord_dests.txt) QSEL="$QSEL cord_test" ;;
+        tests/target_budget.txt) QSEL="$QSEL target_budget" ;;
+        tests/ui_render.*) QSEL="$QSEL ui_renders" ;;
+        tests/demo_steps.h | tests/demo_projects.c) QSEL="$QSEL demo_projects" ;;
+        tests/macro_test.c) QSEL="$QSEL macro_tests" ;;
+        tests/phys_ref.cpp | tests/phys_fixed.c) QSEL="$QSEL phys_ref" ;;
+        tests/fm6_parity* | tests/fm6_score.h | tests/dexed_*) QSEL="$QSEL fm6_parity" ;;
+        tests/boot_fixtures.py) QSEL="$QSEL loader_powercut_test" ;;
+        tests/descdump.c) QSEL="$QSEL web_tests" ;;
+        tests/*_test.c | tests/*_test.py | tests/*.py | tests/*.c) _f=${1#tests/}; QSEL="$QSEL ${_f%.*}" ;;
+        *) return 1 ;;                            # the rest (hal, loader, tools, build, hostsim.c, run_tests.sh): all
+    esac
+}
+QUICK=${QUICK:-0} QUIET=${QUIET:-1}
+for _a; do
+    case $_a in
+        --quick) QUICK=1 ;;
+        --full) QUICK=0 ;;
+        -v | --verbose) QUIET=0 ;;
+        *) echo "usage: tests/run_tests.sh [--quick] [-v]"; exit 2 ;;
+    esac
+done
+if [ "$QUICK" = 1 ]; then
+    for _u in GOLDEN_UPDATE BUDGET_UPDATE PID_UPDATE CORD_UPDATE TESSERA_UPDATE; do
+        eval "[ -n \"\${$_u:-}\" ]" && { echo "QUICK: $_u rewrites a whole file: the full suite runs"; QUICK=0; }
+    done
+fi
+if [ "$QUICK" = 1 ]; then
+    _base=$(git merge-base "${QUICK_BASE:-origin/develop}" HEAD 2>/dev/null) || {
+        echo "QUICK: no ${QUICK_BASE:-origin/develop} to compare with: the full suite runs"; QUICK=0; }
+fi
+if [ "$QUICK" = 1 ]; then
+    # the smoke set, always: the firmware built a few ways, the UI against the stubs, storage, the parameter ids
+    QSEL=" pid_test ui_test storage_test settings_test msg_len_test" QENG= QREG=0 _odd= _nf=0
+    _files=$( (git diff --name-only "$_base"; git ls-files --others --exclude-standard) | sort -u)
+    _docs=1
+    for _f in $_files; do
+        _nf=$((_nf + 1))
+        case $_f in *.md | LICENSE* | LICENSES/* | docs/*) ;; *) _docs=0 ;; esac
+        qmap "$_f" || _odd="$_odd $_f"
+    done
+    [ $_docs = 1 ] && QSEL=${QSEL#" pid_test ui_test storage_test settings_test msg_len_test"}
+    if [ -n "$_odd" ]; then
+        echo "QUICK: no rule for$_odd: the full suite runs"
+        QUICK=0
+    elif [ $QREG = 0 ] && [ -n "$QENG" ]; then
+        export REGRESS_ONLY="$QENG"               # regress renders and costs these engines alone
+    fi
+fi
+if [ "$QUICK" = 1 ]; then
+    export UI_PPM=${UI_PPM:-0}                    # the UI renders' lint without writing ~730 MB of pictures
+    echo "QUICK: $_nf files changed since $(git rev-parse --short "$_base"); jobs:$(echo $QSEL | tr ' ' '\n' | sort -u | tr '\n' ' ')${REGRESS_ONLY:+(regress: $REGRESS_ONLY)}"
+fi
+
 # ------------------------------------------------------------------- jobs ---
 # job FN ARGS...: FN ARGS in the background once one of the PARALLEL slots is free (fd 3, a FIFO holding a line per
 #   free slot), the output in $LOG/<n>.log; a failure is a line in $LOG/<n>.fail, $LOG/<n>.done marks the end.
@@ -142,6 +260,7 @@ trap 'stop; exit 130' INT
 trap 'stop; exit 143' TERM
 
 fail() { echo "$1" >> "$LOG/$n.fail"; }
+ended() { [ -f "$LOG/$1.done" ] && echo $(($(cat "$LOG/$1.done") - $(cat "$LOG/$1.start"))) || echo "?"; }
 step() { echo "== $1"; _step=$1; shift; "$@" || fail "$_step"; }
 build() {
     _out=$1 _src=$2; shift 2
@@ -156,20 +275,55 @@ _t() {
     build "$_out" "$_src" $_flags || return
     "$@" || fail "$_title"
 }
+brief() {                                         # QUIET: a job's line; a failed one's own output (60 lines)
+    _l=$LOG/$1.log _title=$(sed -n '1s/^== //p' "$_l")
+    if [ "$(cat "$LOG/$1.key")" = note ]; then
+        printf 'note        %s\n' "$_title"
+    elif [ ! -f "$LOG/$1.fail" ]; then
+        printf 'ok   %4ss  %.96s\n' "$(ended "$1")" "$_title"
+        sed -n -E '2,$s/^== (note|skip)/            \1/p' "$_l"
+    fi
+    [ -f "$LOG/$1.fail" ] || return 0
+    printf 'FAIL %4ss  %s\n' "$(ended "$1")" "$_title"
+    if [ "$(wc -l < "$_l")" -le 60 ]; then
+        sed 's/^/  | /' "$_l"
+    else                                          # the lines that say what failed, then the end
+        grep -n -i -E 'fail|error|changed|over budget|crash|assert|differ|mismatch|expected' "$_l" | head -25 |
+            sed 's/^/  | line /'
+        echo "  | ... the last 30 of $(wc -l < "$_l") lines:"
+        tail -n 30 "$_l" | sed 's/^/  | /'
+    fi
+    sed 's/^/  failed: /' "$LOG/$1.fail"
+    echo "  full log: $_l"
+}
 flush() {                                         # the logs of the jobs ended, in order
     while [ $shown -lt $n ] && [ -f "$LOG/$((shown + 1)).done" ]; do
         shown=$((shown + 1))
-        cat "$LOG/$shown.log"
+        if [ "$QUIET" = 1 ]; then brief $shown; else cat "$LOG/$shown.log"; fi
         [ -f "$LOG/$shown.fail" ] && cat "$LOG/$shown.fail" >> "$LOG/failed"
     done
 }
 job() {
+    jkey "$@"
+    [ "$QUICK" = 1 ] && ! wanted && return
     read -r slot <&3
     flush
     n=$((n + 1))
-    ( "$@" 3>&- > "$LOG/$n.log" 2>&1; : > "$LOG/$n.done"; echo >&3 ) &
+    echo "$_k" > "$LOG/$n.key"
+    date +%s > "$LOG/$n.start"
+    ( "$@" 3>&- > "$LOG/$n.log" 2>&1; date +%s > "$LOG/$n.end"; mv "$LOG/$n.end" "$LOG/$n.done"; echo >&3 ) &
     pids="$pids $!"
 }
+jkey() {                                          # a job's name for QUICK: the test's binary and source, the script, the function
+    case $1 in
+        _t) _k="${3%%:*} ${3#*:}" ;;
+        echo) _k=note ;;
+        step) _k=other
+              for _a; do case $_a in tests/*.py | tests/*.sh) _k=${_a#tests/}; _k=${_k%.*}; break ;; esac; done ;;
+        *) _k=$1 ;;
+    esac
+}
+wanted() { for _w in $_k; do case " $QSEL " in *" $_w "*) return 0 ;; esac; done; return 1; }
 t() { job _t "$@"; }
 run() { job step "$@"; }
 note() { job echo "$@"; }
@@ -228,14 +382,14 @@ ui_renders() {
     mkdir -p build/ui_new/ppm build/ui_slot
     step "UI renders: layout lint (every screen and palette, every page, engine and column value), MONO gray, draw cost" \
         "$OUT/ui_render" build/ui_new build/ui_slot
-    if [ $PIL = 1 ]; then
+    if [ "${UI_PPM:-1}" = 0 ]; then               # (--quick: the lint, no pictures)
+        echo "== note: no pictures (UI_PPM=0); UI_PPM=1 tests/run_tests.sh --quick makes them"
+    elif [ $PIL = 1 ]; then
         python3 tests/ui_render.py build/ui_new build/ui_slot || fail "tests/ui_render.py"
         python3 tools/ui_mockcmp.py build/ui_new build/ui_mock || fail "tools/ui_mockcmp.py" # redesign parity (docs/design): a report, no gate yet
     fi
-    build ui_render_mono ui_render -O1 -w -DMELODEE_USB_AUDIO=1 -DMELODEE_USB_HOST=1 -DMELODEE_LOOK=1 -Ibuild/gen -Ifirmware/src -Itests || return
-    mkdir -p build/ui_mono/ppm build/ui_mono_slot
-    step "UI renders, Mono look (MELODEE_LOOK 1, ui_mono.c): the same screens, lint and MONO gray" \
-        "$OUT/ui_render_mono" build/ui_mono build/ui_mono_slot
+    # (a second render built with -DMELODEE_LOOK=1 into build/ui_mono ran here until 2026-11-10: the same look as this
+    # one since Mono became the default, the same pictures byte for byte, ~730 MB written again)
 }
 dsp_tracks() {
     build hostsim hostsim -O2 $FW || return
@@ -474,6 +628,8 @@ case $SOUND in
     0) what="HOST TESTS (sound tests skipped: SOUND=0)" ;;
     only) what="SOUND TESTS (SOUND=only)" ;;
 esac
+# QUICK is not the gate: its line never says ALL
+[ "$QUICK" = 1 ] && what="QUICK HOST TESTS ($n jobs for the changed files; the full suite is the gate before a PR)"
 if [ -s "$LOG/failed" ]; then
     echo "$what FAILED in $secs s:"
     sed 's/^/  /' "$LOG/failed"

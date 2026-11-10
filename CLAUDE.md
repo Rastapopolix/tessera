@@ -38,10 +38,14 @@ use Windows git for git (WSL git cannot read a Windows worktree's `.git`).
 ## Test
 
 ```
-tests/run_tests.sh                       # host tests; run after ./build.sh
+tests/run_tests.sh --quick               # while working: the tests of the files changed since origin/develop
+tests/run_tests.sh                       # the full suite; run after ./build.sh, and always before a PR
 GOLDEN_UPDATE=1 sh tests/run_tests.sh    # only after an intended change of the sound
 BUDGET_UPDATE=1 sh tests/run_tests.sh    # only after an intended change of the CPU cost
 ```
+
+The output is one line per job; a failure prints its own output and the path of its log
+(`-v`: everything). `--quick` is not the gate: run the full suite before opening a PR.
 
 The suite renders every engine against `tests/golden.txt`, checks CPU cost, and renders the UI.
 Generators can be developed and tested on the PC; flash the device only to check how it plays.
