@@ -10,9 +10,11 @@ notes in `docs/design/`. This repo is public: keep plans, reviews and decisions 
 
 ## Start and end of each session
 
-Read `~/src/tessera-notes/ROADMAP.md` first (`git -C ~/src/tessera-notes pull`) and claim the task under
-"In progress" (branch, session), along with any new save-format part, parameter ID, cord code or test-page number.
-At the end, update it (tick tasks, record decisions) and commit and push it there; commit code here as usual.
+Read the short `~/src/tessera-notes/ROADMAP.md` first (`git -C ~/src/tessera-notes pull`; about 250 lines: "Number
+claims", standing decisions, "In progress", open tasks) and claim the task under "In progress" (branch, session),
+along with any new save-format part, parameter ID, cord code or test-page number. Everything finished or historical
+is in `docs/archive/roadmap-2026.md` there: grep it when you need a past decision, never read it whole.
+At the end, update the ROADMAP (tick tasks, record decisions) and commit and push it there; commit code here as usual.
 
 Branches: feature branches from `develop`, PRs into `develop`. `main` holds releases and the site (`docs/`):
 release and site PRs only. Betas: push `beta/X.Y-betaN` from develop (`.github/workflows/beta.yml`), then a site PR
@@ -28,6 +30,10 @@ MELODEE_DUAL_CORE=0 ./build.sh   # serial (one-core) variant
 
 WSL Ubuntu, Linux x86-64: the JieLi toolchain runs natively (`~/.jieli/toolchain`), no Docker.
 The AC79 SDK is at `~/fw-AC79_AIoT_SDK`. Build options are listed in `BUILDING.md`.
+
+From Windows (Git Bash or PowerShell) run anything in WSL, in the matching checkout, with `tools/wsl.sh <cmd>` /
+`.\tools\w.ps1 <cmd>` (e.g. `tools/wsl.sh ./build.sh`, `tools/wsl.sh gh pr list`). `gh` and `node` exist only in WSL;
+use Windows git for git (WSL git cannot read a Windows worktree's `.git`).
 
 ## Test
 
