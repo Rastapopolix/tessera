@@ -183,6 +183,19 @@ static const sheet_row_t SHEET_PATTERN_KIT[] = {{"Quantize",nt_quantize_v,nt_qua
 /* PATTERNS' (OCT+): the selected track's pattern; Copy to: its place picked on the grid (ui_patterns.c) */
 static const sheet_row_t SHEET_PATTERNS[] = {{"Copy to\x85", 0, 0, ptc_start, 0}, {"Delete pattern", 0, 0, 0, CF_DEL_PAT}};
 
+/* MUTES (core.h settings_mute_q, saved with the settings): its names and a step (s > 0 on, < 0 back, stopping at the
+ * ends; 0 round, MENU's OCT+). MENU > MUTES and MIXER's sheet turn this one setting */
+static const char *const MUTE_Q_NAME[3] = {"NOW", "BAR", "PHRASE"};
+static void mute_q_step(int32_t s)
+{
+    uint32_t v = settings_mute_q % 3u;
+    settings_mute_q = (uint8_t)(s > 0 ? (v < 2u ? v + 1u : v) : s < 0 ? (v ? v - 1u : 0u) : (v + 1u) % 3u);
+}
+static void mq_v(char *b) { str_cpy(b, MUTE_Q_NAME[settings_mute_q % 3u], 8); }
+static void mq_t(int32_t s) { mute_q_step(s); settings_save(); }
+/* MIXER's (OCT+ held, free since the key grammar's M2 moved PAN to OCT- held): MUTES, as MENU > MUTES */
+static const sheet_row_t SHEET_MIXER[] = {{"Mutes", mq_v, mq_t, 0, 0}};
+
 /* MODS' (OCT+ held; OCT+ tapped stays the mod's BI / UNI): the project's MIX buses, each one's MODE and LAG (cord.c,
  * TX_BUSA_MODE ..: KNOB 2 turns it, OCT+ steps it; a MODE goes round, a LAG stops at its ends) */
 static void bus_v(char *b, uint32_t k) { str_cpy(b, pid_desc(PID_TESS(TX_BUSA_MODE + k), 0)->names[cord_bus_get(k)], 8); }
@@ -434,7 +447,7 @@ none:                                                   /* (KNOB 2 or a key plac
 }
 
 /* the page's sheet: 0 none, 1 the sound's, 2 the song's, 3 the pattern's, 4 PATTERNS', 5 MODS', 6 a generator's (GEN),
- * 7 MIDI OUT's, 8 ENTRIES', 9 PERF's (MOD DEPTH) */
+ * 7 MIDI OUT's, 8 ENTRIES', 9 PERF's (MOD DEPTH), 10 MIXER's (MUTES) */
 static uint32_t page_sheet(void)
 {
     uint32_t fam;
@@ -454,6 +467,8 @@ static uint32_t page_sheet(void)
         return 8;                                       /* (each track's ORDER) */
     if (cur_page()->graph == GR_PERF)
         return 9;                                       /* (the project's MOD DEPTH) */
+    if (cur_page()->graph == GR_TRK)
+        return 10;                                      /* (MIXER: MUTES, the device's) */
     if (cur_page()->graph == GR_PATGRID)
         return 4;
     if (cur_page()->graph == GR_ROLL || (cur_page()->graph == GR_STEPS && (cur_page()->fam != FAM_GEN || gen_pattern_page(cur_page()))))
@@ -515,6 +530,9 @@ static void page_sheet_open(void)
         sr.n = 0;
         sr_add("Mod depth", PID_TESS(TX_MOD_DEPTH), 0);
         sheet_open("Perf", "the project's", SHEET_SR, sr.n);
+        break;
+    case 10:
+        sheet_open("Mixer", "mutes", SHEET_MIXER, NELEM(SHEET_MIXER));
         break;
     default:
         break;

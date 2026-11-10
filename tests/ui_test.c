@@ -1279,6 +1279,19 @@ static int test_oct_grammar_m0(void)
     press(B_OCTDN);
     press(B_OCTUP);
     bad += check("M1: MODS, OCT+ tapped: still the mod's BI / UNI", cord_get(0)->uni != 0u);
+    settings_mute_q = 0;
+    go_page(GR_TRK);                                    /* MIXER: its sheet, MUTES (MENU's setting, not a copy) */
+    frame();
+    ui.msg_t = 0;
+    hold(B_OCTUP);
+    bad += check("MIXER, OCT+ held: its sheet, Mutes NOW", pop.on == POP_SHEET && str_eq(pop.title, "Mixer") &&
+                 pop.n == 1u && !msg_is("NO SHEET"));
+    turn(EN_K1 + 1u, 1);
+    bad += check("..KNOB 2 right: BAR, MENU > MUTES' own setting", settings_mute_q == 1u);
+    turn(EN_K1 + 1u, 5);
+    bad += check("..further: PHRASE, and there it stops", settings_mute_q == 2u);
+    press(B_OCTDN);
+    settings_mute_q = 0;
     cord_clear();
     for (i = 0; i < NPAGES && PAGES[i].graph != GR_PERF; i++)   /* PERF: its sheet, MOD DEPTH (G9); the page set */
         ;                                               /* by hand (the detailed look this test builds hides PERF) */

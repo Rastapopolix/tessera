@@ -32,6 +32,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - MOD DEPTH: one control for how much of the whole patch plays, 0 to 100 % (GLO > PERF, hold OCT+ for its sheet). It scales every mod's movement, FILL, TEMPO and CC included, but never an OFFSET: at 0 the patch is dry. MOD DEP is also a mod destination, so a MACRO can ride it. A GATE mod onto FILL at 100 % stops holding FILL once MOD DEPTH is under 50 %.
 - PLAY: a mod destination on each track that decides whether it is heard. While its mods reach half its notes sound, under half they don't; a GATE mod onto PLAY makes a gated voice in one cord. A shut track plays on unheard (it still leads, as MUTE).
 - CLOCK: a new destination. A generator track with a mod onto CLOCK steps on the source's edges and not on its DIV: with EOC as the source, a note each LFO cycle (a Krell: add S&H onto the LFO's rate). AMOUNT is the division (50 % every second edge), negative the gate closing; a GATE source counts hits. First step at PLAY; DIV is the step's length and the fastest it steps. A project that uses it does not load on older firmware.
+- MIXER's sheet: hold OCT+ on MIXER for Mutes (NOW, BAR, PHRASE), the same setting as MENU > MUTES, at hand while you play the mute keys.
 
 ## Fixed
 - SCL > SCALES with a USER scale picked: the keys light and play by their own note whatever QNT is; with QNT on they were snapped and lit wrong (#559).
