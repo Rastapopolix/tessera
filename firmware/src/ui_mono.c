@@ -3022,6 +3022,44 @@ static void mo_cu_led(uint32_t lv)
     if (lv)
         mo_disc(1, 1, 1, lv > 3u ? MO_INK : MO_DIM);
 }
+/* the MOD SCOPE (mscope.c) in h cells from row top, columns from x 4: the source dim and dashed, the mod's move in ink over it,
+ * on one scale (the dotted middle 0, the top +100 %), each column its lowest to highest joined to the last; a GATE's
+ * threshold dashed across the source; a bar's ticks at the edges; the sweep's head a gap of three columns */
+static void mo_scope(int32_t top, int32_t h)
+{
+    const cord_t *c = cord_get(mscope.cord);
+    int32_t x, cy = top + h / 2, r = (h - 1) / 2, n = mscope.full ? (int32_t)MSC_W : mscope.col, pass;
+    int32_t bars = mscope.bars ? mscope.bars : 1, step = bars > 8 ? bars / 4 : 1;
+#define MSY(v) (cy - (int32_t)(v) * r / 127)
+    for (x = 0; x < (int32_t)MSC_W; x += 4)
+        mo_px(4 + x, cy, MO_DIM);
+    for (x = 0; x < bars; x += step) {                  /* (the bars: 16 and 64 in fours) */
+        int32_t bx = 4 + x * (int32_t)MSC_W / bars;
+        mo_vl(bx, top, 2, MO_DIM);
+        mo_vl(bx, top + h - 2, 2, MO_DIM);
+    }
+    if (cord_gate(c)) {
+        int32_t ty = MSY(msc_q(cord_thresh(c)));
+        for (x = 0; x < (int32_t)MSC_W; x += 5)
+            mo_hl(4 + x, ty, 3, MO_INK);
+    }
+    for (pass = c->src ? 0 : 1; pass < 2; pass++) {    /* the source (a fixed move: none), then the move over it */
+        const int8_t *lo = pass ? mscope.lo : mscope.sv, *hi = pass ? mscope.hi : mscope.sv;
+        for (x = 0; x < n; x++) {
+            int32_t a = hi[x], b = lo[x];
+            if (mscope.full && (uint32_t)((x - mscope.col + (int32_t)MSC_W) % (int32_t)MSC_W) < 3u)
+                continue;                               /* (the head) */
+            if (!pass && (x & 3) == 3)                  /* (the source dashed and dim: apart from the move by more */
+                continue;                               /* than ink) */
+            if (x && x != mscope.col + 3) {             /* (the move joined to the column before, not across the head) */
+                if (lo[x - 1] > a) a = lo[x - 1];
+                if (hi[x - 1] < b) b = hi[x - 1];
+            }
+            mo_vl(4 + x, MSY(a), MSY(b) - MSY(a) + 1, pass ? MO_INK : MO_DIM);
+        }
+    }
+#undef MSY
+}
 
 /* ---- a knob as a chip or a strip (pv_chip, pv_column's CS_STRIP) on the screens drawn by their own code ---- */
 static void mo_four(char *d, const char *s)            /* four characters: a number shortened, a word abbreviated */

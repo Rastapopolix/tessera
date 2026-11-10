@@ -75,6 +75,8 @@ static uint32_t pv_kind(void)
 /* a knob's picker open (ui_draw.c): MODS' and MOD's chips under it as they change, the rest of the page as it was
  * (drawn again when the picker goes); the picker's lowest row: above the chips (220), else above the strips (188) */
 static void cu_columns(void);
+static void cu_scope_draw(int held);
+static int cu_scope_held(void);                         /* (ui_input.c) */
 static void pv_mod_chips(void)
 {
     uint32_t kind = pv_kind();
@@ -1055,6 +1057,7 @@ static void pv_draw(void)
         if (ui.force)
             lcd_fill(0, H_HEAD, 240, 240 - H_HEAD, T_BG);
         draw_head();
+        cu_scope_draw(cu_scope_held());                 /* (MOD SCOPE while OCT- is held: first, the rows follow) */
         cu_rows();
         cu_leds();
         col_style = CS_CHIP;

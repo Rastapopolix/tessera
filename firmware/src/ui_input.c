@@ -79,7 +79,13 @@ static int oct_dn_page(void)                            /* the page shown has an
     uint32_t g = cur_page()->graph;
     if (g == GR_TWEAK || (g == GR_STEPS && cur_page()->fam == FAM_GEN))
         return pr_gen_track(song.sel);                  /* RANDOM (page_random.c; CHORD: STRUM too) */
-    return g == GR_EVOLVE || g == GR_MIDICH || g == GR_ENTRIES || g == GR_PIECE;   /* ROLL ALL, SOUND, ORDER, USER 5-8 */
+    return g == GR_EVOLVE || g == GR_MIDICH || g == GR_ENTRIES || g == GR_PIECE ||   /* ROLL ALL, SOUND, ORDER, USER 5-8, */
+           (MELODEE_LOOK && g == GR_CORDS);                                    /* MODS' scope (ui_cords.c cu_scope) */
+}
+/* MODS' scope (ui_cords.c cu_scope_draw): OCT- held, nothing over the page */
+static int cu_scope_held(void)
+{
+    return ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) && !ui.menu && !ui.confirm && !pop.on && !ui.layer && !help.on;
 }
 static uint32_t oct_leds(void)
 {

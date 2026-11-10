@@ -149,6 +149,16 @@ static void cu_chip(int32_t x, int32_t y, int32_t w, uint32_t tr, const char *s,
                  on ? T_TEXT : T_DIM, fill, w - 8);
 }
 
+/* MOD SCOPE (gap G14; mscope.c samples, ui_mono.c mo_scope draws): OCT- held on MODS shows the picked mod's move over
+ * time under its row, in the other three rows' place; letting go, the rows again. 1 while shown (cu_scope_draw) */
+static uint8_t cu_scope;
+/* the cord shown in row k of four: the screenful, or with the scope under it the picked one alone; CORD_LIVE none */
+static uint32_t cu_slot(uint32_t k)
+{
+    if (cu_scope) return k ? CORD_LIVE : cord_ui_sel;
+    return cord_ui_sel / 4u * 4u + k;
+}
+
 static uint8_t cu_led_was[4];                           /* (cu_leds: the step each light shows; a row redrawn: none) */
 static uint8_t cu_bar_was[4];                           /* (and where each row's live mark is) */
 static int8_t cu_mv_was[4];                             /* (and its move now: a mod of mods turns it) */
@@ -157,7 +167,7 @@ static int8_t cu_mv_was[4];                             /* (and its move now: a 
 static void cu_rows(void)
 {
     static uint32_t sig;
-    uint32_t k, top = cord_ui_sel / 4u * 4u, sg = cord_ui_sel * 7u + ux.gen * 977u + ux.pal * 31u;
+    uint32_t k, sg = cord_ui_sel * 7u + ux.gen * 977u + ux.pal * 31u + cu_scope * 7919u;
     for (k = 0; k < CORD_LIVE; k++) {
         const uint8_t *b = (const uint8_t *)cord_get(k);
         uint32_t i;
@@ -173,13 +183,16 @@ static void cu_rows(void)
     memset(cu_led_was, 0xFF, sizeof cu_led_was);        /* (the rows over their lights and moves: cu_leds again) */
     memset(cu_bar_was, 0xFF, sizeof cu_bar_was);
     for (k = 0; k < 4u; k++) {
-        const cord_t *c = cord_get(top + k);
-        int sel = top + k == cord_ui_sel, on = cord_live(c);
+        uint32_t i = cu_slot(k);
+        const cord_t *c = cord_get(i);
+        int sel = i == cord_ui_sel, on;
+        if (i >= CORD_LIVE) continue;
+        on = cord_live(c);
         uint16_t bg = sel ? T_LIFT : T_BG;
         int32_t a = cu_pct(c);
         char b[16];
 #if MELODEE_LOOK
-        mo_cu_row(top + k + 1u, c, sel, on);
+        mo_cu_row(i + 1u, c, sel, on);
         cv_blit(0, (uint32_t)(CU_Y + (int32_t)k * CU_H));
         continue;
 #endif
@@ -188,8 +201,8 @@ static void cu_rows(void)
             cv_rrect(4, 1, 232, CU_H - 4, 7, T_THEME, T_BG);
             cv_rrect(5, 2, 230, CU_H - 6, 6, bg, T_THEME);
         }
-        fmt_int(b, (int32_t)(top + k + 1u));
-        cv_text_on(top + k + 1u >= 10u ? 8 : 12, 7, &AF_S, b, sel ? T_THEME : T_MID, bg);
+        fmt_int(b, (int32_t)(i + 1u));
+        cv_text_on(i + 1u >= 10u ? 8 : 12, 7, &AF_S, b, sel ? T_THEME : T_MID, bg);
         cu_chip(26, 6, 74, c->src_trk, cu_src_name(c), c->src != CS_OFF, cu_src_trk(c->src), bg);
         cv_rect(104, 14, 10, 2, on ? T_MID : T_DIM);    /* an arrow */
         cv_line(110, 11, 113, 14, on ? T_MID : T_DIM);
@@ -234,18 +247,20 @@ static void cu_bar(uint32_t k, const cord_t *c, int sel, int32_t s)
 static void cu_leds(void)
 {
     uint8_t *was = cu_led_was;
-    uint32_t k, top = cord_ui_sel / 4u * 4u;
+    uint32_t k;
     for (k = 0; k < 4u; k++) {
-        const cord_t *c = cord_get(top + k);
+        uint32_t i = cu_slot(k);
+        const cord_t *c = cord_get(i);
+        if (i >= CORD_LIVE) continue;
         int32_t s = cord_live(c) ? cord_share(c) : 0;
         uint8_t lv = (uint8_t)(cord_live(c) ? 1 + clamp((s < 0 ? -s : s) * 7 / 32768, 0, 7) : 0);
-        uint8_t key = (uint8_t)(lv | (top + k == cord_ui_sel) << 4 | (ux.pal & 7u) << 5);
+        uint8_t key = (uint8_t)(lv | (i == cord_ui_sel) << 4 | (ux.pal & 7u) << 5);
         uint8_t bk = (uint8_t)(clamp(s, -32768, 32768) * 103 / 32768 + 104);   /* (the mark's x, 1 .. 207) */
-        uint16_t bg = top + k == cord_ui_sel ? T_LIFT : T_BG;
+        uint16_t bg = i == cord_ui_sel ? T_LIFT : T_BG;
         if (ui.force || bk != cu_bar_was[k] || cu_now(c) != cu_mv_was[k]) {
             cu_bar_was[k] = bk;
             cu_mv_was[k] = (int8_t)cu_now(c);
-            cu_bar(k, c, top + k == cord_ui_sel, s);
+            cu_bar(k, c, i == cord_ui_sel, s);
         }
         if (!ui.force && key == was[k])
             continue;
@@ -259,6 +274,30 @@ static void cu_leds(void)
 #endif
         cv_blit(CU_LED_X, (uint32_t)(CU_Y + (int32_t)k * CU_H + CU_LED_Y));
     }
+}
+
+/* every frame on MODS, before the rows: the picked mod sampled (mscope.c; off MODS not), and while OCT- is held
+ * the scope under its row, drawn when a column came in */
+static void cu_scope_draw(int held)                     /* held: OCT- held, nothing over the page (ui_pages.c) */
+{
+    static uint32_t was;
+    uint32_t key;
+    mscope_take(cord_ui_sel);
+    cu_scope = (uint8_t)(MELODEE_LOOK && held);
+#if MELODEE_LOOK
+    key = mscope.col | (uint32_t)mscope.bars << 8 | (uint32_t)cord_ui_sel << 16 | (ux.pal & 7u) << 21 |
+          (uint32_t)mscope.full << 24 | (uint32_t)cu_scope << 25 | (ux.gen & 15u) << 26;
+    if (!cu_scope || (!ui.force && key == was)) {
+        was = cu_scope ? key : 0u;
+        return;
+    }
+    was = key;
+    cv_begin(240, 3 * CU_H, T_BG);
+    mo_scope(3, 3 * CU_H / 2 - 6);
+    cv_blit(0, (uint32_t)(CU_Y + CU_H));
+#else
+    (void)was, (void)key;
+#endif
 }
 
 /* the chips under the rows (ui_draw.c draw_columns): KNOB 1 the source, 2 the cord, 3 the destination, 4 the move */
