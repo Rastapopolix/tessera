@@ -37,6 +37,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - MIXER's sheet: hold OCT+ on MIXER for Mutes (NOW, BAR, PHRASE), the same setting as MENU > MUTES, at hand while you play the mute keys.
 
 ## Fixed
+- Web editor on macOS: "Tessera not found" when the FM-1's MIDI port is still named "FM-1" (CoreMIDI keeps the first name it saw). The editor now also tries ports named FM-1 / FM1, takes one only if it answers the editor handshake as Tessera, and says so if an FM-1 does not (stock firmware: install Tessera with the installer). The not-found text hints at the cached name (#527).
 - Rename and SAVE while playing: the name screen now opens (the keys type, they never sound); only writing the name needs the transport stopped. OCT+ says STOP TO SAVE and the screen stays; PLAY stops, OCT+ saves. Before, Rename closed the sheet and nothing opened (#602).
 - KNOBS BARS: a bar at its maximum no longer touches the top of its outline; it keeps the same one-pixel gap there as at the sides and bottom (13 pixels of travel, not 15).
 - STEP direction: a pattern of recorded notes (REC) played them forwards while BACK or PEND moved the playhead backwards; each step now plays its own recorded notes. A tied note going backwards plays once, from the tie's last step, as long as the tie (it played again on its own step). The pattern sheet's Direction row shows a mod moving it as FWD>PEND: the pattern's own, then the one playing.

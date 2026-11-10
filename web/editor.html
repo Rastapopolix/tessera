@@ -2769,6 +2769,39 @@ function devicePresetRows(info, names, preferences) {
     .filter((row) => !preferences.state.filter || row.favorite);
 }
 
+/* Finding the device's MIDI port. Tessera names its port "Tessera FM-1" (Melodee: "Melodee"), but macOS keeps the name
+   it first saw ("FM-1", from the stock firmware or an older Tessera). A port is never used for its name alone: an FM-1
+   name is only a candidate, and the editor takes it when it answers the INFO handshake. */
+const RE_TESSERA = /tessera|melodee|felucca/i, RE_FM1 = /(^|[^a-z0-9])fm-?1($|[^a-z0-9])/i;
+async function probeFm1(input, output, timeout = 300) {
+  const link = new Link((d) => output.send(d), { timeout, onUnknown: () => {} });
+  const prev = input.onmidimessage;
+  input.onmidimessage = (e) => link.receive(e.data);
+  try {
+    if (input.open) await input.open().catch(() => {});
+    parse[CMD.INFO](await link.request(req.info(), { timeout, retries: 1, quiet: true }));
+    return true;
+  } catch (e) { return false; }
+  finally { link.close(); input.onmidimessage = prev || null; }
+}
+/* -> {input, output} | {notTessera: true} (an FM-1 that does not answer) | {} (no candidate) */
+async function findDevicePorts(access, probe = probeFm1) {
+  const live = (m) => [...m.values()].filter((p) => p.state !== "disconnected");
+  const ins = live(access.inputs), outs = live(access.outputs);
+  const named = (list, re) => list.filter((p) => re.test(p.name || ""));
+  const input = named(ins, RE_TESSERA)[0], output = named(outs, RE_TESSERA)[0];
+  if (input && output) return { input, output };
+  let tried = false;
+  for (const i of named(ins, RE_FM1)) {
+    const same = named(outs, RE_FM1).filter((x) => x.name === i.name);   /* (an input and an output of one name: try each) */
+    for (const o of same.length ? same : named(outs, RE_FM1).slice(0, 1)) {
+      tried = true;
+      if (await probe(i, o)) return { input: i, output: o };
+    }
+  }
+  return tried ? { notTessera: true } : {};
+}
+
 /*PROTO-END*/
 
 /* ===================================================================== UI === */
@@ -2884,7 +2917,8 @@ const TEXT = {
     foot: "Chrome か Edge で使えます。", iconsCredit: "アイコン: Fukiai（MIT）Hügelton Instruments",
     nomidi: "このブラウザでは使えません。Chrome か Edge で開いてください。",
     denied: "MIDI（SysEx）の使用が許可されませんでした。",
-    nodevice: "Tessera が見つかりません。FM-1 を USB で接続して、もう一度押してください。",
+    nodevice: "Tessera が見つかりません。FM-1 を USB で接続して、もう一度押してください。Mac では古いポート名が残っていることがあります。Audio MIDI 設定でデバイス名を変更するか、挿し直してください。",
+    notessera: "この FM-1 では Tessera が動いていません。Tessera インストーラー（下のリンク）で入れてから、もう一度押してください。",
     connecting: "接続中", reading: "読み込み中 ", steploading: "ステップを読み込み中 ",
     ready: "接続しました", disconnected: "切断されました", lost: "Tessera が外されました",
     noreply: "応答がありません", error: "エラー: ", busy: "処理中",
@@ -3001,7 +3035,8 @@ const TEXT = {
     foot: "Works in Chrome or Edge.", iconsCredit: "Icons: Fukiai (MIT), Hügelton Instruments",
     nomidi: "This browser cannot do it. Open the page in Chrome or Edge.",
     denied: "MIDI (SysEx) access was not allowed.",
-    nodevice: "Tessera not found. Connect the FM-1 by USB and press Connect again.",
+    nodevice: "Tessera not found. Connect the FM-1 by USB and press Connect again. On a Mac an old port name may be cached: rename the device in Audio MIDI Setup, or replug it.",
+    notessera: "This FM-1 isn't running Tessera. Install it with the Tessera installer (link below), then press Connect again.",
     connecting: "Connecting", reading: "Reading ", steploading: "Reading steps ",
     ready: "Connected", disconnected: "Disconnected", lost: "Tessera was unplugged",
     noreply: "No reply from the device", error: "Error: ", busy: "Busy",
@@ -3235,9 +3270,8 @@ async function connect() {
       }
       access.onstatechange = onState;
     }
-    const isF = (p) => /tessera|melodee|felucca/i.test(p.name || "") && p.state !== "disconnected";   /* (the device's port: Tessera, from its USB name; Melodee before 2.0) */
-    const input = [...access.inputs.values()].find(isF);
-    const output = [...access.outputs.values()].find(isF);
+    const { input, output, notTessera } = await findDevicePorts(access);
+    if (notTessera) { sayK("notessera"); return; }
     if (!input || !output) { sayK("nodevice"); return; }
     const link = new Link((d) => output.send(d), {
       timeout: 300,
@@ -3288,7 +3322,7 @@ function disconnect(reasonKey = "disconnected") {
 
 function onState(e) {
   const p = e.port;
-  if (!p || !/tessera|melodee|felucca/i.test(p.name || "")) return;
+  if (!p || !(RE_TESSERA.test(p.name || "") || RE_FM1.test(p.name || ""))) return;
   if (dev && p.state === "disconnected" && (p.id === dev.input.id || p.id === dev.output.id)) {
     disconnect("lost");
   } else if (!dev && wantConnected && p.state === "connected" && p.type === "output") {
