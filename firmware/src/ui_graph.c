@@ -46,64 +46,45 @@ static void graph_adsr_v(int32_t va, int32_t vd, int32_t vs, int32_t vr, int32_t
 #undef EGY
 }
 
-/* QUAD on GEN with OCT+ held: the knobs are the grid's columns' (COL, MOVE, EVERY) and the row's RANGE
- * (tessera.c tessera_quad_cols_knob); ui_input.c routes the knobs, ui_draw.c the cards, the picture marks the column */
-static int quad_cols_on(void)
+/* a generator track's GEN with OCT- held, engine m's (the key grammar, M3): KNOB 1 RANDOM (page_random.c), KNOB 2-4
+ * the engine's layer, its settings 1-3 (a fourth: the GEN sheet, ui_popup.c); ui_input.c gen_dn_knob routes the knobs,
+ * ui_draw.c pr_draw the cards */
+static int gen_dn_on(uint32_t m)
 {
     return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->fam == FAM_GEN &&
-           cur_page()->graph == GR_STEPS && tessera.mode[song.sel] == TESS_ENG_QUAD &&
-           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+           cur_page()->graph == GR_STEPS && tessera.mode[song.sel] == m && oct_dn_only();
 }
-/* CONSTELLATION on GEN with OCT+ held: the knobs are LOCK, LEN, FILL and SIZE (tessera.c tessera_constel_layer_knob) */
-static int cs_layer_on(void)
-{
-    return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->fam == FAM_GEN &&
-           cur_page()->graph == GR_STEPS && tessera.mode[song.sel] == TESS_ENG_CONSTEL &&
-           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
-}
-/* CHORD on GEN with OCT+ held: the knobs are OCT, the track's CHRD and VOIC (ui_input.c ch_layer_knob) */
-static int ch_layer_on(void)
-{
-    return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->fam == FAM_GEN &&
-           cur_page()->graph == GR_STEPS && tessera.mode[song.sel] == TESS_ENG_CHORD &&
-           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
-}
+/* QUAD: the grid's columns' COL, MOVE, EVERY (tessera.c tessera_quad_cols_knob; RANGE: the sheet); the picture marks
+ * the column */
+static int quad_cols_on(void) { return gen_dn_on(TESS_ENG_QUAD); }
+/* CONSTELLATION: LOCK, LEN, FILL (tessera.c tessera_constel_layer_knob; SIZE: the sheet) */
+static int cs_layer_on(void) { return gen_dn_on(TESS_ENG_CONSTEL); }
+/* CHORD: STRUM, its DIR, OCT (CHRD, VOIC, LEN / BREATH: the sheet) */
+static int ch_layer_on(void) { return gen_dn_on(TESS_ENG_CHORD); }
 /* within the OCT- layer (page_random.c pr_layer_on): a CHORD track's GEN, whose KNOB 2 and 3 are STRUM and its DIR */
 static int ch_st_layer_on(void)
 {
     return cur_page()->graph == GR_STEPS && song.sel < TESSERA_TRACKS && tessera.mode[song.sel] == TESS_ENG_CHORD;
 }
-/* CHORD on GEN, PROG USER, OCT+ held: the keys are USER's chords, silent (ui_input.c chord_user_keys) */
+/* CHORD on GEN, PROG USER, OCT- held: the keys are USER's chords, silent (ui_input.c chord_user_keys) */
 static int ch_user_entry_on(void) { return ch_layer_on() && tessera_chord(song.sel)->prog == GEN_CH_USER; }
-/* GRIDS on GEN with OCT+ held: the knobs are KICK, SNR, HAT and TOMS (tessera.c tessera_grids_layer_knob) */
-static int gr_layer_on(void)
-{
-    return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->fam == FAM_GEN &&
-           cur_page()->graph == GR_STEPS && tessera.mode[song.sel] == TESS_ENG_GRIDS &&
-           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
-}
-/* ANSWER on GEN with OCT+ held: the knobs are ORDER, SHIFT, SPACE and LEN (tessera.c tessera_answer_layer_knob) */
-static int an_layer_on(void)
-{
-    return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->fam == FAM_GEN &&
-           cur_page()->graph == GR_STEPS && tessera.mode[song.sel] == TESS_ENG_ANSWER &&
-           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
-}
-/* TURING, EUCLID, MARKOV or MORPH on GEN with OCT+ held: the knobs are SOURCE, KEEP and GRAVITY (step_seed.c
- * tessera_sd_layer_knob) */
+/* GRIDS: KICK, SNR, HAT (tessera.c tessera_grids_layer_knob; the fourth part: the sheet); a black key picks the fourth
+ * part's sound */
+static int gr_layer_on(void) { return gen_dn_on(TESS_ENG_GRIDS); }
+/* ANSWER: SOURCE, ORDER, SHIFT (answer.c tessera_answer_layer_knob; SPACE: the sheet) */
+static int an_layer_on(void) { return gen_dn_on(TESS_ENG_ANSWER); }
+/* TURING, EUCLID, MARKOV or MORPH: SOURCE, KEEP, GRAVITY (step_seed.c tessera_sd_layer_knob) */
 static int sd_layer_on(void)
 {
     uint32_t m = song.sel < TESSERA_TRACKS ? tessera.mode[song.sel] : TESS_ENG_OFF;
-    return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->fam == FAM_GEN &&
-           cur_page()->graph == GR_STEPS &&
-           (m == TESS_ENG_TURING || m == TESS_ENG_EUCLID || m == TESS_ENG_MARKOV || m == TESS_ENG_MORPH) &&
-           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+    return (m == TESS_ENG_TURING || m == TESS_ENG_EUCLID || m == TESS_ENG_MARKOV || m == TESS_ENG_MORPH) && gen_dn_on(m);
 }
-/* a STEP track's EVOLVE page (STEP EVOLVE) with OCT+ held: KNOB 1 is HOW (step_evolve.c tessera_sv_layer_knob) */
+/* a STEP track's EVOLVE page (STEP EVOLVE) with OCT- held: KNOB 4 is HOW, KNOB 3 PAT GEN (step_evolve.c
+ * tessera_sv_layer_knob; KNOB 1 ROLL ALL) */
 static int sv_layer_on(void)
 {
     return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->graph == GR_EVOLVE &&
-           tessera_step_on(song.sel) && ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+           tessera_step_on(song.sel) && oct_dn_only();
 }
 /* the ENERGY page with OCT- held: KNOB 1 is the selected track's DEPTH (tessera.c tessera_en_layer_knob) */
 static int en_layer_on(void)
@@ -117,29 +98,17 @@ static int tm_layer_on(void)
     return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->graph == GR_TIMING &&
            oct_dn_only();
 }
-/* the MIDI OUT page with OCT+ held: KNOB k is track k's TRANSPOSE (midi_out.c) */
+/* the MIDI OUT page with OCT- held: KNOB k is track k's TRANSPOSE (midi_out.c; each track's SOUND and DRUM MAP: the
+ * MIDI OUT sheet, ui_popup.c) */
 static int midi_layer_on(void)
 {
-    return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_MIDICH &&
-           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+    return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_MIDICH && oct_dn_only();
 }
-/* the MIDI OUT page with OCT- held (and not OCT+): KNOB k is track k's SOUND, ON or OFF (voice.c trk_note_on) */
-/* the MIDI OUT page with OCT+ and OCT- held: KNOB k is track k's DRUM MAP (midi_out.c) */
-static int midi_dm_layer_on(void)
-{
-    return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_MIDICH &&
-           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) && ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u);
-}
-static int midi_snd_layer_on(void)
-{
-    return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_MIDICH &&
-           ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) && !((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
-}
-/* the EVOLVE page with OCT- held: KNOB 4 is ROLL ALL, every generator track's seed (tessera.c tessera_roll_all) */
+/* the EVOLVE page with OCT- held: KNOB 1 is ROLL ALL, every generator track's seed (tessera.c tessera_roll_all); KNOB 3
+ * PAT GEN and KNOB 4 HOW or GRAVITY (sv_layer_on, ev_layer_on; at the edge, where HOW's long names fit) */
 static int rall_layer_on(void)
 {
-    return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_EVOLVE &&
-           ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) && !((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+    return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_EVOLVE && oct_dn_only();
 }
 /* the CHAIN page with OCT- held: KNOB k is place k's REPEAT (form_chain.c) */
 static int chain_layer_on(void)
@@ -147,21 +116,19 @@ static int chain_layer_on(void)
     return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_CHAIN &&
            oct_dn_only();
 }
-/* the ENTRIES page with OCT+ held: KNOB k is track k's ROLE; with OCT- held, its ORDER (entries.c). 1, 2, or 0 */
+/* the ENTRIES page with OCT- held: KNOB k is track k's ROLE (entries.c; each track's ORDER: the ENTRIES sheet) */
 static int entries_layer_on(void)
 {
-    if (ui.home || ui.menu || ui.confirm || cur_page()->graph != GR_ENTRIES) return 0;
-    if ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) return 1;
-    return ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) ? 2 : 0;
+    return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_ENTRIES && oct_dn_only();
 }
-/* the PIECE page with OCT+ held: KNOB k is USER's level k; with OCT- held, level 4 + k (planner.c). 1, 2, or 0 */
+/* the PIECE page, SHAPE USER, with OCT- held (the key grammar, M3): KNOB 1 picks one of USER's eight points (pl_pt: a
+ * cursor, never saved), KNOB 2 sets its level (planner.c); the arc stays in view, the point picked marked on it */
+static uint8_t pl_pt;
 static int piece_layer(void)
 {
-    if (ui.home || ui.menu || ui.confirm || cur_page()->graph != GR_PIECE) return 0;
-    if ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) return 1;
-    return ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) ? 2 : 0;
+    return !ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_PIECE && tessera.pl_shape == PL_USER &&
+           oct_dn_only();
 }
-static int piece_layer_on(void) { return piece_layer() != 0; }
 /* PEAK (ARCH, PLATEAU, VALLEY) or COUNT (WAVES, BUILDS, STEPS) on KNOB 3; RISE, FALL, FLAT, USER: neither */
 static int piece_k3(void)
 {
@@ -198,19 +165,19 @@ static void midi_tr_text(char *b, int32_t v)
     if (v > 0) b[0] = '+';
     fmt_int(b + (v > 0), v);
 }
-/* a generator track's EVOLVE page with OCT+ held: KNOB 1 is GRAVITY (tessera.c tessera_ev_layer_knob) */
+/* a generator track's EVOLVE page with OCT- held: KNOB 4 is GRAVITY (as on GEN), KNOB 3 PAT GEN (tessera.c
+ * tessera_ev_layer_knob; KNOB 1 ROLL ALL) */
 static int ev_layer_on(void)
 {
     return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->graph == GR_EVOLVE &&
-           !tessera_step_on(song.sel) && tessera.mode[song.sel] != TESS_ENG_OFF &&
-           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+           !tessera_step_on(song.sel) && tessera.mode[song.sel] != TESS_ENG_OFF && oct_dn_only();
 }
-/* a generator track's TWEAK page with OCT+ held: KNOBs 2, 3, 4 are FOLLOW's HOW, RHYTHM, HOLD (tessera_tw_layer_knob) */
+/* a generator track's TWEAK page with OCT- held: KNOBs 2, 3, 4 are FOLLOW's HOW, RHYTHM, HOLD (tessera_tw_layer_knob;
+ * KNOB 1 RANDOM, page_random.c) */
 static int tw_layer_on(void)
 {
     return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->graph == GR_TWEAK &&
-           tessera.mode[song.sel] != TESS_ENG_OFF && tessera.mode[song.sel] != TESS_ENG_GRIDS &&
-           ((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u);
+           tessera.mode[song.sel] != TESS_ENG_OFF && tessera.mode[song.sel] != TESS_ENG_GRIDS && oct_dn_only();
 }
 /* a generator track's FORM page with OCT- held: KNOB 1 is DEVELOP (tessera.c tessera_fm_layer_knob) */
 static int fm_layer_on(void)
@@ -218,14 +185,13 @@ static int fm_layer_on(void)
     return !ui.home && !ui.menu && !ui.confirm && song.sel < TESSERA_TRACKS && cur_page()->graph == GR_FORM &&
            tessera.mode[song.sel] != TESS_ENG_OFF && oct_dn_only();
 }
-/* a page's knob layer is on: OCT+'s (QUAD's, CONSTELLATION's, CHORD's, GRIDS', ANSWER's, the SOURCE one, STEP EVOLVE's,
- * EVOLVE's; MIDI OUT's TRANSPOSE; until the key grammar's M3 moves them) or OCT-'s (FORM's, TIMING's, ENERGY's, CHAIN's):
- * no octave, no sheet */
+/* a page's knob layer is on, OCT- held (the key grammar's rule 2: the GEN engines', STEP EVOLVE's, EVOLVE's, TWEAK's,
+ * FORM's, TIMING's, ENERGY's, MIDI OUT's, CHAIN's, ENTRIES', PIECE's): no octave, the cards again */
 static int gen_layer_on(void)
 {
     return quad_cols_on() || cs_layer_on() || ch_layer_on() || gr_layer_on() || an_layer_on() || sd_layer_on() ||
-           sv_layer_on() || ev_layer_on() || tw_layer_on() || fm_layer_on() || en_layer_on() || tm_layer_on() || midi_layer_on() || chain_layer_on() ||
-           entries_layer_on() || piece_layer_on();
+           sv_layer_on() || ev_layer_on() || tw_layer_on() || fm_layer_on() || en_layer_on() || tm_layer_on() ||
+           midi_layer_on() || chain_layer_on() || entries_layer_on() || piece_layer();
 }
 /* QUAD's LINK as its card shows it: OFF, or "T" and the linked tracks ("T24") */
 static void quad_link_text(uint32_t m, char *b)
@@ -1296,8 +1262,8 @@ static void graph_chain(uint16_t c)
     }
 }
 
-/* PIECE (planner.c): the SHAPE over the piece, sparse at the foot, full at the top (USER: its eight points, the
- * layer's four ringed); playing, the play head and the time left; FREE: the curve dim and "FREE" */
+/* PIECE (planner.c): the SHAPE over the piece, sparse at the foot, full at the top (USER: its eight points, OCT- held
+ * the one picked ringed); playing, the play head and the time left; FREE: the curve dim and "FREE" */
 static void graph_piece(uint16_t c)
 {
     int32_t x0 = PANEL_X0 + 8, w = PANEL_W - 16, top = 6, h = 40, i, py = 0;
@@ -1313,7 +1279,7 @@ static void graph_piece(uint16_t c)
     if (tessera.pl_shape == PL_USER)
         for (i = 0; i < 8; i++) {
             int32_t px = x0 + i * w / 7, y = top + h - (int32_t)tessera.pl_user[i] * h / 100;
-            int hot = lay && (i >> 2) == lay - 1;
+            int hot = lay && i == (int32_t)(pl_pt & 7u);
             cv_ball(px, y, hot ? 6 : 4, hot ? c : T_TEXT);
         }
     if (on && song.playing) {
@@ -1365,7 +1331,7 @@ static void graph_midich(void)
     for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
         int32_t y = 4 + (int32_t)k * 20;
         uint32_t ch = midi_out_channel(&trk[k]);
-        char n[4], b[24];
+        char n[4], b[40];                               /* ("CHANNEL 16  (ROUT)  -24 ST  SOUND OFF") */
         fmt_int(n, (int32_t)k + 1);
         cv_rrect(PANEL_X0 + 6, y, 17, 17, 3, T_TRK(k), T_SURF);
         cv_text_c(PANEL_X0 + 15, y + 3, &AF_X, n, T_BG, T_TRK(k));
@@ -2125,7 +2091,7 @@ static uint32_t graph_sig(int play)
         int on = tessera_piece_get(&px, &lf);
         h ^= ((uint32_t)tessera.pl_length | (uint32_t)tessera.pl_shape << 5 | (uint32_t)tessera.pl_peak << 9 |
               (uint32_t)tessera.pl_count << 16 | (uint32_t)tessera.pl_end << 20 | (uint32_t)on << 22 | (uint32_t)song.playing << 23 |
-              (uint32_t)piece_layer() << 24) * 2246822519u ^ (px >> 8 | lf << 9) * 3266489917u ^
+              (uint32_t)(piece_layer() ? 1u + pl_pt : 0u) << 24) * 2246822519u ^ (px >> 8 | lf << 9) * 3266489917u ^
              ((uint32_t)tessera.pl_user[0] | (uint32_t)tessera.pl_user[1] << 7 | (uint32_t)tessera.pl_user[2] << 14 |
               (uint32_t)tessera.pl_user[3] << 21) * 40503u ^
              ((uint32_t)tessera.pl_user[4] | (uint32_t)tessera.pl_user[5] << 7 | (uint32_t)tessera.pl_user[6] << 14 |

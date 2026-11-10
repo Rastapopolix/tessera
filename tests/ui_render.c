@@ -1295,7 +1295,7 @@ static void setup(int s)
     case S_MIDI_OUT:                                /* MIDI OUT: the tracks' channels */
         go_title("MIDI OUT");
         break;
-    case S_MIDI_SOUND:                              /* MIDI OUT, OCT- held: SOUND; track 2 a MIDI track on 3, track 4
+    case S_MIDI_SOUND:                              /* MIDI OUT, OCT- held: TRANSPOSE (SOUND: its sheet); track 2 a MIDI track on 3, track 4
                                                      * a lane of mods (channel OFF) */
         tessera_reset();
         tessera_param_set(1, TX_SOUND, 1);
@@ -1308,8 +1308,8 @@ static void setup(int s)
     case S_GLO_CHAIN:                               /* CHAIN: ABAC, A x2 and C x3, WANDER 30, playing in C's first phrase;
                                                      * tracks 1 and 2 follow, 3 has its own FORM (OWN) */
     case S_GLO_CHAIN_OFF:                           /* (OFF: a line) */
-    case S_GLO_CHAIN_REPS:                          /* (OCT+ held: the REPEATs, the fourth dim on AB) */
-    case S_GEN_FORM_CHAIN:                          /* (FORM, OCT+ held: DEVELOP, the CHAIN's FOLLOW and SKIP 20) */
+    case S_GLO_CHAIN_REPS:                          /* (OCT- held: the REPEATs, the fourth dim on AB) */
+    case S_GEN_FORM_CHAIN:                          /* (FORM, OCT- held: DEVELOP, the CHAIN's FOLLOW and SKIP 20) */
         tessera_reset();
         song.sel = 0;
         tessera_knob(0, TESS_ENG_TURING);
@@ -1338,7 +1338,7 @@ static void setup(int s)
     case S_GLO_ENTRIES:                             /* ENTRIES 60, DWELL 2, FADE 2: playing, track 4 out, track 2 fading
                                                      * out, track 3 about to change, track 1 muted by hand */
     case S_GLO_ENTRIES_OFF:                         /* (ENTRIES 0: OFF, the rows dim) */
-    case S_GLO_ENTRIES_ROLES:                       /* (OCT+ held: the ROLEs, track 2 ANCHOR) */
+    case S_GLO_ENTRIES_ROLES:                       /* (OCT- held: the ROLEs, track 2 ANCHOR) */
         tessera_reset();
         song.sel = 0;
         tessera_knob(0, TESS_ENG_TURING);
@@ -1365,11 +1365,11 @@ static void setup(int s)
             trk[0].p[P_MUTE] = 1;
         }
         go_title("ENTRIES");
-        if (s == S_GLO_ENTRIES_ROLES) fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+        if (s == S_GLO_ENTRIES_ROLES) fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
         break;
     case S_GLO_PIECE:                               /* PIECE: 20 minutes, ARCH at 62 %, END STOP, playing 40 % in */
     case S_GLO_PIECE_FREE:                          /* (FREE: the curve dim) */
-    case S_GLO_PIECE_USER:                          /* (USER, OCT+ held: its first four points ringed; stopped) */
+    case S_GLO_PIECE_USER:                          /* (USER, OCT- held: point 1 picked, bigger; stopped) */
         tessera_reset();
         song.sel = 0;
         tessera_knob(0, TESS_ENG_TURING);
@@ -1383,7 +1383,7 @@ static void setup(int s)
             beat_n = 0;
         }
         go_title("PIECE");
-        if (s == S_GLO_PIECE_USER) fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+        if (s == S_GLO_PIECE_USER) fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
         break;
     case S_SCL_KEY:                                 /* SCL's KEY row: LINKED, the CHAIN's B a fourth up, C down a tone */
         tessera_reset();
@@ -1425,7 +1425,7 @@ static void setup(int s)
         break;
     case S_GEN_ENERGY:                              /* ENERGY: ARC 60, RESTS 40, stopped (the tide's curve, no dot) */
     case S_GEN_ENERGY_LEVEL:                        /* (LEVEL -35: the curve below the line) */
-    case S_GEN_ENERGY_DEPTH:                        /* (OCT+ held: track 1's DEPTH 40) */
+    case S_GEN_ENERGY_DEPTH:                        /* (OCT- held: track 1's DEPTH 40) */
         tessera_reset();
         song.sel = 0;
         tessera_knob(0, TESS_ENG_EUCLID);
@@ -1509,7 +1509,7 @@ static void setup(int s)
         tessera_param_set(0, TX_CH_PROG, GEN_CH_DRONE);
         go_title("GEN");
         break;
-    case S_GEN_CHORD_OCT:                            /* CHORD with OCT+ held: OCT +1, CHRD DIA7, VOIC OPEN */
+    case S_GEN_CHORD_OCT:                            /* CHORD with OCT- held: RANDOM, STRUM, DIR, OCT +1 (CHRD DIA7, VOIC OPEN) */
         tessera_reset();
         song.sel = 0;
         tessera_knob(0, TESS_ENG_CHORD);
@@ -1517,10 +1517,10 @@ static void setup(int s)
         TSEL->p[P_CHRD] = CH_DIA7;
         TSEL->p[P_VOIC] = VC_OPEN;
         go_title("GEN");
-        fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+        fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
         break;
     case S_GEN_STEP_EVOLVE:                          /* STEP EVOLVE: a STEP melody, LOCK 60, AMOUNT 80, 3 steps changed */
-    case S_GEN_STEP_EVOLVE_HOW:                      /* (OCT+ held: HOW ADORN) */
+    case S_GEN_STEP_EVOLVE_HOW:                      /* (OCT- held: ROLL ALL, HOW ADORN) */
     case S_GEN_STEP_ADORN:                           /* (HOW ADORN, playing step 5: a ratchet, a passing note, an octave) */
     case S_GEN_STEP_SERIAL:                          /* (HOW SERIAL, playing step 5: ROTATE 3) */
     case S_NOTES_EVOLVE:                             /* (NOTES of the ADORN one: its ghost notes dashed) */
@@ -1561,11 +1561,11 @@ static void setup(int s)
         go_title("EVOLVE");
         if (s == S_GEN_STEP_EVOLVE_HOW) {
             tessera.sv_how[0] = TESS_SV_ORNAMENT;
-            fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+            fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
         }
         break;
     case S_GEN_ANSWER:                               /* ANSWER: five notes heard, its second answer, its third note */
-    case S_GEN_ANSWER_OCT:                           /* (OCT+ held: ORDER SHUFFLE, SHIFT 3, SPACE 50, LEN LONG) */
+    case S_GEN_ANSWER_OCT:                           /* (OCT- held: RANDOM, SOURCE, ORDER SHUFFLE, SHIFT 3) */
         tessera_reset();
         song.sel = 0;
         tessera_knob(0, TESS_ENG_ANSWER);
@@ -1585,7 +1585,7 @@ static void setup(int s)
             tessera_param_set(0, TX_AN_LEN, TESS_AN_LONG);
         }
         go_title("GEN");
-        if (s == S_GEN_ANSWER_OCT) fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+        if (s == S_GEN_ANSWER_OCT) fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
         break;
     case S_GEN_SEED:                                 /* TURING from T2's melody, three steps drifted, playing step 6 */
     case S_GEN_SEED_MORPH:                           /* MORPH from it: A the melody, B its variation, at 60 % B */
@@ -1617,7 +1617,7 @@ static void setup(int s)
         song.playing = 1;
         go_title("GEN");
         break;
-    case S_GEN_SEED_OCT:                             /* TURING, OCT+ held: SOURCE T2, KEEP RHYTHM, GRAVITY 30 (STEP as seed) */
+    case S_GEN_SEED_OCT:                             /* TURING, OCT- held: RANDOM, SOURCE T2, KEEP RHYTHM, GRAVITY 30 (STEP as seed) */
         tessera_reset();
         song.sel = 0;
         tessera_knob(0, TESS_ENG_TURING);
@@ -1625,9 +1625,9 @@ static void setup(int s)
         tessera_param_set(0, TX_SD_KEEP, TESS_SD_RHYTHM);
         tessera_param_set(0, TX_SD_GRAVITY, 30);
         go_title("GEN");
-        fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+        fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
         break;
-    case S_GEN_CHORD_USER:                           /* CHORD USER, eight chords played in, OCT+ held: LEN 8 */
+    case S_GEN_CHORD_USER:                           /* CHORD USER, eight chords played in, OCT- held */
         tessera_reset();
         song.sel = 0;
         tessera_knob(0, TESS_ENG_CHORD);
@@ -1637,9 +1637,9 @@ static void setup(int s)
             for (uint32_t k = 0; k < 8u; k++) tessera_chord_user_key(0, K[k], k == 0u);
         }
         go_title("GEN");
-        fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+        fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
         break;
-    case S_GEN_GRIDS_OCT:                            /* GRIDS with OCT+ held: KICK 100, SNR 60, HAT 30, TOMS 40 (four lanes) */
+    case S_GEN_GRIDS_OCT:                            /* GRIDS with OCT- held: RANDOM, KICK 100, SNR 60, HAT 30 (TOMS 40: four lanes) */
         tessera_reset();
         song.sel = 0;
         tessera_knob(0, TESS_ENG_GRIDS);
@@ -1648,7 +1648,7 @@ static void setup(int s)
         tessera_param_set(0, TX_GRD_HAT, 30);
         tessera_param_set(0, TX_GRD_TOMS, 40);
         go_title("GEN");
-        fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+        fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
         break;
     case S_GEN_CONSTEL:                              /* CONSTELLATION flying a while: a loop caught, a star just caught */
         tessera_reset();
@@ -1693,7 +1693,7 @@ static void setup(int s)
         go_title("GEN");
         break;
     case S_GEN_TURING: case S_GEN_EUCLID: case S_GEN_MARKOV: case S_GEN_MORPH: case S_GEN_EVOLVE: case S_GEN_GRIDS:
-    case S_GEN_EVOLVE_GRAV:                          /* (MARKOV's EVOLVE, OCT+ held: GRAVITY 40) */
+    case S_GEN_EVOLVE_GRAV:                          /* (MARKOV's EVOLVE, OCT- held: ROLL ALL, GRAVITY 40) */
         tessera_reset();                            /* (track 1's generator, from its defaults) */
         song.sel = 0;
         tessera_knob(0, s == S_GEN_TURING ? TESS_ENG_TURING : s == S_GEN_EUCLID ? TESS_ENG_EUCLID :
@@ -1707,7 +1707,7 @@ static void setup(int s)
         go_title(s == S_GEN_EVOLVE || s == S_GEN_EVOLVE_GRAV ? "EVOLVE" : "GEN");    /* (GEN: ARP's tap) */
         if (s == S_GEN_EVOLVE_GRAV) {
             tessera_param_set(0, TX_SD_GRAVITY, 40);
-            fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
+            fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
         }
         break;
     case S_GEN_TWEAK: case S_GEN_TWEAK_OFF:         /* TWEAK: each knob's picture, set and at its off position */
