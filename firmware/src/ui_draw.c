@@ -285,7 +285,7 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
 static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on);
 static void mo_cu_bar(const cord_t *c, int32_t s, int32_t ox);
 static void mo_cu_led(uint32_t lv, int32_t ox);
-static void mo_scope(int32_t top, int32_t h);
+static void mo_scope(int32_t top, int32_t h, int32_t tk, int across);
 static void mo_chip(uint32_t c, const char *val, const char *unit, uint16_t vc, int hot, int32_t y);
 static void mo_strip_col(uint32_t c, const char *label, const char *val, uint16_t vc, int hot, int32_t y);
 static int foot_tabs_on(void);
