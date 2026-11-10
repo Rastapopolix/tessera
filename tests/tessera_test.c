@@ -8,8 +8,8 @@
  * generator up through the same knob functions the UI calls (tessera_knob, tessera_evolve_knob, ..), plays for
  * some bars at 120 BPM, and logs every note a generator plays (hostsim.c TESSERA_NOTE_HOOK): the block (32
  * samples) it starts in, the track, the note, the velocity and its length in blocks (until the sequencer has let
- * it go). The log's hash and note count must equal tests/tessera_baseline.txt. LOGDIR gets each log as text, to
- * diff against a log of the old code when a hash changes.
+ * it go; a muted track's are not heard, so not logged). The log's hash and note count must equal
+ * tests/tessera_baseline.txt. LOGDIR gets each log as text, to diff against a log of the old code when a hash changes.
  * Each scenario's whole generator state after the stop is hashed too (NAME.state in the baseline), for what the
  * notes do not show.
  * Also: the same scenario twice gives the same notes; stopping leaves no generator note held; the saved block
@@ -42,6 +42,7 @@ static void tt_note(track_t *t, uint32_t note, uint32_t vel)
     uint32_t tr = trk_index(t);
     if (tr >= NTRK) return;
     tt_close(tr);
+    if (t->p[P_MUTE]) return;                    /* (muted: it plays on, unheard; voice.c drops the note) */
     if (tt_n >= TT_MAX) { tt_lost++; return; }
     tt_ev[tt_n] = (tt_ev_t){tt_blk, (uint8_t)tr, (uint8_t)note, (uint8_t)vel, 0};
     tt_open[tr] = (int32_t)tt_n++;

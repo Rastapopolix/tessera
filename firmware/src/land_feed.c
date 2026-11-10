@@ -12,7 +12,7 @@ static uint8_t land_ev_tr[LAND_EV], land_ev_note[LAND_EV], land_ev_vel[LAND_EV];
 static void land_note(const track_t *t, uint32_t note, uint32_t vel)
 {
     uint32_t i;
-    if (!land_open)
+    if (!land_open || t->p[P_MUTE])                    /* (a muted track plays on, unheard: no drops) */
         return;
     i = land_ev_at & (LAND_EV - 1u);
     land_ev_tr[i] = (uint8_t)((uint32_t)(t - trk) % NTRK);

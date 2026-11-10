@@ -373,12 +373,12 @@ static void tess_realign(uint32_t tr)
     tessera.morph[tr].step_idx = (uint8_t)((tessera.morph[tr].step_idx & 0xF0u) | 0x0Fu);  /* engine pre-increments */
 }
 
-/* The step a generator picked (or unmuted) while the transport runs plays (Theo 2026-11-01: ATLAS picked under an
- * OFF BEAT CHORD came in out of time, its step 1 where it was picked): it joins as if it had played since PLAY. A track
- * that did not step since PLAY (it was STEP) takes the bar's counters from PLAY's and its phrase from EVERY's last
- * boundary; one that did (another generator, MUTE) keeps them. Then the phrase loop and the engine's own playhead at
- * the steps since the phrase began, CHORD's progression at those since PLAY (a FORM's section). The free ones
- * (BOUNCE's ball, QUAD, CONSTELLATION's sky, SERIES) go on as they are */
+/* The step a generator picked while the transport runs plays (Theo 2026-11-01: ATLAS picked under an OFF BEAT CHORD
+ * came in out of time, its step 1 where it was picked): it joins as if it had played since PLAY. A track that did not
+ * step since PLAY (it was STEP) takes the bar's counters from PLAY's and its phrase from EVERY's last boundary; one
+ * that did (another generator) keeps them. A muted one plays on, unheard: unmuted, it needs no join. Then the phrase
+ * loop and the engine's own playhead at the steps since the phrase began, CHORD's progression at those since PLAY (a
+ * FORM's section). The free ones (BOUNCE's ball, QUAD, CONSTELLATION's sky, SERIES) go on as they are */
 static void tess_join(const track_t *t, uint32_t tr)
 {
     tessera_evolve_t *ev = &tessera.evolve[tr];
@@ -1247,12 +1247,12 @@ static void tess_branch_on(track_t *v, uint32_t note, uint32_t vel, uint32_t off
 static void tess_quad_link(const track_t *t, uint32_t tr)
 {
     const tessera_quad_t *q = &tessera.quad[tr];
-    if (tessera.mode[tr] != TESS_ENG_QUAD || !q->link || t->p[P_MUTE]) return;
+    if (tessera.mode[tr] != TESS_ENG_QUAD || !q->link) return;   /* (muted: it still moves them) */
     for (uint32_t to = 0; to < TESSERA_TRACKS; to++) {
         gen_out_t out = {0, 60, 100, 0, 0, 0};
         track_t *v = &trk[to];
         int32_t n;
-        if (to == tr || !((q->link >> to) & 1u) || tessera.mode[to] != TESS_ENG_QUAD || v->p[P_MUTE]) continue;
+        if (to == tr || !((q->link >> to) & 1u) || tessera.mode[to] != TESS_ENG_QUAD) continue;
         gen_quad_step(&tessera.quad[to], &tessera.rnd[to], &out);
         tessera.cv[to] = out.cv;
         if (!out.gate) continue;
@@ -1541,21 +1541,12 @@ static void tess_chord_play(track_t *t, uint32_t tr, uint32_t gate)
 static void tess_clock_step_body(track_t *t, uint32_t tr)
 {
     tess_seed_fresh(tr);                                    /* before EVOLVE captures the phrase's start */
-    if ((tess_join_due >> tr & 1u) && !t->p[P_MUTE]) tess_join(t, tr);
+    if (tess_join_due >> tr & 1u) tess_join(t, tr);
     tessera_evolve_tick(t, tr);
 
     tessera.hit[tr] = 0;
-    if (t->p[P_MUTE]) {
-        tess_join_due |= (uint8_t)(1u << tr);               /* (its playhead stands: back in time when heard) */
-        if (tessera.active_gate[tr]) {
-            trk_note_off(t, tessera.last_note[tr]);
-            tessera.active_gate[tr] = 0;
-        }
-        nl_stop(t);
-        seq_release(t);
-        tessera.br_in[tr] = 0;
-        return;
-    }
+    /* MUTE: the step plays on, unheard (voice.c, midi_out.c and mix.c leave a muted track out), so its notes still lead
+     * FOLLOW, ANSWER, LOGIC, QNT CHRD, LINK and the cords, as a muted STEP track's do; unmuted, it is in time already */
 
     if (tessera.active_gate[tr]) {
         trk_note_off(t, tessera.last_note[tr]);
@@ -1676,7 +1667,7 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
             track_t *v = &trk[to];
             uint32_t off = tess_gate_len(t, seq_div_samples((uint32_t)t->p[P_SDIV]), out.len);
             tessera.last_note[tr] = (uint8_t)final_note;   /* (FOLLOW of this track: still its melody) */
-            if (v->p[P_MUTE]) return;
+            if (v->p[P_MUTE] || t->p[P_MUTE]) return;   /* (its hits sound on v: muting either silences them) */
             tess_branch_on(v, (uint32_t)final_note, vel, off);
             for (uint32_t i = 0; i < out.more_n && i < 2u; i++) {
                 int32_t m = tessera_snap_note(t, (int32_t)out.more[i] + tess_key(t, tr) + tess_flourish(t, tr)) + tess_trn(t, tr) + tw2->shift;

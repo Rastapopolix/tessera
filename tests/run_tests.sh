@@ -559,7 +559,7 @@ if core && [ $TABLES = 1 ]; then
         entries_test -O2 $FW
     t "SPLIT: TIMING's SPLIT: DOUBLE, PUSH, MIX on generators, STEP and drums; SPLIT 0 and a generator's own notes unchanged" \
         split_test -O1 $FW
-    t "FOLLOW: HOW and RHYTHM on a STEP melody: SAME / OWN unchanged, SOURCE, BOTH, CHORD, CONTRA, BASS, CANON" \
+    t "FOLLOW: HOW and RHYTHM on a STEP melody: SAME / OWN unchanged, SOURCE, BOTH, CHORD, CONTRA, BASS, CANON; a muted lead" \
         follow_test -O1 $FW
     t "PIECE: the planner: the SHAPEs, FREE unchanged, ENERGY / Entries / the CHAIN steered, END STOP LOOP NEW FREE, tempo" \
         planner_test -O2 $FW

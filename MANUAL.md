@@ -290,7 +290,8 @@ does: MENU > **LARGE VALUE** shows it on every page (ON) or on none (OFF).
 **OCT-** held they set the pans. The keys are the mixer's while it is shown: the **black keys** F#3 G#3 A#3 C#4 mute
 and unmute tracks 1 to 4, the **white keys** F3 G3 A3 B3 solo a track while held, **C4** unmutes them all, **E4**
 holds FILL and **F4** taps the tempo, the same as with GLO held on any other page. Each strip shows MUTE or SOLO; a track silenced by
-another's solo dims. Any page button leaves the mixer, and the keys play notes again.
+another's solo dims. Any page button leaves the mixer, and the keys play notes again. A mute only silences the track: a
+muted track still leads the tracks that follow it (FOLLOW, an ANSWER's SOURCE, QNT CHRD's chord, QUAD's LINK, the cords).
 
 **Lists** (the HOME menu, SCL, VOICE, the sheets and the sound designer): KNOB 1 picks the row, KNOB 2 changes its
 value.
@@ -504,8 +505,9 @@ LENGTH, DIVISION and GATE, and the track's SWING is a row of the pattern's sheet
 these on PATTERN instead. The generators run at the track's DIV and play in the track's scale (SCL). Choosing STEP or a
 generator turns the arpeggiator off; choosing ARP again brings back its last setting.
 
-A generator picked (or a track unmuted) while the others play **joins in time**: it starts where it would be had it
+A generator picked while the others play **joins in time**: it starts where it would be had it
 played since PLAY, on the same steps and bars, so an ATLAS groove picked under a playing chord lands on the beat.
+A muted track plays on unheard, so unmuted it comes back in time.
 BOUNCE, QUAD, CONSTELLATION and SERIES run free and simply carry on.
 
 On NOTES, **KNOB 2** sets the picked note's pitch. With **QNT OFF** it moves a semitone a detent. With QNT on
@@ -1112,7 +1114,7 @@ with a mod from a macro loses that mod on older firmware.
 | 1 | **SHIFT** (±24) | Transposes by semitones; while following, by scale steps from the followed note. |
 | 2 | **DROP** (0–100 %) | The chance a hit is left out, whatever the generator. |
 | 3 | **HUMAN** (0–100 %) | Varies each note's velocity and length a little, as a player would: at 100 up to 20 softer or louder and up to half as long, the same each time the piece plays. The timing is TIMING's **HUMAN**. |
-| 4 | **FOLLOW** | OFF, or T1 to T4: plays that track's pitch, SHIFT away, in this track's scale. STEP tracks can be followed too. |
+| 4 | **FOLLOW** | OFF, or T1 to T4: plays that track's pitch, SHIFT away, in this track's scale. STEP tracks can be followed too. A muted track still leads the tracks that follow it. |
 
 Hold **OCT-** and turn **KNOB 1** right for random SHIFT, DROP and HUMAN; turn it left to put them back (as on GEN).
 
