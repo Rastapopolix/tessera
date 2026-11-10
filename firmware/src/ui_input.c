@@ -959,8 +959,9 @@ static void edit_param(uint32_t slot, int32_t steps)
             oct_eat |= 1u;                              /* (OCT- held: a GATE's threshold; its release no Back) */
             return;
         }
-        if (slot == 2u && oct_dn_only() && cu_cc_knob(steps)) {
-            oct_eat |= 1u;                              /* (OCT- held: a CC mod's number; its release no Back) */
+        if (slot == 2u && oct_dn_only() && (cu_cc_knob(steps) || cu_vca_knob(steps))) {
+            oct_eat |= 1u;                              /* (OCT- held: a CC mod's number, a mod of mods' ADD /
+                                                         * SCALE; its release no Back) */
             return;
         }
         cu_knob(slot, steps);

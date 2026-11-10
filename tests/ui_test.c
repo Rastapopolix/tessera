@@ -1565,6 +1565,37 @@ static int test_cords_page(void)
         ok &= cord_cc_num(0) == n0 + 4u && !c->uni && cur_page()->graph == GR_CORDS;
         bad += check("MODS CC mod: OCT- held + KNOB 3 its CC number (+3, then +1), no UNI, no Back from the release", ok);
     }
+    {   /* a mod of mods: OCT- held + KNOB 3 right SCALEs its mod (G7, "M3*"), left ADDs again; saved with the project */
+        cord_t b = {CS_LFO, 0, CD_M1_AMT + 2u, 0, 60, 0, 0};
+        int ok;
+        cord_set(0, &b); cord_ui_sel = 0; ui.force = 1; frame();
+        fm1_ms += 3000u; host_ticks += 3000000u;
+        fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+        host_pressed |= 1u << panel.btn[B_OCTDN];
+        frame();
+        turn(EN_K1 + 2u, 1);
+        fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
+        frame();
+        c = cord_get(0);
+        ok = cord_vca_mask() == 1u && c->dst == CD_M1_AMT + 2u && cur_page()->graph == GR_CORDS &&
+             str_eq(cu_dst_mono(c), "M3*");
+        bad += check("MODS mod of mods: OCT- held + KNOB 3 right SCALEs M3 (M3*), no Back", ok);
+        stop_transport();
+        project_save(1);
+        cord_clear();
+        project_load(1);
+        bad += check("..saved with the project (part 44)", cord_vca_mask() == 1u && cord_get(0)->dst == CD_M1_AMT + 2u);
+        cord_ui_sel = 0;
+        fm1_ms += 3000u; host_ticks += 3000000u;
+        fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+        host_pressed |= 1u << panel.btn[B_OCTDN];
+        frame();
+        turn(EN_K1 + 2u, -1);
+        fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
+        frame();
+        bad += check("..KNOB 3 left: ADD again (M3%)", !cord_vca_mask() && str_eq(cu_dst_mono(cord_get(0)), "M3%") &&
+                     cur_page()->graph == GR_CORDS);
+    }
     cord_clear();
     return bad;
 }

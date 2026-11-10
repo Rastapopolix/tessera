@@ -234,6 +234,62 @@ static int behaviour(void)
         cord_clear();
     }
 
+    /* SCALE (G7, cord_vca_mask): a mod of mods that multiplies its mod's move by 0..1 (a VCA), the mod keeping its own
+     * amount; AMOUNT -: the source closes it; after the ADD mods; at 0 nothing; saved as a mask apart */
+    {
+        uint8_t pk[CORD_PK_BYTES];
+        int32_t mv[4];
+        cord_clear();
+        trk[0].p[P_LPOL] = 0; trk[0].lfo_val = 32767; trk[0].lfo_fade = 32767;
+        trk[1].p[P_LPOL] = 0; trk[1].lfo_val = 32767; trk[1].lfo_fade = 32767;
+        c = C(CS_LFO, 0, CD_LEVEL, 2, 60, 0);          /* mod 3: T1 LFO -> T3 LEVEL +60 % */
+        cord_set(2, &c);
+        c = C(CS_LFO, 1, CD_M1_AMT + 2u, 0, 100, 0);  /* mod 5: T2 LFO+ SCALEs M3 */
+        c.uni = CU_UNI;
+        cord_set(4, &c);
+        cord_vca_load(0x10u);
+        cord_tick(); mv[0] = cord_move(2);
+        trk[1].lfo_val = 0; cord_tick(); mv[1] = cord_move(2);
+        trk[1].lfo_val = -32767; cord_tick(); mv[2] = cord_move(2);
+        check("SCALE: mod 3 keeps +60 %, times its scaler's source (0..1): open 60, half 30, shut 0",
+              cord_vca_mask() == 0x10u && mv[0] == 60 && mv[1] == 30 && mv[2] == 0 && cord_get(2)->amount == 60);
+        c.amount = -100;
+        cord_set(4, &c);
+        cord_tick(); mv[0] = cord_move(2);
+        trk[1].lfo_val = 32767; cord_tick(); mv[1] = cord_move(2);
+        check("...AMOUNT -: the source closes it (shut at the top, open at the bottom); kept SCALE through an edit",
+              mv[0] == 60 && mv[1] == 0 && cord_vca_mask() == 0x10u);
+        c.amount = 100;
+        cord_set(4, &c);
+        c = C(CS_OFF, 0, CD_M1_AMT + 2u, 0, 0, 20);   /* mod 6: a fixed +20 % ADDed to M3, before the scale */
+        cord_set(5, &c);
+        trk[1].lfo_val = 0; cord_tick(); mv[0] = cord_move(2);
+        c = C(CS_OFF, 0, CD_M1_AMT + 2u, 0, 0, 50);   /* mod 7: a fixed SCALE of half: two scalers multiply */
+        cord_set(6, &c);
+        cord_vca_load(cord_vca_mask() | 0x40u);
+        cord_tick(); mv[1] = cord_move(2);
+        check("...ADD first, then the scalers multiply: (60 + 20) x 0.5 = 40, x 0.5 again = 20", mv[0] == 40 && mv[1] == 20);
+        c.offset = 0;                                   /* (mod 7 at 0: off, nothing scaled) */
+        cord_set(6, &c);
+        cord_tick(); mv[2] = cord_move(2);
+        check("...a scaler at 0 does nothing (its off position)", mv[2] == 40);
+        cord_pack(pk);
+        cord_clear();
+        check("...cleared: no SCALE", !cord_vca_mask());
+        mv[0] = cord_unpack(pk);
+        check("...loaded without the mask: ADD (older firmware), nothing marked", mv[0] && !cord_vca_mask() &&
+              (cord_tick(), cord_move(2) == 100));
+        cord_vca_load(0x50u);
+        cord_tick();
+        check("...the mask back: SCALE as saved", cord_vca_mask() == 0x50u && cord_move(2) == 40);
+        c = C(CS_LFO, 1, CD_LEVEL, 2, 40, 0);          /* (mod 5 moved off M AMT: SCALE gone with it) */
+        cord_set(4, &c);
+        check("...a mod moved off M AMT is no longer SCALE", cord_vca_mask() == 0x40u);
+        cord_clear();
+        cord_tick();
+        trk[2].p[P_LEVEL] = 100;
+    }
+
     /* HOLD (CU_HOLD): the source as it is, sampled when set and at each bar of the destination's track, held between */
     {
         uint32_t lv[4];

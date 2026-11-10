@@ -157,6 +157,11 @@ const cord_t *cord_get(uint32_t i);
 void cord_hold_bar(uint32_t tr);                    /* seq.c: track tr's bar begins (its HOLD mods sample) */
 uint32_t cord_hold_mask(void);                      /* bit i: cord i is HOLD (the project's part TSP_MHOLD) */
 void cord_hold_load(uint32_t m);                    /* .. and back, after cord_unpack */
+/* SCALE (G7): a mod onto M1 AMT .. M16 AMT that multiplies that mod's move by its own, 0..1 (AMOUNT +: the source
+ * opens it; -: closes it) in place of adding to it. Bit i: cord i (only one onto an M AMT; the project's part
+ * TSP_MVCA: older firmware adds) */
+uint32_t cord_vca_mask(void);
+void cord_vca_load(uint32_t m);                     /* after cord_unpack, as cord_hold_load; and MODS' KNOB 3 */
 void cord_clear(void);                              /* every cord off */
 int32_t cord_move(uint32_t i);                      /* cord i's move as its M AMT cords make it now: -100..100 % */
 uint32_t cord_count(void);                          /* cords doing something (a destination and an amount or offset) */
