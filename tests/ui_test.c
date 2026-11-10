@@ -62,6 +62,16 @@ static void fm1_irq_on(void) {}
 static uint16_t host_screen[240 * 240];
 static int host_blit_trace;                       /* (tests/ui_render.c UI_AUDIT_BLITS: each transfer listed) */
 static uint64_t host_sent;                        /* pixels sent to the LCD, blitted or filled (tests/ui_render.c) */
+/* pixels sent twice in one frame, the second time different: the panel shows the first for a moment (a flicker on
+ * the device's SPI screen, never in a render; MODS' rows sent blank under their moves and lights, then those) */
+static uint64_t host_redrawn;
+static uint32_t host_frame_n = 1, host_put_f[240 * 240];
+static void host_put(uint32_t i, uint16_t v)
+{
+    if (host_put_f[i] == host_frame_n && host_screen[i] != v) host_redrawn++;
+    host_put_f[i] = host_frame_n;
+    host_screen[i] = v;
+}
 static void lcd_fill(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint16_t c)
 {
     uint32_t i, j;
@@ -73,7 +83,7 @@ static void lcd_fill(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint16_t c)
 #endif
     for (j = 0; j < h && y + j < 240u; j++)
         for (i = 0; i < w && x + i < 240u; i++)
-            host_screen[(y + j) * 240u + x + i] = (uint16_t)((c >> 8) | (c << 8));
+            host_put((y + j) * 240u + x + i, (uint16_t)((c >> 8) | (c << 8)));
 }
 static void lcd_sync(void) {}
 static void lcd_gamma_switch(uint32_t opt) { (void)opt; }   /* (lcd.c: the device's panel) */
@@ -86,7 +96,7 @@ static void lcd_blit(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint1
     host_sent += (uint64_t)w * h;
     if (host_blit_trace) fprintf(stderr, " [blit %u,%u %ux%u]", x, y, w, h);
     for (j = 0; j < h && y + j < 240u; j++)
-        for (i = 0; i < w && x + i < 240u; i++) host_screen[(y + j) * 240u + x + i] = p[j * w + i];
+        for (i = 0; i < w && x + i < 240u; i++) host_put((y + j) * 240u + x + i, p[j * w + i]);
 }
 static struct { uint32_t stage, crash_magic, crash_audio, crash_stage, crash_page; } melodee_dbg;
 #define DBG_CRASH_MAGIC 0x43524831u               /* (audio.c) */
@@ -245,6 +255,7 @@ static void frame(void)
 {
     host_ticks += 16000u;
     fm1_ms += 16u;
+    host_frame_n++;
     ui_input();
     ui_draw();
 #ifdef ANN_VER
