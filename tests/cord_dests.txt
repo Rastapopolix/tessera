@@ -107,3 +107,6 @@
 104 DIR      step  PATTERN DIR
 105 BUS A    bus   -
 106 BUS B    bus   -
+107 ?        ?     -
+108 ?        ?     -
+109 CLOCK    clock -

@@ -28,9 +28,12 @@
  *   CK_CC     a MIDI CC out on the destination track's MIDI OUT channel (cord.c cord_cc_tick, issue #374): its number
  *             the cord's own (cord_cc_num, OCT+ held + KNOB 3 on MODS); a track's, as CK_BLOCK (before CK_GLOBAL: the
  *             kinds are not saved, only the codes)
+ *   CK_CLOCK  the track's generator clock (cord.c cord_clock_tick, seq.c seq_grid_tick): a track with a live one is
+ *             stepped by the cord's edges alone, not by its DIV (always a GATE cord: its OFFSET the threshold; AMOUNT
+ *             is the division, every n-th edge, its sign the edge); a track's, before CK_GLOBAL
  *   CK_BUS    a project MIX bus, BUS A or B (cord.c cord_bus_tick): its cords combined by its MODE, then its LAG, each
  *             block; read back as the source BUS A / BUS B one block later; destination track 0 as CK_GLOBAL */
-enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO, CK_BUS };
+enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_CLOCK, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO, CK_BUS };
 
 /* Destination codes. FROZEN: saved cords keep them; new ones at the end, a retired one stays as a gap */
 enum {
@@ -74,6 +77,7 @@ enum {
     CD_SUB_SPLIT,                                                   /* TIMING's SPLIT */
     CD_SEQ_DIR,                                                     /* the STEP pattern's DIR (seq_dir.c) */
     CD_BUS_A, CD_BUS_B,                                             /* the project's MIX buses (CK_BUS) */
+    CD_CLOCK = 109,                                                 /* the track's generator clock (CK_CLOCK); 107, 108: MOD DEPTH, PLAY */
     CD_N
 };
 
