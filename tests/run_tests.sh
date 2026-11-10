@@ -150,6 +150,7 @@ qmap() {
     case $1 in
         docs/PARAMETERS.md) QSEL="$QSEL pid_test" ;;
         *.md | LICENSE* | LICENSES/* | docs/design/* | docs/*.txt) ;;  # prose: nothing to run
+        web/sim/build.sh | tools/build.py) QSEL="$QSEL sim_flags_test web_tests" ;;
         docs/* | web/*) QSEL="$QSEL web_tests nightly_site_test" ;;
         demos/*) QSEL="$QSEL demo_projects" ;;
         firmware/words.tsv | firmware/words_allow.txt) QSEL="$QSEL speak_test" ;;
@@ -455,6 +456,7 @@ if core; then
     run "audio diagnostics schema compatibility" python3 tests/usb_audio_stats_test.py
     run "target budget: natural loops and FPU decoding" python3 tests/target_budget_test.py
     run "header messages: every literal fits the Mono header (15 characters)" python3 tests/msg_len_test.py
+    run "web simulator: the device's engine set (no SID KIT)" python3 tests/sim_flags_test.py
     t "retired synth identities, project/user patch preservation and favorites" engine_retirement_test -O2 $FW
     t "capture gating, derived caches and silent-track clocks" performance_test -DMELODEE_LEGACY_EXTRAS=1 -O2 $FW
     t "canvas drawing overlaps DMA without changing pending pixels" lcd_overlap_test -O1 -w -Ibuild/gen
