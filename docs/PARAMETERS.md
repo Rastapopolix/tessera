@@ -298,6 +298,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x29F | BUS A LAG | OFF, 10 ms, 20 ms, 50 ms, 100 ms, 200 ms, 500 ms, 1 s, 2 s, 5 s, 10 s, 20 s | OFF | A slew on BUS A: the time a whole move from 0 to 1 takes, up or down. A gate into a lagged bus rises and falls as an envelope. OFF: none. MODS' sheet (OCT+ held). |
 | 0x2A0 | BUS B MODE | SUM, MAX, MIN, DIFF | SUM | How the mods into BUS B combine. SUM: added, -1..1. MAX: the highest (two gates: either, OR). MIN: the lowest (both, AND). DIFF: how far apart the first two are (two gates: one or the other, XOR). The source BUS B reads the result a block later. MODS' sheet (OCT+ held). |
 | 0x2A1 | BUS B LAG | OFF, 10 ms, 20 ms, 50 ms, 100 ms, 200 ms, 500 ms, 1 s, 2 s, 5 s, 10 s, 20 s | OFF | A slew on BUS B: the time a whole move from 0 to 1 takes, up or down. A gate into a lagged bus rises and falls as an envelope. OFF: none. MODS' sheet (OCT+ held). |
+| 0x2A2 | MOD DEPTH | 0 to 100 % | 100 | How much of every mod's move plays, 0 to 100 %: the moving part (AMOUNT times its source) of each mod, FILL, TEMPO and CC ones too; never an OFFSET, so fixed mods, a CC's base and a GATE's threshold stay. 0: the patch dry. A mod onto MOD DEP (a MACRO) rides it. A GATE onto FILL at 100 % stops holding FILL under 50 %. GLO > PERF's sheet (OCT+ held). |
 
 ## Mods
 
@@ -446,3 +447,4 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | DIR | the generator's step | the STEP pattern's DIR, stepped: FWD BACK PEND PONG RAND DRUNK from the pattern's own |
 | BUS A | the project's MIX bus, each block | the project's MIX bus A: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS A |
 | BUS B | the project's MIX bus, each block | the project's MIX bus B: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS B |
+| MOD DEP | (null) | the project's MOD DEPTH (GLO > PERF's sheet): how much of every mod's move plays, 0..100 %; a MACRO onto it at -100 % turns the patch dry |

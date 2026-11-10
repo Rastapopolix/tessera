@@ -305,3 +305,5 @@ MPC	M P C
 4TH	fourth
 # MIX buses (MODS sheet: MODE)
 DIFF	difference
+# MOD DEPTH (MODS destination)
+MOD DEP	mod depth

@@ -19,7 +19,8 @@ static void check(const char *what, int ok)
     bad += !ok;
 }
 
-static const char *const KIND[] = {"voice", "block", "depth", "step", "cc", "send", "cord", "fill", "tempo", "bus"};
+static const char *const KIND[] = {"voice", "block", "depth", "step", "cc", "send", "cord", "fill", "tempo", "bus",
+                                   "mdepth"};
 
 static cord_t C(uint32_t src, uint32_t st, uint32_t dst, uint32_t dt, int32_t amount, int32_t offset)
 {
@@ -288,6 +289,70 @@ static int behaviour(void)
         cord_clear();
         cord_tick();
         trk[2].p[P_LEVEL] = 100;
+    }
+
+    /* MOD DEPTH (G9): the moving part of every mod with a source scaled, never an OFFSET; mods of mods and bus inputs
+     * once, where they land; its own mods unscaled; 100 the off position */
+    {
+        int32_t mv[6];
+        cord_clear();
+        trk[0].p[P_LPOL] = 0; trk[0].lfo_val = 32767; trk[0].lfo_fade = 32767;
+        check("MOD DEPTH: 100 % after a clear (the off position)", cord_mdepth_get() == 100u &&
+              tessera_param_get(0, TX_MOD_DEPTH) == 100);
+        c = C(CS_LFO, 0, CD_LEVEL, 2, 60, 0);          /* mod 1: T1 LFO -> T3 LEVEL +60 % */
+        cord_set(0, &c);
+        c = C(CS_OFF, 0, CD_PAN, 2, 0, 30);            /* mod 2: a fixed PAN +30 % */
+        cord_set(1, &c);
+        cord_tick(); mv[0] = cord_move(0);
+        tessera_param_set(0, TX_MOD_DEPTH, 50);
+        cord_tick(); mv[1] = cord_move(0); mv[2] = cord_move(1);
+        tessera_param_set(0, TX_MOD_DEPTH, 0);
+        cord_tick(); mv[3] = cord_move(0); mv[4] = cord_move(1);
+        check("...a mod's move 60, at 50 % 30, at 0 none; a fixed mod's OFFSET stays 30",
+              mv[0] == 60 && mv[1] == 30 && mv[3] == 0 && mv[2] == 30 && mv[4] == 30);
+        c = C(CS_LFO, 0, CD_M1_AMT, 0, 40, 0);         /* mod 3: T1 LFO adds 40 to mod 1: 100 */
+        cord_set(2, &c);
+        tessera_param_set(0, TX_MOD_DEPTH, 50);
+        cord_tick(); mv[0] = cord_move(0);
+        c = C(CS_LFO, 0, CD_M1_AMT + 1u, 0, 40, 0);    /* mod 4: T1 LFO adds 40 to the fixed mod 2 */
+        cord_set(3, &c);
+        cord_tick(); mv[1] = cord_move(1);
+        c = C(CS_OFF, 0, CD_M1_AMT + 1u, 0, 0, 40);    /* (a fixed one instead: not a moving part) */
+        cord_set(3, &c);
+        cord_tick(); mv[2] = cord_move(1);
+        check("...a mod of mods once, not twice: (60 + 40) x 0.5 = 50; onto a fixed mod 30 + 40 x 0.5 = 50; a fixed one "
+              "onto it 70", mv[0] == 50 && mv[1] == 50 && mv[2] == 70);
+        cord_clear();
+        c = C(CS_LFO, 0, CD_FILL, 0, 100, 0);          /* a GATE onto FILL at 100 */
+        c.uni = CU_GATE;
+        cord_set(0, &c);
+        tessera_param_set(0, TX_MOD_DEPTH, 60);
+        cord_tick(); cord_tick(); mv[0] = seq_fill_mod;
+        tessera_param_set(0, TX_MOD_DEPTH, 40);
+        cord_tick(); mv[1] = seq_fill_mod;
+        check("...a GATE onto FILL at 100: held at 60 %, no longer under 50 % (the documented consequence)",
+              mv[0] == 1 && mv[1] == 0);
+        c = C(CS_LFO, 0, CD_TEMPO, 0, 100, 0);
+        cord_set(0, &c);
+        tessera_param_set(0, TX_MOD_DEPTH, 0);
+        cord_tick(); mv[0] = seq_tempo_q12;
+        check("...TEMPO at 0: back to BPM", mv[0] == 4096);
+        c = C(CS_MACRO1, 0, CD_MOD_DEPTH, 0, -100, 0); /* a MACRO onto MOD DEP: rides it, itself unscaled */
+        cord_set(1, &c);
+        c = C(CS_LFO, 0, CD_LEVEL, 2, 60, 0);
+        cord_set(0, &c);
+        tessera_param_set(0, TX_MOD_DEPTH, 100);
+        tessera_param_set(0, TX_MACRO1, 25);
+        cord_tick(); mv[0] = cord_move(0); mv[1] = cord_move(1);
+        tessera_param_set(0, TX_MACRO1, 100);
+        cord_tick(); mv[2] = cord_move(0);
+        check("...a MACRO onto MOD DEP at -100: 25 % up plays 75 % (45), all up dry; its own mod not scaled",
+              mv[0] == 44 || mv[0] == 45);
+        check("...its own mod's move as set, the patch dry at the top", mv[1] == -100 && mv[2] == 0);
+        tessera_param_set(0, TX_MACRO1, 0);
+        cord_clear();
+        cord_tick();
+        check("...cleared: 100 % again", cord_mdepth_get() == 100u);
     }
 
     /* HOLD (CU_HOLD): the source as it is, sampled when set and at each bar of the destination's track, held between */
@@ -1037,6 +1102,8 @@ int main(int argc, char **argv)
             if (d->pid != PID_NONE || d->md || c != CD_CC) mods = 0;
         } else if (d->kind == CK_BUS) {                 /* (the MIX buses: no parameter) */
             if (d->pid != PID_NONE || d->md || (c != CD_BUS_A && c != CD_BUS_B)) mods = 0;
+        } else if (d->kind == CK_MDEPTH) {              /* (MOD DEPTH: the project's, no parameter of a track) */
+            if (d->pid != PID_NONE || d->md || c != CD_MOD_DEPTH) mods = 0;
         } else if (d->kind == CK_VOICE || d->kind == CK_DEPTH) {
             if (d->pid != PID_NONE || !d->md || d->md >= MD_N || (d->md >= MD_RESERVED6 && d->md <= MD_RESERVED9) ||
                 (d->kind == CK_VOICE) != (d->md <= MD_AMP) || (d->kind == CK_DEPTH) != (d->md == MD_DEPTH))
