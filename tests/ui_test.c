@@ -3821,6 +3821,19 @@ static int test_step_dir(void)
     project_load(1);
     ok &= tessera_param_get(0, TX_SEQ_DIR) == SEQ_FWD;
     bad += check("DIR: saved with the pattern (part 40 only when one is not FWD)", ok);
+    {   /* the pattern sheet's Direction row: a mod moving DIR shows the pattern's and the one playing */
+        cord_t c = {(uint8_t)CS_OFF, 0, (uint8_t)CD_SEQ_DIR, 0, 0, 40};   /* (a fixed +40 %: two values on) */
+        char v[20];
+        song.sel = 0;
+        cord_clear();
+        nt_dir_v(v);
+        ok = str_eq(v, "FWD");
+        cord_set(0, &c);
+        nt_dir_v(v);
+        ok &= str_eq(v, "FWD>PEND");
+        cord_clear();
+        bad += check("DIR row: FWD; a mod moving it, FWD>PEND (the pattern's, the one playing)", ok);
+    }
     return bad;
 }
 /* HOLD mods: a source sampled on the first step of each bar of the destination's track, held between; saved */
