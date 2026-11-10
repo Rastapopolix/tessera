@@ -173,10 +173,11 @@ static void mo_cut(char *d, const char *s, uint32_t n)   /* s's first n characte
         d[i] = s[i];
     d[i] = 0;
 }
-/* a bar (MENU > KNOBS BAR): an outline 15 x 17 filled from its foot, v 0..1000 */
+/* a bar (MENU > KNOBS BAR): an outline 15 x 17 filled from its foot, v 0..1000; the fill keeps 1 px from the outline all round
+ * (11 wide, 13 high at most: the top too, it touched it at 15) */
 static void mo_bar(int32_t cx, int32_t v, uint16_t c)
 {
-    int32_t h = 15 * v / 1000;
+    int32_t h = 13 * v / 1000;
     mo_box(cx - 7, 20, 15, 17, c);
     if (h)
         mo_fill(cx - 5, 35 - h, 11, h, c);
