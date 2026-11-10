@@ -254,6 +254,7 @@ static volatile uint32_t bar_n;                  /* bars since PLAY (seq_phase: 
  * (taken once the step has lasted its DIV); was, it was clocked last block (seq_grid_tick) */
 static uint8_t cord_clk_trk, cord_clk_pend, cord_clk_was, cord_clk_new;   /* new: stepped at PLAY this block: deaf to edges */
 static void cord_clock_hit(uint32_t tr);
+static void cord_hold_note(uint32_t tr);
 static int seq_clocked(const track_t *t)               /* a generator track stepped by its CLOCK cord, not its DIV */
 {
     uint32_t k = trk_index(t);

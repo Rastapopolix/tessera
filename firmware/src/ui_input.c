@@ -955,6 +955,10 @@ static void edit_param(uint32_t slot, int32_t steps)
         return;
     }
     if (pg->graph == GR_CORDS) {                        /* CORDS (ui_cords.c) */
+        if (slot == 0u && oct_dn_only() && cu_hclk_knob(steps)) {
+            oct_eat |= 1u;                              /* (OCT- held: a HOLD mod's clock; its release no Back) */
+            return;
+        }
         if (slot == 3u && oct_dn_only() && cu_thresh_knob(steps)) {
             oct_eat |= 1u;                              /* (OCT- held: a GATE's threshold; its release no Back) */
             return;

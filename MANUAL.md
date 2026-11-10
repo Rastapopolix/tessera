@@ -1477,6 +1477,11 @@ at a time, each with an activity light and a moving mark.
   1's bar. Set while stopped, it takes the source at once; PLAY takes it again on the first step. (S&H, a source, holds
   random values for an LFO cycle; FOLLOW HOLD takes another track's pitch on its notes.) Saved with the project;
   firmware before it plays a HOLD mod as +-.
+  **On a track's notes.** Hold **OCT-** on a HOLD mod and turn **KNOB 1**: **HOLD ON T1 NOTES** to **T4**, and it
+  takes its source on each note that track plays instead of on the bar (left back to **HOLD A BAR**). So a random or
+  slow source steps with another voice's rhythm: `T1 RAND= -> T3 CUTOFF`, clocked by T2's notes, gives each of T2's
+  notes a new filter for track 3, as a sample and hold fed a gate. A note of the clock track a mod onto PLAY shuts
+  still counts. Firmware before it holds by the bar.
 - **DIR.** A mod onto a track's **DIR** picks the direction its STEP pattern plays in (see *Direction* on the
   pattern's sheet), in whole steps from the pattern's own along FWD, BACK, PEND, PONG, RAND, DRUNK: each 20 % of move
   is one more, and it stops at the ends. So the amount and the offset say which directions it can reach: from FWD, a +
