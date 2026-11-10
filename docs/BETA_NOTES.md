@@ -26,6 +26,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - Moved onto a sheet (OCT+ held): GEN's new sheet has QUAD's RANGE, CONSTL's SIZE, ATLAS' fourth part, ANSWER's SPACE and CHORD's CHRD, VOIC and BREATH / LEN. MIDI OUT's sheet has each track's SOUND and DRUM MAP (the both-keys layer is gone). ENTRIES' sheet has ORDER. MODS' sheet has the MIX buses.
 - PIECE, SHAPE USER: hold OCT-, KNOB 1 picks one of the eight points, KNOB 2 sets its level, with the shape in view (was OCT+ / OCT- held for points 1 to 4 / 5 to 8).
 - Manual: recording the four tracks as separate stems over USB (USB OUTPUT 4 TRACKS), for macOS and Windows; on Windows, Live needs an ASIO wrapper such as FlexASIO for more than two channels.
+- Clear mod: hold OCT+ on MODS; the sheet's header names the picked mod (M3 at its right) and its first row, Clear mod, empties it with OCT+ (no undo).
 - MIX buses: BUS A and BUS B, two mixers for mods. Send any mods into a bus (the end of KNOB 3's list on MODS) and use the bus as a source (the end of KNOB 1's list). Hold OCT+ on MODS for its sheet: each bus's Mode (SUM, MAX, MIN, DIFF: with gates OR, AND, XOR) and Lag (OFF, 10 ms to 20 s: a gate into a lagged bus is an envelope). A bus can feed itself, one block late, safely.
 - EOC: a new source on every track, the LFO's cycle start as a gate (high from each wrap until an eighth of the cycle has passed). Last in a track's source list on MODS. Use it as a GATE mod: onto FILL, a bus, a mod's amount. A project that uses it does not load on older firmware.
 - Mods of mods can scale: hold OCT- on a mod of mods (M1 AMT .. M16 AMT) and turn KNOB 3 right. It then multiplies the other mod's move by 0 to 1 instead of adding to it (M3* on the row), so a GATE or an envelope opens and closes a mod that keeps its own amount; a negative amount closes it instead. KNOB 3 left adds again.
@@ -69,6 +70,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - PRINT ARP: an ARP track with a chord held, hold REC after two bars; then EDIT held.
 - ROLL and ROLL ALL on EVOLVE, stopped and playing: the screen says NEW LINE (NEW LINE AT BAR while playing).
 - Web editor: an ORACLE or TRIO user preset shows in the Sound list; Save to file on an FM6 user preset uses its own name.
+- Clear mod: pick a mod with a SCALE or a CC, OCT+ held, Clear mod; the mod is empty and the others play on.
 - MIX buses: two LFOs into BUS A at SUM, BUS A as a GATE onto FILL; a track's GATE into BUS B with Lag 200 ms onto CUTOFF; save, load.
 - RANDOM on GEN with a few generators, stopped and playing; then turn back.
 - GROUND LIGHT with a few inks and a MOSAIC set: HOME, the pages, LANDSCAPE, the boot screen after a power cycle; is everything readable on the device's panel?
