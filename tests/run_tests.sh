@@ -3,15 +3,19 @@
 # Copyright (C) 2026 Kerem Kilic (Ellic Studio)
 # Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
 # Host tests of the Melodee sources (no hardware). Run from the repo root after ./build.sh:
-#   tests/run_tests.sh               everything
+#   tests/run_tests.sh               everything (the gate before a pull request)
 #   SOUND=0 tests/run_tests.sh       everything but the sound tests
 #   SOUND=only tests/run_tests.sh    the sound tests alone
+#   tests/run_tests.sh --quick       QUICK=1: the jobs for the files changed since origin/develop (QUICK_BASE=ref) and a
+#                                    smoke set (qmap below); a file without a rule, or any *_UPDATE, runs everything
+#   tests/run_tests.sh -v            QUIET=0: every job's whole output (default: a line per job; a failure prints its
+#                                    own output, 60 lines at most, and the path of its log)
 # Sound tests: the regression suite, the DSP render and TRACKS, and every test of an engine's or an effect's rendered
 #   signal (native fp32, SPEAKER, MOD, SLICER, the FX layer, REVERB, DELAY, MOD / SPREAD, SID, PHYS, DRUM, NOISE,
 #   FM6, the dual-core pairing). The rest (storage, UI, MIDI, USB, editor, web) always runs.
 # Each test (its compile and its runs) is a job; PARALLEL=n jobs run at once (default: the CPU count; 1: one by one).
-# A job's output goes to build/host/log/<n>.log and is printed in the order of this file as the jobs end; the
-# failures are listed again at the end. The cost gates count instructions, which the load leaves alone; the ns
+# A job's output goes to build/host/log/<n>.log and is printed (QUIET=0; QUIET=1: its line) in the order of this file as
+# the jobs end; the failures are listed again at the end. The cost gates count instructions, which the load leaves alone; the ns
 # figures printed beside them are noisier in parallel (PARALLEL=1 for quiet ones).
 #
 # Regression suite (tests/regress.c, tests/target_budget.py; details at the top of regress.c):
