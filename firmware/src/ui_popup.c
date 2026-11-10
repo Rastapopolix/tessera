@@ -207,7 +207,7 @@ static void bus_turn(uint32_t k, int32_t s)
 #define BUS_ROW_(k) static void bus_v##k(char *b) { bus_v(b, k); } static void bus_t##k(int32_t s) { bus_turn(k, s); }
 BUS_ROW_(0) BUS_ROW_(1) BUS_ROW_(2) BUS_ROW_(3)
 #undef BUS_ROW_
-static const sheet_row_t SHEET_MODS[] = {{"Bus A mode", bus_v0, bus_t0, 0, 0}, {"Bus A lag", bus_v1, bus_t1, 0, 0},
+static const sheet_row_t SHEET_MODS[] = {{"Clear mod", 0, 0, cu_clear, SR_RED}, {"Bus A mode", bus_v0, bus_t0, 0, 0}, {"Bus A lag", bus_v1, bus_t1, 0, 0},
     {"Bus B mode", bus_v2, bus_t2, 0, 0}, {"Bus B lag", bus_v3, bus_t3, 0, 0}};
 
 /* a page's settings past its eight knobs (the key grammar's rule 3, M3) as a sheet's rows: row k is setting sr.pid[k] of
@@ -508,7 +508,9 @@ static void page_sheet_open(void)
         break;
     }
     case 5:
-        sheet_open("Mods", "mix buses", SHEET_MODS, NELEM(SHEET_MODS));
+        fmt_int(nm + 1, (int32_t)cord_ui_sel + 1);     /* (the picked mod, which Clear mod clears: M3) */
+        nm[0] = 'M';
+        sheet_open("Mods", nm, SHEET_MODS, NELEM(SHEET_MODS));
         break;
     case 6:
         str_cpy(nm, "T1", sizeof nm);

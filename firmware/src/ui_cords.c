@@ -418,6 +418,22 @@ static void cu_polarity(void)
                                                          * KNOB 1 its clock, HOLD ON T1 NOTES ..) */
     ui.force = 1;
 }
+/* MODS' sheet, Clear mod: the picked mod back to empty (no source, destination or move, +-; not a SCALE, CC 1). Mods
+ * that move it (M AMT) stay. Nothing set: NOTHING THERE */
+static void cu_clear(void)
+{
+    static const cord_t none;                           /* (CS_OFF, CD_OFF, 0, 0, CU_BI) */
+    const cord_t *c = cord_get(cord_ui_sel);
+    if (!c->src && !c->dst && !c->amount && !c->offset) {
+        ui_message("NOTHING THERE");
+        return;
+    }
+    (void)cord_set(cord_ui_sel, &none);
+    cord_vca_load(cord_vca_mask() & ~(1u << cord_ui_sel));
+    cord_cc_set(cord_ui_sel, 1u);
+    ui_message("MOD CLEARED");
+    ui.force = 1;
+}
 /* OCT- held + KNOB 4 on a GATE mod: its threshold (ui_input.c: OCT-'s tap eaten) */
 static int cu_thresh_knob(int32_t steps)
 {

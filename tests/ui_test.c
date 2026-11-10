@@ -1507,6 +1507,7 @@ static int test_cords_page(void)
 {
     int bad = 0;
     uint32_t i;
+    int ok;
     const cord_t *c;
     ui_power_on();
     cord_clear();
@@ -1546,7 +1547,9 @@ static int test_cords_page(void)
     fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
     frame();
     bad += check("..OCT+ held on MODS, let go untouched: MODS' sheet (the MIX buses), the mod as it was (BI)",
-                 pop.on == POP_SHEET && str_eq(pop.title, "Mods") && pop.n == 4u && !c->uni);
+                 pop.on == POP_SHEET && str_eq(pop.title, "Mods") && str_eq(pop.sub, cord_ui_sel ? "M2" : "M1") &&
+                 pop.n == 5u && str_eq(pop.rows[0].label, "Clear mod") && !c->uni);
+    turn(EN_K1, 1);
     turn(EN_K1 + 1u, 1);
     bad += check("..the sheet's KNOB 2 on its first row: BUS A's MODE, SUM to MAX", cord_bus_get(0) == CB_MAX &&
                  tessera_param_get(0, TX_BUSA_MODE) == CB_MAX && pop.on == POP_SHEET);
@@ -1555,13 +1558,29 @@ static int test_cords_page(void)
     bad += check("..a MODE goes round: MAX, SUM, back to DIFF", cord_bus_get(0) == CB_DIFF);
     turn(EN_K1, 1);
     turn(EN_K1 + 1u, -1);
-    bad += check("..its second row: BUS A's LAG, stops at OFF", pop.sel == 1u && !cord_bus_get(1));
+    bad += check("..its second row: BUS A's LAG, stops at OFF", pop.sel == 2u && !cord_bus_get(1));
     turn(EN_K1 + 1u, 1);
     turn(EN_K1 + 1u, 1);
     press(B_OCTUP);
     bad += check("..KNOB 2 to 20 ms, OCT+ steps it on (50 ms) and closes the sheet, the mod as it was",
                  cord_bus_get(1) == 3u && pop.on != POP_SHEET && !c->uni && cur_page()->graph == GR_CORDS);
     cord_bus_set(0, CB_SUM); cord_bus_set(1, 0);
+    {   /* the sheet's Clear mod: the picked mod empty, its SCALE and CC number gone; again: NOTHING THERE */
+        cord_t was = *c;
+        uint32_t vm = cord_vca_mask();
+        cord_vca_load(vm | 1u << cord_ui_sel);
+        cord_cc_set(cord_ui_sel, 9u);
+        page_sheet_open();
+        press(B_OCTUP);
+        ok = !c->src && !c->dst && !c->amount && !c->offset && !c->uni && !((cord_vca_mask() >> cord_ui_sel) & 1u) &&
+             cord_cc_num(cord_ui_sel) == 1u && msg_is("MOD CLEARED") && pop.on != POP_SHEET;
+        page_sheet_open();
+        press(B_OCTUP);
+        ok &= msg_is("NOTHING THERE") && cur_page()->graph == GR_CORDS;
+        bad += check("MODS sheet, Clear mod (first row, OCT+): the picked mod empty; empty: NOTHING THERE", ok);
+        (void)cord_set(cord_ui_sel, &was);
+        cord_vca_load(vm);
+    }
     press(B_OCTUP);
     turn(EN_K1 + 3u, -3);
     bad += check("KNOB 4: the amount down by 3 (22 %)", c->amount == 22);
