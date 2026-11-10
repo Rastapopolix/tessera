@@ -28,7 +28,7 @@ static const gshot_t SHOTS[] = {
     {"form", G_FORM, 0}, {"gen_tweak", G_SCENE, S_GEN_TWEAK}, {"gen_tweak2", G_SCENE, S_GEN_TWEAK2},
     {"gen_length", G_SCENE, S_GEN_LENGTH}, {"gen_seed", G_SCENE, S_GEN_SEED},
     {"cords", G_SCENE, S_CORDS}, {"mods_live", G_SCENE, S_MODS_LIVE_GEN}, {"matrix", G_SCENE, S_MATRIX},
-    {"mods_scope", G_SCENE, S_MODS_SCOPE}, {"mods_scope_gate", G_SCENE, S_MODS_SCOPE_GATE}, {"mods_scope_bus", G_SCENE, S_MODS_SCOPE_BUS},
+    {"mods_scope", G_SCENE, S_MODS_SCOPE}, {"mods_scope_gate", G_SCENE, S_MODS_SCOPE_GATE}, {"mods_scope_bus", G_SCENE, S_MODS_SCOPE_BUS}, {"mods_scope_thresh", G_SCENE, S_MODS_SCOPE_THRESH},
     {"organic", G_SCENE, S_ORGANIC}, {"mod_shortcut", G_SCENE, S_MOD_SHORTCUT},
     {"help", G_SCENE, S_HELP},
     {"oracle_osc", G_ORACLE, 0}, {"oracle_filter", G_ORACLE, 1}, {"oracle_env", G_ORACLE, 2},
@@ -97,6 +97,20 @@ int main(int argc, char **argv)
         draw(S_HOME);
         write_ppm(out, UI_PALETTES[i].name, name);
     }
+    for (i = 0; i < UI_NPALETTES; i++)                  /* each MOSAIC's MOD SCOPE: T2's LFO in T2's colour, */
+        if (UI_PALETTES[i].trk[0] != UI_PALETTES[i].trk[1]) {   /* colour, a bus in the ink (mosaic_scope_<name>, */
+            char name[40], *c;                          /* not in the manual) */
+            int k;
+            for (k = 0; k < 2; k++) {
+                snprintf(name, sizeof name, "mosaic_scope%s_%s", k ? "_bus" : "", UI_PALETTES[i].name);
+                for (c = name; *c; c++) *c = *c == ' ' ? '_' : *c >= 'A' && *c <= 'Z' ? (char)(*c + 32) : *c;
+                cur_name = name;
+                setup(k ? S_MODS_SCOPE_BUS : S_MODS_SCOPE_SLOW);
+                pal(i);
+                draw(k ? S_MODS_SCOPE_BUS : S_MODS_SCOPE_SLOW);
+                write_ppm(out, UI_PALETTES[i].name, name);
+            }
+        }
     /* GROUND LIGHT (MENU > GROUND): HOME in each ink's light version, paper_<name>, and a few screens on paper in the
      * default ink's, paper_<screen> (the landscape, the menu and COLOR's sheet: where the dark look was assumed) */
     ux_ground = 1;
