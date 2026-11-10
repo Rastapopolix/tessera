@@ -3033,42 +3033,59 @@ static void mo_cu_led(uint32_t lv, int32_t ox)
     if (lv)
         mo_ofill(ox, 0, 0, 3, 3, lv > 3u ? MO_INK : MO_DIM);
 }
-/* the MOD SCOPE (mscope.c) in h cells from row top, columns from x 4: the source dim and dashed, the mod's move in ink over it,
- * on one scale (the dotted middle 0, the top +100 %), each column its lowest to highest joined to the last; a GATE's
- * threshold dashed across the source; a bar's ticks at the edges; the sweep's head a gap of three columns */
-static void mo_scope(int32_t top, int32_t h)
+/* the MOD SCOPE (mscope.c) in h cells from row top, columns from x 4, on one scale (the middle 0 dotted, the top
+ * +100 %): the mod's move a line through each column's mean, a column's lowest to highest only where it jumped (not
+ * where it turned back and forth: a fast mod's band would smear); its source behind it, a dim dot in four columns; a
+ * GATE's threshold a wedge at each edge pointing in (filled while open), dashed across while KNOB 4 turns it (across);
+ * a bar a tick on the bottom edge; the sweep's head a gap of three columns. tk: the source's track (MOSAIC: its ink),
+ * -1 the project's (the ink) */
+#define MSC_JUMP 32                                     /* a column's span over an eighth of the scale: a jump */
+static void mo_scope(int32_t top, int32_t h, int32_t tk, int across)
 {
     const cord_t *c = cord_get(mscope.cord);
-    int32_t x, cy = top + h / 2, r = (h - 1) / 2, n = mscope.full ? (int32_t)MSC_W : mscope.col, pass;
+    int32_t x, cy = top + h / 2, r = (h - 1) / 2, n = mscope.full ? (int32_t)MSC_W : mscope.col, pa, pb;
     int32_t bars = mscope.bars ? mscope.bars : 1, step = bars > 8 ? bars / 4 : 1;
+    uint16_t ink = tk < 0 ? MO_INK : MO_TRK((uint32_t)tk), dim = tk < 0 ? MO_DIM : mo_tdim((uint32_t)tk);
 #define MSY(v) (cy - (int32_t)(v) * r / 127)
-    for (x = 0; x < (int32_t)MSC_W; x += 4)
+#define MSHEAD(x) (mscope.full && (uint32_t)(((x) - mscope.col + (int32_t)MSC_W) % (int32_t)MSC_W) < 3u)
+    for (x = 2; x < (int32_t)MSC_W; x += 8)
         mo_px(4 + x, cy, MO_DIM);
-    for (x = 0; x < bars; x += step) {                  /* (the bars: 16 and 64 in fours) */
-        int32_t bx = 4 + x * (int32_t)MSC_W / bars;
-        mo_vl(bx, top, 2, MO_DIM);
-        mo_vl(bx, top + h - 2, 2, MO_DIM);
-    }
+    for (x = 0; x < bars; x += step)                    /* (the bars: 16 and 64 in fours) */
+        mo_vl(4 + x * (int32_t)MSC_W / bars, top + h - 2, 2, MO_DIM);
     if (cord_gate(c)) {
-        int32_t ty = MSY(msc_q(cord_thresh(c)));
-        for (x = 0; x < (int32_t)MSC_W; x += 5)
-            mo_hl(4 + x, ty, 3, MO_INK);
-    }
-    for (pass = c->src ? 0 : 1; pass < 2; pass++) {    /* the source (a fixed move: none), then the move over it */
-        const int8_t *lo = pass ? mscope.lo : mscope.sv, *hi = pass ? mscope.hi : mscope.sv;
-        for (x = 0; x < n; x++) {
-            int32_t a = hi[x], b = lo[x];
-            if (mscope.full && (uint32_t)((x - mscope.col + (int32_t)MSC_W) % (int32_t)MSC_W) < 3u)
-                continue;                               /* (the head) */
-            if (!pass && (x & 3) == 3)                  /* (the source dashed and dim: apart from the move by more */
-                continue;                               /* than ink) */
-            if (x && x != mscope.col + 3) {             /* (the move joined to the column before, not across the head) */
-                if (lo[x - 1] > a) a = lo[x - 1];
-                if (hi[x - 1] < b) b = hi[x - 1];
-            }
-            mo_vl(4 + x, MSY(a), MSY(b) - MSY(a) + 1, pass ? MO_INK : MO_DIM);
+        int32_t ty = MSY(msc_q(cord_thresh(c))), o = cord_gate_on(c), k;
+        if (across)
+            for (x = 0; x < (int32_t)MSC_W; x += 5)
+                mo_hl(4 + x, ty, 3, MO_INK);
+        for (k = 0; k < 2; k++) {                       /* (left at 1 .. 3, right at 116 .. 118; shut: hollow) */
+            int32_t e = k ? 118 : 1, i = k ? -1 : 1;
+            mo_vl(e, ty - 2, 5, MO_INK);
+            mo_px(e + i, ty - 1, MO_INK);
+            mo_px(e + i, ty + 1, MO_INK);
+            if (o) mo_px(e + i, ty, MO_INK);
+            mo_px(e + 2 * i, ty, MO_INK);
         }
     }
+    if (c->src)                                         /* the source (a fixed move: none) */
+        for (x = 0; x < n; x += 4)
+            if (!MSHEAD(x)) mo_px(4 + x, MSY(mscope.sv[x]), dim);
+    for (x = 0, pa = pb = -1; x < n; x++) {             /* the move over it; pa .. pb the column before's own */
+        int32_t y0 = MSY(mscope.mv[x]), y1 = y0, c0, c1;
+        if (!((mscope.busy[x >> 3] >> (x & 7)) & 1u) && mscope.hi[x] - mscope.lo[x] > MSC_JUMP)
+            y0 = MSY(mscope.hi[x]), y1 = MSY(mscope.lo[x]);   /* (a jump: its span) */
+        if (MSHEAD(x)) {
+            pa = -1;                                    /* (not joined across the head) */
+            continue;
+        }
+        c0 = y0, c1 = y1;
+        if (pa >= 0) {                                  /* (joined to it where apart: one line, no step drawn twice) */
+            if (pb < c0) y0 = pb + 1;
+            if (pa > c1) y1 = pa - 1;
+        }
+        mo_vl(4 + x, y0, y1 - y0 + 1, ink);
+        pa = c0, pb = c1;
+    }
+#undef MSHEAD
 #undef MSY
 }
 

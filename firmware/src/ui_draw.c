@@ -285,7 +285,7 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
 static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on);
 static void mo_cu_bar(const cord_t *c, int32_t s, int32_t ox);
 static void mo_cu_led(uint32_t lv, int32_t ox);
-static void mo_scope(int32_t top, int32_t h);
+static void mo_scope(int32_t top, int32_t h, int32_t tk, int across);
 static void mo_chip(uint32_t c, const char *val, const char *unit, uint16_t vc, int hot, int32_t y);
 static void mo_strip_col(uint32_t c, const char *label, const char *val, uint16_t vc, int hot, int32_t y);
 static int foot_tabs_on(void);
@@ -830,7 +830,8 @@ static int pr_draw(void)
         uint32_t sm = tessera.ch_strum[tr], sd = tessera.ch_sdir[tr] % TESS_STR_DIRS;
         fmt_int(v, (int32_t)sm);
         col_mods(PID_TESS(TX_CH_STRUM));
-        draw_column(1, "STRUM", sm ? v : "OFF", sm ? "ms" : "", VAL(1u), (int32_t)(sm * 1000u / TESS_STRUM_MS), ICON_AUTO);
+        draw_column(1, "STRUM", sm ? v : "OFF", sm ? "ms" : "", VAL(1u),     /* (the bar by detent: the fine low end shows) */
+                    (int32_t)(tess_strum_detent(sm) * 1000u / TESS_STRUM_DETENTS), ICON_AUTO);
         col_mods(PID_TESS(TX_CH_SDIR));
         draw_column(2, "DIR", pid_desc(PID_TESS(TX_CH_SDIR), tr)->names[sd], "", sm ? VAL(2u) : T_DIM, (int32_t)sd * 500,
                     ICON_AUTO);
@@ -2044,10 +2045,13 @@ static void ui_draw_frame(void)
             cv_dim = cv_under = 1;
             draw_page();
             cv_dim = cv_under = 0;
+        }
+        if (ui.force || msc.card) {                     /* (a turn: the card alone, no flicker) */
             ui.force = 1;
             msc_draw();
             ui.force = 0;
         }
+        msc.card = 0;
         draw_head();
         return;
     }

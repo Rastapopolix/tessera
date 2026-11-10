@@ -505,8 +505,8 @@ int main(int argc,char **argv)
     ui_power_on();press(B_FX);assert(!ui.home && cur_page()->fam==FAM_FX && !ui.layer);
     turn(EN_K1,2);assert(TSEL->p[P_FXTYPE]==FX_WIDTH);turn(EN_K2,50);assert(TSEL->p[P_FXMIX]>0);
     project_t q;project_capture(&q);assert(fx_roundtrip(&q));assert(proj_scratch.t[0].p[P_FXTYPE]==FX_WIDTH);
-    frames(400);press(B_OCTUP);assert(pop.on==POP_SHEET);press(B_OCTDN);assert(!pop.on);
-    press(B_OCTDN);assert(ui.home);
+    frames(400);press(B_OCTUP);assert(!pop.on);hold(B_OCTUP);assert(pop.on==POP_SHEET);press(B_OCTDN);assert(!pop.on);
+    press(B_OCTDN);assert(!ui.home);   /* (nothing open: OCT- does nothing, HOME goes to Stage; tessera-notes oct-taps.md) */
     /* Four live tracks through the actual mixer, then mute a sounding insert. */
     ui_power_on();int32_t out[CTL*2];
     for(uint32_t k=0;k<NPART;k++){

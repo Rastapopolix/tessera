@@ -1602,6 +1602,32 @@ static void st_check(char *res, size_t cap)
                                                         * with it: every hit at least its first note and the repeat) */
         else ok &= n >= 60u && !bad && most > 0u && most <= 86u && !held;
     }
+    held = st_play(200, TESS_STR_UP, GEN_CH_HOLD, 0);  /* (a slow roll: 200 ms is 275.6 blocks) */
+    n = st_strikes(1000u, first);
+    bad = 0;
+    for (s = 0; s < n; s++)
+        bad += st_shape(first, s, &gmin, &gmax, &spread, &same) != 1 || gmin < 275u || gmax > 277u || !same ||
+               first[s + 1u] - first[s] != 3u;
+    printf("strum: 200 ms UP: %u strikes, %u wrong, %u held\n", (unsigned)n, (unsigned)bad, (unsigned)held);
+    ok &= n == 4u && !bad && !held;
+    {                                                   /* the knob: 1 ms detents to 10, 5 to 60, 10 to 250, and back */
+        static const uint8_t want[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80,
+                                       90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250};
+        uint32_t i, kb = 0;
+        _Static_assert(sizeof want == TESS_STRUM_DETENTS + 1u, "a value for each detent");
+        song.sel = 0;
+        tessera_param_set(0, TX_CH_STRUM, 0);
+        for (i = 1; i < sizeof want; i++) { tessera_strum_knob(1); kb += tessera.ch_strum[0] != want[i]; }
+        tessera_strum_knob(1);
+        kb += tessera.ch_strum[0] != TESS_STRUM_MS;
+        for (i = sizeof want - 1u; i-- > 0;) { tessera_strum_knob(-1); kb += tessera.ch_strum[0] != want[i]; }
+        tessera_param_set(0, TX_CH_STRUM, 62);          /* (between detents: up to 70, down to 60) */
+        tessera_strum_knob(1); kb += tessera.ch_strum[0] != 70u;
+        tessera_param_set(0, TX_CH_STRUM, 62);
+        tessera_strum_knob(-1); kb += tessera.ch_strum[0] != 60u;
+        printf("strum: knob detents: %u wrong\n", (unsigned)kb);
+        ok &= !kb;
+    }
     snprintf(res, cap, "%u", (unsigned)ok);
 }
 
@@ -3891,7 +3917,8 @@ int main(int argc, char **argv)
             waitpid(pid, 0, 0);
         }
         bad += check("STRUM: OFF strikes at once; UP, DOWN, ALT a chord's notes 20 ms apart in order; short HIT STEP "
-                     "strikes keep every note, the spread kept to half the gate, with RATCH too; STOP releases", ok);
+                     "strikes keep every note, the spread kept to half the gate, with RATCH too; STOP releases; 200 ms rolls; the "
+                     "knob's detents", ok);
     }
     {   /* ENERGY (energy.c) */
         unsigned ok = 0;

@@ -15,8 +15,8 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | **ALGORITHM** | Picks the track, on every page (MENU > TRACK KNOB LEFT swaps it with PRESETS) |
 | **SELECT** | The pages of the section shown, both ways; on HOME and MIXER the tempo |
 | A page button again | That section's next page (from elsewhere most return to the page last used) |
-| **OCT-** (off HOME) | Back: closes a list, sheet or map, else HOME |
-| **OCT+** (off HOME) | Enter: opens the row, slot or note picked; does the action picked |
+| **OCT-** (off HOME) | Back: closes a list, sheet, map or selection; a page opened from the map or MATRIX: back there; else nothing (HOME: the home page) |
+| **OCT+** (off HOME) | Enter: opens the row, slot, note or mod picked; does the action picked; else nothing (the sheet: held) |
 | **OCT+** held | The page's sheet: the sound's (HOME, EDIT, ENV, LFO, FX), the pattern's (GEN, NOTES, PATTERN; Swing there), the song's (SONG), the pattern's on PATTERNS; a generator's (GEN: QUAD, CONSTL, ATLAS, ANSWER, CHORD), MIDI OUT's, ENTRIES', MODS'; elsewhere NO SHEET |
 | A sheet: **KNOB 1**, **OCT+** / **OCT-** | Picks the row / does it / closes |
 | A dialog: **OCT+** / **OCT-** | Yes / no |
@@ -36,7 +36,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | **SCL** | SCALES, SCL, CHORD |
 | SCALES: **KNOB 1** to **USER** | Your own tunings: Scala files sent from the web editor (Projects > Tunings) |
 | **EDIT** | The sound's EDIT pages (ORACLE: MACRO, MACRO 2, OSC A, OSC B, OSC MIX, FILTER, POLY MOD, CHARACTER, ...) |
-| **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across, KNOB 2 rows, OCT+ opens, OCT- or EDIT closes |
+| **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across, KNOB 2 rows (on the page last used in each), OCT+ opens (OCT- there: the map again), OCT- or EDIT closes |
 | **PRESETS** on an EDIT page | The next / previous section (FM6: Algo, OP1 to OP6, Pitch, LFO, Ctrl, Store) |
 | **FX** | The insert and send effects |
 | **GLO** | MIXER, PERF (MACRO 1 to 4, the project's mod sources), GLOBAL (BUDGET: the shared voices), SYSTEM, MIDI OUT, PIECE (the piece's LENGTH, SHAPE, END), CHAIN (the project's FORM, PHRASE, WANDER), ENTRIES (tracks out and back in), LANDSCAPE (the music as rain on water) |
@@ -105,8 +105,8 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | **SEQ** + a pattern key held + another | Copies the first pattern onto the second |
 | **SEQ** + SELECT | The next / previous pattern |
 | PATTERNS: KNOB 1 to 4 | Track 1 to 4's next pattern |
-| PATTERNS: **OCT-** | Clears the queue (again: HOME) |
-| PATTERNS: **OCT+** | The pattern's sheet: Copy to, Delete pattern |
+| PATTERNS: **OCT-** | Clears the queue |
+| PATTERNS: **OCT+** held | The pattern's sheet: Copy to, Delete pattern |
 | SONG: KNOB 1 to 4 | Section (**+** adds one), track, its pattern there, repeats (1 to 16) |
 | SONG: **PLAY** or **OCT+** | Plays the song; STOP brings back the patterns you had |
 | SONG: **OCT+** held | Insert, duplicate, delete section; take jam; clear song |
@@ -147,7 +147,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | Do this | And this happens |
 |---|---|
 | GEN: **KNOB 1** | MODE: STEP, ARP or a generator |
-| GEN: **OCT-** held, **KNOB 2** to **4** | The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD (COL, MOVE, EVERY), CHORD (STRUM, DIR, OCT), ATLAS (KICK, SNR, HAT), CONSTL (LOCK, LEN, FILL), ANSWER (SOURCE, ORDER, SHIFT) |
+| GEN: **OCT-** held, **KNOB 2** to **4** | The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD (COL, MOVE, EVERY), CHORD (STRUM 1-250 ms, DIR, OCT), ATLAS (KICK, SNR, HAT), CONSTL (LOCK, LEN, FILL), ANSWER (SOURCE, ORDER, SHIFT) |
 | GEN: **OCT+** held | The GEN sheet: QUAD's RANGE, CONSTL's SIZE, ATLAS' fourth part, ANSWER's SPACE, CHORD's CHRD, VOIC and BREATH / LEN |
 | EVOLVE: **OCT-** held | **KNOB 1** ROLL ALL; **KNOB 3** PAT GEN; **KNOB 4** GRAVITY (a generator) or HOW: DRIFT, ADORN, SERIAL (a STEP track) |
 | TIMING: **OCT-** held | **KNOB 1** SPLIT, the chance a step plays at half its division; **KNOB 2** HOW: DOUBLE, PUSH, MIX |

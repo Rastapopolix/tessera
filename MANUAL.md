@@ -267,7 +267,8 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 | **GLO** | MIXER, [PERF](#perf-four-macros), GLOBAL, SYSTEM, MIDI OUT, [PIECE](#piece-a-length-and-a-shape), [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in), [LANDSCAPE](#landscape-rain-on-water) | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
 | **SAVE** | USER (ready to save the sound), PROJECT, PRESETS | Save the project to its slot (as SAVE + REC) |
 | **REC** | Records the selected track until REC again (see [Recording live](#recording-live)) | Capture or print the last bars (see [Print and keep](#print-and-keep)) |
-| **OCT+** | Octave up; on some pages, an action (shown on screen) | The page's sheet; a page without one says NO SHEET (its second knobs are on OCT- held: see [The GEN layer](#the-gen-layer)) |
+| **OCT+** | On HOME: octave up. Elsewhere Enter: the row, slot, note or mod under the cursor, the action picked; where there is nothing to enter, nothing (the sheet is a hold) | The page's sheet; a page without one says NO SHEET (its second knobs are on OCT- held: see [The GEN layer](#the-gen-layer)) |
+| **OCT-** | On HOME: octave down. Elsewhere Back: closes a sheet, list, map or selection; a page opened from the EDIT map or from MATRIX goes back there. On a page with nothing open, nothing (HOME goes to the home page) | The page's second knobs while held; letting go returns to the page, never back |
 
 On the home page each track's tile shows its sound and engine. **ALGORITHM** picks the track on every page (or
 the left knob, with MENU > TRACK KNOB set to LEFT), and **SELECT** turns the pages of the section shown (on the home
@@ -310,8 +311,10 @@ the one chosen framed and its name large; KNOB 2 or OCT+ steps through them.
 
 **GROUND.** MENU > GROUND, just below COLOR, sets what the ink is drawn on: **DARK** (the default, black, as above) or
 **LIGHT**, warm paper. On paper each ink becomes a darker version of itself that reads well there, and several inks
-share one: WHITE becomes CHARCOAL, YELLOW and ORANGE become SEPIA, GREEN FOREST, BLUE NAVY, RED, PINK and HOT PINK
-CRIMSON, and LILAC PLUM. The four-colour sets keep four different inks: MOSAIC SEPIA, NAVY, CRIMSON and FOREST; SUNSET
+share one: WHITE becomes pure BLACK (and COLOR calls it BLACK), YELLOW and ORANGE become SEPIA, GREEN FOREST, BLUE NAVY,
+RED, PINK and HOT PINK CRIMSON, and LILAC PLUM. On paper RED, PINK and HOT PINK look nearly the same, and so do YELLOW
+and ORANGE, so COLOR shows only PINK and YELLOW: a RED, HOT PINK or ORANGE you chose on DARK is shown and drawn as PINK
+or YELLOW, and is itself again on DARK. The four-colour sets keep four different inks: MOSAIC SEPIA, NAVY, CRIMSON and FOREST; SUNSET
 SEPIA, CRIMSON, PLUM and CHARCOAL; OCEAN NAVY, TEAL, FOREST and PLUM; NEON TEAL, PLUM, FOREST and SEPIA; the selection
 in CHARCOAL. While LIGHT is on, COLOR's sheet shows the light versions on paper, so you see what you pick. Older
 firmware keeps the ink you chose and draws it on black.
@@ -397,7 +400,7 @@ MODAL's overtones in tune from 16 to 48, a chime's near 84 and a marimba's at th
 is); a dull, short or bowed sound is as loud as a bright one. An old project's PHYS track (one not saved again
 since 2.0, which turned it into FM6) plays PHYS again, a little differently towards the ends of the knobs. **SID** is no longer in the device build, and neither is CZ-1: a track saved
 with SID loads FM6's INIT. DRUM's SID KIT
-and SID DIGI are out too (2.2, for flash room): a track saved with KIT SID loads as the 909. FM6 and TRIO presets have
+and SID DIGI are out too (3.0, for flash room): a track saved with KIT SID loads as the 909. FM6 and TRIO presets have
 releases that ring out, so short sequenced notes are not cut off. The slow pads (GLASS PAD, SOFT PAD, DEEP PAD, PAD,
 STRINGS) swell in slowly: they speak on long notes and drones, and stay quiet on short steps.
 
@@ -579,8 +582,9 @@ patterns keeps its own, saved with it:
 
 - **FWD** (the default): step 1 to the last, as always.
 - **BACK**: the last step to step 1.
-- **PEND**: there and back, the end steps once (1 2 3 4 3 2 1 2 ..).
-- **PONG**: there and back, the end steps twice (1 2 3 4 4 3 2 1 1 2 ..).
+- **PEND**: there and back, turning on the end steps: each end plays once (1 2 3 4 3 2 1 2 ..).
+- **PONG**: there and back, each end step played again as it turns, so its note is heard twice in a row
+  (1 2 3 4 4 3 2 1 1 2 ..). A pass of PONG is two steps longer than one of PEND.
 - **RAND**: any step, each time.
 - **DRUNK**: one step on or one back, at random; past the ends it goes round.
 
@@ -591,6 +595,12 @@ track's SEED, so PLAY plays the same line again. Changing the direction while it
 next step comes from the one playing, the new way. A new pattern starts at its own direction's start (BACK: its last
 step). Capture and print write the notes in the order they sounded and set the pattern to FWD. A generator track
 does not use it.
+
+Going backwards (BACK, the way back of PEND and PONG, DRUNK's steps back), a tied note plays once: a run of a note
+and the TIEs after it starts on the run's last step and lasts the whole run, as it does forwards (it does not play
+again on the note's own step). Recorded notes (REC) follow the direction too: each step plays the notes recorded
+on it, whichever way the playhead goes. While a mod moves the direction, the Direction row shows both, the
+pattern's own and the one playing: FWD>PEND.
 
 Two rows set the track's pitch accumulator (a step's Accumulate, below):
 
@@ -639,8 +649,8 @@ when it was saved. To change a generator over a piece without PAT GEN, use [FORM
 | Do this | And this happens |
 |---|---|
 | **KNOB 1** to **KNOB 4** | Track 1 to 4's next pattern. Stopped: it changes at once. Playing: it waits (dashed) and changes when the pattern playing reaches its end. While a song plays it does not change: **STOP TO SWITCH**. |
-| **OCT-** | Clears the queue. Again: HOME. |
-| **OCT+** | The selected track's pattern's sheet: **Copy to** and **Delete pattern** (its notes and motion). |
+| **OCT-** | Clears the queue. |
+| **OCT+** held | The selected track's pattern's sheet: **Copy to** and **Delete pattern** (its notes and motion). |
 
 Copy to frames a place on the track's row, the first empty one first. Any knob moves it, **OCT+** copies (over a
 pattern in use it asks first), **OCT-** leaves. It works only while no song plays.
@@ -770,7 +780,7 @@ register. The chord's kind and voicing are on the GEN sheet (and on SCL > CHORD)
 
 | Knob (OCT- held) | Setting | What it does |
 |---|---|---|
-| 2 | **STRUM** (OFF, 5 to 60 ms, 5 ms a detent) | The time between one note of the chord and the next, as a strummed chord. A four-note chord at 40 ms spreads over 120 ms. OFF strikes them together, as before. |
+| 2 | **STRUM** (OFF, 1 to 250 ms) | The time between one note of the chord and the next, as a strummed chord. A four-note chord at 40 ms spreads over 120 ms. The knob goes by 1 ms up to 10 (a flam), by 5 up to 60, then by 10: 100 ms and more is a slow roll that slow pads and strings let you hear. OFF strikes them together, as before. |
 | 3 | **DIR** | **UP**: the lowest note first. **DOWN**: the highest first. **ALT**: up, down, up and so on, a strike each, like strumming (from PLAY, so a piece replays the same). |
 | 4 | **OCT** (−2 to +2) | The chords' register from their home around C3. |
 | GEN sheet | **Chord** | SCL > CHORD's chord kind: OFF plays triads; DIA3 and DIA7 triads and sevenths in the scale; MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9, MAJ6 (fixed shapes on any note). |
@@ -789,7 +799,8 @@ number of chords played sets Length.
 - **MIDI OUT** sends each note when it sounds, so the notes go out strummed too (also with SOUND OFF).
 - Each note takes its voice when it starts. With fewer voices than notes the last ones steal, so DIR decides which
   note may take another's voice.
-- STRUM and DIR are saved with the project; firmware before STRUM plays the chords together.
+- STRUM and DIR are saved with the project; firmware before STRUM plays the chords together. 3.5-beta4 and beta5
+  took STRUM up to 60 ms only: they do not load a project with a longer STRUM.
 
 ### QUAD: columns and RANGE
 
@@ -1544,15 +1555,18 @@ at a time, each with an activity light and a moving mark.
 - Choosing a destination on a new cord sets the amount to 50 % (or a fixed move of 25 % with no source), so you hear
   it at once.
 - **The scope.** Hold **OCT-** on MODS to see how the picked mod moves: its row stays at the top and, in the other
-  rows' place, its move over time (the solid line) over its source (the dashed one), the dotted middle line 0, the top
-  +100 % of the destination's range. With AMOUNT under 100 % the gap between the two lines is the amount; a mod of
-  mods swells and shrinks inside its source. A GATE mod draws its threshold as a dashed line across the source, so you
-  see where it opens; a HOLD mod steps once a bar. It sweeps left to right (a gap marks now) over a window that suits
-  the source, with ticks at the bars: a bar for the notes' own (ENV, VEL, GATE, NOTE, CV, S&H ...), 2 to 16 bars for
+  rows' place, its move over time (the line) over its source (the faint dots behind it), the dotted middle line 0,
+  the top +100 % of the destination's range. With AMOUNT under 100 % the gap between line and dots is the amount; a
+  mod of mods swells and shrinks inside its source. A mod faster than the window draws its middle, not a band; a
+  sudden jump is drawn as a jump. With a MOSAIC colour set the line is in its source's track colour (a BUS, MACRO or
+  other project source in the main ink). A GATE mod marks its threshold with a small wedge at each edge, filled while
+  the gate is open; turn its threshold (KNOB 4) and a dashed line runs across for a second, so you see where it opens.
+  A HOLD mod steps once a bar. It sweeps left to right (a gap marks now) over a window that suits the source, with
+  ticks on the bottom edge at the bars: a bar for the notes' own (ENV, VEL, GATE, NOTE, CV, S&H ...), 2 to 16 bars for
   an LFO (it keeps 2 to 6 cycles in view), 4 for a MACRO, 16 for DRIFT and SWARM, 64 for TIDE and ENERGY. Let go and
   the four rows come back. With the screen reader, holding OCT- says it once: the window, the shape and the lowest and
   highest move ("SCOPE 2 BARS, CYCLING 2 A BAR, LOW -60 HIGH 60 %"; a GATE: how often it opens and whether it is open
-  now). The same hold turns a GATE's threshold (KNOB 4), so you watch the line move against the source. A cord
+  now). The same hold turns a GATE's threshold (KNOB 4), so you watch it move against the source. A cord
   from BUS A or BUS B draws the bus as its source. Nothing is saved; nothing changes until you hold it.
 - **Live marks**: a knob a cord reaches shows a mark where the cords move it now.
 - **DRIFT** is each track's slow wander, a new point about every 12 seconds, eased between.
@@ -1585,7 +1599,7 @@ at a time, each with an activity light and a moving mark.
   says **MODS FULL**.
 
 <p align="center"><img src="assets/gallery/cords.png" alt="MODS" width="240"> <img src="assets/gallery/mods_live.png" alt="A live mod mark on BRANCH" width="240"></p>
-<p align="center"><img src="assets/gallery/mods_scope.png" alt="MODS with OCT- held: the scope of a mod whose amount another mod turns" width="240"> <img src="assets/gallery/mods_scope_gate.png" alt="The scope of a GATE mod: its threshold across the source" width="240"></p>
+<p align="center"><img src="assets/gallery/mods_scope.png" alt="MODS with OCT- held: the scope of a mod whose amount another mod turns" width="240"> <img src="assets/gallery/mods_scope_gate.png" alt="The scope of a GATE mod: its threshold a wedge at each edge" width="240"> <img src="assets/gallery/mods_scope_thresh.png" alt="The same while KNOB 4 turns the threshold: a dashed line across" width="240"></p>
 
 ---
 

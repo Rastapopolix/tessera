@@ -154,6 +154,7 @@ static void cu_chip(int32_t x, int32_t y, int32_t w, uint32_t tr, const char *s,
 /* MOD SCOPE (gap G14; mscope.c samples, ui_mono.c mo_scope draws): OCT- held on MODS shows the picked mod's move over
  * time under its row, in the other three rows' place; letting go, the rows again. 1 while shown (cu_scope_draw) */
 static uint8_t cu_scope;
+static uint8_t cu_thr_t;                                /* frames left of a GATE's threshold drawn across (KNOB 4) */
 /* the cord shown in row k of four: the screenful, or with the scope under it the picked one alone; CORD_LIVE none */
 static uint32_t cu_slot(uint32_t k)
 {
@@ -178,6 +179,7 @@ static uint8_t cu_state(uint32_t i, const cord_t *c, int32_t *s, uint8_t *bk)
 static uint8_t cu_led_was[4];                           /* (cu_leds: the step each light shows; a row redrawn: none) */
 static uint8_t cu_bar_was[4];                           /* (and where each row's live mark is) */
 static int8_t cu_mv_was[4];                             /* (and its move now: a mod of mods turns it) */
+static uint8_t cu_rows_sent;                            /* (Mono: cu_rows sent the rows, their moves and lights in them) */
 #define CU_Y 22                                         /* the rows: 48 px each from y 22 (as MOD's), the chips at 220 */
 #define CU_H 48
 static void cu_rows(void)
@@ -224,6 +226,7 @@ static void cu_rows(void)
             cv_oy = 0;
         }
         cv_blit(0, (uint32_t)(CU_Y + (int32_t)k * CU_H));
+        cu_rows_sent = 1;
         continue;
 #endif
         cv_begin(240, CU_H, T_BG);
@@ -275,6 +278,12 @@ static void cu_leds(void)
 {
     uint8_t *was = cu_led_was;
     uint32_t k;
+    if (cu_rows_sent) {                                 /* (Mono: in the rows just sent. Not again: a mark moved on
+                                                         * since went out twice, the selected row flickered as KNOB 4
+                                                         * turned its AMOUNT, 3.5-beta5) */
+        cu_rows_sent = 0;
+        return;
+    }
     for (k = 0; k < 4u; k++) {
         uint32_t i = cu_slot(k);
         const cord_t *c = cord_get(i);
@@ -307,22 +316,26 @@ static void cu_leds(void)
 static void cu_scope_draw(int held)                     /* held: OCT- held, nothing over the page (ui_pages.c) */
 {
     static uint32_t was;
+    const cord_t *c = cord_get(cord_ui_sel);
     uint32_t key;
     mscope_take(cord_ui_sel);
     cu_scope = (uint8_t)(MELODEE_LOOK && held);
+    cu_thr_t -= (uint8_t)(cu_thr_t != 0u);
 #if MELODEE_LOOK
     key = mscope.col | (uint32_t)mscope.bars << 8 | (uint32_t)cord_ui_sel << 16 | (ux.pal & 7u) << 21 |
           (uint32_t)mscope.full << 24 | (uint32_t)cu_scope << 25 | (ux.gen & 15u) << 26;
+    if (cord_gate(c))                                   /* (its threshold, shut or open, across or the wedges) */
+        key = key * 31u + (uint8_t)c->offset * 4u + (uint32_t)cord_gate_on(c) * 2u + (cu_thr_t != 0u);
     if (!cu_scope || (!ui.force && key == was)) {
         was = cu_scope ? key : 0u;
         return;
     }
     was = key;
-    cv_begin(240, 3 * CU_H, T_BG);
-    mo_scope(3, 3 * CU_H / 2 - 6);
-    cv_blit(0, (uint32_t)(CU_Y + CU_H));
+    cv_begin(240, 124, T_BG);                           /* (the canvas's most, gfx.c CV_MAX: 124 of the rows' 144, */
+    mo_scope(2, 58, cu_src_trk(c->src) ? (int32_t)c->src_trk : -1, cu_thr_t != 0u);   /* centred) */
+    cv_blit(0, (uint32_t)(CU_Y + CU_H + 10));
 #else
-    (void)was, (void)key;
+    (void)was, (void)key, (void)c;
 #endif
 }
 
@@ -429,6 +442,7 @@ static int cu_thresh_knob(int32_t steps)
     str_cpy(b, "GATE OVER ", sizeof b);
     cu_pct_text(b + str_len(b), c.offset);
     ui_message(b);
+    cu_thr_t = 64;                                      /* (about a second, then the wedges at the edges again) */
     return 1;
 }
 

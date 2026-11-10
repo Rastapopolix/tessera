@@ -128,6 +128,14 @@ static uint16_t pal_light(uint32_t i, uint32_t j)    /* palette i's light ink fo
 {
     return UI_LIGHT_INKS[(UI_LIGHT_MAP[i % UI_NPALETTES] >> 3u * j) & 7u];
 }
+/* COLOR on LIGHT: the ink palette i is shown as (RED and HOT PINK as PINK, ORANGE as YELLOW: hidden), and its name
+ * (WHITE: BLACK) */
+static uint32_t pal_shown(uint32_t i) { return ux_ground ? UI_LIGHT_AS[i % UI_NPALETTES] : i % UI_NPALETTES; }
+static const char *pal_name(uint32_t i)
+{
+    i = pal_shown(i);
+    return ux_ground && i == UI_LIGHT_RENAME_I ? UI_LIGHT_RENAME : UI_PALETTES[i].name;
+}
 #define UX_PAL (*ux_p)
 #else
 #define UX_PAL UI_PALETTES[ux.pal]

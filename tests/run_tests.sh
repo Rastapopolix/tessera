@@ -140,7 +140,7 @@ G_SEQ="seq_edit_test seq_notes_test pattern_test note_tools_test swing_test spli
 G_GEN="gen_test tessera_test chain_test entries_test planner_test split_test follow_test cordclock_test"
 G_STORE="storage_test persistence_test upgrade_test backup_test demo_projects settings_test upreset_test storage_safety_test
     settings_origin_test preset_boot_reset_test fm6_preset_test"
-G_MIDI="midi_control_test midi_out_test midi_timing_test midi_scale_test midi_uart_test recording_test"
+G_MIDI="midi_control_test midi_out_test seq_dir_test midi_timing_test midi_scale_test midi_uart_test recording_test"
 G_USB="usb_audio_test usb_audio_driver_test usb_audio_tracks_test usb_host_test usb_audio_desc_test"
 G_SCALE="scale_test microtonal_test scale_picker_test tune_test uscale_test tuning_test midi_scale_test"
 G_AUDIO="regress audio_test audio_matrix_test ram_audio_test ram_voice_budget_test audio_admission_test resources_test
@@ -150,6 +150,7 @@ qmap() {
     case $1 in
         docs/PARAMETERS.md) QSEL="$QSEL pid_test" ;;
         *.md | LICENSE* | LICENSES/* | docs/design/* | docs/*.txt) ;;  # prose: nothing to run
+        web/sim/build.sh | tools/build.py) QSEL="$QSEL sim_flags_test web_tests" ;;
         docs/* | web/*) QSEL="$QSEL web_tests nightly_site_test" ;;
         demos/*) QSEL="$QSEL demo_projects" ;;
         firmware/words.tsv | firmware/words_allow.txt) QSEL="$QSEL speak_test" ;;
@@ -455,6 +456,7 @@ if core; then
     run "audio diagnostics schema compatibility" python3 tests/usb_audio_stats_test.py
     run "target budget: natural loops and FPU decoding" python3 tests/target_budget_test.py
     run "header messages: every literal fits the Mono header (15 characters)" python3 tests/msg_len_test.py
+    run "web simulator: the device's engine set (no SID KIT)" python3 tests/sim_flags_test.py
     t "retired synth identities, project/user patch preservation and favorites" engine_retirement_test -O2 $FW
     t "capture gating, derived caches and silent-track clocks" performance_test -DMELODEE_LEGACY_EXTRAS=1 -O2 $FW
     t "canvas drawing overlaps DMA without changing pending pixels" lcd_overlap_test -O1 -w -Ibuild/gen
@@ -501,6 +503,7 @@ if core && [ $TABLES = 1 ]; then
     t "recording/performance tools and legacy migrations" performance_tools_test -O1 $FW
     t "USB/TRS clock, bend, sustain, ownership and panic recovery" midi_control_test -O1 $FW
     t "MIDI OUT: steps, generators, ARP and keys per track channel, no echo, note-offs, clock out, settings" midi_out_test -O1 $FW
+    t "STEP DIR heard: PEND, PONG, BACK play each step's own note; a TIE backwards plays once" seq_dir_test -O1 $FW
     t "MIDI timing: quantized TRS/USB recording, audio timeline, tempo changes and timer wrap" midi_timing_test -O1 $FW
     t "MIDI recording: raw events, quantization at take end, independent releases, banks and capacity" recording_test \
         -O1 $FW
@@ -578,7 +581,7 @@ if core && [ $TABLES = 1 ]; then
     t "TABLES: the computed readouts (TIME, LFO Hz, CUTOFF, dB) equal the tables they replace" tables_test -O1 $FW
     t "CORDS: the destination table, frozen against tests/cord_dests.txt" cord_test \
         -O1 $FW -- "$OUT/cord_test" tests/cord_dests.txt
-    t "double-tap layers, SCREEN OFF, LFO 2 SYNC / TRIG / POL, MODS scrolled without a pixel sent twice" layer_screen_test \
+    t "double-tap layers, SCREEN OFF, LFO 2 SYNC / TRIG / POL; MODS scrolled, FX + knobs, MODS AMOUNT: no pixel sent twice" layer_screen_test \
         -O1 -DMELODEE_USB_AUDIO=1 $FW
     t "DRUM EDITOR: synthesized 909, sound controls, individual pitch/length, undo and storage" drum_editor_test -O2 $FW
 fi

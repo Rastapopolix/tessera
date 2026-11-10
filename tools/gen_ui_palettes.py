@@ -66,15 +66,20 @@ for _n, _t in (("SUNSET", ((255, 144, 40), _INK["HOT PINK"], _INK["LILAC"], _INK
     MONO_PALETTES.append((_n, (0, 0, 0), (20, 20, 20), _t[0], _INK["WHITE"], _t))
 # MENU > GROUND LIGHT (#557, Theo 2026-11-10): the chosen palette's light version, dark inks on warm paper. A few light
 # inks shared by the nine (each dark enough for MONO_CHECKS' 7:1 on paper); a MOSAIC's four tracks each their own, its
-# ACCENT CHARCOAL. SUNSET's yellow would collide with its orange (both SEPIA): CHARCOAL takes its place
+# ACCENT CHARCOAL. SUNSET's yellow would collide with its orange (both SEPIA): CHARCOAL takes its place. WHITE on paper
+# is pure BLACK, and COLOR names it so (Theo's device test, beta5); RED and HOT PINK look nearly like PINK on paper, and
+# ORANGE like YELLOW (both SEPIA), so COLOR shows only PINK and YELLOW there (LIGHT_AS: a saved RED, HOT PINK or ORANGE
+# is shown and drawn as the one it stands for, and is itself again on DARK)
 LIGHT_BG, LIGHT_SURF = (236, 232, 220), (222, 217, 203)
 LIGHT_INKS = [("CHARCOAL", (34, 34, 34)), ("SEPIA", (100, 60, 8)), ("FOREST", (16, 84, 34)), ("NAVY", (30, 50, 140)),
-              ("CRIMSON", (140, 16, 46)), ("PLUM", (100, 40, 130)), ("TEAL", (0, 80, 84))]
-LIGHT_ONE = {"WHITE": "CHARCOAL", "YELLOW": "SEPIA", "ORANGE": "SEPIA", "GREEN": "FOREST", "BLUE": "NAVY",
+              ("CRIMSON", (140, 16, 46)), ("PLUM", (100, 40, 130)), ("TEAL", (0, 80, 84)), ("BLACK", (0, 0, 0))]
+LIGHT_ONE = {"WHITE": "BLACK", "YELLOW": "SEPIA", "ORANGE": "SEPIA", "GREEN": "FOREST", "BLUE": "NAVY",
              "RED": "CRIMSON", "PINK": "CRIMSON", "HOT PINK": "CRIMSON", "LILAC": "PLUM"}
 LIGHT_MOSAIC = {"MOSAIC": ("SEPIA", "NAVY", "CRIMSON", "FOREST"), "SUNSET": ("SEPIA", "CRIMSON", "PLUM", "CHARCOAL"),
                 "OCEAN": ("NAVY", "TEAL", "FOREST", "PLUM"), "NEON": ("TEAL", "PLUM", "FOREST", "SEPIA")}
 LIGHT_ACCENT = "CHARCOAL"                # a MOSAIC's selected value (dark: white)
+LIGHT_AS = {"RED": "PINK", "HOT PINK": "PINK", "ORANGE": "YELLOW"}   # COLOR on LIGHT: these hidden, shown (and drawn) as that one
+LIGHT_RENAME = ("WHITE", "BLACK")        # COLOR on LIGHT names this ink so
 
 
 def light_names(p):
@@ -243,6 +248,11 @@ def main():
             c = contrast(d[f], d[b])
             if c < lim:
                 fails.append(f"{name}: {f}/{b} {c:.2f} < {lim} ({why})")
+    _mn = [p[0] for p in MONO_PALETTES]
+    for a_, b_ in LIGHT_AS.items():          # a hidden ink: a one-ink palette, drawn exactly as the one shown for it
+        pa, pb = MONO_PALETTES[_mn.index(a_)], MONO_PALETTES[_mn.index(b_)]
+        assert pa[5][0] == pa[5][1] and b_ not in LIGHT_AS and light_names(pa) == light_names(pb), a_
+    assert LIGHT_RENAME[0] in _mn and LIGHT_RENAME[0] not in LIGHT_AS
     for p in MONO_PALETTES:                  # GROUND LIGHT: the same checks on paper, a MOSAIC's four all different
         lp = light_pal(p)
         if p[5][0] != p[5][1]:
@@ -301,7 +311,13 @@ def main():
                 "};   /* " + " ".join(_li) + " */",
                 "static const uint16_t UI_LIGHT_MAP[] = {" +
                 ", ".join(f"0x{sum(_li.index(n) << 3 * j for j, n in enumerate(light_names(p))):04x}"
-                          for p in MONO_PALETTES) + "};"]
+                          for p in MONO_PALETTES) + "};",
+                "/* COLOR on LIGHT: the ink each is shown as (itself, or the one that stands for it: hidden), and the",
+                " * one renamed */",
+                "static const uint8_t UI_LIGHT_AS[] = {" +
+                ", ".join(str(mono_names.index(LIGHT_AS.get(n, n))) for n in mono_names) + "};",
+                f"#define UI_LIGHT_RENAME_I {mono_names.index(LIGHT_RENAME[0])}u      /* {LIGHT_RENAME[0]} */",
+                f'#define UI_LIGHT_RENAME "{LIGHT_RENAME[1]}"']
         out += ["#else", "static const ui_pal_t UI_PALETTES[] = {"] + table(PALETTES, SLOTS, DEFAULT, names) + ["#endif"]
         out += [f"#define UI_PAL_TAG {PAL_TAG}u          /* stored id = UI_PAL_TAG + UI_PAL_SLOTS[index] */"]
         out += [f"#define UI_{k}_PCT {v}" for k, v in PCT.items()] + [f"#define UI_RAISE_PCT {RAISE_PCT}   /* SURF -> TEXT */"]

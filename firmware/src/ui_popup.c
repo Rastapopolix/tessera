@@ -153,8 +153,17 @@ static void nt_accmode(int32_t s)                      /* (round: OCT+ goes on p
     tessera_param_set(tr, TX_ACC_MODE, (tessera_param_get(tr, TX_ACC_MODE) + (s > 0 ? 1 : TESS_ACC_MODES - 1)) %
                                        TESS_ACC_MODES);
 }
-/* .. its DIR (TX_SEQ_DIR: the pattern's) */
-static void nt_dir_v(char *b) { str_cpy(b, pid_desc(PID_TESS(TX_SEQ_DIR), 0)->names[tessera_param_get(trk_index(TSEL), TX_SEQ_DIR) % SEQ_DIRS], 8); }
+/* .. its DIR (TX_SEQ_DIR: the pattern's; a mod moving it: "FWD>PEND", the pattern's and the one playing, seq_dir.c) */
+static void nt_dir_v(char *b)
+{
+    const char *const *nm = pid_desc(PID_TESS(TX_SEQ_DIR), 0)->names;
+    uint32_t d = (uint32_t)tessera_param_get(trk_index(TSEL), TX_SEQ_DIR) % SEQ_DIRS, now = seq_dir_now(TSEL) % SEQ_DIRS;
+    str_cpy(b, nm[d], 8);
+    if (now != d) {
+        str_cpy(b + str_len(b), ">", 2);
+        str_cpy(b + str_len(b), nm[now], 8);
+    }
+}
 static void nt_dir(int32_t s)                          /* (round: OCT+ goes on past DRUNK to FWD) */
 {
     uint32_t tr = trk_index(TSEL);
