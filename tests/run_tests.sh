@@ -236,6 +236,7 @@ if [ "$QUICK" = 1 ]; then
     fi
 fi
 if [ "$QUICK" = 1 ]; then
+    export UI_PPM=${UI_PPM:-0}                    # the UI renders' lint without writing ~730 MB of pictures
     echo "QUICK: $_nf files changed since $(git rev-parse --short "$_base"); jobs:$(echo $QSEL | tr ' ' '\n' | sort -u | tr '\n' ' ')${REGRESS_ONLY:+(regress: $REGRESS_ONLY)}"
 fi
 
@@ -377,14 +378,14 @@ ui_renders() {
     mkdir -p build/ui_new/ppm build/ui_slot
     step "UI renders: layout lint (every screen and palette, every page, engine and column value), MONO gray, draw cost" \
         "$OUT/ui_render" build/ui_new build/ui_slot
-    if [ $PIL = 1 ]; then
+    if [ "${UI_PPM:-1}" = 0 ]; then               # (--quick: the lint, no pictures)
+        echo "== note: no pictures (UI_PPM=0); UI_PPM=1 tests/run_tests.sh --quick makes them"
+    elif [ $PIL = 1 ]; then
         python3 tests/ui_render.py build/ui_new build/ui_slot || fail "tests/ui_render.py"
         python3 tools/ui_mockcmp.py build/ui_new build/ui_mock || fail "tools/ui_mockcmp.py" # redesign parity (docs/design): a report, no gate yet
     fi
-    build ui_render_mono ui_render -O1 -w -DMELODEE_USB_AUDIO=1 -DMELODEE_USB_HOST=1 -DMELODEE_LOOK=1 -Ibuild/gen -Ifirmware/src -Itests || return
-    mkdir -p build/ui_mono/ppm build/ui_mono_slot
-    step "UI renders, Mono look (MELODEE_LOOK 1, ui_mono.c): the same screens, lint and MONO gray" \
-        "$OUT/ui_render_mono" build/ui_mono build/ui_mono_slot
+    # (a second render built with -DMELODEE_LOOK=1 into build/ui_mono ran here until 2026-11-10: the same look as this
+    # one since Mono became the default, the same pictures byte for byte, ~730 MB written again)
 }
 dsp_tracks() {
     build hostsim hostsim -O2 $FW || return
@@ -623,6 +624,8 @@ case $SOUND in
     0) what="HOST TESTS (sound tests skipped: SOUND=0)" ;;
     only) what="SOUND TESTS (SOUND=only)" ;;
 esac
+# QUICK is not the gate: its line never says ALL
+[ "$QUICK" = 1 ] && what="QUICK HOST TESTS ($n jobs for the changed files; the full suite is the gate before a PR)"
 if [ -s "$LOG/failed" ]; then
     echo "$what FAILED in $secs s:"
     sed 's/^/  /' "$LOG/failed"
