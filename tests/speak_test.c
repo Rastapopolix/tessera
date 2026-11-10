@@ -80,6 +80,25 @@ static void dump_extra(void)
     for (pop.sel = 0; pop.sel < pop.n; pop.sel++)
         if (sp_pop_row(b, sizeof b)) fprintf(dump_f, "ROW\t%s\n", b);
     pop_close();
+    go_title("MODS");                                   /* MODS' sheet: the MIX buses, every MODE and LAG */
+    {
+        cord_t c = {CS_BUSA, 0, CD_BUS_B, 0, 50, 0, CU_BI};   /* (and a mod from one bus into the other) */
+        cord_set(cord_ui_sel, &c);
+        ui.force = 1;
+        ui_draw();
+        dump_screen();
+        for (k = 0; k < 4u; k++)
+            if (sp_knob(k, b, sizeof b)) fprintf(dump_f, "KNOB\t%s\n", b);
+    }
+    page_sheet_open();
+    dump_screen();
+    for (pop.sel = 0; pop.sel < pop.n; pop.sel++)
+        for (i = 0; i < (pop.sel & 1u ? CB_LAGS : (uint32_t)CB_MODES); i++) {
+            cord_bus_set(pop.sel, (int32_t)i);
+            if (sp_pop_row(b, sizeof b)) fprintf(dump_f, "ROW\t%s\n", b);
+        }
+    pop_close();
+    cord_clear();
     go_title("SCALES");                                 /* the scale picker: the scale under the cursor */
     dump_screen();
     scale_picker_edit(1, 3);
