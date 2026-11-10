@@ -3004,27 +3004,33 @@ static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on)
     str_cpy(b + str_len(b), "%", 2);
     mo_textr(cu_pct(c) ? b : b + 1, 116, 3, sel ? MO_INK : ink);
 }
-/* the move (cu_bar's canvas, 105 x 4 cells): the line, its middle, the amount from the middle (a +- mod's both ways:
- * its source swings it as far down as up), a mark where it moves the destination now */
-static void mo_cu_bar(const cord_t *c, int32_t s)
+/* MODS' cells ox pixels to the right (cu_rows: a row's move and light drawn into the row's canvas, where they sit at
+ * odd pixels) */
+static void mo_ofill(int32_t ox, int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c)
+{
+    if (w > 0)
+        cv_rect(ox + x * 2, y * 2, w * 2, h * 2, c);
+}
+/* the move (105 x 4 cells from ox pixels: cu_bar's canvas, or the row's): the line, its middle, the amount from the
+ * middle (a +- mod's both ways: its source swings it as far down as up), a mark where it moves the destination now */
+static void mo_cu_bar(const cord_t *c, int32_t s, int32_t ox)
 {
     int on = cord_live(c);
     int32_t a = cu_now(c), m = 52, x = 1 + (a + 100) * 102 / 200, lx = m + clamp(s, -32768, 32768) * 51 / 32768;
     int32_t d = x < m ? m - x : x - m;
-    cv_begin(CU_BAR_W, 9, MO_BG);
-    mo_hl(1, 2, 102, MO_DIM);
+    mo_ofill(ox, 1, 2, 102, 1, MO_DIM);
     if (a)
-        mo_fill(cord_bip(c) ? m - d : x < m ? x : m, 1, cord_bip(c) ? 2 * d : d, 2, on ? MO_INK : MO_DIM);
-    mo_vl(m, 0, 4, MO_DIM);
+        mo_ofill(ox, cord_bip(c) ? m - d : x < m ? x : m, 1, cord_bip(c) ? 2 * d : d, 2, on ? MO_INK : MO_DIM);
+    mo_ofill(ox, m, 0, 1, 4, MO_DIM);
     if (on && c->src)
-        mo_vl(lx, 0, 4, MO_INK);
+        mo_ofill(ox, lx, 0, 1, 4, MO_INK);
 }
-/* the light (cu_leds' canvas, 4 x 4 cells): how far the cord moves its destination now, lit or dim */
-static void mo_cu_led(uint32_t lv)
+/* the light (4 x 4 cells from ox pixels, as mo_cu_bar): how far the cord moves its destination now, lit or dim (a disc
+ * of radius 1: three cells square) */
+static void mo_cu_led(uint32_t lv, int32_t ox)
 {
-    cv_begin(8, 8, MO_BG);
     if (lv)
-        mo_disc(1, 1, 1, lv > 3u ? MO_INK : MO_DIM);
+        mo_ofill(ox, 0, 0, 3, 3, lv > 3u ? MO_INK : MO_DIM);
 }
 /* the MOD SCOPE (mscope.c) in h cells from row top, columns from x 4: the source dim and dashed, the mod's move in ink over it,
  * on one scale (the dotted middle 0, the top +100 %), each column its lowest to highest joined to the last; a GATE's

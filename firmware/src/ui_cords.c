@@ -161,6 +161,20 @@ static uint32_t cu_slot(uint32_t k)
     return cord_ui_sel / 4u * 4u + k;
 }
 
+#define CU_LED_X 9                                      /* 8 x 8 at (9, a row's y + 28) */
+#define CU_LED_Y 28
+#define CU_BAR_X 24                                     /* the move: 210 x 9 at (24, a row's y + 27), the bar 206 long */
+#define CU_BAR_W 210
+#define CU_BAR_Y 27
+/* cord i's light and move now, as cu_leds keeps them: its key (the light's level 0..8 in the low four bits), *s its
+ * share, *bk where its mark is */
+static uint8_t cu_state(uint32_t i, const cord_t *c, int32_t *s, uint8_t *bk)
+{
+    int32_t v = *s = cord_live(c) ? cord_share(c) : 0;
+    uint8_t lv = (uint8_t)(cord_live(c) ? 1 + clamp((v < 0 ? -v : v) * 7 / 32768, 0, 7) : 0);
+    *bk = (uint8_t)(clamp(v, -32768, 32768) * 103 / 32768 + 104);   /* (the mark's x, 1 .. 207) */
+    return (uint8_t)(lv | (i == cord_ui_sel) << 4 | (ux.pal & 7u) << 5);
+}
 static uint8_t cu_led_was[4];                           /* (cu_leds: the step each light shows; a row redrawn: none) */
 static uint8_t cu_bar_was[4];                           /* (and where each row's live mark is) */
 static int8_t cu_mv_was[4];                             /* (and its move now: a mod of mods turns it) */
@@ -195,6 +209,20 @@ static void cu_rows(void)
         char b[16];
 #if MELODEE_LOOK
         mo_cu_row(i + 1u, c, sel, on);
+        {                                               /* its move and light in the row, sent with it once: not the
+                                                         * row blank under them, then they (all four flickered as
+                                                         * KNOB 2 scrolled) */
+            int32_t s;
+            uint8_t bk;
+            cu_led_was[k] = cu_state(i, c, &s, &bk);
+            cu_bar_was[k] = bk;
+            cu_mv_was[k] = (int8_t)cu_now(c);
+            cv_oy = CU_BAR_Y;
+            mo_cu_bar(c, s, CU_BAR_X);
+            cv_oy = CU_LED_Y;
+            mo_cu_led(cu_led_was[k] & 15u, CU_LED_X);
+            cv_oy = 0;
+        }
         cv_blit(0, (uint32_t)(CU_Y + (int32_t)k * CU_H));
         continue;
 #endif
@@ -221,10 +249,6 @@ static void cu_rows(void)
  * the bar from the middle (its AMOUNT, or OFFSET; a +- mod's both ways), with a mark where it moves the destination
  * now. Each its own small
  * canvas, sent when it changes */
-#define CU_LED_X 9                                      /* 8 x 8 at (9, a row's y + 28) */
-#define CU_LED_Y 28
-#define CU_BAR_X 24                                     /* the move: 210 x 9 at (24, a row's y + 27), the bar 206 long */
-#define CU_BAR_W 210
 static void cu_bar(uint32_t k, const cord_t *c, int sel, int32_t s)
 {
     uint16_t bg = sel ? T_LIFT : T_BG;
@@ -232,8 +256,9 @@ static void cu_bar(uint32_t k, const cord_t *c, int sel, int32_t s)
     int32_t a = cu_now(c), m = 104, x = 2 + (a + 100) * 206 / 200, lx = m + clamp(s, -32768, 32768) * 103 / 32768;
     int32_t d = x < m ? m - x : x - m;
 #if MELODEE_LOOK
-    mo_cu_bar(c, s);
-    cv_blit(CU_BAR_X, (uint32_t)(CU_Y + (int32_t)k * CU_H + 27));
+    cv_begin(CU_BAR_W, 9, T_BG);                        /* (Mono: MO_BG) */
+    mo_cu_bar(c, s, 0);
+    cv_blit(CU_BAR_X, (uint32_t)(CU_Y + (int32_t)k * CU_H + CU_BAR_Y));
     return;
 #endif
     cv_begin(CU_BAR_W, 9, bg);
@@ -244,7 +269,7 @@ static void cu_bar(uint32_t k, const cord_t *c, int sel, int32_t s)
     cv_rect(m, 1, 1, 7, T_MID);
     if (on && c->src)                                   /* (a fixed OFFSET: no mark, the bar says it) */
         cv_rect(lx - 1, 0, 3, 9, T_TEXT);
-    cv_blit(CU_BAR_X, (uint32_t)(CU_Y + (int32_t)k * CU_H + 27));
+    cv_blit(CU_BAR_X, (uint32_t)(CU_Y + (int32_t)k * CU_H + CU_BAR_Y));
 }
 static void cu_leds(void)
 {
@@ -254,10 +279,8 @@ static void cu_leds(void)
         uint32_t i = cu_slot(k);
         const cord_t *c = cord_get(i);
         if (i >= CORD_LIVE) continue;
-        int32_t s = cord_live(c) ? cord_share(c) : 0;
-        uint8_t lv = (uint8_t)(cord_live(c) ? 1 + clamp((s < 0 ? -s : s) * 7 / 32768, 0, 7) : 0);
-        uint8_t key = (uint8_t)(lv | (i == cord_ui_sel) << 4 | (ux.pal & 7u) << 5);
-        uint8_t bk = (uint8_t)(clamp(s, -32768, 32768) * 103 / 32768 + 104);   /* (the mark's x, 1 .. 207) */
+        int32_t s;
+        uint8_t bk, key = cu_state(i, c, &s, &bk), lv = key & 15u;
         uint16_t bg = i == cord_ui_sel ? T_LIFT : T_BG;
         if (ui.force || bk != cu_bar_was[k] || cu_now(c) != cu_mv_was[k]) {
             cu_bar_was[k] = bk;
@@ -268,7 +291,8 @@ static void cu_leds(void)
             continue;
         was[k] = key;
 #if MELODEE_LOOK
-        mo_cu_led(lv);
+        cv_begin(8, 8, T_BG);
+        mo_cu_led(lv, 0);
 #else
         cv_begin(8, 8, bg);
         if (lv)
