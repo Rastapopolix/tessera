@@ -40,7 +40,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **PRESETS** on an EDIT page | The next / previous section (FM6: Algo, OP1 to OP6, Pitch, LFO, Ctrl, Store) |
 | **FX** | The insert and send effects |
 | **GLO** | MIXER, PERF (MACRO 1 to 4, the project's mod sources), GLOBAL (BUDGET: the shared voices), SYSTEM, MIDI OUT, PIECE (the piece's LENGTH, SHAPE, END), CHAIN (the project's FORM, PHRASE, WANDER), ENTRIES (tracks out and back in), LANDSCAPE (the music as rain on water) |
-| On **MIXER**: **KNOB 1** to **4** / with **OCT+** held | Level / pan of track 1 to 4; the keys mute and solo as with GLO held |
+| On **MIXER**: **KNOB 1** to **4** / with **OCT-** held | Level / pan of track 1 to 4; the keys mute and solo as with GLO held |
 | **SAVE** | USER (save the sound), PROJECT, PRESETS |
 
 ## Quick layers: hold GLO or SCL
@@ -137,7 +137,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | GLO > MIDI OUT: **OCT+** held, **KNOB 1** to **4** | Each track's MIDI OUT TRANSPOSE, a semitone a click |
 | GLO > MIDI OUT: **OCT-** held, **KNOB 1** to **4** | Each track's SOUND, ON or OFF (OFF: MIDI only) |
 | GLO > PIECE: **OCT+** / **OCT-** held, **KNOB 1** to **4** | SHAPE USER's points 1 to 4 / 5 to 8 |
-| GLO > CHAIN: **OCT+** held, **KNOB 1** to **4** | Each place's REPEAT, 1 to 8 phrases |
+| GLO > CHAIN: **OCT-** held, **KNOB 1** to **4** | Each place's REPEAT, 1 to 8 phrases |
 | GLO > ENTRIES: **OCT+** held, **KNOB 1** to **4** | Each track's ROLE for ENTRIES: AUTO, BASS, RHYTHM, HARMONY, MELODY, ANCHOR |
 | GLO > ENTRIES: **OCT-** held, **KNOB 1** to **4** | Each track's ORDER for ENTRIES: AUTO (by ROLE), 1ST to 4TH (in in that order, out the other way) |
 | GLO: a black key on a track ENTRIES took out | Brings it back now, left alone until the next section |
@@ -149,20 +149,21 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | GEN: **KNOB 1** | MODE: STEP, ARP or a generator |
 | GEN: **OCT+** held | The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD, CHORD, ATLAS, CONSTL, ANSWER (SOURCE, ORDER, SHIFT, SPACE) |
 | EVOLVE: **OCT+** held | GRAVITY (a generator); HOW: DRIFT, ADORN, SERIAL (a STEP track) |
-| TIMING: **OCT+** held | **KNOB 1** SPLIT, the chance a step plays at half its division; **KNOB 2** HOW: DOUBLE, PUSH, MIX |
+| TIMING: **OCT-** held | **KNOB 1** SPLIT, the chance a step plays at half its division; **KNOB 2** HOW: DOUBLE, PUSH, MIX |
 | ATLAS: **OCT+** + a black key | The fourth part's sound (TOM, CLAP, OPEN HAT, RIM, BELL) |
 | CHORD, PROG USER: **OCT+** + keys | One chord a key, its root the key's note |
 | AWAKE: a white key | Picks that step: KNOB 1 its A, KNOB 2 its B; the key again lets it go |
 | EVOLVE: **KNOB 4** (ROLL) | A new seed a click; turn back for the last one |
 | GEN, TWEAK: **OCT-** held, **KNOB 1** | RANDOM: new values for the page's knobs; turn back to put them back |
 | FORM: **KNOB 3** (CLEAR) | Forgets B and C |
-| FORM: **OCT+** held, **KNOB 1** | DEVELOP: each return of a section varies a little (0: exact) |
-| FORM: **OCT+** held, **KNOB 2** / **3** | The CHAIN: FOLLOW or OWN; SKIP, the chance it lags a phrase |
-| FORM: **OCT+** held, **KNOB 4** | ROLE: this track's part for ENTRIES |
+| FORM: **OCT-** held, **KNOB 1** | DEVELOP: each return of a section varies a little (0: exact) |
+| FORM: **OCT-** held, **KNOB 2** / **3** | The CHAIN: FOLLOW or OWN; SKIP, the chance it lags a phrase |
+| FORM: **OCT-** held, **KNOB 4** | ROLE: this track's part for ENTRIES |
 | TWEAK: **OCT+** held, **KNOB 2** / **3** | FOLLOW's HOW (SAME, CHORD, CONTRA, BASS, CANON1 to 8); RHYTHM (OWN, SOURCE, BOTH) |
 | TWEAK: **OCT+** held, **KNOB 4** | FOLLOW's HOLD (shown as T3H2 on FOLLOW) |
 | MODS: **OCT+** | The picked mod: +- (both ways) / + (one way) / GATE |
-| MODS: **OCT+** held, **KNOB 4** / **KNOB 3** | A GATE's threshold / a CC mod's CC number |
+| MODS: **OCT-** held, **KNOB 4** / **KNOB 3** | A GATE's threshold / a CC mod's CC number |
+| MODS: **OCT+** held | MODS' sheet: each MIX bus's Mode (SUM, MAX, MIN, DIFF) and Lag |
 | MATRIX: **OCT+** | Opens the picked mod in MODS |
 
 ## MIDI LEARN

@@ -613,16 +613,16 @@ static int test_gen_family(void)
         turn(EN_K1, -1);
         bad += check("TIMING: back to x1, kept there", tessera.sub_ratch[tr] == 0u);
         tessera_param_set(tr, TX_SUB_CHANCE, 100);
-        uint32_t oct = song.octave, shape = tessera.sub_shape[tr], hum = tessera.sub_human[tr];   /* OCT+ held: KNOB 1 SPLIT, KNOB 2 HOW; 3 and 4 nothing, no octave */
-        btn_down(B_OCTUP);
+        uint32_t oct = song.octave, shape = tessera.sub_shape[tr], hum = tessera.sub_human[tr];   /* OCT- held: KNOB 1 SPLIT, KNOB 2 HOW; 3 and 4 nothing, no octave */
+        btn_down(B_OCTDN);
         frame();
         turn(EN_K1, 5);
         turn(EN_K2, 1);
         turn(EN_K3, 2);
         turn(EN_K4, -2);
-        btn_up(B_OCTUP);
+        btn_up(B_OCTDN);
         frame();
-        bad += check("TIMING, OCT+ held: SPLIT up, HOW PUSH, the rest untouched, no octave",
+        bad += check("TIMING, OCT- held: SPLIT up, HOW PUSH, the rest untouched, no octave",
                      tessera.sub_split[tr] > 0u && tessera.sub_split_how[tr] == TESS_SPLIT_PUSH &&
                      tessera.sub_ratch[tr] == 0u && tessera.sub_shape[tr] == shape && tessera.sub_human[tr] == hum && song.octave == oct);
         tessera_param_set(tr, TX_SUB_SPLIT, 0);
@@ -801,17 +801,17 @@ static int test_form_develop(void)
     go_title("FORM");
     frame();
     oct = song.octave;
-    fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
-    host_pressed |= 1u << panel.btn[B_OCTUP];
+    fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+    host_pressed |= 1u << panel.btn[B_OCTDN];
     frame();
     turn(EN_K1, 1);
     turn(EN_K1, 1);
     turn(EN_K1, 1);
     help_find(0);
-    bad += check("FORM, OCT+ held: KNOB 1 is DEVELOP (3 clicks: 6 %), its help; FORM itself unchanged",
+    bad += check("FORM, OCT- held: KNOB 1 is DEVELOP (3 clicks: 6 %), its help; FORM itself unchanged",
                  tessera.fm_dev[song.sel] == 6u && help.pid == PID_TESS(TX_FM_DEVELOP) && pid_find(help.pid) &&
                  !tessera.evolve[song.sel].form);
-    fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
     frame();
     turn(EN_K1, 1);
     bad += check("..let go: the octave as it was, KNOB 1 is FORM again (AB), DEVELOP kept",
@@ -1209,7 +1209,12 @@ static int test_oct_grammar_m0(void)
     bad += check("M0: EVOLVE: the OCT- LED lit (ROLL ALL)", (oct_leds() & 1u) != 0u);
     go_title("FORM");
     frame();
-    bad += check("M0: FORM: no OCT- layer, the OCT- LED dark", (oct_leds() & 1u) == 0u);
+    bad += check("M2: FORM on a generator track: the OCT- LED lit (DEVELOP's layer)", (oct_leds() & 1u) != 0u);
+    go_title("ENV");
+    frame();
+    bad += check("M0: ENV: no OCT- layer, the OCT- LED dark", (oct_leds() & 1u) == 0u);
+    go_title("FORM");
+    frame();
     hold(B_OCTDN);
     bad += check("M0: FORM, OCT- held and let go: still FORM (once Back, #519 covered only 7 pages)",
                  !ui.home && str_eq(cur_page()->title, "FORM"));
@@ -1229,6 +1234,25 @@ static int test_oct_grammar_m0(void)
     press(B_OCTDN);
     press(B_OCTDN);
     bad += check("M0: OCT- tapped: the sheet closed, then Back to Stage", !pop.on && ui.home);
+    go_title("FORM");
+    frame();
+    ui.msg_t = 0;
+    hold(B_OCTUP);
+    bad += check("M1: FORM, OCT+ held: NO SHEET, still FORM, nothing opened", msg_is("NO SHEET") && !pop.on &&
+                 !ui.home && str_eq(cur_page()->title, "FORM"));
+    cord_clear();
+    cord_set(0, &(cord_t){.src = CS_LFO, .dst = CD_CUTOFF, .amount = 40});
+    go_page(GR_CORDS);
+    cord_ui_sel = 0;                                    /* (mod 1 picked) */
+    frame();
+    ui.msg_t = 0;
+    hold(B_OCTUP);
+    bad += check("M1: MODS, OCT+ held: MODS' sheet (the MIX buses), the mod's BI / UNI unchanged",
+                 pop.on == POP_SHEET && str_eq(pop.title, "Mods") && !msg_is("NO SHEET") && !cord_get(0)->uni);
+    press(B_OCTDN);
+    press(B_OCTUP);
+    bad += check("M1: MODS, OCT+ tapped: still the mod's BI / UNI", cord_get(0)->uni != 0u);
+    cord_clear();
     return bad;
 }
 static int test_page_random(void)
@@ -1429,13 +1453,13 @@ static int test_cords_page(void)
     press(B_OCTUP);
     bad += check("..OCT+ again: GATE, its threshold at the LFO's middle", c->uni == CU_GATE && !c->offset &&
                  c->amount == 25 && pop.on != POP_SHEET);
-    fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
-    host_pressed |= 1u << panel.btn[B_OCTUP];
+    fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+    host_pressed |= 1u << panel.btn[B_OCTDN];
     frame();
     turn(EN_K1 + 3u, 5);
-    fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
     frame();
-    bad += check("..OCT+ held + KNOB 4: the GATE's threshold (+5 %), the amount kept, its release no OCT+",
+    bad += check("..OCT- held + KNOB 4: the GATE's threshold (+5 %), the amount kept, its release no Back",
                  c->uni == CU_GATE && c->offset == 5 && c->amount == 25);
     press(B_OCTUP);
     bad += check("..OCT+ again: HOLD, the threshold gone", c->uni == CU_HOLD && !c->offset && pop.on != POP_SHEET &&
@@ -1447,8 +1471,23 @@ static int test_cords_page(void)
     for (i = 0; i < 6u; i++) { frame(); fm1_ms += 200u; host_ticks += 200000u; }   /* (held 1.2 s) */
     fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
     frame();
-    bad += check("..OCT+ held on MODS, let go untouched: no sound sheet (MODS is not a sound page), the mod as it was (BI)",
-                 pop.on != POP_SHEET && !c->uni);
+    bad += check("..OCT+ held on MODS, let go untouched: MODS' sheet (the MIX buses), the mod as it was (BI)",
+                 pop.on == POP_SHEET && str_eq(pop.title, "Mods") && pop.n == 4u && !c->uni);
+    turn(EN_K1 + 1u, 1);
+    bad += check("..the sheet's KNOB 2 on its first row: BUS A's MODE, SUM to MAX", cord_bus_get(0) == CB_MAX &&
+                 tessera_param_get(0, TX_BUSA_MODE) == CB_MAX && pop.on == POP_SHEET);
+    turn(EN_K1 + 1u, -1);
+    turn(EN_K1 + 1u, -1);
+    bad += check("..a MODE goes round: MAX, SUM, back to DIFF", cord_bus_get(0) == CB_DIFF);
+    turn(EN_K1, 1);
+    turn(EN_K1 + 1u, -1);
+    bad += check("..its second row: BUS A's LAG, stops at OFF", pop.sel == 1u && !cord_bus_get(1));
+    turn(EN_K1 + 1u, 1);
+    turn(EN_K1 + 1u, 1);
+    press(B_OCTUP);
+    bad += check("..KNOB 2 to 20 ms, OCT+ steps it on (50 ms) and closes the sheet, the mod as it was",
+                 cord_bus_get(1) == 3u && pop.on != POP_SHEET && !c->uni && cur_page()->graph == GR_CORDS);
+    cord_bus_set(0, CB_SUM); cord_bus_set(1, 0);
     press(B_OCTUP);
     turn(EN_K1 + 3u, -3);
     bad += check("KNOB 4: the amount down by 3 (22 %)", c->amount == 22);
@@ -1477,11 +1516,11 @@ static int test_cords_page(void)
         cord_set(0, &b); cord_ui_sel = 0; ui.force = 1; frame();
         n0 = cord_cc_num(0);
         fm1_ms += 3000u; host_ticks += 3000000u;
-        fm1_in.buttons |= 1u << panel.btn[B_OCTUP];
-        host_pressed |= 1u << panel.btn[B_OCTUP];
+        fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+        host_pressed |= 1u << panel.btn[B_OCTDN];
         frame();
         turn(EN_K1 + 2u, 3);
-        fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
+        fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
         frame();
         c = cord_get(0);
         ok = cord_cc_num(0) == n0 + 3u && c->dst == CD_CC && !c->uni && cur_page()->graph == GR_CORDS;
@@ -1492,8 +1531,8 @@ static int test_cords_page(void)
         turn(EN_K1 + 2u, 1);
         fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
         frame();
-        ok &= cord_cc_num(0) == n0 + 3u;
-        bad += check("MODS CC mod: OCT+ held + KNOB 3 its CC number (+3), no UNI from the release; OCT- held leaves it", ok);
+        ok &= cord_cc_num(0) == n0 + 4u && !c->uni && cur_page()->graph == GR_CORDS;
+        bad += check("MODS CC mod: OCT- held + KNOB 3 its CC number (+3, then +1), no UNI, no Back from the release", ok);
     }
     cord_clear();
     return bad;
@@ -1557,8 +1596,8 @@ static int test_cords_scroll_playing(void)
         cords_blocks(24);
     }
     bad += check("..KNOB 3 a detent at a time through every track's destinations, then the send effects' and the mods' "
-                 "moves, FILL and TEMPO (once, no track), playing between: the last reached (TEMPO)",
-                 k->dst == CD_TEMPO && k->dst_trk == 0u && (seen & 1u) && pop.on == POP_PICK);
+                 "moves, FILL, TEMPO and the MIX buses (once, no track), playing between: the last reached (BUS B)",
+                 k->dst == CD_BUS_B && k->dst_trk == 0u && (seen & 1u) && pop.on == POP_PICK);
     {                                                   /* the list: each entry back to itself, the send effects' last */
         uint32_t v, round = 1, globals = 0;
         int32_t tr;
@@ -1570,8 +1609,8 @@ static int test_cords_scroll_playing(void)
             if (cu_global(e.dst)) globals++, round &= tr == -1 && v > NTRK * CU_DPT;
             else round &= tr == (int32_t)e.dst_trk;
         }
-        bad += check("..its list: every entry to its destination and back, the 10 send effects', 16 M AMT, FILL and "
-                     "TEMPO once, with no track", round && globals == 28u && CU_NDST == 1u + NTRK * CU_DPT + 28u);
+        bad += check("..its list: every entry to its destination and back, the 10 send effects', 16 M AMT, FILL, "
+                     "TEMPO, BUS A and B once, with no track", round && globals == 30u && CU_NDST == 1u + NTRK * CU_DPT + 30u);
     }
     for (i = 0; i < CU_NDST + 4u; i++) {
         turn(EN_K1 + 2u, -1);
@@ -2535,12 +2574,12 @@ static int test_tracks(void)
     bad += check("MIXER: KNOB 1..4 are tracks 1..4's LEVEL (the selected track stays)", ok);
     {
         int8_t oct = song.octave;
-        btn_down(B_OCTUP); frame();
+        btn_down(B_OCTDN); frame();
         turn(EN_K2, 3);
-        btn_up(B_OCTUP); frame();
-        bad += check("MIXER, OCT+ held: KNOB 2 is track 2's PAN; letting OCT+ go shifts no octave",
+        btn_up(B_OCTDN); frame();
+        bad += check("MIXER, OCT- held: KNOB 2 is track 2's PAN; letting OCT- go shifts no octave, stays on MIXER",
                      trk[1].p[P_PAN] == before[1].p[P_PAN] + 3 && trk[1].p[P_LEVEL] == before[1].p[P_LEVEL] - 2 &&
-                     song.octave == oct);
+                     song.octave == oct && !ui.home);
     }
     key_down(key_at(1, 0)); frame(); key_up(key_at(1, 0)); frame();
     ok = trk[0].p[P_MUTE] == 1 && !gates();
@@ -6383,7 +6422,7 @@ static int test_bughunt_ui2(void)
             }
         bad += check("STEP entry with CHRD: POLY the chord, MONO its root, as live recording writes", ok);
     }
-    {   /* 3. MIXER: KNOB k lights strip k's LEVEL ring in text (its own strip, none other); OCT+ held: its PAN value
+    {   /* 3. MIXER: KNOB k lights strip k's LEVEL ring in text (its own strip, none other); OCT- held: its PAN value
          * (ui_pages.c pv_strip) */
         uint32_t k, j, ok = 1;
         int32_t Y = PV_STRIP_TOP;
@@ -6402,13 +6441,13 @@ static int test_bughunt_ui2(void)
         ui_power_on();
         settings.palette = 1; palette_set(1);
         go_page(GR_TRK); frame(); frame();
-        btn_down(B_OCTUP); frame();
+        btn_down(B_OCTDN); frame();
         turn(EN_K3, 1);
         ui.force = 1; frame();
         ok &= text_in(CARD_X(2) + 5, Y + 145, CARD_X(2) + 26, Y + 157) > 0u &&
               text_in(CARD_X(2) + 7, Y + 50, CARD_X(2) + 15, Y + 90) == 0u;
-        btn_up(B_OCTUP); frame();
-        bad += check("MIXER: KNOB k lights strip k's LEVEL ring, no other; OCT+ held, its PAN", ok);
+        btn_up(B_OCTDN); frame();
+        bad += check("MIXER: KNOB k lights strip k's LEVEL ring, no other; OCT- held, its PAN", ok);
     }
     {   /* 4. renaming the slot the music came from renames the music: the next SAVE prefills the new name */
         char pn[16];

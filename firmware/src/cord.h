@@ -27,8 +27,10 @@
  *             full move down halves it; BPM itself is left alone; destination track 0 as CK_GLOBAL
  *   CK_CC     a MIDI CC out on the destination track's MIDI OUT channel (cord.c cord_cc_tick, issue #374): its number
  *             the cord's own (cord_cc_num, OCT+ held + KNOB 3 on MODS); a track's, as CK_BLOCK (before CK_GLOBAL: the
- *             kinds are not saved, only the codes) */
-enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO };
+ *             kinds are not saved, only the codes)
+ *   CK_BUS    a project MIX bus, BUS A or B (cord.c cord_bus_tick): its cords combined by its MODE, then its LAG, each
+ *             block; read back as the source BUS A / BUS B one block later; destination track 0 as CK_GLOBAL */
+enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO, CK_BUS };
 
 /* Destination codes. FROZEN: saved cords keep them; new ones at the end, a retired one stays as a gap */
 enum {
@@ -71,6 +73,7 @@ enum {
     CD_CC,                                                          /* a MIDI CC out (CK_CC), issue #374 */
     CD_SUB_SPLIT,                                                   /* TIMING's SPLIT */
     CD_SEQ_DIR,                                                     /* the STEP pattern's DIR (seq_dir.c) */
+    CD_BUS_A, CD_BUS_B,                                             /* the project's MIX buses (CK_BUS) */
     CD_N
 };
 
@@ -111,6 +114,7 @@ enum {
     CS_OCHD1, CS_OCHD2, CS_OCHD3, CS_OCHD4, CS_OCHD5, CS_OCHD6, CS_OCHD7, CS_OCHD8,   /* its OCHD: 64 s .. 2.4 s */
     CS_ENERGY,                    /* the project's tide (ARC, energy.c), the same for every track: -1 sparse .. 1 full */
     CS_MACRO1, CS_MACRO2, CS_MACRO3, CS_MACRO4,   /* GLO > PERF's knobs, the project's: 0..1 */
+    CS_BUSA, CS_BUSB,             /* the project's MIX buses as their cords make them, one block late: -1..1 */
     CS_N
 };
 
@@ -126,6 +130,15 @@ typedef struct {                  /* one cord, as saved (6 bytes: uni rides in s
  * OFFSET then moves nothing), CU_HOLD the source as it is (as BI), sampled once a bar of the destination's track and
  * held to the next (cord_hold_bar; saved as BI, the project's part TSP_MHOLD marks it: older firmware plays it live) */
 enum { CU_BI, CU_UNI, CU_GATE, CU_HOLD };
+
+/* MIX buses (CK_BUS, CS_BUSA): each bus's MODE, how its cords combine: SUM (clamped to -1..1), MAX, MIN, DIFF (|a - b|
+ * of its first two cords); and LAG, a slew on the result, the time a whole 0..1 move takes (OFF none) */
+enum { CB_SUM, CB_MAX, CB_MIN, CB_DIFF, CB_MODES };
+#define CB_LAGS 12u               /* LAG: OFF, 10 ms .. 20 s (pid.c TX_N_BUSLAG; saved: append only) */
+/* setting k: 0 BUS A MODE, 1 its LAG, 2 BUS B MODE, 3 its LAG (TX_BUSA_MODE ..); set: clamped to its range */
+uint32_t cord_bus_get(uint32_t k);
+void cord_bus_set(uint32_t k, int32_t v);
+int32_t cord_bus_now(uint32_t b);                   /* bus b's value now (Q15), as the source BUS A / B reads it */
 
 const char *cord_src_name(uint32_t code);           /* <= 7 characters; 0: no such source */
 int cord_set(uint32_t i, const cord_t *c);          /* i < CORD_LIVE; out of range: refused (0), nothing changed */

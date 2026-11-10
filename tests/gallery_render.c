@@ -28,7 +28,7 @@ static const gshot_t SHOTS[] = {
     {"form", G_FORM, 0}, {"gen_tweak", G_SCENE, S_GEN_TWEAK}, {"gen_tweak2", G_SCENE, S_GEN_TWEAK2},
     {"gen_length", G_SCENE, S_GEN_LENGTH}, {"gen_seed", G_SCENE, S_GEN_SEED},
     {"cords", G_SCENE, S_CORDS}, {"mods_live", G_SCENE, S_MODS_LIVE_GEN}, {"matrix", G_SCENE, S_MATRIX},
-    {"mods_scope", G_SCENE, S_MODS_SCOPE}, {"mods_scope_gate", G_SCENE, S_MODS_SCOPE_GATE},
+    {"mods_scope", G_SCENE, S_MODS_SCOPE}, {"mods_scope_gate", G_SCENE, S_MODS_SCOPE_GATE}, {"mods_scope_bus", G_SCENE, S_MODS_SCOPE_BUS},
     {"organic", G_SCENE, S_ORGANIC}, {"mod_shortcut", G_SCENE, S_MOD_SHORTCUT},
     {"help", G_SCENE, S_HELP},
     {"oracle_osc", G_ORACLE, 0}, {"oracle_filter", G_ORACLE, 1}, {"oracle_env", G_ORACLE, 2},

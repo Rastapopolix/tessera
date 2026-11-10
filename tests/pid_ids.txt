@@ -276,3 +276,7 @@
 0x29b PATTERN DIR              track 0..5 def 0
 0x29c CHORD STRUM              track 0..60 def 0
 0x29d CHORD DIR                track 0..2 def 0
+0x29e BUS A MODE               global 0..3 def 0
+0x29f BUS A LAG                global 0..11 def 0
+0x2a0 BUS B MODE               global 0..3 def 0
+0x2a1 BUS B LAG                global 0..11 def 0

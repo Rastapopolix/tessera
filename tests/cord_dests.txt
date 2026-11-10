@@ -105,3 +105,5 @@
 102 CC       cc    -
 103 SPLIT    step  TIMING SPLIT
 104 DIR      step  PATTERN DIR
+105 BUS A    bus   -
+106 BUS B    bus   -

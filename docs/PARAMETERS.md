@@ -294,6 +294,10 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x29B | PATTERN DIR | FWD, BACK, PEND, PONG, RAND, DRUNK | FWD | The order the STEP pattern plays its steps in, each pattern its own. FWD: 1 to the end. BACK: the end to 1. PEND: there and back, the ends once. PONG: there and back, the ends twice. RAND: any step. DRUNK: a step on or back at random. A pass is still LEN steps, so conditions, Accumulate and pattern changes keep the bar. The pattern's sheet (OCT+ held), Direction. |
 | 0x29C | CHORD STRUM | 0 to 60 ms | 0 | A chord's notes start this many ms apart, as a strummed chord (in all at most half its length). OFF: together. OCT- held on GEN, KNOB 2. |
 | 0x29D | CHORD DIR | UP, DOWN, ALT | UP | A strum's first note: UP the lowest, DOWN the highest, ALT turns round each strike. OCT- held on GEN, KNOB 3. |
+| 0x29E | BUS A MODE | SUM, MAX, MIN, DIFF | SUM | How the mods into BUS A combine. SUM: added, -1..1. MAX: the highest (two gates: either, OR). MIN: the lowest (both, AND). DIFF: how far apart the first two are (two gates: one or the other, XOR). The source BUS A reads the result a block later. MODS' sheet (OCT+ held). |
+| 0x29F | BUS A LAG | OFF, 10 ms, 20 ms, 50 ms, 100 ms, 200 ms, 500 ms, 1 s, 2 s, 5 s, 10 s, 20 s | OFF | A slew on BUS A: the time a whole move from 0 to 1 takes, up or down. A gate into a lagged bus rises and falls as an envelope. OFF: none. MODS' sheet (OCT+ held). |
+| 0x2A0 | BUS B MODE | SUM, MAX, MIN, DIFF | SUM | How the mods into BUS B combine. SUM: added, -1..1. MAX: the highest (two gates: either, OR). MIN: the lowest (both, AND). DIFF: how far apart the first two are (two gates: one or the other, XOR). The source BUS B reads the result a block later. MODS' sheet (OCT+ held). |
+| 0x2A1 | BUS B LAG | OFF, 10 ms, 20 ms, 50 ms, 100 ms, 200 ms, 500 ms, 1 s, 2 s, 5 s, 10 s, 20 s | OFF | A slew on BUS B: the time a whole move from 0 to 1 takes, up or down. A gate into a lagged bus rises and falls as an envelope. OFF: none. MODS' sheet (OCT+ held). |
 
 ## Mods
 
@@ -331,6 +335,8 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | MACRO 2 | GLO > PERF's KNOB 2, the project's: 0 .. 100 % |
 | MACRO 3 | GLO > PERF's KNOB 3, the project's: 0 .. 100 % |
 | MACRO 4 | GLO > PERF's KNOB 4, the project's: 0 .. 100 % |
+| BUS A | the project's MIX bus A: its mods combined by its MODE, slewed by its LAG (MODS' sheet), one block late: -100 .. 100 % |
+| BUS B | the project's MIX bus B, as BUS A |
 
 | Destination | Moved at | What it moves |
 | --- | --- | --- |
@@ -434,6 +440,8 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | M16 AMT | another mod's move, each block | MOD 16's AMOUNT (a fixed mod's OFFSET), turned by another mod |
 | FILL | the project's FILL, each block | the project's FILL (steps set to FILL / NOT FILL), held while the move is past half |
 | TEMPO | the project's tempo on CLK INT, each block | the project's tempo on CLK INT: a full move up doubles it, down halves it (BPM stays as set) |
-| CC | a MIDI CC out, each block | a MIDI CC out on the track's MIDI OUT channel, its number set with OCT+ held and KNOB 3 |
+| CC | a MIDI CC out, each block | a MIDI CC out on the track's MIDI OUT channel, its number set with OCT- held and KNOB 3 |
 | SPLIT | the generator's step | TIMING's SPLIT: the chance a step plays at half its division |
 | DIR | the generator's step | the STEP pattern's DIR, stepped: FWD BACK PEND PONG RAND DRUNK from the pattern's own |
+| BUS A | the project's MIX bus, each block | the project's MIX bus A: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS A |
+| BUS B | the project's MIX bus, each block | the project's MIX bus B: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS B |

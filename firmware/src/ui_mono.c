@@ -291,12 +291,12 @@ static int32_t mo_batt_right(int32_t bat)
  * the header's line filling under it until the sheet opens (OCT_HOLD_MS); 0..1000, -1 none */
 static int32_t mo_sheet_hold(const char **name)
 {
-    static const char *const NM[5] = {"", "SOUND", "SONG", "PATTERN", "PATTERNS"};
+    static const char *const NM[6] = {"", "SOUND", "SONG", "PATTERN", "PATTERNS", "MODS"};
     uint32_t k, ms;
     if (!ui.oct_t0 || (ui.oct_t0 & 2u) || !((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u) || gen_layer_on())
         return -1;
     k = page_sheet();
-    if (!k || k > 4u)
+    if (!k || k > 5u)
         return -1;
     ms = (fm1_ticks() - (ui.oct_t0 & ~3u)) / (1000u * FM1_TICKS_PER_US);
     if (ms < 150u)
@@ -2976,8 +2976,12 @@ static void mo_cu_side(int32_t x, uint32_t tr, const char *name, int has_trk, in
             w[n - 1u < sizeof w - 1u ? n - 1u : sizeof w - 1u] = 0;
         mo_abbr(a, w);
         if (mk) {
-            if (str_len(a) > 3u)
+            n = str_len(w);
+            if (str_len(a) > 3u) {                      /* (a name ending in one letter or digit keeps it: BUS A, */
+                if (n > 2u && w[n - 2u] == ' ')         /* SWARM 3, MACRO 1 as BUA SW3 MC1, not BUS SWR MCR) */
+                    a[2] = w[n - 1u];
                 a[3] = 0;
+            }
             n = str_len(a), a[n] = mk, a[n + 1u] = 0;
         }
     }

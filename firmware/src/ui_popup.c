@@ -183,6 +183,20 @@ static const sheet_row_t SHEET_PATTERN_KIT[] = {{"Quantize",nt_quantize_v,nt_qua
 /* PATTERNS' (OCT+): the selected track's pattern; Copy to: its place picked on the grid (ui_patterns.c) */
 static const sheet_row_t SHEET_PATTERNS[] = {{"Copy to\x85", 0, 0, ptc_start, 0}, {"Delete pattern", 0, 0, 0, CF_DEL_PAT}};
 
+/* MODS' (OCT+ held; OCT+ tapped stays the mod's BI / UNI): the project's MIX buses, each one's MODE and LAG (cord.c,
+ * TX_BUSA_MODE ..: KNOB 2 turns it, OCT+ steps it; a MODE goes round, a LAG stops at its ends) */
+static void bus_v(char *b, uint32_t k) { str_cpy(b, pid_desc(PID_TESS(TX_BUSA_MODE + k), 0)->names[cord_bus_get(k)], 8); }
+static void bus_turn(uint32_t k, int32_t s)
+{
+    int32_t v = (int32_t)cord_bus_get(k) + (s > 0 ? 1 : -1);
+    tessera_param_set(0, TX_BUSA_MODE + k, k & 1u ? v : (v + CB_MODES) % CB_MODES);
+}
+#define BUS_ROW_(k) static void bus_v##k(char *b) { bus_v(b, k); } static void bus_t##k(int32_t s) { bus_turn(k, s); }
+BUS_ROW_(0) BUS_ROW_(1) BUS_ROW_(2) BUS_ROW_(3)
+#undef BUS_ROW_
+static const sheet_row_t SHEET_MODS[] = {{"Bus A mode", bus_v0, bus_t0, 0, 0}, {"Bus A lag", bus_v1, bus_t1, 0, 0},
+    {"Bus B mode", bus_v2, bus_t2, 0, 0}, {"Bus B lag", bus_v3, bus_t3, 0, 0}};
+
 /* the step's: NOTES' note at the cursor (KNOB 2 its length, velocity, chance), the drum grid's hit of the lane there */
 static void st_cap(uint32_t c, char *b)                 /* NOTES' column c as its chip shows it (draw_columns) */
 {
@@ -348,7 +362,7 @@ none:                                                   /* (KNOB 2 or a key plac
     return 1;
 }
 
-/* the page's sheet: 0 none, 1 the sound's, 2 the song's, 3 the pattern's, 4 PATTERNS' */
+/* the page's sheet: 0 none, 1 the sound's, 2 the song's, 3 the pattern's, 4 PATTERNS', 5 MODS' */
 static uint32_t page_sheet(void)
 {
     uint32_t fam;
@@ -356,8 +370,10 @@ static uint32_t page_sheet(void)
         return 0;
     if (ui.home)
         return 1;
-    if (cur_page()->graph == GR_CORDS || cur_page()->graph == GR_MATRIX)
-        return 0;                                       /* (MODS, MATRIX: OCT+ is the mod's, tapped or held: Theo 2026-10-19) */
+    if (cur_page()->graph == GR_CORDS)
+        return 5;                                       /* (MODS: OCT+ tapped is the mod's BI / UNI, held its sheet) */
+    if (cur_page()->graph == GR_MATRIX)
+        return 0;                                       /* (MATRIX: OCT+ opens the mod in MODS, tapped or held) */
     if (cur_page()->graph == GR_SONG)
         return 2;
     if (cur_page()->graph == GR_PATGRID)
@@ -396,6 +412,9 @@ static void page_sheet_open(void)
         sheet_open(t, nm, SHEET_PATTERNS, NELEM(SHEET_PATTERNS));
         break;
     }
+    case 5:
+        sheet_open("Mods", "mix buses", SHEET_MODS, NELEM(SHEET_MODS));
+        break;
     default:
         break;
     }

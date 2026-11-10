@@ -6,7 +6,7 @@
  * MOD's: KNOB 1 the source (--, then T1 LFO .. T4 NOTE), 2 the cord, 3 the destination (--, then T1 PITCH ..), 4 the
  * amount. A cord without a source is a fixed move: KNOB 4 its OFFSET. OCT+: a bipolar source's direction, +- (both
  * ways from the knob) or + (folded to 0..1: one way, "+" after its name), then GATE (">" after its name, Mono "^": all while the
- * source is over a threshold, none under it; OCT+ held + KNOB 4 sets the threshold); the mod's own (cord.h uni), not
+ * source is over a threshold, none under it; OCT- held + KNOB 4 sets the threshold); the mod's own (cord.h uni), not
  * the LFO page's POL BI/UNI (cord.c cord_lfo_raw); then HOLD ("=" after its name: the source as +-, sampled once a
  * bar of the destination's track and held). Included by ui_pages.c. */
 
@@ -391,7 +391,7 @@ static void cu_polarity(void)
         ui_message(c.uni == CU_HOLD ? "HOLD A BAR" : c.uni ? "+ ONE WAY" : "+- BOTH WAYS");
     ui.force = 1;
 }
-/* OCT+ held + KNOB 4 on a GATE mod: its threshold (ui_input.c: OCT+'s tap eaten) */
+/* OCT- held + KNOB 4 on a GATE mod: its threshold (ui_input.c: OCT-'s tap eaten) */
 static int cu_thresh_knob(int32_t steps)
 {
     cord_t c = *cord_get(cord_ui_sel);
@@ -405,7 +405,7 @@ static int cu_thresh_knob(int32_t steps)
     return 1;
 }
 
-/* OCT+ held + KNOB 3 on a CC mod: its CC number, 0..119 (ui_input.c: OCT+'s tap eaten; KNOB 4 a GATE's threshold) */
+/* OCT- held + KNOB 3 on a CC mod: its CC number, 0..119 (ui_input.c: OCT-'s tap eaten; KNOB 4 a GATE's threshold) */
 static int cu_cc_knob(int32_t steps)
 {
     const cord_t *c = cord_get(cord_ui_sel);
