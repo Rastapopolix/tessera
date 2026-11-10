@@ -21,6 +21,8 @@
   webapp/editor/index.html          editor.html (+ fukiai.ttf, FUKIAI-LICENSE.txt, fm1backup.js, demos/*.tsp)
   webapp/editor-beta/               the beta's editor, the same files from the beta's own web/ and demos/ (its Demo
                                     projects hold the CHK test projects); goes with the beta
+  webapp/sim-beta/                  the beta's web simulator (web/sim/build.sh --release X.Y-betaN, publish_beta.py
+                                    --sim), when given; goes with the beta; both simulators offer the other
   words/                            the screen reader's words files (web/words: tools/gen_words.py), every one ever
                                     made: a device points the reader at its own, so none is changed or dropped
   webapp/sim/                       the web simulator (web/sim/build.sh: build/sim/), when given; else kept as published
@@ -115,6 +117,8 @@ def channel(spec, label, stem, branch):
             "builtAt": spec["builtAt"], "pkg": {k: "../../firmware/" + f[3] for k, f in files.items()}}
     if spec.get("notes"):                           # (a beta's: what is new, docs/BETA_NOTES.md, publish_beta.py)
         meta["notes"] = spec["notes"]
+    if spec.get("sim"):                             # (a beta's simulator, webapp/sim-beta/: publish_beta.py --sim)
+        meta["sim"] = spec["sim"]
     return files, meta
 
 
@@ -132,6 +136,19 @@ def copy_editor(ed):
             shutil.copy(f, ed / "demos" / sub / f.name)
 
 
+def copy_sim(sim, dest, version=None):
+    """web/sim/build.sh's output (index.html, worklet.js, melodee.wasm) into dest; with version, it must be that
+    build (web/sim/build.sh --release VERSION: the page says Tessera vVERSION)"""
+    sim = Path(sim)
+    if not (sim / "melodee.wasm").exists():
+        raise SystemExit(f"{sim}: no melodee.wasm (web/sim/build.sh)")
+    if version and f"Tessera v{version.lower()}" not in (sim / "index.html").read_text(encoding="utf-8"):
+        raise SystemExit(f"{sim}: not the {version} simulator (web/sim/build.sh --release {version})")
+    dest.mkdir(parents=True, exist_ok=True)
+    for f in ("index.html", "worklet.js", "melodee.wasm"):
+        shutil.copy(sim / f, dest / f)
+
+
 def version_key(version):
     """X.Y[.Z][-suffix] -> (X, Y, Z): the release a version is or leads to"""
     m = re.match(r"(\d+)\.(\d+)(?:\.(\d+))?", version)
@@ -140,11 +157,12 @@ def version_key(version):
     return tuple(int(n or 0) for n in m.groups())
 
 
-def main(pkg, single, version, out, nightly=None, installer_only=False, synth=None, sim=None, beta=None):
+def main(pkg, single, version, out, nightly=None, installer_only=False, synth=None, sim=None, beta=None, beta_sim=None):
     """beta: the beta ({pkg: {dual, single}, version X.Y[.Z]-betaN, commit, builtAt}); None keeps what the site has,
     False drops it. A beta whose release is out (X.Y[.Z] at or before this release's) is dropped too. synth: the synth-only firmware ({pkg: {dual, single}, version, commit, builtAt, web}: web, the synth-only
     branch's web/ for its editor); None keeps what the site has. sim: web/sim/build.sh's output (build/sim); None
-    keeps what the site has"""
+    keeps what the site has. beta_sim: the beta's simulator (web/sim/build.sh --release, its version), to
+    webapp/sim-beta/ with a beta published now; a beta published without one, or none, drops the old one"""
     pkg, single, out = Path(pkg), Path(single), Path(out)
     raw, product = check_package(pkg)
     raw1, product1 = check_package(single)
@@ -232,6 +250,11 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
         copy_editor(bed)
     elif not beta_meta and bed.exists():
         shutil.rmtree(bed)
+    bsim = out / "webapp" / "sim-beta"
+    if beta_meta and beta_sim:
+        copy_sim(beta_sim, bsim, beta_meta["version"])
+    elif bsim.exists() and (not beta_meta or beta_editor):   # (no beta, or a new one without its simulator)
+        shutil.rmtree(bsim)
     if not installer_only:                          # the project page, its screens and the brand pictures
         home = (HERE / "home" / "index.html").read_text(encoding="utf-8")
         for mark in ("@VERSION@", "@FWSC@", "@FWSC1@"):
@@ -247,13 +270,7 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
                 if f.suffix in (".png", ".svg", ".mp4", ".jpg"):
                     shutil.copy(f, dest / f.name)
     if sim and not installer_only:
-        sim = Path(sim)
-        if not (sim / "melodee.wasm").exists():
-            raise SystemExit(f"{sim}: no melodee.wasm (web/sim/build.sh)")
-        dest = out / "webapp" / "sim"
-        dest.mkdir(parents=True, exist_ok=True)
-        for f in ("index.html", "worklet.js", "melodee.wasm"):
-            shutil.copy(sim / f, dest / f)
+        copy_sim(sim, out / "webapp" / "sim")
     print(f"site: {out}: webapp/installer ({len(html)} B), webapp/editor, firmware/{name} ({len(raw)} B) and "
           f"{name1} ({len(raw1)} B), {product}" + (f"; beta {beta_meta['version']}" if beta_meta else "") +
           (f"; synth {synth_meta['version']}" if synth_meta else ""))

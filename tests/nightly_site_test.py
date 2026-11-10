@@ -134,9 +134,30 @@ class NightlySite(unittest.TestCase):
             self.assertEqual((manifest["version"], manifest["product"], manifest["branch"], manifest["commit"]),
                              ("3.3-beta1", "FM-1_833", "develop", commit))
             self.assertIn('"dual": "../../firmware/tessera-3.3-beta1.fwsc"', installer.read_text())
-            # A second beta replaces the first; a 3.2.x patch release keeps it.
+            self.assertNotIn("sim", manifest)
+            # Its simulator (web/sim/build.sh --release: the page names the version) goes to webapp/sim-beta/, beside
+            # the release's, and beta.json points the simulators at it; a build of another version is refused.
+            sim = root / "sim"
+            sim.mkdir()
+            (sim / "worklet.js").write_text("worklet")
+            (sim / "melodee.wasm").write_bytes(b"wasm")
+            (sim / "index.html").write_text("<small>Tessera v3.3-beta1 · ...</small>")
+            (site / "webapp/sim").mkdir()
+            (site / "webapp/sim/index.html").write_text("the release's simulator")
+            with self.assertRaises(SystemExit):
+                publish_beta(site, str(beta), str(beta1), "3.3-beta2", commit, "2026-11-05T19:00:00Z", sim=str(sim))
+            publish_beta(site, str(beta), str(beta1), "3.3-beta1", commit, "2026-11-04T19:00:00Z", sim=str(sim))
+            self.assertEqual(json.loads((site / "firmware/beta.json").read_text())["sim"], "../sim-beta/")
+            self.assertEqual((site / "webapp/sim-beta/melodee.wasm").read_bytes(), b"wasm")
+            self.assertEqual((site / "webapp/sim/index.html").read_text(), "the release's simulator")
+            main(dual, single, "3.2.2", site, installer_only=True)   # (a patch release keeps it)
+            self.assertTrue((site / "webapp/sim-beta/index.html").exists())
+            self.assertIn('"sim": "../sim-beta/"', installer.read_text())
+            # A second beta replaces the first (without a simulator: the old one goes); a 3.2.x patch release keeps it.
             publish_beta(site, str(beta), str(beta1), "3.3-beta2", commit, "2026-11-05T19:00:00Z")
             self.assertFalse((site / "firmware/tessera-3.3-beta1.fwsc").exists())
+            self.assertFalse((site / "webapp/sim-beta").exists())
+            self.assertNotIn("sim", json.loads((site / "firmware/beta.json").read_text()))
             main(dual, single, "3.2.3", site, installer_only=True)
             self.assertIn('"version": "3.3-beta2"', installer.read_text())
             self.assertTrue((site / "firmware/tessera-3.3-beta2.fwsc").exists())
@@ -153,9 +174,12 @@ class NightlySite(unittest.TestCase):
             self.assertFalse((site / "firmware/beta.json").exists())
             self.assertFalse(any(site.glob("firmware/tessera-3.3-beta*.fwsc")))
             self.assertFalse((site / "webapp/editor-beta").exists())
-            # --off takes a beta off before then.
-            publish_beta(site, str(beta), str(beta1), "3.4-beta1", commit, "2026-11-07T19:00:00Z")
+            # --off takes a beta off before then, its simulator too.
+            (sim / "index.html").write_text("<small>Tessera v3.4-beta1 · ...</small>")
+            publish_beta(site, str(beta), str(beta1), "3.4-beta1", commit, "2026-11-07T19:00:00Z", sim=str(sim))
+            self.assertTrue((site / "webapp/sim-beta/index.html").exists())
             publish_beta(site, off=True)
+            self.assertFalse((site / "webapp/sim-beta").exists())
             self.assertIn('"beta": null', installer.read_text())
             self.assertFalse(any(site.glob("firmware/tessera-3.4-beta*.fwsc")))
             self.assertFalse((site / "webapp/editor-beta").exists())

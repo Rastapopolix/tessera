@@ -221,6 +221,11 @@ project page stay as they are) and opens a pull request from `site-beta-VERSION`
 live. A new beta replaces the last. The release the beta leads to (3.3 here, or later) takes it off by itself when
 `make_site.py` publishes it; `python3 web/publish_beta.py docs --off` takes it off before then.
 
+The workflow also builds the beta's web simulator (Emscripten 6.0.12, `web/sim/build.sh --release 3.3-beta1`) and
+publishes it with `publish_beta.py --sim build/sim` to `webapp/sim-beta/`: `beta.json` names it, and both simulators
+then show a Release / Beta choice. By hand, the same `--sim` on the `publish_beta.py` line. The beta's simulator goes
+with its beta (a new beta without one, the release, `--off`).
+
 ### Recover a black-screen FM-1
 
 Builds with the boot stub can recover an interrupted application write after power loss.
