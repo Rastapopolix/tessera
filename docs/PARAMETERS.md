@@ -337,6 +337,7 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | MACRO 4 | GLO > PERF's KNOB 4, the project's: 0 .. 100 % |
 | BUS A | the project's MIX bus A: its mods combined by its MODE, slewed by its LAG (MODS' sheet), one block late: -100 .. 100 % |
 | BUS B | the project's MIX bus B, as BUS A |
+| EOC | the track's LFO cycle start as a gate: 1 from each wrap of the LFO until an eighth of the cycle has passed, else 0 (a TRIG or PLAY phase set is not a wrap). Onto FILL, a GATE mod or a bus it marks each cycle |
 
 | Destination | Moved at | What it moves |
 | --- | --- | --- |

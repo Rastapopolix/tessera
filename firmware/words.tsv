@@ -62,6 +62,7 @@ C64	C 64
 IN ->	in, to
 PROJ	project
 EXT	external
+EOC	end of cycle
 CLK	clock
 QNT	quantize
 HOLD GLO QUICK	hold global for its quick page

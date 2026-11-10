@@ -27,7 +27,7 @@ static uint32_t mscope_bars(uint32_t s)
 {
     if (s == CS_DRIFT || (s >= CS_OCHD1 && s <= CS_OCHD8)) return 16u;
     if ((s >= CS_TORPOR && s <= CS_INERTIA) || s == CS_ENERGY) return 64u;
-    if (s >= CS_MACRO1 && s < CS_N) return 4u;
+    if (s >= CS_MACRO1 && s < CS_EOC) return 4u;
     if (s == CS_LFO || s == CS_SLEW) return 2u;         /* (then two to six cycles: mscope_take) */
     return 1u;                                          /* the notes' own: ENV, VEL, GATE, NOTE, CV, S&H .. */
 }

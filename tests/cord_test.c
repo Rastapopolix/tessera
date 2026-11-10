@@ -439,6 +439,47 @@ static int32_t bus_after(uint32_t blocks)
     while (blocks--) cord_tick();
     return cord_bus_now(0);
 }
+/* EOC (CS_EOC): high from a wrap of the track's LFO to an eighth of the cycle, a track's source; a phase set is not a wrap */
+static int eoc(void)
+{
+    int fails = bad;
+    track_t *t;
+    uint32_t i, n_blk, high = 0, rises = 0, prev = 0, cyc = 0;
+    host_tracks_init();
+    tessera_reset();
+    t = &trk[1];
+    t->p[P_LRATE] = 100;
+    t->p[P_LSYNC] = 0;
+    check("eoc: the source after the buses, a track's, 0..1, named EOC",
+          !strcmp(cord_src_name(CS_EOC), "EOC") && CS_EOC == CS_BUSB + 1u && !CS_PROJECT(CS_EOC) && CS_PROJECT(CS_BUSB) &&
+          !cord_bipolar(CS_EOC, 1));
+    t->lfo_ph = 0xFFFFFFFFu - LFO_INC[100] * 3u;   /* three blocks to the wrap */
+    for (i = 0; i < 4u; i++) {
+        track_lfo_tick(t);
+        check("...low until the wrap", i == 3u ? cord_src(CS_EOC, 1) == 32767 : cord_src(CS_EOC, 1) == 0);
+    }
+    check("...another track's EOC stays low (its own LFO)", cord_src(CS_EOC, 0) == 0);
+    n_blk = 3u * (0xFFFFFFFFu / LFO_INC[100]);
+    for (i = 0; i < n_blk; i++) {
+        uint32_t now;
+        track_lfo_tick(t);
+        now = cord_src(CS_EOC, 1) != 0;
+        high += now;
+        rises += now && !prev;
+        cyc += t->lfo_ph < LFO_INC[100];
+        check("...never high past an eighth of the cycle", !now || t->lfo_ph < 0x20000000u + LFO_INC[100]);
+        prev = now;
+    }
+    check("...one rise a cycle (3 cycles)", rises + 1u >= cyc && rises <= cyc + 1u && rises >= 2u && rises <= 4u);
+    check("...high for about an eighth of the time", high * 8u + 16u * cyc >= n_blk && high * 8u <= n_blk + 16u * cyc);
+    t->lfo_ph = 0x30000000u;                          /* a TRIG / PLAY phase set mid-cycle: not a wrap */
+    track_lfo_tick(t);
+    t->lfo_ph = 0;
+    check("...a phase reset to 0 makes no pulse", cord_src(CS_EOC, 1) == 0);
+    track_lfo_tick(t);
+    check("...nor the block after", cord_src(CS_EOC, 1) == 0);
+    return bad - fails;
+}
 static int buses(void)
 {
     int fails = bad;
@@ -449,7 +490,7 @@ static int buses(void)
     tessera_reset();
     check("buses: BUS A / B the sources after MACRO 4, bipolar, the project's (none of a track's)",
           !strcmp(cord_src_name(CS_BUSA), "BUS A") && !strcmp(cord_src_name(CS_BUSB), "BUS B") && cord_bipolar(CS_BUSA, 0) &&
-          cord_bipolar(CS_BUSB, 3) && CS_BUSA == CS_MACRO4 + 1u && CS_N == CS_BUSB + 1u);
+          cord_bipolar(CS_BUSB, 3) && CS_BUSA == CS_MACRO4 + 1u && CS_EOC == CS_BUSB + 1u && CS_N == CS_EOC + 1u);
     check("...a new project: SUM, LAG OFF, both at 0", !cord_bus_get(0) && !cord_bus_get(1) && !cord_bus_get(2) &&
           !cord_bus_get(3) && !cord_bus_now(0) && !cord_bus_now(1));
     cord_tick();
@@ -972,6 +1013,7 @@ int main(int argc, char **argv)
     (void)adoption();
     (void)drift_and_defaults();
     (void)buses();
+    (void)eoc();
 
     {
         FILE *f = fopen(golden, update ? "w" : "r");

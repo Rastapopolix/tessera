@@ -15,7 +15,7 @@ static uint32_t mx_cell(uint32_t from, uint32_t to, uint32_t k, uint32_t *i)
     *i = CORD_LIVE;
     for (j = 0; j < CORD_LIVE; j++) {
         const cord_t *c = cord_get(j);
-        if (!cord_live(c) || !c->src || c->src >= CS_BUSA || c->src_trk != from || c->dst_trk != to ||
+        if (!cord_live(c) || !c->src || (c->src >= CS_BUSA && c->src != CS_EOC) || c->src_trk != from || c->dst_trk != to ||
             cord_dest(c->dst)->kind >= CK_GLOBAL)
             continue;
         if (n++ == k) *i = j;
@@ -30,7 +30,7 @@ static uint32_t mx_level(uint32_t from, uint32_t to)
     for (j = 0; j < CORD_LIVE; j++) {
         const cord_t *c = cord_get(j);
         int32_t s;
-        if (!cord_live(c) || !c->src || c->src >= CS_BUSA || c->src_trk != from || c->dst_trk != to ||
+        if (!cord_live(c) || !c->src || (c->src >= CS_BUSA && c->src != CS_EOC) || c->src_trk != from || c->dst_trk != to ||
             cord_dest(c->dst)->kind >= CK_GLOBAL)
             continue;
         s = cord_share(c);
