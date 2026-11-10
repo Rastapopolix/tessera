@@ -5,14 +5,14 @@ Shown on the installer under the Beta choice (web/publish_beta.py --notes, from 
 release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again for the next beta.
 
 ## New since 3.4.1
-- PAT GEN: each of a track's 8 patterns can keep its own generator setup, so switching pattern switches the generator. Off by default: EVOLVE, OCT+ held, KNOB 4.
-- ROLL ALL: every generator track gets a new seed at once, and one step back undoes it. EVOLVE, OCT- held, KNOB 4.
-- ENTRIES ORDER: choose the order tracks come in (AUTO, 1ST to 4TH); they leave in reverse. ENTRIES, OCT- held.
+- PAT GEN: each of a track's 8 patterns can keep its own generator setup, so switching pattern switches the generator. Off by default: EVOLVE, OCT- held, KNOB 3.
+- ROLL ALL: every generator track gets a new seed at once, and one step back undoes it. EVOLVE, OCT- held, KNOB 1.
+- ENTRIES ORDER: choose the order tracks come in (AUTO, 1ST to 4TH); they leave in reverse. ENTRIES' sheet (OCT+ held).
 - PRINT ARP: hold REC on an ARP track to print what the arpeggio played into STEP, as on a generator track; EDIT held brings the ARP back (#530).
 - USER scales: four 12-note scales of your own, USER1 to USER4, in the USER family on SCL > SCALES. With one picked, a key adds its note or takes it out. Every generator, QNT and FOLLOW play it; it is kept with the settings and saved with a project that plays it.
 - RANDOM: hold OCT- on GEN or TWEAK and turn KNOB 1 right for new values on the page's knobs, each inside its range; turn left to put them back. MODE, the seed and FOLLOW never change (#529).
 - ARP modes: DNUP (down, then up) and RND1 (one random order, repeated until the held notes change; from the track's SEED, so PLAY replays it). SEQ > ARP, KNOB 1.
-- MIDI OUT DRUM MAP: GM or ROW, for drum machines that take their tracks as a row of notes (such as the Analog Rytm). MIDI OUT, OCT+ and OCT- held.
+- MIDI OUT DRUM MAP: GM or ROW, for drum machines that take their tracks as a row of notes (such as the Analog Rytm). MIDI OUT's sheet (OCT+ held).
 - CHORD STRUM: a CHORD track's notes start a few ms apart, like a played chord. STRUM (OFF, 5 to 60 ms) and DIR (UP, DOWN, ALT) on GEN, OCT- held, KNOB 2 and 3. Short strikes strum tighter; all notes end together.
 - STEP direction: each pattern plays FWD, BACK, PEND, PONG, RAND or DRUNK. Direction row on the pattern's sheet (OCT+ held on PATTERN, NOTES, or GEN with STEP or ARP). RAND and DRUNK follow the SEED, so PLAY replays them.
 - DIR as a mod destination: a cord can move a pattern's direction at each step; a GATE mod switches direction while its source is high.
@@ -21,7 +21,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 - HOLD mods: OCT+ on MODS cycles +- / + / GATE / HOLD. HOLD takes the source at the start of each bar and keeps it until the next.
 - MOD SCOPE: hold OCT- on MODS to see the picked mod move over time (solid) over its source (dashed), a GATE's threshold as a line across it. The window follows the source: a bar for the notes' own, 2 to 16 bars for an LFO, up to 64 for TIDE and ENERGY. Let go and the rows come back. The screen reader says its shape once as it opens.
 - Chord kinds SUS2, 7SUS4, ADD9 and MAJ6 on CHRD (SCL > CHORD, or the CHORD track's layer), after POW: fixed shapes on any note, for the chord keys, MIDI in, step entry, the arp and the CHORD generator.
-- Keys: OCT+ goes in, OCT- goes back. Held, OCT+ opens the page's sheet (the header shows its name and a line filling until it opens; a page without one says NO SHEET) and OCT- gives the page's second set of knobs while held. Moved from OCT+ held to OCT- held: FORM (DEVELOP, CHAIN, SKIP, ROLE), TIMING (SPLIT, HOW), ENERGY (DEPTH), CHAIN (REPEAT), MIXER (PAN) and MODS (a GATE's threshold, a CC mod's number). The OCT- LED is lit on pages that have such a layer. GEN, EVOLVE, TWEAK, MIDI OUT, ENTRIES and PIECE move in a later beta.
+- Keys: OCT+ goes in, OCT- goes back. Held, OCT+ opens the page's sheet (the header shows its name and a line filling until it opens; a page without one says NO SHEET) and OCT- gives the page's second set of knobs while held. Moved from OCT+ held to OCT- held: FORM (DEVELOP, CHAIN, SKIP, ROLE), TIMING (SPLIT, HOW), ENERGY (DEPTH), CHAIN (REPEAT), MIXER (PAN) and MODS (a GATE's threshold, a CC mod's number). The OCT- LED is lit on pages that have such a layer. GEN, EVOLVE, TWEAK, MIDI OUT, ENTRIES and PIECE move in a later beta. Since then the rest moved too, so OCT+ held has no knob layer anywhere: GEN (KNOB 1 RANDOM, KNOB 2 to 4 the generator's layer; QUAD's RANGE, CONSTL's SIZE, ATLAS' fourth part, ANSWER's SPACE and CHORD's CHRD, VOIC and BREATH / LEN on a new GEN sheet), EVOLVE (KNOB 1 ROLL ALL, KNOB 3 PAT GEN, KNOB 4 GRAVITY or HOW), TWEAK (FOLLOW's HOW, RHYTHM, HOLD), MIDI OUT (TRANSPOSE; SOUND and DRUM MAP on its sheet), ENTRIES (ROLE; ORDER on its sheet) and PIECE (SHAPE USER: KNOB 1 picks a point, KNOB 2 its level, the shape in view). ATLAS' part keys and CHORD USER's entry are on OCT- held too.
 - MIX buses: BUS A and BUS B, two mixers for mods. Send any mods into a bus (the end of KNOB 3's list on MODS) and use the bus as a source (the end of KNOB 1's list). Hold OCT+ on MODS for its sheet: each bus's Mode (SUM, MAX, MIN, DIFF: with gates OR, AND, XOR) and Lag (OFF, 10 ms to 20 s: a gate into a lagged bus is an envelope). A bus can feed itself, one block late, safely.
 
 ## Fixed
