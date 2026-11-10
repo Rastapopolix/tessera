@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 /* List pages (docs/design README "Pages: lists or knobs", mock/r6_pages SCL): the pages one sets and leaves as a list,
  * a row a setting: KNOB 1 the row, KNOB 2 its value, OCT+ a list value's whole list (SCL's Scale: the SCALES page),
- * OCT- Stage. Only what has more than four settings (Kerem, 2026-10-11: four or fewer are a page's own four knobs;
+ * OCT- nothing (HOME: Stage). Only what has more than four settings (Kerem, 2026-10-11: four or fewer are a page's own four knobs;
  * TEMPO, GLOBAL, SYSTEM stay knobs too: BPM and TUNE are turned while playing). A list may gather a few
  * pages (VOICE 1-3, FM6's LFO and controller pages): the
  * others leave the SELECT round (list_gone). The rows' labels and values are the pages' own (draw_column captures

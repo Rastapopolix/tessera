@@ -216,6 +216,7 @@ static const page_t *cur_page(void) { return page_over ? page_over : &PAGES[ui.p
 /* the one hold time (the key grammar, tessera-notes audit-2026-11 M0): a button held this long is a hold (btn_hold:
  * OCT+'s sheet, HOME's menu, REC's take ..), and an OCT held this long is never a tap (ui_input.c oct_taps) */
 #define OCT_HOLD_MS 700u
+#define OCT_TAP_MS 250u                     /* an OCT- let go later was a hold, never Back (oct-taps.md) */
 /* OCT- held, not OCT+: a page's second set of knobs (the key grammar's rule 2: FORM, TIMING, ENERGY, CHAIN, MIXER, MODS ..) */
 static int oct_dn_only(void)
 {
@@ -442,8 +443,12 @@ static void seq_midi_reset(void)                    /* a new page/track ends MID
     memset(step_midi_keys, 0, sizeof step_midi_keys);
 }
 static void undo_seal(void);
+/* a page opened from FM6's map (1) or from MATRIX (2), drill_pg: OCT- goes back there (ui_input.c; tessera-notes
+ * oct-taps.md); any other way to a page forgets it */
+static uint8_t drill_to, drill_pg;
 static void page_entered(void)
 {
+    drill_to = 0;
     const page_t *pg = cur_page();
     if (pg->graph == GR_SCALE_PICKER && !ui.scale_picker_seen) {
         ui.scale_family = (uint8_t)(tune_scale() || uscale_on() ? SCALE_FAM_USER :
@@ -716,6 +721,7 @@ static void open_global(void)
 static void go_home(void)
 {
     ui.home = 1;
+    drill_to = 0;
     ui.entry_open = 0;
     ui.hot_t = 0;
     song.seq_mode = 0;

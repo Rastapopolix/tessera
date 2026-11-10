@@ -66,9 +66,11 @@ static void notes_oct_say(void)                         /* (NOTES: no octave LED
     if (notes_oct())
         ui_say("KEYS OCT ", song.octave ? b : "0");
 }
-static int oct_enter_ok(void)                           /* OCT+ would do something here */
+static int oct_enter_ok(void)                           /* OCT+ tapped would do something here (not the sheet: held) */
 {
-    return list_on() || slot_kind() || motion_page() || (!ui.home && cur_page()->graph == GR_SCALE_PICKER) || page_sheet() || pop.on || smap.on || (!ui.home && cur_page()->graph == GR_BROWSE) || ptc_on();
+    uint32_t g = ui.home ? GR_NONE : cur_page()->graph;
+    return list_on() || slot_kind() || motion_page() || g == GR_SCALE_PICKER || g == GR_BROWSE || g == GR_ROLL ||
+           g == GR_CORDS || g == GR_MATRIX || pop.on || smap.on || ptc_on();
 }
 
 /* the OCT LEDs, bit 0 OCT-, bit 1 OCT+. In the dialogs, the menu and on action pages OCT- (back) is
@@ -1407,8 +1409,9 @@ static void act_do(void)
 static uint8_t oct_eat;                                 /* OCT taps not to come (held for a sheet, used in a combo) */
 static uint8_t oct_deferred;                            /* OCT+ pressed on Stage (its sheet when held): the octave on
                                                          * release */
-/* a held OCT- is a hold, never a tap (the key grammar, M0; issue #519 had it on seven pages): held past OCT_HOLD_MS on
- * any page it is never Back (its layer, or a peek: letting go returns). OCT+ has no layer since M3: held, it opens the
+/* a held OCT- is a hold, never a tap (the key grammar, M0; issue #519 had it on seven pages): held past OCT_TAP_MS on
+ * any page it is never Back (its layer shows from the first frame: letting go returns; tessera-notes oct-taps.md, 3.5-beta5
+ * had 700 ms and a short look at TWEAK's layer went to Stage). OCT+ has no layer since M3: held, it opens the
  * page's sheet or says NO SHEET (btn_hold eats its release), and where it Enters it still does on release however long
  * (PATTERNS' Copy to: OCT+ pastes). The menu, dialogs, sheets and the map keep their taps */
 static int oct_hold_page(uint32_t k)                    /* k 0 OCT-, 1 OCT+ */
@@ -1431,7 +1434,7 @@ static uint32_t oct_taps(uint32_t pressed, int here)
         chord = 1;
     tap = down & ~now;
     for (k = 0; k < 2u; k++)
-        if (((tap >> k) & 1u) && fm1_ms - t_down[k] > OCT_HOLD_MS && oct_hold_page(k))
+        if (((tap >> k) & 1u) && fm1_ms - t_down[k] > OCT_TAP_MS && oct_hold_page(k))
             tap &= ~(1u << k);
     down &= (uint8_t)now;
     if (chord) {
@@ -2461,22 +2464,19 @@ static void ui_input(void)
     if(bulk.on && !slot_kind() && !ui.home && cur_page()->graph==GR_ROLL && (oct&2u)){
         notes_bulk_sheet_open();oct=0;
     } else if((bulk.on||ui.note_move||ui.note_copy)&&(oct&1u)){bulk_clear();oct=0;}
-    if (list_on() && (oct & 2u)) {                      /* a list page: OCT+ the row's list, OCT- Stage */
+    if (list_on() && (oct & 2u)) {                      /* a list page: OCT+ the row's list */
         list_enter();
-    } else if (list_on() && (oct & 1u)) {
-        go_home();
     } else if (!ui.home && cur_page()->graph == GR_MATRIX && (oct & 2u)) {   /* MATRIX: OCT+ opens the mod in MODS */
         mx_open();
     } else if (!ui.home && cur_page()->graph == GR_CORDS && (oct & 2u)) {    /* MODS: OCT+ the mod's BI / UNI */
         cu_polarity();
     } else if (act_cols() && (oct & 2u)) {              /* action pages: OCT+ does the picked action, */
         act_do();
-    } else if (act_cols() && (oct & 1u)) {              /* OCT- drops it, or (none picked) goes HOME */
-        if (ui.act)
-            ui.act = 0;
-        else
-            go_home();
-    } else if (oct_nav() && !ui.layer && (oct & 2u)) {  /* any other page: OCT+ Enter (a slot's sheet, the page's), */
+    } else if (act_cols() && ui.act && (oct & 1u)) {    /* OCT- drops it (none picked: Back, below) */
+        ui.act = 0;
+    } else if (oct_nav() && !ui.layer && (oct & 2u)) {  /* any other page: OCT+ Enter what is under the cursor (a slot,
+                                                         * a note); nothing to enter: nothing (the sheet is OCT+ held;
+                                                         * tessera-notes oct-taps.md) */
         if (ptc_on())                                   /* PATTERNS' Copy to: there */
             ptc_paste(0);
         else if (slot_kind())
@@ -2485,11 +2485,11 @@ static void ui_input(void)
             motion_enter();
         else if (cur_page()->graph == GR_SCALE_PICKER)  /* SCALES: done, SCL's list */
             scales_back();
-        else if (step_enter())
-            ;
-        else if (page_sheet())
-            page_sheet_open();
-    } else if (oct_nav() && !ui.layer && (oct & 1u)) {  /* OCT- Esc: SCALES back to SCL's list, else Stage */
+        else
+            step_enter();
+    } else if (oct_nav() && !ui.layer && (oct & 1u)) {  /* OCT- Back: SCALES to SCL's list, a page opened from the map
+                                                         * or MATRIX back there; on any other page nothing (HOME goes
+                                                         * to Stage; OCT- there is the knob layer's key) */
         uint32_t p = page_titled("SCL");
         if (str_eq(cur_page()->title, "SCALES") && p < NPAGES) {
             ui.page = (uint8_t)p;
@@ -2504,8 +2504,14 @@ static void ui_input(void)
             motion_unguard(f);
             ui_message("QUEUE CLEARED");
             ui.force = 1;
-        } else {
-            go_home();
+        } else if (drill_to && ui.page == drill_pg) {
+            if (drill_to == 1u) {
+                smap_open();                            /* (the map: on the tile of this page) */
+            } else if ((p = page_titled("MATRIX")) < NPAGES) {
+                ui.page = (uint8_t)p;
+                page_entered();
+            }
+            drill_to = 0;
         }
     }
     if (!ch_user_entry_on()) ch_user_first = 1;       /* (OCT- let go: the next key starts a new progression) */

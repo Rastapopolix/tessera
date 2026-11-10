@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 /* Slot pages (docs/design: mock/r6_popups PROJECT, README "Popups"): PROJECT, SAVE > USER and FM6 STORE as the
  * list of their slots alone, no action chips. KNOB 1 / 2 the slot, OCT+ its sheet (the page's own actions: act_do
- * in ui_input.c does them, as the chips did), OCT- Stage. The slot picked is a card: its name larger, a line about it,
+ * in ui_input.c does them, as the chips did), OCT- nothing (HOME: Stage). The slot picked is a card: its name larger, a line about it,
  * PROJECT's Boot chip on the one power-on loads. PROJECT's last row, New song: OCT+ starts it. Included by ui_draw.c */
 enum { SK_NONE, SK_PROJECT, SK_USER, SK_FM6 };
 #define SL_Y0 22                                        /* the rows from y 22: 22 px, the card 46 */
