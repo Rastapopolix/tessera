@@ -855,6 +855,28 @@ track_render_done:
     }
     return nr;
 }
+/* a part no one hears (mix.c mix_unheard): its voices make no sound. A released one ends now; a held one keeps its
+ * place, still, and goes on when the part is heard again (a note off ends it in the meantime). The part's LFO, its
+ * engine's block and an engine switch's fade go on, as on a silent part (#586) */
+static uint32_t track_render_unheard(track_t *t, int32_t *out, uint32_t n)
+{
+    uint32_t i, held = 0;
+    for (i = 0; i < NVOICE; i++) {
+        voice_t *v = &t->v[i];
+        if (!v->active)
+            continue;
+        if (v->gate)
+            held |= 1u << i;
+        else
+            v->stage = 0, v->env = v->env_out = 0;
+        v->active = 0;
+    }
+    track_render_audio(t, out, n, 0);
+    for (i = 0; i < NVOICE; i++)
+        if ((held >> i) & 1u)
+            t->v[i].active = 1;
+    return 0;
+}
 /* Direct callers receive a cleared buffer even for silence. The mixer can
  * omit that write when neither a DIST tail nor a stutter needs the zeros. */
 static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
