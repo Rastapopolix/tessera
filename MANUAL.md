@@ -1830,7 +1830,7 @@ directly or through a USB hub, and after a moment the screen says **USB MIDI REA
 2. In your DAW choose **Tessera Out** as the audio input device and enable its inputs 1 to 4. Inputs 1 to 4 are tracks 1 to 4.
 3. Make four audio tracks, each set to one input, and arm and record. Recording works while the FM-1 plays.
 
-**What is in a stem.** A track's own sound after its insert effects, its LEVEL, MUTE/SOLO and [Entries](#entries-tracks-out-and-back-in), so a muted track is silent in its stem. It is taken before PAN and SPREAD, so each stem is mono, and without the shared SEND and RETURN effects, MASTER and the limiter. The stems are dry of the shared reverb and delay; USB VOLUME and the volume pot do not change them.
+**What is in a stem.** A track's own sound after its insert effects, its LEVEL, MUTE/SOLO and [Entries](#entries-tracks-out-and-back-in), so a muted track is silent in its stem. It is taken before PAN and SPREAD, so each stem is mono, and without the shared SEND and RETURN effects, MASTER and the limiter. The stems are dry of the shared reverb and delay; USB VOLUME and the volume pot do not change them. A stem has the stereo recording's level (a centred track at MASTER's default) and a soft clip like the outputs', so a loud chord rounds off instead of crackling.
 
 **Ableton Live.**
 
