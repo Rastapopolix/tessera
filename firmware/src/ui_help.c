@@ -660,6 +660,7 @@ static void help_value(const pid_entry_t *e, char *val, uint32_t size)
     param_format(d, v, val, &unit);
     if (d->fmt == F_ENUM && d->names && d->names != N_ROUTE)
         str_cpy(val, d->names[clamp(v, d->min, d->max)], size);
+    if (e->pid == PID_TESS(TX_SD_SOURCE) && answer_own(help_tr)) str_cpy(val, "OWN PATTERN", size);   /* (ui_draw: OWN) */
     if (unit[0] && str_len(val) + str_len(unit) + 2u < size) {
         str_cpy(val + str_len(val), " ", 2);
         str_cpy(val + str_len(val), unit, 8);

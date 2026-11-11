@@ -1464,7 +1464,8 @@ static void draw_columns_(void)
                 if (an_layer_on()) {                            /* OCT- held: SOURCE, ORDER, SHIFT (SPACE: the sheet) */
                     const param_desc_t *dor = pid_desc(PID_TESS(TX_AN_ORDER), tr);
                     uint32_t src = tessera.sd_src[tr] % (TESSERA_TRACKS + 1u);
-                    draw_column(0, "SOURCE", pid_desc(PID_TESS(TX_SD_SOURCE), tr)->names[src], "", VAL(0u),
+                    draw_column(0, "SOURCE", answer_own(tr) ? "OWN" : pid_desc(PID_TESS(TX_SD_SOURCE), tr)->names[src],
+                                "", VAL(0u),
                                 (int32_t)src * 1000 / TESSERA_TRACKS, ICON_AUTO);
                     draw_column(1, "ORDER", dor->names[a->order % TESS_AN_ORDERS], "", VAL(1u),
                                 (int32_t)(a->order % TESS_AN_ORDERS) * 1000 / (TESS_AN_ORDERS - 1), ICON_AUTO);
