@@ -2982,6 +2982,9 @@ const TEXT = {
     healthCpu: "CPU 負荷", healthWorst: "最悪の半バッファ（期限に対して）", healthLate: "遅れた半バッファ · 期限超過",
     healthVoices: "発音中 · 保持中のボイス", healthShed: "間引き · 断念 · 奪われたボイス", healthShedTracks: "間引き、トラック 1 · 2 · 3 · 4",
     healthCore1: "第 2 コア 稼働 · タイムアウト · フォールト", healthMemory: "オーディオメモリ、ピーク", healthStack: "スタック、メイン · 割り込み",
+    healthUsbOut: "USB → コンピュータ（Tessera Out）：送信中 · バッファ", healthUsbOutErr: "USB → コンピュータ：アンダーラン · オーバーラン",
+    healthUsbIn: "コンピュータ → USB（Tessera In）：受信中 · バッファ", healthUsbInErr: "コンピュータ → USB：アンダーラン · オーバーラン",
+    healthUsbPackets: "USB 欠落フレーム · 不正パケット", healthUsbTime: "USB 処理の最悪値 · 最長間隔",
     yes: "はい", no: "いいえ",
     system: "システム", firmware: "ファームウェア", sync: "同期", tracksN: "トラック", stepsN: "ステップ数", enginesL: "エンジン",
     smpSlots: "サンプルスロット", userBank: "ユーザープリセット", none: "なし",
@@ -3101,6 +3104,9 @@ const TEXT = {
     healthCpu: "CPU load", healthWorst: "Worst half (of its deadline)", healthLate: "Late halves · deadline misses",
     healthVoices: "Voices sounding · held", healthShed: "Voices shed · given up · stolen", healthShedTracks: "Shed, tracks 1 · 2 · 3 · 4",
     healthCore1: "Second core on · timeouts · faults", healthMemory: "Audio memory, peak", healthStack: "Stack, main · interrupts",
+    healthUsbOut: "USB to computer (Tessera Out): on · buffer", healthUsbOutErr: "USB to computer: underruns · overruns",
+    healthUsbIn: "Computer to USB (Tessera In): on · buffer", healthUsbInErr: "Computer to USB: underruns · overruns",
+    healthUsbPackets: "USB missed frames · bad packets", healthUsbTime: "USB service, worst · longest gap",
     yes: "yes", no: "no",
     system: "System", firmware: "Firmware", sync: "Sync", tracksN: "Tracks", stepsN: "Steps", enginesL: "Engines",
     smpSlots: "Sample slots", userBank: "User presets", none: "none",
@@ -3521,6 +3527,14 @@ function healthRows(v) {
     ["healthMemory", `${v.resource_peak ?? 0} / ${v.resource_capacity ?? 0} B`, v.resource_failures > 0],
     ["healthStack", `${v.stack_cpu0_user_peak ?? 0} / ${v.stack_cpu0_user_size ?? 0} · ${v.stack_cpu0_system_peak ?? 0} / ${v.stack_cpu0_system_size ?? 0} B`,
       v.stack_cpu0_user_size && v.stack_cpu0_user_peak > v.stack_cpu0_user_size * 0.9],
+    /* USB audio (usb_audio_stream.c): each ring holds 1024 frames and aims at 512; an under- or overrun resets it
+       (11.6 ms of silence), a missed frame is a packet the host never sent: each one is a click in that direction */
+    ["healthUsbOut", `${yes(v.cap_alt)} · ${v.cap_fill ?? 0} / 1024`, false],
+    ["healthUsbOutErr", `${v.cap_underruns ?? 0} · ${v.cap_overruns ?? 0}`, v.cap_underruns > 0 || v.cap_overruns > 0],
+    ["healthUsbIn", `${yes(v.play_alt)} · ${v.play_fill ?? 0} / 1024`, false],
+    ["healthUsbInErr", `${v.play_underruns ?? 0} · ${v.play_overruns ?? 0}`, v.play_underruns > 0 || v.play_overruns > 0],
+    ["healthUsbPackets", `${v.missed_frames ?? 0} · ${v.bad_packets ?? 0}`, v.missed_frames > 0 || v.bad_packets > 0],
+    ["healthUsbTime", `${us(v.service_max_us ?? 0)} · ${us(v.poll_max_us ?? 0)}`, false],
   ];
 }
 function renderHealth() {
