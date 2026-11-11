@@ -210,7 +210,18 @@ enum { CF_NONE, CF_CLEAR_SEQ, CF_CLEAR_TRK, CF_OVR_PROJ, CF_OVR_USER,
 
 static const page_t *page_over;   /* a quick layer's own four knobs (ui_layer.c), while it edits or draws them */
 static uint32_t drum_hit_selected(void);
-static const page_t *cur_page(void) { return page_over ? page_over : &PAGES[ui.page]; }
+/* ARP with OCT- held: SWING, PROB, HOLD, ORDER (the ARP 2 page's four, a layer since 3.5-beta7; the page itself is
+ * not listed: seqm_page_ok) */
+static int oct_dn_only(void);
+static const page_t *arp2_page(void)
+{
+    static uint8_t at;
+    if (!at)
+        for (at = 1; at < NPAGES && !(PAGES[at].fam == FAM_ARP && PAGES[at].graph == GR_NONE); at++) ;
+    return &PAGES[at % NPAGES];
+}
+static int arp2_on(void) { return !ui.home && !ui.menu && !ui.confirm && PAGES[ui.page].graph == GR_ARP && oct_dn_only(); }
+static const page_t *cur_page(void) { return page_over ? page_over : arp2_on() ? arp2_page() : &PAGES[ui.page]; }
 
 /* the quick layers (ui_layer.c): a button held, the keys and KNOB 1..4 are its shortcuts, its map over the page */
 /* the one hold time (the key grammar, tessera-notes audit-2026-11 M0): a button held this long is a hold (btn_hold:
@@ -332,7 +343,8 @@ static int seqm_page_ok(uint32_t i)                     /* (the page shown stays
         ((p->graph == GR_EVOLVE || p->graph == GR_TIMING || p->graph == GR_TWEAK) && !m) ||
         (p->graph == GR_TWEAK && m == 1u);              /* (STEP: STEP EVOLVE; TIMING's SHAPE and HUMAN; TWEAK's
                                                          * HUMAN. ARP: TWEAK's SHIFT and HUMAN) */
-    if (p->fam == FAM_ARP && (p->graph == GR_ARP || p->graph == GR_NONE)) return m == 1u;
+    if (p->fam == FAM_ARP && p->graph == GR_NONE) return 0;   /* (ARP 2: ARP's OCT- layer, arp2_on) */
+    if (p->fam == FAM_ARP && p->graph == GR_ARP) return m == 1u;
     if (p->fam == FAM_SEQ && p->graph == GR_ROLL) return m < 2u;
     if (p->fam == FAM_SEQ && p->graph == GR_STEPS) return m >= 2u;   /* PATTERN: STEP and ARP have it on GEN */
     return 1;

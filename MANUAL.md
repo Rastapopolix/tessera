@@ -162,7 +162,6 @@ lets you do and when you would want it. Follow a link for the full description.
 | [LENGTH](#length) | Set how long a generator's notes ring. | Notes sound too clipped, or you want pads out of sparse notes. |
 | [TIMING](#timing) | Add ratchets (rolls) and a behind-the-beat human feel. | You want rolls, stutters or a more relaxed groove. |
 | [ENERGY](#energy) | Give the whole project a slow tide from sparse to full, with occasional rests. | A long piece needs to rise and fall on its own. |
-| ARP 2 | The arpeggiator's SWING, PROB, HOLD and ORDER, on an ARP track. | The arpeggio should swing, skip notes or hold on. |
 
 **LFO**: movement
 
@@ -501,7 +500,7 @@ the **ARP** button holds how its notes are shaped. SELECT turns the pages of the
 | MODE | SEQ: what plays | ARP: how it is shaped |
 |---|---|---|
 | **STEP** | GEN, NOTES (a DRUM track: NOTES, DRUM HIT), TEMPO, PATTERNS, SONG | EVOLVE (STEP EVOLVE), TWEAK (its HUMAN), TIMING (its SHAPE and HUMAN) |
-| **ARP** | GEN, NOTES, ARP (MODE, RATE, OCT, GATE), TEMPO, PATTERNS, SONG | ARP 2 (SWING, PROB, HOLD, ORDER), TWEAK (SHIFT and HUMAN) |
+| **ARP** | GEN, NOTES, ARP (MODE, RATE, OCT, GATE; OCT- held: SWING, PROB, HOLD, ORDER), TEMPO, PATTERNS, SONG | TWEAK (SHIFT and HUMAN) |
 | a generator | GEN, PATTERN, TEMPO, PATTERNS, SONG | EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY |
 
 ARP's **MODE** is the order the held notes play in, over OCT octaves:
@@ -517,7 +516,8 @@ ARP's **MODE** is the order the held notes play in, over OCT octaves:
 | **ORD** | in the order the keys were pressed (or the notes came in over MIDI) |
 | **REPEAT** | the last note pressed, again and again |
 
-ARP 2's **ORDER** (NOTE or PLAY) decides what UP, DN, UPDN, DNUP and RND1 start from: the notes low to high, or as
+The ARP page has a second layer: hold **OCT-** and KNOB 1 to 4 are **SWING**, **PROB**, **HOLD** and **ORDER**
+(the OCT- light is on there). **ORDER** (NOTE or PLAY) decides what UP, DN, UPDN, DNUP and RND1 start from: the notes low to high, or as
 pressed. ORD always plays them as pressed.
 
 On an ARP track, TWEAK's **SHIFT** moves the arpeggio by semitones and **HUMAN** makes its notes a little softer or
@@ -642,7 +642,7 @@ What a pattern changes depends on the track's MODE:
 | MODE | A pattern is |
 |---|---|
 | **STEP** | The whole part. Another pattern plays other notes. |
-| **ARP** | Its LEN, DIV, GATE and its notes. The ARP and ARP 2 settings belong to the track. |
+| **ARP** | Its LEN, DIV, GATE and its notes. The ARP settings (and its OCT- layer's) belong to the track. |
 | a generator | Only LEN, DIV, GATE, and the steps the generator can take as its seed (SOURCE, see [STEP as seed](#turing-euclid-markov-and-morph-source-keep-gravity-step-as-seed)). |
 
 The generator itself, its MODE, its knobs, EVOLVE, FORM, TWEAK and the rest, belongs to the track, not to a pattern,
