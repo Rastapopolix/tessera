@@ -508,6 +508,20 @@ static void test_params(void)
     px(3, TX_ET_ORDER, 9);
     check("OCT- held: a track's ORDER a step a detent, up to 4TH", tessera.et_order[2] == 2u && tessera.et_order[3] == 4u &&
           tessera.et_role[2] == 0u);
+    et_swapped = 0;
+    px(0, TX_ET_ORDER, 2);
+    check("ORDER: a rank another track holds swaps (T1 2ND, T3 takes T1's AUTO), the swapped track noted",
+          tessera.et_order[0] == 2u && tessera.et_order[2] == 0u && et_swapped == 3u);
+    et_swapped = 0;
+    px(1, TX_ET_ORDER, 4);
+    px(0, TX_ET_ORDER, 4);
+    check("..T2 4TH (T4 AUTO), then T1 4TH: T2 takes T1's 2ND; each rank once",
+          tessera.et_order[0] == 4u && tessera.et_order[1] == 2u && tessera.et_order[3] == 0u && et_swapped == 2u);
+    et_swapped = 0;
+    px(1, TX_ET_ORDER, 0);
+    px(2, TX_ET_ORDER, 0);
+    check("..AUTO any number of tracks, no swap", !tessera.et_order[1] && !tessera.et_order[2] && !et_swapped);
+    memset(tessera.et_order, 0, sizeof tessera.et_order);
 }
 
 int main(void)

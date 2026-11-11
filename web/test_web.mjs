@@ -1230,7 +1230,7 @@ async function editorSessions() {
     paramKeys: noop, libAdopt: () => { adoptStarted?.(); return adopted || Promise.resolve(); },
     buildUI: () => { shown++; }, renderPanels: noop, loadSteps: noop, readTunings: noop,
     startWatch: async () => false, renderLive: noop, renderLib: noop,
-    renderBank: noop, renderSysinfo: noop, sayK: noop, report: noop, syncPreferences: noop,
+    renderBank: noop, updateBrowser: noop, renderSysinfo: noop, sayK: noop, report: noop, syncPreferences: noop,
   });
   const oldRelease = S.beginBusy();
   S.resetBusy();

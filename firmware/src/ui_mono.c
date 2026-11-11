@@ -3025,7 +3025,7 @@ static void mo_cu_bar(const cord_t *c, int32_t s, int32_t ox)
     if (a)
         mo_ofill(ox, cord_bip(c) ? m - d : x < m ? x : m, 1, cord_bip(c) ? 2 * d : d, 2, on ? MO_INK : MO_DIM);
     mo_ofill(ox, m, 0, 1, 4, MO_DIM);
-    if (on && c->src)
+    if ((on || cord_src_only(c)) && c->src)             /* (no destination yet: where its source is) */
         mo_ofill(ox, lx, 0, 1, 4, MO_INK);
 }
 /* the light (4 x 4 cells from ox pixels, as mo_cu_bar): how far the cord moves its destination now, lit or dim (a disc
@@ -3576,6 +3576,8 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
                             scale * 1031u + fav;
     char a[32], b[32];
     sig ^= (uint32_t)(batt_head() + 1) * 2654435761u;   /* (the header's battery) */
+    if (ui.msg_t && ui.msg[0])                          /* (a message: USER1 F# IN, ROOT STAYS; 3.5-beta7: never shown) */
+        sig = str_hash(sig + 1u, ui.msg);
     if (!ui.force && sig == mo_sc_sig)
         return;
     mo_sc_sig = sig;
@@ -3585,6 +3587,10 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
         cv_oy = -(int32_t)s * 120;
         b[0] = (char)('1' + song.sel % NTRK);
         str_cpy(b + 1, " SCALES", 8);
+        if (ui.msg_t && ui.msg[0]) {                    /* a message: in the header's place, inverted (as mo_head) */
+            mo_cut(b, ui.msg, 19);
+            mo_inv(b, 2, 1);
+        } else {
         mo_fill(0, 0, mo_tw(b) + 3, 8, MO_INK);
         {
             int32_t chip = mo_text(b, 1, 1, MO_BG) + 3, right = mo_batt_right(batt_head());
@@ -3593,6 +3599,7 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
             if (right - mo_tw(b) < chip + 3)            /* (no room: the number) */
                 fmt_int(b, (int32_t)total);
             mo_textr(b, right, 1, MO_DIM);
+        }
         }
         mo_hl(0, 8, 120, MO_INK);
         for (f = 0; f <= SCALE_FAM_USER; f++) {         /* the families (8 px rows: eleven above the foot) */

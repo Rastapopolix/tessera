@@ -2271,6 +2271,23 @@ static int test_help_gesture(void)
         frame();
         go_title("EVOLVE");
     }
+    {                                             /* a mod with a source, no destination: MODS shows it move */
+        int32_t sv;
+        uint8_t bk, lv;
+        uint32_t i;
+        cord_t c = {0};
+        cord_clear();
+        c.src = CS_LFO; c.src_trk = 0; c.amount = 50;
+        cord_set(0, &c);
+        trk[0].lfo_fade = 32767;
+        trk[0].lfo_val = 20000;
+        cord_tick();
+        lv = cu_state(0, cord_get(0), &sv, &bk) & 15u;
+        for (i = 0; i < 3u; i++) { lfo_units_run += 4000u; mscope_take(0); }
+        bad += check("MODS: a source, no destination: moves nothing, its light, mark and scope show the source",
+                     !cord_live(cord_get(0)) && lv > 1u && sv > 10000 && mscope.mv[mscope.col] > 40);
+        cord_clear();
+    }
     {                                             /* the selectors' lists (ui_popup.c pick_*) */
         int32_t n, cur, tr;
         go_title("MODS");
@@ -4207,8 +4224,14 @@ static int test_popups(void)
         turn(EN_K3, 1);
         ok &= pop.on == POP_PICK;
         pop_close();
+        go_title("PATTERN"); frame();
+        TSEL->p[P_SDIV] = 2;                            /* (1/16) */
+        turn(EN_K2, -1);
+        ok &= !pop.on && TSEL->p[P_SDIV] == 5;          /* DIV: its value under the knob, no list; 1/16 down: 16T */
+        turn(EN_K2, 1);
+        ok &= !pop.on && TSEL->p[P_SDIV] == 2;
         set_engine_of(TSEL, ENGI_FM6); go_title("ALGO"); frame(); turn(EN_K1, 1);
-        bad += check("POPUPS: DRUM, MIDI and FM6 ALG step inline; five ROUT choices use a picker", ok && !pop.on);
+        bad += check("POPUPS: DRUM, MIDI, DIV and FM6 ALG step inline; five ROUT choices use a picker", ok && !pop.on);
     }
     {   /* list pages (ui_list.c): KNOB 1 the row, KNOB 2 its value, OCT+ its list (SCL's Scale: SCALES), OCT- Stage */
         ui_power_on(); go_title("VOICE"); frame();

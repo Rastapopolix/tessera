@@ -153,15 +153,26 @@ static void nt_accmode(int32_t s)                      /* (round: OCT+ goes on p
     tessera_param_set(tr, TX_ACC_MODE, (tessera_param_get(tr, TX_ACC_MODE) + (s > 0 ? 1 : TESS_ACC_MODES - 1)) %
                                        TESS_ACC_MODES);
 }
-/* .. its DIR (TX_SEQ_DIR: the pattern's; a mod moving it: "FWD>PEND", the pattern's and the one playing, seq_dir.c) */
+/* .. its DIR (TX_SEQ_DIR: the pattern's; a mod moving it: "FWD>PEND", the pattern's and the one playing, seq_dir.c).
+ * The live part changes at most every 300 ms and stays 1 s after the mod last moved DIR away, so a mod near a boundary
+ * no longer flickers the row between "FWD" and "FWD>PEND" a step at a time (3.5-beta7) */
 static void nt_dir_v(char *b)
 {
+    static uint8_t shown, live;
+    static uint32_t t_set, t_away;
     const char *const *nm = pid_desc(PID_TESS(TX_SEQ_DIR), 0)->names;
     uint32_t d = (uint32_t)tessera_param_get(trk_index(TSEL), TX_SEQ_DIR) % SEQ_DIRS, now = seq_dir_now(TSEL) % SEQ_DIRS;
-    str_cpy(b, nm[d], 8);
     if (now != d) {
+        if (!live) shown = (uint8_t)now, t_set = fm1_ms;
+        live = 1;
+        t_away = fm1_ms;
+    } else if (live && fm1_ms - t_away >= 1000u)
+        live = 0;
+    if (live && now != shown && fm1_ms - t_set >= 300u) shown = (uint8_t)now, t_set = fm1_ms;
+    str_cpy(b, nm[d], 8);
+    if (live) {
         str_cpy(b + str_len(b), ">", 2);
-        str_cpy(b + str_len(b), nm[now], 8);
+        str_cpy(b + str_len(b), nm[shown % SEQ_DIRS], 8);
     }
 }
 static void nt_dir(int32_t s)                          /* (round: OCT+ goes on past DRUNK to FWD) */
@@ -628,8 +639,9 @@ static void pick_touch(uint32_t c)
         d = 0;
     } else {
     d = page_desc(cur_page(), c, &vp);
-    if (!d || !vp || d->fmt != F_ENUM || !d->names || d->max - d->min < 4 || pick_numbers(d))
-        return;
+    if (!d || !vp || d->fmt != F_ENUM || !d->names || d->max - d->min < 4 || pick_numbers(d) || enum_order(d))
+        return;                                         /* (DIV, ARP RATE: their value under the knob, slow to fast;
+                                                         * beta7: the list read as a drop-down) */
     }
     if (pop.on != POP_PICK)
         ui.force = 1;                                   /* (the page dimmed under it) */

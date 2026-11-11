@@ -779,7 +779,7 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_ET_ORDER, "ENTRIES ORDER", "When the track comes in: 1ST to 4TH, one a phrase in that order, and out the "
                                      "other way round (last in, first out). AUTO: by ROLE, after the numbered tracks. "
                                      "ANCHOR still never goes out; only AUTO tracks wait for a bass or harmony. GLO > "
-                                     "ENTRIES' sheet (OCT+ held), Order T1 to T4."),
+                                     "ENTRIES' sheet (OCT+ held), Order T1 to T4. A number another track holds: the two swap."),
     X_(TX_SEQ_DIR, "PATTERN DIR", "The order the STEP pattern plays its steps in, each pattern its own. FWD: 1 to the "
                                   "end. BACK: the end to 1. PEND: there and back, the ends once. FOLD: from "
                                   "the ends inwards, 1, the end, 2, .. RAND: any step. DRUNK: a step on or back at random. A pass "

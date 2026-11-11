@@ -841,7 +841,8 @@ into.
 
 With OCT- held, KNOB 2 is **SOURCE** (the call: the keys, or T1 to T4's pattern), KNOB 3 **ORDER** (PLAYED,
 REVERSE or SHUFFLE) and KNOB 4 **SHIFT** (each answer moved by up to this many scale degrees). **Space** on the GEN
-sheet is the rest before each answer.
+sheet is the rest before each answer. SOURCE on its own track shows **OWN**: it answers the phrase written on its
+STEP page.
 
 **AUTO** steers the ship for you: OFF follows Y, 1 to 9 is a wander of its own (faster further up), SEEK flies to
 the next star. It has no knob: set it with a mod to **C AUTO** (a cord with no source is a fixed value).
@@ -1080,7 +1081,9 @@ marked), whether it is IN, OUT or muted by hand, and its level.
 The ENTRIES sheet (hold **OCT+**) has each track's **ORDER** (Order T1 to T4, KNOB 2): **AUTO** (the default) or **1ST**, **2ND**, **3RD**, **4TH**,
 to choose the order tracks come in, for example the bass third instead of first. Numbered tracks come in first, one a
 phrase, lowest number first; the AUTO tracks follow by ROLE as below. They leave the other way round: last in, first
-out, so the AUTO tracks leave before the numbered ones and 1ST leaves last. Two tracks on one number take turns. An
+out, so the AUTO tracks leave before the numbered ones and 1ST leaves last. Each number is one track's: setting a
+number another track holds swaps the two (the header says which track moved, for example T2 NOW AUTO); AUTO can be
+any number of tracks. A project saved with two tracks on one number keeps them, and they take turns. An
 ANCHOR still never leaves, and only an AUTO melody waits for a bass or harmony (a numbered one comes in when its turn
 comes). With every track on AUTO, ENTRIES works exactly as before. While OCT- is held the picture shows each track's
 ORDER in place of its role. ORDER is saved with the project; a project from before it loads as AUTO, and firmware

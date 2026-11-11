@@ -188,8 +188,9 @@ static uint32_t cu_slot(uint32_t k)
  * share, *bk where its mark is */
 static uint8_t cu_state(uint32_t i, const cord_t *c, int32_t *s, uint8_t *bk)
 {
-    int32_t v = *s = cord_live(c) ? cord_share(c) : 0;
-    uint8_t lv = (uint8_t)(cord_live(c) ? 1 + clamp((v < 0 ? -v : v) * 7 / 32768, 0, 7) : 0);
+    int on = cord_live(c) || cord_src_only(c);           /* (no destination yet: its source, cord.c) */
+    int32_t v = *s = cord_live(c) ? cord_share(c) : on ? cord_val(c, 32767) : 0;
+    uint8_t lv = (uint8_t)(on ? 1 + clamp((v < 0 ? -v : v) * 7 / 32768, 0, 7) : 0);
     *bk = (uint8_t)(clamp(v, -32768, 32768) * 103 / 32768 + 104);   /* (the mark's x, 1 .. 207) */
     return (uint8_t)(lv | (i == cord_ui_sel) << 4 | (ux.pal & 7u) << 5);
 }

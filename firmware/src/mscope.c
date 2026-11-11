@@ -70,8 +70,9 @@ static void mscope_take(uint32_t i)
     mscope.at = now;
     t = *c;                                             /* (the source as it is: a copy read +-, cord.c's cord_val */
     t.uni = CU_BI;                                      /* out of line, not cord_src again) */
-    v = cord_live(c) ? msc_q(cord_share(c)) : 0;
     s = msc_q(cord_val(&t, 32767));
+    v = cord_live(c) ? msc_q(cord_share(c)) : cord_src_only(c) ? msc_q(cord_val(c, 32767)) : 0;   /* (no destination
+                                                         * yet: the source as the move, cord.c cord_src_only) */
     mid = cord_bipolar(c->src, c->src_trk) ? 0 : 64;    /* rising through the source's middle (0 of a bipolar one, */
     g = (int8_t)(s > mid + 8 ? 1 : s < mid - 8 ? -1 : mscope.sgn);   /* half of a 0..1 one), a little hysteresis */
     mscope.cross += (uint8_t)(g > 0 && mscope.sgn < 0 && mscope.cross < 255u);
