@@ -217,8 +217,8 @@ static __attribute__((noinline,section(".dsp_text"))) void mix_mono_samples(trac
 }
 static int32_t solo_gain[NPART]={32768,32768,32768,32768};
 static int32_t entry_gain[NPART]={32768,32768,32768,32768};   /* Tessera: Entries' level of each track (entries.c) */
-static int32_t mix_to(const track_t *t,uint32_t ti)   /* the part's gain as MUTE, SOLO and Entries set it (SOLO: heard
-                                                         * whatever Entries says) */
+/* the gain MUTE, SOLO and Entries set (SOLO: heard whatever Entries says); inline: .dsp_text calls it from RAM */
+static inline __attribute__((always_inline)) int32_t mix_to(const track_t *t,uint32_t ti)
 { return t->p[P_MUTE]?0:!track_solo?entry_gain[ti]:((track_solo>>ti)&1u)?32768:0; }
 /* A part no one can hear (LEVEL 0 as the cords leave it, or faded out by MUTE, SOLO or Entries) for MIX_QUIET blocks
  * (~46 ms: not a cord's or a fade's passing zero) renders nothing and its insert effects rest: on a busy project the
