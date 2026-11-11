@@ -45,6 +45,16 @@ static void keys(void)
            scale_picker_selected() == USCALE_ID && scale_mask(t) == USCALE_DEF && micro_scale(t) == 0);
     tap_key(8); tap_key(10); tap_key(9); tap_key(11);   /* C# D# in, D E out (keys 53 + k) */
     tap_key(7);                                         /* C: the root stays */
+    {                                                   /* the header says it (3.5-beta7: SCALES drew over it) */
+        static uint16_t with[240u * 16u];
+        tap_key(8); frame();
+        memcpy(with, host_screen, sizeof with);
+        int said = str_eq(ui.msg, "USER1 C# OUT") && ui.msg_t;
+        ui.msg_t = 0; frame();
+        verify("SCALES: a key's IN / OUT shows in the header (USER1 C# OUT), gone with its time",
+               said && memcmp(with, host_screen, sizeof with) != 0);
+        tap_key(8);                                     /* (C# back in) */
+    }
     verify("the keys made it: C Db Eb F G A B, a mask of its own", uscale_mask[0] == NEAPOL && !built_in(NEAPOL) &&
            scale_mask(t) == NEAPOL && scale_count(t) == 7u && uscale_mask[1] == USCALE_DEF);
     char val[8]; const char *unit = "";
