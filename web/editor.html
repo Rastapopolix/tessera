@@ -3399,6 +3399,8 @@ async function load(d) {
     renderLive();
     renderLib();
     renderBank();
+    updateBrowser();                                /* (the bank's presets of this engine in the Presets list: it was
+                                                     * built before the bank was read, beta7) */
     renderSysinfo();
     sayK("ready");
   } finally { releaseBusy(); }
@@ -5162,6 +5164,7 @@ $("bkerase").addEventListener("click", () => {
 $("bkrefresh").addEventListener("click", () => libOp(async (d, rqf) => {
   sayK("readingBank");
   const engine=poolEngine();if(engine)dev.nativePools[engine]=await nativeBank.list(rqf,engine);else dev.bank=await bank.list(rqf);
+  updateBrowser();
   sayK("ready");
 }));
 $("bkexport").addEventListener("click", () => libOp(async (d, rqf) => {
