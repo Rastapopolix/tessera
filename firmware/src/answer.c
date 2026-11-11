@@ -30,6 +30,11 @@ static int answer_gen_src(uint32_t tr)
 
 /* SOURCE: the call is that track's STEP pattern playing now (this track's own too), its first 8 notes at their steps
  * (a chord its first note, a drum hit its lane's note); 0: none (OFF, or a pattern without notes: the keys' call) */
+/* SOURCE the ANSWER track itself: its own STEP pattern is the call (shown OWN, not "T4", which read like a slip) */
+static int answer_own(uint32_t tr)
+{
+    return tr < TESSERA_TRACKS && tessera.mode[tr] == TESS_ENG_ANSWER && tessera.sd_src[tr] == tr + 1u;
+}
 static int answer_source(uint32_t tr)
 {
     uint32_t s = tessera.sd_src[tr], i, n = 0, note, vel, len;
