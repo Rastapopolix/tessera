@@ -16,7 +16,7 @@ setting, with its range and default, is listed in [docs/PARAMETERS.md](docs/PARA
 Page and knob names are the ones on the screen. KNOB 1 to KNOB 4 are the four knobs from left to right, and each
 page's four settings sit along the top of the screen in the same order.
 
-New to some terms? See the [Glossary](GLOSSARY.md). Want the big picture? See [Features](FEATURES.md).
+New to some terms? See the [Glossary](GLOSSARY.md). Want the big picture? See [Features](FEATURES.md). Have a loop and wonder what to do with it? See [First steps](RECIPES.md#first-steps-you-have-a-loop-what-next).
 
 **New to Tessera?** Start with [Tessera in plain words](#tessera-in-plain-words): what each page is for and when you
 would use it, then a table of goals and where to go for each.

@@ -13,6 +13,8 @@ without a tag work on 3.4.1 too. The keys are the beta's: **OCT+ held** is the p
 knobs. For the long patches that use these features (Krell, long gates, stepped chaos, the brake), see
 [GENERATIVE.md](GENERATIVE.md).
 
+**New here?** Start with [First steps: you have a loop, what next?](#first-steps-you-have-a-loop-what-next).
+
 **Recipes**
 
 - [A first generative patch in a minute](#a-first-generative-patch-in-a-minute)
@@ -62,6 +64,111 @@ knobs. For the long patches that use these features (Krell, long gates, stepped 
 - [A strummed chord pad (STRUM, 3.5 beta)](#a-strummed-chord-pad-strum-35-beta)
 
 **[Tips](#tips)**
+
+---
+
+## First steps: you have a loop, what next?
+
+A loop that sounds good is the best place to start. These moves turn it into music that develops, easiest first.
+Stop after any of them: each one is optional, and everything automatic starts switched off. Keys: **OCT+** tap =
+Enter, **OCT+ held** = the page's sheet, **OCT-** tap = Back, **OCT- held** = the page's second set of knobs.
+Moves tagged **3.5 beta** need the beta.
+
+### 1. Play with it live
+
+Mutes, fills and one big knob make a loop a performance, and cost nothing to try.
+
+- **GLO** opens the MIXER. The **black keys** (F#3 G#3 A#3 C#4) mute tracks 1 to 4; **C4** brings them all back.
+  **E4** holds FILL.
+- Hold **OCT+** on MIXER for its sheet, **Mutes: BAR**, so a mute lands on the next bar line (**3.5 beta**; on 3.4.1 use
+  MENU > MUTES).
+- **GLO > PERF** has four macros; they do something once a mod uses them (see [One knob for a big build](#one-knob-for-a-big-build-perf-macros)).
+
+**Try:** drop the drums on a bar line, then bring them back one bar later.
+
+### 2. Let it change by itself
+
+On a generator track, EVOLVE changes the phrase every few bars, so the loop never wears out.
+
+- **ARP**, tap to EVOLVE. **EVERY 4**, **AMOUNT** about 30.
+- **ROLL** (KNOB 4) is the track's seed: each click is a new line. Turn back to get the last one again.
+- Hold **OCT-**, **KNOB 4** is **GRAVITY**: the line drifts and then comes home.
+
+**Try:** EVERY 4, AMOUNT 30, GRAVITY 50, and listen for a minute. See
+[Drift, then come home](#drift-then-come-home-gravity-on-evolve).
+
+### 3. Vary it with a second pattern, or a direction
+
+Each track has 8 patterns. Copy yours, change a few notes, and you have an answer to the first.
+
+- **SEQ** held opens PATTERNS: a cell per pattern. KNOB 1 to 4 pick the next pattern of tracks 1 to 4.
+- **SEQ**, tap to SONG: put patterns in order, each with its repeats. **PLAY** plays the song.
+- **3.5 beta:** hold **OCT+** on PATTERN or NOTES, and the **Direction** row plays the same notes
+  FWD, BACK, PEND, FOLD, RAND or DRUNK.
+
+**Try:** set a STEP track's Direction to **FOLD**: the same notes, a new tune.
+
+### 4. Give it an arc
+
+ENERGY is the project's mood over minutes: sparse and soft, then busy and loud, then back.
+
+- **ARP**, tap to ENERGY. Turn **ARC** up to about 50.
+- A drone or a bass that should stay put: hold **OCT-** and set **DEPTH 0** on that track.
+
+**Try:** ARC 50, **RESTS** 20, and let it run for five minutes.
+
+### 5. Bring tracks in and out
+
+ENTRIES takes tracks out and back in on phrase lines, so a layered loop thins and fills without your hands.
+
+- **GLO**, tap to ENTRIES. **ENTRIES** about 50, **STYLE FADE**.
+- Hold **OCT-** to give each track a **ROLE**; set a pad to **ANCHOR** and it never leaves.
+
+**Try:** ENTRIES 50, and watch the picture show which tracks are IN and OUT.
+
+### 6. Build sections
+
+FORM gives a track a verse and a chorus. CHAIN makes the whole project change section together, like a band
+going into the chorus.
+
+- **ARP**, tap to FORM: **FORM ABAC**, **CONTR** about 40.
+- **GLO**, tap to CHAIN: **FORM ABAC**, **PHRASE 8**. Tracks whose own FORM is OFF follow it.
+
+**Try:** CHAIN ABAC, PHRASE 8, then play for two minutes. See
+[Returns that vary](#returns-that-vary-form-develop) to keep the returns from sounding the same.
+
+### 7. Give it a length and an ending
+
+PIECE plans the whole thing: a length, a shape and an end. It steers CHAIN, ENTRIES and ENERGY along the shape.
+
+- **GLO**, tap to PIECE: **LENGTH 10 min**, **SHAPE ARCH**, **END STOP**.
+- Press **PLAY**: it starts sparse, peaks, thins out and stops by itself. Try 5 min first to hear the whole shape.
+
+**Try:** LENGTH 5 min, ARCH, END STOP. Full recipe: [A piece that plays itself](#a-piece-that-plays-itself-piece-chain-and-entries).
+
+### 8. Add one moving part
+
+One slow cord is enough to make a pad breathe.
+
+- Hold **FX** and turn a knob (a cutoff, a level): a cord from the track's LFO to that knob, its amount set
+  as you turn. Then set a slow RATE on **LFO**.
+- **3.5 beta:** on **LFO > MODS**, hold **OCT-** to watch the picked mod move over time (MOD SCOPE). Let go and the
+  rows come back.
+
+**Try:** an LFO on cutoff at about +30 %, RATE slow, and watch it in MOD SCOPE.
+(The filter on FM6 is an effect: [A filter sweep on FM6](#a-filter-sweep-on-fm6-the-filter-effect).)
+
+### 9. Keep it
+
+- Hold **REC** on a generator track to **print** what it played into STEP: ordinary notes, which never change unless
+  you change them. **EDIT** held undoes it.
+- Tap **REC** to record keys over the loop, pass after pass; tap again to stop.
+- **SAVE + REC** (or hold **SAVE**) saves the project to its slot; playback stops first.
+
+**Try:** print a line you like, then save.
+
+That is enough for a piece. For full patches see the recipes below, [GENERATIVE.md](GENERATIVE.md) for deeper
+patching, and the [GLOSSARY](GLOSSARY.md) for any term that is new.
 
 ---
 
