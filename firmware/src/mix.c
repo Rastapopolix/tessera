@@ -217,11 +217,30 @@ static __attribute__((noinline,section(".dsp_text"))) void mix_mono_samples(trac
 }
 static int32_t solo_gain[NPART]={32768,32768,32768,32768};
 static int32_t entry_gain[NPART]={32768,32768,32768,32768};   /* Tessera: Entries' level of each track (entries.c) */
+static int32_t mix_to(const track_t *t,uint32_t ti)   /* the part's gain as MUTE, SOLO and Entries set it (SOLO: heard
+                                                         * whatever Entries says) */
+{ return t->p[P_MUTE]?0:!track_solo?entry_gain[ti]:((track_solo>>ti)&1u)?32768:0; }
+/* A part no one can hear (LEVEL 0 as the cords leave it, or faded out by MUTE, SOLO or Entries) for MIX_QUIET blocks
+ * (~46 ms: not a cord's or a fade's passing zero) renders nothing and its insert effects rest: on a busy project the
+ * time goes to the parts that sound (#586). Its sequencer, LFO and FOLLOW leads go on; a part whose ENV a cord reads
+ * always renders. Heard again: its effects start clean and MUTE's ramp fades it in. */
+#define MIX_QUIET 64u
+static uint8_t mix_quiet[NPART];
+static int mix_unheard(const track_t *t)
+{
+    uint32_t ti=(uint32_t)(t-trk);
+    if((!(t->p[P_LEVEL]&127) || (!solo_gain[ti] && !mix_to(t,ti))) && !((cord_envsrc>>ti)&1u)){
+        if(mix_quiet[ti]==MIX_QUIET)return 1;
+        mix_quiet[ti]++;return 0;
+    }
+    if(mix_quiet[ti]==MIX_QUIET)for(uint32_t slot=0;slot<FX_SLOTS;slot++)fx_state[ti*FX_SLOTS+slot].epoch=fx_epoch-1u;
+    mix_quiet[ti]=0;return 0;
+}
 static void mix_solo(track_t *t,int32_t *b,uint32_t n)
 {
     uint32_t ti=(uint32_t)(t-trk);
     /* muted: the notes still sounding go too, not only the new ones (voice.c), as an insert FX's do (upstream 8d29d95) */
-    int32_t from=solo_gain[ti],to=t->p[P_MUTE]?0:!track_solo?entry_gain[ti]:((track_solo>>ti)&1u)?32768:0;   /* (SOLO: heard whatever Entries says) */
+    int32_t from=solo_gain[ti],to=mix_to(t,ti);
     if(from==32768 && to==32768)return;
     for(uint32_t i=0;i<n;i++){
         from += clamp(to-from,-256,256); /* 128 samples, the same ramp for GLO solo and MUTE */
@@ -234,7 +253,7 @@ static __attribute__((noinline,section(".dsp_text"))) void mix_fx_samples(track_
 {
     uint32_t ti=(uint32_t)(t-trk);int32_t lvl=LEVEL_Q12[t->p[P_LEVEL]&127],pk=t->peak;
     uint32_t send=fx_send_on?fx_send_gain(t):0u;
-    int32_t gain=solo_gain[ti],to=t->p[P_MUTE]?0:!track_solo?entry_gain[ti]:((track_solo>>ti)&1u)?32768:0;
+    int32_t gain=solo_gain[ti],to=mix_to(t,ti);
     for(uint32_t i=0;i<n;i++){
         gain+=mix_clamp(to-gain,-256,256);
         int32_t l=fx_scale(fx_left[i],(uint32_t)gain*2u),r=fx_scale(fx_right[i],(uint32_t)gain*2u);
@@ -248,7 +267,7 @@ static __attribute__((noinline,section(".dsp_text"))) void mix_fx_samples(track_
 }
 #if MELODEE_BATCH_AUDIO && !MELODEE_LEGACY_EXTRAS
 static int32_t batch_pcm[NPART][CTL],batch_spread[NPART][CTL];
-static uint32_t batch_rendered[NPART];static uint8_t batch_spread_on[NPART],batch_ready;
+static uint32_t batch_rendered[NPART];static uint8_t batch_spread_on[NPART],batch_unheard[NPART],batch_ready;
 static __typeof__(mod) batch_mod[NPART];
 static int16_t batch_params[NPART][P_COUNT];
 static __attribute__((noinline)) void mix_prepare_batch(uint32_t n)
@@ -258,7 +277,8 @@ static __attribute__((noinline)) void mix_prepare_batch(uint32_t n)
         track_t *t=&trk[p];mod_begin(t);batch_mod[p]=mod;memcpy(batch_params[p],t->p,sizeof t->p);
         spread_on=t->p[P_SPRD]>0 && (trk_vmode(t)==V_POLY || trk_vmode(t)==V_UNISON);
         batch_spread_on[p]=spread_on;spread_buf=batch_spread[p];
-        batch_rendered[p]=track_render_audio(t,batch_pcm[p],n,0);
+        batch_unheard[p]=(uint8_t)mix_unheard(t);
+        batch_rendered[p]=batch_unheard[p]?track_render_unheard(t,batch_pcm[p],n):track_render_audio(t,batch_pcm[p],n,0);
         if(mod.on)mod_end(t);
     }
     audio_batch_flush();audio_batch_active=0;batch_ready=1;
@@ -267,13 +287,13 @@ static __attribute__((noinline)) void mix_prepare_batch(uint32_t n)
 static __attribute__((noinline)) void mix_part(track_t *t,uint32_t n)
 {
     uint32_t extra=0;
-    int rendered;
+    int rendered,unheard;
 #if MELODEE_BATCH_AUDIO && !MELODEE_LEGACY_EXTRAS
     if(batch_ready){
         uint32_t p=(uint32_t)(t-trk);mod=batch_mod[p];
         part_buf=batch_pcm[p];
         if(mod.on)for(uint32_t k=0;k<mod.nk;k++)t->p[mod.kid[k]]=batch_params[p][mod.kid[k]];
-        spread_on=batch_spread_on[p];spread_buf=batch_spread[p];rendered=(int)batch_rendered[p];
+        spread_on=batch_spread_on[p];spread_buf=batch_spread[p];rendered=(int)batch_rendered[p];unheard=batch_unheard[p];
         if(rendered){
             if(spread_on)spread_sum(part_buf);
             const engine_t *e=ENGINES[t->engine];if(e->post)e->post(t,part_buf,n,(uint32_t)rendered);
@@ -283,7 +303,8 @@ static __attribute__((noinline)) void mix_part(track_t *t,uint32_t n)
     {
         part_buf=part_storage;spread_buf=spread_storage;mod_begin(t);
         spread_on=t->p[P_SPRD]>0 && (trk_vmode(t)==V_POLY || trk_vmode(t)==V_UNISON);
-        rendered=(int)track_render_audio(t,part_buf,n,0);
+        unheard=mix_unheard(t);
+        rendered=(int)(unheard?track_render_unheard(t,part_buf,n):track_render_audio(t,part_buf,n,0));
     }
     /* SEND 2 / 3 as the mods move them (after mod_begin). Reuse the return workspace until the worker starts. The
      * difference is this track's exact post-fader/pan/solo contribution; CHAIN's sample loops stay unchanged and
@@ -293,10 +314,10 @@ static __attribute__((noinline)) void mix_part(track_t *t,uint32_t n)
     }
     if(extra){memcpy(fx_bus_sum_l,mix_l,n*sizeof *mix_l);memcpy(fx_bus_sum_r,mix_r,n*sizeof *mix_r);}
 #if defined(MELODEE_FX_PROFILE) && MELODEE_FX_PROFILE && defined(FM1_IRQ_TARGET)
-    if(fx_profile_control>>30u && fx_profile_track((uint32_t)(t-trk))){for(uint32_t i=0;i<n;i++)part_buf[i]=((i&8u)?-8000:8000)+(int32_t)i*97;rendered=1;spread_on=0;}
+    if(fx_profile_control>>30u && fx_profile_track((uint32_t)(t-trk))){for(uint32_t i=0;i<n;i++)part_buf[i]=((i&8u)?-8000:8000)+(int32_t)i*97;rendered=1;unheard=0;spread_on=0;}
 #endif
     AP_START(mix_start);
-    if(rendered || fx_active(t)){
+    if(!unheard && (rendered || fx_active(t))){
         if(!rendered){memset(part_buf,0,n*sizeof *part_buf);if(spread_on)memset(spread_buf,0,n*sizeof *spread_buf);}
         AP_START(fx_start);int wet=fx_process(t,part_buf,n);AP_END(AP_FX,fx_start);
         if(wet){

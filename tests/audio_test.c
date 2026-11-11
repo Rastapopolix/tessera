@@ -39,6 +39,8 @@ static void fresh(void)
     audio_cpu_rem = audio_halves = audio_max_us = 0;
     shed_req = 0; shed_count = 0; shed_over = 0;
     memset(shed_part, 0, sizeof shed_part);
+    memset(mix_quiet, 0, sizeof mix_quiet); memset(solo_gain, 0, sizeof solo_gain);
+    for (p = 0; p < NPART; p++) solo_gain[p] = 32768;
     memset(voice_kills_part, 0, sizeof voice_kills_part);
     host_clock = host_us = host_half_reads = host_dma_advanced = host_acks = host_nest = 0;
     host_pending = FM1_AUDIO_HALF;
@@ -174,10 +176,49 @@ static void bench_output(void)
     check("normal build retains audible physical output", nonzero);
 #endif
 }
+static void unheard(void)
+{
+    int32_t out[2 * CTL];
+    uint32_t i, e, loud;
+    voice_t *a, *b;
+    fresh();
+    trk[0].p[P_VOICE] = V_POLY;
+    trk[0].p[P_LEVEL] = 0;
+    trk_note_on(&trk[0], 60, 100); trk_note_on(&trk[0], 64, 100);
+    a = held(&trk[0], 60); b = held(&trk[0], 64);
+    for (i = 0; i < 10u; i++) mix_block(out, CTL);
+    e = a ? a->ph[0] : 0;
+    mix_block(out, CTL);
+    check("LEVEL 0 for a moment still renders (a cord's passing zero)", a && a->ph[0] != e && mix_quiet[0] < MIX_QUIET);
+    for (i = 0; i < MIX_QUIET; i++) mix_block(out, CTL);
+    e = a->ph[0];
+    mix_block(out, CTL); mix_block(out, CTL);
+    check("a part at LEVEL 0 stops rendering: its held voice waits, still", a->active && a->gate && a->ph[0] == e);
+    trk_note_off(&trk[0], 64);
+    mix_block(out, CTL);
+    check("an unheard part's released voice ends at once", b && !b->active && a->active);
+    trk[0].p[P_LEVEL] = 100;
+    for (i = loud = 0; i < 8u; i++) {
+        mix_block(out, CTL);
+        for (e = 0; e < 2u * CTL; e++) loud |= out[e] != 0;
+    }
+    check("heard again, the held note goes on", a->active && a->env != 0 && loud && !mix_quiet[0]);
+    fresh();
+    trk_note_on(&trk[1], 60, 100);
+    a = held(&trk[1], 60);
+    trk[1].p[P_MUTE] = 1;                               /* (a muted part takes no new notes: one held) */
+    for (i = 0; i < MIX_QUIET + 8u; i++) mix_block(out, CTL);
+    e = a ? a->ph[0] : 0;
+    mix_block(out, CTL);
+    check("a MUTEd part stops rendering once faded out", a && a->active && a->ph[0] == e && mix_quiet[1] == MIX_QUIET);
+    trk[1].p[P_MUTE] = 0;
+    mix_block(out, CTL);
+    check("unMUTEd, it renders again", !mix_quiet[1] && solo_gain[1] > 0);
+}
 int main(void)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
-    overload(); dma(); bench_output();
+    overload(); unheard(); dma(); bench_output();
     printf(bad ? "audio: %d FAILED\n" : "audio: all passed\n", bad);
     return bad != 0;
 }
