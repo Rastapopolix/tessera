@@ -192,8 +192,9 @@ MIXER) to call one; and **FILL**, a mod destination, so an LFO or ENERGY can cal
 [MANUAL](MANUAL.md#a-steps-condition-and-fill)
 
 **Filter**. Removes part of a sound's frequencies. A low-pass filter keeps the lows and removes the highs; its
-*cutoff* is where, its *resonance* the emphasis there. In Tessera: ORACLE has its own; FM6 has none (use MLVL, or the
-**FILTER** effect, on any track).
+*cutoff* is where, its *resonance* the emphasis there. In Tessera: TRIO, SID, NOISE and ORACLE have their own; FM6
+has none (use MLVL, or the **FILTER** effect, on any track). A mod onto **CUTOFF** moves each engine's own (MANUAL:
+"CUTOFF and SHAPE per engine").
 
 **FM** (frequency modulation). Making a sound by having one oscillator change the pitch of another at audio speed,
 which adds overtones: bells, electric pianos, metal. In Tessera: the **FM6** engine.

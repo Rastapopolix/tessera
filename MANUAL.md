@@ -415,6 +415,24 @@ the level of the operators that are not carriers, and the track's CUTOFF cords m
 the **FILTER** effect on the track (FX, an insert's TYPE **FILTER**): **CUT** is its cutoff, **RES** its resonance,
 and both are cord destinations (FX1 RTE, FX1 CHR). It works on any track, and as a send effect.
 
+**CUTOFF and SHAPE per engine.** A mod (or the ENV and LFO routes) onto a track's **CUTOFF** or **SHAPE** moves what
+that track's engine has in their place, on every voice: a filter where there is one, the brightness or the timbre
+where there is none. Where an engine has nothing there, the mod does nothing; for a resonant low-pass on any track,
+use the **FILTER** effect above.
+
+| Engine | CUTOFF moves | SHAPE moves |
+|---|---|---|
+| TRIO | **CUT**, its filter | **PW**, the pulse width |
+| SID | **CUT**, its filter | **PW**, the pulse width (with SYNC or RING: the second voice's pitch, up to 24 semitones) |
+| ORACLE | **CUT**, its four-pole ladder | **PW A** and **PW B**, both pulse widths |
+| NOISE | **FREQ**, its filter | **COLR**, the noise's colour |
+| VOICE | **VOWL** and **VOWL2**, the vowel | **BUZZ**, the buzz against the breath |
+| MACRO | **TIMBR** | **MORPH** |
+| FM6 | **MLVL**, the modulators' level (its brightness) | **FB**, the feedback |
+| PHYS | **BRIT**, the brightness | nothing |
+| WHEEL | nothing | nothing |
+| DRUM | nothing | nothing |
+
 <p align="center"><img src="assets/gallery/fx_filter.png" alt="FX 1 on FILTER: its curve" width="240"></p>
 
 **ORACLE.** Oscillator A (saw, pulse) and B (saw, triangle, pulse) and noise go through a resonant four-pole

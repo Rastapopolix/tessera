@@ -2957,7 +2957,7 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
 /* ---- MODS (CORDS) ---- */
 /* a cord's row (cu_rows; 120 x 24 cells): its number, the source as its track and four letters, an arrow, the
  * destination so, the move at the right; the cord picked outlined; under them its light and move (mo_cu_bar) */
-static void mo_cu_side(int32_t x, uint32_t tr, const char *name, int has_trk, int on)
+static void mo_cu_side(int32_t x, uint32_t tr, const char *name, int has_trk, int on, uint16_t ink)
 {
     char a[8];
     if (!on) {
@@ -2986,20 +2986,22 @@ static void mo_cu_side(int32_t x, uint32_t tr, const char *name, int has_trk, in
             n = str_len(a), a[n] = mk, a[n + 1u] = 0;
         }
     }
-    mo_text(a, x + 8, 3, MO_INK);
+    mo_text(a, x + 8, 3, ink);
 }
 static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on)
 {
     char b[16];
+    const char *e;
     uint16_t ink = on ? MO_INK : MO_DIM;
     cv_begin(240, CU_H, MO_BG);
     if (sel)
         mo_box(1, 0, 118, CU_H / 2 - 1, MO_INK);
     fmt_int(b, (int32_t)n);
     mo_text(b, n >= 10u ? 3 : 5, 3, sel ? MO_INK : MO_DIM);
-    mo_cu_side(13, c->src_trk, cu_src_name(c), cu_src_trk(c->src), c->src != CS_OFF);
+    mo_cu_side(13, c->src_trk, cu_src_name(c), cu_src_trk(c->src), c->src != CS_OFF, MO_INK);
     mo_text(">", 47, 3, ink);
-    mo_cu_side(54, c->dst_trk, cu_dst_mono(c), !cu_global(c->dst), c->dst != CD_OFF);
+    e = cu_eng_dst(c);                                  /* (CUTOFF, SHAPE: the engine's own knob, dim where none) */
+    mo_cu_side(54, c->dst_trk, e && *e ? e : cu_dst_mono(c), !cu_global(c->dst), c->dst != CD_OFF, e && !*e ? MO_DIM : MO_INK);
     fmt_int(b + 1, cu_pct(c) < 0 ? -cu_pct(c) : cu_pct(c));
     b[0] = cu_pct(c) < 0 ? '-' : '+';
     str_cpy(b + str_len(b), "%", 2);
