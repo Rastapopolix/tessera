@@ -10,8 +10,9 @@ WOFF, so the site, the installer, the editor and the simulator page letter as th
 A font pixel is 100 units, a glyph 6 pixels wide (5 and one clear), 7 above the baseline and 1 below: 800 units an
 em, so the face is sharp at 8, 16, 24 ... px. Lower case is drawn as upper (as on the device); a few signs the pages
 use and the device has no need of (| { } ~ ` and the middle dot, dashes, ellipsis, times) are added here, and the
-accented letters of the pages' other languages (latin(): a 5-row capital under a 2-row accent, C cedilla, sharp s,
-inverted ! and ?, guillemets; the device has none of them, so this costs no flash). The WOFF
+accented letters of the pages' other languages (latin(): the whole capital with a 2-row accent above the cap height,
+C cedilla, sharp s, inverted ! and ?, guillemets; the device has none of them, so this costs no flash). The line
+metrics stay 7 + 1 pixels (typo metrics, USE_TYPO_METRICS); the Windows ascent leaves room for the accents. The WOFF
 goes inline, as a data URL, between the TESSERA-MONO markers of every page in PAGES, so each one stays a single file.
 """
 import base64
@@ -34,6 +35,7 @@ EXTRA = {                                               # code point: 7 rows, bi
     0x2026: (0, 0, 0, 0, 0, 0, 21), 0x2019: (12, 4, 8, 0, 0, 0, 0), 0x2018: (4, 8, 12, 0, 0, 0, 0),
     0x201C: (10, 20, 30, 0, 0, 0, 0), 0x201D: (30, 10, 20, 0, 0, 0, 0),
 }
+ACCENT_ROWS = "accent"                                  # marks a glyph drawn from 2 rows above the cap height
 ACCENTS = {"grave": (8, 4), "acute": (2, 4), "circ": (4, 10), "tilde": (13, 22), "uml": (10, 0)}
 LATIN = {                                               # code point of the capital: (base letter, accent)
     0xC0: ("A", "grave"), 0xC1: ("A", "acute"), 0xC2: ("A", "circ"), 0xC3: ("A", "tilde"), 0xC4: ("A", "uml"),
@@ -57,37 +59,24 @@ def mo_font():
     return {0x20 + i: r for i, r in enumerate(rows)}
 
 
-def squeeze(rows, n=5):
-    """a capital in n rows: drop one row of its longest run of equal rows until it fits (E keeps its three bars)"""
-    rows = list(rows)
-    while len(rows) > n:
-        runs, i = [], 0
-        while i < len(rows):
-            j = i
-            while j + 1 < len(rows) and rows[j + 1] == rows[i]:
-                j += 1
-            runs.append((j - i + 1, i))
-            i = j + 1
-        size, at = max(runs, key=lambda r: r[0])        # the first of the longest
-        assert size > 1, "squeeze: no repeated row to drop"
-        del rows[at]
-    return tuple(rows)
-
-
 def latin(font):
     """the accented letters (capital and small: the pages draw both as capitals), C cedilla and the signs"""
     out = {}
     for cp, (base, accent) in LATIN.items():
-        out[cp] = out[cp + 0x20] = ACCENTS[accent] + squeeze(font[ord(base)])
+        out[cp] = out[cp + 0x20] = (ACCENT_ROWS,) + ACCENTS[accent] + font[ord(base)]
     out[0xC7] = out[0xE7] = font[ord("C")] + (4,)
     out.update(SIGNS)
     return out
 
 
 def glyph(rows):
-    """the rows' pixels as squares, each row's runs merged (no overlapping contours)"""
+    """the rows' pixels as squares, each row's runs merged (no overlapping contours); rows that start with
+    ACCENT_ROWS begin two rows above the cap height"""
+    first = 0
+    if rows and rows[0] == ACCENT_ROWS:
+        rows, first = rows[1:], -2
     pen = TTGlyphPen(None)
-    for r, bits in enumerate(rows):
+    for r, bits in enumerate(rows, first):
         top = (ASC - r) * PX
         c = 0
         while c < 5:
@@ -126,7 +115,8 @@ def build():
     fb.setupHorizontalHeader(ascent=ASC * PX, descent=-DESC * PX)
     fb.setupNameTable({"familyName": "Tessera Mono", "styleName": "Regular",
                        "copyright": "Copyright (C) 2026 Theo Dainis; GPL-3.0-only (firmware/src/gfx.c)"})
-    fb.setupOS2(sTypoAscender=ASC * PX, sTypoDescender=-DESC * PX, usWinAscent=ASC * PX, usWinDescent=DESC * PX)
+    fb.setupOS2(sTypoAscender=ASC * PX, sTypoDescender=-DESC * PX, sTypoLineGap=0, usWinAscent=(ASC + 2) * PX,
+                usWinDescent=DESC * PX, fsSelection=0x40 | 0x80, version=4)    # REGULAR, USE_TYPO_METRICS (v4+)
     fb.setupPost()
     fb.font["head"].created = fb.font["head"].modified = 3_844_800_000   # fixed: the same bytes every run
     fb.font.recalcTimestamp = False

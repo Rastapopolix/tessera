@@ -5,8 +5,8 @@
 //   node web/test_web.mjs
 // - editor.html: the protocol section (between PROTO-BEGIN/END) against its mock device (v1 commands,
 //   the user preset bank / librarian, library files, live pushes, older-firmware fallback, the v3 tracks
-//   and the mixer, the v5 drum grid in steps and user presets), its tab layout and ja/en strings, the installer's
-//   strings in every language and its language menu,
+//   and the mixer, the v5 drum grid in steps and user presets), its tab layout and strings in every language, the installer's
+//   strings in every language and its language menu, the simulator page's lines in every language,
 //   and the user-sample pipeline byte for byte against tools/sampleio.py
 // - fm1pkg.js: productOf and logicalImage on build/tessera.fwsc (skipped without a build)
 // - fm1ota.js: a full install and an unplug during the write against a simulated FM-1
@@ -1298,12 +1298,19 @@ function editorTabs() {
   /* every string key in both languages */
   const tb = html.slice(html.indexOf("const TEXT = {"), html.indexOf("\n};", html.indexOf("const TEXT = {")) + 2);
   const TEXT = vm.runInNewContext(tb.replace("const TEXT =", "(") + ")");
-  const ja = new Set(Object.keys(TEXT.ja)), en = new Set(Object.keys(TEXT.en));
+  const en = new Set(Object.keys(TEXT.en)), langs = Object.keys(TEXT);
   const used = new Set([...html.matchAll(/data-t="(\w+)"|\bt\("(\w+)"\)|sayK\("(\w+)"|hint = "(\w+)"/g)].map((x) => x[1] || x[2] || x[3] || x[4]));
   for (const k of ["needDevice", "smpNone", "bankConnect", "bankNone", "selectedTrack", "selectTrack", "notesHelp", "live", "polling"]) used.add(k);
-  const miss = [...used].filter((k) => !ja.has(k) || !en.has(k));
-  const odd = [...ja].filter((k) => !en.has(k)).concat([...en].filter((k) => !ja.has(k)));
-  ok(!miss.length && !odd.length, `editor: every string in ja and en (${used.size} used${miss.length ? ", missing " + miss : ""}${odd.length ? ", one language only " + odd : ""})`);
+  const miss = [...used].filter((k) => !en.has(k));
+  const odd = langs.flatMap((l) => [...en].filter((k) => typeof TEXT[l][k] !== "string").map((k) => l + "." + k)
+    .concat(Object.keys(TEXT[l]).filter((k) => !en.has(k)).map((k) => l + "." + k + " (not in en)")));
+  const holes = langs.flatMap((l) => [...en].filter((k) => typeof TEXT[l][k] === "string"
+    && js((TEXT.en[k].match(/\{\w+\}/g) || []).sort()) !== js((TEXT[l][k].match(/\{\w+\}/g) || []).sort())).map((k) => l + "." + k));
+  ok(!miss.length && !odd.length && !holes.length, `editor: ${en.size} strings in ${langs.join(" ")} (${used.size} used${miss.length ? ", not in en " + miss : ""}${odd.length ? ", missing " + odd.slice(0, 8) : ""}${holes.length ? ", {placeholders} differ " + holes : ""})`);
+  const emenu = [...html.matchAll(/<option value="(\w+)" lang=/g)].map((x) => x[1]);
+  const ELANGS = JSON.parse((/const LANGS = (\[[^\]]*\])/.exec(html) || [])[1] || "[]");
+  ok(js([...emenu].sort()) === js([...langs].sort()) && js([...ELANGS].sort()) === js([...langs].sort())
+    && /localStorage\.setItem\(LANG_KEY/.test(html) && /LANG_KEY = "tessera-lang"/.test(html), `editor: language menu = LANGS = TEXT, kept in tessera-lang`);
   /* the installer: every language has every English string, every string the page uses is there, and the header's
      language menu offers exactly the languages it has */
   {
@@ -1321,6 +1328,23 @@ function editorTabs() {
     ok(js([...menu].sort()) === js([...langs].sort()) && js([...LANGS].sort()) === js([...langs].sort()),
       `installer: language menu = LANGS = TEXT (${menu.join(" ")})`);
     ok(/localStorage\.setItem\(LANG_KEY/.test(ih) && /LANG_KEY = "tessera-lang"/.test(ih), "installer: picked language kept in tessera-lang");
+  }
+  /* the simulator page: every other language has every line the page and its script write in English */
+  {
+    const sh = readFileSync(join(HERE, "sim", "index.html"), "utf8");
+    const ST = vm.runInNewContext(sh.slice(sh.indexOf("window.SIM_TEXT = {") + 18, sh.indexOf("\n};", sh.indexOf("window.SIM_TEXT = {")) + 2)
+      .replace(/^/, "(") + ")");
+    const eb = sh.indexOf("const EN_TEXT = {");
+    const ENT = vm.runInNewContext("(" + sh.slice(eb + 15, sh.indexOf("\n};", eb) + 2) + ")");
+    const keys = new Set([...Object.keys(ENT), ...[...sh.matchAll(/data-[th]="(\w+)"/g)].map((x) => x[1])]);
+    const used = [...sh.matchAll(/\btr\("(\w+)"/g)].map((x) => x[1]).filter((k) => !keys.has(k));
+    const gaps = Object.keys(ST).flatMap((l) => [...keys].filter((k) => typeof ST[l][k] !== "string").map((k) => l + "." + k)
+      .concat(Object.keys(ST[l]).filter((k) => !keys.has(k)).map((k) => l + "." + k + " (unknown)")));
+    const holes = Object.keys(ST).flatMap((l) => Object.keys(ENT).filter((k) => typeof ST[l][k] === "string"
+      && js((ENT[k].match(/\{\w+\}/g) || []).sort()) !== js((ST[l][k].match(/\{\w+\}/g) || []).sort())).map((k) => l + "." + k));
+    const smenu = [...sh.matchAll(/<option value="(\w+)" lang=/g)].map((x) => x[1]);
+    ok(!gaps.length && !used.length && !holes.length && js([...smenu].sort()) === js(["en", ...Object.keys(ST)].sort()),
+      `simulator: ${keys.size} lines in en ${Object.keys(ST).join(" ")}${gaps.length ? ", missing " + gaps.slice(0, 8) : ""}${used.length ? ", no English for " + used : ""}${holes.length ? ", {placeholders} differ " + holes : ""}`);
   }
   /* the page script parses (the browser's view of it) */
   const script = html.slice(html.indexOf("<script>") + 8, html.lastIndexOf("</script>"));
