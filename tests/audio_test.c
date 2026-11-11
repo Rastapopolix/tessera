@@ -156,6 +156,19 @@ static void dma(void)
     for (i = 0; i < 512u; i++) fm1_alnk0_irq();
     expected = host_us * 256u / (HALF_FRAMES * 1000000u / FS);
     check("steady CPU load converges without integer smoothing bias", song.cpu_q8 >= expected - 1u && song.cpu_q8 <= expected);
+    fresh();
+    expected = HALF_FRAMES * 1000000u / FS;
+    host_us = expected / 2u; host_nest = expected / 4u;   /* the render 25 %, TIMER5 nested 25 % (#586) */
+    for (i = 0; i < 512u; i++) fm1_alnk0_irq();
+    check("the CPU meter counts TIMER5's nested USB service", song.cpu_q8 >= 126u && song.cpu_q8 <= 128u);
+    host_nest = 0;
+    host_us = expected;
+    fm1_alnk0_irq();
+    host_us = expected / 10u;
+    fm1_alnk0_irq();
+    check("one full half shows at once as the peak, not in the average", song.cpu_peak_q8 >= 250u && song.cpu_q8 < 140u);
+    for (i = 0; i < 300u; i++) fm1_alnk0_irq();
+    check("the peak falls back within a second", song.cpu_peak_q8 < 100u);
 }
 static void bench_output(void)
 {

@@ -187,7 +187,7 @@ static int sp_knob(uint32_t k, char *b, uint32_t size)
     const pid_entry_t *e;
     const char *name;
     char v[24];
-    int unused, col;
+    int unused, col, cpu;
     b[0] = v[0] = 0;
     if (ui.layer) {                                     /* a layer (GLO, SCL held): its knobs as its map shows them */
         uint8_t cs = col_style;
@@ -247,6 +247,7 @@ static int sp_knob(uint32_t k, char *b, uint32_t size)
         if (u > v && *u >= 'a' && *u <= 'z') u[-1] = 0;
     }
     unused = !e && help.hp == HP_UNUSED;
+    cpu = help.hp == HP_CPU;
     help = keep;
     help_tr = keep_tr;
     col = 0;
@@ -282,6 +283,17 @@ static int sp_knob(uint32_t k, char *b, uint32_t size)
         else if (str_eq(u, "+-") || str_eq(u, "+"))   /* (a mod source's bar: both ways, or one) */
             sp_cat(v, sizeof v, u[1] ? "BIPOLAR" : "UNIPOLAR");
         else if (sp_digit(v)) sp_cat(v, sizeof v, u);   /* (no unit after a word: "OFF", not "OFF bar") */
+    }
+    if (cpu) {                                          /* SYSTEM's CPU "55/92": 55 % PEAK 92 % */
+        char t[8];
+        uint32_t i;
+        for (i = 0; v[i] && v[i] != '/'; i++) ;
+        if (v[i]) {
+            str_cpy(t, v + i + 1u, sizeof t);
+            v[i] = 0;
+            sp_cat(v, sizeof v, "% PEAK");
+            sp_cat(v, sizeof v, t);
+        }
     }
     if (!name || !name[0] || str_eq(name, "-") || (!v[0] && !col && !e)) return 0;   /* ("-": an engine's unused knob) */
     if (!ui.home && (cur_page()->scope == SC_TRK || cur_page()->graph == GR_MIDICH)) {   /* MIXER, MIDI OUT: knob k

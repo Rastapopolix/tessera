@@ -514,7 +514,8 @@ typedef struct {
     uint8_t sel;                 /* selected track 0..NTRK-1: keys, pages, editor */
     int8_t octave;
     uint32_t tick;               /* sub-blocks since play */
-    uint32_t cpu_q8;             /* audio ISR load, 1/256 */
+    uint32_t cpu_q8;             /* audio ISR load, 1/256, USB service nested in it included (~93 ms average) */
+    uint32_t cpu_peak_q8;        /* the recent worst half's load, 1/256 (audio.c: falls over ~0.7 s) */
     uint32_t master_q12;
     int32_t batt_raw;            /* smoothed ADC ch3 (battery divider), 0 = not read yet */
     uint8_t pwr[3];              /* P33 0xA1 (LDO5V_CON: bit 5 5 V in), 0x19 (CHG_READ: bit 0 full), 0x1A (CHG_CON0: bit 0
