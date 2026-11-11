@@ -42,10 +42,12 @@ static uint32_t cu_count(uint32_t below, int global)    /* the listed codes 1 ..
 }
 #define CU_DPT cu_count(CD_N, 0)
 #define CU_NDST (1u + NTRK * CU_DPT + cu_count(CD_N, 1))
+/* TIDE listed 1, 2, 3 (its codes: TIDE 1, TIDE 3, TIDE 2, kept so projects load): the two swap places in the list */
+static uint32_t cu_tide(uint32_t s) { return s == CS_APATHY ? CS_INERTIA : s == CS_INERTIA ? CS_APATHY : s; }
 static uint32_t cu_src_of(const cord_t *c)
 {
     if (!c->src) return 0u;
-    return cu_src_trk(c->src) ? 1u + c->src_trk * CU_SPT + (c->src == CS_EOC ? CS_ENERGY - 1u : c->src - 1u) : 1u + NTRK * CU_SPT + c->src - CS_ENERGY;
+    return cu_src_trk(c->src) ? 1u + c->src_trk * CU_SPT + (c->src == CS_EOC ? CS_ENERGY - 1u : cu_tide(c->src) - 1u) : 1u + NTRK * CU_SPT + c->src - CS_ENERGY;
 }
 static uint32_t cu_src_at(uint32_t v, uint8_t *tr)     /* entry v of KNOB 1's list: its source, *tr its track */
 {
@@ -54,7 +56,7 @@ static uint32_t cu_src_at(uint32_t v, uint8_t *tr)     /* entry v of KNOB 1's li
     v--;
     if (v >= NTRK * CU_SPT) return CS_ENERGY + v - NTRK * CU_SPT;
     *tr = (uint8_t)(v / CU_SPT);
-    return v % CU_SPT == CS_ENERGY - 1u ? (uint32_t)CS_EOC : 1u + v % CU_SPT;
+    return v % CU_SPT == CS_ENERGY - 1u ? (uint32_t)CS_EOC : cu_tide(1u + v % CU_SPT);
 }
 static uint32_t cu_dst_k(uint32_t code) { return cu_count(code, cu_global(code)); }   /* code -> its place, in its kind */
 static uint32_t cu_dst_code(uint32_t k, int global)
