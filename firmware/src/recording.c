@@ -211,7 +211,11 @@ static int recording_note(track_t *t, uint32_t note, uint32_t vel, uint32_t step
     recorded_note_t *r = &recording[free];
     *r = (recorded_note_t){(uint16_t)on, 1, (uint8_t)note, (uint8_t)vel, (uint8_t)owner, (uint8_t)(actual | (step != actual ? 64u : 0u) | (step == 0u && actual ? 128u : 0u))};
     recording_next[free] = recording_head[owner]; recording_head[owner] = (uint16_t)free;
-    recording_schedule[trk_index(t)].period = 0;
+    /* Only the new event's onset (as recording_sync would): a fresh schedule
+     * walks the whole bank, near 1,000 events in a full store: a dropout at
+     * every captured note (#612). A stale schedule is redone at the next tick. */
+    uint32_t tr = trk_index(t), sp = recording_schedule[tr].period, q = (uint32_t)t->p[P_RECQ];
+    if (sp) recording_due[free] = q ? recording_quant_on(t, r, sp, q) : recording_on(t, r, sp);
     memset(&recording_run[free], 0, sizeof recording_run[free]);
     recording_flags[free] = 13;
     t->step[step].flags |= SF_RECORDED;

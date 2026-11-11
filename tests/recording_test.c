@@ -603,10 +603,28 @@ static int take_quantization(void)
     seq_stop();
     led_pos_init(); return bad;
 }
+/* #612: a captured note keeps the bank's schedule and gets its own onset: no whole-bank recompute (a dropout per
+ * note in a full store), and the onset is the one a fresh schedule would give, with QNT OFF and ON. */
+static int capture_keeps_schedule(void)
+{
+    int bad = 0;
+    for (uint32_t q = 0; q < 4u; q += 3u) {
+        raw_begin(); track_t *t = &trk[0]; t->p[P_RECQ] = (int16_t)q;
+        for (uint32_t i = 0; i < 40u; i++) { seq_advance(54); input_on(t, 60, 90); seq_advance(12); input_off(t, 60); }
+        seq_advance(7); input_on(t, 64, 100);
+        uint32_t period = recording_schedule[0].period, last = recording_head[0], due = recording_due[last];
+        recording_schedule[0].period = 0; recording_sync(t, seq_div_samples((uint32_t)t->p[P_SDIV]));
+        bad += check(q ? "a captured note keeps the schedule and its quantized onset (QNT ON)" :
+                         "a captured note keeps the schedule and its onset (QNT OFF)",
+                     period && recording[last].note == 64 && due == recording_due[last]);
+        input_off(t, 64); seq_stop(); t->p[P_RECQ] = 0;
+    }
+    return bad;
+}
 #ifndef RECORDING_NO_MAIN
 int main(void)
 {
-    int bad=take_quantization()+first_note_start()+pattern_passes()+control_tick_precision()+repeated_hits()+independent_lengths()+raw_loop()+raw_storage()+raw_capacity()+copy_and_edit()+slow_precision()+replace_during_replay()+standalone_and_template()+full_recording_replay();
+    int bad=take_quantization()+first_note_start()+pattern_passes()+control_tick_precision()+repeated_hits()+independent_lengths()+raw_loop()+raw_storage()+raw_capacity()+copy_and_edit()+slow_precision()+replace_during_replay()+standalone_and_template()+full_recording_replay()+capture_keeps_schedule();
     printf("%s\n",bad?"RAW RECORDING TEST FAILED":"Raw recording tests passed");return !!bad;
 }
 #endif
