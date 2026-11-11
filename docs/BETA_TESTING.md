@@ -10,11 +10,7 @@ The maintainer has already checked the other items on a device with beta7, so th
 ## Known issues (please don't report these again)
 
 - **Web editor overwrites projects on connect** ([#609](https://github.com/Rastapopolix/tessera/issues/609)): don't connect the web editor to the FM-1 until this is fixed.
-- The DIR row flickers while a mod moves it (known issue, being fixed).
-- ENTRIES ORDER allows two tracks to have the same rank (known issue, being fixed).
-- "MEMORY FULL" with audio crackles after long, heavily evolving projects with REC armed ([#612](https://github.com/Rastapopolix/tessera/issues/612), being looked at).
-- ARP HOLD does not latch the held chord (known issue, being fixed).
-- A mod row with a source but no destination shows no activity; it works once a destination is set (known issue, being fixed).
+- "MEMORY FULL" with audio crackles after long, heavily evolving projects with REC armed ([#612](https://github.com/Rastapopolix/tessera/issues/612)): the crackle on each captured note is fixed in 3.5-rc1; the message itself is most likely the recording store filling up (turn REC off when you are done overdubbing).
 
 ## How to report
 
@@ -152,6 +148,12 @@ from `[SETUP]` first. Tick the boxes as you go if you copy the list to your own 
       **Expect:** presets listed; the file is named after the preset, not TINE EP.
 
 ## [KNOWN] Known, still being checked
+- [ ] **CPU meter** *(new in 3.5-rc2)*: GLO > SYSTEM's CPU shows two numbers, average/peak (e.g. 55/92 %).
+      1. Load a busy demo (two FM6 or ORACLE tracks), PLAY, open GLO > SYSTEM.
+      **Expect:** the second number is higher and jumps with busy moments; at 99 you may hear crackles. Mute the busiest track: both numbers drop within a second.
+- [ ] **A track you can't hear rests** *(new in 3.5-rc2)*: mute a track with a long REVERB or ECHO tail, wait, unmute.
+      1. A pad with REVERB on T1, playing. Mute T1 (GLO, black key) for a few bars, then unmute.
+      **Expect:** it fades back in on time, no click or old echo burst. T2 FOLLOW T1 keeps following while T1 is muted.
 - [ ] USB stems soft clip (#603): needs a check on a device (USB OUTPUT 4 TRACKS with a hot mix; do the stems clip hard or round off?).
 - [ ] The web editor finds an FM-1 port by its old name (#605): try it in Chrome on a Mac (port still called "FM-1").
 

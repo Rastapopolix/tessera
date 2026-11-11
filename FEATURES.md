@@ -177,7 +177,8 @@ More: [Harmony](MANUAL.md#harmony-one-key-chord-and-qnt-chrd), [USER scales](MAN
 - **HOLD on notes**: clock a HOLD cord by a track's notes instead of the bar **(3.5 beta)**.
 - **MOD DEPTH**: one control for how much of the whole patch plays, 0 to 100 %; a brake for feedback patches
   **(3.5 beta)**.
-- **MOD SCOPE**: watch a cord's movement over time against its source **(3.5 beta)**.
+- **MOD SCOPE**: watch a cord's movement over time against its source, and pin it while you turn the knobs
+  **(3.5 beta)**.
 - **MATRIX**: the whole patch as a 4 x 4 grid, lit as cords move.
 - **Mod shortcut**: make a cord on the spot from the knob you are turning.
 - **Live marks**: every knob a cord moves shows it.
@@ -243,7 +244,11 @@ More: [The panel at a glance](MANUAL.md#the-panel-at-a-glance), [Screen reader](
   autosave and a template.
 - **New song screen**: pick a key, tempo and a role per track.
 - **Demo projects** to load and learn from.
-- **Health monitor**: watch CPU load, late audio and shed voices live, in the web editor.
+- **Health monitor**: watch CPU load, late audio and shed voices live, in the web editor; its USB rows tell a click on
+  the USB side from an overloaded FM-1 **(3.5 beta)**.
+- **CPU meter** on GLO > SYSTEM: the average and the worst moment of the last second **(3.5 beta)**.
+- **Free time from silent tracks**: a muted or faded-out track stops making sound, leaving its time to the tracks you
+  hear **(3.5 beta)**.
 - **Manual, recipes and parameter reference**: step-by-step patches, and a reference generated from the firmware.
 - **Free and open**: GPL-3.0, with every line readable.
 

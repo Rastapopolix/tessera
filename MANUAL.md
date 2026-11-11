@@ -479,6 +479,14 @@ clean:
 - lower **BUDGET** (12, say): fewer voices ring at once, which leaves the FM-1 headroom; higher allows more, and
   crackles sooner.
 
+**GLO > SYSTEM** shows how hard the FM-1 is working in its fourth column, **CPU**, as two numbers: the average, then
+the worst moment of about the last second (`55/92 %`), USB audio and MIDI included. When the second number reaches
+99, notes may drop or the sound crackle. A track nobody can hear costs next to nothing: at LEVEL 0, muted, left out
+by SOLO or taken out by [ENTRIES](#entries-tracks-out-and-back-in), its voices and insert effects stop after a moment,
+while its sequencer, LFO and the tracks that follow it go on; heard again, it fades back in. (A track whose ENV a cord
+reads always plays on.) Muting a busy part is a quick way to make room. For the full picture, the web editor's
+[Health](#saving-and-older-projects) reads the same numbers and more.
+
 ---
 
 ## SEQ: the MODE and its pages
@@ -1590,7 +1598,9 @@ at a time, each with an activity light and a moving mark.
   A HOLD mod steps once a bar. It sweeps left to right (a gap marks now) over a window that suits the source, with
   ticks on the bottom edge at the bars: a bar for the notes' own (ENV, VEL, GATE, NOTE, CV, S&H ...), 2 to 16 bars for
   an LFO (it keeps 2 to 6 cycles in view), 4 for a MACRO, 16 for DRIFT and SWARM, 64 for TIDE and ENERGY. Let go and
-  the four rows come back. With the screen reader, holding OCT- says it once: the window, the shape and the lowest and
+  the four rows come back. To keep it on screen, hold OCT- and tap **OCT+** (SCOPE PINNED): let go of OCT- and the
+  knobs work as usual, so you can turn the amount or pick another mod and watch it change. Tap OCT- (SCOPE FREE) or
+  leave MODS and the rows come back; the pin is not saved. With the screen reader, holding OCT- says it once: the window, the shape and the lowest and
   highest move ("SCOPE 2 BARS, CYCLING 2 A BAR, LOW -60 HIGH 60 %"; a GATE: how often it opens and whether it is open
   now). The same hold turns a GATE's threshold (KNOB 4), so you watch it move against the source. A cord
   from BUS A or BUS B draws the bus as its source. Nothing is saved; nothing changes until you hold it.
@@ -1892,7 +1902,10 @@ load a file you put into a slot from SAVE > PROJECT. A project made on a newer T
 
 To see how hard the FM-1 is working, the editor's **Settings** tab has **Health**: press **Live** and it reads the
 CPU load, the worst audio half against its deadline, late halves, voices shed or stolen (per track too), the second
-core and the stacks once a second. A value shown inverted means a crackle or a cut voice is likely. **Reset worst**
+core and the stacks once a second. Its USB rows show the audio to and from the computer, each way: whether it
+streams, how full its buffer is, underruns and overruns, missed frames and bad packets, and the slowest USB service;
+one of those marked points to a click on the USB side rather than an overloaded FM-1. A value shown inverted means a
+crackle or a cut voice is likely. **Reset worst**
 starts the worst times again, for example before you try a busy part.
 
 ---
