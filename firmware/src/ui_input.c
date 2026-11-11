@@ -118,10 +118,14 @@ static void gen_dn_knob(uint32_t slot, int32_t steps)
     else if (sd_layer_on())
         tessera_sd_layer_knob(slot - 1u, steps);
 }
-/* MODS' scope (ui_cords.c cu_scope_draw): OCT- held, nothing over the page */
+/* MODS' scope (ui_cords.c cu_scope_draw): OCT- held or the scope pinned, nothing over the page */
+static int cu_scope_bare(void)
+{
+    return !ui.menu && !ui.confirm && !pop.on && !ui.layer && !help.on;
+}
 static int cu_scope_held(void)
 {
-    return ((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) && !ui.menu && !ui.confirm && !pop.on && !ui.layer && !help.on;
+    return (((fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u) | cu_pin) && cu_scope_bare();
 }
 static uint32_t oct_leds(void)
 {
@@ -2143,6 +2147,8 @@ static void ui_input(void)
         if(bulk_context()){if(bulk.on&&!slot_kind())notes_bulk_sheet_open();else if(!bulk.on)page_sheet_open();}ui.bulk_hold=0;
     }
     oct = oct_taps(pressed, oct_nav());
+    if (ui.home || cur_page()->graph != GR_CORDS)       /* (off MODS: the scope's pin let go) */
+        cu_pin = 0;
     uint32_t lay, knob_layer, combo = 0, lytap, lkeys;
     int32_t s, ks[4] = {0, 0, 0, 0};
     seq_erase_update(pressed);
@@ -2427,6 +2433,14 @@ static void ui_input(void)
             if (!ui.home && cur_page()->graph == GR_BROWSE) {   /* the browser: OCT- back, OCT+ keep (ui_browser.c) */
                 browser_key(b == B_OCTUP);
                 oct_eat |= (uint8_t)bit;
+                break;
+            }
+            if (MELODEE_LOOK && !ui.home && cur_page()->graph == GR_CORDS && cu_scope_bare() && !name_on() &&
+                !new_on() && (b == B_OCTDN ? cu_pin : (fm1_in.buttons >> panel.btn[B_OCTDN]) & 1u)) {   /* MODS: OCT- held
+                                                         * + OCT+ pins the scope, OCT- lets it go */
+                cu_pin = (uint8_t)(b == B_OCTUP && !cu_pin);   /* (no Back, no BI / UNI) */
+                oct_eat |= (uint8_t)bit;
+                ui_message(cu_pin ? "SCOPE PINNED" : "SCOPE FREE");
                 break;
             }
             if (oct_nav())                              /* off Stage: Esc / Enter, on release (below) */

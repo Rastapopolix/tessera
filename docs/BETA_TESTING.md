@@ -129,6 +129,9 @@ from `[SETUP]` first. Tick the boxes as you go if you copy the list to your own 
 - [ ] Smooth while playing (frame rate), readable on DARK and LIGHT ground.
       1. While playing, hold OCT- for a while. Then MENU > GROUND = LIGHT and repeat.
       **Expect:** smooth movement; readable in both.
+- [ ] **Pinned** *(new in 3.5-rc2)*: hold OCT-, tap OCT+, let go of OCT-: the scope stays and says SCOPE PINNED.
+      1. On MODS with an LFO cord, hold OCT-, tap OCT+, let go. Turn KNOB 4 (the amount); KNOB 2 to another mod.
+      **Expect:** the scope stays while the knobs work as without OCT- (the amount changes the line); another mod gets its scope. Tap OCT-: the rows come back, SCOPE FREE, and you stay on MODS. Pin it again and leave MODS: coming back shows the rows.
 - [ ] Screen reader says it once as it opens (e.g. SCOPE 2 BARS, CYCLING 2 A BAR, LOW -60 HIGH 60 %), not again while held.
       1. Screen reader on; hold OCT- on MODS for several seconds.
       **Expect:** it speaks once on opening, not repeatedly.

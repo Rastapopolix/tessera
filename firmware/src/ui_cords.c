@@ -173,6 +173,8 @@ static void cu_chip(int32_t x, int32_t y, int32_t w, uint32_t tr, const char *s,
 /* MOD SCOPE (gap G14; mscope.c samples, ui_mono.c mo_scope draws): OCT- held on MODS shows the picked mod's move over
  * time under its row, in the other three rows' place; letting go, the rows again. 1 while shown (cu_scope_draw) */
 static uint8_t cu_scope;
+static uint8_t cu_pin;                                  /* pinned: shown without OCT- (OCT- held + OCT+; OCT- or leaving
+                                                         * MODS lets it go; RAM only, never saved; ui_input.c) */
 static uint8_t cu_thr_t;                                /* frames left of a GATE's threshold drawn across (KNOB 4) */
 /* the cord shown in row k of four: the screenful, or with the scope under it the picked one alone; CORD_LIVE none */
 static uint32_t cu_slot(uint32_t k)
