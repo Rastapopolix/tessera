@@ -1830,6 +1830,12 @@ static void ui_notices(void)
     if (ui.msg_t && str_eq(ui.msg, "WAIT FOR LOOP") && !(song.rec_wait & (1u << song.sel)))
         ui_message(rec_on(TSEL) ? "RECORDING" : "REC OFF");
     if (motion_full) { motion_full = 0; ui_message("MOTION FULL"); }
+    if (et_swapped) {                                   /* (ENTRIES ORDER swapped: "T2 NOW AUTO") */
+        char m[8] = "T1 NOW ";
+        m[1] = (char)('0' + et_swapped);
+        ui_say(m, ET_ORDER_NAME[tessera.et_order[(et_swapped - 1u) % TESSERA_TRACKS] % ET_ORDERS]);
+        et_swapped = 0;
+    }
     if (recording_quant_blocked) { recording_quant_blocked = 0; ui_message("QNT STEP TAKEN"); }
     if (midi_hint) {                                    /* MIDI notes into a track that is not selected */
         uint32_t h = midi_hint;
