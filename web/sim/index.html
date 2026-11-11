@@ -121,6 +121,7 @@ footer small { font-size: 11px; opacity: .8; }
 .demo button:hover:not(:disabled) { background: var(--bg); color: var(--fg); }
 .demo button:disabled { opacity: .45; cursor: default; }
 .demo button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.demo select { font: 16px/1 var(--pixel); padding: 6px 4px; background: var(--bg); color: var(--fg); border: 2px solid var(--fg); }
 .gens { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin: 0 0 14px; }
 .gens section { min-width: 0; border: 2px solid var(--rule); border-top: 6px solid var(--fg); padding: 10px 12px; }
 .gens section:nth-child(4n+2) { border-top-style: dashed; }
@@ -153,6 +154,13 @@ footer small { font-size: 11px; opacity: .8; }
       hour, a breathing FM6 drone, a TRIO pad on AWAKE, wind chimes on FALL and a sub bass on MARKOV, thinned and
       filled by ENERGY. The button plays it from the top (or press PLAY); KOTO GARDEN is in slot B
       (SAVE &gt; PROJECT).</span></div>
+  <div class="demo" id="files"><select id="fslot" aria-label="Project slot" disabled>
+      <option value="0">Slot A</option><option value="1">Slot B</option><option value="2">Slot C</option><option value="3">Slot D</option></select>
+    <button id="fsave" type="button" disabled>Save as file</button><button id="fload" type="button" disabled>Load a file</button>
+    <input type="file" id="ffile" accept=".tsp" hidden>
+    <span id="fnote">Project files: a slot's project as a .tsp file, the same file the web editor puts on (or takes off) an
+      FM-1 in its Projects tab. Save a project into a slot first (SAVE &gt; PROJECT). A loaded file goes into the slot
+      you pick; load it from SAVE &gt; PROJECT. The simulator forgets its slots when the page closes: keep the file.</span></div>
   <p>The demo is loaded as a project, as on the device, so PLAY plays it. <b>To start from an empty project</b>:
     tap <b>SAVE</b> (<kbd>8</kbd>) until the PROJECT page, turn <b>KNOB 1</b> down to <b>New song</b> and press
     <b>OCT+</b> (<kbd>]</kbd>): the demo stops. <b>OCT+</b> again for Yes to "Start a new song?", then pick the key
@@ -709,6 +717,7 @@ async function switchOn() {
         const m = e.data;
         if (m.type === "ready") res();
         else if (m.type === "error") rej(new Error(m.message));
+        else if (m.type === "slot" || m.type === "slotPut") slotReply(m);
         else if (m.type === "frame") {
           if (m.fb) drawScreen(m.fb);
           if (m.leds) drawLights(lastLeds = m.leds, m.anim);
@@ -730,6 +739,7 @@ async function switchOn() {
     send({ type: "visible", on: !document.hidden });
     midiOn();
     document.getElementById("demo").disabled = false;
+    for (const id of ["fslot", "fsave", "fload"]) document.getElementById(id).disabled = false;
   } catch (err) {
     node = null;
     go.disabled = false;
@@ -739,6 +749,51 @@ async function switchOn() {
 }
 document.getElementById("go").addEventListener("click", switchOn);
 document.getElementById("demo").addEventListener("click", () => send({ type: "demo" }));
+
+// ------------------------------------------------------------------ project files (.tsp, a slot's TSP1 record)
+// The record as the FM-1 keeps it (project_tsp.c): "TSP1", u32 length, u16 part count, u16 0, the parts (u8 id, u8 version,
+// u16 length, bytes), u32 FNV-1a. Part 10 is the name. The firmware checks the record again before it takes it.
+let slotWait = null;
+function slotReply(m) { const w = slotWait; slotWait = null; if (w) w(m); }
+const ask = (m) => new Promise((res) => { slotWait = res; send(m); });
+const fnote = document.getElementById("fnote"), fslot = document.getElementById("fslot"), FNOTE = fnote.textContent;
+const slotName = () => "ABCD"[fslot.value | 0];
+function tspName(b) {
+  const v = new DataView(b.buffer, b.byteOffset, b.length);
+  if (b.length < 16 || v.getUint32(0, true) !== 0x31505354) return null;
+  let at = 12;
+  for (let k = v.getUint16(8, true); k > 0 && at + 4 <= b.length; k--) {
+    const len = v.getUint16(at + 2, true);
+    if (b[at] === 10) { const n = b.subarray(at + 4, at + 4 + len), z = n.indexOf(0); return String.fromCharCode(...(z < 0 ? n : n.subarray(0, z))).trim(); }
+    at += 4 + len;
+  }
+  return "";
+}
+document.getElementById("fsave").addEventListener("click", async () => {
+  const m = await ask({ type: "slotGet", slot: fslot.value | 0 });
+  if (!m.bytes.length) { fnote.textContent = `Slot ${slotName()} is empty: save a project into it first (SAVE > PROJECT).`; return; }
+  const name = (tspName(m.bytes) || `slot-${slotName()}`).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "project";
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([m.bytes], { type: "application/octet-stream" }));
+  a.download = name + ".tsp";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  fnote.textContent = `Slot ${slotName()} saved as ${a.download}. ` + FNOTE;
+});
+const ffile = document.getElementById("ffile");
+document.getElementById("fload").addEventListener("click", () => ffile.click());
+ffile.addEventListener("change", async () => {
+  const f = ffile.files[0];
+  ffile.value = "";
+  if (!f) return;
+  const bytes = new Uint8Array(await f.arrayBuffer()), name = tspName(bytes);
+  if (name === null) { fnote.textContent = `${f.name} is not a Tessera project file (.tsp).`; return; }
+  const was = (await ask({ type: "slotGet", slot: fslot.value | 0 })).bytes;
+  if (was.length && !confirm(`Replace slot ${slotName()} (${tspName(was) || "a project with no name"}) with ${name || f.name}?`)) return;
+  const r = await ask({ type: "slotPut", slot: fslot.value | 0, bytes });
+  fnote.textContent = r.ok ? `${name || f.name} is in slot ${slotName()}: load it from SAVE > PROJECT.`
+    : `This simulator does not read ${f.name}: it may be damaged, or made by a newer Tessera (try the beta simulator).`;
+});
 document.addEventListener("visibilitychange", () => send({ type: "visible", on: !document.hidden }));
 
 // ------------------------------------------------------------------ the release and the beta

@@ -1867,6 +1867,10 @@ until you save it.
 The web editor's **Complete backup** saves and restores the music, slots A to D, the sound banks and the settings.
 To try the [demo projects](demos/README.md), the editor's **Demo projects** (on the Projects tab) puts each into a
 slot you choose and leaves the rest of the FM-1 as it is; `tools/demo_backup.py` does the same with a backup file.
+**Project files** (on the same tab) saves one slot's project as a `.tsp` file, or puts a `.tsp` file into a slot. The
+[web simulator](https://rastapopolix.github.io/tessera/webapp/sim/) has the same two buttons under the FM-1, so a
+song made in the simulator goes onto the FM-1 as a file and back. Save it into a slot first (SAVE > PROJECT), and
+load a file you put into a slot from SAVE > PROJECT. A project made on a newer Tessera may not load on an older one.
 
 To see how hard the FM-1 is working, the editor's **Settings** tab has **Health**: press **Live** and it reads the
 CPU load, the worst audio half against its deadline, late halves, voices shed or stolen (per track too), the second
