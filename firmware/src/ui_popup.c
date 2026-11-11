@@ -628,8 +628,9 @@ static void pick_touch(uint32_t c)
         d = 0;
     } else {
     d = page_desc(cur_page(), c, &vp);
-    if (!d || !vp || d->fmt != F_ENUM || !d->names || d->max - d->min < 4 || pick_numbers(d))
-        return;
+    if (!d || !vp || d->fmt != F_ENUM || !d->names || d->max - d->min < 4 || pick_numbers(d) || enum_order(d))
+        return;                                         /* (DIV, ARP RATE: their value under the knob, slow to fast;
+                                                         * beta7: the list read as a drop-down) */
     }
     if (pop.on != POP_PICK)
         ui.force = 1;                                   /* (the page dimmed under it) */
