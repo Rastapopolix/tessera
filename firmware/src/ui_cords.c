@@ -333,10 +333,12 @@ static void cu_scope_draw(int held)                     /* held: OCT- held, noth
         was = cu_scope ? key : 0u;
         return;
     }
+    if (!was || ui.force)                               /* (just opened: the 20 under it, the rows' 144 less 124) */
+        lcd_fill(0, CU_Y + CU_H + 124, 240, 3 * CU_H - 124, T_BG);
     was = key;
     cv_begin(240, 124, T_BG);                           /* (the canvas's most, gfx.c CV_MAX: 124 of the rows' 144, */
-    mo_scope(2, 58, cu_src_trk(c->src) ? (int32_t)c->src_trk : -1, cu_thr_t != 0u);   /* centred) */
-    cv_blit(0, (uint32_t)(CU_Y + CU_H + 10));
+    mo_scope(2, 58, cu_src_trk(c->src) ? (int32_t)c->src_trk : -1, cu_thr_t != 0u);   /* up to the picked row) */
+    cv_blit(0, (uint32_t)(CU_Y + CU_H));
 #else
     (void)was, (void)key, (void)c;
 #endif

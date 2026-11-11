@@ -118,6 +118,17 @@ static void test_mods_scroll(void)
     for (uint32_t i = 0; i < 4u; i++) {                 /* the scope: OCT- held a while, let go, scroll again */
         pr_hold(1); for (uint32_t f = 0; f < 60u; f++) frame();   /* (past a tap: no Back) */
         assert(cu_scope);
+        if (!i) {                                       /* (opened over the rows: none of rows 2..4 left around it,
+                                                         * the same as drawn whole; Theo, beta7) */
+            static uint16_t was[240u * 3u * CU_H];
+            memcpy(was, host_screen + (CU_Y + CU_H) * 240, sizeof was);
+            ui.force = 1; frame();
+            for (uint32_t p = 0; p < 240u * 3u * CU_H; p++)
+                if (was[p] != host_screen[(CU_Y + CU_H) * 240 + p]) {
+                    printf("MOD SCOPE: a row's pixel left at %u,%u\n", p % 240u, CU_Y + CU_H + p / 240u);
+                    assert(0);
+                }
+        }
         pr_hold(0); frame();
         assert(!cu_scope && cur_page()->graph == GR_CORDS && !ui.home);
         host_redrawn = 0;
