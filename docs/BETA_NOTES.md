@@ -39,6 +39,7 @@ Want to help test? The steps, by area, and how to report a problem: [BETA_TESTIN
 - MIXER's sheet: hold OCT+ on MIXER for Mutes (NOW, BAR, PHRASE), the same setting as MENU > MUTES, at hand while you play the mute keys.
 
 ## Fixed
+- ARP HOLD: with CLK set to an external clock (USB, TRS) and the transport stopped, a chord latched with HOLD stopped when the keys were let go, though it played while they were held. It now keeps playing at the local tempo, as the keys do. A chord stopped by the external Stop (or a lost clock) still waits for Start or Continue; a new key plays again.
 - USB OUTPUT 4 TRACKS: a loud chord crackled in its stem (cut hard at full scale, #586). A stem now has the stereo recording's level, 6 dB under before, and the outputs' soft clip.
 - Web editor on macOS: "Tessera not found" when the FM-1's MIDI port is still named "FM-1" (CoreMIDI keeps the first name it saw). The editor now also tries ports named FM-1 / FM1, takes one only if it answers the editor handshake as Tessera, and says so if an FM-1 does not (stock firmware: install Tessera with the installer). The not-found text hints at the cached name (#527).
 - Rename and SAVE while playing: the name screen now opens (the keys type, they never sound); only writing the name needs the transport stopped. OCT+ says STOP TO SAVE and the screen stays; PLAY stops, OCT+ saves. Before, Rename closed the sheet and nothing opened (#602).
