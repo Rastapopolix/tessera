@@ -38,8 +38,11 @@ Want to help test? The steps, by area, and how to report a problem: [BETA_TESTIN
 - CLOCK: a new destination. A generator track with a mod onto CLOCK steps on the source's edges and not on its DIV: with EOC as the source, a note each LFO cycle (a Krell: add S&H onto the LFO's rate). AMOUNT is the division (50 % every second edge), negative the gate closing; a GATE source counts hits. First step at PLAY; DIV is the step's length and the fastest it steps. A project that uses it does not load on older firmware.
 - HOLD on notes: hold OCT- on a HOLD mod and turn KNOB 1 to clock it by a track's notes (HOLD ON T1 NOTES .. T4) instead of the bar: the source is taken on each note that track plays.
 - MIXER's sheet: hold OCT+ on MIXER for Mutes (NOW, BAR, PHRASE), the same setting as MENU > MUTES, at hand while you play the mute keys.
+- A track nobody can hear (LEVEL 0, muted, left out by SOLO or taken out by ENTRIES) stops making sound after about 46 ms, so its time goes to the tracks you hear; its sequencer, LFO and the tracks that follow it go on, and it fades back in when heard again. A track whose ENV a cord reads always plays on (#586).
+- Web editor Health: six USB rows, each way (to and from the computer): streaming and buffer fill, underruns and overruns, missed frames and bad packets, the slowest USB service. A marked one points to a click on the USB side rather than an overloaded FM-1 (#586).
 
 ## Fixed
+- GLO > SYSTEM's CPU read about 55 % while the sound already broke up: it left out the USB and MIDI service and averaged over a tenth of a second. It now counts everything and shows the average and the worst moment of about the last second, as 55/92 (the screen reader says "55 % PEAK 92 %") (#586).
 - ARP HOLD: with CLK set to an external clock (USB, TRS) and the transport stopped, a chord latched with HOLD stopped when the keys were let go, though it played while they were held. It now keeps playing at the local tempo, as the keys do. A chord stopped by the external Stop (or a lost clock) still waits for Start or Continue; a new key plays again.
 - USB OUTPUT 4 TRACKS: a loud chord crackled in its stem (cut hard at full scale, #586). A stem now has the stereo recording's level, 6 dB under before, and the outputs' soft clip.
 - Web editor on macOS: "Tessera not found" when the FM-1's MIDI port is still named "FM-1" (CoreMIDI keeps the first name it saw). The editor now also tries ports named FM-1 / FM1, takes one only if it answers the editor handshake as Tessera, and says so if an FM-1 does not (stock firmware: install Tessera with the installer). The not-found text hints at the cached name (#527).
@@ -101,4 +104,6 @@ Want to help test? The steps, by area, and how to report a problem: [BETA_TESTIN
 - HOLD on notes: T1 RAND as HOLD onto T3 CUTOFF, clocked by T2's notes; save, load.
 - EOC: an LFO's EOC as a GATE mod onto FILL or a bus; on a slow LFO the gate is a short pulse each cycle.
 - CLOCK: EOC onto a generator's CLOCK, then S&H onto that LFO's rate; AMOUNT 50 % for every second edge; a GATE source counting hits; STOP and PLAY start it again.
+- CPU on GLO > SYSTEM with a busy project: does the second number reach 99 when you hear crackles, and drop when you mute a busy track?
+- Mute a track with a long reverb or ECHO, then unmute it: it fades back in without a click (its effects start clean).
 - A project from 3.4.1 loads and plays the same.
