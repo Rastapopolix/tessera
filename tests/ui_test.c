@@ -2278,6 +2278,18 @@ static int test_help_gesture(void)
     }
     {                                             /* the selectors' lists (ui_popup.c pick_*) */
         int32_t n, cur, tr;
+        {                                         /* TIDE 1, 2, 3 in order in KNOB 1's list; each round trip */
+            uint32_t i, at = 0, rt = 1;
+            cord_t c = {0};
+            for (i = 0; i < CU_NSRC; i++) {
+                c.src = (uint8_t)cu_src_at(i, &c.src_trk);
+                rt &= cu_src_of(&c) == i;
+                if (!c.src_trk && cord_src_name(c.src)[0] == 'T' && cord_src_name(c.src)[1] == 'I')
+                    at = at * 10u + (uint32_t)(cord_src_name(c.src)[5] - '0');
+            }
+            bad += check("MODS: KNOB 1's list has TIDE 1, 2, 3 in order (codes kept); every entry round trips",
+                         at == 123u && rt);
+        }
         go_title("MODS");
         cord_clear();
         cord_ui_sel = 0;
