@@ -12,6 +12,8 @@ Items marked ✓ were checked by the maintainer on beta7; unmarked ones need tes
 - **Web editor overwrites projects on connect** ([#609](https://github.com/Rastapopolix/tessera/issues/609)): don't connect the web editor to the FM-1 until this is fixed.
 - The DIR row flickers while a mod moves it (known issue, being fixed).
 - ENTRIES ORDER allows two tracks to have the same rank (known issue, being fixed).
+- ARP HOLD does not latch the held chord (known issue, being fixed).
+- A mod row with a source but no destination shows no activity; it works once a destination is set (known issue, being fixed).
 
 ## How to report
 
@@ -71,7 +73,7 @@ from `[SETUP]` first. Tick the boxes as you go if you copy the list to your own 
 - **S-sheet**: hold OCT+; KNOB 1 picks the row, KNOB 2 changes it; OCT- (tap) closes.
 
 ## [START] Before you start
-- [ ] Back up projects and settings (web editor) on your current firmware.
+- [ ] Back up projects and settings (web editor) on your current firmware. ✓ checked on beta7
       1. In the web editor, connect the FM-1 and export projects and settings to files.
       **Expect:** files saved on your computer.
 - [ ] Install 3.5-beta7 from the installer's Beta choice; the version screen and the splash (small, bottom right) say 3.5-beta7. ✓ checked on beta7
@@ -86,12 +88,12 @@ from `[SETUP]` first. Tick the boxes as you go if you copy the list to your own 
       **Expect:** same values.
 
 ## [3.4.1] 3.4.1 fixes (if you're coming from 3.4)
-- [ ] The FM-1 shows up over USB as **Tessera FM-1**; Tessera In / Tessera Out audio still work.
+- [ ] The FM-1 shows up over USB as **Tessera FM-1**; Tessera In / Tessera Out audio still work. ✓ checked on beta7
       1. Connect by USB. Look at the MIDI device list in your DAW or in the web installer's port chooser.
       2. Open the audio device list.
       **Expect:** the MIDI port is "Tessera FM-1" (re-pick it once if an app remembers "Tessera"); audio devices are
       "Tessera In" and "Tessera Out", and sound passes through them.
-- [ ] Screen reader: GEN on an ARP track says ARP; TURING PROB 0 says LOCK; ENTRIES 0 says OFF.
+- [ ] Screen reader: GEN on an ARP track says ARP; TURING PROB 0 says LOCK; ENTRIES 0 says OFF. ✓ checked on beta7
       1. Turn the screen reader on (MENU, accessibility row). Select a track, tap SEQ, GEN KNOB 1 to ARP.
       2. Switch the track to TURING; turn KNOB 3 (PROB) all the way down.
       3. Tap GLO to ENTRIES (GLO pages); turn KNOB 1 to 0.
@@ -160,48 +162,48 @@ from `[SETUP]` first. Tick the boxes as you go if you copy the list to your own 
 - [ ] **PIECE**, SHAPE USER, OCT- held: KNOB 1 picks one of 8 points (drawn bigger), KNOB 2 sets its level. ✓ checked on beta7
       1. GLO pages to PIECE. KNOB 1 LENGTH = 10 MIN, KNOB 2 SHAPE = USER. Hold OCT-, turn KNOB 1 then KNOB 2.
       **Expect:** a point is drawn larger as you pick it; KNOB 2 moves its level 0..100 % with the shape in view.
-- [ ] Screen reader says the sheets and layers as they open.
+- [ ] Screen reader says the sheets and layers as they open. ✓ checked on beta7
       1. Screen reader on; hold OCT+ on GEN; hold OCT- on GEN.
       **Expect:** it names the sheet / layer as it opens.
 
 ## [GEN] Generators and EVOLVE
-- [ ] **PAT GEN** (EVOLVE, OCT- held, KNOB 3): different generators on two patterns; switching pattern switches the generator.
+- [ ] **PAT GEN** (EVOLVE, OCT- held, KNOB 3): different generators on two patterns; switching pattern switches the generator. ✓ checked on beta7
       1. T1 on GEN: MODE TURING, pattern 1 (SEQ pages to PATTERNS shows the 1..8 cells). ARP to EVOLVE, hold OCT-, KNOB 3 = ON.
       2. Go to PATTERNS (hold SEQ), pick pattern 2, tap SEQ for GEN and set MODE EUCLID. Press PLAY.
       3. Switch between pattern 1 and 2 on PATTERNS.
       **Expect:** pattern 1 plays TURING, pattern 2 EUCLID; the GEN page shows the mode of the pattern you switch to.
-- [ ] PAT GEN with SONG switching the patterns; survives save, power off and on, and load.
+- [ ] PAT GEN with SONG switching the patterns; survives save, power off and on, and load. ✓ checked on beta7
       1. SEQ pages to SONG: queue pattern 1 then 2 (see SONG page keys). Play it.
       2. SAVE + REC, power off and on, load the project, play.
       **Expect:** the generator changes with the SONG; both setups are intact after reload.
-- [ ] **ROLL ALL** (EVOLVE, OCT- held, KNOB 1): every generator track gets a new seed; one step back undoes it.
+- [ ] **ROLL ALL** (EVOLVE, OCT- held, KNOB 1): every generator track gets a new seed; one step back undoes it. ✓ checked on beta7
       1. Two generator tracks (T1 TURING, T2 MARKOV), PLAY. Note the ROLL number on each EVOLVE page (KNOB 4).
       2. On EVOLVE hold OCT-, turn KNOB 1 right; then left one click.
       **Expect:** both tracks' ROLL numbers change and the tunes change; left puts back the old seeds (once).
-- [ ] ROLL and ROLL ALL stopped: NEW LINE. Playing: NEW LINE AT BAR, and the change lands on the bar.
+- [ ] ROLL and ROLL ALL stopped: NEW LINE. Playing: NEW LINE AT BAR, and the change lands on the bar. ✓ checked on beta7
       1. Stopped: turn KNOB 4 (ROLL) and do ROLL ALL.
       2. Playing: do the same.
       **Expect:** stopped says NEW LINE; playing says NEW LINE AT BAR, the number blinks, and the tune changes at the next bar.
-- [ ] **RANDOM** (OCT- held on GEN or TWEAK, KNOB 1 right): new values; turning left puts them back. Never changes MODE, the seed or FOLLOW.
+- [ ] **RANDOM** (OCT- held on GEN or TWEAK, KNOB 1 right): new values; turning left puts them back. Never changes MODE, the seed or FOLLOW. ✓ checked on beta7
       1. S-gen EUCLID, hold OCT- on GEN, KNOB 1 right; look at KNOB 2..4 values. Then KNOB 1 left.
       2. Repeat on TWEAK (SHIFT, DROP, HUMAN) stopped and playing.
       **Expect:** screen says RANDOMIZED, then PUT BACK; MODE, seed and FOLLOW stay. A STEP track says NO GENERATOR.
-- [ ] GEN on a generator: OCT+ held does **not** open the STEP pattern sheet *(new in beta5)*.
+- [ ] GEN on a generator: OCT+ held does **not** open the STEP pattern sheet *(new in beta5)*. ✓ checked on beta7
       1. S-gen TURING. On GEN hold OCT+.
       **Expect:** a generator sheet if the engine has one, otherwise NO SHEET; never the pattern sheet. (PATTERN page still has it.)
-- [ ] **ANSWER from a generator** *(new in beta5)*: BOUNCE on T1, ANSWER on T2 with SOURCE T1: the picture and the answer follow what T1 plays (not one note).
+- [ ] **ANSWER from a generator** *(new in beta5)*: BOUNCE on T1, ANSWER on T2 with SOURCE T1: the picture and the answer follow what T1 plays (not one note). ✓ checked on beta7
       1. T1 S-gen BOUNCE, BALLS 3. T2 S-gen ANSWER. On T2 GEN hold OCT-, KNOB 2 SOURCE = T1. PLAY.
       **Expect:** T2 shows LISTENING, takes up to 8 of the balls' notes, then answers them.
 
 ## [FOLLOW] FOLLOW *(new in beta5)*
-- [ ] **Mute the followed track** (MIXER or GLO mute): the following track keeps playing its notes; the muted track is silent.
+- [ ] **Mute the followed track** (MIXER or GLO mute): the following track keeps playing its notes; the muted track is silent. ✓ checked on beta7
       1. T1 S-gen TURING. T2 ARP button to TWEAK, KNOB 4 FOLLOW = T1. PLAY.
       2. Tap GLO to MIXER; press the black key F#3 (mute T1).
       **Expect:** T1 is silent, T2 keeps following T1's notes.
-- [ ] Unmute it: no jump or doubled notes.
+- [ ] Unmute it: no jump or doubled notes. ✓ checked on beta7
       1. Press F#3 again.
       **Expect:** T1 returns in time with no stutter.
-- [ ] The same with ANSWER from a muted source and QNT CHRD from a muted CHORD track.
+- [ ] The same with ANSWER from a muted source and QNT CHRD from a muted CHORD track. ✓ checked on beta7
       1. T3 S-gen ANSWER with SOURCE = T1; mute T1.
       2. T1 S-gen CHORD; T2 SCL page QNT = CHRD; mute T1.
       **Expect:** ANSWER still answers; T2 still snaps to the muted chord track's chords.
@@ -216,7 +218,7 @@ from `[SETUP]` first. Tick the boxes as you go if you copy the list to your own 
       **Expect:** note sheet; then, on hold, "PATTERN SHEET" appears when the hold counts and the pattern's sheet opens.
 
 ## [ENTRIES] ENTRIES
-- [ ] **ENTRIES ORDER** (now on the ENTRIES sheet): AUTO and 1ST..4TH; tracks come in in that order and leave in reverse.
+- [ ] **ENTRIES ORDER** (now on the ENTRIES sheet): AUTO and 1ST..4TH; tracks come in in that order and leave in reverse. ✓ checked on beta7
       1. Four tracks playing (any generators). GLO pages to ENTRIES: KNOB 1 to 60 %. Hold OCT+: Order T1 = 4TH, T4 = 1ST,
          others AUTO.
       2. PLAY and listen through a few phrases (CHAIN > PHRASE short helps; GLO pages to CHAIN).
@@ -230,17 +232,17 @@ from `[SETUP]` first. Tick the boxes as you go if you copy the list to your own 
       3. Then hold EDIT.
       **Expect:** the track switches to STEP and plays the same notes without keys held; EDIT held brings the ARP back
       (hold the keys again).
-- [ ] ARP ORD plays in the order pressed; **DNUP** down then up; **RND1** a repeating random order that changes when a key is added.
+- [ ] ARP ORD plays in the order pressed; **DNUP** down then up; **RND1** a repeating random order that changes when a key is added. ✓ checked on beta7
       1. ARP page KNOB 1 = ORD. Press E, C, G in that order and hold.
       2. KNOB 1 = DNUP with C E G. 3. KNOB 1 = RND1; STOP and PLAY twice; add a key.
       **Expect:** ORD plays E C G; DNUP G E C E G E C ...; RND1 repeats one order, changes when you add a key, and is the same
       after STOP and PLAY.
 
 ## [CHORD] Chords
-- [ ] **New CHRD kinds** *(new in beta5)*: SUS2, 7SUS4, ADD9, MAJ6 after POW (SCL > CHORD); the CHORD page names them (Csus2, C7sus4, Cadd9, C6).
+- [ ] **New CHRD kinds** *(new in beta5)*: SUS2, 7SUS4, ADD9, MAJ6 after POW (SCL > CHORD); the CHORD page names them (Csus2, C7sus4, Cadd9, C6). ✓ checked on beta7
       1. S-gen CHORD on a track. Tap SCL until the CHORD page. KNOB 1/2 for CHRD: step past POW.
       **Expect:** SUS2, 7SUS4, ADD9, MAJ6 are listed after POW; the CHORD generator page names the chord (Csus2, C7sus4, Cadd9, C6).
-- [ ] The new kinds with OPEN and +OCT voicings, on chord keys, MIDI in and the CHORD generator.
+- [ ] The new kinds with OPEN and +OCT voicings, on chord keys, MIDI in and the CHORD generator. ✓ checked on beta7
       1. Set CHRD = ADD9, VOIC = OPEN, press a key on a normal track; then VOIC = +OCT. Repeat with MIDI in, and the CHORD generator.
       **Expect:** chords sound as named, voiced open or with the extra octave.
 - [ ] **STRUM** (CHORD generator: GEN, OCT- held, KNOB 2) at 20 ms and up, and up to 250 ms on a slow pad *(range new in beta6)*; DIR (KNOB 3) UP, DOWN, ALT; notes end together; MIDI OUT strums too. ✓ checked on beta7
@@ -271,19 +273,19 @@ from `[SETUP]` first. Tick the boxes as you go if you copy the list to your own 
       2. Cord 3: source BUS A (end of KNOB 1 list), OCT+ until ^, destination FILL (near the end of KNOB 3's list).
       3. Give a STEP track a step with condition FILL (NOTES > note sheet) and PLAY.
       **Expect:** the FILL step plays only when BUS A is above the threshold; the GLO FILL light follows.
-- [ ] A track's GATE into BUS B with LAG 200 ms, BUS B onto CUTOFF: an envelope.
+- [ ] A track's GATE into BUS B with LAG 200 ms, BUS B onto CUTOFF: an envelope. ✓ checked on beta7
       1. Cord: T1 GATE -> BUS B. Cord: BUS B -> T1 CUTOFF 60 %. On MODS hold OCT+: BUS B Lag = 200 ms.
       **Expect:** the cutoff rises and falls smoothly with each note instead of jumping.
-- [ ] **MODS sheet** (OCT+ held): Bus A/B MODE (SUM, MAX, MIN, DIFF) and LAG; KNOB 1 row, KNOB 2 value; OCT+ tap still cycles the mod type.
+- [ ] **MODS sheet** (OCT+ held): Bus A/B MODE (SUM, MAX, MIN, DIFF) and LAG; KNOB 1 row, KNOB 2 value; OCT+ tap still cycles the mod type. ✓ checked on beta7
       1. On MODS hold OCT+: change each row. Tap OCT- to close. Then tap OCT+ on a cord.
       **Expect:** four rows (Mode A, Lag A, Mode B, Lag B); tapping OCT+ cycles the cord type.
-- [ ] MAX / MIN / DIFF with two gates act as OR / AND / XOR.
+- [ ] MAX / MIN / DIFF with two gates act as OR / AND / XOR. ✓ checked on beta7
       1. Two GATE mods at +100 into BUS A (T1 GATE, T2 GATE). BUS A read as GATE onto FILL (or a LEVEL). Mode MAX, then MIN, then DIFF.
       **Expect:** MAX: either gate opens it; MIN: both; DIFF: one but not both.
-- [ ] Marked sources read BUA^, SW3^, TD2^, MC1^ (was BUS^, SWR^ ...).
+- [ ] Marked sources read BUA^, SW3^, TD2^, MC1^ (was BUS^, SWR^ ...). ✓ checked on beta7
       1. On MODS, set GATE type on cords from BUS A, SWARM 3, TIDE 2, MACRO 1.
       **Expect:** the source names show as BUA^, SW3^, TD2^, MC1^.
-- [ ] Save, power cycle, load: buses come back. The same project on beta4 or 3.4.1 is refused (expected).
+- [ ] Save, power cycle, load: buses come back. The same project on beta4 or 3.4.1 is refused (expected). ✓ checked on beta7
       1. SAVE + REC, power off and on, load. 2. (Optional) install 3.4.1 and try to load it.
       **Expect:** buses and settings intact; older firmware refuses the file.
 
@@ -358,7 +360,7 @@ from `[SETUP]` first. Tick the boxes as you go if you copy the list to your own 
       **Expect:** lit keys match the scale; each key plays its own note.
 
 ## [MIDI] MIDI
-- [ ] **MIDI OUT DRUM MAP** (now on the MIDI OUT sheet): GM and ROW; ROW drives a drum machine as a row of notes.
+- [ ] **MIDI OUT DRUM MAP** (now on the MIDI OUT sheet): GM and ROW; ROW drives a drum machine as a row of notes. ✓ checked on beta7
       1. MENU NOTES OUT = ALL. Drum track on ATLAS. GLO to MIDI OUT, hold OCT+, Drum map T4: GM, watch MIDI notes (36, 38, 42);
          then ROW.
       **Expect:** GM sends kick 36, snare 38, closed hat 42; ROW sends one note per drum in a row from 36 (kick, snare, rim, clap, -, low tom...).
@@ -377,11 +379,11 @@ from `[SETUP]` first. Tick the boxes as you go if you copy the list to your own 
       **Expect:** presets listed; the file is named after the preset, not TINE EP.
 
 ## [USB] USB audio
-- [ ] **USB OUTPUT 4 TRACKS**: four stems in a DAW (Mac: works directly; Windows: Live needs an ASIO wrapper for more than 2 channels).
+- [ ] **USB OUTPUT 4 TRACKS**: four stems in a DAW (Mac: works directly; Windows: Live needs an ASIO wrapper for more than 2 channels). ✓ checked on beta7
       1. S-menu: USB OUTPUT = 4 TRACKS (FM-1 reconnects). In the DAW pick Tessera Out as input, enable inputs 1..4, arm four tracks.
       2. Play four different tracks and record.
       **Expect:** each audio track holds one FM-1 track, mono, dry of shared reverb/delay; a muted track is silent in its stem.
-- [ ] The volume knob mutes the speaker without changing the stems.
+- [ ] The volume knob mutes the speaker without changing the stems. ✓ checked on beta7
       1. While recording, turn the FM-1 volume knob down to 0.
       **Expect:** the speaker goes quiet; the recorded stems keep their level.
 
@@ -395,18 +397,18 @@ from `[SETUP]` first. Tick the boxes as you go if you copy the list to your own 
 - [ ] **OCT taps**: a held OCT- is never Back; an OCT- tap only closes what is open; an OCT+ tap only enters. ✓ checked on beta7
       1. On TWEAK, hold OCT- for a second, let go. 2. On a page with nothing open, tap OCT-. 3. On a page with nothing to enter, tap OCT+.
       **Expect:** 1: still on TWEAK. 2: nothing happens (no jump to HOME). 3: nothing happens, no sheet.
-- [ ] **FM6 map opens on the last page used**.
+- [ ] **FM6 map opens on the last page used**. ✓ checked on beta7
       1. Select an FM6 track, open the EDIT map, go into an operator row and a page (e.g. EG RATE), Back out, move to another operator row, enter.
       **Expect:** each row lands on the page you used last there, not on whichever column the row before had.
 - [ ] **MOD SCOPE reads calmly**: a calm line over a dotted source; GATE wedges at the edges with the full line while adjusting; MOSAIC colours by source track. ✓ checked on beta7
       1. Cord T1 LFO fast -> CUTOFF; hold OCT- on MODS. 2. Make it a GATE (OCT+ tap until ^) and turn KNOB 4. 3. MENU > COLOR = MOSAIC, cords from T2 and T3.
       **Expect:** 1: a smooth line, not a smear, over a dotted source. 2: small wedges at each edge, filled while open; the full dashed line appears only while KNOB 4 turns. 3: line in the source track\x27s colour.
       (The same checks are in MOD SCOPE above.)
-- [ ] **STEP DIR**: recorded takes follow DIR; a tied note going backwards plays once; a mod on DIR shows on the sheet.
+- [ ] **STEP DIR**: recorded takes follow DIR; a tied note going backwards plays once; a mod on DIR shows on the sheet. ✓ checked on beta7
       1. S-step, record (REC) six notes with one held long enough to tie over steps. Pattern sheet Direction = BACK, then PEND. PLAY.
       2. Put a mod on DIR (S-mod, destination DIR) and hold OCT+ on NOTES.
       **Expect:** 1: every step plays its own recorded notes while the playhead goes backwards; the tied note sounds once, from the tie\x27s last step. 2: Direction reads like FWD>PEND.
-- [ ] **STRUM up to 250 ms** (see Chords above) and **Clear mod** on the MODS sheet.
+- [ ] **STRUM up to 250 ms** (see Chords above) and **Clear mod** on the MODS sheet. ✓ checked on beta7
       1. Cord with a SCALE or a CC set. On MODS hold OCT+: first row **Clear mod** (red); the header names the picked mod (M3 at its right). Tap OCT+ on it.
       **Expect:** the mod is empty (no source, destination, amount); other cords play on; an empty mod says NOTHING THERE. No undo.
 - [ ] **GROUND LIGHT**: WHITE becomes BLACK; one red and one yellow on paper (see Screen above). ✓ checked on beta7
@@ -425,12 +427,12 @@ from `[SETUP]` first. Tick the boxes as you go if you copy the list to your own 
 - [ ] **Web simulator** no longer lists SID KIT / SID DIGI in DRUM *(simulator only; the device already lacked them)*. ✓ checked on beta7
       1. Open the web simulator, pick a DRUM track\x27s sound list.
       **Expect:** no SID KIT or SID DIGI.
-- [ ] **Docs refresh (optional)**: FEATURES, GLOSSARY and RECIPES updated.
+- [ ] **Docs refresh (optional)**: FEATURES, GLOSSARY and RECIPES updated. ✓ checked on beta7
       1. Skim FEATURES and GLOSSARY. Try two recipes tagged (3.5 beta) in RECIPES on the device.
       **Expect:** the recipes work as written; note any step that is wrong.
 
 ## [ANSWER] ANSWER chain and ring test *(new)*
-- [ ] **T1 a generator, T2 to T4 ANSWER chained, then T2\x27s SOURCE set to T4** (a ring): no hang, no stuck notes, no crash.
+- [ ] **T1 a generator, T2 to T4 ANSWER chained, then T2\x27s SOURCE set to T4** (a ring): no hang, no stuck notes, no crash. ✓ checked on beta7
       1. T1 S-gen TURING (or BOUNCE), PLAY.
       2. T2 S-gen ANSWER, GEN hold OCT-, KNOB 2 SOURCE = T1. T3 ANSWER, SOURCE = T2. T4 ANSWER, SOURCE = T3.
       **Expect:** each answers the one before: T2 shows LISTENING then answers T1, T3 answers T2, T4 answers T3.
@@ -442,7 +444,7 @@ from `[SETUP]` first. Tick the boxes as you go if you copy the list to your own 
 - [ ] The web editor finds an FM-1 port by its old name (#605): try it in Chrome on a Mac (port still called "FM-1").
 
 ## [BACK] Going back (optional)
-- [ ] A beta5 or beta7 project without bus mods opens on 3.4.1: new chord kinds play as power chords, strum together, direction FWD, HOLD as +-.
+- [ ] A beta5 or beta7 project without bus mods opens on 3.4.1: new chord kinds play as power chords, strum together, direction FWD, HOLD as +-. ✓ checked on beta7
       1. Make a project with CHRD = ADD9, STRUM 40, a direction, a HOLD mod; no bus, EOC, CLOCK, PLAY or MOD DEP mods. Save.
       2. Install 3.4.1 and load.
       **Expect:** it loads; chords are POW, strum plays together, direction FWD, HOLD plays as +-.
