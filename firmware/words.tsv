@@ -307,3 +307,9 @@ MPC	M P C
 DIFF	difference
 # MOD DEPTH (MODS destination)
 MOD DEP	mod depth
+# what CUTOFF and SHAPE move per engine (MODS row, engine pages)
+COLR	colour
+BRIT	brightness
+VOWL	vowel
+TMBR	timbre
+MRPH	morph

@@ -105,6 +105,23 @@ static const char *cu_dst_name(const cord_t *c)
     return cord_dest(c->dst) ? cord_dest(c->dst)->name : "--";
 }
 
+/* what a track's CUTOFF or SHAPE moves on its engine (MANUAL "CUTOFF and SHAPE per engine"): the knob's name, ""
+ * where the engine has nothing there; 0 for any other destination */
+static const char *cu_eng_dst(const cord_t *c)
+{
+    static const struct { uint8_t e; char cut[5], shp[5]; } T[] = {
+        {3, "CUT", "PW"}, {6, "CUT", "PW"}, {19, "CUT", "PW"},        /* SID TRIO ORACLE */
+        {11, "FREQ", "COLR"}, {5, "VOWL", "BUZZ"}, {21, "TMBR", "MRPH"},   /* NOISE VOICE MACRO */
+        {12, "MLVL", "FB"}, {9, "BRIT", ""},                           /* FM6 PHYS */
+    };
+    uint32_t i, e;
+    if (c->dst != CD_CUTOFF && c->dst != CD_SHAPE) return 0;
+    e = trk[c->dst_trk % NTRK].engine;
+    for (i = 0; i < sizeof T / sizeof T[0]; i++)
+        if (T[i].e == e) return c->dst == CD_CUTOFF ? T[i].cut : T[i].shp;
+    return "";                                          /* (WHEEL, DRUM) */
+}
+
 /* Mono's four characters for a destination: a mod's move "M3%" (M3 AMT: Mono's abbreviation would read "M3MT"), else
  * the name, abbreviated where it is drawn */
 static const char *cu_dst_mono(const cord_t *c)
@@ -363,6 +380,10 @@ static void cu_columns(void)
     else if (c->dst) {
         val[0] = 'T'; val[1] = (char)('1' + c->dst_trk); val[2] = ' ';
         str_cpy(val + 3, cu_dst_name(c), sizeof val - 3);
+        if (cu_eng_dst(c)) {                            /* (CUTOFF, SHAPE: and what it moves, said) */
+            str_cpy(val + str_len(val), " ", 2);
+            str_cpy(val + str_len(val), *cu_eng_dst(c) ? cu_eng_dst(c) : "NONE", 5);
+        }
     } else
         str_cpy(val, "--", sizeof val);
     draw_column(2, "", val, "", c->dst ? VAL(2u) : T_DIM, -1, ICON_NONE);

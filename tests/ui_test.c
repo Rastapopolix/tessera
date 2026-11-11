@@ -1326,6 +1326,18 @@ static int test_oct_grammar_m0(void)
     press(B_OCTDN);
     press(B_OCTUP);
     bad += check("M1: MODS, OCT+ tapped: still the mod's BI / UNI", cord_get(0)->uni != 0u);
+    {   /* beta7: CUTOFF and SHAPE named by what they move on the track's engine; nothing there: "" (drawn dim) */
+        uint8_t was = trk[0].engine;
+        cord_t q = {.src = CS_LFO, .dst = CD_CUTOFF, .dst_trk = 0, .amount = 40};
+        const char *a, *b, *w;
+        trk[0].engine = 12;                             /* FM6 */
+        a = cu_eng_dst(&q), q.dst = CD_SHAPE, b = cu_eng_dst(&q);
+        bad += check("MODS: on FM6, CUTOFF is MLVL and SHAPE is FB", a && str_eq(a, "MLVL") && b && str_eq(b, "FB"));
+        trk[0].engine = 9;                              /* PHYS: SHAPE moves nothing */
+        w = cu_eng_dst(&q), q.dst = CD_GAIN, a = cu_eng_dst(&q);
+        bad += check("MODS: on PHYS, SHAPE moves nothing; GAIN keeps its own name", w && !*w && !a);
+        trk[0].engine = was;
+    }
     settings_mute_q = 0;
     go_page(GR_TRK);                                    /* MIXER: its sheet, MUTES (MENU's setting, not a copy) */
     frame();
