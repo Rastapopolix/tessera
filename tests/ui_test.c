@@ -2259,6 +2259,23 @@ static int test_help_gesture(void)
         frame();
         go_title("EVOLVE");
     }
+    {                                             /* a mod with a source, no destination: MODS shows it move */
+        int32_t sv;
+        uint8_t bk, lv;
+        uint32_t i;
+        cord_t c = {0};
+        cord_clear();
+        c.src = CS_LFO; c.src_trk = 0; c.amount = 50;
+        cord_set(0, &c);
+        trk[0].lfo_fade = 32767;
+        trk[0].lfo_val = 20000;
+        cord_tick();
+        lv = cu_state(0, cord_get(0), &sv, &bk) & 15u;
+        for (i = 0; i < 3u; i++) { lfo_units_run += 4000u; mscope_take(0); }
+        bad += check("MODS: a source, no destination: moves nothing, its light, mark and scope show the source",
+                     !cord_live(cord_get(0)) && lv > 1u && sv > 10000 && mscope.mv[mscope.col] > 40);
+        cord_clear();
+    }
     {                                             /* the selectors' lists (ui_popup.c pick_*) */
         int32_t n, cur, tr;
         go_title("MODS");

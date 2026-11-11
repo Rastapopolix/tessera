@@ -3023,7 +3023,7 @@ static void mo_cu_bar(const cord_t *c, int32_t s, int32_t ox)
     if (a)
         mo_ofill(ox, cord_bip(c) ? m - d : x < m ? x : m, 1, cord_bip(c) ? 2 * d : d, 2, on ? MO_INK : MO_DIM);
     mo_ofill(ox, m, 0, 1, 4, MO_DIM);
-    if (on && c->src)
+    if ((on || cord_src_only(c)) && c->src)             /* (no destination yet: where its source is) */
         mo_ofill(ox, lx, 0, 1, 4, MO_INK);
 }
 /* the light (4 x 4 cells from ox pixels, as mo_cu_bar): how far the cord moves its destination now, lit or dim (a disc
