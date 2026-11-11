@@ -5,7 +5,8 @@
 //   node web/test_web.mjs
 // - editor.html: the protocol section (between PROTO-BEGIN/END) against its mock device (v1 commands,
 //   the user preset bank / librarian, library files, live pushes, older-firmware fallback, the v3 tracks
-//   and the mixer, the v5 drum grid in steps and user presets), its tab layout and ja/en strings,
+//   and the mixer, the v5 drum grid in steps and user presets), its tab layout and ja/en strings, the installer's
+//   strings in every language and its language menu,
 //   and the user-sample pipeline byte for byte against tools/sampleio.py
 // - fm1pkg.js: productOf and logicalImage on build/tessera.fwsc (skipped without a build)
 // - fm1ota.js: a full install and an unplug during the write against a simulated FM-1
@@ -1303,6 +1304,24 @@ function editorTabs() {
   const miss = [...used].filter((k) => !ja.has(k) || !en.has(k));
   const odd = [...ja].filter((k) => !en.has(k)).concat([...en].filter((k) => !ja.has(k)));
   ok(!miss.length && !odd.length, `editor: every string in ja and en (${used.size} used${miss.length ? ", missing " + miss : ""}${odd.length ? ", one language only " + odd : ""})`);
+  /* the installer: every language has every English string, every string the page uses is there, and the header's
+     language menu offers exactly the languages it has */
+  {
+    const ih = readFileSync(join(HERE, "index_pkg.html"), "utf8");
+    const itb = ih.slice(ih.indexOf("const TEXT = {"), ih.indexOf("\n};", ih.indexOf("const TEXT = {")) + 2);
+    const IT = vm.runInNewContext(itb.replace("const TEXT =", "(") + ")");
+    const en = Object.keys(IT.en), langs = Object.keys(IT);
+    const used = new Set([...ih.matchAll(/data-t="([\w-]+)"|\bt\("([\w-]+)"\)|sayK\("([\w-]+)"/g)].map((x) => x[1] || x[2] || x[3]));
+    const gaps = langs.flatMap((l) => en.filter((k) => typeof IT[l][k] !== "string" || !IT[l][k].trim()).map((k) => l + "." + k)
+      .concat(Object.keys(IT[l]).filter((k) => !(k in IT.en)).map((k) => l + "." + k + " (not in en)")));
+    const unknown = [...used].filter((k) => !(k in IT.en));
+    const menu = [...ih.matchAll(/<option value="(\w+)"/g)].map((x) => x[1]);
+    const LANGS = JSON.parse((/const LANGS = (\[[^\]]*\])/.exec(ih) || [])[1] || "[]");
+    ok(!gaps.length && !unknown.length, `installer: ${en.length} strings in ${langs.join(" ")}${gaps.length ? ", missing " + gaps.slice(0, 8) : ""}${unknown.length ? ", not in en " + unknown : ""}`);
+    ok(js([...menu].sort()) === js([...langs].sort()) && js([...LANGS].sort()) === js([...langs].sort()),
+      `installer: language menu = LANGS = TEXT (${menu.join(" ")})`);
+    ok(/localStorage\.setItem\(LANG_KEY/.test(ih) && /LANG_KEY = "tessera-lang"/.test(ih), "installer: picked language kept in tessera-lang");
+  }
   /* the page script parses (the browser's view of it) */
   const script = html.slice(html.indexOf("<script>") + 8, html.lastIndexOf("</script>"));
   let err = null;
