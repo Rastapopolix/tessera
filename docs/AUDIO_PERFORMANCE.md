@@ -197,7 +197,8 @@ Worker engine durations are published privately and merged by CPU0 after joining
 Editor 72 flag 32 adds schema 7 complete timing, deadline/admission/steal counters
 and fixed-benchmark status; existing flags/schema layouts remain compatible.
 `tools/usb_audio_stats.py --complete --voices --cores --memory --parts` reads it. The web editor's Settings > Health reads
-schema 8 (flags 126) once a second while Live is on.
+schema 8 (flags 126) once a second while Live is on; its last six rows are the USB audio counters (each direction:
+streaming, ring fill of 1024, underruns and overruns; missed frames, bad packets; the worst service time and poll gap).
 The assembly envelope captures C entry/exit and nested service. The reported
 maximum adds one worst observed TIMER5 span plus 4 us for the short timestamp,
 save/restore/return envelope. This is a conservative timing bound, not a claim
