@@ -192,5 +192,37 @@ static void test_mods_amount(void)
 
 
 
+/* the PATTERN sheet's Direction row, a mod moving DIR (3.5-beta7: the row flickered, "FWD>PEND" over its value) */
+static void test_dir_sheet(void)
+{
+    reset_controls(); cord_clear();
+    cord_t c = {0};
+    c.src = CS_LFO; c.src_trk = 0; c.dst = CD_SEQ_DIR; c.dst_trk = 0; c.amount = 100;
+    assert(cord_set(0, &c));
+    go_title("PATTERN"); frame();
+    page_sheet_open(); frame();
+    assert(pop.on == POP_SHEET);
+    for (pop.sel = 0; pop.sel < pop.n && !str_eq(pop.rows[pop.sel].label, "Direction"); pop.sel++) ;
+    assert(pop.sel < pop.n);
+    ui.force = 1; frame(); frame();
+    uint64_t sent = host_sent;
+    unsigned changes = 0; char was[20] = "", v[20];
+    host_mid_audio = 1;
+    host_redrawn = 0;
+    for (uint32_t f = 0; f < 120u; f++) {
+        trk[0].lfo_fade = 32767;                        /* (T1's LFO sweeping DIR, a frame a step) */
+        trk[0].lfo_val = (int32_t)((f * 4001u) % 65536u) - 32768;
+        cord_tick();
+        frame();
+        pop.rows[pop.sel].value(v);
+        if (!str_eq(v, was)) { changes++; str_cpy(was, v, sizeof was); }
+        if (changes > 1u) assert(strchr(v, '>'));      /* (live: its width kept, no "FWD" a step, "FWD>PEND" the next) */
+    }
+    host_mid_audio = 0;
+    printf("DIR sheet: %u value changes, %llu bytes sent, %llu pixels sent twice in a frame (%s)\n", changes,
+           (unsigned long long)(host_sent - sent), (unsigned long long)host_redrawn, was);
+    assert(changes <= 120u * 16u / 300u + 2u && !host_redrawn);   /* (at most one change in 300 ms; 44 before) */
+    pop_close(); cord_clear();
+}
 int main(void) { test_layers(); test_screen_sleep(); test_lfo(); test_mods_scroll();
-    test_msc_turns("ENV"); test_msc_turns("SEND FX 3"); test_mods_amount(); return 0; }
+    test_msc_turns("ENV"); test_msc_turns("SEND FX 3"); test_mods_amount(); test_dir_sheet(); return 0; }
