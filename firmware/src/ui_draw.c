@@ -1688,7 +1688,11 @@ static void draw_columns_(void)
             continue;
         }
         if (cur_page()->id[c] == G_INFO && cur_page()->scope == SC_GLOBAL) {
-            fmt_int(val, (int32_t)(song.cpu_q8 * 100u / 256u));
+            uint32_t a = song.cpu_q8 * 100u / 256u, pk = song.cpu_peak_q8 * 100u / 256u;   /* average/recent peak */
+            fmt_int(val, (int32_t)(a > 99u ? 99u : a));                     /* (99: at or past the limit; 5 chars) */
+            a = str_len(val);
+            val[a] = '/';
+            fmt_int(val + a + 1u, (int32_t)(pk > 99u ? 99u : pk));
             unit = "%";
         } else {
             param_format(d, *vp, val, &unit);

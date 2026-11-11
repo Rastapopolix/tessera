@@ -39,8 +39,9 @@ static const help_t HELP_PAGE[HP_COUNT] = {
     H_(HP_UNUSED, "KNOB", "Does nothing on this page."),
     H_(HP_LIST_ROW, "LIST ROW", "Which row of the list KNOB 2 sets. OCT+ on a row opens its whole list of values (on "
                                 "Scale: the SCALES page)."),
-    H_(HP_CPU, "CPU", "How busy the FM-1 is making the sound, in percent; nothing to set. Near 100, notes may drop: "
-                      "fewer voices, effects or tracks playing help."),
+    H_(HP_CPU, "CPU", "How busy the FM-1 is making the sound, in percent, USB included: the average, then the "
+                      "worst moment of the last second. Near 100, notes may drop or the sound crackle: fewer "
+                      "voices, effects or tracks playing help."),
     H_(HP_TIMING_STEP, "TIMING", "A generator's: on a STEP track each step has its own ratchet and chance (OCT+ on a "
                                  "note: its sheet). KNOB 3, SHAPE, shapes the steps' ratchets here too."),
     H_(HP_SCALE_FAMILY, "SCALE FAMILY", "Narrows the scales KNOB 2 picks from: all of them, Western, EDO, just, "
