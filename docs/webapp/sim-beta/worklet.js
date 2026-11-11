@@ -95,6 +95,14 @@ if (typeof registerProcessor === "function") {
       else if (m.type === "midi") ex.web_midi(m.data[0] | 0, m.data[1] | 0, m.data[2] | 0);
       else if (m.type === "visible") this.period = m.on ? 1 / 30 : 1 / 4;
       else if (m.type === "demo" && ex.web_demo) ex.web_demo();   // melodee-tess
+      else if (m.type === "slotGet" && ex.web_slot_get) {         // melodee-tess: a slot's record, for a .tsp file
+        const n = ex.web_slot_get(m.slot | 0);
+        this.port.postMessage({ type: "slot", slot: m.slot, bytes: new Uint8Array(ex.memory.buffer, ex.web_slot_buf(), n).slice() });
+      } else if (m.type === "slotPut" && ex.web_slot_put) {        // .. and a .tsp file into a slot
+        const b = m.bytes, ok = b.length <= ex.web_slot_buf_size();
+        if (ok) new Uint8Array(ex.memory.buffer, ex.web_slot_buf(), b.length).set(b);
+        this.port.postMessage({ type: "slotPut", slot: m.slot, ok: ok && ex.web_slot_put(m.slot | 0, b.length) === 0 });
+      }
       else if (m.type === "ink" && ex.web_ink) {                   // the page's shell picker: the ink by name
         const name = String(m.name).slice(0, 15), buf = new Uint8Array(ex.memory.buffer, ex.web_ink_name(), name.length);
         for (let i = 0; i < name.length; i++) buf[i] = name.charCodeAt(i) & 0x7f;           // (ASCII names)

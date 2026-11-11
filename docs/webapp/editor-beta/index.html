@@ -364,6 +364,14 @@
       <p class="bar"><button id="demos-put" data-t="demosPut" data-ic="symbol_download"></button>
         <span id="demos-status" class="dim" aria-live="polite"></span></p>
     </div>
+    <div id="pfiles-panel" style="margin-top:16px">
+      <h2 data-t="pfTitle"></h2>
+      <p class="dim" data-t="pfHelp"></p>
+      <p class="bar"><select id="pf-slot" aria-label="Slot"></select>
+        <button id="pf-save" data-t="pfSave" data-ic="symbol_download"></button>
+        <button id="pf-load" data-t="pfLoad" data-ic="symbol_upload"></button><input id="pf-file" type="file" accept=".tsp" hidden>
+        <span id="pf-status" class="dim" aria-live="polite"></span></p>
+    </div>
     <div class="group" id="tunings" hidden style="margin-top:16px">
       <h2 data-t="tuneTitle"></h2>
       <p class="dim" data-t="tuneHelp"></p>
@@ -2769,6 +2777,39 @@ function devicePresetRows(info, names, preferences) {
     .filter((row) => !preferences.state.filter || row.favorite);
 }
 
+/* Finding the device's MIDI port. Tessera names its port "Tessera FM-1" (Melodee: "Melodee"), but macOS keeps the name
+   it first saw ("FM-1", from the stock firmware or an older Tessera). A port is never used for its name alone: an FM-1
+   name is only a candidate, and the editor takes it when it answers the INFO handshake. */
+const RE_TESSERA = /tessera|melodee|felucca/i, RE_FM1 = /(^|[^a-z0-9])fm-?1($|[^a-z0-9])/i;
+async function probeFm1(input, output, timeout = 300) {
+  const link = new Link((d) => output.send(d), { timeout, onUnknown: () => {} });
+  const prev = input.onmidimessage;
+  input.onmidimessage = (e) => link.receive(e.data);
+  try {
+    if (input.open) await input.open().catch(() => {});
+    parse[CMD.INFO](await link.request(req.info(), { timeout, retries: 1, quiet: true }));
+    return true;
+  } catch (e) { return false; }
+  finally { link.close(); input.onmidimessage = prev || null; }
+}
+/* -> {input, output} | {notTessera: true} (an FM-1 that does not answer) | {} (no candidate) */
+async function findDevicePorts(access, probe = probeFm1) {
+  const live = (m) => [...m.values()].filter((p) => p.state !== "disconnected");
+  const ins = live(access.inputs), outs = live(access.outputs);
+  const named = (list, re) => list.filter((p) => re.test(p.name || ""));
+  const input = named(ins, RE_TESSERA)[0], output = named(outs, RE_TESSERA)[0];
+  if (input && output) return { input, output };
+  let tried = false;
+  for (const i of named(ins, RE_FM1)) {
+    const same = named(outs, RE_FM1).filter((x) => x.name === i.name);   /* (an input and an output of one name: try each) */
+    for (const o of same.length ? same : named(outs, RE_FM1).slice(0, 1)) {
+      tried = true;
+      if (await probe(i, o)) return { input: i, output: o };
+    }
+  }
+  return tried ? { notTessera: true } : {};
+}
+
 /*PROTO-END*/
 
 /* ===================================================================== UI === */
@@ -2844,6 +2885,7 @@ const TEXT = {
     chkTempo: "TEMPO へのゆっくりしたモッド", chkMidi: "SOUND OFF トラック：MIDI のみ（TRANSPOSE -24）とモッド用レーン",
     chkCpu: "ORACLE 4 トラック：設定 > 動作状態 を見る",
     demosTitle: "デモ・プロジェクト", demosHelp: "Tessera のデモ曲を選んだスロットへ書き込みます。そのスロットのプロジェクトは置き換わり、ほかは変わりません。残したい場合は先にバックアップを保存してください。", demosPut: "FM-1 に書き込む", demosNone: "スロットを選んでください", demosTwice: "同じスロットは一度だけ選べます", demosSkip: "書き込まない",
+    pfTitle: "プロジェクト・ファイル", pfHelp: "スロットのプロジェクトを .tsp ファイルとして保存、または .tsp ファイルをスロットへ。Webシミュレーターと同じファイルです。書き込んだら SAVE > PROJECT から読み込みます。読み書きの間、再生は止まります。", pfSave: "ファイルに保存", pfLoad: "ファイルを読み込む", pfEmpty: "このスロットは空です", pfSaved: "保存しました: ", pfNotTsp: "Tessera のプロジェクト・ファイル（.tsp）ではありません: ", pfReplace: "スロット {s} の {old} を {new} に置き換えますか？", pfWorking: "プロジェクトを書き込み中 ", pfDone: "スロット {s} に書き込みました。SAVE > PROJECT から読み込めます: ",
     demosConfirm: "次のデモを書き込みますか？", demosWas: "現在", demosEmpty: "空き", demosOld: "読めない古い形式のプロジェクト", demosUnnamed: "名前なしのプロジェクト", demosKeep: "置き換えるプロジェクトを残したい場合は、キャンセルして先にバックアップを保存してください。", demosWorking: "デモを書き込み中 ", demosDone: "デモを書き込みました。SAVE > PROJECT から読み込めます: ", demosFetch: "デモ・ファイルを読み込めません: ",
     demoStill: "アンビエント: ORACLE のドローン、GRAVITY、FILTER を通る FALL、STEP を種にしたベース", demoKoto: "HIRA の FM 箏が QUAD で 2 列、FORM で育つ ORACLE の笛、条件付きステップの木魚", demoHarbour: "アンビエント・ダブ: ORACLE のコードがエコーへ、サブベース、909 のワンドロップ",
     demoLight: "ドローン: 一度だけ鳴らす TRIO の五度、TIDE で動く風、ORACLE の合唱、ときどき立ち上がる SOFT SWELL（15 分の WAVES）",
@@ -2884,7 +2926,8 @@ const TEXT = {
     foot: "Chrome か Edge で使えます。", iconsCredit: "アイコン: Fukiai（MIT）Hügelton Instruments",
     nomidi: "このブラウザでは使えません。Chrome か Edge で開いてください。",
     denied: "MIDI（SysEx）の使用が許可されませんでした。",
-    nodevice: "Tessera が見つかりません。FM-1 を USB で接続して、もう一度押してください。",
+    nodevice: "Tessera が見つかりません。FM-1 を USB で接続して、もう一度押してください。Mac では古いポート名が残っていることがあります。Audio MIDI 設定でデバイス名を変更するか、挿し直してください。",
+    notessera: "この FM-1 では Tessera が動いていません。Tessera インストーラー（下のリンク）で入れてから、もう一度押してください。",
     connecting: "接続中", reading: "読み込み中 ", steploading: "ステップを読み込み中 ",
     ready: "接続しました", disconnected: "切断されました", lost: "Tessera が外されました",
     noreply: "応答がありません", error: "エラー: ", busy: "処理中",
@@ -2939,6 +2982,9 @@ const TEXT = {
     healthCpu: "CPU 負荷", healthWorst: "最悪の半バッファ（期限に対して）", healthLate: "遅れた半バッファ · 期限超過",
     healthVoices: "発音中 · 保持中のボイス", healthShed: "間引き · 断念 · 奪われたボイス", healthShedTracks: "間引き、トラック 1 · 2 · 3 · 4",
     healthCore1: "第 2 コア 稼働 · タイムアウト · フォールト", healthMemory: "オーディオメモリ、ピーク", healthStack: "スタック、メイン · 割り込み",
+    healthUsbOut: "USB → コンピュータ（Tessera Out）：送信中 · バッファ", healthUsbOutErr: "USB → コンピュータ：アンダーラン · オーバーラン",
+    healthUsbIn: "コンピュータ → USB（Tessera In）：受信中 · バッファ", healthUsbInErr: "コンピュータ → USB：アンダーラン · オーバーラン",
+    healthUsbPackets: "USB 欠落フレーム · 不正パケット", healthUsbTime: "USB 処理の最悪値 · 最長間隔",
     yes: "はい", no: "いいえ",
     system: "システム", firmware: "ファームウェア", sync: "同期", tracksN: "トラック", stepsN: "ステップ数", enginesL: "エンジン",
     smpSlots: "サンプルスロット", userBank: "ユーザープリセット", none: "なし",
@@ -2961,6 +3007,7 @@ const TEXT = {
     chkTempo: "A slow mod onto TEMPO", chkMidi: "SOUND OFF tracks: MIDI only (TRANSPOSE -24) and a mod lane",
     chkCpu: "Four ORACLE tracks: watch Settings > Health",
     demosTitle: "Demo projects", demosHelp: "Put Tessera's demo songs into the slots you choose. Each chosen slot's project is replaced; nothing else on the FM-1 changes. Save a backup first if you want to keep what is there.", demosPut: "Put on the FM-1", demosNone: "Choose a slot for at least one demo", demosTwice: "Choose each slot only once", demosSkip: "Leave out",
+    pfTitle: "Project files", pfHelp: "Save a slot's project as a .tsp file, or put a .tsp file into a slot: the same file the web simulator saves and loads. Load it on the FM-1 from SAVE > PROJECT. Playback stops while the slot is read or written.", pfSave: "Save as file", pfLoad: "Load a file", pfEmpty: "This slot is empty", pfSaved: "Saved: ", pfNotTsp: "Not a Tessera project file (.tsp): ", pfReplace: "Replace slot {s} ({old}) with {new}?", pfWorking: "Putting the project on the FM-1 ", pfDone: "Written to slot {s}. Load it from SAVE > PROJECT: ",
     demosConfirm: "Put these demos on the FM-1?", demosWas: "now", demosEmpty: "empty", demosOld: "a project in an older format", demosUnnamed: "a project with no name", demosKeep: "To keep a project that will be replaced, cancel and save a backup first.", demosWorking: "Putting the demos on the FM-1 ", demosDone: "Demos written. Load them from SAVE > PROJECT: ", demosFetch: "Could not read the demo file: ",
     demoStill: "Ambient: an ORACLE drone, GRAVITY, FALL through the FILTER effect, a bass from STEP as seed", demoKoto: "FM koto in HIRA on two QUAD rows, an ORACLE flute in a FORM that develops, a mokugyo with conditions", demoHarbour: "Ambient dub: ORACLE chord stabs into a drifting echo, a sub bass, a 909 one drop",
     demoLight: "Drone: a TRIO fifth struck once and held, a wind a TIDE moves, an ORACLE choir, a SOFT SWELL rising now and then (15 minutes in WAVES)",
@@ -3001,7 +3048,8 @@ const TEXT = {
     foot: "Works in Chrome or Edge.", iconsCredit: "Icons: Fukiai (MIT), Hügelton Instruments",
     nomidi: "This browser cannot do it. Open the page in Chrome or Edge.",
     denied: "MIDI (SysEx) access was not allowed.",
-    nodevice: "Tessera not found. Connect the FM-1 by USB and press Connect again.",
+    nodevice: "Tessera not found. Connect the FM-1 by USB and press Connect again. On a Mac an old port name may be cached: rename the device in Audio MIDI Setup, or replug it.",
+    notessera: "This FM-1 isn't running Tessera. Install it with the Tessera installer (link below), then press Connect again.",
     connecting: "Connecting", reading: "Reading ", steploading: "Reading steps ",
     ready: "Connected", disconnected: "Disconnected", lost: "Tessera was unplugged",
     noreply: "No reply from the device", error: "Error: ", busy: "Busy",
@@ -3056,6 +3104,9 @@ const TEXT = {
     healthCpu: "CPU load", healthWorst: "Worst half (of its deadline)", healthLate: "Late halves · deadline misses",
     healthVoices: "Voices sounding · held", healthShed: "Voices shed · given up · stolen", healthShedTracks: "Shed, tracks 1 · 2 · 3 · 4",
     healthCore1: "Second core on · timeouts · faults", healthMemory: "Audio memory, peak", healthStack: "Stack, main · interrupts",
+    healthUsbOut: "USB to computer (Tessera Out): on · buffer", healthUsbOutErr: "USB to computer: underruns · overruns",
+    healthUsbIn: "Computer to USB (Tessera In): on · buffer", healthUsbInErr: "Computer to USB: underruns · overruns",
+    healthUsbPackets: "USB missed frames · bad packets", healthUsbTime: "USB service, worst · longest gap",
     yes: "yes", no: "no",
     system: "System", firmware: "Firmware", sync: "Sync", tracksN: "Tracks", stepsN: "Steps", enginesL: "Engines",
     smpSlots: "Sample slots", userBank: "User presets", none: "none",
@@ -3235,9 +3286,8 @@ async function connect() {
       }
       access.onstatechange = onState;
     }
-    const isF = (p) => /tessera|melodee|felucca/i.test(p.name || "") && p.state !== "disconnected";   /* (the device's port: Tessera, from its USB name; Melodee before 2.0) */
-    const input = [...access.inputs.values()].find(isF);
-    const output = [...access.outputs.values()].find(isF);
+    const { input, output, notTessera } = await findDevicePorts(access);
+    if (notTessera) { sayK("notessera"); return; }
     if (!input || !output) { sayK("nodevice"); return; }
     const link = new Link((d) => output.send(d), {
       timeout: 300,
@@ -3288,7 +3338,7 @@ function disconnect(reasonKey = "disconnected") {
 
 function onState(e) {
   const p = e.port;
-  if (!p || !/tessera|melodee|felucca/i.test(p.name || "")) return;
+  if (!p || !(RE_TESSERA.test(p.name || "") || RE_FM1.test(p.name || ""))) return;
   if (dev && p.state === "disconnected" && (p.id === dev.input.id || p.id === dev.output.id)) {
     disconnect("lost");
   } else if (!dev && wantConnected && p.state === "connected" && p.type === "output") {
@@ -3365,6 +3415,8 @@ async function load(d) {
     renderLive();
     renderLib();
     renderBank();
+    updateBrowser();                                /* (the bank's presets of this engine in the Presets list: it was
+                                                     * built before the bank was read, beta7) */
     renderSysinfo();
     sayK("ready");
   } finally { releaseBusy(); }
@@ -3475,6 +3527,14 @@ function healthRows(v) {
     ["healthMemory", `${v.resource_peak ?? 0} / ${v.resource_capacity ?? 0} B`, v.resource_failures > 0],
     ["healthStack", `${v.stack_cpu0_user_peak ?? 0} / ${v.stack_cpu0_user_size ?? 0} · ${v.stack_cpu0_system_peak ?? 0} / ${v.stack_cpu0_system_size ?? 0} B`,
       v.stack_cpu0_user_size && v.stack_cpu0_user_peak > v.stack_cpu0_user_size * 0.9],
+    /* USB audio (usb_audio_stream.c): each ring holds 1024 frames and aims at 512; an under- or overrun resets it
+       (11.6 ms of silence), a missed frame is a packet the host never sent: each one is a click in that direction */
+    ["healthUsbOut", `${yes(v.cap_alt)} · ${v.cap_fill ?? 0} / 1024`, false],
+    ["healthUsbOutErr", `${v.cap_underruns ?? 0} · ${v.cap_overruns ?? 0}`, v.cap_underruns > 0 || v.cap_overruns > 0],
+    ["healthUsbIn", `${yes(v.play_alt)} · ${v.play_fill ?? 0} / 1024`, false],
+    ["healthUsbInErr", `${v.play_underruns ?? 0} · ${v.play_overruns ?? 0}`, v.play_underruns > 0 || v.play_overruns > 0],
+    ["healthUsbPackets", `${v.missed_frames ?? 0} · ${v.bad_packets ?? 0}`, v.missed_frames > 0 || v.bad_packets > 0],
+    ["healthUsbTime", `${us(v.service_max_us ?? 0)} · ${us(v.poll_max_us ?? 0)}`, false],
   ];
 }
 function renderHealth() {
@@ -3912,6 +3972,7 @@ const CHECKS = ["chain", "entries", "piece", "mods", "tempo", "midi", "cpu"].map
 function renderDemos() {
   const caps = dev?.info?.backupCaps || 0, box = $("demorows");
   $("demos-put").disabled = (caps & 3) !== 3;
+  renderProjectFiles(caps);
   if (box.contains(document.activeElement)) return;
   box.replaceChildren();
   for (const d of [...DEMOS, null, ...CHECKS]) {
@@ -4032,6 +4093,52 @@ $("demos-put").addEventListener("click", () => op(async () => {
   renderSlots();
   say("demosDone", picks.map(x => `${x.name} ${String.fromCharCode(65 + x.slot)}`).join(", "));
 }));
+
+/* project files: one slot's TSP1 record to a .tsp file (fm1backup.js readProject) or a .tsp file into a slot (putProject,
+   as a demo goes on), the file the web simulator saves and loads. Nothing is written but on Load and its confirm. */
+function renderProjectFiles(caps) {
+  const sel = $("pf-slot"), v = sel.value || "0";
+  sel.replaceChildren(...[0, 1, 2, 3].map((k) => el("option", { value: k, text: `${t("slot")} ${String.fromCharCode(65 + k)}` })));
+  sel.value = v;
+  $("pf-save").disabled = !(caps & 1);
+  $("pf-load").disabled = (caps & 3) !== 3;
+}
+const pfSay = (k, a = "") => { $("pf-status").textContent = t(k) + a; sayK(k, a); };
+$("pf-save").addEventListener("click", () => op(async () => {
+  const d = dev, slot = +$("pf-slot").value;
+  if (!(d?.info?.backupCaps & 1)) return;
+  const { readProject, tspName } = await backupModule();
+  const bytes = await readProject((r, o) => sessionRequest(d, r, o), slot);
+  if (!bytes.length) throw new Error(t("pfEmpty"));
+  let name = "";
+  try { name = tspName(bytes); } catch { throw new Error(t("demosOld")); }
+  const file = `${fileSlug(name || `slot-${String.fromCharCode(97 + slot)}`)}.tsp`;
+  downloadBytes(file, bytes);
+  pfSay("pfSaved", file);
+}));
+$("pf-load").addEventListener("click", () => { if ((dev?.info?.backupCaps & 3) === 3) $("pf-file").click(); });
+$("pf-file").addEventListener("change", () => {
+  const file = $("pf-file").files[0], d = dev, slot = +$("pf-slot").value, s = String.fromCharCode(65 + slot); $("pf-file").value = "";
+  if (!file || (d?.info?.backupCaps & 3) !== 3) return;
+  op(async () => {
+    if (file.size > 40000) throw new Error(t("pfNotTsp") + file.name);
+    const { readProject, tspName, putProject } = await backupModule(), bytes = new Uint8Array(await file.arrayBuffer());
+    let name;
+    try { name = tspName(bytes) || file.name; } catch { throw new Error(t("pfNotTsp") + file.name); }
+    assertSession(d);
+    const was = await readProject((r, o) => sessionRequest(d, r, o), slot);   // (stops playback)
+    if (was.length) {
+      let old;
+      try { old = tspName(was) || t("demosUnnamed"); } catch { old = t("demosOld"); }
+      if (!confirm(t("pfReplace").replace("{s}", s).replace("{old}", old).replace("{new}", name) + "\n\n" + t("demosKeep"))) return;
+    }
+    await putProject((r, o) => sessionRequest(d, r, o), slot, bytes, (done, total) => pfSay("pfWorking", `${Math.round(done / total * 100)}%`));
+    d.slotUsed[slot] = true;
+    renderSlots();
+    const done = t("pfDone").replace("{s}", s) + name;
+    $("pf-status").textContent = done; say(done);
+  });
+});
 
 async function readMotion(d = dev) {
   assertSession(d);
@@ -5128,6 +5235,7 @@ $("bkerase").addEventListener("click", () => {
 $("bkrefresh").addEventListener("click", () => libOp(async (d, rqf) => {
   sayK("readingBank");
   const engine=poolEngine();if(engine)dev.nativePools[engine]=await nativeBank.list(rqf,engine);else dev.bank=await bank.list(rqf);
+  updateBrowser();
   sayK("ready");
 }));
 $("bkexport").addEventListener("click", () => libOp(async (d, rqf) => {
