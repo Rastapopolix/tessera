@@ -12,6 +12,7 @@ The maintainer has already checked the other items on a device with beta7, so th
 - **Web editor overwrites projects on connect** ([#609](https://github.com/Rastapopolix/tessera/issues/609)): don't connect the web editor to the FM-1 until this is fixed.
 - The DIR row flickers while a mod moves it (known issue, being fixed).
 - ENTRIES ORDER allows two tracks to have the same rank (known issue, being fixed).
+- "MEMORY FULL" with audio crackles after long, heavily evolving projects with REC armed ([#612](https://github.com/Rastapopolix/tessera/issues/612), being looked at).
 - ARP HOLD does not latch the held chord (known issue, being fixed).
 - A mod row with a source but no destination shows no activity; it works once a destination is set (known issue, being fixed).
 
