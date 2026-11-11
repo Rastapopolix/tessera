@@ -251,6 +251,13 @@ export async function readSlots(request) {
   }
   return slots;
 }
+// One slot's project (0..3: A..D) as its TSP1 record, for a .tsp file; an empty array when the slot is empty. Stops playback.
+export async function readProject(request, slot) {
+  if (!(slot >= 0 && slot <= 3)) throw new Error("Invalid slot");
+  const ask = (r) => request(r, { timeout: 3000, retries: 1 });
+  const size = bkManifest(await ask([BACKUP_CMD.LIST, []])).find(o => o.id === 2 + slot)?.size || 0;
+  return size ? getObject(ask, 2 + slot, size) : new Uint8Array(0);
+}
 export async function putProject(request, slot, bytes, onProgress = () => {}) {
   tspName(bytes);                             // a whole record, or nothing is sent
   if (!(slot >= 0 && slot <= 3) || bytes.length > maxSize(2)) throw new Error("Invalid slot or project");
