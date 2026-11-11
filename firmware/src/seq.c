@@ -197,9 +197,13 @@ static uint32_t midi_map(const track_t *t, uint32_t note)
 #include "chord.c"
 
 /* ------------------------------------------------------------- arp --- */
+/* bit tr: track tr's HOLD chord was stopped by the external transport (seq_stop): it waits for Start / Continue or a
+ * new key. Any other latched chord plays on at the local tempo while the transport is stopped, as held keys do */
+static uint8_t arp_wait;
 static void arp_add(track_t *t, uint32_t note)
 {
     uint32_t i;
+    arp_wait &= (uint8_t)~(1u << trk_index(t));
     if (t->p[P_AHOLD] && t->arp_phys == 0u)
         t->nheld = 0;                               /* new chord replaces the latched one */
     t->arp_phys++;                                  /* every key-down: arp_remove counts every key-up */
@@ -213,6 +217,8 @@ static void arp_add(track_t *t, uint32_t note)
         t->arp_idx = 0xFFFFFFFFu;
     }
 }
+
+static int arp_runs(uint32_t i) { return trk[i].arp_phys || (trk[i].nheld && !((arp_wait >> i) & 1u)); }
 
 static void arp_remove(track_t *t, uint32_t note)
 {
@@ -980,6 +986,7 @@ static void seq_start(void)
     tessera_sd_play();                              /* (STEP as seed's loops from their sources again) */
     cin_left = 0; /* MIDI Start also cancels a pending local count-in. */
     int_clock_rem = int_clock_frac = 0;             /* every start from the same place: a take repeats exactly */
+    arp_wait = 0;                                   /* (a HOLD chord the external Stop stopped plays again) */
     uint32_t i;
     seq_erase_request = 0;
     seq_erase_transport++;
@@ -1139,6 +1146,7 @@ static void seq_stop(void)
         for (i = 0; i < NPART; i++)                /* its sounding note too (HOLD keeps the latched chord) */
             if (trk[i].arp_note)
                 arp_off(&trk[i]);
+    arp_wait = midi_sync_active ? (1u << NPART) - 1u : 0u;
     for (i = 0; i < NTRK; i++) {
         recording_stop(&trk[i]);
         if (trk[i].rh_n)
@@ -1436,9 +1444,9 @@ static void seq_advance(uint32_t n)
     for (i = 0; i < NTRK; i++)
         seq_tick(&trk[i], n);
     for (i = 0; i < NPART; i++)
-        /* Held keys play at the local tempo while the selected master is
-         * stopped. A released HOLD chord still waits for external transport. */
-        arp_step(&trk[i], song.playing || !song.g[G_CLOCK] || trk[i].arp_phys ? n : 0u, n);
+        /* held keys and a HOLD chord play at the local tempo while the selected master is stopped; a chord its
+         * Stop (or a lost clock) stopped waits for the transport (arp_wait) */
+        arp_step(&trk[i], song.playing || !song.g[G_CLOCK] || arp_runs(i) ? n : 0u, n);
     midi_out_seq = 0;
     beat_pos += n;
     while (beat_pos >= beat) {
@@ -1582,7 +1590,7 @@ static void events_block(uint32_t n)
         if (!song.playing) {
             uint32_t elapsed = (uint32_t)((uint64_t)n * MIDI_BEAT_UNITS / beat_samples());
             for (i = 0; i < NPART; i++)
-                arp_step(&trk[i], trk[i].arp_phys ? elapsed : 0u, elapsed);
+                arp_step(&trk[i], arp_runs(i) ? elapsed : 0u, elapsed);
             lfo_units = elapsed;
         } else
             lfo_units = lfo_ext_units(n, seq_advanced);

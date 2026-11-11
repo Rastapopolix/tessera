@@ -7491,6 +7491,46 @@ static int test_battery(void)
     return bad;
 }
 
+
+/* ARP HOLD (Theo, 3.5-beta7): keys held, ARP 2 KNOB 3 to HOLD ON, keys let go: the arpeggio goes on, stopped and
+ * playing; new keys replace the latched chord; HOLD OFF releases it */
+static int test_arp_hold_latch(void)
+{
+    int bad = 0;
+    uint32_t play, i, fired;
+    /* 0 stopped, 1 playing (CLK INT); 2 CLK USB, stopped, no clock coming in; 3 CLK USB, its clock seen, stopped */
+    for (play = 0; play < 4u; play++) {
+        static const char *const WHERE[] = {"stopped, CLK INT", "playing, CLK INT", "stopped, CLK USB, no clock",
+                                            "stopped, CLK USB, its clock seen"};
+        ui_power_on();
+        stop_transport();
+        TSEL->p[P_AMODE] = 1;
+        go_title("ARP 2");
+        song.playing = play == 1u;
+        song.g[G_CLOCK] = play >= 2u;
+        midi_clock.mode = play == 3u;
+        fm1_in.notes |= 1u << 0 | 1u << 4; host_notes |= 1u << 0 | 1u << 4;
+        frame(); events_block(CTL);
+        turn(EN_K1 + 2u, 1);
+        events_block(CTL);
+        printf("    (%s)\n", WHERE[play]);
+        bad += check("ARP HOLD: KNOB 3 on ARP 2 with keys held turns HOLD ON", TSEL->p[P_AHOLD] == 1);
+        fm1_in.notes = 0; frame();
+        for (i = 0, fired = 0; i < 6000u; i++) { uint8_t was = TSEL->arp_note; events_block(CTL); fired += TSEL->arp_note && TSEL->arp_note != was; }
+        bad += check("..keys let go: the held chord keeps arpeggiating", TSEL->nheld == 2u && fired > 4u);
+        fm1_in.notes |= 1u << 7; host_notes |= 1u << 7; frame(); events_block(CTL);
+        fm1_in.notes = 0; frame(); events_block(CTL);
+        bad += check("..a new key replaces the latched chord", TSEL->nheld == 1u);
+        turn(EN_K1 + 2u, -1);
+        for (i = 0; i < 4u; i++) events_block(CTL);
+        bad += check("..HOLD OFF releases it", !TSEL->p[P_AHOLD] && !TSEL->nheld && !TSEL->arp_note);
+        midi_clock.mode = 0;
+    }
+    song.g[G_CLOCK] = 0;
+    stop_transport();
+    return bad;
+}
+
 int main(void)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -7498,6 +7538,7 @@ int main(void)
 #if !MELODEE_LOOK
     bad += test_large_face();
 #endif
+    bad += test_arp_hold_latch();
     bad += test_battery();
     bad += test_home_notes();
     bad += test_stage();

@@ -170,8 +170,8 @@ static int clock_arp_and_boundaries(void)
     bad+=check("a followed master clock that stops still times out",!song.playing);
     return bad;
 }
-/* ARP HOLD latched on an external clock: a Stop, a lost clock or a tap while stopped must not leave the arp note
- * sounding; Continue plays the latched chord again; the internal clock's free-running arp is unchanged by STOP */
+/* ARP HOLD latched on an external clock: a Stop or a lost clock must not leave the arp note sounding (the chord waits);
+ * Continue plays the latched chord again; a tap while stopped latches and plays at the local tempo, as held keys do; the internal clock's free-running arp is unchanged by STOP */
 static void arp_latch(uint32_t mode)
 {
     midi_test_reset(); song.g[G_CLOCK] = (int16_t)mode; events_block(CTL);
@@ -205,8 +205,10 @@ static int arp_ext_stop_test(void)
     bad += check("a lost external clock stops the transport and ends the ARP note", !song.playing && !trk[0].arp_note && !gate_note(&trk[0], 72));
     arp_latch(1); queued(0x90, 64, 100, 1); queued(0x80, 64, 0, 1);
     bad += check("a tap while the external transport is stopped sounds", trk[0].arp_note == 64);
-    idle_ms(2000);
-    bad += check("its ARP gate still ends in real time", !trk[0].arp_note && !gate_note(&trk[0], 64));
+    for (i = 0; i < 4000 && trk[0].arp_note != 76; i++) events_block(CTL);
+    bad += check("..latched while stopped, it plays on at the local tempo (3.5-beta7: it waited)", trk[0].arp_note == 76 && trk[0].nheld == 1u);
+    clock_packet(1, 0xFA, fm1_ms); clock_packet(1, 0xFC, fm1_ms + 5); idle_ms(2000);
+    bad += check("..an external Start and Stop: it waits again, silent", !trk[0].arp_note && !gate_note(&trk[0], 64) && !gate_note(&trk[0], 76));
     arp_latch(0); transport_req = 1; events_block(CTL); queued(0x90, 60, 100, 1); queued(0x80, 60, 0, 1);
     for (i = 0; i < 4000 && trk[0].arp_note != 72; i++) events_block(CTL);
     off = trk[0].arp_off;
