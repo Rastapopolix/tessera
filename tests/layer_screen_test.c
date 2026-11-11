@@ -136,6 +136,20 @@ static void test_mods_scroll(void)
         if (host_redrawn) printf("MODS after the scope: %llu pixels sent twice in a frame\n", (unsigned long long)host_redrawn);
         assert(!host_redrawn);
     }
+    /* pinned (3.5-rc2): OCT- held + OCT+ keeps it without OCT-; OCT- lets it go (no Back); leaving MODS too */
+    pr_hold(1); press(B_OCTUP); pr_hold(0); frame(); frame();
+    assert(cu_pin && cu_scope && cur_page()->graph == GR_CORDS && !ui.home);
+    mods_scroll(1); frame();
+    assert(cu_scope && cu_slot(1) == CORD_LIVE);        /* (still the scope, the next mod's) */
+    mods_scroll(-1);
+    press(B_OCTDN); frame();
+    assert(!cu_pin && !cu_scope && cur_page()->graph == GR_CORDS && !ui.home);
+    pr_hold(1); press(B_OCTUP); pr_hold(0); frame();
+    assert(cu_pin);
+    go_title("PATTERN"); frame();
+    assert(!cu_pin);
+    go_title("MODS"); frame();
+    assert(!cu_scope);
     cord_clear();
     puts("MODS: sixteen mods scrolled with KNOB 2, before and after the scope: every row sent once, its move and light in it");
 }
