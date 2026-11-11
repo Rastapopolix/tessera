@@ -92,7 +92,8 @@ static int oct_dn_page(void)                            /* the page shown has an
         return song.sel < TESSERA_TRACKS && tessera.mode[song.sel] != TESS_ENG_OFF;   /* DEVELOP, CHAIN, SKIP, ROLE */
     if (g == GR_PIECE)
         return tessera.pl_shape == PL_USER;             /* USER's points */
-    return g == GR_EVOLVE || g == GR_MIDICH || g == GR_ENTRIES ||   /* ROLL ALL, TRANSPOSE, ROLE, */
+    return g == GR_EVOLVE || g == GR_MIDICH || g == GR_ENTRIES || PAGES[ui.page].graph == GR_ARP ||   /* ROLL ALL,
+                                                         * TRANSPOSE, ROLE, ARP's SWING PROB HOLD ORDER, */
            g == GR_TIMING || g == GR_ENERGY || g == GR_CHAIN || g == GR_TRK || g == GR_CORDS;   /* SPLIT, DEPTH, REPEAT, PAN, CC */
 }
 /* GEN or TWEAK, OCT- held (the key grammar, M3): KNOB 2-4 (slot 1-3; KNOB 1 is RANDOM). TWEAK: FOLLOW's HOW,
@@ -1806,7 +1807,7 @@ static void page_tap(uint32_t b)
         else {
             for (k = 0; k < n && pg[k] != last; k++) {}
             if (k < n) ui.page = (uint8_t)last;
-            else {                                      /* first time: an ARP track's ARP 2, else the lane's first */
+            else {                                      /* first time: the lane's first (ARP 2 is ARP's OCT- layer, not listed) */
                 for (k = 0; k < n && PAGES[pg[k]].graph != GR_NONE; k++) {}
                 ui.page = pg[k < n ? k : 0u];
             }
@@ -1943,6 +1944,7 @@ static void page_knob(uint32_t k, int32_t s)
         page_over = 0;
     } else {
         edit_param(k, s);
+        if (arp2_on()) oct_eat |= 1u;                   /* (ARP, OCT- held: its release is no Back) */
         pg = cur_page();
         if (!(pg->graph == GR_EVOLVE || pg->graph == GR_FORM || pg->graph == GR_TWEAK || pg->graph == GR_TWEAK2 ||
               pg->graph == GR_ORGANIC || pg->graph == GR_MATRIX || pg->graph == GR_TIMING || pg->graph == GR_ENERGY || pg->graph == GR_MIDICH || pg->graph == GR_CHAIN || pg->graph == GR_ENTRIES || pg->graph == GR_PIECE || pg->graph == GR_LAND || pg->graph == GR_PERF || pg->graph == GR_KEYLINK || (pg->graph == GR_NOTELEN && k < 3u) ||   /* Tessera's own pages: no picker */

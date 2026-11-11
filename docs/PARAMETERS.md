@@ -29,10 +29,10 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x012 | ARP RATE | 1/4, 1/8, 1/16, 1/32, 8T, 16T, 1/2, 1/1, 2BAR, 4BAR | 1/16 | How often the arpeggiator plays a note. |
 | 0x013 | ARP OCTAVES | 1 to 4 | 1 | How many octaves the arpeggio climbs through. |
 | 0x014 | ARP GATE | 1 to 127 | 64 | How long each arpeggio note lasts, as a share of its step. |
-| 0x015 | ARP SWING | 0 to 100 % | 0 | Delays every second arpeggio note, for a swung feel. |
-| 0x016 | ARP PROBABILITY | 0 to 127 | 127 | The chance each arpeggio note plays. |
-| 0x017 | ARP HOLD | OFF, ON | OFF | ON keeps the arpeggio going after the keys are let go. |
-| 0x018 | ARP ORDER | NOTE, PLAY | NOTE | NOTE: the held notes from low to high; PLAY: in the order they were pressed. MODE ORD always plays them as pressed. |
+| 0x015 | ARP SWING | 0 to 100 % | 0 | Delays every second arpeggio note, for a swung feel. ARP, OCT- held, KNOB 1. |
+| 0x016 | ARP PROBABILITY | 0 to 127 | 127 | The chance each arpeggio note plays. ARP, OCT- held, KNOB 2. |
+| 0x017 | ARP HOLD | OFF, ON | OFF | ON keeps the arpeggio going after the keys are let go. ARP, OCT- held, KNOB 3. |
+| 0x018 | ARP ORDER | NOTE, PLAY | NOTE | NOTE: the held notes from low to high; PLAY: in the order they were pressed. MODE ORD always plays them as pressed. ARP, OCT- held, KNOB 4. |
 | 0x019 | ROOT | 0 to 11 | 0 | The scale's key note. |
 | 0x01A | SCALE | CHR, MAJ, MIN, DOR, MIX, PEN, MPEN, HARM, PHRY, LYD, LOC, MEL, BLUES, WHOLE, DIMHW, DIMWH, 5EDO, 7EDO, 9EDO, 10EDO, 13EDO, 14EDO, 15EDO, 16EDO, 17EDO, 18EDO, 19EDO, 20EDO, 21EDO, 22EDO, 23EDO, 24EDO, 26EDO, 27EDO, 29EDO, 31EDO, 34EDO, 36EDO, 41EDO, 53EDO, JI-MAJ, JI-MIN, JI-12, JI-7L, JI-7, HARM8, HARM16, PARTCH, HARRIS, PYTH, MT-1/4, MT-1/3, MT-1/6, WERCK3, KIRN3, VALLOT, YOUNG2, RAST-J, SABA-J, SHRUTI, SLENDR, PELOG, BP-ET, BP-JI, RAST, BAYATI, HIJAZ, SABA, HUSAYN, SIKAH, IN, YO, HIRA, IWATO, KUMOI, RYUK | CHR | The scale the keys and the generators play in. SCALES' USER family has four of your own, USER1 to USER4, made on the keys. |
 | 0x01B | QUANTIZE | OFF, SNAP, WHITE, ALL, MPC, CHRD | OFF | How the keys meet the scale: OFF plays every key, SNAP moves a note into the scale, WHITE puts the scale on the white keys, ALL and MPC lay it out over the keys or MPC pads; CHRD snaps the keys, MIDI and the generators to the nearest note of the chord a CHORD track plays (no CHORD track: as SNAP). Not OFF: KNOB 2 on NOTES moves a note by the scale's notes (CHRD: the chord's). Notes already written stay: Snap to scale in the pattern's sheet (OCT+ held) moves them onto the scale, once. |

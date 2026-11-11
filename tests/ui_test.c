@@ -538,7 +538,7 @@ static int test_phys_chrd_click(void)
 static int test_gen_family(void)
 {
     static const char STEP[] = "GEN NOTES TEMPO PATTERNS SONG GEN", STEP_A[] = "EVOLVE TWEAK TIMING EVOLVE",
-                      ARP[] = "GEN NOTES ARP TEMPO PATTERNS SONG GEN", ARP_A[] = "ARP 2 TWEAK ARP 2",
+                      ARP[] = "GEN NOTES ARP TEMPO PATTERNS SONG GEN", ARP_A[] = "TWEAK TWEAK TWEAK",
                       GEN[] = "GEN PATTERN TEMPO PATTERNS SONG GEN",
                       GEN_A[] = "EVOLVE FORM TWEAK TWEAK 2 LENGTH TIMING ENERGY EVOLVE";
     char got[128];
@@ -555,14 +555,28 @@ static int test_gen_family(void)
     bad += check("SEQ in ARP: GEN NOTES ARP (its MODE RATE OCT GATE) TEMPO PATTERNS SONG",
                  str_eq(seq_taps(got, sizeof got, 7), ARP));
     if (!str_eq(got, ARP)) printf("    got: %s\n", got);
-    bad += check("ARP in ARP: ARP 2 first, then TWEAK (SHIFT, HUMAN)", str_eq(btn_taps(B_ARP, got, sizeof got, 3), ARP_A));
+    bad += check("ARP in ARP: TWEAK (SHIFT, HUMAN) alone; ARP 2 is ARP's OCT- layer", str_eq(btn_taps(B_ARP, got, sizeof got, 3), ARP_A));
     if (!str_eq(got, ARP_A)) printf("    got: %s\n", got);
     go_title("TWEAK");
     turn(EN_SELECT, 1);
-    n = str_eq(cur_page()->title, "ARP 2");
-    turn(EN_SELECT, 1);
-    n &= str_eq(cur_page()->title, "TWEAK");
-    bad += check("SELECT on the ARP button's lane: its pages only (ARP 2, TWEAK)", n);
+    n = str_eq(cur_page()->title, "TWEAK");
+    bad += check("SELECT on the ARP button's lane: its pages only (TWEAK)", n);
+    {                                             /* ARP, OCT- held: SWING, PROB, HOLD, ORDER (ARP 2 folded in, beta7) */
+        int16_t pr = TSEL->p[P_APROB];
+        go_title("ARP");
+        n = cur_page()->id[0] == P_AMODE && (oct_leds() & 1u);
+        fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+        frame();
+        n &= cur_page()->id[0] == P_ASWING && cur_page()->id[1] == P_APROB && cur_page()->id[2] == P_AHOLD &&
+             cur_page()->id[3] == P_AORDER;
+        turn(EN_K2, -2);
+        n &= TSEL->p[P_APROB] != pr;
+        fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
+        frame(); frame();
+        n &= str_eq(cur_page()->title, "ARP") && !ui.home && cur_page()->id[0] == P_AMODE;
+        TSEL->p[P_APROB] = pr;
+        bad += check("ARP: OCT- lit; held, KNOB 1-4 SWING PROB HOLD ORDER; let go after a turn: ARP, no Back", n);
+    }
     {
         uint32_t tr = song.sel;
         int8_t sh = tessera.evolve[tr].shift;
@@ -7505,23 +7519,27 @@ static int test_arp_hold_latch(void)
         ui_power_on();
         stop_transport();
         TSEL->p[P_AMODE] = 1;
-        go_title("ARP 2");
+        go_title("ARP");
         song.playing = play == 1u;
         song.g[G_CLOCK] = play >= 2u;
         midi_clock.mode = play == 3u;
         fm1_in.notes |= 1u << 0 | 1u << 4; host_notes |= 1u << 0 | 1u << 4;
         frame(); events_block(CTL);
+        fm1_in.buttons |= 1u << panel.btn[B_OCTDN];   /* (ARP, OCT- held: KNOB 3 HOLD) */
         turn(EN_K1 + 2u, 1);
+        fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
         events_block(CTL);
         printf("    (%s)\n", WHERE[play]);
-        bad += check("ARP HOLD: KNOB 3 on ARP 2 with keys held turns HOLD ON", TSEL->p[P_AHOLD] == 1);
+        bad += check("ARP HOLD: KNOB 3 on ARP's OCT- layer with keys held turns HOLD ON", TSEL->p[P_AHOLD] == 1);
         fm1_in.notes = 0; frame();
         for (i = 0, fired = 0; i < 6000u; i++) { uint8_t was = TSEL->arp_note; events_block(CTL); fired += TSEL->arp_note && TSEL->arp_note != was; }
         bad += check("..keys let go: the held chord keeps arpeggiating", TSEL->nheld == 2u && fired > 4u);
         fm1_in.notes |= 1u << 7; host_notes |= 1u << 7; frame(); events_block(CTL);
         fm1_in.notes = 0; frame(); events_block(CTL);
         bad += check("..a new key replaces the latched chord", TSEL->nheld == 1u);
+        fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
         turn(EN_K1 + 2u, -1);
+        fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
         for (i = 0; i < 4u; i++) events_block(CTL);
         bad += check("..HOLD OFF releases it", !TSEL->p[P_AHOLD] && !TSEL->nheld && !TSEL->arp_note);
         midi_clock.mode = 0;
