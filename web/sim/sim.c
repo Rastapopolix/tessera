@@ -252,3 +252,29 @@ EXPORT void web_demo(void)
     ui.force = 1;
     transport_req = 1;
 }
+
+/* project files (the page's Projects row): a slot's TSP1 record out as a .tsp file, or a .tsp file into a slot, the
+ * same record the FM-1 keeps (the web editor's Projects > Project files moves it on and off the device). The slot list
+ * shows the name at once; SAVE > PROJECT loads it, as on the device. web_slot_buf: the record's bytes, both ways. */
+static uint8_t web_slot_raw[TSP_MAX];
+EXPORT uint8_t *web_slot_buf(void) { return web_slot_raw; }
+EXPORT uint32_t web_slot_buf_size(void) { return TSP_MAX; }
+/* slot 0..3 (A..D) -> web_slot_buf: the record's length, 0 = empty */
+EXPORT uint32_t web_slot_get(uint32_t slot)
+{
+    uint32_t n;
+    if (slot > 3u || !project_used(slot)) return 0;
+    n = proj_bank_len[slot];
+    memcpy(web_slot_raw, proj_bank_slot[slot], n);
+    return n;
+}
+/* web_slot_buf's first len bytes -> slot 0..3: 0 done, 1 not a whole TSP1 record this firmware reads */
+EXPORT uint32_t web_slot_put(uint32_t slot, uint32_t len)
+{
+    if (slot > 3u || len < 16u || len > TSP_MAX || !tsp_valid(web_slot_raw, len)) return 1;
+    memcpy(proj_bank_slot[slot], web_slot_raw, len);
+    proj_bank_len[slot] = len;
+    proj_fetch(slot);                        /* (its name in the slot list) */
+    ui.force = 1;
+    return 0;
+}

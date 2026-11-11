@@ -480,6 +480,10 @@ The editor's **Demo projects** (`fm1backup.js` `readSlots`, `putProject`) use th
 and its name into the slot list at once, with no power cycle (`proj_write_slot`; `tests/demo_projects.c check`).
 A record this firmware cannot read is refused at the commit (rc 2) and the slot keeps what it held.
 
+The editor's **Project files** (`readProject`, `putProject`) move one slot as a `.tsp` file, the slot's TSP1 record as
+it is: Save is `LIST` then `GET` of that slot's object; Load is that read (for the name it replaces) and the `PUT` above.
+The web simulator's page reads and writes the same record (web/sim/sim.c `web_slot_get`, `web_slot_put`).
+
 ## Historical v6: project-based song chain
 
 INFO appends CHAIN_ROWS (16) after NTRK. Earlier INFO bytes and command numbers
