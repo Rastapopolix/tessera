@@ -36,7 +36,7 @@ const E = vm.runInNewContext(proto + `
 ;({ frame, unframe, parse, req, Link, parseWav, resample, normalize, takeSample, autoTrim, zoomView, rootFromName, buildSlot, makeMockDevice, CMD, SMP,
    UP, bank, nativeBank, capturePatch, auditionPatch, startWatch, libraryFile, readLibraryFile, paramKeys, patternFromSteps, stepsFromPattern, upName,
    mixer, parseNotes, parseHits, hitsText, gridFromSteps, LANE_NOTE, LANE_OF, readDevicePreferences, devicePresetRows, engineOrder, ENGINE_ORDER, aliasOf, fmtValue, FM6,
-   FM4, fromDigital, nativeImportTargets, scaleRows, SCALE_INFO, parseScala, tuneName, tuneValid, TUNE, STATS, statsFields })`,
+   FM4, fromDigital, nativeImportTargets, scaleRows, SCALE_INFO, parseScala, tuneName, tuneValid, TUNE, STATS, statsFields, findDevicePorts, probeFm1 })`,
 { setTimeout, clearTimeout, setInterval, clearInterval, console, Date: TestDate });
 
 {
@@ -1170,6 +1170,47 @@ print(json.dumps([[r["file"], r["pitch"], r["name"]] for r in gen_scales.catalog
   ok(r.rc === 1, "TUNE: a selection past the slots refused");
 }
 
+/* a port named "FM-1" (macOS keeps the first name it saw) is taken only when it answers the INFO handshake */
+async function portDiscovery() {
+  const rename = (m, name) => { for (const p of [...m.access.inputs.values(), ...m.access.outputs.values()]) p.name = name; return m; };
+  const silent = (name) => {
+    const i = { id: "s-in", name, type: "input", state: "connected", onmidimessage: null };
+    const o = { id: "s-out", name, type: "output", state: "connected", send() {} };
+    return { inputs: new Map([[i.id, i]]), outputs: new Map([[o.id, o]]) };
+  };
+  let m = rename(E.makeMockDevice({ auto: false }), "FM-1");
+  let r = await E.findDevicePorts(m.access);
+  ok(r.input === m.access.inputs.get("mock-in") && !r.notTessera, "ports: an \"FM-1\" port that answers as Tessera connects");
+  m.stop();
+  m = rename(E.makeMockDevice({ auto: false }), "fm1 MIDI");
+  r = await E.findDevicePorts(m.access);
+  ok(!!r.input, "ports: \"fm1\" matches case-insensitively");
+  m.stop();
+  const t0 = Date.now();
+  r = await E.findDevicePorts(silent("FM-1"));
+  ok(r.notTessera === true && !r.input && Date.now() - t0 < 2000, "ports: an \"FM-1\" port that does not answer is not Tessera (short timeout)");
+  r = await E.findDevicePorts(silent("USB Midi Keyboard"));
+  ok(!r.input && !r.notTessera, "ports: other names are never probed");
+  let probed = 0;
+  m = rename(E.makeMockDevice({ auto: false }), "Tessera FM-1");
+  r = await E.findDevicePorts(m.access, async () => { probed++; return true; });
+  ok(!!r.input && probed === 0, "ports: \"Tessera FM-1\" connects as before, without a probe");
+  m.stop();
+  /* both: the Tessera-named pair wins over an FM-1 one */
+  m = rename(E.makeMockDevice({ auto: false }), "Tessera FM-1");
+  const fm = silent("FM-1");
+  const both = { inputs: new Map([...fm.inputs, ...m.access.inputs]), outputs: new Map([...fm.outputs, ...m.access.outputs]) };
+  r = await E.findDevicePorts(both);
+  ok(r.input === m.access.inputs.get("mock-in"), "ports: a Tessera name is preferred over an FM-1 name");
+  m.stop();
+  /* a silent FM-1 first, then an answering one */
+  m = rename(E.makeMockDevice({ auto: false }), "FM-1");
+  const both2 = { inputs: new Map([...fm.inputs, ...m.access.inputs]), outputs: new Map([...fm.outputs, ...m.access.outputs]) };
+  r = await E.findDevicePorts(both2);
+  ok(r.input === m.access.inputs.get("mock-in"), "ports: a confirmed FM-1 is picked over a silent one");
+  m.stop();
+}
+
 async function editorSessions() {
   const state = html.slice(html.indexOf("let busy = 0;"), html.indexOf("let dragging", html.indexOf("let busy = 0;")));
   const requests = html.slice(html.indexOf("function assertSession(d)"), html.indexOf("/* the whole connect sequence */"));
@@ -1809,6 +1850,7 @@ await editorTrackParam();
 await editorSong();
 await editorTunings();
 await editorHealth();
+await portDiscovery();
 await editorSessions();
 await editorFm6();
 await editorFm4();

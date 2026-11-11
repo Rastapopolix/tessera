@@ -1874,6 +1874,7 @@ starts the worst times again, for example before you try a busy part.
 
 ## If something goes wrong
 
+- **Web editor says "Tessera not found" on a Mac.** macOS keeps the MIDI port name it first saw, so the FM-1 can still be called "FM-1" (from the stock firmware or an older Tessera). The editor now finds it anyway, if it answers as Tessera; renaming the device in Audio MIDI Setup, or replugging it, also works.
 - **Single core.** If your FM-1 crashes with the standard build (red crash screen, freezes, or restarts into update
   mode), install the `-1core` firmware from the same release.
 - **TESSERA CRASH.** If the crash screen shows, take a photo; after a restart, MENU > ABOUT shows LAST CRASH until

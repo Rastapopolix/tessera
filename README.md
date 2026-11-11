@@ -45,6 +45,8 @@ and sequences from the computer with the [web editor](https://rastapopolix.githu
 Each release has two builds: `tessera-X.Y.fwsc` (standard, dual core: start here) and
 `tessera-X.Y-1core.fwsc` (single core, for FM-1s that crash with the standard build).
 
+Trying the beta? Choose **Beta** in the installer and see [testing the beta](docs/BETA_TESTING.md) for what to check and how to report.
+
 Do not unplug the FM-1 while it is writing. Tessera is experimental in every sense of the word: use it at your own risk. The installer
 page also has a way back to the official firmware, with a backup first: V15 or V16, whichever the FM-1 had before
 Tessera (its start-up part decides; the page says which one it needs). M-VAVE's own updater (M-UPGRADE 3.11 and

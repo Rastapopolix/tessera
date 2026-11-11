@@ -4,6 +4,8 @@ Shown on the installer under the Beta choice (web/publish_beta.py --notes, from 
 "## " headings and the "- " lines are shown, as plain text. Update it when a change merges into develop; at the
 release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again for the next beta.
 
+Want to help test? The steps, by area, and how to report a problem: [BETA_TESTING.md](BETA_TESTING.md).
+
 ## New since 3.4.1
 - PAT GEN: each of a track's 8 patterns can keep its own generator setup, so switching pattern switches the generator. Off by default: EVOLVE, OCT- held, KNOB 3.
 - ROLL ALL: every generator track gets a new seed at once, and one step back undoes it. EVOLVE, OCT- held, KNOB 1.
@@ -38,6 +40,7 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 
 ## Fixed
 - USB OUTPUT 4 TRACKS: a loud chord crackled in its stem (cut hard at full scale, #586). A stem now has the stereo recording's level, 6 dB under before, and the outputs' soft clip.
+- Web editor on macOS: "Tessera not found" when the FM-1's MIDI port is still named "FM-1" (CoreMIDI keeps the first name it saw). The editor now also tries ports named FM-1 / FM1, takes one only if it answers the editor handshake as Tessera, and says so if an FM-1 does not (stock firmware: install Tessera with the installer). The not-found text hints at the cached name (#527).
 - Rename and SAVE while playing: the name screen now opens (the keys type, they never sound); only writing the name needs the transport stopped. OCT+ says STOP TO SAVE and the screen stays; PLAY stops, OCT+ saves. Before, Rename closed the sheet and nothing opened (#602).
 - KNOBS BARS: a bar at its maximum no longer touches the top of its outline; it keeps the same one-pixel gap there as at the sides and bottom (13 pixels of travel, not 15).
 - STEP direction: a pattern of recorded notes (REC) played them forwards while BACK or PEND moved the playhead backwards; each step now plays its own recorded notes. A tied note going backwards plays once, from the tie's last step, as long as the tie (it played again on its own step). The pattern sheet's Direction row shows a mod moving it as FWD>PEND: the pattern's own, then the one playing.
