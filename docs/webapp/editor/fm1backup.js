@@ -9,7 +9,7 @@ const BACKUP_IDS_OWN = Array.from({length:21},(_,i)=>i);
 const BACKUP_IDS_NATIVE = Array.from({length:23},(_,i)=>i);
 const BACKUP_IDS_P5 = Array.from({length:28},(_,i)=>i);
 const BACKUP_IDS_TESS = Array.from({length:30},(_,i)=>i);   // melodee-tess: 28 the generators of the saved slots, 29 the live ones
-const maxSize = id => id >= 32 ? 81920 : (id === 0 || (id >= 2 && id <= 5)) ? 32768 : id>=23&&id<=27?3600:3840;
+const maxSize = id => id >= 32 ? 81920 : (id === 0 || (id >= 2 && id <= 5)) ? 34816 : id>=23&&id<=27?3600:3840;
 const idsOf = (n) => (n === BACKUP_IDS.length ? BACKUP_IDS : n === BACKUP_IDS_V1.length ? BACKUP_IDS_V1 : n === 9 ? BACKUP_IDS_BANKS : n === 17 ? BACKUP_IDS_CZ : n === 21 ? BACKUP_IDS_OWN : n === 23 ? BACKUP_IDS_NATIVE : n === 28 ? BACKUP_IDS_P5 : n === 30 ? BACKUP_IDS_TESS : null);
 export const BACKUP_CMD = { LIST: 65, GET: 66, PUT: 67 };
 // melodee-tess, the own project format: the projects (0 the live music, 2..5 the slots) are TSP1 records (project_tsp.c):
@@ -250,6 +250,13 @@ export async function readSlots(request) {
     slots.push({ used: true, name });
   }
   return slots;
+}
+// One slot's project (0..3: A..D) as its TSP1 record, for a .tsp file; an empty array when the slot is empty. Stops playback.
+export async function readProject(request, slot) {
+  if (!(slot >= 0 && slot <= 3)) throw new Error("Invalid slot");
+  const ask = (r) => request(r, { timeout: 3000, retries: 1 });
+  const size = bkManifest(await ask([BACKUP_CMD.LIST, []])).find(o => o.id === 2 + slot)?.size || 0;
+  return size ? getObject(ask, 2 + slot, size) : new Uint8Array(0);
 }
 export async function putProject(request, slot, bytes, onProgress = () => {}) {
   tspName(bytes);                             // a whole record, or nothing is sent
