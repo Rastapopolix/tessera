@@ -14,9 +14,11 @@ knobs. For the long patches that use these features (Krell, long gates, stepped 
 [GENERATIVE.md](GENERATIVE.md).
 
 **New here?** Start with [First steps: you have a loop, what next?](#first-steps-you-have-a-loop-what-next).
+Or [start from a demo](#start-from-a-demo): load the piece nearest to what you want and change it.
 
 **Recipes**
 
+- [Start from a demo](#start-from-a-demo)
 - [A first generative patch in a minute](#a-first-generative-patch-in-a-minute)
 - [A drone that breathes](#a-drone-that-breathes)
 - [Chords that lead, melodies that follow (QNT CHRD)](#chords-that-lead-melodies-that-follow-qnt-chrd)
@@ -66,6 +68,29 @@ knobs. For the long patches that use these features (Krell, long gates, stepped 
 **[Tips](#tips)**
 
 ---
+
+## Start from a demo
+
+The [demo projects](demos/README.md) are finished pieces, each made for a kind of music. Pick the one nearest to what
+you want, load it, press **PLAY**, then change the one thing named below: it's quicker than starting from nothing, and
+you hear at once what the change does. Put a demo on the FM-1 with the web editor's **Projects** > **Demo projects**
+(it asks before it writes, and only the slots you pick change).
+
+| You want | Load | Then change | Recipes |
+|---|---|---|---|
+| An evolving ambient piece | **SLOW LIGHT** | **GLO > PIECE**: LENGTH and SHAPE; **GLO > CHAIN**: FORM AABA to ABAC, for a third section | [A piece that plays itself](#a-piece-that-plays-itself-piece-chain-and-entries), [Movement over minutes](#movement-over-minutes-tide-and-swarm) |
+| A bed that runs for an hour | **STILL TIDE** | Track 1, GEN: **PROG** DRONE to **WALK**, so the drone moves through the scale | [A drone that breathes](#a-drone-that-breathes), [Drift, then come home](#drift-then-come-home-gravity-on-evolve) |
+| A slowly changing cinematic texture | **PAPER KITES** | Tracks 1 and 2, PATTERN: **LEN** (11 and 13; try 7 and 9) | [Polyrhythms](#polyrhythms-poly-and-quad), [A melody you can come back to](#a-melody-you-can-come-back-to-constellation) |
+| A drone that never moves, with a voice over it | **EMBER FIELD** | Track 4, FORM: **CONTR** and **DEVELOP**, for how far each section strays | [Returns that vary](#returns-that-vary-form-develop) |
+| A melody that answers itself | **UNDERTOW** | Track 1, NOTES: write your own call; track 2's answers follow it at once | [Your phrase, answered](#your-phrase-answered-answer-source) |
+| A melody with harmonies of its own | **UNDERTOW** | Track 2: MODE **EUCLID**, then TWEAK **FOLLOW T1**, HOW **CHORD**, RHYTHM **SOURCE**: a harmony under each note of the call | [A harmony on your own melody](#a-harmony-on-your-own-melody-follow-chord), [A harmony line that follows](#a-harmony-line-that-follows-follow) |
+| Two parts that trade notes | **KOTO GARDEN** | Track 1, GEN sheet (hold **OCT+**): the columns' moves | [Notes that travel between tracks](#notes-that-travel-between-tracks-quad-columns) |
+| Plucked strings and hand drums | **CEDAR RAIN** | **SCL** (everything follows); track 1, EVOLVE: **ROLL** for a new figure | [A first generative patch](#a-first-generative-patch-in-a-minute), [From generator to pattern](#from-generator-to-pattern-print-then-step-evolve) |
+| A slow groove with space | **LOW HARBOUR** | Track 3: MODE **ATLAS**, for drums that vary themselves | [Atlas: a groove with fills](#atlas-a-groove-with-fills), [A fill on the last bar](#a-fill-on-the-last-bar-condition-and-fill) |
+
+The demos are all slow (80 BPM or under). For a faster groove, start from the
+[first patch](#a-first-generative-patch-in-a-minute) and the ATLAS recipes, and give it a length with
+[MUTES](#drops-that-land-on-the-bar-mutes) and [PERF macros](#one-knob-for-a-big-build-perf-macros) to play it live.
 
 ## First steps: you have a loop, what next?
 
@@ -217,6 +242,8 @@ A held chord that changes slowly, for ambient beds.
 5. For a drone that moves through the scale, set PROG to **WALK**: four chords from the seed, and EVOLVE (EVERY 8,
    AMOUNT 30) changes one now and then.
 
+Hear it in **STILL TIDE** (track 1).
+
 ## Chords that lead, melodies that follow (QNT CHRD)
 
 <p align="center"><img src="assets/gallery/gen_chord.png" alt="CHORD" width="240"></p>
@@ -360,6 +387,8 @@ groove that keeps changing, which is the other use.
 5. **LINK** on GEN: a fast QUAD track pulls slower ones along. With DIR **HOLD** a track plays only when the linked
    one moves it.
 
+Hear it in **KOTO GARDEN** (tracks 1 and 2).
+
 ## A melody you can come back to (CONSTELLATION)
 
 <p align="center"><img src="assets/gallery/gen_constel.png" alt="CONSTELLATION" width="240"></p>
@@ -383,6 +412,8 @@ groove that keeps changing, which is the other use.
    motif moves on now and then.
 4. **LENGTH** page: **HIT**, so each note rings until the next one.
 
+Hear it in **KOTO GARDEN** (track 3, the flute).
+
 ## Leaves in the wind (FALL)
 
 <p align="center"><img src="assets/gallery/gen_fall.png" alt="BOUNCE in FALL" width="240"></p>
@@ -393,6 +424,8 @@ groove that keeps changing, which is the other use.
    leaves down together, in bursts.
 3. **MODS**: a cord from a **SWARM** (SWARM 3, about 25 s a turn) to **B ANGLE**: the wind rises and falls.
 4. **SPEED** slower (10 to 20) for a sparse, rain-like part.
+
+Hear it in **STILL TIDE** (track 3, through the FILTER effect).
 
 ## Pads from sparse notes (LENGTH HIT)
 
@@ -534,6 +567,8 @@ never repeats itself note for note.
    (LOOPS) it keeps answering forever.
 5. Change the STEP pattern and the answers change with it, as ANSWER reads it again before each answer.
 
+Hear it in **UNDERTOW**: track 1 is the call, track 2 the answers.
+
 ## Driving another synth (MIDI OUT)
 
 <p align="center"><img src="assets/gallery/midi_out.png" alt="GLO > MIDI OUT" width="240"></p>
@@ -568,6 +603,8 @@ The piece starts sparse, layers in, peaks a little past the middle, thins and fa
 tracks' seeds, so PLAY plays it again the same way; set END to **NEW** for a new piece each time (an installation that
 never repeats), or **LOOP** for the same one again. To hear a whole shape quickly before you commit, try LENGTH 5 min
 first.
+
+Hear it in **SLOW LIGHT**, **CEDAR RAIN** or **UNDERTOW**: all three set PIECE, CHAIN and ENTRIES.
 
 ## One knob for a big build (PERF macros)
 
