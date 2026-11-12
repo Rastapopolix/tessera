@@ -1,0 +1,62 @@
+name: Web simulator for a release
+
+# Run by hand (Actions > Web simulator for a release > Run workflow) with a version X.Y[.Z]: builds the release's web
+# simulator (web/sim/build.sh --release, Emscripten 6.0.12, as the beta workflow's) from the chosen branch or tag and
+# uploads build/sim/ as the artifact sim-VERSION, for the release's site pull request (web/make_site.py ... --sim).
+# The cloud sessions have no Emscripten, so this is how they get the release's simulator. Nothing is published.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version, X.Y[.Z] (e.g. 3.5)'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  sim:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Version
+        env:
+          V: ${{ inputs.version }}
+        run: |
+          echo "$V" | grep -Eq '^[1-9]\.[0-9]{1,2}(\.[0-9])?$' || { echo "version $V: use X.Y[.Z]"; exit 1; }
+          echo "V=$V" >> "$GITHUB_ENV"
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libharfbuzz-dev libfribidi-dev libraqm-dev
+          python -m pip install Pillow fonttools==4.68.0
+      - name: Generated headers (build/gen, no device toolchain needed)
+        run: |
+          python -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+          python tools/gen_909_tables.py build/gen/x0x_drum_tables.h
+      - uses: actions/cache@v4
+        with:
+          path: .nightly-deps/emsdk
+          key: emsdk-6.0.12-v1
+      - name: The web simulator (Emscripten 6.0.12)
+        env:
+          EMSDK: ${{ github.workspace }}/.nightly-deps/emsdk
+        run: |
+          if [ ! -x "$EMSDK/upstream/emscripten/emcc" ]; then
+            git clone -q https://github.com/emscripten-core/emsdk.git "$EMSDK"
+            "$EMSDK/emsdk" install 6.0.12
+          fi
+          "$EMSDK/emsdk" activate 6.0.12 >/dev/null
+          web/sim/build.sh --release "$V" | tee -a "$GITHUB_STEP_SUMMARY"
+          node web/sim/test_sim.mjs build/sim/melodee.wasm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sim-${{ env.V }}
+          path: build/sim/
