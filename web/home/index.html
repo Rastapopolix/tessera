@@ -122,9 +122,7 @@ section > .wrap > header p { color: var(--mid); max-width: 44em; margin-top: 12p
 .gen figcaption { padding: 10px 2px 0; }
 .gen figcaption b { display: block; color: var(--ink); font: 16px/1.2 var(--pixel); text-transform: uppercase; }
 .gen figcaption span { color: var(--mid); font-size: 14px; line-height: 1.45; display: block; margin-top: 4px; }
-/* new in 3.5: the mixed scopes wide, then the new screens and the light ground as the generators' grid */
-.wide { margin: 0 0 28px; }
-.wide figcaption { color: var(--mid); font-size: 14px; padding: 10px 2px 0; }
+/* new in 3.5: the new screens and the light ground, as the generators' grid */
 #new h3 { margin: 40px 0 8px; }
 #new h3 + p { color: var(--mid); margin: 0 0 20px; max-width: 44em; }
 
@@ -241,10 +239,10 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       </div>
     </div>
     <div class="screens">
-      <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/gen_bounce.png" width="480" height="480" aria-label="BOUNCE: balls in a box, a note at every wall"><source src="media/gallery/loop_bounce.mp4" type="video/mp4"></video></div>
+      <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/brand/hero_scope.png" width="480" height="480" aria-label="MOD SCOPE: a cord drawn over its source as it moves"><source src="media/gallery/loop_scope.mp4" type="video/mp4"></video></div>
+      <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/brand/hero_land.png" width="480" height="480" aria-label="LANDSCAPE: rain on the water, clouds and the moon"><source src="media/gallery/loop_land.mp4" type="video/mp4"></video></div>
       <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/gen_constel.png" width="480" height="480" aria-label="CONSTELLATION: stars play as they cross the crosshair"><source src="media/gallery/loop_constel.mp4" type="video/mp4"></video></div>
       <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/gen_chord.png" width="480" height="480" aria-label="CHORD: a progression"><source src="media/gallery/loop_chord.mp4" type="video/mp4"></video></div>
-      <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/matrix.png" width="480" height="480" aria-label="MATRIX: the mods track by track"><source src="media/gallery/loop_matrix.mp4" type="video/mp4"></video></div>
     </div>
   </div>
 </div>
@@ -274,8 +272,10 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <h2 data-h="new_h2">Patch it, then watch it</h2>
       <p data-h="new_p1">Modular-style patching on the FM-1: mix mods on two buses, clock a generator from an LFO, gate a whole track, brake the whole patch with MOD DEPTH, and see every cord move on MOD SCOPE. Projects that use these don't open on 3.4.1.</p>
     </header>
-    <figure class="wide"><div class="screen"><img src="media/brand/new35_scope_mix.png" alt="MOD SCOPE: LFO A, LFO B and their mix on BUS A" loading="lazy" width="1800" height="592"></div><figcaption data-h="new_cap0">Two LFOs of different shapes mixed on BUS A into one new shape, each watched on MOD SCOPE.</figcaption></figure>
     <div class="gens">
+      <div class="gen"><figure><div class="screen"><img src="media/brand/new35_scope_a.png" alt="LFO A" loading="lazy" width="480" height="480"></div><figcaption><b>LFO A</b><span data-h="new_capa">T3's LFO, a triangle, into BUS A.</span></figcaption></figure></div>
+      <div class="gen"><figure><div class="screen"><img src="media/brand/new35_scope_b.png" alt="LFO B" loading="lazy" width="480" height="480"></div><figcaption><b>LFO B</b><span data-h="new_capb">T4's LFO, a saw, into BUS A.</span></figcaption></figure></div>
+      <div class="gen"><figure><div class="screen"><img src="media/brand/new35_scope_sum.png" alt="MIXED: A + B" loading="lazy" width="480" height="480"></div><figcaption><b>MIXED: A + B</b><span data-h="new_cap0">BUS A plays the two as one new shape, watched on MOD SCOPE.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/brand/new35_mods_new.png" alt="MODS" loading="lazy" width="480" height="480"></div><figcaption><b>MODS</b><span data-h="new_cap1">New cords: EOC as a clock, a GATE scaling a mod, a bus onto PLAY.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/brand/new35_mods_bus.png" alt="MIX BUSES" loading="lazy" width="480" height="480"></div><figcaption><b>MIX BUSES</b><span data-h="new_cap2">Each bus mixes by SUM, MAX, MIN or DIFF, with a lag.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/brand/new35_pattern_dir.png" alt="DIRECTION" loading="lazy" width="480" height="480"></div><figcaption><b>DIRECTION</b><span data-h="new_cap3">Step patterns play FWD, BACK, PEND, FOLD, RAND or DRUNK.</span></figcaption></figure></div>
@@ -393,10 +393,10 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <figure><div class="screen"><img src="media/gallery/ink_pink.png" alt="HOME in Pink" loading="lazy" width="480" height="480"></div><figcaption>Pink</figcaption></figure>
       <figure><div class="screen"><img src="media/gallery/ink_hot_pink.png" alt="HOME in Hot pink" loading="lazy" width="480" height="480"></div><figcaption>Hot pink</figcaption></figure>
       <figure><div class="screen"><img src="media/gallery/ink_lilac.png" alt="HOME in Lilac" loading="lazy" width="480" height="480"></div><figcaption>Lilac</figcaption></figure>
-      <figure><div class="screen"><img src="media/gallery/ink_mosaic.png" alt="HOME in Mosaic" loading="lazy" width="480" height="480"></div><figcaption>Mosaic</figcaption></figure>
-      <figure><div class="screen"><img src="media/gallery/ink_sunset.png" alt="HOME in Sunset" loading="lazy" width="480" height="480"></div><figcaption>Sunset</figcaption></figure>
-      <figure><div class="screen"><img src="media/gallery/ink_ocean.png" alt="HOME in Ocean" loading="lazy" width="480" height="480"></div><figcaption>Ocean</figcaption></figure>
-      <figure><div class="screen"><img src="media/gallery/ink_neon.png" alt="HOME in Neon" loading="lazy" width="480" height="480"></div><figcaption>Neon</figcaption></figure>
+      <figure><div class="screen"><img src="media/brand/inkland_mosaic.png" alt="LANDSCAPE in Mosaic" loading="lazy" width="480" height="480"></div><figcaption>Mosaic</figcaption></figure>
+      <figure><div class="screen"><img src="media/brand/inkland_sunset.png" alt="LANDSCAPE in Sunset" loading="lazy" width="480" height="480"></div><figcaption>Sunset</figcaption></figure>
+      <figure><div class="screen"><img src="media/brand/inkland_ocean.png" alt="LANDSCAPE in Ocean" loading="lazy" width="480" height="480"></div><figcaption>Ocean</figcaption></figure>
+      <figure><div class="screen"><img src="media/brand/inkland_neon.png" alt="LANDSCAPE in Neon" loading="lazy" width="480" height="480"></div><figcaption>Neon</figcaption></figure>
       <figure><div class="screen"><img src="media/gallery/paper_yellow.png" alt="HOME on GROUND LIGHT" loading="lazy" width="480" height="480"></div><figcaption>Light<span data-h="inks_cap2">GROUND LIGHT, new in 3.5</span></figcaption></figure>
     </div>
   </div>
@@ -508,7 +508,9 @@ window.HOME_TEXT = {
     new_kicker: "Nuevo en 3.5",
     new_h2: "Parchéalo y míralo",
     new_p1: "Patcheo al estilo modular en el FM-1: mezcla mods en dos buses, sincroniza un generador con un LFO, abre y cierra una pista entera, frena todo el patch con MOD DEPTH y mira moverse cada cable en MOD SCOPE. Los proyectos que usan estas funciones no se abren en 3.4.1.",
-    new_cap0: "Dos LFO de formas distintas mezclados en BUS A en una forma nueva, cada uno visto en MOD SCOPE.",
+    new_capa: "El LFO de T3, un triángulo, hacia BUS A.",
+    new_capb: "El LFO de T4, una sierra, hacia BUS A.",
+    new_cap0: "BUS A toca los dos como una forma nueva, vista en MOD SCOPE.",
     new_cap1: "Cables nuevos: EOC como reloj, un GATE que escala un mod, un bus hacia PLAY.",
     new_cap2: "Cada bus mezcla por SUM, MAX, MIN o DIFF, con lag.",
     new_cap3: "Los patrones de pasos tocan FWD, BACK, PEND, FOLD, RAND o DRUNK.",
@@ -641,7 +643,9 @@ window.HOME_TEXT = {
     new_kicker: "Novità della 3.5",
     new_h2: "Collegalo, poi guardalo",
     new_p1: "Patch in stile modulare sull'FM-1: mescola le mod su due bus, fai avanzare un generatore al ritmo di un LFO, apri e chiudi un'intera traccia, frena tutta la patch con MOD DEPTH e guarda ogni cavo muoversi in MOD SCOPE. I progetti che le usano non si aprono sulla 3.4.1.",
-    new_cap0: "Due LFO di forme diverse mescolati su BUS A in una forma nuova, ognuno visto in MOD SCOPE.",
+    new_capa: "L'LFO di T3, un triangolo, verso BUS A.",
+    new_capb: "L'LFO di T4, un dente di sega, verso BUS A.",
+    new_cap0: "BUS A suona i due come una forma nuova, vista in MOD SCOPE.",
     new_cap1: "Nuovi cavi: EOC come clock, un GATE che scala una mod, un bus verso PLAY.",
     new_cap2: "Ogni bus mescola con SUM, MAX, MIN o DIFF, con un lag.",
     new_cap3: "I pattern a passi suonano FWD, BACK, PEND, FOLD, RAND o DRUNK.",
@@ -774,7 +778,9 @@ window.HOME_TEXT = {
     new_kicker: "Neu in 3.5",
     new_h2: "Patchen, dann zusehen",
     new_p1: "Patchen wie im Modularsystem, auf dem FM-1: Mods auf zwei Bussen mischen, einen Generator von einem LFO takten lassen, eine ganze Spur öffnen und schließen, den ganzen Patch mit MOD DEPTH bremsen und jedes Kabel in MOD SCOPE in Bewegung sehen. Projekte, die das nutzen, öffnen sich nicht auf 3.4.1.",
-    new_cap0: "Zwei LFOs verschiedener Form auf BUS A zu einer neuen Form gemischt, jeder in MOD SCOPE zu sehen.",
+    new_capa: "Der LFO von T3, ein Dreieck, in BUS A.",
+    new_capb: "Der LFO von T4, ein Sägezahn, in BUS A.",
+    new_cap0: "BUS A spielt beide als eine neue Form, in MOD SCOPE zu sehen.",
     new_cap1: "Neue Kabel: EOC als Takt, ein GATE, das einen Mod skaliert, ein Bus auf PLAY.",
     new_cap2: "Jeder Bus mischt mit SUM, MAX, MIN oder DIFF, mit Lag.",
     new_cap3: "Step-Patterns spielen FWD, BACK, PEND, FOLD, RAND oder DRUNK.",
@@ -907,7 +913,9 @@ window.HOME_TEXT = {
     new_kicker: "Nouveau en 3.5",
     new_h2: "Patchez, puis regardez",
     new_p1: "Le patch à la manière d'un modulaire sur le FM-1 : mélangez des mods sur deux bus, cadencez un générateur avec un LFO, ouvrez et fermez une piste entière, freinez tout le patch avec MOD DEPTH et regardez chaque câble bouger sur MOD SCOPE. Les projets qui s'en servent ne s'ouvrent pas sur 3.4.1.",
-    new_cap0: "Deux LFO de formes différentes mélangés sur BUS A en une forme nouvelle, chacun vu sur MOD SCOPE.",
+    new_capa: "Le LFO de T3, un triangle, vers BUS A.",
+    new_capb: "Le LFO de T4, une dent de scie, vers BUS A.",
+    new_cap0: "BUS A joue les deux comme une forme nouvelle, vue sur MOD SCOPE.",
     new_cap1: "Nouveaux câbles : EOC comme horloge, un GATE qui met une mod à l'échelle, un bus vers PLAY.",
     new_cap2: "Chaque bus mélange par SUM, MAX, MIN ou DIFF, avec un lag.",
     new_cap3: "Les motifs de pas jouent FWD, BACK, PEND, FOLD, RAND ou DRUNK.",
@@ -1040,7 +1048,9 @@ window.HOME_TEXT = {
     new_kicker: "Novo na 3.5",
     new_h2: "Conecte e veja",
     new_p1: "Patches no estilo modular no FM-1: misture mods em dois barramentos, faça um gerador andar no ritmo de um LFO, abra e feche uma trilha inteira, freie o patch inteiro com MOD DEPTH e veja cada cabo se mover no MOD SCOPE. Projetos que usam isso não abrem na 3.4.1.",
-    new_cap0: "Dois LFOs de formas diferentes misturados no BUS A numa forma nova, cada um visto no MOD SCOPE.",
+    new_capa: "O LFO de T3, um triângulo, para o BUS A.",
+    new_capb: "O LFO de T4, uma dente de serra, para o BUS A.",
+    new_cap0: "O BUS A toca os dois como uma forma nova, vista no MOD SCOPE.",
     new_cap1: "Cabos novos: EOC como clock, um GATE que escala um mod, um barramento para PLAY.",
     new_cap2: "Cada barramento mistura por SUM, MAX, MIN ou DIFF, com lag.",
     new_cap3: "Os padrões de passos tocam FWD, BACK, PEND, FOLD, RAND ou DRUNK.",
@@ -1173,7 +1183,9 @@ window.HOME_TEXT = {
     new_kicker: "3.5의 새 기능",
     new_h2: "패치하고, 지켜보기",
     new_p1: "FM-1에서 모듈러 방식으로 패치하세요: 두 버스에서 모드를 섞고, LFO로 제너레이터를 클록하고, 트랙 전체를 열고 닫고, MOD DEPTH로 패치 전체를 늦추고, MOD SCOPE에서 모든 케이블의 움직임을 보세요. 이 기능을 쓰는 프로젝트는 3.4.1에서 열리지 않습니다.",
-    new_cap0: "모양이 다른 두 LFO를 BUS A에서 섞어 새로운 모양으로, 각각 MOD SCOPE에서 봅니다.",
+    new_capa: "T3의 LFO, 삼각파를 BUS A로.",
+    new_capb: "T4의 LFO, 톱니파를 BUS A로.",
+    new_cap0: "BUS A는 둘을 하나의 새로운 모양으로 연주하고, MOD SCOPE에서 볼 수 있습니다.",
     new_cap1: "새 케이블: 클록으로 쓰는 EOC, 모드를 스케일하는 GATE, PLAY로 가는 버스.",
     new_cap2: "각 버스는 SUM, MAX, MIN, DIFF로 섞고, 랙을 걸 수 있습니다.",
     new_cap3: "스텝 패턴이 FWD, BACK, PEND, FOLD, RAND, DRUNK로 연주됩니다.",
@@ -1306,7 +1318,9 @@ window.HOME_TEXT = {
     new_kicker: "3.5 の新機能",
     new_h2: "パッチして、見る",
     new_p1: "FM-1 でモジュラー風のパッチング：2つのバスでモッドを混ぜ、LFO でジェネレーターを刻み、トラック全体を開け閉めし、MOD DEPTH でパッチ全体にブレーキをかけ、MOD SCOPE ですべてのコードの動きを見る。これらを使うプロジェクトは 3.4.1 では開けません。",
-    new_cap0: "形の違う2つの LFO を BUS A で混ぜて新しい形に。それぞれを MOD SCOPE で。",
+    new_capa: "T3 の LFO、三角波を BUS A へ。",
+    new_capb: "T4 の LFO、ノコギリ波を BUS A へ。",
+    new_cap0: "BUS A は2つをひとつの新しい形として鳴らし、MOD SCOPE で見えます。",
     new_cap1: "新しいコード：クロックとしての EOC、モッドをスケールする GATE、PLAY へのバス。",
     new_cap2: "各バスは SUM、MAX、MIN、DIFF で混ぜ、ラグもかけられます。",
     new_cap3: "ステップパターンは FWD、BACK、PEND、FOLD、RAND、DRUNK で再生。",
