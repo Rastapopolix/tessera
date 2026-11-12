@@ -261,7 +261,7 @@ def demo_card(lines, ink):
     return im
 
 
-def demo_frame(caption, ink, version="3.3"):
+def demo_frame(caption, ink, version="3.3", cap=None):
     im = Image.new("RGB", (DW, DW), (0, 0, 0))
     d = ImageDraw.Draw(im)
     from gen_brand import centred
@@ -270,7 +270,7 @@ def demo_frame(caption, ink, version="3.3"):
     d.rectangle([DX - 4, DY - 4, DX + 240 * DS + 3, DY + 240 * DS + 3], outline=mix((0, 0, 0), ink, 23), width=2)
     y = DY + 240 * DS + 30
     for line in wrap(caption, (DW - 80) // 30)[:2]:
-        centred(d, DW, y, line, 5, ink)
+        centred(d, DW, y, line, 5, cap or ink)
         y += 52
     return im
 
@@ -402,29 +402,30 @@ def demo(src, intro, out):
 # three 3.5 pieces (NIGHT LOOM, INK RIVER, SALT GLASS); the scope's combined waves; GROUND LIGHT briefly; LANDSCAPE in
 # dark MOSAIC with the moon crossing, its music running on under the end card.
 CUT35 = [
-    ("c00-loom-home", 0, 15, [(0, "NIGHT LOOM, new in 3.5"), (6.5, "Two figures that never line up")]),
+    ("c00-loom-home", 0, 15, [(0, "New in 3.5"), (6.5, "Two figures that never line up")]),
     ("Step patterns", "Each pattern plays its own way"),
     ("c01-dir", 0, 18.5, [(0, "FWD: as written"), (4.6, "BACK"), (9.2, "PEND: there and back"),
                           (13.8, "FOLD: from the ends inwards")]),
-    ("c02-ink-notes", 0, 13, [(0, "INK RIVER: a mod turns the call around")]),
+    ("c02-ink-notes", 0, 13, [(0, "A mod turns the line around")]),
     ("Strum", "Chords played as a hand plays them"),
     ("c03-strum", 0, 16, [(0, "A chord, all at once"), (4.2, "STRUM spreads its notes out")]),
-    ("c04-salt-strum", 0, 12, [(0, "SALT GLASS: each chord unrolls")]),
+    ("c04-salt-strum", 0, 12, [(0, "Each chord unrolls")]),
     ("The MIX buses", "Mods mixed into new shapes"),
     ("c05-bus-tri-saw", 0, 21.5, [(0, "Two LFOs into BUS A"), (3, "MOD SCOPE: a triangle..."), (8, "...a saw..."),
                                   (13.5, "...and the two mixed")]),
     ("c06-bus-modes", 0, 18.5, [(0, "MODE SUM: added"), (5, "MAX: the higher"), (10.5, "MIN: the lower"),
                                 (16, "DIFF: how far apart")]),
     ("c07-bus-sin-sqr", 0, 12, [(0, "A sine and a square: steps")]),
-    ("c08-loom-scope", 0, 12, [(0, "NIGHT LOOM's pad breathes on BUS A")]),
+    ("c08-loom-scope", 0, 12, [(0, "A pad breathes on BUS A")]),
     ("Patch it", "Modular ideas, in a few cords"),
     ("c09-eoc-clock", 0, 14, [(0, "EOC clocks the notes"), (5.5, "A second LFO bends their pace")]),
     ("c10-light", 0, 11.5, [(0, "GROUND LIGHT: the screen on paper")]),
-    ("c11-ink-answer", 0, 14, [(0, "INK RIVER: a flute answers the call")]),
+    ("c11-ink-answer", 0, 14, [(0, "A flute answers the call")]),
     ("c12-salt-land", 0, 31, [(0, "LANDSCAPE: rain on water, drawn by the music"),
                               (13, "The moon crosses as the piece plays")]),
 ]
 END35 = ("c12-salt-land", 31)                               # the end card's music: SALT GLASS, on from the last clip
+CAP35 = (236, 234, 226)                                  # the captions: warm white, apart from every ink
 INK35 = {"c00": "YELLOW", "c01": "GREEN", "c02": "GREEN", "c03": "BLUE", "c04": "BLUE", "c05": "MOSAIC",
          "c06": "MOSAIC", "c07": "MOSAIC", "c08": "MOSAIC", "c09": "ORANGE", "c10": "BLUE", "c11": "YELLOW",
          "c12": "MOSAIC"}
@@ -487,7 +488,7 @@ def demo35(src, intro, out):
         plan.append(("still", big, n, 0, 0))
         silence(n)
     plan[-1] = plan[-1][:3] + (0, V_CARD)
-    title = demo_card([("TESSERA 3.5", 12, False), ("Composing through systems, on the M-Vave FM-1", 4, True)], INK["YELLOW"])
+    title = demo_card([("TESSERA 3.5", 12, False), ("A pocket rabbit hole, on the M-Vave FM-1", 4, True)], INK["YELLOW"])
     plan.append(("still", title, nf(TITLE_S), V_TITLE_IN, V_CARD))
     silence(nf(TITLE_S))
 
@@ -567,7 +568,7 @@ def demo35(src, intro, out):
                 t = i / float(FPS)
                 cap = [c for at, c in caps if at <= t][-1]
                 if cap not in cards:
-                    cards[cap] = demo_frame(cap, ink, "3.5")
+                    cards[cap] = demo_frame(cap, ink, "3.5", CAP35)
                 im = cards[cap].copy()
                 im.paste(Image.open(f).convert("RGB").resize((240 * DS, 240 * DS), Image.NEAREST), (DX, DY))
                 yield dim(im, gain(i, n, v_in, v_out))
