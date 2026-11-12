@@ -29,8 +29,9 @@ need Tessera 3.5 (the MIX buses, EOC, CLOCK, PLAY, MOD DEPTH, scaling and HOLD m
 
 ## How the recipes are written
 
-Each recipe starts from a new project: track 1 **GLASS PAD**, track 2 **STRING MACH**, track 3 **BELLS**, track 4
-the **808 KIT**, every track on STEP with nothing in it, no mods. Then:
+Each recipe starts from a new project: track 1 **KUGO HARP**, track 2 **KOTO WARM**, track 3 **FLUTE** (all FM6),
+track 4 the **808 KIT**, in KUMOI on E at 80 BPM, every track on STEP with nothing in it, no mods. Where a recipe
+wants a pad on track 1, load one with **PRESETS** (**GLASS PAD**): a new project's track 1 is a harp, a pluck. Then:
 
 - **What you hear**, and why it's worth trying.
 - **Cords**: each mod as source, destination and amount. `T1 S&H → T1 LFO RTE, +40` is a mod from track 1's S&H
@@ -70,7 +71,7 @@ It's the quickest way to hear what "controlled randomness" means.
 **Cords:** none.
 
 **Keys:**
-1. Select track 3 (BELLS). **SEQ** for GEN: **KNOB 1** MODE **TURING**, **KNOB 2** LENGTH **8**, **KNOB 3** PROB
+1. Select track 3 (FLUTE). **SEQ** for GEN: **KNOB 1** MODE **TURING**, **KNOB 2** LENGTH **8**, **KNOB 3** PROB
    **0** (the knob reads Lock). Press **PLAY**: eight steps loop exactly.
 2. Turn PROB to **10**: now and then a step changes as it comes round, and stays changed. At 50 it changes all the
    time; back at 0 it locks wherever it is.
@@ -173,8 +174,8 @@ here runs on the clock: the patch decides when the next note comes.
 - `T1 LFO → T1 GAIN, +100`
 
 **Keys:**
-1. Track 1 (GLASS PAD), **SEQ** for GEN: MODE **MARKOV**, **KNOB 3** DENS **100** (a note every step). **ARP** for
-   LENGTH: **KNOB 1** LENGTH **HIT**, so each note rings until the next.
+1. Track 1: **PRESETS**, **GLASS PAD** (a pad). **SEQ** for GEN: MODE **MARKOV**, **KNOB 3** DENS **100** (a note
+   every step). **ARP** for LENGTH: **KNOB 1** LENGTH **HIT**, so each note rings until the next.
 2. **LFO** for LFO: **KNOB 1** RATE **35** (about three seconds a cycle), **KNOB 2** WAVE **TRI**.
 3. **MODS**: mod 1 from **T1 EOC** (the last of track 1's sources) to **T1 CLOCK**, **+100**. EOC is a short gate
    at the start of each LFO cycle; CLOCK steps the generator on each one instead of on its DIV. Press **PLAY**: a note
@@ -205,7 +206,7 @@ into a figure, now breaking out of it.
 - `T1 S&H → T3 T PROB, +40`
 
 **Keys:**
-1. Track 3 (BELLS), **SEQ** for GEN: MODE **TURING**, LENGTH **8**, PROB **10**. Track 1's LFO is the clock
+1. Track 3 (FLUTE), **SEQ** for GEN: MODE **TURING**, LENGTH **8**, PROB **10**. Track 1's LFO is the clock
    (track 1 plays nothing): **LFO** for LFO, **KNOB 1** RATE **40**, a cycle every two and a half seconds.
 2. **MODS**: mod 1 from **T1 EOC** to **T3 CLOCK**, **+100**. The register steps once each cycle of track 1's LFO.
 3. Mod 2 from **T3 CV** (the register) to **T1 LFO RTE**, **+25**. The register sets the speed of its own clock: high
@@ -333,7 +334,7 @@ minutes to repeat, from two plain LFOs.
 - `BUS A^ → T3 PLAY, +100`
 
 **Keys:**
-1. Track 3 plays a generator (TURING on BELLS). Tracks 1 and 2 are the LFOs: track 1 **LFO** RATE **20** (about 7 s a
+1. Track 3 plays a generator (TURING on FLUTE). Tracks 1 and 2 are the LFOs: track 1 **LFO** RATE **20** (about 7 s a
    cycle), track 2 RATE **25** (about 5 s).
 2. **MODS**: mods 1 and 2 from **T1 LFO** and **T2 LFO** to **BUS A** (the end of KNOB 3's list), **+50** each. BUS A
    adds them (its MODE is SUM).
@@ -371,8 +372,8 @@ can hear every other.
 - `T4 ENV → T1 LEVEL, −60`
 
 **Keys:**
-1. Track 4 (808 KIT): **SEQ** for GEN, MODE **ATLAS**, **KNOB 4** DENS **40**. Track 1 plays a long pad (LENGTH HIT,
-   or CHORD with HIT HOLD).
+1. Track 4 (808 KIT): **SEQ** for GEN, MODE **ATLAS**, **KNOB 4** DENS **40**. Track 1 plays a long pad (**PRESETS**,
+   **GLASS PAD**; LENGTH HIT, or CHORD with HIT HOLD).
 2. **MODS**: mod 1 from **T4 ENV** to **T1 LEVEL**, **−60**. Each hit pushes the pad down for the length of its
    envelope.
 
@@ -394,7 +395,7 @@ open.
 
 **Keys:**
 1. Track 3 plays a sparse generator (MARKOV, DENS **40**); **SEQ** for PATTERN, **KNOB 2** DIV **1/8**. Track 1 plays
-   a long pad.
+   a long pad (**PRESETS**, **GLASS PAD**).
 2. **MODS**: mod 1 from **T3 GATE** to **BUS B**, **+100**. Hold **OCT+** for MODS' sheet: **Bus B lag 100 ms**
    (KNOB 1 the row, KNOB 2 the value), then **OCT-** to close it. The bus now rises and falls over 100 ms with each
    gate: an attack and a release.
@@ -441,7 +442,7 @@ drifting a step at a time, with no new material and no cords.
 **Cords:** none. It's a generator-only patch: each ANSWER's SOURCE is the track before it.
 
 **Keys:**
-1. Track 1 plays a generator (TURING on GLASS PAD, LENGTH **8**, PROB **10**), or a STEP pattern.
+1. Track 1 plays a generator (TURING on KUGO HARP, LENGTH **8**, PROB **10**), or a STEP pattern.
 2. Track 2, **SEQ** for GEN: MODE **ANSWER**, **KNOB 4** FADE **1** (one answer, then it listens again). Hold
    **OCT-** and turn **KNOB 2** to SOURCE **T1**. Track 2 takes in up to 8 of track 1's notes, rests, and answers.
 3. Track 3: ANSWER, FADE **1**, SOURCE **T2**. Track 4 (808 KIT or any sound): ANSWER, FADE **1**, SOURCE **T3**.
