@@ -1921,6 +1921,9 @@ The web editor only reads the FM-1 until you tick **Edit the FM-1** (beside **Di
 nothing, and a change made in the editor before then is not sent (the editor says so and shows the FM-1's value again).
 Ticking it offers a **Complete backup** first. It is off again at every connection.
 
+Each slot keeps its last two saves. If the newest is ever damaged, loading the slot (or power-on) brings back the
+one before and the screen says **OLD SAVE LOADED**: save it again to keep it, or restore a backup.
+
 The web editor's **Complete backup** saves and restores the music, slots A to D, the sound banks and the settings.
 To try the [demo projects](demos/README.md), the editor's **Demo projects** (on the Projects tab) puts each into a
 slot you choose and leaves the rest of the FM-1 as it is; `tools/demo_backup.py` does the same with a backup file.
