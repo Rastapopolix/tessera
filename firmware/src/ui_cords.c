@@ -384,7 +384,9 @@ static void cu_columns(void)
     else if (c->dst) {
         val[0] = 'T'; val[1] = (char)('1' + c->dst_trk); val[2] = ' ';
         str_cpy(val + 3, cu_dst_name(c), sizeof val - 3);
-        if (cu_eng_dst(c)) {                            /* (CUTOFF, SHAPE: and what it moves, said) */
+        if (cu_eng_dst(c) && *cu_eng_dst(c) && LOOK(0, col_style != CS_CAPTURE))
+            str_cpy(val + 3, cu_eng_dst(c), sizeof val - 3);   /* (Mono's chip: the engine's knob, as the row: T3ML) */
+        else if (cu_eng_dst(c)) {                       /* (CUTOFF, SHAPE: and what it moves, said) */
             str_cpy(val + str_len(val), " ", 2);
             str_cpy(val + str_len(val), *cu_eng_dst(c) ? cu_eng_dst(c) : "NONE", 5);
         }

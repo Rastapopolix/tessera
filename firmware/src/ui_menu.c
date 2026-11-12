@@ -120,6 +120,10 @@ static const menu_credit_t MENU_CREDITS[] = {
     {"A tessera is the small tile of a mosaic: short phrases set side by side into a larger form", MC_TEXT},
     {"https://github.com/Rastapopolix/tessera", MC_URL},
     {"", MC_TEXT},
+    {"THANKS / TESTERS AND IDEAS", MC_TITLE},
+    {"BobFromson, pavig-coder, bambalaya, alxantdroid, resocut, Joao Duraes, tv-glotzer,", MC_TEXT},  /* Mono: ASCII only */
+    {"il1893, fairplay, alexwlloyd, morgulbrut, nrittamurti, Charles Vestal (FM-1 Screen Reader)", MC_TEXT},
+    {"", MC_TEXT},
     {"MELODEE / ORIGINAL", MC_TITLE},                  /* Tessera is a modified Melodee */
     {"Kerem Kilic (keremimo), Ellic Studio / GPL-3.0", MC_TEXT},
     {"https://github.com/keremimo/melodee", MC_URL},
@@ -177,7 +181,7 @@ static const menu_credit_t MENU_CREDITS[] = {
 /* Mono: the 5 x 7 font, 19 characters a line (a word longer than that broken), 18 px apart as the detailed look's */
 static int32_t menu_text(const char *s, int32_t y, uint16_t col, int draw)
 {
-    char a[96], line[24];
+    char a[128], line[24];                           /* the longest credit is 110 */
     const char *p = a;
     mo_ascii(a, s, sizeof a);
     while (*p) {

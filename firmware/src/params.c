@@ -10,6 +10,7 @@ static const char *const N_DIV[] = {"1/4", "1/8", "1/16", "1/32", "8T", "16T", "
  * stored values keep upstream's order, slow rates appended) */
 static const uint8_t N_DIV_ORDER[10] = {9, 8, 7, 6, 0, 4, 1, 5, 2, 3};
 static const char *const N_RECQ[] = {"OFF", "1/4", "1/8", "1/16", "1/32", "8T", "16T", "1/2", "1/1", "2BAR", "4BAR"};
+static const uint8_t N_RECQ_ORDER[11] = {0, 10, 9, 8, 7, 1, 5, 2, 6, 3, 4};   /* OFF, then N_DIV_ORDER's (+1) */
 static const char *const N_LTRIG[] = {"NOTE", "FREE"};
 static const char *const N_LPOL[] = {"BI", "UNI"};
 static const char *const N_FX[] = {"OFF", "PHASER", "WIDTH", "FORMANT", "TAPE", "SPIT", "ECHO", "ROOM", "REVERB", "CHORUS", "FILTER"};
@@ -328,10 +329,11 @@ static int32_t enum_step(const param_desc_t *d, int32_t from, int32_t v)
     return v;
 }
 
-/* an F_ENUM shown in an order of its own (N_DIV): the order, 0 = its values' */
+/* an F_ENUM shown in an order of its own (N_DIV, N_RECQ): the order, 0 = its values' */
 static const uint8_t *enum_order(const param_desc_t *d)
 {
-    return d->fmt == F_ENUM && d->names == N_DIV && d->min == 0 && d->max == 9 ? N_DIV_ORDER : 0;
+    if (d->fmt != F_ENUM || d->min != 0) return 0;
+    return d->names == N_DIV && d->max == 9 ? N_DIV_ORDER : d->names == N_RECQ && d->max == 10 ? N_RECQ_ORDER : 0;
 }
 static int32_t enum_order_pos(const param_desc_t *d, int32_t v)   /* v's place in its order */
 {

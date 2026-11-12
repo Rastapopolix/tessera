@@ -3621,22 +3621,22 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
             id = scale_picker_at((uint32_t)at);
             scales_name(a, id, sizeof a);
             mo_ascii(b, a, sizeof b);
-            if (!d) {                                   /* the one picked: its name in two lines */
+            if (!d) {                                   /* the one picked: its name in two lines, inverted (as the family) */
                 uint32_t n = str_len(b), cut = n > 10u ? 10u : n, k;
                 char l[12];
                 for (k = cut; n > 10u && k > 3u; k--)  /* (at a space or after a hyphen that fits) */
                     if (b[k] == ' ' || b[k - 1u] == '-') { cut = k; break; }
-                mo_box(48, 33, 68, 33, MO_INK);
+                mo_fill(48, 33, 68, 33, MO_INK);
                 mo_cut(l, b, cut);
-                mo_text(l, 51, 36, MO_INK);
+                mo_text(l, 51, 36, MO_BG);
                 while (b[cut] == ' ') cut++;
                 mo_cut(l, b + cut, 10);
-                mo_text(l, 51, 45, MO_INK);
+                mo_text(l, 51, 45, MO_BG);
                 if (scale_pick_fav(id))
-                    mo_text("*", 110, 36, MO_INK);
+                    mo_text("*", 110, 36, MO_BG);
                 fmt_int(b, (int32_t)scale_pick_degrees(id));
                 str_cpy(b + str_len(b), scale_pick_nonoct(id) ? " NON-OCT" : " NOTES", 10);
-                mo_text(b, 51, 56, MO_DIM);
+                mo_text(b, 51, 56, MO_BG);
             } else {
                 b[11] = 0;
                 mo_text(b, 50, d < 0 ? 36 + d * 11 : 59 + d * 11, d == -1 || d == 1 ? MO_INK : MO_DIM);
@@ -3776,7 +3776,10 @@ static void mo_smap(uint32_t cur)
             n = smap_pages(r, pg);
             mo_ascii(t, sec.name[r], sizeof t);
             mo_cut(b, t, 5);
-            mo_text(b, 2, y, r == cur ? MO_INK : MO_DIM);
+            if (r == smap.row) {                        /* the cursor's row: its name inverted (as a list's row) */
+                mo_fill(0, y - 1, 32, 9, MO_INK);
+                mo_text(b, 2, y, MO_BG);
+            } else mo_text(b, 2, y, r == cur ? MO_INK : MO_DIM);
             w = n ? (86 - (int32_t)(n - 1u) * 2) / (int32_t)n : 0;
             for (c = 0; c < n; c++) {
                 int32_t x = 34 + (int32_t)c * (w + 2);
