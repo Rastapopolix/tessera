@@ -526,6 +526,8 @@ const tessera_answer_t *tessera_answer(uint32_t tr);
 void tessera_answer_hear(track_t *t, uint32_t note, uint32_t vel);   /* a key / MIDI note on the track, on its step */
 void tessera_answer_hear_at(track_t *t, uint32_t note, uint32_t vel, uint32_t late);   /* seq.c: late, played past
                                                      * the middle of the step playing: on the next, as REC places it */
+void tessera_answer_key(track_t *t, uint32_t note, uint32_t vel, uint32_t late);   /* seq.c: a key on t, to its ANSWER
+                                                     * and each ANSWER with t as SOURCE */
 void tessera_answer_layer_knob(uint32_t k, int32_t s);  /* OCT+ held on GEN in ANSWER: ORDER, SHIFT, SPACE, LEN */
 uint32_t tessera_answer_count(uint32_t tr);             /* the answers FADE gives (1..16), 0: never forgets (loops) */
 const gen_chord_t *tessera_chord(uint32_t tr);

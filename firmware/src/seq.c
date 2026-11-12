@@ -794,11 +794,11 @@ static void input_on(track_t *t, uint32_t note, uint32_t vel)
     live_note_on(t, note, vel);
     if (!t->p[P_AMODE])
         cap_on(t, note, vel);                       /* (ARP on: Capture takes what it plays, arp_step) */
-    {   /* (an ANSWER track: the note joins its phrase, on the nearest step as rec_note's) */
+    {   /* (an ANSWER track, or one with this track as SOURCE: the note joins its phrase, on the nearest step) */
         uint32_t late = 0, len = t->p[P_SLEN] > 0 ? (uint32_t)t->p[P_SLEN] : 1u;
         if (song.playing && t->seq_pos != 0x7FFFFFFFu)
             late = t->seq_pos >= step_samples(t, seq_div_samples((uint32_t)t->p[P_SDIV]), SEQ_D(t).slot % len) / 2u;
-        tessera_answer_hear_at(t, note, vel, late);
+        tessera_answer_key(t, note, vel, late);
     }
     if (rec_on(t) && !t->p[P_AMODE])               /* (ARP on: arp_tick records its notes) */
         rec_note(t, note, vel);

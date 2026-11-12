@@ -114,6 +114,19 @@ static void tessera_answer_heard(uint32_t src, uint32_t note)
             tessera_answer_hear_at(&trk[f], note, 100u, 0);
 }
 
+/* a key (or MIDI IN) on track t: its own ANSWER's phrase, and the phrase of each ANSWER whose SOURCE is t, as on its
+ * own keys (a reddit report, 3.5: T2 ANSWER with SOURCE T1 did not hear T1 played live). A STEP pattern on t still
+ * wins (answer_source: the keys just play); not passed on (a ring of ANSWERs hears the keys once) */
+void tessera_answer_key(track_t *t, uint32_t note, uint32_t vel, uint32_t late)
+{
+    uint32_t tr = trk_index(t);
+    tessera_answer_hear_at(t, note, vel, late);
+    if (tr >= TESSERA_TRACKS) return;
+    for (uint32_t f = 0; f < TESSERA_TRACKS; f++)
+        if (f != tr && tessera.mode[f] == TESS_ENG_ANSWER && tessera.sd_src[f] == tr + 1u)
+            tessera_answer_hear_at(&trk[f], note, vel, late);
+}
+
 /* a new answer's (or loop round's) choices: the changes (vary.c, LOCK 50: half of them stay), the order, the SHIFT */
 static void answer_round(uint32_t tr)
 {
