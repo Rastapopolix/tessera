@@ -15,7 +15,7 @@ import os
 import re
 import sys
 
-FUNCS = ["sid_render", "formant_render",
+FUNCS = ["formant_render",
          "trio_render", "trio_pass", "wheel_render", "wheel_block",
          "phys_render", "drum_render", "noise_render", "fm6_render", "px_modal_block", "px_modal_run", "px_memb_block",
          "px_string_excite", "px_string_run", "px_symp_run",
@@ -36,7 +36,6 @@ OPTIONAL = {}                   # built only with an option, not in BUDGET: abse
 # The FM6 operator kernel may be extracted from its renderer. Keep the original
 # combined budget, so moving work into a helper cannot weaken the existing guard.
 EXTRACTED = {
-    "sid_render": ("sid_render_into",),
     "drum_render": ("drum_render_into",),
     "dr8_run": ("dr8_run_into",),
     "fm6_render": ("fm6_run", "fm6_run_into", "fm6_output", "fm6_join"),
@@ -44,8 +43,7 @@ EXTRACTED = {
     "track_render_audio": ("fm6_dc_samples",),
 }
 KERNEL_NAMES = {n for names in EXTRACTED.values() for n in names}
-FEATURE_OPTIONAL = {"fm6_render",                            # MELODEE_FM6=0 omits it
-                    "sid_render"}                            # and MELODEE_SID=0 this
+FEATURE_OPTIONAL = {"fm6_render"}                            # MELODEE_FM6=0 omits it
 TOL = 0.10                      # exact (no noise): small edits pass, a grown render loop does not
 DIV_W = 8                       # a divide weighs 1 + 8 instructions
 NEST = 4                        # an instruction in a loop inside a loop weighs 4, two deep 16, ...

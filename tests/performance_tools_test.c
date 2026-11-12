@@ -5,7 +5,7 @@
 
 static void reset_tools(void)
 {
-    seq_stop(); momentary_restore(); ui_power_on(); set_engine_of(&trk[0], 3); recording_reset();   /* (SID: knobs and CC macros on p[]) */ memset(&midi_clock,0,sizeof midi_clock); song.master_q12=4096;
+    seq_stop(); momentary_restore(); ui_power_on(); set_engine_of(&trk[0], 6); trk[0].engine = trk[0].eng_req; recording_reset();   /* (TRIO: knobs and CC macros on p[]) */ memset(&midi_clock,0,sizeof midi_clock); song.master_q12=4096;
     settings_click=settings_countin=settings_preview=settings_chord_add=0;
     settings_click_level=1; memset(cin_n,0,sizeof cin_n); clk.env=click_req=0;
 }
@@ -99,10 +99,13 @@ static void test_midi_and_levels(void)
 {
     reset_tools();midi_event(0xb0,0,7,127);assert(TSEL->p[P_LEVEL]==127);
     midi_event(0xb0,0,10,64);assert(TSEL->p[P_PAN]==0);
-    midi_event(0xb0,0,74,0);assert(TSEL->p[P_E4]==0);
-    midi_event(0xb0,0,71,127);assert(TSEL->p[P_E5]==ENGINES[TSEL->eng_req]->edit[5].max);   /* (SID's RES: 0..15) */
+    {   /* CC 74 / 71 on an engine without a map (TRIO): its sound values untouched */
+        int16_t e[8];memcpy(e,TSEL->p+P_E0,sizeof e);midi_event(0xb0,0,74,0);midi_event(0xb0,0,71,127);
+        assert(!memcmp(e,TSEL->p+P_E0,sizeof e));
+    }
     song.g[G_ROUTE]=0;midi_event(0xb0,1,91,88);assert(!trk[1].p[P_RESERVED36] && !trk[0].p[P_RESERVED36]);
     set_engine_of(TSEL,ENGI_FM6);TSEL->engine=TSEL->eng_req;
+    midi_event(0xb0,0,74,0);assert(TSEL->p[P_E2]==ENGINES[ENGI_FM6]->edit[2].min);   /* (CC 74: FM6's MLVL) */
     midi_event(0xb0,0,73,70);for(uint32_t op=0;op<6;op++)assert(fm6_patch[0][op*FP_OP]==99u-70u*99u/127u);   /* (FM6's own envelope: R1) */
     reset_tools();song.rec=1;seq_start();seq_advance(0);midi_event(0xb0,0,7,17);
     assert(motion.count==1 && motion.event[0].param==P_LEVEL && motion.event[0].value==17);seq_stop();
@@ -132,7 +135,7 @@ static void test_compatibility(void)
         r.np=100;up_values(&r,v);assert(v[P_RESERVED35]==0);
     }
     {   /* a factory preset: no delay send (its sends predate the delay coming back) */
-        TSEL->eng_req=3;TSEL->p[P_RESERVED35]=77;apply_preset_to(TSEL,8);assert(TSEL->p[P_RESERVED35]==0 && TSEL->p[P_RESERVED36]==0);
+        TSEL->eng_req=6;TSEL->p[P_RESERVED35]=77;apply_preset_to(TSEL,8);assert(TSEL->p[P_RESERVED35]==0 && TSEL->p[P_RESERVED36]==0);
     }
 }
 static int pv_sounds(const track_t *t, uint32_t note)
@@ -208,6 +211,7 @@ static void test_arp_shape(void)
     reset_tools();track_t *t=TSEL;uint32_t tr=song.sel;
     uint8_t a[24],b[24],va[24],vb[24];
     t->p[P_AMODE]=4;t->p[P_APROB]=100;t->p[P_AOCT]=2;           /* RANDOM over two octaves, some steps skipped */
+    t->p[P_VOICE]=V_POLY;                                         /* (TRIO's first sound is MONO) */
     memset(va,0,sizeof va);memset(vb,0,sizeof vb);
     assert(arp_run(t,a,va,24)==24 && arp_run(t,b,vb,24)==24);
     assert(!memcmp(a,b,24));                                     /* PLAY again: the same arpeggio */

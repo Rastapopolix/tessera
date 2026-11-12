@@ -42,8 +42,8 @@ static void transaction_tests(void)
     failures+=check("second SAVE returns to exact edited draft",!ds.compare && !memcmp(&draft,&after,sizeof draft));
     designer_finish_row(2);designer_snapshot(&after);
     failures+=check("discard restores exact original without touching pattern or arp",!designer_on() && !memcmp(&before,&after,sizeof before) && steps_sig(TSEL)==steps && TSEL->p[P_ARATE]==arp);
-    designer_open();ds.eng=3;ds.current=0;press(B_OCTUP);
-    failures+=check("engine change happens on BEGIN and retains pattern",TSEL->eng_req==3 && steps_sig(TSEL)==steps);
+    designer_open();ds.eng=6;ds.current=0;press(B_OCTUP);
+    failures+=check("engine change happens on BEGIN and retains pattern",TSEL->eng_req==6 && steps_sig(TSEL)==steps);
     press(B_SAVE);press(B_SAVE);designer_finish_row(2);designer_snapshot(&after);
     failures+=check("cross-engine compare/discard restores the original native patch",!memcmp(&before,&after,sizeof before));
 }
@@ -55,7 +55,7 @@ static void dependency_tests(void)
     failures+=check("a silent operator's level turned down stays silent",!(fm6_on[0]&(1u<<3)) && !fm6_patch[0][3*FP_OP+FP_OL]);
     turn(EN_K1,1);
     failures+=check("turned up, the displayed OP3 (not reversed OP4) is switched on",(fm6_on[0]&(1u<<3)) && fm6_patch[0][3*FP_OP+FP_OL]>0);
-    designer_close(0);sound_init_of(TSEL,3);designer_open();press(B_OCTUP);
+    designer_close(0);sound_init_of(TSEL,6);designer_open();press(B_OCTUP);
     designer_at("LFO",0);TSEL->p[P_LD_PIT]=TSEL->p[P_LD_FLT]=TSEL->p[P_LD_SHP]=TSEL->p[P_LD_AMP]=TSEL->p[P_M1SRC]=0;ds.focus=0;
     turn(EN_K1,1);
     failures+=check("turning a dim track LFO switches its vibrato on and says so",TSEL->p[P_LD_PIT] && designer_need()==DF_NONE &&
@@ -91,7 +91,7 @@ static void designer_render(int32_t *pcm)
 }
 static void feature_tests(void)
 {
-    static const uint8_t engines[]={ENGI_FM6,3};
+    static const uint8_t engines[]={ENGI_FM6,6};   /* (FM6, TRIO; SID until 2026-11-12) */
     int first=1,states=1,audible=1,steady=1,drums=1;
     for(uint32_t ei=0;ei<NENG_SHOWN;ei++){
         eng_state_reset();ui_power_on();sound_init_of(TSEL,eng_vis(ei));designer_open();press(B_OCTUP);
@@ -111,6 +111,7 @@ static void feature_tests(void)
             uint32_t f=fs[r],knob;
             designer_restore(&base);knob=designer_feature(f);   /* (one feature at a time) */
             if(f==DF_GLIDE)TSEL->p[P_VOICE]=V_MONO;            /* (poly voices start fresh: no slide) */
+            if(f==DF_SPREAD)TSEL->p[P_VOICE]=V_POLY;           /* (SPREAD spreads voices: TRIO's first sound is MONO) */
             for(uint32_t n=0;n<4;n++)turn(EN_K1+knob,-1);
             states&=designer_feat_get(f)==0;
             designer_render(pcm_off);designer_render(pcm_again);
@@ -144,7 +145,7 @@ static void audition_tests(void)
 {
     int quiet=1,keys=1;
     for(uint32_t e=0;e<2u;e++){
-        static const uint8_t engines[]={ENGI_FM6,3};
+        static const uint8_t engines[]={ENGI_FM6,6};
         eng_state_reset();ui_power_on();sound_init_of(TSEL,engines[e]);designer_open();press(B_OCTUP);
         turn(EN_K1+designer_feature(engines[e]==ENGI_FM6?DF_OP1+1:DF_VIB),1);
         press(B_OCTUP);turn(EN_SELECT,1);turn(EN_K1,1);press(B_SAVE);press(B_SAVE);

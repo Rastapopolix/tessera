@@ -110,8 +110,8 @@ static const char *cu_dst_name(const cord_t *c)
 static const char *cu_eng_dst(const cord_t *c)
 {
     static const struct { uint8_t e; char cut[5], shp[5]; } T[] = {
-        {3, "CUT", "PW"}, {6, "CUT", "PW"}, {19, "CUT", "PW"},        /* SID TRIO ORACLE */
-        {11, "FREQ", "COLR"}, {5, "VOWL", "BUZZ"}, {21, "TMBR", "MRPH"},   /* NOISE VOICE MACRO */
+        {6, "CUT", "PW"}, {19, "CUT", "PW"},                          /* TRIO ORACLE */
+        {11, "FREQ", "COLR"}, {5, "VOWL", "BUZZ"},                     /* NOISE VOICE */
         {12, "MLVL", "FB"}, {9, "BRIT", ""},                           /* FM6 PHYS */
     };
     uint32_t i, e;

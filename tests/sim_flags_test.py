@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
 """The web simulator builds the device's engine set: every engine flag tools/build.py gives the firmware,
-web/sim/build.sh gives the simulator, with the same default (issue #593: the simulator kept DRUM's SID KIT
-and SID DIGI, which the device leaves out)."""
+web/sim/build.sh gives the simulator, with the same default (issue #593: the simulator once kept engines the
+device left out)."""
 import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ENGINE_FLAGS = ("MELODEE_FM6", "MELODEE_SID", "MELODEE_SID_KIT", "MELODEE_PHYS", "MELODEE_PLAITS",
-                "MELODEE_TRIO", "MELODEE_ACCESS", "MELODEE_LOOK")
+ENGINE_FLAGS = ("MELODEE_FM6", "MELODEE_PHYS", "MELODEE_TRIO", "MELODEE_ACCESS", "MELODEE_LOOK")
 
 
 def main():
@@ -25,8 +24,8 @@ def main():
         ok = sim.get(f) == dev[f]
         print(f"sim flags: {f:<16} device {dev[f]}, simulator {sim.get(f, 'core.h default')}  {'ok' if ok else 'FAIL'}")
         fails += not ok
-    if not dev.get("MELODEE_SID_KIT"):
-        print("sim flags: tools/build.py no longer names MELODEE_SID_KIT  FAIL"); fails += 1
+    if not dev.get("MELODEE_FM6"):
+        print("sim flags: tools/build.py no longer names MELODEE_FM6  FAIL"); fails += 1
     print("sim flags:", "FAILED" if fails else "all checks ok")
     return 1 if fails else 0
 

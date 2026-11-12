@@ -11,7 +11,7 @@ static int audio_worker_join(void){return 1;}
 #include <assert.h>
 static uint32_t sounding(const track_t *t)
 {uint32_t n=0;for(uint32_t i=0;i<NVOICE;i++)n+=t->v[i].active && t->v[i].stage!=4u;return n;}
-static const uint8_t family[4]={ENGI_FM6,3,ENGI_DRUM,ENGI_DRUM};   /* (the Prophet and CZ-1: retired 2026-10-22) */
+static const uint8_t family[4]={ENGI_FM6,ENGI_ORACLE,ENGI_DRUM,ENGI_DRUM};   /* (the Prophet and CZ-1: retired 2026-10-22; SID removed) */
 static void setup(const uint32_t cat[4])
 {
     memset(trk,0,sizeof trk);memset(&song,0,sizeof song);eng_state_reset();
@@ -21,7 +21,7 @@ static void setup(const uint32_t cat[4])
 }
 int main(void)
 {
-    const uint32_t native[4]={16,4,8,8};uint32_t cases=0;
+    const uint32_t native[4]={16,8,8,8};uint32_t cases=0;
     for(uint32_t a=0;a<4;a++)for(uint32_t b=0;b<4;b++)for(uint32_t c=0;c<4;c++)for(uint32_t d=0;d<4;d++){
         uint32_t cat[4]={a,b,c,d},q[4],u[4],used=0;
         setup(cat);
@@ -53,6 +53,6 @@ int main(void)
     cat[0]=0;setup(cat);settings_budget=32;
     for(uint32_t n=0;n<12;n++)trk_note_on(&trk[0],36+n*3,110);
     assert(sounding(&trk[0])==12 && trk_nvoice(&trk[0])==16);
-    printf("Shared admission: 256 guaranteed allocations; FM/SID polyphony, three drum hits, eight 909 instruments and adjustable pool: OK\n");
+    printf("Shared admission: 256 guaranteed allocations; FM/ORACLE polyphony, three drum hits, eight 909 instruments and adjustable pool: OK\n");
     return 0;
 }

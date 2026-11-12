@@ -185,7 +185,7 @@ F major pentatonic, 66 BPM. Loops of different lengths, so the parts meet differ
 ## Making them again
 
 ```
-cc -O2 -w -Ibuild/gen -Ifirmware/src -DMELODEE_SID=0 -DMELODEE_PHYS=0 -DTRK_START_TESS=1 \
+cc -O2 -w -Ibuild/gen -Ifirmware/src -DMELODEE_PHYS=0 -DTRK_START_TESS=1 \
     -o build/host/demo_projects tests/demo_projects.c -lm      # (after ./build.sh: build/gen)
 build/host/demo_projects make build/demos 180                  # the records, and 3 minutes of each as WAV
 cp build/demos/*.tsp demos/
@@ -206,7 +206,7 @@ the FM-1 draws it), chapter cards and captions. The same clips make the narrated
 (`tools/tour_video.py build/tour OUTDIR`).
 
 ```
-cc -O2 -w -DMELODEE_LOOK=1 -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_SID=0 -DMELODEE_PHYS=0 -DTRK_START_TESS=1 \
+cc -O2 -w -DMELODEE_LOOK=1 -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_PHYS=0 -DTRK_START_TESS=1 \
    -o build/dp tests/demo_projects.c -lm
 build/dp tour build/tour                         # every clip's WAV and frames (TOUR_ONLY=prefix: some)
 python3 tools/tour_video.py demo build/tour INTRO build/tessera-3.3-demo.mp4   # Pillow, imageio-ffmpeg, fontTools
@@ -220,7 +220,7 @@ knobs turned through the real UI (`ui_input`, as a hand turns them), then what i
 LOW HARBOUR again under the end card, fading out.
 
 ```
-cc -O2 -w -DMELODEE_LOOK=1 -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_SID=0 -DMELODEE_PHYS=0 -DTRK_START_TESS=1 \
+cc -O2 -w -DMELODEE_LOOK=1 -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_PHYS=0 -DTRK_START_TESS=1 \
    -o build/dp tests/demo_projects.c -lm                     # (after ./build.sh or tools/build.py's generate(): build/gen)
 build/dp video build/video                      # each clip's WAV, frames and captions (about 1.8 GB of frames)
 python3 tools/demo_video.py build/video build/tessera-3.0-demo.mp4   # needs Pillow and imageio-ffmpeg (or ffmpeg)

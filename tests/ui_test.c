@@ -241,12 +241,12 @@ static void ui_power_on(void)
     settings_hold = HOLD_DEF;
     fm1_in.buttons = fm1_in.notes = 0;
 }
-/* power-on with track 1 on a general engine (SID): for the general user presets, the generic ENV / LFO pages and the
+/* power-on with track 1 on a general engine (TRIO; SID until 2026-11-12): for the general user presets, the generic ENV / LFO pages and the
  * knobs on p[] (the general paths, whatever track 1 powers on with) */
 static void ui_power_on_general(void)
 {
     ui_power_on();
-    set_engine_of(&trk[0], 3);
+    set_engine_of(&trk[0], 6);
     trk[0].engine = trk[0].eng_req;
 }
 
@@ -377,7 +377,7 @@ static int test_sound_loads(void)
         empty &= (uint32_t)seq_is_empty(&trk[i]);
     bad += check("power-on: the four sounds, every sequencer empty, no undo copy", empty && undo.trk == 0 && undo_depth == 0 &&
                  trk[3].eng_req == ENGI_DRUM && trk[3].preset == 0u && trk[0].preset == TRK_DEF[0][1]);
-    set_engine_of(t,3);
+    set_engine_of(t,6);
     my_steps(t);
     t->p[P_E0 + 1] = 77;                          /* a sound edit */
     t->p[P_AMODE] = 2;                            /* and the track's own settings */
@@ -390,21 +390,21 @@ static int test_sound_loads(void)
     t->p[P_LEVEL] = 90;
     before = *t;
     turn(EN_PRESET, 1);                           /* HOME: the next preset */
-    bad += check("PRESETS on HOME loads the sound: steps, LEN, DIV untouched", t->preset == (uint8_t)((before.preset + 1u) % ENGINES[3]->npresets) &&
+    bad += check("PRESETS on HOME loads the sound: steps, LEN, DIV untouched", t->preset == (uint8_t)((before.preset + 1u) % ENGINES[6]->npresets) &&
                  !memcmp(t->step, before.step, sizeof t->step) && t->p[P_SLEN] == 32 && t->p[P_SDIV] == 1);
     bad += check("..ARP, SCL, the SLICER and the mix stay the track's", t->p[P_AMODE] == 2 && t->p[P_AOCT] == 3 && t->p[P_SCALE] == 2 &&
                  t->p[P_TRANS] == 5 && !t->p[P_RESERVED45] && !t->p[P_RESERVED46] && t->p[P_LEVEL] == 90);
     bad += check("..and no warning about the sequence", !msg_is("T1 SEQ REPLACED"));
-    for (i = 0; i < ENGINES[3]->npresets; i++)
-        if (str_eq(eng_preset(ENGINES[3], i)->name, "ARP BASS"))
+    for (i = 0; i < ENGINES[6]->npresets; i++)
+        if (str_eq(eng_preset(ENGINES[6], i)->name, "ARP LEAD"))
             break;
     t->p[P_AMODE] = 0;
     t->preset = (uint8_t)(i - 1u);
     turn(EN_PRESET, 1);
-    bad += check("ARP BASS (an arp-named preset) leaves the track arp off", t->preset == i && t->p[P_AMODE] == 0);
+    bad += check("ARP LEAD (an arp-named preset) leaves the track arp off", t->preset == i && t->p[P_AMODE] == 0);
     t->p[P_AMODE] = 2;
     before = *t;
-    for (i = 0; i < ENGINES[3]->npresets - before.preset + 1u; i++) /* through SID's remaining sounds, into next engine */
+    for (i = 0; i < ENGINES[6]->npresets - before.preset + 1u; i++) /* through TRIO's remaining sounds, into next engine */
         turn(EN_PRESET, 1);
     bad += check("browsing on, into another engine: the steps still untouched", t->eng_req != before.eng_req &&
                  !memcmp(t->step, before.step, sizeof t->step) && t->p[P_AMODE] == 2);
@@ -435,7 +435,7 @@ static int test_sound_loads(void)
     bad += check("Init sound: the sound only (steps and SLICER kept), a copy of T2", undo.trk == 2u &&
                  !memcmp(trk[1].step, before.step, sizeof before.step) && !trk[1].p[P_RESERVED45]);
     track_select(0);
-    set_engine_of(&trk[0], 3);                    /* (a general sound) */
+    set_engine_of(&trk[0], 6);                    /* (a general sound) */
     my_steps(&trk[0]);
     trk[0].p[P_SDIV] = 2;
     up_store(3, "MINE");
@@ -1257,7 +1257,7 @@ static int test_oct_grammar_m0(void)
 {
     int bad = 0;
     uint32_t tr, i;
-    ui_power_on();
+    ui_power_on_general();                        /* (track 1 on a general engine: ENV is its ADSR) */
     go_title("GEN");
     tr = song.sel;
     tessera_param_set(tr, TX_MODE, TESS_ENG_TURING);
@@ -2562,7 +2562,7 @@ static int test_save(void)
     int bad = 0, ok;
     uint32_t i;
     ui_power_on();
-    set_engine_of(&trk[0], 3);                    /* (a general sound) */
+    set_engine_of(&trk[0], 6);                    /* (a general sound) */
     trk[0].p[P_E1] = 5;
     press(B_SAVE);
     bad += check("SAVE opens USER on its slot, no sheet popped up, without writing a slot",
@@ -2593,7 +2593,7 @@ static int test_save(void)
                  ui.confirm == CF_OVR_USER && up_value(up_rec(0), P_E1) == 5);
     press(B_OCTDN);
     ui_power_on();
-    set_engine_of(&trk[0], 3);
+    set_engine_of(&trk[0], 6);
     song.playing = 1;
     project_save(0);
     bad += check("project save while playing: refused, STOP TO SAVE", !project_used(0) && msg_is("STOP TO SAVE"));
@@ -2784,7 +2784,7 @@ static int test_tracks(void)
     int bad = 0, ok;
     track_t before[NTRK];
     uint32_t k;
-    ui_power_on();
+    ui_power_on_general();                        /* (track 1 on a general engine: ENV is its ADSR) */
     open_family(FAM_TRK);
     memcpy(before, trk, sizeof before);
     turn(EN_PRESET, 1);
@@ -3019,7 +3019,7 @@ static int test_grid(void)
         memcpy(keep, t->step, sizeof keep);
         go_home();
         turn(EN_PRESET, 1);
-        set_engine_of(t, 3);
+        set_engine_of(t, 6);
         t->engine = t->eng_req;
         ok = !memcmp(keep, t->step, sizeof keep) && !grid_on();
         t->seq_hold = 0;
@@ -3027,7 +3027,7 @@ static int test_grid(void)
         seq_step(t, &t->step[0], seq_div_samples((uint32_t)t->p[P_SDIV]), 0);
         ok &= t->seq_n == 1u && t->seq_notes[0] == 36u;
         seq_release(t);
-        bad += check("a sound load keeps the grid; on SID its hits play as their GM notes", ok);
+        bad += check("a sound load keeps the grid; on TRIO its hits play as their GM notes", ok);
         hold(B_EDIT);                             /* undo the sound loads: DRUM again */
         set_engine_of(t, ENGI_DRUM);
         t->engine = t->eng_req;
@@ -3120,7 +3120,7 @@ static int test_browser(void)
         ok = total > 0u;
     }
     bad += check("BROWSE: every sound is in exactly one category (their lists add up to ALL)", sum == all && ok);
-    set_engine_of(TSEL, 3);                                /* (a general sound) */
+    set_engine_of(TSEL, 6);                                /* (a general sound) */
     up_store(5, "SUB BASS 2");
     list_set(LM_CAT);                                      /* BASS */
     preset_pos(&total);
@@ -4182,12 +4182,12 @@ static int test_native_env_lfo(void)
     open_family(FAM_LFO); go_home(); open_family(FAM_LFO);
     bad += check("..from elsewhere: the LFO page last used", str_eq(cur_page()->title, "MATRIX"));
     go_home();
-    set_engine_of(TSEL, 3);
+    set_engine_of(TSEL, 6);
     open_family(FAM_ENV);
-    bad += check("ENV on SID: the track's ADSR", str_eq(cur_page()->title, "ENV"));
+    bad += check("ENV on TRIO: the track's ADSR", str_eq(cur_page()->title, "ENV"));
     ui.fam_last[FAM_LFO] = 0;
     open_family(FAM_LFO);
-    bad += check("LFO on SID: MODS first, then MATRIX, LFO, LFO 2, ORGANIC, LFO DEST", str_eq(cur_page()->title, "MODS") &&
+    bad += check("LFO on TRIO: MODS first, then MATRIX, LFO, LFO 2, ORGANIC, LFO DEST", str_eq(cur_page()->title, "MODS") &&
                  (open_family(FAM_LFO), str_eq(cur_page()->title, "MATRIX")) && (open_family(FAM_LFO), str_eq(cur_page()->title, "LFO")) &&
                  (open_family(FAM_LFO), str_eq(cur_page()->title, "LFO 2")) &&
                  (open_family(FAM_LFO), str_eq(cur_page()->title, "ORGANIC")) &&
@@ -4212,7 +4212,7 @@ static int test_native_env_lfo(void)
 static int test_popups(void)
 {
     int bad = 0, o;
-    ui_power_on_general();                        /* (EDIT 1: SID's, WAVE on KNOB 2 a list knob) */
+    ui_power_on_general();                        /* (EDIT 1: TRIO's, WAVE on KNOB 1 a list knob) */
     ui.home = 0; ui.page = (uint8_t)page_first(FAM_EDIT); page_entered(); frame();
     o = song.octave;
     press(B_OCTUP);
@@ -4230,13 +4230,13 @@ static int test_popups(void)
     hold(B_OCTUP); press(B_OCTUP);
     bad += check("POPUPS: a destructive row (Init sound) asks first", !pop.on && ui.confirm == CF_INIT_SOUND);
     press(B_OCTDN);
-    turn(EN_K2, 1);
-    bad += check("POPUPS: a list knob (WAVE) turning: its picker", pop.on == POP_PICK && pop.col == 1u);
+    turn(EN_K1, 1);
+    bad += check("POPUPS: a list knob (WAVE) turning: its picker", pop.on == POP_PICK && pop.col == 0u);
     fm1_ms += 2000u; frame();
     bad += check("POPUPS: the picker goes once the knob rests", !pop.on);
-    turn(EN_K2, 1); turn(EN_K1, 1);
+    turn(EN_K1, 1); turn(EN_K2, 1);
     bad += check("POPUPS: another knob turning closes it", !pop.on);
-    turn(EN_K2, 1); press(B_OCTDN);
+    turn(EN_K1, 1); press(B_OCTDN);
     bad += check("POPUPS: OCT- closes the picker (the page stays), no octave", !pop.on && !ui.home && song.octave == o);
     {   /* a list of numbers steps on its card, as its neighbours do: GLO's DRUM channel (OFF, 1-16), FM6's ALG */
         int32_t ch;
@@ -4707,7 +4707,7 @@ static int test_product_ux(void)
     ok = 1;
     for (p = 0; p < NPALETTES; p++) for (b = 0; b < 1u; b++) {   /* (ENV: its knobs the strip under the curve) */
         uint16_t sound[240 * (240 - PV_SOUND_Y)], columns[240 * PV_STRIP_H];
-        ui_power_on(); set_engine_of(TSEL, 3); palette_set(p); settings.zoom = 1;   /* (the generic ENV) */
+        ui_power_on(); set_engine_of(TSEL, 6); palette_set(p); settings.zoom = 1;   /* (the generic ENV) */
         open_family(FAM_ENV); frame();
         memcpy(sound, host_screen + PV_SOUND_Y * 240, sizeof sound);
         memcpy(columns, host_screen + PV_STRIP_Y * 240, sizeof columns);
@@ -5474,14 +5474,14 @@ static int test_edit_cycle(void)
     for (i = 0; i < NPAGES; i++)
         ok &= !str_eq(PAGES[i].title, "ENGINE");
     bad += check("no ENGINE page (engines are the EDIT layer's)", ok);
-    set_engine_of(TSEL, 3);
-    bad += check("EDIT cycle (SID): EDIT 1 EDIT 2 VOICE VOICE 2 EDIT 1", engine_cycle(CYC_A, NELEM(CYC_A)));
+    set_engine_of(TSEL, 6);
+    bad += check("EDIT cycle (TRIO): EDIT 1 EDIT 2 VOICE VOICE 2 EDIT 1", engine_cycle(CYC_A, NELEM(CYC_A)));
     set_engine_of(TSEL, ENGI_FM6);
     bad += check("EDIT cycle (FM6): EDIT 1 EDIT 2, FM6's 16 pages, VOICE VOICE 2",
                  TSEL->eng_req == ENGI_FM6 && engine_cycle(CYC_F, NELEM(CYC_F)));
     (void)CYC_D;
     go_title("OP2 ENV"); ui.fam_last[FAM_EDIT] = ui.page;
-    set_engine_of(TSEL, 3); frame();
+    set_engine_of(TSEL, 6); frame();
     bad += check("an OP page of a track no longer DIGITAL falls back to EDIT 1", str_eq(cur_page()->title, "EDIT 1"));
     go_title("EDIT 2"); ui.fam_last[FAM_EDIT] = ui.page;
     go_home(); press(B_EDIT);
@@ -5545,7 +5545,7 @@ static int test_boot_template(void)
     bad += check("  EDIT there: no NAME (the template has no name)", !name_on());
     trk[1].p[P_LEVEL] = 20;
     fm6_fn[1][FN_PBUP] = 2;
-    set_engine_of(&trk[2], 3);
+    set_engine_of(&trk[2], 6);
     trk[0].step[3].time = ST_NOTE; trk[0].step[3].n = 1; trk[0].step[3].note[0] = 60;
     project_save(0);                                     /* (A used: the template's project goes to B) */
     sheet_do("Load template");
@@ -5961,7 +5961,7 @@ static int test_fm6_pages(void)
     fm6_unpack(FM6_INIT, v);
     fm6_name(b, v);
     bad += check("  INIT: the init voice", msg_is("INIT VOICE") && str_eq(a, b));
-    set_engine_of(TSEL, 3);
+    set_engine_of(TSEL, 6);
     frame();
     bad += check("an FM6 page of a track no longer FM6 falls back to EDIT 1", str_eq(cur_page()->title, "EDIT 1"));
     return bad;
@@ -6072,7 +6072,7 @@ static int test_slices(void)
     ok &= ui.home;
     bad += check("SLICES: OCT- drops the pick, then goes HOME", ok);
     go_page(GR_SLICES); frame();
-    set_engine_of(TSEL, 3); frame();
+    set_engine_of(TSEL, 6); frame();
     bad += check("SLICES: on another engine the page is not there (EDIT 1)", str_eq(cur_page()->title, "EDIT 1"));
     {   /* the engine changed (the editor's SET between two ui_input passes) while the page is still the current one:
          * its knobs and actions do nothing to the track or the slot */
@@ -6083,7 +6083,7 @@ static int test_slices(void)
         TSEL->p[P_E1] = SLC_DIV_MAN;
         go_page(GR_SLICES); frame();
         keep = *slc_man_of(slc_get(1));
-        set_engine(3u);                              /* SID, as ed_service's SET G_ENGSEL */
+        set_engine(6u);                              /* TRIO, as ed_service's SET G_ENGSEL */
         TSEL->p[P_E0] = 1;
         before = *TSEL;
         slc_man_save = 0;
@@ -6118,7 +6118,7 @@ static int test_slices(void)
         for (k = 0; k < SP_COLS; k++)
             ok &= sp.lo[k] >= -1 && sp.hi[k] <= 1;   /* (near silence) */
         bad += check("SLICES: a re-upload of the same length redraws the waveform", ok);
-        set_engine_of(TSEL, 3); frame();
+        set_engine_of(TSEL, 6); frame();
     }
     memset(host_slots, 0, sizeof host_slots);        /* (the other tests: empty slots) */
     smp_user_scan(0);
@@ -6270,7 +6270,7 @@ static int test_quick_layers(void)
     song.g[G_CLOCK] = 0; song.g[G_BPM] = 120;
     bad += check("SELECT on HOME, and with GLO held: the tempo (a combo, no MIXER); with CLK EXT it says why", ok);
     {
-        set_engine_of(TSEL, 3);                   /* (the generic ENV page) */
+        set_engine_of(TSEL, 6);                   /* (the generic ENV page) */
         int16_t l2 = trk[2].p[P_LEVEL], atk = TSEL->p[P_ATK];
         go_title("ENV");
         btn_down(B_GLO); frame();
@@ -7020,11 +7020,11 @@ static int test_stage(void)
     int16_t *vp;
     uint32_t k, before;
     ui_power_on();
-    set_engine_of(TSEL, 3);
+    set_engine_of(TSEL, 6);
     go_home();
     frame();
-    bad += check("Stage: SID's knobs are its EDIT values (WAVE PW CUT RES)", stage_page()->scope == SC_ENGINE &&
-                 stage_page()->id[0] == P_E1 && stage_page()->id[3] == P_E5 && home_param(0, &vp) && vp == &TSEL->p[P_E1]);
+    bad += check("Stage: TRIO's knobs are its EDIT values (CUT RES PW INT2)", stage_page()->scope == SC_ENGINE &&
+                 stage_page()->id[0] == P_E5 && stage_page()->id[3] == P_E1 && home_param(0, &vp) && vp == &TSEL->p[P_E5]);
     set_engine_of(TSEL, ENGI_FM6);
     go_home();
     frame();

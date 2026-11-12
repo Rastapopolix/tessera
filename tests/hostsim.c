@@ -209,8 +209,8 @@ static uint32_t started_since(const track_t *t, uint32_t a0)
     return n;
 }
 
-/* the demo song: T1 the power-on bass (TRK_DEF: SID BELL RING; PROPHET FUNK BASS II until 2026-10-22, ANALOG ACID until 2.0) (16 steps), T2 the
- * power-on pad (TRK_DEF: TRIO STRING MACH; FM6 STRINGS, GLASS PAD, PAD, DIGITAL PAD before) (32 steps, tied chords), T3 SID INIT SID
+/* the demo song: T1 the power-on bass (TRK_DEF: FM6 GLASS PAD; SID BELL RING until 2026-11-12) (16 steps), T2 the
+ * power-on pad (TRK_DEF: TRIO STRING MACH; FM6 STRINGS, GLASS PAD, PAD, DIGITAL PAD before) (32 steps, tied chords), T3 FM6 BELLS (SID INIT SID before)
  * (12 steps: 3 against 4), T4 808 DRUM drums (16 steps, up to 3 notes a step); 120 BPM, 8 bars. Bars 5..6:
  * live recording: a clap into the drums just before step 4 (quantised onto it, not triggered twice),
  * MIDI ch 3 into the lead, a two-key chord on the keys into an empty pad step. solo: 0 = the mix,
@@ -236,7 +236,7 @@ static int tracks_demo(const char *dir, const char *name, uint32_t solo)
     song.g[G_BPM] = 120;
     host_power_on_sound(t1, 0);
     host_power_on_sound(t2, 1);
-    host_preset(t3, 3, 0);
+    host_power_on_sound(t3, 2);
     host_808_kit(td);                   /* saved 808 DRUM sound */
     for (i = 0; i < 16u; i++) {
         uint8_t n = ACID[i];
@@ -481,7 +481,7 @@ static int steal_test(const char *dir)
 /* a preset change across engines while notes sound (the PRESETS knob, the editor's PRESET) must not click:
  * part 1 as a plain sine pad (FM6 INIT VOICE, no sends: smooth, so the largest
  * sample step is set by the pitches), (a) a chord held and released, the switch to TRIO (its FAT BASS) in its release
- * tail; (b) twice a chord held, the switch to PHASE / SID while it is held (the preset change releases
+ * tail; (b) twice a chord held, the switch to PHASE / ORACLE while it is held (the preset change releases
  * it); (c) a switch to SAMPLE with a note in its second block: that note must sound on the new engine. As ui.c
  * set_engine_of + apply_preset_to: eng_req, the new engine's values and panic_req at once (the main loop
  * writes them with the audio IRQ off). Compares the largest sample step in the 10 ms after (a) and (b)
@@ -502,7 +502,7 @@ static int xfade_test(const char *dir)
     /* switches: (a) in a release tail, (b) twice with a chord held, (c) with a note right after it */
     const uint32_t sw[4] = {11u * B, 23u * B, 29u * B + 7u * CTL, 33u * B};
     const uint32_t on[3] = {B, 15u * B, 25u * B}, sine[3] = {14u * B, 24u * B, 32u * B};
-    const uint8_t to[4] = {6, 2, 3, 4};             /* TRIO, the retired PHASE, SID, the retired SAMPLE */
+    const uint8_t to[4] = {6, 2, ENGI_ORACLE, 4};   /* TRIO, the retired PHASE, ORACLE (SID until removed), the retired SAMPLE */
     char path[512];
     FILE *w;
     int32_t *L = calloc(frames, sizeof *L);

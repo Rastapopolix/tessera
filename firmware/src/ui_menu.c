@@ -156,12 +156,6 @@ static const menu_credit_t MENU_CREDITS[] = {
     {"msfa: Apache-2.0, Dexed: GPL-3.0", MC_TEXT},
     {"https://github.com/asb2m10/dexed", MC_URL},
     {"", MC_TEXT},
-#if MELODEE_SID || MELODEE_SID_KIT                    /* the device build has neither */
-    {"RESID / SID MODEL", MC_TITLE},
-    {"Dag Lem / GPL-2.0-or-later", MC_TEXT},
-    {"https://github.com/libsidplayfp/resid", MC_URL},
-    {"", MC_TEXT},
-#endif
     {"RINGS / PHYS PORT", MC_TITLE},
     {"Emilie Gillet / MIT", MC_TEXT},
     {"https://github.com/pichenettes/eurorack", MC_URL},
