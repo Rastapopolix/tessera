@@ -122,7 +122,8 @@ static const menu_credit_t MENU_CREDITS[] = {
     {"", MC_TEXT},
     {"THANKS / TESTERS AND IDEAS", MC_TITLE},
     {"BobFromson, pavig-coder, bambalaya, alxantdroid, resocut, Joao Duraes, tv-glotzer,", MC_TEXT},  /* Mono: ASCII only */
-    {"il1893, fairplay, alexwlloyd, morgulbrut, nrittamurti, Charles Vestal (FM-1 Screen Reader)", MC_TEXT},
+    {"il1893, fairplay, alexwlloyd, morgulbrut, nrittamurti, Charles Vestal (FM-1 Screen Reader),", MC_TEXT},
+    {"bitmap303 (the tagline: a pocket rabbit hole)", MC_TEXT},
     {"", MC_TEXT},
     {"MELODEE / ORIGINAL", MC_TITLE},                  /* Tessera is a modified Melodee */
     {"Kerem Kilic (keremimo), Ellic Studio / GPL-3.0", MC_TEXT},
