@@ -3,6 +3,7 @@
 /* Parameter descriptors, formatting and the page table. */
 static const char *const N_LSYNC[] = {"OFF", "4BAR", "2BAR", "1/1", "1/2", "1/4", "1/8", "8T", "1/16", "16T", "1/32"};
 static const uint8_t LSYNC_DIV[11] = {0, 9, 8, 7, 6, 0, 1, 4, 2, 5, 3};
+static const uint8_t N_LSYNC_ORDER[11] = {0, 1, 2, 3, 4, 5, 7, 6, 9, 8, 10};   /* OFF, then slow to fast (8T before 1/8) */
 static const char *const N_LWAVE[] = {"SIN", "TRI", "SAW", "SQR", "S&H"};
 static const char *const N_AMODE[] = {"OFF", "UP", "DN", "UPDN", "RND", "ORD", "REPEAT", "DNUP", "RND1"};
 static const char *const N_DIV[] = {"1/4", "1/8", "1/16", "1/32", "8T", "16T", "1/2", "1/1", "2BAR", "4BAR"};
@@ -329,11 +330,13 @@ static int32_t enum_step(const param_desc_t *d, int32_t from, int32_t v)
     return v;
 }
 
-/* an F_ENUM shown in an order of its own (N_DIV, N_RECQ): the order, 0 = its values' */
+/* an F_ENUM shown in an order of its own (N_DIV, N_RECQ, N_LSYNC; no picker): the order, 0 = its values' */
 static const uint8_t *enum_order(const param_desc_t *d)
 {
     if (d->fmt != F_ENUM || d->min != 0) return 0;
-    return d->names == N_DIV && d->max == 9 ? N_DIV_ORDER : d->names == N_RECQ && d->max == 10 ? N_RECQ_ORDER : 0;
+    if (d->names == N_DIV && d->max == 9) return N_DIV_ORDER;
+    if (d->max == 10) return d->names == N_RECQ ? N_RECQ_ORDER : d->names == N_LSYNC ? N_LSYNC_ORDER : 0;
+    return 0;
 }
 static int32_t enum_order_pos(const param_desc_t *d, int32_t v)   /* v's place in its order */
 {
