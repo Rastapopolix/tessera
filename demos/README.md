@@ -1,21 +1,23 @@
 # Tessera demo projects
 
-Seven projects that show what Tessera does, each music that keeps changing on its own. Press PLAY and leave it, then open
-the pages named below to see what is moving and turn things. The first three came with 3.0; the four after them came
+Eight projects that show what Tessera does, each music that keeps changing on its own. Press PLAY and leave it, then open
+the pages named below to see what is moving and turn things. The first three came with 3.0; the five after them came
 with 3.3 and are built round the long form: the **CHAIN** (one FORM for the whole project, with **KEY B** and **KEY
 C**), **ENTRIES** (tracks leaving and coming back on its phrase lines) and the **PIECE** (a length and the shape it
 takes). They need Tessera 3.3 or later.
 
-| File | Name on the FM-1 | What it shows |
-|---|---|---|
-| `still-tide.tsp` | STILL TIDE | Ambient: an ORACLE drone with BREATH, GRAVITY, FALL through the FILTER effect, a bass from STEP as seed, ENERGY |
-| `koto-garden.tsp` | KOTO GARDEN | FM koto in HIRA on QUAD, an ORACLE flute in a FORM that develops, a STEP mokugyo with conditions and Accumulate |
-| `low-harbour.tsp` | LOW HARBOUR | Ambient dub: ORACLE chord stabs into a drifting echo, a sub bass, a 909 one drop, RESTS |
-| `slow-light.tsp` | SLOW LIGHT | Drone: a TRIO fifth struck once and held, a wind, an ORACLE choir and a SOFT SWELL that change with the CHAIN's AABA; 15 minutes in WAVES |
-| `cedar-rain.tsp` | CEDAR RAIN | Plucked strings in KUMOI: a harp on TURING, a koto on EUCLID, an FM6 flute on MARKOV, 808 hand drums that ADORN varies; ABAC through three keys |
-| `undertow.tsp` | UNDERTOW | Call and answer in D minor: a STEP melody as ANSWER's SOURCE, answered on and on; minor chords and a sub bass in STEP |
-| `paper-kites.tsp` | PAPER KITES | Loops of different lengths: a harp in 11 eighths and ORACLE keys in 13 meet differently each time round, a MORPH pad, high CONSTELLATION stars; 30 minutes in WAVES |
-| `ember-field.tsp` | EMBER FIELD | Drone: a fifth that never moves (CHAIN: OWN), a tanpura cycle in STEP, a flute whose AABA sections differ; a 20-minute PIECE |
+| File | Name on the FM-1 | Good for | What it shows |
+|---|---|---|---|
+| `still-tide.tsp` | STILL TIDE | A bed that runs for an hour | Ambient: an ORACLE drone with BREATH, GRAVITY, FALL through the FILTER effect, a bass from STEP as seed, ENERGY |
+| `koto-garden.tsp` | KOTO GARDEN | Two parts that trade notes | FM koto in HIRA on QUAD, an ORACLE flute in a FORM that develops, a STEP mokugyo with conditions and Accumulate |
+| `low-harbour.tsp` | LOW HARBOUR | A slow groove with space | Ambient dub: ORACLE chord stabs into a drifting echo, a sub bass, a 909 one drop, RESTS |
+| `slow-light.tsp` | SLOW LIGHT | An evolving ambient piece | Drone: a TRIO fifth struck once and held, a wind, an ORACLE choir and a SOFT SWELL that change with the CHAIN's AABA; 15 minutes in WAVES |
+| `cedar-rain.tsp` | CEDAR RAIN | Plucked strings and hand drums | Plucked strings in KUMOI: a harp on TURING, a koto on EUCLID, an FM6 flute on MARKOV, 808 hand drums that ADORN varies; ABAC through three keys |
+| `undertow.tsp` | UNDERTOW | A melody that answers itself, or harmonises itself | Call and answer in D minor: a STEP melody as ANSWER's SOURCE, answered on and on; minor chords and a sub bass in STEP |
+| `paper-kites.tsp` | PAPER KITES | A slowly changing cinematic texture | Loops of different lengths: a harp in 11 eighths and ORACLE keys in 13 meet differently each time round, a MORPH pad, high CONSTELLATION stars; 30 minutes in WAVES |
+| `ember-field.tsp` | EMBER FIELD | A drone that never moves, with a voice over it | Drone: a fifth that never moves (CHAIN: OWN), a tanpura cycle in STEP, a flute whose AABA sections differ; a 20-minute PIECE |
+
+[RECIPES.md](../RECIPES.md#start-from-a-demo) says what to change in each to make it your own.
 
 They are made by the firmware's own code (`tests/demo_projects.c`), which saves each one to a slot, reads it back
 as the backup page does, loads it and plays it; `tests/run_tests.sh` checks that these files still load and play.
