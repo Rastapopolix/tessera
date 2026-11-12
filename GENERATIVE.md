@@ -13,8 +13,32 @@ You don't need a modular to follow either part. Where a recipe says **MODS**, se
 [MANUAL: MODS](MANUAL.md#mods-the-modulation-cords); for a quick start, see [RECIPES.md](RECIPES.md). The recipes
 need Tessera 3.5 (the MIX buses, EOC, CLOCK, PLAY, MOD DEPTH, scaling and HOLD mods and the mod scope are new in it).
 
+## New to patching?
+
+Tessera isn't a modular synth: there are no cables and no modules. It borrows a few of the modular world's ideas,
+and once they click, every recipe below reads easily. Five words cover most of it.
+
+- **Source**: something that moves on its own. An **LFO** (a slow wave), **S&H** (sample and hold: a new random
+  value every so often), a track's **ENV** (its envelope, rising with each note), a track's **GATE** (on while its
+  note sounds), **EOC** (a short gate at the start of each LFO cycle), **TIDE** and **ENERGY** (very slow movements,
+  over minutes and over the whole piece).
+- **Destination**: something a source can move. Sound settings such as **CUTOFF** or the **LFO RTE**, and the way
+  a track plays: **FILL**, **PLAY** (whether it's heard), **CLOCK** (when a generator steps), **DIR** (which way a
+  pattern runs), and **MOD DEP** (how much the whole patch moves).
+- **Cord** (a **mod**): one line from a source to a destination, with an **amount**. On a modular this is a patch
+  cable plus a knob that sets how far it pushes. Tessera has 16 of them on **LFO > MODS**.
+- **Gate**: a signal that is only on or off. Any source becomes one with the **^** kind (GATE): on above a threshold,
+  off below it. Gates are what turn a smooth curve into an event, like a fill or a part coming in.
+- **Clock**: what tells things when to step. Normally it's the tempo; a cord onto CLOCK lets another track's notes,
+  or an LFO's cycle, do it instead.
+
+A patch is a few cords that work together, and the fun starts when they feed each other: an LFO that changes the
+speed of another LFO, a gate that opens a mod, a track that listens to another track's notes. Start with one cord,
+listen to it, then add the next. Words you don't know are in [GLOSSARY.md](GLOSSARY.md).
+
 **Contents**
 
+- [New to patching?](#new-to-patching)
 - [How the recipes are written](#how-the-recipes-are-written)
 - [Six ideas](#six-ideas)
   - [1. Randomness you can lock](#1-randomness-you-can-lock)
