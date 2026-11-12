@@ -4,7 +4,7 @@
 <!-- Sample input recording and waveform trimming adapted from Andrea (@andreahaku), PR #29.
      Tessera web editor. One file, no libraries. Protocol: EDITOR_PROTOCOL.md.
      Add ?mock=1 to the URL to use a built-in simulated device. -->
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,7 +15,7 @@
      they stay hidden until the face has loaded (html.fk), so a missing font never shows boxes. */
   @font-face { font-family: "Fukiai"; src: url("fukiai.ttf") format("truetype"); font-display: block; unicode-range: U+EA00-EB09; }
   /* TESSERA-MONO: tools/gen_mono_webfont.py writes the face here (firmware/src/gfx.c's 5 x 7 font) */
-@font-face { font-family: "Tessera Mono"; font-display: block; src: url("data:font/woff;base64,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") format("woff"); }
+@font-face { font-family: "Tessera Mono"; font-display: block; src: url("data:font/woff;base64,d09GRgABAAAAAAwcAAoAAAAAN/gAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAABPUy8yAAABZAAAADEAAABgRDvlomNtYXAAAAGoAAAAqQAAANRq0Gl3Z2x5ZgAAAywAAAZ+AAAvMvmORTRoZWFkAAAA9AAAADYAAAA2K18/OGhoZWEAAAEsAAAAHgAAACQEsgJaaG10eAAAAZgAAAANAAAA1gJYAABsb2NhAAACVAAAANYAAADWSkQ+R21heHAAAAFMAAAAGAAAACAAfgBObmFtZQAACawAAADvAAABStmmH/Rwb3N0AAAKnAAAAX8AAANs143PEgABAAAAAQAA96P4QV8PPPUAAQMgAAAAAOUq/gAAAAAA5Sr+AAAA/5wB9AOEAAAAAwACAAAAAAAAeJxjYGRgYNrzfw6QjGBgYEhh/MIAFEEBjABqGwQQAAB4nGNgZGBgyGLwYRBmAAEmBjQAABSwAM14nGNgYYpgnMDAysDCQAA0MDAwI/PtgYDhAIOCghrTnv9zgJItDCloWhQYGAANiQcCAAAAeJxjimAYhgAAS7oAWwAAAHicY2BgYGJgYGAGYhEgyQimWRgOAGktBgUgi4shgaGKoY5hIcNqhu0MuxmOMJxnuM5wh+E+wxOG9wzfGP4oiChIKsgqqP3/D9SjwJDIUA1Xu5/hOMNFhptAtQ8YnjN8ZPipIKwgoSADUvv/4f+D/4//X/p/zv+J//v+d//v/N/xv/1/6//s/5n/M/6nA81ieOD9wBnsIvyAi4EHykpl4GNIY+AAAGQqOusAAAAAAAAAAAAAKABEAI4AyAD/AUwBYwGQAbwB9QIZAjACPAJNAnACwALuAyIDVQOPA8QD/wQsBHQErwTMBO4FGgUtBVkFhwXSBh8GZgahBuwHGwdKB5EH4ggQCEQIkgi/CR4JeAnFCgAKVQqgCs8K/QtOC54MAQxQDJQMwgzxDRENQA1iDW0Nfg2rDdgOBA4lDk0OiQ6VDtEO/w9WD64QCxBuEMYRBhFBEX0RvRH4EjESaxKqEuMTUxOqFAIUXxTCFRoVUhWvFg0WbxbMFxsXKBc/F2IXhBeZAAB4nL1aS5IiNxCVaGPsNnYPQRBeeGETXnhhIhwTBDGLWcxiFrOYC8wBdIA+hA/AAXwUH0AH4CissZX6lH6ZKanArg66igKUT5kvP0qV+FpoIeRh8bd4EivxnXgRW/GjENvTcbdCXlrFY/FFZYf5TIivhJJXeU7Gs2MdzWvpz/Dd2yUfQKyFOeS1wPGT+Fn8Kn4Tv4s/6nGWpz1xXci5vcrr7TW7uCD4y0N8y2DyGopS4XqVoHHa0vJ8W4Nu5AFUd1vLs2YEC17mxlvhiFgm3NPmUNOfOThp3ze1fnQzLXWbSj0inyttVKyVVTYAsbZYw52LbmveQHsyPDonvMwYCQOmajTfMJPJWOfmISSiqZ1/ycMEjYIk6JG3yUilhPBzrShjWzsbT1l8obi1zLS7L94DtyyJLakPVs+W1vJK2XqJSJy0GiQEH79djKfA+OV4AiwDEUMegmXeVZbR8dvSftdEBPNtw9/9zlwfzAcLN4qJPjDKNAYw1v8UxYvZU54nvtdoOxnuZr9HmFyye++1pazWzVyA1to6OVDcwDfXcNuYpYPnLL+wCAxxBhx74hglRohvyLlnM8YkTLNTQbdgCWIOjJyNj4Sp36ValFfHlrbO+MgYeFFab5nIB3/XPiHY2ATCuWDEanAzecx+igH5zIAThptdk2vnmmVinZSrQZ52EddInGjZZCF4Hio1s1vlb9dACkWqD+IC63eVz4V5YPdSX/OT6p9kl35xuavErjWGs3L5jNGvqYZMDDskMazya5ujzeFDl/Z4ly4+4tG6/r2KwS8GX2fdjqy4O1VZUTO2XZhhDV55dbHbeYJjPER6Xwm6yIZwa1tIrDKn5hInzVkuphXxDJua7q1Cy1xR5+Zwb1dwF65DovBvjHlaZegcVLQ3uXPJ5rUNV8l7+N9G1vTyzYCXF5FrXb9vOPmQj6fswOKMO9ohtMc6m1O+OsEskmYsA8NXz4VFXAndUVnwkb3MJeHa5SyfQ+BM5Pw5ox+r0UkPH84dq8TnuNyhgtOlUbyVOboqyA1pVdYHC+POcUK+hqSyuNVLXMzTRWSjhixHTlmuowRXcNGpcoaWy7p8hdxLtOzXogaDW95M7tWlX5LtdI2ejkD60ZuOWb8T78UHeu7YNc02k/ySDKRUGV26FBJs9tKJHvWO9hqr9hK3uPKw7aJrEPUduZT27yqXVv97Anar80Pn0bgORvInHFz2+qHLhk2dkH0gQjfBhr39oL7ajNMSxjFCYwPRoV2Nuvo6XSMCY1xX0NajdGHD1Lqbwvb5+sx3hhRj/bvzGusPtCuM9EYejjB0LnlsSpGrj1yDm+7o/ZHHScXx8pp2pPT0Shr9sVou+8BM5I5t4NThenTcscJo2ztZBWK2Vk2FNTyRqgFip0QzRQBfv+Fe7rJO4uZ0FxDto25O+RocXm6cqoM6XF2GGDAdtwuLTp4LvU59jpRVKX3ywaDHDLYRsGsg3nq9Q4cZes1+5KnrEG3dv2uwS862P8KzBnSG7aqxXd18b40curkfkeLN9yMcbGLcZdbTQewwxU4/de16m3GEO3cS89mbST47q2aIoucju4ERY3r2rFHR2eGVY88ES6OHg/mzOxZbO4LdsWjg2RDyq4oogoiwGDhchVFrdeoGqxBwk3Srq8F99ff0Z6v6C5wa7DLZlWW70fT0CzX9OWij946hdZ3PB+J96cL7vox3Y6h9XLw8DndclzaRf6B35bs5ol3loh87hWRt08PuWcgH9V65X4nXRJh//iJrna4OZtbrLruYjao2rEBRfU0xIF915tfKbxwXTUTOZoKXGvf1mK7lwa4jR+U+s+xAfRKTHuqSMfE92m5JVqxclG2gbVs/8DZeMTWtmh5mcYd507IvIzGN1WQV7ePygMxnRiZiW0pyjK3dsrt03JKraKm4Wbfd8fqj+CQ+49XT7A7dFMGzQMg06/qDuJ/fQ+oUpmOB1ClYz+L/rFNotHidcgfeB9YpNGqqTpmP+7+oUxiO0HXKPVN4WJ3CsntI7806hX12rdynwDpEaE+IfnJtiJ+7Lq2gWoLH53pal9307Ece65xx5L7+eTT2Qd+iuoADsYHn5xzXGmLOXPRqGHvDw+56MreV0eOTuW5LtMja5kZHW1bCU03yHHoktt9nmyT8c7vWzsn4vvt3rrt/ZaT2OraBrNgtEfgo5TMXcDY18kWhHXKYx9RDtLjfnmLlk37xX3U69SsAAHicLU3LasMwEBynpaVQeu5RR/vgBw7kklNxIJe4hKAfEEaWBY4UpITE135kP6Pf0GkdLcvO7jwE4AmfSDC/D/aME7xym/ECz2jxgOTxhdsX5B0neMf3HS/whp/Gn6ZgzXAWaZOJuqpXQg7ai42yzsa12O53+bKocu/GSaS9DcerCrqMoStNfyu6TOoYdVCi9c4ftLmMKqCBxwkTAiwMBpwhkPKacdao2CsiSUZTKbCBotKxI9bct9hjhxxLFFTn1DiMzPtL6akKOOJKT6C/pCeg4zTkbnR0/EeSiSxNTtHX/md4HHgxuDCN7l8unzxfAHicfc/XVhRBFEDROSjmnLOCAbM9faumBxPOVIE5YAZzRPn/D1CO7/bDWb1W3951qzfR+/+z2usxwTrWM8kGNrKJzWxhK9vYzg52sovd7GEv+9jPAQ5yiMMc4SjHOM4JTnKKKaY5zRnOco4ZznOBi1ziMle4yjUa+rQEicyAjiGzXOcGN7nFbea4w4gxhco8C9zlHvd5wEMe8ZgnPOUZizznBS95xWve8JYllnnHez7wkU985gtf+cZ3fvCTFX7xm9XJlaZpG9u3rQ2bbLYD29mhnbUjO7bFVjtvF9Ya+qEf+qEf+qEf+qEf+qEf+qEf+qEf+qGf9JN+0k/6ST/pJ/2kn/STftJP+kk/6Sf9pJ/1s37Wz/pZP+tn/ayf9bN+1s/6WT/rZ/2sP9DvnOmc6ZzpnBl57sivY/3xv3f/Lf5bnCnuVtytuFtxvrhPcZ/iPkWheFbxrOJZRbOqVbWqVtWqN63etCpXzapZNatm/eu0TT/s0BZb19oO/gBtT5nEAA==") format("woff"); }
 /* /TESSERA-MONO */
   /* the project page's look (web/home/index.html): the Mono look's one ink on black, the four tracks as its fills;
      --hi is what the device inverts (the open tab, a pressed button, a set step) */
@@ -44,13 +44,17 @@
        margin: 0 0 4px; padding-bottom: 2px; border-bottom: 1px solid var(--line); }
   h3 { font-size: 11px; font-weight: 400; color: var(--dim); margin: 4px 0 0; }
   a { color: var(--accent); }
-  .lang { float: right; font-size: 12px; color: var(--dim); text-decoration: underline; background: none; padding: 0; }
+  /* the language menu: a short code (EN, DE ...) shown, the real select laid over it, so the list names each language */
+  .lang { float: right; position: relative; font: 16px/1 var(--pixel); color: var(--dim); padding: 3px 4px 2px; cursor: pointer;
+          text-transform: uppercase; }
+  .lang::after { content: " \25BE"; font-family: ui-monospace, monospace; }
+  .lang:hover, .lang:focus-within { color: var(--bg); background: var(--fg); }
+  .lang select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; font: 16px system-ui, sans-serif; }
   button { font: inherit; background: var(--raise); color: var(--fg); border: 0; padding: 3px 10px; cursor: pointer; }
   button:hover:not(:disabled) { background: var(--line); }
   #connect { background: var(--fg); color: var(--hi-fg); font-weight: 600; border: 1px solid var(--fg); }
   #connect:hover:not(:disabled) { background: var(--bg); color: var(--fg); }
   button:disabled { opacity: .3; cursor: default; }
-  button.lang { color: var(--dim); background: none; }
   select, input[type=text], input[type=number], input[type=search] {
     font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); padding: 1px 3px; border-radius: 0; }
   input[type=range] { width: 100%; margin: 0; accent-color: var(--gold); }
@@ -193,7 +197,12 @@
 </head>
 <body>
 <main>
-  <button class="lang" id="lang"></button>
+  <label class="lang"><span id="lang-code" aria-hidden="true">EN</span><select id="lang" aria-label="Language">
+    <option value="en" lang="en">English</option><option value="es" lang="es">Español</option>
+    <option value="it" lang="it">Italiano</option><option value="de" lang="de">Deutsch</option>
+    <option value="fr" lang="fr">Français</option><option value="pt" lang="pt-BR">Português</option>
+    <option value="ko" lang="ko">한국어</option><option value="ja" lang="ja">日本語</option>
+  </select></label>
   <h1><a href="../../" aria-label="Tessera"><svg viewBox="0 0 78 78" aria-hidden="true"><rect x="4" y="5" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="31" y="3" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="53" y="2" width="22" height="22" fill="#ffd020"/><rect x="5" y="30" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="30" y="30" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="55" y="31" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="4" y="55" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="31" y="57" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="55" y="55" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/></svg>TESSERA</a> <small>EDITOR</small></h1>
   <div class="tbar" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
   <p class="dim"><a href="../installer/" style="color:inherit" data-t="installer"></a></p>
@@ -204,6 +213,7 @@
       <span id="version" class="dim"></span>
       <span id="live" class="dim"></span>
       <span id="mock" class="dim" hidden data-t="mock"></span>
+      <label id="edit-wrap" hidden><input type="checkbox" id="edit-on"> <span data-t="editOn"></span></label>
     </div>
     <div id="status"></div>
     <nav class="tabs" id="tabs" role="tablist">
@@ -264,7 +274,7 @@
 
   <section class="panel" id="p-sequencer" data-tab="sequencer" data-dev hidden>
     <div class="groups" id="seqgroups"></div>
-    <p id="patternbar" class="bar" hidden><label for="patternpick">Pattern</label><select id="patternpick"></select><span id="patternstate" class="dim"></span></p>
+    <p id="patternbar" class="bar" hidden><label for="patternpick" data-t="pattern"></label><select id="patternpick"></select><span id="patternstate" class="dim"></span></p>
     <div id="steps">
       <h2 data-t="steps" data-ic="note_eight"></h2>
       <p class="bar"><button id="reloadsteps" data-t="reload" data-ic="control_arrow_loop"></button>
@@ -326,8 +336,8 @@
         <h2 data-t="bank" data-ic="port_disk"></h2>
         <p class="dim" id="bankhint"></p>
         <div id="bankpane" hidden>
-          <p class="bar"><label>Preset collection <select id="presetpool"><option value="0">General presets</option><option value="12">FM6 voices</option></select></label></p>
-          <p class="dim" id="nativehint" hidden>Native tones appear in the preset browser. Effects and track settings stay unchanged when loaded.</p>
+          <p class="bar"><label><span data-t="presetPool"></span> <select id="presetpool"><option value="0" data-t="poolGeneral"></option><option value="12" data-t="poolFm6"></option></select></label></p>
+          <p class="dim" id="nativehint" data-t="nativeHint" hidden></p>
           <div class="bar"><b id="bankhead"></b></div>
           <div class="list" id="banklist"></div>
           <p class="bar" style="margin-top:6px">
@@ -337,7 +347,7 @@
             <button id="bkerase" data-t="erase" data-ic="symbol_trash"></button>
           </p>
           <p class="bar">
-            <button id="bknativeimport" hidden>Import .syx</button><input id="bknativefile" type="file" accept=".syx" hidden>
+            <button id="bknativeimport" data-t="importSyx" hidden></button><input id="bknativefile" type="file" accept=".syx" hidden>
             <button id="bkrefresh" data-t="reload" data-ic="control_arrow_loop"></button>
             <button id="bkexport" data-t="exportBank" data-ic="symbol_download"></button>
             <span class="dim" data-t="dndHelp"></span>
@@ -364,6 +374,14 @@
       <p class="bar"><button id="demos-put" data-t="demosPut" data-ic="symbol_download"></button>
         <span id="demos-status" class="dim" aria-live="polite"></span></p>
     </div>
+    <div id="pfiles-panel" style="margin-top:16px">
+      <h2 data-t="pfTitle"></h2>
+      <p class="dim" data-t="pfHelp"></p>
+      <p class="bar"><select id="pf-slot" aria-label="Slot"></select>
+        <button id="pf-save" data-t="pfSave" data-ic="symbol_download"></button>
+        <button id="pf-load" data-t="pfLoad" data-ic="symbol_upload"></button><input id="pf-file" type="file" accept=".tsp" hidden>
+        <span id="pf-status" class="dim" aria-live="polite"></span></p>
+    </div>
     <div class="group" id="tunings" hidden style="margin-top:16px">
       <h2 data-t="tuneTitle"></h2>
       <p class="dim" data-t="tuneHelp"></p>
@@ -388,8 +406,8 @@
       <div id="device-display-controls"></div>
     </div>
     <div class="group" id="device-recording" hidden style="margin-top:12px">
-      <h2>Recording</h2>
-      <p class="dim">Click, count-in and stopped note editing. REC arms; PLAY starts recording.</p>
+      <h2 data-t="recTitle"></h2>
+      <p class="dim" data-t="recHelp"></p>
       <div id="device-recording-controls"></div>
     </div>
     <div class="group" style="margin-top:12px">
@@ -1907,7 +1925,7 @@ function makeMockDevice(opt = {}) {
     D("FLT", F.BIPCT, -64, 63, 0), D("PIT", F.BIPCT, -64, 63, 0), D("SHP", F.BIPCT, -64, 63, 0), E("QNT", ["OFF", ...NDIV], 0),
     D("RATE", F.LFOHZ, 0, 127, 60), E("WAVE", ["SIN", "TRI", "SAW", "SQR", "S&H"], 0), D("PHS", F.INT, 0, 127, 0), D("FADE", F.TIME, 0, 127, 0),
     D("PIT", F.BIPCT, -64, 63, 0), D("FLT", F.BIPCT, -64, 63, 0), D("SHP", F.BIPCT, -64, 63, 0), D("AMP", F.PCT, 0, 127, 0),
-    E("MODE", ["OFF", "UP", "DN", "UPDN", "RND", "ORD", "REPEAT"], 0), E("RATE", NDIV, 2), D("OCT", F.INT, 1, 4, 1), D("GATE", F.PCT, 1, 127, 64),
+    E("MODE", ["OFF", "UP", "DN", "UPDN", "RND", "ORD", "REPEAT", "DNUP", "RND1"], 0), E("RATE", NDIV, 2), D("OCT", F.INT, 1, 4, 1), D("GATE", F.PCT, 1, 127, 64),
     D("SWG", F.PCT, 0, 100, 0), D("PROB", F.PCT, 0, 127, 127), E("HOLD", NONOFF, 0), E("ORD", ["NOTE", "PLAY"], 0),
     D("ROOT", F.NOTE, 0, 11, 0), E("SCL", ["CHR", "MAJ", "MIN", "DOR", "MIX", "PEN", "MPEN", "HARM", "PHRY", "LYD", "LOC", "MEL", "BLUES", "WHOLE", "DIMHW", "DIMWH", "5EDO", "7EDO", "9EDO", "10EDO", "13EDO", "14EDO", "15EDO", "16EDO", "17EDO", "18EDO", "19EDO", "20EDO", "21EDO", "22EDO", "23EDO", "24EDO", "26EDO", "27EDO", "29EDO", "31EDO", "34EDO", "36EDO", "41EDO", "53EDO", "JI-MAJ", "JI-MIN", "JI-12", "JI-7L", "JI-7", "HARM8", "HARM16", "PARTCH", "HARRIS", "PYTH", "MT-1/4", "MT-1/3", "MT-1/6", "WERCK3", "KIRN3", "VALLOT", "YOUNG2", "RAST-J", "SABA-J", "SHRUTI", "SLENDR", "PELOG", "BP-ET", "BP-JI", "RAST", "BAYATI", "HIJAZ", "SABA", "HUSAYN", "SIKAH", "IN", "YO", "HIRA", "IWATO", "KUMOI", "RYUKYU", "MINYO"], 0), E("QNT", ["OFF", "SNAP", "WHITE", "ALL", "MPC", "CHRD"], 0), D("TRN", F.SEMI, -24, 24, 0),
     D("LEN", F.STEPS, 1, 64, 16), E("DIV", NDIV, 2), D("SWG", F.PCT, 0, 100, 0), D("GATE", F.PCT, 1, 127, 64),
@@ -1922,7 +1940,7 @@ function makeMockDevice(opt = {}) {
     ...Array.from({length:8},()=>D("",F.INT,0,127,0)),
     E("MIDI", ["USB", "TRS"], 0), E("DRUM", ["OFF", ...Array.from({ length: 16 }, (_, i) => String(i + 1))], 0), E("ROUT", ["CH1-4", "SEL", "CH5-8", "CH9-12", "CH13-16"], 0), D("CPU", F.INT, 0, 0, 0),
     D("SLOT", F.INT, 1, 5, 1), E("BOOT", ["OFF", "A", "B", "C", "D"], 0), E("LOAD", NGO, 0), E("SAVE", NGO, 0),
-    E("ENG", ["-", "-", "-", "SID", "-", "-", "TRIO", "-",
+    E("ENG", ["-", "-", "-", "-", "-", "-", "TRIO", "-",
       "-", "PHYS", "DRUM", "-", "FM6", "-", "-", "-", "-", "-", "-", "ORACLE", "-", "-"], 0), D("A4", F.INT, 400, 480, 440, null, "Hz"),
     E("CLRSQ", NGO, 0), E("INIT", NGO, 0),
     ...Array.from({length:3},()=>D("",F.INT,0,127,0)),
@@ -1934,26 +1952,7 @@ function makeMockDevice(opt = {}) {
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},   /* 0: retired ANALOG; stored ID reserved */
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},   /* 1: retired DIGITAL; stored ID reserved (the editor converts its sounds: FM4 above) */
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},   /* 2: retired PHASE; stored ID reserved */
-    { name: "SID", titles: ["CHIP", "FILTER"], edit: [E("MODEL", ["6581", "8580", "C64 6581", "C64 8580"], 0), E("WAVE", ["TRI", "SAW", "PULSE", "NOISE", "TRI+SAW", "TRI+PLS", "SAW+PLS", "T+S+P"], 1),
-        E("STACK", ["ONE", "DETUNE", "OCT", "FIFTH", "MAJOR", "SYNC", "RING", "SUB"], 0), D("PW", F.PCT, 0, 127, 64), D("CUT", F.PCT, 0, 127, 127),
-        D("RES", F.INT, 0, 15, 0), E("MODE", ["LP", "BP", "HP", "NOTCH", "LP+BP", "BP+HP", "ALL", "OFF"], 0), D("DRIVE", F.PCT, 0, 127, 0)],
-      presets: [
-        P("INIT SID", [0,1,0,64,127,0,0,0], [0,36,127,36], 0), P("BREADBOX", [0,2,1,40,60,6,0,30], [0,78,100,57], 0),
-        P("RUBBER BASS", [0,2,7,30,36,10,0,40], [0,63,60,36], 1), P("ARP BASS", [0,2,0,48,34,12,0,30], [0,57,40,0], 1),
-        P("SUB PULSE", [1,2,7,64,14,4,0,0], [0,69,100,36], 1), P("SYNC BASS", [0,1,5,64,44,8,0,40], [0,63,90,36], 1),
-        P("SAW BASS", [1,1,2,64,10,9,0,10], [0,63,84,36], 1), P("DIRTY BASS", [0,1,1,64,38,11,0,90], [0,69,70,36], 1),
-        P("LEAD 6581", [0,1,1,64,60,9,0,40], [0,69,110,57], 1), P("RING LEAD", [1,0,6,64,127,0,7,0], [0,69,110,57], 1),
-        P("SYNC LEAD", [1,1,5,64,100,6,0,0], [0,69,110,57], 1), P("PULSE LEAD", [0,2,1,26,70,8,0,50], [0,63,110,49], 1),
-        P("GAME HERO", [0,2,3,50,127,0,7,0], [0,57,100,49], 1), P("LASER LEAD", [1,6,5,72,100,6,0,0], [0,63,100,36], 1),
-        P("CHIP SOLO", [0,5,1,40,127,0,7,0], [0,69,110,57], 1), P("8580 LEAD", [1,4,1,64,110,4,0,0], [0,69,110,57], 1),
-        P("PWM PAD", [0,2,1,46,66,6,0,20], [85,85,100,90], 0), P("SID STRINGS", [1,1,1,64,60,5,0,0], [90,85,110,97], 0),
-        P("DREAM CHIP", [0,0,4,64,127,0,7,0], [70,85,100,90], 0), P("8580 PAD", [1,4,1,64,70,6,4,0], [85,90,104,97], 0),
-        P("TRI ORGAN", [1,0,2,64,127,0,7,0], [0,36,127,36], 0), P("GAME ORGAN", [0,2,3,64,127,0,7,0], [0,36,118,36], 0),
-        P("C64 KEYS", [1,6,0,58,70,4,0,20], [0,85,60,63], 0), P("SID CLAV", [1,2,0,20,40,10,1,30], [0,57,20,49], 0),
-        P("ARP PLUCK", [0,1,4,64,50,12,0,40], [0,57,0,49], 0), P("COIN PLUCK", [1,2,2,32,127,0,7,0], [0,63,0,57], 0),
-        P("BELL RING", [1,0,6,64,127,0,7,0], [0,97,0,97], 0), P("SID BRASS", [0,1,3,64,46,8,0,40], [49,78,100,63], 0),
-        P("FILTER HIT", [0,1,0,64,40,15,1,70], [0,63,0,57], 0), P("LASER FX", [1,2,5,82,96,8,0,0], [0,78,40,69], 1),
-        P("NOISE SWEEP", [0,3,0,64,40,12,1,60], [63,97,40,97], 0), P("DATA STORM", [1,3,1,64,80,10,0,40], [0,85,60,78], 0)] },
+    {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},   /* 3: SID, removed 2026-11-12; stored ID reserved */
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},   /* 5: retired VOICE; stored ID reserved */
     { name: "TRIO", titles: ["OSC", "TONE"], edit: [E("WAVE", ["SAW3", "PLS3", "PPT", "SST", "TRI3", "S&T", "P&S", "P+N", "NOIS", "SYNC",
@@ -1982,10 +1981,10 @@ function makeMockDevice(opt = {}) {
         P("DULCIMER", [1,96,90,84,24,100,0,10], [0,100,127,70], 0), P("SITAR", [1,4,80,96,30,100,0,0], [0,100,127,80], 0),
         P("BOWED STRING", [1,40,40,90,40,90,64,0], [50,100,127,80], 0), P("TIMPANI", [2,40,40,100,20,110,4,10], [0,100,127,90], 0),
         P("SYMPATHY", [3,20,50,112,90,60,0,0], [40,100,127,100], 0)] },
-    { name: "DRUM", titles: ["KIT", "HIT"], edit: [D("KIT", F.ENUM, 4, 6, 4, ["808","909","SID"]), D("TUNE", F.PCT, 0, 127, 64),
+    { name: "DRUM", titles: ["KIT", "HIT"], edit: [D("KIT", F.ENUM, 4, 5, 4, ["808","909"]), D("TUNE", F.PCT, 0, 127, 64),
         D("TONE", F.PCT, 0, 127, 64), D("DECY", F.PCT, 0, 127, 64), D("SNAP", F.PCT, 0, 127, 64), D("ACC", F.PCT, 0, 127, 100),
         E("KICK", ["PUNCH", "ROUND"], 0), D("DRV", F.PCT, 0, 127, 0)],
-      presets: [P("808 KIT", [4, 64, 64, 64, 64, 100, 0, 0], [0, 100, 127, 100], 0),P("909 KIT", [5, 64, 64, 64, 64, 100, 0, 0], [0, 100, 127, 100], 0),P("SID KIT", [6, 64, 80, 64, 64, 100, 0, 0], [0, 100, 127, 100], 0),P("SID DIGI", [6, 64, 80, 64, 64, 100, 1, 0], [0, 100, 127, 100], 0)] },
+      presets: [P("808 KIT", [4, 64, 64, 64, 64, 100, 0, 0], [0, 100, 127, 100], 0),P("909 KIT", [5, 64, 64, 64, 64, 100, 0, 0], [0, 100, 127, 100], 0)] },
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},   /* 11: retired NOISE; stored ID reserved */
     { name: "FM6", titles: ["OPS", "PATCH"], edit: [D("ALG", F.INT, 0, 32, 0), D("FB", F.INT, -7, 7, 0), D("MLVL", F.BIPCT, -64, 63, 0),
         D("MRAT", F.INT, -16, 16, 0), D("MEG", F.BIPCT, -64, 63, 0), D("VMOD", F.INT, -7, 7, 0), D("DTUN", F.PCT, 0, 127, 0),
@@ -2057,7 +2056,7 @@ function makeMockDevice(opt = {}) {
     [[36, 42, 42, 42, 38, 42, 36, 42, 36, 42, 42, 36, 38, 42, 46, 42], [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]],
   ];
   for (let op = 0; op < 4; op++) TP.push(D("ATK", F.TIME, 0, 127, 0), D("DEC", F.TIME, 0, 127, 0), D("SUS", F.PCT, 0, 127, 127), D("REL", F.TIME, 0, 127, 0), D("LVL", F.PCT, 0, 127, 127));
-  TP.push(E("CHRD", ["OFF", "DIA3", "DIA7", "MAJ", "MIN", "DOM7", "MAJ7", "MIN7", "SUS4", "POW"], 0),   /* the chord keys 81, 82 */
+  TP.push(E("CHRD", ["OFF", "DIA3", "DIA7", "MAJ", "MIN", "DOM7", "MAJ7", "MIN7", "SUS4", "POW", "SUS2", "7SUS4", "ADD9", "MAJ6"], 0),   /* the chord keys 81, 82 */
     E("VOIC", ["CLOSE", "OPEN", "INV1", "INV2", "+OCT"], 0),
     D("DEG", F.INT, 1, 12, 1));                      /* 83: QNT MPC, the degree of pad H02 */
   TP.push(...["KICK","SNARE","CLAP","HATCL","HATOP","TOM","RIM","BELL"].map(n=>D(n,F.PCT,0,127,127)));
@@ -2148,15 +2147,15 @@ function makeMockDevice(opt = {}) {
     if (a.length >= 12) x.chance = Math.min(100, a[11]);
   }
   /* a few user presets to start with; BREADBOX stored with the ACID steps (as UP_STORE would) */
-  [[0, 0, 0, "MY LEAD"], [1, FM6_E, 1, "GLASS BELL"], [2, 3, 1, "BREADBOX"], [5, 3, 2, "RUBBER BASS"]].forEach(([slot, e, p, name]) => {
+  [[0, 0, 0, "MY LEAD"], [1, FM6_E, 1, "GLASS BELL"], [2, 6, 0, "FAT BASS"], [5, 6, 9, "SUB BASS"]].forEach(([slot, e, p, name]) => {
     setEngine(e); applyPreset(p);
     if (slot === 2) loadDemo(0);
     st.bank[slot] = snapshot(name);
     clearSteps(); st.p[29] = 16;
   });
-  /* the power-on sounds (engines.c TRK_DEF): SID 26, TRIO STRING MACH, INIT SID, DRUM KIT (the reference build; FUNK BASS II
-     until the PROPHET was retired, 2026-10-22; FM6 STRINGS until 2026-10-28) */
-  [[1, 6, 6], [2, 3, 0], [3, 10, 0], [0, 3, 26]].forEach(([i, e, p]) => { st.sel = i; setEngine(e); applyPreset(p); });
+  /* the power-on sounds (engines.c TRK_DEF): FM6 KUGO HARP, KOTO WARM, FLUTE, DRUM KIT (CEDAR RAIN's, 3.5; SID's in the
+     reference build until SID was removed, 2026-11-12; FUNK BASS II until the PROPHET was retired, 2026-10-22) */
+  [[1, 12, 38], [2, 12, 20], [3, 10, 0], [0, 12, 39]].forEach(([i, e, p]) => { st.sel = i; setEngine(e); applyPreset(p); });
   /* the device powers on with its sequencers empty; the mock starts as a little demo to look at: track 1 with
      the power-on bass, track 4 with BEAT, pads left, lead right */
   st.sel = 3; loadDemo(1);
@@ -2769,6 +2768,60 @@ function devicePresetRows(info, names, preferences) {
     .filter((row) => !preferences.state.filter || row.favorite);
 }
 
+/* Finding the device's MIDI port. Tessera names its port "Tessera FM-1" (Melodee: "Melodee"), but macOS keeps the name
+   it first saw ("FM-1", from the stock firmware or an older Tessera). A port is never used for its name alone: an FM-1
+   name is only a candidate, and the editor takes it when it answers the INFO handshake. */
+const RE_TESSERA = /tessera|melodee|felucca/i, RE_FM1 = /(^|[^a-z0-9])fm-?1($|[^a-z0-9])/i;
+async function probeFm1(input, output, timeout = 300) {
+  const link = new Link((d) => output.send(d), { timeout, onUnknown: () => {} });
+  const prev = input.onmidimessage;
+  input.onmidimessage = (e) => link.receive(e.data);
+  try {
+    if (input.open) await input.open().catch(() => {});
+    parse[CMD.INFO](await link.request(req.info(), { timeout, retries: 1, quiet: true }));
+    return true;
+  } catch (e) { return false; }
+  finally { link.close(); input.onmidimessage = prev || null; }
+}
+/* -> {input, output} | {notTessera: true} (an FM-1 that does not answer) | {} (no candidate) */
+async function findDevicePorts(access, probe = probeFm1) {
+  const live = (m) => [...m.values()].filter((p) => p.state !== "disconnected");
+  const ins = live(access.inputs), outs = live(access.outputs);
+  const named = (list, re) => list.filter((p) => re.test(p.name || ""));
+  const input = named(ins, RE_TESSERA)[0], output = named(outs, RE_TESSERA)[0];
+  if (input && output) return { input, output };
+  let tried = false;
+  for (const i of named(ins, RE_FM1)) {
+    const same = named(outs, RE_FM1).filter((x) => x.name === i.name);   /* (an input and an output of one name: try each) */
+    for (const o of same.length ? same : named(outs, RE_FM1).slice(0, 1)) {
+      tried = true;
+      if (await probe(i, o)) return { input: i, output: o };
+    }
+  }
+  return tried ? { notTessera: true } : {};
+}
+
+/* #609: does request r ([cmd, args]) change what the FM-1 holds or plays? The editor sends these only while "Edit the
+   FM-1" is on (sessionRequest); the rest only read. Selecting a track (TRACK with an argument) only moves the device's
+   cursor and is a read here; a read that stops playback (BACKUP_LIST) changes no data. Unknown commands count as writes. */
+const READS = new Set([CMD.INFO, CMD.GET, CMD.DUMP, CMD.DESC, CMD.STEP_GET, CMD.NAMES, CMD.SMP_INFO, CMD.UP_LIST, CMD.UP_GET,
+  CMD.WATCH, CMD.PING, CMD.TRACK, CMD.TRACK_DUMP, CMD.UI_STATE, CMD.UI_PALETTES, CMD.FAV_GET, CMD.BACKUP_LIST, CMD.BACKUP_GET,
+  CMD.FM6_GET, CMD.FM6_LIST, CMD.STATS]);
+function writesDevice([cmd, a]) {
+  if (READS.has(cmd)) return false;
+  switch (cmd) {
+    case CMD.PROJECT: return a[0] !== 2;                      /* 2 asks whether a slot is used; 0 loads, 1 saves */
+    case CMD.TRACK_MIX: return a.length !== 1;
+    case CMD.TRACK_STEP: return a.length !== 2;
+    case CMD.TRACK_PARAM: return a.length !== 2;
+    case CMD.SONG: case CMD.BANK_SONG: return a[0] !== 0;
+    case CMD.PATTERN: return a[1] !== 0;
+    case CMD.MOTION: return a.length !== 1;
+    case CMD.NATIVE: return ![0, 1, 7].includes(a[1]);        /* 0 lists, 1 reads a slot, 7 a track's user preset */
+    case CMD.TUNE: return a[0] !== 0 && a[0] !== 1;           /* 0 the list, 1 a table */
+    default: return true;
+  }
+}
 /*PROTO-END*/
 
 /* ===================================================================== UI === */
@@ -2827,6 +2880,7 @@ function setLabel(e, txt) { e.replaceChildren(...(e.dataset.ic ? [icon(e.dataset
 
 const TEXT = {
   ja: {
+    pattern: "パターン", presetPool: "プリセット集", poolGeneral: "一般プリセット", poolFm6: "FM6 ボイス", nativeHint: "ネイティブ音色はプリセットブラウザに表示されます。読み込んでもエフェクトとトラック設定は変わりません。", importSyx: ".syx を読み込む", recTitle: "録音", recHelp: "クリック、カウントイン、停止中のノート編集。REC で待機、PLAY で録音開始。", favLocal: "お気に入りはこのブラウザに保存されます", poolFirst: "先に対応するプリセット集を選んでください", poolTrack: "先に現在のトラックのプリセット集を選んでください",
     tabFm6: "6-OP FM", fm6Help: "FM6 の音色を編集・SysEx から読み込み、トラックへ送ります。ユーザープリセットまたはプロジェクトへ保存すると、音色全体が保存されます。",
     fm6Source: "音色の出し入れ", fm6ReadBtn: "トラックから読む", fm6SendBtn: "トラックへ送る", fm6Live: "編集しながら送る",
     fm6StoreBtn: "バンクに保存", fm6Import: "SysEx を読み込む", fm6Export: "SysEx に書き出し", fm6BankExport: "バンクを SysEx に書き出し",
@@ -2844,6 +2898,7 @@ const TEXT = {
     chkTempo: "TEMPO へのゆっくりしたモッド", chkMidi: "SOUND OFF トラック：MIDI のみ（TRANSPOSE -24）とモッド用レーン",
     chkCpu: "ORACLE 4 トラック：設定 > 動作状態 を見る",
     demosTitle: "デモ・プロジェクト", demosHelp: "Tessera のデモ曲を選んだスロットへ書き込みます。そのスロットのプロジェクトは置き換わり、ほかは変わりません。残したい場合は先にバックアップを保存してください。", demosPut: "FM-1 に書き込む", demosNone: "スロットを選んでください", demosTwice: "同じスロットは一度だけ選べます", demosSkip: "書き込まない",
+    pfTitle: "プロジェクト・ファイル", pfHelp: "スロットのプロジェクトを .tsp ファイルとして保存、または .tsp ファイルをスロットへ。Webシミュレーターと同じファイルです。書き込んだら SAVE > PROJECT から読み込みます。読み書きの間、再生は止まります。", pfSave: "ファイルに保存", pfLoad: "ファイルを読み込む", pfEmpty: "このスロットは空です", pfSaved: "保存しました: ", pfNotTsp: "Tessera のプロジェクト・ファイル（.tsp）ではありません: ", pfReplace: "スロット {s} の {old} を {new} に置き換えますか？", pfWorking: "プロジェクトを書き込み中 ", pfDone: "スロット {s} に書き込みました。SAVE > PROJECT から読み込めます: ",
     demosConfirm: "次のデモを書き込みますか？", demosWas: "現在", demosEmpty: "空き", demosOld: "読めない古い形式のプロジェクト", demosUnnamed: "名前なしのプロジェクト", demosKeep: "置き換えるプロジェクトを残したい場合は、キャンセルして先にバックアップを保存してください。", demosWorking: "デモを書き込み中 ", demosDone: "デモを書き込みました。SAVE > PROJECT から読み込めます: ", demosFetch: "デモ・ファイルを読み込めません: ",
     demoStill: "アンビエント: ORACLE のドローン、GRAVITY、FILTER を通る FALL、STEP を種にしたベース", demoKoto: "HIRA の FM 箏が QUAD で 2 列、FORM で育つ ORACLE の笛、条件付きステップの木魚", demoHarbour: "アンビエント・ダブ: ORACLE のコードがエコーへ、サブベース、909 のワンドロップ",
     demoLight: "ドローン: 一度だけ鳴らす TRIO の五度、TIDE で動く風、ORACLE の合唱、ときどき立ち上がる SOFT SWELL（15 分の WAVES）",
@@ -2873,7 +2928,11 @@ const TEXT = {
     deviceRejected: "本体がこの設定を受け付けませんでした。",
     devicePending: "反映しました。再生を停止すると保存されます。",
 
-    other: "English", connect: "接続", disconnect: "切断", mock: "モック（実機なし）",
+    connect: "接続", disconnect: "切断", mock: "モック（実機なし）",
+    editOn: "FM-1 を編集", readOnly: "読み取り専用：「FM-1 を編集」をオンにするまで FM-1 には何も書き込みません。",
+    editBlocked: "送っていません：FM-1 を変えるには「FM-1 を編集」をオンにしてください。",
+    editBackupAsk: "編集の前に、FM-1 の中身をすべてこのコンピューターにバックアップしますか？ OK でバックアップファイルを保存してから編集をオンにします。キャンセルでバックアップなしでオンにします。",
+    editOnSaid: "編集オン：ここでの変更は FM-1 に送られます。",
     sound: "音色", engine: "エンジン", presets: "プリセット", initSound: "音色を初期化",
     track: "トラック",
     saveFile: "ファイルに保存", loadFile: "ファイルを読み込む", projects: "プロジェクト",
@@ -2884,7 +2943,8 @@ const TEXT = {
     foot: "Chrome か Edge で使えます。", iconsCredit: "アイコン: Fukiai（MIT）Hügelton Instruments",
     nomidi: "このブラウザでは使えません。Chrome か Edge で開いてください。",
     denied: "MIDI（SysEx）の使用が許可されませんでした。",
-    nodevice: "Tessera が見つかりません。FM-1 を USB で接続して、もう一度押してください。",
+    nodevice: "Tessera が見つかりません。FM-1 を USB で接続して、もう一度押してください。Mac では古いポート名が残っていることがあります。Audio MIDI 設定でデバイス名を変更するか、挿し直してください。",
+    notessera: "この FM-1 では Tessera が動いていません。Tessera インストーラー（下のリンク）で入れてから、もう一度押してください。",
     connecting: "接続中", reading: "読み込み中 ", steploading: "ステップを読み込み中 ",
     ready: "接続しました", disconnected: "切断されました", lost: "Tessera が外されました",
     noreply: "応答がありません", error: "エラー: ", busy: "処理中",
@@ -2939,11 +2999,15 @@ const TEXT = {
     healthCpu: "CPU 負荷", healthWorst: "最悪の半バッファ（期限に対して）", healthLate: "遅れた半バッファ · 期限超過",
     healthVoices: "発音中 · 保持中のボイス", healthShed: "間引き · 断念 · 奪われたボイス", healthShedTracks: "間引き、トラック 1 · 2 · 3 · 4",
     healthCore1: "第 2 コア 稼働 · タイムアウト · フォールト", healthMemory: "オーディオメモリ、ピーク", healthStack: "スタック、メイン · 割り込み",
+    healthUsbOut: "USB → コンピュータ（Tessera Out）：送信中 · バッファ", healthUsbOutErr: "USB → コンピュータ：アンダーラン · オーバーラン",
+    healthUsbIn: "コンピュータ → USB（Tessera In）：受信中 · バッファ", healthUsbInErr: "コンピュータ → USB：アンダーラン · オーバーラン",
+    healthUsbPackets: "USB 欠落フレーム · 不正パケット", healthUsbTime: "USB 処理の最悪値 · 最長間隔",
     yes: "はい", no: "いいえ",
     system: "システム", firmware: "ファームウェア", sync: "同期", tracksN: "トラック", stepsN: "ステップ数", enginesL: "エンジン",
     smpSlots: "サンプルスロット", userBank: "ユーザープリセット", none: "なし",
   },
   en: {
+    pattern: "Pattern", presetPool: "Preset collection", poolGeneral: "General presets", poolFm6: "FM6 voices", nativeHint: "Native tones appear in the preset browser. Effects and track settings stay unchanged when loaded.", importSyx: "Import .syx", recTitle: "Recording", recHelp: "Click, count-in and stopped note editing. REC arms; PLAY starts recording.", favLocal: "Favorites are saved in this browser", poolFirst: "Select the matching preset collection first", poolTrack: "Select the current track's preset collection first",
     tabFm6: "6-OP FM", fm6Help: "Edit an FM6 voice, or import a SysEx file and pick a voice. Send it to a track, then save it in User presets or save the project. Each preset keeps its whole voice.",
     fm6Source: "Patches in and out", fm6ReadBtn: "Read from track", fm6SendBtn: "Send to track", fm6Live: "Send while editing",
     fm6StoreBtn: "Store in bank", fm6Import: "Import SysEx", fm6Export: "Export SysEx", fm6BankExport: "Export bank as SysEx",
@@ -2961,6 +3025,7 @@ const TEXT = {
     chkTempo: "A slow mod onto TEMPO", chkMidi: "SOUND OFF tracks: MIDI only (TRANSPOSE -24) and a mod lane",
     chkCpu: "Four ORACLE tracks: watch Settings > Health",
     demosTitle: "Demo projects", demosHelp: "Put Tessera's demo songs into the slots you choose. Each chosen slot's project is replaced; nothing else on the FM-1 changes. Save a backup first if you want to keep what is there.", demosPut: "Put on the FM-1", demosNone: "Choose a slot for at least one demo", demosTwice: "Choose each slot only once", demosSkip: "Leave out",
+    pfTitle: "Project files", pfHelp: "Save a slot's project as a .tsp file, or put a .tsp file into a slot: the same file the web simulator saves and loads. Load it on the FM-1 from SAVE > PROJECT. Playback stops while the slot is read or written.", pfSave: "Save as file", pfLoad: "Load a file", pfEmpty: "This slot is empty", pfSaved: "Saved: ", pfNotTsp: "Not a Tessera project file (.tsp): ", pfReplace: "Replace slot {s} ({old}) with {new}?", pfWorking: "Putting the project on the FM-1 ", pfDone: "Written to slot {s}. Load it from SAVE > PROJECT: ",
     demosConfirm: "Put these demos on the FM-1?", demosWas: "now", demosEmpty: "empty", demosOld: "a project in an older format", demosUnnamed: "a project with no name", demosKeep: "To keep a project that will be replaced, cancel and save a backup first.", demosWorking: "Putting the demos on the FM-1 ", demosDone: "Demos written. Load them from SAVE > PROJECT: ", demosFetch: "Could not read the demo file: ",
     demoStill: "Ambient: an ORACLE drone, GRAVITY, FALL through the FILTER effect, a bass from STEP as seed", demoKoto: "FM koto in HIRA on two QUAD rows, an ORACLE flute in a FORM that develops, a mokugyo with conditions", demoHarbour: "Ambient dub: ORACLE chord stabs into a drifting echo, a sub bass, a 909 one drop",
     demoLight: "Drone: a TRIO fifth struck once and held, a wind a TIDE moves, an ORACLE choir, a SOFT SWELL rising now and then (15 minutes in WAVES)",
@@ -2990,7 +3055,11 @@ const TEXT = {
     deviceRejected: "The device rejected that setting.",
     devicePending: "Applied. Settings will save when playback stops.",
 
-    other: "日本語", connect: "Connect", disconnect: "Disconnect", mock: "Mock device (no hardware)",
+    connect: "Connect", disconnect: "Disconnect", mock: "Mock device (no hardware)",
+    editOn: "Edit the FM-1", readOnly: "Read-only: nothing is written to the FM-1 until you switch on Edit the FM-1.",
+    editBlocked: "Not sent: switch on Edit the FM-1 to change the FM-1.",
+    editBackupAsk: "Before you edit: save a backup of everything on the FM-1 to this computer? OK saves the backup file first, then turns editing on. Cancel turns editing on without one.",
+    editOnSaid: "Editing on: changes here go to the FM-1.",
     sound: "Sound", engine: "Engine", presets: "Presets", initSound: "Init sound",
     track: "Track",
     saveFile: "Save to file", loadFile: "Load file", projects: "Projects",
@@ -3001,7 +3070,8 @@ const TEXT = {
     foot: "Works in Chrome or Edge.", iconsCredit: "Icons: Fukiai (MIT), Hügelton Instruments",
     nomidi: "This browser cannot do it. Open the page in Chrome or Edge.",
     denied: "MIDI (SysEx) access was not allowed.",
-    nodevice: "Tessera not found. Connect the FM-1 by USB and press Connect again.",
+    nodevice: "Tessera not found. Connect the FM-1 by USB and press Connect again. On a Mac an old port name may be cached: rename the device in Audio MIDI Setup, or replug it.",
+    notessera: "This FM-1 isn't running Tessera. Install it with the Tessera installer (link below), then press Connect again.",
     connecting: "Connecting", reading: "Reading ", steploading: "Reading steps ",
     ready: "Connected", disconnected: "Disconnected", lost: "Tessera was unplugged",
     noreply: "No reply from the device", error: "Error: ", busy: "Busy",
@@ -3056,20 +3126,2038 @@ const TEXT = {
     healthCpu: "CPU load", healthWorst: "Worst half (of its deadline)", healthLate: "Late halves · deadline misses",
     healthVoices: "Voices sounding · held", healthShed: "Voices shed · given up · stolen", healthShedTracks: "Shed, tracks 1 · 2 · 3 · 4",
     healthCore1: "Second core on · timeouts · faults", healthMemory: "Audio memory, peak", healthStack: "Stack, main · interrupts",
+    healthUsbOut: "USB to computer (Tessera Out): on · buffer", healthUsbOutErr: "USB to computer: underruns · overruns",
+    healthUsbIn: "Computer to USB (Tessera In): on · buffer", healthUsbInErr: "Computer to USB: underruns · overruns",
+    healthUsbPackets: "USB missed frames · bad packets", healthUsbTime: "USB service, worst · longest gap",
     yes: "yes", no: "no",
     system: "System", firmware: "Firmware", sync: "Sync", tracksN: "Tracks", stepsN: "Steps", enginesL: "Engines",
     smpSlots: "Sample slots", userBank: "User presets", none: "none",
   },
+  es: {
+    tabFm6: "FM 6-OP",
+    fm6Help: "Edita una voz FM6, o importa un archivo SysEx y elige una voz. Envíala a una pista y luego guárdala en Presets de usuario o guarda el proyecto. Cada preset conserva su voz completa.",
+    fm6Source: "Entrada y salida de patches",
+    fm6ReadBtn: "Leer de la pista",
+    fm6SendBtn: "Enviar a la pista",
+    fm6Live: "Enviar mientras editas",
+    fm6StoreBtn: "Guardar en el banco",
+    fm6Import: "Importar SysEx",
+    fm6Export: "Exportar SysEx",
+    fm6BankExport: "Exportar banco como SysEx",
+    fm6Init: "Voz inicial",
+    fm6Voice: "Voz",
+    fm6Ops: "Operadores",
+    fm6Carriers: "portadoras",
+    fm6Feedback: "realimentación",
+    fm6PitchEg: "EG de afinación",
+    fm6Freq: "Frecuencia",
+    fm6Legend: "R1..R4 / L1..L4: velocidades y niveles de la EG; BP LD RD LC RC: escalado de nivel por teclado; RS: escalado de velocidad; AMS: modulación de amplitud por LFO; KVS: velocidad de pulsación; OL: nivel de salida; MODE: ratio / fija; FC FF: frecuencia gruesa / fina; DET: desafinación (7 = centro). ● = portadora.",
+    fm6Pick: "Voces del archivo importado (haz clic para editar):",
+    fm6Picked: "Editando:",
+    fm6Sent: "Enviado a la pista",
+    fm6Read: "Leído de la pista",
+    fm6Loaded: "Cargado",
+    fm6Factory: "F1..F24 son los patches de fábrica: elige B1..B32.",
+    fm6BadSum: "una suma de comprobación no coincide",
+    fm6Exported: "Banco exportado",
+    motion: "Movimiento",
+    motionOn: "Reproducir movimiento",
+    motionClear: "Borrar movimiento",
+    motionConfirm: "¿Borrar el movimiento de esta pista?",
+    chance: "Probabilidad %",
+    motionStep: "Paso",
+    motionParam: "Parámetro",
+    motionValue: "Valor",
+    backupTitle: "Copia de seguridad completa",
+    backupExport: "Guardar copia",
+    backupImport: "Restaurar copia",
+    backupHelp: "Guarda en este ordenador la música actual, A–D, los bancos de sonidos y los ajustes.",
+    backupOld: "Las copias completas necesitan un firmware con soporte de archivo.",
+    backupConfirm: "¿Restaurar esta copia de seguridad completa? Se sustituirán la música actual, los datos guardados y las muestras. Mantén el USB conectado.",
+    backupWorking: "Haciendo copia / restaurando ",
+    backupDone: "Copia guardada",
+    backupRestored: "Copia completa restaurada",
+    demosChecks: "Proyectos de prueba, para las comprobaciones en el aparato (demos/checks/README.md):",
+    chkChain: "CHAIN ABAC, frases de 4 compases: todas las pistas cambian de sección a la vez",
+    chkEntries: "ENTRIES 50 sobre esa CHAIN: las pistas se desvanecen y vuelven a entrar",
+    chkPiece: "PIECE: 2 minutos, ARCH, y luego se detiene",
+    chkMods: "Un mod de un mod, un mod de GATE, un mod sobre FILL",
+    chkTempo: "Un mod lento sobre TEMPO",
+    chkMidi: "Pistas con SOUND OFF: solo MIDI (TRANSPOSE -24) y un carril de mod",
+    chkCpu: "Cuatro pistas ORACLE: observa Ajustes > Salud",
+    demosTitle: "Proyectos de demostración",
+    demosHelp: "Pon las canciones de demostración de Tessera en las ranuras que elijas. Se sustituye el proyecto de cada ranura elegida; nada más cambia en el FM-1. Guarda antes una copia si quieres conservar lo que hay.",
+    demosPut: "Poner en el FM-1",
+    demosNone: "Elige una ranura para al menos una demo",
+    demosTwice: "Elige cada ranura solo una vez",
+    demosSkip: "Omitir",
+    pfTitle: "Archivos de proyecto",
+    pfHelp: "Guarda el proyecto de una ranura como archivo .tsp, o pon un archivo .tsp en una ranura: el mismo archivo que guarda y carga el simulador web. Cárgalo en el FM-1 desde SAVE > PROJECT. La reproducción se detiene mientras se lee o escribe la ranura.",
+    pfSave: "Guardar como archivo",
+    pfLoad: "Cargar un archivo",
+    pfEmpty: "Esta ranura está vacía",
+    pfSaved: "Guardado: ",
+    pfNotTsp: "No es un archivo de proyecto de Tessera (.tsp): ",
+    pfReplace: "¿Sustituir la ranura {s} ({old}) por {new}?",
+    pfWorking: "Poniendo el proyecto en el FM-1 ",
+    pfDone: "Escrito en la ranura {s}. Cárgalo desde SAVE > PROJECT: ",
+    demosConfirm: "¿Poner estas demos en el FM-1?",
+    demosWas: "ahora",
+    demosEmpty: "vacía",
+    demosOld: "un proyecto en un formato anterior",
+    demosUnnamed: "un proyecto sin nombre",
+    demosKeep: "Para conservar un proyecto que se va a sustituir, cancela y guarda antes una copia.",
+    demosWorking: "Poniendo las demos en el FM-1 ",
+    demosDone: "Demos escritas. Cárgalas desde SAVE > PROJECT: ",
+    demosFetch: "No se pudo leer el archivo de demo: ",
+    demoStill: "Ambient: un drone ORACLE, GRAVITY, FALL a través del efecto FILTER, un bajo de STEP como semilla",
+    demoKoto: "Koto FM en HIRA sobre dos filas de QUAD, una flauta ORACLE en una FORM que evoluciona, un mokugyo con condiciones",
+    demoHarbour: "Dub ambient: golpes de acordes ORACLE en un eco a la deriva, un subgrave, un 909 one drop",
+    demoLight: "Drone: una quinta TRIO tocada una vez y sostenida, un viento que mueve un TIDE, un coro ORACLE, un SOFT SWELL que crece de vez en cuando (15 minutos en WAVES)",
+    demoCedar: "Cuerdas pulsadas en KUMOI: un arpa KUGO en TURING, un koto en EUCLID, una flauta MARKOV, toms 808 que varía ADORN; la CHAIN cambia de tonalidad",
+    demoUndertow: "Pregunta y respuesta en re menor: una melodía STEP que ANSWER toma como SOURCE y responde una y otra vez, acordes menores (Dm Bb Gm Am) y un subgrave",
+    demoEmber: "Drone: una quinta que nunca se mueve, un ciclo STEP tipo tanpura, una flauta MARKOV que cambia con el AABA de la CHAIN (una PIECE de 20 minutos)",
+    demoKites: "Bucles de distintas longitudes: un arpa en 11 corcheas y teclas ORACLE en 13 que se encuentran distinto cada vez, un pad MORPH, estrellas CONSTELLATION agudas (30 minutos en WAVES)",
+    deviceDisplay: "Pantalla del aparato",
+    deviceDisplayHelp: "Los cambios se aplican a la pantalla del FM-1 y se guardan. Los cambios hechos durante la reproducción se guardan tras STOP.",
+    devicePresets: "Presets del aparato",
+    deviceFavHelp: "Las estrellas y el filtro de favoritos se sincronizan con el FM-1. Guarda los sonidos de la biblioteca del ordenador en una ranura de usuario del aparato antes de marcarlos.",
+    deviceList: "Mostrar",
+    deviceAll: "Todos los presets",
+    deviceFavorites: "Solo favoritos",
+    deviceEmpty: "Aún no hay favoritos. Elige Todos los presets para añadir alguno.",
+    deviceTheme: "Tema",
+    deviceFont: "Fuente",
+    deviceMonitor: "Monitor MIDI",
+    deviceRegular: "Normal",
+    deviceBold: "Negrita",
+    deviceOff: "Apagado",
+    deviceEvents: "Eventos",
+    deviceNotes: "Notas / acordes sostenidos",
+    deviceStar: "Añadir a favoritos",
+    deviceUnstar: "Quitar de favoritos",
+    deviceUnsaved: "Aplicado, pero no se pudo guardar en el aparato. Inténtalo de nuevo.",
+    deviceRejected: "El aparato rechazó ese ajuste.",
+    devicePending: "Aplicado. Los ajustes se guardarán cuando se detenga la reproducción.",
+    connect: "Conectar",
+    disconnect: "Desconectar",
+    mock: "Aparato simulado (sin hardware)",
+    editOn: "Editar el FM-1", readOnly: "Solo lectura: no se escribe nada en el FM-1 hasta que actives Editar el FM-1.",
+    editBlocked: "No enviado: activa Editar el FM-1 para cambiar el FM-1.",
+    editBackupAsk: "Antes de editar: ¿guardar en este ordenador una copia de seguridad de todo lo que hay en el FM-1? Aceptar guarda primero el archivo de copia y luego activa la edición. Cancelar activa la edición sin copia.",
+    editOnSaid: "Edición activada: los cambios de aquí van al FM-1.",
+    sound: "Sonido",
+    engine: "Motor",
+    presets: "Presets",
+    initSound: "Sonido inicial",
+    track: "Pista",
+    saveFile: "Guardar en archivo",
+    loadFile: "Cargar archivo",
+    projects: "Proyectos",
+    load: "Cargar",
+    save: "Guardar",
+    used: "en uso",
+    empty: "vacía",
+    unknown: "—",
+    steps: "Pasos",
+    reload: "Recargar",
+    clearSeq: "Borrar secuencia",
+    notesHelp: "Escribe notas como C4 E4 G4 (hasta 4, C4 = 60). Los golpes son carriles DRUM: KICK >SNARE HATCL (> = acento).",
+    notes: "Notas",
+    hits: "Golpes",
+    time: "Tiempo",
+    acc: "Acento",
+    slide: "Slide",
+    vel: "Velocidad",
+    foot: "Funciona en Chrome o Edge.",
+    iconsCredit: "Iconos: Fukiai (MIT), Hügelton Instruments",
+    nomidi: "Este navegador no puede hacerlo. Abre la página en Chrome o Edge.",
+    denied: "No se permitió el acceso MIDI (SysEx).",
+    nodevice: "No se encontró Tessera. Conecta el FM-1 por USB y pulsa Conectar otra vez. En un Mac puede quedar guardado un nombre de puerto antiguo: renombra el aparato en Configuración de Audio MIDI o vuelve a conectarlo.",
+    notessera: "Este FM-1 no tiene Tessera. Instálalo con el instalador de Tessera (enlace abajo) y pulsa Conectar otra vez.",
+    connecting: "Conectando",
+    reading: "Leyendo ",
+    steploading: "Leyendo pasos ",
+    ready: "Conectado",
+    disconnected: "Desconectado",
+    lost: "Tessera se desconectó",
+    noreply: "El aparato no responde",
+    error: "Error: ",
+    busy: "Ocupado",
+    applying: "Escribiendo ",
+    applied: "Cargado",
+    badfile: "No se puede leer el archivo: ",
+    savedSlot: "Guardado en la ranura ",
+    loadedSlot: "Cargada la ranura ",
+    emptySlot: "Ranura vacía: ",
+    confirmSave: "¿Sobrescribir la ranura {n}?",
+    confirmLoad: "¿Cargar la ranura {n}? Se sustituyen los sonidos y secuencias de las cuatro pistas (no se puede deshacer).",
+    confirmClear: "¿Borrar toda la secuencia?",
+    confirmInit: "¿Restablecer el sonido a los valores del motor? La secuencia se mantiene (mantén EDIT en el aparato para deshacer).",
+    samples: "Muestras",
+    smpHelp: "Elige archivos o graba una entrada. Arrastra los extremos de la onda para recortar; rueda para hacer zoom. Hasta 16 sonidos y unos 7 s por ranura.",
+    zones: "zonas",
+    smpName: "Nombre",
+    chooseFiles: "Elegir archivos",
+    upload: "Subir",
+    erase: "Borrar",
+    clearList: "Vaciar lista",
+    file: "Archivo",
+    root: "Raíz",
+    keys: "Teclas",
+    length: "Duración",
+    remove: "Quitar",
+    record: "Grabar",
+    stopRec: "Parar",
+    recInput: "Entrada",
+    recDenied: "No se puede grabar",
+    recFull: "La ranura está llena",
+    recSilent: "Silencio: comprueba la entrada",
+    preview: "Escuchar",
+    autoTrim: "Recorte automático",
+    trim: "Recortar",
+    smpTooBig: "demasiado grande",
+    smpDecodeFail: "No se puede leer: ",
+    smpUploading: "Subiendo USR",
+    smpDone: "Subido USR",
+    smpFail: "Falló la subida de la muestra: ",
+    smpErased: "Borrado USR",
+    confirmErase: "¿Borrar USR{n}?",
+    confirmUpload: "¿Escribir en USR{n}? Se sustituirá su contenido actual.",
+    layout: "(El firmware tiene otro número de parámetros; se muestra una lista simple.)",
+    ctlHelp: "Deslizadores: haz clic y ajusta con la rueda o las flechas (Mayús: pasos de 10); doble clic para restablecer.",
+    live: "● En vivo",
+    polling: "○ Consultando (firmware antiguo)",
+    library: "Biblioteca",
+    libSearch: "Buscar nombre o etiqueta",
+    allEngines: "Todos los motores",
+    allTags: "Todas las etiquetas",
+    sortModified: "Cambiados recientemente",
+    sortCreated: "Añadidos recientemente",
+    sortName: "Nombre",
+    sortEngine: "Motor",
+    name: "Nombre",
+    tagsCol: "Etiquetas",
+    date: "Cambiado",
+    audition: "Escuchar",
+    toSlot: "A ranura del aparato",
+    rename: "Renombrar",
+    tags: "Etiquetas",
+    duplicate: "Duplicar",
+    delete: "Eliminar",
+    exportPatch: "Exportar",
+    saveToLib: "Guardar el sonido actual",
+    import: "Importar",
+    exportLib: "Exportar biblioteca",
+    factoryToLib: "Copiar a la biblioteca",
+    libEmpty: "La biblioteca está vacía. Añade sonidos con \"Guardar el sonido actual\", copiando un preset de fábrica o una ranura del aparato, o importando un archivo.",
+    noMatch: "Sin resultados",
+    noLibDB: "(este navegador no puede guardarla: se pierde al recargar)",
+    bank: "Presets de usuario del aparato",
+    bankLoad: "Cargar",
+    bankStore: "Guardar el sonido actual",
+    bankGet: "A la biblioteca",
+    exportBank: "Exportar banco",
+    dndHelp: "También puedes arrastrar entre la biblioteca y las ranuras.",
+    confirmOverwriteRange: "No hay suficientes ranuras vacías. ¿Sobrescribir las {n} ranuras {from}–{to} ({used} en uso)?",
+    confirmOverwrite: "¿Sobrescribir la ranura {n} ({name})?",
+    confirmEraseSlot: "¿Borrar la ranura {n} ({name})?",
+    confirmDelete: "¿Eliminar \"{name}\" de la biblioteca?",
+    promptName: "Nombre (el aparato guarda 12 caracteres ASCII)",
+    promptTags: "Etiquetas (separadas por comas)",
+    promptNameAuto: "Nombre (12 caracteres ASCII; vacío: lo nombra el aparato)",
+    auditioning: "Preparando la escucha ",
+    auditioned: "Escuchando (solo el sonido, la secuencia se mantiene; mantén EDIT en el aparato para deshacer): ",
+    savedLib: "Guardado en la biblioteca: ",
+    copiedLib: "Copiado a la biblioteca: ",
+    imported: "Importado: ",
+    skippedN: " ({n} ilegibles)",
+    patchesN: " patches",
+    putDone: "Escrito en el aparato: ranura ",
+    storedSlot: "Guardado en el aparato: ranura ",
+    erasedSlot: "Borrada la ranura ",
+    loadedUser: "Sonido cargado (la secuencia se mantiene; su patrón está en el aparato en SEQ > PHRASES; mantén EDIT para deshacer): ",
+    reloaded: "El sonido cambió en el aparato: leído de nuevo",
+    readingBank: "Leyendo las ranuras",
+    badEngine: "Este firmware no tiene ese motor: ",
+    flashFail: "Falló la escritura (rc {rc})",
+    installer: "Instalador de Tessera",
+    tabSeq: "Secuenciador",
+    tabTracks: "Pistas",
+    tabSettings: "Ajustes",
+    needDevice: "Conecta el FM-1 para editar.",
+    smpNone: "Este firmware no tiene ranuras de muestras de usuario.",
+    bankConnect: "Conecta el FM-1 para ver también sus presets de usuario.",
+    bankNone: "Este firmware no tiene presets de usuario.",
+    mixer: "Mezclador",
+    mixHelp: "Las cuatro pistas de la página MIXER del aparato. El fader es el nivel. El panorama se escribe en cualquier pista sin cambiar la selección. REC indica una pista armada para grabar en directo en el aparato.",
+    level: "Nivel",
+    pan: "Pan",
+    mute: "Silencio",
+    rec: "REC",
+    selectTrack: "Seleccionar",
+    selectedTrack: "Seleccionada",
+    projHelp: "Un proyecto guarda los sonidos y patrones de las cuatro pistas, la cadena de la canción, la pista seleccionada y los ajustes globales.",
+    tuneTitle: "Afinaciones (Scala)",
+    tuneHelp: "Lee un archivo Scala .scl y envíalo a una de cuatro ranuras. Las afinaciones se guardan con el proyecto. Elige una en el aparato (SCL > SCALES, USER) o tócala desde aquí. ROOT es el grado 0; los mapas .kbm no se usan.",
+    tuneLoad: "Cargar .scl",
+    tunePlay: "Tocar",
+    tuneOff: "Afinación desactivada (la escala de SCL)",
+    tuneNotes: "notas",
+    tuneFolded: "plegada en el periodo, repeticiones descartadas",
+    tuneRefused: "El FM-1 rechazó esta afinación",
+    tuneReplace: "¿Sustituir {old} en USR{n}?",
+    tuneClearConfirm: "¿Borrar USR{n}?",
+    slot: "Ranura",
+    songTitle: "Canción",
+    songHelp: "Ordena patrones de ranuras guardadas y elige sus repeticiones. Los sonidos actuales se mantienen. Guarda un proyecto arriba para conservar la cadena. Las filas cambian al final de la pista 1; la canción se detiene al final.",
+    songAdd: "Añadir fila",
+    songRemove: "Quitar la última fila",
+    songPlay: "Reproducir desde el inicio",
+    songStop: "Parar",
+    songReps: "repeticiones",
+    songEmpty: "Añade antes una fila",
+    songBusy: "Para antes de editar",
+    songInvalid: "Comprueba ranuras y repeticiones",
+    songPlaying: "Reproduciendo la fila",
+    songSaved: "Cadena cambiada. Guarda un proyecto para conservarla.",
+    health: "Salud",
+    healthHelp: "Los contadores del propio FM-1, leídos una vez por segundo mientras LIVE está activo: lo que hay que mirar al probar la CPU. Los peores tiempos cuentan desde el encendido o RESET. Un valor mostrado invertido indica que es probable un chasquido o una voz cortada.",
+    healthLive: "En vivo",
+    healthStop: "Parar",
+    healthReset: "Reiniciar peores",
+    healthSchema: "Esquema",
+    healthOld: "La respuesta de este firmware tiene otra estructura.",
+    healthNone: "Sin respuesta: este firmware se compiló sin los contadores (audio USB desactivado).",
+    healthCpu: "Carga de CPU",
+    healthWorst: "Peor mitad (de su plazo)",
+    healthLate: "Mitades tardías · plazos incumplidos",
+    healthVoices: "Voces sonando · sostenidas",
+    healthShed: "Voces descartadas · abandonadas · robadas",
+    healthShedTracks: "Descartadas, pistas 1 · 2 · 3 · 4",
+    healthCore1: "Segundo núcleo activo · tiempos agotados · fallos",
+    healthMemory: "Memoria de audio, pico",
+    healthStack: "Pila, principal · interrupciones",
+    healthUsbOut: "USB al ordenador (Tessera Out): activo · búfer",
+    healthUsbOutErr: "USB al ordenador: subdesbordamientos · desbordamientos",
+    healthUsbIn: "Ordenador a USB (Tessera In): activo · búfer",
+    healthUsbInErr: "Ordenador a USB: subdesbordamientos · desbordamientos",
+    healthUsbPackets: "Tramas USB perdidas · paquetes erróneos",
+    healthUsbTime: "Servicio USB, peor · mayor hueco",
+    yes: "sí",
+    no: "no",
+    system: "Sistema",
+    firmware: "Firmware",
+    sync: "Sincronía",
+    tracksN: "Pistas",
+    stepsN: "Pasos",
+    enginesL: "Motores",
+    smpSlots: "Ranuras de muestras",
+    userBank: "Presets de usuario",
+    none: "ninguno",
+    pattern: "Patrón",
+    presetPool: "Colección de presets",
+    poolGeneral: "Presets generales",
+    poolFm6: "Voces FM6",
+    nativeHint: "Los tonos nativos aparecen en el navegador de presets. Los efectos y los ajustes de pista no cambian al cargarlos.",
+    importSyx: "Importar .syx",
+    recTitle: "Grabación",
+    recHelp: "Clic, cuenta atrás y edición de notas en parada. REC arma; PLAY empieza a grabar.",
+    favLocal: "Los favoritos se guardan en este navegador",
+    poolFirst: "Elige antes la colección de presets correspondiente",
+    poolTrack: "Elige antes la colección de presets de la pista actual",
+  },
+  it: {
+    tabFm6: "FM 6-OP",
+    fm6Help: "Modifica una voce FM6, oppure importa un file SysEx e scegli una voce. Inviala a una traccia, poi salvala nei Preset utente o salva il progetto. Ogni preset conserva la sua voce completa.",
+    fm6Source: "Patch in entrata e in uscita",
+    fm6ReadBtn: "Leggi dalla traccia",
+    fm6SendBtn: "Invia alla traccia",
+    fm6Live: "Invia durante la modifica",
+    fm6StoreBtn: "Salva nel banco",
+    fm6Import: "Importa SysEx",
+    fm6Export: "Esporta SysEx",
+    fm6BankExport: "Esporta banco come SysEx",
+    fm6Init: "Voce iniziale",
+    fm6Voice: "Voce",
+    fm6Ops: "Operatori",
+    fm6Carriers: "portanti",
+    fm6Feedback: "feedback",
+    fm6PitchEg: "EG di intonazione",
+    fm6Freq: "Frequenza",
+    fm6Legend: "R1..R4 / L1..L4: velocità e livelli dell'EG; BP LD RD LC RC: scalatura del livello sulla tastiera; RS: scalatura della velocità; AMS: modulazione d'ampiezza dall'LFO; KVS: dinamica; OL: livello d'uscita; MODE: rapporto / fissa; FC FF: frequenza grossa / fine; DET: detune (7 = centro). ● = portante.",
+    fm6Pick: "Voci del file importato (clicca per modificare):",
+    fm6Picked: "In modifica:",
+    fm6Sent: "Inviato alla traccia",
+    fm6Read: "Letto dalla traccia",
+    fm6Loaded: "Caricato",
+    fm6Factory: "F1..F24 sono le patch di fabbrica: scegli B1..B32.",
+    fm6BadSum: "un checksum non corrisponde",
+    fm6Exported: "Banco esportato",
+    motion: "Movimento",
+    motionOn: "Riproduci movimento",
+    motionClear: "Cancella movimento",
+    motionConfirm: "Cancellare il movimento di questa traccia?",
+    chance: "Probabilità %",
+    motionStep: "Passo",
+    motionParam: "Parametro",
+    motionValue: "Valore",
+    backupTitle: "Backup completo",
+    backupExport: "Salva backup",
+    backupImport: "Ripristina backup",
+    backupHelp: "Salva su questo computer la musica attuale, A–D, i banchi di suoni e le impostazioni.",
+    backupOld: "I backup completi richiedono un firmware con supporto all'archivio.",
+    backupConfirm: "Ripristinare questo backup completo? La musica attuale, i dati salvati e i campioni verranno sostituiti. Tieni l'USB collegato.",
+    backupWorking: "Backup / ripristino in corso ",
+    backupDone: "Backup salvato",
+    backupRestored: "Backup completo ripristinato",
+    demosChecks: "Progetti di prova, per i controlli sul dispositivo (demos/checks/README.md):",
+    chkChain: "CHAIN ABAC, frasi di 4 battute: tutte le tracce cambiano sezione insieme",
+    chkEntries: "ENTRIES 50 su quella CHAIN: le tracce svaniscono e rientrano",
+    chkPiece: "PIECE: 2 minuti, ARCH, poi si ferma",
+    chkMods: "Un mod di un mod, un mod di GATE, un mod su FILL",
+    chkTempo: "Un mod lento su TEMPO",
+    chkMidi: "Tracce SOUND OFF: solo MIDI (TRANSPOSE -24) e una corsia di mod",
+    chkCpu: "Quattro tracce ORACLE: osserva Impostazioni > Salute",
+    demosTitle: "Progetti dimostrativi",
+    demosHelp: "Metti i brani dimostrativi di Tessera negli slot che scegli. Il progetto di ogni slot scelto viene sostituito; nient'altro cambia sull'FM-1. Salva prima un backup se vuoi conservare ciò che c'è.",
+    demosPut: "Metti sull'FM-1",
+    demosNone: "Scegli uno slot per almeno una demo",
+    demosTwice: "Scegli ogni slot una sola volta",
+    demosSkip: "Escludi",
+    pfTitle: "File di progetto",
+    pfHelp: "Salva il progetto di uno slot come file .tsp, oppure metti un file .tsp in uno slot: lo stesso file che il simulatore web salva e carica. Caricalo sull'FM-1 da SAVE > PROJECT. La riproduzione si ferma mentre lo slot viene letto o scritto.",
+    pfSave: "Salva come file",
+    pfLoad: "Carica un file",
+    pfEmpty: "Questo slot è vuoto",
+    pfSaved: "Salvato: ",
+    pfNotTsp: "Non è un file di progetto di Tessera (.tsp): ",
+    pfReplace: "Sostituire lo slot {s} ({old}) con {new}?",
+    pfWorking: "Trasferimento del progetto sull'FM-1 ",
+    pfDone: "Scritto nello slot {s}. Caricalo da SAVE > PROJECT: ",
+    demosConfirm: "Mettere queste demo sull'FM-1?",
+    demosWas: "ora",
+    demosEmpty: "vuoto",
+    demosOld: "un progetto in un formato precedente",
+    demosUnnamed: "un progetto senza nome",
+    demosKeep: "Per conservare un progetto che verrà sostituito, annulla e salva prima un backup.",
+    demosWorking: "Trasferimento delle demo sull'FM-1 ",
+    demosDone: "Demo scritte. Caricale da SAVE > PROJECT: ",
+    demosFetch: "Impossibile leggere il file della demo: ",
+    demoStill: "Ambient: un drone ORACLE, GRAVITY, FALL attraverso l'effetto FILTER, un basso da STEP come seme",
+    demoKoto: "Koto FM in HIRA su due righe QUAD, un flauto ORACLE in una FORM che si sviluppa, un mokugyo con condizioni",
+    demoHarbour: "Dub ambient: accordi stab ORACLE in un'eco alla deriva, un sub basso, un 909 one drop",
+    demoLight: "Drone: una quinta TRIO suonata una volta e tenuta, un vento mosso da un TIDE, un coro ORACLE, un SOFT SWELL che sale ogni tanto (15 minuti in WAVES)",
+    demoCedar: "Corde pizzicate in KUMOI: un'arpa KUGO su TURING, un koto su EUCLID, un flauto MARKOV, tom 808 variati da ADORN; la CHAIN cambia tonalità",
+    demoUndertow: "Domanda e risposta in re minore: una melodia STEP che ANSWER prende come SOURCE e a cui risponde di continuo, accordi minori (Dm Bb Gm Am) e un sub basso",
+    demoEmber: "Drone: una quinta che non si muove mai, un ciclo STEP simile a una tanpura, un flauto MARKOV che cambia con l'AABA della CHAIN (un PIECE di 20 minuti)",
+    demoKites: "Loop di lunghezze diverse: un'arpa in 11 crome e tasti ORACLE in 13 che si incontrano ogni volta in modo diverso, un pad MORPH, stelle CONSTELLATION acute (30 minuti in WAVES)",
+    deviceDisplay: "Display del dispositivo",
+    deviceDisplayHelp: "Le modifiche si applicano allo schermo dell'FM-1 e vengono salvate. Quelle fatte durante la riproduzione si salvano dopo STOP.",
+    devicePresets: "Preset del dispositivo",
+    deviceFavHelp: "Le stelle e il filtro dei preferiti si sincronizzano con l'FM-1. Salva i suoni della libreria del computer in uno slot utente del dispositivo prima di contrassegnarli.",
+    deviceList: "Mostra",
+    deviceAll: "Tutti i preset",
+    deviceFavorites: "Solo preferiti",
+    deviceEmpty: "Ancora nessun preferito. Scegli Tutti i preset per aggiungerne.",
+    deviceTheme: "Tema",
+    deviceFont: "Carattere",
+    deviceMonitor: "Monitor MIDI",
+    deviceRegular: "Normale",
+    deviceBold: "Grassetto",
+    deviceOff: "Spento",
+    deviceEvents: "Eventi",
+    deviceNotes: "Note / accordi tenuti",
+    deviceStar: "Aggiungi ai preferiti",
+    deviceUnstar: "Rimuovi dai preferiti",
+    deviceUnsaved: "Applicato, ma non è stato possibile salvarlo sul dispositivo. Riprova.",
+    deviceRejected: "Il dispositivo ha rifiutato questa impostazione.",
+    devicePending: "Applicato. Le impostazioni si salveranno quando la riproduzione si ferma.",
+    connect: "Connetti",
+    disconnect: "Disconnetti",
+    mock: "Dispositivo simulato (senza hardware)",
+    editOn: "Modifica l'FM-1", readOnly: "Sola lettura: nulla viene scritto sull'FM-1 finché non attivi Modifica l'FM-1.",
+    editBlocked: "Non inviato: attiva Modifica l'FM-1 per cambiare l'FM-1.",
+    editBackupAsk: "Prima di modificare: salvare su questo computer un backup di tutto ciò che c'è sull'FM-1? OK salva prima il file di backup, poi attiva la modifica. Annulla attiva la modifica senza backup.",
+    editOnSaid: "Modifica attiva: i cambiamenti fatti qui vanno all'FM-1.",
+    sound: "Suono",
+    engine: "Motore",
+    presets: "Preset",
+    initSound: "Suono iniziale",
+    track: "Traccia",
+    saveFile: "Salva su file",
+    loadFile: "Carica file",
+    projects: "Progetti",
+    load: "Carica",
+    save: "Salva",
+    used: "in uso",
+    empty: "vuoto",
+    unknown: "—",
+    steps: "Passi",
+    reload: "Ricarica",
+    clearSeq: "Cancella sequenza",
+    notesHelp: "Inserisci note come C4 E4 G4 (fino a 4, C4 = 60). I colpi sono corsie DRUM: KICK >SNARE HATCL (> = accento).",
+    notes: "Note",
+    hits: "Colpi",
+    time: "Tempo",
+    acc: "Accento",
+    slide: "Slide",
+    vel: "Dinamica",
+    foot: "Funziona con Chrome o Edge.",
+    iconsCredit: "Icone: Fukiai (MIT), Hügelton Instruments",
+    nomidi: "Questo browser non può farlo. Apri la pagina in Chrome o Edge.",
+    denied: "L'accesso MIDI (SysEx) non è stato consentito.",
+    nodevice: "Tessera non trovato. Collega l'FM-1 via USB e premi di nuovo Connetti. Su un Mac può restare in memoria un vecchio nome di porta: rinomina il dispositivo in Configurazione MIDI Audio, oppure ricollegalo.",
+    notessera: "Su questo FM-1 non c'è Tessera. Installalo con l'installer di Tessera (link qui sotto), poi premi di nuovo Connetti.",
+    connecting: "Connessione",
+    reading: "Lettura ",
+    steploading: "Lettura dei passi ",
+    ready: "Connesso",
+    disconnected: "Disconnesso",
+    lost: "Tessera è stato scollegato",
+    noreply: "Nessuna risposta dal dispositivo",
+    error: "Errore: ",
+    busy: "Occupato",
+    applying: "Scrittura ",
+    applied: "Caricato",
+    badfile: "Impossibile leggere il file: ",
+    savedSlot: "Salvato nello slot ",
+    loadedSlot: "Caricato lo slot ",
+    emptySlot: "Slot vuoto: ",
+    confirmSave: "Sovrascrivere lo slot {n}?",
+    confirmLoad: "Caricare lo slot {n}? I suoni e le sequenze di tutte e quattro le tracce vengono sostituiti (non si può annullare).",
+    confirmClear: "Cancellare l'intera sequenza?",
+    confirmInit: "Riportare il suono ai valori predefiniti del motore? La sequenza resta (tieni premuto EDIT sul dispositivo per annullare).",
+    samples: "Campioni",
+    smpHelp: "Scegli dei file o registra un ingresso. Trascina le estremità della forma d'onda per tagliare; rotella per lo zoom. Fino a 16 suoni e circa 7 s per slot.",
+    zones: "zone",
+    smpName: "Nome",
+    chooseFiles: "Scegli file",
+    upload: "Carica",
+    erase: "Cancella",
+    clearList: "Svuota elenco",
+    file: "File",
+    root: "Fondamentale",
+    keys: "Tasti",
+    length: "Durata",
+    remove: "Rimuovi",
+    record: "Registra",
+    stopRec: "Stop",
+    recInput: "Ingresso",
+    recDenied: "Impossibile registrare",
+    recFull: "Lo slot è pieno",
+    recSilent: "Silenzio: controlla l'ingresso",
+    preview: "Ascolta",
+    autoTrim: "Taglio automatico",
+    trim: "Taglia",
+    smpTooBig: "troppo grande",
+    smpDecodeFail: "Impossibile leggere: ",
+    smpUploading: "Caricamento USR",
+    smpDone: "Caricato USR",
+    smpFail: "Caricamento del campione non riuscito: ",
+    smpErased: "Cancellato USR",
+    confirmErase: "Cancellare USR{n}?",
+    confirmUpload: "Scrivere in USR{n}? Il contenuto attuale verrà sostituito.",
+    layout: "(Il firmware ha un numero diverso di parametri; viene mostrato un elenco semplice.)",
+    ctlHelp: "Cursori: clicca, poi regola con la rotella o le frecce (Maiusc: passi di 10); doppio clic per azzerare.",
+    live: "● Live",
+    polling: "○ Interrogazione (firmware vecchio)",
+    library: "Libreria",
+    libSearch: "Cerca nome o tag",
+    allEngines: "Tutti i motori",
+    allTags: "Tutti i tag",
+    sortModified: "Modificati di recente",
+    sortCreated: "Aggiunti di recente",
+    sortName: "Nome",
+    sortEngine: "Motore",
+    name: "Nome",
+    tagsCol: "Tag",
+    date: "Modificato",
+    audition: "Ascolta",
+    toSlot: "In uno slot del dispositivo",
+    rename: "Rinomina",
+    tags: "Tag",
+    duplicate: "Duplica",
+    delete: "Elimina",
+    exportPatch: "Esporta",
+    saveToLib: "Salva il suono attuale",
+    import: "Importa",
+    exportLib: "Esporta libreria",
+    factoryToLib: "Copia nella libreria",
+    libEmpty: "La libreria è vuota. Aggiungi suoni con \"Salva il suono attuale\", copiando un preset di fabbrica o uno slot del dispositivo, oppure importando un file.",
+    noMatch: "Nessun risultato",
+    noLibDB: "(questo browser non può conservarla: sparisce dopo un ricaricamento)",
+    bank: "Preset utente sul dispositivo",
+    bankLoad: "Carica",
+    bankStore: "Salva il suono attuale",
+    bankGet: "Nella libreria",
+    exportBank: "Esporta banco",
+    dndHelp: "Puoi anche trascinare tra la libreria e gli slot.",
+    confirmOverwriteRange: "Non ci sono abbastanza slot vuoti. Sovrascrivere i {n} slot {from}–{to} ({used} in uso)?",
+    confirmOverwrite: "Sovrascrivere lo slot {n} ({name})?",
+    confirmEraseSlot: "Cancellare lo slot {n} ({name})?",
+    confirmDelete: "Eliminare \"{name}\" dalla libreria?",
+    promptName: "Nome (il dispositivo conserva 12 caratteri ASCII)",
+    promptTags: "Tag (separati da virgole)",
+    promptNameAuto: "Nome (12 caratteri ASCII; vuoto: lo nomina il dispositivo)",
+    auditioning: "Preparazione dell'ascolto ",
+    auditioned: "In ascolto (solo il suono, la sequenza resta; tieni premuto EDIT sul dispositivo per annullare): ",
+    savedLib: "Salvato nella libreria: ",
+    copiedLib: "Copiato nella libreria: ",
+    imported: "Importato: ",
+    skippedN: " ({n} illeggibili)",
+    patchesN: " patch",
+    putDone: "Scritto sul dispositivo: slot ",
+    storedSlot: "Salvato sul dispositivo: slot ",
+    erasedSlot: "Cancellato lo slot ",
+    loadedUser: "Suono caricato (la sequenza resta; il suo pattern è sul dispositivo in SEQ > PHRASES; tieni premuto EDIT per annullare): ",
+    reloaded: "Il suono è cambiato sul dispositivo: riletto",
+    readingBank: "Lettura degli slot",
+    badEngine: "Questo firmware non ha questo motore: ",
+    flashFail: "Scrittura non riuscita (rc {rc})",
+    installer: "Installer di Tessera",
+    tabSeq: "Sequencer",
+    tabTracks: "Tracce",
+    tabSettings: "Impostazioni",
+    needDevice: "Collega l'FM-1 per modificare.",
+    smpNone: "Questo firmware non ha slot per campioni utente.",
+    bankConnect: "Collega l'FM-1 per vedere anche i suoi preset utente.",
+    bankNone: "Questo firmware non ha preset utente.",
+    mixer: "Mixer",
+    mixHelp: "Le quattro tracce della pagina MIXER del dispositivo. Il fader è il livello. Il pan si scrive su qualsiasi traccia senza cambiare la selezione. REC indica una traccia armata per la registrazione dal vivo sul dispositivo.",
+    level: "Livello",
+    pan: "Pan",
+    mute: "Mute",
+    rec: "REC",
+    selectTrack: "Seleziona",
+    selectedTrack: "Selezionata",
+    projHelp: "Un progetto conserva i suoni e i pattern di tutte e quattro le tracce, la catena del brano, la traccia selezionata e le impostazioni globali.",
+    tuneTitle: "Accordature (Scala)",
+    tuneHelp: "Leggi un file Scala .scl e invialo a uno dei quattro slot. Le accordature si salvano con il progetto. Scegline una sul dispositivo (SCL > SCALES, USER) o suonala da qui. ROOT è il grado 0; le mappe .kbm non vengono usate.",
+    tuneLoad: "Carica .scl",
+    tunePlay: "Suona",
+    tuneOff: "Accordatura disattivata (la scala di SCL)",
+    tuneNotes: "note",
+    tuneFolded: "ripiegata nel periodo, ripetizioni scartate",
+    tuneRefused: "L'FM-1 ha rifiutato questa accordatura",
+    tuneReplace: "Sostituire {old} in USR{n}?",
+    tuneClearConfirm: "Cancellare USR{n}?",
+    slot: "Slot",
+    songTitle: "Brano",
+    songHelp: "Disponi pattern da slot salvati e scegli le loro ripetizioni. I suoni attuali restano. Salva un progetto qui sopra per conservare la catena. Le righe cambiano alla fine della traccia 1; il brano si ferma alla fine.",
+    songAdd: "Aggiungi riga",
+    songRemove: "Rimuovi l'ultima riga",
+    songPlay: "Suona dall'inizio",
+    songStop: "Stop",
+    songReps: "ripetizioni",
+    songEmpty: "Aggiungi prima una riga",
+    songBusy: "Ferma prima di modificare",
+    songInvalid: "Controlla slot e ripetizioni",
+    songPlaying: "In riproduzione la riga",
+    songSaved: "Catena modificata. Salva un progetto per conservarla.",
+    health: "Salute",
+    healthHelp: "I contatori dell'FM-1 stesso, letti una volta al secondo mentre LIVE è attivo: cosa guardare quando si prova la CPU. I tempi peggiori contano dall'accensione o da RESET. Un valore mostrato in negativo indica che un crepitio o una voce tagliata sono probabili.",
+    healthLive: "Live",
+    healthStop: "Stop",
+    healthReset: "Azzera i peggiori",
+    healthSchema: "Schema",
+    healthOld: "La risposta di questo firmware ha un'altra struttura.",
+    healthNone: "Nessuna risposta: questo firmware è stato compilato senza i contatori (audio USB disattivato).",
+    healthCpu: "Carico della CPU",
+    healthWorst: "Metà peggiore (rispetto alla sua scadenza)",
+    healthLate: "Metà in ritardo · scadenze mancate",
+    healthVoices: "Voci che suonano · tenute",
+    healthShed: "Voci scartate · abbandonate · rubate",
+    healthShedTracks: "Scartate, tracce 1 · 2 · 3 · 4",
+    healthCore1: "Secondo core attivo · timeout · errori",
+    healthMemory: "Memoria audio, picco",
+    healthStack: "Stack, principale · interrupt",
+    healthUsbOut: "USB verso il computer (Tessera Out): attivo · buffer",
+    healthUsbOutErr: "USB verso il computer: underrun · overrun",
+    healthUsbIn: "Computer verso USB (Tessera In): attivo · buffer",
+    healthUsbInErr: "Computer verso USB: underrun · overrun",
+    healthUsbPackets: "Frame USB persi · pacchetti errati",
+    healthUsbTime: "Servizio USB, peggiore · pausa più lunga",
+    yes: "sì",
+    no: "no",
+    system: "Sistema",
+    firmware: "Firmware",
+    sync: "Sincronia",
+    tracksN: "Tracce",
+    stepsN: "Passi",
+    enginesL: "Motori",
+    smpSlots: "Slot per campioni",
+    userBank: "Preset utente",
+    none: "nessuno",
+    pattern: "Pattern",
+    presetPool: "Raccolta di preset",
+    poolGeneral: "Preset generali",
+    poolFm6: "Voci FM6",
+    nativeHint: "I timbri nativi compaiono nel browser dei preset. Effetti e impostazioni della traccia non cambiano quando vengono caricati.",
+    importSyx: "Importa .syx",
+    recTitle: "Registrazione",
+    recHelp: "Click, conteggio iniziale e modifica delle note a fermo. REC arma; PLAY avvia la registrazione.",
+    favLocal: "I preferiti sono salvati in questo browser",
+    poolFirst: "Seleziona prima la raccolta di preset corrispondente",
+    poolTrack: "Seleziona prima la raccolta di preset della traccia attuale",
+  },
+  de: {
+    tabFm6: "6-OP-FM",
+    fm6Help: "Bearbeite eine FM6-Stimme oder importiere eine SysEx-Datei und wähle eine Stimme. Sende sie an eine Spur und speichere sie dann in den User-Presets oder speichere das Projekt. Jedes Preset behält seine ganze Stimme.",
+    fm6Source: "Patches rein und raus",
+    fm6ReadBtn: "Von der Spur lesen",
+    fm6SendBtn: "An die Spur senden",
+    fm6Live: "Beim Bearbeiten senden",
+    fm6StoreBtn: "In der Bank speichern",
+    fm6Import: "SysEx importieren",
+    fm6Export: "SysEx exportieren",
+    fm6BankExport: "Bank als SysEx exportieren",
+    fm6Init: "Init-Stimme",
+    fm6Voice: "Stimme",
+    fm6Ops: "Operatoren",
+    fm6Carriers: "Träger",
+    fm6Feedback: "Feedback",
+    fm6PitchEg: "Tonhöhen-EG",
+    fm6Freq: "Frequenz",
+    fm6Legend: "R1..R4 / L1..L4: EG-Raten und -Pegel; BP LD RD LC RC: Pegelskalierung über die Tastatur; RS: Ratenskalierung; AMS: Amplitudenmodulation durch den LFO; KVS: Anschlagdynamik; OL: Ausgangspegel; MODE: Verhältnis / fest; FC FF: Frequenz grob / fein; DET: Verstimmung (7 = Mitte). ● = Träger.",
+    fm6Pick: "Stimmen der importierten Datei (zum Bearbeiten klicken):",
+    fm6Picked: "In Bearbeitung:",
+    fm6Sent: "An die Spur gesendet",
+    fm6Read: "Von der Spur gelesen",
+    fm6Loaded: "Geladen",
+    fm6Factory: "F1..F24 sind die Werks-Patches: wähle B1..B32.",
+    fm6BadSum: "eine Prüfsumme stimmte nicht",
+    fm6Exported: "Bank exportiert",
+    motion: "Bewegung",
+    motionOn: "Bewegung abspielen",
+    motionClear: "Bewegung löschen",
+    motionConfirm: "Die Bewegung dieser Spur löschen?",
+    chance: "Chance %",
+    motionStep: "Schritt",
+    motionParam: "Parameter",
+    motionValue: "Wert",
+    backupTitle: "Vollständiges Backup",
+    backupExport: "Backup sichern",
+    backupImport: "Backup wiederherstellen",
+    backupHelp: "Sichert die aktuelle Musik, A–D, die Soundbänke und die Einstellungen auf diesem Computer.",
+    backupOld: "Vollständige Backups brauchen eine Firmware mit Archivunterstützung.",
+    backupConfirm: "Dieses vollständige Backup wiederherstellen? Aktuelle Musik, gespeicherte Daten und Samples werden ersetzt. USB verbunden lassen.",
+    backupWorking: "Sichern / Wiederherstellen ",
+    backupDone: "Backup gesichert",
+    backupRestored: "Vollständiges Backup wiederhergestellt",
+    demosChecks: "Testprojekte für die Geräteprüfungen (demos/checks/README.md):",
+    chkChain: "CHAIN ABAC, 4-taktige Phrasen: alle Spuren wechseln gemeinsam den Abschnitt",
+    chkEntries: "ENTRIES 50 auf dieser CHAIN: Spuren blenden aus und wieder ein",
+    chkPiece: "PIECE: 2 Minuten, ARCH, dann stoppt es",
+    chkMods: "Ein Mod eines Mods, ein GATE-Mod, ein Mod auf FILL",
+    chkTempo: "Ein langsamer Mod auf TEMPO",
+    chkMidi: "SOUND-OFF-Spuren: nur MIDI (TRANSPOSE -24) und eine Mod-Spur",
+    chkCpu: "Vier ORACLE-Spuren: Einstellungen > Zustand beobachten",
+    demosTitle: "Demo-Projekte",
+    demosHelp: "Lege die Demo-Songs von Tessera in die Slots deiner Wahl. Das Projekt jedes gewählten Slots wird ersetzt; sonst ändert sich nichts auf dem FM-1. Sichere vorher ein Backup, wenn du behalten willst, was dort ist.",
+    demosPut: "Auf den FM-1 legen",
+    demosNone: "Wähle für mindestens eine Demo einen Slot",
+    demosTwice: "Wähle jeden Slot nur einmal",
+    demosSkip: "Weglassen",
+    pfTitle: "Projektdateien",
+    pfHelp: "Speichere das Projekt eines Slots als .tsp-Datei oder lege eine .tsp-Datei in einen Slot: dieselbe Datei, die der Web-Simulator speichert und lädt. Lade sie auf dem FM-1 unter SAVE > PROJECT. Die Wiedergabe stoppt, während der Slot gelesen oder geschrieben wird.",
+    pfSave: "Als Datei speichern",
+    pfLoad: "Datei laden",
+    pfEmpty: "Dieser Slot ist leer",
+    pfSaved: "Gespeichert: ",
+    pfNotTsp: "Keine Tessera-Projektdatei (.tsp): ",
+    pfReplace: "Slot {s} ({old}) durch {new} ersetzen?",
+    pfWorking: "Projekt wird auf den FM-1 übertragen ",
+    pfDone: "In Slot {s} geschrieben. Lade es unter SAVE > PROJECT: ",
+    demosConfirm: "Diese Demos auf den FM-1 legen?",
+    demosWas: "jetzt",
+    demosEmpty: "leer",
+    demosOld: "ein Projekt in einem älteren Format",
+    demosUnnamed: "ein Projekt ohne Namen",
+    demosKeep: "Um ein Projekt zu behalten, das ersetzt würde, brich ab und sichere vorher ein Backup.",
+    demosWorking: "Demos werden auf den FM-1 übertragen ",
+    demosDone: "Demos geschrieben. Lade sie unter SAVE > PROJECT: ",
+    demosFetch: "Die Demo-Datei ließ sich nicht lesen: ",
+    demoStill: "Ambient: ein ORACLE-Drone, GRAVITY, FALL durch den FILTER-Effekt, ein Bass aus STEP als Seed",
+    demoKoto: "FM-Koto in HIRA auf zwei QUAD-Reihen, eine ORACLE-Flöte in einer FORM, die sich entwickelt, ein Mokugyo mit Bedingungen",
+    demoHarbour: "Ambient Dub: ORACLE-Akkord-Stabs in ein treibendes Echo, ein Subbass, eine 909 im One Drop",
+    demoLight: "Drone: eine TRIO-Quinte, einmal angeschlagen und gehalten, ein Wind, den ein TIDE bewegt, ein ORACLE-Chor, ein SOFT SWELL, der ab und zu anschwillt (15 Minuten in WAVES)",
+    demoCedar: "Gezupfte Saiten in KUMOI: eine KUGO-Harfe auf TURING, ein Koto auf EUCLID, eine MARKOV-Flöte, 808-Toms, die ADORN variiert; die CHAIN wechselt die Tonart",
+    demoUndertow: "Ruf und Antwort in d-Moll: eine STEP-Melodie, die ANSWER als SOURCE nimmt und immer weiter beantwortet, Mollakkorde (Dm Bb Gm Am) und ein Subbass",
+    demoEmber: "Drone: eine Quinte, die sich nie bewegt, ein Tanpura-artiger STEP-Zyklus, eine MARKOV-Flöte, die sich mit dem AABA der CHAIN ändert (ein 20-minütiges PIECE)",
+    demoKites: "Loops verschiedener Länge: eine Harfe in 11 Achteln und ORACLE-Tasten in 13, die sich jedes Mal anders treffen, ein MORPH-Pad, hohe CONSTELLATION-Sterne (30 Minuten in WAVES)",
+    deviceDisplay: "Geräteanzeige",
+    deviceDisplayHelp: "Änderungen gelten für den Bildschirm des FM-1 und werden gespeichert. Während der Wiedergabe gemachte Änderungen werden nach STOP gespeichert.",
+    devicePresets: "Geräte-Presets",
+    deviceFavHelp: "Sterne und der Favoritenfilter werden mit dem FM-1 abgeglichen. Speichere Sounds aus der Computer-Bibliothek in einem User-Slot des Geräts, bevor du sie markierst.",
+    deviceList: "Zeigen",
+    deviceAll: "Alle Presets",
+    deviceFavorites: "Nur Favoriten",
+    deviceEmpty: "Noch keine Favoriten. Wähle Alle Presets, um welche hinzuzufügen.",
+    deviceTheme: "Design",
+    deviceFont: "Schrift",
+    deviceMonitor: "MIDI-Monitor",
+    deviceRegular: "Normal",
+    deviceBold: "Fett",
+    deviceOff: "Aus",
+    deviceEvents: "Ereignisse",
+    deviceNotes: "Gehaltene Noten / Akkorde",
+    deviceStar: "Zu Favoriten",
+    deviceUnstar: "Aus Favoriten entfernen",
+    deviceUnsaved: "Übernommen, aber nicht auf dem Gerät gespeichert. Versuche es noch einmal.",
+    deviceRejected: "Das Gerät hat diese Einstellung abgelehnt.",
+    devicePending: "Übernommen. Die Einstellungen werden gespeichert, sobald die Wiedergabe stoppt.",
+    connect: "Verbinden",
+    disconnect: "Trennen",
+    mock: "Simuliertes Gerät (ohne Hardware)",
+    editOn: "FM-1 bearbeiten", readOnly: "Nur lesen: Auf den FM-1 wird nichts geschrieben, bis du FM-1 bearbeiten einschaltest.",
+    editBlocked: "Nicht gesendet: Schalte FM-1 bearbeiten ein, um den FM-1 zu ändern.",
+    editBackupAsk: "Vor dem Bearbeiten: Ein Backup von allem auf dem FM-1 auf diesem Computer speichern? OK speichert zuerst die Backup-Datei und schaltet dann das Bearbeiten ein. Abbrechen schaltet es ohne Backup ein.",
+    editOnSaid: "Bearbeiten an: Änderungen hier gehen an den FM-1.",
+    sound: "Sound",
+    engine: "Engine",
+    presets: "Presets",
+    initSound: "Init-Sound",
+    track: "Spur",
+    saveFile: "In Datei speichern",
+    loadFile: "Datei laden",
+    projects: "Projekte",
+    load: "Laden",
+    save: "Speichern",
+    used: "belegt",
+    empty: "leer",
+    unknown: "—",
+    steps: "Schritte",
+    reload: "Neu laden",
+    clearSeq: "Sequenz löschen",
+    notesHelp: "Gib Noten wie C4 E4 G4 ein (bis zu 4, C4 = 60). Schläge sind DRUM-Spuren: KICK >SNARE HATCL (> = Akzent).",
+    notes: "Noten",
+    hits: "Schläge",
+    time: "Zeit",
+    acc: "Akzent",
+    slide: "Slide",
+    vel: "Anschlag",
+    foot: "Funktioniert in Chrome oder Edge.",
+    iconsCredit: "Icons: Fukiai (MIT), Hügelton Instruments",
+    nomidi: "Dieser Browser kann das nicht. Öffne die Seite in Chrome oder Edge.",
+    denied: "MIDI-Zugriff (SysEx) wurde nicht erlaubt.",
+    nodevice: "Tessera nicht gefunden. Verbinde den FM-1 per USB und drücke erneut auf Verbinden. Auf einem Mac kann ein alter Portname gespeichert sein: benenne das Gerät in Audio-MIDI-Setup um oder stecke es neu ein.",
+    notessera: "Auf diesem FM-1 läuft kein Tessera. Installiere es mit dem Tessera-Installer (Link unten) und drücke dann erneut auf Verbinden.",
+    connecting: "Verbinde",
+    reading: "Lese ",
+    steploading: "Lese Schritte ",
+    ready: "Verbunden",
+    disconnected: "Getrennt",
+    lost: "Tessera wurde abgezogen",
+    noreply: "Keine Antwort vom Gerät",
+    error: "Fehler: ",
+    busy: "Beschäftigt",
+    applying: "Schreibe ",
+    applied: "Geladen",
+    badfile: "Datei nicht lesbar: ",
+    savedSlot: "Gespeichert in Slot ",
+    loadedSlot: "Geladen: Slot ",
+    emptySlot: "Leerer Slot: ",
+    confirmSave: "Slot {n} überschreiben?",
+    confirmLoad: "Slot {n} laden? Sounds und Sequenzen aller vier Spuren werden ersetzt (kein Rückgängig).",
+    confirmClear: "Die ganze Sequenz löschen?",
+    confirmInit: "Den Sound auf die Grundwerte der Engine zurücksetzen? Die Sequenz bleibt (EDIT am Gerät halten zum Rückgängigmachen).",
+    samples: "Samples",
+    smpHelp: "Wähle Dateien oder nimm einen Eingang auf. Ziehe die Enden der Wellenform zum Trimmen; Mausrad zum Zoomen. Bis zu 16 Sounds und etwa 7 s pro Slot.",
+    zones: "Zonen",
+    smpName: "Name",
+    chooseFiles: "Dateien wählen",
+    upload: "Hochladen",
+    erase: "Löschen",
+    clearList: "Liste leeren",
+    file: "Datei",
+    root: "Grundton",
+    keys: "Tasten",
+    length: "Länge",
+    remove: "Entfernen",
+    record: "Aufnehmen",
+    stopRec: "Stopp",
+    recInput: "Eingang",
+    recDenied: "Aufnahme nicht möglich",
+    recFull: "Der Slot ist voll",
+    recSilent: "Stille: prüfe den Eingang",
+    preview: "Abspielen",
+    autoTrim: "Auto-Trim",
+    trim: "Trimmen",
+    smpTooBig: "zu groß",
+    smpDecodeFail: "Nicht lesbar: ",
+    smpUploading: "Lade hoch: USR",
+    smpDone: "Hochgeladen: USR",
+    smpFail: "Sample-Upload fehlgeschlagen: ",
+    smpErased: "Gelöscht: USR",
+    confirmErase: "USR{n} löschen?",
+    confirmUpload: "In USR{n} schreiben? Der jetzige Inhalt wird ersetzt.",
+    layout: "(Die Firmware hat eine andere Anzahl von Parametern; es wird eine einfache Liste gezeigt.)",
+    ctlHelp: "Schieberegler: anklicken, dann mit Mausrad oder Pfeiltasten feinjustieren (Umschalt: Zehnerschritte); Doppelklick setzt zurück.",
+    live: "● Live",
+    polling: "○ Abfrage (ältere Firmware)",
+    library: "Bibliothek",
+    libSearch: "Name oder Tag suchen",
+    allEngines: "Alle Engines",
+    allTags: "Alle Tags",
+    sortModified: "Zuletzt geändert",
+    sortCreated: "Zuletzt hinzugefügt",
+    sortName: "Name",
+    sortEngine: "Engine",
+    name: "Name",
+    tagsCol: "Tags",
+    date: "Geändert",
+    audition: "Anhören",
+    toSlot: "In Geräte-Slot",
+    rename: "Umbenennen",
+    tags: "Tags",
+    duplicate: "Duplizieren",
+    delete: "Löschen",
+    exportPatch: "Exportieren",
+    saveToLib: "Aktuellen Sound speichern",
+    import: "Importieren",
+    exportLib: "Bibliothek exportieren",
+    factoryToLib: "In die Bibliothek kopieren",
+    libEmpty: "Die Bibliothek ist leer. Füge Sounds mit \"Aktuellen Sound speichern\" hinzu, indem du ein Werks-Preset oder einen Geräte-Slot kopierst, oder indem du eine Datei importierst.",
+    noMatch: "Kein Treffer",
+    noLibDB: "(dieser Browser kann sie nicht speichern: nach dem Neuladen ist sie weg)",
+    bank: "User-Presets auf dem Gerät",
+    bankLoad: "Laden",
+    bankStore: "Aktuellen Sound speichern",
+    bankGet: "In die Bibliothek",
+    exportBank: "Bank exportieren",
+    dndHelp: "Du kannst auch zwischen der Bibliothek und den Slots ziehen.",
+    confirmOverwriteRange: "Nicht genug leere Slots. Die {n} Slots {from}–{to} überschreiben ({used} belegt)?",
+    confirmOverwrite: "Slot {n} ({name}) überschreiben?",
+    confirmEraseSlot: "Slot {n} ({name}) löschen?",
+    confirmDelete: "\"{name}\" aus der Bibliothek löschen?",
+    promptName: "Name (das Gerät behält 12 ASCII-Zeichen)",
+    promptTags: "Tags (durch Kommas getrennt)",
+    promptNameAuto: "Name (12 ASCII-Zeichen; leer: das Gerät vergibt ihn)",
+    auditioning: "Anhören wird vorbereitet ",
+    auditioned: "Anhören (nur der Sound, die Sequenz bleibt; EDIT am Gerät halten zum Rückgängigmachen): ",
+    savedLib: "In der Bibliothek gespeichert: ",
+    copiedLib: "In die Bibliothek kopiert: ",
+    imported: "Importiert: ",
+    skippedN: " ({n} nicht lesbar)",
+    patchesN: " Patches",
+    putDone: "Auf das Gerät geschrieben: Slot ",
+    storedSlot: "Auf dem Gerät gespeichert: Slot ",
+    erasedSlot: "Gelöscht: Slot ",
+    loadedUser: "Sound geladen (die Sequenz bleibt; ihr Pattern liegt auf dem Gerät unter SEQ > PHRASES; EDIT halten zum Rückgängigmachen): ",
+    reloaded: "Der Sound hat sich am Gerät geändert: neu gelesen",
+    readingBank: "Lese die Slots",
+    badEngine: "Diese Firmware hat diese Engine nicht: ",
+    flashFail: "Schreiben fehlgeschlagen (rc {rc})",
+    installer: "Tessera-Installer",
+    tabSeq: "Sequencer",
+    tabTracks: "Spuren",
+    tabSettings: "Einstellungen",
+    needDevice: "Verbinde den FM-1 zum Bearbeiten.",
+    smpNone: "Diese Firmware hat keine User-Sample-Slots.",
+    bankConnect: "Verbinde den FM-1, um auch seine User-Presets zu sehen.",
+    bankNone: "Diese Firmware hat keine User-Presets.",
+    mixer: "Mixer",
+    mixHelp: "Die vier Spuren der MIXER-Seite des Geräts. Der Fader ist der Pegel. Pan wird in jede Spur geschrieben, ohne die Auswahl zu ändern. REC zeigt eine Spur, die am Gerät für die Live-Aufnahme scharfgeschaltet ist.",
+    level: "Pegel",
+    pan: "Pan",
+    mute: "Stumm",
+    rec: "REC",
+    selectTrack: "Auswählen",
+    selectedTrack: "Ausgewählt",
+    projHelp: "Ein Projekt behält die Sounds und Patterns aller vier Spuren, die Song-Kette, die ausgewählte Spur und die globalen Einstellungen.",
+    tuneTitle: "Stimmungen (Scala)",
+    tuneHelp: "Lies eine Scala-.scl-Datei und sende sie an einen von vier Slots. Die Stimmungen werden mit dem Projekt gespeichert. Wähle eine am Gerät (SCL > SCALES, USER) oder spiele sie von hier. ROOT ist Stufe 0; .kbm-Zuordnungen werden nicht verwendet.",
+    tuneLoad: ".scl laden",
+    tunePlay: "Spielen",
+    tuneOff: "Stimmung aus (die Skala von SCL)",
+    tuneNotes: "Noten",
+    tuneFolded: "in die Periode gefaltet, Wiederholungen entfernt",
+    tuneRefused: "Der FM-1 hat diese Stimmung abgelehnt",
+    tuneReplace: "{old} in USR{n} ersetzen?",
+    tuneClearConfirm: "USR{n} löschen?",
+    slot: "Slot",
+    songTitle: "Song",
+    songHelp: "Ordne Patterns aus gespeicherten Slots an und wähle ihre Wiederholungen. Die aktuellen Sounds bleiben. Speichere oben ein Projekt, um die Kette zu behalten. Zeilen wechseln am Ende von Spur 1; der Song stoppt am Ende.",
+    songAdd: "Zeile hinzufügen",
+    songRemove: "Letzte Zeile entfernen",
+    songPlay: "Von vorn abspielen",
+    songStop: "Stopp",
+    songReps: "Wiederholungen",
+    songEmpty: "Füge zuerst eine Zeile hinzu",
+    songBusy: "Vor dem Bearbeiten stoppen",
+    songInvalid: "Slots und Wiederholungen prüfen",
+    songPlaying: "Spielt Zeile",
+    songSaved: "Kette geändert. Speichere ein Projekt, um sie zu behalten.",
+    health: "Zustand",
+    healthHelp: "Die eigenen Zähler des FM-1, einmal pro Sekunde gelesen, solange LIVE an ist: worauf man beim CPU-Test achtet. Schlechteste Werte zählen ab dem Einschalten oder RESET. Ein invertiert gezeigter Wert heißt, dass ein Knistern oder eine abgeschnittene Stimme wahrscheinlich ist.",
+    healthLive: "Live",
+    healthStop: "Stopp",
+    healthReset: "Schlechteste zurücksetzen",
+    healthSchema: "Schema",
+    healthOld: "Die Antwort dieser Firmware hat einen anderen Aufbau.",
+    healthNone: "Keine Antwort: diese Firmware wurde ohne die Zähler gebaut (USB-Audio aus).",
+    healthCpu: "CPU-Last",
+    healthWorst: "Schlechteste Hälfte (ihrer Frist)",
+    healthLate: "Späte Hälften · verpasste Fristen",
+    healthVoices: "Klingende Stimmen · gehalten",
+    healthShed: "Stimmen abgeworfen · aufgegeben · gestohlen",
+    healthShedTracks: "Abgeworfen, Spuren 1 · 2 · 3 · 4",
+    healthCore1: "Zweiter Kern an · Zeitüberschreitungen · Fehler",
+    healthMemory: "Audiospeicher, Spitze",
+    healthStack: "Stack, Haupt · Interrupts",
+    healthUsbOut: "USB zum Computer (Tessera Out): an · Puffer",
+    healthUsbOutErr: "USB zum Computer: Unterläufe · Überläufe",
+    healthUsbIn: "Computer zu USB (Tessera In): an · Puffer",
+    healthUsbInErr: "Computer zu USB: Unterläufe · Überläufe",
+    healthUsbPackets: "Verpasste USB-Frames · fehlerhafte Pakete",
+    healthUsbTime: "USB-Dienst, schlechteste · längste Lücke",
+    yes: "ja",
+    no: "nein",
+    system: "System",
+    firmware: "Firmware",
+    sync: "Sync",
+    tracksN: "Spuren",
+    stepsN: "Schritte",
+    enginesL: "Engines",
+    smpSlots: "Sample-Slots",
+    userBank: "User-Presets",
+    none: "keine",
+    pattern: "Pattern",
+    presetPool: "Preset-Sammlung",
+    poolGeneral: "Allgemeine Presets",
+    poolFm6: "FM6-Stimmen",
+    nativeHint: "Native Klänge erscheinen im Preset-Browser. Effekte und Spureinstellungen bleiben beim Laden unverändert.",
+    importSyx: ".syx importieren",
+    recTitle: "Aufnahme",
+    recHelp: "Klick, Einzähler und Notenbearbeitung im Stopp. REC macht scharf; PLAY startet die Aufnahme.",
+    favLocal: "Favoriten werden in diesem Browser gespeichert",
+    poolFirst: "Wähle zuerst die passende Preset-Sammlung",
+    poolTrack: "Wähle zuerst die Preset-Sammlung der aktuellen Spur",
+  },
+  fr: {
+    tabFm6: "FM 6-OP",
+    fm6Help: "Modifiez une voix FM6, ou importez un fichier SysEx et choisissez une voix. Envoyez-la à une piste, puis enregistrez-la dans les presets utilisateur ou enregistrez le projet. Chaque preset garde sa voix entière.",
+    fm6Source: "Patches en entrée et en sortie",
+    fm6ReadBtn: "Lire depuis la piste",
+    fm6SendBtn: "Envoyer à la piste",
+    fm6Live: "Envoyer pendant l'édition",
+    fm6StoreBtn: "Ranger dans la banque",
+    fm6Import: "Importer SysEx",
+    fm6Export: "Exporter SysEx",
+    fm6BankExport: "Exporter la banque en SysEx",
+    fm6Init: "Voix initiale",
+    fm6Voice: "Voix",
+    fm6Ops: "Opérateurs",
+    fm6Carriers: "porteuses",
+    fm6Feedback: "rétroaction",
+    fm6PitchEg: "EG de hauteur",
+    fm6Freq: "Fréquence",
+    fm6Legend: "R1..R4 / L1..L4 : vitesses et niveaux de l'EG ; BP LD RD LC RC : échelonnement du niveau au clavier ; RS : échelonnement des vitesses ; AMS : modulation d'amplitude par le LFO ; KVS : vélocité ; OL : niveau de sortie ; MODE : rapport / fixe ; FC FF : fréquence grossière / fine ; DET : désaccord (7 = centre). ● = porteuse.",
+    fm6Pick: "Voix du fichier importé (cliquez pour modifier) :",
+    fm6Picked: "En cours :",
+    fm6Sent: "Envoyé à la piste",
+    fm6Read: "Lu depuis la piste",
+    fm6Loaded: "Chargé",
+    fm6Factory: "F1..F24 sont les patches d'usine : choisissez B1..B32.",
+    fm6BadSum: "une somme de contrôle ne correspond pas",
+    fm6Exported: "Banque exportée",
+    motion: "Mouvement",
+    motionOn: "Jouer le mouvement",
+    motionClear: "Effacer le mouvement",
+    motionConfirm: "Effacer le mouvement de cette piste ?",
+    chance: "Probabilité %",
+    motionStep: "Pas",
+    motionParam: "Paramètre",
+    motionValue: "Valeur",
+    backupTitle: "Sauvegarde complète",
+    backupExport: "Enregistrer la sauvegarde",
+    backupImport: "Restaurer la sauvegarde",
+    backupHelp: "Enregistre sur cet ordinateur la musique en cours, A–D, les banques de sons et les réglages.",
+    backupOld: "Les sauvegardes complètes nécessitent un firmware qui gère les archives.",
+    backupConfirm: "Restaurer cette sauvegarde complète ? La musique en cours, les données enregistrées et les échantillons seront remplacés. Gardez l'USB branché.",
+    backupWorking: "Sauvegarde / restauration ",
+    backupDone: "Sauvegarde enregistrée",
+    backupRestored: "Sauvegarde complète restaurée",
+    demosChecks: "Projets de test, pour les vérifications sur l'appareil (demos/checks/README.md) :",
+    chkChain: "CHAIN ABAC, phrases de 4 mesures : toutes les pistes changent de section ensemble",
+    chkEntries: "ENTRIES 50 sur cette CHAIN : les pistes disparaissent puis reviennent",
+    chkPiece: "PIECE : 2 minutes, ARCH, puis il s'arrête",
+    chkMods: "Un mod d'un mod, un mod de GATE, un mod sur FILL",
+    chkTempo: "Un mod lent sur TEMPO",
+    chkMidi: "Pistes SOUND OFF : MIDI seul (TRANSPOSE -24) et une ligne de mod",
+    chkCpu: "Quatre pistes ORACLE : surveillez Réglages > État",
+    demosTitle: "Projets de démonstration",
+    demosHelp: "Placez les morceaux de démonstration de Tessera dans les emplacements de votre choix. Le projet de chaque emplacement choisi est remplacé ; rien d'autre ne change sur le FM-1. Enregistrez d'abord une sauvegarde si vous voulez garder ce qui s'y trouve.",
+    demosPut: "Placer sur le FM-1",
+    demosNone: "Choisissez un emplacement pour au moins une démo",
+    demosTwice: "Choisissez chaque emplacement une seule fois",
+    demosSkip: "Ignorer",
+    pfTitle: "Fichiers de projet",
+    pfHelp: "Enregistrez le projet d'un emplacement dans un fichier .tsp, ou placez un fichier .tsp dans un emplacement : le même fichier que le simulateur web enregistre et charge. Chargez-le sur le FM-1 depuis SAVE > PROJECT. La lecture s'arrête pendant la lecture ou l'écriture de l'emplacement.",
+    pfSave: "Enregistrer dans un fichier",
+    pfLoad: "Charger un fichier",
+    pfEmpty: "Cet emplacement est vide",
+    pfSaved: "Enregistré : ",
+    pfNotTsp: "Ce n'est pas un fichier de projet Tessera (.tsp) : ",
+    pfReplace: "Remplacer l'emplacement {s} ({old}) par {new} ?",
+    pfWorking: "Envoi du projet sur le FM-1 ",
+    pfDone: "Écrit dans l'emplacement {s}. Chargez-le depuis SAVE > PROJECT : ",
+    demosConfirm: "Placer ces démos sur le FM-1 ?",
+    demosWas: "actuellement",
+    demosEmpty: "vide",
+    demosOld: "un projet dans un format plus ancien",
+    demosUnnamed: "un projet sans nom",
+    demosKeep: "Pour garder un projet qui va être remplacé, annulez et enregistrez d'abord une sauvegarde.",
+    demosWorking: "Envoi des démos sur le FM-1 ",
+    demosDone: "Démos écrites. Chargez-les depuis SAVE > PROJECT : ",
+    demosFetch: "Impossible de lire le fichier de démo : ",
+    demoStill: "Ambient : un drone ORACLE, GRAVITY, FALL à travers l'effet FILTER, une basse issue de STEP comme graine",
+    demoKoto: "Koto FM en HIRA sur deux rangées QUAD, une flûte ORACLE dans une FORM qui évolue, un mokugyo avec conditions",
+    demoHarbour: "Dub ambient : des accords ORACLE plaqués dans un écho qui dérive, une sub-basse, une 909 en one drop",
+    demoLight: "Drone : une quinte TRIO frappée une fois et tenue, un vent que déplace un TIDE, un chœur ORACLE, un SOFT SWELL qui monte de temps en temps (15 minutes en WAVES)",
+    demoCedar: "Cordes pincées en KUMOI : une harpe KUGO sur TURING, un koto sur EUCLID, une flûte MARKOV, des toms 808 que varie ADORN ; la CHAIN change de tonalité",
+    demoUndertow: "Appel et réponse en ré mineur : une mélodie STEP qu'ANSWER prend pour SOURCE et à laquelle il répond sans fin, des accords mineurs (Dm Bb Gm Am) et une sub-basse",
+    demoEmber: "Drone : une quinte qui ne bouge jamais, un cycle STEP façon tanpura, une flûte MARKOV qui change avec l'AABA de la CHAIN (un PIECE de 20 minutes)",
+    demoKites: "Boucles de longueurs différentes : une harpe en 11 croches et des touches ORACLE en 13 qui se rencontrent différemment à chaque fois, un pad MORPH, des étoiles CONSTELLATION aiguës (30 minutes en WAVES)",
+    deviceDisplay: "Affichage de l'appareil",
+    deviceDisplayHelp: "Les changements s'appliquent à l'écran du FM-1 et sont enregistrés. Ceux faits pendant la lecture sont enregistrés après STOP.",
+    devicePresets: "Presets de l'appareil",
+    deviceFavHelp: "Les étoiles et le filtre des favoris se synchronisent avec le FM-1. Enregistrez les sons de la bibliothèque de l'ordinateur dans un emplacement utilisateur de l'appareil avant de les marquer.",
+    deviceList: "Afficher",
+    deviceAll: "Tous les presets",
+    deviceFavorites: "Favoris seulement",
+    deviceEmpty: "Pas encore de favoris. Choisissez Tous les presets pour en ajouter.",
+    deviceTheme: "Thème",
+    deviceFont: "Police",
+    deviceMonitor: "Moniteur MIDI",
+    deviceRegular: "Normal",
+    deviceBold: "Gras",
+    deviceOff: "Désactivé",
+    deviceEvents: "Événements",
+    deviceNotes: "Notes / accords tenus",
+    deviceStar: "Ajouter aux favoris",
+    deviceUnstar: "Retirer des favoris",
+    deviceUnsaved: "Appliqué, mais impossible d'enregistrer sur l'appareil. Réessayez.",
+    deviceRejected: "L'appareil a refusé ce réglage.",
+    devicePending: "Appliqué. Les réglages seront enregistrés à l'arrêt de la lecture.",
+    connect: "Connecter",
+    disconnect: "Déconnecter",
+    mock: "Appareil simulé (sans matériel)",
+    editOn: "Modifier le FM-1", readOnly: "Lecture seule : rien n'est écrit sur le FM-1 tant que Modifier le FM-1 n'est pas activé.",
+    editBlocked: "Non envoyé : activez Modifier le FM-1 pour changer le FM-1.",
+    editBackupAsk: "Avant de modifier : enregistrer sur cet ordinateur une sauvegarde de tout ce que contient le FM-1 ? OK enregistre d'abord le fichier de sauvegarde, puis active la modification. Annuler l'active sans sauvegarde.",
+    editOnSaid: "Modification activée : les changements faits ici vont au FM-1.",
+    sound: "Son",
+    engine: "Moteur",
+    presets: "Presets",
+    initSound: "Son initial",
+    track: "Piste",
+    saveFile: "Enregistrer dans un fichier",
+    loadFile: "Charger un fichier",
+    projects: "Projets",
+    load: "Charger",
+    save: "Enregistrer",
+    used: "utilisé",
+    empty: "vide",
+    unknown: "—",
+    steps: "Pas",
+    reload: "Recharger",
+    clearSeq: "Effacer la séquence",
+    notesHelp: "Saisissez des notes comme C4 E4 G4 (jusqu'à 4, C4 = 60). Les frappes sont des lignes DRUM : KICK >SNARE HATCL (> = accent).",
+    notes: "Notes",
+    hits: "Frappes",
+    time: "Temps",
+    acc: "Accent",
+    slide: "Slide",
+    vel: "Vélocité",
+    foot: "Fonctionne dans Chrome ou Edge.",
+    iconsCredit: "Icônes : Fukiai (MIT), Hügelton Instruments",
+    nomidi: "Ce navigateur ne peut pas le faire. Ouvrez la page dans Chrome ou Edge.",
+    denied: "L'accès MIDI (SysEx) n'a pas été autorisé.",
+    nodevice: "Tessera introuvable. Branchez le FM-1 en USB et appuyez à nouveau sur Connecter. Sur un Mac, un ancien nom de port peut être mémorisé : renommez l'appareil dans Configuration audio et MIDI, ou rebranchez-le.",
+    notessera: "Ce FM-1 n'utilise pas Tessera. Installez-le avec l'installateur de Tessera (lien ci-dessous), puis appuyez à nouveau sur Connecter.",
+    connecting: "Connexion",
+    reading: "Lecture ",
+    steploading: "Lecture des pas ",
+    ready: "Connecté",
+    disconnected: "Déconnecté",
+    lost: "Tessera a été débranché",
+    noreply: "Pas de réponse de l'appareil",
+    error: "Erreur : ",
+    busy: "Occupé",
+    applying: "Écriture ",
+    applied: "Chargé",
+    badfile: "Impossible de lire le fichier : ",
+    savedSlot: "Enregistré dans l'emplacement ",
+    loadedSlot: "Emplacement chargé ",
+    emptySlot: "Emplacement vide : ",
+    confirmSave: "Écraser l'emplacement {n} ?",
+    confirmLoad: "Charger l'emplacement {n} ? Les sons et séquences des quatre pistes sont remplacés (pas d'annulation).",
+    confirmClear: "Effacer toute la séquence ?",
+    confirmInit: "Remettre le son aux valeurs par défaut du moteur ? La séquence reste (maintenez EDIT sur l'appareil pour annuler).",
+    samples: "Échantillons",
+    smpHelp: "Choisissez des fichiers ou enregistrez une entrée. Faites glisser les extrémités de la forme d'onde pour couper ; molette pour zoomer. Jusqu'à 16 sons et environ 7 s par emplacement.",
+    zones: "zones",
+    smpName: "Nom",
+    chooseFiles: "Choisir des fichiers",
+    upload: "Envoyer",
+    erase: "Effacer",
+    clearList: "Vider la liste",
+    file: "Fichier",
+    root: "Fondamentale",
+    keys: "Touches",
+    length: "Durée",
+    remove: "Retirer",
+    record: "Enregistrer",
+    stopRec: "Arrêter",
+    recInput: "Entrée",
+    recDenied: "Enregistrement impossible",
+    recFull: "L'emplacement est plein",
+    recSilent: "Silence : vérifiez l'entrée",
+    preview: "Écouter",
+    autoTrim: "Coupe automatique",
+    trim: "Couper",
+    smpTooBig: "trop grand",
+    smpDecodeFail: "Lecture impossible : ",
+    smpUploading: "Envoi USR",
+    smpDone: "Envoyé USR",
+    smpFail: "Échec de l'envoi de l'échantillon : ",
+    smpErased: "Effacé USR",
+    confirmErase: "Effacer USR{n} ?",
+    confirmUpload: "Écrire dans USR{n} ? Son contenu actuel sera remplacé.",
+    layout: "(Le firmware a un autre nombre de paramètres ; une simple liste est affichée.)",
+    ctlHelp: "Curseurs : cliquez, puis réglez finement à la molette ou aux flèches (Maj : pas de 10) ; double-clic pour réinitialiser.",
+    live: "● En direct",
+    polling: "○ Interrogation (firmware ancien)",
+    library: "Bibliothèque",
+    libSearch: "Rechercher un nom ou une étiquette",
+    allEngines: "Tous les moteurs",
+    allTags: "Toutes les étiquettes",
+    sortModified: "Modifiés récemment",
+    sortCreated: "Ajoutés récemment",
+    sortName: "Nom",
+    sortEngine: "Moteur",
+    name: "Nom",
+    tagsCol: "Étiquettes",
+    date: "Modifié",
+    audition: "Écouter",
+    toSlot: "Vers un emplacement de l'appareil",
+    rename: "Renommer",
+    tags: "Étiquettes",
+    duplicate: "Dupliquer",
+    delete: "Supprimer",
+    exportPatch: "Exporter",
+    saveToLib: "Enregistrer le son actuel",
+    import: "Importer",
+    exportLib: "Exporter la bibliothèque",
+    factoryToLib: "Copier dans la bibliothèque",
+    libEmpty: "La bibliothèque est vide. Ajoutez des sons avec \"Enregistrer le son actuel\", en copiant un preset d'usine ou un emplacement de l'appareil, ou en important un fichier.",
+    noMatch: "Aucun résultat",
+    noLibDB: "(ce navigateur ne peut pas la conserver : elle disparaît au rechargement)",
+    bank: "Presets utilisateur de l'appareil",
+    bankLoad: "Charger",
+    bankStore: "Ranger le son actuel",
+    bankGet: "Vers la bibliothèque",
+    exportBank: "Exporter la banque",
+    dndHelp: "Vous pouvez aussi faire glisser entre la bibliothèque et les emplacements.",
+    confirmOverwriteRange: "Pas assez d'emplacements vides. Écraser les {n} emplacements {from}–{to} ({used} utilisés) ?",
+    confirmOverwrite: "Écraser l'emplacement {n} ({name}) ?",
+    confirmEraseSlot: "Effacer l'emplacement {n} ({name}) ?",
+    confirmDelete: "Supprimer \"{name}\" de la bibliothèque ?",
+    promptName: "Nom (l'appareil garde 12 caractères ASCII)",
+    promptTags: "Étiquettes (séparées par des virgules)",
+    promptNameAuto: "Nom (12 caractères ASCII ; vide : l'appareil le nomme)",
+    auditioning: "Préparation de l'écoute ",
+    auditioned: "Écoute (le son seulement, la séquence reste ; maintenez EDIT sur l'appareil pour annuler) : ",
+    savedLib: "Enregistré dans la bibliothèque : ",
+    copiedLib: "Copié dans la bibliothèque : ",
+    imported: "Importé : ",
+    skippedN: " ({n} illisibles)",
+    patchesN: " patches",
+    putDone: "Écrit sur l'appareil : emplacement ",
+    storedSlot: "Rangé sur l'appareil : emplacement ",
+    erasedSlot: "Emplacement effacé ",
+    loadedUser: "Son chargé (la séquence reste ; son motif est sur l'appareil dans SEQ > PHRASES ; maintenez EDIT pour annuler) : ",
+    reloaded: "Le son a changé sur l'appareil : relu",
+    readingBank: "Lecture des emplacements",
+    badEngine: "Ce firmware n'a pas ce moteur : ",
+    flashFail: "Échec de l'écriture (rc {rc})",
+    installer: "Installateur de Tessera",
+    tabSeq: "Séquenceur",
+    tabTracks: "Pistes",
+    tabSettings: "Réglages",
+    needDevice: "Branchez le FM-1 pour modifier.",
+    smpNone: "Ce firmware n'a pas d'emplacements d'échantillons utilisateur.",
+    bankConnect: "Branchez le FM-1 pour voir aussi ses presets utilisateur.",
+    bankNone: "Ce firmware n'a pas de presets utilisateur.",
+    mixer: "Mixeur",
+    mixHelp: "Les quatre pistes de la page MIXER de l'appareil. Le fader est le niveau. Le panoramique s'écrit sur n'importe quelle piste sans changer la sélection. REC indique une piste armée pour l'enregistrement en direct sur l'appareil.",
+    level: "Niveau",
+    pan: "Pan",
+    mute: "Muet",
+    rec: "REC",
+    selectTrack: "Sélectionner",
+    selectedTrack: "Sélectionnée",
+    projHelp: "Un projet garde les sons et motifs des quatre pistes, la chaîne du morceau, la piste sélectionnée et les réglages globaux.",
+    tuneTitle: "Accordages (Scala)",
+    tuneHelp: "Lisez un fichier Scala .scl et envoyez-le dans l'un des quatre emplacements. Les accordages sont enregistrés avec le projet. Choisissez-en un sur l'appareil (SCL > SCALES, USER) ou jouez-le d'ici. ROOT est le degré 0 ; les tables .kbm ne sont pas utilisées.",
+    tuneLoad: "Charger .scl",
+    tunePlay: "Jouer",
+    tuneOff: "Accordage désactivé (la gamme de SCL)",
+    tuneNotes: "notes",
+    tuneFolded: "repliée dans la période, répétitions supprimées",
+    tuneRefused: "Le FM-1 a refusé cet accordage",
+    tuneReplace: "Remplacer {old} dans USR{n} ?",
+    tuneClearConfirm: "Effacer USR{n} ?",
+    slot: "Emplacement",
+    songTitle: "Morceau",
+    songHelp: "Organisez des motifs issus d'emplacements enregistrés et choisissez leurs répétitions. Les sons actuels restent. Enregistrez un projet ci-dessus pour garder la chaîne. Les lignes changent à la fin de la piste 1 ; le morceau s'arrête à la fin.",
+    songAdd: "Ajouter une ligne",
+    songRemove: "Retirer la dernière ligne",
+    songPlay: "Jouer depuis le début",
+    songStop: "Arrêter",
+    songReps: "répétitions",
+    songEmpty: "Ajoutez d'abord une ligne",
+    songBusy: "Arrêtez avant de modifier",
+    songInvalid: "Vérifiez les emplacements et les répétitions",
+    songPlaying: "Lecture de la ligne",
+    songSaved: "Chaîne modifiée. Enregistrez un projet pour la garder.",
+    health: "État",
+    healthHelp: "Les compteurs du FM-1 lui-même, lus une fois par seconde tant que LIVE est actif : ce qu'il faut surveiller en testant le processeur. Les pires temps comptent depuis la mise sous tension ou RESET. Une valeur affichée en inversé signale qu'un craquement ou une voix coupée est probable.",
+    healthLive: "En direct",
+    healthStop: "Arrêter",
+    healthReset: "Remettre les pires à zéro",
+    healthSchema: "Schéma",
+    healthOld: "La réponse de ce firmware a une autre structure.",
+    healthNone: "Pas de réponse : ce firmware a été compilé sans les compteurs (audio USB désactivé).",
+    healthCpu: "Charge du processeur",
+    healthWorst: "Pire moitié (de son échéance)",
+    healthLate: "Moitiés en retard · échéances manquées",
+    healthVoices: "Voix qui sonnent · tenues",
+    healthShed: "Voix délestées · abandonnées · volées",
+    healthShedTracks: "Délestées, pistes 1 · 2 · 3 · 4",
+    healthCore1: "Second cœur actif · délais dépassés · erreurs",
+    healthMemory: "Mémoire audio, pic",
+    healthStack: "Pile, principale · interruptions",
+    healthUsbOut: "USB vers l'ordinateur (Tessera Out) : actif · tampon",
+    healthUsbOutErr: "USB vers l'ordinateur : sous-alimentations · débordements",
+    healthUsbIn: "Ordinateur vers USB (Tessera In) : actif · tampon",
+    healthUsbInErr: "Ordinateur vers USB : sous-alimentations · débordements",
+    healthUsbPackets: "Trames USB manquées · paquets erronés",
+    healthUsbTime: "Service USB, pire · plus long écart",
+    yes: "oui",
+    no: "non",
+    system: "Système",
+    firmware: "Firmware",
+    sync: "Synchro",
+    tracksN: "Pistes",
+    stepsN: "Pas",
+    enginesL: "Moteurs",
+    smpSlots: "Emplacements d'échantillons",
+    userBank: "Presets utilisateur",
+    none: "aucun",
+    pattern: "Motif",
+    presetPool: "Collection de presets",
+    poolGeneral: "Presets généraux",
+    poolFm6: "Voix FM6",
+    nativeHint: "Les timbres natifs apparaissent dans le navigateur de presets. Les effets et les réglages de piste ne changent pas au chargement.",
+    importSyx: "Importer .syx",
+    recTitle: "Enregistrement",
+    recHelp: "Clic, décompte et édition des notes à l'arrêt. REC arme ; PLAY lance l'enregistrement.",
+    favLocal: "Les favoris sont enregistrés dans ce navigateur",
+    poolFirst: "Choisissez d'abord la collection de presets correspondante",
+    poolTrack: "Choisissez d'abord la collection de presets de la piste actuelle",
+  },
+  pt: {
+    tabFm6: "FM 6-OP",
+    fm6Help: "Edite uma voz FM6, ou importe um arquivo SysEx e escolha uma voz. Envie-a para uma faixa e depois salve-a nos presets de usuário ou salve o projeto. Cada preset guarda a voz inteira.",
+    fm6Source: "Patches de entrada e saída",
+    fm6ReadBtn: "Ler da faixa",
+    fm6SendBtn: "Enviar para a faixa",
+    fm6Live: "Enviar enquanto edita",
+    fm6StoreBtn: "Guardar no banco",
+    fm6Import: "Importar SysEx",
+    fm6Export: "Exportar SysEx",
+    fm6BankExport: "Exportar banco como SysEx",
+    fm6Init: "Voz inicial",
+    fm6Voice: "Voz",
+    fm6Ops: "Operadores",
+    fm6Carriers: "portadoras",
+    fm6Feedback: "realimentação",
+    fm6PitchEg: "EG de afinação",
+    fm6Freq: "Frequência",
+    fm6Legend: "R1..R4 / L1..L4: taxas e níveis do EG; BP LD RD LC RC: escala de nível pelo teclado; RS: escala de taxa; AMS: modulação de amplitude pelo LFO; KVS: velocidade; OL: nível de saída; MODE: razão / fixa; FC FF: frequência grossa / fina; DET: desafinação (7 = centro). ● = portadora.",
+    fm6Pick: "Vozes do arquivo importado (clique para editar):",
+    fm6Picked: "Editando:",
+    fm6Sent: "Enviado para a faixa",
+    fm6Read: "Lido da faixa",
+    fm6Loaded: "Carregado",
+    fm6Factory: "F1..F24 são os patches de fábrica: escolha B1..B32.",
+    fm6BadSum: "uma soma de verificação não confere",
+    fm6Exported: "Banco exportado",
+    motion: "Movimento",
+    motionOn: "Tocar movimento",
+    motionClear: "Apagar movimento",
+    motionConfirm: "Apagar o movimento desta faixa?",
+    chance: "Chance %",
+    motionStep: "Passo",
+    motionParam: "Parâmetro",
+    motionValue: "Valor",
+    backupTitle: "Backup completo",
+    backupExport: "Salvar backup",
+    backupImport: "Restaurar backup",
+    backupHelp: "Salve neste computador a música atual, A–D, os bancos de sons e os ajustes.",
+    backupOld: "Backups completos precisam de um firmware com suporte a arquivo.",
+    backupConfirm: "Restaurar este backup completo? A música atual, os dados salvos e as amostras serão substituídos. Mantenha o USB conectado.",
+    backupWorking: "Fazendo backup / restaurando ",
+    backupDone: "Backup salvo",
+    backupRestored: "Backup completo restaurado",
+    demosChecks: "Projetos de teste, para as verificações no aparelho (demos/checks/README.md):",
+    chkChain: "CHAIN ABAC, frases de 4 compassos: todas as faixas mudam de seção juntas",
+    chkEntries: "ENTRIES 50 nessa CHAIN: as faixas somem e voltam",
+    chkPiece: "PIECE: 2 minutos, ARCH, depois para",
+    chkMods: "Um mod de um mod, um mod de GATE, um mod no FILL",
+    chkTempo: "Um mod lento no TEMPO",
+    chkMidi: "Faixas SOUND OFF: só MIDI (TRANSPOSE -24) e uma linha de mod",
+    chkCpu: "Quatro faixas ORACLE: observe Ajustes > Saúde",
+    demosTitle: "Projetos de demonstração",
+    demosHelp: "Coloque as músicas de demonstração do Tessera nos slots que você escolher. O projeto de cada slot escolhido é substituído; nada mais muda no FM-1. Salve um backup antes se quiser guardar o que está lá.",
+    demosPut: "Colocar no FM-1",
+    demosNone: "Escolha um slot para pelo menos uma demo",
+    demosTwice: "Escolha cada slot só uma vez",
+    demosSkip: "Deixar de fora",
+    pfTitle: "Arquivos de projeto",
+    pfHelp: "Salve o projeto de um slot como arquivo .tsp, ou coloque um arquivo .tsp em um slot: o mesmo arquivo que o simulador web salva e carrega. Carregue-o no FM-1 em SAVE > PROJECT. A reprodução para enquanto o slot é lido ou gravado.",
+    pfSave: "Salvar como arquivo",
+    pfLoad: "Carregar um arquivo",
+    pfEmpty: "Este slot está vazio",
+    pfSaved: "Salvo: ",
+    pfNotTsp: "Não é um arquivo de projeto do Tessera (.tsp): ",
+    pfReplace: "Substituir o slot {s} ({old}) por {new}?",
+    pfWorking: "Colocando o projeto no FM-1 ",
+    pfDone: "Gravado no slot {s}. Carregue-o em SAVE > PROJECT: ",
+    demosConfirm: "Colocar estas demos no FM-1?",
+    demosWas: "agora",
+    demosEmpty: "vazio",
+    demosOld: "um projeto em um formato antigo",
+    demosUnnamed: "um projeto sem nome",
+    demosKeep: "Para guardar um projeto que será substituído, cancele e salve um backup antes.",
+    demosWorking: "Colocando as demos no FM-1 ",
+    demosDone: "Demos gravadas. Carregue-as em SAVE > PROJECT: ",
+    demosFetch: "Não foi possível ler o arquivo da demo: ",
+    demoStill: "Ambient: um drone ORACLE, GRAVITY, FALL pelo efeito FILTER, um baixo do STEP como semente",
+    demoKoto: "Koto FM em HIRA em duas fileiras de QUAD, uma flauta ORACLE em uma FORM que se desenvolve, um mokugyo com condições",
+    demoHarbour: "Dub ambient: acordes ORACLE em stabs num eco à deriva, um sub grave, um 909 one drop",
+    demoLight: "Drone: uma quinta TRIO tocada uma vez e sustentada, um vento que um TIDE move, um coro ORACLE, um SOFT SWELL que cresce de vez em quando (15 minutos em WAVES)",
+    demoCedar: "Cordas dedilhadas em KUMOI: uma harpa KUGO no TURING, um koto no EUCLID, uma flauta MARKOV, tons 808 que o ADORN varia; a CHAIN muda de tom",
+    demoUndertow: "Pergunta e resposta em ré menor: uma melodia STEP que o ANSWER usa como SOURCE e responde sem parar, acordes menores (Dm Bb Gm Am) e um sub grave",
+    demoEmber: "Drone: uma quinta que nunca se move, um ciclo STEP como uma tanpura, uma flauta MARKOV que muda com o AABA da CHAIN (uma PIECE de 20 minutos)",
+    demoKites: "Loops de tamanhos diferentes: uma harpa em 11 colcheias e teclas ORACLE em 13 que se encontram de um jeito diferente a cada vez, um pad MORPH, estrelas CONSTELLATION agudas (30 minutos em WAVES)",
+    deviceDisplay: "Tela do aparelho",
+    deviceDisplayHelp: "As mudanças valem para a tela do FM-1 e são salvas. Mudanças feitas durante a reprodução são salvas depois do STOP.",
+    devicePresets: "Presets do aparelho",
+    deviceFavHelp: "As estrelas e o filtro de favoritos sincronizam com o FM-1. Salve os sons da biblioteca do computador em um slot de usuário do aparelho antes de marcá-los.",
+    deviceList: "Mostrar",
+    deviceAll: "Todos os presets",
+    deviceFavorites: "Só favoritos",
+    deviceEmpty: "Ainda não há favoritos. Escolha Todos os presets para adicionar.",
+    deviceTheme: "Tema",
+    deviceFont: "Fonte",
+    deviceMonitor: "Monitor MIDI",
+    deviceRegular: "Normal",
+    deviceBold: "Negrito",
+    deviceOff: "Desligado",
+    deviceEvents: "Eventos",
+    deviceNotes: "Notas / acordes segurados",
+    deviceStar: "Adicionar aos favoritos",
+    deviceUnstar: "Remover dos favoritos",
+    deviceUnsaved: "Aplicado, mas não foi possível salvar no aparelho. Tente de novo.",
+    deviceRejected: "O aparelho recusou esse ajuste.",
+    devicePending: "Aplicado. Os ajustes serão salvos quando a reprodução parar.",
+    connect: "Conectar",
+    disconnect: "Desconectar",
+    mock: "Aparelho simulado (sem hardware)",
+    editOn: "Editar o FM-1", readOnly: "Somente leitura: nada é gravado no FM-1 até você ligar Editar o FM-1.",
+    editBlocked: "Não enviado: ligue Editar o FM-1 para alterar o FM-1.",
+    editBackupAsk: "Antes de editar: salvar neste computador um backup de tudo o que está no FM-1? OK salva primeiro o arquivo de backup e depois liga a edição. Cancelar liga a edição sem backup.",
+    editOnSaid: "Edição ligada: as mudanças feitas aqui vão para o FM-1.",
+    sound: "Som",
+    engine: "Motor",
+    presets: "Presets",
+    initSound: "Som inicial",
+    track: "Faixa",
+    saveFile: "Salvar em arquivo",
+    loadFile: "Carregar arquivo",
+    projects: "Projetos",
+    load: "Carregar",
+    save: "Salvar",
+    used: "em uso",
+    empty: "vazio",
+    unknown: "—",
+    steps: "Passos",
+    reload: "Recarregar",
+    clearSeq: "Apagar sequência",
+    notesHelp: "Digite notas como C4 E4 G4 (até 4, C4 = 60). Os toques são linhas DRUM: KICK >SNARE HATCL (> = acento).",
+    notes: "Notas",
+    hits: "Toques",
+    time: "Tempo",
+    acc: "Acento",
+    slide: "Slide",
+    vel: "Velocidade",
+    foot: "Funciona no Chrome ou no Edge.",
+    iconsCredit: "Ícones: Fukiai (MIT), Hügelton Instruments",
+    nomidi: "Este navegador não consegue fazer isso. Abra a página no Chrome ou no Edge.",
+    denied: "O acesso MIDI (SysEx) não foi permitido.",
+    nodevice: "Tessera não encontrado. Conecte o FM-1 por USB e pressione Conectar de novo. No Mac um nome de porta antigo pode ficar guardado: renomeie o aparelho em Configuração de Áudio e MIDI, ou reconecte-o.",
+    notessera: "Este FM-1 não está com o Tessera. Instale-o com o instalador do Tessera (link abaixo) e pressione Conectar de novo.",
+    connecting: "Conectando",
+    reading: "Lendo ",
+    steploading: "Lendo passos ",
+    ready: "Conectado",
+    disconnected: "Desconectado",
+    lost: "O Tessera foi desconectado",
+    noreply: "Sem resposta do aparelho",
+    error: "Erro: ",
+    busy: "Ocupado",
+    applying: "Gravando ",
+    applied: "Carregado",
+    badfile: "Não é possível ler o arquivo: ",
+    savedSlot: "Salvo no slot ",
+    loadedSlot: "Slot carregado ",
+    emptySlot: "Slot vazio: ",
+    confirmSave: "Sobrescrever o slot {n}?",
+    confirmLoad: "Carregar o slot {n}? Os sons e sequências das quatro faixas são substituídos (não dá para desfazer).",
+    confirmClear: "Apagar a sequência inteira?",
+    confirmInit: "Voltar o som aos valores padrão do motor? A sequência fica (segure EDIT no aparelho para desfazer).",
+    samples: "Amostras",
+    smpHelp: "Escolha arquivos ou grave uma entrada. Arraste as pontas da forma de onda para cortar; roda do mouse para zoom. Até 16 sons e cerca de 7 s por slot.",
+    zones: "zonas",
+    smpName: "Nome",
+    chooseFiles: "Escolher arquivos",
+    upload: "Enviar",
+    erase: "Apagar",
+    clearList: "Limpar lista",
+    file: "Arquivo",
+    root: "Fundamental",
+    keys: "Teclas",
+    length: "Duração",
+    remove: "Remover",
+    record: "Gravar",
+    stopRec: "Parar",
+    recInput: "Entrada",
+    recDenied: "Não é possível gravar",
+    recFull: "O slot está cheio",
+    recSilent: "Silêncio: verifique a entrada",
+    preview: "Ouvir",
+    autoTrim: "Corte automático",
+    trim: "Cortar",
+    smpTooBig: "grande demais",
+    smpDecodeFail: "Não é possível ler: ",
+    smpUploading: "Enviando USR",
+    smpDone: "Enviado USR",
+    smpFail: "Falha ao enviar a amostra: ",
+    smpErased: "Apagado USR",
+    confirmErase: "Apagar USR{n}?",
+    confirmUpload: "Gravar em USR{n}? O conteúdo atual será substituído.",
+    layout: "(O firmware tem outro número de parâmetros; mostrando uma lista simples.)",
+    ctlHelp: "Controles deslizantes: clique e ajuste com a roda do mouse ou as setas (Shift: passos de 10); clique duplo restaura.",
+    live: "● Ao vivo",
+    polling: "○ Consultando (firmware antigo)",
+    library: "Biblioteca",
+    libSearch: "Buscar nome ou tag",
+    allEngines: "Todos os motores",
+    allTags: "Todas as tags",
+    sortModified: "Alterados recentemente",
+    sortCreated: "Adicionados recentemente",
+    sortName: "Nome",
+    sortEngine: "Motor",
+    name: "Nome",
+    tagsCol: "Tags",
+    date: "Alterado",
+    audition: "Ouvir",
+    toSlot: "Para um slot do aparelho",
+    rename: "Renomear",
+    tags: "Tags",
+    duplicate: "Duplicar",
+    delete: "Excluir",
+    exportPatch: "Exportar",
+    saveToLib: "Salvar o som atual",
+    import: "Importar",
+    exportLib: "Exportar biblioteca",
+    factoryToLib: "Copiar para a biblioteca",
+    libEmpty: "A biblioteca está vazia. Adicione sons com \"Salvar o som atual\", copiando um preset de fábrica ou um slot do aparelho, ou importando um arquivo.",
+    noMatch: "Nada encontrado",
+    noLibDB: "(este navegador não consegue guardá-la: ela some ao recarregar)",
+    bank: "Presets de usuário no aparelho",
+    bankLoad: "Carregar",
+    bankStore: "Guardar o som atual",
+    bankGet: "Para a biblioteca",
+    exportBank: "Exportar banco",
+    dndHelp: "Você também pode arrastar entre a biblioteca e os slots.",
+    confirmOverwriteRange: "Não há slots vazios suficientes. Sobrescrever os {n} slots {from}–{to} ({used} em uso)?",
+    confirmOverwrite: "Sobrescrever o slot {n} ({name})?",
+    confirmEraseSlot: "Apagar o slot {n} ({name})?",
+    confirmDelete: "Excluir \"{name}\" da biblioteca?",
+    promptName: "Nome (o aparelho guarda 12 caracteres ASCII)",
+    promptTags: "Tags (separadas por vírgula)",
+    promptNameAuto: "Nome (12 caracteres ASCII; vazio: o aparelho dá o nome)",
+    auditioning: "Preparando para ouvir ",
+    auditioned: "Ouvindo (só o som, a sequência fica; segure EDIT no aparelho para desfazer): ",
+    savedLib: "Salvo na biblioteca: ",
+    copiedLib: "Copiado para a biblioteca: ",
+    imported: "Importado: ",
+    skippedN: " ({n} ilegíveis)",
+    patchesN: " patches",
+    putDone: "Gravado no aparelho: slot ",
+    storedSlot: "Guardado no aparelho: slot ",
+    erasedSlot: "Slot apagado ",
+    loadedUser: "Som carregado (a sequência fica; o padrão dela está no aparelho em SEQ > PHRASES; segure EDIT para desfazer): ",
+    reloaded: "O som mudou no aparelho: lido de novo",
+    readingBank: "Lendo os slots",
+    badEngine: "Este firmware não tem esse motor: ",
+    flashFail: "Falha na gravação (rc {rc})",
+    installer: "Instalador do Tessera",
+    tabSeq: "Sequenciador",
+    tabTracks: "Faixas",
+    tabSettings: "Ajustes",
+    needDevice: "Conecte o FM-1 para editar.",
+    smpNone: "Este firmware não tem slots de amostras de usuário.",
+    bankConnect: "Conecte o FM-1 para ver também os presets de usuário dele.",
+    bankNone: "Este firmware não tem presets de usuário.",
+    mixer: "Mixer",
+    mixHelp: "As quatro faixas da página MIXER do aparelho. O fader é o nível. O pan é gravado em qualquer faixa sem mudar a seleção. REC mostra uma faixa armada para gravação ao vivo no aparelho.",
+    level: "Nível",
+    pan: "Pan",
+    mute: "Mudo",
+    rec: "REC",
+    selectTrack: "Selecionar",
+    selectedTrack: "Selecionada",
+    projHelp: "Um projeto guarda os sons e padrões das quatro faixas, a cadeia da música, a faixa selecionada e os ajustes globais.",
+    tuneTitle: "Afinações (Scala)",
+    tuneHelp: "Leia um arquivo Scala .scl e envie-o para um de quatro slots. As afinações são salvas com o projeto. Escolha uma no aparelho (SCL > SCALES, USER) ou toque daqui. ROOT é o grau 0; mapas .kbm não são usados.",
+    tuneLoad: "Carregar .scl",
+    tunePlay: "Tocar",
+    tuneOff: "Afinação desligada (a escala do SCL)",
+    tuneNotes: "notas",
+    tuneFolded: "dobrada no período, repetições descartadas",
+    tuneRefused: "O FM-1 recusou esta afinação",
+    tuneReplace: "Substituir {old} em USR{n}?",
+    tuneClearConfirm: "Apagar USR{n}?",
+    slot: "Slot",
+    songTitle: "Música",
+    songHelp: "Organize padrões de slots salvos e escolha as repetições. Os sons atuais ficam. Salve um projeto acima para guardar a cadeia. As linhas mudam no fim da faixa 1; a música para no fim.",
+    songAdd: "Adicionar linha",
+    songRemove: "Remover a última linha",
+    songPlay: "Tocar do início",
+    songStop: "Parar",
+    songReps: "repetições",
+    songEmpty: "Adicione uma linha antes",
+    songBusy: "Pare antes de editar",
+    songInvalid: "Verifique slots e repetições",
+    songPlaying: "Tocando a linha",
+    songSaved: "Cadeia alterada. Salve um projeto para guardá-la.",
+    health: "Saúde",
+    healthHelp: "Os contadores do próprio FM-1, lidos uma vez por segundo enquanto LIVE está ligado: o que observar ao testar a CPU. Os piores tempos contam desde que liga ou desde RESET. Um valor mostrado invertido indica que um estalo ou uma voz cortada é provável.",
+    healthLive: "Ao vivo",
+    healthStop: "Parar",
+    healthReset: "Zerar piores",
+    healthSchema: "Esquema",
+    healthOld: "A resposta deste firmware tem outro formato.",
+    healthNone: "Sem resposta: este firmware foi compilado sem os contadores (áudio USB desligado).",
+    healthCpu: "Carga da CPU",
+    healthWorst: "Pior metade (do seu prazo)",
+    healthLate: "Metades atrasadas · prazos perdidos",
+    healthVoices: "Vozes soando · seguradas",
+    healthShed: "Vozes descartadas · abandonadas · roubadas",
+    healthShedTracks: "Descartadas, faixas 1 · 2 · 3 · 4",
+    healthCore1: "Segundo núcleo ligado · tempos esgotados · falhas",
+    healthMemory: "Memória de áudio, pico",
+    healthStack: "Pilha, principal · interrupções",
+    healthUsbOut: "USB para o computador (Tessera Out): ligado · buffer",
+    healthUsbOutErr: "USB para o computador: underruns · overruns",
+    healthUsbIn: "Computador para USB (Tessera In): ligado · buffer",
+    healthUsbInErr: "Computador para USB: underruns · overruns",
+    healthUsbPackets: "Quadros USB perdidos · pacotes com erro",
+    healthUsbTime: "Serviço USB, pior · maior intervalo",
+    yes: "sim",
+    no: "não",
+    system: "Sistema",
+    firmware: "Firmware",
+    sync: "Sincronia",
+    tracksN: "Faixas",
+    stepsN: "Passos",
+    enginesL: "Motores",
+    smpSlots: "Slots de amostras",
+    userBank: "Presets de usuário",
+    none: "nenhum",
+    pattern: "Padrão",
+    presetPool: "Coleção de presets",
+    poolGeneral: "Presets gerais",
+    poolFm6: "Vozes FM6",
+    nativeHint: "Os timbres nativos aparecem no navegador de presets. Efeitos e ajustes da faixa não mudam ao carregar.",
+    importSyx: "Importar .syx",
+    recTitle: "Gravação",
+    recHelp: "Clique, contagem e edição de notas com o transporte parado. REC arma; PLAY começa a gravar.",
+    favLocal: "Os favoritos são salvos neste navegador",
+    poolFirst: "Escolha antes a coleção de presets correspondente",
+    poolTrack: "Escolha antes a coleção de presets da faixa atual",
+  },
+  ko: {
+    tabFm6: "6-OP FM",
+    fm6Help: "FM6 보이스를 편집하거나 SysEx 파일을 가져와 보이스를 고르세요. 트랙으로 보낸 다음 사용자 프리셋에 저장하거나 프로젝트를 저장하세요. 각 프리셋은 보이스 전체를 담습니다.",
+    fm6Source: "패치 주고받기",
+    fm6ReadBtn: "트랙에서 읽기",
+    fm6SendBtn: "트랙으로 보내기",
+    fm6Live: "편집하면서 보내기",
+    fm6StoreBtn: "뱅크에 저장",
+    fm6Import: "SysEx 가져오기",
+    fm6Export: "SysEx 내보내기",
+    fm6BankExport: "뱅크를 SysEx로 내보내기",
+    fm6Init: "보이스 초기화",
+    fm6Voice: "보이스",
+    fm6Ops: "오퍼레이터",
+    fm6Carriers: "캐리어",
+    fm6Feedback: "피드백",
+    fm6PitchEg: "피치 EG",
+    fm6Freq: "주파수",
+    fm6Legend: "R1..R4 / L1..L4: EG 레이트와 레벨; BP LD RD LC RC: 건반 레벨 스케일링; RS: 레이트 스케일링; AMS: LFO 진폭 변조; KVS: 벨로시티; OL: 출력 레벨; MODE: 비율 / 고정; FC FF: 주파수 대략 / 미세; DET: 디튠(7 = 중앙). ● = 캐리어.",
+    fm6Pick: "가져온 파일의 보이스(클릭해서 편집):",
+    fm6Picked: "편집 중:",
+    fm6Sent: "트랙으로 보냄",
+    fm6Read: "트랙에서 읽음",
+    fm6Loaded: "불러옴",
+    fm6Factory: "F1..F24는 공장 패치입니다. B1..B32를 고르세요.",
+    fm6BadSum: "체크섬이 맞지 않습니다",
+    fm6Exported: "뱅크를 내보냄",
+    motion: "모션",
+    motionOn: "모션 재생",
+    motionClear: "모션 지우기",
+    motionConfirm: "이 트랙의 모션을 지울까요?",
+    chance: "확률 %",
+    motionStep: "스텝",
+    motionParam: "파라미터",
+    motionValue: "값",
+    backupTitle: "전체 백업",
+    backupExport: "백업 저장",
+    backupImport: "백업 복원",
+    backupHelp: "현재 음악, A–D, 사운드 뱅크, 설정을 이 컴퓨터에 저장합니다.",
+    backupOld: "전체 백업에는 보관 기능을 지원하는 펌웨어가 필요합니다.",
+    backupConfirm: "이 전체 백업을 복원할까요? 현재 음악, 저장된 데이터, 샘플이 바뀝니다. USB를 연결해 두세요.",
+    backupWorking: "백업 / 복원 중 ",
+    backupDone: "백업 저장됨",
+    backupRestored: "전체 백업 복원됨",
+    demosChecks: "기기 점검용 테스트 프로젝트(demos/checks/README.md):",
+    chkChain: "CHAIN ABAC, 4마디 프레이즈: 모든 트랙이 함께 섹션을 바꿈",
+    chkEntries: "그 CHAIN에 ENTRIES 50: 트랙이 사라졌다가 다시 들어옴",
+    chkPiece: "PIECE: 2분, ARCH, 그다음 멈춤",
+    chkMods: "모드의 모드, GATE 모드, FILL에 거는 모드",
+    chkTempo: "TEMPO에 거는 느린 모드",
+    chkMidi: "SOUND OFF 트랙: MIDI만(TRANSPOSE -24)과 모드 레인",
+    chkCpu: "ORACLE 트랙 네 개: 설정 > 상태를 지켜보세요",
+    demosTitle: "데모 프로젝트",
+    demosHelp: "Tessera 데모 곡을 원하는 슬롯에 넣으세요. 고른 슬롯의 프로젝트만 바뀌고 FM-1의 다른 것은 그대로입니다. 지금 있는 것을 남기려면 먼저 백업을 저장하세요.",
+    demosPut: "FM-1에 넣기",
+    demosNone: "적어도 하나의 데모에 슬롯을 고르세요",
+    demosTwice: "각 슬롯은 한 번만 고르세요",
+    demosSkip: "빼기",
+    pfTitle: "프로젝트 파일",
+    pfHelp: "슬롯의 프로젝트를 .tsp 파일로 저장하거나 .tsp 파일을 슬롯에 넣으세요. 웹 시뮬레이터가 저장하고 불러오는 것과 같은 파일입니다. FM-1에서는 SAVE > PROJECT에서 불러오세요. 슬롯을 읽거나 쓰는 동안 재생이 멈춥니다.",
+    pfSave: "파일로 저장",
+    pfLoad: "파일 불러오기",
+    pfEmpty: "이 슬롯은 비어 있습니다",
+    pfSaved: "저장됨: ",
+    pfNotTsp: "Tessera 프로젝트 파일(.tsp)이 아닙니다: ",
+    pfReplace: "슬롯 {s}({old})를 {new}(으)로 바꿀까요?",
+    pfWorking: "프로젝트를 FM-1에 넣는 중 ",
+    pfDone: "슬롯 {s}에 썼습니다. SAVE > PROJECT에서 불러오세요: ",
+    demosConfirm: "이 데모들을 FM-1에 넣을까요?",
+    demosWas: "현재",
+    demosEmpty: "비어 있음",
+    demosOld: "이전 형식의 프로젝트",
+    demosUnnamed: "이름 없는 프로젝트",
+    demosKeep: "바뀔 프로젝트를 남기려면 취소하고 먼저 백업을 저장하세요.",
+    demosWorking: "데모를 FM-1에 넣는 중 ",
+    demosDone: "데모를 썼습니다. SAVE > PROJECT에서 불러오세요: ",
+    demosFetch: "데모 파일을 읽지 못했습니다: ",
+    demoStill: "앰비언트: ORACLE 드론, GRAVITY, FILTER 이펙트를 거친 FALL, STEP을 시드로 한 베이스",
+    demoKoto: "두 줄의 QUAD 위 HIRA 음계 FM 고토, 발전하는 FORM 속 ORACLE 플루트, 조건이 걸린 목어",
+    demoHarbour: "앰비언트 덥: 떠도는 에코 속 ORACLE 코드 스탭, 서브 베이스, 909 원 드롭",
+    demoLight: "드론: 한 번 쳐서 유지하는 TRIO 5도, TIDE가 움직이는 바람, ORACLE 합창, 가끔 부풀어 오르는 SOFT SWELL(WAVES로 15분)",
+    demoCedar: "KUMOI 음계의 발현악기: TURING 위 KUGO 하프, EUCLID 위 고토, MARKOV 플루트, ADORN이 변주하는 808 톰; CHAIN이 조를 바꿈",
+    demoUndertow: "D 단조의 부름과 응답: ANSWER가 SOURCE로 삼아 계속 답하는 STEP 선율, 단화음(Dm Bb Gm Am), 서브 베이스",
+    demoEmber: "드론: 움직이지 않는 5도, 탄푸라 같은 STEP 사이클, CHAIN의 AABA에 따라 바뀌는 MARKOV 플루트(20분짜리 PIECE)",
+    demoKites: "길이가 다른 루프: 8분음표 11개의 하프와 13개의 ORACLE 건반이 매번 다르게 만남, MORPH 패드, 높은 CONSTELLATION 별(WAVES로 30분)",
+    deviceDisplay: "기기 화면",
+    deviceDisplayHelp: "변경 사항은 FM-1 화면에 적용되고 저장됩니다. 재생 중에 바꾼 것은 STOP 뒤에 저장됩니다.",
+    devicePresets: "기기 프리셋",
+    deviceFavHelp: "별표와 즐겨찾기 필터는 FM-1과 동기화됩니다. 컴퓨터 라이브러리의 사운드는 별표하기 전에 기기의 사용자 슬롯에 저장하세요.",
+    deviceList: "보기",
+    deviceAll: "모든 프리셋",
+    deviceFavorites: "즐겨찾기만",
+    deviceEmpty: "아직 즐겨찾기가 없습니다. 모든 프리셋을 골라 추가하세요.",
+    deviceTheme: "테마",
+    deviceFont: "글꼴",
+    deviceMonitor: "MIDI 모니터",
+    deviceRegular: "보통",
+    deviceBold: "굵게",
+    deviceOff: "끔",
+    deviceEvents: "이벤트",
+    deviceNotes: "누르고 있는 음 / 코드",
+    deviceStar: "즐겨찾기에 추가",
+    deviceUnstar: "즐겨찾기에서 제거",
+    deviceUnsaved: "적용했지만 기기에 저장하지 못했습니다. 다시 시도하세요.",
+    deviceRejected: "기기가 그 설정을 거부했습니다.",
+    devicePending: "적용했습니다. 재생이 멈추면 설정이 저장됩니다.",
+    connect: "연결",
+    disconnect: "연결 끊기",
+    mock: "가상 기기(하드웨어 없음)",
+    editOn: "FM-1 편집", readOnly: "읽기 전용: FM-1 편집을 켤 때까지 FM-1에 아무것도 쓰지 않습니다.",
+    editBlocked: "보내지 않음: FM-1을 바꾸려면 FM-1 편집을 켜세요.",
+    editBackupAsk: "편집하기 전에 FM-1의 모든 내용을 이 컴퓨터에 백업할까요? 확인을 누르면 백업 파일을 먼저 저장한 뒤 편집을 켭니다. 취소를 누르면 백업 없이 켭니다.",
+    editOnSaid: "편집 켜짐: 여기서 바꾼 내용이 FM-1로 갑니다.",
+    sound: "사운드",
+    engine: "엔진",
+    presets: "프리셋",
+    initSound: "사운드 초기화",
+    track: "트랙",
+    saveFile: "파일로 저장",
+    loadFile: "파일 불러오기",
+    projects: "프로젝트",
+    load: "불러오기",
+    save: "저장",
+    used: "사용 중",
+    empty: "비어 있음",
+    unknown: "—",
+    steps: "스텝",
+    reload: "다시 읽기",
+    clearSeq: "시퀀스 지우기",
+    notesHelp: "C4 E4 G4처럼 음을 입력하세요(최대 4개, C4 = 60). 타격은 DRUM 레인입니다: KICK >SNARE HATCL(> = 액센트).",
+    notes: "음",
+    hits: "타격",
+    time: "시간",
+    acc: "액센트",
+    slide: "슬라이드",
+    vel: "벨로시티",
+    foot: "Chrome 또는 Edge에서 작동합니다.",
+    iconsCredit: "아이콘: Fukiai(MIT), Hügelton Instruments",
+    nomidi: "이 브라우저에서는 할 수 없습니다. Chrome 또는 Edge에서 이 페이지를 여세요.",
+    denied: "MIDI(SysEx) 접근이 허용되지 않았습니다.",
+    nodevice: "Tessera를 찾을 수 없습니다. FM-1을 USB로 연결하고 연결을 다시 누르세요. Mac에서는 예전 포트 이름이 남아 있을 수 있습니다. Audio MIDI 설정에서 기기 이름을 바꾸거나 다시 연결하세요.",
+    notessera: "이 FM-1에는 Tessera가 없습니다. Tessera 설치 프로그램(아래 링크)으로 설치한 뒤 연결을 다시 누르세요.",
+    connecting: "연결 중",
+    reading: "읽는 중 ",
+    steploading: "스텝 읽는 중 ",
+    ready: "연결됨",
+    disconnected: "연결 끊김",
+    lost: "Tessera가 분리되었습니다",
+    noreply: "기기의 응답이 없습니다",
+    error: "오류: ",
+    busy: "사용 중",
+    applying: "쓰는 중 ",
+    applied: "불러옴",
+    badfile: "파일을 읽을 수 없습니다: ",
+    savedSlot: "슬롯에 저장함: ",
+    loadedSlot: "슬롯을 불러옴: ",
+    emptySlot: "빈 슬롯: ",
+    confirmSave: "슬롯 {n}을(를) 덮어쓸까요?",
+    confirmLoad: "슬롯 {n}을(를) 불러올까요? 네 트랙의 사운드와 시퀀스가 모두 바뀝니다(되돌릴 수 없음).",
+    confirmClear: "시퀀스 전체를 지울까요?",
+    confirmInit: "사운드를 엔진 기본값으로 되돌릴까요? 시퀀스는 그대로입니다(되돌리려면 기기에서 EDIT를 누르고 있으세요).",
+    samples: "샘플",
+    smpHelp: "파일을 고르거나 입력을 녹음하세요. 파형 끝을 끌어 다듬고, 휠로 확대합니다. 슬롯당 최대 16개 사운드, 약 7초.",
+    zones: "존",
+    smpName: "이름",
+    chooseFiles: "파일 선택",
+    upload: "업로드",
+    erase: "지우기",
+    clearList: "목록 비우기",
+    file: "파일",
+    root: "루트",
+    keys: "건반",
+    length: "길이",
+    remove: "제거",
+    record: "녹음",
+    stopRec: "정지",
+    recInput: "입력",
+    recDenied: "녹음할 수 없습니다",
+    recFull: "슬롯이 가득 찼습니다",
+    recSilent: "무음: 입력을 확인하세요",
+    preview: "재생",
+    autoTrim: "자동 다듬기",
+    trim: "다듬기",
+    smpTooBig: "너무 큼",
+    smpDecodeFail: "읽을 수 없음: ",
+    smpUploading: "업로드 중 USR",
+    smpDone: "업로드 완료 USR",
+    smpFail: "샘플 업로드 실패: ",
+    smpErased: "지움 USR",
+    confirmErase: "USR{n}을(를) 지울까요?",
+    confirmUpload: "USR{n}에 쓸까요? 현재 내용이 바뀝니다.",
+    layout: "(펌웨어의 파라미터 수가 다릅니다. 단순 목록으로 보여 줍니다.)",
+    ctlHelp: "슬라이더: 클릭한 다음 휠이나 화살표 키로 미세 조정(Shift: 10단위), 더블클릭하면 초기화합니다.",
+    live: "● 라이브",
+    polling: "○ 폴링(이전 펌웨어)",
+    library: "라이브러리",
+    libSearch: "이름이나 태그 검색",
+    allEngines: "모든 엔진",
+    allTags: "모든 태그",
+    sortModified: "최근 변경순",
+    sortCreated: "최근 추가순",
+    sortName: "이름",
+    sortEngine: "엔진",
+    name: "이름",
+    tagsCol: "태그",
+    date: "변경일",
+    audition: "미리 듣기",
+    toSlot: "기기 슬롯으로",
+    rename: "이름 바꾸기",
+    tags: "태그",
+    duplicate: "복제",
+    delete: "삭제",
+    exportPatch: "내보내기",
+    saveToLib: "현재 사운드 저장",
+    import: "가져오기",
+    exportLib: "라이브러리 내보내기",
+    factoryToLib: "라이브러리로 복사",
+    libEmpty: "라이브러리가 비어 있습니다. \"현재 사운드 저장\"으로, 공장 프리셋이나 기기 슬롯을 복사해서, 또는 파일을 가져와서 사운드를 추가하세요.",
+    noMatch: "일치하는 항목 없음",
+    noLibDB: "(이 브라우저는 저장할 수 없어 새로 고치면 사라집니다)",
+    bank: "기기의 사용자 프리셋",
+    bankLoad: "불러오기",
+    bankStore: "현재 사운드 저장",
+    bankGet: "라이브러리로",
+    exportBank: "뱅크 내보내기",
+    dndHelp: "라이브러리와 슬롯 사이를 끌어서 옮길 수도 있습니다.",
+    confirmOverwriteRange: "빈 슬롯이 부족합니다. 슬롯 {from}–{to}의 {n}개를 덮어쓸까요({used}개 사용 중)?",
+    confirmOverwrite: "슬롯 {n}({name})을(를) 덮어쓸까요?",
+    confirmEraseSlot: "슬롯 {n}({name})을(를) 지울까요?",
+    confirmDelete: "\"{name}\"을(를) 라이브러리에서 삭제할까요?",
+    promptName: "이름(기기는 ASCII 12자를 저장)",
+    promptTags: "태그(쉼표로 구분)",
+    promptNameAuto: "이름(ASCII 12자, 비우면 기기가 이름을 붙임)",
+    auditioning: "미리 듣기 준비 중 ",
+    auditioned: "미리 듣는 중(사운드만, 시퀀스는 그대로; 되돌리려면 기기에서 EDIT를 누르고 있으세요): ",
+    savedLib: "라이브러리에 저장함: ",
+    copiedLib: "라이브러리로 복사함: ",
+    imported: "가져옴: ",
+    skippedN: " ({n}개 읽을 수 없음)",
+    patchesN: "개 패치",
+    putDone: "기기에 씀: 슬롯 ",
+    storedSlot: "기기에 저장함: 슬롯 ",
+    erasedSlot: "슬롯을 지움: ",
+    loadedUser: "사운드를 불러옴(시퀀스는 그대로; 패턴은 기기의 SEQ > PHRASES에 있음; 되돌리려면 EDIT를 누르고 있으세요): ",
+    reloaded: "기기에서 사운드가 바뀌어 다시 읽었습니다",
+    readingBank: "슬롯 읽는 중",
+    badEngine: "이 펌웨어에는 그런 엔진이 없습니다: ",
+    flashFail: "쓰기 실패(rc {rc})",
+    installer: "Tessera 설치 프로그램",
+    tabSeq: "시퀀서",
+    tabTracks: "트랙",
+    tabSettings: "설정",
+    needDevice: "편집하려면 FM-1을 연결하세요.",
+    smpNone: "이 펌웨어에는 사용자 샘플 슬롯이 없습니다.",
+    bankConnect: "FM-1을 연결하면 사용자 프리셋도 볼 수 있습니다.",
+    bankNone: "이 펌웨어에는 사용자 프리셋이 없습니다.",
+    mixer: "믹서",
+    mixHelp: "기기 MIXER 페이지의 네 트랙입니다. 페이더는 레벨입니다. 팬은 선택을 바꾸지 않고 어느 트랙에나 씁니다. REC는 기기에서 라이브 녹음 대기 중인 트랙을 보여 줍니다.",
+    level: "레벨",
+    pan: "팬",
+    mute: "뮤트",
+    rec: "REC",
+    selectTrack: "선택",
+    selectedTrack: "선택됨",
+    projHelp: "프로젝트는 네 트랙의 사운드와 패턴, 송 체인, 선택한 트랙, 전역 설정을 담습니다.",
+    tuneTitle: "조율(Scala)",
+    tuneHelp: "Scala .scl 파일을 읽어 네 슬롯 중 하나로 보내세요. 조율은 프로젝트와 함께 저장됩니다. 기기에서 고르거나(SCL > SCALES, USER) 여기서 연주하세요. ROOT는 0도이며 .kbm 매핑은 쓰지 않습니다.",
+    tuneLoad: ".scl 불러오기",
+    tunePlay: "연주",
+    tuneOff: "조율 끔(SCL의 스케일)",
+    tuneNotes: "음",
+    tuneFolded: "주기 안으로 접고 반복은 뺐습니다",
+    tuneRefused: "FM-1이 이 조율을 거부했습니다",
+    tuneReplace: "USR{n}의 {old}을(를) 바꿀까요?",
+    tuneClearConfirm: "USR{n}을(를) 지울까요?",
+    slot: "슬롯",
+    songTitle: "송",
+    songHelp: "저장된 슬롯의 패턴을 배열하고 반복 횟수를 고르세요. 현재 사운드는 그대로입니다. 체인을 남기려면 위에서 프로젝트를 저장하세요. 행은 트랙 1의 끝에서 바뀌고, 송은 끝에서 멈춥니다.",
+    songAdd: "행 추가",
+    songRemove: "마지막 행 제거",
+    songPlay: "처음부터 재생",
+    songStop: "정지",
+    songReps: "반복",
+    songEmpty: "먼저 행을 추가하세요",
+    songBusy: "편집하기 전에 정지하세요",
+    songInvalid: "슬롯과 반복을 확인하세요",
+    songPlaying: "재생 중인 행",
+    songSaved: "체인이 바뀌었습니다. 남기려면 프로젝트를 저장하세요.",
+    health: "상태",
+    healthHelp: "FM-1 자체의 카운터로, LIVE가 켜져 있는 동안 1초에 한 번 읽습니다. CPU를 시험할 때 볼 곳입니다. 최악값은 전원을 켠 때나 RESET부터 셉니다. 반전되어 보이는 값은 지직거림이나 끊긴 보이스가 생기기 쉽다는 뜻입니다.",
+    healthLive: "라이브",
+    healthStop: "정지",
+    healthReset: "최악값 초기화",
+    healthSchema: "스키마",
+    healthOld: "이 펌웨어의 응답은 형식이 다릅니다.",
+    healthNone: "응답 없음: 이 펌웨어는 카운터 없이 빌드되었습니다(USB 오디오 꺼짐).",
+    healthCpu: "CPU 부하",
+    healthWorst: "최악의 절반(기한 대비)",
+    healthLate: "늦은 절반 · 기한 초과",
+    healthVoices: "소리 나는 보이스 · 유지",
+    healthShed: "보이스 줄임 · 포기 · 가로챔",
+    healthShedTracks: "줄임, 트랙 1 · 2 · 3 · 4",
+    healthCore1: "두 번째 코어 켜짐 · 시간 초과 · 오류",
+    healthMemory: "오디오 메모리, 최대",
+    healthStack: "스택, 메인 · 인터럽트",
+    healthUsbOut: "USB에서 컴퓨터로(Tessera Out): 켜짐 · 버퍼",
+    healthUsbOutErr: "USB에서 컴퓨터로: 언더런 · 오버런",
+    healthUsbIn: "컴퓨터에서 USB로(Tessera In): 켜짐 · 버퍼",
+    healthUsbInErr: "컴퓨터에서 USB로: 언더런 · 오버런",
+    healthUsbPackets: "놓친 USB 프레임 · 잘못된 패킷",
+    healthUsbTime: "USB 처리, 최악 · 최장 간격",
+    yes: "예",
+    no: "아니요",
+    system: "시스템",
+    firmware: "펌웨어",
+    sync: "동기",
+    tracksN: "트랙",
+    stepsN: "스텝",
+    enginesL: "엔진",
+    smpSlots: "샘플 슬롯",
+    userBank: "사용자 프리셋",
+    none: "없음",
+    pattern: "패턴",
+    presetPool: "프리셋 모음",
+    poolGeneral: "일반 프리셋",
+    poolFm6: "FM6 보이스",
+    nativeHint: "네이티브 음색은 프리셋 브라우저에 나타납니다. 불러와도 이펙트와 트랙 설정은 바뀌지 않습니다.",
+    importSyx: ".syx 가져오기",
+    recTitle: "녹음",
+    recHelp: "클릭, 카운트인, 정지 중 음 편집. REC로 대기하고 PLAY로 녹음을 시작합니다.",
+    favLocal: "즐겨찾기는 이 브라우저에 저장됩니다",
+    poolFirst: "먼저 맞는 프리셋 모음을 고르세요",
+    poolTrack: "먼저 현재 트랙의 프리셋 모음을 고르세요",
+  },
 };
-let lang = (navigator.language || "en").toLowerCase().startsWith("ja") ? "ja" : "en";
-const t = (k) => TEXT[lang][k] ?? k;
+/* the page language: the one picked in the header (tessera-lang, shared with the site, the installer and the simulator),
+   else the browser's first we have, else English; a string missing in a language falls back to English */
+const LANGS = ["en", "es", "it", "de", "fr", "pt", "ko", "ja"], LANG_KEY = "tessera-lang";
+function pickLang() {
+  try { const s = localStorage.getItem(LANG_KEY); if (LANGS.includes(s)) return s; } catch (e) {}
+  for (const l of navigator.languages || [navigator.language || "en"]) {
+    const b = String(l).toLowerCase().slice(0, 2);
+    if (LANGS.includes(b)) return b;
+  }
+  return "en";
+}
+let lang = pickLang();
+const t = (k) => (TEXT[lang] || TEXT.en)[k] ?? TEXT.en[k] ?? k;
 let lastKey = null, lastArg = "";
 function sayK(k, arg = "") { lastKey = k; lastArg = arg; $("status").textContent = t(k) + arg; }
 function say(message) { lastKey = null; lastArg = ""; $("status").textContent = String(message); }
 function applyLang() {
-  document.documentElement.lang = lang;
+  document.documentElement.lang = lang === "pt" ? "pt-BR" : lang;
   document.querySelectorAll("[data-t]").forEach((e) => setLabel(e, t(e.dataset.t)));
-  $("lang").textContent = t("other");
+  $("lang").value = lang; $("lang-code").textContent = lang.toUpperCase();
   setLabel($("connect"), t(dev ? "disconnect" : "connect"));
   if (lastKey) $("status").textContent = t(lastKey) + lastArg;
   $("libq").placeholder = t("libSearch");
@@ -3079,7 +5167,11 @@ function applyLang() {
   renderPreferences(true);
   renderPanels();
 }
-$("lang").addEventListener("click", () => { lang = lang === "ja" ? "en" : "ja"; applyLang(); });
+$("lang").addEventListener("change", () => {
+  lang = $("lang").value;
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+  applyLang();
+});
 
 /* ---------------------------------------------------------------- tabs --- */
 /* one panel at a time; the last one is remembered (localStorage) and in the URL hash (#sound ...) */
@@ -3235,9 +5327,8 @@ async function connect() {
       }
       access.onstatechange = onState;
     }
-    const isF = (p) => /tessera|melodee|felucca/i.test(p.name || "") && p.state !== "disconnected";   /* (the device's port: Tessera, from its USB name; Melodee before 2.0) */
-    const input = [...access.inputs.values()].find(isF);
-    const output = [...access.outputs.values()].find(isF);
+    const { input, output, notTessera } = await findDevicePorts(access);
+    if (notTessera) { sayK("notessera"); return; }
     if (!input || !output) { sayK("nodevice"); return; }
     const link = new Link((d) => output.send(d), {
       timeout: 300,
@@ -3249,7 +5340,7 @@ async function connect() {
     input.onmidimessage = (e) => link.receive(e.data);
     if (input.open) await input.open().catch(() => {});
     dev = { link, input, output, info: null, pdesc: [], gdesc: [], names: [], dump: null, steps: [], slotUsed: [null, null, null, null],
-      keys: null, watch: false, bank: null };
+      keys: null, watch: false, bank: null, editOn: false, backedUp: false };
     connectedDevice = dev;
     setLabel($("connect"), t("disconnect"));
     await load(connectedDevice);
@@ -3281,6 +5372,7 @@ function disconnect(reasonKey = "disconnected") {
   renderLib();
   renderBank();
   renderPreferences(true);
+  renderEdit();
   $("version").textContent = "";
   setLabel($("connect"), t("connect"));
   sayK(reasonKey);
@@ -3288,7 +5380,7 @@ function disconnect(reasonKey = "disconnected") {
 
 function onState(e) {
   const p = e.port;
-  if (!p || !/tessera|melodee|felucca/i.test(p.name || "")) return;
+  if (!p || !(RE_TESSERA.test(p.name || "") || RE_FM1.test(p.name || ""))) return;
   if (dev && p.state === "disconnected" && (p.id === dev.input.id || p.id === dev.output.id)) {
     disconnect("lost");
   } else if (!dev && wantConnected && p.state === "connected" && p.type === "output") {
@@ -3300,6 +5392,11 @@ function onState(e) {
 function assertSession(d) { if (!d || d !== dev) throw new Error("closed"); }
 async function sessionRequest(d, r, opt) {
   assertSession(d);
+  if (!d.editOn && writesDevice(r)) {               /* #609: read-only until "Edit the FM-1" is on */
+    needReload = blockedReload = true;              /* (the control that asked shows the device's value again) */
+    setTimeout(maybeReload, 0);
+    throw new Error(t("editBlocked"));
+  }
   const reply = await d.link.request(r, opt);
   assertSession(d);
   return reply;
@@ -3365,8 +5462,11 @@ async function load(d) {
     renderLive();
     renderLib();
     renderBank();
+    updateBrowser();                                /* (the bank's presets of this engine in the Presets list: it was
+                                                     * built before the bank was read, beta7) */
     renderSysinfo();
-    sayK("ready");
+    renderEdit();
+    sayK("readOnly");
   } finally { releaseBusy(); }
 }
 async function getDescOrNull(s, i, d = dev) { try { return await getDesc(s, i, d); } catch (e) { if (e.message === "closed") throw e; return null; } }
@@ -3475,6 +5575,14 @@ function healthRows(v) {
     ["healthMemory", `${v.resource_peak ?? 0} / ${v.resource_capacity ?? 0} B`, v.resource_failures > 0],
     ["healthStack", `${v.stack_cpu0_user_peak ?? 0} / ${v.stack_cpu0_user_size ?? 0} · ${v.stack_cpu0_system_peak ?? 0} / ${v.stack_cpu0_system_size ?? 0} B`,
       v.stack_cpu0_user_size && v.stack_cpu0_user_peak > v.stack_cpu0_user_size * 0.9],
+    /* USB audio (usb_audio_stream.c): each ring holds 1024 frames and aims at 512; an under- or overrun resets it
+       (11.6 ms of silence), a missed frame is a packet the host never sent: each one is a click in that direction */
+    ["healthUsbOut", `${yes(v.cap_alt)} · ${v.cap_fill ?? 0} / 1024`, false],
+    ["healthUsbOutErr", `${v.cap_underruns ?? 0} · ${v.cap_overruns ?? 0}`, v.cap_underruns > 0 || v.cap_overruns > 0],
+    ["healthUsbIn", `${yes(v.play_alt)} · ${v.play_fill ?? 0} / 1024`, false],
+    ["healthUsbInErr", `${v.play_underruns ?? 0} · ${v.play_overruns ?? 0}`, v.play_underruns > 0 || v.play_overruns > 0],
+    ["healthUsbPackets", `${v.missed_frames ?? 0} · ${v.bad_packets ?? 0}`, v.missed_frames > 0 || v.bad_packets > 0],
+    ["healthUsbTime", `${us(v.service_max_us ?? 0)} · ${us(v.poll_max_us ?? 0)}`, false],
   ];
 }
 function renderHealth() {
@@ -3525,13 +5633,15 @@ function updateBrowser() {
   const ps = $("preset");
   const names = dev.names[e] || [];
   const currentNative=null;
-  const pool=dev.nativePools?.[e],sig=JSON.stringify([e,pool,currentNative]);
+  const pool=dev.nativePools?.[e],gen=(dev.bank?.slots||[]).filter(x=>x.used&&x.engine===e),sig=JSON.stringify([e,pool,gen,currentNative]);
   if(ps.dataset.engine!==sig){
-    ps.replaceChildren(...names.map((n,i)=>el("option",{value:i,text:n,hidden:aliasOf(names,i)!==i})),...(pool?.slots||[]).filter(x=>x.used).map(x=>el("option",{value:`u:${x.slot}`,text:`${slotName(x.slot,e)} ${x.name}`})));
+    ps.replaceChildren(...names.map((n,i)=>el("option",{value:i,text:n,hidden:aliasOf(names,i)!==i})),...(pool?.slots||[]).filter(x=>x.used).map(x=>el("option",{value:`u:${x.slot}`,text:`${slotName(x.slot,e)} ${x.name}`})),
+      ...gen.map(x=>el("option",{value:`g:${x.slot}`,text:`${slotName(x.slot)} ${x.name}`})));
     if(currentNative)ps.append(el("option",{value:"current-native",text:`${currentNative} (current)`,disabled:true}));
     ps.dataset.engine=sig;
   }
-  if(document.activeElement!==ps)ps.value=dev.dump.user?`u:${dev.dump.user-1}`:currentNative?"current-native":String(dev.dump.preset);
+  const g=userGeneral(dev);
+  if(document.activeElement!==ps)ps.value=dev.dump.user?`u:${dev.dump.user-1}`:g!=null?`g:${g}`:currentNative?"current-native":String(dev.dump.preset);
 }
 
 function visible(d) { return d && d.max > d.min && !!d.label && d.label !== "-"; }
@@ -3596,7 +5706,7 @@ function scalePickerRow(s, id, d) {
   for (const name of ["All scales", "Favorites", ...new Set(all.map(r => r.family))]) family.append(el("option", {value: name}, name));
   const search = el("input", {type: "search", placeholder: "Search scales", "aria-label": "Search scales"});
   const input = el("select", {size: 6, "aria-label": "Scale"}), out = el("span", {class: "v", "aria-live": "polite"});
-  const favorite = el("button", {type: "button", title: "Favorites are saved in this browser"});
+  const favorite = el("button", {type: "button", title: t("favLocal")});
   let selected = dev.dump.p[id], renderKey = "";
   const render = v => {
     const sig = JSON.stringify([v, family.value, search.value, favorites]);
@@ -3739,13 +5849,25 @@ async function sendSet(s, id, k) {
 /* engine / preset browser */
 $("engine").addEventListener("change", () => choosePreset(+$("engine").value, 0));
 $("preset").addEventListener("change", () => { if (dev) choosePreset(dev.dump.engine, $("preset").value); });
+/* the general user preset (slot) the editor loaded on the selected track, if the sound is still that one (DUMP
+   reports only native user presets; a load on the device clears it) */
+function userGeneral(d) { const u=d?.userGen; return u&&u.track===(d.sel||0)&&d.bank?.slots?.[u.slot]?.used&&d.bank.slots[u.slot].engine===d.dump?.engine?u.slot:null; }
+/* the name of the sound on the selected track: a user preset's own, else the factory preset's */
+function soundName(d) {
+  const e=d.dump.engine,g=userGeneral(d);
+  if(d.dump.user)return d.nativePools?.[e]?.slots?.[d.dump.user-1]?.name||(d.names[e]||[])[d.dump.preset];
+  return g!=null?d.bank.slots[g].name:(d.names[e]||[])[d.dump.preset];
+}
 async function choosePreset(e, p) {
   if (!dev) return;
   const releaseBusy = beginBusy();
   try {
     selfLoad();
-    if(String(p).startsWith("u:"))checkRc(await nativeBank.load(rq,e,+String(p).slice(2),dev.sel||0));
+    const d=dev;
+    if(String(p).startsWith("u:"))checkRc(await nativeBank.load(rq,e,+String(p).slice(2),d.sel||0));
+    else if(String(p).startsWith("g:"))checkRc(await bank.load(rq,+String(p).slice(2)));
     else parse[CMD.PRESET](await rq(req.preset(e, +p)));
+    d.userGen=String(p).startsWith("g:")?{track:d.sel||0,slot:+String(p).slice(2)}:null;
     await afterSoundChange();
   } catch (err) { report(err); } finally { releaseBusy(); }
 }
@@ -3898,6 +6020,7 @@ const CHECKS = ["chain", "entries", "piece", "mods", "tempo", "midi", "cpu"].map
 function renderDemos() {
   const caps = dev?.info?.backupCaps || 0, box = $("demorows");
   $("demos-put").disabled = (caps & 3) !== 3;
+  renderProjectFiles(caps);
   if (box.contains(document.activeElement)) return;
   box.replaceChildren();
   for (const d of [...DEMOS, null, ...CHECKS]) {
@@ -3971,15 +6094,19 @@ $("tunefile").addEventListener("change", () => {
 });
 const backupModule = () => import("./fm1backup.js");
 const backupProgress = (done, total) => sayK("backupWorking", `${Math.round(done / Math.max(1, total) * 100)}%`);
-$("backup-export").addEventListener("click", () => op(async () => {
-  const d = dev;
-  if (!(d?.info?.backupCaps & 1)) return;
+async function saveBackup(d) {
   const { captureBackup } = await backupModule();
   assertSession(d);
   const file = await captureBackup((r, o) => sessionRequest(d, r, o), d.info.version, backupProgress);
   assertSession(d);
   download(`Tessera-backup-${new Date().toISOString().slice(0, 10)}.json`, file);
+  d.backedUp = true;
   sayK("backupDone");
+}
+$("backup-export").addEventListener("click", () => op(async () => {
+  const d = dev;
+  if (!(d?.info?.backupCaps & 1)) return;
+  await saveBackup(d);
 }));
 $("backup-import").addEventListener("click", () => { if (dev?.info?.backupCaps & 2) $("backup-file").click(); });
 $("backup-file").addEventListener("change", () => {
@@ -4018,6 +6145,52 @@ $("demos-put").addEventListener("click", () => op(async () => {
   renderSlots();
   say("demosDone", picks.map(x => `${x.name} ${String.fromCharCode(65 + x.slot)}`).join(", "));
 }));
+
+/* project files: one slot's TSP1 record to a .tsp file (fm1backup.js readProject) or a .tsp file into a slot (putProject,
+   as a demo goes on), the file the web simulator saves and loads. Nothing is written but on Load and its confirm. */
+function renderProjectFiles(caps) {
+  const sel = $("pf-slot"), v = sel.value || "0";
+  sel.replaceChildren(...[0, 1, 2, 3].map((k) => el("option", { value: k, text: `${t("slot")} ${String.fromCharCode(65 + k)}` })));
+  sel.value = v;
+  $("pf-save").disabled = !(caps & 1);
+  $("pf-load").disabled = (caps & 3) !== 3;
+}
+const pfSay = (k, a = "") => { $("pf-status").textContent = t(k) + a; sayK(k, a); };
+$("pf-save").addEventListener("click", () => op(async () => {
+  const d = dev, slot = +$("pf-slot").value;
+  if (!(d?.info?.backupCaps & 1)) return;
+  const { readProject, tspName } = await backupModule();
+  const bytes = await readProject((r, o) => sessionRequest(d, r, o), slot);
+  if (!bytes.length) throw new Error(t("pfEmpty"));
+  let name = "";
+  try { name = tspName(bytes); } catch { throw new Error(t("demosOld")); }
+  const file = `${fileSlug(name || `slot-${String.fromCharCode(97 + slot)}`)}.tsp`;
+  downloadBytes(file, bytes);
+  pfSay("pfSaved", file);
+}));
+$("pf-load").addEventListener("click", () => { if ((dev?.info?.backupCaps & 3) === 3) $("pf-file").click(); });
+$("pf-file").addEventListener("change", () => {
+  const file = $("pf-file").files[0], d = dev, slot = +$("pf-slot").value, s = String.fromCharCode(65 + slot); $("pf-file").value = "";
+  if (!file || (d?.info?.backupCaps & 3) !== 3) return;
+  op(async () => {
+    if (file.size > 40000) throw new Error(t("pfNotTsp") + file.name);
+    const { readProject, tspName, putProject } = await backupModule(), bytes = new Uint8Array(await file.arrayBuffer());
+    let name;
+    try { name = tspName(bytes) || file.name; } catch { throw new Error(t("pfNotTsp") + file.name); }
+    assertSession(d);
+    const was = await readProject((r, o) => sessionRequest(d, r, o), slot);   // (stops playback)
+    if (was.length) {
+      let old;
+      try { old = tspName(was) || t("demosUnnamed"); } catch { old = t("demosOld"); }
+      if (!confirm(t("pfReplace").replace("{s}", s).replace("{old}", old).replace("{new}", name) + "\n\n" + t("demosKeep"))) return;
+    }
+    await putProject((r, o) => sessionRequest(d, r, o), slot, bytes, (done, total) => pfSay("pfWorking", `${Math.round(done / total * 100)}%`));
+    d.slotUsed[slot] = true;
+    renderSlots();
+    const done = t("pfDone").replace("{s}", s) + name;
+    $("pf-status").textContent = done; say(done);
+  });
+});
 
 async function readMotion(d = dev) {
   assertSession(d);
@@ -4426,6 +6599,7 @@ function onPush(f) {
     } else if (f.cmd === CMD.RELOAD) {
       d.sel = parse[CMD.RELOAD](f.a).track;          /* v3: another track may be selected on the device */
       if (selfReload.n > 0 && Date.now() < selfReload.until) { selfReload.n--; return; }
+      d.userGen = null;
       needReload = true;
       maybeReload();
     } else if (f.cmd === CMD.STEP_CHANGED) {
@@ -4458,9 +6632,12 @@ async function refreshStep(i) {
     updateStepRows();
   } catch (err) { report(err); }
 }
+let blockedReload = false;                          /* #609: the reload after a write that was not sent says so */
 function maybeReload() {
   if (!dev || busy || !needReload || !dev.dump) return;
-  op(() => afterSoundChange("reloaded"));
+  const msg = blockedReload ? "editBlocked" : "reloaded";
+  blockedReload = false;
+  op(() => afterSoundChange(msg));
 }
 /* one multi-request operation; polling waits for it */
 async function op(fn) {
@@ -4468,6 +6645,22 @@ async function op(fn) {
   const releaseBusy = beginBusy();
   try { await fn(); } catch (err) { report(err); } finally { releaseBusy(); }
 }
+/* #609: "Edit the FM-1". Off at every connection: the editor only reads. Turning it on offers a backup first. */
+function renderEdit() {
+  $("edit-wrap").hidden = !dev || !dev.dump;
+  $("edit-on").checked = !!dev?.editOn;
+}
+$("edit-on").addEventListener("change", () => {
+  const d = dev, on = $("edit-on").checked;
+  if (!d) { renderEdit(); return; }
+  if (!on) { d.editOn = false; renderEdit(); sayK("readOnly"); return; }
+  op(async () => {
+    if (!d.backedUp && (d.info?.backupCaps & 1) && confirm(t("editBackupAsk"))) await saveBackup(d);
+    assertSession(d);
+    d.editOn = true; renderEdit(); sayK("editOnSaid");
+  });
+  renderEdit();
+});
 function renderLive() {
   $("live").textContent = !dev || !dev.dump ? "" : t(dev.watch ? "live" : "polling");
 }
@@ -4636,7 +6829,7 @@ $("savefile").addEventListener("click", () => op(async () => {
   if (!dev) return;
   const engine = dev.dump.engine, preset = dev.dump.preset;
   const data = { format: "felucca-patch", version: 1, firmware: dev.info.version,
-    engineName: dev.info.engines[engine], presetName: (dev.names[engine] || [])[preset],
+    engineName: dev.info.engines[engine], presetName: soundName(dev),
     engine, preset, p: dev.dump.p.slice(), g: dev.dump.g.slice(),
     steps: dev.steps.map((s) => ({ n: s.n, notes: s.notes.slice(), time: s.time, flags: s.flags, vel: s.vel })) };
   if(data.engineName === "FM6") { const r=parse[CMD.FM6_GET](await rq(req.fm6Get(FM6.TARGET.TRACK,dev.sel||0)));if(r.rc)throw new Error("Cannot read FM6 voice");data.fm6=Array.from(r.packed); }
@@ -4956,6 +7149,11 @@ $("factlib").addEventListener("click", () => libOp(async (d, rqf) => {
     const pt=await nativeBank.get(rqf,d.info,d.dump.engine,+$("preset").value.slice(2));
     await libAdd([{...pt,engineName:d.info.engines[pt.engine],tags:["device"]}]);sayK("copiedLib",pt.name);return;
   }
+  if($("preset").value.startsWith("g:")){
+    const u=await bank.get(rqf,d.info,+$("preset").value.slice(2));
+    if(!u.used){sayK("emptySlot",slotName(u.slot));return;}
+    await libAdd([{name:u.name,engine:u.engine,engineName:d.info.engines[u.engine],p:u.p,fm6:u.fm6,pattern:u.pattern,grid:u.grid,tags:["device"]}]);sayK("copiedLib",u.name);return;
+  }
   const e = dev.dump.engine, pi = $("preset").value === "" ? dev.dump.preset : +$("preset").value;
   const name = (dev.names[e] || [])[pi] || "PRESET";
   selfLoad();
@@ -4973,7 +7171,7 @@ function libPut(id, slot) {
   const p = lib.find((x) => x.id === id);
   if (!p || !dev || !bankView() || slot == null || libBusy) return;
   const engine=poolEngine();
-  if(dev.info.native && (engine || dev.info.native[p.engine]) && engine!==p.engine){say("Select the matching preset collection first");return;}
+  if(dev.info.native && (engine || dev.info.native[p.engine]) && engine!==p.engine){sayK("poolFirst");return;}
   const s = bankView().slots[slot];
   if (!engineOk(p)) { sayK("badEngine", p.engineName || p.engine); return; }
   if (s.used && !confirm(t("confirmOverwrite").replace("{n}", slotName(slot)).replace("{name}", s.name))) return;
@@ -5061,6 +7259,7 @@ function bankLoad(slot,engine=poolEngine()) {
     selfLoad();
     const rc = engine?await nativeBank.load(rqf,engine,slot,d.sel||0):await bank.load(rqf,slot);
     if (rc) { sayK("emptySlot", slotName(slot)); return; }
+    d.userGen = engine ? null : { track: d.sel || 0, slot };
     await afterSoundChange("ready", d);
     sayK("loadedUser", `${slotName(slot,engine)} ${s.name}`);
   });
@@ -5070,7 +7269,7 @@ $("bkstore").addEventListener("click", () => {
   const slot = bankSel,engine=poolEngine();
   if (!dev || !bankView() || slot == null) return;
   const matching=dev.info.native?.[dev.dump?.engine]?dev.dump.engine:0;
-  if(dev.info.native && matching!==engine){say("Select the current track's preset collection first");return;}
+  if(dev.info.native && matching!==engine){sayK("poolTrack");return;}
   const s = bankView().slots[slot];
   const name = prompt(t("promptNameAuto"), s.used ? s.name : "");
   if (name == null) return;
@@ -5107,6 +7306,7 @@ $("bkerase").addEventListener("click", () => {
 $("bkrefresh").addEventListener("click", () => libOp(async (d, rqf) => {
   sayK("readingBank");
   const engine=poolEngine();if(engine)dev.nativePools[engine]=await nativeBank.list(rqf,engine);else dev.bank=await bank.list(rqf);
+  updateBrowser();
   sayK("ready");
 }));
 $("bkexport").addEventListener("click", () => libOp(async (d, rqf) => {
