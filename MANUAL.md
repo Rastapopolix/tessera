@@ -1938,4 +1938,9 @@ Tessera stands on other people's ideas and work:
 - **Triple Sloth** by Nonlinear Circuits (Andrew Fitch), with J. C. Sprott's jerk system, for TIDE; **ochd** by
   Instruō and DivKid for SWARM (ideas only, no code copied).
 
+Thanks to the people who tested Tessera, reported bugs and asked for features: BobFromson, pavig-coder, bambalaya,
+alxantdroid, resocut, João Durães, tv-glotzer, il1893, fairplay, alexwlloyd and morgulbrut on GitHub, @nrittamurti on
+YouTube for the KNOBS ideas, Inputsignwave, and Charles Vestal for the
+[FM-1 Screen Reader](https://charlesvestal.github.io/fm1-reader/).
+
 Every third-party part and its licence is listed in [LICENSING.md](LICENSING.md).

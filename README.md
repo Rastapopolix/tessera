@@ -197,5 +197,11 @@ The ATLAS generator uses the drum map of **Grids** by Émilie Gillet / Mutable I
 inspired by **norns** scripts (ideas only, no code copied): **QUAD** by initenere, **FALL** by ambalek's Fall,
 **CONSTELLATION** by timothy-taylor's Constellation, **AWAKE** by tehn's Awake and **SERIES** by nørgård.
 **ORACLE** is Melodee's Prophet engine (after the Prophet-5) under its own name, with its own sounds. The TIDE and SWARM mod sources are inspired by **Triple Sloth** by Nonlinear Circuits (Andrew Fitch) and **ochd** by
-Instruō and DivKid. See
+Instruō and DivKid.
+
+Thanks to the testers and everyone who reported a bug or asked for a feature: BobFromson, pavig-coder, bambalaya,
+alxantdroid, resocut, João Durães, tv-glotzer, il1893, fairplay, alexwlloyd, morgulbrut, @nrittamurti, Inputsignwave
+and Charles Vestal (FM-1 Screen Reader).
+
+See
 [LICENSING.md](LICENSING.md) for every third-party part and its licence.
