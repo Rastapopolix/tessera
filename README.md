@@ -67,7 +67,7 @@ and sequences from the computer with the [web editor](https://rastapopolix.githu
 Each release has two builds: `tessera-X.Y.fwsc` (standard, dual core: start here) and
 `tessera-X.Y-1core.fwsc` (single core, for FM-1s that crash with the standard build).
 
-When a beta is out, the installer offers it as **Beta**: see [testing the beta](docs/BETA_TESTING.md) for what to check and how to report.
+When a beta is out, the installer offers it as **Beta**, with what is new. Found a problem? Open an [issue](https://github.com/Rastapopolix/tessera/issues) with the firmware version (MENU > ABOUT), the steps, and what you expected.
 
 Do not unplug the FM-1 while it is writing. Tessera is experimental in every sense of the word: use it at your own risk. The installer
 page also has a way back to the official firmware, with a backup first: V15 or V16, whichever the FM-1 had before

@@ -2273,6 +2273,35 @@ static int test_answer_source_keys(void)
     tessera_reset();
     return check("ANSWER: SOURCE T1 hears T1's keys; another SOURCE does not; its own keys still count", ok);
 }
+/* FOLLOW hears the keys (or MIDI IN) of the track it follows, as ANSWER's SOURCE does: an empty STEP track's keys, a
+ * generator's keys until its next note, CANON's count, HOLD sampled by a key on its track; a STEP pattern playing wins */
+static int test_follow_live_keys(void)
+{
+    int ok;
+    tessera_reset();
+    gen(1, TESS_ENG_TURING);
+    tessera.evolve[1].follow = 1u;                     /* T2 FOLLOWs T1, a STEP track with nothing playing */
+    trk[0].seq_n = 0;
+    tessera_follow_key(0, 62);
+    ok = tess_follow_source(0, 1) == 62 && tessera.f_cnt[0] == 1u && tessera.f_hist[0][0] == 63u;
+    trk[0].seq_n = 1, trk[0].seq_notes[0] = 72;        /* (its pattern playing: the pattern's note) */
+    tessera_follow_key(0, 60);
+    ok &= tess_follow_source(0, 1) == 72;
+    trk[0].seq_n = 0;
+    gen(0, TESS_ENG_EUCLID);                           /* T1 a generator: the newer of its note and a key */
+    tessera.last_note[0] = 50;
+    tessera_hold_hit(0);
+    ok &= tess_follow_source(0, 1) == 50;
+    tessera_follow_key(0, 67);
+    ok &= tess_follow_source(0, 1) == 67;
+    tessera_hold_hit(0);
+    ok &= tess_follow_source(0, 1) == 50;
+    tessera.follow_hold[1] = 4u, tessera.hold_mem[1] = 0;   /* HOLD T4: a key on T4 samples T1's note */
+    tessera_follow_key(3, 40);
+    ok &= tessera.hold_mem[1] == 51u;
+    tessera_reset();
+    return check("FOLLOW: hears the followed track's keys (STEP or generator), CANON's count, HOLD; a playing pattern wins", ok);
+}
 /* A STEP track's EVOLVE page (step_evolve.c, vary.c): the step player called as seq.c calls it, step by step, then once
  * through the sequencer. Each check a bit of "fail" */
 static const char *const SV_CHECK[] = {
@@ -3524,6 +3553,7 @@ int main(int argc, char **argv)
         bad += check("QUAD columns: DOWN and UP turn all four rows, each on its EVERY, on the first QUAD track's steps", ok);
     bad += test_answer_nearest();
     bad += test_answer_source_keys();
+    bad += test_follow_live_keys();
         for (uint32_t r = 0; r < TESSERA_TRACKS; r++) memcpy(was[r], tessera.quad[r].cell, 4);
         tess_quad_mutate(0, 100);
         ok = 1;

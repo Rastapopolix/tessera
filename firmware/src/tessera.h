@@ -312,6 +312,7 @@ void tessera_evolve_knob(uint32_t k, int32_t s);
 void tessera_ev_layer_knob(uint32_t k, int32_t s);
 void tessera_tw_layer_knob(uint32_t k, int32_t s);
 void tessera_hold_hit(uint32_t tr);
+void tessera_follow_key(uint32_t tr, uint32_t note);   /* seq.c: a key on tr, to the tracks that FOLLOW it */
 void tessera_fm_layer_knob(uint32_t k, int32_t s);   /* OCT+ held on FORM: KNOB 1 DEVELOP */
 void tessera_en_layer_knob(uint32_t k, int32_t s);   /* OCT+ held on ENERGY: KNOB 1 the track's DEPTH */   /* OCT+ held on a generator's EVOLVE: KNOB 1 GRAVITY */
 uint32_t tessera_every_bars(uint32_t every);
