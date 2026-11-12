@@ -1,0 +1,8 @@
+{
+  "version": "2.1-rc1",
+  "product": "FM-1_83772010",
+  "pkg": {
+    "dual": "../../firmware/tessera-2.1-rc1.fwsc",
+    "single": "../../firmware/tessera-2.1-rc1-1core.fwsc"
+  }
+}
