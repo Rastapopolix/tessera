@@ -469,6 +469,9 @@ static void project_load(uint32_t slot)
     if (!project_restore_runtime(&proj_scratch)) {
         tsp_restore(proj_wire_u.raw);                  /* (the other patterns, the generators and the cords) */
         proj_cur = (uint8_t)(slot & 3u);
+#if MELODEE_FLASH
+        if (st_older & (1u << (slot & 3u))) ui_message("OLD SAVE LOADED");   /* #609: its last save is damaged */
+#endif
     }
 }
 

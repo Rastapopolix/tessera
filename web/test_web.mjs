@@ -37,7 +37,7 @@ const E = vm.runInNewContext(proto + `
 ;({ frame, unframe, parse, req, Link, parseWav, resample, normalize, takeSample, autoTrim, zoomView, rootFromName, buildSlot, makeMockDevice, CMD, SMP,
    UP, bank, nativeBank, capturePatch, auditionPatch, startWatch, libraryFile, readLibraryFile, paramKeys, patternFromSteps, stepsFromPattern, upName,
    mixer, parseNotes, parseHits, hitsText, gridFromSteps, LANE_NOTE, LANE_OF, readDevicePreferences, devicePresetRows, engineOrder, ENGINE_ORDER, aliasOf, fmtValue, FM6,
-   FM4, fromDigital, nativeImportTargets, scaleRows, SCALE_INFO, parseScala, tuneName, tuneValid, TUNE, STATS, statsFields, findDevicePorts, probeFm1 })`,
+   FM4, fromDigital, nativeImportTargets, scaleRows, SCALE_INFO, parseScala, tuneName, tuneValid, TUNE, STATS, statsFields, findDevicePorts, probeFm1, writesDevice })`,
 { setTimeout, clearTimeout, setInterval, clearInterval, console, Date: TestDate });
 
 {
@@ -51,6 +51,22 @@ const E = vm.runInNewContext(proto + `
   ok(E.scaleRows(d, "Favorites").length === 0 && E.scaleRows(d, "All scales", "missing scale").length === 0, "scale picker: empty favorites and search");
   const old = E.scaleRows({min: 0, max: 1, names: ["MAJ", "UNKNOWN"]});
   ok(old[0].title === "Major" && old[1].title === "UNKNOWN" && old[1].id === 1 && old[1].family === "Other", "scale picker: old firmware and unknown scale fallback");
+}
+
+{
+  /* #609: which requests change the FM-1. Everything the editor sends while connecting must be a read. */
+  const W = E.writesDevice, R = E.req;
+  const reads = [R.info(), R.get(0, 1), R.dump(), R.desc(0, 1), R.stepGet(0), R.names(0), R.smpInfo(), R.upList(0, 4), R.upGet(0),
+    R.watch(3), R.ping(), R.track(), R.track(2), R.trackDump(1), R.trackMix(1), R.trackStep(1, 3), R.trackParam(1, 5), R.project(2, 1),
+    R.song(), R.bankSong(), R.pattern(0), R.motion(0), R.native(12, 0, 0, 16), R.native(12, 1, 3), R.native(12, 7, 0), R.tune(0), R.tune(1, 2),
+    R.uiState(), R.uiPalettes(), R.favGet(0, 0, 8), R.fm6Get(0, 1), R.fm6List(), R.stats(), [E.CMD.BACKUP_LIST, []], [E.CMD.BACKUP_GET, [2, 0, 0, 0, 0, 0, 0, 1]]];
+  const writes = [R.set(0, 1, 5), R.stepSet(0, { n: 0, notes: [], time: 0, flags: 0, vel: 64 }), R.preset(0, 1), R.project(0, 1), R.project(1, 1),
+    R.smpBegin(0), R.smpErase(0), R.upPut(0, { engine: 0, name: "X", p: [] }), R.upStore(0, "X"), R.upLoad(0), R.upErase(0),
+    R.trackMix(1, 100, false), R.trackStep(1, 3, { n: 0, notes: [], time: 0, flags: 0, vel: 64 }), R.trackParam(1, 5, 9), R.song(1, [{ slot: 0, repeat: 1 }]),
+    R.bankSong(3), R.pattern(0, 1, 2), R.motion(0, 2), R.native(12, 2, 0), R.native(12, 3, 0, 1), R.native(12, 4, 0, 1), R.native(12, 5, 0), R.native(12, 6, 0), R.tune(3, 0), R.tune(4, 1),
+    R.uiSet(0, 1), R.favSet(0, 1, true), R.fm6Put(0, 1, []), R.fm6Erase(1), [E.CMD.BACKUP_PUT, [2, 2]], [99, []]];
+  ok(reads.every(r => !W(r)), "editor (#609): reads are not writes: " + reads.filter(W).map(r => r[0]).join());
+  ok(writes.every(r => W(r)), "editor (#609): every write is a write: " + writes.filter(r => !W(r)).map(r => r[0]).join());
 }
 
 {
@@ -1233,6 +1249,7 @@ async function editorSessions() {
     buildUI: () => { shown++; }, renderPanels: noop, loadSteps: noop, readTunings: noop,
     startWatch: async () => false, renderLive: noop, renderLib: noop,
     renderBank: noop, updateBrowser: noop, renderSysinfo: noop, sayK: noop, report: noop, syncPreferences: noop,
+    writesDevice: r => r === "write", t: k => k, maybeReload: noop, blockedReload: false, renderEdit: noop, setTimeout,
   });
   const oldRelease = S.beginBusy();
   S.resetBusy();
@@ -1252,6 +1269,14 @@ async function editorSessions() {
   d.link.request = async () => { sent++; };
   const wrong = await S.sessionRequest(d, "write").then(() => null, e => e);
   ok(wrong?.message === "closed" && sent === 0, "editor: captured request cannot write through a replacement connection");
+  /* #609: a connection is read-only until "Edit the FM-1" is on */
+  const ro = { link: { request: async () => { sent++; return "ok"; } } };
+  S.setDevice(ro); sent = 0;
+  const blocked = await S.sessionRequest(ro, "write").then(() => null, e => e);
+  ok(blocked?.message === "editBlocked" && sent === 0, "editor (#609): a write is not sent while editing is off");
+  ok(await S.sessionRequest(ro, "dump") === "ok" && sent === 1, "editor (#609): reads go out while editing is off");
+  ro.editOn = true;
+  ok(await S.sessionRequest(ro, "write") === "ok" && sent === 2, "editor (#609): a write goes out once editing is on");
 
   const old = { link: { request: () => new Promise(r => { resolve = r; }) } };
   S.setDevice(old);
