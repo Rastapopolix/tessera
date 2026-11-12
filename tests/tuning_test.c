@@ -49,14 +49,13 @@ static uint32_t oscillator_step(uint32_t eng, uint32_t hz, uint32_t osc)
 
 static void engines(void)
 {
-    const uint32_t eng[] = {3, 6}, oscillators[] = {1, 3};   /* SID, TRIO (PHASE and the CZ-1: retired) */
+    const uint32_t eng[] = {6}, oscillators[] = {3};   /* TRIO (PHASE and the CZ-1: retired; SID: removed) */
     for (uint32_t k = 0; k < NELEM(eng); k++) {
         int ok = 1;
         for (uint32_t osc = 0; osc < oscillators[k]; osc++) {
             uint32_t a = oscillator_step(eng[k], 440, osc);
             uint32_t b = oscillator_step(eng[k], 432, osc);
-            ok &= a && (eng[k] == 3 ? fabs(b - (double)a * 432 / 440) <= (SID_FREQ_K16 >> 16) /* SID: to its 16-bit */
-                                    : near_ratio(b, a, 432));                                     /* frequency register */
+            ok &= a && near_ratio(b, a, 432);
         }
         char msg[100]; snprintf(msg, sizeof msg, "%s: all oscillator pitches follow A4=432", ENGINES[eng[k]]->name);
         verify(msg, ok);

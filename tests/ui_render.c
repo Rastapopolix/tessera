@@ -525,7 +525,7 @@ static void eng(uint32_t e) { set_engine_of(TSEL, e); }
 enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_WIDE, S_HOME_RELEASED, S_HOME_FM6, S_MESSAGE, S_MESSAGE_KEY, S_MESSAGE_PAGED, S_PRESETS, S_PRESETS_NOFAV, S_PRESETS_CAT, S_PRESETS_PENDING, S_PRESETS_RECENT, S_USER, S_PROJECT, S_PROJECT_BOOT, S_TEMPO,
        S_SONG_EMPTY, S_SONG, S_STEP, S_PATTERN, S_MOTION, S_DRUM, S_MIXER, S_MIXER_PAN,
        S_ENV, S_ENVDEST, S_LFO, S_MOD, S_SCL, S_CHORD, S_CHORD_WIDE, S_CHORD_OFF, S_CHORD_KIT, S_ARP, S_VOICE, S_GLOBAL, S_SYSTEM,
-       S_EDIT_SID, S_EDIT_DIGITAL, S_OP_ENV, S_EDIT_WHEEL, S_EDIT_PHYS, S_EDIT_PHYS_STRNG, S_EDIT_PHYS_MEMB, S_EDIT_PHYS_SYMP, S_EXCT_PHYS_BOWED,
+       S_EDIT_DIGITAL, S_OP_ENV, S_EDIT_WHEEL, S_EDIT_PHYS, S_EDIT_PHYS_STRNG, S_EDIT_PHYS_MEMB, S_EDIT_PHYS_SYMP, S_EXCT_PHYS_BOWED,
        S_ALG1, S_ALG2, S_ALG3, S_ALG4, S_ALG5, S_ALG6, S_ALG7, S_ALG8, S_OP_LEVEL,
        S_FM6_ALG1, S_FM6_ALG5, S_FM6_ALG22, S_FM6_ALG32, S_FM6_FREQ, S_FM6_EG, S_FM6_PEG, S_FM6_STORE,
        S_CONFIRM_SEQ, S_CONFIRM_PROJ, S_CONFIRM_USER, S_CONFIRM_MOTION, S_CONFIRM_ERASE,
@@ -548,11 +548,11 @@ enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_
        S_REF_SHEET_MOTION, S_REF_MOD, S_REF_PICKER_MOD, S_REF_ARP, S_REF_PATTERN,
        S_REF_FMEG, S_REF_GRID, S_REF_SCALES, S_FX_PHASER, S_FX_WIDTH, S_FX_FORMANT, S_FX_TAPE, S_FX_SPIT, S_FX_ECHO, S_FX_ROOM, S_FX_REVERB, S_FX_CHORUS, S_FX_FULL, S_FX_SLOT2, S_FX_SLOT3, S_FX_SEND, S_FX_SEPARATE, S_FX_SENDS, S_FX_BUS1, S_FX_BUS2, S_FX_BUS3,
        S_GEN_TURING, S_GEN_EUCLID, S_GEN_MARKOV, S_GEN_MORPH, S_GEN_EVOLVE, S_CORDS, S_HELP, S_CORDS_PICK_SRC, S_CORDS_PICK_DST,
-       S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_GEN_CHORD_OFFBEAT, S_GEN_CHORD_DRONE, S_GEN_STEP_EVOLVE_HOW, S_GEN_STEP_ADORN, S_GEN_STEP_SERIAL, S_NOTES_EVOLVE, S_GEN_SEED, S_GEN_SEED_MORPH, S_GEN_FORM, S_MIDI_OUT, S_EDIT_FILT, S_GEN_EVOLVE_GRAV, S_GEN_ENERGY_LEVEL, S_GEN_ENERGY_DEPTH, S_EDIT_FILT_BP, S_EDIT_FILT_HP, S_EDIT_FILT_NOT, S_STAGE_FILTER_HP, S_GEN_STEP_PAT, S_KNOBS_BAR, S_KNOBS_BAR_GEN, S_MENU_KNOBS, S_MODS_AMT, S_MIDI_SOUND, S_MODS_GATE, S_GLO_CHAIN, S_GLO_CHAIN_OFF, S_GLO_CHAIN_REPS, S_GEN_FORM_CHAIN, S_GLO_ENTRIES, S_GLO_ENTRIES_OFF, S_GLO_ENTRIES_ROLES, S_GLO_PIECE, S_GLO_PIECE_FREE, S_GLO_PIECE_USER, S_GLO_LAND, S_GLO_LAND_RAIN, S_GLO_PERF, S_MENU_COLORS, S_SCL_KEY, S_GEN_TIMING_SPLIT, S_GEN_TIMING_PUSH, S_GEN_TIMING_MIX, S_STEP_TIMING_SPLIT, S_ROLL_RAISED, S_ROLL_RAISED_TOP, S_ROLL_ONE, S_ROLL_TURN, S_ENV_SHEET_HOLD, S_MODS_BUS, S_MODS_SCOPE, S_MODS_SCOPE_GATE, S_MODS_SCOPE_SLOW, S_MODS_SCOPE_BUS, S_COUNT };
+       S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_GEN_CHORD_OFFBEAT, S_GEN_CHORD_DRONE, S_GEN_STEP_EVOLVE_HOW, S_GEN_STEP_ADORN, S_GEN_STEP_SERIAL, S_NOTES_EVOLVE, S_GEN_SEED, S_GEN_SEED_MORPH, S_GEN_FORM, S_MIDI_OUT, S_EDIT_FILT, S_GEN_EVOLVE_GRAV, S_GEN_ENERGY_LEVEL, S_GEN_ENERGY_DEPTH, S_EDIT_FILT_BP, S_EDIT_FILT_HP, S_EDIT_FILT_NOT, S_STAGE_FILTER_HP, S_GEN_STEP_PAT, S_KNOBS_BAR, S_KNOBS_BAR_GEN, S_KNOBS_BAR_RANGE, S_MENU_KNOBS, S_MODS_AMT, S_MIDI_SOUND, S_MODS_GATE, S_GLO_CHAIN, S_GLO_CHAIN_OFF, S_GLO_CHAIN_REPS, S_GEN_FORM_CHAIN, S_GLO_ENTRIES, S_GLO_ENTRIES_OFF, S_GLO_ENTRIES_ROLES, S_GLO_PIECE, S_GLO_PIECE_FREE, S_GLO_PIECE_USER, S_GLO_LAND, S_GLO_LAND_RAIN, S_GLO_PERF, S_MENU_COLORS, S_SCL_KEY, S_GEN_TIMING_SPLIT, S_GEN_TIMING_PUSH, S_GEN_TIMING_MIX, S_STEP_TIMING_SPLIT, S_ROLL_RAISED, S_ROLL_RAISED_TOP, S_ROLL_ONE, S_ROLL_TURN, S_ENV_SHEET_HOLD, S_MODS_BUS, S_MODS_SCOPE, S_MODS_SCOPE_GATE, S_MODS_SCOPE_SLOW, S_MODS_SCOPE_BUS, S_MODS_SCOPE_THRESH, S_COUNT };
 static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "home_chord", "home_inversion", "home_wide", "home_released", "home_fm6", "message", "message_key", "message_paged", "presets", "presets_nofav", "presets_cat", "presets_pending", "presets_recent", "user",
     "project", "project_boot", "tempo", "song_empty", "song", "step", "pattern", "motion", "drum",
     "mixer", "mixer_pan", "env", "env_dest", "lfo", "mod", "scl", "chord", "chord_wide", "chord_off", "chord_kit", "arp",
-    "voice", "global", "system", "edit_sid", "edit_fm6", "op_env", "edit_wheel",
+    "voice", "global", "system", "edit_fm6", "op_env", "edit_wheel",
     "edit_phys", "edit_phys_strng", "edit_phys_memb", "edit_phys_symp", "exct_phys_bowed", "alg_1", "alg_2", "alg_3", "alg_4", "alg_5", "alg_6", "alg_7", "alg_8", "op_level", "fm6_alg_01", "fm6_alg_05", "fm6_alg_22", "fm6_alg_32", "fm6_freq", "fm6_eg", "fm6_peg", "fm6_store", "confirm_seq", "confirm_project", "confirm_user",
     "confirm_motion", "confirm_erase", "menu", "about", "about_rec", "about_credits", "about_end", "uboot", "calibration",
     "batt_0", "batt_1", "batt_2", "batt_3", "batt_usb", "motion_rec", "motion_off", "song_home",
@@ -568,7 +568,7 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "h
     "notes_slide", "notes_mixed", "notes_chord", "notes_empty", "notes_raw", "notes_zoom", "notes_loop", "notes_drum", "notes_dense", "notes_rec", "notes_erase", "notes_drum_rec", "notes_drum_erase", "scl_micro", "scl_micro_layer", "scl_micro_chord", "scale_picker_edo", "scale_picker_historical", "scale_picker_favorites", "scale_picker_empty", "scale_settings_favorite", "menu_click", "menu_click_level", "menu_countin", "menu_preview", "menu_add", "menu_autosave_on", "menu_autosave_off", "drum_sound_808", "drum_sound_909", "drum_mix_909", "drum_hit_909", "drum_hit_free", "drum_hit_long",
     "stage_drum", "stage_trio", "stage_queued", "stage_browse", "stage_stopped", "stage_filter", "patterns", "patterns_stopped", "patterns_sheet", "patterns_copy", "patterns_replace", "patterns_delete", "project_new", "new_key", "new_roles",
     "ref_stage_held", "ref_stage_released", "ref_stage_cutoff", "ref_stage_drum", "ref_browser", "ref_patterns", "ref_song", "ref_env", "ref_lfo", "ref_edit_osc", "ref_mixer", "ref_notes", "ref_settings", "ref_dialog", "ref_sheet_sound", "ref_sheet_song", "ref_picker_wave", "ref_picker_mode", "ref_sections_p5", "ref_map_p5", "ref_map_fm6", "ref_scl_list", "ref_sheet_project", "ref_sheet_note", "ref_sheet_hit", "ref_motion", "ref_sheet_motion", "ref_mod", "ref_picker_mod", "ref_arp", "ref_pattern", "ref_fmeg", "ref_grid", "ref_scales", "fx_phaser", "fx_width", "fx_formant", "fx_tape", "fx_spit", "fx_echo", "fx_room", "fx_reverb", "fx_chorus", "fx_full", "fx_slot2", "fx_slot3", "fx_send", "fx_separate", "fx_sends", "fx_bus1", "fx_bus2", "fx_bus3",
-    "gen_turing", "gen_euclid", "gen_markov", "gen_morph", "gen_evolve", "cords", "help", "cords_pick_src", "cords_pick_dst", "gen_grids", "gen_tweak", "gen_tweak_off", "mod_shortcut", "gen_bounce", "gen_awake", "gen_poly", "gen_tweak2", "gen_tweak2_off", "organic", "gen_tweak2_coin", "mods_live", "mods_live_gen", "matrix", "gen_quad", "gen_length", "gen_fall", "gen_constel", "gen_length_hit", "gen_length_keys", "gen_length_step", "gen_pattern_constel", "gen_series", "gen_chord", "gen_chord_oct", "gen_grids_oct", "gen_chord_user", "gen_step_evolve", "help_gen", "gen_timing", "gen_timing_x1", "gen_energy", "gen_answer", "gen_answer_oct", "gen_seed_oct", "gen_timing_human", "gen_chord_circle", "gen_chord_offbeat", "gen_chord_drone", "gen_step_evolve_how", "gen_step_adorn", "gen_step_serial", "notes_evolve", "gen_seed", "gen_seed_morph", "gen_form", "midi_out", "edit_filt", "gen_evolve_grav", "gen_energy_level", "gen_energy_depth", "edit_filt_bp", "edit_filt_hp", "edit_filt_not", "stage_filter_hp", "gen_step_pat", "knobs_bar", "knobs_bar_gen", "menu_knobs", "mods_amt", "midi_sound", "mods_gate", "glo_chain", "glo_chain_off", "glo_chain_reps", "gen_form_chain", "glo_entries", "glo_entries_off", "glo_entries_roles", "glo_piece", "glo_piece_free", "glo_piece_user", "glo_land", "glo_land_rain", "glo_perf", "menu_colors", "scl_key", "gen_timing_split", "gen_timing_push", "gen_timing_mix", "step_timing_split", "roll_raised", "roll_raised_top", "roll_one", "roll_turn", "env_sheet_hold", "mods_bus", "mods_scope", "mods_scope_gate", "mods_scope_slow", "mods_scope_bus"};
+    "gen_turing", "gen_euclid", "gen_markov", "gen_morph", "gen_evolve", "cords", "help", "cords_pick_src", "cords_pick_dst", "gen_grids", "gen_tweak", "gen_tweak_off", "mod_shortcut", "gen_bounce", "gen_awake", "gen_poly", "gen_tweak2", "gen_tweak2_off", "organic", "gen_tweak2_coin", "mods_live", "mods_live_gen", "matrix", "gen_quad", "gen_length", "gen_fall", "gen_constel", "gen_length_hit", "gen_length_keys", "gen_length_step", "gen_pattern_constel", "gen_series", "gen_chord", "gen_chord_oct", "gen_grids_oct", "gen_chord_user", "gen_step_evolve", "help_gen", "gen_timing", "gen_timing_x1", "gen_energy", "gen_answer", "gen_answer_oct", "gen_seed_oct", "gen_timing_human", "gen_chord_circle", "gen_chord_offbeat", "gen_chord_drone", "gen_step_evolve_how", "gen_step_adorn", "gen_step_serial", "notes_evolve", "gen_seed", "gen_seed_morph", "gen_form", "midi_out", "edit_filt", "gen_evolve_grav", "gen_energy_level", "gen_energy_depth", "edit_filt_bp", "edit_filt_hp", "edit_filt_not", "stage_filter_hp", "gen_step_pat", "knobs_bar", "knobs_bar_gen", "knobs_bar_range", "menu_knobs", "mods_amt", "midi_sound", "mods_gate", "glo_chain", "glo_chain_off", "glo_chain_reps", "gen_form_chain", "glo_entries", "glo_entries_off", "glo_entries_roles", "glo_piece", "glo_piece_free", "glo_piece_user", "glo_land", "glo_land_rain", "glo_perf", "menu_colors", "scl_key", "gen_timing_split", "gen_timing_push", "gen_timing_mix", "step_timing_split", "roll_raised", "roll_raised_top", "roll_one", "roll_turn", "env_sheet_hold", "mods_bus", "mods_scope", "mods_scope_gate", "mods_scope_slow", "mods_scope_bus", "mods_scope_thresh"};
 
 /* the scenes of the UI design screens: the state the UI-redesign
  * prototype drew them from (its setup(): two pattern tracks, the drum pattern on track 4, a synthetic scope),
@@ -844,8 +844,8 @@ static void ref_scene(int s)
         break;
     }
     case S_REF_ENV: case S_REF_LFO: case S_REF_EDIT_OSC: case S_REF_NOTES:
-        /* (R5) track 2: SID SAW BASS (ANALOG ACID until 2.0); ENV: SUSTAIN just turned, LFO: RATE, DLY: FEEDBACK */
-        set_engine_of(&trk[1], 3); apply_preset_to(&trk[1], preset_named(3, "SAW BASS")); trk[1].engine = 3;
+        /* (R5) track 2: TRIO FAT BASS (SID SAW BASS until 2026-11-12, ANALOG ACID until 2.0); ENV: SUSTAIN just turned, LFO: RATE, DLY: FEEDBACK */
+        set_engine_of(&trk[1], 6); apply_preset_to(&trk[1], preset_named(6, "FAT BASS")); trk[1].engine = 6;
         song.playing = 0; trk[1].pattern_next = 0xFF; trk[1].p[P_LD_FLT] = 30;
         if (s == S_REF_EDIT_OSC) { ui.home = 0; ui.page = (uint8_t)page_first(FAM_EDIT); page_entered(); }
         else if (s != S_REF_NOTES) go_title(s == S_REF_ENV ? "ENV" : s == S_REF_LFO ? "LFO" : "ENV");
@@ -864,9 +864,9 @@ static void ref_scene(int s)
         }
         if (s != S_REF_EDIT_OSC && s != S_REF_NOTES) { ui.hot_col = s == S_REF_ENV ? 2 : s == S_REF_LFO ? 0 : 1; ui.hot_t = 30; }
         break;
-    case S_REF_SECTIONS_P5: case S_REF_MAP_P5:       /* (R7) the mockups' Prophet FILTER (retired: SID's FILTER in its
-                                                      * place, its first knob just turned), its map */
-        set_engine_of(&trk[1], 3); trk[1].engine = 3; song.playing = 0;
+    case S_REF_SECTIONS_P5: case S_REF_MAP_P5:       /* (R7) the mockups' Prophet FILTER (retired: TRIO's second EDIT
+                                                      * page in its place, its first knob just turned), its map */
+        set_engine_of(&trk[1], 6); trk[1].engine = 6; song.playing = 0;
         ui.home = 0; ui.page = (uint8_t)(page_first(FAM_EDIT) + 1u); page_entered();   /* (its second EDIT page) */
         if (s == S_REF_MAP_P5) smap_open();
         else { ui.hot_col = 0; ui.hot_t = 30; }
@@ -907,16 +907,16 @@ static void ref_scene(int s)
     }
     case S_REF_MOTION: case S_REF_SHEET_MOTION: {    /* (R6) MOTION: ACID's CUTOFF RESO DRIVE moved; the playhead at 5 */
         static const uint8_t CUT[16] = {60, 60, 70, 70, 80, 80, 90, 95, 95, 90, 85, 80, 85, 90, 80, 70};
-        static const uint8_t RES[16] = {7, 7, 7, 10, 10, 12, 12, 10, 10, 10, 7, 7, 10, 10, 7, 7};   /* (SID's RES: 0..15) */
+        static const uint8_t RES[16] = {7, 7, 7, 10, 10, 12, 12, 10, 10, 10, 7, 7, 10, 10, 7, 7};   
         static const uint8_t DRV[16] = {10, 10, 20, 20, 30, 40, 40, 30, 40, 50, 50, 40, 30, 30, 20, 20};
         uint32_t i;
-        set_engine_of(&trk[1], 3); apply_preset_to(&trk[1], preset_named(3, "SAW BASS")); trk[1].engine = 3;
+        set_engine_of(&trk[1], 6); apply_preset_to(&trk[1], preset_named(6, "FAT BASS")); trk[1].engine = 6;
         song.playing = 0; trk[1].pattern_next = 0xFF; trk[1].p[P_SLEN] = 16;
         motion_clear(&trk[1]);
         for (i = 0; i < 16u; i++) {
             motion_set_event(&trk[1], i, P_E0 + 4u, CUT[i]);
             motion_set_event(&trk[1], i, P_E0 + 5u, RES[i]);
-            motion_set_event(&trk[1], i, P_E0 + 7u, DRV[i]);   /* (SID's DRIVE) */
+            motion_set_event(&trk[1], i, P_E0 + 7u, DRV[i]);
         }
         go_title("MOTION"); mo.lane = 0;
         if (s == S_REF_SHEET_MOTION) { motion_enter(); pop.sel = 1; }
@@ -924,7 +924,7 @@ static void ref_scene(int s)
         break;
     }
     case S_REF_MOD: case S_REF_PICKER_MOD:           /* (R6) MOD: LFO > Cutoff, Mod wheel > PW (picked), Velocity > Level */
-        set_engine_of(&trk[1], 3); apply_preset_to(&trk[1], preset_named(3, "SAW BASS")); trk[1].engine = 3;
+        set_engine_of(&trk[1], 6); apply_preset_to(&trk[1], preset_named(6, "FAT BASS")); trk[1].engine = 6;
         song.playing = 0; trk[1].pattern_next = 0xFF;
         trk[1].p[P_M1SRC] = MS_LFO; trk[1].p[P_M1DST] = MD_CUT; trk[1].p[P_M1AMT] = 40;
         trk[1].p[P_M2SRC] = MS_MODW; trk[1].p[P_M2DST] = MD_E1 + 3; trk[1].p[P_M2AMT] = -64;
@@ -935,7 +935,7 @@ static void ref_scene(int s)
         break;
     case S_REF_ARP: case S_REF_PATTERN: {   /* (R6) ARP Up 2 oct; PATTERN 32 steps; SLICER Gate */
         uint32_t i;
-        set_engine_of(&trk[1], 3); apply_preset_to(&trk[1], preset_named(3, "SAW BASS")); trk[1].engine = 3;
+        set_engine_of(&trk[1], 6); apply_preset_to(&trk[1], preset_named(6, "FAT BASS")); trk[1].engine = 6;
         song.playing = 0; trk[1].pattern_next = 0xFF;
         if (s == S_REF_ARP) {
             trk[1].p[P_AMODE] = 1; trk[1].p[P_AOCT] = 2; go_title("ARP"); ui.hot_col = 0;
@@ -968,8 +968,8 @@ static void ref_scene(int s)
         ref_scene(S_REF_SONG); page_sheet_open();
         break;
     case S_REF_PICKER_WAVE: case S_REF_PICKER_MODE:  /* (R6) a list knob turning: its picker, over its column and the
-                                                      * next (SID's WAVE on KNOB 2; its filter MODE on KNOB 3) */
-        set_engine_of(&trk[1], 3); apply_preset_to(&trk[1], preset_named(3, "SAW BASS")); trk[1].engine = 3;
+                                                      * next (TRIO's EDIT page, KNOB 2; EDIT 2, KNOB 3) */
+        set_engine_of(&trk[1], 6); apply_preset_to(&trk[1], preset_named(6, "FAT BASS")); trk[1].engine = 6;
         song.playing = 0; trk[1].pattern_next = 0xFF;
         if (s == S_REF_PICKER_WAVE) { ui.home = 0; ui.page = (uint8_t)page_first(FAM_EDIT); page_entered(); pick_touch(1); }
         else { go_title("EDIT 2"); pick_touch(2); }
@@ -1010,6 +1010,7 @@ static void setup(int s)
     ui.oct_t0 = 0;                                  /* (no OCT+ hold under way: env_sheet_hold's) */
     msc.slot = -1;
     memset(&mscope, 0, sizeof mscope);              /* (MOD SCOPE: the scope scenes fill it) */
+    cu_thr_t = 0;
     if (s >= S_MOCK_HOME && s <= S_MOCK_MENU) {
         mock_state(s);
         return;
@@ -1134,8 +1135,8 @@ static void setup(int s)
     case S_STAGE_TRIO:
         eng(6); apply_preset(3); go_home(); ui.hot_col = 2; ui.hot_t = 30; stage_out();
         input_on(TSEL, 48, 100); input_on(TSEL, 55, 100); input_on(TSEL, 64, 100); break;
-    case S_STAGE_FILTER:                                 /* SID's RES turning, a chord held: the curve behind it */
-        eng(3); go_home(); TSEL->p[P_E5] = 12; ui.hot_col = 3; ui.hot_t = 30; stage_out();
+    case S_STAGE_FILTER:                                 /* TRIO's RES turning, a chord held: the curve behind it */
+        eng(6); go_home(); TSEL->p[P_E6] = 100; ui.hot_col = 3; ui.hot_t = 30; stage_out();
         input_on(TSEL, 57, 100); input_on(TSEL, 60, 100); input_on(TSEL, 64, 100); break;
     case S_STAGE_FILTER_HP:                              /* TRIO's CUT turning, MODE HP (not one of Stage's knobs) */
         eng(6); go_home(); TSEL->p[P_E4] = 2; TSEL->p[P_E6] = 90; ui.hot_col = 0; ui.hot_t = 30; stage_out(); break;
@@ -1236,6 +1237,15 @@ static void setup(int s)
         break;
     case S_KNOBS_BAR_GEN:                            /* .. and the GEN page at rest */
         go_title("GEN");
+        KNOBS_SAVED = KNOBS_BAR_TAG;
+        break;
+    case S_KNOBS_BAR_RANGE:                          /* .. four bars at 0, 50 and 100 % (the full one keeps a pixel under the top) */
+        eng(6); go_title("EDIT 2");
+        for (uint32_t c = 0; c < 4u; c++) {          /* (each knob's own range: its minimum, middle, maximum, maximum) */
+            int16_t *vp;
+            const param_desc_t *d = page_desc(cur_page(), c, &vp);
+            *vp = (int16_t)(c == 0 ? d->min : c == 1 ? (d->min + d->max) / 2 : d->max);
+        }
         KNOBS_SAVED = KNOBS_BAR_TAG;
         break;
     case S_MENU_COLORS:                              /* the menu, COLOR's sheet open (KNOB 2 turned on it) */
@@ -1845,9 +1855,9 @@ static void setup(int s)
         go_title("MODS");
         break;
     }
-    case S_MODS_LIVE: {                             /* SID's PW and MODEL moved by mods now: their live marks */
+    case S_MODS_LIVE: {                             /* TRIO's DTN and WAVE moved by mods now: their live marks */
         static const cord_t C2[2] = {{CS_OCHD1, 0, CD_E4, 0, 80, 0}, {CS_OCHD3, 0, CD_E1, 0, -60, 0}};
-        eng(3);
+        eng(6);
         cord_clear();
         cord_set(0, &C2[0]);
         cord_set(1, &C2[1]);
@@ -1906,18 +1916,19 @@ static void setup(int s)
         go_title("MODS");
         break;
     }
-    case S_MODS_SCOPE: case S_MODS_SCOPE_GATE: case S_MODS_SCOPE_SLOW: {
+    case S_MODS_SCOPE: case S_MODS_SCOPE_GATE: case S_MODS_SCOPE_SLOW: case S_MODS_SCOPE_THRESH: {
         /* MOD SCOPE, OCT- held on MODS: mod 1 T1's LFO onto T3's CUTOFF, its amount turned by mod 3 (T2's slower LFO:
          * cross-modulation); mod 2 a GATE on T1's LFO over +20 % onto T2's DROP; mod 4 a fixed move (no source). T1's
          * LFO a sine of half a bar, T2's of two, run 5.3 bars at 120 BPM. SLOW: mod 4 on T2's LFO slowed to 180 bars a
-         * cycle: the window grows to 16 bars */
+         * cycle: the window grows to 16 bars. GATE: its threshold the wedges at the edges; THRESH: KNOB 4 just turned
+         * it, dashed across */
         static const cord_t C4[4] = {{CS_LFO, 0, CD_CUTOFF, 2, 60, 0}, {CS_LFO, 0, CD_TW_DROP, 1, 100, 20, CU_GATE},
                                      {CS_LFO, 1, CD_M1_AMT, 0, 40, 0}, {CS_LFO, 1, CD_PAN, 0, -80, 0}};
         uint32_t k, b;
         cord_clear();
         for (k = 0; k < 4u; k++) cord_set(k, &C4[k]);
         for (k = 0; k < 2u; k++) { trk[k].lfo_fade = 32767; trk[k].p[P_LPOL] = 0; }
-        cord_ui_sel = s == S_MODS_SCOPE_GATE ? 1 : s == S_MODS_SCOPE_SLOW ? 3 : 0;
+        cord_ui_sel = s == S_MODS_SCOPE_GATE || s == S_MODS_SCOPE_THRESH ? 1 : s == S_MODS_SCOPE_SLOW ? 3 : 0;
         for (b = 0; b < 660u; b++) {                /* (a UI frame of 16 ms: 786 units at 120 BPM, a bar 125) */
             trk[0].lfo_val = scope_sine(b, 62u);
             trk[1].lfo_val = s == S_MODS_SCOPE_SLOW ? scope_sine(b, 2730u) : scope_sine(b, 250u);
@@ -1927,6 +1938,7 @@ static void setup(int s)
         }
         fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
         go_title("MODS");
+        if (s == S_MODS_SCOPE_THRESH) cu_thr_t = 40;
         break;
     }
     case S_ENVDEST: go_title("ENV DEST"); break;
@@ -1972,7 +1984,6 @@ static void setup(int s)
     case S_VOICE: go_title("VOICE"); break;
     case S_GLOBAL: go_title("GLOBAL"); break;
     case S_SYSTEM: go_title("SYSTEM"); break;
-    case S_EDIT_SID: eng(3); go_title("EDIT 1"); break;
     case S_EDIT_FILT: eng(6); go_title("EDIT 2"); TSEL->p[P_E6] = 90; break;   /* TRIO's CUT and RES: the filter's curve */
     case S_EDIT_FILT_BP: case S_EDIT_FILT_HP: case S_EDIT_FILT_NOT:   /* .. its MODE BP, HP, notch: the curve follows it
                                                                       * (issue #299) */

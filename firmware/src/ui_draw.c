@@ -283,9 +283,9 @@ static void mo_scale_pic(int32_t y, int32_t h);
 static void mo_confirm(const char *a, const char *b);
 static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint32_t flags, int32_t meter);
 static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on);
-static void mo_cu_bar(const cord_t *c, int32_t s);
-static void mo_cu_led(uint32_t lv);
-static void mo_scope(int32_t top, int32_t h);
+static void mo_cu_bar(const cord_t *c, int32_t s, int32_t ox);
+static void mo_cu_led(uint32_t lv, int32_t ox);
+static void mo_scope(int32_t top, int32_t h, int32_t tk, int across);
 static void mo_chip(uint32_t c, const char *val, const char *unit, uint16_t vc, int hot, int32_t y);
 static void mo_strip_col(uint32_t c, const char *label, const char *val, uint16_t vc, int hot, int32_t y);
 static int foot_tabs_on(void);
@@ -830,7 +830,8 @@ static int pr_draw(void)
         uint32_t sm = tessera.ch_strum[tr], sd = tessera.ch_sdir[tr] % TESS_STR_DIRS;
         fmt_int(v, (int32_t)sm);
         col_mods(PID_TESS(TX_CH_STRUM));
-        draw_column(1, "STRUM", sm ? v : "OFF", sm ? "ms" : "", VAL(1u), (int32_t)(sm * 1000u / TESS_STRUM_MS), ICON_AUTO);
+        draw_column(1, "STRUM", sm ? v : "OFF", sm ? "ms" : "", VAL(1u),     /* (the bar by detent: the fine low end shows) */
+                    (int32_t)(tess_strum_detent(sm) * 1000u / TESS_STRUM_DETENTS), ICON_AUTO);
         col_mods(PID_TESS(TX_CH_SDIR));
         draw_column(2, "DIR", pid_desc(PID_TESS(TX_CH_SDIR), tr)->names[sd], "", sm ? VAL(2u) : T_DIM, (int32_t)sd * 500,
                     ICON_AUTO);
@@ -862,7 +863,7 @@ static void draw_columns_(void)
         if(cur_page()->id[1]==4){fmt_int(v,127-c[3]);draw_column(1,"LEVEL",v,"",VAL(1u),-1,ICON_AUTO);draw_column(2,"","","",T_THEME,-1,ICON_NONE);draw_column(3,"","","",T_THEME,-1,ICON_NONE);return;}
         fmt_int(v,c[0]);draw_column(1,"TUNE",v,"ST",VAL(1u),-1,ICON_PITCH);
         fmt_int(v,c[1]+64);draw_column(2,"DECAY",v,"",VAL(2u),-1,ICON_GATE);
-        fmt_int(v,c[2]+64);draw_column(3,(drum_is909(TSEL)?drum_character(sound):drum_issid(TSEL)?"SNAP":sound==D9_SD?"SNAPPY":"TONE"),v,"",VAL(3u),-1,ICON_AUTO);return;
+        fmt_int(v,c[2]+64);draw_column(3,(drum_is909(TSEL)?drum_character(sound):sound==D9_SD?"SNAPPY":"TONE"),v,"",VAL(3u),-1,ICON_AUTO);return;
     }
     if(cur_page()->scope==SC_DRUMHIT){
         char v[12];uint32_t i=drum_hit_selected();const recorded_note_t *r=i<RECORD_MAX?&recording[i]:0;
@@ -1463,7 +1464,8 @@ static void draw_columns_(void)
                 if (an_layer_on()) {                            /* OCT- held: SOURCE, ORDER, SHIFT (SPACE: the sheet) */
                     const param_desc_t *dor = pid_desc(PID_TESS(TX_AN_ORDER), tr);
                     uint32_t src = tessera.sd_src[tr] % (TESSERA_TRACKS + 1u);
-                    draw_column(0, "SOURCE", pid_desc(PID_TESS(TX_SD_SOURCE), tr)->names[src], "", VAL(0u),
+                    draw_column(0, "SOURCE", answer_own(tr) ? "OWN" : pid_desc(PID_TESS(TX_SD_SOURCE), tr)->names[src],
+                                "", VAL(0u),
                                 (int32_t)src * 1000 / TESSERA_TRACKS, ICON_AUTO);
                     draw_column(1, "ORDER", dor->names[a->order % TESS_AN_ORDERS], "", VAL(1u),
                                 (int32_t)(a->order % TESS_AN_ORDERS) * 1000 / (TESS_AN_ORDERS - 1), ICON_AUTO);
@@ -1686,7 +1688,11 @@ static void draw_columns_(void)
             continue;
         }
         if (cur_page()->id[c] == G_INFO && cur_page()->scope == SC_GLOBAL) {
-            fmt_int(val, (int32_t)(song.cpu_q8 * 100u / 256u));
+            uint32_t a = song.cpu_q8 * 100u / 256u, pk = song.cpu_peak_q8 * 100u / 256u;   /* average/recent peak */
+            fmt_int(val, (int32_t)(a > 99u ? 99u : a));                     /* (99: at or past the limit; 5 chars) */
+            a = str_len(val);
+            val[a] = '/';
+            fmt_int(val + a + 1u, (int32_t)(pk > 99u ? 99u : pk));
             unit = "%";
         } else {
             param_format(d, *vp, val, &unit);
@@ -2044,10 +2050,13 @@ static void ui_draw_frame(void)
             cv_dim = cv_under = 1;
             draw_page();
             cv_dim = cv_under = 0;
+        }
+        if (ui.force || msc.card) {                     /* (a turn: the card alone, no flicker) */
             ui.force = 1;
             msc_draw();
             ui.force = 0;
         }
+        msc.card = 0;
         draw_head();
         return;
     }

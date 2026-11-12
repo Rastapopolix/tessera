@@ -24,7 +24,7 @@ for name, f in (("SIM_DEMO_A", "still-tide"), ("SIM_DEMO_B", "koto-garden")):
 Path("build/gen/sim_demos.h").write_text("\n".join(out) + "\n")
 PY
 # as Felucca's web/emu/build.sh: no fused multiply-adds (as the host build), a 1 MiB stack, no file system;
-# the device's engine set (tools/build.py build_app: FM6 and PHYS in, SID and MACRO out), not core.h's host defaults; the look as the
+# the device's engine set (tools/build.py build_app: FM6 and PHYS in; tests/sim_flags_test.py), not core.h's host defaults; the look as the
 # firmware build takes it (MELODEE_LOOK=1: Mono)
 VERSION=$(sed -n 's/^#define MELODEE_VERSION "\([^"]*\)".*/\1/p' firmware/src/melodee.c)   # upstream's, shown in the menu
 LABEL="Tessera, Melodee $VERSION base"
@@ -35,7 +35,7 @@ if [ "$1" = --release ]; then           # as tools/build.py --release: X.Y[.Z] o
 elif [ -n "$1" ]; then
     echo "usage: web/sim/build.sh [--release X.Y[.Z]]"; exit 1
 fi
-ENGINES="-DMELODEE_ACCESS=${MELODEE_ACCESS:-1} -DMELODEE_LOOK=${MELODEE_LOOK:-1} -DMELODEE_FM6=${MELODEE_FM6:-1} -DMELODEE_SID=${MELODEE_SID:-0} -DMELODEE_PHYS=${MELODEE_PHYS:-1} -DMELODEE_PLAITS=${MELODEE_PLAITS:-0}"
+ENGINES="-DMELODEE_ACCESS=${MELODEE_ACCESS:-1} -DMELODEE_LOOK=${MELODEE_LOOK:-1} -DMELODEE_FM6=${MELODEE_FM6:-1} -DMELODEE_PHYS=${MELODEE_PHYS:-1}"
 emcc -O2 -ffp-contract=off -w -DMELODEE_USB_AUDIO=1 $ENGINES "-DMELODEE_VERSION=\"$VERSION web\"" -Ibuild/gen -Ifirmware/src -Itests \
     --no-entry -sSTANDALONE_WASM -sSTACK_SIZE=1048576 -sINITIAL_MEMORY=33554432 -sFILESYSTEM=0 \
     -o "$OUT/melodee.wasm" web/sim/sim.c
@@ -43,7 +43,7 @@ cp web/sim/worklet.js "$OUT/"
 {   # index.html is written as a page body (it also publishes as is): the document around it for a plain server
     printf '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
     printf '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n</head>\n<body>\n'
-    sed "s/@VERSION@/$LABEL/" web/sim/index.html
+    sed -e "s/@VERSION@/$LABEL/" -e "s/@BUILD@/$VERSION/" web/sim/index.html
     printf '</body>\n</html>\n'
 } > "$OUT/index.html"
 echo "sim      $OUT/melodee.wasm  $(wc -c < "$OUT/melodee.wasm") B   (serve $OUT/ and open index.html)"

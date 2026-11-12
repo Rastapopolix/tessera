@@ -3,7 +3,7 @@
 /* Tessera 2.0's demo projects (demos/), made by the firmware's own code: each one set up through the functions the
  * pages call (a new project, the sounds, tessera_param_set, cords), saved into a slot of simulated NOR flash by
  * project_save_as, read back as the backup page reads a slot (editor_backup.c, object 2..5: the TSP1 record), loaded
- * into a fresh project and played. Built as the device builds it (tests/run_tests.sh: -DMELODEE_SID=0
+ * into a fresh project and played. Built as the device builds it (tests/run_tests.sh:
  * -DMELODEE_PHYS=0, the power-on of TRK_START_TESS).
  *   build/host/demo_projects make DIR [SECS]   the records (DIR/<name>.tsp) and SECS s of each (DIR/<name>.wav)
  *   build/host/demo_projects check DIR         every demo record in DIR (demos/) restores through the backup page's PUT, loads

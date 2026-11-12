@@ -22,7 +22,7 @@
  *    no hanging note after the note-offs on any routing (USB channels 1..4, others while the
  *    selected track changes, the keys while the selected track changes, with ARP and the voice modes).
  * env: GOLDEN_UPDATE=1 rewrites GOLDEN_FILE, BUDGET_UPDATE=1 rewrites CPU_FILE (on purpose: review the
- * diff), VERBOSE=1 prints every render's numbers, JOBS=n children at once (default 8), REGRESS_ONLY="FM6 SID" renders
+ * diff), VERBOSE=1 prints every render's numbers, JOBS=n children at once (default 8), REGRESS_ONLY="FM6 TRIO" renders
  * and costs the presets of these engines alone (run_tests.sh --quick; the other renders and checks stay). */
 /* The one-shot terminal interpolation fixture supplies one synthetic user zone.
  * Shipping firmware has no user slots; eng_sample.c forbids this on the target. */
@@ -233,8 +233,8 @@ static void job_drums(const job_t *j)           /* every GM note through 808 DRU
  * pattern 6, 1/16), 1 STUT (DIGITAL PAD, pattern 7, 1/32, DEPTH 100 %) */
 
 
-/* the 4-track mix: T1 the power-on bass (TRK_DEF: SID; PROPHET FUNK BASS II until 2026-10-22, ANALOG ACID until
- * 2.0), T2 the power-on pad (TRK_DEF: TRIO STRING MACH; FM6 STRINGS, GLASS PAD, PAD, DIGITAL PAD before) (tied chords), T3 SID lead (12 steps against 16),
+/* the 4-track mix: T1 the power-on bass (TRK_DEF: FM6 GLASS PAD; SID until 2026-11-12, ANALOG ACID until
+ * 2.0), T2 the power-on pad (TRK_DEF: TRIO STRING MACH; FM6 STRINGS, GLASS PAD, PAD, DIGITAL PAD before) (tied chords), T3 FM6 BELLS lead (12 steps against 16),
  * T4 808 DRUM drums; 120 BPM, 4 bars (the hostsim TRACKS demo without the recording), stop, the tail.
  * arg 1: with the SLICER (GATE on the pad, STUT on the bass line and the drums, SWING 20 %) */
 static void job_song(const job_t *j)
@@ -250,7 +250,7 @@ static void job_song(const job_t *j)
     song.g[G_BPM] = 120;
     host_power_on_sound(t1, 0);
     host_power_on_sound(t2, 1);
-    host_preset(t3, 3, 0);
+    host_power_on_sound(t3, 2);
     host_808_kit(td);
     for (i = 0; i < 16u; i++) {
         uint8_t n = ACID[i];
@@ -441,10 +441,10 @@ static void midi_pkt(uint32_t st, uint32_t d1, uint32_t d2)   /* as usb.c: the q
 }
 
 /* the shared budget: 4 POLY parts (the host synth (TRIO; the CZ-1 until 2026-10-22, ANALOG until 2.0), FM6's BELL (DIGITAL's BELL until DIGITAL
- * was retired), VOICE (retired: SID), 808 DRUM) play random notes on and off for
+ * was retired), VOICE (retired: ORACLE), 808 DRUM) play random notes on and off for
  * 6 s, up to 8 held each; after every block: at most 8 part voices active, none still fading (a stolen voice
  * fades within its one block), the VOICE part at most 4; then all off: every voice free */
-#define VCAP_E (MELODEE_LEGACY_EXTRAS ? 5u : 3u)
+#define VCAP_E (MELODEE_LEGACY_EXTRAS ? 5u : ENGI_ORACLE)
 #define VCAP (MELODEE_LEGACY_EXTRAS ? 4u : NVOICE)
 static int chk_budget(char *msg, uint32_t n)
 {

@@ -42,10 +42,12 @@ static uint32_t cu_count(uint32_t below, int global)    /* the listed codes 1 ..
 }
 #define CU_DPT cu_count(CD_N, 0)
 #define CU_NDST (1u + NTRK * CU_DPT + cu_count(CD_N, 1))
+/* TIDE listed 1, 2, 3 (its codes: TIDE 1, TIDE 3, TIDE 2, kept so projects load): the two swap places in the list */
+static uint32_t cu_tide(uint32_t s) { return s == CS_APATHY ? CS_INERTIA : s == CS_INERTIA ? CS_APATHY : s; }
 static uint32_t cu_src_of(const cord_t *c)
 {
     if (!c->src) return 0u;
-    return cu_src_trk(c->src) ? 1u + c->src_trk * CU_SPT + (c->src == CS_EOC ? CS_ENERGY - 1u : c->src - 1u) : 1u + NTRK * CU_SPT + c->src - CS_ENERGY;
+    return cu_src_trk(c->src) ? 1u + c->src_trk * CU_SPT + (c->src == CS_EOC ? CS_ENERGY - 1u : cu_tide(c->src) - 1u) : 1u + NTRK * CU_SPT + c->src - CS_ENERGY;
 }
 static uint32_t cu_src_at(uint32_t v, uint8_t *tr)     /* entry v of KNOB 1's list: its source, *tr its track */
 {
@@ -54,7 +56,7 @@ static uint32_t cu_src_at(uint32_t v, uint8_t *tr)     /* entry v of KNOB 1's li
     v--;
     if (v >= NTRK * CU_SPT) return CS_ENERGY + v - NTRK * CU_SPT;
     *tr = (uint8_t)(v / CU_SPT);
-    return v % CU_SPT == CS_ENERGY - 1u ? (uint32_t)CS_EOC : 1u + v % CU_SPT;
+    return v % CU_SPT == CS_ENERGY - 1u ? (uint32_t)CS_EOC : cu_tide(1u + v % CU_SPT);
 }
 static uint32_t cu_dst_k(uint32_t code) { return cu_count(code, cu_global(code)); }   /* code -> its place, in its kind */
 static uint32_t cu_dst_code(uint32_t k, int global)
@@ -101,6 +103,23 @@ static const char *cu_dst_name(const cord_t *c)
     if (c->dst >= CD_E1 && c->dst <= CD_E8)
         return mod_dst_name(&trk[c->dst_trk % NTRK], MD_E1 + (c->dst - CD_E1));
     return cord_dest(c->dst) ? cord_dest(c->dst)->name : "--";
+}
+
+/* what a track's CUTOFF or SHAPE moves on its engine (MANUAL "CUTOFF and SHAPE per engine"): the knob's name, ""
+ * where the engine has nothing there; 0 for any other destination */
+static const char *cu_eng_dst(const cord_t *c)
+{
+    static const struct { uint8_t e; char cut[5], shp[5]; } T[] = {
+        {6, "CUT", "PW"}, {19, "CUT", "PW"},                          /* TRIO ORACLE */
+        {11, "FREQ", "COLR"}, {5, "VOWL", "BUZZ"},                     /* NOISE VOICE */
+        {12, "MLVL", "FB"}, {9, "BRIT", ""},                           /* FM6 PHYS */
+    };
+    uint32_t i, e;
+    if (c->dst != CD_CUTOFF && c->dst != CD_SHAPE) return 0;
+    e = trk[c->dst_trk % NTRK].engine;
+    for (i = 0; i < sizeof T / sizeof T[0]; i++)
+        if (T[i].e == e) return c->dst == CD_CUTOFF ? T[i].cut : T[i].shp;
+    return "";                                          /* (WHEEL, DRUM) */
 }
 
 /* Mono's four characters for a destination: a mod's move "M3%" (M3 AMT: Mono's abbreviation would read "M3MT"), else
@@ -154,6 +173,9 @@ static void cu_chip(int32_t x, int32_t y, int32_t w, uint32_t tr, const char *s,
 /* MOD SCOPE (gap G14; mscope.c samples, ui_mono.c mo_scope draws): OCT- held on MODS shows the picked mod's move over
  * time under its row, in the other three rows' place; letting go, the rows again. 1 while shown (cu_scope_draw) */
 static uint8_t cu_scope;
+static uint8_t cu_pin;                                  /* pinned: shown without OCT- (OCT- held + OCT+; OCT- or leaving
+                                                         * MODS lets it go; RAM only, never saved; ui_input.c) */
+static uint8_t cu_thr_t;                                /* frames left of a GATE's threshold drawn across (KNOB 4) */
 /* the cord shown in row k of four: the screenful, or with the scope under it the picked one alone; CORD_LIVE none */
 static uint32_t cu_slot(uint32_t k)
 {
@@ -161,9 +183,25 @@ static uint32_t cu_slot(uint32_t k)
     return cord_ui_sel / 4u * 4u + k;
 }
 
+#define CU_LED_X 9                                      /* 8 x 8 at (9, a row's y + 28) */
+#define CU_LED_Y 28
+#define CU_BAR_X 24                                     /* the move: 210 x 9 at (24, a row's y + 27), the bar 206 long */
+#define CU_BAR_W 210
+#define CU_BAR_Y 27
+/* cord i's light and move now, as cu_leds keeps them: its key (the light's level 0..8 in the low four bits), *s its
+ * share, *bk where its mark is */
+static uint8_t cu_state(uint32_t i, const cord_t *c, int32_t *s, uint8_t *bk)
+{
+    int on = cord_live(c) || cord_src_only(c);           /* (no destination yet: its source, cord.c) */
+    int32_t v = *s = cord_live(c) ? cord_share(c) : on ? cord_val(c, 32767) : 0;
+    uint8_t lv = (uint8_t)(on ? 1 + clamp((v < 0 ? -v : v) * 7 / 32768, 0, 7) : 0);
+    *bk = (uint8_t)(clamp(v, -32768, 32768) * 103 / 32768 + 104);   /* (the mark's x, 1 .. 207) */
+    return (uint8_t)(lv | (i == cord_ui_sel) << 4 | (ux.pal & 7u) << 5);
+}
 static uint8_t cu_led_was[4];                           /* (cu_leds: the step each light shows; a row redrawn: none) */
 static uint8_t cu_bar_was[4];                           /* (and where each row's live mark is) */
 static int8_t cu_mv_was[4];                             /* (and its move now: a mod of mods turns it) */
+static uint8_t cu_rows_sent;                            /* (Mono: cu_rows sent the rows, their moves and lights in them) */
 #define CU_Y 22                                         /* the rows: 48 px each from y 22 (as MOD's), the chips at 220 */
 #define CU_H 48
 static void cu_rows(void)
@@ -195,7 +233,22 @@ static void cu_rows(void)
         char b[16];
 #if MELODEE_LOOK
         mo_cu_row(i + 1u, c, sel, on);
+        {                                               /* its move and light in the row, sent with it once: not the
+                                                         * row blank under them, then they (all four flickered as
+                                                         * KNOB 2 scrolled) */
+            int32_t s;
+            uint8_t bk;
+            cu_led_was[k] = cu_state(i, c, &s, &bk);
+            cu_bar_was[k] = bk;
+            cu_mv_was[k] = (int8_t)cu_now(c);
+            cv_oy = CU_BAR_Y;
+            mo_cu_bar(c, s, CU_BAR_X);
+            cv_oy = CU_LED_Y;
+            mo_cu_led(cu_led_was[k] & 15u, CU_LED_X);
+            cv_oy = 0;
+        }
         cv_blit(0, (uint32_t)(CU_Y + (int32_t)k * CU_H));
+        cu_rows_sent = 1;
         continue;
 #endif
         cv_begin(240, CU_H, T_BG);
@@ -221,10 +274,6 @@ static void cu_rows(void)
  * the bar from the middle (its AMOUNT, or OFFSET; a +- mod's both ways), with a mark where it moves the destination
  * now. Each its own small
  * canvas, sent when it changes */
-#define CU_LED_X 9                                      /* 8 x 8 at (9, a row's y + 28) */
-#define CU_LED_Y 28
-#define CU_BAR_X 24                                     /* the move: 210 x 9 at (24, a row's y + 27), the bar 206 long */
-#define CU_BAR_W 210
 static void cu_bar(uint32_t k, const cord_t *c, int sel, int32_t s)
 {
     uint16_t bg = sel ? T_LIFT : T_BG;
@@ -232,8 +281,9 @@ static void cu_bar(uint32_t k, const cord_t *c, int sel, int32_t s)
     int32_t a = cu_now(c), m = 104, x = 2 + (a + 100) * 206 / 200, lx = m + clamp(s, -32768, 32768) * 103 / 32768;
     int32_t d = x < m ? m - x : x - m;
 #if MELODEE_LOOK
-    mo_cu_bar(c, s);
-    cv_blit(CU_BAR_X, (uint32_t)(CU_Y + (int32_t)k * CU_H + 27));
+    cv_begin(CU_BAR_W, 9, T_BG);                        /* (Mono: MO_BG) */
+    mo_cu_bar(c, s, 0);
+    cv_blit(CU_BAR_X, (uint32_t)(CU_Y + (int32_t)k * CU_H + CU_BAR_Y));
     return;
 #endif
     cv_begin(CU_BAR_W, 9, bg);
@@ -244,20 +294,24 @@ static void cu_bar(uint32_t k, const cord_t *c, int sel, int32_t s)
     cv_rect(m, 1, 1, 7, T_MID);
     if (on && c->src)                                   /* (a fixed OFFSET: no mark, the bar says it) */
         cv_rect(lx - 1, 0, 3, 9, T_TEXT);
-    cv_blit(CU_BAR_X, (uint32_t)(CU_Y + (int32_t)k * CU_H + 27));
+    cv_blit(CU_BAR_X, (uint32_t)(CU_Y + (int32_t)k * CU_H + CU_BAR_Y));
 }
 static void cu_leds(void)
 {
     uint8_t *was = cu_led_was;
     uint32_t k;
+    if (cu_rows_sent) {                                 /* (Mono: in the rows just sent. Not again: a mark moved on
+                                                         * since went out twice, the selected row flickered as KNOB 4
+                                                         * turned its AMOUNT, 3.5-beta5) */
+        cu_rows_sent = 0;
+        return;
+    }
     for (k = 0; k < 4u; k++) {
         uint32_t i = cu_slot(k);
         const cord_t *c = cord_get(i);
         if (i >= CORD_LIVE) continue;
-        int32_t s = cord_live(c) ? cord_share(c) : 0;
-        uint8_t lv = (uint8_t)(cord_live(c) ? 1 + clamp((s < 0 ? -s : s) * 7 / 32768, 0, 7) : 0);
-        uint8_t key = (uint8_t)(lv | (i == cord_ui_sel) << 4 | (ux.pal & 7u) << 5);
-        uint8_t bk = (uint8_t)(clamp(s, -32768, 32768) * 103 / 32768 + 104);   /* (the mark's x, 1 .. 207) */
+        int32_t s;
+        uint8_t bk, key = cu_state(i, c, &s, &bk), lv = key & 15u;
         uint16_t bg = i == cord_ui_sel ? T_LIFT : T_BG;
         if (ui.force || bk != cu_bar_was[k] || cu_now(c) != cu_mv_was[k]) {
             cu_bar_was[k] = bk;
@@ -268,7 +322,8 @@ static void cu_leds(void)
             continue;
         was[k] = key;
 #if MELODEE_LOOK
-        mo_cu_led(lv);
+        cv_begin(8, 8, T_BG);
+        mo_cu_led(lv, 0);
 #else
         cv_begin(8, 8, bg);
         if (lv)
@@ -283,22 +338,28 @@ static void cu_leds(void)
 static void cu_scope_draw(int held)                     /* held: OCT- held, nothing over the page (ui_pages.c) */
 {
     static uint32_t was;
+    const cord_t *c = cord_get(cord_ui_sel);
     uint32_t key;
     mscope_take(cord_ui_sel);
     cu_scope = (uint8_t)(MELODEE_LOOK && held);
+    cu_thr_t -= (uint8_t)(cu_thr_t != 0u);
 #if MELODEE_LOOK
     key = mscope.col | (uint32_t)mscope.bars << 8 | (uint32_t)cord_ui_sel << 16 | (ux.pal & 7u) << 21 |
           (uint32_t)mscope.full << 24 | (uint32_t)cu_scope << 25 | (ux.gen & 15u) << 26;
+    if (cord_gate(c))                                   /* (its threshold, shut or open, across or the wedges) */
+        key = key * 31u + (uint8_t)c->offset * 4u + (uint32_t)cord_gate_on(c) * 2u + (cu_thr_t != 0u);
     if (!cu_scope || (!ui.force && key == was)) {
         was = cu_scope ? key : 0u;
         return;
     }
+    if (!was || ui.force)                               /* (just opened: the 20 under it, the rows' 144 less 124) */
+        lcd_fill(0, CU_Y + CU_H + 124, 240, 3 * CU_H - 124, T_BG);
     was = key;
-    cv_begin(240, 3 * CU_H, T_BG);
-    mo_scope(3, 3 * CU_H / 2 - 6);
+    cv_begin(240, 124, T_BG);                           /* (the canvas's most, gfx.c CV_MAX: 124 of the rows' 144, */
+    mo_scope(2, 58, cu_src_trk(c->src) ? (int32_t)c->src_trk : -1, cu_thr_t != 0u);   /* up to the picked row) */
     cv_blit(0, (uint32_t)(CU_Y + CU_H));
 #else
-    (void)was, (void)key;
+    (void)was, (void)key, (void)c;
 #endif
 }
 
@@ -323,6 +384,12 @@ static void cu_columns(void)
     else if (c->dst) {
         val[0] = 'T'; val[1] = (char)('1' + c->dst_trk); val[2] = ' ';
         str_cpy(val + 3, cu_dst_name(c), sizeof val - 3);
+        if (cu_eng_dst(c) && *cu_eng_dst(c) && LOOK(0, col_style != CS_CAPTURE))
+            str_cpy(val + 3, cu_eng_dst(c), sizeof val - 3);   /* (Mono's chip: the engine's knob, as the row: T3ML) */
+        else if (cu_eng_dst(c)) {                       /* (CUTOFF, SHAPE: and what it moves, said) */
+            str_cpy(val + str_len(val), " ", 2);
+            str_cpy(val + str_len(val), *cu_eng_dst(c) ? cu_eng_dst(c) : "NONE", 5);
+        }
     } else
         str_cpy(val, "--", sizeof val);
     draw_column(2, "", val, "", c->dst ? VAL(2u) : T_DIM, -1, ICON_NONE);
@@ -394,6 +461,22 @@ static void cu_polarity(void)
                                                          * KNOB 1 its clock, HOLD ON T1 NOTES ..) */
     ui.force = 1;
 }
+/* MODS' sheet, Clear mod: the picked mod back to empty (no source, destination or move, +-; not a SCALE, CC 1). Mods
+ * that move it (M AMT) stay. Nothing set: NOTHING THERE */
+static void cu_clear(void)
+{
+    static const cord_t none;                           /* (CS_OFF, CD_OFF, 0, 0, CU_BI) */
+    const cord_t *c = cord_get(cord_ui_sel);
+    if (!c->src && !c->dst && !c->amount && !c->offset) {
+        ui_message("NOTHING THERE");
+        return;
+    }
+    (void)cord_set(cord_ui_sel, &none);
+    cord_vca_load(cord_vca_mask() & ~(1u << cord_ui_sel));
+    cord_cc_set(cord_ui_sel, 1u);
+    ui_message("MOD CLEARED");
+    ui.force = 1;
+}
 /* OCT- held + KNOB 4 on a GATE mod: its threshold (ui_input.c: OCT-'s tap eaten) */
 static int cu_thresh_knob(int32_t steps)
 {
@@ -405,6 +488,7 @@ static int cu_thresh_knob(int32_t steps)
     str_cpy(b, "GATE OVER ", sizeof b);
     cu_pct_text(b + str_len(b), c.offset);
     ui_message(b);
+    cu_thr_t = 64;                                      /* (about a second, then the wedges at the edges again) */
     return 1;
 }
 

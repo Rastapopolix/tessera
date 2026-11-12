@@ -130,5 +130,7 @@ static void mx_open(void)
     ui.page = (uint8_t)p;
     ui.fam_last[fam_grp(PAGES[p].fam)] = ui.page;
     page_entered();
+    drill_to = 2;                                       /* (OCT- in MODS: back to MATRIX) */
+    drill_pg = ui.page;
     ui.force = 1;
 }

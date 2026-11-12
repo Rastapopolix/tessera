@@ -9,7 +9,10 @@ WOFF, so the site, the installer, the editor and the simulator page letter as th
 
 A font pixel is 100 units, a glyph 6 pixels wide (5 and one clear), 7 above the baseline and 1 below: 800 units an
 em, so the face is sharp at 8, 16, 24 ... px. Lower case is drawn as upper (as on the device); a few signs the pages
-use and the device has no need of (| { } ~ ` and the middle dot, dashes, ellipsis, times) are added here. The WOFF
+use and the device has no need of (| { } ~ ` and the middle dot, dashes, ellipsis, times) are added here, and the
+accented letters of the pages' other languages (latin(): the whole capital with a 2-row accent above the cap height,
+C cedilla, sharp s, inverted ! and ?, guillemets; the device has none of them, so this costs no flash). The line
+metrics stay 7 + 1 pixels (typo metrics, USE_TYPO_METRICS); the Windows ascent leaves room for the accents. The WOFF
 goes inline, as a data URL, between the TESSERA-MONO markers of every page in PAGES, so each one stays a single file.
 """
 import base64
@@ -32,6 +35,19 @@ EXTRA = {                                               # code point: 7 rows, bi
     0x2026: (0, 0, 0, 0, 0, 0, 21), 0x2019: (12, 4, 8, 0, 0, 0, 0), 0x2018: (4, 8, 12, 0, 0, 0, 0),
     0x201C: (10, 20, 30, 0, 0, 0, 0), 0x201D: (30, 10, 20, 0, 0, 0, 0),
 }
+ACCENT_ROWS = "accent"                                  # marks a glyph drawn from 2 rows above the cap height
+ACCENTS = {"grave": (8, 4), "acute": (2, 4), "circ": (4, 10), "tilde": (13, 22), "uml": (10, 0)}
+LATIN = {                                               # code point of the capital: (base letter, accent)
+    0xC0: ("A", "grave"), 0xC1: ("A", "acute"), 0xC2: ("A", "circ"), 0xC3: ("A", "tilde"), 0xC4: ("A", "uml"),
+    0xC8: ("E", "grave"), 0xC9: ("E", "acute"), 0xCA: ("E", "circ"), 0xCB: ("E", "uml"),
+    0xCC: ("I", "grave"), 0xCD: ("I", "acute"), 0xCE: ("I", "circ"), 0xCF: ("I", "uml"), 0xD1: ("N", "tilde"),
+    0xD2: ("O", "grave"), 0xD3: ("O", "acute"), 0xD4: ("O", "circ"), 0xD5: ("O", "tilde"), 0xD6: ("O", "uml"),
+    0xD9: ("U", "grave"), 0xDA: ("U", "acute"), 0xDB: ("U", "circ"), 0xDC: ("U", "uml"),
+}
+SIGNS = {                                               # rows as EXTRA; C cedilla has an 8th row, under the baseline
+    0xA1: (4, 0, 4, 4, 4, 4, 4), 0xBF: (4, 0, 4, 8, 16, 17, 14), 0xAB: (0, 0, 5, 10, 20, 10, 5),
+    0xBB: (0, 0, 20, 10, 5, 10, 20), 0xDF: (12, 18, 18, 22, 17, 17, 22),
+}
 MARK = re.compile(r"(/\* TESSERA-MONO:[^*]*\*/).*?(/\* /TESSERA-MONO \*/)", re.S)
 
 
@@ -43,10 +59,24 @@ def mo_font():
     return {0x20 + i: r for i, r in enumerate(rows)}
 
 
+def latin(font):
+    """the accented letters (capital and small: the pages draw both as capitals), C cedilla and the signs"""
+    out = {}
+    for cp, (base, accent) in LATIN.items():
+        out[cp] = out[cp + 0x20] = (ACCENT_ROWS,) + ACCENTS[accent] + font[ord(base)]
+    out[0xC7] = out[0xE7] = font[ord("C")] + (4,)
+    out.update(SIGNS)
+    return out
+
+
 def glyph(rows):
-    """the rows' pixels as squares, each row's runs merged (no overlapping contours)"""
+    """the rows' pixels as squares, each row's runs merged (no overlapping contours); rows that start with
+    ACCENT_ROWS begin two rows above the cap height"""
+    first = 0
+    if rows and rows[0] == ACCENT_ROWS:
+        rows, first = rows[1:], -2
     pen = TTGlyphPen(None)
-    for r, bits in enumerate(rows):
+    for r, bits in enumerate(rows, first):
         top = (ASC - r) * PX
         c = 0
         while c < 5:
@@ -68,6 +98,7 @@ def build():
     for c in range(0x61, 0x7B):                         # lower case drawn as upper
         cmap_src[c] = cmap_src[c - 32]
     cmap_src.update(EXTRA)
+    cmap_src.update(latin(cmap_src))
     names, glyphs, cmap, seen = [".notdef"], {".notdef": TTGlyphPen(None).glyph()}, {}, {}
     for cp in sorted(cmap_src):
         rows = cmap_src[cp]
@@ -84,7 +115,8 @@ def build():
     fb.setupHorizontalHeader(ascent=ASC * PX, descent=-DESC * PX)
     fb.setupNameTable({"familyName": "Tessera Mono", "styleName": "Regular",
                        "copyright": "Copyright (C) 2026 Theo Dainis; GPL-3.0-only (firmware/src/gfx.c)"})
-    fb.setupOS2(sTypoAscender=ASC * PX, sTypoDescender=-DESC * PX, usWinAscent=ASC * PX, usWinDescent=DESC * PX)
+    fb.setupOS2(sTypoAscender=ASC * PX, sTypoDescender=-DESC * PX, sTypoLineGap=0, usWinAscent=(ASC + 2) * PX,
+                usWinDescent=DESC * PX, fsSelection=0x40 | 0x80, version=4)    # REGULAR, USE_TYPO_METRICS (v4+)
     fb.setupPost()
     fb.font["head"].created = fb.font["head"].modified = 3_844_800_000   # fixed: the same bytes every run
     fb.font.recalcTimestamp = False

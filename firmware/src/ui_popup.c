@@ -153,8 +153,28 @@ static void nt_accmode(int32_t s)                      /* (round: OCT+ goes on p
     tessera_param_set(tr, TX_ACC_MODE, (tessera_param_get(tr, TX_ACC_MODE) + (s > 0 ? 1 : TESS_ACC_MODES - 1)) %
                                        TESS_ACC_MODES);
 }
-/* .. its DIR (TX_SEQ_DIR: the pattern's) */
-static void nt_dir_v(char *b) { str_cpy(b, pid_desc(PID_TESS(TX_SEQ_DIR), 0)->names[tessera_param_get(trk_index(TSEL), TX_SEQ_DIR) % SEQ_DIRS], 8); }
+/* .. its DIR (TX_SEQ_DIR: the pattern's; a mod moving it: "FWD>PEND", the pattern's and the one playing, seq_dir.c).
+ * The live part changes at most every 300 ms and stays 1 s after the mod last moved DIR away, so a mod near a boundary
+ * no longer flickers the row between "FWD" and "FWD>PEND" a step at a time (3.5-beta7) */
+static void nt_dir_v(char *b)
+{
+    static uint8_t shown, live;
+    static uint32_t t_set, t_away;
+    const char *const *nm = pid_desc(PID_TESS(TX_SEQ_DIR), 0)->names;
+    uint32_t d = (uint32_t)tessera_param_get(trk_index(TSEL), TX_SEQ_DIR) % SEQ_DIRS, now = seq_dir_now(TSEL) % SEQ_DIRS;
+    if (now != d) {
+        if (!live) shown = (uint8_t)now, t_set = fm1_ms;
+        live = 1;
+        t_away = fm1_ms;
+    } else if (live && fm1_ms - t_away >= 1000u)
+        live = 0;
+    if (live && now != shown && fm1_ms - t_set >= 300u) shown = (uint8_t)now, t_set = fm1_ms;
+    str_cpy(b, nm[d], 8);
+    if (live) {
+        str_cpy(b + str_len(b), ">", 2);
+        str_cpy(b + str_len(b), nm[shown % SEQ_DIRS], 8);
+    }
+}
 static void nt_dir(int32_t s)                          /* (round: OCT+ goes on past DRUNK to FWD) */
 {
     uint32_t tr = trk_index(TSEL);
@@ -207,7 +227,7 @@ static void bus_turn(uint32_t k, int32_t s)
 #define BUS_ROW_(k) static void bus_v##k(char *b) { bus_v(b, k); } static void bus_t##k(int32_t s) { bus_turn(k, s); }
 BUS_ROW_(0) BUS_ROW_(1) BUS_ROW_(2) BUS_ROW_(3)
 #undef BUS_ROW_
-static const sheet_row_t SHEET_MODS[] = {{"Bus A mode", bus_v0, bus_t0, 0, 0}, {"Bus A lag", bus_v1, bus_t1, 0, 0},
+static const sheet_row_t SHEET_MODS[] = {{"Clear mod", 0, 0, cu_clear, SR_RED}, {"Bus A mode", bus_v0, bus_t0, 0, 0}, {"Bus A lag", bus_v1, bus_t1, 0, 0},
     {"Bus B mode", bus_v2, bus_t2, 0, 0}, {"Bus B lag", bus_v3, bus_t3, 0, 0}};
 
 /* a page's settings past its eight knobs (the key grammar's rule 3, M3) as a sheet's rows: row k is setting sr.pid[k] of
@@ -508,7 +528,9 @@ static void page_sheet_open(void)
         break;
     }
     case 5:
-        sheet_open("Mods", "mix buses", SHEET_MODS, NELEM(SHEET_MODS));
+        fmt_int(nm + 1, (int32_t)cord_ui_sel + 1);     /* (the picked mod, which Clear mod clears: M3) */
+        nm[0] = 'M';
+        sheet_open("Mods", nm, SHEET_MODS, NELEM(SHEET_MODS));
         break;
     case 6:
         str_cpy(nm, "T1", sizeof nm);
@@ -617,8 +639,12 @@ static void pick_touch(uint32_t c)
         d = 0;
     } else {
     d = page_desc(cur_page(), c, &vp);
-    if (!d || !vp || d->fmt != F_ENUM || !d->names || d->max - d->min < 4 || pick_numbers(d))
-        return;
+    if (!d || !vp || d->fmt != F_ENUM || !d->names || d->max - d->min < 4 || pick_numbers(d) || enum_order(d) ||
+        d->names == N_AMODE || d->names == N_CHRD || d->names == N_VOIC || d->names == N_FX)
+        return;                                         /* (DIV, ARP RATE, TEMPO's QNT: their value under the knob, slow to
+                                                         * fast; beta7: the list read as a drop-down. ARP MODE, CHORD's
+                                                         * CHRD and VOIC, FX: short names, under the knob too; Theo,
+                                                         * 2026-11-12) */
     }
     if (pop.on != POP_PICK)
         ui.force = 1;                                   /* (the page dimmed under it) */

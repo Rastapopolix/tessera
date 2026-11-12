@@ -165,13 +165,19 @@ void fm1_alnk0_irq(void)                       /* via isr_alnk0 (hal/fm1_isr.S) 
         midi_render_timed = 0;
         fm1_audio_ack_half();
         audio_halves++;
-        us = shed_check(fm1_ticks() - t0);
+        uint32_t all = fm1_ticks() - t0;
+        us = shed_check(all);
         if (us > audio_max_us)
             audio_max_us = us;
         {
-            uint32_t load = song.cpu_q8 * (CPU_AVG - 1u) + (us * 256u) / (HALF_FRAMES * 1000000u / FS) + audio_cpu_rem;
+            /* The meter counts the whole half, TIMER5's nested USB/MIDI service included, as shedding and the
+             * deadline do (#586: it read 55 % while halves ran past 100 %); the peak holds this half's load and
+             * falls 1/256 of full scale a half (full to zero in about 0.7 s), so a spike a 93 ms average hides still shows */
+            uint32_t now = all / FM1_TICKS_PER_US * 256u / (HALF_FRAMES * 1000000u / FS);
+            uint32_t load = song.cpu_q8 * (CPU_AVG - 1u) + now + audio_cpu_rem;
             song.cpu_q8 = load / CPU_AVG;
             audio_cpu_rem = load % CPU_AVG;
+            song.cpu_peak_q8 = now > song.cpu_peak_q8 ? now : song.cpu_peak_q8 - (song.cpu_peak_q8 + 255u) / 256u;
         }
         if (fm1_audio_free_half() != half)
             melodee_dbg.late++;                         /* the DMA moved on while we rendered */

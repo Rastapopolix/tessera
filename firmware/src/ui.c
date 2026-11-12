@@ -210,12 +210,24 @@ enum { CF_NONE, CF_CLEAR_SEQ, CF_CLEAR_TRK, CF_OVR_PROJ, CF_OVR_USER,
 
 static const page_t *page_over;   /* a quick layer's own four knobs (ui_layer.c), while it edits or draws them */
 static uint32_t drum_hit_selected(void);
-static const page_t *cur_page(void) { return page_over ? page_over : &PAGES[ui.page]; }
+/* ARP with OCT- held: SWING, PROB, HOLD, ORDER (the ARP 2 page's four, a layer since 3.5-beta7; the page itself is
+ * not listed: seqm_page_ok) */
+static int oct_dn_only(void);
+static const page_t *arp2_page(void)
+{
+    static uint8_t at;
+    if (!at)
+        for (at = 1; at < NPAGES && !(PAGES[at].fam == FAM_ARP && PAGES[at].graph == GR_NONE); at++) ;
+    return &PAGES[at % NPAGES];
+}
+static int arp2_on(void) { return !ui.home && !ui.menu && !ui.confirm && PAGES[ui.page].graph == GR_ARP && oct_dn_only(); }
+static const page_t *cur_page(void) { return page_over ? page_over : arp2_on() ? arp2_page() : &PAGES[ui.page]; }
 
 /* the quick layers (ui_layer.c): a button held, the keys and KNOB 1..4 are its shortcuts, its map over the page */
 /* the one hold time (the key grammar, tessera-notes audit-2026-11 M0): a button held this long is a hold (btn_hold:
  * OCT+'s sheet, HOME's menu, REC's take ..), and an OCT held this long is never a tap (ui_input.c oct_taps) */
 #define OCT_HOLD_MS 700u
+#define OCT_TAP_MS 250u                     /* an OCT- let go later was a hold, never Back (oct-taps.md) */
 /* OCT- held, not OCT+: a page's second set of knobs (the key grammar's rule 2: FORM, TIMING, ENERGY, CHAIN, MIXER, MODS ..) */
 static int oct_dn_only(void)
 {
@@ -331,7 +343,8 @@ static int seqm_page_ok(uint32_t i)                     /* (the page shown stays
         ((p->graph == GR_EVOLVE || p->graph == GR_TIMING || p->graph == GR_TWEAK) && !m) ||
         (p->graph == GR_TWEAK && m == 1u);              /* (STEP: STEP EVOLVE; TIMING's SHAPE and HUMAN; TWEAK's
                                                          * HUMAN. ARP: TWEAK's SHIFT and HUMAN) */
-    if (p->fam == FAM_ARP && (p->graph == GR_ARP || p->graph == GR_NONE)) return m == 1u;
+    if (p->fam == FAM_ARP && p->graph == GR_NONE) return 0;   /* (ARP 2: ARP's OCT- layer, arp2_on) */
+    if (p->fam == FAM_ARP && p->graph == GR_ARP) return m == 1u;
     if (p->fam == FAM_SEQ && p->graph == GR_ROLL) return m < 2u;
     if (p->fam == FAM_SEQ && p->graph == GR_STEPS) return m >= 2u;   /* PATTERN: STEP and ARP have it on GEN */
     return 1;
@@ -442,8 +455,12 @@ static void seq_midi_reset(void)                    /* a new page/track ends MID
     memset(step_midi_keys, 0, sizeof step_midi_keys);
 }
 static void undo_seal(void);
+/* a page opened from FM6's map (1) or from MATRIX (2), drill_pg: OCT- goes back there (ui_input.c; tessera-notes
+ * oct-taps.md); any other way to a page forgets it */
+static uint8_t drill_to, drill_pg;
 static void page_entered(void)
 {
+    drill_to = 0;
     const page_t *pg = cur_page();
     if (pg->graph == GR_SCALE_PICKER && !ui.scale_picker_seen) {
         ui.scale_family = (uint8_t)(tune_scale() || uscale_on() ? SCALE_FAM_USER :
@@ -716,6 +733,7 @@ static void open_global(void)
 static void go_home(void)
 {
     ui.home = 1;
+    drill_to = 0;
     ui.entry_open = 0;
     ui.hot_t = 0;
     song.seq_mode = 0;
@@ -1105,7 +1123,7 @@ static void engine_load_of(track_t *t, uint32_t ei, uint32_t pi)
 /* the engine's defaults and its first preset */
 static void set_engine_of(track_t *t, uint32_t ei) { engine_load_of(t, ei, 0u); }
 
-/* the engine's own starting point, nothing changed: its INIT preset (SID, FM6: "INIT .."), else
+/* the engine's own starting point, nothing changed: its INIT preset (FM6: "INIT .."), else
  * its first (DRUM: the 808 kit) */
 static uint32_t preset_init(uint32_t e)
 {

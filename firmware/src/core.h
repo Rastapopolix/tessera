@@ -41,7 +41,7 @@
                                  * 2026-10-10: the flash for the redesign; PHASE with the CZ-1, 2026-10-22) */
 #endif
 /* Tessera (phase 4, tessera-notes/docs/design/phase4/PLAN.md): an engine left out of the build (0) is never offered; its stored ID
- * stays reserved and a project's track of it loads SID's INIT (project.c). Its code goes where nothing reaches it */
+ * stays reserved and a project's track of it loads FM6's INIT (project.c). Its code goes where nothing reaches it */
 /* CZ-1 and PROPHET: retired as engines 2026-10-22 (their IDs stay reserved), their stores and tones with the own
  * project format. The Prophet's engine came back as ORACLE (2026-10-29, ID 19): its own sounds, no factory bank */
 #ifndef MELODEE_ORACLE
@@ -50,16 +50,8 @@
 #ifndef MELODEE_FM6
 #define MELODEE_FM6 1
 #endif
-#ifndef MELODEE_SID
-#define MELODEE_SID 1            /* SID as a melodic engine (eng_sid.c); DRUM's SID KIT and SID DIGI keep the chip core either
-                                  * way. Tessera 2026-10-21: out, FM back (its tracks load FM's INIT) */
-#endif
-#ifndef MELODEE_SID_KIT
-#define MELODEE_SID_KIT 1        /* DRUM's SID KIT and SID DIGI (drum_sid.c); the device build leaves them out for flash
-                                  * (2026-10-28: a stored KIT SID loads clamped: the 909) */
-#endif
 #ifndef MELODEE_TRIO
-#define MELODEE_TRIO 1           /* TRIO (eng_trio.c), back 2026-10-17 beside SID and DRUM (MACRO out: too costly) */
+#define MELODEE_TRIO 1           /* TRIO (eng_trio.c), back 2026-10-17 */
 #endif
 #ifndef MELODEE_PHYS
 #define MELODEE_PHYS 1           /* PHYS (eng_phys.c), back 2026-10-18 after TRIO; out of device builds 2026-10-21 (build.py) */
@@ -76,32 +68,30 @@
 #else
 #define LOOK(d, m) (d)
 #endif
-#ifndef MELODEE_PLAITS
-#define MELODEE_PLAITS 0         /* MACRO (eng_macro.c): Plaits' synthesis, C++ (build.py); the prototype: off by default */
-#endif
-#define ENG_BUILT(e) ((e) == 3u ? MELODEE_SID : (e) == 9u ? PHYS_ON : (e) == 12u ? MELODEE_FM6 : (e) == 15u ? 0 : (e) == 19u ? MELODEE_ORACLE : \
-                      (e) == 21u ? MELODEE_PLAITS : 1)   /* SID PHYS FM6 CZ-1 ORACLE MACRO (PHYS: left out, not retired,
+/* SID (3) and MACRO (21, Plaits): engines no longer in the code (2026-11-12; SID out of the device since 2.0, DRUM's
+ * SID KIT since 3.0, MACRO a prototype never shipped). Their IDs stay reserved: a track saved with them loads FM6's INIT */
+#define ENG_BUILT(e) ((e) == 3u ? 0 : (e) == 9u ? PHYS_ON : (e) == 12u ? MELODEE_FM6 : (e) == 15u ? 0 : (e) == 19u ? MELODEE_ORACLE : \
+                      (e) == 21u ? 0 : 1)   /* SID PHYS FM6 CZ-1 ORACLE MACRO (PHYS: left out, not retired,
                                                    * since 2026-10-21: its tracks load FM's first voice) */
 #define TRIO_ON (MELODEE_TRIO || MELODEE_LEGACY_EXTRAS)
 #define PHYS_ON (MELODEE_PHYS || MELODEE_LEGACY_EXTRAS)
-#define ENGI_SID 3u
-#define ENGI_FALLBACK (MELODEE_FM6 ? 12u : ENGI_SID)   /* a retired engine's place (eng_rank, the designer, project.c) */
-#if !MELODEE_FM6 && !MELODEE_SID
-#error "MELODEE_FM6 or MELODEE_SID: one of them is the place of an engine left out"
+#define ENGI_FALLBACK 12u        /* a retired engine's place (eng_rank, the designer, project.c): FM6 */
+#if !MELODEE_FM6
+#error "MELODEE_FM6: FM6 is the place of an engine left out"
 #endif
 #define ENGI_CZ 15u      /* retired (the CZ-1) */
 #define ENGI_ORACLE 19u  /* ORACLE (the Prophet's ID until 2026-10-22); 16..18 reserved: historical preset namespaces */
 #define USER_GENERAL 16u
 #define USER_NATIVE_P5 20u
 #define NENGINES 22               /* 13 SLICE and 14 OBXF reserved; 15 native CZ-1; 20 reserved (USER_NATIVE_P5's
-                                   * namespace in the browser); 21 MACRO (Tessera) */
+                                   * namespace in the browser); 21 reserved (MACRO, removed) */
 #define USER_NATIVE_FM 17u
 #define USER_NATIVE_CZ 18u
 #define USER_NONE 256u
 #define ENGI_ANALOG 0u           /* retired in 1.2: never selectable (eng_ok), its stored sounds play silent */
 #define ENGI_DIGITAL 1u          /* retired: never selectable (eng_ok), its stored sounds play silent */
-#define NENG_SHOWN (NENGINES - 10u - !MELODEE_ORACLE - !MELODEE_SLICE - (MELODEE_LEGACY_EXTRAS ? 1u : 6u - MELODEE_TRIO - MELODEE_PHYS) - !MELODEE_SID - !MELODEE_FM6 - \
-                    !MELODEE_PLAITS)   /* the engines one can pick: PRESETS, the EDIT
+#define NENG_SHOWN (NENGINES - 10u - !MELODEE_ORACLE - !MELODEE_SLICE - (MELODEE_LEGACY_EXTRAS ? 1u : 6u - MELODEE_TRIO - MELODEE_PHYS) - 2u /* SID, MACRO */ - \
+                    !MELODEE_FM6)   /* the engines one can pick: PRESETS, the EDIT
                                                 * layer, the editor, in the display order of engines.c ENGINE_ORDER */
 #define ENGI_SLICE 13u           /* reserved without MELODEE_SLICE: never selectable (eng_ok) */
 #ifdef SMP_USER_SLOTS
@@ -497,7 +487,9 @@ typedef struct {
     uint16_t slot;               /* the step of time in the pass (0..LEN-1); seq_idx the step playing on it: the same
                                   * on FWD, else as DIR takes them */
     uint16_t nxt;                /* DIR not FWD: the step after seq_idx, chosen a step ahead (SEQ_NXT_*: none yet) */
-    uint8_t ndir, back;          /* the DIR nxt was chosen by; PEND / PONG going back */
+    uint8_t ndir, back;          /* the DIR nxt was chosen by; PEND going back */
+    uint8_t rev, nrev, cont;     /* the step playing came backwards (seq_idx one before the last), the next will;
+                                  * it goes on a tied run backwards (seq_dir_tie) */
 } seq_dir_t;
 static seq_dir_t seq_dirs[NTRK];
 #define SEQ_D(t) seq_dirs[(t) - trk]
@@ -512,7 +504,8 @@ typedef struct {
     uint8_t sel;                 /* selected track 0..NTRK-1: keys, pages, editor */
     int8_t octave;
     uint32_t tick;               /* sub-blocks since play */
-    uint32_t cpu_q8;             /* audio ISR load, 1/256 */
+    uint32_t cpu_q8;             /* audio ISR load, 1/256, USB service nested in it included (~93 ms average) */
+    uint32_t cpu_peak_q8;        /* the recent worst half's load, 1/256 (audio.c: falls over ~0.7 s) */
     uint32_t master_q12;
     int32_t batt_raw;            /* smoothed ADC ch3 (battery divider), 0 = not read yet */
     uint8_t pwr[3];              /* P33 0xA1 (LDO5V_CON: bit 5 5 V in), 0x19 (CHG_READ: bit 0 full), 0x1A (CHG_CON0: bit 0

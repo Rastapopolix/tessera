@@ -104,7 +104,7 @@ static const cord_dest_t CORD_DESTS[CD_N] = {
     [CD_TEMPO] = {CD_TEMPO, CK_TEMPO, 0, PID_NONE, "TEMPO" CD_FULL("the project's tempo on CLK INT: a full move up doubles it, down halves it (BPM stays as set)")},
     [CD_CC] = {CD_CC, CK_CC, 0, PID_NONE, "CC" CD_FULL("a MIDI CC out on the track's MIDI OUT channel, its number set with OCT- held and KNOB 3")},
     [CD_SUB_SPLIT] = S_(CD_SUB_SPLIT, TX_SUB_SPLIT, "SPLIT", "TIMING's SPLIT: the chance a step plays at half its division"),
-    [CD_SEQ_DIR] = S_(CD_SEQ_DIR, TX_SEQ_DIR, "DIR", "the STEP pattern's DIR, stepped: FWD BACK PEND PONG RAND DRUNK from the pattern's own"),
+    [CD_SEQ_DIR] = S_(CD_SEQ_DIR, TX_SEQ_DIR, "DIR", "the STEP pattern's DIR, stepped: FWD BACK PEND FOLD RAND DRUNK from the pattern's own"),
     [CD_PLAY] = {CD_PLAY, CK_PLAY, 0, PID_NONE, "PLAY" CD_FULL("whether the track's notes sound: while its mods together are at half or more; under it the track plays on unheard (it still leads, as MUTE)")},
     [CD_MOD_DEPTH] = {CD_MOD_DEPTH, CK_MDEPTH, 0, PID_NONE, "MOD DEP" CD_FULL("the project's MOD DEPTH (GLO > PERF's sheet): how much of every mod's move plays, 0..100 %; a MACRO onto it at -100 % turns the patch dry")},
     [CD_BUS_A] = {CD_BUS_A, CK_BUS, 0, PID_NONE, "BUS A" CD_FULL("the project's MIX bus A: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS A")},
@@ -244,6 +244,9 @@ static int32_t cord_fold(const cord_t *c, int32_t x) { return cord_fold_on(c) ? 
 /* a cord's source now, folded when UNI. A track's LFO is folded before its FADE and (own: the DEPTH gain of the track
  * the cord is on, 32767 none) its DEPTH scale it, as the LFO's own POL UNI is (voice.c): faded in or turned down, a UNI
  * mod goes to 0, not to half its amount */
+/* a mod with a source and no destination yet: it moves nothing, but MODS shows its source moving (its light, its mark,
+ * MOD SCOPE), so a source can be seen before it is sent somewhere (3.5-beta7) */
+static int cord_src_only(const cord_t *c) { return c->src && c->dst == CD_OFF; }
 static int32_t cord_val(const cord_t *c, int32_t own)
 {
     if (!c->src) return 0;
@@ -430,10 +433,11 @@ static void cord_masks(void)
     for (i = 0; i < CORD_LIVE; i++) {
         const cord_t *c = &cords[i];
         uint32_t kind;
+        if (c->src == CS_ENV && (cord_live(c) || cord_src_only(c)))   /* (one shown alone too: its voices report) */
+            cord_envsrc |= (uint8_t)(1u << c->src_trk);
         if (!cord_live(c)) continue;
         kind = cord_dest(c->dst)->kind;
         if (cord_gate(c)) cord_tmask |= 1u << i;
-        if (c->src == CS_ENV) cord_envsrc |= (uint8_t)(1u << c->src_trk);
         if (kind == CK_CLOCK) {                         /* (cord_clock_tick; a track with one live is clocked by it) */
             cord_clmask |= 1u << i;
             if (c->amount || cord_bit(cord_amask, c)) cord_clk_trk |= (uint8_t)(1u << c->dst_trk);

@@ -120,6 +120,10 @@ static const menu_credit_t MENU_CREDITS[] = {
     {"A tessera is the small tile of a mosaic: short phrases set side by side into a larger form", MC_TEXT},
     {"https://github.com/Rastapopolix/tessera", MC_URL},
     {"", MC_TEXT},
+    {"THANKS / TESTERS AND IDEAS", MC_TITLE},
+    {"BobFromson, pavig-coder, bambalaya, alxantdroid, resocut, Joao Duraes, tv-glotzer,", MC_TEXT},  /* Mono: ASCII only */
+    {"il1893, fairplay, alexwlloyd, morgulbrut, nrittamurti, Charles Vestal (FM-1 Screen Reader)", MC_TEXT},
+    {"", MC_TEXT},
     {"MELODEE / ORIGINAL", MC_TITLE},                  /* Tessera is a modified Melodee */
     {"Kerem Kilic (keremimo), Ellic Studio / GPL-3.0", MC_TEXT},
     {"https://github.com/keremimo/melodee", MC_URL},
@@ -152,10 +156,6 @@ static const menu_credit_t MENU_CREDITS[] = {
     {"msfa: Apache-2.0, Dexed: GPL-3.0", MC_TEXT},
     {"https://github.com/asb2m10/dexed", MC_URL},
     {"", MC_TEXT},
-    {"RESID / SID MODEL", MC_TITLE},
-    {"Dag Lem / GPL-2.0-or-later", MC_TEXT},
-    {"https://github.com/libsidplayfp/resid", MC_URL},
-    {"", MC_TEXT},
     {"RINGS / PHYS PORT", MC_TITLE},
     {"Emilie Gillet / MIT", MC_TEXT},
     {"https://github.com/pichenettes/eurorack", MC_URL},
@@ -181,7 +181,7 @@ static const menu_credit_t MENU_CREDITS[] = {
 /* Mono: the 5 x 7 font, 19 characters a line (a word longer than that broken), 18 px apart as the detailed look's */
 static int32_t menu_text(const char *s, int32_t y, uint16_t col, int draw)
 {
-    char a[96], line[24];
+    char a[128], line[24];                           /* the longest credit is 110 */
     const char *p = a;
     mo_ascii(a, s, sizeof a);
     while (*p) {
@@ -425,6 +425,9 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
     if (i == MI_ACCEL) value = PREF_BITS & PREF_ACCEL_OFF ? "OFF" : "ON";
     if (i == MI_TRACK_KNOB) value = settings_knob_swap ? "LEFT" : "RIGHT";
 #if MELODEE_LOOK
+#if MELODEE_LOOK
+    if (i == MI_COLOR) value = pal_name(settings.palette);   /* (the screen reader says the ink too) */
+#endif
     if (i == MI_GROUND) value = ux_ground ? "LIGHT" : "DARK";
     if (i == MI_KNOBS) value = KNOBS_BAR ? "BAR" : "DIAL";
     if (i == MI_LARGE) value = (const char *const[]){"AUTO", "ON", "OFF"}[LARGE_MODE];
@@ -460,21 +463,32 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
     }
     return value;
 }
+#if !MELODEE_LOOK
+#define pal_shown(i) ((i) % NPALETTES)
+#endif
+static uint32_t menu_color_step(int32_t d)            /* COLOR's next ink, from the one shown (LIGHT skips the hidden) */
+{
+    uint32_t p = pal_shown(settings.palette);
+    do p = (p + (d > 0 ? 1u : NPALETTES - 1u)) % NPALETTES; while (pal_shown(p) != p);
+    return p;
+}
 #if MELODEE_LOOK
 /* Mono: the rows 11 cells apart from row 12, the name at the left, the value at the right (dim), the row picked
  * inverted across the screen; a scroll bar a cell wide at the right. COLOR picked: its sheet in place of the rows below
  * it (menu_colors) */
 /* MENU > COLOR's sheet: ONE INK, a box in each ink, and MOSAIC, a tile of four stripes in each palette's track colours
  * (tools/gen_ui_palettes.py keeps them to a row each, inks first); the one chosen framed, a cell clear round it, and
- * its name large below. GROUND LIGHT: the light inks, on paper */
+ * its name large below. GROUND LIGHT: the light inks, on paper; RED, HOT PINK and ORANGE left out (shown as PINK and YELLOW, pal_shown) */
 static void menu_colors(void)
 {
-    uint32_t k, cur = settings.palette % NPALETTES, ni = 0, nm = 0;
+    uint32_t k, cur = pal_shown(settings.palette), ni = 0, nm = 0;
     mo_text("ONE INK", 2, 16, MO_DIM);
     mo_text("MOSAIC", 2, 50, MO_DIM);
     for (k = 0; k < NPALETTES; k++) {
         const ui_pal_t *q = &UI_PALETTES[k];
         int32_t x, y, w, j;
+        if (pal_shown(k) != k)
+            continue;
         if (q->trk[0] == q->trk[1]) {                   /* one ink: a box 10 x 11 (the frames clear of the scroll bar) */
             x = 2 + (int32_t)ni++ * 13, y = 27, w = 10;
             mo_fill(x, y, w, 11, ux_ground ? pal_light(k, 0) : q->text);
@@ -487,7 +501,7 @@ static void menu_colors(void)
             mo_box(x - 2, y - 2, w + 4, 15, MO_HOT);
     }
     mo_hl(0, 82, 120, MO_DIM);
-    mo_text_s(UI_PALETTES[cur].name, 2, 88, 2, MO_INK);
+    mo_text_s(pal_name(cur), 2, 88, 2, MO_INK);
 }
 static void menu_mono(void)
 {
@@ -505,8 +519,6 @@ static void menu_mono(void)
             if (on)
                 mo_fill(0, y, 118, 10, MO_HOT);
             mo_text(MI_NAME[i], 2, y + 2, on ? MO_BG : MO_DIM);
-            if (i == MI_COLOR)
-                value = UI_PALETTES[settings.palette % NPALETTES].name;
             if (value) {
                 mo_ascii(a, value, sizeof a);
                 mo_textr(a, 115, y + 2, i == MI_COLOR ? ink : dim);
@@ -694,7 +706,7 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
     }
     if (s != 0 && ui.menu == 1 && ui.menu_sel == MI_COLOR) {
         menu_cols = 1;
-        settings.palette = (settings.palette + (s > 0 ? 1u : NPALETTES - 1u)) % NPALETTES;   /* (wraps) */
+        settings.palette = (uint8_t)menu_color_step(s);   /* (wraps) */
         palette_set(settings.palette);              /* (the menu signature redraws) */
         ui.force = 1;
     }
@@ -811,7 +823,7 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         switch (ui.menu_sel) {
         case MI_COLOR:                                 /* OCT+ steps through the palettes too */
             menu_cols = 1;
-            settings.palette = (settings.palette + 1u) % NPALETTES;
+            settings.palette = (uint8_t)menu_color_step(1);
             palette_set(settings.palette);
             ui.force = 1;
             break;

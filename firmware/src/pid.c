@@ -52,7 +52,7 @@ static const char *const TX_N_FCFOLLOW[] = {"FOLLOW", "OWN"};
 static const char *const TX_N_ETSTYLE[] = {"CUT", "FADE"};   /* (entries.c) */
 static const char *const TX_N_ETROLE[] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "MELODY", "ANCHOR"};
 static const char *const TX_N_ETORDER[] = {"AUTO", "1ST", "2ND", "3RD", "4TH"};
-static const char *const TX_N_SEQDIR[] = {"FWD", "BACK", "PEND", "PONG", "RAND", "DRUNK"};   /* (SEQ_*) */
+static const char *const TX_N_SEQDIR[] = {"FWD", "BACK", "PEND", "FOLD", "RAND", "DRUNK"};   /* (SEQ_*) */
 static const char *const TX_N_SDIR[] = {"UP", "DOWN", "ALT"};   /* (TESS_STR_*) */
 static const char *const TX_N_BUSMODE[] = {"SUM", "MAX", "MIN", "DIFF"};   /* (cord.h CB_*) */
 static const char *const TX_N_BUSLAG[] = {"OFF", "10 ms", "20 ms", "50 ms", "100 ms", "200 ms", "500 ms", "1 s", "2 s",
@@ -268,10 +268,10 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     T_(P_ARATE, "ARP RATE", "How often the arpeggiator plays a note."),
     T_(P_AOCT, "ARP OCTAVES", "How many octaves the arpeggio climbs through."),
     T_(P_AGATE, "ARP GATE", "How long each arpeggio note lasts, as a share of its step."),
-    T_(P_ASWING, "ARP SWING", "Delays every second arpeggio note, for a swung feel."),
-    T_(P_APROB, "ARP PROBABILITY", "The chance each arpeggio note plays."),
-    T_(P_AHOLD, "ARP HOLD", "ON keeps the arpeggio going after the keys are let go."),
-    T_(P_AORDER, "ARP ORDER", "NOTE: the held notes from low to high; PLAY: in the order they were pressed. MODE ORD always plays them as pressed."),
+    T_(P_ASWING, "ARP SWING", "Delays every second arpeggio note, for a swung feel. ARP, OCT- held, KNOB 1."),
+    T_(P_APROB, "ARP PROBABILITY", "The chance each arpeggio note plays. ARP, OCT- held, KNOB 2."),
+    T_(P_AHOLD, "ARP HOLD", "ON keeps the arpeggio going after the keys are let go. ARP, OCT- held, KNOB 3."),
+    T_(P_AORDER, "ARP ORDER", "NOTE: the held notes from low to high; PLAY: in the order they were pressed. MODE ORD always plays them as pressed. ARP, OCT- held, KNOB 4."),
     T_(P_ROOT, "ROOT", "The scale's key note."),
     T_(P_SCALE, "SCALE", "The scale the keys and the generators play in. SCALES' USER family has four of "
                          "your own, USER1 to USER4, made on the keys."),
@@ -779,10 +779,10 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_ET_ORDER, "ENTRIES ORDER", "When the track comes in: 1ST to 4TH, one a phrase in that order, and out the "
                                      "other way round (last in, first out). AUTO: by ROLE, after the numbered tracks. "
                                      "ANCHOR still never goes out; only AUTO tracks wait for a bass or harmony. GLO > "
-                                     "ENTRIES' sheet (OCT+ held), Order T1 to T4."),
+                                     "ENTRIES' sheet (OCT+ held), Order T1 to T4. A number another track holds: the two swap."),
     X_(TX_SEQ_DIR, "PATTERN DIR", "The order the STEP pattern plays its steps in, each pattern its own. FWD: 1 to the "
-                                  "end. BACK: the end to 1. PEND: there and back, the ends once. PONG: there and "
-                                  "back, the ends twice. RAND: any step. DRUNK: a step on or back at random. A pass "
+                                  "end. BACK: the end to 1. PEND: there and back, the ends once. FOLD: from "
+                                  "the ends inwards, 1, the end, 2, .. RAND: any step. DRUNK: a step on or back at random. A pass "
                                   "is still LEN steps, so conditions, Accumulate and pattern changes keep the bar. "
                                   "The pattern's sheet (OCT+ held), Direction."),
     X_(TX_CH_STRUM, "CHORD STRUM", "A chord's notes start this many ms apart, as a strummed chord (in all at most "

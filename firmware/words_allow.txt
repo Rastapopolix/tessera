@@ -6,7 +6,6 @@ poly
 formant
 favourite
 init
-sid
 phys
 partch
 pelog

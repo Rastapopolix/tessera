@@ -203,7 +203,18 @@ int main(void)
             if (UI_PALETTES[i].trk[0] != UI_PALETTES[i].trk[1])   /* a MOSAIC: its four light inks all different */
                 assert(T_TRK(0) != T_TRK(1) && T_TRK(0) != T_TRK(2) && T_TRK(0) != T_TRK(3) && T_TRK(1) != T_TRK(2) &&
                        T_TRK(1) != T_TRK(3) && T_TRK(2) != T_TRK(3));
+            if (str_eq(UI_PALETTES[i].name, "RED") || str_eq(UI_PALETTES[i].name, "HOT PINK"))   /* COLOR: as PINK */
+                assert(str_eq(UI_PALETTES[pal_shown(i)].name, "PINK") && str_eq(pal_name(i), "PINK") &&
+                       T_TEXT == pal_light(pal_shown(i), 0));
+            else if (str_eq(UI_PALETTES[i].name, "ORANGE"))   /* COLOR: as YELLOW */
+                assert(str_eq(pal_name(i), "YELLOW") && T_TEXT == pal_light(pal_shown(i), 0));
+            else
+                assert(pal_shown(i) == i && str_eq(pal_name(i), str_eq(UI_PALETTES[i].name, "WHITE") ? "BLACK" :
+                                                                UI_PALETTES[i].name));
+            if (str_eq(UI_PALETTES[i].name, "WHITE"))   /* WHITE on paper: pure black */
+                assert(T_TEXT == 0x0000u);
             ux_ground = 0; palette_set(i);
+            assert(pal_shown(i) == i && str_eq(pal_name(i), UI_PALETTES[i].name));
             assert(T_BG == UI_PALETTES[i].bg && T_TEXT == UI_PALETTES[i].text && !ux.light);
             for (j = 0; j < 4u; j++) assert(T_TRK(j) == UI_PALETTES[i].trk[j]);
         }

@@ -415,6 +415,35 @@ int main(int argc, char **argv)
         cord_clear();
     }
 #endif
+    {                                                   /* ANSWER, SOURCE its own track: OWN, said "OWN PATTERN" (beta7) */
+        char b[48];
+        uint8_t cs;
+        uint32_t tr = song.sel, j;
+        go_title("GEN");
+        tessera_param_set(tr, TX_MODE, TESS_ENG_ANSWER);
+        for (j = 0; j < 2u; j++) {
+            tessera_param_set(tr, TX_SD_SOURCE, j ? (int32_t)((tr + 1u) % TESSERA_TRACKS) + 1 : (int32_t)tr + 1);
+            fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+            settle();
+            cs = col_style;
+            memset(lcap, 0, sizeof lcap);
+            col_style = CS_CAPTURE;
+            draw_columns();
+            col_style = cs;
+            if (!sp_knob(1, b, sizeof b)) b[0] = 0;
+            if (!j)
+                bad += check("speak: ANSWER, SOURCE its own track: OWN on screen, OWN PATTERN said",
+                             str_eq(lcap[1].label, "SOURCE") && strstr(lcap[1].val, "OWN") &&
+                             strstr(b, "SOURCE OWN PATTERN"));
+            else
+                bad += check("speak: ..another track's: that track", strstr(lcap[1].val, "T") && !strstr(b, "OWN"));
+            fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
+            settle();
+        }
+        tessera_param_set(tr, TX_SD_SOURCE, 0);
+        tessera_param_set(tr, TX_MODE, TESS_ENG_OFF);
+        frame();
+    }
     said_clear();
     go_title("SCALES");
     settle();
@@ -476,7 +505,7 @@ int main(int argc, char **argv)
     hold(B_HOME);
     settle();
     printf("  said: %s", host_said);
-    bad += check("speak: the menu: its first row, with its place", said("N MENU. COLOR, 1 OF "));
+    bad += check("speak: the menu: its first row, with its place", said("N MENU. COLOR YELLOW, 1 OF "));   /* (the row says its ink) */
     said_clear();
     turn(EN_K1, 1);
     settle();
