@@ -46,10 +46,10 @@ static void web_power_on(void)
 {
     uint32_t i;
     ui_power_on();
-    song.g[G_BPM] = TRK_DEF_BPM;             /* (ui_power_on: the tests' start; main.c melodee_init: the device's) */
+    TRK_DEF_SONG();                          /* (ui_power_on: the tests' start; main.c melodee_init: the device's) */
     for (i = 0; i < NTRK; i++)
         if (TRK_DEF[i][0] != ENGI_DRUM)
-            trk[i].p[P_SCALE] = TRK_DEF_SCALE;
+            TRK_DEF_SCALE_OF(&trk[i]);
     web_demos_load();                        /* (STILL TIDE loaded, stopped: the demo button, or PLAY, starts it) */
     settings.palette = UI_DEFAULT_INDEX;     /* (ui_power_on: the tests' GRAY) */
     palette_set(settings.palette);

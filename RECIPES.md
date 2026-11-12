@@ -174,19 +174,20 @@ patching, and the [GLOSSARY](GLOSSARY.md) for any term that is new.
 
 ## A first generative patch in a minute
 
-1. Power on. Track 1 is **GLASS PAD**, track 2 **STRING MACH**, track 3 **BELLS**, track 4 the **808 KIT**.
-2. Track 3 (BELLS): **SEQ** for GEN, **MODE** to **TURING**. Press **PLAY**: a looping melody in the track's scale.
+1. Power on. Track 1 is **KUGO HARP**, track 2 **KOTO WARM**, track 3 **FLUTE**, track 4 the **808 KIT**, in
+   KUMOI on E.
+2. Track 1 (KUGO HARP): **SEQ** for GEN, **MODE** to **TURING**. Press **PLAY**: a looping melody in the track's scale.
 3. **PROB** at about 20: the loop changes a little each time round. At 0 (Lock) it holds.
 4. Track 4: MODE **ATLAS**, **DENS** at 50. A drum groove under it.
-5. Track 3 again, **EVOLVE**: turn **ROLL** a click at a time until you like the line. The number is its seed: write
+5. Track 1 again, **EVOLVE**: turn **ROLL** a click at a time until you like the line. The number is its seed: write
    it down and you can always come back to it.
-6. **SCL** on track 3 to change the scale; the generator follows at once.
+6. **SCL** on track 1 to change the scale; the generator follows at once.
 
 ## A drone that breathes
 
 A held chord that changes slowly, for ambient beds.
 
-1. Track 1 (GLASS PAD): GEN, MODE **CHORD**, **PROG DRONE** (the I chord alone), **BARS 4**, **HIT HOLD**.
+1. Track 1: **PRESETS**, **GLASS PAD** (an FM6 pad). GEN, MODE **CHORD**, **PROG DRONE** (the I chord alone), **BARS 4**, **HIT HOLD**.
 2. Hold **OCT+** on GEN for its sheet: **Chord DIA7** (a seventh in the scale), **Voicing OPEN**. Then hold **OCT-**:
    **OCT −1** (KNOB 4) for weight.
 3. **MODS**: a cord from **T1 TIDE 1** (TIDE's slowest circuit) to **T1 CUTOFF**, amount about +30 %.
@@ -196,8 +197,8 @@ A held chord that changes slowly, for ambient beds.
 
 ## Chords that lead, melodies that follow (QNT CHRD)
 
-1. Track 2 (STRING MACH): MODE **CHORD**, **PROG POP**, **BARS 1**, **HIT BEAT**.
-2. Track 3 (BELLS): MODE **MARKOV**, **LEAP 30**, **DENS 60**.
+1. Track 2: **PRESETS**, **STRING MACH** (a TRIO pad). MODE **CHORD**, **PROG POP**, **BARS 1**, **HIT BEAT**.
+2. Track 3 (FLUTE): MODE **MARKOV**, **LEAP 30**, **DENS 60**.
 3. On track 3, **SCL**: **QNT** to **CHRD**. Its notes now snap to the chord track 2 plays, so the melody always
    fits the harmony. The keys and MIDI input snap too, so you can play along on track 3.
 4. Try PROG **2-5-1** or **CIRCLE** for a jazzier walk; the melody follows every change.
@@ -212,8 +213,8 @@ A held chord that changes slowly, for ambient beds.
 
 ## Two tracks answering each other (BRANCH)
 
-1. Two melodic tracks, for example track 1 GLASS PAD and track 3 BELLS. Track 3: MODE **TURING**.
-2. Track 3, **TWEAK 2**: **TO** to **T1 COIN**, **BRANCH 40 %**. About four hits in ten now play on the pad.
+1. Two melodic tracks, for example track 1 KUGO HARP and track 3 FLUTE. Track 3: MODE **TURING**.
+2. Track 3, **TWEAK 2**: **TO** to **T1 COIN**, **BRANCH 40 %**. About four hits in ten now play on the harp.
 3. **TOGGLE** instead of COIN alternates: at 100 % every other hit goes across, a strict call and response.
 4. **LATCH** tosses once a bar: whole bars swap between the two sounds.
 5. The tosses replay with the seed. A cord from a **SWARM** to **BRANCH** sweeps how often hits cross over.
@@ -361,7 +362,7 @@ groove that keeps changing, which is the other use.
 
 ## Pads from sparse notes (LENGTH HIT)
 
-1. Any generator on a pad sound (GLASS PAD, STRING MACH). Set **DENS** or **PROB** so it plays few notes.
+1. Any generator on a pad sound (**PRESETS**: GLASS PAD, STRING MACH). Set **DENS** or **PROB** so it plays few notes.
 2. **LENGTH** page: **LENGTH HIT**. Each note holds until the next hit, so rests let notes ring and the line turns
    into a slowly changing pad.
 3. For plucks instead: **FIXED**, **LEN 1/16**, **KEYS 2**.
@@ -409,7 +410,7 @@ groove that keeps changing, which is the other use.
 
 FM6 has no filter of its own; the FILTER effect gives it one.
 
-1. Track 1 (GLASS PAD): **FX**, the **FX 1** page: **FX** to **FILTER**, **MIX** full, **CUT** about halfway,
+1. Track 1 (load **GLASS PAD** with **PRESETS**): **FX**, the **FX 1** page: **FX** to **FILTER**, **MIX** full, **CUT** about halfway,
    **RES** a third up.
 2. Hold **FX** and turn **CUT** (KNOB 3) to the right: a cord from the track's LFO to the cutoff, its amount set
    as you turn.
@@ -618,7 +619,7 @@ The bar's first step stays on the grid. A mod on **SPLIT** (an LFO or TIDE) brin
 A bus with a Lag turns a short pulse into a soft rise and fall, and one bus can move several things. Here the pad's own
 LFO cycle starts a swell (EOC, the end of the cycle, is a gate on every track).
 
-1. Track 1 (GLASS PAD) on a long pad (LENGTH HIT, or CHORD with HIT HOLD). **LFO 2**: **SYNC 2BAR**, **TRIG FREE**.
+1. Track 1 with **PRESETS** on **GLASS PAD**, on a long pad (LENGTH HIT, or CHORD with HIT HOLD). **LFO 2**: **SYNC 2BAR**, **TRIG FREE**.
 2. **MODS**: mod 1 from **T1 EOC** to **BUS A** (the end of KNOB 3's list), **+100**.
 3. Hold **OCT+** on MODS for its sheet: **Bus A lag 500 ms** (KNOB 1 the row, KNOB 2 the value), **OCT-** to close.
 4. Mod 2 from **BUS A** (the end of KNOB 1's list) to **T1 CUTOFF**, **+40**. Mod 3 from **BUS A** to **T1 FX SEND**,

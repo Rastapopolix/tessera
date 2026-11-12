@@ -122,7 +122,8 @@ static struct result stereo_render(int insert, int send, uint32_t master)
     return result;
 }
 
-/* Issue #586: a six-note chord on the power-on TRIO track (track 2) peaked at +4 dBFS in its stem and the 16-bit
+/* Issue #586: a six-note chord on the power-on TRIO track (track 2; TRIO STRING MACH, set here since 3.5's power-on
+ * sounds are plucks) peaked at +4 dBFS in its stem and the 16-bit
  * capture cut it hard. The stem now has the stereo recording's gain (half) and the outputs' soft clip: no sample at
  * the hard ceiling, the loud chord still loud, a single note at the stereo recording's level. */
 static void stem_headroom(void)
@@ -135,6 +136,7 @@ static void stem_headroom(void)
             memset(&ua, 0, sizeof ua);
             host_tracks_init();
             for (uint32_t k = 0; k < NPART; k++) host_power_on_sound(&trk[k], k);
+            host_preset(&trk[1], 6u, 6u);                   /* TRIO STRING MACH (engines.c TRK_DEF before 3.5) */
             for (uint32_t k = 0; k < NPART; k++) for (uint32_t v = 0; v < NVOICE; v++) trk[k].v[v].active = 0;
             usb.up = usb.config = 1; usb.suspended = 0; ua.cap_alt = 1; ua_cap_channels = stems ? 4 : 2;
             for (uint32_t i = 0; i < notes; i++) trk_note_on(&trk[1], chord[i], 100);

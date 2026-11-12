@@ -56,7 +56,7 @@ from `[SETUP]` first. Tick the boxes as you go if you copy the list to your own 
 
 - **S-track**: pick the track with ALGORITHM (or the left knob, if MENU > TRACK KNOB is LEFT). The HOME tiles show T1..T4.
 - **S-gen** (a generator on a track): select the track, tap SEQ (lands on GEN), KNOB 1 to the mode name asked for
-  (CHORD, TURING, EUCLID, ..., BOUNCE, ANSWER). Press PLAY. For a fresh pad track use T1 (GLASS PAD); for drums, the
+  (CHORD, TURING, EUCLID, ..., BOUNCE, ANSWER). Press PLAY. For a fresh pad track load GLASS PAD on T1 with PRESETS (T1 starts on KUGO HARP); for drums, the
   DRUM track (808 KIT; check HOME).
 - **S-step** (a STEP track with notes): select a track, tap SEQ, GEN KNOB 1 = STEP, tap SEQ again for NOTES. Press a few
   white keys with REC armed (tap REC, PLAY, play keys, tap REC), or use KNOB 1 to move the cursor and KNOB 2 to place
