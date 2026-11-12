@@ -1,0 +1,49 @@
+name: Docs pictures
+
+# Renders the pictures of README.md, MANUAL.md and RECIPES.md (assets/gallery) from the drawing code on the PC and
+# fails when a committed PNG no longer matches its screen, or a page links a picture with no SHOTS line in
+# tests/gallery_render.c. The fix is always the same: run tools/docs_images.sh and commit assets/gallery.
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - 'firmware/src/**'
+      - 'tests/ui_render.c'
+      - 'tests/gallery_render.c'
+      - 'assets/gallery/**'
+      - '*.md'
+      - 'tools/docs_images.sh'
+      - 'tools/gallery_png.py'
+  schedule:
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libharfbuzz-dev libfribidi-dev libraqm-dev
+          python -m pip install Pillow fonttools==4.68.0
+      - name: Check the pictures against the screens
+        run: |
+          if ! tools/docs_images.sh --check | tee check.txt; then
+            {
+              echo '### Docs pictures are out of date'
+              echo
+              cat check.txt
+              echo
+              echo 'Run `tools/docs_images.sh` (in WSL: `tools/wsl.sh tools/docs_images.sh`) and commit `assets/gallery`.'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi

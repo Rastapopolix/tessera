@@ -614,6 +614,8 @@ patterns keeps its own, saved with it:
 - **RAND**: any step, each time.
 - **DRUNK**: one step on or one back, at random; past the ends it goes round.
 
+<p align="center"><img src="assets/gallery/pattern_dir.png" alt="PATTERN's sheet, Direction FOLD" width="240"></p>
+
 A pass is still LEN steps of time, whatever the direction. So step Conditions (1:2 ..), Accumulate, pattern
 changes, the SONG and STEP EVOLVE's rounds stay on the bar line, in time with the other tracks; a PEND of 16 steps
 goes on into the next pass. SWING swings the off-beats, whichever step is on them. RAND and DRUNK draw from the
@@ -643,6 +645,8 @@ Two rows set the track's pitch accumulator (a step's Accumulate, below):
 **What a pattern holds.** A track's 64 steps with everything on them (notes, drum hits, each step's length, velocity,
 chance, ratchet, nudge, accumulate and condition), its recorded notes and knob motion, and its LEN, DIV, SWING and
 GATE. Each of the four tracks has 8, so a project has 32.
+
+<p align="center"><img src="assets/gallery/patterns.png" alt="PATTERNS" width="240"> <img src="assets/gallery/song.png" alt="SONG" width="240"></p>
 
 What a pattern changes depends on the track's MODE:
 
@@ -803,6 +807,8 @@ BELL. The parts are also mod destinations: AT KICK, AT SNR, AT HAT, AT TOMS.
 
 Hold **OCT-** on GEN with a CHORD track: KNOB 1 is RANDOM, KNOB 2 and 3 set how the chord is struck, KNOB 4 its
 register. The chord's kind and voicing are on the GEN sheet (and on SCL > CHORD).
+
+<p align="center"><img src="assets/gallery/chord_strum.png" alt="CHORD with OCT- held: STRUM 40 ms, DOWN" width="240"></p>
 
 | Knob (OCT- held) | Setting | What it does |
 |---|---|---|
@@ -971,6 +977,8 @@ plays now is dashed, beside the note you wrote.
 
 FORM strings mutated phrases into a short song form of sections A, B and C, each EVERY bars long.
 
+<p align="center"><img src="assets/gallery/gen_form.png" alt="FORM ABCB" width="240"></p>
+
 | Knob | Setting | What it does |
 |---|---|---|
 | 1 | **FORM** | OFF, AB, ABAC, ABCB, AABA, ABCA or AABC. Turning it on with EVERY OFF sets EVERY to 4 bars. |
@@ -1004,6 +1012,8 @@ on the ENTRIES page.
 **GLO > PIECE** plans the whole piece: how long it lasts and the shape it takes, sparse to full and back. It adds no
 system of its own; it steers ENERGY, [CHAIN](#chain-one-form-for-the-project) and
 [ENTRIES](#entries-tracks-out-and-back-in) along the shape.
+
+<p align="center"><img src="assets/gallery/glo_piece.png" alt="PIECE, 20 min ARCH" width="240"></p>
 
 | Knob | Setting | What it does |
 |---|---|---|
@@ -1041,6 +1051,8 @@ to its next letter, and every generator track that FOLLOWs moves to its own A, B
 CONTR the first time, recalled after, varied by its DEVELOP). Phrases are counted in bars from PLAY, so a change always
 lands on a downbeat, whatever each track's DIV.
 
+<p align="center"><img src="assets/gallery/glo_chain.png" alt="CHAIN ABAC" width="240"></p>
+
 | Knob | Setting | What it does |
 |---|---|---|
 | 1 | **FORM** | OFF, AB, ABAC, ABCB, AABA, ABCA or AABC. OFF (the default): every track as set, nothing changes. |
@@ -1072,6 +1084,8 @@ section in A's key.
 **GLO > ENTRIES** lets tracks drop out and come back on the CHAIN's phrase lines, so a piece thins and fills over
 time without a hand on the mutes. It works with the CHAIN's FORM on or OFF (OFF: phrases of the CHAIN's PHRASE, a
 section every 4 phrases), and on every track, STEP tracks too.
+
+<p align="center"><img src="assets/gallery/glo_entries.png" alt="ENTRIES" width="240"> <img src="assets/gallery/glo_entries_roles.png" alt="ENTRIES with OCT- held: the roles" width="240"></p>
 
 | Knob | Setting | What it does |
 |---|---|---|
@@ -1121,6 +1135,8 @@ The choices come from the tracks' SEEDs, so PLAY plays the same piece again; STO
 **GLO > LANDSCAPE** is a page to look at while the music plays: a night lake, drawn by the music.
 It has no settings and changes nothing; the knobs do nothing here.
 
+<p align="center"><img src="assets/gallery/glo_land_rain.png" alt="LANDSCAPE" width="240"></p>
+
 - Each note a track plays is a drop on the water. **Pitch** sets where it lands, low notes at the left, high at the
   right. **T1** lands far out, **T4** close by. Louder notes open wider rings, with a second ring inside.
 - **ENERGY**'s tide moves the clouds: more and lower as it fills, a thin wisp as it falls sparse. While playing, the
@@ -1140,6 +1156,8 @@ The scene only listens while the page shows. In the MOSAIC palette each track's 
 (they are the project's, so they show without a track) and send it anywhere: a filter, a level, an FX send, TEMPO,
 another mod's amount. One macro can drive as many mods as you like, so a single knob can open a filter, raise the
 reverb and push the tempo together.
+
+<p align="center"><img src="assets/gallery/glo_perf.png" alt="PERF" width="240"></p>
 
 The page shows each macro as a bar and how many mods it drives. The macros are saved with the project. A project
 with a mod from a macro loses that mod on older firmware.
@@ -1260,7 +1278,7 @@ an early Nudge stays as it is.
 Projects saved before HUMAN had its own knob keep their feel: a generator track's TWEAK HUMAN becomes this HUMAN at a
 fifth of it (TWEAK 100: 20 ms).
 
-<p align="center"><img src="assets/gallery/gen_timing.png" alt="TIMING, x4 ACCEL" width="240"></p>
+<p align="center"><img src="assets/gallery/gen_timing.png" alt="TIMING, x4 ACCEL" width="240"> <img src="assets/gallery/gen_timing_split.png" alt="TIMING with OCT- held: SPLIT and HOW" width="240"></p>
 
 **SPLIT.** Hold **OCT-** on TIMING, on a generator or a STEP track, and the knobs set how often a step breaks out of the
 grid: a 1/8 track now and then plays a pair of 1/16s, or a note pushed onto the off-1/16, as a player does.
@@ -1424,6 +1442,8 @@ track, from SCL's list or with SCL held and a key, and every melodic track follo
 link is saved with the project (a project saved before it loads as OWN). TRN still moves a single track. The **Key in B** and
 **Key in C** rows at the end of SCL's list change the key in the CHAIN's sections ([CHAIN](#chain-one-form-for-the-project)).
 
+<p align="center"><img src="assets/gallery/scl.png" alt="SCL" width="240"> <img src="assets/gallery/chord.png" alt="SCL > CHORD" width="240"></p>
+
 A **CHORD** track plays a progression; with **QNT CHRD** the other tracks follow it.
 
 - On the CHORD track: GEN, MODE **CHORD**, then **PROG**, **BARS** and **HIT**. The chord's kind and voicing come
@@ -1556,6 +1576,8 @@ at a time, each with an activity light and a moving mark.
     track's GATE into a lagged bus rises and falls as an envelope (Maths' slew), and a stepped source (S&H, a HOLD mod)
     glides.
 
+  <p align="center"><img src="assets/gallery/mods_bus.png" alt="MODS' sheet: the buses' Mode and Lag" width="240"></p>
+
   A bus is read one block (0.7 ms) after its mods, so it can feed itself or the other bus: BUS A into BUS A at +100 %
   with a small fixed mod adds up (an integrator, stopping at 100 %); at a negative amount it settles or swings,
   always within the clamp. With no mod into a bus it stays at 0 and nothing changes. Buses come from no track, so
@@ -1633,7 +1655,7 @@ at a time, each with an activity light and a moving mark.
 - Melodee's MOD routes, in old projects and sounds, become cords when they load. If all 16 are in use the screen
   says **MODS FULL**.
 
-<p align="center"><img src="assets/gallery/cords.png" alt="MODS" width="240"> <img src="assets/gallery/mods_live.png" alt="A live mod mark on BRANCH" width="240"></p>
+<p align="center"><img src="assets/gallery/cords.png" alt="MODS" width="240"> <img src="assets/gallery/mods_live.png" alt="A live mod mark on BRANCH" width="240"> <img src="assets/gallery/mods_new.png" alt="3.5 mods: EOC clocks a track, a GATE turns mod 2's amount, BUS A plays track 3" width="240"></p>
 <p align="center"><img src="assets/gallery/mods_scope.png" alt="MODS with OCT- held: the scope of a mod whose amount another mod turns" width="240"> <img src="assets/gallery/mods_scope_gate.png" alt="The scope of a GATE mod: its threshold a wedge at each edge" width="240"> <img src="assets/gallery/mods_scope_thresh.png" alt="The same while KNOB 4 turns the threshold: a dashed line across" width="240"></p>
 
 ---
@@ -1722,6 +1744,8 @@ sound browser, the slot pages and SCALES say what is selected. Tessera's abbrevi
 > on your controller (and remembers them), and MUTES makes mutes land on the bar or the phrase.
 
 Hold **HOME** for the menu. Its rows come in groups: the screen, the knobs and buttons, playing, MIDI, USB, then the tools. Tessera's additions, in that order:
+
+<p align="center"><img src="assets/gallery/menu_ground.png" alt="The menu on GROUND" width="240"></p>
 
 | Item | What it does |
 |---|---|
@@ -1881,6 +1905,8 @@ A project holds everything in one record: the patterns, the sounds, the generato
 layers, ENERGY, and the cords. Since 2.0 Tessera has a project format of its own: projects saved by Melodee (Tess) 1.x or
 by Melodee show **OLD FORMAT** in their slot and do not load (there is no converter), and the first save writes over
 them. Melodee's own preset banks are not carried over.
+
+<p align="center"><img src="assets/gallery/project.png" alt="SAVE > PROJECT" width="240"></p>
 
 **A new project**: tap **SAVE** to the **PROJECT** page, turn **KNOB 1** down the list to **New song** and press
 **OCT+** (playback stops; with unsaved changes, **OCT+** again answers Yes to "Start a new song?"). The NEW SONG
