@@ -488,7 +488,7 @@ def demo35(src, intro, out):
         plan.append(("still", big, n, 0, 0))
         silence(n)
     plan[-1] = plan[-1][:3] + (0, V_CARD)
-    title = demo_card([("TESSERA 3.5", 12, False), ("A pocket rabbit hole, on the M-Vave FM-1", 4, True)], INK["YELLOW"])
+    title = demo_card([("TESSERA 3.5", 12, False), ("Generative firmware for the M-Vave FM-1", 4, True)], INK["YELLOW"])
     plan.append(("still", title, nf(TITLE_S), V_TITLE_IN, V_CARD))
     silence(nf(TITLE_S))
 
