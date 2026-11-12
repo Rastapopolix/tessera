@@ -1930,7 +1930,7 @@ function makeMockDevice(opt = {}) {
     ...Array.from({length:8},()=>D("",F.INT,0,127,0)),
     E("MIDI", ["USB", "TRS"], 0), E("DRUM", ["OFF", ...Array.from({ length: 16 }, (_, i) => String(i + 1))], 0), E("ROUT", ["CH1-4", "SEL", "CH5-8", "CH9-12", "CH13-16"], 0), D("CPU", F.INT, 0, 0, 0),
     D("SLOT", F.INT, 1, 5, 1), E("BOOT", ["OFF", "A", "B", "C", "D"], 0), E("LOAD", NGO, 0), E("SAVE", NGO, 0),
-    E("ENG", ["-", "-", "-", "SID", "-", "-", "TRIO", "-",
+    E("ENG", ["-", "-", "-", "-", "-", "-", "TRIO", "-",
       "-", "PHYS", "DRUM", "-", "FM6", "-", "-", "-", "-", "-", "-", "ORACLE", "-", "-"], 0), D("A4", F.INT, 400, 480, 440, null, "Hz"),
     E("CLRSQ", NGO, 0), E("INIT", NGO, 0),
     ...Array.from({length:3},()=>D("",F.INT,0,127,0)),
@@ -1942,26 +1942,7 @@ function makeMockDevice(opt = {}) {
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},   /* 0: retired ANALOG; stored ID reserved */
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},   /* 1: retired DIGITAL; stored ID reserved (the editor converts its sounds: FM4 above) */
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},   /* 2: retired PHASE; stored ID reserved */
-    { name: "SID", titles: ["CHIP", "FILTER"], edit: [E("MODEL", ["6581", "8580", "C64 6581", "C64 8580"], 0), E("WAVE", ["TRI", "SAW", "PULSE", "NOISE", "TRI+SAW", "TRI+PLS", "SAW+PLS", "T+S+P"], 1),
-        E("STACK", ["ONE", "DETUNE", "OCT", "FIFTH", "MAJOR", "SYNC", "RING", "SUB"], 0), D("PW", F.PCT, 0, 127, 64), D("CUT", F.PCT, 0, 127, 127),
-        D("RES", F.INT, 0, 15, 0), E("MODE", ["LP", "BP", "HP", "NOTCH", "LP+BP", "BP+HP", "ALL", "OFF"], 0), D("DRIVE", F.PCT, 0, 127, 0)],
-      presets: [
-        P("INIT SID", [0,1,0,64,127,0,0,0], [0,36,127,36], 0), P("BREADBOX", [0,2,1,40,60,6,0,30], [0,78,100,57], 0),
-        P("RUBBER BASS", [0,2,7,30,36,10,0,40], [0,63,60,36], 1), P("ARP BASS", [0,2,0,48,34,12,0,30], [0,57,40,0], 1),
-        P("SUB PULSE", [1,2,7,64,14,4,0,0], [0,69,100,36], 1), P("SYNC BASS", [0,1,5,64,44,8,0,40], [0,63,90,36], 1),
-        P("SAW BASS", [1,1,2,64,10,9,0,10], [0,63,84,36], 1), P("DIRTY BASS", [0,1,1,64,38,11,0,90], [0,69,70,36], 1),
-        P("LEAD 6581", [0,1,1,64,60,9,0,40], [0,69,110,57], 1), P("RING LEAD", [1,0,6,64,127,0,7,0], [0,69,110,57], 1),
-        P("SYNC LEAD", [1,1,5,64,100,6,0,0], [0,69,110,57], 1), P("PULSE LEAD", [0,2,1,26,70,8,0,50], [0,63,110,49], 1),
-        P("GAME HERO", [0,2,3,50,127,0,7,0], [0,57,100,49], 1), P("LASER LEAD", [1,6,5,72,100,6,0,0], [0,63,100,36], 1),
-        P("CHIP SOLO", [0,5,1,40,127,0,7,0], [0,69,110,57], 1), P("8580 LEAD", [1,4,1,64,110,4,0,0], [0,69,110,57], 1),
-        P("PWM PAD", [0,2,1,46,66,6,0,20], [85,85,100,90], 0), P("SID STRINGS", [1,1,1,64,60,5,0,0], [90,85,110,97], 0),
-        P("DREAM CHIP", [0,0,4,64,127,0,7,0], [70,85,100,90], 0), P("8580 PAD", [1,4,1,64,70,6,4,0], [85,90,104,97], 0),
-        P("TRI ORGAN", [1,0,2,64,127,0,7,0], [0,36,127,36], 0), P("GAME ORGAN", [0,2,3,64,127,0,7,0], [0,36,118,36], 0),
-        P("C64 KEYS", [1,6,0,58,70,4,0,20], [0,85,60,63], 0), P("SID CLAV", [1,2,0,20,40,10,1,30], [0,57,20,49], 0),
-        P("ARP PLUCK", [0,1,4,64,50,12,0,40], [0,57,0,49], 0), P("COIN PLUCK", [1,2,2,32,127,0,7,0], [0,63,0,57], 0),
-        P("BELL RING", [1,0,6,64,127,0,7,0], [0,97,0,97], 0), P("SID BRASS", [0,1,3,64,46,8,0,40], [49,78,100,63], 0),
-        P("FILTER HIT", [0,1,0,64,40,15,1,70], [0,63,0,57], 0), P("LASER FX", [1,2,5,82,96,8,0,0], [0,78,40,69], 1),
-        P("NOISE SWEEP", [0,3,0,64,40,12,1,60], [63,97,40,97], 0), P("DATA STORM", [1,3,1,64,80,10,0,40], [0,85,60,78], 0)] },
+    {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},   /* 3: SID, removed 2026-11-12; stored ID reserved */
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},   /* 5: retired VOICE; stored ID reserved */
     { name: "TRIO", titles: ["OSC", "TONE"], edit: [E("WAVE", ["SAW3", "PLS3", "PPT", "SST", "TRI3", "S&T", "P&S", "P+N", "NOIS", "SYNC",
@@ -1990,10 +1971,10 @@ function makeMockDevice(opt = {}) {
         P("DULCIMER", [1,96,90,84,24,100,0,10], [0,100,127,70], 0), P("SITAR", [1,4,80,96,30,100,0,0], [0,100,127,80], 0),
         P("BOWED STRING", [1,40,40,90,40,90,64,0], [50,100,127,80], 0), P("TIMPANI", [2,40,40,100,20,110,4,10], [0,100,127,90], 0),
         P("SYMPATHY", [3,20,50,112,90,60,0,0], [40,100,127,100], 0)] },
-    { name: "DRUM", titles: ["KIT", "HIT"], edit: [D("KIT", F.ENUM, 4, 6, 4, ["808","909","SID"]), D("TUNE", F.PCT, 0, 127, 64),
+    { name: "DRUM", titles: ["KIT", "HIT"], edit: [D("KIT", F.ENUM, 4, 5, 4, ["808","909"]), D("TUNE", F.PCT, 0, 127, 64),
         D("TONE", F.PCT, 0, 127, 64), D("DECY", F.PCT, 0, 127, 64), D("SNAP", F.PCT, 0, 127, 64), D("ACC", F.PCT, 0, 127, 100),
         E("KICK", ["PUNCH", "ROUND"], 0), D("DRV", F.PCT, 0, 127, 0)],
-      presets: [P("808 KIT", [4, 64, 64, 64, 64, 100, 0, 0], [0, 100, 127, 100], 0),P("909 KIT", [5, 64, 64, 64, 64, 100, 0, 0], [0, 100, 127, 100], 0),P("SID KIT", [6, 64, 80, 64, 64, 100, 0, 0], [0, 100, 127, 100], 0),P("SID DIGI", [6, 64, 80, 64, 64, 100, 1, 0], [0, 100, 127, 100], 0)] },
+      presets: [P("808 KIT", [4, 64, 64, 64, 64, 100, 0, 0], [0, 100, 127, 100], 0),P("909 KIT", [5, 64, 64, 64, 64, 100, 0, 0], [0, 100, 127, 100], 0)] },
     {name:"-",titles:["-","-"],edit:Array(8).fill(NONE),presets:[]},   /* 11: retired NOISE; stored ID reserved */
     { name: "FM6", titles: ["OPS", "PATCH"], edit: [D("ALG", F.INT, 0, 32, 0), D("FB", F.INT, -7, 7, 0), D("MLVL", F.BIPCT, -64, 63, 0),
         D("MRAT", F.INT, -16, 16, 0), D("MEG", F.BIPCT, -64, 63, 0), D("VMOD", F.INT, -7, 7, 0), D("DTUN", F.PCT, 0, 127, 0),
@@ -2156,15 +2137,15 @@ function makeMockDevice(opt = {}) {
     if (a.length >= 12) x.chance = Math.min(100, a[11]);
   }
   /* a few user presets to start with; BREADBOX stored with the ACID steps (as UP_STORE would) */
-  [[0, 0, 0, "MY LEAD"], [1, FM6_E, 1, "GLASS BELL"], [2, 3, 1, "BREADBOX"], [5, 3, 2, "RUBBER BASS"]].forEach(([slot, e, p, name]) => {
+  [[0, 0, 0, "MY LEAD"], [1, FM6_E, 1, "GLASS BELL"], [2, 6, 0, "FAT BASS"], [5, 6, 9, "SUB BASS"]].forEach(([slot, e, p, name]) => {
     setEngine(e); applyPreset(p);
     if (slot === 2) loadDemo(0);
     st.bank[slot] = snapshot(name);
     clearSteps(); st.p[29] = 16;
   });
-  /* the power-on sounds (engines.c TRK_DEF): SID 26, TRIO STRING MACH, INIT SID, DRUM KIT (the reference build; FUNK BASS II
-     until the PROPHET was retired, 2026-10-22; FM6 STRINGS until 2026-10-28) */
-  [[1, 6, 6], [2, 3, 0], [3, 10, 0], [0, 3, 26]].forEach(([i, e, p]) => { st.sel = i; setEngine(e); applyPreset(p); });
+  /* the power-on sounds (engines.c TRK_DEF): FM6 GLASS PAD, TRIO STRING MACH, FM6 BELLS, DRUM KIT (SID's until SID was
+     removed, 2026-11-12; FUNK BASS II until the PROPHET was retired, 2026-10-22; FM6 STRINGS until 2026-10-28) */
+  [[1, 6, 6], [2, 12, 11], [3, 10, 0], [0, 12, 16]].forEach(([i, e, p]) => { st.sel = i; setEngine(e); applyPreset(p); });
   /* the device powers on with its sequencers empty; the mock starts as a little demo to look at: track 1 with
      the power-on bass, track 4 with BEAT, pads left, lead right */
   st.sel = 3; loadDemo(1);

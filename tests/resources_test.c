@@ -9,7 +9,7 @@ static int cache_tests(void)
     int bad=0;uint8_t fm[FM6_PACKED];char name[13];
     reset();audio_resources_reset();up_boot();fm6_factory(3,fm);
     for(uint32_t b=0;b<4u;b++){fm[118]=(uint8_t)('A'+b);bad+=check("native FM cache writes across bank evictions",!native_put(ENGI_FM6,b*16u,fm));}
-    for(uint32_t b=0;b<4u;b++){set_engine_of(TSEL,3);TSEL->p[P_E1]=(int16_t)b;   /* (SID's WAVE) */bad+=check("general cache writes across bank evictions",!up_store(b*16u,"BANK SOUND"));}
+    for(uint32_t b=0;b<4u;b++){set_engine_of(TSEL,6);TSEL->p[P_E1]=(int16_t)b;   /* (TRIO's WAVE) */bad+=check("general cache writes across bank evictions",!up_store(b*16u,"BANK SOUND"));}
     up_boot();uint32_t reads=preset_reads;
     for(uint32_t k=0;k<64u;k++){up_used(k);up_engine(k);up_name(k,name);native_used(ENGI_FM6,k);native_name(ENGI_FM6,k,name);}
     bad+=check("browsing every preset name/slot does no flash reads",preset_reads==reads);
@@ -21,7 +21,7 @@ static int cache_tests(void)
         for(uint32_t r=0;r<3u;r++)for(uint32_t b=0;b<4u;b++)
             ok&=up_value(up_rec(b*16u),P_E1)==(int16_t)b && native_raw(ENGI_FM6,b*16u)[118]=='A'+b;
         bad+=check("one bank cache: user and FM6 banks interleaved read back intact",ok);
-        set_engine_of(TSEL,3);up_store(5,"AFTER EDIT");native_raw(ENGI_FM6,16u);up_name(5,name);
+        set_engine_of(TSEL,6);up_store(5,"AFTER EDIT");native_raw(ENGI_FM6,16u);up_name(5,name);
         bad+=check("one bank cache: a user bank evicted after an edit keeps its index (the new name, no reload)",
                    up_cached==255u && !strcmp(name,"AFTER EDIT"));
         bad+=check("one bank cache: the largest bank's size, not the sum",
@@ -42,7 +42,7 @@ static int audio_tests(void)
 {
     int bad=0;int32_t in[CTL]={0},out[CTL],c[CTL]={0},d[CTL]={0},r[CTL]={0};
     audio_resources_reset();host_tracks_init();
-    const uint8_t engines[4]={0,ENGI_FM6,3,ENGI_DRUM};uint32_t expected=sizeof(fm6_part_t)+sizeof(sid_part_t)+sizeof(drum_lane_t)*DV_NLANE;
+    const uint8_t engines[4]={0,ENGI_FM6,ENGI_ORACLE,ENGI_DRUM};uint32_t expected=sizeof(fm6_part_t)+sizeof(or_part_t)+sizeof(drum_lane_t)*DV_NLANE;
     for(uint32_t k=0;k<4u;k++){trk[k].engine=engines[k];eng_state_prepare(&trk[k]);}
     bad+=check("default engine setup and derived caches stay within 16 KiB",resource_used()==expected && expected<=16u*1024u);
     for(uint32_t cycle=0;cycle<2048u;cycle++){

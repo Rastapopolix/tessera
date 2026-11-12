@@ -11,7 +11,7 @@
 #   tests/run_tests.sh -v            QUIET=0: every job's whole output (default: a line per job; a failure prints its
 #                                    own output, 60 lines at most, and the path of its log)
 # Sound tests: the regression suite, the DSP render and TRACKS, and every test of an engine's or an effect's rendered
-#   signal (native fp32, SPEAKER, MOD, SLICER, the FX layer, REVERB, DELAY, MOD / SPREAD, SID, PHYS, DRUM, NOISE,
+#   signal (native fp32, SPEAKER, MOD, SLICER, the FX layer, REVERB, DELAY, MOD / SPREAD, PHYS, DRUM, NOISE,
 #   FM6, the dual-core pairing). The rest (storage, UI, MIDI, USB, editor, web) always runs.
 # Each test (its compile and its runs) is a job; PARALLEL=n jobs run at once (default: the CPU count; 1: one by one).
 # A job's output goes to build/host/log/<n>.log and is printed (QUIET=0; QUIET=1: its line) in the order of this file as
@@ -70,9 +70,6 @@
 #                   Melodee's targets, the controls' directions, no clipping, DC, retriggers, the hat choke, the
 #                   kick on a small speaker; the DRUM engine (src/eng_drum.c): its key map, the 8 lanes together,
 #                   one hit per lane, the choke between lanes; the cost per voice; demos in build/drum_demo/.
-# DRUM SID (tests/drum_sid_test.c): KIT SID (src/drum_sid.c): one 6581 on one voice, its three voices taken by
-#                   the hits, frame programs at PAL frames, DIGI on $D418 and its effect on the voices ringing,
-#                   the filter for the routed drums, levels next to the 808; demos in build/sid_kit_demo/.
 # NOISE (tests/noise_test.c): the engine (src/eng_noise.c): COLR's slope (white, pink, brown), the filter and the
 #                   register clock following the key, META periodic at the key, no DC, no clipping at the
 #                   corners, a note from silence the same twice, the cost per voice; demos in build/noise_demo/.
@@ -155,12 +152,9 @@ qmap() {
         demos/*) QSEL="$QSEL demo_projects" ;;
         firmware/words.tsv | firmware/words_allow.txt) QSEL="$QSEL speak_test" ;;
         firmware/src/eng_fm6* | firmware/src/fm6_core.c) eng FM6 fm6_test fm6_ams_test synth_fpu_test dual_core_test ;;
-        firmware/src/eng_sid.c) eng SID sid_test ;;
-        firmware/src/drum_sid.c) eng DRUM drum_sid_test ;;
         firmware/src/eng_phys.c | firmware/src/phys_*) eng PHYS phys_test phys_ref ;;
         firmware/src/eng_drum.c | firmware/src/drum_808.c | firmware/src/x0x/*) eng DRUM drum_test drum_editor_test ;;
         firmware/src/eng_noise.c) eng NOISE noise_test ;;
-        firmware/src/eng_macro.c | firmware/src/macro_glue.* | firmware/third_party/mi/*) eng MACRO macro_tests ;;
         firmware/src/eng_oracle.c | firmware/src/oracle_*) eng ORACLE oracle_test ;;
         firmware/src/eng_trio.c) eng TRIO ;;
         firmware/src/eng_wheel.c) eng WHEEL ;;
@@ -198,7 +192,6 @@ qmap() {
         tests/target_budget.txt) QSEL="$QSEL target_budget" ;;
         tests/ui_render.*) QSEL="$QSEL ui_renders" ;;
         tests/demo_steps.h | tests/demo_projects.c) QSEL="$QSEL demo_projects" ;;
-        tests/macro_test.c) QSEL="$QSEL macro_tests" ;;
         tests/phys_ref.cpp | tests/phys_fixed.c) QSEL="$QSEL phys_ref" ;;
         tests/fm6_parity* | tests/fm6_score.h | tests/dexed_*) QSEL="$QSEL fm6_parity" ;;
         tests/boot_fixtures.py) QSEL="$QSEL loader_powercut_test" ;;
@@ -402,23 +395,6 @@ dsp_tracks() {
     step "TRACKS: 4-track pattern, live recording (lengths, swing), voice budget, engine switch, cost" \
         env TRACKS=build/tracks_demo "$OUT/hostsim" 12 24 1 "$OUT/tracks.wav"
 }
-macro_tests() {                                  # MACRO (eng_macro.c): Plaits' C++ for this computer, then macro_test
-    M=firmware/third_party/mi
-    if ! command -v c++ >/dev/null 2>&1; then echo "== MACRO: skipped (no c++)"; return; fi
-    mkdir -p "$OUT/mi"
-    _objs=
-    for _f in $M/plaits/dsp/*.cc $M/plaits/dsp/*/*.cc $M/plaits/resources.cc $M/stmlib/dsp/*.cc $M/stmlib/utils/*.cc \
-        firmware/src/macro_glue.cc; do
-        _o=$OUT/mi/$(echo "$_f" | tr / _).o
-        c++ -O2 -std=c++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -w -DMACRO_HOST -DTEST -DPLAITS_LEAN \
-            -DPLAITS_SAMPLE_RATE=44100.0f -DPLAITS_SAMPLE_RATE_EXACT -DPLAITS_BLOCK_SIZE=16 -include stdio.h \
-            -I$M -Ifirmware/src -c "$_f" -o "$_o" || { fail "compile $_f (MACRO)"; return 1; }
-        _objs="$_objs $_o"
-    done
-    $CC -O2 $FW -DMELODEE_PLAITS=1 -c tests/macro_test.c -o "$OUT/macro_test.o" &&
-        c++ -o "$OUT/macro_test" "$OUT/macro_test.o" $_objs -lm || { fail "compile tests/macro_test.c (MACRO)"; return 1; }
-    step "MACRO: Plaits' models play, pitch, HIT, every knob, arena memory, cost against SID" "$OUT/macro_test"
-}
 phys_ref() {
     D=${DAISYSP:-vendor/DaisySP}/Source
     if [ ! -d "$D/PhysicalModeling" ] || ! command -v c++ >/dev/null 2>&1; then
@@ -456,7 +432,7 @@ if core; then
     run "audio diagnostics schema compatibility" python3 tests/usb_audio_stats_test.py
     run "target budget: natural loops and FPU decoding" python3 tests/target_budget_test.py
     run "header messages: every literal fits the Mono header (15 characters)" python3 tests/msg_len_test.py
-    run "web simulator: the device's engine set (no SID KIT)" python3 tests/sim_flags_test.py
+    run "web simulator: the device's engine set" python3 tests/sim_flags_test.py
     t "retired synth identities, project/user patch preservation and favorites" engine_retirement_test -O2 $FW
     t "capture gating, derived caches and silent-track clocks" performance_test -DMELODEE_LEGACY_EXTRAS=1 -O2 $FW
     t "canvas drawing overlaps DMA without changing pending pixels" lcd_overlap_test -O1 -w -Ibuild/gen
@@ -546,11 +522,9 @@ if core && [ $TABLES = 1 ]; then
     t "storage safety: protect unreadable records until confirmed replacement" storage_safety_test $FW
     t "full backup: CRC before writes, stale runtime, USB reset / timeout, malformed objects, older projects" backup_test $FW
     t "demo and test projects (demos/, demos/checks/): made, saved, backed up, loaded and played; the shipped ones load; put into a backup" \
-        demo_projects -O2 $FW -DMELODEE_SID=0 -DMELODEE_SID_KIT=0 -DMELODEE_PHYS=0 -DTRK_START_TESS=1 -- demo_tests
-    t "engines off (FM6, CZ-1, ORACLE left out): never offered, a project's tracks of them SID INIT, the parts play" \
-        engine_switch_test $FW -DMELODEE_FM6=0 -DMELODEE_CZ=0 -DMELODEE_ORACLE=0
-    t "engines off (SID, PHYS, CZ-1, ORACLE left out, FM back): never offered, their tracks FM6's first voice, the parts play" \
-        engine_switch_fm:engine_switch_test $FW -DMELODEE_SID=0 -DMELODEE_SID_KIT=0 -DMELODEE_PHYS=0 -DMELODEE_CZ=0 -DMELODEE_ORACLE=0
+        demo_projects -O2 $FW -DMELODEE_PHYS=0 -DTRK_START_TESS=1 -- demo_tests
+    t "engines off (PHYS, CZ-1, ORACLE left out; SID and MACRO removed): never offered, their tracks FM6's first voice, the parts play" \
+        engine_switch_fm:engine_switch_test $FW -DMELODEE_PHYS=0 -DMELODEE_CZ=0 -DMELODEE_ORACLE=0
     t "editor: real C protocol, malformed transfers and queue recovery" editor_test $FW
     t "DX7 librarian: USB voice/bank receive, dump replies and malformed frame recovery" fm6_sysex_test $FW
     t "SWING: track + global at most 100, sequencer step lengths, the SWG display" swing_test -O2 $FW
@@ -598,16 +572,12 @@ if sound && [ $TABLES = 1 ]; then
     t "audio: 1296 ordered engine assignments, releases, controls and concurrent PCM parity" audio_matrix_test -O2 $FW -pthread
     t "native fp32: FM6 against an independent reference, exact pitch" synth_fpu_test \
         -O2 $FW
-    job macro_tests
     t "modulation matrix: off = bit-identical, the math, MIDI CC1 / CC11 / aftertouch, cost, demos" mod_test \
         -DMELODEE_LEGACY_EXTRAS=1 -O2 $FW -- "$OUT/mod_test" build/mod_demo
     t "matrix S&H / SLEW / DEPTH, SPREAD: off = bit-identical, stereo sides and routing" mod_spread_test -O2 $FW
-    t "SID: oscillator/LFSR/register semantics, revisions and 32 factory presets" sid_test -O2 $FW
     job phys_ref
     t "DRUM: 808 instruments, velocity, hat choke, release, eight lanes and shared voice budget" drum_test -O2 $FW -- \
         "$OUT/drum_test" build/drum_demo
-    t "DRUM SID: one 6581 on one voice, frame programs, DIGI on \$D418, filter routing, levels" drum_sid_test -O2 $FW -- \
-        "$OUT/drum_sid_test" build/sid_kit_demo
     t "NOISE: colour slopes, key-tracked filter and clock, META period, DC, clipping, retrigger, cost, demos" noise_test \
         -DMELODEE_LEGACY_EXTRAS=1 -O2 $FW -- "$OUT/noise_test" build/noise_demo
     t "FM6: the DX7's algorithms, pitch, levels, envelopes, modulation; DC, clipping, macros, patches, voices, cost, demos" \

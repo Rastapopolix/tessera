@@ -525,7 +525,7 @@ static void eng(uint32_t e) { set_engine_of(TSEL, e); }
 enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_WIDE, S_HOME_RELEASED, S_HOME_FM6, S_MESSAGE, S_MESSAGE_KEY, S_MESSAGE_PAGED, S_PRESETS, S_PRESETS_NOFAV, S_PRESETS_CAT, S_PRESETS_PENDING, S_PRESETS_RECENT, S_USER, S_PROJECT, S_PROJECT_BOOT, S_TEMPO,
        S_SONG_EMPTY, S_SONG, S_STEP, S_PATTERN, S_MOTION, S_DRUM, S_MIXER, S_MIXER_PAN,
        S_ENV, S_ENVDEST, S_LFO, S_MOD, S_SCL, S_CHORD, S_CHORD_WIDE, S_CHORD_OFF, S_CHORD_KIT, S_ARP, S_VOICE, S_GLOBAL, S_SYSTEM,
-       S_EDIT_SID, S_EDIT_DIGITAL, S_OP_ENV, S_EDIT_WHEEL, S_EDIT_PHYS, S_EDIT_PHYS_STRNG, S_EDIT_PHYS_MEMB, S_EDIT_PHYS_SYMP, S_EXCT_PHYS_BOWED,
+       S_EDIT_DIGITAL, S_OP_ENV, S_EDIT_WHEEL, S_EDIT_PHYS, S_EDIT_PHYS_STRNG, S_EDIT_PHYS_MEMB, S_EDIT_PHYS_SYMP, S_EXCT_PHYS_BOWED,
        S_ALG1, S_ALG2, S_ALG3, S_ALG4, S_ALG5, S_ALG6, S_ALG7, S_ALG8, S_OP_LEVEL,
        S_FM6_ALG1, S_FM6_ALG5, S_FM6_ALG22, S_FM6_ALG32, S_FM6_FREQ, S_FM6_EG, S_FM6_PEG, S_FM6_STORE,
        S_CONFIRM_SEQ, S_CONFIRM_PROJ, S_CONFIRM_USER, S_CONFIRM_MOTION, S_CONFIRM_ERASE,
@@ -552,7 +552,7 @@ enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_
 static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "home_chord", "home_inversion", "home_wide", "home_released", "home_fm6", "message", "message_key", "message_paged", "presets", "presets_nofav", "presets_cat", "presets_pending", "presets_recent", "user",
     "project", "project_boot", "tempo", "song_empty", "song", "step", "pattern", "motion", "drum",
     "mixer", "mixer_pan", "env", "env_dest", "lfo", "mod", "scl", "chord", "chord_wide", "chord_off", "chord_kit", "arp",
-    "voice", "global", "system", "edit_sid", "edit_fm6", "op_env", "edit_wheel",
+    "voice", "global", "system", "edit_fm6", "op_env", "edit_wheel",
     "edit_phys", "edit_phys_strng", "edit_phys_memb", "edit_phys_symp", "exct_phys_bowed", "alg_1", "alg_2", "alg_3", "alg_4", "alg_5", "alg_6", "alg_7", "alg_8", "op_level", "fm6_alg_01", "fm6_alg_05", "fm6_alg_22", "fm6_alg_32", "fm6_freq", "fm6_eg", "fm6_peg", "fm6_store", "confirm_seq", "confirm_project", "confirm_user",
     "confirm_motion", "confirm_erase", "menu", "about", "about_rec", "about_credits", "about_end", "uboot", "calibration",
     "batt_0", "batt_1", "batt_2", "batt_3", "batt_usb", "motion_rec", "motion_off", "song_home",
@@ -844,8 +844,8 @@ static void ref_scene(int s)
         break;
     }
     case S_REF_ENV: case S_REF_LFO: case S_REF_EDIT_OSC: case S_REF_NOTES:
-        /* (R5) track 2: SID SAW BASS (ANALOG ACID until 2.0); ENV: SUSTAIN just turned, LFO: RATE, DLY: FEEDBACK */
-        set_engine_of(&trk[1], 3); apply_preset_to(&trk[1], preset_named(3, "SAW BASS")); trk[1].engine = 3;
+        /* (R5) track 2: TRIO FAT BASS (SID SAW BASS until 2026-11-12, ANALOG ACID until 2.0); ENV: SUSTAIN just turned, LFO: RATE, DLY: FEEDBACK */
+        set_engine_of(&trk[1], 6); apply_preset_to(&trk[1], preset_named(6, "FAT BASS")); trk[1].engine = 6;
         song.playing = 0; trk[1].pattern_next = 0xFF; trk[1].p[P_LD_FLT] = 30;
         if (s == S_REF_EDIT_OSC) { ui.home = 0; ui.page = (uint8_t)page_first(FAM_EDIT); page_entered(); }
         else if (s != S_REF_NOTES) go_title(s == S_REF_ENV ? "ENV" : s == S_REF_LFO ? "LFO" : "ENV");
@@ -864,9 +864,9 @@ static void ref_scene(int s)
         }
         if (s != S_REF_EDIT_OSC && s != S_REF_NOTES) { ui.hot_col = s == S_REF_ENV ? 2 : s == S_REF_LFO ? 0 : 1; ui.hot_t = 30; }
         break;
-    case S_REF_SECTIONS_P5: case S_REF_MAP_P5:       /* (R7) the mockups' Prophet FILTER (retired: SID's FILTER in its
-                                                      * place, its first knob just turned), its map */
-        set_engine_of(&trk[1], 3); trk[1].engine = 3; song.playing = 0;
+    case S_REF_SECTIONS_P5: case S_REF_MAP_P5:       /* (R7) the mockups' Prophet FILTER (retired: TRIO's second EDIT
+                                                      * page in its place, its first knob just turned), its map */
+        set_engine_of(&trk[1], 6); trk[1].engine = 6; song.playing = 0;
         ui.home = 0; ui.page = (uint8_t)(page_first(FAM_EDIT) + 1u); page_entered();   /* (its second EDIT page) */
         if (s == S_REF_MAP_P5) smap_open();
         else { ui.hot_col = 0; ui.hot_t = 30; }
@@ -907,16 +907,16 @@ static void ref_scene(int s)
     }
     case S_REF_MOTION: case S_REF_SHEET_MOTION: {    /* (R6) MOTION: ACID's CUTOFF RESO DRIVE moved; the playhead at 5 */
         static const uint8_t CUT[16] = {60, 60, 70, 70, 80, 80, 90, 95, 95, 90, 85, 80, 85, 90, 80, 70};
-        static const uint8_t RES[16] = {7, 7, 7, 10, 10, 12, 12, 10, 10, 10, 7, 7, 10, 10, 7, 7};   /* (SID's RES: 0..15) */
+        static const uint8_t RES[16] = {7, 7, 7, 10, 10, 12, 12, 10, 10, 10, 7, 7, 10, 10, 7, 7};   
         static const uint8_t DRV[16] = {10, 10, 20, 20, 30, 40, 40, 30, 40, 50, 50, 40, 30, 30, 20, 20};
         uint32_t i;
-        set_engine_of(&trk[1], 3); apply_preset_to(&trk[1], preset_named(3, "SAW BASS")); trk[1].engine = 3;
+        set_engine_of(&trk[1], 6); apply_preset_to(&trk[1], preset_named(6, "FAT BASS")); trk[1].engine = 6;
         song.playing = 0; trk[1].pattern_next = 0xFF; trk[1].p[P_SLEN] = 16;
         motion_clear(&trk[1]);
         for (i = 0; i < 16u; i++) {
             motion_set_event(&trk[1], i, P_E0 + 4u, CUT[i]);
             motion_set_event(&trk[1], i, P_E0 + 5u, RES[i]);
-            motion_set_event(&trk[1], i, P_E0 + 7u, DRV[i]);   /* (SID's DRIVE) */
+            motion_set_event(&trk[1], i, P_E0 + 7u, DRV[i]);
         }
         go_title("MOTION"); mo.lane = 0;
         if (s == S_REF_SHEET_MOTION) { motion_enter(); pop.sel = 1; }
@@ -924,7 +924,7 @@ static void ref_scene(int s)
         break;
     }
     case S_REF_MOD: case S_REF_PICKER_MOD:           /* (R6) MOD: LFO > Cutoff, Mod wheel > PW (picked), Velocity > Level */
-        set_engine_of(&trk[1], 3); apply_preset_to(&trk[1], preset_named(3, "SAW BASS")); trk[1].engine = 3;
+        set_engine_of(&trk[1], 6); apply_preset_to(&trk[1], preset_named(6, "FAT BASS")); trk[1].engine = 6;
         song.playing = 0; trk[1].pattern_next = 0xFF;
         trk[1].p[P_M1SRC] = MS_LFO; trk[1].p[P_M1DST] = MD_CUT; trk[1].p[P_M1AMT] = 40;
         trk[1].p[P_M2SRC] = MS_MODW; trk[1].p[P_M2DST] = MD_E1 + 3; trk[1].p[P_M2AMT] = -64;
@@ -935,7 +935,7 @@ static void ref_scene(int s)
         break;
     case S_REF_ARP: case S_REF_PATTERN: {   /* (R6) ARP Up 2 oct; PATTERN 32 steps; SLICER Gate */
         uint32_t i;
-        set_engine_of(&trk[1], 3); apply_preset_to(&trk[1], preset_named(3, "SAW BASS")); trk[1].engine = 3;
+        set_engine_of(&trk[1], 6); apply_preset_to(&trk[1], preset_named(6, "FAT BASS")); trk[1].engine = 6;
         song.playing = 0; trk[1].pattern_next = 0xFF;
         if (s == S_REF_ARP) {
             trk[1].p[P_AMODE] = 1; trk[1].p[P_AOCT] = 2; go_title("ARP"); ui.hot_col = 0;
@@ -968,8 +968,8 @@ static void ref_scene(int s)
         ref_scene(S_REF_SONG); page_sheet_open();
         break;
     case S_REF_PICKER_WAVE: case S_REF_PICKER_MODE:  /* (R6) a list knob turning: its picker, over its column and the
-                                                      * next (SID's WAVE on KNOB 2; its filter MODE on KNOB 3) */
-        set_engine_of(&trk[1], 3); apply_preset_to(&trk[1], preset_named(3, "SAW BASS")); trk[1].engine = 3;
+                                                      * next (TRIO's EDIT page, KNOB 2; EDIT 2, KNOB 3) */
+        set_engine_of(&trk[1], 6); apply_preset_to(&trk[1], preset_named(6, "FAT BASS")); trk[1].engine = 6;
         song.playing = 0; trk[1].pattern_next = 0xFF;
         if (s == S_REF_PICKER_WAVE) { ui.home = 0; ui.page = (uint8_t)page_first(FAM_EDIT); page_entered(); pick_touch(1); }
         else { go_title("EDIT 2"); pick_touch(2); }
@@ -1135,8 +1135,8 @@ static void setup(int s)
     case S_STAGE_TRIO:
         eng(6); apply_preset(3); go_home(); ui.hot_col = 2; ui.hot_t = 30; stage_out();
         input_on(TSEL, 48, 100); input_on(TSEL, 55, 100); input_on(TSEL, 64, 100); break;
-    case S_STAGE_FILTER:                                 /* SID's RES turning, a chord held: the curve behind it */
-        eng(3); go_home(); TSEL->p[P_E5] = 12; ui.hot_col = 3; ui.hot_t = 30; stage_out();
+    case S_STAGE_FILTER:                                 /* TRIO's RES turning, a chord held: the curve behind it */
+        eng(6); go_home(); TSEL->p[P_E6] = 100; ui.hot_col = 3; ui.hot_t = 30; stage_out();
         input_on(TSEL, 57, 100); input_on(TSEL, 60, 100); input_on(TSEL, 64, 100); break;
     case S_STAGE_FILTER_HP:                              /* TRIO's CUT turning, MODE HP (not one of Stage's knobs) */
         eng(6); go_home(); TSEL->p[P_E4] = 2; TSEL->p[P_E6] = 90; ui.hot_col = 0; ui.hot_t = 30; stage_out(); break;
@@ -1855,9 +1855,9 @@ static void setup(int s)
         go_title("MODS");
         break;
     }
-    case S_MODS_LIVE: {                             /* SID's PW and MODEL moved by mods now: their live marks */
+    case S_MODS_LIVE: {                             /* TRIO's DTN and WAVE moved by mods now: their live marks */
         static const cord_t C2[2] = {{CS_OCHD1, 0, CD_E4, 0, 80, 0}, {CS_OCHD3, 0, CD_E1, 0, -60, 0}};
-        eng(3);
+        eng(6);
         cord_clear();
         cord_set(0, &C2[0]);
         cord_set(1, &C2[1]);
@@ -1984,7 +1984,6 @@ static void setup(int s)
     case S_VOICE: go_title("VOICE"); break;
     case S_GLOBAL: go_title("GLOBAL"); break;
     case S_SYSTEM: go_title("SYSTEM"); break;
-    case S_EDIT_SID: eng(3); go_title("EDIT 1"); break;
     case S_EDIT_FILT: eng(6); go_title("EDIT 2"); TSEL->p[P_E6] = 90; break;   /* TRIO's CUT and RES: the filter's curve */
     case S_EDIT_FILT_BP: case S_EDIT_FILT_HP: case S_EDIT_FILT_NOT:   /* .. its MODE BP, HP, notch: the curve follows it
                                                                       * (issue #299) */

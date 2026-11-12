@@ -124,7 +124,6 @@ COND !FIRST	condition not first
 COND !FILL	condition not fill
 MACH	machine
 EP	E P
-SID	sid
 PHYS	phys
 ROUT	routing
 SEL	selected

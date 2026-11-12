@@ -24,7 +24,6 @@ static const char *const PRESET_CAT[NENGINES] = {
     [5] = "PLBF",                                       /* VOICE: CHOIR AAH, VOX LEAD, WOW BASS, WHISPER */
     [11] = "FFFF",                                      /* NOISE */
 #endif
-    [3] = "OLBBBBBBLLLLLLLLPSPPGGKKUUERFFFF",          /* SID */
 #if TRIO_ON
     [6] = "BLLEPPSPPBLWFRPP",                           /* TRIO: FAT BASS .. CHIP CHOIR, then the warm set (WARM PAD .. SWEEP PAD) */
 #endif
@@ -33,13 +32,10 @@ static const char *const PRESET_CAT[NENGINES] = {
                                                          * DRONE STRING, HARP, VIBES, GONG, SINGING BOWL, DULCIMER, SITAR,
                                                          * BOWED STRING, TIMPANI, SYMPATHY */
 #endif
-    [10] = "DDDD",                                      /* DRUM: the kits (808, 909, SID, SID DIGI) */
+    [10] = "DD",                                      /* DRUM: the kits (808, 909) */
     [12] = "KEBRPEGUKRBEEKGSPLUEWEBEOPPPFEEEDEDDUUUU",  /* FM6, INIT VOICE, ZEN-1's (SOFT PAD .. KUGO HARP) */
 #if MELODEE_ORACLE
     [19] = "OPPSRLBBBUEKKUPFFLPPUWKK",                     /* ORACLE (oracle_sounds.h): INIT ORACLE .. DUB CHORD */
-#endif
-#if MELODEE_PLAITS
-    [21] = "OBPLKEBGUEE",                          /* MACRO (eng_macro.c MC_PRESETS) */
 #endif
 };
 static uint32_t cat_of_engine(uint32_t e) { return e == ENGI_DRUM ? CAT_DRUM : e == 11u ? CAT_FX : CAT_OTHER; }

@@ -446,7 +446,7 @@ static void up_slot_label(char *b, uint32_t k)  /* "U07" */
     b[3] = 0;
 }
 
-/* the automatic name of engine e's sound in slot k: engine name + slot number ("SID 07"); b holds 13 */
+/* the automatic name of engine e's sound in slot k: engine name + slot number ("TRIO 07"); b holds 13 */
 static void up_auto_name(char *b, uint32_t e, uint32_t k)
 {
     char l[4];

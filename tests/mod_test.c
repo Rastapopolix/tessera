@@ -547,9 +547,9 @@ static int demos(const char *dir)
         fclose(f);
         n++;
     }
-    /* MODW -> CUT: SID LEAD 6581, the mod wheel (CC1) opens its filter over 4 s */
-    e = eng_by_name("SID");
-    fresh(e, preset_by_name(e, "LEAD 6581"));
+    /* MODW -> CUT: ORACLE SQUARE LEAD (SID LEAD 6581 until SID was removed), the mod wheel (CC1) opens its filter over 4 s */
+    e = eng_by_name("ORACLE");
+    fresh(e, preset_by_name(e, "SQUARE LEAD"));
     t->p[P_LRATE] = 70;
     t->p[P_LD_PIT] = 0;
     t->p[P_LFADE] = 0;

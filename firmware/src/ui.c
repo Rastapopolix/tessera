@@ -1123,7 +1123,7 @@ static void engine_load_of(track_t *t, uint32_t ei, uint32_t pi)
 /* the engine's defaults and its first preset */
 static void set_engine_of(track_t *t, uint32_t ei) { engine_load_of(t, ei, 0u); }
 
-/* the engine's own starting point, nothing changed: its INIT preset (SID, FM6: "INIT .."), else
+/* the engine's own starting point, nothing changed: its INIT preset (FM6: "INIT .."), else
  * its first (DRUM: the 808 kit) */
 static uint32_t preset_init(uint32_t e)
 {
