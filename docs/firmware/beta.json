@@ -1,12 +1,12 @@
 {
-  "version": "3.5-rc2",
+  "version": "3.5-rc3",
   "product": "FM-1_835",
   "branch": "develop",
-  "commit": "dee9a80636695a911109075a998717d9d99236e0",
-  "builtAt": "2026-11-12T02:09:29Z",
+  "commit": "35487512794dd1bc10ca0ac51847234b88fc8e29",
+  "builtAt": "2026-11-12T07:29:10Z",
   "pkg": {
-    "dual": "../../firmware/tessera-3.5-rc2.fwsc",
-    "single": "../../firmware/tessera-3.5-rc2-1core.fwsc"
+    "dual": "../../firmware/tessera-3.5-rc3.fwsc",
+    "single": "../../firmware/tessera-3.5-rc3-1core.fwsc"
   },
   "notes": [
     [
