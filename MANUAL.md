@@ -425,7 +425,6 @@ use the **FILTER** effect above.
 | ORACLE | **CUT**, its four-pole ladder | **PW A** and **PW B**, both pulse widths |
 | NOISE | **FREQ**, its filter | **COLR**, the noise's colour |
 | VOICE | **VOWL** and **VOWL2**, the vowel | **BUZZ**, the buzz against the breath |
-| MACRO | **TIMBR** | **MORPH** |
 | FM6 | **MLVL**, the modulators' level (its brightness) | **FB**, the feedback |
 | PHYS | **BRIT**, the brightness | nothing |
 | WHEEL | nothing | nothing |
