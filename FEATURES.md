@@ -12,8 +12,8 @@ This page lists what Tessera has, by category, so you can see how much is there 
 not teach anything: each category ends with a **More:** link to the part of the [MANUAL](MANUAL.md) that does, and
 [GLOSSARY.md](GLOSSARY.md) explains the terms. For step-by-step patches, see [RECIPES.md](RECIPES.md).
 
-Features not yet in a stable release (3.4.1 is the latest) are tagged **(3.5 beta)**. Everything else is in the
-current release.
+Features new in 3.5 are tagged **(3.5)**: a project that uses some of them (the MIX buses, EOC, CLOCK, PLAY,
+MOD DEPTH) does not load on 3.4.1.
 
 ## Sound engines
 
@@ -65,14 +65,14 @@ More: [Every page, and why you would use it](MANUAL.md#every-page-and-why-you-wo
 - **Eight patterns per track**, each with its own length, speed (DIV), gate and swing.
 - **SONG**: line patterns up in order with repeats, per track.
 - **Polymeter**: tracks run at different divisions and lengths against each other.
-- **Pattern direction**: forward, back, pendulum, ping-pong, random or drunk walk **(3.5 beta)**.
+- **Pattern direction**: forward, back, pendulum, ping-pong, random or drunk walk **(3.5)**.
 - **PAT GEN**: each pattern keeps its own generator setup, so switching pattern switches the generator
-  **(3.5 beta)**.
+  **(3.5)**.
 - **Arpeggiator**: up, down, up-down, random, as-played and repeat modes, with octaves, gate, swing, probability and
-  hold; down-up and a random-once order **(3.5 beta)**.
+  hold; down-up and a random-once order **(3.5)**.
 - **Tempo, swing and record quantise**; tap tempo; external clock follow.
 - **Live recording**: play in from the keys, layer by layer, with MOTION keeping knob moves.
-- **Print**: what a generator just played becomes ordinary steps you can edit; an arpeggio too **(3.5 beta)**.
+- **Print**: what a generator just played becomes ordinary steps you can edit; an arpeggio too **(3.5)**.
 
 More: [SEQ](MANUAL.md#seq-the-mode-and-its-pages), [PATTERNS and SONG](MANUAL.md#patterns-and-song),
 [Print and keep](MANUAL.md#print-and-keep)
@@ -96,8 +96,8 @@ More: [SEQ](MANUAL.md#seq-the-mode-and-its-pages), [PATTERNS and SONG](MANUAL.md
 - **Your steps as a seed**: TURING, EUCLID, MARKOV and MORPH can vary a STEP pattern you wrote, keeping its rhythm or
   its pitches.
 - **Seeds**: every random choice comes from a seed, so PLAY replays exactly and ROLL finds a new line.
-- **ROLL ALL**: new seeds on every generator track at once, with one step back **(3.5 beta)**.
-- **RANDOM**: new values for a page's knobs, each inside its range, with a way back **(3.5 beta)**.
+- **ROLL ALL**: new seeds on every generator track at once, with one step back **(3.5)**.
+- **RANDOM**: new values for a page's knobs, each inside its range, with a way back **(3.5)**.
 - **Generators join in time** when picked while others play.
 - **Generators are mod sources**: each offers its gate, note and CV to the cords.
 
@@ -114,7 +114,7 @@ More: [The generators](MANUAL.md#the-generators), [The GEN layer](MANUAL.md#the-
 - **LENGTH**: how long notes ring, from clipped to pads made of sparse notes.
 - **TIMING**: ratchets x1 to x8, even, accelerating or decelerating, split timing and a behind-the-beat feel.
 - **CHORD STRUM**: chord notes start a few milliseconds apart, up, down or alternating, like a played chord
-  **(3.5 beta)**.
+  **(3.5)**.
 
 More: [EVOLVE](MANUAL.md#evolve), [TWEAK](MANUAL.md#tweak), [TWEAK 2](MANUAL.md#tweak-2),
 [LENGTH](MANUAL.md#length), [TIMING](MANUAL.md#timing)
@@ -126,7 +126,7 @@ More: [EVOLVE](MANUAL.md#evolve), [TWEAK](MANUAL.md#tweak), [TWEAK 2](MANUAL.md#
 - **CHAIN**: one shared form for the project, so every track changes section (and key) together.
 - **ENTRIES**: tracks drop out and come back on phrase lines like a band arranging itself, in a musical order by role
   (bass, rhythm, harmony, melody), with an ANCHOR that never leaves.
-- **ENTRIES order**: choose the order tracks come in; they leave in reverse **(3.5 beta)**.
+- **ENTRIES order**: choose the order tracks come in; they leave in reverse **(3.5)**.
 - **ENERGY**: a slow tide from sparse to busy over minutes, with occasional rests and a depth per track.
 - **PIECE**: plan a whole piece, 1 minute to 4 hours, with a shape (arch, rise, fall, plateau, valley, waves,
   builds, steps or one you draw) and an end (stop, loop, new seeds or free).
@@ -145,9 +145,9 @@ More: [FORM](MANUAL.md#form), [The long-form layers together](MANUAL.md#the-long
 - **Quantise (QNT)**: snaps notes to the scale, with keyboard layouts (white keys, all keys, MPC).
 - **QNT CHRD**: a CHORD track keeps every other part in key with the current chord.
 - **Chord kinds and voicings**: triads, sevenths, sus, add9, power chords, open voicings and octave doubling; SUS2,
-  7SUS4, ADD9 and MAJ6 **(3.5 beta)**.
+  7SUS4, ADD9 and MAJ6 **(3.5)**.
 - **Your own progressions** on the CHORD generator.
-- **USER scales**: four 12-note scales of your own, made on the keys and saved with the project **(3.5 beta)**.
+- **USER scales**: four 12-note scales of your own, made on the keys and saved with the project **(3.5)**.
 - **Scala tunings**: load microtonal `.scl` files from the web editor and play every melodic track in them.
 - **Transpose** per track and a quick-set for the key.
 
@@ -166,19 +166,19 @@ More: [Harmony](MANUAL.md#harmony-one-key-chord-and-qnt-chrd), [USER scales](MAN
 - **Cord modes**: both ways, one way, GATE (all or nothing past a threshold) and HOLD (taken once a bar).
 - **Mods of mods**: a cord can move another cord's amount.
 - **Scaling mods of mods**: a cord can multiply another instead of adding, so a gate or an envelope opens and closes
-  a mod **(3.5 beta)**.
+  a mod **(3.5)**.
 - **MIX buses**: two mixers for mods, with sum, max, min or difference modes and lag; a gate through a lagged bus is
-  an envelope **(3.5 beta)**.
-- **EOC**: the LFO's cycle start as a gate source **(3.5 beta)**.
+  an envelope **(3.5)**.
+- **EOC**: the LFO's cycle start as a gate source **(3.5)**.
 - **CLOCK destination**: a generator steps on a source's edges, so an LFO cycle can trigger a note
-  **(3.5 beta)**.
-- **PLAY destination**: a mod decides whether a track is heard, giving a gated voice in one cord **(3.5 beta)**.
-- **DIR destination**: a cord changes a pattern's direction **(3.5 beta)**.
-- **HOLD on notes**: clock a HOLD cord by a track's notes instead of the bar **(3.5 beta)**.
+  **(3.5)**.
+- **PLAY destination**: a mod decides whether a track is heard, giving a gated voice in one cord **(3.5)**.
+- **DIR destination**: a cord changes a pattern's direction **(3.5)**.
+- **HOLD on notes**: clock a HOLD cord by a track's notes instead of the bar **(3.5)**.
 - **MOD DEPTH**: one control for how much of the whole patch plays, 0 to 100 %; a brake for feedback patches
-  **(3.5 beta)**.
+  **(3.5)**.
 - **MOD SCOPE**: watch a cord's movement over time against its source, and pin it while you turn the knobs
-  **(3.5 beta)**.
+  **(3.5)**.
 - **MATRIX**: the whole patch as a 4 x 4 grid, lit as cords move.
 - **Mod shortcut**: make a cord on the spot from the knob you are turning.
 - **Live marks**: every knob a cord moves shows it.
@@ -189,7 +189,7 @@ More: [MODS](MANUAL.md#mods-the-modulation-cords), [MATRIX](MANUAL.md#matrix),
 ## Performance
 
 - **Mute and solo keys** on any page, landing now, on the bar or on the phrase; the setting is also on the MIXER's sheet
-  **(3.5 beta)**.
+  **(3.5)**.
 - **Muting never stops the music**: a muted track plays on unheard, so followers and cords still hear it.
 - **FILL**: steps with a FILL condition play a fill on demand.
 - **PERF macros**: one knob drives many cords at once.
@@ -205,12 +205,12 @@ More: [The panel at a glance](MANUAL.md#the-panel-at-a-glance), [Shortcuts](MANU
 
 - **MIDI out**: every track and generator on its own channel, with transpose.
 - **Silence a track's own sound** and use it only to play outside gear or to modulate.
-- **Drum maps** for MIDI out: General MIDI or one note per row **(3.5 beta)**.
+- **Drum maps** for MIDI out: General MIDI or one note per row **(3.5)**.
 - **MIDI clock out** with start and stop, or follow an external clock.
 - **MIDI CC and NRPN in**: every parameter has an ID and can be controlled from a controller, DAW or sequencer.
 - **Mods out as CC**: LFOs and generators modulate other synths' knobs.
 - **USB audio**: stereo in and out to a computer, with separate volume.
-- **Four stems over USB**: each track recorded on its own channel in a DAW **(3.5 beta)**.
+- **Four stems over USB**: each track recorded on its own channel in a DAW **(3.5)**.
 - **USB host**: plug a USB-MIDI keyboard, synth or MIDI-to-CV module straight into the FM-1.
 - **norns and other hosts**: connect over USB MIDI.
 
@@ -221,12 +221,12 @@ More: [MIDI OUT channels](MANUAL.md#midi-out-channels), [MIDI CC control](MANUAL
 
 - **A minimal surface**: four knobs, a few buttons, one page at a time.
 - **One key rule on every page**: OCT+ goes in, OCT- goes back, and holding either reaches the page's extra layers
-  **(3.5 beta)**.
+  **(3.5)**.
 - **Sheets**: deeper settings stay out of sight until you ask for them.
 - **Mono look**: a 5 x 7 pixel face, one ink on black.
 - **Thirteen inks**: nine single inks (yellow, white, green, blue, red, orange, pink, hot pink, lilac) and four
   multi-colour sets with a colour per track.
-- **GROUND LIGHT**: put the screen on warm paper, with each ink darkened to read well **(3.5 beta)**.
+- **GROUND LIGHT**: put the screen on warm paper, with each ink darkened to read well **(3.5)**.
 - **Dials or bars** for knob values, a large-value readout and panel contrast options.
 - **Battery display** and a menu for MIDI, USB and device settings.
 - **Screen reader**: speaks every page, knob and message through a web page and your computer's screen reader.
@@ -245,10 +245,10 @@ More: [The panel at a glance](MANUAL.md#the-panel-at-a-glance), [Screen reader](
 - **New song screen**: pick a key, tempo and a role per track.
 - **Demo projects** to load and learn from.
 - **Health monitor**: watch CPU load, late audio and shed voices live, in the web editor; its USB rows tell a click on
-  the USB side from an overloaded FM-1 **(3.5 beta)**.
-- **CPU meter** on GLO > SYSTEM: the average and the worst moment of the last second **(3.5 beta)**.
+  the USB side from an overloaded FM-1 **(3.5)**.
+- **CPU meter** on GLO > SYSTEM: the average and the worst moment of the last second **(3.5)**.
 - **Free time from silent tracks**: a muted or faded-out track stops making sound, leaving its time to the tracks you
-  hear **(3.5 beta)**.
+  hear **(3.5)**.
 - **Manual, recipes and parameter reference**: step-by-step patches, and a reference generated from the firmware.
 - **Free and open**: GPL-3.0, with every line readable.
 

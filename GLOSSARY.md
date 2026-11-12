@@ -4,7 +4,7 @@ The words, labels and ideas you meet in Tessera, A to Z: the abbreviations on th
 features, and the synthesis and modular terms a newcomer may not know. Where a term is a general one, the entry says
 what it means in plain words first, then what it means *here*.
 
-Entries marked **(3.5 beta)** are not in a stable release yet. For the big picture see [FEATURES.md](FEATURES.md); for
+Entries marked **(3.5)** are new in 3.5. For the big picture see [FEATURES.md](FEATURES.md); for
 how everything works, the [MANUAL](MANUAL.md); for patches to try, [RECIPES.md](RECIPES.md); for every setting with its
 range, [docs/PARAMETERS.md](docs/PARAMETERS.md).
 
@@ -88,7 +88,7 @@ becomes FALL, leaves in the wind. [MANUAL](MANUAL.md#the-generators)
 **BUDGET**. The size of the pool of voices shared by all four tracks (GLO > GLOBAL > BUDGET, 16 by default). Lower it
 if notes crackle. [MANUAL](MANUAL.md#how-many-voices-at-once)
 
-**BUS A / BUS B** **(3.5 beta)**. See *MIX buses*.
+**BUS A / BUS B** **(3.5)**. See *MIX buses*.
 
 ## C
 
@@ -104,11 +104,11 @@ and key at the same time. Also the track setting on FORM, FOLLOW or OWN, that de
 kind and voicing. [MANUAL](MANUAL.md#chord-strum-dir-oct-chrd-voic-breath-or-len)
 
 **CHRD** (chord kind). Which chord shape a note makes: triads, sevenths in the scale (DIA3, DIA7), or fixed shapes
-(MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW; SUS2, 7SUS4, ADD9, MAJ6 **(3.5 beta)**). Used by the chord keys, MIDI in, the
+(MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW; SUS2, 7SUS4, ADD9, MAJ6 **(3.5)**). Used by the chord keys, MIDI in, the
 arpeggiator and the CHORD generator. See also *QNT* and *VOIC*.
 
 **CLK / CLOCK**. The timing signal that keeps music in step. In Tessera: **CLK** (GLO > GLOBAL) picks the clock
-source: internal, USB or TRS. **CLOCK OUT** sends MIDI clock. **CLOCK**, a mod destination **(3.5 beta)**, makes a
+source: internal, USB or TRS. **CLOCK OUT** sends MIDI clock. **CLOCK**, a mod destination **(3.5)**, makes a
 generator step on a cord's edges instead of its own DIV. [MANUAL](MANUAL.md#mods-the-modulation-cords)
 
 **COLOR**. MENU > COLOR: the screen's ink. Nine single inks (YELLOW, WHITE, GREEN, BLUE, RED, ORANGE, PINK, HOT PINK,
@@ -142,8 +142,8 @@ source (its note value as a smooth movement) beside its **GATE** and **NOTE**.
 Each track and pattern has its own, which is how you get polymeter.
 
 **DIR** (direction). Four meanings: the way a pattern plays (**STEP direction**: FWD, BACK, PEND, FOLD, RAND, DRUNK
-**(3.5 beta)**); the order a CHORD strum goes (UP, DOWN, ALT **(3.5 beta)**); how a QUAD track walks its grid; and
-**DIR**, a mod destination that changes a pattern's direction **(3.5 beta)**.
+**(3.5)**); the order a CHORD strum goes (UP, DOWN, ALT **(3.5)**); how a QUAD track walks its grid; and
+**DIR**, a mod destination that changes a pattern's direction **(3.5)**.
 
 **Drawbars**. On a tonewheel organ, sliders that set how much of each harmonic (16', 8', 5 1/3' and so on) is in
 the sound. In Tessera there is an FM6 preset named DRAWBARS that builds the same thing from six carriers; there are
@@ -155,7 +155,7 @@ ORACLE, VINTAGE gives each voice its own slight drift.
 **DRUM**. The engine for drum kits (808 and 909), eight lanes: BD, SD, CP, CH, OH, TM, RS, CB.
 [MANUAL](MANUAL.md#sounds)
 
-**DRUNK**. A direction **(3.5 beta)**: a random walk, a step forward or back at a time. Follows the SEED.
+**DRUNK**. A direction **(3.5)**: a random walk, a step forward or back at a time. Follows the SEED.
 
 ## E
 
@@ -171,7 +171,7 @@ track's ROLE. An ANCHOR never leaves. Off at 0. [MANUAL](MANUAL.md#entries-track
 away. It makes a sound pluck, swell or sustain, and is a standard thing to patch to a filter or volume. In Tessera:
 each track has an ENV, a mod source that follows its notes. See *ADSR*.
 
-**EOC** (end of cycle) **(3.5 beta)**. A source on every track: the LFO's cycle start as a gate, high from each wrap
+**EOC** (end of cycle) **(3.5)**. A source on every track: the LFO's cycle start as a gate, high from each wrap
 of the LFO for an eighth of the cycle. Useful as a GATE mod, or onto CLOCK for a note per LFO cycle.
 
 **Euclidean**. A rhythm that spreads a number of hits as evenly as possible over a number of steps, which gives many
@@ -229,12 +229,12 @@ MIDI OUT, PIECE, CHAIN, ENTRIES, LANDSCAPE. Held, it gives the performance keys 
 **GRAVITY**. A pull toward a track's home notes, so a drifting line comes back. On EVOLVE (STEP EVOLVE's HOW) and on
 the generators that can use a STEP seed.
 
-**GROUND** **(3.5 beta)**. MENU > GROUND: the screen on **DARK** (black, the default) or **LIGHT** (warm paper, each
+**GROUND** **(3.5)**. MENU > GROUND: the screen on **DARK** (black, the default) or **LIGHT** (warm paper, each
 ink darkened). [MANUAL](MANUAL.md#the-panel-at-a-glance)
 
 ## H
 
-**HOLD**. Five meanings. A *HOLD mod* takes its source once a bar (or on a chosen track's notes **(3.5 beta)**) and
+**HOLD**. Five meanings. A *HOLD mod* takes its source once a bar (or on a chosen track's notes **(3.5)**) and
 keeps it, like a sample and hold (**=**). The arpeggiator's **HOLD** keeps the notes after you let go. A CHORD
 track's **HIT HOLD** strikes a chord once and lets it ring. QUAD's **DIR** has a HOLD. And holding **FILL** on the GLO
 keys. Say which you mean.
@@ -257,15 +257,16 @@ Tessera: INV1, INV2 on VOIC.
 
 **Krell**. A classic self-playing modular patch (named after the aliens in the film *Forbidden Planet*): a slow
 random source picks the notes while another random source changes how fast they come, so the music seems to play
-itself. In Tessera **(3.5 beta)**: an LFO's EOC onto a generator's CLOCK plays a note each LFO cycle, and S&H onto that
+itself. In Tessera **(3.5)**: an LFO's EOC onto a generator's CLOCK plays a note each LFO cycle, and S&H onto that
 LFO's rate gives every cycle its own length.
 
 ## L
 
-**LAG**. On a MIX bus **(3.5 beta)**, a slew on the result: how long a full move takes, 10 ms to 20 s. A GATE
+**LAG**. On a MIX bus **(3.5)**, a slew on the result: how long a full move takes, 10 ms to 20 s. A GATE
 through a lagged bus is an envelope.
 
-**LANDSCAPE**. A night lake drawn by the music (GLO). It changes nothing in the sound.
+**LANDSCAPE**. A night lake drawn by the music (GLO), by day on GROUND LIGHT **(3.5)**. It changes nothing in the
+sound.
 
 **Layer**. In the manual, either one of Tessera's optional parts (sounds, generators, shaping, form, mods, performing)
 or the *second set of knobs* a page shows with OCT- held ("the GEN layer"). See *OCT+ / OCT-*.
@@ -277,6 +278,9 @@ LENGTH: the steps in its loop (2 to 16). PIECE's LENGTH: how long the whole piec
 
 **LFO** (low-frequency oscillator). A wave too slow to hear as a pitch, used to move something else: a vibrato, a
 filter sweep, a tremolo. In Tessera: each track has one (LFO, LFO 2, LFO DEST), also a source on MODS.
+
+**LFO SYNC**. On LFO 2: ties the track's LFO to the tempo: one cycle every 4 bars down to every 1/32, or OFF
+for its own RATE. It steps slow to fast under the knob, triplets between their neighbours.
 
 **LINK**. A QUAD setting: how the other QUAD tracks follow this one. Not Key link.
 
@@ -291,20 +295,24 @@ filter sweep, a tremolo. In Tessera: each track has one (LFO, LFO 2, LFO DEST), 
 
 **MIDI LEARN**. MENU: put any Tessera knob on a CC of your controller; remembered.
 
-**MIX buses** **(3.5 beta)**. **BUS A** and **BUS B**: two mixers for cords. Every cord sent into a bus is combined
+**MIX buses** **(3.5)**. **BUS A** and **BUS B**: two mixers for cords. Every cord sent into a bus is combined
 there (Mode: SUM, MAX, MIN, DIFF; with gates that is OR, AND, XOR), optionally slowed by LAG, and the bus is a source
 for other cords.
 
 **MLVL** (modulator level). FM6's brightness: the level of the operators that are not carriers.
 
-**MOD DEPTH / MOD DEP** **(3.5 beta)**. One control for how much of the whole patch plays, 0 to 100 % (GLO > PERF's
+**MOD DEPTH / MOD DEP** **(3.5)**. One control for how much of the whole patch plays, 0 to 100 % (GLO > PERF's
 sheet). At 0 the patch is dry. **MOD DEP** is also a destination so a MACRO can ride it.
+
+**MOD SCOPE** **(3.5)**. Hold OCT- on MODS to see the picked mod move over time (a line) over its source (faint
+dots). Hold OCT- and tap OCT+ to pin it (SCOPE PINNED), so the knobs work while you watch; tap OCT- to let it go.
+[MANUAL](MANUAL.md#mods-the-modulation-cords)
 
 **MODE**. What a track plays: STEP, ARP, or a generator (GEN's KNOB 1). Also the ARP's order, and a MIX bus's
 combining mode.
 
 **MODS**. The modulation cords (LFO button): up to 16, each from a source on any track to a destination on any
-track. A *mod of mods* (M1 AMT to M16 AMT) moves another cord's amount, or scales it **(3.5 beta)**.
+track. A *mod of mods* (M1 AMT to M16 AMT) moves another cord's amount, or scales it **(3.5)**.
 [MANUAL](MANUAL.md#mods-the-modulation-cords)
 
 **Modulation**. Using one signal to change a setting of another: an LFO moving a filter, one track's notes opening
@@ -332,7 +340,7 @@ way. [MANUAL](MANUAL.md#midi-cc-control)
 
 **OCT+ / OCT-**. On the home page, octave up and down. Everywhere else the two keys go **in** and **back**: tap OCT+
 to Enter the row, slot, note or cord under the cursor; tap OCT- to go Back. Hold OCT+ for the page's **sheet**; hold
-OCT- for the page's **second knobs** (the layer) while held. **(3.5 beta)** [MANUAL](MANUAL.md#the-panel-at-a-glance)
+OCT- for the page's **second knobs** (the layer) while held. **(3.5)** [MANUAL](MANUAL.md#the-panel-at-a-glance)
 
 **ORACLE**. The engine for a polyphonic analogue-style voice: two oscillators, noise, POLY MOD and a four-pole
 low-pass filter.
@@ -347,7 +355,7 @@ and TRIO, operators for FM6.
 
 ## P
 
-**PAT GEN** **(3.5 beta)**. Each of a track's eight patterns keeps its own generator setup, so changing pattern
+**PAT GEN** **(3.5)**. Each of a track's eight patterns keeps its own generator setup, so changing pattern
 changes the generator. Off by default. On EVOLVE's second layer.
 
 **PATTERN**. The sequencer page for a track's length, speed and gate. Each track has eight patterns of its own
@@ -364,7 +372,7 @@ and an end (STOP, LOOP, NEW or FREE). It steers ENERGY, CHAIN and ENTRIES along 
 [MANUAL](MANUAL.md#piece-a-length-and-a-shape)
 
 **PLAY**. The button that starts the music; every generator starts its random choices from the top of its seed, so a
-piece replays the same. And **PLAY**, a mod destination **(3.5 beta)** that decides whether a track is heard.
+piece replays the same. And **PLAY**, a mod destination **(3.5)** that decides whether a track is heard.
 
 **POLY**. A generator: four notes stepped on by four rhythms, for polyrhythms. **POLY MOD** (ORACLE) lets the filter
 envelope and oscillator B bend oscillator A's pitch, pulse width or the cutoff.
@@ -388,7 +396,7 @@ quantise on TEMPO. [MANUAL](MANUAL.md#harmony-one-key-chord-and-qnt-chrd)
 ## R
 
 **RANDOM**. OCT- held on GEN or TWEAK, KNOB 1: new values for the page's knobs, inside their ranges, with a way back
-**(3.5 beta)**. See also the RAND source, a stream of random values.
+**(3.5)**. See also the RAND source, a stream of random values.
 
 **Ratchet**. Repeating a note several times within one step: a drum roll or stutter. In Tessera: RATCH x1 to x8 on
 TIMING, and a step's own Ratchet.
@@ -400,7 +408,7 @@ TIMING, and a step's own Ratchet.
 **ROLE**. A track's part for ENTRIES: BASS, RHYTHM, HARMONY, MELODY or ANCHOR (AUTO guesses).
 
 **ROLL / ROLL ALL**. EVOLVE's ROLL picks a new SEED, so a new line; turn back for the last one. ROLL ALL does it for
-every generator track at once, with one step back **(3.5 beta)**.
+every generator track at once, with one step back **(3.5)**.
 
 **ROOT**. The key's first note.
 
@@ -410,7 +418,7 @@ every generator track at once, with one step back **(3.5 beta)**.
 smooth signal becomes steps. In Tessera: **S&H** is a source on each track (random values for an LFO cycle), and a
 **HOLD** cord does the same to any source, per bar.
 
-**Scale**. A set of notes the music stays within. 77 are built in; four **USER** scales **(3.5 beta)** are yours, and
+**Scale**. A set of notes the music stays within. 77 are built in; four **USER** scales **(3.5)** are yours, and
 **Scala tunings** are microtonal ones from the web editor.
 
 **SCL**. The harmony button: SCALES, the scale and key, QNT, CHORD.
@@ -435,10 +443,10 @@ it.
 
 **STEP**. A track that plays notes you wrote. Also one position in a pattern.
 
-**STRUM** **(3.5 beta)**. A CHORD track's notes start a few ms apart (1 to 250), like a played chord.
+**STRUM** **(3.5)**. A CHORD track's notes start a few ms apart (1 to 250), like a played chord.
 
 **Suspended chord (sus)**. A chord with its third replaced by the second or fourth, so it sounds open and
-unresolved. In Tessera: SUS2, SUS4, 7SUS4 **(3.5 beta)** on CHRD.
+unresolved. In Tessera: SUS2, SUS4, 7SUS4 **(3.5)** on CHRD.
 
 **SWARM**. Eight related slow wanderers per track, from 64 s to 2.4 s a turn at the default speed, set with RATE on
 ORGANIC. A mod source.
@@ -469,12 +477,12 @@ to another track, combine rhythms with logic, play only on some bars (TWEAK 2).
 ## U
 
 **USER**. A slot that stores a sound you edited (SAVE > USER). Also **USER1 to USER4**, four 12-note scales of your
-own **(3.5 beta)**, and **CHORD USER**, your own progression.
+own **(3.5)**, and **CHORD USER**, your own progression.
 
 ## V
 
 **VCA** (voltage-controlled amplifier). The part that sets the volume under the control of a signal, such as an
-envelope. In Tessera, a cord that *scales* another cord is a VCA on a mod **(3.5 beta)**; a gated PLAY cord opens
+envelope. In Tessera, a cord that *scales* another cord is a VCA on a mod **(3.5)**; a gated PLAY cord opens
 and shuts a whole track.
 
 **VEL**. Velocity, how hard a note was played; a mod source.

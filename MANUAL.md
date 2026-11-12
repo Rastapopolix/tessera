@@ -285,7 +285,9 @@ On every page the four knobs' values sit under their dials (or bars: MENU > KNOB
 inverted. On the home page and on pages without a picture of their own, while you turn it its name and value also show
 large across the foot of the screen, with a bar for where it sits in its range; they go when the knob rests. Pages with
 a picture (a generator's, an envelope, the LFO, PIECE and the rest) keep the picture in view, so you see what the knob
-does: MENU > **LARGE VALUE** shows it on every page (ON) or on none (OFF).
+does: MENU > **LARGE VALUE** shows it on every page (ON) or on none (OFF). A value from a short list (DIV, ARP MODE,
+LFO SYNC, QNT, CHRD, VOIC, an FX type) steps under its knob as you turn; the ones in time order go slow to fast. Only
+long lists (a mod's source and destination, LFO WAVE) open a list to pick from.
 
 <p align="center"><img src="assets/gallery/home.png" alt="HOME" width="320"> <img src="assets/gallery/mixer.png" alt="MIXER" width="320"></p>
 
@@ -787,7 +789,7 @@ saved project keeps its seeds.
 Hold **OCT-** on GEN: the knobs' labels change to the layer's, KNOB 1 is **RANDOM** as on every generator (see
 [Shortcuts](#shortcuts)) and KNOB 2 to 4 set the layer. Let go to return; letting go never goes back a page. A
 generator with more settings than that has them on the **GEN sheet**: hold **OCT+** (or tap it) on GEN, pick the row
-with KNOB 1 and turn its value with KNOB 2. (Until 3.5's betas these layers were on OCT+ held, KNOB 1 to 4.)
+with KNOB 1 and turn its value with KNOB 2. (Before 3.5 these layers were on OCT+ held, KNOB 1 to 4.)
 
 <p align="center"><img src="assets/gallery/gen_grids_oct.png" alt="ATLAS with OCT- held" width="240"> <img src="assets/gallery/gen_chord_oct.png" alt="CHORD with OCT- held" width="240"> <img src="assets/gallery/gen_chord_user.png" alt="CHORD USER with OCT- held" width="240"></p>
 
@@ -1143,6 +1145,8 @@ It has no settings and changes nothing; the knobs do nothing here.
   clouds drift.
 - **Stars** come out as the music thins and all of them once nothing has played for a few seconds. Then the water is
   still and the moon's reflection lies quiet.
+- On **GROUND LIGHT** it is day: a sun (a ring with short rays) takes the moon's place on the same arc, and no stars
+  come out. Rain, clouds, hills and the water are the same.
 
 The scene only listens while the page shows. In the MOSAIC palette each track's drops are in its own colour.
 
