@@ -5,7 +5,8 @@
  * open its velocity. ENERGY's tide gathers the clouds and lowers them (full) or thins them (sparse); while playing they
  * drift. Stars come out as the music thins, all of them when nothing has played for a while; then the water is still
  * and nothing is drawn again. Drawn from code; the notes come from land_feed.c, read only while the page is open. The
- * whole page below the header (no dials: the knobs do nothing here). Included by ui_mono.c */
+ * whole page below the header (no dials: the knobs do nothing here). GROUND LIGHT: the same water by day, a sun in the
+ * moon's place and no stars. Included by ui_mono.c */
 #define LAND_TOP 10                                     /* the scene's rows: LAND_TOP .. MO_PY1 - 1 */
 #define LAND_H 66                                       /* the water's line */
 #define LAND_RIP 12                                     /* rings at once (the oldest gives way) */
@@ -21,20 +22,22 @@
 #define LAND_FISH_T 900u                                /* ms in the air */
 
 /* a MOSAIC kind of palette: each part of the scene an ink of its four that suits it (Theo, beta3): the moon, the far
- * hills, the water (its line and the moon in it), as track ink 0..3, or 4 the palette's white; the stars white. A one-ink
+ * hills, the water (its line and the moon in it), as track ink 0..3, or 4 the palette's white; the stars white; on GROUND
+ * LIGHT the sun in the moon's place (SUNSET's moon ink is CHARCOAL on paper: its sun CRIMSON). A one-ink
  * palette: its ink, as before (its track inks are the ink, its white the ink) */
-static const struct { char name[7]; uint8_t moon, hills, water; } LAND_INKS[] = {
-    {"MOSAIC", 0, 3, 1},                                /* yellow moon, green hills, blue water */
-    {"SUNSET", 3, 2, 0},                                /* yellow moon, lilac hills, orange water */
-    {"OCEAN", 4, 2, 1},                                 /* white moon, green hills, teal water */
-    {"NEON", 3, 2, 0},                                  /* orange moon, lime hills, cyan water */
+static const struct { char name[7]; uint8_t moon, hills, water, sun; } LAND_INKS[] = {
+    {"MOSAIC", 0, 3, 1, 0},                             /* yellow moon, green hills, blue water; by day a sepia sun */
+    {"SUNSET", 3, 2, 0, 1},                             /* yellow moon, lilac hills, orange water; a crimson sun */
+    {"OCEAN", 4, 2, 1, 4},                              /* white moon, green hills, teal water; a charcoal sun */
+    {"NEON", 3, 2, 0, 3},                               /* orange moon, lime hills, cyan water; a sepia sun */
 };
-static uint16_t land_ink(uint32_t part, int dim)       /* part: 0 moon, 1 hills, 2 water */
+static uint16_t land_ink(uint32_t part, int dim)       /* part: 0 moon (by day the sun), 1 hills, 2 water */
 {
     uint32_t i, k = 4u;
     for (i = 0; i < sizeof LAND_INKS / sizeof LAND_INKS[0]; i++)
         if (str_eq(UI_PALETTES[ux.pal].name, LAND_INKS[i].name))
-            k = part == 0u ? LAND_INKS[i].moon : part == 1u ? LAND_INKS[i].hills : LAND_INKS[i].water;
+            k = part == 0u ? (ux.light ? LAND_INKS[i].sun : LAND_INKS[i].moon) : part == 1u ? LAND_INKS[i].hills
+                                                                                 : LAND_INKS[i].water;
     if (k > 3u) return dim ? MO_DIM : MO_HOT;
     return dim ? mo_tdim(k) : T_TRK(k);
 }
@@ -198,15 +201,25 @@ static void mo_pic_land(void)
     uint32_t i, s = 0x2545F491u, stars = land_stars(), cover = land_cover(), clouds = 1u + cover / 4u;
     uint16_t moon = land_ink(0, 0), hills = land_ink(1, 1), water = land_ink(2, 0), deep = land_ink(2, 1);
     int32_t x, y, mx = land.mx >> 4, my = land.my >> 4;
-    for (i = 0; i < LAND_STARS; i++) {                  /* the stars, always in the same places */
+    for (i = 0; i < LAND_STARS && !ux.light; i++) {    /* the stars, always in the same places (by day none) */
         s = s * 1103515245u + 12345u;
         x = 2 + (int32_t)((s >> 8) % 116u);
         y = LAND_TOP + 2 + (int32_t)((s >> 20) % (uint32_t)(LAND_H - LAND_TOP - 12));
         if (i < stars && ((x - mx) * (x - mx) + (y - my) * (y - my) > 81))
             mo_px(x, y, (s >> 30) ? MO_HOT : MO_DIM);
     }
-    land_disc(mx, my, 5, moon);                         /* a crescent */
-    land_disc(mx + 3, my - 2, 4, MO_BG);
+    if (ux.light) {                                     /* by day the sun: a ring, eight short rays */
+        land_disc(mx, my, 4, moon);
+        land_disc(mx, my, 3, MO_BG);
+        for (i = 0; i < 16u; i++) {                     /* (each ray two cells: 6 and 7 out) */
+            int32_t r = 6 + (int32_t)(i & 1u), a = (int32_t)(i >> 1) * 32;
+            x = mx + r * mo_cos(a) / 127, y = my + r * mo_sin(a) / 127;
+            if (y < land_hill(x)) mo_px(x, y, moon);
+        }
+    } else {
+        land_disc(mx, my, 5, moon);                     /* a crescent */
+        land_disc(mx + 3, my - 2, 4, MO_BG);
+    }
     for (i = 0; i < clouds; i++) {                      /* the clouds: bands of dashes, lower and wider when full */
         int32_t w = 18 + (int32_t)cover + (int32_t)(i * 7u % 9u), cy = LAND_TOP + 6 + (int32_t)(i * 11u % 23u) +
                     (int32_t)cover / 2, cx = (int32_t)((i * 37u + land.drift / 700u) % 150u) - 15, r;
