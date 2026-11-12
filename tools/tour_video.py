@@ -261,12 +261,12 @@ def demo_card(lines, ink):
     return im
 
 
-def demo_frame(caption, ink):
+def demo_frame(caption, ink, version="3.3"):
     im = Image.new("RGB", (DW, DW), (0, 0, 0))
     d = ImageDraw.Draw(im)
     from gen_brand import centred
     mark(d, 76, 76, 14)
-    text(d, 118, 62, "TESSERA 3.3", 4, mix((0, 0, 0), ink, 70))
+    text(d, 118, 62, "TESSERA " + version, 4, mix((0, 0, 0), ink, 70))
     d.rectangle([DX - 4, DY - 4, DX + 240 * DS + 3, DY + 240 * DS + 3], outline=mix((0, 0, 0), ink, 23), width=2)
     y = DY + 240 * DS + 30
     for line in wrap(caption, (DW - 80) // 30)[:2]:
@@ -396,8 +396,199 @@ def demo(src, intro, out):
     print(f"{out}: {total / float(FPS):.1f} s")
 
 
+# The 3.5 demo (demo35 CLIPS INTRO OUT.mp4; demo_projects tour35): as the 3.3 one, 1080 x 1080, music only, one short
+# caption at a time, a card before each chapter, plus Theo's refinements (2026-11-12): the picture fades with the sound,
+# out of and into every card and between clips (none where one clip carries on), the title and the end card too; the
+# three 3.5 pieces (NIGHT LOOM, INK RIVER, SALT GLASS); the scope's combined waves; GROUND LIGHT briefly; LANDSCAPE in
+# dark MOSAIC with the moon crossing, its music running on under the end card.
+CUT35 = [
+    ("c00-loom-home", 0, 15, [(0, "NIGHT LOOM, new in 3.5"), (6.5, "Two figures that never line up")]),
+    ("Step patterns", "Each pattern plays its own way"),
+    ("c01-dir", 0, 18.5, [(0, "FWD: as written"), (4.6, "BACK"), (9.2, "PEND: there and back"),
+                          (13.8, "FOLD: from the ends inwards")]),
+    ("c02-ink-notes", 0, 13, [(0, "INK RIVER: a mod turns the call around")]),
+    ("Strum", "Chords played as a hand plays them"),
+    ("c03-strum", 0, 16, [(0, "A chord, all at once"), (4.2, "STRUM spreads its notes out")]),
+    ("c04-salt-strum", 0, 12, [(0, "SALT GLASS: each chord unrolls")]),
+    ("The MIX buses", "Mods mixed into new shapes"),
+    ("c05-bus-tri-saw", 0, 21.5, [(0, "Two LFOs into BUS A"), (3, "MOD SCOPE: a triangle..."), (8, "...a saw..."),
+                                  (13.5, "...and the two mixed")]),
+    ("c06-bus-modes", 0, 18.5, [(0, "MODE SUM: added"), (5, "MAX: the higher"), (10.5, "MIN: the lower"),
+                                (16, "DIFF: how far apart")]),
+    ("c07-bus-sin-sqr", 0, 12, [(0, "A sine and a square: steps")]),
+    ("c08-loom-scope", 0, 12, [(0, "NIGHT LOOM's pad breathes on BUS A")]),
+    ("Patch it", "Modular ideas, in a few cords"),
+    ("c09-eoc-clock", 0, 14, [(0, "EOC clocks the notes"), (5.5, "A second LFO bends their pace")]),
+    ("c10-light", 0, 11.5, [(0, "GROUND LIGHT: the screen on paper")]),
+    ("c11-ink-answer", 0, 14, [(0, "INK RIVER: a flute answers the call")]),
+    ("c12-salt-land", 0, 31, [(0, "LANDSCAPE: rain on water, drawn by the music"),
+                              (13, "The moon crosses as the piece plays")]),
+]
+END35 = ("c12-salt-land", 31)                               # the end card's music: SALT GLASS, on from the last clip
+INK35 = {"c00": "YELLOW", "c01": "GREEN", "c02": "GREEN", "c03": "BLUE", "c04": "BLUE", "c05": "MOSAIC",
+         "c06": "MOSAIC", "c07": "MOSAIC", "c08": "MOSAIC", "c09": "ORANGE", "c10": "BLUE", "c11": "YELLOW",
+         "c12": "MOSAIC"}
+V_TITLE_IN, V_CARD, V_CLIP = 0.8, 0.4, 0.25               # s: the picture's fades: the title in; at a card; at a cut
+END_FADE = 2.5                                          # s: the end card's picture out to black, with the music
+LOUD35 = -21.5                                          # LUFS: every clip, scenes and pieces alike (the 3.3 cut's -21)
+
+
+def demo35(src, intro, out):
+    import numpy as np
+    src, intro, out = Path(src), Path(intro), Path(out)
+    work = out.with_suffix(".work")
+    work.mkdir(parents=True, exist_ok=True)
+    audio = array.array("h")
+    plan = []                                           # (kind, payload, frames, fade in s, fade out s)
+    nf = lambda s: round(s * float(FPS))
+
+    def silence(n):
+        audio.extend([0] * (n * SPF * 2))
+
+    def wav(name):
+        with wave.open(str(src / f"{name}.wav")) as r:
+            return array.array("h", r.readframes(r.getnframes()))
+
+    gains = {}
+
+    def loud(a, name):                                  # every clip at LOUD35 LUFS (its whole WAV measured, so one clip
+        if name not in gains:                           # cut in parts keeps one gain), its peaks under LEVEL_PEAK
+            r = subprocess.run([ffmpeg(), "-hide_banner", "-nostats", "-i", str(src / f"{name}.wav"), "-af", "ebur128",
+                                "-f", "null", "-"], capture_output=True, text=True).stderr
+            lufs = float(r.split("Summary:")[1].split("I:")[1].split("LUFS")[0])
+            g = 10 ** ((LOUD35 - lufs) / 20)
+            whole = wav(name)
+            peak = max(abs(v) for v in whole) or 1
+            gains[name] = min(g, 10 ** (LEVEL_PEAK / 20) * 32768 / peak)
+            print(f"{name:22s} {lufs:6.1f} LUFS, gain {20 * math.log10(gains[name]):+.1f} dB")
+        g = gains[name]
+        return array.array("h", (max(-32768, min(32767, round(v * g))) for v in a))
+
+    def shape(a, k_in, k_out):                          # (the 3.3 cut's sin-squared fades, k in samples)
+        m = len(a) // 2
+        for i in range(max(k_in, k_out)):
+            for kk, frm in ((k_in, i), (k_out, m - 1 - i)):
+                if i < kk:
+                    g = math.sin(0.5 * math.pi * i / kk) ** 2
+                    a[2 * frm] = int(a[2 * frm] * g)
+                    a[2 * frm + 1] = int(a[2 * frm + 1] * g)
+        return a
+
+    # the intro: the splash as the FM-1 draws it, in silence
+    im_t = 0.0
+    for line in (intro / "frames.txt").read_text().split("\n"):
+        if not line.strip():
+            continue
+        name, ms = line.split()
+        n = nf(im_t + int(ms) / 1000) - nf(im_t)
+        im_t += int(ms) / 1000
+        big = Image.new("RGB", (DW, DW), (0, 0, 0))
+        big.paste(Image.open(intro / name).convert("RGB").resize((240 * 4, 240 * 4), Image.NEAREST), ((DW - 960) // 2,) * 2)
+        plan.append(("still", big, n, 0, 0))
+        silence(n)
+    plan[-1] = plan[-1][:3] + (0, V_CARD)
+    title = demo_card([("TESSERA 3.5", 12, False), ("Composing through systems, on the M-Vave FM-1", 4, True)], INK["YELLOW"])
+    plan.append(("still", title, nf(TITLE_S), V_TITLE_IN, V_CARD))
+    silence(nf(TITLE_S))
+
+    def goes_on(a, b):
+        return len(a) > 2 and len(b) > 2 and a[0] == b[0] and abs(a[1] + a[2] - b[1]) < 1e-6
+
+    for idx, e in enumerate(CUT35):
+        if len(e) == 2:                                 # a card, in the next chapter's ink
+            c = demo_card([(e[0], 9, False), (e[1], 4, True)], INK[INK35[CUT35[idx + 1][0][:3]]])
+            plan.append(("still", c, nf(CARD_S), V_CARD, V_CARD))
+            silence(nf(CARD_S))
+            continue
+        name, start, dur, caps = e
+        ink = INK[INK35[name[:3]]]
+        f0, n = nf(start), nf(dur)
+        ppm = sorted((src / name).glob("f*.ppm"))[f0:f0 + n]
+        assert len(ppm) == n, (name, len(ppm), n)
+        a = wav(name)[f0 * SPF * 2:(f0 + n) * SPF * 2]
+        a.extend([0] * max(0, n * SPF * 2 - len(a)))
+        a = loud(a, name)
+        prev = CUT35[idx - 1] if idx else None
+        nxt = CUT35[idx + 1] if idx + 1 < len(CUT35) else None
+        t_in = 0 if prev and goes_on(prev, e) else CUT_FADE_FIRST if idx == 0 else CUT_FADE_CARD if len(prev) == 2 else CUT_FADE
+        t_out = 0 if (not nxt and (name, start + dur) == END35) or (nxt and goes_on(e, nxt)) else \
+            CUT_FADE_CARD if not nxt or len(nxt) == 2 else CUT_FADE
+        audio.extend(shape(a, int(t_in * FS), int(t_out * FS)))
+        v_in = 0 if not t_in else V_CARD if (idx == 0 or len(prev) == 2) else V_CLIP
+        v_out = 0 if not t_out else V_CARD if (not nxt or len(nxt) == 2) else V_CLIP
+        if not nxt and not t_out:                       # (the end card comes in over the last clip's own music)
+            v_out = V_CARD
+        plan.append(("clip", (ppm, caps, ink), n, v_in, v_out))
+    # the end: the last clip's music carries on under the end card, fading out with the picture
+    a = wav(END35[0])
+    n = nf(END_S)
+    s0 = nf(END35[1]) * SPF * 2
+    a = a[s0:s0 + n * SPF * 2]
+    a.extend([0] * max(0, n * SPF * 2 - len(a)))
+    a = loud(a, END35[0])
+    m = len(a) // 2
+    h = int(END_HOLD * FS)
+    for i in range(m):
+        g = 1.0 if i < h else max(0.0, (m - 1 - i) / (m - h)) ** 1.6
+        a[2 * i] = int(a[2 * i] * g)
+        a[2 * i + 1] = int(a[2 * i + 1] * g)
+    audio.extend(a)
+    end = demo_card([("TESSERA 3.5", 12, False), ("rastapopolix.github.io/tessera", 4, True),
+                     ("Free, GPL-3.0. Installs from the browser.", 3, True)], INK["YELLOW"])
+    plan.append(("still", end, n, V_CARD, END_FADE))
+    total = sum(p[2] for p in plan)
+    assert len(audio) == total * SPF * 2, (len(audio), total * SPF * 2)
+    wav_path = work / "audio.wav"
+    write_wav(wav_path, audio)
+
+    def gain(i, n, v_in, v_out):                        # the picture's level at frame i of n
+        t, g = i / float(FPS), 1.0
+        if v_in and t < v_in:
+            g = math.sin(0.5 * math.pi * t / v_in) ** 2
+        left = (n - 1 - i) / float(FPS)
+        if v_out and left < v_out:
+            g *= math.sin(0.5 * math.pi * left / v_out) ** 2
+        return g
+
+    def dim(im, g):
+        if g >= 0.999:
+            return im
+        return Image.fromarray((np.asarray(im, dtype=np.float32) * g + 0.5).astype(np.uint8))
+
+    def frames():
+        for kind, payload, n, v_in, v_out in plan:
+            if kind == "still":
+                for i in range(n):
+                    yield dim(payload, gain(i, n, v_in, v_out))
+                continue
+            ppm, caps, ink = payload
+            cards = {}
+            for i, f in enumerate(ppm):
+                t = i / float(FPS)
+                cap = [c for at, c in caps if at <= t][-1]
+                if cap not in cards:
+                    cards[cap] = demo_frame(cap, ink, "3.5")
+                im = cards[cap].copy()
+                im.paste(Image.open(f).convert("RGB").resize((240 * DS, 240 * DS), Image.NEAREST), (DX, DY))
+                yield dim(im, gain(i, n, v_in, v_out))
+
+    cmd = [ffmpeg(), "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{DW}x{DW}",
+           "-framerate", f"{FPS.numerator}/{FPS.denominator}", "-i", "-", "-i", str(wav_path),
+           "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-r", "30",
+           "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", str(out)]
+    p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    for im in frames():
+        p.stdin.write(im.tobytes())
+    p.stdin.close()
+    if p.wait():
+        raise SystemExit("ffmpeg failed")
+    print(f"{out}: {total / float(FPS):.1f} s")
+
+
 if __name__ == "__main__":
     if sys.argv[1] == "demo":                           # demo CLIPS INTRO OUT.mp4: the captioned 1:1 cut
         demo(*sys.argv[2:5])
+    elif sys.argv[1] == "demo35":                       # demo35 CLIPS INTRO OUT.mp4: the 3.5 one (demo_projects tour35)
+        demo35(*sys.argv[2:5])
     else:
         main(*sys.argv[1:3])
