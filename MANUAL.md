@@ -1917,6 +1917,10 @@ BASS: BASS, CHORDS and PAD: HARMONY, LEAD: MELODY), so ENTRIES takes the parts o
 leaves it as it was. **OCT+** creates it with every pattern empty; **OCT-** goes back or cancels. It starts from the template when one is saved in TMPL, else from the power-on sounds, and has no slot
 until you save it.
 
+The web editor only reads the FM-1 until you tick **Edit the FM-1** (beside **Disconnect**): connecting changes
+nothing, and a change made in the editor before then is not sent (the editor says so and shows the FM-1's value again).
+Ticking it offers a **Complete backup** first. It is off again at every connection.
+
 The web editor's **Complete backup** saves and restores the music, slots A to D, the sound banks and the settings.
 To try the [demo projects](demos/README.md), the editor's **Demo projects** (on the Projects tab) puts each into a
 slot you choose and leaves the rest of the FM-1 as it is; `tools/demo_backup.py` does the same with a backup file.

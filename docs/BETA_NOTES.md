@@ -43,6 +43,7 @@ Want to help test? The steps, by area, and how to report a problem: [BETA_TESTIN
 - New project sounds: power-on and NEW start with CEDAR RAIN's set: KUGO HARP, KOTO WARM and FLUTE on FM6 and the 808 KIT, in KUMOI on E at 80 BPM, with REVERB and ECHO on the sends (was GLASS PAD, STRING MACH, BELLS in MPEN on C at 85, sends off). Saved projects are unchanged.
 
 ## Fixed
+- Web editor (#609): it only reads the FM-1 until you tick **Edit the FM-1** beside Disconnect, and ticking it offers a complete backup first; it is off again at every connection, so connecting can never change a project and a stray edit is not sent.
 - GLO > SYSTEM's CPU read about 55 % while the sound already broke up: it left out the USB and MIDI service and averaged over a tenth of a second. It now counts everything and shows the average and the worst moment of about the last second, as 55/92 (the screen reader says "55 % PEAK 92 %") (#586).
 - ARP HOLD: with CLK set to an external clock (USB, TRS) and the transport stopped, a chord latched with HOLD stopped when the keys were let go, though it played while they were held. It now keeps playing at the local tempo, as the keys do. A chord stopped by the external Stop (or a lost clock) still waits for Start or Continue; a new key plays again.
 - USB OUTPUT 4 TRACKS: a loud chord crackled in its stem (cut hard at full scale, #586). A stem now has the stereo recording's level, 6 dB under before, and the outputs' soft clip.
