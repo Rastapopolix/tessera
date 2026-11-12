@@ -12,6 +12,8 @@
 <b><a href="https://github.com/Rastapopolix/tessera/releases/latest">Releases</a></b>
 </p>
 
+<p align="center"><b>A pocket rabbit hole.</b></p>
+
 **Tessera** is generative firmware for the M-Vave FM-1: an instrument for composing through systems. Instead of
 programming every note, you set up how the music behaves, and it plays.
 
@@ -34,6 +36,27 @@ Melodee (Tess).
 *Tessera* (plural *tesserae*) is the Latin word for the small tile of stone or glass in a mosaic. Each generator
 makes a short phrase; EVOLVE and FORM set mutated phrases side by side into sections, so a piece is built from small
 tiles arranged into a larger pattern. The word also meant a die, which suits the chance-driven generators.
+Tessera for FM-1 is not related to the Tessera plugins for VCV Rack.
+
+## New in 3.5
+
+<p align="center"><img src="assets/brand/social-3.5.png" alt="Tessera 3.5: two LFOs mixed on BUS A, watched on MOD SCOPE" width="480"></p>
+
+- **Patch like a modular**: two MIX buses, EOC gates, CLOCK and PLAY destinations, mods that scale other mods, HOLD
+  (sample and hold per bar or per note), and MOD DEPTH as one brake for the whole patch.
+- **See your mods**: MOD SCOPE draws the picked mod over its source, and can be pinned.
+- **More from the generators**: PAT GEN, ROLL ALL, RANDOM, CHORD STRUM, ENTRIES ORDER, USER scales, new chord kinds
+  and ARP modes.
+- **STEP direction**: FWD, BACK, PEND, FOLD, RAND, DRUNK, also as a mod destination.
+- **GROUND LIGHT**: the whole screen on warm paper, with a LANDSCAPE by day.
+- **Project files**: move songs between the web simulator and the FM-1 as `.tsp` files.
+- **One key rule everywhere**: OCT+ goes in, OCT- goes back.
+
+<p align="center"><img src="assets/brand/new35_scope_mix.png" alt="MOD SCOPE: LFO A, LFO B and their mix" width="100%"></p>
+<p align="center"><img src="assets/brand/new35_mods_new.png" alt="MODS: EOC onto CLOCK, a bus onto PLAY" width="24%"> <img src="assets/brand/new35_pattern_dir.png" alt="PATTERN's sheet, Direction FOLD" width="24%"> <img src="assets/brand/new35_chord_strum.png" alt="CHORD STRUM" width="24%"> <img src="assets/gallery/paper_yellow.png" alt="HOME on GROUND LIGHT" width="24%"></p>
+
+A project that uses MIX buses, EOC, CLOCK, PLAY or a mod onto MOD DEP does not load on 3.4.1. The full list:
+[release notes](docs/RELEASE_3.5.md).
 
 ---
 
