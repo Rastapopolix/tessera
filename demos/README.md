@@ -194,12 +194,25 @@ cp build/demos/*.tsp demos/
 A change of what the generators play, or of the project format, can change the records: make them again and check
 they still sound right (the WAVs) before committing.
 
-Five more pieces are kept in reserve, built but not shipped here (NIGHT FERRY, TIN ROOF, COLD ORBIT, STONE PIER, FAR
-SHORE): `build/host/demo_projects reserve make build/reserve 180` makes them.
+Eight more pieces are kept in reserve, built but not shipped here (NIGHT FERRY, TIN ROOF, COLD ORBIT, STONE PIER, FAR
+SHORE, and NIGHT LOOM, INK RIVER and SALT GLASS from the 3.5 video): `build/host/demo_projects reserve make build/reserve
+180` makes them (`DM_ONLY=night-loom,ink-river`: only those).
 
 ## The demo video
 
-**3.3** (the project page's): 3:55, 1080 x 1080, music only, with short captions, from the firmware's own sound and
+**3.5** (the project page's): 3:53, 1080 x 1080, music only, the same form as 3.3's, on three pieces made for it
+(NIGHT LOOM, INK RIVER, SALT GLASS): step DIRECTION, STRUM, the MIX buses on the MOD SCOPE, EOC as a clock, GROUND
+LIGHT and the LANDSCAPE in MOSAIC with the moon crossing. Each clip is levelled to -21.5 LUFS, and the picture fades
+with the sound at every card and cut. The intro's line under TESSERA is the tagline on two lines, with the version.
+
+```
+cc -O2 -w -DMELODEE_LOOK=1 -DMELODEE_SID=0 -DMELODEE_SID_KIT=0 -DMELODEE_PLAITS=0 -DMELODEE_ACCESS=1 -Ibuild/gen \
+   -Ifirmware/src -Itests -DMELODEE_PHYS=0 -DTRK_START_TESS=1 -o build/dp tests/demo_projects.c -lm
+build/dp tour35 build/t35                        # every clip's WAV and frames
+python3 tools/tour_video.py demo35 build/t35 INTRO build/tessera-3.5-demo.mp4
+```
+
+**3.3**: 3:55, 1080 x 1080, music only, with short captions, from the firmware's own sound and
 screens. `demo_projects tour` renders a clip for each moment (UNDERTOW, CEDAR RAIN, PAPER KITES, a little STONE PIER, a
 held ORACLE chord for the mods and PERF, the inks); `tools/tour_video.py demo` cuts them with the intro (the splash as
 the FM-1 draws it), chapter cards and captions. The same clips make the narrated tour's rough cut
@@ -229,7 +242,7 @@ python3 tools/demo_video.py build/video build/tessera-3.0-demo.mp4   # needs Pil
 The pages shown, the knob turns and the captions are the timelines in `tests/demo_projects.c` (V_STILL, V_GARDEN,
 V_HARBOUR, v_generators, v_features); `DM_DEBUG=1` prints the knobs each clip ends on.
 
-The project page plays the copy in `assets/video/` (`tessera-3.3-demo.mp4`, and `tessera-3.3-demo.jpg`, its title card
+The project page plays the copy in `assets/video/` (`tessera-3.5-demo.mp4`, and `tessera-3.5-demo.jpg`, its title card
 as the poster); `web/make_site.py` puts both in the site's `media/video/`. After making a new video, copy it there
 and make the poster again:
-`ffmpeg -ss 5 -i assets/video/tessera-3.3-demo.mp4 -frames:v 1 -vf scale=720:720 -q:v 3 assets/video/tessera-3.3-demo.jpg`.
+`ffmpeg -ss 5 -i assets/video/tessera-3.5-demo.mp4 -frames:v 1 -vf scale=720:720 -q:v 3 assets/video/tessera-3.5-demo.jpg`.
