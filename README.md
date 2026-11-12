@@ -8,6 +8,7 @@
 <b><a href="RECIPES.md">Recipes</a></b> ·
 <b><a href="FEATURES.md">Features</a></b> ·
 <b><a href="GLOSSARY.md">Glossary</a></b> ·
+<b><a href="GENERATIVE.md">Generative patching</a></b> ·
 <b><a href="https://github.com/Rastapopolix/tessera/releases/latest">Releases</a></b>
 </p>
 
@@ -90,7 +91,9 @@ later) works with Tessera 3.3 and later only: earlier Tessera reports an identit
 
 The **[manual](MANUAL.md)** covers every page, knob and shortcut; **[RECIPES.md](RECIPES.md)** has step-by-step
 patches and tips. **[FEATURES.md](FEATURES.md)** lists everything
-Tessera offers on one page, and **[GLOSSARY.md](GLOSSARY.md)** explains the terms, labels and synthesis words used here.
+Tessera offers on one page, **[GENERATIVE.md](GENERATIVE.md)** explains the ideas behind generative patching, from
+modular synths to norns, and where each generator comes from, and **[GLOSSARY.md](GLOSSARY.md)** explains the terms,
+labels and synthesis words used here.
 
 ---
 
