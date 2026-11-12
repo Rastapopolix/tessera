@@ -153,7 +153,8 @@ Instruō and DivKid.
 
 Thanks to the testers and everyone who reported a bug or asked for a feature: BobFromson, pavig-coder, bambalaya,
 alxantdroid, resocut, João Durães, tv-glotzer, il1893, fairplay, alexwlloyd, morgulbrut, @nrittamurti, Inputsignwave
-and Charles Vestal (FM-1 Screen Reader).
+Charles Vestal (FM-1 Screen Reader), and
+@bitmap303 on YouTube, whose comment gave Tessera its tagline, "a pocket rabbit hole".
 
 See
 [LICENSING.md](LICENSING.md) for every third-party part and its licence.
