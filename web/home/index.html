@@ -13,7 +13,7 @@
 <meta name="description" content="Tessera, a pocket rabbit hole: generative firmware for the M-Vave FM-1. Thirteen generators, song forms, harmony and modulation on four tracks.">
 <meta property="og:title" content="Tessera">
 <meta property="og:description" content="A pocket rabbit hole: generative firmware for the M-Vave FM-1.">
-<meta property="og:image" content="https://rastapopolix.github.io/tessera/media/brand/social-preview.png">
+<meta property="og:image" content="https://rastapopolix.github.io/tessera/media/brand/social-3.5.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="media/brand/logo.svg" type="image/svg+xml">
 <style>
@@ -122,6 +122,9 @@ section > .wrap > header p { color: var(--mid); max-width: 44em; margin-top: 12p
 .gen figcaption { padding: 10px 2px 0; }
 .gen figcaption b { display: block; color: var(--ink); font: 16px/1.2 var(--pixel); text-transform: uppercase; }
 .gen figcaption span { color: var(--mid); font-size: 14px; line-height: 1.45; display: block; margin-top: 4px; }
+/* new in 3.5: the new screens and the light ground, as the generators' grid */
+#new h3 { margin: 40px 0 8px; }
+#new h3 + p { color: var(--mid); margin: 0 0 20px; max-width: 44em; }
 
 /* inks: the same screen in each of the device's inks */
 .inks { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px var(--gap); }
@@ -158,6 +161,13 @@ a.card:hover { border-color: var(--ink); background: var(--raise); color: var(--
 code { font-family: inherit; font-size: .9em; background: var(--raise); padding: 1px 5px; overflow-wrap: anywhere; }
 .note { margin-top: 28px; padding: 16px 20px; border: 2px dashed var(--line); color: var(--mid); font-size: 15px; }
 .note b { color: var(--ink); }
+.more { margin: 24px 0 0; font-size: 15px; }
+details.more-ways { margin-top: 28px; border: 2px dashed var(--line); padding: 14px 20px; color: var(--mid); font-size: 15px; }
+details.more-ways summary { cursor: pointer; color: var(--ink); font: 16px/1.3 var(--pixel); text-transform: uppercase; }
+details.more-ways .dl, details.more-ways .note { margin-top: 16px; border: 0; padding: 0; }
+details.more-ways .dl b { display: block; color: var(--ink); font: 14px/1.3 var(--pixel); text-transform: uppercase; font-weight: 400; }
+details.more-ways .dl span { display: block; margin-top: 6px; }
+details.more-ways a { color: var(--ink); }
 .about { max-width: 46em; }
 .about p { margin: 0; }
 .about .note { margin-top: 20px; }
@@ -177,11 +187,11 @@ footer p { max-width: 56em; }
 .lang select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; font: 16px system-ui, sans-serif; }
 @media (max-width: 380px) { .lang, .theme { padding-left: 2px; padding-right: 2px; } nav .wrap { gap: 6px; } }
 @media (max-width: 360px) { .lang { font-size: 14px; } }
-/* the other languages' longer words: on a phone the bar keeps the logo without its name (the hero's below) */
-@media (max-width: 480px) { html:not([lang="en"]) nav .brand { font-size: 0; } }
+/* on a phone the bar keeps the logo without its name (the hero's below) */
+@media (max-width: 480px) { nav .brand { font-size: 0; } }
 @media (max-width: 340px) { nav .brand { font-size: 0; } }
 nav .links a, .lang, .theme { white-space: nowrap; }
-@media (max-width: 1240px) { html:not([lang="en"]) nav .links a.opt { display: none; } }
+nav .wrap.tight { gap: 12px; } nav .wrap.tight .links { gap: 6px; }   /* (script: before a link is left out) */
 </style>
 <script>/* the theme chosen with the LIGHT / DARK button, before the page draws */
 try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
@@ -231,15 +241,13 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
         <a data-h="hero_cta2" class="btn" href="webapp/sim/">Try it in your browser</a>
         <a data-h="hero_cta3" class="btn" href="webapp/editor/">Web editor</a>
         <a data-h="hero_cta4" class="btn" href="https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md">Manual</a>
-        <a data-h="hero_cta5" class="btn" href="https://github.com/Rastapopolix/tessera/blob/HEAD/FEATURES.md">Features</a>
-        <a data-h="hero_cta6" class="btn" href="https://github.com/Rastapopolix/tessera/blob/HEAD/GLOSSARY.md">Glossary</a>
       </div>
     </div>
     <div class="screens">
-      <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/gen_bounce.png" width="480" height="480" aria-label="BOUNCE: balls in a box, a note at every wall"><source src="media/gallery/loop_bounce.mp4" type="video/mp4"></video></div>
+      <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/brand/hero_scope.png" width="480" height="480" aria-label="MOD SCOPE: a cord drawn over its source as it moves"><source src="media/gallery/loop_scope.mp4" type="video/mp4"></video></div>
+      <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/brand/hero_land.png" width="480" height="480" aria-label="LANDSCAPE: rain on the water, clouds and the moon"><source src="media/gallery/loop_land.mp4" type="video/mp4"></video></div>
       <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/gen_constel.png" width="480" height="480" aria-label="CONSTELLATION: stars play as they cross the crosshair"><source src="media/gallery/loop_constel.mp4" type="video/mp4"></video></div>
       <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/gen_chord.png" width="480" height="480" aria-label="CHORD: a progression"><source src="media/gallery/loop_chord.mp4" type="video/mp4"></video></div>
-      <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/matrix.png" width="480" height="480" aria-label="MATRIX: the mods track by track"><source src="media/gallery/loop_matrix.mp4" type="video/mp4"></video></div>
     </div>
   </div>
 </div>
@@ -258,6 +266,29 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
         <source src="media/video/tessera-3.5-demo.mp4" type="video/mp4">
         <a data-h="demo_dl" href="media/video/tessera-3.5-demo.mp4">Download the demo video (MP4, 8 MB)</a>
       </video>
+    </div>
+  </div>
+</section>
+
+<section id="new">
+  <div class="wrap">
+    <header>
+      <div data-h="new_kicker" class="kicker">New in 3.5</div>
+      <h2 data-h="new_h2">Patch it, then watch it</h2>
+      <p data-h="new_p1">Modular-style patching on the FM-1: mix mods on two buses, clock a generator from an LFO, gate a whole track, brake the whole patch with MOD DEPTH, and see every cord move on MOD SCOPE. Projects that use these don't open on 3.4.1.</p>
+    </header>
+    <div class="gens">
+      <div class="gen"><figure><div class="screen"><img src="media/brand/new35_scope_sum.png" alt="MIXED: A + B" loading="lazy" width="480" height="480"></div><figcaption><b>MIXED: A + B</b><span data-h="new_cap0">Two LFOs mixed on BUS A, watched on MOD SCOPE.</span></figcaption></figure></div>
+      <div class="gen"><figure><div class="screen"><img src="media/brand/new35_mods_new.png" alt="MODS" loading="lazy" width="480" height="480"></div><figcaption><b>MODS</b><span data-h="new_cap1">New cords: EOC as a clock, a GATE scaling a mod, a bus onto PLAY.</span></figcaption></figure></div>
+      <div class="gen"><figure><div class="screen"><img src="media/brand/new35_mods_bus.png" alt="MIX BUSES" loading="lazy" width="480" height="480"></div><figcaption><b>MIX BUSES</b><span data-h="new_cap2">Each bus mixes by SUM, MAX, MIN or DIFF, with a lag.</span></figcaption></figure></div>
+      <div class="gen"><figure><div class="screen"><img src="media/brand/new35_pattern_dir.png" alt="DIRECTION" loading="lazy" width="480" height="480"></div><figcaption><b>DIRECTION</b><span data-h="new_cap3">Step patterns play FWD, BACK, PEND, FOLD, RAND or DRUNK.</span></figcaption></figure></div>
+      <div class="gen"><figure><div class="screen"><img src="media/brand/new35_chord_strum.png" alt="STRUM" loading="lazy" width="480" height="480"></div><figcaption><b>STRUM</b><span data-h="new_cap4">Chords played the way a hand plays them.</span></figcaption></figure></div>
+    </div>
+    <h3 data-h="new_light_h3">GROUND LIGHT</h3>
+    <p data-h="new_light_p">The whole screen on warm paper: MENU &gt; GROUND &gt; LIGHT. Every ink is darkened to read well, and the landscape turns to day.</p>
+    <div class="gens">
+      <div class="gen"><figure><div class="screen"><img src="media/brand/light35_chord.png" alt="CHORD" loading="lazy" width="480" height="480"></div><figcaption><b>CHORD</b></figcaption></figure></div>
+      <div class="gen"><figure><div class="screen"><img src="media/gallery/paper_land.png" alt="LANDSCAPE" loading="lazy" width="480" height="480"></div><figcaption><b>LANDSCAPE</b></figcaption></figure></div>
     </div>
   </div>
 </section>
@@ -298,7 +329,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <div class="tile" style="--c:var(--p2)"><h3 data-h="inside_tileh32">Evolve and form</h3><p data-h="inside_tilep2">Mutate a phrase every few bars, or build sections A, B and C into forms such as AABA. STEP EVOLVE varies the steps you wrote.</p></div>
       <div class="tile" style="--c:var(--p3)"><h3 data-h="inside_tileh33">Tracks that talk</h3><p data-h="inside_tilep3">Branch hits to another track's sound, combine tracks with AND, OR and XOR, follow another track's pitch, play only on certain bars.</p></div>
       <div class="tile" style="--c:var(--p4)"><h3 data-h="inside_tileh34">Harmony</h3><p data-h="inside_tilep4">One key for every track with Key link. A Chord track plays a progression, or your own played in on the keys, and QNT CHRD makes every other track follow it.</p></div>
-      <div class="tile" style="--c:var(--p1)"><h3 data-h="inside_tileh35">Sixteen cords</h3><p data-h="inside_tilep5">Any source to any destination on any track, generators included. Slow organic sources, live marks on the knobs, and a MATRIX to see the patch.</p></div>
+      <div class="tile" style="--c:var(--p1)"><h3 data-h="inside_tileh35">Sixteen cords</h3><p data-h="inside_tilep5">Any source to any destination on any track, generators included. New in 3.5: MIX buses, EOC, CLOCK and PLAY for modular-style patching, MOD DEPTH as one brake for the whole patch, and MOD SCOPE to watch a cord move.</p></div>
       <div class="tile" style="--c:var(--p2)"><h3 data-h="inside_tileh36">Record and print</h3><p data-h="inside_tilep6">Play a pattern in layer by layer, and REC keeps overdubbing until you stop. Hold REC and what a generator just played becomes ordinary steps, ready to edit.</p></div>
       <div class="tile" style="--c:var(--p3)"><h3 data-h="inside_tileh37">Sounds</h3><p data-h="inside_tilep7">Six-operator FM with three engine models, ORACLE (two oscillators, POLY MOD and a four-pole filter), the three-oscillator TRIO, PHYS physical models (bells, mallets, strings, drum heads), and 808 and 909 drum kits.</p></div>
       <div class="tile" style="--c:var(--p4)"><h3 data-h="inside_tileh38">MIDI in and out</h3><p data-h="inside_tilep8">Every track and generator on a channel of its own, and the clock. External gear sets Tessera’s parameters by MIDI CC. As a USB host, the FM-1 can play a USB-MIDI synth or MIDI-to-CV module directly. The FM-1 doesn’t power its USB port, so you’ll need a powered USB-C hub that also feeds 5V back to it.</p></div>
@@ -318,22 +349,12 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
     </header>
     <div class="gens">
       <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_turing.png" alt="TURING" loading="lazy" width="480" height="480"></div><figcaption><b>TURING</b><span data-h="generators_cap1">A looping shift register that locks or drifts.</span></figcaption></figure></div>
-      <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_euclid.png" alt="EUCLID" loading="lazy" width="480" height="480"></div><figcaption><b>EUCLID</b><span data-h="generators_cap2">Hits spread as evenly as they go.</span></figcaption></figure></div>
-      <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_markov.png" alt="MARKOV" loading="lazy" width="480" height="480"></div><figcaption><b>MARKOV</b><span data-h="generators_cap3">A random walk over eight scale degrees.</span></figcaption></figure></div>
-      <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_morph.png" alt="MORPH" loading="lazy" width="480" height="480"></div><figcaption><b>MORPH</b><span data-h="generators_cap4">A rhythm blended between two patterns.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_grids.png" alt="ATLAS" loading="lazy" width="480" height="480"></div><figcaption><b>ATLAS</b><span data-h="generators_cap5">Inspired by Émilie Gillet's Grids (Mutable Instruments), with a fourth part for fills.</span></figcaption></figure></div>
-      <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_bounce.png" alt="BOUNCE" loading="lazy" width="480" height="480"></div><figcaption><b>BOUNCE</b><span data-h="generators_cap6">Balls in a box: a note at every wall.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_fall.png" alt="FALL" loading="lazy" width="480" height="480"></div><figcaption><b>FALL</b><span data-h="generators_cap7">Leaves in the wind, playing where they land. After the norns script Fall.</span></figcaption></figure></div>
-      <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_awake.png" alt="AWAKE" loading="lazy" width="480" height="480"></div><figcaption><b>AWAKE</b><span data-h="generators_cap8">Two loops of their own lengths, after the norns script Awake.</span></figcaption></figure></div>
-      <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_poly.png" alt="POLY" loading="lazy" width="480" height="480"></div><figcaption><b>POLY</b><span data-h="generators_cap9">Four notes stepped on by four rhythms.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_quad.png" alt="QUAD" loading="lazy" width="480" height="480"></div><figcaption><b>QUAD</b><span data-h="generators_cap10">A grid the tracks share, notes travelling between them. Inspired by the norns script initenere.</span></figcaption></figure></div>
       <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_constel.png" alt="CONSTELLATION" loading="lazy" width="480" height="480"></div><figcaption><b>CONSTELLATION</b><span data-h="generators_cap11">Stars play as they cross the ship's crosshair. After the norns script Constellation.</span></figcaption></figure></div>
-      <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_series.png" alt="SERIES" loading="lazy" width="480" height="480"></div><figcaption><b>SERIES</b><span data-h="generators_cap12">Per Nørgård's infinity series.</span></figcaption></figure></div>
-      <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_chord.png" alt="CHORD" loading="lazy" width="480" height="480"></div><figcaption><b>CHORD</b><span data-h="generators_cap13">Progressions the other tracks can follow.</span></figcaption></figure></div>
-      <div class="gen"><figure><div class="screen"><img src="media/gallery/gen_answer.png" alt="ANSWER" loading="lazy" width="480" height="480"></div><figcaption><b>ANSWER</b><span data-h="generators_cap14">Plays your phrase back in fading variations and echoes.</span></figcaption></figure></div>
-      <div class="gen"><figure><div class="screen"><img src="media/gallery/step_evolve.png" alt="STEP EVOLVE" loading="lazy" width="480" height="480"></div><figcaption><b>STEP EVOLVE</b><span data-h="generators_cap15">Your own steps, varied as they play.</span></figcaption></figure></div>
-      <div class="gen"><figure><div class="screen"><img src="media/gallery/cords.png" alt="MODS" loading="lazy" width="480" height="480"></div><figcaption><b>MODS</b><span data-h="generators_cap16">Sixteen cords, any source to any destination.</span></figcaption></figure></div>
     </div>
+    <p data-h="generators_more" class="more"><a href="https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md#the-generators">All thirteen generators, knob by knob, are in the manual.</a></p>
   </div>
 </section>
 
@@ -349,18 +370,11 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
     </header>
     <div class="inks">
       <figure><div class="screen"><img src="media/gallery/ink_yellow.png" alt="HOME in Yellow" loading="lazy" width="480" height="480"></div><figcaption>Yellow<span data-h="inks_cap1">the default</span></figcaption></figure>
-      <figure><div class="screen"><img src="media/gallery/ink_white.png" alt="HOME in White" loading="lazy" width="480" height="480"></div><figcaption>White</figcaption></figure>
-      <figure><div class="screen"><img src="media/gallery/ink_green.png" alt="HOME in Green" loading="lazy" width="480" height="480"></div><figcaption>Green</figcaption></figure>
-      <figure><div class="screen"><img src="media/gallery/ink_blue.png" alt="HOME in Blue" loading="lazy" width="480" height="480"></div><figcaption>Blue</figcaption></figure>
-      <figure><div class="screen"><img src="media/gallery/ink_red.png" alt="HOME in Red" loading="lazy" width="480" height="480"></div><figcaption>Red</figcaption></figure>
-      <figure><div class="screen"><img src="media/gallery/ink_orange.png" alt="HOME in Orange" loading="lazy" width="480" height="480"></div><figcaption>Orange</figcaption></figure>
-      <figure><div class="screen"><img src="media/gallery/ink_pink.png" alt="HOME in Pink" loading="lazy" width="480" height="480"></div><figcaption>Pink</figcaption></figure>
       <figure><div class="screen"><img src="media/gallery/ink_hot_pink.png" alt="HOME in Hot pink" loading="lazy" width="480" height="480"></div><figcaption>Hot pink</figcaption></figure>
-      <figure><div class="screen"><img src="media/gallery/ink_lilac.png" alt="HOME in Lilac" loading="lazy" width="480" height="480"></div><figcaption>Lilac</figcaption></figure>
-      <figure><div class="screen"><img src="media/gallery/ink_mosaic.png" alt="HOME in Mosaic" loading="lazy" width="480" height="480"></div><figcaption>Mosaic</figcaption></figure>
-      <figure><div class="screen"><img src="media/gallery/ink_sunset.png" alt="HOME in Sunset" loading="lazy" width="480" height="480"></div><figcaption>Sunset</figcaption></figure>
-      <figure><div class="screen"><img src="media/gallery/ink_ocean.png" alt="HOME in Ocean" loading="lazy" width="480" height="480"></div><figcaption>Ocean</figcaption></figure>
-      <figure><div class="screen"><img src="media/gallery/ink_neon.png" alt="HOME in Neon" loading="lazy" width="480" height="480"></div><figcaption>Neon</figcaption></figure>
+      <figure><div class="screen"><img src="media/brand/inkland_mosaic.png" alt="LANDSCAPE in Mosaic" loading="lazy" width="480" height="480"></div><figcaption>Mosaic</figcaption></figure>
+      <figure><div class="screen"><img src="media/brand/inkland_sunset.png" alt="LANDSCAPE in Sunset" loading="lazy" width="480" height="480"></div><figcaption>Sunset</figcaption></figure>
+      <figure><div class="screen"><img src="media/brand/inkland_ocean.png" alt="LANDSCAPE in Ocean" loading="lazy" width="480" height="480"></div><figcaption>Ocean</figcaption></figure>
+      <figure><div class="screen"><img src="media/brand/inkland_neon.png" alt="LANDSCAPE in Neon" loading="lazy" width="480" height="480"></div><figcaption>Neon</figcaption></figure>
     </div>
   </div>
 </section>
@@ -374,6 +388,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
         <a href="https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md">RECIPES.md</a>.</p>
     </header>
     <ul class="recipes">
+      <li><a data-h="recipes_r0" href="https://github.com/Rastapopolix/tessera/blob/HEAD/GENERATIVE.md#new-to-patching">New to patching? Start here<small>Sources, cords, gates and clocks in plain words</small></a></li>
       <li><a data-h="recipes_r1" href="https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md#a-first-generative-patch-in-a-minute">A first generative patch in a minute<small>Turing on the bells, Atlas on the 808</small></a></li>
       <li><a data-h="recipes_r2" href="https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md#a-drone-that-breathes">A drone that breathes<small>Chord DRONE, TIDE on the filter</small></a></li>
       <li><a data-h="recipes_r3" href="https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md#chords-that-lead-melodies-that-follow-qnt-chrd">Chords that lead, melodies that follow<small>QNT CHRD</small></a></li>
@@ -402,21 +417,24 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
     <div class="cards">
       <a class="card" style="--c:var(--p1)" href="webapp/installer/"><b data-h="install_cardb1">Install @VERSION@</b><span data-h="install_cards1">The web installer, in Chrome or Edge.</span></a>
       <a class="card" style="--c:var(--p2)" href="webapp/sim/"><b data-h="install_cardb2">Try it in your browser</b><span data-h="install_cards2">The same firmware on an on-screen FM-1, with sound.</span></a>
-      <div class="card" style="--c:var(--p3)"><b data-h="install_cardb3">Download .fwsc</b><span data-h="install_cards3"><a href="firmware/@FWSC@">Standard</a> ·
+      <a class="card" style="--c:var(--p3)" href="https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md"><b data-h="install_cardb4">Manual</b><span data-h="install_cards4">Every page, knob and mode.</span></a>
+      <a class="card" style="--c:var(--p4)" href="webapp/editor/"><b data-h="install_cardb6">Web editor</b><span data-h="install_cards6">Edit sounds and sequences from the computer.</span></a>
+      <a class="card" style="--c:var(--p1)" href="https://github.com/Rastapopolix/tessera/blob/HEAD/docs/cheatsheet/tessera-cheatsheet.pdf"><b data-h="install_cardb5">Cheatsheet</b><span data-h="install_cards5">The buttons and combinations on one printable page.</span></a>
+      <a class="card" style="--c:var(--p2)" href="https://github.com/Rastapopolix/tessera"><b data-h="install_cardb7">Source</b><span data-h="install_cards7">GPL-3.0, on GitHub, with the changes in every release.</span></a>
+    </div>
+    <details class="more-ways">
+      <summary data-h="install_more">Other ways to install, and the way back</summary>
+      <div class="dl"><b data-h="install_cardb3">Download .fwsc</b><span data-h="install_cards3"><a href="firmware/@FWSC@">Standard</a> ·
         <a href="firmware/@FWSC1@">single core</a> ·
         <a href="https://github.com/Rastapopolix/tessera/releases">all releases</a>. From a terminal:
         <code>python3 tools/fm1_install.py @FWSC@</code> (<a href="https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py">fm1_install.py</a>, needs mido and python-rtmidi).</span></div>
-      <a class="card" style="--c:var(--p4)" href="https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md"><b data-h="install_cardb4">Manual</b><span data-h="install_cards4">Every page, knob and mode.</span></a>
-      <a class="card" style="--c:var(--p1)" href="https://github.com/Rastapopolix/tessera/blob/HEAD/docs/cheatsheet/tessera-cheatsheet.pdf"><b data-h="install_cardb5">Cheatsheet</b><span data-h="install_cards5">The buttons and combinations on one printable page.</span></a>
-      <a class="card" style="--c:var(--p2)" href="webapp/editor/"><b data-h="install_cardb6">Web editor</b><span data-h="install_cards6">Edit sounds and sequences from the computer.</span></a>
-      <a class="card" style="--c:var(--p3)" href="https://github.com/Rastapopolix/tessera"><b data-h="install_cardb7">Source</b><span data-h="install_cards7">GPL-3.0, on GitHub, with the changes in every release.</span></a>
-    </div>
-    <div data-h="install_note1" class="note"><b>Back to the stock firmware.</b> Open the installer and choose <i>Return to official V15</i>, or
-      install M-Vave's own <code>FM-1.fwsc</code> with <code>fm1_install.py</code>. If an update is cut off, see the
-      <a href="https://github.com/Rastapopolix/tessera/blob/HEAD/docs/RECOVERY.md">recovery guide</a>.</div>
-    <div data-h="install_note2" class="note"><b>Prefer the classic look?</b> <a href="classic/">Tessera 2.1.1</a>, the last version with the
-      old screens, keeps its own installer. It is no longer developed (no fixes or new features), and projects saved in
-      3.0 lose their newer settings there. You can come back to the current version at any time.</div>
+      <div data-h="install_note1" class="note"><b>Back to the stock firmware.</b> Open the installer and choose <i>Return to official V15</i>, or
+        install M-Vave's own <code>FM-1.fwsc</code> with <code>fm1_install.py</code>. If an update is cut off, see the
+        <a href="https://github.com/Rastapopolix/tessera/blob/HEAD/docs/RECOVERY.md">recovery guide</a>.</div>
+      <div data-h="install_note2" class="note"><b>Prefer the classic look?</b> <a href="classic/">Tessera 2.1.1</a>, the last version with the
+        old screens, keeps its own installer. It is no longer developed (no fixes or new features), and projects saved in
+        3.0 lose their newer settings there. You can come back to the current version at any time.</div>
+    </details>
   </div>
 </section>
 <section id="about">
@@ -444,7 +462,8 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       by Triple Sloth (Nonlinear Circuits, Andrew Fitch) and ochd (Instruō, DivKid). GPL-3.0-only:
       <a href="https://github.com/Rastapopolix/tessera">source on GitHub</a>,
       <a href="firmware/LICENSES/">licence texts</a>. Tessera is an independent project, not affiliated with or
-      endorsed by M-Vave; M-Vave and FM-1 are trademarks of their respective owners.</p>
+      endorsed by M-Vave; M-Vave and FM-1 are trademarks of their respective owners. Tessera for FM-1 is not related to
+      the Tessera plugins for VCV Rack.</p>
   </div>
 </footer>
 
@@ -465,8 +484,16 @@ window.HOME_TEXT = {
     hero_cta2: "Pruébalo en el navegador",
     hero_cta3: "Editor web",
     hero_cta4: "Manual (inglés)",
-    hero_cta5: "Funciones (inglés)",
-    hero_cta6: "Glosario (inglés)",
+    new_kicker: "Nuevo en 3.5",
+    new_h2: "Parchéalo y míralo",
+    new_p1: "Patcheo al estilo modular en el FM-1: mezcla mods en dos buses, sincroniza un generador con un LFO, abre y cierra una pista entera, frena todo el patch con MOD DEPTH y mira moverse cada cable en MOD SCOPE. Los proyectos que usan estas funciones no se abren en 3.4.1.",
+    new_cap0: "Dos LFO mezclados en BUS A, vistos en MOD SCOPE.",
+    new_cap1: "Cables nuevos: EOC como reloj, un GATE que escala un mod, un bus hacia PLAY.",
+    new_cap2: "Cada bus mezcla por SUM, MAX, MIN o DIFF, con lag.",
+    new_cap3: "Los patrones de pasos tocan FWD, BACK, PEND, FOLD, RAND o DRUNK.",
+    new_cap4: "Acordes tocados como los toca una mano.",
+    new_light_h3: "GROUND LIGHT",
+    new_light_p: "Toda la pantalla sobre papel cálido: MENU &gt; GROUND &gt; LIGHT. Cada tinta se oscurece para leerse bien, y el paisaje se vuelve de día.",
     demo_kicker: "Escúchalo",
     demo_h2: "Cuatro minutos de Tessera 3.5",
     demo_p1: "Patrones de pasos que corren hacia atrás y se pliegan, acordes rasgueados, mods mezclados en los buses MIX y vistos en el osciloscopio de mods, el fondo claro y el paisaje, en tres piezas hechas para la 3.5. Cada sonido y cada pantalla son del propio firmware.",
@@ -494,7 +521,7 @@ window.HOME_TEXT = {
     inside_tileh34: "Armonía",
     inside_tilep4: "Una tonalidad para todas las pistas con Key link. Una pista Chord toca una progresión, o la tuya tocada en las teclas, y QNT CHRD hace que todas las demás pistas la sigan.",
     inside_tileh35: "Dieciséis cables",
-    inside_tilep5: "Cualquier fuente a cualquier destino en cualquier pista, generadores incluidos. Fuentes lentas y orgánicas, marcas en vivo sobre los knobs y una MATRIX para ver el patch.",
+    inside_tilep5: "Cualquier fuente a cualquier destino en cualquier pista, generadores incluidos. Nuevo en 3.5: buses MIX, EOC, CLOCK y PLAY para patchear al estilo modular, MOD DEPTH como un único freno para todo el patch, y MOD SCOPE para ver moverse un cable.",
     inside_tileh36: "Grabar e imprimir",
     inside_tilep6: "Toca un patrón capa a capa, y REC sigue sobregrabando hasta que paras. Mantén REC y lo que un generador acaba de tocar se convierte en pasos normales, listos para editar.",
     inside_tileh37: "Sonidos",
@@ -505,22 +532,12 @@ window.HOME_TEXT = {
     generators_kicker: "Los generadores",
     generators_h2: "Elige un MODE, gira tres knobs",
     generators_p1: "Cada generador toca en la escala de la pista y toma sus elecciones al azar de la semilla de la pista, así que una línea que te gusta siempre está a un número de distancia. Las pantallas las dibuja el propio código del firmware.",
+    generators_more: "<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md#the-generators\">Los trece generadores, perilla por perilla, están en el manual (en inglés).</a>",
     generators_cap1: "Un registro de desplazamiento en bucle que se fija o deriva.",
-    generators_cap2: "Golpes repartidos de la forma más uniforme posible.",
-    generators_cap3: "Un paseo aleatorio sobre ocho grados de la escala.",
-    generators_cap4: "Un ritmo mezclado entre dos patrones.",
     generators_cap5: "Inspirado en Grids de Émilie Gillet (Mutable Instruments), con una cuarta parte para los fills.",
-    generators_cap6: "Pelotas en una caja: una nota en cada pared.",
     generators_cap7: "Hojas al viento que suenan donde caen. Basado en el script de norns Fall.",
-    generators_cap8: "Dos bucles de longitudes propias, basado en el script de norns Awake.",
-    generators_cap9: "Cuatro notas pisadas por cuatro ritmos.",
     generators_cap10: "Una cuadrícula que comparten las pistas, con notas que viajan entre ellas. Inspirado en el script de norns initenere.",
     generators_cap11: "Las estrellas suenan al cruzar la mira de la nave. Basado en el script de norns Constellation.",
-    generators_cap12: "La serie infinita de Per Nørgård.",
-    generators_cap13: "Progresiones que las otras pistas pueden seguir.",
-    generators_cap14: "Devuelve tu frase en variaciones y ecos que se desvanecen.",
-    generators_cap15: "Tus propios pasos, variados mientras suenan.",
-    generators_cap16: "Dieciséis cables, cualquier fuente a cualquier destino.",
     inks_kicker: "Tintas",
     inks_h2: "Tu pantalla, tu color",
     inks_p1: "Una tipografía de píxeles, una tinta sobre negro. Elige una de nueve tintas en MENU &gt; COLOR según la carcasa de tu FM-1 o tu ánimo, o MOSAIC, SUNSET, OCEAN o NEON, que dan a cada una de las cuatro pistas su propio color para distinguirlas de un vistazo, hasta en las listas de mods. El knob que giras puede mostrarse en grande al pie de la pantalla: MENU &gt; LARGE VALUE lo oculta en las páginas que tienen su propia imagen (AUTO), o lo muestra en todas partes, o en ninguna.",
@@ -528,6 +545,7 @@ window.HOME_TEXT = {
     recipes_kicker: "Recetas",
     recipes_h2: "Por dónde empezar",
     recipes_p1: "Patches paso a paso que solo usan lo que hay en el aparato. Todas, y los consejos, están en <a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md\">RECIPES.md</a> (en inglés).",
+    recipes_r0: "¿Nuevo en el patching? Empieza aquí<small>Fuentes, cables, gates y relojes en palabras sencillas</small>",
     recipes_r1: "Un primer patch generativo en un minuto<small>Turing en las campanas, Atlas en la 808</small>",
     recipes_r2: "Un drone que respira<small>Chord DRONE, TIDE en el filtro</small>",
     recipes_r3: "Acordes que guían, melodías que siguen<small>QNT CHRD</small>",
@@ -560,6 +578,7 @@ window.HOME_TEXT = {
     install_cards6: "Edita sonidos y secuencias desde el ordenador.",
     install_cardb7: "Código fuente",
     install_cards7: "GPL-3.0, en GitHub, con los cambios de cada release.",
+    install_more: "Otras formas de instalar, y la vuelta atrás",
     install_note1: "<b>Volver al firmware original.</b> Abre el instalador y elige <i>Return to official V15</i>, o instala el <code>FM-1.fwsc</code> de M-Vave con <code>fm1_install.py</code>. Si una actualización se interrumpe, consulta la <a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/docs/RECOVERY.md\">guía de recuperación</a>.",
     install_note2: "<b>¿Prefieres el aspecto clásico?</b> <a href=\"classic/\">Tessera 2.1.1</a>, la última versión con las pantallas antiguas, tiene su propio instalador. Ya no se desarrolla (sin correcciones ni funciones nuevas), y los proyectos guardados en la 3.0 pierden allí sus ajustes más nuevos. Puedes volver a la versión actual en cualquier momento.",
     about_kicker: "Acerca de",
@@ -582,8 +601,16 @@ window.HOME_TEXT = {
     hero_cta2: "Provalo nel browser",
     hero_cta3: "Editor web",
     hero_cta4: "Manuale (inglese)",
-    hero_cta5: "Funzioni (inglese)",
-    hero_cta6: "Glossario (inglese)",
+    new_kicker: "Novità della 3.5",
+    new_h2: "Collegalo, poi guardalo",
+    new_p1: "Patch in stile modulare sull'FM-1: mescola le mod su due bus, fai avanzare un generatore al ritmo di un LFO, apri e chiudi un'intera traccia, frena tutta la patch con MOD DEPTH e guarda ogni cavo muoversi in MOD SCOPE. I progetti che le usano non si aprono sulla 3.4.1.",
+    new_cap0: "Due LFO mescolati su BUS A, visti in MOD SCOPE.",
+    new_cap1: "Nuovi cavi: EOC come clock, un GATE che scala una mod, un bus verso PLAY.",
+    new_cap2: "Ogni bus mescola con SUM, MAX, MIN o DIFF, con un lag.",
+    new_cap3: "I pattern a passi suonano FWD, BACK, PEND, FOLD, RAND o DRUNK.",
+    new_cap4: "Accordi suonati come li suona una mano.",
+    new_light_h3: "GROUND LIGHT",
+    new_light_p: "Tutto lo schermo su carta calda: MENU &gt; GROUND &gt; LIGHT. Ogni inchiostro è scurito per leggersi bene, e il paesaggio diventa giorno.",
     demo_kicker: "Ascoltalo",
     demo_h2: "Quattro minuti di Tessera 3.5",
     demo_p1: "Pattern di passi che scorrono all'indietro e si ripiegano, accordi arpeggiati, mod mixate sui bus MIX e osservate sull'oscilloscopio delle mod, lo sfondo chiaro e il paesaggio, in tre brani fatti per la 3.5. Ogni suono e ogni schermata sono del firmware stesso.",
@@ -611,7 +638,7 @@ window.HOME_TEXT = {
     inside_tileh34: "Armonia",
     inside_tilep4: "Una tonalità per tutte le tracce con Key link. Una traccia Chord suona una progressione, o la tua suonata sui tasti, e QNT CHRD fa sì che tutte le altre tracce la seguano.",
     inside_tileh35: "Sedici cavi",
-    inside_tilep5: "Qualsiasi sorgente verso qualsiasi destinazione su qualsiasi traccia, generatori compresi. Sorgenti lente e organiche, segni dal vivo sulle manopole e una MATRIX per vedere la patch.",
+    inside_tilep5: "Qualsiasi sorgente verso qualsiasi destinazione su qualsiasi traccia, generatori compresi. Novità della 3.5: bus MIX, EOC, CLOCK e PLAY per patch in stile modulare, MOD DEPTH come unico freno per tutta la patch, e MOD SCOPE per vedere muoversi un cavo.",
     inside_tileh36: "Registra e stampa",
     inside_tilep6: "Suona un pattern strato per strato, e REC continua a sovraincidere finché non ti fermi. Tieni premuto REC e ciò che un generatore ha appena suonato diventa passi normali, pronti da modificare.",
     inside_tileh37: "Suoni",
@@ -622,22 +649,12 @@ window.HOME_TEXT = {
     generators_kicker: "I generatori",
     generators_h2: "Scegli un MODE, gira tre manopole",
     generators_p1: "Ogni generatore suona nella scala della traccia e prende le sue scelte casuali dal seme della traccia, così una linea che ti piace è sempre a un numero di distanza. Le schermate sono disegnate dal codice del firmware stesso.",
+    generators_more: "<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md#the-generators\">Tutti i tredici generatori, manopola per manopola, sono nel manuale (in inglese).</a>",
     generators_cap1: "Uno shift register in loop che si blocca o va alla deriva.",
-    generators_cap2: "Colpi distribuiti nel modo più uniforme possibile.",
-    generators_cap3: "Una passeggiata casuale su otto gradi della scala.",
-    generators_cap4: "Un ritmo sfumato tra due pattern.",
     generators_cap5: "Ispirato a Grids di Émilie Gillet (Mutable Instruments), con una quarta parte per i fill.",
-    generators_cap6: "Palline in una scatola: una nota a ogni parete.",
     generators_cap7: "Foglie nel vento che suonano dove cadono. Dallo script norns Fall.",
-    generators_cap8: "Due loop di lunghezze proprie, dallo script norns Awake.",
-    generators_cap9: "Quattro note calpestate da quattro ritmi.",
     generators_cap10: "Una griglia condivisa dalle tracce, con note che viaggiano tra di esse. Ispirato allo script norns initenere.",
     generators_cap11: "Le stelle suonano quando attraversano il mirino della nave. Dallo script norns Constellation.",
-    generators_cap12: "La serie infinita di Per Nørgård.",
-    generators_cap13: "Progressioni che le altre tracce possono seguire.",
-    generators_cap14: "Restituisce la tua frase in variazioni ed echi che svaniscono.",
-    generators_cap15: "I tuoi passi, variati mentre suonano.",
-    generators_cap16: "Sedici cavi, qualsiasi sorgente verso qualsiasi destinazione.",
     inks_kicker: "Inchiostri",
     inks_h2: "Il tuo schermo, il tuo colore",
     inks_p1: "Un carattere a pixel, un inchiostro sul nero. Scegli uno dei nove inchiostri in MENU &gt; COLOR per abbinarlo alla scocca del tuo FM-1 o al tuo umore, oppure MOSAIC, SUNSET, OCEAN o NEON, che danno a ciascuna delle quattro tracce il suo colore per distinguerle a colpo d'occhio, fino alle liste delle mod. La manopola che giri può comparire in grande in fondo allo schermo: MENU &gt; LARGE VALUE la nasconde nelle pagine che hanno un'immagine propria (AUTO), oppure la mostra ovunque, o da nessuna parte.",
@@ -645,6 +662,7 @@ window.HOME_TEXT = {
     recipes_kicker: "Ricette",
     recipes_h2: "Da dove cominciare",
     recipes_p1: "Patch passo per passo che usano solo ciò che c'è sullo strumento. Tutte, insieme ai consigli, sono in <a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md\">RECIPES.md</a> (in inglese).",
+    recipes_r0: "Nuovo al patching? Inizia qui<small>Sorgenti, cavi, gate e clock in parole semplici</small>",
     recipes_r1: "Una prima patch generativa in un minuto<small>Turing sulle campane, Atlas sulla 808</small>",
     recipes_r2: "Un drone che respira<small>Chord DRONE, TIDE sul filtro</small>",
     recipes_r3: "Accordi che guidano, melodie che seguono<small>QNT CHRD</small>",
@@ -677,6 +695,7 @@ window.HOME_TEXT = {
     install_cards6: "Modifica suoni e sequenze dal computer.",
     install_cardb7: "Sorgente",
     install_cards7: "GPL-3.0, su GitHub, con le modifiche di ogni release.",
+    install_more: "Altri modi di installare, e come tornare indietro",
     install_note1: "<b>Tornare al firmware originale.</b> Apri l'installer e scegli <i>Return to official V15</i>, oppure installa il <code>FM-1.fwsc</code> di M-Vave con <code>fm1_install.py</code>. Se un aggiornamento si interrompe, consulta la <a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/docs/RECOVERY.md\">guida al ripristino</a>.",
     install_note2: "<b>Preferisci l'aspetto classico?</b> <a href=\"classic/\">Tessera 2.1.1</a>, l'ultima versione con le vecchie schermate, ha il suo installer. Non è più sviluppata (niente correzioni né nuove funzioni), e i progetti salvati nella 3.0 lì perdono le impostazioni più recenti. Puoi tornare alla versione attuale in qualsiasi momento.",
     about_kicker: "Chi sono",
@@ -699,8 +718,16 @@ window.HOME_TEXT = {
     hero_cta2: "Im Browser ausprobieren",
     hero_cta3: "Web-Editor",
     hero_cta4: "Handbuch (englisch)",
-    hero_cta5: "Funktionen (englisch)",
-    hero_cta6: "Glossar (englisch)",
+    new_kicker: "Neu in 3.5",
+    new_h2: "Patchen, dann zusehen",
+    new_p1: "Patchen wie im Modularsystem, auf dem FM-1: Mods auf zwei Bussen mischen, einen Generator von einem LFO takten lassen, eine ganze Spur öffnen und schließen, den ganzen Patch mit MOD DEPTH bremsen und jedes Kabel in MOD SCOPE in Bewegung sehen. Projekte, die das nutzen, öffnen sich nicht auf 3.4.1.",
+    new_cap0: "Zwei LFOs auf BUS A gemischt, in MOD SCOPE zu sehen.",
+    new_cap1: "Neue Kabel: EOC als Takt, ein GATE, das einen Mod skaliert, ein Bus auf PLAY.",
+    new_cap2: "Jeder Bus mischt mit SUM, MAX, MIN oder DIFF, mit Lag.",
+    new_cap3: "Step-Patterns spielen FWD, BACK, PEND, FOLD, RAND oder DRUNK.",
+    new_cap4: "Akkorde, gespielt wie von Hand.",
+    new_light_h3: "GROUND LIGHT",
+    new_light_p: "Der ganze Bildschirm auf warmem Papier: MENU &gt; GROUND &gt; LIGHT. Jede Farbe wird abgedunkelt, damit sie gut lesbar ist, und die Landschaft wird zum Tag.",
     demo_kicker: "Hör rein",
     demo_h2: "Vier Minuten Tessera 3.5",
     demo_p1: "Step-Patterns, die rückwärts laufen und sich falten, geschlagene Akkorde, Mods, auf den MIX-Bussen gemischt und auf dem Mod-Scope beobachtet, der helle Grund und die Landschaft, in drei Stücken für 3.5. Jeder Klang und jeder Bildschirm darin stammt von der Firmware selbst.",
@@ -728,7 +755,7 @@ window.HOME_TEXT = {
     inside_tileh34: "Harmonie",
     inside_tilep4: "Eine Tonart für alle Spuren mit Key link. Eine Chord-Spur spielt eine Akkordfolge, oder deine eigene, auf den Tasten eingespielt, und QNT CHRD lässt jede andere Spur ihr folgen.",
     inside_tileh35: "Sechzehn Kabel",
-    inside_tilep5: "Jede Quelle zu jedem Ziel auf jeder Spur, Generatoren eingeschlossen. Langsame, organische Quellen, Live-Marken an den Reglern und eine MATRIX, um den Patch zu sehen.",
+    inside_tilep5: "Jede Quelle zu jedem Ziel auf jeder Spur, Generatoren eingeschlossen. Neu in 3.5: MIX-Busse, EOC, CLOCK und PLAY zum Patchen wie im Modularsystem, MOD DEPTH als eine Bremse für den ganzen Patch und MOD SCOPE, um ein Kabel in Bewegung zu sehen.",
     inside_tileh36: "Aufnehmen und drucken",
     inside_tilep6: "Spiel ein Pattern Schicht für Schicht ein, und REC nimmt weiter auf, bis du stoppst. Halte REC, und was ein Generator gerade gespielt hat, wird zu gewöhnlichen Steps, bereit zum Bearbeiten.",
     inside_tileh37: "Klänge",
@@ -739,22 +766,12 @@ window.HOME_TEXT = {
     generators_kicker: "Die Generatoren",
     generators_h2: "Wähle einen MODE, dreh drei Regler",
     generators_p1: "Jeder Generator spielt in der Skala der Spur und nimmt seine Zufallsentscheidungen aus dem Seed der Spur, also ist eine Linie, die dir gefällt, immer nur eine Zahl entfernt. Die Bildschirme zeichnet der Code der Firmware selbst.",
+    generators_more: "<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md#the-generators\">Alle dreizehn Generatoren, Regler für Regler, stehen im Handbuch (englisch).</a>",
     generators_cap1: "Ein Schieberegister in Schleife, das einrastet oder driftet.",
-    generators_cap2: "Schläge, so gleichmäßig verteilt wie möglich.",
-    generators_cap3: "Ein Zufallsweg über acht Skalenstufen.",
-    generators_cap4: "Ein Rhythmus, zwischen zwei Patterns überblendet.",
     generators_cap5: "Inspiriert von Émilie Gillets Grids (Mutable Instruments), mit einer vierten Stimme für Fills.",
-    generators_cap6: "Bälle in einer Kiste: eine Note an jeder Wand.",
     generators_cap7: "Blätter im Wind, die dort spielen, wo sie landen. Nach dem norns-Skript Fall.",
-    generators_cap8: "Zwei Schleifen eigener Länge, nach dem norns-Skript Awake.",
-    generators_cap9: "Vier Noten, von vier Rhythmen angeschlagen.",
     generators_cap10: "Ein Raster, das sich die Spuren teilen, mit Noten, die zwischen ihnen wandern. Inspiriert vom norns-Skript initenere.",
     generators_cap11: "Sterne spielen, wenn sie das Fadenkreuz des Schiffs kreuzen. Nach dem norns-Skript Constellation.",
-    generators_cap12: "Per Nørgårds Unendlichkeitsreihe.",
-    generators_cap13: "Akkordfolgen, denen die anderen Spuren folgen können.",
-    generators_cap14: "Spielt deine Phrase in verblassenden Variationen und Echos zurück.",
-    generators_cap15: "Deine eigenen Steps, variiert, während sie spielen.",
-    generators_cap16: "Sechzehn Kabel, jede Quelle zu jedem Ziel.",
     inks_kicker: "Farben",
     inks_h2: "Dein Bildschirm, deine Farbe",
     inks_p1: "Eine Pixelschrift, eine Farbe auf Schwarz. Wähle eine von neun Farben unter MENU &gt; COLOR, passend zum Gehäuse deines FM-1 oder zu deiner Stimmung, oder MOSAIC, SUNSET, OCEAN oder NEON, die jeder der vier Spuren eine eigene Farbe geben, damit du sie auf einen Blick unterscheidest, bis hinein in die Mod-Listen. Der Regler, den du drehst, kann groß am unteren Bildschirmrand erscheinen: MENU &gt; LARGE VALUE blendet ihn auf Seiten mit eigenem Bild aus (AUTO), zeigt ihn überall oder nirgends.",
@@ -762,6 +779,7 @@ window.HOME_TEXT = {
     recipes_kicker: "Rezepte",
     recipes_h2: "Ein Anfang",
     recipes_p1: "Schritt-für-Schritt-Patches, die nur das nutzen, was das Gerät hat. Alle, samt Tipps, stehen in <a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md\">RECIPES.md</a> (englisch).",
+    recipes_r0: "Neu beim Patchen? Hier anfangen<small>Quellen, Kabel, Gates und Clocks in einfachen Worten</small>",
     recipes_r1: "Ein erster generativer Patch in einer Minute<small>Turing auf den Glocken, Atlas auf der 808</small>",
     recipes_r2: "Ein Drone, der atmet<small>Chord DRONE, TIDE auf dem Filter</small>",
     recipes_r3: "Akkorde, die führen, Melodien, die folgen<small>QNT CHRD</small>",
@@ -794,6 +812,7 @@ window.HOME_TEXT = {
     install_cards6: "Klänge und Sequenzen am Computer bearbeiten.",
     install_cardb7: "Quellcode",
     install_cards7: "GPL-3.0, auf GitHub, mit den Änderungen jedes Releases.",
+    install_more: "Andere Wege zu installieren, und der Weg zurück",
     install_note1: "<b>Zurück zur Original-Firmware.</b> Öffne den Installer und wähle <i>Return to official V15</i>, oder installiere M-Vaves eigene <code>FM-1.fwsc</code> mit <code>fm1_install.py</code>. Bricht ein Update ab, hilft die <a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/docs/RECOVERY.md\">Anleitung zur Wiederherstellung</a>.",
     install_note2: "<b>Lieber den klassischen Look?</b> <a href=\"classic/\">Tessera 2.1.1</a>, die letzte Version mit den alten Bildschirmen, hat ihren eigenen Installer. Sie wird nicht mehr weiterentwickelt (keine Fehlerbehebungen oder neuen Funktionen), und in 3.0 gespeicherte Projekte verlieren dort ihre neueren Einstellungen. Du kannst jederzeit zur aktuellen Version zurückkehren.",
     about_kicker: "Über",
@@ -816,8 +835,16 @@ window.HOME_TEXT = {
     hero_cta2: "Essayer dans le navigateur",
     hero_cta3: "Éditeur web",
     hero_cta4: "Manuel (anglais)",
-    hero_cta5: "Fonctions (anglais)",
-    hero_cta6: "Glossaire (anglais)",
+    new_kicker: "Nouveau en 3.5",
+    new_h2: "Patchez, puis regardez",
+    new_p1: "Le patch à la manière d'un modulaire sur le FM-1 : mélangez des mods sur deux bus, cadencez un générateur avec un LFO, ouvrez et fermez une piste entière, freinez tout le patch avec MOD DEPTH et regardez chaque câble bouger sur MOD SCOPE. Les projets qui s'en servent ne s'ouvrent pas sur 3.4.1.",
+    new_cap0: "Deux LFO mélangés sur BUS A, vus sur MOD SCOPE.",
+    new_cap1: "Nouveaux câbles : EOC comme horloge, un GATE qui met une mod à l'échelle, un bus vers PLAY.",
+    new_cap2: "Chaque bus mélange par SUM, MAX, MIN ou DIFF, avec un lag.",
+    new_cap3: "Les motifs de pas jouent FWD, BACK, PEND, FOLD, RAND ou DRUNK.",
+    new_cap4: "Des accords joués comme les joue une main.",
+    new_light_h3: "GROUND LIGHT",
+    new_light_p: "Tout l'écran sur un papier chaud : MENU &gt; GROUND &gt; LIGHT. Chaque encre est assombrie pour bien se lire, et le paysage passe au jour.",
     demo_kicker: "Écoutez",
     demo_h2: "Quatre minutes de Tessera 3.5",
     demo_p1: "Des motifs de pas qui reculent et se replient, des accords grattés, des mods mélangées sur les bus MIX et suivies sur l'oscilloscope des mods, le fond clair et le paysage, sur trois morceaux faits pour la 3.5. Chaque son et chaque écran viennent du firmware lui-même.",
@@ -845,7 +872,7 @@ window.HOME_TEXT = {
     inside_tileh34: "Harmonie",
     inside_tilep4: "Une tonalité pour toutes les pistes avec Key link. Une piste Chord joue une progression, ou la vôtre jouée au clavier, et QNT CHRD fait suivre toutes les autres pistes.",
     inside_tileh35: "Seize câbles",
-    inside_tilep5: "N'importe quelle source vers n'importe quelle destination sur n'importe quelle piste, générateurs compris. Des sources lentes et organiques, des repères en direct sur les potentiomètres et une MATRIX pour voir le patch.",
+    inside_tilep5: "N'importe quelle source vers n'importe quelle destination sur n'importe quelle piste, générateurs compris. Nouveau en 3.5 : bus MIX, EOC, CLOCK et PLAY pour patcher à la manière d'un modulaire, MOD DEPTH comme frein unique pour tout le patch, et MOD SCOPE pour voir un câble bouger.",
     inside_tileh36: "Enregistrer et imprimer",
     inside_tilep6: "Jouez un motif couche par couche, et REC continue d'enregistrer par-dessus jusqu'à ce que vous arrêtiez. Maintenez REC et ce qu'un générateur vient de jouer devient des pas ordinaires, prêts à éditer.",
     inside_tileh37: "Sons",
@@ -856,22 +883,12 @@ window.HOME_TEXT = {
     generators_kicker: "Les générateurs",
     generators_h2: "Choisissez un MODE, tournez trois boutons",
     generators_p1: "Chaque générateur joue dans la gamme de la piste et tire ses choix aléatoires de la graine de la piste : une ligne qui vous plaît n'est jamais qu'à un nombre de distance. Les écrans sont dessinés par le code du firmware lui-même.",
+    generators_more: "<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md#the-generators\">Les treize générateurs, bouton par bouton, sont dans le manuel (en anglais).</a>",
     generators_cap1: "Un registre à décalage en boucle qui se fige ou dérive.",
-    generators_cap2: "Des frappes réparties aussi régulièrement que possible.",
-    generators_cap3: "Une marche aléatoire sur huit degrés de la gamme.",
-    generators_cap4: "Un rythme fondu entre deux motifs.",
     generators_cap5: "Inspiré de Grids d'Émilie Gillet (Mutable Instruments), avec une quatrième partie pour les fills.",
-    generators_cap6: "Des balles dans une boîte : une note à chaque paroi.",
     generators_cap7: "Des feuilles dans le vent, qui jouent là où elles tombent. D'après le script norns Fall.",
-    generators_cap8: "Deux boucles de longueurs différentes, d'après le script norns Awake.",
-    generators_cap9: "Quatre notes parcourues par quatre rythmes.",
     generators_cap10: "Une grille partagée par les pistes, où les notes voyagent de l'une à l'autre. Inspiré du script norns initenere.",
     generators_cap11: "Les étoiles jouent en croisant le réticule du vaisseau. D'après le script norns Constellation.",
-    generators_cap12: "La série infinie de Per Nørgård.",
-    generators_cap13: "Des progressions que les autres pistes peuvent suivre.",
-    generators_cap14: "Rejoue votre phrase en variations et en échos qui s'estompent.",
-    generators_cap15: "Vos propres pas, variés pendant qu'ils jouent.",
-    generators_cap16: "Seize câbles, n'importe quelle source vers n'importe quelle destination.",
     inks_kicker: "Encres",
     inks_h2: "Votre écran, votre couleur",
     inks_p1: "Une police de pixels, une encre sur noir. Choisissez l'une des neuf encres dans MENU &gt; COLOR selon le boîtier de votre FM-1 ou votre humeur, ou MOSAIC, SUNSET, OCEAN ou NEON, qui donnent à chacune des quatre pistes sa propre couleur pour les distinguer d'un coup d'œil, jusque dans les listes de mods. Le bouton que vous tournez peut s'afficher en grand au bas de l'écran : MENU &gt; LARGE VALUE le masque sur les pages qui ont leur propre image (AUTO), l'affiche partout, ou nulle part.",
@@ -879,6 +896,7 @@ window.HOME_TEXT = {
     recipes_kicker: "Recettes",
     recipes_h2: "Par où commencer",
     recipes_p1: "Des patchs pas à pas qui n'utilisent que ce qu'il y a sur l'appareil. Toutes, avec les astuces, sont dans <a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md\">RECIPES.md</a> (en anglais).",
+    recipes_r0: "Débutant en patching ? Commencez ici<small>Sources, câbles, gates et horloges en mots simples</small>",
     recipes_r1: "Un premier patch génératif en une minute<small>Turing sur les cloches, Atlas sur la 808</small>",
     recipes_r2: "Un drone qui respire<small>Chord DRONE, TIDE sur le filtre</small>",
     recipes_r3: "Des accords qui mènent, des mélodies qui suivent<small>QNT CHRD</small>",
@@ -911,6 +929,7 @@ window.HOME_TEXT = {
     install_cards6: "Éditez sons et séquences depuis l'ordinateur.",
     install_cardb7: "Code source",
     install_cards7: "GPL-3.0, sur GitHub, avec les changements de chaque release.",
+    install_more: "Autres façons d'installer, et le retour en arrière",
     install_note1: "<b>Revenir au firmware d'origine.</b> Ouvrez l'installateur et choisissez <i>Return to official V15</i>, ou installez le <code>FM-1.fwsc</code> de M-Vave avec <code>fm1_install.py</code>. Si une mise à jour est interrompue, consultez le <a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/docs/RECOVERY.md\">guide de récupération</a>.",
     install_note2: "<b>Vous préférez l'aspect classique ?</b> <a href=\"classic/\">Tessera 2.1.1</a>, la dernière version avec les anciens écrans, garde son propre installateur. Elle n'est plus développée (ni corrections ni nouvelles fonctions), et les projets enregistrés en 3.0 y perdent leurs réglages plus récents. Vous pouvez revenir à la version actuelle à tout moment.",
     about_kicker: "À propos",
@@ -933,8 +952,16 @@ window.HOME_TEXT = {
     hero_cta2: "Experimente no navegador",
     hero_cta3: "Editor web",
     hero_cta4: "Manual (inglês)",
-    hero_cta5: "Recursos (inglês)",
-    hero_cta6: "Glossário (inglês)",
+    new_kicker: "Novo na 3.5",
+    new_h2: "Conecte e veja",
+    new_p1: "Patches no estilo modular no FM-1: misture mods em dois barramentos, faça um gerador andar no ritmo de um LFO, abra e feche uma trilha inteira, freie o patch inteiro com MOD DEPTH e veja cada cabo se mover no MOD SCOPE. Projetos que usam isso não abrem na 3.4.1.",
+    new_cap0: "Dois LFOs misturados no BUS A, vistos no MOD SCOPE.",
+    new_cap1: "Cabos novos: EOC como clock, um GATE que escala um mod, um barramento para PLAY.",
+    new_cap2: "Cada barramento mistura por SUM, MAX, MIN ou DIFF, com lag.",
+    new_cap3: "Os padrões de passos tocam FWD, BACK, PEND, FOLD, RAND ou DRUNK.",
+    new_cap4: "Acordes tocados como uma mão os toca.",
+    new_light_h3: "GROUND LIGHT",
+    new_light_p: "A tela inteira sobre papel quente: MENU &gt; GROUND &gt; LIGHT. Cada cor é escurecida para ler bem, e a paisagem vira dia.",
     demo_kicker: "Ouça",
     demo_h2: "Quatro minutos de Tessera 3.5",
     demo_p1: "Padrões de passos que correm para trás e se dobram, acordes dedilhados, mods mixados nos barramentos MIX e vistos no osciloscópio de mods, o fundo claro e a paisagem, em três peças feitas para a 3.5. Cada som e cada tela são do próprio firmware.",
@@ -962,7 +989,7 @@ window.HOME_TEXT = {
     inside_tileh34: "Harmonia",
     inside_tilep4: "Um tom para todas as trilhas com Key link. Uma trilha Chord toca uma progressão, ou a sua tocada nas teclas, e QNT CHRD faz todas as outras trilhas a seguirem.",
     inside_tileh35: "Dezesseis cabos",
-    inside_tilep5: "Qualquer fonte para qualquer destino em qualquer trilha, geradores incluídos. Fontes lentas e orgânicas, marcas ao vivo nos knobs e uma MATRIX para ver o patch.",
+    inside_tilep5: "Qualquer fonte para qualquer destino em qualquer trilha, geradores incluídos. Novo na 3.5: barramentos MIX, EOC, CLOCK e PLAY para patches no estilo modular, MOD DEPTH como um único freio para o patch inteiro, e MOD SCOPE para ver um cabo se mover.",
     inside_tileh36: "Gravar e imprimir",
     inside_tilep6: "Toque um padrão camada por camada, e REC continua sobrepondo até você parar. Segure REC e o que um gerador acabou de tocar vira passos comuns, prontos para editar.",
     inside_tileh37: "Sons",
@@ -973,22 +1000,12 @@ window.HOME_TEXT = {
     generators_kicker: "Os geradores",
     generators_h2: "Escolha um MODE, gire três knobs",
     generators_p1: "Cada gerador toca na escala da trilha e tira suas escolhas aleatórias da semente da trilha, então uma linha de que você gosta está sempre a um número de distância. As telas são desenhadas pelo próprio código do firmware.",
+    generators_more: "<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md#the-generators\">Os treze geradores, botão por botão, estão no manual (em inglês).</a>",
     generators_cap1: "Um registrador de deslocamento em loop que trava ou deriva.",
-    generators_cap2: "Batidas espalhadas da forma mais uniforme possível.",
-    generators_cap3: "Uma caminhada aleatória por oito graus da escala.",
-    generators_cap4: "Um ritmo mesclado entre dois padrões.",
     generators_cap5: "Inspirado no Grids de Émilie Gillet (Mutable Instruments), com uma quarta parte para viradas.",
-    generators_cap6: "Bolas numa caixa: uma nota a cada parede.",
     generators_cap7: "Folhas ao vento, tocando onde caem. A partir do script de norns Fall.",
-    generators_cap8: "Dois loops com comprimentos próprios, a partir do script de norns Awake.",
-    generators_cap9: "Quatro notas percorridas por quatro ritmos.",
     generators_cap10: "Uma grade que as trilhas compartilham, com notas viajando entre elas. Inspirado no script de norns initenere.",
     generators_cap11: "As estrelas tocam ao cruzar a mira da nave. A partir do script de norns Constellation.",
-    generators_cap12: "A série infinita de Per Nørgård.",
-    generators_cap13: "Progressões que as outras trilhas podem seguir.",
-    generators_cap14: "Devolve sua frase em variações e ecos que se apagam.",
-    generators_cap15: "Seus próprios passos, variados enquanto tocam.",
-    generators_cap16: "Dezesseis cabos, qualquer fonte para qualquer destino.",
     inks_kicker: "Cores",
     inks_h2: "Sua tela, sua cor",
     inks_p1: "Uma fonte de pixels, uma cor sobre o preto. Escolha uma de nove cores em MENU &gt; COLOR para combinar com a carcaça do seu FM-1 ou com o seu humor, ou MOSAIC, SUNSET, OCEAN ou NEON, que dão a cada uma das quatro trilhas sua própria cor para você distingui-las num relance, até nas listas de mods. O knob que você gira pode aparecer grande no pé da tela: MENU &gt; LARGE VALUE o esconde nas páginas que têm imagem própria (AUTO), ou mostra em todo lugar, ou em lugar nenhum.",
@@ -996,6 +1013,7 @@ window.HOME_TEXT = {
     recipes_kicker: "Receitas",
     recipes_h2: "Por onde começar",
     recipes_p1: "Patches passo a passo que usam só o que está no aparelho. Todas, e as dicas, estão em <a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md\">RECIPES.md</a> (em inglês).",
+    recipes_r0: "Novo em patching? Comece aqui<small>Fontes, cabos, gates e clocks em palavras simples</small>",
     recipes_r1: "Um primeiro patch generativo em um minuto<small>Turing nos sinos, Atlas na 808</small>",
     recipes_r2: "Um drone que respira<small>Chord DRONE, TIDE no filtro</small>",
     recipes_r3: "Acordes que conduzem, melodias que seguem<small>QNT CHRD</small>",
@@ -1028,6 +1046,7 @@ window.HOME_TEXT = {
     install_cards6: "Edite sons e sequências pelo computador.",
     install_cardb7: "Código-fonte",
     install_cards7: "GPL-3.0, no GitHub, com as mudanças de cada release.",
+    install_more: "Outras formas de instalar, e o caminho de volta",
     install_note1: "<b>Voltar ao firmware original.</b> Abra o instalador e escolha <i>Return to official V15</i>, ou instale o <code>FM-1.fwsc</code> da M-Vave com <code>fm1_install.py</code>. Se uma atualização for interrompida, veja o <a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/docs/RECOVERY.md\">guia de recuperação</a>.",
     install_note2: "<b>Prefere o visual clássico?</b> <a href=\"classic/\">Tessera 2.1.1</a>, a última versão com as telas antigas, tem seu próprio instalador. Ela não é mais desenvolvida (sem correções nem recursos novos), e projetos salvos na 3.0 perdem lá seus ajustes mais novos. Você pode voltar para a versão atual a qualquer momento.",
     about_kicker: "Sobre",
@@ -1050,8 +1069,16 @@ window.HOME_TEXT = {
     hero_cta2: "브라우저에서 체험하기",
     hero_cta3: "웹 에디터",
     hero_cta4: "매뉴얼 (영어)",
-    hero_cta5: "기능 (영어)",
-    hero_cta6: "용어집 (영어)",
+    new_kicker: "3.5의 새 기능",
+    new_h2: "패치하고, 지켜보기",
+    new_p1: "FM-1에서 모듈러 방식으로 패치하세요: 두 버스에서 모드를 섞고, LFO로 제너레이터를 클록하고, 트랙 전체를 열고 닫고, MOD DEPTH로 패치 전체를 늦추고, MOD SCOPE에서 모든 케이블의 움직임을 보세요. 이 기능을 쓰는 프로젝트는 3.4.1에서 열리지 않습니다.",
+    new_cap0: "두 LFO를 BUS A에서 섞고, MOD SCOPE에서 봅니다.",
+    new_cap1: "새 케이블: 클록으로 쓰는 EOC, 모드를 스케일하는 GATE, PLAY로 가는 버스.",
+    new_cap2: "각 버스는 SUM, MAX, MIN, DIFF로 섞고, 랙을 걸 수 있습니다.",
+    new_cap3: "스텝 패턴이 FWD, BACK, PEND, FOLD, RAND, DRUNK로 연주됩니다.",
+    new_cap4: "손으로 치듯 연주되는 코드.",
+    new_light_h3: "GROUND LIGHT",
+    new_light_p: "화면 전체를 따뜻한 종이 위에: MENU &gt; GROUND &gt; LIGHT. 각 잉크는 잘 읽히도록 어둡게 바뀌고, 풍경은 낮이 됩니다.",
     demo_kicker: "들어 보세요",
     demo_h2: "Tessera 3.5의 4분",
     demo_p1: "거꾸로 흐르고 접히는 스텝 패턴, 스트럼한 코드, MIX 버스에서 섞이고 모드 스코프로 지켜보는 모드, 밝은 배경과 풍경. 3.5를 위해 만든 세 곡에 담았습니다. 모든 소리와 모든 화면은 펌웨어가 직접 만든 것입니다.",
@@ -1079,7 +1106,7 @@ window.HOME_TEXT = {
     inside_tileh34: "화성",
     inside_tilep4: "Key link로 모든 트랙에 하나의 조성을. Chord 트랙은 진행을 연주하거나 건반으로 직접 입력한 진행을 연주하고, QNT CHRD는 다른 모든 트랙이 그것을 따르게 합니다.",
     inside_tileh35: "열여섯 개의 케이블",
-    inside_tilep5: "제너레이터를 포함해 어느 트랙의 어떤 소스든 어떤 목적지로든. 느리고 유기적인 소스, 노브 위의 실시간 표시, 패치를 한눈에 보는 MATRIX.",
+    inside_tilep5: "제너레이터를 포함해 어느 트랙의 어떤 소스든 어떤 목적지로든. 3.5의 새 기능: 모듈러 방식 패치를 위한 MIX 버스, EOC, CLOCK, PLAY, 패치 전체를 한 번에 늦추는 MOD DEPTH, 그리고 케이블의 움직임을 보는 MOD SCOPE.",
     inside_tileh36: "녹음과 프린트",
     inside_tilep6: "패턴을 한 겹씩 쌓아 연주하면 REC는 멈출 때까지 계속 오버더빙합니다. REC를 누르고 있으면 제너레이터가 방금 연주한 것이 편집 가능한 일반 스텝이 됩니다.",
     inside_tileh37: "사운드",
@@ -1090,22 +1117,12 @@ window.HOME_TEXT = {
     generators_kicker: "제너레이터",
     generators_h2: "MODE를 고르고, 노브 세 개를 돌리세요",
     generators_p1: "각 제너레이터는 트랙의 스케일로 연주하고 무작위 선택을 트랙의 시드에서 가져오므로, 마음에 드는 라인은 언제나 숫자 하나 거리에 있습니다. 화면은 펌웨어의 코드가 직접 그립니다.",
+    generators_more: "<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md#the-generators\">열세 가지 제너레이터의 노브 하나하나는 매뉴얼(영어)에 있습니다.</a>",
     generators_cap1: "고정되거나 표류하는 루프 시프트 레지스터.",
-    generators_cap2: "최대한 고르게 퍼진 히트.",
-    generators_cap3: "여덟 개의 스케일 음을 오가는 랜덤 워크.",
-    generators_cap4: "두 패턴 사이를 섞는 리듬.",
     generators_cap5: "Émilie Gillet의 Grids (Mutable Instruments)에서 영감을 받았고, 필인을 위한 네 번째 파트가 있습니다.",
-    generators_cap6: "상자 속의 공: 벽에 닿을 때마다 음 하나.",
     generators_cap7: "바람에 날리는 잎사귀가 떨어지는 곳에서 연주합니다. norns 스크립트 Fall을 바탕으로.",
-    generators_cap8: "각자의 길이를 가진 두 루프, norns 스크립트 Awake를 바탕으로.",
-    generators_cap9: "네 개의 리듬이 밟는 네 개의 음.",
     generators_cap10: "트랙들이 공유하는 그리드, 그 사이를 오가는 음. norns 스크립트 initenere에서 영감을 받았습니다.",
     generators_cap11: "별이 우주선의 조준선을 지날 때 연주합니다. norns 스크립트 Constellation을 바탕으로.",
-    generators_cap12: "Per Nørgård의 무한 급수.",
-    generators_cap13: "다른 트랙들이 따를 수 있는 코드 진행.",
-    generators_cap14: "당신의 프레이즈를 사라져 가는 변주와 메아리로 되돌려 줍니다.",
-    generators_cap15: "당신의 스텝을 연주하면서 변주합니다.",
-    generators_cap16: "열여섯 개의 케이블, 어떤 소스든 어떤 목적지로든.",
     inks_kicker: "잉크",
     inks_h2: "당신의 화면, 당신의 색",
     inks_p1: "하나의 픽셀 서체, 검정 위의 하나의 잉크. MENU &gt; COLOR에서 FM-1의 외관이나 기분에 맞게 아홉 가지 잉크 중 하나를 고르거나, 네 트랙 각각에 고유한 색을 주어 모드 목록까지 한눈에 구분하게 해 주는 MOSAIC, SUNSET, OCEAN, NEON을 고르세요. 돌리는 노브의 값은 화면 아래에 크게 표시할 수 있습니다. MENU &gt; LARGE VALUE는 자체 그림이 있는 페이지에서는 숨기거나 (AUTO), 어디서나 보이거나, 아예 보이지 않게 합니다.",
@@ -1113,6 +1130,7 @@ window.HOME_TEXT = {
     recipes_kicker: "레시피",
     recipes_h2: "시작하기 좋은 곳",
     recipes_p1: "기기에 있는 것만으로 만드는 단계별 패치. 전체 레시피와 팁은 <a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md\">RECIPES.md</a> (영어)에 있습니다.",
+    recipes_r0: "패칭이 처음인가요? 여기서 시작하세요<small>소스, 코드, 게이트, 클럭을 쉬운 말로</small>",
     recipes_r1: "1분 만에 만드는 첫 제너러티브 패치<small>벨에 Turing, 808에 Atlas</small>",
     recipes_r2: "숨 쉬는 드론<small>Chord DRONE, 필터에 TIDE</small>",
     recipes_r3: "이끄는 코드, 따르는 멜로디<small>QNT CHRD</small>",
@@ -1145,6 +1163,7 @@ window.HOME_TEXT = {
     install_cards6: "컴퓨터에서 사운드와 시퀀스를 편집합니다.",
     install_cardb7: "소스",
     install_cards7: "GPL-3.0, GitHub에서, 릴리스마다 변경 내역과 함께.",
+    install_more: "다른 설치 방법과 되돌리는 방법",
     install_note1: "<b>순정 펌웨어로 돌아가기.</b> 설치 프로그램을 열고 <i>Return to official V15</i>를 고르거나, <code>fm1_install.py</code>로 M-Vave의 <code>FM-1.fwsc</code>를 설치하세요. 업데이트가 중간에 끊기면 <a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/docs/RECOVERY.md\">복구 가이드</a>를 보세요.",
     install_note2: "<b>예전 모습이 더 좋나요?</b> 예전 화면을 가진 마지막 버전인 <a href=\"classic/\">Tessera 2.1.1</a>에는 자체 설치 프로그램이 있습니다. 더 이상 개발되지 않으며 (수정이나 새 기능 없음), 3.0에서 저장한 프로젝트는 그곳에서 새로운 설정을 잃습니다. 언제든 현재 버전으로 돌아올 수 있습니다.",
     about_kicker: "소개",
@@ -1167,8 +1186,16 @@ window.HOME_TEXT = {
     hero_cta2: "ブラウザで試す",
     hero_cta3: "Webエディター",
     hero_cta4: "マニュアル（英語）",
-    hero_cta5: "機能一覧（英語）",
-    hero_cta6: "用語集（英語）",
+    new_kicker: "3.5 の新機能",
+    new_h2: "パッチして、見る",
+    new_p1: "FM-1 でモジュラー風のパッチング：2つのバスでモッドを混ぜ、LFO でジェネレーターを刻み、トラック全体を開け閉めし、MOD DEPTH でパッチ全体にブレーキをかけ、MOD SCOPE ですべてのコードの動きを見る。これらを使うプロジェクトは 3.4.1 では開けません。",
+    new_cap0: "2つの LFO を BUS A で混ぜ、MOD SCOPE で見る。",
+    new_cap1: "新しいコード：クロックとしての EOC、モッドをスケールする GATE、PLAY へのバス。",
+    new_cap2: "各バスは SUM、MAX、MIN、DIFF で混ぜ、ラグもかけられます。",
+    new_cap3: "ステップパターンは FWD、BACK、PEND、FOLD、RAND、DRUNK で再生。",
+    new_cap4: "手で弾くように鳴るコード。",
+    new_light_h3: "GROUND LIGHT",
+    new_light_p: "画面全体を温かな紙の上に：MENU &gt; GROUND &gt; LIGHT。各インクは読みやすく濃くなり、風景は昼になります。",
     demo_kicker: "聴いてみる",
     demo_h2: "Tessera 3.5 の4分間",
     demo_p1: "逆向きに進み折り返すステップパターン、かき鳴らすコード、MIXバスで混ぜてモッドスコープで見るモッド、明るい背景と風景。3.5のために作った3曲です。音も画面もすべてファームウェア自身のものです。",
@@ -1196,7 +1223,7 @@ window.HOME_TEXT = {
     inside_tileh34: "ハーモニー",
     inside_tilep4: "Key link ですべてのトラックをひとつの調に。Chord トラックはコード進行を、あるいは鍵盤で弾き込んだ自分の進行を演奏し、QNT CHRD で他のトラックすべてがそれに従います。",
     inside_tileh35: "16本のケーブル",
-    inside_tilep5: "どのトラックのどのソースからどの行き先へも、ジェネレーターも含めて。ゆっくりした有機的なソース、ノブ上のライブマーク、パッチを見渡せる MATRIX。",
+    inside_tilep5: "どのトラックのどのソースからどの行き先へも、ジェネレーターも含めて。3.5 の新機能：モジュラー風のパッチングのための MIX バス、EOC、CLOCK、PLAY、パッチ全体をひとつで抑える MOD DEPTH、そしてコードの動きを見る MOD SCOPE。",
     inside_tileh36: "録音とプリント",
     inside_tilep6: "パターンを一層ずつ弾き込めば、止めるまで REC がオーバーダブを続けます。REC を長押しすると、ジェネレーターが今弾いたものが編集できる普通のステップになります。",
     inside_tileh37: "サウンド",
@@ -1207,22 +1234,12 @@ window.HOME_TEXT = {
     generators_kicker: "ジェネレーター",
     generators_h2: "MODE を選び、ノブを3つ回す",
     generators_p1: "各ジェネレーターはトラックのスケールで演奏し、ランダムな選択をトラックのシードから取るので、気に入ったラインはいつも数字ひとつで呼び戻せます。画面はファームウェア自身のコードが描いています。",
+    generators_more: "<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md#the-generators\">13 のジェネレーターのノブひとつひとつはマニュアル（英語）にあります。</a>",
     generators_cap1: "固定したり漂ったりするループ式シフトレジスター。",
-    generators_cap2: "できるだけ均等に散らばるヒット。",
-    generators_cap3: "スケールの8つの音をめぐるランダムウォーク。",
-    generators_cap4: "2つのパターンのあいだをブレンドするリズム。",
     generators_cap5: "Émilie Gillet の Grids（Mutable Instruments）に着想を得て、フィル用の4つめのパートを加えたもの。",
-    generators_cap6: "箱の中のボール。壁に当たるたびに一音。",
     generators_cap7: "風に舞う葉が、落ちた場所で鳴ります。norns スクリプト Fall にもとづく。",
-    generators_cap8: "それぞれの長さを持つ2つのループ。norns スクリプト Awake にもとづく。",
-    generators_cap9: "4つのリズムが踏む4つの音。",
     generators_cap10: "トラック同士が共有するグリッドを、音が行き来します。norns スクリプト initenere に着想を得たもの。",
     generators_cap11: "星が宇宙船の照準を横切ると鳴ります。norns スクリプト Constellation にもとづく。",
-    generators_cap12: "Per Nørgård の無限セリー。",
-    generators_cap13: "他のトラックが従えるコード進行。",
-    generators_cap14: "あなたのフレーズを、消えていく変奏とエコーで返します。",
-    generators_cap15: "あなた自身のステップを、鳴らしながら変奏。",
-    generators_cap16: "16本のケーブル、どのソースからどの行き先へも。",
     inks_kicker: "インク",
     inks_h2: "あなたの画面、あなたの色",
     inks_p1: "ひとつのピクセル書体、黒の上にひとつのインク。MENU &gt; COLOR で FM-1 のボディや気分に合わせて9色のインクから選ぶか、4つのトラックそれぞれに色を与えてモッドの一覧まで一目で見分けられる MOSAIC、SUNSET、OCEAN、NEON を選べます。回しているノブの値は画面下部に大きく表示できます。MENU &gt; LARGE VALUE で、独自の絵があるページでは隠す（AUTO）、どこでも表示、まったく表示しない、を選べます。",
@@ -1230,6 +1247,7 @@ window.HOME_TEXT = {
     recipes_kicker: "レシピ",
     recipes_h2: "はじめの一歩",
     recipes_p1: "本体にあるものだけで作れるステップごとのパッチ集。全レシピとヒントは <a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md\">RECIPES.md</a>（英語）にあります。",
+    recipes_r0: "パッチングは初めて？ここから<small>ソース、コード、ゲート、クロックをやさしい言葉で</small>",
     recipes_r1: "1分でできる最初のジェネラティブ・パッチ<small>ベルに Turing、808 に Atlas</small>",
     recipes_r2: "呼吸するドローン<small>Chord DRONE、フィルターに TIDE</small>",
     recipes_r3: "導くコード、従うメロディ<small>QNT CHRD</small>",
@@ -1262,6 +1280,7 @@ window.HOME_TEXT = {
     install_cards6: "パソコンから音色とシーケンスを編集。",
     install_cardb7: "ソース",
     install_cards7: "GPL-3.0、GitHub で。リリースごとの変更点も。",
+    install_more: "ほかのインストール方法と、元に戻す方法",
     install_note1: "<b>純正ファームウェアに戻すには。</b>インストーラーを開いて <i>Return to official V15</i> を選ぶか、<code>fm1_install.py</code> で M-Vave の <code>FM-1.fwsc</code> をインストールします。アップデートが途中で切れたら<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/docs/RECOVERY.md\">復旧ガイド</a>を見てください。",
     install_note2: "<b>以前の見た目が好き？</b> 旧画面を持つ最後のバージョン <a href=\"classic/\">Tessera 2.1.1</a> には専用のインストーラーがあります。今後は開発されず（修正も新機能もなし）、3.0 で保存したプロジェクトはそちらでは新しい設定が失われます。いつでも現行バージョンに戻せます。",
     about_kicker: "紹介",
@@ -1298,6 +1317,23 @@ var homeLang = (function () {
     apply();
   });
   return { tr: tr, apply: apply, hook: function (f) { hooks.push(f); } };
+})();
+</script>
+<script>/* the bar's optional links (Demo .. About): as many as fit in every language, the last ones go first; without
+   script, the CSS hides them all under 900 px */
+(function () {
+  var w = document.querySelector("nav .wrap"), opt = document.querySelectorAll("nav .links a.opt");
+  function fit() {
+    var i;
+    w.classList.remove("tight");
+    for (i = 0; i < opt.length; i++) opt[i].style.display = "inline";
+    if (w.scrollWidth > w.clientWidth) w.classList.add("tight");
+    for (i = opt.length - 1; i >= 0 && w.scrollWidth > w.clientWidth; i--) opt[i].style.display = "none";
+  }
+  homeLang.hook(fit);
+  addEventListener("resize", fit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  fit();
 })();
 </script>
 <script>
