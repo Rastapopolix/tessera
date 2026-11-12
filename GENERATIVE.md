@@ -34,7 +34,7 @@ and once they click, every recipe below reads easily. Five words cover most of i
 
 A patch is a few cords that work together, and the fun starts when they feed each other: an LFO that changes the
 speed of another LFO, a gate that opens a mod, a track that listens to another track's notes. Start with one cord,
-listen to it, then add the next. Words you don't know are in [GLOSSARY.md](GLOSSARY.md).
+listen to it, then add the next. Words you don't know are in the [glossary](MANUAL.md#glossary).
 
 **Contents**
 
