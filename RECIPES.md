@@ -6,10 +6,10 @@ the button in brackets until it shows: GEN, NOTES and PATTERN are under **SEQ**;
 and ENERGY under **ARP**; MODS, MATRIX
 and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
 
-Recipes tagged **(3.5 beta)** need a feature that is not in 3.4.1 (the MIX buses, EOC, CLOCK, PLAY, MOD DEPTH,
-scaling and HOLD mods, DIR, CHORD STRUM and the new chord kinds). Install the beta by picking **Beta** on the
+Recipes tagged **(3.5)** need a feature that is new in 3.5 (the MIX buses, EOC, CLOCK, PLAY, MOD DEPTH,
+scaling and HOLD mods, DIR, CHORD STRUM and the new chord kinds). Update with the
 [web installer](https://rastapopolix.github.io/tessera/webapp/installer/) (a project that uses them does not load on older firmware). Recipes
-without a tag work on 3.4.1 too. The keys are the beta's: **OCT+ held** is the page's sheet, **OCT- held** its second
+without a tag work on 3.4.1 too. The keys are 3.5's: **OCT+ held** is the page's sheet, **OCT- held** its second
 knobs. For the long patches that use these features (Krell, long gates, stepped chaos, the brake), see
 [GENERATIVE.md](GENERATIVE.md).
 
@@ -53,15 +53,15 @@ knobs. For the long patches that use these features (Krell, long gates, stepped 
 - [An LFO for another synth's filter (mods out as CC)](#an-lfo-for-another-synths-filter-mods-out-as-cc)
 - [A bass that takes a note a bar (FOLLOW HOLD)](#a-bass-that-takes-a-note-a-bar-follow-hold)
 - [Loosen a 1/8 line (TIMING SPLIT)](#loosen-a-18-line-timing-split)
-- [A pad that swells every cycle (a lagged bus, 3.5 beta)](#a-pad-that-swells-every-cycle-a-lagged-bus-35-beta)
-- [A fill every four bars (EOC, 3.5 beta)](#a-fill-every-four-bars-eoc-35-beta)
-- [A melody that steps on another track's notes (CLOCK, 3.5 beta)](#a-melody-that-steps-on-another-tracks-notes-clock-35-beta)
-- [A part that comes and goes (PLAY, 3.5 beta)](#a-part-that-comes-and-goes-play-35-beta)
-- [A pattern that turns round on a gate (DIR, 3.5 beta)](#a-pattern-that-turns-round-on-a-gate-dir-35-beta)
-- [Steps, not sweeps (HOLD, 3.5 beta)](#steps-not-sweeps-hold-35-beta)
-- [A cord that opens and closes (scaling a mod, 3.5 beta)](#a-cord-that-opens-and-closes-scaling-a-mod-35-beta)
-- [A brake for the whole patch (MOD DEPTH, 3.5 beta)](#a-brake-for-the-whole-patch-mod-depth-35-beta)
-- [A strummed chord pad (STRUM, 3.5 beta)](#a-strummed-chord-pad-strum-35-beta)
+- [A pad that swells every cycle (a lagged bus, 3.5)](#a-pad-that-swells-every-cycle-a-lagged-bus-35)
+- [A fill every four bars (EOC, 3.5)](#a-fill-every-four-bars-eoc-35)
+- [A melody that steps on another track's notes (CLOCK, 3.5)](#a-melody-that-steps-on-another-tracks-notes-clock-35)
+- [A part that comes and goes (PLAY, 3.5)](#a-part-that-comes-and-goes-play-35)
+- [A pattern that turns round on a gate (DIR, 3.5)](#a-pattern-that-turns-round-on-a-gate-dir-35)
+- [Steps, not sweeps (HOLD, 3.5)](#steps-not-sweeps-hold-35)
+- [A cord that opens and closes (scaling a mod, 3.5)](#a-cord-that-opens-and-closes-scaling-a-mod-35)
+- [A brake for the whole patch (MOD DEPTH, 3.5)](#a-brake-for-the-whole-patch-mod-depth-35)
+- [A strummed chord pad (STRUM, 3.5)](#a-strummed-chord-pad-strum-35)
 
 **[Tips](#tips)**
 
@@ -72,7 +72,7 @@ knobs. For the long patches that use these features (Krell, long gates, stepped 
 A loop that sounds good is the best place to start. These moves turn it into music that develops, easiest first.
 Stop after any of them: each one is optional, and everything automatic starts switched off. Keys: **OCT+** tap =
 Enter, **OCT+ held** = the page's sheet, **OCT-** tap = Back, **OCT- held** = the page's second set of knobs.
-Moves tagged **3.5 beta** need the beta.
+Moves tagged **3.5** need Tessera 3.5.
 
 ### 1. Play with it live
 
@@ -80,7 +80,7 @@ Mutes, fills and one big knob make a loop a performance, and cost nothing to try
 
 - **GLO** opens the MIXER. The **black keys** (F#3 G#3 A#3 C#4) mute tracks 1 to 4; **C4** brings them all back.
   **E4** holds FILL.
-- Hold **OCT+** on MIXER for its sheet, **Mutes: BAR**, so a mute lands on the next bar line (**3.5 beta**; on 3.4.1 use
+- Hold **OCT+** on MIXER for its sheet, **Mutes: BAR**, so a mute lands on the next bar line (**3.5**; on 3.4.1 use
   MENU > MUTES).
 - **GLO > PERF** has four macros; they do something once a mod uses them (see [One knob for a big build](#one-knob-for-a-big-build-perf-macros)).
 
@@ -107,10 +107,10 @@ Each track has 8 patterns. Copy yours, change a few notes, and you have an answe
 
 - **SEQ** held opens PATTERNS: a cell per pattern. KNOB 1 to 4 pick the next pattern of tracks 1 to 4.
 - **SEQ**, tap to SONG: put patterns in order, each with its repeats. **PLAY** plays the song.
-- **3.5 beta:** hold **OCT+** on PATTERN or NOTES, and the **Direction** row plays the same notes
+- **3.5:** hold **OCT+** on PATTERN or NOTES, and the **Direction** row plays the same notes
   FWD, BACK, PEND, FOLD, RAND or DRUNK.
 
-<p align="center"><img src="assets/gallery/pattern_dir.png" alt="PATTERN's sheet, Direction FOLD" width="240"><br><sub>You should see PATTERN's sheet with Direction on FOLD (3.5 beta).</sub></p>
+<p align="center"><img src="assets/gallery/pattern_dir.png" alt="PATTERN's sheet, Direction FOLD" width="240"><br><sub>You should see PATTERN's sheet with Direction on FOLD (3.5).</sub></p>
 
 **Try:** set a STEP track's Direction to **FOLD**: the same notes, a new tune.
 
@@ -166,7 +166,7 @@ One slow cord is enough to make a pad breathe.
 
 - Hold **FX** and turn a knob (a cutoff, a level): a cord from the track's LFO to that knob, its amount set
   as you turn. Then set a slow RATE on **LFO**.
-- **3.5 beta:** on **LFO > MODS**, hold **OCT-** to watch the picked mod move over time (MOD SCOPE). Let go and the
+- **3.5:** on **LFO > MODS**, hold **OCT-** to watch the picked mod move over time (MOD SCOPE). Let go and the
   rows come back.
 
 <p align="center"><img src="assets/gallery/mods_scope.png" alt="MOD SCOPE: an LFO on a track's knob" width="240"><br><sub>You should see MOD SCOPE (OCT- held on MODS): the picked mod over time.</sub></p>
@@ -250,7 +250,7 @@ A held chord that changes slowly, for ambient beds.
    steps up, in its own scale and its own rhythm.
 3. **SHIFT −7** for a line an octave below in a seven-note scale. **DROP 50** thins the harmony so it only answers
    now and then.
-4. **3.5 beta:** mute track 3 on MIXER (the black key for it): track 2 keeps playing the harmony, so the melody can be
+4. **3.5:** mute track 3 on MIXER (the black key for it): track 2 keeps playing the harmony, so the melody can be
    a leader you never hear. On 3.4.1 a muted leader stops its followers; set its MIDI OUT to SOUND OFF instead.
 
 ## A harmony on your own melody (FOLLOW CHORD)
@@ -464,8 +464,8 @@ FM6 has no filter of its own; the FILTER effect gives it one.
    **4:4**. They play on every fourth pass only.
 3. For a fill on demand, set another few hits to **FILL** instead, and the kick on the last beat to **!FILL**.
    Hold **GLO** and **E4** (on MIXER, E4 alone) while the bar plays: the fill comes in and the kick drops out.
-4. On the 3.5 beta a slow LFO can hold FILL for you:
-   [A fill every four bars](#a-fill-every-four-bars-eoc-35-beta).
+4. On 3.5 a slow LFO can hold FILL for you:
+   [A fill every four bars](#a-fill-every-four-bars-eoc-35).
 
 ## A line that climbs (Accumulate)
 
@@ -584,8 +584,8 @@ pushes a little.
 5. **GLO > PERF**: turn **KNOB 1** up for the build, back down for the breakdown. The page shows how many mods each
    macro drives.
 
-**3.5 beta:** one more mod, from **MACRO 1** to **MOD DEP** at -100 %, and the same knob also takes the whole patch to
-dry (see [A brake for the whole patch](#a-brake-for-the-whole-patch-mod-depth-35-beta)).
+**3.5:** one more mod, from **MACRO 1** to **MOD DEP** at -100 %, and the same knob also takes the whole patch to
+dry (see [A brake for the whole patch](#a-brake-for-the-whole-patch-mod-depth-35)).
 
 Give **MACRO 2** the opposite job (negative amounts on levels and cutoffs) for a breakdown on another knob. The macros
 are saved with the project, so the build is there next time.
@@ -599,7 +599,7 @@ Mute and unmute by hand, and let Tessera put the change on the beat for you.
    drums drop out on the next bar line.
 3. Press it again on a later bar to bring them back on the line. Changed your mind before the line? Press it again
    while it blinks to call it off.
-4. **3.5 beta:** hold **OCT+** on MIXER for its sheet, **Mutes**: the same setting as the menu's, at hand while you
+4. **3.5:** hold **OCT+** on MIXER for its sheet, **Mutes**: the same setting as the menu's, at hand while you
    play the mute keys. A muted generator track still leads the tracks that follow it.
 
 ## Your controller's knobs, kept (MIDI LEARN)
@@ -660,7 +660,7 @@ A line on the grid, broken up now and then the way a player would: a quick pair 
 
 The bar's first step stays on the grid. A mod on **SPLIT** (an LFO or TIDE) brings the looser bars in and out.
 
-## A pad that swells every cycle (a lagged bus, 3.5 beta)
+## A pad that swells every cycle (a lagged bus, 3.5)
 
 A bus with a Lag turns a short pulse into a soft rise and fall, and one bus can move several things. Here the pad's own
 LFO cycle starts a swell (EOC, the end of the cycle, is a gate on every track).
@@ -676,7 +676,7 @@ LFO cycle starts a swell (EOC, the end of the cycle, is a gate on every track).
 A longer Lag is a slower, softer swell. Hold **OCT-** on mod 2 to watch the bus. The same bus fed by another track's
 notes is in [GENERATIVE.md](GENERATIVE.md#an-envelope-from-another-tracks-notes).
 
-## A fill every four bars (EOC, 3.5 beta)
+## A fill every four bars (EOC, 3.5)
 
 EOC gives a gate once per LFO cycle. A slow LFO synced to the bars makes it a clock for fills, with no condition on
 any step.
@@ -690,7 +690,7 @@ FILL is held for the eighth of the cycle after each wrap (half a bar every four 
 while it is. SYNC **2BAR** for a fill every second bar. For a note on each cycle instead, send EOC to CLOCK: the Krell
 in [GENERATIVE.md](GENERATIVE.md#an-envelope-that-plays-itself).
 
-## A melody that steps on another track's notes (CLOCK, 3.5 beta)
+## A melody that steps on another track's notes (CLOCK, 3.5)
 
 A mod onto **CLOCK** makes a generator step on a gate's edges instead of its own DIV.
 
@@ -703,7 +703,7 @@ A mod onto **CLOCK** makes a generator step on a gate's edges instead of its own
 Two tracks that play together without sharing a grid: the melody follows the other player's hands. STOP and PLAY start
 it again from the first step.
 
-## A part that comes and goes (PLAY, 3.5 beta)
+## A part that comes and goes (PLAY, 3.5)
 
 **PLAY** is a destination on each track: while the mods on it reach half, the track is heard; under half it plays on
 unheard (so tracks that follow it keep their place). One GATE cord makes a gated voice.
@@ -716,7 +716,7 @@ unheard (so tracks that follow it keep their place). One GATE cord makes a gated
 For a part that arrives on no schedule, use `T2 TIDE 2^ -> T2 PLAY` instead (tap OCT+ twice for ^): it comes in for a
 few minutes and goes. More in [GENERATIVE.md](GENERATIVE.md#a-voice-that-comes-and-goes-with-the-tide).
 
-## A pattern that turns round on a gate (DIR, 3.5 beta)
+## A pattern that turns round on a gate (DIR, 3.5)
 
 A STEP pattern has a direction (FWD, BACK, PEND, RAND, DRUNK) and a mod can move it.
 
@@ -731,7 +731,7 @@ A STEP pattern has a direction (FWD, BACK, PEND, RAND, DRUNK) and a mod can move
 read at each step and never moves the playhead; a generator track does not use it. On 3.4.1 the direction is set on
 the pattern's sheet, with no mod.
 
-## Steps, not sweeps (HOLD, 3.5 beta)
+## Steps, not sweeps (HOLD, 3.5)
 
 A HOLD mod takes its source once and keeps it, as a sample and hold: a slow source turns into steps.
 
@@ -744,7 +744,7 @@ A HOLD mod takes its source once and keeps it, as a sample and hold: a slow sour
 A held mod onto DIR or a generator's setting changes the line on the bar line. The long version:
 [GENERATIVE.md](GENERATIVE.md#a-sample-and-hold-clocked-by-another-voice).
 
-## A cord that opens and closes (scaling a mod, 3.5 beta)
+## A cord that opens and closes (scaling a mod, 3.5)
 
 A mod of mods normally adds to another mod's amount. Hold OCT- and it scales instead, like a VCA on the cord.
 
@@ -759,7 +759,7 @@ A mod of mods normally adds to another mod's amount. Hold OCT- and it scales ins
 `T4 ENV` as the scaler shapes the sweep with each of track 4's notes. KNOB 3 left adds again. A gate on a mod is also
 in [GENERATIVE.md](GENERATIVE.md#long-gates) (Try next). On 3.4.1 the same cords add instead.
 
-## A brake for the whole patch (MOD DEPTH, 3.5 beta)
+## A brake for the whole patch (MOD DEPTH, 3.5)
 
 One control for how much of every mod plays, 0 to 100 %. At 0 the patch is dry; at 100 (the default) it is as you set it.
 
@@ -773,7 +773,7 @@ Offsets and a GATE's threshold stay put; a cord onto MOD DEP is not scaled by it
 holding FILL once the depth is under 50 %. For the feedback version, see
 [GENERATIVE.md](GENERATIVE.md#a-brake-for-any-feedback-patch).
 
-## A strummed chord pad (STRUM, 3.5 beta)
+## A strummed chord pad (STRUM, 3.5)
 
 A chord whose notes start a little apart, as a played one.
 
@@ -846,10 +846,10 @@ MIDI OUT sends the notes spread too. On 3.4.x the chords play together, and SUS2
 - A cord with no source (`--`) is a fixed offset: use it to set things that have no knob, such as **C AUTO**.
 - A knob with a mod on it shows a moving mark: you can see what the cords are doing without opening MODS.
 - **OCT+** on MATRIX jumps straight to that cord in MODS.
-- **3.5 beta:** hold **OCT-** on MODS to see what the picked mod does: its move over time (a line) over its source
+- **3.5:** hold **OCT-** on MODS to see what the picked mod does: its move over time (a line) over its source
   (faint dots), a GATE's threshold as a wedge at each edge. Let go and the rows come back. Turn **KNOB 4** while
   holding to move a threshold and watch the gate follow. Hold **OCT+** there for the MIX buses.
-- **3.5 beta:** a bus (BUS A, BUS B) is a mixer of mods you can use as one source: send several cords in, or one
+- **3.5:** a bus (BUS A, BUS B) is a mixer of mods you can use as one source: send several cords in, or one
   envelope out to many places, and set the amounts once. Its **Mode** SUM, MAX, MIN or DIFF is OR, AND and XOR for gates.
 - A mod's **+-** moves both ways from the knob, **+** only up; the bar shows which. It is the mod's own setting, not
   the LFO's POL. The lists name each source and destination with its track (**T2 GATE**).
