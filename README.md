@@ -52,7 +52,7 @@ Tessera for FM-1 is not related to the Tessera plugins for VCV Rack.
 - **Project files**: move songs between the web simulator and the FM-1 as `.tsp` files.
 - **One key rule everywhere**: OCT+ goes in, OCT- goes back.
 
-<p align="center"><img src="assets/brand/new35_scope_mix.png" alt="MOD SCOPE: LFO A, LFO B and their mix" width="100%"></p>
+<p align="center"><img src="assets/brand/new35_scope_a.png" alt="MOD SCOPE: LFO A" width="32%"> <img src="assets/brand/new35_scope_b.png" alt="MOD SCOPE: LFO B" width="32%"> <img src="assets/brand/new35_scope_sum.png" alt="MOD SCOPE: their mix on BUS A" width="32%"></p>
 <p align="center"><img src="assets/brand/new35_mods_new.png" alt="MODS: EOC onto CLOCK, a bus onto PLAY" width="24%"> <img src="assets/brand/new35_pattern_dir.png" alt="PATTERN's sheet, Direction FOLD" width="24%"> <img src="assets/brand/new35_chord_strum.png" alt="CHORD STRUM" width="24%"> <img src="assets/gallery/paper_yellow.png" alt="HOME on GROUND LIGHT" width="24%"></p>
 
 A project that uses MIX buses, EOC, CLOCK, PLAY or a mod onto MOD DEP does not load on 3.4.1. The full list:
