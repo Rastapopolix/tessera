@@ -799,6 +799,7 @@ static void input_on(track_t *t, uint32_t note, uint32_t vel)
         if (song.playing && t->seq_pos != 0x7FFFFFFFu)
             late = t->seq_pos >= step_samples(t, seq_div_samples((uint32_t)t->p[P_SDIV]), SEQ_D(t).slot % len) / 2u;
         tessera_answer_key(t, note, vel, late);
+        if (vel) tessera_follow_key(trk_index(t), note);   /* (and each track that FOLLOWs it) */
     }
     if (rec_on(t) && !t->p[P_AMODE])               /* (ARP on: arp_tick records its notes) */
         rec_note(t, note, vel);

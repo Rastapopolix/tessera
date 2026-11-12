@@ -4,11 +4,14 @@ Shown on the installer under the Beta choice (web/publish_beta.py --notes, from 
 "## " headings and the "- " lines are shown, as plain text. Update it when a change merges into develop; at the
 release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again for the next beta.
 
-Want to help test? The steps, by area, and how to report a problem: [BETA_TESTING.md](BETA_TESTING.md).
+Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues> (the firmware version, the steps,
+what you expected and what happened).
 
 ## New since 3.5
 
 ## Fixed
+
+- FOLLOW follows the notes you play on the followed track's keys (or its MIDI IN), not only its pattern or generator.
 
 ## Good to know
 

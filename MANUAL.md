@@ -1190,7 +1190,7 @@ project with a mod onto MOD DEP.
 | 1 | **SHIFT** (±24) | Transposes by semitones; while following, by scale steps from the followed note. |
 | 2 | **DROP** (0–100 %) | The chance a hit is left out, whatever the generator. |
 | 3 | **HUMAN** (0–100 %) | Varies each note's velocity and length a little, as a player would: at 100 up to 20 softer or louder and up to half as long, the same each time the piece plays. The timing is TIMING's **HUMAN**. |
-| 4 | **FOLLOW** | OFF, or T1 to T4: plays that track's pitch, SHIFT away, in this track's scale. STEP tracks can be followed too. A muted track still leads the tracks that follow it. |
+| 4 | **FOLLOW** | OFF, or T1 to T4: plays that track's pitch, SHIFT away, in this track's scale. STEP tracks can be followed too, and so can the notes you play on that track's keys (or its MIDI IN): while its STEP pattern is empty, or until its generator's next note. A muted track still leads the tracks that follow it. |
 
 Hold **OCT-** and turn **KNOB 1** right for random SHIFT, DROP and HUMAN; turn it left to put them back (as on GEN).
 
