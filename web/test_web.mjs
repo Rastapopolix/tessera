@@ -6,7 +6,7 @@
 // - editor.html: the protocol section (between PROTO-BEGIN/END) against its mock device (v1 commands,
 //   the user preset bank / librarian, library files, live pushes, older-firmware fallback, the v3 tracks
 //   and the mixer, the v5 drum grid in steps and user presets), its tab layout and strings in every language, the installer's
-//   strings in every language and its language menu, the simulator page's lines in every language,
+//   strings in every language and its language menu, the simulator page's lines and the project page's in every language,
 //   and the user-sample pipeline byte for byte against tools/sampleio.py
 // - fm1pkg.js: productOf and logicalImage on build/tessera.fwsc (skipped without a build)
 // - fm1ota.js: a full install and an unplug during the write against a simulated FM-1
@@ -1346,6 +1346,29 @@ function editorTabs() {
     const smenu = [...sh.matchAll(/<option value="(\w+)" lang=/g)].map((x) => x[1]);
     ok(!gaps.length && !used.length && !holes.length && js([...smenu].sort()) === js(["en", ...Object.keys(ST)].sort()),
       `simulator: ${keys.size} lines in en ${Object.keys(ST).join(" ")}${gaps.length ? ", missing " + gaps.slice(0, 8) : ""}${used.length ? ", no English for " + used : ""}${holes.length ? ", {placeholders} differ " + holes : ""}`);
+  }
+  /* the project page: every other language has every piece of the page, with the same links and release marks */
+  {
+    const hh = readFileSync(join(HERE, "home", "index.html"), "utf8");
+    const hb = hh.indexOf("window.HOME_TEXT = {");
+    const HT = vm.runInNewContext("(" + hh.slice(hb + 19, hh.indexOf("\n};", hb) + 2) + ")");
+    const EN = {};
+    for (const m of hh.matchAll(/<(\w+) data-h="(\w+)"[^>]*>/g)) {         /* the element's markup, to its own closing tag */
+      const rest = hh.slice(m.index + m[0].length), tag = new RegExp(`<(/?)${m[1]}\\b[^>]*>`, "g");
+      for (let d = 1, t; (t = tag.exec(rest));) if (!(d += t[1] ? -1 : 1)) { EN[m[2]] = rest.slice(0, t.index); break; }
+    }
+    EN.themeLight = "Light"; EN.themeDark = "Dark";
+    const marks = (v) => js([...v.matchAll(/href="([^"]*)"|@\w+@/g)].map((x) => x[1] ?? x[0]).sort());
+    const gaps = [], links = [];
+    for (const [l, T] of Object.entries(HT)) {
+      for (const k of Object.keys(EN)) if (typeof T[k] !== "string") gaps.push(l + "." + k); else if (marks(T[k]) !== marks(EN[k])) links.push(l + "." + k);
+      for (const k of Object.keys(T)) if (!(k in EN)) gaps.push(l + "." + k + " (unknown)");
+    }
+    const hmenu = [...hh.matchAll(/<option value="(\w+)" lang=/g)].map((x) => x[1]);
+    const HL = JSON.parse((/var LANGS = (\[[^\]]*\])/.exec(hh) || [])[1] || "[]");
+    ok(!gaps.length && !links.length && js([...hmenu].sort()) === js(["en", ...Object.keys(HT)].sort()) && js(HL) === js(hmenu)
+      && /LANG_KEY = "tessera-lang"/.test(hh),
+      `project page: ${Object.keys(EN).length} pieces in en ${Object.keys(HT).join(" ")}${gaps.length ? ", missing " + gaps.slice(0, 8) : ""}${links.length ? ", links or marks differ " + links.slice(0, 8) : ""}`);
   }
   /* the page script parses (the browser's view of it) */
   const script = html.slice(html.indexOf("<script>") + 8, html.lastIndexOf("</script>"));
