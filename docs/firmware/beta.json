@@ -1,12 +1,12 @@
 {
-  "version": "3.5-rc3",
+  "version": "3.5-rc4",
   "product": "FM-1_835",
   "branch": "develop",
-  "commit": "35487512794dd1bc10ca0ac51847234b88fc8e29",
-  "builtAt": "2026-11-12T07:29:10Z",
+  "commit": "cd7decb4640a31c7ab6a5cb9e0a459614e124e41",
+  "builtAt": "2026-11-12T08:17:03Z",
   "pkg": {
-    "dual": "../../firmware/tessera-3.5-rc3.fwsc",
-    "single": "../../firmware/tessera-3.5-rc3-1core.fwsc"
+    "dual": "../../firmware/tessera-3.5-rc4.fwsc",
+    "single": "../../firmware/tessera-3.5-rc4-1core.fwsc"
   },
   "notes": [
     [
@@ -51,6 +51,8 @@
     [
       "Fixed",
       [
+        "Web editor (#609): it only reads the FM-1 until you tick Edit the FM-1 beside Disconnect, and ticking it offers a complete backup first; it is off again at every connection, so connecting can never change a project and a stray edit is not sent.",
+        "Project slots (#609): each slot keeps its last two saves. If the newest one is damaged, the FM-1 loads the one before and now says OLD SAVE LOADED instead of loading it silently.",
         "GLO > SYSTEM's CPU read about 55 % while the sound already broke up: it left out the USB and MIDI service and averaged over a tenth of a second. It now counts everything and shows the average and the worst moment of about the last second, as 55/92 (the screen reader says \"55 % PEAK 92 %\") (#586).",
         "ARP HOLD: with CLK set to an external clock (USB, TRS) and the transport stopped, a chord latched with HOLD stopped when the keys were let go, though it played while they were held. It now keeps playing at the local tempo, as the keys do. A chord stopped by the external Stop (or a lost clock) still waits for Start or Continue; a new key plays again.",
         "USB OUTPUT 4 TRACKS: a loud chord crackled in its stem (cut hard at full scale, #586). A stem now has the stereo recording's level, 6 dB under before, and the outputs' soft clip.",

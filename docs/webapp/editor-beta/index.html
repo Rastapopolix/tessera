@@ -213,6 +213,7 @@
       <span id="version" class="dim"></span>
       <span id="live" class="dim"></span>
       <span id="mock" class="dim" hidden data-t="mock"></span>
+      <label id="edit-wrap" hidden><input type="checkbox" id="edit-on"> <span data-t="editOn"></span></label>
     </div>
     <div id="status"></div>
     <nav class="tabs" id="tabs" role="tablist">
@@ -2800,6 +2801,27 @@ async function findDevicePorts(access, probe = probeFm1) {
   return tried ? { notTessera: true } : {};
 }
 
+/* #609: does request r ([cmd, args]) change what the FM-1 holds or plays? The editor sends these only while "Edit the
+   FM-1" is on (sessionRequest); the rest only read. Selecting a track (TRACK with an argument) only moves the device's
+   cursor and is a read here; a read that stops playback (BACKUP_LIST) changes no data. Unknown commands count as writes. */
+const READS = new Set([CMD.INFO, CMD.GET, CMD.DUMP, CMD.DESC, CMD.STEP_GET, CMD.NAMES, CMD.SMP_INFO, CMD.UP_LIST, CMD.UP_GET,
+  CMD.WATCH, CMD.PING, CMD.TRACK, CMD.TRACK_DUMP, CMD.UI_STATE, CMD.UI_PALETTES, CMD.FAV_GET, CMD.BACKUP_LIST, CMD.BACKUP_GET,
+  CMD.FM6_GET, CMD.FM6_LIST, CMD.STATS]);
+function writesDevice([cmd, a]) {
+  if (READS.has(cmd)) return false;
+  switch (cmd) {
+    case CMD.PROJECT: return a[0] !== 2;                      /* 2 asks whether a slot is used; 0 loads, 1 saves */
+    case CMD.TRACK_MIX: return a.length !== 1;
+    case CMD.TRACK_STEP: return a.length !== 2;
+    case CMD.TRACK_PARAM: return a.length !== 2;
+    case CMD.SONG: case CMD.BANK_SONG: return a[0] !== 0;
+    case CMD.PATTERN: return a[1] !== 0;
+    case CMD.MOTION: return a.length !== 1;
+    case CMD.NATIVE: return ![0, 1, 7].includes(a[1]);        /* 0 lists, 1 reads a slot, 7 a track's user preset */
+    case CMD.TUNE: return a[0] !== 0 && a[0] !== 1;           /* 0 the list, 1 a table */
+    default: return true;
+  }
+}
 /*PROTO-END*/
 
 /* ===================================================================== UI === */
@@ -2907,6 +2929,10 @@ const TEXT = {
     devicePending: "反映しました。再生を停止すると保存されます。",
 
     connect: "接続", disconnect: "切断", mock: "モック（実機なし）",
+    editOn: "FM-1 を編集", readOnly: "読み取り専用：「FM-1 を編集」をオンにするまで FM-1 には何も書き込みません。",
+    editBlocked: "送っていません：FM-1 を変えるには「FM-1 を編集」をオンにしてください。",
+    editBackupAsk: "編集の前に、FM-1 の中身をすべてこのコンピューターにバックアップしますか？ OK でバックアップファイルを保存してから編集をオンにします。キャンセルでバックアップなしでオンにします。",
+    editOnSaid: "編集オン：ここでの変更は FM-1 に送られます。",
     sound: "音色", engine: "エンジン", presets: "プリセット", initSound: "音色を初期化",
     track: "トラック",
     saveFile: "ファイルに保存", loadFile: "ファイルを読み込む", projects: "プロジェクト",
@@ -3030,6 +3056,10 @@ const TEXT = {
     devicePending: "Applied. Settings will save when playback stops.",
 
     connect: "Connect", disconnect: "Disconnect", mock: "Mock device (no hardware)",
+    editOn: "Edit the FM-1", readOnly: "Read-only: nothing is written to the FM-1 until you switch on Edit the FM-1.",
+    editBlocked: "Not sent: switch on Edit the FM-1 to change the FM-1.",
+    editBackupAsk: "Before you edit: save a backup of everything on the FM-1 to this computer? OK saves the backup file first, then turns editing on. Cancel turns editing on without one.",
+    editOnSaid: "Editing on: changes here go to the FM-1.",
     sound: "Sound", engine: "Engine", presets: "Presets", initSound: "Init sound",
     track: "Track",
     saveFile: "Save to file", loadFile: "Load file", projects: "Projects",
@@ -3212,6 +3242,10 @@ const TEXT = {
     connect: "Conectar",
     disconnect: "Desconectar",
     mock: "Aparato simulado (sin hardware)",
+    editOn: "Editar el FM-1", readOnly: "Solo lectura: no se escribe nada en el FM-1 hasta que actives Editar el FM-1.",
+    editBlocked: "No enviado: activa Editar el FM-1 para cambiar el FM-1.",
+    editBackupAsk: "Antes de editar: ¿guardar en este ordenador una copia de seguridad de todo lo que hay en el FM-1? Aceptar guarda primero el archivo de copia y luego activa la edición. Cancelar activa la edición sin copia.",
+    editOnSaid: "Edición activada: los cambios de aquí van al FM-1.",
     sound: "Sonido",
     engine: "Motor",
     presets: "Presets",
@@ -3542,6 +3576,10 @@ const TEXT = {
     connect: "Connetti",
     disconnect: "Disconnetti",
     mock: "Dispositivo simulato (senza hardware)",
+    editOn: "Modifica l'FM-1", readOnly: "Sola lettura: nulla viene scritto sull'FM-1 finché non attivi Modifica l'FM-1.",
+    editBlocked: "Non inviato: attiva Modifica l'FM-1 per cambiare l'FM-1.",
+    editBackupAsk: "Prima di modificare: salvare su questo computer un backup di tutto ciò che c'è sull'FM-1? OK salva prima il file di backup, poi attiva la modifica. Annulla attiva la modifica senza backup.",
+    editOnSaid: "Modifica attiva: i cambiamenti fatti qui vanno all'FM-1.",
     sound: "Suono",
     engine: "Motore",
     presets: "Preset",
@@ -3872,6 +3910,10 @@ const TEXT = {
     connect: "Verbinden",
     disconnect: "Trennen",
     mock: "Simuliertes Gerät (ohne Hardware)",
+    editOn: "FM-1 bearbeiten", readOnly: "Nur lesen: Auf den FM-1 wird nichts geschrieben, bis du FM-1 bearbeiten einschaltest.",
+    editBlocked: "Nicht gesendet: Schalte FM-1 bearbeiten ein, um den FM-1 zu ändern.",
+    editBackupAsk: "Vor dem Bearbeiten: Ein Backup von allem auf dem FM-1 auf diesem Computer speichern? OK speichert zuerst die Backup-Datei und schaltet dann das Bearbeiten ein. Abbrechen schaltet es ohne Backup ein.",
+    editOnSaid: "Bearbeiten an: Änderungen hier gehen an den FM-1.",
     sound: "Sound",
     engine: "Engine",
     presets: "Presets",
@@ -4202,6 +4244,10 @@ const TEXT = {
     connect: "Connecter",
     disconnect: "Déconnecter",
     mock: "Appareil simulé (sans matériel)",
+    editOn: "Modifier le FM-1", readOnly: "Lecture seule : rien n'est écrit sur le FM-1 tant que Modifier le FM-1 n'est pas activé.",
+    editBlocked: "Non envoyé : activez Modifier le FM-1 pour changer le FM-1.",
+    editBackupAsk: "Avant de modifier : enregistrer sur cet ordinateur une sauvegarde de tout ce que contient le FM-1 ? OK enregistre d'abord le fichier de sauvegarde, puis active la modification. Annuler l'active sans sauvegarde.",
+    editOnSaid: "Modification activée : les changements faits ici vont au FM-1.",
     sound: "Son",
     engine: "Moteur",
     presets: "Presets",
@@ -4532,6 +4578,10 @@ const TEXT = {
     connect: "Conectar",
     disconnect: "Desconectar",
     mock: "Aparelho simulado (sem hardware)",
+    editOn: "Editar o FM-1", readOnly: "Somente leitura: nada é gravado no FM-1 até você ligar Editar o FM-1.",
+    editBlocked: "Não enviado: ligue Editar o FM-1 para alterar o FM-1.",
+    editBackupAsk: "Antes de editar: salvar neste computador um backup de tudo o que está no FM-1? OK salva primeiro o arquivo de backup e depois liga a edição. Cancelar liga a edição sem backup.",
+    editOnSaid: "Edição ligada: as mudanças feitas aqui vão para o FM-1.",
     sound: "Som",
     engine: "Motor",
     presets: "Presets",
@@ -4862,6 +4912,10 @@ const TEXT = {
     connect: "연결",
     disconnect: "연결 끊기",
     mock: "가상 기기(하드웨어 없음)",
+    editOn: "FM-1 편집", readOnly: "읽기 전용: FM-1 편집을 켤 때까지 FM-1에 아무것도 쓰지 않습니다.",
+    editBlocked: "보내지 않음: FM-1을 바꾸려면 FM-1 편집을 켜세요.",
+    editBackupAsk: "편집하기 전에 FM-1의 모든 내용을 이 컴퓨터에 백업할까요? 확인을 누르면 백업 파일을 먼저 저장한 뒤 편집을 켭니다. 취소를 누르면 백업 없이 켭니다.",
+    editOnSaid: "편집 켜짐: 여기서 바꾼 내용이 FM-1로 갑니다.",
     sound: "사운드",
     engine: "엔진",
     presets: "프리셋",
@@ -5286,7 +5340,7 @@ async function connect() {
     input.onmidimessage = (e) => link.receive(e.data);
     if (input.open) await input.open().catch(() => {});
     dev = { link, input, output, info: null, pdesc: [], gdesc: [], names: [], dump: null, steps: [], slotUsed: [null, null, null, null],
-      keys: null, watch: false, bank: null };
+      keys: null, watch: false, bank: null, editOn: false, backedUp: false };
     connectedDevice = dev;
     setLabel($("connect"), t("disconnect"));
     await load(connectedDevice);
@@ -5318,6 +5372,7 @@ function disconnect(reasonKey = "disconnected") {
   renderLib();
   renderBank();
   renderPreferences(true);
+  renderEdit();
   $("version").textContent = "";
   setLabel($("connect"), t("connect"));
   sayK(reasonKey);
@@ -5337,6 +5392,11 @@ function onState(e) {
 function assertSession(d) { if (!d || d !== dev) throw new Error("closed"); }
 async function sessionRequest(d, r, opt) {
   assertSession(d);
+  if (!d.editOn && writesDevice(r)) {               /* #609: read-only until "Edit the FM-1" is on */
+    needReload = blockedReload = true;              /* (the control that asked shows the device's value again) */
+    setTimeout(maybeReload, 0);
+    throw new Error(t("editBlocked"));
+  }
   const reply = await d.link.request(r, opt);
   assertSession(d);
   return reply;
@@ -5405,7 +5465,8 @@ async function load(d) {
     updateBrowser();                                /* (the bank's presets of this engine in the Presets list: it was
                                                      * built before the bank was read, beta7) */
     renderSysinfo();
-    sayK("ready");
+    renderEdit();
+    sayK("readOnly");
   } finally { releaseBusy(); }
 }
 async function getDescOrNull(s, i, d = dev) { try { return await getDesc(s, i, d); } catch (e) { if (e.message === "closed") throw e; return null; } }
@@ -6033,15 +6094,19 @@ $("tunefile").addEventListener("change", () => {
 });
 const backupModule = () => import("./fm1backup.js");
 const backupProgress = (done, total) => sayK("backupWorking", `${Math.round(done / Math.max(1, total) * 100)}%`);
-$("backup-export").addEventListener("click", () => op(async () => {
-  const d = dev;
-  if (!(d?.info?.backupCaps & 1)) return;
+async function saveBackup(d) {
   const { captureBackup } = await backupModule();
   assertSession(d);
   const file = await captureBackup((r, o) => sessionRequest(d, r, o), d.info.version, backupProgress);
   assertSession(d);
   download(`Tessera-backup-${new Date().toISOString().slice(0, 10)}.json`, file);
+  d.backedUp = true;
   sayK("backupDone");
+}
+$("backup-export").addEventListener("click", () => op(async () => {
+  const d = dev;
+  if (!(d?.info?.backupCaps & 1)) return;
+  await saveBackup(d);
 }));
 $("backup-import").addEventListener("click", () => { if (dev?.info?.backupCaps & 2) $("backup-file").click(); });
 $("backup-file").addEventListener("change", () => {
@@ -6567,9 +6632,12 @@ async function refreshStep(i) {
     updateStepRows();
   } catch (err) { report(err); }
 }
+let blockedReload = false;                          /* #609: the reload after a write that was not sent says so */
 function maybeReload() {
   if (!dev || busy || !needReload || !dev.dump) return;
-  op(() => afterSoundChange("reloaded"));
+  const msg = blockedReload ? "editBlocked" : "reloaded";
+  blockedReload = false;
+  op(() => afterSoundChange(msg));
 }
 /* one multi-request operation; polling waits for it */
 async function op(fn) {
@@ -6577,6 +6645,22 @@ async function op(fn) {
   const releaseBusy = beginBusy();
   try { await fn(); } catch (err) { report(err); } finally { releaseBusy(); }
 }
+/* #609: "Edit the FM-1". Off at every connection: the editor only reads. Turning it on offers a backup first. */
+function renderEdit() {
+  $("edit-wrap").hidden = !dev || !dev.dump;
+  $("edit-on").checked = !!dev?.editOn;
+}
+$("edit-on").addEventListener("change", () => {
+  const d = dev, on = $("edit-on").checked;
+  if (!d) { renderEdit(); return; }
+  if (!on) { d.editOn = false; renderEdit(); sayK("readOnly"); return; }
+  op(async () => {
+    if (!d.backedUp && (d.info?.backupCaps & 1) && confirm(t("editBackupAsk"))) await saveBackup(d);
+    assertSession(d);
+    d.editOn = true; renderEdit(); sayK("editOnSaid");
+  });
+  renderEdit();
+});
 function renderLive() {
   $("live").textContent = !dev || !dev.dump ? "" : t(dev.watch ? "live" : "polling");
 }
