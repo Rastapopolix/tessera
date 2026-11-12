@@ -422,7 +422,6 @@ use the **FILTER** effect above.
 | Engine | CUTOFF moves | SHAPE moves |
 |---|---|---|
 | TRIO | **CUT**, its filter | **PW**, the pulse width |
-| SID | **CUT**, its filter | **PW**, the pulse width (with SYNC or RING: the second voice's pitch, up to 24 semitones) |
 | ORACLE | **CUT**, its four-pole ladder | **PW A** and **PW B**, both pulse widths |
 | NOISE | **FREQ**, its filter | **COLR**, the noise's colour |
 | VOICE | **VOWL** and **VOWL2**, the vowel | **BUZZ**, the buzz against the breath |
