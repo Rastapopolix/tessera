@@ -186,7 +186,7 @@ One slow cord is enough to make a pad breathe.
 **Try:** print a line you like, then save.
 
 That is enough for a piece. For full patches see the recipes below, [GENERATIVE.md](GENERATIVE.md) for deeper
-patching, and the [GLOSSARY](GLOSSARY.md) for any term that is new.
+patching, and the [glossary](MANUAL.md#glossary) for any term that is new.
 
 ---
 
