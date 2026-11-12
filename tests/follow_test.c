@@ -4,7 +4,10 @@
  * block at a time: a EUCLID track (2) follows a STEP melody (track 1) in C major. SAME / OWN, and HOW / RHYTHM with
  * FOLLOW OFF, play as before; RHYTHM SOURCE plays on the melody's steps, BOTH on its own and the melody's; CHORD a third,
  * fifth or seventh of the melody's note, never a leap past a tritone; CONTRA the other way; BASS an octave or two down on
- * beats 1 and 3; CANON2 the melody two notes late; the melody's own MIDI never changes; the same each PLAY. */
+ * beats 1 and 3; CANON2 the melody two notes late; the melody's own MIDI never changes; the same each PLAY. A muted
+ * generator still leads: muted from PLAY or on the way, its follower plays as if it were heard, it sounds nothing
+ * (no MIDI, no voice), and unmuted it comes back on its own notes, none doubled; a muted CHORD track still gives
+ * QNT CHRD its chord. */
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
 
@@ -100,7 +103,57 @@ static int32_t at_step(const run_t *r, uint32_t st)
     return -1;
 }
 
-static run_t mel0, own0, alone, m, f, f2;
+
+/* the source a generator (TURING, track 1) instead of the melody; muted from PLAY when pre, the MIXER's mute key
+ * (MUTES NOW) pressed at blocks mute_at and unmute_at after PLAY (~0u: never); *gated: a voice of it ever opened while
+ * muted */
+static void setup_gen(uint32_t how, uint32_t rhy, int pre)
+{
+    setup(1, how, rhy, 1);
+    tessera_knob(0, TESS_ENG_TURING);
+    trk[0].p[P_SDIV] = DIV_8TH;
+    trk[0].p[P_SCALE] = 1;
+    tessera.seed[0] = 9;
+    tessera.rnd[0] = gen_stream(9);
+    settings_mute_q = 0;
+    trk[0].p[P_MUTE] = (int16_t)(pre != 0);
+    blocks(1);
+    log_n = 0;
+}
+static void play_mute(uint32_t beats, run_t *a, run_t *b, uint32_t mute_at, uint32_t unmute_at, int *gated)
+{
+    uint32_t i, j, t0 = blk, stop_at, n = beats * (beat_samples() / CTL) + 1u;
+    log_n = 0;
+    *gated = 0;
+    transport_req = 1;
+    for (j = 0; j < n; j++) {
+        if (j == mute_at || j == unmute_at) mute_press(0, 0);
+        blocks(1);
+        if (trk[0].p[P_MUTE])
+            for (i = 0; i < NVOICE; i++) *gated |= trk[0].v[i].gate != 0;
+    }
+    stop_at = log_n;
+    transport_req = 2;
+    blocks(2);
+    trk[0].p[P_MUTE] = 0;
+    a->n = b->n = 0;
+    for (i = 0; i < stop_at; i++) {
+        uint32_t s = (log_pkt[i] >> 8) & 0xFFu, d1 = (log_pkt[i] >> 16) & 0x7Fu;
+        run_t *r = s == 0x90u ? a : s == 0x91u ? b : 0;
+        if (!r || r->n >= EV_MAX) continue;
+        r->at[r->n] = (log_blk[i] - t0) * CTL;
+        r->note[r->n++] = (uint8_t)d1;
+    }
+}
+/* r's note-ons from sample at on, as a run of their own */
+static void from(const run_t *r, uint32_t at, run_t *o)
+{
+    o->n = 0;
+    for (uint32_t i = 0; i < r->n; i++)
+        if (r->at[i] >= at) { o->at[o->n] = r->at[i]; o->note[o->n++] = r->note[i]; }
+}
+
+static run_t mel0, own0, alone, m, f, f2, g0, gf0, ga, gb;
 
 int main(void)
 {
@@ -188,6 +241,45 @@ int main(void)
     for (i = 0; ok && i < f.n; i++) ok = f.at[i] >= mel0.at[8] && at_step(&own0, step_of(f.at[i])) >= 0;
     bad += check("CANON8, OWN: its own steps, from the melody's ninth note on", ok);
 
+
+    {   /* MUTE (Theo 2026-11-10: B following A, A muted on the MIXER, B went silent): A's notes still lead */
+        uint32_t bb = beat_samples() / CTL, um = 8u * bb + span8() / CTL / 2u;   /* (unmuted mid-step) */
+        int gated;
+        static const uint8_t HOW[3] = {TESS_FH_SAME, TESS_FH_CHORD, TESS_FH_CANON + 1u};
+        for (k = 0; k < 3u; k++) {
+            setup_gen(HOW[k], TESS_FR_SOURCE, 0);
+            play_mute(beats, &g0, &gf0, ~0u, ~0u, &gated);
+            ok = g0.n > 4u && gf0.n > 2u;
+            setup_gen(HOW[k], TESS_FR_SOURCE, 1);
+            play_mute(beats, &ga, &gb, ~0u, ~0u, &gated);
+            ok &= same(&gf0, &gb) && ga.n == 0u && !gated;
+            setup_gen(HOW[k], TESS_FR_SOURCE, 0);
+            play_mute(beats, &ga, &gb, 4u * bb, ~0u, &gated);
+            from(&g0, 4u * bb * CTL, &f);
+            ok &= same(&gf0, &gb) && ga.n + f.n == g0.n && !gated;
+            setup_gen(HOW[k], TESS_FR_SOURCE, 1);
+            play_mute(beats, &ga, &gb, ~0u, um, &gated);
+            from(&g0, um * CTL, &f);
+            ok &= same(&gf0, &gb) && same(&f, &ga) && !gated;
+            bad += check(k == 0u ? "MUTE: a muted TURING still leads (SAME): its follower as when heard; it silent; "
+                                   "unmuted, its own notes on, none doubled" :
+                         k == 1u ? "  CHORD" : "  CANON2", ok);
+        }
+        setup_gen(TESS_FH_SAME, TESS_FR_SOURCE, 0);    /* QNT CHRD's chord: from a muted CHORD track too */
+        song.sel = 2;
+        tessera_knob(0, TESS_ENG_CHORD);
+        song.sel = 0;
+        trk[2].p[P_MUTE] = 1;
+        transport_req = 1;
+        blocks(4u * bb);
+        ok = tessera_chord_pcs() != 0u;
+        for (i = 0; i < NVOICE; i++) ok &= !trk[2].v[i].gate;
+        for (i = 0; i < log_n; i++) ok &= ((log_pkt[i] >> 8) & 0xFFu) != 0x92u;
+        transport_req = 2;
+        blocks(2);
+        trk[2].p[P_MUTE] = 0;
+        bad += check("  a muted CHORD track still gives QNT CHRD its chord, silent", ok);
+    }
     {                                                   /* the parameters: ranges, never past their ends */
         tessera_param_set(1, TX_TW_FHOW, 99);
         tessera_param_set(1, TX_TW_FRHY, -3);

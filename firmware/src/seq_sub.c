@@ -53,11 +53,12 @@ static uint32_t seq_split_n[NTRK];                      /* SPLIT's draws since P
 static uint32_t seq_split_step(const track_t *t, const step_t *s, uint32_t tr);
 static void seq_split_done(track_t *t, uint32_t tr);
 
-/* PLAY, STOP: nothing recorded, armed or held on any track */
+/* PLAY, STOP: nothing recorded, armed or held on any track (STRUM: nothing queued, ALT from UP) */
 static void seq_sub_clear(void)
 {
-    seq_sub_rec = seq_sub_armed = seq_nudge_due = seq_nudge_early = seq_hum_due = 0;
-    for (uint32_t k = 0; k < NTRK; k++) seq_hum_n[k] = seq_humv_n[k] = seq_split_n[k] = seq_split[k] = arp_draws[k] = 0;
+    seq_sub_rec = seq_sub_armed = seq_nudge_due = seq_nudge_early = seq_hum_due = seq_st_alt = 0;
+    for (uint32_t k = 0; k < NTRK; k++)
+        seq_hum_n[k] = seq_humv_n[k] = seq_split_n[k] = seq_split[k] = arp_draws[k] = seq_st[k].n = 0;
 }
 
 /* A step starts: what it plays is recorded from here, the last step's repeats are dropped */
@@ -142,6 +143,7 @@ static void seq_sub_tick(track_t *t, uint32_t cur_len)
     if (!(seq_sub_armed & (1u << tr))) return;
     while (s->left && t->seq_pos >= s->next && s->next < cur_len) {
         seq_release(t);
+        seq_st[tr].n = 0;                               /* (STRUM: the repeat strikes all of it) */
         for (i = 0; i < s->n; i++) {
             SUB_NOTE_ON(t, s->note[i], s->vel[i]);
             t->seq_notes[i] = s->note[i];
@@ -201,7 +203,7 @@ static void seq_nudge_step(track_t *t, const step_t *s, uint32_t period, uint32_
  * next step plays early when its NUDGE (< 0) brings it into this one */
 static void seq_nudge_tick(track_t *t, uint32_t period, uint32_t cur_len, uint32_t len)
 {
-    uint32_t tr = trk_index(t), ni, next_len, lead;
+    uint32_t tr = trk_index(t), ni, ns, next_len, lead;
     const step_t *s;
     if ((seq_nudge_due & (1u << tr)) && t->seq_pos >= seq_nudge[tr].at && t->seq_pos < cur_len) {
         seq_nudge_due &= (uint8_t)~(1u << tr);
@@ -209,19 +211,25 @@ static void seq_nudge_tick(track_t *t, uint32_t period, uint32_t cur_len, uint32
     }
     if ((seq_nudge_early & (1u << tr)) || t->seq_pos >= cur_len || chain.running || song.rec || seq_erase_active(t))
         return;
-    ni = (t->seq_idx + 1u) % (len ? len : 1u);
-    if (!ni && t->pattern_next < NPAT) return;         /* (the next pattern's first step: on its line) */
+    ni = seq_dir_next(t, len);
+    ns = (SEQ_D(t).slot + 1u) % (len ? len : 1u);        /* (its step of time: the pass, SWING) */
+    if (!ns && t->pattern_next < NPAT) return;         /* (the next pattern's first step: on its line) */
     s = &seq_steps(t)[ni];
     if (step_nudge(s) >= 0) return;
-    next_len = step_samples(t, period, ni);
+    next_len = step_samples(t, period, ns);
     lead = next_len * (uint32_t)-step_nudge(s) / 16u;
     if (t->seq_pos + lead < cur_len) return;
     {   /* its turn: played as if on its line (seq_idx and, step 0, seq_pass: the next pass's; STEP EVOLVE's change),
          * its RATCH armed on the line */
-        step_t sv;
-        uint16_t was = t->seq_idx;
+        step_t sv, tv;
+        uint16_t was = t->seq_idx, was_slot = SEQ_D(t).slot;
+        uint8_t rev = SEQ_D(t).rev, cont = SEQ_D(t).cont;
+        SEQ_D(t).rev = SEQ_D(t).nrev;                    /* (a tied run backwards: as on its line, seq_dir.c) */
+        SEQ_D(t).cont = (uint8_t)(SEQ_D(t).nrev && seq_dir_cont(t, was % (len ? len : 1u), ni, len ? len : 1u));
         t->seq_idx = (uint16_t)ni;
-        t->seq_pass += !ni;
+        SEQ_D(t).slot = (uint16_t)ns;
+        t->seq_pass += !ns;
+        s = seq_dir_tie(t, s, &tv, len ? len : 1u);
         s = tessera_step_vary(t, s, &sv);
         s = step_acc(t, s, &sv, t->seq_pass);
         seq_nudge[tr].s = *s;
@@ -230,7 +238,9 @@ static void seq_nudge_tick(track_t *t, uint32_t period, uint32_t cur_len, uint32
         if (seq_nudge[tr].hits > 1u) seq_sub_begin(t);
         seq_step(t, &seq_nudge[tr].s, step_gate(s) ? next_len : period, 0);
         t->seq_idx = was;
-        t->seq_pass -= !ni;
+        SEQ_D(t).slot = was_slot;
+        SEQ_D(t).rev = rev; SEQ_D(t).cont = cont;
+        t->seq_pass -= !ns;
         seq_nudge_early |= (uint8_t)(1u << tr);
     }
 }

@@ -133,6 +133,16 @@ static int shapes_voicings(void)
     t->p[P_CHRD] = CH_MIN7; bad += check("MIN7: C Eb G Bb (Cm7)", chord_is(60, (const uint8_t[]){60, 63, 67, 70}) && name_is(60, "Cm7"));
     t->p[P_CHRD] = CH_SUS4; bad += check("SUS4: C F G (Csus4)", chord_is(60, (const uint8_t[]){60, 65, 67, 0}) && name_is(60, "Csus4"));
     t->p[P_CHRD] = CH_POW; bad += check("POW: C G C (C5)", chord_is(60, (const uint8_t[]){60, 67, 72, 0}) && name_is(60, "C5"));
+    t->p[P_CHRD] = CH_SUS2; bad += check("SUS2: C D G (Csus2)", chord_is(60, (const uint8_t[]){60, 62, 67, 0}) && name_is(60, "Csus2"));
+    t->p[P_CHRD] = CH_7SUS4; bad += check("7SUS4: C F G Bb (C7sus4)", chord_is(60, (const uint8_t[]){60, 65, 67, 70}) && name_is(60, "C7sus4"));
+    t->p[P_CHRD] = CH_ADD9; bad += check("ADD9: C E G D5 (Cadd9)", chord_is(60, (const uint8_t[]){60, 64, 67, 74}) && name_is(60, "Cadd9"));
+    t->p[P_CHRD] = CH_MAJ6; bad += check("MAJ6: C E G A (C6)", chord_is(60, (const uint8_t[]){60, 64, 67, 69}) && name_is(60, "C6"));
+    t->p[P_CHRD] = CH_ADD9; t->p[P_VOIC] = VC_BASS;
+    bad += check("+OCT of ADD9: C3 C E D5 (the fifth dropped)", chord_is(60, (const uint8_t[]){48, 60, 64, 74}) && name_is(60, "Cadd9"));
+    t->p[P_CHRD] = CH_SUS2; t->p[P_VOIC] = VC_OPEN;
+    bad += check("OPEN SUS2: C G D5 (1-5-9)", chord_is(60, (const uint8_t[]){60, 67, 74, 0}));
+    t->p[P_VOIC] = VC_CLOSE;
+    bad += check("CHRD's list ends with MAJ6", TP[P_CHRD].max == CH_MAJ6);
     t->p[P_CHRD] = CH_MIN; t->p[P_SCALE] = 1;
     bad += check("a fixed shape ignores the scale (MIN on D# in C major: D# F# A#)", chord_is(63, (const uint8_t[]){63, 66, 70, 0}));
     t->p[P_CHRD] = CH_MAJ;

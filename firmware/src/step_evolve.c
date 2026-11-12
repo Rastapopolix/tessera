@@ -146,7 +146,7 @@ const step_t *tessera_step_vary(track_t *t, const step_t *s, step_t *out)
     if (!sv_on(t, tr)) return s;
     len = t->p[P_SLEN] ? (uint32_t)t->p[P_SLEN] : 1u;
     if (tess_sv.flash[tr]) tess_sv.flash[tr]--;
-    if (!i && tess_sv.steps[tr] >= tessera_every_bars(tessera.sv_every[tr]) * tess_steps_per_bar(t)) {
+    if (!SEQ_D(t).slot && tess_sv.steps[tr] >= tessera_every_bars(tessera.sv_every[tr]) * tess_steps_per_bar(t)) {
         uint8_t kind[NSTEP];
         const step_t *st = seq_steps(t);
         for (k = 0; k < len && k < NSTEP; k++) kind[k] = (uint8_t)sv_kind(&st[k]);
@@ -247,8 +247,9 @@ void tessera_sv_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;
     tessera_ensure_init();
-    if (tr >= TESSERA_TRACKS || !s || k) return;
+    if (tr >= TESSERA_TRACKS || !s || (k && k != 3u)) return;
     TESS_IRQ_OFF();
-    tess_param_set_body(tr, TX_SV_HOW, (int32_t)tessera.sv_how[tr] + (s > 0 ? 1 : -1));
+    if (k) tess_param_set_body(tr, TX_PAT_GEN, s > 0);   /* (KNOB 4 PAT GEN, as a generator's EVOLVE) */
+    else tess_param_set_body(tr, TX_SV_HOW, (int32_t)tessera.sv_how[tr] + (s > 0 ? 1 : -1));
     TESS_IRQ_ON();
 }

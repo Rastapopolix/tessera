@@ -7,7 +7,7 @@
 static track_t *edit_setup(void)
 {
     ui_power_on();
-    set_engine_of(TSEL, 3);                       /* (SID: the generic ENV) */
+    set_engine_of(TSEL, 6);                       /* (TRIO: the generic ENV) */
     TSEL->engine = TSEL->eng_req;
     TSEL->p[P_VOICE] = V_POLY;
     TSEL->p[P_QUANT] = Q_OFF;
@@ -258,7 +258,8 @@ static int test_step_modifiers(void)
     bad += check("plain STEP OCT+: neither the cursor (the knobs move it) nor the octave (Stage only)", ui.cursor == 7 &&
                  !song.octave && !ui.home && cur_page()->graph == GR_ROLL);
     press(B_OCTDN);
-    bad += check("plain STEP OCT-: Esc, back to Stage, no octave", ui.home && !song.octave);
+    bad += check("plain STEP OCT-: nothing open, so nothing (HOME goes to Stage), no octave",
+                 !ui.home && !song.octave && cur_page()->graph == GR_ROLL);
 
     t = edit_setup(); press(B_ENV);
     bad += check("unused ENV tap still opens ENV", cur_page()->fam == FAM_ENV);

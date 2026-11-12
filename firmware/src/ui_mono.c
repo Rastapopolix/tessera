@@ -173,10 +173,11 @@ static void mo_cut(char *d, const char *s, uint32_t n)   /* s's first n characte
         d[i] = s[i];
     d[i] = 0;
 }
-/* a bar (MENU > KNOBS BAR): an outline 15 x 17 filled from its foot, v 0..1000 */
+/* a bar (MENU > KNOBS BAR): an outline 15 x 17 filled from its foot, v 0..1000; the fill keeps 1 px from the outline all round
+ * (11 wide, 13 high at most: the top too, it touched it at 15) */
 static void mo_bar(int32_t cx, int32_t v, uint16_t c)
 {
-    int32_t h = 15 * v / 1000;
+    int32_t h = 13 * v / 1000;
     mo_box(cx - 7, 20, 15, 17, c);
     if (h)
         mo_fill(cx - 5, 35 - h, 11, h, c);
@@ -287,12 +288,41 @@ static int32_t mo_batt_right(int32_t bat)
     mo_battery(120 - MO_BATT_W, bat);
     return 120 - MO_BATT_W - 2;
 }
+/* OCT+ held where it opens a sheet (the key grammar's rule 5): from 150 ms the sheet's name in the header's title place,
+ * the header's line filling under it until the sheet opens (OCT_HOLD_MS); 0..1000, -1 none */
+static int32_t mo_sheet_hold(const char **name)
+{
+    static const char *const NM[9] = {"", "SOUND", "SONG", "PATTERN", "PATTERNS", "MODS", "GENERATOR", "MIDI OUT",
+                                      "ENTRIES"};
+    uint32_t k, ms;
+    if (!ui.oct_t0 || (ui.oct_t0 & 2u) || !((fm1_in.buttons >> panel.btn[B_OCTUP]) & 1u))
+        return -1;
+    k = page_sheet();
+    if (!k || k > 8u)
+        return -1;
+    ms = (fm1_ticks() - (ui.oct_t0 & ~3u)) / (1000u * FM1_TICKS_PER_US);
+    if (ms < 150u)
+        return -1;
+    *name = NM[k];
+    return ms >= OCT_HOLD_MS ? 1000 : (int32_t)((ms - 150u) * 1000u / (OCT_HOLD_MS - 150u));
+}
+/* the header's line: whole, or (a sheet's hold) solid as far as it has been held, dotted for the rest */
+static void mo_head_line(int32_t y, int32_t hold)
+{
+    int32_t x, w = hold < 0 ? 120 : 120 * hold / 1000;
+    if (w)
+        mo_hl(0, y, w, MO_INK);
+    for (x = w + 1; x < 120; x += 2)
+        mo_fill(x, y, 1, 1, MO_INK);
+}
 static void mo_head(void)
 {
     const page_t *pg = cur_page();
     char t[24], sub[8], at[8];
     uint32_t i;
-    int32_t room, bat = batt_head(), right;
+    int32_t room, bat = batt_head(), right, hold;
+    const char *hn = "";
+    hold = mo_sheet_hold(&hn);
     if (ui.msg_t && ui.msg[0] && (int32_t)str_len(ui.msg) * 6 + 2 > 96 - MO_BATT_W - 2)
         bat = -1;                                       /* (a message too long beside it: for as long as it shows) */
     right = bat >= 0 ? 96 - MO_BATT_W - 2 : 94;         /* (the title and the engine end here) */
@@ -305,6 +335,8 @@ static void mo_head(void)
         mo_cut(t, ui.msg, 15);                          /* position and the engine (they would show through) */
         mo_inv(t, 2, 1);
         at[0] = sub[0] = 0;
+    } else if (hold >= 0) {                             /* OCT+ held: the sheet it opens */
+        mo_text(hn, 1, 1, MO_INK);
     } else {
         str_cpy(t, mo_title(pg), sizeof t);
         if (pg->fam == FAM_GEN && pg->graph == GR_STEPS && song.sel < TESSERA_TRACKS) {
@@ -337,7 +369,7 @@ static void mo_head(void)
     }
     if (song.rec & (1u << song.sel))                    /* REC: a bar under the track's dot */
         mo_hl(97 + (int32_t)song.sel * 6, 8, 5, MO_INK);
-    mo_hl(0, 9, 120, MO_INK);
+    mo_head_line(9, hold);
 }
 /* a value as its column shows it: five characters at most (MORPH, 0.25); longer, a number loses its last decimals
  * (128.00: 128.0) and a word its vowels from the end (MARKOV: MARKV, REVERB: REVRB), then an H; still longer, cut (1: the Mono
@@ -1192,7 +1224,7 @@ static void mo_pic_chord(uint32_t tr)
 }
 /* ANSWER: the phrase on a staff of its steps, a note a square at its height, lines joining them, the one playing
  * ringed; under it what it does now: LISTENING, an answer of FADE's count (a square an answer, the played ones dim),
- * LOOPS or PLAY KEYS. The squares outlined once the answers fade past half */
+ * LOOPS or PLAY KEYS (a generator SOURCE: LISTENING). The squares outlined once the answers fade past half */
 static void mo_pic_answer(uint32_t tr)
 {
     const tessera_answer_t *a = tessera_answer(tr);
@@ -1221,7 +1253,7 @@ static void mo_pic_answer(uint32_t tr)
             else mo_fill(x - 1, y - 1, 3, 3, MO_INK);
             if (song.playing && now == i + 1u && (ph == TESS_AN_PLAY || ph == TESS_AN_LOOP)) mo_circ(x, y, 3, MO_INK);
         }
-    if (ph == TESS_AN_HEAR) str_cpy(b, "LISTENING", sizeof b);
+    if (ph == TESS_AN_HEAR || (ph == TESS_AN_IDLE && answer_gen_src(tr))) str_cpy(b, "LISTENING", sizeof b);
     else if (!n || ph == TESS_AN_IDLE) str_cpy(b, "PLAY KEYS", sizeof b);
     else if (!cnt) str_cpy(b, "LOOPS", sizeof b);
     else {
@@ -1604,7 +1636,7 @@ static void mo_pic_chain(void)
         if (fc_follows(i)) mo_invc(t, 3 + (int32_t)i * 16, 93, MO_TRK(i));
     }
 }
-/* PIECE: the SHAPE over the piece (USER: its points, the layer's four filled); playing, the play head; the time left
+/* PIECE: the SHAPE over the piece (USER: its points, OCT- held the one picked bigger); playing, the play head; the time left
  * (or FREE, or ENDED) on the foot row */
 static void mo_pic_piece(void)
 {
@@ -1620,7 +1652,7 @@ static void mo_pic_piece(void)
     if (tessera.pl_shape == PL_USER)
         for (i = 0; i < 8; i++) {
             int32_t x = 2 + i * 115 / 7, y = 86 - (int32_t)tessera.pl_user[i] * 32 / 100;
-            mo_disc(x, y, lay && (i >> 2) == lay - 1 ? 3 : 2, MO_INK);
+            mo_disc(x, y, lay && i == (int32_t)(pl_pt & 7u) ? 3 : 2, MO_INK);
         }
     if (on && song.playing) mo_vl(2 + (int32_t)(at * 115u >> 16), 52, 36, MO_INK);
     if (!set) str_cpy(b, "FREE", sizeof b);
@@ -1648,8 +1680,8 @@ static void mo_pic_perf(void)
         mo_text(n ? b : "NO MOD", 82, y, n ? MO_INK : MO_DIM);
     }
 }
-/* ENTRIES: a row a track: its number, its role (AUTO's guess), IN / OUT / MUTE, its level as a bar; a row about
- * to change on the next line blinks; off: dim */
+/* ENTRIES: a row a track: its number, its role (AUTO's guess), IN / OUT / MUTE, its level as
+ * a bar; a row about to change on the next line blinks; off: dim */
 static void mo_pic_entries(void)
 {
     uint8_t role[TESSERA_TRACKS];
@@ -1801,12 +1833,16 @@ static void mo_pic_arp(const track_t *t)
             for (j = i; j > 0 && base[j - 1] > base[j]; j--) { uint8_t x = base[j]; base[j] = base[j - 1]; base[j - 1] = x; }
     for (o = 0; o < oct; o++)
         for (i = 0; i < nb && n < 16u; i++) seq[n++] = (uint8_t)clamp(base[i] + 12 * (int32_t)o, 0, 127);
-    if (mode == 2u)                                     /* DN */
+    if (mode == 2u || mode == 7u)                       /* DN; DNUP from the top */
         for (i = 0; i < n / 2u; i++) { uint8_t x = seq[i]; seq[i] = seq[n - 1u - i]; seq[n - 1u - i] = x; }
-    else if (mode == 3u)                                /* UPDN */
+    if (mode == 3u || mode == 7u)                       /* UPDN, DNUP: back without the ends again */
         for (i = n >= 2u ? n - 2u : 0u; i > 0u && n < 16u; i--) seq[n++] = seq[i];
     else if (mode == 4u)                                /* RND: one of its orders */
         for (i = n; i > 1u; i--) { j = (i * 7u + 3u) % i; uint8_t x = seq[i - 1u]; seq[i - 1u] = seq[j]; seq[j] = x; }
+    else if (mode == 8u) {                              /* RND1: one shuffle, played again */
+        for (i = n; i > 1u; i--) { j = (i * 5u + 1u) % i; uint8_t x = seq[i - 1u]; seq[i - 1u] = seq[j]; seq[j] = x; }
+        for (i = 0, j = n; i < j && n < 16u; i++) seq[n++] = seq[i];
+    }
     for (i = 0; i < n; i++) { lo = seq[i] < lo ? seq[i] : lo; hi = seq[i] > hi ? seq[i] : hi; }
     w = n ? 116 / (int32_t)n : 116;
     bw = w - 1 < 10 ? w - 1 : 10;
@@ -2315,6 +2351,11 @@ static void mo_sheet(void)
 }
 
 /* what the page shows: drawn again only when it changes */
+static uint32_t mo_hold_sig(void)
+{
+    const char *hn;
+    return (uint32_t)(mo_sheet_hold(&hn) / 25 + 1);
+}
 static uint32_t mo_signature(void)
 {
     const track_t *t = TSEL;
@@ -2337,6 +2378,7 @@ static uint32_t mo_signature(void)
     if (cur_page()->graph == GR_LFO)                    /* the LFO's dot: 116 places a cycle */
         h = (h ^ (t->lfo_ph / (0xFFFFFFFFu / 116u))) * 16777619u;
     h = (h ^ (uint32_t)(batt_head() + 1)) * 16777619u;   /* (the header's battery) */
+    h = (h ^ mo_hold_sig()) * 16777619u;                 /* (OCT+ held: the sheet's line filling) */
     if (ui.msg_t)
         h = (h ^ str_hash(1u, ui.msg)) * 16777619u;
     if (cur_page()->graph == GR_LAND)                   /* LANDSCAPE: the scene, a step on */
@@ -2413,7 +2455,7 @@ static void mono_page(void)
 static void mo_dhead(const char *chip, const char *msg, int32_t bat)
 {
     char b[24], t[24];
-    int32_t x = 119;
+    int32_t x = 119, hold = msg ? -1 : mo_sheet_hold(&chip);   /* (OCT+ held: the sheet it opens, in the chip) */
     cv_begin(240, H_HEAD, MO_BG);
     fmt_int(b, song.g[G_BPM]);
     x = 119 - mo_tw(b);
@@ -2456,7 +2498,7 @@ static void mo_dhead(const char *chip, const char *msg, int32_t bat)
         fmt_int(t + 1, song.octave < 0 ? -song.octave : song.octave);
         mo_text(t, mo_tw(b) + 6, 1, MO_INK);
     }
-    mo_hl(0, 8, 120, MO_INK);
+    mo_head_line(8, hold);
     cv_blit(0, Y_HEAD);
 }
 /* a list page's rows (list_rows; 22 px = 11 cells apart): the label at the left, the value at the right (dim), the
@@ -2686,10 +2728,14 @@ static void mo_stage_col(uint32_t k, int top)
 static void mo_stage_head(void)
 {
     char b[16];
-    int32_t right = mo_batt_right(batt_head()), msg = ui.msg_t && ui.msg[0];
+    int32_t right = mo_batt_right(batt_head()), msg = ui.msg_t && ui.msg[0], hold;
+    const char *hn = "";
+    hold = msg ? -1 : mo_sheet_hold(&hn);
     if (msg) {
         mo_cut(b, ui.msg, 15);
         mo_inv(b, 2, 1);
+    } else if (hold >= 0) {                             /* OCT+ held: the sheet it opens */
+        mo_text(hn, 1, 1, MO_INK);
     } else {
         if (song.playing) {                             /* PLAY: a triangle; STOP: a square */
             int32_t r;
@@ -2705,7 +2751,7 @@ static void mo_stage_head(void)
         str_cpy(b, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), 8);
         mo_textr(b, right < 119 ? right : 118, 1, MO_DIM);
     }
-    mo_hl(0, 9, 120, MO_INK);
+    mo_head_line(9, hold);
 }
 static void mo_stage_wave(int32_t top, int32_t h, uint16_t c)   /* the output, triggered on a rising zero crossing */
 {
@@ -2813,7 +2859,7 @@ static uint32_t mo_stage_signature(void)
         for (k = 0; k < sizeof mo_col; k++)
             h = (h ^ p[k]) * 16777619u;
     }
-    return h;
+    return (h ^ mo_hold_sig()) * 16777619u;             /* (OCT+ held: the sheet's line filling) */
 }
 static void mono_stage(void)
 {
@@ -2911,7 +2957,7 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
 /* ---- MODS (CORDS) ---- */
 /* a cord's row (cu_rows; 120 x 24 cells): its number, the source as its track and four letters, an arrow, the
  * destination so, the move at the right; the cord picked outlined; under them its light and move (mo_cu_bar) */
-static void mo_cu_side(int32_t x, uint32_t tr, const char *name, int has_trk, int on)
+static void mo_cu_side(int32_t x, uint32_t tr, const char *name, int has_trk, int on, uint16_t ink)
 {
     char a[8];
     if (!on) {
@@ -2925,57 +2971,124 @@ static void mo_cu_side(int32_t x, uint32_t tr, const char *name, int has_trk, in
     {                                                   /* the mark (+ one way, ^ GATE) outlasts the abbreviation */
         char w[16];
         uint32_t n = str_len(name);
-        char mk = n > 1u && (name[n - 1u] == '+' || name[n - 1u] == '^') ? name[n - 1u] : 0;
+        char mk = n > 1u && (name[n - 1u] == '+' || name[n - 1u] == '^' || name[n - 1u] == '=') ? name[n - 1u] : 0;
         str_cpy(w, name, sizeof w);
         if (mk)
             w[n - 1u < sizeof w - 1u ? n - 1u : sizeof w - 1u] = 0;
         mo_abbr(a, w);
         if (mk) {
-            if (str_len(a) > 3u)
+            n = str_len(w);
+            if (str_len(a) > 3u) {                      /* (a name ending in one letter or digit keeps it: BUS A, */
+                if (n > 2u && w[n - 2u] == ' ')         /* SWARM 3, MACRO 1 as BUA SW3 MC1, not BUS SWR MCR) */
+                    a[2] = w[n - 1u];
                 a[3] = 0;
+            }
             n = str_len(a), a[n] = mk, a[n + 1u] = 0;
         }
     }
-    mo_text(a, x + 8, 3, MO_INK);
+    mo_text(a, x + 8, 3, ink);
 }
 static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on)
 {
     char b[16];
+    const char *e;
     uint16_t ink = on ? MO_INK : MO_DIM;
     cv_begin(240, CU_H, MO_BG);
     if (sel)
         mo_box(1, 0, 118, CU_H / 2 - 1, MO_INK);
     fmt_int(b, (int32_t)n);
     mo_text(b, n >= 10u ? 3 : 5, 3, sel ? MO_INK : MO_DIM);
-    mo_cu_side(13, c->src_trk, cu_src_name(c), cu_src_trk(c->src), c->src != CS_OFF);
+    mo_cu_side(13, c->src_trk, cu_src_name(c), cu_src_trk(c->src), c->src != CS_OFF, MO_INK);
     mo_text(">", 47, 3, ink);
-    mo_cu_side(54, c->dst_trk, cu_dst_mono(c), !cu_global(c->dst), c->dst != CD_OFF);
+    e = cu_eng_dst(c);                                  /* (CUTOFF, SHAPE: the engine's own knob, dim where none) */
+    mo_cu_side(54, c->dst_trk, e && *e ? e : cu_dst_mono(c), !cu_global(c->dst), c->dst != CD_OFF, e && !*e ? MO_DIM : MO_INK);
     fmt_int(b + 1, cu_pct(c) < 0 ? -cu_pct(c) : cu_pct(c));
     b[0] = cu_pct(c) < 0 ? '-' : '+';
     str_cpy(b + str_len(b), "%", 2);
     mo_textr(cu_pct(c) ? b : b + 1, 116, 3, sel ? MO_INK : ink);
 }
-/* the move (cu_bar's canvas, 105 x 4 cells): the line, its middle, the amount from the middle (a +- mod's both ways:
- * its source swings it as far down as up), a mark where it moves the destination now */
-static void mo_cu_bar(const cord_t *c, int32_t s)
+/* MODS' cells ox pixels to the right (cu_rows: a row's move and light drawn into the row's canvas, where they sit at
+ * odd pixels) */
+static void mo_ofill(int32_t ox, int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c)
+{
+    if (w > 0)
+        cv_rect(ox + x * 2, y * 2, w * 2, h * 2, c);
+}
+/* the move (105 x 4 cells from ox pixels: cu_bar's canvas, or the row's): the line, its middle, the amount from the
+ * middle (a +- mod's both ways: its source swings it as far down as up), a mark where it moves the destination now */
+static void mo_cu_bar(const cord_t *c, int32_t s, int32_t ox)
 {
     int on = cord_live(c);
     int32_t a = cu_now(c), m = 52, x = 1 + (a + 100) * 102 / 200, lx = m + clamp(s, -32768, 32768) * 51 / 32768;
     int32_t d = x < m ? m - x : x - m;
-    cv_begin(CU_BAR_W, 9, MO_BG);
-    mo_hl(1, 2, 102, MO_DIM);
+    mo_ofill(ox, 1, 2, 102, 1, MO_DIM);
     if (a)
-        mo_fill(cord_bip(c) ? m - d : x < m ? x : m, 1, cord_bip(c) ? 2 * d : d, 2, on ? MO_INK : MO_DIM);
-    mo_vl(m, 0, 4, MO_DIM);
-    if (on && c->src)
-        mo_vl(lx, 0, 4, MO_INK);
+        mo_ofill(ox, cord_bip(c) ? m - d : x < m ? x : m, 1, cord_bip(c) ? 2 * d : d, 2, on ? MO_INK : MO_DIM);
+    mo_ofill(ox, m, 0, 1, 4, MO_DIM);
+    if ((on || cord_src_only(c)) && c->src)             /* (no destination yet: where its source is) */
+        mo_ofill(ox, lx, 0, 1, 4, MO_INK);
 }
-/* the light (cu_leds' canvas, 4 x 4 cells): how far the cord moves its destination now, lit or dim */
-static void mo_cu_led(uint32_t lv)
+/* the light (4 x 4 cells from ox pixels, as mo_cu_bar): how far the cord moves its destination now, lit or dim (a disc
+ * of radius 1: three cells square) */
+static void mo_cu_led(uint32_t lv, int32_t ox)
 {
-    cv_begin(8, 8, MO_BG);
     if (lv)
-        mo_disc(1, 1, 1, lv > 3u ? MO_INK : MO_DIM);
+        mo_ofill(ox, 0, 0, 3, 3, lv > 3u ? MO_INK : MO_DIM);
+}
+/* the MOD SCOPE (mscope.c) in h cells from row top, columns from x 4, on one scale (the middle 0 dotted, the top
+ * +100 %): the mod's move a line through each column's mean, a column's lowest to highest only where it jumped (not
+ * where it turned back and forth: a fast mod's band would smear); its source behind it, a dim dot in four columns; a
+ * GATE's threshold a wedge at each edge pointing in (filled while open), dashed across while KNOB 4 turns it (across);
+ * a bar a tick on the bottom edge; the sweep's head a gap of three columns. tk: the source's track (MOSAIC: its ink),
+ * -1 the project's (the ink) */
+#define MSC_JUMP 32                                     /* a column's span over an eighth of the scale: a jump */
+static void mo_scope(int32_t top, int32_t h, int32_t tk, int across)
+{
+    const cord_t *c = cord_get(mscope.cord);
+    int32_t x, cy = top + h / 2, r = (h - 1) / 2, n = mscope.full ? (int32_t)MSC_W : mscope.col, pa, pb;
+    int32_t bars = mscope.bars ? mscope.bars : 1, step = bars > 8 ? bars / 4 : 1;
+    uint16_t ink = tk < 0 ? MO_INK : MO_TRK((uint32_t)tk), dim = tk < 0 ? MO_DIM : mo_tdim((uint32_t)tk);
+#define MSY(v) (cy - (int32_t)(v) * r / 127)
+#define MSHEAD(x) (mscope.full && (uint32_t)(((x) - mscope.col + (int32_t)MSC_W) % (int32_t)MSC_W) < 3u)
+    for (x = 2; x < (int32_t)MSC_W; x += 8)
+        mo_px(4 + x, cy, MO_DIM);
+    for (x = 0; x < bars; x += step)                    /* (the bars: 16 and 64 in fours) */
+        mo_vl(4 + x * (int32_t)MSC_W / bars, top + h - 2, 2, MO_DIM);
+    if (cord_gate(c)) {
+        int32_t ty = MSY(msc_q(cord_thresh(c))), o = cord_gate_on(c), k;
+        if (across)
+            for (x = 0; x < (int32_t)MSC_W; x += 5)
+                mo_hl(4 + x, ty, 3, MO_INK);
+        for (k = 0; k < 2; k++) {                       /* (left at 1 .. 3, right at 116 .. 118; shut: hollow) */
+            int32_t e = k ? 118 : 1, i = k ? -1 : 1;
+            mo_vl(e, ty - 2, 5, MO_INK);
+            mo_px(e + i, ty - 1, MO_INK);
+            mo_px(e + i, ty + 1, MO_INK);
+            if (o) mo_px(e + i, ty, MO_INK);
+            mo_px(e + 2 * i, ty, MO_INK);
+        }
+    }
+    if (c->src)                                         /* the source (a fixed move: none) */
+        for (x = 0; x < n; x += 4)
+            if (!MSHEAD(x)) mo_px(4 + x, MSY(mscope.sv[x]), dim);
+    for (x = 0, pa = pb = -1; x < n; x++) {             /* the move over it; pa .. pb the column before's own */
+        int32_t y0 = MSY(mscope.mv[x]), y1 = y0, c0, c1;
+        if (!((mscope.busy[x >> 3] >> (x & 7)) & 1u) && mscope.hi[x] - mscope.lo[x] > MSC_JUMP)
+            y0 = MSY(mscope.hi[x]), y1 = MSY(mscope.lo[x]);   /* (a jump: its span) */
+        if (MSHEAD(x)) {
+            pa = -1;                                    /* (not joined across the head) */
+            continue;
+        }
+        c0 = y0, c1 = y1;
+        if (pa >= 0) {                                  /* (joined to it where apart: one line, no step drawn twice) */
+            if (pb < c0) y0 = pb + 1;
+            if (pa > c1) y1 = pa - 1;
+        }
+        mo_vl(4 + x, y0, y1 - y0 + 1, ink);
+        pa = c0, pb = c1;
+    }
+#undef MSHEAD
+#undef MSY
 }
 
 /* ---- a knob as a chip or a strip (pv_chip, pv_column's CS_STRIP) on the screens drawn by their own code ---- */
@@ -3463,6 +3576,8 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
                             scale * 1031u + fav;
     char a[32], b[32];
     sig ^= (uint32_t)(batt_head() + 1) * 2654435761u;   /* (the header's battery) */
+    if (ui.msg_t && ui.msg[0])                          /* (a message: USER1 F# IN, ROOT STAYS; 3.5-beta7: never shown) */
+        sig = str_hash(sig + 1u, ui.msg);
     if (!ui.force && sig == mo_sc_sig)
         return;
     mo_sc_sig = sig;
@@ -3472,6 +3587,10 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
         cv_oy = -(int32_t)s * 120;
         b[0] = (char)('1' + song.sel % NTRK);
         str_cpy(b + 1, " SCALES", 8);
+        if (ui.msg_t && ui.msg[0]) {                    /* a message: in the header's place, inverted (as mo_head) */
+            mo_cut(b, ui.msg, 19);
+            mo_inv(b, 2, 1);
+        } else {
         mo_fill(0, 0, mo_tw(b) + 3, 8, MO_INK);
         {
             int32_t chip = mo_text(b, 1, 1, MO_BG) + 3, right = mo_batt_right(batt_head());
@@ -3480,6 +3599,7 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
             if (right - mo_tw(b) < chip + 3)            /* (no room: the number) */
                 fmt_int(b, (int32_t)total);
             mo_textr(b, right, 1, MO_DIM);
+        }
         }
         mo_hl(0, 8, 120, MO_INK);
         for (f = 0; f <= SCALE_FAM_USER; f++) {         /* the families (8 px rows: eleven above the foot) */
@@ -3501,22 +3621,22 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
             id = scale_picker_at((uint32_t)at);
             scales_name(a, id, sizeof a);
             mo_ascii(b, a, sizeof b);
-            if (!d) {                                   /* the one picked: its name in two lines */
+            if (!d) {                                   /* the one picked: its name in two lines, inverted (as the family) */
                 uint32_t n = str_len(b), cut = n > 10u ? 10u : n, k;
                 char l[12];
                 for (k = cut; n > 10u && k > 3u; k--)  /* (at a space or after a hyphen that fits) */
                     if (b[k] == ' ' || b[k - 1u] == '-') { cut = k; break; }
-                mo_box(48, 33, 68, 33, MO_INK);
+                mo_fill(48, 33, 68, 33, MO_INK);
                 mo_cut(l, b, cut);
-                mo_text(l, 51, 36, MO_INK);
+                mo_text(l, 51, 36, MO_BG);
                 while (b[cut] == ' ') cut++;
                 mo_cut(l, b + cut, 10);
-                mo_text(l, 51, 45, MO_INK);
+                mo_text(l, 51, 45, MO_BG);
                 if (scale_pick_fav(id))
-                    mo_text("*", 110, 36, MO_INK);
+                    mo_text("*", 110, 36, MO_BG);
                 fmt_int(b, (int32_t)scale_pick_degrees(id));
                 str_cpy(b + str_len(b), scale_pick_nonoct(id) ? " NON-OCT" : " NOTES", 10);
-                mo_text(b, 51, 56, MO_DIM);
+                mo_text(b, 51, 56, MO_BG);
             } else {
                 b[11] = 0;
                 mo_text(b, 50, d < 0 ? 36 + d * 11 : 59 + d * 11, d == -1 || d == 1 ? MO_INK : MO_DIM);
@@ -3656,7 +3776,10 @@ static void mo_smap(uint32_t cur)
             n = smap_pages(r, pg);
             mo_ascii(t, sec.name[r], sizeof t);
             mo_cut(b, t, 5);
-            mo_text(b, 2, y, r == cur ? MO_INK : MO_DIM);
+            if (r == smap.row) {                        /* the cursor's row: its name inverted (as a list's row) */
+                mo_fill(0, y - 1, 32, 9, MO_INK);
+                mo_text(b, 2, y, MO_BG);
+            } else mo_text(b, 2, y, r == cur ? MO_INK : MO_DIM);
             w = n ? (86 - (int32_t)(n - 1u) * 2) / (int32_t)n : 0;
             for (c = 0; c < n; c++) {
                 int32_t x = 34 + (int32_t)c * (w + 2);

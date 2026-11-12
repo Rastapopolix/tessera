@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
 // fm1backup.js against a simulated device: 7-bit packing, CRC, manifest checks, a full capture,
 // validation before the first write, restore order (live music last) and abort on a failed chunk.
-import { BACKUP_IDS, BACKUP_CMD, bkU32, bkR32, bkPack, bkUnpack, bkCrc, bkManifest, readBackup, captureBackup, restoreBackup, tspName, readSlots, putProject } from "./fm1backup.js";
+import { BACKUP_IDS, BACKUP_CMD, bkU32, bkR32, bkPack, bkUnpack, bkCrc, bkManifest, readBackup, captureBackup, restoreBackup, tspName, readSlots, readProject, putProject } from "./fm1backup.js";
 
 let fails = 0;
 const ok = (c, what) => { console.log(`${what.padEnd(72)} ${c ? "ok" : "FAIL"}`); if (!c) fails++; };
@@ -220,6 +220,19 @@ ok(await athrows(()=>restoreBackup(oldOwnedTarget.request,ownedFile)) && !oldOwn
   const refusing = device([[0, still.slice()]], { ids }); refusing.request = ((r0) => async (r) => { const a = await r0(r); return r[1][0] === 2 ? [2, a[1], 2] : a; })(refusing.request);
   ok(await athrows(() => putProject(refusing.request, 0, still)), "demos: a firmware that cannot read the record says so");
   ok(await athrows(() => readSlots(device([[0, rnd(3388, 2)]], { ids }).request)), "demos: firmware before Tessera's own format is refused");
+}
+
+{ /* Project files: a slot's record out as a .tsp file and into another FM-1's slot (or the simulator's), byte for byte */
+  const { readFileSync } = await import("node:fs");
+  const still = new Uint8Array(readFileSync(new URL("../demos/still-tide.tsp", import.meta.url))), ids = Array.from({ length: 30 }, (_, i) => i);
+  const a = device([[0, still.slice()], [4, still.slice()]], { ids });
+  const out = await readProject(a.request, 2);
+  ok(out.length === still.length && out.every((x, i) => x === still[i]) && tspName(out) === "STILL TIDE", "project files: slot C read whole");
+  ok((await readProject(a.request, 0)).length === 0 && await athrows(() => readProject(a.request, 4)), "project files: an empty slot is empty, no slot E");
+  ok(!a.log.length, "project files: reading writes nothing");
+  const b = device([[0, still.slice()]], { ids });
+  await putProject(b.request, 3, out);
+  ok(JSON.stringify(b.log) === "[5]" && b.objs.get(5).every((x, i) => x === still[i]), "project files: the file into slot D, nothing else written");
 }
 
 console.log(fails ? `BACKUP WEB TESTS FAILED (${fails})` : "backup web tests passed");

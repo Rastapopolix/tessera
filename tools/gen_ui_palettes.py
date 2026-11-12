@@ -23,6 +23,8 @@ blends (src/gfx.c, the same integer maths as mix() here):
 Outside the palette: REC, a fixed red; the QR code's fixed black and white; the crash screen's fixed red.
 GRAY (pure grayscale, R = G = B in every colour and tint) is compiled into the host tests only (UI_TEST_PALETTE):
 every screen drawn in it must stay gray, which proves the drawing takes every colour from the tokens.
+GROUND LIGHT (the Mono look): each Mono palette's light version, its inks from LIGHT_INKS on paper (LIGHT_BG); checked
+with MONO_CHECKS as the dark ones, and a MOSAIC's four light inks must all differ.
 Saved settings name palettes by a tagged id (PAL_TAG + slot, SLOTS); any other id reads as the default.
 --report prints the WCAG contrast of every pairing, with each track colour as THEME. The tool fails on any miss.
 """
@@ -62,6 +64,38 @@ for _n, _t in (("SUNSET", ((255, 144, 40), _INK["HOT PINK"], _INK["LILAC"], _INK
                ("OCEAN", (_INK["BLUE"], (64, 224, 208), _INK["GREEN"], _INK["LILAC"])),
                ("NEON", ((0, 230, 255), (255, 90, 230), (180, 255, 0), (255, 140, 0)))):
     MONO_PALETTES.append((_n, (0, 0, 0), (20, 20, 20), _t[0], _INK["WHITE"], _t))
+# MENU > GROUND LIGHT (#557, Theo 2026-11-10): the chosen palette's light version, dark inks on warm paper. A few light
+# inks shared by the nine (each dark enough for MONO_CHECKS' 7:1 on paper); a MOSAIC's four tracks each their own, its
+# ACCENT CHARCOAL. SUNSET's yellow would collide with its orange (both SEPIA): CHARCOAL takes its place. WHITE on paper
+# is pure BLACK, and COLOR names it so (Theo's device test, beta5); RED and HOT PINK look nearly like PINK on paper, and
+# ORANGE like YELLOW (both SEPIA), so COLOR shows only PINK and YELLOW there (LIGHT_AS: a saved RED, HOT PINK or ORANGE
+# is shown and drawn as the one it stands for, and is itself again on DARK)
+LIGHT_BG, LIGHT_SURF = (236, 232, 220), (222, 217, 203)
+LIGHT_INKS = [("CHARCOAL", (34, 34, 34)), ("SEPIA", (100, 60, 8)), ("FOREST", (16, 84, 34)), ("NAVY", (30, 50, 140)),
+              ("CRIMSON", (140, 16, 46)), ("PLUM", (100, 40, 130)), ("TEAL", (0, 80, 84)), ("BLACK", (0, 0, 0))]
+LIGHT_ONE = {"WHITE": "BLACK", "YELLOW": "SEPIA", "ORANGE": "SEPIA", "GREEN": "FOREST", "BLUE": "NAVY",
+             "RED": "CRIMSON", "PINK": "CRIMSON", "HOT PINK": "CRIMSON", "LILAC": "PLUM"}
+LIGHT_MOSAIC = {"MOSAIC": ("SEPIA", "NAVY", "CRIMSON", "FOREST"), "SUNSET": ("SEPIA", "CRIMSON", "PLUM", "CHARCOAL"),
+                "OCEAN": ("NAVY", "TEAL", "FOREST", "PLUM"), "NEON": ("TEAL", "PLUM", "FOREST", "SEPIA")}
+LIGHT_ACCENT = "CHARCOAL"                # a MOSAIC's selected value (dark: white)
+LIGHT_AS = {"RED": "PINK", "HOT PINK": "PINK", "ORANGE": "YELLOW"}   # COLOR on LIGHT: these hidden, shown (and drawn) as that one
+LIGHT_RENAME = ("WHITE", "BLACK")        # COLOR on LIGHT names this ink so
+
+
+def light_names(p):
+    """palette p's light inks: tracks 1..4, then ACCENT"""
+    if p[0] in LIGHT_MOSAIC:
+        return LIGHT_MOSAIC[p[0]] + (LIGHT_ACCENT,)
+    return (LIGHT_ONE[p[0]],) * 5
+
+
+def light_pal(p):
+    """palette p on paper, as a palette row"""
+    c = dict(LIGHT_INKS)
+    n = light_names(p)
+    return (p[0], LIGHT_BG, LIGHT_SURF, c[n[0]], c[n[4]], tuple(c[x] for x in n[:4]))
+
+
 MONO_SLOTS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
 MONO_DEFAULT = "YELLOW"
 SLOTS = [0, 2, 3, 4, 5]            # each palette's stored slot; 1 was DAY (retired: its stored id reads as the default)
@@ -214,7 +248,21 @@ def main():
             c = contrast(d[f], d[b])
             if c < lim:
                 fails.append(f"{name}: {f}/{b} {c:.2f} < {lim} ({why})")
-    for name, d in mono_rows:                # one ink on black: its text, labels and inverted text (ink on BG fills)
+    _mn = [p[0] for p in MONO_PALETTES]
+    for a_, b_ in LIGHT_AS.items():          # a hidden ink: a one-ink palette, drawn exactly as the one shown for it
+        pa, pb = MONO_PALETTES[_mn.index(a_)], MONO_PALETTES[_mn.index(b_)]
+        assert pa[5][0] == pa[5][1] and b_ not in LIGHT_AS and light_names(pa) == light_names(pb), a_
+    assert LIGHT_RENAME[0] in _mn and LIGHT_RENAME[0] not in LIGHT_AS
+    for p in MONO_PALETTES:                  # GROUND LIGHT: the same checks on paper, a MOSAIC's four all different
+        lp = light_pal(p)
+        if p[5][0] != p[5][1]:
+            if len(set(lp[5])) != 4:
+                fails.append(f"{p[0]}/LIGHT: its four light inks are not all different: {light_names(p)[:4]}")
+            mono_rows += [derive((f"{p[0]}/L",) + lp[1:3] + (c, c, lp[5]), t) for t, c in enumerate(lp[5])]
+            mono_rows.append(derive((f"{p[0]}/L/SEL",) + lp[1:3] + (lp[4], lp[4], lp[5]), 0))
+        else:
+            mono_rows.append(derive((f"{p[0]}/L",) + lp[1:], 0))
+    for name, d in mono_rows:                # one ink on black (or paper): its text, labels and inverted text (ink on BG fills)
         for f, b, lim, why in MONO_CHECKS:
             c = contrast(d[f], d[b])
             if c < lim:
@@ -254,6 +302,22 @@ def main():
             return t
         out = out[:-1] + ["#if MELODEE_LOOK                /* the Mono look: COLOR is its ink on black */",
                           "static const ui_pal_t UI_PALETTES[] = {"] + table(MONO_PALETTES, MONO_SLOTS, MONO_DEFAULT, mono_names)
+        _li = [x[0] for x in LIGHT_INKS]
+        assert len(_li) <= 8
+        out += ["/* GROUND LIGHT (src/gfx.c palette_set): paper, and each palette's light inks (UI_LIGHT_INKS' index for",
+                " * track j in bits 3j .. 3j + 2, ACCENT's in bits 12 .. 14; TEXT is track 1's) */",
+                f"#define UI_LIGHT_BG 0x{to565(LIGHT_BG):04x}u", f"#define UI_LIGHT_SURF 0x{to565(LIGHT_SURF):04x}u",
+                "static const uint16_t UI_LIGHT_INKS[] = {" + ", ".join(f"0x{to565(c):04x}" for _, c in LIGHT_INKS) +
+                "};   /* " + " ".join(_li) + " */",
+                "static const uint16_t UI_LIGHT_MAP[] = {" +
+                ", ".join(f"0x{sum(_li.index(n) << 3 * j for j, n in enumerate(light_names(p))):04x}"
+                          for p in MONO_PALETTES) + "};",
+                "/* COLOR on LIGHT: the ink each is shown as (itself, or the one that stands for it: hidden), and the",
+                " * one renamed */",
+                "static const uint8_t UI_LIGHT_AS[] = {" +
+                ", ".join(str(mono_names.index(LIGHT_AS.get(n, n))) for n in mono_names) + "};",
+                f"#define UI_LIGHT_RENAME_I {mono_names.index(LIGHT_RENAME[0])}u      /* {LIGHT_RENAME[0]} */",
+                f'#define UI_LIGHT_RENAME "{LIGHT_RENAME[1]}"']
         out += ["#else", "static const ui_pal_t UI_PALETTES[] = {"] + table(PALETTES, SLOTS, DEFAULT, names) + ["#endif"]
         out += [f"#define UI_PAL_TAG {PAL_TAG}u          /* stored id = UI_PAL_TAG + UI_PAL_SLOTS[index] */"]
         out += [f"#define UI_{k}_PCT {v}" for k, v in PCT.items()] + [f"#define UI_RAISE_PCT {RAISE_PCT}   /* SURF -> TEXT */"]

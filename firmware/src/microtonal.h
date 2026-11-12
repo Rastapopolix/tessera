@@ -2,6 +2,9 @@
 #pragma once
 #include "scales.h"
 #include "tune.h"
+#include "uscale.h"
+/* the USER scale playing (uscale.h), 0: none (SCL's scale, or TUNING's tuning) */
+static uint32_t uscale_on(void) { return uscale_sel && !tune_scale() ? uscale_mask[(uscale_sel - 1u) % USCALE_SLOTS] : 0u; }
 
 /* Microtonal notes use the existing 7-bit note identity as a scale-degree address:
  * 60 is degree zero at C4 + ROOT + TRN. This keeps independent releases, chords,
@@ -11,6 +14,7 @@ static const micro_scale_t *micro_scale(const track_t *t)
 {
     int32_t s = t->p[P_SCALE];
     if (tune_scale()) return tune_scale();          /* (TUNE: a user tuning stands for SCL, tune.h) */
+    if (uscale_on()) return 0;                      /* (a USER scale: 12 notes, uscale.h) */
     return s >= (int32_t)SCALE_LEGACY && s < (int32_t)SCALE_TOTAL ? &MICRO_SCALE[s - SCALE_LEGACY] : 0;
 }
 static int micro_active(const track_t *t)

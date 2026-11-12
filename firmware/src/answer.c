@@ -8,7 +8,8 @@
  * again. At the top of FADE it never forgets: its notes run as four loops of unequal lengths (LEN; Eno's tape loops),
  * so it never quite repeats. ECHO: a note now and then comes back once, softer, a few steps later, sometimes an octave
  * up. The phrase is saved (a project answers at PLAY); timing snaps to steps (SUB later). SOURCE (T1..T4, STEP as
- * seed's: tessera.sd_src) makes a STEP pattern the phrase instead, read again before each answer. Included by tessera.c */
+ * seed's: tessera.sd_src) makes a STEP pattern the phrase instead, read again before each answer; a generator track's
+ * SOURCE (BOUNCE, TURING ...) is heard instead: the notes it plays are the call, as the keys' are. Included by tessera.c */
 
 static const uint8_t AN_LOOPS[TESS_AN_LENS][4] = {{5, 7, 11, 13}, {13, 17, 23, 29}, {23, 29, 31, 37}};
 
@@ -19,13 +20,27 @@ uint32_t tessera_answer_count(uint32_t tr)
     return f >= 100u ? 0u : 1u + f * 15u / 99u;
 }
 
+/* SOURCE another track with a generator: its notes heard as played (tessera_answer_heard), its STEP pattern not read
+ * (Theo, 3.5-beta4: BOUNCE on T1 answered as T1's hidden pattern, one note) */
+static int answer_gen_src(uint32_t tr)
+{
+    uint32_t s = tessera.sd_src[tr];
+    return s && s <= TESSERA_TRACKS && s != tr + 1u && tessera.mode[s - 1u] != TESS_ENG_OFF;
+}
+
 /* SOURCE: the call is that track's STEP pattern playing now (this track's own too), its first 8 notes at their steps
  * (a chord its first note, a drum hit its lane's note); 0: none (OFF, or a pattern without notes: the keys' call) */
+/* SOURCE the ANSWER track itself: its own STEP pattern is the call (shown OWN, not "T4", which read like a slip) */
+static int answer_own(uint32_t tr)
+{
+    return tr < TESSERA_TRACKS && tessera.mode[tr] == TESS_ENG_ANSWER && tessera.sd_src[tr] == tr + 1u;
+}
 static int answer_source(uint32_t tr)
 {
     uint32_t s = tessera.sd_src[tr], i, n = 0, note, vel, len;
     tessera_answer_t *a = &tessera.answer[tr];
     if (!s || s > TESSERA_TRACKS || tessera.mode[tr] != TESS_ENG_ANSWER) return 0;   /* (another mode's SOURCE: its own) */
+    if (answer_gen_src(tr)) return 0;                  /* (a generator: heard, tessera_answer_heard) */
     len = sd_len(s - 1u);
     for (i = 0; i < len && i <= TESS_AN_AT_MAX && n < TESS_AN_NOTES; i++)
         if (sd_step(s - 1u, i, &note, &vel)) {
@@ -43,6 +58,7 @@ static int answer_source(uint32_t tr)
 static void answer_restart(uint32_t tr)
 {
     answer_source(tr);
+    if (answer_gen_src(tr)) tessera.answer[tr].n = 0;  /* (a generator's call: heard afresh) */
     tess_an.phase[tr] = tessera.answer[tr].n ? TESS_AN_GAP : TESS_AN_IDLE;
     tess_an.cnt[tr] = 0;
     tess_an.ans[tr] = 0;
@@ -85,6 +101,17 @@ void tessera_answer_hear_at(track_t *t, uint32_t note, uint32_t vel, uint32_t la
     a->at[n] = (uint8_t)at;
     a->n = (uint8_t)(n + 1u);
     tess_an.cnt[tr] = 0;
+}
+
+/* track src (a generator) has just played note: each ANSWER with SOURCE src that listens or rests hears it, as a key
+ * at velocity 100 (so a BOUNCE call: up to 8 notes, closed by a bar without one, or at the 8th's bar); one answering
+ * (or LOOPS) goes on. Two ANSWERs each other's SOURCE: a conversation */
+static void tessera_answer_heard(uint32_t src, uint32_t note)
+{
+    for (uint32_t f = 0; f < TESSERA_TRACKS; f++)
+        if (tessera.mode[f] == TESS_ENG_ANSWER && tessera.sd_src[f] == src + 1u && f != src &&
+            (tess_an.phase[f] == TESS_AN_HEAR || tess_an.phase[f] == TESS_AN_IDLE))
+            tessera_answer_hear_at(&trk[f], note, 100u, 0);
 }
 
 /* a new answer's (or loop round's) choices: the changes (vary.c, LOCK 50: half of them stay), the order, the SHIFT */

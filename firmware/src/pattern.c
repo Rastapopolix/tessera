@@ -9,12 +9,18 @@ static pattern_t pattern_pool[2][NPAT] __attribute__((section(".pool")));
 static pattern_t pattern_bss[NPAT];
 static pattern_t pattern_noinit[NPAT] __attribute__((section(".noinit")));
 static uint8_t chain_patterns[CHAIN_ROWS][NTRK];
+static uint8_t pattern_dir[NTRK][NPAT];             /* each pattern's DIR (TX_SEQ_DIR, SEQ_*; seq_dir.c), 0 FWD: kept
+                                                     * apart from pattern_t, which the audio arena holds */
 static uint8_t motion_pattern[MOTION_MAX];
 static void seq_release(track_t *t);
 static void recording_reset(void);
 static void recording_stop(track_t *t);
 static int recording_owns(const track_t *t, uint32_t note);
 static void motion_restore(track_t *t);
+static void seq_dir_top(track_t *t);                /* (seq_dir.c) */
+static uint32_t seq_dir_next(const track_t *t, uint32_t len);
+static uint32_t seq_dir_cont(const track_t *t, uint32_t from, uint32_t to, uint32_t len);
+static const step_t *seq_dir_tie(const track_t *t, const step_t *s, step_t *tv, uint32_t len);
 static pattern_t *pattern_at(uint32_t track, uint32_t bank)
 {
     return track < 2u ? &pattern_pool[track][bank] : track == 2u ? &pattern_bss[bank] : &pattern_noinit[bank];
@@ -24,6 +30,7 @@ static void pattern_commit(track_t *t)
     pattern_t *p = pattern_at(t - trk, t->pattern);
     memcpy(p->step, t->step, sizeof p->step);
     memcpy(p->timing, &t->p[P_SLEN], sizeof p->timing);
+    if (tessera.pat_gen[(t - trk) % TESSERA_TRACKS]) tessera_pg_store((uint32_t)(t - trk), t->pattern);
 }
 static void pattern_apply(track_t *t, uint32_t bank)
 {
@@ -40,6 +47,7 @@ static void pattern_apply(track_t *t, uint32_t bank)
     t->rh_n = t->rskip_n = 0;
     t->pattern_gen++;
     tessera_step_clear((uint32_t)(t - trk));        /* (STEP EVOLVE: the new steps as written) */
+    tessera_pg_load((uint32_t)(t - trk), bank);     /* (PAT GEN: the pattern's generator, pat_gen.c) */
 }
 static void pattern_init(void)
 {
@@ -50,6 +58,7 @@ static void pattern_init(void)
     memset(pattern_noinit, 0, sizeof pattern_noinit);
     memset(chain_patterns, 0, sizeof chain_patterns);
     memset(motion_pattern, 0, sizeof motion_pattern);
+    memset(pattern_dir, 0, sizeof pattern_dir);
     for (k = 0; k < NTRK; k++) {
         trk[k].pattern = 0; trk[k].pattern_next = 0xff; trk[k].pattern_gen++;
         for (b = 0; b < NPAT; b++) {
@@ -63,6 +72,6 @@ static void pattern_switch(track_t *t, uint32_t bank)
 {
     pattern_commit(t);
     pattern_apply(t, bank);
-    t->seq_idx = (uint16_t)(t->p[P_SLEN] - 1);
+    seq_dir_top(t);                                     /* (from the top, by its DIR) */
     t->seq_pass = 0;                                    /* (the pitch accumulator from the notes as written) */
 }

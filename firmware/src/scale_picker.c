@@ -6,28 +6,33 @@ static int scale_settings_page(const page_t *pg)
     return pg->fam == FAM_SCL && pg->graph == GR_SCALE && pg->id[1] == 0xFF;
 }
 /* The picker's ids: the catalogue's (P_SCALE), then SCALE_TOTAL + k the user tuning in slot k (tune.h: TUNING, the
- * project's), listed in ALL and in USER, the family after the favourites, once the web editor sent them */
-static uint32_t scale_picker_selected(void)         /* the id playing: TUNING's slot, else SCL's */
+ * project's), listed in ALL and in USER, the family after the favourites, once the web editor sent them; then
+ * USCALE_ID + k the USER scale k (uscale.h), always there, in USER only */
+static uint32_t scale_picker_selected(void)         /* the id playing: TUNING's slot, a USER scale, else SCL's */
 {
-    return tune_scale() ? SCALE_TOTAL + tune_sel - 1u : (uint32_t)clamp(TSEL->p[P_SCALE], 0, SCALE_TOTAL - 1u);
+    return tune_scale() ? SCALE_TOTAL + tune_sel - 1u : uscale_on() ? USCALE_ID + uscale_sel - 1u :
+                                                                      (uint32_t)clamp(TSEL->p[P_SCALE], 0, SCALE_TOTAL - 1u);
 }
 static int scale_pick_fav(uint32_t id) { return id < SCALE_TOTAL && scale_favorite(id); }
 static const char *scale_pick_name(uint32_t id)     /* "53EDO", a tuning's own name */
 {
-    return id < SCALE_TOTAL ? N_SCALE[id] : tune_name(id - SCALE_TOTAL);
+    return id < SCALE_TOTAL ? N_SCALE[id] : id >= USCALE_ID ? USCALE_NAME[(id - USCALE_ID) % USCALE_SLOTS] :
+                              tune_name(id - SCALE_TOTAL);
 }
 static const char *scale_pick_title(uint32_t id)    /* "53-tone equal division", a tuning's title (else its name) */
 {
-    return id < SCALE_TOTAL ? SCALE_TITLE[id] : tune_title(id - SCALE_TOTAL)[0] ? tune_title(id - SCALE_TOTAL) :
+    return id < SCALE_TOTAL ? SCALE_TITLE[id] : id >= USCALE_ID ? USCALE_TITLE[(id - USCALE_ID) % USCALE_SLOTS] :
+           tune_title(id - SCALE_TOTAL)[0] ? tune_title(id - SCALE_TOTAL) :
                                                                                    tune_name(id - SCALE_TOTAL);
 }
 static uint32_t scale_pick_degrees(uint32_t id)
 {
-    return id < SCALE_TOTAL ? SCALE_DEGREES[id] : tune_micro[(id - SCALE_TOTAL) % TUNE_SLOTS].count;
+    return id < SCALE_TOTAL ? SCALE_DEGREES[id] :
+           id >= USCALE_ID ? uscale_count(uscale_mask[(id - USCALE_ID) % USCALE_SLOTS]) : tune_micro[(id - SCALE_TOTAL) % TUNE_SLOTS].count;
 }
 static int scale_pick_nonoct(uint32_t id)           /* a period other than the octave */
 {
-    return id < SCALE_TOTAL ? SCALE_FAMILY[id] == 6u :
+    return id < SCALE_TOTAL ? SCALE_FAMILY[id] == 6u : id >= USCALE_ID ? 0 :
                               tune_slot[(id - SCALE_TOTAL) % TUNE_SLOTS].pitch[scale_pick_degrees(id)] != 120000;
 }
 static const char *scale_family_short(uint32_t f) { return f == SCALE_FAM_USER ? "USER" : SCALE_FAMILY_SHORT[f]; }
@@ -38,6 +43,8 @@ static void scale_picker_mark(int on)
 }
 static int scale_picker_match(uint32_t id)
 {
+    if (id >= USCALE_ID)
+        return id < SCALE_PICK_TOTAL && ui.scale_family == SCALE_FAM_USER;
     if (id >= SCALE_TOTAL)
         return id < SCALE_PICK_TOTAL && tune_used(id - SCALE_TOTAL) && (!ui.scale_family || ui.scale_family == SCALE_FAM_USER);
     return !ui.scale_family || (ui.scale_family == SCALE_FAMILIES + 1u ? scale_favorite(id) :
@@ -68,7 +75,11 @@ static uint32_t scale_picker_rank(void)
 static void scale_picker_select(uint32_t id)
 {
     if (id >= SCALE_PICK_TOTAL) return;
-    if (id >= SCALE_TOTAL) {                        /* a user tuning: TUNING, SCL kept underneath */
+    uscale_sel = 0;
+    if (id >= USCALE_ID) {                          /* a USER scale: the project's, SCL kept underneath */
+        tune_sel = 0;
+        uscale_sel = (uint8_t)(id - USCALE_ID + 1u);
+    } else if (id >= SCALE_TOTAL) {                 /* a user tuning: TUNING, SCL kept underneath */
         tune_sel = (uint8_t)(id - SCALE_TOTAL + 1u);
     } else {
         tune_sel = 0;
@@ -77,6 +88,29 @@ static void scale_picker_select(uint32_t id)
     }
     scale_share(TSEL);
     ui.force = 1;
+}
+/* SCALES with a USER scale picked: a key adds its note to the scale or takes it out (the root stays), at once and
+ * saved with the settings; the key still plays (ui_input.c) */
+static void uscale_keys(uint32_t pressed)
+{
+    for (uint32_t k = 0; k < 27u; k++) {
+        uint32_t b = (53u + k + 120u - (uint32_t)TSEL->p[P_ROOT]) % 12u;
+        uint16_t *m = &uscale_mask[(uscale_sel - 1u) % USCALE_SLOTS];
+        char msg[16];
+        if (!((pressed >> k) & 1u)) continue;
+        if (!b) {
+            ui_message("ROOT STAYS");
+            continue;
+        }
+        *m ^= (uint16_t)(1u << b);
+        str_cpy(msg, USCALE_NAME[(uscale_sel - 1u) % USCALE_SLOTS], sizeof msg);
+        str_cpy(msg + 5, " ", 2);
+        str_cpy(msg + 6, N_NOTE[(53u + k) % 12u], 3);
+        str_cpy(msg + str_len(msg), (*m >> b) & 1u ? " IN" : " OUT", 5);
+        ui_message(msg);
+        settings_save();
+        ui.force = 1;
+    }
 }
 static void scale_picker_step(int32_t steps)
 {

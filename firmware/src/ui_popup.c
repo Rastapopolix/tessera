@@ -153,6 +153,33 @@ static void nt_accmode(int32_t s)                      /* (round: OCT+ goes on p
     tessera_param_set(tr, TX_ACC_MODE, (tessera_param_get(tr, TX_ACC_MODE) + (s > 0 ? 1 : TESS_ACC_MODES - 1)) %
                                        TESS_ACC_MODES);
 }
+/* .. its DIR (TX_SEQ_DIR: the pattern's; a mod moving it: "FWD>PEND", the pattern's and the one playing, seq_dir.c).
+ * The live part changes at most every 300 ms and stays 1 s after the mod last moved DIR away, so a mod near a boundary
+ * no longer flickers the row between "FWD" and "FWD>PEND" a step at a time (3.5-beta7) */
+static void nt_dir_v(char *b)
+{
+    static uint8_t shown, live;
+    static uint32_t t_set, t_away;
+    const char *const *nm = pid_desc(PID_TESS(TX_SEQ_DIR), 0)->names;
+    uint32_t d = (uint32_t)tessera_param_get(trk_index(TSEL), TX_SEQ_DIR) % SEQ_DIRS, now = seq_dir_now(TSEL) % SEQ_DIRS;
+    if (now != d) {
+        if (!live) shown = (uint8_t)now, t_set = fm1_ms;
+        live = 1;
+        t_away = fm1_ms;
+    } else if (live && fm1_ms - t_away >= 1000u)
+        live = 0;
+    if (live && now != shown && fm1_ms - t_set >= 300u) shown = (uint8_t)now, t_set = fm1_ms;
+    str_cpy(b, nm[d], 8);
+    if (live) {
+        str_cpy(b + str_len(b), ">", 2);
+        str_cpy(b + str_len(b), nm[shown % SEQ_DIRS], 8);
+    }
+}
+static void nt_dir(int32_t s)                          /* (round: OCT+ goes on past DRUNK to FWD) */
+{
+    uint32_t tr = trk_index(TSEL);
+    tessera_param_set(tr, TX_SEQ_DIR, (tessera_param_get(tr, TX_SEQ_DIR) + (s > 0 ? 1 : SEQ_DIRS - 1)) % SEQ_DIRS);
+}
 /* .. the track's SWING (STEP and ARP: not on GEN's knobs) */
 static void nt_swing_v(char *b) { fmt_int(b, TSEL->p[P_SSWING]); str_cpy(b + str_len(b), "%", 2); }
 static void nt_swing(int32_t s)
@@ -167,6 +194,7 @@ static void nt_swing(int32_t s)
 #define SHEET_PATTERN_ROWS \
     {"Double", seqt_double_v, 0, seqt_double, 0}, {"Half", seqt_half_v, 0, seqt_half, 0}, \
     {"Euclid", seqt_hits_v, seqt_hits_turn, seqt_euclid, 0}, {"Euclid turn", seqt_rot_v, seqt_rot_turn, seqt_euclid, 0}, \
+    {"Direction", nt_dir_v, nt_dir, 0, 0}, \
     {"Accum limit", nt_acclim_v, nt_acclim, 0, 0}, {"Accum mode", nt_accmode_v, nt_accmode, 0, 0}, \
     {"Swing", nt_swing_v, nt_swing, 0, 0}, {"Clear pattern", 0, 0, 0, CF_CLEAR_SEQ}, {"Clear motion", 0, 0, 0, CF_CLEAR_MOTION}
 static const sheet_row_t SHEET_PATTERN[] = {{"Quantize",nt_quantize_v,nt_quantize_grid,nt_quantize,0},
@@ -174,6 +202,104 @@ static const sheet_row_t SHEET_PATTERN[] = {{"Quantize",nt_quantize_v,nt_quantiz
 static const sheet_row_t SHEET_PATTERN_KIT[] = {{"Quantize",nt_quantize_v,nt_quantize_grid,nt_quantize,0}, SHEET_PATTERN_ROWS};
 /* PATTERNS' (OCT+): the selected track's pattern; Copy to: its place picked on the grid (ui_patterns.c) */
 static const sheet_row_t SHEET_PATTERNS[] = {{"Copy to\x85", 0, 0, ptc_start, 0}, {"Delete pattern", 0, 0, 0, CF_DEL_PAT}};
+
+/* MUTES (core.h settings_mute_q, saved with the settings): its names and a step (s > 0 on, < 0 back, stopping at the
+ * ends; 0 round, MENU's OCT+). MENU > MUTES and MIXER's sheet turn this one setting */
+static const char *const MUTE_Q_NAME[3] = {"NOW", "BAR", "PHRASE"};
+static void mute_q_step(int32_t s)
+{
+    uint32_t v = settings_mute_q % 3u;
+    settings_mute_q = (uint8_t)(s > 0 ? (v < 2u ? v + 1u : v) : s < 0 ? (v ? v - 1u : 0u) : (v + 1u) % 3u);
+}
+static void mq_v(char *b) { str_cpy(b, MUTE_Q_NAME[settings_mute_q % 3u], 8); }
+static void mq_t(int32_t s) { mute_q_step(s); settings_save(); }
+/* MIXER's (OCT+ held, free since the key grammar's M2 moved PAN to OCT- held): MUTES, as MENU > MUTES */
+static const sheet_row_t SHEET_MIXER[] = {{"Mutes", mq_v, mq_t, 0, 0}};
+
+/* MODS' (OCT+ held; OCT+ tapped stays the mod's BI / UNI): the project's MIX buses, each one's MODE and LAG (cord.c,
+ * TX_BUSA_MODE ..: KNOB 2 turns it, OCT+ steps it; a MODE goes round, a LAG stops at its ends) */
+static void bus_v(char *b, uint32_t k) { str_cpy(b, pid_desc(PID_TESS(TX_BUSA_MODE + k), 0)->names[cord_bus_get(k)], 8); }
+static void bus_turn(uint32_t k, int32_t s)
+{
+    int32_t v = (int32_t)cord_bus_get(k) + (s > 0 ? 1 : -1);
+    tessera_param_set(0, TX_BUSA_MODE + k, k & 1u ? v : (v + CB_MODES) % CB_MODES);
+}
+#define BUS_ROW_(k) static void bus_v##k(char *b) { bus_v(b, k); } static void bus_t##k(int32_t s) { bus_turn(k, s); }
+BUS_ROW_(0) BUS_ROW_(1) BUS_ROW_(2) BUS_ROW_(3)
+#undef BUS_ROW_
+static const sheet_row_t SHEET_MODS[] = {{"Clear mod", 0, 0, cu_clear, SR_RED}, {"Bus A mode", bus_v0, bus_t0, 0, 0}, {"Bus A lag", bus_v1, bus_t1, 0, 0},
+    {"Bus B mode", bus_v2, bus_t2, 0, 0}, {"Bus B lag", bus_v3, bus_t3, 0, 0}};
+
+/* a page's settings past its eight knobs (the key grammar's rule 3, M3) as a sheet's rows: row k is setting sr.pid[k] of
+ * track sr.tr[k], its value as its card says it (params.c param_format), KNOB 2 a step a detent (a percent: as turned),
+ * OCT+ a step on (ON / OFF: round) */
+#define SR_N 8u
+static struct {
+    uint16_t pid[SR_N];
+    uint8_t tr[SR_N], n;
+    char lb[SR_N][14];
+} sr;
+static void sr_add(const char *lb, uint32_t pid, uint32_t tr)
+{
+    if (sr.n >= SR_N) return;
+    str_cpy(sr.lb[sr.n], lb, sizeof sr.lb[0]);
+    sr.pid[sr.n] = (uint16_t)pid;
+    sr.tr[sr.n++] = (uint8_t)tr;
+}
+static void sr_tracks(const char *lb, uint32_t x)        /* "Sound T1" .. "Sound T4": TX_ x of each track */
+{
+    for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
+        sr_add(lb, PID_TESS(x), k);
+        sr.lb[sr.n - 1u][str_len(lb) - 1u] = (char)('1' + k);
+    }
+}
+static void sr_v(char *b, uint32_t k)
+{
+    const param_desc_t *d = pid_desc(sr.pid[k], sr.tr[k]);
+    const char *u = "";
+    uint32_t n;
+    b[0] = 0;
+    if (!d) return;
+    param_format(d, pid_get(sr.pid[k], sr.tr[k]), b, &u);
+    n = str_len(b);
+    if (u[0] && n < 10u) {                              /* "40%", "2 st" */
+        if (u[0] != '%') b[n++] = ' ';
+        str_cpy(b + n, u, 6);
+    }
+}
+static void sr_turn(uint32_t k, int32_t s)
+{
+    const param_desc_t *d = pid_desc(sr.pid[k], sr.tr[k]);
+    int32_t v;
+    if (!d || !s) return;
+    v = pid_get(sr.pid[k], sr.tr[k]) + (d->fmt == F_PCT ? s : s > 0 ? 1 : -1);
+    if (d->max - d->min == 1) v = v > d->max ? d->min : v < d->min ? d->max : v;
+    pid_set(sr.pid[k], sr.tr[k], v);
+}
+#define SR_ROW_(k) static void sr_v##k(char *b) { sr_v(b, k); } static void sr_t##k(int32_t s) { sr_turn(k, s); }
+SR_ROW_(0) SR_ROW_(1) SR_ROW_(2) SR_ROW_(3) SR_ROW_(4) SR_ROW_(5) SR_ROW_(6) SR_ROW_(7)
+#undef SR_ROW_
+static const sheet_row_t SHEET_SR[SR_N] = {{sr.lb[0], sr_v0, sr_t0, 0, 0}, {sr.lb[1], sr_v1, sr_t1, 0, 0},
+    {sr.lb[2], sr_v2, sr_t2, 0, 0}, {sr.lb[3], sr_v3, sr_t3, 0, 0}, {sr.lb[4], sr_v4, sr_t4, 0, 0},
+    {sr.lb[5], sr_v5, sr_t5, 0, 0}, {sr.lb[6], sr_v6, sr_t6, 0, 0}, {sr.lb[7], sr_v7, sr_t7, 0, 0}};
+/* GEN on a generator track: the engine's layer setting past KNOB 4 (OCT- held is RANDOM and three of them; CHORD: STRUM,
+ * DIR, OCT, so CHRD, VOIC and LEN / BREATH here). The rows; 0: no sheet */
+static uint32_t gen_sheet_rows(void)
+{
+    uint32_t tr = song.sel, m = tr < TESSERA_TRACKS ? tessera.mode[tr] : TESS_ENG_OFF;
+    sr.n = 0;
+    if (m == TESS_ENG_QUAD) sr_add("Range", PID_TESS(TX_QD_RANGE), tr);
+    else if (m == TESS_ENG_CONSTEL) sr_add("Size", PID_TESS(TX_CS_SIZE), tr);
+    else if (m == TESS_ENG_GRIDS) sr_add("Fourth part", PID_TESS(TX_GRD_TOMS), tr);
+    else if (m == TESS_ENG_ANSWER) sr_add("Space", PID_TESS(TX_AN_SPACE), tr);
+    else if (m == TESS_ENG_CHORD) {
+        sr_add("Chord", PID_TRACK(P_CHRD), tr);
+        sr_add("Voicing", PID_TRACK(P_VOIC), tr);
+        if (tessera_chord(tr)->prog == GEN_CH_USER) sr_add("Length", PID_TESS(TX_CH_ULEN), tr);
+        else sr_add("Breath", PID_TESS(TX_CH_BREATH), tr);
+    }
+    return sr.n;
+}
 
 /* the step's: NOTES' note at the cursor (KNOB 2 its length, velocity, chance), the drum grid's hit of the lane there */
 static void st_cap(uint32_t c, char *b)                 /* NOTES' column c as its chip shows it (draw_columns) */
@@ -305,8 +431,8 @@ static void ht_clear(void) { edit_param(2u, -1); }
 static const sheet_row_t SHEET_HIT[] = {{"Accent", ht_acc_v, 0, ht_acc, 0}, {"Chance", nt_chance_v, nt_chance, 0, 0},
     {"Condition", nt_cond_v, nt_cond, 0, 0}, {"Ratchet", nt_ratch_v, nt_ratch, 0, 0}, {"Nudge", nt_nudge_v, nt_nudge, 0, 0}, {"Clear hit", 0, 0, ht_clear, SR_RED}};
 
-/* OCT+ on NOTES / the drum grid: an empty place gets a note (the last one played) / the lane's hit; on a note or a
- * hit: its sheet. 0: not such a page */
+/* OCT+ on NOTES / the drum grid: on a note or a hit its sheet; an empty place NOTHING THERE (Enter opens, never
+ * makes). 0: not such a page */
 static int step_enter(void)
 {
     char t[24], sub[12];
@@ -316,10 +442,8 @@ static int step_enter(void)
     str_cpy(sub, "step ", sizeof sub);
     fmt_int(sub + 5, (int32_t)ui.cursor + 1);
     if (grid_on()) {
-        if (!((step_lanes(&seq_steps(TSEL)[ui.cursor]) >> ui.lane) & 1u)) {
-            edit_param(2u, 1);                          /* (the grid's HIT: its checks) */
-            return 1;
-        }
+        if (!((step_lanes(&seq_steps(TSEL)[ui.cursor]) >> ui.lane) & 1u))
+            goto none;                                  /* (Enter opens, never makes: KNOB 3 or a key sets a hit) */
         str_cpy(t, drum_lane_abbr(TSEL, ui.lane), sizeof t);   /* "SD \xB7 step 5" */
         str_cpy(t + str_len(t), " \xB7 ", 4);
         str_cpy(t + str_len(t), sub, sizeof t - str_len(t));
@@ -329,7 +453,8 @@ static int step_enter(void)
     chosen = notes_selected(TSEL);
     start = notes_manual_start(TSEL);
     if (chosen >= RECORD_MAX && !(start < NSTEP && TSEL->step[start].n)) {
-        edit_param(1u, 0);                              /* (NOTES' PITCH on an empty step: the last note there) */
+none:                                                   /* (KNOB 2 or a key places a note; Theo 2026-11-10) */
+        ui_message("NOTHING THERE");
         return 1;
     }
     str_cpy(t, "Note ", sizeof t);
@@ -341,7 +466,8 @@ static int step_enter(void)
     return 1;
 }
 
-/* the page's sheet: 0 none, 1 the sound's, 2 the song's, 3 the pattern's, 4 PATTERNS' */
+/* the page's sheet: 0 none, 1 the sound's, 2 the song's, 3 the pattern's, 4 PATTERNS', 5 MODS', 6 a generator's (GEN),
+ * 7 MIDI OUT's, 8 ENTRIES', 9 PERF's (MOD DEPTH), 10 MIXER's (MUTES) */
 static uint32_t page_sheet(void)
 {
     uint32_t fam;
@@ -349,14 +475,26 @@ static uint32_t page_sheet(void)
         return 0;
     if (ui.home)
         return 1;
-    if (cur_page()->graph == GR_CORDS || cur_page()->graph == GR_MATRIX)
-        return 0;                                       /* (MODS, MATRIX: OCT+ is the mod's, tapped or held: Theo 2026-10-19) */
+    if (cur_page()->graph == GR_CORDS)
+        return 5;                                       /* (MODS: OCT+ tapped is the mod's BI / UNI, held its sheet) */
+    if (cur_page()->graph == GR_MATRIX)
+        return 0;                                       /* (MATRIX: OCT+ opens the mod in MODS, tapped or held) */
     if (cur_page()->graph == GR_SONG)
         return 2;
+    if (cur_page()->graph == GR_MIDICH)
+        return 7;                                       /* (each track's SOUND and DRUM MAP) */
+    if (cur_page()->graph == GR_ENTRIES)
+        return 8;                                       /* (each track's ORDER) */
+    if (cur_page()->graph == GR_PERF)
+        return 9;                                       /* (the project's MOD DEPTH) */
+    if (cur_page()->graph == GR_TRK)
+        return 10;                                      /* (MIXER: MUTES, the device's) */
     if (cur_page()->graph == GR_PATGRID)
         return 4;
-    if (cur_page()->graph == GR_ROLL || cur_page()->graph == GR_STEPS)
-        return 3;
+    if (cur_page()->graph == GR_ROLL || (cur_page()->graph == GR_STEPS && (cur_page()->fam != FAM_GEN || gen_pattern_page(cur_page()))))
+        return 3;                                       /* (GEN: only STEP and ARP's pattern page; a generator's is PATTERN) */
+    if (cur_page()->graph == GR_STEPS)
+        return gen_sheet_rows() ? 6u : 0u;              /* (a generator's GEN: its layer's fourth setting, CHORD's three) */
     fam = cur_page()->fam;
     return fam == FAM_EDIT || fam == FAM_ENV || fam == FAM_LFO || fam == FAM_FX ? 1u : 0u;
 }
@@ -389,6 +527,35 @@ static void page_sheet_open(void)
         sheet_open(t, nm, SHEET_PATTERNS, NELEM(SHEET_PATTERNS));
         break;
     }
+    case 5:
+        fmt_int(nm + 1, (int32_t)cord_ui_sel + 1);     /* (the picked mod, which Clear mod clears: M3) */
+        nm[0] = 'M';
+        sheet_open("Mods", nm, SHEET_MODS, NELEM(SHEET_MODS));
+        break;
+    case 6:
+        str_cpy(nm, "T1", sizeof nm);
+        nm[1] = (char)('1' + song.sel % NTRK);
+        sheet_open("Generator", nm, SHEET_SR, gen_sheet_rows());
+        break;
+    case 7:
+        sr.n = 0;
+        sr_tracks("Sound T1", TX_SOUND);
+        sr_tracks("Drum map T1", TX_MIDI_DMAP);
+        sheet_open("MIDI out", "sound, drum map", SHEET_SR, sr.n);
+        break;
+    case 8:
+        sr.n = 0;
+        sr_tracks("Order T1", TX_ET_ORDER);
+        sheet_open("Entries", "order", SHEET_SR, sr.n);
+        break;
+    case 9:
+        sr.n = 0;
+        sr_add("Mod depth", PID_TESS(TX_MOD_DEPTH), 0);
+        sheet_open("Perf", "the project's", SHEET_SR, sr.n);
+        break;
+    case 10:
+        sheet_open("Mixer", "mutes", SHEET_MIXER, NELEM(SHEET_MIXER));
+        break;
     default:
         break;
     }
@@ -472,8 +639,12 @@ static void pick_touch(uint32_t c)
         d = 0;
     } else {
     d = page_desc(cur_page(), c, &vp);
-    if (!d || !vp || d->fmt != F_ENUM || !d->names || d->max - d->min < 4 || pick_numbers(d))
-        return;
+    if (!d || !vp || d->fmt != F_ENUM || !d->names || d->max - d->min < 4 || pick_numbers(d) || enum_order(d) ||
+        d->names == N_AMODE || d->names == N_CHRD || d->names == N_VOIC || d->names == N_FX)
+        return;                                         /* (DIV, ARP RATE, TEMPO's QNT, LFO SYNC: their value under the knob, slow to
+                                                         * fast; beta7: the list read as a drop-down. ARP MODE, CHORD's
+                                                         * CHRD and VOIC, FX: short names, under the knob too; Theo,
+                                                         * 2026-11-12) */
     }
     if (pop.on != POP_PICK)
         ui.force = 1;                                   /* (the page dimmed under it) */

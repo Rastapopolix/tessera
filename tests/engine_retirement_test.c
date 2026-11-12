@@ -4,8 +4,9 @@
 int main(void)
 {
     int bad=0; reset(); up_boot();
-    /* (melodee-tess 2026-10-16: MACRO appended at 21, 20 reserved for USER_NATIVE_P5; the others as they were) */
-    bad+=check("engine and native collection IDs remain unchanged",NENGINES==22 && USER_GENERAL==16 && USER_NATIVE_FM==17 && USER_NATIVE_CZ==18 && ENGI_ORACLE==19 && USER_NATIVE_P5==20 && ENGI_MACRO==21 && !eng_ok(20));
+    /* (melodee-tess 2026-10-16: MACRO appended at 21, 20 reserved for USER_NATIVE_P5; the others as they were; SID (3) and
+     * MACRO (21) removed 2026-11-12, their IDs reserved: their tracks load FM6's INIT, engine_switch_test.c) */
+    bad+=check("engine and native collection IDs remain unchanged",NENGINES==22 && USER_GENERAL==16 && USER_NATIVE_FM==17 && USER_NATIVE_CZ==18 && ENGI_ORACLE==19 && USER_NATIVE_P5==20 && !eng_ok(20) && !eng_ok(3) && !eng_ok(21));
     const uint8_t retired[]={2,5,7,11};   /* (TRIO and PHYS back 2026-10-17: MELODEE_TRIO, MELODEE_PHYS) */
     for(uint32_t j=0;j<NELEM(retired);j++) {
         uint32_t e=retired[j];

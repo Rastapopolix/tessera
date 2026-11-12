@@ -98,7 +98,7 @@ Build options (environment; most use `0` or `1`; defaults in `firmware/src/build
 | `MELODEE_DUAL_CORE` | 1 | paired FM6 rendering on CPU1; `0` builds serial-only firmware |
 | `MELODEE_SLICE` | 1 | the SLICE engine |
 | `MELODEE_ICONS` | 1 | parameter icons on the knob cards |
-| `MELODEE_ACCESS` | 1 (host tests: 0) | screen reader support in place of the help cards (issue #430): `1` leaves out the cards (ARP held + a knob) and their texts, ~22 KB flash. MIDI LEARN and the mod shortcut still find a knob's parameter (`help_find`); docs/PARAMETERS.md keeps every text. `0` builds the cards back in (no room left for much else). What it says is put into words by `firmware/words.tsv` (`tools/gen_words.py`: `web/words/<id>.json`, published on the site, never changed); `tools/speak_audit.sh [../fm1-reader]` checks every page, knob, row, value and message with fm1-reader's audit |
+| `MELODEE_ACCESS` | 1 (host tests: 0) | screen reader support in place of the help cards (issue #430): `1` leaves out the cards (ARP held + a knob) and their texts, ~22 KB flash, and the cord destinations' sentences (cord.h `CD_FULL`, ~5.5 KB). MIDI LEARN and the mod shortcut still find a knob's parameter (`help_find`); docs/PARAMETERS.md keeps every text. `0` builds the cards back in (no room left for much else). What it says is put into words by `firmware/words.tsv` (`tools/gen_words.py`: `web/words/<id>.json`, published on the site, never changed); `tools/speak_audit.sh [../fm1-reader]` checks every page, knob, row, value and message with fm1-reader's audit |
 | `MELODEE_COMPRESS_AUDIO` | 1 | the five SRAM load images (`.ram_text`, `.dsp_text`, `.dsp_tables`, `.data`, `.audio_text`) stored as raw LZMA1 (`tools/boot_audio.py`) and unpacked by `fm1_cstart` before anything runs from SRAM (`firmware/src/boot_lzma.h`; a record that does not unpack exactly enters update mode); `0` stores them raw and copies them by words |
 
 ## Samples
@@ -159,6 +159,18 @@ in order as it ends and the failures are listed again at the end. `SOUND=0` leav
 sound tests (the regression suite, TRACKS and the tests of every engine's and effect's rendered
 signal), `SOUND=only` runs them alone.
 
+The output is one line per job (`ok` or `FAIL` and its seconds); a failed job prints its own
+output (about 60 lines at most) and the path of its whole log in `build/host/log/`. `-v` (or
+`QUIET=0`) prints every job's whole output as before.
+
+`tests/run_tests.sh --quick` (or `QUICK=1`) runs only the jobs that test the files changed since
+`origin/develop` (`QUICK_BASE` sets another base) and a small smoke set: an engine's file runs
+its own tests and the regression suite for that engine alone (`REGRESS_ONLY`), a UI file the UI
+renders (the lint, without writing the pictures: `UI_PPM=1` keeps them) and the UI tests, prose
+nothing. A file without a rule (the platform layer, the loader, tools, the build) runs the full
+suite, and so does any `*_UPDATE` setting. It is for the edit-and-check loop: the full suite is
+the check before a pull request.
+
 ## Install
 
 Use the web installer in Chrome or Edge:
@@ -178,7 +190,7 @@ Or, to install your own build from the web installer, make a local copy of the s
 # Build both variants from the same source (copy the first away: the second build starts afresh).
 ./build.sh --release 2.0 && cp build/tessera-2.0.fwsc /tmp/
 MELODEE_DUAL_CORE=0 ./build.sh --release 2.0 && cp build/tessera-2.0-1core.fwsc /tmp/
-web/sim/build.sh                                 # optional: the simulator (Emscripten)
+web/sim/build.sh --release 2.0                  # optional: the simulator (Emscripten)
 python3 web/make_site.py /tmp/tessera-2.0.fwsc /tmp/tessera-2.0-1core.fwsc 2.0 /tmp/tessera-site build/sim
 cd /tmp/tessera-site && python3 -m http.server 8000
 # open http://localhost:8000/ (the project page) or http://localhost:8000/webapp/installer/
@@ -208,6 +220,11 @@ before the stable release. Push a branch `beta/X.Y[.Z]-suffix` from `develop` (e
 project page stay as they are) and opens a pull request from `site-beta-VERSION` into `main`: merging it makes the beta
 live. A new beta replaces the last. The release the beta leads to (3.3 here, or later) takes it off by itself when
 `make_site.py` publishes it; `python3 web/publish_beta.py docs --off` takes it off before then.
+
+The workflow also builds the beta's web simulator (Emscripten 6.0.12, `web/sim/build.sh --release 3.3-beta1`) and
+publishes it with `publish_beta.py --sim build/sim` to `webapp/sim-beta/`: `beta.json` names it, and both simulators
+then show a Release / Beta choice. By hand, the same `--sim` on the `publish_beta.py` line. The beta's simulator goes
+with its beta (a new beta without one, the release, `--off`).
 
 ### Recover a black-screen FM-1
 

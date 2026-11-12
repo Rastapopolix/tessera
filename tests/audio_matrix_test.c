@@ -4,8 +4,8 @@
  * spread and shared Chorus. Host elapsed time is not a device deadline. */
 #define AUDIO_MATRIX_INCLUDE 1
 #include "dual_core_test.c"
-static const uint8_t matrix_engines[6]={6,ENGI_FM6,ENGI_PHYS,3,ENGI_DRUM,ENGI_DRUM};   /* TRIO, PHYS: the Prophet's and
-                                                                                    * CZ-1's places (retired 2026-10-22) */
+static const uint8_t matrix_engines[6]={6,ENGI_FM6,ENGI_PHYS,ENGI_ORACLE,ENGI_DRUM,ENGI_DRUM};   /* TRIO, PHYS: the Prophet's and
+                                                                                    * CZ-1's places (retired 2026-10-22); ORACLE SID's (removed 2026-11-12) */
 static uint64_t matrix_hash;
 static void matrix_setup(const uint32_t cat[4],uint32_t variant)
 {
@@ -23,7 +23,6 @@ static void matrix_setup(const uint32_t cat[4],uint32_t variant)
         if(c==1){uint8_t patch[FP_SIZE+1u];fm6_unpack(FM6_INIT,patch);patch[FP_ALG]=variant%32u;patch[FP_FB]=7;
             for(uint32_t k=0;k<6;k++){patch[k*FP_OP+FP_OL]=90;patch[k*FP_OP+FP_FC]=k+1;}
             fm6_put_patch(p,patch,1);FM6F(&trk[p])[FN_ENGINE]=variant%3u;}
-        if(c==3){trk[p].p[P_E0]=variant&1u;trk[p].p[P_E2]=(variant%3u)==0?SID_DETUNE:(variant%3u)==1?SID_SYNC:SID_RING;}
         for(uint32_t k=0;k<2;k++)trk_note_on(&trk[p],c>=4?(k?38:36):48+p*3+k*7,110);
         assert(active_voices(&trk[p])==2);
     }
@@ -37,7 +36,7 @@ static void matrix_render(const uint32_t cat[4],uint32_t variant,int parallel)
         if(block==32u)for(uint32_t p=0;p<4;p++)for(uint32_t k=0;k<2;k++)trk_note_off(&trk[p],cat[p]>=4?(k?38:36):48+p*3+k*7);
         if(block==40u)for(uint32_t p=0;p<4;p++)for(uint32_t k=0;k<2;k++)trk_note_on(&trk[p],cat[p]>=4?(k?38:36):48+p*3+k*7,100);
         if(block==56u){song.g[G_MFXTYPE]=FX_CHORUS;for(uint32_t p=0;p<4;p++)trk[p].p[P_FXSEND]=30;}
-        if(block==72u)for(uint32_t p=0;p<4;p++){trk[p].p[P_E1]+=cat[p]==3?0:1;trk[p].p[P_LD_PIT]=4;}
+        if(block==72u)for(uint32_t p=0;p<4;p++){trk[p].p[P_E1]+=1;trk[p].p[P_LD_PIT]=4;}
         mix_block(out,CTL);
         assert(!audio_batch_count && AW_LOAD(&audio_worker.request)==AW_LOAD(&audio_worker.complete));
         assert(!resource_failures && !audio_worker.timeouts && !injected_faults);

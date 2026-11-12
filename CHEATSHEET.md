@@ -4,7 +4,7 @@ The buttons and combinations of Tessera on one sheet, a supplement to the **[man
 two-page version is [docs/cheatsheet/tessera-cheatsheet.pdf](docs/cheatsheet/tessera-cheatsheet.pdf).
 
 **A + B**: hold A, then press or turn B. **Held**: about 0.7 s (the GLO and SCL layers: MENU > HOLD, 0.3 to 0.6 s);
-ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act when let go. KNOB 1 to 4 are the four knobs from the left.
+ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act when let go. KNOB 1 to 4 are the four knobs from the left.
 
 ## Getting around
 
@@ -15,12 +15,13 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **ALGORITHM** | Picks the track, on every page (MENU > TRACK KNOB LEFT swaps it with PRESETS) |
 | **SELECT** | The pages of the section shown, both ways; on HOME and MIXER the tempo |
 | A page button again | That section's next page (from elsewhere most return to the page last used) |
-| **OCT-** (off HOME) | Back: closes a list, sheet or map, else HOME |
-| **OCT+** (off HOME) | Enter: opens the row, slot or note picked; does the action picked |
-| **OCT+** held | The page's sheet: the sound's (HOME, EDIT, ENV, LFO, FX), the pattern's (GEN, NOTES, PATTERN; Swing there), the song's (SONG), the pattern's on PATTERNS |
+| **OCT-** (off HOME) | Back: closes a list, sheet, map or selection; a page opened from the map or MATRIX: back there; else nothing (HOME: the home page) |
+| **OCT+** (off HOME) | Enter: opens the row, slot, note or mod picked; does the action picked; else nothing (the sheet: held) |
+| **OCT+** held | The page's sheet: the sound's (HOME, EDIT, ENV, LFO, FX), the pattern's (GEN, NOTES, PATTERN; Swing there), the song's (SONG), the pattern's on PATTERNS; a generator's (GEN: QUAD, CONSTL, ATLAS, ANSWER, CHORD), MIDI OUT's, ENTRIES', MODS'; elsewhere NO SHEET |
 | A sheet: **KNOB 1**, **OCT+** / **OCT-** | Picks the row / does it / closes |
 | A dialog: **OCT+** / **OCT-** | Yes / no |
 | Lists (menu, SCL, VOICE): **KNOB 1** / **KNOB 2** | The row / its value |
+| MENU > **GROUND** | What the ink is drawn on: DARK (black, the default) or LIGHT (paper, each ink's light version) |
 | MENU > **LARGE VALUE** | The knob turning, large at the foot: AUTO (pages without a picture), ON, OFF |
 
 ## The page buttons
@@ -29,17 +30,17 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 |---|---|
 | **SEQ** | What plays: GEN, then STEP: NOTES (a DRUM track: NOTES, DRUM HIT). ARP: NOTES, ARP. A generator: PATTERN. All: TEMPO, PATTERNS, SONG |
 | **SEQ** held | PATTERNS |
-| **ARP** | How it is shaped. STEP: EVOLVE, TWEAK, TIMING. ARP: ARP 2, TWEAK. A generator: EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY |
+| **ARP** | How it is shaped. STEP: EVOLVE, TWEAK, TIMING. ARP: TWEAK (SWING, PROB, HOLD, ORDER: ARP with OCT- held). A generator: EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY |
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST; on FM6 then FM LFO; on ORACLE then LFO MOD, LFO ROUTE |
 | **ENV** | ENV, ENV DEST; on FM6 instead EG RATE, EG LVL, PITCH EG, PITCH LV; on ORACLE FILT ENV, AMP ENV |
 | **SCL** | SCALES, SCL, CHORD |
 | SCALES: **KNOB 1** to **USER** | Your own tunings: Scala files sent from the web editor (Projects > Tunings) |
 | **EDIT** | The sound's EDIT pages (ORACLE: MACRO, MACRO 2, OSC A, OSC B, OSC MIX, FILTER, POLY MOD, CHARACTER, ...) |
-| **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across, KNOB 2 rows, OCT+ opens, OCT- or EDIT closes |
+| **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across, KNOB 2 rows (on the page last used in each), OCT+ opens (OCT- there: the map again), OCT- or EDIT closes |
 | **PRESETS** on an EDIT page | The next / previous section (FM6: Algo, OP1 to OP6, Pitch, LFO, Ctrl, Store) |
 | **FX** | The insert and send effects |
 | **GLO** | MIXER, PERF (MACRO 1 to 4, the project's mod sources), GLOBAL (BUDGET: the shared voices), SYSTEM, MIDI OUT, PIECE (the piece's LENGTH, SHAPE, END), CHAIN (the project's FORM, PHRASE, WANDER), ENTRIES (tracks out and back in), LANDSCAPE (the music as rain on water) |
-| On **MIXER**: **KNOB 1** to **4** / with **OCT+** held | Level / pan of track 1 to 4; the keys mute and solo as with GLO held |
+| On **MIXER**: **KNOB 1** to **4** / with **OCT-** held | Level / pan of track 1 to 4; the keys mute and solo as with GLO held |
 | **SAVE** | USER (save the sound), PROJECT, PRESETS |
 
 ## Quick layers: hold GLO or SCL
@@ -78,11 +79,11 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **ENV** + SELECT or KNOB 1 | The cursor's note longer / shorter |
 | **SCL** + SELECT or KNOB 1 | Moves the note (ties, chord and velocity with it) |
 | **EDIT** tapped | Deletes the note and its ties; the cursor moves on the way KNOB 1 last turned |
-| **OCT+** | The note's sheet (length, velocity, chance, ratchet x1–x8, nudge ±/16, accumulate ±7, condition 1:2..8:8, FILL...) |
+| **OCT+** | The note's sheet (length, velocity, chance, ratchet x1–x8, nudge ±/16, accumulate ±7, condition 1:2..8:8, FILL...); an empty step: NOTHING THERE |
 | **OCT+** + SELECT, KNOB 1 or 2 | Selects a run of notes; let go: the Selected notes sheet (move, copy, quantize, delete) |
 | **OCT-** | Clears the selection |
 | **PRESETS** | Zooms the notes |
-| **OCT+** held | The pattern's sheet: Snap to scale, Double, Half, Euclid (hits, turn), Accum limit / mode, Quantize, Clear |
+| **OCT+** held | (PATTERN SHEET) The pattern's sheet: Snap to scale, Double, Half, Euclid (hits, turn), Accum limit / mode, Quantize, Clear |
 
 ## The drum grid (NOTES on a DRUM track)
 
@@ -94,7 +95,7 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | D#5 / F#5 | Page down / up (patterns over 16 steps) |
 | KNOB 1 to 4 | STEP, LANE, HIT, ACC |
 | **EDIT** | Clears the cursor step |
-| **OCT+** | The hit's sheet (accent, chance, ratchet, nudge, condition) |
+| **OCT+** | The hit's sheet (accent, chance, ratchet, nudge, condition); an empty place: NOTHING THERE |
 
 ## Patterns
 
@@ -104,8 +105,8 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **SEQ** + a pattern key held + another | Copies the first pattern onto the second |
 | **SEQ** + SELECT | The next / previous pattern |
 | PATTERNS: KNOB 1 to 4 | Track 1 to 4's next pattern |
-| PATTERNS: **OCT-** | Clears the queue (again: HOME) |
-| PATTERNS: **OCT+** | The pattern's sheet: Copy to, Delete pattern |
+| PATTERNS: **OCT-** | Clears the queue |
+| PATTERNS: **OCT+** held | The pattern's sheet: Copy to, Delete pattern |
 | SONG: KNOB 1 to 4 | Section (**+** adds one), track, its pattern there, repeats (1 to 16) |
 | SONG: **PLAY** or **OCT+** | Plays the song; STOP brings back the patterns you had |
 | SONG: **OCT+** held | Insert, duplicate, delete section; take jam; clear song |
@@ -133,11 +134,12 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | **SAVE** | USER, its Save sheet ready: OCT+ saves the sound |
 | **EDIT** on USER or PROJECT | Renames the slot |
 | **OCT+** on a PROJECT slot | Load, Save here, Rename, Boot, Erase |
-| GLO > MIDI OUT: **OCT+** held, **KNOB 1** to **4** | Each track's MIDI OUT TRANSPOSE, a semitone a click |
-| GLO > MIDI OUT: **OCT-** held, **KNOB 1** to **4** | Each track's SOUND, ON or OFF (OFF: MIDI only) |
-| GLO > PIECE: **OCT+** / **OCT-** held, **KNOB 1** to **4** | SHAPE USER's points 1 to 4 / 5 to 8 |
-| GLO > CHAIN: **OCT+** held, **KNOB 1** to **4** | Each place's REPEAT, 1 to 8 phrases |
-| GLO > ENTRIES: **OCT+** held, **KNOB 1** to **4** | Each track's ROLE for ENTRIES: AUTO, BASS, RHYTHM, HARMONY, MELODY, ANCHOR |
+| GLO > MIDI OUT: **OCT-** held, **KNOB 1** to **4** | Each track's MIDI OUT TRANSPOSE, a semitone a click |
+| GLO > MIDI OUT: **OCT+** held | Its sheet: each track's SOUND (OFF: MIDI only) and DRUM MAP (GM, ROW) |
+| GLO > PIECE, SHAPE USER: **OCT-** held, **KNOB 1** / **2** | Picks one of its eight points / sets its level |
+| GLO > CHAIN: **OCT-** held, **KNOB 1** to **4** | Each place's REPEAT, 1 to 8 phrases |
+| GLO > ENTRIES: **OCT-** held, **KNOB 1** to **4** | Each track's ROLE for ENTRIES: AUTO, BASS, RHYTHM, HARMONY, MELODY, ANCHOR |
+| GLO > ENTRIES: **OCT+** held | Its sheet: each track's ORDER: AUTO (by ROLE), 1ST to 4TH (in in that order, out the other way) |
 | GLO: a black key on a track ENTRIES took out | Brings it back now, left alone until the next section |
 
 ## Generators
@@ -145,21 +147,24 @@ ARP, FX, LFO and OCT+ on GEN work as soon as they are down. Page buttons act whe
 | Do this | And this happens |
 |---|---|
 | GEN: **KNOB 1** | MODE: STEP, ARP or a generator |
-| GEN: **OCT+** held | The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD, CHORD, ATLAS, CONSTL, ANSWER (SOURCE, ORDER, SHIFT, SPACE) |
-| EVOLVE: **OCT+** held | GRAVITY (a generator); HOW: DRIFT, ADORN, SERIAL (a STEP track) |
-| TIMING: **OCT+** held | **KNOB 1** SPLIT, the chance a step plays at half its division; **KNOB 2** HOW: DOUBLE, PUSH, MIX |
-| ATLAS: **OCT+** + a black key | The fourth part's sound (TOM, CLAP, OPEN HAT, RIM, BELL) |
-| CHORD, PROG USER: **OCT+** + keys | One chord a key, its root the key's note |
+| GEN: **OCT-** held, **KNOB 2** to **4** | The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD (COL, MOVE, EVERY), CHORD (STRUM 1-250 ms, DIR, OCT), ATLAS (KICK, SNR, HAT), CONSTL (LOCK, LEN, FILL), ANSWER (SOURCE, ORDER, SHIFT) |
+| GEN: **OCT+** held | The GEN sheet: QUAD's RANGE, CONSTL's SIZE, ATLAS' fourth part, ANSWER's SPACE, CHORD's CHRD, VOIC and BREATH / LEN |
+| EVOLVE: **OCT-** held | **KNOB 1** ROLL ALL; **KNOB 3** PAT GEN; **KNOB 4** GRAVITY (a generator) or HOW: DRIFT, ADORN, SERIAL (a STEP track) |
+| TIMING: **OCT-** held | **KNOB 1** SPLIT, the chance a step plays at half its division; **KNOB 2** HOW: DOUBLE, PUSH, MIX |
+| ATLAS: **OCT-** + a black key | The fourth part's sound (TOM, CLAP, OPEN HAT, RIM, BELL) |
+| CHORD, PROG USER: **OCT-** + keys | One chord a key, its root the key's note |
 | AWAKE: a white key | Picks that step: KNOB 1 its A, KNOB 2 its B; the key again lets it go |
 | EVOLVE: **KNOB 4** (ROLL) | A new seed a click; turn back for the last one |
+| GEN, TWEAK: **OCT-** held, **KNOB 1** | RANDOM: new values for the page's knobs; turn back to put them back |
 | FORM: **KNOB 3** (CLEAR) | Forgets B and C |
-| FORM: **OCT+** held, **KNOB 1** | DEVELOP: each return of a section varies a little (0: exact) |
-| FORM: **OCT+** held, **KNOB 2** / **3** | The CHAIN: FOLLOW or OWN; SKIP, the chance it lags a phrase |
-| FORM: **OCT+** held, **KNOB 4** | ROLE: this track's part for ENTRIES |
-| TWEAK: **OCT+** held, **KNOB 2** / **3** | FOLLOW's HOW (SAME, CHORD, CONTRA, BASS, CANON1 to 8); RHYTHM (OWN, SOURCE, BOTH) |
-| TWEAK: **OCT+** held, **KNOB 4** | FOLLOW's HOLD (shown as T3H2 on FOLLOW) |
+| FORM: **OCT-** held, **KNOB 1** | DEVELOP: each return of a section varies a little (0: exact) |
+| FORM: **OCT-** held, **KNOB 2** / **3** | The CHAIN: FOLLOW or OWN; SKIP, the chance it lags a phrase |
+| FORM: **OCT-** held, **KNOB 4** | ROLE: this track's part for ENTRIES |
+| TWEAK: **OCT-** held, **KNOB 2** / **3** | FOLLOW's HOW (SAME, CHORD, CONTRA, BASS, CANON1 to 8); RHYTHM (OWN, SOURCE, BOTH) |
+| TWEAK: **OCT-** held, **KNOB 4** | FOLLOW's HOLD (shown as T3H2 on FOLLOW) |
 | MODS: **OCT+** | The picked mod: +- (both ways) / + (one way) / GATE |
-| MODS: **OCT+** held, **KNOB 4** / **KNOB 3** | A GATE's threshold / a CC mod's CC number |
+| MODS: **OCT-** held, **KNOB 4** / **KNOB 3** | A GATE's threshold / a CC mod's CC number |
+| MODS: **OCT+** held | MODS' sheet (the picked mod named): Clear mod, then each MIX bus's Mode (SUM, MAX, MIN, DIFF) and Lag |
 | MATRIX: **OCT+** | Opens the picked mod in MODS |
 
 ## MIDI LEARN

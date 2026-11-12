@@ -3,7 +3,8 @@ name: Beta on the installer
 # A branch beta/X.Y[.Z]-suffix (e.g. beta/3.3-beta1, made from develop) builds that beta as a release is built (the full
 # host suite, both variants with --release), puts it on the public installer's Beta choice with web/publish_beta.py
 # (main's docs/: its release, editor and project page kept) and pushes that to branch site-beta-VERSION, made from
-# main, for a pull request into main. Merging it makes the beta live; the release it leads to takes it off again
+# main, for a pull request into main, with the beta's web simulator (web/sim/build.sh --release, Emscripten) at
+# webapp/sim-beta/, offered beside the release's. Merging it makes the beta live; the release it leads to takes it off again
 # (web/make_site.py), or web/publish_beta.py docs --off before then. (The cloud cannot build the device image, so
 # this workflow does.)
 on:
@@ -83,6 +84,21 @@ jobs:
         with:
           name: tessera-${{ env.V }}
           path: ${{ runner.temp }}/pkgs/*
+      - uses: actions/cache@v4
+        with:
+          path: .nightly-deps/emsdk
+          key: emsdk-6.0.12-v1
+      - name: The beta's web simulator (Emscripten 6.0.12, as the maintainer's)
+        env:
+          EMSDK: ${{ github.workspace }}/.nightly-deps/emsdk
+        run: |
+          if [ ! -x "$EMSDK/upstream/emscripten/emcc" ]; then
+            git clone -q https://github.com/emscripten-core/emsdk.git "$EMSDK"
+            "$EMSDK/emsdk" install 6.0.12
+          fi
+          "$EMSDK/emsdk" activate 6.0.12 >/dev/null
+          web/sim/build.sh --release "$V" | tee -a "$GITHUB_STEP_SUMMARY"
+          node web/sim/test_sim.mjs build/sim/melodee.wasm
       - name: The installer's Beta, pushed to site-beta-${{ env.V }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -90,11 +106,11 @@ jobs:
           commit=$(git rev-parse HEAD)
           git worktree add -B "site-beta-$V" ../page origin/main
           python web/publish_beta.py ../page/docs --dual "$RUNNER_TEMP/pkgs/tessera-$V.fwsc" --single "$RUNNER_TEMP/pkgs/tessera-$V-1core.fwsc" \
-            --version "$V" --commit "$commit" --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            --version "$V" --commit "$commit" --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --notes docs/BETA_NOTES.md --sim build/sim
           cd ../page
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/webapp/installer docs/firmware docs/words   # (words: the screen reader's, make_site.py)
+          git add docs/webapp/installer docs/webapp/editor-beta docs/webapp/sim-beta docs/firmware docs/words   # (words: the screen reader's, make_site.py; editor-beta: the Beta choice links to it; sim-beta: the beta's simulator)
           git add -f docs/firmware/*.fwsc
           git commit -q -m "Installer: beta $V (${commit:0:7})" -m "Built by .github/workflows/beta.yml from $GITHUB_REF_NAME."
           git show --stat HEAD | tail -5

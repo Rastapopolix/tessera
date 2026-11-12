@@ -45,7 +45,7 @@ _Static_assert(G_MFXTYPE == PROJ_GLOBALS && G_FXMODE==40u && G_BUDGET==41u && G_
 #define PROJ_DEF_SOUND 0xFFu                   /* preset byte: the track's power-on sound, no steps (kept from an
                                                 * import of before 1.0) */
 #define PROJ_DEF_KEEP 0xFEu                    /* .. the 808 DRUM sound, steps and the rest kept (old drums) */
-#define TSP_MAX 32768u                         /* a TSP1 record at most (project_tsp.c): its RAM buffers are in the pool, beside the audio arena */
+#define TSP_MAX 34816u                         /* a TSP1 record at most (project_tsp.c): its RAM buffers are in the pool, beside the audio arena */
 #if !defined(FM1_IRQ_TARGET)
 static uint8_t proj_bank_slot[4][TSP_MAX];    /* host-only: each slot's TSP1 record (MELODEE_FLASH 0: the slots) */
 static uint32_t proj_bank_len[4];             /* (0: empty) */
@@ -409,8 +409,8 @@ static int project_restore_runtime(const project_t *input)
         track_t *t = &trk[k];
         const proj_trk_t *s = &p->t[k];
         uint32_t e = s->engine % NENGINES, gone = !ENG_BUILT(e);   /* (gone: an engine left out of the build, */
-        if (gone)                                                     /* Tessera: the fallback's first voice (FM's, or */
-            e = ENGI_FALLBACK;                                        /* SID's INIT), the common settings kept, core.h) */
+        if (gone)                                                     /* Tessera: the fallback's first voice (FM6's */
+            e = ENGI_FALLBACK;                                        /* INIT), the common settings kept, core.h) */
         t->eng_req = (uint8_t)e;
         t->user = 0; t->user_native=0;                                    /* (no user preset slot is saved) */
         for (i = 0; i < P_COUNT; i++) {                 /* every value back inside its range */
@@ -469,6 +469,9 @@ static void project_load(uint32_t slot)
     if (!project_restore_runtime(&proj_scratch)) {
         tsp_restore(proj_wire_u.raw);                  /* (the other patterns, the generators and the cords) */
         proj_cur = (uint8_t)(slot & 3u);
+#if MELODEE_FLASH
+        if (st_older & (1u << (slot & 3u))) ui_message("OLD SAVE LOADED");   /* #609: its last save is damaged */
+#endif
     }
 }
 
@@ -720,7 +723,7 @@ static void project_new_blank(void)
         song.g[i] = GP[i].def;
     for (k = 0; k < 4u; k++)
         song.g[GLO_KEPT[k]] = kept[k];
-    song.g[G_BPM] = TRK_DEF_BPM;
+    TRK_DEF_SONG();
     undo_depth++;
     for (k = 0; k < NTRK; k++) {
         track_t *t = &trk[k];
@@ -728,7 +731,7 @@ static void project_new_blank(void)
         set_engine_of(t, TRK_DEF[k][0]);
         apply_preset_to(t, TRK_DEF[k][1]);
         if (TRK_DEF[k][0] != ENGI_DRUM)
-            t->p[P_SCALE] = TRK_DEF_SCALE;
+            TRK_DEF_SCALE_OF(t);
         track_defaults_steps(t);
         pat_last[k] = 0;
         pat_sig[k] = steps_sig(t);

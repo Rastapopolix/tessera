@@ -13,6 +13,7 @@ DST#	destination #
 PART#	part #
 CH#	channel #
 USR#	user #
+USER#	user #
 F00#	slot #
 F0#	slot #
 F1#	slot 1#
@@ -61,6 +62,7 @@ C64	C 64
 IN ->	in, to
 PROJ	project
 EXT	external
+EOC	end of cycle
 CLK	clock
 QNT	quantize
 HOLD GLO QUICK	hold global for its quick page
@@ -103,6 +105,7 @@ FENV	filter envelope
 RHY	rhythm
 INTV	interval
 RATCH	ratchet
+DIR	direction
 PW	pulse width
 EG	envelope
 LV	level
@@ -121,7 +124,6 @@ COND !FIRST	condition not first
 COND !FILL	condition not fill
 MACH	machine
 EP	E P
-SID	sid
 PHYS	phys
 ROUT	routing
 SEL	selected
@@ -227,6 +229,8 @@ SOURCE AT	source aftertouch
 RAND	random
 DN	down
 UPDN	up down
+DNUP	down up
+RND1	random once
 
 
 # chords and forms
@@ -237,6 +241,10 @@ DOM7	dominant seventh
 MAJ7	major seventh
 MIN7	minor seventh
 SUS4	suspended fourth
+SUS2	suspended second
+7SUS4	seventh, suspended fourth
+ADD9	added ninth
+MAJ6	major sixth chord
 AABA	A, A, B, A
 AABC	A, A, B, C
 ABAC	A, B, A, C
@@ -289,3 +297,18 @@ HIRA	hirajoshi
 SCALE IN	scale in sen
 SCALE YO	scale yo
 MPC	M P C
+# Entries ORDER
+1ST	first
+2ND	second
+3RD	third
+4TH	fourth
+# MIX buses (MODS sheet: MODE)
+DIFF	difference
+# MOD DEPTH (MODS destination)
+MOD DEP	mod depth
+# what CUTOFF and SHAPE move per engine (MODS row, engine pages)
+COLR	colour
+BRIT	brightness
+VOWL	vowel
+TMBR	timbre
+MRPH	morph

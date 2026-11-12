@@ -75,8 +75,10 @@ static int reference(FILE *f)
     }
     {                                                   /* the cords' (firmware/src/cord.c) */
         static const char *const KIND[] = {"each voice", "the audio block", "the LFO's depth", "the generator's step",
-                                             "a MIDI CC out, each block", "the send effects' block (every track's)", "another mod's move, each block", "the project's FILL, each block",
-                                             "the project's tempo on CLK INT, each block"};
+                                             "a MIDI CC out, each block", "the generator's clock, on the source's edges", "whether the track is heard, each block", "the send effects' block (every track's)", "another mod's move, each block", "the project's FILL, each block",
+                                             "the project's tempo on CLK INT, each block",
+                                             "the project's MIX bus, each block", "the project's MOD DEPTH, each block"};
+        _Static_assert(sizeof KIND / sizeof KIND[0] == CK_MDEPTH + 1u, "a description for each kind of destination");
         static const char *const SRC_HELP[CS_N] = {"", "the track's LFO, both ways whatever its POL (the mod's +- or + "
             "decides)", "the envelope of the track's latest note",
             "the latest note's velocity", "the latest note's pitch (C4 = 0)", "a new random value at each note",
@@ -92,7 +94,10 @@ static int reference(FILE *f)
             "a free LFO, 2.4 s a turn",
             "the project's slow tide (ENERGY ARC), every track's the same: -100 % sparse .. 100 % full",
             "GLO > PERF's KNOB 1, the project's: 0 .. 100 %", "GLO > PERF's KNOB 2, the project's: 0 .. 100 %",
-            "GLO > PERF's KNOB 3, the project's: 0 .. 100 %", "GLO > PERF's KNOB 4, the project's: 0 .. 100 %"};
+            "GLO > PERF's KNOB 3, the project's: 0 .. 100 %", "GLO > PERF's KNOB 4, the project's: 0 .. 100 %",
+            "the project's MIX bus A: its mods combined by its MODE, slewed by its LAG (MODS' sheet), one block late: "
+            "-100 .. 100 %", "the project's MIX bus B, as BUS A",
+            "the track's LFO cycle start as a gate: 1 from each wrap of the LFO until an eighth of the cycle has passed, else 0 (a TRIG or PLAY phase set is not a wrap). Onto FILL, a GATE mod or a bus it marks each cycle"};
         fprintf(f, "\n## Mods\n\nA mod (the MODS page, under LFO) moves a destination on any track by a source on any "
                    "track: by its AMOUNT (-100 to 100 %%, at a full source the destination's whole range; PITCH: an octave) "
                    "plus its OFFSET. A mod's direction is shown under KNOB 1 and in its bar: +- moves both ways from the knob "

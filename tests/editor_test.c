@@ -83,7 +83,7 @@ static void reset(void)
     so_r = so_w = mi_r = mi_w = 0; midi_in_overflow = 0; usb.config = 1;
     for (i = 0; i < G_COUNT; i++) song.g[i] = GP[i].def;
     for (t = 0; t < NTRK; t++) {
-        track_defaults(&trk[t]); set_engine_of(&trk[t], 3); apply_preset_to(&trk[t], 0);   /* (SID: values on p[]) */
+        track_defaults(&trk[t]); set_engine_of(&trk[t], 6); apply_preset_to(&trk[t], 0);   /* (TRIO: values on p[]) */
         trk[t].engine = trk[t].eng_req; track_defaults_steps(&trk[t]);
     }
 }
@@ -364,7 +364,7 @@ static int user_preset_roundtrip(void)
     uint32_t k = 0, i, p, ok;
     int bad = 0;
     reset();
-    a[k++] = 3; a[k++] = 3;                                /* slot U04, SID */
+    a[k++] = 3; a[k++] = 6;                                /* slot U04, TRIO */
     memcpy(a + k, "ROUND", 5); k += 5; a[k++] = 0;
     for (i = 0; i < P_COUNT; i++) {
         const param_desc_t *d = param_desc_of(0, i);
@@ -387,7 +387,7 @@ static int user_preset_roundtrip(void)
     bad += check("UP_PUT keeps every value (PAN -20, FLT -40, min and max)", ok);
     a[0] = 3;
     request(ED_UP_GET, a, 1);
-    ok = host_wire[5] == 3 && host_wire[6] == 1 && host_wire[7] == 3 && !memcmp(host_wire + 8, "ROUND", 6);   /* (slot, used, SID) */
+    ok = host_wire[5] == 3 && host_wire[6] == 1 && host_wire[7] == 6 && !memcmp(host_wire + 8, "ROUND", 6);   /* (slot, used, TRIO) */
     for (i = 0, p = 14; i < P_COUNT; i++, p += 2u)
         ok &= (int32_t)(host_wire[p] | host_wire[p + 1] << 7) - 8192 == want[i];
     for (i = 0; i < 16u; i++, p += 2u)

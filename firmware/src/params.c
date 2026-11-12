@@ -3,20 +3,23 @@
 /* Parameter descriptors, formatting and the page table. */
 static const char *const N_LSYNC[] = {"OFF", "4BAR", "2BAR", "1/1", "1/2", "1/4", "1/8", "8T", "1/16", "16T", "1/32"};
 static const uint8_t LSYNC_DIV[11] = {0, 9, 8, 7, 6, 0, 1, 4, 2, 5, 3};
+static const uint8_t N_LSYNC_ORDER[11] = {0, 1, 2, 3, 4, 5, 7, 6, 9, 8, 10};   /* OFF, then slow to fast (8T before 1/8) */
 static const char *const N_LWAVE[] = {"SIN", "TRI", "SAW", "SQR", "S&H"};
-static const char *const N_AMODE[] = {"OFF", "UP", "DN", "UPDN", "RND", "ORD", "REPEAT"};
+static const char *const N_AMODE[] = {"OFF", "UP", "DN", "UPDN", "RND", "ORD", "REPEAT", "DNUP", "RND1"};
 static const char *const N_DIV[] = {"1/4", "1/8", "1/16", "1/32", "8T", "16T", "1/2", "1/1", "2BAR", "4BAR"};
 /* N_DIV as the knobs and lists step through it: slowest to fastest, each triplet between its straight neighbours (the
  * stored values keep upstream's order, slow rates appended) */
 static const uint8_t N_DIV_ORDER[10] = {9, 8, 7, 6, 0, 4, 1, 5, 2, 3};
 static const char *const N_RECQ[] = {"OFF", "1/4", "1/8", "1/16", "1/32", "8T", "16T", "1/2", "1/1", "2BAR", "4BAR"};
+static const uint8_t N_RECQ_ORDER[11] = {0, 10, 9, 8, 7, 1, 5, 2, 6, 3, 4};   /* OFF, then N_DIV_ORDER's (+1) */
 static const char *const N_LTRIG[] = {"NOTE", "FREE"};
 static const char *const N_LPOL[] = {"BI", "UNI"};
 static const char *const N_FX[] = {"OFF", "PHASER", "WIDTH", "FORMANT", "TAPE", "SPIT", "ECHO", "ROOM", "REVERB", "CHORUS", "FILTER"};
 static const char *const N_ONOFF[] = {"OFF", "ON"};
 static const char *const N_QUANT[] = {"OFF", "SNAP", "WHITE", "ALL", "MPC", "CHRD"};   /* Q_OFF .. Q_CHRD (seq.c kb_map, midi_map) */
 /* chord keys (chord.c): OFF, the diatonic triad / seventh of the track's ROOT and SCALE on the key, fixed shapes */
-static const char *const N_CHRD[] = {"OFF", "DIA3", "DIA7", "MAJ", "MIN", "DOM7", "MAJ7", "MIN7", "SUS4", "POW"};
+static const char *const N_CHRD[] = {"OFF", "DIA3", "DIA7", "MAJ", "MIN", "DOM7", "MAJ7", "MIN7", "SUS4", "POW",
+                                            "SUS2", "7SUS4", "ADD9", "MAJ6"};   /* CH_OFF .. CH_MAJ6 (chord.c; saved: append only) */
 static const char *const N_VOIC[] = {"CLOSE", "OPEN", "INV1", "INV2", "+OCT"};   /* VC_CLOSE .. VC_BASS */
 static const char *const N_VOICE[] = {"POLY", "MONO", "LEG", "UNI"};   /* V_POLY .. V_UNISON */
 static const char *const N_GLMODE[] = {"RATE", "TIME"};
@@ -49,10 +52,10 @@ static int16_t boot_cell;
 static const char *const N_MSRC[] = {"OFF", "LFO", "ENV", "VEL", "KEY", "RAND", "MODW", "AT", "EXPR", "S&H", "SLEW"};
 static const char *const N_MDST[] = {"OFF", "PITCH", "CUT", "SHP", "AMP", "PAN", "", "", "", "", "RATE",
                                      "VIB", "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "DEPTH"};
-static const char *const N_ENGNAME[] = {"-", "-", "-", "SID", "-", MELODEE_LEGACY_EXTRAS ? "VOICE" : "-", TRIO_ON ? "TRIO" : "-", MELODEE_LEGACY_EXTRAS ? "WHEEL" : "-", "-", PHYS_ON ? "PHYS" : "-",
+static const char *const N_ENGNAME[] = {"-", "-", "-", "-", "-", MELODEE_LEGACY_EXTRAS ? "VOICE" : "-", TRIO_ON ? "TRIO" : "-", MELODEE_LEGACY_EXTRAS ? "WHEEL" : "-", "-", PHYS_ON ? "PHYS" : "-",
                                              "DRUM", MELODEE_LEGACY_EXTRAS ? "NOISE" : "-", "FM6", MELODEE_SLICE ? "SLICE" : "-", "-", "-", "-", "-", "-",
-                                             MELODEE_ORACLE ? "ORACLE" : "-", "-", MELODEE_PLAITS ? "MACRO" : "-"};   /* (15 CZ-1: retired
-                                                                                   * 2026-10-22; 19 PROPHET, then ORACLE; 20 reserved, 21 MACRO:
+                                             MELODEE_ORACLE ? "ORACLE" : "-", "-", "-"};   /* (3 SID: removed
+                                                                                   * 2026-11-12; 15 CZ-1: retired 2026-10-22; 19 PROPHET, then ORACLE; 20 reserved, 21 MACRO (removed):
                                                                                    * one name per engine ID, NENGINES) */
 _Static_assert(NELEM(N_ENGNAME) == NENGINES, "N_ENGNAME: one name per engine ID");
 
@@ -327,10 +330,13 @@ static int32_t enum_step(const param_desc_t *d, int32_t from, int32_t v)
     return v;
 }
 
-/* an F_ENUM shown in an order of its own (N_DIV): the order, 0 = its values' */
+/* an F_ENUM shown in an order of its own (N_DIV, N_RECQ, N_LSYNC; no picker): the order, 0 = its values' */
 static const uint8_t *enum_order(const param_desc_t *d)
 {
-    return d->fmt == F_ENUM && d->names == N_DIV && d->min == 0 && d->max == 9 ? N_DIV_ORDER : 0;
+    if (d->fmt != F_ENUM || d->min != 0) return 0;
+    if (d->names == N_DIV && d->max == 9) return N_DIV_ORDER;
+    if (d->max == 10) return d->names == N_RECQ ? N_RECQ_ORDER : d->names == N_LSYNC ? N_LSYNC_ORDER : 0;
+    return 0;
 }
 static int32_t enum_order_pos(const param_desc_t *d, int32_t v)   /* v's place in its order */
 {
@@ -443,6 +449,8 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
             str_cpy(val, d->names[v] + (v == 1 ? 0 : 2), 6);
         } else if (d->names == N_SCALE && tune_scale())   /* (TUNING: its tuning stands for every SCL, tune.h) */
             str_cpy(val, tune_name(tune_sel - 1u), 6);
+        else if (d->names == N_SCALE && uscale_on())  /* (and a USER scale, uscale.h) */
+            str_cpy(val, USCALE_NAME[uscale_sel - 1u], 6);
         else
             str_cpy(val, d->names[v < d->min ? d->min : v > d->max ? d->max : v], 6);
         if (d->unit)
@@ -534,7 +542,8 @@ static const page_t PAGES[] = {
     {"MATRIX", FAM_LFO, SC_GLOBAL, GR_MATRIX, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: the mods track by track (ui_matrix.c) */
     {"LFO", FAM_LFO, SC_TRACK, GR_LFO, {P_LRATE, P_LWAVE, P_LPHASE, P_LFADE}},
     {"LFO 2", FAM_LFO, SC_TRACK, GR_LFO, {P_LSYNC, P_LTRIG, P_LPOL, 0xFF}},
-    {"MOD", FAM_LFO, SC_TRACK, GR_MOD, {P_M1SRC, 0xFF, P_M1DST, P_M1AMT}},   /* KNOB 2: the route (mod_ui_slot) */
+    {"MOD", FAM_LFO, SC_TRACK, GR_MOD, {P_M1SRC, 0xFF, P_M1DST, P_M1AMT}},   /* KNOB 2: the route (mod_ui_slot); hidden (ui.c), its code
+                                                                      * only in the detailed look */
     {"ORGANIC", FAM_LFO, SC_TRACK, GR_ORGANIC, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: SLOTH SPEED, OCHD RATE (organic.c) */
     {"LFO DEST", FAM_LFO, SC_TRACK, GR_NONE, {P_LD_PIT, P_LD_FLT, P_LD_SHP, P_LD_AMP}},
     {"SCALES", FAM_SCL, SC_TRACK, GR_SCALE_PICKER, {0xFF, P_SCALE, P_ROOT, P_QUANT}},
@@ -741,7 +750,7 @@ static const param_desc_t *page_desc(const page_t *pg, uint32_t slot, int16_t **
         *valp = &song.g[id];
         return global_desc(id);
     }
-    if (pg->graph == GR_MOD)                          /* SRC DST AMT of the slot shown */
+    if (!MELODEE_LOOK && pg->graph == GR_MOD)         /* SRC DST AMT of the slot shown */
         id += 3u * mod_ui_slot;
     *valp = &TSEL->p[id];
     return track_desc(TSEL, id);

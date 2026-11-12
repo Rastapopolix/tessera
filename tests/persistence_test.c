@@ -502,6 +502,97 @@ static int test_tsp_record(void)
     raw[tsp_seen.at[TSP_FMODE] + 1u] = TESS_FH_COUNT;  /* (track 2's HOW past CANON8) */
     tsp_resum(raw);
     bad += check("TSP1: a HOW past CANON8 refused", ok && !tsp_valid(raw, len));
+    reset();                                           /* Entries' ORDER: the EORDER part; none at AUTO */
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    bad += check("TSP1: ORDER all AUTO writes no EORDER part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_EORDER]);
+    tessera_param_set(0, TX_ET_ORDER, 3); tessera_param_set(2, TX_ET_ORDER, 1);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_EORDER];
+    tessera_reset();
+    tsp_restore(raw);
+    bad += check("TSP1: ORDER comes back from its part", ok && tessera.et_order[0] == 3u && tessera.et_order[2] == 1u &&
+                 !tessera.et_order[1] && !tessera.et_order[3]);
+    raw[tsp_seen.at[TSP_EORDER] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (an id this build does not know: as a record from
+                                                                       * before ORDER, which 3.4 skips the same way) */
+    tsp_resum(raw);
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_EORDER];
+    if (ok) tsp_restore(raw);
+    bad += check("TSP1: a record without the part loads with ORDER AUTO", ok && !tessera.et_order[0] && !tessera.et_order[2]);
+    tessera_param_set(1, TX_ET_ORDER, 4);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_EORDER];
+    raw[tsp_seen.at[TSP_EORDER] + 1u] = ET_ORDERS;     /* (track 2's ORDER past 4TH) */
+    tsp_resum(raw);
+    bad += check("TSP1: an ORDER past 4TH refused", ok && !tsp_valid(raw, len));
+    reset();                                           /* CHORD's STRUM: the STRUM part; none while OFF */
+    tessera_param_set(1, TX_CH_SDIR, TESS_STR_ALT);    /* (a DIR alone: STRUM OFF, no part) */
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    bad += check("TSP1: STRUM OFF everywhere writes no STRUM part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_STRUM]);
+    tessera_param_set(1, TX_CH_STRUM, 25); tessera_param_set(3, TX_CH_STRUM, 60); tessera_param_set(3, TX_CH_SDIR, TESS_STR_DOWN);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_STRUM];
+    tessera_reset();
+    tsp_restore(raw);
+    bad += check("TSP1: STRUM and DIR come back from their part", ok && tessera.ch_strum[1] == 25u &&
+                 tessera.ch_strum[3] == 60u && !tessera.ch_strum[0] && tessera.ch_sdir[1] == TESS_STR_ALT &&
+                 tessera.ch_sdir[3] == TESS_STR_DOWN && tessera.ch_sdir[0] == TESS_STR_UP);
+    raw[tsp_seen.at[TSP_STRUM] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (an id this build does not know: as older firmware
+                                                                      * sees the part, skipped) */
+    tsp_resum(raw);
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_STRUM];
+    if (ok) tsp_restore(raw);
+    bad += check("TSP1: a record without the part loads with STRUM OFF, UP", ok && !tessera.ch_strum[1] &&
+                 !tessera.ch_strum[3] && !tessera.ch_sdir[1]);
+    tessera_param_set(2, TX_CH_STRUM, 10);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_STRUM];
+    raw[tsp_seen.at[TSP_STRUM] + NTRK + 2u] = TESS_STR_DIRS;   /* (track 3's DIR past ALT) */
+    tsp_resum(raw);
+    bad += check("TSP1: a DIR past ALT refused", ok && !tsp_valid(raw, len));
+    reset();                                           /* the MIX buses: the BUS part; none at SUM, OFF */
+    {
+        cord_t c = {CS_BUSA, 0, CD_BUS_B, 0, 50, 0, CU_BI};
+        cord_set(3, &c);                               /* (a mod from bus A into bus B: codes 31 and 106 in CORDS) */
+        project_capture(&proj_scratch);
+        len = tsp_pack(raw, &proj_scratch, 1);
+        bad += check("TSP1: the buses at SUM, OFF write no BUS part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_BUS]);
+        tessera_param_set(0, TX_BUSA_MODE, CB_DIFF); tessera_param_set(0, TX_BUSA_LAG, 7);
+        tessera_param_set(0, TX_BUSB_MODE, CB_MIN);
+        project_capture(&proj_scratch);
+        len = tsp_pack(raw, &proj_scratch, 1);
+        ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_BUS];
+        tessera_reset();
+        tsp_restore(raw);
+        bad += check("TSP1: the buses' MODE and LAG come back from their part, the bus mod from CORDS",
+                     ok && cord_bus_get(0) == CB_DIFF && cord_bus_get(1) == 7u && cord_bus_get(2) == CB_MIN &&
+                     !cord_bus_get(3) && cord_get(3)->src == CS_BUSA && cord_get(3)->dst == CD_BUS_B &&
+                     cord_get(3)->amount == 50);
+        raw[tsp_seen.at[TSP_BUS] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (an id this build does not know: as older
+                                                                        * firmware sees the part, skipped) */
+        tsp_resum(raw);
+        ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_BUS];
+        if (ok) tsp_restore(raw);
+        bad += check("TSP1: a record without the part loads with the buses at SUM, OFF", ok && !cord_bus_get(0) &&
+                     !cord_bus_get(1) && !cord_bus_get(2) && cord_get(3)->dst == CD_BUS_B);
+        tessera_param_set(0, TX_BUSB_LAG, 2);
+        project_capture(&proj_scratch);
+        len = tsp_pack(raw, &proj_scratch, 1);
+        ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_BUS];
+        raw[tsp_seen.at[TSP_BUS] + 3u] = CB_LAGS;     /* (bus B's LAG past 20 s) */
+        tsp_resum(raw);
+        bad += check("TSP1: a LAG past 20 s refused", ok && !tsp_valid(raw, len));
+        raw[tsp_seen.at[TSP_BUS] + 3u] = 2u;
+        raw[tsp_seen.at[TSP_BUS]] = CB_MODES;          /* (bus A's MODE past DIFF) */
+        tsp_resum(raw);
+        bad += check("TSP1: a MODE past DIFF refused", !tsp_valid(raw, len));
+        cord_clear();
+    }
     reset();                                           /* HUMAN TIME: the record's HUMAN part; a record without it */
     song.sel = 1; tessera_knob(0, TESS_ENG_EUCLID);
     tessera_param_set(1, TX_TW_HUMAN, 60); tessera_param_set(0, TX_TW_HUMAN, 40);   /* (track 0: a STEP track) */
@@ -606,9 +697,76 @@ static int test_tsp_record(void)
     return bad;
 }
 
+/* PAT GEN (pat_gen.c): each pattern its own generator setup; switched with the pattern, saved in the PGEN part */
+static int test_pat_gen(void)
+{
+    static uint8_t raw[TSP_MAX];
+    uint32_t len;
+    int bad = 0, ok;
+    track_t *t = &trk[1];
+    reset();
+    tessera_param_set(1, TX_MODE, TESS_ENG_TURING);
+    tessera_param_set(1, TX_TUR_LEN, 5);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    bad += check("PAT GEN: OFF writes no PGEN part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_PGEN]);
+    pattern_switch(t, 1);
+    bad += check("PAT GEN: OFF, a pattern switch keeps the generator", tessera.mode[1] == TESS_ENG_TURING &&
+                 tessera.turing[1].len == 5u);
+    pattern_switch(t, 0);
+    tessera_param_set(1, TX_PAT_GEN, 1);
+    pattern_switch(t, 2);
+    ok = tessera.mode[1] == TESS_ENG_TURING && tessera.turing[1].len == 5u;   /* (turned on: all 8 as they were) */
+    tessera_param_set(1, TX_MODE, TESS_ENG_EUCLID);
+    tessera_param_set(1, TX_EUC_PULSES, 3);
+    pattern_switch(t, 0);
+    ok &= tessera.mode[1] == TESS_ENG_TURING && tessera.turing[1].len == 5u;
+    pattern_switch(t, 2);
+    ok &= tessera.mode[1] == TESS_ENG_EUCLID && tessera.euclid[1].pulses == 3u;
+    bad += check("PAT GEN: ON, each pattern brings its own MODE and knobs back", ok);
+    ok = !pattern_copy(t, 2, 5) && tessera_pg_mode(1, 5) == TESS_ENG_EUCLID && tessera_pg_mode(1, 0) == TESS_ENG_TURING;
+    bad += check("PAT GEN: COPY copies the pattern's generator", ok);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_PGEN];
+    tessera_reset();
+    tsp_restore(raw);
+    ok &= tessera.pat_gen[1] == 1u && !tessera.pat_gen[0] && tessera.mode[1] == TESS_ENG_EUCLID;
+    pattern_switch(t, 0);
+    ok &= tessera.mode[1] == TESS_ENG_TURING && tessera.turing[1].len == 5u;
+    bad += check("PAT GEN: the PGEN part brings every pattern's generator back", ok);
+    tsp_valid(raw, len);
+    raw[tsp_seen.at[TSP_PGEN] + NTRK + (NPAT + 2u) * TESS_PG_BYTES] = TESS_ENG_COUNT;   /* (track 2's pattern 3: no MODE) */
+    tsp_resum(raw);
+    bad += check("PAT GEN: a slot with a MODE past the last refuses the record", !tsp_valid(raw, len));
+    raw[tsp_seen.at[TSP_PGEN] + NTRK + (NPAT + 2u) * TESS_PG_BYTES] = TESS_ENG_EUCLID;
+    raw[tsp_seen.at[TSP_PGEN] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (an id 3.4 does not know: skipped) */
+    tsp_resum(raw);
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_PGEN];
+    if (ok) tsp_restore(raw);
+    bad += check("PAT GEN: a record without the part loads with PAT GEN OFF", ok && !tessera.pat_gen[1]);
+    reset();                                           /* MIDI OUT's DRUM MAP: the DMAP part; ROW's notes */
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    bad += check("DRUM MAP: all GM writes no DMAP part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_DMAP]);
+    tessera_param_set(2, TX_MIDI_DMAP, TESS_DM_ROW);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_DMAP];
+    tessera_reset();
+    tsp_restore(raw);
+    bad += check("DRUM MAP: ROW comes back from its part", ok && tessera.midi_dmap[2] == TESS_DM_ROW && !tessera.midi_dmap[0]);
+    bad += check("DRUM MAP: ROW sends kick snare closed hat as 36 37 44, GM as they are, other notes as they are",
+                 midi_out_map(TESS_DM_ROW, 36) == 36u && midi_out_map(TESS_DM_ROW, 38) == 37u &&
+                 midi_out_map(TESS_DM_ROW, 42) == 44u && midi_out_map(TESS_DM_GM, 38) == 38u &&
+                 midi_out_map(TESS_DM_ROW, 60) == 60u);
+    reset();
+    return bad;
+}
+
 int main(void)
 {
-    int bad = test_boot_maintenance_writes() + test_tsp_record() + test_mlearn_save(), ok;
+    int bad = test_boot_maintenance_writes() + test_tsp_record() + test_mlearn_save() + test_pat_gen(), ok;
     uint32_t before;
     persist_t p;
     static uint8_t old[TSP_MAX], keep[TSP_MAX];   /* (a slot's record as it was) */

@@ -22,7 +22,8 @@
  *    no hanging note after the note-offs on any routing (USB channels 1..4, others while the
  *    selected track changes, the keys while the selected track changes, with ARP and the voice modes).
  * env: GOLDEN_UPDATE=1 rewrites GOLDEN_FILE, BUDGET_UPDATE=1 rewrites CPU_FILE (on purpose: review the
- * diff), VERBOSE=1 prints every render's numbers, JOBS=n children at once (default 8). */
+ * diff), VERBOSE=1 prints every render's numbers, JOBS=n children at once (default 8), REGRESS_ONLY="FM6 TRIO" renders
+ * and costs the presets of these engines alone (run_tests.sh --quick; the other renders and checks stay). */
 /* The one-shot terminal interpolation fixture supplies one synthetic user zone.
  * Shipping firmware has no user slots; eng_sample.c forbids this on the target. */
 #define SMP_USER_SLOTS 3
@@ -232,8 +233,8 @@ static void job_drums(const job_t *j)           /* every GM note through 808 DRU
  * pattern 6, 1/16), 1 STUT (DIGITAL PAD, pattern 7, 1/32, DEPTH 100 %) */
 
 
-/* the 4-track mix: T1 the power-on bass (TRK_DEF: SID; PROPHET FUNK BASS II until 2026-10-22, ANALOG ACID until
- * 2.0), T2 the power-on pad (TRK_DEF: TRIO STRING MACH; FM6 STRINGS, GLASS PAD, PAD, DIGITAL PAD before) (tied chords), T3 SID lead (12 steps against 16),
+/* the 4-track mix: T1 the power-on bass (TRK_DEF: FM6 GLASS PAD; SID until 2026-11-12, ANALOG ACID until
+ * 2.0), T2 the power-on pad (TRK_DEF: TRIO STRING MACH; FM6 STRINGS, GLASS PAD, PAD, DIGITAL PAD before) (tied chords), T3 FM6 BELLS lead (12 steps against 16),
  * T4 808 DRUM drums; 120 BPM, 4 bars (the hostsim TRACKS demo without the recording), stop, the tail.
  * arg 1: with the SLICER (GATE on the pad, STUT on the bass line and the drums, SWING 20 %) */
 static void job_song(const job_t *j)
@@ -249,7 +250,7 @@ static void job_song(const job_t *j)
     song.g[G_BPM] = 120;
     host_power_on_sound(t1, 0);
     host_power_on_sound(t2, 1);
-    host_preset(t3, 3, 0);
+    host_power_on_sound(t3, 2);
     host_808_kit(td);
     for (i = 0; i < 16u; i++) {
         uint8_t n = ACID[i];
@@ -440,10 +441,10 @@ static void midi_pkt(uint32_t st, uint32_t d1, uint32_t d2)   /* as usb.c: the q
 }
 
 /* the shared budget: 4 POLY parts (the host synth (TRIO; the CZ-1 until 2026-10-22, ANALOG until 2.0), FM6's BELL (DIGITAL's BELL until DIGITAL
- * was retired), VOICE (retired: SID), 808 DRUM) play random notes on and off for
+ * was retired), VOICE (retired: ORACLE), 808 DRUM) play random notes on and off for
  * 6 s, up to 8 held each; after every block: at most 8 part voices active, none still fading (a stolen voice
  * fades within its one block), the VOICE part at most 4; then all off: every voice free */
-#define VCAP_E (MELODEE_LEGACY_EXTRAS ? 5u : 3u)
+#define VCAP_E (MELODEE_LEGACY_EXTRAS ? 5u : ENGI_ORACLE)
 #define VCAP (MELODEE_LEGACY_EXTRAS ? 4u : NVOICE)
 static int chk_budget(char *msg, uint32_t n)
 {
@@ -943,6 +944,35 @@ static job_t *add(uint32_t kind, const char *name)
     return j;
 }
 
+static const char *only;                     /* REGRESS_ONLY: engine names, or 0 for every engine */
+static int listed_name(const char *n, size_t len)
+{
+    const char *p = only;
+    if (!only)
+        return 1;
+    while ((p = strstr(p, n ? n : "")) != 0) {
+        if ((p == only || p[-1] == ' ') && (p[len] == 0 || p[len] == ' '))
+            return 1;
+        p++;
+    }
+    return 0;
+}
+static int listed(uint32_t e) { return listed_name(ENGINES[e]->name, strlen(ENGINES[e]->name)); }
+static int gold_listed(const char *name)     /* a golden entry this run renders (preset/ENGINE/... by engine) */
+{
+    char eng[32];
+    const char *a, *b;
+    if (!only || strncmp(name, "preset/", 7))
+        return 1;
+    a = name + 7;
+    b = strchr(a, '/');
+    if (!b || (size_t)(b - a) >= sizeof eng)
+        return 1;
+    memcpy(eng, a, (size_t)(b - a));
+    eng[b - a] = 0;
+    return listed_name(eng, strlen(eng));
+}
+
 int main(int argc, char **argv)
 {
     const char *gpath = argc > 1 ? argv[1] : "tests/golden.txt";
@@ -963,11 +993,18 @@ int main(int argc, char **argv)
     char name[64], s[64];
     if (jobs_at_once < 1u || jobs_at_once > 64u)
         jobs_at_once = 8;
+    only = getenv("REGRESS_ONLY") && *getenv("REGRESS_ONLY") ? getenv("REGRESS_ONLY") : 0;
+    if (only && (gupd || cupd)) {
+        printf("regress: REGRESS_ONLY with GOLDEN_UPDATE / BUDGET_UPDATE would drop the other engines' entries\n");
+        return 2;
+    }
+    if (only)
+        printf("regress: REGRESS_ONLY=%s: the presets of these engines alone\n", only);
 
     /* 1 + 2: the golden renders */
     g0 = nj;
     for (e = 0; e < NENGINES; e++)
-        for (pi = 0; pi < ENGINES[e]->npresets; pi++) {
+        for (pi = 0; pi < ENGINES[e]->npresets && listed(e); pi++) {
             job_t *j;
             slug(s, eng_preset(ENGINES[e], pi)->name, sizeof s);
             snprintf(name, sizeof name, "preset/%s/%02u_%s", ENGINES[e]->name, pi, s);
@@ -1012,7 +1049,7 @@ int main(int argc, char **argv)
     /* 3: CPU, one child at a time (the ns are for information; the instruction counts do not care) */
     c0 = nj;
     for (e = 0; e < NENGINES; e++)
-        for (pi = 0; pi < ENGINES[e]->npresets; pi++) {
+        for (pi = 0; pi < ENGINES[e]->npresets && listed(e); pi++) {
             job_t *j;
             slug(s, eng_preset(ENGINES[e], pi)->name, sizeof s);
             snprintf(name, sizeof name, "cpu/%s/%02u_%s", ENGINES[e]->name, pi, s);
@@ -1098,7 +1135,7 @@ int main(int argc, char **argv)
         uint32_t k, found = 0;
         for (k = g0; k < g1 && !found; k++)
             found = !strcmp(J[k].name, gold[i].name);
-        if (!found) {
+        if (!found && gold_listed(gold[i].name)) {
             if (!gupd)
                 printf("regress: GOLDEN GONE  %s (no such render now)\n", gold[i].name);
             g_gone++;
@@ -1192,7 +1229,7 @@ int main(int argc, char **argv)
     }
     printf("regress: CPU, one part with 8 notes held (VOICE 4), heaviest preset per engine (instructions / ns per sample):\n");
     for (e = 0; e < NENGINES; e++)
-        if (eng_ok(e))
+        if (eng_ok(e) && listed(e))
             printf("regress:   %-8s %-14s %6.0f instr  %6.1f ns\n", ENGINES[e]->name, eng_preset(ENGINES[e], heavy_p[e])->name,
                    heavy[e], heavy_ns[e]);
     for (i = c1 - 3u; i < c1; i++)

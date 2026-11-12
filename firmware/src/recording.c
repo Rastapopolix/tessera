@@ -211,7 +211,11 @@ static int recording_note(track_t *t, uint32_t note, uint32_t vel, uint32_t step
     recorded_note_t *r = &recording[free];
     *r = (recorded_note_t){(uint16_t)on, 1, (uint8_t)note, (uint8_t)vel, (uint8_t)owner, (uint8_t)(actual | (step != actual ? 64u : 0u) | (step == 0u && actual ? 128u : 0u))};
     recording_next[free] = recording_head[owner]; recording_head[owner] = (uint16_t)free;
-    recording_schedule[trk_index(t)].period = 0;
+    /* Only the new event's onset (as recording_sync would): a fresh schedule
+     * walks the whole bank, near 1,000 events in a full store: a dropout at
+     * every captured note (#612). A stale schedule is redone at the next tick. */
+    uint32_t tr = trk_index(t), sp = recording_schedule[tr].period, q = (uint32_t)t->p[P_RECQ];
+    if (sp) recording_due[free] = q ? recording_quant_on(t, r, sp, q) : recording_on(t, r, sp);
     memset(&recording_run[free], 0, sizeof recording_run[free]);
     recording_flags[free] = 13;
     t->step[step].flags |= SF_RECORDED;
@@ -346,24 +350,36 @@ static void recording_fire(track_t *t, uint32_t i, uint32_t period, uint32_t lat
         recording_off(t, r->note);
     }
 }
+/* the loop's top (PLAY, step 0): every note played again, those due by now played. DIR not FWD (seq_dir.c): only the
+ * step playing's (the take's time is the steps', not the pass's) */
 static void recording_zero(track_t *t)
 {
     uint32_t period = seq_div_samples((uint32_t)t->p[P_SDIV]);
+    uint32_t from = SEQ_D(t).ndir != SEQ_FWD ? recording_prefix(t, period, t->seq_idx) : 0u;
     uint32_t phase = recording_prefix(t, period, t->seq_idx) + t->seq_pos;
     recording_sync(t, period);
     for (uint32_t i = recording_head[recording_owner(t)]; i < RECORD_MAX; i = recording_next[i]) {
         recording_flags[i] &= (uint8_t)~4u;
         if (recording_active(t, i)) {
             uint32_t on = recording_play_on(t, i, period);
-            if (on <= phase) recording_fire(t, i, period, phase - on);
+            if (on >= from && on <= phase) recording_fire(t, i, period, phase - on);
         }
     }
+}
+/* DIR not FWD, a step begun: its notes may play again (BACK, PEND, FOLD .. come to a step again) */
+static void recording_rearm(track_t *t)
+{
+    for (uint32_t i = recording_head[recording_owner(t)]; i < RECORD_MAX; i = recording_next[i]) recording_flags[i] &= (uint8_t)~4u;
 }
 static void recording_tick(track_t *t, uint32_t n)
 {
     uint32_t period = seq_div_samples((uint32_t)t->p[P_SDIV]), tr = trk_index(t);
-    uint32_t a = recording_prefix(t, period, t->seq_idx) + t->seq_pos, b = a + n;
+    uint32_t a = recording_prefix(t, period, t->seq_idx) + t->seq_pos, b = a + n, dir = SEQ_D(t).ndir != SEQ_FWD;
     uint32_t elapsed;
+    if (dir) {                                     /* (DIR: the step's own notes, from its start: not the next's) */
+        uint32_t end = recording_prefix(t, period, t->seq_idx + 1u);
+        if (b > end) b = end;
+    }
     if (n <= CTL) {
         /* At most CTL * 65536 plus one sequencer period: the ordinary
          * audio tick fits 32 bits, including the slowest supported division. */
@@ -387,7 +403,7 @@ static void recording_tick(track_t *t, uint32_t n)
             uint32_t on = recording_play_on(t, i, period);
             /* Most retained events are nowhere near this block. Avoid
              * looking up their STEP ownership until their onset is due. */
-            if (on > a && on <= b && recording_active(t, i)) recording_fire(t, i, period, b - on);
+            if ((dir ? on >= a && on < b : on > a && on <= b) && recording_active(t, i)) recording_fire(t, i, period, b - on);
         }
     }
 }

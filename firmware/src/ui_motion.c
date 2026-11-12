@@ -2,7 +2,7 @@
 /* SEQ > MOTION (docs/design: mock/r6_pages MOTION, mock/r6_popups): the selected track's recorded motion as lanes, one
  * per parameter it moves on the pattern playing: the value step by step (held from one event to the next, the sound's
  * own before the first), the playhead over them. No chips: KNOB 2 the lane, KNOB 1 Play on / off, OCT+ the lane's
- * sheet (Play, Clear <lane>, Clear all motion), OCT- Stage. Included by ui_draw.c */
+ * sheet (Play, Clear <lane>, Clear all motion), OCT- nothing (HOME: Stage). Included by ui_draw.c */
 #define MO_MAX 8                                        /* lanes (parameters) at most */
 #define MO_Y0 22                                        /* the lanes: 64 px each, 3 shown, from y 22 */
 #define MO_H 64

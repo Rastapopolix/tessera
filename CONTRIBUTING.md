@@ -66,6 +66,9 @@ enough. It saves you from writing code that cannot be merged, and I can often po
 - Run the test suite before opening a pull request. It renders every engine against `tests/golden.txt`, checks CPU
   cost and renders the UI. Generators can be developed and tested on a PC; flash the device only to check how it
   plays.
+- The pictures in the manual, the recipes and the README are the real screens, drawn on the PC. After a change to a
+  page's look, run `tools/docs_images.sh` and commit `assets/gallery`; the **Docs pictures** check lists any that are
+  out of date. A new picture is a line in `tests/gallery_render.c`'s SHOTS and a link in the page.
 - Say in the pull request how the **device image size** changed (the build's size check prints it), and keep each
   pull request to one change.
 

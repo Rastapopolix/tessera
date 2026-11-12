@@ -104,8 +104,10 @@ static int ann_wire_send(const uint8_t *p, uint32_t n)   /* never waits: no room
 #include "song_chain.c"
 #include "seq.c"
 #include "tessera.c"
+#include "pat_gen.c"               /* PAT GEN: each pattern its own generator setup */
 #include "pid.c"                 /* the central parameter ids (pid.h) */
 #include "cord.c"                /* cords: the signal bus (cord.h) */
+#include "mscope.c"              /* MOD SCOPE: the picked mod sampled for MODS */
 #include "audio.c"
 
 /* -------------------------------------------------------------- UI --- */
@@ -113,6 +115,7 @@ static int ann_wire_send(const uint8_t *p, uint32_t n)   /* never waits: no room
 #include "ui.c"
 #include "icons.c"               /* parameter icons (MELODEE_ICONS), used by ui_draw.c */
 #include "ui_graph.c"
+#include "page_random.c"           /* GEN / TWEAK, OCT- + KNOB 1: page randomize (#529) */
 #include "ui_draw.c"
 #include "ui_menu.c"
 #include "ui_input.c"

@@ -261,6 +261,24 @@ int main(void)
             ok &= st_load(OBJ_PROJ0 + 3u, back, sizeof back) == (int)sizeof back && !memcmp(back, second, sizeof back);
         }
         bad += check("projects: every page or header cut keeps the old copy", ok);
+        {   /* #609: the newest committed copy damaged later: the older one loads, and st_older says so; a clean
+             * newest copy, or a new save, clears it */
+            st_hdr_t h;
+            memcpy(nor, snap, sizeof snap);
+            int c = st_current(OBJ_PROJ0 + 3u, &h), ok2 = c >= 0 && !(st_older & 8u);
+            nor[st_proj_sector(OBJ_PROJ0 + 3u, (uint32_t)c, 4u) + 100u] ^= 0x01u;   /* one bit in the newest copy */
+            ok2 &= st_load(OBJ_PROJ0 + 3u, back, sizeof back) == (int)sizeof back && !memcmp(back, first, sizeof back) &&
+                   (st_older & 8u);
+            ok2 &= st_save(OBJ_PROJ0 + 3u, second, sizeof second) == 0 &&
+                   st_load(OBJ_PROJ0 + 3u, back, sizeof back) == (int)sizeof back && !memcmp(back, second, sizeof back) &&
+                   !(st_older & 8u);
+            memcpy(nor, snap, sizeof snap);
+            c = st_current(OBJ_PROJ0 + 3u, &h);
+            nor[st_proj_sector(OBJ_PROJ0 + 3u, (uint32_t)(c ^ 1), 2u) + 7u] ^= 0x01u;   /* the older copy damaged: no mark */
+            ok2 &= st_load(OBJ_PROJ0 + 3u, back, sizeof back) == (int)sizeof back && !memcmp(back, second, sizeof back) &&
+                   !(st_older & 8u);
+            bad += check("projects (#609): a damaged newest copy loads the older one and is reported", ok2);
+        }
         memcpy(nor, snap, sizeof snap);
         {
             st_hdr_t h;

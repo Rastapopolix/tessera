@@ -3,7 +3,7 @@
 /* Tessera 2.0's demo projects (demos/), made by the firmware's own code: each one set up through the functions the
  * pages call (a new project, the sounds, tessera_param_set, cords), saved into a slot of simulated NOR flash by
  * project_save_as, read back as the backup page reads a slot (editor_backup.c, object 2..5: the TSP1 record), loaded
- * into a fresh project and played. Built as the device builds it (tests/run_tests.sh: -DMELODEE_SID=0
+ * into a fresh project and played. Built as the device builds it (tests/run_tests.sh:
  * -DMELODEE_PHYS=0, the power-on of TRK_START_TESS).
  *   build/host/demo_projects make DIR [SECS]   the records (DIR/<name>.tsp) and SECS s of each (DIR/<name>.wav)
  *   build/host/demo_projects check DIR         every demo record in DIR (demos/) restores through the backup page's PUT, loads
@@ -14,6 +14,7 @@
  *   build/host/demo_projects levels [SECS]     each track alone: its level, to balance a demo by
  *   build/host/demo_projects video OUTDIR      the demo video's audio, screens and captions (tools/demo_video.py)
  *   build/host/demo_projects tour OUTDIR       the 3.3 narrated tour's clips (tools/tour_video.py)
+ *   build/host/demo_projects tour35 OUTDIR     the 3.5 demo video's clips (tools/tour_video.py demo35)
  *   build/host/demo_projects log N SECS        demo N's notes as CSV (time, track, note, velocity)
  *   build/host/demo_projects solo N T SECS [WAV] demo N with track T alone heard (0: all): the voices' cost, as a
  *                                              device CPU guide, and the render
@@ -76,6 +77,7 @@ static struct { uint32_t magic, count, vec, pc, rets, emu, dbg, sp, psr, icfg, u
 #include "../firmware/src/ui.c"
 #include "../firmware/src/icons.c"                       /* (the drawing: the video mode's screens) */
 #include "../firmware/src/ui_graph.c"
+#include "../firmware/src/page_random.c"
 #include "../firmware/src/ui_draw.c"
 #include "../firmware/src/ui_menu.c"
 #include "../firmware/src/ui_input.c"
@@ -1262,6 +1264,262 @@ static void demo_shore(void)
     cord(4, CS_DRIFT, 3, CD_PAN, 3, 20, 0, 0);        /* T4 DRIFT -> T4 PAN: the bubble moves a little */
 }
 
+/* ---------------------------------------------------------- the 3.5 demos --- */
+/* Three pieces for the 3.5 video (Theo 2026-11-12: slow and mysterious, with interesting rhythm, in the spirit of
+ * CEDAR RAIN, PAPER KITES and UNDERTOW but not the same), each built on what is new in 3.5: STEP direction, CHORD's
+ * STRUM, the MIX buses. All minor or Japanese scales; no noise beds, no bell alone. */
+static void chord_user(uint32_t tr, const uint8_t *deg, uint32_t n)   /* CHORD's USER progression: degrees 0..6 */
+{
+    tx(tr, TX_CH_PROG, GEN_CH_USER);
+    for (uint32_t i = 0; i < n && i < GEN_CH_USER_N; i++) tessera.chord[tr].user[i] = deg[i];
+    tessera.chord[tr].ulen = (uint8_t)n;
+    gen_chord_start(&tessera.chord[tr]);
+}
+static void lfo(uint32_t tr, uint32_t wave, uint32_t sync)            /* a track's LFO, free running, synced to bars */
+{
+    trk[tr].p[P_LWAVE] = (int16_t)wave; trk[tr].p[P_LSYNC] = (int16_t)sync; trk[tr].p[P_LTRIG] = 1;
+}
+enum { LW_SIN, LW_TRI, LW_SAW, LW_SQR };
+enum { LS_4BAR = 1, LS_2BAR, LS_1, LS_2 };
+
+/* NIGHT LOOM: a weave of two plucked figures that never line up, as PAPER KITES, but each read in an order of its own
+ * (3.5's STEP direction): a koto's 7 eighths played FOLDed (from the ends inwards: 1 7 2 6 3 5 4) and a harp's 9
+ * eighths played PENDulum (there and back: 16 eighths a turn). STEP EVOLVE keeps both moving (Theo: the first draft's
+ * melody did not change for two minutes): the koto's notes DRIFT a degree or two every 2 bars, the harp's line is
+ * turned SERIALly (inverted, reversed) every 4. Under them a hollow pad strums Gm Eb Cm Dm (CHORD USER,
+ * STRUM 70 ms up, two bars a chord), its filter breathing on BUS A: the koto's slow sine and the harp's triangle summed;
+ * and 808 hand drums in 12 sixteenths (three beats against the bar's four), a rim on conditions. G minor, 64 BPM. The
+ * CHAIN goes to C minor in B (KEY B +5) and F minor in C (KEY C -2), ABAC in 16-bar phrases (A once: a new section
+ * each minute); a square LFO turns the koto's order from FOLD to PEND every two bars; ENTRIES 45 on the drums alone;
+ * a 12-minute ARCH, played again. */
+static void demo_loom(void)
+{
+    song.g[G_BPM] = 64;
+    sound(0, ENGI_FM6, FX_KOTO_RING);
+    sound(1, ENGI_FM6, 18);                         /* (FM6 HARP) */
+    sound(2, ENGI_TRIO, TR_HOLLOW_PAD);
+    sound(3, ENGI_DRUM, DK_808_KIT);
+    scale(7, SCL_MIN, 0);
+    sends(104, 100, 86, 64);
+
+    /* T1: the koto, 7 eighths, FOLD: G' Bb' D'' C'' F' .. */
+    {
+        static const uint8_t FIG[7] = {67, 0, 74, 70, 0, 72, 65};
+        for (uint32_t i = 0; i < 7u; i++) step_note(0, i, FIG[i], i == 0u ? 92 : 74);
+        trk[0].p[P_SLEN] = 7;
+    }
+    tx(0, TX_MODE, TESS_ENG_OFF);
+    trk[0].p[P_SDIV] = DIV_8;
+    tx(0, TX_SEQ_DIR, SEQ_FOLD);
+    tx(0, TX_SUB_HUMAN, 20);
+    tx(0, TX_SV_EVERY, 2); tx(0, TX_SV_AMOUNT, 55); tx(0, TX_SV_LOCK, 15); tx(0, TX_SV_HOW, TESS_SV_DRIFT);
+    mixer(0, 116, -30, 85, 45);         /* (STEP EVOLVE DRIFT: a few of its notes move by degrees every 2 bars) */
+
+    /* T2: the harp, 9 eighths an octave down, PEND: a line that turns back on itself */
+    {
+        static const uint8_t FIG[9] = {55, 0, 62, 0, 58, 0, 0, 60, 0};
+        for (uint32_t i = 0; i < 9u; i++) step_note(1, i, FIG[i], 70);
+        trk[1].p[P_SLEN] = 9;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF);
+    trk[1].p[P_SDIV] = DIV_8;
+    tx(1, TX_SEQ_DIR, SEQ_PEND);
+    tx(1, TX_SUB_HUMAN, 15);
+    tx(1, TX_SV_EVERY, 4); tx(1, TX_SV_AMOUNT, 50); tx(1, TX_SV_LOCK, 50); tx(1, TX_SV_HOW, TESS_SV_SERIAL);
+                                        /* (STEP EVOLVE SERIAL: every 4 bars the line inverted, reversed or turned) */
+    mixer(1, 114, 30, 95, 30);
+
+    /* T3: the pad, CHORD USER i VI iv v, two bars a chord, held, strummed up 70 ms, an octave down */
+    {
+        static const uint8_t PROG[4] = {0, 5, 3, 4};
+        trk[2].p[P_SDIV] = DIV_16;
+        gen(2, TESS_ENG_CHORD, 11);
+        chord_user(2, PROG, 4);
+        tx(2, TX_CH_BARS, 2); tx(2, TX_CH_HIT, GEN_CH_HOLD); tx(2, TX_CH_OCT, -1);
+        tx(2, TX_CH_STRUM, 70); tx(2, TX_CH_SDIR, TESS_STR_UP);
+        trk[2].p[P_REL] = 50;
+    }
+    mixer(2, 64, 0, 100, 10);
+
+    /* T4: 808 hand drums, 12 sixteenths: a low tom on one and its dotted answer, rims between; ADORN now and then */
+    {
+        static const uint8_t L[12] = {L_TM, 0, 0, L_RS, 0, 0, L_TM, 0, L_RS, 0, 0, L_RS};
+        for (uint32_t i = 0; i < 12u; i++) step_hits(3, i, L[i], i == 0u ? 96 : 62);
+        step_set_cond(&trk[3].step[8], SC_1_2);
+        step_set_cond(&trk[3].step[11], SC_2_4);
+        trk[3].p[P_SLEN] = 12;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF);
+    trk[3].p[P_SDIV] = DIV_16;
+    tx(3, TX_SV_EVERY, 4); tx(3, TX_SV_AMOUNT, 15); tx(3, TX_SV_LOCK, 70); tx(3, TX_SV_HOW, TESS_SV_ORNAMENT);
+    tx(3, TX_SUB_HUMAN, 14);
+    mixer(3, 102, -5, 50, 20);
+
+    {
+        static const uint8_t REP[4] = {1, 1, 1, 1}, ROLE[4] = {RO_ANCHOR, RO_ANCHOR, RO_ANCHOR, RO_RHYTHM};
+        chain_set(FC_ABAC, PH_16, 15, REP, 5, -2);
+        entries_set(45, 2, 1, 2, ROLE);
+        piece_set(LEN_12, SH_ARCH, 55, 3, END_LOOP);
+    }
+    tx(0, TX_EN_ARC, 25);
+    lfo(0, LW_SIN, LS_4BAR); lfo(1, LW_TRI, LS_1);
+    cord(0, CS_LFO, 0, CD_BUS_A, 0, 60, 0, 0);       /* T1 LFO (4 bars, SIN) -> BUS A */
+    cord(1, CS_LFO, 1, CD_BUS_A, 0, 30, 0, 0);       /* T2 LFO (a bar, TRI) -> BUS A */
+    cord(2, CS_BUSA, 0, CD_CUTOFF, 2, 35, 0, 0);     /* BUS A -> T3 CUT: the pad breathes, a slow swell with a ripple */
+    cord_bus_set(0, CB_SUM);
+    cord(3, CS_DRIFT, 0, CD_PAN, 0, 25, 0, 0);       /* T1 DRIFT -> T1 PAN */
+    cord(4, CS_APATHY, 1, CD_FX_SEND2, 1, 25, 0, CU_UNI);   /* T2 TIDE 3 -> T2 SEND 2: the harp into the echo, then not */
+    lfo(3, LW_SQR, LS_4BAR);
+    cord(5, CS_LFO, 3, CD_SEQ_DIR, 0, -20, 0, CU_UNI);   /* T4 LFO (a square, 4 bars) -> T1 DIR: FOLD two bars, PEND two */
+}
+
+/* INK RIVER: a call and its answers, as UNDERTOW, but the call is read in two directions: a tine piano's six-note
+ * phrase over two bars goes forward, and a HOLD mod from a slow square (T1's LFO, 4 bars) turns it BACKwards for two
+ * bars at a time, so the answers (ANSWER on an FM6 flute, SOURCE T1) answer a phrase that keeps turning round. A warm
+ * pad strums Cm Ab Fm Gm DOWN, slowly (110 ms), a chord a bar, and a sub bass walks the roots in a 3+3+2 rhythm. C minor,
+ * 68 BPM. KEY B -2 (Bb minor), KEY C +5 (F minor), ABAC in 8-bar phrases; ENTRIES 45; a 12-minute ARCH. */
+static void demo_ink(void)
+{
+    song.g[G_BPM] = 68;
+    sound(0, ENGI_FM6, FX_TINE);
+    sound(1, ENGI_FM6, FX_FLUTE);
+    sound(2, ENGI_TRIO, TR_WARM_PAD);
+    sound(3, ENGI_TRIO, TR_SUB_BASS);
+    scale(0, SCL_MIN, 0);
+    sends(100, 100, 108, 90);
+
+    /* T1: the call, 16 eighths: G, Eb, F held, D, C held, then a bar of rests but one high Bb */
+    {
+        static const uint8_t MEL[16] = {67, 0, 63, 65, 0, 0, 62, 60, 0, 0, 0, 0, 0, 70, 0, 0};
+        static const uint8_t TIE[] = {4, 5, 8, 9, 10};
+        for (uint32_t i = 0; i < 16u; i++) step_note(0, i, MEL[i], i == 0u ? 94 : 78);
+        for (uint32_t i = 0; i < sizeof TIE; i++) step_tie(0, TIE[i]);
+        trk[0].p[P_SLEN] = 16;
+    }
+    tx(0, TX_MODE, TESS_ENG_OFF);
+    trk[0].p[P_SDIV] = DIV_8;
+    tx(0, TX_SUB_HUMAN, 15);
+    trk[0].p[P_VOICE] = 2;                            /* LEGATO */
+    mixer(0, 106, -25, 85, 45);
+
+    /* T2: the answers, ANSWER on SOURCE T1, a degree or two away, VARY 35, some echo, FADE 60 */
+    trk[1].p[P_SDIV] = DIV_8;
+    gen(1, TESS_ENG_ANSWER, 31);
+    tx(1, TX_SD_SOURCE, 1);
+    tx(1, TX_AN_VARY, 35); tx(1, TX_AN_ECHO, 25); tx(1, TX_AN_FADE, 60); tx(1, TX_AN_LEN, 1);
+    tx(1, TX_AN_ORDER, 0); tx(1, TX_AN_SHIFT, 2); tx(1, TX_AN_SPACE, 40);
+    tx(1, TX_TW_SHIFT, 12); tx(1, TX_TW_HUMAN, 25);
+    trk[1].p[P_VOICE] = 2;
+    sections(1, 40, 30, 0);
+    mixer(1, 116, 25, 105, 70);
+
+    /* T3: the pad, CHORD USER i VI iv v, a chord a bar, strummed down, slowly */
+    {
+        static const uint8_t PROG[4] = {0, 5, 3, 4};
+        trk[2].p[P_SDIV] = DIV_16;
+        gen(2, TESS_ENG_CHORD, 5);
+        chord_user(2, PROG, 4);
+        tx(2, TX_CH_BARS, 1); tx(2, TX_CH_HIT, GEN_CH_HOLD); tx(2, TX_CH_OCT, -1);
+        tx(2, TX_CH_STRUM, 110); tx(2, TX_CH_SDIR, TESS_STR_DOWN);
+        trk[2].p[P_REL] = 45;
+    }
+    mixer(2, 72, 0, 100, 15);
+
+    /* T4: the sub, a chord's root a bar in 3+3+2 eighths: C . . C . . G . | Ab . . Ab . . Eb . | F .. | G .. */
+    {
+        static const uint8_t ROOT[4] = {36, 32, 29, 31}, FIFTH[4] = {43, 39, 36, 38};
+        for (uint32_t c = 0; c < 4u; c++) {
+            for (uint32_t i = 0; i < 8u; i++) step_note(3, c * 8u + i, 0, 0);
+            step_note(3, c * 8u, ROOT[c], 100); step_tie(3, c * 8u + 1u);
+            step_note(3, c * 8u + 3u, ROOT[c], 76);
+            step_note(3, c * 8u + 6u, FIFTH[c] - 12u, 70);
+        }
+        trk[3].p[P_SLEN] = 32;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF);
+    trk[3].p[P_SDIV] = DIV_8;
+    mixer(3, 90, 0, 10, 0);
+
+    {
+        static const uint8_t REP[4] = {2, 1, 1, 1}, ROLE[4] = {RO_ANCHOR, RO_MELODY, RO_HARMONY, RO_BASS};
+        chain_set(FC_ABAC, PH_8, 0, REP, -2, 5);
+        entries_set(45, 2, 1, 2, ROLE);
+        piece_set(LEN_12, SH_ARCH, 55, 3, END_LOOP);
+    }
+    tx(0, TX_EN_ARC, 30);
+    lfo(0, LW_SQR, LS_4BAR);                          /* (two bars high, two low) */
+    cord(0, CS_LFO, 0, CD_SEQ_DIR, 0, 20, 0, CU_HOLD);   /* T1 LFO, held a bar -> T1 DIR: forward, then back */
+    cord(1, CS_TORPOR, 2, CD_CUTOFF, 2, 30, 0, 0);   /* T3 TIDE 1 -> T3 CUT */
+    cord(2, CS_DRIFT, 0, CD_SF2_RATE, 0, 6, 0, 0);   /* T1 DRIFT -> SF2 RTE: the echo bends a little */
+    cord(3, CS_OCHD3, 1, CD_PAN, 1, 35, 0, 0);       /* T2 SWARM 3 -> T2 PAN */
+}
+
+/* SALT GLASS: plucked strings, a flute and hand drums, as CEDAR RAIN, but darker: the IN scale on A (its half steps
+ * the mystery), 74 BPM. A koto pluck on TURING turning 10 eighths; the flute on MARKOV in half notes, the song; a soft
+ * pad holding the scale's chord four bars at a time, strummed ALTernately up and down, 180 ms between notes, so each
+ * chord unrolls like a harp; and 808 hand drums in 20 sixteenths (five beats against four), read DRUNK (a step back or
+ * on, from the SEED: PLAY replays it), a low tom always on the one. CHAIN AABA in 8-bar phrases, KEY B +5; ENTRIES
+ * 50; a 15-minute piece in three WAVES. */
+static void demo_salt(void)
+{
+    song.g[G_BPM] = 74;
+    sound(0, ENGI_FM6, FX_KOTO_PLUCK);
+    sound(1, ENGI_FM6, FX_FLUTE);
+    sound(2, ENGI_TRIO, TR_SOFT_PAD);
+    sound(3, ENGI_DRUM, DK_808_KIT);
+    scale(9, SCL_IN, 0);
+    sends(110, 96, 80, 58);
+
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_TURING, 83);
+    tx(0, TX_TUR_LEN, 10); tx(0, TX_TUR_PROB, 5); tx(0, TX_TUR_SPAN, 2);
+    tx(0, TX_TW_DROP, 35); tx(0, TX_TW_HUMAN, 30);
+    tx(0, TX_NL_MODE, 1); tx(0, TX_NL_LEN, 3);
+    sections(0, 50, 30, 0);
+    mixer(0, 104, -30, 80, 35);
+
+    trk[1].p[P_SDIV] = DIV_2;
+    gen(1, TESS_ENG_MARKOV, 19);
+    tx(1, TX_MKV_LEAP, 12); tx(1, TX_MKV_DENS, 40); tx(1, TX_MKV_SPAN, 1);
+    tx(1, TX_NL_MODE, 2); tx(1, TX_TW_HUMAN, 40); tx(1, TX_TW_SHIFT, 12);
+    trk[1].p[P_VOICE] = 2;
+    sections(1, 70, 35, 0);
+    mixer(1, 92, 10, 105, 55);
+
+    {
+        static const uint8_t PROG[2] = {0, 5};
+        trk[2].p[P_SDIV] = DIV_16;
+        gen(2, TESS_ENG_CHORD, 3);
+        chord_user(2, PROG, 2);
+        tx(2, TX_CH_BARS, 3); tx(2, TX_CH_HIT, GEN_CH_HOLD); tx(2, TX_CH_OCT, -1);
+        tx(2, TX_CH_STRUM, 180); tx(2, TX_CH_SDIR, TESS_STR_ALT);
+        trk[2].p[P_REL] = 55;
+    }
+    mixer(2, 66, 0, 110, 10);
+
+    {
+        static const uint8_t L[20] = {L_TM, 0, 0, L_RS, 0, 0, L_TM, 0, 0, L_RS, 0, L_RS, 0, 0, L_TM, 0, 0, L_RS, 0, 0};
+        for (uint32_t i = 0; i < 20u; i++) step_hits(3, i, L[i], i == 0u ? 98 : 64);
+        step_set_cond(&trk[3].step[11], SC_1_2);
+        trk[3].p[P_SLEN] = 20;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF);
+    trk[3].p[P_SDIV] = DIV_16;
+    tx(3, TX_SEQ_DIR, SEQ_DRUNK);
+    tx(3, TX_SUB_HUMAN, 14);
+    mixer(3, 100, -5, 50, 22);
+
+    {
+        static const uint8_t REP[4] = {1, 1, 1, 1}, ROLE[4] = {RO_ANCHOR, RO_MELODY, RO_HARMONY, RO_RHYTHM};
+        chain_set(FC_AABA, PH_8, 15, REP, 5, 0);
+        entries_set(50, 2, 1, 2, ROLE);
+        piece_set(LEN_15, SH_WAVES, 50, 3, END_LOOP);
+    }
+    cord(0, CS_APATHY, 0, CD_TW_DROP, 0, 30, 0, 0);  /* T1 TIDE 3 -> T1 DROP: the koto thins and fills */
+    cord(1, CS_OCHD4, 1, CD_E1, 1, 20, 0, 0);        /* T2 SWARM 4 -> T2's MACRO: the flute's breath */
+    cord(2, CS_INERTIA, 2, CD_CUTOFF, 2, 30, 0, 0);  /* T3 TIDE 2 -> T3 CUT */
+}
+
 typedef struct { const char *name, *file; void (*make)(void); } demo_t;
 static const demo_t DEMO_LIST[] = {
     {"STILL TIDE", "still-tide", demo_still},
@@ -1281,6 +1539,9 @@ static const demo_t RESERVE_LIST[] = {
     {"COLD ORBIT", "cold-orbit", demo_orbit},
     {"STONE PIER", "stone-pier", demo_pier},
     {"FAR SHORE", "far-shore", demo_shore},
+    {"NIGHT LOOM", "night-loom", demo_loom},      /* (the 3.5 video's three, Theo 2026-11-12: in reserve until heard) */
+    {"INK RIVER", "ink-river", demo_ink},
+    {"SALT GLASS", "salt-glass", demo_salt},
 };
 
 /* ------------------------------------------------------- the test projects --- */
@@ -1504,6 +1765,8 @@ static int make(const char *dir, uint32_t secs)
         FILE *f;
         dm_play_t a, b;
         uint8_t tess[TESSERA_PK_BYTES], cords[CORD_PK_BYTES];
+        const char *only = getenv("DM_ONLY");         /* (DM_ONLY=a,b: those demos alone, by their file names) */
+        if (only && !strstr(only, DEMOS[d].file)) continue;
         power_on();
         DEMOS[d].make();
         song.g[G_SLOT] = 1;                           /* (SLOT 1 in every record; a load keeps the device's own) */
@@ -1816,12 +2079,14 @@ typedef struct {
     const vbtn_t *btns; uint32_t nbtns;
     const vturn_t *turns; uint32_t nturns;
     void (*fn)(void); uint32_t fn_ms;              /* (tour: a change of the project at fn_ms) */
+    const struct vfn_s *fns; uint32_t nfns;        /* (3.5: more changes, each at its ms) */
 } vclip_t;
+typedef struct vfn_s { uint32_t ms; void (*fn)(void); } vfn_t;
 #define VN(a) a, (uint32_t)(sizeof a / sizeof a[0])
 static void v_run(const char *out, const vclip_t *c)
 {
     char dir[600], wav[600];
-    uint32_t frames = c->secs * FS, f, si = 0, ki = 0, bi = 0, b = 0, n = 0, done[16] = {0};
+    uint32_t frames = c->secs * FS, f, si = 0, ki = 0, bi = 0, b = 0, n = 0, done[16] = {0}, fi = 0;
     int fired = 0;
     memset(dm_notes, 0, sizeof dm_notes);
     snprintf(dir, sizeof dir, "%s/%s", out, c->name);
@@ -1867,6 +2132,7 @@ static void v_run(const char *out, const vclip_t *c)
             }
         }
         if (c->fn && !fired && ms >= c->fn_ms) c->fn(), fired = 1, input = 1;
+        while (fi < c->nfns && ms >= c->fns[fi].ms) c->fns[fi++].fn(), input = 1;
         if (input) ui_input();
         dm_f = f;
         mix_block(o, CTL);
@@ -2377,6 +2643,176 @@ static void tour(const char *out)
     fclose(v_cap);
     printf("tour: %.0f s in %s\n", v_t0, out);
 }
+/* the 3.5 demo for the project page (tour35 OUTDIR; tools/tour_video.py demo35): the three 3.5 pieces (NIGHT LOOM,
+ * INK RIVER, SALT GLASS) and what is new in 3.5, each moment a clip as the 3.3 tour's (Theo 2026-11-12: STEP
+ * direction, STRUM, the MIX buses and the MOD SCOPE with combined waves, the light ground briefly, LANDSCAPE in dark
+ * MOSAIC with the moon moving). TOUR_ONLY=prefix: those clips only */
+static uint8_t t35_ground;                               /* (the next clip on GROUND LIGHT) */
+static void t35_run(const char *out, void (*make)(void), const char *ink, const vclip_t *c)
+{
+    if (!t_want(c->name)) return;
+    power_on();
+    pop_close();                                         /* (a sheet left open by the clip before) */
+    if (make) make();
+    song.batt_raw = 600;
+    ux_ground = t35_ground;
+    v_ink(ink);
+    v_run(out, c);
+    ux_ground = 0;
+}
+#define T35(mk, ink, ...) do { const vclip_t C_ = {__VA_ARGS__}; t35_run(out, mk, ink, &C_); } while (0)
+#define T_F(...) .fns = (const vfn_t[]){__VA_ARGS__}, .nfns = sizeof((const vfn_t[]){__VA_ARGS__}) / sizeof(vfn_t)
+/* a pad under a scene: TRIO's HOLLOW PAD holding the scale's chord (CHORD DRONE, struck once), cheap on the CPU */
+static void t35_pad(uint32_t tr, int32_t level)
+{
+    sound(tr, ENGI_TRIO, TR_HOLLOW_PAD);
+    trk[tr].p[P_CHRD] = 1;                               /* DIA3 */
+    gen(tr, TESS_ENG_CHORD, 7);
+    tx(tr, TX_CH_PROG, GEN_CH_DRONE); tx(tr, TX_CH_BARS, 3); tx(tr, TX_CH_HIT, GEN_CH_HOLD); tx(tr, TX_CH_OCT, -1);
+    mixer(tr, level, 0, 100, 0);
+}
+/* STEP direction: a harp running up the C minor scale in eighths, so each order is heard as plainly as it is seen */
+static void t35_dir_scene(void)
+{
+    power_on();
+    song.g[G_BPM] = 84;
+    scale(0, SCL_MIN, 0);
+    for (uint32_t k = 0; k < NTRK; k++) trk[k].p[P_LEVEL] = 0;
+    sends(100, 96, 84, 50);
+    sound(0, ENGI_FM6, FX_KUGO_HARP);
+    {
+        static const uint8_t RUN[8] = {60, 62, 63, 65, 67, 68, 70, 72};
+        for (uint32_t i = 0; i < 8u; i++) step_note(0, i, RUN[i], i == 0u ? 96 : 80);
+        trk[0].p[P_SLEN] = 8;
+    }
+    tx(0, TX_MODE, TESS_ENG_OFF);
+    trk[0].p[P_SDIV] = DIV_8;
+    mixer(0, 108, -10, 85, 30);
+    t35_pad(1, 70);
+}
+static void t35_sheet(void) { page_sheet_open(); pop.sel = 6; pop.first = 2; ui.force = 1; }
+static void t35_back(void) { tx(0, TX_SEQ_DIR, SEQ_BACK); ui.force = 1; }
+static void t35_pend(void) { tx(0, TX_SEQ_DIR, SEQ_PEND); ui.force = 1; }
+static void t35_fold(void) { tx(0, TX_SEQ_DIR, SEQ_FOLD); ui.force = 1; }
+/* STRUM: KUGO HARP on CHORD, i VI iv v in C minor, a chord a bar; STRUM turned up from OFF while it plays */
+static void t35_strum_scene(void)
+{
+    static const uint8_t PROG[4] = {0, 5, 3, 4};
+    power_on();
+    song.g[G_BPM] = 76;
+    scale(0, SCL_MIN, 0);
+    for (uint32_t k = 0; k < NTRK; k++) trk[k].p[P_LEVEL] = 0;
+    sends(104, 100, 84, 50);
+    sound(0, ENGI_FM6, FX_KUGO_HARP);
+    trk[0].p[P_SDIV] = DIV_16;
+    gen(0, TESS_ENG_CHORD, 9);
+    chord_user(0, PROG, 4);
+    tx(0, TX_CH_BARS, 1); tx(0, TX_CH_HIT, GEN_CH_HOLD); tx(0, TX_CH_OCT, 0);
+    tx(0, TX_CH_STRUM, 0); tx(0, TX_CH_SDIR, TESS_STR_UP);
+    mixer(0, 96, 0, 95, 30);
+    sound(1, ENGI_TRIO, TR_SUB_BASS);                    /* (a sub on the roots, FOLLOW T1 as a bass) */
+    trk[1].p[P_SDIV] = DIV_1;
+    gen(1, TESS_ENG_EUCLID, 3);
+    tx(1, TX_EUC_STEPS, 4); tx(1, TX_EUC_PULSES, 1);
+    tx(1, TX_TW_FOLLOW, 1); tx(1, TX_TW_FHOW, TESS_FH_BASS);
+    mixer(1, 84, 0, 20, 0);
+    t35_pad(2, 66);                                      /* (a bed, so no strike comes out of silence) */
+}
+/* the MIX bus scenes: an ORACLE pad holding the chord through its four-pole filter (as the 3.3 video's MODS), its
+ * CUTOFF moved by BUS A, two LFOs of the silent T3 and T4 mixed in it; the scope on the bus's mod (OCT- held) */
+static void t35_bus_base(uint32_t w3, uint32_t s3, int32_t a3, uint32_t w4, uint32_t s4, int32_t a4)
+{
+    t_chord_scene();                                     /* (T1 ORACLE WARM PAD, DIA3 DRONE, 72 BPM; the others silent) */
+    lfo(2, w3, s3); lfo(3, w4, s4);
+    for (uint32_t k = 2; k < 4u; k++) trk[k].p[P_LPOL] = 0;
+    cord(0, CS_LFO, 2, CD_BUS_A, 0, a3, 0, 0);           /* T3 LFO -> BUS A */
+    cord(1, CS_LFO, 3, CD_BUS_A, 0, a4, 0, 0);           /* T4 LFO -> BUS A */
+    cord(2, CS_BUSA, 0, CD_CUTOFF, 0, 45, 0, 0);         /* BUS A -> T1 CUT */
+    cord_bus_set(0, CB_SUM);
+    cord_bus_set(1, 2);                                  /* (LAG a few ms: a saw's drop or a square's step never snaps the
+                                                          * filter shut with a click) */
+}
+static void t35_tri_saw(void) { t35_bus_base(LW_TRI, LS_2BAR, 60, LW_SAW, LS_2, 35); }
+static void t35_sin_sqr(void) { t35_bus_base(LW_SIN, LS_2BAR, 60, LW_SQR, 5, 30); }   /* (SQR: a quarter, SYNC 1/4) */
+static void t35_sel0(void) { cord_ui_sel = 0; ui.force = 1; }
+static void t35_sel1(void) { cord_ui_sel = 1; ui.force = 1; }
+static void t35_sel2(void) { cord_ui_sel = 2; ui.force = 1; }
+static void t35_max(void) { cord_bus_set(0, CB_MAX); ui.force = 1; }
+static void t35_min(void) { cord_bus_set(0, CB_MIN); ui.force = 1; }
+static void t35_diff(void) { cord_bus_set(0, CB_DIFF); ui.force = 1; }
+/* EOC onto CLOCK: a koto on MARKOV stepped by its own LFO's cycle (a note each wrap), a second LFO bending that LFO's
+ * rate, so the notes come faster and slower as a ball bouncing to rest and thrown again; the pad under it */
+static void t35_eoc_scene(void)
+{
+    power_on();
+    song.g[G_BPM] = 72;
+    scale(9, SCL_IN, 0);
+    for (uint32_t k = 0; k < NTRK; k++) trk[k].p[P_LEVEL] = 0;
+    sends(108, 96, 84, 56);
+    sound(0, ENGI_FM6, FX_KOTO_RING);
+    trk[0].p[P_SDIV] = DIV_32;
+    gen(0, TESS_ENG_MARKOV, 21);
+    tx(0, TX_MKV_LEAP, 20); tx(0, TX_MKV_DENS, 100); tx(0, TX_MKV_SPAN, 2);
+    tx(0, TX_NL_MODE, 1); tx(0, TX_NL_LEN, 3);
+    mixer(0, 104, -10, 90, 35);
+    trk[0].p[P_LWAVE] = LW_SAW; trk[0].p[P_LSYNC] = 0; trk[0].p[P_LTRIG] = 1; trk[0].p[P_LRATE] = 64;
+    lfo(1, LW_SIN, LS_2BAR);
+    cord(0, CS_EOC, 0, CD_CLOCK, 0, 100, 0, CU_GATE);    /* T1 EOC -> T1 CLOCK: a note each LFO cycle */
+    cord(1, CS_LFO, 1, CD_LFO_RATE, 0, 55, 0, 0);        /* T2 LFO -> T1 LFO RATE: the cycles faster, then slower */
+    t35_pad(2, 66);
+}
+/* LANDSCAPE: SALT GLASS with a one-minute PIECE (ENTRIES and ENERGY off, so it plays as made), so the moon is seen
+ * crossing its arc as the piece plays */
+static void t35_salt_moon(void)
+{
+    demo_salt();
+    piece_set(1, SH_PLATEAU, 50, 1, END_LOOP);
+    tx(0, TX_ET_AMOUNT, 0);
+    tx(0, TX_EN_ARC, 0);
+}
+static void tour35(const char *out)
+{
+    char cap[600];
+    mkdir(out, 0755);
+    snprintf(cap, sizeof cap, "%s/captions.txt", out);
+    if (!(v_cap = fopen(cap, t_only ? "a" : "w"))) return;
+    v_t0 = 0;
+    /* the opening: NIGHT LOOM on HOME, every track in */
+    T35(demo_loom, "YELLOW", .name = "c00-loom-home", .secs = 18, .pre = 170, T_S({0, 1, 0, 0, "HOME"}));
+    /* STEP direction: the harp's run, FWD, BACK, PEND, FOLD; then INK RIVER's call turned round by a HOLD mod */
+    T35(t35_dir_scene, "GREEN", .name = "c01-dir", .secs = 19, .pre = 1, T_S({0, 0, 0, "PATTERN", "PATTERN: DIRECTION"}),
+        T_F({0, t35_sheet}, {4600, t35_back}, {9200, t35_pend}, {13800, t35_fold}));
+    T35(demo_ink, "GREEN", .name = "c02-ink-notes", .secs = 14, .pre = 116, T_S({0, 0, 0, "NOTES", "NOTES"}));
+    /* STRUM: turned up from OFF on GEN's second layer (OCT- held), then SALT GLASS's pad */
+    T35(t35_strum_scene, "BLUE", .name = "c03-strum", .secs = 17, .pre = 0, T_S({0, 0, 0, "GEN", "GEN  OCT- HELD"}),
+        T_B({0, B_OCTDN, 1}), T_T({4200, EN_K2, 22, 4200}));
+    T35(demo_salt, "BLUE", .name = "c04-salt-strum", .secs = 13, .pre = 150, T_S({0, 0, 2, "GEN", "GEN  OCT- HELD"}),
+        T_B({0, B_OCTDN, 1}));
+    /* the MIX buses and the MOD SCOPE (MOSAIC): a triangle and a saw, then their sum; the bus's MODE; a sine and a
+     * square; NIGHT LOOM's own bus */
+    T35(t35_tri_saw, "MOSAIC", .name = "c05-bus-tri-saw", .secs = 24, .pre = 2, T_S({0, 0, 0, "MODS", "MODS"}),
+        T_B({3000, B_OCTDN, 1}), T_F({0, t35_sel0}, {8000, t35_sel1}, {13500, t35_sel2}));
+    T35(t35_tri_saw, "MOSAIC", .name = "c06-bus-modes", .secs = 21, .pre = 14, T_S({0, 0, 0, "MODS", "MODS"}),
+        T_B({0, B_OCTDN, 1}), T_F({0, t35_sel2}, {5000, t35_max}, {10500, t35_min}, {16000, t35_diff}));
+    T35(t35_sin_sqr, "MOSAIC", .name = "c07-bus-sin-sqr", .secs = 13, .pre = 6, T_S({0, 0, 0, "MODS", "MODS"}),
+        T_B({0, B_OCTDN, 1}), T_F({0, t35_sel2}));
+    T35(demo_loom, "MOSAIC", .name = "c08-loom-scope", .secs = 13, .pre = 200, T_S({0, 0, 0, "MODS", "MODS"}),
+        T_B({0, B_OCTDN, 1}), T_F({0, t35_sel2}));
+    /* EOC onto CLOCK */
+    T35(t35_eoc_scene, "ORANGE", .name = "c09-eoc-clock", .secs = 15, .pre = 2, T_S({0, 0, 0, "MODS", "MODS"}),
+        T_B({5500, B_OCTDN, 1}), T_F({0, t35_sel0}));
+    /* GROUND LIGHT: INK RIVER on paper */
+    t35_ground = 1;
+    T35(demo_ink, "BLUE", .name = "c10-light", .secs = 12, .pre = 150,
+        T_S({0, 1, 0, 0, "HOME"}, {6000, 0, 1, "GEN", "GEN"}));
+    t35_ground = 0;
+    /* INK RIVER: the answers, dark again */
+    T35(demo_ink, "YELLOW", .name = "c11-ink-answer", .secs = 15, .pre = 162, T_S({0, 0, 1, "GEN", "ANSWER"}));
+    /* LANDSCAPE in MOSAIC, the moon crossing; the end card's music runs on from it */
+    T35(t35_salt_moon, "MOSAIC", .name = "c12-salt-land", .secs = 44, .pre = 3, T_S({0, 0, 0, "LANDSCAPE", "LANDSCAPE"}));
+    fclose(v_cap);
+    printf("tour35: %.0f s in %s\n", v_t0, out);
+}
 static int make(const char *dir, uint32_t secs);
 static int video(const char *out)
 {
@@ -2543,6 +2979,7 @@ int main(int argc, char **argv)
     else if (argc >= 3 && !strcmp(argv[1], "restore")) bad = archive_restore(argv[2]);
     else if (argc >= 3 && !strcmp(argv[1], "video")) return video(argv[2]);
     else if (argc >= 3 && !strcmp(argv[1], "tour")) { t_only = getenv("TOUR_ONLY"); tour(argv[2]); return 0; }
+    else if (argc >= 3 && !strcmp(argv[1], "tour35")) { t_only = getenv("TOUR_ONLY"); tour35(argv[2]); return 0; }
     else if (argc >= 2 && !strcmp(argv[1], "levels")) { levels(argc > 2 ? (uint32_t)atoi(argv[2]) : 60u); return 0; }
     else { fprintf(stderr, "demo_projects [checks] make DIR [SECS] | [checks] check DIR\n"); return 2; }
     printf(bad ? "demos: %d FAILED\n" : "demos passed\n", bad);

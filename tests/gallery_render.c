@@ -1,18 +1,17 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* The README's Visual Reference Gallery and the manual's pictures: the real drawing code (tests/ui_render.c's scenes)
- * in the device build's engine set (FM6, ORACLE, TRIO, DRUM: no SID, PHYS or CZ-1), the Mono look's default ink (YELLOW),
- * as PPM in OUTDIR/ppm (240 x 240; the PNGs in assets/gallery are these 2x, nearest: tools/gallery_png.py).
- *   cc -O1 -w -DMELODEE_LOOK=1 -DMELODEE_USB_AUDIO=1 -DMELODEE_SID=0 -DMELODEE_PHYS=0 '-DMELODEE_VERSION="v2.0"' \
- *      -Ibuild/gen -Ifirmware/src -Itests -o build/gallery_render tests/gallery_render.c -lm
- *   mkdir -p build/gallery/ppm && build/gallery_render build/gallery
- * (README.md, MANUAL.md and the project page show these as assets/gallery/<name>.png) */
+/* The README's Visual Reference Gallery and the pictures in MANUAL.md and RECIPES.md: the real drawing code
+ * (tests/ui_render.c's scenes) in the device build's engine set and screen reader (MELODEE_ACCESS=1), the Mono look's
+ * default ink (YELLOW), as PPM in OUTDIR/ppm (240 x 240; the PNGs in assets/gallery are these 2x, nearest).
+ *   tools/docs_images.sh            render them all into assets/gallery
+ *   tools/docs_images.sh --check    list the PNGs that no longer match the drawing code (CI: docs-images.yml)
+ * (README.md, MANUAL.md, RECIPES.md and the project page show these as assets/gallery/<name>.png) */
 #define UI_RENDER_NO_MAIN 1
 #include "ui_render.c"
 
-enum { G_SCENE, G_TRIO, G_MODE_STEP, G_MODE_ARP, G_FORM, G_TIMING, G_SHEET, G_MIDIOUT, G_FX_FILTER, G_ORACLE };   /* (ARP: the same page,
+enum { G_SCENE, G_TRIO, G_MODE_STEP, G_MODE_ARP, G_FORM, G_TIMING, G_SHEET, G_MIDIOUT, G_FX_FILTER, G_ORACLE, G_35 };   /* (ARP: the same page,
                                                      * MODE Arp; TIMING: x4 ACCEL; SHEET: x3, +2/16; MIDI: GLO > MIDI OUT;
                                                      * FX_FILTER: FX 1 on FILTER, its curve; ORACLE: WARM PAD on track 1,
-                                                     * the page OR_PAGE[scene]) */
+                                                     * the page OR_PAGE[scene]; G_35: a 3.5 screen, f35_setup(scene)) */
 typedef struct { const char *name; int kind; int scene; } gshot_t;
 static const gshot_t SHOTS[] = {
     {"home", G_SCENE, S_HOME}, {"seq_mode", G_MODE_STEP, 0},
@@ -28,14 +27,64 @@ static const gshot_t SHOTS[] = {
     {"form", G_FORM, 0}, {"gen_tweak", G_SCENE, S_GEN_TWEAK}, {"gen_tweak2", G_SCENE, S_GEN_TWEAK2},
     {"gen_length", G_SCENE, S_GEN_LENGTH}, {"gen_seed", G_SCENE, S_GEN_SEED},
     {"cords", G_SCENE, S_CORDS}, {"mods_live", G_SCENE, S_MODS_LIVE_GEN}, {"matrix", G_SCENE, S_MATRIX},
+    {"mods_scope", G_SCENE, S_MODS_SCOPE}, {"mods_scope_gate", G_SCENE, S_MODS_SCOPE_GATE}, {"mods_scope_bus", G_SCENE, S_MODS_SCOPE_BUS}, {"mods_scope_thresh", G_SCENE, S_MODS_SCOPE_THRESH},
     {"organic", G_SCENE, S_ORGANIC}, {"mod_shortcut", G_SCENE, S_MOD_SHORTCUT},
-    {"help", G_SCENE, S_HELP},
     {"oracle_osc", G_ORACLE, 0}, {"oracle_filter", G_ORACLE, 1}, {"oracle_env", G_ORACLE, 2},
     {"edit_fm6", G_SCENE, S_FM6_ALG5}, {"fm6_eg", G_SCENE, S_FM6_EG}, {"edit_trio", G_TRIO, 0},
     {"drum", G_SCENE, S_DRUM}, {"patterns", G_SCENE, S_PATGRID}, {"mixer", G_SCENE, S_MIXER},
     {"gen_timing", G_TIMING, 0}, {"gen_energy", G_SCENE, S_GEN_ENERGY}, {"gen_answer", G_SCENE, S_GEN_ANSWER},
     {"sheet_note", G_SHEET, 0}, {"fx_filter", G_FX_FILTER, 0}, {"midi_out", G_MIDIOUT, 0}, {"about", G_SCENE, S_ABOUT},
+    /* RECIPES.md's "you should see" screens and the manual's pages for them */
+    {"gen_evolve_grav", G_SCENE, S_GEN_EVOLVE_GRAV}, {"gen_chord_drone", G_SCENE, S_GEN_CHORD_DRONE},
+    {"gen_timing_split", G_SCENE, S_GEN_TIMING_SPLIT}, {"gen_form_chain", G_SCENE, S_GEN_FORM_CHAIN},
+    {"glo_entries", G_SCENE, S_GLO_ENTRIES}, {"glo_entries_roles", G_SCENE, S_GLO_ENTRIES_ROLES},
+    {"glo_chain", G_SCENE, S_GLO_CHAIN}, {"glo_piece", G_SCENE, S_GLO_PIECE}, {"glo_perf", G_SCENE, S_GLO_PERF},
+    {"glo_land_rain", G_SCENE, S_GLO_LAND_RAIN}, {"mods_bus", G_SCENE, S_MODS_BUS}, {"scl", G_SCENE, S_SCL},
+    {"chord", G_SCENE, S_CHORD}, {"song", G_SCENE, S_SONG}, {"project", G_SCENE, S_PROJECT},
+    {"gen_form", G_SCENE, S_GEN_FORM},
+    /* 3.5's screens (f35_setup) */
+    {"mods_new", G_35, 0}, {"menu_ground", G_35, 1}, {"pattern_dir", G_35, 2}, {"chord_strum", G_35, 3},
+    {"chord_add9", G_35, 4}, {"arp_dnup", G_35, 5},
 };
+
+/* 3.5's screens: the setup, and the scene that draws it */
+static int f35_setup(int f)
+{
+    switch (f) {
+    case 0: {                                           /* MODS: EOC clocks a track, an LFO into BUS A, a GATE opens
+                                                         * mod 1's amount, BUS A plays track 3; the picked row's scope */
+        cord_t C[4] = {{CS_EOC, 0, CD_CLOCK, 1, 50, 0, CU_GATE}, {CS_LFO, 0, CD_BUS_A, 0, 60, 0},
+                       {CS_GATE, 1, CD_M1_AMT + 1, 0, 100, 0}, {CS_BUSA, 0, CD_PLAY, 2, 100, 0}};
+        uint32_t k;
+        setup(S_MODS_SCOPE_BUS);
+        cord_clear();
+        for (k = 0; k < 4u; k++) cord_set(k, &C[k]);
+        cord_vca_load(1u << 2);
+        cord_ui_sel = 2;
+        fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
+        go_title("MODS");
+        return S_MODS_SCOPE_BUS;
+    }
+    case 1: setup(S_MENU); ui.menu_sel = MI_GROUND; song.rec = 0; return S_MENU;   /* MENU on GROUND */
+    case 2:                                             /* PATTERN's sheet, Direction FOLD */
+        setup(S_PATTERN);
+        tessera_param_set(trk_index(TSEL), TX_SEQ_DIR, 3);
+        page_sheet_open(); pop.sel = 6; pop.first = 2;
+        return S_PATTERN;
+    case 3:                                             /* CHORD with OCT- held: STRUM 40, DOWN */
+        setup(S_GEN_CHORD_OCT);
+        tessera_param_set(0, TX_CH_STRUM, 40); tessera_param_set(0, TX_CH_SDIR, 1);
+        return S_GEN_CHORD_OCT;
+    case 4: {                                           /* CHORD page: ADD9, OPEN voicing */
+        uint8_t o[CHORD_MAX];
+        setup(S_CHORD);
+        TSEL->p[P_CHRD] = CH_ADD9; TSEL->p[P_VOIC] = VC_OPEN;
+        chord_build(TSEL, 60u, o);
+        return S_CHORD;
+    }
+    default: setup(S_ARP); TSEL->p[P_AMODE] = 7; return S_ARP;   /* ARP: MODE DNUP */
+    }
+}
 
 static const char *const OR_PAGE[] = {"OSC A", "FILTER", "AMP ENV"};
 
@@ -80,6 +129,12 @@ int main(int argc, char **argv)
             setup(S_HOME);
             host_preset(TSEL, ENGI_ORACLE, 1u);
             go_title(OR_PAGE[g->scene]);
+        } else if (g->kind == G_35) {
+            int sc = f35_setup(g->scene);
+            pal(UI_DEFAULT_INDEX);
+            draw(sc);
+            write_ppm(out, UI_PALETTES[UI_DEFAULT_INDEX].name, g->name);
+            continue;
         } else { setup(S_HOME); eng(6u); go_title("EDIT 1"); }   /* TRIO */
         pal(UI_DEFAULT_INDEX);
         draw(g->kind == G_SCENE ? g->scene : -1);
@@ -96,6 +151,75 @@ int main(int argc, char **argv)
         draw(S_HOME);
         write_ppm(out, UI_PALETTES[i].name, name);
     }
-    printf("gallery_render: %u screens and the inks in %s\n", (unsigned)NELEM(SHOTS), out);
+    for (i = 0; i < UI_NPALETTES; i++)                  /* each MOSAIC's MOD SCOPE: T2's LFO in T2's colour, */
+        if (UI_PALETTES[i].trk[0] != UI_PALETTES[i].trk[1]) {   /* colour, a bus in the ink (mosaic_scope_<name>, */
+            char name[40], *c;                          /* not in the manual) */
+            int k;
+            for (k = 0; k < 2; k++) {
+                snprintf(name, sizeof name, "mosaic_scope%s_%s", k ? "_bus" : "", UI_PALETTES[i].name);
+                for (c = name; *c; c++) *c = *c == ' ' ? '_' : *c >= 'A' && *c <= 'Z' ? (char)(*c + 32) : *c;
+                cur_name = name;
+                setup(k ? S_MODS_SCOPE_BUS : S_MODS_SCOPE_SLOW);
+                pal(i);
+                draw(k ? S_MODS_SCOPE_BUS : S_MODS_SCOPE_SLOW);
+                write_ppm(out, UI_PALETTES[i].name, name);
+            }
+        }
+    /* GROUND LIGHT (MENU > GROUND): HOME in each ink's light version, paper_<name>, and a few screens on paper in the
+     * default ink's, paper_<screen> (the landscape, the menu and COLOR's sheet: where the dark look was assumed) */
+    ux_ground = 1;
+    for (i = 0; i < UI_NPALETTES; i++) {
+        char name[32], *c;
+        snprintf(name, sizeof name, "paper_%s", UI_PALETTES[i].name);
+        for (c = name; *c; c++) *c = *c == ' ' ? '_' : *c >= 'A' && *c <= 'Z' ? (char)(*c + 32) : *c;
+        cur_name = name;
+        setup(S_HOME);
+        pal(i);
+        draw(S_HOME);
+        write_ppm(out, UI_PALETTES[i].name, name);
+    }
+    {
+        static const gshot_t LIGHT[] = {
+            {"paper_menu", G_SCENE, S_MENU}, {"paper_colors", G_SCENE, S_MENU_COLORS},
+            {"paper_land", G_SCENE, S_GLO_LAND}, {"paper_land_rain", G_SCENE, S_GLO_LAND_RAIN},
+            {"paper_turing", G_SCENE, S_GEN_TURING}, {"paper_constel", G_SCENE, S_GEN_CONSTEL},
+            {"paper_cords", G_SCENE, S_CORDS}, {"paper_mods_scope", G_SCENE, S_MODS_SCOPE_GATE}, {"paper_mixer", G_SCENE, S_MIXER}, {"paper_drum", G_SCENE, S_DRUM},
+            {"paper_patterns", G_SCENE, S_PATGRID}, {"paper_notes", G_SCENE, S_NOTES_MIXED},
+            {"paper_about", G_SCENE, S_ABOUT}, {"paper_knobs_bar", G_SCENE, S_KNOBS_BAR},
+        };
+        for (i = 0; i < NELEM(LIGHT); i++) {
+            cur_name = LIGHT[i].name;
+            setup(LIGHT[i].scene);
+            pal(UI_DEFAULT_INDEX);
+            draw(LIGHT[i].scene);
+            write_ppm(out, UI_PALETTES[UI_DEFAULT_INDEX].name, LIGHT[i].name);
+        }
+        for (i = 0; i < UI_NPALETTES; i++)              /* COLOR's sheet with WHITE (named BLACK), RED (as PINK), ORANGE (as YELLOW) */
+            if (str_eq(UI_PALETTES[i].name, "WHITE") || str_eq(UI_PALETTES[i].name, "RED") ||
+                str_eq(UI_PALETTES[i].name, "ORANGE")) {
+                cur_name = str_eq(UI_PALETTES[i].name, "WHITE") ? "paper_colors_white" :
+                           str_eq(UI_PALETTES[i].name, "RED") ? "paper_colors_red" : "paper_colors_orange";
+                setup(S_MENU_COLORS);
+                pal(i);
+                draw(S_MENU_COLORS);
+                write_ppm(out, UI_PALETTES[i].name, cur_name);
+            }
+        for (i = 0; i < UI_NPALETTES; i++)              /* each MOSAIC's landscape and COLOR's sheet */
+            if (UI_PALETTES[i].trk[0] != UI_PALETTES[i].trk[1]) {
+                char name[40], *c;
+                int k;
+                for (k = 0; k < 2; k++) {
+                    snprintf(name, sizeof name, "paper_%s_%s", k ? "colors" : "land", UI_PALETTES[i].name);
+                    for (c = name; *c; c++) *c = *c >= 'A' && *c <= 'Z' ? (char)(*c + 32) : *c;
+                    cur_name = name;
+                    setup(k ? S_MENU_COLORS : S_GLO_LAND_RAIN);
+                    pal(i);
+                    draw(k ? S_MENU_COLORS : S_GLO_LAND_RAIN);
+                    write_ppm(out, UI_PALETTES[i].name, name);
+                }
+            }
+    }
+    ux_ground = 0;
+    printf("gallery_render: %u screens, the inks and the light ground in %s\n", (unsigned)NELEM(SHOTS), out);
     return 0;
 }

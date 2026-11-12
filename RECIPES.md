@@ -6,6 +6,15 @@ the button in brackets until it shows: GEN, NOTES and PATTERN are under **SEQ**;
 and ENERGY under **ARP**; MODS, MATRIX
 and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
 
+Recipes tagged **(3.5)** need a feature that is new in 3.5 (the MIX buses, EOC, CLOCK, PLAY, MOD DEPTH,
+scaling and HOLD mods, DIR, CHORD STRUM and the new chord kinds). Update with the
+[web installer](https://rastapopolix.github.io/tessera/webapp/installer/) (a project that uses them does not load on older firmware). Recipes
+without a tag work on 3.4.1 too. The keys are 3.5's: **OCT+ held** is the page's sheet, **OCT- held** its second
+knobs. For the long patches that use these features (Krell, long gates, stepped chaos, the brake), see
+[GENERATIVE.md](GENERATIVE.md).
+
+**New here?** Start with [First steps: you have a loop, what next?](#first-steps-you-have-a-loop-what-next).
+
 **Recipes**
 
 - [A first generative patch in a minute](#a-first-generative-patch-in-a-minute)
@@ -43,27 +52,166 @@ and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
 - [Your controller's knobs, kept (MIDI LEARN)](#your-controllers-knobs-kept-midi-learn)
 - [An LFO for another synth's filter (mods out as CC)](#an-lfo-for-another-synths-filter-mods-out-as-cc)
 - [A bass that takes a note a bar (FOLLOW HOLD)](#a-bass-that-takes-a-note-a-bar-follow-hold)
+- [Loosen a 1/8 line (TIMING SPLIT)](#loosen-a-18-line-timing-split)
+- [A pad that swells every cycle (a lagged bus, 3.5)](#a-pad-that-swells-every-cycle-a-lagged-bus-35)
+- [A fill every four bars (EOC, 3.5)](#a-fill-every-four-bars-eoc-35)
+- [A melody that steps on another track's notes (CLOCK, 3.5)](#a-melody-that-steps-on-another-tracks-notes-clock-35)
+- [A part that comes and goes (PLAY, 3.5)](#a-part-that-comes-and-goes-play-35)
+- [A pattern that turns round on a gate (DIR, 3.5)](#a-pattern-that-turns-round-on-a-gate-dir-35)
+- [Steps, not sweeps (HOLD, 3.5)](#steps-not-sweeps-hold-35)
+- [A cord that opens and closes (scaling a mod, 3.5)](#a-cord-that-opens-and-closes-scaling-a-mod-35)
+- [A brake for the whole patch (MOD DEPTH, 3.5)](#a-brake-for-the-whole-patch-mod-depth-35)
+- [A strummed chord pad (STRUM, 3.5)](#a-strummed-chord-pad-strum-35)
 
 **[Tips](#tips)**
 
 ---
 
+## First steps: you have a loop, what next?
+
+A loop that sounds good is the best place to start. These moves turn it into music that develops, easiest first.
+Stop after any of them: each one is optional, and everything automatic starts switched off. Keys: **OCT+** tap =
+Enter, **OCT+ held** = the page's sheet, **OCT-** tap = Back, **OCT- held** = the page's second set of knobs.
+Moves tagged **3.5** need Tessera 3.5.
+
+### 1. Play with it live
+
+Mutes, fills and one big knob make a loop a performance, and cost nothing to try.
+
+- **GLO** opens the MIXER. The **black keys** (F#3 G#3 A#3 C#4) mute tracks 1 to 4; **C4** brings them all back.
+  **E4** holds FILL.
+- Hold **OCT+** on MIXER for its sheet, **Mutes: BAR**, so a mute lands on the next bar line (**3.5**; on 3.4.1 use
+  MENU > MUTES).
+- **GLO > PERF** has four macros; they do something once a mod uses them (see [One knob for a big build](#one-knob-for-a-big-build-perf-macros)).
+
+<p align="center"><img src="assets/gallery/mixer.png" alt="MIXER" width="240"><br><sub>You should see MIXER: a level per track, and the mutes on the black keys.</sub></p>
+
+**Try:** drop the drums on a bar line, then bring them back one bar later.
+
+### 2. Let it change by itself
+
+On a generator track, EVOLVE changes the phrase every few bars, so the loop never wears out.
+
+- **ARP**, tap to EVOLVE. **EVERY 4**, **AMOUNT** about 30.
+- **ROLL** (KNOB 4) is the track's seed: each click is a new line. Turn back to get the last one again.
+- Hold **OCT-**, **KNOB 4** is **GRAVITY**: the line drifts and then comes home.
+
+<p align="center"><img src="assets/gallery/gen_evolve_grav.png" alt="EVOLVE with OCT- held" width="240"><br><sub>You should see EVOLVE with OCT- held: GRVT (GRAVITY) on KNOB 4.</sub></p>
+
+**Try:** EVERY 4, AMOUNT 30, GRAVITY 50, and listen for a minute. See
+[Drift, then come home](#drift-then-come-home-gravity-on-evolve).
+
+### 3. Vary it with a second pattern, or a direction
+
+Each track has 8 patterns. Copy yours, change a few notes, and you have an answer to the first.
+
+- **SEQ** held opens PATTERNS: a cell per pattern. KNOB 1 to 4 pick the next pattern of tracks 1 to 4.
+- **SEQ**, tap to SONG: put patterns in order, each with its repeats. **PLAY** plays the song.
+- **3.5:** hold **OCT+** on PATTERN or NOTES, and the **Direction** row plays the same notes
+  FWD, BACK, PEND, FOLD, RAND or DRUNK.
+
+<p align="center"><img src="assets/gallery/pattern_dir.png" alt="PATTERN's sheet, Direction FOLD" width="240"><br><sub>You should see PATTERN's sheet with Direction on FOLD (3.5).</sub></p>
+
+**Try:** set a STEP track's Direction to **FOLD**: the same notes, a new tune.
+
+### 4. Give it an arc
+
+ENERGY is the project's mood over minutes: sparse and soft, then busy and loud, then back.
+
+- **ARP**, tap to ENERGY. Turn **ARC** up to about 50.
+- A drone or a bass that should stay put: hold **OCT-** and set **DEPTH 0** on that track.
+
+<p align="center"><img src="assets/gallery/gen_energy.png" alt="ENERGY" width="240"><br><sub>You should see ENERGY: the arc over minutes, and where the piece is on it.</sub></p>
+
+**Try:** ARC 50, **RESTS** 20, and let it run for five minutes.
+
+### 5. Bring tracks in and out
+
+ENTRIES takes tracks out and back in on phrase lines, so a layered loop thins and fills without your hands.
+
+- **GLO**, tap to ENTRIES. **ENTRIES** about 50, **STYLE FADE**.
+- Hold **OCT-** to give each track a **ROLE**; set a pad to **ANCHOR** and it never leaves.
+
+<p align="center"><img src="assets/gallery/glo_entries.png" alt="ENTRIES" width="240"><br><sub>You should see ENTRIES: each track's role, and whether it is IN or OUT.</sub></p>
+
+**Try:** ENTRIES 50, and watch the picture show which tracks are IN and OUT.
+
+### 6. Build sections
+
+FORM gives a track a verse and a chorus. CHAIN makes the whole project change section together, like a band
+going into the chorus.
+
+- **ARP**, tap to FORM: **FORM ABAC**, **CONTR** about 40.
+- **GLO**, tap to CHAIN: **FORM ABAC**, **PHRASE 8**. Tracks whose own FORM is OFF follow it.
+
+<p align="center"><img src="assets/gallery/gen_form.png" alt="FORM ABCB" width="240"> <img src="assets/gallery/glo_chain.png" alt="CHAIN ABAC" width="240"><br><sub>You should see FORM (a track's own sections) and CHAIN (the whole project's).</sub></p>
+
+**Try:** CHAIN ABAC, PHRASE 8, then play for two minutes. See
+[Returns that vary](#returns-that-vary-form-develop) to keep the returns from sounding the same.
+
+### 7. Give it a length and an ending
+
+PIECE plans the whole thing: a length, a shape and an end. It steers CHAIN, ENTRIES and ENERGY along the shape.
+
+- **GLO**, tap to PIECE: **LENGTH 10 min**, **SHAPE ARCH**, **END STOP**.
+- Press **PLAY**: it starts sparse, peaks, thins out and stops by itself. Try 5 min first to hear the whole shape.
+
+<p align="center"><img src="assets/gallery/glo_piece.png" alt="PIECE, 20 min ARCH" width="240"><br><sub>You should see PIECE: the shape, where you are on it and the time left.</sub></p>
+
+**Try:** LENGTH 5 min, ARCH, END STOP. Full recipe: [A piece that plays itself](#a-piece-that-plays-itself-piece-chain-and-entries).
+
+### 8. Add one moving part
+
+One slow cord is enough to make a pad breathe.
+
+- Hold **FX** and turn a knob (a cutoff, a level): a cord from the track's LFO to that knob, its amount set
+  as you turn. Then set a slow RATE on **LFO**.
+- **3.5:** on **LFO > MODS**, hold **OCT-** to watch the picked mod move over time (MOD SCOPE). Let go and the
+  rows come back.
+
+<p align="center"><img src="assets/gallery/mods_scope.png" alt="MOD SCOPE: an LFO on a track's knob" width="240"><br><sub>You should see MOD SCOPE (OCT- held on MODS): the picked mod over time.</sub></p>
+
+**Try:** an LFO on cutoff at about +30 %, RATE slow, and watch it in MOD SCOPE.
+(The filter on FM6 is an effect: [A filter sweep on FM6](#a-filter-sweep-on-fm6-the-filter-effect).)
+
+### 9. Keep it
+
+- Hold **REC** on a generator track to **print** what it played into STEP: ordinary notes, which never change unless
+  you change them. **EDIT** held undoes it.
+- Tap **REC** to record keys over the loop, pass after pass; tap again to stop.
+- **SAVE + REC** (or hold **SAVE**) saves the project to its slot; playback stops first.
+
+<p align="center"><img src="assets/gallery/project.png" alt="The project slots after a save" width="240"><br><sub>You should see the project's slots, with the one you saved.</sub></p>
+
+**Try:** print a line you like, then save.
+
+That is enough for a piece. For full patches see the recipes below, [GENERATIVE.md](GENERATIVE.md) for deeper
+patching, and the [GLOSSARY](GLOSSARY.md) for any term that is new.
+
+---
+
 ## A first generative patch in a minute
 
-1. Power on. Track 1 is **GLASS PAD**, track 2 **STRING MACH**, track 3 **BELLS**, track 4 the **808 KIT**.
-2. Track 3 (BELLS): **SEQ** for GEN, **MODE** to **TURING**. Press **PLAY**: a looping melody in the track's scale.
+<p align="center"><img src="assets/gallery/gen_turing.png" alt="TURING" width="240"></p>
+
+1. Power on. Track 1 is **KUGO HARP**, track 2 **KOTO WARM**, track 3 **FLUTE**, track 4 the **808 KIT**, in
+   KUMOI on E.
+2. Track 1 (KUGO HARP): **SEQ** for GEN, **MODE** to **TURING**. Press **PLAY**: a looping melody in the track's scale.
 3. **PROB** at about 20: the loop changes a little each time round. At 0 (Lock) it holds.
 4. Track 4: MODE **ATLAS**, **DENS** at 50. A drum groove under it.
-5. Track 3 again, **EVOLVE**: turn **ROLL** a click at a time until you like the line. The number is its seed: write
+5. Track 1 again, **EVOLVE**: turn **ROLL** a click at a time until you like the line. The number is its seed: write
    it down and you can always come back to it.
-6. **SCL** on track 3 to change the scale; the generator follows at once.
+6. **SCL** on track 1 to change the scale; the generator follows at once.
 
 ## A drone that breathes
 
 A held chord that changes slowly, for ambient beds.
 
-1. Track 1 (GLASS PAD): GEN, MODE **CHORD**, **PROG DRONE** (the I chord alone), **BARS 4**, **HIT HOLD**.
-2. Hold **OCT+** on GEN: **CHRD DIA7** (a seventh in the scale), **VOICING OPEN**, **OCTAVES −1** for weight.
+<p align="center"><img src="assets/gallery/gen_chord_drone.png" alt="CHORD, PROG DRONE" width="240"></p>
+
+1. Track 1: **PRESETS**, **GLASS PAD** (an FM6 pad). GEN, MODE **CHORD**, **PROG DRONE** (the I chord alone), **BARS 4**, **HIT HOLD**.
+2. Hold **OCT+** on GEN for its sheet: **Chord DIA7** (a seventh in the scale), **Voicing OPEN**. Then hold **OCT-**:
+   **OCT −1** (KNOB 4) for weight.
 3. **MODS**: a cord from **T1 TIDE 1** (TIDE's slowest circuit) to **T1 CUTOFF**, amount about +30 %.
 4. A second cord from **T1 SWARM 2** to **T1 PAN**, about +20 %: the pad drifts across the stereo field.
 5. For a drone that moves through the scale, set PROG to **WALK**: four chords from the seed, and EVOLVE (EVERY 8,
@@ -71,8 +219,10 @@ A held chord that changes slowly, for ambient beds.
 
 ## Chords that lead, melodies that follow (QNT CHRD)
 
-1. Track 2 (STRING MACH): MODE **CHORD**, **PROG POP**, **BARS 1**, **HIT BEAT**.
-2. Track 3 (BELLS): MODE **MARKOV**, **LEAP 30**, **DENS 60**.
+<p align="center"><img src="assets/gallery/gen_chord.png" alt="CHORD" width="240"></p>
+
+1. Track 2: **PRESETS**, **STRING MACH** (a TRIO pad). MODE **CHORD**, **PROG POP**, **BARS 1**, **HIT BEAT**.
+2. Track 3 (FLUTE): MODE **MARKOV**, **LEAP 30**, **DENS 60**.
 3. On track 3, **SCL**: **QNT** to **CHRD**. Its notes now snap to the chord track 2 plays, so the melody always
    fits the harmony. The keys and MIDI input snap too, so you can play along on track 3.
 4. Try PROG **2-5-1** or **CIRCLE** for a jazzier walk; the melody follows every change.
@@ -80,15 +230,15 @@ A held chord that changes slowly, for ambient beds.
 ## Your own progression (CHORD USER)
 
 1. A CHORD track: **PROG USER**.
-2. Hold **OCT+** on GEN and play the roots on the keys, one key a chord: for example C, A, F, G. The keys are silent
+2. Hold **OCT-** on GEN and play the roots on the keys, one key a chord: for example C, A, F, G. The keys are silent
    while you enter. Notes outside the scale round down into it.
-3. Let OCT+ go. LENGTH (KNOB 4 with OCT+ held) is now 4; shorten it to leave the last chords out.
-4. The chords' kind comes from **CHRD** (OCT+ layer, KNOB 2): OFF for triads, **DIA7** for sevenths.
+3. Let OCT- go. **Length** (the GEN sheet, OCT+ held) is now 4; shorten it to leave the last chords out.
+4. The chords' kind comes from **Chord** on the same sheet: OFF for triads, **DIA7** for sevenths.
 
 ## Two tracks answering each other (BRANCH)
 
-1. Two melodic tracks, for example track 1 GLASS PAD and track 3 BELLS. Track 3: MODE **TURING**.
-2. Track 3, **TWEAK 2**: **TO** to **T1 COIN**, **BRANCH 40 %**. About four hits in ten now play on the pad.
+1. Two melodic tracks, for example track 1 KUGO HARP and track 3 FLUTE. Track 3: MODE **TURING**.
+2. Track 3, **TWEAK 2**: **TO** to **T1 COIN**, **BRANCH 40 %**. About four hits in ten now play on the harp.
 3. **TOGGLE** instead of COIN alternates: at 100 % every other hit goes across, a strict call and response.
 4. **LATCH** tosses once a bar: whole bars swap between the two sounds.
 5. The tosses replay with the seed. A cord from a **SWARM** to **BRANCH** sweeps how often hits cross over.
@@ -100,6 +250,8 @@ A held chord that changes slowly, for ambient beds.
    steps up, in its own scale and its own rhythm.
 3. **SHIFT −7** for a line an octave below in a seven-note scale. **DROP 50** thins the harmony so it only answers
    now and then.
+4. **3.5:** mute track 3 on MIXER (the black key for it): track 2 keeps playing the harmony, so the melody can be
+   a leader you never hear. On 3.4.1 a muted leader stops its followers; set its MIDI OUT to SOUND OFF instead.
 
 ## A harmony on your own melody (FOLLOW CHORD)
 
@@ -108,7 +260,7 @@ Write or play in a melody, and let another track harmonise it, note for note, wi
 1. Track 1 holds your melody: a STEP track with the notes written in on **NOTES**, or played in with **REC**.
 2. Track 2: any generator (its own notes are not used; **EUCLID** is fine), in the same key on **SCL**. On
    **TWEAK**: **FOLLOW T1**.
-3. Still on **TWEAK**, hold **OCT+**: **KNOB 2** sets **HOW** to **CHORD**, **KNOB 3** sets **RHYTHM** to **SOURCE**.
+3. Still on **TWEAK**, hold **OCT-**: **KNOB 2** sets **HOW** to **CHORD**, **KNOB 3** sets **RHYTHM** to **SOURCE**.
    Track 2 now plays with each note of your melody a third, fifth or seventh of the chord on it, the one nearest its
    last note, so the harmony moves smoothly.
 4. Other ways to go: **HOW CONTRA** for a line that moves against yours, **CANON2** for your melody again two notes
@@ -119,11 +271,13 @@ Keep the melody on a lower track number than the harmony: the harmony then lands
 
 ## Atlas: a groove with fills
 
+<p align="center"><img src="assets/gallery/gen_grids.png" alt="ATLAS" width="240"></p>
+
 1. Track 4 (808 KIT): MODE **ATLAS**, **X** and **Y** where you like the groove, **DENS 60**.
-2. Hold **OCT+** on GEN: **TOMS 40** brings in the hits the kick and snare only just miss, so fills follow the
-   groove. Press a **black key** (still holding OCT+) to put that part on **CLAP**, **OPEN HAT**, **RIM** or **BELL**
-   instead.
-3. Still holding OCT+: **HAT 30** thins the hats, **KICK 100** keeps the kick full.
+2. Hold **OCT+** on GEN for its sheet: **Fourth part 40** brings in the hits the kick and snare only just miss, so
+   fills follow the groove. Hold **OCT-** and press a **black key** to put that part on **CLAP**, **OPEN HAT**,
+   **RIM** or **BELL** instead.
+3. Still holding OCT-: **HAT 30** thins the hats (KNOB 4), **KICK 100** keeps the kick full (KNOB 2).
 4. **TWEAK 2**: **COND 4:4** on a second ATLAS track, with the fourth part on CLAP and DENS high, gives a fill on
    every fourth bar only.
 
@@ -179,6 +333,8 @@ groove that keeps changing, which is the other use.
 
 **Inside one track (POLY):**
 
+<p align="center"><img src="assets/gallery/gen_poly.png" alt="POLY" width="240"> <img src="assets/gallery/gen_quad.png" alt="QUAD" width="240"></p>
+
 1. MODE **POLY**. Its four notes step on whenever one of its rhythms fires. By default rhythm 1 is **/4** and
    rhythm 2 **/3**: 4 against 3.
 2. **RHY 3**, then **DIVISION /5**: a third rhythm against the other two. Where rhythms land together the note
@@ -195,19 +351,22 @@ groove that keeps changing, which is the other use.
 ## Notes that travel between tracks (QUAD columns)
 
 1. Two or more tracks in **QUAD**, as above.
-2. Hold **OCT+** on GEN. KNOB 1 picks a column, KNOB 2 its **MOVE** (**DOWN**: each note moves a track down,
-   track 4's to track 1), KNOB 3 its **EVERY** (/4: every four steps of the first QUAD track).
+2. Hold **OCT-** on GEN. KNOB 2 picks a column, KNOB 3 its **MOVE** (**DOWN**: each note moves a track down,
+   track 4's to track 1), KNOB 4 its **EVERY** (/4: every four steps of the first QUAD track).
 3. Set a different MOVE on another column (UP, or RAND). A phrase on one track now turns up on the next a few beats
    later, as a canon.
-4. **RANGE** (KNOB 4 on the layer) **1 OCT** folds every row into one octave from the root: tighter, more like a
+4. **Range** (the GEN sheet, OCT+ held) **1 OCT** folds every row into one octave from the root: tighter, more like a
    riff.
 5. **LINK** on GEN: a fast QUAD track pulls slower ones along. With DIR **HOLD** a track plays only when the linked
    one moves it.
 
 ## A melody you can come back to (CONSTELLATION)
 
+<p align="center"><img src="assets/gallery/gen_constel.png" alt="CONSTELLATION" width="240"></p>
+
 1. MODE **CONSTL**, **DENS 60**, **SPEED 1/16**. The stars that cross the crosshair play.
-2. Hold **OCT+**: **SIZE 3** catches stars three rows either side, for wider leaps. **LEN 8** and **LOCK 70**: most
+2. Hold **OCT+** for the GEN sheet: **Size 3** catches stars three rows either side, for wider leaps. Then hold
+   **OCT-**: **LEN 8** and **LOCK 70**: most
    steps now play the eight-step loop of stars already caught, so a phrase forms and repeats with small changes.
 3. **FILL ARP** fills the steps between stars with the last four stars, low to high and softer.
 4. Let the ship steer itself: **MODS**, a cord with no source (`--`) to **C AUTO** on this track, offset to taste:
@@ -216,6 +375,8 @@ groove that keeps changing, which is the other use.
 
 ## A slow lead from the infinity series (SERIES)
 
+<p align="center"><img src="assets/gallery/gen_series.png" alt="SERIES" width="240"></p>
+
 1. MODE **SERIES** on a lead sound (BELLS or an FM6 tine). PATTERN **DIV 1/8** or slower.
 2. **INTV 1**: close, stepwise lines. **INTV 3** or **4**: wider leaps (folded back into two octaves).
 3. **LOOP OFF** never repeats; **LOOP 8** repeats eight notes as a motif. EVOLVE (EVERY 8) picks new STARTs, so the
@@ -223,6 +384,8 @@ groove that keeps changing, which is the other use.
 4. **LENGTH** page: **HIT**, so each note rings until the next one.
 
 ## Leaves in the wind (FALL)
+
+<p align="center"><img src="assets/gallery/gen_fall.png" alt="BOUNCE in FALL" width="240"></p>
 
 1. MODE **BOUNCE**, **BALLS** turned past 4 to **Fall**. Eight leaves fall and play where they land: left low, right
    high, one in seven an octave down.
@@ -233,7 +396,7 @@ groove that keeps changing, which is the other use.
 
 ## Pads from sparse notes (LENGTH HIT)
 
-1. Any generator on a pad sound (GLASS PAD, STRING MACH). Set **DENS** or **PROB** so it plays few notes.
+1. Any generator on a pad sound (**PRESETS**: GLASS PAD, STRING MACH). Set **DENS** or **PROB** so it plays few notes.
 2. **LENGTH** page: **LENGTH HIT**. Each note holds until the next hit, so rests let notes ring and the line turns
    into a slowly changing pad.
 3. For plucks instead: **FIXED**, **LEN 1/16**, **KEYS 2**.
@@ -271,9 +434,11 @@ groove that keeps changing, which is the other use.
 
 ## Drift, then come home (GRAVITY on EVOLVE)
 
+<p align="center"><img src="assets/gallery/gen_evolve_grav.png" alt="EVOLVE with OCT- held: GRAVITY" width="240"></p>
+
 1. Track 3 (BELLS): MODE **TURING**, **PROB 0** (Lock), and turn **ROLL** on EVOLVE until you like the loop.
 2. **EVOLVE**: **EVERY 2**, **AMOUNT 40**. Every two bars the line changes a little, and keeps going further.
-3. Hold **OCT+** on EVOLVE: **GRAVITY 30**. Now about one round in three brings a changed note back instead, so the
+3. Hold **OCT-** on EVOLVE: **GRAVITY 30** (KNOB 4). Now about one round in three brings a changed note back instead, so the
    melody wanders and returns. At 70 it stays close to home; at 0 it wanders freely.
 4. Home is the loop as you last set it: turn a knob or ROLL and that becomes the new home.
 
@@ -281,7 +446,9 @@ groove that keeps changing, which is the other use.
 
 FM6 has no filter of its own; the FILTER effect gives it one.
 
-1. Track 1 (GLASS PAD): **FX**, the **FX 1** page: **FX** to **FILTER**, **MIX** full, **CUT** about halfway,
+<p align="center"><img src="assets/gallery/fx_filter.png" alt="FX 1 on FILTER: its curve" width="240"></p>
+
+1. Track 1 (load **GLASS PAD** with **PRESETS**): **FX**, the **FX 1** page: **FX** to **FILTER**, **MIX** full, **CUT** about halfway,
    **RES** a third up.
 2. Hold **FX** and turn **CUT** (KNOB 3) to the right: a cord from the track's LFO to the cutoff, its amount set
    as you turn.
@@ -297,6 +464,8 @@ FM6 has no filter of its own; the FILTER effect gives it one.
    **4:4**. They play on every fourth pass only.
 3. For a fill on demand, set another few hits to **FILL** instead, and the kick on the last beat to **!FILL**.
    Hold **GLO** and **E4** (on MIXER, E4 alone) while the bar plays: the fill comes in and the kick drops out.
+4. On 3.5 a slow LFO can hold FILL for you:
+   [A fill every four bars](#a-fill-every-four-bars-eoc-35).
 
 ## A line that climbs (Accumulate)
 
@@ -314,10 +483,10 @@ never repeats itself note for note.
 1. A melodic track: MODE **TURING**, **PROB 0** so the loop itself holds still.
 2. **EVOLVE**: **EVERY 4**. **FORM**: **ABAC**, **CONTR 40**: four sections of four bars, A coming back every
    eight bars.
-3. Hold **OCT+** on FORM: **DEVELOP 40**. Each time A comes back it is A varied by about that much: a note or two
+3. Hold **OCT-** on FORM: **DEVELOP 40**. Each time A comes back it is A varied by about that much: a note or two
    changed. The section itself is kept, so the next return starts from A again: after an hour
    it is still the same A, varied, not something that has drifted away.
-4. Hold **OCT+** on EVOLVE: **GRAVITY 30**. About one return in three is exact, so the original comes back now and
+4. Hold **OCT-** on EVOLVE: **GRAVITY 30** (KNOB 4). About one return in three is exact, so the original comes back now and
    then.
 5. **DEVELOP 0** (the default) gives exact returns again. Between 30 and 50 the returns sound like a player
    ornamenting the same phrase; above 70 they wander further each time.
@@ -360,12 +529,14 @@ never repeats itself note for note.
 
 1. Record a short line into track 1's STEP pattern (above), up to 8 notes.
 2. Track 2: MODE **ANSWER**, a different sound (a PHYS bell answering an FM6 piano works well).
-3. Hold **OCT+** on GEN and turn **KNOB 1** (SOURCE) to **T1**: track 1's pattern is now the call.
+3. Hold **OCT-** on GEN and turn **KNOB 2** (SOURCE) to **T1**: track 1's pattern is now the call.
 4. **VARY** about 40 %: each answer changes a little more. **FADE** sets how many answers before it rests; past 16
    (LOOPS) it keeps answering forever.
 5. Change the STEP pattern and the answers change with it, as ANSWER reads it again before each answer.
 
 ## Driving another synth (MIDI OUT)
+
+<p align="center"><img src="assets/gallery/midi_out.png" alt="GLO > MIDI OUT" width="240"></p>
 
 1. Hold **HOME** for the menu: **NOTES OUT** to **ALL**. The steps, the ARP and every generator now go out over USB
    MIDI, each track on its own channel: AUTO gives 1 to 4 (GLO > SYSTEM ROUT at CH1-4; the drum track on its DRUM
@@ -380,12 +551,14 @@ never repeats itself note for note.
 A piece with an intro, a build, a peak and an ending, that plays for half an hour with no hands on it. Three pages work
 together: CHAIN gives the tracks shared sections, ENTRIES brings tracks in and out, and PIECE plans the whole shape.
 
+<p align="center"><img src="assets/gallery/glo_piece.png" alt="PIECE" width="240"> <img src="assets/gallery/glo_chain.png" alt="CHAIN" width="240"> <img src="assets/gallery/glo_entries.png" alt="ENTRIES" width="240"></p>
+
 1. Start from a few generator tracks playing together (the [first patch](#a-first-generative-patch-in-a-minute) is
    enough): a melody, a pad or chords, and ATLAS drums.
 2. **GLO > CHAIN**: **FORM ABAC**, **PHRASE 8**, **WANDER** about 20 (now and then the next section is chosen rather
    than read). Tracks whose own FORM is OFF follow it.
 3. On each generator track, **FORM**: **CONTR** about 40, so B and C sound different from A.
-4. **GLO > ENTRIES**: **ENTRIES 50**, **STYLE FADE**. Hold **OCT+** and set the pad's ROLE to **ANCHOR** if it should
+4. **GLO > ENTRIES**: **ENTRIES 50**, **STYLE FADE**. Hold **OCT-** and set the pad's ROLE to **ANCHOR** if it should
    never leave.
 5. **ENERGY** (on any generator track's ARP pages): **ARC** about 60, so the shape is heard in how busy and loud the
    tracks play.
@@ -401,6 +574,8 @@ first.
 A single knob that builds the whole track up: filters open, the reverb grows, the drums get busier and the tempo
 pushes a little.
 
+<p align="center"><img src="assets/gallery/glo_perf.png" alt="PERF" width="240"></p>
+
 1. **LFO > MODS**, a free mod: **KNOB 1** (source) to **MACRO 1**, **KNOB 3** (destination) to **T1 CUTOFF**,
    **KNOB 4** about +60 %.
 2. Another mod from **MACRO 1** to **T1 FX SEND**, about +40 %: more reverb or echo as it builds.
@@ -408,6 +583,9 @@ pushes a little.
 4. One more from **MACRO 1** to **TEMPO**, about +5 %: a slight push (with CLK on INT).
 5. **GLO > PERF**: turn **KNOB 1** up for the build, back down for the breakdown. The page shows how many mods each
    macro drives.
+
+**3.5:** one more mod, from **MACRO 1** to **MOD DEP** at -100 %, and the same knob also takes the whole patch to
+dry (see [A brake for the whole patch](#a-brake-for-the-whole-patch-mod-depth-35)).
 
 Give **MACRO 2** the opposite job (negative amounts on levels and cutoffs) for a breakdown on another knob. The macros
 are saved with the project, so the build is there next time.
@@ -421,6 +599,8 @@ Mute and unmute by hand, and let Tessera put the change on the beat for you.
    drums drop out on the next bar line.
 3. Press it again on a later bar to bring them back on the line. Changed your mind before the line? Press it again
    while it blinks to call it off.
+4. **3.5:** hold **OCT+** on MIXER for its sheet, **Mutes**: the same setting as the menu's, at hand while you
+   play the mute keys. A muted generator track still leads the tracks that follow it.
 
 ## Your controller's knobs, kept (MIDI LEARN)
 
@@ -463,7 +643,7 @@ copying every note.
    scale steps: −7 is an octave in a seven-note scale).
 3. A track that plays once a bar decides when the bass takes a new note: track 1 as **EUCLID**, **STEPS 16**,
    **PULSE 1**, set to SOUND OFF with its channel OFF on **GLO > MIDI OUT** so it stays silent.
-4. On track 2, hold **OCT+** on **TWEAK** and set **HOLD** to **T1**.
+4. On track 2, hold **OCT-** on **TWEAK** and set **HOLD** to **T1** (KNOB 4).
 
 The bass now plays its own rhythm on the note the melody had at the bar line. HOLD on a track with random hits (DROP,
 BRANCH) samples at random moments instead.
@@ -472,11 +652,142 @@ BRANCH) samples at random moments instead.
 
 A line on the grid, broken up now and then the way a player would: a quick pair of 1/16s here, a note pushed late there.
 
+<p align="center"><img src="assets/gallery/gen_timing_split.png" alt="TIMING with OCT- held: SPLIT and HOW" width="240"></p>
+
 1. Any melodic track at **DIV 1/8**: a generator, or a STEP track with a line written in.
-2. On **TIMING**, hold **OCT+**: **KNOB 1** sets **SPLIT 20 %**, **KNOB 2** sets **HOW** to **MIX**.
+2. On **TIMING**, hold **OCT-**: **KNOB 1** sets **SPLIT 20 %**, **KNOB 2** sets **HOW** to **MIX**.
 3. Too busy, or not enough? Turn SPLIT. **ROLL** on EVOLVE gives a new set of tosses, and the generator's notes stay.
 
 The bar's first step stays on the grid. A mod on **SPLIT** (an LFO or TIDE) brings the looser bars in and out.
+
+## A pad that swells every cycle (a lagged bus, 3.5)
+
+A bus with a Lag turns a short pulse into a soft rise and fall, and one bus can move several things. Here the pad's own
+LFO cycle starts a swell (EOC, the end of the cycle, is a gate on every track).
+
+<p align="center"><img src="assets/gallery/mods_bus.png" alt="MODS sheet: Bus A mode and lag" width="240"></p>
+
+1. Track 1 with **PRESETS** on **GLASS PAD**, on a long pad (LENGTH HIT, or CHORD with HIT HOLD). **LFO 2**: **SYNC 2BAR**, **TRIG FREE**.
+2. **MODS**: mod 1 from **T1 EOC** to **BUS A** (the end of KNOB 3's list), **+100**.
+3. Hold **OCT+** on MODS for its sheet: **Bus A lag 500 ms** (KNOB 1 the row, KNOB 2 the value), **OCT-** to close.
+4. Mod 2 from **BUS A** (the end of KNOB 1's list) to **T1 CUTOFF**, **+40**. Mod 3 from **BUS A** to **T1 FX SEND**,
+   **+30**: the pad opens and gets wetter with every cycle, with one lag to set, not two.
+
+A longer Lag is a slower, softer swell. Hold **OCT-** on mod 2 to watch the bus. The same bus fed by another track's
+notes is in [GENERATIVE.md](GENERATIVE.md#an-envelope-from-another-tracks-notes).
+
+## A fill every four bars (EOC, 3.5)
+
+EOC gives a gate once per LFO cycle. A slow LFO synced to the bars makes it a clock for fills, with no condition on
+any step.
+
+1. Track 4 (808 KIT) on a groove with some steps set to **FILL** (see [A fill on the last bar](#a-fill-on-the-last-bar-condition-and-fill)).
+2. **LFO 2** on track 4: **SYNC 4BAR**, **TRIG FREE**.
+3. **MODS**: a mod from **T4 EOC** to **FILL** (near the end of KNOB 3's list), **+100**. EOC is already a 0 to 1
+   source, so the mod starts at **+**; tap **OCT+** once for **^**, a GATE.
+
+FILL is held for the eighth of the cycle after each wrap (half a bar every four bars), and the GLO layer's FILL lights
+while it is. SYNC **2BAR** for a fill every second bar. For a note on each cycle instead, send EOC to CLOCK: the Krell
+in [GENERATIVE.md](GENERATIVE.md#an-envelope-that-plays-itself).
+
+## A melody that steps on another track's notes (CLOCK, 3.5)
+
+A mod onto **CLOCK** makes a generator step on a gate's edges instead of its own DIV.
+
+1. Track 1 plays a sparse generator. Track 3 plays a generator (TURING on BELLS).
+2. **MODS**: a mod from **T1 GATE** to **T3 CLOCK**, **+50**. Track 3 now plays a step on every second note of track
+   1, and never on its own.
+3. **+100** is every note, **+33** every third. A **negative** amount steps when the note ends. DIV on PATTERN is
+   still the step's length and the fastest it steps.
+
+Two tracks that play together without sharing a grid: the melody follows the other player's hands. STOP and PLAY start
+it again from the first step.
+
+## A part that comes and goes (PLAY, 3.5)
+
+**PLAY** is a destination on each track: while the mods on it reach half, the track is heard; under half it plays on
+unheard (so tracks that follow it keep their place). One GATE cord makes a gated voice.
+
+1. Track 2 plays a generator (MARKOV).
+2. **LFO** on track 2: **WAVE SQR**; **LFO 2**: **SYNC 2BAR**, **TRIG FREE**. Leave the LFO DEST depths at 0.
+3. **MODS**: a mod from **T2 LFO** to **T2 PLAY** (near the end of track 2's destinations), **+100**; tap **OCT+**
+   twice for **^**. Track 2 is heard for two bars, silent for two.
+
+For a part that arrives on no schedule, use `T2 TIDE 2^ -> T2 PLAY` instead (tap OCT+ twice for ^): it comes in for a
+few minutes and goes. More in [GENERATIVE.md](GENERATIVE.md#a-voice-that-comes-and-goes-with-the-tide).
+
+## A pattern that turns round on a gate (DIR, 3.5)
+
+A STEP pattern has a direction (FWD, BACK, PEND, RAND, DRUNK) and a mod can move it.
+
+<p align="center"><img src="assets/gallery/pattern_dir.png" alt="PATTERN's sheet, Direction FOLD" width="240"></p>
+
+1. Track 3 on **STEP** with a short line written on **NOTES** (LEN 8 on PATTERN).
+2. Track 2 **LFO**: **WAVE SQR**; **LFO 2**: **SYNC 2BAR**, **TRIG FREE**.
+3. **MODS**: a mod from **T2 LFO** to **T3 DIR**, **+20**; tap **OCT+** twice for **^**. Each 20 % of move is one
+   direction along the list: while the gate is high the line plays BACK, then FWD again.
+
+**+40** reaches PEND. Without the GATE, `T2 S&H -> T3 DIR` picks a new direction from the LFO's random values. DIR is
+read at each step and never moves the playhead; a generator track does not use it. On 3.4.1 the direction is set on
+the pattern's sheet, with no mod.
+
+## Steps, not sweeps (HOLD, 3.5)
+
+A HOLD mod takes its source once and keeps it, as a sample and hold: a slow source turns into steps.
+
+1. **MODS**: a mod from **T1 TIDE 3** to **T1 CUTOFF**, **+50**. Tap **OCT+** three times: **=**, HOLD. The cutoff is
+   taken on the first step of each bar and stays.
+2. Clock it by another voice instead: hold **OCT-** on the mod and turn **KNOB 1** to **HOLD ON T2 NOTES**. Now it
+   takes a new place on every note track 2 plays.
+3. Try `T3 DRIFT=` to **T3 PAN**, held on T2's notes too.
+
+A held mod onto DIR or a generator's setting changes the line on the bar line. The long version:
+[GENERATIVE.md](GENERATIVE.md#a-sample-and-hold-clocked-by-another-voice).
+
+## A cord that opens and closes (scaling a mod, 3.5)
+
+A mod of mods normally adds to another mod's amount. Hold OCT- and it scales instead, like a VCA on the cord.
+
+<p align="center"><img src="assets/gallery/mods_new.png" alt="MODS: a GATE turns mod 2's amount (M2*)" width="240"></p>
+
+1. **MODS**: mod 3 from **T1 LFO** to **T1 CUTOFF**, **+60**: a plain filter sweep.
+2. Mod 4 from **T2 GATE** to **M3 AMT** (after the send effects in KNOB 3's list), **+100**. Hold **OCT-** on mod 4
+   and turn **KNOB 3** right: the row shows **M3\***.
+3. Mod 3 now moves the filter only while track 2 plays; the sweep keeps its own amount. A **negative** amount closes it
+   instead (a duck).
+
+`T4 ENV` as the scaler shapes the sweep with each of track 4's notes. KNOB 3 left adds again. A gate on a mod is also
+in [GENERATIVE.md](GENERATIVE.md#long-gates) (Try next). On 3.4.1 the same cords add instead.
+
+## A brake for the whole patch (MOD DEPTH, 3.5)
+
+One control for how much of every mod plays, 0 to 100 %. At 0 the patch is dry; at 100 (the default) it is as you set it.
+
+1. Any patch with a few cords, playing.
+2. **GLO** for PERF (the page after MIXER); hold **OCT+** for PERF's sheet: **Mod depth**, **KNOB 2**. Turn it down to
+   hear the patch settle.
+3. To play it with a knob: **MODS**, a mod from **MACRO 1** to **MOD DEP** (the end of KNOB 3's list), **-100**. On
+   PERF, **KNOB 1** up now takes the patch to dry.
+
+Offsets and a GATE's threshold stay put; a cord onto MOD DEP is not scaled by it. A **GATE** onto FILL at 100 % stops
+holding FILL once the depth is under 50 %. For the feedback version, see
+[GENERATIVE.md](GENERATIVE.md#a-brake-for-any-feedback-patch).
+
+## A strummed chord pad (STRUM, 3.5)
+
+A chord whose notes start a little apart, as a played one.
+
+<p align="center"><img src="assets/gallery/chord_strum.png" alt="CHORD with OCT- held: STRUM 40 ms, DOWN" width="240"></p>
+
+1. Track 1 (GLASS PAD): GEN, MODE **CHORD**, **PROG POP**, **BARS 1**, **HIT HOLD**.
+2. Hold **OCT-** on GEN: **KNOB 2** **STRUM 100** (OFF, 1 to 250 ms: by 1 up to 10, by 5 up to 60, then by 10),
+   **KNOB 3** **DIR UP** (DOWN or ALT as well).
+3. Hold **OCT+** on GEN for its sheet: **Chord** **SUS2**, **ADD9**, **MAJ6** or **7SUS4**, fixed shapes on any
+   note, in place of triads.
+4. HIT **BEAT** or **STEP** with **STRUM 20** and **DIR ALT** gives guitar-like stabs. A short stab strums tighter, and
+   all the notes end together.
+
+MIDI OUT sends the notes spread too. On 3.4.x the chords play together, and SUS2, 7SUS4, ADD9 and MAJ6 as power chords.
 
 ## Tips
 
@@ -489,9 +800,9 @@ The bar's first step stays on the grid. A mod on **SPLIT** (an LFO or TIDE) brin
   save the project.
 - Movement is more interesting when it is slow. A TIDE or a slow LFO on a filter or a send, at a small amount, keeps
   a loop alive for much longer than a fast one.
-- When EVOLVE wanders too far, turn up **GRAVITY** (OCT+ on EVOLVE) rather than turning EVOLVE off: it still moves,
+- When EVOLVE wanders too far, turn up **GRAVITY** (OCT- on EVOLVE) rather than turning EVOLVE off: it still moves,
   but comes home.
-- A drone or a bass that should stay steady through ENERGY's tide: hold OCT+ on ENERGY and set **DEPTH 0** on it.
+- A drone or a bass that should stay steady through ENERGY's tide: hold OCT- on ENERGY and set **DEPTH 0** on it.
 - A track at SOUND OFF (OCT- held on GLO > MIDI OUT) is a free modulation lane: its generator's GATE, NOTE and CV
   still drive mods on the other tracks.
 - For long pieces, try the plan on a short PIECE LENGTH first, to hear the whole shape, then make it longer.
@@ -535,6 +846,11 @@ The bar's first step stays on the grid. A mod on **SPLIT** (an LFO or TIDE) brin
 - A cord with no source (`--`) is a fixed offset: use it to set things that have no knob, such as **C AUTO**.
 - A knob with a mod on it shows a moving mark: you can see what the cords are doing without opening MODS.
 - **OCT+** on MATRIX jumps straight to that cord in MODS.
+- **3.5:** hold **OCT-** on MODS to see what the picked mod does: its move over time (a line) over its source
+  (faint dots), a GATE's threshold as a wedge at each edge. Let go and the rows come back. Turn **KNOB 4** while
+  holding to move a threshold and watch the gate follow. Hold **OCT+** there for the MIX buses.
+- **3.5:** a bus (BUS A, BUS B) is a mixer of mods you can use as one source: send several cords in, or one
+  envelope out to many places, and set the amounts once. Its **Mode** SUM, MAX, MIN or DIFF is OR, AND and XOR for gates.
 - A mod's **+-** moves both ways from the knob, **+** only up; the bar shows which. It is the mod's own setting, not
   the LFO's POL. The lists name each source and destination with its track (**T2 GATE**).
 

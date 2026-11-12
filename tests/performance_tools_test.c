@@ -5,7 +5,7 @@
 
 static void reset_tools(void)
 {
-    seq_stop(); momentary_restore(); ui_power_on(); set_engine_of(&trk[0], 3); recording_reset();   /* (SID: knobs and CC macros on p[]) */ memset(&midi_clock,0,sizeof midi_clock); song.master_q12=4096;
+    seq_stop(); momentary_restore(); ui_power_on(); set_engine_of(&trk[0], 6); trk[0].engine = trk[0].eng_req; recording_reset();   /* (TRIO: knobs and CC macros on p[]) */ memset(&midi_clock,0,sizeof midi_clock); song.master_q12=4096;
     settings_click=settings_countin=settings_preview=settings_chord_add=0;
     settings_click_level=1; memset(cin_n,0,sizeof cin_n); clk.env=click_req=0;
 }
@@ -99,10 +99,13 @@ static void test_midi_and_levels(void)
 {
     reset_tools();midi_event(0xb0,0,7,127);assert(TSEL->p[P_LEVEL]==127);
     midi_event(0xb0,0,10,64);assert(TSEL->p[P_PAN]==0);
-    midi_event(0xb0,0,74,0);assert(TSEL->p[P_E4]==0);
-    midi_event(0xb0,0,71,127);assert(TSEL->p[P_E5]==ENGINES[TSEL->eng_req]->edit[5].max);   /* (SID's RES: 0..15) */
+    {   /* CC 74 / 71 on an engine without a map (TRIO): its sound values untouched */
+        int16_t e[8];memcpy(e,TSEL->p+P_E0,sizeof e);midi_event(0xb0,0,74,0);midi_event(0xb0,0,71,127);
+        assert(!memcmp(e,TSEL->p+P_E0,sizeof e));
+    }
     song.g[G_ROUTE]=0;midi_event(0xb0,1,91,88);assert(!trk[1].p[P_RESERVED36] && !trk[0].p[P_RESERVED36]);
     set_engine_of(TSEL,ENGI_FM6);TSEL->engine=TSEL->eng_req;
+    midi_event(0xb0,0,74,0);assert(TSEL->p[P_E2]==ENGINES[ENGI_FM6]->edit[2].min);   /* (CC 74: FM6's MLVL) */
     midi_event(0xb0,0,73,70);for(uint32_t op=0;op<6;op++)assert(fm6_patch[0][op*FP_OP]==99u-70u*99u/127u);   /* (FM6's own envelope: R1) */
     reset_tools();song.rec=1;seq_start();seq_advance(0);midi_event(0xb0,0,7,17);
     assert(motion.count==1 && motion.event[0].param==P_LEVEL && motion.event[0].value==17);seq_stop();
@@ -132,7 +135,7 @@ static void test_compatibility(void)
         r.np=100;up_values(&r,v);assert(v[P_RESERVED35]==0);
     }
     {   /* a factory preset: no delay send (its sends predate the delay coming back) */
-        TSEL->eng_req=3;TSEL->p[P_RESERVED35]=77;apply_preset_to(TSEL,8);assert(TSEL->p[P_RESERVED35]==0 && TSEL->p[P_RESERVED36]==0);
+        TSEL->eng_req=6;TSEL->p[P_RESERVED35]=77;apply_preset_to(TSEL,8);assert(TSEL->p[P_RESERVED35]==0 && TSEL->p[P_RESERVED36]==0);
     }
 }
 static int pv_sounds(const track_t *t, uint32_t note)
@@ -208,6 +211,7 @@ static void test_arp_shape(void)
     reset_tools();track_t *t=TSEL;uint32_t tr=song.sel;
     uint8_t a[24],b[24],va[24],vb[24];
     t->p[P_AMODE]=4;t->p[P_APROB]=100;t->p[P_AOCT]=2;           /* RANDOM over two octaves, some steps skipped */
+    t->p[P_VOICE]=V_POLY;                                         /* (TRIO's first sound is MONO) */
     memset(va,0,sizeof va);memset(vb,0,sizeof vb);
     assert(arp_run(t,a,va,24)==24 && arp_run(t,b,vb,24)==24);
     assert(!memcmp(a,b,24));                                     /* PLAY again: the same arpeggio */
@@ -221,8 +225,66 @@ static void test_arp_shape(void)
     tessera.evolve[tr].human=0;
     t->p[P_AMODE]=0;
 }
+/* ARP MODE's orders for C E G (pressed E C G for ORD), RND1 repeating and replaying, the old values' meaning kept */
+static uint32_t arp_keys(track_t *t, const uint8_t *keys, uint32_t nk, uint8_t *notes, uint32_t n)
+{
+    uint32_t got = 0, guard = 0, period = seq_div_samples((uint32_t)t->p[P_ARATE]);
+    seq_sub_clear();
+    arp_off(t); t->nheld = 0; t->arp_pos = 0xFFFFFFF; t->arp_idx = 0xFFFFFFFFu;
+    for (uint32_t i = 0; i < nk; i++) arp_add(t, keys[i]);
+    while (got < n && guard++ < 400u) {
+        arp_tick(t, period);
+        if (t->arp_note) { notes[got++] = t->arp_note; arp_off(t); }
+    }
+    t->nheld = 0;
+    return got;
+}
+static void test_arp_modes(void)
+{
+    static const uint8_t CEG[3] = {60, 64, 67}, ECG[3] = {64, 60, 67}, CEGC[4] = {60, 64, 67, 72};
+    static const struct { int16_t mode; const uint8_t *keys; uint8_t want[6]; } W[] = {
+        {1, ECG, {60, 64, 67, 60, 64, 67}},             /* UP: low to high, whatever the order pressed */
+        {2, ECG, {67, 64, 60, 67, 64, 60}},             /* DN */
+        {3, CEG, {60, 64, 67, 64, 60, 64}},             /* UPDN: the ends once */
+        {7, CEG, {67, 64, 60, 64, 67, 64}},             /* DNUP: the ends once */
+        {5, ECG, {64, 60, 67, 64, 60, 67}},             /* ORD: as pressed (ORDER NOTE too) */
+        {6, ECG, {67, 67, 67, 67, 67, 67}},             /* REPEAT: the last pressed */
+    };
+    reset_tools(); track_t *t = TSEL; uint32_t tr = song.sel, i, k;
+    uint8_t a[12], b[12];
+    t->p[P_APROB] = 127; t->p[P_AOCT] = 1; t->p[P_AORDER] = 0;
+    for (k = 0; k < sizeof W / sizeof W[0]; k++) {
+        t->p[P_AMODE] = W[k].mode;
+        assert(arp_keys(t, W[k].keys, 3, a, 6) == 6 && !memcmp(a, W[k].want, 6));
+    }
+    t->p[P_AORDER] = 1; t->p[P_AMODE] = 1;              /* ORDER PLAY: UP as pressed, as before */
+    assert(arp_keys(t, ECG, 3, a, 3) == 3 && a[0] == 64 && a[1] == 60 && a[2] == 67);
+    t->p[P_AORDER] = 0; t->p[P_AMODE] = 8;              /* RND1: one order of C E G, repeated */
+    assert(arp_keys(t, CEG, 3, a, 12) == 12);
+    assert((1u << (a[0] - 60)) + (1u << (a[1] - 60)) + (1u << (a[2] - 60)) == (1u << 0) + (1u << 4) + (1u << 7));
+    for (i = 3; i < 12u; i++) assert(a[i] == a[i - 3]);
+    assert(arp_keys(t, CEG, 3, b, 12) == 12 && !memcmp(a, b, 12));   /* PLAY again: the same order */
+    assert(arp_keys(t, CEGC, 4, b, 12) == 12);          /* a note added: an order of the four, repeated */
+    for (i = 4; i < 12u; i++) assert(b[i] == b[i - 4]);
+    uint32_t differs = 0;                               /* other SEEDs: other orders */
+    uint16_t seed = tessera.seed[tr];
+    for (k = 1; k < 12u; k++) {
+        tessera.seed[tr] = (uint16_t)(seed + k);
+        assert(arp_keys(t, CEG, 3, b, 3) == 3);
+        differs += memcmp(a, b, 3) != 0;
+    }
+    tessera.seed[tr] = seed;
+    assert(differs);
+    /* the stored values keep their meaning, the new ones appended: an older project plays as it did */
+    const param_desc_t *d = param_desc_of(t->eng_req, P_AMODE);
+    static const char *const OLD[] = {"OFF", "UP", "DN", "UPDN", "RND", "ORD", "REPEAT", "DNUP", "RND1"};
+    assert(d->max == 8);
+    for (k = 0; k <= 8u; k++) assert(!strcmp(d->names[k], OLD[k]));
+    t->p[P_AMODE] = 0;
+}
 int main(void)
 {
+    test_arp_modes();
     test_recording_tools();test_click_volume();test_editing_tools();test_knob_preview();test_arp_shape();test_midi_and_levels();test_compatibility();
     puts("performance tools: count-in, click, additive entry, audition, momentary restore/keep, MIDI, drum levels and inert legacy effect values passed");return 0;
 }

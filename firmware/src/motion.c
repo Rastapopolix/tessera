@@ -281,7 +281,7 @@ static uint32_t motion_rec_step(track_t *t)             /* the step a move recor
 {
     uint32_t len = (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP), period = seq_div_samples((uint32_t)t->p[P_SDIV]);
     uint32_t idx = t->seq_idx % len;
-    if (t->seq_pos < 0x7FFFFFFFu && t->seq_pos > step_samples(t, period, idx) / 2u) idx = (idx + 1u) % len;
+    if (t->seq_pos < 0x7FFFFFFFu && t->seq_pos > step_samples(t, period, SEQ_D(t).slot) / 2u) idx = seq_dir_next(t, len);
     return idx;
 }
 static int motion_capture(track_t *t, uint32_t id, int16_t value)
@@ -424,6 +424,8 @@ static int pattern_copy(track_t *t, uint32_t source, uint32_t dest)
     pattern_commit(t);
     recording_copy(t, source, dest, 1);
     *pattern_at(k, dest) = *pattern_at(k, source);
+    pattern_dir[k][dest] = pattern_dir[k][source];
+    tessera_pg_copy(k, source, dest);                   /* (PAT GEN's slot with it) */
     n = 0;
     for (i = 0; i < motion.count; i++) if ((motion.event[i].place >> 6) != k || motion_pattern[i] != dest) {
         motion_pattern[n] = motion_pattern[i]; motion.event[n++] = motion.event[i];

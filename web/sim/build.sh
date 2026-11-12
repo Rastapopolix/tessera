@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: GPL-3.0-only
 # Web simulator: the firmware to WebAssembly (web/sim/sim.c) and the page into build/sim/ (index.html, worklet.js:
 # Felucca's, hugelton/Felucca web/emu).
-#   web/sim/build.sh        (after ./build.sh, which generates build/gen/)
+#   web/sim/build.sh [--release X.Y[.Z]]   (after ./build.sh, which generates build/gen/)
+# --release names the build as tools/build.py's does (vX.Y[.Z] in the menu and on the page); without it the version
+# is melodee.c's MELODEE_VERSION (upstream's, shown as the Melodee base).
 # Needs Emscripten (emcc): on the PATH, or emsdk in ~/emsdk (or $EMSDK).
 # Serve build/sim/ over http(s) (python3 -m http.server -d build/sim) and open it: AudioWorklet needs a server.
 set -e
@@ -22,10 +24,18 @@ for name, f in (("SIM_DEMO_A", "still-tide"), ("SIM_DEMO_B", "koto-garden")):
 Path("build/gen/sim_demos.h").write_text("\n".join(out) + "\n")
 PY
 # as Felucca's web/emu/build.sh: no fused multiply-adds (as the host build), a 1 MiB stack, no file system;
-# the device's engine set (tools/build.py build_app: FM6 and PHYS in, SID and MACRO out), not core.h's host defaults; the look as the
+# the device's engine set (tools/build.py build_app: FM6 and PHYS in; tests/sim_flags_test.py), not core.h's host defaults; the look as the
 # firmware build takes it (MELODEE_LOOK=1: Mono)
 VERSION=$(sed -n 's/^#define MELODEE_VERSION "\([^"]*\)".*/\1/p' firmware/src/melodee.c)   # upstream's, shown in the menu
-ENGINES="-DMELODEE_ACCESS=${MELODEE_ACCESS:-1} -DMELODEE_LOOK=${MELODEE_LOOK:-1} -DMELODEE_FM6=${MELODEE_FM6:-1} -DMELODEE_SID=${MELODEE_SID:-0} -DMELODEE_PHYS=${MELODEE_PHYS:-1} -DMELODEE_PLAITS=${MELODEE_PLAITS:-0}"
+LABEL="Tessera, Melodee $VERSION base"
+if [ "$1" = --release ]; then           # as tools/build.py --release: X.Y[.Z] or X.Y[.Z]-suffix, lower case, a v in front
+    echo "$2" | grep -Eq '^[1-9]\.[0-9](\.[0-9])?(-[A-Za-z0-9]+)?$' || { echo "--release $2: use X.Y[.Z] or X.Y[.Z]-suffix"; exit 1; }
+    VERSION="v$(echo "$2" | tr 'A-Z' 'a-z')"
+    LABEL="Tessera $VERSION"
+elif [ -n "$1" ]; then
+    echo "usage: web/sim/build.sh [--release X.Y[.Z]]"; exit 1
+fi
+ENGINES="-DMELODEE_ACCESS=${MELODEE_ACCESS:-1} -DMELODEE_LOOK=${MELODEE_LOOK:-1} -DMELODEE_FM6=${MELODEE_FM6:-1} -DMELODEE_PHYS=${MELODEE_PHYS:-1}"
 emcc -O2 -ffp-contract=off -w -DMELODEE_USB_AUDIO=1 $ENGINES "-DMELODEE_VERSION=\"$VERSION web\"" -Ibuild/gen -Ifirmware/src -Itests \
     --no-entry -sSTANDALONE_WASM -sSTACK_SIZE=1048576 -sINITIAL_MEMORY=33554432 -sFILESYSTEM=0 \
     -o "$OUT/melodee.wasm" web/sim/sim.c
@@ -33,7 +43,7 @@ cp web/sim/worklet.js "$OUT/"
 {   # index.html is written as a page body (it also publishes as is): the document around it for a plain server
     printf '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
     printf '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n</head>\n<body>\n'
-    sed "s/@BASE@/$VERSION/" web/sim/index.html
+    sed -e "s/@VERSION@/$LABEL/" -e "s/@BUILD@/$VERSION/" web/sim/index.html
     printf '</body>\n</html>\n'
 } > "$OUT/index.html"
 echo "sim      $OUT/melodee.wasm  $(wc -c < "$OUT/melodee.wasm") B   (serve $OUT/ and open index.html)"

@@ -177,23 +177,33 @@ static int st_body(uint32_t obj, uint32_t copy, const st_hdr_t *h)   /* streamin
 /* the current copy: the newest valid sequence (A on a tie), -1 when
  * neither is valid. Headers first, so only the winner's payload is read (it
  * is verified); *h gets its header. */
+static uint8_t st_older;   /* #609: bit k: slot k's newest committed copy failed its CRC, the older one is in use */
+static void st_older_mark(uint32_t obj, int older)
+{
+    if (!st_proj(obj)) return;
+    if (older) st_older |= (uint8_t)(1u << (obj - OBJ_PROJ0));
+    else st_older &= (uint8_t)~(1u << (obj - OBJ_PROJ0));
+}
 static int st_current(uint32_t obj, st_hdr_t *h)
 {
     st_hdr_t a, b;
-    int va = st_head(obj, 0, &a) == 0, vb = st_head(obj, 1, &b) == 0;
+    int va = st_head(obj, 0, &a) == 0, vb = st_head(obj, 1, &b) == 0, lost = 0;
     if (vb && (!va || (b.seq != a.seq && b.seq - a.seq < 0x80000000u))) {
         if (st_body(obj, 1, &b) == 0) {
             *h = b;
+            st_older_mark(obj, 0);
             return 1;
         }
-        vb = 0;
+        vb = 0; lost = 1;                            /* (B was the newer one) */
     }
     if (va && st_body(obj, 0, &a) == 0) {
         *h = a;
+        st_older_mark(obj, lost);
         return 0;
     }
-    if (vb && st_body(obj, 1, &b) == 0) {
+    if (vb && st_body(obj, 1, &b) == 0) {           /* (A, the newer or a tie, failed its CRC) */
         *h = b;
+        st_older_mark(obj, va);
         return 1;
     }
     return -1;

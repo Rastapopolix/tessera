@@ -122,6 +122,45 @@ static struct result stereo_render(int insert, int send, uint32_t master)
     return result;
 }
 
+/* Issue #586: a six-note chord on the power-on TRIO track (track 2; TRIO STRING MACH, set here since 3.5's power-on
+ * sounds are plucks) peaked at +4 dBFS in its stem and the 16-bit
+ * capture cut it hard. The stem now has the stereo recording's gain (half) and the outputs' soft clip: no sample at
+ * the hard ceiling, the loud chord still loud, a single note at the stereo recording's level. */
+static void stem_headroom(void)
+{
+    static const uint8_t chord[6] = {48, 55, 60, 64, 67, 71};
+    int32_t out[CTL * 2];
+    for (uint32_t notes = 1; notes <= 6; notes += 5) {
+        int32_t stem_peak = 0, stereo_peak = 0;
+        for (uint32_t stems = 0; stems <= 1; stems++) {
+            memset(&ua, 0, sizeof ua);
+            host_tracks_init();
+            for (uint32_t k = 0; k < NPART; k++) host_power_on_sound(&trk[k], k);
+            host_preset(&trk[1], 6u, 6u);                   /* TRIO STRING MACH (engines.c TRK_DEF before 3.5) */
+            for (uint32_t k = 0; k < NPART; k++) for (uint32_t v = 0; v < NVOICE; v++) trk[k].v[v].active = 0;
+            usb.up = usb.config = 1; usb.suspended = 0; ua.cap_alt = 1; ua_cap_channels = stems ? 4 : 2;
+            for (uint32_t i = 0; i < notes; i++) trk_note_on(&trk[1], chord[i], 100);
+            for (uint32_t block = 0; block < 1500; block++) {
+                mix_block(out, CTL);
+                ua.cw = ua.cr = 0;
+                ua_audio(out, track_capture, CTL, 4096);
+                for (uint32_t i = 0; i < CTL; i++) {
+                    int32_t c = stems ? ua.cap[i * NTRK + 1u] : ua.cap[2u * i];
+                    c = c < 0 ? -c : c;
+                    assert(c < 32767);
+                    if (stems && c > stem_peak) stem_peak = c;
+                    if (!stems && c > stereo_peak) stereo_peak = c;
+                }
+            }
+        }
+        if (notes == 6)
+            assert(stem_peak > 20000);                      /* (still loud: soft, not quietened) */
+        else                                                /* a lone centred note: the stereo recording's level */
+            assert(stem_peak > stereo_peak * 9 / 10 && stem_peak < stereo_peak * 11 / 10);
+    }
+    puts("USB track capture: a loud chord's stem soft-clipped, not cut; a single note at the stereo level: OK");
+}
+
 int main(void)
 {
     struct result dry = stereo_render(0, 0, 4096);
@@ -150,5 +189,6 @@ int main(void)
         }
     }
     puts("USB track capture: tracks 1..4 isolated, ignored legacy effects, level, pan/master isolation, stale blocks: OK");
+    stem_headroom();                                        /* (last: it leaves voices sounding) */
     return 0;
 }

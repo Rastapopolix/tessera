@@ -5,7 +5,8 @@
 //   node web/test_web.mjs
 // - editor.html: the protocol section (between PROTO-BEGIN/END) against its mock device (v1 commands,
 //   the user preset bank / librarian, library files, live pushes, older-firmware fallback, the v3 tracks
-//   and the mixer, the v5 drum grid in steps and user presets), its tab layout and ja/en strings,
+//   and the mixer, the v5 drum grid in steps and user presets), its tab layout and strings in every language, the installer's
+//   strings in every language and its language menu, the simulator page's lines and the project page's in every language,
 //   and the user-sample pipeline byte for byte against tools/sampleio.py
 // - fm1pkg.js: productOf and logicalImage on build/tessera.fwsc (skipped without a build)
 // - fm1ota.js: a full install and an unplug during the write against a simulated FM-1
@@ -27,12 +28,17 @@ const HERE = new URL(".", import.meta.url).pathname;
 /* ------------------------------------------------------------ editor protocol --- */
 const html = readFileSync(join(HERE, "editor.html"), "utf8");
 const proto = html.slice(html.indexOf("/*PROTO-BEGIN*/"), html.indexOf("/*PROTO-END*/"));
+/* The protocol section's clock (Date.now: the mock's WATCH window, the Link's keep-alive gap). A mock with a WATCH
+   window runs on a stopped clock that only clock.advance moves (attachMock), so a busy machine that holds the test
+   process longer than the window cannot end a WATCH the test keeps alive. Timers (replies, Link timeouts) stay real. */
+const clock = { t: null, stop() { this.t = Date.now(); }, advance(ms) { this.t += ms; }, run() { this.t = null; } };
+class TestDate extends Date { static now() { return clock.t ?? Date.now(); } }
 const E = vm.runInNewContext(proto + `
 ;({ frame, unframe, parse, req, Link, parseWav, resample, normalize, takeSample, autoTrim, zoomView, rootFromName, buildSlot, makeMockDevice, CMD, SMP,
    UP, bank, nativeBank, capturePatch, auditionPatch, startWatch, libraryFile, readLibraryFile, paramKeys, patternFromSteps, stepsFromPattern, upName,
    mixer, parseNotes, parseHits, hitsText, gridFromSteps, LANE_NOTE, LANE_OF, readDevicePreferences, devicePresetRows, engineOrder, ENGINE_ORDER, aliasOf, fmtValue, FM6,
-   FM4, fromDigital, nativeImportTargets, scaleRows, SCALE_INFO, parseScala, tuneName, tuneValid, TUNE, STATS, statsFields })`,
-{ setTimeout, clearTimeout, setInterval, clearInterval, console });
+   FM4, fromDigital, nativeImportTargets, scaleRows, SCALE_INFO, parseScala, tuneName, tuneValid, TUNE, STATS, statsFields, findDevicePorts, probeFm1, writesDevice })`,
+{ setTimeout, clearTimeout, setInterval, clearInterval, console, Date: TestDate });
 
 {
   const d = {min: 0, max: E.SCALE_INFO.length - 1, names: E.SCALE_INFO.map(r => r.name)};
@@ -45,6 +51,22 @@ const E = vm.runInNewContext(proto + `
   ok(E.scaleRows(d, "Favorites").length === 0 && E.scaleRows(d, "All scales", "missing scale").length === 0, "scale picker: empty favorites and search");
   const old = E.scaleRows({min: 0, max: 1, names: ["MAJ", "UNKNOWN"]});
   ok(old[0].title === "Major" && old[1].title === "UNKNOWN" && old[1].id === 1 && old[1].family === "Other", "scale picker: old firmware and unknown scale fallback");
+}
+
+{
+  /* #609: which requests change the FM-1. Everything the editor sends while connecting must be a read. */
+  const W = E.writesDevice, R = E.req;
+  const reads = [R.info(), R.get(0, 1), R.dump(), R.desc(0, 1), R.stepGet(0), R.names(0), R.smpInfo(), R.upList(0, 4), R.upGet(0),
+    R.watch(3), R.ping(), R.track(), R.track(2), R.trackDump(1), R.trackMix(1), R.trackStep(1, 3), R.trackParam(1, 5), R.project(2, 1),
+    R.song(), R.bankSong(), R.pattern(0), R.motion(0), R.native(12, 0, 0, 16), R.native(12, 1, 3), R.native(12, 7, 0), R.tune(0), R.tune(1, 2),
+    R.uiState(), R.uiPalettes(), R.favGet(0, 0, 8), R.fm6Get(0, 1), R.fm6List(), R.stats(), [E.CMD.BACKUP_LIST, []], [E.CMD.BACKUP_GET, [2, 0, 0, 0, 0, 0, 0, 1]]];
+  const writes = [R.set(0, 1, 5), R.stepSet(0, { n: 0, notes: [], time: 0, flags: 0, vel: 64 }), R.preset(0, 1), R.project(0, 1), R.project(1, 1),
+    R.smpBegin(0), R.smpErase(0), R.upPut(0, { engine: 0, name: "X", p: [] }), R.upStore(0, "X"), R.upLoad(0), R.upErase(0),
+    R.trackMix(1, 100, false), R.trackStep(1, 3, { n: 0, notes: [], time: 0, flags: 0, vel: 64 }), R.trackParam(1, 5, 9), R.song(1, [{ slot: 0, repeat: 1 }]),
+    R.bankSong(3), R.pattern(0, 1, 2), R.motion(0, 2), R.native(12, 2, 0), R.native(12, 3, 0, 1), R.native(12, 4, 0, 1), R.native(12, 5, 0), R.native(12, 6, 0), R.tune(3, 0), R.tune(4, 1),
+    R.uiSet(0, 1), R.favSet(0, 1, true), R.fm6Put(0, 1, []), R.fm6Erase(1), [E.CMD.BACKUP_PUT, [2, 2]], [99, []]];
+  ok(reads.every(r => !W(r)), "editor (#609): reads are not writes: " + reads.filter(W).map(r => r[0]).join());
+  ok(writes.every(r => W(r)), "editor (#609): every write is a write: " + writes.filter(r => !W(r)).map(r => r[0]).join());
 }
 
 {
@@ -77,7 +99,7 @@ await prophetBackupTests();
 
 
 async function nativeTests() {
-  const m=E.makeMockDevice(), inp=[...m.access.inputs.values()][0], out=[...m.access.outputs.values()][0];
+  const m=E.makeMockDevice({ auto: false }), inp=[...m.access.inputs.values()][0], out=[...m.access.outputs.values()][0];
   const link=new E.Link(d=>out.send(d),{timeout:500});inp.onmidimessage=e=>link.receive(e.data);const rq=(r,o)=>link.request(r,o);
   const info=E.parse[E.CMD.INFO](await rq(E.req.info()));
   const fm=Array.from(E.FM6.INIT_PK);
@@ -109,7 +131,8 @@ async function nativeTests() {
 await nativeTests();
 
 async function editorMock() {
-  const m = E.makeMockDevice();
+  /* no simulated knobs: their 3 s timer would move parameters (33 and 35 among them) while a slow run reads them */
+  const m = E.makeMockDevice({ auto: false });
   const inp = [...m.access.inputs.values()][0], out = [...m.access.outputs.values()][0];
   const link = new E.Link((d) => out.send(d), { timeout: 300 });
   inp.onmidimessage = (e) => link.receive(e.data);
@@ -141,7 +164,7 @@ async function editorMock() {
     await rq(E.req.set(0, 53, 12));
     await rq(E.req.set(0, 54, -30));
     const on = E.parse[E.CMD.DUMP](await rq(E.req.dump()), info);
-    await rq(E.req.preset(3, 2));
+    await rq(E.req.preset(6, 2));
     const off = E.parse[E.CMD.DUMP](await rq(E.req.dump()), info);
     ok(on.p[52] === 1 && on.p[53] === 12 && on.p[54] === -30 && off.p.slice(49, 61).every((v) => v === 0),
       "editor: a factory preset turns every matrix slot off");
@@ -150,12 +173,12 @@ async function editorMock() {
     /* the chord keys (core.h P_CHRD, P_VOIC = 81, 82, just before P_E0 83): the track's, a factory preset keeps them */
     const c0 = E.parse[E.CMD.DESC](await rq(E.req.desc(0, 81)));
     const c1 = E.parse[E.CMD.DESC](await rq(E.req.desc(0, 82)));
-    ok(c0.label === "CHRD" && c0.names.join() === "OFF,DIA3,DIA7,MAJ,MIN,DOM7,MAJ7,MIN7,SUS4,POW" && c0.def === 0 &&
+    ok(c0.label === "CHRD" && c0.names.join() === "OFF,DIA3,DIA7,MAJ,MIN,DOM7,MAJ7,MIN7,SUS4,POW,SUS2,7SUS4,ADD9,MAJ6" && c0.def === 0 &&
        c1.label === "VOIC" && c1.names.join() === "CLOSE,OPEN,INV1,INV2,+OCT" && c1.def === 0,
       "editor: the chord keys 81, 82 over DESC");
     await rq(E.req.set(0, 81, 2));
     await rq(E.req.set(0, 82, 4));
-    await rq(E.req.preset(3, 3));
+    await rq(E.req.preset(6, 3));
     const kept = E.parse[E.CMD.DUMP](await rq(E.req.dump()), info);
     ok(kept.p[81] === 2 && kept.p[82] === 4 && kept.preset === 3, "editor: a factory preset keeps CHRD and VOIC (the track's)");
     await rq(E.req.set(0, 81, 0));
@@ -194,9 +217,9 @@ async function editorMock() {
   await rq(E.req.uiSet(3, 1));
   prefs = await E.readDevicePreferences(rq, info, names, prefs);
   ok(E.devicePresetRows(info, names, prefs).length === 1 && prefs.favorites[6][0], "editor: favorites filter follows device state");
-  m.state.favorites[6][0] = false; m.state.favorites[3][0] = true;
+  m.state.favorites[6][0] = false; m.state.favorites[19][0] = true;
   prefs = await E.readDevicePreferences(rq, info, names, prefs);
-  ok(!prefs.favorites[6][0] && prefs.favorites[3][0], "editor: panel-side favorite changes refresh");
+  ok(!prefs.favorites[6][0] && prefs.favorites[19][0], "editor: panel-side favorite changes refresh");
   await rq(E.req.upStore(31, "FAVORITE"));
   await rq(E.req.favSet(info.namespace.general, 31, true));
   prefs = await E.readDevicePreferences(rq, info, names, prefs);
@@ -210,7 +233,7 @@ async function editorMock() {
   {   /* the lists in the device's order (engines.c ENGINE_ORDER): FM6 first (second until the PROPHET was retired,
        2026-10-22), ORACLE after it (2026-10-29), DRUM last, "-" never; the numbers stay */
     const shown = E.engineOrder(info.engines).map((i) => info.engines[i]);
-    ok(shown.join() === "FM6,ORACLE,SID,TRIO,PHYS,DRUM" &&
+    ok(shown.join() === "FM6,ORACLE,TRIO,PHYS,DRUM" &&
        E.engineOrder(info.engines)[0] === 12 && E.engineOrder(info.engines).at(-1) === 10,
        "editor: engines listed FM6 first, DRUM last (indices kept)");
     ok(E.engineOrder(["ANALOG", "X", "-", "DRUM", "FM6"]).join() === "0,4,3,1", "editor: an unknown engine follows the known ones");
@@ -307,8 +330,9 @@ function mockTables() {
     ok([2,5,7,11].every((i) => m0.tables.ENG[i].name === "-" && !m0.tables.ENG[i].presets.length),
        "editor: PHASE, VOICE, WHEEL and NOISE retired with their original IDs reserved");
     ok(dr.name === "DRUM" && dr.edit.map((d) => d.label).join() === "KIT,TUNE,TONE,DECY,SNAP,ACC,KICK,DRV" &&
-       dr.edit[0].names.join() === "808,909,SID" && dr.edit[0].min === 4 && dr.edit[0].max === 6 && dr.presets.length === 4 && dr.presets[0].name === "808 KIT" && dr.presets[2].name === "SID KIT" && dr.presets[3].name === "SID DIGI",
-       "editor: DRUM engine 10 (KIT TUNE TONE DECY SNAP ACC KICK DRV, KIT 808), 808, 909 and SID kits");
+       dr.edit[0].names.join() === "808,909" && dr.edit[0].min === 4 && dr.edit[0].max === 5 && dr.presets.length === 2 && dr.presets[0].name === "808 KIT" && dr.presets[1].name === "909 KIT",
+       "editor: DRUM engine 10 (KIT TUNE TONE DECY SNAP ACC KICK DRV, KIT 808), 808 and 909 kits");
+    ok(m0.tables.ENG[3].name === "-" && !m0.tables.ENG[3].presets.length, "editor: SID removed, its ID 3 reserved");
   }
   const dj = join(HERE, "../build/host/desc.json");
   if (!existsSync(dj)) { console.log("editor: mock tables == firmware (no build/host/desc.json)        skip"); return; }
@@ -459,7 +483,9 @@ async function editorFm4() {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const js = (x) => JSON.stringify(x);
 /* a mock + Link pair; counts frames sent per cmd and timeouts reported */
-function attachMock(opt, linkOpt = {}) {
+/* opt.watchMs: the WATCH window on the stopped clock (clock.advance moves it, done() lets it run again) */
+function attachMock(opt = {}, linkOpt = {}) {
+  if (opt.watchMs) clock.stop();
   const m = E.makeMockDevice({ auto: false, ...opt });
   const inp = [...m.access.inputs.values()][0], out = [...m.access.outputs.values()][0];
   const sent = {}, ev = { timeouts: 0, unknown: [], pushes: [] };
@@ -468,7 +494,7 @@ function attachMock(opt, linkOpt = {}) {
     onPush: (f) => ev.pushes.push({ ...f, pending: link.cur ? link.cur.cmd : 0 }), ...linkOpt });
   inp.onmidimessage = (e) => link.receive(e.data);
   const rq = (r, o) => link.request(r, o);
-  return { m, link, rq, sent, ev, done: () => { link.close(); m.stop(); } };
+  return { m, link, rq, sent, ev, done: () => { link.close(); m.stop(); if (opt.watchMs) clock.run(); } };
 }
 const emptyStep = { n: 0, notes: [0, 0, 0, 0], time: 2, flags: 0, vel: 0 };
 
@@ -510,13 +536,13 @@ async function editorLibrarian() {
   ok(b.total === 64 && b.slots.length === 64 && b.slots[1].used && b.slots[1].name === "GLASS BELL" && !b.slots[3].used
     && b.slots[63].slot === 63, "librarian: UP_LIST, 64 slots in 4 frames");
 
-  await rq(E.req.preset(3, 6));                  /* SID SAW BASS on the ACID steps (the power-on Prophet: its own slots) */
+  await rq(E.req.preset(6, 0));                  /* TRIO FAT BASS on the ACID steps (SID SAW BASS until SID was removed) */
   const cap = (await E.capturePatch(rq, info, "acid test")).patch;
-  ok(cap.engine === 3 && cap.p.length === info.pcount && cap.pattern && cap.pattern[0][0] === 45 && cap.pattern[0][1] === 1,
+  ok(cap.engine === 6 && cap.p.length === info.pcount && cap.pattern && cap.pattern[0][0] === 45 && cap.pattern[0][1] === 1,
     "librarian: capture = DUMP + first 16 steps");
   let rc = await E.bank.put(rq, 10, cap);
   const g = await E.bank.get(rq, info, 10);
-  ok(rc === 0 && g.used && g.name === "acid test" && g.engine === 3 && eq(g.p, cap.p) && js(g.pattern) === js(cap.pattern),
+  ok(rc === 0 && g.used && g.name === "acid test" && g.engine === 6 && eq(g.p, cap.p) && js(g.pattern) === js(cap.pattern),
     "librarian: UP_PUT -> UP_GET round trip");
   const bad = E.parse[C.UP_PUT](await rq(E.req.upPut(64, cap), { timeout: 2500, retries: 0 }));
   ok(bad.rc === 1, "librarian: UP_PUT to a slot past the bank -> rc 1");
@@ -536,7 +562,7 @@ async function editorLibrarian() {
   const d2 = E.parse[C.DUMP](await rq(E.req.dump()), info);
   const st = [];
   for (let i = 0; i < 16; i++) st.push(E.parse[C.STEP_GET](await rq(E.req.stepGet(i))));
-  ok(rc === 0 && d2.engine === 3 && eq(d2.p.filter((_, i) => i !== 17), cap.p.filter((_, i) => i !== 17)) && d2.p[17] === 3
+  ok(rc === 0 && d2.engine === 6 && eq(d2.p.filter((_, i) => i !== 17), cap.p.filter((_, i) => i !== 17)) && d2.p[17] === 3
     && st.every((x) => !x.n) && cap.pattern, "librarian: UP_LOAD applies the sound only (steps and the track's ARP stay)");
   await rq(E.req.set(0, 17, 0));
   for (let i = 0; i < 16; i++) await rq(E.req.stepSet(i, E.stepsFromPattern(cap.pattern)[i]));   /* (for the captures below) */
@@ -547,7 +573,7 @@ async function editorLibrarian() {
   ok(rc === 0 && !b2.slots[11].used && b2.slots[10].used && rcEmpty === 1, "librarian: UP_ERASE, UP_LOAD of an empty slot -> rc 1");
 
   /* audition: a patch that holds a pattern; the sound only, the sequence (with notes) stays */
-  const bass = await E.bank.get(rq, info, 2);   /* SID BREADBOX, with the ACID steps */
+  const bass = await E.bank.get(rq, info, 2);   /* TRIO FAT BASS, with the ACID steps */
   await rq(E.req.stepSet(20, { n: 1, notes: [50, 0, 0, 0], time: 0, flags: 0, vel: 90 }));
   await rq(E.req.set(0, 29, 24));               /* the track's own: LEN 24, ARP MODE 2 */
   await rq(E.req.set(0, 17, 2));
@@ -605,18 +631,18 @@ async function editorLibrarian() {
       "library file: retired effect labels never activate new FX controls");
   }
   ok(back.patches.length === 2 && !back.skipped && eq(back.patches[0].p, cap.p) && eq(back.patches[1].p, bass.p)
-    && js(back.patches[1].pattern) === js(bass.pattern) && back.patches[1].tags.join() === "bass,device" && back.patches[1].engineName === "SID",
+    && js(back.patches[1].pattern) === js(bass.pattern) && back.patches[1].tags.join() === "bass,device" && back.patches[1].engineName === "TRIO",
     "library file: write -> read round trip");
   /* a future firmware: one more parameter at id 5, engines in another order and one of them gone */
   const keys2 = [...keys.slice(0, 5), "NEW", ...keys.slice(5)];
-  const eng2 = ["ANALOG", "SAMPLE", "SID"];
+  const eng2 = ["ANALOG", "SAMPLE", "TRIO"];
   const fut = E.readLibraryFile(file, { keys: keys2, engines: eng2 });
   const p0 = fut.patches[0].p;
   ok(fut.patches.length === 2 && p0.length === 120 && p0[5] === null && p0[6] === cap.p[5] && p0[119] === cap.p[118]
     && fut.patches[0].engine === 2 && fut.patches[1].engine === 2, "library file: other ids / engine order mapped by label and name");
   const lost = E.readLibraryFile({ ...file, patches: [{ ...file.patches[0], engineName: "WAVETABLE" }] }, ctx);
   ok(lost.patches.length === 0 && lost.skipped === 1, "library file: a patch for an unknown engine is skipped");
-  const bankFile = E.libraryFile("bank", [{ ...g, engineName: "SID", slot: 10 }], ctx);
+  const bankFile = E.libraryFile("bank", [{ ...g, engineName: "TRIO", slot: 10 }], ctx);
   ok(bankFile.kind === "bank" && bankFile.patches[0].slot === 10 && E.readLibraryFile(bankFile, ctx).patches[0].slot === 10, "library file: bank export keeps slot numbers");
   {   /* files from the 69-parameter firmware (P_E0 61): the engine's 8 land on E0..E7 (96..103), FM op ENV, the
          chord keys, the MPC degree, the lane levels, LFO 2 and SPRD stay unset */
@@ -647,7 +673,7 @@ async function editorLibrarian() {
     const good = (q) => q.length === 119 && eq(q.slice(0, 83), cap.p.slice(0, 83)) && q.slice(83, 111).every((v) => v === null) && eq(q.slice(111), cap.p.slice(111));
     ok(keys91[83] === "E0" && good(lp) && good(nk), "library file: Felucca 1.0 files (91 parameters) map the engine's 8 to 96..103, DEG unset");
   }
-  const old = E.readLibraryFile({ format: "felucca-patch", version: 1, engine: 3, preset: 6, engineName: "SID", presetName: "SAW BASS", p: d2.p, steps: E.stepsFromPattern(cap.pattern) }, ctx);
+  const old = E.readLibraryFile({ format: "felucca-patch", version: 1, engine: 6, preset: 0, engineName: "TRIO", presetName: "FAT BASS", p: d2.p, steps: E.stepsFromPattern(cap.pattern) }, ctx);
   ok(old.patches.length === 1 && eq(old.patches[0].p, d2.p) && js(old.patches[0].pattern) === js(cap.pattern), "library file: reads the old \"Save to file\" format");
   let threw = false;
   try { E.readLibraryFile({ format: "something" }, ctx); } catch (e) { threw = true; }
@@ -730,13 +756,13 @@ async function editorLive() {
   ok(ev.pushes.filter((f) => f.cmd === C.RELOAD).length === nr + 1 && !ev.pushes.some((f) => f.cmd === C.STEP_CHANGED && f.a[0] === 9),
     "live: RELOAD after an editor PRESET too, nothing after its STEP_SET");
 
-  /* PING keeps the watch on; without requests it ends */
-  for (let i = 0; i < 4; i++) { await sleep(120); await rq(E.req.ping()); }
+  /* PING keeps the watch on; without requests it ends (the window: 250 ms on the test's clock) */
+  for (let i = 0; i < 4; i++) { clock.advance(120); await rq(E.req.ping()); }
   let n0 = ev.pushes.length;
   m.sim.knob();
   await sleep(10);
   ok(ev.pushes.length === n0 + 1, "live: PING keeps WATCH on");
-  await sleep(320);
+  clock.advance(320);
   n0 = ev.pushes.length;
   m.sim.knob();
   await sleep(10);
@@ -786,7 +812,7 @@ async function editorTracks() {
   const { m, rq, ev, done } = attachMock({ watchMs: 1000 });
   const info = E.parse[C.INFO](await rq(E.req.info()));
   const tr = E.parse[C.TRACK](await rq(E.req.track()));
-  ok(info.ntrk === 4 && tr.sel === 0 && tr.ntrk === 4 && tr.tracks[0].engine === 3 && tr.tracks[1].engine === 6
+  ok(info.ntrk === 4 && tr.sel === 0 && tr.ntrk === 4 && tr.tracks[0].engine === 12 && tr.tracks[1].engine === 12
     && tr.tracks[3].engine === 10 && tr.tracks[3].preset === 0, "tracks: INFO NTRK, TRACK lists 4 parts (track 4: DRUM KIT)");
   /* the v1 commands follow the selected track */
   const d0 = E.parse[C.DUMP](await rq(E.req.dump()), info);
@@ -795,7 +821,7 @@ async function editorTracks() {
   await rq(E.req.set(0, 1, 77));
   const td0 = E.parse[C.TRACK_DUMP](await rq(E.req.trackDump(0)), info);
   const td1 = E.parse[C.TRACK_DUMP](await rq(E.req.trackDump(1)), info);
-  ok(t1.sel === 1 && d1.engine === 6 && d0.engine === 3 && td1.p[1] === 77 && td0.p[1] === d0.p[1] && td0.p[1] !== 77,
+  ok(t1.sel === 1 && d1.engine === 12 && d0.engine === 12 && td1.p[1] === 77 && td0.p[1] === d0.p[1] && td0.p[1] !== 77,
     "tracks: TRACK selects; DUMP / SET act on it, TRACK_DUMP reads any track");
   /* steps of a track that is not selected */
   const w = E.parse[C.TRACK_STEP](await rq(E.req.trackStep(2, 5, { n: 2, notes: [60, 67, 0, 0], time: 0, flags: 1, vel: 99 })));
@@ -907,12 +933,12 @@ async function editorTrackParam() {
   const g = E.parse[C.TRACK_PARAM](await rq(E.req.trackParam(1, PAN)));
   const p2 = await E.mixer.setPan(rq, 2, 0, PAN, -40, true);
   const p1 = await E.mixer.setPan(rq, 1, 0, PAN, 99, true);
-  const alg = E.parse[C.TRACK_PARAM](await rq(E.req.trackParam(1, info.pe0, 50)));   /* track 2 is TRIO STRING MACH: WAVE 0..15 */
+  const alg = E.parse[C.TRACK_PARAM](await rq(E.req.trackParam(1, info.pe0, 50)));   /* track 2 is FM6 KOTO WARM: ALG 1..32 */
   const lv = E.parse[C.TRACK_PARAM](await rq(E.req.trackParam(3, 0, -5)));
   const sel = E.parse[C.TRACK](await rq(E.req.track()));
   const td2 = E.parse[C.TRACK_DUMP](await rq(E.req.trackDump(2)), info);
   await sleep(10);
-  ok(g.track === 1 && g.id === PAN && g.value === -24 && p2 === -40 && p1 === 63 && alg.value === 15 && lv.value === 0 && td2.p[PAN] === -40
+  ok(g.track === 1 && g.id === PAN && g.value === -24 && p2 === -40 && p1 === 63 && alg.value === 32 && lv.value === 0 && td2.p[PAN] === -40
     && sel.sel === 0 && (sent[C.TRACK] || 0) === tracks0 + 1 && ev.pushes.length === pushes,
     "v4: TRACK_PARAM get / set on other tracks (clamped as SET, selection kept, no push)");
   const bad = await rq(E.req.trackParam(4, PAN), { timeout: 60, retries: 0, quiet: true }).then(() => "reply", () => "none");
@@ -1162,6 +1188,47 @@ print(json.dumps([[r["file"], r["pitch"], r["name"]] for r in gen_scales.catalog
   ok(r.rc === 1, "TUNE: a selection past the slots refused");
 }
 
+/* a port named "FM-1" (macOS keeps the first name it saw) is taken only when it answers the INFO handshake */
+async function portDiscovery() {
+  const rename = (m, name) => { for (const p of [...m.access.inputs.values(), ...m.access.outputs.values()]) p.name = name; return m; };
+  const silent = (name) => {
+    const i = { id: "s-in", name, type: "input", state: "connected", onmidimessage: null };
+    const o = { id: "s-out", name, type: "output", state: "connected", send() {} };
+    return { inputs: new Map([[i.id, i]]), outputs: new Map([[o.id, o]]) };
+  };
+  let m = rename(E.makeMockDevice({ auto: false }), "FM-1");
+  let r = await E.findDevicePorts(m.access);
+  ok(r.input === m.access.inputs.get("mock-in") && !r.notTessera, "ports: an \"FM-1\" port that answers as Tessera connects");
+  m.stop();
+  m = rename(E.makeMockDevice({ auto: false }), "fm1 MIDI");
+  r = await E.findDevicePorts(m.access);
+  ok(!!r.input, "ports: \"fm1\" matches case-insensitively");
+  m.stop();
+  const t0 = Date.now();
+  r = await E.findDevicePorts(silent("FM-1"));
+  ok(r.notTessera === true && !r.input && Date.now() - t0 < 2000, "ports: an \"FM-1\" port that does not answer is not Tessera (short timeout)");
+  r = await E.findDevicePorts(silent("USB Midi Keyboard"));
+  ok(!r.input && !r.notTessera, "ports: other names are never probed");
+  let probed = 0;
+  m = rename(E.makeMockDevice({ auto: false }), "Tessera FM-1");
+  r = await E.findDevicePorts(m.access, async () => { probed++; return true; });
+  ok(!!r.input && probed === 0, "ports: \"Tessera FM-1\" connects as before, without a probe");
+  m.stop();
+  /* both: the Tessera-named pair wins over an FM-1 one */
+  m = rename(E.makeMockDevice({ auto: false }), "Tessera FM-1");
+  const fm = silent("FM-1");
+  const both = { inputs: new Map([...fm.inputs, ...m.access.inputs]), outputs: new Map([...fm.outputs, ...m.access.outputs]) };
+  r = await E.findDevicePorts(both);
+  ok(r.input === m.access.inputs.get("mock-in"), "ports: a Tessera name is preferred over an FM-1 name");
+  m.stop();
+  /* a silent FM-1 first, then an answering one */
+  m = rename(E.makeMockDevice({ auto: false }), "FM-1");
+  const both2 = { inputs: new Map([...fm.inputs, ...m.access.inputs]), outputs: new Map([...fm.outputs, ...m.access.outputs]) };
+  r = await E.findDevicePorts(both2);
+  ok(r.input === m.access.inputs.get("mock-in"), "ports: a confirmed FM-1 is picked over a silent one");
+  m.stop();
+}
+
 async function editorSessions() {
   const state = html.slice(html.indexOf("let busy = 0;"), html.indexOf("let dragging", html.indexOf("let busy = 0;")));
   const requests = html.slice(html.indexOf("function assertSession(d)"), html.indexOf("/* the whole connect sequence */"));
@@ -1181,7 +1248,8 @@ async function editorSessions() {
     paramKeys: noop, libAdopt: () => { adoptStarted?.(); return adopted || Promise.resolve(); },
     buildUI: () => { shown++; }, renderPanels: noop, loadSteps: noop, readTunings: noop,
     startWatch: async () => false, renderLive: noop, renderLib: noop,
-    renderBank: noop, renderSysinfo: noop, sayK: noop, report: noop, syncPreferences: noop,
+    renderBank: noop, updateBrowser: noop, renderSysinfo: noop, sayK: noop, report: noop, syncPreferences: noop,
+    writesDevice: r => r === "write", t: k => k, maybeReload: noop, blockedReload: false, renderEdit: noop, setTimeout,
   });
   const oldRelease = S.beginBusy();
   S.resetBusy();
@@ -1201,6 +1269,14 @@ async function editorSessions() {
   d.link.request = async () => { sent++; };
   const wrong = await S.sessionRequest(d, "write").then(() => null, e => e);
   ok(wrong?.message === "closed" && sent === 0, "editor: captured request cannot write through a replacement connection");
+  /* #609: a connection is read-only until "Edit the FM-1" is on */
+  const ro = { link: { request: async () => { sent++; return "ok"; } } };
+  S.setDevice(ro); sent = 0;
+  const blocked = await S.sessionRequest(ro, "write").then(() => null, e => e);
+  ok(blocked?.message === "editBlocked" && sent === 0, "editor (#609): a write is not sent while editing is off");
+  ok(await S.sessionRequest(ro, "dump") === "ok" && sent === 1, "editor (#609): reads go out while editing is off");
+  ro.editOn = true;
+  ok(await S.sessionRequest(ro, "write") === "ok" && sent === 2, "editor (#609): a write goes out once editing is on");
 
   const old = { link: { request: () => new Promise(r => { resolve = r; }) } };
   S.setDevice(old);
@@ -1248,12 +1324,77 @@ function editorTabs() {
   /* every string key in both languages */
   const tb = html.slice(html.indexOf("const TEXT = {"), html.indexOf("\n};", html.indexOf("const TEXT = {")) + 2);
   const TEXT = vm.runInNewContext(tb.replace("const TEXT =", "(") + ")");
-  const ja = new Set(Object.keys(TEXT.ja)), en = new Set(Object.keys(TEXT.en));
+  const en = new Set(Object.keys(TEXT.en)), langs = Object.keys(TEXT);
   const used = new Set([...html.matchAll(/data-t="(\w+)"|\bt\("(\w+)"\)|sayK\("(\w+)"|hint = "(\w+)"/g)].map((x) => x[1] || x[2] || x[3] || x[4]));
   for (const k of ["needDevice", "smpNone", "bankConnect", "bankNone", "selectedTrack", "selectTrack", "notesHelp", "live", "polling"]) used.add(k);
-  const miss = [...used].filter((k) => !ja.has(k) || !en.has(k));
-  const odd = [...ja].filter((k) => !en.has(k)).concat([...en].filter((k) => !ja.has(k)));
-  ok(!miss.length && !odd.length, `editor: every string in ja and en (${used.size} used${miss.length ? ", missing " + miss : ""}${odd.length ? ", one language only " + odd : ""})`);
+  const miss = [...used].filter((k) => !en.has(k));
+  const odd = langs.flatMap((l) => [...en].filter((k) => typeof TEXT[l][k] !== "string").map((k) => l + "." + k)
+    .concat(Object.keys(TEXT[l]).filter((k) => !en.has(k)).map((k) => l + "." + k + " (not in en)")));
+  const holes = langs.flatMap((l) => [...en].filter((k) => typeof TEXT[l][k] === "string"
+    && js((TEXT.en[k].match(/\{\w+\}/g) || []).sort()) !== js((TEXT[l][k].match(/\{\w+\}/g) || []).sort())).map((k) => l + "." + k));
+  ok(!miss.length && !odd.length && !holes.length, `editor: ${en.size} strings in ${langs.join(" ")} (${used.size} used${miss.length ? ", not in en " + miss : ""}${odd.length ? ", missing " + odd.slice(0, 8) : ""}${holes.length ? ", {placeholders} differ " + holes : ""})`);
+  const emenu = [...html.matchAll(/<option value="(\w+)" lang=/g)].map((x) => x[1]);
+  const ELANGS = JSON.parse((/const LANGS = (\[[^\]]*\])/.exec(html) || [])[1] || "[]");
+  ok(js([...emenu].sort()) === js([...langs].sort()) && js([...ELANGS].sort()) === js([...langs].sort())
+    && /localStorage\.setItem\(LANG_KEY/.test(html) && /LANG_KEY = "tessera-lang"/.test(html), `editor: language menu = LANGS = TEXT, kept in tessera-lang`);
+  /* the installer: every language has every English string, every string the page uses is there, and the header's
+     language menu offers exactly the languages it has */
+  {
+    const ih = readFileSync(join(HERE, "index_pkg.html"), "utf8");
+    const itb = ih.slice(ih.indexOf("const TEXT = {"), ih.indexOf("\n};", ih.indexOf("const TEXT = {")) + 2);
+    const IT = vm.runInNewContext(itb.replace("const TEXT =", "(") + ")");
+    const en = Object.keys(IT.en), langs = Object.keys(IT);
+    const used = new Set([...ih.matchAll(/data-t="([\w-]+)"|\bt\("([\w-]+)"\)|sayK\("([\w-]+)"/g)].map((x) => x[1] || x[2] || x[3]));
+    const gaps = langs.flatMap((l) => en.filter((k) => typeof IT[l][k] !== "string" || !IT[l][k].trim()).map((k) => l + "." + k)
+      .concat(Object.keys(IT[l]).filter((k) => !(k in IT.en)).map((k) => l + "." + k + " (not in en)")));
+    const unknown = [...used].filter((k) => !(k in IT.en));
+    const menu = [...ih.matchAll(/<option value="(\w+)"/g)].map((x) => x[1]);
+    const LANGS = JSON.parse((/const LANGS = (\[[^\]]*\])/.exec(ih) || [])[1] || "[]");
+    ok(!gaps.length && !unknown.length, `installer: ${en.length} strings in ${langs.join(" ")}${gaps.length ? ", missing " + gaps.slice(0, 8) : ""}${unknown.length ? ", not in en " + unknown : ""}`);
+    ok(js([...menu].sort()) === js([...langs].sort()) && js([...LANGS].sort()) === js([...langs].sort()),
+      `installer: language menu = LANGS = TEXT (${menu.join(" ")})`);
+    ok(/localStorage\.setItem\(LANG_KEY/.test(ih) && /LANG_KEY = "tessera-lang"/.test(ih), "installer: picked language kept in tessera-lang");
+  }
+  /* the simulator page: every other language has every line the page and its script write in English */
+  {
+    const sh = readFileSync(join(HERE, "sim", "index.html"), "utf8");
+    const ST = vm.runInNewContext(sh.slice(sh.indexOf("window.SIM_TEXT = {") + 18, sh.indexOf("\n};", sh.indexOf("window.SIM_TEXT = {")) + 2)
+      .replace(/^/, "(") + ")");
+    const eb = sh.indexOf("const EN_TEXT = {");
+    const ENT = vm.runInNewContext("(" + sh.slice(eb + 15, sh.indexOf("\n};", eb) + 2) + ")");
+    const keys = new Set([...Object.keys(ENT), ...[...sh.matchAll(/data-[th]="(\w+)"/g)].map((x) => x[1])]);
+    const used = [...sh.matchAll(/\btr\("(\w+)"/g)].map((x) => x[1]).filter((k) => !keys.has(k));
+    const gaps = Object.keys(ST).flatMap((l) => [...keys].filter((k) => typeof ST[l][k] !== "string").map((k) => l + "." + k)
+      .concat(Object.keys(ST[l]).filter((k) => !keys.has(k)).map((k) => l + "." + k + " (unknown)")));
+    const holes = Object.keys(ST).flatMap((l) => Object.keys(ENT).filter((k) => typeof ST[l][k] === "string"
+      && js((ENT[k].match(/\{\w+\}/g) || []).sort()) !== js((ST[l][k].match(/\{\w+\}/g) || []).sort())).map((k) => l + "." + k));
+    const smenu = [...sh.matchAll(/<option value="(\w+)" lang=/g)].map((x) => x[1]);
+    ok(!gaps.length && !used.length && !holes.length && js([...smenu].sort()) === js(["en", ...Object.keys(ST)].sort()),
+      `simulator: ${keys.size} lines in en ${Object.keys(ST).join(" ")}${gaps.length ? ", missing " + gaps.slice(0, 8) : ""}${used.length ? ", no English for " + used : ""}${holes.length ? ", {placeholders} differ " + holes : ""}`);
+  }
+  /* the project page: every other language has every piece of the page, with the same links and release marks */
+  {
+    const hh = readFileSync(join(HERE, "home", "index.html"), "utf8");
+    const hb = hh.indexOf("window.HOME_TEXT = {");
+    const HT = vm.runInNewContext("(" + hh.slice(hb + 19, hh.indexOf("\n};", hb) + 2) + ")");
+    const EN = {};
+    for (const m of hh.matchAll(/<(\w+) data-h="(\w+)"[^>]*>/g)) {         /* the element's markup, to its own closing tag */
+      const rest = hh.slice(m.index + m[0].length), tag = new RegExp(`<(/?)${m[1]}\\b[^>]*>`, "g");
+      for (let d = 1, t; (t = tag.exec(rest));) if (!(d += t[1] ? -1 : 1)) { EN[m[2]] = rest.slice(0, t.index); break; }
+    }
+    EN.themeLight = "Light"; EN.themeDark = "Dark";
+    const marks = (v) => js([...v.matchAll(/href="([^"]*)"|@\w+@/g)].map((x) => x[1] ?? x[0]).sort());
+    const gaps = [], links = [];
+    for (const [l, T] of Object.entries(HT)) {
+      for (const k of Object.keys(EN)) if (typeof T[k] !== "string") gaps.push(l + "." + k); else if (marks(T[k]) !== marks(EN[k])) links.push(l + "." + k);
+      for (const k of Object.keys(T)) if (!(k in EN)) gaps.push(l + "." + k + " (unknown)");
+    }
+    const hmenu = [...hh.matchAll(/<option value="(\w+)" lang=/g)].map((x) => x[1]);
+    const HL = JSON.parse((/var LANGS = (\[[^\]]*\])/.exec(hh) || [])[1] || "[]");
+    ok(!gaps.length && !links.length && js([...hmenu].sort()) === js(["en", ...Object.keys(HT)].sort()) && js(HL) === js(hmenu)
+      && /LANG_KEY = "tessera-lang"/.test(hh),
+      `project page: ${Object.keys(EN).length} pieces in en ${Object.keys(HT).join(" ")}${gaps.length ? ", missing " + gaps.slice(0, 8) : ""}${links.length ? ", links or marks differ " + links.slice(0, 8) : ""}`);
+  }
   /* the page script parses (the browser's view of it) */
   const script = html.slice(html.indexOf("<script>") + 8, html.lastIndexOf("</script>"));
   let err = null;
@@ -1801,6 +1942,7 @@ await editorTrackParam();
 await editorSong();
 await editorTunings();
 await editorHealth();
+await portDiscovery();
 await editorSessions();
 await editorFm6();
 await editorFm4();

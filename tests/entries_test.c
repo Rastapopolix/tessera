@@ -7,7 +7,7 @@
  *   track in or out at least DWELL phrases, one track always playing, an ANCHOR never out, a melody only over a bass or
  *   harmony;  above 50 the phrase before A down to the anchors, A with everything;  FORM OFF: a section every 4
  *   phrases;  the same piece from PLAY;  CUT and FADE;  an out track starts no voice;  hand mutes and GLO's key;
- *   SOLO heard;  AUTO's roles. */
+ *   SOLO heard;  AUTO's roles;  ORDER: in by number, out the other way round, AUTO as by ROLE. */
 #define TESSERA_NOTE_HOOK et_note
 #define main hostsim_main
 #include "hostsim.c"
@@ -431,6 +431,61 @@ static void test_roles(void)
     check("a ROLE set wins over AUTO", role[3] == ET_ANCHOR);
 }
 
+/* ORDER: four tracks ENTRIES 100, DWELL 1 (each one ready every phrase) over 96 phrases (ABAC, WANDER 40); each track's
+ * ORDER, 0 AUTO */
+static void order_run(const uint8_t ord[NTRK], uint32_t anchor)
+{
+    power_on(11);
+    p_four();
+    for (uint32_t tr = 0; tr < NTRK; tr++) px(tr, TX_ET_ORDER, ord[tr]);
+    if (anchor < NTRK) px(anchor, TX_ET_ROLE, ET_ANCHOR);
+    px(0, TX_FC_FORM, FM_ABAC);
+    px(0, TX_FC_PHRASE, 0);
+    px(0, TX_FC_WANDER, 40);
+    px(0, TX_ET_AMOUNT, 100);
+    px(0, TX_ET_DWELL, 1);
+    play();
+    run(96, 4);
+}
+static void test_order(void)
+{
+    enum { N = 96 };
+    static const uint8_t AUTO[NTRK] = {0, 0, 0, 0}, ASROLE[NTRK] = {1, 2, 3, 0}, CUSTOM[NTRK] = {3, 1, 2, 4};
+    static const uint8_t MEL1[NTRK] = {2, 3, 4, 1};
+    static uint8_t was[N];
+    uint32_t p, tr, ins = 0, outs = 0, in_bad = 0, out_bad = 0, alone = 0, same;
+    order_run(AUTO, NTRK);
+    memcpy(was, ph_out, N);
+    order_run(ASROLE, NTRK);                           /* (BASS, RHYTHM, HARMONY numbered in their ROLE order, MELODY AUTO) */
+    same = !memcmp(was, ph_out, N);
+    for (p = 1; p < N; p++) same &= was[p] == ph_out[p];
+    check("ORDER: the ROLE order numbered (melody AUTO): the same piece as all AUTO, phrase for phrase", same);
+    order_run(CUSTOM, NTRK);                           /* (the bass 3RD, the rhythm 1ST, the chord 2ND, the melody 4TH) */
+    for (p = 1; p < N; p++) {
+        uint32_t gone = ph_out[p] & ~ph_out[p - 1u], back = ph_out[p - 1u] & ~ph_out[p], left = 0xFu & ~ph_out[p] & ~back;
+        if (bits(back) == 1u) {                        /* (one in: the lowest number out; A's everything back aside) */
+            ins++;
+            for (tr = 0; tr < NTRK; tr++)
+                if ((ph_out[p - 1u] >> tr & 1u) && CUSTOM[tr] < CUSTOM[__builtin_ctz(back)]) in_bad++;
+        }
+        for (tr = 0; tr < NTRK; tr++)                  /* (out: higher numbers than every track playing on) */
+            if (gone >> tr & 1u) {
+                outs++;
+                for (uint32_t o = 0; o < NTRK; o++)
+                    if ((left >> o & 1u) && CUSTOM[o] > CUSTOM[tr]) out_bad++;
+            }
+    }
+    printf("entries:   ORDER 3 1 2 4, 96 phrases: %u entries, %u exits\n", ins, outs);
+    check("ORDER 3RD 1ST 2ND 4TH: one in a phrase, the lowest number out first", ins >= 4u && in_bad == 0u && too_few == 0u);
+    check("ORDER: out the other way round, the highest number playing first", outs >= 4u && out_bad == 0u);
+    order_run(CUSTOM, 1u);                             /* (the rhythm, 1ST, an ANCHOR too) */
+    for (p = 1; p < N; p++) alone += ph_out[p] & 2u;
+    check("ORDER set on an ANCHOR: still never out", anchor_out == 0u && alone == 0u);
+    order_run(MEL1, NTRK);                             /* (the melody 1ST: no bass or harmony under it needed) */
+    for (p = 1; p < N; p++) alone += (ph_out[p] & 0xDu) == 0x5u;   /* (the melody on, the bass and chord out) */
+    check("ORDER: a numbered melody plays on without a bass or harmony", alone > 0u);
+}
+
 static void test_params(void)
 {
     power_on(20);
@@ -447,6 +502,26 @@ static void test_params(void)
           tessera.et_role[1] == ET_ANCHOR);
     tessera_entries_knob(1, -1, 1);
     check("ROLE a step a detent", tessera.et_role[1] == ET_MELODY);
+    check("ORDER: AUTO by default", tessera_param_get(0, TX_ET_ORDER) == 0 && tessera_param_get(3, TX_ET_ORDER) == 0);
+    tessera_entries_knob(2, 1, 2);
+    tessera_entries_knob(2, 1, 2);
+    px(3, TX_ET_ORDER, 9);
+    check("OCT- held: a track's ORDER a step a detent, up to 4TH", tessera.et_order[2] == 2u && tessera.et_order[3] == 4u &&
+          tessera.et_role[2] == 0u);
+    et_swapped = 0;
+    px(0, TX_ET_ORDER, 2);
+    check("ORDER: a rank another track holds swaps (T1 2ND, T3 takes T1's AUTO), the swapped track noted",
+          tessera.et_order[0] == 2u && tessera.et_order[2] == 0u && et_swapped == 3u);
+    et_swapped = 0;
+    px(1, TX_ET_ORDER, 4);
+    px(0, TX_ET_ORDER, 4);
+    check("..T2 4TH (T4 AUTO), then T1 4TH: T2 takes T1's 2ND; each rank once",
+          tessera.et_order[0] == 4u && tessera.et_order[1] == 2u && tessera.et_order[3] == 0u && et_swapped == 2u);
+    et_swapped = 0;
+    px(1, TX_ET_ORDER, 0);
+    px(2, TX_ET_ORDER, 0);
+    check("..AUTO any number of tracks, no swap", !tessera.et_order[1] && !tessera.et_order[2] && !et_swapped);
+    memset(tessera.et_order, 0, sizeof tessera.et_order);
 }
 
 int main(void)
@@ -462,6 +537,7 @@ int main(void)
     test_hand();
     test_solo();
     test_roles();
+    test_order();
     if (fails) {
         printf("entries: %d FAILED\n", fails);
         return 1;

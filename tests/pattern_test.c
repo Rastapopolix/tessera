@@ -453,7 +453,7 @@ static int snap_to_scale(void)
     pop_close();
     ui_power_on(); t = TSEL; set_engine(ENGI_DRUM); stop_transport();
     go_title("PATTERN");
-    press(B_OCTUP);
+    hold(B_OCTUP);
     int row = 0;
     for (uint32_t i = 0; i < pop.n; i++) row |= str_eq(pop.rows[i].label, "Snap to scale");
     bad += check("  a kit's sheet has no such row, and its other rows", pop.on == POP_SHEET && !row && pop.n == NELEM(SHEET_PATTERN) - 1u);

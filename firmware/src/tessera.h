@@ -209,6 +209,10 @@ typedef struct {
     uint8_t          fm_dev[TESSERA_TRACKS];     /* 0..100: how far a section's return varies, 0 exact (as before) */
     /* CHORD's BREATH (HIT HOLD): its voices on slow cycles of their own, one now and then sitting out */
     uint8_t          ch_breath[TESSERA_TRACKS];  /* 0..100: 0 off (as before) */
+    /* CHORD's STRUM (OCT- held on GEN): a strike's notes STRUM ms apart, DIR's order. The record's STRUM part (the two
+     * side by side: project_tsp.c copies them as one) */
+    uint8_t          ch_strum[TESSERA_TRACKS];   /* 0..TESS_STRUM_MS: 0 off, all at once (as before) */
+    uint8_t          ch_sdir[TESSERA_TRACKS];    /* TESS_STR_UP, _DOWN, _ALT */
     /* ENERGY (energy.c; the ENERGY page), the project's, not a track's: its slow tide and its rests */
     uint8_t          en_arc;                     /* 0..100: how far the tide swings, 0 off */
     uint8_t          en_rests;                   /* 0..100: how often the notes rest, 0 off */
@@ -233,6 +237,7 @@ typedef struct {
     uint8_t          et_style;                   /* 0 CUT, 1 FADE (default) */
     uint8_t          et_fade;                    /* 1..4: a FADE's bars (default 2) */
     uint8_t          et_role[TESSERA_TRACKS];    /* 0 AUTO, 1 BASS, 2 RHYTHM, 3 HARMONY, 4 MELODY, 5 ANCHOR (never out) */
+    uint8_t          et_order[TESSERA_TRACKS];   /* 0 AUTO (by ROLE), 1..4 comes in 1st..4th (entries.c et_rank) */
     /* The piece planner (planner.c; the PIECE page under GLO): the piece's LENGTH and SHAPE, steering ENERGY, Entries and
      * the CHAIN. The record's PLAN part. LENGTH FREE: nothing changes */
     uint8_t          pl_length;                  /* 0 FREE, 1..21 minutes (planner.c PL_MIN: 1 .. 240) */
@@ -242,7 +247,11 @@ typedef struct {
     uint8_t          pl_end;                     /* 0 STOP, 1 LOOP, 2 NEW, 3 FREE */
     uint8_t          pl_user[8];                 /* 0..100: USER's levels, evenly along the piece */
     uint8_t          macro[4];                   /* 0..100: PERF's MACRO 1..4 (cord.c CS_MACRO1..4) */
+    uint8_t          pat_gen[TESSERA_TRACKS];    /* PAT GEN: 1 each pattern keeps its own generator setup (pat_gen.c) */
+    uint8_t          midi_dmap[TESSERA_TRACKS];  /* MIDI OUT's DRUM MAP: TESS_DM_GM (as before), _ROW (midi_out.c) */
 } tessera_state_t;
+_Static_assert(__builtin_offsetof(tessera_state_t, ch_sdir) == __builtin_offsetof(tessera_state_t, ch_strum) + TESSERA_TRACKS,
+               "STRUM's part: DIR right after STRUM (project_tsp.c copies them as one)");
 
 extern tessera_state_t tessera;
 /* STEP EVOLVE's changes as they play (not saved; cleared with `tessera` by tessera_init). In .pool: static RAM is
@@ -296,6 +305,8 @@ uint32_t tessera_euclid_pitch(const track_t *t, uint32_t step);
 uint32_t tessera_sig(uint32_t tr);
 void tessera_kill(track_t *t);
 void tessera_mutate(uint32_t tr);
+uint32_t tessera_roll_all(int32_t dir);           /* ROLL ALL: the tracks rolled (or put back) */
+int tessera_roll_all_back(void);
 void tessera_seed_turn(uint32_t tr, int32_t s);    /* ROLL (EVOLVE page): the next seed, on the bar line */
 void tessera_evolve_knob(uint32_t k, int32_t s);
 void tessera_ev_layer_knob(uint32_t k, int32_t s);
@@ -356,6 +367,14 @@ const char *tessera_form_name(uint32_t form);
 #define TESSERA_PK_BYTES_V2 188u                    /* version 2 (before GRIDS) */
 #define TESSERA_PK_BYTES_V1 180u                    /* version 1 (before SEED) */
 uint32_t tessera_pack(uint8_t *out);                /* live state -> TESSERA_PK_BYTES */
+#define TESS_PG_BYTES 40u                           /* PAT GEN: a pattern's generator setup (pat_gen.c) */
+void tessera_pg_store(uint32_t tr, uint32_t b);
+void tessera_pg_load(uint32_t tr, uint32_t b);
+void tessera_pg_copy(uint32_t tr, uint32_t from, uint32_t to);
+int tessera_pg_check(uint32_t tr, const uint8_t *slot);
+uint32_t tessera_pg_mode(uint32_t tr, uint32_t b);
+const uint8_t *tessera_pg_slots(uint32_t tr);
+void tessera_pg_put(uint32_t tr, const uint8_t *slots);
 int tessera_unpack(const uint8_t *in);              /* 1 loaded; 0 refused (range check), nothing changed */
 int tessera_unpack_ver(uint32_t ver, const uint8_t *in);   /* the same for a block of version ver (1..19) */
 int tessera_check(uint32_t ver, const uint8_t *in);        /* the same checks, nothing loaded: 1 it would load */
@@ -427,13 +446,27 @@ enum {
     TX_FC_KEYB, TX_FC_KEYC,                         /* (0x292, 0x293: the CHAIN's B and C sections' key, the project's) */
     TX_SUB_SPLIT, TX_SUB_SPLIT_HOW,                 /* (0x294, 0x295: TIMING's SPLIT and HOW, any track's) */
     TX_TW_FHOW, TX_TW_FRHY,                         /* (0x296, 0x297: FOLLOW's HOW and RHYTHM, a generator track's) */
+    TX_PAT_GEN,                                     /* (0x298: PAT GEN, any track's: each pattern its own generator) */
+    TX_MIDI_DMAP,                                   /* (0x299: MIDI OUT's DRUM MAP, any track's: midi_out.c) */
+    TX_ET_ORDER,                                    /* (0x29A: Entries' ORDER, any track's: AUTO, 1ST..4TH) */
+    TX_SEQ_DIR,                                     /* (0x29B: the STEP pattern's DIR, the playing one's: pattern.c) */
+    TX_CH_STRUM, TX_CH_SDIR,                        /* (0x29C, 0x29D: CHORD's STRUM and its DIR, a CHORD track's) */
+    TX_BUSA_MODE, TX_BUSA_LAG, TX_BUSB_MODE, TX_BUSB_LAG,   /* (0x29E..0x2A1: the MIX buses', the project's: cord.c) */
+    TX_MOD_DEPTH,                                   /* (0x2A2: MOD DEPTH, the project's: cord.c cord_mdepth_get) */
     TX_COUNT
 };
-_Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95 && TX_TW_FRHY == 0x97,
-               "parameter ids are stored: never renumbered");
+_Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95 && TX_TW_FRHY == 0x97 &&
+               TX_PAT_GEN == 0x98 && TX_MIDI_DMAP == 0x99 && TX_ET_ORDER == 0x9A && TX_SEQ_DIR == 0x9B &&
+               TX_CH_SDIR == 0x9D && TX_BUSB_LAG == 0xA1 && TX_MOD_DEPTH == 0xA2, "parameter ids are stored: never renumbered");
+/* TX_SEQ_DIR: the order a STEP pattern plays its steps in (seq_dir.c) */
+enum { SEQ_FWD, SEQ_BACK, SEQ_PEND, SEQ_FOLD, SEQ_RAND, SEQ_DRUNK, SEQ_DIRS };
+#define TESS_STRUM_MS 250u                          /* TX_CH_STRUM: up to 250 ms between a chord's notes (a byte, in ms) */
+#define TESS_STRUM_DETENTS 39u                      /* its knob: 1..10 ms by 1, 15..60 by 5, 70..250 by 10 */
+enum { TESS_STR_UP, TESS_STR_DOWN, TESS_STR_ALT, TESS_STR_DIRS };   /* TX_CH_SDIR (saved: append only) */
 /* TX_TW_FHOW: the source's note as it is, the nearest chord tone, mirrored, a bass, or CANON 1..8 notes back */
 enum { TESS_FH_SAME, TESS_FH_CHORD, TESS_FH_CONTRA, TESS_FH_BASS, TESS_FH_CANON, TESS_FH_COUNT = TESS_FH_CANON + 8 };
 enum { TESS_FR_OWN, TESS_FR_SOURCE, TESS_FR_BOTH, TESS_FR_COUNT };   /* TX_TW_FRHY */
+enum { TESS_DM_GM, TESS_DM_ROW, TESS_DM_COUNT };   /* TX_MIDI_DMAP: General MIDI's drum notes, or one a track in a row */
 enum { TESS_SPLIT_DOUBLE, TESS_SPLIT_PUSH, TESS_SPLIT_MIX, TESS_SPLIT_HOWS };   /* TX_SUB_SPLIT_HOW */
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */
 #define TESS_ACC_LIMIT 14u                          /* TX_ACC_LIMIT: up to two octaves of a 7-note scale */
@@ -483,6 +516,9 @@ void tessera_step_clear(uint32_t tr);                    /* the steps as written
 void tessera_sv_layer_knob(uint32_t k, int32_t s);       /* its page, OCT+ held: KNOB 1 HOW */
 uint32_t tessera_step_keep(uint32_t tr);                 /* REC held: the changes become the steps; returns how many */
 void tessera_chord_ulen_knob(int32_t s);                   /* OCT+ held on GEN in CHORD USER, KNOB 4: LEN */
+uint32_t tess_strum_at(uint32_t i);                        /* STRUM's detent i (0..TESS_STRUM_DETENTS) in ms */
+uint32_t tess_strum_detent(uint32_t ms);                   /* the detent at or below ms */
+void tessera_strum_knob(int32_t s);                        /* OCT- held on GEN in CHORD, KNOB 2: STRUM a detent */
 void tessera_chord_oct_knob(int32_t s);                    /* OCT+ held on GEN in CHORD, KNOB 1: OCT */
 void tessera_chord_breath_knob(int32_t s);                 /* OCT+ held on GEN in CHORD (not USER), KNOB 4: BREATH */
 const gen_series_t *tessera_series(uint32_t tr);

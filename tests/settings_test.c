@@ -183,7 +183,44 @@ int main(void)
         assert(p.bold == 0u && settings_import(&p, sizeof p) == 1 && settings_hold == HOLD_DEF);
         assert(!hold_stored_ok(2u) && !hold_stored_ok(HOLD_TAG + 4u) && hold_stored_ok(HOLD_TAG | 2u));
     }
+#if MELODEE_LOOK
+    {   /* GROUND (#557): LIGHT tagged in row 8 byte 29, the palette id as it was (older firmware keeps the ink on black);
+         * any other byte DARK; LIGHT takes each palette's light inks on paper, DARK the palette exactly */
+        uint32_t i, j;
+        p = original; p.palette = palette_to_stored(3);
+        assert(settings_import(&p, sizeof p) == 1 && !ux_ground);
+        ux_ground = 1;
+        settings_export(&p);
+        assert(p.favorites.factory[8][29] == GROUND_LIGHT_TAG && p.palette == palette_to_stored(3));
+        ux_ground = 0;
+        assert(settings_import(&p, sizeof p) == 1 && ux_ground && settings.palette == 3u);
+        p.favorites.factory[8][29] = 0x01u;
+        assert(settings_import(&p, sizeof p) == 1 && !ux_ground);
+        for (i = 0; i < NPALETTES; i++) {
+            ux_ground = 1; palette_set(i);
+            assert(T_BG == UI_LIGHT_BG && ux.light && T_TEXT == pal_light(i, 0) && T_ACCENT == pal_light(i, 4));
+            for (j = 0; j < 4u; j++) assert(T_TRK(j) == pal_light(i, j));
+            if (UI_PALETTES[i].trk[0] != UI_PALETTES[i].trk[1])   /* a MOSAIC: its four light inks all different */
+                assert(T_TRK(0) != T_TRK(1) && T_TRK(0) != T_TRK(2) && T_TRK(0) != T_TRK(3) && T_TRK(1) != T_TRK(2) &&
+                       T_TRK(1) != T_TRK(3) && T_TRK(2) != T_TRK(3));
+            if (str_eq(UI_PALETTES[i].name, "RED") || str_eq(UI_PALETTES[i].name, "HOT PINK"))   /* COLOR: as PINK */
+                assert(str_eq(UI_PALETTES[pal_shown(i)].name, "PINK") && str_eq(pal_name(i), "PINK") &&
+                       T_TEXT == pal_light(pal_shown(i), 0));
+            else if (str_eq(UI_PALETTES[i].name, "ORANGE"))   /* COLOR: as YELLOW */
+                assert(str_eq(pal_name(i), "YELLOW") && T_TEXT == pal_light(pal_shown(i), 0));
+            else
+                assert(pal_shown(i) == i && str_eq(pal_name(i), str_eq(UI_PALETTES[i].name, "WHITE") ? "BLACK" :
+                                                                UI_PALETTES[i].name));
+            if (str_eq(UI_PALETTES[i].name, "WHITE"))   /* WHITE on paper: pure black */
+                assert(T_TEXT == 0x0000u);
+            ux_ground = 0; palette_set(i);
+            assert(pal_shown(i) == i && str_eq(pal_name(i), UI_PALETTES[i].name));
+            assert(T_BG == UI_PALETTES[i].bg && T_TEXT == UI_PALETTES[i].text && !ux.light);
+            for (j = 0; j < 4u; j++) assert(T_TRK(j) == UI_PALETTES[i].trk[j]);
+        }
+    }
+#endif
     assert(settings_import(&p, 3) == 0 && settings_import(&p, -1) == 0);
     assert(settings_import(&p, sizeof p - 1) == 0);
-    puts("Settings: PER5 only, palette ids, calibration, HOLD, AUTOSAVE, ext and independent feature preservation passed.");
+    puts("Settings: PER5 only, palette ids, calibration, HOLD, AUTOSAVE, GROUND, ext and independent feature preservation passed.");
 }

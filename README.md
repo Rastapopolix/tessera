@@ -6,6 +6,9 @@
 <b><a href="https://rastapopolix.github.io/tessera/webapp/sim/">Try it in your browser</a></b> ·
 <b><a href="MANUAL.md">Manual</a></b> ·
 <b><a href="RECIPES.md">Recipes</a></b> ·
+<b><a href="FEATURES.md">Features</a></b> ·
+<b><a href="GLOSSARY.md">Glossary</a></b> ·
+<b><a href="GENERATIVE.md">Generative patching</a></b> ·
 <b><a href="https://github.com/Rastapopolix/tessera/releases/latest">Releases</a></b>
 </p>
 
@@ -43,6 +46,8 @@ and sequences from the computer with the [web editor](https://rastapopolix.githu
 Each release has two builds: `tessera-X.Y.fwsc` (standard, dual core: start here) and
 `tessera-X.Y-1core.fwsc` (single core, for FM-1s that crash with the standard build).
 
+When a beta is out, the installer offers it as **Beta**: see [testing the beta](docs/BETA_TESTING.md) for what to check and how to report.
+
 Do not unplug the FM-1 while it is writing. Tessera is experimental in every sense of the word: use it at your own risk. The installer
 page also has a way back to the official firmware, with a backup first: V15 or V16, whichever the FM-1 had before
 Tessera (its start-up part decides; the page says which one it needs). M-VAVE's own updater (M-UPGRADE 3.11 and
@@ -58,26 +63,37 @@ later) works with Tessera 3.3 and later only: earlier Tessera reports an identit
   builds sections such as AABA, and with **DEVELOP** each return varies a little; TWEAK shifts, drops, humanises or follows another track; TWEAK 2 branches hits
   to another track's sound, combines tracks with logic, and plays only on certain bars; LENGTH sets how long notes
   hold. **GRAVITY** lets a drifting line come back home.
+* **Long form**: CHAIN plays the sections in an order, ENTRIES brings parts in and out in a musical order, ENERGY
+  swings the whole piece between sparse and busy, and PIECE gives it a length and a shape over minutes or hours.
 * **Your steps as a seed**: TURING, EUCLID, MARKOV and MORPH can play from a STEP pattern you wrote (SOURCE) and vary
   it, keeping its rhythm or its pitches as you choose.
 * **Steps**: per step ratchets, nudges, conditions (1:2 to 8:8, FILL, FIRST) and a pitch accumulator that climbs each
-  pass; the pattern's sheet doubles, halves or writes a Euclidean rhythm.
+  pass; the pattern's sheet doubles, halves or writes a Euclidean rhythm. Each pattern plays forwards, backwards,
+  pendulum, folded, random or drunk (new in 3.5).
 * **Harmony**: one key and scale for the whole project (**Key link**); a CHORD track plays a progression (or your
-  own), and **QNT CHRD** makes the other tracks follow it.
+  own), and **QNT CHRD** makes the other tracks follow it. Four **USER scales** of your own and a strummed CHORD track
+  (new in 3.5).
 * **Modulation**: 16 cords from any source to any destination on any track, generators and effects included; slow organic
-  sources (TIDE, SWARM); live marks on every knob a cord moves, and **MATRIX** to see the whole patch.
+  sources (TIDE, SWARM); live marks on every knob a cord moves, and **MATRIX** to see the whole patch. New in 3.5:
+  two **MIX buses**, EOC, CLOCK and PLAY for modular-style patching, MOD DEPTH as a brake for the whole patch, and the
+  **MOD SCOPE** to watch a cord move.
 * **Print**: hold REC to turn what a generator played into ordinary steps.
 * **Sounds**: FM6 (six-operator FM, three engine models), **ORACLE** (two oscillators, POLY MOD and a four-pole
-  filter: a classic polyphonic analogue voice), TRIO and DRUM (808, 909), with three insert effects a track and three
-  send effects, a resonant FILTER among them.
+  filter: a classic polyphonic analogue voice), TRIO, PHYS (physical models: bars, bells, strings, drum heads) and
+  DRUM (808, 909), with three insert effects a track and three send effects, a resonant FILTER among them.
 * **MIDI OUT** of every track and the generators, each on a channel of its own (GLO > MIDI OUT), and **CLOCK OUT**,
   over USB.
+* **USB audio**: stereo in and out with a computer, or the four tracks as separate stems (new in 3.5).
 * **Its own look**: one ink on black and a 5 x 7 pixel font, as on a monochrome OLED; YELLOW by default, or
   WHITE, GREEN, BLUE, RED, or ORANGE, PINK, HOT PINK or LILAC as the FM-1's shells, or MOSAIC, SUNSET, OCEAN or NEON: a colour per
-  track (MENU > COLOR).
+  track (MENU > COLOR). **GROUND LIGHT** puts it all on warm paper instead (new in 3.5).
+* **Screen reader**: every page, knob and message spoken through your computer's screen reader.
 
 The **[manual](MANUAL.md)** covers every page, knob and shortcut; **[RECIPES.md](RECIPES.md)** has step-by-step
-patches and tips.
+patches and tips. **[FEATURES.md](FEATURES.md)** lists everything
+Tessera offers on one page, **[GENERATIVE.md](GENERATIVE.md)** explains the ideas behind generative patching, from
+modular synths to norns, and where each generator comes from, and **[GLOSSARY.md](GLOSSARY.md)** explains the terms,
+labels and synthesis words used here.
 
 ---
 
@@ -184,5 +200,11 @@ The ATLAS generator uses the drum map of **Grids** by Émilie Gillet / Mutable I
 inspired by **norns** scripts (ideas only, no code copied): **QUAD** by initenere, **FALL** by ambalek's Fall,
 **CONSTELLATION** by timothy-taylor's Constellation, **AWAKE** by tehn's Awake and **SERIES** by nørgård.
 **ORACLE** is Melodee's Prophet engine (after the Prophet-5) under its own name, with its own sounds. The TIDE and SWARM mod sources are inspired by **Triple Sloth** by Nonlinear Circuits (Andrew Fitch) and **ochd** by
-Instruō and DivKid. See
+Instruō and DivKid.
+
+Thanks to the testers and everyone who reported a bug or asked for a feature: BobFromson, pavig-coder, bambalaya,
+alxantdroid, resocut, João Durães, tv-glotzer, il1893, fairplay, alexwlloyd, morgulbrut, @nrittamurti, Inputsignwave
+and Charles Vestal (FM-1 Screen Reader).
+
+See
 [LICENSING.md](LICENSING.md) for every third-party part and its licence.

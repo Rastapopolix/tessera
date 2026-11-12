@@ -27,8 +27,17 @@
  *             full move down halves it; BPM itself is left alone; destination track 0 as CK_GLOBAL
  *   CK_CC     a MIDI CC out on the destination track's MIDI OUT channel (cord.c cord_cc_tick, issue #374): its number
  *             the cord's own (cord_cc_num, OCT+ held + KNOB 3 on MODS); a track's, as CK_BLOCK (before CK_GLOBAL: the
- *             kinds are not saved, only the codes) */
-enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO };
+ *             kinds are not saved, only the codes)
+ *   CK_CLOCK  the track's generator clock (cord.c cord_clock_tick, seq.c seq_grid_tick): a track with a live one is
+ *             stepped by the cord's edges alone, not by its DIV (always a GATE cord: its OFFSET the threshold; AMOUNT
+ *             is the division, every n-th edge, its sign the edge); a track's, before CK_GLOBAL
+ *   CK_PLAY   whether the destination track's notes sound (cord.c cord_play_tick, voice.c trk_note_on): shut while its
+ *             mods together are under half, its generator playing on unheard (as MUTE: it still leads); a track's
+ *   CK_BUS    a project MIX bus, BUS A or B (cord.c cord_bus_tick): its cords combined by its MODE, then its LAG, each
+ *             block; read back as the source BUS A / BUS B one block later; destination track 0 as CK_GLOBAL
+ *   CK_MDEPTH the project's MOD DEPTH (cord.c cord_mdepth_tick): added to its setting, each block; destination track 0
+ *             as CK_GLOBAL; its own cords are never scaled by it */
+enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_CLOCK, CK_PLAY, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO, CK_BUS, CK_MDEPTH };
 
 /* Destination codes. FROZEN: saved cords keep them; new ones at the end, a retired one stays as a gap */
 enum {
@@ -70,15 +79,31 @@ enum {
     CD_TEMPO,                                                       /* the project's tempo (CK_TEMPO), issue #359 */
     CD_CC,                                                          /* a MIDI CC out (CK_CC), issue #374 */
     CD_SUB_SPLIT,                                                   /* TIMING's SPLIT */
+    CD_SEQ_DIR,                                                     /* the STEP pattern's DIR (seq_dir.c) */
+    CD_BUS_A, CD_BUS_B,                                             /* the project's MIX buses (CK_BUS) */
+    CD_MOD_DEPTH,                                                   /* the project's MOD DEPTH (CK_MDEPTH, G9) */
+    CD_PLAY,                                                        /* a track's notes heard or not (CK_PLAY, G8) */
+    CD_CLOCK = 109,                                                 /* the track's generator clock (CK_CLOCK) */
     CD_N
 };
 
+/* The device build (MELODEE_ACCESS 1: no help cards) leaves the destinations' sentences out of flash (5 KB), as pid.c
+ * leaves its help texts out; the host builds (tests, docs/PARAMETERS.md) keep them */
+#if defined(MELODEE_ACCESS) && MELODEE_ACCESS
+#define CD_FULL_ON 1
+#define CD_FULL(f)
+#else
+#define CD_FULL_ON 0
+#define CD_FULL(f) , f
+#endif
 typedef struct {
     uint8_t code, kind;
     uint8_t md;                   /* CK_VOICE / CK_DEPTH: mod.c's MD_* it shares; else 0 */
     uint16_t pid;                 /* CK_BLOCK / CK_STEP / CK_GLOBAL: the parameter (pid.h); else PID_NONE */
     const char *name;             /* as a cord shows it: <= 7 characters */
-    const char *full;             /* for the help and the reference */
+#if !CD_FULL_ON
+    const char *full;             /* for the help and the reference (host builds: tests, docs/PARAMETERS.md) */
+#endif
 } cord_dest_t;
 
 const cord_dest_t *cord_dest(uint32_t code);        /* 0: no such destination (a gap, past the end) */
@@ -99,8 +124,13 @@ enum {
     CS_OCHD1, CS_OCHD2, CS_OCHD3, CS_OCHD4, CS_OCHD5, CS_OCHD6, CS_OCHD7, CS_OCHD8,   /* its OCHD: 64 s .. 2.4 s */
     CS_ENERGY,                    /* the project's tide (ARC, energy.c), the same for every track: -1 sparse .. 1 full */
     CS_MACRO1, CS_MACRO2, CS_MACRO3, CS_MACRO4,   /* GLO > PERF's knobs, the project's: 0..1 */
+    CS_BUSA, CS_BUSB,             /* the project's MIX buses as their cords make them, one block late: -1..1 */
+    CS_EOC,                       /* the track's LFO cycle start (end of cycle) as a gate: 1 from a wrap of the LFO to an
+                                   * eighth of the cycle, else 0; a TRIG / phase reset is not a wrap. Added after the
+                                   * project's sources: a track's source all the same (CS_PROJECT) */
     CS_N
 };
+#define CS_PROJECT(s) ((s) >= CS_ENERGY && (s) != CS_EOC)   /* the project's sources (no track), not a track's */
 
 typedef struct {                  /* one cord, as saved (6 bytes: uni rides in src_trk's top two bits) */
     uint8_t src, src_trk;         /* CS_*, 0..3 */
@@ -111,8 +141,25 @@ typedef struct {                  /* one cord, as saved (6 bytes: uni rides in s
 } cord_t;
 /* a cord's uni: CU_BI the source as it is (+-), CU_UNI a bipolar source folded to 0..1 (+: one way from the knob),
  * CU_GATE the source as a gate: all (1) while it is over the threshold OFFSET (-100..100 % of its range), else 0 (the
- * OFFSET then moves nothing) */
-enum { CU_BI, CU_UNI, CU_GATE };
+ * OFFSET then moves nothing), CU_HOLD the source as it is (as BI), sampled once a bar of the destination's track and
+ * held to the next (cord_hold_bar; saved as BI, the project's part TSP_MHOLD marks it: older firmware plays it live) */
+enum { CU_BI, CU_UNI, CU_GATE, CU_HOLD };
+
+/* MIX buses (CK_BUS, CS_BUSA): each bus's MODE, how its cords combine: SUM (clamped to -1..1), MAX, MIN, DIFF (|a - b|
+ * of its first two cords); and LAG, a slew on the result, the time a whole 0..1 move takes (OFF none) */
+enum { CB_SUM, CB_MAX, CB_MIN, CB_DIFF, CB_MODES };
+#define CB_LAGS 12u               /* LAG: OFF, 10 ms .. 20 s (pid.c TX_N_BUSLAG; saved: append only) */
+/* setting k: 0 BUS A MODE, 1 its LAG, 2 BUS B MODE, 3 its LAG (TX_BUSA_MODE ..); set: clamped to its range */
+uint32_t cord_bus_get(uint32_t k);
+void cord_bus_set(uint32_t k, int32_t v);
+int32_t cord_bus_now(uint32_t b);                   /* bus b's value now (Q15), as the source BUS A / B reads it */
+/* MOD DEPTH (G9, TX_MOD_DEPTH): 0..100 %, 100 the off position (every mod as set). It scales the moving part of every
+ * mod with a source (AMOUNT x source; never an OFFSET; not CLOCK's, a division) where it lands: a mod of mods and a mod into a bus are scaled
+ * once, by the mod they turn or read them; a fixed mod's mods of mods by it here. Its own mods (CD_MOD_DEPTH) add to
+ * it, unscaled. The project's (cord_reset: 100) */
+uint32_t cord_mdepth_get(void);
+int cord_play_shut(uint32_t tr);                    /* PLAY (G8): track tr's notes shut by its mods now (voice.c) */
+void cord_mdepth_set(int32_t v);
 
 const char *cord_src_name(uint32_t code);           /* <= 7 characters; 0: no such source */
 int cord_set(uint32_t i, const cord_t *c);          /* i < CORD_LIVE; out of range: refused (0), nothing changed */
@@ -120,6 +167,22 @@ int cord_set(uint32_t i, const cord_t *c);          /* i < CORD_LIVE; out of ran
 uint32_t cord_cc_num(uint32_t i);
 void cord_cc_set(uint32_t i, uint32_t n);
 const cord_t *cord_get(uint32_t i);
+void cord_hold_bar(uint32_t tr);                    /* seq.c: track tr's bar begins (its HOLD mods sample) */
+uint32_t cord_hold_mask(void);                      /* bit i: cord i is HOLD (the project's part TSP_MHOLD) */
+void cord_hold_load(uint32_t m);                    /* .. and back, after cord_unpack */
+/* a HOLD mod's clock (G2): 0 its destination track's bar (cord_hold_bar), 1..4 each note of track 1..4 (cord_hold_note,
+ * from tessera.c tessera_hold_hit); kept only while the mod is HOLD. Saved: the project's part TSP_MHCLK, CORD_LIVE
+ * nibbles (older firmware: by the bar) */
+#define CORD_HCLK_BYTES (CORD_LIVE / 2u)
+uint32_t cord_hold_clk(uint32_t i);
+void cord_hold_clk_set(uint32_t i, uint32_t v);
+int cord_hold_clk_pack(uint8_t *out);               /* 0: every one by the bar (nothing to save) */
+void cord_hold_clk_load(const uint8_t *in);         /* after cord_hold_load; a nibble past 4: by the bar */
+/* SCALE (G7): a mod onto M1 AMT .. M16 AMT that multiplies that mod's move by its own, 0..1 (AMOUNT +: the source
+ * opens it; -: closes it) in place of adding to it. Bit i: cord i (only one onto an M AMT; the project's part
+ * TSP_MVCA: older firmware adds) */
+uint32_t cord_vca_mask(void);
+void cord_vca_load(uint32_t m);                     /* after cord_unpack, as cord_hold_load; and MODS' KNOB 3 */
 void cord_clear(void);                              /* every cord off */
 int32_t cord_move(uint32_t i);                      /* cord i's move as its M AMT cords make it now: -100..100 % */
 uint32_t cord_count(void);                          /* cords doing something (a destination and an amount or offset) */

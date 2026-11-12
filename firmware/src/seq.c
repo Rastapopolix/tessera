@@ -87,6 +87,7 @@ static uint32_t scale_mask(const track_t *t)
             mask |= 1u << ((s->pitch[i] + 5000) / 10000 % 12);
         return mask;
     }
+    if (uscale_on()) return uscale_on();            /* (a USER scale stands for SCL, uscale.h) */
     return SCALE_MASK[clamp(t->p[P_SCALE], 0, SCALE_LEGACY - 1)];
 }
 
@@ -144,6 +145,9 @@ static uint32_t scale_map(const track_t *t, int32_t n, int32_t offset)
     return (uint32_t)clamp(n + offset + t->p[P_TRANS], 0, 127);
 }
 
+/* 1 while SCALES is up with a USER scale picked (ui_input.c): the keys edit the scale, so each plays its own note,
+ * unquantized, and lights by it (#559) */
+static uint8_t kb_chrom;
 static uint32_t kb_map(const track_t *t, uint32_t k)
 {
     const engine_t *e = ENGINES[eng_idx(t->eng_req)];   /* (the engine it switches to) */
@@ -151,6 +155,8 @@ static uint32_t kb_map(const track_t *t, uint32_t k)
     if (e->keys && (n = e->keys(t, k)) >= 0)           /* the engine's own key map (GM kit, slices) */
         return (uint32_t)n;
     n = 53 + (int32_t)k;
+    if (kb_chrom)
+        return (uint32_t)clamp(n + 12 * song.octave, 0, 127);
     if (t->p[P_QUANT] == Q_SNAP || t->p[P_QUANT] == Q_CHRD) {   /* SNAP: every key, rounded down to the scale; CHRD:
                                                                  * then to the nearest note of the CHORD track's chord */
         uint32_t pcs = t->p[P_QUANT] == Q_CHRD ? tessera_chord_pcs() : 0u;
@@ -191,9 +197,13 @@ static uint32_t midi_map(const track_t *t, uint32_t note)
 #include "chord.c"
 
 /* ------------------------------------------------------------- arp --- */
+/* bit tr: track tr's HOLD chord was stopped by the external transport (seq_stop): it waits for Start / Continue or a
+ * new key. Any other latched chord plays on at the local tempo while the transport is stopped, as held keys do */
+static uint8_t arp_wait;
 static void arp_add(track_t *t, uint32_t note)
 {
     uint32_t i;
+    arp_wait &= (uint8_t)~(1u << trk_index(t));
     if (t->p[P_AHOLD] && t->arp_phys == 0u)
         t->nheld = 0;                               /* new chord replaces the latched one */
     t->arp_phys++;                                  /* every key-down: arp_remove counts every key-up */
@@ -207,6 +217,8 @@ static void arp_add(track_t *t, uint32_t note)
         t->arp_idx = 0xFFFFFFFFu;
     }
 }
+
+static int arp_runs(uint32_t i) { return trk[i].arp_phys || (trk[i].nheld && !((arp_wait >> i) & 1u)); }
 
 static void arp_remove(track_t *t, uint32_t note)
 {
@@ -244,6 +256,16 @@ static void arp_off(track_t *t)                  /* the sounding arp note ends (
  * transport uses real time converted to musical units for a tapped note's gate. */
 static volatile uint32_t beat_pos, beat_n;      /* clock units into the beat, beat of the bar (0..3) */
 static volatile uint32_t bar_n;                  /* bars since PLAY (seq_phase: the slowest DIV is 4 bars) */
+/* CLOCK (cord.c, cord.h CK_CLOCK): clk_trk bit tr, track tr has a live CLOCK cord; pend, an edge is waiting for its step
+ * (taken once the step has lasted its DIV); was, it was clocked last block (seq_grid_tick) */
+static uint8_t cord_clk_trk, cord_clk_pend, cord_clk_was, cord_clk_new;   /* new: stepped at PLAY this block: deaf to edges */
+static void cord_clock_hit(uint32_t tr);
+static void cord_hold_note(uint32_t tr);
+static int seq_clocked(const track_t *t)               /* a generator track stepped by its CLOCK cord, not its DIV */
+{
+    uint32_t k = trk_index(t);
+    return k < TESSERA_TRACKS && ((cord_clk_trk >> k) & 1u) && tessera.mode[k] != TESS_ENG_OFF;
+}
 static uint32_t seq_period_was[NTRK];            /* each track's step length last block (0: from PLAY) */
 /* a step's condition (SC_*) against its track's pass (t->seq_pass: 0 the first since PLAY, a pattern change or a song's
  * section). seq_fill: FILL held (the GLO layer's E4, ui_layer.c) */
@@ -275,10 +297,10 @@ static uint32_t seq_slip[NTRK];                  /* samples the step playing las
  * past the step's end there it plays now, before its start it lasts that much longer */
 static void seq_grid_place(track_t *t, uint32_t period, uint32_t done)
 {
-    uint32_t k = trk_index(t), len = swing_step_len(t, period, t->seq_idx);
+    uint32_t k = trk_index(t), len = swing_step_len(t, period, SEQ_D(t).slot);
     uint32_t ph = (seq_phase(seq_beat_samples()) % period + period - seq_lag % period) % period;
     int32_t sw = (int32_t)swing_step_len(t, period, 0) - (int32_t)period, pair = 2 * (int32_t)period;
-    int32_t start = (t->seq_idx & 1u) ? (int32_t)period + sw : 0, a = (int32_t)ph, d, x, y;
+    int32_t start = (SEQ_D(t).slot & 1u) ? (int32_t)period + sw : 0, a = (int32_t)ph, d, x, y;
     seq_slip[k] = 0;
     if (!sw) {
         t->seq_pos = ph + (done >= 32768u && ph < period / 2u ? len : 0u);
@@ -304,6 +326,32 @@ static uint32_t arp_rand(const track_t *t, uint32_t salt)
     uint32_t tr = trk_index(t);
     return tr < TESSERA_TRACKS ? seq_hum_draw(tr, arp_draws[tr]++, salt) : rng();
 }
+/* RND1's order: one shuffle of the note list from the track's SEED and the notes themselves, kept while they stay the
+ * same (a held note added or let go, OCT, ORDER or the SEED turned: a new one). The same notes on the same SEED
+ * shuffle the same way, so PLAY replays it. */
+static uint8_t arp_once[NTRK][64];
+static uint32_t arp_once_key[NTRK];
+static void arp_shuffle_once(const track_t *t, uint32_t *list, uint32_t len)
+{
+    uint32_t tr = trk_index(t), key = 0x811C9DC5u ^ len, i, j;
+    uint32_t tmp[64];
+    if (tr >= NTRK) return;
+    if (tr < TESSERA_TRACKS) key ^= (uint32_t)tessera.seed[tr] << 8;   /* (a new SEED: a new order) */
+    for (i = 0; i < len; i++) key = (key ^ list[i]) * 0x01000193u;
+    if (!key) key = 1u;
+    if (key != arp_once_key[tr]) {                     /* a Fisher-Yates over the positions */
+        for (i = 0; i < len; i++) arp_once[tr][i] = (uint8_t)i;
+        for (i = len; i > 1u; i--) {
+            uint8_t x;
+            j = (tr < TESSERA_TRACKS ? seq_hum_draw(tr, i, 0x524E31u ^ key) : rng()) % i;
+            x = arp_once[tr][i - 1u]; arp_once[tr][i - 1u] = arp_once[tr][j]; arp_once[tr][j] = x;
+        }
+        arp_once_key[tr] = key;
+    }
+    for (i = 0; i < len; i++) tmp[i] = list[arp_once[tr][i]];
+    for (i = 0; i < len; i++) list[i] = tmp[i];
+}
+static void cap_gen(const track_t *t, uint32_t note, uint32_t vel, uint32_t dur);
 static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
 {
     uint32_t period, cnt, list[64], len = 0, i, j, o;
@@ -334,7 +382,7 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
         for (i = 0; i < t->nheld; i++)
             list[i] = t->held[i];
         cnt = t->nheld;
-        if (!t->p[P_AORDER])
+        if (!t->p[P_AORDER] && t->p[P_AMODE] != 5)     /* (ORD: always as pressed) */
             for (i = 1; i < cnt; i++)
                 for (j = i; j > 0 && list[j - 1] > list[j]; j--) {
                     uint32_t x = list[j];
@@ -351,6 +399,7 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
                 }
         if (!len) return;
         if (t->p[P_AMODE] == 6) { list[0] = t->held[t->nheld - 1u]; len = 1; } /* REPEAT: last played note, no octave traversal */
+        if (t->p[P_AMODE] == 8) arp_shuffle_once(t, list, len);   /* RND1: one shuffle, then played as UP */
         t->arp_idx++;
         switch (t->p[P_AMODE]) {
         case 2:
@@ -364,6 +413,11 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
         case 4:
             j = arp_rand(t, 0x41524Fu) % len;
             break;
+        case 7: {                                       /* DNUP: down, then up; the ends once (as UPDN) */
+            uint32_t cyc = len > 1u ? 2u * len - 2u : 1u, k = t->arp_idx % cyc;
+            j = k < len ? len - 1u - k : k - (len - 1u);
+            break;
+        }
         default:
             j = t->arp_idx % len;
             break;
@@ -388,6 +442,10 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
             if (rec_on(t))
                 rec_note(t, t->arp_note, vel);           /* recording: what the arp plays */
             trk_note_on(t, t->arp_note, vel);
+            {   /* Capture: what the arp plays, so REC held prints it (issue #530; its gate in 1/256 of a step) */
+                uint32_t sp = seq_div_samples((uint32_t)t->p[P_SDIV]);
+                cap_gen(t, t->arp_note, vel, sp ? (uint32_t)((uint64_t)t->arp_off * 256u / sp) : 256u);
+            }
         }
         /* A recovered clock burst may cross several ARP steps. Consume them all
          * and retain the residual phase, just as the sequencer does. */
@@ -405,7 +463,7 @@ static void arp_tick(track_t *t, uint32_t n) { arp_step(t, n, n); }
  * and the odd ones shorter, so every odd step starts late */
 static uint32_t step_samples(const track_t *t, uint32_t period, uint32_t idx)
 {
-    return swing_step_len(t, period, idx);   /* core.h: own + global, at most 100 */
+    return seq_clocked(t) ? period : swing_step_len(t, period, idx);   /* core.h: own + global, at most 100 (CLOCK: none) */
 }
 
 #include "recording.c"
@@ -422,7 +480,7 @@ static uint16_t cap_step[NTRK];                 /* the step playing, counted fro
 static uint32_t seq_run_step[NTRK];             /* the same, not wrapping: a generator joining (tessera.c tess_join) */
 static uint32_t cap_frac(const track_t *t)      /* RECORD_UNIT fraction of the step playing */
 {
-    uint32_t span = step_samples(t, seq_div_samples((uint32_t)t->p[P_SDIV]), t->seq_idx);
+    uint32_t span = step_samples(t, seq_div_samples((uint32_t)t->p[P_SDIV]), SEQ_D(t).slot);
     uint32_t on = t->seq_pos >= 0x7FFFFFFFu || !span ? 0u : (uint32_t)(((uint64_t)t->seq_pos * RECORD_UNIT) / span);
     return on > 65535u ? 65535u : on;
 }
@@ -734,11 +792,12 @@ static void input_on(track_t *t, uint32_t note, uint32_t vel)
     countin_note(t,note,vel);
     last_note = (uint8_t)note;
     live_note_on(t, note, vel);
-    cap_on(t, note, vel);
+    if (!t->p[P_AMODE])
+        cap_on(t, note, vel);                       /* (ARP on: Capture takes what it plays, arp_step) */
     {   /* (an ANSWER track: the note joins its phrase, on the nearest step as rec_note's) */
         uint32_t late = 0, len = t->p[P_SLEN] > 0 ? (uint32_t)t->p[P_SLEN] : 1u;
         if (song.playing && t->seq_pos != 0x7FFFFFFFu)
-            late = t->seq_pos >= step_samples(t, seq_div_samples((uint32_t)t->p[P_SDIV]), t->seq_idx % len) / 2u;
+            late = t->seq_pos >= step_samples(t, seq_div_samples((uint32_t)t->p[P_SDIV]), SEQ_D(t).slot % len) / 2u;
         tessera_answer_hear_at(t, note, vel, late);
     }
     if (rec_on(t) && !t->p[P_AMODE])               /* (ARP on: arp_tick records its notes) */
@@ -914,6 +973,7 @@ static __attribute__((noinline)) void audition_tick(uint32_t n)
 }
 /* -------------------------------------------------------- sequencer --- */
 static void seq_sub_clear(void);                    /* (seq_sub.c, below) */
+static void seq_dir_seek(track_t *t, uint32_t len, uint32_t k);   /* (seq_dir.c, below) */
 static void seq_start(void)
 {
     tessera_ensure_init();
@@ -926,6 +986,7 @@ static void seq_start(void)
     tessera_sd_play();                              /* (STEP as seed's loops from their sources again) */
     cin_left = 0; /* MIDI Start also cancels a pending local count-in. */
     int_clock_rem = int_clock_frac = 0;             /* every start from the same place: a take repeats exactly */
+    arp_wait = 0;                                   /* (a HOLD chord the external Stop stopped plays again) */
     uint32_t i;
     seq_erase_request = 0;
     seq_erase_transport++;
@@ -937,7 +998,7 @@ static void seq_start(void)
     for (i = 0; i < NTRK; i++) {                   /* every track from its step 0, together */
         track_t *t = &trk[i];
         if (t->p[P_LTRIG] && t->p[P_LSYNC]) t->lfo_ph = (uint32_t)t->p[P_LPHASE] << 25;
-        t->seq_idx = (uint16_t)(t->p[P_SLEN] - 1);
+        seq_dir_top(t);
         t->seq_pos = 0x7FFFFFFF;                   /* step 0 fires on the first block */
         t->seq_pass = 0;
         t->rskip_n = 0;
@@ -970,14 +1031,15 @@ static void seq_seek(uint32_t units)
     for (i = 0; i < NTRK; i++) {
         track_t *t = &trk[i];
         uint32_t period = seq_div_samples((uint32_t)t->p[P_SDIV]), len = t->p[P_SLEN] > 0 ? (uint32_t)t->p[P_SLEN] : 1u;
+        if (seq_clocked(t)) continue;                  /* (CLOCK: no grid to seek on; it steps at PLAY, then on its edges) */
         uint32_t pair = 2u * period, k = units / pair * 2u, r = units % pair, first = step_samples(t, period, k % len);
         if (r >= first) { k++; r -= first; }          /* (SWING: the pair's second step) */
         if (!r) {
             if (!k) continue;                          /* (the top: as PLAY) */
-            t->seq_idx = (uint16_t)((k - 1u) % len);   /* step k fires on the first block */
+            seq_dir_seek(t, len, k - 1u);              /* step k fires on the first block */
             seq_run_step[i] = k - 1u;
         } else {
-            t->seq_idx = (uint16_t)(k % len);
+            seq_dir_seek(t, len, k);
             t->seq_pos = r;
             seq_run_step[i] = k;
         }
@@ -1002,7 +1064,9 @@ static void seq_release(track_t *t)
 
 #include "seq_erase.c"
 #include "step_acc.c"                               /* the pitch accumulator: a step's notes climbing each pass */
+#include "seq_strum.c"                             /* STRUM: a CHORD strike's notes a few ms apart */
 #include "seq_sub.c"                               /* SUB: a step's notes again within it (RATCH) */
+#include "seq_dir.c"                               /* DIR: the order a STEP pattern plays its steps in */
 
 /* Map a quantized onset back to the compact tempo-relative event format. The
  * inverse swung pair calculation is constant-time, even at a 64-step boundary. */
@@ -1082,6 +1146,7 @@ static void seq_stop(void)
         for (i = 0; i < NPART; i++)                /* its sounding note too (HOLD keeps the latched chord) */
             if (trk[i].arp_note)
                 arp_off(&trk[i]);
+    arp_wait = midi_sync_active ? (1u << NPART) - 1u : 0u;
     for (i = 0; i < NTRK; i++) {
         recording_stop(&trk[i]);
         if (trk[i].rh_n)
@@ -1112,7 +1177,7 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
     uint32_t vel = (s->flags & SF_ACCENT) ? 127u : (s->vel ? s->vel : 96u);
     uint32_t slide_in = t->seq_hold && t->seq_n;
     uint32_t len = t->p[P_SLEN] ? (uint32_t)t->p[P_SLEN] : 1u;
-    uint32_t next_tie = seq_steps(t)[(t->seq_idx + 1u) % len].time == ST_TIE;
+    uint32_t next_tie = seq_dir_next_tie(t, len);   /* (backwards: a tied run's step before, seq_dir.c) */
     uint8_t nn[4 + NLANE], vv[4 + NLANE];           /* the notes it plays: its notes, then its hits */
     uint32_t m = 0, sk = 0;
     if (!seq_cond_met(t, s) || (step_chance(s) < 100u && rng() % 100u >= step_chance(s))) {
@@ -1172,7 +1237,7 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
 
 static void seq_grid_tick(track_t *t, uint32_t n)
 {
-    uint32_t period, len;
+    uint32_t period, len, cs;
     if (t->seq_n && !t->seq_hold) {
         if (t->seq_off <= n)
             seq_release(t);
@@ -1185,12 +1250,20 @@ static void seq_grid_tick(track_t *t, uint32_t n)
         t->rh_elapsed += n;
     period = seq_div_samples((uint32_t)t->p[P_SDIV]);
     len = (uint32_t)t->p[P_SLEN];
+    cs = seq_clocked(t);
+    if (cs != ((cord_clk_was >> trk_index(t)) & 1u)) {  /* a CLOCK cord came or went: the step playing is not moved by it */
+        cord_clk_was = (uint8_t)(cs ? cord_clk_was | (1u << trk_index(t)) : cord_clk_was & ~(1u << trk_index(t)));
+        if (t->seq_pos < 0x7FFFFFFFu) {
+            if (cs) t->seq_pos = 0;                     /* (its step lasts DIV from here) */
+            else seq_grid_place(t, period, 0);          /* (back onto the grid from PLAY) */
+        }
+    }
     {   /* DIV, tempo or SWING changed while playing: back onto the grid (seq_grid_place) */
         uint32_t *was = &seq_period_was[trk_index(t)], sw = (uint32_t)track_swing(t), *slip = &seq_slip[trk_index(t)];
         uint8_t *sw_was = &seq_swing_was[trk_index(t)];
-        if (*was && (*was != period || *sw_was != sw) && t->seq_pos < 0x7FFFFFFFu && !chain.running) {
+        if (*was && (*was != period || *sw_was != sw) && t->seq_pos < 0x7FFFFFFFu && !chain.running && !cs) {
             int32_t old = (int32_t)(*sw_was * *was / 250u);
-            uint32_t len_was = *was + (uint32_t)((t->seq_idx & 1u) ? -old : old) + *slip;
+            uint32_t len_was = *was + (uint32_t)((SEQ_D(t).slot & 1u) ? -old : old) + *slip;
             uint64_t done = len_was ? ((uint64_t)t->seq_pos << 16) / len_was : 0u;
             seq_grid_place(t, period, done > 65535u ? 65535u : (uint32_t)done);
         }
@@ -1198,24 +1271,34 @@ static void seq_grid_tick(track_t *t, uint32_t n)
         *sw_was = (uint8_t)sw;
     }
     t->seq_pos += n;
-    seq_sub_tick(t, step_samples(t, period, t->seq_idx));   /* (SUB: this step's repeats due, before the next step) */
+    if (cs && t->seq_pos < 0x7FFFFFFFu && t->seq_pos > period) t->seq_pos = period;   /* (waiting: no further, or the PLAY mark) */
+    seq_strum_tick(t, n);                               /* (STRUM: a chord's queued notes due) */
+    seq_sub_tick(t, step_samples(t, period, SEQ_D(t).slot));   /* (SUB: this step's repeats due, before the next step) */
     if (trk_index(t) >= TESSERA_TRACKS || tessera.mode[trk_index(t)] == TESS_ENG_OFF)
-        seq_nudge_tick(t, period, step_samples(t, period, t->seq_idx), len);   /* (NUDGE: a held step, the next early) */
+        seq_nudge_tick(t, period, step_samples(t, period, SEQ_D(t).slot), len);   /* (NUDGE: a held step, the next early) */
     else
-        seq_gen_tick(t, step_samples(t, period, t->seq_idx));   /* (HUMAN: a generator step a moment late) */
+        seq_gen_tick(t, step_samples(t, period, SEQ_D(t).slot));   /* (HUMAN: a generator step a moment late) */
     for (;;) {
-        uint32_t cur_len = step_samples(t, period, t->seq_idx) + seq_slip[trk_index(t)];
-        if (t->seq_pos < cur_len && t->seq_pos != 0x7FFFFFFFu + n)
+        uint32_t cur_len = step_samples(t, period, SEQ_D(t).slot) + seq_slip[trk_index(t)];
+        if (cs && t->seq_pos < 0x7FFFFFFFu) {           /* CLOCK: a step when an edge waits and DIV is up since the last */
+            if (!((cord_clk_pend >> trk_index(t)) & 1u) || t->seq_pos < period) break;
+            cord_clk_pend &= (uint8_t)~(1u << trk_index(t));
+            cur_len = t->seq_pos;                       /* (the step ends now) */
+        } else if (t->seq_pos < cur_len && t->seq_pos != 0x7FFFFFFFu + n)
             break;
         seq_slip[trk_index(t)] = 0;
         uint32_t starting = t->seq_pos >= 0x7FFFFFFFu;
         uint32_t punch_in = 0;
         if (starting) seq_lag = n;
         t->seq_pos = starting ? (chain.running ? chain.carry : 0u) : t->seq_pos - cur_len;
-        t->seq_idx = (uint16_t)((t->seq_idx + 1u) % (len ? len : 1u));
-        if (!t->seq_idx && !starting)
+        if (starting && cs) {                           /* (CLOCK: PLAY's step is its first; what waits or hits now is not another) */
+            cord_clk_pend &= (uint8_t)~(1u << trk_index(t));
+            cord_clk_new |= (uint8_t)(1u << trk_index(t));
+        }
+        seq_dir_step(t, len ? len : 1u, seq_run_step[trk_index(t)] + 1u);   /* (DIR: the next step, seq_dir.c) */
+        if (!SEQ_D(t).slot && !starting)
             t->seq_pass++;
-        if (!t->seq_idx && !starting && !chain.running) {   /* punch-in at the loop's start; then REC stays on, a
+        if (!SEQ_D(t).slot && !starting && !chain.running) {   /* punch-in at the loop's start; then REC stays on, a
                                                          * pass over the last (overdub), until REC again (Theo
                                                          * 2026-10-31: a whole take, not one pass) */
             uint8_t bit = (uint8_t)(1u << trk_index(t));
@@ -1225,9 +1308,9 @@ static void seq_grid_tick(track_t *t, uint32_t n)
                 punch_in = 1;
             }
         }
-        if (!t->seq_idx && !chain.running && t->pattern_next < NPAT) {
+        if (!SEQ_D(t).slot && !chain.running && t->pattern_next < NPAT) {
             pattern_switch(t, t->pattern_next);
-            t->seq_idx = 0;
+            seq_dir_first(t, (uint32_t)t->p[P_SLEN], seq_run_step[trk_index(t)] + 1u);   /* (its first step, its DIR) */
             period = seq_div_samples((uint32_t)t->p[P_SDIV]);
             seq_period_was[trk_index(t)] = period;    /* (a pattern of another DIV starts here, as it is) */
             seq_swing_was[trk_index(t)] = (uint8_t)track_swing(t);
@@ -1235,14 +1318,16 @@ static void seq_grid_tick(track_t *t, uint32_t n)
         }
         cap_step[trk_index(t)]++;
         seq_run_step[trk_index(t)]++;
-        if (!t->seq_idx && t == &trk[0] && !chain.running)
+        if (!(seq_run_step[trk_index(t)] % tess_steps_per_bar(t))) cord_hold_bar(trk_index(t));   /* (HOLD mods) */
+        if (!SEQ_D(t).slot && t == &trk[0] && !chain.running)
             jam_loop();
         motion_step(t, t->seq_idx, &motion);
         if (punch_in) rec_begin_held(t);
         seq_erase_pass(t, t->seq_idx, 1);
         if (!seq_erase_active(t)) rec_hold(t, t->seq_idx, len ? len : 1u);
         {
-            const step_t *s = &seq_steps(t)[t->seq_idx];
+            step_t tv;
+            const step_t *s = seq_dir_tie(t, &seq_steps(t)[t->seq_idx], &tv, len ? len : 1u);   /* (a tied run backwards) */
             uint32_t skip = 0, i, k;
             if (t->rskip_n && t->rskip_idx == t->seq_idx) {
                 for (k = 0; k < t->rskip_n; k++) {
@@ -1257,11 +1342,11 @@ static void seq_grid_tick(track_t *t, uint32_t n)
             }
             uint32_t tr_idx = trk_index(t);
             if (tr_idx < TESSERA_TRACKS && tessera.mode[tr_idx] != TESS_ENG_OFF) {
-                seq_gen_step(t, tr_idx, step_samples(t, period, t->seq_idx));   /* (now, or HUMAN's moment late) */
+                seq_gen_step(t, tr_idx, step_samples(t, period, SEQ_D(t).slot));   /* (now, or HUMAN's moment late) */
             } else {
                 step_t sv;                          /* (STEP EVOLVE: the step with its change, tessera.c; not again for a
                                                      * step NUDGE played early) */
-                uint32_t span = step_samples(t, period, t->seq_idx);
+                uint32_t span = step_samples(t, period, SEQ_D(t).slot);
                 if (!(seq_nudge_early & (1u << tr_idx))) {
                     s = tessera_step_vary(t, s, &sv);
                     s = step_acc(t, s, &sv, t->seq_pass);   /* (Accumulate: its notes this pass) */
@@ -1297,12 +1382,13 @@ static void seq_tick(track_t *t, uint32_t n)
     }
     while (n) {
         uint32_t period = seq_div_samples((uint32_t)t->p[P_SDIV]);
-        uint32_t span = step_samples(t, period, t->seq_idx);
+        uint32_t span = step_samples(t, period, SEQ_D(t).slot);
         uint32_t chunk = t->seq_pos < span ? span - t->seq_pos : 1u;
         if (chunk > n) chunk = n;
         uint32_t before = t->seq_idx;
         if (recording_tracks & (1u << trk_index(t))) recording_tick(t, chunk);
         seq_grid_tick(t, chunk);
+        if (SEQ_D(t).ndir != SEQ_FWD && t->seq_pos < chunk) recording_rearm(t);   /* (DIR: each step its own notes) */
         if (!t->seq_idx && (before || t->p[P_SLEN] == 1) && t->seq_pos < chunk) recording_zero(t);
         n -= chunk;
     }
@@ -1358,9 +1444,9 @@ static void seq_advance(uint32_t n)
     for (i = 0; i < NTRK; i++)
         seq_tick(&trk[i], n);
     for (i = 0; i < NPART; i++)
-        /* Held keys play at the local tempo while the selected master is
-         * stopped. A released HOLD chord still waits for external transport. */
-        arp_step(&trk[i], song.playing || !song.g[G_CLOCK] || trk[i].arp_phys ? n : 0u, n);
+        /* held keys and a HOLD chord play at the local tempo while the selected master is stopped; a chord its
+         * Stop (or a lost clock) stopped waits for the transport (arp_wait) */
+        arp_step(&trk[i], song.playing || !song.g[G_CLOCK] || arp_runs(i) ? n : 0u, n);
     midi_out_seq = 0;
     beat_pos += n;
     while (beat_pos >= beat) {
@@ -1504,7 +1590,7 @@ static void events_block(uint32_t n)
         if (!song.playing) {
             uint32_t elapsed = (uint32_t)((uint64_t)n * MIDI_BEAT_UNITS / beat_samples());
             for (i = 0; i < NPART; i++)
-                arp_step(&trk[i], trk[i].arp_phys ? elapsed : 0u, elapsed);
+                arp_step(&trk[i], arp_runs(i) ? elapsed : 0u, elapsed);
             lfo_units = elapsed;
         } else
             lfo_units = lfo_ext_units(n, seq_advanced);
@@ -1530,6 +1616,7 @@ static void events_block(uint32_t n)
         if(left) { uint32_t units = int_clock_units(left); seq_advance(units); lfo_units += units; }   /* (mix.c) */
     }
     lfo_block_units = lfo_units;
+    lfo_units_run += lfo_units;
     if (song.playing)
         song.tick++;
 }
