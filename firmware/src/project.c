@@ -720,7 +720,7 @@ static void project_new_blank(void)
         song.g[i] = GP[i].def;
     for (k = 0; k < 4u; k++)
         song.g[GLO_KEPT[k]] = kept[k];
-    song.g[G_BPM] = TRK_DEF_BPM;
+    TRK_DEF_SONG();
     undo_depth++;
     for (k = 0; k < NTRK; k++) {
         track_t *t = &trk[k];
@@ -728,7 +728,7 @@ static void project_new_blank(void)
         set_engine_of(t, TRK_DEF[k][0]);
         apply_preset_to(t, TRK_DEF[k][1]);
         if (TRK_DEF[k][0] != ENGI_DRUM)
-            t->p[P_SCALE] = TRK_DEF_SCALE;
+            TRK_DEF_SCALE_OF(t);
         track_defaults_steps(t);
         pat_last[k] = 0;
         pat_sig[k] = steps_sig(t);

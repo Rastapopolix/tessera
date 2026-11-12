@@ -40,6 +40,7 @@ Want to help test? The steps, by area, and how to report a problem: [BETA_TESTIN
 - MIXER's sheet: hold OCT+ on MIXER for Mutes (NOW, BAR, PHRASE), the same setting as MENU > MUTES, at hand while you play the mute keys.
 - A track nobody can hear (LEVEL 0, muted, left out by SOLO or taken out by ENTRIES) stops making sound after about 46 ms, so its time goes to the tracks you hear; its sequencer, LFO and the tracks that follow it go on, and it fades back in when heard again. A track whose ENV a cord reads always plays on (#586).
 - Web editor Health: six USB rows, each way (to and from the computer): streaming and buffer fill, underruns and overruns, missed frames and bad packets, the slowest USB service. A marked one points to a click on the USB side rather than an overloaded FM-1 (#586).
+- New project sounds: power-on and NEW start with CEDAR RAIN's set: KUGO HARP, KOTO WARM and FLUTE on FM6 and the 808 KIT, in KUMOI on E at 80 BPM, with REVERB and ECHO on the sends (was GLASS PAD, STRING MACH, BELLS in MPEN on C at 85, sends off). Saved projects are unchanged.
 
 ## Fixed
 - GLO > SYSTEM's CPU read about 55 % while the sound already broke up: it left out the USB and MIDI service and averaged over a tenth of a second. It now counts everything and shows the average and the worst moment of about the last second, as 55/92 (the screen reader says "55 % PEAK 92 %") (#586).

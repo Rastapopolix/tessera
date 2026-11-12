@@ -275,10 +275,11 @@ On the home page each track's tile shows its sound and engine. **ALGORITHM** pic
 the left knob, with MENU > TRACK KNOB set to LEFT), and **SELECT** turns the pages of the section shown (on the home
 page, the tempo). When a section has more pages than the footer's tabs show, the header gives the page's place (4/10:
 SEQ counts GEN's pages and the sequencer's together, the way the button goes through them) and arrows at the footer's
-ends say more pages lie that way. The four sounds a new project starts with are an ambient set: **GLASS PAD**
-and **BELLS** on FM6, **STRING MACH** on TRIO, and the **808 KIT** on DRUM. (Track 2 is a TRIO pad so that
-generators on both pads stay within what the FM-1 can play: see [How many voices at once](#how-many-voices-at-once).) A new project has no mods, so nothing moves until
-you patch it.
+ends say more pages lie that way. A new project starts with the sounds of the CEDAR RAIN demo: **KUGO HARP**, **KOTO WARM** and **FLUTE** on FM6,
+and the **808 KIT** on DRUM, in **KUMOI** on E at 80 BPM, with a REVERB and an ECHO on the two send effects. Plucks ring
+out by themselves, so generators on all three melodic tracks stay within what the FM-1 can play (see
+[How many voices at once](#how-many-voices-at-once)). For a pad, load one with **PRESETS** (GLASS PAD, STRING MACH). A
+new project has no mods, so nothing moves until you patch it.
 
 On every page the four knobs' values sit under their dials (or bars: MENU > KNOBS). The value you turn is drawn
 inverted. On the home page and on pages without a picture of their own, while you turn it its name and value also show

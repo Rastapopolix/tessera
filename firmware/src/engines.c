@@ -212,26 +212,42 @@ static uint32_t eng_step(uint32_t e, int32_t dir)
     return eng_vis((eng_rank(e % NENGINES) + (dir > 0 ? 1u : NENG_SHOWN - 1u)) % NENG_SHOWN);
 }
 
-/* The project at power-on and NEW (melodee_init, project_new_blank): TRK_START_TESS (the device) at 85 BPM, the melodic
- * parts in minor pentatonic; 0: the parameters' defaults for tempo and scale, which the host tests are written for
- * (hostsim.c). The sounds are the same either way (2026-11-12: the host's SID start went with SID) */
+/* The project at power-on and NEW (melodee_init, project_new_blank). 3.5 (Theo 2026-11-12): CEDAR RAIN's four sounds;
+ * TRK_START_TESS (the device) adds KUMOI on E, 80 BPM, its REVERB and ECHO; 0: the parameters' defaults for tempo,
+ * scale and sends, which the host tests are written for (hostsim.c). The sounds are the same either way (2026-11-12:
+ * the host's SID start went with SID) */
 #ifndef TRK_START_TESS
 #define TRK_START_TESS 1
 #endif
 /* the parts at power-on (engine, preset; the steps empty): bass (TRK_START_TESS: a drone), pad, lead, drums */
 static const uint8_t TRK_DEF[NPART][2] = {
-    {ENGI_FM6, 16},                                 /* FM6 GLASS PAD, the drone (FM back, PHYS and SID out: 2026-10-21) */
-    {6, 6},                                         /* TRIO STRING MACH (2026-10-28: two FM6 pads under generators
-                                                     * crackle, past the FM-1's six-operator limit; was FM6 STRINGS) */
-    {ENGI_FM6, 11},                                 /* FM6 BELLS (was KALIMBA) */
+    {ENGI_FM6, 39},                                 /* FM6 KUGO HARP (3.5: CEDAR RAIN's four, Theo 2026-11-12; was GLASS PAD) */
+    {ENGI_FM6, 38},                                 /* FM6 KOTO WARM (was TRIO STRING MACH: two FM6 pads under generators
+                                                     * crackled, 2026-10-28; these are plucks, which ring out) */
+    {ENGI_FM6, 20},                                 /* FM6 FLUTE (was BELLS) */
     {ENGI_DRUM, 0}};                                /* DRUM KIT */
 /* the power-on presets when project format 1 was written (project.c PROJ_DEF_SOUND): fixed, whatever TRK_DEF becomes */
 static const uint8_t TRK_DEF_V1[NPART] = {4, 4, 0, 0};
 #if TRK_START_TESS
-#define TRK_DEF_BPM 85
-#define TRK_DEF_SCALE 6                             /* MPEN (scales.h N_SCALE) */
+#define TRK_DEF_BPM 80                              /* CEDAR RAIN's (85 before 3.5) */
+#define TRK_DEF_SCALE 74                            /* KUMOI on E, CEDAR RAIN's (scales.h N_SCALE; MPEN on C before 3.5) */
+#define TRK_DEF_ROOT 4
 #else
 #define TRK_DEF_BPM GP[G_BPM].def
 #define TRK_DEF_SCALE TP[P_SCALE].def
+#define TRK_DEF_ROOT TP[P_ROOT].def
 #endif
+/* the song's start (melodee_init, project_new_blank): BPM, and (TRK_START_TESS) CEDAR RAIN's send effects, 1 a
+ * REVERB, 2 an ECHO, so the presets' sends are heard (both MIX full by default); the parameters' defaults stay OFF,
+ * for older projects. Macros: the parameter tables come after this file */
+#if TRK_START_TESS
+#define TRK_DEF_SONG() do { song.g[G_BPM] = TRK_DEF_BPM;                                           \
+        song.g[G_MFXTYPE] = 8; song.g[G_MFXRATE] = 96; song.g[G_MFXCHAR] = 84;   /* REVERB */   \
+        song.g[G_MFX2TYPE] = 6; song.g[G_MFX2RATE] = 82; song.g[G_MFX2CHAR] = 60; /* ECHO */    \
+    } while (0)
+#else
+#define TRK_DEF_SONG() (song.g[G_BPM] = TRK_DEF_BPM)
+#endif
+/* a melodic part's start: the scale and its root */
+#define TRK_DEF_SCALE_OF(t) ((t)->p[P_SCALE] = TRK_DEF_SCALE, (t)->p[P_ROOT] = TRK_DEF_ROOT)
 static uint32_t trk_def_engine(uint32_t i) { return TRK_DEF[i % NPART][0]; }
