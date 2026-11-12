@@ -1912,6 +1912,15 @@ static void seq_erase_update(uint32_t pressed)
 #ifdef ANN_VER
 static void sp_turn(uint32_t k);                       /* ui_speak.c */
 #endif
+/* knob k on one of Tessera's own pages (their values kept by tessera.c, not a page_desc): no picker, the value hot */
+static int tess_knob(const page_t *pg, uint32_t k)
+{
+    uint8_t g = pg->graph;
+    return g == GR_EVOLVE || g == GR_FORM || g == GR_TWEAK || g == GR_TWEAK2 || g == GR_ORGANIC || g == GR_MATRIX ||
+           g == GR_TIMING || g == GR_ENERGY || g == GR_MIDICH || g == GR_CHAIN || g == GR_ENTRIES || g == GR_PIECE ||
+           g == GR_LAND || g == GR_PERF || g == GR_KEYLINK || (g == GR_NOTELEN && k < 3u) ||
+           (song.sel < TESSERA_TRACKS && g == GR_STEPS && pg->fam == FAM_GEN && (k == 0u || tessera.mode[song.sel] != TESS_ENG_OFF));
+}
 static void page_knob(uint32_t k, int32_t s)
 {
     const page_t *pg = cur_page();
@@ -1928,7 +1937,8 @@ static void page_knob(uint32_t k, int32_t s)
     if (ui.home || pg->scope == SC_STEP || pg->scope == SC_TRK || ((pg->scope==SC_DRUM || pg->scope==SC_DRUMHIT) && pg->id[k]!=255) || page_desc(pg, k, &hv) ||
         (pg->graph == GR_USER && k == 0u) || (!MELODEE_LOOK && pg->graph == GR_MOD && k == 1u)
         || pg->graph == GR_SONG || pg->graph == GR_PATGRID || pg->graph == GR_SCALE_PICKER || (scale_settings_page(pg) && k == 1u)
-        || (pg->graph == GR_SLICES && k < 2u)) {       /* (not an empty column) */
+        || (pg->graph == GR_SLICES && k < 2u) || tess_knob(pg, k)) {   /* (not an empty column; Tessera's own pages'
+                                                         * values invert as the rest do) */
         ui.hot_col = (uint8_t)k;
         ui.hot_t = 40;
     }
@@ -1956,9 +1966,7 @@ static void page_knob(uint32_t k, int32_t s)
         edit_param(k, s);
         if (arp2_on()) oct_eat |= 1u;                   /* (ARP, OCT- held: its release is no Back) */
         pg = cur_page();
-        if (!(pg->graph == GR_EVOLVE || pg->graph == GR_FORM || pg->graph == GR_TWEAK || pg->graph == GR_TWEAK2 ||
-              pg->graph == GR_ORGANIC || pg->graph == GR_MATRIX || pg->graph == GR_TIMING || pg->graph == GR_ENERGY || pg->graph == GR_MIDICH || pg->graph == GR_CHAIN || pg->graph == GR_ENTRIES || pg->graph == GR_PIECE || pg->graph == GR_LAND || pg->graph == GR_PERF || pg->graph == GR_KEYLINK || (pg->graph == GR_NOTELEN && k < 3u) ||   /* Tessera's own pages: no picker */
-              (song.sel < TESSERA_TRACKS && pg->graph == GR_STEPS && pg->fam == FAM_GEN && (k == 0u || tessera.mode[song.sel] != TESS_ENG_OFF))))
+        if (!tess_knob(pg, k))                          /* (Tessera's own pages: no picker) */
             pick_touch(k);                              /* a name from a long list: its picker (ui_popup.c) */
     }
 }
