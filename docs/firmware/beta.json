@@ -1,12 +1,12 @@
 {
-  "version": "3.5-rc1",
+  "version": "3.5-rc2",
   "product": "FM-1_835",
   "branch": "develop",
-  "commit": "8e437b0bd51374acbd62ce17e7a823e9b3672ecb",
-  "builtAt": "2026-11-11T17:18:50Z",
+  "commit": "dee9a80636695a911109075a998717d9d99236e0",
+  "builtAt": "2026-11-12T02:09:29Z",
   "pkg": {
-    "dual": "../../firmware/tessera-3.5-rc1.fwsc",
-    "single": "../../firmware/tessera-3.5-rc1-1core.fwsc"
+    "dual": "../../firmware/tessera-3.5-rc2.fwsc",
+    "single": "../../firmware/tessera-3.5-rc2-1core.fwsc"
   },
   "notes": [
     [
@@ -26,7 +26,7 @@
         "NOTES: OCT+ on an empty step no longer places a note (on the drum grid, no longer sets a hit); it says NOTHING THERE. KNOB 2 or a key places a note (the grid: KNOB 3 or a white key). OCT+ on a note still opens its sheet; held, OCT+ opens the pattern's sheet and the screen says PATTERN SHEET once the hold counts.",
         "GROUND: MENU > GROUND, below COLOR, puts the screen on warm paper (LIGHT) instead of black (DARK, the default). Each ink becomes a darker version that reads well on paper; the MOSAIC sets keep four different inks. COLOR's sheet shows them on paper while LIGHT is on (#557). On paper WHITE is pure black and named BLACK, and COLOR shows one red, PINK, and one yellow, YELLOW (RED and HOT PINK, and ORANGE, look the same there; a chosen RED or ORANGE comes back on DARK).",
         "HOLD mods: OCT+ on MODS cycles +- / + / GATE / HOLD. HOLD takes the source at the start of each bar and keeps it until the next.",
-        "MOD SCOPE: hold OCT- on MODS to see the picked mod move over time (a line) over its source (faint dots), a GATE's threshold as a wedge at each edge (filled while open; a dashed line across while KNOB 4 turns it). With a MOSAIC set the line takes its source's track colour. The window follows the source: a bar for the notes' own, 2 to 16 bars for an LFO, up to 64 for TIDE and ENERGY. Let go and the rows come back. The screen reader says its shape once as it opens.",
+        "MOD SCOPE: hold OCT- on MODS to see the picked mod move over time (a line) over its source (faint dots), a GATE's threshold as a wedge at each edge (filled while open; a dashed line across while KNOB 4 turns it). With a MOSAIC set the line takes its source's track colour. The window follows the source: a bar for the notes' own, 2 to 16 bars for an LFO, up to 64 for TIDE and ENERGY. Let go and the rows come back. The screen reader says its shape once as it opens. To keep it on screen, hold OCT- and tap OCT+ (SCOPE PINNED): let go of OCT- and the knobs work as usual while you watch. Tap OCT- or leave MODS to let it go.",
         "Chord kinds SUS2, 7SUS4, ADD9 and MAJ6 on CHRD (SCL > CHORD, or the CHORD track's layer), after POW: fixed shapes on any note, for the chord keys, MIDI in, step entry, the arp and the CHORD generator.",
         "Keys, one rule on every page: OCT+ goes in, OCT- goes back. Tap OCT+ = Enter: the row, slot, note or mod under the cursor; where there is nothing to enter, nothing (a tap no longer opens the sound's or the page's sheet). Hold OCT+ = the page's sheet (it stays open; the header shows its name and a line filling until it opens; a page without one says NO SHEET). Tap OCT- = Back: closes a sheet, list, map or selection, and a page opened from the EDIT map or from MATRIX goes back there; on a page with nothing open it does nothing (it no longer goes to HOME: HOME does). Hold OCT- = the page's second set of knobs, only while held (never Back, never a sheet). The OCT- LED is lit on pages that have such a set. OCT+ held no longer gives knobs anywhere.",
         "Moved from OCT+ held to OCT- held (same knobs, other key): FORM (DEVELOP, CHAIN, SKIP, ROLE), TIMING (SPLIT, HOW), ENERGY (DEPTH), CHAIN (REPEAT), MIXER (PAN), MODS (a GATE's threshold, a CC mod's number), GEN (KNOB 2 to 4: the generator's second layer, e.g. TURING's SOURCE KEEP GRAVITY, CHORD's STRUM DIR OCT; KNOB 1 stays RANDOM), EVOLVE (KNOB 4 GRAVITY or HOW, beside ROLL ALL and PAT GEN), TWEAK (FOLLOW's HOW, RHYTHM, HOLD), MIDI OUT (TRANSPOSE), ENTRIES (ROLE). ATLAS' fourth-part keys and CHORD / PROG USER's chord entry: OCT- + keys.",
@@ -42,12 +42,16 @@
         "PLAY: a mod destination on each track that decides whether it is heard. While its mods reach half its notes sound, under half they don't; a GATE mod onto PLAY makes a gated voice in one cord. A shut track plays on unheard (it still leads, as MUTE).",
         "CLOCK: a new destination. A generator track with a mod onto CLOCK steps on the source's edges and not on its DIV: with EOC as the source, a note each LFO cycle (a Krell: add S&H onto the LFO's rate). AMOUNT is the division (50 % every second edge), negative the gate closing; a GATE source counts hits. First step at PLAY; DIV is the step's length and the fastest it steps. A project that uses it does not load on older firmware.",
         "HOLD on notes: hold OCT- on a HOLD mod and turn KNOB 1 to clock it by a track's notes (HOLD ON T1 NOTES .. T4) instead of the bar: the source is taken on each note that track plays.",
-        "MIXER's sheet: hold OCT+ on MIXER for Mutes (NOW, BAR, PHRASE), the same setting as MENU > MUTES, at hand while you play the mute keys."
+        "MIXER's sheet: hold OCT+ on MIXER for Mutes (NOW, BAR, PHRASE), the same setting as MENU > MUTES, at hand while you play the mute keys.",
+        "A track nobody can hear (LEVEL 0, muted, left out by SOLO or taken out by ENTRIES) stops making sound after about 46 ms, so its time goes to the tracks you hear; its sequencer, LFO and the tracks that follow it go on, and it fades back in when heard again. A track whose ENV a cord reads always plays on (#586).",
+        "Web editor Health: six USB rows, each way (to and from the computer): streaming and buffer fill, underruns and overruns, missed frames and bad packets, the slowest USB service. A marked one points to a click on the USB side rather than an overloaded FM-1 (#586).",
+        "New project sounds: power-on and NEW start with CEDAR RAIN's set: KUGO HARP, KOTO WARM and FLUTE on FM6 and the 808 KIT, in KUMOI on E at 80 BPM, with REVERB and ECHO on the sends (was GLASS PAD, STRING MACH, BELLS in MPEN on C at 85, sends off). Saved projects are unchanged."
       ]
     ],
     [
       "Fixed",
       [
+        "GLO > SYSTEM's CPU read about 55 % while the sound already broke up: it left out the USB and MIDI service and averaged over a tenth of a second. It now counts everything and shows the average and the worst moment of about the last second, as 55/92 (the screen reader says \"55 % PEAK 92 %\") (#586).",
         "ARP HOLD: with CLK set to an external clock (USB, TRS) and the transport stopped, a chord latched with HOLD stopped when the keys were let go, though it played while they were held. It now keeps playing at the local tempo, as the keys do. A chord stopped by the external Stop (or a lost clock) still waits for Start or Continue; a new key plays again.",
         "USB OUTPUT 4 TRACKS: a loud chord crackled in its stem (cut hard at full scale, #586). A stem now has the stereo recording's level, 6 dB under before, and the outputs' soft clip.",
         "Web editor on macOS: \"Tessera not found\" when the FM-1's MIDI port is still named \"FM-1\" (CoreMIDI keeps the first name it saw). The editor now also tries ports named FM-1 / FM1, takes one only if it answers the editor handshake as Tessera, and says so if an FM-1 does not (stock firmware: install Tessera with the installer). The not-found text hints at the cached name (#527).",
@@ -115,6 +119,8 @@
         "HOLD on notes: T1 RAND as HOLD onto T3 CUTOFF, clocked by T2's notes; save, load.",
         "EOC: an LFO's EOC as a GATE mod onto FILL or a bus; on a slow LFO the gate is a short pulse each cycle.",
         "CLOCK: EOC onto a generator's CLOCK, then S&H onto that LFO's rate; AMOUNT 50 % for every second edge; a GATE source counting hits; STOP and PLAY start it again.",
+        "CPU on GLO > SYSTEM with a busy project: does the second number reach 99 when you hear crackles, and drop when you mute a busy track?",
+        "Mute a track with a long reverb or ECHO, then unmute it: it fades back in without a click (its effects start clean).",
         "A project from 3.4.1 loads and plays the same."
       ]
     ]
