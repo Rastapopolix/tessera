@@ -1541,15 +1541,15 @@ static int test_page_order(void)
         if (str_eq(PAGES[i].title, "NOTES")) notes = i;
         if (str_eq(PAGES[i].title, "DRUM HIT")) hit = i;
         if (str_eq(PAGES[i].title, "PERF")) perf = i;
-        if (str_eq(PAGES[i].title, "GLOBAL")) glob = i;
+        if (str_eq(PAGES[i].title, "LANDSCAPE")) glob = i;
         if (PAGES[i].fam == FAM_GLO && glo1 == NPAGES) glo1 = i;
     }
     for (i = 0; i < MI_COUNT; i++) {
         if (str_eq(MI_NAME[i], "NOTES OUT")) menu |= 1;
         if (str_eq(MI_NAME[i], "MIDI OUT")) menu |= 2;
     }
-    return check("pages: DRUM HIT right after NOTES, PERF GLO's first table page (before GLOBAL); menu row NOTES OUT",
-                 hit == notes + 1u && perf + 1u == glob && glo1 == perf && menu == 1);
+    return check("pages: DRUM HIT right after NOTES, GLO: MIXER first, then PERF, LANDSCAPE; menu row NOTES OUT",
+                 hit == notes + 1u && perf + 1u == glob && PAGES[glo1].graph == GR_TRK && glo1 + 1u == perf && menu == 1);
 }
 static int test_cords_page(void)
 {
@@ -2355,7 +2355,7 @@ static int test_help_gesture(void)
 
 static int test_rec(void)
 {
-    static const uint8_t FAMS[3] = {FAM_TRK, FAM_SEQ, FAM_ARP};
+    static const uint8_t FAMS[3] = {FAM_GLO, FAM_SEQ, FAM_ARP};   /* (FAM_GLO at power-on: MIXER) */
     int bad = 0;
     uint32_t k;
     for (k = 0; k < 3u; k++) {
@@ -2542,17 +2542,17 @@ static int test_midi(void)
         bad += check("MIDI accepts a fresh note after overflow recovery", mn_get(0, 61) == 1u && gated_notes(&trk[0]));
     }
     {
-        const page_t *pg = &PAGES[page_first(FAM_GLO) + 1u];
+        const page_t *pg = &PAGES[page_first(FAM_GLO) + 7u];
         int16_t *vp;
         const param_desc_t *d = page_desc(pg, 2, &vp);
         char v[8];
         const char *u;
         param_format(d, 1, v, &u);
-        bad += check("GLO > SYSTEM K3: ROUT CH1-4 / SEL", str_eq(pg->title, "SYSTEM") && vp == &song.g[G_ROUTE] && str_eq(v, "SEL"));
+        bad += check("GLO > MIDI IN K3: ROUT CH1-4 / SEL", str_eq(pg->title, "MIDI IN") && vp == &song.g[G_ROUTE] && str_eq(v, "SEL"));
         param_format(d, 4, v, &u);
-        bad += check("GLO > SYSTEM K3: all four ranges exposed", d->max == 4 && str_eq(v, "13-16"));
-        pg=&PAGES[page_first(FAM_GLO)];d=page_desc(pg,1,&vp);
-        bad+=check("GLO > GLOBAL K2: device shared BUDGET",d && str_eq(d->label,"BUDGET") && vp==&settings_budget && pg->id[1]==G_BUDGET);
+        bad += check("GLO > MIDI IN K3: all four ranges exposed", d->max == 4 && str_eq(v, "13-16"));
+        pg=&PAGES[page_first(FAM_GLO) + 6u];d=page_desc(pg,0,&vp);
+        bad+=check("GLO > SYSTEM K1: device shared BUDGET",d && str_eq(pg->title,"SYSTEM") && str_eq(d->label,"BUDGET") && vp==&settings_budget && pg->id[0]==G_BUDGET);
     }
     return bad;
 }
@@ -2777,7 +2777,7 @@ static void key_up(uint32_t k);
 static void btn_down(uint32_t label);
 static void btn_up(uint32_t label);
 static uint32_t gates(void);
-/* MIXER (2.1): one 4-channel mixer, the GLO layer without holding GLO: KNOB k track k's LEVEL, OCT+ held its PAN;
+/* MIXER (2.1): one 4-channel mixer, the GLO layer without holding GLO: KNOB k track k's LEVEL, OCT- held its PAN;
  * black keys mute, white keys solo while held, C4 unmutes all; the keys play no notes there; page buttons leave it */
 static int test_tracks(void)
 {
@@ -2785,7 +2785,7 @@ static int test_tracks(void)
     track_t before[NTRK];
     uint32_t k;
     ui_power_on_general();                        /* (track 1 on a general engine: ENV is its ADSR) */
-    open_family(FAM_TRK);
+    go_title("MIXER");
     memcpy(before, trk, sizeof before);
     turn(EN_PRESET, 1);
     bad += check("MIXER: the PRESETS knob does nothing", trk[0].preset == before[0].preset && !memcmp(trk[0].p, before[0].p, sizeof before[0].p));
@@ -2819,7 +2819,7 @@ static int test_tracks(void)
     ok &= gates() && !trk[0].p[P_MUTE];
     key_up(key_at(0, 0)); frame();
     bad += check("MIXER is not modal: ENV leaves it, and the keys play notes again", ok);
-    open_family(FAM_TRK);
+    go_title("MIXER");
     turn(EN_ALGO, 1);
     bad += check("ALGORITHM selects the track", song.sel == 1);
     return bad;
@@ -3527,7 +3527,7 @@ static void roll_settle_on(const char *page)       /* that page, nothing rolling
     ui.hot_t = 0; ui.bpm_t = 0;
     for (k = 0; k < 12u; k++) frame();
 }
-static void roll_settle(void) { roll_settle_on("GLOBAL"); }   /* (TUNE on KNOB 4) */
+static void roll_settle(void) { roll_settle_on("SYSTEM"); }   /* (TUNE on KNOB 4) */
 /* host_screen against roll_shot: the pixels that differ inside the box (in = 1) or outside it */
 static uint32_t roll_diff(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int in)
 {
@@ -3703,15 +3703,17 @@ static int test_roll(void)
     turn(EN_K4, -1);
     ok = song.g[G_TUNE] == -1 && !ui.roll[3].from[0] && roll_static_now();
     for (k = 0; k < 5u; k++) frame();
-    turn(EN_K3, 1);
-    ok &= song.g[G_CLOCK] != 0 && !ui.roll[2].from[0] && roll_static_now();
+    go_title("MIDI IN");
+    for (k = 0; k < 12u; k++) frame();
+    turn(EN_K4, 1);
+    ok &= song.g[G_CLOCK] != 0 && !ui.roll[3].from[0] && roll_static_now();
     bad += check("roll: a sign / length change (0 -> -1) and a name (CLK) snap", ok);
     ok = 1;
     for (k = 0; k < 5u; k++) {
         ui_power_on(); roll_settle();
         turn(EN_K4, 1);
         ok &= ui.roll[3].from[0] != 0;
-        if (k == 0) go_title("SYSTEM");
+        if (k == 0) go_title("MIDI IN");
         else if (k == 1) turn(EN_ALGO, 1);
         else if (k == 2) { settings.palette = 1; palette_set(1); }          /* (no ui.force) */
         else if (k == 3) set_engine_of(TSEL, eng_step(TSEL->eng_req, 1));   /* (no ui.force) */
@@ -4241,7 +4243,7 @@ static int test_popups(void)
     {   /* a list of numbers steps on its card, as its neighbours do: GLO's DRUM channel (OFF, 1-16), FM6's ALG */
         int32_t ch;
         int ok;
-        ui_power_on(); go_title("SYSTEM"); frame();
+        ui_power_on(); go_title("MIDI IN"); frame();
         ch = settings_drumch;
         turn(EN_K2, 1);
         ok = !pop.on && settings_drumch == ch + 1;
@@ -4563,14 +4565,17 @@ static int test_product_ux(void)
         bad += check("SELECT on MIXER: the tempo (+2), as on HOME", song.g[G_BPM] == bpm + 2 && cur_page()->graph == GR_TRK);
         song.g[G_BPM] = bpm;
     }
-    press(B_GLO); ok = cur_page()->fam == FAM_GLO && str_eq(cur_page()->title, "GLOBAL");
-    press(B_GLO); ok &= str_eq(cur_page()->title, "SYSTEM");
-    press(B_GLO); ok &= str_eq(cur_page()->title, "MIDI OUT");
-    press(B_GLO); ok &= str_eq(cur_page()->title, "PIECE");
-    press(B_GLO); ok &= str_eq(cur_page()->title, "CHAIN");
-    press(B_GLO); ok &= str_eq(cur_page()->title, "ENTRIES");
-    press(B_GLO); ok &= cur_page()->graph == GR_TRK;
-    bad += check("GLO cycles MIXER > GLOBAL > SYSTEM > MIDI OUT > PIECE > CHAIN > ENTRIES > MIXER", ok);
+    {
+        static const char *const CYC[9] = {"PERF", "LANDSCAPE", "PIECE", "CHAIN", "ENTRIES", "SYSTEM", "MIDI IN", "MIDI OUT", "MIXER"};
+        uint32_t n;
+        for (ok = 1, n = MELODEE_LOOK ? 0u : 2u; n < 9u; n++) {   /* (PERF, LANDSCAPE: the Mono look's) */
+            uint32_t f;
+            for (f = 0; f < 25u; f++) frame();        /* (past the double tap) */
+            press(B_GLO);
+            ok &= cur_page()->fam == FAM_GLO && str_eq(cur_page()->title, CYC[n]);
+        }
+    }
+    bad += check("GLO cycles MIXER > PERF > LANDSCAPE > PIECE > CHAIN > ENTRIES > SYSTEM > MIDI IN > MIDI OUT > MIXER", ok);
     go_title("PIECE");                            /* the planner: LENGTH, SHAPE, PEAK / COUNT, END; USER, OCT- held: a
                                                    * point (KNOB 1), its level (KNOB 2) */
     turn(EN_K1, 2); turn(EN_K2, 5); turn(EN_K3, 1); turn(EN_K4, 1);
@@ -5598,22 +5603,22 @@ static int test_tempo_select(void)
     int bad = 0, ok;
     ui_power_on();
     stop_transport();
-    go_title("GLOBAL");
+    go_title("PIECE");
     turn(EN_SELECT, 1);
-    ok = song.g[G_BPM] == 120 && str_eq(cur_page()->title, "SYSTEM");
-    turn(EN_SELECT, 1);
-    ok &= str_eq(cur_page()->title, "MIDI OUT");
-    turn(EN_SELECT, 1);
-    ok &= str_eq(cur_page()->title, "PIECE");
-    turn(EN_SELECT, 1);
-    ok &= str_eq(cur_page()->title, "CHAIN");
+    ok = song.g[G_BPM] == 120 && str_eq(cur_page()->title, "CHAIN");
     turn(EN_SELECT, 1);
     ok &= str_eq(cur_page()->title, "ENTRIES");
     turn(EN_SELECT, 1);
-    ok &= str_eq(cur_page()->title, "GLOBAL");
+    ok &= str_eq(cur_page()->title, "SYSTEM");
+    turn(EN_SELECT, 1);
+    ok &= str_eq(cur_page()->title, "MIDI IN");
+    turn(EN_SELECT, 1);
+    ok &= str_eq(cur_page()->title, "MIDI OUT");
+    turn(EN_SELECT, 1);
+    ok &= str_eq(cur_page()->title, MELODEE_LOOK ? "PERF" : "PIECE");   /* (MIXER skipped: SELECT there is the tempo) */
     turn(EN_SELECT, -1);
-    bad += check("SELECT on GLO: GLOBAL -> SYSTEM -> MIDI OUT -> PIECE -> CHAIN -> ENTRIES -> GLOBAL (wraps), back the other way; the BPM untouched",
-                 ok && str_eq(cur_page()->title, "ENTRIES") && song.g[G_BPM] == 120);
+    bad += check("SELECT on GLO: PIECE -> CHAIN -> ENTRIES -> SYSTEM -> MIDI IN -> MIDI OUT -> past MIXER (wraps), back the other way; the BPM untouched",
+                 ok && str_eq(cur_page()->title, "MIDI OUT") && song.g[G_BPM] == 120);
     go_title("NOTES");
     cursor_set(4);
     turn(EN_SELECT, 1);
@@ -5639,17 +5644,17 @@ static int test_tempo_select(void)
     return bad;
 }
 
-/* GLO > SYSTEM KNOB 1: the MIDI column shows USB's or TRS's status (both inputs play), RX for 250 ms after input */
+/* GLO > MIDI IN KNOB 1: the MIDI column shows USB's or TRS's status (both inputs play), RX for 250 ms after input */
 static int test_midi_status(void)
 {
     int bad = 0, ok;
     ui_power_on();
-    go_title("SYSTEM");
+    go_title("MIDI IN");
     song.g[G_MIDI] = 0;
     turn(EN_K1, 1);
     ok = song.g[G_MIDI] == 1;
     turn(EN_K1, -1);
-    bad += check("SYSTEM KNOB 1: TRS's status, then USB's", ok && song.g[G_MIDI] == 0);
+    bad += check("MIDI IN KNOB 1: TRS's status, then USB's", ok && song.g[G_MIDI] == 0);
     midi_rx_recent(0);                                   /* (what came before: seen) */
     fm1_ms += 1000;
     ok = !midi_rx_recent(0);
@@ -6137,7 +6142,7 @@ static int test_quick_layers(void)
 {
     static const uint8_t LB[2] = {B_GLO, B_SCL};
     static const uint8_t LL[2] = {LAYER_GLO, LAYER_SCL};
-    static const char *const HINT[2] = {"HOLD [GLO] QUICK", "HOLD [SCL] QUICK"};
+    static const char *const HINT[2] = {"HOLD [GLO] SET", "HOLD [SCL] SET"};
     int bad = 0, ok, flash, hint;
     uint32_t i, k, a, b2, mo;
     /* tap / peek / combo, the hint once */
@@ -6149,7 +6154,18 @@ static int test_quick_layers(void)
         btn_up(LB[i]); frame();
         ok &= !flash && !ui.home && (LB[i] == B_GLO ? cur_page()->graph == GR_TRK :
                                      LB[i] == B_SCL ? cur_page()->fam == FAM_SCL : str_eq(cur_page()->title, "EDIT 1"));
-        hint &= msg_is(HINT[i]);
+        if (LB[i] == B_GLO) {                     /* MIXER, PERF, LANDSCAPE: the keys are GLO's already, no hint;
+                                                   * PIECE: the hint */
+            uint32_t n, m = MELODEE_LOOK ? 3u : 1u;   /* (PERF, LANDSCAPE: the Mono look's) */
+            hint &= !msg_is(HINT[i]);
+            for (n = 1; n <= m; n++) {
+                frames(400);                      /* (past the double tap) */
+                press(B_GLO);
+                hint &= n < m ? !msg_is(HINT[i]) : msg_is(HINT[i]) && str_eq(cur_page()->title, "PIECE");
+            }
+        } else {
+            hint &= msg_is(HINT[i]);
+        }
         go_home(); frame();
         btn_down(LB[i]); frames(368);
         ok &= !ui.layer;
@@ -6167,7 +6183,7 @@ static int test_quick_layers(void)
         ok &= ui.home && !ui.layer;
     }
     bad += check("GLO SCL: a tap opens the page, held past HOLD the map (no page), a key: the map at once", ok);
-    bad += check("  after a tap \"HOLD [BTN] QUICK\" until the layer has been opened once", hint);
+    bad += check("  after a tap \"HOLD [BTN] SET\" until the layer has been opened once (not on GLO's play pages)", hint);
     {
         persist_t p = {0};
         p.magic = PERSIST_MAGIC; p.panel = panel;
@@ -6551,19 +6567,19 @@ static int test_bughunt_ui(void)
         btn_up(B_FX); frame();
     }
     bad += check("SET layers: the OCT- LED lit (UNDO), OCT+ dark; after: the octave; FX: the octave", ok);
-    /* 9: no "HOLD [EDIT] QUICK" over NAME (EDIT tapped on USER / PROJECT renames) */
+    /* 9: no "HOLD [EDIT] SET" over NAME (EDIT tapped on USER / PROJECT renames) */
     ui_power_on_general();
     layer_seen = 0;
     up_ui(2, 0);
     go_page(GR_USER); ui.uslot = 0; frame();
     ui.msg_t = 0;
     press(B_EDIT);
-    ok = name_on() && !msg_is("HOLD [EDIT] QUICK");
+    ok = name_on() && !msg_is("HOLD [EDIT] SET");
     ui_power_on();
     layer_seen = 0;
     press(B_EDIT);
     bad += check("EDIT tap = RENAME on USER: no layer hint over NAME (no retired layer hint)",
-                 ok && !msg_is("HOLD [EDIT] QUICK"));
+                 ok && !msg_is("HOLD [EDIT] SET"));
     return bad;
 }
 

@@ -479,7 +479,7 @@ static int test_conditions(void)
         ok &= seq_fill;                                   /* (GLO let go first: FILL stays with its key, as SOLO) */
         key_up(e4); frame();
         ok &= !seq_fill;
-        open_family(FAM_TRK); frame();
+        ui.fam_last[FAM_GLO] = 0; open_family(FAM_GLO); frame();   /* (MIXER, GLO's first page) */
         key_down(e4); frame();
         ok &= seq_fill;
         key_up(e4); frame();

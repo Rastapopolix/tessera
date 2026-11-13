@@ -16,7 +16,7 @@
  * PLAY and REC work in every layer (GLO + PLAY: RESTART); SAVE, HOME, SEQ and the other page buttons are swallowed. In SET
  * layers OCT± do not shift the octave: OCT- (on release, not with OCT+) puts back what the layer changed since it
  * opened. A HOLD key's effect lasts until the key is let go, the map with it. No layer in the menu, a dialog,
- * NAME or the UPDATE MODE countdown. After a tap, until the layer has been opened once: "HOLD [GLO] QUICK"
+ * NAME or the UPDATE MODE countdown. After a tap, until the layer has been opened once: "HOLD [GLO] SET"
  * (the seen bits are kept with the settings, favorites.c spare byte). */
 enum { LK_HOLD, LK_SET };
 typedef struct {
@@ -55,10 +55,15 @@ static const uint32_t LY_DTAP_MS=300u;
 
 
 static int layer_allowed(void) { return !ui.menu && !ui.confirm && !ui.uboot && !name_on(); }
-/* MIXER (Tessera 2.1, Theo): the page is the GLO layer without holding GLO. Its keys are the layer's (black keys
- * mute, white keys solo while held, C4 unmutes all, E4 FILL while held, F4 taps the tempo), its LEDs the layer's; its knobs are the four
- * tracks' levels, OCT+ held their pans (ui_input.c tracks_edit). A layer button armed (GLO, SCL held) wins */
-static int mixer_live(void) { return !ui.home && !ui.ly && layer_allowed() && cur_page()->graph == GR_TRK; }
+/* MIXER (Tessera 2.1, Theo), PERF and LANDSCAPE (the GLO pages to play with, review 2026-11-13): the GLO layer
+ * without holding GLO. Their keys are the layer's (black keys mute, white keys solo while held, C4 unmutes all, E4
+ * FILL while held, F4 taps the tempo), their LEDs the layer's; their knobs stay the page's (MIXER: the four tracks'
+ * levels, OCT- held their pans, ui_input.c tracks_edit; PERF: the MACROs). A layer button armed (GLO, SCL held) wins */
+static int mixer_live(void)
+{
+    uint32_t g = cur_page()->graph;
+    return !ui.home && !ui.ly && layer_allowed() && (g == GR_TRK || g == GR_PERF || g == GR_LAND);
+}
 static uint32_t ly_bit(uint32_t l) { return 1u << panel.btn[LAYERS[l].btn]; }
 static uint32_t ly_down(uint32_t l) { return l && ((fm1_in.buttons & ly_bit(l)) != 0u || ui.lock == l); }
 static uint32_t layer_bits(void)
@@ -90,7 +95,7 @@ static void layer_masks(void)
                : ui.ly ? ly_bit(ui.ly) : layer_bits() & ~fm1_in.buttons;
     kb_mask = m | (layer_allowed() && !ui.ly ? 1u << panel.btn[B_SEQ] : 0u);
 
-    kb_lock = (m && ui.lock) || mixer_live() ? 1u : 0u;  /* (MIXER: its keys the GLO layer's, no button held) */
+    kb_lock = (m && ui.lock) || mixer_live() ? 1u : 0u;  /* (MIXER, PERF, LANDSCAPE: their keys the GLO layer's) */
 
 }
 
@@ -194,7 +199,8 @@ static void layer_show(void)
 }
 
 /* a tap: the button's page; the hint until its layer has been opened once (unless the tap said something, or
- * opened NAME: EDIT on USER / PROJECT renames; never over a dialog or the menu) */
+ * opened NAME: EDIT on USER / PROJECT renames; never over a dialog or the menu, nor on MIXER, PERF or LANDSCAPE,
+ * whose keys are the layer's already) */
 static void layer_tap(uint32_t l)
 {
     lys.dt_l=(uint8_t)l; lys.dt_ms=fm1_ms;
@@ -202,10 +208,10 @@ static void layer_tap(uint32_t l)
     memcpy(lys.nv.fam,ui.fam_last,sizeof ui.fam_last);
     uint8_t m = ui.msg_t;
     page_tap(LAYERS[l].btn);
-    if (!((layer_seen >> l) & 1u) && ui.msg_t == m && !name_on() && !ui.confirm && !ui.menu) {
+    if (!((layer_seen >> l) & 1u) && ui.msg_t == m && !name_on() && !ui.confirm && !ui.menu && !mixer_live()) {
         char hq[24] = "HOLD [";                         /* (whole, so the screen reader hears the end too) */
         str_cpy(hq + 6, KC[LY_KC[l]].label, sizeof hq - 6u);
-        str_cpy(hq + str_len(hq), "] QUICK", sizeof hq - str_len(hq));
+        str_cpy(hq + str_len(hq), "] SET", sizeof hq - str_len(hq));
         ui_message(hq);
         ui.msg_t = 90;                                  /* ~1.5 s */
     }
