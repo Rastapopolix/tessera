@@ -1723,23 +1723,26 @@ static void mo_pic_midich(void)
     if (settings_midi_out != MIDI_OUT_ALL)
         mo_text(settings_midi_out == MIDI_OUT_OFF ? "NOTES OUT: OFF" : "NOTES OUT: KEYS", 2, 101, MO_DIM);
 }
-/* CPU%'s own display smoothing (Theo 2026-11-14: the bar and the number were jittery): a new reading only replaces
- * what's shown once it has held for CPU_DISP_HOLD draws running (so a value the meter barely visits does not flash
- * by); while it hasn't, the old reading stays. UI-only: song.cpu_q8 and cpu_peak_q8 (the console, the screen reader,
- * #586's shedding) are unchanged; only this readout is steadied. */
-#define CPU_DISP_HOLD 30u                     /* ~0.5 s at the UI's up to 60 fps cap */
+/* CPU%'s own display smoothing (Theo 2026-11-14: the bar and the number were jittery): a running average kept at
+ * 4 extra bits of precision (Q4), one pole, about 1/32 of the remaining gap closed a draw -- a few tenths of a
+ * second to settle, faster for a bigger real jump than for a one-draw wobble. Two tries at a window/histogram
+ * version (48 and then 24 raw samples kept) each grew the image by thousands of bytes more than their own size,
+ * apparently from shifting other code's addressing in this toolchain; this one keeps its added state to a single
+ * uint16_t, the same size class as a first, too-crude hysteresis try that cost only +60 B, and was measured the
+ * same way. UI-only: song.cpu_q8 and cpu_peak_q8 (the console, the screen reader, #586's shedding) are unchanged;
+ * only this readout is steadied. */
+#define CPU_DISP_SHIFT 4u                     /* Q4: acc_q4 = the shown value's average, x16 */
 static uint32_t cpu_disp_smooth(uint32_t raw)
 {
-    static uint8_t disp = 0xFFu, run;
+    static uint16_t acc_q4 = 0xFFFFu;
+    int32_t target;
     if (raw > 100u) raw = 100u;
-    if (disp == 0xFFu || (uint8_t)raw == disp) {
-        disp = (uint8_t)raw;
-        run = 0;
-    } else if (++run >= CPU_DISP_HOLD) {
-        disp = (uint8_t)raw;
-        run = 0;
-    }
-    return disp;
+    target = (int32_t)(raw << CPU_DISP_SHIFT);
+    if (acc_q4 == 0xFFFFu)
+        acc_q4 = (uint16_t)target;
+    else
+        acc_q4 = (uint16_t)((int32_t)acc_q4 + ((target - (int32_t)acc_q4) >> 5));
+    return acc_q4 >> CPU_DISP_SHIFT;
 }
 /* GLO > SYSTEM: what the voices and the CPU are doing. VOICES: the budget's points sounding now of BUDGET (the one
  * in effect, voice.c voice_budget) as a bar; CPU: the average as a bar, the recent peak a tick (as KNOB 4's numbers) */
