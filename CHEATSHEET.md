@@ -39,7 +39,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across, KNOB 2 rows (on the page last used in each), OCT+ opens (OCT- there: the map again), OCT- or EDIT closes |
 | **PRESETS** on an EDIT page | The next / previous section (FM6: Algo, OP1 to OP6, Pitch, LFO, Ctrl, Store) |
 | **FX** | The insert and send effects |
-| **GLO** | MIXER, PERF (MACRO 1 to 4, the project's mod sources), LANDSCAPE (the music as rain on water), PIECE (the piece's LENGTH, SHAPE, END), CHAIN (the project's FORM, PHRASE, WANDER), ENTRIES (tracks out and back in), SYSTEM (BUDGET: the shared voices; CPU), MIDI IN, MIDI OUT |
+| **GLO** | MIXER, PERF (MACRO 1 to 4, the project's mod sources), PIECE (the piece's LENGTH, SHAPE, END), CHAIN (the project's FORM, PHRASE, WANDER), ENTRIES (tracks out and back in), LANDSCAPE (the music as rain on water), SYSTEM (BUDGET: the shared voices; CPU), MIDI IN, MIDI OUT |
 | On **MIXER**: **KNOB 1** to **4** / with **OCT-** held | Level / pan of track 1 to 4; on MIXER, PERF and LANDSCAPE the keys are GLO's without holding it |
 | **SAVE** | USER (save the sound), PROJECT, PRESETS |
 

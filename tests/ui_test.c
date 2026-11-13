@@ -1535,21 +1535,24 @@ static uint32_t cords_left(uint32_t k)
  * notes row named NOTES OUT (MIDI OUT is the GLO page) */
 static int test_page_order(void)
 {
-    uint32_t i, notes = NPAGES, hit = NPAGES, perf = NPAGES, glob = NPAGES, glo1 = NPAGES;
+    uint32_t i, notes = NPAGES, hit = NPAGES, perf = NPAGES, glob = NPAGES, glo1 = NPAGES, entries = NPAGES, sysp = NPAGES;
     int menu = 0;
     for (i = 0; i < NPAGES; i++) {
         if (str_eq(PAGES[i].title, "NOTES")) notes = i;
         if (str_eq(PAGES[i].title, "DRUM HIT")) hit = i;
         if (str_eq(PAGES[i].title, "PERF")) perf = i;
         if (str_eq(PAGES[i].title, "LANDSCAPE")) glob = i;
+        if (str_eq(PAGES[i].title, "ENTRIES")) entries = i;
+        if (str_eq(PAGES[i].title, "SYSTEM")) sysp = i;
         if (PAGES[i].fam == FAM_GLO && glo1 == NPAGES) glo1 = i;
     }
     for (i = 0; i < MI_COUNT; i++) {
         if (str_eq(MI_NAME[i], "NOTES OUT")) menu |= 1;
         if (str_eq(MI_NAME[i], "MIDI OUT")) menu |= 2;
     }
-    return check("pages: DRUM HIT right after NOTES, GLO: MIXER first, then PERF, LANDSCAPE; menu row NOTES OUT",
-                 hit == notes + 1u && perf + 1u == glob && PAGES[glo1].graph == GR_TRK && glo1 + 1u == perf && menu == 1);
+    return check("pages: DRUM HIT right after NOTES, GLO: MIXER first, then PERF; LANDSCAPE after ENTRIES, before SYSTEM; menu row NOTES OUT",
+                 hit == notes + 1u && entries + 1u == glob && glob + 1u == sysp &&
+                 PAGES[glo1].graph == GR_TRK && glo1 + 1u == perf && menu == 1);
 }
 static int test_cords_page(void)
 {
@@ -4566,16 +4569,23 @@ static int test_product_ux(void)
         song.g[G_BPM] = bpm;
     }
     {
-        static const char *const CYC[9] = {"PERF", "LANDSCAPE", "PIECE", "CHAIN", "ENTRIES", "SYSTEM", "MIDI IN", "MIDI OUT", "MIXER"};
-        uint32_t n;
-        for (ok = 1, n = MELODEE_LOOK ? 0u : 2u; n < 9u; n++) {   /* (PERF, LANDSCAPE: the Mono look's) */
-            uint32_t f;
+        /* the expected order: PAGES[] itself (as open_global walks it), skipping pages this look hides
+         * (e.g. PERF, LANDSCAPE: the Mono look's), so this does not hardcode which pages that is */
+        uint8_t exp[NPAGES];
+        uint32_t n, nexp = 0, i, f;
+        for (i = 0; i < NPAGES; i++)
+            if (PAGES[i].fam == FAM_GLO && page_visible(i) && PAGES[i].graph != GR_TRK)   /* (MIXER, the start, not a tap away) */
+                exp[nexp++] = (uint8_t)i;
+        for (ok = 1, n = 0; n < nexp; n++) {
             for (f = 0; f < 25u; f++) frame();        /* (past the double tap) */
             press(B_GLO);
-            ok &= cur_page()->fam == FAM_GLO && str_eq(cur_page()->title, CYC[n]);
+            ok &= cur_page()->fam == FAM_GLO && str_eq(cur_page()->title, PAGES[exp[n]].title);
         }
+        for (f = 0; f < 25u; f++) frame();
+        press(B_GLO);
+        ok &= cur_page()->graph == GR_TRK;            /* (one more: back to MIXER) */
     }
-    bad += check("GLO cycles MIXER > PERF > LANDSCAPE > PIECE > CHAIN > ENTRIES > SYSTEM > MIDI IN > MIDI OUT > MIXER", ok);
+    bad += check("GLO cycles MIXER > PERF > PIECE > CHAIN > ENTRIES > LANDSCAPE > SYSTEM > MIDI IN > MIDI OUT > MIXER (this look's visible pages)", ok);
     go_title("PIECE");                            /* the planner: LENGTH, SHAPE, PEAK / COUNT, END; USER, OCT- held: a
                                                    * point (KNOB 1), its level (KNOB 2) */
     turn(EN_K1, 2); turn(EN_K2, 5); turn(EN_K3, 1); turn(EN_K4, 1);
@@ -6154,9 +6164,9 @@ static int test_quick_layers(void)
         btn_up(LB[i]); frame();
         ok &= !flash && !ui.home && (LB[i] == B_GLO ? cur_page()->graph == GR_TRK :
                                      LB[i] == B_SCL ? cur_page()->fam == FAM_SCL : str_eq(cur_page()->title, "EDIT 1"));
-        if (LB[i] == B_GLO) {                     /* MIXER, PERF, LANDSCAPE: the keys are GLO's already, no hint;
-                                                   * PIECE: the hint */
-            uint32_t n, m = MELODEE_LOOK ? 3u : 1u;   /* (PERF, LANDSCAPE: the Mono look's) */
+        if (LB[i] == B_GLO) {                     /* MIXER, PERF: the keys are GLO's already, no hint;
+                                                   * PIECE: the hint (LANDSCAPE moved after ENTRIES, still no hint there) */
+            uint32_t n, m = MELODEE_LOOK ? 2u : 1u;   /* (PERF: the Mono look's) */
             hint &= !msg_is(HINT[i]);
             for (n = 1; n <= m; n++) {
                 frames(400);                      /* (past the double tap) */
