@@ -100,7 +100,8 @@ EXPORT uint8_t *web_screen(void)
     return &and_fb[0][0];
 }
 EXPORT uint32_t web_led_buttons(void) { return and_led_buttons(); }
-EXPORT uint32_t web_led_keys(void) { return and_led_keys(); }
+/* the keys' lights: 16 x RGB (bottom row first), 0..255 a channel */
+EXPORT const uint8_t *web_led_keys(void) { return and_led_keys(); }
 EXPORT uint32_t web_sample_rate(void) { return FS; }
 EXPORT uint32_t web_now_ms(void) { return fm1_ms; }
 EXPORT uint32_t web_playing(void) { return song.playing; }

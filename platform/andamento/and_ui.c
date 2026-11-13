@@ -13,7 +13,8 @@
  *   LEFT / RIGHT     the selected track; FUNC + one of the first keys picks a track directly
  *   encoder 1..8     the cell's setting; pushed, back to its default
  *   ENERGY           ENERGY LEVEL on every page
- *   keys             the selected track's scale (bottom row low, top row high), as the FM-1's 16 white keys play it
+ *   keys             SCALE, CHROM, STEP or MUTE (FUNC + key 9..12), and their RGB lights: and_keys.c
+ *   FUNC + UP / DOWN the keys' octave, or STEP's 16 steps shown
  *   PLAY / STOP      transport (PLAY while playing restarts) */
 
 #define AND_NENC 8
@@ -25,12 +26,24 @@ static struct {
     uint8_t page, sub[6], held[AB_COUNT];
     uint16_t cell[AND_NENC];                     /* this page's settings (PID_NONE: an empty cell) */
     int8_t hot;                                  /* the cell turned last (-1: none), shown until hot_ms + 1200 */
-    uint32_t hot_ms, keys;
+    uint32_t hot_ms, say_ms;
     uint16_t hot_pid;
+    const char *say;                             /* a word for the header (a mode, the octave), until say_ms + 1200 */
 } and_ui = {.hot = -1};
 
-/* the FM-1's 16 white keys (F3 .. G5, seq.c key_black): what its keyboard plays as scale degrees */
-static const uint8_t AND_WHITE[16] = {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 26};
+static void and_ui_say(const char *s)
+{
+    static char buf[16];
+    uint32_t i;
+    for (i = 0; s[i] && i + 1u < sizeof buf; i++)
+        buf[i] = s[i];
+    buf[i] = 0;
+    and_ui.say = buf;
+    and_ui.say_ms = fm1_ms | 1u;
+    and_ui.hot_ms = 0;
+}
+
+#include "and_keys.c"                            /* the 16 keys and their lights */
 
 /* ------------------------------------------------------------- pages --- */
 static const char *const AND_PAGE[6] = {"GEN", "SOUND", "MOD", "FX", "PIECE", "MIX"};
@@ -105,6 +118,7 @@ static void and_turn(uint32_t pid, int32_t n)
         scale_share(&trk[song.sel]);
     and_ui.hot_pid = (uint16_t)pid;
     and_ui.hot_ms = fm1_ms | 1u;                 /* (0: nothing turned yet) */
+    and_ui.say_ms = 0;
 }
 
 /* encoder i (0..7 the grid, 8 ENERGY) turned by n detents */
@@ -114,6 +128,7 @@ static void and_enc(uint32_t i, int32_t n)
     if (i == AND_NENC) {
         and_turn(AND_PID_ENERGY, n * 2);
         and_ui.hot = -1;
+        and_keys.energy_ms = fm1_ms | 1u;        /* (the keys show it) */
     } else if (i < AND_NENC && and_ui.cell[i] != PID_NONE) {
         and_turn(and_ui.cell[i], n);
         and_ui.hot = (int8_t)i;
@@ -132,6 +147,9 @@ static void and_enc_push(uint32_t i)
     and_ui.hot = i < AND_NENC ? (int8_t)i : -1;
     and_ui.hot_pid = (uint16_t)pid;
     and_ui.hot_ms = fm1_ms | 1u;
+    and_ui.say_ms = 0;
+    if (pid == AND_PID_ENERGY)
+        and_keys.energy_ms = fm1_ms | 1u;
 }
 
 static void and_track(int32_t d)
@@ -151,6 +169,8 @@ static void and_button(uint32_t b, uint32_t down)
             and_ui.sub[b] = (uint8_t)((and_ui.sub[b] + 1u) % AND_SUBS[b]);
         and_ui.page = (uint8_t)b;
         and_ui.hot = -1;
+    } else if ((b == AB_UP || b == AB_DOWN) && and_ui.held[AB_FUNC]) {
+        and_keys_shift(b == AB_UP ? 1 : -1);
     } else if (b == AB_UP || b == AB_DOWN) {
         uint32_t p = and_ui.page;
         and_ui.sub[p] = (uint8_t)((and_ui.sub[p] + (b == AB_UP ? AND_SUBS[p] - 1u : 1u)) % AND_SUBS[p]);
@@ -163,22 +183,13 @@ static void and_button(uint32_t b, uint32_t down)
     }
 }
 
-/* key k (0..7 the bottom row, 8..15 the top) down or up */
+/* key k (0..7 the bottom row, 8..15 the top) down or up: and_keys.c */
 static void and_key(uint32_t k, uint32_t down)
 {
-    uint32_t bit;
-    if (k >= 16u)
-        return;
-    if (down && and_ui.held[AB_FUNC]) {          /* FUNC + a key: that track */
-        if (k < NTRK)
-            song.sel = (uint8_t)k;
-        return;
-    }
-    bit = 1u << AND_WHITE[k];
     if (down)
-        and_ui.keys |= 1u << k, fm1_in.notes |= bit;
+        and_keys_down(k);
     else
-        and_ui.keys &= ~(1u << k), fm1_in.notes &= ~bit;
+        and_keys_up(k);
 }
 
 /* --------------------------------------------------------------- draw --- */
@@ -195,12 +206,15 @@ static void and_draw(void)
 {
     char s[24], val[16];
     uint32_t i, tr, hot = and_ui.hot_ms && fm1_ms - and_ui.hot_ms < 1200u;
+    uint32_t say = and_ui.say_ms && fm1_ms - and_ui.say_ms < 1200u;
     const pid_entry_t *e;
     and_cells();
     and_clear();
     /* the header, a lit bar: the page (or the setting just turned, by its full name), the track, transport, tempo */
     and_fill(0, 0, AND_W, 9, 15);
-    if (hot && (e = pid_find(and_ui.hot_pid)))
+    if (say)
+        and_text(2, 1, and_ui.say, 0, 15);
+    else if (hot && (e = pid_find(and_ui.hot_pid)))
         and_text(2, 1, e->name, 0, 15);
     else {
         int32_t x = and_text(2, 1, AND_PAGE[and_ui.page], 0, 5);
@@ -213,6 +227,7 @@ static void and_draw(void)
         s[1] = (char)('1' + song.sel);
         s[2] = 0;
         and_text(52, 1, s, 0, 2);
+        and_text(66, 1, AK_SHORT[and_keys.mode], 0, 3);   /* the keys' mode */
     }
     and_text(92, 1, song.playing ? ">" : "-", song.playing ? 0 : 6, 1);
     {
@@ -269,7 +284,7 @@ static void and_draw(void)
     }
 }
 
-/* the LEDs: bit b = button b lit; keys: bit k = key k lit */
+/* the LEDs: bit b = button b lit; the keys: 16 x RGB, 0..255 a channel (and_keys.c) */
 static uint32_t and_led_buttons(void)
 {
     uint32_t m = 1u << and_ui.page, b;
@@ -280,7 +295,8 @@ static uint32_t and_led_buttons(void)
         m |= 1u << AB_PLAY;
     return m;
 }
-static uint32_t and_led_keys(void)
+static const uint8_t *and_led_keys(void)
 {
-    return and_ui.keys;
+    and_keys_lights();
+    return &and_keys.rgb[0][0];
 }
