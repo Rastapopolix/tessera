@@ -59,6 +59,7 @@ static void web_ms(void)
         uint32_t k;
         web_samples_due -= 1000u * CTL;
         mix_block(o, CTL);
+        and_master_block(o, CTL);                /* (the master bus: tilt EQ then compressor, and_master.c) */
         and_ext_block();                         /* (tracks 5..8: their steps on the clock mix_block moved on) */
         for (k = 0; k < CTL; k++) {
             uint32_t i = (ring_w++ % RING) * 2u;

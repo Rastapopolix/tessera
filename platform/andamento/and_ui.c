@@ -11,7 +11,8 @@
  * Controls (first stage):
  *   HOME             the piece at a glance: ENERGY's arc over time, its rests and entries, the 8 tracks
  *                    (and_home.c); Andamento starts here, NO comes back here from any page
- *   page button      that page; pressed again, its next sub-page (also UP / DOWN)
+ *   page button      that page; pressed again, its next sub-page (also UP / DOWN); FX's 2nd sub-page is the
+ *                    master bus, tilt EQ then compressor (and_master.c), song-wide
  *   LEFT / RIGHT     the selected track, 1..8; FUNC + one of the first keys picks a track directly. Tracks 5..8 are
  *                    the external ones (and_ext.c): GEN their generator and clock, SOUND their outputs (OUT)
  *   encoder 1..8     the cell's setting; pushed, back to its default (HOME: tracks 1..8's ENERGY DEPTH)
@@ -64,21 +65,29 @@ static void and_ui_say(const char *s)
 }
 
 #include "and_ext.c"                             /* tracks 5..8: generators out to MIDI and CV / gate */
+#include "and_master.c"                           /* the master bus: tilt EQ then compressor, FX page's 2nd sub-page */
 
-/* a setting of track tr (0..7): Tessera's (pid.c) or, for 5..8, an external track's (AE_PID + AE_*); a song-wide one
- * of Tessera's on an external track is track 1's */
+/* a setting of track tr (0..7): Tessera's (pid.c), an external track's (AE_PID + AE_*), or the song-wide master
+ * bus (AM_PID + AM_*, and_master.c: tr does not matter, it is the same for every track) */
 static int and_is_ext(uint32_t pid, uint32_t tr) { return tr >= NTRK && pid >= AE_PID && pid < AE_PID + AE_NPRM; }
+static int and_is_master(uint32_t pid) { return pid >= AM_PID && pid < AM_PID + AM_NPRM; }
 static const param_desc_t *and_desc(uint32_t pid, uint32_t tr)
 {
+    if (and_is_master(pid))
+        return am_desc(pid - AM_PID);
     return and_is_ext(pid, tr) ? ae_desc(pid - AE_PID, tr - NTRK) : pid >= AE_PID ? 0 : pid_desc(pid, tr < NTRK ? tr : 0);
 }
 static int32_t and_get(uint32_t pid, uint32_t tr)
 {
+    if (and_is_master(pid))
+        return am_get(pid - AM_PID);
     return and_is_ext(pid, tr) ? ae_get(pid - AE_PID, tr - NTRK) : pid >= AE_PID ? 0 : pid_get(pid, tr < NTRK ? tr : 0);
 }
 static void and_set(uint32_t pid, uint32_t tr, int32_t v)
 {
-    if (and_is_ext(pid, tr))
+    if (and_is_master(pid))
+        am_set(pid - AM_PID, v);
+    else if (and_is_ext(pid, tr))
         ae_set(pid - AE_PID, tr - NTRK, v);
     else if (pid < AE_PID)
         pid_set(pid, tr < NTRK ? tr : 0, v);
@@ -86,6 +95,8 @@ static void and_set(uint32_t pid, uint32_t tr, int32_t v)
 static const char *and_name(uint32_t pid, uint32_t tr)   /* the setting's full name (the header, when turned) */
 {
     const pid_entry_t *e;
+    if (and_is_master(pid))
+        return am_desc(pid - AM_PID)->label;
     if (and_is_ext(pid, tr))
         return ae_desc(pid - AE_PID, tr - NTRK)->label;
     return pid < AE_PID && (e = pid_find(pid)) ? e->name : "";
@@ -116,7 +127,8 @@ static void and_mute(uint32_t tr, int on)
 
 /* ------------------------------------------------------------- pages --- */
 static const char *const AND_PAGE[6] = {"GEN", "SOUND", "MOD", "FX", "PIECE", "MIX"};
-static const uint8_t AND_SUBS[6] = {2, 2, 2, 1, 2, 1};
+static const uint8_t AND_SUBS[6] = {2, 2, 2, 2, 2, 1};
+#define AM_C(x) (AM_PID + (x))
 static const uint16_t AND_FIXED[6][2][AND_NENC] = {
     [0][1] = {0x20f, 0x20e, 0x20d, 0x210, 0x211, 0x212, 0x26e, 0x26a},   /* EVOLVE AMT EVERY LOCK ROLL, FORM, GRAVITY */
     [1][0] = {0x06f, 0x070, 0x071, 0x072, 0x073, 0x074, 0x075, 0x076},   /* the engine's 8 */
@@ -124,6 +136,8 @@ static const uint16_t AND_FIXED[6][2][AND_NENC] = {
     [2][0] = {0x009, 0x00a, 0x00d, 0x00e, 0x00f, 0x010, 0x05c, 0x00c},   /* the LFO */
     [2][1] = {0x031, 0x032, 0x033, 0x034, 0x035, 0x036, 0x28d, 0x28e},   /* MOD 1, MOD 2, MACRO 1, 2 */
     [3][0] = {0x06c, 0x06d, 0x06e, 0x11b, 0x11c, 0x11f, 0x120, 0x127},   /* sends, send FX 1 and 2, return */
+    [3][1] = {AM_C(AM_TILT), AM_C(AM_THRESH), AM_C(AM_RATIO), AM_C(AM_ATTACK), AM_C(AM_RELEASE), AM_C(AM_MAKEUP),
+              AM_C(AM_MIX), PID_NONE},                                   /* the master bus (and_master.c): song-wide */
     [4][0] = {0x280, 0x281, 0x282, 0x284, 0x259, 0x25a, 0x27b, 0x27d},   /* PIECE, ENERGY ARC RESTS, ENTRIES */
     [4][1] = {0x272, 0x273, 0x274, 0x27c, 0x27e, 0x26d, 0x283, 0x279},   /* CHAIN, ENTRIES, DEPTH, COUNT, FOLLOW */
     [5][0] = {0x000, 0x027, 0x028, 0x100, 0x101, 0x019, 0x01a, 0x01c},   /* LEVEL PAN MUTE, TEMPO SWING, ROOT SCALE TRANS */
@@ -165,7 +179,8 @@ static const uint16_t AND_EXT_CELLS[6][AND_NENC] = {
     {AE_C(AE_GEN), AE_C(AE_P1), AE_C(AE_P2), AE_C(AE_P3), AE_C(AE_SEED), AE_C(AE_DIV), AE_C(AE_OCT), AE_C(AE_GATE)},
     {AE_C(AE_CHAN), AE_C(AE_VEL), AE_C(AE_GATE), AE_C(AE_OCT), AE_C(AE_DEPTH), AE_C(AE_MUTE), PID_NONE, PID_NONE},
     {PID_NONE, PID_NONE, PID_NONE, PID_NONE, PID_NONE, PID_NONE, PID_NONE, PID_NONE},
-    {PID_NONE, PID_NONE, PID_NONE, PID_NONE, PID_NONE, PID_NONE, PID_NONE, PID_NONE},
+    {AM_C(AM_TILT), AM_C(AM_THRESH), AM_C(AM_RATIO), AM_C(AM_ATTACK), AM_C(AM_RELEASE), AM_C(AM_MAKEUP),
+     AM_C(AM_MIX), PID_NONE},                       /* song-wide: the same master bus as an internal track's FX2 */
     {0x280, 0x281, 0x282, 0x284, 0x259, 0x25a, 0x27b, 0x27d},
     {AE_C(AE_CHAN), AE_C(AE_VEL), AE_C(AE_MUTE), 0x100, 0x101, 0x019, 0x01a, AE_C(AE_DEPTH)},
 };
@@ -182,7 +197,9 @@ static void and_cells(void)
     if (and_ui.ext >= 0) {                       /* (an external track: one sub-page each) */
         for (i = 0; i < AND_NENC; i++)
             and_ui.cell[i] = AND_EXT_CELLS[p][i];
-        if (and_ext.t[and_ui.ext % AE_N].gen == AE_OFF)
+        /* GEN's and OUT's cells 1..3 are the generator's own: nothing to show with it OFF. FX is the master bus
+         * (and_master.c), the same whatever the generator is doing, so it is left alone. */
+        if (p != AB_FX && and_ext.t[and_ui.ext % AE_N].gen == AE_OFF)
             and_ui.cell[1] = and_ui.cell[2] = and_ui.cell[3] = PID_NONE;
         return;
     }
@@ -194,9 +211,10 @@ static void and_cells(void)
             and_ui.cell[i] = AND_FIXED[p][s][i] ? AND_FIXED[p][s][i] : PID_NONE;
     if (p == 0 && s == 0)
         return;
-    for (i = 0; i < AND_NENC; i++)               /* (an engine's unused knob: no cell) */
+    for (i = 0; i < AND_NENC; i++)               /* (an engine's unused knob: no cell; and_desc, not pid_desc, so
+                                                   * AM_* (and_master.c) is not mistaken for an unknown pid) */
         if (and_ui.cell[i] != PID_NONE) {
-            const param_desc_t *d = pid_desc(and_ui.cell[i], song.sel);
+            const param_desc_t *d = and_desc(and_ui.cell[i], song.sel);
             if (!d || d->max <= d->min)
                 and_ui.cell[i] = PID_NONE;
         }
