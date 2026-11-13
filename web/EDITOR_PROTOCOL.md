@@ -409,6 +409,29 @@ grid lives in the steps themselves, so every engine has it:
   Melodee's own storage; never the app or the update area.
 
 
+## The panel for the web simulator (command 75)
+
+The web simulator (`web/sim`) mirrors a connected FM-1's panel: its knobs, buttons, keys and MASTER play
+the simulator. The firmware side is `ed_panel` in `editor.c`.
+
+| cmd | Request | Reply |
+| --- | --- | --- |
+| 75 PANEL | 1 on, 0 off | on (0/1) |
+
+The simulator sends `PANEL 1` about once a second while it listens and `PANEL 0` when it stops. Three
+seconds without a request, or a USB reset, turns it off too. Firmware without it (3.5 and older) gives no reply. While it is on, the
+device also sends these channel messages on **channel 16**, besides its usual MIDI OUT:
+
+| What | Message |
+| --- | --- |
+| Buttons, by printed label (FX SCL ENV LFO EDIT GLO HOME SAVE ARP SEQ PLAY REC OCT- OCT+) | CC 80..93, 127 pressed, 0 let go |
+| Keys, F3 .. G5 | note on / off 0..26 (key number, not pitch), velocity 127 |
+| Knobs SELECT, ALGORITHM, PRESETS, KNOB 1..4 (by printed label, before TRACK KNOB) | CC 20..26, relative: 1..63 clockwise, 65..127 back (sign bit) |
+| MASTER | CC 27, 0..127 |
+
+Within one pass, buttons go before keys and keys before knobs, so a held button reaches the simulator before
+the knob it is held with. A message waits until the queue has room, so none is lost.
+
 ## Pattern banks (commands 73–74)
 
 INFO sends 0 in the former untagged CHAIN_ROWS byte, then retains the tagged UI, motion and backup

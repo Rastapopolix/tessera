@@ -321,6 +321,7 @@ static void fm1_main(void)
                 knob += (a * 16 - knob) / 8;
                 k10 = (uint32_t)(knob / 16);
                 song.master_q12 = (k10 * k10) >> 8;            /* 0 .. ~4096 */
+                panel_out_master = (uint16_t)k10;              /* (editor.c ED_PANEL) */
             }
         }
         {   /* OCT- + OCT+ held 5 s: enter UBOOT with RAM intact (debug / update); a countdown

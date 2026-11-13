@@ -648,10 +648,60 @@ static int user_tunings(void)
     return bad;
 }
 
+/* PANEL (75): the web simulator mirrors the FM-1's panel; channel 16 carries buttons, keys, knobs and MASTER */
+static uint32_t panel_pkts(uint32_t *out, uint32_t max)
+{
+    uint32_t n = 0;
+    while (so_r != so_w) {
+        uint32_t p = sx_out_q[so_r++ % SXQ];
+        if (n < max) out[n++] = p >> 8 & 0xFFFFFFu;                     /* status | d1 << 8 | d2 << 16 */
+    }
+    return n;
+}
+#define PK(st, d1, d2) ((uint32_t)(st) | (uint32_t)(d1) << 8 | (uint32_t)(d2) << 16)
+static int panel_protocol(void)
+{
+    static const uint8_t on[1] = {1}, off[1] = {0}, two[2] = {1, 1};
+    uint32_t p[16], n, bad = 0;
+    reset(); panel_init();
+    fm1_in.buttons = fm1_in.notes = 0;
+    bad += check("PANEL without its one byte gets no reply", request(ED_PANEL, two, 2) == 0 && !panel_out);
+    fm1_in.buttons = 1u << panel.btn[B_PLAY]; fm1_in.notes = 1u << 7;
+    panel_out_steps[EN_K1] = 5;                                          /* (turned while off: not sent) */
+    n = request(ED_PANEL, on, 1);
+    bad += check("PANEL 1 -> on, reply F0 7D 46 4C 4B 01 F7",
+                 n == 7u && host_wire[4] == 75u && host_wire[5] == 1u && host_wire[6] == 0xF7u && panel_out);
+    panel_out_steps[EN_K1] = -2; panel_out_steps[EN_SELECT] = 70; panel_out_master = 1023;
+    ed_service(); n = panel_pkts(p, 16);
+    bad += check("held PLAY, key 7, SELECT +63 of 70, KNOB 1 -2, MASTER: in that order on ch 16",
+                 n == 5u && p[0] == PK(0xBF, 80 + B_PLAY, 127) && p[1] == PK(0x9F, 7, 127) && p[2] == PK(0xBF, 20, 63) &&
+                 p[3] == PK(0xBF, 23, 66) && p[4] == PK(0xBF, 27, 127));
+    ed_service(); n = panel_pkts(p, 16);
+    bad += check("SELECT's other 7 steps next", n == 1u && p[0] == PK(0xBF, 20, 7));
+    ed_service(); n = panel_pkts(p, 16);
+    bad += check("nothing new: nothing sent", n == 0u);
+    panel_out_master = 1021; ed_service(); n = panel_pkts(p, 16);
+    bad += check("MASTER moved by less than 4: not sent", n == 0u);
+    fm1_in.buttons = 0; fm1_in.notes = 0; ed_service(); n = panel_pkts(p, 16);
+    bad += check("let go: PLAY CC 0, key 7 note off", n == 2u && p[0] == PK(0xBF, 80 + B_PLAY, 0) && p[1] == PK(0x8F, 7, 0));
+    so_w = so_r + SXQ - 1u; fm1_in.notes = 3u; ed_service();
+    so_r = so_w; ed_service(); n = panel_pkts(p, 16);
+    bad += check("a full queue: the rest waits, none lost", n == 1u && p[0] == PK(0x9F, 1, 127));
+    fm1_ms += 3001u; fm1_in.notes = 0; ed_service(); n = panel_pkts(p, 16);
+    bad += check("3 s without PANEL 1: off, nothing sent", n == 0u && !panel_out);
+    request(ED_PANEL, on, 1); usb.resets++; ed_service(); n = panel_pkts(p, 16);
+    bad += check("a USB reset: off", !panel_out);
+    request(ED_PANEL, on, 1); ed_service(); panel_pkts(p, 16);                 /* (MASTER again, from a new start) */
+    n = request(ED_PANEL, off, 1);
+    bad += check("PANEL 0 -> off, reply 0", n == 7u && host_wire[5] == 0u && !panel_out);
+    fm1_in.notes = 0;
+    return (int)bad;
+}
+
 int main(void)
 {
     int bad = library_transfers() + native_motion_protocol() + bank_protocol() + preferences() + framing() + uart_recovery() + steps() + song_protocol() + malformed_saves() + names_whole() +
-              native_protocol() + fm6_patches() + user_preset_roundtrip() + concert_pitch() + scale_catalogue() + user_tunings();
+              native_protocol() + fm6_patches() + user_preset_roundtrip() + concert_pitch() + scale_catalogue() + user_tunings() + panel_protocol();
     printf("%s\n", bad ? "EDITOR TEST FAILED" : "editor test passed");
     return bad != 0;
 }

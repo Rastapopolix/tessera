@@ -2,7 +2,8 @@
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
 /* Editor protocol: SysEx for the web editor (web/EDITOR_PROTOCOL.md; v2 = user presets + live sync,
  * v3 = four tracks: the v1 / v2 commands act on the selected track, cmds 27-30 reach any track;
- * v4 = TRACK_PARAM (31) and the TRACK_CHANGED push (32), enabled by WATCH bit 1).
+ * v4 = TRACK_PARAM (31) and the TRACK_CHANGED push (32), enabled by WATCH bit 1; PANEL (75): the web simulator
+ * mirrors this panel).
  *   F0 7D 46 4C cmd args.. F7     (7D = non-commercial ID, "FL")
  * Values are 14 bit, two 7-bit bytes LSB first, offset by 8192 (so -8192..8191).
  * Every request gets a reply with the same cmd; 23/24/26 are also pushed
@@ -19,7 +20,7 @@ enum { ED_INFO = 1, ED_GET, ED_SET, ED_DUMP, ED_DESC, ED_STEP_GET, ED_STEP_SET, 
        ED_TRACK_PARAM, ED_TRACK_CHANGED, ED_SONG,
        ED_UI_STATE, ED_UI_SET, ED_UI_PALETTES, ED_FAV_GET, ED_FAV_SET,
        ED_MOTION = 64, ED_BACKUP_LIST, ED_BACKUP_GET, ED_BACKUP_PUT,                               /* v6: song chain */
-       ED_AUDIO_STATS = 72, ED_PATTERN, ED_BANK_SONG };                                       /* USB audio diagnostics (68..71: FM6, editor_fm6.c) */
+       ED_AUDIO_STATS = 72, ED_PATTERN, ED_BANK_SONG, ED_PANEL };                                       /* USB audio diagnostics (68..71: FM6, editor_fm6.c) */
 #if MELODEE_CORE1_TEST && MELODEE_DUAL_CORE
 enum { ED_CORE1_TEST = 79 };                         /* test builds only: CPU1 failure injection */
 static void core1_test_stall(void *unused) { (void)unused; for (;;) ; }
@@ -297,6 +298,58 @@ static void ed_motion_reply(uint32_t k, uint32_t rc)
         ed_b((e->place & 63u) | ((e->param & 128u) >> 1)); ed_b(e->param); ed_v(e->value);
     }
 }
+/* PANEL (75): the web simulator (web/sim) mirrors this panel. It asks with 1 about once a second while it listens
+ * and 0 when it stops; 3 s without one, or a USB reset, stops too. While on, channel 16 also carries, in this order:
+ * the buttons CC 80..93 by printed label (B_FX .. B_OCTUP: 127 pressed, 0 let go), the keys as notes 0..26 (key k,
+ * F3 .. G5: on 127, off), the knobs CC 20..26 (SELECT .. KNOB 4, panel_enc: relative, 1..63 clockwise, 65..127 back)
+ * and MASTER CC 27 (0..127). The tracks' MIDI OUT notes go out as always. Into the SysEx queue (main loop only), a
+ * change sent only when there is room for it, so none is lost */
+static struct { uint32_t ms, resets, btn, keys; uint16_t master; } ed_pn;
+static int ed_pn_put(uint32_t st, uint32_t d1, uint32_t d2)
+{
+    if (so_w - so_r >= SXQ)
+        return 0;
+    sx_out_q[so_w % SXQ] = st >> 4 | st << 8 | d1 << 16 | d2 << 24;
+    RING_PUBLISH();
+    so_w++;
+    return 1;
+}
+static void ed_panel(void)
+{
+    uint32_t i, m = 0, d, on, k10 = panel_out_master, b = fm1_in.buttons, notes = fm1_in.notes & ((1u << 27) - 1u);
+    if (!panel_out)
+        return;
+    if (!usb.config || usb.resets != ed_pn.resets || fm1_ms - ed_pn.ms > 3000u) {
+        panel_out = 0;
+        return;
+    }
+    for (i = 0; i < NB; i++)
+        m |= (b >> panel.btn[i] & 1u) << i;
+    for (d = m ^ ed_pn.btn; d; d &= d - 1u) {
+        i = (uint32_t)__builtin_ctz(d);
+        if (!ed_pn_put(0xBFu, 80u + i, (m >> i & 1u) * 127u))
+            return;
+        ed_pn.btn ^= 1u << i;
+    }
+    for (d = notes ^ ed_pn.keys; d; d &= d - 1u) {
+        i = (uint32_t)__builtin_ctz(d);
+        on = notes >> i & 1u;
+        if (!ed_pn_put(on ? 0x9Fu : 0x8Fu, i, on * 127u))
+            return;
+        ed_pn.keys ^= 1u << i;
+    }
+    for (i = 0; i < NE; i++) {
+        int32_t s = panel_out_steps[i];
+        s = s > 63 ? 63 : s < -63 ? -63 : s;
+        if (s && !ed_pn_put(0xBFu, 20u + i, s > 0 ? (uint32_t)s : (uint32_t)(64 - s)))
+            return;
+        panel_out_steps[i] = (int16_t)(panel_out_steps[i] - s);
+    }
+    d = k10 > ed_pn.master ? k10 - ed_pn.master : ed_pn.master - k10;   /* (a step of 4: no flicker from the pot) */
+    if (d >= 4u && ed_pn_put(0xBFu, 27u, (k10 * 127u + 511u) / 1023u))
+        ed_pn.master = (uint16_t)k10;
+}
+
 static int ed_args_ok(uint32_t cmd, const uint8_t *a, uint32_t n)
 {
     switch (cmd) {
@@ -309,7 +362,7 @@ static int ed_args_ok(uint32_t cmd, const uint8_t *a, uint32_t n)
     case ED_SET:
         return n == 4u;
     case ED_STEP_GET: case ED_NAMES: case ED_SMP_BEGIN: case ED_SMP_ERASE:
-    case ED_UP_GET: case ED_UP_LOAD: case ED_UP_ERASE: case ED_WATCH: case ED_TRACK_DUMP:
+    case ED_UP_GET: case ED_UP_LOAD: case ED_UP_ERASE: case ED_WATCH: case ED_TRACK_DUMP: case ED_PANEL:
         return n == 1u || (cmd == ED_NAMES && n == 3u);
     case ED_STEP_SET:
         return n == 9u || n == 12u || (n == 13u && a[12] <= 100u);                 /* notes only, or the complete grid extension */
@@ -893,6 +946,17 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
     case ED_PING:
         ed_b(0);
         break;
+    case ED_PANEL:                                         /* on -> on (ed_panel) */
+        if (!panel_out && (a[0] & 1u)) {
+            memset(panel_out_steps, 0, sizeof panel_out_steps);
+            ed_pn.btn = ed_pn.keys = 0;
+            ed_pn.master = 0xFFFFu;
+        }
+        panel_out = a[0] & 1u;
+        ed_pn.ms = fm1_ms;
+        ed_pn.resets = usb.resets;
+        ed_b(panel_out);
+        break;
     case ED_TRACK:                                         /* [track] -> selected, NTRK, per track: engine, preset, level, mute, armed */
         if (na >= 1u && a[0] < NTRK && a[0] != song.sel) {
             track_select(a[0]);
@@ -1057,6 +1121,7 @@ static void ed_service(void)
     const uint8_t *p;
     uint32_t n;
     ed_sync();                                             /* v2 pushes (while watched) */
+    ed_panel();                                            /* PANEL (while the simulator mirrors it) */
     if(!ota_frame_get(&p,&n))return;
 #ifdef ANN_VER
     if (ann_frame(p, n, fm1_ms)) {                         /* a screen reader's HELLO, BYE or WHERE (announce.c) */
