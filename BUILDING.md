@@ -100,6 +100,7 @@ Build options (environment; most use `0` or `1`; defaults in `firmware/src/build
 | `MELODEE_ICONS` | 1 | parameter icons on the knob cards |
 | `MELODEE_ACCESS` | 1 (host tests: 0) | screen reader support in place of the help cards (issue #430): `1` leaves out the cards (ARP held + a knob) and their texts, ~22 KB flash, and the cord destinations' sentences (cord.h `CD_FULL`, ~5.5 KB). MIDI LEARN and the mod shortcut still find a knob's parameter (`help_find`); docs/PARAMETERS.md keeps every text. `0` builds the cards back in (no room left for much else). What it says is put into words by `firmware/words.tsv` (`tools/gen_words.py`: `web/words/<id>.json`, published on the site, never changed); `tools/speak_audit.sh [../fm1-reader]` checks every page, knob, row, value and message with fm1-reader's audit |
 | `MELODEE_COMPRESS_AUDIO` | 1 | the five SRAM load images (`.ram_text`, `.dsp_text`, `.dsp_tables`, `.data`, `.audio_text`) stored as raw LZMA1 (`tools/boot_audio.py`) and unpacked by `fm1_cstart` before anything runs from SRAM (`firmware/src/boot_lzma.h`; a record that does not unpack exactly enters update mode); `0` stores them raw and copies them by words |
+| `MELODEE_FS` | 44100 | the sample rate, read by `tools/gen_tables.py` into `FS` (`melodee_tables.h`); every rate-dependent number in the firmware is derived from it. The FM-1 is 44.1 kHz; 48000 is for other hardware (a Daisy Seed runs its codec at 48 or 96 kHz). `tests/fs_test.py` checks every engine plays in tune at 48 kHz |
 
 ## Samples
 

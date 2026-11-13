@@ -8,6 +8,10 @@
  * its meaning. */
 #pragma once
 #include <stdint.h>
+#ifndef FS
+#define FS 44100                               /* (the sample rate: melodee_tables.h, tools/gen_tables.py) */
+#endif
+#define X0X_TAU ((int)(FS / 100))              /* a glide's time constant: 10 ms in samples */
 
 /* X0X's pan: a balance law, pot 0..127, 64 = centre. Centre is 1 on both sides exactly (a centred
  * mix is the mono one, bit for bit); toward a side the other fades along a quarter cosine and the
@@ -32,7 +36,7 @@ static inline float x0x_glide_block(float *cur, float tgt, int n)
     float c = *cur, e;
     if (c == tgt)
         return 0.0f;
-    e = (tgt - c) * (n >= 441 ? 1.0f : (float)n * (1.0f / 441.0f));   /* ~1 - exp(-n / 441) for small n */
+    e = (tgt - c) * (n >= X0X_TAU ? 1.0f : (float)n * (1.0f / (float)X0X_TAU));   /* ~1 - exp(-n / X0X_TAU) for small n */
     if (tgt - (c + e) < 1e-5f && (c + e) - tgt < 1e-5f)
         e = tgt - c;
     *cur = c + e;

@@ -11,7 +11,7 @@
  * They run every audio block (cord_tick), stopped or playing; PLAY starts every track's from the place its SEED gives,
  * so a piece replays. Settings: tessera.org_speed / org_rate (the Tessera block, since TSR5). Included by tessera.c. */
 
-#define ORG_BPS (44100.0f / 32.0f)                    /* audio blocks a second (32 samples each: CTL) */
+#define ORG_BPS ((float)FS / 32.0f)                   /* audio blocks a second (32 samples each: CTL) */
 #define ORG_LOOP 6.45f                                /* the jerk system's time units for one turn, about */
 
 typedef struct {

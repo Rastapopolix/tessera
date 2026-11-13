@@ -144,7 +144,7 @@ G_MIDI="midi_control_test midi_out_test seq_dir_test midi_timing_test midi_scale
 G_USB="usb_audio_test usb_audio_driver_test usb_audio_tracks_test usb_host_test usb_audio_desc_test"
 G_SCALE="scale_test microtonal_test scale_picker_test tune_test uscale_test tuning_test midi_scale_test"
 G_AUDIO="regress audio_test audio_matrix_test ram_audio_test ram_voice_budget_test audio_admission_test resources_test
-    dsp_tracks dual_core_test target_budget"
+    dsp_tracks dual_core_test target_budget fs_test"
 eng() { QENG="$QENG $1"; shift; QSEL="$QSEL regress target_budget $*"; }
 qmap() {
     case $1 in
@@ -419,6 +419,8 @@ sound && t "FX: three-slot chains, reverb decay/density/rate conversion, smooth 
 core && t "EQ accelerator: register layout, isolated histories and bounded timeout" eq_hw_test
 core && job web_tests
 sound && [ $TABLES = 1 ] && job dsp_tracks
+sound && [ $TABLES = 1 ] && run "sample rate: every engine in tune at 48 kHz as at 44.1 (FS, tools/gen_tables.py)" \
+    python3 tests/fs_test.py "$OUT/fs"
 
 if core; then
     t "flash storage (A/B, torn writes)" storage_test

@@ -45,9 +45,9 @@ static const uint8_t DR_OF_DVT[DVT_COUNT] = {    /* fallback GM role (DVT_*) -> 
 
 #define DR8_OUT 6800                             /* the kit's output into DRUM's (Q12): the 808 BD as loud as PUNCH */
 #define DR_V1 16384                              /* 1 V of the trigger and the pulse shaper */
-#define DR_P1 44u                                /* the trigger pulse: 1 ms */
+#define DR_P1 (FS / 1000u)                       /* the trigger pulse: 1 ms */
 #define DR_PEND 200u                             /* the shaped pulse has settled */
-#define DR_MS(ms) ((uint32_t)(ms) * 441u / 10u)  /* ms -> samples */
+#define DR_MS(ms) ((uint32_t)(ms) * (FS / 100u) / 10u)  /* ms -> samples */
 #define DR_TAU(ms) (DR_MS(ms) * 10u / 46u)       /* time constant of a decay reaching -40 dB at ms */
 #define DR_LVL(vel) ((int32_t)(vel) * 132104)    /* envelope level, Q24 (velocity 127 = 1.0) */
 #define DR_NOISY ((1u << DR_SD) | (1u << DR_LT) | (1u << DR_MT) | (1u << DR_HT) | (1u << DR_CP) | (1u << DR_MA))
@@ -100,9 +100,16 @@ static inline __attribute__((always_inline)) int32_t dr_softclip(int32_t x)
     else y = TANH_Q15[i] + (((TANH_Q15[i + 1] - TANH_Q15[i]) * (a & 255)) >> 8);
     return x < 0 ? -y : y;
 }
+#if FS == 44100                                  /* (the FM-1: integers, as its compiler wants for constants) */
+#define DR_PI_FS 4781u                           /* pi / FS per 1/16 Hz, Q30 */
+#define DR_2PI_FS 2390u                          /* 2 pi / FS, Q24 */
+#else
+#define DR_PI_FS ((uint32_t)(3.14159265358979323846 * 1073741824.0 / (16.0 * FS) + 0.5))
+#define DR_2PI_FS ((uint32_t)(2.0 * 3.14159265358979323846 * 16777216.0 / FS + 0.5))
+#endif
 static inline __attribute__((always_inline)) int32_t dr_freq(uint32_t hz16) /* 2 sin(pi fc / FS), Q30 */
 {
-    int32_t x = (int32_t)(hz16 * 4781u);         /* pi fc / FS, Q30 */
+    int32_t x = (int32_t)(hz16 * DR_PI_FS);      /* pi fc / FS, Q30 */
     int32_t x3 = (int32_t)(((((int64_t)x * x) >> 30) * x) >> 30);
     return 2 * x - x3 / 3;                       /* 2 sin x ~ 2 x - x^3 / 3 */
 }
@@ -133,7 +140,7 @@ static inline __attribute__((always_inline)) int32_t dr_damp(int32_t f, uint32_t
 
 static inline __attribute__((always_inline)) int32_t dr_lp1(uint32_t hz) /* one-pole coefficient, Q14 */
 {
-    int32_t w = (int32_t)((hz * 2390u) >> 10);   /* 2 pi fc / FS, Q14 */
+    int32_t w = (int32_t)((hz * DR_2PI_FS) >> 10);   /* 2 pi fc / FS, Q14 */
     return w * 16384 / (16384 + w / 2);
 }
 
@@ -407,7 +414,7 @@ static __attribute__((noinline, section(".dsp_text"))) void dr_cl(dr8_t *d, int3
 }
 
 /* -------------------------------------------------------- noise voices --- */
-#define DR_CP_GAP 441u                           /* the sawtooth: a burst every 10 ms, */
+#define DR_CP_GAP (FS / 100u)                    /* the sawtooth: a burst every 10 ms, */
 #define DR_CP_N 3u                               /* this many fast ones, then a slower last one */
 #define DR_CP_REV 9000                           /* the reverb envelope, Q15 */
 #define DR_CP_G 10445                            /* out, Q12 */

@@ -28,7 +28,7 @@ static void seq_strum_strike(track_t *t, uint32_t tr, uint32_t vel)
         down = (seq_st_alt >> tr) & 1u;
         seq_st_alt ^= (uint8_t)(1u << tr);
     }
-    gap = seq_units_of(441u * tessera.ch_strum[tr] / 10u);   /* (44.1 samples a ms) */
+    gap = seq_units_of(FS / 100u * tessera.ch_strum[tr] / 10u);   /* (FS / 1000 samples a ms) */
     if (n > 1u && gap * (n - 1u) > t->seq_off / 2u) gap = t->seq_off / 2u / (n - 1u);
     for (i = 0; i < n; i++) seq_st[tr].note[i] = t->seq_notes[down ? n - 1u - i : i];   /* (down: TESS_STR_DOWN, 1) */
     seq_st[tr].n = (uint8_t)n;
