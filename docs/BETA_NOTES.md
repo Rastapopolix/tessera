@@ -7,11 +7,11 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues> (the firmware version, the steps,
 what you expected and what happened).
 
-## New since 3.5.1
+## New since 3.5.2
 
 ## Fixed
 
 ## Good to know
 
 ## Please try
-- A project from 3.5.1 loads and plays the same.
+- A project from 3.5.2 loads and plays the same.
