@@ -1949,6 +1949,14 @@ slot you choose and leaves the rest of the FM-1 as it is; `tools/demo_backup.py`
 song made in the simulator goes onto the FM-1 as a file and back. Save it into a slot first (SAVE > PROJECT), and
 load a file you put into a slot from SAVE > PROJECT. A project made on a newer Tessera may not load on an older one.
 
+The FM-1 itself can play the web simulator: plug it in by USB, open the simulator in Chrome or Edge and switch it on.
+Under the panel, **An FM-1 on USB: its knobs, buttons and keys play the simulator** finds the FM-1 by itself (it is
+ticked already when this site may use MIDI, as after the installer or the editor; else tick it and allow MIDI). It
+says **FM-1 connected**, and every knob, button, key and MASTER on the FM-1 then works the simulator's panel, holds and
+shortcuts included. The FM-1 keeps playing its own sound too: turn its volume down. The two follow each other best
+when they start from the same project and page. A computer usually lets one program at a time use the FM-1's MIDI
+port, so close the editor or a DAW that holds it. An FM-1 with an older Tessera gets the message to update it.
+
 To see how hard the FM-1 is working, the editor's **Settings** tab has **Health**: press **Live** and it reads the
 CPU load, the worst audio half against its deadline, late halves, voices shed or stolen (per track too), the second
 core and the stacks once a second. Its USB rows show the audio to and from the computer, each way: whether it
