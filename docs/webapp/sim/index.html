@@ -113,6 +113,7 @@ a:hover { background: var(--fg); color: var(--bg); text-decoration: none; }
 .keys #midiin, .keys #midiknobs, .keys #fm1panel { display: inline-block; max-width: calc(100% - 16px); white-space: normal; }
 .keys #midiin span, .keys #midiknobs span, .keys #fm1panel span { white-space: normal; margin: 0; }
 #midiin, #midiknobs, #fm1panel { white-space: normal; }     /* (long: they wrap on a phone) */
+.keys #fm1panel .fm1which { display: block; margin: 4px 0 0 22px; font-size: 12px; text-align: left; }  /* which FM-1s answer (PANEL, 3.5.1) */
 .keys select { font: inherit; font-size: 12px; }
 kbd { font: 600 11px ui-monospace, Menlo, monospace; border: 1px solid var(--raise); background: var(--surf);
       padding: 0 4px; color: var(--fg); }
@@ -149,7 +150,7 @@ footer small { font-size: 11px; opacity: .8; }
 .gens dd { margin: 0; }
 .gens .what { margin: 0 0 6px; font-size: 13px; }
 </style>
-<main data-build="v3.5.2">
+<main data-build="v3.5.3">
 <div class="topbar"><label class="lang"><span id="lang-code" aria-hidden="true">EN</span><select id="lang" aria-label="Language">
   <option value="en" lang="en">English</option><option value="es" lang="es">Español</option>
   <option value="it" lang="it">Italiano</option><option value="de" lang="de">Deutsch</option>
@@ -218,7 +219,7 @@ footer small { font-size: 11px; opacity: .8; }
   <span><kbd>↑</kbd> <kbd>↓</kbd> SELECT</span>
   <span><kbd>←</kbd> <kbd>→</kbd> ALGORITHM</span>
   <span data-h="shiftClick"><kbd>Shift</kbd>-click holds a button</span>
-  <span id="fm1panel" hidden><label><input type="checkbox" id="fm1on"> <span data-t="fm1Panel">An FM-1 on USB: its knobs, buttons and keys play the simulator</span></label> <b id="fm1state" hidden></b></span>
+  <span id="fm1panel" hidden><label><input type="checkbox" id="fm1on"> <span data-t="fm1Panel">An FM-1 on USB: its knobs, buttons and keys play the simulator</span></label> <b id="fm1state" hidden></b><span class="fm1which" data-h="fm1Which"><b>Tessera 3.5.1 or later</b>: works and shows FM-1 connected.<br><b>Tessera 3.5 or older</b>: update Tessera first (the page says so).<br><b>Stock M-VAVE or other firmware</b>: doesn't work.</span></span>
   <span id="midiin" hidden><label><input type="checkbox" id="midion"> <span data-t="midiIn">MIDI in: a keyboard or controller plays the simulator</span></label></span>
   <span id="midiknobs" hidden><label><input type="checkbox" id="knobson"> <span data-t="midiKnobs">MIDI CC 20–27 turn the panel's knobs</span></label>
   <select id="knobmode" aria-label="How the controller sends CC 20–26" hidden>
@@ -230,7 +231,7 @@ footer small { font-size: 11px; opacity: .8; }
 </p>
 
 <footer>
-  <small class="version">Tessera v3.5.2 · <span data-t="noSaves">the simulator keeps no saves</span></small><br>
+  <small class="version">Tessera v3.5.3 · <span data-t="noSaves">the simulator keeps no saves</span></small><br>
   Tessera by Theo Dainis (Rastapopolix), a fork of <a href="https://github.com/keremimo/melodee" target="_blank" rel="noopener">Melodee</a> by keremimo,
   built on <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener">Felucca</a> by Leo Kuroshita, Hügelton Instruments ·
   <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener">GPL-3.0</a> · this page is Felucca's, after charlesvestal's
@@ -278,6 +279,7 @@ window.SIM_TEXT = {
     kmTwos: "relativo complemento a 2",
     kmSign: "relativo bit de signo",
     fm1Panel: "Un FM-1 por USB: sus mandos, botones y teclas tocan el simulador",
+    fm1Which: "<b>Tessera 3.5.1 o posterior</b>: funciona y muestra «FM-1 conectado».<br><b>Tessera 3.5 o anterior</b>: actualiza Tessera primero (la página lo indica).<br><b>Firmware original de M-VAVE u otro</b>: no funciona.",
     fm1Live: "FM-1 conectado",
     fm1Old: "el firmware de este FM-1 es anterior: actualiza Tessera para tocar el simulador desde él",
     noSaves: "el simulador no guarda nada",
@@ -350,6 +352,7 @@ window.SIM_TEXT = {
     kmTwos: "relativo complemento a 2",
     kmSign: "relativo bit di segno",
     fm1Panel: "Un FM-1 via USB: le sue manopole, i tasti e la tastiera suonano il simulatore",
+    fm1Which: "<b>Tessera 3.5.1 o successivo</b>: funziona e mostra «FM-1 collegato».<br><b>Tessera 3.5 o precedente</b>: prima aggiorna Tessera (la pagina lo indica).<br><b>Firmware originale M-VAVE o altro</b>: non funziona.",
     fm1Live: "FM-1 collegato",
     fm1Old: "il firmware di questo FM-1 è più vecchio: aggiorna Tessera per suonare il simulatore da lì",
     noSaves: "il simulatore non salva nulla",
@@ -422,6 +425,7 @@ window.SIM_TEXT = {
     kmTwos: "relativ Zweierkomplement",
     kmSign: "relativ Vorzeichenbit",
     fm1Panel: "Ein FM-1 über USB: seine Regler, Taster und Tasten spielen den Simulator",
+    fm1Which: "<b>Tessera 3.5.1 oder neuer</b>: funktioniert und zeigt „FM-1 verbunden“.<br><b>Tessera 3.5 oder älter</b>: zuerst Tessera aktualisieren (die Seite sagt es).<br><b>Original-Firmware von M-VAVE oder andere</b>: funktioniert nicht.",
     fm1Live: "FM-1 verbunden",
     fm1Old: "die Firmware dieses FM-1 ist älter: Tessera aktualisieren, um den Simulator damit zu spielen",
     noSaves: "der Simulator speichert nichts",
@@ -494,6 +498,7 @@ window.SIM_TEXT = {
     kmTwos: "relatif complément à 2",
     kmSign: "relatif bit de signe",
     fm1Panel: "Un FM-1 en USB : ses boutons rotatifs, ses touches et son clavier jouent le simulateur",
+    fm1Which: "<b>Tessera 3.5.1 ou plus récent</b> : fonctionne et affiche « FM-1 connecté ».<br><b>Tessera 3.5 ou plus ancien</b> : mettez d’abord Tessera à jour (la page l’indique).<br><b>Firmware d’origine M-VAVE ou autre</b> : ne fonctionne pas.",
     fm1Live: "FM-1 connecté",
     fm1Old: "le firmware de ce FM-1 est plus ancien : mettez Tessera à jour pour jouer le simulateur depuis lui",
     noSaves: "le simulateur ne garde rien",
@@ -566,6 +571,7 @@ window.SIM_TEXT = {
     kmTwos: "relativo complemento de 2",
     kmSign: "relativo bit de sinal",
     fm1Panel: "Um FM-1 via USB: seus botões giratórios, botões e teclas tocam o simulador",
+    fm1Which: "<b>Tessera 3.5.1 ou posterior</b>: funciona e mostra “FM-1 conectado”.<br><b>Tessera 3.5 ou anterior</b>: atualize o Tessera primeiro (a página avisa).<br><b>Firmware original da M-VAVE ou outro</b>: não funciona.",
     fm1Live: "FM-1 conectado",
     fm1Old: "o firmware deste FM-1 é mais antigo: atualize o Tessera para tocar o simulador por ele",
     noSaves: "o simulador não guarda nada",
@@ -638,6 +644,7 @@ window.SIM_TEXT = {
     kmTwos: "상대값 2의 보수",
     kmSign: "상대값 부호 비트",
     fm1Panel: "USB로 연결한 FM-1: 노브, 버튼, 건반으로 시뮬레이터 연주",
+    fm1Which: "<b>Tessera 3.5.1 이상</b>: 작동하며 “FM-1 연결됨”이 표시됩니다.<br><b>Tessera 3.5 이하</b>: 먼저 Tessera를 업데이트하세요(페이지에서 안내합니다).<br><b>M-VAVE 공식 펌웨어나 다른 펌웨어</b>: 작동하지 않습니다.",
     fm1Live: "FM-1 연결됨",
     fm1Old: "이 FM-1의 펌웨어가 이전 버전입니다: Tessera를 업데이트하면 FM-1로 시뮬레이터를 연주할 수 있습니다",
     noSaves: "시뮬레이터는 저장하지 않습니다",
@@ -710,6 +717,7 @@ window.SIM_TEXT = {
     kmTwos: "相対値 2 の補数",
     kmSign: "相対値 符号ビット",
     fm1Panel: "USB の FM-1: ノブ、ボタン、鍵盤でシミュレーターを演奏",
+    fm1Which: "<b>Tessera 3.5.1 以降</b>：動作し、「FM-1 接続中」と表示されます。<br><b>Tessera 3.5 以前</b>：先に Tessera を更新してください（ページに表示されます）。<br><b>M-VAVE 純正ファームウェアやほかのファームウェア</b>：動作しません。",
     fm1Live: "FM-1 接続中",
     fm1Old: "この FM-1 のファームウェアは古いバージョンです: Tessera を更新すると FM-1 からシミュレーターを演奏できます",
     noSaves: "シミュレーターは保存しません",
