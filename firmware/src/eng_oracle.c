@@ -401,8 +401,8 @@ static void or_batch_kernel(const void *data,int32_t *pcm)
 /* the part after its voices: the output's coupling capacitor, about 5 Hz (y = x - x' + (1 - 2 pi 5 / FS) y'). The
  * oscillators are unipolar, as the CEM3340's, so the mixer's DC rides through the filter and the VCA; without the
  * capacitor it reached the sends and the USB stems. With no voice it starts afresh */
-#define OR_DC_K 1072976913                       /* (1 - 2 pi 5 / FS) << 30 */
-_Static_assert(FS == 44100, "OR_DC_K: the sample rate");
+#define OR_DC_K ((int32_t)((1.0 - 2.0 * 3.14159265358979323846 * 5.0 / FS) * 1073741824.0 + 0.5))   /* (1 - 2 pi 5 / FS) << 30 */
+_Static_assert(FS != 44100 || OR_DC_K == 1072976913, "OR_DC_K: the 44.1 kHz value");
 static __attribute__((noinline,section(".dsp_text"))) void or_dc_samples(or_part_t *P,int32_t *out,uint32_t n)
 {
     int32_t x1=P->dc_x1,y=P->dc_y1;

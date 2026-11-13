@@ -28,10 +28,13 @@
 #define D9_NOINLINE static
 #endif
 
-#define D9_SR 44100.0f
+#ifndef FS
+#define FS 44100                               /* (the sample rate: melodee_tables.h, tools/gen_tables.py) */
+#endif
+#define D9_SR ((float)FS)
 #define D9_MS (0.001f * D9_SR)                 /* samples per ms, as 9W9's `ms` */
 #define D9_MIN_EXP 1.0e-9f
-#define D9_PHASE_PER_HZ 97391.548752834467f   /* 2^32 / 44100 */
+#define D9_PHASE_PER_HZ ((float)(4294967296.0 / FS))   /* 2^32 / FS: 97391.548752834467 at 44.1 kHz */
 
 /* ---- exp(x) to about an ulp for |x| < 0.35 (envelope and detector rates) ---- */
 static inline float d9_exp_small(float x)

@@ -7,11 +7,13 @@ FS = 44100 Hz, control rate = every CTL (32) samples. All curves map a
 0..127 parameter value to the unit the DSP needs, plus a display table.
 """
 import math
+import os
 import struct
 import sys
 from pathlib import Path
 
-FS = 44100
+FS = int(os.environ.get("MELODEE_FS", "44100"))   # the sample rate: 44.1 kHz on the FM-1, 48 kHz on the Daisy (Andamento)
+assert FS in (44100, 48000, 96000), f"gen_tables: MELODEE_FS {FS}"
 CTL = 32
 
 

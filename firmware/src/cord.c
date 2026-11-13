@@ -813,7 +813,7 @@ static __attribute__((noinline)) void cord_cc_tick(void)
  * (their shares, as cord_share: SUM clamped to -1..1, MAX, MIN, DIFF |a - b| of the first two), then slewed by its
  * LAG. Both are worked out from the cords first and only then stored: a cord reading a bus (into a bus too) reads
  * it as it was the block before, so a bus fed back into itself is a stable one-block loop (with a negative amount
- * a slow swing, bounded by the clamp). LAG: the steps of a whole 0..1 move a block, Q23 (CTL samples at 44.1 kHz) */
+ * a slow swing, bounded by the clamp). LAG: the steps of a whole 0..1 move a block, Q23 (CTL samples at FS) */
 #define CORD_LAG_(ms) ((int32_t)(8388352LL * 1000 / ((FS / CTL) * (int64_t)(ms))))
 static const int32_t CORD_LAG_STEP[CB_LAGS] = {0, CORD_LAG_(10), CORD_LAG_(20), CORD_LAG_(50), CORD_LAG_(100),
     CORD_LAG_(200), CORD_LAG_(500), CORD_LAG_(1000), CORD_LAG_(2000), CORD_LAG_(5000), CORD_LAG_(10000),
