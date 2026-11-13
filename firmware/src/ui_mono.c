@@ -1723,6 +1723,24 @@ static void mo_pic_midich(void)
     if (settings_midi_out != MIDI_OUT_ALL)
         mo_text(settings_midi_out == MIDI_OUT_OFF ? "NOTES OUT: OFF" : "NOTES OUT: KEYS", 2, 101, MO_DIM);
 }
+/* CPU%'s own display smoothing (Theo 2026-11-14: the bar and the number were jittery): a new reading only replaces
+ * what's shown once it has held for CPU_DISP_HOLD draws running (so a value the meter barely visits does not flash
+ * by); while it hasn't, the old reading stays. UI-only: song.cpu_q8 and cpu_peak_q8 (the console, the screen reader,
+ * #586's shedding) are unchanged; only this readout is steadied. */
+#define CPU_DISP_HOLD 30u                     /* ~0.5 s at the UI's up to 60 fps cap */
+static uint32_t cpu_disp_smooth(uint32_t raw)
+{
+    static uint8_t disp = 0xFFu, run;
+    if (raw > 100u) raw = 100u;
+    if (disp == 0xFFu || (uint8_t)raw == disp) {
+        disp = (uint8_t)raw;
+        run = 0;
+    } else if (++run >= CPU_DISP_HOLD) {
+        disp = (uint8_t)raw;
+        run = 0;
+    }
+    return disp;
+}
 /* GLO > SYSTEM: what the voices and the CPU are doing. VOICES: the budget's points sounding now of BUDGET (the one
  * in effect, voice.c voice_budget) as a bar; CPU: the average as a bar, the recent peak a tick (as KNOB 4's numbers) */
 static void mo_pic_load(const char *k, uint32_t a, uint32_t pk, uint32_t n, const char *v, int32_t y)
@@ -1737,7 +1755,8 @@ static void mo_pic_load(const char *k, uint32_t a, uint32_t pk, uint32_t n, cons
 static void mo_pic_system(void)
 {
     char b[16];
-    uint32_t used = voices_busy(), bud = voice_budget(), a = song.cpu_q8 * 100u / 256u, pk = song.cpu_peak_q8 * 100u / 256u;
+    uint32_t used = voices_busy(), bud = voice_budget(), a = cpu_disp_smooth(song.cpu_q8 * 100u / 256u),
+             pk = song.cpu_peak_q8 * 100u / 256u;
     fmt_int(b, (int32_t)used);
     str_cpy(b + str_len(b), "/", 2);
     fmt_int(b + str_len(b), (int32_t)bud);
