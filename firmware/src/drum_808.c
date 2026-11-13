@@ -100,9 +100,13 @@ static inline __attribute__((always_inline)) int32_t dr_softclip(int32_t x)
     else y = TANH_Q15[i] + (((TANH_Q15[i + 1] - TANH_Q15[i]) * (a & 255)) >> 8);
     return x < 0 ? -y : y;
 }
-#define DR_PI_FS ((uint32_t)(3.14159265358979323846 * 1073741824.0 / (16.0 * FS) + 0.5))   /* pi / FS per 1/16 Hz, Q30: 4781 at 44.1 kHz */
-#define DR_2PI_FS ((uint32_t)(2.0 * 3.14159265358979323846 * 16777216.0 / FS + 0.5))     /* 2 pi / FS, Q24: 2390 at 44.1 kHz */
-_Static_assert(FS != 44100 || (DR_PI_FS == 4781u && DR_2PI_FS == 2390u), "drum_808: the 44.1 kHz constants");
+#if FS == 44100                                  /* (the FM-1: integers, as its compiler wants for constants) */
+#define DR_PI_FS 4781u                           /* pi / FS per 1/16 Hz, Q30 */
+#define DR_2PI_FS 2390u                          /* 2 pi / FS, Q24 */
+#else
+#define DR_PI_FS ((uint32_t)(3.14159265358979323846 * 1073741824.0 / (16.0 * FS) + 0.5))
+#define DR_2PI_FS ((uint32_t)(2.0 * 3.14159265358979323846 * 16777216.0 / FS + 0.5))
+#endif
 static inline __attribute__((always_inline)) int32_t dr_freq(uint32_t hz16) /* 2 sin(pi fc / FS), Q30 */
 {
     int32_t x = (int32_t)(hz16 * DR_PI_FS);      /* pi fc / FS, Q30 */
