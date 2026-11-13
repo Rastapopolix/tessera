@@ -10,7 +10,10 @@ those come next, behind the same stand-ins.
 | --- | --- |
 | `tessera_core.c` | the unity build of the portable core (the include list of `tests/hostsim.c`), with plain stand-ins for the FM-1's `fm1_*` names |
 | `tessera_core.h` | what `main.cpp` calls: init, one 32-frame block, the millisecond tick |
-| `main.cpp` | libDaisy: the board, the codec at 48 kHz in blocks of 32 frames, the audio callback, the LED, the screen's frame buffer and its two SPI calls (empty until the board is here) |
+| `main.cpp` | libDaisy: the board, the codec at 48 kHz in blocks of 32 frames, the audio callback, the fast memories filled at boot, the LED, the screen's frame buffer and its two SPI calls (empty until the board is here) |
+| `tessera_daisy.lds` | the memory map: libDaisy's QSPI one, with the audio path in ITCM and DTCM (below) |
+| `itcm_pick.py` | at build time, chooses the code that goes to ITCM, as much of the audio path as fits |
+| `memcheck.py` | after the link: fails on a section nothing would copy, and prints where the audio path landed |
 | `Makefile` | libDaisy's build, plus Tessera's generated headers with the tables at `MELODEE_FS=48000` |
 
 ## Build
@@ -25,11 +28,35 @@ make -C platform/daisy LIBDAISY_DIR=~/src/libDaisy
 ```
 
 The result is `platform/daisy/build/tessera_daisy.bin`, built to run from the Seed's QSPI flash with the Daisy
-bootloader (`APP_TYPE = BOOT_QSPI`). The link prints the memory use: on 2026-11-13 (libDaisy 1289a00,
-arm-none-eabi-gcc 13.2), about 373 KiB of code in QSPI and 328 KiB of RAM in the AXI SRAM, most of it the
-host-sized resource arena (`resource_host`). The screen added 1.4 KiB of code, its 8 KiB framebuffer, and an 8 KiB
-packed frame in the DMA RAM (`RAM_D2_DMA`, 24 of 32 KiB used, the rest libDaisy's).
+bootloader (`APP_TYPE = BOOT_QSPI`). The link prints the memory use, then `memcheck.py` where the audio path went.
 `.github/workflows/daisy-build.yml` builds it on every pull request that touches the core.
+
+## Where things live
+
+The STM32H750 has memories of very different speeds, and where the audio path sits decides how many voices fit.
+`tessera_daisy.lds` is libDaisy's QSPI memory map with Tessera's hot parts moved into the two fast ones:
+
+| Memory | Size | Speed | What goes there |
+| --- | --- | --- | --- |
+| ITCM | 64 KiB | the CPU's own, no wait | the code that runs for every sample: the FM-1's own choice (`.audio_text`, `.dsp_text`), then the mixer and the engines' render loops, as many as fit (`itcm_pick.py`) |
+| DTCM | 128 KiB | the CPU's own, no wait | the tables those read (`.dsp_tables`, the sine, pitch and FM6 tables), the state they write (tracks, effects, FM6's RAM tables, the mix batch, the first banks of the audio arena), and the stack (32 KiB kept for it, from the top) |
+| AXI SRAM | 512 KiB | fast, through the cache | everything else: the main audio arena, patterns, the FM-1's `.pool` and `.noinit` |
+| RAM_D2_DMA | 32 KiB | not cached | what DMA reads or writes: libDaisy's audio buffers (16 KiB) and the screen's packed frame (8 KiB) |
+| SDRAM | 64 MiB | slow, through the cache | nothing of Tessera's yet: long buffers later (Beads, samples), `DSY_SDRAM_BSS` |
+| QSPI flash | 8 MiB | slow on a cache miss | the rest of the code and the constants |
+
+Why: code in QSPI flash runs through a 16 KiB instruction cache, and every miss waits on the flash; ITCM never
+misses. The DMA rule is the classic first bug on this chip: the CPU's data cache doesn't see what DMA does, so a
+buffer DMA touches must sit where nothing is cached (or be cleaned and invalidated by hand). On 2026-11-13
+(libDaisy 1289a00, arm-none-eabi-gcc 13.2): ITCM 58.5 of 64 KiB, DTCM 82.8 KiB plus the stack's 32, AXI SRAM
+276 KiB, RAM_D2_DMA 24 of 32 KiB, QSPI 387 KiB. Only `mix_block` and `cord_block` (once a block each) stay in
+QSPI for lack of room.
+
+libDaisy's startup copies `.data` and zeroes `.bss`, nothing else, so `main.cpp` fills ITCM and DTCM first thing
+(`tessera_memory_init`) and zeroes the SDRAM's `.sdram_bss` once `hw.Init` has started it. A section name the
+linker script doesn't know would get a place in RAM and its bytes in flash, and nothing would ever copy them:
+`memcheck.py` fails the build if that happens. Moving the FM-1's placements across (rather than dropping them, as
+the first build did) also keeps its `noinline` and `always_inline`, which the compiler now honours.
 
 ## Flash (once the board is here)
 
@@ -44,13 +71,18 @@ Rescue: hold BOOT, tap RESET, release BOOT, and flash again.
 
 The FM-1 runs at 44.1 kHz and the Seed's codec at 48 kHz. `tools/gen_tables.py` reads `MELODEE_FS` and every
 rate-dependent number in the firmware is derived from `FS`, so this build plays in tune (`tests/fs_test.py`
-checks it on the host). Some filters still hold coefficients made at 44.1 kHz and sound slightly brighter at
-48 kHz: the 808 kit's `DRF_*` filters (`drum_808.c`) and PHYS' damping and brightness.
+checks it on the host). Since 2026-11-13 that includes the 808 kit (its fixed filters come from `gen_tables.py`;
+its metal oscillators, which were 9 % sharp at 48 kHz, and its short envelopes are rescaled) and PHYS (the modes'
+Q scale, Dust's density, the string's dispersion), each identical at 44.1 kHz. `fs_test.py` checks the cowbell's
+pitch and the decays of four PHYS sounds. The 808's noise sounds (hats, snare, clap) and PHYS' plucks and bows
+were compared by their spectra, octave by octave: what still differs comes from the random noise running a
+different course at another rate, not from a number made for 44.1 kHz.
 
 ## Next
 
-The plan is in the private notes (tessera-notes `andamento/DAISY_PORT.md`): the audio path in fast RAM (ITCM,
-DTCM), a demo project instead of the fixed figure, the screen's SPI (below), encoders and keys, MIDI, storage on SD.
+The plan is in the private notes (tessera-notes `andamento/DAISY_PORT.md`): a demo project instead of the fixed
+figure, the screen's SPI (below), encoders and keys, MIDI, storage on SD. On the board, the first number to read is
+`tessera_core_load` (the audio callback's peak share of the time, 0..1) with the debugger.
 
 ## The screen
 

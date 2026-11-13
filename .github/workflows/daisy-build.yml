@@ -51,5 +51,7 @@ jobs:
             echo '### Daisy build (platform/daisy)'
             echo '```'
             sed -n '/Memory region/,/QSPIFLASH/p' daisy.log
+            grep '^ITCM:' daisy.log
+            sed -n '/^memcheck/,$p' daisy.log | grep '^memcheck\|^  '
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
