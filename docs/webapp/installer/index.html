@@ -1,66 +1,245 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: GPL-3.0-only
-     Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments -->
+     Copyright (C) 2026 Kerem Kilic (Ellic Studio)
+     Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments -->
 <html lang="ja">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Melodee (tess)</title>
+<title>Tessera · Installer</title>
+<link rel="icon" href="../../media/brand/logo.svg" type="image/svg+xml">
 <style>
-  :root { --bg: #fff; --fg: #000; --dim: #777; }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) { --bg: #000; --fg: #fff; --dim: #888; }
+  /* TESSERA-MONO: tools/gen_mono_webfont.py writes the face here (firmware/src/gfx.c's 5 x 7 font) */
+@font-face { font-family: "Tessera Mono"; font-display: block; src: url("data:font/woff;base64,d09GRgABAAAAAAwoAAoAAAAAOAQAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAABPUy8yAAABZAAAADEAAABgRDvlomNtYXAAAAGoAAAAqQAAANRq0Gl3Z2x5ZgAAAywAAAZ+AAAvMvmORTRoZWFkAAAA9AAAADYAAAA2K18/OGhoZWEAAAEsAAAAHgAAACQEsgJaaG10eAAAAZgAAAANAAAA1gJYAABsb2NhAAACVAAAANYAAADWSkQ+R21heHAAAAFMAAAAGAAAACAAfgBObmFtZQAACawAAAD5AAABVkEZmDhwb3N0AAAKqAAAAX8AAANs143PEgABAAAAAQAAKL0HoV8PPPUAAQMgAAAAAOUq/gAAAAAA5Sr+AAAA/5wB9AOEAAAAAwACAAAAAAAAeJxjYGRgYNrzfw6QjGBgYEhh/MIAFEEBjABqGwQQAAB4nGNgZGBgyGLwYRBmAAEmBjQAABSwAM14nGNgYYpgnMDAysDCQAA0MDAwI/PtgYDhAIOCghrTnv9zgJItDCloWhQYGAANiQcCAAAAeJxjimAYhgAAS7oAWwAAAHicY2BgYGJgYGAGYhEgyQimWRgOAGktBgUgi4shgaGKoY5hIcNqhu0MuxmOMJxnuM5wh+E+wxOG9wzfGP4oiChIKsgqqP3/D9SjwJDIUA1Xu5/hOMNFhptAtQ8YnjN8ZPipIKwgoSADUvv/4f+D/4//X/p/zv+J//v+d//v/N/xv/1/6//s/5n/M/6nA81ieOD9wBnsIvyAi4EHykpl4GNIY+AAAGQqOusAAAAAAAAAAAAAKABEAI4AyAD/AUwBYwGQAbwB9QIZAjACPAJNAnACwALuAyIDVQOPA8QD/wQsBHQErwTMBO4FGgUtBVkFhwXSBh8GZgahBuwHGwdKB5EH4ggQCEQIkgi/CR4JeAnFCgAKVQqgCs8K/QtOC54MAQxQDJQMwgzxDRENQA1iDW0Nfg2rDdgOBA4lDk0OiQ6VDtEO/w9WD64QCxBuEMYRBhFBEX0RvRH4EjESaxKqEuMTUxOqFAIUXxTCFRoVUhWvFg0WbxbMFxsXKBc/F2IXhBeZAAB4nL1aS5IiNxCVaGPsNnYPQRBeeGETXnhhIhwTBDGLWcxiFrOYC8wBdIA+hA/AAXwUH0AH4CissZX6lH6ZKanArg66igKUT5kvP0qV+FpoIeRh8bd4EivxnXgRW/GjENvTcbdCXlrFY/FFZYf5TIivhJJXeU7Gs2MdzWvpz/Dd2yUfQKyFOeS1wPGT+Fn8Kn4Tv4s/6nGWpz1xXci5vcrr7TW7uCD4y0N8y2DyGopS4XqVoHHa0vJ8W4Nu5AFUd1vLs2YEC17mxlvhiFgm3NPmUNOfOThp3ze1fnQzLXWbSj0inyttVKyVVTYAsbZYw52LbmveQHsyPDonvMwYCQOmajTfMJPJWOfmISSiqZ1/ycMEjYIk6JG3yUilhPBzrShjWzsbT1l8obi1zLS7L94DtyyJLakPVs+W1vJK2XqJSJy0GiQEH79djKfA+OV4AiwDEUMegmXeVZbR8dvSftdEBPNtw9/9zlwfzAcLN4qJPjDKNAYw1v8UxYvZU54nvtdoOxnuZr9HmFyye++1pazWzVyA1to6OVDcwDfXcNuYpYPnLL+wCAxxBhx74hglRohvyLlnM8YkTLNTQbdgCWIOjJyNj4Sp36ValFfHlrbO+MgYeFFab5nIB3/XPiHY2ATCuWDEanAzecx+igH5zIAThptdk2vnmmVinZSrQZ52EddInGjZZCF4Hio1s1vlb9dACkWqD+IC63eVz4V5YPdSX/OT6p9kl35xuavErjWGs3L5jNGvqYZMDDskMazya5ujzeFDl/Z4ly4+4tG6/r2KwS8GX2fdjqy4O1VZUTO2XZhhDV55dbHbeYJjPER6Xwm6yIZwa1tIrDKn5hInzVkuphXxDJua7q1Cy1xR5+Zwb1dwF65DovBvjHlaZegcVLQ3uXPJ5rUNV8l7+N9G1vTyzYCXF5FrXb9vOPmQj6fswOKMO9ohtMc6m1O+OsEskmYsA8NXz4VFXAndUVnwkb3MJeHa5SyfQ+BM5Pw5ox+r0UkPH84dq8TnuNyhgtOlUbyVOboqyA1pVdYHC+POcUK+hqSyuNVLXMzTRWSjhixHTlmuowRXcNGpcoaWy7p8hdxLtOzXogaDW95M7tWlX5LtdI2ejkD60ZuOWb8T78UHeu7YNc02k/ySDKRUGV26FBJs9tKJHvWO9hqr9hK3uPKw7aJrEPUduZT27yqXVv97Anar80Pn0bgORvInHFz2+qHLhk2dkH0gQjfBhr39oL7ajNMSxjFCYwPRoV2Nuvo6XSMCY1xX0NajdGHD1Lqbwvb5+sx3hhRj/bvzGusPtCuM9EYejjB0LnlsSpGrj1yDm+7o/ZHHScXx8pp2pPT0Shr9sVou+8BM5I5t4NThenTcscJo2ztZBWK2Vk2FNTyRqgFip0QzRQBfv+Fe7rJO4uZ0FxDto25O+RocXm6cqoM6XF2GGDAdtwuLTp4LvU59jpRVKX3ywaDHDLYRsGsg3nq9Q4cZes1+5KnrEG3dv2uwS862P8KzBnSG7aqxXd18b40curkfkeLN9yMcbGLcZdbTQewwxU4/de16m3GEO3cS89mbST47q2aIoucju4ERY3r2rFHR2eGVY88ES6OHg/mzOxZbO4LdsWjg2RDyq4oogoiwGDhchVFrdeoGqxBwk3Srq8F99ff0Z6v6C5wa7DLZlWW70fT0CzX9OWij946hdZ3PB+J96cL7vox3Y6h9XLw8DndclzaRf6B35bs5ol3loh87hWRt08PuWcgH9V65X4nXRJh//iJrna4OZtbrLruYjao2rEBRfU0xIF915tfKbxwXTUTOZoKXGvf1mK7lwa4jR+U+s+xAfRKTHuqSMfE92m5JVqxclG2gbVs/8DZeMTWtmh5mcYd507IvIzGN1WQV7ePygMxnRiZiW0pyjK3dsrt03JKraKm4Wbfd8fqj+CQ+49XT7A7dFMGzQMg06/qDuJ/fQ+oUpmOB1ClYz+L/rFNotHidcgfeB9YpNGqqTpmP+7+oUxiO0HXKPVN4WJ3CsntI7806hX12rdynwDpEaE+IfnJtiJ+7Lq2gWoLH53pal9307Ece65xx5L7+eTT2Qd+iuoADsYHn5xzXGmLOXPRqGHvDw+56MreV0eOTuW5LtMja5kZHW1bCU03yHHoktt9nmyT8c7vWzsn4vvt3rrt/ZaT2OraBrNgtEfgo5TMXcDY18kWhHXKYx9RDtLjfnmLlk37xX3U69SsAAHicLY29asMwFIWP09JSKJ07arQH/+BAloxOyZKUNHjIFkSQLYEtBckh+BX6mH2MTj2pI3G55+p+5wjAEz4RYTofrElHeOU06Rme8YUHRI8vnL5xuOsI7/i56xne8Fu58+hNqwcRV4koi3Ihaq2cWEljTViK9W6TzrMidbYbRdwY31+lV3nwp7x3x8bZIdNJrUJQXoqts26v2ksnPSo4nDHCw6CFxgCBmK8Je4mCtaCquVEkBVaQJC0rYMl5jR02SDFHRjolY9Ex75bSkPLocaXH05/T43Fi78kdub/RA52a/9UkAq8iI+nf/m8d9nxpcWEqU/4ADCo/8wAAAHicfc/XVhRBFEDROSjmnLOCAbM9faumBxPOVIE5YAZzRPn/D1CO7/bDWb1W3951qzfR+/+z2usxwTrWM8kGNrKJzWxhK9vYzg52sovd7GEv+9jPAQ5yiMMc4SjHOM4JTnKKKaY5zRnOco4ZznOBi1ziMle4yjUa+rQEicyAjiGzXOcGN7nFbea4w4gxhco8C9zlHvd5wEMe8ZgnPOUZizznBS95xWve8JYllnnHez7wkU985gtf+cZ3fvCTFX7xm9XJlaZpG9u3rQ2bbLYD29mhnbUjO7bFVjtvF9Ya+qEf+qEf+qEf+qEf+qEf+qEf+qEf+qGf9JN+0k/6ST/pJ/2kn/STftJP+kk/6Sf9pJ/1s37Wz/pZP+tn/ayf9bN+1s/6WT/rZ/2sP9DvnOmc6ZzpnBl57sivY/3xv3f/Lf5bnCnuVtytuFtxvrhPcZ/iPkWheFbxrOJZRbOqVbWqVtWqN63etCpXzapZNatm/eu0TT/s0BZb19oO/gBtT5nEAA==") format("woff"); }
+/* /TESSERA-MONO */
+  /* the project page's look (web/home/index.html): the Mono look's one ink on black, the four tracks as its fills */
+  :root {
+    --bg: #111; --ink: #ffd020; --surf: #19170f; --raise: #252113; --line: #3b3007; --text: #e6e0d0; --mid: #b9b2a0;
+    --dim: #8e877a;
+    --p1: var(--ink);
+    --p2: repeating-linear-gradient(135deg, var(--ink) 0 2px, transparent 2px 5px);
+    --p3: radial-gradient(circle, var(--ink) 1.2px, transparent 1.6px) 0 0 / 5px 5px;
+    --p4: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px);
+    --pixel: "Tessera Mono", ui-monospace, monospace; --gap: 6px;
+    color-scheme: dark;
   }
-  :root[data-theme="dark"] { --bg: #000; --fg: #fff; --dim: #888; }
-  body { margin: 0; background: var(--bg); color: var(--fg);
-         font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; }
-  main { max-width: 520px; margin: 0 auto; padding: 48px 16px; }
-  h1 { font-size: 24px; font-weight: 600; margin: 0 0 24px; }
-  .lang { float: right; font-size: 13px; color: var(--dim); cursor: pointer; text-decoration: underline; background: none; padding: 0; color: var(--dim); }
-  p { margin: 0 0 16px; }
-  button { font: inherit; background: var(--fg); color: var(--bg); border: 0; padding: 8px 20px; cursor: pointer; }
-  button:disabled { opacity: .3; cursor: default; }
-  #status { margin-top: 16px; min-height: 1.6em; }
-  .small { color: var(--dim); font-size: 13px; }
-  progress { width: 100%; height: 4px; margin-top: 16px; }
-  pre { color: var(--dim); font-size: 12px; white-space: pre-wrap; margin-top: 16px; }
+  /* the light version (dark ink on paper): only from the LIGHT / DARK button (stored); dark is the default, whatever the system says */
+  :root[data-theme="light"] { --bg: #f6f2e7; --ink: #1c1a14; --surf: #eee8d6; --raise: #e2d9bf; --line: #c8bd9b; --text: #1c1a14; --mid: #4b4535; --dim: #786e57; color-scheme: light; }
+  .theme { font: 16px/1 var(--pixel); color: var(--mid); background: none; border: 0; padding: 3px 4px 2px;
+           cursor: pointer; text-transform: uppercase; }
+  .theme:hover { color: var(--bg); background: var(--ink); }
+  * { box-sizing: border-box; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 400 15px/1.6 ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+  a { color: var(--ink); text-underline-offset: 3px; }
+  a:hover { background: var(--ink); color: var(--bg); text-decoration: none; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+  nav { border-bottom: 2px solid var(--ink); background: var(--bg); }
+  nav .wrap { display: flex; align-items: center; gap: 16px; height: 56px; }
+  nav .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font: 24px/1 var(--pixel); }
+  nav .brand:hover { background: none; color: var(--ink); }
+  nav .brand svg { width: 26px; height: 26px; }
+  /* the language menu: a short code (EN, DE ...) shown, the real select laid over it, so the list names each language */
+  .lang { position: relative; margin-left: auto; font: 16px/1 var(--pixel); color: var(--mid); padding: 3px 4px 2px;
+          cursor: pointer; text-transform: uppercase; letter-spacing: 0; }
+  .lang::after { content: " \25BE"; font-family: ui-monospace, monospace; }
+  .lang:hover, .lang:focus-within { color: var(--bg); background: var(--ink); }
+  .lang select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; font: 16px system-ui, sans-serif; }
+  main.wrap { padding-top: 40px; padding-bottom: 56px; }
+  .kicker { display: inline-block; background: var(--ink); color: var(--bg); font: 16px/1 var(--pixel);
+            text-transform: uppercase; padding: 3px 6px 2px; }
+  h1 { color: var(--ink); font: clamp(40px, 9vw, 64px)/1.1 var(--pixel); margin: 12px 0 0; }
+  .bar { display: flex; gap: var(--gap); margin: 16px 0 28px; }
+  .bar span { flex: 1; height: 8px; }
+  .bar span:nth-child(1) { background: var(--p1); } .bar span:nth-child(2) { background: var(--p2); }
+  .bar span:nth-child(3) { background: var(--p3); } .bar span:nth-child(4) { background: var(--p4); }
+  p { margin: 0 0 14px; }
+  .needs { list-style: none; display: flex; flex-wrap: wrap; gap: var(--gap); padding: 0; margin: 0 0 var(--gap); }
+  .needs li { position: relative; border: 2px solid var(--line); padding: 6px 12px 6px 18px; font-size: 14px; }
+  .needs li::before, .panel::before, .next::before { content: ""; position: absolute; left: -2px; top: -2px; bottom: -2px;
+    width: 6px; background: var(--c, var(--p1)); }
+  .small { color: var(--mid); font-size: 14px; line-height: 1.5; }
+  #beta-notes ul { margin: 0 0 8px; padding-left: 20px; }
+  #beta-notes li { margin: 2px 0; }
+  .beta-notes-head { color: var(--text); margin: 8px 0 2px; }
+  .panel { position: relative; border: 2px solid var(--line); padding: 18px 20px 6px 24px; margin: 0 0 var(--gap); }
+  .warn { color: var(--text); font-weight: 600; }
+  /* the tip under the stripes: where to start (GEN's MODE) */
+  .tip { display: flex; gap: 12px; align-items: baseline; border: 2px solid var(--ink); padding: 10px 14px; margin: 0 0 var(--gap); }
+  .tip b { flex: none; background: var(--ink); color: var(--bg); font: 16px/1 var(--pixel); font-weight: 400; padding: 3px 6px 2px; }
+  .tip span { font-size: 14px; line-height: 1.5; }
+  .panel strong { font: 16px/1.3 var(--pixel); text-transform: uppercase; font-weight: 400; }
+  label { cursor: pointer; }
+  .choice label { display: flex; gap: 10px; align-items: center; padding: 6px 0; }
+  input[type=radio], input[type=checkbox] { accent-color: var(--ink); width: 18px; height: 18px; margin: 0; flex: none; }
+  input[type=file] { font: inherit; font-size: 14px; color: var(--mid); margin-top: 6px; max-width: 100%; }
+  input[type=file]::file-selector-button { font: 16px/1 var(--pixel); text-transform: uppercase; background: var(--bg);
+    color: var(--ink); border: 2px solid var(--ink); padding: 6px 10px 5px; margin-right: 10px; cursor: pointer; }
+  button { font: 16px/1 var(--pixel); text-transform: uppercase; letter-spacing: 0;
+           background: var(--bg); color: var(--ink); border: 2px solid var(--ink); padding: 10px 16px 9px; cursor: pointer; }
+  button:hover { background: var(--ink); color: var(--bg); }
+  button:disabled { opacity: .35; cursor: default; }
+  button:disabled:hover { background: var(--bg); color: var(--ink); }
+  #go { background: var(--ink); color: var(--bg); border-color: var(--ink); padding: 14px 28px 13px; margin-top: 18px; }
+  #go:hover:not(:disabled) { background: var(--bg); color: var(--ink); }
+  details { border: 2px solid var(--line); margin: var(--gap) 0 0; padding: 0 20px; }
+  details[open] { padding-bottom: 6px; }
+  summary { cursor: pointer; padding: 14px 0 12px; color: var(--mid); font: 16px/1 var(--pixel); text-transform: uppercase; }
+  summary:hover, details[open] summary { color: var(--text); }
+  .run { margin-top: 28px; }
+  progress { appearance: none; -webkit-appearance: none; width: 100%; height: 12px; border: 2px solid var(--ink);
+             background: var(--bg); display: block; }
+  progress::-webkit-progress-bar { background: var(--bg); }
+  progress::-webkit-progress-value { background: var(--ink); transition: width .3s; }
+  progress::-moz-progress-bar { background: var(--ink); }
+  #status { margin-top: 14px; min-height: 1.6em; font-weight: 600; }
+  pre { color: var(--dim); font: 12px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; margin: 0 0 12px;
+        max-height: 12em; overflow: auto; }
+  /* the install window: the stages, the bar and its percentage, the status, the log behind Details */
+  dialog { width: min(560px, calc(100vw - 32px)); background: var(--bg); color: var(--text); border: 2px solid var(--ink);
+           padding: 0 24px 20px; }
+  dialog::backdrop { background: rgba(0, 0, 0, .88); }
+  dialog .bar { margin: 0 -24px 22px; }
+  dialog h2 { color: var(--ink); font: 24px/1.2 var(--pixel); text-transform: uppercase; margin: 0 0 12px; }
+  .keep { border: 2px solid var(--ink); padding: 10px 14px; font-weight: 600; }
+  .stages { list-style: none; counter-reset: st; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap);
+            padding: 0; margin: 18px 0 14px; }
+  .stages li { counter-increment: st; color: var(--dim); padding: 8px 8px 6px; font: 16px/1.2 var(--pixel);
+               text-transform: uppercase; border: 2px dashed var(--line); }
+  .stages li::before { content: counter(st) " "; }
+  .stages li.now { color: var(--bg); background: var(--ink); border: 2px solid var(--ink); }
+  .stages li.done { color: var(--mid); border: 2px solid var(--line); }
+  .stages li.done::before { content: "\2713  "; color: var(--ink); font-family: ui-monospace, monospace; }
+  .meter { display: flex; align-items: center; gap: 12px; }
+  .meter progress { flex: 1; }
+  #run-pct { min-width: 3.5em; text-align: right; font: 16px/1 var(--pixel); }
+  #run-status { margin: 12px 0 14px; min-height: 1.6em; font-weight: 600; }
+  dialog.ok #run-status { background: var(--ink); color: var(--bg); padding: 4px 8px; }
+  dialog.fail #run-status { border: 2px dashed var(--ink); padding: 4px 8px; }
+  dialog.fail #run-status::before { content: "! "; font-family: var(--pixel); }
+  dialog details { padding: 0 14px; margin: 0 0 16px; }
+  dialog summary { padding: 10px 0 8px; }
+  #run-close { width: 100%; }
+  @media (max-width: 480px) { .stages { grid-template-columns: repeat(2, 1fr); } }
+  .next { display: block; position: relative; border: 2px solid var(--line); padding: 16px 20px 16px 24px; margin-top: 28px;
+          color: var(--text); text-decoration: none; }
+  a.next:hover { border-color: var(--ink); background: var(--raise); color: var(--text); }
+  footer { border-top: 2px solid var(--ink); margin-top: 40px; padding-top: 24px; }
+  footer p { color: var(--dim); font-size: 13px; }
+  footer a { color: var(--mid); }
 </style>
+<script>/* the theme chosen with the LIGHT / DARK button, before the page draws */
+try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 </head>
 <body>
-<main>
-  <button class="lang" id="lang"></button>
-  <h1>Melodee (tess)</h1>
-  <p data-t="intro"></p>
-  <p data-t="warn"></p>
-  <p class="small" data-t="direct"></p>
-  <p class="small" data-t="beta"></p>
-  <p class="small"><span data-t="brick"></span>
-    <a href="https://github.com/kurogedelic/FM-1-transporter" target="_blank" rel="noopener" style="color:inherit">FM-1-transporter</a></p>
-  <p><label><input type="radio" name="build" id="build-dual" checked> <span data-t="dual"></span></label><br>
-    <label><input type="radio" name="build" id="build-single"> <span data-t="single"></span></label></p>
-  <p class="small" data-t="singleWhy"></p>
+<nav>
+  <div class="wrap">
+    <a class="brand" href="../../" aria-label="Tessera">
+      <svg viewBox="0 0 78 78" aria-hidden="true"><rect x="4" y="5" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="3" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="53" y="2" width="22" height="22" fill="currentColor"/><rect x="5" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="30" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="31" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="4" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="57" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/></svg>
+      TESSERA
+    </a>
+    <label class="lang"><span id="lang-code" aria-hidden="true">EN</span><select id="lang" aria-label="Language">
+      <option value="en" lang="en">English</option><option value="es" lang="es">Español</option>
+      <option value="it" lang="it">Italiano</option><option value="de" lang="de">Deutsch</option>
+      <option value="fr" lang="fr">Français</option><option value="pt" lang="pt-BR">Português</option>
+      <option value="ko" lang="ko">한국어</option><option value="ja" lang="ja">日本語</option>
+    </select></label>
+    <button class="theme" id="theme" type="button" aria-label="Light or dark page"></button>
+  </div>
+</nav>
+<main class="wrap">
+  <div class="kicker" id="ver">FM-1</div>
+  <h1>TESSERA</h1>
+  <div class="bar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+  <p class="tip"><b data-t="tipLabel"></b><span data-t="tip"></span></p>
+  <ul class="needs">
+    <li style="--c:var(--p1)" data-t="needBrowser"></li><li style="--c:var(--p2)" data-t="needCable"></li>
+    <li style="--c:var(--p3)" data-t="needTab"></li>
+  </ul>
+  <div class="panel">
+    <p data-t="intro"></p>
+    <p class="warn" data-t="warn"></p>
+    <p class="small" data-t="direct"></p>
+  </div>
+  <div class="panel choice" style="--c:var(--p2)">
+    <p><label><input type="radio" name="build" id="build-dual" checked> <span data-t="dual"></span></label>
+      <label><input type="radio" name="build" id="build-single"> <span data-t="single"></span></label></p>
+    <p class="small" data-t="singleWhy"></p>
+  </div>
+  <section id="beta-options" class="panel choice" style="--c:var(--p1)" hidden>
+    <p><strong data-t="betaTitle"></strong> <span id="beta-version"></span></p>
+    <p><label><input type="radio" name="build" id="build-beta-dual"> <span data-t="beta-dual"></span></label>
+      <label><input type="radio" name="build" id="build-beta-single"> <span data-t="beta-single"></span></label></p>
+    <p class="small" data-t="betaWhy"></p>
+    <p class="small" id="beta-info"></p>
+    <details id="beta-notes" class="small" hidden><summary data-t="betaNotes"></summary><div id="beta-notes-body"></div></details>
+    <p class="small"><a id="beta-editor" href="../editor-beta/" data-t="betaEditor" hidden></a></p>
+    <p class="small"><a href="https://github.com/Rastapopolix/tessera/issues" data-t="betaReport"></a></p>
+  </section>
+  <section id="nightly-options" class="panel choice" style="--c:var(--p3)" hidden>
+    <p><strong data-t="nightlyTitle"></strong></p>
+    <p><label><input type="radio" name="build" id="build-nightly-dual"> <span data-t="nightly-dual"></span></label>
+      <label><input type="radio" name="build" id="build-nightly-single"> <span data-t="nightly-single"></span></label></p>
+    <p class="small" data-t="nightlyWhy"></p>
+    <p class="small" id="nightly-info"></p>
+  </section>
+  <section id="synth-options" class="panel choice" style="--c:var(--p4)" hidden>
+    <p><strong data-t="synthTitle"></strong></p>
+    <p><label><input type="radio" name="build" id="build-synth-dual"> <span data-t="synth-dual"></span></label>
+      <label><input type="radio" name="build" id="build-synth-single"> <span data-t="synth-single"></span></label></p>
+    <p class="small" data-t="synthWhy"></p>
+    <p class="small" id="synth-info"></p>
+    <p class="small"><a id="synth-editor" href="../synth-editor/" data-t="synthEditor"></a></p>
+  </section>
   <p><button id="go" disabled data-t="install"></button></p>
-  <details style="margin-top:24px">
+  <div class="run">
+    <p id="status"></p>
+  </div>
+  <dialog id="run" aria-labelledby="run-title">
+    <div class="bar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+    <h2 id="run-title"></h2>
+    <p class="keep" data-t="runKeep"></p>
+    <ol class="stages">
+      <li id="run-st1" data-t="stPrep"></li><li id="run-st2" data-t="stLoader"></li>
+      <li id="run-st3" data-t="stWrite"></li><li id="run-st4" data-t="stReboot"></li>
+    </ol>
+    <div class="meter"><progress id="bar" max="100" value="0"></progress><span id="run-pct">0 %</span></div>
+    <p id="run-status" role="status"></p>
+    <details><summary data-t="details"></summary><pre id="log"></pre></details>
+    <button id="run-close" disabled data-t="close"></button>
+  </dialog>
+  <p class="small" data-t="beta"></p>
+  <p class="small" data-t="counted"></p>
+  <p class="small"><span data-t="brick"></span>
+    <a href="https://github.com/keremimo/melodee/blob/next/docs/RECOVERY.md" target="_blank" rel="noopener" data-t="recoveryLink"></a></p>
+  <details>
+    <summary data-t="localTitle"></summary>
+    <p class="small" data-t="localWhy"></p>
+    <p><label><span data-t="localFile"></span><br><input id="local-file" type="file" accept=".fwsc"></label></p>
+    <p><button id="local-go" disabled data-t="localGo"></button></p>
+  </details>
+  <details>
     <summary data-t="stockTitle"></summary>
     <p class="small" data-t="back"></p>
-    <p class="small"><a href="https://www.m-vave.com/download" target="_blank" rel="noopener" style="color:inherit">M-VAVE Downloads</a></p>
+    <p class="small"><a href="https://www.m-vave.com/download" target="_blank" rel="noopener">M-VAVE Downloads</a></p>
     <p><label><span data-t="stockFile"></span><br><input id="stock-file" type="file" accept=".fwsc"></label></p>
     <p><button id="stock-go" disabled data-t="stockGo"></button></p>
     <p class="small" data-t="stockBackup"></p>
-    <p class="small"><label><input id="stock-skip-backup" type="checkbox"> <span data-t="stockSkipBackup"></span></label></p>
-    <p class="small"><label><input id="stock-recovery" type="checkbox"> <span data-t="stockRecovery"></span></label></p>
+    <p class="small choice"><label><input id="stock-skip-backup" type="checkbox"> <span data-t="stockSkipBackup"></span></label></p>
+    <p class="small choice"><label><input id="stock-recovery" type="checkbox"> <span data-t="stockRecovery"></span></label></p>
   </details>
-  <progress id="bar" max="100" value="0"></progress>
-  <p id="status"></p>
-  <pre id="log"></pre>
-  <p><a href="../editor/" style="color:inherit" data-t="editor"></a></p>
-  <p class="small">Melodee (tess) is a fork of Melodee by Theo Dainis, adding the Tessera note engines and project save. <a href="https://github.com/Rastapopolix/melodee-tess" target="_blank" rel="noopener" style="color:inherit">github.com/Rastapopolix/melodee-tess</a><br>
-    Melodee by Ellic Studio, based on <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener" style="color:inherit">Felucca</a>
-    by Leo Kuroshita (@kurogedelic), <a href="https://hugelton.com" target="_blank" rel="noopener" style="color:inherit">Hügelton Instruments</a>, with its CrispyZebra waveforms, drum voices, Sample Pack and Fukiai icons (MIT).<br>
+  <a class="next" href="../editor/" data-t="editor"></a>
+  <footer>
+  <p>Tessera is firmware for the FM-1 by Theo Dainis (Rastapopolix), a fork of Melodee: it adds the Tessera generators and a project format of its own. <a href="https://github.com/Rastapopolix/tessera" target="_blank" rel="noopener">github.com/Rastapopolix/tessera</a><br>
+    Melodee by Ellic Studio, based on <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener">Felucca</a>
+    by Leo Kuroshita (@kurogedelic), <a href="https://hugelton.com" target="_blank" rel="noopener">Hügelton Instruments</a>, with its CrispyZebra waveforms and Fukiai icons (MIT).<br>
     Font: Inter Tight (The Inter Project Authors, SIL OFL 1.1). Samples: Versilian Studios VSCO-2 Community Edition and VCSL (CC0 1.0).<br>
-    FM6 engine: msfa from Dexed (Google Inc., Pascal Gauthier, Apache-2.0). The package also holds three JieLi AC79 SDK files, uboot.boot, cfg_tool.bin and eq_cfg_hw.bin (JieLi Technology, Apache-2.0). <a href="../../firmware/LICENSING.md" style="color:inherit">Licences</a>: <a href="../../firmware/LICENSE" style="color:inherit">GPL-3.0</a>, <a href="../../firmware/LICENSES/Apache-2.0.txt" style="color:inherit">Apache-2.0</a>, <a href="../../firmware/LICENSES/" style="color:inherit">all</a>.<br>
+    FM6 engine: msfa from Dexed (Google Inc., Pascal Gauthier, Apache-2.0). The package also holds three JieLi AC79 SDK files, uboot.boot, cfg_tool.bin and eq_cfg_hw.bin (JieLi Technology, Apache-2.0). <a href="../../firmware/LICENSING.md">Licences</a>: <a href="../../firmware/LICENSE">GPL-3.0</a>, <a href="../../firmware/LICENSES/Apache-2.0.txt">Apache-2.0</a>, <a href="../../firmware/LICENSES/">all</a>.<br>
     M-VAVE and FM-1 are trademarks of their respective owners.<br>
-    <span data-t="license"></span> <a href="https://github.com/keremimo/melodee" target="_blank" rel="noopener" style="color:inherit">github.com/keremimo/melodee</a></p>
+    <span data-t="license"></span> <a href="https://github.com/keremimo/melodee" target="_blank" rel="noopener">github.com/keremimo/melodee</a></p>
+  </footer>
 </main>
 <script type="module">
 // SPDX-License-Identifier: GPL-3.0-only
@@ -73,6 +252,16 @@ const BLOCKS = 20, BLK = 0x30, KEEP = 0x2F;
 const STOCK_V15_SHA256 = "db1642b2b6fa5c2cccb11ffd13878068bb28601678d3644049f99dc40e7edb8a";
 const STOCK_APP_SIZE = 0x8DFBC;
 const STOCK_V15_SIZE = 699956;
+// the unmodified official FM-1 V16 (M-VAVE's FM-1.fwsc since 2026-10-21; FM-1_016): the way back of a unit that ran V16
+// before Tessera (its head is V16's; ota.c stages an official package only when its head is the unit's). Pins after
+// Skiff 2.0.2 (#64)
+const STOCK_V16_SHA256 = "d017fb65e70aca97ee29d944470c3515a74581df5c0576bf70de917c7b2b61d5";
+const STOCK_V16_SIZE = 718196;
+// each official FM-1 file's layout as pinned: identity, file size, flash.bin's size, the app's offset and size
+const FM1_STOCK = {
+  [STOCK_V15_SHA256]: { product: "FM-1_015", size: STOCK_V15_SIZE, flash: 602112, appOff: 16672, app: STOCK_APP_SIZE },
+  [STOCK_V16_SHA256]: { product: "FM-1_016", size: STOCK_V16_SIZE, flash: 692224, appOff: 16704, app: 0x91FA8 },
+};
 
 const T = new Uint16Array(256);
 for (let i = 0; i < 256; i++) {
@@ -297,17 +486,23 @@ async function sha256hex(bytes) {
   return [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, "0")).join("");
 }
 
-// Only the user's unmodified official V15 is accepted for a return to stock.
+// Only the user's unmodified official V15 or V16 is accepted for a return to stock.
 // The digest pins every file, loader and flash layout; filenames are not evidence.
+// The file goes to the device unchanged, through its own official loader. head: the image
+// range the firmware compares with the device's boot data (CHECK HEAD, firmware/src/ota.c)
+// before it starts that loader.
 async function validateStockPackage(bytes) {
-  if (bytes.length !== STOCK_V15_SIZE || await sha256hex(bytes) !== STOCK_V15_SHA256)
-    throw new Error("Select the unmodified official FM-1 V15 file (FM-1.fwsc).");
+  const sha = await sha256hex(bytes), L = FM1_STOCK[sha];
+  if (!L || bytes.length !== L.size)
+    throw new Error("Select the unmodified official FM-1 V15 or V16 file (FM-1.fwsc).");
   const pkg = new Package(bytes);
-  if (pkg.product !== "FM-1_015" || pkg.flashFileOff !== 1044 || pkg.flashSize !== 602112 ||
-      pkg.appBase !== 16384 || pkg.appOff !== 16672 || pkg.app.size !== STOCK_APP_SIZE ||
+  if (pkg.product !== L.product || pkg.flashFileOff !== 1044 || pkg.flashSize !== L.flash ||
+      pkg.appBase !== 16384 || pkg.appOff !== L.appOff || pkg.app.size !== L.app ||
       !pkg.entries.some((e) => e.type === 100 && e.name === "ota.bin" && e.size === 19969))
     throw new Error("The official firmware has an unsupported FM-1 layout.");
-  return { product: pkg.product, image: logicalImage(bytes), sha256: STOCK_V15_SHA256 };
+  const head = pkg.flashEntry.dataOff;
+  return { product: pkg.product, image: logicalImage(bytes), sha256: sha,
+    head: { from: head, to: head + 0x4000 } };
 }
 
 // official V15 + Melodee app -> installable package (Uint8Array)
@@ -321,7 +516,8 @@ async function buildMelodeePackage(stockBytes, appBytes, product) {
 }
 
 // SPDX-License-Identifier: GPL-3.0-only
-// Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+// Copyright (C) 2026 Kerem Kilic (Ellic Studio)
+// Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
 //
 // The FM-1 USB-MIDI update protocol over WebMIDI (after tools/fm1_install.py).
 // Step 1: the running firmware (official
@@ -334,9 +530,15 @@ const UPGRADE = [0xF0, 0x22, 0x24, 0x35, 0x7F, 0xF7];
 const MAXDATA = 512;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const IS_OTA = (id) => /^ota-/i.test(id.model);
+// the update loaders on the handshake: Tessera's own (firmware/loader/loader.c, still Melodee's identity), which
+// writes the app area only, and the official one, which writes the whole package including the boot data and
+// reports the name in its update record (firmware/src/ota.c). Each package goes only to its own.
+const TESSERA_LOADER = "ota-FM-1_900";
+const STOCK_LOADER = "ota-FM-1_015";
 
 // errors carry a code the pages translate: notfound, model, stopped, noloader, lost, noreturn,
-// mismatch (detail: the identity the device reports), badreq
+// mismatch (detail: the identity the device reports), badreq, wrongloader (detail: the loader's
+// identity). A step-1 error has lastRead: the last image address the running firmware read.
 function fail(code, msg, detail = "") { const e = new Error(msg); e.code = code; e.detail = detail; return e; }
 
 function pack7(data) {
@@ -441,7 +643,7 @@ class Updater {
     const outs = [...this.access.outputs.values()];
     for (const input of this.access.inputs.values()) {
       if (input.state === "disconnected") continue;
-      if (!/fm-1|melodee|felucca|ota|composite|sinco|usb-midi/i.test(input.name || "")) continue;   // never probe other gear
+      if (!/fm-1|tessera|melodee|felucca|ota|composite|sinco|usb-midi/i.test(input.name || "")) continue;   // never probe other gear
       const output = outs.find((o) => o.name === input.name && o.state !== "disconnected");
       if (!output) continue;
       try { await input.open(); await output.open(); } catch (_) { continue; }
@@ -466,12 +668,12 @@ class Updater {
   // serve read requests until the device asks for one of the finish addresses; stops early
   // when the port disappears (lost: true) instead of waiting out idleMs
   async serve(link, image, finishAddr, idleMs, onProgress) {
-    let served = 0, last = Date.now();
+    let served = 0, last = Date.now(), lastRead = -1;
     for (;;) {
       const pkt = await link.read(1000);
       if (!pkt) {
-        if (link.lost) return { served, finished: false, lost: true };
-        if (Date.now() - last > idleMs) return { served, finished: false };
+        if (link.lost) return { served, finished: false, lost: true, lastRead };
+        if (Date.now() - last > idleMs) return { served, finished: false, lastRead };
         continue;
       }
       const r = parseRequest(pkt);
@@ -483,17 +685,19 @@ class Updater {
         continue;
       }
       if (r.len > MAXDATA || r.addr + r.len > image.length) throw fail("badreq", `bad request ${r.addr.toString(16)}+${r.len}`);
+      lastRead = r.addr;
       await sleep(10);
       if (!link.send(response(r.addr, Array.from(image.subarray(r.addr, r.addr + r.len)), r.fl))) {
-        return { served, finished: false, lost: true };
+        return { served, finished: false, lost: true, lastRead };
       }
       served++;
       if (onProgress) onProgress(served, r.addr);
     }
   }
 
-  // full install: running firmware -> loader -> new firmware
-  async install(image, product, onStep) {
+  // full install: running firmware -> loader -> new firmware; loader: the identity of the
+  // package's own loader (TESSERA_LOADER, STOCK_LOADER), any other one gets nothing
+  async install(image, product, onStep, loader) {
     const step = onStep || (() => {});
     const dev = await this.find((id) => !IS_OTA(id));
     if (!dev) throw fail("notfound", "FM-1 not found (USB cable, and no other app using it?)");
@@ -504,13 +708,21 @@ class Updater {
     await sleep(2000);
     const s1 = await this.serve(dev.link, image, 0xE0000000, 8000, (n) => step("verify", n));
     dev.link.close();
-    if (!s1.finished) throw fail(s1.lost ? "lost" : "stopped", `the device ${s1.lost ? "was disconnected" : "stopped"} after ${s1.served} requests: nothing was written`);
+    if (!s1.finished) {
+      const e = fail(s1.lost ? "lost" : "stopped", `the device ${s1.lost ? "was disconnected" : "stopped"} after ${s1.served} requests: nothing was written`);
+      e.lastRead = s1.lastRead;
+      throw e;
+    }
     step("loader");
     await sleep(3000);
     const ota = await this.waitFor((id) => id.model === "ota-" + model, 30000);
     if (!ota) throw fail("noloader", "the update loader did not appear. Replug the USB cable and press Install again: the device stays in update mode until it is finished.");
+    if (ota.id.text !== loader) {
+      ota.link.close();
+      throw fail("wrongloader", `the device started ${ota.id.text}, this package goes only to ${loader}: nothing was sent to it`, ota.id.text);
+    }
     const s2 = await this.write(ota, image, step);
-    if (!s2.finished) throw fail(s2.lost ? "lost" : "stopped", `the loader ${s2.lost ? "was disconnected" : "stopped"} after ${s2.served} requests. Replug and press Install again to resume.`);
+    if (!s2.finished) throw fail(s2.lost ? "lost" : "stopped", `the loader ${s2.lost ? "was disconnected" : "stopped"} after ${s2.served} requests. Reconnect and press Install again. With boot-protected firmware, power on holding OCT− alone if needed; three short key-light flashes mean update mode.`);
     step("reboot");
     await sleep(3000);
     const back = await this.waitFor((id) => !IS_OTA(id), 40000);
@@ -530,10 +742,11 @@ class Updater {
     return s2;
   }
 
-  // resume: the device is already in update mode (loader) -> true when the write finished
-  async resume(image, onStep, product = null) {
+  // resume: the device is already in update mode -> true when the write finished. Only the
+  // package's own loader (identity `loader`) is written to; false if it is not there.
+  async resume(image, onStep, product, loader) {
     const model = product && product.split("_")[0];
-    const ota = await this.find((id) => model ? id.model === "ota-" + model : IS_OTA(id));
+    const ota = await this.find((id) => id.text === loader);
     if (!ota) return false;
     const step = onStep || (() => {});
     const result = await this.write(ota, image, step);
@@ -561,9 +774,27 @@ const BACKUP_IDS_CZ = Array.from({length:17},(_,i)=>i);
 const BACKUP_IDS_OWN = Array.from({length:21},(_,i)=>i);
 const BACKUP_IDS_NATIVE = Array.from({length:23},(_,i)=>i);
 const BACKUP_IDS_P5 = Array.from({length:28},(_,i)=>i);
-const maxSize = id => id >= 32 ? 81920 : (id === 0 || (id >= 2 && id <= 5)) ? 27904 : id>=23&&id<=27?3600:3840;
-const idsOf = (n) => (n === BACKUP_IDS.length ? BACKUP_IDS : n === BACKUP_IDS_V1.length ? BACKUP_IDS_V1 : n === 9 ? BACKUP_IDS_BANKS : n === 17 ? BACKUP_IDS_CZ : n === 21 ? BACKUP_IDS_OWN : n === 23 ? BACKUP_IDS_NATIVE : n === 28 ? BACKUP_IDS_P5 : null);
+const BACKUP_IDS_TESS = Array.from({length:30},(_,i)=>i);   // melodee-tess: 28 the generators of the saved slots, 29 the live ones
+const maxSize = id => id >= 32 ? 81920 : (id === 0 || (id >= 2 && id <= 5)) ? 34816 : id>=23&&id<=27?3600:3840;
+const idsOf = (n) => (n === BACKUP_IDS.length ? BACKUP_IDS : n === BACKUP_IDS_V1.length ? BACKUP_IDS_V1 : n === 9 ? BACKUP_IDS_BANKS : n === 17 ? BACKUP_IDS_CZ : n === 21 ? BACKUP_IDS_OWN : n === 23 ? BACKUP_IDS_NATIVE : n === 28 ? BACKUP_IDS_P5 : n === 30 ? BACKUP_IDS_TESS : null);
 const BACKUP_CMD = { LIST: 65, GET: 66, PUT: 67 };
+// melodee-tess, the own project format: the projects (0 the live music, 2..5 the slots) are TSP1 records (project_tsp.c):
+// "TSP1", u32 length, u16 part count, u16 0, the parts (u8 id, u8 version, u16 length, bytes), u32 FNV-1a of the rest.
+// Firmware of the own format reads no older project, and older firmware reads no TSP1 one: no converter either way.
+const TSP_MAGIC = 0x31505354, TSP_HEAD = 12;
+const isProject = (id) => id === 0 || (id >= 2 && id <= 5);
+const fnv = (bytes) => { let s = 0x811c9dc5; for (const b of bytes) s = Math.imul(s ^ b, 16777619) >>> 0; return s; };
+const isTsp = (bytes) => bytes.length >= TSP_HEAD + 4 && new DataView(bytes.buffer, bytes.byteOffset, bytes.length).getUint32(0, true) === TSP_MAGIC;
+function tspCheck(bytes) {                    // the record whole: its length, every part inside it, its checksum
+  const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.length), n = bytes.length;
+  if (v.getUint32(4, true) !== n || fnv(bytes.subarray(0, n - 4)) !== v.getUint32(n - 4, true)) throw new Error("Damaged project record");
+  let at = TSP_HEAD;
+  for (let k = v.getUint16(8, true); k > 0; k--) {
+    if (at + 4 > n - 4) throw new Error("Damaged project record");
+    at += 4 + v.getUint16(at + 2, true);
+  }
+  if (at !== n - 4) throw new Error("Damaged project record");
+}
 const BACKUP_CHUNK = 256;
 const bkU32 = (n) => Array.from({ length: 5 }, (_, i) => (n >>> (i * 7)) & (i === 4 ? 15 : 127));
 const bkR32 = (a, off = 0) => {
@@ -620,7 +851,7 @@ function readBackup(file) {
   if (typeof file === "string") file = JSON.parse(file);
   const ids = file && Array.isArray(file.objects) ? idsOf(file.objects.length) : null;
   if (!file || file.format !== "felucca-backup" || file.version !== 1 || !ids)
-    throw new Error("Not a complete Melodee backup");
+    throw new Error("Not a complete backup file");
   const objects = file.objects.map((o, i) => {
     if (!o || o.id !== ids[i] || !Number.isInteger(o.size) || o.size < 0 || o.size > maxSize(o.id) ||
         !Number.isInteger(o.crc) || o.crc < 0 || o.crc > 0xffffffff || typeof o.data !== "string" ||
@@ -628,6 +859,7 @@ function readBackup(file) {
       throw new Error("Invalid backup object");
     const bytes = Uint8Array.from(atob(o.data), (c) => c.charCodeAt(0));
     if (bytes.length !== o.size || bkCrc(bytes) !== o.crc) throw new Error("Backup checksum mismatch");
+    if (isProject(o.id) && isTsp(bytes)) tspCheck(bytes);
     if(o.id>=23&&o.id<=27&&o.size){
       if(o.size!==3600)throw Error("Invalid Prophet bank size");const v=new DataView(bytes.buffer),used=v.getUint32(4,true),fav=v.getUint32(8,true),mask=(1<<(o.id===27?24:26))-1;
       if(v.getUint32(0,true)!==0x31553550||(used&~mask)||(fav&~(mask|(o.id===23?0x80000000:0))))throw Error("Invalid Prophet bank");
@@ -686,10 +918,29 @@ async function restoreBackup(request, file, onProgress = () => {}) {
   const ask = async (r, o = {}) => request(r, { timeout: 4000, retries: 0, ...o });
   const supported = bkManifest(await ask([BACKUP_CMD.LIST, []]));
   const liveSize = supported.find(o => o.id === 0)?.size || 0;
-  for (const o of archive.objects) if ((o.id === 0 || o.id >= 2 && o.id <= 5) && o.size > liveSize && !(liveSize >= 19008 && [19084,19092,20224].includes(o.size)))
-    throw new Error("This backup needs firmware with larger recording storage");
   for (const o of archive.objects) if (!supported.some(x => x.id === o.id) && o.size) throw new Error("This firmware does not support a nonempty object in this backup");
+  let own = false;                            // the device's live music a TSP1 record: firmware of the own format
+  if (liveSize >= TSP_HEAD + 4) {
+    const a = await ask([BACKUP_CMD.GET, [0, ...bkU32(0), 4, 0]]); bkCheck(a[1]);
+    if (a[0] !== 0 || bkR32(a, 2) !== 0 || (a[7] | a[8] << 7) !== 4) throw new Error("Unexpected backup reply");
+    own = new DataView(bkUnpack(a.slice(9), 4).buffer).getUint32(0, true) === TSP_MAGIC;
+  }
+  const oldProjects = archive.objects.some(o => isProject(o.id) && o.size && !isTsp(o.bytes));
+  const tspProjects = archive.objects.some(o => isProject(o.id) && o.size && isTsp(o.bytes));
+  if (own && oldProjects)
+    throw new Error("This backup's projects are in the format before Tessera's own; this firmware does not read them. Restore it with the firmware that made it.");
+  if (!own && tspProjects) throw new Error("This backup's projects are in Tessera's own format; update the firmware first.");
+  if (!own) for (const o of archive.objects) if (isProject(o.id) && o.size > liveSize && !(liveSize >= 19008 && [19084,19092,20224].includes(o.size)))
+    throw new Error("This backup needs firmware with larger recording storage");   // (fixed-size records; TSP1's vary)
   const put = async (args) => { const a = await ask([BACKUP_CMD.PUT, args]); bkCheck(a[2]); return a; };
+  // The firmware accepts or refuses each object's size before the first write (2.0 reads only the formats of
+  // 1.0 and later: an older archive restores on 1.2 first), so a refused archive writes nothing.
+  for (const o of archive.objects) if (o.id < 32 && o.size && supported.some(x => x.id === o.id)) {
+    const a = await ask([BACKUP_CMD.PUT, [0, o.id, ...bkU32(o.size), ...bkU32(o.crc)]]);
+    await ask([BACKUP_CMD.PUT, [3, o.id]]);
+    if (a[2] === 1) throw new Error("This backup holds an older format. Restore it with Melodee 1.2 first.");
+    bkCheck(a[2]);
+  }
   // Restore live music last. Other objects commit individually; a disconnect can leave a partial restore.
   for (const o of [...archive.objects.slice(2), archive.objects[1], archive.objects[0]]) {
     if (!supported.some(x => x.id === o.id)) continue;
@@ -723,6 +974,72 @@ async function restoreBackup(request, file, onProgress = () => {}) {
   return archive;
 }
 
+// One project into one slot (A..D: 0..3), as the editor puts a demo (demos/*.tsp) on the FM-1: objects 2..5 alone, the
+// rest of the device as it was. The firmware writes the slot, its name shows in the slot list at once (editor_backup.c).
+const TSP_NAME = 10;                          // project_tsp.c's NAME part id (its 12 bytes, 0-padded)
+function tspName(bytes) {              // a whole TSP1 record's name ("" when it has none); throws when not one
+  if (!isTsp(bytes)) throw new Error("Not a Tessera project record");
+  tspCheck(bytes);
+  const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.length);
+  let at = TSP_HEAD;
+  for (let k = v.getUint16(8, true); k > 0; k--) {
+    const len = v.getUint16(at + 2, true);
+    if (bytes[at] === TSP_NAME) { const n = bytes.subarray(at + 4, at + 4 + len), z = n.indexOf(0); return String.fromCharCode(...(z < 0 ? n : n.subarray(0, z))); }
+    at += 4 + len;
+  }
+  return "";
+}
+async function getObject(ask, id, size) {
+  const bytes = new Uint8Array(size);
+  for (let off = 0; off < size; off += BACKUP_CHUNK) {
+    const n = Math.min(BACKUP_CHUNK, size - off), a = await ask([BACKUP_CMD.GET, [id, ...bkU32(off), n & 127, n >>> 7]]);
+    bkCheck(a[1]);
+    if (a[0] !== id || bkR32(a, 2) !== off || (a[7] | a[8] << 7) !== n) throw new Error("Unexpected backup reply");
+    bytes.set(bkUnpack(a.slice(9), n), off);
+  }
+  return bytes;
+}
+// What the four slots hold: [{ used, name }] (name null: a project the firmware does not read). Stops playback.
+// Throws when the firmware is not of Tessera's own project format (2.0 and later).
+async function readSlots(request) {
+  const ask = (r) => request(r, { timeout: 3000, retries: 1 });
+  const list = bkManifest(await ask([BACKUP_CMD.LIST, []]));
+  const live = list.find(o => o.id === 0);
+  if (!live || live.size < TSP_HEAD + 4 || new DataView((await getObject(ask, 0, 4)).buffer).getUint32(0, true) !== TSP_MAGIC) throw new Error("The demos need Tessera 2.0 or later on the FM-1");
+  const slots = [];
+  for (const id of [2, 3, 4, 5]) {            // (one request at a time)
+    const size = list.find(o => o.id === id)?.size || 0;
+    if (!size) { slots.push({ used: false, name: "" }); continue; }
+    const bytes = await getObject(ask, id, size);
+    let name = null;
+    try { name = tspName(bytes); } catch { /* a project of a format before Tessera's own */ }
+    slots.push({ used: true, name });
+  }
+  return slots;
+}
+// One slot's project (0..3: A..D) as its TSP1 record, for a .tsp file; an empty array when the slot is empty. Stops playback.
+async function readProject(request, slot) {
+  if (!(slot >= 0 && slot <= 3)) throw new Error("Invalid slot");
+  const ask = (r) => request(r, { timeout: 3000, retries: 1 });
+  const size = bkManifest(await ask([BACKUP_CMD.LIST, []])).find(o => o.id === 2 + slot)?.size || 0;
+  return size ? getObject(ask, 2 + slot, size) : new Uint8Array(0);
+}
+async function putProject(request, slot, bytes, onProgress = () => {}) {
+  tspName(bytes);                             // a whole record, or nothing is sent
+  if (!(slot >= 0 && slot <= 3) || bytes.length > maxSize(2)) throw new Error("Invalid slot or project");
+  const id = 2 + slot, ask = (args) => request([BACKUP_CMD.PUT, args], { timeout: 4000, retries: 0 });
+  let a = await ask([0, id, ...bkU32(bytes.length), ...bkU32(bkCrc(bytes))]); bkCheck(a[2]);
+  try {
+    for (let off = 0; off < bytes.length; off += BACKUP_CHUNK) {
+      a = await ask([1, id, ...bkU32(off), ...bkPack(bytes.subarray(off, off + BACKUP_CHUNK))]); bkCheck(a[2]);
+      onProgress(Math.min(bytes.length, off + BACKUP_CHUNK), bytes.length);
+    }
+    a = await ask([2, id]);
+  } catch (e) { await ask([3, id]).catch(() => {}); throw e; }
+  if (a[2] === 2) throw new Error("This firmware does not read the demo: install the Tessera release it came with (or later)");
+  bkCheck(a[2]);
+}
+
 // Installer connection: no editor page or watcher owns this input simultaneously.
 class BackupConnection {
   constructor(input, output) {
@@ -752,28 +1069,58 @@ const $ = (id) => document.getElementById(id);
 const TEXT = {
   ja: {
     intro: "FM-1 を USB で接続してください。（Chrome か Edge で使えます）",
+    tipLabel: "ヒント", tip: "インストールしたら、SEQ を押して GEN の KNOB 1（MODE）で各トラックが何を演奏するかを選びます。各つまみの働きはマニュアルに載っています。",
     warn: "書き込み中は USB を抜かないでください。",
-    install: "インストール", other: "English",
+    install: "インストール",
+    betaTitle: "ベータ版", "beta-dual": "ベータ（デュアルコア）", "beta-single": "ベータ（シングルコア）",
+    "beta-dualTag": "ベータ・デュアルコア", "beta-singleTag": "ベータ・シングルコア",
+    betaWhy: "次のアップデートを正式リリースの前に試せます。まだ不具合があるかもしれません。インストール前にエディタで全体バックアップを保存してください。ベータで保存したプロジェクトや音色は、古いリリースでは読めないことがあります。標準を選んでインストールするとリリース版へ戻せます。",
+    betaReport: "不具合の報告・感想（GitHub Issues）",
+    betaNotes: "このベータの変更点（英語）",
+    nightlyTitle: "Nightly（next）", "nightly-dual": "Nightly（デュアルコア）",
+    "nightly-single": "Nightly（シングルコア）", "nightly-dualTag": "nightly・デュアルコア", "nightly-singleTag": "nightly・シングルコア",
+    nightlyWhy: "next の開発版です。インストール前にエディタで全体バックアップを保存してください。標準版を選ぶとリリース版へ戻せます。",
+    synthTitle: "シンセ専用（オプション）", "synth-dual": "シンセ専用（デュアルコア）", "synth-single": "シンセ専用（シングルコア）",
+    "synth-dualTag": "シンセ専用・デュアルコア", "synth-singleTag": "シンセ専用・シングルコア",
+    synthWhy: "パソコンで演奏・録音するための 1 トラックの音源版です。すべてのシンセと音色エディット、ARP・CHORD・SCALES、エフェクト（ドライブ、コーラス、ディレイ、リバーブ）、USB オーディオのステレオ録音を備えます。シーケンサー、ソング、プロジェクトの保存はありません。PLAY は ARP のホールドです。本体に保存したプロジェクトとプリセットはそのまま残り、標準を選んでインストールすると戻ります。インストール前にエディタで全体バックアップを保存してください。",
+    betaEditor: "ベータ版のエディタ（新しい機能とテスト用プロジェクト入り）",
+    synthEditor: "シンセ専用版のエディタ（音色・エフェクト・設定をパソコンから編集）",
     dual: "標準（デュアルコア）", single: "シングルコア", dualTag: "標準", singleTag: "シングルコア",
-    singleWhy: "シングルコア版は、標準版でクラッシュする FM-1 のためのものです（赤い MELODEE CRASH 画面、フリーズ、書き込みモードでの再起動）。FM-1 の 2 つ目のコアを起動しません（公式ファームウェアも使っていません）。PROPHET の最大発音数は 8 から 5 になり、重い FM6・PROPHET の音色は早めに処理の上限に達します。標準版に戻すには、標準を選んでインストールしてください。",
+    singleWhy: "シングルコア版は、標準版でクラッシュする FM-1 のためのものです（赤い TESSERA CRASH 画面、フリーズ、書き込みモードでの再起動）。FM-1 の 2 つ目のコアを起動しません（公式ファームウェアも使っていません）。重い FM6 の音色は早めに処理の上限に達します。標準版に戻すには、標準を選んでインストールしてください。",
     editor: "エディタ（インストール後、パソコンから音色やシーケンスを編集）",
     direct: "USB ケーブルはパソコンに直接つないでください。Probe や Transporter などの機材は不要です。",
-    brick: "万一インストールに失敗して起動しなくなった場合は、復旧に Transporter が必要です:",
-    beta: "Melodee (tess) 1.0 は Melodee の実験的フォークです。不具合は github.com/Rastapopolix/melodee-tess へ知らせてください（本家には送らないでください）。このカスタムファームウェアを使ったことで FM-1 が壊れたり不具合が起きたりしても、作者は一切の責任を負いません。自己責任でお使いください。",
-    back: "M-VAVEから公式FM-1 V15を取得し、未変更のFM-1.fwscを選んでください。ファイルはこのブラウザ内で検証し、サーバーへ送りません。",
-    stockTitle: "公式V15に戻す", stockFile: "公式FM-1.fwsc", stockGo: "バックアップして公式V15へ戻す",
-    stockBackup: "現在の曲・保存曲・音色バンク・サンプル・設定を先に保存します。バックアップできない場合は、Melodeeを更新するか、データ消失を了承してバックアップを省略できます。復元はMelodeeを再インストールしてエディタから行います。",
-    stockSkipBackup: "バックアップを省略する（Melodeeの曲・音色・設定が失われる可能性があります）",
-    stockGoNoBackup: "バックアップせず公式V15へ戻す",
-    stockConfirmNoBackup: "バックアップを作成せず公式V15へ戻します。Melodeeの曲・音色・設定が失われる可能性があり、バックアップなしでは復元できません。続けますか？",
+    brick: "起動保護付きファームウェアの更新が中断した場合は、電源を入れ直すか、OCT− だけを押しながら電源を入れてください。キーのライトが短く3回点滅したら更新モードです。USB を接続し直して、もう一度インストールしてください。以前のファームウェアや長い1回の点滅の場合は、USB 復旧手順を確認してください:",
+    recoveryLink: "USB 復旧手順とダウンロード",
+    counted: "インストールが終わると、このページは GoatCounter でその回数を数えます。送るのはバージョンとビルドだけで、Cookie や個人情報は使いません。このブラウザを数えないようにするには、一度このページを #nocount 付きで開いてください。",
+    beta: "Tessera は Melodee から生まれた実験的なファームウェアです。不具合は github.com/Rastapopolix/tessera へ知らせてください。このカスタムファームウェアを使ったことで FM-1 が壊れたり不具合が起きたりしても、作者は一切の責任を負いません。自己責任でお使いください。",
+    back: "Tessera の前に入っていた公式ファームウェア（V15 または V16）の未変更の FM-1.fwsc を選んでください。M-VAVE のダウンロードページは現在 V16 です。V15 は M-VAVE の fm1_open リポジトリ（sdk/firmware/FM-1_015.fwsc）にあります。ファイルはこのブラウザ内で検証し、サーバーへ送りません。",
+    localTitle: "テストビルド（パソコンのファイル）", localFile: "テスト用ファームウェア（.fwsc）", localGo: "テストビルドをインストール",
+    localWhy: "テスト用の Tessera ビルドです。パソコンに保存した .fwsc（build/ や テストページのもの）を選んでください。tools/fm1pkg_make.py で作ったパッケージだけを受け付けます。ファイルはこのブラウザ内で確認し、サーバーへ送りません。テストビルドは未リリースで、正しく動かないことがあります。標準を選んでインストールするとリリース版に戻せます。",
+    localValid: "テストビルドを確認しました: ", localError: "このファイルは使えません: ",
+    localConfirm: "このテストビルドをインストールしますか？ リリース版ではなく、正しく動かないことがあります。\n",
+    stockTitle: "公式ファームウェアに戻す", stockFile: "公式 FM-1.fwsc（V15 または V16）", stockGo: "バックアップして公式ファームウェアへ戻す",
+    stockBackup: "現在の曲・保存曲・音色バンク・サンプル・設定を先に保存します。バックアップできない場合は、Tessera を更新するか、データ消失を了承してバックアップを省略できます。復元は Tessera を再インストールしてエディタから行います。",
+    stockSkipBackup: "バックアップを省略する（Tessera の曲・音色・設定が失われる可能性があります）",
+    stockGoNoBackup: "バックアップせず公式ファームウェアへ戻す",
+    stockConfirmNoBackup: "バックアップを作成せず公式ファームウェアへ戻します。Tessera の曲・音色・設定が失われる可能性があり、バックアップなしでは復元できません。続けますか？",
     stockRecovery: "更新中断の再開：全体バックアップはすでにパソコンへ保存済み",
-    stockValid: "公式V15を確認しました", stockConfirm: "全体バックアップファイルをパソコンに保存できましたか？ 続けると公式V15へ戻します。Melodeeの曲は公式V15では開けません。",
+    stockValid: "公式ファームウェアを確認しました: ", stockConfirm: "全体バックアップファイルをパソコンに保存できましたか？ 続けると公式ファームウェアへ戻します。Tessera の曲は公式ファームウェアでは開けません。",
     stockNeedBackup: "書き込みモードからはバックアップできません。保存済みバックアップがある場合は更新中断の再開にチェックするか、データ消失を了承してバックアップを省略してください。",
-    stockUnsupported: "このMelodeeは全体バックアップに未対応です。先に最新版をインストールするか、データ消失を了承して「バックアップを省略する」を選び、もう一度押してください。",
+    stockUnsupported: "このファームウェアは全体バックアップに未対応です。先に最新版をインストールするか、データ消失を了承して「バックアップを省略する」を選び、もう一度押してください。",
     backup: "全体バックアップ保存中 ", stockError: "公式ファイルを確認できません: ",
+    stockNeedsV16: "書き込みはしていません（CHECK HEAD, FAILED -5）。この FM-1 の起動部は V16 のものです（Tessera の前は V16 でした）。戻せるのは V16 です。M-VAVE の現在の FM-1.fwsc（V16）を選んでください。",
+    stockNeedsV15: "書き込みはしていません（CHECK HEAD, FAILED -5）。この FM-1 の起動部は V15 のものです（Tessera の前は V15 でした）。戻せるのは V15 です。M-VAVE の fm1_open リポジトリ（sdk/firmware）の FM-1_015.fwsc を選んでください。その後 M-VAVE の M-UPGRADE で V16 にできます。",
+    stockTesseraOld: "書き込みはしていません。3.3 より前の Tessera は V16 を受け付けません。最新の Tessera をインストールしてから、もう一度公式ファームウェアに戻してください。",
+    loaderStock: "FM-1 は M-VAVE 公式の書き込みモードで待機しています。このモードには公式FM-1.fwscしか書き込めません。何も送っていません。先に「公式ファームウェアに戻す」を完了してください。",
+    loaderTessera: "FM-1 は Tessera の書き込みモード（Melodee Update）で待機しています。このモードには公式ファイルを送りません。何も送っていません。上の「インストール」で Tessera を完了してから、公式ファームウェアに戻してください。",
+    loaderUnknown: "このインストーラーが知らない書き込みモードです。何も送っていません。この名前を添えて GitHub で報告してください: ",
     nomidi: "このブラウザでは使えません。Chrome か Edge で開いてください。", loadfail: "読み込めませんでした: ",
     start: "開始します", verify: "確認中", loader: "書き込みモードに切り替え中", write: "書き込み中",
-    reboot: "再起動中", done: "完了しました", stopped: "途中で止まりました。USB を挿し直してもう一度押してください。",
+    reboot: "再起動中", done: "完了しました。FM-1 を外しても大丈夫です。", stopped: "途中で止まりました。USB を挿し直してもう一度押してください。",
+    needBrowser: "Chrome か Edge", needCable: "USB データケーブル", needTab: "終わるまでこのタブを開いたまま",
+    runTitle: "Tessera をインストール中", runTitleStock: "公式ファームウェアに戻しています",
+    runKeep: "終わるまでこのタブを開いたまま、FM-1 を接続したままにしてください。タブを閉じたり、FM-1 の電源を切ったり、USB を抜いたりすると更新が中断します。",
+    stPrep: "準備", stLoader: "書き込みモード", stWrite: "書き込み", stReboot: "再起動", details: "詳細", close: "閉じる",
     error: "エラー: ",
     denied: "MIDI（SysEx）の使用が許可されませんでした。アドレスバーのサイト設定で MIDI を許可して、もう一度押してください。",
     notfound: "FM-1 が見つかりません。USB ケーブル（データ通信用か）を確かめ、MIDI を使う他のアプリを閉じてから、もう一度押してください。",
@@ -788,28 +1135,58 @@ const TEXT = {
   },
   en: {
     intro: "Connect the FM-1 by USB. (Works in Chrome or Edge.)",
+    tipLabel: "TIP", tip: "Once installed, tap SEQ and turn KNOB 1 (MODE) on GEN to pick what each track plays. Every knob's job is in the manual.",
     warn: "Do not unplug the USB cable while writing.",
-    install: "Install", other: "日本語",
+    install: "Install",
+    betaTitle: "Beta", "beta-dual": "Beta — dual core", "beta-single": "Beta — single core",
+    "beta-dualTag": "beta, dual core", "beta-singleTag": "beta, single core",
+    betaWhy: "The next update, to try before its stable release. It may still have bugs: save a complete backup in the editor before installing. Projects and sounds saved on the beta may not all load on an older release. To go back, choose Standard and install again.",
+    betaReport: "Report a problem or tell us how it went (GitHub issues)",
+    betaNotes: "What's new in this beta",
+    nightlyTitle: "Nightly (next)", "nightly-dual": "Nightly — dual core",
+    "nightly-single": "Nightly — single core", "nightly-dualTag": "nightly, dual core", "nightly-singleTag": "nightly, single core",
+    nightlyWhy: "Development builds from next. Save a complete backup in the editor before installing. Choose Standard to return to the release.",
+    synthTitle: "Synth only (optional)", "synth-dual": "Synth only — dual core", "synth-single": "Synth only — single core",
+    "synth-dualTag": "synth only, dual core", "synth-singleTag": "synth only, single core",
+    synthWhy: "A one-track sound module for playing and recording into a computer: every synth and its sound editing, ARP, CHORD and SCALES, the effects (drive, chorus, delay, reverb) and stereo recording over USB audio. There is no sequencer, song or project saving; PLAY holds the ARP. Projects and presets saved on the FM-1 stay where they are and come back when you choose Standard and install again. Save a complete backup in the editor before installing.",
+    betaEditor: "The beta's editor (its new features and the CHK test projects)",
+    synthEditor: "Synth-only editor (sounds, effects and settings from the computer)",
     dual: "Standard (dual core)", single: "Single core", dualTag: "standard", singleTag: "single core",
-    singleWhy: "The single-core build is for FM-1s that crash with the standard build (a red MELODEE CRASH screen, freezes, or restarts into update mode). It never starts the FM-1's second core, which the official firmware does not use either. PROPHET then plays up to five voices instead of eight, and heavy FM6 and PROPHET sounds reach the CPU limit sooner. To go back, choose Standard and install again.",
+    singleWhy: "The single-core build is for FM-1s that crash with the standard build (a red TESSERA CRASH screen, freezes, or restarts into update mode). It never starts the FM-1's second core, which the official firmware does not use either. Heavy FM6 sounds reach the CPU limit sooner. To go back, choose Standard and install again.",
     editor: "Editor (after installing: edit sounds and sequences from the computer)",
     direct: "Connect the USB cable directly to the computer. No probe or Transporter is needed.",
-    brick: "If an install fails and the FM-1 no longer starts, recovering it needs a Transporter:",
-    beta: "Melodee (tess) 1.0 is an experimental fork of Melodee; please report problems at github.com/Rastapopolix/melodee-tess, not to upstream. The author accepts no responsibility if your FM-1 is damaged or misbehaves because of this custom firmware. Use it at your own risk.",
-    back: "Get official FM-1 V15 from M-VAVE and select the unmodified FM-1.fwsc. The browser validates it locally; it is not sent to a server.",
-    stockTitle: "Return to official V15", stockFile: "Official FM-1.fwsc", stockGo: "Back up and return to official V15",
-    stockBackup: "Current music, saved music, sound banks, samples and settings are saved first. If backups are unavailable, update Melodee or choose to skip the backup and accept possible data loss. To restore an archive later, reinstall Melodee and use the editor.",
-    stockSkipBackup: "Skip backup (Melodee music, sounds and settings may be lost)",
-    stockGoNoBackup: "Return to official V15 without backup",
-    stockConfirmNoBackup: "Return to official V15 without creating a backup? Melodee music, sounds and settings may be lost and cannot be restored without a backup. Continue?",
+    brick: "If an update is interrupted on firmware with boot protection, switch the FM-1 on again (or hold OCT− alone while switching on). Three short key-light flashes mean update mode: reconnect USB and press Install again. Older firmware and one long flash need the USB recovery instructions:",
+    recoveryLink: "USB recovery instructions and downloads",
+    counted: "When an install finishes, the page counts it at GoatCounter: the version and the build only, no cookies or personal data. To leave this browser out, open this page once with #nocount at the end of its address.",
+    beta: "Tessera is an experimental firmware grown out of Melodee; please report problems at github.com/Rastapopolix/tessera. The author accepts no responsibility if your FM-1 is damaged or misbehaves because of this custom firmware. Use it at your own risk.",
+    back: "Select the unmodified official FM-1.fwsc of the version the FM-1 had before Tessera, V15 or V16. M-VAVE's download page now has V16; V15 is in M-VAVE's fm1_open repository (sdk/firmware/FM-1_015.fwsc). The browser validates it locally; it is not sent to a server.",
+    localTitle: "Test build from this computer", localFile: "Test firmware (.fwsc)", localGo: "Install test build",
+    localWhy: "For testing: pick a Tessera .fwsc saved on this computer, such as one from build/ or a test page. Only packages made by tools/fm1pkg_make.py are accepted. The browser checks the file locally; it is not sent to a server. Test builds are unreleased and may not work; choose Standard and install again to go back to the release.",
+    localValid: "Test build checked: ", localError: "Cannot use this file: ",
+    localConfirm: "Install this test build? It is not a release and may not work.\n",
+    stockTitle: "Return to the official firmware", stockFile: "Official FM-1.fwsc (V15 or V16)", stockGo: "Back up and return to the official firmware",
+    stockBackup: "Current music, saved music, sound banks, samples and settings are saved first. If backups are unavailable, update Tessera or choose to skip the backup and accept possible data loss. To restore an archive later, reinstall Tessera and use the editor.",
+    stockSkipBackup: "Skip backup (Tessera music, sounds and settings may be lost)",
+    stockGoNoBackup: "Return to the official firmware without backup",
+    stockConfirmNoBackup: "Return to the official firmware without creating a backup? Tessera music, sounds and settings may be lost and cannot be restored without a backup. Continue?",
     stockRecovery: "Resume an interrupted update: I already saved a complete backup to this computer",
-    stockValid: "Official V15 verified", stockConfirm: "Has the complete backup file been saved to this computer? Continue to return to official V15. Official V15 cannot open Melodee music.",
+    stockValid: "Official firmware verified: ", stockConfirm: "Has the complete backup file been saved to this computer? Continue to return to the official firmware. The official firmware cannot open Tessera music.",
     stockNeedBackup: "An update loader cannot export a backup. Select resume if you already saved a complete backup, or choose Skip backup to continue and accept possible data loss.",
-    stockUnsupported: "This Melodee does not support complete backups. Install the current Melodee first, or select Skip backup to accept possible data loss and try again.",
+    stockUnsupported: "This firmware does not support complete backups. Install the current Tessera first, or select Skip backup to accept possible data loss and try again.",
     backup: "Saving complete backup ", stockError: "Cannot validate official firmware: ",
+    stockNeedsV16: "Nothing was written (CHECK HEAD, FAILED -5): this FM-1's start-up part is V16's (it ran V16 before Tessera), so its way back is V16. Select M-VAVE's current FM-1.fwsc (V16).",
+    stockNeedsV15: "Nothing was written (CHECK HEAD, FAILED -5): this FM-1's start-up part is V15's (it ran V15 before Tessera), so its way back is V15. Select FM-1_015.fwsc from M-VAVE's fm1_open repository (sdk/firmware). M-VAVE's M-UPGRADE can take it to V16 afterwards.",
+    stockTesseraOld: "Nothing was written. Tessera before 3.3 does not take V16: install the current Tessera first, then return to the official firmware again.",
+    loaderStock: "The FM-1 is waiting in M-VAVE's official update mode, which only accepts the official FM-1.fwsc. Nothing was sent. Finish Return to the official firmware first.",
+    loaderTessera: "The FM-1 is waiting in Tessera's update mode (Melodee Update), which never receives the official file. Nothing was sent. Press Install above to finish Tessera first, then return to the official firmware.",
+    loaderUnknown: "The FM-1 is in an update mode this installer does not know. Nothing was sent. Please report it on GitHub with this name: ",
     nomidi: "This browser cannot do it. Open the page in Chrome or Edge.", loadfail: "Could not load: ",
     start: "Starting", verify: "Verifying", loader: "Switching to update mode", write: "Writing",
-    reboot: "Restarting", done: "Done", stopped: "Stopped. Replug the USB cable and press Install again.",
+    reboot: "Restarting", done: "Done. You can unplug the FM-1.", stopped: "Stopped. Replug the USB cable and press Install again.",
+    needBrowser: "Chrome or Edge", needCable: "A USB data cable", needTab: "This tab open until it is done",
+    runTitle: "Installing Tessera", runTitleStock: "Returning to the official firmware",
+    runKeep: "Keep this tab open and the FM-1 connected until it is finished. Closing the tab, switching the FM-1 off or unplugging it interrupts the update.",
+    stPrep: "Preparing", stLoader: "Update mode", stWrite: "Writing", stReboot: "Restarting", details: "Details", close: "Close",
     error: "Error: ",
     denied: "MIDI (SysEx) access was not allowed. Allow MIDI in the site settings (address bar) and press Install again.",
     notfound: "FM-1 not found. Check the USB cable (a data cable), close other apps that use MIDI, and press Install again.",
@@ -822,102 +1199,831 @@ const TEXT = {
     leave: "Writing. Do not close the page.",
     license: "GPL-3.0, no warranty. Source:",
   },
+  es: {
+    intro: "Conecta el FM-1 por USB. (Funciona en Chrome o Edge.)",
+    tipLabel: "CONSEJO",
+    tip: "Una vez instalado, toca SEQ y gira KNOB 1 (MODE) en GEN para elegir qué toca cada pista. La función de cada mando está en el manual (en inglés).",
+    warn: "No desconectes el cable USB mientras se escribe.",
+    install: "Instalar",
+    betaTitle: "Beta",
+    "beta-dual": "Beta — doble núcleo",
+    "beta-single": "Beta — un núcleo",
+    "beta-dualTag": "beta, doble núcleo",
+    "beta-singleTag": "beta, un núcleo",
+    betaWhy: "La próxima actualización, para probarla antes de su versión estable. Aún puede tener errores: guarda una copia de seguridad completa en el editor antes de instalar. Puede que no todos los proyectos y sonidos guardados en la beta se abran en una versión anterior. Para volver, elige Estándar e instala de nuevo.",
+    betaReport: "Informa de un problema o cuéntanos qué tal fue (GitHub issues)",
+    betaNotes: "Novedades de esta beta",
+    nightlyTitle: "Nightly (next)",
+    "nightly-dual": "Nightly — doble núcleo",
+    "nightly-single": "Nightly — un núcleo",
+    "nightly-dualTag": "nightly, doble núcleo",
+    "nightly-singleTag": "nightly, un núcleo",
+    nightlyWhy: "Versiones de desarrollo de next. Guarda una copia de seguridad completa en el editor antes de instalar. Elige Estándar para volver a la versión publicada.",
+    synthTitle: "Solo sintetizador (opcional)",
+    "synth-dual": "Solo sintetizador — doble núcleo",
+    "synth-single": "Solo sintetizador — un núcleo",
+    "synth-dualTag": "solo sintetizador, doble núcleo",
+    "synth-singleTag": "solo sintetizador, un núcleo",
+    synthWhy: "Un módulo de sonido de una pista para tocar y grabar en un ordenador: todos los sintetizadores con su edición de sonido, ARP, CHORD y SCALES, los efectos (drive, chorus, delay, reverb) y la grabación estéreo por audio USB. No hay secuenciador, canciones ni guardado de proyectos; PLAY mantiene el ARP. Los proyectos y presets guardados en el FM-1 se quedan donde están y vuelven al elegir Estándar e instalar de nuevo. Guarda una copia de seguridad completa en el editor antes de instalar.",
+    betaEditor: "El editor de la beta (sus novedades y los proyectos de prueba CHK)",
+    synthEditor: "Editor de solo sintetizador (sonidos, efectos y ajustes desde el ordenador)",
+    dual: "Estándar (doble núcleo)",
+    single: "Un núcleo",
+    dualTag: "estándar",
+    singleTag: "un núcleo",
+    singleWhy: "La versión de un núcleo es para los FM-1 que fallan con la versión estándar (una pantalla roja TESSERA CRASH, bloqueos o reinicios en modo de actualización). Nunca arranca el segundo núcleo del FM-1, que el firmware oficial tampoco usa. Los sonidos FM6 pesados llegan antes al límite de CPU. Para volver, elige Estándar e instala de nuevo.",
+    editor: "Editor (después de instalar: edita sonidos y secuencias desde el ordenador)",
+    direct: "Conecta el cable USB directamente al ordenador. No hace falta ninguna sonda ni Transporter.",
+    brick: "Si una actualización se interrumpe en un firmware con protección de arranque, vuelve a encender el FM-1 (o mantén pulsado solo OCT− al encenderlo). Tres destellos cortos de las luces de las teclas indican el modo de actualización: vuelve a conectar el USB y pulsa Instalar otra vez. Un firmware más antiguo o un destello largo necesitan las instrucciones de recuperación por USB:",
+    recoveryLink: "Instrucciones y descargas de recuperación por USB",
+    counted: "Cuando termina una instalación, la página la cuenta en GoatCounter: solo la versión y la variante, sin cookies ni datos personales. Para excluir este navegador, abre esta página una vez con #nocount al final de su dirección.",
+    beta: "Tessera es un firmware experimental surgido de Melodee; informa de problemas en github.com/Rastapopolix/tessera. El autor no se hace responsable si tu FM-1 se daña o funciona mal por este firmware personalizado. Úsalo bajo tu propia responsabilidad.",
+    back: "Selecciona el FM-1.fwsc oficial sin modificar de la versión que tenía el FM-1 antes de Tessera, V15 o V16. La página de descargas de M-VAVE ofrece ahora la V16; la V15 está en el repositorio fm1_open de M-VAVE (sdk/firmware/FM-1_015.fwsc). El navegador lo comprueba localmente; no se envía a ningún servidor.",
+    localTitle: "Versión de prueba desde este ordenador",
+    localFile: "Firmware de prueba (.fwsc)",
+    localGo: "Instalar versión de prueba",
+    localWhy: "Para pruebas: elige un .fwsc de Tessera guardado en este ordenador, como uno de build/ o de una página de pruebas. Solo se aceptan paquetes creados con tools/fm1pkg_make.py. El navegador comprueba el archivo localmente; no se envía a ningún servidor. Las versiones de prueba no están publicadas y puede que no funcionen; elige Estándar e instala de nuevo para volver a la versión publicada.",
+    localValid: "Versión de prueba comprobada: ",
+    localError: "No se puede usar este archivo: ",
+    localConfirm: "¿Instalar esta versión de prueba? No es una versión publicada y puede que no funcione.\n",
+    stockTitle: "Volver al firmware oficial",
+    stockFile: "FM-1.fwsc oficial (V15 o V16)",
+    stockGo: "Hacer copia y volver al firmware oficial",
+    stockBackup: "Primero se guardan la música actual, la música guardada, los bancos de sonidos, las muestras y los ajustes. Si no se pueden hacer copias, actualiza Tessera o elige omitir la copia y aceptar la posible pérdida de datos. Para restaurar un archivo más adelante, reinstala Tessera y usa el editor.",
+    stockSkipBackup: "Omitir la copia (la música, los sonidos y los ajustes de Tessera pueden perderse)",
+    stockGoNoBackup: "Volver al firmware oficial sin copia",
+    stockConfirmNoBackup: "¿Volver al firmware oficial sin crear una copia de seguridad? La música, los sonidos y los ajustes de Tessera pueden perderse y no se pueden recuperar sin una copia. ¿Continuar?",
+    stockRecovery: "Reanudar una actualización interrumpida: ya guardé una copia de seguridad completa en este ordenador",
+    stockValid: "Firmware oficial verificado: ",
+    stockConfirm: "¿Se ha guardado el archivo de copia de seguridad completa en este ordenador? Continúa para volver al firmware oficial. El firmware oficial no puede abrir la música de Tessera.",
+    stockNeedBackup: "Un cargador de actualización no puede exportar una copia. Selecciona reanudar si ya guardaste una copia completa, o elige Omitir la copia para continuar aceptando la posible pérdida de datos.",
+    stockUnsupported: "Este firmware no admite copias de seguridad completas. Instala primero el Tessera actual, o selecciona Omitir la copia para aceptar la posible pérdida de datos e inténtalo de nuevo.",
+    backup: "Guardando la copia de seguridad completa ",
+    stockError: "No se puede validar el firmware oficial: ",
+    stockNeedsV16: "No se ha escrito nada (CHECK HEAD, FAILED -5): la parte de arranque de este FM-1 es de la V16 (tenía la V16 antes de Tessera), así que su camino de vuelta es la V16. Selecciona el FM-1.fwsc actual de M-VAVE (V16).",
+    stockNeedsV15: "No se ha escrito nada (CHECK HEAD, FAILED -5): la parte de arranque de este FM-1 es de la V15 (tenía la V15 antes de Tessera), así que su camino de vuelta es la V15. Selecciona FM-1_015.fwsc del repositorio fm1_open de M-VAVE (sdk/firmware). Después, M-UPGRADE de M-VAVE puede llevarlo a la V16.",
+    stockTesseraOld: "No se ha escrito nada. Tessera anterior a la 3.3 no acepta la V16: instala primero el Tessera actual y vuelve después al firmware oficial.",
+    loaderStock: "El FM-1 espera en el modo de actualización oficial de M-VAVE, que solo acepta el FM-1.fwsc oficial. No se ha enviado nada. Termina primero Volver al firmware oficial.",
+    loaderTessera: "El FM-1 espera en el modo de actualización de Tessera (Melodee Update), que nunca recibe el archivo oficial. No se ha enviado nada. Pulsa Instalar arriba para terminar primero Tessera y vuelve después al firmware oficial.",
+    loaderUnknown: "El FM-1 está en un modo de actualización que este instalador no conoce. No se ha enviado nada. Infórmalo en GitHub con este nombre: ",
+    nomidi: "Este navegador no puede hacerlo. Abre la página en Chrome o Edge.",
+    loadfail: "No se pudo cargar: ",
+    start: "Iniciando",
+    verify: "Verificando",
+    loader: "Cambiando al modo de actualización",
+    write: "Escribiendo",
+    reboot: "Reiniciando",
+    done: "Hecho. Ya puedes desconectar el FM-1.",
+    stopped: "Detenido. Vuelve a conectar el cable USB y pulsa Instalar otra vez.",
+    needBrowser: "Chrome o Edge",
+    needCable: "Un cable USB de datos",
+    needTab: "Esta pestaña abierta hasta que termine",
+    runTitle: "Instalando Tessera",
+    runTitleStock: "Volviendo al firmware oficial",
+    runKeep: "Mantén esta pestaña abierta y el FM-1 conectado hasta que termine. Cerrar la pestaña, apagar el FM-1 o desconectarlo interrumpe la actualización.",
+    stPrep: "Preparando",
+    stLoader: "Modo de actualización",
+    stWrite: "Escribiendo",
+    stReboot: "Reiniciando",
+    details: "Detalles",
+    close: "Cerrar",
+    error: "Error: ",
+    denied: "No se permitió el acceso MIDI (SysEx). Permite MIDI en la configuración del sitio (barra de direcciones) y pulsa Instalar otra vez.",
+    notfound: "No se encontró el FM-1. Comprueba el cable USB (debe ser de datos), cierra otras aplicaciones que usen MIDI y pulsa Instalar otra vez.",
+    model: "El dispositivo conectado no es un FM-1.",
+    lost: "Se perdió la conexión USB. Vuelve a conectarlo y pulsa Instalar otra vez.",
+    noloader: "No se encontró el FM-1 en modo de actualización. Vuelve a conectar el cable USB y pulsa Instalar otra vez (sigue en modo de actualización hasta que termine).",
+    noreturn: "El FM-1 no ha vuelto. Apágalo y vuelve a encenderlo.",
+    mismatch: "Escrito, pero el FM-1 indica otra versión: ",
+    badpkg: "El archivo a instalar está dañado. Recarga la página.",
+    leave: "Escribiendo. No cierres la página.",
+    license: "GPL-3.0, sin garantía. Código fuente:",
+  },
+  it: {
+    intro: "Collega l'FM-1 via USB. (Funziona con Chrome o Edge.)",
+    tipLabel: "SUGGERIMENTO",
+    tip: "Dopo l'installazione, tocca SEQ e gira KNOB 1 (MODE) su GEN per scegliere cosa suona ogni traccia. La funzione di ogni manopola è nel manuale (in inglese).",
+    warn: "Non scollegare il cavo USB durante la scrittura.",
+    install: "Installa",
+    betaTitle: "Beta",
+    "beta-dual": "Beta — doppio core",
+    "beta-single": "Beta — core singolo",
+    "beta-dualTag": "beta, doppio core",
+    "beta-singleTag": "beta, core singolo",
+    betaWhy: "Il prossimo aggiornamento, da provare prima della versione stabile. Può ancora contenere bug: salva un backup completo nell'editor prima di installare. Non tutti i progetti e i suoni salvati sulla beta potrebbero aprirsi su una versione precedente. Per tornare indietro, scegli Standard e installa di nuovo.",
+    betaReport: "Segnala un problema o raccontaci com'è andata (GitHub issues)",
+    betaNotes: "Novità di questa beta",
+    nightlyTitle: "Nightly (next)",
+    "nightly-dual": "Nightly — doppio core",
+    "nightly-single": "Nightly — core singolo",
+    "nightly-dualTag": "nightly, doppio core",
+    "nightly-singleTag": "nightly, core singolo",
+    nightlyWhy: "Build di sviluppo da next. Salva un backup completo nell'editor prima di installare. Scegli Standard per tornare alla versione pubblicata.",
+    synthTitle: "Solo synth (opzionale)",
+    "synth-dual": "Solo synth — doppio core",
+    "synth-single": "Solo synth — core singolo",
+    "synth-dualTag": "solo synth, doppio core",
+    "synth-singleTag": "solo synth, core singolo",
+    synthWhy: "Un modulo sonoro a una traccia per suonare e registrare su un computer: tutti i synth con la loro modifica del suono, ARP, CHORD e SCALES, gli effetti (drive, chorus, delay, reverb) e la registrazione stereo tramite audio USB. Non ci sono sequencer, brani né salvataggio dei progetti; PLAY tiene l'ARP. I progetti e i preset salvati sull'FM-1 restano dove sono e tornano quando scegli Standard e installi di nuovo. Salva un backup completo nell'editor prima di installare.",
+    betaEditor: "L'editor della beta (le sue novità e i progetti di prova CHK)",
+    synthEditor: "Editor solo synth (suoni, effetti e impostazioni dal computer)",
+    dual: "Standard (doppio core)",
+    single: "Core singolo",
+    dualTag: "standard",
+    singleTag: "core singolo",
+    singleWhy: "La build a core singolo è per gli FM-1 che si bloccano con la build standard (una schermata rossa TESSERA CRASH, blocchi o riavvii in modalità aggiornamento). Non avvia mai il secondo core dell'FM-1, che neanche il firmware ufficiale usa. I suoni FM6 pesanti raggiungono prima il limite della CPU. Per tornare indietro, scegli Standard e installa di nuovo.",
+    editor: "Editor (dopo l'installazione: modifica suoni e sequenze dal computer)",
+    direct: "Collega il cavo USB direttamente al computer. Non servono sonde né Transporter.",
+    brick: "Se un aggiornamento si interrompe su un firmware con protezione di avvio, riaccendi l'FM-1 (o tieni premuto solo OCT− mentre lo accendi). Tre brevi lampeggi delle luci dei tasti indicano la modalità aggiornamento: ricollega l'USB e premi di nuovo Installa. Un firmware più vecchio o un lampeggio lungo richiedono le istruzioni di ripristino via USB:",
+    recoveryLink: "Istruzioni e download per il ripristino via USB",
+    counted: "Al termine di un'installazione, la pagina la conta su GoatCounter: solo la versione e la build, senza cookie né dati personali. Per escludere questo browser, apri questa pagina una volta con #nocount alla fine dell'indirizzo.",
+    beta: "Tessera è un firmware sperimentale nato da Melodee; segnala i problemi su github.com/Rastapopolix/tessera. L'autore non si assume alcuna responsabilità se il tuo FM-1 si danneggia o non funziona correttamente a causa di questo firmware personalizzato. Usalo a tuo rischio.",
+    back: "Seleziona l'FM-1.fwsc ufficiale non modificato della versione che l'FM-1 aveva prima di Tessera, V15 o V16. La pagina dei download di M-VAVE ora offre la V16; la V15 è nel repository fm1_open di M-VAVE (sdk/firmware/FM-1_015.fwsc). Il browser lo verifica in locale; non viene inviato a nessun server.",
+    localTitle: "Build di prova da questo computer",
+    localFile: "Firmware di prova (.fwsc)",
+    localGo: "Installa la build di prova",
+    localWhy: "Per i test: scegli un .fwsc di Tessera salvato su questo computer, per esempio da build/ o da una pagina di test. Sono accettati solo i pacchetti creati con tools/fm1pkg_make.py. Il browser controlla il file in locale; non viene inviato a nessun server. Le build di prova non sono pubblicate e potrebbero non funzionare; scegli Standard e installa di nuovo per tornare alla versione pubblicata.",
+    localValid: "Build di prova verificata: ",
+    localError: "Impossibile usare questo file: ",
+    localConfirm: "Installare questa build di prova? Non è una versione pubblicata e potrebbe non funzionare.\n",
+    stockTitle: "Torna al firmware ufficiale",
+    stockFile: "FM-1.fwsc ufficiale (V15 o V16)",
+    stockGo: "Fai il backup e torna al firmware ufficiale",
+    stockBackup: "Prima vengono salvati la musica attuale, la musica salvata, i banchi di suoni, i campioni e le impostazioni. Se i backup non sono disponibili, aggiorna Tessera oppure scegli di saltare il backup accettando la possibile perdita di dati. Per ripristinare un archivio in seguito, reinstalla Tessera e usa l'editor.",
+    stockSkipBackup: "Salta il backup (musica, suoni e impostazioni di Tessera possono andare persi)",
+    stockGoNoBackup: "Torna al firmware ufficiale senza backup",
+    stockConfirmNoBackup: "Tornare al firmware ufficiale senza creare un backup? Musica, suoni e impostazioni di Tessera possono andare persi e non si possono recuperare senza un backup. Continuare?",
+    stockRecovery: "Riprendi un aggiornamento interrotto: ho già salvato un backup completo su questo computer",
+    stockValid: "Firmware ufficiale verificato: ",
+    stockConfirm: "Il file di backup completo è stato salvato su questo computer? Continua per tornare al firmware ufficiale. Il firmware ufficiale non può aprire la musica di Tessera.",
+    stockNeedBackup: "Un loader di aggiornamento non può esportare un backup. Seleziona riprendi se hai già salvato un backup completo, oppure scegli Salta il backup per continuare accettando la possibile perdita di dati.",
+    stockUnsupported: "Questo firmware non supporta i backup completi. Installa prima il Tessera attuale, oppure seleziona Salta il backup per accettare la possibile perdita di dati e riprova.",
+    backup: "Salvataggio del backup completo ",
+    stockError: "Impossibile verificare il firmware ufficiale: ",
+    stockNeedsV16: "Non è stato scritto nulla (CHECK HEAD, FAILED -5): la parte di avvio di questo FM-1 è della V16 (aveva la V16 prima di Tessera), quindi la sua via di ritorno è la V16. Seleziona l'FM-1.fwsc attuale di M-VAVE (V16).",
+    stockNeedsV15: "Non è stato scritto nulla (CHECK HEAD, FAILED -5): la parte di avvio di questo FM-1 è della V15 (aveva la V15 prima di Tessera), quindi la sua via di ritorno è la V15. Seleziona FM-1_015.fwsc dal repository fm1_open di M-VAVE (sdk/firmware). In seguito M-UPGRADE di M-VAVE può portarlo alla V16.",
+    stockTesseraOld: "Non è stato scritto nulla. Tessera prima della 3.3 non accetta la V16: installa prima il Tessera attuale, poi torna di nuovo al firmware ufficiale.",
+    loaderStock: "L'FM-1 è in attesa nella modalità di aggiornamento ufficiale di M-VAVE, che accetta solo l'FM-1.fwsc ufficiale. Non è stato inviato nulla. Completa prima Torna al firmware ufficiale.",
+    loaderTessera: "L'FM-1 è in attesa nella modalità di aggiornamento di Tessera (Melodee Update), che non riceve mai il file ufficiale. Non è stato inviato nulla. Premi Installa qui sopra per completare prima Tessera, poi torna al firmware ufficiale.",
+    loaderUnknown: "L'FM-1 è in una modalità di aggiornamento che questo installer non conosce. Non è stato inviato nulla. Segnalalo su GitHub con questo nome: ",
+    nomidi: "Questo browser non può farlo. Apri la pagina in Chrome o Edge.",
+    loadfail: "Impossibile caricare: ",
+    start: "Avvio",
+    verify: "Verifica",
+    loader: "Passaggio alla modalità aggiornamento",
+    write: "Scrittura",
+    reboot: "Riavvio",
+    done: "Fatto. Puoi scollegare l'FM-1.",
+    stopped: "Interrotto. Ricollega il cavo USB e premi di nuovo Installa.",
+    needBrowser: "Chrome o Edge",
+    needCable: "Un cavo USB dati",
+    needTab: "Questa scheda aperta fino alla fine",
+    runTitle: "Installazione di Tessera",
+    runTitleStock: "Ritorno al firmware ufficiale",
+    runKeep: "Tieni aperta questa scheda e l'FM-1 collegato fino alla fine. Chiudere la scheda, spegnere l'FM-1 o scollegarlo interrompe l'aggiornamento.",
+    stPrep: "Preparazione",
+    stLoader: "Modalità aggiornamento",
+    stWrite: "Scrittura",
+    stReboot: "Riavvio",
+    details: "Dettagli",
+    close: "Chiudi",
+    error: "Errore: ",
+    denied: "L'accesso MIDI (SysEx) non è stato consentito. Consenti il MIDI nelle impostazioni del sito (barra degli indirizzi) e premi di nuovo Installa.",
+    notfound: "FM-1 non trovato. Controlla il cavo USB (deve essere un cavo dati), chiudi le altre app che usano il MIDI e premi di nuovo Installa.",
+    model: "Il dispositivo collegato non è un FM-1.",
+    lost: "La connessione USB si è interrotta. Ricollegalo e premi di nuovo Installa.",
+    noloader: "L'FM-1 in modalità aggiornamento non è stato trovato. Ricollega il cavo USB e premi di nuovo Installa (resta in modalità aggiornamento fino alla fine).",
+    noreturn: "L'FM-1 non è tornato. Spegnilo e riaccendilo.",
+    mismatch: "Scritto, ma l'FM-1 indica un'altra versione: ",
+    badpkg: "Il file da installare è danneggiato. Ricarica la pagina.",
+    leave: "Scrittura in corso. Non chiudere la pagina.",
+    license: "GPL-3.0, nessuna garanzia. Sorgente:",
+  },
+  de: {
+    intro: "Verbinde den FM-1 per USB. (Funktioniert in Chrome oder Edge.)",
+    tipLabel: "TIPP",
+    tip: "Nach der Installation tippe auf SEQ und drehe KNOB 1 (MODE) auf GEN, um zu wählen, was jede Spur spielt. Was jeder Regler tut, steht im Handbuch (auf Englisch).",
+    warn: "Ziehe das USB-Kabel während des Schreibens nicht ab.",
+    install: "Installieren",
+    betaTitle: "Beta",
+    "beta-dual": "Beta — zwei Kerne",
+    "beta-single": "Beta — ein Kern",
+    "beta-dualTag": "Beta, zwei Kerne",
+    "beta-singleTag": "Beta, ein Kern",
+    betaWhy: "Das nächste Update, zum Ausprobieren vor der stabilen Version. Es kann noch Fehler haben: Sichere vor der Installation ein vollständiges Backup im Editor. Auf der Beta gespeicherte Projekte und Sounds lassen sich in einer älteren Version eventuell nicht alle öffnen. Zum Zurückwechseln wähle Standard und installiere erneut.",
+    betaReport: "Ein Problem melden oder erzählen, wie es lief (GitHub Issues)",
+    betaNotes: "Neu in dieser Beta",
+    nightlyTitle: "Nightly (next)",
+    "nightly-dual": "Nightly — zwei Kerne",
+    "nightly-single": "Nightly — ein Kern",
+    "nightly-dualTag": "Nightly, zwei Kerne",
+    "nightly-singleTag": "Nightly, ein Kern",
+    nightlyWhy: "Entwicklungsversionen aus next. Sichere vor der Installation ein vollständiges Backup im Editor. Wähle Standard, um zur veröffentlichten Version zurückzukehren.",
+    synthTitle: "Nur Synth (optional)",
+    "synth-dual": "Nur Synth — zwei Kerne",
+    "synth-single": "Nur Synth — ein Kern",
+    "synth-dualTag": "nur Synth, zwei Kerne",
+    "synth-singleTag": "nur Synth, ein Kern",
+    synthWhy: "Ein Klangmodul mit einer Spur zum Spielen und Aufnehmen am Computer: alle Synths mit ihrer Klangbearbeitung, ARP, CHORD und SCALES, die Effekte (Drive, Chorus, Delay, Reverb) und Stereo-Aufnahme über USB-Audio. Es gibt keinen Sequencer, keine Songs und kein Speichern von Projekten; PLAY hält den ARP. Auf dem FM-1 gespeicherte Projekte und Presets bleiben, wo sie sind, und sind wieder da, wenn du Standard wählst und erneut installierst. Sichere vor der Installation ein vollständiges Backup im Editor.",
+    betaEditor: "Der Editor der Beta (ihre neuen Funktionen und die CHK-Testprojekte)",
+    synthEditor: "Editor für Nur Synth (Sounds, Effekte und Einstellungen vom Computer)",
+    dual: "Standard (zwei Kerne)",
+    single: "Ein Kern",
+    dualTag: "Standard",
+    singleTag: "ein Kern",
+    singleWhy: "Die Ein-Kern-Version ist für FM-1, die mit der Standardversion abstürzen (ein roter TESSERA-CRASH-Bildschirm, Einfrieren oder Neustarts in den Update-Modus). Sie startet nie den zweiten Kern des FM-1, den auch die offizielle Firmware nicht nutzt. Schwere FM6-Sounds erreichen die CPU-Grenze früher. Zum Zurückwechseln wähle Standard und installiere erneut.",
+    editor: "Editor (nach der Installation: Sounds und Sequenzen am Computer bearbeiten)",
+    direct: "Schließe das USB-Kabel direkt am Computer an. Keine Sonde und kein Transporter nötig.",
+    brick: "Wird ein Update auf einer Firmware mit Startschutz unterbrochen, schalte den FM-1 wieder ein (oder halte beim Einschalten nur OCT− gedrückt). Drei kurze Blinkzeichen der Tastenbeleuchtung bedeuten Update-Modus: USB neu verbinden und erneut auf Installieren drücken. Ältere Firmware und ein langes Blinken brauchen die Anleitung zur USB-Wiederherstellung:",
+    recoveryLink: "Anleitung und Downloads zur USB-Wiederherstellung",
+    counted: "Wenn eine Installation fertig ist, zählt die Seite sie bei GoatCounter: nur die Version und die Variante, keine Cookies oder persönlichen Daten. Um diesen Browser auszunehmen, öffne diese Seite einmal mit #nocount am Ende der Adresse.",
+    beta: "Tessera ist eine experimentelle Firmware, die aus Melodee hervorgegangen ist; bitte melde Probleme auf github.com/Rastapopolix/tessera. Der Autor übernimmt keine Verantwortung, wenn dein FM-1 durch diese inoffizielle Firmware beschädigt wird oder sich falsch verhält. Nutzung auf eigene Gefahr.",
+    back: "Wähle die unveränderte offizielle FM-1.fwsc der Version, die der FM-1 vor Tessera hatte, V15 oder V16. Die Download-Seite von M-VAVE bietet jetzt V16; V15 liegt im fm1_open-Repository von M-VAVE (sdk/firmware/FM-1_015.fwsc). Der Browser prüft die Datei lokal; sie wird an keinen Server gesendet.",
+    localTitle: "Testversion von diesem Computer",
+    localFile: "Test-Firmware (.fwsc)",
+    localGo: "Testversion installieren",
+    localWhy: "Zum Testen: Wähle eine auf diesem Computer gespeicherte Tessera-.fwsc, etwa aus build/ oder von einer Testseite. Nur mit tools/fm1pkg_make.py erstellte Pakete werden angenommen. Der Browser prüft die Datei lokal; sie wird an keinen Server gesendet. Testversionen sind unveröffentlicht und funktionieren eventuell nicht; wähle Standard und installiere erneut, um zur veröffentlichten Version zurückzukehren.",
+    localValid: "Testversion geprüft: ",
+    localError: "Diese Datei ist nicht verwendbar: ",
+    localConfirm: "Diese Testversion installieren? Sie ist keine veröffentlichte Version und funktioniert eventuell nicht.\n",
+    stockTitle: "Zurück zur offiziellen Firmware",
+    stockFile: "Offizielle FM-1.fwsc (V15 oder V16)",
+    stockGo: "Sichern und zur offiziellen Firmware zurück",
+    stockBackup: "Zuerst werden die aktuelle Musik, die gespeicherte Musik, die Soundbänke, Samples und Einstellungen gesichert. Sind Backups nicht möglich, aktualisiere Tessera oder überspringe das Backup und nimm möglichen Datenverlust in Kauf. Um ein Archiv später wiederherzustellen, installiere Tessera erneut und nutze den Editor.",
+    stockSkipBackup: "Backup überspringen (Musik, Sounds und Einstellungen von Tessera können verloren gehen)",
+    stockGoNoBackup: "Ohne Backup zur offiziellen Firmware zurück",
+    stockConfirmNoBackup: "Ohne Backup zur offiziellen Firmware zurückkehren? Musik, Sounds und Einstellungen von Tessera können verloren gehen und lassen sich ohne Backup nicht wiederherstellen. Fortfahren?",
+    stockRecovery: "Ein unterbrochenes Update fortsetzen: Ich habe bereits ein vollständiges Backup auf diesem Computer gespeichert",
+    stockValid: "Offizielle Firmware geprüft: ",
+    stockConfirm: "Wurde die vollständige Backup-Datei auf diesem Computer gespeichert? Fahre fort, um zur offiziellen Firmware zurückzukehren. Die offizielle Firmware kann Tessera-Musik nicht öffnen.",
+    stockNeedBackup: "Ein Update-Loader kann kein Backup exportieren. Wähle Fortsetzen, wenn du schon ein vollständiges Backup gespeichert hast, oder wähle Backup überspringen, um fortzufahren und möglichen Datenverlust in Kauf zu nehmen.",
+    stockUnsupported: "Diese Firmware unterstützt keine vollständigen Backups. Installiere zuerst das aktuelle Tessera oder wähle Backup überspringen, um möglichen Datenverlust in Kauf zu nehmen, und versuche es erneut.",
+    backup: "Vollständiges Backup wird gesichert ",
+    stockError: "Offizielle Firmware lässt sich nicht prüfen: ",
+    stockNeedsV16: "Nichts wurde geschrieben (CHECK HEAD, FAILED -5): Der Startteil dieses FM-1 stammt von V16 (er lief vor Tessera mit V16), also führt sein Weg zurück über V16. Wähle die aktuelle FM-1.fwsc von M-VAVE (V16).",
+    stockNeedsV15: "Nichts wurde geschrieben (CHECK HEAD, FAILED -5): Der Startteil dieses FM-1 stammt von V15 (er lief vor Tessera mit V15), also führt sein Weg zurück über V15. Wähle FM-1_015.fwsc aus dem fm1_open-Repository von M-VAVE (sdk/firmware). M-UPGRADE von M-VAVE kann ihn danach auf V16 bringen.",
+    stockTesseraOld: "Nichts wurde geschrieben. Tessera vor 3.3 nimmt V16 nicht an: Installiere zuerst das aktuelle Tessera und kehre dann erneut zur offiziellen Firmware zurück.",
+    loaderStock: "Der FM-1 wartet im offiziellen Update-Modus von M-VAVE, der nur die offizielle FM-1.fwsc annimmt. Es wurde nichts gesendet. Schließe zuerst Zurück zur offiziellen Firmware ab.",
+    loaderTessera: "Der FM-1 wartet im Update-Modus von Tessera (Melodee Update), der die offizielle Datei nie annimmt. Es wurde nichts gesendet. Drücke oben auf Installieren, um zuerst Tessera fertigzustellen, und kehre dann zur offiziellen Firmware zurück.",
+    loaderUnknown: "Der FM-1 ist in einem Update-Modus, den dieser Installer nicht kennt. Es wurde nichts gesendet. Bitte melde es auf GitHub mit diesem Namen: ",
+    nomidi: "Dieser Browser kann das nicht. Öffne die Seite in Chrome oder Edge.",
+    loadfail: "Laden fehlgeschlagen: ",
+    start: "Start",
+    verify: "Prüfen",
+    loader: "Wechsel in den Update-Modus",
+    write: "Schreiben",
+    reboot: "Neustart",
+    done: "Fertig. Du kannst den FM-1 abziehen.",
+    stopped: "Abgebrochen. Stecke das USB-Kabel neu ein und drücke erneut auf Installieren.",
+    needBrowser: "Chrome oder Edge",
+    needCable: "Ein USB-Datenkabel",
+    needTab: "Diesen Tab offen bis zum Ende",
+    runTitle: "Tessera wird installiert",
+    runTitleStock: "Zurück zur offiziellen Firmware",
+    runKeep: "Lass diesen Tab offen und den FM-1 verbunden, bis alles fertig ist. Den Tab zu schließen, den FM-1 auszuschalten oder abzuziehen unterbricht das Update.",
+    stPrep: "Vorbereitung",
+    stLoader: "Update-Modus",
+    stWrite: "Schreiben",
+    stReboot: "Neustart",
+    details: "Details",
+    close: "Schließen",
+    error: "Fehler: ",
+    denied: "MIDI-Zugriff (SysEx) wurde nicht erlaubt. Erlaube MIDI in den Website-Einstellungen (Adressleiste) und drücke erneut auf Installieren.",
+    notfound: "FM-1 nicht gefunden. Prüfe das USB-Kabel (ein Datenkabel), schließe andere Apps, die MIDI nutzen, und drücke erneut auf Installieren.",
+    model: "Das verbundene Gerät ist kein FM-1.",
+    lost: "Die USB-Verbindung ist abgerissen. Stecke ihn neu ein und drücke erneut auf Installieren.",
+    noloader: "Der FM-1 im Update-Modus wurde nicht gefunden. Stecke das USB-Kabel neu ein und drücke erneut auf Installieren (er bleibt im Update-Modus, bis alles fertig ist).",
+    noreturn: "Der FM-1 ist nicht zurückgekommen. Schalte ihn aus und wieder ein.",
+    mismatch: "Geschrieben, aber der FM-1 meldet eine andere Version: ",
+    badpkg: "Die zu installierende Datei ist beschädigt. Lade die Seite neu.",
+    leave: "Schreibvorgang läuft. Schließe die Seite nicht.",
+    license: "GPL-3.0, keine Gewährleistung. Quellcode:",
+  },
+  fr: {
+    intro: "Branchez le FM-1 en USB. (Fonctionne dans Chrome ou Edge.)",
+    tipLabel: "ASTUCE",
+    tip: "Une fois l'installation terminée, appuyez sur SEQ et tournez KNOB 1 (MODE) sur GEN pour choisir ce que joue chaque piste. Le rôle de chaque bouton est décrit dans le manuel (en anglais).",
+    warn: "Ne débranchez pas le câble USB pendant l'écriture.",
+    install: "Installer",
+    betaTitle: "Bêta",
+    "beta-dual": "Bêta — double cœur",
+    "beta-single": "Bêta — simple cœur",
+    "beta-dualTag": "bêta, double cœur",
+    "beta-singleTag": "bêta, simple cœur",
+    betaWhy: "La prochaine mise à jour, à essayer avant sa version stable. Elle peut encore contenir des bugs : enregistrez une sauvegarde complète dans l'éditeur avant d'installer. Les projets et sons enregistrés sur la bêta ne s'ouvriront peut-être pas tous sur une version plus ancienne. Pour revenir en arrière, choisissez Standard et réinstallez.",
+    betaReport: "Signaler un problème ou nous dire comment ça s'est passé (GitHub issues)",
+    betaNotes: "Nouveautés de cette bêta",
+    nightlyTitle: "Nightly (next)",
+    "nightly-dual": "Nightly — double cœur",
+    "nightly-single": "Nightly — simple cœur",
+    "nightly-dualTag": "nightly, double cœur",
+    "nightly-singleTag": "nightly, simple cœur",
+    nightlyWhy: "Versions de développement de next. Enregistrez une sauvegarde complète dans l'éditeur avant d'installer. Choisissez Standard pour revenir à la version publiée.",
+    synthTitle: "Synthé seul (facultatif)",
+    "synth-dual": "Synthé seul — double cœur",
+    "synth-single": "Synthé seul — simple cœur",
+    "synth-dualTag": "synthé seul, double cœur",
+    "synth-singleTag": "synthé seul, simple cœur",
+    synthWhy: "Un module de sons à une piste pour jouer et enregistrer sur un ordinateur : tous les synthés et leur édition de son, ARP, CHORD et SCALES, les effets (drive, chorus, delay, reverb) et l'enregistrement stéréo par l'audio USB. Il n'y a ni séquenceur, ni morceaux, ni sauvegarde de projets ; PLAY maintient l'ARP. Les projets et presets enregistrés sur le FM-1 restent en place et reviennent quand vous choisissez Standard et réinstallez. Enregistrez une sauvegarde complète dans l'éditeur avant d'installer.",
+    betaEditor: "L'éditeur de la bêta (ses nouveautés et les projets de test CHK)",
+    synthEditor: "Éditeur synthé seul (sons, effets et réglages depuis l'ordinateur)",
+    dual: "Standard (double cœur)",
+    single: "Simple cœur",
+    dualTag: "standard",
+    singleTag: "simple cœur",
+    singleWhy: "La version simple cœur est destinée aux FM-1 qui plantent avec la version standard (un écran rouge TESSERA CRASH, des blocages ou des redémarrages en mode mise à jour). Elle ne démarre jamais le second cœur du FM-1, que le firmware officiel n'utilise pas non plus. Les sons FM6 lourds atteignent plus tôt la limite du processeur. Pour revenir en arrière, choisissez Standard et réinstallez.",
+    editor: "Éditeur (après l'installation : modifiez sons et séquences depuis l'ordinateur)",
+    direct: "Branchez le câble USB directement sur l'ordinateur. Aucune sonde ni Transporter n'est nécessaire.",
+    brick: "Si une mise à jour est interrompue sur un firmware doté d'une protection de démarrage, rallumez le FM-1 (ou maintenez seulement OCT− en l'allumant). Trois clignotements courts des voyants des touches signalent le mode mise à jour : rebranchez l'USB et appuyez à nouveau sur Installer. Un firmware plus ancien ou un clignotement long nécessitent les instructions de récupération USB :",
+    recoveryLink: "Instructions et téléchargements de récupération USB",
+    counted: "À la fin d'une installation, la page la compte sur GoatCounter : uniquement la version et la variante, sans cookies ni données personnelles. Pour exclure ce navigateur, ouvrez cette page une fois avec #nocount à la fin de son adresse.",
+    beta: "Tessera est un firmware expérimental issu de Melodee ; signalez les problèmes sur github.com/Rastapopolix/tessera. L'auteur décline toute responsabilité si votre FM-1 est endommagé ou se comporte mal à cause de ce firmware personnalisé. Utilisation à vos risques et périls.",
+    back: "Sélectionnez le FM-1.fwsc officiel non modifié de la version qu'avait le FM-1 avant Tessera, V15 ou V16. La page de téléchargement de M-VAVE propose désormais la V16 ; la V15 se trouve dans le dépôt fm1_open de M-VAVE (sdk/firmware/FM-1_015.fwsc). Le navigateur le vérifie localement ; il n'est envoyé à aucun serveur.",
+    localTitle: "Version de test depuis cet ordinateur",
+    localFile: "Firmware de test (.fwsc)",
+    localGo: "Installer la version de test",
+    localWhy: "Pour les tests : choisissez un .fwsc de Tessera enregistré sur cet ordinateur, par exemple depuis build/ ou une page de test. Seuls les paquets créés par tools/fm1pkg_make.py sont acceptés. Le navigateur vérifie le fichier localement ; il n'est envoyé à aucun serveur. Les versions de test ne sont pas publiées et peuvent ne pas fonctionner ; choisissez Standard et réinstallez pour revenir à la version publiée.",
+    localValid: "Version de test vérifiée : ",
+    localError: "Impossible d'utiliser ce fichier : ",
+    localConfirm: "Installer cette version de test ? Ce n'est pas une version publiée et elle peut ne pas fonctionner.\n",
+    stockTitle: "Revenir au firmware officiel",
+    stockFile: "FM-1.fwsc officiel (V15 ou V16)",
+    stockGo: "Sauvegarder et revenir au firmware officiel",
+    stockBackup: "La musique en cours, la musique enregistrée, les banques de sons, les échantillons et les réglages sont d'abord sauvegardés. Si les sauvegardes ne sont pas disponibles, mettez Tessera à jour ou choisissez d'ignorer la sauvegarde en acceptant une possible perte de données. Pour restaurer une archive plus tard, réinstallez Tessera et utilisez l'éditeur.",
+    stockSkipBackup: "Ignorer la sauvegarde (la musique, les sons et les réglages de Tessera peuvent être perdus)",
+    stockGoNoBackup: "Revenir au firmware officiel sans sauvegarde",
+    stockConfirmNoBackup: "Revenir au firmware officiel sans créer de sauvegarde ? La musique, les sons et les réglages de Tessera peuvent être perdus et ne peuvent pas être restaurés sans sauvegarde. Continuer ?",
+    stockRecovery: "Reprendre une mise à jour interrompue : j'ai déjà enregistré une sauvegarde complète sur cet ordinateur",
+    stockValid: "Firmware officiel vérifié : ",
+    stockConfirm: "Le fichier de sauvegarde complète a-t-il été enregistré sur cet ordinateur ? Continuez pour revenir au firmware officiel. Le firmware officiel ne peut pas ouvrir la musique de Tessera.",
+    stockNeedBackup: "Un chargeur de mise à jour ne peut pas exporter de sauvegarde. Sélectionnez reprendre si vous avez déjà enregistré une sauvegarde complète, ou choisissez Ignorer la sauvegarde pour continuer en acceptant une possible perte de données.",
+    stockUnsupported: "Ce firmware ne prend pas en charge les sauvegardes complètes. Installez d'abord le Tessera actuel, ou sélectionnez Ignorer la sauvegarde pour accepter une possible perte de données, puis réessayez.",
+    backup: "Enregistrement de la sauvegarde complète ",
+    stockError: "Impossible de valider le firmware officiel : ",
+    stockNeedsV16: "Rien n'a été écrit (CHECK HEAD, FAILED -5) : la partie de démarrage de ce FM-1 est celle de la V16 (il était en V16 avant Tessera), son chemin de retour est donc la V16. Sélectionnez le FM-1.fwsc actuel de M-VAVE (V16).",
+    stockNeedsV15: "Rien n'a été écrit (CHECK HEAD, FAILED -5) : la partie de démarrage de ce FM-1 est celle de la V15 (il était en V15 avant Tessera), son chemin de retour est donc la V15. Sélectionnez FM-1_015.fwsc dans le dépôt fm1_open de M-VAVE (sdk/firmware). M-UPGRADE de M-VAVE peut ensuite le passer en V16.",
+    stockTesseraOld: "Rien n'a été écrit. Tessera avant 3.3 n'accepte pas la V16 : installez d'abord le Tessera actuel, puis revenez à nouveau au firmware officiel.",
+    loaderStock: "Le FM-1 attend dans le mode de mise à jour officiel de M-VAVE, qui n'accepte que le FM-1.fwsc officiel. Rien n'a été envoyé. Terminez d'abord Revenir au firmware officiel.",
+    loaderTessera: "Le FM-1 attend dans le mode de mise à jour de Tessera (Melodee Update), qui ne reçoit jamais le fichier officiel. Rien n'a été envoyé. Appuyez sur Installer ci-dessus pour terminer d'abord Tessera, puis revenez au firmware officiel.",
+    loaderUnknown: "Le FM-1 est dans un mode de mise à jour que cet installateur ne connaît pas. Rien n'a été envoyé. Merci de le signaler sur GitHub avec ce nom : ",
+    nomidi: "Ce navigateur ne peut pas le faire. Ouvrez la page dans Chrome ou Edge.",
+    loadfail: "Chargement impossible : ",
+    start: "Démarrage",
+    verify: "Vérification",
+    loader: "Passage en mode mise à jour",
+    write: "Écriture",
+    reboot: "Redémarrage",
+    done: "Terminé. Vous pouvez débrancher le FM-1.",
+    stopped: "Arrêté. Rebranchez le câble USB et appuyez à nouveau sur Installer.",
+    needBrowser: "Chrome ou Edge",
+    needCable: "Un câble USB de données",
+    needTab: "Cet onglet ouvert jusqu'à la fin",
+    runTitle: "Installation de Tessera",
+    runTitleStock: "Retour au firmware officiel",
+    runKeep: "Gardez cet onglet ouvert et le FM-1 branché jusqu'à la fin. Fermer l'onglet, éteindre le FM-1 ou le débrancher interrompt la mise à jour.",
+    stPrep: "Préparation",
+    stLoader: "Mode mise à jour",
+    stWrite: "Écriture",
+    stReboot: "Redémarrage",
+    details: "Détails",
+    close: "Fermer",
+    error: "Erreur : ",
+    denied: "L'accès MIDI (SysEx) n'a pas été autorisé. Autorisez le MIDI dans les paramètres du site (barre d'adresse) et appuyez à nouveau sur Installer.",
+    notfound: "FM-1 introuvable. Vérifiez le câble USB (un câble de données), fermez les autres applications qui utilisent le MIDI et appuyez à nouveau sur Installer.",
+    model: "L'appareil branché n'est pas un FM-1.",
+    lost: "La connexion USB a été perdue. Rebranchez-le et appuyez à nouveau sur Installer.",
+    noloader: "Le FM-1 en mode mise à jour est introuvable. Rebranchez le câble USB et appuyez à nouveau sur Installer (il reste en mode mise à jour jusqu'à la fin).",
+    noreturn: "Le FM-1 n'est pas revenu. Éteignez-le puis rallumez-le.",
+    mismatch: "Écrit, mais le FM-1 indique une autre version : ",
+    badpkg: "Le fichier à installer est endommagé. Rechargez la page.",
+    leave: "Écriture en cours. Ne fermez pas la page.",
+    license: "GPL-3.0, sans garantie. Code source :",
+  },
+  pt: {
+    intro: "Conecte o FM-1 por USB. (Funciona no Chrome ou no Edge.)",
+    tipLabel: "DICA",
+    tip: "Depois de instalar, toque em SEQ e gire o KNOB 1 (MODE) no GEN para escolher o que cada faixa toca. A função de cada botão giratório está no manual (em inglês).",
+    warn: "Não desconecte o cabo USB durante a gravação.",
+    install: "Instalar",
+    betaTitle: "Beta",
+    "beta-dual": "Beta — dois núcleos",
+    "beta-single": "Beta — um núcleo",
+    "beta-dualTag": "beta, dois núcleos",
+    "beta-singleTag": "beta, um núcleo",
+    betaWhy: "A próxima atualização, para testar antes da versão estável. Ainda pode ter bugs: salve um backup completo no editor antes de instalar. Talvez nem todos os projetos e sons salvos na beta abram em uma versão anterior. Para voltar, escolha Padrão e instale de novo.",
+    betaReport: "Relate um problema ou conte como foi (GitHub issues)",
+    betaNotes: "Novidades desta beta",
+    nightlyTitle: "Nightly (next)",
+    "nightly-dual": "Nightly — dois núcleos",
+    "nightly-single": "Nightly — um núcleo",
+    "nightly-dualTag": "nightly, dois núcleos",
+    "nightly-singleTag": "nightly, um núcleo",
+    nightlyWhy: "Versões de desenvolvimento do next. Salve um backup completo no editor antes de instalar. Escolha Padrão para voltar à versão lançada.",
+    synthTitle: "Só sintetizador (opcional)",
+    "synth-dual": "Só sintetizador — dois núcleos",
+    "synth-single": "Só sintetizador — um núcleo",
+    "synth-dualTag": "só sintetizador, dois núcleos",
+    "synth-singleTag": "só sintetizador, um núcleo",
+    synthWhy: "Um módulo de som de uma faixa para tocar e gravar no computador: todos os sintetizadores com sua edição de som, ARP, CHORD e SCALES, os efeitos (drive, chorus, delay, reverb) e a gravação estéreo por áudio USB. Não há sequenciador, músicas nem salvamento de projetos; PLAY segura o ARP. Os projetos e presets salvos no FM-1 continuam onde estão e voltam quando você escolhe Padrão e instala de novo. Salve um backup completo no editor antes de instalar.",
+    betaEditor: "O editor da beta (suas novidades e os projetos de teste CHK)",
+    synthEditor: "Editor só sintetizador (sons, efeitos e ajustes pelo computador)",
+    dual: "Padrão (dois núcleos)",
+    single: "Um núcleo",
+    dualTag: "padrão",
+    singleTag: "um núcleo",
+    singleWhy: "A versão de um núcleo é para os FM-1 que travam com a versão padrão (uma tela vermelha TESSERA CRASH, congelamentos ou reinícios no modo de atualização). Ela nunca liga o segundo núcleo do FM-1, que o firmware oficial também não usa. Sons FM6 pesados chegam antes ao limite da CPU. Para voltar, escolha Padrão e instale de novo.",
+    editor: "Editor (depois de instalar: edite sons e sequências pelo computador)",
+    direct: "Conecte o cabo USB direto no computador. Não é preciso sonda nem Transporter.",
+    brick: "Se uma atualização for interrompida em um firmware com proteção de inicialização, ligue o FM-1 de novo (ou segure só OCT− ao ligar). Três piscadas curtas das luzes das teclas indicam o modo de atualização: reconecte o USB e pressione Instalar de novo. Firmware mais antigo ou uma piscada longa precisam das instruções de recuperação por USB:",
+    recoveryLink: "Instruções e downloads de recuperação por USB",
+    counted: "Quando uma instalação termina, a página a conta no GoatCounter: só a versão e a variante, sem cookies nem dados pessoais. Para deixar este navegador de fora, abra esta página uma vez com #nocount no fim do endereço.",
+    beta: "Tessera é um firmware experimental que nasceu do Melodee; relate problemas em github.com/Rastapopolix/tessera. O autor não se responsabiliza se o seu FM-1 for danificado ou funcionar mal por causa deste firmware personalizado. Use por sua conta e risco.",
+    back: "Selecione o FM-1.fwsc oficial sem modificações da versão que o FM-1 tinha antes do Tessera, V15 ou V16. A página de downloads da M-VAVE agora oferece a V16; a V15 está no repositório fm1_open da M-VAVE (sdk/firmware/FM-1_015.fwsc). O navegador verifica o arquivo localmente; ele não é enviado a nenhum servidor.",
+    localTitle: "Versão de teste deste computador",
+    localFile: "Firmware de teste (.fwsc)",
+    localGo: "Instalar versão de teste",
+    localWhy: "Para testes: escolha um .fwsc do Tessera salvo neste computador, como um de build/ ou de uma página de teste. Só são aceitos pacotes criados por tools/fm1pkg_make.py. O navegador verifica o arquivo localmente; ele não é enviado a nenhum servidor. Versões de teste não são lançadas e podem não funcionar; escolha Padrão e instale de novo para voltar à versão lançada.",
+    localValid: "Versão de teste verificada: ",
+    localError: "Não é possível usar este arquivo: ",
+    localConfirm: "Instalar esta versão de teste? Ela não é uma versão lançada e pode não funcionar.\n",
+    stockTitle: "Voltar ao firmware oficial",
+    stockFile: "FM-1.fwsc oficial (V15 ou V16)",
+    stockGo: "Fazer backup e voltar ao firmware oficial",
+    stockBackup: "Primeiro são salvos a música atual, as músicas salvas, os bancos de sons, as amostras e os ajustes. Se não for possível fazer backup, atualize o Tessera ou escolha pular o backup e aceite a possível perda de dados. Para restaurar um arquivo depois, reinstale o Tessera e use o editor.",
+    stockSkipBackup: "Pular o backup (a música, os sons e os ajustes do Tessera podem ser perdidos)",
+    stockGoNoBackup: "Voltar ao firmware oficial sem backup",
+    stockConfirmNoBackup: "Voltar ao firmware oficial sem criar um backup? A música, os sons e os ajustes do Tessera podem ser perdidos e não podem ser recuperados sem um backup. Continuar?",
+    stockRecovery: "Retomar uma atualização interrompida: já salvei um backup completo neste computador",
+    stockValid: "Firmware oficial verificado: ",
+    stockConfirm: "O arquivo de backup completo foi salvo neste computador? Continue para voltar ao firmware oficial. O firmware oficial não abre a música do Tessera.",
+    stockNeedBackup: "Um carregador de atualização não pode exportar um backup. Selecione retomar se você já salvou um backup completo, ou escolha Pular o backup para continuar aceitando a possível perda de dados.",
+    stockUnsupported: "Este firmware não permite backups completos. Instale primeiro o Tessera atual, ou selecione Pular o backup para aceitar a possível perda de dados e tente de novo.",
+    backup: "Salvando o backup completo ",
+    stockError: "Não é possível validar o firmware oficial: ",
+    stockNeedsV16: "Nada foi gravado (CHECK HEAD, FAILED -5): a parte de inicialização deste FM-1 é da V16 (ele tinha a V16 antes do Tessera), então o caminho de volta é a V16. Selecione o FM-1.fwsc atual da M-VAVE (V16).",
+    stockNeedsV15: "Nada foi gravado (CHECK HEAD, FAILED -5): a parte de inicialização deste FM-1 é da V15 (ele tinha a V15 antes do Tessera), então o caminho de volta é a V15. Selecione FM-1_015.fwsc no repositório fm1_open da M-VAVE (sdk/firmware). Depois, o M-UPGRADE da M-VAVE pode levá-lo à V16.",
+    stockTesseraOld: "Nada foi gravado. O Tessera anterior à 3.3 não aceita a V16: instale primeiro o Tessera atual e depois volte de novo ao firmware oficial.",
+    loaderStock: "O FM-1 está esperando no modo de atualização oficial da M-VAVE, que só aceita o FM-1.fwsc oficial. Nada foi enviado. Termine primeiro Voltar ao firmware oficial.",
+    loaderTessera: "O FM-1 está esperando no modo de atualização do Tessera (Melodee Update), que nunca recebe o arquivo oficial. Nada foi enviado. Pressione Instalar acima para terminar primeiro o Tessera e depois volte ao firmware oficial.",
+    loaderUnknown: "O FM-1 está em um modo de atualização que este instalador não conhece. Nada foi enviado. Relate no GitHub com este nome: ",
+    nomidi: "Este navegador não consegue fazer isso. Abra a página no Chrome ou no Edge.",
+    loadfail: "Não foi possível carregar: ",
+    start: "Iniciando",
+    verify: "Verificando",
+    loader: "Mudando para o modo de atualização",
+    write: "Gravando",
+    reboot: "Reiniciando",
+    done: "Pronto. Você já pode desconectar o FM-1.",
+    stopped: "Interrompido. Reconecte o cabo USB e pressione Instalar de novo.",
+    needBrowser: "Chrome ou Edge",
+    needCable: "Um cabo USB de dados",
+    needTab: "Esta aba aberta até o fim",
+    runTitle: "Instalando o Tessera",
+    runTitleStock: "Voltando ao firmware oficial",
+    runKeep: "Mantenha esta aba aberta e o FM-1 conectado até o fim. Fechar a aba, desligar o FM-1 ou desconectá-lo interrompe a atualização.",
+    stPrep: "Preparando",
+    stLoader: "Modo de atualização",
+    stWrite: "Gravando",
+    stReboot: "Reiniciando",
+    details: "Detalhes",
+    close: "Fechar",
+    error: "Erro: ",
+    denied: "O acesso MIDI (SysEx) não foi permitido. Permita o MIDI nas configurações do site (barra de endereço) e pressione Instalar de novo.",
+    notfound: "FM-1 não encontrado. Verifique o cabo USB (um cabo de dados), feche outros apps que usam MIDI e pressione Instalar de novo.",
+    model: "O dispositivo conectado não é um FM-1.",
+    lost: "A conexão USB caiu. Reconecte e pressione Instalar de novo.",
+    noloader: "O FM-1 no modo de atualização não foi encontrado. Reconecte o cabo USB e pressione Instalar de novo (ele fica no modo de atualização até terminar).",
+    noreturn: "O FM-1 não voltou. Desligue e ligue de novo.",
+    mismatch: "Gravado, mas o FM-1 informa outra versão: ",
+    badpkg: "O arquivo de instalação está danificado. Recarregue a página.",
+    leave: "Gravando. Não feche a página.",
+    license: "GPL-3.0, sem garantia. Código-fonte:",
+  },
+  ko: {
+    intro: "FM-1을 USB로 연결하세요. (Chrome 또는 Edge에서 작동합니다.)",
+    tipLabel: "팁",
+    tip: "설치가 끝나면 SEQ를 누르고 GEN에서 KNOB 1(MODE)을 돌려 각 트랙이 무엇을 연주할지 고르세요. 모든 노브의 기능은 매뉴얼(영어)에 있습니다.",
+    warn: "쓰는 동안 USB 케이블을 뽑지 마세요.",
+    install: "설치",
+    betaTitle: "베타",
+    "beta-dual": "베타 — 듀얼 코어",
+    "beta-single": "베타 — 싱글 코어",
+    "beta-dualTag": "베타, 듀얼 코어",
+    "beta-singleTag": "베타, 싱글 코어",
+    betaWhy: "정식 출시 전에 미리 써 볼 수 있는 다음 업데이트입니다. 아직 버그가 있을 수 있으니 설치하기 전에 에디터에서 전체 백업을 저장하세요. 베타에서 저장한 프로젝트와 사운드 중 일부는 이전 버전에서 열리지 않을 수 있습니다. 되돌리려면 표준을 고르고 다시 설치하세요.",
+    betaReport: "문제를 알리거나 사용 소감을 들려주세요 (GitHub issues)",
+    betaNotes: "이번 베타의 새로운 점",
+    nightlyTitle: "나이틀리 (next)",
+    "nightly-dual": "나이틀리 — 듀얼 코어",
+    "nightly-single": "나이틀리 — 싱글 코어",
+    "nightly-dualTag": "나이틀리, 듀얼 코어",
+    "nightly-singleTag": "나이틀리, 싱글 코어",
+    nightlyWhy: "next의 개발 빌드입니다. 설치하기 전에 에디터에서 전체 백업을 저장하세요. 정식 버전으로 돌아가려면 표준을 고르세요.",
+    synthTitle: "신스 전용 (선택)",
+    "synth-dual": "신스 전용 — 듀얼 코어",
+    "synth-single": "신스 전용 — 싱글 코어",
+    "synth-dualTag": "신스 전용, 듀얼 코어",
+    "synth-singleTag": "신스 전용, 싱글 코어",
+    synthWhy: "컴퓨터로 연주하고 녹음하기 위한 1트랙 사운드 모듈입니다. 모든 신스와 사운드 편집, ARP, CHORD, SCALES, 이펙트(드라이브, 코러스, 딜레이, 리버브), USB 오디오 스테레오 녹음이 들어 있습니다. 시퀀서, 송, 프로젝트 저장은 없으며 PLAY는 ARP를 유지합니다. FM-1에 저장된 프로젝트와 프리셋은 그대로 남아 있다가 표준을 고르고 다시 설치하면 돌아옵니다. 설치하기 전에 에디터에서 전체 백업을 저장하세요.",
+    betaEditor: "베타용 에디터 (새 기능과 CHK 테스트 프로젝트)",
+    synthEditor: "신스 전용 에디터 (컴퓨터에서 사운드, 이펙트, 설정 편집)",
+    dual: "표준 (듀얼 코어)",
+    single: "싱글 코어",
+    dualTag: "표준",
+    singleTag: "싱글 코어",
+    singleWhy: "싱글 코어 빌드는 표준 빌드에서 멈추는 FM-1용입니다(빨간 TESSERA CRASH 화면, 멈춤, 업데이트 모드로 재시작). FM-1의 두 번째 코어를 전혀 켜지 않으며, 공식 펌웨어도 이 코어를 쓰지 않습니다. 무거운 FM6 사운드는 CPU 한계에 더 빨리 닿습니다. 되돌리려면 표준을 고르고 다시 설치하세요.",
+    editor: "에디터 (설치 후: 컴퓨터에서 사운드와 시퀀스 편집)",
+    direct: "USB 케이블을 컴퓨터에 직접 연결하세요. 프로브나 Transporter는 필요 없습니다.",
+    brick: "부트 보호가 있는 펌웨어에서 업데이트가 중단되면 FM-1을 다시 켜세요(또는 켤 때 OCT−만 누르고 있으세요). 키 조명이 짧게 세 번 깜박이면 업데이트 모드입니다. USB를 다시 연결하고 설치를 다시 누르세요. 이전 펌웨어이거나 길게 한 번 깜박이면 USB 복구 안내가 필요합니다:",
+    recoveryLink: "USB 복구 안내와 다운로드",
+    counted: "설치가 끝나면 이 페이지는 GoatCounter에 설치 횟수를 기록합니다. 버전과 빌드만 보내며 쿠키나 개인정보는 없습니다. 이 브라우저를 제외하려면 주소 끝에 #nocount를 붙여 이 페이지를 한 번 여세요.",
+    beta: "Tessera는 Melodee에서 출발한 실험적인 펌웨어입니다. 문제는 github.com/Rastapopolix/tessera에 알려 주세요. 이 커스텀 펌웨어 때문에 FM-1이 손상되거나 오작동해도 제작자는 책임지지 않습니다. 사용에 따른 책임은 본인에게 있습니다.",
+    back: "Tessera 이전에 FM-1에 있던 버전(V15 또는 V16)의 수정되지 않은 공식 FM-1.fwsc를 선택하세요. M-VAVE 다운로드 페이지에는 현재 V16이 있고, V15는 M-VAVE의 fm1_open 저장소(sdk/firmware/FM-1_015.fwsc)에 있습니다. 브라우저가 파일을 로컬에서 확인하며 서버로 보내지 않습니다.",
+    localTitle: "이 컴퓨터의 테스트 빌드",
+    localFile: "테스트 펌웨어 (.fwsc)",
+    localGo: "테스트 빌드 설치",
+    localWhy: "테스트용입니다. build/나 테스트 페이지에서 받은 것처럼 이 컴퓨터에 저장된 Tessera .fwsc를 고르세요. tools/fm1pkg_make.py로 만든 패키지만 받습니다. 브라우저가 파일을 로컬에서 확인하며 서버로 보내지 않습니다. 테스트 빌드는 출시되지 않은 것이라 작동하지 않을 수 있습니다. 정식 버전으로 돌아가려면 표준을 고르고 다시 설치하세요.",
+    localValid: "테스트 빌드 확인됨: ",
+    localError: "이 파일은 사용할 수 없습니다: ",
+    localConfirm: "이 테스트 빌드를 설치할까요? 정식 버전이 아니며 작동하지 않을 수 있습니다.\n",
+    stockTitle: "공식 펌웨어로 돌아가기",
+    stockFile: "공식 FM-1.fwsc (V15 또는 V16)",
+    stockGo: "백업하고 공식 펌웨어로 돌아가기",
+    stockBackup: "먼저 현재 음악, 저장된 음악, 사운드 뱅크, 샘플, 설정을 저장합니다. 백업을 할 수 없으면 Tessera를 업데이트하거나, 데이터가 사라질 수 있음을 받아들이고 백업 건너뛰기를 고르세요. 나중에 보관 파일을 복원하려면 Tessera를 다시 설치하고 에디터를 사용하세요.",
+    stockSkipBackup: "백업 건너뛰기 (Tessera 음악, 사운드, 설정이 사라질 수 있음)",
+    stockGoNoBackup: "백업 없이 공식 펌웨어로 돌아가기",
+    stockConfirmNoBackup: "백업 없이 공식 펌웨어로 돌아갈까요? Tessera 음악, 사운드, 설정이 사라질 수 있으며 백업 없이는 복원할 수 없습니다. 계속할까요?",
+    stockRecovery: "중단된 업데이트 이어 하기: 이미 이 컴퓨터에 전체 백업을 저장했습니다",
+    stockValid: "공식 펌웨어 확인됨: ",
+    stockConfirm: "전체 백업 파일을 이 컴퓨터에 저장했나요? 계속하면 공식 펌웨어로 돌아갑니다. 공식 펌웨어는 Tessera 음악을 열 수 없습니다.",
+    stockNeedBackup: "업데이트 로더에서는 백업을 내보낼 수 없습니다. 이미 전체 백업을 저장했다면 이어 하기를 선택하고, 아니면 데이터가 사라질 수 있음을 받아들이고 백업 건너뛰기를 고르세요.",
+    stockUnsupported: "이 펌웨어는 전체 백업을 지원하지 않습니다. 먼저 최신 Tessera를 설치하거나, 데이터가 사라질 수 있음을 받아들이고 백업 건너뛰기를 선택한 뒤 다시 시도하세요.",
+    backup: "전체 백업 저장 중 ",
+    stockError: "공식 펌웨어를 확인할 수 없습니다: ",
+    stockNeedsV16: "아무것도 쓰지 않았습니다(CHECK HEAD, FAILED -5). 이 FM-1의 시작 부분은 V16용이므로(Tessera 이전에 V16이었음) 돌아가는 길도 V16입니다. M-VAVE의 현재 FM-1.fwsc(V16)를 선택하세요.",
+    stockNeedsV15: "아무것도 쓰지 않았습니다(CHECK HEAD, FAILED -5). 이 FM-1의 시작 부분은 V15용이므로(Tessera 이전에 V15였음) 돌아가는 길도 V15입니다. M-VAVE의 fm1_open 저장소(sdk/firmware)에서 FM-1_015.fwsc를 선택하세요. 그 뒤 M-VAVE의 M-UPGRADE로 V16으로 올릴 수 있습니다.",
+    stockTesseraOld: "아무것도 쓰지 않았습니다. 3.3 이전의 Tessera는 V16을 받지 않습니다. 먼저 최신 Tessera를 설치한 다음 다시 공식 펌웨어로 돌아가세요.",
+    loaderStock: "FM-1이 M-VAVE의 공식 업데이트 모드에서 기다리고 있습니다. 이 모드는 공식 FM-1.fwsc만 받습니다. 아무것도 보내지 않았습니다. 먼저 공식 펌웨어로 돌아가기를 마치세요.",
+    loaderTessera: "FM-1이 Tessera의 업데이트 모드(Melodee Update)에서 기다리고 있습니다. 이 모드는 공식 파일을 받지 않습니다. 아무것도 보내지 않았습니다. 위의 설치를 눌러 먼저 Tessera를 마친 다음 공식 펌웨어로 돌아가세요.",
+    loaderUnknown: "FM-1이 이 설치 프로그램이 모르는 업데이트 모드에 있습니다. 아무것도 보내지 않았습니다. 다음 이름과 함께 GitHub에 알려 주세요: ",
+    nomidi: "이 브라우저에서는 할 수 없습니다. Chrome 또는 Edge에서 이 페이지를 여세요.",
+    loadfail: "불러오지 못했습니다: ",
+    start: "시작 중",
+    verify: "확인 중",
+    loader: "업데이트 모드로 전환 중",
+    write: "쓰는 중",
+    reboot: "재시작 중",
+    done: "완료. 이제 FM-1을 분리해도 됩니다.",
+    stopped: "중단되었습니다. USB 케이블을 다시 연결하고 설치를 다시 누르세요.",
+    needBrowser: "Chrome 또는 Edge",
+    needCable: "USB 데이터 케이블",
+    needTab: "끝날 때까지 이 탭 열어 두기",
+    runTitle: "Tessera 설치 중",
+    runTitleStock: "공식 펌웨어로 돌아가는 중",
+    runKeep: "끝날 때까지 이 탭을 열어 두고 FM-1을 연결해 두세요. 탭을 닫거나 FM-1을 끄거나 분리하면 업데이트가 중단됩니다.",
+    stPrep: "준비",
+    stLoader: "업데이트 모드",
+    stWrite: "쓰기",
+    stReboot: "재시작",
+    details: "자세히",
+    close: "닫기",
+    error: "오류: ",
+    denied: "MIDI(SysEx) 접근이 허용되지 않았습니다. 사이트 설정(주소 표시줄)에서 MIDI를 허용하고 설치를 다시 누르세요.",
+    notfound: "FM-1을 찾을 수 없습니다. USB 케이블(데이터 케이블)을 확인하고, MIDI를 쓰는 다른 앱을 닫은 뒤 설치를 다시 누르세요.",
+    model: "연결된 기기는 FM-1이 아닙니다.",
+    lost: "USB 연결이 끊어졌습니다. 다시 연결하고 설치를 다시 누르세요.",
+    noloader: "업데이트 모드의 FM-1을 찾을 수 없습니다. USB 케이블을 다시 연결하고 설치를 다시 누르세요(끝날 때까지 업데이트 모드에 머뭅니다).",
+    noreturn: "FM-1이 다시 켜지지 않았습니다. 전원을 껐다가 다시 켜세요.",
+    mismatch: "쓰기는 끝났지만 FM-1이 다른 버전을 알립니다: ",
+    badpkg: "설치할 파일이 손상되었습니다. 페이지를 새로 고치세요.",
+    leave: "쓰는 중입니다. 페이지를 닫지 마세요.",
+    license: "GPL-3.0, 보증 없음. 소스:",
+  },
 };
-let lang = (navigator.language || "en").toLowerCase().startsWith("ja") ? "ja" : "en";
-const t = (k) => TEXT[lang][k];
-let lastKey = null, lastArg = "";
+/* the page language: the one picked in the header (tessera-lang, shared with the site, the editor and the simulator),
+   else the browser's first we have, else English; a string missing in a language falls back to English */
+const LANGS = ["en", "es", "it", "de", "fr", "pt", "ko", "ja"], LANG_KEY = "tessera-lang";
+function pickLang() {
+  try { const s = localStorage.getItem(LANG_KEY); if (LANGS.includes(s)) return s; } catch (e) {}
+  for (const l of navigator.languages || [navigator.language || "en"]) {
+    const b = String(l).toLowerCase().slice(0, 2);
+    if (LANGS.includes(b)) return b;
+  }
+  return "en";
+}
+let lang = pickLang();
+const t = (k) => (TEXT[lang] || TEXT.en)[k] ?? TEXT.en[k];
+let lastKey = null, lastArg = "", runTitle = null;
 function applyLang() {
-  document.documentElement.lang = lang;
+  document.documentElement.lang = lang === "pt" ? "pt-BR" : lang;
   document.querySelectorAll("[data-t]").forEach((e) => { e.textContent = t(e.dataset.t); });
-  $("lang").textContent = t("other");
+  $("lang").value = lang; $("lang-code").textContent = lang.toUpperCase();
   $("stock-go").textContent = t($("stock-skip-backup").checked ? "stockGoNoBackup" : "stockGo");
   if (lastKey === "ready") ready();
-  else if (lastKey) $("status").textContent = t(lastKey) + lastArg;
+  else if (lastKey) $("status").textContent = $("run-status").textContent = t(lastKey) + lastArg;
+  if (runTitle) $("run-title").textContent = t(runTitle);
 }
-$("lang").addEventListener("click", () => { lang = lang === "ja" ? "en" : "ja"; applyLang(); });
+$("lang").addEventListener("change", () => {
+  lang = $("lang").value;
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+  applyLang();
+});
 applyLang();
 $("stock-skip-backup").addEventListener("change", applyLang);
-const sayK = (k, arg = "") => { lastKey = k; lastArg = arg; $("status").textContent = t(k) + arg; };
+const sayK = (k, arg = "") => { lastKey = k; lastArg = arg; $("status").textContent = $("run-status").textContent = t(k) + arg; };
 const say = (txt) => { lastKey = null; $("status").textContent = txt; };
-const build = () => $("build-single").checked ? "single" : "dual";
-const ready = () => { lastKey = "ready"; $("status").textContent = `Melodee (tess) ${meta.version} (${t(build() + "Tag")})`; };
+const buildIds = ["dual", "single", "beta-dual", "beta-single", "nightly-dual", "nightly-single", "synth-dual", "synth-single"];
+const build = () => buildIds.find(k => $("build-" + k).checked) || "dual";
+const selection = () => {     /* the release, or a channel ("nightly-dual": meta.nightly's dual-core package) */
+  const kind = build(), dash = kind.indexOf("-");
+  return dash < 0 ? {kind, channel: meta, key: kind} : {kind, channel: meta[kind.slice(0, dash)], key: kind.slice(dash + 1)};
+};
+const ready = () => { lastKey = "ready"; $("status").textContent = `Tessera ${selection().channel.version} (${t(build() + "Tag")})`; };
 const log = (t) => { $("log").textContent += t + "\n"; };
 let image = null;
-const meta = {"version": "1.0", "product": "FM-1_910", "pkg": {"dual": "../../firmware/melodee-tess-1.0.fwsc", "single": "../../firmware/melodee-tess-1.0-1core.fwsc"}};
-const images = {};                // "dual" / "single" -> the package's image, each fetched once
+const meta = {"version": "3.5.1", "product": "FM-1_835", "pkg": {"dual": "../../firmware/tessera-3.5.1.fwsc", "single": "../../firmware/tessera-3.5.1-1core.fwsc"}, "beta": null, "nightly": null, "synth": null};
+$("ver").textContent = `FM-1 · ${meta.version}`;
+$("beta-options").hidden = !meta.beta;
+if (meta.beta) {
+  $("beta-version").textContent = meta.beta.version;
+  $("beta-info").textContent = `${meta.beta.branch} · ${meta.beta.commit.slice(0, 7)} · ${meta.beta.builtAt}`;
+  if (meta.beta.editor) { $("beta-editor").href = meta.beta.editor; $("beta-editor").hidden = false; }
+  if (Array.isArray(meta.beta.notes) && meta.beta.notes.length) {   // (docs/BETA_NOTES.md: headings and their lines, as text)
+    const body = $("beta-notes-body");
+    for (const [head, lines] of meta.beta.notes) {
+      const h = document.createElement("p"); h.className = "beta-notes-head"; h.textContent = String(head);
+      const ul = document.createElement("ul");
+      for (const line of lines) { const li = document.createElement("li"); li.textContent = String(line); ul.append(li); }
+      body.append(h, ul);
+    }
+    $("beta-notes").hidden = false;
+  }
+}
+$("nightly-options").hidden = !meta.nightly;
+if (meta.nightly) $("nightly-info").textContent = `next · ${meta.nightly.commit.slice(0, 7)} · ${meta.nightly.builtAt}`;
+$("synth-options").hidden = !meta.synth;
+if (meta.synth) $("synth-info").textContent = `${meta.synth.branch} · ${meta.synth.commit.slice(0, 7)} · ${meta.synth.builtAt}`;
+const images = {};                // a build ("dual", "nightly-single", "synth-dual" ..) -> its package's image, each fetched once
 
-let writing = false, stock = null, stockFileEpoch = 0, buildEpoch = 0;
-const lockInstaller = (on) => { writing = on; $("go").disabled = on || !image; $("build-dual").disabled = on; $("build-single").disabled = on; $("stock-go").disabled = on || !stock; $("stock-file").disabled = on; $("stock-recovery").disabled = on; $("stock-skip-backup").disabled = on; };
+let writing = false, stock = null, stockFileEpoch = 0, buildEpoch = 0, local = null, localFileEpoch = 0;
+const lockInstaller = (on) => { writing = on; $("go").disabled = on || !image; $("local-go").disabled = on || !local; $("local-file").disabled = on; buildIds.forEach(k => { $("build-" + k).disabled = on; }); $("stock-go").disabled = on || !stock; $("stock-file").disabled = on; $("stock-recovery").disabled = on; $("stock-skip-backup").disabled = on; };
 window.addEventListener("beforeunload", (e) => { if (writing) { e.preventDefault(); e.returnValue = t("leave"); } });
+
+// the install window (display only; the protocol is fm1ota.js): the four stages, the bar and its percentage, the
+// status, and the log behind Details, which keeps the stages and errors, not every request. Esc does not close it
+// while writing; Close does once it has finished. Nothing started (a refusal, a cancelled confirm): it just closes,
+// the page's status says why
+const STAGES = {start: 1, verify: 1, backup: 1, loader: 2, write: 3, reboot: 4, done: 5};
+let runStage = 0;
+const runShow = (n) => { for (let i = 1; i <= 4; i++) $("run-st" + i).className = i < n ? "done" : i === n ? "now" : ""; };
+function runOpen(title) {
+  runTitle = title; runStage = 0;
+  $("run-title").textContent = t(title); $("run-status").textContent = ""; $("log").textContent = "";
+  $("bar").value = 0; $("run-pct").textContent = "0 %"; $("run-close").disabled = true; $("run").className = "";
+  runShow(0);
+  if ($("run").showModal && !$("run").open) $("run").showModal();
+}
+function runStep(k, pct) {
+  const n = STAGES[k];
+  if (n && n > runStage) { runStage = n; runShow(n); log(t(k)); }
+  if (pct !== undefined) { $("bar").value = pct; $("run-pct").textContent = `${Math.floor(pct)} %`; }
+}
+function runEnd(ok) {
+  if (!ok && runStage === 0) { if ($("run").close) $("run").close(); return; }
+  if (ok) runStep("done", 100);
+  $("run").className = ok ? "ok" : "fail"; $("run-close").disabled = false;
+}
+/* the Updater's steps for an image (its writes: one request a 512-byte block, fm1ota.js MAXDATA; 74 to verify first):
+ * the status, the stages and the bar; the requests are counted, not each logged. onDone: when "done" arrives */
+function installSteps(img, onDone) {
+  const total = 74 + Math.ceil(img.length / 512);
+  return (k, a) => {
+    if (k === "start") { sayK("start"); runStep(k); }
+    if (k === "verify") { if (lastKey !== "verify") sayK("verify"); runStep(k, Math.min(5, (a / total) * 100)); }
+    if (k === "loader") { sayK("loader"); runStep(k); }
+    if (k === "write") { if (lastKey !== "write") sayK("write"); runStep(k, Math.min(97, ((74 + a) / total) * 100)); }
+    if (k === "reboot") { sayK("reboot"); runStep(k, 98); }
+    if (k === "done") { sayK("done"); onDone(); }
+  };
+}
+$("run-close").addEventListener("click", () => { if (!writing && $("run").close) $("run").close(); });
+$("run").addEventListener("cancel", (e) => { if (writing) e.preventDefault(); });
 
 // the chosen build's package: Install stays off until it is loaded and checked
 async function choose() {
   if (writing) return;
   if (!navigator.requestMIDIAccess) { sayK("nomidi"); return; }
-  const kind = build(), epoch = ++buildEpoch;
+  const {kind, channel, key} = selection(), epoch = ++buildEpoch;
   image = null; $("go").disabled = true;
   try {
     if (!images[kind]) {
-      const url = meta.pkg[kind], r = await fetch(url);
+      if (!channel) throw new Error(kind.startsWith("synth-") ? "Synth only is not available yet" : kind.startsWith("beta-") ? "No beta at the moment" : "Nightly is not available yet");
+      const url = channel.pkg[key] + (channel.commit ? "?commit=" + channel.commit : ""), r = await fetch(url);
       if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
       const pkg = new Uint8Array(await r.arrayBuffer());
-      if (productOf(pkg) !== meta.product) { if (epoch === buildEpoch) sayK("badpkg"); return; }
+      if (productOf(pkg) !== channel.product) { if (epoch === buildEpoch) sayK("badpkg"); return; }
       images[kind] = logicalImage(pkg);
     }
     if (epoch !== buildEpoch) return;
     image = images[kind]; if (!writing) ready(); lockInstaller(writing);
   } catch (e) { if (epoch === buildEpoch) sayK("loadfail", e.message); }
 }
-$("build-dual").addEventListener("change", choose);
-$("build-single").addEventListener("change", choose);
+buildIds.forEach(k => $("build-" + k).addEventListener("change", choose));
 choose();
 
-$("go").addEventListener("click", async () => {
-  if (writing || !image) return;
+// the install count: one GoatCounter event per finished install of a published build (the version and the build, no
+// cookies); never for a local file, nor in a browser that opened this page with #nocount once
+const COUNT_URL = "https://rastapopolix.goatcounter.com/count";
+const NOCOUNT = "tessera-nocount";
+try { if (location.hash === "#nocount") localStorage.setItem(NOCOUNT, "1"); } catch (e) { /* no storage: counted */ }
+function countInstall(what) {
+  try { if (localStorage.getItem(NOCOUNT)) return; } catch (e) { /* no storage: counted */ }
+  const q = new URLSearchParams({p: `install/${what}`, t: `Install ${what}`, e: "true", rnd: Math.random().toString(36).slice(2)});
+  try { navigator.sendBeacon(`${COUNT_URL}?${q}`); } catch (e) { /* the count is never worth an error */ }
+}
+
+// an update loader that is not the package's own gets nothing: the official one would write a Tessera package's
+// head over the boot data, Tessera's would write only V15's application (docs/RECOVERY.md)
+const refuseLoader = (id) => id === STOCK_LOADER ? sayK("loaderStock") : id === TESSERA_LOADER ? sayK("loaderTessera") : sayK("loaderUnknown", id);
+
+// install an image whose identity the device must report afterwards (the chosen build, or a local test build);
+// what: the published build to count ("2.0/dual"), none for a local file
+async function flash(image, product, what) {
   lockInstaller(true);
   let midi;
   try { midi = await navigator.requestMIDIAccess({ sysex: true }); }
   catch (e) { sayK("denied"); lockInstaller(false); return; }
+  let done = false;
+  runOpen("runTitle");
   try {
     const up = new Updater(midi, log);
-    const total = 74 + 1167;
-    const step = (k, a) => {
-      log(`${k} ${a ?? ""}`);
-      if (k === "start") sayK("start");
-      if (k === "verify") { sayK("verify"); $("bar").value = (a / total) * 100; }
-      if (k === "loader") sayK("loader");
-      if (k === "write") { sayK("write"); $("bar").value = ((74 + a) / total) * 100; }
-      if (k === "reboot") sayK("reboot");
-      if (k === "done") { $("bar").value = 100; sayK("done"); }
-    };
+    const step = installSteps(image, () => { done = true; });
     const ota = await up.find((id) => /^ota-/i.test(id.model));
     if (ota) {
       ota.link.close();
-      sayK((await up.resume(image, step, meta.product)) ? "done" : "stopped");
+      if (ota.id.text !== TESSERA_LOADER) refuseLoader(ota.id.text);
+      else {
+        if (await up.resume(image, step, product, TESSERA_LOADER)) done = true;
+        sayK(done ? "done" : "stopped");
+      }
     } else {
-      await up.install(image, meta.product, step);
+      await up.install(image, product, step, TESSERA_LOADER);
     }
+    if (done && what) countInstall(what);
   } catch (e) {
-    if (e && e.code && TEXT[lang][e.code]) sayK(e.code, e.detail || "");
+    if (e && e.code === "wrongloader") refuseLoader(e.detail);
+    else if (e && e.code && TEXT.en[e.code]) sayK(e.code, e.detail || "");
     else sayK("error", e && e.message);
     log(String(e && e.stack || e));
   }
+  runEnd(done);
   lockInstaller(false);
+}
+$("go").addEventListener("click", () => { if (!writing && image) { const {channel, kind} = selection(); return flash(image, channel.product, `${channel.version}/${kind}`); } });
+
+// a test build from this computer: only a Melodee package (fm1pkg_make.py: CRCs intact, an FM-1_8XY (FM-1_8377, FM-1_9 before) identity and
+// Melodee's loader, so never a vendor or patched official package), as web/make_site.py checks before publishing
+const LOADER_MARK = Array.from("FELUCCA-LOADER-1", (c) => c.charCodeAt(0));
+const hasLoader = (raw) => {
+  for (let i = raw.indexOf(LOADER_MARK[0]); i >= 0; i = raw.indexOf(LOADER_MARK[0], i + 1))
+    if (LOADER_MARK.every((b, j) => raw[i + j] === b)) return true;
+  return false;
+};
+function checkLocal(raw) {
+  new Package(raw);
+  const product = productOf(raw);
+  if (!/^(FM-1_8\d\d|FM-1_8377\d{4}|FM-1_9\d{2,4})$/.test(product)) throw new Error(`identity ${JSON.stringify(product)} is not a Tessera package`);
+  if (!hasLoader(raw)) throw new Error("no Tessera loader in it (only tools/fm1pkg_make.py packages)");
+  return {image: logicalImage(raw), product};
+}
+$("local-file").addEventListener("change", async () => {
+  const epoch = ++localFileEpoch, file = $("local-file").files[0]; local = null; lockInstaller(false);
+  if (!file) return;
+  try {
+    const checked = checkLocal(new Uint8Array(await file.arrayBuffer()));
+    if (epoch !== localFileEpoch) return;
+    local = {...checked, name: file.name}; sayK("localValid", `${file.name} (${checked.product})`); lockInstaller(false);
+  } catch (e) { if (epoch === localFileEpoch) sayK("localError", e.message); }
+});
+$("local-go").addEventListener("click", () => {
+  if (writing || !local) return;
+  const {image, product, name} = local;
+  if (confirm(t("localConfirm") + `${name} (${product})`)) return flash(image, product);
 });
 
 $("stock-file").addEventListener("change", async () => {
   const epoch = ++stockFileEpoch, file = $("stock-file").files[0]; stock = null; lockInstaller(false);
   if (!file) return;
   try {
-    if (file.size !== STOCK_V15_SIZE) throw new Error("FM-1 V15 / FM-1.fwsc");
+    if (![STOCK_V15_SIZE, STOCK_V16_SIZE].includes(file.size)) throw new Error("FM-1 V15 / V16 FM-1.fwsc");
     const verified = await validateStockPackage(new Uint8Array(await file.arrayBuffer()));
     if (epoch !== stockFileEpoch) return;
-    stock = verified; sayK("stockValid"); lockInstaller(false);
+    stock = verified; sayK("stockValid", verified.product === "FM-1_016" ? "V16" : "V15"); lockInstaller(false);
   } catch (e) { if (epoch === stockFileEpoch) sayK("stockError", e.message); }
 });
 function saveArchive(archive) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(archive)], {type:"application/json"}));
-  const a = document.createElement("a"); a.href = url; a.download = `Melodee-backup-${new Date().toISOString().slice(0,10)}.json`;
+  const a = document.createElement("a"); a.href = url; a.download = `Tessera-backup-${new Date().toISOString().slice(0,10)}.json`;
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function archiveInfo(a) {
@@ -926,25 +2032,28 @@ function archiveInfo(a) {
   const engines = a[pos]; pos += 5;
   for (let i = 0; i < engines; i++) { const end = a.indexOf(0,pos); if (end < 0) throw new Error("Invalid INFO"); pos = end + 1; }
   const ext = a.slice(pos + 1);
-  const supported = /^(MELODEE|FELUCCA) /i.test(version) && ext[0] === 16 && ext[1] === 0x55 && ext[2] === 1 &&
+  const supported = /^(TESSERA|MELODEE|FELUCCA) /i.test(version) && ext[0] === 16 && ext[1] === 0x55 && ext[2] === 1 &&
     ext[4] === 0x4d && ext[5] === 1 && ext[8] === 0x42 && ext[9] === 1 && (ext[10] & 1);
   return {version,supported};
 }
 $("stock-go").addEventListener("click", async () => {
   if (!stock || writing) return;
   const selected = stock, skipBackup = $("stock-skip-backup").checked; lockInstaller(true);
-  let link = null;
+  let link = null, done = false;
   try {
     let midi;
     try { midi = await navigator.requestMIDIAccess({sysex:true}); } catch (e) { sayK("denied"); return; }
+    runOpen("runTitleStock");
     const up = new Updater(midi, log);
-    const step = (k, n) => { log(`${k} ${n ?? ""}`); if (["start","verify","loader","write","reboot","done"].includes(k)) sayK(k); if (k === "done") $("bar").value = 100; };
-    const loader = await up.find(id => id.model === "ota-FM-1");
+    const step = installSteps(selected.image, () => { done = true; });
+    const loader = await up.find(id => /^ota-/i.test(id.model));
     if (loader) {
       loader.link.close();
+      if (loader.id.text !== STOCK_LOADER) { refuseLoader(loader.id.text); return; }
       if (!skipBackup && !$("stock-recovery").checked) { sayK("stockNeedBackup"); return; }
       if (!confirm(t(skipBackup ? "stockConfirmNoBackup" : "stockConfirm"))) return;
-      sayK(await up.resume(selected.image, step, selected.product) ? "done" : "stopped");
+      if (await up.resume(selected.image, step, selected.product, STOCK_LOADER)) done = true;
+      sayK(done ? "done" : "stopped");
     } else {
       const device = await up.find(id => id.model === "FM-1");
       if (!device) { sayK("notfound"); return; }
@@ -953,18 +2062,38 @@ $("stock-go").addEventListener("click", async () => {
         link = new BackupConnection(input, output);
         const info = archiveInfo(await link.request([1,[]]));
         if (!info.supported) { sayK("stockUnsupported"); return; }
+        runStep("backup");
         const archive = await captureBackup((r,o) => link.request(r,o), info.version,
-          (done,total) => sayK("backup", `${Math.round(done / Math.max(1,total) * 100)}%`));
+          (got,total) => sayK("backup", `${Math.round(got / Math.max(1,total) * 100)}%`));
         saveArchive(archive); link.close(); link = null;
       }
       if (!confirm(t(skipBackup ? "stockConfirmNoBackup" : "stockConfirm"))) return;
-      await up.install(selected.image, selected.product, step);
+      await up.install(selected.image, selected.product, step, STOCK_LOADER);
     }
   } catch (e) {
-    if (e.code && TEXT[lang][e.code]) sayK(e.code,e.detail || ""); else sayK("error",e.message);
+    // the firmware stops reading at CHECK HEAD when the device's boot data is not the file's (FAILED -5): V15's on a
+    // unit V16 started, or back; refused, never retried another way. A Tessera before 3.3 stops V16 at its size (-15)
+    const v16 = selected.product === "FM-1_016";
+    if (e.code === "stopped" && e.lastRead >= selected.head.from && e.lastRead < selected.head.to) sayK(v16 ? "stockNeedsV15" : "stockNeedsV16");
+    else if (e.code === "stopped" && v16 && e.lastRead >= 0 && e.lastRead < selected.head.from) sayK("stockTesseraOld");
+    else if (e.code === "wrongloader") refuseLoader(e.detail);
+    else if (e.code && TEXT.en[e.code]) sayK(e.code,e.detail || ""); else sayK("error",e.message);
     log(String(e.stack || e));
-  } finally { if (link) link.close(); lockInstaller(false); }
+  } finally { if (link) link.close(); runEnd(done); lockInstaller(false); }
 });
+</script>
+<script>/* LIGHT / DARK: names the other look; the choice is stored (tessera-theme) */
+(function () {
+  var b = document.getElementById("theme"), r = document.documentElement;
+  function light() { return r.dataset.theme === "light"; }
+  function show() { b.textContent = light() ? "Dark" : "Light"; }
+  b.addEventListener("click", function () {
+    r.dataset.theme = light() ? "dark" : "light";
+    try { localStorage.setItem("tessera-theme", r.dataset.theme); } catch (e) {}
+    show();
+  });
+  show();
+})();
 </script>
 </body>
 </html>
