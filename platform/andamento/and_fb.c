@@ -6,8 +6,8 @@
  * is Tessera's default Mono look (YELLOW ink on black): ink at 15, dimmed marks at lower levels.
  *
  * Plain C with no hardware, included in a unity build after firmware/src/mo_font.h (the Mono look's 5 x 7 face):
- * platform/daisy/tessera_core.c, tests/oled_render.c, and the UI (platform/andamento/and_ui.c, branch
- * claude/andamento-web: it carries its own copy of these primitives until it moves onto this file). */
+ * platform/daisy/tessera_core.c, tests/oled_render.c, and the web prototype with Andamento's UI (web/andamento/sim.c
+ * and platform/andamento/and_ui.c, which draws only through this file). */
 
 #define AND_W 128
 #define AND_H 64

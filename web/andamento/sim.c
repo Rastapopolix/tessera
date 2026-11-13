@@ -7,6 +7,8 @@
 #define UI_TEST_NO_MAIN 1
 #define TRK_START_TESS 1
 #include "ui_test.c"
+#include "../../firmware/src/mo_font.h"
+#include "../../platform/andamento/and_fb.c"           /* the screen: 128 x 64, 16 levels */
 #include "../../platform/andamento/and_ui.c"
 
 #include "sim_demos.h"                       /* (web/andamento/build.sh: demos/still-tide.tsp, koto-garden.tsp) */

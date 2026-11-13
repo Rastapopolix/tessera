@@ -4,8 +4,9 @@
  * Tessera's default Mono ink), 8 data encoders in 2 rows of 4, ENERGY, the 6 page buttons (GEN SOUND MOD FX PIECE
  * MIX), FUNC NO YES and the arrows, 16 keys in 2 rows of 8, REC PLAY STOP. First stage, for the virtual prototype
  * (web/andamento) and later the Daisy build: each page is a 2 x 4 grid of the selected track's settings, taken from
- * Tessera's central parameter list (pid.c), one per encoder. Included after the firmware (a unity build: it uses
- * pid_*, param_format, song, trk, transport_req, fm1_in and the Mono look's 5 x 7 face, MO_FONT).
+ * Tessera's central parameter list (pid.c), one per encoder. Included after the firmware and the screen's
+ * framebuffer, and_fb.c (a unity build: it uses pid_*, param_format, song, trk, transport_req, fm1_in, and and_fb.c's
+ * and_fb, and_clear, and_fill and and_text in the Mono look's 5 x 7 face).
  *
  * Controls (first stage):
  *   page button      that page; pressed again, its next sub-page (also UP / DOWN)
@@ -15,14 +16,11 @@
  *   keys             the selected track's scale (bottom row low, top row high), as the FM-1's 16 white keys play it
  *   PLAY / STOP      transport (PLAY while playing restarts) */
 
-#define AND_W 128
-#define AND_H 64
 #define AND_NENC 8
 
 enum { AB_GEN, AB_SOUND, AB_MOD, AB_FX, AB_PIECE, AB_MIX, AB_FUNC, AB_NO, AB_YES, AB_UP, AB_DOWN, AB_LEFT, AB_RIGHT,
        AB_REC, AB_PLAY, AB_STOP, AB_COUNT };
 
-static uint8_t and_fb[AND_H][AND_W];             /* one level 0..15 a pixel (the SSD1322's 4 bits) */
 static struct {
     uint8_t page, sub[6], held[AB_COUNT];
     uint16_t cell[AND_NENC];                     /* this page's settings (PID_NONE: an empty cell) */
@@ -33,37 +31,6 @@ static struct {
 
 /* the FM-1's 16 white keys (F3 .. G5, seq.c key_black): what its keyboard plays as scale degrees */
 static const uint8_t AND_WHITE[16] = {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 26};
-
-/* ------------------------------------------------------------ drawing --- */
-static void and_px(int32_t x, int32_t y, uint32_t l)
-{
-    if ((uint32_t)x < AND_W && (uint32_t)y < AND_H)
-        and_fb[y][x] = (uint8_t)l;
-}
-static void and_fill(int32_t x, int32_t y, int32_t w, int32_t h, uint32_t l)
-{
-    int32_t i, j;
-    for (j = y; j < y + h; j++)
-        for (i = x; i < x + w; i++)
-            and_px(i, j, l);
-}
-/* text in the 5 x 7 face, 6 px a character; at most n characters; the width drawn */
-static int32_t and_text(int32_t x, int32_t y, const char *s, uint32_t l, uint32_t n)
-{
-    int32_t x0 = x;
-    for (; *s && n; s++, n--, x += 6) {
-        uint32_t c = (uint8_t)*s, r, b;
-        if (c >= 'a' && c <= 'z')
-            c -= 32;                             /* (one case on this screen) */
-        if (c < ' ' || c > 'z')
-            c = '?';
-        for (r = 0; r < 7u; r++)
-            for (b = 0; b < 5u; b++)
-                if ((MO_FONT[c - ' '][r] >> (4u - b)) & 1u)
-                    and_px(x + (int32_t)b, y + (int32_t)r, l);
-    }
-    return x - x0;
-}
 
 /* ------------------------------------------------------------- pages --- */
 static const char *const AND_PAGE[6] = {"GEN", "SOUND", "MOD", "FX", "PIECE", "MIX"};
@@ -230,7 +197,7 @@ static void and_draw(void)
     uint32_t i, tr, hot = and_ui.hot_ms && fm1_ms - and_ui.hot_ms < 1200u;
     const pid_entry_t *e;
     and_cells();
-    memset(and_fb, 0, sizeof and_fb);
+    and_clear();
     /* the header, a lit bar: the page (or the setting just turned, by its full name), the track, transport, tempo */
     and_fill(0, 0, AND_W, 9, 15);
     if (hot && (e = pid_find(and_ui.hot_pid)))
