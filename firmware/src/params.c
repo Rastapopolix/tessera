@@ -597,21 +597,22 @@ static const page_t PAGES[] = {
     {"VOICE", FAM_EDIT, SC_TRACK, GR_NONE, {P_VOICE, P_GLIDE, P_GLMODE, P_PRIO}},
     {"VOICE 2", FAM_EDIT, SC_TRACK, GR_NONE, {P_ALLOC, P_DETUNE, P_PAN, P_MUTE}},
     {"VOICE 3", FAM_EDIT, SC_TRACK, GR_NONE, {P_SPRD, 0xFF, 0xFF, 0xFF}},
-    /* GLO (review 2026-11-13): the pages to play with first (MIXER, PERF, LANDSCAPE: their keys are the GLO layer's,
-     * ui_layer.c mixer_live), then the long form (PIECE, CHAIN, ENTRIES), the device's setup last (SYSTEM, MIDI IN,
-     * MIDI OUT). Only the order of this table: the parameters keep their IDs, projects and settings read the same */
+    /* GLO (review 2026-11-13; LANDSCAPE moved 2026-11-14): the pages to play with first (MIXER, PERF: their keys
+     * are the GLO layer's, ui_layer.c mixer_live), then the long form (PIECE, CHAIN, ENTRIES, LANDSCAPE: its own
+     * keys stay live wherever it sits), the device's setup last (SYSTEM, MIDI IN, MIDI OUT). Only the order of this
+     * table: the parameters keep their IDs, projects and settings read the same */
     {"MIXER", FAM_GLO, SC_TRK, GR_TRK, {0, 1, 2, 3}},   /* KNOB k track k's LEVEL, OCT- held its PAN; the keys mute,
                                                         * solo, FILL, TAP (ui_input.c tracks_edit) */
     {"PERF", FAM_GLO, SC_GLOBAL, GR_PERF, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: MACRO 1..4, the project's cord sources
                                                                    * (cord.c CS_MACRO1; the Mono look only) */
-    {"LANDSCAPE", FAM_GLO, SC_GLOBAL, GR_LAND, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: rain on water, played by the
-                                                                         * music (ui_land.c; the Mono look only) */
     {"PIECE", FAM_GLO, SC_GLOBAL, GR_PIECE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: LENGTH SHAPE PEAK / COUNT END; OCT+ /
                                                                        * OCT- held USER's levels (planner.c) */
     {"CHAIN", FAM_GLO, SC_GLOBAL, GR_CHAIN, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: the project's FORM PHRASE WANDER; OCT+
                                                                        * held the REPEATs (form_chain.c) */
     {"ENTRIES", FAM_GLO, SC_GLOBAL, GR_ENTRIES, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: ENTRIES DWELL STYLE FADE; OCT+
                                                                            * held each track's ROLE (entries.c) */
+    {"LANDSCAPE", FAM_GLO, SC_GLOBAL, GR_LAND, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: rain on water, played by the
+                                                                         * music (ui_land.c; the Mono look only) */
     {"SYSTEM", FAM_GLO, SC_GLOBAL, GR_NONE, {G_BUDGET, G_INFO, G_A4, G_TUNE}},   /* the voices and the CPU they cost,
                                                                                * the tuning (ui_mono.c mo_pic_system) */
     {"MIDI IN", FAM_GLO, SC_GLOBAL, GR_NONE, {G_MIDI, G_DRUMCH, G_ROUTE, G_CLOCK}},   /* what comes in: the port, DRUM's
