@@ -6,8 +6,8 @@
  *                        in the panel's yellow, as tests/oled_render.c writes them, for tests/oled_render.py)
  * Checks:
  *   start     Andamento starts on HOME, no page button lit; a page button leaves it, NO comes back from any page
- *   DEPTH     encoders A..D turn tracks 1..4's ENERGY DEPTH, a push resets it; E..H (no track yet) change nothing
- *   lanes     8 lanes of 16 px; tracks past Tessera's NTRK dotted and dim; the selected one lit
+ *   DEPTH     encoders A..D turn tracks 1..4's ENERGY DEPTH, a push resets it; E..H the external tracks 5..8's
+ *   lanes     8 lanes of 16 px, each with its meter; the selected one lit (5..8 too)
  *   FREE      a demo playing with ARC set: ENERGY's history grows from the left, now a disc at its leading edge;
  *             once full it scrolls, now at the right edge; a rest shows REST in the header and is marked under the arc
  *   piece     a LENGTH set: the SHAPE across the screen, what was played over it up to the play head, the time left */
@@ -93,20 +93,23 @@ int main(int argc, char **argv)
     dump("home_depth");
     web_push(0);
     CHECK(pid_get(AND_PID_DEPTH, 0) == 100, "encoder A pushed: DEPTH back to 100");
-    web_enc(4, 5);
-    web_push(5);
-    CHECK(and_ui.page == AND_HOME, "encoders E..H (tracks 5..8 not yet): nothing breaks");
+    web_enc(4, -5);
+    CHECK(ae_get(AE_DEPTH, 0) == 95 && pid_get(AND_PID_DEPTH, 0) == 100, "encoder E: track 5's DEPTH 95 (%d)",
+          ae_get(AE_DEPTH, 0));
+    web_push(4);
+    CHECK(ae_get(AE_DEPTH, 0) == 100, "encoder E pushed: track 5's DEPTH back to 100");
+    CHECK(and_ui.page == AND_HOME, "encoders E..H: HOME stays");
 
     /* the lanes */
     run_ms(1300);
     song.sel = 1;
     CHECK(peak(17, AH_LANE_Y, 15, 9) == 15, "lane 2 selected: its number lit");
     CHECK(peak(1, AH_LANE_Y + 1, 15, 8) < 15, "lane 1 not selected");
-    for (i = NTRK; i < AND_TRACKS; i++)
-        CHECK(peak((int32_t)i * 16, AH_LANE_Y, 16, AND_H - AH_LANE_Y) <= 4u, "lane %u (no track yet) dim", i + 1u);
-    for (i = 0; i < NTRK; i++)
+    for (i = 0; i < AND_TRACKS; i++)
         CHECK(peak((int32_t)i * 16 + 2, AH_LANE_Y + 10, 13, 13) > 3u, "lane %u: a meter", i + 1u);
-    song.sel = 0;
+    and_select(5);
+    CHECK(peak(16 * 5 + 1, AH_LANE_Y, 15, 9) == 15 && peak(17, AH_LANE_Y, 15, 9) < 15, "lane 6 selected: its number lit");
+    and_select(0);
 
     /* FREE: the demo, ARC and RESTS set */
     web_demo(0);

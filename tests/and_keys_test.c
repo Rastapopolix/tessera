@@ -57,7 +57,7 @@ int main(void)
     CHECK(and_keys.mode == AK_CHROM, "FUNC + key 10: CHROM (mode %u)", and_keys.mode);
     web_button(AB_FUNC, 1);
     CHECK(lum(9) > 3u * lum(8) && lum(10) > 0 && lum(12) == 0, "FUNC held: the mode keys, CHROM brightest");
-    CHECK(lum(0) > lum(1) && lum(1) > 0 && lum(NTRK) == 0, "FUNC held: the tracks, the selected brightest");
+    CHECK(lum(0) > lum(1) && lum(1) > 0 && lum(7) > 0, "FUNC held: the 8 tracks, the selected brightest");
     web_button(AB_FUNC, 0);
     func_key(8);
     CHECK(and_keys.mode == AK_SCALE, "FUNC + key 9: SCALE");
@@ -78,6 +78,7 @@ int main(void)
         CHECK(held_sounds(0, root + 12u), "SCALE: an octave up, key 1 plays %u", root + 12u);
         song.octave = 0;
         and_keys_lights();
+        run_ms(AK_FLASH_MS);                         /* (the notes just played: their flashes gone) */
         CHECK(lum(0) > lum(1) && lum(1) > 0, "SCALE: the root lit brighter than the other degrees");
 
         /* CHROM (CHRD off: a chord would snap its notes to the scale) */
