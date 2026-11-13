@@ -237,7 +237,7 @@ enum { LAYER_NONE, LAYER_RESERVED, LAYER_GLO, LAYER_SCL, LAYER_N };
 static void draw_layer(void);
 static const char *layer_head(void);
 static uint32_t layer_leds(void);
-static int mixer_live(void);                            /* (ui_layer.c: MIXER's keys are the GLO layer's) */
+static int mixer_live(void);                            /* (ui_layer.c: MIXER's, PERF's, LANDSCAPE's keys: GLO's) */
 static uint32_t layer_btn(void);
 
 /* FM operator pages belonged to DIGITAL (retired): they never appear. SLICES:
@@ -644,7 +644,8 @@ static void page_scroll(int32_t dir)
     } else {
         for (n = 0; n < NPAGES; n++) {
             i = (i + (dir > 0 ? 1u : NPAGES - 1u)) % NPAGES;
-            if (in_fam(i, fam) && page_visible(i))
+            if (in_fam(i, fam) && page_visible(i) && PAGES[i].graph != GR_TRK)   /* (MIXER: GLO's tap; SELECT there
+                                                                                  * is the tempo) */
                 break;
         }
     }
@@ -713,19 +714,14 @@ static void open_family(uint32_t fam)
         slot_save_sheet();                       /* SAVE: USER; OCT+ then its slot's sheet on Save here (ui_slots.c) */
 }
 
-/* GLO always enters the mixer from another family. Subsequent taps visit the
- * global settings, then return to the mixer; recording has no navigation role. */
+/* GLO always enters MIXER (its first page) from another family; then each tap the next GLO page, after the last
+ * MIXER again */
 static void open_global(void)
 {
-    uint32_t i;
-    if (!ui.home && cur_page()->fam == FAM_TRK) {
-        ui.page = (uint8_t)page_first(FAM_GLO);
-    } else if (!ui.home && cur_page()->fam == FAM_GLO) {
+    uint32_t i = NPAGES;
+    if (!ui.home && cur_page()->fam == FAM_GLO)
         for (i = ui.page + 1u; i < NPAGES && (PAGES[i].fam != FAM_GLO || !page_visible(i)); i++) {}
-        ui.page = (uint8_t)(i < NPAGES ? i : page_first(FAM_TRK));
-    } else {
-        ui.page = (uint8_t)page_first(FAM_TRK);
-    }
+    ui.page = (uint8_t)(i < NPAGES ? i : page_first(FAM_GLO));
     ui.home = 0;
     page_entered();
 }

@@ -608,7 +608,7 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                      "closer (a roll that speeds up), DECEL further and further apart (a bounce). The "
                                      "track's, for its RATCH and for every step's Ratchet on a STEP track."),
     X_(TX_MIDI_CH, "MIDI OUT CHANNEL", "The MIDI channel this track's notes go out on over USB, so each track can play "
-                                       "its own instrument. AUTO follows SYSTEM's ROUT (CH1-4: tracks on 1 to 4), a drum "
+                                       "its own instrument. AUTO follows MIDI IN's ROUT (CH1-4: tracks on 1 to 4), a drum "
                                        "track the DRUM channel; OFF sends none of its notes. Saved with the project. "
                                        "Which notes go out at all is the menu's NOTES OUT: KEYS, ALL or OFF. GLO > MIDI OUT, "
                                        "a knob for each track."),

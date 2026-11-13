@@ -282,6 +282,7 @@ static void mo_sound(const char *en, const char *nm);
 static void mo_scale_pic(int32_t y, int32_t h);
 static void mo_confirm(const char *a, const char *b);
 static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint32_t flags, int32_t meter);
+static void mo_mixer_foot(void);                      /* (ui_mono.c: MIXER's legend and tabs) */
 static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on);
 static void mo_cu_bar(const cord_t *c, int32_t s, int32_t ox);
 static void mo_cu_led(uint32_t lv, int32_t ox);

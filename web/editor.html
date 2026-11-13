@@ -5296,7 +5296,7 @@ const LAYOUT = (pe0) => [
   { t: "ARP", pages: [["ARP", 0, [17, 18, 19, 20]], ["ARP 2", 0, [21, 22, 23, 24]]] },
   { t: "SEQ PATTERN", tab: "seqgroups", pages: [["PATTERN", 0, [29, 30, 31, 32]], ["TIMING", 0, [8]]] },
   { t: "TEMPO", tab: "seqgroups", pages: [["TEMPO", 1, [0, 1]]] },   /* BPM SWG: the project's (SEQ > TEMPO) */
-  { t: "GLOBAL", tab: "setgroups", pages: [["GLOBAL", 1, [21, 41, 2, 3]], ["SYSTEM", 1, [14]]] }, /* device workload budget */
+  { t: "GLOBAL", tab: "setgroups", pages: [["SYSTEM", 1, [41, 21, 3]], ["MIDI IN", 1, [14, 2]]] }, /* the device's GLO > SYSTEM, MIDI IN */
 ];
 /* globals that are actions or placeholders on the device: buttons instead, or hidden */
 const G_SKIP = new Set(["SLOT", "NAME", "BOOT", "LOAD", "SAVE", "ENG", "SET", "CLRSQ", "INIT", "MIDI", "SYNC", "DRUM", "CPU", "CLK"]);

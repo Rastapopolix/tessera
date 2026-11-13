@@ -9,7 +9,7 @@ limits as musically unusable. They are superseded in the revised source. The
 old results below remain evidence for the earlier `audio3` package, not a
 certification of the new shared-budget policy.
 
-GLO > GLOBAL knob 2 now controls BUDGET, a device-wide allowance of 8–32 weighted
+GLO > SYSTEM knob 1 (GLO > GLOBAL knob 2 up to 3.5) controls BUDGET, a device-wide allowance of 8–32 weighted
 points. The performance profile defaults to 16. Native engine capacities are
 retained: Prophet 8 (5 in serial fallback), FM6 16, CZ 8, SID 4, DRUM 8. Idle
 tracks reserve no sounding slots. At the default budget a solo Prophet track

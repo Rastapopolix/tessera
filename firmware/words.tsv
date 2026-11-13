@@ -65,8 +65,8 @@ EXT	external
 EOC	end of cycle
 CLK	clock
 QNT	quantize
-HOLD GLO QUICK	hold global for its quick page
-HOLD SCL QUICK	hold scale for its quick page
+HOLD GLO SET	hold global to set its keys
+HOLD SCL SET	hold scale to set the key
 ERR	error
 
 

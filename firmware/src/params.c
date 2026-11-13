@@ -35,10 +35,10 @@ static const char *const N_GO[] = {"--", "GO"};
 static const char *const N_BOOT[] = {"OFF", "A", "B", "C", "D"};
 static const char *const N_DRUMCH[] = {"OFF", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14",
                                        "15", "16"};
-/* GLO > SYSTEM KNOB 2, DRUM: the MIDI channel that plays the first DRUM track within ROUT (none: normal
+/* GLO > MIDI IN KNOB 2, DRUM: the MIDI channel that plays the first DRUM track within ROUT (none: normal
  * routing), 0 OFF, 1..16; 10 as General MIDI's. A device setting kept with the settings (ext.drumch), not the
  * project's: the column shows drumch_cell (seq.c midi_track) */
-static uint8_t settings_drumch = 0;   /* SYSTEM > DRUM: OFF since 3.3.1 (a drum track follows ROUT); was 10 */
+static uint8_t settings_drumch = 0;   /* MIDI IN > DRUM: OFF since 3.3.1 (a drum track follows ROUT); was 10 */
 static int16_t drumch_cell;
 #define PROJ_TMPL 5                                      /* SLOT 5: the template (project.c tmpl) */
 /* SAVE > PROJECT KNOB 2, BOOT: the project power-on loads (OFF, A..D; OFF or an empty slot: the template, if one is
@@ -428,7 +428,8 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
         if (v <= 0) {
             str_cpy(val, "OFF", 6);
         } else {
-            fmt_fix(val, level_db_x10((uint32_t)v), 1);
+            int32_t d = level_db_x10((uint32_t)v);   /* whole dB, as MIXER and HOME show it (review 2026-11-13) */
+            fmt_int(val, (d + (d < 0 ? -5 : 5)) / 10);
             *unit = "dB";
         }
         break;
@@ -596,19 +597,27 @@ static const page_t PAGES[] = {
     {"VOICE", FAM_EDIT, SC_TRACK, GR_NONE, {P_VOICE, P_GLIDE, P_GLMODE, P_PRIO}},
     {"VOICE 2", FAM_EDIT, SC_TRACK, GR_NONE, {P_ALLOC, P_DETUNE, P_PAN, P_MUTE}},
     {"VOICE 3", FAM_EDIT, SC_TRACK, GR_NONE, {P_SPRD, 0xFF, 0xFF, 0xFF}},
+    /* GLO (review 2026-11-13): the pages to play with first (MIXER, PERF, LANDSCAPE: their keys are the GLO layer's,
+     * ui_layer.c mixer_live), then the long form (PIECE, CHAIN, ENTRIES), the device's setup last (SYSTEM, MIDI IN,
+     * MIDI OUT). Only the order of this table: the parameters keep their IDs, projects and settings read the same */
+    {"MIXER", FAM_GLO, SC_TRK, GR_TRK, {0, 1, 2, 3}},   /* KNOB k track k's LEVEL, OCT- held its PAN; the keys mute,
+                                                        * solo, FILL, TAP (ui_input.c tracks_edit) */
     {"PERF", FAM_GLO, SC_GLOBAL, GR_PERF, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: MACRO 1..4, the project's cord sources
-                                                                   * (cord.c CS_MACRO1; the Mono look only): GLO's first page after MIXER */
-    {"GLOBAL", FAM_GLO, SC_GLOBAL, GR_NONE, {G_A4, G_BUDGET, G_CLOCK, G_TUNE}}, /* device reference/budget; CLK/TUNE kept */
-    {"SYSTEM", FAM_GLO, SC_GLOBAL, GR_NONE, {G_MIDI, G_DRUMCH, G_ROUTE, G_INFO}},
-    {"MIDI OUT", FAM_GLO, SC_GLOBAL, GR_MIDICH, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: KNOB k track k's channel (midi_out.c) */
+                                                                   * (cord.c CS_MACRO1; the Mono look only) */
+    {"LANDSCAPE", FAM_GLO, SC_GLOBAL, GR_LAND, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: rain on water, played by the
+                                                                         * music (ui_land.c; the Mono look only) */
     {"PIECE", FAM_GLO, SC_GLOBAL, GR_PIECE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: LENGTH SHAPE PEAK / COUNT END; OCT+ /
                                                                        * OCT- held USER's levels (planner.c) */
     {"CHAIN", FAM_GLO, SC_GLOBAL, GR_CHAIN, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: the project's FORM PHRASE WANDER; OCT+
                                                                        * held the REPEATs (form_chain.c) */
     {"ENTRIES", FAM_GLO, SC_GLOBAL, GR_ENTRIES, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: ENTRIES DWELL STYLE FADE; OCT+
                                                                            * held each track's ROLE (entries.c) */
-    {"LANDSCAPE", FAM_GLO, SC_GLOBAL, GR_LAND, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: rain on water, played by the
-                                                                         * music (ui_land.c; the Mono look only) */
+    {"SYSTEM", FAM_GLO, SC_GLOBAL, GR_NONE, {G_BUDGET, G_INFO, G_A4, G_TUNE}},   /* the voices and the CPU they cost,
+                                                                               * the tuning (ui_mono.c mo_pic_system) */
+    {"MIDI IN", FAM_GLO, SC_GLOBAL, GR_NONE, {G_MIDI, G_DRUMCH, G_ROUTE, G_CLOCK}},   /* what comes in: the port, DRUM's
+                                                                                   * channel, ROUT, the clock
+                                                                                   * (ui_mono.c mo_pic_midiin) */
+    {"MIDI OUT", FAM_GLO, SC_GLOBAL, GR_MIDICH, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: KNOB k track k's channel (midi_out.c) */
     {"PRESETS", FAM_SAVE, SC_GLOBAL, GR_BROWSE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* browser: KNOB 1 LIST, 2 / PRESETS the sounds */
     {"USER", FAM_SAVE, SC_GLOBAL, GR_USER, {0xFF, 0xFF, 0xFF, 0xFF}},       /* user presets: SLOT LOAD ERASE SAVE */
     {"PROJECT", FAM_SAVE, SC_GLOBAL, GR_SLOTS, {G_SLOT, G_BOOT, G_LOAD, G_SAVE}},
@@ -631,7 +640,6 @@ static const page_t PAGES[] = {
     {"PATTERN", FAM_SEQ, SC_TRACK, GR_STEPS, {P_SLEN, P_SDIV, P_SSWING, P_SGATE}},
     {"TEMPO", FAM_SEQ, SC_GLOBAL, GR_NONE, {G_BPM, G_SWING, G_TRK_RECQ, 0xFF}},   /* the project's: saved with it; QNT: the
                                                                                   * selected track's (TIMING's, folded in) */
-    {"MIXER", FAM_TRK, SC_TRK, GR_TRK, {0, 1, 2, 3}},   /* GLO button; LEVEL PAN MUTE */
     {"PATTERNS", FAM_SEQ, SC_GLOBAL, GR_PATGRID, {0xFF, 0xFF, 0xFF, 0xFF}},   /* the 4 x 8 grid: KNOB k track k's (ui_stage.c) */
     {"SONG", FAM_SEQ, SC_GLOBAL, GR_SONG, {0xFF, 0xFF, 0xFF, 0xFF}},
     {"MOTION", FAM_SEQ, SC_TRACK, GR_MOTION, {0xFF, 0xFF, 0xFF, 0xFF}},

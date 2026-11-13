@@ -1982,8 +1982,8 @@ static void setup(int s)
     case S_CHORD_KIT: eng(ENGI_DRUM); TSEL->p[P_CHRD] = CH_DIA3; go_title("CHORD"); break;
     case S_ARP: go_title("ARP"); break;
     case S_VOICE: go_title("VOICE"); break;
-    case S_GLOBAL: go_title("GLOBAL"); break;
-    case S_SYSTEM: go_title("SYSTEM"); break;
+    case S_GLOBAL: go_title("SYSTEM"); break;
+    case S_SYSTEM: go_title("MIDI IN"); break;
     case S_EDIT_FILT: eng(6); go_title("EDIT 2"); TSEL->p[P_E6] = 90; break;   /* TRIO's CUT and RES: the filter's curve */
     case S_EDIT_FILT_BP: case S_EDIT_FILT_HP: case S_EDIT_FILT_NOT:   /* .. its MODE BP, HP, notch: the curve follows it
                                                                       * (issue #299) */
@@ -2090,7 +2090,7 @@ static void setup(int s)
     }
     case S_SCL_PEEK: lys.snd = 0; brw.on = 0; go_title("ENV"); ui.layer = LAYER_SCL; break;
     case S_SCL_ACTIVE: go_home(); ui.layer = LAYER_SCL; TSEL->p[P_ROOT] = 3; TSEL->p[P_SCALE] = 2; ui.hot_col = 1; ui.hot_t = 30; break;
-    case S_LAYER_HINT: go_page(GR_TRK); ui.msg_t = 0; layer_tap(LAYER_GLO); break;
+    case S_LAYER_HINT: go_page(GR_LAND); ui.msg_t = 0; layer_tap(LAYER_GLO); break;   /* (to PIECE: the hint) */
     /* NAME (ui_name.c): USER SAVE prefilled; a letter cycling (RS: S, R next); 123 on a project; an empty project name
      * (the placeholder); 12 of the widest letters, the cursor past them; playing (OCT+ dim) */
     case S_NAME_USER: song.playing = 0; go_page(GR_USER); ui.uslot = 6; name_open(NK_USER_SAVE, 6); break;
@@ -2230,7 +2230,7 @@ static void sweep_columns(void)
     }
 }
 
-/* the rolling digits (ui_draw.c roll_*): GLOBAL, KNOB 4 turned and the BPM (SEQ > TEMPO's) moved together, BPM 129 -> 130 in the header
+/* the rolling digits (ui_draw.c roll_*): SYSTEM, KNOB 4 turned and the BPM (SEQ > TEMPO's) moved together, BPM 129 -> 130 in the header
  * and TUNE 19 -> 20 on a card, then back. Every frame is linted and (MONO) checked for gray; with a directory,
  * filmstrips of both (each frame side by side, x4: the static frame before, then the roll's frames) as
  * DIR/<PALETTE>_bpm_roll.ppm and DIR/<PALETTE>_card_roll.ppm, the up roll above the down roll. */
@@ -2285,7 +2285,7 @@ static void roll_frames(const char *dir)
         memset(cimg, 90, sizeof cimg);
         state(); song.playing = 0; pal(p);
         song.g[G_BPM] = 129; song.g[G_TUNE] = 19;
-        go_title("GLOBAL");
+        go_title("SYSTEM");
         snprintf(name, sizeof name, "%s/roll", UI_PALETTES[p].name);
         cur_name = name;
         draw(-1);
@@ -2482,7 +2482,7 @@ static void roll_cost(void)
         clock_t c0;
         state(); song.playing = 0; pal(1);
         song.g[G_BPM] = 129; song.g[G_TUNE] = 19;
-        go_title("GLOBAL");
+        go_title("SYSTEM");
         draw(-1);
         for (k = 0; k < 8u; k++) { ui.hot_t = 0; ui.bpm_t = 0; ui_draw(); }
         px_visited = 0; blit_px = 0;
@@ -2583,7 +2583,7 @@ static void library_note_sweep(const char *out)
 static uint32_t mono_batt_check(const char *out)
 {
     static const int32_t RAW[4] = {500, 540, 570, 600};
-    static const char *const SCREEN[] = {"EDIT 1", "MIDI OUT", "SYSTEM"};
+    static const char *const SCREEN[] = {"EDIT 1", "MIDI OUT", "MIDI IN"};
     uint32_t bad = 0, p, l, e, k;
     state(); pal(UI_GRAY_INDEX);
     settings_batt_off = 1;

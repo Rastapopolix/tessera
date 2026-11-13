@@ -496,7 +496,7 @@ FM6 has no filter of its own; the FILTER effect gives it one.
 2. Write a run of snare or tom hits on the last four steps. On each, **OCT+** for the hit's sheet: **Condition**
    **4:4**. They play on every fourth pass only.
 3. For a fill on demand, set another few hits to **FILL** instead, and the kick on the last beat to **!FILL**.
-   Hold **GLO** and **E4** (on MIXER, E4 alone) while the bar plays: the fill comes in and the kick drops out.
+   Hold **GLO** and **E4** (on MIXER, PERF or LANDSCAPE, E4 alone) while the bar plays: the fill comes in and the kick drops out.
 4. On 3.5 a slow LFO can hold FILL for you:
    [A fill every four bars](#a-fill-every-four-bars-eoc-35).
 
@@ -574,7 +574,7 @@ Hear it in **UNDERTOW**: track 1 is the call, track 2 the answers.
 <p align="center"><img src="assets/gallery/midi_out.png" alt="GLO > MIDI OUT" width="240"></p>
 
 1. Hold **HOME** for the menu: **NOTES OUT** to **ALL**. The steps, the ARP and every generator now go out over USB
-   MIDI, each track on its own channel: AUTO gives 1 to 4 (GLO > SYSTEM ROUT at CH1-4; the drum track on its DRUM
+   MIDI, each track on its own channel: AUTO gives 1 to 4 (GLO > MIDI IN ROUT at CH1-4; the drum track on its DRUM
    channel), or pick each track's channel, or OFF, on **GLO > MIDI OUT**.
 2. **CLOCK OUT** on: the other synth or DAW follows Tessera's tempo, START and STOP included.
 3. Turn the track's **LEVEL** down on the MIXER if you only want to hear the other synth.
@@ -843,7 +843,7 @@ MIDI OUT sends the notes spread too. On 3.4.x the chords play together, and SUS2
 - A track at SOUND OFF (OCT- held on GLO > MIDI OUT) is a free modulation lane: its generator's GATE, NOTE and CV
   still drive mods on the other tracks.
 - For long pieces, try the plan on a short PIECE LENGTH first, to hear the whole shape, then make it longer.
-- Crackles mean the FM-1 is out of breath: lower **BUDGET** (GLO > GLOBAL) or thin the busiest track.
+- Crackles mean the FM-1 is out of breath: lower **BUDGET** (GLO > SYSTEM) or thin the busiest track.
 
 **Finding your way**
 
