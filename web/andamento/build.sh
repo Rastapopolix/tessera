@@ -4,10 +4,10 @@
 # WebAssembly, and one page that holds everything (build/andamento/index.html, with the worklet and the wasm inside
 # it), so it opens from any server or as a published page.
 #   web/andamento/build.sh        (needs Emscripten's emcc, on the PATH or in ~/emsdk, and Python 3)
+#   web/andamento/build.sh --headers   only the generated headers in build/andamento/gen (tests/run_tests.sh's
+#                                      and_keys job builds sim.c for the PC from them)
 set -e
 cd "$(dirname "$0")/../.."
-command -v emcc >/dev/null 2>&1 || PATH="${EMSDK:-$HOME/emsdk}/upstream/emscripten:$PATH"
-command -v emcc >/dev/null 2>&1 || { echo "emcc not found: install Emscripten (emsdk)"; exit 1; }
 OUT=build/andamento
 GEN=$OUT/gen
 mkdir -p "$GEN"
@@ -26,6 +26,9 @@ for name, f in (("SIM_DEMO_A", "still-tide"), ("SIM_DEMO_B", "koto-garden")):
     out.append(f"static const uint8_t {name}[{len(b)}] = {{" + ",".join(str(x) for x in b) + "};")
 Path(sys.argv[1]).write_text("\n".join(out) + "\n")
 PY
+[ "$1" = --headers ] && exit 0
+command -v emcc >/dev/null 2>&1 || PATH="${EMSDK:-$HOME/emsdk}/upstream/emscripten:$PATH"
+command -v emcc >/dev/null 2>&1 || { echo "emcc not found: install Emscripten (emsdk)"; exit 1; }
 # as web/sim/build.sh: no fused multiply-adds, a 1 MiB stack, no file system; the device's engine set; no screen
 # reader (Andamento's UI does not speak yet)
 emcc -O2 -ffp-contract=off -w -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 -DMELODEE_PHYS=1 \
