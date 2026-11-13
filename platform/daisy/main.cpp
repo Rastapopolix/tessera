@@ -11,6 +11,24 @@ using namespace daisy;
 static DaisySeed hw;
 static CpuLoadMeter load;               // the audio callback's share of the time: the first number to measure
 
+// The screen: the yellow NHD-2.7-12864WDY3-M (SSD1322) in 4-wire SPI. tessera_core.c draws and packs a frame; these
+// two calls are all it needs from the board. Its packed frame lives in memory the SPI's DMA can read (not cached).
+// Left for the board (DAISY_PORT.md task 5): SPI1 with SCK on D8 (pin 9), MOSI on D10 (pin 11), CS on D7 (pin 8),
+// at most 10 MHz, mode 0; DC and RESET on two free GPIO, chosen when it is wired. RESET low for at least 2 us, then
+// a wait before tessera_core_screen_init. Until then the calls do nothing, and the build checks the rest compiles.
+static uint8_t DMA_BUFFER_MEM_SECTION screen_buf[TESSERA_SCREEN_BYTES];
+
+extern "C" void and_spi_cmd(uint8_t c)
+{
+    (void)c;                             // the board: DC low, the byte out on SPI1
+}
+
+extern "C" void and_spi_data(const uint8_t *p, uint32_t n)
+{
+    (void)p;                             // the board: DC high, the bytes out on SPI1 (a frame by DMA)
+    (void)n;
+}
+
 static void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, size_t size)
 {
     (void)in;
@@ -33,6 +51,8 @@ int main(void)
     hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
     load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
     tessera_core_init();
+    tessera_core_screen_init();
+    tessera_core_screen(screen_buf);     // the bring-up card (and_testcard)
     hw.StartAudio(AudioCallback);
 
     uint32_t last = System::GetNow();
