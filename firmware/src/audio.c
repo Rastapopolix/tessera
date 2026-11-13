@@ -87,6 +87,7 @@ static __attribute__((noinline)) uint32_t shed_check(uint32_t all)
     shed_over = (uint8_t)(shed_over << 1 | (all > SHED_TICKS));
     if ((shed_over & 3u) == 3u || all > SHED_NOW_TICKS)
         shed_req = 1;
+    voice_ceiling_tick(song.cpu_q8);                    /* the load ceiling recovers (voice.c) */
     return (all - t5_nested_ticks) / FM1_TICKS_PER_US;
 }
 
@@ -145,7 +146,10 @@ void fm1_alnk0_irq(void)                       /* via isr_alnk0 (hal/fm1_isr.S) 
             if(audio_bench_active())audio_bench_shed_requests++;
             else
 #endif
-            shed_voice();
+            {
+                shed_voice();
+                voice_ceiling_drop();           /* no more voices than this half could carry */
+            }
         }
 #if MELODEE_DUAL_CORE
         audio_worker_check();                   /* a CPU1 that misread or faulted: render alone from here */
