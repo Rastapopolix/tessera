@@ -1723,26 +1723,49 @@ static void mo_pic_midich(void)
     if (settings_midi_out != MIDI_OUT_ALL)
         mo_text(settings_midi_out == MIDI_OUT_OFF ? "NOTES OUT: OFF" : "NOTES OUT: KEYS", 2, 101, MO_DIM);
 }
-/* CPU%'s own display smoothing (Theo 2026-11-14: the bar and the number were jittery): a running average kept at
- * 4 extra bits of precision (Q4), one pole, about 1/32 of the remaining gap closed a draw -- a few tenths of a
- * second to settle, faster for a bigger real jump than for a one-draw wobble. Two tries at a window/histogram
- * version (48 and then 24 raw samples kept) each grew the image by thousands of bytes more than their own size,
- * apparently from shifting other code's addressing in this toolchain; this one keeps its added state to a single
- * uint16_t, the same size class as a first, too-crude hysteresis try that cost only +60 B, and was measured the
- * same way. UI-only: song.cpu_q8 and cpu_peak_q8 (the console, the screen reader, #586's shedding) are unchanged;
- * only this readout is steadied. */
+/* CPU%'s own display smoothing (Theo 2026-11-14: the bar and the number were jittery; still was in 3.5.2): a
+ * running average kept at 4 extra bits of precision (Q4), one pole, about 1/32 of the remaining gap closed a
+ * draw -- a few tenths of a second to settle, faster for a bigger real jump than for a one-draw wobble. Two
+ * tries at a window/histogram version (48 and then 24 raw samples kept) each grew the image by thousands of
+ * bytes more than their own size, apparently from shifting other code's addressing in this toolchain; this one
+ * keeps its added state small. UI-only: song.cpu_q8 and cpu_peak_q8 (the console, the screen reader, #586's
+ * shedding) are unchanged; only this readout is steadied.
+ * Two bugs in the 3.5.2 version, found from Theo's "still jitters" report and a standalone simulation (not a
+ * device test: this is a pure function of its inputs), fixed together:
+ * 1. C's >> on a negative value rounds toward -infinity, not zero, so a gap of -1..-31 stepped by -1 while the
+ *    same-size positive gap (0..31) stepped by 0 -- biased the average to drift down. Rounding the step toward
+ *    zero (symmetric either side of 0) fixes the bias, but on its own barely touches the jitter: simulated
+ *    against noisy input, the shown number still changed on about 1 draw in 8.
+ * 2. The real jitter is the display truncating a continuously-moving average (acc_q4) to a whole number
+ *    (`>> CPU_DISP_SHIFT`) with no hysteresis: ordinary noise in the average wobbles it back and forth across
+ *    a whole-percent line, and every crossing changes what's shown, even though the average itself is behaving.
+ *    `disp` now only moves once acc_q4 is CPU_DISP_MARGIN past the line, not right on it (a Schmitt trigger on
+ *    the display, not the average) -- changes dropped to 0 and 8 in two simulated 400-draw runs (vs. 48 and 49
+ *    without it) with everything else the same. */
 #define CPU_DISP_SHIFT 4u                     /* Q4: acc_q4 = the shown value's average, x16 */
+#define CPU_DISP_MARGIN 3u                    /* Q4 units (~0.2 points) past the line before disp follows */
 static uint32_t cpu_disp_smooth(uint32_t raw)
 {
     static uint16_t acc_q4 = 0xFFFFu;
-    int32_t target;
+    static uint8_t disp;
+    int32_t target, diff, step;
+    uint32_t cand;
     if (raw > 100u) raw = 100u;
     target = (int32_t)(raw << CPU_DISP_SHIFT);
-    if (acc_q4 == 0xFFFFu)
+    if (acc_q4 == 0xFFFFu) {
         acc_q4 = (uint16_t)target;
-    else
-        acc_q4 = (uint16_t)((int32_t)acc_q4 + ((target - (int32_t)acc_q4) >> 5));
-    return acc_q4 >> CPU_DISP_SHIFT;
+        disp = (uint8_t)raw;
+        return disp;
+    }
+    diff = target - (int32_t)acc_q4;
+    step = diff >= 0 ? diff >> 5 : -((-diff) >> 5);   /* toward zero, symmetric either side of 0 */
+    acc_q4 = (uint16_t)((int32_t)acc_q4 + step);
+    cand = (uint32_t)(acc_q4 >> CPU_DISP_SHIFT);
+    if (cand > disp && acc_q4 >= (uint16_t)((cand << CPU_DISP_SHIFT) + CPU_DISP_MARGIN))
+        disp = (uint8_t)cand;
+    else if (cand < disp && acc_q4 <= (uint16_t)((disp << CPU_DISP_SHIFT) - CPU_DISP_MARGIN))
+        disp = (uint8_t)cand;
+    return disp;
 }
 /* GLO > SYSTEM: what the voices and the CPU are doing. VOICES: the budget's points sounding now of BUDGET (the one
  * in effect, voice.c voice_budget) as a bar; CPU: the average as a bar, the recent peak a tick (as KNOB 4's numbers) */
