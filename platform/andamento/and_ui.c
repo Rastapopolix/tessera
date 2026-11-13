@@ -231,31 +231,31 @@ static void and_draw(void)
     const pid_entry_t *e;
     and_cells();
     memset(and_fb, 0, sizeof and_fb);
-    /* the header: the page (or the setting just turned, by its full name), the track, transport and tempo */
+    /* the header, a lit bar: the page (or the setting just turned, by its full name), the track, transport, tempo */
+    and_fill(0, 0, AND_W, 9, 15);
     if (hot && (e = pid_find(and_ui.hot_pid)))
-        and_text(1, 0, e->name, 15, 15);
+        and_text(2, 1, e->name, 0, 15);
     else {
-        int32_t x = and_text(1, 0, AND_PAGE[and_ui.page], 15, 5);
+        int32_t x = and_text(2, 1, AND_PAGE[and_ui.page], 0, 5);
         if (AND_SUBS[and_ui.page] > 1u) {
             s[0] = (char)('1' + and_ui.sub[and_ui.page]);
             s[1] = 0;
-            and_text(x + 3, 0, s, 6, 1);
+            and_text(x + 3, 1, s, 5, 1);
         }
         s[0] = 'T';
         s[1] = (char)('1' + song.sel);
         s[2] = 0;
-        and_text(52, 0, s, 15, 2);
+        and_text(52, 1, s, 0, 2);
     }
-    and_text(92, 0, song.playing ? ">" : "-", song.playing ? 15 : 6, 1);
+    and_text(92, 1, song.playing ? ">" : "-", song.playing ? 0 : 6, 1);
     {
         uint32_t bpm = (uint32_t)pid_get(0x100, 0);
         s[0] = (char)('0' + bpm / 100 % 10);
         s[1] = (char)('0' + bpm / 10 % 10);
         s[2] = (char)('0' + bpm % 10);
         s[3] = 0;
-        and_text(108, 0, bpm < 100 ? s + 1 : s, 10, 3);
+        and_text(107, 1, bpm < 100 ? s + 1 : s, 0, 3);
     }
-    and_fill(0, 9, AND_W, 1, 3);
     /* the 2 x 4 grid: each cell its label (dim) over its value, the cell turned last lit */
     for (i = 0; i < AND_NENC; i++) {
         int32_t x = (int32_t)(i % 4u) * 32, y = 12 + (int32_t)(i / 4u) * 20;
