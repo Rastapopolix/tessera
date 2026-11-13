@@ -9,12 +9,13 @@
  * screen (platform/andamento: a framebuffer, the SSD1322 driver) shows a bring-up card until the UI comes.
  *
  * Built at FS = 48000 (platform/daisy/Makefile: MELODEE_FS for tools/gen_tables.py), the Daisy's codec rate.
+ * The FM-1's placements are kept (section, noinline, always_inline): tessera_daisy.lds puts its .audio_text and
+ * .dsp_text in ITCM and its .dsp_tables in DTCM, with the rest of the audio path, and .pool and .noinit in .bss.
  * The include list follows tests/hostsim.c; keep the two in step when a source is added there. */
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#define __attribute__(x)                         /* (the FM-1's section placements: libDaisy's linker script has none) */
 #define memset melodee_memset
 #define memcpy melodee_memcpy
 #define memcmp melodee_memcmp
@@ -40,15 +41,30 @@ static void fm1_wdt_feed(void) {}
 #include "../../firmware/src/gen.c"
 #include "../../firmware/src/song_chain.c"
 #include "../../firmware/src/seq.c"
-#define TESS_IRQ_OFF() ((void)0)                  /* (the audio callback and the main loop share nothing yet) */
-#define TESS_IRQ_ON() ((void)0)
+/* The main loop's guard against the audio callback (an interrupt): PRIMASK off around a change the callback must
+ * not see half made, nesting, back to what it was at the outermost ON. Only tessera_core_tick_ms runs in the main
+ * loop yet; the UI will need this. */
+static uint32_t daisy_irq_depth, daisy_irq_primask;
+static inline __attribute__((always_inline)) void daisy_irq_off(void)
+{
+    uint32_t pm;
+    __asm__ volatile("mrs %0, primask\n\tcpsid i" : "=r"(pm) :: "memory");
+    if (!daisy_irq_depth++)
+        daisy_irq_primask = pm;
+}
+static inline __attribute__((always_inline)) void daisy_irq_on(void)
+{
+    if (daisy_irq_depth && !--daisy_irq_depth && !daisy_irq_primask)
+        __asm__ volatile("cpsie i" ::: "memory");
+}
+#define TESS_IRQ_OFF() daisy_irq_off()
+#define TESS_IRQ_ON() daisy_irq_on()
 #define TESS_ENTROPY() (fm1_ms * 2654435761u)
 #include "../../firmware/src/tessera.c"
 #include "../../firmware/src/pat_gen.c"
 #include "../../firmware/src/pid.c"
 #include "../../firmware/src/cord.c"
 #include "../../firmware/src/mscope.c"
-#undef __attribute__
 #include "../../firmware/src/mo_font.h"
 #include "../andamento/and_fb.c"                  /* the screen: a framebuffer of 16 levels */
 #include "../andamento/ssd1322.c"                 /* .. as the SSD1322's bytes (and_spi_cmd / and_spi_data: main.cpp) */
