@@ -9,9 +9,11 @@
  * and_fb, and_clear, and_fill and and_text in the Mono look's 5 x 7 face).
  *
  * Controls (first stage):
+ *   HOME             the piece at a glance: ENERGY's arc over time, its rests and entries, the 8 tracks
+ *                    (and_home.c); Andamento starts here, NO comes back here from any page
  *   page button      that page; pressed again, its next sub-page (also UP / DOWN)
  *   LEFT / RIGHT     the selected track; FUNC + one of the first keys picks a track directly
- *   encoder 1..8     the cell's setting; pushed, back to its default
+ *   encoder 1..8     the cell's setting; pushed, back to its default (HOME: tracks 1..8's ENERGY DEPTH)
  *   ENERGY           ENERGY LEVEL on every page
  *   keys             SCALE, CHROM, STEP or MUTE (FUNC + key 9..12), and their RGB lights: and_keys.c
  *   FUNC + UP / DOWN the keys' octave, or STEP's 16 steps shown
@@ -22,6 +24,8 @@
 enum { AB_GEN, AB_SOUND, AB_MOD, AB_FX, AB_PIECE, AB_MIX, AB_FUNC, AB_NO, AB_YES, AB_UP, AB_DOWN, AB_LEFT, AB_RIGHT,
        AB_REC, AB_PLAY, AB_STOP, AB_COUNT };
 
+#define AND_HOME 6                               /* the page after the 6 buttons' (and_home.c) */
+
 static struct {
     uint8_t page, sub[6], held[AB_COUNT];
     uint16_t cell[AND_NENC];                     /* this page's settings (PID_NONE: an empty cell) */
@@ -29,7 +33,7 @@ static struct {
     uint32_t hot_ms, say_ms;
     uint16_t hot_pid;
     const char *say;                             /* a word for the header (a mode, the octave), until say_ms + 1200 */
-} and_ui = {.hot = -1};
+} and_ui = {.page = AND_HOME, .hot = -1};
 
 static void and_ui_say(const char *s)
 {
@@ -44,6 +48,7 @@ static void and_ui_say(const char *s)
 }
 
 #include "and_keys.c"                            /* the 16 keys and their lights */
+#include "and_home.c"                            /* HOME: the piece, its ENERGY arc, the 8 tracks */
 
 /* ------------------------------------------------------------- pages --- */
 static const char *const AND_PAGE[6] = {"GEN", "SOUND", "MOD", "FX", "PIECE", "MIX"};
@@ -91,7 +96,13 @@ static void and_gen_cells(uint16_t *c)
 
 static void and_cells(void)
 {
-    uint32_t i, p = and_ui.page, s = and_ui.sub[p];
+    uint32_t i, p = and_ui.page, s;
+    if (p >= 6u) {                               /* (HOME: no grid) */
+        for (i = 0; i < AND_NENC; i++)
+            and_ui.cell[i] = PID_NONE;
+        return;
+    }
+    s = and_ui.sub[p];
     if (p == 0 && s == 0)
         and_gen_cells(and_ui.cell);
     else
@@ -129,6 +140,8 @@ static void and_enc(uint32_t i, int32_t n)
         and_turn(AND_PID_ENERGY, n * 2);
         and_ui.hot = -1;
         and_keys.energy_ms = fm1_ms | 1u;        /* (the keys show it) */
+    } else if (and_ui.page == AND_HOME) {
+        and_home_enc(i, n, 0);
     } else if (i < AND_NENC && and_ui.cell[i] != PID_NONE) {
         and_turn(and_ui.cell[i], n);
         and_ui.hot = (int8_t)i;
@@ -140,6 +153,10 @@ static void and_enc_push(uint32_t i)
     uint32_t pid;
     const param_desc_t *d;
     and_cells();
+    if (and_ui.page == AND_HOME && i < AND_NENC) {
+        and_home_enc(i, 0, 1);
+        return;
+    }
     pid = i == AND_NENC ? AND_PID_ENERGY : i < AND_NENC ? and_ui.cell[i] : PID_NONE;
     if (pid == PID_NONE || !(d = pid_desc(pid, song.sel)))
         return;
@@ -155,6 +172,13 @@ static void and_enc_push(uint32_t i)
 static void and_track(int32_t d)
 {
     song.sel = (uint8_t)((song.sel + NTRK + d) % NTRK);
+    if (and_ui.page == AND_HOME) {               /* (HOME has no T in its header: the track and its generator) */
+        const param_desc_t *m = pid_desc(AND_PID_MODE, song.sel);
+        int32_t mode = pid_get(AND_PID_MODE, song.sel);
+        char b[16] = {'T', (char)('1' + song.sel), ' ', 0};
+        str_cpy(b + 3, m && m->names ? m->names[mode - m->min] : "", sizeof b - 3);
+        and_ui_say(b);
+    }
 }
 
 static void and_button(uint32_t b, uint32_t down)
@@ -169,9 +193,12 @@ static void and_button(uint32_t b, uint32_t down)
             and_ui.sub[b] = (uint8_t)((and_ui.sub[b] + 1u) % AND_SUBS[b]);
         and_ui.page = (uint8_t)b;
         and_ui.hot = -1;
+    } else if (b == AB_NO) {
+        and_ui.page = AND_HOME;
+        and_ui.hot = -1;
     } else if ((b == AB_UP || b == AB_DOWN) && and_ui.held[AB_FUNC]) {
         and_keys_shift(b == AB_UP ? 1 : -1);
-    } else if (b == AB_UP || b == AB_DOWN) {
+    } else if ((b == AB_UP || b == AB_DOWN) && and_ui.page < AND_HOME) {
         uint32_t p = and_ui.page;
         and_ui.sub[p] = (uint8_t)((and_ui.sub[p] + (b == AB_UP ? AND_SUBS[p] - 1u : 1u)) % AND_SUBS[p]);
     } else if (b == AB_LEFT || b == AB_RIGHT) {
@@ -193,13 +220,13 @@ static void and_key(uint32_t k, uint32_t down)
 }
 
 /* --------------------------------------------------------------- draw --- */
-static void and_value(uint32_t pid, char *val)
+static void and_value(uint32_t pid, uint32_t tr, char *val)
 {
-    const param_desc_t *d = pid_desc(pid, song.sel);
+    const param_desc_t *d = pid_desc(pid, tr);
     const char *unit;
     val[0] = 0;
     if (d)
-        param_format(d, pid_get(pid, song.sel), val, &unit);
+        param_format(d, pid_get(pid, tr), val, &unit);
 }
 
 static void and_draw(void)
@@ -214,8 +241,19 @@ static void and_draw(void)
     and_fill(0, 0, AND_W, 9, 15);
     if (say)
         and_text(2, 1, and_ui.say, 0, 15);
-    else if (hot && (e = pid_find(and_ui.hot_pid)))
+    else if (hot && and_ui.page == AND_HOME && and_ui.hot >= 0) {   /* (HOME: the track's DEPTH and its value) */
+        int32_t x;
+        s[0] = 'T';
+        s[1] = (char)('1' + and_ui.hot);
+        s[2] = 0;
+        x = and_text(2, 1, s, 0, 2);
+        x += and_text(x + 8, 1, "DEPTH", 0, 5);
+        and_value(and_ui.hot_pid, (uint32_t)and_ui.hot, val);
+        and_text(x + 16, 1, val, 0, 6);
+    } else if (hot && (e = pid_find(and_ui.hot_pid)))
         and_text(2, 1, e->name, 0, 15);
+    else if (and_ui.page == AND_HOME)
+        and_home_header();
     else {
         int32_t x = and_text(2, 1, AND_PAGE[and_ui.page], 0, 5);
         if (AND_SUBS[and_ui.page] > 1u) {
@@ -238,6 +276,10 @@ static void and_draw(void)
         s[3] = 0;
         and_text(107, 1, bpm < 100 ? s + 1 : s, 0, 3);
     }
+    if (and_ui.page == AND_HOME) {
+        and_home_draw();
+        return;
+    }
     /* the 2 x 4 grid: each cell its label (dim) over its value, the cell turned last lit */
     for (i = 0; i < AND_NENC; i++) {
         int32_t x = (int32_t)(i % 4u) * 32, y = 12 + (int32_t)(i / 4u) * 20;
@@ -248,7 +290,7 @@ static void and_draw(void)
             continue;
         }
         and_text(x + 1, y, d->label ? d->label : "", 7, 5);
-        and_value(pid, val);
+        and_value(pid, song.sel, val);
         if (hot && and_ui.hot == (int8_t)i) {
             and_fill(x, y + 8, 31, 9, 15);
             and_text(x + 1, y + 9, val, 0, 5);
@@ -287,7 +329,7 @@ static void and_draw(void)
 /* the LEDs: bit b = button b lit; the keys: 16 x RGB, 0..255 a channel (and_keys.c) */
 static uint32_t and_led_buttons(void)
 {
-    uint32_t m = 1u << and_ui.page, b;
+    uint32_t m = and_ui.page < AND_HOME ? 1u << and_ui.page : 0u, b;   /* (HOME: no page lit) */
     for (b = AB_FUNC; b < AB_COUNT; b++)
         if (and_ui.held[b])
             m |= 1u << b;
