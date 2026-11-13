@@ -3,12 +3,14 @@
      web/andamento/build.sh puts the worklet and the wasm into this page (@WORKLET@, @WASM@). It is written as a page
      body (it also publishes as is); build.sh puts the document around it for a plain server. -->
 <title>Andamento prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&display=swap">
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 :root {
   --bg: #e9e6df; --text: #26241f; --muted: #6b675e; --line: #c9c4b8;
-  --panel: #151515; --panel-edge: #2a2a2a; --print: #a7a39a; --cap: #2b2b2b; --cap-top: #383838;
-  --ink: #ffd020; --lit: #ffd020; --key: #303030; --key-lit: #ffcc33;
+  --print: #b4b1aa;
+  --ink: #ffd020;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) { --bg: #0e0e0d; --text: #e8e4da; --muted: #9a958a; --line: #2c2a26; color-scheme: dark; }
@@ -24,33 +26,44 @@ h1 { font-size: 20px; margin: 0 0 4px; font-weight: 650; }
 .bar button:hover { border-color: var(--muted); }
 .bar .status { color: var(--muted); font-size: 13px; margin-left: auto; }
 
-/* the panel: every size in cqw of its own width, so it scales as one object */
+/* the panel, as Theo's 3D-printed mockup (about 214 x 154 mm): every size in cqw of its own width, so it scales as one
+   object; positions in % of the panel */
 .wrap { container-type: inline-size; width: 100%; }
-.panel { position: relative; width: 100cqw; aspect-ratio: 210 / 125; background: var(--panel); border-radius: 2.2cqw;
-  box-shadow: inset 0 0 0 0.25cqw var(--panel-edge), 0 1cqw 3cqw rgba(0,0,0,.35); user-select: none; -webkit-user-select: none; touch-action: none; }
-.lbl { position: absolute; color: var(--print); font: 600 1.15cqw/1 ui-monospace, "SF Mono", Menlo, Consolas, monospace; letter-spacing: .08em; text-align: center; transform: translateX(-50%); white-space: nowrap; pointer-events: none; }
-.logo { position: absolute; left: 4cqw; top: 2.6cqw; color: var(--print); font: 700 1.5cqw/1 ui-monospace, Menlo, monospace; letter-spacing: .4em; }
-.screen { position: absolute; left: 4cqw; top: 5.5cqw; width: 40cqw; aspect-ratio: 2 / 1; background: #000; border-radius: .5cqw;
-  box-shadow: 0 0 0 .7cqw #050505, 0 0 0 .85cqw #333; image-rendering: pixelated; }
-.enc { position: absolute; width: 6.6cqw; height: 6.6cqw; transform: translate(-50%, -50%); border-radius: 50%; cursor: ns-resize;
-  background: radial-gradient(circle at 50% 40%, #4a4a4a, #222 62%, #111 70%); box-shadow: 0 .3cqw .6cqw rgba(0,0,0,.6), inset 0 0 0 .2cqw #0a0a0a; }
-.enc::after { content: ""; position: absolute; left: 50%; top: 9%; width: .45cqw; height: 1.7cqw; margin-left: -.225cqw; background: #ddd; border-radius: .2cqw;
-  transform-origin: 50% 2.4cqw; transform: rotate(var(--a, 0deg)); }
-.enc.big { width: 8.2cqw; height: 8.2cqw; }
-.enc.big::after { transform-origin: 50% 3.2cqw; height: 2.2cqw; }
-.enc.pushed { box-shadow: 0 .1cqw .3cqw rgba(0,0,0,.6), inset 0 0 0 .2cqw var(--ink); }
-.btn { position: absolute; width: 5.2cqw; height: 3cqw; transform: translate(-50%, -50%); border-radius: .6cqw; cursor: pointer;
-  background: linear-gradient(var(--cap-top), var(--cap)); box-shadow: 0 .25cqw 0 #0b0b0b; }
-.btn.round { width: 4cqw; height: 4cqw; border-radius: 50%; }
-.btn.lit { box-shadow: 0 .25cqw 0 #0b0b0b, inset 0 0 0 .25cqw var(--lit), 0 0 1.2cqw rgba(255,208,32,.35); }
-.btn.down, .key.down { transform: translate(-50%, -48%); box-shadow: 0 .05cqw 0 #0b0b0b; }
-.btn.lit.down { box-shadow: 0 .05cqw 0 #0b0b0b, inset 0 0 0 .25cqw var(--lit); }
-.key { position: absolute; width: 7.6cqw; height: 7.6cqw; transform: translate(-50%, -50%); border-radius: .9cqw; cursor: pointer;
-  background: linear-gradient(#3a3a3a, var(--key)); box-shadow: 0 .35cqw 0 #0b0b0b; }
-.key.lit { background: linear-gradient(#ffe27a, var(--key-lit)); }
-.key .k { position: absolute; right: .6cqw; bottom: .5cqw; font: 600 1cqw/1 ui-monospace, Menlo, monospace; color: #777; }
-.key.lit .k { color: #6b5200; }
-.jacks { position: absolute; left: 0; right: 0; top: -0.2cqw; text-align: center; }
+.panel { position: relative; width: 100cqw; aspect-ratio: 214 / 154; max-width: 100%; border-radius: 3.6cqw;
+  background: repeating-linear-gradient(135deg, #191919 0 .25cqw, #161616 .25cqw .5cqw);
+  box-shadow: inset 0 0 0 .2cqw #0c0c0c, 0 1.2cqw 3cqw rgba(0,0,0,.35); user-select: none; -webkit-user-select: none; touch-action: none; }
+.lbl { position: absolute; color: var(--print); font: 600 1.3cqw/1 "Barlow Condensed", "Arial Narrow", sans-serif; letter-spacing: .06em;
+  text-align: center; transform: translateX(-50%); white-space: nowrap; pointer-events: none; }
+.lbl.big { font-size: 1.6cqw; letter-spacing: .1em; }
+.logo { position: absolute; right: 6cqw; top: 2.4cqw; color: var(--print); font: 600 1.7cqw/1 "Barlow Condensed", "Arial Narrow", sans-serif; letter-spacing: .5em; }
+.bezel { position: absolute; left: 5.3%; top: 6.9%; width: 38.1%; height: 27.9%; background: #050505; border-radius: 1.2cqw;
+  box-shadow: inset 0 0 0 .15cqw #222; }
+.screen { position: absolute; left: 8.9%; top: 9.7%; width: 30.6%; aspect-ratio: 2 / 1; background: #000; image-rendering: pixelated; }
+.enc { position: absolute; width: 6.3cqw; height: 6.3cqw; transform: translate(-50%, -50%); border-radius: 50%; cursor: ns-resize;
+  background: radial-gradient(circle, #262626 0 58%, transparent 59%),
+              repeating-conic-gradient(#3a3a3a 0 4deg, #101010 4deg 8deg);
+  box-shadow: 0 .35cqw .7cqw rgba(0,0,0,.6); }
+.enc::after { content: ""; position: absolute; left: 50%; top: 22%; width: .3cqw; height: 1.2cqw; margin-left: -.15cqw; background: #8a8a8a;
+  border-radius: .2cqw; transform-origin: 50% 1.75cqw; transform: rotate(var(--a, 0deg)); }
+.enc.big { width: 9.5cqw; height: 9.5cqw; }
+.enc.big::after { top: 20%; height: 1.6cqw; transform-origin: 50% 2.85cqw; }
+.enc.small { width: 5.6cqw; height: 5.6cqw; background: radial-gradient(circle at 50% 40%, #2c2c2c, #141414 70%); }
+.enc.small::after { top: 14%; height: 1.5cqw; background: #eee; transform-origin: 50% 1.4cqw; }
+.enc.pushed { box-shadow: 0 .1cqw .3cqw rgba(0,0,0,.6), 0 0 0 .25cqw var(--ink); }
+.btn { position: absolute; width: 5.6cqw; height: 3.4cqw; transform: translate(-50%, -50%); border-radius: .7cqw; cursor: pointer;
+  background: linear-gradient(#303030, #222); box-shadow: 0 .3cqw 0 #090909, 0 0 0 .15cqw #0c0c0c; --led: #ffcc33; }
+.btn.led::before { content: ""; position: absolute; left: 38%; right: 38%; top: 22%; height: .3cqw; border-radius: .2cqw; background: #444; }
+.btn.led.lit::before { background: var(--led); box-shadow: 0 0 .8cqw var(--led); }
+.btn.arrow { width: 4.7cqw; height: 3.4cqw; display: grid; place-items: center; color: #ddd; font: 600 1.6cqw/1 system-ui, sans-serif; }
+.btn.small { width: 4.8cqw; height: 3.7cqw; }
+.btn.down, .key.down { transform: translate(-50%, -47%); box-shadow: 0 .08cqw 0 #090909, 0 0 0 .15cqw #0c0c0c; }
+.tray { position: absolute; left: 4.5%; top: 67.1%; width: 70.1%; height: 25.9%; background: #0d0d0d; border-radius: 1.4cqw; box-shadow: inset 0 0 0 .15cqw #1d1d1d; }
+.key { position: absolute; width: 7.8cqw; height: 7.3cqw; transform: translate(-50%, -50%); border-radius: .8cqw; cursor: pointer;
+  background: linear-gradient(#f4f2ee, #dcd9d3); box-shadow: 0 .3cqw 0 #8f8c86, inset 0 0 0 .1cqw #fff; --glow: transparent; }
+.key::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(circle at 50% 30%, var(--glow), transparent 62%); }
+.key.lit { --glow: rgba(214,120,20,.95); }
+.key.down { --glow: rgba(255,250,235,1); box-shadow: 0 .08cqw 0 #8f8c86, 0 0 2cqw rgba(255,240,210,.5); }
+.key .k { position: absolute; right: .6cqw; bottom: .5cqw; font: 600 1cqw/1 "Barlow Condensed", sans-serif; color: #a5a198; }
 .start { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.55); border-radius: 2.2cqw; cursor: pointer; }
 .start span { background: var(--ink); color: #111; font: 700 2cqw/1 system-ui, sans-serif; padding: 1.6cqw 3cqw; border-radius: 1cqw; }
 .help { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 6px 28px; margin-top: 18px; font-size: 14px; }
@@ -68,14 +81,16 @@ kbd { font: 12px ui-monospace, Menlo, monospace; border: 1px solid var(--line); 
   </div>
   <div class="wrap"><div class="panel" id="panel">
     <div class="logo">ANDAMENTO</div>
+    <div class="bezel"></div>
     <canvas class="screen" id="screen" width="128" height="64"></canvas>
+    <div class="tray"></div>
     <div class="start" id="start"><span>Click to start</span></div>
   </div></div>
   <div class="help">
     <div>
       <h2>Encoders</h2>
       <p>Drag up or down, or use the mouse wheel. A click (without dragging) pushes it: the setting goes back to its default.</p>
-      <p>The 8 encoders follow the 2×4 grid on the screen. ENERGY works on every page; VOL is the main level.</p>
+      <p>Encoders A to H follow the 2×4 grid on the screen. ENERGY works on every page; VOL is the main level.</p>
     </div>
     <div>
       <h2>Buttons</h2>
@@ -112,10 +127,10 @@ function el(cls, x, y, parent = panel) {
 function label(text, x, y) { const d = el("lbl", x, y); d.textContent = text; return d; }
 
 const encs = [];
-function encoder(i, x, y, big, name) {
-  const d = el("enc" + (big ? " big" : ""), x, y);
+function encoder(i, x, y, size, name, ly) {
+  const d = el("enc" + (size ? " " + size : ""), x, y);
   d.dataset.angle = 0;
-  if (name) label(name, x, y + (big ? 8.2 : 6.6));
+  if (name) label(name, x, ly).classList.toggle("big", size === "big");
   let drag = null;
   const turn = (n) => {
     if (!n) return;
@@ -139,29 +154,33 @@ function encoder(i, x, y, big, name) {
   encs[i] = d;
 }
 let volume = 700;
-for (let i = 0; i < 8; i++) encoder(i, 53 + (i % 4) * 8.6, 14 + Math.floor(i / 4) * 21, false, "");
-for (let i = 0; i < 8; i++) label(String(i + 1), 53 + (i % 4) * 8.6, 22.5 + Math.floor(i / 4) * 21);
-encoder(8, 90, 15, true, "ENERGY");
-encoder(9, 90, 41, true, "VOL");
+// from the mockup: 8 encoders A..H under the screen, ENERGY and VOL top right
+for (let i = 0; i < 8; i++)
+  encoder(i, [10.3, 19.6, 28.9, 38.2][i % 4], i < 4 ? 41.8 : 55.0, "", "ABCDEFGH"[i], i < 4 ? 47.6 : 60.8);
+encoder(8, 77.9, 18.7, "big", "ENERGY", 27.4);
+encoder(9, 91.7, 18.9, "small", "VOL", 24.9);
 
 const btns = [];
-function button(id, name, x, y, round) {
-  const d = el("btn" + (round ? " round" : ""), x, y);
-  label(name, x, y + (round ? 5 : 4.2));
+function button(id, name, x, y, kind, ly, led) {
+  const d = el("btn" + (kind ? " " + kind : ""), x, y);
+  if (kind === "arrow") d.textContent = name;
+  else label(name, x, ly);
+  if (led) d.style.setProperty("--led", led);
   const up = () => { if (d.classList.contains("down")) { d.classList.remove("down"); send({ type: "button", b: id, down: 0 }); } };
   d.addEventListener("pointerdown", (e) => { e.preventDefault(); d.classList.add("down"); send({ type: "button", b: id, down: 1 }); });
   d.addEventListener("pointerup", up);
   d.addEventListener("pointerleave", up);
   btns[id] = d;
 }
-["GEN", "SOUND", "MOD", "FX", "PIECE", "MIX"].forEach((n, i) => button(AB[n], n, 6 + i * 6.6, 57.5));
-button(AB.FUNC, "FUNC", 51, 57.5);
-button(AB.NO, "NO", 58, 57.5);
-button(AB.YES, "YES", 65, 57.5);
-button(AB.UP, "▲", 79, 51, true);
-button(AB.LEFT, "◀", 73.5, 59, true);
-button(AB.RIGHT, "▶", 84.5, 59, true);
-button(AB.DOWN, "▼", 79, 66, true);
+["GEN", "SOUND", "MOD", "FX", "PIECE", "MIX"].forEach((n, i) =>
+  button(AB[n], n, [50.3, 57.2, 64.1][i % 3], i < 3 ? 14.3 : 24.1, "led", i < 3 ? 18.6 : 28.2));
+button(AB.FUNC, "FUNC", 50.3, 49.1, "", 53.0);
+button(AB.NO, "NO", 60.6, 49.1, "", 53.0);
+button(AB.YES, "YES", 70.9, 49.1, "", 53.0);
+button(AB.UP, "\u2303", 86.5, 47.9, "arrow");
+button(AB.LEFT, "\u2039", 80.9, 53.5, "arrow");
+button(AB.DOWN, "\u2304", 86.5, 53.5, "arrow");
+button(AB.RIGHT, "\u203a", 91.9, 53.5, "arrow");
 
 const keys = [];
 function key(k, x, y, name) {
@@ -175,12 +194,12 @@ function key(k, x, y, name) {
 }
 const KB_BOTTOM = "asdfghjk", KB_TOP = "qwertyui";
 for (let i = 0; i < 8; i++) {
-  key(8 + i, 8 + i * 9.4, 76, KB_TOP[i].toUpperCase());
-  key(i, 8 + i * 9.4, 90, KB_BOTTOM[i].toUpperCase());
+  key(8 + i, 9.6 + i * 8.57, 73.8, KB_TOP[i].toUpperCase());
+  key(i, 9.6 + i * 8.57, 86.2, KB_BOTTOM[i].toUpperCase());
 }
-button(AB.REC, "REC", 85, 76);
-button(AB.PLAY, "PLAY", 85, 88);
-button(AB.STOP, "STOP", 93, 88);
+button(AB.REC, "REC", 79.9, 78.4, "small led", 82.6, "#e0392b");
+button(AB.PLAY, "PLAY", 85.9, 78.4, "small led", 82.6, "#3ddc6a");
+button(AB.STOP, "STOP", 91.9, 78.4, "small", 82.6);
 
 // ---- the screen: 4-bit levels in the yellow of the NHD-2.7-12864WDY3 (Tessera's default ink) ----
 const ctx = document.getElementById("screen").getContext("2d");
