@@ -61,10 +61,9 @@ h1 { font-size: 20px; margin: 0 0 4px; font-weight: 650; }
 .key { position: absolute; width: 7.8cqw; height: 7.3cqw; transform: translate(-50%, -50%); border-radius: .8cqw; cursor: pointer;
   background: linear-gradient(#f4f2ee, #dcd9d3); box-shadow: 0 .3cqw 0 #8f8c86, inset 0 0 0 .1cqw #fff; --glow: transparent; }
 .key::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(circle at 50% 30%, var(--glow), transparent 62%); }
-.key.lit { --glow: rgba(214,120,20,.95); }
-.key.down { --glow: rgba(255,250,235,1); box-shadow: 0 .08cqw 0 #8f8c86, 0 0 2cqw rgba(255,240,210,.5); }
+.key.down { box-shadow: 0 .08cqw 0 #8f8c86, 0 0 2cqw rgba(255,240,210,.35); }
 .key .k { position: absolute; right: .6cqw; bottom: .5cqw; font: 600 1cqw/1 "Barlow Condensed", sans-serif; color: #a5a198; }
-.start { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.55); border-radius: 2.2cqw; cursor: pointer; }
+.start { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(0,0,0,.55); border-radius: 2.2cqw; cursor: pointer; }
 .start span { background: var(--ink); color: #111; font: 700 2cqw/1 system-ui, sans-serif; padding: 1.6cqw 3cqw; border-radius: 1cqw; }
 .help { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 6px 28px; margin-top: 18px; font-size: 14px; }
 .help h2 { font-size: 14px; margin: 10px 0 4px; }
@@ -98,9 +97,14 @@ kbd { font: 12px ui-monospace, Menlo, monospace; border: 1px solid var(--line); 
       <p><kbd>←</kbd> <kbd>→</kbd> choose the track; FUNC held with key 1 to 4 picks one directly. PLAY restarts while playing.</p>
     </div>
     <div>
+      <h2>The 16 keys</h2>
+      <p>Hold FUNC and press a top-row key for the keys' mode: 9 SCALE (16 degrees of the scale from the root), 10 CHROM (a keyboard: white keys below, their sharps above), 11 STEP (the track's pattern, 16 steps at a time), 12 MUTE (top row mutes, bottom row selects).</p>
+      <p>FUNC with <kbd>↑</kbd> <kbd>↓</kbd>: the octave, or the next 16 steps. The lights: the track's colour, a flash where it plays (its generator too), the step playing white, red for a muted track; turning ENERGY shows its level across the keys.</p>
+    </div>
+    <div>
       <h2>Computer keyboard</h2>
       <p>Keys: <kbd>A</kbd>…<kbd>K</kbd> bottom row, <kbd>Q</kbd>…<kbd>I</kbd> top row. Pages <kbd>1</kbd>…<kbd>6</kbd>.</p>
-      <p><kbd>Space</kbd> PLAY / STOP, <kbd>Shift</kbd> FUNC, arrows as on the panel.</p>
+      <p><kbd>Space</kbd> PLAY / STOP, <kbd>Shift</kbd> FUNC, arrows as on the panel. The modes: <kbd>Shift</kbd> with <kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd>.</p>
     </div>
   </div>
 </main>
@@ -201,6 +205,14 @@ button(AB.REC, "REC", 79.9, 78.4, "small led", 82.6, "#e0392b");
 button(AB.PLAY, "PLAY", 85.9, 78.4, "small led", 82.6, "#3ddc6a");
 button(AB.STOP, "STOP", 91.9, 78.4, "small", 82.6);
 
+// ---- the keys' RGB LEDs (and_keys.c: 0..255 a channel), as light through a white cap: the colour at full
+// strength, its brightness as how much of it shows ----
+function keyLight(d, r, g, b) {
+  const m = Math.max(r, g, b);
+  const v = m ? `rgba(${Math.round(r * 255 / m)},${Math.round(g * 255 / m)},${Math.round(b * 255 / m)},${Math.min(1, .12 + m / 255).toFixed(2)})` : "transparent";
+  if (d.dataset.glow !== v) { d.dataset.glow = v; d.style.setProperty("--glow", v); }
+}
+
 // ---- the screen: 4-bit levels in the yellow of the NHD-2.7-12864WDY3 (Tessera's default ink) ----
 const ctx = document.getElementById("screen").getContext("2d");
 const img = ctx.createImageData(128, 64);
@@ -214,7 +226,7 @@ function drawScreen(fb) {
 function onFrame(m) {
   drawScreen(m.fb);
   for (let b = 0; b < btns.length; b++) if (btns[b]) btns[b].classList.toggle("lit", !!((m.buttons >> b) & 1));
-  for (let k = 0; k < 16; k++) keys[k].classList.toggle("lit", !!((m.keys >> k) & 1));
+  for (let k = 0; k < 16; k++) keyLight(keys[k], m.keys[3 * k], m.keys[3 * k + 1], m.keys[3 * k + 2]);
   playing = m.playing;
 }
 
@@ -257,7 +269,7 @@ async function startMainThread(ac) {         // fallback: a ScriptProcessorNode 
   };
   sp.connect(ac.destination);
   setInterval(() => onFrame({ fb: new Uint8Array(ex.memory.buffer, ex.web_screen(), 8192), buttons: ex.web_led_buttons(),
-                              keys: ex.web_led_keys(), playing: ex.web_playing() }), 33);
+                              keys: new Uint8Array(ex.memory.buffer, ex.web_led_keys(), 48), playing: ex.web_playing() }), 33);
   return { port: { postMessage(m) {
     if (m.type === "key") queue.push({ k: m.k, down: m.down ? 1 : 0 });
     else if (m.type === "enc") ex.web_enc(m.i, m.n | 0);

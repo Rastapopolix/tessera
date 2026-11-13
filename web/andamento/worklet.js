@@ -40,8 +40,9 @@ class Andamento extends AudioWorkletProcessor {
   publish() {
     const ex = this.ex;
     const fb = new Uint8Array(ex.memory.buffer, ex.web_screen(), 128 * 64).slice();
-    this.port.postMessage({ type: "frame", fb, buttons: ex.web_led_buttons(), keys: ex.web_led_keys(),
-                            playing: ex.web_playing() }, [fb.buffer]);
+    const keys = new Uint8Array(ex.memory.buffer, ex.web_led_keys(), 16 * 3).slice();   // (16 x RGB)
+    this.port.postMessage({ type: "frame", fb, buttons: ex.web_led_buttons(), keys, playing: ex.web_playing() },
+                          [fb.buffer, keys.buffer]);
   }
   process(inputs, outputs) {
     const ex = this.ex;
