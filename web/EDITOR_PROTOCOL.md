@@ -372,14 +372,14 @@ grid lives in the steps themselves, so every engine has it:
   from the editor. Since 1.0 the same USB device also has an audio input ("Melodee",
   44.1 kHz stereo; bcdDevice 3.11); the MIDI port and this protocol are unchanged, and both
   work while the computer records.
-- **Global ids.** `G_ROUTE` (id 14, label "ROUT", GLO > SYSTEM) was a placeholder ("--", range 0..0);
+- **Global ids.** `G_ROUTE` (id 14, label "ROUT", GLO > MIDI IN; GLO > SYSTEM up to 3.5) was a placeholder ("--", range 0..0);
   it is the MIDI IN routing: 0 "CH1-4", 1 "SEL", 2 "CH5-8", 3 "CH9-12", 4 "CH13-16".
   Each range maps only its four channels to tracks 1..4 in order; other channels are ignored. SEL receives every channel on the selected track. DRUM redirects its channel to the
   first DRUM track only within the selected range (or in SEL); without a DRUM track, normal routing applies.
   Note-offs and sustain release still reach their original owners after changing ROUT. Earlier firmware
   sent out-of-range channels to the selected track; this fallback is removed. Stored values 0 and 1,
   global id 14, the global count and the project layout are unchanged. ROUT persists between starts and
-  is saved with projects/templates. The editor shows it under GLOBAL > SYSTEM.
+  is saved with projects/templates. The editor shows it under GLOBAL > MIDI IN.
 - **Sound loads and undo.** A load that changes a track's sound (`PRESET`, `SET` of `G_ENGSEL`, `UP_LOAD`,
   and the same on the device) changes the sound only: the engine and the parameters of the sound. It
   never changes the steps, nor the track's own parameters: `P_LEVEL`, `P_PAN`, `P_MUTE` (0, 39, 40), the
@@ -1120,7 +1120,7 @@ must also be checked with normal admission and emergency protection enabled.
 ### Shared workload budget
 
 Global ID 41 is BUDGET (`G_COUNT=42`), range 8–32 integer points. Existing
-global IDs remain unchanged; FXMODE is 40. GLO > GLOBAL knob 2 edits this
+global IDs remain unchanged; FXMODE is 40. GLO > SYSTEM knob 1 (GLO > GLOBAL knob 2 up to 3.5) edits this
 device setting. Like A4, it is a virtual global value preserved across project
 and template loads. A tagged high word (`0x5742`) in PER5 `ext.usb_off` stores
 nondefault budgets in bits 8–15 while retaining the low two USB flags. The
