@@ -123,6 +123,36 @@ static void drift(int ppm, int play, int cap)
            ppm, play, cap);
 }
 
+/* #586: a capture ring that runs dry or overflows recovers with a tick, never 11.6 ms of re-primed silence. Each
+ * block carries its own value; a ring that loses its place may repeat or skip blocks, never send a zero. */
+static void capture_recovery(void)
+{
+    uint8_t packet[UA_PACKET];
+    int32_t out[64];
+    uint32_t i, b = 1, bytes, sent = 0, keep = ua_cap_channels;
+    ua_cap_channels = 2;
+    memset(&ua, 0, sizeof ua);
+    ua_reset();
+    ua.cap_alt = 1;
+    for (i = 0; i < 18; i++, b++)                 /* 576 frames: ready */
+        block((int32_t)b * 10, -(int32_t)b * 10, 4096, out);
+    for (i = 0; i < 40; i++) {                    /* the render stops: the ring runs dry */
+        bytes = ua_transmit(packet);
+        for (uint32_t k = 0; k < bytes; k += 4, sent++)
+            assert(ua_decode(packet + k, 2) != 0 && ua_decode(packet + k, 2) % 10 == 0);
+    }
+    assert(ua.cap_underruns > 0 && ua.cap_ready && sent >= 40u * 43u);
+    for (i = 0; i < 40; i++, b++)                 /* unpolled: the ring overflows and keeps the newest */
+        block((int32_t)b * 10, -(int32_t)b * 10, 4096, out);
+    assert(ua.cap_overruns > 0 && ua.cw - ua.cr <= UA_RING && ua.cw - ua.cr >= UA_TARGET);
+    bytes = ua_transmit(packet);
+    assert(bytes && ua_decode(packet, 2) > (int16_t)((b - 1u - UA_RING / 32u) * 10u));
+    for (uint32_t k = 0; k < bytes; k += 4)
+        assert(ua_decode(packet + k, 2) != 0);
+    ua_cap_channels = keep;
+    puts("USB capture: underrun replays, overrun drops the oldest, no silence: OK");
+}
+
 static void recovery(void)
 {
     uint8_t packet[UA_PACKET];
@@ -286,6 +316,7 @@ int main(void)
     ua_cap_channels = 4;
     routing();
     recovery();
+    capture_recovery();
     pcm24();
     for (int alt = 1; alt <= 2; alt++) {
         tone(0, 1000, 0, alt);

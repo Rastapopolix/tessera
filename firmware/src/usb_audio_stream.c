@@ -136,11 +136,13 @@ static uint32_t ua_transmit(uint8_t *p)
     if (!ua.cap_ready && ua.cw - ua.cr >= UA_TARGET)
         ua.cap_ready = 1;
     if (ua.cap_ready) {
-        if (ua.cw - ua.cr >= n)
-            take = 1;
-        else {
+        take = 1;
+        if (ua.cw - ua.cr < n) {
+            /* Run dry (the render lost time): replay the newest UA_TARGET frames, a tick where a re-prime sent
+             * 11.6 ms of silence (#586). Ready means at least UA_TARGET frames came since the reset: all real audio. */
             ua.cap_underruns++;
-            ua_cap_reset();
+            ua.cr = ua.cw - UA_TARGET;
+            ua.cap_fill_q8 = UA_TARGET * 256;
         }
     }
     for (i = 0; i < n; i++) {
@@ -169,8 +171,10 @@ static void ua_audio(int32_t *out, const int32_t *tracks, uint32_t n, uint32_t v
 {
     uint32_t i, capture = ua.cap_alt && (ua_cap_channels == 2u || tracks), playback = 0;
     if (capture && ua.cw - ua.cr + n > UA_RING) {
+        /* Not polled in time: drop the oldest frames down to the target, a tick and no re-prime (#586) */
         ua.cap_overruns++;
-        ua_cap_reset();
+        ua.cr = ua.cw + n - UA_TARGET;
+        ua.cap_fill_q8 = UA_TARGET * 256;
     }
     if (ua.play_alt) {
         if (!ua.play_ready && ua.pw - ua.pr >= UA_TARGET)
