@@ -36,6 +36,9 @@
 # ANDAMENTO SCREEN (tests/oled_render.c): Andamento's 128 x 64 screen (platform/andamento) through a model of its
 #                   SSD1322: the init commands and their arguments, each frame exactly the screen's 8,192 bytes, read
 #                   back equal to the framebuffer; the bring-up card and the face as PNGs in build/oled (oled_render.py).
+# ANDAMENTO KEYS (tests/and_keys_test.c): Andamento's 16 keys and their RGB lights (platform/andamento/and_keys.c)
+#                   in the virtual prototype's build at 48 kHz: SCALE, CHROM, STEP and MUTE, the octave, ENERGY on the
+#                   keys, a demo's generator notes lighting them.
 # UI (tests/ui_test.c): the UI sources against stub display / buttons / knobs: sound loads keep the steps and
 #                   the track's ARP / SCL / SLICER, the SEQ > PATTERNS loader and its REPLACE? dialog, the
 #                   one-step undo of both (EDIT held), REC on TRACKS / SEQ / ARP, STEP and ARP while recording,
@@ -197,7 +200,9 @@ qmap() {
         tests/cord_dests.txt) QSEL="$QSEL cord_test" ;;
         tests/target_budget.txt) QSEL="$QSEL target_budget" ;;
         tests/ui_render.*) QSEL="$QSEL ui_renders" ;;
-        tests/oled_render.* | platform/andamento/*) QSEL="$QSEL oled_render" ;;
+        tests/oled_render.*) QSEL="$QSEL oled_render" ;;
+        platform/andamento/*) QSEL="$QSEL oled_render and_keys" ;;
+        tests/and_keys_test.c | web/andamento/*) QSEL="$QSEL and_keys" ;;
         firmware/src/mo_font.h) QSEL="$QSEL $G_UI oled_render" ;;
         tests/demo_steps.h | tests/demo_projects.c) QSEL="$QSEL demo_projects" ;;
         tests/phys_ref.cpp | tests/phys_fixed.c) QSEL="$QSEL phys_ref" ;;
@@ -403,6 +408,13 @@ oled_render() {
         "$OUT/oled_render" build/oled
     [ $PIL = 1 ] && { python3 tests/oled_render.py build/oled || fail "tests/oled_render.py"; }
 }
+and_keys() {                                      # (the headers at the Seed's 48 kHz, as web/andamento/build.sh)
+    sh web/andamento/build.sh --headers > /dev/null || { fail "web/andamento/build.sh --headers"; return; }
+    build and_keys and_keys_test -w -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 \
+        -DMELODEE_PHYS=1 -Ibuild/andamento/gen -Ifirmware/src -Itests || return
+    step "Andamento keys (platform/andamento/and_keys.c): SCALE, CHROM, STEP, MUTE, their RGB lights, ENERGY, activity" \
+        "$OUT/and_keys"
+}
 dsp_tracks() {
     build hostsim hostsim -O2 $FW || return
     step "DSP render (FM6 INIT VOICE)" "$OUT/hostsim" 12 24 1 "$OUT/render.wav"
@@ -529,6 +541,7 @@ if core && [ $TABLES = 1 ]; then
         -O1 -DMELODEE_USB_AUDIO=1 $FW
     job ui_renders
     job oled_render
+    job and_keys
     t "boot audio: codec waits for settled silent DMA and shuts down before I2S" audio_boot_test -w
     t "audio: overload protection, bounded fades and DMA diagnostics" audio_test $FW
     t "audio: silent bench keeps synthesis running and silences physical output" audio_silent_test:audio_test \
