@@ -14,7 +14,7 @@
  * an audio block at a time (cord_tick); PLAY starts them from the project's SEEDs, so a piece replays. Project-wide
  * settings: tessera.en_arc, en_rests (the Tessera block's tail since TS18). Included by tessera.c. */
 
-#define EN_BPS 1378u                                  /* audio blocks a second (44100 / 32: CTL), about */
+#define EN_BPS (FS / 32u)                             /* audio blocks a second (FS / 32: CTL), about: 1378 at 44.1 kHz */
 static struct {
     uint32_t ph, per;                                 /* the tide: blocks into this turn, the turn's length */
     uint32_t rest_left, rest_next;                    /* blocks left of a rest; to the next */

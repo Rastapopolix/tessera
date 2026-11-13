@@ -81,9 +81,9 @@ static void engines(void)
 
 static void controls(void)
 {
-    ui_power_on(); tuning_a4 = 440; go_title("GLOBAL");
-    int16_t old = song.g[G_A4]; turn(EN_K1, -8);
-    verify("GLOBAL knob 1 selects 432 Hz without writing the project", tuning_a4 == 432 && song.g[G_A4] == old);
+    ui_power_on(); tuning_a4 = 440; go_title("SYSTEM");
+    int16_t old = song.g[G_A4]; turn(EN_K3, -8);
+    verify("SYSTEM knob 3 selects 432 Hz without writing the project", tuning_a4 == 432 && song.g[G_A4] == old);
     char value[16]; const char *unit;
     param_format(&GP[G_A4], tuning_a4, value, &unit);
     verify("A4 card shows 432 Hz", str_eq(value, "432") && str_eq(unit, "Hz"));
@@ -95,11 +95,11 @@ static void controls(void)
     template_load(); verify("Loading a template keeps the device's chosen A4", tuning_a4 == 432);
     settings_budget=24;template_load();verify("Loading a template keeps the device workload allowance",settings_budget==24);
     settings_budget=previous_budget;
-    song.g[G_TUNE] = 7; go_title("GLOBAL"); turn(EN_K4, 1);
+    song.g[G_TUNE] = 7; go_title("SYSTEM"); turn(EN_K4, 1);
     verify("TUNE remains an independent cents adjustment", song.g[G_TUNE] == 8 && tuning_a4 == 432);
-    tuning_a4 = 440; turn(EN_K1, -1000);
+    tuning_a4 = 440; turn(EN_K3, -1000);
     verify("A4 knob clamps at 400 Hz", tuning_a4 == 400);
-    turn(EN_K1, 1000); verify("A4 knob clamps at 480 Hz", tuning_a4 == 480);
+    turn(EN_K3, 1000); verify("A4 knob clamps at 480 Hz", tuning_a4 == 480);
     tuning_a4 = 432;
     track_t *t = TSEL; voice_t *v = &t->v[0]; vmod_t m = {0};
     mod.on = 1; mod.pit = 16; mod.nv = 0; mod.amp = 0;

@@ -286,6 +286,7 @@ static uint8_t tess_join_due;                           /* bit tr: its next step
 static uint8_t tess_in_step;                            /* 1 while a track's step plays (tessera_clock_step) */
 static uint32_t tess_ph0[TESSERA_TRACKS];               /* the step its phrase began on (a realign's) */
 static uint32_t tess_run_k[TESSERA_TRACKS];             /* the step it last played + 1 (0: none since PLAY) */
+static uint8_t tess_live_lead;                          /* bit tr: a key on tr is FOLLOW's newer note (follow_mem) */
 
 static void tess_realign(uint32_t tr);
 static void tess_form_reset(uint32_t tr);
@@ -303,6 +304,7 @@ void tessera_stop_all(void)
         tessera.evolve[i].br_side = 0;
         tessera.hit[i] = 0;
         tessera.hold_mem[i] = 0;                              /* (HOLD samples afresh) */
+        tess_live_lead &= (uint8_t)~(1u << i);
         tessera.f_anchor[i] = tessera.f_seen[i] = tessera.f_cnt[i] = 0;   /* (FOLLOW's HOW, RHYTHM from the top) */
         memset(tessera.f_hist[i], 0, sizeof tessera.f_hist[i]);
         tessera.br_in[i] = 0;
@@ -1132,24 +1134,41 @@ static int32_t tess_scale_steps(const track_t *t, int32_t n, int32_t k);
 static int32_t tess_follow_source(uint32_t src, uint32_t tr);
 static void tessera_answer_heard(uint32_t src, uint32_t note);   /* (answer.c) */
 
+/* track tr played note n (its own, or a key on it): CANON's memory, RHYTHM's count, and each track that FOLLOWs with
+ * HOLD on tr samples its followed note now */
+static void tess_lead_note(uint32_t tr, int32_t n)
+{
+    tessera.f_hist[tr][tessera.f_cnt[tr] & 15u] = (uint8_t)(n + 1);
+    tessera.f_cnt[tr]++;
+    for (uint32_t f = 0; f < TESSERA_TRACKS; f++) {
+        int32_t m;
+        if (tessera.follow_hold[f] != tr + 1u || !tessera.evolve[f].follow || f == tr) continue;
+        m = tess_follow_source((uint32_t)tessera.evolve[f].follow - 1u, f);
+        if (m >= 0) tessera.hold_mem[f] = (uint8_t)(m + 1);
+    }
+}
 /* FOLLOW HOLD: track tr has just played a note. Each track that FOLLOWs with HOLD on tr samples its followed note now
  * (the tracks step in index order: a lower source's note is this step's, a higher one's the step before) */
 void tessera_hold_hit(uint32_t tr)
 {
     cord_clock_hit(tr);                                     /* (a CLOCK cord from its GATE: a hit is a step) */
     cord_hold_note(tr);                                     /* (HOLD mods clocked by its notes) */
+    tess_live_lead &= (uint8_t)~(1u << tr);                 /* (its own note is the newer one) */
     int32_t n = tessera.last_note[tr];                      /* (its note, as FOLLOW takes it: a STEP track's highest) */
     if (tessera.mode[tr] == TESS_ENG_OFF)
         for (uint32_t i = n = 0; i < trk[tr].seq_n; i++) if ((int32_t)trk[tr].seq_notes[i] > n) n = trk[tr].seq_notes[i];
-    tessera.f_hist[tr][tessera.f_cnt[tr] & 15u] = (uint8_t)(n + 1);   /* (CANON's memory, RHYTHM's count) */
-    tessera.f_cnt[tr]++;
     if (tessera.mode[tr] != TESS_ENG_OFF) tessera_answer_heard(tr, (uint32_t)n);   /* (an ANSWER with it as SOURCE) */
-    for (uint32_t f = 0; f < TESSERA_TRACKS; f++) {
-        int32_t n;
-        if (tessera.follow_hold[f] != tr + 1u || !tessera.evolve[f].follow || f == tr) continue;
-        n = tess_follow_source((uint32_t)tessera.evolve[f].follow - 1u, f);
-        if (n >= 0) tessera.hold_mem[f] = (uint8_t)(n + 1);
-    }
+    tess_lead_note(tr, n);
+}
+/* a key (or MIDI IN) on track tr: the tracks that FOLLOW it hear it as one of its notes, as an ANSWER with it as
+ * SOURCE does (tessera_answer_key); CANON, RHYTHM SOURCE and HOLD count it. A STEP pattern playing on tr still wins;
+ * on a generator the newer note wins. Not the cords (the GATE / NOTE sources stay the generator's) */
+void tessera_follow_key(uint32_t tr, uint32_t note)
+{
+    if (tr >= TESSERA_TRACKS || note > 127u) return;
+    tessera.follow_mem[tr] = (uint8_t)(note + 1u);
+    tess_live_lead |= (uint8_t)(1u << tr);
+    tess_lead_note(tr, (int32_t)note);
 }
 /* the note FOLLOW gives track tr, -1 none: with HOLD, the one last sampled (the first hit samples one at once) */
 static int32_t tess_follow_note(uint32_t tr)
@@ -2294,8 +2313,9 @@ int32_t tessera_pitch_turn(const track_t *t, int32_t n, int32_t k, int fine)
     return n;
 }
 
-/* FOLLOW: the note track src gives track tr, -1 none. A generator: the last note it played. A STEP track: the highest
- * note it sounds now (a chord's top: the melody), else the last one it sounded (a rest keeps it) */
+/* FOLLOW: the note track src gives track tr, -1 none. A generator: the last note it played, or a key played on it
+ * since. A STEP track: the highest note it sounds now (a chord's top: the melody), else the last one it sounded or
+ * was played on its keys (a rest keeps it) */
 static int32_t tess_follow_source(uint32_t src, uint32_t tr)
 {
     const track_t *s;
@@ -2304,7 +2324,7 @@ static int32_t tess_follow_source(uint32_t src, uint32_t tr)
     if (src >= TESSERA_TRACKS || src == tr)
         return -1;
     if (tessera.mode[src] != TESS_ENG_OFF)
-        return (int32_t)tessera.last_note[src];
+        return (tess_live_lead >> src) & 1u ? (int32_t)tessera.follow_mem[src] - 1 : (int32_t)tessera.last_note[src];
     s = &trk[src];
     for (i = 0; i < s->seq_n; i++)
         if ((int32_t)s->seq_notes[i] > n)

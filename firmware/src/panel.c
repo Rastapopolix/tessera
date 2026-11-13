@@ -61,6 +61,12 @@ static uint32_t panel_btn_of(uint32_t matrix_id)        /* label of a matrix but
 #define KNOB_SWAP_TAG 0xA5u
 static uint8_t settings_knob_swap;
 
+/* PANEL (editor.c ED_PANEL): while the web simulator mirrors this panel, the steps each knob turned (by its printed
+ * label: the simulator's own TRACK KNOB swaps them again) and MASTER as main.c read it (0..1023) */
+static uint8_t panel_out;
+static int16_t panel_out_steps[NE];
+static uint16_t panel_out_master;
+
 /* steps of a role, + = clockwise */
 static uint8_t panel_moved;
 static int32_t panel_enc(uint32_t role)
@@ -69,6 +75,8 @@ static int32_t panel_enc(uint32_t role)
         role = role == EN_ALGO ? EN_PRESET : EN_ALGO;
     int32_t value=fm1_enc_take(panel.enc[role]) * panel.dir[role];
     panel_moved |= value != 0;
+    if (panel_out)
+        panel_out_steps[role] = (int16_t)(panel_out_steps[role] + value);
     return value;
 }
 

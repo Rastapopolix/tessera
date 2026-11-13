@@ -1723,6 +1723,58 @@ static void mo_pic_midich(void)
     if (settings_midi_out != MIDI_OUT_ALL)
         mo_text(settings_midi_out == MIDI_OUT_OFF ? "NOTES OUT: OFF" : "NOTES OUT: KEYS", 2, 101, MO_DIM);
 }
+/* GLO > SYSTEM: what the voices and the CPU are doing. VOICES: the budget's points sounding now of BUDGET (the one
+ * in effect, voice.c voice_budget) as a bar; CPU: the average as a bar, the recent peak a tick (as KNOB 4's numbers) */
+static void mo_pic_load(const char *k, uint32_t a, uint32_t pk, uint32_t n, const char *v, int32_t y)
+{
+    mo_text(k, 2, y, MO_DIM);
+    mo_textr(v, 118, y, MO_INK);
+    mo_box(2, y + 10, 116, 7, MO_DIM);
+    a = a > n ? n : a;
+    if (a) mo_fill(3, y + 11, (int32_t)(a * 114u / n), 5, MO_INK);
+    if (pk) mo_vl(2 + (int32_t)((pk > n ? n : pk) * 114u / n), y + 8, 11, MO_INK);
+}
+static void mo_pic_system(void)
+{
+    char b[16];
+    uint32_t used = voices_busy(), bud = voice_budget(), a = song.cpu_q8 * 100u / 256u, pk = song.cpu_peak_q8 * 100u / 256u;
+    fmt_int(b, (int32_t)used);
+    str_cpy(b + str_len(b), "/", 2);
+    fmt_int(b + str_len(b), (int32_t)bud);
+    mo_pic_load("VOICES", used, 0, bud ? bud : 1u, b, 56);
+    fmt_int(b, (int32_t)(a > 99u ? 99u : a));
+    str_cpy(b + str_len(b), "/", 2);
+    fmt_int(b + str_len(b), (int32_t)(pk > 99u ? 99u : pk));
+    str_cpy(b + str_len(b), "%", 2);
+    mo_pic_load("CPU", a, pk, 100u, b, 80);
+}
+/* GLO > MIDI IN: the channel each track hears (ROUT's range, SEL: all to the selected track, DRUM's channel to the
+ * first DRUM track and to no other; seq.c midi_track) */
+static void mo_pic_midiin(void)
+{
+    uint32_t route = (uint32_t)song.g[G_ROUTE], first = route > 1u ? (route - 1u) * 4u : 0u, d = settings_drumch, dk, k;
+    for (dk = 0; dk < NTRK && !drum_track(&trk[dk]); dk++) {}
+    if (!d || dk >= NTRK || (route != 1u && (d - 1u < first || d - 1u - first >= 4u)))
+        d = 0;                                          /* (DRUM's channel outside ROUT's range: not heard) */
+    for (k = 0; k < TESSERA_TRACKS; k++) {
+        int32_t y = 54 + (int32_t)k * 11;
+        uint32_t ch = route == 1u ? (k == song.sel ? 17u : 0u) : first + k + 1u;
+        char n[3] = {'T', (char)('1' + k), 0}, b[16];
+        if (d && k == dk) ch = d;
+        else if (d && ch == d) ch = 0;
+        mo_invc(n, 3, y, MO_TRK(k));
+        if (ch == 17u) {
+            str_cpy(b, "ALL CHANNELS", sizeof b);
+        } else if (ch) {
+            str_cpy(b, "CH ", sizeof b);
+            fmt_int(b + 3, (int32_t)ch);
+            if (d && k == dk) str_cpy(b + str_len(b), " DRUM", 6);
+        } else {
+            str_cpy(b, "--", sizeof b);
+        }
+        mo_text(b, 18, y, ch ? MO_TRK(k) : mo_tdim(k));
+    }
+}
 #include "ui_land.c"                                    /* LANDSCAPE: rain on water */
 static void mo_stage_wave(int32_t top, int32_t h, uint16_t c);
 /* the value of the knob turning (KNOB k), with its unit, on the picture's foot row at the right */
@@ -2226,6 +2278,14 @@ static void mo_picture(void)
         if (pic == 5u) { mo_pic_arp(t); return; }
         if (pic == 9u) { mo_pic_fx(); return; }
     }
+    if (pg->scope == SC_GLOBAL && pg->graph == GR_NONE && pg->id[1] == G_INFO) {   /* SYSTEM: the voices, the CPU */
+        mo_pic_system();
+        return;
+    }
+    if (pg->scope == SC_GLOBAL && pg->graph == GR_NONE && pg->id[0] == G_MIDI) {   /* MIDI IN: the channels */
+        mo_pic_midiin();
+        return;
+    }
     mo_pic_own = 0;
     mo_stage_wave(MO_PY0 + 4, 48, MO_INK);              /* the rest: the output */
 }
@@ -2383,6 +2443,8 @@ static uint32_t mo_signature(void)
         h = (h ^ str_hash(1u, ui.msg)) * 16777619u;
     if (cur_page()->graph == GR_LAND)                   /* LANDSCAPE: the scene, a step on */
         h = (h ^ land_sig()) * 16777619u;
+    if (cur_page()->scope == SC_GLOBAL && cur_page()->id[1] == G_INFO)   /* SYSTEM: the voices, the CPU */
+        h = (h ^ voices_busy() ^ voice_budget() << 6 ^ song.cpu_q8 << 12 ^ song.cpu_peak_q8 << 22) * 16777619u;
     if (cur_page()->graph == GR_PERF)                   /* PERF: the MACROs (a learned CC moves them too) */
         h = (h ^ ((uint32_t)tessera.macro[0] | (uint32_t)tessera.macro[1] << 7 | (uint32_t)tessera.macro[2] << 14 |
                   (uint32_t)tessera.macro[3] << 21)) * 16777619u;
@@ -2899,10 +2961,12 @@ static void mono_stage(void)
 }
 
 /* ---- MIXER ---- */
-/* a track's strip (pv_strip; 29 x 106 cells, a cell into the gaps beside its card): its sound in two words of four
- * letters, LEVEL as a dial with its dB, the meter beside it, PAN a small dial and its side, SOLO boxed, MUTE inverted
- * (silenced by another's solo: dim), REC a dot (armed) or a ring; the selected track's strip outlined, a clear cell
- * inside its outline all round; the knob turning its value inverted */
+/* a track's strip (pv_strip; 29 x 89 cells, a cell into the gaps beside its card): its sound in two words of four
+ * letters, LEVEL as a dial with its dB, the meter beside it, PAN a small dial and its side (in the track's ink while
+ * OCT- holds the knobs on the pans), SOLO boxed, MUTE inverted (silenced by another's solo: dim), REC a dot (armed)
+ * or a ring; the selected track's strip outlined, a clear cell inside its outline all round; the knob turning its value
+ * inverted. Under the strips the keys' legend and the GLO tabs (mo_mixer_foot) */
+#define MO_STRIP_H 89
 static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint32_t flags, int32_t meter)
 {
     uint32_t sel = flags & 1u, mute = flags & 2u, solo = flags & 4u, quiet = flags & 8u, arm = flags & 16u;
@@ -2910,48 +2974,63 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
     uint16_t ink = quiet ? mo_tdim(k) : MO_TRK(k), dim = mo_tdim(k);
     char a[8], b[8];
     int32_t h;
-    cv_begin(CARD_W + 4, PV_STRIP_ROWS, MO_BG);
+    cv_begin(CARD_W + 4, MO_STRIP_H * 2, MO_BG);
     if (sel)
-        mo_box(0, 0, CARD_W / 2 + 2, PV_STRIP_ROWS / 2, MO_TRK(k));
+        mo_box(0, 0, CARD_W / 2 + 2, MO_STRIP_H, MO_TRK(k));
     mo_word(a, nm, 0);
     mo_textc(a, 14, 3, ink);
     mo_word(a, nm, 1);
-    mo_textc(a, 14, 12, ink);
-    mo_dial(12, 31, 8, (int32_t)lvl * 1000 / 127, ink);
+    mo_textc(a, 14, 11, ink);
+    mo_dial(12, 28, 8, (int32_t)lvl * 1000 / 127, ink);
     if (lvl) {
         int32_t d = level_db_x10(lvl);
         fmt_int(b, (d + (d < 0 ? -5 : 5)) / 10);
     } else {
         str_cpy(b, "OFF", sizeof b);
     }
-    if (hot == 1u) mo_invc(b, 13 - mo_tw(b) / 2, 43, MO_HOT);
-    else mo_textc(b, 13, 43, ink);
-    mo_vl(24, 23, 18, dim);                          /* the meter */
+    if (hot == 1u) mo_invc(b, 13 - mo_tw(b) / 2, 39, MO_HOT);
+    else mo_textc(b, 13, 39, ink);
+    mo_vl(24, 20, 18, dim);                          /* the meter */
     h = meter * 18 / (TS_MH - 2);
     if (h > 0)
-        mo_fill(23, 41 - h, 3, h, ink);
-    mo_textc("PAN", 13, 55, octp ? MO_TRK(k) : dim);
-    mo_dial(13, 69, 5, (pan + 64) * 1000 / 127, ink);
+        mo_fill(23, 38 - h, 3, h, ink);
+    mo_dial(13, 52, 5, (pan + 64) * 1000 / 127, octp ? MO_TRK(k) : dim);
     if (pan) {
         b[0] = pan < 0 ? 'L' : 'R';
         fmt_int(b + 1, pan < 0 ? -pan : pan);
     } else {
         str_cpy(b, "C", sizeof b);
     }
-    if (hot == 2u) mo_invc(b, 14 - mo_tw(b) / 2, 77, MO_HOT);
-    else mo_textc(b, 14, 77, dim);
+    if (hot == 2u) mo_invc(b, 14 - mo_tw(b) / 2, 60, MO_HOT);
+    else mo_textc(b, 14, 60, octp ? MO_TRK(k) : dim);
     if (solo) {
-        mo_box(2, 86, 25, 11, MO_TRK(k));
-        mo_textc("SOLO", 14, 88, MO_TRK(k));
+        mo_box(2, 68, 25, 11, MO_TRK(k));
+        mo_textc("SOLO", 14, 70, MO_TRK(k));
     } else if (mute) {
-        mo_fill(2, 86, 25, 11, MO_TRK(k));
-        mo_textc("MUTE", 14, 88, MO_BG);
+        mo_fill(2, 68, 25, 11, MO_TRK(k));
+        mo_textc("MUTE", 14, 70, MO_BG);
     } else {
-        mo_textc("MUTE", 14, 88, dim);
+        mo_textc("MUTE", 14, 70, dim);
     }
-    if (arm) mo_disc(14, 101, 3, MO_TRK(k));
-    else mo_circ(14, 101, 3, dim);
+    if (arm) mo_disc(14, 83, 3, MO_TRK(k));
+    else mo_circ(14, 83, 3, dim);
     cv_blit((uint32_t)CARD_X(k) - 2u, PV_STRIP_TOP);
+}
+/* under the strips: what the keys do here, a black key MUTE, a white key SOLO, E FILL (the GLO map has the rest);
+ * then the GLO pages' tabs, MIXER the first */
+static void mo_mixer_foot(void)
+{
+    cv_begin(240, 40, MO_BG);
+    cv_oy = -200;
+    mo_fill(1, 101, 3, 7, MO_INK);
+    mo_text("MUTE", 6, 101, MO_DIM);
+    mo_box(34, 101, 4, 7, MO_INK);
+    mo_text("SOLO", 41, 101, MO_DIM);
+    mo_inv("E", 69, 101);
+    mo_text("FILL", 78, 101, MO_DIM);
+    mo_foot();
+    cv_oy = 0;
+    cv_blit(0, 200);
 }
 
 /* ---- MODS (CORDS) ---- */

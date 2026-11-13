@@ -386,10 +386,8 @@ static int32_t list_accel(uint32_t role, int32_t s, uint32_t total, uint32_t *fa
     return accel_by(role, s, total > 256u ? 16u : total > 64u ? 8u : total > 16u ? 4u : 1u, fast);
 }
 
-/* MIXER page: KNOB 1 LEVEL, 2 PAN, 3 unused, 4 MUTE of the selected track (right = ON, left = OFF: the
- * track itself is ALGORITHM's, on every page). Pattern length stays on SEQ. */
-/* MIXER: KNOB k track k's LEVEL; OCT+ held, its PAN (OCT+ then a modifier: no octave). Mute and solo are its keys
- * (ui_layer.c mixer_live), as GLO held */
+/* MIXER: KNOB k track k's LEVEL; OCT- held, its PAN (OCT- then a modifier: no octave, no Back). Mute and solo are
+ * its keys (ui_layer.c mixer_live), as GLO held */
 static void tracks_edit(uint32_t slot, int32_t steps)
 {
     track_t *t = &trk[slot % NTRK];

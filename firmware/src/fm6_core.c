@@ -66,6 +66,11 @@ static int fm6_fn_ok(const uint8_t *f)                    /* a stored set: every
  * envelope's rates and steps (1/32 octave). The sine, 2^x, frequency, MARK I / OPL, detune, LFO and
  * portamento tables are in melodee_tables.h (tools/gen_tables.py) */
 static const uint8_t FM6_LEVELLUT[20] = {0, 5, 9, 13, 17, 20, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 42, 43, 45, 46};
+#if FS == 44100
+#define FM6_AT_FS(n) (n)                       /* Dexed's times, in samples at 44.1 kHz */
+#else
+#define FM6_AT_FS(n) ((int32_t)((int64_t)(n) * FS / 44100))   /* (no 64-bit division on the FM-1: only other rates) */
+#endif
 static const int32_t FM6_STATICS[77] = {
     1764000, 1764000, 1411200, 1411200, 1190700, 1014300, 992250, 882000, 705600, 705600,
     584325, 507150, 502740, 441000, 418950, 352800, 308700, 286650, 253575, 220500,
@@ -231,7 +236,7 @@ static __attribute__((noinline,section(".dsp_text"))) void fm6_eg_go(fm6_eg_t *e
         e->hold = 0;
         if (e->target == e->level || (!ix && !lv)) {
             int32_t r = fm6_clamp(op[FP_R1 + ix] + rs, 0, 99);
-            e->hold = r < 77 ? FM6_STATICS[r] : 20 * (99 - r);
+            e->hold = FM6_AT_FS(r < 77 ? FM6_STATICS[r] : 20 * (99 - r));
             if (r < 77 && !ix && !lv)
                 e->hold /= 20;
         }

@@ -40,6 +40,7 @@ static const gshot_t SHOTS[] = {
     {"glo_entries", G_SCENE, S_GLO_ENTRIES}, {"glo_entries_roles", G_SCENE, S_GLO_ENTRIES_ROLES},
     {"glo_chain", G_SCENE, S_GLO_CHAIN}, {"glo_piece", G_SCENE, S_GLO_PIECE}, {"glo_perf", G_SCENE, S_GLO_PERF},
     {"glo_land_rain", G_SCENE, S_GLO_LAND_RAIN}, {"mods_bus", G_SCENE, S_MODS_BUS}, {"scl", G_SCENE, S_SCL},
+    {"glo_system", G_SCENE, S_GLOBAL},
     {"chord", G_SCENE, S_CHORD}, {"song", G_SCENE, S_SONG}, {"project", G_SCENE, S_PROJECT},
     {"gen_form", G_SCENE, S_GEN_FORM},
     /* 3.5's screens (f35_setup) */

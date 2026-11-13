@@ -1,0 +1,57 @@
+name: Daisy build (Andamento)
+
+# Compiles platform/daisy (Tessera's core on a Daisy Seed, for Andamento) with arm-none-eabi and a pinned libDaisy,
+# so a change to the core that breaks the Daisy build shows on the pull request. No board is involved; nothing is
+# published. The memory report goes to the run summary.
+on:
+  pull_request:
+    branches: [develop]
+    paths: ['firmware/src/**', 'tools/gen_*.py', 'platform/daisy/**', 'platform/andamento/**', '.github/workflows/daisy-build.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  LIBDAISY_SHA: 1289a000bc29dae1bc0ed4129cfa2df40ef71574   # libDaisy master, 2026-11-03
+
+jobs:
+  daisy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the ARM toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+      - uses: actions/cache@v4
+        with:
+          path: libDaisy
+          key: libdaisy-${{ env.LIBDAISY_SHA }}-${{ runner.os }}
+      - name: Fetch and build libDaisy
+        run: |
+          if [ ! -f libDaisy/build/libdaisy.a ]; then
+            git init -q libDaisy && cd libDaisy
+            git remote add origin https://github.com/electro-smith/libDaisy
+            git fetch -q --depth 1 origin "$LIBDAISY_SHA" && git checkout -q FETCH_HEAD
+            git submodule update -q --init --depth 1
+            make -j"$(nproc)"
+          fi
+      - name: Build platform/daisy
+        run: |
+          make -C platform/daisy LIBDAISY_DIR="$GITHUB_WORKSPACE/libDaisy" 2>&1 | tee daisy.log
+          test -f platform/daisy/build/tessera_daisy.bin
+      - name: Memory report
+        run: |
+          {
+            echo '### Daisy build (platform/daisy)'
+            echo '```'
+            sed -n '/Memory region/,/QSPIFLASH/p' daisy.log
+            grep '^ITCM:' daisy.log
+            sed -n '/^memcheck/,$p' daisy.log | grep '^memcheck\|^  '
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -372,14 +372,14 @@ grid lives in the steps themselves, so every engine has it:
   from the editor. Since 1.0 the same USB device also has an audio input ("Melodee",
   44.1 kHz stereo; bcdDevice 3.11); the MIDI port and this protocol are unchanged, and both
   work while the computer records.
-- **Global ids.** `G_ROUTE` (id 14, label "ROUT", GLO > SYSTEM) was a placeholder ("--", range 0..0);
+- **Global ids.** `G_ROUTE` (id 14, label "ROUT", GLO > MIDI IN; GLO > SYSTEM up to 3.5) was a placeholder ("--", range 0..0);
   it is the MIDI IN routing: 0 "CH1-4", 1 "SEL", 2 "CH5-8", 3 "CH9-12", 4 "CH13-16".
   Each range maps only its four channels to tracks 1..4 in order; other channels are ignored. SEL receives every channel on the selected track. DRUM redirects its channel to the
   first DRUM track only within the selected range (or in SEL); without a DRUM track, normal routing applies.
   Note-offs and sustain release still reach their original owners after changing ROUT. Earlier firmware
   sent out-of-range channels to the selected track; this fallback is removed. Stored values 0 and 1,
   global id 14, the global count and the project layout are unchanged. ROUT persists between starts and
-  is saved with projects/templates. The editor shows it under GLOBAL > SYSTEM.
+  is saved with projects/templates. The editor shows it under GLOBAL > MIDI IN.
 - **Sound loads and undo.** A load that changes a track's sound (`PRESET`, `SET` of `G_ENGSEL`, `UP_LOAD`,
   and the same on the device) changes the sound only: the engine and the parameters of the sound. It
   never changes the steps, nor the track's own parameters: `P_LEVEL`, `P_PAN`, `P_MUTE` (0, 39, 40), the
@@ -408,6 +408,29 @@ grid lives in the steps themselves, so every engine has it:
 - **Safety.** `PROJECT` save, sample-slot commands, `UP_PUT` / `UP_STORE` / `UP_ERASE`, and the tagged preference writes below write flash, and only in
   Melodee's own storage; never the app or the update area.
 
+
+## The panel for the web simulator (command 75)
+
+The web simulator (`web/sim`) mirrors a connected FM-1's panel: its knobs, buttons, keys and MASTER play
+the simulator. The firmware side is `ed_panel` in `editor.c`.
+
+| cmd | Request | Reply |
+| --- | --- | --- |
+| 75 PANEL | 1 on, 0 off | on (0/1) |
+
+The simulator sends `PANEL 1` about once a second while it listens and `PANEL 0` when it stops. Three
+seconds without a request, or a USB reset, turns it off too. Firmware without it (3.5 and older) gives no reply. While it is on, the
+device also sends these channel messages on **channel 16**, besides its usual MIDI OUT:
+
+| What | Message |
+| --- | --- |
+| Buttons, by printed label (FX SCL ENV LFO EDIT GLO HOME SAVE ARP SEQ PLAY REC OCT- OCT+) | CC 80..93, 127 pressed, 0 let go |
+| Keys, F3 .. G5 | note on / off 0..26 (key number, not pitch), velocity 127 |
+| Knobs SELECT, ALGORITHM, PRESETS, KNOB 1..4 (by printed label, before TRACK KNOB) | CC 20..26, relative: 1..63 clockwise, 65..127 back (sign bit) |
+| MASTER | CC 27, 0..127 |
+
+Within one pass, buttons go before keys and keys before knobs, so a held button reaches the simulator before
+the knob it is held with. A message waits until the queue has room, so none is lost.
 
 ## Pattern banks (commands 73–74)
 
@@ -1120,7 +1143,7 @@ must also be checked with normal admission and emergency protection enabled.
 ### Shared workload budget
 
 Global ID 41 is BUDGET (`G_COUNT=42`), range 8–32 integer points. Existing
-global IDs remain unchanged; FXMODE is 40. GLO > GLOBAL knob 2 edits this
+global IDs remain unchanged; FXMODE is 40. GLO > SYSTEM knob 1 (GLO > GLOBAL knob 2 up to 3.5) edits this
 device setting. Like A4, it is a virtual global value preserved across project
 and template loads. A tagged high word (`0x5742`) in PER5 `ext.usb_off` stores
 nondefault budgets in bits 8–15 while retaining the low two USB flags. The

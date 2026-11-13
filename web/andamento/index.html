@@ -1,0 +1,340 @@
+<!-- SPDX-License-Identifier: GPL-3.0-only
+     Andamento's virtual prototype: the panel (Octatrack-style, as the mockups) around Tessera's core at 48 kHz.
+     web/andamento/build.sh puts the worklet and the wasm into this page (@WORKLET@, @WASM@). It is written as a page
+     body (it also publishes as is); build.sh puts the document around it for a plain server. -->
+<title>Andamento prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&display=swap">
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root {
+  --bg: #e9e6df; --text: #26241f; --muted: #6b675e; --line: #c9c4b8;
+  --print: #b4b1aa;
+  --ink: #ffd020;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0e0e0d; --text: #e8e4da; --muted: #9a958a; --line: #2c2a26; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0e0e0d; --text: #e8e4da; --muted: #9a958a; --line: #2c2a26; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1000px; margin: 0 auto; padding-block: 20px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font-size: 20px; margin: 0 0 4px; font-weight: 650; }
+.sub { color: var(--muted); margin: 0 0 16px; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 14px; }
+.bar button { font: inherit; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; }
+.bar button:hover { border-color: var(--muted); }
+.bar .status { color: var(--muted); font-size: 13px; margin-left: auto; }
+
+/* the panel, as Theo's 3D-printed mockup (about 214 x 154 mm): every size in cqw of its own width, so it scales as one
+   object; positions in % of the panel */
+.wrap { container-type: inline-size; width: 100%; }
+.panel { position: relative; width: 100cqw; aspect-ratio: 214 / 154; max-width: 100%; border-radius: 3.6cqw;
+  background: repeating-linear-gradient(135deg, #191919 0 .25cqw, #161616 .25cqw .5cqw);
+  box-shadow: inset 0 0 0 .2cqw #0c0c0c, 0 1.2cqw 3cqw rgba(0,0,0,.35); user-select: none; -webkit-user-select: none; touch-action: none; }
+.lbl { position: absolute; color: var(--print); font: 600 1.3cqw/1 "Barlow Condensed", "Arial Narrow", sans-serif; letter-spacing: .06em;
+  text-align: center; transform: translateX(-50%); white-space: nowrap; pointer-events: none; }
+.lbl.big { font-size: 1.6cqw; letter-spacing: .1em; }
+.logo { position: absolute; right: 6cqw; top: 2.4cqw; color: var(--print); font: 600 1.7cqw/1 "Barlow Condensed", "Arial Narrow", sans-serif; letter-spacing: .5em; }
+.bezel { position: absolute; left: 5.3%; top: 6.9%; width: 38.1%; height: 27.9%; background: #050505; border-radius: 1.2cqw;
+  box-shadow: inset 0 0 0 .15cqw #222; }
+.screen { position: absolute; left: 8.9%; top: 9.7%; width: 30.6%; aspect-ratio: 2 / 1; background: #000; image-rendering: pixelated; }
+.enc { position: absolute; width: 6.3cqw; height: 6.3cqw; transform: translate(-50%, -50%); border-radius: 50%; cursor: ns-resize;
+  background: radial-gradient(circle, #262626 0 58%, transparent 59%),
+              repeating-conic-gradient(#3a3a3a 0 4deg, #101010 4deg 8deg);
+  box-shadow: 0 .35cqw .7cqw rgba(0,0,0,.6); }
+.enc::after { content: ""; position: absolute; left: 50%; top: 22%; width: .3cqw; height: 1.2cqw; margin-left: -.15cqw; background: #8a8a8a;
+  border-radius: .2cqw; transform-origin: 50% 1.75cqw; transform: rotate(var(--a, 0deg)); }
+.enc.big { width: 9.5cqw; height: 9.5cqw; }
+.enc.big::after { top: 20%; height: 1.6cqw; transform-origin: 50% 2.85cqw; }
+.enc.small { width: 5.6cqw; height: 5.6cqw; background: radial-gradient(circle at 50% 40%, #2c2c2c, #141414 70%); }
+.enc.small::after { top: 14%; height: 1.5cqw; background: #eee; transform-origin: 50% 1.4cqw; }
+.enc.pushed { box-shadow: 0 .1cqw .3cqw rgba(0,0,0,.6), 0 0 0 .25cqw var(--ink); }
+.btn { position: absolute; width: 5.6cqw; height: 3.4cqw; transform: translate(-50%, -50%); border-radius: .7cqw; cursor: pointer;
+  background: linear-gradient(#303030, #222); box-shadow: 0 .3cqw 0 #090909, 0 0 0 .15cqw #0c0c0c; --led: #ffcc33; }
+.btn.led::before { content: ""; position: absolute; left: 38%; right: 38%; top: 22%; height: .3cqw; border-radius: .2cqw; background: #444; }
+.btn.led.lit::before { background: var(--led); box-shadow: 0 0 .8cqw var(--led); }
+.btn.arrow { width: 4.7cqw; height: 3.4cqw; display: grid; place-items: center; color: #ddd; font: 600 1.6cqw/1 system-ui, sans-serif; }
+.btn.small { width: 4.8cqw; height: 3.7cqw; }
+.btn.down, .key.down { transform: translate(-50%, -47%); box-shadow: 0 .08cqw 0 #090909, 0 0 0 .15cqw #0c0c0c; }
+.tray { position: absolute; left: 4.5%; top: 67.1%; width: 70.1%; height: 25.9%; background: #0d0d0d; border-radius: 1.4cqw; box-shadow: inset 0 0 0 .15cqw #1d1d1d; }
+.key { position: absolute; width: 7.8cqw; height: 7.3cqw; transform: translate(-50%, -50%); border-radius: .8cqw; cursor: pointer;
+  background: linear-gradient(#f4f2ee, #dcd9d3); box-shadow: 0 .3cqw 0 #8f8c86, inset 0 0 0 .1cqw #fff; --glow: transparent; }
+.key::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(circle at 50% 30%, var(--glow), transparent 62%); }
+.key.down { box-shadow: 0 .08cqw 0 #8f8c86, 0 0 2cqw rgba(255,240,210,.35); }
+.key .k { position: absolute; right: .6cqw; bottom: .5cqw; font: 600 1cqw/1 "Barlow Condensed", sans-serif; color: #a5a198; }
+.start { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(0,0,0,.55); border-radius: 2.2cqw; cursor: pointer; }
+.start span { background: var(--ink); color: #111; font: 700 2cqw/1 system-ui, sans-serif; padding: 1.6cqw 3cqw; border-radius: 1cqw; }
+.help { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 6px 28px; margin-top: 18px; font-size: 14px; }
+.help h2 { font-size: 14px; margin: 10px 0 4px; }
+.help p { margin: 0 0 4px; color: var(--muted); }
+kbd { font: 12px ui-monospace, Menlo, monospace; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; color: var(--text); }
+</style>
+<main>
+  <h1>Andamento, virtual prototype</h1>
+  <p class="sub">Tessera's engine at the Daisy Seed's 48 kHz, behind a first draft of Andamento's panel and 128×64 screen.</p>
+  <div class="bar">
+    <button id="demoA">Play STILL TIDE</button>
+    <button id="demoB">Play KOTO GARDEN</button>
+    <span class="status" id="status">Click the panel to start the sound.</span>
+  </div>
+  <div class="wrap"><div class="panel" id="panel">
+    <div class="logo">ANDAMENTO</div>
+    <div class="bezel"></div>
+    <canvas class="screen" id="screen" width="128" height="64"></canvas>
+    <div class="tray"></div>
+    <div class="start" id="start"><span>Click to start</span></div>
+  </div></div>
+  <div class="help">
+    <div>
+      <h2>Encoders</h2>
+      <p>Drag up or down, or use the mouse wheel. A click (without dragging) pushes it: the setting goes back to its default.</p>
+      <p>Encoders A to H follow the 2×4 grid on the screen. ENERGY works on every page; VOL is the main level.</p>
+    </div>
+    <div>
+      <h2>Buttons</h2>
+      <p>A page button opens that page; pressed again it goes to its second page (or <kbd>↑</kbd> <kbd>↓</kbd>).</p>
+      <p><kbd>←</kbd> <kbd>→</kbd> choose the track; FUNC held with key 1 to 4 picks one directly. PLAY restarts while playing.</p>
+    </div>
+    <div>
+      <h2>The 16 keys</h2>
+      <p>Hold FUNC and press a top-row key for the keys' mode: 9 SCALE (16 degrees of the scale from the root), 10 CHROM (a keyboard: white keys below, their sharps above), 11 STEP (the track's pattern, 16 steps at a time), 12 MUTE (top row mutes, bottom row selects).</p>
+      <p>FUNC with <kbd>↑</kbd> <kbd>↓</kbd>: the octave, or the next 16 steps. The lights: the track's colour, a flash where it plays (its generator too), the step playing white, red for a muted track; turning ENERGY shows its level across the keys.</p>
+    </div>
+    <div>
+      <h2>Computer keyboard</h2>
+      <p>Keys: <kbd>A</kbd>…<kbd>K</kbd> bottom row, <kbd>Q</kbd>…<kbd>I</kbd> top row. Pages <kbd>1</kbd>…<kbd>6</kbd>.</p>
+      <p><kbd>Space</kbd> PLAY / STOP, <kbd>Shift</kbd> FUNC, arrows as on the panel. The modes: <kbd>Shift</kbd> with <kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd>.</p>
+    </div>
+  </div>
+</main>
+<script id="worklet-src" type="text/plain">@WORKLET@</script>
+<script id="wasm-src" type="application/octet-stream">@WASM@</script>
+<script>
+"use strict";
+const panel = document.getElementById("panel"), statusEl = document.getElementById("status");
+// button ids as platform/andamento/and_ui.c's AB_* enum
+const AB = { GEN: 0, SOUND: 1, MOD: 2, FX: 3, PIECE: 4, MIX: 5, FUNC: 6, NO: 7, YES: 8, UP: 9, DOWN: 10, LEFT: 11,
+             RIGHT: 12, REC: 13, PLAY: 14, STOP: 15 };
+let node = null, playing = 0, booting = false;
+const send = (m) => { if (node) node.port.postMessage(m); };
+
+// ---- building the panel (positions in % of the panel, from the mockup's 210 x 125 mm) ----
+function el(cls, x, y, parent = panel) {
+  const d = document.createElement("div");
+  d.className = cls;
+  d.style.left = x + "%";
+  d.style.top = y + "%";
+  parent.appendChild(d);
+  return d;
+}
+function label(text, x, y) { const d = el("lbl", x, y); d.textContent = text; return d; }
+
+const encs = [];
+function encoder(i, x, y, size, name, ly) {
+  const d = el("enc" + (size ? " " + size : ""), x, y);
+  d.dataset.angle = 0;
+  if (name) label(name, x, ly).classList.toggle("big", size === "big");
+  let drag = null;
+  const turn = (n) => {
+    if (!n) return;
+    d.dataset.angle = +d.dataset.angle + n * 15;
+    d.style.setProperty("--a", d.dataset.angle + "deg");
+    if (i === 9) { volume = Math.max(0, Math.min(1023, volume + n * 24)); send({ type: "volume", value: volume }); }
+    else send({ type: "enc", i, n });
+  };
+  d.addEventListener("pointerdown", (e) => { d.setPointerCapture(e.pointerId); drag = { y: e.clientY, acc: 0, moved: false }; e.preventDefault(); });
+  d.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const dy = drag.y - e.clientY; drag.y = e.clientY; drag.acc += dy;
+    const n = Math.trunc(drag.acc / 6);
+    if (n) { drag.acc -= n * 6; drag.moved = true; turn(n); }
+  });
+  d.addEventListener("pointerup", () => {
+    if (drag && !drag.moved && i !== 9) { send({ type: "push", i }); d.classList.add("pushed"); setTimeout(() => d.classList.remove("pushed"), 150); }
+    drag = null;
+  });
+  d.addEventListener("wheel", (e) => { e.preventDefault(); turn(e.deltaY < 0 ? 1 : -1); }, { passive: false });
+  encs[i] = d;
+}
+let volume = 700;
+// from the mockup: 8 encoders A..H under the screen, ENERGY and VOL top right
+for (let i = 0; i < 8; i++)
+  encoder(i, [10.3, 19.6, 28.9, 38.2][i % 4], i < 4 ? 41.8 : 55.0, "", "ABCDEFGH"[i], i < 4 ? 47.6 : 60.8);
+encoder(8, 77.9, 18.7, "big", "ENERGY", 27.4);
+encoder(9, 91.7, 18.9, "small", "VOL", 24.9);
+
+const btns = [];
+function button(id, name, x, y, kind, ly, led) {
+  const d = el("btn" + (kind ? " " + kind : ""), x, y);
+  if (kind === "arrow") d.textContent = name;
+  else label(name, x, ly);
+  if (led) d.style.setProperty("--led", led);
+  const up = () => { if (d.classList.contains("down")) { d.classList.remove("down"); send({ type: "button", b: id, down: 0 }); } };
+  d.addEventListener("pointerdown", (e) => { e.preventDefault(); d.classList.add("down"); send({ type: "button", b: id, down: 1 }); });
+  d.addEventListener("pointerup", up);
+  d.addEventListener("pointerleave", up);
+  btns[id] = d;
+}
+["GEN", "SOUND", "MOD", "FX", "PIECE", "MIX"].forEach((n, i) =>
+  button(AB[n], n, [50.3, 57.2, 64.1][i % 3], i < 3 ? 14.3 : 24.1, "led", i < 3 ? 18.6 : 28.2));
+button(AB.FUNC, "FUNC", 50.3, 49.1, "", 53.0);
+button(AB.NO, "NO", 60.6, 49.1, "", 53.0);
+button(AB.YES, "YES", 70.9, 49.1, "", 53.0);
+button(AB.UP, "\u2303", 86.5, 47.9, "arrow");
+button(AB.LEFT, "\u2039", 80.9, 53.5, "arrow");
+button(AB.DOWN, "\u2304", 86.5, 53.5, "arrow");
+button(AB.RIGHT, "\u203a", 91.9, 53.5, "arrow");
+
+const keys = [];
+function key(k, x, y, name) {
+  const d = el("key", x, y);
+  const t = document.createElement("span"); t.className = "k"; t.textContent = name; d.appendChild(t);
+  const up = () => { if (d.classList.contains("down")) { d.classList.remove("down"); send({ type: "key", k, down: 0 }); } };
+  d.addEventListener("pointerdown", (e) => { e.preventDefault(); d.classList.add("down"); send({ type: "key", k, down: 1 }); });
+  d.addEventListener("pointerup", up);
+  d.addEventListener("pointerleave", up);
+  keys[k] = d;
+}
+const KB_BOTTOM = "asdfghjk", KB_TOP = "qwertyui";
+for (let i = 0; i < 8; i++) {
+  key(8 + i, 9.6 + i * 8.57, 73.8, KB_TOP[i].toUpperCase());
+  key(i, 9.6 + i * 8.57, 86.2, KB_BOTTOM[i].toUpperCase());
+}
+button(AB.REC, "REC", 79.9, 78.4, "small led", 82.6, "#e0392b");
+button(AB.PLAY, "PLAY", 85.9, 78.4, "small led", 82.6, "#3ddc6a");
+button(AB.STOP, "STOP", 91.9, 78.4, "small", 82.6);
+
+// ---- the keys' RGB LEDs (and_keys.c: 0..255 a channel), as light through a white cap: the colour at full
+// strength, its brightness as how much of it shows ----
+function keyLight(d, r, g, b) {
+  const m = Math.max(r, g, b);
+  const v = m ? `rgba(${Math.round(r * 255 / m)},${Math.round(g * 255 / m)},${Math.round(b * 255 / m)},${Math.min(1, .12 + m / 255).toFixed(2)})` : "transparent";
+  if (d.dataset.glow !== v) { d.dataset.glow = v; d.style.setProperty("--glow", v); }
+}
+
+// ---- the screen: 4-bit levels in the yellow of the NHD-2.7-12864WDY3 (Tessera's default ink) ----
+const ctx = document.getElementById("screen").getContext("2d");
+const img = ctx.createImageData(128, 64);
+const LUT = [];
+for (let l = 0; l < 16; l++) { const g = Math.pow(l / 15, 1.6); LUT.push([255 * g, 208 * g, 32 * g]); }
+function drawScreen(fb) {
+  const p = img.data;
+  for (let i = 0; i < 8192; i++) { const c = LUT[fb[i] & 15]; p[4 * i] = c[0]; p[4 * i + 1] = c[1]; p[4 * i + 2] = c[2]; p[4 * i + 3] = 255; }
+  ctx.putImageData(img, 0, 0);
+}
+function onFrame(m) {
+  drawScreen(m.fb);
+  for (let b = 0; b < btns.length; b++) if (btns[b]) btns[b].classList.toggle("lit", !!((m.buttons >> b) & 1));
+  for (let k = 0; k < 16; k++) keyLight(keys[k], m.keys[3 * k], m.keys[3 * k + 1], m.keys[3 * k + 2]);
+  playing = m.playing;
+}
+
+// ---- the engine: an AudioWorklet, or (where a worklet can't load) the same work on this thread ----
+function wasmBytes() {
+  const s = atob(document.getElementById("wasm-src").textContent.trim());
+  const b = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
+  return b.buffer;
+}
+async function startWorklet(ac) {
+  const url = URL.createObjectURL(new Blob([document.getElementById("worklet-src").textContent], { type: "text/javascript" }));
+  await ac.audioWorklet.addModule(url);
+  const n = new AudioWorkletNode(ac, "andamento", { numberOfInputs: 0, outputChannelCount: [2] });
+  await new Promise((resolve, reject) => {
+    n.port.onmessage = (e) => {
+      const m = e.data;
+      if (m.type === "ready") resolve();
+      else if (m.type === "error") reject(new Error(m.message));
+      else if (m.type === "frame") onFrame(m);
+    };
+    const wasm = wasmBytes();
+    n.port.postMessage({ type: "load", wasm, volume }, [wasm]);
+  });
+  return n;
+}
+async function startMainThread(ac) {         // fallback: a ScriptProcessorNode running the same exports here
+  const { instance } = await WebAssembly.instantiate(wasmBytes(), {});
+  const ex = instance.exports;
+  ex._initialize(); ex.web_volume(volume); ex.web_boot();
+  const queue = []; let nextOk = 0;
+  const sp = ac.createScriptProcessor(1024, 0, 2);
+  sp.onaudioprocess = (e) => {
+    const now = ex.web_now_ms();
+    while (queue.length && now - nextOk >= 0) { const k = queue.shift(); ex.web_key(k.k, k.down); nextOk = now + 24; }
+    const l = e.outputBuffer.getChannelData(0), r = e.outputBuffer.getChannelData(1);
+    ex.web_render(1024);
+    l.set(new Float32Array(ex.memory.buffer, ex.web_out_l(), 1024));
+    r.set(new Float32Array(ex.memory.buffer, ex.web_out_r(), 1024));
+  };
+  sp.connect(ac.destination);
+  setInterval(() => onFrame({ fb: new Uint8Array(ex.memory.buffer, ex.web_screen(), 8192), buttons: ex.web_led_buttons(),
+                              keys: new Uint8Array(ex.memory.buffer, ex.web_led_keys(), 48), playing: ex.web_playing() }), 33);
+  return { port: { postMessage(m) {
+    if (m.type === "key") queue.push({ k: m.k, down: m.down ? 1 : 0 });
+    else if (m.type === "enc") ex.web_enc(m.i, m.n | 0);
+    else if (m.type === "push") ex.web_push(m.i);
+    else if (m.type === "button") ex.web_button(m.b, m.down ? 1 : 0);
+    else if (m.type === "volume") ex.web_volume(m.value | 0);
+    else if (m.type === "demo") ex.web_demo(m.slot | 0);
+  } } };
+}
+async function boot() {
+  if (node || booting) return;
+  booting = true;
+  statusEl.textContent = "Starting…";
+  try {
+    const ac = new AudioContext({ sampleRate: 48000, latencyHint: "interactive" });
+    let how = "worklet";
+    try {
+      node = await startWorklet(ac);
+      node.connect(ac.destination);
+    } catch (err) {
+      console.warn("worklet unavailable, running on the main thread:", err);
+      how = "main thread";
+      node = await startMainThread(ac);
+    }
+    await ac.resume();
+    document.getElementById("start").remove();
+    statusEl.textContent = `Running at ${ac.sampleRate} Hz (${how}). Press PLAY or a demo.`;
+    window.andamento = { send, ac };
+  } catch (err) {
+    statusEl.textContent = "Could not start: " + (err && err.message || err);
+    booting = false;
+  }
+}
+document.getElementById("start").addEventListener("click", boot);
+document.getElementById("demoA").addEventListener("click", async () => { await boot(); send({ type: "demo", slot: 0 }); });
+document.getElementById("demoB").addEventListener("click", async () => { await boot(); send({ type: "demo", slot: 1 }); });
+
+// ---- the computer keyboard ----
+const held = new Set();
+function press(code, down) {
+  const ch = code.length === 4 && code.startsWith("Key") ? code[3].toLowerCase() : "";
+  let k = KB_BOTTOM.indexOf(ch), b = -1;
+  if (ch && k >= 0) return { key: k };
+  if (ch && (k = KB_TOP.indexOf(ch)) >= 0) return { key: 8 + k };
+  if (/^Digit[1-6]$/.test(code)) b = +code[5] - 1;
+  else if (code === "ArrowUp") b = AB.UP; else if (code === "ArrowDown") b = AB.DOWN;
+  else if (code === "ArrowLeft") b = AB.LEFT; else if (code === "ArrowRight") b = AB.RIGHT;
+  else if (code === "ShiftLeft" || code === "ShiftRight") b = AB.FUNC;
+  else if (code === "Space") b = playing ? AB.STOP : AB.PLAY;
+  return b >= 0 ? { button: b } : null;
+}
+addEventListener("keydown", (e) => {
+  if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+  const p = press(e.code); if (!p) return;
+  e.preventDefault();
+  boot();
+  held.add(e.code);
+  if (p.key !== undefined) { keys[p.key].classList.add("down"); send({ type: "key", k: p.key, down: 1 }); }
+  else { btns[p.button].classList.add("down"); send({ type: "button", b: p.button, down: 1 }); held[e.code] = p.button; }
+});
+addEventListener("keyup", (e) => {
+  if (!held.has(e.code)) return;
+  held.delete(e.code);
+  const p = press(e.code);
+  if (p && p.key !== undefined) { keys[p.key].classList.remove("down"); send({ type: "key", k: p.key, down: 0 }); }
+  else if (held[e.code] !== undefined) { const b = held[e.code]; btns[b].classList.remove("down"); send({ type: "button", b, down: 0 }); delete held[e.code]; }
+});
+</script>

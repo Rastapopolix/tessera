@@ -33,6 +33,12 @@
 #                   PNGs of MONO GREEN PAPER in build/ui_new (tests/ui_render.py), the findings in build/ui_new/report.txt;
 #                   FM6's 32 algorithm charts as drawn (no box overlapping, no route through a box or crossing another);
 #                   every frame of the rolling digits (lint, MONO), their filmstrips in build/ui_slot.
+# ANDAMENTO SCREEN (tests/oled_render.c): Andamento's 128 x 64 screen (platform/andamento) through a model of its
+#                   SSD1322: the init commands and their arguments, each frame exactly the screen's 8,192 bytes, read
+#                   back equal to the framebuffer; the bring-up card and the face as PNGs in build/oled (oled_render.py).
+# ANDAMENTO KEYS (tests/and_keys_test.c): Andamento's 16 keys and their RGB lights (platform/andamento/and_keys.c)
+#                   in the virtual prototype's build at 48 kHz: SCALE, CHROM, STEP and MUTE, the octave, ENERGY on the
+#                   keys, a demo's generator notes lighting them.
 # UI (tests/ui_test.c): the UI sources against stub display / buttons / knobs: sound loads keep the steps and
 #                   the track's ARP / SCL / SLICER, the SEQ > PATTERNS loader and its REPLACE? dialog, the
 #                   one-step undo of both (EDIT held), REC on TRACKS / SEQ / ARP, STEP and ARP while recording,
@@ -144,7 +150,7 @@ G_MIDI="midi_control_test midi_out_test seq_dir_test midi_timing_test midi_scale
 G_USB="usb_audio_test usb_audio_driver_test usb_audio_tracks_test usb_host_test usb_audio_desc_test"
 G_SCALE="scale_test microtonal_test scale_picker_test tune_test uscale_test tuning_test midi_scale_test"
 G_AUDIO="regress audio_test audio_matrix_test ram_audio_test ram_voice_budget_test audio_admission_test resources_test
-    dsp_tracks dual_core_test target_budget"
+    dsp_tracks dual_core_test target_budget fs_test"
 eng() { QENG="$QENG $1"; shift; QSEL="$QSEL regress target_budget $*"; }
 qmap() {
     case $1 in
@@ -194,6 +200,10 @@ qmap() {
         tests/cord_dests.txt) QSEL="$QSEL cord_test" ;;
         tests/target_budget.txt) QSEL="$QSEL target_budget" ;;
         tests/ui_render.*) QSEL="$QSEL ui_renders" ;;
+        tests/oled_render.*) QSEL="$QSEL oled_render" ;;
+        platform/andamento/*) QSEL="$QSEL oled_render and_keys" ;;
+        tests/and_keys_test.c | web/andamento/*) QSEL="$QSEL and_keys" ;;
+        firmware/src/mo_font.h) QSEL="$QSEL $G_UI oled_render" ;;
         tests/demo_steps.h | tests/demo_projects.c) QSEL="$QSEL demo_projects" ;;
         tests/phys_ref.cpp | tests/phys_fixed.c) QSEL="$QSEL phys_ref" ;;
         tests/fm6_parity* | tests/fm6_score.h | tests/dexed_*) QSEL="$QSEL fm6_parity" ;;
@@ -391,6 +401,20 @@ ui_renders() {
     # (a second render built with -DMELODEE_LOOK=1 into build/ui_mono ran here until 2026-11-10: the same look as this
     # one since Mono became the default, the same pictures byte for byte, ~730 MB written again)
 }
+oled_render() {
+    build oled_render oled_render || return
+    mkdir -p build/oled/ppm
+    step "Andamento screen (platform/andamento): the SSD1322 driver through a model of the controller, the frame read back" \
+        "$OUT/oled_render" build/oled
+    [ $PIL = 1 ] && { python3 tests/oled_render.py build/oled || fail "tests/oled_render.py"; }
+}
+and_keys() {                                      # (the headers at the Seed's 48 kHz, as web/andamento/build.sh)
+    sh web/andamento/build.sh --headers > /dev/null || { fail "web/andamento/build.sh --headers"; return; }
+    build and_keys and_keys_test -w -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 \
+        -DMELODEE_PHYS=1 -Ibuild/andamento/gen -Ifirmware/src -Itests || return
+    step "Andamento keys (platform/andamento/and_keys.c): SCALE, CHROM, STEP, MUTE, their RGB lights, ENERGY, activity" \
+        "$OUT/and_keys"
+}
 dsp_tracks() {
     build hostsim hostsim -O2 $FW || return
     step "DSP render (FM6 INIT VOICE)" "$OUT/hostsim" 12 24 1 "$OUT/render.wav"
@@ -419,6 +443,8 @@ sound && t "FX: three-slot chains, reverb decay/density/rate conversion, smooth 
 core && t "EQ accelerator: register layout, isolated histories and bounded timeout" eq_hw_test
 core && job web_tests
 sound && [ $TABLES = 1 ] && job dsp_tracks
+sound && [ $TABLES = 1 ] && run "sample rate: every engine in tune at 48 kHz as at 44.1 (FS, tools/gen_tables.py)" \
+    python3 tests/fs_test.py "$OUT/fs"
 
 if core; then
     t "flash storage (A/B, torn writes)" storage_test
@@ -514,6 +540,8 @@ if core && [ $TABLES = 1 ]; then
     t "Note/library gestures: quarter snapping, range moves/copies, undo and bulk preset erase" note_tools_test \
         -O1 -DMELODEE_USB_AUDIO=1 $FW
     job ui_renders
+    job oled_render
+    job and_keys
     t "boot audio: codec waits for settled silent DMA and shuts down before I2S" audio_boot_test -w
     t "audio: overload protection, bounded fades and DMA diagnostics" audio_test $FW
     t "audio: silent bench keeps synthesis running and silences physical output" audio_silent_test:audio_test \

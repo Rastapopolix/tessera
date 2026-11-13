@@ -257,7 +257,7 @@ static uint32_t seq_human_late(uint32_t tr, uint32_t span)   /* samples late, 0.
     uint32_t ms = tr < TESSERA_TRACKS ? (uint32_t)cord_tess_get(tr, TX_SUB_HUMAN) : 0u, x, most;
     if (!ms) return 0;
     x = seq_hum_draw(tr, seq_hum_n[tr]++, 0x48554Du);
-    most = seq_units_of(441u * ms / 10u);               /* (44.1 samples a ms, in the sequencer's units) */
+    most = seq_units_of(FS / 100u * ms / 10u);          /* (FS / 1000 samples a ms, in the sequencer's units) */
     if (most > span / 4u) most = span / 4u;
     return most ? x % (most + 1u) : 0u;
 }

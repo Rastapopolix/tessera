@@ -1088,6 +1088,10 @@ static void pv_draw(void)
         draw_head();
         for (k = 0; k < NTRK; k++)
             pv_strip(k);
+#if MELODEE_LOOK
+        if (ui.force)
+            mo_mixer_foot();                            /* the keys' legend, the GLO tabs */
+#endif
         return;
     }
 #if !MELODEE_LOOK                                       /* (Mono: the rings and the curves are mono_page's) */
