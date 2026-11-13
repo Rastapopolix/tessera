@@ -2609,7 +2609,7 @@ static void ui_input(void)
             if (pattern_request(TSEL, (uint32_t)clamp((int32_t)from + s, 0, NPAT - 1u))) ui_message("STOP TO SWITCH");
             ui.force = 1;
         } else if (step_gesture(s)) {                   /* ENV / SCL / a key held: the note's length, its place */
-        } else if (ui.home || cur_page()->graph == GR_TRK) {   /* HOME, MIXER: the tempo (GLO held: above) */
+        } else if (ui.home) {                           /* HOME: the tempo (GLO held, or on MIXER: above) */
             bpm_turn(s);
         } else {                                        /* the section's pages (the notes, the hits: KNOB 1) */
             page_scroll(s);

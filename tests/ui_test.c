@@ -4565,7 +4565,14 @@ static int test_product_ux(void)
     {
         int16_t bpm = song.g[G_BPM];
         turn(EN_SELECT, 2);
-        bad += check("SELECT on MIXER: the tempo (+2), as on HOME", song.g[G_BPM] == bpm + 2 && cur_page()->graph == GR_TRK);
+        bad += check("SELECT on MIXER pages, same as everywhere else (the BPM untouched)",
+                     song.g[G_BPM] == bpm && cur_page()->fam == FAM_GLO && cur_page()->graph != GR_TRK);
+        go_title("MIXER");
+        btn_down(B_GLO); frame();
+        turn(EN_SELECT, 2);
+        bad += check("GLO held + SELECT on MIXER: still the tempo (+2), the page unchanged",
+                     song.g[G_BPM] == bpm + 2 && cur_page()->graph == GR_TRK);
+        btn_up(B_GLO); frame();
         song.g[G_BPM] = bpm;
     }
     {
@@ -5625,9 +5632,9 @@ static int test_tempo_select(void)
     turn(EN_SELECT, 1);
     ok &= str_eq(cur_page()->title, "MIDI OUT");
     turn(EN_SELECT, 1);
-    ok &= str_eq(cur_page()->title, MELODEE_LOOK ? "PERF" : "PIECE");   /* (MIXER skipped: SELECT there is the tempo) */
+    ok &= str_eq(cur_page()->title, "MIXER") && cur_page()->graph == GR_TRK;   /* (MIXER is a page like any other now) */
     turn(EN_SELECT, -1);
-    bad += check("SELECT on GLO: PIECE -> CHAIN -> ENTRIES -> SYSTEM -> MIDI IN -> MIDI OUT -> past MIXER (wraps), back the other way; the BPM untouched",
+    bad += check("SELECT on GLO: PIECE -> CHAIN -> ENTRIES -> SYSTEM -> MIDI IN -> MIDI OUT -> MIXER (wraps), back the other way; the BPM untouched",
                  ok && str_eq(cur_page()->title, "MIDI OUT") && song.g[G_BPM] == 120);
     go_title("NOTES");
     cursor_set(4);
