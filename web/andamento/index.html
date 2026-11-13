@@ -89,7 +89,12 @@ kbd { font: 12px ui-monospace, Menlo, monospace; border: 1px solid var(--line); 
     <div>
       <h2>Encoders</h2>
       <p>Drag up or down, or use the mouse wheel. A click (without dragging) pushes it: the setting goes back to its default.</p>
-      <p>Encoders A to H follow the 2×4 grid on the screen. ENERGY works on every page; VOL is the main level.</p>
+      <p>Encoders A to H follow the 2×4 grid on the screen; on HOME they are tracks 1 to 8's ENERGY DEPTH. ENERGY works on every page; VOL is the main level.</p>
+    </div>
+    <div>
+      <h2>HOME</h2>
+      <p>Where Andamento starts, and where NO brings you back from any page: the piece at a glance. The header names the piece's SHAPE (FREE when PIECE has no LENGTH) and its time, or REST and its seconds while the notes rest.</p>
+      <p>Under it ENERGY over time, full above the dotted line and sparse below: with a LENGTH the whole piece across the screen, the plan dim and what played lit up to the play head; FREE it grows from the left from PLAY and then scrolls, the last three minutes. Marks under the curve are rests, ticks above it where Entries brought a track in or out. Along the foot the 8 tracks: a meter that fills as a track is in and lights while it sounds, its DEPTH underneath. Tracks 5 to 8 are empty until the 8 tracks arrive.</p>
     </div>
     <div>
       <h2>Buttons</h2>
@@ -104,7 +109,7 @@ kbd { font: 12px ui-monospace, Menlo, monospace; border: 1px solid var(--line); 
     <div>
       <h2>Computer keyboard</h2>
       <p>Keys: <kbd>A</kbd>…<kbd>K</kbd> bottom row, <kbd>Q</kbd>…<kbd>I</kbd> top row. Pages <kbd>1</kbd>…<kbd>6</kbd>.</p>
-      <p><kbd>Space</kbd> PLAY / STOP, <kbd>Shift</kbd> FUNC, arrows as on the panel. The modes: <kbd>Shift</kbd> with <kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd>.</p>
+      <p><kbd>Space</kbd> PLAY / STOP, <kbd>Shift</kbd> FUNC, <kbd>Esc</kbd> NO (HOME), arrows as on the panel. The modes: <kbd>Shift</kbd> with <kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd>.</p>
     </div>
   </div>
 </main>
@@ -318,6 +323,7 @@ function press(code, down) {
   else if (code === "ArrowUp") b = AB.UP; else if (code === "ArrowDown") b = AB.DOWN;
   else if (code === "ArrowLeft") b = AB.LEFT; else if (code === "ArrowRight") b = AB.RIGHT;
   else if (code === "ShiftLeft" || code === "ShiftRight") b = AB.FUNC;
+  else if (code === "Escape" || code === "Backspace") b = AB.NO;
   else if (code === "Space") b = playing ? AB.STOP : AB.PLAY;
   return b >= 0 ? { button: b } : null;
 }

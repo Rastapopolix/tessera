@@ -39,6 +39,9 @@
 # ANDAMENTO KEYS (tests/and_keys_test.c): Andamento's 16 keys and their RGB lights (platform/andamento/and_keys.c)
 #                   in the virtual prototype's build at 48 kHz: SCALE, CHROM, STEP and MUTE, the octave, ENERGY on the
 #                   keys, a demo's generator notes lighting them.
+# ANDAMENTO HOME (tests/and_home_test.c): Andamento's home screen (platform/andamento/and_home.c) in the same build:
+#                   it starts there and NO comes back, the encoders as the tracks' ENERGY DEPTH, the 8 lanes (5..8
+#                   empty yet), ENERGY's history FREE and over a planned piece, a rest; its frames as PNGs in build/oled.
 # UI (tests/ui_test.c): the UI sources against stub display / buttons / knobs: sound loads keep the steps and
 #                   the track's ARP / SCL / SLICER, the SEQ > PATTERNS loader and its REPLACE? dialog, the
 #                   one-step undo of both (EDIT held), REC on TRACKS / SEQ / ARP, STEP and ARP while recording,
@@ -201,8 +204,10 @@ qmap() {
         tests/target_budget.txt) QSEL="$QSEL target_budget" ;;
         tests/ui_render.*) QSEL="$QSEL ui_renders" ;;
         tests/oled_render.*) QSEL="$QSEL oled_render" ;;
-        platform/andamento/*) QSEL="$QSEL oled_render and_keys" ;;
-        tests/and_keys_test.c | web/andamento/*) QSEL="$QSEL and_keys" ;;
+        platform/andamento/*) QSEL="$QSEL oled_render and_keys and_home" ;;
+        tests/and_keys_test.c) QSEL="$QSEL and_keys" ;;
+        tests/and_home_test.c) QSEL="$QSEL and_home" ;;
+        web/andamento/*) QSEL="$QSEL and_keys and_home" ;;
         firmware/src/mo_font.h) QSEL="$QSEL $G_UI oled_render" ;;
         tests/demo_steps.h | tests/demo_projects.c) QSEL="$QSEL demo_projects" ;;
         tests/phys_ref.cpp | tests/phys_fixed.c) QSEL="$QSEL phys_ref" ;;
@@ -415,6 +420,15 @@ and_keys() {                                      # (the headers at the Seed's 4
     step "Andamento keys (platform/andamento/and_keys.c): SCALE, CHROM, STEP, MUTE, their RGB lights, ENERGY, activity" \
         "$OUT/and_keys"
 }
+and_home() {                                      # (the headers as and_keys: web/andamento/build.sh --headers)
+    sh web/andamento/build.sh --headers > /dev/null || { fail "web/andamento/build.sh --headers"; return; }
+    build and_home and_home_test -w -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 \
+        -DMELODEE_PHYS=1 -Ibuild/andamento/gen -Ifirmware/src -Itests || return
+    mkdir -p build/oled/ppm
+    step "Andamento home (platform/andamento/and_home.c): HOME and NO, DEPTH, the 8 lanes, ENERGY's arc FREE and planned, a rest" \
+        "$OUT/and_home" build/oled
+    [ $PIL = 1 ] && { python3 tests/oled_render.py build/oled || fail "tests/oled_render.py"; }
+}
 dsp_tracks() {
     build hostsim hostsim -O2 $FW || return
     step "DSP render (FM6 INIT VOICE)" "$OUT/hostsim" 12 24 1 "$OUT/render.wav"
@@ -542,6 +556,7 @@ if core && [ $TABLES = 1 ]; then
     job ui_renders
     job oled_render
     job and_keys
+    job and_home
     t "boot audio: codec waits for settled silent DMA and shuts down before I2S" audio_boot_test -w
     t "audio: overload protection, bounded fades and DMA diagnostics" audio_test $FW
     t "audio: silent bench keeps synthesis running and silences physical output" audio_silent_test:audio_test \
