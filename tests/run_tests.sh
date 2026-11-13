@@ -50,6 +50,11 @@
 #                   compressor, called directly (not through a project playing): MIX 0 is bit-identical, MIX 100 with
 #                   no gain reduction and no tilt is unchanged but for rounding, the compressor settles below a loud
 #                   tone and returns to unity gain under THRESH, MAKEUP's dB, TILT's direction, and determinism.
+# ANDAMENTO TEXTURE (tests/and_texture_test.c): Andamento's texture engine (platform/andamento/and_texture.c), a
+#                   granular cloud resampling and_master_block's output, called directly: MIX 0 is bit-identical,
+#                   an empty capture barely changes a tone, a filled one keeps sounding after the dry input stops,
+#                   FREEZE holds the capture still, a busier DENS is not quieter, AT_GRAINS (8) is never exceeded,
+#                   and determinism.
 # UI (tests/ui_test.c): the UI sources against stub display / buttons / knobs: sound loads keep the steps and
 #                   the track's ARP / SCL / SLICER, the SEQ > PATTERNS loader and its REPLACE? dialog, the
 #                   one-step undo of both (EDIT held), REC on TRACKS / SEQ / ARP, STEP and ARP while recording,
@@ -212,12 +217,13 @@ qmap() {
         tests/target_budget.txt) QSEL="$QSEL target_budget" ;;
         tests/ui_render.*) QSEL="$QSEL ui_renders" ;;
         tests/oled_render.*) QSEL="$QSEL oled_render" ;;
-        platform/andamento/*) QSEL="$QSEL oled_render and_keys and_home and_ext and_master" ;;
+        platform/andamento/*) QSEL="$QSEL oled_render and_keys and_home and_ext and_master and_texture" ;;
         tests/and_keys_test.c) QSEL="$QSEL and_keys" ;;
         tests/and_home_test.c) QSEL="$QSEL and_home" ;;
         tests/and_ext_test.c) QSEL="$QSEL and_ext" ;;
         tests/and_master_test.c) QSEL="$QSEL and_master" ;;
-        web/andamento/*) QSEL="$QSEL and_keys and_home and_ext and_master" ;;
+        tests/and_texture_test.c) QSEL="$QSEL and_texture" ;;
+        web/andamento/*) QSEL="$QSEL and_keys and_home and_ext and_master and_texture" ;;
         firmware/src/mo_font.h) QSEL="$QSEL $G_UI oled_render" ;;
         tests/demo_steps.h | tests/demo_projects.c) QSEL="$QSEL demo_projects" ;;
         tests/phys_ref.cpp | tests/phys_fixed.c) QSEL="$QSEL phys_ref" ;;
@@ -455,6 +461,13 @@ and_master() {                                    # (the headers as and_keys: we
     step "Andamento master bus (platform/andamento/and_master.c): MIX 0 bit-identical, bypass, compressor, release, makeup, tilt, determinism" \
         "$OUT/and_master"
 }
+and_texture() {                                   # (the headers as and_keys: web/andamento/build.sh --headers)
+    sh web/andamento/build.sh --headers > /dev/null || { fail "web/andamento/build.sh --headers"; return; }
+    build and_texture and_texture_test -w -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 \
+        -DMELODEE_PHYS=1 -Ibuild/andamento/gen -Ifirmware/src -Itests || return
+    step "Andamento texture engine (platform/andamento/and_texture.c): MIX 0 bit-identical, capture, FREEZE, DENS, AT_GRAINS bound, determinism" \
+        "$OUT/and_texture"
+}
 dsp_tracks() {
     build hostsim hostsim -O2 $FW || return
     step "DSP render (FM6 INIT VOICE)" "$OUT/hostsim" 12 24 1 "$OUT/render.wav"
@@ -586,6 +599,7 @@ if core && [ $TABLES = 1 ]; then
     job and_home
     job and_ext
     job and_master
+    job and_texture
     t "boot audio: codec waits for settled silent DMA and shuts down before I2S" audio_boot_test -w
     t "audio: overload protection, bounded fades and DMA diagnostics" audio_test $FW
     t "audio: silent bench keeps synthesis running and silences physical output" audio_silent_test:audio_test \

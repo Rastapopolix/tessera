@@ -36,6 +36,7 @@ static void web_power_on(void)
     project_load(0);
     song.master_q12 = 2048;
     and_ext_init();                              /* tracks 5..8 (and_ext.c) */
+    and_texture_init();                          /* the texture engine (and_texture.c) */
     web_booted = 1;
 }
 EXPORT void web_boot(void)
@@ -60,6 +61,7 @@ static void web_ms(void)
         web_samples_due -= 1000u * CTL;
         mix_block(o, CTL);
         and_master_block(o, CTL);                /* (the master bus: tilt EQ then compressor, and_master.c) */
+        and_texture_block(o, CTL);                /* (the texture engine: a granular cloud, and_texture.c) */
         and_ext_block();                         /* (tracks 5..8: their steps on the clock mix_block moved on) */
         for (k = 0; k < CTL; k++) {
             uint32_t i = (ring_w++ % RING) * 2u;

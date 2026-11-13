@@ -66,27 +66,36 @@ static void and_ui_say(const char *s)
 
 #include "and_ext.c"                             /* tracks 5..8: generators out to MIDI and CV / gate */
 #include "and_master.c"                           /* the master bus: tilt EQ then compressor, FX page's 2nd sub-page */
+#include "and_texture.c"                          /* the texture engine: a granular cloud, FX page's 3rd sub-page */
 
-/* a setting of track tr (0..7): Tessera's (pid.c), an external track's (AE_PID + AE_*), or the song-wide master
- * bus (AM_PID + AM_*, and_master.c: tr does not matter, it is the same for every track) */
+/* a setting of track tr (0..7): Tessera's (pid.c), an external track's (AE_PID + AE_*), or one of the song-wide
+ * modules (AM_PID + AM_*, the master bus; AT_PID + AT_*, the texture engine: tr does not matter, each is the
+ * same for every track) */
 static int and_is_ext(uint32_t pid, uint32_t tr) { return tr >= NTRK && pid >= AE_PID && pid < AE_PID + AE_NPRM; }
 static int and_is_master(uint32_t pid) { return pid >= AM_PID && pid < AM_PID + AM_NPRM; }
+static int and_is_texture(uint32_t pid) { return pid >= AT_PID && pid < AT_PID + AT_NPRM; }
 static const param_desc_t *and_desc(uint32_t pid, uint32_t tr)
 {
     if (and_is_master(pid))
         return am_desc(pid - AM_PID);
+    if (and_is_texture(pid))
+        return at_desc(pid - AT_PID);
     return and_is_ext(pid, tr) ? ae_desc(pid - AE_PID, tr - NTRK) : pid >= AE_PID ? 0 : pid_desc(pid, tr < NTRK ? tr : 0);
 }
 static int32_t and_get(uint32_t pid, uint32_t tr)
 {
     if (and_is_master(pid))
         return am_get(pid - AM_PID);
+    if (and_is_texture(pid))
+        return at_get(pid - AT_PID);
     return and_is_ext(pid, tr) ? ae_get(pid - AE_PID, tr - NTRK) : pid >= AE_PID ? 0 : pid_get(pid, tr < NTRK ? tr : 0);
 }
 static void and_set(uint32_t pid, uint32_t tr, int32_t v)
 {
     if (and_is_master(pid))
         am_set(pid - AM_PID, v);
+    else if (and_is_texture(pid))
+        at_set(pid - AT_PID, v);
     else if (and_is_ext(pid, tr))
         ae_set(pid - AE_PID, tr - NTRK, v);
     else if (pid < AE_PID)
@@ -97,6 +106,8 @@ static const char *and_name(uint32_t pid, uint32_t tr)   /* the setting's full n
     const pid_entry_t *e;
     if (and_is_master(pid))
         return am_desc(pid - AM_PID)->label;
+    if (and_is_texture(pid))
+        return at_desc(pid - AT_PID)->label;
     if (and_is_ext(pid, tr))
         return ae_desc(pid - AE_PID, tr - NTRK)->label;
     return pid < AE_PID && (e = pid_find(pid)) ? e->name : "";
@@ -127,9 +138,10 @@ static void and_mute(uint32_t tr, int on)
 
 /* ------------------------------------------------------------- pages --- */
 static const char *const AND_PAGE[6] = {"GEN", "SOUND", "MOD", "FX", "PIECE", "MIX"};
-static const uint8_t AND_SUBS[6] = {2, 2, 2, 2, 2, 1};
+static const uint8_t AND_SUBS[6] = {2, 2, 2, 3, 2, 1};
 #define AM_C(x) (AM_PID + (x))
-static const uint16_t AND_FIXED[6][2][AND_NENC] = {
+#define AT_C(x) (AT_PID + (x))
+static const uint16_t AND_FIXED[6][3][AND_NENC] = {
     [0][1] = {0x20f, 0x20e, 0x20d, 0x210, 0x211, 0x212, 0x26e, 0x26a},   /* EVOLVE AMT EVERY LOCK ROLL, FORM, GRAVITY */
     [1][0] = {0x06f, 0x070, 0x071, 0x072, 0x073, 0x074, 0x075, 0x076},   /* the engine's 8 */
     [1][1] = {0x001, 0x002, 0x003, 0x004, 0x005, 0x026, 0x027, 0x000},   /* ADSR, ENV > FILTER, GLIDE, PAN, LEVEL */
@@ -138,6 +150,8 @@ static const uint16_t AND_FIXED[6][2][AND_NENC] = {
     [3][0] = {0x06c, 0x06d, 0x06e, 0x11b, 0x11c, 0x11f, 0x120, 0x127},   /* sends, send FX 1 and 2, return */
     [3][1] = {AM_C(AM_TILT), AM_C(AM_THRESH), AM_C(AM_RATIO), AM_C(AM_ATTACK), AM_C(AM_RELEASE), AM_C(AM_MAKEUP),
               AM_C(AM_MIX), PID_NONE},                                   /* the master bus (and_master.c): song-wide */
+    [3][2] = {AT_C(AT_SIZE), AT_C(AT_DENS), AT_C(AT_POS), AT_C(AT_SPREAD), AT_C(AT_PITCH), AT_C(AT_FREEZE),
+              AT_C(AT_MIX), PID_NONE},                                   /* the texture engine (and_texture.c): song-wide */
     [4][0] = {0x280, 0x281, 0x282, 0x284, 0x259, 0x25a, 0x27b, 0x27d},   /* PIECE, ENERGY ARC RESTS, ENTRIES */
     [4][1] = {0x272, 0x273, 0x274, 0x27c, 0x27e, 0x26d, 0x283, 0x279},   /* CHAIN, ENTRIES, DEPTH, COUNT, FOLLOW */
     [5][0] = {0x000, 0x027, 0x028, 0x100, 0x101, 0x019, 0x01a, 0x01c},   /* LEVEL PAN MUTE, TEMPO SWING, ROOT SCALE TRANS */
