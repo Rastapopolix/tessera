@@ -4,8 +4,9 @@
  *
  * A unity build, as firmware/src/melodee.c and tests/hostsim.c are: the engines, voices, mods, the mixer, the
  * sequencer and the generators, with the FM-1's hardware names (fm1_*) given plain stand-ins here, as the host
- * tests give them. No UI, screen, storage or USB yet: main.cpp hands this file one block of CTL samples at a time
- * from libDaisy's audio callback, and a short figure is played on track 1 so the board makes sound on day one.
+ * tests give them. No UI, storage or USB yet: main.cpp hands this file one block of CTL samples at a time from
+ * libDaisy's audio callback, and a short figure is played on track 1 so the board makes sound on day one. The
+ * screen (platform/andamento: a framebuffer, the SSD1322 driver) shows a bring-up card until the UI comes.
  *
  * Built at FS = 48000 (platform/daisy/Makefile: MELODEE_FS for tools/gen_tables.py), the Daisy's codec rate.
  * The include list follows tests/hostsim.c; keep the two in step when a source is added there. */
@@ -48,6 +49,9 @@ static void fm1_wdt_feed(void) {}
 #include "../../firmware/src/cord.c"
 #include "../../firmware/src/mscope.c"
 #undef __attribute__
+#include "../../firmware/src/mo_font.h"
+#include "../andamento/and_fb.c"                  /* the screen: a framebuffer of 16 levels */
+#include "../andamento/ssd1322.c"                 /* .. as the SSD1322's bytes (and_spi_cmd / and_spi_data: main.cpp) */
 
 #include "tessera_core.h"
 
@@ -103,4 +107,21 @@ void tessera_core_block(int32_t *out)
 void tessera_core_tick_ms(void)
 {
     fm1_ms++;
+}
+
+_Static_assert(TESSERA_SCREEN_BYTES == SSD_FRAME, "tessera_core.h: a frame of the SSD1322");
+
+void tessera_core_screen_init(void)
+{
+    ssd1322_init();
+}
+
+void tessera_core_screen(uint8_t *buf)
+{
+    static uint8_t on;
+    and_testcard();                              /* (no UI yet: platform/andamento/and_ui.c comes next) */
+    ssd1322_pack(and_fb, buf);
+    ssd1322_frame(buf);
+    if (!on)
+        ssd1322_on(on = 1);
 }

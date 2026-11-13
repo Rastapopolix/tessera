@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
 # Copyright (C) 2026 Theo Dainis (melodee-tess)
-"""Tessera Mono, the web pages' pixel face: the Mono look's own 5 x 7 font (firmware/src/gfx.c MO_FONT) as a
+"""Tessera Mono, the web pages' pixel face: the Mono look's own 5 x 7 font (firmware/src/mo_font.h MO_FONT) as a
 WOFF, so the site, the installer, the editor and the simulator page letter as the device does.
 
   python3 tools/gen_mono_webfont.py          (needs fonttools)
@@ -25,7 +25,7 @@ from fontTools.fontBuilder import FontBuilder
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "firmware/src/gfx.c"
+SRC = ROOT / "firmware/src/mo_font.h"
 PAGES = ("web/home/index.html", "web/index_pkg.html", "web/editor.html", "web/sim/index.html")
 PX, ADV, ASC, DESC = 100, 6, 7, 1
 EXTRA = {                                               # code point: 7 rows, bit 4 the left column (as MO_FONT)
@@ -114,7 +114,7 @@ def build():
     fb.setupHorizontalMetrics({n: (ADV * PX, 0) for n in names})
     fb.setupHorizontalHeader(ascent=ASC * PX, descent=-DESC * PX)
     fb.setupNameTable({"familyName": "Tessera Mono", "styleName": "Regular",
-                       "copyright": "Copyright (C) 2026 Theo Dainis; GPL-3.0-only (firmware/src/gfx.c)"})
+                       "copyright": "Copyright (C) 2026 Theo Dainis; GPL-3.0-only (firmware/src/mo_font.h)"})
     fb.setupOS2(sTypoAscender=ASC * PX, sTypoDescender=-DESC * PX, sTypoLineGap=0, usWinAscent=(ASC + 2) * PX,
                 usWinDescent=DESC * PX, fsSelection=0x40 | 0x80, version=4)    # REGULAR, USE_TYPO_METRICS (v4+)
     fb.setupPost()

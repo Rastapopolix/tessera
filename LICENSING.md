@@ -25,7 +25,7 @@ Every file in this tree that carries an `SPDX-License-Identifier: GPL-3.0-only` 
 - the build script and tools: `build.sh`, `tools/`
 - the web pages (installer, editor) and their tests: `web/` (not the Fukiai font, below)
 - the host tests: `tests/`
-- the Daisy Seed build for Andamento: `platform/daisy/`
+- the Daisy Seed build for Andamento: `platform/daisy/`, and Andamento's screen: `platform/andamento/`
 
 Two source files are ports and keep the licence of their originals: `firmware/src/phys_dsp.c`
 (DaisySP, MIT) and `firmware/src/phys_symp.c` (Rings, MIT). `firmware/src/fm6_core.c` and
@@ -77,6 +77,7 @@ Melodee's additions and modifications are credited separately in the source file
 | ZEN-1 by aceyprime (<https://github.com/aceyprime/zen-1> 1.1, `firmware/src/dsp/zen_patches.h`) and FuMi-1 by cartesive (<https://github.com/cartesive/fumi-1>, via ZEN-1's `fumi_patches.h`): their own FM6 patches, written as operator settings, as the FM6 presets after INIT VOICE (SOFT PAD .. FURIN from ZEN-1; HYOSHIGI, MOKUGYO, KOTO PLUCK, KOTO RING, KOTO WARM, KUGO HARP from FuMi-1), packed bytes unchanged but for the names; FuMi's patches taken from community banks are not included | GPL-3.0-only | `firmware/src/eng_fm6_zen.h` |
 | klattsch by Tony Gies (<https://github.com/tgies/klattsch>): design reference for the VOICE engine; no code copied. Formant data from Klatt (1980) / Hillenbrand et al. (1995) | MIT (klattsch) | credit only |
 | libDaisy by Electrosmith (<https://github.com/electro-smith/libDaisy>): the Daisy Seed's hardware library (board, codec, audio, LED), which `platform/daisy/` builds against for Andamento; fetched at build time, not in this tree, and not in the FM-1 firmware | MIT | `platform/daisy/` |
+| u8g2 by olikraus (<https://github.com/olikraus/u8g2>, `csrc/u8x8_d_ssd1322.c`, `u8x8_d_ssd1322_nhd_128x64`): the SSD1322 register values for Newhaven's 128 x 64 module (its init sequence, column offset and remap), used as data in Andamento's screen driver; no code copied | BSD-2-Clause (u8g2) | `platform/andamento/ssd1322.c` |
 | JieLi AC79 SDK by JieLi Technology: three external files go into every `.fwsc` package; the optional RAM recovery helper is in `assets/recovery/` | Apache-2.0 | `LICENSES/Apache-2.0.txt` |
 
 On the device, HOME held > ABOUT opens the information screen; turning PRESETS scrolls on into

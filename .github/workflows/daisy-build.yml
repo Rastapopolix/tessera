@@ -6,7 +6,7 @@ name: Daisy build (Andamento)
 on:
   pull_request:
     branches: [develop]
-    paths: ['firmware/src/**', 'tools/gen_*.py', 'platform/daisy/**', '.github/workflows/daisy-build.yml']
+    paths: ['firmware/src/**', 'tools/gen_*.py', 'platform/daisy/**', 'platform/andamento/**', '.github/workflows/daisy-build.yml']
   workflow_dispatch:
 
 permissions:
