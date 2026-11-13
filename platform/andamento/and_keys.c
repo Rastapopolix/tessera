@@ -11,7 +11,8 @@
  *   MUTE   (FUNC + key 12)  the top row mutes a track, the bottom row selects one
  * FUNC + bottom-row key: that track. FUNC + UP / DOWN: the octave (SCALE, CHROM) or the 16 steps shown (STEP).
  * A drum track's keys are its 8 lanes, the bottom row as played and the top row accented; STEP turns the lane last
- * played on or off.
+ * played on or off. An external track (5..8, and_ext.c) plays its line out (MIDI, CV / gate) in track 1's scale and its
+ * own OCT, the key taking over from its generator while held; it has no pattern for STEP.
  *
  * The lights, a colour per track: what the keys play, dim, the root brighter; a key flashes when the track plays its
  * note, a generator's notes included (Tessera's note feed, land_feed.c); STEP shows the steps set, the step playing in
@@ -35,12 +36,13 @@ static struct {
     uint32_t flash_ms[16];                       /* when the selected track last played key k's note (0: never) */
     uint8_t flash_lv[16];                        /* .. how bright: its own note, or the note in another octave */
     uint32_t trail_ms[NTRK][NSTEP];              /* when each track last played on each step */
-    uint32_t track_ms[NTRK];                     /* when each track last played */
+    uint32_t track_ms[AND_TRACKS];               /* when each track last played */
+    uint32_t ext_ms[AE_N];                       /* an external track's last note seen (its note_ms) */
     uint32_t energy_ms;
     uint8_t rgb[16][3];
 } and_keys;
 
-/* the tracks' colours (8, for Andamento's 8 tracks; Tessera has NTRK of them yet) */
+/* the tracks' colours, Andamento's 8 */
 static const uint8_t AK_TRACK_RGB[8][3] = {
     {255, 140, 16}, {24, 190, 255}, {255, 40, 150}, {110, 255, 40},
     {150, 90, 255}, {255, 70, 30}, {30, 255, 170}, {230, 220, 190},
@@ -51,7 +53,8 @@ static const int8_t AK_SEMI[16] = {0, 2, 4, 5, 7, 9, 11, 12, 1, 3, -1, 6, 8, 10,
 /* an engine with a key map of its own (a GM kit, slices): the FM-1's white keys, as it plays them */
 static const uint8_t AK_FM1_WHITE[16] = {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 26};
 
-static uint32_t ak_ago(uint32_t ms) { return ms ? fm1_ms - ms : 0xFFFFFFFFu; }
+/* the milliseconds since ms (0: never); a time stamped fm1_ms | 1 on an even millisecond is 1 ahead: now */
+static uint32_t ak_ago(uint32_t ms) { return !ms ? 0xFFFFFFFFu : fm1_ms - ms == 0xFFFFFFFFu ? 0u : fm1_ms - ms; }
 static uint32_t ak_len(const track_t *t) { return (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP); }
 static int ak_step_on(const step_t *s) { return s->time == ST_NOTE && (s->n || s->hit); }
 
@@ -72,6 +75,25 @@ static uint32_t ak_note(const track_t *t, uint32_t k, uint32_t mode)
     }
     n = (int32_t)scale_degree_map(t, (int32_t)k, 12 * song.octave, 1);
     return n == KB_SILENT ? AK_NONE : (uint32_t)n;
+}
+
+/* key k's note on Andamento's track tr: Tessera's own (ak_note), or an external track's: SCALE in track 1's scale,
+ * CHROM, each from C4 and moved by the keys' octave and the track's OCT */
+static uint32_t ak_key_note(uint32_t tr, uint32_t k, uint32_t mode)
+{
+    const track_t *t = &trk[0];
+    int32_t n, oct;
+    if (tr < NTRK)
+        return ak_note(&trk[tr], k, mode);
+    oct = 12 * (song.octave + and_ext.t[(tr - NTRK) % AE_N].oct);
+    if (mode == AK_CHROM) {
+        if (AK_SEMI[k] < 0)
+            return AK_NONE;
+        n = 60 + AK_SEMI[k] + oct;
+        return n < 0 || n > 127 ? AK_NONE : (uint32_t)n;
+    }
+    n = (int32_t)scale_degree_map(t, (int32_t)k, oct, 1);
+    return n == KB_SILENT || n < 0 || n > 127 ? AK_NONE : (uint32_t)n;
 }
 
 /* a key's light: 0..255 of a colour */
@@ -158,15 +180,14 @@ static void ak_step_toggle(track_t *t, uint32_t i)
 static void and_keys_down(uint32_t k)
 {
     track_t *t = TSEL;
-    uint32_t n;
+    uint32_t n, sel = AND_SEL;
     if (k >= 16u)
         return;
     and_keys.held |= 1u << k;
     and_keys.note[k] = AK_NONE;
     if (and_ui.held[AB_FUNC]) {
         if (k < 8u) {
-            if (k < NTRK)
-                song.sel = (uint8_t)k;
+            and_select(k);
         } else if (k - 8u < AK_MODES) {
             and_keys.mode = (uint8_t)(k - 8u);
             and_ui_say(AK_NAME[and_keys.mode]);
@@ -174,10 +195,22 @@ static void and_keys_down(uint32_t k)
         return;
     }
     if (and_keys.mode == AK_MUTE) {
-        if (k >= 8u && k - 8u < NTRK)
-            pid_set(0x028, k - 8u, !pid_get(0x028, k - 8u));
-        else if (k < NTRK)
-            song.sel = (uint8_t)k;
+        if (k >= 8u)
+            and_mute(k - 8u, !and_muted(k - 8u));
+        else
+            and_select(k);
+        return;
+    }
+    if (sel >= NTRK) {                               /* an external track: its line out */
+        if (and_keys.mode == AK_STEP) {
+            and_ui_say("NO STEPS: EXT");
+            return;
+        }
+        if ((n = ak_key_note(sel, k, and_keys.mode)) == AK_NONE)
+            return;
+        and_keys.note[k] = (uint8_t)n;
+        and_keys.trk[k] = (uint8_t)sel;
+        and_ext_key(sel - NTRK, n, 100);
         return;
     }
     if (and_keys.mode == AK_STEP) {
@@ -224,6 +257,11 @@ static void and_keys_up(uint32_t k)
     and_keys.held &= ~(1u << k);
     if (and_keys.note[k] == AK_NONE)
         return;
+    if (and_keys.trk[k] >= NTRK) {                   /* (an external track's: its note off, if still its own) */
+        and_ext_key(and_keys.trk[k] - NTRK, and_keys.note[k], 0);
+        and_keys.note[k] = AK_NONE;
+        return;
+    }
     and_keys.note[k] = AK_NONE;
     TESS_IRQ_OFF();
     key_off(k, &trk[and_keys.trk[k] % NTRK]);
@@ -234,6 +272,8 @@ static void and_keys_up(uint32_t k)
 static void and_keys_shift(int32_t d)
 {
     char s[16];
+    if (and_keys.mode == AK_STEP && AND_SEL >= NTRK)
+        return;
     if (and_keys.mode == AK_STEP) {                  /* "STEPS 17-32" */
         uint32_t banks = (ak_len(TSEL) + 15u) / 16u, b = (and_keys.bank + (d > 0 ? 1u : banks - 1u)) % banks;
         uint32_t lo = b * 16u + 1u, hi = lo + 15u, n = 6;
@@ -258,45 +298,58 @@ static void and_keys_shift(int32_t d)
 }
 
 /* ------------------------------------------------------------ lights --- */
-/* the note feed (land_feed.c: every note a track starts, a generator's too): flashes and the trails */
+/* flashes on the keys that play note on track tr (none: the keys of its pitch class, dimmer) */
+static void ak_flash(uint32_t tr, uint32_t note, uint32_t now)
+{
+    uint32_t n[16], exact = 0, mode = and_keys.mode == AK_CHROM ? AK_CHROM : AK_SCALE, k;
+    for (k = 0; k < 16u; k++)
+        exact |= (uint32_t)((n[k] = ak_key_note(tr, k, mode)) == note) << k;
+    for (k = 0; k < 16u; k++)
+        if (exact ? (exact >> k) & 1u : n[k] != AK_NONE && n[k] % 12u == note % 12u) {
+            and_keys.flash_ms[k] = now;
+            and_keys.flash_lv[k] = exact ? 255u : 130u;
+        }
+}
+
+/* the note feed (land_feed.c: every note a track starts, a generator's too) and the external tracks' notes: flashes
+ * and the trails */
 static void ak_feed(void)
 {
     uint8_t at = land_ev_at;
+    uint32_t x;
+    for (x = 0; x < AE_N; x++)
+        if (and_ext.t[x].note_ms != and_keys.ext_ms[x]) {
+            and_keys.ext_ms[x] = and_ext.t[x].note_ms;
+            and_keys.track_ms[NTRK + x] = fm1_ms | 1u;
+            if (NTRK + x == AND_SEL && !and_ext.t[x].key)
+                ak_flash(NTRK + x, and_ext.t[x].note, fm1_ms | 1u);
+        }
     land_open = 1;                                   /* (Andamento reads the feed always) */
     if ((uint8_t)(at - and_keys.feed) > LAND_EV)
         and_keys.feed = (uint8_t)(at - LAND_EV);
     for (; and_keys.feed != at; and_keys.feed++) {
-        uint32_t i = and_keys.feed & (LAND_EV - 1u), tr = land_ev_tr[i] % NTRK, note = land_ev_note[i], k;
+        uint32_t i = and_keys.feed & (LAND_EV - 1u), tr = land_ev_tr[i] % NTRK, note = land_ev_note[i];
         const track_t *t = &trk[tr];
         uint32_t now = fm1_ms | 1u;
         and_keys.track_ms[tr] = now;
         and_keys.trail_ms[tr][t->seq_idx % NSTEP] = now;
-        if (tr != song.sel)
-            continue;
-        {   /* the key that plays the note; none (a bass, a high line): the keys of its pitch class, dimmer */
-            uint32_t n[16], exact = 0, mode = and_keys.mode == AK_CHROM ? AK_CHROM : AK_SCALE;
-            for (k = 0; k < 16u; k++)
-                exact |= (uint32_t)((n[k] = ak_note(t, k, mode)) == note) << k;
-            for (k = 0; k < 16u; k++)
-                if (exact ? (exact >> k) & 1u : n[k] != AK_NONE && n[k] % 12u == note % 12u) {
-                    and_keys.flash_ms[k] = now;
-                    and_keys.flash_lv[k] = exact ? 255u : 130u;
-                }
-        }
+        if (tr == AND_SEL)                           /* (the key that plays it; none: its pitch class, dimmer) */
+            ak_flash(tr, note, now);
     }
 }
 
-static void ak_play_lights(const track_t *t, const uint8_t *c)
+static void ak_play_lights(uint32_t tr, const uint8_t *c)
 {
-    uint32_t k, mask = scale_mask(t), drum = (uint32_t)drum_track(t);
+    const track_t *t = &trk[tr < NTRK ? tr : 0u];
+    uint32_t k, mask = scale_mask(t), drum = tr < NTRK && drum_track(t);
     for (k = 0; k < 16u; k++) {
-        uint32_t n = ak_note(t, k, and_keys.mode), level;
+        uint32_t n = ak_key_note(tr, k, and_keys.mode), level;
         if (n == AK_NONE) {
             ak_set(k, c, 0);
             continue;
         }
         if (drum)                                    /* (the lane last played brighter) */
-            level = k % 8u == and_keys.lane[song.sel] ? 90u : k < 8u ? 34u : 18u;
+            level = k % 8u == and_keys.lane[tr] ? 90u : k < 8u ? 34u : 18u;
         else if (and_keys.mode == AK_CHROM) {
             uint32_t pc = (n - (uint32_t)t->p[P_ROOT] + 120u) % 12u;
             level = !pc ? 90u : ((mask >> pc) & 1u) ? 34u : 6u;
@@ -338,12 +391,9 @@ static void ak_mute_lights(void)
     for (k = 0; k < 16u; k++) {
         uint32_t tr = k % 8u;
         const uint8_t *c = AK_TRACK_RGB[tr];
-        ak_set(k, c, 0);
-        if (tr >= NTRK)
-            continue;
         if (k < 8u) {
-            ak_set(k, c, tr == song.sel ? 230u : 30u);
-        } else if (pid_get(0x028, tr)) {
+            ak_set(k, c, tr == AND_SEL ? 230u : 30u);
+        } else if (and_muted(tr)) {
             ak_set(k, RED, 70);
         } else {
             ak_set(k, c, 60);
@@ -357,7 +407,7 @@ static void ak_func_lights(void)                     /* FUNC held: the tracks be
     uint32_t k;
     for (k = 0; k < 16u; k++)
         if (k < 8u)
-            ak_set(k, AK_TRACK_RGB[k], k >= NTRK ? 0u : k == song.sel ? 230u : 40u);
+            ak_set(k, AK_TRACK_RGB[k], k == AND_SEL ? 230u : 40u);
         else
             ak_set(k, AK_WHITE_RGB, k - 8u >= AK_MODES ? 0u : k - 8u == and_keys.mode ? 230u : 30u);
 }
@@ -379,7 +429,8 @@ static void ak_energy_lights(void)                   /* ENERGY's level, -100..10
 static void and_keys_lights(void)
 {
     const track_t *t = TSEL;
-    const uint8_t *c = AK_TRACK_RGB[song.sel % 8u];
+    uint32_t sel = AND_SEL;
+    const uint8_t *c = AK_TRACK_RGB[sel % 8u];
     uint32_t k;
     ak_feed();
     if (and_ui.held[AB_FUNC])
@@ -388,10 +439,12 @@ static void and_keys_lights(void)
         ak_energy_lights();
     else if (and_keys.mode == AK_MUTE)
         ak_mute_lights();
+    else if (and_keys.mode == AK_STEP && sel >= NTRK)   /* (an external track: no pattern) */
+        memset(and_keys.rgb, 0, sizeof and_keys.rgb);
     else if (and_keys.mode == AK_STEP)
         ak_step_lights(t, c);
     else
-        ak_play_lights(t, c);
+        ak_play_lights(sel, c);
     for (k = 0; k < 16u; k++)                        /* a key held: white */
         if ((and_keys.held >> k) & 1u && !and_ui.held[AB_FUNC])
             ak_max(k, AK_WHITE_RGB, 200);

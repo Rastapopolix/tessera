@@ -123,37 +123,83 @@ static void drift(int ppm, int play, int cap)
            ppm, play, cap);
 }
 
+/* #586: once a stream runs, a ring that runs short or full is mended, never reset
+ * (a reset re-primed 512 frames: 11.6 ms of silence). */
 static void recovery(void)
 {
     uint8_t packet[UA_PACKET];
     int32_t out[64];
-    uint32_t i;
+    uint32_t i, bytes, frame = 2u * ua_cap_channels;
     memset(&ua, 0, sizeof ua);
     ua_reset();
     ua.play_alt = ua.cap_alt = 1;
     ua_receive(packet, UA_PACKET + 4);
     ua_receive(packet, 3);
     assert(ua.bad_packets == 2 && ua.pw == 0);
+
+    /* Playback overrun: the oldest frames go, the newest 512 stay. */
     pcm(packet, 32, 2000, -2000);
     for (i = 0; i < 33; i++)
         ua_receive(packet, 128);
-    assert(ua.play_overruns == 1 && !ua.play_ready);
+    assert(ua.play_overruns == 1 && ua.pw - ua.pr == UA_TARGET && ua.pr == ua.pw - UA_TARGET);
     for (i = 0; i < 16; i++)
-        ua_receive(packet, 128);
-    for (i = 0; i < 18; i++)
         block(1000, -1000, 4096, out);
-    assert(ua.play_underruns == 1 && out[0] == 1000);
-    for (i = 0; i < 16; i++)
-        ua_receive(packet, 128);
+    assert(ua.play_ready && ua.pw == ua.pr && out[0] == 3000 && out[63] == -3000);
+
+    /* Playback underrun: the gap's tail decays from the last sample, no silence wait. */
     block(1000, -1000, 4096, out);
-    assert(out[0] == 3000);                     /* playback re-primes */
-    for (i = 0; i < 33; i++)
+    assert(ua.play_underruns == 1 && ua.play_ready && ua.play_ramp == UA_FADE);
+    assert(out[0] == 1000 + 1750 && out[1] == -1000 - 1750);
+    for (i = 1; i < 32; i++)
+        assert(out[2 * i] <= out[2 * i - 2] && out[2 * i] >= 1000);
+    assert(out[62] < 1000 + 40);
+    /* The next packet plays at once, crossfaded in, and then plays clean. */
+    ua_receive(packet, 128);
+    block(1000, -1000, 4096, out);
+    assert(ua.play_underruns == 1 && !ua.play_ramp && ua.pw == ua.pr);
+    for (i = 1; i < 32; i++)
+        assert(out[2 * i] >= out[2 * i - 2] && out[2 * i] <= 3000);
+    assert(out[62] > 2900);
+    ua_receive(packet, 128);
+    block(1000, -1000, 4096, out);
+    assert(out[0] == 3000 && out[63] == -3000);
+
+    /* Unpolled capture stays bounded and keeps its newest frames. */
+    for (i = 0; i < 40; i++)
         block(1000, -1000, 4096, out);
-    assert(ua.cap_overruns > 0);                /* unpolled capture stays bounded */
+    assert(ua.cap_overruns > 0 && ua.cw - ua.cr <= UA_RING && ua.cw - ua.cr >= UA_TARGET);
     ua_cap_reset();
-    uint32_t bytes = ua_transmit(packet);
+    bytes = ua_transmit(packet);
     for (i = 0; i < bytes; i++)
         assert(packet[i] == 0);                 /* no stale audio after restart */
+
+    /* Capture underrun: the frames there are go out, then the tail, and the stream stays up. */
+    for (i = 0; i < 16; i++)
+        block(1000, -1000, 4096, out);
+    for (i = 0; ua.cw - ua.cr >= 45u; i++)
+        bytes = ua_transmit(packet);
+    uint32_t left = ua.cw - ua.cr;
+    assert(ua.cap_ready && left > 0 && !ua.cap_underruns);
+    bytes = ua_transmit(packet);
+    assert(ua.cap_underruns == 1 && ua.cap_ready && ua.cw == ua.cr && ua.cap_ramp == UA_FADE);
+    for (i = 0; i < left; i++)
+        assert(ua_decode(packet + i * frame, 2) == 1000 && ua_decode(packet + i * frame + 2, 2) == -1000);
+    assert(ua_decode(packet + left * frame, 2) == 875);
+    for (i = left + 1; i < bytes / frame; i++)
+        assert(ua_decode(packet + i * frame, 2) < ua_decode(packet + (i - 1) * frame, 2));
+    /* New frames go out at once, crossfaded in. */
+    for (i = 0; i < 2; i++)
+        block(1000, -1000, 4096, out);
+    bytes = ua_transmit(packet);
+    assert(ua.cap_underruns == 1 && ua.cap_ramp < UA_FADE);
+    for (i = 1; i < bytes / frame; i++)
+        assert(ua_decode(packet + i * frame, 2) >= ua_decode(packet + (i - 1) * frame, 2));
+    assert(ua_decode(packet + (bytes / frame - 1) * frame, 2) > 900);
+    for (i = 0; i < 2; i++)
+        block(1000, -1000, 4096, out);
+    bytes = ua_transmit(packet);
+    assert(!ua.cap_ramp && ua_decode(packet, 2) == 1000 && ua_decode(packet + bytes - frame, 2) == 1000);
+
     /* Unsigned ring indices must survive long-running streams. */
     ua_play_reset();
     ua.pw = ua.pr = 0xFFFFFF00u;
@@ -281,6 +327,48 @@ static void tone(int capture, double frequency, uint32_t channel, uint32_t alt)
            width * 8u, capture ? "capture" : "playback", channel + 1, frequency, gain, rms);
 }
 
+/* #586: a render that stalls past the ring's slack. Before the fix the ring reset and
+ * re-primed, adding 11.6 ms of silence on top of the stall; now the gap is the stall's
+ * overhang alone, and no further underruns follow while the servo refills the ring. */
+static void stall(uint32_t stall_ms, uint32_t cap_alt)
+{
+    uint8_t captured[UA_PACKET];
+    int32_t out[64];
+    uint64_t device_phase = 0;
+    uint64_t step = (uint64_t)UA_RATE * 1000000u;
+    uint32_t ms, i, bytes, cw = cap_alt == 2 ? 3u : 2u, frame = cw * ua_cap_channels;
+    uint32_t run = 0, longest = 0, underruns_after = 0;
+    memset(&ua, 0, sizeof ua);
+    ua_reset();
+    ua.cap_alt = cap_alt;
+    for (ms = 0; ms < 20000; ms++) {
+        device_phase += step;
+        while (device_phase >= 256ull * 1000000000ull) {
+            device_phase -= 256ull * 1000000000ull;
+            if (ms < 5000 || ms >= 5000 + stall_ms)     /* the stalled renders are lost */
+                for (i = 0; i < 8; i++)
+                    block(1000, -1000, 4096, out);
+        }
+        ua_sof();
+        if (ms == 8000)
+            underruns_after = ua.cap_underruns;
+        bytes = ua_transmit(captured);
+        if (ms > 1000)
+            for (i = 0; i < bytes; i += frame) {
+                if (ua_decode(captured + i, cw) != 1000) {
+                    if (++run > longest)
+                        longest = run;
+                } else
+                    run = 0;
+            }
+    }
+    /* A 1000 ppm faster render would also do; this one is the plain case. */
+    assert(ua.cap_underruns >= 1 && ua.cap_underruns == underruns_after);
+    assert(longest * 1000u <= (stall_ms * 44100u) + 2u * UA_FADE * 1000u);
+    printf("USB audio: a %u ms render stall, capture %u: one gap of %.1f ms (%u underrun packets), then clean: OK\n",
+           stall_ms, cap_alt, longest / 44.1, ua.cap_underruns);
+}
+
 int main(void)
 {
     ua_cap_channels = 4;
@@ -302,6 +390,8 @@ int main(void)
     }
     drift(1000, 2, 1);
     drift(-1000, 1, 2);
+    stall(20, 1);
+    stall(60, 2);
     ua_cap_channels = 2;
     ua_reset(); ua.cap_alt = 1;
     int32_t master[64];

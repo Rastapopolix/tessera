@@ -2,6 +2,7 @@
 // Andamento's virtual prototype in an AudioWorklet: andamento.wasm (web/andamento/sim.c) renders 128 frames a
 // render quantum at 48 kHz; the page's controls go in as messages; about 30 times a second the screen and the LEDs
 // come out. Key changes are held 24 ms of device time each, so a quick click still sounds (as web/sim/worklet.js).
+// Tracks 5..8's MIDI goes to the page as soon as a render quantum makes it (2.7 ms), for Web MIDI to send on.
 const HOLD_MS = 24;
 class Andamento extends AudioWorkletProcessor {
   constructor() {
@@ -41,7 +42,8 @@ class Andamento extends AudioWorkletProcessor {
     const ex = this.ex;
     const fb = new Uint8Array(ex.memory.buffer, ex.web_screen(), 128 * 64).slice();
     const keys = new Uint8Array(ex.memory.buffer, ex.web_led_keys(), 16 * 3).slice();   // (16 x RGB)
-    this.port.postMessage({ type: "frame", fb, buttons: ex.web_led_buttons(), keys, playing: ex.web_playing() },
+    const cv = [0, 1, 2, 3].map((i) => ex.web_cv(i)), gate = [0, 1, 2, 3].map((i) => ex.web_gate(i));
+    this.port.postMessage({ type: "frame", fb, buttons: ex.web_led_buttons(), keys, playing: ex.web_playing(), cv, gate },
                           [fb.buffer, keys.buffer]);
   }
   process(inputs, outputs) {
@@ -57,6 +59,11 @@ class Andamento extends AudioWorkletProcessor {
     ex.web_render(n);
     out[0].set(new Float32Array(ex.memory.buffer, ex.web_out_l(), n));
     if (out[1]) out[1].set(new Float32Array(ex.memory.buffer, ex.web_out_r(), n));
+    const nm = ex.web_midi_take();                  // (tracks 5..8: 3 bytes a message)
+    if (nm) {
+      const midi = new Uint8Array(ex.memory.buffer, ex.web_midi_buf(), nm * 3).slice();
+      this.port.postMessage({ type: "midi", midi }, [midi.buffer]);
+    }
     if (currentTime - this.last >= 1 / 30) {
       this.last = currentTime;
       this.publish();

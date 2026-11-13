@@ -65,6 +65,18 @@ h1 { font-size: 20px; margin: 0 0 4px; font-weight: 650; }
 .key .k { position: absolute; right: .6cqw; bottom: .5cqw; font: 600 1cqw/1 "Barlow Condensed", sans-serif; color: #a5a198; }
 .start { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(0,0,0,.55); border-radius: 2.2cqw; cursor: pointer; }
 .start span { background: var(--ink); color: #111; font: 700 2cqw/1 system-ui, sans-serif; padding: 1.6cqw 3cqw; border-radius: 1cqw; }
+.jacks { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-top: 14px; }
+.jack { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px 10px; padding: 8px 12px;
+  border: 1px solid var(--line); border-radius: 10px; font-size: 13px; }
+.jack b { font-weight: 650; }
+.jack .meta { color: var(--muted); grid-column: 1 / -1; font-size: 12px; }
+.jack .cvbar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.jack .cvbar i { display: block; height: 100%; width: 0; background: var(--ink); }
+.jack .v { font: 12px ui-monospace, Menlo, monospace; }
+.jack .gate { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.jack .gate.on { background: #3ddc6a; box-shadow: 0 0 6px #3ddc6a; }
+.jack .row { display: contents; }
+.bar select { font: inherit; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--text); max-width: 220px; }
 .help { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 6px 28px; margin-top: 18px; font-size: 14px; }
 .help h2 { font-size: 14px; margin: 10px 0 4px; }
 .help p { margin: 0 0 4px; color: var(--muted); }
@@ -76,6 +88,8 @@ kbd { font: 12px ui-monospace, Menlo, monospace; border: 1px solid var(--line); 
   <div class="bar">
     <button id="demoA">Play STILL TIDE</button>
     <button id="demoB">Play KOTO GARDEN</button>
+    <button id="midiBtn" title="Tracks 5 to 8 send MIDI on channels 5 to 8 (each track's CHAN)">MIDI out…</button>
+    <select id="midiOut" hidden aria-label="MIDI output"></select>
     <span class="status" id="status">Click the panel to start the sound.</span>
   </div>
   <div class="wrap"><div class="panel" id="panel">
@@ -85,16 +99,27 @@ kbd { font: 12px ui-monospace, Menlo, monospace; border: 1px solid var(--line); 
     <div class="tray"></div>
     <div class="start" id="start"><span>Click to start</span></div>
   </div></div>
+  <div class="jacks" id="jacks" aria-label="CV and gate outputs, tracks 5 to 8"></div>
   <div class="help">
     <div>
       <h2>Encoders</h2>
       <p>Drag up or down, or use the mouse wheel. A click (without dragging) pushes it: the setting goes back to its default.</p>
-      <p>Encoders A to H follow the 2×4 grid on the screen. ENERGY works on every page; VOL is the main level.</p>
+      <p>Encoders A to H follow the 2×4 grid on the screen; on HOME they are tracks 1 to 8's ENERGY DEPTH. ENERGY works on every page; VOL is the main level.</p>
+    </div>
+    <div>
+      <h2>HOME</h2>
+      <p>Where Andamento starts, and where NO brings you back from any page: the piece at a glance. The header names the piece's SHAPE (FREE when PIECE has no LENGTH) and its time, or REST and its seconds while the notes rest.</p>
+      <p>Under it ENERGY over time, full above the dotted line and sparse below: with a LENGTH the whole piece across the screen, the plan dim and what played lit up to the play head; FREE it grows from the left from PLAY and then scrolls, the last three minutes. Marks under the curve are rests, ticks above it where Entries brought a track in or out. Along the foot the 8 tracks: a meter that fills as a track is in and lights while it sounds, its DEPTH underneath; on tracks 5 to 8 a dark line across the meter is the CV.</p>
+    </div>
+    <div>
+      <h2>Tracks 5 to 8</h2>
+      <p>The external tracks: each runs a generator (TURING, EUCLID, MARKOV, AWAKE, POLY or SERIES) on the song's clock, in track 1's scale, and plays out of the box instead of through a voice: a MIDI channel (5 to 8 to start with) and a CV / gate pair, shown under the panel as the jack strip would carry them (1 V an octave, 0 V at C2).</p>
+      <p>Pick one with <kbd>←</kbd> <kbd>→</kbd> or FUNC + key 5 to 8. GEN sets its generator, SEED, DIV, OCT and GATE; SOUND becomes OUT: CHAN, VEL, DEPTH, MUTE and its CV and gate. The keys play its line out while held. <b>MIDI out…</b> sends it to a synth over Web MIDI (Chrome or Edge; Firefox asks for an add-on).</p>
     </div>
     <div>
       <h2>Buttons</h2>
       <p>A page button opens that page; pressed again it goes to its second page (or <kbd>↑</kbd> <kbd>↓</kbd>).</p>
-      <p><kbd>←</kbd> <kbd>→</kbd> choose the track; FUNC held with key 1 to 4 picks one directly. PLAY restarts while playing.</p>
+      <p><kbd>←</kbd> <kbd>→</kbd> choose the track; FUNC held with key 1 to 8 picks one directly. PLAY restarts while playing.</p>
     </div>
     <div>
       <h2>The 16 keys</h2>
@@ -104,7 +129,7 @@ kbd { font: 12px ui-monospace, Menlo, monospace; border: 1px solid var(--line); 
     <div>
       <h2>Computer keyboard</h2>
       <p>Keys: <kbd>A</kbd>…<kbd>K</kbd> bottom row, <kbd>Q</kbd>…<kbd>I</kbd> top row. Pages <kbd>1</kbd>…<kbd>6</kbd>.</p>
-      <p><kbd>Space</kbd> PLAY / STOP, <kbd>Shift</kbd> FUNC, arrows as on the panel. The modes: <kbd>Shift</kbd> with <kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd>.</p>
+      <p><kbd>Space</kbd> PLAY / STOP, <kbd>Shift</kbd> FUNC, <kbd>Esc</kbd> NO (HOME), arrows as on the panel. The modes: <kbd>Shift</kbd> with <kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd>.</p>
     </div>
   </div>
 </main>
@@ -228,6 +253,71 @@ function onFrame(m) {
   for (let b = 0; b < btns.length; b++) if (btns[b]) btns[b].classList.toggle("lit", !!((m.buttons >> b) & 1));
   for (let k = 0; k < 16; k++) keyLight(keys[k], m.keys[3 * k], m.keys[3 * k + 1], m.keys[3 * k + 2]);
   playing = m.playing;
+  if (m.cv) drawJacks(m.cv, m.gate);
+}
+
+// ---- the jack strip: tracks 5..8's CV (mV, 0..10 V) and gates ----
+const jacksEl = document.getElementById("jacks"), jackEls = [];
+for (let i = 0; i < 4; i++) {
+  const d = document.createElement("div");
+  d.className = "jack";
+  d.innerHTML = `<b>Track ${i + 5}</b><span class="cvbar"><i></i></span><span class="gate" title="gate ${i + 1}"></span>` +
+                `<span class="meta">CV ${i + 1}: <span class="v">0.00 V</span> · gate ${i + 1}</span>`;
+  jacksEl.appendChild(d);
+  jackEls.push({ bar: d.querySelector(".cvbar i"), v: d.querySelector(".v"), gate: d.querySelector(".gate") });
+}
+function drawJacks(cv, gate) {
+  for (let i = 0; i < 4; i++) {
+    const j = jackEls[i];
+    j.bar.style.width = (cv[i] / 100).toFixed(1) + "%";
+    j.v.textContent = (cv[i] / 1000).toFixed(2) + " V";
+    j.gate.classList.toggle("on", !!gate[i]);
+  }
+}
+
+// ---- Web MIDI: tracks 5..8's notes to a synth ----
+const midiBtn = document.getElementById("midiBtn"), midiSel = document.getElementById("midiOut");
+let midiAccess = null, midiPort = null, midiHeld = new Map();   // (the notes on, so a change of port ends them)
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+                set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+function midiList() {
+  // (the port chosen before, or last time on this browser; the first output the first time)
+  const keep = midiSel.options.length ? midiSel.value : store.get("andamento.midi");
+  midiSel.textContent = "";
+  midiSel.add(new Option("MIDI off", ""));
+  for (const o of midiAccess.outputs.values()) midiSel.add(new Option(o.name, o.id));
+  midiSel.value = keep !== null && [...midiSel.options].some((o) => o.value === keep) ? keep
+                : (midiSel.options[1] ? midiSel.options[1].value : "");
+  midiPick();
+}
+function midiPick() {
+  if (midiPort) for (const [k] of midiHeld) midiPort.send([0x80 | (k >> 8), k & 127, 0]);
+  midiHeld.clear();
+  midiPort = midiAccess && midiSel.value ? midiAccess.outputs.get(midiSel.value) || null : null;
+  store.set("andamento.midi", midiSel.value);
+  midiBtn.textContent = midiPort ? "MIDI: on" : "MIDI out…";
+}
+midiBtn.addEventListener("click", async () => {
+  if (midiAccess) { midiSel.focus(); return; }
+  if (!navigator.requestMIDIAccess) { statusEl.textContent = "This browser has no Web MIDI (try Chrome or Edge)."; return; }
+  try {
+    midiAccess = await navigator.requestMIDIAccess();
+    midiAccess.onstatechange = midiList;
+    midiSel.hidden = false;
+    midiList();
+    if (!midiAccess.outputs.size) statusEl.textContent = "No MIDI outputs found: connect an interface and they appear here.";
+  } catch (err) {
+    statusEl.textContent = "MIDI not allowed here: " + (err && err.message || err) + " (open the standalone page in Chrome).";
+  }
+});
+midiSel.addEventListener("change", midiPick);
+function onMidi(bytes) {
+  if (!midiPort) return;
+  for (let i = 0; i + 2 < bytes.length; i += 3) {
+    const s = bytes[i], k = ((s & 15) << 8) | bytes[i + 1];
+    if ((s & 0xF0) === 0x90 && bytes[i + 2]) midiHeld.set(k, 1); else midiHeld.delete(k);
+    try { midiPort.send([s, bytes[i + 1], bytes[i + 2]]); } catch (e) { /* (a port gone: statechange lists again) */ }
+  }
 }
 
 // ---- the engine: an AudioWorklet, or (where a worklet can't load) the same work on this thread ----
@@ -247,6 +337,7 @@ async function startWorklet(ac) {
       if (m.type === "ready") resolve();
       else if (m.type === "error") reject(new Error(m.message));
       else if (m.type === "frame") onFrame(m);
+      else if (m.type === "midi") onMidi(m.midi);
     };
     const wasm = wasmBytes();
     n.port.postMessage({ type: "load", wasm, volume }, [wasm]);
@@ -268,8 +359,13 @@ async function startMainThread(ac) {         // fallback: a ScriptProcessorNode 
     r.set(new Float32Array(ex.memory.buffer, ex.web_out_r(), 1024));
   };
   sp.connect(ac.destination);
+  sp.addEventListener("audioprocess", () => {
+    const nm = ex.web_midi_take();
+    if (nm) onMidi(new Uint8Array(ex.memory.buffer, ex.web_midi_buf(), nm * 3).slice());
+  });
   setInterval(() => onFrame({ fb: new Uint8Array(ex.memory.buffer, ex.web_screen(), 8192), buttons: ex.web_led_buttons(),
-                              keys: new Uint8Array(ex.memory.buffer, ex.web_led_keys(), 48), playing: ex.web_playing() }), 33);
+                              keys: new Uint8Array(ex.memory.buffer, ex.web_led_keys(), 48), playing: ex.web_playing(),
+                              cv: [0, 1, 2, 3].map((i) => ex.web_cv(i)), gate: [0, 1, 2, 3].map((i) => ex.web_gate(i)) }), 33);
   return { port: { postMessage(m) {
     if (m.type === "key") queue.push({ k: m.k, down: m.down ? 1 : 0 });
     else if (m.type === "enc") ex.web_enc(m.i, m.n | 0);
@@ -318,6 +414,7 @@ function press(code, down) {
   else if (code === "ArrowUp") b = AB.UP; else if (code === "ArrowDown") b = AB.DOWN;
   else if (code === "ArrowLeft") b = AB.LEFT; else if (code === "ArrowRight") b = AB.RIGHT;
   else if (code === "ShiftLeft" || code === "ShiftRight") b = AB.FUNC;
+  else if (code === "Escape" || code === "Backspace") b = AB.NO;
   else if (code === "Space") b = playing ? AB.STOP : AB.PLAY;
   return b >= 0 ? { button: b } : null;
 }

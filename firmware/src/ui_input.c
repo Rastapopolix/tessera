@@ -1932,11 +1932,13 @@ static void page_knob(uint32_t k, int32_t s)
         return;
     if (mlearn_on && !pop.on)                          /* MIDI LEARN: this knob's parameter waits for a CC (ui_learn.c) */
         mlearn_take(k);
-    if (ui.home || pg->scope == SC_STEP || pg->scope == SC_TRK || ((pg->scope==SC_DRUM || pg->scope==SC_DRUMHIT) && pg->id[k]!=255) || page_desc(pg, k, &hv) ||
+    if ((ui.home || pg->scope == SC_STEP || pg->scope == SC_TRK || ((pg->scope==SC_DRUM || pg->scope==SC_DRUMHIT) && pg->id[k]!=255) || page_desc(pg, k, &hv) ||
         (pg->graph == GR_USER && k == 0u) || (!MELODEE_LOOK && pg->graph == GR_MOD && k == 1u)
         || pg->graph == GR_SONG || pg->graph == GR_PATGRID || pg->graph == GR_SCALE_PICKER || (scale_settings_page(pg) && k == 1u)
-        || (pg->graph == GR_SLICES && k < 2u) || tess_knob(pg, k)) {   /* (not an empty column; Tessera's own pages'
+        || (pg->graph == GR_SLICES && k < 2u) || tess_knob(pg, k))   /* (not an empty column; Tessera's own pages'
                                                          * values invert as the rest do) */
+        && !(pg->scope == SC_GLOBAL && pg->id[k] < G_COUNT && GP[pg->id[k]].min == GP[pg->id[k]].max)) {   /* a
+         * fixed-range global (SYSTEM's CPU: a meter, nothing to set, ui_help.c) is not a knob to invert */
         ui.hot_col = (uint8_t)k;
         ui.hot_t = 40;
     }
@@ -2609,7 +2611,7 @@ static void ui_input(void)
             if (pattern_request(TSEL, (uint32_t)clamp((int32_t)from + s, 0, NPAT - 1u))) ui_message("STOP TO SWITCH");
             ui.force = 1;
         } else if (step_gesture(s)) {                   /* ENV / SCL / a key held: the note's length, its place */
-        } else if (ui.home || cur_page()->graph == GR_TRK) {   /* HOME, MIXER: the tempo (GLO held: above) */
+        } else if (ui.home) {                           /* HOME: the tempo (GLO held, or on MIXER: above) */
             bpm_turn(s);
         } else {                                        /* the section's pages (the notes, the hits: KNOB 1) */
             page_scroll(s);

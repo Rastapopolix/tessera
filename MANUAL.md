@@ -269,7 +269,7 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 | **SCL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
 | **EDIT** | The sound's EDIT pages; on an EDIT page, the map | With OCT- / OCT+: undo / redo |
 | **FX** | The insert and send effects | The mod amount of any knob you turn |
-| **GLO** | MIXER, [PERF](#perf-four-macros), [LANDSCAPE](#landscape-rain-on-water), [PIECE](#piece-a-length-and-a-shape), [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in), SYSTEM, MIDI IN, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
+| **GLO** | MIXER, [PERF](#perf-four-macros), [PIECE](#piece-a-length-and-a-shape), [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in), [LANDSCAPE](#landscape-rain-on-water), SYSTEM, MIDI IN, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
 | **SAVE** | USER (ready to save the sound), PROJECT, PRESETS | Save the project to its slot (as SAVE + REC) |
 | **REC** | Records the selected track until REC again (see [Recording live](#recording-live)) | Capture or print the last bars (see [Print and keep](#print-and-keep)) |
 | **OCT+** | On HOME: octave up. Elsewhere Enter: the row, slot, note or mod under the cursor, the action picked; where there is nothing to enter, nothing (the sheet is a hold) | The page's sheet; a page without one says NO SHEET (its second knobs are on OCT- held: see [The GEN layer](#the-gen-layer)) |
@@ -2201,7 +2201,7 @@ The **GEN layer** is the second set of knobs under OCT- held, and the **GEN shee
 **Generator**. Something that writes notes for you, in your scale and at the track's DIV. Tessera has thirteen.
 Every generator is also a mod source.
 
-**GLO** (global). The button for the whole project: MIXER, PERF, LANDSCAPE, PIECE, CHAIN, ENTRIES, SYSTEM (voice
+**GLO** (global). The button for the whole project: MIXER, PERF, PIECE, CHAIN, ENTRIES, LANDSCAPE, SYSTEM (voice
 BUDGET, CPU, tuning), MIDI IN (input, DRUM channel, ROUT, clock source), MIDI OUT. Held, it gives the performance keys
 (mutes, solos, FILL, levels, tempo); on MIXER, PERF and LANDSCAPE the keys are those without holding it.
 

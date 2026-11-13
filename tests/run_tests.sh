@@ -39,6 +39,17 @@
 # ANDAMENTO KEYS (tests/and_keys_test.c): Andamento's 16 keys and their RGB lights (platform/andamento/and_keys.c)
 #                   in the virtual prototype's build at 48 kHz: SCALE, CHROM, STEP and MUTE, the octave, ENERGY on the
 #                   keys, a demo's generator notes lighting them.
+# ANDAMENTO HOME (tests/and_home_test.c): Andamento's home screen (platform/andamento/and_home.c) in the same build:
+#                   it starts there and NO comes back, the encoders as the tracks' ENERGY DEPTH, the 8 lanes (5..8
+#                   the external tracks'), ENERGY's history FREE and over a planned piece, a rest; its frames as PNGs in build/oled.
+# ANDAMENTO EXT (tests/and_ext_test.c): Andamento's tracks 5..8 (platform/andamento/and_ext.c) in the same build: their
+#                   generators' notes out on MIDI channels 5..8 on the grid, one at a time, in the scale; the CV and gate;
+#                   STOP, PLAY again from the SEED, MUTE, CHAN OFF, ENERGY's DEPTH, a key, their pages, and tracks 1..4
+#                   bit for bit the same with them playing; its frames as PNGs in build/oled.
+# ANDAMENTO MASTER (tests/and_master_test.c): Andamento's master bus (platform/andamento/and_master.c), tilt EQ then
+#                   compressor, called directly (not through a project playing): MIX 0 is bit-identical, MIX 100 with
+#                   no gain reduction and no tilt is unchanged but for rounding, the compressor settles below a loud
+#                   tone and returns to unity gain under THRESH, MAKEUP's dB, TILT's direction, and determinism.
 # UI (tests/ui_test.c): the UI sources against stub display / buttons / knobs: sound loads keep the steps and
 #                   the track's ARP / SCL / SLICER, the SEQ > PATTERNS loader and its REPLACE? dialog, the
 #                   one-step undo of both (EDIT held), REC on TRACKS / SEQ / ARP, STEP and ARP while recording,
@@ -149,7 +160,7 @@ G_STORE="storage_test persistence_test upgrade_test backup_test demo_projects se
 G_MIDI="midi_control_test midi_out_test seq_dir_test midi_timing_test midi_scale_test midi_uart_test recording_test"
 G_USB="usb_audio_test usb_audio_driver_test usb_audio_tracks_test usb_host_test usb_audio_desc_test"
 G_SCALE="scale_test microtonal_test scale_picker_test tune_test uscale_test tuning_test midi_scale_test"
-G_AUDIO="regress audio_test audio_matrix_test ram_audio_test ram_voice_budget_test audio_admission_test resources_test
+G_AUDIO="regress audio_test audio_matrix_test ram_audio_test ram_voice_budget_test voice_ceiling_test audio_admission_test resources_test
     dsp_tracks dual_core_test target_budget fs_test"
 eng() { QENG="$QENG $1"; shift; QSEL="$QSEL regress target_budget $*"; }
 qmap() {
@@ -201,8 +212,12 @@ qmap() {
         tests/target_budget.txt) QSEL="$QSEL target_budget" ;;
         tests/ui_render.*) QSEL="$QSEL ui_renders" ;;
         tests/oled_render.*) QSEL="$QSEL oled_render" ;;
-        platform/andamento/*) QSEL="$QSEL oled_render and_keys" ;;
-        tests/and_keys_test.c | web/andamento/*) QSEL="$QSEL and_keys" ;;
+        platform/andamento/*) QSEL="$QSEL oled_render and_keys and_home and_ext and_master" ;;
+        tests/and_keys_test.c) QSEL="$QSEL and_keys" ;;
+        tests/and_home_test.c) QSEL="$QSEL and_home" ;;
+        tests/and_ext_test.c) QSEL="$QSEL and_ext" ;;
+        tests/and_master_test.c) QSEL="$QSEL and_master" ;;
+        web/andamento/*) QSEL="$QSEL and_keys and_home and_ext and_master" ;;
         firmware/src/mo_font.h) QSEL="$QSEL $G_UI oled_render" ;;
         tests/demo_steps.h | tests/demo_projects.c) QSEL="$QSEL demo_projects" ;;
         tests/phys_ref.cpp | tests/phys_fixed.c) QSEL="$QSEL phys_ref" ;;
@@ -415,6 +430,31 @@ and_keys() {                                      # (the headers at the Seed's 4
     step "Andamento keys (platform/andamento/and_keys.c): SCALE, CHROM, STEP, MUTE, their RGB lights, ENERGY, activity" \
         "$OUT/and_keys"
 }
+and_home() {                                      # (the headers as and_keys: web/andamento/build.sh --headers)
+    sh web/andamento/build.sh --headers > /dev/null || { fail "web/andamento/build.sh --headers"; return; }
+    build and_home and_home_test -w -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 \
+        -DMELODEE_PHYS=1 -Ibuild/andamento/gen -Ifirmware/src -Itests || return
+    mkdir -p build/oled/ppm
+    step "Andamento home (platform/andamento/and_home.c): HOME and NO, DEPTH, the 8 lanes, ENERGY's arc FREE and planned, a rest" \
+        "$OUT/and_home" build/oled
+    [ $PIL = 1 ] && { python3 tests/oled_render.py build/oled || fail "tests/oled_render.py"; }
+}
+and_ext() {                                       # (the headers as and_keys: web/andamento/build.sh --headers)
+    sh web/andamento/build.sh --headers > /dev/null || { fail "web/andamento/build.sh --headers"; return; }
+    build and_ext and_ext_test -w -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 \
+        -DMELODEE_PHYS=1 -Ibuild/andamento/gen -Ifirmware/src -Itests || return
+    mkdir -p build/oled/ppm
+    step "Andamento tracks 5..8 (platform/andamento/and_ext.c): MIDI 5..8, CV / gate, STOP, MUTE, ENERGY, keys, pages, 1..4 unchanged" \
+        "$OUT/and_ext" build/oled
+    [ $PIL = 1 ] && { python3 tests/oled_render.py build/oled || fail "tests/oled_render.py"; }
+}
+and_master() {                                    # (the headers as and_keys: web/andamento/build.sh --headers)
+    sh web/andamento/build.sh --headers > /dev/null || { fail "web/andamento/build.sh --headers"; return; }
+    build and_master and_master_test -w -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 \
+        -DMELODEE_PHYS=1 -Ibuild/andamento/gen -Ifirmware/src -Itests || return
+    step "Andamento master bus (platform/andamento/and_master.c): MIX 0 bit-identical, bypass, compressor, release, makeup, tilt, determinism" \
+        "$OUT/and_master"
+}
 dsp_tracks() {
     build hostsim hostsim -O2 $FW || return
     step "DSP render (FM6 INIT VOICE)" "$OUT/hostsim" 12 24 1 "$OUT/render.wav"
@@ -479,6 +519,7 @@ if core; then
     t "removed effects: old songs and motion, MIDI, physical input and dry output" no_effects_test -O1 $FW
     t "resident audio: four-track resource budget and removed buses" ram_audio_test -O2 $FW
     t "resident audio: expanded voice budget and CPU1 fallback" ram_voice_budget_test -O2 $FW
+    t "load ceiling: a shed caps admission, recovers under 60 %, BUDGET stays the maximum (#586)" voice_ceiling_test -O2 $FW
     t "audio: calibrated reservations, release tails and overlapping hits" audio_admission_test -O2 $FW
     t "USB audio: four isolated track stems through the real mixer" usb_audio_tracks_test -O2 $FW
     t "boot stub: CRCs, rescue keys, damaged staging and retry fallback" boot_stub_test -O2
@@ -542,6 +583,9 @@ if core && [ $TABLES = 1 ]; then
     job ui_renders
     job oled_render
     job and_keys
+    job and_home
+    job and_ext
+    job and_master
     t "boot audio: codec waits for settled silent DMA and shuts down before I2S" audio_boot_test -w
     t "audio: overload protection, bounded fades and DMA diagnostics" audio_test $FW
     t "audio: silent bench keeps synthesis running and silences physical output" audio_silent_test:audio_test \

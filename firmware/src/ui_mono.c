@@ -1723,6 +1723,27 @@ static void mo_pic_midich(void)
     if (settings_midi_out != MIDI_OUT_ALL)
         mo_text(settings_midi_out == MIDI_OUT_OFF ? "NOTES OUT: OFF" : "NOTES OUT: KEYS", 2, 101, MO_DIM);
 }
+/* CPU%'s own display smoothing (Theo 2026-11-14: the bar and the number were jittery): a running average kept at
+ * 4 extra bits of precision (Q4), one pole, about 1/32 of the remaining gap closed a draw -- a few tenths of a
+ * second to settle, faster for a bigger real jump than for a one-draw wobble. Two tries at a window/histogram
+ * version (48 and then 24 raw samples kept) each grew the image by thousands of bytes more than their own size,
+ * apparently from shifting other code's addressing in this toolchain; this one keeps its added state to a single
+ * uint16_t, the same size class as a first, too-crude hysteresis try that cost only +60 B, and was measured the
+ * same way. UI-only: song.cpu_q8 and cpu_peak_q8 (the console, the screen reader, #586's shedding) are unchanged;
+ * only this readout is steadied. */
+#define CPU_DISP_SHIFT 4u                     /* Q4: acc_q4 = the shown value's average, x16 */
+static uint32_t cpu_disp_smooth(uint32_t raw)
+{
+    static uint16_t acc_q4 = 0xFFFFu;
+    int32_t target;
+    if (raw > 100u) raw = 100u;
+    target = (int32_t)(raw << CPU_DISP_SHIFT);
+    if (acc_q4 == 0xFFFFu)
+        acc_q4 = (uint16_t)target;
+    else
+        acc_q4 = (uint16_t)((int32_t)acc_q4 + ((target - (int32_t)acc_q4) >> 5));
+    return acc_q4 >> CPU_DISP_SHIFT;
+}
 /* GLO > SYSTEM: what the voices and the CPU are doing. VOICES: the budget's points sounding now of BUDGET (the one
  * in effect, voice.c voice_budget) as a bar; CPU: the average as a bar, the recent peak a tick (as KNOB 4's numbers) */
 static void mo_pic_load(const char *k, uint32_t a, uint32_t pk, uint32_t n, const char *v, int32_t y)
@@ -1737,7 +1758,8 @@ static void mo_pic_load(const char *k, uint32_t a, uint32_t pk, uint32_t n, cons
 static void mo_pic_system(void)
 {
     char b[16];
-    uint32_t used = voices_busy(), bud = voice_budget(), a = song.cpu_q8 * 100u / 256u, pk = song.cpu_peak_q8 * 100u / 256u;
+    uint32_t used = voices_busy(), bud = voice_budget(), a = cpu_disp_smooth(song.cpu_q8 * 100u / 256u),
+             pk = song.cpu_peak_q8 * 100u / 256u;
     fmt_int(b, (int32_t)used);
     str_cpy(b + str_len(b), "/", 2);
     fmt_int(b + str_len(b), (int32_t)bud);

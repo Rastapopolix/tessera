@@ -6,7 +6,12 @@
  *
  * The I2S clock is independent of USB SOF. A low-pass ring-fill servo adjusts
  * capture packet lengths and the playback endpoint's explicit 10.14 feedback.
- * USB and I2S both run at the native 44.1 kHz rate; no resampler is needed. */
+ * USB and I2S both run at the native 44.1 kHz rate; no resampler is needed.
+ *
+ * Once a stream runs, a ring that runs short or full is mended, not reset (#586): an
+ * underrun sends what it has and pads only the missing frames with the last sample
+ * decaying; an overrun drops the oldest frames back to the target. Either way the
+ * stream crossfades back in over UA_FADE frames. A reset cost 11.6 ms of silence. */
 #include <stdint.h>
 #define UA_RATE 44100u
 #define UA_CAP_CHANNELS 4u                    /* maximum; active stride follows the enumerated mode */
@@ -16,6 +21,7 @@ static uint8_t ua_cap_channels = 2u;
 #define UA_PACKET (UA_MAX_FRAMES * UA_CAP_CHANNELS * 3u)
 #define UA_RING 1024u
 #define UA_TARGET 512u
+#define UA_FADE 32u                             /* frames: a mended gap's crossfade back into the stream */
 #define UA_NOMINAL ((UA_RATE * 16384u) / 1000u)
 #ifdef __APPLE__
 #define UA_POOL                                 /* (the host tests: Mach-O has no such section) */
@@ -30,6 +36,8 @@ static struct {
     uint32_t play_underruns, play_overruns, cap_underruns, cap_overruns, bad_packets;
     uint32_t rx_packets, tx_packets, missed_frames;
     uint32_t poll_max_ticks, service_max_ticks;
+    uint8_t play_ramp, cap_ramp;               /* frames of crossfade left after a mended gap */
+    int16_t play_last[2], cap_last[UA_CAP_CHANNELS];
     int16_t play[UA_RING * 2u], cap[UA_RING * UA_CAP_CHANNELS];
 } ua UA_POOL;
 
@@ -62,15 +70,28 @@ static uint8_t settings_usb_volume = UA_VOLUME_DEFAULT;   /* MENU > USB VOLUME, 
 static void ua_play_reset(void)
 {
     ua.pw = ua.pr = 0;
-    ua.play_ready = 0;
+    ua.play_ready = ua.play_ramp = 0;
+    ua.play_last[0] = ua.play_last[1] = 0;
     ua.play_fill_q8 = UA_TARGET * 256;
 }
 
 static void ua_cap_reset(void)
 {
+    uint32_t ch;
     ua.cw = ua.cr = ua.cap_frac = 0;
-    ua.cap_ready = 0;
+    ua.cap_ready = ua.cap_ramp = 0;
+    for (ch = 0; ch < UA_CAP_CHANNELS; ch++)
+        ua.cap_last[ch] = 0;
     ua.cap_fill_q8 = UA_TARGET * 256;
+}
+
+/* One sample of a mended gap: the last sample decays by 7/8 a frame and fades out as
+ * the stream's sample s fades in over UA_FADE frames (ramp UA_FADE: all tail, a pad). */
+static int16_t ua_mend(int16_t *last, int32_t s, uint32_t ramp)
+{
+    int32_t tail = *last * 7 / 8;
+    s = (s * (int32_t)(UA_FADE - ramp) + tail * (int32_t)ramp) / (int32_t)UA_FADE;
+    return *last = (int16_t)s;
 }
 
 static void ua_reset(void)
@@ -92,7 +113,8 @@ static void ua_receive(const uint8_t *p, uint32_t bytes)
     }
     if (ua.pw - ua.pr + n > UA_RING) {
         ua.play_overruns++;
-        ua_play_reset();                       /* re-prime, never replay stale data */
+        ua.pr = ua.pw + n - UA_TARGET;         /* drop the oldest, never replay stale data */
+        ua.play_ramp = UA_FADE;
     }
     for (i = 0; i < n; i++) {
         uint32_t at = (ua.pw & (UA_RING - 1u)) * 2u;
@@ -129,31 +151,39 @@ static uint32_t ua_feedback(void)
 
 static uint32_t ua_transmit(uint8_t *p)
 {
-    uint32_t i, n, take = 0, width = ua_sample_bytes(ua.cap_alt);
+    uint32_t i, n, have = 0, width = ua_sample_bytes(ua.cap_alt), gap = 0;
     ua.cap_frac += ua_rate(ua.cap_fill_q8 - UA_TARGET * 256);
     n = ua.cap_frac >> 14;
     ua.cap_frac &= 16383u;
     if (!ua.cap_ready && ua.cw - ua.cr >= UA_TARGET)
         ua.cap_ready = 1;
     if (ua.cap_ready) {
-        if (ua.cw - ua.cr >= n)
-            take = 1;
-        else {
-            ua.cap_underruns++;
-            ua_cap_reset();
-        }
+        have = ua.cw - ua.cr;
+        if (have < n) {
+            ua.cap_underruns++;                 /* send what there is, pad the rest */
+            gap = 1;
+        } else
+            have = n;
     }
     for (i = 0; i < n; i++) {
         int16_t sample[UA_CAP_CHANNELS] = {0};
-        uint32_t ch;
-        if (take) {
-            uint32_t at = (ua.cr++ & (UA_RING - 1u)) * ua_cap_channels;
-            for (ch = 0; ch < ua_cap_channels; ch++)
-                sample[ch] = ua.cap[at + ch];
-        }
-        for (ch = 0; ch < ua_cap_channels; ch++)
+        uint32_t ch, at = (ua.cr & (UA_RING - 1u)) * ua_cap_channels;
+        for (ch = 0; ch < ua_cap_channels; ch++) {
+            if (i < have)
+                sample[ch] = ua.cap_ramp ? ua_mend(&ua.cap_last[ch], ua.cap[at + ch], ua.cap_ramp)
+                                         : (ua.cap_last[ch] = ua.cap[at + ch]);
+            else if (gap)
+                sample[ch] = ua_mend(&ua.cap_last[ch], 0, UA_FADE);
             ua_encode(p + (i * ua_cap_channels + ch) * width, width, sample[ch]);
+        }
+        if (i < have) {
+            ua.cr++;
+            if (ua.cap_ramp)
+                ua.cap_ramp--;
+        }
     }
+    if (gap)
+        ua.cap_ramp = UA_FADE;
     return n * width * ua_cap_channels;
 }
 
@@ -167,20 +197,20 @@ static uint32_t ua_transmit(uint8_t *p)
  * capture was disabled. */
 static void ua_audio(int32_t *out, const int32_t *tracks, uint32_t n, uint32_t volume_q12)
 {
-    uint32_t i, capture = ua.cap_alt && (ua_cap_channels == 2u || tracks), playback = 0;
+    uint32_t i, capture = ua.cap_alt && (ua_cap_channels == 2u || tracks), playback = 0, have = n;
     if (capture && ua.cw - ua.cr + n > UA_RING) {
         ua.cap_overruns++;
-        ua_cap_reset();
+        ua.cr = ua.cw + n - UA_TARGET;          /* drop the oldest, keep the stream */
+        ua.cap_ramp = UA_FADE;
     }
     if (ua.play_alt) {
         if (!ua.play_ready && ua.pw - ua.pr >= UA_TARGET)
             ua.play_ready = 1;
         if (ua.play_ready) {
-            if (ua.pw - ua.pr >= n)
-                playback = 1;
-            else {
-                ua.play_underruns++;
-                ua_play_reset();
+            playback = 1;
+            if (ua.pw - ua.pr < n) {
+                ua.play_underruns++;            /* play what there is, pad the rest */
+                have = ua.pw - ua.pr;
             }
         }
     }
@@ -198,14 +228,32 @@ static void ua_audio(int32_t *out, const int32_t *tracks, uint32_t n, uint32_t v
                     ua.cap[ci + ch] = (int16_t)ua_clip(tracks[i * UA_CAP_CHANNELS + ch]);
         }
         if (playback) {
-            l += (ua.play[pi] * (int32_t)volume_q12) >> 12;
-            r += (ua.play[pi + 1u] * (int32_t)volume_q12) >> 12;
+            int32_t pl = 0, pr = 0;
+            if (i < have) {
+                pl = ua.play[pi];
+                pr = ua.play[pi + 1u];
+                if (ua.play_ramp) {
+                    pl = ua_mend(&ua.play_last[0], pl, ua.play_ramp);
+                    pr = ua_mend(&ua.play_last[1], pr, ua.play_ramp--);
+                } else {
+                    ua.play_last[0] = (int16_t)pl;
+                    ua.play_last[1] = (int16_t)pr;
+                }
+            } else {
+                pl = ua_mend(&ua.play_last[0], 0, UA_FADE);
+                pr = ua_mend(&ua.play_last[1], 0, UA_FADE);
+            }
+            l += (pl * (int32_t)volume_q12) >> 12;
+            r += (pr * (int32_t)volume_q12) >> 12;
             out[2u * i] = ua_clip(l);
             out[2u * i + 1u] = ua_clip(r);
         }
     }
     if (capture)
         ua.cw += n;
-    if (playback)
-        ua.pr += n;
+    if (playback) {
+        ua.pr += have;
+        if (have < n)
+            ua.play_ramp = UA_FADE;
+    }
 }
