@@ -142,7 +142,12 @@ static uint32_t voice_units(const track_t *t)
 /* the budget with CPU1: VBUDGET at 360 MHz, scaled with the clock running by main.c clock_boot (16 at a 320 MHz a
  * soft reset kept from a 1.3.x session); VBUDGET on the host */
 static uint32_t vbudget_cpu1 = VBUDGET;
-static uint32_t voice_budget(void)
+/* The load ceiling (#586): the measured time's own limit under BUDGET. The weights don't see FX, USB, the mixer or
+ * what a patch really costs, so a busy project kept admitting voices that the overload check (audio.c) then faded
+ * one a half: clicks, and late halves anyway. An emergency shed drops the ceiling to the units sounding then; past
+ * it a new voice replaces one (voice_victim's order: a released tail first) instead of adding load. 0xFF = none */
+static uint8_t vceil = 0xFFu, vceil_wait;
+static uint32_t voice_budget_max(void)
 {
 #if MELODEE_AUDIO_BENCH
     if(audio_bench_active())return NPART*NVOICE*3u;
@@ -160,6 +165,11 @@ static uint32_t voice_budget(void)
     return (uint32_t)settings_budget;
 #endif
 }
+static uint32_t voice_budget(void)
+{
+    uint32_t b = voice_budget_max();
+    return vceil < b ? vceil : b;
+}
 
 static uint32_t voices_busy(void)                       /* budget units of all parts' sounding voices (not fading) */
 {
@@ -170,6 +180,34 @@ static uint32_t voices_busy(void)                       /* budget units of all p
         u += n * voice_units(&trk[p]);
     }
     return u;
+}
+
+/* audio.c: an emergency shed has just faded a voice: the ceiling is what still sounds (2 units at least: each part's
+ * protected voice is admitted past it anyway, voice_room) */
+#define VCEIL_MIN 2u
+#define VCEIL_LOW 154u                                  /* average load under 60 % (song.cpu_q8: 256 = a full half) */
+#define VCEIL_HALVES 86u                                /* ... for 86 halves (~250 ms): one unit back */
+static void voice_ceiling_drop(void)
+{
+    uint32_t u = voices_busy();
+    vceil = (uint8_t)(u > VCEIL_MIN ? u : VCEIL_MIN);
+    vceil_wait = 0;
+}
+
+/* each half (audio.c): recover slowly while the load stays low; let go at BUDGET */
+static void voice_ceiling_tick(uint32_t load_q8)
+{
+    if (vceil == 0xFFu)
+        return;
+    if (load_q8 >= VCEIL_LOW) {
+        vceil_wait = 0;
+        return;
+    }
+    if (++vceil_wait < VCEIL_HALVES)
+        return;
+    vceil_wait = 0;
+    if (++vceil >= voice_budget_max())
+        vceil = 0xFFu;
 }
 
 static uint32_t lowest_held(const track_t *t)           /* index of the lowest held note (the bass), NVOICE = none */
