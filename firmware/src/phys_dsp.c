@@ -66,6 +66,18 @@
 #define PX_SLINE 128             /* dispersion all-pass line (a quarter, as DaisySP) */
 #define PX_SMASK (PX_SLINE - 1)
 #define PX_ONE (1 << 20)         /* signal 1.0 */
+/* The models' numbers were set at the FM-1's 44.1 kHz. Three of them count per sample (DaisySP's too): the modes'
+ * Q scale (a mode's Q grows with its frequency in cycles per sample), Dust's density (hits per sample) and the
+ * string's dispersion scale (160 / sr). At another FS they are rescaled so that the decays, the bowing's grain
+ * and the stiffness stay as they sound at 44.1 kHz. */
+#if FS == 44100
+#define PX_DUST_Q32 19661u                       /* 0.3, Q16 (times the density, Q16: Q32) */
+#define PX_DISP_SR 238                           /* 160 / sr, Q16 */
+#else
+#define PX_DUST_Q32 ((uint32_t)(19661.0 * 44100.0 / FS + 0.5))
+#define PX_DISP_SR ((int32_t)(160.0 * 65536.0 / FS + 0.5))
+#define PX_Q_FS ((uint32_t)(65536.0 * FS / 44100.0 + 0.5))   /* the modes' Q scale: FS / 44.1 kHz, Q16 */
+#endif
 
 /* ---------------------------------------------------------------- math --- */
 static inline int32_t px_m(int32_t a, int32_t b, int sh) { return (int32_t)(((int64_t)a * b) >> sh); }
@@ -281,7 +293,7 @@ static __attribute__((noinline)) void px_modal_exciter(px_modal_blk_t *B, px_mod
         int32_t bb = 22938 + px_m(brightness, 42598, 16), dn = px_m(bb, bb, 16), df;
         dn = px_m(dn, dn, 16);
         df = 3 + px_m(dn, 65533, 16);
-        B->dust_thr = (uint32_t)df * 19661u;             /* 0.3 df, Q32 */
+        B->dust_thr = (uint32_t)df * PX_DUST_Q32;        /* 0.3 df, Q32 */
         B->dust_inv = (uint32_t)(((uint64_t)1 << 47) / B->dust_thr);
         B->dust_gain = px_m(px_m(px_m(262144 - 3 * df, accent, 16), bow, 16), (int32_t)px_exp2(-px_m(d, 217579, 16)), 16);
         B->dust_dc = (int32_t)(((uint64_t)B->dust_thr * (uint32_t)B->dust_gain) >> 29);
@@ -301,7 +313,11 @@ static uint64_t px_modal_q(int32_t structure, int32_t b, int32_t d, int32_t *ql)
 {
     int32_t bb = px_m(px_m(b, 65536 - px_m(structure, 19661, 16), 16), 65536 - px_m(d, 19661, 16), 16);
     *ql = px_m(px_m(bb, 131072 - bb, 16), 55706, 16) + 9830;
-    return ((uint64_t)500 * px_exp2((int32_t)(((int64_t)d * 870537) >> 16))) >> 8;
+    uint64_t q = ((uint64_t)500 * px_exp2((int32_t)(((int64_t)d * 870537) >> 16))) >> 8;
+#ifdef PX_Q_FS
+    q = (q * PX_Q_FS) >> 16;                     /* (the same decay in seconds as at 44.1 kHz) */
+#endif
+    return q;
 }
 
 /* ModalVoice::Process + Resonator::Process, the per-block part. f0: the note (cycles Q32);
@@ -536,7 +552,7 @@ static __attribute__((noinline)) void px_string_block(px_string_blk_t *B, px_str
         int32_t dn = px_m(brightness, brightness, 16), dfx;
         dn = px_m(dn, dn, 16);
         dfx = 3 + px_m(dn, 65533, 16);
-        B->dust_thr = (uint32_t)dfx * 19661u;
+        B->dust_thr = (uint32_t)dfx * PX_DUST_Q32;
         B->dust_inv = (uint32_t)(((uint64_t)1 << 47) / B->dust_thr);
         B->dust_gain = px_m(px_m(px_m(524288 - 6 * dfx, accent, 16), bow, 16), (int32_t)px_exp2(-px_m(d, 217579, 16)), 16);
         B->dust_dc = (int32_t)(((uint64_t)B->dust_thr * (uint32_t)B->dust_gain) >> 29);
@@ -582,7 +598,7 @@ static __attribute__((noinline)) void px_string_block(px_string_blk_t *B, px_str
     x = (int32_t)(((uint64_t)1 << 46) / px_exp2(dcut / 12));   /* 1 / ratio, Q30 */
     B->comp = (1 << 30) - px_m(px_atan(x), 341782638, 30);    /* * 1 / pi */
     sp = px_m(px_m(nl, 131072 - nl, 16), 14746, 16);     /* nl (2 - nl) 0.225, Q16 */
-    sc = (int32_t)(((uint64_t)delay * 238) >> 16);       /* 160 / sr * delay, Q16 */
+    sc = (int32_t)(((uint64_t)delay * PX_DISP_SR) >> 16);   /* 160 / sr * delay, Q16 */
     sc = px_clamp(sc, 65536, 137626);
     B->m_ap = sp << 14;
     B->m_main = (1 << 30) - px_m(sp, px_m(26739 - px_m(sp, 20185, 16), sc, 16), 2);

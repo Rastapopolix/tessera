@@ -103,9 +103,20 @@ static inline __attribute__((always_inline)) int32_t dr_softclip(int32_t x)
 #if FS == 44100                                  /* (the FM-1: integers, as its compiler wants for constants) */
 #define DR_PI_FS 4781u                           /* pi / FS per 1/16 Hz, Q30 */
 #define DR_2PI_FS 2390u                          /* 2 pi / FS, Q24 */
+#define DR_STEP44(x) (x)
+#define DR_LEN44(n) (n)
+#define DR_SHR44(v, sh) ((v) >> (sh))
+#define DR_SHR44_OR(v, c, sa, sb) ((v) >> ((c) ? (sa) : (sb)))
 #else
 #define DR_PI_FS ((uint32_t)(3.14159265358979323846 * 1073741824.0 / (16.0 * FS) + 0.5))
 #define DR_2PI_FS ((uint32_t)(2.0 * 3.14159265358979323846 * 16777216.0 / FS + 0.5))
+/* numbers worked out for 44.1 kHz, at FS: a step per sample (a phase increment, a small one-pole coefficient)
+ * and a length in samples */
+#define DR_STEP44(x) ((uint32_t)((x) * 44100.0 / FS + 0.5))
+#define DR_LEN44(n) ((uint32_t)((n) * (double)FS / 44100.0 + 0.5))
+/* v >> sh, the step of a one-pole that moves by 2^-sh a sample at 44.1 kHz: the same time constant at FS */
+#define DR_SHR44(v, sh) ((int32_t)(((int64_t)(v) * (int32_t)DR_STEP44(65536u >> (sh))) >> 16))
+#define DR_SHR44_OR(v, c, sa, sb) ((c) ? DR_SHR44(v, sa) : DR_SHR44(v, sb))   /* (two constant steps) */
 #endif
 static inline __attribute__((always_inline)) int32_t dr_freq(uint32_t hz16) /* 2 sin(pi fc / FS), Q30 */
 {
@@ -189,17 +200,18 @@ static inline __attribute__((always_inline)) int32_t drf_hp(const drf_t *c, int3
     s[1] = 2 * v2 - s[1];
     return x - ((c->k * v1) >> 13) - v2;
 }
-/* the fixed filters: g = tan(pi fc / FS), k = 1 / Q, a1 = 1 / (1 + g (g + k)), a2 = g a1, a3 = g a2 */
-static const drf_t DRF_SDN = {6206, 1231, 244, 11587};          /* SD noise high-pass 2749 Hz, Q 0.71 */
-static const drf_t DRF_CP = {7814, 636, 52, 4201};              /* clap band-pass 1140 Hz, Q 1.95 */
-static const drf_t DRF_MA = {4921, 1831, 681, 11587};           /* maracas high-pass 5 kHz */
-static const drf_t DRF_CB = {8055, 506, 32, 1707};              /* cowbell band-pass 880 Hz, Q 4.8 */
-static const drf_t DRF_M1 = {7149, 1788, 447, 2731};            /* metal band-pass 1: 3440 Hz, Q 3 */
-static const drf_t DRF_M2 = {5360, 2969, 1644, 3277};           /* metal band-pass 2: 7100 Hz, Q 2.5 */
-static const drf_t DRF_CYA = {6050, 1313, 285, 11587};          /* cymbal band 1 high-pass 3 kHz */
-static const drf_t DRF_CYB = {3110, 2886, 2677, 6827};          /* cymbal band 2 high-pass 10.5 kHz, Q 1.2 */
-static const drf_t DRF_HAT = {4449, 2423, 1320, 8192};          /* hi-hat high-pass 7 kHz, Q 1 */
-static const drf_t DRF_RS = {7558, 431, 25, 11587};             /* rim shot high-pass 800 Hz */
+/* the fixed filters: g = tan(pi fc / FS), k = 1 / Q, a1 = 1 / (1 + g (g + k)), a2 = g a1, a3 = g a2; their
+ * frequencies and Qs are in tools/gen_tables.py (DRF), which works the numbers out at FS */
+static const drf_t DRF_SDN = {DRF_SDN_C};                        /* SD noise high-pass 2749 Hz, Q 0.71 */
+static const drf_t DRF_CP = {DRF_CP_C};                          /* clap band-pass 1140 Hz, Q 1.95 */
+static const drf_t DRF_MA = {DRF_MA_C};                          /* maracas high-pass 5 kHz */
+static const drf_t DRF_CB = {DRF_CB_C};                          /* cowbell band-pass 880 Hz, Q 4.8 */
+static const drf_t DRF_M1 = {DRF_M1_C};                          /* metal band-pass 1: 3440 Hz, Q 3 */
+static const drf_t DRF_M2 = {DRF_M2_C};                          /* metal band-pass 2: 7100 Hz, Q 2.5 */
+static const drf_t DRF_CYA = {DRF_CYA_C};                        /* cymbal band 1 high-pass 3 kHz */
+static const drf_t DRF_CYB = {DRF_CYB_C};                        /* cymbal band 2 high-pass 10.5 kHz, Q 1.2 */
+static const drf_t DRF_HAT = {DRF_HAT_C};                        /* hi-hat high-pass 7 kHz, Q 1 */
+static const drf_t DRF_RS = {DRF_RS_C};                          /* rim shot high-pass 800 Hz */
 
 static inline __attribute__((always_inline)) int32_t dr_blk(uint32_t tau) /* exp(-CTL / tau), Q16 */
 {
@@ -233,7 +245,7 @@ static inline __attribute__((always_inline)) int32_t dre_next(dre_t *e, int32_t 
 static inline __attribute__((always_inline)) int32_t dr_pulse(dr8_t *d)
 {
     int32_t p = d->t < DR_P1 ? d->v : 0, s;
-    d->px += ((p - d->px) * 6650) >> 15;         /* 0.1 ms */
+    d->px += ((p - d->px) * (int32_t)DR_STEP44(6650)) >> 15;   /* 0.1 ms */
     s = p - d->px + ((p * 1442) >> 15);
     if (s < 0)                                   /* -> -0.71 V (727 = 0.71 V / 16) */
         s = s * 727 / (727 - (s >> 4));
@@ -284,7 +296,7 @@ static __attribute__((noinline, section(".dsp_text"))) void dr_bd(dr8_t *d, cons
             if (d->t < DR_P1 && !round)
                 d->s[0] = 32767;
         }
-        d->s[0] -= (d->s[0] >> 6) + (d->s[0] > 0);   /* attack envelope: ~5 ms after the pulse */
+        d->s[0] -= DR_SHR44(d->s[0], 6) + (d->s[0] > 0);   /* attack envelope: ~5 ms after the pulse */
         m = (d->s[0] * 53412) >> 15;             /* the attack: x 2.63, 130 Hz */
         if (d->s[3] > DR_SIGH0)
             m += (d->s[3] - DR_SIGH0) >> DR_SIGHS;
@@ -293,7 +305,7 @@ static __attribute__((noinline, section(".dsp_text"))) void dr_bd(dr8_t *d, cons
         d->s[3] = y;
         y += x >> DR_LEAK;
         d->s[1] += ((y - d->s[1]) * c) >> 14;    /* TONE */
-        d->s[2] += (d->s[1] * 256 - d->s[2]) >> 10;   /* output high-pass 6.8 Hz, Q8 */
+        d->s[2] += DR_SHR44(d->s[1] * 256 - d->s[2], 10);   /* output high-pass 6.8 Hz, Q8 */
         y = d->s[1] - (d->s[2] >> 8);
         acc[i] += y;
         if (y > pk || -y > pk)
@@ -357,7 +369,7 @@ static __attribute__((noinline, section(".dsp_text"))) void dr_tom(dr8_t *d, con
             x = dr_pulse(d) * 16;
         y = (int32_t)(((int64_t)dr_res(&d->lp, &d->bp, f, q, x) * g) >> 16);
         if (DR_TOM[k].nz) {
-            d->s[0] += ((scratch->nz[i] - d->s[0]) * 2700) >> 14;   /* ~1 kHz low-pass */
+            d->s[0] += ((scratch->nz[i] - d->s[0]) * (int32_t)DR_STEP44(2700)) >> 14;   /* ~1 kHz low-pass */
             y += (d->s[0] * ((DRE_AT(n0, dn, i) * DR_TOM_N) >> 15)) >> 15;
         } else {
             y += x >> (DR_LEAK + 2);             /* the congas' click */
@@ -429,7 +441,7 @@ static __attribute__((noinline, section(".dsp_text"))) void dr_cp(dr8_t *d, int3
             d->s[2] = (d->v * 151) >> 10;         /* Q15 of the trigger level (13.5 V -> 1.0) */
             d->s[3] += (int32_t)DR_CP_GAP;
         }
-        d->s[2] -= (d->s[2] >> (d->t < DR_CP_N * DR_CP_GAP ? 7 : 8)) + (d->s[2] > 0);   /* 2.9 ms, the last 5.8 ms */
+        d->s[2] -= DR_SHR44_OR(d->s[2], d->t < DR_CP_N * DR_CP_GAP, 7, 8) + (d->s[2] > 0);   /* 2.9 ms, the last 5.8 ms */
         w = d->s[2] + ((DRE_AT(e0, de, i) * DR_CP_REV) >> 15);
         y = (((drf_bp(&filter, scratch->nz[i], d->s) * w) >> 15) * DR_CP_G) >> 12;
         acc[i] += y;
@@ -441,7 +453,7 @@ static __attribute__((noinline, section(".dsp_text"))) void dr_cp(dr8_t *d, int3
         dr_off(d);
 }
 
-#define DR_MA_RISE 662u                          /* 15 ms */
+#define DR_MA_RISE DR_LEN44(662u)                /* 15 ms */
 #define DR_MA_G 23900                            /* out, Q15 */
 static __attribute__((noinline, section(".dsp_text"))) void dr_ma(dr8_t *d, int32_t *acc, uint32_t n, dr_scratch_t *scratch)
 {
@@ -452,7 +464,7 @@ static __attribute__((noinline, section(".dsp_text"))) void dr_ma(dr8_t *d, int3
         if (d->t < DR_MA_RISE)
             d->s[2] += step;
         else
-            d->s[2] -= (d->s[2] >> 7) + (d->s[2] > 0);   /* 2.9 ms */
+            d->s[2] -= DR_SHR44(d->s[2], 7) + (d->s[2] > 0);   /* 2.9 ms */
         y = (((drf_hp(&DRF_MA, scratch->nz[i], d->s) * d->s[2]) >> 15) * DR_MA_G) >> 15;
         acc[i] += y;
         if (y > pk || -y > pk)
@@ -466,7 +478,8 @@ static __attribute__((noinline, section(".dsp_text"))) void dr_ma(dr8_t *d, int3
 /* -------------------------------------------------------- metal voices --- */
 #define DR_DUTY 2060725309u                      /* 47.98 % (the HD14584 at 5 V) */
 static const uint32_t DR_OSC[6] = {              /* phase increments: 205.3, 369.6, 304.4, 522.7, */
-    19994485u, 35995916u, 29645987u, 50906562u, 77913239u, 52591436u,   /* 800 (#5), 540 Hz (#6) */
+    DR_STEP44(19994485u), DR_STEP44(35995916u), DR_STEP44(29645987u),   /* 800 (#5), 540 Hz (#6) */
+    DR_STEP44(50906562u), DR_STEP44(77913239u), DR_STEP44(52591436u),
 };
 
 /* Block setup stays outside the six-oscillator sample loop. */
