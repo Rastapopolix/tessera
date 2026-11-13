@@ -2556,6 +2556,15 @@ static int test_midi(void)
         bad += check("GLO > MIDI IN K3: all four ranges exposed", d->max == 4 && str_eq(v, "13-16"));
         pg=&PAGES[page_first(FAM_GLO) + 6u];d=page_desc(pg,0,&vp);
         bad+=check("GLO > SYSTEM K1: device shared BUDGET",d && str_eq(pg->title,"SYSTEM") && str_eq(d->label,"BUDGET") && vp==&settings_budget && pg->id[0]==G_BUDGET);
+        go_title("SYSTEM");
+        int16_t budget = settings_budget;
+        ui.hot_t = 0; ui.hot_col = 0xFFu;
+        turn(EN_K1 + 1u, 1);
+        bad += check("SYSTEM's CPU column (fixed range, nothing to set) does not invert when its knob turns",
+                     cur_page()->id[1] == G_INFO && !(ui.hot_t && ui.hot_col == 1u));
+        turn(EN_K1, 1);
+        bad += check("BUDGET (an editable column on the same page) still inverts", ui.hot_t != 0 && ui.hot_col == 0u);
+        settings_budget = budget;
     }
     return bad;
 }

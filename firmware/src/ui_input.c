@@ -1932,11 +1932,13 @@ static void page_knob(uint32_t k, int32_t s)
         return;
     if (mlearn_on && !pop.on)                          /* MIDI LEARN: this knob's parameter waits for a CC (ui_learn.c) */
         mlearn_take(k);
-    if (ui.home || pg->scope == SC_STEP || pg->scope == SC_TRK || ((pg->scope==SC_DRUM || pg->scope==SC_DRUMHIT) && pg->id[k]!=255) || page_desc(pg, k, &hv) ||
+    if ((ui.home || pg->scope == SC_STEP || pg->scope == SC_TRK || ((pg->scope==SC_DRUM || pg->scope==SC_DRUMHIT) && pg->id[k]!=255) || page_desc(pg, k, &hv) ||
         (pg->graph == GR_USER && k == 0u) || (!MELODEE_LOOK && pg->graph == GR_MOD && k == 1u)
         || pg->graph == GR_SONG || pg->graph == GR_PATGRID || pg->graph == GR_SCALE_PICKER || (scale_settings_page(pg) && k == 1u)
-        || (pg->graph == GR_SLICES && k < 2u) || tess_knob(pg, k)) {   /* (not an empty column; Tessera's own pages'
+        || (pg->graph == GR_SLICES && k < 2u) || tess_knob(pg, k))   /* (not an empty column; Tessera's own pages'
                                                          * values invert as the rest do) */
+        && !(pg->scope == SC_GLOBAL && pg->id[k] < G_COUNT && GP[pg->id[k]].min == GP[pg->id[k]].max)) {   /* a
+         * fixed-range global (SYSTEM's CPU: a meter, nothing to set, ui_help.c) is not a knob to invert */
         ui.hot_col = (uint8_t)k;
         ui.hot_t = 40;
     }
