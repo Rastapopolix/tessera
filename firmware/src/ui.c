@@ -644,8 +644,7 @@ static void page_scroll(int32_t dir)
     } else {
         for (n = 0; n < NPAGES; n++) {
             i = (i + (dir > 0 ? 1u : NPAGES - 1u)) % NPAGES;
-            if (in_fam(i, fam) && page_visible(i) && PAGES[i].graph != GR_TRK)   /* (MIXER: GLO's tap; SELECT there
-                                                                                  * is the tempo) */
+            if (in_fam(i, fam) && page_visible(i))
                 break;
         }
     }
