@@ -304,9 +304,9 @@ void cord_cc_set(uint32_t i, uint32_t n)
 /* per destination track, the cords that reach it (bit i: cords[i]): mask in the audio block, smask at the step.
  * envsrc: bit t, a cord reads track t's ENV (its voices report it only with mod.c active: mod_begin keeps it on) */
 static uint32_t cord_mask[NTRK], cord_smask[NTRK];
-/* velm[t]: the cords onto track t's VELO (CK_VEL); omask bit t, a cord moves its TIDE SPEED or SWARM RATE (organic.c,
- * each block); qall (below, at cord_seq_begin): the CK_SEQ cords, also in mask (the render's GLIDE) */
-static uint32_t cord_velm[NTRK], cord_qall;
+/* velm bit i: cords[i] goes onto a VELO (CK_VEL); qall, a CK_SEQ cord (cord_seq_begin; also in mask: the render's
+ * GLIDE); omask bit t, a cord moves track t's TIDE SPEED or SWARM RATE (organic.c, each block) */
+static uint16_t cord_velm, cord_qall;
 static uint8_t cord_omask;
 static uint8_t cord_envsrc;
 /* the mods of mods (CK_CORD): cmask bit i, cords[i] is an M AMT cord; amask bit i, one turns cords[i]; now[i], cords[i]'s
@@ -428,12 +428,12 @@ int32_t cord_move(uint32_t i)
     const cord_t *c = cord_get(i);
     return !c ? 0 : c->src ? cord_amount(c) : cord_offset(c);
 }
-static __attribute__((noinline)) void cord_masks(void)
+static void cord_masks(void)
 {
     uint32_t i, t;
-    for (t = 0; t < NTRK; t++) cord_mask[t] = cord_smask[t] = cord_velm[t] = 0;
+    for (t = 0; t < NTRK; t++) cord_mask[t] = cord_smask[t] = 0;
     cord_omask = 0;
-    cord_qall = 0;
+    cord_qall = cord_velm = 0;
     cord_envsrc = 0;
     cord_gmask = 0;
     cord_cmask = cord_amask = 0;
@@ -501,10 +501,10 @@ static __attribute__((noinline)) void cord_masks(void)
             continue;
         }
         if (kind == CK_VEL) {                           /* (cord_vel) */
-            cord_velm[c->dst_trk] |= 1u << i;
+            cord_velm |= (uint16_t)(1u << i);
             continue;
         }
-        if (kind == CK_SEQ) cord_qall |= 1u << i;       /* (cord_seq_begin; and the render's, below) */
+        if (kind == CK_SEQ) cord_qall |= (uint16_t)(1u << i);   /* (cord_seq_begin; and the render's, below) */
         if (c->dst == CD_ORG_SPEED || c->dst == CD_ORG_RATE) cord_omask |= (uint8_t)(1u << c->dst_trk);
         if (kind == CK_STEP) cord_smask[c->dst_trk] |= 1u << i;
         else if (kind == CK_GLOBAL) cord_gmask |= 1u << i;
@@ -536,9 +536,9 @@ const cord_t *cord_get(uint32_t i) { return i < CORD_MAX ? &cords[i] : 0; }
 static void cord_reset(void)
 {
     uint32_t t;
-    for (t = 0; t < NTRK; t++) cord_mask[t] = cord_smask[t] = cord_velm[t] = cord_adopted[t] = 0;
+    for (t = 0; t < NTRK; t++) cord_mask[t] = cord_smask[t] = cord_adopted[t] = 0;
     cord_omask = 0;
-    cord_qall = 0;
+    cord_qall = cord_velm = 0;
     cord_envsrc = 0;
     cord_gmask = 0;
     cord_cmask = cord_amask = 0;
@@ -1017,14 +1017,15 @@ uint32_t cord_adopt(void)
 }
 
 /* ------------------------------------------------------------ at the generator's step --- */
-static struct { uint8_t n, x[CORD_MAX]; int16_t base[CORD_MAX], set[CORD_MAX]; } cord_held;
+static struct { uint8_t n, x[CORD_LIVE]; int16_t base[CORD_LIVE], set[CORD_LIVE]; } cord_held;   /* (a Tessera
+                                                         * setting each: at most one a live cord) */
 
 /* tessera_clock_step, before the step: the Tessera cords of track tr into its settings (tessera_param_poke: no side
  * effect; PULSES within STEPS ..) */
 static __attribute__((noinline)) void cord_step_begin(uint32_t tr)
 {
     uint32_t m = cord_smask[tr], i, j;
-    int32_t off[CORD_MAX];
+    int32_t off[CORD_LIVE];
     cord_held.n = 0;
     for (i = 0; m; i++, m >>= 1) {
         const cord_t *c = &cords[i];
@@ -1075,21 +1076,22 @@ static __attribute__((noinline)) int32_t cord_tess_get(uint32_t tr, uint32_t x)
 /* ------------------------------------------------------------ at the sequencer --- */
 /* CK_SEQ: around seq.c seq_advance (outside the render, where mod_begin moves them), the track parameters the sequencer
  * reads (GATE, SWING, GLIDE at its note-ons, ARP's RATE GATE OCT) as their cords make them, each cord in turn within
- * the parameter's range; after it the stored ones back, the last cord first, a change made inside kept (motion
- * playback), as cord_step_end. qall bit i: cords[i] is one (cord_masks); base, set: its parameter before it and after */
-static int16_t cord_qbase[CORD_LIVE], cord_qset[CORD_LIVE];
+ * the parameter's range; after it each one's move taken off again, the last cord first, so a change made inside stays
+ * (motion playback), as cord_step_end. qmove[i]: cords[i]'s move as made (a span is at most 127) */
+static int8_t cord_qmove[CORD_LIVE];
 static __attribute__((noinline)) void cord_seq_begin(void)
 {
     uint32_t m = cord_qall, i;
     for (i = 0; m; i++, m >>= 1) {
         const cord_t *c = &cords[i];
-        uint32_t id;
-        int16_t *p;
+        const param_desc_t *pd;
+        int16_t *p, was;
         if (!(m & 1u)) continue;
-        id = cord_dest(c->dst)->pid;
-        p = &trk[c->dst_trk].p[id];
-        cord_qbase[i] = *p;
-        *p = cord_qset[i] = (int16_t)clamp(*p + cord_steps(cord_share(c), TP[id].max - TP[id].min), TP[id].min, TP[id].max);
+        pd = &TP[cord_dest(c->dst)->pid];
+        p = &trk[c->dst_trk].p[cord_dest(c->dst)->pid];
+        was = *p;
+        *p = (int16_t)clamp(was + cord_steps(cord_share(c), pd->max - pd->min), pd->min, pd->max);
+        cord_qmove[i] = (int8_t)(*p - was);
     }
 }
 static __attribute__((noinline)) void cord_seq_end(void)
@@ -1098,20 +1100,20 @@ static __attribute__((noinline)) void cord_seq_end(void)
     while (i--)
         if ((cord_qall >> i) & 1u) {
             const cord_t *c = &cords[i];
-            uint32_t id = cord_dest(c->dst)->pid;
-            int16_t *p = &trk[c->dst_trk].p[id];
-            *p = *p == cord_qset[i] ? cord_qbase[i] : (int16_t)clamp(*p - (cord_qset[i] - cord_qbase[i]), TP[id].min, TP[id].max);
+            const param_desc_t *pd = &TP[cord_dest(c->dst)->pid];
+            int16_t *p = &trk[c->dst_trk].p[cord_dest(c->dst)->pid];
+            *p = (int16_t)clamp(*p - cord_qmove[i], pd->min, pd->max);
         }
 }
 
 /* VELO (CK_VEL): a note-on's velocity on track tr, its cords' shares added (100 %: the whole 1..127) */
 __attribute__((noinline)) uint32_t cord_vel(uint32_t tr, uint32_t vel)
 {
-    uint32_t m = cord_velm[tr % NTRK], i;
+    uint32_t m = cord_velm, i;
     int32_t s = 0;
     if (!m || !vel) return vel;
     for (i = 0; m; i++, m >>= 1)
-        if (m & 1u) s += cord_share(&cords[i]);
+        if ((m & 1u) && cords[i].dst_trk == tr) s += cord_share(&cords[i]);
     return (uint32_t)clamp((int32_t)vel + (s * 127 + (s < 0 ? -16384 : 16384)) / 32768, 1, 127);
 }
 
