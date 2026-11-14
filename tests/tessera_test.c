@@ -3174,12 +3174,35 @@ static void pack_run(char *res, size_t cap)
         v18[TESSERA_TRACKS * n17 + 1u] = 0;
         ok &= tessera_unpack_ver(18u, v18) == 1 && tessera.mode[1] == TESS_ENG_ANSWER && tessera_answer(1)->n == 0u &&
               tessera_param_get(1, TX_AN_VARY) == 30 && tessera_param_get(1, TX_AN_FADE) == 33 &&
-              tessera_param_get(0, TX_EN_ARC) == 30 && tessera_check(18u, v18) == 1 && tessera_check(19u, b) == 1;
+              tessera_param_get(0, TX_EN_ARC) == 30 && tessera_check(18u, v18) == 1 && tessera_check(20u, b) == 1;
         for (uint32_t k = 0; k < 6u; k++) {
             memcpy(c, b, sizeof c);
             c[1u * n19 + n17 + BAD[k][0]] = BAD[k][1];
-            ok &= tessera_unpack(c) == 0 && tessera_check(19u, c) == 0;
+            ok &= tessera_unpack(c) == 0 && tessera_check(20u, c) == 0;
         }
+        tessera_unpack(a);
+    }
+    {   /* ANSWER HOLD (version 20): each note's held steps round trips with the rest of the phrase; a version 19
+         * block (before HOLD) loads with every HOLD 0, unheld, as it played before; a HOLD over 15 is refused */
+        const uint32_t n20 = TESSERA_PK_BYTES / TESSERA_TRACKS, n19b = TESSERA_PK_BYTES_V19 / TESSERA_TRACKS;
+        static uint8_t v19[TESSERA_PK_BYTES_V19];
+        tessera_reset();
+        gen(1, TESS_ENG_ANSWER);
+        tessera_answer_hear_at(&trk[1], 57, 90, 0);
+        tess_an.hclk[1] = 3;
+        tessera_answer_release(&trk[1], 57);
+        tessera_answer_hear_at(&trk[1], 64, 70, 0);         /* (never released: its HOLD stays 0) */
+        tessera_pack(b);
+        tessera_reset();
+        ok &= tessera_unpack(b) == 1 && tessera_answer(1)->n == 2u && tessera_answer(1)->hold[0] == 3u &&
+              tessera_answer(1)->hold[1] == 0u;
+        for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) memcpy(v19 + tr * n19b, b + tr * n20, n19b);
+        ok &= tessera_unpack_ver(19u, v19) == 1 && tessera_answer(1)->n == 2u && tessera_answer(1)->note[0] == 57u &&
+              tessera_answer(1)->hold[0] == 0u && tessera_answer(1)->hold[1] == 0u;
+        ok &= tessera_pk_bytes(19u) == TESSERA_PK_BYTES_V19 && tessera_pk_bytes(20u) == TESSERA_PK_BYTES;
+        memcpy(c, b, sizeof c);
+        c[1u * n20 + n19b] = 16;                            /* (track 1's HOLD[0], over 15) */
+        ok &= tessera_unpack(c) == 0 && tessera_check(20u, c) == 0;
         tessera_unpack(a);
     }
     {   /* ANSWER SOURCE: T1's STEP pattern is the call (its notes at their steps), read again before each answer; the
