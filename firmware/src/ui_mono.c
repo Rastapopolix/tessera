@@ -179,12 +179,27 @@ static void mo_head(void)
         mo_cut(t, ui.msg, 15);
         mo_inv(t, 2, 1);
     } else {
+        char pos[8] = "";
+        uint32_t pn, pk;
+        int32_t room = 94 - mo_tw(sub) - 4;
         str_cpy(t, mo_title(pg), sizeof t);
         if (pg->fam == FAM_GEN && pg->graph == GR_STEPS && song.sel < TESSERA_TRACKS) {
             str_cpy(t + str_len(t), "/", 2);
             str_cpy(t + str_len(t), TX_N_MODE[tessera.mode[song.sel] % TESS_ENG_COUNT], 8);   /* (pid.c) */
         }
-        t[(94 - mo_tw(sub) - 4) / 6] = 0;               /* (room before the engine) */
+        for (i = pn = pk = 0; i < NPAGES; i++)          /* the page's place among the footer's tabs: "4/10", dim, before */
+            if (PAGES[i].fam == pg->fam && page_visible(i)) {   /* the engine */
+                if (&PAGES[i] == pg) pk = pn + 1u;
+                pn++;
+            }
+        if (!ui.home && pn > 1u && pk) {
+            fmt_int(pos, (int32_t)pk);
+            str_cpy(pos + str_len(pos), "/", 2);
+            fmt_int(pos + str_len(pos), (int32_t)pn);
+            room -= mo_tw(pos) + 4;
+            mo_textr(pos, room + mo_tw(pos) + 1, 1, MO_DIM);
+        }
+        t[room / 6] = 0;                                /* (room before the place and the engine) */
         mo_text(t, 1, 1, MO_INK);
     }
     mo_textr(sub, 94, 1, MO_DIM);
@@ -317,7 +332,7 @@ static void mo_foot(void)
     const page_t *pg = cur_page();
     uint32_t i, n = 0, cur = 0, first = 0;
     uint16_t idx[16];
-    int32_t x = 1, w = 0;
+    int32_t x = 3, w = 0;                               /* (cells 0..1 and 118..119: the arrows to pages out of sight) */
     mo_hl(0, 109, 120, MO_INK);                         /* (row 110 clear: the selected tab's block below it) */
     for (i = 0; i < NPAGES && n < 16u; i++)             /* the family's pages, as the button turns through them */
         if (PAGES[i].fam == pg->fam && page_visible(i)) {
@@ -347,11 +362,19 @@ static void mo_foot(void)
             const char *e = mo_title(&PAGES[idx[i]]);
             t[3] = e[str_len(e) - 1u];
         }
-        if (x + mo_tw(t) > 119)
+        if (x + mo_tw(t) > 117)
             break;
         if (i == cur) mo_inv(t, x + 1, 112);
         else mo_text(t, x + 1, 112, MO_DIM);
         x += mo_tw(t) + 5;
+    }
+    if (first > 0u) {                                   /* pages before the first shown: a triangle pointing left */
+        mo_fill(0, 115, 1, 1, MO_INK);
+        mo_fill(1, 114, 1, 3, MO_INK);
+    }
+    if (i < n) {                                        /* .. after the last shown: one pointing right */
+        mo_fill(118, 114, 1, 3, MO_INK);
+        mo_fill(119, 115, 1, 1, MO_INK);
     }
     (void)w;
 }
