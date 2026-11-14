@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 /* The load ceiling (#586): an emergency shed caps admission at what was sounding; past it a new voice replaces one
- * (released first, bass kept); it holds while the load is high, recovers a unit per ~250 ms under 60 %, lets go at
- * BUDGET, never goes under 2 units, and BUDGET stays the maximum. Resident profile, as the device. */
+ * (released first, bass kept); it recovers a unit per ~250 ms under 60 % and per ~1 s above (a shed restarts the
+ * wait), lets go at BUDGET, never goes under half of BUDGET, and BUDGET stays the maximum. Resident profile, as the
+ * device. */
 #define MELODEE_RAM_AUDIO 1
 #define MELODEE_DUAL_CORE 1
 static int audio_worker_online=1;
@@ -42,10 +43,14 @@ int main(void)
     assert(voices_busy()<=16u && voice_kills);
     for(unsigned p=0;p<NPART;p++)assert(trk[p].v[lowest_held(&trk[p])].note==48u);
 
-    /* held while the load is high, and a high half restarts the wait */
-    ticks(500,VCEIL_LOW);assert(vceil==16u);
+    /* under a high load: a unit back per ~1 s (it used to hold for as long as the load stayed high) */
+    ticks(VCEIL_HALVES_BUSY-1u,VCEIL_LOW);assert(vceil==16u);
+    ticks(1,VCEIL_LOW+50u);assert(vceil==17u && voice_budget()==17u);
+    /* a shed restarts the wait */
+    ticks(VCEIL_HALVES_BUSY-1u,VCEIL_LOW);voice_ceiling_drop();assert(vceil==16u);
+    ticks(VCEIL_HALVES_BUSY-1u,VCEIL_LOW);assert(vceil==16u);
+    voice_ceiling_drop();
     ticks(VCEIL_HALVES-1u,0);assert(vceil==16u);
-    ticks(1,VCEIL_LOW+50u);ticks(VCEIL_HALVES-1u,0);assert(vceil==16u);
     ticks(1,0);assert(vceil==17u && voice_budget()==17u);  /* one unit after ~250 ms under 60 % */
     while(vceil!=0xFFu)ticks(1,0);                          /* back to BUDGET: the ceiling lets go */
     assert(voice_budget()==full);
@@ -56,9 +61,9 @@ int main(void)
     voice_ceiling_drop();assert(vceil==16u);
     { uint8_t keep=settings_budget; settings_budget=8; assert(voice_budget()==8u); settings_budget=keep; }
 
-    /* the floor: nothing sounding still leaves 2 units, and each part's protected voice is admitted past it */
+    /* the floor: nothing sounding still leaves half of BUDGET, and each part's protected voice is admitted past it */
     fresh();voice_ceiling_drop();
-    assert(vceil==VCEIL_MIN && voice_budget()==VCEIL_MIN);
+    assert(vceil==full/2u && voice_budget()==full/2u && full/2u>=VCEIL_MIN);
     for(unsigned p=0;p<NPART;p++)trk_note_on(&trk[p],48u,100);
     for(unsigned p=0;p<NPART;p++)assert(trk[p].v[lowest_held(&trk[p])].note==48u && trk[p].v[lowest_held(&trk[p])].gate);
 
@@ -68,8 +73,11 @@ int main(void)
     voice_ceiling_drop();assert(vceil==16u);
     trk_note_off(&trk[0],52u);trk_note_off(&trk[1],52u);
     for(unsigned b=0;b<64u;b++){int32_t o[2u*CTL];mix_block(o,CTL);}    /* the released tails ring out */
-    voice_ceiling_drop();assert(vceil<16u && vceil==voices_busy());
+    voice_ceiling_drop();assert(vceil<16u && vceil==(voices_busy()>full/2u?voices_busy():full/2u));
+    /* a shed with few voices sounding (between hits): half of BUDGET, not what rang then */
+    fresh();trk_note_on(&trk[0],48u,100);assert(voices_busy()==2u);
+    voice_ceiling_drop();assert(vceil==full/2u);
 
-    printf("Load ceiling: shed caps admission, replaces past it with the bass kept, holds under load, ~250 ms a unit back, BUDGET the maximum, floor 2: OK\n");
+    printf("Load ceiling: shed caps admission, replaces past it with the bass kept, ~250 ms a unit back, BUDGET the maximum, ~1 s a unit under load, floor half of BUDGET: OK\n");
     return 0;
 }
