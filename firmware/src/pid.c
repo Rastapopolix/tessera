@@ -455,7 +455,7 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_GRD_X, "ATLAS X", "Where on the map of drum patterns, left to right; between two, a blend of both."),
     X_(TX_GRD_Y, "ATLAS Y", "Where on the map of drum patterns, top to bottom; between two, a blend of both."),
     X_(TX_GRD_DENS, "ATLAS DENSITY", "How full the kick, snare, hat and toms are: 0 silent, 100 every hit the map "
-                                     "offers. Hold OCT+ on GEN for each part's own: KICK, SNR, HAT and TOMS."),
+                                     "offers. Hold OCT- on GEN for each part's own: KICK, SNR, HAT; TOMS is on the GEN sheet."),
     X_(TX_BNC_SPEED, "BOUNCE SPEED", "How far the ball travels each step: faster, more wall hits, more notes. In FALL, how fast the "
                                      "leaves fall."),
     X_(TX_BNC_ANGLE, "BOUNCE ANGLE", "The ball's path from the floor, in degrees: 0 and 90 go back and forth, an angle "
@@ -539,9 +539,9 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_CH_PROG, "CHORD PROG", "The progression, on the degrees of the track's scale: POP I V vi IV, 50S I vi IV V, "
                                  "2-5-1 ii V I I, CIRCLE the scale's fifths down, TWO I IV, DRONE I alone; WALK four "
                                  "chords of the track's SEED (ROLL another, EVOLVE changes one); USER up to eight of "
-                                 "your own: hold OCT+ on GEN and play their roots on the keys, one key a chord (rounded "
-                                 "down to the scale; letting OCT+ go ends it). SCL CHORD's CHRD and VOIC shape the "
-                                 "chords (CHRD OFF: triads); hold OCT+ on GEN for OCT, CHRD and VOIC."),
+                                 "your own: hold OCT- on GEN and play their roots on the keys, one key a chord (rounded "
+                                 "down to the scale; letting OCT- go ends it). SCL CHORD's CHRD and VOIC shape the "
+                                 "chords (CHRD OFF: triads); they are on the GEN sheet, OCT on OCT- held, KNOB 4."),
     X_(TX_CH_BARS, "CHORD BARS", "How long each chord lasts: half a bar, 1, 2 or 4 bars."),
     X_(TX_CH_HIT, "CHORD HIT", "How the chord plays: HOLD once, held to the next chord; BEAT struck again every beat; "
                                "STEP every step, for the step's GATE; OFFBEAT a short stab on the off-beats, the \"and\" halfway between "
@@ -570,7 +570,7 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                            "swapped, a ghost note in a rest. 0 plays the steps as written; the steps "
                                            "themselves never change until REC held keeps the changes."),
     X_(TX_GRD_PART4, "ATLAS PART4", "The fourth part's sound: TOM, CLAP, HATOP (the open hat), RIM or BELL, the DRUM "
-                                    "lanes besides the kick, snare and closed hat. Hold OCT+ on GEN and press its black "
+                                    "lanes besides the kick, snare and closed hat. Hold OCT- on GEN and press its black "
                                     "key (as on the drum grid: CP OH TM RS CB)."),
     X_(TX_SUB_RATCH, "TIMING RATCH", "Plays each step's notes 1 to 8 times in equal parts of the step, a ratchet; x1 "
                                      "plays them once, as written. Each hit gets its share of the step's GATE. Notes "
@@ -764,7 +764,7 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                  "that many notes back. TWEAK, OCT- held, KNOB 2."),
     X_(TX_TW_FRHY, "FOLLOW RHYTHM", "When a following track plays. OWN: on its own hits. SOURCE: only when the "
                                     "followed track has played a note, so the two move together (a lower track "
-                                    "number lands on the same step). BOTH: its own hits and the other's. TWEAK, OCT+ "
+                                    "number lands on the same step). BOTH: its own hits and the other's. TWEAK, OCT- "
                                     "held, KNOB 3."),
     X_(TX_PAT_GEN, "PAT GEN", "ON: each of the track's 8 patterns keeps its own MODE, the generator's knobs, "
                               "SEED and EVOLVE's EVERY, AMOUNT and LOCK, so switching pattern (by hand, "

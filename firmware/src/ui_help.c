@@ -156,8 +156,8 @@ static const help_t HELP_PAGE[HP_COUNT] = {
     H_(HP_POLY_RHY, "POLY RHY", "Which of the four rhythms DIV sets."),
     H_(HP_CONSTEL_SPEED, "CONSTELLATION SPEED", "How fast the sky flies by: a column a step, so this is the track's "
                                                 "DIV (PATTERN's too), from 4 bars a step to 1/32, straight divisions "
-                                                "only, so the notes land on the beat. Hold OCT+ for LOCK, LEN, FILL "
-                                                "and SIZE."),
+                                                "only, so the notes land on the beat. Hold OCT- for LOCK, LEN, FILL; "
+                                                "SIZE is on the GEN sheet."),
     /* FM6's pages (params.c FM6_OPD, FM6_GD, FM6_FD): an operator's (OP1 .. OP6: the PRESETS knob picks it) */
     H_(HP_FMOP + FP_R1, "EG RATE 1", "How fast the operator's envelope rises from L4 to L1 when a key goes down, its "
                                      "attack: 99 at once, 0 very slowly."),
