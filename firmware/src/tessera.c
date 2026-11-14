@@ -3547,19 +3547,10 @@ void tessera_param_poke(uint32_t tr, uint32_t x, int32_t v)
     case TX_SR_START: tessera.series[tr].start = (uint8_t)tess_clampi(v, 0, 127); break;
     case TX_CH_PROG: tessera.chord[tr].prog = (uint8_t)tess_clampi(v, 0, GEN_CH_PROGS - 1); break;
     case TX_AN_VARY: tessera.answer[tr].vary = (uint8_t)tess_clampi(v, 0, 100); break;
-    case TX_AN_ECHO: tessera.answer[tr].echo = (uint8_t)tess_clampi(v, 0, 100); break;
-    case TX_AN_SHIFT: tessera.answer[tr].shift = (uint8_t)tess_clampi(v, 0, 7); break;
-    case TX_AN_SPACE: tessera.answer[tr].space = (uint8_t)tess_clampi(v, 0, 100); break;
-    case TX_CH_STRUM: tessera.ch_strum[tr] = (uint8_t)tess_clampi(v, 0, TESS_STRUM_MS); break;
-    case TX_CH_SDIR: tessera.ch_sdir[tr] = (uint8_t)tess_clampi(v, 0, TESS_STR_DIRS - 1); break;
-    case TX_CH_BREATH: tessera.ch_breath[tr] = (uint8_t)tess_clampi(v, 0, 100); break;
-    case TX_SUB_RATCH: tessera.sub_ratch[tr] = (uint8_t)tess_clampi(v, 0, SUB_HITS_MAX - 1); break;
-    case TX_SUB_CHANCE: tessera.sub_chance[tr] = (uint8_t)tess_clampi(v, 0, 100); break;
-    case TX_NL_LEN: tessera.nl_len[tr] = (uint8_t)tess_clampi(v, 0, 5); break;
-    case TX_SD_GRAVITY: tessera.sd_grav[tr] = (uint8_t)tess_clampi(v, 0, 100); break;
-    case TX_FM_DEVELOP: tessera.fm_dev[tr] = (uint8_t)tess_clampi(v, 0, 100); break;
-    case TX_ORG_SPEED: tessera.org_speed[tr] = (uint8_t)tess_clampi(v, 0, 100); break;
-    case TX_ORG_RATE: tessera.org_rate[tr] = (uint8_t)tess_clampi(v, 0, 100); break;
+    case TX_AN_ECHO: case TX_AN_SHIFT: case TX_AN_SPACE: case TX_CH_STRUM: case TX_CH_SDIR: case TX_CH_BREATH:
+    case TX_SUB_RATCH: case TX_SUB_CHANCE: case TX_NL_LEN: case TX_SD_GRAVITY: case TX_FM_DEVELOP: case TX_ORG_SPEED:
+    case TX_ORG_RATE:                               /* (their setter only clamps and stores: no side effect) */
+        tess_param_set_body(tr, x, v); break;
     case TX_EV_LOCK:                                /* (as tess_param_set_body, no rearm: Turing's PROB and Atlas' */
         v = tess_clampi(v, 0, 100);                 /* CHAOS turned round, the others' LOCK) */
         if (tessera.mode[tr] == TESS_ENG_TURING) tessera.turing[tr].prob = (uint8_t)(100 - v);
