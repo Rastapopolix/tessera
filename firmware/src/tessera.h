@@ -136,7 +136,7 @@ typedef struct {
     uint8_t          qcol[4];                 /* QUAD's columns: MOVE (GEN_QC_*) | EVERY (0..6) << 2 (saved a column
                                                * a track record) */
     uint8_t          qcol_cnt[4];             /* the steps since a column last moved (not saved) */
-    uint8_t          qcol_sel;                /* the column OCT+ held on GEN edits, 0..3 (the page's, not saved) */
+    uint8_t          qcol_sel;                /* the column OCT- held on GEN edits, 0..3 (the page's, not saved) */
     tessera_constel_t constel[TESSERA_TRACKS];
     tessera_series_t series[TESSERA_TRACKS];
     tessera_chord_t  chord[TESSERA_TRACKS];
@@ -147,12 +147,12 @@ typedef struct {
     tessera_sec_t    sec[TESSERA_TRACKS][3];
     uint8_t          last_note[TESSERA_TRACKS];
     uint8_t          follow_mem[TESSERA_TRACKS];   /* FOLLOW of a STEP track: its last sounding note + 1, 0 none yet */
-    /* FOLLOW's HOLD (TWEAK, OCT+ held, KNOB 4): 0 off (the followed note on each of this track's own hits, as before),
+    /* FOLLOW's HOLD (TWEAK, OCT- held, KNOB 4): 0 off (the followed note on each of this track's own hits, as before),
      * 1..4 that track's hits sample the followed note and this track plays it until the next one: a sample and hold.
      * Not in the packed block: the record's HOLD part */
     uint8_t          follow_hold[TESSERA_TRACKS];
     uint8_t          hold_mem[TESSERA_TRACKS];     /* HOLD: the sampled note + 1, 0 none yet (not saved) */
-    /* FOLLOW's HOW and RHYTHM (TWEAK, OCT+ held, KNOBs 2 and 3): TESS_FH_*, TESS_FR_*; 0 (SAME, OWN) as before. Not in
+    /* FOLLOW's HOW and RHYTHM (TWEAK, OCT- held, KNOBs 2 and 3): TESS_FH_*, TESS_FR_*; 0 (SAME, OWN) as before. Not in
      * the packed block: the record's FMODE part */
     uint8_t          follow_how[TESSERA_TRACKS];
     uint8_t          follow_rhy[TESSERA_TRACKS];
@@ -206,12 +206,12 @@ typedef struct {
     /* KEY LINK (ui.c scale_share; SCL's sheet), the project's: 1 one ROOT for every melodic track, shared as SCL and
      * QNT always are; 0 each track its own ROOT (as before). On in a new project; a record without its part: off */
     uint8_t          key_link;
-    /* STEP as seed (step_seed.c; OCT+ held on GEN, TURING, EUCLID, MARKOV and MORPH): the record's SEED part (SOURCE,
+    /* STEP as seed (step_seed.c; OCT- held on GEN, TURING, EUCLID, MARKOV and MORPH): the record's SEED part (SOURCE,
      * KEEP) and GRAV part (GRAVITY), not the packed block */
     uint8_t          sd_src[TESSERA_TRACKS];     /* SOURCE: 0 OFF, 1..4 that track's STEP pattern */
     uint8_t          sd_keep[TESSERA_TRACKS];    /* KEEP: TESS_SD_FREE, _RHYTHM, _PITCH */
     uint8_t          sd_grav[TESSERA_TRACKS];    /* GRAVITY: 0..100 % of steps played as written, 0 off */
-    /* FORM's DEVELOP (OCT+ held on FORM, KNOB 1): the record's DEV part, not the packed block */
+    /* FORM's DEVELOP (OCT- held on FORM, KNOB 1): the record's DEV part, not the packed block */
     uint8_t          fm_dev[TESSERA_TRACKS];     /* 0..100: how far a section's return varies, 0 exact (as before) */
     /* CHORD's BREATH (HIT HOLD): its voices on slow cycles of their own, one now and then sitting out */
     uint8_t          ch_breath[TESSERA_TRACKS];  /* 0..100: 0 off (as before) */
@@ -225,7 +225,7 @@ typedef struct {
     int8_t           en_level;                   /* -100..100: the energy the tide swings round, 0 as set (part 2) */
     uint8_t          en_depth[TESSERA_TRACKS];   /* 0..100: a track's share of ENERGY, 100 all (as before), 0 an anchor */
     /* Form chaining (form_chain.c; the CHAIN page under GLO), the project's FORM on the bar clock, and each track's part
-     * in it (OCT+ held on FORM): the record's CHAIN part, not the packed block. FORM OFF: nothing changes */
+     * in it (OCT- held on FORM): the record's CHAIN part, not the packed block. FORM OFF: nothing changes */
     uint8_t          fc_form;                    /* 0 OFF, 1..6 AB .. AABC (TESS_FORMS) */
     uint8_t          fc_phrase;                  /* 0, 1, 2: a phrase of 4, 8 (default), 16 bars */
     uint8_t          fc_wander;                  /* 0..100: the chance the next letter is drawn, 0 as written */
@@ -317,12 +317,12 @@ uint32_t tessera_roll_all(int32_t dir);           /* ROLL ALL: the tracks rolled
 int tessera_roll_all_back(void);
 void tessera_seed_turn(uint32_t tr, int32_t s);    /* ROLL (EVOLVE page): the next seed, on the bar line */
 void tessera_evolve_knob(uint32_t k, int32_t s);
-void tessera_ev_layer_knob(uint32_t k, int32_t s);
-void tessera_tw_layer_knob(uint32_t k, int32_t s);
+void tessera_ev_layer_knob(uint32_t k, int32_t s);   /* OCT- held on a generator's EVOLVE: KNOB 3 PAT GEN, 4 GRAVITY */
+void tessera_tw_layer_knob(uint32_t k, int32_t s);   /* OCT- held on a generator's TWEAK: KNOB 2 HOW, 3 RHYTHM, 4 HOLD */
 void tessera_hold_hit(uint32_t tr);
 void tessera_follow_key(uint32_t tr, uint32_t note);   /* seq.c: a key on tr, to the tracks that FOLLOW it */
-void tessera_fm_layer_knob(uint32_t k, int32_t s);   /* OCT+ held on FORM: KNOB 1 DEVELOP */
-void tessera_en_layer_knob(uint32_t k, int32_t s);   /* OCT+ held on ENERGY: KNOB 1 the track's DEPTH */   /* OCT+ held on a generator's EVOLVE: KNOB 1 GRAVITY */
+void tessera_fm_layer_knob(uint32_t k, int32_t s);   /* OCT- held on FORM: KNOB 1 DEVELOP, 2 FOLLOW, 3 SKIP, 4 ROLE */
+void tessera_en_layer_knob(uint32_t k, int32_t s);   /* OCT- held on ENERGY: KNOB 1 the track's DEPTH */
 uint32_t tessera_every_bars(uint32_t every);
 int  tessera_lock_get(uint32_t tr);            /* 0..100, or -1 when LOCK is not available for the mode */
 void tessera_phrase(uint32_t tr, uint32_t *bar, uint32_t *of, int *flash); /* of == 0: EVERY is OFF */
@@ -489,8 +489,8 @@ enum { TESS_ACC_WRAP, TESS_ACC_PING, TESS_ACC_CLAMP, TESS_ACC_MODES };   /* TX_A
 enum { TESS_SD_FREE, TESS_SD_RHYTHM, TESS_SD_PITCH, TESS_SD_KEEPS };   /* TX_SD_KEEP */
 enum { TESS_SV_DRIFT, TESS_SV_ORNAMENT, TESS_SV_SERIAL, TESS_SV_HOWS };   /* TX_SV_HOW */
 void tessera_sd_play(void);                         /* seq.c, PLAY: STEP as seed's loops from their sources again */
-void tessera_sd_layer_knob(uint32_t k, int32_t s);  /* TURING / EUCLID / MARKOV / MORPH on GEN, OCT+ held: KNOB 1
-                                                     * SOURCE, 2 KEEP, 3 GRAVITY */
+void tessera_sd_layer_knob(uint32_t k, int32_t s);  /* TURING / EUCLID / MARKOV / MORPH on GEN, OCT- held: KNOB 2
+                                                     * SOURCE, 3 KEEP, 4 GRAVITY */
 #define TESS_MIDI_OFF 17u                           /* TX_MIDI_CH: 0 AUTO, 1..16, 17 OFF */
 #define TESS_MIDI_TR 48                             /* TX_MIDI_TR: -48..48 semitones, four octaves either way */
 int32_t tessera_param_get(uint32_t tr, uint32_t x);           /* the value its page shows */
@@ -509,15 +509,15 @@ void tessera_awake_select(uint32_t tr, uint32_t step);   /* the step KNOB 1 (A) 
                                                         * step 16: none) */
 const gen_poly_t *tessera_poly(uint32_t tr);
 const gen_quad_t *tessera_quad(uint32_t tr);
-void tessera_quad_cols_knob(uint32_t k, int32_t s);  /* OCT+ held on GEN in QUAD: COL, MOVE, EVERY, RANGE */
+void tessera_quad_cols_knob(uint32_t k, int32_t s);  /* OCT- held on GEN in QUAD: COL, MOVE, EVERY (RANGE: the GEN sheet) */
 uint32_t tessera_quad_every(uint32_t c);            /* column c's EVERY in steps */
 const gen_constel_t *tessera_constel(uint32_t tr);
 uint32_t tessera_cs_speed(uint32_t tr);                 /* Constellation's SPEED: the track's DIV, 0 the slowest .. 7 */
 #define TESS_CS_SPEEDS 8u                               /* (4BAR .. 1/32, the straight DIVs) */
-void tessera_constel_layer_knob(uint32_t k, int32_t s);   /* OCT+ held on GEN in CONSTELLATION: LOCK, LEN, FILL, SIZE */
-void tessera_grids_layer_knob(uint32_t k, int32_t s);      /* OCT+ held on GEN in GRIDS: KICK, SNR, HAT, TOMS */
+void tessera_constel_layer_knob(uint32_t k, int32_t s);   /* OCT- held on GEN in CONSTELLATION: LOCK, LEN, FILL (SIZE: the GEN sheet) */
+void tessera_grids_layer_knob(uint32_t k, int32_t s);      /* OCT- held on GEN in GRIDS: KICK, SNR, HAT (TOMS: the GEN sheet) */
 const char *tessera_grids_part4_name(uint32_t tr);         /* the fourth part's sound: TOM, CLAP, HATOP, RIM, BELL */
-int tessera_grids_part4_note(uint32_t tr, uint32_t note);  /* OCT+ held on GEN in GRIDS, a key: note's sound picked (1) */
+int tessera_grids_part4_note(uint32_t tr, uint32_t note);  /* OCT- held on GEN in GRIDS, a key: note's sound picked (1) */
 uint32_t tessera_chord_user_key(uint32_t tr, uint32_t note, int first);   /* CHORD USER: a key's chord (0 full) */
 /* STEP EVOLVE (step_evolve.c): a STEP track's EVOLVE page evolves its written steps; they stay as written until kept */
 int tessera_step_on(uint32_t tr);                        /* a STEP track (no generator, no ARP): its EVOLVE page */
@@ -543,7 +543,7 @@ void tessera_answer_hear_at(track_t *t, uint32_t note, uint32_t vel, uint32_t la
 void tessera_answer_key(track_t *t, uint32_t note, uint32_t vel, uint32_t late);   /* seq.c: a key on t, to its ANSWER
                                                      * and each ANSWER with t as SOURCE */
 void tessera_answer_release(track_t *t, uint32_t note);   /* seq.c input_off: that key is up, close its hold */
-void tessera_answer_layer_knob(uint32_t k, int32_t s);  /* OCT+ held on GEN in ANSWER: ORDER, SHIFT, SPACE, LEN */
+void tessera_answer_layer_knob(uint32_t k, int32_t s);  /* OCT- held on GEN in ANSWER: SOURCE, ORDER, SHIFT */
 uint32_t tessera_answer_count(uint32_t tr);             /* the answers FADE gives (1..16), 0: never forgets (loops) */
 const gen_chord_t *tessera_chord(uint32_t tr);
 uint32_t tessera_chord_pcs(void);     /* QNT CHRD: the chord the first CHORD track plays (pitch classes, bit 0 C), 0 none */

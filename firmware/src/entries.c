@@ -2,7 +2,7 @@
  * Copyright (C) 2026 Theo Dainis (melodee-tess) */
 /* Entries (long form, slice 2): tracks drop out and come back on the project's phrase lines. The ENTRIES page (GLO):
  * ENTRIES 0..100 (0 off: every track as set), DWELL 1-8 phrases a track stays in or out at least, STYLE CUT / FADE and
- * FADE 1-4 bars; OCT+ held, KNOB k track k's ROLE (also OCT+ held on FORM, KNOB 4): AUTO, BASS, RHYTHM, HARMONY,
+ * FADE 1-4 bars; OCT- held, KNOB k track k's ROLE (also OCT- held on FORM, KNOB 4): AUTO, BASS, RHYTHM, HARMONY,
  * MELODY or ANCHOR (never taken out). AUTO: CHORD harmony; ATLAS or a drum sound rhythm; notes mostly below C3 bass;
  * else melody. OCT- held, KNOB k track k's ORDER: AUTO, 1ST..4TH (et_rank: the order it comes in).
  *   The phrase is the CHAIN's (PHRASE, counted from PLAY, its FORM on or OFF). A section begins where the CHAIN moves

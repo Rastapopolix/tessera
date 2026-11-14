@@ -1017,7 +1017,7 @@ static void mo_pic_poly(const gen_poly_t *p)
 }
 /* QUAD: the grid the tracks share, a row a track: T1 and its DIR, its four cells (a bar its pitch, a rest a dash; the
  * cell it plays solid), its RANGE and LINKs (a dot a track, solid when linked); a row not in QUAD dim. Over each column
- * its MOVE (a triangle the way it goes, RAND two dots, STOP a dash), under it its EVERY; the column OCT+ edits marked */
+ * its MOVE (a triangle the way it goes, RAND two dots, STOP a dash), under it its EVERY; the column OCT- edits marked */
 static void mo_pic_quad(uint32_t tr)
 {
     static const char *const QD[GEN_QD_COUNT] = {">", "<", "<>", "?", "="};

@@ -318,8 +318,8 @@ static void answer_tick(const track_t *t, uint32_t tr, const gen_clock_t *clk, g
     }
 }
 
-/* OCT- held on GEN in ANSWER: KNOB 1 SOURCE, 2 ORDER, 3 SHIFT, 4 SPACE (LEN: FADE's top, tessera_knob; CHORD: the
- * GEN sheet, OCT+ held) */
+/* OCT- held on GEN in ANSWER (behind RANDOM, ui_input.c gen_dn_knob): KNOB 2 SOURCE, 3 ORDER, 4 SHIFT (SPACE and
+ * CHORD: the GEN sheet, OCT+ held, ui_popup.c; LEN: FADE's top, tessera_knob) */
 void tessera_answer_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;

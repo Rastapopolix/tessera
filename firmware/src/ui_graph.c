@@ -810,7 +810,7 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
         /* the whole grid whatever track is selected: a row a track, a cell a bar at its pitch (a rest a dash), the cell
          * each QUAD row plays lit; a row not in QUAD dim. Panel, on all four sides: above each column its MOVE (an arrow
          * down or up, RAND a dice's two dots, STOP a dash), below it its EVERY; left each row's track and DIR; right
-         * its RANGE and its LINKs (a dot a track, lit when linked). OCT+ held: the column KNOB 2 and 3 set lit */
+         * its RANGE and its LINKs (a dot a track, lit when linked). OCT- held: the column KNOB 3 and 4 set lit */
         int32_t top = is_panel ? 13 : y_base, lane = is_panel ? 21 : 6, x0 = is_panel ? 50 : 13, cw = is_panel ? 30 : 50;
         int32_t gap = is_panel ? 4 : 6;
         int layer = quad_cols_on();

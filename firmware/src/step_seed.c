@@ -320,7 +320,8 @@ uint32_t tessera_sd_loop(uint32_t tr, uint8_t *now, uint8_t *home, uint32_t *at)
     return len;
 }
 
-/* OCT+ held on GEN, TURING, EUCLID, MARKOV or MORPH: KNOB 1 SOURCE, KNOB 2 KEEP, KNOB 3 GRAVITY (ui_input.c) */
+/* OCT- held on GEN, TURING, EUCLID, MARKOV or MORPH (behind RANDOM, ui_input.c gen_dn_knob): KNOB 2 SOURCE, KNOB 3
+ * KEEP, KNOB 4 GRAVITY */
 void tessera_sd_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;

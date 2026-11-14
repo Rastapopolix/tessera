@@ -4,7 +4,7 @@
 /* Melodee UI input: LEDs, knobs and buttons, SEQ step entry, panel setup. */
 #include "ui_name.c"                                    /* NAME: naming user presets and projects */
 #include "ui_new.c"                                     /* NEW SONG: key, tempo, roles */
-static uint8_t oct_eat, oct_deferred;                   /* (below, with OCT's taps; QUAD's OCT+ layer uses them first) */
+static uint8_t oct_eat, oct_deferred;                   /* (below, with OCT's taps; QUAD's OCT- layer uses them first) */
 /* ----------------------------------------------------------- LEDs --- */
 /* The LED picture is built off-line and copied one byte per column: clearing
  * and relighting would let the 10 kHz scan catch the dark gap and flicker. */
@@ -1127,7 +1127,7 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
-    if (pg->graph == GR_ENERGY && en_layer_on()) {  /* ENERGY, OCT+ held: the selected track's DEPTH */
+    if (pg->graph == GR_ENERGY && en_layer_on()) {  /* ENERGY, OCT- held: the selected track's DEPTH */
         tessera_en_layer_knob(slot, accel(EN_K1 + slot, steps, 100));
         oct_eat |= 2u;
         ui.oct_t0 |= 2u;
@@ -1174,7 +1174,7 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
-    if (pg->graph == GR_FORM && fm_layer_on()) {    /* a generator's FORM, OCT+ held: DEVELOP */
+    if (pg->graph == GR_FORM && fm_layer_on()) {    /* a generator's FORM, OCT- held: DEVELOP */
         tessera_fm_layer_knob(slot, steps);
         oct_eat |= 2u;
         ui.oct_t0 |= 2u;
@@ -1971,7 +1971,7 @@ static void page_knob(uint32_t k, int32_t s)
     }
 }
 
-/* CHORD USER with OCT+ held on GEN: each key pressed the next chord, its root the key's note (rounded down to the
+/* CHORD USER with OCT- held on GEN: each key pressed the next chord, its root the key's note (rounded down to the
  * scale: tessera.c); the first key of a hold starts a new progression. Silent (keys_mode); OCT-'s release then does
  * nothing else */
 static uint8_t ch_user_first = 1;
