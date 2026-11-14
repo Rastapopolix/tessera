@@ -3,6 +3,7 @@
 """Tessera's brand pictures for GitHub and the project page, in the Mono look: one ink on black, the device's own
 5 x 7 font (firmware/src/gfx.c MO_FONT) at whole-pixel scales:
 
+  assets/brand/logo-mosaic.svg     the secondary mark, for MOSAIC: each tile one of the nine inks, on black only
   assets/brand/logo.svg            the mark: 3 x 3 tiles outlined in the ink, the top-right one solid (the splash's
                                    tessera that is laid last)
   assets/brand/banner.png          README header, 1280 x 400: the mark, TESSERA, the line, two screens
@@ -71,17 +72,21 @@ def mark(d, cx, cy, u):
             d.rectangle((x, y, x + u - 1, y + u - 1), outline=INK, width=t)
 
 
-def logo_svg():
+MOSAIC_INKS = ("#ff7162", "#ff9129", "#ffd220", "#ff59b4", "#f6f2f6", "#62ff83", "#ffb2de", "#c595ff", "#8bc2ff")
+
+
+def logo_svg(inks=None):
+    """the mark; inks: each tile's colour (the MOSAIC mark: round the colour wheel from the gold one, white in the middle)"""
     u, g, t = 22, 4, 4
     rects = []
     for i in range(9):
         x = 2 + (i % 3) * (u + g) + JIT[i][0]
         y = 2 + (i // 3) * (u + g) + JIT[i][1]
         if i == LIT:
-            rects.append(f'<rect x="{x}" y="{y}" width="{u}" height="{u}" fill="#ffd020"/>')
+            rects.append(f'<rect x="{x}" y="{y}" width="{u}" height="{u}" fill="{inks[i] if inks else "#ffd020"}"/>')
         else:
             rects.append(f'<rect x="{x + t // 2}" y="{y + t // 2}" width="{u - t}" height="{u - t}" fill="none" '
-                         f'stroke="#ffd020" stroke-width="{t}"/>')
+                         f'stroke="{inks[i] if inks else "#ffd020"}" stroke-width="{t}"/>')
     size = 3 * u + 2 * g + 4
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {size} {size}" width="{size}" height="{size}">'
             f'<title>Tessera</title><rect width="{size}" height="{size}" fill="#000"/>{"".join(rects)}</svg>\n')
@@ -171,6 +176,7 @@ def main():
     gallery = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "assets/gallery"
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "logo.svg").write_text(logo_svg(), encoding="utf-8")
+    (OUT / "logo-mosaic.svg").write_text(logo_svg(MOSAIC_INKS), encoding="utf-8")
     banner(gallery).save(OUT / "banner.png", optimize=True)
     social(gallery).save(OUT / "social-preview.png", optimize=True)
     profile(1080, 1080).save(OUT / "profile.png", optimize=True)
