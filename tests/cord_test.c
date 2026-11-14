@@ -19,7 +19,7 @@ static void check(const char *what, int ok)
     bad += !ok;
 }
 
-static const char *const KIND[] = {"voice", "block", "depth", "step", "cc", "clock", "play", "send", "cord", "fill", "tempo", "bus",
+static const char *const KIND[] = {"voice", "block", "depth", "step", "cc", "clock", "play", "seq", "vel", "send", "cord", "fill", "tempo", "bus",
                                    "mdepth"};
 
 static cord_t C(uint32_t src, uint32_t st, uint32_t dst, uint32_t dt, int32_t amount, int32_t offset)
@@ -630,6 +630,132 @@ static int32_t bus_after(uint32_t blocks)
     while (blocks--) cord_tick();
     return cord_bus_now(0);
 }
+
+/* the destinations from code 110 (more-mod-dests): every Tessera one written around the step and back after it (each
+ * needs its case in tessera_param_poke: its default leaves a setting alone), read outside the step through the cords
+ * (RATCH, ACC LIM, TIDE / SWARM); GATE .. ARP OCT around the sequencer and GLIDE in the render; VELO at a note-on */
+static int more_dests(void)
+{
+    int fails = bad;
+    cord_t c;
+    uint32_t code, moved = 1, back = 1, read = 1;
+    int32_t a, b;
+
+    host_tracks_init();
+    tessera_reset();
+    cord_clear();
+    tessera_param_set(0, TX_MODE, TESS_ENG_EUCLID);
+    for (code = CD_CH_STRUM; code < CD_N; code++) {
+        const cord_dest_t *d = cord_dest(code);
+        uint32_t x;
+        int32_t base, in, out, mid;
+        const param_desc_t *pd;
+        if (!d || d->kind != CK_STEP) continue;
+        x = d->pid - PID_TESS(0);
+        pd = pid_desc(d->pid, 0);
+        base = tessera_param_get(0, x);
+        mid = (pd->min + pd->max) / 2;
+        c = C(CS_OFF, 0, code, 0, 0, base > mid ? -60 : 60);
+        cord_set(0, &c);
+        cord_step_begin(0);
+        in = tessera_param_get(0, x);
+        cord_step_end(0);
+        out = tessera_param_get(0, x);
+        if (in == base) { moved = 0; printf("    %s: not moved in the step (%d)\n", d->name, base); }
+        if (out != base) { back = 0; printf("    %s: %d after the step, was %d\n", d->name, out, base); }
+        if (cord_tess_get(0, x) != in) { read = 0; printf("    %s: read outside the step %d, in it %d\n", d->name,
+                                                         cord_tess_get(0, x), in); }
+        cord_clear();
+    }
+    check("more mods: every new Tessera destination moves its setting in the step", moved);
+    check("...and leaves it as set after the step", back);
+    check("...and reads the same outside it (cord_tess_get)", read);
+
+    c = C(CS_OFF, 0, CD_SUB_RATCH, 0, 0, 100);         /* RATCH x1 set, +100 %: x8 at the ratchet, after the step */
+    cord_set(0, &c);
+    a = (int32_t)tessera_ratchet(0);
+    check("RATCH +100 % on x1: the step's notes play 8 times (tessera_ratchet), the setting still x1",
+          a == (int32_t)SUB_HITS_MAX && tessera.sub_ratch[0] == 0u);
+    c = C(CS_OFF, 0, CD_SUB_CHANCE, 0, 0, -100);       /* R CHANC -100 % (100 -> 0): no step ratchets */
+    cord_set(1, &c);
+    for (a = 0, b = 0; b < 32; b++) a += tessera_ratchet(0) > 1u;
+    check("...R CHANC -100 %: never", a == 0 && tessera.sub_chance[0] == 100u);
+    cord_clear();
+
+    tessera_param_set(0, TX_EV_LOCK, 0);
+    tessera_param_set(1, TX_MODE, TESS_ENG_TURING);
+    tessera_param_set(1, TX_TUR_PROB, 50);
+    c = C(CS_OFF, 0, CD_EV_LOCK, 1, 0, 30);            /* Turing's LOCK is its PROB turned round: 50 -> 20 */
+    cord_set(0, &c);
+    cord_step_begin(1);
+    a = tessera.turing[1].prob;
+    cord_step_end(1);
+    check("LOCK +30 % on a Turing track: its PROB 50 -> 20 in the step, 50 after", a == 20 && tessera.turing[1].prob == 50u);
+    cord_clear();
+
+    c = C(CS_OFF, 0, CD_ORG_SPEED, 0, 0, 40);          /* TIDE SP 50 + 40 % */
+    cord_set(0, &c);
+    a = b = -1;
+    check("TIDE SP +40 %: organic_tick reads 90, the setting 50", cord_org(0, &a, &b) && a == 90 && b == 50 &&
+          tessera.org_speed[0] == 50u && !cord_org(1, &a, &b));
+    cord_clear();
+
+    /* the sequencer's: GATE 64 -> 96 around it, a change made inside kept as a change (motion) */
+    trk[0].p[P_SGATE] = 64;
+    c = C(CS_OFF, 0, CD_SGATE, 0, 0, 25);              /* 25 % of 1..127: +32 (to the nearest) */
+    cord_set(0, &c);
+    cord_seq_begin();
+    a = trk[0].p[P_SGATE];
+    cord_seq_end();
+    check("GATE +25 %: 64 -> 96 around the sequencer, 64 after", a == 96 && trk[0].p[P_SGATE] == 64);
+    cord_seq_begin();
+    trk[0].p[P_SGATE] = 100;                            /* (motion playback inside: +4) */
+    cord_seq_end();
+    check("...a change made inside kept as a change: 68", trk[0].p[P_SGATE] == 68);
+    trk[0].p[P_SGATE] = 64;
+    c = C(CS_OFF, 0, CD_AOCT, 0, 0, 100);
+    cord_set(1, &c);
+    cord_seq_begin();
+    a = trk[0].p[P_AOCT];
+    cord_seq_end();
+    check("ARP OCT +100 %: 4 octaves for the sequencer, clamped; 1 after", a == 4 && trk[0].p[P_AOCT] == 1);
+    cord_clear();
+    trk[0].p[P_GLIDE] = 0;
+    c = C(CS_OFF, 0, CD_GLIDE, 0, 0, 50);
+    cord_set(0, &c);
+    cord_seq_begin();
+    a = trk[0].p[P_GLIDE];
+    cord_seq_end();
+    mod_begin(&trk[0]);
+    b = trk[0].p[P_GLIDE];
+    mod_end(&trk[0]);
+    check("GLIDE +50 %: moved at the sequencer's note-ons and in the render, 0 after", a == 64 && b == 64 &&
+          trk[0].p[P_GLIDE] == 0);
+    cord_clear();
+
+    /* VELO: at a note-on */
+    trk[0].p[P_LPOL] = 0; trk[0].lfo_fade = 32767; trk[0].lfo_val = 32767;
+    check("VELO: no mod, the velocity as played", cord_vel(2, 100) == 100u);
+    c = C(CS_LFO, 0, CD_VELO, 2, 20, 0);               /* T1 LFO (full) 20 % -> T3 VELO: +25 */
+    cord_set(0, &c);
+    a = (int32_t)cord_vel(2, 100);
+    b = (int32_t)cord_vel(1, 100);
+    check("...T1 LFO full at 20 % onto T3 VELO: 100 -> 125; T2 untouched", a == 125 && b == 100);
+    c.offset = -100; c.amount = 0; c.src = CS_OFF;
+    cord_set(0, &c);
+    check("...-100 %: the softest, never 0 (a note-on stays a note-on)", cord_vel(2, 100) == 1u && cord_vel(2, 0) == 0u);
+    c.offset = 20;
+    cord_set(0, &c);
+    trk_note_on(&trk[2], 60, 100);
+    for (a = 0, code = 0; code < NVOICE; code++)
+        if (trk[2].v[code].active && trk[2].v[code].note == 60u) a = trk[2].v[code].vel;
+    trk_note_off(&trk[2], 60);
+    check("...+20 % fixed: a note played at 100 sounds at 125", a == 125);
+    cord_clear();
+    tessera_stop_all();
+    return bad - fails;
+}
+
 /* EOC (CS_EOC): high from a wrap of the track's LFO to an eighth of the cycle, a track's source; a phase set is not a wrap */
 static int eoc(void)
 {
@@ -1177,6 +1303,8 @@ int main(int argc, char **argv)
             if (d->pid != PID_NONE || d->md || (c != CD_BUS_A && c != CD_BUS_B)) mods = 0;
         } else if (d->kind == CK_PLAY) {                /* (PLAY: a track's, no parameter) */
             if (d->pid != PID_NONE || d->md || c != CD_PLAY) mods = 0;
+        } else if (d->kind == CK_VEL) {                 /* (VELO: a track's note-ons, no parameter) */
+            if (d->pid != PID_NONE || d->md || c != CD_VELO) mods = 0;
         } else if (d->kind == CK_MDEPTH) {              /* (MOD DEPTH: the project's, no parameter of a track) */
             if (d->pid != PID_NONE || d->md || c != CD_MOD_DEPTH) mods = 0;
         } else if (d->kind == CK_VOICE || d->kind == CK_DEPTH) {
@@ -1212,6 +1340,7 @@ int main(int argc, char **argv)
     (void)drift_and_defaults();
     (void)buses();
     (void)eoc();
+    (void)more_dests();
 
     {
         FILE *f = fopen(golden, update ? "w" : "r");

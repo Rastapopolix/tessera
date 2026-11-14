@@ -320,6 +320,7 @@ static void seq_grid_place(track_t *t, uint32_t period, uint32_t done)
  * replays from PLAY as everything else does (seq_sub.c's streams; arp_draws back to 0 at PLAY) */
 static uint32_t seq_hum_draw(uint32_t tr, uint32_t n, uint32_t salt);   /* (seq_sub.c) */
 static int32_t cord_tess_get(uint32_t tr, uint32_t x);                  /* (cord.c) */
+static void cord_seq_begin(void), cord_seq_end(void);                  /* (cord.c: CK_SEQ, around seq_advance) */
 static uint32_t arp_draws[NTRK];
 static uint32_t arp_rand(const track_t *t, uint32_t salt)
 {
@@ -1443,12 +1444,14 @@ static void seq_advance(uint32_t n)
     midi_out_seq = 1;                              /* (midi_out.c: these notes are the sequencer's) */
     chain_tick(n);
     entries_tick(n);                               /* (Entries: a phrase line before its downbeat's steps) */
+    cord_seq_begin();                              /* (GATE, SWING, GLIDE, ARP as their mods make them: cord.c) */
     for (i = 0; i < NTRK; i++)
         seq_tick(&trk[i], n);
     for (i = 0; i < NPART; i++)
         /* held keys and a HOLD chord play at the local tempo while the selected master is stopped; a chord its
          * Stop (or a lost clock) stopped waits for the transport (arp_wait) */
         arp_step(&trk[i], song.playing || !song.g[G_CLOCK] || arp_runs(i) ? n : 0u, n);
+    cord_seq_end();
     midi_out_seq = 0;
     beat_pos += n;
     while (beat_pos >= beat) {
@@ -1591,8 +1594,10 @@ static void events_block(uint32_t n)
         }
         if (!song.playing) {
             uint32_t elapsed = (uint32_t)((uint64_t)n * MIDI_BEAT_UNITS / beat_samples());
+            cord_seq_begin();
             for (i = 0; i < NPART; i++)
                 arp_step(&trk[i], arp_runs(i) ? elapsed : 0u, elapsed);
+            cord_seq_end();
             lfo_units = elapsed;
         } else
             lfo_units = lfo_ext_units(n, seq_advanced);

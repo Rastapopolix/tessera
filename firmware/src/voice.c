@@ -572,6 +572,7 @@ static void trk_note_on(track_t *t,uint32_t note,uint32_t vel)
 {
     if (!entries_note(t, note) || cord_play_shut((uint32_t)(t - trk)))   /* (PLAY shut by its mods: cord.c) */
         return;
+    vel = cord_vel((uint32_t)(t - trk), vel);          /* (VELO as its mods move it: cord.c) */
     land_note(t, note, vel);
     midi_out_on(t, note, vel);
     if (!tess_sound_off(t))

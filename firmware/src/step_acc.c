@@ -12,7 +12,7 @@ static int32_t acc_offset(uint32_t tr, int32_t climb, uint32_t pass)
     uint32_t a = (uint32_t)(climb < 0 ? -climb : climb), lim, x;
     if (!climb || !pass || tr >= TESSERA_TRACKS)
         return 0;
-    lim = tessera.acc_limit[tr] ? tessera.acc_limit[tr] : TESS_ACC_LIMIT_DEF;
+    lim = (uint32_t)cord_tess_get(tr, TX_ACC_LIMIT);  /* (as its mods make it: cord.c; never 0) */
     switch (tessera.acc_mode[tr]) {
     case TESS_ACC_PING:                                 /* 0 .. LIMIT .. 0, and so on */
         x = a * (pass % (2u * lim)) % (2u * lim);

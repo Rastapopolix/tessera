@@ -58,6 +58,7 @@ void organic_play(void)                               /* seq.c seq_start: every 
     for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) org_start(tr);
 }
 
+static int cord_org(uint32_t tr, int32_t *speed, int32_t *rate);   /* (cord.c: SPEED and RATE as their mods make them) */
 static void organic_tick(void)                        /* an audio block (cord_tick) */
 {
     static uint8_t ready;
@@ -65,7 +66,11 @@ static void organic_tick(void)                        /* an audio block (cord_ti
     if (!ready) { ready = 1; organic_play(); }
     for (tr = 0; tr < TESSERA_TRACKS; tr++) {
         organic_t *o = &organic[tr];
-        float ks = org_rate_k(tessera.org_speed[tr]), kr = org_rate_k(tessera.org_rate[tr]);
+        int32_t sp = tessera.org_speed[tr], rt = tessera.org_rate[tr];
+        float ks, kr;
+        (void)cord_org(tr, &sp, &rt);
+        ks = org_rate_k((uint32_t)sp);
+        kr = org_rate_k((uint32_t)rt);
         for (c = 0; c < 3u; c++) {                    /* semi-implicit Euler, a step once 0.004 is due (a block's
                                                        * share is too small for a float at the slow speeds) */
             float dt = (o->due[c] += ks * (ORG_LOOP / ORG_BPS) / ORG_SLOTH_S[c]), x = o->x[c];

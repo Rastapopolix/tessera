@@ -1262,6 +1262,7 @@ static int32_t tess_key(const track_t *t, uint32_t tr)
 static uint32_t cord_smask[NTRK];                       /* (cord.c: the cords on Tessera settings, per track) */
 static void cord_step_begin(uint32_t tr);
 static void cord_step_end(uint32_t tr);
+static int32_t cord_tess_get(uint32_t tr, uint32_t x);
 static void tess_branch_on(track_t *v, uint32_t note, uint32_t vel, uint32_t off);
 /* QUAD's LINK (the four-track hook): this track's step also moves each QUAD track it links (a bit each, in track
  * order) on a cell and plays it on that track's voice for this step's gate (tess_branch_on: its gate count or its next
@@ -1752,9 +1753,13 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
  * track's stream (so they replay with its SEED). RATCH x1, or a STEP track: 1, no draw */
 uint32_t tessera_ratchet(uint32_t tr)
 {
-    if (tr >= TESSERA_TRACKS || tessera.mode[tr] == TESS_ENG_OFF || !tessera.sub_ratch[tr]) return 1u;
-    if (tessera.sub_chance[tr] < 100u && gen_rnd(&tessera.rnd[tr], 100u) >= tessera.sub_chance[tr]) return 1u;
-    return tessera.sub_ratch[tr] + 1u;
+    uint32_t r, ch;
+    if (tr >= TESSERA_TRACKS || tessera.mode[tr] == TESS_ENG_OFF) return 1u;
+    r = (uint32_t)cord_tess_get(tr, TX_SUB_RATCH);      /* (after the step: as its mods make them, cord.c) */
+    if (!r) return 1u;
+    ch = (uint32_t)cord_tess_get(tr, TX_SUB_CHANCE);
+    if (ch < 100u && gen_rnd(&tessera.rnd[tr], 100u) >= ch) return 1u;
+    return r + 1u;
 }
 
 /* Constellation's SPEED: the track's straight DIVs (params.c N_DIV) from the slowest to the fastest; a triplet DIV (set
@@ -3542,6 +3547,25 @@ void tessera_param_poke(uint32_t tr, uint32_t x, int32_t v)
     case TX_SR_START: tessera.series[tr].start = (uint8_t)tess_clampi(v, 0, 127); break;
     case TX_CH_PROG: tessera.chord[tr].prog = (uint8_t)tess_clampi(v, 0, GEN_CH_PROGS - 1); break;
     case TX_AN_VARY: tessera.answer[tr].vary = (uint8_t)tess_clampi(v, 0, 100); break;
+    case TX_AN_ECHO: tessera.answer[tr].echo = (uint8_t)tess_clampi(v, 0, 100); break;
+    case TX_AN_SHIFT: tessera.answer[tr].shift = (uint8_t)tess_clampi(v, 0, 7); break;
+    case TX_AN_SPACE: tessera.answer[tr].space = (uint8_t)tess_clampi(v, 0, 100); break;
+    case TX_CH_STRUM: tessera.ch_strum[tr] = (uint8_t)tess_clampi(v, 0, TESS_STRUM_MS); break;
+    case TX_CH_SDIR: tessera.ch_sdir[tr] = (uint8_t)tess_clampi(v, 0, TESS_STR_DIRS - 1); break;
+    case TX_CH_BREATH: tessera.ch_breath[tr] = (uint8_t)tess_clampi(v, 0, 100); break;
+    case TX_SUB_RATCH: tessera.sub_ratch[tr] = (uint8_t)tess_clampi(v, 0, SUB_HITS_MAX - 1); break;
+    case TX_SUB_CHANCE: tessera.sub_chance[tr] = (uint8_t)tess_clampi(v, 0, 100); break;
+    case TX_NL_LEN: tessera.nl_len[tr] = (uint8_t)tess_clampi(v, 0, 5); break;
+    case TX_SD_GRAVITY: tessera.sd_grav[tr] = (uint8_t)tess_clampi(v, 0, 100); break;
+    case TX_FM_DEVELOP: tessera.fm_dev[tr] = (uint8_t)tess_clampi(v, 0, 100); break;
+    case TX_ORG_SPEED: tessera.org_speed[tr] = (uint8_t)tess_clampi(v, 0, 100); break;
+    case TX_ORG_RATE: tessera.org_rate[tr] = (uint8_t)tess_clampi(v, 0, 100); break;
+    case TX_EV_LOCK:                                /* (as tess_param_set_body, no rearm: Turing's PROB and Atlas' */
+        v = tess_clampi(v, 0, 100);                 /* CHAOS turned round, the others' LOCK) */
+        if (tessera.mode[tr] == TESS_ENG_TURING) tessera.turing[tr].prob = (uint8_t)(100 - v);
+        else if (tessera.mode[tr] == TESS_ENG_GRIDS) tessera.grids[tr].chaos = (uint8_t)(100 - v);
+        else ev->lock = (uint8_t)v;
+        break;
     default: break;                                 /* (the others are no cord's: cord.c's destinations) */
     }
 }

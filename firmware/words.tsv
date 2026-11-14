@@ -312,3 +312,17 @@ BRIT	brightness
 VOWL	vowel
 TMBR	timbre
 MRPH	morph
+# more MODS destinations (codes 110..131)
+STR DIR	strum direction
+R CHANC	ratchet chance
+N LEN	note length
+VELO	velocity
+AN ECHO	answer echo
+AN SHFT	answer shift
+AN SPCE	answer space
+ACC LIM	accumulator limit
+TIDE SP	tide speed
+SWRM RT	swarm rate
+ARP RTE	arp rate
+ARP GTE	arp gate
+ARP OCT	arp octaves
