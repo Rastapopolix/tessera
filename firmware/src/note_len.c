@@ -40,12 +40,16 @@ static void nl_stop(track_t *t)
 }
 void tessera_len_stop(track_t *t) { nl_stop(t); }
 
-/* each block, before the step (seq.c seq_tick): FIXED's notes end on time; stopped, muted or STEP again: all end */
+/* each block, before the step (seq.c seq_tick): FIXED's notes end on time; stopped, muted or STEP again: all end.
+ * ANSWER also runs its held notes through here at NL_MODE STEP (nl_on_for, answer-note-length.md): STEP is only
+ * "nothing running" for every other engine, which never calls nl_on while STEP, so this stays a no-op for them */
 void tessera_len_tick(track_t *t, uint32_t n)
 {
     uint32_t tr = trk_index(t), any = 0;
     if (tr >= TESSERA_TRACKS || !(nl_active & (1u << tr))) return;
-    if (tessera.mode[tr] == TESS_ENG_OFF || tessera.nl_mode[tr] == NL_STEP || t->p[P_MUTE] || !song.playing) {
+    if (tessera.mode[tr] == TESS_ENG_OFF ||
+        (tessera.nl_mode[tr] == NL_STEP && tessera.mode[tr] != TESS_ENG_ANSWER) ||
+        t->p[P_MUTE] || !song.playing) {
         nl_stop(t);
         return;
     }
@@ -81,6 +85,26 @@ static void nl_on(track_t *t, uint32_t tr, uint32_t note, uint32_t vel, int more
     }
     while (slot < NL_KEYS - 1u && nl_run[tr][slot].on) slot++;   /* (a free one: KEYS <= NL_KEYS) */
     nl_run[tr][slot].left = hit ? NL_HELD : seq_div_samples(NL_DIV[tessera.nl_len[tr] % 6u]);
+    nl_run[tr][slot].note = (uint8_t)note;
+    nl_run[tr][slot].on = 1;
+    nl_active |= (uint8_t)(1u << tr);
+    trk_note_on(t, note, vel);
+}
+
+/* ANSWER (answer.c, NL_MODE STEP only): hold note open for exactly samples, its own captured duration rather
+ * than the LENGTH page's nl_len/nl_keys (not engaged while STEP) - the same slots and tick/release as nl_on,
+ * up to all NL_KEYS at once (docs/design/answer-note-length.md) */
+static void nl_on_for(track_t *t, uint32_t tr, uint32_t note, uint32_t vel, uint32_t samples)
+{
+    uint32_t k, slot = 0;
+    if (!(nl_active & (1u << tr)))
+        for (k = 0; k < NL_KEYS; k++) nl_run[tr][k].on = 0;
+    for (k = 0; k < NL_KEYS; k++)
+        if (nl_run[tr][k].on && nl_run[tr][k].note == note)
+            nl_release(t, tr, k);
+    while (slot < NL_KEYS - 1u && nl_run[tr][slot].on) slot++;
+    if (nl_run[tr][slot].on) nl_release(t, tr, slot);   /* all four held already: the last slot goes */
+    nl_run[tr][slot].left = samples ? samples : 1u;
     nl_run[tr][slot].note = (uint8_t)note;
     nl_run[tr][slot].on = 1;
     nl_active |= (uint8_t)(1u << tr);
