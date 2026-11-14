@@ -307,7 +307,7 @@ muted track still leads the tracks that follow it (FOLLOW, an ANSWER's SOURCE, Q
 Hold **OCT+** on MIXER for its sheet: **Mutes**, when the mute keys take effect while playing (NOW, BAR or PHRASE),
 the same setting as MENU > MUTES.
 
-**Lists** (the HOME menu, SCL, VOICE, the sheets and the sound designer): KNOB 1 picks the row, KNOB 2 changes its
+**Lists** (the HOME menu, SCL, VOICE and the sheets): KNOB 1 picks the row, KNOB 2 changes its
 value.
 
 **The look.** Tessera draws every screen in one ink on black, with a 5 x 7 pixel font: the selected item is

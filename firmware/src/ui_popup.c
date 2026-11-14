@@ -77,7 +77,7 @@ static void ps_fav(void) { preset_mark(!preset_favorite()); }
 static void ps_undo(void) { undo_step(0); }
 static const sheet_row_t SHEET_SOUND[] = {
     {"Init sound", 0, 0, 0, CF_INIT_SOUND}, {"Save as user\x85", 0, 0, ps_save, 0}, {"Favourite", ps_fav_v, 0, ps_fav, 0},
-    {"Undo last load", 0, 0, ps_undo, 0}, {"Sound designer", 0, 0, designer_open, 0}};
+    {"Undo last load", 0, 0, ps_undo, 0}};
 /* the song's (SONG) */
 static int ps_song_free(void)
 {
@@ -471,7 +471,7 @@ none:                                                   /* (KNOB 2 or a key plac
 static uint32_t page_sheet(void)
 {
     uint32_t fam;
-    if (designer_on() || ui.menu || ui.confirm || ui.layer || pop.on || name_on() || new_on() || slot_kind() || ptc_on())
+    if (ui.menu || ui.confirm || ui.layer || pop.on || name_on() || new_on() || slot_kind() || ptc_on())
         return 0;
     if (ui.home)
         return 1;

@@ -177,8 +177,7 @@ static void head_chip_text(char *b)
 {
     const page_t *pg = cur_page();
     uint32_t e = TSEL->eng_req % NENGINES;
-    if (designer_on() && !name_on() && designer_head_chip(b)) {   /* the designer's START, FEATURES, original */
-    } else if (new_on()) {                                     /* NEW SONG */
+    if (new_on()) {                                     /* NEW SONG */
         str_cpy(b, "NEW SONG", 16);
     } else if (ptc_on()) {                              /* PATTERNS' Copy to: "copy 3 to 5" */
         str_cpy(b, "copy 1 to 1", 16);
@@ -202,15 +201,12 @@ static void head_chip_text(char *b)
         str_cpy(b, t, 16);
     }
 }
-/* the page's place in its family: n pages, the page the k-th (an engine in sections: the section's pages; the
- * designer: its stage's) */
+/* the page's place in its family: n pages, the page the k-th (an engine in sections: the section's pages) */
 static void page_place(uint32_t *pn, uint32_t *pk)
 {
     const page_t *pg = cur_page();
     uint32_t i, n = 0, k = 0, sc = sec_on() ? sec_of(ui.page) + 1u : 0u;
-    if (designer_on() && !name_on())
-        designer_pages(&n, &k);
-    else for (i = 0; i < NPAGES; i++)
+    for (i = 0; i < NPAGES; i++)
         if (PAGES[i].fam == pg->fam && page_visible(i) &&
             (!sc || (PAGES[i].scope == SC_FMOP ? PAGES[ui.page].scope == SC_FMOP : sec_of(i) + 1u == sc))) {
             if (i == ui.page)
@@ -303,10 +299,8 @@ static void mo_grid_panel(void);
 static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fav);
 static void mo_slot_card(const char *tag, const char *nm, int used, const char *d, int boot, int32_t y);
 static void mo_slot_row(const char *tag, const char *nm, int used, int boot, int mark, int32_t y, int32_t ty, int32_t th);
-static void mo_dstart(void);
 static void mo_msc(void);
 static void mo_smap(uint32_t cur);
-static void mo_dfoot(const char *nm, const char *go);
 #endif
 static void draw_head(void)
 {
@@ -1812,10 +1806,6 @@ static void confirm_text(char *a, char *b)
         str_cpy(a + str_len(a), "?", 2);
         user_name(k, b);                             /* the sound stored there */
         break;
-    case CF_DISCARD_DESIGN:
-        str_cpy(a, "DISCARD THE DESIGN?", 24);
-        str_cpy(b, "The original sound returns", 32);
-        break;
     case CF_IMPORT:
         for (uint32_t slot = sx_import.first; slot < sx_import.first + sx_import.count; slot++) {
             if (sx_import.general ? up_old_bank(slot) : native_old(sx_import.engine, slot)) {
@@ -1900,7 +1890,6 @@ static void draw_confirm(void)
 #include "ui_slots.c"                                   /* PROJECT, USER, the STOREs: their slots */
 #include "ui_motion.c"                                  /* MOTION: its lanes */
 #include "ui_scales.c"                                  /* SCALES: a screen of its own */
-#include "ui_designer.c"                                /* guided native sound creation */
 #include "ui_awake.c"                                   /* AWAKE's step entry on GEN */
 #if MELODEE_LOOK
 #include "ui_mono.c"                                    /* the Mono look (MELODEE_LOOK 1) */
@@ -1911,12 +1900,12 @@ static int own_screen(void)                             /* a page drawn whole by
     return !ui.home && (g == GR_BROWSE || g == GR_PATGRID || g == GR_SONG || g == GR_SCALE_PICKER);
 }
 /* the foot has the page tabs, the header then no dots: the sound's strip (ui_pages.c pv_sound) on the pages pv_draw
- * draws with it, draw_foot's second row on the rest (not the notes', which end before it); not the designer's (its
- * stages are its tabs), MIXER's, MOD's or CORDS' (no foot) */
+ * draws with it, draw_foot's second row on the rest (not the notes', which end before it); not MIXER's, MOD's or
+ * CORDS' (no foot) */
 static int foot_tabs_on(void)
 {
     uint32_t k = pv_kind(), g = cur_page()->graph;
-    if (ui.home || designer_on() || own_screen() || slot_kind() || motion_page() || list_on())
+    if (ui.home || own_screen() || slot_kind() || motion_page() || list_on())
         return 0;
     if (k == PV_NONE)
         return !(g == GR_ROLL && (!grid_on() || live_rec_sel()));
@@ -1930,9 +1919,7 @@ static void draw_page(void)
         page_entered();
     }
     cursor_fix();
-    if (designer_screen()) {                            /* the sound designer's START, FEATURES (ui_designer.c) */
-        designer_draw();
-    } else if (!own_screen() && slot_kind()) {          /* a slot page (ui_slots.c) */
+    if (!own_screen() && slot_kind()) {          /* a slot page (ui_slots.c) */
         slot_draw();
     } else if (!own_screen() && motion_page()) {        /* MOTION's lanes (ui_motion.c) */
         motion_draw();

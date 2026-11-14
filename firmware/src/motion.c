@@ -4,9 +4,6 @@
  * interrupt guard as parameter batches. The ISR only scans 64 fixed records.
  * p[] is the sounding value; motion_base_value() is the patch's saved value. */
 static motion_store_t motion;
-/* Main-loop sound design temporarily auditions the base tone. The saved motion
- * enable bits and event pool remain unchanged. */
-static uint8_t motion_design_pause;
 static int recording_copy(track_t *t, uint32_t source, uint32_t dest, int apply);
 static int recording_double(track_t *t, uint32_t bank, uint32_t len, int apply);
 static void recording_reindex(void);
@@ -353,7 +350,6 @@ static uint32_t motion_native_edited(track_t *t, const uint8_t *old)
 static __attribute__((noinline)) void motion_step(track_t *t, uint32_t step, const motion_store_t *m)
 {
     uint32_t k = trk_index(t), i;
-    if((motion_design_pause>>k)&1u)return;
     if (!((m->on >> k) & 1u)) return;
     if (!((motion_base_valid >> k) & 1u)) {
         memcpy(motion_base[k], t->p, sizeof t->p);

@@ -31,7 +31,7 @@ enum { MI_COLOR,
 #if MELODEE_USB_HOST
        MI_USB_HOST,
 #endif
-       MI_DESIGNER, MI_PANEL, MI_ABOUT, MI_BACK,
+       MI_PANEL, MI_ABOUT, MI_BACK,
        MI_COUNT };
 static const char *const GAMMA_NAME[GAMMA_N] = {"G2.2", "G1.8", "G2.5", "G1.0", "TUNED", "TUNED+VCOM"};   /* (lcd.c) */
 static const char *const MI_NAME[MI_COUNT] = {"COLOR",
@@ -49,7 +49,7 @@ static const char *const MI_NAME[MI_COUNT] = {"COLOR",
 #if MELODEE_USB_HOST
                                               "USB HOST",
 #endif
-                                              "SOUND DESIGNER", "CALIBRATION", "ABOUT", "BACK"};
+                                              "CALIBRATION", "ABOUT", "BACK"};
 _Static_assert(MI_ADD - MI_CLICK == 4, "MI_CLICK .. MI_ADD in a row");
 static uint8_t menu_cols;   /* Mono: the COLOR sheet open (KNOB 2 or OCT+ on COLOR; KNOB 1 off it, OCT- or closing folds it:
                              * HOME held shows the list first, beta3 Theo) */
@@ -831,9 +831,6 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         case MI_PANEL:
             panel_setup();
             ui.force = 1;
-            break;
-        case MI_DESIGNER:
-            menu_close();designer_open();
             break;
         case MI_ABOUT:
             ui.menu = 2;
