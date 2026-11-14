@@ -120,7 +120,7 @@ static void pframe(const char *where, int tabs)
 
 int main(int argc, char **argv)
 {
-    uint32_t p, s, i, tr;
+    uint32_t p, s, i, tr, eng0, preset0;
     char where[48];
     dir = argc > 1 ? argv[1] : 0;
     web_boot();
@@ -160,7 +160,9 @@ int main(int argc, char **argv)
     CHECK(and_ui.cell[0] == 0x000 && and_cellv[0].used, "MIX: cell A is LEVEL");
 
     /* the map, with each engine on track 1: every page drawn and linted, every value of the engine's own pages on
-     * SOUND or MOD, a cell once per sub-page */
+     * SOUND or MOD, a cell once per sub-page (track 1's own sound put back after: the demo song's ORACLE, whose AMP
+     * has an envelope on cell A for the hot test below) */
+    eng0 = trk[0].eng_req, preset0 = trk[0].preset;
     an_engines();
     for (i = 0; i < an_neng; i++) {
         uint32_t e = an_eng_id[i], pi, c, k, j;
@@ -241,7 +243,8 @@ int main(int argc, char **argv)
         CHECK(and_get(cell, 0) == v0 + 1 && fm6_patch[0][FP_ALG] == v0 + 1, "FM6: ALGO turned, in the patch");
         CHECK(on_page(AB_SOUND, AN_PID + AN_FMOP), "FM6: its operator on SOUND");
     }
-    set_engine_of(&trk[0], TRK_DEF[0][0]);
+    set_engine_of(&trk[0], eng0);
+    apply_preset_to(&trk[0], preset0);
 
     /* FX: one send, or three in SPLIT */
     song.g[G_FXMODE] = 0;
@@ -252,7 +255,9 @@ int main(int argc, char **argv)
 
     /* a setting turned: inverted on the dial screen, large in the picture */
     btn(AB_SOUND);
-    and_ui.sub[AB_SOUND] = (uint8_t)find_sub(AB_SOUND, "AMP");   /* (AMP: ATK first) */
+    and_ui.sub[AB_SOUND] = (uint8_t)find_sub(AB_SOUND, "AMP");   /* (AMP: ATK first; ORACLE's AMP ENV) */
+    CHECK(trk[0].eng_req == ENGI_ORACLE && and_subs[and_ui.sub[AB_SOUND]].c[0] != PID_NONE,
+          "hot: track 1 back on ORACLE, AMP's cell A set");
     web_enc(0, 3);
     web_screen();
     CHECK(and_ui.hot == 0, "encoder A turned: cell A hot");
