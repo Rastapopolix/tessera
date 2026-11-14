@@ -158,3 +158,5 @@ Charles Vestal (FM-1 Screen Reader), and
 
 See
 [LICENSING.md](LICENSING.md) for every third-party part and its licence.
+
+You can also try Tessera in the browser, no flashing needed, in the free community [FM-1 Emulator](https://fm1-emulator.atst.tools/).
