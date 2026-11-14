@@ -1,14 +1,20 @@
 {
-  "version": "3.6-beta2",
+  "version": "3.6-beta3",
   "product": "FM-1_836",
   "branch": "develop",
-  "commit": "10301630d20c0d0e8e64ad07ab5faec1c4ba3044",
-  "builtAt": "2026-11-14T20:47:54Z",
+  "commit": "3aa75a3f8fa91831ca47c0fa9428e55695edebd5",
+  "builtAt": "2026-11-14T23:44:48Z",
   "pkg": {
-    "dual": "../../firmware/tessera-3.6-beta2.fwsc",
-    "single": "../../firmware/tessera-3.6-beta2-1core.fwsc"
+    "dual": "../../firmware/tessera-3.6-beta3.fwsc",
+    "single": "../../firmware/tessera-3.6-beta3-1core.fwsc"
   },
   "notes": [
+    [
+      "New in 3.6-beta3",
+      [
+        "SIM CONTROL (in the menu: hold HOME): with the web simulator open and the FM-1 connected by USB, the FM-1's knobs, buttons and keys play only the simulator, and the FM-1 itself stays silent. Hold FX + GLO for a second to get the panel back; closing the simulator or unplugging ends it too. It is off every time the FM-1 starts."
+      ]
+    ],
     [
       "New in 3.6-beta2",
       [
@@ -46,6 +52,7 @@
     [
       "Please try",
       [
+        "SIM CONTROL: open the web simulator with the FM-1 on USB, turn SIM CONTROL on in the menu, play the FM-1: only the simulator answers. Hold FX + GLO for a second: the FM-1 plays again. Hold GLO alone while it is on: GLO's settings open in the simulator.",
         "A mod onto GATE, SWING or ARP RTE on a playing track, RATCH on a generator track, VELO on a STEP track.",
         "On MODS, a mod from T3's LFO: turn KNOB 3. T3 comes first and the title follows the groups; with T1 on Turing, T1 offers T PROB but not E PULSE.",
         "The 909 on ATLAS at 85 BPM with DENSITY at 64 % or more: the snares keep playing. A busy four-track project: after a crackle, the voices come back within seconds.",
