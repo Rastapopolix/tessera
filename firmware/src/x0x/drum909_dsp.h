@@ -139,7 +139,8 @@ typedef struct {
     float x1, x2, y1, y2;
 } d9_biquad_t;
 
-static inline void d9_biquad_set(d9_biquad_t *f, int type, float freq, float q)
+/* (noinline: a set-up, called from about twenty places; one copy saves flash, the result is the same) */
+static __attribute__((noinline)) void d9_biquad_set(d9_biquad_t *f, int type, float freq, float q)
 {
     float fc = freq / (D9_SR * 0.5f);
     if (fc >= 1.0f) fc = 0.9999f;
@@ -213,7 +214,7 @@ typedef struct {
     float c1, c2;  /* type-specific constants (see prep) */
 } d9_shape_t;
 
-static inline void d9_shape_prep(d9_shape_t *s, float drive, int type)
+static __attribute__((noinline)) void d9_shape_prep(d9_shape_t *s, float drive, int type)   /* (noinline: as d9_biquad_set) */
 {
     const float k = drive > 0.01f ? drive : 0.01f;
     s->type = type;
