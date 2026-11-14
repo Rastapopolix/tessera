@@ -8,7 +8,7 @@
 #define TRK_START_TESS 1
 #include "ui_test.c"
 #include "../../firmware/src/mo_font.h"
-#include "../../platform/andamento/and_fb.c"           /* the screen: 128 x 64, 16 levels */
+#include "../../platform/andamento/and_fb.c"           /* the screens: two of 128 x 64, 16 levels */
 #include "../../platform/andamento/and_ui.c"
 
 #include "sim_demos.h"                       /* (web/andamento/build.sh: demos/still-tide.tsp, koto-garden.tsp) */
@@ -98,12 +98,14 @@ EXPORT void web_volume(uint32_t v)
     uint32_t k10 = v > 1023u ? 1023u : v;
     song.master_q12 = (int32_t)((k10 * k10) >> 8);
 }
-/* the screen: and_draw into and_fb (128 x 64, a byte a pixel, 0..15) */
+/* the screens: and_draw into both frames (128 x 64, a byte a pixel, 0..15); web_screen the page screen's, web_dials
+ * the dial screen's (drawn by the same web_screen call). Which side each is on is the page's (left- or right-handed) */
 EXPORT uint8_t *web_screen(void)
 {
     and_draw();
-    return &and_fb[0][0];
+    return &and_fbs[AND_SCR_PAGE][0][0];
 }
+EXPORT uint8_t *web_dials(void) { return &and_fbs[AND_SCR_DIAL][0][0]; }
 EXPORT uint32_t web_led_buttons(void) { return and_led_buttons(); }
 /* the keys' lights: 16 x RGB (bottom row first), 0..255 a channel */
 EXPORT const uint8_t *web_led_keys(void) { return and_led_keys(); }

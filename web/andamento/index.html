@@ -26,29 +26,30 @@ h1 { font-size: 20px; margin: 0 0 4px; font-weight: 650; }
 .bar button:hover { border-color: var(--muted); }
 .bar .status { color: var(--muted); font-size: 13px; margin-left: auto; }
 
-/* the panel, as Theo's 3D-printed mockup (about 214 x 154 mm): every size in cqw of its own width, so it scales as one
-   object; positions in % of the panel */
+/* the panel, as the two-screen mockup (about 210 x 135 mm, docs/mockups/TwoScreens.dc.html in the andamento repo):
+   every size in cqw of its own width, so it scales as one object; positions in % of the panel */
 .wrap { container-type: inline-size; width: 100%; }
-.panel { position: relative; width: 100cqw; aspect-ratio: 214 / 154; max-width: 100%; border-radius: 3.6cqw;
+.panel { position: relative; width: 100cqw; aspect-ratio: 210 / 135; max-width: 100%; border-radius: 3.6cqw;
   background: repeating-linear-gradient(135deg, #191919 0 .25cqw, #161616 .25cqw .5cqw);
   box-shadow: inset 0 0 0 .2cqw #0c0c0c, 0 1.2cqw 3cqw rgba(0,0,0,.35); user-select: none; -webkit-user-select: none; touch-action: none; }
 .lbl { position: absolute; color: var(--print); font: 600 1.3cqw/1 "Barlow Condensed", "Arial Narrow", sans-serif; letter-spacing: .06em;
   text-align: center; transform: translateX(-50%); white-space: nowrap; pointer-events: none; }
 .lbl.big { font-size: 1.6cqw; letter-spacing: .1em; }
-.logo { position: absolute; right: 6cqw; top: 2.4cqw; color: var(--print); font: 600 1.7cqw/1 "Barlow Condensed", "Arial Narrow", sans-serif; letter-spacing: .5em; }
-.bezel { position: absolute; left: 5.3%; top: 6.9%; width: 38.1%; height: 27.9%; background: #050505; border-radius: 1.2cqw;
+.logo { position: absolute; left: 5.7cqw; top: 1.6cqw; color: var(--print); font: 600 1.7cqw/1 "Barlow Condensed", "Arial Narrow", sans-serif; letter-spacing: .5em; }
+.bezel { position: absolute; top: 7.41%; width: 37.14%; height: 29.63%; background: #050505; border-radius: .6cqw;
   box-shadow: inset 0 0 0 .15cqw #222; }
-.screen { position: absolute; left: 8.9%; top: 9.7%; width: 30.6%; aspect-ratio: 2 / 1; background: #000; image-rendering: pixelated; }
+.screen { position: absolute; top: 10.19%; width: 30.48%; aspect-ratio: 2 / 1; background: #000; image-rendering: pixelated; }
+.scrname { position: absolute; top: 38.2%; color: #8d8b86; font: 600 1.1cqw/1 "Barlow Condensed", sans-serif; letter-spacing: .12em; }
 .enc { position: absolute; width: 6.3cqw; height: 6.3cqw; transform: translate(-50%, -50%); border-radius: 50%; cursor: ns-resize;
   background: radial-gradient(circle, #262626 0 58%, transparent 59%),
               repeating-conic-gradient(#3a3a3a 0 4deg, #101010 4deg 8deg);
   box-shadow: 0 .35cqw .7cqw rgba(0,0,0,.6); }
 .enc::after { content: ""; position: absolute; left: 50%; top: 22%; width: .3cqw; height: 1.2cqw; margin-left: -.15cqw; background: #8a8a8a;
   border-radius: .2cqw; transform-origin: 50% 1.75cqw; transform: rotate(var(--a, 0deg)); }
-.enc.big { width: 9.5cqw; height: 9.5cqw; }
-.enc.big::after { top: 20%; height: 1.6cqw; transform-origin: 50% 2.85cqw; }
-.enc.small { width: 5.6cqw; height: 5.6cqw; background: radial-gradient(circle at 50% 40%, #2c2c2c, #141414 70%); }
-.enc.small::after { top: 14%; height: 1.5cqw; background: #eee; transform-origin: 50% 1.4cqw; }
+.enc.big { width: 7.6cqw; height: 7.6cqw; }
+.enc.big::after { top: 20%; height: 1.4cqw; transform-origin: 50% 2.25cqw; }
+.enc.small { width: 4.8cqw; height: 4.8cqw; background: radial-gradient(circle at 50% 40%, #2c2c2c, #141414 70%); }
+.enc.small::after { top: 14%; height: 1.3cqw; background: #eee; transform-origin: 50% 1.2cqw; }
 .enc.pushed { box-shadow: 0 .1cqw .3cqw rgba(0,0,0,.6), 0 0 0 .25cqw var(--ink); }
 .btn { position: absolute; width: 5.6cqw; height: 3.4cqw; transform: translate(-50%, -50%); border-radius: .7cqw; cursor: pointer;
   background: linear-gradient(#303030, #222); box-shadow: 0 .3cqw 0 #090909, 0 0 0 .15cqw #0c0c0c; --led: #ffcc33; }
@@ -57,7 +58,7 @@ h1 { font-size: 20px; margin: 0 0 4px; font-weight: 650; }
 .btn.arrow { width: 4.7cqw; height: 3.4cqw; display: grid; place-items: center; color: #ddd; font: 600 1.6cqw/1 system-ui, sans-serif; }
 .btn.small { width: 4.8cqw; height: 3.7cqw; }
 .btn.down, .key.down { transform: translate(-50%, -47%); box-shadow: 0 .08cqw 0 #090909, 0 0 0 .15cqw #0c0c0c; }
-.tray { position: absolute; left: 4.5%; top: 67.1%; width: 70.1%; height: 25.9%; background: #0d0d0d; border-radius: 1.4cqw; box-shadow: inset 0 0 0 .15cqw #1d1d1d; }
+.tray { position: absolute; left: 4.76%; top: 68.52%; width: 69.76%; height: 28.15%; background: #0d0d0d; border-radius: 1.4cqw; box-shadow: inset 0 0 0 .15cqw #1d1d1d; }
 .key { position: absolute; width: 7.8cqw; height: 7.3cqw; transform: translate(-50%, -50%); border-radius: .8cqw; cursor: pointer;
   background: linear-gradient(#f4f2ee, #dcd9d3); box-shadow: 0 .3cqw 0 #8f8c86, inset 0 0 0 .1cqw #fff; --glow: transparent; }
 .key::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(circle at 50% 30%, var(--glow), transparent 62%); }
@@ -84,18 +85,23 @@ kbd { font: 12px ui-monospace, Menlo, monospace; border: 1px solid var(--line); 
 </style>
 <main>
   <h1>Andamento, virtual prototype</h1>
-  <p class="sub">Tessera's engine at the Daisy Seed's 48 kHz, behind a first draft of Andamento's panel and 128×64 screen.</p>
+  <p class="sub">Tessera's engine at the Daisy Seed's 48 kHz, behind Andamento's panel and its two 128×64 screens: the page screen (Tessera's header, a picture, the tabs) and the dial screen over the 8 encoders.</p>
   <div class="bar">
     <button id="demoA">Play STILL TIDE</button>
     <button id="demoB">Play KOTO GARDEN</button>
+    <button id="handBtn" title="Swap the encoders with the buttons, and the two screens' pictures">Left-handed</button>
     <button id="midiBtn" title="Tracks 5 to 8 send MIDI on channels 5 to 8 (each track's CHAN)">MIDI out…</button>
     <select id="midiOut" hidden aria-label="MIDI output"></select>
     <span class="status" id="status">Click the panel to start the sound.</span>
   </div>
   <div class="wrap"><div class="panel" id="panel">
     <div class="logo">ANDAMENTO</div>
-    <div class="bezel"></div>
-    <canvas class="screen" id="screen" width="128" height="64"></canvas>
+    <div class="bezel" style="left: 5.71%"></div>
+    <div class="bezel" style="left: 44.76%"></div>
+    <canvas class="screen" id="scrL" width="128" height="64" style="left: 8.93%" aria-label="left screen"></canvas>
+    <canvas class="screen" id="scrR" width="128" height="64" style="left: 47.98%" aria-label="right screen"></canvas>
+    <div class="scrname" id="nameL" style="left: 5.71%">PAGE</div>
+    <div class="scrname" id="nameR" style="left: 44.76%">DIALS</div>
     <div class="tray"></div>
     <div class="start" id="start"><span>Click to start</span></div>
   </div></div>
@@ -104,7 +110,8 @@ kbd { font: 12px ui-monospace, Menlo, monospace; border: 1px solid var(--line); 
     <div>
       <h2>Encoders</h2>
       <p>Drag up or down, or use the mouse wheel. A click (without dragging) pushes it: the setting goes back to its default.</p>
-      <p>Encoders A to H follow the 2×4 grid on the screen; on HOME they are tracks 1 to 8's ENERGY DEPTH. ENERGY works on every page; VOL is the main level.</p>
+      <p>Encoders A to H sit under the dial screen, each under its own dial; on HOME they are tracks 1 to 8's ENERGY DEPTH. ENERGY works on every page; VOL is the main level.</p>
+      <p><b>Left-handed</b> swaps the encoders with the buttons, and the two screens' pictures, so the dials stay over the encoders; the choice is kept in this browser.</p>
     </div>
     <div>
       <h2>HOME</h2>
@@ -182,34 +189,63 @@ function encoder(i, x, y, size, name, ly) {
   d.addEventListener("wheel", (e) => { e.preventDefault(); turn(e.deltaY < 0 ? 1 : -1); }, { passive: false });
   encs[i] = d;
 }
-let volume = 700;
-// from the mockup: 8 encoders A..H under the screen, ENERGY and VOL top right
-for (let i = 0; i < 8; i++)
-  encoder(i, [10.3, 19.6, 28.9, 38.2][i % 4], i < 4 ? 41.8 : 55.0, "", "ABCDEFGH"[i], i < 4 ? 47.6 : 60.8);
-encoder(8, 77.9, 18.7, "big", "ENERGY", 27.4);
-encoder(9, 91.7, 18.9, "small", "VOL", 24.9);
+let volume = 700, lastFrame = null;
+// from the two-screen mockup (840 x 540 px = 210 x 135 mm, 4 px a mm): x for the right hand, then for the left. The
+// encoder block and the button block swap sides; the screens stay, and swap pictures (onFrame)
+const placed = [];                               // [element, x right-handed %, x left-handed %]
+function both(d, xr, xl) { placed.push([d, xr, xl]); return d; }
+const ENC_XR = [51.79, 59.40, 67.02, 74.64], ENC_XL = [12.74, 20.36, 27.98, 35.60];
+for (let i = 0; i < 8; i++) {
+  const r = i < 4 ? 0 : 1;
+  encoder(i, ENC_XR[i % 4], [44.26, 58.33][r], "", "ABCDEFGH"[i], [50.93, 65.0][r]);
+  both(encs[i], ENC_XR[i % 4], ENC_XL[i % 4]);
+  both(panel.lastElementChild, ENC_XR[i % 4], ENC_XL[i % 4]);   // (its label)
+}
+encoder(8, 89.52, 13.70, "big", "ENERGY", 21.1);
+encoder(9, 89.52, 30.74, "small", "VOL", 35.93);
 
 const btns = [];
 function button(id, name, x, y, kind, ly, led) {
   const d = el("btn" + (kind ? " " + kind : ""), x, y);
+  let l = null;
   if (kind === "arrow") d.textContent = name;
-  else label(name, x, ly);
+  else l = label(name, x, ly);
   if (led) d.style.setProperty("--led", led);
   const up = () => { if (d.classList.contains("down")) { d.classList.remove("down"); send({ type: "button", b: id, down: 0 }); } };
   d.addEventListener("pointerdown", (e) => { e.preventDefault(); d.classList.add("down"); send({ type: "button", b: id, down: 1 }); });
   d.addEventListener("pointerup", up);
   d.addEventListener("pointerleave", up);
   btns[id] = d;
+  return [d, l];
+}
+const SHIFT = 39.05;                             // (the button block's move to the right, left-handed: 328 px)
+function block(id, name, x, y, kind, ly, led) {
+  for (const d of button(id, name, x, y, kind, ly, led)) if (d) both(d, x, x + SHIFT);
 }
 ["GEN", "SOUND", "MOD", "FX", "PIECE", "MIX"].forEach((n, i) =>
-  button(AB[n], n, [50.3, 57.2, 64.1][i % 3], i < 3 ? 14.3 : 24.1, "led", i < 3 ? 18.6 : 28.2));
-button(AB.FUNC, "FUNC", 50.3, 49.1, "", 53.0);
-button(AB.NO, "NO", 60.6, 49.1, "", 53.0);
-button(AB.YES, "YES", 70.9, 49.1, "", 53.0);
-button(AB.UP, "\u2303", 86.5, 47.9, "arrow");
-button(AB.LEFT, "\u2039", 80.9, 53.5, "arrow");
-button(AB.DOWN, "\u2304", 86.5, 53.5, "arrow");
-button(AB.RIGHT, "\u203a", 91.9, 53.5, "arrow");
+  block(AB[n], n, [8.33, 14.71, 21.10, 27.48, 33.86, 40.24][i], 43.52, "led", 47.6));
+block(AB.FUNC, "FUNC", 8.45, 55.0, "", 59.07);
+block(AB.NO, "NO", 15.12, 55.0, "", 59.07);
+block(AB.YES, "YES", 21.79, 55.0, "", 59.07);
+block(AB.UP, "\u2303", 35.36, 55.0, "arrow");
+block(AB.LEFT, "\u2039", 30.12, 60.93, "arrow");
+block(AB.DOWN, "\u2304", 35.36, 60.93, "arrow");
+block(AB.RIGHT, "\u203a", 40.60, 60.93, "arrow");
+
+// left- or right-handed: the blocks' places, the screens' names; the pictures follow in onFrame
+let left = store0("andamento.hand") === "left";
+function store0(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+const handBtn = document.getElementById("handBtn");
+function hand(l) {
+  left = l;
+  for (const [d, xr, xl] of placed) d.style.left = (left ? xl : xr) + "%";
+  document.getElementById("nameL").textContent = left ? "DIALS" : "PAGE";
+  document.getElementById("nameR").textContent = left ? "PAGE" : "DIALS";
+  handBtn.textContent = left ? "Right-handed" : "Left-handed";
+  try { localStorage.setItem("andamento.hand", left ? "left" : "right"); } catch (e) {}
+  if (lastFrame) drawScreens(lastFrame);
+}
+handBtn.addEventListener("click", () => hand(!left));
 
 const keys = [];
 function key(k, x, y, name) {
@@ -223,12 +259,13 @@ function key(k, x, y, name) {
 }
 const KB_BOTTOM = "asdfghjk", KB_TOP = "qwertyui";
 for (let i = 0; i < 8; i++) {
-  key(8 + i, 9.6 + i * 8.57, 73.8, KB_TOP[i].toUpperCase());
-  key(i, 9.6 + i * 8.57, 86.2, KB_BOTTOM[i].toUpperCase());
+  key(8 + i, 9.64 + i * 8.571, 75.74, KB_TOP[i].toUpperCase());
+  key(i, 9.64 + i * 8.571, 89.44, KB_BOTTOM[i].toUpperCase());
 }
-button(AB.REC, "REC", 79.9, 78.4, "small led", 82.6, "#e0392b");
-button(AB.PLAY, "PLAY", 85.9, 78.4, "small led", 82.6, "#3ddc6a");
-button(AB.STOP, "STOP", 91.9, 78.4, "small", 82.6);
+button(AB.REC, "REC", 80.0, 82.59, "small led", 86.67, "#e0392b");
+button(AB.PLAY, "PLAY", 85.95, 82.59, "small led", 86.67, "#3ddc6a");
+button(AB.STOP, "STOP", 91.9, 82.59, "small", 86.67);
+hand(left);
 
 // ---- the keys' RGB LEDs (and_keys.c: 0..255 a channel), as light through a white cap: the colour at full
 // strength, its brightness as how much of it shows ----
@@ -238,18 +275,24 @@ function keyLight(d, r, g, b) {
   if (d.dataset.glow !== v) { d.dataset.glow = v; d.style.setProperty("--glow", v); }
 }
 
-// ---- the screen: 4-bit levels in the yellow of the NHD-2.7-12864WDY3 (Tessera's default ink) ----
-const ctx = document.getElementById("screen").getContext("2d");
-const img = ctx.createImageData(128, 64);
+// ---- the screens: 4-bit levels in the yellow of the NHD-2.7-12864WDY3 (Tessera's default ink); the page screen on
+// the left right-handed, the dial screen over the encoders ----
+const ctxL = document.getElementById("scrL").getContext("2d"), ctxR = document.getElementById("scrR").getContext("2d");
+const img = ctxL.createImageData(128, 64);
 const LUT = [];
 for (let l = 0; l < 16; l++) { const g = Math.pow(l / 15, 1.6); LUT.push([255 * g, 208 * g, 32 * g]); }
-function drawScreen(fb) {
+function drawScreen(ctx, fb) {
   const p = img.data;
   for (let i = 0; i < 8192; i++) { const c = LUT[fb[i] & 15]; p[4 * i] = c[0]; p[4 * i + 1] = c[1]; p[4 * i + 2] = c[2]; p[4 * i + 3] = 255; }
   ctx.putImageData(img, 0, 0);
 }
+function drawScreens(m) {
+  drawScreen(left ? ctxR : ctxL, m.fb);
+  if (m.dials) drawScreen(left ? ctxL : ctxR, m.dials);
+}
 function onFrame(m) {
-  drawScreen(m.fb);
+  lastFrame = m;
+  drawScreens(m);
   for (let b = 0; b < btns.length; b++) if (btns[b]) btns[b].classList.toggle("lit", !!((m.buttons >> b) & 1));
   for (let k = 0; k < 16; k++) keyLight(keys[k], m.keys[3 * k], m.keys[3 * k + 1], m.keys[3 * k + 2]);
   playing = m.playing;
@@ -363,7 +406,8 @@ async function startMainThread(ac) {         // fallback: a ScriptProcessorNode 
     const nm = ex.web_midi_take();
     if (nm) onMidi(new Uint8Array(ex.memory.buffer, ex.web_midi_buf(), nm * 3).slice());
   });
-  setInterval(() => onFrame({ fb: new Uint8Array(ex.memory.buffer, ex.web_screen(), 8192), buttons: ex.web_led_buttons(),
+  setInterval(() => onFrame({ fb: new Uint8Array(ex.memory.buffer, ex.web_screen(), 8192).slice(),
+                              dials: new Uint8Array(ex.memory.buffer, ex.web_dials(), 8192).slice(), buttons: ex.web_led_buttons(),
                               keys: new Uint8Array(ex.memory.buffer, ex.web_led_keys(), 48), playing: ex.web_playing(),
                               cv: [0, 1, 2, 3].map((i) => ex.web_cv(i)), gate: [0, 1, 2, 3].map((i) => ex.web_gate(i)) }), 33);
   return { port: { postMessage(m) {
