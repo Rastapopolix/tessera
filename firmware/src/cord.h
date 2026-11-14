@@ -26,18 +26,23 @@
  *   CK_TEMPO  the project's tempo on CLK INT (mix.c seq_tempo_q12, cord.c cord_tempo_tick): a full move doubles it, a
  *             full move down halves it; BPM itself is left alone; destination track 0 as CK_GLOBAL
  *   CK_CC     a MIDI CC out on the destination track's MIDI OUT channel (cord.c cord_cc_tick, issue #374): its number
- *             the cord's own (cord_cc_num, OCT+ held + KNOB 3 on MODS); a track's, as CK_BLOCK (before CK_GLOBAL: the
+ *             the cord's own (cord_cc_num, OCT- held + KNOB 3 on MODS); a track's, as CK_BLOCK (before CK_GLOBAL: the
  *             kinds are not saved, only the codes)
  *   CK_CLOCK  the track's generator clock (cord.c cord_clock_tick, seq.c seq_grid_tick): a track with a live one is
  *             stepped by the cord's edges alone, not by its DIV (always a GATE cord: its OFFSET the threshold; AMOUNT
  *             is the division, every n-th edge, its sign the edge); a track's, before CK_GLOBAL
  *   CK_PLAY   whether the destination track's notes sound (cord.c cord_play_tick, voice.c trk_note_on): shut while its
  *             mods together are under half, its generator playing on unheard (as MUTE: it still leads); a track's
+ *   CK_SEQ    a track parameter the sequencer reads (GATE, SWING, GLIDE, ARP's RATE GATE OCT): in place around
+ *             seq.c seq_advance (cord.c cord_seq_begin .. cord_seq_end, a change made inside kept: motion playback), and
+ *             as CK_BLOCK in the render (GLIDE's speed); a live key's note-on is in neither; a track's
+ *   CK_VEL    the velocity of the destination track's note-ons (cord.c cord_vel, voice.c trk_note_on): its mods'
+ *             shares added, 100 % the whole 1..127; a track's
  *   CK_BUS    a project MIX bus, BUS A or B (cord.c cord_bus_tick): its cords combined by its MODE, then its LAG, each
  *             block; read back as the source BUS A / BUS B one block later; destination track 0 as CK_GLOBAL
  *   CK_MDEPTH the project's MOD DEPTH (cord.c cord_mdepth_tick): added to its setting, each block; destination track 0
  *             as CK_GLOBAL; its own cords are never scaled by it */
-enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_CLOCK, CK_PLAY, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO, CK_BUS, CK_MDEPTH };
+enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_CLOCK, CK_PLAY, CK_SEQ, CK_VEL, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO, CK_BUS, CK_MDEPTH };
 
 /* Destination codes. FROZEN: saved cords keep them; new ones at the end, a retired one stays as a gap */
 enum {
@@ -84,6 +89,19 @@ enum {
     CD_MOD_DEPTH,                                                   /* the project's MOD DEPTH (CK_MDEPTH, G9) */
     CD_PLAY,                                                        /* a track's notes heard or not (CK_PLAY, G8) */
     CD_CLOCK = 109,                                                 /* the track's generator clock (CK_CLOCK) */
+    CD_CH_STRUM = 110, CD_CH_SDIR,                                  /* CHORD's STRUM and its DIR (CK_STEP) */
+    CD_SUB_RATCH, CD_SUB_CHANCE,                                    /* SUB's RATCH and its CHANCE */
+    CD_SGATE,                                                       /* the step GATE (CK_SEQ) */
+    CD_NL_LEN,                                                      /* NOTE LEN's FIXED length */
+    CD_EV_LOCK,                                                     /* EVOLVE's LOCK (deja vu) */
+    CD_VELO,                                                        /* the note-ons' velocity (CK_VEL) */
+    CD_SSWING, CD_GLIDE,                                            /* the track's SWING, GLIDE (CK_SEQ) */
+    CD_SD_GRAVITY, CD_FM_DEVELOP,                                   /* GRAVITY, FORM's DEVELOP */
+    CD_AN_ECHO, CD_AN_SHIFT, CD_AN_SPACE,                           /* ANSWER's ECHO, SHIFT, SPACE */
+    CD_CH_BREATH,                                                   /* CHORD's BREATH */
+    CD_ACC_LIMIT,                                                   /* the pitch accumulator's LIMIT (STEP tracks) */
+    CD_ORG_SPEED, CD_ORG_RATE,                                      /* TIDE's SPEED, SWARM's RATE (organic.c) */
+    CD_ARATE, CD_AGATE, CD_AOCT,                                    /* ARP's RATE, GATE, OCT (CK_SEQ) */
     CD_N
 };
 
@@ -159,6 +177,7 @@ int32_t cord_bus_now(uint32_t b);                   /* bus b's value now (Q15), 
  * it, unscaled. The project's (cord_reset: 100) */
 uint32_t cord_mdepth_get(void);
 int cord_play_shut(uint32_t tr);                    /* PLAY (G8): track tr's notes shut by its mods now (voice.c) */
+uint32_t cord_vel(uint32_t tr, uint32_t vel);       /* VELO: a note-on's velocity on track tr as its mods move it (voice.c) */
 void cord_mdepth_set(int32_t v);
 
 const char *cord_src_name(uint32_t code);           /* <= 7 characters; 0: no such source */
