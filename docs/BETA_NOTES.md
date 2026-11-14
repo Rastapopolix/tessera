@@ -7,6 +7,9 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues> (the firmware version, the steps,
 what you expected and what happened).
 
+## New in 3.6-beta3
+- SIM CONTROL (in the menu: hold HOME): with the web simulator open and the FM-1 connected by USB, the FM-1's knobs, buttons and keys play only the simulator, and the FM-1 itself stays silent. Hold FX + GLO for a second to get the panel back; closing the simulator or unplugging ends it too. It is off every time the FM-1 starts.
+
 ## New in 3.6-beta2
 - MODS: 22 more destinations: STRUM, STR DIR, RATCH, R CHANC, GATE, N LEN, LOCK, VELO, SWING, GLIDE, GRAVITY, DEVELOP, AN ECHO, AN SHFT, AN SPCE, BREATH, ACC LIM, TIDE SP, SWRM RT, ARP RTE, ARP GTE and ARP OCT.
 - MODS: KNOB 3's destinations come in groups (SOUND, ENV, LFO, MIX, FX, GEN, FEEL, EVOLVE, ARP, MODS), and the list's title names the group under the cursor, for example T3 LFO.
@@ -30,6 +33,7 @@ what you expected and what happened).
 - Patterns (PAT GEN) keep ANSWER's first 8 notes; CHORD, held lengths and notes 9-16 belong to the track, not the pattern.
 
 ## Please try
+- SIM CONTROL: open the web simulator with the FM-1 on USB, turn SIM CONTROL on in the menu, play the FM-1: only the simulator answers. Hold FX + GLO for a second: the FM-1 plays again. Hold GLO alone while it is on: GLO's settings open in the simulator.
 - A mod onto GATE, SWING or ARP RTE on a playing track, RATCH on a generator track, VELO on a STEP track.
 - On MODS, a mod from T3's LFO: turn KNOB 3. T3 comes first and the title follows the groups; with T1 on Turing, T1 offers T PROB but not E PULSE.
 - The 909 on ATLAS at 85 BPM with DENSITY at 64 % or more: the snares keep playing. A busy four-track project: after a crackle, the voices come back within seconds.
