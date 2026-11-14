@@ -397,9 +397,9 @@ static void draw_head(void)
             cv_text_c(8 + cw / 2, 3, &AF_X, chip, T_INK, T_THEME);
             l = 8 + cw;
         }
-        if (gen_layer_on()) {                           /* OCT+ held, a generator's layer: its key */
-            cv_keycap(l + 6, 3, KC_OCTUP, T_THEME, T_INK, T_BG);
-            l += 6 + kc_w(KC_OCTUP);
+        if (gen_layer_on()) {                           /* OCT- held, a page's layer: its key */
+            cv_keycap(l + 6, 3, KC_OCTDN, T_THEME, T_INK, T_BG);
+            l += 6 + kc_w(KC_OCTDN);
         } else if (page_sheet()) {                      /* the page has a sheet (OCT+ held) */
             cv_text_on(l + 4, 2, &AF_S, "\x85", T_MID, T_BG);
             l += 14;
@@ -931,7 +931,7 @@ static void draw_columns_(void)
         uint32_t tr = song.sel;
         const tessera_evolve_t *ev = &tessera.evolve[tr < TESSERA_TRACKS ? tr : 0u];
         char f2[16];
-        if (fm_layer_on()) {                            /* a generator's FORM, OCT+ held: DEVELOP (lit with a FORM on) */
+        if (fm_layer_on()) {                            /* a generator's FORM, OCT- held: DEVELOP (lit with a FORM on) */
             uint32_t dv = tessera.fm_dev[tr];
             fmt_int(f2, dv);
             col_mods(PID_TESS(TX_FM_DEVELOP));
@@ -1125,7 +1125,7 @@ static void draw_columns_(void)
         }
         return;
     }
-    if (cur_page()->graph == GR_ENERGY && en_layer_on()) {   /* ENERGY, OCT+ held: the selected track's DEPTH */
+    if (cur_page()->graph == GR_ENERGY && en_layer_on()) {   /* ENERGY, OCT- held: the selected track's DEPTH */
         char w0[8];
         uint32_t dp = tessera.en_depth[song.sel % TESSERA_TRACKS];
         fmt_int(w0, dp);

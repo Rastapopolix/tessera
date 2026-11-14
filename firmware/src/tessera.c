@@ -938,7 +938,8 @@ void tessera_evolve_knob(uint32_t k, int32_t s)
     TESS_IRQ_ON();
 }
 
-/* OCT+ held on a generator track's EVOLVE page: KNOB 1 GRAVITY (ui_input.c; the SOURCE layer's too), KNOB 4 PAT GEN */
+/* OCT- held on a generator track's EVOLVE page (behind ROLL ALL, ui_input.c): KNOB 3 PAT GEN (k 3), KNOB 4 GRAVITY
+ * (k 0; the SOURCE layer's too) */
 void tessera_ev_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;
@@ -950,7 +951,7 @@ void tessera_ev_layer_knob(uint32_t k, int32_t s)
     TESS_IRQ_ON();
 }
 
-/* OCT+ held on a generator track's TWEAK page: KNOB 2 FOLLOW's HOW, KNOB 3 its RHYTHM, a step a turn; KNOB 4 its HOLD,
+/* OCT- held on a generator track's TWEAK page: KNOB 2 FOLLOW's HOW, KNOB 3 its RHYTHM, a step a turn; KNOB 4 its HOLD,
  * OFF or a track, never this one (ui_input.c) */
 void tessera_tw_layer_knob(uint32_t k, int32_t s)
 {
@@ -973,7 +974,8 @@ void tessera_tw_layer_knob(uint32_t k, int32_t s)
     TESS_IRQ_ON();
 }
 
-/* OCT+ held on a generator track's FORM page: KNOB 1 DEVELOP, a step of 2 % a click as CONTRAST (ui_input.c) */
+/* OCT- held on a generator track's FORM page: KNOB 1 DEVELOP, a step of 2 % a click as CONTRAST; 2 FOLLOW, 3 SKIP, 4
+ * Entries' ROLE (ui_input.c) */
 void tessera_fm_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;
@@ -1035,7 +1037,7 @@ void tessera_chain_knob(uint32_t k, int32_t s, int layer)
     TESS_IRQ_ON();
 }
 
-/* OCT+ held on the ENERGY page: KNOB 1 the selected track's DEPTH (ui_input.c) */
+/* OCT- held on the ENERGY page: KNOB 1 the selected track's DEPTH (ui_input.c) */
 void tessera_en_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;
@@ -2030,8 +2032,8 @@ static void tess_knob_body(uint32_t k, int32_t s)
     tess_rearm(tr);
 }
 static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v);
-/* QUAD with OCT+ held on GEN: KNOB 1 the column (1..4), 2 its MOVE (STOP DOWN UP RAND), 3 its EVERY, 4 the track's
- * RANGE */
+/* QUAD with OCT- held on GEN (behind RANDOM, ui_input.c gen_dn_knob): KNOB 2 the column (1..4), 3 its MOVE (STOP DOWN
+ * UP RAND), 4 its EVERY (RANGE: the GEN sheet) */
 void tessera_quad_cols_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel, c;
@@ -2047,13 +2049,11 @@ void tessera_quad_cols_knob(uint32_t k, int32_t s)
         tess_param_set_body(tr, TX_QD_MOVE1 + c, (int32_t)(tessera.qcol[c] & 3u) + d);
     } else if (k == 2u) {
         tess_param_set_body(tr, TX_QD_EVERY1 + c, (int32_t)(tessera.qcol[c] >> 2) + d);
-    } else if (k == 3u) {
-        tess_param_set_body(tr, TX_QD_RANGE, (int32_t)tessera.quad[tr].range + d);
     }
     TESS_IRQ_ON();
 }
-/* CONSTELLATION with OCT+ held on GEN: KNOB 1 LOCK (EVOLVE's: how much of the loop stays), 2 LEN (the loop's slots), 3
- * FILL (a step with no star: OFF, ARP), 4 SIZE (the crosshair's catch) */
+/* CONSTELLATION with OCT- held on GEN (behind RANDOM, ui_input.c gen_dn_knob): KNOB 2 LOCK (EVOLVE's: how much of the
+ * loop stays), 3 LEN (the loop's slots), 4 FILL (a step with no star: OFF, ARP); SIZE: the GEN sheet */
 void tessera_constel_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;
@@ -2066,11 +2066,10 @@ void tessera_constel_layer_knob(uint32_t k, int32_t s)
     if (k == 0u) tess_param_set_body(tr, TX_EV_LOCK, (int32_t)tessera.evolve[tr].lock + s * 2);
     else if (k == 1u) tess_param_set_body(tr, TX_CS_LEN, (int32_t)c->len + d);
     else if (k == 2u) tess_param_set_body(tr, TX_CS_FILL, (int32_t)c->fill + d);
-    else if (k == 3u) tess_param_set_body(tr, TX_CS_SIZE, (int32_t)c->size + d);
     TESS_IRQ_ON();
 }
 
-/* GRIDS' fourth part: its sound's name; OCT+ held on GEN, a key: the sound of its note picked when it is one of them
+/* GRIDS' fourth part: its sound's name; OCT- held on GEN, a key: the sound of its note picked when it is one of them
  * (the DRUM lanes' black keys: CP OH TM RS CB), 0 else (BD, SD, CH: the other parts') */
 const char *tessera_grids_part4_name(uint32_t tr)
 {
@@ -2086,21 +2085,21 @@ int tessera_grids_part4_note(uint32_t tr, uint32_t note)
         }
     return 0;
 }
-/* GRIDS with OCT+ held on GEN: KNOB 1 KICK, 2 SNR, 3 HAT (each part's share of DENS), 4 TOMS; 2 % a click, as DENS */
+/* GRIDS with OCT- held on GEN (behind RANDOM, ui_input.c gen_dn_knob): KNOB 2 KICK, 3 SNR, 4 HAT (each part's share of
+ * DENS), 2 % a click, as DENS (TOMS: the GEN sheet) */
 void tessera_grids_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;
     const tessera_grids_t *g;
     tessera_ensure_init();
-    if (tr >= TESSERA_TRACKS || !s || k > 3u) return;
+    if (tr >= TESSERA_TRACKS || !s || k > 2u) return;
     g = &tessera.grids[tr];
     TESS_IRQ_OFF();
-    if (k < 3u) tess_param_set_body(tr, TX_GRD_KICK + k, 100 - (int32_t)g->thin[k] + s * 2);
-    else tess_param_set_body(tr, TX_GRD_TOMS, (int32_t)g->toms + s * 2);
+    tess_param_set_body(tr, TX_GRD_KICK + k, 100 - (int32_t)g->thin[k] + s * 2);
     TESS_IRQ_ON();
 }
 
-/* CHORD USER, a key at a time (OCT+ held on GEN, PROG USER: ui_input.c): the key's note, rounded down to the track's
+/* CHORD USER, a key at a time (OCT- held on GEN, PROG USER: ui_input.c): the key's note, rounded down to the track's
  * scale (CHR: ROOT's major, as tess_chord_build), is the next chord's root; first: a new progression. 0 = full (eight
  * already), else how many it has now */
 uint32_t tessera_chord_user_key(uint32_t tr, uint32_t note, int first)
@@ -2121,29 +2120,8 @@ uint32_t tessera_chord_user_key(uint32_t tr, uint32_t note, int first)
     return ok ? tessera.chord[tr].ulen : 0u;
 }
 
-/* CHORD with OCT+ held on GEN, PROG USER, KNOB 4: USER's LEN */
-void tessera_chord_ulen_knob(int32_t s)
-{
-    uint32_t tr = song.sel;
-    tessera_ensure_init();
-    if (tr >= TESSERA_TRACKS || !s) return;
-    TESS_IRQ_OFF();
-    tess_param_set_body(tr, TX_CH_ULEN, (int32_t)gen_chord_ulen(&tessera.chord[tr]) + (s > 0 ? 1 : -1));
-    TESS_IRQ_ON();
-}
-
-/* CHORD with OCT+ held on GEN, KNOB 4 (not USER, whose LEN it is): BREATH, 5 % a detent */
-void tessera_chord_breath_knob(int32_t s)
-{
-    uint32_t tr = song.sel;
-    tessera_ensure_init();
-    if (tr >= TESSERA_TRACKS || !s) return;
-    TESS_IRQ_OFF();
-    tess_param_set_body(tr, TX_CH_BREATH, (int32_t)tessera.ch_breath[tr] + (s > 0 ? 5 : -5));
-    TESS_IRQ_ON();
-}
-
-/* CHORD with OCT+ held on GEN, KNOB 1: OCT (KNOB 2 and 3 are the track's CHRD and VOIC: ui_input.c) */
+/* CHORD with OCT- held on GEN (ui_input.c gen_dn_knob): KNOB 2 STRUM, 3 its DIR, 4 OCT (CHRD, VOIC and USER's LEN or
+ * BREATH: the GEN sheet) */
 /* STRUM's knob: fine where a strum is a flam, coarser where it is a slow roll (the value stays ms, as saved) */
 uint32_t tess_strum_at(uint32_t i)
 {

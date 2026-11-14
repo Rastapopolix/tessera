@@ -318,8 +318,8 @@ static void answer_tick(const track_t *t, uint32_t tr, const gen_clock_t *clk, g
     }
 }
 
-/* OCT- held on GEN in ANSWER: KNOB 1 SOURCE, 2 ORDER, 3 SHIFT, 4 SPACE (LEN: FADE's top, tessera_knob; CHORD: the
- * GEN sheet, OCT+ held) */
+/* OCT- held on GEN in ANSWER (behind RANDOM, ui_input.c gen_dn_knob): KNOB 2 SOURCE, 3 ORDER, 4 SHIFT (SPACE and
+ * CHORD: the GEN sheet, OCT+ held, ui_popup.c; LEN: FADE's top, tessera_knob) */
 void tessera_answer_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;
@@ -332,6 +332,5 @@ void tessera_answer_layer_knob(uint32_t k, int32_t s)
     if (k == 0u) tess_param_set_body(tr, TX_SD_SOURCE, (int32_t)tessera.sd_src[tr] + d);
     else if (k == 1u) tess_param_set_body(tr, TX_AN_ORDER, (int32_t)a->order + d);
     else if (k == 2u) tess_param_set_body(tr, TX_AN_SHIFT, (int32_t)a->shift + d);
-    else if (k == 3u) tess_param_set_body(tr, TX_AN_SPACE, (int32_t)a->space + s * 2);
     TESS_IRQ_ON();
 }

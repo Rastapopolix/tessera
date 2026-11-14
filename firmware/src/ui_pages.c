@@ -223,7 +223,7 @@ static void pv_ring(uint32_t c, const char *label0, const char *val0, const char
         cv_rrect(1, 1, 56, h - 4, 7, bg, T_THEME);
     }
     if (label[0] || val[0]) {
-        if (gen_layer_on() && label[0]) {              /* OCT+'s layer: the labels on tiles, a set laid over the
+        if (gen_layer_on() && label[0]) {              /* OCT-'s layer: the labels on tiles, a set laid over the
                                                          * page's (ui_graph.c gen_layer_on) */
             int32_t w = text_w(&AF_X, label) + 8;
             if (w < 30) w = 30;

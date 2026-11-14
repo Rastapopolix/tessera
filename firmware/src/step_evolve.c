@@ -5,7 +5,7 @@
  * first step, each change kept at LOCK %, then new ones up to AMOUNT's share (100: half the steps). A MOVE goes by degrees of the track's scale
  * (CHR: semitones), drum hits never MOVE or jump an OCT. Tied and recorded steps are left alone. AMOUNT 0 or EVERY OFF:
  * the steps as written. REC held keeps the changes: they become the steps (ui_input.c capture_take). Not saved: a
- * loaded project's steps start as written. HOW (OCT+ held on the page, KNOB 1; saved) says what a round makes: DRIFT
+ * loaded project's steps start as written. HOW (OCT- held on the page, KNOB 4; saved) says what a round makes: DRIFT
  * (as before: moves, octaves, drops, swaps, ghosts), ADORN (ornaments, only adding: ratchets, octave jumps, neighbour
  * notes, passing notes in the rests) or SERIAL (the whole phrase at once, for the round: RETROGRADE, INVERSION around
  * its first note, ROTATION, AUGMENTATION, half the phrase at half speed; AMOUNT the chance a round brings one, LOCK
@@ -242,7 +242,7 @@ uint32_t tessera_step_keep(uint32_t tr)
     return n;
 }
 
-/* OCT+ held on a STEP track's EVOLVE page: KNOB 1 HOW (ui_input.c) */
+/* OCT- held on a STEP track's EVOLVE page (behind ROLL ALL, ui_input.c): KNOB 3 PAT GEN (k 3), KNOB 4 HOW (k 0) */
 void tessera_sv_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;

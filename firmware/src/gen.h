@@ -50,8 +50,8 @@ typedef struct {
 
 /* 5. Grids (Mutable Instruments Grids' drum map, gen_grids.h): kick, snare and hat from a point on a 5 x 5 map of
  * patterns, blended between the four nearest; TOMS a fourth part, the kick's and the snare's near misses, on a sound
- * of its own (PART4: a tom, the clap, the open hat, the rim, the bell) (OCT+ held on GEN: KICK, SNR, HAT, TOMS; a
- * black key its sound) */
+ * of its own (PART4: a tom, the clap, the open hat, the rim, the bell) (OCT- held on GEN: KICK, SNR, HAT, a
+ * black key its sound; TOMS: the GEN sheet) */
 #define GEN_GRIDS_PARTS 4u   /* kick, snare, hat, the fourth */
 #define GEN_GRIDS_TOM 3u     /* (the part TOMS plays: no pattern of its own on the map) */
 #define GEN_GRIDS_P4_N 5u    /* the fourth part's sounds (gen.c GEN_GRIDS_P4_NOTE) */
@@ -115,7 +115,7 @@ typedef struct {
  * A track in QUAD plays its own row on its own clock (its division), so the polyrhythm comes from the tracks' speeds;
  * LINK: its steps also move other QUAD tracks on (tessera.c tess_quad_link). RANGE folds the row's notes into fewer
  * octaves. The columns can move too, each on its own: its cells turn down or up the four rows, or jump, every so many
- * steps (tessera.c tess_quad_cols; OCT+ held on GEN). The cells come from the seed (ROLL); EVOLVE turns the grid's
+ * steps (tessera.c tess_quad_cols; OCT- held on GEN). The cells come from the seed (ROLL); EVOLVE turns the grid's
  * columns between the QUAD rows while no column moves, else changes notes (tessera.c tess_quad_mutate) */
 enum { GEN_QD_FWD, GEN_QD_BACK, GEN_QD_PEND, GEN_QD_RAND, GEN_QD_HOLD, GEN_QD_COUNT };
 enum { GEN_QR_FULL, GEN_QR_ONE, GEN_QR_TWO, GEN_QR_LOW, GEN_QR_COUNT };   /* RANGE: 3 octaves, 1, 2, 1 either side */
@@ -180,7 +180,7 @@ typedef struct {
 /* 12. Chord pad: one chord at a time on a degree of the track's scale, from a progression, BARS long (tessera.c builds
  * its tones with the track's SCL CHORD: CHRD, VOIC). HIT: held for the chord, struck every beat, every step, or
  * short on the off-beats (OFF BEAT). WALK is
- * the seed's own four chords (ROLL a new walk, EVOLVE changes one); USER up to eight played in on the keys (OCT+ held
+ * the seed's own four chords (ROLL a new walk, EVOLVE changes one); USER up to eight played in on the keys (OCT- held
  * on GEN: tessera_chord_user_key); the others are fixed progressions */
 enum { GEN_CH_POP, GEN_CH_50S, GEN_CH_251, GEN_CH_CIRCLE, GEN_CH_TWO, GEN_CH_DRONE, GEN_CH_WALK, GEN_CH_USER, GEN_CH_PROGS };
 enum { GEN_CH_HOLD, GEN_CH_BEAT, GEN_CH_STEP, GEN_CH_OFF, GEN_CH_HITS };   /* (saved: append only) */
