@@ -41,7 +41,7 @@ def main():
         app_data = app.read_bytes()
         if decoded[0x120:0x120 + len(app_data)] != app_data:
             raise RuntimeError(f"Application binary differs from package: {app}")
-        packages[name] = {"MELODEE_DUAL_CORE": cores, "MELODEE_RAM_AUDIO": 1,
+        packages[name] = {"MELODEE_DUAL_CORE": cores, "MELODEE_RAM_AUDIO": 0,   # (release and beta builds: not resident)
                           "sha256": package.digest}
     if len({p["sha256"] for p in packages.values()}) != 2:
         raise RuntimeError("Dual and single core packages must differ")
