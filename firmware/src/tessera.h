@@ -64,6 +64,8 @@ typedef struct {
     uint8_t n;             /* the phrase's notes, 0..16 (0: nothing to answer yet) */
     uint8_t chord;         /* TESS_AN_ARP / TESS_AN_TRUE: whether notes played together share a step */
     uint8_t note[TESS_AN_NOTES], vel[TESS_AN_NOTES], at[TESS_AN_NOTES];   /* each note, its velocity, its step */
+    uint8_t hold[TESS_AN_NOTES];   /* steps held before release, 0..15 (0: unheld, today's length); LENGTH's own
+                                    * NL_MODE off STEP still wins (docs/design/answer-note-length.md) */
 } tessera_answer_t;
 
 /* 5. Evolve (per track, engine-independent): phrase-level mutation.
@@ -288,6 +290,8 @@ typedef struct {
     uint8_t  slot[TESSERA_TRACKS];              /* the phrase's note just played + 1, 0 none (the picture) */
     uint16_t hclk[TESSERA_TRACKS];              /* listening: steps since the phrase's first note */
     uint8_t  hlate[TESSERA_TRACKS];             /* the first note was past its step's middle: on the next step */
+    uint16_t hopen[TESSERA_TRACKS];             /* bit n: place n's key is still down (its hold not set yet);
+                                                 * TESS_AN_NOTES is 16, so this needs all 16 bits, not 8 */
     uint32_t cnt[TESSERA_TRACKS];               /* steps in this phase (listening: since the last note) */
     uint32_t rnd[TESSERA_TRACKS];               /* its random stream (from the SEED at PLAY) */
     uint8_t  mut[TESSERA_TRACKS][TESS_AN_NOTES];   /* each place's change (vary.c) */
@@ -351,9 +355,10 @@ int energy_resting(void);                           /* 1 while the notes rest */
 const char *tessera_cond_name(uint32_t cond);
 uint32_t tessera_form_get(uint32_t tr, uint8_t seq[4], uint32_t *pos);   /* returns the form's length, 0 = OFF */
 const char *tessera_form_name(uint32_t form);
-#define TESSERA_PK_BYTES 830u                       /* the saved state, version 20 (tessera.c: TESS_PK_TRACK x TESSERA_TRACKS,
+#define TESSERA_PK_BYTES 894u                       /* the saved state, version 21 (tessera.c: TESS_PK_TRACK x TESSERA_TRACKS,
                                                      * then the project's TESS_PK_TAIL) */
-#define TESSERA_PK_BYTES_V19 730u                   /* version 19 (before ANSWER's extra 8 notes and its CHORD switch) */
+#define TESSERA_PK_BYTES_V20 762u                   /* version 20 (before ANSWER's extra 8 notes and its CHORD switch) */
+#define TESSERA_PK_BYTES_V19 730u                   /* version 19 (before ANSWER's HOLD) */
 #define TESSERA_PK_BYTES_V18 602u                   /* version 18 (before ANSWER) */
 #define TESSERA_PK_BYTES_V17 600u                   /* version 17 (before ENERGY's ARC and RESTS) */
 #define TESSERA_PK_BYTES_V16 596u                   /* version 16 (before CHORD's BREATH) */
@@ -382,10 +387,10 @@ uint32_t tessera_pg_mode(uint32_t tr, uint32_t b);
 const uint8_t *tessera_pg_slots(uint32_t tr);
 void tessera_pg_put(uint32_t tr, const uint8_t *slots);
 int tessera_unpack(const uint8_t *in);              /* 1 loaded; 0 refused (range check), nothing changed */
-int tessera_unpack_ver(uint32_t ver, const uint8_t *in);   /* the same for a block of version ver (1..19) */
+int tessera_unpack_ver(uint32_t ver, const uint8_t *in);   /* the same for a block of version ver (1..20) */
 int tessera_check(uint32_t ver, const uint8_t *in);        /* the same checks, nothing loaded: 1 it would load */
 uint32_t tessera_pk_bytes(uint32_t ver);            /* a version's block length, 0 none */
-void tessera_track_up(uint32_t ver, const uint8_t *in, uint8_t *out);   /* one track's record, version ver -> 19 */
+void tessera_track_up(uint32_t ver, const uint8_t *in, uint8_t *out);   /* one track's record, version ver -> 20 */
 void tessera_reset(void);                           /* every track OFF, defaults */
 uint32_t tessera_ratchet(uint32_t tr);              /* SUB: the hits this step plays (1..8), its CHANCE drawn */
 /* Tessera's parameters by number (pid.h: PID_TESS(x)). FROZEN: cords and saved projects keep these numbers, so an id
@@ -537,6 +542,7 @@ void tessera_answer_hear_at(track_t *t, uint32_t note, uint32_t vel, uint32_t la
                                                      * the middle of the step playing: on the next, as REC places it */
 void tessera_answer_key(track_t *t, uint32_t note, uint32_t vel, uint32_t late);   /* seq.c: a key on t, to its ANSWER
                                                      * and each ANSWER with t as SOURCE */
+void tessera_answer_release(track_t *t, uint32_t note);   /* seq.c input_off: that key is up, close its hold */
 void tessera_answer_layer_knob(uint32_t k, int32_t s);  /* OCT+ held on GEN in ANSWER: ORDER, SHIFT, SPACE, LEN */
 uint32_t tessera_answer_count(uint32_t tr);             /* the answers FADE gives (1..16), 0: never forgets (loops) */
 const gen_chord_t *tessera_chord(uint32_t tr);

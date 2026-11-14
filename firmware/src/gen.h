@@ -234,6 +234,7 @@ typedef struct {
     uint8_t more[2];        /* Bounce: notes after `note` on the same step (raw, as note), more_n of them */
     uint8_t more_n;
     uint8_t len;            /* the note's length, quarters of the step's GATE (Constellation: a star's size); 0 = GATE */
+    uint8_t hold;           /* ANSWER: steps the note was held when heard, 0 = none (answer.c, note_len.c nl_on_for) */
 } gen_out_t;
 
 #endif

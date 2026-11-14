@@ -65,6 +65,7 @@ static void answer_restart(uint32_t tr)
     tess_an.slot[tr] = 0;
     tess_an.shift[tr] = 0;
     tess_an.rnd[tr] = gen_stream(tessera.seed[tr] * 31u + 7u);
+    tess_an.hopen[tr] = 0;
     memset(tess_an.mut[tr], 0, TESS_AN_NOTES);
     memset(tess_an.e_left[tr], 0, TESS_AN_ECHOES);
     for (uint32_t i = 0; i < TESS_AN_NOTES; i++) tess_an.ord[tr][i] = (uint8_t)i;
@@ -100,8 +101,37 @@ void tessera_answer_hear_at(track_t *t, uint32_t note, uint32_t vel, uint32_t la
     a->note[n] = (uint8_t)note;
     a->vel[n] = (uint8_t)(vel > 127u ? 127u : vel);
     a->at[n] = (uint8_t)at;
+    a->hold[n] = 0;                          /* (set on release, tessera_answer_release; 0: unheld, as before) */
+    tess_an.hopen[tr] |= (uint16_t)(1u << n);
     a->n = (uint8_t)(n + 1u);
     tess_an.cnt[tr] = 0;
+}
+
+/* note's key (or MIDI note) is up: close the held place's hold, the step count it was held across (clamped
+ * 1..15), so ANSWER can play it back that long (answer_tick, note_len.c's nl_on_for; LENGTH's own NL_MODE off
+ * STEP still wins). Places not still open (never captured here, or already closed) are left alone */
+static void answer_release(uint32_t tr, uint32_t note)
+{
+    tessera_answer_t *a = &tessera.answer[tr];
+    uint32_t at;
+    if (tr >= TESSERA_TRACKS || tessera.mode[tr] != TESS_ENG_ANSWER) return;
+    for (uint32_t i = a->n; i-- > 0; )
+        if ((tess_an.hopen[tr] & (1u << i)) && a->note[i] == note) {
+            at = tess_an.hclk[tr] > tess_an.hlate[tr] ? tess_an.hclk[tr] - tess_an.hlate[tr] : 0u;
+            at = at > a->at[i] ? at - a->at[i] : 0u;
+            a->hold[i] = (uint8_t)(at < 1u ? 1u : at > 15u ? 15u : at);
+            tess_an.hopen[tr] &= (uint16_t)~(1u << i);
+            return;
+        }
+}
+void tessera_answer_release(track_t *t, uint32_t note)
+{
+    uint32_t tr = trk_index(t);
+    if (tr >= TESSERA_TRACKS) return;
+    answer_release(tr, note);
+    for (uint32_t f = 0; f < TESSERA_TRACKS; f++)
+        if (f != tr && tessera.mode[f] == TESS_ENG_ANSWER && tessera.sd_src[f] == tr + 1u)
+            answer_release(f, note);
 }
 
 /* track src (a generator) has just played note: each ANSWER with SOURCE src that listens or rests hears it, as a key
@@ -158,8 +188,9 @@ static void answer_emit(gen_out_t *out, uint32_t note, uint32_t vel)
     }
 }
 
-/* place i of the phrase as this answer plays it: its note (changed, shifted) and velocity; 0 a rest */
-static uint32_t answer_place(const track_t *t, uint32_t tr, uint32_t i, uint32_t *vel)
+/* place i of the phrase as this answer plays it: its note (changed, shifted), velocity and hold (steps it was
+ * held when heard, §2 docs/design/answer-note-length.md); 0 a rest */
+static uint32_t answer_place(const track_t *t, uint32_t tr, uint32_t i, uint32_t *vel, uint32_t *hold)
 {
     const tessera_answer_t *a = &tessera.answer[tr];
     uint32_t n = a->n, m = tess_an.mut[tr][i], src = vary_src(m), k = i, note;
@@ -173,6 +204,7 @@ static uint32_t answer_place(const track_t *t, uint32_t tr, uint32_t i, uint32_t
     note = sv_degrees(t, a->note[tess_an.ord[tr][k] % n], vary_move(m) + tess_an.shift[tr]);
     note = (uint32_t)((int32_t)note + 12 * vary_oct(m));
     *vel = a->vel[tess_an.ord[tr][k] % n];
+    *hold = a->hold[tess_an.ord[tr][k] % n];
     return note > 127u ? 0u : note + 1u;
 }
 
@@ -192,14 +224,18 @@ static void answer_echo(uint32_t tr, uint32_t note, uint32_t vel)
     }
 }
 
-/* place i plays now: its note into out (velocity scaled by sc / 256), maybe an echo */
+/* place i plays now: its note into out (velocity scaled by sc / 256), maybe an echo. Its hold (held steps when
+ * heard) rides with it only if this is the tick's main note, not a chord's "more": echoes and chords stay
+ * out of scope for v1 (docs/design/answer-note-length.md §2-3) */
 static void answer_play(const track_t *t, uint32_t tr, uint32_t i, uint32_t sc, gen_out_t *out)
 {
-    uint32_t vel = 0, n = answer_place(t, tr, i, &vel);
+    uint32_t vel = 0, hold = 0, n = answer_place(t, tr, i, &vel, &hold);
+    uint32_t was_main = !out->gate;
     tess_an.slot[tr] = (uint8_t)(i + 1u);
     if (!n) return;
     vel = vel * sc / 256u;
     answer_emit(out, n - 1u, vel);
+    if (was_main) out->hold = (uint8_t)hold;
     answer_echo(tr, n - 1u, vel);
 }
 

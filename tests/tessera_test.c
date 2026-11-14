@@ -3185,15 +3185,17 @@ static void pack_run(char *res, size_t cap)
         ok &= tessera_unpack(c) == 0;
         tessera_unpack(a);
     }
-    {   /* ANSWER (version 20): its settings, CHORD switch and phrase (now up to 16 notes) round trip; a version 19
-         * block (182-byte tracks, no CHORD byte) loads with the extra notes empty and CHORD ARP, as it played; a
-         * version 18 block loads with the defaults and nothing heard; ORDER 3, SHIFT 8, LEN 3, CHORD 2, 17 notes, a
-         * note over 127 or a step over 63 refused (the old 8-note chunk and the new one both checked) */
-        const uint32_t n20 = TESSERA_PK_BYTES / TESSERA_TRACKS, n19 = TESSERA_PK_BYTES_V19 / TESSERA_TRACKS,
-                       n17 = TESSERA_PK_BYTES_V17 / TESSERA_TRACKS;
-        static uint8_t v19[TESSERA_PK_BYTES_V19], v18[TESSERA_PK_BYTES_V18];
+    {   /* ANSWER (version 21): its settings, CHORD switch and phrase (now up to 16 notes) round trip; a version 20
+         * block (190-byte tracks, HOLD but no CHORD byte or extra notes) loads with the extra notes empty and CHORD
+         * ARP, as it played; a version 19 block (before HOLD) and a version 18 block (before ANSWER) load with their
+         * own defaults; ORDER 3, SHIFT 8, LEN 3, CHORD 2, 17 notes, a note over 127, a step over 63 or a HOLD over 15
+         * refused (the three ANSWER chunks all checked) */
+        const uint32_t n21 = TESSERA_PK_BYTES / TESSERA_TRACKS, n20 = TESSERA_PK_BYTES_V20 / TESSERA_TRACKS,
+                       n19 = TESSERA_PK_BYTES_V19 / TESSERA_TRACKS, n17 = TESSERA_PK_BYTES_V17 / TESSERA_TRACKS;
+        static uint8_t v20[TESSERA_PK_BYTES_V20], v19[TESSERA_PK_BYTES_V19], v18[TESSERA_PK_BYTES_V18];
         static const uint8_t BAD[6][2] = {{3, 3}, {4, 8}, {6, 3}, {7, 17}, {8, 128}, {24, 64}};
-        static const uint8_t BAD2[3][2] = {{0, 2}, {1, 128}, {17, 64}};   /* (an2: CHORD, note 8, step 8) */
+        static const uint8_t BADH[1][2] = {{0, 16}};                       /* (anh: HOLD[0], over 15) */
+        static const uint8_t BAD2[4][2] = {{0, 2}, {1, 128}, {17, 64}, {25, 16}};   /* (an2: CHORD, note 8, step 8, HOLD 8) */
         uint32_t k;
         tessera_reset();
         gen(1, TESS_ENG_ANSWER);
@@ -3206,40 +3208,57 @@ static void pack_run(char *res, size_t cap)
             tess_an.hclk[1] = k;
             tessera_answer_hear(&trk[1], 50u + k, 90u - k);
         }
+        tess_an.hclk[1] = 10u;
+        tessera_answer_release(&trk[1], 59);            /* (note 9, place 9: held 1 step) */
         tessera_answer_hear(&trk[0], 50, 70);           /* (track 1 is no ANSWER track: not heard) */
         tessera_pack(b);
         tessera_reset();
         ok &= tessera_unpack(b) == 1 && tessera.mode[1] == TESS_ENG_ANSWER && tessera_answer(1)->n == 10u &&
               tessera_answer(1)->note[1] == 51u && tessera_answer(1)->vel[0] == 90u && tessera_answer(1)->at[1] == 1u &&
               tessera_answer(1)->note[9] == 59u && tessera_answer(1)->vel[9] == 81u && tessera_answer(1)->at[9] == 9u &&
+              tessera_answer(1)->hold[9] == 1u && tessera_answer(1)->hold[0] == 0u &&
               tessera_param_get(1, TX_AN_VARY) == 70 && tessera_param_get(1, TX_AN_FADE) == 100 &&
               tessera_param_get(1, TX_AN_ORDER) == TESS_AN_SHUFFLE && tessera_param_get(1, TX_AN_LEN) == TESS_AN_LONG &&
               tessera_param_get(1, TX_AN_CHORD) == TESS_AN_TRUE &&
               tessera_answer(0)->n == 0u && tessera_answer_count(1) == 0u;
-        for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) memcpy(v19 + tr * n19, b + tr * n20, n19);
+        ok &= tessera_pk_bytes(21u) == TESSERA_PK_BYTES && tessera_pk_bytes(20u) == TESSERA_PK_BYTES_V20 &&
+              tessera_pk_bytes(19u) == TESSERA_PK_BYTES_V19;
+        for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) memcpy(v20 + tr * n20, b + tr * n21, n20);
+        v20[TESSERA_TRACKS * n20] = 30;                 /* (ENERGY ARC, kept) */
+        v20[TESSERA_TRACKS * n20 + 1u] = 0;
+        ok &= tessera_unpack_ver(20u, v20) == 1 && tessera.mode[1] == TESS_ENG_ANSWER && tessera_answer(1)->n == 10u &&
+              tessera_answer(1)->note[0] == 50u && tessera_answer(1)->note[7] == 57u && tessera_answer(1)->hold[0] == 0u &&
+              tessera_answer(1)->note[8] == 0u && tessera_answer(1)->at[8] == 0u && tessera_answer(1)->hold[8] == 0u &&
+              tessera_param_get(1, TX_AN_CHORD) == TESS_AN_ARP &&                     /* (no CHORD byte: as it played) */
+              tessera_param_get(1, TX_AN_VARY) == 70 && tessera_check(20u, v20) == 1;
+        for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) memcpy(v19 + tr * n19, b + tr * n21, n19);
         v19[TESSERA_TRACKS * n19] = 30;                 /* (ENERGY ARC, kept) */
         v19[TESSERA_TRACKS * n19 + 1u] = 0;
         ok &= tessera_unpack_ver(19u, v19) == 1 && tessera.mode[1] == TESS_ENG_ANSWER && tessera_answer(1)->n == 10u &&
-              tessera_answer(1)->note[0] == 50u && tessera_answer(1)->note[7] == 57u &&
-              tessera_answer(1)->note[8] == 0u && tessera_answer(1)->at[8] == 0u &&   /* (notes 8, 9: nothing there) */
-              tessera_param_get(1, TX_AN_CHORD) == TESS_AN_ARP &&                     /* (no CHORD byte: as it played) */
-              tessera_param_get(1, TX_AN_VARY) == 70 && tessera_check(19u, v19) == 1;
-        for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) memcpy(v18 + tr * n17, b + tr * n20, n17);
+              tessera_answer(1)->note[0] == 50u && tessera_answer(1)->hold[0] == 0u && tessera_answer(1)->hold[9] == 0u &&
+              tessera_param_get(1, TX_AN_CHORD) == TESS_AN_ARP && tessera_param_get(1, TX_AN_VARY) == 70 &&
+              tessera_check(19u, v19) == 1;
+        for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) memcpy(v18 + tr * n17, b + tr * n21, n17);
         v18[TESSERA_TRACKS * n17] = 30;                 /* (ENERGY ARC, kept) */
         v18[TESSERA_TRACKS * n17 + 1u] = 0;
         ok &= tessera_unpack_ver(18u, v18) == 1 && tessera.mode[1] == TESS_ENG_ANSWER && tessera_answer(1)->n == 0u &&
               tessera_param_get(1, TX_AN_VARY) == 30 && tessera_param_get(1, TX_AN_FADE) == 33 &&
               tessera_param_get(1, TX_AN_CHORD) == TESS_AN_ARP &&
-              tessera_param_get(0, TX_EN_ARC) == 30 && tessera_check(18u, v18) == 1 && tessera_check(20u, b) == 1;
+              tessera_param_get(0, TX_EN_ARC) == 30 && tessera_check(18u, v18) == 1 && tessera_check(21u, b) == 1;
         for (k = 0; k < 6u; k++) {
             memcpy(c, b, sizeof c);
-            c[1u * n20 + n17 + BAD[k][0]] = BAD[k][1];
-            ok &= tessera_unpack(c) == 0 && tessera_check(20u, c) == 0;
+            c[1u * n21 + n17 + BAD[k][0]] = BAD[k][1];
+            ok &= tessera_unpack(c) == 0 && tessera_check(21u, c) == 0;
         }
-        for (k = 0; k < 3u; k++) {
+        for (k = 0; k < 1u; k++) {
             memcpy(c, b, sizeof c);
-            c[1u * n20 + n19 + BAD2[k][0]] = BAD2[k][1];
-            ok &= tessera_unpack(c) == 0 && tessera_check(20u, c) == 0;
+            c[1u * n21 + n19 + BADH[k][0]] = BADH[k][1];
+            ok &= tessera_unpack(c) == 0 && tessera_check(21u, c) == 0;
+        }
+        for (k = 0; k < 4u; k++) {
+            memcpy(c, b, sizeof c);
+            c[1u * n21 + n20 + BAD2[k][0]] = BAD2[k][1];
+            ok &= tessera_unpack(c) == 0 && tessera_check(21u, c) == 0;
         }
         tessera_unpack(a);
     }
