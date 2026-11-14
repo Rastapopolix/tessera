@@ -2586,7 +2586,7 @@ static void mo_dhead(const char *chip, const char *msg, int32_t bat)
         x -= MO_BATT_W + 2;
         mo_battery(x, bat);
     }
-    if (!msg && !ui.home && !ui.menu && !new_on() && !sec_map_on() && !designer_on()) {   /* a page: its place (4/9) */
+    if (!msg && !ui.home && !ui.menu && !new_on() && !sec_map_on()) {   /* a page: its place (4/9) */
         mo_place(t);
         if (t[0] && (int32_t)str_len(chip) * 6 <= x - mo_tw(t) - 6 - 6) {   /* (the chip first) */
             x -= mo_tw(t) + 6;
@@ -2610,8 +2610,7 @@ static void mo_dhead(const char *chip, const char *msg, int32_t bat)
 }
 /* a list page's rows (list_rows; 22 px = 11 cells apart): the label at the left, the value at the right (dim), the
  * row picked inverted across the screen, a row with more behind it a '>'; a scroll bar when not all fit */
-static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
-                         int (*cap)(uint32_t r, char *lb, char *v, uint16_t *vc))
+static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis)
 {
     uint32_t r;
     int32_t top, hh = (int32_t)vis * 11;
@@ -2625,7 +2624,7 @@ static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
             int32_t y = (int32_t)(r - first) * 11, on = r == row, more, vw;
             if (y + 11 <= top || y >= top + sh)
                 continue;
-            more = cap(r, lb, v, &vc);
+            more = list_text(r, lb, v, &vc);
             if (on)
                 mo_fill(0, y, 118, 10, MO_HOT);
             mo_ascii(a, v, sizeof a);
@@ -3782,40 +3781,6 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
     }
 }
 
-/* the sound designer's START: ENGINE START PAGES as the knob pages' dials, the engine twice the size under them, where
- * the sound starts and which pages follow; BACK (OCT-) outlined, DESIGN (OCT+) filled */
-static void mo_dstart(void)
-{
-    char b[24], w[24];
-    uint32_t st = designer_start(), s;
-    memset(mo_col, 0, sizeof mo_col);
-    mo_capture(0, "ENGINE", ENGINES[ds.eng]->name, "", VAL(0u), (int32_t)(eng_rank(ds.eng) * 1000u / (NENG_SHOWN - 1u)),
-               ui.hot_t && ui.hot_col == 0u);
-    mo_capture(1, "START", st == 0u ? "CURRENT" : st == 1u ? "INIT" : DS_GOAL[ds.goal], "", VAL(1u),
-               (int32_t)(st * 1000u / DG_COUNT), ui.hot_t && ui.hot_col == 1u);
-    mo_capture(2, "PAGES", ds.expert ? "ALL" : "MAIN", "", VAL(2u), ds.expert ? 1000 : 0, ui.hot_t && ui.hot_col == 2u);
-    for (s = 0; s < 2u; s++) {
-        cv_begin(240, s ? 120u : 102u, MO_BG);
-        cv_oy = s ? -120 : -18;
-        mo_cols();
-        mo_ascii(b, ENGINES[ds.eng]->name, sizeof b);
-        if (mo_tw(b) * 2 + 2 <= 116) mo_text_s(b, 60 - (mo_tw(b) * 2 + 1) / 2, 62, 2, MO_INK);
-        else mo_textc(b, 60, 66, MO_INK);
-        if (st > 1u) {
-            str_cpy(w, DS_GOAL[ds.goal], sizeof w);
-            str_cpy(w + str_len(w), " FROM INIT", sizeof w - str_len(w));
-        } else str_cpy(w, st ? "FROM INIT" : "FROM THIS SOUND", sizeof w);
-        mo_textc(w, 60, 80, MO_DIM);
-        mo_textc(ds.expert ? "ALL PAGES" : "MAIN PAGES", 60, 90, MO_DIM);
-        mo_box(2, 107, 32, 11, MO_DIM);
-        mo_textc("BACK", 18, 109, MO_INK);
-        mo_fill(117 - mo_tw("DESIGN") - 8, 107, mo_tw("DESIGN") + 8, 11, MO_INK);
-        mo_text("DESIGN", 117 - mo_tw("DESIGN") - 4, 109, MO_BG);
-        cv_oy = 0;
-        cv_blit(0, s ? 120u : 18u);
-    }
-}
-
 /* the mod shortcut's map (ui_modsc.c): a card over the dimmed page, 110 x 92 cells at (5, 16): a knob two lines, its
  * parameter and the amount, then the cord's source and a bar from the middle; the knob last turned inverted; at the
  * foot the source SELECT gives a new cord */
@@ -3926,21 +3891,3 @@ static void mo_smap(uint32_t cur)
     }
 }
 
-/* under a sound designer stage's page (ui_designer.c designer_foot): BACK (OCT-) outlined, the sound, the next stage
- * (OCT+) filled */
-static void mo_dfoot(const char *nm, const char *go)
-{
-    char b[24], t[24];
-    int32_t gw;
-    mo_ascii(t, go, sizeof t);
-    gw = mo_tw(t) + 8;
-    cv_begin(240, 240 - PV_SOUND_Y, MO_BG);
-    mo_box(2, 0, 32, 10, MO_DIM);
-    mo_textc("BACK", 18, 2, MO_INK);
-    mo_ascii(b, nm, sizeof b);
-    b[(uint32_t)(117 - gw - 38) / 6u] = 0;
-    mo_text(b, 38, 2, MO_DIM);
-    mo_fill(117 - gw, 0, gw, 10, MO_INK);
-    mo_text(t, 117 - gw + 4, 2, MO_BG);
-    cv_blit(0, PV_SOUND_Y);
-}

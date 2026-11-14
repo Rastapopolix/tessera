@@ -75,7 +75,7 @@
                                                    * since 2026-10-21: its tracks load FM's first voice) */
 #define TRIO_ON (MELODEE_TRIO || MELODEE_LEGACY_EXTRAS)
 #define PHYS_ON (MELODEE_PHYS || MELODEE_LEGACY_EXTRAS)
-#define ENGI_FALLBACK 12u        /* a retired engine's place (eng_rank, the designer, project.c): FM6 */
+#define ENGI_FALLBACK 12u        /* a retired engine's place (eng_rank, project.c): FM6 */
 #if !MELODEE_FM6
 #error "MELODEE_FM6: FM6 is the place of an engine left out"
 #endif

@@ -192,10 +192,9 @@ qmap() {
         firmware/src/fx.c) QREG=1; QSEL="$QSEL $G_AUDIO fx_test fx_performance no_effects_test" ;;
         firmware/src/mod.c) QREG=1; QSEL="$QSEL $G_AUDIO mod_test mod_spread_test" ;;
         firmware/src/voice.c | firmware/src/mix.c | firmware/src/dsp.c | firmware/src/audio*.[ch] | firmware/src/engines.c | \
-            firmware/src/resources.c | firmware/src/native_presets.c) QREG=1; QSEL="$QSEL $G_AUDIO designer_test" ;;
+            firmware/src/resources.c | firmware/src/native_presets.c) QREG=1; QSEL="$QSEL $G_AUDIO" ;;
         firmware/src/ui_cords.c | firmware/src/cord.[ch]) QSEL="$QSEL $G_UI cord_test mod_test recipes_test" ;;
         firmware/src/ui_speak.c) QSEL="$QSEL $G_UI" ;;
-        firmware/src/ui_designer*) QSEL="$QSEL $G_UI designer_test" ;;
         firmware/src/ui_help.c | firmware/src/pid.[ch] | firmware/src/pid_help_unpack.h | firmware/src/params.c)
             QSEL="$QSEL $G_UI pid_test help_pack_test cord_test" ;;
         firmware/src/ui*.c | firmware/src/gfx.c | firmware/src/icons.c | firmware/src/screen.c | firmware/src/splash.c | \
@@ -213,7 +212,7 @@ qmap() {
             firmware/src/upreset.c | firmware/src/favorites.c) QSEL="$QSEL $G_STORE" ;;
         firmware/src/midi_*.c) QSEL="$QSEL $G_MIDI" ;;
         firmware/src/usb*) QSEL="$QSEL $G_USB" ;;
-        firmware/src/editor*.c | firmware/src/sysex_library.c) QSEL="$QSEL editor_test fm6_sysex_test web_tests designer_test" ;;
+        firmware/src/editor*.c | firmware/src/sysex_library.c) QSEL="$QSEL editor_test fm6_sysex_test web_tests" ;;
         firmware/src/scale*.[ch] | firmware/src/microtonal.h | firmware/src/tun*.h | firmware/src/uscale.h) QSEL="$QSEL $G_SCALE" ;;
         tests/golden.txt | tests/cpu_baseline.txt | tests/regress.c) QREG=1; QSEL="$QSEL regress" ;;
         tests/tessera_baseline.txt) QSEL="$QSEL tessera_test" ;;
@@ -603,7 +602,6 @@ if core && [ $TABLES = 1 ]; then
     t "screen reader against the screen: every knob, every page, engine and MODE, said as drawn (tools/speak_screen.py)" \
         speak_screen:speak_test -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=1 -DMELODEE_ACCESS=1 -Itests $FW -- \
         sh -c "\"$OUT/speak_screen\" compare \"$OUT/speak_screen.tsv\" && python3 tools/speak_screen.py \"$OUT/speak_screen.tsv\""
-    t "Sound designer: native recipes, dependencies, compare, discard and save" designer_test -O2 -DMELODEE_USB_AUDIO=1 $FW
     t "Sequencer: tied length/move/delete, eight-level undo/redo, MIDI step entry and playing-step recording" seq_edit_test \
         -DMELODEE_USB_AUDIO=1 $FW
     t "Note/library gestures: quarter snapping, range moves/copies, undo and bulk preset erase" note_tools_test \

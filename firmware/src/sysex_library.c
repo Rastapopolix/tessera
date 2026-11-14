@@ -33,7 +33,7 @@ static void sysex_import_name(char *nm)
 static int sysex_stage(uint32_t e, const uint8_t *raw, uint32_t count, uint32_t size)
 {
     if(!count || (count*size>sizeof sx_import.raw && !(e==ENGI_FM6&&count==32u&&size==FM6_PACKED)))return 0;
-    if (sx_import.count || ui.confirm || ui.name_active || ui.new_active || ui.layer || ui.ly || designer_on()) { ui_message("IMPORT RUNNING"); return 0; }
+    if (sx_import.count || ui.confirm || ui.name_active || ui.new_active || ui.layer || ui.ly) { ui_message("IMPORT RUNNING"); return 0; }
     if(count*size>sizeof sx_import.raw){sx_import.data=raw;fm6_rx_ready=2;}
     else {memcpy(sx_import.raw,raw,count*size);sx_import.data=sx_import.raw;}
     sx_import.general=size==238u;

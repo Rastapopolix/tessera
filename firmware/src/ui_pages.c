@@ -364,8 +364,6 @@ static void pv_sound(void)
     const char *en = ENGINES[eng_idx(TSEL->eng_req)]->name;
     uint32_t sig;
     int32_t x, tx;
-    if (designer_on() && designer_foot())                /* the sound designer: its keys (ui_designer.c) */
-        return;
     if(cur_page()->fam==FAM_FX && cur_page()->scope==SC_GLOBAL && cur_page()->id[0]!=G_TRK_SEND){en="SEND / RETURN";memcpy(nm,"ALL TRACKS",11);}
     else sound_name(TSEL, nm);
     sig = str_hash(str_hash(song.sel * 7u + ux.gen * 977u + ux.pal * 31u + ui.page * 2654435761u, en), nm);
@@ -1095,16 +1093,14 @@ static void pv_draw(void)
         return;
     }
 #if !MELODEE_LOOK                                       /* (Mono: the rings and the curves are mono_page's) */
-    pv_tab_h = kind == PV_RINGS && (sec_on() || (designer_on() && designer_tabs_on())) ? SEC_TAB_H : 0;
+    pv_tab_h = kind == PV_RINGS && sec_on() ? SEC_TAB_H : 0;
     if (kind != PV_CURVE) {                             /* RINGS, FADERS */
         if (ui.force) {                                 /* (the parts then cover what they draw) */
             lcd_fill(0, H_HEAD, 240, PV_SOUND_Y - H_HEAD, T_BG);
             ui.graph_sig = 0;
         }
         draw_head();
-        if (pv_tab_h && designer_on()) {                /* the sound designer: its stages */
-            designer_tabs();
-        } else if (pv_tab_h) {                          /* an engine in sections: its tabs, the page noted */
+        if (pv_tab_h) {                          /* an engine in sections: its tabs, the page noted */
             sec_note();
             sec_tabs();
         }

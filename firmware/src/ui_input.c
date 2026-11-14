@@ -52,13 +52,13 @@ static int layer_set_open(void);                       /* (ui_layer.c) */
 static int grid_on(void);
 static int notes_oct(void)
 {
-    return !ui.home && cur_page()->graph == GR_ROLL && ((song.rec >> song.sel) & 1u) && !grid_on() && !designer_on() &&
+    return !ui.home && cur_page()->graph == GR_ROLL && ((song.rec >> song.sel) & 1u) && !grid_on() &&
            !ui.menu && !ui.confirm && !name_on() && !new_on() && !layer_set_open() && !pop.on && !smap.on;
 }
 static int oct_nav(void)
 {
     return !notes_oct() &&
-           (designer_on() || !ui.home || ui.menu || ui.confirm || name_on() || new_on() || layer_set_open() || pop.on || smap.on);
+           (!ui.home || ui.menu || ui.confirm || name_on() || new_on() || layer_set_open() || pop.on || smap.on);
 }
 static void notes_oct_say(void)                         /* (NOTES: no octave LEDs to read it from there) */
 {
@@ -80,7 +80,7 @@ static int oct_enter_ok(void)                           /* OCT+ tapped would do 
  * a list, a slot, MOTION, SCALES, the browser, Copy to and SONG keep their Enter on a slow press) */
 static int oct_no_sheet(void)
 {
-    return !ui.home && !ui.menu && !ui.confirm && !ui.layer && !name_on() && !new_on() && !designer_on() && !oct_enter_ok() &&
+    return !ui.home && !ui.menu && !ui.confirm && !ui.layer && !name_on() && !new_on() && !oct_enter_ok() &&
            !act_cols();
 }
 static int oct_dn_page(void)                            /* the page shown has an OCT- layer for the track shown */
@@ -129,7 +129,6 @@ static int cu_scope_held(void)
 }
 static uint32_t oct_leds(void)
 {
-    if (designer_on() && !name_on() && !ui.confirm) return 3u;
     uint32_t blink = ((fm1_ms / 250u) & 1u) == 0u;
     if ((name_on() || new_on()) && !ui.confirm && !ui.menu)   /* NAME, NEW SONG: OCT- cancels, OCT+ (blinking) goes on */
         return 1u | (blink ? 2u : 0u);
@@ -694,7 +693,7 @@ static void autosave_poll(uint32_t active)
     uint32_t r = usb.rx_pkts;
 #endif
     if (!settings_autosave || active || r != rx || transport_busy() || ui.menu || ui.confirm || name_on() || new_on() || ui.layer || momentary.active ||
-        browse_pending() || qsave_req || designer_on()) {
+        browse_pending() || qsave_req) {
         t0 = fm1_ms;
         rx = r;
         done = 0;
@@ -935,7 +934,7 @@ static void motion_unplayed(void)
 /* an edit of the engine's own patch (its bytes before: old, under motion_guard): its motion (motion.c) */
 static void native_motion(const uint8_t *old)
 {
-    if (!designer_on() && !momentary.active && motion_native_edited(TSEL, old))
+    if (!momentary.active && motion_native_edited(TSEL, old))
         motion_unplayed();
 }
 /* ROLL and ROLL ALL said on the screen (issue #528: a new seed changes values on the other pages, so this one gave
@@ -1306,7 +1305,7 @@ static void edit_param(uint32_t slot, int32_t steps)
         settings_save();
         return;
     }
-    if ((pg->scope != SC_GLOBAL || pg->id[slot]==G_TRK_SEND) && !momentary.active && !designer_on()) {
+    if ((pg->scope != SC_GLOBAL || pg->id[slot]==G_TRK_SEND) && !momentary.active) {
         motion_capture(TSEL, (uint32_t)(vp - TSEL->p), *vp);
         if (motion_param((uint32_t)(vp - TSEL->p)))
             motion_unplayed();
@@ -1415,7 +1414,7 @@ static uint8_t oct_deferred;                            /* OCT+ pressed on Stage
  * (PATTERNS' Copy to: OCT+ pastes). The menu, dialogs, sheets and the map keep their taps */
 static int oct_hold_page(uint32_t k)                    /* k 0 OCT-, 1 OCT+ */
 {
-    return !k && !(ui.home || ui.menu || ui.confirm || pop.on || smap.on || name_on() || new_on() || designer_on());
+    return !k && !(ui.home || ui.menu || ui.confirm || pop.on || smap.on || name_on() || new_on());
 }
 static uint32_t oct_taps(uint32_t pressed, int here)
 {
@@ -1906,7 +1905,7 @@ static void seq_erase_update(uint32_t pressed)
     if (!(fm1_in.buttons & ed)) { ui.erase_gesture = ui.erase_owner = 0; }
 }
 
-/* KNOB k turned s on the page shown (the sound designer's pages too): what it edits there, its card hot */
+/* KNOB k turned s on the page shown: what it edits there, its card hot */
 #ifdef ANN_VER
 static void sp_turn(uint32_t k);                       /* ui_speak.c */
 #endif
@@ -2077,8 +2076,6 @@ static void ui_confirm_accept(void)
     } else if (kind == CF_PASTE_PAT) {          /* PATTERNS' Copy to over a pattern in use */
         if (ui.ptc_on && ui.ptc_trk == ui.confirm_trk)
             ptc_paste(1);
-    } else if (kind == CF_DISCARD_DESIGN) {    /* the sound designer's original back */
-        if (designer_on() && designer_quit) { designer_quit(1); ui_message("SOUND RESTORED"); }
     } else if (kind == CF_INIT_SOUND) {
         if (!chain_busy()) { sound_init_of(TSEL, TSEL->eng_req); ui_message("SOUND INIT"); }
     } else {
@@ -2102,7 +2099,6 @@ static void ui_confirm_accept(void)
     }
 }
 
-#include "ui_designer_input.c"
 static void ui_input(void)
 {
     uint32_t pressed = fm1_input_edges(0), notes = fm1_input_note_edges(), now = fm1_ticks(), id, b, k;
@@ -2119,7 +2115,6 @@ static void ui_input(void)
     if(ui.import_refresh){pop.on=0;brw.on=0;ui.import_refresh=0;ui.force=1;}
     cu_adopt();                                         /* (Tessera: MOD's routes into MODS, ui_cords.c) */
     if (scr_input(pressed, notes)) return;
-    if (designer_on() && !name_on() && !ui.confirm && designer_input(pressed, notes)) return;
     if (notes)
         browse_commit();                              /* a key played while browsing: hear the sound shown */
     browse_poll();
