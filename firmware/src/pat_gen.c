@@ -5,8 +5,10 @@
  * the track and taking those bytes, loaded by packing the track, putting them back and loading the record through
  * its own range checks. FORM, TWEAK, TWEAK 2, NOTE LENGTH, SUB, FOLLOW and the rest stay the track's. ANSWER's
  * HOLD (version 20) is not a slot field: tessera_pg_load clears it on every switch, so a pattern's phrase never
- * carries another's held lengths. Included by melodee.c after tessera.c (docs/design/gen-per-pattern.md in
- * tessera-notes) */
+ * carries another's held lengths. ANSWER's CHORD switch and notes 8-15 (version 21, TESS_AN_NOTES raised 8 -> 16)
+ * are not slot fields either: the slot's own ANSWER range is still the original 32 bytes, 8 notes; a phrase of
+ * more than 8 notes is clamped to 8 when stored into a slot (tessera_pg_store), so a saved pattern never claims
+ * notes it cannot hold. Included by melodee.c after tessera.c (docs/design/gen-per-pattern.md in tessera-notes) */
 
 typedef struct { uint8_t at, n; } pg_range_t;
 #define PG_COMMON 3u                                     /* MODE, EVERY AMOUNT LOCK, SEED: every slot's */
@@ -28,7 +30,8 @@ static const pg_range_t pg_mode[TESS_ENG_COUNT][3] = {
     [TESS_ENG_ANSWER]  = {{TESS_PK_TRACK_V17, 32}},
 };
 _Static_assert(TESS_PK_TRACK_V19 == TESS_PK_TRACK_V17 + 32u, "PAT GEN's slots are version 19's bytes (pg_mode); HOLD"
-               " (version 20, TESS_PK_TRACK_V19..TESS_PK_TRACK) is deliberately not one: pat_gen.c clears it instead");
+               " (version 20) and the extra notes, HOLD and CHORD switch (version 21, TESS_PK_TRACK_V19..TESS_PK_TRACK)"
+               " are deliberately not ones: pat_gen.c clears them instead");
 static uint8_t pg_slot[TESSERA_TRACKS][NPAT][TESS_PG_BYTES] __attribute__((section(".pool")));
 
 /* the slot's bytes <-> the track record's: dir 1 record -> slot, 0 slot -> record */
@@ -52,6 +55,8 @@ void tessera_pg_store(uint32_t tr, uint32_t b)
     tess_pack_track(rec, tr);
     memset(pg_slot[tr][b], 0, TESS_PG_BYTES);
     pg_move(rec, pg_slot[tr][b], rec[0] < TESS_ENG_COUNT ? rec[0] : 0u, 1);
+    if (rec[0] == TESS_ENG_ANSWER && pg_slot[tr][b][13] > 8u)
+        pg_slot[tr][b][13] = 8u;   /* (ANSWER's slot only ever held 8 notes: offset 6 + the 7 before N, pg_mode) */
 }
 
 /* slot s on track tr's record now: 1 it passes the record's range checks (nothing changed), 0 not */
