@@ -46,10 +46,20 @@
 #                   generators' notes out on MIDI channels 5..8 on the grid, one at a time, in the scale; the CV and gate;
 #                   STOP, PLAY again from the SEED, MUTE, CHAN OFF, ENERGY's DEPTH, a key, their pages, and tracks 1..4
 #                   bit for bit the same with them playing; its frames as PNGs in build/oled.
+# ANDAMENTO SCREENS (tests/and_ui_test.c): Andamento's two screens (platform/andamento/and_ui.c) in the same build:
+#                   the page screen (header, picture, tabs) and the dial screen on every page of an internal and an
+#                   external track and on HOME; the dial screen's layout lint (no value cut, each in its cell, a clear
+#                   pixel round a box's text and between neighbours); a setting turned (inverted, large in the
+#                   picture); both screens as PNGs in build/oled.
 # ANDAMENTO MASTER (tests/and_master_test.c): Andamento's master bus (platform/andamento/and_master.c), tilt EQ then
 #                   compressor, called directly (not through a project playing): MIX 0 is bit-identical, MIX 100 with
 #                   no gain reduction and no tilt is unchanged but for rounding, the compressor settles below a loud
 #                   tone and returns to unity gain under THRESH, MAKEUP's dB, TILT's direction, and determinism.
+# ANDAMENTO TEXTURE (tests/and_texture_test.c): Andamento's texture engine (platform/andamento/and_texture.c), a
+#                   granular cloud resampling and_master_block's output, called directly: MIX 0 is bit-identical,
+#                   an empty capture barely changes a tone, a filled one keeps sounding after the dry input stops,
+#                   FREEZE holds the capture still, a busier DENS is not quieter, AT_GRAINS (8) is never exceeded,
+#                   and determinism.
 # UI (tests/ui_test.c): the UI sources against stub display / buttons / knobs: sound loads keep the steps and
 #                   the track's ARP / SCL / SLICER, the SEQ > PATTERNS loader and its REPLACE? dialog, the
 #                   one-step undo of both (EDIT held), REC on TRACKS / SEQ / ARP, STEP and ARP while recording,
@@ -212,12 +222,14 @@ qmap() {
         tests/target_budget.txt) QSEL="$QSEL target_budget" ;;
         tests/ui_render.*) QSEL="$QSEL ui_renders" ;;
         tests/oled_render.*) QSEL="$QSEL oled_render" ;;
-        platform/andamento/*) QSEL="$QSEL oled_render and_keys and_home and_ext and_master" ;;
+        platform/andamento/*) QSEL="$QSEL oled_render and_keys and_home and_ext and_ui and_master and_texture" ;;
         tests/and_keys_test.c) QSEL="$QSEL and_keys" ;;
         tests/and_home_test.c) QSEL="$QSEL and_home" ;;
         tests/and_ext_test.c) QSEL="$QSEL and_ext" ;;
+        tests/and_ui_test.c) QSEL="$QSEL and_ui" ;;
         tests/and_master_test.c) QSEL="$QSEL and_master" ;;
-        web/andamento/*) QSEL="$QSEL and_keys and_home and_ext and_master" ;;
+        tests/and_texture_test.c) QSEL="$QSEL and_texture" ;;
+        web/andamento/*) QSEL="$QSEL and_keys and_home and_ext and_ui and_master and_texture" ;;
         firmware/src/mo_font.h) QSEL="$QSEL $G_UI oled_render" ;;
         tests/demo_steps.h | tests/demo_projects.c) QSEL="$QSEL demo_projects" ;;
         tests/phys_ref.cpp | tests/phys_fixed.c) QSEL="$QSEL phys_ref" ;;
@@ -448,12 +460,28 @@ and_ext() {                                       # (the headers as and_keys: we
         "$OUT/and_ext" build/oled
     [ $PIL = 1 ] && { python3 tests/oled_render.py build/oled || fail "tests/oled_render.py"; }
 }
+and_ui() {                                        # (the headers as and_keys: web/andamento/build.sh --headers)
+    sh web/andamento/build.sh --headers > /dev/null || { fail "web/andamento/build.sh --headers"; return; }
+    build and_ui and_ui_test -w -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 \
+        -DMELODEE_PHYS=1 -Ibuild/andamento/gen -Ifirmware/src -Itests || return
+    mkdir -p build/oled/ppm
+    step "Andamento screens (platform/andamento/and_ui.c): the page and dial screens on every page, their layout, a setting turned" \
+        "$OUT/and_ui" build/oled
+    [ $PIL = 1 ] && { python3 tests/oled_render.py build/oled || fail "tests/oled_render.py"; }
+}
 and_master() {                                    # (the headers as and_keys: web/andamento/build.sh --headers)
     sh web/andamento/build.sh --headers > /dev/null || { fail "web/andamento/build.sh --headers"; return; }
     build and_master and_master_test -w -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 \
         -DMELODEE_PHYS=1 -Ibuild/andamento/gen -Ifirmware/src -Itests || return
     step "Andamento master bus (platform/andamento/and_master.c): MIX 0 bit-identical, bypass, compressor, release, makeup, tilt, determinism" \
         "$OUT/and_master"
+}
+and_texture() {                                   # (the headers as and_keys: web/andamento/build.sh --headers)
+    sh web/andamento/build.sh --headers > /dev/null || { fail "web/andamento/build.sh --headers"; return; }
+    build and_texture and_texture_test -w -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 \
+        -DMELODEE_PHYS=1 -Ibuild/andamento/gen -Ifirmware/src -Itests || return
+    step "Andamento texture engine (platform/andamento/and_texture.c): MIX 0 bit-identical, capture, FREEZE, DENS, AT_GRAINS bound, determinism" \
+        "$OUT/and_texture"
 }
 dsp_tracks() {
     build hostsim hostsim -O2 $FW || return
@@ -585,7 +613,9 @@ if core && [ $TABLES = 1 ]; then
     job and_keys
     job and_home
     job and_ext
+    job and_ui
     job and_master
+    job and_texture
     t "boot audio: codec waits for settled silent DMA and shuts down before I2S" audio_boot_test -w
     t "audio: overload protection, bounded fades and DMA diagnostics" audio_test $FW
     t "audio: silent bench keeps synthesis running and silences physical output" audio_silent_test:audio_test \
