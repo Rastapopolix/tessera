@@ -39,7 +39,7 @@ static uint32_t msc_dest(uint32_t k)
         return CD_OFF;
     for (code = CD_OFF + 1u; code < CD_N; code++) {
         const cord_dest_t *d = cord_dest(code);
-        if (d && (d->kind == CK_BLOCK || d->kind == CK_STEP || d->kind == CK_GLOBAL) && d->pid == help.pid)
+        if (d && (d->kind == CK_BLOCK || d->kind == CK_STEP || d->kind == CK_SEQ || d->kind == CK_GLOBAL) && d->pid == help.pid)
             return code;
     }
     return CD_OFF;
