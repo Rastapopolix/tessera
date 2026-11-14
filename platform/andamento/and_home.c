@@ -5,7 +5,7 @@
  * (energy.c, planner.c, entries.c through their getters and state), never the FM-1's UI.
  *
  *   the header     the piece's SHAPE (or FREE: no LENGTH set), its time (left of a planned piece, played of a free
- *                  one), REST and its seconds while the notes rest; PLAY and the tempo as on every page
+ *                  one), REST and its seconds (inverted) while the notes rest; the 8 tracks' marks as on every page
  *   the arc        ENERGY over time, full above the dim line, sparse below. A LENGTH set: the whole piece across the
  *                  screen, its SHAPE as energy_tick will follow it (dim), what was played over it (lit) and a play head.
  *                  FREE: from PLAY it grows from the left, a column every 1.5 s, then scrolls (the last 3 min 12 s,
@@ -138,7 +138,7 @@ static void and_home_header(void)
     uint32_t at = 0, left = 0, on = (uint32_t)tessera_piece_get(&at, &left), set = tessera.pl_length != 0u;
     const param_desc_t *d = pid_desc(AND_PID_SHAPE, 0);
     int32_t x;
-    if (song.playing && energy_resting()) {      /* the notes resting: REST and its seconds, inverted in the bar */
+    if (song.playing && energy_resting()) {      /* the notes resting: REST and its seconds, inverted */
         uint32_t s = energy.rest_left / EN_BPS + 1u, n = 0;
         b[n++] = 'R', b[n++] = 'E', b[n++] = 'S', b[n++] = 'T', b[n++] = ' ';
         if (s >= 10u)
@@ -146,11 +146,11 @@ static void and_home_header(void)
         b[n++] = (char)('0' + s % 10u);
         b[n++] = 'S';
         b[n] = 0;
-        and_fill(0, 0, 4 + 6 * (int32_t)n, 9, 0);
-        and_text(2, 1, b, 15, 8);
+        and_fill(0, 0, 4 + 6 * (int32_t)n, 9, 15);
+        and_text(2, 1, b, 0, 8);
         return;
     }
-    x = and_text(2, 1, set && d && d->names ? d->names[tessera.pl_shape - d->min] : "FREE", 0, 7);
+    x = and_text(1, 1, set && d && d->names ? d->names[tessera.pl_shape - d->min] : "FREE", 15, 7);
     if (set && song.playing && !on)
         str_cpy(b, "END", sizeof b);
     else if (set) {                              /* a planned piece: the time left (stopped: its length) */
@@ -158,7 +158,7 @@ static void and_home_header(void)
         b[0] = song.playing ? '-' : ' ';
     } else                                       /* free: the time played since PLAY */
         ah_time(b, song.playing ? plan.run / (uint32_t)FS : 0u);
-    and_text(x + 8, 1, b[0] == ' ' ? b + 1 : b, 0, 7);
+    and_text(x + 7, 1, b[0] == ' ' ? b + 1 : b, 7, 7);
 }
 
 static void and_home_draw(void)
