@@ -397,9 +397,9 @@ static void draw_head(void)
             cv_text_c(8 + cw / 2, 3, &AF_X, chip, T_INK, T_THEME);
             l = 8 + cw;
         }
-        if (gen_layer_on()) {                           /* OCT+ held, a generator's layer: its key */
-            cv_keycap(l + 6, 3, KC_OCTUP, T_THEME, T_INK, T_BG);
-            l += 6 + kc_w(KC_OCTUP);
+        if (gen_layer_on()) {                           /* OCT- held, a page's layer: its key */
+            cv_keycap(l + 6, 3, KC_OCTDN, T_THEME, T_INK, T_BG);
+            l += 6 + kc_w(KC_OCTDN);
         } else if (page_sheet()) {                      /* the page has a sheet (OCT+ held) */
             cv_text_on(l + 4, 2, &AF_S, "\x85", T_MID, T_BG);
             l += 14;
