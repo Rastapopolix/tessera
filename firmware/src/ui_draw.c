@@ -272,8 +272,8 @@ static int32_t page_tabs(int32_t x0, int32_t x1, int32_t y)
 #if MELODEE_LOOK                                        /* the Mono look's chrome (ui_mono.c) */
 static void mo_dhead(const char *chip, const char *msg, int32_t bat);
 static uint32_t mo_hold_sig(void);                     /* (OCT+ held: the sheet it opens) */
-static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
-                         int (*cap)(uint32_t r, char *lb, char *v, uint16_t *vc));
+static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis);
+static int list_text(uint32_t r, char *lb, char *v, uint16_t *vc);   /* a list row's texts (ui_list.c) */
 static void mo_sound(const char *en, const char *nm);
 static void mo_scale_pic(int32_t y, int32_t h);
 static void mo_confirm(const char *a, const char *b);

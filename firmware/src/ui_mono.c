@@ -2610,8 +2610,7 @@ static void mo_dhead(const char *chip, const char *msg, int32_t bat)
 }
 /* a list page's rows (list_rows; 22 px = 11 cells apart): the label at the left, the value at the right (dim), the
  * row picked inverted across the screen, a row with more behind it a '>'; a scroll bar when not all fit */
-static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
-                         int (*cap)(uint32_t r, char *lb, char *v, uint16_t *vc))
+static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis)
 {
     uint32_t r;
     int32_t top, hh = (int32_t)vis * 11;
@@ -2625,7 +2624,7 @@ static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
             int32_t y = (int32_t)(r - first) * 11, on = r == row, more, vw;
             if (y + 11 <= top || y >= top + sh)
                 continue;
-            more = cap(r, lb, v, &vc);
+            more = list_text(r, lb, v, &vc);
             if (on)
                 mo_fill(0, y, 118, 10, MO_HOT);
             mo_ascii(a, v, sizeof a);
