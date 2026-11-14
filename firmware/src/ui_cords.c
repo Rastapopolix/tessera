@@ -3,8 +3,8 @@
 /* MODS (LFO family; MOD's place: its page hidden, ui.c page_visible; tessera-notes/docs/design/phase2/cords.png): the cords (cord.c)
  * four to a screen, as MOD's rows:
  * "2  [2] ENV -> [4] DECAY  -25 %" over the amount's bar from the middle; the cord KNOB 2 is on: a card. The knobs as
- * MOD's: KNOB 1 the source (--, then T1 LFO .. T4 NOTE), 2 the cord, 3 the destination (--, then T1 PITCH ..), 4 the
- * amount. A cord without a source is a fixed move: KNOB 4 its OFFSET. OCT+: a bipolar source's direction, +- (both
+ * MOD's: KNOB 1 the source (--, then T1 LFO .. T4 NOTE), 2 the cord, 3 the destination (--, then the source's track's
+ * groups, SOUND ..: cu_walk), 4 the amount. A cord without a source is a fixed move: KNOB 4 its OFFSET. OCT+: a bipolar source's direction, +- (both
  * ways from the knob) or + (folded to 0..1: one way, "+" after its name), then GATE (">" after its name, Mono "^": all while the
  * source is over a threshold, none under it; OCT- held + KNOB 4 sets the threshold); the mod's own (cord.h uni), not
  * the LFO page's POL BI/UNI (cord.c cord_lfo_raw); then HOLD ("=" after its name: the source as +-, sampled once a
@@ -30,18 +30,90 @@ static void cu_adopt(void)
 #define CU_NSRC (1u + NTRK * CU_SPT + (CS_EOC - CS_ENERGY))   /* KNOB 1's list: --, track by track, then the project's
                                                          * (ENERGY, the MACROs) once */
 static int cu_src_trk(uint32_t s) { return s && !CS_PROJECT(s); }   /* a track's source, not the project's */
-/* KNOB 3's list: --, a track's destinations track by track (none, the retired one: not listed), then the send
- * effects' once (CK_GLOBAL: every track's) */
+/* KNOB 3's list (cu_walk): --, then each track's destinations from the cord's source's track on (a T3 source: T3,
+ * T4, T1, T2), group by group (the list's title names the group: "T3 FEEL"), only those that act on the track's
+ * MODE (a generator's own on its tracks, the pattern's on STEP tracks; the cord's own always stays), then the
+ * project's (the send effects', FILL and TEMPO, the mods') once */
 static int cu_global(uint32_t code) { return cord_dest(code) && cord_dest(code)->kind >= CK_GLOBAL; }   /* (CK_CORD too) */
-static uint32_t cu_count(uint32_t below, int global)    /* the listed codes 1 .. below - 1 of that kind */
+enum { CU_G = 0xF0u, CU_SOUND = CU_G, CU_ENV, CU_LFO, CU_MIX, CU_FX, CU_GEN, CU_FEEL, CU_EVOLVE, CU_ARP, CU_MODS,
+       CU_SENDS, CU_PROJECT, CU_PMODS };
+static const char CU_GNAME[][8] = {"SOUND", "ENV", "LFO", "MIX", "FX", "GEN", "FEEL", "EVOLVE", "ARP", "MODS",
+                                   "SEND FX", "PROJECT", "MODS"};
+/* the list's order: a group's mark (CU_SOUND ..), then its codes; every listed code once (ui_test). A track's
+ * groups, then the project's (CU_SENDS on); a generator's own first in GEN, the general ones after */
+static const uint8_t CU_ORDER[] = {
+    CU_SOUND, CD_PITCH, CD_CUTOFF, CD_SHAPE, CD_GAIN, CD_E1, CD_E2, CD_E3, CD_E4, CD_E5, CD_E6, CD_E7, CD_E8,
+    CU_ENV, CD_ATTACK, CD_DECAY, CD_SUSTAIN, CD_RELEASE, CD_ENV_FLT, CD_ENV_PIT, CD_ENV_SHP,
+    CU_LFO, CD_LFO_RATE, CD_LFO_DEPTH, CD_LFO_PIT, CD_LFO_FLT, CD_LFO_SHP, CD_LFO_AMP,
+    CU_MIX, CD_LEVEL, CD_PAN, CD_SPREAD, CD_FX_SEND, CD_FX_SEND2, CD_FX_SEND3, CD_PLAY, CD_CC,
+    CU_FX, CD_FX1_MIX, CD_FX1_RATE, CD_FX1_CHAR, CD_FX2_MIX, CD_FX2_RATE, CD_FX2_CHAR, CD_FX3_MIX, CD_FX3_RATE,
+    CD_FX3_CHAR,
+    CU_GEN, CD_TUR_PROB, CD_TUR_LEN, CD_EUC_PULSES, CD_EUC_ROT, CD_MKV_LEAP, CD_MKV_DENS, CD_MRP_POS, CD_GRD_X,
+    CD_GRD_Y, CD_GRD_DENS, CD_GRD_KICK, CD_GRD_SNR, CD_GRD_HAT, CD_GRD_TOMS, CD_BNC_SPEED, CD_BNC_ANGLE, CD_AWK_PROB,
+    CD_QD_PROB, CD_CS_Y, CD_CS_SIZE, CD_CS_DENS, CD_CS_AUTO, CD_SR_START, CD_CH_PROG, CD_CH_STRUM, CD_CH_SDIR,
+    CD_CH_BREATH, CD_AN_VARY, CD_AN_ECHO, CD_AN_SHIFT, CD_AN_SPACE, CD_SEQ_DIR, CD_ACC_LIMIT, CD_TW_SHIFT,
+    CD_TW_DROP, CD_TW_BRANCH,
+    CU_FEEL, CD_VELO, CD_TW_HUMAN, CD_SUB_HUMAN, CD_SGATE, CD_NL_LEN, CD_SSWING, CD_GLIDE, CD_SUB_SPLIT,
+    CD_SUB_RATCH, CD_SUB_CHANCE, CD_CLOCK,
+    CU_EVOLVE, CD_EV_AMOUNT, CD_EV_LOCK, CD_SD_GRAVITY, CD_FM_CONTRAST, CD_FM_DEVELOP,
+    CU_ARP, CD_ARATE, CD_AGATE, CD_AOCT,
+    CU_MODS, CD_ORG_SPEED, CD_ORG_RATE,
+    CU_SENDS, CD_SF1_MIX, CD_SF1_RATE, CD_SF1_CHAR, CD_SF2_MIX, CD_SF2_RATE, CD_SF2_CHAR, CD_SF3_MIX, CD_SF3_RATE,
+    CD_SF3_CHAR, CD_FX_RETURN,
+    CU_PROJECT, CD_FILL, CD_TEMPO,
+    CU_PMODS, CD_M1_AMT, CD_M1_AMT + 1, CD_M1_AMT + 2, CD_M1_AMT + 3, CD_M1_AMT + 4, CD_M1_AMT + 5, CD_M1_AMT + 6,
+    CD_M1_AMT + 7, CD_M1_AMT + 8, CD_M1_AMT + 9, CD_M1_AMT + 10, CD_M1_AMT + 11, CD_M1_AMT + 12, CD_M1_AMT + 13,
+    CD_M1_AMT + 14, CD_M16_AMT, CD_BUS_A, CD_BUS_B, CD_MOD_DEPTH,
+};
+/* whether destination code acts on track tr as its MODE is: a generator's own on its tracks, the general generator
+ * ones (TWEAK, EVOLVE, FORM, TIMING's RATCH ..) on any generator's, PATTERN DIR and ACCUM on STEP tracks; the rest
+ * (read outside the generator's step: seq.c, seq_sub.c cord_tess_get) on any track */
+static int cu_acts(uint32_t code, uint32_t tr)
 {
-    uint32_t code, n = 0;
-    for (code = CD_OFF + 1u; code < below; code++)
-        n += cord_dest(code) && cu_global(code) == global;
-    return n;
+    uint32_t m = tr < TESSERA_TRACKS ? tessera.mode[tr] : TESS_ENG_OFF, own;
+    switch (code) {
+    case CD_TUR_PROB: case CD_TUR_LEN: own = TESS_ENG_TURING; break;
+    case CD_EUC_PULSES: case CD_EUC_ROT: own = TESS_ENG_EUCLID; break;
+    case CD_MKV_LEAP: case CD_MKV_DENS: own = TESS_ENG_MARKOV; break;
+    case CD_MRP_POS: own = TESS_ENG_MORPH; break;
+    case CD_GRD_X: case CD_GRD_Y: case CD_GRD_DENS: case CD_GRD_KICK: case CD_GRD_SNR: case CD_GRD_HAT:
+    case CD_GRD_TOMS: own = TESS_ENG_GRIDS; break;
+    case CD_BNC_SPEED: case CD_BNC_ANGLE: own = TESS_ENG_BOUNCE; break;
+    case CD_AWK_PROB: own = TESS_ENG_AWAKE; break;
+    case CD_QD_PROB: own = TESS_ENG_QUAD; break;
+    case CD_CS_Y: case CD_CS_SIZE: case CD_CS_DENS: case CD_CS_AUTO: own = TESS_ENG_CONSTEL; break;
+    case CD_SR_START: own = TESS_ENG_SERIES; break;
+    case CD_CH_PROG: case CD_CH_STRUM: case CD_CH_SDIR: case CD_CH_BREATH: own = TESS_ENG_CHORD; break;
+    case CD_AN_VARY: case CD_AN_ECHO: case CD_AN_SHIFT: case CD_AN_SPACE: own = TESS_ENG_ANSWER; break;
+    case CD_SEQ_DIR: case CD_ACC_LIMIT: return m == TESS_ENG_OFF;
+    case CD_TW_DROP: case CD_TW_BRANCH: case CD_NL_LEN: case CD_SUB_RATCH: case CD_SUB_CHANCE: case CD_CLOCK:
+    case CD_EV_AMOUNT: case CD_EV_LOCK: case CD_SD_GRAVITY: case CD_FM_CONTRAST: case CD_FM_DEVELOP:
+        return m != TESS_ENG_OFF;
+    default: return 1;
+    }
+    return m == own;
 }
-#define CU_DPT cu_count(CD_N, 0)
-#define CU_NDST (1u + NTRK * CU_DPT + cu_count(CD_N, 1))
+/* a walk of KNOB 3's list for cord c: its length (n), c's own entry (at), entry `want`'s code, track and group */
+typedef struct { uint32_t n, at, code, grp; uint8_t tr; } cu_walk_t;
+static void cu_walk(const cord_t *c, uint32_t want, cu_walk_t *w)
+{
+    uint32_t i, k, g = CU_SOUND, from = c->src && !CS_PROJECT(c->src) ? c->src_trk % NTRK : 0u;
+    w->n = 1u, w->at = 0u, w->code = CD_OFF, w->grp = 0u, w->tr = 0u;
+    for (i = 0; i <= NTRK; i++) {                       /* the tracks, from the source's on; then (NTRK) the project's */
+        uint32_t tr = i < NTRK ? (from + i) % NTRK : 0u;
+        for (k = 0; k < sizeof CU_ORDER; k++) {
+            uint32_t code = CU_ORDER[k];
+            if (code >= CU_G) { g = code; continue; }
+            if ((i == NTRK) != (g >= CU_SENDS) || !cord_dest(code)) continue;
+            if (i < NTRK && !cu_acts(code, tr) && !(c->dst == code && c->dst_trk == tr)) continue;
+            if (c->dst == code && (i == NTRK || c->dst_trk == tr)) w->at = w->n;
+            if (w->n == want) w->code = code, w->grp = g, w->tr = (uint8_t)tr;
+            w->n++;
+        }
+    }
+}
+static uint32_t cu_ndst(const cord_t *c) { cu_walk_t w; cu_walk(c, 0u, &w); return w.n; }
+#define CU_NDST cu_ndst(cord_get(cord_ui_sel))
 /* TIDE listed 1, 2, 3 (its codes: TIDE 1, TIDE 3, TIDE 2, kept so projects load): the two swap places in the list */
 static uint32_t cu_tide(uint32_t s) { return s == CS_APATHY ? CS_INERTIA : s == CS_INERTIA ? CS_APATHY : s; }
 static uint32_t cu_src_of(const cord_t *c)
@@ -58,25 +130,20 @@ static uint32_t cu_src_at(uint32_t v, uint8_t *tr)     /* entry v of KNOB 1's li
     *tr = (uint8_t)(v / CU_SPT);
     return v % CU_SPT == CS_ENERGY - 1u ? (uint32_t)CS_EOC : cu_tide(1u + v % CU_SPT);
 }
-static uint32_t cu_dst_k(uint32_t code) { return cu_count(code, cu_global(code)); }   /* code -> its place, in its kind */
-static uint32_t cu_dst_code(uint32_t k, int global)
-{
-    uint32_t code;
-    for (code = CD_OFF + 1u; code < CD_N; code++)
-        if (cord_dest(code) && cu_global(code) == global && !k--) return code;
-    return CD_OFF;
-}
 static uint32_t cu_dst_of(const cord_t *c)
 {
+    cu_walk_t w;
     if (!c->dst) return 0u;
-    return cu_global(c->dst) ? 1u + NTRK * CU_DPT + cu_dst_k(c->dst) : 1u + c->dst_trk * CU_DPT + cu_dst_k(c->dst);
+    cu_walk(c, 0u, &w);
+    return w.at;
 }
 /* KNOB 3's entry v (1 ..) into c: its destination and track */
 static void cu_dst_set(cord_t *c, uint32_t v)
 {
-    uint32_t n = NTRK * CU_DPT;
-    c->dst = (uint8_t)(v - 1u < n ? cu_dst_code((v - 1u) % CU_DPT, 0) : cu_dst_code(v - 1u - n, 1));
-    c->dst_trk = (uint8_t)(v - 1u < n ? (v - 1u) / CU_DPT : 0u);
+    cu_walk_t w;
+    cu_walk(c, v, &w);
+    c->dst = (uint8_t)w.code;
+    c->dst_trk = w.tr;
 }
 
 /* the source's name, "+" after it when UNI folds it (cord.c cord_fold_on) */
@@ -420,9 +487,23 @@ static const char *cu_pick_name(uint32_t col, int32_t i, int32_t *tr)
         if (cu_src_trk(s)) *tr = t;                     /* (ENERGY, the MACROs: the project's) */
         return cord_src_name(s);
     }
+    c = *cord_get(cord_ui_sel);                         /* (its source and destination: the list's order) */
     cu_dst_set(&c, (uint32_t)i);
     *tr = cu_global(c.dst) ? -1 : c.dst_trk;
     return cu_dst_name(&c);
+}
+
+/* KNOB 3's list's title: the group of entry i, "T3 FEEL" (the project's: "SEND FX"); "" for -- */
+static void cu_pick_title(char *b, int32_t i)
+{
+    cu_walk_t w;
+    b[0] = 0;
+    if (i <= 0) return;
+    cu_walk(cord_get(cord_ui_sel), (uint32_t)i, &w);
+    if (!w.grp) return;
+    if (w.grp < CU_SENDS)
+        b[0] = 'T', b[1] = (char)('1' + w.tr), b[2] = ' ', b[3] = 0;
+    str_cpy(b + str_len(b), CU_GNAME[w.grp - CU_G], 12);
 }
 
 /* entry i's label in Mono's list (ui_mono.c mo_pick): "T1 SLEW", as KNOB 1's and 3's values ("T1 LFO", the rows'
