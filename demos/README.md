@@ -214,6 +214,13 @@ python3 tools/tour_video.py demo build/tour INTRO build/tessera-3.3-demo.mp4   #
 
 INTRO is the splash's frames (`frames.txt` and PPMs), drawn by the splash code in YELLOW at its own speed.
 
+The same clips make two more cuts:
+
+- `tools/tour_video.py narrated build/tour INTRO OUT.mp4`: the tour to narrate (16:9, about 9 minutes, music only),
+  the whole of Tessera chapter by chapter, with `OUT.chapters.txt` (YouTube chapters) and `OUT.timing.csv`. Build
+  `build/dp` with `-DMELODEE_PHYS=1` for its PHYS clip.
+- `tools/tour_video.py short build/tour INTRO OUT.mp4`: the short (9:16, about a minute, what is new in 3.3).
+
 **3.0**: the video (6 minutes, 1080 x 1080, in the Mono look) is made from the firmware's own sound and screens: the three
 demos as `make` plays them (their first 20 s are the same samples as the WAVs above), then every generator with its
 knobs turned through the real UI (`ui_input`, as a hand turns them), then what is new in 3.0, TWEAK and TIMING, and
