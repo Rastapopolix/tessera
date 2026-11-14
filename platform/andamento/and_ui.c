@@ -593,10 +593,14 @@ static void and_tabs(const char *const *names, uint32_t n, uint32_t cur)
     char t[8];
     for (i = 0; i < AND_W; i += 2)
         and_px((int32_t)i, 53, 4);
-    for (;;) {                                   /* (the first tab: the shown one and as many before it as fit) */
-        for (w = 0, i = first; i <= cur && i < n; i++)
-            w += (int32_t)strlen(names[i] ? names[i] : "") * 6 + 5;
-        if (w - 4 <= room - (first ? 3 : 0) || first >= cur)
+    for (;;) {                                   /* (the first tab: the shown one and as many before it as fit, measured
+                                                  * as drawn below: from 3 past a dotted left edge, up to 3 short of a
+                                                  * dotted right one when more follow) */
+        for (w = first ? 3 : 0, i = first; i <= cur && i < n; i++) {
+            int32_t l = (int32_t)strlen(names[i] ? names[i] : "");
+            w += (l < 4 ? l : 4) * 6 + 5;        /* (str_cpy below keeps 4 letters) */
+        }
+        if (w - 4 <= room - (cur + 1u < n ? 3 : 0) || first >= cur)
             break;
         first++;
     }
