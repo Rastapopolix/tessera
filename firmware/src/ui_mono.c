@@ -2400,7 +2400,14 @@ static void mo_pick(int32_t col, int32_t count, int32_t cur, int32_t first, int3
 {
     mo_row_t r[8];
     int32_t i, tr, cords = cur_page()->graph == GR_CORDS, w = cords ? 70 : 58;
+    char title[16];
     if (rows > 8) rows = 8;
+    title[0] = 0;
+    if (cords && col == 2) {                            /* (KNOB 3's: the group under the cursor, "T3 FEEL"; a row
+                                                         * less, the bottom line kept) */
+        cu_pick_title(title, cur);
+        if (title[0] && rows > 7) rows = 7, first = clamp(cur - 3, 0, count - 7);
+    }
     for (i = 0; i < rows; i++) {
         if (cords)
             cu_pick_label(r[i].name, (uint32_t)col, first + i, &tr);
@@ -2410,7 +2417,8 @@ static void mo_pick(int32_t col, int32_t count, int32_t cur, int32_t first, int3
         r[i].trk = (uint8_t)(ux_multi && tr >= 0 ? tr + 1 : 0);
         r[i].dim = first + i - cur > 1 || cur - first - i > 1;
     }
-    mo_list(col < 2 ? 1 + 30 * col : 119 - w, 20, w, 0, 0, r, rows, cur - first, -1, first > 0, first + rows < count);
+    mo_list(col < 2 ? 1 + 30 * col : 119 - w, 20, w, title[0] ? title : 0, 0, r, rows, cur - first, -1, first > 0,
+            first + rows < count);
 }
 /* OCT+'s whole list (vlist_draw): the list's name, the names around the one picked, the value now a dot; at the
  * bottom of the screen, its width */

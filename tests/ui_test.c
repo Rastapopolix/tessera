@@ -1774,18 +1774,53 @@ static int test_cords_scroll_playing(void)
                  "moves, FILL, TEMPO, the MIX buses and MOD DEP (once, no track), playing between: the last reached (MOD DEP)",
                  k->dst == CD_MOD_DEPTH && k->dst_trk == 0u && (seen & 1u) && pop.on == POP_PICK);
     {                                                   /* the list: each entry back to itself, the send effects' last */
-        uint32_t v, round = 1, globals = 0;
+        uint32_t v, round = 1, globals = 0, ntrk = 0, code, x, once = 1, step_ok = 1, gen_ok;
         int32_t tr;
-        cord_t e = {0};
+        cord_t e = *k;
+        char t[16];
         for (v = 1; v < CU_NDST; v++) {
             cu_dst_set(&e, v);
             round &= cu_dst_of(&e) == v && cord_dest(e.dst) != 0;
             (void)cu_pick_name(2u, (int32_t)v, &tr);
-            if (cu_global(e.dst)) globals++, round &= tr == -1 && v > NTRK * CU_DPT;
-            else round &= tr == (int32_t)e.dst_trk;
+            if (cu_global(e.dst)) globals++, round &= tr == -1 && ntrk + globals == v;
+            else ntrk++, round &= tr == (int32_t)e.dst_trk;
         }
         bad += check("..its list: every entry to its destination and back, the 10 send effects', 16 M AMT, FILL, "
-                     "TEMPO, BUS A and B, MOD DEP once, with no track", round && globals == 31u && CU_NDST == 1u + NTRK * CU_DPT + 31u);
+                     "TEMPO, BUS A and B, MOD DEP once after the tracks', with no track", round && globals == 31u);
+        for (code = CD_OFF + 1u; code < CD_N; code++) {   /* every listed code in CU_ORDER once (a new one: add it) */
+            uint32_t n = 0;
+            for (x = 0; x < sizeof CU_ORDER; x++) n += CU_ORDER[x] == code;
+            if (n != (cord_dest(code) != 0)) { fprintf(stderr, "ui_test: CU_ORDER has code %u %u times\n", code, n); once = 0; }
+        }
+        bad += check("..its order (ui_cords.c CU_ORDER): every destination once, in a group", once && CU_ORDER[0] == CU_SOUND);
+        e = *k;                                         /* (T1 SLOTH: T1 first) */
+        cu_dst_set(&e, 1u);
+        cu_pick_title(t, 1);
+        bad += check("..from the source's track on: T1 PITCH first, its title T1 SOUND",
+                     e.dst == CD_PITCH && e.dst_trk == 0u && str_eq(t, "T1 SOUND"));
+        e.src = CS_LFO; e.src_trk = 2; e.dst = CD_OFF;
+        (void)cord_set(4, &e);
+        cu_dst_set(&e, 1u);
+        bad += check("..a T3 source: T3 PITCH first", e.dst == CD_PITCH && e.dst_trk == 2u);
+        gen_ok = cu_acts(CD_TUR_PROB, 0) && !cu_acts(CD_EUC_PULSES, 0) && cu_acts(CD_EUC_PULSES, 1) &&
+                 !cu_acts(CD_SEQ_DIR, 0) && cu_acts(CD_EV_AMOUNT, 0) && cu_acts(CD_GLIDE, 0) && cu_acts(CD_GRD_X, 3);
+        e.dst = CD_EUC_PULSES; e.dst_trk = 0;             /* (T1 plays Turing: hidden, but the mod's own stays) */
+        (void)cord_set(4, &e);
+        v = cu_dst_of(&e);
+        x = CU_NDST;
+        e.dst = CD_OFF;
+        (void)cord_set(4, &e);
+        bad += check("..a generator's own on its tracks alone (T PROB on Turing's, not E PULSE), the general ones on "
+                     "any generator's, DIR on STEP tracks; the mod's own stays (T1 E PULSE listed, then gone)",
+                     gen_ok && v != 0u && x == CU_NDST + 1u);
+        tessera_param_set(2, TX_MODE, TESS_ENG_OFF);    /* (T3 a STEP track: DIR, ACC LIM; no EV AMT, T PROB) */
+        step_ok = cu_acts(CD_SEQ_DIR, 2) && cu_acts(CD_ACC_LIMIT, 2) && !cu_acts(CD_EV_AMOUNT, 2) &&
+                  !cu_acts(CD_TUR_PROB, 2) && cu_acts(CD_TW_HUMAN, 2) && cu_acts(CD_SUB_SPLIT, 2);
+        tessera_param_set(2, TX_MODE, TESS_ENG_MARKOV);
+        bad += check("..a STEP track: the pattern's (DIR, ACC LIM) and those read outside the step (HUMAN, SPLIT)", step_ok);
+        e = *k;
+        e.src = CS_TORPOR; e.src_trk = 0;
+        (void)cord_set(4, &e);
     }
     for (i = 0; i < CU_NDST + 4u; i++) {
         turn(EN_K1 + 2u, -1);
