@@ -451,3 +451,25 @@ A mod (the MODS page, under LFO) moves a destination on any track by a source on
 | MOD DEP | the project's MOD DEPTH, each block | the project's MOD DEPTH (GLO > PERF's sheet): how much of every mod's move plays, 0..100 %; a MACRO onto it at -100 % turns the patch dry |
 | PLAY | whether the track is heard, each block | whether the track's notes sound: while its mods together are at half or more; under it the track plays on unheard (it still leads, as MUTE) |
 | CLOCK | the generator's clock, on the source's edges | steps the track's generator on each edge of the source, in place of its DIV (a GATE cord: OFFSET the threshold, a GATE source counts hits); AMOUNT is the division, 100 % every edge, 50 % every second, 33 % every third; negative: the gate closing |
+| STRUM | the generator's step | CHORD's STRUM: how many ms apart a chord's notes start, at each strike |
+| STR DIR | the generator's step | CHORD's strum DIR, stepped: UP DOWN ALT from the track's own |
+| RATCH | the generator's step | TIMING's RATCH: how many times a generator step's notes play, x1 .. x8 |
+| R CHANC | the generator's step | TIMING's CHANCE: how often a step ratchets |
+| GATE | the sequencer's step (and the audio block) | the track's step GATE: how long its notes hold, a generator's and a STEP pattern's |
+| N LEN | the generator's step | NOTE LENGTH's LEN, stepped: FIXED's length, from a 32nd note to a bar |
+| LOCK | the generator's step | EVOLVE's LOCK: how much of a generator's phrase stays (Turing: PROB turned round; Atlas: CHAOS) |
+| VELO | each note-on's velocity | the velocity of the track's notes, at each note-on: 100 % at a full source is the whole 1..127 |
+| SWING | the sequencer's step (and the audio block) | the track's SWING: its even steps later, its odd ones sooner |
+| GLIDE | the sequencer's step (and the audio block) | the track's GLIDE: at the sequencer's note-ons and its speed in the sound (a live key's note-on: as set) |
+| GRAVITY | the generator's step | GRAVITY: the pull of a generator's phrase back home |
+| DEVELOP | the generator's step | FORM's DEVELOP: how far a section varies each time FORM comes back to it |
+| AN ECHO | the generator's step | ANSWER's ECHO: the chance a note it plays comes back once more |
+| AN SHFT | the generator's step | ANSWER's SHIFT: how many scale degrees up or down an answer may move |
+| AN SPCE | the generator's step | ANSWER's SPACE: the rest before each answer |
+| BREATH | the generator's step | CHORD's BREATH (HIT HOLD): how its voices are struck again, softer |
+| ACC LIM | the generator's step | a STEP track's ACCUM LIMIT: how far a step's Accumulate climbs, in scale degrees |
+| TIDE SP | the generator's step | TIDE's SPEED: how fast the track's TIDE 1, 2, 3 drift |
+| SWRM RT | the generator's step | SWARM's RATE: how fast the track's eight SWARM LFOs run |
+| ARP RTE | the sequencer's step (and the audio block) | ARP's RATE, stepped through the divisions |
+| ARP GTE | the sequencer's step (and the audio block) | ARP's GATE: how long its notes hold |
+| ARP OCT | the sequencer's step (and the audio block) | ARP's OCT: over how many octaves it runs, 1..4 |
