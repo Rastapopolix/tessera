@@ -527,14 +527,12 @@ uint32_t tessera_sd_loop(uint32_t tr, uint8_t *now, uint8_t *home, uint32_t *at)
 int tessera_step_now(uint32_t tr, uint32_t i, step_t *out);   /* step i as it plays now: 1 changed (the pictures) */
 uint32_t tessera_step_serial(uint32_t tr, uint32_t *arg);   /* SERIAL's transform now (TESS_SV_SER_*), its argument */
 void tessera_step_clear(uint32_t tr);                    /* the steps as written again (KNOB 4 CLEAR) */
-void tessera_sv_layer_knob(uint32_t k, int32_t s);       /* its page, OCT+ held: KNOB 1 HOW */
+void tessera_sv_layer_knob(uint32_t k, int32_t s);       /* its page, OCT- held: KNOB 3 PAT GEN, 4 HOW */
 uint32_t tessera_step_keep(uint32_t tr);                 /* REC held: the changes become the steps; returns how many */
-void tessera_chord_ulen_knob(int32_t s);                   /* OCT+ held on GEN in CHORD USER, KNOB 4: LEN */
 uint32_t tess_strum_at(uint32_t i);                        /* STRUM's detent i (0..TESS_STRUM_DETENTS) in ms */
 uint32_t tess_strum_detent(uint32_t ms);                   /* the detent at or below ms */
 void tessera_strum_knob(int32_t s);                        /* OCT- held on GEN in CHORD, KNOB 2: STRUM a detent */
-void tessera_chord_oct_knob(int32_t s);                    /* OCT+ held on GEN in CHORD, KNOB 1: OCT */
-void tessera_chord_breath_knob(int32_t s);                 /* OCT+ held on GEN in CHORD (not USER), KNOB 4: BREATH */
+void tessera_chord_oct_knob(int32_t s);                    /* OCT- held on GEN in CHORD, KNOB 4: OCT */
 const gen_series_t *tessera_series(uint32_t tr);
 const tessera_answer_t *tessera_answer(uint32_t tr);
 void tessera_answer_hear(track_t *t, uint32_t note, uint32_t vel);   /* a key / MIDI note on the track, on its step */

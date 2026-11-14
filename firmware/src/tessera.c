@@ -2049,8 +2049,6 @@ void tessera_quad_cols_knob(uint32_t k, int32_t s)
         tess_param_set_body(tr, TX_QD_MOVE1 + c, (int32_t)(tessera.qcol[c] & 3u) + d);
     } else if (k == 2u) {
         tess_param_set_body(tr, TX_QD_EVERY1 + c, (int32_t)(tessera.qcol[c] >> 2) + d);
-    } else if (k == 3u) {
-        tess_param_set_body(tr, TX_QD_RANGE, (int32_t)tessera.quad[tr].range + d);
     }
     TESS_IRQ_ON();
 }
@@ -2068,7 +2066,6 @@ void tessera_constel_layer_knob(uint32_t k, int32_t s)
     if (k == 0u) tess_param_set_body(tr, TX_EV_LOCK, (int32_t)tessera.evolve[tr].lock + s * 2);
     else if (k == 1u) tess_param_set_body(tr, TX_CS_LEN, (int32_t)c->len + d);
     else if (k == 2u) tess_param_set_body(tr, TX_CS_FILL, (int32_t)c->fill + d);
-    else if (k == 3u) tess_param_set_body(tr, TX_CS_SIZE, (int32_t)c->size + d);
     TESS_IRQ_ON();
 }
 
@@ -2095,11 +2092,10 @@ void tessera_grids_layer_knob(uint32_t k, int32_t s)
     uint32_t tr = song.sel;
     const tessera_grids_t *g;
     tessera_ensure_init();
-    if (tr >= TESSERA_TRACKS || !s || k > 3u) return;
+    if (tr >= TESSERA_TRACKS || !s || k > 2u) return;
     g = &tessera.grids[tr];
     TESS_IRQ_OFF();
-    if (k < 3u) tess_param_set_body(tr, TX_GRD_KICK + k, 100 - (int32_t)g->thin[k] + s * 2);
-    else tess_param_set_body(tr, TX_GRD_TOMS, (int32_t)g->toms + s * 2);
+    tess_param_set_body(tr, TX_GRD_KICK + k, 100 - (int32_t)g->thin[k] + s * 2);
     TESS_IRQ_ON();
 }
 
@@ -2124,29 +2120,8 @@ uint32_t tessera_chord_user_key(uint32_t tr, uint32_t note, int first)
     return ok ? tessera.chord[tr].ulen : 0u;
 }
 
-/* CHORD with OCT+ held on GEN, PROG USER, KNOB 4: USER's LEN */
-void tessera_chord_ulen_knob(int32_t s)
-{
-    uint32_t tr = song.sel;
-    tessera_ensure_init();
-    if (tr >= TESSERA_TRACKS || !s) return;
-    TESS_IRQ_OFF();
-    tess_param_set_body(tr, TX_CH_ULEN, (int32_t)gen_chord_ulen(&tessera.chord[tr]) + (s > 0 ? 1 : -1));
-    TESS_IRQ_ON();
-}
-
-/* CHORD with OCT+ held on GEN, KNOB 4 (not USER, whose LEN it is): BREATH, 5 % a detent */
-void tessera_chord_breath_knob(int32_t s)
-{
-    uint32_t tr = song.sel;
-    tessera_ensure_init();
-    if (tr >= TESSERA_TRACKS || !s) return;
-    TESS_IRQ_OFF();
-    tess_param_set_body(tr, TX_CH_BREATH, (int32_t)tessera.ch_breath[tr] + (s > 0 ? 5 : -5));
-    TESS_IRQ_ON();
-}
-
-/* CHORD with OCT+ held on GEN, KNOB 1: OCT (KNOB 2 and 3 are the track's CHRD and VOIC: ui_input.c) */
+/* CHORD with OCT- held on GEN (ui_input.c gen_dn_knob): KNOB 2 STRUM, 3 its DIR, 4 OCT (CHRD, VOIC and USER's LEN or
+ * BREATH: the GEN sheet) */
 /* STRUM's knob: fine where a strum is a flam, coarser where it is a slow roll (the value stays ms, as saved) */
 uint32_t tess_strum_at(uint32_t i)
 {

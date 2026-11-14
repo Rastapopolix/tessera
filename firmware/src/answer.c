@@ -332,6 +332,5 @@ void tessera_answer_layer_knob(uint32_t k, int32_t s)
     if (k == 0u) tess_param_set_body(tr, TX_SD_SOURCE, (int32_t)tessera.sd_src[tr] + d);
     else if (k == 1u) tess_param_set_body(tr, TX_AN_ORDER, (int32_t)a->order + d);
     else if (k == 2u) tess_param_set_body(tr, TX_AN_SHIFT, (int32_t)a->shift + d);
-    else if (k == 3u) tess_param_set_body(tr, TX_AN_SPACE, (int32_t)a->space + s * 2);
     TESS_IRQ_ON();
 }
