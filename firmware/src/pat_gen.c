@@ -3,8 +3,10 @@
  * hand, PATTERNS, SONG) switches what the generator plays. A slot holds MODE, EVOLVE's EVERY, AMOUNT, LOCK, SEED and
  * the knobs of its MODE, as bytes of the saved track record (tessera.c tessera_pack, version 19): stored by packing
  * the track and taking those bytes, loaded by packing the track, putting them back and loading the record through
- * its own range checks. FORM, TWEAK, TWEAK 2, NOTE LENGTH, SUB, FOLLOW and the rest stay the track's. Included by
- * melodee.c after tessera.c (docs/design/gen-per-pattern.md in tessera-notes) */
+ * its own range checks. FORM, TWEAK, TWEAK 2, NOTE LENGTH, SUB, FOLLOW and the rest stay the track's. ANSWER's
+ * HOLD (version 20) is not a slot field: tessera_pg_load clears it on every switch, so a pattern's phrase never
+ * carries another's held lengths. Included by melodee.c after tessera.c (docs/design/gen-per-pattern.md in
+ * tessera-notes) */
 
 typedef struct { uint8_t at, n; } pg_range_t;
 #define PG_COMMON 3u                                     /* MODE, EVERY AMOUNT LOCK, SEED: every slot's */
@@ -25,7 +27,8 @@ static const pg_range_t pg_mode[TESS_ENG_COUNT][3] = {
     [TESS_ENG_CHORD]   = {{TESS_PK_TRACK_V11, 5}, {TESS_PK_TRACK_V12 + 4, 4}, {TESS_PK_TRACK_V16, 1}},
     [TESS_ENG_ANSWER]  = {{TESS_PK_TRACK_V17, 32}},
 };
-_Static_assert(TESS_PK_TRACK == TESS_PK_TRACK_V17 + 32u, "PAT GEN's slots are version 19's bytes (pg_mode)");
+_Static_assert(TESS_PK_TRACK_V19 == TESS_PK_TRACK_V17 + 32u, "PAT GEN's slots are version 19's bytes (pg_mode); HOLD"
+               " (version 20, TESS_PK_TRACK_V19..TESS_PK_TRACK) is deliberately not one: pat_gen.c clears it instead");
 static uint8_t pg_slot[TESSERA_TRACKS][NPAT][TESS_PG_BYTES] __attribute__((section(".pool")));
 
 /* the slot's bytes <-> the track record's: dir 1 record -> slot, 0 slot -> record */
@@ -73,6 +76,7 @@ void tessera_pg_load(uint32_t tr, uint32_t b)
     if (!pg_record(tr, pg_slot[tr][b], rec)) return;
     tessera.active_gate[tr] = 0;
     tess_pk_track(rec, tr, 1);
+    memset(tessera.answer[tr].hold, 0, TESS_AN_NOTES);   /* (not a PAT GEN field yet: stale, not this pattern's) */
     tessera.awake[tr].edit = 0;
     if (tessera.seed[tr]) tessera.rnd[tr] = gen_stream(tessera.seed[tr]);   /* (its knobs as stored: not the seed's) */
     else if (tessera.mode[tr] != TESS_ENG_OFF) tess_seed_fresh(tr);

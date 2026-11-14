@@ -819,6 +819,7 @@ static void input_off(track_t *t, uint32_t note)
     if (midi_note_held(t, note))
         return;
     live_held[trk_index(t)][note >> 5] &= ~(1u << (note & 31u));
+    tessera_answer_release(t, note);                /* (its ANSWER, and each ANSWER with t as SOURCE: close the hold) */
     cap_off(t, note);
     rec_release(t, note);
     arp_remove(t, note);                            /* both: the note may have started in the */
