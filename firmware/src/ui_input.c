@@ -273,6 +273,15 @@ static void ui_leds(void)
         led_pos_init();
         ready = 1;
     }
+    if (sim.on) {                                       /* SIM CONTROL: FX and GLO breathe (the way out), the rest dark */
+        uint8_t *plane = breath_on() ? fm1_led_dim[2] : fm1_led;
+        memset(fm1_led, 0, sizeof fm1_led);
+        memset(fm1_led_dim, 0, sizeof fm1_led_dim);
+        fm1_led_dim_mask[2] = BREATH[(fm1_ms / 125u) & 7u];
+        led_put(plane, panel.btn[B_FX], 1);
+        led_put(plane, panel.btn[B_GLO], 1);
+        return;
+    }
     if (lights == LIGHTS_AUTO && !ui.menu && (int32_t)(fm1_ms - scrn.idle) >= (int32_t)LIGHTS_AUTO_MS) {
         memset(fm1_led, 0, sizeof fm1_led);             /* AUTO, untouched a while: all dark (screen.c scrn.idle) */
         memset(fm1_led_dim, 0, sizeof fm1_led_dim);
@@ -2099,6 +2108,53 @@ static void ui_confirm_accept(void)
     }
 }
 
+/* SIM CONTROL (panel.c sim; the menu turns it on while the simulator mirrors the panel, panel_out): the keys go quiet
+ * (seq.c kb_remote) and every note playing stops; the UI takes no input but the knobs' turns, which PANEL sends on
+ * (panel_enc). The screen shows how to take the panel back (ui_draw.c draw_sim) and stays on */
+static void sim_enter(void)
+{
+    if (!panel_out)
+        return;
+    memset(&sim, 0, sizeof sim);
+    sim.on = 1;
+    kb_remote = 1;
+    panic_req = (1u << NTRK) - 1u;                      /* (every track's notes off: seq.c) */
+    menu_close();
+    ui_message("SIM CONTROL ON");                       /* (the screen reader says it: the card is no page) */
+}
+static void sim_leave(void)
+{
+    sim.on = 0;
+    kb_remote = 0;
+    ui.force = 1;
+    ui_message("PANEL BACK");
+}
+static int sim_input(void)                              /* ui_input, every pass: 1 = the pass is the simulator's */
+{
+    uint32_t k, pair = (1u << panel.btn[B_FX]) | (1u << panel.btn[B_GLO]);
+    if (!sim.on)
+        return 0;
+    for (k = 0; k < NE; k++)
+        (void)panel_enc(k);
+    panel_moved = 0;
+    scrn.idle = fm1_ms;
+    if (scrn.st != SCR_ON)
+        scr_wake();
+    if (sim.on == 2) {                                  /* ended by FX + GLO: theirs until both are let go */
+        if (!(fm1_in.buttons & pair))
+            sim_leave();
+    } else if (!panel_out) {                            /* the simulator gone (editor.c ed_panel) */
+        sim_leave();
+    } else if ((fm1_in.buttons & pair) != pair) {
+        sim.t0 = 0;
+    } else if (!sim.t0) {
+        sim.t0 = fm1_ms | 1u;
+    } else if (fm1_ms - sim.t0 >= SIM_EXIT_MS) {
+        sim.on = 2;
+    }
+    return 1;
+}
+
 static void ui_input(void)
 {
     uint32_t pressed = fm1_input_edges(0), notes = fm1_input_note_edges(), now = fm1_ticks(), id, b, k;
@@ -2112,6 +2168,8 @@ static void ui_input(void)
         boot_work_input(pressed);
         return;
     }
+    if (sim_input())
+        return;
     if(ui.import_refresh){pop.on=0;brw.on=0;ui.import_refresh=0;ui.force=1;}
     cu_adopt();                                         /* (Tessera: MOD's routes into MODS, ui_cords.c) */
     if (scr_input(pressed, notes)) return;

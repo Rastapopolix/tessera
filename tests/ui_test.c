@@ -239,6 +239,8 @@ static void ui_power_on(void)
     track_solo = 0;
     memset(&lys, 0, sizeof lys);
     settings_hold = HOLD_DEF;
+    memset(&sim, 0, sizeof sim);                        /* SIM CONTROL off, as every boot */
+    kb_remote = 0;
     fm1_in.buttons = fm1_in.notes = 0;
 }
 /* power-on with track 1 on a general engine (TRIO; SID until 2026-11-12): for the general user presets, the generic ENV / LFO pages and the
@@ -7678,6 +7680,55 @@ static int test_arp_hold_latch(void)
     return bad;
 }
 
+/* MENU > SIM CONTROL (panel.c sim, ui_input.c sim_*): while the simulator mirrors the panel, the panel plays it only; FX +
+ * GLO held 1 s, or the simulator gone, gives the panel back */
+static int test_sim_control(void)
+{
+    int bad = 0;
+    uint32_t sel, page;
+    ui_power_on();
+    stop_transport();
+    panel_out = 0;
+    hold(B_HOME);
+    ui.menu_sel = MI_SIM;
+    turn(EN_K2, 1);
+    bad += check("SIM CONTROL without the simulator: stays off, the menu up", !sim.on && ui.menu == 1);
+    panel_out = 1;
+    turn(EN_K2, 1);
+    bad += check("  the simulator listening: on, the menu closed, the keys quiet", sim.on == 1u && !ui.menu && kb_remote);
+    sel = song.sel;
+    page = ui.page;
+    turn(EN_ALGO, 1);
+    press(B_SEQ);
+    press(B_PLAY);
+    bad += check("  knobs and buttons do nothing on the FM-1", song.sel == sel && ui.page == page && !transport_req &&
+                 !song.playing);
+    key_down(5);
+    bad += check("  a key plays nothing", gates() == 0u);
+    key_up(5);
+    btn_down(B_FX);
+    btn_down(B_GLO);
+    frames(496);
+    bad += check("  FX + GLO held 0.5 s: still on", sim.on == 1u);
+    frames(608);
+    bad += check("  .. 1 s: ended, until both are let go", sim.on == 2u && kb_remote);
+    btn_up(B_FX);
+    frame();
+    bad += check("  .. one let go: still waiting", sim.on == 2u);
+    btn_up(B_GLO);
+    frame();
+    bad += check("  both let go: the panel back, no layer opened", !sim.on && !kb_remote && !ui.ly && !ui.menu);
+    turn(EN_ALGO, 1);
+    bad += check("  ALGORITHM picks the track again", song.sel != sel);
+    sim_enter();
+    bad += check("  on again", sim.on == 1u);
+    panel_out = 0;
+    frame();
+    bad += check("  the simulator gone: off", !sim.on && !kb_remote);
+    song.sel = 0;
+    return bad;
+}
+
 int main(void)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -7738,6 +7789,7 @@ int main(void)
     bad += test_roll();
     bad += test_panel();
     bad += test_track_knob();
+    bad += test_sim_control();
 #if MELODEE_LOOK
     bad += test_knobs_menu();
     bad += test_ground_menu();

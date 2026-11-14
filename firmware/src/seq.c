@@ -16,6 +16,7 @@
  * chord when the track's CHRD is on (chord.c): its notes go through the same input as so many keys. */
 #define KB_SILENT 255u
 static volatile uint8_t kb_asleep;
+static volatile uint8_t kb_remote;      /* SIM CONTROL (ui_input.c sim_enter): the keys play the web simulator only */
 static uint32_t kb_prev;
 static uint8_t kb_note[27], kb_trk[27];  /* per key: the note it started and on which track */
 static uint8_t last_note = 60;
@@ -887,7 +888,7 @@ static void keyboard_block(void)
             continue;
         if ((cur >> k) & 1u) {                    /* the selected track; the key-up goes to the same one */
             kb_trk[k] = song.sel;
-            if (kb_asleep) { kb_note[k]=KB_SILENT; continue; }
+            if (kb_asleep || kb_remote) { kb_note[k]=KB_SILENT; continue; }
             if ((fm1_in.buttons & kb_mask) || kb_lock) {       /* a layer's button held: the key is the layer's (ui_layer.c), */
                 kb_note[k] = KB_SILENT;           /* a quick-layer key */
                 kb_layer |= 1u << k;

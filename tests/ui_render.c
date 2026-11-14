@@ -529,7 +529,7 @@ enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_
        S_ALG1, S_ALG2, S_ALG3, S_ALG4, S_ALG5, S_ALG6, S_ALG7, S_ALG8, S_OP_LEVEL,
        S_FM6_ALG1, S_FM6_ALG5, S_FM6_ALG22, S_FM6_ALG32, S_FM6_FREQ, S_FM6_EG, S_FM6_PEG, S_FM6_STORE,
        S_CONFIRM_SEQ, S_CONFIRM_PROJ, S_CONFIRM_USER, S_CONFIRM_MOTION, S_CONFIRM_ERASE,
-       S_MENU, S_ABOUT, S_ABOUT_REC, S_ABOUT_CREDITS, S_ABOUT_END, S_UBOOT, S_CALIBRATION,
+       S_MENU, S_ABOUT, S_ABOUT_REC, S_ABOUT_CREDITS, S_ABOUT_END, S_UBOOT, S_SIM, S_CALIBRATION,
        S_BATT0, S_BATT1, S_BATT2, S_BATT3, S_BATT_USB, S_MOTION_REC, S_MOTION_OFF, S_SONG_HOME,
        S_MENU_HOLD, S_MENU_USB, S_MENU_USB_STEREO, S_MENU_USB_TRACKS, S_GLO_PEEK, S_GLO_ACTIVE, S_GLO_EXT, S_GLO_SOUND, S_GLO_SOUND_FAST, S_SCL_PEEK, S_SCL_ACTIVE, S_LAYER_HINT,
        S_NAME_USER, S_NAME_TYPING, S_NAME_123, S_NAME_EMPTY, S_NAME_FULL, S_NAME_PLAYING, S_PROJECT_NAMED, S_SONG_NAMED,
@@ -554,7 +554,7 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "h
     "mixer", "mixer_pan", "env", "env_dest", "lfo", "mod", "scl", "chord", "chord_wide", "chord_off", "chord_kit", "arp",
     "voice", "global", "system", "edit_fm6", "op_env", "edit_wheel",
     "edit_phys", "edit_phys_strng", "edit_phys_memb", "edit_phys_symp", "exct_phys_bowed", "alg_1", "alg_2", "alg_3", "alg_4", "alg_5", "alg_6", "alg_7", "alg_8", "op_level", "fm6_alg_01", "fm6_alg_05", "fm6_alg_22", "fm6_alg_32", "fm6_freq", "fm6_eg", "fm6_peg", "fm6_store", "confirm_seq", "confirm_project", "confirm_user",
-    "confirm_motion", "confirm_erase", "menu", "about", "about_rec", "about_credits", "about_end", "uboot", "calibration",
+    "confirm_motion", "confirm_erase", "menu", "about", "about_rec", "about_credits", "about_end", "uboot", "sim", "calibration",
     "batt_0", "batt_1", "batt_2", "batt_3", "batt_usb", "motion_rec", "motion_off", "song_home",
     "menu_hold", "menu_usb", "menu_usb_stereo", "menu_usb_tracks",
     "layer_glo_peek", "layer_glo_active", "layer_glo_ext", "layer_glo_sound", "layer_glo_sound_fast", "layer_scl_peek", "layer_scl_active", "layer_hint",
@@ -1005,6 +1005,7 @@ static void setup(int s)
     chain.running = 0;                              /* (the song the SONG scene plays) */
     help.on = 0;
     msc.on = 0;
+    memset(&sim, 0, sizeof sim);                    /* (SIM CONTROL: its scene turns it on) */
     fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);   /* (OCT+ let go: a layer's scene holds it) */
     fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);   /* (and OCT-) */
     ui.oct_t0 = 0;                                  /* (no OCT+ hold under way: env_sheet_hold's) */
@@ -2032,6 +2033,7 @@ static void setup(int s)
     case S_ABOUT_CREDITS: ui.menu = 2; ui.menu_scroll = 360; break;
     case S_ABOUT_END: ui.menu = 2; ui.menu_scroll = (uint16_t)menu_scroll_max(); break;
     case S_UBOOT: ui.uboot = 3; break;
+    case S_SIM: sim.on = 1; sim.t0 = (fm1_ms - 400u) | 1u; break;   /* SIM CONTROL, FX + GLO held 0.4 s */
     /* the header's battery at each stock level (raw ADC: under 531, 531.., 561.., 591..) and on USB power */
     case S_BATT0: usb.config = 0; song.batt_raw = 500; go_home(); break;
     case S_BATT1: usb.config = 0; song.batt_raw = 540; go_home(); break;

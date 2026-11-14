@@ -698,10 +698,45 @@ static int panel_protocol(void)
     return (int)bad;
 }
 
+/* SIM CONTROL (panel.c sim, sim_mask): FX + GLO are the FM-1's way out, so the pair never reaches the simulator; a lone
+ * one goes there SIM_WAIT_MS late, a quicker tap at once when let go, and one sent already is let go when the other joins */
+static int sim_control_pair(void)
+{
+    static const uint8_t on[1] = {1};
+    uint32_t p[16], n, bad = 0, fx = 1u << panel.btn[B_FX], glo = 1u << panel.btn[B_GLO];
+    reset(); panel_init();
+    fm1_in.buttons = fm1_in.notes = 0;
+    request(ED_PANEL, on, 1); ed_service(); panel_pkts(p, 16);
+    memset(&sim, 0, sizeof sim); sim.on = 1;
+    fm1_in.buttons = 1u << panel.btn[B_PLAY]; ed_service(); n = panel_pkts(p, 16);
+    bad += check("SIM CONTROL: other buttons go at once", n == 1u && p[0] == PK(0xBF, 80 + B_PLAY, 127));
+    fm1_in.buttons = glo; ed_service(); n = panel_pkts(p, 16);
+    bad += check("SIM CONTROL: a lone GLO waits", n == 1u && p[0] == PK(0xBF, 80 + B_PLAY, 0));
+    fm1_ms += SIM_WAIT_MS; ed_service(); n = panel_pkts(p, 16);
+    bad += check("SIM CONTROL: GLO still held after the wait: sent", n == 1u && p[0] == PK(0xBF, 80 + B_GLO, 127));
+    fm1_in.buttons = glo | fx; ed_service(); n = panel_pkts(p, 16);
+    bad += check("SIM CONTROL: FX joins: GLO let go there, FX not sent", n == 1u && p[0] == PK(0xBF, 80 + B_GLO, 0));
+    fm1_ms += 2000u; request(ED_PANEL, on, 1); fm1_in.buttons = fx; ed_service(); n = panel_pkts(p, 16);
+    bad += check("SIM CONTROL: one of the pair still held: nothing", n == 0u);
+    fm1_in.buttons = 0; ed_service(); n = panel_pkts(p, 16);
+    bad += check("SIM CONTROL: both let go: nothing", n == 0u);
+    fm1_in.buttons = fx; ed_service(); fm1_ms += 40u; fm1_in.buttons = fx | glo; ed_service(); n = panel_pkts(p, 16);
+    bad += check("SIM CONTROL: FX then GLO inside the wait: neither sent", n == 0u);
+    fm1_in.buttons = 0; ed_service(); panel_pkts(p, 16);
+    fm1_in.buttons = fx; ed_service(); fm1_ms += 50u; fm1_in.buttons = 0; ed_service(); n = panel_pkts(p, 16);
+    bad += check("SIM CONTROL: a quick FX tap: pressed when let go", n == 1u && p[0] == PK(0xBF, 80 + B_FX, 127));
+    ed_service(); n = panel_pkts(p, 16);
+    bad += check("SIM CONTROL: .. and let go next", n == 1u && p[0] == PK(0xBF, 80 + B_FX, 0));
+    sim.on = 0; fm1_in.buttons = fx; ed_service(); n = panel_pkts(p, 16);
+    bad += check("SIM CONTROL off: FX goes at once", n == 1u && p[0] == PK(0xBF, 80 + B_FX, 127));
+    fm1_in.buttons = 0; ed_service(); panel_pkts(p, 16);
+    return (int)bad;
+}
+
 int main(void)
 {
     int bad = library_transfers() + native_motion_protocol() + bank_protocol() + preferences() + framing() + uart_recovery() + steps() + song_protocol() + malformed_saves() + names_whole() +
-              native_protocol() + fm6_patches() + user_preset_roundtrip() + concert_pitch() + scale_catalogue() + user_tunings() + panel_protocol();
+              native_protocol() + fm6_patches() + user_preset_roundtrip() + concert_pitch() + scale_catalogue() + user_tunings() + panel_protocol() + sim_control_pair();
     printf("%s\n", bad ? "EDITOR TEST FAILED" : "editor test passed");
     return bad != 0;
 }

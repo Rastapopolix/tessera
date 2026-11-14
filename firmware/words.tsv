@@ -68,6 +68,7 @@ QNT	quantize
 HOLD GLO SET	hold global to set its keys
 HOLD SCL SET	hold scale to set the key
 ERR	error
+SIM	simulator
 
 
 # pages and knobs

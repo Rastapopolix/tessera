@@ -1266,7 +1266,8 @@ async function midiOn() {
 // buttons (CC 80..93), keys (notes 0..26), knobs (CC 20..26, sign bit) and MASTER (CC 27) on channel 16, which press,
 // turn and set this panel. Its other messages (the notes its tracks send) are left out, so a key plays once, and the
 // MIDI in box above never sees that port. Plug and play: on by itself where the browser already lets this site use
-// MIDI with SysEx (the installer and the editor ask for it); else one tick, which asks. The FM-1 still plays itself.
+// MIDI with SysEx (the installer and the editor ask for it); else one tick, which asks. The FM-1 still plays itself,
+// unless its menu's SIM CONTROL is on (FX + GLO, its way out, then never come here together: web/EDITOR_PROTOCOL.md).
 const FM1_ON = "melodee-tess-sim-fm1", FM1_PANEL = 75;
 const RE_FM1_PORT = /tessera|melodee|felucca|(^|[^a-z0-9])fm-?1($|[^a-z0-9])/i;
 const fm1Box = document.getElementById("fm1on"), fm1State = document.getElementById("fm1state");

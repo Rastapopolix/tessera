@@ -303,7 +303,8 @@ static void ed_motion_reply(uint32_t k, uint32_t rc)
  * the buttons CC 80..93 by printed label (B_FX .. B_OCTUP: 127 pressed, 0 let go), the keys as notes 0..26 (key k,
  * F3 .. G5: on 127, off), the knobs CC 20..26 (SELECT .. KNOB 4, panel_enc: relative, 1..63 clockwise, 65..127 back)
  * and MASTER CC 27 (0..127). The tracks' MIDI OUT notes go out as always. Into the SysEx queue (main loop only), a
- * change sent only when there is room for it, so none is lost */
+ * change sent only when there is room for it, so none is lost. With SIM CONTROL on (panel.c sim) the FM-1 itself
+ * takes none of it, and FX + GLO together, its way out, are not sent */
 static struct { uint32_t ms, resets, btn, keys; uint16_t master; } ed_pn;
 static int ed_pn_put(uint32_t st, uint32_t d1, uint32_t d2)
 {
@@ -325,6 +326,7 @@ static void ed_panel(void)
     }
     for (i = 0; i < NB; i++)
         m |= (b >> panel.btn[i] & 1u) << i;
+    m = sim_mask(m, fm1_ms);                               /* (SIM CONTROL: FX + GLO stay the FM-1's, panel.c) */
     for (d = m ^ ed_pn.btn; d; d &= d - 1u) {
         i = (uint32_t)__builtin_ctz(d);
         if (!ed_pn_put(0xBFu, 80u + i, (m >> i & 1u) * 127u))

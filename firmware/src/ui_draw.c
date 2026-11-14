@@ -1707,6 +1707,32 @@ static void draw_columns(void)
 }
 
 
+/* SIM CONTROL (panel.c sim, ui_input.c sim_input): the panel plays the web simulator; how to take it back, and FX + GLO
+ * held as a bar filling for SIM_EXIT_MS */
+static void draw_sim(void)
+{
+    static uint32_t shown;
+    uint32_t w = sim.on == 2u ? 200u : sim.t0 ? (fm1_ms - sim.t0) * 200u / SIM_EXIT_MS : 0u;
+    if (w > 200u)
+        w = 200u;
+    if (ui.force) {
+        lcd_fill(0, H_HEAD, 240, 240 - H_HEAD, T_BG);
+        ui.head_sig = ~0u;
+        draw_text_box(0, 60, 240, &AF_M, "SIM CONTROL", T_THEME, 1);
+        draw_text_box(0, 96, 240, &AF_S, "THE PANEL PLAYS", T_TEXT, 1);
+        draw_text_box(0, 114, 240, &AF_S, "THE SIMULATOR", T_TEXT, 1);
+        draw_text_box(0, 150, 240, &AF_S, "HOLD FX + GLO", T_MID, 1);
+        draw_text_box(0, 168, 240, &AF_S, "TO TAKE IT BACK", T_MID, 1);
+        shown = ~0u;
+    }
+    if (w != shown) {
+        lcd_fill(20, 200, 200, 6, T_DIM);
+        if (w)
+            lcd_fill(20, 200, w, 6, T_THEME);
+        shown = w;
+    }
+}
+
 /* UPDATE MODE countdown (main.c: OCT- + OCT+ held): over everything, the menu and the dialogs too */
 static void draw_uboot(void)
 {
@@ -1996,6 +2022,12 @@ static void ui_draw_frame(void)
     if (ui.uboot) {
         draw_uboot();
         draw_head();
+        return;
+    }
+    if (sim.on) {
+        draw_sim();
+        draw_head();
+        ui.force = 0;
         return;
     }
     if (ui.menu) {

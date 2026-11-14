@@ -432,6 +432,11 @@ device also sends these channel messages on **channel 16**, besides its usual MI
 Within one pass, buttons go before keys and keys before knobs, so a held button reaches the simulator before
 the knob it is held with. A message waits until the queue has room, so none is lost.
 
+With **SIM CONTROL** on (the device's menu) the device acts on none of its own panel; the messages are as above,
+but for FX and GLO: pressed together they are its way out and are not sent; one alone is sent 150 ms after it went
+down (a shorter tap: press and release then), and one already sent gets its release when the other joins it. The
+simulator needs no change for it.
+
 ## Pattern banks (commands 73–74)
 
 INFO sends 0 in the former untagged CHAIN_ROWS byte, then retains the tagged UI, motion and backup

@@ -1794,6 +1794,7 @@ Hold **HOME** for the menu. Its rows come in groups: the screen, the knobs and b
 | **USB AUDIO** | Which USB audio devices the computer sees, named from the FM-1's side: **IN + OUT** (the default), **IN** (the computer plays into the FM-1, through device **Tessera In**), **OUT** (the computer records the FM-1 from device **Tessera Out**) or **OFF**. The computer gets the change once the knob rests for a moment (the FM-1 reconnects). Saved. |
 | **USB OUTPUT** | What the FM-1 sends to the computer on **Tessera Out**: **STEREO** (the default: the mix, two channels) or **4 TRACKS** (each track on its own channel). Both are taken before MASTER. For stems in a DAW see [Recording the four tracks as separate stems](#recording-the-four-tracks-as-separate-stems). Saved. |
 | **USB VOLUME** | The level of the computer's audio played through the FM-1, **0 to 100 %** in 5 % steps, apart from MASTER: the volume pot sets the FM-1's own sound, this the computer's. 50 % (the default) is the old level at MASTER's default. What the FM-1 records over USB (USB OUTPUT: stereo or four tracks) is taken before MASTER too, so the pot never changes a recording's level. Saved. |
+| **SIM CONTROL** | While the [web simulator](#saving-and-older-projects) mirrors the panel: the FM-1's knobs, buttons and keys play the simulator only. Hold **FX + GLO** for a second to get the panel back. **NO SIM**: no simulator listening. Not saved: every start is off. |
 | **USB HOST** | **ON**: the USB-C port hosts a USB-MIDI keyboard, controller, synth or MIDI-to-CV module, with no computer in between (see [USB host](#usb-host)). **OFF** (the default): the port talks to a computer. Not saved: every start is OFF. |
 | **ABOUT** | Version, credits, **POWER** (the battery's reading and bars, whether 5 V comes in), and, after a crash, LAST CRASH (until power-off). |
 
@@ -1966,9 +1967,17 @@ The FM-1 itself can play the web simulator: plug it in by USB, open the simulato
 Under the panel, **An FM-1 on USB: its knobs, buttons and keys play the simulator** finds the FM-1 by itself (it is
 ticked already when this site may use MIDI, as after the installer or the editor; else tick it and allow MIDI). It
 says **FM-1 connected**, and every knob, button, key and MASTER on the FM-1 then works the simulator's panel, holds and
-shortcuts included. The FM-1 keeps playing its own sound too: turn its volume down. The two follow each other best
-when they start from the same project and page. A computer usually lets one program at a time use the FM-1's MIDI
+shortcuts included. The FM-1 keeps playing its own sound too: turn its volume down, or use SIM CONTROL (below). The
+two follow each other best when they start from the same project and page. A computer usually lets one program at a time use the FM-1's MIDI
 port, so close the editor or a DAW that holds it. An FM-1 with an older Tessera gets the message to update it.
+
+**SIM CONTROL** (HOME held, the menu; KNOB 2 right or OCT+) makes the FM-1 a controller for the simulator only: its
+knobs, buttons and keys play the simulator and do nothing on the FM-1, which stops its notes and shows **SIM
+CONTROL** with how to get its panel back. FX and GLO breathe. Hold **FX + GLO** for a second (a bar fills) and let
+go: the panel is the FM-1's again. Closing the simulator, unplugging the cable or switching off ends it too, and
+every start has it off. The row says **NO SIM** while no simulator listens. Pressed together, FX and GLO never reach
+the simulator; either one alone does, a moment late. MASTER still sets the FM-1's volume, and holding OCT- + OCT+
+for update mode still works.
 
 To see how hard the FM-1 is working, the editor's **Settings** tab has **Health**: press **Live** and it reads the
 CPU load, the worst audio half against its deadline, late halves, voices shed or stolen (per track too), the second
