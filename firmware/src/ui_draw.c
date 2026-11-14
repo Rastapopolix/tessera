@@ -1688,13 +1688,12 @@ static void draw_columns_(void)
                         cur_page()->id[c] == G_SLOT ? VAL(c) : T_DIM, -1, ICON_AUTO);
             continue;
         }
-        if (cur_page()->id[c] == G_INFO && cur_page()->scope == SC_GLOBAL) {
-            uint32_t a = song.cpu_q8 * 100u / 256u, pk = song.cpu_peak_q8 * 100u / 256u;   /* average/recent peak */
-            fmt_int(val, (int32_t)(a > 99u ? 99u : a));                     /* (99: at or past the limit; 5 chars) */
-            a = str_len(val);
-            val[a] = '/';
-            fmt_int(val + a + 1u, (int32_t)(pk > 99u ? 99u : pk));
-            unit = "%";
+        if (cur_page()->id[c] == G_INFO && cur_page()->scope == SC_GLOBAL) {   /* Theo 2026-11-14: nothing to set here
+             * (ui_help.c), and this number duplicated the CPU bar further down -- raw and unsmoothed too, so it
+             * jittered even after #689/#692 steadied that bar's own reading. Blank: SYSTEM's VOICES / CPU bars
+             * (mo_pic_system, below) are the one CPU readout now. */
+            val[0] = 0;
+            unit = "";
         } else {
             param_format(d, *vp, val, &unit);
             if(d->names==N_FX && *vp>=0 && *vp<FX_COUNT && (MELODEE_LOOK || *vp==FX_REVERB || *vp==FX_CHORUS))
