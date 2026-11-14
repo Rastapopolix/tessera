@@ -2565,6 +2565,11 @@ static int test_midi(void)
         turn(EN_K1, 1);
         bad += check("BUDGET (an editable column on the same page) still inverts", ui.hot_t != 0 && ui.hot_col == 0u);
         settings_budget = budget;
+#if MELODEE_LOOK
+        frame();
+        bad += check("SYSTEM's CPU column shows nothing under the dial (it duplicated the CPU bar, raw and unsmoothed)",
+                     mo_col[1].val[0] == 0);
+#endif
     }
     return bad;
 }
