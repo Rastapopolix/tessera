@@ -70,6 +70,9 @@ static void and_ui_say(const char *s)
 #include "and_ext.c"                             /* tracks 5..8: generators out to MIDI and CV / gate */
 #include "and_master.c"                           /* the master bus: tilt EQ then compressor, FX page's 2nd sub-page */
 #include "and_texture.c"                          /* the texture engine: a granular cloud, FX page's 3rd sub-page */
+#define AM_C(x) (AM_PID + (x))
+#define AT_C(x) (AT_PID + (x))
+#include "and_pages.c"                            /* SOUND, MOD, FX from Tessera's page table, Monomachine-style */
 
 /* a setting of track tr (0..7): Tessera's (pid.c), an external track's (AE_PID + AE_*), or one of the song-wide
  * modules (AM_PID + AM_*, the master bus; AT_PID + AT_*, the texture engine: tr does not matter, each is the
@@ -79,6 +82,11 @@ static int and_is_master(uint32_t pid) { return pid >= AM_PID && pid < AM_PID + 
 static int and_is_texture(uint32_t pid) { return pid >= AT_PID && pid < AT_PID + AT_NPRM; }
 static const param_desc_t *and_desc(uint32_t pid, uint32_t tr)
 {
+    int16_t *vp;
+    if (and_is_ap(pid))
+        return tr < NTRK ? ap_desc(pid - AP_PID, &vp) : 0;
+    if (and_is_an(pid))
+        return tr < NTRK ? an_desc(pid - AN_PID, tr) : 0;
     if (and_is_master(pid))
         return am_desc(pid - AM_PID);
     if (and_is_texture(pid))
@@ -87,6 +95,10 @@ static const param_desc_t *and_desc(uint32_t pid, uint32_t tr)
 }
 static int32_t and_get(uint32_t pid, uint32_t tr)
 {
+    if (and_is_ap(pid))
+        return tr < NTRK ? ap_get(pid - AP_PID) : 0;
+    if (and_is_an(pid))
+        return tr < NTRK ? an_get(pid - AN_PID, tr) : 0;
     if (and_is_master(pid))
         return am_get(pid - AM_PID);
     if (and_is_texture(pid))
@@ -95,7 +107,13 @@ static int32_t and_get(uint32_t pid, uint32_t tr)
 }
 static void and_set(uint32_t pid, uint32_t tr, int32_t v)
 {
-    if (and_is_master(pid))
+    if (and_is_ap(pid)) {
+        if (tr < NTRK)
+            ap_set(pid - AP_PID, v);
+    } else if (and_is_an(pid)) {
+        if (tr < NTRK)
+            an_set(pid - AN_PID, tr, v);
+    } else if (and_is_master(pid))
         am_set(pid - AM_PID, v);
     else if (and_is_texture(pid))
         at_set(pid - AT_PID, v);
@@ -107,6 +125,10 @@ static void and_set(uint32_t pid, uint32_t tr, int32_t v)
 static const char *and_name(uint32_t pid, uint32_t tr)   /* the setting's full name (the header, when turned) */
 {
     const pid_entry_t *e;
+    if (and_is_ap(pid))
+        return ap_name(pid - AP_PID);
+    if (and_is_an(pid))
+        return pid == AN_PID + AN_ENGINE ? "ENGINE" : pid == AN_PID + AN_PRESET ? "PRESET" : "FM6 OPERATOR";
     if (and_is_master(pid))
         return am_desc(pid - AM_PID)->label;
     if (and_is_texture(pid))
@@ -141,24 +163,6 @@ static void and_mute(uint32_t tr, int on)
 
 /* ------------------------------------------------------------- pages --- */
 static const char *const AND_PAGE[6] = {"GEN", "SOUND", "MOD", "FX", "PIECE", "MIX"};
-static const uint8_t AND_SUBS[6] = {2, 2, 2, 3, 2, 1};
-#define AM_C(x) (AM_PID + (x))
-#define AT_C(x) (AT_PID + (x))
-static const uint16_t AND_FIXED[6][3][AND_NENC] = {
-    [0][1] = {0x20f, 0x20e, 0x20d, 0x210, 0x211, 0x212, 0x26e, 0x26a},   /* EVOLVE AMT EVERY LOCK ROLL, FORM, GRAVITY */
-    [1][0] = {0x06f, 0x070, 0x071, 0x072, 0x073, 0x074, 0x075, 0x076},   /* the engine's 8 */
-    [1][1] = {0x001, 0x002, 0x003, 0x004, 0x005, 0x026, 0x027, 0x000},   /* ADSR, ENV > FILTER, GLIDE, PAN, LEVEL */
-    [2][0] = {0x009, 0x00a, 0x00d, 0x00e, 0x00f, 0x010, 0x05c, 0x00c},   /* the LFO */
-    [2][1] = {0x031, 0x032, 0x033, 0x034, 0x035, 0x036, 0x28d, 0x28e},   /* MOD 1, MOD 2, MACRO 1, 2 */
-    [3][0] = {0x06c, 0x06d, 0x06e, 0x11b, 0x11c, 0x11f, 0x120, 0x127},   /* sends, send FX 1 and 2, return */
-    [3][1] = {AM_C(AM_TILT), AM_C(AM_THRESH), AM_C(AM_RATIO), AM_C(AM_ATTACK), AM_C(AM_RELEASE), AM_C(AM_MAKEUP),
-              AM_C(AM_MIX), PID_NONE},                                   /* the master bus (and_master.c): song-wide */
-    [3][2] = {AT_C(AT_SIZE), AT_C(AT_DENS), AT_C(AT_POS), AT_C(AT_SPREAD), AT_C(AT_PITCH), AT_C(AT_FREEZE),
-              AT_C(AT_MIX), PID_NONE},                                   /* the texture engine (and_texture.c): song-wide */
-    [4][0] = {0x280, 0x281, 0x282, 0x284, 0x259, 0x25a, 0x27b, 0x27d},   /* PIECE, ENERGY ARC RESTS, ENTRIES */
-    [4][1] = {0x272, 0x273, 0x274, 0x27c, 0x27e, 0x26d, 0x283, 0x279},   /* CHAIN, ENTRIES, DEPTH, COUNT, FOLLOW */
-    [5][0] = {0x000, 0x027, 0x028, 0x100, 0x101, 0x019, 0x01a, 0x01c},   /* LEVEL PAN MUTE, TEMPO SWING, ROOT SCALE TRANS */
-};
 #define AND_PID_MODE 0x200u
 #define AND_PID_ENERGY 0x26cu
 
@@ -203,9 +207,20 @@ static const uint16_t AND_EXT_CELLS[6][AND_NENC] = {
 };
 static const char *const AND_EXT_PAGE[6] = {"GEN", "OUT", "MOD", "FX", "PIECE", "MIX"};
 
+/* page p's sub-pages now (an internal track: and_pages.c's map, which follows the engine; an external track: one) */
+static uint32_t and_nsub(uint32_t p)
+{
+    if (p >= 6u)
+        return 1;
+    if (and_ui.ext >= 0)
+        return 1;
+    and_map(p);
+    return and_nsubs ? and_nsubs : 1u;
+}
+
 static void and_cells(void)
 {
-    uint32_t i, p = and_ui.page, s;
+    uint32_t i, p = and_ui.page, n;
     if (p >= 6u) {                               /* (HOME: no grid) */
         for (i = 0; i < AND_NENC; i++)
             and_ui.cell[i] = PID_NONE;
@@ -220,13 +235,12 @@ static void and_cells(void)
             and_ui.cell[1] = and_ui.cell[2] = and_ui.cell[3] = PID_NONE;
         return;
     }
-    s = and_ui.sub[p];
-    if (p == 0 && s == 0)
-        and_gen_cells(and_ui.cell);
-    else
-        for (i = 0; i < AND_NENC; i++)
-            and_ui.cell[i] = AND_FIXED[p][s][i];   /* (every sub-page's row is whole: 0x000 is LEVEL, not empty) */
-    if (p == 0 && s == 0)
+    n = and_nsub(p);                             /* (and_map: and_subs; an engine changed may leave fewer) */
+    if (and_ui.sub[p] >= n)
+        and_ui.sub[p] = (uint8_t)(n - 1u);
+    for (i = 0; i < AND_NENC; i++)
+        and_ui.cell[i] = and_nsubs ? and_subs[and_ui.sub[p]].c[i] : PID_NONE;
+    if (p == AB_GEN && and_ui.sub[p] == 0)       /* (GEN's: and_gen_cells, whole) */
         return;
     for (i = 0; i < AND_NENC; i++)               /* (an engine's unused knob: no cell; and_desc, not pid_desc, so
                                                    * AM_* (and_master.c) is not mistaken for an unknown pid) */
@@ -307,7 +321,7 @@ static void and_button(uint32_t b, uint32_t down)
         return;
     if (b <= AB_MIX) {
         if (and_ui.page == b)
-            and_ui.sub[b] = (uint8_t)((and_ui.sub[b] + 1u) % AND_SUBS[b]);
+            and_ui.sub[b] = (uint8_t)((and_ui.sub[b] + 1u) % and_nsub(b));
         and_ui.page = (uint8_t)b;
         and_ui.hot = -1;
     } else if (b == AB_NO) {
@@ -316,8 +330,8 @@ static void and_button(uint32_t b, uint32_t down)
     } else if ((b == AB_UP || b == AB_DOWN) && and_ui.held[AB_FUNC]) {
         and_keys_shift(b == AB_UP ? 1 : -1);
     } else if ((b == AB_UP || b == AB_DOWN) && and_ui.page < AND_HOME) {
-        uint32_t p = and_ui.page;
-        and_ui.sub[p] = (uint8_t)((and_ui.sub[p] + (b == AB_UP ? AND_SUBS[p] - 1u : 1u)) % AND_SUBS[p]);
+        uint32_t p = and_ui.page, n = and_nsub(p);
+        and_ui.sub[p] = (uint8_t)((and_ui.sub[p] % n + (b == AB_UP ? n - 1u : 1u)) % n);
     } else if (b == AB_LEFT || b == AB_RIGHT) {
         and_track(b == AB_LEFT ? -1 : 1);
     } else if (b == AB_PLAY) {
@@ -525,8 +539,11 @@ static void and_draw_dials(uint32_t hot)
             str_cpy(b, val, sizeof b);
             if (!and_is_list(d, val) && unit && unit[0] && strlen(b) + strlen(unit) <= 5u && strcmp(unit, d->label))
                 str_cpy(b + strlen(b), unit, sizeof b - strlen(b));   /* (a unit when it fits: 12ms, 60%) */
-            and_cell(i, and_ui.page == AND_HOME ? lab : d->label ? d->label : "", b, param_ratio(d, v),
-                     and_is_list(d, val), (int)ishot);
+            {
+                const char *pn = an_preset_name(pid, tr, 1);   /* (PRESET: the sound's name, in a box as a list) */
+                and_cell(i, and_ui.page == AND_HOME ? lab : d->label ? d->label : "", pn ? pn : b, param_ratio(d, v),
+                         pn ? 1 : and_is_list(d, val), (int)ishot);
+            }
         }
     }
 }
@@ -567,23 +584,43 @@ static void and_head(const char *title, const char *eng)
     and_fill(0, 9, AND_W, 1, 8);
 }
 
-/* the tabs: the page's sub-pages, the shown one inverted (the FM-1's mo_foot), and the keys' mode at the right */
+/* the tabs: the page's sub-pages, the shown one inverted (the FM-1's mo_foot), and the keys' mode at the right. More
+ * than fit (FM6's SOUND has 11): the run of them that holds the shown one, a dotted edge where more lie past it */
 static void and_tabs(const char *const *names, uint32_t n, uint32_t cur)
 {
-    uint32_t i;
-    int32_t x = 0;
+    uint32_t i, first = 0;
+    int32_t x, room = AND_W - 6 * (int32_t)strlen(AK_SHORT[and_keys.mode]) - 3, w;
     char t[8];
     for (i = 0; i < AND_W; i += 2)
         and_px((int32_t)i, 53, 4);
-    for (i = 0; i < n; i++) {
-        str_cpy(t, names[i], 5);
+    for (;;) {                                   /* (the first tab: the shown one and as many before it as fit, measured
+                                                  * as drawn below: from 3 past a dotted left edge, up to 3 short of a
+                                                  * dotted right one when more follow) */
+        for (w = first ? 3 : 0, i = first; i <= cur && i < n; i++) {
+            int32_t l = (int32_t)strlen(names[i] ? names[i] : "");
+            w += (l < 4 ? l : 4) * 6 + 5;        /* (str_cpy below keeps 4 letters) */
+        }
+        if (w - 4 <= room - (cur + 1u < n ? 3 : 0) || first >= cur)
+            break;
+        first++;
+    }
+    x = first ? 3 : 0;
+    if (first)
+        and_px(0, AND_TAB_Y + 4, 6), and_px(0, AND_TAB_Y + 2, 6), and_px(0, AND_TAB_Y + 6, 6);
+    for (i = first; i < n; i++) {
+        str_cpy(t, names[i] ? names[i] : "", 5);
+        w = (int32_t)strlen(t) * 6 + 1;
+        if (x + w > room - (i + 1u < n ? 3 : 0)) {
+            and_px(x, AND_TAB_Y + 4, 6), and_px(x, AND_TAB_Y + 2, 6), and_px(x, AND_TAB_Y + 6, 6);
+            break;
+        }
         if (i == cur) {
-            and_fill(x, AND_TAB_Y, (int32_t)strlen(t) * 6 + 1, 9, 15);
+            and_fill(x, AND_TAB_Y, w, 9, 15);
             and_text(x + 1, AND_TAB_Y + 1, t, 0, 4);
         } else {
             and_text(x + 1, AND_TAB_Y + 1, t, 6, 4);
         }
-        x += (int32_t)strlen(t) * 6 + 5;
+        x += w + 4;
     }
     and_text(AND_W - 6 * (int32_t)strlen(AK_SHORT[and_keys.mode]), AND_TAB_Y + 1, AK_SHORT[and_keys.mode], 4, 4);
 }
@@ -606,6 +643,11 @@ static void and_picture(uint32_t hot)
             param_format(d, raw, val, &unit);
             if (d->fmt == F_ENUM && d->names && raw >= d->min && raw <= d->max)
                 str_cpy(val, d->names[raw - d->min], sizeof val);
+            if (an_preset_name(and_ui.hot_pid, tr0, 0)) {   /* (PRESET: its whole name, as the FM-1's browser) */
+                and_text(x, AND_PIC_Y + 2, "PRESET", 7, 6);
+                and_text2(x, AND_PIC_Y + 14, an_preset_name(and_ui.hot_pid, tr0, 0), 15, 10);
+                return;
+            }
             (void)and_fit(v, val);
             if (!and_is_list(d, val)) {
                 and_dial(18, AND_PIC_Y + 21, 15, param_ratio(d, raw), 5, 15);
@@ -644,11 +686,6 @@ static void and_picture(uint32_t hot)
     }
 }
 
-/* the sub-pages' names (the tabs, and the title where the page has no name of its own) */
-static const char *const AND_SUBNAME[6][3] = {
-    {"GEN", "EVOLVE"}, {"SYNTH", "AMP"}, {"LFO", "MOD"}, {"SENDS", "MASTER", "TEXTURE"}, {"PIECE", "CHAIN"}, {"MIX"},
-};
-
 /* a moment ago (t from fm1_ms | 1, 0 never): the setting turned and a word said show for 1.2 s */
 static int and_recent(uint32_t t) { return t && (uint32_t)(fm1_ms + 1u - t) < 1201u; }
 
@@ -674,7 +711,8 @@ static void and_draw(void)
     } else if (and_ui.ext >= 0) {
         str_cpy(t, p == AB_GEN ? and_gen_name(sel) : AND_EXT_PAGE[p], sizeof t);
     } else {
-        str_cpy(t, p == AB_GEN && s == 0u ? and_gen_name(sel) : AND_SUBNAME[p][s], sizeof t);
+        and_nsub(p);                             /* (and_subs: this page's) */
+        str_cpy(t, p == AB_GEN && s == 0u ? and_gen_name(sel) : s < and_nsubs ? and_subs[s].title : "", sizeof t);
         if (!t[0] || !strcmp(t, "OFF"))
             str_cpy(t, "STEP", sizeof t);
     }
@@ -689,8 +727,13 @@ static void and_draw(void)
     and_picture(hot);
     if (and_ui.ext >= 0)
         and_tabs(&AND_EXT_PAGE[p], 1, 0);
-    else
-        and_tabs(AND_SUBNAME[p], AND_SUBS[p], s);
+    else {
+        const char *names[AND_NSUB];
+        uint32_t i, n = and_nsub(p);
+        for (i = 0; i < n && i < AND_NSUB; i++)
+            names[i] = i < and_nsubs ? and_subs[i].tab : "";
+        and_tabs(names, n, s);
+    }
 }
 
 /* the LEDs: bit b = button b lit; the keys: 16 x RGB, 0..255 a channel (and_keys.c) */
