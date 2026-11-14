@@ -129,7 +129,8 @@ int main(int argc, char **argv)
     run_ms(2000);
     scr();
     CHECK(energy_resting(), "a rest");
-    CHECK(peak(2, 1, 40, 7) == 15 && peak(3, 0, 40, 1) == 0, "a rest: REST inverted in the header");
+    CHECK(peak(2, 1, 40, 7) == 15 && peak(0, 0, 3, 1) == 15 && peak(60, 0, 24, 9) < 15,
+          "a rest: REST inverted in the header (a lit box, ink-dark letters)");
     run_ms(1600);
     scr();
     CHECK(and_home.f[ah_now_x()] & AH_REST, "a rest: marked in the history");
