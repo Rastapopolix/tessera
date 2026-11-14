@@ -2567,8 +2567,8 @@ static int test_midi(void)
         settings_budget = budget;
 #if MELODEE_LOOK
         frame();
-        bad += check("SYSTEM's CPU column shows nothing under the dial (it duplicated the CPU bar, raw and unsmoothed)",
-                     mo_col[1].val[0] == 0);
+        bad += check("SYSTEM's KNOB 2 is an empty slot: no label, no value, no frame (the CPU bar is the readout)",
+                     !mo_col[1].used && mo_col[0].used && mo_col[2].used && mo_col[3].used);
 #endif
     }
     return bad;

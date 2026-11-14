@@ -1688,13 +1688,13 @@ static void draw_columns_(void)
                         cur_page()->id[c] == G_SLOT ? VAL(c) : T_DIM, -1, ICON_AUTO);
             continue;
         }
-        if (cur_page()->id[c] == G_INFO && cur_page()->scope == SC_GLOBAL) {   /* Theo 2026-11-14: nothing to set here
-             * (ui_help.c), and this number duplicated the CPU bar further down -- raw and unsmoothed too, so it
-             * jittered even after #689/#692 steadied that bar's own reading. Blank: SYSTEM's VOICES / CPU bars
-             * (mo_pic_system, below) are the one CPU readout now. */
-            val[0] = 0;
-            unit = "";
-        } else {
+        if (cur_page()->id[c] == G_INFO && cur_page()->scope == SC_GLOBAL) {   /* Theo 2026-11-14: SYSTEM's KNOB 2 is an
+             * empty slot -- no label, no frame. CPU has nothing to set (ui_help.c) and its number duplicated the CPU
+             * bar further down, raw and unsmoothed; SYSTEM's VOICES / CPU bars (mo_pic_system) are the one readout. */
+            draw_column(c, "", "", "", T_THEME, -1, ICON_AUTO);
+            continue;
+        }
+        {
             param_format(d, *vp, val, &unit);
             if(d->names==N_FX && *vp>=0 && *vp<FX_COUNT && (MELODEE_LOOK || *vp==FX_REVERB || *vp==FX_CHORUS))
                 str_cpy(val,N_FX[*vp],sizeof val);   /* (Mono: the whole name, ui_mono.c mo_fit shortens it: FILTR) */
