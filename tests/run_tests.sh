@@ -547,7 +547,7 @@ if core; then
     t "removed effects: old songs and motion, MIDI, physical input and dry output" no_effects_test -O1 $FW
     t "resident audio: four-track resource budget and removed buses" ram_audio_test -O2 $FW
     t "resident audio: expanded voice budget and CPU1 fallback" ram_voice_budget_test -O2 $FW
-    t "load ceiling: a shed caps admission, recovers under 60 %, BUDGET stays the maximum (#586)" voice_ceiling_test -O2 $FW
+    t "load ceiling: a shed caps admission (half of BUDGET at least), recovers, faster under 60 %, BUDGET stays the maximum (#586)" voice_ceiling_test -O2 $FW
     t "audio: calibrated reservations, release tails and overlapping hits" audio_admission_test -O2 $FW
     t "USB audio: four isolated track stems through the real mixer" usb_audio_tracks_test -O2 $FW
     t "boot stub: CRCs, rescue keys, damaged staging and retry fallback" boot_stub_test -O2
