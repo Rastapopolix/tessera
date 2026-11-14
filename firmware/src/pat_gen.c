@@ -25,7 +25,7 @@ static const pg_range_t pg_mode[TESS_ENG_COUNT][3] = {
     [TESS_ENG_CHORD]   = {{TESS_PK_TRACK_V11, 5}, {TESS_PK_TRACK_V12 + 4, 4}, {TESS_PK_TRACK_V16, 1}},
     [TESS_ENG_ANSWER]  = {{TESS_PK_TRACK_V17, 32}},
 };
-_Static_assert(TESS_PK_TRACK == TESS_PK_TRACK_V17 + 32u, "PAT GEN's slots are version 19's bytes (pg_mode)");
+_Static_assert(TESS_PK_TRACK_V19 == TESS_PK_TRACK_V17 + 32u, "PAT GEN's slots are version 19's bytes (pg_mode)");
 static uint8_t pg_slot[TESSERA_TRACKS][NPAT][TESS_PG_BYTES] __attribute__((section(".pool")));
 
 /* the slot's bytes <-> the track record's: dir 1 record -> slot, 0 slot -> record */

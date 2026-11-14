@@ -42,6 +42,7 @@ static const char *const TX_N_MIDICH[] = {"AUTO", "1", "2", "3", "4", "5", "6", 
                                           "14", "15", "16", "OFF"};   /* (TESS_MIDI_OFF) */
 static const char *const TX_N_ANORDER[] = {"PLAYED", "REVERSE", "SHUFFLE"};   /* (TESS_AN_*) */
 static const char *const TX_N_ANLEN[] = {"SHORT", "MID", "LONG"};
+static const char *const TX_N_ANCHORD[] = {"ARP", "TRUE"};   /* (TESS_AN_*) */
 static const char *const TX_N_SDKEEP[] = {"FREE", "RHYTHM", "PITCH"};   /* (TESS_SD_*) */
 static const char *const TX_N_SVHOW[] = {"DRIFT", "ADORN", "SERIAL"};   /* (TESS_SV_*) */
 static const char *const TX_N_SOUND[] = {"ON", "OFF"};
@@ -229,6 +230,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_BUSB_MODE] = PE("MODE", TX_N_BUSMODE, 0),
     [TX_BUSB_LAG] = PE("LAG", TX_N_BUSLAG, 0),
     [TX_MOD_DEPTH] = PD("MOD DEPTH", F_PCT, 0, 100, 100),
+    [TX_AN_CHORD] = PE("CHORD", TX_N_ANCHORD, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -621,7 +623,7 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                "loops its first LEN steps and PROB changes them a step at a time; EUCLID plays its "
                                "notes in order on its hits; MARKOV learns what follows what in it (LEAP: jumps "
                                "anywhere); MORPH blends it (A) with a variation of it (B). OFF, or a pattern without "
-                               "notes: the generator's own. ANSWER: the pattern's first 8 notes are its call, read "
+                               "notes: the generator's own. ANSWER: the pattern's first 16 notes are its call, read "
                                "again before each answer; the keys then just play. A track with a generator: the notes it plays "
                                "are the call. OCT- held on GEN, KNOB 2."),
     X_(TX_SD_KEEP, "KEEP", "With a SOURCE, what stays as written. FREE: a step's pitch or its hit may change. "
@@ -808,6 +810,9 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                    "CC's base and a GATE's threshold stay. 0: the patch dry. A mod onto MOD DEP (a MACRO) "
                                    "rides it. A GATE onto FILL at 100 % stops holding FILL under 50 %. GLO > PERF's "
                                    "sheet (OCT+ held)."),
+    X_(TX_AN_CHORD, "ANSWER CHORD", "ARP: notes played together are spread one a step apart (the old behaviour, so "
+                                    "an answer never surprises an old project). TRUE: they share the step and answer "
+                                    "back as a real chord. The GEN sheet (OCT+ held), Chord."),
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT

@@ -44,12 +44,15 @@ typedef gen_constel_t tessera_constel_t;
 typedef gen_series_t tessera_series_t;
 typedef gen_chord_t  tessera_chord_t;
 
-/* ANSWER (answer.c): the notes played on the track's keys (up to 8) are its phrase; it answers it, after a gap, with
+/* ANSWER (answer.c): the notes played on the track's keys (up to 16) are its phrase; it answers it, after a gap, with
  * variations (vary.c), echoes, each answer softer until it forgets. The saved part; what plays now is tess_an */
-#define TESS_AN_NOTES 8u
+#define TESS_AN_NOTES 16u
 #define TESS_AN_AT_MAX 63u                          /* a note's step in the phrase: 0..63 */
 enum { TESS_AN_ASPLAYED, TESS_AN_REVERSE, TESS_AN_SHUFFLE, TESS_AN_ORDERS };
 enum { TESS_AN_SHORT, TESS_AN_MID, TESS_AN_LONG, TESS_AN_LENS };   /* LEN: the four loops at the top of FADE */
+enum { TESS_AN_ARP, TESS_AN_TRUE, TESS_AN_CHORDS };   /* TX_AN_CHORD: ARP spreads notes played together one a step
+                                                       * apart (the old, default behaviour); TRUE lets them share a
+                                                       * step, a real chord */
 typedef struct {
     uint8_t vary;          /* 0..100: how much an answer changes (0: as played) */
     uint8_t echo;          /* 0..100: the chance a note comes back once more, softer */
@@ -58,7 +61,8 @@ typedef struct {
     uint8_t shift;         /* 0..7: an answer moved up to this many scale degrees up or down (0: none) */
     uint8_t space;         /* 0..100: the gap before each answer, 0 .. 4 bars */
     uint8_t len;           /* TESS_AN_SHORT .. LONG: the loops' lengths in steps (5 7 11 13, 13 17 23 29, 23 29 31 37) */
-    uint8_t n;             /* the phrase's notes, 0..8 (0: nothing to answer yet) */
+    uint8_t n;             /* the phrase's notes, 0..16 (0: nothing to answer yet) */
+    uint8_t chord;         /* TESS_AN_ARP / TESS_AN_TRUE: whether notes played together share a step */
     uint8_t note[TESS_AN_NOTES], vel[TESS_AN_NOTES], at[TESS_AN_NOTES];   /* each note, its velocity, its step */
 } tessera_answer_t;
 
@@ -347,8 +351,9 @@ int energy_resting(void);                           /* 1 while the notes rest */
 const char *tessera_cond_name(uint32_t cond);
 uint32_t tessera_form_get(uint32_t tr, uint8_t seq[4], uint32_t *pos);   /* returns the form's length, 0 = OFF */
 const char *tessera_form_name(uint32_t form);
-#define TESSERA_PK_BYTES 730u                       /* the saved state, version 19 (tessera.c: TESS_PK_TRACK x TESSERA_TRACKS,
+#define TESSERA_PK_BYTES 830u                       /* the saved state, version 20 (tessera.c: TESS_PK_TRACK x TESSERA_TRACKS,
                                                      * then the project's TESS_PK_TAIL) */
+#define TESSERA_PK_BYTES_V19 730u                   /* version 19 (before ANSWER's extra 8 notes and its CHORD switch) */
 #define TESSERA_PK_BYTES_V18 602u                   /* version 18 (before ANSWER) */
 #define TESSERA_PK_BYTES_V17 600u                   /* version 17 (before ENERGY's ARC and RESTS) */
 #define TESSERA_PK_BYTES_V16 596u                   /* version 16 (before CHORD's BREATH) */
@@ -454,11 +459,14 @@ enum {
     TX_CH_STRUM, TX_CH_SDIR,                        /* (0x29C, 0x29D: CHORD's STRUM and its DIR, a CHORD track's) */
     TX_BUSA_MODE, TX_BUSA_LAG, TX_BUSB_MODE, TX_BUSB_LAG,   /* (0x29E..0x2A1: the MIX buses', the project's: cord.c) */
     TX_MOD_DEPTH,                                   /* (0x2A2: MOD DEPTH, the project's: cord.c cord_mdepth_get) */
+    TX_AN_CHORD,                                     /* (0x2A3: ANSWER's CHORD, any track's: ARP spreads a chord
+                                                     * apart, TRUE lets it share a step) */
     TX_COUNT
 };
 _Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95 && TX_TW_FRHY == 0x97 &&
                TX_PAT_GEN == 0x98 && TX_MIDI_DMAP == 0x99 && TX_ET_ORDER == 0x9A && TX_SEQ_DIR == 0x9B &&
-               TX_CH_SDIR == 0x9D && TX_BUSB_LAG == 0xA1 && TX_MOD_DEPTH == 0xA2, "parameter ids are stored: never renumbered");
+               TX_CH_SDIR == 0x9D && TX_BUSB_LAG == 0xA1 && TX_MOD_DEPTH == 0xA2 && TX_AN_CHORD == 0xA3,
+               "parameter ids are stored: never renumbered");
 /* TX_SEQ_DIR: the order a STEP pattern plays its steps in (seq_dir.c) */
 enum { SEQ_FWD, SEQ_BACK, SEQ_PEND, SEQ_FOLD, SEQ_RAND, SEQ_DRUNK, SEQ_DIRS };
 #define TESS_STRUM_MS 250u                          /* TX_CH_STRUM: up to 250 ms between a chord's notes (a byte, in ms) */

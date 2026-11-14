@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis (melodee-tess) */
 /* ANSWER (after Zen-1's koi and petals, aceyprime/zen-1: the idea only, no code): the notes played on the track's keys
- * (or MIDI IN), up to 8, are its phrase, each with its velocity and its step; a bar with no key closes it. After a gap
+ * (or MIDI IN), up to 16, are its phrase, each with its velocity and its step; a bar with no key closes it. After a gap
  * (SPACE) it answers: the phrase's rhythm with its notes in ORDER (as played, reversed, shuffled), the answer moved up
  * to SHIFT scale degrees, and changes that come and go (vary.c: a note moved, an octave, dropped, swapped) at VARY.
  * Each answer is softer and more changed, until FADE's count is played and it forgets: it rests until the keys play
@@ -28,7 +28,7 @@ static int answer_gen_src(uint32_t tr)
     return s && s <= TESSERA_TRACKS && s != tr + 1u && tessera.mode[s - 1u] != TESS_ENG_OFF;
 }
 
-/* SOURCE: the call is that track's STEP pattern playing now (this track's own too), its first 8 notes at their steps
+/* SOURCE: the call is that track's STEP pattern playing now (this track's own too), its first 16 notes at their steps
  * (a chord its first note, a drum hit its lane's note); 0: none (OFF, or a pattern without notes: the keys' call) */
 /* SOURCE the ANSWER track itself: its own STEP pattern is the call (shown OWN, not "T4", which read like a slip) */
 static int answer_own(uint32_t tr)
@@ -70,7 +70,7 @@ static void answer_restart(uint32_t tr)
     for (uint32_t i = 0; i < TESS_AN_NOTES; i++) tess_an.ord[tr][i] = (uint8_t)i;
 }
 
-/* a note on the track's keys: the first after an answer (or a closed phrase) starts a new phrase; up to 8, a step
+/* a note on the track's keys: the first after an answer (or a closed phrase) starts a new phrase; up to 16, a step
  * apart at least (keys while stopped: a step each). On the nearest step, as REC places a note: one played past the
  * middle of a step (late) counts on the next, so a note played a touch early is not a whole step early (Theo, 3.3.1:
  * the answers felt off the grid) */
@@ -94,7 +94,8 @@ void tessera_answer_hear_at(track_t *t, uint32_t note, uint32_t vel, uint32_t la
     at = tess_an.hclk[tr] + (late ? 1u : 0u);
     at = at > tess_an.hlate[tr] ? at - tess_an.hlate[tr] : 0u;
     at = at > TESS_AN_AT_MAX ? TESS_AN_AT_MAX : at;
-    if (n && at <= a->at[n - 1u]) at = a->at[n - 1u] + 1u;
+    if (n && (at < a->at[n - 1u] || (a->chord == TESS_AN_ARP && at == a->at[n - 1u])))
+        at = a->at[n - 1u] + 1u;   /* ARP: a note at the same step as the last is pushed one on; TRUE: it shares it */
     if (at > TESS_AN_AT_MAX) return;
     a->note[n] = (uint8_t)note;
     a->vel[n] = (uint8_t)(vel > 127u ? 127u : vel);
@@ -104,7 +105,7 @@ void tessera_answer_hear_at(track_t *t, uint32_t note, uint32_t vel, uint32_t la
 }
 
 /* track src (a generator) has just played note: each ANSWER with SOURCE src that listens or rests hears it, as a key
- * at velocity 100 (so a BOUNCE call: up to 8 notes, closed by a bar without one, or at the 8th's bar); one answering
+ * at velocity 100 (so a BOUNCE call: up to 16 notes, closed by a bar without one, or at the 16th's bar); one answering
  * (or LOOPS) goes on. Two ANSWERs each other's SOURCE: a conversation */
 static void tessera_answer_heard(uint32_t src, uint32_t note)
 {
@@ -281,7 +282,8 @@ static void answer_tick(const track_t *t, uint32_t tr, const gen_clock_t *clk, g
     }
 }
 
-/* OCT+ held on GEN in ANSWER: KNOB 1 SOURCE, 2 ORDER, 3 SHIFT, 4 SPACE (LEN: FADE's top, tessera_knob) */
+/* OCT- held on GEN in ANSWER: KNOB 1 SOURCE, 2 ORDER, 3 SHIFT, 4 SPACE (LEN: FADE's top, tessera_knob; CHORD: the
+ * GEN sheet, OCT+ held) */
 void tessera_answer_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;

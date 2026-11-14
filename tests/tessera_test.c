@@ -2273,6 +2273,43 @@ static int test_answer_source_keys(void)
     tessera_reset();
     return check("ANSWER: SOURCE T1 hears T1's keys; another SOURCE does not; its own keys still count", ok);
 }
+/* ANSWER CHORD (3.5.2, a Reddit report: a chord answered as one note): ARP, the default, still spreads notes played
+ * at the same step one apart, as it always has; TRUE lets them share it, a real chord, and a later note still gets
+ * its own step. TESS_AN_NOTES raised 8 -> 16: a longer call fits too */
+static int test_answer_chord(void)
+{
+    const tessera_answer_t *a = &tessera.answer[1];
+    int ok;
+    uint32_t k;
+    tessera_reset();
+    gen(1, TESS_ENG_ANSWER);                            /* CHORD ARP (default) */
+    tessera_answer_hear(&trk[1], 60, 90);
+    tessera_answer_hear(&trk[1], 64, 80);               /* (the same step: pushed to the next, as before) */
+    tessera_answer_hear(&trk[1], 67, 70);
+    ok = a->n == 3u && a->at[0] == 0u && a->at[1] == 1u && a->at[2] == 2u;
+    tessera_reset();
+    gen(1, TESS_ENG_ANSWER);
+    tessera_param_set(1, TX_AN_CHORD, TESS_AN_TRUE);
+    tessera_answer_hear(&trk[1], 60, 90);
+    tessera_answer_hear(&trk[1], 64, 80);               /* (the same step: a chord now, it shares it) */
+    tessera_answer_hear(&trk[1], 67, 70);
+    ok &= a->n == 3u && a->at[0] == 0u && a->at[1] == 0u && a->at[2] == 0u;
+    tess_an.hclk[1] = 2;
+    tessera_answer_hear(&trk[1], 72, 60);               /* (a step on: its own step, not pulled back into the chord) */
+    ok &= a->n == 4u && a->at[3] == 2u;
+    tessera_reset();
+    gen(1, TESS_ENG_ANSWER);                            /* up to 16 notes now (was 8) */
+    for (k = 0; k < 16u; k++) {
+        tess_an.hclk[1] = k;
+        tessera_answer_hear(&trk[1], 48u + k, 90);
+    }
+    ok &= a->n == 16u && a->note[15] == 63u && a->at[15] == 15u;
+    tess_an.hclk[1] = 16;
+    tessera_answer_hear(&trk[1], 80, 90);                /* (the 17th: past the cap, not heard) */
+    ok &= a->n == 16u;
+    tessera_reset();
+    return check("ANSWER: CHORD ARP spreads a chord apart, TRUE lets it share a step; up to 16 notes", ok);
+}
 /* FOLLOW hears the keys (or MIDI IN) of the track it follows, as ANSWER's SOURCE does: an empty STEP track's keys, a
  * generator's keys until its next note, CANON's count, HOLD sampled by a key on its track; a STEP pattern playing wins */
 static int test_follow_live_keys(void)
@@ -3148,37 +3185,61 @@ static void pack_run(char *res, size_t cap)
         ok &= tessera_unpack(c) == 0;
         tessera_unpack(a);
     }
-    {   /* ANSWER (version 19): its settings and phrase round trip; a version 18 block loads with the defaults and nothing
-         * heard; ORDER 3, SHIFT 8, LEN 3, 9 notes, a note over 127 or a step over 63 refused */
-        const uint32_t n19 = TESSERA_PK_BYTES / TESSERA_TRACKS, n17 = TESSERA_PK_BYTES_V17 / TESSERA_TRACKS;
-        static uint8_t v18[TESSERA_PK_BYTES_V18];
-        static const uint8_t BAD[6][2] = {{3, 3}, {4, 8}, {6, 3}, {7, 9}, {8, 128}, {24, 64}};
+    {   /* ANSWER (version 20): its settings, CHORD switch and phrase (now up to 16 notes) round trip; a version 19
+         * block (182-byte tracks, no CHORD byte) loads with the extra notes empty and CHORD ARP, as it played; a
+         * version 18 block loads with the defaults and nothing heard; ORDER 3, SHIFT 8, LEN 3, CHORD 2, 17 notes, a
+         * note over 127 or a step over 63 refused (the old 8-note chunk and the new one both checked) */
+        const uint32_t n20 = TESSERA_PK_BYTES / TESSERA_TRACKS, n19 = TESSERA_PK_BYTES_V19 / TESSERA_TRACKS,
+                       n17 = TESSERA_PK_BYTES_V17 / TESSERA_TRACKS;
+        static uint8_t v19[TESSERA_PK_BYTES_V19], v18[TESSERA_PK_BYTES_V18];
+        static const uint8_t BAD[6][2] = {{3, 3}, {4, 8}, {6, 3}, {7, 17}, {8, 128}, {24, 64}};
+        static const uint8_t BAD2[3][2] = {{0, 2}, {1, 128}, {17, 64}};   /* (an2: CHORD, note 8, step 8) */
+        uint32_t k;
         tessera_reset();
         gen(1, TESS_ENG_ANSWER);
         tessera_param_set(1, TX_AN_VARY, 70);
         tessera_param_set(1, TX_AN_FADE, 100);
         tessera_param_set(1, TX_AN_ORDER, TESS_AN_SHUFFLE);
         tessera_param_set(1, TX_AN_LEN, TESS_AN_LONG);
-        tessera_answer_hear(&trk[1], 57, 90);
-        tessera_answer_hear(&trk[1], 64, 70);
+        tessera_param_set(1, TX_AN_CHORD, TESS_AN_TRUE);
+        for (k = 0; k < 10u; k++) {                     /* past the old 8-note cap, within the new 16 */
+            tess_an.hclk[1] = k;
+            tessera_answer_hear(&trk[1], 50u + k, 90u - k);
+        }
         tessera_answer_hear(&trk[0], 50, 70);           /* (track 1 is no ANSWER track: not heard) */
         tessera_pack(b);
         tessera_reset();
-        ok &= tessera_unpack(b) == 1 && tessera.mode[1] == TESS_ENG_ANSWER && tessera_answer(1)->n == 2u &&
-              tessera_answer(1)->note[1] == 64u && tessera_answer(1)->vel[0] == 90u && tessera_answer(1)->at[1] == 1u &&
+        ok &= tessera_unpack(b) == 1 && tessera.mode[1] == TESS_ENG_ANSWER && tessera_answer(1)->n == 10u &&
+              tessera_answer(1)->note[1] == 51u && tessera_answer(1)->vel[0] == 90u && tessera_answer(1)->at[1] == 1u &&
+              tessera_answer(1)->note[9] == 59u && tessera_answer(1)->vel[9] == 81u && tessera_answer(1)->at[9] == 9u &&
               tessera_param_get(1, TX_AN_VARY) == 70 && tessera_param_get(1, TX_AN_FADE) == 100 &&
               tessera_param_get(1, TX_AN_ORDER) == TESS_AN_SHUFFLE && tessera_param_get(1, TX_AN_LEN) == TESS_AN_LONG &&
+              tessera_param_get(1, TX_AN_CHORD) == TESS_AN_TRUE &&
               tessera_answer(0)->n == 0u && tessera_answer_count(1) == 0u;
-        for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) memcpy(v18 + tr * n17, b + tr * n19, n17);
+        for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) memcpy(v19 + tr * n19, b + tr * n20, n19);
+        v19[TESSERA_TRACKS * n19] = 30;                 /* (ENERGY ARC, kept) */
+        v19[TESSERA_TRACKS * n19 + 1u] = 0;
+        ok &= tessera_unpack_ver(19u, v19) == 1 && tessera.mode[1] == TESS_ENG_ANSWER && tessera_answer(1)->n == 10u &&
+              tessera_answer(1)->note[0] == 50u && tessera_answer(1)->note[7] == 57u &&
+              tessera_answer(1)->note[8] == 0u && tessera_answer(1)->at[8] == 0u &&   /* (notes 8, 9: nothing there) */
+              tessera_param_get(1, TX_AN_CHORD) == TESS_AN_ARP &&                     /* (no CHORD byte: as it played) */
+              tessera_param_get(1, TX_AN_VARY) == 70 && tessera_check(19u, v19) == 1;
+        for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) memcpy(v18 + tr * n17, b + tr * n20, n17);
         v18[TESSERA_TRACKS * n17] = 30;                 /* (ENERGY ARC, kept) */
         v18[TESSERA_TRACKS * n17 + 1u] = 0;
         ok &= tessera_unpack_ver(18u, v18) == 1 && tessera.mode[1] == TESS_ENG_ANSWER && tessera_answer(1)->n == 0u &&
               tessera_param_get(1, TX_AN_VARY) == 30 && tessera_param_get(1, TX_AN_FADE) == 33 &&
-              tessera_param_get(0, TX_EN_ARC) == 30 && tessera_check(18u, v18) == 1 && tessera_check(19u, b) == 1;
-        for (uint32_t k = 0; k < 6u; k++) {
+              tessera_param_get(1, TX_AN_CHORD) == TESS_AN_ARP &&
+              tessera_param_get(0, TX_EN_ARC) == 30 && tessera_check(18u, v18) == 1 && tessera_check(20u, b) == 1;
+        for (k = 0; k < 6u; k++) {
             memcpy(c, b, sizeof c);
-            c[1u * n19 + n17 + BAD[k][0]] = BAD[k][1];
-            ok &= tessera_unpack(c) == 0 && tessera_check(19u, c) == 0;
+            c[1u * n20 + n17 + BAD[k][0]] = BAD[k][1];
+            ok &= tessera_unpack(c) == 0 && tessera_check(20u, c) == 0;
+        }
+        for (k = 0; k < 3u; k++) {
+            memcpy(c, b, sizeof c);
+            c[1u * n20 + n19 + BAD2[k][0]] = BAD2[k][1];
+            ok &= tessera_unpack(c) == 0 && tessera_check(20u, c) == 0;
         }
         tessera_unpack(a);
     }
@@ -3553,6 +3614,7 @@ int main(int argc, char **argv)
         bad += check("QUAD columns: DOWN and UP turn all four rows, each on its EVERY, on the first QUAD track's steps", ok);
     bad += test_answer_nearest();
     bad += test_answer_source_keys();
+    bad += test_answer_chord();
     bad += test_follow_live_keys();
         for (uint32_t r = 0; r < TESSERA_TRACKS; r++) memcpy(was[r], tessera.quad[r].cell, 4);
         tess_quad_mutate(0, 100);
