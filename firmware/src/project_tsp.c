@@ -539,6 +539,47 @@ static int tsp_tune_read(const uint8_t *p, uint32_t len, int apply)
 /* raw (len bytes) is a whole TSP1 record whose every part checks out: 1, and proj_scratch holds its project (the
  * patterns other than the current ones, the song's and motion's pattern tags, the generators and the cords stay in raw
  * for tsp_restore). 0: not one (proj_scratch then undefined) */
+/* the plain parts: version 1, len bytes, the first `at` of them at most `a`, the rest at most `b` (tsp_valid) */
+static const struct { uint8_t id, a, b; uint8_t at; uint16_t len; } TSP_PLAIN[] = {
+    {TSP_SUB, SUB_SHAPES - 1u, 0, NTRK, NTRK},
+    {TSP_MIDI, TESS_MIDI_OFF, 0, NTRK, NTRK},
+    {TSP_TRANSP, 2u * TESS_MIDI_TR, 0, NTRK, NTRK},
+    {TSP_SOUND, 1u, 0, NTRK, NTRK},
+    {TSP_KEY, 1u, 0, 1u, 1u},
+    {TSP_SEED, TESSERA_TRACKS, TESS_SD_KEEPS - 1u, NTRK, 2u * NTRK},
+    {TSP_GRAV, 100u, 0, NTRK, NTRK},
+    {TSP_HOW, TESS_SV_HOWS - 1u, 0, NTRK, NTRK},
+    {TSP_ENERGY, 200u, 100u, 1u, 1u + NTRK},
+    {TSP_DEV, 100u, 0, NTRK, NTRK},
+    {TSP_PERF, 100u, 0, 4u, 4u},
+    {TSP_FKEY, 24u, 0, 2u, 2u},
+    {TSP_HOLD, TESSERA_TRACKS, 0, NTRK, NTRK},
+    {TSP_SPLIT, 100u, TESS_SPLIT_HOWS - 1u, NTRK, 2u * NTRK},
+    {TSP_FMODE, TESS_FH_COUNT - 1u, TESS_FR_COUNT - 1u, NTRK, 2u * NTRK},
+    {TSP_DMAP, TESS_DM_COUNT - 1u, 0, NTRK, NTRK},
+    {TSP_MHOLD, 255u, 0, 2u, 2u},
+    {TSP_MVCA, 255u, 0, 2u, 2u},
+    {TSP_MHCLK, 255u, 0, CORD_HCLK_BYTES, CORD_HCLK_BYTES},
+    {TSP_MDEPTH, 100u, 0, 1u, 1u},
+    {TSP_SDIR, SEQ_DIRS - 1u, 0, NTRK * NPAT, NTRK * NPAT},
+    {TSP_EORDER, ET_ORDERS - 1u, 0, NTRK, NTRK},
+    {TSP_STRUM, TESS_STRUM_MS, TESS_STR_DIRS - 1u, NTRK, 2u * NTRK},
+    {TSP_HUMAN, TESS_HUMAN_MS, 0, NTRK, NTRK},
+    {TSP_ACC, TESS_ACC_LIMIT, TESS_ACC_MODES - 1u, NTRK, 2u * NTRK},   /* (LIMIT 0: 7) */
+    {TSP_CCN, 119u, 0, CORD_MAX, CORD_MAX},
+};
+_Static_assert(NTRK * NPAT <= 255u && CORD_MAX <= 255u && CORD_HCLK_BYTES <= 255u, "TSP_PLAIN's at: a byte");
+static int tsp_plain_ok(const uint8_t *raw)
+{
+    for (uint32_t i = 0; i < sizeof TSP_PLAIN / sizeof TSP_PLAIN[0]; i++) {
+        uint32_t id = TSP_PLAIN[i].id;
+        if (!tsp_seen.at[id]) continue;
+        if (tsp_seen.ver[id] != 1u || tsp_seen.len[id] != TSP_PLAIN[i].len) return 0;
+        for (uint32_t k = 0; k < TSP_PLAIN[i].len; k++)
+            if (raw[tsp_seen.at[id] + k] > (k < TSP_PLAIN[i].at ? TSP_PLAIN[i].a : TSP_PLAIN[i].b)) return 0;
+    }
+    return 1;
+}
 static int tsp_valid(const uint8_t *raw, uint32_t len)
 {
     project_t *q = &proj_scratch;
@@ -559,7 +600,7 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         }
         pos += 4u + plen;
     }
-    if (pos != len - 4u) return 0;
+    if (pos != len - 4u || !tsp_plain_ok(raw)) return 0;
 
     memset(q, 0, sizeof *q);                           /* defaults for what a record leaves out */
     q->magic = PROJ_MAGIC; q->size = sizeof *q; q->parts = NPART; q->phys = PROJ_PHYS;
@@ -664,30 +705,6 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (tsp_seen.ver[TSP_TESSERA] != 1u || tsp_seen.len[TSP_TESSERA] < 1u ||
             tsp_seen.len[TSP_TESSERA] != 1u + tessera_pk_bytes(p[0]) || !tessera_check(p[0], p + 1)) return 0;
     }
-    if (tsp_seen.at[TSP_SUB]) {
-        if (tsp_seen.ver[TSP_SUB] != 1u || tsp_seen.len[TSP_SUB] != NTRK) return 0;
-        for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_SUB] + k] >= SUB_SHAPES) return 0;
-    }
-    if (tsp_seen.at[TSP_MIDI]) {
-        if (tsp_seen.ver[TSP_MIDI] != 1u || tsp_seen.len[TSP_MIDI] != NTRK) return 0;
-        for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_MIDI] + k] > TESS_MIDI_OFF) return 0;
-    }
-    if (tsp_seen.at[TSP_TRANSP]) {
-        if (tsp_seen.ver[TSP_TRANSP] != 1u || tsp_seen.len[TSP_TRANSP] != NTRK) return 0;
-        for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_TRANSP] + k] > 2u * TESS_MIDI_TR) return 0;
-    }
-    if (tsp_seen.at[TSP_SOUND]) {
-        if (tsp_seen.ver[TSP_SOUND] != 1u || tsp_seen.len[TSP_SOUND] != NTRK) return 0;
-        for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_SOUND] + k] > 1u) return 0;
-    }
-    if (tsp_seen.at[TSP_KEY]) {
-        if (tsp_seen.ver[TSP_KEY] != 1u || tsp_seen.len[TSP_KEY] != 1u || raw[tsp_seen.at[TSP_KEY]] > 1u) return 0;
-    }
-    if (tsp_seen.at[TSP_SEED]) {
-        const uint8_t *p = raw + tsp_seen.at[TSP_SEED];
-        if (tsp_seen.ver[TSP_SEED] != 1u || tsp_seen.len[TSP_SEED] != 2u * NTRK) return 0;
-        for (uint32_t k = 0; k < NTRK; k++) if (p[k] > TESSERA_TRACKS || p[NTRK + k] >= TESS_SD_KEEPS) return 0;
-    }
     q->oracle_ok = 0;                                  /* (a record of before ORACLE: each track its preset's) */
     if (tsp_seen.at[TSP_ORACLE]) {
         const uint8_t *p = raw + tsp_seen.at[TSP_ORACLE];
@@ -695,25 +712,8 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         for (uint32_t k = 0; k < NTRK; k++) { if (!or_patch_ok(p + k * OR_N)) return 0; memcpy(q->oracle[k], p + k * OR_N, OR_N); }
         q->oracle_ok = 1;
     }
-    if (tsp_seen.at[TSP_GRAV]) {
-        if (tsp_seen.ver[TSP_GRAV] != 1u || tsp_seen.len[TSP_GRAV] != NTRK) return 0;
-        for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_GRAV] + k] > 100u) return 0;
-    }
-    if (tsp_seen.at[TSP_HOW]) {
-        if (tsp_seen.ver[TSP_HOW] != 1u || tsp_seen.len[TSP_HOW] != NTRK) return 0;
-        for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_HOW] + k] >= TESS_SV_HOWS) return 0;
-    }
-    if (tsp_seen.at[TSP_ENERGY]) {
-        const uint8_t *p = raw + tsp_seen.at[TSP_ENERGY];
-        if (tsp_seen.ver[TSP_ENERGY] != 1u || tsp_seen.len[TSP_ENERGY] != 1u + NTRK || p[0] > 200u) return 0;
-        for (uint32_t k = 0; k < NTRK; k++) if (p[1u + k] > 100u) return 0;
-    }
     if (tsp_seen.at[TSP_TUNE] && (tsp_seen.ver[TSP_TUNE] != 1u ||
                                   !tsp_tune_read(raw + tsp_seen.at[TSP_TUNE], tsp_seen.len[TSP_TUNE], 0))) return 0;
-    if (tsp_seen.at[TSP_DEV]) {
-        if (tsp_seen.ver[TSP_DEV] != 1u || tsp_seen.len[TSP_DEV] != NTRK) return 0;
-        for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_DEV] + k] > 100u) return 0;
-    }
     if (tsp_seen.at[TSP_CHAIN]) {
         const uint8_t *p = raw + tsp_seen.at[TSP_CHAIN];
         if (tsp_seen.ver[TSP_CHAIN] != 1u || tsp_seen.len[TSP_CHAIN] != 7u + 2u * NTRK) return 0;
@@ -733,33 +733,6 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (p[0] > 21u || p[1] > 9u || p[2] > 100u || p[3] < 2u || p[3] > 8u || p[4] > 3u) return 0;
         for (uint32_t k = 0; k < 8u; k++) if (p[5u + k] > 100u) return 0;
     }
-    if (tsp_seen.at[TSP_PERF]) {
-        const uint8_t *p = raw + tsp_seen.at[TSP_PERF];
-        if (tsp_seen.ver[TSP_PERF] != 1u || tsp_seen.len[TSP_PERF] != 4u) return 0;
-        for (uint32_t k = 0; k < 4u; k++) if (p[k] > 100u) return 0;
-    }
-    if (tsp_seen.at[TSP_FKEY]) {
-        const uint8_t *p = raw + tsp_seen.at[TSP_FKEY];
-        if (tsp_seen.ver[TSP_FKEY] != 1u || tsp_seen.len[TSP_FKEY] != 2u || p[0] > 24u || p[1] > 24u) return 0;
-    }
-    if (tsp_seen.at[TSP_HOLD]) {
-        if (tsp_seen.ver[TSP_HOLD] != 1u || tsp_seen.len[TSP_HOLD] != NTRK) return 0;
-        for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_HOLD] + k] > TESSERA_TRACKS) return 0;
-    }
-    if (tsp_seen.at[TSP_SPLIT]) {
-        const uint8_t *p = raw + tsp_seen.at[TSP_SPLIT];
-        if (tsp_seen.ver[TSP_SPLIT] != 1u || tsp_seen.len[TSP_SPLIT] != 2u * NTRK) return 0;
-        for (uint32_t k = 0; k < NTRK; k++) if (p[k] > 100u || p[NTRK + k] >= TESS_SPLIT_HOWS) return 0;
-    }
-    if (tsp_seen.at[TSP_FMODE]) {
-        const uint8_t *p = raw + tsp_seen.at[TSP_FMODE];
-        if (tsp_seen.ver[TSP_FMODE] != 1u || tsp_seen.len[TSP_FMODE] != 2u * NTRK) return 0;
-        for (uint32_t k = 0; k < NTRK; k++) if (p[k] >= TESS_FH_COUNT || p[NTRK + k] >= TESS_FR_COUNT) return 0;
-    }
-    if (tsp_seen.at[TSP_DMAP]) {
-        if (tsp_seen.ver[TSP_DMAP] != 1u || tsp_seen.len[TSP_DMAP] != NTRK) return 0;
-        for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_DMAP] + k] >= TESS_DM_COUNT) return 0;
-    }
     if (tsp_seen.at[TSP_PGEN]) {
         const uint8_t *p = raw + tsp_seen.at[TSP_PGEN];
         if (tsp_seen.ver[TSP_PGEN] != 1u || tsp_seen.len[TSP_PGEN] != NTRK * (1u + NPAT * TESS_PG_BYTES)) return 0;
@@ -775,51 +748,39 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
             p[0] > USCALE_SLOTS) return 0;
         for (uint32_t k = 0; k < USCALE_SLOTS; k++) if (!uscale_ok(tsp_u16_at(p + 1u + 2u * k))) return 0;
     }
-    if (tsp_seen.at[TSP_MHOLD] && (tsp_seen.ver[TSP_MHOLD] != 1u || tsp_seen.len[TSP_MHOLD] != 2u)) return 0;
-    if (tsp_seen.at[TSP_MVCA] && (tsp_seen.ver[TSP_MVCA] != 1u || tsp_seen.len[TSP_MVCA] != 2u)) return 0;
-    if (tsp_seen.at[TSP_MHCLK] && (tsp_seen.ver[TSP_MHCLK] != 1u || tsp_seen.len[TSP_MHCLK] != CORD_HCLK_BYTES)) return 0;
-    if (tsp_seen.at[TSP_MDEPTH] && (tsp_seen.ver[TSP_MDEPTH] != 1u || tsp_seen.len[TSP_MDEPTH] != 1u ||
-                                    raw[tsp_seen.at[TSP_MDEPTH]] > 100u)) return 0;
     if (tsp_seen.at[TSP_BUS]) {
         const uint8_t *p = raw + tsp_seen.at[TSP_BUS];
         if (tsp_seen.ver[TSP_BUS] != 1u || tsp_seen.len[TSP_BUS] != 4u || p[0] >= CB_MODES || p[1] >= CB_LAGS ||
             p[2] >= CB_MODES || p[3] >= CB_LAGS) return 0;
     }
-    if (tsp_seen.at[TSP_SDIR]) {
-        if (tsp_seen.ver[TSP_SDIR] != 1u || tsp_seen.len[TSP_SDIR] != NTRK * NPAT) return 0;
-        for (uint32_t k = 0; k < NTRK * NPAT; k++) if (raw[tsp_seen.at[TSP_SDIR] + k] >= SEQ_DIRS) return 0;
-    }
-    if (tsp_seen.at[TSP_EORDER]) {
-        if (tsp_seen.ver[TSP_EORDER] != 1u || tsp_seen.len[TSP_EORDER] != NTRK) return 0;
-        for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_EORDER] + k] >= ET_ORDERS) return 0;
-    }
-    if (tsp_seen.at[TSP_STRUM]) {
-        const uint8_t *p = raw + tsp_seen.at[TSP_STRUM];
-        if (tsp_seen.ver[TSP_STRUM] != 1u || tsp_seen.len[TSP_STRUM] != 2u * NTRK) return 0;
-        for (uint32_t k = 0; k < NTRK; k++) if (p[k] > TESS_STRUM_MS || p[NTRK + k] >= TESS_STR_DIRS) return 0;
-    }
-    if (tsp_seen.at[TSP_HUMAN]) {
-        if (tsp_seen.ver[TSP_HUMAN] != 1u || tsp_seen.len[TSP_HUMAN] != NTRK) return 0;
-        for (uint32_t k = 0; k < NTRK; k++) if (raw[tsp_seen.at[TSP_HUMAN] + k] > TESS_HUMAN_MS) return 0;
-    }
-    if (tsp_seen.at[TSP_ACC]) {
-        const uint8_t *p = raw + tsp_seen.at[TSP_ACC];
-        if (tsp_seen.ver[TSP_ACC] != 1u || tsp_seen.len[TSP_ACC] != 2u * NTRK) return 0;
-        for (uint32_t k = 0; k < NTRK; k++)
-            if (p[k] > TESS_ACC_LIMIT || p[NTRK + k] >= TESS_ACC_MODES) return 0;   /* (LIMIT 0: 7) */
-    }
     if (tsp_seen.at[TSP_CORDS]) {
         if (tsp_seen.ver[TSP_CORDS] != 1u || tsp_seen.len[TSP_CORDS] != CORD_PK_BYTES ||
             !cord_check(raw + tsp_seen.at[TSP_CORDS])) return 0;
-    }
-    if (tsp_seen.at[TSP_CCN]) {
-        if (tsp_seen.ver[TSP_CCN] != 1u || tsp_seen.len[TSP_CCN] != CORD_MAX) return 0;
-        for (uint32_t i = 0; i < CORD_MAX; i++) if (raw[tsp_seen.at[TSP_CCN] + i] > 119u) return 0;
     }
     q->sum = proj_sum(q);
     return proj_ok(q);
 }
 
+/* the parts tsp_restore copies as they are, n bytes to a (then n more to b); none saved: 0 (zero), else
+ * tessera_reset's (saved before the part: SUB, MIDI, SOUND ON, STEP as seed OFF FREE, GRAVITY 0, HOW DRIFT,
+ * DEVELOP 0; then HOLD OFF, SPLIT off, ORDER AUTO, STRUM OFF UP, FOLLOW's SAME OWN, MACROs 0, DIR FWD, DRUM MAP GM) */
+static const struct { uint8_t id, zero; uint16_t n; uint8_t *a, *b; } TSP_COPY[] = {
+    {TSP_SUB, 0, NTRK, tessera.sub_shape, 0},
+    {TSP_MIDI, 0, NTRK, tessera.midi_ch, 0},
+    {TSP_SOUND, 0, TESSERA_TRACKS, tessera.sound_off, 0},
+    {TSP_SEED, 0, NTRK, tessera.sd_src, tessera.sd_keep},
+    {TSP_GRAV, 0, NTRK, tessera.sd_grav, 0},
+    {TSP_HOW, 0, NTRK, tessera.sv_how, 0},
+    {TSP_DEV, 0, NTRK, tessera.fm_dev, 0},
+    {TSP_PERF, 1, 4, tessera.macro, 0},
+    {TSP_HOLD, 1, NTRK, tessera.follow_hold, 0},
+    {TSP_SPLIT, 1, NTRK, tessera.sub_split, tessera.sub_split_how},
+    {TSP_EORDER, 1, NTRK, tessera.et_order, 0},
+    {TSP_STRUM, 1, NTRK, tessera.ch_strum, tessera.ch_sdir},
+    {TSP_FMODE, 1, NTRK, tessera.follow_how, tessera.follow_rhy},
+    {TSP_SDIR, 1, sizeof pattern_dir, &pattern_dir[0][0], 0},
+    {TSP_DMAP, 1, NTRK, tessera.midi_dmap, 0},
+};
 /* after tsp_valid of raw and project_restore_runtime of its project: the other patterns, the song's and motion's
  * pattern tags, the generators and the cords (none in the record: OFF, none) */
 static void tsp_restore(const uint8_t *raw)
@@ -854,28 +815,24 @@ static void tsp_restore(const uint8_t *raw)
         for (uint32_t k = 0; k < 4u; k++) cord_bus_set(k, raw[tsp_seen.at[TSP_BUS] + k]);
     if (tsp_seen.at[TSP_CCN])                          /* (saved before CC OUT: tessera_reset's 1 each) */
         for (uint32_t i = 0; i < CORD_LIVE; i++) cord_cc_set(i, raw[tsp_seen.at[TSP_CCN] + i]);
-    if (tsp_seen.at[TSP_SUB]) memcpy(tessera.sub_shape, raw + tsp_seen.at[TSP_SUB], NTRK);
-    if (tsp_seen.at[TSP_MIDI]) memcpy(tessera.midi_ch, raw + tsp_seen.at[TSP_MIDI], NTRK);
+    for (uint32_t k = 0; k < sizeof TSP_COPY / sizeof TSP_COPY[0]; k++) {   /* the parts copied as they are */
+        uint32_t id = TSP_COPY[k].id, n = TSP_COPY[k].n;
+        if (tsp_seen.at[id]) {
+            memcpy(TSP_COPY[k].a, raw + tsp_seen.at[id], n);
+            if (TSP_COPY[k].b) memcpy(TSP_COPY[k].b, raw + tsp_seen.at[id] + n, n);
+        } else if (TSP_COPY[k].zero) {                 /* (saved without it: 0, as before) */
+            memset(TSP_COPY[k].a, 0, n);
+            if (TSP_COPY[k].b) memset(TSP_COPY[k].b, 0, n);
+        }                                              /* (else tessera_reset's) */
+    }
     if (tsp_seen.at[TSP_TRANSP])                       /* (saved before TRANSPOSE: tessera_reset's 0) */
         for (uint32_t k = 0; k < TESSERA_TRACKS; k++)
             tessera.midi_tr[k] = (int8_t)((int32_t)raw[tsp_seen.at[TSP_TRANSP] + k] - TESS_MIDI_TR);
-    if (tsp_seen.at[TSP_SOUND])                        /* (saved before SOUND: tessera_reset's ON) */
-        memcpy(tessera.sound_off, raw + tsp_seen.at[TSP_SOUND], TESSERA_TRACKS);
     tessera.key_link = tsp_seen.at[TSP_KEY] ? raw[tsp_seen.at[TSP_KEY]] : 0u;   /* (saved before KEY LINK: OWN) */
-    if (tsp_seen.at[TSP_SEED]) {                       /* (saved before STEP as seed: tessera_reset's OFF, FREE) */
-        memcpy(tessera.sd_src, raw + tsp_seen.at[TSP_SEED], NTRK);
-        memcpy(tessera.sd_keep, raw + tsp_seen.at[TSP_SEED] + NTRK, NTRK);
-    }
-    if (tsp_seen.at[TSP_GRAV])                         /* (saved before GRAVITY: tessera_reset's 0) */
-        memcpy(tessera.sd_grav, raw + tsp_seen.at[TSP_GRAV], NTRK);
-    if (tsp_seen.at[TSP_HOW])                          /* (saved before HOW: tessera_reset's DRIFT) */
-        memcpy(tessera.sv_how, raw + tsp_seen.at[TSP_HOW], NTRK);
     if (tsp_seen.at[TSP_ENERGY]) {                     /* (saved before part 2: tessera_reset's LEVEL 0, DEPTH 100) */
         tessera.en_level = (int8_t)((int32_t)raw[tsp_seen.at[TSP_ENERGY]] - 100);
         memcpy(tessera.en_depth, raw + tsp_seen.at[TSP_ENERGY] + 1, NTRK);
     }
-    if (tsp_seen.at[TSP_DEV])                          /* (saved before DEVELOP: tessera_reset's 0, exact returns) */
-        memcpy(tessera.fm_dev, raw + tsp_seen.at[TSP_DEV], NTRK);
     if (tsp_seen.at[TSP_CHAIN]) {                      /* (saved before form chaining: tessera_reset's OFF) */
         const uint8_t *p = raw + tsp_seen.at[TSP_CHAIN];
         tessera.fc_form = p[0]; tessera.fc_phrase = p[1]; tessera.fc_wander = p[2];
@@ -894,38 +851,12 @@ static void tsp_restore(const uint8_t *raw)
         tessera.pl_end = p[4];
         memcpy(tessera.pl_user, p + 5, 8);
     }
-    if (tsp_seen.at[TSP_PERF]) memcpy(tessera.macro, raw + tsp_seen.at[TSP_PERF], 4);
-    else memset(tessera.macro, 0, 4);                  /* (none saved: 0) */
     for (uint32_t k = 0; k < 2u; k++)                  /* (the CHAIN's KEY B / C; none saved: 0) */
         tessera.fc_key[k] = (int8_t)(tsp_seen.at[TSP_FKEY] ? (int32_t)raw[tsp_seen.at[TSP_FKEY] + k] - 12 : 0);
-    if (tsp_seen.at[TSP_HOLD]) memcpy(tessera.follow_hold, raw + tsp_seen.at[TSP_HOLD], NTRK);
-    else memset(tessera.follow_hold, 0, sizeof tessera.follow_hold);   /* (saved before HOLD: OFF) */
-    if (tsp_seen.at[TSP_SPLIT]) {
-        memcpy(tessera.sub_split, raw + tsp_seen.at[TSP_SPLIT], NTRK);
-        memcpy(tessera.sub_split_how, raw + tsp_seen.at[TSP_SPLIT] + NTRK, NTRK);
-    } else {                                           /* (saved without it: off) */
-        memset(tessera.sub_split, 0, sizeof tessera.sub_split);
-        memset(tessera.sub_split_how, 0, sizeof tessera.sub_split_how);
-    }
-    if (tsp_seen.at[TSP_EORDER]) memcpy(tessera.et_order, raw + tsp_seen.at[TSP_EORDER], NTRK);
-    else memset(tessera.et_order, 0, sizeof tessera.et_order);   /* (saved before ORDER, or none set: AUTO) */
-    if (tsp_seen.at[TSP_STRUM]) memcpy(tessera.ch_strum, raw + tsp_seen.at[TSP_STRUM], 2u * NTRK);   /* (and ch_sdir) */
-    else memset(tessera.ch_strum, 0, 2u * NTRK);       /* (saved before STRUM, or none set: OFF, UP) */
-    if (tsp_seen.at[TSP_FMODE]) {
-        memcpy(tessera.follow_how, raw + tsp_seen.at[TSP_FMODE], NTRK);
-        memcpy(tessera.follow_rhy, raw + tsp_seen.at[TSP_FMODE] + NTRK, NTRK);
-    } else {                                           /* (saved without them: SAME, OWN) */
-        memset(tessera.follow_how, 0, sizeof tessera.follow_how);
-        memset(tessera.follow_rhy, 0, sizeof tessera.follow_rhy);
-    }
     if (tsp_seen.at[TSP_PGEN]) {                       /* (saved without it: OFF, as before) */
         memcpy(tessera.pat_gen, raw + tsp_seen.at[TSP_PGEN], NTRK);
         for (uint32_t k = 0; k < NTRK; k++) tessera_pg_put(k, raw + tsp_seen.at[TSP_PGEN] + NTRK + k * NPAT * TESS_PG_BYTES);
     } else memset(tessera.pat_gen, 0, sizeof tessera.pat_gen);
-    if (tsp_seen.at[TSP_SDIR]) memcpy(pattern_dir, raw + tsp_seen.at[TSP_SDIR], sizeof pattern_dir);
-    else memset(pattern_dir, 0, sizeof pattern_dir);   /* (saved without it: FWD, as before) */
-    if (tsp_seen.at[TSP_DMAP]) memcpy(tessera.midi_dmap, raw + tsp_seen.at[TSP_DMAP], NTRK);
-    else memset(tessera.midi_dmap, 0, sizeof tessera.midi_dmap);   /* (saved without it: GM, as before) */
     memset(tessera.f_anchor, 0, sizeof tessera.f_anchor);
     memset(tessera.hold_mem, 0, sizeof tessera.hold_mem);
     tune_clear_all();                                  /* (the tunings are the project's; saved before them: none) */
