@@ -33,7 +33,7 @@ static int cu_src_trk(uint32_t s) { return s && !CS_PROJECT(s); }   /* a track's
 /* KNOB 3's list: --, a track's destinations track by track (none, the retired one: not listed), then the send
  * effects' once (CK_GLOBAL: every track's) */
 static int cu_global(uint32_t code) { return cord_dest(code) && cord_dest(code)->kind >= CK_GLOBAL; }   /* (CK_CORD too) */
-static uint32_t cu_count(uint32_t below, int global)    /* the listed codes 1 .. below - 1 of that kind */
+static __attribute__((noinline)) uint32_t cu_count(uint32_t below, int global)   /* the listed codes 1 .. below - 1 of that kind */
 {
     uint32_t code, n = 0;
     for (code = CD_OFF + 1u; code < below; code++)
@@ -59,7 +59,7 @@ static uint32_t cu_src_at(uint32_t v, uint8_t *tr)     /* entry v of KNOB 1's li
     return v % CU_SPT == CS_ENERGY - 1u ? (uint32_t)CS_EOC : cu_tide(1u + v % CU_SPT);
 }
 static uint32_t cu_dst_k(uint32_t code) { return cu_count(code, cu_global(code)); }   /* code -> its place, in its kind */
-static uint32_t cu_dst_code(uint32_t k, int global)
+static __attribute__((noinline)) uint32_t cu_dst_code(uint32_t k, int global)
 {
     uint32_t code;
     for (code = CD_OFF + 1u; code < CD_N; code++)

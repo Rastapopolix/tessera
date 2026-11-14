@@ -428,7 +428,7 @@ int32_t cord_move(uint32_t i)
     const cord_t *c = cord_get(i);
     return !c ? 0 : c->src ? cord_amount(c) : cord_offset(c);
 }
-static void cord_masks(void)
+static __attribute__((noinline)) void cord_masks(void)
 {
     uint32_t i, t;
     for (t = 0; t < NTRK; t++) cord_mask[t] = cord_smask[t] = cord_velm[t] = 0;
