@@ -455,6 +455,9 @@ static int project_restore_runtime(const project_t *input)
         pat_sig[k] = ~steps_sig(t);                     /* a project's steps are the user's */
     }
     scale_share(TSEL);                                  /* (older projects: one scale per part, the selected wins) */
+    native_relink_req = 0;                              /* #744: FM6 tracks find their user slot again (main loop: */
+    for (k = 0; k < NTRK; k++)                          /* native_relink_service) */
+        if (trk[k].eng_req == ENGI_FM6) native_relink_req |= (uint8_t)(1u << k);
     undo_depth--;
     sync_reload = 1;
     ui.force = 1;

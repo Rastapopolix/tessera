@@ -75,6 +75,15 @@ int main(void)
      reboot_presets();project_load(1);fm6_pack(fm6_patch[0],got);
      bad+=check("a loaded project names its user FM6 voice (not TINE EP) on HOME",!TSEL->user && !memcmp(got,fm,128)
          && fm6_own_name(TSEL,a,16) && !strcmp(a,"MY VOICE"));
+     native_relink_service();
+     bad+=check("after the load, the main loop links the track back to the slot holding the same voice (F006)",
+         TSEL->user==6 && TSEL->user_native && user_of(TSEL)==5 && native_relink_req==0);
+     {uint8_t other[FM6_PACKED];memcpy(other,fm,128);other[118]='Z';native_put(ENGI_FM6,5,other);}
+     project_load(1);native_relink_service();
+     bad+=check("a slot whose voice changed since the save is not linked (the name still from the patch)",
+         !TSEL->user && fm6_own_name(TSEL,a,16) && !strcmp(a,"MY VOICE"));
+     native_put(ENGI_FM6,5,fm);project_load(1);engine_load_of(TSEL,ENGI_FM6,3);native_relink_service();
+     bad+=check("a track given a factory sound before the look stays on it",!TSEL->user && TSEL->preset==3);
      int fac=1;
      for(uint32_t k=0;k<ENGINES[ENGI_FM6]->npresets;k++){engine_load_of(TSEL,ENGI_FM6,k);if(fm6_own_name(TSEL,a,16)){fac=0;printf("  preset %u %s -> %s\n",(unsigned)k,eng_preset(ENGINES[ENGI_FM6],k)->name,a);}}
      bad+=check("every FM6 factory voice keeps its preset name (DX TINE's voice is called TINE EP)",fac);
