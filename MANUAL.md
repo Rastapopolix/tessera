@@ -144,7 +144,7 @@ lets you do and when you would want it. Follow a link for the full description.
 
 | Page | What it lets you do | Reach for it when |
 |---|---|---|
-| [GEN](#seq-the-mode-and-its-pages) | Choose the track's MODE: your own steps, the ARP, or one of thirteen generators, and set the generator's three main knobs. | Every time you start a part. This is the most important page. |
+| [GEN](#seq-the-mode-and-its-pages) (tap SEQ) | Choose the track's MODE: your own steps, the ARP, or one of thirteen generators, and set the generator's three main knobs. | Every time you start a part. This is the most important page. |
 | [NOTES](#seq-the-mode-and-its-pages) | Write and edit steps by hand; open a step's sheet for ratchets, nudges, conditions and climbing notes. | You want a part exactly as you hear it in your head. |
 | [PATTERN](#seq-the-mode-and-its-pages) | A generator track's length, speed (DIV) and gate. | A generator should run faster, slower or over a different length. |
 | TEMPO | The project's BPM, swing and record quantize. | You set the speed and feel of the whole project. |
@@ -795,11 +795,11 @@ saved project keeps its seeds.
 
 ## The GEN layer
 
-> **In short:** holding OCT- on GEN gives a generator a second set of knobs: KNOB 1 RANDOM, KNOB 2 to 4 its finer
+> **In short:** on the GEN page (tap SEQ), hold OCT-: a generator gets a second set of knobs, not a page of its own: KNOB 1 RANDOM, KNOB 2 to 4 its finer
 > settings. This lets you shape the details without crowding the main page. A setting past those, where a generator
 > has one, is on the GEN sheet (hold OCT+).
 
-Hold **OCT-** on GEN: the knobs' labels change to the layer's, KNOB 1 is **RANDOM** as on every generator (see
+On the **GEN** page (tap **SEQ**), hold **OCT-**: the knobs' labels change to the layer's, KNOB 1 is **RANDOM** as on every generator (see
 [Shortcuts](#shortcuts)) and KNOB 2 to 4 set the layer. Let go to return; letting go never goes back a page. A
 generator with more settings than that has them on the **GEN sheet**: hold **OCT+** (or tap it) on GEN, pick the row
 with KNOB 1 and turn its value with KNOB 2.
