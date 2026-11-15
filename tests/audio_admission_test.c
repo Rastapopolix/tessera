@@ -53,6 +53,18 @@ int main(void)
     cat[0]=0;setup(cat);settings_budget=32;
     for(uint32_t n=0;n<12;n++)trk_note_on(&trk[0],36+n*3,110);
     assert(sounding(&trk[0])==12 && trk_nvoice(&trk[0])==16);
-    printf("Shared admission: 256 guaranteed allocations; FM/ORACLE polyphony, three drum hits, eight 909 instruments and adjustable pool: OK\n");
+    /* The budget takes the quietest released voice, the oldest of equally loud ones: the oldest could still be ringing
+     * near full level (a long release), cut within a block, a click (from LEMONADE SANDWICH, Thomas Bradley). */
+    {
+        uint32_t c1[4]={1,1,1,1};track_t *pp=0;setup(c1);
+        for(uint32_t i=0;i<3;i++){voice_t *v=&trk[1].v[i];v->active=1;v->gate=0;v->stage=3;}
+        trk[1].v[0].age=1;trk[1].v[0].env=1<<23;                         /* oldest, loud */
+        trk[1].v[1].age=2;trk[1].v[1].env=1<<16;                         /* quietest */
+        trk[1].v[2].age=3;trk[1].v[2].env=1<<20;
+        assert(voice_victim(&trk[0],0,&pp)==1u && pp==&trk[1]);
+        trk[1].v[0].env=trk[1].v[1].env;                                  /* the two quietest as loud: the older */
+        assert(voice_victim(&trk[0],0,&pp)==0u && pp==&trk[1]);
+    }
+    printf("Shared admission: 256 guaranteed allocations; FM/ORACLE polyphony, three drum hits, eight 909 instruments, adjustable pool and the quietest released voice taken: OK\n");
     return 0;
 }
