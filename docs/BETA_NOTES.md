@@ -9,6 +9,7 @@ what you expected and what happened).
 
 ## New in 3.6-beta5
 - MODS: KNOB 1's source list now starts at the selected track too, as KNOB 3's does: on track 3, the first turn lands on T3 LFO.
+- When the FM-1 runs short of CPU and has to cut a sound early, it now cuts the quietest fading drum first (a hat's tail), not the kick or a snare in the middle of a roll.
 
 ## New in 3.6-beta4
 - MODS: KNOB 3's list now starts at the selected track (it started at the mod's source's track, and at T1 for a new mod); a new mod's first turn of KNOB 3 lands on the selected track's PITCH. Thanks for the report (#724).
