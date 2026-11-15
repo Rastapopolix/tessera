@@ -1,14 +1,20 @@
 {
-  "version": "3.6-beta3",
+  "version": "3.6-beta4",
   "product": "FM-1_836",
   "branch": "develop",
-  "commit": "3aa75a3f8fa91831ca47c0fa9428e55695edebd5",
-  "builtAt": "2026-11-14T23:44:48Z",
+  "commit": "e644b7220543913b8e292c4f0d31b4d8a2d32fbc",
+  "builtAt": "2026-11-15T01:17:12Z",
   "pkg": {
-    "dual": "../../firmware/tessera-3.6-beta3.fwsc",
-    "single": "../../firmware/tessera-3.6-beta3-1core.fwsc"
+    "dual": "../../firmware/tessera-3.6-beta4.fwsc",
+    "single": "../../firmware/tessera-3.6-beta4-1core.fwsc"
   },
   "notes": [
+    [
+      "New in 3.6-beta4",
+      [
+        "MODS: KNOB 3's list now starts at the selected track (it started at the mod's source's track, and at T1 for a new mod); a new mod's first turn of KNOB 3 lands on the selected track's PITCH. Thanks for the report (#724)."
+      ]
+    ],
     [
       "New in 3.6-beta3",
       [
