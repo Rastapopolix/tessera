@@ -2296,6 +2296,7 @@ static void trk_short_name(uint32_t c, char *b)      /* the track's sound, b hol
     const engine_t *e = ENGINES[t->eng_req % NENGINES];
     if(user_of(t)<USER_NONE && t->user_native)native_name(t->eng_req,user_of(t),b);
     else if (user_of(t) < UP_SLOTS)up_name(user_of(t), b);
+    else if (fm6_own_name(t, b, 13)) ;
     else if (e->npresets)
         str_cpy(b, eng_preset(e, t->preset % e->npresets)->name, 13);
     else

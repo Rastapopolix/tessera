@@ -67,6 +67,20 @@ int main(void)
     native_put(ENGI_FM6,63,0);reboot_presets();
     bad+=check("erased native presets stay erased across boot",!native_used(ENGI_FM6,63));
 
+    /* #744: a project keeps the user voice's patch, not its slot; the track still shows the voice's own name */
+    reset();fm6_init();up_boot();
+    {char a[16];
+     native_put(ENGI_FM6,5,fm);native_load(ENGI_FM6,5,0);
+     bad+=check("project save of a native FM6 voice",project_save(1)==0);
+     reboot_presets();project_load(1);fm6_pack(fm6_patch[0],got);
+     bad+=check("a loaded project names its user FM6 voice (not TINE EP) on HOME",!TSEL->user && !memcmp(got,fm,128)
+         && fm6_own_name(TSEL,a,16) && !strcmp(a,"MY VOICE"));
+     int fac=1;
+     for(uint32_t k=0;k<ENGINES[ENGI_FM6]->npresets;k++){engine_load_of(TSEL,ENGI_FM6,k);if(fm6_own_name(TSEL,a,16)){fac=0;printf("  preset %u %s -> %s\n",(unsigned)k,eng_preset(ENGINES[ENGI_FM6],k)->name,a);}}
+     bad+=check("every FM6 factory voice keeps its preset name (DX TINE's voice is called TINE EP)",fac);
+     engine_load_of(TSEL,ENGI_FM6,0);trk[1].eng_req=ENGI_FM6;
+     bad+=check("loading TINE EP again shows the preset name again",!fm6_own_name(TSEL,a,16));}
+
     /* An FM6 general preset keeps its voice in the native slot of the same number. */
     reset();fm6_init();set_engine_of(TSEL,ENGI_FM6);
     uint8_t voice[FP_SIZE+1];fm6_unpack(fm,voice);fm6_set_patch(0,voice);

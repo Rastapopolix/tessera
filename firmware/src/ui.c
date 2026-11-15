@@ -68,6 +68,38 @@ static uint32_t user_of(const track_t *t)    /* user preset slot its sound came 
 {
     return t->user && (t->user_native ? native_used(t->eng_req,t->user-1u) : up_used(t->user-1u)) ? t->user-1u : USER_NONE;
 }
+/* an FM6 track's own voice name -> b (cap bytes) when it is not its preset's: a user voice after a project load (the
+ * project keeps the patch, not the slot it came from, #744), or a voice sent from the editor. 0: show the preset's
+ * name: the patch still has its factory voice's name (an edited factory sound too). Compared with the factory
+ * patch, as the preset's name can differ (DX TINE is the ROM's TINE EP), and with the preset's name */
+static int fm6_own_name(const track_t *t, char *b, uint32_t cap)
+{
+#if MELODEE_FM6
+    const engine_t *e = ENGINES[t->eng_req % NENGINES];
+    uint8_t pk[FM6_PACKED];
+    const uint8_t *v;
+    char nm[11];
+    uint32_t i;
+    if (t->eng_req != ENGI_FM6 || !e->npresets) return 0;
+    v = fm6_patch[(t - trk) % NTRK];
+    fm6_factory(t->preset % e->npresets, pk);
+    for (i = 0; i < 10u && v[FP_NAME + i] == (pk[118u + i] & 0x7Fu); i++) ;   /* (packed: the name at 118) */
+    if (i == 10u) return 0;
+    fm6_name(nm, v);
+    if (!nm[0]) return 0;
+    {   /* or the preset's own name (its first ten characters): the voices past the factory patches (INIT VOICE,
+         * ZEN-1's), which fm6_factory does not hold */
+        const char *pn = eng_preset(e, t->preset % e->npresets)->name;
+        for (i = 0; i < 10u && nm[i] && nm[i] == pn[i]; i++) ;
+        if (!nm[i] && (!pn[i] || i == 10u)) return 0;
+    }
+    str_cpy(b, nm, cap);
+    return 1;
+#else
+    (void)t; (void)b; (void)cap;
+    return 0;
+#endif
+}
 static uint32_t up_gen;                      /* bumped on every user bank change (redraws) */
 static uint8_t browse_loads, browse_mark;    /* sound loads so far; at the browser's opening (ui_browser.c: back) */
 #include "favorites.c"
