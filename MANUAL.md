@@ -202,7 +202,7 @@ how far a cord moves the knob you turn ([Mod shortcut](#mod-shortcut)). *Use it 
 | [CHAIN](#chain-one-form-for-the-project) | Give all tracks one shared song form, so their sections change together. | Tracks with FORM should move from A to B at the same moment. |
 | [ENTRIES](#entries-tracks-out-and-back-in) | Let tracks drop out and come back in on phrase lines, like a band arranging itself. | The piece should thin out and fill up without you touching the mutes. |
 | SYSTEM | The voice BUDGET and how hard the FM-1 is working (VOICES and CPU meters), the tuning reference. | Notes crackle (lower BUDGET). |
-| MIDI IN | The MIDI input, the DRUM channel, the routing of channels to tracks (ROUT) and the clock source. | You play Tessera from a keyboard or a DAW, or sync to other gear. |
+| MIDI IN | The MIDI input, the DRUM channel, the routing of channels to tracks (ROUT) and the clock source; OCT- held, KNOB 4 is the clock's PPQN. | You play Tessera from a keyboard or a DAW, or sync to other gear. |
 | [MIDI OUT](#midi-out-channels) | Give each track its own MIDI channel, transpose what goes out, or silence a track's own sound. | Tessera should play other synths, or a track should only modulate. |
 
 The first three pages are the ones to play with: on MIXER, PERF and LANDSCAPE the keys are the performance keys
@@ -1842,7 +1842,7 @@ Hold **HOME** for the menu. Its rows come in groups: the screen, the knobs and b
 | **TRACK KNOB** | RIGHT: the ALGORITHM knob picks the track and PRESETS browses sounds, as printed. LEFT: the two swap. |
 | **MUTES** | When GLO's mute keys (and C4's UNMUTE ALL) take effect while playing. **NOW** (the default): at once. **BAR**: on the next bar line. **PHRASE**: on the next phrase line (the CHAIN's PHRASE, counted from PLAY). A key waiting blinks quickly; press it again before the line to call it off. Stopped, a press is at once. Saved. Also on MIXER's sheet (OCT+ held). |
 | **NOTES OUT** | What goes out over USB MIDI: **KEYS** (only the notes you play on the keys), **ALL** (also the steps, the ARP, recordings and every generator) or **OFF**. Each track on its own channel: see [MIDI OUT channels](#midi-out-channels). |
-| **CLOCK OUT** | 24 pulses a beat with START and STOP over USB, while the clock is INT. |
+| **CLOCK OUT** | 24 pulses a beat (or GLO > MIDI IN's **PPQN**) with START and STOP over USB, while the clock is INT. |
 | **MIDI CC IN** | **ON** (the default): CCs and NRPNs set the tracks' parameters (see [MIDI CC control](#midi-cc-control)). **OFF**: they move nothing, for a sequencer that sends CCs to other gear on the same channels. Bend, mod wheel, expression, sustain and aftertouch always play. Saved. |
 | **MIDI LEARN** | Puts any knob on a CC of your controller. Turn KNOB 2 right (or press OCT+): the menu closes and the screen says **LEARN: A KNOB**. Turn a knob on any page (it still edits; the screen names it and asks **SEND A CC**), then move the controller's knob: **CC 21 =** then **T1 CUTOFF**. Repeat for as many as 16 knobs. While learning, the header says **MIDI LEARN ON**; OCT- ends it, as does holding HOME for the menu. A learned CC works from any channel, on whatever page is shown, and takes over what the [fixed CC map](#midi-cc-control) gave it, even with MIDI CC IN OFF. The row shows how many are learned; KNOB 2 left asks **FORGET? OCT+**: OCT+ forgets them all, OCT- keeps them. They are the device's, not a project's: kept through power-off and project loads (saved once the music stops). |
 | **USB AUDIO** | Which USB audio devices the computer sees, named from the FM-1's side: **IN + OUT** (the default), **IN** (the computer plays into the FM-1, through device **Tessera In**), **OUT** (the computer records the FM-1 from device **Tessera Out**) or **OFF**. The computer gets the change once the knob rests for a moment (the FM-1 reconnects). Saved. |
@@ -2166,7 +2166,8 @@ arpeggiator and the CHORD generator. See also *QNT* and *VOIC*.
 
 **CLK / CLOCK**. The timing signal that keeps music in step. In Tessera: **CLK** (GLO > MIDI IN) picks the clock
 source: internal, USB or TRS. **CLOCK OUT** sends MIDI clock. **CLOCK**, a mod destination **(3.5)**, makes a
-generator step on a cord's edges instead of its own DIV. [MANUAL](#mods-the-modulation-cords)
+generator step on a cord's edges instead of its own DIV. **PPQN** sets how many clock pulses make a beat.
+[MANUAL](#mods-the-modulation-cords)
 
 **COLOR**. MENU > COLOR: the screen's ink. Nine single inks (YELLOW, WHITE, GREEN, BLUE, RED, ORANGE, PINK, HOT PINK,
 LILAC) and four sets with a colour per track (MOSAIC, SUNSET, OCEAN, NEON). See *GROUND*.
@@ -2434,6 +2435,11 @@ piece replays the same. And **PLAY**, a mod destination **(3.5)** that decides w
 
 **POLY**. A generator: four notes stepped on by four rhythms, for polyrhythms. **POLY MOD** (ORACLE) lets the filter
 envelope and oscillator B bend oscillator A's pitch, pulse width or the cutoff.
+
+**PPQN**. Pulses per quarter note: how many MIDI clock pulses make a beat. GLO > MIDI IN, OCT- held, KNOB 4: **24** (the
+default, the MIDI standard), **48**, **4**, **8** or **12**, for the clock the FM-1 follows (CLK USB or TRS) and for
+CLOCK OUT. If the FM-1 plays twice as fast as the gear it follows, and HOME shows double the tempo, try **48**. Like
+CLK, it is the device's: kept through power-off and project loads.
 
 **PRESETS**. Browse the sounds by category, favourite or recent; the knob on the panel. **USER** slots store sounds
 you edit.

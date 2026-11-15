@@ -280,7 +280,13 @@ async function editorMock() {
     await rq(E.req.set(1,41,16));
   }
   {
-    for(const id of [4,5,6,7,8,9,10,11,24,25,26]){
+    {   /* global 4: PPQN since it left the reserved ids (24 48 4 8 12; the device's, kept through project loads) */
+      const d=E.parse[E.CMD.DESC](await rq(E.req.desc(1,4)));
+      const r=E.parse[E.CMD.SET](await rq(E.req.set(1,4,1)));
+      ok(d.label==="PPQN" && d.min===0 && d.max===4 && d.names[1]==="48" && r.value===1,"editor: global 4 is PPQN, 0..4 (24 48 4 8 12)");
+      await rq(E.req.set(1,4,0));
+    }
+    for(const id of [5,6,7,8,9,10,11,24,25,26]){
       const d=E.parse[E.CMD.DESC](await rq(E.req.desc(1,id)));
       const r=E.parse[E.CMD.SET](await rq(E.req.set(1,id,127)));
       ok(!d.label && r.value===0,"editor: removed global effect parameter is inert "+id);

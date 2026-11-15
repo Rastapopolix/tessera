@@ -8,7 +8,8 @@
  * SYSTEM DRUM channel. A track's TRANSPOSE (OCT+ held on GLO > MIDI OUT, tessera.midi_tr) moves its notes on the way
  * out only; one moved past 0..127 is not sent. Every note sent is remembered until its note-off went out, so
  * a STOP, a panic, a channel or a TRANSPOSE change never leaves a note hanging on the other side.
- * CLOCK OUT (Settings): 24 pulses a beat with START and STOP, while CLK is INT (an external clock is not sent on). */
+ * CLOCK OUT (Settings): PPQN pulses a beat (G_PPQN, 24 by default) with START and STOP, while CLK is INT (an external
+ * clock is not sent on). */
 enum { MIDI_OUT_KEYS, MIDI_OUT_ALL, MIDI_OUT_OFF, MIDI_OUT_N };
 static uint8_t settings_midi_out, settings_clock_out;   /* saved: favorites.c row 15 byte 30 (settings_persist.c) */
 static uint8_t midi_out_seq;                     /* 1 inside seq_advance: the sequencer is playing these notes */
@@ -126,7 +127,7 @@ static void midi_out_stop(void)
     midi_out_clk_live = 0;
 }
 
-/* seq_advance: n samples played (beat: a beat's); the first pulse on START's block, then every 1/24 beat.
+/* seq_advance: n samples played (beat: a beat's); the first pulse on START's block, then every 1/PPQN beat.
  * CLOCK OUT turned off while playing sends STOP; turned on, it waits for the next START */
 static void midi_out_clock(uint32_t n, uint32_t beat)
 {
@@ -141,6 +142,6 @@ static void midi_out_clock(uint32_t n, uint32_t beat)
         midi_out_event(0x0Fu | 0xF8u << 8);
         midi_out_clk = 0;
     }
-    for (midi_out_clk += n * 24u; midi_out_clk >= beat; midi_out_clk -= beat)
+    for (midi_out_clk += n * midi_ppqn(); midi_out_clk >= beat; midi_out_clk -= beat)
         midi_out_event(0x0Fu | 0xF8u << 8);
 }

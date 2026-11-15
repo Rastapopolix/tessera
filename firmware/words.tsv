@@ -64,6 +64,7 @@ PROJ	project
 EXT	external
 EOC	end of cycle
 CLK	clock
+PPQN	pulses per beat
 QNT	quantize
 HOLD GLO SET	hold global to set its keys
 HOLD SCL SET	hold scale to set the key

@@ -579,6 +579,21 @@ static int test_gen_family(void)
         TSEL->p[P_APROB] = pr;
         bad += check("ARP: OCT- lit; held, KNOB 1-4 SWING PROB HOLD ORDER; let go after a turn: ARP, no Back", n);
     }
+    {                                             /* MIDI IN, OCT- held: KNOB 4 is PPQN (CLK's place), the rest as they are */
+        int16_t clk = song.g[G_CLOCK];
+        go_title("MIDI IN");
+        n = cur_page()->id[3] == G_CLOCK && (oct_leds() & 1u);
+        fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
+        frame();
+        n &= str_eq(cur_page()->title, "MIDI IN") && cur_page()->id[0] == G_MIDI && cur_page()->id[3] == G_PPQN;
+        turn(EN_K4, 1);
+        n &= song.g[G_PPQN] == 1 && song.g[G_CLOCK] == clk;
+        fm1_in.buttons &= ~(1u << panel.btn[B_OCTDN]);
+        frame(); frame();
+        n &= str_eq(cur_page()->title, "MIDI IN") && !ui.home && cur_page()->id[3] == G_CLOCK;
+        song.g[G_PPQN] = 0;
+        bad += check("MIDI IN: OCT- lit; held, KNOB 4 PPQN (CLK kept); let go after a turn: MIDI IN, no Back", n);
+    }
     {
         uint32_t tr = song.sel;
         int8_t sh = tessera.evolve[tr].shift;

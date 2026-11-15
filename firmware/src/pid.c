@@ -384,6 +384,9 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     G_(G_SWING, 0, "SWING", "Delays every second step of every track, for a swung feel."),
     G_(G_CLOCK, 0, "CLOCK SOURCE", "Where the tempo comes from: the FM-1 itself, USB MIDI or the TRS MIDI input."),
     G_(G_TUNE, 0, "TUNE", "Fine tuning of every track, in cents."),
+    G_(G_PPQN, 0, "CLOCK PPQN",
+        "MIDI clock pulses per beat, for the clock the FM-1 follows and CLOCK OUT. 24 is the MIDI standard; 48 for a "
+        "clock that plays twice as fast; 4, 8 or 12 for gear that sends or expects fewer. MIDI IN, OCT- held: KNOB 4."),
     G_(G_MIDI, 0, "MIDI INPUT", "Which MIDI input plays the tracks: USB or TRS."),
     G_(G_DRUMCH, PID_F_DEVICE, "DRUM MIDI CHANNEL", "The MIDI channel the first drum track listens to and sends on (MIDI OUT). "
                                                     "OFF (the default): it follows ROUT like the other tracks. 10 is General MIDI's drum channel."),

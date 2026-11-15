@@ -905,6 +905,25 @@ int main(void)
                      song.g[G_CLOCK] == 0 && song.g[G_TUNE] == -4 && song.g[G_MIDI] == GP[G_MIDI].min &&
                      song.g[G_ROUTE] == 0 && song.g[G_BPM] == 133);
     }
+    {   /* PPQN is the device's too (like CLK): a project load keeps it; the settings keep it across power-off, tagged in
+         * favorites row 8 bytes 2..3 (an untagged or out-of-range byte: 24) */
+        song.g[G_PPQN] = 1;
+        project_save_as(3, "PPQN");
+        song.g[G_PPQN] = 3;
+        project_load(3);
+        int kept = song.g[G_PPQN] == 3;
+        settings_ppqn = song.g[G_PPQN]; settings_save();
+        persist_t rec; int n = st_load(OBJ_SETTINGS, &rec, sizeof rec);
+        settings_ppqn = 0; song.g[G_PPQN] = 0;
+        settings_import(&rec, n); glo_restore();
+        int saved = song.g[G_PPQN] == 3 && rec.favorites.factory[8][2] == 0xC5u && rec.favorites.factory[8][3] == 3u;
+        rec.favorites.factory[8][2] = 0x11; settings_import(&rec, n);
+        int untagged = settings_ppqn == 0;
+        rec.favorites.factory[8][2] = 0xC5u; rec.favorites.factory[8][3] = 9; settings_import(&rec, n);
+        bad += check("PPQN: a project load keeps the device's; saved with the settings; untagged or out of range is 24",
+                     kept && saved && untagged && settings_ppqn == 0);
+        song.g[G_PPQN] = 0; settings_ppqn = 0;
+    }
     {   /* All inactive banks are validated before replacing the runtime. */
         step_t keep = trk[0].step[0];
         project_capture(&proj_scratch);
