@@ -35,6 +35,7 @@ what you expected and what happened).
 - ANSWER CHORD (on the GEN sheet, hold OCT+): ARP spreads notes played together one step apart, as before; TRUE answers them as a real chord.
 
 ## Fixed
+- FM6 AEG (EDIT 2, KNOB 4): the slow side is usable all the way up. It slows the envelopes of the operators you hear by up to 24 rate steps (it was 40) and never to a release longer than about 15 s, unless the patch's own is longer; near the top, notes rang on for minutes and held voices. A project with AEG turned right sounds a little shorter in its tails than before; AEG 0 and the left side are as they were.
 - Web simulator, An FM-1 on USB: a click of the FM-1's knobs is one step again where Windows listed the FM-1 twice (lists such as the menu and MODS skipped every other row).
 - After an overload (a crackle), the voices come back within a few seconds while you keep playing, and one overload no longer holds every track to one or two voices.
 - Help on the device for ATLAS DENSITY, ATLAS PART4, CHORD PROG, FOLLOW RHYTHM and CONSTELLATION SPEED now says to hold OCT-, as the keys work.

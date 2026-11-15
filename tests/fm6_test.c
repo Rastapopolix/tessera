@@ -15,7 +15,8 @@
  *    while its key is held (Dexed keeps a decayed note keyed).
  * 7. modulation: feedback, the modulation index (Bessel), LFO vibrato and tremolo, the pitch envelope.
  * 8. no DC, no clipping: every factory patch, C1..C7 at velocity 30 and 127.
- * 9. macros: neutral at 0 (the patch's own samples); MLVL, MRAT, FB brighter; MEG keeps it up longer; AEG the amp envelope; VMOD
+ * 9. macros: neutral at 0 (the patch's own samples); MLVL, MRAT, FB brighter; MEG keeps it up longer; AEG the amp envelope (its
+ *    slow side capped); VMOD
  *    makes velocity count more; DTUN spreads the carriers (beats); ALG puts another algorithm in; PTCH loads its
  *    patch (main loop).
  * 10. voices: POLY takes Dexed's 16, all free some seconds after their release.
@@ -762,6 +763,26 @@ static void macros(void)
                a[0], a[1], a[2], r[0], r[1], r[2]);
         check("AEG: + a slower attack and longer release, - a shorter release (the carriers' envelope)",
               a[1] < a[0] * 0.8 && r[1] > r[0] * 1.5 && r[2] < r[0] * 0.67);
+    }
+    {   /* AEG's slow side stays usable: at most 24 rate steps, never below rate 25 (about 15 s to -60 dB), and a
+         * patch's own slower rate as it is (Theo: AEG 98 % rang for minutes) */
+        static const int RS[4] = {99, 30, 10, 50}, LS[4] = {99, 95, 90, 0};
+        uint8_t v[FP_SIZE + 1u];
+        const uint8_t *c;
+        memcpy(v, base, sizeof v);
+        op_set(v, 1, RS, LS, 99, 1);
+        memcpy(e, E0, sizeof e); e[7] = 63;
+        setup(v, e);
+        fm6_eff_build(T);
+        c = fm6_eff[0].p + (6u - 1u) * FP_OP;
+        printf("fm6: AEG +63: carrier rates 99 30 10 50 -> %d %d %d %d\n", c[FP_R1], c[FP_R1 + 1], c[FP_R1 + 2],
+               c[FP_R1 + 3]);
+        check("AEG +63: 24 steps at most, never below 25, a patch's own 10 kept",
+              c[FP_R1] == 75 && c[FP_R1 + 1] == 25 && c[FP_R1 + 2] == 10 && c[FP_R1 + 3] == 26);
+        e[7] = -64;
+        setup(v, e);
+        fm6_eff_build(T);
+        check("AEG -64: 40 steps faster, as before", c[FP_R1 + 1] == 70 && c[FP_R1 + 2] == 50 && c[FP_R1 + 3] == 90);
     }
     {   /* VMOD: velocity changes the brightness more */
         double s0 = centroid_of(base, E0, 127, FS / 10) / centroid_of(base, E0, 40, FS / 10);

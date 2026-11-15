@@ -19,8 +19,8 @@
  *   MEG   the modulators' envelope times: + slower (rates down to 40 steps), - faster
  *   VMOD  added to the modulators' velocity sensitivity (0..7)
  *   DTUN  spreads the carriers apart in pitch (up to about +-36 cents between the outer ones)
- *   AEG   the carriers' envelope times, the amp envelope: + slower attack and release (rates down to 40 steps),
- *         - faster
+ *   AEG   the carriers' envelope times, the amp envelope: + slower attack and release (rates down to 24 steps,
+ *         never below FM6_AEG_FLOOR unless the patch's own rate is lower), - faster (up to 40 steps)
  * User presets and projects retain the whole voice; the preset browser loads factory voices.
  * The operator envelopes are the voice's amplitude and end it (engine_t.ownenv / done): the track's ADSR, ENV
  * DEST and the matrix's ENV do nothing here. The track's FLT moves MLVL (ENV / LFO -> FLT, the matrix's CUT), SHP
@@ -253,6 +253,10 @@ static void fm6_init(void)
     }
 }
 
+/* AEG's slowest: a carrier rate it slows stops at 25, a release of about 15 s to -60 dB (rate 0 is about 4 min and
+ * holds voices from BUDGET). A patch's own slower rates stay as they are. */
+#define FM6_AEG_FLOOR 25
+
 /* -------------------------------------------------------------- macros --- */
 /* the patch through E0..E7 (audio ISR; cheap when nothing changed). With every macro at 0 it is the patch.
  * 1 = made again (the patch or a macro changed) */
@@ -280,7 +284,8 @@ static int fm6_eff_build(const track_t *t)
         p[FP_FB] = (uint8_t)clamp(p[FP_FB] + e[1], 0, 7);
         car = fm6_carriers(alg);
         meg = clamp(e[4], -64, 63) * 40 / 64;               /* MEG: rate steps (+ slower) */
-        aeg = clamp(e[7], -64, 63) * 40 / 64;               /* AEG: the carriers' (+ slower) */
+        aeg = e[7] > 0 ? clamp(e[7], 0, 63) * 24 / 63       /* AEG: the carriers' (+ slower, at most 24 steps) */
+                       : clamp(e[7], -64, 0) * 40 / 64;
         step = clamp(e[6], 0, 127) * (12 * 13981) / 127;    /* DTUN: up to 12 cents a step (1 cent = 13981) */
         for (k = 0; k < 6u; k++) {
             uint8_t *op = p + (5u - k) * FP_OP;              /* OP1 first: carriers in their order */
@@ -289,8 +294,10 @@ static int fm6_eff_build(const track_t *t)
             if ((car >> ki) & 1u) {                          /* carriers 0, +1, -1, +2, -2, +3 steps apart */
                 static const int8_t SPREAD[6] = {0, 1, -1, 2, -2, 3};
                 fm6_eff[tr].dt[ki] = SPREAD[n++] * step;
-                for (j = 0; j < 4u; j++)
-                    op[FP_R1 + j] = (uint8_t)clamp(op[FP_R1 + j] - aeg, 0, 99);
+                for (j = 0; j < 4u; j++) {
+                    int32_t r = op[FP_R1 + j], f = r < FM6_AEG_FLOOR ? r : FM6_AEG_FLOOR;
+                    op[FP_R1 + j] = (uint8_t)clamp(r - aeg, f, 99);
+                }
                 continue;
             }
             if (!op[FP_MODE])
