@@ -129,6 +129,25 @@ static void overload(void)
               lead && extra && lead->active && extra->active && !lead->gate && !extra->gate &&
               extra->s[7] < lead->s[7] && (shed_voice(), extra->stage == 4u && lead->stage != 4u));
     }
+
+    {                                           /* at the ceiling: one step's kick, snare and hat, room for two */
+        voice_t *snr, *hat;
+        uint32_t rej;
+        fresh();
+        host_preset(&trk[0], ENGI_DRUM, 0);
+        trk[0].p[P_E0] = DK_909;
+        vceil = (uint8_t)(2u * voice_units(&trk[0]));
+        rej = admission_rejections;
+        trk_note_on(&trk[0], 36, 127); trk_note_on(&trk[0], 38, 110); trk_note_on(&trk[0], 42, 90);
+        lead = held(&trk[0], 36); snr = held(&trk[0], 38); hat = held(&trk[0], 42);
+        check("ceiling: the step's snare is not taken by its hat (the later hit gives way)",
+              lead && snr && snr->stage != 4u && lead->stage != 4u && !hat && admission_rejections == rej + 1u);
+        mix_block(out, CTL);
+        trk_note_on(&trk[0], 42, 90);           /* the next step's hat: the snare has been heard now */
+        hat = held(&trk[0], 42);
+        check("ceiling: a hit once heard can make room for the next one", hat && hat->stage != 4u);
+        vceil = 0xFFu;
+    }
 }
 static void dma(void)
 {

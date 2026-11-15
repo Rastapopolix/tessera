@@ -229,6 +229,23 @@ static uint32_t lowest_held(const track_t *t)           /* index of the lowest h
 /* the voice to give up for a new one (see the top); soft: only released voices and
  * extra voices of other non-POLY parts (also ones left after a mode change).
  * Returns its index, *pp its part; NVOICE = none */
+/* a released voice's loudness, Q24, for the shedder (audio.c shed_voice): its envelope; a drum's is held at full
+ * (eng_drum.c drum_amp), so its last block's peak instead (v->s[7], Q15): the quietest ringing tail goes first */
+static int32_t voice_level(const track_t *t, const voice_t *v)
+{
+    if (t->engine == ENGI_DRUM) {
+        int32_t pk = v->s[7] > 32767 ? 32767 : v->s[7];
+        return pk << 9;
+    }
+    return v->env;
+}
+/* a drum hit not heard yet (eng_drum.c drum_note_on: DRUM_FRESH until its first block): never given up to make room
+ * for a later hit (voice_victim); that hit gives way instead (voice_alloc), so at the ceiling a step's kick, snare
+ * and hat don't leave only the last. (An emergency shed, audio.c, may still take it: it must free time.) */
+static int voice_fresh(const track_t *t, const voice_t *v)
+{
+    return t->engine == ENGI_DRUM && v->s[7] > 32767;
+}
 static uint32_t voice_victim(const track_t *self, int soft, track_t **pp)
 {
     uint32_t p, i, best = NVOICE, cat = 4;
@@ -241,7 +258,7 @@ static uint32_t voice_victim(const track_t *self, int soft, track_t **pp)
         for (i = 0; i < NVOICE; i++) {
             const voice_t *v = &t->v[i];
             uint32_t c;
-            if (!v->active || v->stage == 4u)
+            if (!v->active || v->stage == 4u || voice_fresh(t, v))
                 continue;
             if (!v->gate)
                 c = 1;                                  /* released */
@@ -333,8 +350,11 @@ static voice_t *voice_alloc(track_t *t, uint32_t note)
         uint32_t k = voice_victim(t, 0, &vp);
         if (k < np && vp == t)
             return &t->v[k];                            /* our own: restart it in place (no click) */
-        if (k >= NVOICE)
+        if (k >= NVOICE) {
+            if (t->engine == ENGI_DRUM)
+                return 0;                               /* a drum hit with nothing to give up: it gives way */
             break;
+        }
         voice_capacity_kill(&vp->v[k]);
     }
     if (t->p[P_ALLOC] || t->p[P_GLIDE]) {
@@ -547,6 +567,10 @@ static void trk_note_on_work(track_t *t, uint32_t note, uint32_t vel)
     }
     if (mode == V_POLY) {
         AP_START(alloc_start);voice_t *v = voice_alloc(t, note);AP_END(AP_ALLOC,alloc_start);
+        if (!v) {                                       /* a drum hit with no room: dropped (voice_alloc) */
+            admission_rejections++;
+            return;
+        }
         t->nmono = 0;                                   /* no stale mono stack after a mode change */
         t->mono_note = 0;
         v->fine = 0;

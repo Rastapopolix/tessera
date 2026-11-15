@@ -91,16 +91,6 @@ static __attribute__((noinline)) uint32_t shed_check(uint32_t all)
     return (all - t5_nested_ticks) / FM1_TICKS_PER_US;
 }
 
-/* a released voice's loudness for the shedder, Q24: its envelope; a drum's is held at full (eng_drum.c drum_amp),
- * so its last block's peak instead (v->s[7], Q15): the quietest ringing tail goes first, not the first one found */
-static int32_t shed_level(const track_t *t, const voice_t *v)
-{
-    if (t->engine == ENGI_DRUM) {
-        int32_t pk = v->s[7] > 32767 ? 32767 : v->s[7];
-        return pk << 9;
-    }
-    return v->env;
-}
 static void shed_voice(void)
 {
     uint32_t p, i;
@@ -110,7 +100,7 @@ static void shed_voice(void)
         for (i = 0; i < NVOICE; i++) {
             voice_t *v = &trk[p].v[i];
             if (v->active && !v->gate && v->stage != 4u) {
-                int32_t lv = shed_level(&trk[p], v);
+                int32_t lv = voice_level(&trk[p], v);
                 if (!best || lv < best_lv)
                     best = v, best_lv = lv;
             }
