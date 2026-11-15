@@ -628,6 +628,7 @@ static void sound_name(const track_t *t, char *b)
     if(t->user_native && user_of(t)<USER_NONE)native_name(t->eng_req,user_of(t),b);
     else if (user_of(t) < UP_SLOTS)
         up_name(user_of(t), b);
+    else if (fm6_own_name(t, b, 16)) ;
     else if (e->npresets)
         str_cpy(b, eng_preset(e, t->preset % e->npresets)->name, 16);
 }

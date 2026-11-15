@@ -374,6 +374,7 @@ static void fm1_main(void)
             }
         }
         fm6_service();                                  /* DX7 SysEx for FM6, a pending FM6 settings save */
+        native_relink_service();                        /* after a project load: FM6 tracks back to their user slots */
 #if MELODEE_OTA
         ed_service();                                   /* web editor SysEx */
         ota_service();                                  /* M-UPGRADE handshake */

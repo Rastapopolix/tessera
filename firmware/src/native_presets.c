@@ -185,6 +185,41 @@ static int native_load(uint32_t e,uint32_t k,uint32_t tr)
     {uint8_t v[FP_SIZE+1u];fm6_unpack(loaded,v);fm6_set_patch(tr,v);}
     fm1_irq_on();load_end(t);sync_reload=1;ui.force=1;return 0;
 }
+/* #744: a project keeps each track's FM6 patch, not the user slot it came from. After a load (project_restore_runtime
+ * sets the tracks), the main loop finds the first slot that holds the same voice and links the track to it again:
+ * HOME names it and PRESETS starts from it, as after loading the slot. The slots' banks come from flash through the
+ * shared bank cache, so never inside the load (interrupts off there). A track changed meanwhile is left alone */
+static uint8_t native_relink_req;               /* bit per track: look for its slot */
+static void native_relink_service(void)
+{
+#if MELODEE_FM6
+    uint8_t want[FM6_PACKED], have[FM6_PACKED], v[FP_SIZE + 1u];
+    uint32_t tr, k;
+    if (!native_relink_req) return;
+    for (tr = 0; tr < NTRK; tr++) {
+        track_t *t = &trk[tr];
+        if (!(native_relink_req & (1u << tr))) continue;
+        native_relink_req &= (uint8_t)~(1u << tr);
+        if (t->eng_req != ENGI_FM6 || t->user) continue;
+        memset(want, 0, sizeof want);
+        fm6_pack(fm6_patch[tr], want);
+        for (k = 0; k < native_limit(ENGI_FM6); k++) {
+            if (!native_used(ENGI_FM6, k) || native_old(ENGI_FM6, k)) continue;
+            fm6_unpack(native_raw(ENGI_FM6, k), v);     /* (as native_load sets it: unpacked and sanitized) */
+            memset(have, 0, sizeof have);
+            fm6_pack(v, have);
+            if (!memcmp(want, have, sizeof want)) {
+                t->user = (uint8_t)(k + 1u);
+                t->user_native = 1;
+                ui.force = 1;
+                break;
+            }
+        }
+    }
+#else
+    native_relink_req = 0;
+#endif
+}
 static int native_store(uint32_t e,uint32_t k,uint32_t tr,const char *name)
 {
     momentary_restore();
