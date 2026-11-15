@@ -1611,8 +1611,26 @@ async function updater() {
   const dev3 = new FakeFM1(image, { unplugAfter: 2 });
   const e = await new Updater(dev3.access).install(image, "FM-1_900", null, TESSERA_LOADER).then(() => null, (x) => x);
   ok(e && e.code === "lost" && e.lastRead === 0x40, "fm1ota.js: unplugged in step 1 -> error code 'lost', last read address");
-  const e2 = await new Updater({ inputs: new Map(), outputs: new Map() }).install(image, "FM-1_900", null, TESSERA_LOADER).then(() => null, (x) => x);
+  const none = new Updater({ inputs: new Map(), outputs: new Map() });
+  none.findMs = 0;
+  const e2 = await none.install(image, "FM-1_900", null, TESSERA_LOADER).then(() => null, (x) => x);
   ok(e2 && e2.code === "notfound", "fm1ota.js: no device -> error code 'notfound'");
+
+  // #743: a port another app holds (Windows: one owner per MIDI port) is reported as busy, with its name
+  const held = new FakeFM1(image);
+  held.input.open = async () => { throw new Error("InvalidAccessError"); };
+  const hu = new Updater(held.access);
+  hu.findMs = 0;
+  const e3 = await hu.install(image, "FM-1_900", null, TESSERA_LOADER).then(() => null, (x) => x);
+  ok(e3 && e3.code === "busy" && e3.detail === held.input.name && held.served === 0,
+    "fm1ota.js: a MIDI port held by another app -> error code 'busy' naming the port, nothing sent");
+
+  // #743: an FM-1 that answers only after a moment (still starting, port just listed) is still found
+  const late = new FakeFM1(image);
+  const answer = late.rx.bind(late), t1 = Date.now();
+  late.rx = (d) => { if (Date.now() - t1 > 2500) answer(d); };
+  const got2 = await new Updater(late.access).install(image, "FM-1_900", null, TESSERA_LOADER);
+  ok(got2 === "FM-1_900" && late.bad === 0, "fm1ota.js: an FM-1 that answers after ~2.5 s is found, not 'notfound'");
 }
 
 async function patternProtocol() {
@@ -1664,6 +1682,11 @@ async function stockRestore() {
         async find(filter) {
           const id = loader ? {model:"ota-FM-1", text:loader} : {model:"FM-1", text:"FM-1_9010"};
           return filter(id) ? {id, link:{input:{},output:{},close() {}}} : null;
+        }
+        async findDevice(filter) {
+          const dev = await this.find(filter);
+          if (!dev) throw Object.assign(new Error("notfound"), {code:"notfound"});
+          return dev;
         }
         async install(image, product, step, own) {
           calls.push("install"); writes.push([product, own]);
