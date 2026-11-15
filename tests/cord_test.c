@@ -995,6 +995,21 @@ static int fx_dests(void)
     cord_clear();
     check("...cleared: no send effect cords", !cord_gmask);
 
+    /* a fresh phrase restarts the LFO's FADE; with FADE 0 there is none to restart: the LFO stays in (it dropped out
+     * for a block, a click on the note before, still releasing; from LEMONADE SANDWICH, Thomas Bradley) */
+    fresh_tracks();
+    trk[0].p[P_LFADE] = 0;
+    trk_note_on(&trk[0], 60, 100);
+    trk_note_off(&trk[0], 60);
+    trk_note_on(&trk[0], 62, 100);
+    i = (uint32_t)trk[0].lfo_fade;
+    trk_note_off(&trk[0], 62);
+    trk[0].p[P_LFADE] = 40;
+    trk_note_on(&trk[0], 64, 100);
+    check("LFO FADE 0: a fresh phrase leaves the LFO in (no block without it); FADE 40: it fades in again",
+          i == 32767u && trk[0].lfo_fade == 0);
+    trk_note_off(&trk[0], 64);
+
     /* ECHO's TIME glides: at most 1/4 sample a quarter-rate tick (8 a block), no jump */
     fresh_tracks();
     trk[0].p[P_FXTYPE] = FX_ECHO; trk[0].p[P_FXMIX] = 127; trk[0].p[P_FXRATE] = 0; trk[0].p[P_FXCHAR] = 64;
