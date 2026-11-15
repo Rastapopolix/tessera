@@ -1804,6 +1804,19 @@ static int test_cords_scroll_playing(void)
         (void)cord_set(4, &e);
         cu_dst_set(&e, 1u);
         bad += check("..a T3 source: T3 PITCH first", e.dst == CD_PITCH && e.dst_trk == 2u);
+        {                                               /* (#724: a new mod, no source; T4 selected) */
+            cord_t n = e;
+            uint8_t was = song.sel;
+            n.src = CS_OFF; n.src_trk = 0; n.dst = CD_OFF;
+            song.sel = 3;
+            cu_dst_set(&n, 1u);
+            x = n.dst == CD_PITCH && n.dst_trk == 3u;
+            n.src = CS_ENERGY; n.dst = CD_OFF;
+            cu_dst_set(&n, 1u);
+            song.sel = was;
+            bad += check("..no source, or the project's (ENERGY): the selected track's (T4) first",
+                         x && n.dst == CD_PITCH && n.dst_trk == 3u);
+        }
         gen_ok = cu_acts(CD_TUR_PROB, 0) && !cu_acts(CD_EUC_PULSES, 0) && cu_acts(CD_EUC_PULSES, 1) &&
                  !cu_acts(CD_SEQ_DIR, 0) && cu_acts(CD_EV_AMOUNT, 0) && cu_acts(CD_GLIDE, 0) && cu_acts(CD_GRD_X, 3);
         e.dst = CD_EUC_PULSES; e.dst_trk = 0;             /* (T1 plays Turing: hidden, but the mod's own stays) */

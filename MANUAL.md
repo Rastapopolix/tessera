@@ -1543,7 +1543,7 @@ at a time, each with an activity light and a moving mark.
 | 4 | **Amount**, −100 to +100 %. With no source (`--`) the cord is a fixed move and KNOB 4 sets its offset. |
 
 - **How KNOB 3's list is arranged.** Track by track, starting from the source's track (a mod from T3's LFO lists T3,
-  then T4, T1, T2), each track's destinations in groups: SOUND, ENV, LFO, MIX, FX, GEN, FEEL (VELO, HUMAN, GATE,
+  then T4, T1, T2; with no source yet, or one of the project's, from the selected track), each track's destinations in groups: SOUND, ENV, LFO, MIX, FX, GEN, FEEL (VELO, HUMAN, GATE,
   N LEN, SWING, GLIDE, SPLIT, RATCH, CLOCK ..), EVOLVE, ARP and MODS (TIDE SP, SWRM RT); then the project's: SEND FX,
   PROJECT (FILL, TEMPO) and MODS (M1 AMT .., the buses, MOD DEP). The list's title names the group under the cursor
   (**T3 FEEL**). A track lists only what acts on it as its MODE is: a generator's own settings on its tracks (T PROB

@@ -31,7 +31,7 @@ static void cu_adopt(void)
                                                          * (ENERGY, the MACROs) once */
 static int cu_src_trk(uint32_t s) { return s && !CS_PROJECT(s); }   /* a track's source, not the project's */
 /* KNOB 3's list (cu_walk): --, then each track's destinations from the cord's source's track on (a T3 source: T3,
- * T4, T1, T2), group by group (the list's title names the group: "T3 FEEL"), only those that act on the track's
+ * T4, T1, T2; no source, or the project's: from the selected track), group by group (the list's title names the group: "T3 FEEL"), only those that act on the track's
  * MODE (a generator's own on its tracks, the pattern's on STEP tracks; the cord's own always stays), then the
  * project's (the send effects', FILL and TEMPO, the mods') once */
 static int cu_global(uint32_t code) { return cord_dest(code) && cord_dest(code)->kind >= CK_GLOBAL; }   /* (CK_CORD too) */
@@ -97,7 +97,8 @@ static int cu_acts(uint32_t code, uint32_t tr)
 typedef struct { uint32_t n, at, code, grp; uint8_t tr; } cu_walk_t;
 static void cu_walk(const cord_t *c, uint32_t want, cu_walk_t *w)
 {
-    uint32_t i, k, g = CU_SOUND, from = c->src && !CS_PROJECT(c->src) ? c->src_trk % NTRK : 0u;
+    uint32_t i, k, g = CU_SOUND, from = cu_src_trk(c->src) ? c->src_trk % NTRK : song.sel % NTRK;   /* (no track's
+                                                         * source: the selected track's, #724) */
     w->n = 1u, w->at = 0u, w->code = CD_OFF, w->grp = 0u, w->tr = 0u;
     for (i = 0; i <= NTRK; i++) {                       /* the tracks, from the source's on; then (NTRK) the project's */
         uint32_t tr = i < NTRK ? (from + i) % NTRK : 0u;
