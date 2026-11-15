@@ -259,7 +259,7 @@ static voice_t *drum_reuse(track_t *t, uint32_t note)
 
 /* lanes hit since the UI last looked, a bit per lane (drum_lane) and track: Stage flashes their names (ui_stage.c) */
 static volatile uint8_t drum_flash[NTRK];
-#define DRUM_FRESH 0x10000                               /* v->s[7] of a hit not heard yet (voice.c voice_fresh) */
+#define DRUM_FRESH 65536                                 /* v->s[7] of a hit not heard yet (voice.c voice_fresh) */
 static void drum_note_on(track_t *t, voice_t *v)
 {
     drum_flash[(uint32_t)(t - trk) % NTRK] |= (uint8_t)(1u << drum_lane(v->note));
