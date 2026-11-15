@@ -83,6 +83,9 @@ VOICE LEG	voice legato
 COND	condition
 CONTRA	contrary
 CANON#	canon #
+HOW HARM	how harmonizer
+QNT HARM	quantize harmonizer
+QUANTIZE HARM	quantize harmonizer
 QUAD EVERY # EVERY	quad column # every
 RAM	R A M
 CCS	controllers
