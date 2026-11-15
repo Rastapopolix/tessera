@@ -8,6 +8,7 @@ Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues>
 what you expected and what happened).
 
 ## New in 3.6-beta6
+- MENU > ABOUT shows **SPACE**: how much flash and RAM this firmware leaves free for new features.
 - REVERB and ECHO now rest while nothing reaches them and their tails have died away, which frees CPU when tracks are quiet. The sound is exactly the same.
 
 ## New in 3.6-beta5

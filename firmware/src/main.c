@@ -6,11 +6,31 @@
 extern uint32_t _data_start[], _data_end[], _data_load[], _bss_start[], _bss_end[];
 extern uint32_t _dsp_start[], _dsp_end[], _dsp_load[], _dt_start[], _dt_end[], _dt_load[];
 extern uint32_t _audio_start[], _audio_end[], _audio_load[];
-extern uint8_t _app_xip_end[], _resource_start[];
+extern uint8_t _app_xip_end[], _resource_start[], _resource_data_start[], _resource_data_end[];
 #include "boot_lzma.h"
 extern uint32_t _pool_start[], _pool_end[], _rt_start[], _rt_end[], _rt_load[];
 extern uint32_t _ustack_top[];
 extern uint8_t _cpu1_stacks_lo[], _cpu1_stacks_hi[], _cpu1_ustack_top[];
+
+/* ABOUT's SPACE (ui_menu.c): what this build leaves free of the flash body (up to _app_xip_end, after the SRAM load
+ * images, walked as fm1_cstart unpacks them: 16-byte record, then the stream to a word) and of .data+.bss (96 KiB;
+ * the tail feeds the audio arena at run time, so it is room for new code's variables, not memory going spare) */
+static void space_report(uint32_t *flash, uint32_t *ram)
+{
+    uintptr_t end;
+    if (_rt_load[0] == BOOT_LZMA_MAGIC) {
+        const uint32_t *at = _rt_load;
+        for (uint32_t k = 0; k < 5u; k++)
+            at += 4u + (at[1] + 3u) / 4u;
+        end = (uintptr_t)at;
+    } else {                                            /* (MELODEE_COMPRESS_AUDIO=0: each image at its load address) */
+        end = (uintptr_t)_audio_load + ((uintptr_t)_audio_end - (uintptr_t)_audio_start);
+        if (_audio_end == _audio_start)
+            end = (uintptr_t)_data_load + ((uintptr_t)_data_end - (uintptr_t)_data_start);
+    }
+    *flash = (uintptr_t)_app_xip_end > end ? (uint32_t)((uintptr_t)_app_xip_end - end) : 0u;
+    *ram = (uint32_t)((uintptr_t)_resource_data_end - (uintptr_t)_resource_data_start);
+}
 
 /* Stack high-water marks (editor AUDIO_STATS flag 64, upstream Melodee 1.5): fm1_cstart paints each stack below what
  * is in use, a reading finds the lowest word written since. The device side of tools/stack_budget.py's estimate */

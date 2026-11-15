@@ -1796,7 +1796,7 @@ Hold **HOME** for the menu. Its rows come in groups: the screen, the knobs and b
 | **USB VOLUME** | The level of the computer's audio played through the FM-1, **0 to 100 %** in 5 % steps, apart from MASTER: the volume pot sets the FM-1's own sound, this the computer's. 50 % (the default) is the old level at MASTER's default. What the FM-1 records over USB (USB OUTPUT: stereo or four tracks) is taken before MASTER too, so the pot never changes a recording's level. Saved. |
 | **SIM CONTROL** | While the [web simulator](#saving-and-older-projects) mirrors the panel: the FM-1's knobs, buttons and keys play the simulator only. Hold **FX + GLO** for a second to get the panel back. **NO SIM**: no simulator listening. Not saved: every start is off. |
 | **USB HOST** | **ON**: the USB-C port hosts a USB-MIDI keyboard, controller, synth or MIDI-to-CV module, with no computer in between (see [USB host](#usb-host)). **OFF** (the default): the port talks to a computer. Not saved: every start is OFF. |
-| **ABOUT** | Version, credits, **POWER** (the battery's reading and bars, whether 5 V comes in), and, after a crash, LAST CRASH (until power-off). |
+| **ABOUT** | Version, credits, **POWER** (the battery's reading and bars, whether 5 V comes in), **SPACE** (how much flash and RAM this firmware leaves free for new features: FLASH 18.9 KB FREE, RAM 5.7 KB FREE; not space for your projects, and the RAM tail is used for sound while playing), and, after a crash, LAST CRASH (until power-off). |
 
 ### MIDI OUT channels
 
