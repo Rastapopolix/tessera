@@ -1466,6 +1466,12 @@ static void draw_columns_(void)
                                 (int32_t)(a->order % TESS_AN_ORDERS) * 1000 / (TESS_AN_ORDERS - 1), ICON_AUTO);
                     fmt_int(v2, a->shift);
                     draw_column(2, "SHIFT", a->shift ? v2 : "OFF", "", VAL(2u), (int32_t)a->shift * 1000 / 7, ICON_AUTO);
+                    if (a->mode == TESS_AN_BEND) {              /* (BEND: its TIME in SPACE's place) */
+                        fmt_int(v3, a->time);
+                        draw_column(3, "TIME", v3, "", VAL(3u), (int32_t)a->time * 1000 / (int32_t)TESS_AN_TIME_MAX,
+                                    ICON_AUTO);
+                        return;
+                    }
                     fmt_int(v3, a->space);
                     draw_column(3, "SPACE", v3, "%", VAL(3u), (int32_t)a->space * 10, ICON_AUTO);
                     return;
@@ -1477,8 +1483,9 @@ static void draw_columns_(void)
                 fmt_int(v2, a->echo);
                 draw_column(2, "ECHO", a->echo ? v2 : "OFF", a->echo ? "%" : "", VAL(2u), (int32_t)a->echo * 10, ICON_AUTO);
                 if (tessera_answer_count(tr)) fmt_int(v3, (int32_t)tessera_answer_count(tr));
+                else if (a->mode == TESS_AN_BEND) str_cpy(v3, "NEVER", sizeof v3);   /* (BEND: no loops, on and on) */
                 else str_cpy(v3, pid_desc(PID_TESS(TX_AN_LEN), tr)->names[a->len % TESS_AN_LENS], sizeof v3);
-                draw_column(3, tessera_answer_count(tr) ? "FADE" : "LOOPS", v3, "", VAL(3u), (int32_t)a->fade * 10, ICON_AUTO);
+                draw_column(3, tessera_answer_count(tr) || a->mode == TESS_AN_BEND ? "FADE" : "LOOPS", v3, "", VAL(3u), (int32_t)a->fade * 10, ICON_AUTO);
             } else if (m == TESS_ENG_CONSTEL) {
                 const gen_constel_t *c = tessera_constel(tr);
                 if (cs_layer_on()) {                            /* OCT- held: LOCK, LEN, FILL (SIZE: the sheet) */

@@ -43,6 +43,7 @@ static const char *const TX_N_MIDICH[] = {"AUTO", "1", "2", "3", "4", "5", "6", 
 static const char *const TX_N_ANORDER[] = {"PLAYED", "REVERSE", "SHUFFLE"};   /* (TESS_AN_*) */
 static const char *const TX_N_ANLEN[] = {"SHORT", "MID", "LONG"};
 static const char *const TX_N_ANCHORD[] = {"ARP", "TRUE"};   /* (TESS_AN_*) */
+static const char *const TX_N_ANMODE[] = {"REPLY", "BEND"};   /* (TESS_AN_*) */
 static const char *const TX_N_SDKEEP[] = {"FREE", "RHYTHM", "PITCH"};   /* (TESS_SD_*) */
 static const char *const TX_N_SVHOW[] = {"DRIFT", "ADORN", "SERIAL"};   /* (TESS_SV_*) */
 static const char *const TX_N_SOUND[] = {"ON", "OFF"};
@@ -231,6 +232,9 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_BUSB_LAG] = PE("LAG", TX_N_BUSLAG, 0),
     [TX_MOD_DEPTH] = PD("MOD DEPTH", F_PCT, 0, 100, 100),
     [TX_AN_CHORD] = PE("CHORD", TX_N_ANCHORD, 0),
+    [TX_AN_MODE] = PE("MODE", TX_N_ANMODE, 0),
+    [TX_AN_TIME] = PD("TIME", F_INT, 1, 16, 3),
+    [TX_AN_BREAK] = PD("BREAK", F_PCT, 0, 100, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -813,6 +817,19 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_AN_CHORD, "ANSWER CHORD", "ARP: notes played together are spread one a step apart (the old behaviour, so "
                                     "an answer never surprises an old project). TRUE: they share the step and answer "
                                     "back as a real chord. The GEN sheet (OCT+ held), Chord."),
+    X_(TX_AN_MODE, "ANSWER MODE", "REPLY: it waits for your phrase to end (a bar without a key), then SPACE, then "
+                                  "answers it (as before). BEND: it does not wait. Every note comes back TIME steps "
+                                  "later while you play, again and again, softer and more changed each time: a delay "
+                                  "with a mind of its own. FADE: how many repeats (at the top, on and on). VARY: how "
+                                  "far each repeat drifts. SHIFT: the repeats climb or sink, up to that many degrees "
+                                  "a bar, a new way each bar. ORDER: the first repeats play your line reversed or shuffled. BREAK: the "
+                                  "glitches. VARY, SHIFT, ECHO and BREAK at 0: a plain delay. The GEN sheet (OCT+ "
+                                  "held), Mode."),
+    X_(TX_AN_TIME, "ANSWER TIME", "BEND: the steps between a note and its repeat, and between repeats: 1 to 16 "
+                                  "(3: a dotted eighth at 16 steps a bar). The GEN sheet (OCT+ held), Time."),
+    X_(TX_AN_BREAK, "ANSWER BREAK", "BEND: the chance a repeat glitches, this once: it slips a step early or late, "
+                                    "skips, stutters (again a step later) or jumps back to a note you played a little "
+                                    "before. 0: never. The GEN sheet (OCT+ held), Break."),
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT

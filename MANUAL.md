@@ -753,7 +753,7 @@ generator is also a mod source: its **GATE**, its **NOTE** and a **CV** (see [MO
 | **CONSTL** | Y (0–14) | DENS (0–100 %) | SPEED | After timothy-taylor's norns script Constellation: a ship flies through a sky of stars; the stars that cross its crosshair play. Y is the crosshair's height (where the melody sits), DENS how many stars, SPEED how fast the sky passes (the straight note values, slow to fast). More on the [OCT+ layer](#constellation-lock-len-fill-size). |
 | **SERIES** | START (0–127) | INTV (1–7) | LOOP (OFF, 1–16) | Per Nørgård's infinity series (after the norns script nørgård): a melody alike at every scale. START picks where it begins, INTV how many scale degrees a step of the series is, LOOP repeats that many steps (OFF never repeats). |
 | **CHORD** | PROG | BARS (½, 1, 2, 4) | HIT | A progression's chords in the track's scale: POP (I V vi IV), 50S, 2-5-1, CIRCLE, TWO, DRONE, WALK (four chords from the seed) or USER (your own). HIT: HOLD (once, held), BEAT, STEP or OFFBEAT (short stabs on the "and" between the beats, a reggae skank). See [Harmony](#harmony-one-key-chord-and-qnt-chrd). |
-| **ANSWER** | VARY (0–100 %) | ECHO (0–100 %) | FADE (1–16, LOOPS) | After Zen-1's call and response (the idea only): play a phrase on the track's keys (or MIDI IN), up to 16 notes, and a bar without a key ends it. ANSWER plays it back, after a rest, as answers that change a little more each time (VARY: a note moved a degree or two, an octave, left out or swapped), each softer than the last. ECHO repeats some notes once more at half the velocity. A note held down rings back that long too, when [LENGTH](#length) is left at its default STEP (FIXED or HIT there still decide). FADE is how many answers it gives, 1 to 16, before it rests until you play again; turned on past 16 (LOOPS SHORT, MID or LONG, the loops' lengths) it never forgets and plays on as four loops of different lengths. Its OCT+ layer: SOURCE (below), ORDER (PLAYED, REVERSE, SHUFFLE), SHIFT (each answer moved up to this many scale degrees) and SPACE (the rest before an answer, up to 4 bars). The GEN sheet (OCT+ held) adds **CHORD**: ARP (the old behaviour: notes played together are spread one a step apart) or TRUE (they share the step and come back as a real chord). **SOURCE** (OFF, T1 to T4) makes a STEP pattern the call instead of the keys: that track's pattern playing now (this track's own too), its first 16 notes at their steps, read again before each answer, so a sequence you record in STEP gets answered, and answered anew when you change it. The keys then just play. While that track's pattern is empty, the notes you play live on its keys (or its MIDI IN) are the call instead, so you can play T1 and have T2 answer. The other way round, REC held prints ANSWER's answers into STEP (see [Print and keep](#print-and-keep)). |
+| **ANSWER** | VARY (0–100 %) | ECHO (0–100 %) | FADE (1–16, LOOPS) | After Zen-1's call and response (the idea only): play a phrase on the track's keys (or MIDI IN), up to 16 notes, and a bar without a key ends it. ANSWER plays it back, after a rest, as answers that change a little more each time (VARY: a note moved a degree or two, an octave, left out or swapped), each softer than the last. ECHO repeats some notes once more at half the velocity. A note held down rings back that long too, when [LENGTH](#length) is left at its default STEP (FIXED or HIT there still decide). FADE is how many answers it gives, 1 to 16, before it rests until you play again; turned on past 16 (LOOPS SHORT, MID or LONG, the loops' lengths) it never forgets and plays on as four loops of different lengths. Its OCT+ layer: SOURCE (below), ORDER (PLAYED, REVERSE, SHUFFLE), SHIFT (each answer moved up to this many scale degrees) and SPACE (the rest before an answer, up to 4 bars). The GEN sheet (OCT+ held) adds **CHORD**: ARP (the old behaviour: notes played together are spread one a step apart) or TRUE (they share the step and come back as a real chord), and **MODE**: REPLY (as above) or BEND, a delay with a mind of its own that repeats every note TIME steps later while you play, drifting (VARY, SHIFT) and glitching (BREAK) as it goes (see [ANSWER: SOURCE, ORDER, SHIFT; SPACE, CHORD](#answer-source-order-shift-space-chord)). **SOURCE** (OFF, T1 to T4) makes a STEP pattern the call instead of the keys: that track's pattern playing now (this track's own too), its first 16 notes at their steps, read again before each answer, so a sequence you record in STEP gets answered, and answered anew when you change it. The keys then just play. While that track's pattern is empty, the notes you play live on its keys (or its MIDI IN) are the call instead, so you can play T1 and have T2 answer. The other way round, REC held prints ANSWER's answers into STEP (see [Print and keep](#print-and-keep)). |
 
 <table>
 <tr>
@@ -874,6 +874,29 @@ STEP page.
 **Chord**, also on the GEN sheet, is ARP (the old behaviour: notes played together on the keys are spread one a
 step apart, so a chord answers as an arpeggio) or TRUE (they share the step and answer back as a real chord). ARP
 is the default, so an old project still answers exactly as it did.
+
+**Mode**, the GEN sheet's third row, is **REPLY** (the default: it waits for your phrase to end, rests SPACE, then
+answers it) or **BEND** (after Qu-Bit's Data Bender, the idea only). BEND does not wait for you to stop: every note
+you play comes back **Time** steps later (1 to 16, 3 by default: a dotted eighth at 16 steps a bar), while you are
+still playing, and again every Time steps after that, like a delay locked to the tempo. Then the other settings
+bend it:
+
+- **FADE**: how many repeats, 1 to 16, each softer than the last. At the top (**NEVER**) the repeats go on at full
+  velocity; once 16 wait, the one repeated most makes room for what you play now.
+- **VARY**: the chance a repeat changes (a degree or two, an octave, silent this once, or the note you played next
+  to it), higher with each repeat. What changes is kept, so a line drifts further every time round.
+- **SHIFT**: the repeats climb or sink, up to that many scale degrees a bar, a new direction each bar.
+- **ORDER**: REVERSE or SHUFFLE plays your line's first repeats back to front or mixed up.
+- **ECHO**: as in REPLY, a note now and then comes back once more.
+- **Break**: the chance a repeat glitches, this once
+  only: it slips a step early or late, skips, stutters (plays again a step later) or jumps back to a note you played
+  a little before.
+
+With VARY, SHIFT, ECHO and Break at 0, BEND is a plain delay. In BEND the sheet's rows are Time, Break and Mode; in
+REPLY, Space, Chord and Mode. On the OCT- layer, Time shows where SPACE does. The picture shows the repeats waiting,
+the nearest at the left. BEND hears the keys, MIDI IN and a generator SOURCE; a STEP pattern as SOURCE is not heard
+in BEND yet (the keys are). Switching Mode clears whatever is waiting. A project saved with BEND (or with Time or
+Break set) needs this version or later to open.
 
 **AUTO** steers the ship for you: OFF follows Y, 1 to 9 is a wander of its own (faster further up), SEEK flies to
 the next star. It has no knob: set it with a mod to **C AUTO** (a cord with no source is a fixed value).
@@ -2071,6 +2094,9 @@ DRUM track. [MANUAL](#atlas-kick-snr-hat-the-fourth-part)
 [MANUAL](#the-generators)
 
 ### B
+
+**BEND**. ANSWER's second MODE: every note you play comes back TIME steps later, again and again, drifting and
+glitching, instead of waiting for your phrase to end. [MANUAL](#answer-source-order-shift-space-chord)
 
 **BI / UNI** (bipolar, unipolar). Bipolar swings both sides of a middle (-1 to +1), unipolar only from 0 up (0 to 1).
 In Tessera: the LFO page's **POL** is BI or UNI. A cord's own **+-** (both ways) or **+** (one way) is separate, and

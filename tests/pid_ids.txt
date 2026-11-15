@@ -282,3 +282,6 @@
 0x2a1 BUS B LAG                global 0..11 def 0
 0x2a2 MOD DEPTH                global 0..100 def 100
 0x2a3 ANSWER CHORD             track 0..1 def 0
+0x2a4 ANSWER MODE              track 0..1 def 0
+0x2a5 ANSWER TIME              track 1..16 def 3
+0x2a6 ANSWER BREAK             track 0..100 def 0
