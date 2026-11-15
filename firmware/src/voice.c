@@ -261,14 +261,15 @@ static uint32_t voice_victim(const track_t *self, int soft, track_t **pp)
             if (!v->active || v->stage == 4u || voice_fresh(t, v))
                 continue;
             if (!v->gate)
-                c = 1;                                  /* released */
+                c = 1;                                  /* released: the quietest (then the oldest) */
             else if (mode != V_POLY && i > 0)
                 c = 2;                                  /* extra UNISON, or a voice left by a mode / cap change */
             else if (!soft && mode == V_POLY && i != low)
                 c = 3;                                  /* held, not the bass */
             else
                 continue;
-            if (c < cat || (c == cat && v->age < (*pp)->v[best].age)) {
+            if (c < cat || (c == cat && (c == 1u && v->env != (*pp)->v[best].env ? v->env < (*pp)->v[best].env
+                                                                                : v->age < (*pp)->v[best].age))) {
                 cat = c;
                 best = i;
                 *pp = t;
@@ -563,7 +564,8 @@ static void trk_note_on_work(track_t *t, uint32_t note, uint32_t vel)
     if (!any) {                                        /* fresh phrase: LFO retrigger (TRIG NOTE) and fade */
         if (!t->p[P_LTRIG])
             t->lfo_ph = (uint32_t)t->p[P_LPHASE] << 25;
-        t->lfo_fade = 0;
+        t->lfo_fade = t->p[P_LFADE] ? 0 : 32767;       /* (FADE 0: no fade-in to restart. 0 left the LFO out for a
+                                                     * block, a step and back: a click on a note still releasing) */
     }
     if (mode == V_POLY) {
         AP_START(alloc_start);voice_t *v = voice_alloc(t, note);AP_END(AP_ALLOC,alloc_start);
