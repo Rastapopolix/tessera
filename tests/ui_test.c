@@ -1795,15 +1795,28 @@ static int test_cords_scroll_playing(void)
             if (n != (cord_dest(code) != 0)) { fprintf(stderr, "ui_test: CU_ORDER has code %u %u times\n", code, n); once = 0; }
         }
         bad += check("..its order (ui_cords.c CU_ORDER): every destination once, in a group", once && CU_ORDER[0] == CU_SOUND);
-        e = *k;                                         /* (T1 SLOTH: T1 first) */
-        cu_dst_set(&e, 1u);
-        cu_pick_title(t, 1);
-        bad += check("..from the source's track on: T1 PITCH first, its title T1 SOUND",
-                     e.dst == CD_PITCH && e.dst_trk == 0u && str_eq(t, "T1 SOUND"));
-        e.src = CS_LFO; e.src_trk = 2; e.dst = CD_OFF;
-        (void)cord_set(4, &e);
-        cu_dst_set(&e, 1u);
-        bad += check("..a T3 source: T3 PITCH first", e.dst == CD_PITCH && e.dst_trk == 2u);
+        {                                               /* (#724: the selected track first, whatever the source) */
+            uint8_t was = song.sel;
+            song.sel = 0;
+            e = *k;                                     /* (T1 SLOTH, T1 selected) */
+            cu_dst_set(&e, 1u);
+            cu_pick_title(t, 1);
+            x = e.dst == CD_PITCH && e.dst_trk == 0u && str_eq(t, "T1 SOUND");
+            song.sel = 2;                               /* (T3 selected: a T1 source, no source, ENERGY) */
+            cu_dst_set(&e, 1u);
+            x = x && e.dst == CD_PITCH && e.dst_trk == 2u;
+            e.src = CS_OFF; e.src_trk = 0; e.dst = CD_OFF;
+            cu_dst_set(&e, 1u);
+            x = x && e.dst == CD_PITCH && e.dst_trk == 2u;
+            e.src = CS_ENERGY; e.dst = CD_OFF;
+            cu_dst_set(&e, 1u);
+            x = x && e.dst == CD_PITCH && e.dst_trk == 2u;
+            e.src = CS_LFO; e.src_trk = 0; e.dst = CD_OFF;
+            (void)cord_set(4, &e);
+            song.sel = was;
+            bad += check("..from the selected track on (T1: T1 PITCH first, its title T1 SOUND; T3, whatever the "
+                         "source: T3 PITCH)", x);
+        }
         gen_ok = cu_acts(CD_TUR_PROB, 0) && !cu_acts(CD_EUC_PULSES, 0) && cu_acts(CD_EUC_PULSES, 1) &&
                  !cu_acts(CD_SEQ_DIR, 0) && cu_acts(CD_EV_AMOUNT, 0) && cu_acts(CD_GLIDE, 0) && cu_acts(CD_GRD_X, 3);
         e.dst = CD_EUC_PULSES; e.dst_trk = 0;             /* (T1 plays Turing: hidden, but the mod's own stays) */

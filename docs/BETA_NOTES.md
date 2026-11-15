@@ -7,6 +7,9 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues> (the firmware version, the steps,
 what you expected and what happened).
 
+## New in 3.6-beta4
+- MODS: KNOB 3's list now starts at the selected track (it started at the mod's source's track, and at T1 for a new mod); a new mod's first turn of KNOB 3 lands on the selected track's PITCH. Thanks for the report (#724).
+
 ## New in 3.6-beta3
 - SIM CONTROL (in the menu: hold HOME): with the web simulator open and the FM-1 connected by USB, the FM-1's knobs, buttons and keys play only the simulator, and the FM-1 itself stays silent. Hold FX + GLO for a second to get the panel back; closing the simulator or unplugging ends it too. It is off every time the FM-1 starts.
 

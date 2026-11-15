@@ -3,7 +3,7 @@
 /* MODS (LFO family; MOD's place: its page hidden, ui.c page_visible; tessera-notes/docs/design/phase2/cords.png): the cords (cord.c)
  * four to a screen, as MOD's rows:
  * "2  [2] ENV -> [4] DECAY  -25 %" over the amount's bar from the middle; the cord KNOB 2 is on: a card. The knobs as
- * MOD's: KNOB 1 the source (--, then T1 LFO .. T4 NOTE), 2 the cord, 3 the destination (--, then the source's track's
+ * MOD's: KNOB 1 the source (--, then T1 LFO .. T4 NOTE), 2 the cord, 3 the destination (--, then the selected track's
  * groups, SOUND ..: cu_walk), 4 the amount. A cord without a source is a fixed move: KNOB 4 its OFFSET. OCT+: a bipolar source's direction, +- (both
  * ways from the knob) or + (folded to 0..1: one way, "+" after its name), then GATE (">" after its name, Mono "^": all while the
  * source is over a threshold, none under it; OCT- held + KNOB 4 sets the threshold); the mod's own (cord.h uni), not
@@ -30,8 +30,8 @@ static void cu_adopt(void)
 #define CU_NSRC (1u + NTRK * CU_SPT + (CS_EOC - CS_ENERGY))   /* KNOB 1's list: --, track by track, then the project's
                                                          * (ENERGY, the MACROs) once */
 static int cu_src_trk(uint32_t s) { return s && !CS_PROJECT(s); }   /* a track's source, not the project's */
-/* KNOB 3's list (cu_walk): --, then each track's destinations from the cord's source's track on (a T3 source: T3,
- * T4, T1, T2), group by group (the list's title names the group: "T3 FEEL"), only those that act on the track's
+/* KNOB 3's list (cu_walk): --, then each track's destinations from the selected track on (T3 selected: T3, T4, T1,
+ * T2), group by group (the list's title names the group: "T3 FEEL"), only those that act on the track's
  * MODE (a generator's own on its tracks, the pattern's on STEP tracks; the cord's own always stays), then the
  * project's (the send effects', FILL and TEMPO, the mods') once */
 static int cu_global(uint32_t code) { return cord_dest(code) && cord_dest(code)->kind >= CK_GLOBAL; }   /* (CK_CORD too) */
@@ -97,7 +97,7 @@ static int cu_acts(uint32_t code, uint32_t tr)
 typedef struct { uint32_t n, at, code, grp; uint8_t tr; } cu_walk_t;
 static void cu_walk(const cord_t *c, uint32_t want, cu_walk_t *w)
 {
-    uint32_t i, k, g = CU_SOUND, from = c->src && !CS_PROJECT(c->src) ? c->src_trk % NTRK : 0u;
+    uint32_t i, k, g = CU_SOUND, from = song.sel % NTRK;   /* (the selected track first, #724) */
     w->n = 1u, w->at = 0u, w->code = CD_OFF, w->grp = 0u, w->tr = 0u;
     for (i = 0; i <= NTRK; i++) {                       /* the tracks, from the source's on; then (NTRK) the project's */
         uint32_t tr = i < NTRK ? (from + i) % NTRK : 0u;
