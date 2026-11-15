@@ -182,7 +182,7 @@ class Link:
                 self.dev = devices[0]
                 break
             require(time.monotonic() < deadline,
-                    "ROM UBOOT device not found. This tool needs 4c4a:8057, not the Melodee Update MIDI port")
+                    "ROM UBOOT device not found. This tool needs 4c4a:8057, not the Tessera Update (Melodee Update) MIDI port")
             time.sleep(0.25)
         self.tag = 0
         try:

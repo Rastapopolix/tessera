@@ -16,7 +16,7 @@ the FM-1 restarts and the installed identity is checked.
 
 If the FM-1 is still in update mode (an earlier install was cut off), the
 install finishes the write, but only with the package's own loader: Tessera's
-(ota-FM-1_900, "Melodee Update") for a Tessera package, the official one
+(ota-FM-1_900, "Tessera Update", "Melodee Update" in earlier versions) for a Tessera package, the official one
 (ota-FM-1_015) for the official V15 or V16. A package with --force never resumes.
 Needs mido with python-rtmidi.
 

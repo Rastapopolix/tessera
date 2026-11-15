@@ -124,7 +124,7 @@ class FakeFM1:
             if self.stall_after and self.served >= self.stall_after:
                 return
             if addr == I.FINISH_CHECK:
-                threading.Timer(0.05, self.boot, (self.loader, "Melodee Update")).start()
+                threading.Timer(0.05, self.boot, (self.loader, "Tessera Update")).start()
             elif addr == I.FINISH_WRITE:
                 threading.Timer(0.05, self.boot, (self.after_write, "Melodee")).start()
             else:
@@ -191,7 +191,7 @@ def installs():
     ok(rc == 0 and dev.bad == 0 and dev.upgrades == 2 and dev.served == 11 and "done: the FM-1 runs FM-1_900" in out
        and "100%" in out, f"install: running -> loader -> Melodee ({dev.served} reads)")
 
-    dev = FakeFM1(image, identity="ota-FM-1_900", name="Melodee Update")
+    dev = FakeFM1(image, identity="ota-FM-1_900", name="Tessera Update")
     rc, out, err = cli([p, "--yes"], dev)
     ok(rc == 0 and dev.bad == 0 and dev.upgrades == 1 and "update mode" in out, "install: device already in update mode -> finishes the write")
 
