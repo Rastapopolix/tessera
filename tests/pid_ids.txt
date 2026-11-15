@@ -27,7 +27,7 @@
 0x018 ARP ORDER                track 0..1 def 0
 0x019 ROOT                     track 0..11 def 0
 0x01a SCALE                    track 0..76 def 0
-0x01b QUANTIZE                 track 0..5 def 0
+0x01b QUANTIZE                 track 0..6 def 0
 0x01c TRANSPOSE                track -24..24 def 0
 0x01d PATTERN LENGTH           track 1..64 def 16
 0x01e PATTERN DIVISION         track 0..9 def 2
@@ -268,7 +268,7 @@
 0x293 KEY C                    global -12..12 def 0
 0x294 TIMING SPLIT             track 0..100 def 0
 0x295 TIMING HOW               track 0..2 def 0
-0x296 FOLLOW HOW               track 0..11 def 0
+0x296 FOLLOW HOW               track 0..12 def 0
 0x297 FOLLOW RHYTHM            track 0..2 def 0
 0x298 PAT GEN                  track 0..1 def 0
 0x299 MIDI OUT DRUM MAP        track 0..1 def 0

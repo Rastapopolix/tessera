@@ -217,8 +217,10 @@ static int drum_from_phys(uint32_t engine, int16_t *e)
 
 /* ------------------------------------------------- voices, engines --- */
 enum { V_POLY, V_MONO, V_LEGATO, V_UNISON };   /* P_VOICE */
-enum { Q_OFF, Q_SNAP, Q_WHITE, Q_ALL, Q_MPC, Q_CHRD };  /* P_QUANT (seq.c kb_map, midi_map); 1 = SNAP, the former ON;
-                                                        * CHRD: SNAP, then to the CHORD track's chord (tessera.c) */
+enum { Q_OFF, Q_SNAP, Q_WHITE, Q_ALL, Q_MPC, Q_CHRD, Q_HARM };  /* P_QUANT (seq.c kb_map, midi_map); 1 = SNAP, the former
+                                                        * ON; CHRD: SNAP, then to the CHORD track's chord (tessera.c); HARM:
+                                                        * each scale degree the next tone of that chord (tessera_harm_note) */
+#define Q_CHORDS(q) ((q) == Q_CHRD || (q) == Q_HARM)   /* QNT CHRD or HARM: the CHORD track's chord leads */
 typedef struct {
     uint8_t side; /* stereo spread side, retained while sounding */
     uint8_t note, vel, gate, active;
