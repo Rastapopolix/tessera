@@ -1547,7 +1547,7 @@ class FakeFM1 {
       this.waiting = null;
       this.served++;
       if (this.served >= this.unplugAfter) { this.input.state = this.output.state = "disconnected"; return; }
-      if (addr === 0xE0000000) setTimeout(() => this.boot(this.loader, this.loader === STOCK_LOADER ? "FM-1" : "Melodee Update"), 300);
+      if (addr === 0xE0000000) setTimeout(() => this.boot(this.loader, this.loader === STOCK_LOADER ? "FM-1" : "Tessera Update"), 300);
       else if (addr === 0xF0000000) setTimeout(() => this.boot(this.afterWrite, this.afterWrite === "FM-1_015" ? "FM-1" : "Tessera FM-1"), 300);
       else this.next();
     }
@@ -1593,7 +1593,7 @@ async function updater() {
       `fm1ota.js: ${product} never resumes in ${other}`);
   }
   const unnamed = new FakeFM1(image);
-  unnamed.boot(TESSERA_LOADER, "Melodee Update");
+  unnamed.boot(TESSERA_LOADER, "Tessera Update");
   ok(await new Updater(unnamed.access).resume(image, null, "FM-1_900") === false && unnamed.served === 0,
     "fm1ota.js: resume without the package's loader identity writes nothing");
   const recovery = new FakeFM1(image, {afterWrite:"FM-1_015"});
@@ -1603,7 +1603,7 @@ async function updater() {
     "fm1ota.js: an interrupted return to stock resumes in the official loader");
 
   const dev2 = new FakeFM1(image, { unplugAfter: 3 });
-  dev2.boot(TESSERA_LOADER, "Melodee Update");
+  dev2.boot(TESSERA_LOADER, "Melodee Update");   // a loader from an earlier version
   const t0 = Date.now();
   const done = await new Updater(dev2.access).resume(image, null, null, TESSERA_LOADER);
   ok(done === false && Date.now() - t0 < 6000, "fm1ota.js: unplugged during the write -> stops at once");

@@ -83,7 +83,7 @@ uses it to recognise Tessera on a connected FM-1, so no other firmware may share
 stays three digits at most. Releases 2.0.1 to 3.3-beta1 reported `FM-1_8377` and four digits (3.2.2 is
 `FM-1_83773022`), releases up to 2.0 Melodee's numbering (`FM-1_9` and the version's digits, 2.0 is
 `FM-1_920`); the site and the installer still accept those packages. The update loader keeps reporting
-`ota-FM-1_900` ("Melodee Update").
+`ota-FM-1_900` (USB name "Tessera Update"; "Melodee Update" in earlier versions).
 
 Build options (environment; most use `0` or `1`; defaults in `firmware/src/build_options.h`, `melodee.c`, `core.h` and `icons.c`):
 
@@ -239,7 +239,8 @@ The first install of the stub, an intentional stub change, and installing firmwa
 the stub still have an unprotected window. Keep the FM-1 charged and the computer awake.
 See [boot protection design and validation](docs/BOOT-SAFETY.md).
 
-If the device appears as **Melodee Update**, it is in the MIDI update loader:
+If the device appears as **Tessera Update** (**Melodee Update** on earlier versions, or where the computer kept the old
+name), it is in the MIDI update loader:
 `python3 tools/fm1_install.py /path/to/working-firmware.fwsc --yes` resumes installation.
 
 If it appears as USB **4c4a:8057**, with inquiry identity **WL82 / UBOOT1.00**, it is
