@@ -95,6 +95,7 @@
 0x101 SWING                    global 0..100 def 0
 0x102 CLOCK SOURCE             global 0..2 def 0
 0x103 TUNE                     global -50..50 def 0
+0x104 CLOCK PPQN               global 0..4 def 0
 0x10c MIDI INPUT               global 0..1 def 0
 0x10d DRUM MIDI CHANNEL        global device 0..16 def 0
 0x10e MIDI ROUTING             global 0..4 def 0

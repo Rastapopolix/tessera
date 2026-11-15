@@ -21,6 +21,8 @@
  * the root, or above 12 bits) a slot never set: MAJ. Older firmware keeps them with the favorites, unread.
  * favorites.factory[8][27]: tagged NOTE PREVIEW OFF (since 3.3); any other byte ON, so units that never chose get it
  * ON. The old recording-preferences bit 6 is still written for older firmware, and no longer read.
+ * favorites.factory[8] bytes 2..3: PPQN_TAG, then G_PPQN 1..4 (MIDI clock pulses a beat, the device's like CLK: project.c
+ * glo_kept); untagged = 0, 24 pulses. Older firmware keeps them with the favorites, unread.
  * favorites.factory[8][29]: tagged GROUND LIGHT (Mono, gfx.c ux_ground; since 3.5); any other byte DARK. The palette id
  * stays as it was, so older firmware keeps the ink (on black).
  * bold: no longer used (one font weight); kept as it was saved, unless it holds the HOLD setting (panel.c). */
@@ -46,6 +48,9 @@ static int16_t settings_glo[4];                     /* ext.glo: project.c GLO_KE
 #define AUTOSAVE_OFF_TAG 0xA1u                     /* CZ row byte 28: only this tag disables autosave */
 #define PREVIEW_OFF_TAG 0xB2u                      /* GRAIN row byte 27: only this tag turns NOTE PREVIEW off */
 #define GROUND_LIGHT_TAG 0xB5u                     /* GRAIN row byte 29: only this tag puts the screen on paper */
+#define PPQN_TAG 0xC5u                             /* GRAIN row byte 2: byte 3 holds G_PPQN */
+#define PPQN_MAX 4u                                /* (params.c N_PPQN: 24 48 4 8 12; glo_restore clamps again) */
+static int16_t settings_ppqn;                      /* G_PPQN as last used (project.c glo_restore, glo_poll) */
 /* Retired DIGITAL row, outside all live preset/settings bits. Kept by older
  * Melodee builds along with the other favorites; no layout or magic change. */
 static const uint8_t SETTINGS_OWNER[4] = {'M', 'D', 'S', 1};
@@ -124,6 +129,8 @@ static int settings_import(persist_t *p, int n)
         uscale_mask[k] = (uint16_t)(uscale_ok(m) ? m : USCALE_DEF);
     }
     settings_preview = p->favorites.factory[8][27] != PREVIEW_OFF_TAG;   /* (rp bit 6: older firmware's, not read) */
+    settings_ppqn = (int16_t)(p->favorites.factory[8][2] == PPQN_TAG && p->favorites.factory[8][3] <= PPQN_MAX
+                              ? p->favorites.factory[8][3] : 0u);
 #if MELODEE_LOOK
     ux_ground = p->favorites.factory[8][29] == GROUND_LIGHT_TAG;
 #endif
@@ -170,6 +177,8 @@ static void settings_export(persist_t *p)
 #endif
     p->favorites.factory[15][27]=settings_screen;
     p->favorites.factory[8][27] = settings_preview ? 0u : PREVIEW_OFF_TAG;
+    p->favorites.factory[8][2] = settings_ppqn ? PPQN_TAG : 0u;
+    p->favorites.factory[8][3] = (uint8_t)settings_ppqn;
 #if MELODEE_LOOK
     p->favorites.factory[8][29] = ux_ground ? GROUND_LIGHT_TAG : 0u;
 #endif

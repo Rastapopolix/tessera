@@ -208,7 +208,19 @@ static const page_t *arp2_page(void)
     return &PAGES[at % NPAGES];
 }
 static int arp2_on(void) { return !ui.home && !ui.menu && !ui.confirm && PAGES[ui.page].graph == GR_ARP && oct_dn_only(); }
-static const page_t *cur_page(void) { return page_over ? page_over : arp2_on() ? arp2_page() : &PAGES[ui.page]; }
+/* MIDI IN, OCT- held (the key grammar's rule 2): KNOB 4 is PPQN, the clock's pulses a beat, in place of CLK. Not one of
+ * PAGES (the page numbers stay); the same title, so the picture (ui_mono.c mo_pic_midiin) stays too */
+static const page_t MIDIIN2_PAGE = {"MIDI IN", FAM_GLO, SC_GLOBAL, GR_NONE, {G_MIDI, G_DRUMCH, G_ROUTE, G_PPQN}};
+static int midiin2_on(void)
+{
+    const page_t *p = &PAGES[ui.page];
+    return !ui.home && !ui.menu && !ui.confirm && p->scope == SC_GLOBAL && p->graph == GR_NONE && p->id[0] == G_MIDI &&
+           oct_dn_only();
+}
+static const page_t *cur_page(void)
+{
+    return page_over ? page_over : arp2_on() ? arp2_page() : midiin2_on() ? &MIDIIN2_PAGE : &PAGES[ui.page];
+}
 
 /* the quick layers (ui_layer.c): a button held, the keys and KNOB 1..4 are its shortcuts, its map over the page */
 /* the one hold time (the key grammar, tessera-notes audit-2026-11 M0): a button held this long is a hold (btn_hold:

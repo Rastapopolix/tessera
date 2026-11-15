@@ -1,14 +1,27 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Adapted from MIDI clock contributions by ChanceTheMaker and keremimo (2026).
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
-/* Audio ISR state. Musical phase is exactly 1024 units per MIDI pulse; changing
+/* Audio ISR state. Musical phase is exactly MIDI_BEAT_UNITS / PPQN units per MIDI pulse (1024 at 24); changing
  * the measured tempo cannot move steps, gates, ties or the arpeggiator. */
 static struct {
     uint32_t pos, rendered, last_ms, start_ms, last_time, interval_time, tempo_time, tempo_dt;
     uint16_t pulse_count;
     uint16_t spot;                                  /* Song Position: 1/16 steps from the top */
     uint8_t mode, selected, have_pulse, tempo_valid, tempo_n, tempo_count, count_valid, spot_valid, seek_wait;
+    uint8_t ppqn;                                   /* the pulses a beat the tempo was measured with */
 } midi_clock;
+
+/* G_PPQN: the clock's pulses a beat, in (here) and out (midi_out.c CLOCK OUT). 24 is MIDI's; 48 for a clock that
+ * would play twice as fast; 4, 8, 12 for gear that counts fewer. Each divides MIDI_BEAT_UNITS and is a multiple of
+ * 4, so a quarter beat is always whole pulses: the tempo is measured over a quarter beat at every rate */
+static const uint8_t PPQN_PULSES[] = {24, 48, 4, 8, 12};
+_Static_assert(MIDI_BEAT_UNITS % 48u == 0u && MIDI_BEAT_UNITS % 12u == 0u, "whole units a pulse");
+static uint32_t midi_ppqn(void)
+{
+    uint32_t k = (uint32_t)song.g[G_PPQN];
+    return PPQN_PULSES[k < sizeof PPQN_PULSES ? k : 0u];
+}
+static uint32_t midi_pulse_units(void) { return MIDI_BEAT_UNITS / midi_ppqn(); }
 
 /* An external clock's LFO units (Melodee 1.6.1, bc886e4): the measured tempo, so pulse jitter cannot modulate a synced
  * LFO; past a quarter of a pulse from the song's units it is pulled back, so it cannot slide either */
@@ -107,7 +120,13 @@ static __attribute__((noinline)) void midi_clock_transport(uint32_t status, uint
 
 static __attribute__((noinline)) void midi_clock_pulse(uint32_t ms, uint32_t time, uint16_t count)
 {
+    uint32_t ppqn = midi_ppqn(), quarter = ppqn / 4u, unit = MIDI_BEAT_UNITS / ppqn;   /* quarter: pulses a quarter beat */
     if (midi_clock.seek_wait) midi_clock_seek();
+    if (midi_clock.ppqn != ppqn) {                  /* PPQN changed: measure the tempo again at the new rate */
+        midi_clock.ppqn = (uint8_t)ppqn;
+        midi_clock.tempo_valid = 0;
+        midi_clock.tempo_dt = 0;
+    }
     uint32_t pulses = midi_clock.count_valid ? (uint16_t)(count - midi_clock.pulse_count) : 1u;
     if (!pulses || (midi_clock.have_pulse && ms - midi_clock.last_ms > 500u)) pulses = 1u;
     midi_clock.pulse_count = count;
@@ -121,13 +140,13 @@ static __attribute__((noinline)) void midi_clock_pulse(uint32_t ms, uint32_t tim
         midi_clock.tempo_n = 0;
         midi_clock.tempo_dt = 0;
         midi_clock.tempo_count = 0;
-    } else if (++midi_clock.tempo_n == 6u) {
+    } else if (++midi_clock.tempo_n >= quarter) {   /* (a quarter beat: 6 pulses at 24) */
         uint32_t dt = time - midi_clock.tempo_time;
         midi_clock.tempo_time = time;
         midi_clock.tempo_n = 0;
         /* Allow endpoint jitter around the supported 40..240 BPM range. */
         if (dt >= 60u * MIDI_TICKS_PER_MS && dt <= 377u * MIDI_TICKS_PER_MS) {
-            /* Six clocks acquire tempo quickly, but their endpoint jitter must
+            /* A quarter beat's clocks acquire tempo quickly, but their endpoint jitter must
              * not modulate the LFO or the rate between pulses. Smooth duration
              * over roughly two beats; a change above 6.25% locks immediately.
              * Keep eighth-tick precision even with millisecond host clocks.
@@ -145,7 +164,7 @@ static __attribute__((noinline)) void midi_clock_pulse(uint32_t ms, uint32_t tim
                 midi_clock.tempo_dt = (uint32_t)((int32_t)midi_clock.tempo_dt + delta / midi_clock.tempo_count);
             }
             dt = midi_clock.tempo_dt / 8u;
-            midi_clock.interval_time = dt / 6u;
+            midi_clock.interval_time = dt / quarter;
             midi_beat_samples = (uint32_t)(((uint64_t)FS * dt) / (250u * MIDI_TICKS_PER_MS));
             /* +/- 0.875 BPM hysteresis keeps fractional master tempos from
              * repeatedly rolling the header digits across a rounding edge. */
@@ -158,24 +177,25 @@ static __attribute__((noinline)) void midi_clock_pulse(uint32_t ms, uint32_t tim
     if (song.playing) {
         if (midi_clock.have_pulse) {
             uint32_t interval = time - midi_clock.last_time;
-            if (pulses == 1u && !midi_clock.tempo_dt && interval >= 8u * MIDI_TICKS_PER_MS && interval <= 80u * MIDI_TICKS_PER_MS)
+            if (pulses == 1u && !midi_clock.tempo_dt && interval * quarter >= 48u * MIDI_TICKS_PER_MS &&
+                interval * quarter <= 480u * MIDI_TICKS_PER_MS)   /* (8..80 ms a pulse at 24) */
                 midi_clock.interval_time = interval;
-            midi_clock.pos += pulses * (MIDI_BEAT_UNITS / 24u);
+            midi_clock.pos += pulses * unit;
         } else if (pulses > 1u) {
             /* Start's first clock is phase zero, even when it was discarded. */
-            midi_clock.pos += (pulses - 1u) * (MIDI_BEAT_UNITS / 24u);
+            midi_clock.pos += (pulses - 1u) * unit;
         }
         midi_clock.have_pulse = 1;
     }
     if (!midi_clock.interval_time)
-        midi_clock.interval_time = 60000u * MIDI_TICKS_PER_MS / ((uint32_t)song.g[G_BPM] * 24u);
+        midi_clock.interval_time = 60000u * MIDI_TICKS_PER_MS / ((uint32_t)song.g[G_BPM] * ppqn);
     midi_clock.last_ms = ms;
     midi_clock.last_time = time;
 }
 
 static uint32_t midi_clock_advance(uint32_t now)
 {
-    uint32_t target, elapsed, offset, n;
+    uint32_t target, elapsed, offset, n, unit = midi_pulse_units();
     if (!midi_clock.have_pulse)
         return 0;
     elapsed = now - midi_clock.last_time;
@@ -184,9 +204,14 @@ static uint32_t midi_clock_advance(uint32_t now)
         elapsed = 0;
     if (elapsed > midi_clock.interval_time)
         elapsed = midi_clock.interval_time;
-    offset = elapsed * (MIDI_BEAT_UNITS / 24u) / midi_clock.interval_time;
-    if (offset >= MIDI_BEAT_UNITS / 24u)
-        offset = MIDI_BEAT_UNITS / 24u - 1u;
+    if (elapsed <= 0xFFFFFFFFu / unit)              /* (always at 24: exact, as before) */
+        offset = elapsed * unit / midi_clock.interval_time;
+    else {                                          /* (a slow pulse at 4 or 8: 32-bit, no 64-bit divide on the FM-1) */
+        uint32_t per = midi_clock.interval_time / unit;
+        offset = elapsed / (per ? per : 1u);
+    }
+    if (offset >= unit)
+        offset = unit - 1u;
     target = midi_clock.pos + offset;
     n = (int32_t)(target - midi_clock.rendered) > 0 ? target - midi_clock.rendered : 0u;
     midi_clock.rendered += n;

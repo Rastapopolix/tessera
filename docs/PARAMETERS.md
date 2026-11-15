@@ -108,6 +108,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x101 | SWING | 0 to 100 % | 0 | Delays every second step of every track, for a swung feel. |
 | 0x102 | CLOCK SOURCE | INT, USB, TRS | INT | Where the tempo comes from: the FM-1 itself, USB MIDI or the TRS MIDI input. |
 | 0x103 | TUNE | -50 to 50 | 0 | Fine tuning of every track, in cents. |
+| 0x104 | CLOCK PPQN | 24, 48, 4, 8, 12 | 24 | MIDI clock pulses per beat, for the clock the FM-1 follows and CLOCK OUT. 24 is the MIDI standard; 48 for a clock that plays twice as fast; 4, 8 or 12 for gear that sends or expects fewer. MIDI IN, OCT- held: KNOB 4. |
 | 0x10C | MIDI INPUT | USB, TRS | USB | Which MIDI input plays the tracks: USB or TRS. |
 | 0x10D | DRUM MIDI CHANNEL | OFF, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 | OFF | The MIDI channel the first drum track listens to and sends on (MIDI OUT). OFF (the default): it follows ROUT like the other tracks. 10 is General MIDI's drum channel. (The device's, not the project's.) |
 | 0x10E | MIDI ROUTING | CH1-4, SEL, CH5-8, CH9-12, CH13-16 | CH1-4 | Which MIDI channels reach which tracks: four channels to the four tracks, or every channel to the selected track (SEL). MIDI OUT sends each track on the same channels (SEL: 1 to 4). |

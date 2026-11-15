@@ -4,7 +4,7 @@
  * (usb.c midi_out_q): KEYS sends the keys only (as before), ALL also the steps, the generators and the ARP, OFF nothing;
  * MIDI IN is never echoed; a track's channel follows ROUT and a drum track the DRUM channel, unless the track has its
  * own (GLO > MIDI OUT: 1..16, or OFF); its TRANSPOSE moves the notes sent (not past 0..127); a mute sends nothing;
- * every note-on gets its note-off (STOP, a panic, a channel change); 24 clock pulses a beat with START and STOP while
+ * every note-on gets its note-off (STOP, a panic, a channel change); 24 clock pulses a beat (PPQN's) with START and STOP while
  * CLK is INT, none from an external clock; the settings survive a save.
  * Run by tests/run_tests.sh (needs build/gen from one firmware build). */
 #define UI_TEST_NO_MAIN 1
@@ -257,6 +257,21 @@ static int clock_out_test(void)
     bad += check("  turned off while playing: STOP goes out, the pulses end", count(0xFC, 0, 0) == 1u &&
                  ((log_pkt[log_n - 1u] >> 8) & 0xFFu) == 0xFCu);
     stop();
+
+    {   /* PPQN: CLOCK OUT sends the chosen pulses a beat (48, 4, 8, 12), then 24 again */
+        static const uint8_t pulses_a_beat[] = {24, 48, 4, 8, 12};
+        int all = 1;
+        for (uint32_t k = 1; k < 5u; k++) {
+            reset(MIDI_OUT_KEYS);
+            settings_clock_out = 1; song.g[G_PPQN] = (int16_t)k;
+            play(8);
+            uint32_t n = count(0xF8, 0, 0);
+            all &= n >= 8u * pulses_a_beat[k] && n <= 8u * pulses_a_beat[k] + 2u;
+            stop();
+        }
+        song.g[G_PPQN] = 0;
+        bad += check("CLOCK OUT at PPQN 48, 4, 8 and 12: that many pulses a beat", all);
+    }
 
     reset(MIDI_OUT_KEYS);
     settings_clock_out = 1;

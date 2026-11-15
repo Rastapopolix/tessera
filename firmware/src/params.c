@@ -28,6 +28,7 @@ static const char *const N_ALLOC[] = {"ROT", "REUSE"};
 static const char *const N_ORDER[] = {"NOTE", "PLAY"};
 static const char *const N_CLOCK[] = {"INT", "USB", "TRS"};
 static const char *const N_MIDI_INPUT[] = {"USB", "TRS"};
+static const char *const N_PPQN[] = {"24", "48", "4", "8", "12"};   /* G_PPQN: 0 = 24, the MIDI standard (midi_clock.c PPQN) */
 static const char *const N_ROUTE[] = {"CH1-4", "SEL", "CH5-8", "CH9-12", "CH13-16"}; /* Keep saved CH1-4/SEL ids; append ranges. */
 static const char *const N_NOTE[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 static const char *const N_DASH[] = {"--"};
@@ -228,7 +229,7 @@ static const param_desc_t GP[G_COUNT] = {
     [G_SWING] = PD("SWG", F_PCT, 0, 100, 0),
     [G_CLOCK] = PE("CLK", N_CLOCK, 0),
     [G_TUNE] = PD("TUNE", F_INT, -50, 50, 0),
-    [G_RESERVED4] = PD("", F_INT, 0, 127, 0),
+    [G_PPQN] = PE("PPQN", N_PPQN, 0),
     [G_RESERVED5] = PD("", F_INT, 0, 127, 0),
     [G_RESERVED6] = PD("", F_INT, 0, 127, 0),
     [G_RESERVED7] = PD("", F_INT, 0, 127, 0),

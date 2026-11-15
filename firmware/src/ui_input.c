@@ -94,7 +94,8 @@ static int oct_dn_page(void)                            /* the page shown has an
         return tessera.pl_shape == PL_USER;             /* USER's points */
     return g == GR_EVOLVE || g == GR_MIDICH || g == GR_ENTRIES || PAGES[ui.page].graph == GR_ARP ||   /* ROLL ALL,
                                                          * TRANSPOSE, ROLE, ARP's SWING PROB HOLD ORDER, */
-           g == GR_TIMING || g == GR_ENERGY || g == GR_CHAIN || g == GR_TRK || g == GR_CORDS;   /* SPLIT, DEPTH, REPEAT, PAN, CC */
+           g == GR_TIMING || g == GR_ENERGY || g == GR_CHAIN || g == GR_TRK || g == GR_CORDS ||   /* SPLIT, DEPTH, REPEAT, PAN, CC, */
+           (PAGES[ui.page].scope == SC_GLOBAL && g == GR_NONE && PAGES[ui.page].id[0] == G_MIDI);   /* MIDI IN's PPQN */
 }
 /* GEN or TWEAK, OCT- held (the key grammar, M3): KNOB 2-4 (slot 1-3; KNOB 1 is RANDOM). TWEAK: FOLLOW's HOW,
  * RHYTHM, HOLD; CHORD: STRUM (1 ms detents low, 10 ms high: tessera_strum_knob), its DIR (seq_strum.c), OCT; the other engines with a layer: its settings
@@ -1972,7 +1973,7 @@ static void page_knob(uint32_t k, int32_t s)
         page_over = 0;
     } else {
         edit_param(k, s);
-        if (arp2_on()) oct_eat |= 1u;                   /* (ARP, OCT- held: its release is no Back) */
+        if (arp2_on() || midiin2_on()) oct_eat |= 1u;   /* (ARP, MIDI IN, OCT- held: its release is no Back) */
         pg = cur_page();
         if (!tess_knob(pg, k))                          /* (Tessera's own pages: no picker) */
             pick_touch(k);                              /* a name from a long list: its picker (ui_popup.c) */
