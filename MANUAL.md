@@ -1488,6 +1488,21 @@ track, from SCL's list or with SCL held and a key, and every melodic track follo
 link is saved with the project (a project saved before it loads as OWN). TRN still moves a single track. The **Key in B** and
 **Key in C** rows at the end of SCL's list change the key in the CHAIN's sections ([CHAIN](#chain-one-form-for-the-project)).
 
+**QNT: how the keys meet the scale.** SCL's **QNT** row, the same on every track:
+
+| QNT | What it does |
+|---|---|
+| **OFF** | Every key plays its own note, in the scale or not. |
+| **SNAP** | Every key plays; a note outside the scale moves down to the scale's next note below. |
+| **WHITE** | The scale on the white keys, from C4 = ROOT upwards; the black keys are silent. |
+| **ALL** | Every key, black and white, is the next note of the scale. |
+| **MPC** | For playing Tessera from an MPC's pads (or any pad controller that sends the same notes). The FM-1's own keys work as WHITE. From MIDI IN only notes 20 to 35 play: the 16 pads of Bank H in MPC Sample's default map, H01 to H16. They play successive notes of the scale, pad by pad (H01 the lowest), and every other MIDI note is silent (on a drum track too; a kit keeps its own sounds on 20 to 35). **DEGREE**, a row of SCL's list that shows only with QNT MPC, is the scale degree pad **H02** plays (1 is ROOT, up to the scale's number of notes); H01 plays the one below it. The octave buttons (OCT- and OCT+ on HOME) move the pads by octaves. |
+| **CHRD** | The keys, MIDI IN and the generators snap to the nearest note of the chord a CHORD track plays (no CHORD track: as SNAP). See below. |
+| **HARM** | Each note up the scale plays the next note up of that chord: [HARM: a harmonizer](#harm-a-harmonizer). |
+
+With any QNT but OFF, KNOB 2 on NOTES moves a note by the scale's notes (CHRD and HARM: the chord's). Notes already
+written stay where they are; **Snap to scale** on the pattern's sheet moves them onto the scale, once.
+
 <p align="center"><img src="assets/gallery/scl.png" alt="SCL" width="240"> <img src="assets/gallery/chord.png" alt="SCL > CHORD" width="240"></p>
 
 A **CHORD** track plays a progression; with **QNT CHRD** the other tracks follow it.
@@ -2377,6 +2392,10 @@ track. A *mod of mods* (M1 AMT to M16 AMT) moves another cord's amount, or scale
 **Modulation**. Using one signal to change a setting of another: an LFO moving a filter, one track's notes opening
 another's. On a modular, a patch cable does this.
 
+**MPC** (QNT). Plays Tessera from an MPC's pads: MIDI notes 20 to 35 (Bank H, pads H01 to H16) play successive notes
+of the scale, from the degree set by SCL's **DEGREE** row on pad H02; other MIDI notes are silent, and the FM-1's keys
+work as WHITE. [MANUAL](#harmony-one-key-chord-and-qnt-chrd)
+
 **MORPH**. A generator: slides from one rhythm preset to another with a single knob.
 
 **MOSAIC**. A colour set with a colour per track (also SUNSET, OCEAN, NEON). See *COLOR*.
@@ -2451,8 +2470,8 @@ you edit.
 
 ### Q
 
-**QNT** (quantise). Snap notes to the scale, so wrong notes become right ones. **QNT CHRD** snaps to the notes of the
-CHORD track's current chord, so every part stays in key with it. Also *Quantize* on the pattern's sheet, and record
+**QNT** (quantise). How the keys meet the scale: OFF, SNAP, WHITE, ALL, MPC, CHRD or HARM, so wrong notes become
+right ones. **QNT CHRD** snaps to the notes of the CHORD track's current chord, so every part stays in key with it. Also *Quantize* on the pattern's sheet, and record
 quantise on TEMPO. [MANUAL](#harmony-one-key-chord-and-qnt-chrd)
 
 **QUAD**. A generator: a 4 x 4 grid of notes the four tracks share, a row each.
