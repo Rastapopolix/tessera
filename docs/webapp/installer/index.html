@@ -536,7 +536,7 @@ const IS_OTA = (id) => /^ota-/i.test(id.model);
 const TESSERA_LOADER = "ota-FM-1_900";
 const STOCK_LOADER = "ota-FM-1_015";
 
-// errors carry a code the pages translate: notfound, model, stopped, noloader, lost, noreturn,
+// errors carry a code the pages translate: notfound, busy (detail: the ports another app holds), model, stopped, noloader, lost, noreturn,
 // mismatch (detail: the identity the device reports), badreq, wrongloader (detail: the loader's
 // identity). A step-1 error has lastRead: the last image address the running firmware read.
 function fail(code, msg, detail = "") { const e = new Error(msg); e.code = code; e.detail = detail; return e; }
@@ -636,32 +636,59 @@ class Updater {
   constructor(access, log) {
     this.access = access;
     this.log = log || (() => {});
+    this.findMs = 6000;   // how long install() and the pages look for the running firmware before giving up
   }
 
-  // every in/out pair with the same port name that answers the handshake
+  // every in/out pair with the same port name that answers the handshake. this.scan keeps what the last pass saw, so
+  // a miss can say why: busy (open() refused: another app, tab or DAW holds the port; on Windows a MIDI port has one
+  // owner at a time), silent (opened but no identity in time: still starting, or not an FM-1) and other (names the
+  // filter below never probes; logged so a report shows what the computer calls the FM-1)
   async find(filter) {
     const outs = [...this.access.outputs.values()];
+    const scan = this.scan = { busy: [], silent: [], other: [] };
     for (const input of this.access.inputs.values()) {
       if (input.state === "disconnected") continue;
-      if (!/fm-1|tessera|melodee|felucca|ota|composite|sinco|usb-midi/i.test(input.name || "")) continue;   // never probe other gear
+      if (!/fm-1|tessera|melodee|felucca|ota|composite|sinco|usb-midi/i.test(input.name || "")) {   // never probe other gear
+        scan.other.push(input.name || "?");
+        continue;
+      }
       const output = outs.find((o) => o.name === input.name && o.state !== "disconnected");
       if (!output) continue;
-      try { await input.open(); await output.open(); } catch (_) { continue; }
+      try { await input.open(); await output.open(); } catch (_) { scan.busy.push(input.name); continue; }
       const link = new Link(input, output);
       const id = await handshake(link, 2);
       if (id && (!filter || filter(id))) return { link, id, name: input.name };
       link.close();
+      if (!id) {
+        scan.silent.push(input.name);
+        // let go of a port that did not answer, so a Windows DAW or the editor can still have it
+        try { input.close && await input.close(); output.close && await output.close(); } catch (_) { /* closing is best effort */ }
+      }
+    }
+    if (scan.busy.length || scan.silent.length || scan.other.length) {
+      this.log(`MIDI scan: busy [${scan.busy}] silent [${scan.silent}] not probed [${scan.other}]`);
     }
     return null;
   }
 
+  // the running firmware, waited for a little: a single pass misses an FM-1 that is still starting, or a port the
+  // OS has not finished listing; notfound, or busy (detail: the ports another app holds) when that is the reason
+  async findDevice(filter, ms = this.findMs) {
+    const dev = await this.waitFor(filter, ms);
+    if (dev) return dev;
+    const busy = (this.scan && this.scan.busy) || [];
+    if (busy.length) throw fail("busy", `MIDI port in use by another app or tab: ${busy.join(", ")}`, busy.join(", "));
+    throw fail("notfound", "FM-1 not found (USB cable, and no other app using it?)");
+  }
+
   async waitFor(filter, ms) {
     const end = Date.now() + ms;
-    while (Date.now() < end) {
+    do {
       const dev = await this.find(filter);
       if (dev) return dev;
+      if (Date.now() >= end) break;
       await sleep(1000);
-    }
+    } while (Date.now() < end);
     return null;
   }
 
@@ -699,8 +726,7 @@ class Updater {
   // package's own loader (TESSERA_LOADER, STOCK_LOADER), any other one gets nothing
   async install(image, product, onStep, loader) {
     const step = onStep || (() => {});
-    const dev = await this.find((id) => !IS_OTA(id));
-    if (!dev) throw fail("notfound", "FM-1 not found (USB cable, and no other app using it?)");
+    const dev = await this.findDevice((id) => !IS_OTA(id));
     const [model] = product.split("_");
     if (dev.id.model !== model) { dev.link.close(); throw fail("model", `the device is ${dev.id.text}, the package is for ${product}`); }
     step("start", dev.id.text);
@@ -1112,7 +1138,7 @@ const TEXT = {
     stockNeedsV15: "書き込みはしていません（CHECK HEAD, FAILED -5）。この FM-1 の起動部は V15 のものです（Tessera の前は V15 でした）。戻せるのは V15 です。M-VAVE の fm1_open リポジトリ（sdk/firmware）の FM-1_015.fwsc を選んでください。その後 M-VAVE の M-UPGRADE で V16 にできます。",
     stockTesseraOld: "書き込みはしていません。3.3 より前の Tessera は V16 を受け付けません。最新の Tessera をインストールしてから、もう一度公式ファームウェアに戻してください。",
     loaderStock: "FM-1 は M-VAVE 公式の書き込みモードで待機しています。このモードには公式FM-1.fwscしか書き込めません。何も送っていません。先に「公式ファームウェアに戻す」を完了してください。",
-    loaderTessera: "FM-1 は Tessera の書き込みモード（Melodee Update）で待機しています。このモードには公式ファイルを送りません。何も送っていません。上の「インストール」で Tessera を完了してから、公式ファームウェアに戻してください。",
+    loaderTessera: "FM-1 は Tessera の書き込みモード（Tessera Update / Melodee Update）で待機しています。このモードには公式ファイルを送りません。何も送っていません。上の「インストール」で Tessera を完了してから、公式ファームウェアに戻してください。",
     loaderUnknown: "このインストーラーが知らない書き込みモードです。何も送っていません。この名前を添えて GitHub で報告してください: ",
     nomidi: "このブラウザでは使えません。Chrome か Edge で開いてください。", loadfail: "読み込めませんでした: ",
     start: "開始します", verify: "確認中", loader: "書き込みモードに切り替え中", write: "書き込み中",
@@ -1124,6 +1150,7 @@ const TEXT = {
     error: "エラー: ",
     denied: "MIDI（SysEx）の使用が許可されませんでした。アドレスバーのサイト設定で MIDI を許可して、もう一度押してください。",
     notfound: "FM-1 が見つかりません。USB ケーブル（データ通信用か）を確かめ、MIDI を使う他のアプリを閉じてから、もう一度押してください。",
+    busy: "FM-1 の MIDI ポートを他のアプリかタブが使っています（エディタ、DAW、M-UPGRADE、別のインストーラのタブ）。それを閉じてから、もう一度押してください。ポート: ",
     model: "接続されている機器は FM-1 ではありません。",
     lost: "USB の接続が切れました。挿し直してもう一度押してください。",
     noloader: "書き込みモードの FM-1 が見つかりません。USB を挿し直してもう一度押してください（終わるまで書き込みモードのままです）。",
@@ -1178,7 +1205,7 @@ const TEXT = {
     stockNeedsV15: "Nothing was written (CHECK HEAD, FAILED -5): this FM-1's start-up part is V15's (it ran V15 before Tessera), so its way back is V15. Select FM-1_015.fwsc from M-VAVE's fm1_open repository (sdk/firmware). M-VAVE's M-UPGRADE can take it to V16 afterwards.",
     stockTesseraOld: "Nothing was written. Tessera before 3.3 does not take V16: install the current Tessera first, then return to the official firmware again.",
     loaderStock: "The FM-1 is waiting in M-VAVE's official update mode, which only accepts the official FM-1.fwsc. Nothing was sent. Finish Return to the official firmware first.",
-    loaderTessera: "The FM-1 is waiting in Tessera's update mode (Melodee Update), which never receives the official file. Nothing was sent. Press Install above to finish Tessera first, then return to the official firmware.",
+    loaderTessera: "The FM-1 is waiting in Tessera's update mode (Tessera Update / Melodee Update), which never receives the official file. Nothing was sent. Press Install above to finish Tessera first, then return to the official firmware.",
     loaderUnknown: "The FM-1 is in an update mode this installer does not know. Nothing was sent. Please report it on GitHub with this name: ",
     nomidi: "This browser cannot do it. Open the page in Chrome or Edge.", loadfail: "Could not load: ",
     start: "Starting", verify: "Verifying", loader: "Switching to update mode", write: "Writing",
@@ -1190,6 +1217,7 @@ const TEXT = {
     error: "Error: ",
     denied: "MIDI (SysEx) access was not allowed. Allow MIDI in the site settings (address bar) and press Install again.",
     notfound: "FM-1 not found. Check the USB cable (a data cable), close other apps that use MIDI, and press Install again.",
+    busy: "Another app or tab is using the FM-1's MIDI port (the editor, a DAW, M-UPGRADE, another installer tab). Close it and press Install again. Port: ",
     model: "The connected device is not an FM-1.",
     lost: "The USB connection was lost. Replug it and press Install again.",
     noloader: "The FM-1 in update mode was not found. Replug the USB cable and press Install again (it stays in update mode until it is finished).",
@@ -1264,7 +1292,7 @@ const TEXT = {
     stockNeedsV15: "No se ha escrito nada (CHECK HEAD, FAILED -5): la parte de arranque de este FM-1 es de la V15 (tenía la V15 antes de Tessera), así que su camino de vuelta es la V15. Selecciona FM-1_015.fwsc del repositorio fm1_open de M-VAVE (sdk/firmware). Después, M-UPGRADE de M-VAVE puede llevarlo a la V16.",
     stockTesseraOld: "No se ha escrito nada. Tessera anterior a la 3.3 no acepta la V16: instala primero el Tessera actual y vuelve después al firmware oficial.",
     loaderStock: "El FM-1 espera en el modo de actualización oficial de M-VAVE, que solo acepta el FM-1.fwsc oficial. No se ha enviado nada. Termina primero Volver al firmware oficial.",
-    loaderTessera: "El FM-1 espera en el modo de actualización de Tessera (Melodee Update), que nunca recibe el archivo oficial. No se ha enviado nada. Pulsa Instalar arriba para terminar primero Tessera y vuelve después al firmware oficial.",
+    loaderTessera: "El FM-1 espera en el modo de actualización de Tessera (Tessera Update / Melodee Update), que nunca recibe el archivo oficial. No se ha enviado nada. Pulsa Instalar arriba para terminar primero Tessera y vuelve después al firmware oficial.",
     loaderUnknown: "El FM-1 está en un modo de actualización que este instalador no conoce. No se ha enviado nada. Infórmalo en GitHub con este nombre: ",
     nomidi: "Este navegador no puede hacerlo. Abre la página en Chrome o Edge.",
     loadfail: "No se pudo cargar: ",
@@ -1290,6 +1318,7 @@ const TEXT = {
     error: "Error: ",
     denied: "No se permitió el acceso MIDI (SysEx). Permite MIDI en la configuración del sitio (barra de direcciones) y pulsa Instalar otra vez.",
     notfound: "No se encontró el FM-1. Comprueba el cable USB (debe ser de datos), cierra otras aplicaciones que usen MIDI y pulsa Instalar otra vez.",
+    busy: "Otra aplicación o pestaña está usando el puerto MIDI del FM-1 (el editor, un DAW, M-UPGRADE, otra pestaña del instalador). Ciérrala y pulsa Instalar otra vez. Puerto: ",
     model: "El dispositivo conectado no es un FM-1.",
     lost: "Se perdió la conexión USB. Vuelve a conectarlo y pulsa Instalar otra vez.",
     noloader: "No se encontró el FM-1 en modo de actualización. Vuelve a conectar el cable USB y pulsa Instalar otra vez (sigue en modo de actualización hasta que termine).",
@@ -1364,7 +1393,7 @@ const TEXT = {
     stockNeedsV15: "Non è stato scritto nulla (CHECK HEAD, FAILED -5): la parte di avvio di questo FM-1 è della V15 (aveva la V15 prima di Tessera), quindi la sua via di ritorno è la V15. Seleziona FM-1_015.fwsc dal repository fm1_open di M-VAVE (sdk/firmware). In seguito M-UPGRADE di M-VAVE può portarlo alla V16.",
     stockTesseraOld: "Non è stato scritto nulla. Tessera prima della 3.3 non accetta la V16: installa prima il Tessera attuale, poi torna di nuovo al firmware ufficiale.",
     loaderStock: "L'FM-1 è in attesa nella modalità di aggiornamento ufficiale di M-VAVE, che accetta solo l'FM-1.fwsc ufficiale. Non è stato inviato nulla. Completa prima Torna al firmware ufficiale.",
-    loaderTessera: "L'FM-1 è in attesa nella modalità di aggiornamento di Tessera (Melodee Update), che non riceve mai il file ufficiale. Non è stato inviato nulla. Premi Installa qui sopra per completare prima Tessera, poi torna al firmware ufficiale.",
+    loaderTessera: "L'FM-1 è in attesa nella modalità di aggiornamento di Tessera (Tessera Update / Melodee Update), che non riceve mai il file ufficiale. Non è stato inviato nulla. Premi Installa qui sopra per completare prima Tessera, poi torna al firmware ufficiale.",
     loaderUnknown: "L'FM-1 è in una modalità di aggiornamento che questo installer non conosce. Non è stato inviato nulla. Segnalalo su GitHub con questo nome: ",
     nomidi: "Questo browser non può farlo. Apri la pagina in Chrome o Edge.",
     loadfail: "Impossibile caricare: ",
@@ -1390,6 +1419,7 @@ const TEXT = {
     error: "Errore: ",
     denied: "L'accesso MIDI (SysEx) non è stato consentito. Consenti il MIDI nelle impostazioni del sito (barra degli indirizzi) e premi di nuovo Installa.",
     notfound: "FM-1 non trovato. Controlla il cavo USB (deve essere un cavo dati), chiudi le altre app che usano il MIDI e premi di nuovo Installa.",
+    busy: "Un'altra app o scheda sta usando la porta MIDI del FM-1 (l'editor, una DAW, M-UPGRADE, un'altra scheda dell'installer). Chiudila e premi di nuovo Installa. Porta: ",
     model: "Il dispositivo collegato non è un FM-1.",
     lost: "La connessione USB si è interrotta. Ricollegalo e premi di nuovo Installa.",
     noloader: "L'FM-1 in modalità aggiornamento non è stato trovato. Ricollega il cavo USB e premi di nuovo Installa (resta in modalità aggiornamento fino alla fine).",
@@ -1464,7 +1494,7 @@ const TEXT = {
     stockNeedsV15: "Nichts wurde geschrieben (CHECK HEAD, FAILED -5): Der Startteil dieses FM-1 stammt von V15 (er lief vor Tessera mit V15), also führt sein Weg zurück über V15. Wähle FM-1_015.fwsc aus dem fm1_open-Repository von M-VAVE (sdk/firmware). M-UPGRADE von M-VAVE kann ihn danach auf V16 bringen.",
     stockTesseraOld: "Nichts wurde geschrieben. Tessera vor 3.3 nimmt V16 nicht an: Installiere zuerst das aktuelle Tessera und kehre dann erneut zur offiziellen Firmware zurück.",
     loaderStock: "Der FM-1 wartet im offiziellen Update-Modus von M-VAVE, der nur die offizielle FM-1.fwsc annimmt. Es wurde nichts gesendet. Schließe zuerst Zurück zur offiziellen Firmware ab.",
-    loaderTessera: "Der FM-1 wartet im Update-Modus von Tessera (Melodee Update), der die offizielle Datei nie annimmt. Es wurde nichts gesendet. Drücke oben auf Installieren, um zuerst Tessera fertigzustellen, und kehre dann zur offiziellen Firmware zurück.",
+    loaderTessera: "Der FM-1 wartet im Update-Modus von Tessera (Tessera Update / Melodee Update), der die offizielle Datei nie annimmt. Es wurde nichts gesendet. Drücke oben auf Installieren, um zuerst Tessera fertigzustellen, und kehre dann zur offiziellen Firmware zurück.",
     loaderUnknown: "Der FM-1 ist in einem Update-Modus, den dieser Installer nicht kennt. Es wurde nichts gesendet. Bitte melde es auf GitHub mit diesem Namen: ",
     nomidi: "Dieser Browser kann das nicht. Öffne die Seite in Chrome oder Edge.",
     loadfail: "Laden fehlgeschlagen: ",
@@ -1490,6 +1520,7 @@ const TEXT = {
     error: "Fehler: ",
     denied: "MIDI-Zugriff (SysEx) wurde nicht erlaubt. Erlaube MIDI in den Website-Einstellungen (Adressleiste) und drücke erneut auf Installieren.",
     notfound: "FM-1 nicht gefunden. Prüfe das USB-Kabel (ein Datenkabel), schließe andere Apps, die MIDI nutzen, und drücke erneut auf Installieren.",
+    busy: "Eine andere App oder ein anderer Tab nutzt den MIDI-Port des FM-1 (der Editor, eine DAW, M-UPGRADE, ein weiterer Installer-Tab). Schließe sie und drücke erneut auf Installieren. Port: ",
     model: "Das verbundene Gerät ist kein FM-1.",
     lost: "Die USB-Verbindung ist abgerissen. Stecke ihn neu ein und drücke erneut auf Installieren.",
     noloader: "Der FM-1 im Update-Modus wurde nicht gefunden. Stecke das USB-Kabel neu ein und drücke erneut auf Installieren (er bleibt im Update-Modus, bis alles fertig ist).",
@@ -1564,7 +1595,7 @@ const TEXT = {
     stockNeedsV15: "Rien n'a été écrit (CHECK HEAD, FAILED -5) : la partie de démarrage de ce FM-1 est celle de la V15 (il était en V15 avant Tessera), son chemin de retour est donc la V15. Sélectionnez FM-1_015.fwsc dans le dépôt fm1_open de M-VAVE (sdk/firmware). M-UPGRADE de M-VAVE peut ensuite le passer en V16.",
     stockTesseraOld: "Rien n'a été écrit. Tessera avant 3.3 n'accepte pas la V16 : installez d'abord le Tessera actuel, puis revenez à nouveau au firmware officiel.",
     loaderStock: "Le FM-1 attend dans le mode de mise à jour officiel de M-VAVE, qui n'accepte que le FM-1.fwsc officiel. Rien n'a été envoyé. Terminez d'abord Revenir au firmware officiel.",
-    loaderTessera: "Le FM-1 attend dans le mode de mise à jour de Tessera (Melodee Update), qui ne reçoit jamais le fichier officiel. Rien n'a été envoyé. Appuyez sur Installer ci-dessus pour terminer d'abord Tessera, puis revenez au firmware officiel.",
+    loaderTessera: "Le FM-1 attend dans le mode de mise à jour de Tessera (Tessera Update / Melodee Update), qui ne reçoit jamais le fichier officiel. Rien n'a été envoyé. Appuyez sur Installer ci-dessus pour terminer d'abord Tessera, puis revenez au firmware officiel.",
     loaderUnknown: "Le FM-1 est dans un mode de mise à jour que cet installateur ne connaît pas. Rien n'a été envoyé. Merci de le signaler sur GitHub avec ce nom : ",
     nomidi: "Ce navigateur ne peut pas le faire. Ouvrez la page dans Chrome ou Edge.",
     loadfail: "Chargement impossible : ",
@@ -1590,6 +1621,7 @@ const TEXT = {
     error: "Erreur : ",
     denied: "L'accès MIDI (SysEx) n'a pas été autorisé. Autorisez le MIDI dans les paramètres du site (barre d'adresse) et appuyez à nouveau sur Installer.",
     notfound: "FM-1 introuvable. Vérifiez le câble USB (un câble de données), fermez les autres applications qui utilisent le MIDI et appuyez à nouveau sur Installer.",
+    busy: "Une autre application ou un autre onglet utilise le port MIDI du FM-1 (l'éditeur, un DAW, M-UPGRADE, un autre onglet de l'installateur). Fermez-le et appuyez à nouveau sur Installer. Port : ",
     model: "L'appareil branché n'est pas un FM-1.",
     lost: "La connexion USB a été perdue. Rebranchez-le et appuyez à nouveau sur Installer.",
     noloader: "Le FM-1 en mode mise à jour est introuvable. Rebranchez le câble USB et appuyez à nouveau sur Installer (il reste en mode mise à jour jusqu'à la fin).",
@@ -1664,7 +1696,7 @@ const TEXT = {
     stockNeedsV15: "Nada foi gravado (CHECK HEAD, FAILED -5): a parte de inicialização deste FM-1 é da V15 (ele tinha a V15 antes do Tessera), então o caminho de volta é a V15. Selecione FM-1_015.fwsc no repositório fm1_open da M-VAVE (sdk/firmware). Depois, o M-UPGRADE da M-VAVE pode levá-lo à V16.",
     stockTesseraOld: "Nada foi gravado. O Tessera anterior à 3.3 não aceita a V16: instale primeiro o Tessera atual e depois volte de novo ao firmware oficial.",
     loaderStock: "O FM-1 está esperando no modo de atualização oficial da M-VAVE, que só aceita o FM-1.fwsc oficial. Nada foi enviado. Termine primeiro Voltar ao firmware oficial.",
-    loaderTessera: "O FM-1 está esperando no modo de atualização do Tessera (Melodee Update), que nunca recebe o arquivo oficial. Nada foi enviado. Pressione Instalar acima para terminar primeiro o Tessera e depois volte ao firmware oficial.",
+    loaderTessera: "O FM-1 está esperando no modo de atualização do Tessera (Tessera Update / Melodee Update), que nunca recebe o arquivo oficial. Nada foi enviado. Pressione Instalar acima para terminar primeiro o Tessera e depois volte ao firmware oficial.",
     loaderUnknown: "O FM-1 está em um modo de atualização que este instalador não conhece. Nada foi enviado. Relate no GitHub com este nome: ",
     nomidi: "Este navegador não consegue fazer isso. Abra a página no Chrome ou no Edge.",
     loadfail: "Não foi possível carregar: ",
@@ -1690,6 +1722,7 @@ const TEXT = {
     error: "Erro: ",
     denied: "O acesso MIDI (SysEx) não foi permitido. Permita o MIDI nas configurações do site (barra de endereço) e pressione Instalar de novo.",
     notfound: "FM-1 não encontrado. Verifique o cabo USB (um cabo de dados), feche outros apps que usam MIDI e pressione Instalar de novo.",
+    busy: "Outro app ou aba está usando a porta MIDI do FM-1 (o editor, uma DAW, o M-UPGRADE, outra aba do instalador). Feche-o e pressione Instalar de novo. Porta: ",
     model: "O dispositivo conectado não é um FM-1.",
     lost: "A conexão USB caiu. Reconecte e pressione Instalar de novo.",
     noloader: "O FM-1 no modo de atualização não foi encontrado. Reconecte o cabo USB e pressione Instalar de novo (ele fica no modo de atualização até terminar).",
@@ -1764,7 +1797,7 @@ const TEXT = {
     stockNeedsV15: "아무것도 쓰지 않았습니다(CHECK HEAD, FAILED -5). 이 FM-1의 시작 부분은 V15용이므로(Tessera 이전에 V15였음) 돌아가는 길도 V15입니다. M-VAVE의 fm1_open 저장소(sdk/firmware)에서 FM-1_015.fwsc를 선택하세요. 그 뒤 M-VAVE의 M-UPGRADE로 V16으로 올릴 수 있습니다.",
     stockTesseraOld: "아무것도 쓰지 않았습니다. 3.3 이전의 Tessera는 V16을 받지 않습니다. 먼저 최신 Tessera를 설치한 다음 다시 공식 펌웨어로 돌아가세요.",
     loaderStock: "FM-1이 M-VAVE의 공식 업데이트 모드에서 기다리고 있습니다. 이 모드는 공식 FM-1.fwsc만 받습니다. 아무것도 보내지 않았습니다. 먼저 공식 펌웨어로 돌아가기를 마치세요.",
-    loaderTessera: "FM-1이 Tessera의 업데이트 모드(Melodee Update)에서 기다리고 있습니다. 이 모드는 공식 파일을 받지 않습니다. 아무것도 보내지 않았습니다. 위의 설치를 눌러 먼저 Tessera를 마친 다음 공식 펌웨어로 돌아가세요.",
+    loaderTessera: "FM-1이 Tessera의 업데이트 모드(Tessera Update / Melodee Update)에서 기다리고 있습니다. 이 모드는 공식 파일을 받지 않습니다. 아무것도 보내지 않았습니다. 위의 설치를 눌러 먼저 Tessera를 마친 다음 공식 펌웨어로 돌아가세요.",
     loaderUnknown: "FM-1이 이 설치 프로그램이 모르는 업데이트 모드에 있습니다. 아무것도 보내지 않았습니다. 다음 이름과 함께 GitHub에 알려 주세요: ",
     nomidi: "이 브라우저에서는 할 수 없습니다. Chrome 또는 Edge에서 이 페이지를 여세요.",
     loadfail: "불러오지 못했습니다: ",
@@ -1790,6 +1823,7 @@ const TEXT = {
     error: "오류: ",
     denied: "MIDI(SysEx) 접근이 허용되지 않았습니다. 사이트 설정(주소 표시줄)에서 MIDI를 허용하고 설치를 다시 누르세요.",
     notfound: "FM-1을 찾을 수 없습니다. USB 케이블(데이터 케이블)을 확인하고, MIDI를 쓰는 다른 앱을 닫은 뒤 설치를 다시 누르세요.",
+    busy: "다른 앱이나 탭이 FM-1의 MIDI 포트를 쓰고 있습니다(에디터, DAW, M-UPGRADE, 다른 설치 탭). 그것을 닫고 설치를 다시 누르세요. 포트: ",
     model: "연결된 기기는 FM-1이 아닙니다.",
     lost: "USB 연결이 끊어졌습니다. 다시 연결하고 설치를 다시 누르세요.",
     noloader: "업데이트 모드의 FM-1을 찾을 수 없습니다. USB 케이블을 다시 연결하고 설치를 다시 누르세요(끝날 때까지 업데이트 모드에 머뭅니다).",
@@ -1841,7 +1875,7 @@ const selection = () => {     /* the release, or a channel ("nightly-dual": meta
 const ready = () => { lastKey = "ready"; $("status").textContent = `Tessera ${selection().channel.version} (${t(build() + "Tag")})`; };
 const log = (t) => { $("log").textContent += t + "\n"; };
 let image = null;
-const meta = {"version": "3.5.3", "product": "FM-1_835", "pkg": {"dual": "../../firmware/tessera-3.5.3.fwsc", "single": "../../firmware/tessera-3.5.3-1core.fwsc"}, "beta": {"version": "3.6-beta5", "product": "FM-1_836", "branch": "develop", "commit": "292a0ed4d9f7e68b5058feaa2b2a1f959a485672", "builtAt": "2026-11-15T02:20:26Z", "pkg": {"dual": "../../firmware/tessera-3.6-beta5.fwsc", "single": "../../firmware/tessera-3.6-beta5-1core.fwsc"}, "notes": [["New in 3.6-beta5", ["MODS: KNOB 1's source list now starts at the selected track too, as KNOB 3's does: on track 3, the first turn lands on T3 LFO.", "When the FM-1 runs short of CPU and has to cut a sound early, it now cuts the quietest fading drum first (a hat's tail), not the kick or a snare in the middle of a roll."]], ["New in 3.6-beta4", ["MODS: KNOB 3's list now starts at the selected track (it started at the mod's source's track, and at T1 for a new mod); a new mod's first turn of KNOB 3 lands on the selected track's PITCH. Thanks for the report (#724)."]], ["New in 3.6-beta3", ["SIM CONTROL (in the menu: hold HOME): with the web simulator open and the FM-1 connected by USB, the FM-1's knobs, buttons and keys play only the simulator, and the FM-1 itself stays silent. Hold FX + GLO for a second to get the panel back; closing the simulator or unplugging ends it too. It is off every time the FM-1 starts."]], ["New in 3.6-beta2", ["MODS: 22 more destinations: STRUM, STR DIR, RATCH, R CHANC, GATE, N LEN, LOCK, VELO, SWING, GLIDE, GRAVITY, DEVELOP, AN ECHO, AN SHFT, AN SPCE, BREATH, ACC LIM, TIDE SP, SWRM RT, ARP RTE, ARP GTE and ARP OCT.", "MODS: KNOB 3's destinations come in groups (SOUND, ENV, LFO, MIX, FX, GEN, FEEL, EVOLVE, ARP, MODS), and the list's title names the group under the cursor, for example T3 LFO.", "MODS: a track lists only the destinations that act on what it plays (Turing's settings on a Turing track, STRUM on a CHORD track). A mod already set to one keeps it.", "MODS: the list starts at the mod's own source track; a new mod's first turn of KNOB 3 lands on that track's PITCH.", "The sound designer has been removed, to make room for new features. Saving and loading user sounds from the SOUND sheet works as before."]], ["New since 3.5.3", ["ANSWER holds each note as long as you held its key in the call (when the track's LENGTH is on STEP, the default; FIXED and HIT still set the length).", "ANSWER captures up to 16 notes in a call (was 8).", "ANSWER CHORD (on the GEN sheet, hold OCT+): ARP spreads notes played together one step apart, as before; TRUE answers them as a real chord."]], ["Fixed", ["After an overload (a crackle), the voices come back within a few seconds while you keep playing, and one overload no longer holds every track to one or two voices.", "Help on the device for ATLAS DENSITY, ATLAS PART4, CHORD PROG, FOLLOW RHYTHM and CONSTELLATION SPEED now says to hold OCT-, as the keys work.", "SYSTEM: the CPU dial no longer shows its own jittering number. The CPU bar further down is the one readout."]], ["Good to know", ["A project that uses one of the new MODS destinations does not load on 3.6-beta1 or older.", "The project format has changed: projects saved on this beta do not load on 3.5.3 or older. Keep a backup before you try it.", "Patterns (PAT GEN) keep ANSWER's first 8 notes; CHORD, held lengths and notes 9-16 belong to the track, not the pattern."]], ["Please try", ["SIM CONTROL: open the web simulator with the FM-1 on USB, turn SIM CONTROL on in the menu, play the FM-1: only the simulator answers. Hold FX + GLO for a second: the FM-1 plays again. Hold GLO alone while it is on: GLO's settings open in the simulator.", "A mod onto GATE, SWING or ARP RTE on a playing track, RATCH on a generator track, VELO on a STEP track.", "On MODS, a mod from T3's LFO: turn KNOB 3. T3 comes first and the title follows the groups; with T1 on Turing, T1 offers T PROB but not E PULSE.", "The 909 on ATLAS at 85 BPM with DENSITY at 64 % or more: the snares keep playing. A busy four-track project: after a crackle, the voices come back within seconds.", "A project from 3.5.3 loads and plays the same.", "On an ANSWER track, hold some keys longer than others: the answer holds them too.", "Set CHORD to TRUE and play a chord: the answer plays it as a chord.", "Play a call of more than 8 notes: the answer plays all of them."]]], "sim": "../sim-beta/", "editor": "../editor-beta/"}, "nightly": null, "synth": null};
+const meta = {"version": "3.5.3", "product": "FM-1_835", "pkg": {"dual": "../../firmware/tessera-3.5.3.fwsc", "single": "../../firmware/tessera-3.5.3-1core.fwsc"}, "beta": {"version": "3.6-beta6", "product": "FM-1_836", "branch": "develop", "commit": "67aad3a674c60d464c4824328e999b4ebdf68aad", "builtAt": "2026-11-15T19:57:29Z", "pkg": {"dual": "../../firmware/tessera-3.6-beta6.fwsc", "single": "../../firmware/tessera-3.6-beta6-1core.fwsc"}, "notes": [["New in 3.6-beta6", ["HARM, a harmonizer (after Dreamsequence's): with a CHORD track playing, each note of the scale up plays the chord's next note up, so a run up the keys is an arpeggio that follows the chords. SCL > QNT HARM does this for the keys, MIDI IN and the generators; FOLLOW's new HOW HARM does it to another track's line, SHIFT moving by chord notes. A project using HOW HARM does not load on older firmware.", "MENU > ABOUT shows SPACE: how much flash and RAM this firmware leaves free for new features.", "ECHO now rests while nothing reaches it and its tail has died away, which frees CPU when tracks are quiet. The sound is exactly the same.", "PPQN, the MIDI clock's pulses per beat: on GLO > MIDI IN, hold OCT- and KNOB 4 sets 24 (the default, the MIDI standard), 48, 4, 8 or 12, for the clock the FM-1 follows and for CLOCK OUT. If the FM-1 plays twice as fast as the gear it follows (HOME shows double the tempo), try 48. Like CLK, it is kept through power-off and project loads (#747).", "After a project loads, a track playing one of your own FM6 voices finds the user slot holding that voice again: HOME shows its name (not TINE EP) and PRESETS starts from it. If no slot holds it any more, HOME shows the name stored in the voice (#744).", "The installer waits a few seconds for the FM-1 instead of giving up after one quick look, and when another app or tab holds the FM-1's MIDI port it says so and names the port, instead of FM-1 not found (#743).", "The FM-1's update mode is now called Tessera Update on the computer (it was Melodee Update). A computer that has seen the old name may keep showing it."]], ["New in 3.6-beta5", ["MODS: KNOB 1's source list now starts at the selected track too, as KNOB 3's does: on track 3, the first turn lands on T3 LFO.", "When the FM-1 runs short of CPU and has to cut a sound early, it now cuts the quietest fading drum first (a hat's tail), not the kick or a snare in the middle of a roll."]], ["New in 3.6-beta4", ["MODS: KNOB 3's list now starts at the selected track (it started at the mod's source's track, and at T1 for a new mod); a new mod's first turn of KNOB 3 lands on the selected track's PITCH. Thanks for the report (#724)."]], ["New in 3.6-beta3", ["SIM CONTROL (in the menu: hold HOME): with the web simulator open and the FM-1 connected by USB, the FM-1's knobs, buttons and keys play only the simulator, and the FM-1 itself stays silent. Hold FX + GLO for a second to get the panel back; closing the simulator or unplugging ends it too. It is off every time the FM-1 starts."]], ["New in 3.6-beta2", ["MODS: 22 more destinations: STRUM, STR DIR, RATCH, R CHANC, GATE, N LEN, LOCK, VELO, SWING, GLIDE, GRAVITY, DEVELOP, AN ECHO, AN SHFT, AN SPCE, BREATH, ACC LIM, TIDE SP, SWRM RT, ARP RTE, ARP GTE and ARP OCT.", "MODS: KNOB 3's destinations come in groups (SOUND, ENV, LFO, MIX, FX, GEN, FEEL, EVOLVE, ARP, MODS), and the list's title names the group under the cursor, for example T3 LFO.", "MODS: a track lists only the destinations that act on what it plays (Turing's settings on a Turing track, STRUM on a CHORD track). A mod already set to one keeps it.", "MODS: the list starts at the mod's own source track; a new mod's first turn of KNOB 3 lands on that track's PITCH.", "The sound designer has been removed, to make room for new features. Saving and loading user sounds from the SOUND sheet works as before."]], ["New since 3.5.3", ["ANSWER holds each note as long as you held its key in the call (when the track's LENGTH is on STEP, the default; FIXED and HIT still set the length).", "ANSWER captures up to 16 notes in a call (was 8).", "ANSWER CHORD (on the GEN sheet, hold OCT+): ARP spreads notes played together one step apart, as before; TRUE answers them as a real chord."]], ["Fixed", ["FM6 AEG (EDIT 2, KNOB 4): the slow side is usable all the way up. It slows the envelopes of the operators you hear by up to 24 rate steps (it was 40) and never to a release longer than about 15 s, unless the patch's own is longer; near the top, notes rang on for minutes and held voices. A project with AEG turned right sounds a little shorter in its tails than before; AEG 0 and the left side are as they were.", "Web simulator, An FM-1 on USB: a click of the FM-1's knobs is one step again where Windows listed the FM-1 twice (lists such as the menu and MODS skipped every other row).", "After an overload (a crackle), the voices come back within a few seconds while you keep playing, and one overload no longer holds every track to one or two voices.", "Help on the device for ATLAS DENSITY, ATLAS PART4, CHORD PROG, FOLLOW RHYTHM and CONSTELLATION SPEED now says to hold OCT-, as the keys work.", "SYSTEM: the CPU dial no longer shows its own jittering number. The CPU bar further down is the one readout."]], ["Good to know", ["A project that uses one of the new MODS destinations does not load on 3.6-beta1 or older.", "The project format has changed: projects saved on this beta do not load on 3.5.3 or older. Keep a backup before you try it.", "Patterns (PAT GEN) keep ANSWER's first 8 notes; CHORD, held lengths and notes 9-16 belong to the track, not the pattern."]], ["Please try", ["MIDI clock from your gear (CLK USB or TRS): the FM-1 plays at the gear's tempo. If it plays twice as fast, set PPQN to 48 (GLO > MIDI IN, hold OCT-, KNOB 4). CLOCK OUT at 8 or 4 into gear that expects fewer pulses.", "Save a project with a track on one of your own FM6 voices (F001 ..), switch off and on, load it: HOME names the voice, and PRESETS starts from its slot.", "The installer with the editor or a DAW open: it names the MIDI port that is in use.", "SIM CONTROL: open the web simulator with the FM-1 on USB, turn SIM CONTROL on in the menu, play the FM-1: only the simulator answers. Hold FX + GLO for a second: the FM-1 plays again. Hold GLO alone while it is on: GLO's settings open in the simulator.", "A mod onto GATE, SWING or ARP RTE on a playing track, RATCH on a generator track, VELO on a STEP track.", "On MODS, a mod from T3's LFO: turn KNOB 3. T3 comes first and the title follows the groups; with T1 on Turing, T1 offers T PROB but not E PULSE.", "The 909 on ATLAS at 85 BPM with DENSITY at 64 % or more: the snares keep playing. A busy four-track project: after a crackle, the voices come back within seconds.", "A project from 3.5.3 loads and plays the same.", "On an ANSWER track, hold some keys longer than others: the answer holds them too.", "Set CHORD to TRUE and play a chord: the answer plays it as a chord.", "Play a call of more than 8 notes: the answer plays all of them."]]], "sim": "../sim-beta/", "editor": "../editor-beta/"}, "nightly": null, "synth": null};
 $("ver").textContent = `FM-1 · ${meta.version}`;
 $("beta-options").hidden = !meta.beta;
 if (meta.beta) {
@@ -2055,8 +2089,7 @@ $("stock-go").addEventListener("click", async () => {
       if (await up.resume(selected.image, step, selected.product, STOCK_LOADER)) done = true;
       sayK(done ? "done" : "stopped");
     } else {
-      const device = await up.find(id => id.model === "FM-1");
-      if (!device) { sayK("notfound"); return; }
+      const device = await up.findDevice(id => id.model === "FM-1");
       const input = device.link.input, output = device.link.output; device.link.close();
       if (!skipBackup) {
         link = new BackupConnection(input, output);
