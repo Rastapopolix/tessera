@@ -291,7 +291,16 @@ static uint32_t gen_sheet_rows(void)
     if (m == TESS_ENG_QUAD) sr_add("Range", PID_TESS(TX_QD_RANGE), tr);
     else if (m == TESS_ENG_CONSTEL) sr_add("Size", PID_TESS(TX_CS_SIZE), tr);
     else if (m == TESS_ENG_GRIDS) sr_add("Fourth part", PID_TESS(TX_GRD_TOMS), tr);
-    else if (m == TESS_ENG_ANSWER) { sr_add("Space", PID_TESS(TX_AN_SPACE), tr); sr_add("Chord", PID_TESS(TX_AN_CHORD), tr); }
+    else if (m == TESS_ENG_ANSWER) {                    /* (REPLY: SPACE and CHORD; BEND: TIME and BREAK in their */
+        if (tessera_answer(tr)->mode == TESS_AN_BEND) { /* rows; MODE the third in both) */
+            sr_add("Time", PID_TESS(TX_AN_TIME), tr);
+            sr_add("Break", PID_TESS(TX_AN_BREAK), tr);
+        } else {
+            sr_add("Space", PID_TESS(TX_AN_SPACE), tr);
+            sr_add("Chord", PID_TESS(TX_AN_CHORD), tr);
+        }
+        sr_add("Mode", PID_TESS(TX_AN_MODE), tr);
+    }
     else if (m == TESS_ENG_CHORD) {
         sr_add("Chord", PID_TRACK(P_CHRD), tr);
         sr_add("Voicing", PID_TRACK(P_VOIC), tr);
@@ -494,7 +503,7 @@ static uint32_t page_sheet(void)
     if (cur_page()->graph == GR_ROLL || (cur_page()->graph == GR_STEPS && (cur_page()->fam != FAM_GEN || gen_pattern_page(cur_page()))))
         return 3;                                       /* (GEN: only STEP and ARP's pattern page; a generator's is PATTERN) */
     if (cur_page()->graph == GR_STEPS)
-        return gen_sheet_rows() ? 6u : 0u;              /* (a generator's GEN: its layer's fourth setting, CHORD's three, ANSWER's two) */
+        return gen_sheet_rows() ? 6u : 0u;              /* (a generator's GEN: its layer's fourth setting, CHORD's three, ANSWER's three) */
     fam = cur_page()->fam;
     return fam == FAM_EDIT || fam == FAM_ENV || fam == FAM_LFO || fam == FAM_FX ? 1u : 0u;
 }
