@@ -9,7 +9,10 @@
  * so it never quite repeats. ECHO: a note now and then comes back once, softer, a few steps later, sometimes an octave
  * up. The phrase is saved (a project answers at PLAY); timing snaps to steps (SUB later). SOURCE (T1..T4, STEP as
  * seed's: tessera.sd_src) makes a STEP pattern the phrase instead, read again before each answer; a generator track's
- * SOURCE (BOUNCE, TURING ...) is heard instead: the notes it plays are the call, as the keys' are. Included by tessera.c */
+ * SOURCE (BOUNCE, TURING ...) is heard instead: the notes it plays are the call, as the keys' are.
+ * MODE BEND (after Qu-Bit's Data Bender: the idea only) does not wait for the phrase to end: each note comes back TIME
+ * steps later while the keys still play, a delay that drifts (VARY) and breaks (BREAK): answer_bend_*. Included by
+ * tessera.c */
 
 static const uint8_t AN_LOOPS[TESS_AN_LENS][4] = {{5, 7, 11, 13}, {13, 17, 23, 29}, {23, 29, 31, 37}};
 
@@ -68,7 +71,47 @@ static void answer_restart(uint32_t tr)
     tess_an.hopen[tr] = 0;
     memset(tess_an.mut[tr], 0, TESS_AN_NOTES);
     memset(tess_an.e_left[tr], 0, TESS_AN_ECHOES);
+    memset(tess_an.t_left[tr], 0, TESS_AN_TAPS);       /* (BEND: no repeats waiting, nothing remembered) */
+    tess_an.mcnt[tr] = tess_an.mline[tr] = 0;
+    tess_an.hclk[tr] = 0;
     for (uint32_t i = 0; i < TESS_AN_NOTES; i++) tess_an.ord[tr][i] = (uint8_t)i;
+}
+
+/* BEND: a repeat to wait left steps (1..255); full, the one repeated most makes room (at FADE's top, the oldest
+ * material gives way to what the keys play now) */
+static void answer_tap(uint32_t tr, uint32_t note, uint32_t vel, uint32_t left, uint32_t g, uint32_t ser)
+{
+    uint32_t k, use = 0, old = 0;
+    for (k = 0; k < TESS_AN_TAPS; k++) {
+        if (!tess_an.t_left[tr][k]) { use = k; break; }
+        if (tess_an.t_gen[tr][k] >= old) old = tess_an.t_gen[tr][k], use = k;
+    }
+    tess_an.t_note[tr][use] = (uint8_t)note;
+    tess_an.t_vel[tr][use] = (uint8_t)(vel ? vel : 1u);
+    tess_an.t_left[tr][use] = (uint8_t)(left < 1u ? 1u : left > 255u ? 255u : left);
+    tess_an.t_gen[tr][use] = (uint8_t)g;
+    tess_an.t_ser[tr][use] = (uint8_t)ser;
+}
+
+/* BEND: the note heard back notes before the newest (0: the newest) + 1; 0 not remembered */
+static uint32_t answer_mem(uint32_t tr, uint32_t back)
+{
+    if (back >= tess_an.mcnt[tr]) return 0;
+    return tess_an.mem[tr][(uint8_t)(tess_an.mser[tr] - 1u - back) % TESS_AN_NOTES] + 1u;
+}
+
+/* BEND hears a note: remembered (a line: notes no more than 16 steps apart), and back TIME steps later (one past the
+ * middle of its step: a step more, as REPLY counts it) */
+static void answer_bend_hear(uint32_t tr, uint32_t note, uint32_t vel, uint32_t late)
+{
+    uint32_t s = tess_an.mser[tr];
+    if (tess_an.hclk[tr] > TESS_AN_TIME_MAX) tess_an.mline[tr] = 0;
+    tess_an.hclk[tr] = 0;
+    tess_an.mem[tr][s % TESS_AN_NOTES] = (uint8_t)note;
+    tess_an.mser[tr] = (uint8_t)(s + 1u);
+    if (tess_an.mcnt[tr] < TESS_AN_NOTES) tess_an.mcnt[tr]++;
+    if (tess_an.mline[tr] < TESS_AN_NOTES) tess_an.mline[tr]++;
+    answer_tap(tr, note, vel, tessera.answer[tr].time + (late ? 1u : 0u), 0, s);
 }
 
 /* a note on the track's keys: the first after an answer (or a closed phrase) starts a new phrase; up to 16, a step
@@ -81,6 +124,10 @@ void tessera_answer_hear_at(track_t *t, uint32_t note, uint32_t vel, uint32_t la
     uint32_t tr = trk_index(t), n, at;
     tessera_answer_t *a;
     if (tr >= TESSERA_TRACKS || tessera.mode[tr] != TESS_ENG_ANSWER || !vel || note > 127u) return;
+    if (tessera.answer[tr].mode == TESS_AN_BEND) {     /* (BEND: every note, a STEP SOURCE or not) */
+        answer_bend_hear(tr, note, vel > 127u ? 127u : vel, late);
+        return;
+    }
     if (tessera.sd_src[tr] && answer_source(tr)) return;   /* (a SOURCE's call: the keys just play) */
     a = &tessera.answer[tr];
     if (tess_an.phase[tr] != TESS_AN_HEAR) {
@@ -141,7 +188,8 @@ static void tessera_answer_heard(uint32_t src, uint32_t note)
 {
     for (uint32_t f = 0; f < TESSERA_TRACKS; f++)
         if (tessera.mode[f] == TESS_ENG_ANSWER && tessera.sd_src[f] == src + 1u && f != src &&
-            (tess_an.phase[f] == TESS_AN_HEAR || tess_an.phase[f] == TESS_AN_IDLE))
+            (tess_an.phase[f] == TESS_AN_HEAR || tess_an.phase[f] == TESS_AN_IDLE ||
+             tessera.answer[f].mode == TESS_AN_BEND))
             tessera_answer_hear_at(&trk[f], note, 100u, 0);
 }
 
@@ -239,6 +287,81 @@ static void answer_play(const track_t *t, uint32_t tr, uint32_t i, uint32_t sc, 
     answer_echo(tr, n - 1u, vel);
 }
 
+/* BEND: repeat k plays now. Its first repeat in ORDER (the line reversed or shuffled); a repeat now and then moved by
+ * the bar's SHIFT (TIME in spb of them: about once a bar, whatever the TIME), and changed at VARY (growing with each repeat, kept: the line drifts): a degree or two, an octave, silent
+ * this once, its neighbour's note. BREAK, this once only: SLIP (the next repeat a step early or late), SKIP, STUTTER
+ * (again a step later), JUMP (a note heard 2 to 5 notes before). Softer each repeat, FADE's count of them (at its top:
+ * on until newer notes take the room). ECHO as REPLY's */
+static void answer_bend_fire(const track_t *t, uint32_t tr, uint32_t k, uint32_t spb, gen_out_t *out)
+{
+    const tessera_answer_t *a = &tessera.answer[tr];
+    uint32_t *rnd = &tess_an.rnd[tr], cnt = tessera_answer_count(tr), g = tess_an.t_gen[tr][k], amount = a->vary;
+    uint32_t note = tess_an.t_note[tr][k], vel = tess_an.t_vel[tr][k], left = a->time, play, m, stutter = 0, sound = 1;
+    uint32_t back = (uint8_t)(tess_an.mser[tr] - 1u - tess_an.t_ser[tr][k]), line = tess_an.mline[tr];
+    int32_t d;
+    if (!g && a->order != TESS_AN_ASPLAYED && back < line) {
+        back = a->order == TESS_AN_REVERSE ? line - 1u - back : gen_rnd(rnd, line);
+        note = answer_mem(tr, back) - 1u;
+        tess_an.t_ser[tr][k] = (uint8_t)(tess_an.mser[tr] - 1u - back);
+    }
+    if (tess_an.shift[tr] && gen_rnd(rnd, spb) < a->time) note = sv_degrees(t, (int32_t)note, tess_an.shift[tr]);
+    if (amount && cnt) amount += (100u - amount) * (g < cnt ? g : cnt) / cnt;
+    if (amount && gen_rnd(rnd, 100u) < amount)
+        switch (gen_rnd(rnd, 4u)) {
+        case 0: d = 1 + (int32_t)gen_rnd(rnd, 2u); note = sv_degrees(t, (int32_t)note, gen_rnd(rnd, 2u) ? d : -d); break;
+        case 1: note = gen_rnd(rnd, 2u) ? note + 12u : note - 12u; break;   /* (folded back below) */
+        case 2: sound = 0; break;
+        default:
+            if ((m = answer_mem(tr, gen_rnd(rnd, 2u) ? back + 1u : back - 1u)) != 0) note = m - 1u;
+            break;
+        }
+    while ((int32_t)note > 108) note -= 24u;            /* (drifted out of reach: two octaves back) */
+    while ((int32_t)note < 24) note += 24u;
+    play = note;
+    if (a->brk && gen_rnd(rnd, 100u) < a->brk)
+        switch (gen_rnd(rnd, 4u)) {
+        case 0: left = gen_rnd(rnd, 2u) || left < 2u ? left + 1u : left - 1u; break;
+        case 1: sound = 0; break;
+        case 2: stutter = 1; break;
+        default:
+            if ((m = answer_mem(tr, back + 2u + gen_rnd(rnd, 4u))) != 0) play = m - 1u;
+            break;
+        }
+    if (sound) {
+        vel = vel * (cnt ? cnt - (g < cnt ? g : cnt - 1u) : 1u) / (cnt ? cnt : 1u);
+        answer_emit(out, play, vel);
+        answer_echo(tr, play, vel);
+        for (uint32_t e = 0; stutter && e < TESS_AN_ECHOES; e++)   /* (STUTTER: an echo slot, a step on) */
+            if (!tess_an.e_left[tr][e]) {
+                tess_an.e_note[tr][e] = (uint8_t)play;
+                tess_an.e_vel[tr][e] = (uint8_t)(vel * 3u / 4u ? vel * 3u / 4u : 1u);
+                tess_an.e_left[tr][e] = 1;
+                stutter = 0;
+            }
+    }
+    if (++g > 254u) g = 254u;
+    if (cnt && g >= cnt) return;                        /* (its last: the slot free, t_left 0) */
+    tess_an.t_note[tr][k] = (uint8_t)note;
+    tess_an.t_gen[tr][k] = (uint8_t)g;
+    tess_an.t_left[tr][k] = (uint8_t)left;
+}
+
+/* BEND's step: a new bar's SHIFT (up or down, the same for all its repeats: the line climbs or sinks about that
+ * many degrees a bar), the repeats one step nearer and those due played; the CV the share of the room in use */
+static void answer_bend_tick(const track_t *t, uint32_t tr, uint32_t spb, gen_out_t *out)
+{
+    const tessera_answer_t *a = &tessera.answer[tr];
+    uint32_t k, live = 0;
+    if (tess_an.hclk[tr] < 0xFFFFu) tess_an.hclk[tr]++;
+    if (!(tess_an.cnt[tr] % spb))
+        tess_an.shift[tr] = (int8_t)(a->shift ? (int32_t)gen_rnd(&tess_an.rnd[tr], 2u * a->shift + 1u) - (int32_t)a->shift : 0);
+    tess_an.cnt[tr] = tess_an.cnt[tr] + 1u < 0x7FFFFFFFu ? tess_an.cnt[tr] + 1u : 0u;
+    for (k = 0; k < TESS_AN_TAPS; k++)
+        if (tess_an.t_left[tr][k] && !--tess_an.t_left[tr][k]) answer_bend_fire(t, tr, k, spb, out);
+    for (k = 0; k < TESS_AN_TAPS; k++) live += tess_an.t_left[tr][k] != 0u;
+    out->cv = (int16_t)(live * 32767u / TESS_AN_TAPS);
+}
+
 static void answer_tick(const track_t *t, uint32_t tr, const gen_clock_t *clk, gen_out_t *out)
 {
     const tessera_answer_t *a = &tessera.answer[tr];
@@ -247,6 +370,10 @@ static void answer_tick(const track_t *t, uint32_t tr, const gen_clock_t *clk, g
     for (uint32_t e = 0; e < TESS_AN_ECHOES; e++)       /* the echoes waiting: one step nearer */
         if (tess_an.e_left[tr][e] && !--tess_an.e_left[tr][e])
             answer_emit(out, tess_an.e_note[tr][e], tess_an.e_vel[tr][e]);
+    if (a->mode == TESS_AN_BEND) {
+        answer_bend_tick(t, tr, spb, out);
+        return;
+    }
     out->cv = (int16_t)(n ? (uint32_t)tess_an.slot[tr] * 32767u / n : 0u);
     switch (tess_an.phase[tr]) {
     case TESS_AN_HEAR:                                  /* listening: a bar with no key closes the phrase */

@@ -265,6 +265,7 @@ void tessera_init(void)
         tessera.answer[i].space = 25;
         tessera.answer[i].shift = 2;
         tessera.answer[i].len = TESS_AN_MID;
+        tessera.answer[i].time = 3;                       /* (BEND: a dotted eighth at 16 steps a bar; REPLY, no BREAK) */
     }
 }
 
@@ -2235,6 +2236,10 @@ uint32_t tessera_sig(uint32_t tr)
     case TESS_ENG_ANSWER: { const tessera_answer_t *a = &tessera.answer[tr];
         h = (h ^ (a->vary | a->echo << 8 | a->fade << 16 | (uint32_t)a->n << 24)) * 16777619u;
         h = (h ^ (a->order | a->shift << 4 | a->space << 8 | a->len << 16)) * 16777619u;
+        if (a->mode == TESS_AN_BEND)                     /* (REPLY's hash as before: the baseline stays) */
+            for (uint32_t k = 0; k < TESS_AN_TAPS; k++)
+                h = (h ^ (tess_an.t_note[tr][k] | tess_an.t_left[tr][k] << 8 | tess_an.t_gen[tr][k] << 16 |
+                          (uint32_t)a->time << 24)) * 16777619u;
         h = (h ^ (tess_an.phase[tr] | tess_an.ans[tr] << 4 | tess_an.slot[tr] << 12 | (uint32_t)tess_an.hclk[tr] << 16)) *
             16777619u;
         for (uint32_t i = 0; i < a->n && i < TESS_AN_NOTES; i++)
@@ -2344,7 +2349,9 @@ uint32_t tessera_euclid_pitch(const track_t *t, uint32_t step)
  * EVOLVE / FORM / TWEAK settings and the settings of the remembered sections (A, B, C). Not stored: the recorded
  * Markov / Morph phrases (a loaded project records them again on its first pass: RAM is the limit, see
  * project.c), the playheads and the counters. A block that fails any range check is refused whole. */
-#define TESS_PK_TRACK 223u                           /* version 21: version 20's 190 bytes, then ANSWER's extra 8
+#define TESS_PK_TRACK 226u                           /* version 22: version 21's 223 bytes, then ANSWER's MODE, TIME
+                                                     * and BREAK (3) */
+#define TESS_PK_TRACK_V21 223u                       /* version 21: version 20's 190 bytes, then ANSWER's extra 8
                                                      * notes (24), their HOLD (8) and its CHORD switch (1) */
 #define TESS_PK_TRACK_V20 190u                       /* version 20: version 19's 182 bytes, then ANSWER's HOLD (8) */
 #define TESS_PK_TRACK_V19 182u                       /* version 19: version 17's 150 bytes, then ANSWER (32) */
@@ -2367,6 +2374,7 @@ uint32_t tessera_euclid_pitch(const track_t *t, uint32_t step)
 #define TESS_PK_TRACK_V1 45u
 #define TESS_PK_TAIL 2u                              /* version 18 on: after the tracks, the project's: ENERGY's ARC, RESTS */
 _Static_assert(TESSERA_PK_BYTES == TESSERA_TRACKS * TESS_PK_TRACK + TESS_PK_TAIL, "TESSERA_PK_BYTES (tessera.h)");
+_Static_assert(TESSERA_PK_BYTES_V21 == TESSERA_TRACKS * TESS_PK_TRACK_V21 + TESS_PK_TAIL, "TESSERA_PK_BYTES_V21 (tessera.h)");
 _Static_assert(TESSERA_PK_BYTES_V20 == TESSERA_TRACKS * TESS_PK_TRACK_V20 + TESS_PK_TAIL, "TESSERA_PK_BYTES_V20 (tessera.h)");
 _Static_assert(TESSERA_PK_BYTES_V19 == TESSERA_TRACKS * TESS_PK_TRACK_V19 + TESS_PK_TAIL, "TESSERA_PK_BYTES_V19 (tessera.h)");
 _Static_assert(TESSERA_PK_BYTES_V18 == TESSERA_TRACKS * TESS_PK_TRACK_V17 + TESS_PK_TAIL, "TESSERA_PK_BYTES_V18 (tessera.h)");
@@ -2519,6 +2527,12 @@ static uint8_t *tess_put_v21(uint8_t *o, const tessera_answer_t *a)
     memcpy(o, a->hold + 8u, 8u);
     return o + 8u;
 }
+/* version 22's part (after version 21's 223 bytes): ANSWER's MODE (REPLY / BEND), BEND's TIME and BREAK */
+static uint8_t *tess_put_v22(uint8_t *o, const tessera_answer_t *a)
+{
+    *o++ = a->mode; *o++ = a->time; *o++ = a->brk;
+    return o;
+}
 /* one track's record (TESS_PK_TRACK bytes; PAT GEN packs one track: pat_gen.c) */
 static uint8_t *tess_pack_track(uint8_t *o, uint32_t tr)
 {
@@ -2561,6 +2575,7 @@ static uint8_t *tess_pack_track(uint8_t *o, uint32_t tr)
     o = tess_put_v19(o, &tessera.answer[tr]);
     o = tess_put_v20(o, &tessera.answer[tr]);
     o = tess_put_v21(o, &tessera.answer[tr]);
+    o = tess_put_v22(o, &tessera.answer[tr]);
     return o;
 }
 uint32_t tessera_pack(uint8_t *o)
@@ -2604,7 +2619,7 @@ static int tess_pk_track(const uint8_t *in, uint32_t tr, int apply)
     const uint8_t *cl = rec + TESS_PK_TRACK_V10, *ch = rec + TESS_PK_TRACK_V11, *gp = rec + TESS_PK_TRACK_V12;
     const uint8_t *sv = rec + TESS_PK_TRACK_V13, *p4 = rec + TESS_PK_TRACK_V14, *sb = rec + TESS_PK_TRACK_V15;
     const uint8_t *chb = rec + TESS_PK_TRACK_V16, *an = rec + TESS_PK_TRACK_V17, *anh = rec + TESS_PK_TRACK_V19,
-                  *an2 = rec + TESS_PK_TRACK_V20;
+                  *an2 = rec + TESS_PK_TRACK_V20, *an3 = rec + TESS_PK_TRACK_V21;
     uint32_t i, walk = tess_get16(ch + 3), user = gp[4] | (uint32_t)gp[5] << 8 | (uint32_t)gp[6] << 16;
 
     if (mode >= TESS_ENG_COUNT || v_seed > TESS_SEED_LOAD_MAX) return 0;
@@ -2655,6 +2670,7 @@ static int tess_pk_track(const uint8_t *in, uint32_t tr, int apply)
     if (an2[0] >= TESS_AN_CHORDS) return 0;
     for (i = 0; i < 8u; i++)
         if (an2[1 + i] > 127u || an2[9 + i] > 127u || an2[17 + i] > TESS_AN_AT_MAX || an2[25 + i] > 15u) return 0;
+    if (an3[0] >= TESS_AN_MODES || an3[1] < 1u || an3[1] > TESS_AN_TIME_MAX || an3[2] > 100u) return 0;
     if (!apply) return 1;
 
     tessera.mode[tr] = (uint8_t)mode;
@@ -2729,6 +2745,7 @@ static int tess_pk_track(const uint8_t *in, uint32_t tr, int apply)
         a->chord = an2[0];
         memcpy(a->note + 8, an2 + 1, 8u); memcpy(a->vel + 8, an2 + 9, 8u); memcpy(a->at + 8, an2 + 17, 8u);
         memcpy(a->hold + 8, an2 + 25, 8u);
+        a->mode = an3[0]; a->time = an3[1]; a->brk = an3[2];
         answer_restart(tr);
     }
     return 1;
@@ -2764,6 +2781,16 @@ static void tess_v20_track(const uint8_t *in, uint8_t *out)
     memcpy(out, in, TESS_PK_TRACK_V20);
     out[TESS_PK_TRACK_V20] = TESS_AN_ARP;
     memset(out + TESS_PK_TRACK_V20 + 1u, 0, 32u);
+}
+
+/* A version 21 track record (223 bytes, before ANSWER's MODE, TIME and BREAK) -> version 22 (226): REPLY (as it
+ * played), TIME 3 (tessera_init's), BREAK 0. out may not overlap in */
+static void tess_v21_track(const uint8_t *in, uint8_t *out)
+{
+    memcpy(out, in, TESS_PK_TRACK_V21);
+    out[TESS_PK_TRACK_V21] = TESS_AN_REPLY;
+    out[TESS_PK_TRACK_V21 + 1u] = 3u;
+    out[TESS_PK_TRACK_V21 + 2u] = 0u;
 }
 
 /* A version 16 track record (149 bytes, before CHORD's BREATH) -> version 17 (150): BREATH 0, as it played.
@@ -2932,34 +2959,41 @@ static void tess_v1_track(const uint8_t *in, uint8_t *out)
 }
 uint32_t tessera_pk_bytes(uint32_t ver)
 {
-    return ver == 21u ? TESSERA_PK_BYTES : ver == 20u ? TESSERA_PK_BYTES_V20 : ver == 19u ? TESSERA_PK_BYTES_V19 : ver == 18u ? TESSERA_PK_BYTES_V18 : ver == 17u ? TESSERA_PK_BYTES_V17 : ver == 16u ? TESSERA_PK_BYTES_V16 : ver == 15u ? TESSERA_PK_BYTES_V15 : ver == 14u ? TESSERA_PK_BYTES_V14 : ver == 13u ? TESSERA_PK_BYTES_V13 : ver == 12u ? TESSERA_PK_BYTES_V12 : ver == 11u ? TESSERA_PK_BYTES_V11 : ver == 10u ? TESSERA_PK_BYTES_V10 : ver == 9u ? TESSERA_PK_BYTES_V9 : ver == 8u ? TESSERA_PK_BYTES_V8 : ver == 7u ? TESSERA_PK_BYTES_V7 : ver == 6u ? TESSERA_PK_BYTES_V6 : ver == 5u ? TESSERA_PK_BYTES_V5 : ver == 4u ? TESSERA_PK_BYTES_V4 : ver == 3u ? TESSERA_PK_BYTES_V3 :
+    return ver == 22u ? TESSERA_PK_BYTES : ver == 21u ? TESSERA_PK_BYTES_V21 : ver == 20u ? TESSERA_PK_BYTES_V20 : ver == 19u ? TESSERA_PK_BYTES_V19 : ver == 18u ? TESSERA_PK_BYTES_V18 : ver == 17u ? TESSERA_PK_BYTES_V17 : ver == 16u ? TESSERA_PK_BYTES_V16 : ver == 15u ? TESSERA_PK_BYTES_V15 : ver == 14u ? TESSERA_PK_BYTES_V14 : ver == 13u ? TESSERA_PK_BYTES_V13 : ver == 12u ? TESSERA_PK_BYTES_V12 : ver == 11u ? TESSERA_PK_BYTES_V11 : ver == 10u ? TESSERA_PK_BYTES_V10 : ver == 9u ? TESSERA_PK_BYTES_V9 : ver == 8u ? TESSERA_PK_BYTES_V8 : ver == 7u ? TESSERA_PK_BYTES_V7 : ver == 6u ? TESSERA_PK_BYTES_V6 : ver == 5u ? TESSERA_PK_BYTES_V5 : ver == 4u ? TESSERA_PK_BYTES_V4 : ver == 3u ? TESSERA_PK_BYTES_V3 :
            ver == 2u ? TESSERA_PK_BYTES_V2 : ver == 1u ? TESSERA_PK_BYTES_V1 : 0u;
 }
-/* A track record of version ver (1..21) -> version 21, a version at a time. out may not overlap in */
+/* A track record of version ver (1..22) -> version 22, a version at a time. out may not overlap in */
 void tessera_track_up(uint32_t ver, const uint8_t *in, uint8_t *out)
 {
     uint8_t v2[TESS_PK_TRACK_V2], v3[TESS_PK_TRACK_V3], v4[TESS_PK_TRACK_V4], v5[TESS_PK_TRACK_V5], v6[TESS_PK_TRACK_V6];
     uint8_t v7[TESS_PK_TRACK_V7], v8[TESS_PK_TRACK_V8], v9[TESS_PK_TRACK_V9], v10[TESS_PK_TRACK_V10];
     uint8_t v11[TESS_PK_TRACK_V11], v12[TESS_PK_TRACK_V12], v13[TESS_PK_TRACK_V13], v14[TESS_PK_TRACK_V14];
     uint8_t v15[TESS_PK_TRACK_V15], v16[TESS_PK_TRACK_V16], v17[TESS_PK_TRACK_V17];
-    uint8_t v19[TESS_PK_TRACK_V19], v20[TESS_PK_TRACK_V20];
-    if (ver >= 21u) {
+    uint8_t v19[TESS_PK_TRACK_V19], v20[TESS_PK_TRACK_V20], v21[TESS_PK_TRACK_V21];
+    if (ver >= 22u) {
         memcpy(out, in, TESS_PK_TRACK);
         return;
     }
+    if (ver == 21u) {
+        tess_v21_track(in, out);
+        return;
+    }
     if (ver == 20u) {
-        tess_v20_track(in, out);
+        tess_v20_track(in, v21);
+        tess_v21_track(v21, out);
         return;
     }
     if (ver == 19u) {
         tess_v19_track(in, v20);
-        tess_v20_track(v20, out);
+        tess_v20_track(v20, v21);
+        tess_v21_track(v21, out);
         return;
     }
     if (ver >= 17u) {
         tess_v17_track(in, v19);
         tess_v19_track(v19, v20);
-        tess_v20_track(v20, out);
+        tess_v20_track(v20, v21);
+        tess_v21_track(v21, out);
         return;
     }
     if (ver <= 1u) { tess_v1_track(in, v2); in = v2; }
@@ -2980,7 +3014,8 @@ void tessera_track_up(uint32_t ver, const uint8_t *in, uint8_t *out)
     tess_v16_track(in, v17);
     tess_v17_track(v17, v19);
     tess_v19_track(v19, v20);
-    tess_v20_track(v20, out);
+    tess_v20_track(v20, v21);
+    tess_v21_track(v21, out);
 }
 
 /* 1 = loaded; 0 = refused, `tessera` untouched */
@@ -3004,9 +3039,9 @@ int tessera_unpack(const uint8_t *in)
 int tessera_unpack_ver(uint32_t ver, const uint8_t *in)
 {
     uint8_t b[TESSERA_PK_BYTES];                        /* (main loop: on the stack) */
-    uint32_t n = tessera_pk_bytes(ver) / TESSERA_TRACKS;   /* (18, 19, 20, 21: their 2-byte tail rounds away) */
+    uint32_t n = tessera_pk_bytes(ver) / TESSERA_TRACKS;   /* (18 .. 22: their 2-byte tail rounds away) */
     if (!n) return 0;
-    if (ver == 21u) return tessera_unpack(in);
+    if (ver == 22u) return tessera_unpack(in);
     for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++)
         tessera_track_up(ver, in + tr * n, b + tr * TESS_PK_TRACK);
     b[TESSERA_TRACKS * TESS_PK_TRACK] = ver >= 18u ? in[TESSERA_TRACKS * n] : 0u;   /* (before 18: no ENERGY) */
@@ -3018,7 +3053,7 @@ int tessera_unpack_ver(uint32_t ver, const uint8_t *in)
 int tessera_check(uint32_t ver, const uint8_t *in)
 {
     uint8_t b[TESSERA_PK_BYTES];                        /* (main loop: on the stack) */
-    uint32_t n = tessera_pk_bytes(ver) / TESSERA_TRACKS, tr;   /* (18, 19, 20: their 2-byte tail rounds away) */
+    uint32_t n = tessera_pk_bytes(ver) / TESSERA_TRACKS, tr;   /* (18 .. 22: their 2-byte tail rounds away) */
     if (!n) return 0;
     if (ver >= 18u && (in[TESSERA_TRACKS * n] > 100u || in[TESSERA_TRACKS * n + 1u] > 100u)) return 0;
     for (tr = 0; tr < TESSERA_TRACKS; tr++)
@@ -3154,6 +3189,9 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_AN_SPACE: return tessera.answer[tr].space;
     case TX_AN_LEN: return tessera.answer[tr].len;
     case TX_AN_CHORD: return tessera.answer[tr].chord;
+    case TX_AN_MODE: return tessera.answer[tr].mode;
+    case TX_AN_TIME: return tessera.answer[tr].time;
+    case TX_AN_BREAK: return tessera.answer[tr].brk;
     case TX_BNC_SPEED: return tessera.bounce[tr].speed;
     case TX_BNC_ANGLE: return tessera.bounce[tr].angle;
     case TX_BNC_BALLS: return tessera.bounce[tr].balls;
@@ -3400,6 +3438,14 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
     case TX_AN_SPACE: tessera.answer[tr].space = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_AN_LEN: tessera.answer[tr].len = (uint8_t)tess_clampi(v, 0, TESS_AN_LENS - 1); return;
     case TX_AN_CHORD: tessera.answer[tr].chord = (uint8_t)tess_clampi(v, 0, TESS_AN_CHORDS - 1); return;
+    case TX_AN_MODE:                                    /* (REPLY <-> BEND: from the first, no repeats left over) */
+        v = tess_clampi(v, 0, TESS_AN_MODES - 1);
+        if (v == tessera.answer[tr].mode) return;
+        tessera.answer[tr].mode = (uint8_t)v;
+        if (tessera.mode[tr] == TESS_ENG_ANSWER) answer_restart(tr);
+        return;
+    case TX_AN_TIME: tessera.answer[tr].time = (uint8_t)tess_clampi(v, 1, (int32_t)TESS_AN_TIME_MAX); return;
+    case TX_AN_BREAK: tessera.answer[tr].brk = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_EN_ARC: tessera.en_arc = (uint8_t)tess_clampi(v, 0, 100); return;
     case TX_EN_RESTS:
         v = tess_clampi(v, 0, 100);
