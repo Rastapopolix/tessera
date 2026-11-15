@@ -33,7 +33,7 @@ static const char *const TX_N_CHHIT[] = {"HOLD", "BEAT", "STEP", "OFFBEAT"};   /
 static const char *const TX_N_GRP4[] = {"TOM", "CLAP", "HATOP", "RIM", "BELL"};
 static const char *const TX_N_SPLITHOW[] = {"DOUBLE", "PUSH", "MIX"};   /* (TESS_SPLIT_*) */
 static const char *const TX_N_FHOW[] = {"SAME", "CHORD", "CONTRA", "BASS", "CANON1", "CANON2", "CANON3", "CANON4",
-                                        "CANON5", "CANON6", "CANON7", "CANON8"};   /* (TESS_FH_*) */
+                                        "CANON5", "CANON6", "CANON7", "CANON8", "HARM"};   /* (TESS_FH_*) */
 static const char *const TX_N_FRHY[] = {"OWN", "SOURCE", "BOTH"};   /* (TESS_FR_*) */
 static const char *const TX_N_RATCH[] = {"x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8"};
 static const char *const TX_N_SHAPE[] = {"EVEN", "ACCEL", "DECEL"};   /* (SUB_EVEN ..) */
@@ -284,8 +284,10 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     T_(P_QUANT, "QUANTIZE",
         "How the keys meet the scale: OFF plays every key, SNAP moves a note into the scale, WHITE puts the "
         "scale on the white keys, ALL and MPC lay it out over the keys or MPC pads; CHRD snaps the keys, MIDI and "
-        "the generators to the nearest note of the chord a CHORD track plays (no CHORD track: as SNAP). Not OFF: "
-        "KNOB 2 on NOTES moves a note by the scale's notes (CHRD: the chord's). Notes already written stay: Snap to "
+        "the generators to the nearest note of the chord a CHORD track plays (no CHORD track: as SNAP). HARM "
+        "counts instead: each note of the scale up plays the next note of that chord up, the white keys from C4 "
+        "on, so a scale run is an arpeggio that changes with the chords. Not OFF: "
+        "KNOB 2 on NOTES moves a note by the scale's notes (CHRD, HARM: the chord's). Notes already written stay: Snap to "
         "scale in the pattern's sheet (OCT+ held) moves them onto the scale, once."),
     T_(P_TRANS, "TRANSPOSE", "Moves the track's notes up or down by semitones."),
     T_(P_SLEN, "PATTERN LENGTH", "How many steps the track's pattern has. Each of its 8 patterns keeps its own."),
@@ -765,7 +767,9 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                  "CHORD: the third, fifth or seventh of the chord on it, whichever is nearest this "
                                  "track's last note. CONTRA: moves the other way, mirrored around the first note "
                                  "followed. BASS: an octave or two down, on beats 1 and 3 only. CANON1..8: its note "
-                                 "that many notes back. TWEAK, OCT- held, KNOB 2."),
+                                 "that many notes back. HARM: each note of the scale up the other track goes, the "
+                                 "next note up of the chord a CHORD track plays, SHIFT chord notes away (no CHORD "
+                                 "track: as SAME). TWEAK, OCT- held, KNOB 2."),
     X_(TX_TW_FRHY, "FOLLOW RHYTHM", "When a following track plays. OWN: on its own hits. SOURCE: only when the "
                                     "followed track has played a note, so the two move together (a lower track "
                                     "number lands on the same step). BOTH: its own hits and the other's. TWEAK, OCT- "

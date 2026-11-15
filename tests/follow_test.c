@@ -7,7 +7,8 @@
  * beats 1 and 3; CANON2 the melody two notes late; the melody's own MIDI never changes; the same each PLAY. A muted
  * generator still leads: muted from PLAY or on the way, its follower plays as if it were heard, it sounds nothing
  * (no MIDI, no voice), and unmuted it comes back on its own notes, none doubled; a muted CHORD track still gives
- * QNT CHRD its chord. */
+ * QNT CHRD its chord. HARM counts the melody's scale degrees into a CHORD track's chord; QNT HARM counts a generator's own
+ * notes and snaps a followed note to that chord. */
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
 
@@ -240,6 +241,75 @@ int main(void)
     ok = f.n > 0u;
     for (i = 0; ok && i < f.n; i++) ok = f.at[i] >= mel0.at[8] && at_step(&own0, step_of(f.at[i])) >= 0;
     bad += check("CANON8, OWN: its own steps, from the melody's ninth note on", ok);
+
+    {   /* HARM (after Dreamsequence's harmonizer): the melody's scale degree from C4 counted into the CHORD track's chord
+         * (track 3, DRONE: C E G held), one chord note a degree; C D E F G A play C4 E4 G4 C5 E5 G5 */
+        static const uint8_t WANT[12] = {60, 0, 64, 0, 67, 72, 0, 76, 0, 79, 0, 0};
+        setup(1, TESS_FH_HARM, TESS_FR_SOURCE, 0);
+        play(beats, &m, &f2);
+        ok = f2.n == mel0.n;
+        for (i = 0; ok && i < f2.n; i++) ok = f2.note[i] == mel0.note[i];
+        bad += check("HARM with no CHORD track: as SAME", ok);
+        for (k = 0; k < 2u; k++) {
+            setup(1, TESS_FH_HARM, TESS_FR_SOURCE, 0);
+            song.sel = 2;
+            tessera_knob(0, TESS_ENG_CHORD);
+            song.sel = 0;
+            trk[2].p[P_SCALE] = 1;
+            trk[2].p[P_SDIV] = DIV_8TH;
+            tessera.chord[2].prog = GEN_CH_DRONE;
+            tessera.evolve[1].shift = (int8_t)k;           /* (SHIFT 1: a chord note further) */
+            blocks(1);
+            play(beats, &m, &f);
+            ok = f.n == mel0.n && same(&mel0, &m) && (tessera_chord_pcs() & 0xFFFu) == 0x091u;
+            for (i = 1; ok && i < f.n; i++) {            /* (the first: before the CHORD track's first chord) */
+                uint32_t w = WANT[(mel0.note[i] - 60u) % 12u];
+                ok = step_of(f.at[i]) == step_of(mel0.at[i]) && f.note[i] == (k ? (w == 79u ? 72u : w % 12u == 0u ? w + 4u :
+                     w % 12u == 4u ? w + 3u : w + 5u) : w);   /* (G5's next, C6, folded down: C4 + 23 the top) */
+            }
+            bad += check(k ? "  SHIFT 1: one chord note further up" :
+                             "HARM, SOURCE, a C chord: C D E F G A play C4 E4 G4 C5 E5 G5, on the melody's steps", ok);
+        }
+        tessera.evolve[1].shift = 0;
+        setup(1, TESS_FH_SAME, TESS_FR_SOURCE, 0);      /* QNT HARM following: the melody's note to the nearest chord
+                                                         * note, not counted (the source counted already) */
+        song.sel = 2;
+        tessera_knob(0, TESS_ENG_CHORD);
+        song.sel = 0;
+        trk[2].p[P_SCALE] = 1;
+        tessera.chord[2].prog = GEN_CH_DRONE;
+        trk[1].p[P_QUANT] = Q_HARM;
+        blocks(1);
+        play(beats, &m, &f);
+        ok = f.n == mel0.n;
+        for (i = 1; ok && i < f.n; i++)
+            ok = (0x091u >> (f.note[i] % 12u) & 1u) && abs((int)f.note[i] - (int)mel0.note[i]) <= 2;
+        bad += check("QNT HARM, FOLLOW SAME: the melody's note snapped to the chord, not counted twice", ok);
+        setup(0, TESS_FH_SAME, TESS_FR_OWN, 0);         /* QNT HARM on the EUCLID itself: its notes counted, chord notes */
+        song.sel = 2;
+        tessera_knob(0, TESS_ENG_CHORD);
+        song.sel = 0;
+        trk[2].p[P_SCALE] = 1;
+        tessera.chord[2].prog = GEN_CH_DRONE;
+        trk[1].p[P_QUANT] = Q_CHRD;
+        blocks(1);
+        play(beats, &m, &f2);
+        setup(0, TESS_FH_SAME, TESS_FR_OWN, 0);
+        song.sel = 2;
+        tessera_knob(0, TESS_ENG_CHORD);
+        song.sel = 0;
+        trk[2].p[P_SCALE] = 1;
+        tessera.chord[2].prog = GEN_CH_DRONE;
+        trk[1].p[P_QUANT] = Q_HARM;
+        blocks(1);
+        play(beats, &m, &f);
+        ok = f.n == f2.n && f.n > 4u;
+        for (i = 1, k = 0; ok && i < f.n; i++) {
+            ok = (0x091u >> (f.note[i] % 12u) & 1u) && f.at[i] == f2.at[i];
+            k += f.note[i] != f2.note[i];
+        }
+        bad += check("QNT HARM on a generator: its own steps, every note a chord note, not CHRD's nearest ones", ok && k);
+    }
 
 
     {   /* MUTE (Theo 2026-11-10: B following A, A muted on the MIXER, B went silent): A's notes still lead */

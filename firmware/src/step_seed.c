@@ -101,7 +101,7 @@ static uint32_t sd_pitch(const track_t *t, uint32_t tr, uint32_t s, uint32_t not
     k = tessera.mode[tr] == TESS_ENG_TURING && tessera.turing[tr].oct_span ? tessera.turing[tr].oct_span : 2u;
     top = (int32_t)lo + 12 * (int32_t)k;
     if (top <= (int32_t)hi) top = (int32_t)hi + 1;
-    base = tessera_snap_note(t, (int32_t)lo);
+    base = tessera_snap_plain(t, (int32_t)lo);
     for (d = base, deg = 0; d < top && deg < 48; d = tess_scale_steps(t, d, 1)) deg++;
     deg = (int32_t)gen_rnd(&tessera.rnd[tr], (uint32_t)deg);
     d = tess_scale_steps(t, base, deg);

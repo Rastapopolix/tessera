@@ -241,6 +241,7 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 | Stop a generator from changing | TURING's **PROB 0** (Lock), or EVOLVE's **EVERY OFF** |
 | Make a part change slowly over time | [EVOLVE](#evolve), then [GRAVITY](#evolve) to keep it near home |
 | Have every track play in the same key and follow the chords | [Harmony](#harmony-one-key-chord-and-qnt-chrd): Key link and **QNT CHRD** |
+| Turn a line, the keys or MIDI IN into arpeggios of the chords | [HARM: a harmonizer](#harm-a-harmonizer): **QNT HARM**, or FOLLOW's **HOW HARM** |
 | Make the sound move on its own | [MODS](#mods-the-modulation-cords), or hold **FX** and turn a knob ([Mod shortcut](#mod-shortcut)) |
 | Make a piece that plays for an hour and has a beginning, middle and end | [PIECE](#piece-a-length-and-a-shape), [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in), and the [recipe](RECIPES.md#a-piece-that-plays-itself-piece-chain-and-entries) |
 | Do big moves live with one hand | [PERF](#perf-four-macros) macros and the [recipe](RECIPES.md#one-knob-for-a-big-build-perf-macros) |
@@ -558,7 +559,7 @@ BOUNCE, QUAD, CONSTELLATION and SERIES run free and simply carry on.
 
 On NOTES, **KNOB 2** sets the picked note's pitch. With **QNT OFF** it moves a semitone a detent. With QNT on
 (SNAP, WHITE, ALL, MPC) it moves a note of the scale a detent; a note off the scale goes to the next scale note in
-the turn's direction first. With **QNT CHRD** and a CHORD track playing it moves through that chord's notes. Hold
+the turn's direction first. With **QNT CHRD** or **HARM** and a CHORD track playing it moves through that chord's notes. Hold
 **ENV** while turning for a semitone at a time. A microtonal scale moves a degree a detent. With
 **MENU > NOTE PREVIEW** on (the default), you hear the new pitch at the note's velocity, for about a sixth of a second, on that track
 and on MIDI OUT as a key's note would (KEYS, ALL); nothing is recorded. It sounds while playing too, but not while
@@ -602,8 +603,8 @@ Swing (the track's, KNOB 2), Clear pattern and Clear motion it has:
 
 - **Snap to scale**: OCT+ moves every written note of the pattern onto the track's scale and ROOT, once. That means
   every note of a chord, recorded notes, and steps hidden past LEN. Each note goes to the nearest note of the scale;
-  halfway between two, it goes down. Two notes of a chord that land on the same note become one. With **QNT CHRD** and
-  a CHORD track playing, notes go to the nearest note of the chord playing now. The header says how many moved
+  halfway between two, it goes down. Two notes of a chord that land on the same note become one. With **QNT CHRD** (or
+  HARM) and a CHORD track playing, notes go to the nearest note of the chord playing now. The header says how many moved
   (**SNAPPED 7**), or **ALL IN SCALE**. It works at any QNT, OFF included. On a microtonal scale or your own tuning
   with QNT on, every note already is a degree of the scale, so nothing moves. With QNT OFF such a scale's notes play
   as semitones and go to the nearest semitone close to the scale. A kit or slices has no such row.
@@ -1251,6 +1252,7 @@ steps.
 | **CONTRA** | Contrary motion: it goes down as many scale steps as the other track goes up, and the other way, mirrored around the first note it followed. |
 | **BASS** | The note one octave down (two from middle C up), on beats 1 and 3 of the bar only. |
 | **CANON1** to **CANON8** | The other track's note from that many notes ago: a round. It stays silent until the other track has played that many. HOLD does nothing here. |
+| **HARM** | The other track's note counted into the chord a CHORD track plays: each note of the scale it goes up, the chord's next note up; SHIFT moves by chord notes. No CHORD track: as SAME. See [HARM: a harmonizer](#harm-a-harmonizer). |
 
 **RHYTHM** (OCT- held, KNOB 3) says when it plays. **OWN**: on this track's own hits. **SOURCE**: only
 when the followed track has played a note, so the two move together; this track's own rhythm is left out. **BOTH**:
@@ -1496,10 +1498,39 @@ A **CHORD** track plays a progression; with **QNT CHRD** the other tracks follow
   on every chord of the progression, so some may leave the key.
 - On any other track: **SCL**, **QNT** to **CHRD**. Its keys, its MIDI input and its generator snap to the nearest
   note of the chord playing now, and KNOB 2 on NOTES steps through its notes. With no CHORD track, CHRD acts as
-  SNAP.
+  SNAP. **QNT HARM** counts instead of snapping: [HARM: a harmonizer](#harm-a-harmonizer).
 - **CH PROG** is a mod destination, so a slow source can change progressions.
 - **STRUM** (hold **OCT-** on GEN, KNOB 2 and 3): the chord's notes start a few ms apart instead of together, as a
   played guitar or keyboard chord. See [CHORD: STRUM, DIR, OCT](#chord-strum-dir-oct-chrd-voic-breath-or-len).
+
+### HARM: a harmonizer
+
+> **In short:** with a CHORD track playing, every note of the scale you go up plays the chord's next note up. Run up
+> the keys and you play an arpeggio that changes with the chords; any line in the scale becomes one too.
+
+After the harmonizer in Dreamsequence (a norns script by dstroud), the idea only. QNT CHRD moves a note to the *nearest*
+note of the chord, so neighbouring keys can land on the same one. HARM *counts* instead: C4 plays the chord's root (the
+one nearest C4), the next note of the scale its next note up (the third), the next the one after (the fifth), and so
+on, an octave further every time the chord's notes run out; down from C4 the same way. Over a C chord, C D E F G A
+play C4 E4 G4 C5 E5 G5; when the progression moves to G, the same keys play G3 B3 D4 G4 B4 D5. Each note is
+counted when it starts, so a held note keeps its pitch through a chord change. The notes are kept within two octaves
+either side of C4.
+
+- **SCL > QNT HARM** (the project's, as every QNT): the **keys** walk the scale on the white keys from C4, as WHITE
+  does, each a chord note; the black keys are silent. TRN and OCT move the result. **MIDI IN** is counted the same way:
+  a note's place in the scale (a note off the scale counts as the one below it), so a sequencer or a DAW clip playing
+  in the scale plays the chords' notes. The **generators** are counted too: a TURING, EUCLID or MARKOV line becomes an
+  arpeggio of the chords. ANSWER plays back what you played, counted already, so it is not counted again.
+- **TWEAK > FOLLOW**, **HOW HARM** (OCT- held, KNOB 2): a generator track plays the followed track's notes counted
+  into the chord, whatever QNT is. With **RHYTHM SOURCE** it plays on the other track's steps: a STEP melody, muted if
+  you like, becomes a chord-aware second line. **SHIFT** moves it by chord notes (SHIFT 1: the third instead of the
+  root). See [TWEAK](#tweak).
+- A track that FOLLOWs under QNT HARM (any other HOW) snaps the followed note to the chord, as CHRD: that note was
+  counted already.
+- With no CHORD track, HARM plays the keys as WHITE and the rest as SNAP, and HOW HARM as SAME. A microtonal scale or
+  your own tuning plays HARM as CHRD.
+- Notes you record keep the pitch they played at.
+- A project that uses HOW HARM does not load on firmware before it; one with QNT HARM loads with QNT CHRD.
 
 ### Your own scales (USER1 to USER4)
 
@@ -2537,8 +2568,8 @@ Tessera stands on other people's ideas and work:
 - **Grids** by Émilie Gillet / Mutable Instruments: the ATLAS generator's drum map and the way it is read.
 - **ORACLE** is Melodee's Prophet engine (after the Prophet-5), with its own sounds.
 - **norns** scripts, as ideas restated in C (no code copied): **Awake** (tehn) for AWAKE, **Fall** (ambalek) for
-  BOUNCE's FALL, **Constellation** (timothy-taylor) for CONSTELLATION, **initenere** for QUAD, and **nørgård** for
-  SERIES.
+  BOUNCE's FALL, **Constellation** (timothy-taylor) for CONSTELLATION, **initenere** for QUAD, **nørgård** for
+  SERIES, and **Dreamsequence** (dstroud) for HARM.
 - **Turing Machine** (Music Thing Modular) for TURING.
 - **Triple Sloth** by Nonlinear Circuits (Andrew Fitch), with J. C. Sprott's jerk system, for TIDE; **ochd** by
   Instruō and DivKid for SWARM (ideas only, no code copied).

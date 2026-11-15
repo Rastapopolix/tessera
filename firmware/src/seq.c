@@ -130,11 +130,13 @@ static uint32_t scale_degree_map(const track_t *t, int32_t degree, int32_t offse
     return (uint32_t)clamp(n, 0, 127);
 }
 
+/* the scale degree each white key walks to (WHITE, MPC on the keys, HARM), -1 a black key */
+static const int8_t KB_DEGREE[12] = {0, -1, 1, -1, 2, 3, -1, 4, -1, 5, -1, 6};
 /* note n (a key's or a MIDI note) through the WHITE / ALL layouts. WHITE (and MPC on the keys): the white keys walk
  * the scale from C4 = ROOT, the black keys are silent. ALL: every key the next degree of the scale */
 static uint32_t scale_map(const track_t *t, int32_t n, int32_t offset)
 {
-    static const int8_t DEGREE[12] = {0, -1, 1, -1, 2, 3, -1, 4, -1, 5, -1, 6};
+    const int8_t *DEGREE = KB_DEGREE;
     int32_t degree;
     if (t->p[P_QUANT] == Q_ALL)
         return scale_degree_map(t, n - 60, offset, 1);
@@ -158,9 +160,17 @@ static uint32_t kb_map(const track_t *t, uint32_t k)
     n = 53 + (int32_t)k;
     if (kb_chrom)
         return (uint32_t)clamp(n + 12 * song.octave, 0, 127);
-    if (t->p[P_QUANT] == Q_SNAP || t->p[P_QUANT] == Q_CHRD) {   /* SNAP: every key, rounded down to the scale; CHRD:
-                                                                 * then to the nearest note of the CHORD track's chord */
-        uint32_t pcs = t->p[P_QUANT] == Q_CHRD ? tessera_chord_pcs() : 0u;
+    if (t->p[P_QUANT] == Q_HARM && !micro_active(t)) {   /* HARM: the white keys count the scale from C4 as WHITE does,
+                                                          * each degree the CHORD track's chord's next note (tessera.c) */
+        if (KB_DEGREE[n % 12] < 0)
+            return KB_SILENT;
+        n = tessera_harm_degree(t, KB_DEGREE[n % 12] + (n / 12 - 5) * 7);
+        return (uint32_t)clamp(n + 12 * song.octave + t->p[P_TRANS], 0, 127);
+    }
+    if (t->p[P_QUANT] == Q_SNAP || Q_CHORDS(t->p[P_QUANT])) {   /* SNAP: every key, rounded down to the scale; CHRD
+                                                                 * (and HARM microtonal): then to the nearest note of
+                                                                 * the CHORD track's chord */
+        uint32_t pcs = Q_CHORDS(t->p[P_QUANT]) ? tessera_chord_pcs() : 0u;
         if (micro_active(t)) {
             uint32_t note = micro_snap(t, n + t->p[P_TRANS]);
             return note == KB_SILENT ? note : micro_degree_map(t, (int32_t)note - 60, 12 * song.octave, 1);
@@ -188,8 +198,10 @@ static uint32_t midi_map(const track_t *t, uint32_t note)
         return scale_degree_map(t, (int32_t)note - 21 + mpc_degree(t) - 1, 12 * song.octave, 1);
     if (t->p[P_QUANT] == Q_WHITE || t->p[P_QUANT] == Q_ALL)
         return scale_map(t, (int32_t)note, 0);
-    if (micro_active(t) && (t->p[P_QUANT] == Q_SNAP || t->p[P_QUANT] == Q_CHRD))
+    if (micro_active(t) && (t->p[P_QUANT] == Q_SNAP || Q_CHORDS(t->p[P_QUANT])))
         return micro_snap(t, (int32_t)note + t->p[P_TRANS]);
+    if (t->p[P_QUANT] == Q_HARM && tessera_chord_pcs())   /* HARM: its degree of the scale counted into that chord */
+        return (uint32_t)tessera_harm_note(t, (int32_t)note);
     if (t->p[P_QUANT] == Q_CHRD && tessera_chord_pcs())   /* CHRD: to the nearest note of the CHORD track's chord */
         return tessera_chord_snap(tessera_chord_pcs(), (int32_t)note);
     return note;

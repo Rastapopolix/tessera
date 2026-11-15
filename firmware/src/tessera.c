@@ -1177,7 +1177,7 @@ void tessera_follow_key(uint32_t tr, uint32_t note)
 static int32_t tess_follow_note(uint32_t tr)
 {
     uint32_t src = (uint32_t)tessera.evolve[tr].follow - 1u, h = tessera.follow_how[tr];
-    if (h >= TESS_FH_CANON)                                 /* CANON n: its note n back, none until it has played them */
+    if (TESS_FH_IS_CANON(h))                               /* CANON n: its note n back, none until it has played them */
         return src < TESSERA_TRACKS ? (int32_t)tessera.f_hist[src][(tessera.f_cnt[src] - 2u - (h - TESS_FH_CANON)) & 15u] - 1 : -1;
     if (!tessera.follow_hold[tr]) return tess_follow_source(src, tr);
     if (!tessera.hold_mem[tr]) {
@@ -1202,15 +1202,25 @@ static int tess_follow_gate(const track_t *t, uint32_t tr, int g, uint8_t *vel)
         g = rhy == TESS_FR_SOURCE ? fresh : g || fresh;
         if (g && !*vel) *vel = 100;
     }
-    return g && (h < TESS_FH_CANON || tess_follow_note(tr) >= 0);
+    return g && (!TESS_FH_IS_CANON(h) || tess_follow_note(tr) >= 0);
 }
 /* FOLLOW's HOW on the source's note s (snapped to this track's scale), then SHIFT's scale degrees. CHORD: the third,
  * fifth or seventh of the chord on s nearest this track's last note; CONTRA: s mirrored around the first note followed,
  * as many scale degrees the other way;
- * BASS: one octave down, two from 60 up; SAME and CANON: s */
+ * BASS: one octave down, two from 60 up; HARM: s's degree counted into the CHORD track's chord, SHIFT chord notes
+ * further (tessera_harm_degree; no CHORD track: as SAME); SAME and CANON: s */
+static int32_t tess_scale_index(const track_t *t, int32_t n, int32_t c);
+/* a generator's note n on track tr: tessera_snap_note (QNT HARM counts it); ANSWER's are the notes played, counted
+ * already on the keys (seq.c kb_map), so only snapped */
+static int32_t tess_snap_gen(const track_t *t, uint32_t tr, int32_t n)
+{
+    return tessera.mode[tr] == TESS_ENG_ANSWER ? tessera_snap_plain(t, n) : tessera_snap_note(t, n);
+}
 static int32_t tess_follow_how(const track_t *t, uint32_t tr, int32_t s, int32_t shift)
 {
     uint32_t h = tessera.follow_how[tr];
+    if (h == TESS_FH_HARM)
+        return tessera_harm_degree(t, tess_scale_index(t, s, 60 + (int32_t)(t->p[P_ROOT] % 12)) + shift);
     if (h == TESS_FH_CHORD) {
         int32_t to = tessera.f_cnt[tr] ? (int32_t)tessera.last_note[tr] - tess_trn(t, tr) : s + 3, best = s, d;
         for (d = 2; d <= 6; d += 2) {
@@ -1250,7 +1260,7 @@ static int32_t tess_resolve(const track_t *t, uint32_t tr, int32_t n)
     for (i = 0; i < 5u; i++) {
         int32_t m = n + D[i], pc = m % 12;
         if (m < 0 || m > 127 || (pc != r && pc != (r + 7) % 12)) continue;
-        if (tessera_snap_note(t, m - trn) == m - trn) return m;   /* (the fifth only where the scale has it) */
+        if (tessera_snap_plain(t, m - trn) == m - trn) return m;   /* (the fifth only where the scale has it) */
     }
     return n;
 }
@@ -1555,6 +1565,7 @@ static void tess_chord_play(track_t *t, uint32_t tr, uint32_t gate)
     r += tess_trn(t, tr) + tw->shift;
     mask = mask ? mask : 1u;                             /* (a kit: the root alone) */
     tessera.chord_pc[tr] = (uint16_t)(((uint32_t)mask << ((r % 12 + 12) % 12) | (uint32_t)mask >> (12 - (r % 12 + 12) % 12)) & 0xFFFu);
+    tessera.chord_root[tr] = (uint8_t)((r % 12 + 12) % 12);
     tessera.hit[tr] = 1;
     tessera.last_note[tr] = t->seq_notes[0];             /* (FOLLOW of it: the chord's lowest note) */
     tessera_hold_hit(tr);
@@ -1674,13 +1685,15 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
         if (tw2->follow) {          /* harmony: the other track's pitch in this scale, SHIFT scale degrees away */
             int32_t src_note = tess_follow_note(tr);
             if (src_note >= 0) {
-                base_note = tess_follow_how(t, tr, tessera_snap_note(t, src_note - fc_key(tr)), tw2->shift);   /* (KEY: in A's) */
-                following = 1;
+                base_note = tess_follow_how(t, tr, tessera_snap_plain(t, src_note - fc_key(tr)), tw2->shift);   /* (KEY: in A's) */
+                following = 1 + (tessera.follow_how[tr] == TESS_FH_HARM);
             }
         }
-        base_note += tess_flourish(t, tr);                  /* before the snap: the flourish stays in the scale */
+        if (following < 2) base_note += tess_flourish(t, tr);   /* before the snap: the flourish stays in the scale */
         base_note = base_note < 0 ? 0 : base_note > 127 ? 127 : base_note;
-        int32_t final_note = tessera_snap_note(t, base_note);
+        /* HOW HARM: a chord tone already; following under QNT HARM: the followed note is not counted a second time */
+        int32_t final_note = following == 2 ? base_note : following ? tessera_snap_plain(t, base_note)
+                                                                    : tess_snap_gen(t, tr, base_note);
 
         /* Apply track transpose and clamp to MIDI range */
         final_note += tess_trn(t, tr);
@@ -1697,7 +1710,7 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
             if (v->p[P_MUTE] || t->p[P_MUTE]) return;   /* (its hits sound on v: muting either silences them) */
             tess_branch_on(v, (uint32_t)final_note, vel, off);
             for (uint32_t i = 0; i < out.more_n && i < 2u; i++) {
-                int32_t m = tessera_snap_note(t, (int32_t)out.more[i] + tess_key(t, tr) + tess_flourish(t, tr)) + tess_trn(t, tr) + tw2->shift;
+                int32_t m = tess_snap_gen(t, tr, (int32_t)out.more[i] + tess_key(t, tr) + tess_flourish(t, tr)) + tess_trn(t, tr) + tw2->shift;
                 m = m < 0 ? 0 : m > 127 ? 127 : m;
                 if (m != final_note) tess_branch_on(v, (uint32_t)m, vel, off);
             }
@@ -1711,7 +1724,7 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
             tessera.last_note[tr] = (uint8_t)final_note;
             tessera_hold_hit(tr);
             for (uint32_t i = 0; i < out.more_n && i < 2u; i++) {
-                int32_t m = tessera_snap_note(t, (int32_t)out.more[i] + tess_key(t, tr) + tess_flourish(t, tr)) + tess_trn(t, tr) + tw2->shift;
+                int32_t m = tess_snap_gen(t, tr, (int32_t)out.more[i] + tess_key(t, tr) + tess_flourish(t, tr)) + tess_trn(t, tr) + tw2->shift;
                 m = m < 0 ? 0 : m > 127 ? 127 : m;
                 if (m != final_note) { nl_on(t, tr, (uint32_t)m, vel, 1); tess_cap(t, (uint32_t)m, vel, step); }
             }
@@ -1735,7 +1748,7 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
         tessera_hold_hit(tr);
         t->seq_n = 1;
         for (uint32_t i = 0; i < out.more_n && i < 2u; i++) {   /* (Bounce: balls hitting on the same step) */
-            int32_t m = tessera_snap_note(t, (int32_t)out.more[i] + tess_key(t, tr) + tess_flourish(t, tr)) + tess_trn(t, tr) + tw2->shift;
+            int32_t m = tess_snap_gen(t, tr, (int32_t)out.more[i] + tess_key(t, tr) + tess_flourish(t, tr)) + tess_trn(t, tr) + tw2->shift;
             m = m < 0 ? 0 : m > 127 ? 127 : m;
             if (m == final_note) continue;
             trk_note_on(t, (uint32_t)m, vel);
@@ -2256,6 +2269,28 @@ uint32_t tessera_chord_pcs(void)
         if (tessera.mode[i] == TESS_ENG_CHORD && tessera.chord_pc[i]) return tessera.chord_pc[i];
     return 0;
 }
+uint32_t tessera_chord_root(void)
+{
+    for (uint32_t i = 0; i < TESSERA_TRACKS; i++)
+        if (tessera.mode[i] == TESS_ENG_CHORD && tessera.chord_pc[i]) return tessera.chord_root[i];
+    return 0;
+}
+/* QNT HARM and FOLLOW HOW HARM (after Dreamsequence's harmonizer): degree i counted into the chord pcs on root: 0 the
+ * root nearest c, 1 the chord's next note up, and so on, an octave further every as many degrees as the chord has
+ * notes (i below 0: down the same way); folded by octaves into c - 24 .. c + 23, inside 0..127 */
+int32_t tessera_harm_tone(uint32_t pcs, uint32_t root, int32_t c, int32_t i)
+{
+    int32_t tone[12], k = 0, j, o, n;
+    root %= 12u;
+    for (j = 0; j < 12; j++)
+        if ((pcs >> ((root + (uint32_t)j) % 12u)) & 1u) tone[k++] = j;
+    if (!k) return c;
+    o = i >= 0 ? i / k : -((k - 1 - i) / k);
+    n = c + ((int32_t)root - c % 12 + 18) % 12 - 6 + tone[i - o * k] + 12 * o;
+    while (n < c - 24) n += 12;
+    while (n > c + 23) n -= 12;
+    return n < 0 ? 0 : n > 127 ? 127 : n;
+}
 uint32_t tessera_chord_snap(uint32_t pcs, int32_t n)
 {
     n = n < 0 ? 0 : n > 127 ? 127 : n;
@@ -2267,15 +2302,20 @@ uint32_t tessera_chord_snap(uint32_t pcs, int32_t n)
     return (uint32_t)n;
 }
 
-/* Force a note down into the nearest active scale degree of the track; QNT CHRD with a CHORD track playing: to the
- * nearest note of its chord */
-int32_t tessera_snap_note(const track_t *t, int32_t n)
+/* Force a note down into the nearest active scale degree of the track; QNT CHRD (and HARM) with a CHORD track playing:
+ * to the nearest note of its chord */
+int32_t tessera_snap_plain(const track_t *t, int32_t n)
 {
     uint32_t mask = scale_mask(t), guard = 12, pcs;
-    if (t->p[P_QUANT] == Q_CHRD && (pcs = tessera_chord_pcs()) != 0u) return (int32_t)tessera_chord_snap(pcs, n);
+    if (Q_CHORDS(t->p[P_QUANT]) && (pcs = tessera_chord_pcs()) != 0u) return (int32_t)tessera_chord_snap(pcs, n);
     while (guard-- && !((mask >> (uint32_t)((n - t->p[P_ROOT] + 120) % 12)) & 1u))
         n--;
     return n;
+}
+/* a generator's note into t's scale: tessera_snap_plain; QNT HARM: counted into the chord (tessera_harm_note) */
+int32_t tessera_snap_note(const track_t *t, int32_t n)
+{
+    return t->p[P_QUANT] == Q_HARM ? tessera_harm_note(t, n) : tessera_snap_plain(t, n);
 }
 
 /* n (a note of t's scale) moved k notes of the scale up (k > 0) or down; a scale with no notes: k semitones */
@@ -2293,6 +2333,44 @@ static int32_t tess_scale_steps(const track_t *t, int32_t n, int32_t k)
     return n;
 }
 
+/* note n as a degree of t's scale counted from c (a note of it): 0 c, 1 the scale's next note up, -1 the one below c; a
+ * note off the scale counts as the one below it. A scale with no notes: semitones */
+static int32_t tess_scale_index(const track_t *t, int32_t n, int32_t c)
+{
+    int32_t i = 0, m = c;
+    if (!(scale_mask(t) & 0xFFFu))
+        return n - c;
+    if (n >= c) {
+        while (m < n && i < 128)
+            if ((m = tess_scale_steps(t, m, 1)) <= n) i++;
+        return i;
+    }
+    while (m > n && i > -128) {
+        m = tess_scale_steps(t, m, -1);
+        i--;
+    }
+    return i;
+}
+/* QNT HARM: degree i of t's scale from C4's ROOT (60 + ROOT) played as a tone of the CHORD track's chord; no CHORD track
+ * (or a microtonal scale): the degree itself */
+int32_t tessera_harm_degree(const track_t *t, int32_t i)
+{
+    int32_t c = 60 + (int32_t)(t->p[P_ROOT] % 12), n;
+    uint32_t pcs = tessera_chord_pcs() & 0xFFFu;
+    if (pcs && !micro_active(t))
+        return tessera_harm_tone(pcs, tessera_chord_root(), c, i);
+    n = tess_scale_steps(t, c, i);
+    return n < 0 ? 0 : n > 127 ? 127 : n;
+}
+/* QNT HARM: note n (into t's scale first, as SNAP) played as that degree's chord tone; no CHORD track: n as SNAP */
+int32_t tessera_harm_note(const track_t *t, int32_t n)
+{
+    int32_t c = 60 + (int32_t)(t->p[P_ROOT] % 12);
+    if (!(tessera_chord_pcs() & 0xFFFu) || micro_active(t))
+        return tessera_snap_plain(t, n);
+    return tessera_harm_degree(t, tess_scale_index(t, n, c));
+}
+
 /* NOTES KNOB 2: n moved k notes of t's scale (QNT CHRD with a CHORD track playing: of its chord), one off them counting
  * its next one that way as the first; QNT OFF, a microtonal scale (its notes are its degrees) or fine: k semitones */
 int32_t tessera_pitch_turn(const track_t *t, int32_t n, int32_t k, int fine)
@@ -2301,7 +2379,7 @@ int32_t tessera_pitch_turn(const track_t *t, int32_t n, int32_t k, int fine)
     int32_t dir = k < 0 ? -1 : 1;
     if (fine || t->p[P_QUANT] == Q_OFF || micro_active(t))
         return n + k;
-    if (t->p[P_QUANT] != Q_CHRD || !(pcs = tessera_chord_pcs() & 0xFFFu))
+    if (!Q_CHORDS(t->p[P_QUANT]) || !(pcs = tessera_chord_pcs() & 0xFFFu))
         return tess_scale_steps(t, n, k);
     for (; k; k -= dir) {
         uint32_t guard = 12;
@@ -2337,7 +2415,7 @@ static int32_t tess_follow_source(uint32_t src, uint32_t tr)
 /* The pitch Euclid plays on a step, as 0..14 (mirrors tessera_clock_step: 48 + (step*3)%12, snapped) */
 uint32_t tessera_euclid_pitch(const track_t *t, uint32_t step)
 {
-    int32_t n = tessera_snap_note(t, 48 + (int32_t)(t->p[P_ROOT] % 12) + (int32_t)gen_euclid_degree(tessera.euclid[trk_index(t) % TESSERA_TRACKS].pitch_seed, step));
+    int32_t n = tessera_snap_plain(t, 48 + (int32_t)(t->p[P_ROOT] % 12) + (int32_t)gen_euclid_degree(tessera.euclid[trk_index(t) % TESSERA_TRACKS].pitch_seed, step));
     n -= 45 + (int32_t)(t->p[P_ROOT] % 12);   /* (the picture: the same height in every key) */
     if (n < 0) n = 0;
     if (n > 14) n = 14;

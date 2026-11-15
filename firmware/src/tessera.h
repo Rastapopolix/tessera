@@ -150,6 +150,8 @@ typedef struct {
     tessera_answer_t answer[TESSERA_TRACKS];
     uint16_t         chord_pc[TESSERA_TRACKS]; /* CHORD: the pitch classes of the chord it plays (bit 0 C), 0 none yet
                                                * (QNT CHRD's: tessera_chord_pcs; not saved) */
+    uint8_t          chord_root[TESSERA_TRACKS]; /* CHORD: that chord's root, a pitch class (QNT HARM counts from it;
+                                                 * not saved) */
     tessera_evolve_t evolve[TESSERA_TRACKS];
     tessera_sec_t    sec[TESSERA_TRACKS][3];
     uint8_t          last_note[TESSERA_TRACKS];
@@ -498,8 +500,11 @@ enum { SEQ_FWD, SEQ_BACK, SEQ_PEND, SEQ_FOLD, SEQ_RAND, SEQ_DRUNK, SEQ_DIRS };
 #define TESS_STRUM_MS 250u                          /* TX_CH_STRUM: up to 250 ms between a chord's notes (a byte, in ms) */
 #define TESS_STRUM_DETENTS 39u                      /* its knob: 1..10 ms by 1, 15..60 by 5, 70..250 by 10 */
 enum { TESS_STR_UP, TESS_STR_DOWN, TESS_STR_ALT, TESS_STR_DIRS };   /* TX_CH_SDIR (saved: append only) */
-/* TX_TW_FHOW: the source's note as it is, the nearest chord tone, mirrored, a bass, or CANON 1..8 notes back */
-enum { TESS_FH_SAME, TESS_FH_CHORD, TESS_FH_CONTRA, TESS_FH_BASS, TESS_FH_CANON, TESS_FH_COUNT = TESS_FH_CANON + 8 };
+/* TX_TW_FHOW: the source's note as it is, the nearest chord tone, mirrored, a bass, CANON 1..8 notes back, or counted
+ * into the CHORD track's chord (HARM, after the 8 CANONs: older firmware loads no project that uses it) */
+enum { TESS_FH_SAME, TESS_FH_CHORD, TESS_FH_CONTRA, TESS_FH_BASS, TESS_FH_CANON, TESS_FH_HARM = TESS_FH_CANON + 8,
+       TESS_FH_COUNT };
+#define TESS_FH_IS_CANON(h) ((h) >= TESS_FH_CANON && (h) < TESS_FH_HARM)
 enum { TESS_FR_OWN, TESS_FR_SOURCE, TESS_FR_BOTH, TESS_FR_COUNT };   /* TX_TW_FRHY */
 enum { TESS_DM_GM, TESS_DM_ROW, TESS_DM_COUNT };   /* TX_MIDI_DMAP: General MIDI's drum notes, or one a track in a row */
 enum { TESS_SPLIT_DOUBLE, TESS_SPLIT_PUSH, TESS_SPLIT_MIX, TESS_SPLIT_HOWS };   /* TX_SUB_SPLIT_HOW */
@@ -566,6 +571,11 @@ void tessera_answer_layer_knob(uint32_t k, int32_t s);  /* OCT- held on GEN in A
 uint32_t tessera_answer_count(uint32_t tr);             /* the answers FADE gives (1..16), 0: never forgets (loops) */
 const gen_chord_t *tessera_chord(uint32_t tr);
 uint32_t tessera_chord_pcs(void);     /* QNT CHRD: the chord the first CHORD track plays (pitch classes, bit 0 C), 0 none */
+uint32_t tessera_chord_root(void);    /* its root, a pitch class (0 none) */
+int32_t tessera_harm_tone(uint32_t pcs, uint32_t root, int32_t c, int32_t i);   /* degree i counted into the chord */
+int32_t tessera_harm_note(const track_t *t, int32_t n);       /* QNT HARM: note n of t's scale as a chord tone */
+int32_t tessera_harm_degree(const track_t *t, int32_t i);     /* QNT HARM: degree i from C4's ROOT as a chord tone */
+int32_t tessera_snap_plain(const track_t *t, int32_t n);      /* tessera_snap_note without HARM's counting (CHRD's) */
 uint32_t tessera_chord_snap(uint32_t pcs, int32_t n);   /* n moved to the nearest note of pcs (a tie: down), 0..127 */
 uint32_t tessera_chord_at(uint32_t tr, uint32_t i, char *name);   /* chord i of its progression: name (12 B) -> pitch
                                                                  * classes (bit 0 C) | its root's << 12 */
