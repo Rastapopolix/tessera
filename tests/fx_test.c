@@ -1,9 +1,13 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 /* Real UI/mixer/storage integration plus deterministic DSP stress. */
 #include <assert.h>
+static int fx_sleep_off;                   /* (fx.c FX_SLEEP_OFF: 1 keeps REVERB and ECHO awake) */
+#define FX_SLEEP_OFF fx_sleep_off
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
 #include <math.h>
+#include <sys/wait.h>
+#include <unistd.h>
 static void reset_fx(void)
 {
     fx_clear_all();memset(fx_state,0,sizeof fx_state);
@@ -470,8 +474,74 @@ static void filter_test(void)
     for(uint32_t ch=0;ch<2;ch++)assert(!fx_state[0].q[ch][0].z1 && !fx_state[0].q[ch][0].z2);
     puts("FILTER: open passes 10 kHz, shut takes 1 kHz away, RES lifts the cutoff, CUT jumps glide, no denormal tail: OK");
 }
+/* REVERB and ECHO asleep (fx.c REV_QUIET, ECHO_QUIET): with nothing reaching them and their tails provably zero
+ * they skip their work, and the output is bit-identical to running them awake: an insert and the bus (the new
+ * project's REVERB into ECHO, chained and separate), bursts with long silences between, RATE / CHAR moved while
+ * asleep. They must also really sleep (a quarter of the time and more here); the quiet count runs awake too */
+static uint64_t sleep_insert(uint32_t type,uint32_t *asleep)
+{
+    reset_fx();track_t *t=&trk[0];t->p[P_FXTYPE]=(int16_t)type;t->p[P_FXMIX]=127;
+    uint64_t h=1469598103934665603ull;int32_t b[CTL];uint32_t phase=0,r=7;*asleep=0;
+    for(uint32_t frame=0;frame<12u*FS/CTL;frame++){
+        uint32_t ms=frame*CTL*1000u/FS%3000u;
+        for(uint32_t i=0;i<CTL;i++){phase+=0x02347120u;b[i]=ms<200u?sine_i(phase)/3:0;}
+        if(ms==2000u){r=r*1664525u+1013904223u;t->p[P_FXRATE]=(int16_t)(r>>25);t->p[P_FXCHAR]=(int16_t)(r>>9&127u);}
+        int on=fx_process(t,b,CTL);
+        for(uint32_t i=0;i<CTL;i++)h=(h^(uint32_t)(on?fx_left[i]:b[i])^(uint64_t)(uint32_t)(on?fx_right[i]:b[i])<<32)*1099511628211ull;
+        *asleep+=fx_state[0].quiet>=(type==FX_REVERB?REV_QUIET:ECHO_QUIET);
+    }
+    return h;
+}
+static uint64_t sleep_bus(uint32_t separate,uint32_t *asleep)
+{
+    static int32_t out[2*CTL];
+    ui_power_on();tessera_reset();project_new_blank();song.master_q12=2048;
+    song.g[G_MFXTYPE]=FX_REVERB;song.g[G_MFXRATE]=96;song.g[G_MFXCHAR]=84;
+    song.g[G_MFX2TYPE]=FX_ECHO;song.g[G_MFX2RATE]=82;song.g[G_MFX2CHAR]=60;song.g[G_FXMODE]=(int16_t)separate;
+    for(uint32_t k=0;k<NTRK;k++){trk[k].p[P_FXSEND]=64;trk[k].p[P_FXSEND2]=64;}
+    uint64_t h=1469598103934665603ull;uint32_t r=12345u;*asleep=0;
+    for(uint32_t frame=0;frame<20u*FS/CTL;frame++){
+        uint32_t ms=frame*CTL*1000u/FS%4000u;
+        if(ms==0u)for(uint32_t k=0;k<NTRK;k++)trk_note_on(&trk[k],48u+(r>>28)+k*5u,90);
+        if(ms==300u)for(uint32_t k=0;k<NTRK;k++)trk_note_off(&trk[k],48u+(r>>28)+k*5u);
+        if(ms==2500u){r=r*1664525u+1013904223u;song.g[G_MFXRATE]=(int16_t)(r>>8&127u);song.g[G_MFX2RATE]=(int16_t)(r>>16&127u);
+            song.g[G_MFXCHAR]=(int16_t)(r>>24&127u);song.g[G_MFX2CHAR]=(int16_t)(r>>4&127u);}
+        mix_block(out,CTL);
+        for(uint32_t i=0;i<2u*CTL;i++)h=(h^(uint32_t)out[i])*1099511628211ull;
+        *asleep+=fx_state[NPART*FX_SLOTS].quiet>=REV_QUIET && fx_state[NPART*FX_SLOTS+1u].quiet>=ECHO_QUIET;
+    }
+    return h;
+}
+/* one bus run in a fresh process (a second run in the same one starts from the first's leftovers: voices, caches) */
+static uint64_t sleep_bus_fresh(uint32_t separate,uint32_t off,uint32_t *asleep)
+{
+    int fd[2];assert(!pipe(fd));
+    pid_t pid=fork();assert(pid>=0);
+    if(!pid){uint64_t r[2];uint32_t a;fx_sleep_off=(int)off;r[0]=sleep_bus(separate,&a);r[1]=a;
+        assert(write(fd[1],r,sizeof r)==(ssize_t)sizeof r);_exit(0);}
+    uint64_t r[2]={0,0};int st;assert(read(fd[0],r,sizeof r)==(ssize_t)sizeof r);waitpid(pid,&st,0);
+    close(fd[0]);close(fd[1]);*asleep=(uint32_t)r[1];return r[0];
+}
+static void sleep_exact(void)
+{
+    uint32_t a0,a1;
+    for(uint32_t type=FX_ECHO;type<=FX_REVERB;type+=FX_REVERB-FX_ECHO){
+        fx_sleep_off=1;uint64_t awake=sleep_insert(type,&a0);
+        fx_sleep_off=0;uint64_t slept=sleep_insert(type,&a1);
+        assert(awake==slept && a0==a1 && a1>12u*FS/CTL/4u);
+        printf("%s insert asleep %u %% of the time, output bit-identical: OK\n",N_FX[type],a1*100u/(12u*FS/CTL));
+    }
+    for(uint32_t separate=0;separate<2u;separate++){
+        uint64_t awake=sleep_bus_fresh(separate,1u,&a0),slept=sleep_bus_fresh(separate,0u,&a1);
+        assert(awake==slept && a0==a1 && a1>20u*FS/CTL/5u);
+        printf("bus REVERB + ECHO (%s) both asleep %u %% of the time, output bit-identical: OK\n",separate?"separate":"chain",
+               a1*100u/(20u*FS/CTL));
+    }
+    reset_fx();
+}
 int main(int argc,char **argv)
 {
+    sleep_exact();
     legacy();frozen_three_slots();send_return();separate_sends();fx_chain_test();reverb_tail();reverb_presence();reverb_rate_conversion();rate_and_pan();tape_smooth();chorus_test();filter_test();
     fx_images_check(FX_ECHO);fx_images_check(FX_ROOM);
     uint64_t dry=fx_signal(FX_OFF,60,64,0,0);
