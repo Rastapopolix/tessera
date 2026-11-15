@@ -2369,6 +2369,25 @@ static int test_help_gesture(void)
             bad += check("MODS: KNOB 1's list has TIDE 1, 2, 3 in order (codes kept); every entry round trips",
                          at == 123u && rt);
         }
+        {                                         /* the selected track's sources first (T3: T3, T4, T1, T2), as KNOB 3's */
+            uint32_t i, rt = 1;
+            uint8_t was = song.sel, t1, t2, tlast, te;
+            cord_t c = {0};
+            song.sel = 2;
+            for (i = 0; i < CU_NSRC; i++) {
+                c.src = (uint8_t)cu_src_at(i, &c.src_trk);
+                rt &= cu_src_of(&c) == i;
+            }
+            c.src = (uint8_t)cu_src_at(1u, &t1);
+            rt &= c.src == CS_LFO;
+            (void)cu_src_at(1u + CU_SPT, &t2);
+            (void)cu_src_at(NTRK * CU_SPT, &tlast);
+            c.src = (uint8_t)cu_src_at(1u + NTRK * CU_SPT, &te);
+            song.sel = was;
+            bad += check("MODS: KNOB 1's list from the selected track on (T3: T3 LFO first, then T4 .., T2 last; "
+                         "ENERGY after the tracks'); every entry round trips",
+                         rt && t1 == 2u && t2 == 3u && tlast == 1u && c.src == CS_ENERGY);
+        }
         go_title("MODS");
         cord_clear();
         cord_ui_sel = 0;

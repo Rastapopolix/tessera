@@ -3,7 +3,7 @@
 /* MODS (LFO family; MOD's place: its page hidden, ui.c page_visible; tessera-notes/docs/design/phase2/cords.png): the cords (cord.c)
  * four to a screen, as MOD's rows:
  * "2  [2] ENV -> [4] DECAY  -25 %" over the amount's bar from the middle; the cord KNOB 2 is on: a card. The knobs as
- * MOD's: KNOB 1 the source (--, then T1 LFO .. T4 NOTE), 2 the cord, 3 the destination (--, then the selected track's
+ * MOD's: KNOB 1 the source (--, then the selected track's LFO .., the others' after), 2 the cord, 3 the destination (--, then the selected track's
  * groups, SOUND ..: cu_walk), 4 the amount. A cord without a source is a fixed move: KNOB 4 its OFFSET. OCT+: a bipolar source's direction, +- (both
  * ways from the knob) or + (folded to 0..1: one way, "+" after its name), then GATE (">" after its name, Mono "^": all while the
  * source is over a threshold, none under it; OCT- held + KNOB 4 sets the threshold); the mod's own (cord.h uni), not
@@ -27,7 +27,8 @@ static void cu_adopt(void)
 }
 
 #define CU_SPT CS_ENERGY                                /* a track's sources (LFO .. OCHD8, then EOC, added later) */
-#define CU_NSRC (1u + NTRK * CU_SPT + (CS_EOC - CS_ENERGY))   /* KNOB 1's list: --, track by track, then the project's
+#define CU_NSRC (1u + NTRK * CU_SPT + (CS_EOC - CS_ENERGY))   /* KNOB 1's list: --, track by track from the selected
+                                                         * one on (T3: T3, T4, T1, T2), then the project's
                                                          * (ENERGY, the MACROs) once */
 static int cu_src_trk(uint32_t s) { return s && !CS_PROJECT(s); }   /* a track's source, not the project's */
 /* KNOB 3's list (cu_walk): --, then each track's destinations from the selected track on (T3 selected: T3, T4, T1,
@@ -119,7 +120,9 @@ static uint32_t cu_tide(uint32_t s) { return s == CS_APATHY ? CS_INERTIA : s == 
 static uint32_t cu_src_of(const cord_t *c)
 {
     if (!c->src) return 0u;
-    return cu_src_trk(c->src) ? 1u + c->src_trk * CU_SPT + (c->src == CS_EOC ? CS_ENERGY - 1u : cu_tide(c->src) - 1u) : 1u + NTRK * CU_SPT + c->src - CS_ENERGY;
+    return cu_src_trk(c->src) ? 1u + (c->src_trk + NTRK - song.sel % NTRK) % NTRK * CU_SPT +
+                                    (c->src == CS_EOC ? CS_ENERGY - 1u : cu_tide(c->src) - 1u)
+                              : 1u + NTRK * CU_SPT + c->src - CS_ENERGY;
 }
 static uint32_t cu_src_at(uint32_t v, uint8_t *tr)     /* entry v of KNOB 1's list: its source, *tr its track */
 {
@@ -127,7 +130,7 @@ static uint32_t cu_src_at(uint32_t v, uint8_t *tr)     /* entry v of KNOB 1's li
     if (!v) return CS_OFF;
     v--;
     if (v >= NTRK * CU_SPT) return CS_ENERGY + v - NTRK * CU_SPT;
-    *tr = (uint8_t)(v / CU_SPT);
+    *tr = (uint8_t)((v / CU_SPT + song.sel) % NTRK);  /* (the tracks from the selected one on, as KNOB 3's) */
     return v % CU_SPT == CS_ENERGY - 1u ? (uint32_t)CS_EOC : cu_tide(1u + v % CU_SPT);
 }
 static uint32_t cu_dst_of(const cord_t *c)
