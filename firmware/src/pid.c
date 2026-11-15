@@ -169,6 +169,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_SUB_SHAPE] = PE("SHAPE", TX_N_SHAPE, 0),
     [TX_MIDI_CH] = PE("MIDI CH", TX_N_MIDICH, 0),
     [TX_KEY_LINK] = PE("KEY", TX_N_KEYLINK, 1),
+    [TX_QNT_LINK] = PE("QNT", TX_N_KEYLINK, 1),
     [TX_SD_SOURCE] = PE("SOURCE", TX_N_FOLLOW, 0),
     [TX_SD_KEEP] = PE("KEEP", TX_N_SDKEEP, 0),
     [TX_SUB_HUMAN] = {"HUMAN", F_INT, 0, TESS_HUMAN_MS, 0, 0, "ms"},
@@ -837,6 +838,10 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_AN_BREAK, "ANSWER BREAK", "BEND: the chance a repeat glitches, this once: it slips a step early or late, "
                                     "skips, stutters (again a step later) or jumps back to a note you played a little "
                                     "before. 0: never. The GEN sheet (OCT+ held), Break."),
+    XP_(TX_QNT_LINK, "QNT LINK", "LINKED: one QNT for the whole project, and one MPC degree: changing either on any "
+                                "track sets it on every track. OWN: each track its own, so one track can take MPC pads "
+                                "while others follow the chords (CHRD) or HARM. Turning it on gives every track the "
+                                "selected track's. SCL's QNT link row; on in a new project, saved with it."),
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT

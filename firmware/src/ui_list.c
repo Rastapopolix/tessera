@@ -11,9 +11,10 @@ typedef struct { const char *page; uint8_t slot; } lrow_t;
 enum { LP_NONE, LP_SCALE, LP_GRAPH };
 typedef struct { const char *title; uint8_t pic, n; lrow_t row[16]; } list_t;
 static const list_t LISTS[] = {
-    {"SCL", LP_SCALE, 9, {{"SCL", 0}, {"KEY", 0}, {"SCALES", 1}, {"SCL", 2}, {"MPC", 0}, {"SCL", 3}, {"SCL", 1},
-                           {"KEY", 1}, {"KEY", 2}}},
-                                                        /* (KEY: KEY LINK, the CHAIN's KEY B / C; MPC: QNT MPC's pad degree) */
+    {"SCL", LP_SCALE, 10, {{"SCL", 0}, {"KEY", 0}, {"SCALES", 1}, {"SCL", 2}, {"KEY", 3}, {"MPC", 0}, {"SCL", 3},
+                            {"SCL", 1}, {"KEY", 1}, {"KEY", 2}}},
+                                                        /* (KEY: KEY LINK, QNT LINK after QNT, the CHAIN's KEY B / C;
+                                                         * MPC: QNT MPC's pad degree) */
     {"VOICE", LP_NONE, 9, {{"VOICE", 0}, {"VOICE", 1}, {"VOICE", 2}, {"VOICE", 3}, {"VOICE 2", 0}, {"VOICE 2", 1},
                            {"VOICE 2", 2}, {"VOICE 2", 3}, {"VOICE 3", 0}}},
     {"FM LFO", LP_NONE, 7, {{"FM LFO", 0}, {"FM LFO", 1}, {"FM LFO", 2}, {"FM LFO", 3}, {"FM LFO 2", 0}, {"FM LFO 2", 1},

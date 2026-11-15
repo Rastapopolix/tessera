@@ -7,6 +7,9 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues> (the firmware version, the steps,
 what you expected and what happened).
 
+## New in 3.6-beta7
+- QNT link (SCL, the row after QNT): LINKED keeps one QNT for every track, as before; OWN gives each track its own QNT and MPC degree, so one track can take MPC pads while others follow the chords (CHRD) or HARM (#755). A project saved with OWN loads on older firmware with each track's QNT as saved.
+
 ## New in 3.6-beta6
 - HARM, a harmonizer (after Dreamsequence's): with a CHORD track playing, each note of the scale up plays the chord's next note up, so a run up the keys is an arpeggio that follows the chords. SCL > QNT HARM does this for the keys, MIDI IN and the generators; FOLLOW's new HOW HARM does it to another track's line, SHIFT moving by chord notes. A project using HOW HARM does not load on older firmware.
 - MENU > ABOUT shows **SPACE**: how much flash and RAM this firmware leaves free for new features.

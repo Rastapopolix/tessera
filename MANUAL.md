@@ -1481,14 +1481,20 @@ to STEP, and EDIT held brings the ARP back (hold the keys again to restart it).
 > **In short:** all tracks share one scale and key, so nothing clashes. Put a progression on a CHORD track, set the
 > others' QNT to CHRD, and their notes follow the chords as they change.
 
-**One key for the project.** The scale (SCL), QNT and the MPC degree are always the same on every track. The key
+**One key for the project.** The scale (SCL) is always the same on every track, and QNT and the MPC degree are while
+**QNT link** is LINKED (below). The key
 note, ROOT, is too while **SCL > Key link** is **LINKED** (the default in a new project): change ROOT on any melodic
 track, from SCL's list or with SCL held and a key, and every melodic track follows; drum tracks keep their own.
 **OWN** gives each track its own ROOT again; turning LINKED back on gives every track the selected track's key. Key
 link is saved with the project (a project saved before it loads as OWN). TRN still moves a single track. The **Key in B** and
 **Key in C** rows at the end of SCL's list change the key in the CHAIN's sections ([CHAIN](#chain-one-form-for-the-project)).
 
-**QNT: how the keys meet the scale.** SCL's **QNT** row, the same on every track:
+**QNT: how the keys meet the scale.** SCL's **QNT** row. The **QNT link** row under it decides whether every track
+shares it: **LINKED** (the default, and how every project worked before it) sets QNT and the MPC degree on every track
+when you change them on one; **OWN** gives each track its own, so a track played from MPC pads can sit beside tracks
+on CHRD or HARM. Turning LINKED back on gives every track the selected track's. QNT link is saved with the project;
+a project saved before it loads as LINKED, and one saved with OWN loads on older firmware with each track's QNT as
+saved, until a QNT is changed there.
 
 | QNT | What it does |
 |---|---|
@@ -1531,7 +1537,7 @@ play C4 E4 G4 C5 E5 G5; when the progression moves to G, the same keys play G3 B
 counted when it starts, so a held note keeps its pitch through a chord change. The notes are kept within two octaves
 either side of C4.
 
-- **SCL > QNT HARM** (the project's, as every QNT): the **keys** walk the scale on the white keys from C4, as WHITE
+- **SCL > QNT HARM** (every track's while QNT link is LINKED; with OWN, the track's own): the **keys** walk the scale on the white keys from C4, as WHITE
   does, each a chord note; the black keys are silent. TRN and OCT move the result. **MIDI IN** is counted the same way:
   a note's place in the scale (a note off the scale counts as the one below it), so a sequencer or a DAW clip playing
   in the scale plays the chords' notes. The **generators** are counted too: a TURING, EUCLID or MARKOV line becomes an
@@ -2473,6 +2479,9 @@ you edit.
 **QNT** (quantise). How the keys meet the scale: OFF, SNAP, WHITE, ALL, MPC, CHRD or HARM, so wrong notes become
 right ones. **QNT CHRD** snaps to the notes of the CHORD track's current chord, so every part stays in key with it. Also *Quantize* on the pattern's sheet, and record
 quantise on TEMPO. [MANUAL](#harmony-one-key-chord-and-qnt-chrd)
+
+**QNT link**. SCL > QNT link: LINKED (the default), one QNT and MPC degree for every track; OWN, each track's own.
+[MANUAL](#harmony-one-key-chord-and-qnt-chrd)
 
 **QUAD**. A generator: a 4 x 4 grid of notes the four tracks share, a row each.
 
