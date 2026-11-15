@@ -236,6 +236,9 @@ static int32_t menu_text(const char *s, int32_t y, uint16_t col, int draw)
 }
 #endif
 
+#ifdef FM1_IRQ_TARGET
+static void space_report(uint32_t *flash, uint32_t *ram);   /* main.c */
+#endif
 static int32_t menu_document(int32_t y, int draw)
 {
     uint32_t i;
@@ -303,6 +306,23 @@ static int32_t menu_document(int32_t y, int draw)
         }
         y = menu_text(b, y, T_SEC, draw) + 12;
     }
+#ifdef FM1_IRQ_TARGET
+    {                                                 /* what this build leaves free (main.c space_report): room for
+                                                       * new features, "FLASH 18.9 KB FREE" */
+        char b[24];
+        uint32_t v[2];
+        space_report(&v[0], &v[1]);
+        y = menu_text("SPACE", y, T_THEME, draw);
+        for (i = 0; i < 2u; i++) {
+            uint32_t t = (v[i] * 10u + 512u) / 1024u;    /* tenths of a KB */
+            str_cpy(b, i ? "RAM " : "FLASH ", sizeof b);
+            fmt_fix(b + str_len(b), (int32_t)t, 1);
+            str_cpy(b + str_len(b), " KB FREE", 9);
+            y = menu_text(b, y, T_TEXT, draw);
+        }
+        y += 12;
+    }
+#endif
 #if MELODEE_USB_HOST
     if (uh.on && uh_dg.root) {                        /* what USB HOST's last scan found, port by port (usb_host.c) */
         char b[24];
