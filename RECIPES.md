@@ -26,6 +26,7 @@ Or [start from a demo](#start-from-a-demo): load the piece nearest to what you w
 - [Two tracks answering each other (BRANCH)](#two-tracks-answering-each-other-branch)
 - [A harmony line that follows (FOLLOW)](#a-harmony-line-that-follows-follow)
 - [A harmony on your own melody (FOLLOW CHORD)](#a-harmony-on-your-own-melody-follow-chord)
+- [Any modulation, in harmony (FOLLOW HARM, beta)](#any-modulation-in-harmony-follow-harm-beta)
 - [Atlas: a groove with fills](#atlas-a-groove-with-fills)
 - [Atlas: variations that repeat (FORM)](#atlas-variations-that-repeat-form)
 - [Atlas: movement that repeats (an LFO on X or Y)](#atlas-movement-that-repeats-an-lfo-on-x-or-y)
@@ -295,6 +296,39 @@ Write or play in a melody, and let another track harmonise it, note for note, wi
    between.
 
 Keep the melody on a lower track number than the harmony: the harmony then lands on the same step.
+
+## Any modulation, in harmony (FOLLOW HARM, beta)
+
+An LFO, a random source or a slow TIDE picks which note of the chord plays, and a CHORD track decides what the chord
+is: any modulation becomes a melody that follows the progression. After the CV harmonizer in Dreamsequence (a norns
+script by dstroud), the idea only. It works because SHIFT on a track that FOLLOWs with **HOW HARM** counts chord notes,
+not semitones: SHIFT 0 is the chord's root, 1 its third, 2 its fifth, 3 the root an octave up, and so on.
+
+1. Track 1, the chords: GEN, MODE **CHORD**, **PROG POP** (or your own, [CHORD USER](#your-own-progression-chord-user)).
+   A pad sound.
+2. Track 2, the rhythm: **STEP**, with the same note (C4) on the steps where notes should play, every 1/8 or an
+   uneven pattern. Mute it on MIXER: a muted track keeps playing unheard, and track 3 still follows it.
+3. Track 3, the voice: any generator (its own notes are replaced; TURING with PROB 0 is fine). On **TWEAK**:
+   **FOLLOW T2**, and hold **OCT-**: **KNOB 2** **HOW HARM**, **KNOB 3** **RHYTHM SOURCE**. Leave **SHIFT** at 0, the
+   centre the modulation moves around.
+4. **MODS**: a cord into **T3 SHIFT**, a small amount to start (a step of SHIFT is a whole chord note), then more
+   until the range sounds right:
+   - **LFO**, slow: a line that rises and falls through the chord tones.
+   - **RAND**, or **S&H**: a random chord tone on each note, as a random voltage would give.
+   - Any of these with the cord's kind on **HOLD** (press **OCT+** on MODS until it shows): the source taken once a
+     bar, so the line changes register on the bar and stays there.
+   - **TIDE** or **SWARM**: drift over minutes that never quite repeats.
+   - **MACRO 1** (PERF): steer it by hand.
+5. **PLAY**. When the progression moves on, the same modulation lands on the new chord's notes. A note held through
+   a change keeps its pitch; the next one is counted into the new chord.
+
+- For a line with more of its own movement, FOLLOW a melodic generator (**MARKOV**, **TURING**) instead of the
+  silent STEP track: HOW HARM turns its line into chord tones, and the cord on SHIFT moves it further.
+- Two voices: set up track 4 the same way, following T2, with **SHIFT 2** or another source.
+- With **SCL > QNT HARM** instead, the keys, MIDI IN and the generators are counted into the chord the same way, but
+  SHIFT stays in semitones there: use FOLLOW for this recipe.
+
+Needs the current beta or later (HOW HARM); a project that uses it does not load on older firmware.
 
 ## Atlas: a groove with fills
 
