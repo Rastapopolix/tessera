@@ -7,6 +7,9 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues> (the firmware version, the steps,
 what you expected and what happened).
 
+## New in 3.6-beta6
+- REVERB and ECHO now rest while nothing reaches them and their tails have died away, which frees CPU when tracks are quiet. The sound is exactly the same.
+
 ## New in 3.6-beta5
 - MODS: KNOB 1's source list now starts at the selected track too, as KNOB 3's does: on track 3, the first turn lands on T3 LFO.
 - When the FM-1 runs short of CPU and has to cut a sound early, it now cuts the quietest fading drum first (a hat's tail), not the kick or a snare in the middle of a roll.
