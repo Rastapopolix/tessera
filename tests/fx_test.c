@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 /* Real UI/mixer/storage integration plus deterministic DSP stress. */
 #include <assert.h>
-static int fx_sleep_off;                   /* (fx.c FX_SLEEP_OFF: 1 keeps REVERB and ECHO awake) */
+static int fx_sleep_off;                   /* (fx.c FX_SLEEP_OFF: 1 keeps ECHO awake) */
 #define FX_SLEEP_OFF fx_sleep_off
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
@@ -474,10 +474,10 @@ static void filter_test(void)
     for(uint32_t ch=0;ch<2;ch++)assert(!fx_state[0].q[ch][0].z1 && !fx_state[0].q[ch][0].z2);
     puts("FILTER: open passes 10 kHz, shut takes 1 kHz away, RES lifts the cutoff, CUT jumps glide, no denormal tail: OK");
 }
-/* REVERB and ECHO asleep (fx.c REV_QUIET, ECHO_QUIET): with nothing reaching them and their tails provably zero
- * they skip their work, and the output is bit-identical to running them awake: an insert and the bus (the new
- * project's REVERB into ECHO, chained and separate), bursts with long silences between, RATE / CHAR moved while
- * asleep. They must also really sleep (a quarter of the time and more here); the quiet count runs awake too */
+/* ECHO asleep (fx.c ECHO_QUIET): with nothing reaching it and its tail provably zero it skips its work, and the
+ * output is bit-identical to running it awake: an insert and the bus (the new project's REVERB into ECHO, chained and
+ * separate), bursts with long silences between, RATE / CHAR moved while asleep. It must also really sleep (a quarter of
+ * the time and more here); the quiet count runs awake too. (REVERB no longer sleeps: 3.6-beta6, its render cost) */
 static uint64_t sleep_insert(uint32_t type,uint32_t *asleep)
 {
     reset_fx();track_t *t=&trk[0];t->p[P_FXTYPE]=(int16_t)type;t->p[P_FXMIX]=127;
@@ -488,7 +488,7 @@ static uint64_t sleep_insert(uint32_t type,uint32_t *asleep)
         if(ms==2000u){r=r*1664525u+1013904223u;t->p[P_FXRATE]=(int16_t)(r>>25);t->p[P_FXCHAR]=(int16_t)(r>>9&127u);}
         int on=fx_process(t,b,CTL);
         for(uint32_t i=0;i<CTL;i++)h=(h^(uint32_t)(on?fx_left[i]:b[i])^(uint64_t)(uint32_t)(on?fx_right[i]:b[i])<<32)*1099511628211ull;
-        *asleep+=fx_state[0].quiet>=(type==FX_REVERB?REV_QUIET:ECHO_QUIET);
+        *asleep+=fx_state[0].quiet>=ECHO_QUIET;
     }
     return h;
 }
@@ -508,7 +508,7 @@ static uint64_t sleep_bus(uint32_t separate,uint32_t *asleep)
             song.g[G_MFXCHAR]=(int16_t)(r>>24&127u);song.g[G_MFX2CHAR]=(int16_t)(r>>4&127u);}
         mix_block(out,CTL);
         for(uint32_t i=0;i<2u*CTL;i++)h=(h^(uint32_t)out[i])*1099511628211ull;
-        *asleep+=fx_state[NPART*FX_SLOTS].quiet>=REV_QUIET && fx_state[NPART*FX_SLOTS+1u].quiet>=ECHO_QUIET;
+        *asleep+=fx_state[NPART*FX_SLOTS+1u].quiet>=ECHO_QUIET;
     }
     return h;
 }
@@ -525,7 +525,8 @@ static uint64_t sleep_bus_fresh(uint32_t separate,uint32_t off,uint32_t *asleep)
 static void sleep_exact(void)
 {
     uint32_t a0,a1;
-    for(uint32_t type=FX_ECHO;type<=FX_REVERB;type+=FX_REVERB-FX_ECHO){
+    {
+        uint32_t type=FX_ECHO;
         fx_sleep_off=1;uint64_t awake=sleep_insert(type,&a0);
         fx_sleep_off=0;uint64_t slept=sleep_insert(type,&a1);
         assert(awake==slept && a0==a1 && a1>12u*FS/CTL/4u);
@@ -534,7 +535,7 @@ static void sleep_exact(void)
     for(uint32_t separate=0;separate<2u;separate++){
         uint64_t awake=sleep_bus_fresh(separate,1u,&a0),slept=sleep_bus_fresh(separate,0u,&a1);
         assert(awake==slept && a0==a1 && a1>20u*FS/CTL/5u);
-        printf("bus REVERB + ECHO (%s) both asleep %u %% of the time, output bit-identical: OK\n",separate?"separate":"chain",
+        printf("bus REVERB + ECHO (%s): ECHO asleep %u %% of the time, output bit-identical: OK\n",separate?"separate":"chain",
                a1*100u/(20u*FS/CTL));
     }
     reset_fx();

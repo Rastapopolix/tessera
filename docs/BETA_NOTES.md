@@ -10,7 +10,7 @@ what you expected and what happened).
 ## New in 3.6-beta6
 - HARM, a harmonizer (after Dreamsequence's): with a CHORD track playing, each note of the scale up plays the chord's next note up, so a run up the keys is an arpeggio that follows the chords. SCL > QNT HARM does this for the keys, MIDI IN and the generators; FOLLOW's new HOW HARM does it to another track's line, SHIFT moving by chord notes. A project using HOW HARM does not load on older firmware.
 - MENU > ABOUT shows **SPACE**: how much flash and RAM this firmware leaves free for new features.
-- REVERB and ECHO now rest while nothing reaches them and their tails have died away, which frees CPU when tracks are quiet. The sound is exactly the same.
+- ECHO now rests while nothing reaches it and its tail has died away, which frees CPU when tracks are quiet. The sound is exactly the same.
 - PPQN, the MIDI clock's pulses per beat: on GLO > MIDI IN, hold OCT- and KNOB 4 sets 24 (the default, the MIDI standard), 48, 4, 8 or 12, for the clock the FM-1 follows and for CLOCK OUT. If the FM-1 plays twice as fast as the gear it follows (HOME shows double the tempo), try 48. Like CLK, it is kept through power-off and project loads (#747).
 - After a project loads, a track playing one of your own FM6 voices finds the user slot holding that voice again: HOME shows its name (not TINE EP) and PRESETS starts from it. If no slot holds it any more, HOME shows the name stored in the voice (#744).
 - The installer waits a few seconds for the FM-1 instead of giving up after one quick look, and when another app or tab holds the FM-1's MIDI port it says so and names the port, instead of FM-1 not found (#743).

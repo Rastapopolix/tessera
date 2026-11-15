@@ -26,8 +26,9 @@ typedef struct {
     float rev_dc;
     int32_t glide;                /* ECHO: the delay read now (Q8, quarter-rate samples), gliding to its TIME */
     uint8_t slow;                 /* REVERB: blocks since SIZE's lines last moved a sample */
-    uint16_t quiet;               /* REVERB, ECHO: ticks in a row that wrote and read only zeros (fx_reverb, fx_time:
-                                   * asleep from REV_QUIET / ECHO_QUIET; in the struct's padding, no RAM) */
+    uint16_t quiet;               /* ECHO: ticks in a row that wrote and read only zeros (fx_time: asleep from ECHO_QUIET;
+                                   * in the struct's padding, no RAM). (REVERB's sleep was taken out for 3.6-beta6: its
+                                   * per-tick checks cost 15 % of the reverb while it plays, over the render-cost budget) */
 } fx_state_t;
 static fx_state_t fx_state[FX_STATE_COUNT];
 static volatile uint32_t fx_epoch;
@@ -268,7 +269,7 @@ static __attribute__((noinline,section(".audio_text"),aligned(16))) void fx_svf(
  * The wet is interpolated back to FS as fx_up's is (Reverb's histories are free here): held, it mirrored the notes
  * around FS/4 as an audible whine. */
 #ifndef FX_SLEEP_OFF
-#define FX_SLEEP_OFF 0            /* (tests/fx_test.c: 1 keeps REVERB and ECHO awake, to compare the output) */
+#define FX_SLEEP_OFF 0            /* (tests/fx_test.c: 1 keeps ECHO awake, to compare the output) */
 #endif
 /* ECHO asleep (fx_slot_run): after ECHO_QUIET ticks that read and wrote only zeros the whole 4096-sample ring is
  * zero; with no input this block, TIME settled and MIX at its target, the block would read, write and return
@@ -359,9 +360,6 @@ static __attribute__((noinline,section(".audio_text"),aligned(16))) void fx_chor
  * Unlike ROOM, the delays exchange energy and have length-normalised decay. */
 static const uint16_t REV_LEN[8] __attribute__((section(".data.fx_lengths")))={131,149,167,191,211,233,251,277};
 static const uint16_t REV_AP_LEN[8] __attribute__((section(".data.fx_lengths")))={23,31,43,61,19,29,37,47};
-/* REVERB asleep (fx_reverb): after this many ticks that wrote and read only zeros, every cell of the longest line
- * (277) and of every allpass (61 at most) has been rewritten with 0 */
-#define REV_QUIET 280u
 #define FX_REVERB_BYTES 4096u
 /* SIZE moved (a knob, a mod): each line one sample nearer its length every 4 blocks, about 1/16 of a sample a tick,
  * a slight glide instead of a jump. The first block: there at once. 1 there, 0 moved, -1 a block between moves */
@@ -449,22 +447,11 @@ static __attribute__((noinline,section(".dsp_text"))) void fx_reverb(fx_state_t 
              * without increasing the bass return or allocating another filter. */
             int32_t previous_input=f->damp[2];f->damp[2]=input;
             input+=fx_div_pow2(input-previous_input,2);
-            int32_t v[8],x;uint32_t off=0,nz;
+            int32_t v[8],x;uint32_t off=0;
             f->rev_dc+=((float)input-f->rev_dc)*0.006f;
             x=fx_limit(fx_div_pow2((int32_t)((float)input-f->rev_dc),2),-16000,16000);
-            if(!FX_SLEEP_OFF && !x && f->quiet>=REV_QUIET){
-                /* Asleep: every line and allpass holds only zeros (REV_QUIET ticks wrote nothing else), so with no
-                 * input the tick would read and write zeros and return 0: move the positions only. Exact. */
-                for(uint32_t k=0;k<8u;k++){
-                    if(++f->rev_pos[k]>=REV_LEN[k])f->rev_pos[k]=0;
-                    if(++f->rev_ap[k]>=REV_AP_LEN[k])f->rev_ap[k]=0;
-                }
-                f->rev_prev_l=f->rev_l;f->rev_prev_r=f->rev_r;
-                goto out;
-            }
-            nz=(uint32_t)x;
             off=1610u;
-            for(uint32_t k=0;k<4u;k++){x=fx_reverb_ap(f,mem,k,x,off);off+=REV_AP_LEN[k];nz|=(uint32_t)x;}
+            for(uint32_t k=0;k<4u;k++){x=fx_reverb_ap(f,mem,k,x,off);off+=REV_AP_LEN[k];}
             off=0;int32_t sum=0;
             for(uint32_t k=0;k<8u;k++){
                 uint32_t pos=f->rev_pos[k];
@@ -477,7 +464,7 @@ static __attribute__((noinline,section(".dsp_text"))) void fx_reverb(fx_state_t 
                  * accumulate one booming low mode and duck the dry mix. */
                 f->rev_bass[k]=fx_div_pow2(63*f->rev_bass[k]+y,6);y-=f->rev_bass[k];
                 f->rev_damp[k]=fx_div_pow2(f->rev_damp[k]*256+(y-f->rev_damp[k])*tone,8);
-                v[k]=f->rev_damp[k];sum+=v[k];off+=REV_LEN[k];nz|=(uint32_t)v[k]|(uint32_t)f->rev_bass[k];
+                v[k]=f->rev_damp[k];sum+=v[k];off+=REV_LEN[k];
             }
             int32_t l=fx_div_pow2(v[0]-v[1]+v[2]-v[3],1),r=fx_div_pow2(v[4]-v[5]+v[6]-v[7],1);
             /* Householder H = I - 2 uu': for eight equal weights, subtract
@@ -491,16 +478,12 @@ static __attribute__((noinline,section(".dsp_text"))) void fx_reverb(fx_state_t 
                 if(++f->rev_pos[k]>=REV_LEN[k])f->rev_pos[k]=0;off+=REV_LEN[k];
             }
             off=1768u;
-            nz|=(uint32_t)l|(uint32_t)r;
-            l=fx_reverb_ap(f,mem,4,l,off);off+=REV_AP_LEN[4];nz|=(uint32_t)l;l=fx_reverb_ap(f,mem,5,l,off);off+=REV_AP_LEN[5];
-            r=fx_reverb_ap(f,mem,6,r,off);off+=REV_AP_LEN[6];nz|=(uint32_t)r;r=fx_reverb_ap(f,mem,7,r,off);
+            l=fx_reverb_ap(f,mem,4,l,off);off+=REV_AP_LEN[4];l=fx_reverb_ap(f,mem,5,l,off);off+=REV_AP_LEN[5];
+            r=fx_reverb_ap(f,mem,6,r,off);off+=REV_AP_LEN[6];r=fx_reverb_ap(f,mem,7,r,off);
             /* Round only hot wet peaks; the dry signal remains untouched. */
             f->rev_prev_l=f->rev_l;f->rev_prev_r=f->rev_r;
             f->rev_l=fx_reverb_softclip(fx_div_pow2(l*level,8));f->rev_r=fx_reverb_softclip(fx_div_pow2(r*level,8));
-            nz|=(uint32_t)l|(uint32_t)r|(uint32_t)f->rev_l|(uint32_t)f->rev_r;
-            f->quiet=nz?0u:(uint16_t)(f->quiet+(f->quiet<0xFFFFu));
         }
-        out:;
         int32_t l=f->rev_prev_l+fx_div_pow2((f->rev_l-f->rev_prev_l)*(phase+1u),3);
         int32_t r=f->rev_prev_r+fx_div_pow2((f->rev_r-f->rev_prev_r)*(phase+1u),3);
         fx_return(target,0,0,i,l,r,&mix);
