@@ -121,15 +121,18 @@ static int32_t mo_sin(int32_t a)
 static int32_t mo_cos(int32_t a) { return mo_sin(a + 64); }
 
 static int32_t mo_tw(const char *s) { int32_t n = (int32_t)str_len(s); return n ? n * 6 - 1 : 0; }
-static int32_t mo_text_s(const char *s, int32_t x, int32_t y, int32_t sc, uint16_t c)   /* sc: cells a font pixel */
+/* sc: cells a font pixel. MENU > TEXT BOLD: at sc 1 each lit cell 3 px wide, a pixel into its right neighbour (a
+ * glyph has no 1-cell gap to close; between letters the gap is 1 px) */
+static int32_t mo_text_s(const char *s, int32_t x, int32_t y, int32_t sc, uint16_t c)
 {
+    int32_t w = sc * 2 + (sc == 1 && TEXT_IDLE(TEXT_IDLE_BOLD));
     MO_HOOK_TEXT(s, x, y);
     for (; *s; s++, x += 6 * sc) {
         uint32_t ch = mono_ch((uint8_t)*s), r, b;
         for (r = 0; r < 7u; r++)
             for (b = 0; b < 5u; b++)
                 if (MO_FONT[ch - 32u][r] & (16u >> b))
-                    mo_fill(x + (int32_t)b * sc, y + (int32_t)r * sc, sc, sc, c);
+                    cv_rect((x + (int32_t)b * sc) * 2, (y + (int32_t)r * sc) * 2, w, sc * 2, c);
     }
     return x;
 }
@@ -3099,12 +3102,13 @@ static void mono_stage(void)
  * letters, LEVEL as a dial with its dB, the meter beside it, PAN a small dial and its side (in the track's ink while
  * OCT- holds the knobs on the pans), SOLO boxed, MUTE inverted (silenced by another's solo: dim), REC a dot (armed)
  * or a ring; the selected track's strip outlined, a clear cell inside its outline all round; the knob turning its value
- * inverted. Under the strips the keys' legend and the GLO tabs (mo_mixer_foot) */
+ * inverted. A mute waiting for its line (MENU MUTES BAR / PHRASE) underlined: solid for the bar or phrase gone, dotted
+ * for the rest. Under the strips the keys' legend and the GLO tabs (mo_mixer_foot) */
 #define MO_STRIP_H 89
 static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint32_t flags, int32_t meter)
 {
     uint32_t sel = flags & 1u, mute = flags & 2u, solo = flags & 4u, quiet = flags & 8u, arm = flags & 16u;
-    uint32_t hot = flags >> 5 & 3u, octp = flags >> 7 & 1u;
+    uint32_t hot = flags >> 5 & 3u, octp = flags >> 7 & 1u, wait = flags >> 8;   /* (wait: 1 + 2 x the cells gone) */
     uint16_t ink = quiet ? mo_tdim(k) : MO_TRK(k), dim = mo_tdim(k);
     char a[8], b[8];
     int32_t h;
@@ -3146,8 +3150,13 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
     } else {
         mo_textc("MUTE", 14, 70, dim);
     }
-    if (arm) mo_disc(14, 83, 3, MO_TRK(k));
-    else mo_circ(14, 83, 3, dim);
+    if (wait) {
+        int32_t x, w = (int32_t)(wait >> 1);
+        mo_hl(2, 80, w, MO_TRK(k));
+        for (x = (w + 4) & ~1; x < 27; x += 2) mo_px(x, 80, MO_TRK(k));     /* (a gap, then dots on even cells) */
+    }
+    if (arm) mo_disc(14, 84, 3, MO_TRK(k));
+    else mo_circ(14, 84, 3, dim);
     cv_blit((uint32_t)CARD_X(k) - 2u, PV_STRIP_TOP);
 }
 /* under the strips: what the keys do here, a black key MUTE, a white key SOLO, E FILL (the GLO map has the rest);

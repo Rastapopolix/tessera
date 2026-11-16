@@ -350,6 +350,13 @@ void mute_press(uint32_t tr, int all)
     }
 }
 uint32_t mute_waiting(void) { return song.playing ? mute_pend : 0u; }   /* the keys that blink */
+/* MIXER's underline under a waiting MUTE (ui_mono.c mo_strip): how much of the bar or phrase before its line has gone,
+ * in w parts (0..w-1; the bars counted from PLAY, as mute_tick counts them) */
+uint32_t mute_wait_part(uint32_t w)
+{
+    uint32_t n = settings_mute_q < 2u ? 1u : fc_bars(), beat = seq_beat_samples();
+    return ((bar_n % n * 4u + beat_n) * beat + beat_pos % beat) * w / (n * 4u * beat);
+}
 static void mute_tick(void)                           /* entries_tick: a waiting key's line */
 {
     uint32_t b = bar_n, tr;

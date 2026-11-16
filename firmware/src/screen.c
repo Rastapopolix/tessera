@@ -18,6 +18,7 @@ enum { SCR_ON, SCR_OFF, SCR_WAKE, SCR_SLPOUT, SCR_SHOW };
 static struct {
     uint8_t st;                  /* SCR_*: SCR_WAKE asked, SCR_SLPOUT sent, SCR_SHOW the frame that redraws */
     uint8_t eat;                 /* the wake gesture: panel input swallowed (ui_input) */
+    uint8_t land, land_pg;       /* MENU > IDLE LANDSCAPE shown (ui_draw.c scr_idle): 1 + ui.home, 0 none; ui.page */
     uint32_t idle;               /* fm1_ms of the last panel input (or blocker) */
     uint32_t t;                  /* fm1_ms of the last panel command (SLPIN, SLPOUT) */
     uint32_t eat_t;              /* fm1_ms of the last swallowed knob detent */
@@ -52,15 +53,25 @@ static int scr_input(uint32_t pressed, uint32_t notes)
     if (pressed | notes | held | panel_moved)
         scrn.idle = fm1_ms;
     panel_moved = 0;
-    if (scrn.st == SCR_ON && !scrn.eat)
+    if (scrn.st == SCR_ON && !scrn.eat && !scrn.land)
         return 0;
     for (k = 0; k < NE; k++)                           /* (every knob's turns go) */
         moved |= panel_enc(k);
     panel_moved = 0;
     if (moved)
         scrn.eat_t = scrn.idle = fm1_ms;
-    if (pressed | notes | held | (uint32_t)moved)
+    if (pressed | notes | held | (uint32_t)moved) {
         scr_wake();
+        if (scrn.land) {                                /* IDLE: the first touch only takes the page back */
+            ui.home = (uint8_t)(scrn.land - 1u);
+            ui.page = scrn.land_pg;
+            scrn.land = 0;
+            scrn.eat_t = fm1_ms;
+            ui.force = 1;
+        }
+    }
+    if (scrn.st == SCR_ON && !scrn.eat)                 /* (untouched on IDLE's LANDSCAPE: nothing to swallow) */
+        return 0;
     if (scrn.st != SCR_ON || held || (int32_t)(fm1_ms - scrn.eat_t) < (int32_t)SCR_EAT_MS)
         return 1;
     scrn.eat = 0;                                       /* all let go, the knobs at rest: input again */
