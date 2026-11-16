@@ -432,7 +432,7 @@ static int snap_to_scale(void)
         t->step[1].note[0] == 67 && t->step[2].note[0] == 64);
     tessera.mode[other] = TESS_ENG_OFF; tessera.chord_pc[other] = 0;
 
-    /* microtonal: with QNT on a note is a degree; QNT OFF: semitones, to those near the scale */
+    /* microtonal: with QNT on a note is a degree; QNT OFF (up to 12 degrees): semitones, to those near the scale */
     track_defaults_steps(t);
     t->p[P_SCALE] = (int16_t)snap_scale_id("IN"); t->p[P_ROOT] = 0; t->p[P_QUANT] = Q_SNAP;
     t->step[0] = (step_t){{61}, 1, ST_NOTE, 0, 0, 100};

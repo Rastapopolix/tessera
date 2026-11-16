@@ -138,7 +138,7 @@ static uint32_t scale_map(const track_t *t, int32_t n, int32_t offset)
 {
     const int8_t *DEGREE = KB_DEGREE;
     int32_t degree;
-    if (t->p[P_QUANT] == Q_ALL)
+    if (t->p[P_QUANT] == Q_ALL || (t->p[P_QUANT] == Q_OFF && micro_active(t)))   /* (OFF microtonal: each key a degree) */
         return scale_degree_map(t, n - 60, offset, 1);
     if (t->p[P_QUANT] == Q_WHITE || t->p[P_QUANT] == Q_MPC) {
         if ((degree = DEGREE[n % 12]) < 0)
