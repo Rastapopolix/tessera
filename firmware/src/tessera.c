@@ -116,8 +116,10 @@ void tessera_seed_turn(uint32_t tr, int32_t s)
 }
 
 /* ROLL ALL (EVOLVE, OCT- held, KNOB 4): right, every generator track a new seed at once, as its own ROLL would
- * (playing: on each track's next bar line); left, the seeds from before the last ROLL ALL, once. STEP tracks keep theirs */
-static uint16_t tess_rall_prev[TESSERA_TRACKS];          /* the seeds before the last ROLL ALL, 0 none to go back to */
+ * (playing: on each track's next bar line); left, the seeds from before the last ROLL ALL, then from before the one
+ * before it: two levels back. STEP tracks keep theirs */
+static uint16_t tess_rall_prev[2][TESSERA_TRACKS];       /* the seeds before the last ROLL ALL [0] and the one before
+                                                         * it [1], 0 none to go back to */
 static uint32_t tess_rall_n;                             /* (each ROLL ALL draws anew: on the host too) */
 uint32_t tessera_roll_all(int32_t dir)
 {
@@ -129,11 +131,13 @@ uint32_t tessera_roll_all(int32_t dir)
         if (dir > 0) {
             to = 1u + gen_stream(TESS_ENTROPY() + (tess_rall_n + 1u) * 0x9E3779B9u + tr * 0x85EBCA6Bu) % TESS_SEED_MAX;
             if (to == now) to = to % TESS_SEED_MAX + 1u;
-            tess_rall_prev[tr] = (uint16_t)now;
+            tess_rall_prev[1][tr] = tess_rall_prev[0][tr];
+            tess_rall_prev[0][tr] = (uint16_t)now;
         } else {
-            if (!tess_rall_prev[tr]) continue;
-            to = tess_rall_prev[tr];
-            tess_rall_prev[tr] = 0;
+            if (!tess_rall_prev[0][tr]) continue;
+            to = tess_rall_prev[0][tr];
+            tess_rall_prev[0][tr] = tess_rall_prev[1][tr];
+            tess_rall_prev[1][tr] = 0;
         }
         tessera.roll[tr] = to == tessera.seed[tr] ? 0u : (uint16_t)to;
         if (!song.playing) tess_roll_apply(tr);
@@ -145,7 +149,7 @@ uint32_t tessera_roll_all(int32_t dir)
 /* 1 a ROLL ALL can be turned back */
 int tessera_roll_all_back(void)
 {
-    for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) if (tess_rall_prev[tr]) return 1;
+    for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) if (tess_rall_prev[0][tr]) return 1;
     return 0;
 }
 
