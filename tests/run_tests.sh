@@ -120,8 +120,8 @@
 # ENTRIES (tests/entries_test.c): Entries (entries.c) through the sequencer: changes only on phrase lines, exits only where
 #                   a section begins, one entry a phrase, DWELL, at most ENTRIES out and one always playing, ANCHOR,
 #                   a melody over a bass or harmony, the breakdown before A and the full return, FORM OFF's sections,
-#                   PLAY again, CUT / FADE, no voice from a silent track, hand mutes and GLO's key, SOLO, AUTO's roles;
-#                   ENTRIES 0 with the rest turned plays the same notes.
+#                   PLAY again, CUT / FADE (MIDI OUT's velocity faded too), no voice from a silent track, hand mutes
+#                   and GLO's key, SOLO, AUTO's roles; ENTRIES 0 with the rest turned plays the same notes.
 # SPLIT (tests/split_test.c): TIMING's SPLIT through the real sequencer, read off MIDI OUT.
 # FOLLOW (tests/follow_test.c): FOLLOW's HOW and RHYTHM through the real sequencer, read off MIDI OUT.
 # CLOCK (tests/cordclock_test.c): a generator track stepped by a CLOCK cord (cord.c, seq.c seq_grid_tick): the DIV clock

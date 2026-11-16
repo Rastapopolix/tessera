@@ -1183,6 +1183,8 @@ How it moves, in the ways music is usually built:
 - Each change is decided a bar ahead: that track's mute key on GLO blinks quickly through the bar. A track with
   FLOURISH set comes in on its flourish, the bar's last beat.
 - A track out plays no notes (none to MIDI OUT either), like a muted one.
+- With STYLE at FADE, MIDI OUT fades too: while a track fades out or in, its notes go out softer, their velocity
+  following its level (never below 1). A synth that ignores velocity still cuts. CUT sends every note as played.
 
 Your hand wins. A track you mute stays muted and is left out of the rules. Its mute key on GLO brings a track Entries
 took out straight back, and Entries leaves it alone until the next section. SOLO is heard whatever Entries says.
@@ -1934,7 +1936,8 @@ row from 36, in the order of a drum machine's tracks such as the Analog Rytm's (
 
 The page lists each track's channel as it is now, AUTO's included. The channels are saved with the project. Which
 notes go out at all is still the menu's **NOTES OUT** (KEYS, ALL or OFF): for the steps and the generators, set it to
-**ALL**.
+**ALL**. While **ENTRIES** fades a track out or in (STYLE FADE), its notes go out softer with its level; see
+[ENTRIES](#entries-tracks-out-and-back-in).
 
 **TRANSPOSE**: hold **OCT-** on **GLO > MIDI OUT** and turn **KNOB 1** to **4** to move a track's notes up or down
 on their way out, a semitone a detent (12 an octave), up to four octaves either way. For a synth or a MIDI-to-CV
