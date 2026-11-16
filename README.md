@@ -49,7 +49,9 @@ Tessera for FM-1 is not related to the Tessera plugins for VCV Rack.
 - **LANDSCAPE** makes a place of its own for every named project, and shows PIECE, CHAIN and ENERGY in the scene.
 - **HOLD** (GLO + D4) freezes the generators; **SECTION PC** sends a Program Change on each CHAIN section; MENU
   **TEXT BOLD** and **IDLE LANDSCAPE**, a PIECE's progress and the beat in the header.
-- A fairer voice ceiling, faster FM6 and room in the flash again.
+- **ENTRIES** guesses BASS, HARMONY and RHYTHM before a track plays, and its FADE fades MIDI OUT too; MENU
+  **NOTE LIGHTS** lights the keys with the notes; PRESETS lists sounds by engine.
+- A fairer and earlier voice ceiling, faster FM6, TRIO on the second core, and room in the flash again.
 
 A project saved on 3.6 does not load on 3.5.3 or older. The full list: [release notes](docs/RELEASE_3.6.md).
 
