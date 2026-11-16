@@ -6394,10 +6394,13 @@ static int test_quick_layers(void)
         a = leds_at(0); b2 = leds_at(125);
         ok &= ((a ^ b2) >> black(0)) & 1u;                                     /* (its key blinks) */
         btn_up(B_GLO); frame();
-        for (j = 1; j <= 12u && !at; j++) { units_block(beat / 2u); if (trk[0].p[P_MUTE]) at = j; }
-        /* (4 beats in: the block after the line, before its steps) */
-        bad += check("MUTES BAR: GLO's mute key, playing, lands on the next bar line, not before", ok && at == 8u &&
-                     !mute_waiting());
+        ok &= mute_wait_part(16u) == 2u;                                       /* (MIXER's underline: half a beat gone) */
+        units_block(beat * 2u);
+        ok &= mute_wait_part(16u) == 10u && mute_wait_part(25u) == 15u;
+        for (j = 1; j <= 8u && !at; j++) { units_block(beat / 2u); if (trk[0].p[P_MUTE]) at = j; }
+        /* (the line at 4 beats: the block after it, before its steps) */
+        bad += check("MUTES BAR: GLO's mute key, playing, lands on the next bar line, not before; the wait gone (MIXER)",
+                     ok && at == 4u && !mute_waiting());
         lay_combo(B_GLO, black(1)); key_up(black(1)); btn_up(B_GLO); frame();
         lay_combo(B_GLO, black(1)); key_up(black(1)); btn_up(B_GLO); frame();
         ok = !mute_waiting();
@@ -6405,8 +6408,10 @@ static int test_quick_layers(void)
         bad += check("  pressed again before the line: called off", ok && !trk[1].p[P_MUTE]);
         settings_mute_q = 2;
         lay_combo(B_GLO, black(1)); key_up(black(1)); btn_up(B_GLO); frame();
+        ok = mute_wait_part(4u * fc_bars()) == bar_n % fc_bars() * 4u + beat_n;      /* (PHRASE: the phrase gone) */
         for (j = 1; j <= 80u && !pw; j++) { units_block(beat); if (trk[1].p[P_MUTE]) pw = j; }
-        bad += check("MUTES PHRASE: on the CHAIN's phrase line", pw && bar_n % fc_bars() == 0u && bar_n >= fc_bars());
+        bad += check("MUTES PHRASE: on the CHAIN's phrase line; the wait gone counted in the phrase",
+                     ok && pw && bar_n % fc_bars() == 0u && bar_n >= fc_bars());
         btn_down(B_GLO); frame(); key_down(white(4)); frame(); key_up(white(4)); btn_up(B_GLO); frame();
         ok = trk[0].p[P_MUTE] && mute_waiting() == 3u;
         stop_transport(); units_block(beat);
