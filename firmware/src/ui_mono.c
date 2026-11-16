@@ -1754,7 +1754,7 @@ static void mo_pic_perf(void)
         mo_text(n ? b : "NO MOD", 82, y, n ? MO_INK : MO_DIM);
     }
 }
-/* ENTRIES: a row a track: its number, its role (AUTO's guess), IN / OUT / MUTE, its level as
+/* ENTRIES: a row a track: its number, its role (AUTO's guess, marked *), IN / OUT / MUTE, its level as
  * a bar; a row about to change on the next line blinks; off: dim */
 static void mo_pic_entries(void)
 {
@@ -1766,6 +1766,7 @@ static void mo_pic_entries(void)
         uint16_t ink = !on || ((warn >> k & 1u) && blink) ? mo_tdim(k) : MO_TRK(k);
         mo_invc(n, 3, y, MO_TRK(k));
         str_cpy(b, ET_ROLE_NAME[role[k] % ET_ROLES], sizeof b);
+        if (!tessera.et_role[k]) str_cpy(b + str_len(b), "*", 2);   /* (AUTO's guess, not set by hand) */
         mo_text(b, 18, y, ink);
         mo_text(trk[k].p[P_MUTE] ? "MUTE" : (out >> k & 1u) ? "OUT" : "IN", 72, y, ink);
         mo_hl(98, y + 3, 20, MO_DIM);
