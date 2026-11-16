@@ -266,6 +266,9 @@ typedef struct {
     uint8_t          macro[4];                   /* 0..100: PERF's MACRO 1..4 (cord.c CS_MACRO1..4) */
     uint8_t          pat_gen[TESSERA_TRACKS];    /* PAT GEN: 1 each pattern keeps its own generator setup (pat_gen.c) */
     uint8_t          midi_dmap[TESSERA_TRACKS];  /* MIDI OUT's DRUM MAP: TESS_DM_GM (as before), _ROW (midi_out.c) */
+    uint8_t          sec_pc;                     /* MIDI OUT's SECTION PC: bit k, track k sends the CHAIN's section as a
+                                                  * Program Change (form_chain.c fc_pc_tick); 0 none (as before). Not in
+                                                  * the packed block: the record's SECPC part */
 } tessera_state_t;
 _Static_assert(__builtin_offsetof(tessera_state_t, ch_sdir) == __builtin_offsetof(tessera_state_t, ch_strum) + TESSERA_TRACKS,
                "STRUM's part: DIR right after STRUM (project_tsp.c copies them as one)");
@@ -491,12 +494,13 @@ enum {
     TX_AN_MODE, TX_AN_TIME, TX_AN_BREAK,            /* (0x2A4..0x2A6: ANSWER's MODE (REPLY / BEND), BEND's TIME and
                                                      * BREAK, any track's) */
     TX_QNT_LINK,                                    /* (0x2A7: QNT LINK, the project's: one value, whichever track) */
+    TX_SECTION_PC,                                  /* (0x2A8: MIDI OUT's SECTION PC, any track's: form_chain.c) */
     TX_COUNT
 };
 _Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95 && TX_TW_FRHY == 0x97 &&
                TX_PAT_GEN == 0x98 && TX_MIDI_DMAP == 0x99 && TX_ET_ORDER == 0x9A && TX_SEQ_DIR == 0x9B &&
                TX_CH_SDIR == 0x9D && TX_BUSB_LAG == 0xA1 && TX_MOD_DEPTH == 0xA2 && TX_AN_CHORD == 0xA3 &&
-               TX_AN_BREAK == 0xA6 && TX_QNT_LINK == 0xA7,
+               TX_AN_BREAK == 0xA6 && TX_QNT_LINK == 0xA7 && TX_SECTION_PC == 0xA8,
                "parameter ids are stored: never renumbered");
 /* TX_SEQ_DIR: the order a STEP pattern plays its steps in (seq_dir.c) */
 enum { SEQ_FWD, SEQ_BACK, SEQ_PEND, SEQ_FOLD, SEQ_RAND, SEQ_DRUNK, SEQ_DIRS };

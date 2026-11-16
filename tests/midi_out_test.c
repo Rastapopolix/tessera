@@ -284,6 +284,101 @@ static int clock_out_test(void)
     return bad;
 }
 
+/* SECTION PC (F2; MIDI OUT's sheet): the programs (0xC0) channel ch got, in order, into p (at most n); their count */
+static uint32_t pcs(uint32_t ch, uint8_t *p, uint32_t n)
+{
+    uint32_t k = 0;
+    for (uint32_t i = 0; i < log_n; i++)
+        if (((log_pkt[i] >> 8) & 0xFFu) == (0xC0u | ch) && (log_pkt[i] & 15u) == 0x0Cu) {
+            if (k < n) p[k] = (uint8_t)(log_pkt[i] >> 16);
+            k++;
+        }
+    return k;
+}
+static int pcs_are(uint32_t ch, const char *want)        /* "0102": PC 0, 1, 0, 2 and nothing else on ch */
+{
+    uint8_t p[16];
+    uint32_t n = pcs(ch, p, 16), i;
+    if (n != strlen(want) || n > 16u) return 0;
+    for (i = 0; i < n; i++)
+        if (p[i] != (uint8_t)(want[i] - '0')) return 0;
+    return 1;
+}
+static void section_pc_reset(uint32_t out, uint32_t form)
+{
+    reset(out);
+    tessera.sec_pc = 0;
+    tessera_param_set(0, TX_FC_FORM, (int32_t)form);
+    tessera_param_set(0, TX_FC_PHRASE, 0);               /* (4-bar phrases: a section every 16 beats) */
+    tessera_param_set(0, TX_FC_WANDER, 0);
+    for (uint32_t k = 0; k < 4u; k++) tessera_param_set(0, TX_FC_REP1 + k, 1);
+}
+static int section_pc_test(void)
+{
+    int bad = 0;
+    uint32_t i, first_pc = ~0u, first_note = ~0u;
+    section_pc_reset(MIDI_OUT_ALL, 2);                   /* ABAC */
+    bad += check("SECTION PC: OFF by default, each track's own; a value past ON reads ON",
+                 !tessera_param_get(0, TX_SECTION_PC) && (tessera_param_set(2, TX_SECTION_PC, 5),
+                 tessera_param_get(2, TX_SECTION_PC) == 1 && !tessera_param_get(1, TX_SECTION_PC)));
+    tessera_param_set(0, TX_SECTION_PC, 1);              /* T1 AUTO: ROUT's channel 1 */
+    tessera_param_set(2, TX_MIDI_CH, 10);                /* T3 on 10; T2 OFF stays quiet on its 2 */
+    trk[0].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 100};
+    play(65);                                            /* (four phrases and the fifth's line: A B A C A) */
+    stop();
+    bad += check("  ABAC: PC 0 1 0 2 0 on each line where the section changes, from PLAY's A",
+                 pcs_are(0, "01020") && pcs_are(9, "01020"));
+    bad += check("  a track OFF sends none, nor a channel no track ON is on", !pcs(1, 0, 0) && !pcs(2, 0, 0) &&
+                 !pcs(3, 0, 0));
+    for (i = 0; i < log_n; i++) {
+        uint32_t st = (log_pkt[i] >> 8) & 0xFFu;
+        if (st == 0xC0u && first_pc == ~0u) first_pc = i;
+        if (st == 0x90u && first_note == ~0u) first_note = i;
+    }
+    bad += check("  the program goes out before the downbeat's notes", first_pc < first_note && first_note != ~0u);
+
+    section_pc_reset(MIDI_OUT_KEYS, 4);                  /* AABA: a section that repeats sends nothing again */
+    tessera_param_set(1, TX_SECTION_PC, 1);
+    play(65); stop();
+    bad += check("  AABA: PC 0 1 0 only (the second A and the next A on from the last say nothing); MIDI OUT KEYS sends it",
+                 pcs_are(1, "010"));
+    play(1); stop();
+    bad += check("  PLAY again: A from the top", pcs_are(1, "0100"));
+
+    section_pc_reset(MIDI_OUT_ALL, 2);
+    tessera_param_set(0, TX_SECTION_PC, 1);
+    play(20);                                            /* (A, then B) */
+    tessera_param_set(0, TX_MIDI_CH, 5);                 /* the channel follows the track */
+    blocks(16u * beat_blocks());                         /* (A again) */
+    bad += check("  the channel follows the track: A B on 1, the next A on 5", pcs_are(0, "01") && pcs_are(4, "0"));
+    tessera_param_set(0, TX_MIDI_CH, (int32_t)TESS_MIDI_OFF);
+    log_n = 0;
+    blocks(16u * beat_blocks());                         /* (C) */
+    bad += check("  the track's channel OFF: nothing", !count(0xC0, -1, -1));
+    tessera_param_set(0, TX_MIDI_CH, 0);
+    tessera_param_set(1, TX_SECTION_PC, 1);              /* T2 on T1's channel too */
+    tessera_param_set(1, TX_MIDI_CH, 1);
+    log_n = 0;
+    blocks(16u * beat_blocks());                         /* (A) */
+    stop();
+    bad += check("  two tracks ON on one channel: one program", pcs_are(0, "0"));
+
+    section_pc_reset(MIDI_OUT_ALL, 2);
+    play(65); stop();
+    bad += check("  every track OFF: no program at all", !count(0xC0, -1, -1));
+    section_pc_reset(MIDI_OUT_OFF, 2);
+    tessera_param_set(0, TX_SECTION_PC, 1);
+    play(65); stop();
+    bad += check("  MIDI OUT OFF: nothing", !log_n);
+    section_pc_reset(MIDI_OUT_ALL, 0);
+    tessera_param_set(0, TX_SECTION_PC, 1);
+    play(65); stop();
+    bad += check("  FORM OFF: nothing", !count(0xC0, -1, -1));
+    tessera.sec_pc = 0;
+    tessera_param_set(0, TX_FC_PHRASE, 1);
+    return bad;
+}
+
 static int settings_test(void)
 {
     int bad = 0;
@@ -506,7 +601,7 @@ static int preview_test(void)
 int main(void)
 {
     int bad = preview_test() + notes_test() + echo_and_route_test() + generator_test() + clock_out_test() + no_drift_test() + tempo_mod_test() +
-              cc_out_test() + settings_test();
+              cc_out_test() + section_pc_test() + settings_test();
     printf("%s\n", bad ? "MIDI OUT TEST FAILED" : "MIDI out tests passed");
     return bad != 0;
 }

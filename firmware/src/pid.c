@@ -236,6 +236,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_AN_MODE] = PE("MODE", TX_N_ANMODE, 0),
     [TX_AN_TIME] = PD("TIME", F_INT, 1, 16, 3),
     [TX_AN_BREAK] = PD("BREAK", F_PCT, 0, 100, 0),
+    [TX_SECTION_PC] = PE("SEC PC", TX_N_PATGEN, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -842,6 +843,12 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                 "track sets it on every track. OWN: each track its own, so one track can take MPC pads "
                                 "while others follow the chords (CHRD) or HARM. Turning it on gives every track the "
                                 "selected track's. SCL's QNT link row; on in a new project, saved with it."),
+    X_(TX_SECTION_PC, "SECTION PC", "ON: when the CHAIN goes to section A, B or C, the track sends Program Change "
+                                    "0, 1 or 2 on its MIDI OUT channel, so a sequencer or a groovebox on that "
+                                    "channel switches its pattern or scene with the piece's form. Sent on the "
+                                    "phrase line, before its first notes, and at PLAY; a repeat of the same "
+                                    "section sends nothing. Nothing with FORM OFF, MIDI OUT OFF or the track's "
+                                    "channel OFF. MIDI OUT's sheet (OCT+ held), Section PC T1 to T4."),
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
