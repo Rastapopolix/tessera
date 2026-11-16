@@ -1193,8 +1193,6 @@ you can thin the music and watch the lake answer.
   **phase** is the piece's SHAPE there: a thin crescent where the plan is quiet, full at its peak. Over the piece's
   last tenth dusk falls (GROUND LIGHT: the sky darkens from the hills up) and at night the stars come out. END STOP:
   the moon sets behind the hills.
-- **ENTRIES** lights a window for each track along the far shore, T1 to T4 from the left, in the track's colour: lit
-  while the track is in, dimmer as it fades, dark while it is out.
 - **CHAIN**: each section has its own shore. When the form moves on, the new shore comes in from the right, as if
   you were travelling; back to A, you are home. When the whole form comes round, a shooting star crosses the sky.
 - **A place of its own**: a project with a name gets its own landscape, made from the name: the shape of its hills

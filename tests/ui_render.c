@@ -1437,12 +1437,11 @@ static void setup(int s)
         }
         break;
     case S_GLO_LAND_PLACE:                          /* a named project's place: its hills and torii, a PIECE's moon at its */
-        tessera_reset();                            /* SHAPE 80 % (a gibbous phase), ENTRIES: T1 in, T2 half, T3 out, T4 in */
+        tessera_reset();                            /* SHAPE 80 % (a gibbous phase) */
         memset(&land, 0, sizeof land);
         song.playing = 0;
         str_cpy(proj_name, "CEDAR RAIN", sizeof proj_name);
-        tessera.pl_length = 2; tessera.et_amount = 60;
-        entry_gain[0] = 32768, entry_gain[1] = 16000, entry_gain[2] = 0, entry_gain[3] = 32768;
+        tessera.pl_length = 2;
         go_title("LANDSCAPE");
         land_open = 1;
         land.rd = land_ev_at;

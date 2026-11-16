@@ -8,7 +8,7 @@
  * whole page below the header (no dials: the knobs do nothing here). GROUND LIGHT: the same water by day, a sun in the
  * moon's place and no stars.
  * The layers each tell something, and only when switched on: a PIECE's SHAPE is the moon's phase (full at the peak), its
- * last tenth dusk by day and the stars coming out by night; ENTRIES lights a window a track on the far shore; each CHAIN
+ * last tenth dusk by day and the stars coming out by night; each CHAIN
  * section has a shore of its own (the new one comes in from the right) and a shooting star marks the FORM coming round;
  * ENERGY's tide is the wind in the clouds (right as it builds, left as it thins, still at the turns), its rests a mist
  * on the water. A named project is a place of its own: its name seeds the hills, the stars, where the moon rests and a
@@ -273,12 +273,11 @@ static uint32_t land_dusk(void)                         /* 0 .. 16 over a PIECE'
 }
 static uint32_t land_sig(void)
 {
-    uint32_t g = 0, tr, anim;
+    uint32_t anim;
     land_step();
     anim = land_toff() < 120 || fm1_ms - land.st0 < LAND_STAR_MS || (land.mist && land.mist < 16u);
-    for (tr = 0; tr < 4u && tessera.et_amount; tr++) g = g * 5u + (uint32_t)entry_gain[tr] / 6554u;
     return (land_moving() || anim ? fm1_ms / 40u + 1u : 0u) ^ land_stars() << 20 ^ land_cover() << 26 ^
-           (uint32_t)(land.cdr / 700) << 8 ^ (uint32_t)(land.mx >> 4) << 12 ^ (uint32_t)(land.my >> 4) << 19 ^ g << 3 ^
+           (uint32_t)(land.cdr / 700) << 8 ^ (uint32_t)(land.mx >> 4) << 12 ^ (uint32_t)(land.my >> 4) << 19 ^
            (uint32_t)land.ph >> 11 << 24 ^ land_dusk() << 16 ^ land.seed ^ land.sec << 28 ^ (land.mist ? fm1_ms / 350u : 0u) << 5;
 }
 
@@ -369,20 +368,6 @@ static void mo_pic_land(void)
         land_temple(land_gate_x() - toff, hills);
     if (land.seed && land.sec == 0u)
         land_temple(land_gate_x() + 120 - toff, hills);
-    if (tessera.et_amount)                              /* ENTRIES: a lit window a track, as bright as it is in, set into a */
-        for (i = 0; i < 4u; i++) {                      /* hill near its place (none near: no window), never on the torii */
-            int32_t lx = 17 + (int32_t)i * 27 + (int32_t)(i > 1u), k, wx = -1, g = entry_gain[i], gx = land_gate_x();
-            for (k = 0; k < 24 && wx < 0; k++) {
-                int32_t x2 = lx + (k & 1 ? -(k + 1) / 2 : k / 2);
-                if (x2 < 1 || x2 > 117 || (land.seed && land.sec == 0u && toff >= 120 && x2 > gx - 3 && x2 < gx + 12)) continue;
-                if (land_hill(x2) <= LAND_H - 4 && land_hill(x2 + 1) <= LAND_H - 4) wx = x2;
-            }
-            if (wx < 0) continue;
-            k = (land_hill(wx) > land_hill(wx + 1) ? land_hill(wx) : land_hill(wx + 1)) + 2;   /* (inside the hill) */
-            if (g > 21845) mo_fill(wx, k, 2, 2, MO_TRK(i));
-            else if (g > 10922) mo_fill(wx, k + 1, 2, 1, mo_tdim(i));
-            else if (g > 1638) mo_px(wx, k + 1, mo_tdim(i));
-        }
     mo_hl(0, LAND_H, 120, water);
     for (y = LAND_H + 3, i = 0; my - 5 < land_hill(mx) && y < MO_PY1 - 2 && i < 6u - land.mist * 6u / 16u; y += 4, i++) {   /* the moon in the water (it shivers under rings) */
         int32_t w = 7 - (int32_t)i, sh = land_moving() ? (int32_t)((fm1_ms / 80u + i) % 3u) - 1 : 0;
