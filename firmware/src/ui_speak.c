@@ -188,6 +188,7 @@ static int sp_knob(uint32_t k, char *b, uint32_t size)
     const char *name;
     char v[24];
     int unused, col, cpu;
+    uint32_t wait;
     b[0] = v[0] = 0;
     if (ui.layer) {                                     /* a layer (GLO, SCL held): its knobs as its map shows them */
         uint8_t cs = col_style;
@@ -248,6 +249,7 @@ static int sp_knob(uint32_t k, char *b, uint32_t size)
     }
     unused = !e && help.hp == HP_UNUSED;
     cpu = help.hp == HP_CPU;
+    wait = e && e->pid == PID_TESS(TX_EV_SEED) && help_tr < TESSERA_TRACKS ? tessera.roll[help_tr] : 0u;
     help = keep;
     help_tr = keep_tr;
     col = 0;
@@ -283,6 +285,11 @@ static int sp_knob(uint32_t k, char *b, uint32_t size)
         else if (str_eq(u, "+-") || str_eq(u, "+"))   /* (a mod source's bar: both ways, or one) */
             sp_cat(v, sizeof v, u[1] ? "BIPOLAR" : "UNIPOLAR");
         else if (sp_digit(v)) sp_cat(v, sizeof v, u);   /* (no unit after a word: "OFF", not "OFF bar") */
+        if (wait) {                                     /* ROLL: the seed playing, then the one waiting for the bar line
+                                                         * (drawn dotted beside it) */
+            sp_cat(v, sizeof v, "NEXT");
+            sp_num(v, sizeof v, (int32_t)wait);
+        }
     }
     if (cpu) {                                          /* SYSTEM's CPU "55/92": 55 % PEAK 92 % */
         char t[8];
@@ -570,6 +577,10 @@ static void ui_speak(uint32_t now)
 {
     uint32_t ctx = sp_context();
     int playing = song.playing || chain_busy();
+    if (scrn.land) {                                    /* IDLE's LANDSCAPE (ui_draw.c scr_idle): nothing changed for
+        ann_tick(now);                                  * the reader; back on the page, still nothing new to say */
+        return;
+    }
     if (ann_on()) {
         int where = ann_where();
         if (!sp.started || where) {                     /* a new reader, or WHERE: everything, at once */

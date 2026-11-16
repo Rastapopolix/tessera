@@ -5,7 +5,8 @@
  * the first step is at PLAY; a gate's edge steps it two blocks on (one after cord_tick); a GATE source counts hits (the
  * track after it in the order steps in the same block, the one before it a block later); AMOUNT is the division, its sign
  * the edge; an edge within a DIV of the last step waits; a cord removed puts the track back on the grid; STOP clears
- * what waits; a STEP track and an ARP track ignore the cord; EOC is a source like any (its bit set by hand here).
+ * what waits; a STEP track and an ARP track ignore the cord; EOC is a source like any (its bit set by hand here); a STEP
+ * track's GATE and NOTE follow its pattern.
  * Steps are counted off seq_run_step, a block at a time: events_block, then cord_tick, as mix_block has them. */
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
@@ -195,6 +196,39 @@ int main(void)
     setup(); tessera.mode[0] = TESS_ENG_OFF; trk[0].p[P_SDIV] = DIV_16TH;
     cord(0, CS_MACRO1, 0, CD_CLOCK, 0, 100, 50); play(); blocks(1500);
     bad += check("a STEP track ignores a CLOCK cord (the grid)", steps(0) > 8u);
+
+    /* a STEP track's GATE and NOTE: its pattern drives the cords (F3; was the generators' only). Track 3 plays 60 on
+     * step 1 and 72 on step 5 (16ths, GATE 50 %), rests between: a GATE cord from it opens at each, NOTE holds its
+     * note through the rests, as the generators' */
+    setup();
+    trk[2].step[0] = (step_t){{60}, 1, ST_NOTE, 0, 0, 96, 0, 0};
+    trk[2].step[4] = (step_t){{72}, 1, ST_NOTE, 0, 0, 96, 0, 0};
+    trk[2].seq_active = 1;
+    {
+        cord_t c = {CS_GATE, 2, CD_CUTOFF, 3, 50, 0, CU_GATE};
+        uint32_t opens = 0, was = 0, n60 = 0, n72 = 0, other = 0, gb = 0;
+        int32_t nb = cord_src(CS_NOTE, 2);
+        cord_set(0, &c);
+        cord(1, CS_NOTE, 2, CD_PITCH, 3, 50, 0);
+        play();
+        for (i = 0; steps(2) <= 32u && i < 100000u; i++) {   /* (two bars: up to the 33rd step) */
+            int32_t v = cord_src(CS_NOTE, 2);
+            uint32_t g = (uint32_t)cord_gate_on(&cords[0]);
+            one();
+            if (g && !was) opens++;
+            if (g) gb++;
+            was = g;
+            if (v == mod_key(60)) n60++; else if (v == mod_key(72)) n72++; else other++;
+        }
+        i /= 32u;                                       /* (a step's blocks) */
+        bad += check("STEP track: NOTE 0 before its first note", nb == 0);
+        bad += check("...a GATE cord from it opens at each note (2 a bar, 4 in two bars)", opens == 4u);
+        bad += check("...open for the step's GATE (about half of its 2 steps' time in 16)", gb > i && gb < 3u * i);
+        bad += check("...NOTE: 60's and 72's in turn, held through the rests (nothing else)",
+                     n60 > 6u * i && n72 > 18u * i && other <= 2u);
+    }
+    stop();
+    bad += check("...stopped: its GATE shut", !cord_src(CS_GATE, 2));
 
     /* seek: a clocked track is left alone */
     setup(); cord(0, CS_MACRO1, 0, CD_CLOCK, 0, 100, 50);

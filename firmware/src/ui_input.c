@@ -1965,6 +1965,7 @@ static void page_knob(uint32_t k, int32_t s)
          * fixed-range global (SYSTEM's CPU: a meter, nothing to set, ui_help.c) is not a knob to invert */
         ui.hot_col = (uint8_t)k;
         ui.hot_t = 40;
+        ui.hot_ms = (uint16_t)fm1_ms;
     }
     if (list_on()) {                                    /* a list page: KNOB 1 the row, KNOB 2 its value (ui_list.c) */
         list_knob(k, s);

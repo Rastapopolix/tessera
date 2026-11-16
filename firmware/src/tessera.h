@@ -266,6 +266,10 @@ typedef struct {
     uint8_t          macro[4];                   /* 0..100: PERF's MACRO 1..4 (cord.c CS_MACRO1..4) */
     uint8_t          pat_gen[TESSERA_TRACKS];    /* PAT GEN: 1 each pattern keeps its own generator setup (pat_gen.c) */
     uint8_t          midi_dmap[TESSERA_TRACKS];  /* MIDI OUT's DRUM MAP: TESS_DM_GM (as before), _ROW (midi_out.c) */
+    /* HOLD (GLO + D4, ui_layer.c; set each UI pass, not saved; the struct's last byte, padding before): 1 every
+     * generator keeps its line: EVOLVE's and STEP EVOLVE's rounds skipped, TURING as PROB 0, a recorded MARKOV /
+     * MORPH phrase and CONSTELLATION's loop as LOCK 100, ATLAS's bar kept. 0 as set */
+    uint8_t          hold;
 } tessera_state_t;
 _Static_assert(__builtin_offsetof(tessera_state_t, ch_sdir) == __builtin_offsetof(tessera_state_t, ch_strum) + TESSERA_TRACKS,
                "STRUM's part: DIR right after STRUM (project_tsp.c copies them as one)");
@@ -364,6 +368,7 @@ void entries_tick(uint32_t n);                      /* seq.c, each block before 
 int entries_hand_in(uint32_t tr);                   /* GLO's mute key: an out track back in (1 if it was out) */
 void mute_press(uint32_t tr, int all);              /* GLO's mute key / UNMUTE ALL: now or on MENU MUTES' line */
 uint32_t mute_waiting(void);                        /* the mute keys waiting for their line (blinking) */
+uint32_t mute_wait_part(uint32_t w);                /* how much of that wait has gone, in w parts */
 uint32_t tessera_entries_get(uint32_t *warn, uint8_t role[4]);   /* the tracks out, those about to change, the roles */
 void tessera_entries_knob(uint32_t k, int32_t s, int layer);   /* the ENTRIES page: KNOB k turned s (layer: OCT+ held) */
 void planner_play(void);                            /* seq.c, PLAY: the planned piece from the top (planner.c) */

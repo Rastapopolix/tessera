@@ -272,6 +272,7 @@ static int32_t page_tabs(int32_t x0, int32_t x1, int32_t y)
 #if MELODEE_LOOK                                        /* the Mono look's chrome (ui_mono.c) */
 static void mo_dhead(const char *chip, const char *msg, int32_t bat);
 static uint32_t mo_hold_sig(void);                     /* (OCT+ held: the sheet it opens) */
+static uint32_t mo_beat(void);                         /* (PLAY's triangle: the beat) */
 static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis);
 static int list_text(uint32_t r, char *lb, char *v, uint16_t *vc);   /* a list row's texts (ui_list.c) */
 static void mo_sound(const char *en, const char *nm);
@@ -316,7 +317,7 @@ static void draw_head(void)
           (ui.bpm_t != 0) * 31u + low * 7777u + (uint32_t)(bat + 1) * 2147483647u + (chain.running ? (chain.row + 1u) * 104729u : 0u) + ux.gen * 977u +
           (ui.home ? 0u : ui.page * 2654435761u) + page_sheet() * 524287u + (uint32_t)gen_layer_on() * 40503u;
 #if MELODEE_LOOK
-    sig += mo_hold_sig() * 7919u;                       /* (OCT+ held: the sheet's line filling) */
+    sig += mo_hold_sig() * 7919u + mo_beat() * 15485863u;   /* (OCT+ held: the sheet's line filling; the beat) */
 #endif
     if (bpm != ui.roll_bpm) {
         char a[8];
@@ -456,6 +457,7 @@ static void mx_columns(void);                           /* MATRIX (ui_matrix.c) 
 static uint8_t mo_on;                                   /* a Mono page being drawn: its knobs to mo_capture (ui_mono.c) */
 static void mo_capture(uint32_t c, const char *label, const char *val, const char *unit, uint16_t vc, int32_t ratio,
                        int hot);
+static void mo_wait(uint32_t c);
 #endif
 static uint8_t col_sh;                                  /* the cards drawn this many to the right (a GEN engine's OCT- layer
                                                          * behind RANDOM, pr_draw); past the fourth: none */
@@ -1280,11 +1282,13 @@ static void draw_columns_(void)
         col_mods(PID_TESS(TX_EV_AMOUNT));
         draw_column(2, "AMOUNT", e2, e2u, VAL(2u), (int32_t)ev->amount * 10, ICON_AUTO);
         if (tr >= TESSERA_TRACKS || tessera.mode[tr] == TESS_ENG_OFF || !tessera.seed[tr]) str_cpy(e3, "--", sizeof e3);
-        else if (tessera.roll[tr] && ((fm1_ms / 250u) & 1u)) e3[0] = 0;   /* a seed waiting for the bar line: blinking */
-        else if (tessera.roll[tr]) fmt_int(e3, tessera.roll[tr]);
         else fmt_int(e3, tessera.seed[tr]);           /* (picked when a generator is first selected or played) */
         col_quiet = 1;                                  /* ROLL: each step a new line; the seed small, to find one again */
         draw_column(3, "ROLL", e3, "", VAL(3u), -1, ICON_AUTO);
+#if MELODEE_LOOK
+        if (mo_on && e3[0] != '-' && tessera.roll[tr]) mo_wait(3u + col_sh);   /* a seed waiting for the bar line: beside
+                                                         * the one playing, dotted (ui_mono.c mo_cols) */
+#endif
         return;
     }
     if (cur_page()->graph == GR_STEPS && cur_page()->fam == FAM_GEN) {   /* (PATTERN: upstream's columns) */
@@ -2005,6 +2009,26 @@ static void draw_page(void)
         draw_foot();
 #endif
 }
+/* MENU > IDLE LANDSCAPE: IDLE_MS untouched while playing, on a page with nothing over it, the screen moves to
+ * LANDSCAPE, as it is (no page_entered: the page left keeps its state); the first touch only goes back (screen.c
+ * scr_input). The screen reader hears nothing of either (ui_speak.c) */
+static void scr_idle(void)
+{
+#if MELODEE_LOOK
+    uint32_t i;
+    if (!TEXT_IDLE(TEXT_IDLE_LAND) || scrn.land || !song.playing || ui.menu || ui.confirm || ui.layer || pop.on ||
+        name_on() || (int32_t)(fm1_ms - scrn.idle) < (int32_t)IDLE_MS)
+        return;
+    for (i = 0; i < NPAGES && PAGES[i].graph != GR_LAND; i++) ;
+    if (i >= NPAGES || (!ui.home && ui.page == i))
+        return;
+    scrn.land = (uint8_t)(1u + ui.home);
+    scrn.land_pg = ui.page;
+    ui.home = 0;
+    ui.page = (uint8_t)i;
+    ui.force = 1;
+#endif
+}
 static void ui_draw_frame(void);
 static void ui_draw(void)                               /* (gfx.c: the fills wait for the frame's canvases) */
 {
@@ -2020,6 +2044,7 @@ static void ui_draw_frame(void)
         return;
     }
     if (!scr_frame()) return;
+    if (!sim.on && !ui.uboot) scr_idle();
     ui.frame++;
     if (palette_track(song.sel))                       /* THEME is the selected track's colour */
         ui.force = 1;
@@ -2144,8 +2169,9 @@ static void ui_draw_frame(void)
     }
     if (ui.bpm_t)
         ui.bpm_t--;
-    if (ui.hot_t)
-        ui.hot_t--;
+    if (ui.hot_t > 1u || (ui.hot_t && (!MELODEE_LOOK || LARGE_MODE != LARGE_ON ||
+                                       (uint16_t)(fm1_ms - ui.hot_ms) >= LARGE_HOLD_MS)))
+        ui.hot_t--;                                     /* (LARGE VALUE ON: large until LARGE_HOLD_MS after the turn) */
     ui.force = 0;
     scr_shown();
 }
