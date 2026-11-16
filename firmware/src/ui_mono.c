@@ -26,6 +26,12 @@ static uint16_t mo_tdim(uint32_t k) { return ux_mix(T_BG, T_TRK(k), UI_MID_PCT);
 #ifndef MO_HOOK_CUT
 #define MO_HOOK_CUT(full, shown) ((void)0)              /* a header cut a title or a chip (tests/ui_render.c) */
 #endif
+#ifndef MO_HOOK_PIC
+#define MO_HOOK_PIC(on) ((void)0)                       /* the picture is being drawn (tests/ui_render.c) */
+#endif
+#ifndef MO_HOOK_TEXT
+#define MO_HOOK_TEXT(s, x, y) ((void)0)                 /* a text drawn at x, y (tests/ui_render.c) */
+#endif
 
 static const int8_t MO_SIN[64] = {0, 12, 25, 37, 49, 60, 71, 81, 90, 98, 106, 112, 117, 122, 125, 126, 127, 126, 125, 122, 117, 112, 106, 98, 90, 81, 71, 60, 49, 37, 25, 12, 0, -12, -25, -37, -49, -60, -71, -81, -90, -98, -106, -112, -117, -122, -125, -126, -127, -126, -125, -122, -117, -112, -106, -98, -90, -81, -71, -60, -49, -37, -25, -12};
 
@@ -115,6 +121,7 @@ static int32_t mo_cos(int32_t a) { return mo_sin(a + 64); }
 static int32_t mo_tw(const char *s) { int32_t n = (int32_t)str_len(s); return n ? n * 6 - 1 : 0; }
 static int32_t mo_text_s(const char *s, int32_t x, int32_t y, int32_t sc, uint16_t c)   /* sc: cells a font pixel */
 {
+    MO_HOOK_TEXT(s, x, y);
     for (; *s; s++, x += 6 * sc) {
         uint32_t ch = mono_ch((uint8_t)*s), r, b;
         for (r = 0; r < 7u; r++)
@@ -2572,7 +2579,9 @@ static void mono_page(void)
         if (cur_page()->graph != GR_LAND)               /* (LANDSCAPE: the scene in their place) */
             mo_cols();
         mo_cols_trk = 0;
+        MO_HOOK_PIC(1);
         mo_picture();
+        MO_HOOK_PIC(0);
         if (cur_page()->graph == GR_ROLL || !mo_turn())
             mo_foot();
         cv_oy = 0;
