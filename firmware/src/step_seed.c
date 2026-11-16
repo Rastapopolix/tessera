@@ -145,7 +145,7 @@ static int sd_turing(const track_t *t, uint32_t tr, gen_out_t *out)
     if (sd_pull(tr)) {                                  /* GRAVITY: the step as written again (a rest keeps its pitch) */
         uint8_t *e = &tess_sd.loop[tr][p];
         *e = sd_step(s - 1u, p, &note, &vel) ? (uint8_t)(0x80u | (note & 0x7Fu)) : (uint8_t)(*e & 0x7Fu);
-    } else if (tessera.turing[tr].prob && gen_rnd(&tessera.rnd[tr], 100u) < tessera.turing[tr].prob) {
+    } else if (tessera.turing[tr].prob && !tessera.hold && gen_rnd(&tessera.rnd[tr], 100u) < tessera.turing[tr].prob) {
         sd_drift(t, tr, p);
     }
     note = tess_sd.loop[tr][p] & 0x7Fu;

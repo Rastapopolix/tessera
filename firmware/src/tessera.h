@@ -269,6 +269,10 @@ typedef struct {
     uint8_t          sec_pc;                     /* MIDI OUT's SECTION PC: bit k, track k sends the CHAIN's section as a
                                                   * Program Change (form_chain.c fc_pc_tick); 0 none (as before). Not in
                                                   * the packed block: the record's SECPC part */
+    /* HOLD (GLO + D4, ui_layer.c; set each UI pass, not saved; the struct's last byte, padding before): 1 every
+     * generator keeps its line: EVOLVE's and STEP EVOLVE's rounds skipped, TURING as PROB 0, a recorded MARKOV /
+     * MORPH phrase and CONSTELLATION's loop as LOCK 100, ATLAS's bar kept. 0 as set */
+    uint8_t          hold;
 } tessera_state_t;
 _Static_assert(__builtin_offsetof(tessera_state_t, ch_sdir) == __builtin_offsetof(tessera_state_t, ch_strum) + TESSERA_TRACKS,
                "STRUM's part: DIR right after STRUM (project_tsp.c copies them as one)");

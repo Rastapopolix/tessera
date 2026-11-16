@@ -582,7 +582,7 @@ static int behaviour(void)
         check("CV: Euclid's ramp over its 4 steps (0, 1/3, 2/3, all), as the cords read it",
               seen[0] == 0 && seen[1] == 10922 && seen[2] == 21844 && seen[3] == 32767);
     }
-    check("CV, GATE, NOTE of a track without a generator: 0", !cord_src(CS_CV, 1) && !cord_src(CS_GATE, 1) &&
+    check("CV, GATE, NOTE of a STEP track that has played nothing: 0", !cord_src(CS_CV, 1) && !cord_src(CS_GATE, 1) &&
           !cord_src(CS_NOTE, 1));
     tessera_stop_all();
 
