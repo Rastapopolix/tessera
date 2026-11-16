@@ -176,7 +176,7 @@ lets you do and when you would want it. Follow a link for the full description.
 **ENV**: the track's envelope and where it goes (on FM6 and ORACLE, the sound's own envelopes). *Use it to make a
 sound pluck, swell or sustain.*
 
-**SCL**: harmony
+**SCL** (the button printed **SEL**): harmony
 
 | Page | What it lets you do | Reach for it when |
 |---|---|---|
@@ -267,7 +267,7 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 | **ARP** | How the track's notes are shaped: EVOLVE, FORM, TWEAK, TIMING and the rest (by its MODE) | |
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST (an FM6 track: then FM LFO) | |
 | **ENV** | ENV, ENV DEST (an FM6 track: EG RATE, EG LVL, PITCH EG, PITCH LV) | |
-| **SCL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
+| **SCL** (printed SEL) | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
 | **EDIT** | The sound's EDIT pages; on an EDIT page, the map | With OCT- / OCT+: undo / redo |
 | **FX** | The insert and send effects | The mod amount of any knob you turn |
 | **GLO** | MIXER, [PERF](#perf-four-macros), [PIECE](#piece-a-length-and-a-shape), [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in), [LANDSCAPE](#landscape-rain-on-water), SYSTEM, MIDI IN, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, D4 holds the generators' line ([HOLD](#evolve)), E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
@@ -2550,7 +2550,7 @@ smooth signal becomes steps. In Tessera: **S&H** is a source on each track (rand
 **Scale**. A set of notes the music stays within. 77 are built in; four **USER** scales **(3.5)** are yours, and
 **Scala tunings** are microtonal ones from the web editor.
 
-**SCL**. The harmony button: SCALES, the scale and key, QNT, CHORD.
+**SCL**. The harmony button, printed **SEL** on the panel: SCALES, the scale and key, QNT, CHORD.
 
 **Seed**. The starting number for a generator's random choices. The same seed plays the same line.
 

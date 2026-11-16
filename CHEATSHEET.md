@@ -36,7 +36,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | **ARP** | How it is shaped. STEP: EVOLVE, TWEAK, TIMING. ARP: TWEAK (SWING, PROB, HOLD, ORDER: ARP with OCT- held). A generator: EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY |
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST; on FM6 then FM LFO; on ORACLE then LFO MOD, LFO ROUTE |
 | **ENV** | ENV, ENV DEST; on FM6 instead EG RATE, EG LVL, PITCH EG, PITCH LV; on ORACLE FILT ENV, AMP ENV |
-| **SCL** | SCALES, SCL, CHORD |
+| **SCL** (printed SEL) | SCALES, SCL, CHORD |
 | SCALES: **KNOB 1** to **USER** | Your own tunings: Scala files sent from the web editor (Projects > Tunings) |
 | **EDIT** | The sound's EDIT pages (ORACLE: MACRO, MACRO 2, OSC A, OSC B, OSC MIX, FILTER, POLY MOD, CHARACTER, ...) |
 | **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across, KNOB 2 rows (on the page last used in each), OCT+ opens (OCT- there: the map again), OCT- or EDIT closes |
