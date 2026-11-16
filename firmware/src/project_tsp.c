@@ -18,7 +18,7 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
        TSP_TESSERA, TSP_CORDS, TSP_SUB, TSP_MIDI, TSP_KEY, TSP_SEED, TSP_HUMAN, TSP_ACC, TSP_GRAV, TSP_HOW, TSP_ORACLE,
        TSP_ENERGY, TSP_DEV, TSP_TRANSP, TSP_TUNE, TSP_SOUND, TSP_CHAIN, TSP_ENTRY, TSP_PLAN, TSP_PERF, TSP_HOLD,
        TSP_CCN, TSP_FKEY, TSP_SPLIT, TSP_FMODE, TSP_PGEN, TSP_DMAP, TSP_EORDER, TSP_USCALE, TSP_SDIR, TSP_MHOLD,
-       TSP_STRUM, TSP_BUS, TSP_MVCA, TSP_MDEPTH, TSP_MHCLK, TSP_QLINK,
+       TSP_STRUM, TSP_BUS, TSP_MVCA, TSP_MDEPTH, TSP_MHCLK, TSP_QLINK, TSP_SECPC,
        TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
@@ -73,13 +73,16 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * i / 2, its low nibble when even), 0 the bar, 1..4 a track's notes,
                                               * written only when one is not 0; none: every one by the bar;
                                               * TSP_QLINK: QNT LINK OWN, 1 (each track's QNT and MPC degree, kept in
-                                              * TSP_TRACKS), written only when OWN; none: LINKED, as before (#755) */
+                                              * TSP_TRACKS), written only when OWN; none: LINKED, as before (#755);
+                                              * TSP_SECPC: MIDI OUT's SECTION PC, a byte (bit k: track k ON), written
+                                              * only when one is ON; none: OFF, as before */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
                TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_PERF == 30 &&
                TSP_HOLD == 31 && TSP_CCN == 32 && TSP_FKEY == 33 && TSP_SPLIT == 34 && TSP_FMODE == 35 &&
                TSP_PGEN == 36 && TSP_DMAP == 37 && TSP_EORDER == 38 && TSP_USCALE == 39 &&
                TSP_SDIR == 40 && TSP_MHOLD == 41 && TSP_STRUM == 42 && TSP_BUS == 43 &&
-               TSP_MVCA == 44 && TSP_MDEPTH == 45 && TSP_MHCLK == 46 && TSP_QLINK == 47,
+               TSP_MVCA == 44 && TSP_MDEPTH == 45 && TSP_MHCLK == 46 && TSP_QLINK == 47 &&
+               TSP_SECPC == 48,
                "the parts' numbers are stored: never renumbered");
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -372,6 +375,11 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
             tsp_byte(&w, 1u);
             tsp_end(&w);
         }
+        if (tessera.sec_pc) {                          /* (SECTION PC: only when one is ON, so older firmware sees none) */
+            tsp_begin(&w, TSP_SECPC, 1);
+            tsp_byte(&w, tessera.sec_pc);
+            tsp_end(&w);
+        }
         tsp_begin(&w, TSP_SEED, 1);                    /* (STEP as seed: each track's SOURCE, each one's KEEP) */
         tsp_bytes(&w, tessera.sd_src, NTRK);
         tsp_bytes(&w, tessera.sd_keep, NTRK);
@@ -554,6 +562,7 @@ static const struct { uint8_t id, a, b; uint8_t at; uint16_t len; } TSP_PLAIN[] 
     {TSP_SOUND, 1u, 0, NTRK, NTRK},
     {TSP_KEY, 1u, 0, 1u, 1u},
     {TSP_QLINK, 1u, 0, 1u, 1u},
+    {TSP_SECPC, (1u << TESSERA_TRACKS) - 1u, 0, 1u, 1u},
     {TSP_SEED, TESSERA_TRACKS, TESS_SD_KEEPS - 1u, NTRK, 2u * NTRK},
     {TSP_GRAV, 100u, 0, NTRK, NTRK},
     {TSP_HOW, TESS_SV_HOWS - 1u, 0, NTRK, NTRK},
@@ -771,7 +780,8 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
 
 /* the parts tsp_restore copies as they are, n bytes to a (then n more to b); none saved: 0 (zero), else
  * tessera_reset's (saved before the part: SUB, MIDI, SOUND ON, STEP as seed OFF FREE, GRAVITY 0, HOW DRIFT,
- * DEVELOP 0; then HOLD OFF, SPLIT off, ORDER AUTO, STRUM OFF UP, FOLLOW's SAME OWN, MACROs 0, DIR FWD, DRUM MAP GM) */
+ * DEVELOP 0; then HOLD OFF, SPLIT off, ORDER AUTO, STRUM OFF UP, FOLLOW's SAME OWN, MACROs 0, DIR FWD, DRUM MAP GM,
+ * SECTION PC OFF) */
 static const struct { uint8_t id, zero; uint16_t n; uint8_t *a, *b; } TSP_COPY[] = {
     {TSP_SUB, 0, NTRK, tessera.sub_shape, 0},
     {TSP_MIDI, 0, NTRK, tessera.midi_ch, 0},
@@ -788,6 +798,7 @@ static const struct { uint8_t id, zero; uint16_t n; uint8_t *a, *b; } TSP_COPY[]
     {TSP_FMODE, 1, NTRK, tessera.follow_how, tessera.follow_rhy},
     {TSP_SDIR, 1, sizeof pattern_dir, &pattern_dir[0][0], 0},
     {TSP_DMAP, 1, NTRK, tessera.midi_dmap, 0},
+    {TSP_SECPC, 1, 1, &tessera.sec_pc, 0},
 };
 /* after tsp_valid of raw and project_restore_runtime of its project: the other patterns, the song's and motion's
  * pattern tags, the generators and the cords (none in the record: OFF, none) */

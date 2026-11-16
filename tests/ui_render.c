@@ -18,13 +18,16 @@
  * touching a pixel, everything inside the panel.
  * Output: OUTDIR/ppm/<PALETTE>_<screen>.ppm for MONO GREEN PAPER, OUTDIR/report.txt (findings, ellipsised free
  * text, the draw cost), OUTDIR/text_audit.tsv (MONO, per screen: texts, icons and keycaps with their ink-box px, the
- * ellipsised ones, the texts closer than 2 px to their cell's edge, the words).
+ * ellipsised ones, the texts closer than 2 px to their cell's edge, the words), OUTDIR/short_glyphs.txt (the short-glyph
+ * audit: every text under 2 characters a Mono picture draws, by the glyph and the picture).
  * Exit 1 on a finding or a MONO pixel off gray. */
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
 #include <math.h>
+#include <ctype.h>
+#include <stdlib.h>
 
 typedef struct { int16_t x0, y0, x1, y1; uint8_t flags; char s[28]; } rbox_t;
 static rbox_t pend[256], scr[1200];
@@ -42,6 +45,7 @@ static uint32_t nfree_seen;
 #if MELODEE_LOOK
 static void mono_icon(int32_t x0, int32_t y0, int32_t x1, int32_t y1, const char *s);   /* (below) */
 #endif
+static uint8_t in_pic;                          /* MO_HOOK_PIC: a Mono picture (ui_mono.c mo_picture) is being drawn */
 static void hk_text(int32_t x0, int32_t y0, int32_t x1, int32_t y1, const char *s, uint32_t flags)
 {
     n_text++;
@@ -78,11 +82,90 @@ static uint32_t mo_batt_seen, nbatt;           /* how many times a Mono header d
 #define MO_HOOK_BATT() (mo_batt_seen++)
 static void mono_cut_note(const char *full, const char *what);
 #define MO_HOOK_CUT(full, what) mono_cut_note(full, what)
+static void short_glyph(const char *s, int32_t x, int32_t y);   /* (below) */
+#define MO_HOOK_PIC(on) (in_pic = (uint8_t)(on))
+#define MO_HOOK_TEXT(s, x, y) (in_pic && (s)[0] ? short_glyph(s, x, y) : (void)0)
 #define UI_FILL_HOOK(x, y, w, h) hk_fill(x, y, w, h)
 static void fm6_hook(uint32_t kind, uint32_t a, uint32_t b);
 #define FM6_CHART_HOOK(kind, a, b) fm6_hook(kind, a, b)
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
+
+/* the short-glyph audit: every text of one character a Mono picture draws, by the text and the picture (the page, and on
+ * a generator's GEN page its mode), with its draws counted, where it is and the first screen named; then the words up
+ * to 8 characters with a sign in them (/4, +12: digits shown as 9; not prose). A one-character sign (/ + - . ?) is where the thin 5x7 face
+ * is hardest to read: the list says where they are. QUAD's picture draws no one-character sign (a finding) */
+#define SG_MAX 800u
+typedef struct { char t[9]; char pic[24]; uint32_t n; int16_t x, y; char first[40]; } shg_t;
+static shg_t shg[SG_MAX];
+static uint32_t nsg, sg_quad;
+static uint8_t sg_done;                         /* the list written: the draw cost's screens are not counted */
+static int sg_sign(int c) { return c > ' ' && !isalnum(c); }
+static void short_glyph(const char *s, int32_t x, int32_t y)
+{
+    const page_t *pg = cur_page();
+    char pic[24], t[9];
+    uint32_t i, sign = 0;
+    int gen;
+    if (sg_done || cv_oy) return;                  /* (a screen draws its picture once a half: the top half counts) */
+    for (i = 0; s[i] && i < sizeof t - 1u; i++) {
+        t[i] = isdigit((unsigned char)s[i]) && s[1] ? '9' : s[i];
+        sign |= (uint32_t)sg_sign((unsigned char)s[i]);
+    }
+    t[i] = 0;
+    if (s[1] && (!sign || s[i] || strchr(s, ' '))) return;   /* (a longer text: a word with a sign in it, not prose) */
+    gen = pg->fam == FAM_GEN && pg->graph == GR_STEPS && song.sel < TESSERA_TRACKS;
+    snprintf(pic, sizeof pic, "%s%s%s", mo_title(pg), gen ? " " : "", gen ? TX_N_MODE[tessera.mode[song.sel] % TESS_ENG_COUNT] : "");
+    if (gen && tessera.mode[song.sel] == TESS_ENG_QUAD && !s[1] && sign) sg_quad++;
+    for (i = 0; i < nsg; i++)
+        if (!strcmp(shg[i].t, t) && !strcmp(shg[i].pic, pic)) { shg[i].n++; return; }
+    if (nsg >= SG_MAX) return;
+    strcpy(shg[nsg].t, t);
+    shg[nsg].n = 1;
+    shg[nsg].x = (int16_t)x; shg[nsg].y = (int16_t)y;
+    strcpy(shg[nsg].pic, pic);
+    snprintf(shg[nsg].first, sizeof shg[nsg].first, "%s", cur_name);
+    nsg++;
+}
+static int sg_rank(const shg_t *g) { return g->t[1] ? 2 : sg_sign((unsigned char)g->t[0]) ? 0 : 1; }
+static int sg_cmp(const void *a, const void *b)    /* the one-character signs, the other single characters, the rest */
+{
+    const shg_t *x = a, *y = b;
+    int c = sg_rank(x) - sg_rank(y);
+    if (!c) c = strcmp(x->t, y->t);
+    return c ? c : strcmp(x->pic, y->pic);
+}
+static void short_glyphs_write(const char *out)
+{
+    static const char *const HEAD[3] = {"one-character signs", "other single characters", "words with a sign"};
+    char path[600];
+    FILE *f;
+    uint32_t i, n[3] = {0};
+    int r = -1;
+    snprintf(path, sizeof path, "%s/short_glyphs.txt", out);
+    if (!(f = fopen(path, "w"))) return;
+    sg_done = 1;
+    qsort(shg, nsg, sizeof shg[0], sg_cmp);
+    fprintf(f, "# the short-glyph audit (tests/ui_render.c): the texts of one character the Mono pictures draw, then the\n"
+               "# words up to 8 characters with a sign in them (digits as 9)\n# text\tpicture\tdraws\tat x,y (the first)\tfirst screen\n");
+    for (i = 0; i < nsg; i++) {
+        int k = sg_rank(&shg[i]);
+        if (k != r) fprintf(f, "\n## %s\n", HEAD[r = k]);
+        n[k]++;
+        if (!shg[i].t[1] && (unsigned char)shg[i].t[0] >= 127u)
+            fprintf(f, "\\x%02x", (unsigned char)shg[i].t[0]);
+        else
+            fprintf(f, "'%s'", shg[i].t);
+        fprintf(f, "\t%s\t%u\t%d,%d\t%s\n", shg[i].pic, shg[i].n, shg[i].x, shg[i].y, shg[i].first);
+    }
+    fclose(f);
+    fprintf(rep, "\nshort-glyph audit: %u one-character signs, %u other single characters, %u words with a sign "
+                 "(text and picture); %s\n", n[0], n[1], n[2], path);
+    if (sg_quad) {
+        fprintf(stderr, "ui_render: QUAD's picture drew %u one-character signs (its DIR and RANGE are pictures)\n", sg_quad);
+        nfind++;
+    }
+}
 
 /* the FM6 chart lint: each part of a chart (FMH_*) drawn alone onto a canvas of SENT, its pixels kept in fmp_mask
  * (bit: the part), then the canvas as drawn restored with the part on it; at FMH_END the parts are checked */
@@ -548,7 +631,7 @@ enum { S_HOME, S_HOME_IDLE, S_HOME_NOTE, S_HOME_CHORD, S_HOME_INVERSION, S_HOME_
        S_REF_SHEET_MOTION, S_REF_MOD, S_REF_PICKER_MOD, S_REF_ARP, S_REF_PATTERN,
        S_REF_FMEG, S_REF_GRID, S_REF_SCALES, S_FX_PHASER, S_FX_WIDTH, S_FX_FORMANT, S_FX_TAPE, S_FX_SPIT, S_FX_ECHO, S_FX_ROOM, S_FX_REVERB, S_FX_CHORUS, S_FX_FULL, S_FX_SLOT2, S_FX_SLOT3, S_FX_SEND, S_FX_SEPARATE, S_FX_SENDS, S_FX_BUS1, S_FX_BUS2, S_FX_BUS3,
        S_GEN_TURING, S_GEN_EUCLID, S_GEN_MARKOV, S_GEN_MORPH, S_GEN_EVOLVE, S_CORDS, S_HELP, S_CORDS_PICK_SRC, S_CORDS_PICK_DST,
-       S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_GEN_CHORD_OFFBEAT, S_GEN_CHORD_DRONE, S_GEN_STEP_EVOLVE_HOW, S_GEN_STEP_ADORN, S_GEN_STEP_SERIAL, S_NOTES_EVOLVE, S_GEN_SEED, S_GEN_SEED_MORPH, S_GEN_FORM, S_MIDI_OUT, S_EDIT_FILT, S_GEN_EVOLVE_GRAV, S_GEN_ENERGY_LEVEL, S_GEN_ENERGY_DEPTH, S_EDIT_FILT_BP, S_EDIT_FILT_HP, S_EDIT_FILT_NOT, S_STAGE_FILTER_HP, S_GEN_STEP_PAT, S_KNOBS_BAR, S_KNOBS_BAR_GEN, S_KNOBS_BAR_RANGE, S_MENU_KNOBS, S_MODS_AMT, S_MIDI_SOUND, S_MODS_GATE, S_GLO_CHAIN, S_GLO_CHAIN_OFF, S_GLO_CHAIN_REPS, S_GEN_FORM_CHAIN, S_GLO_ENTRIES, S_GLO_ENTRIES_OFF, S_GLO_ENTRIES_ROLES, S_GLO_PIECE, S_GLO_PIECE_FREE, S_GLO_PIECE_USER, S_GLO_LAND, S_GLO_LAND_RAIN, S_GLO_PERF, S_MENU_COLORS, S_SCL_KEY, S_GEN_TIMING_SPLIT, S_GEN_TIMING_PUSH, S_GEN_TIMING_MIX, S_STEP_TIMING_SPLIT, S_ROLL_RAISED, S_ROLL_RAISED_TOP, S_ROLL_ONE, S_ROLL_TURN, S_ENV_SHEET_HOLD, S_MODS_BUS, S_MODS_SCOPE, S_MODS_SCOPE_GATE, S_MODS_SCOPE_SLOW, S_MODS_SCOPE_BUS, S_MODS_SCOPE_THRESH, S_COUNT };
+       S_GEN_GRIDS, S_GEN_TWEAK, S_GEN_TWEAK_OFF, S_MOD_SHORTCUT, S_GEN_BOUNCE, S_GEN_AWAKE, S_GEN_POLY, S_GEN_TWEAK2, S_GEN_TWEAK2_OFF, S_ORGANIC, S_GEN_TWEAK2_COIN, S_MODS_LIVE, S_MODS_LIVE_GEN, S_MATRIX, S_GEN_QUAD, S_GEN_LENGTH, S_GEN_FALL, S_GEN_CONSTEL, S_GEN_LENGTH_HIT, S_GEN_LENGTH_KEYS, S_GEN_LENGTH_STEP, S_GEN_PATTERN_CONSTEL, S_GEN_SERIES, S_GEN_CHORD, S_GEN_CHORD_OCT, S_GEN_GRIDS_OCT, S_GEN_CHORD_USER, S_GEN_STEP_EVOLVE, S_HELP_GEN, S_GEN_TIMING, S_GEN_TIMING_X1, S_GEN_ENERGY, S_GEN_ANSWER, S_GEN_ANSWER_OCT, S_GEN_SEED_OCT, S_GEN_TIMING_HUMAN, S_GEN_CHORD_CIRCLE, S_GEN_CHORD_OFFBEAT, S_GEN_CHORD_DRONE, S_GEN_STEP_EVOLVE_HOW, S_GEN_STEP_ADORN, S_GEN_STEP_SERIAL, S_NOTES_EVOLVE, S_GEN_SEED, S_GEN_SEED_MORPH, S_GEN_FORM, S_MIDI_OUT, S_EDIT_FILT, S_GEN_EVOLVE_GRAV, S_GEN_ENERGY_LEVEL, S_GEN_ENERGY_DEPTH, S_EDIT_FILT_BP, S_EDIT_FILT_HP, S_EDIT_FILT_NOT, S_STAGE_FILTER_HP, S_GEN_STEP_PAT, S_KNOBS_BAR, S_KNOBS_BAR_GEN, S_KNOBS_BAR_RANGE, S_MENU_KNOBS, S_MODS_AMT, S_MIDI_SOUND, S_MODS_GATE, S_GLO_CHAIN, S_GLO_CHAIN_OFF, S_GLO_CHAIN_REPS, S_GEN_FORM_CHAIN, S_GLO_ENTRIES, S_GLO_ENTRIES_OFF, S_GLO_ENTRIES_ROLES, S_GLO_PIECE, S_GLO_PIECE_FREE, S_GLO_PIECE_USER, S_GLO_LAND, S_GLO_LAND_RAIN, S_GLO_LAND_PLACE, S_GLO_PERF, S_MENU_COLORS, S_SCL_KEY, S_GEN_TIMING_SPLIT, S_GEN_TIMING_PUSH, S_GEN_TIMING_MIX, S_STEP_TIMING_SPLIT, S_ROLL_RAISED, S_ROLL_RAISED_TOP, S_ROLL_ONE, S_ROLL_TURN, S_ENV_SHEET_HOLD, S_MODS_BUS, S_MODS_SCOPE, S_MODS_SCOPE_GATE, S_MODS_SCOPE_SLOW, S_MODS_SCOPE_BUS, S_MODS_SCOPE_THRESH, S_GEN_EVOLVE_WAIT, S_GEN_EVOLVE_WAIT_TURN, S_MIXER_WAIT, S_MIDI_SHEET_PC, S_COUNT };
 static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "home_chord", "home_inversion", "home_wide", "home_released", "home_fm6", "message", "message_key", "message_paged", "presets", "presets_nofav", "presets_cat", "presets_pending", "presets_recent", "user",
     "project", "project_boot", "tempo", "song_empty", "song", "step", "pattern", "motion", "drum",
     "mixer", "mixer_pan", "env", "env_dest", "lfo", "mod", "scl", "chord", "chord_wide", "chord_off", "chord_kit", "arp",
@@ -568,7 +651,7 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "home_note", "h
     "notes_slide", "notes_mixed", "notes_chord", "notes_empty", "notes_raw", "notes_zoom", "notes_loop", "notes_drum", "notes_dense", "notes_rec", "notes_erase", "notes_drum_rec", "notes_drum_erase", "scl_micro", "scl_micro_layer", "scl_micro_chord", "scale_picker_edo", "scale_picker_historical", "scale_picker_favorites", "scale_picker_empty", "scale_settings_favorite", "menu_click", "menu_click_level", "menu_countin", "menu_preview", "menu_add", "menu_autosave_on", "menu_autosave_off", "drum_sound_808", "drum_sound_909", "drum_mix_909", "drum_hit_909", "drum_hit_free", "drum_hit_long",
     "stage_drum", "stage_trio", "stage_queued", "stage_browse", "stage_stopped", "stage_filter", "patterns", "patterns_stopped", "patterns_sheet", "patterns_copy", "patterns_replace", "patterns_delete", "project_new", "new_key", "new_roles",
     "ref_stage_held", "ref_stage_released", "ref_stage_cutoff", "ref_stage_drum", "ref_browser", "ref_patterns", "ref_song", "ref_env", "ref_lfo", "ref_edit_osc", "ref_mixer", "ref_notes", "ref_settings", "ref_dialog", "ref_sheet_sound", "ref_sheet_song", "ref_picker_wave", "ref_picker_mode", "ref_sections_p5", "ref_map_p5", "ref_map_fm6", "ref_scl_list", "ref_sheet_project", "ref_sheet_note", "ref_sheet_hit", "ref_motion", "ref_sheet_motion", "ref_mod", "ref_picker_mod", "ref_arp", "ref_pattern", "ref_fmeg", "ref_grid", "ref_scales", "fx_phaser", "fx_width", "fx_formant", "fx_tape", "fx_spit", "fx_echo", "fx_room", "fx_reverb", "fx_chorus", "fx_full", "fx_slot2", "fx_slot3", "fx_send", "fx_separate", "fx_sends", "fx_bus1", "fx_bus2", "fx_bus3",
-    "gen_turing", "gen_euclid", "gen_markov", "gen_morph", "gen_evolve", "cords", "help", "cords_pick_src", "cords_pick_dst", "gen_grids", "gen_tweak", "gen_tweak_off", "mod_shortcut", "gen_bounce", "gen_awake", "gen_poly", "gen_tweak2", "gen_tweak2_off", "organic", "gen_tweak2_coin", "mods_live", "mods_live_gen", "matrix", "gen_quad", "gen_length", "gen_fall", "gen_constel", "gen_length_hit", "gen_length_keys", "gen_length_step", "gen_pattern_constel", "gen_series", "gen_chord", "gen_chord_oct", "gen_grids_oct", "gen_chord_user", "gen_step_evolve", "help_gen", "gen_timing", "gen_timing_x1", "gen_energy", "gen_answer", "gen_answer_oct", "gen_seed_oct", "gen_timing_human", "gen_chord_circle", "gen_chord_offbeat", "gen_chord_drone", "gen_step_evolve_how", "gen_step_adorn", "gen_step_serial", "notes_evolve", "gen_seed", "gen_seed_morph", "gen_form", "midi_out", "edit_filt", "gen_evolve_grav", "gen_energy_level", "gen_energy_depth", "edit_filt_bp", "edit_filt_hp", "edit_filt_not", "stage_filter_hp", "gen_step_pat", "knobs_bar", "knobs_bar_gen", "knobs_bar_range", "menu_knobs", "mods_amt", "midi_sound", "mods_gate", "glo_chain", "glo_chain_off", "glo_chain_reps", "gen_form_chain", "glo_entries", "glo_entries_off", "glo_entries_roles", "glo_piece", "glo_piece_free", "glo_piece_user", "glo_land", "glo_land_rain", "glo_perf", "menu_colors", "scl_key", "gen_timing_split", "gen_timing_push", "gen_timing_mix", "step_timing_split", "roll_raised", "roll_raised_top", "roll_one", "roll_turn", "env_sheet_hold", "mods_bus", "mods_scope", "mods_scope_gate", "mods_scope_slow", "mods_scope_bus", "mods_scope_thresh"};
+    "gen_turing", "gen_euclid", "gen_markov", "gen_morph", "gen_evolve", "cords", "help", "cords_pick_src", "cords_pick_dst", "gen_grids", "gen_tweak", "gen_tweak_off", "mod_shortcut", "gen_bounce", "gen_awake", "gen_poly", "gen_tweak2", "gen_tweak2_off", "organic", "gen_tweak2_coin", "mods_live", "mods_live_gen", "matrix", "gen_quad", "gen_length", "gen_fall", "gen_constel", "gen_length_hit", "gen_length_keys", "gen_length_step", "gen_pattern_constel", "gen_series", "gen_chord", "gen_chord_oct", "gen_grids_oct", "gen_chord_user", "gen_step_evolve", "help_gen", "gen_timing", "gen_timing_x1", "gen_energy", "gen_answer", "gen_answer_oct", "gen_seed_oct", "gen_timing_human", "gen_chord_circle", "gen_chord_offbeat", "gen_chord_drone", "gen_step_evolve_how", "gen_step_adorn", "gen_step_serial", "notes_evolve", "gen_seed", "gen_seed_morph", "gen_form", "midi_out", "edit_filt", "gen_evolve_grav", "gen_energy_level", "gen_energy_depth", "edit_filt_bp", "edit_filt_hp", "edit_filt_not", "stage_filter_hp", "gen_step_pat", "knobs_bar", "knobs_bar_gen", "knobs_bar_range", "menu_knobs", "mods_amt", "midi_sound", "mods_gate", "glo_chain", "glo_chain_off", "glo_chain_reps", "gen_form_chain", "glo_entries", "glo_entries_off", "glo_entries_roles", "glo_piece", "glo_piece_free", "glo_piece_user", "glo_land", "glo_land_rain", "glo_land_place", "glo_perf", "menu_colors", "scl_key", "gen_timing_split", "gen_timing_push", "gen_timing_mix", "step_timing_split", "roll_raised", "roll_raised_top", "roll_one", "roll_turn", "env_sheet_hold", "mods_bus", "mods_scope", "mods_scope_gate", "mods_scope_slow", "mods_scope_bus", "mods_scope_thresh", "gen_evolve_wait", "gen_evolve_wait_turn", "mixer_wait", "midi_sheet_pc"};
 
 /* the scenes of the UI design screens: the state the UI-redesign
  * prototype drew them from (its setup(): two pattern tracks, the drum pattern on track 4, a synthetic scope),
@@ -1012,11 +1095,14 @@ static void setup(int s)
     msc.slot = -1;
     memset(&mscope, 0, sizeof mscope);              /* (MOD SCOPE: the scope scenes fill it) */
     cu_thr_t = 0;
+    settings_mute_q = 0; mute_pend = 0;             /* (MENU MUTES NOW, no mute waiting: S_MIXER_WAIT's) */
+    LARGE_SAVED = 0;                                /* (MENU > LARGE VALUE AUTO: gen_evolve_wait_turn sets ON) */
     if (s >= S_MOCK_HOME && s <= S_MOCK_MENU) {
         mock_state(s);
         return;
     }
     state();
+    proj_name[0] = 0;                               /* (unnamed: LANDSCAPE's place as before; glo_land_place names it) */
     entries_play();                                 /* (Entries: every track in, none about to change) */
     if (s >= S_REF_STAGE_HELD && s <= S_REF_SCALES) {
         ref_scene(s);
@@ -1196,6 +1282,13 @@ static void setup(int s)
         trk[0].p[P_PAN] = -20; trk[1].p[P_PAN] = 24; trk[3].p[P_PAN] = -4; trk[1].p[P_RESERVED36] = 80;
         trk[2].p[P_MUTE] = 1; trk[3].p[P_MUTE] = 1; song.rec = 2u | 8u; trk[0].peak = 9000;
         break;
+    case S_MIXER_WAIT:                           /* MENU MUTES BAR: T1's mute and T3's unmute wait, 2.5 beats of the bar
+                                                  * gone: their MUTE boxes underlined, 15 of 25 cells solid, the rest dotted */
+        go_page(GR_TRK);
+        trk[2].p[P_MUTE] = 1; settings_mute_q = 1;
+        mute_press(0, 0); mute_press(2, 0);
+        bar_n = 5; beat_n = 2; beat_pos = seq_beat_samples() / 2u;
+        break;
     case S_MIXER_PAN:                            /* PAN just turned, the ends of each knob, OFF, armed while stopped */
         go_page(GR_TRK); song.playing = 0; song.sel = 1;
         trk[0].p[P_LEVEL] = 127; trk[1].p[P_LEVEL] = 0; trk[2].p[P_LEVEL] = 1; trk[3].p[P_LEVEL] = 104;
@@ -1316,6 +1409,13 @@ static void setup(int s)
         go_title("MIDI OUT");
         fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
         break;
+    case S_MIDI_SHEET_PC:                           /* MIDI OUT's sheet (OCT+ held) on Section PC T2, ON (F2) */
+        tessera_reset();
+        tessera_param_set(1, TX_SECTION_PC, 1);
+        go_title("MIDI OUT");
+        page_sheet_open();
+        pop.sel = 9;
+        break;
     case S_GLO_CHAIN:                               /* CHAIN: ABAC, A x2 and C x3, WANDER 30, playing in C's first phrase;
                                                      * tracks 1 and 2 follow, 3 has its own FORM (OWN) */
     case S_GLO_CHAIN_OFF:                           /* (OFF: a line) */
@@ -1432,7 +1532,22 @@ static void setup(int s)
             }
             fm1_ms = 100000u;
             land.act = 6u << 8;                     /* (busy lately: a few stars left) */
+            land.cdr = 9000;                        /* (the clouds where the drift has taken them) */
         }
+        break;
+    case S_GLO_LAND_PLACE:                          /* a named project's place: its hills and torii, a PIECE's moon at its */
+        tessera_reset();                            /* SHAPE 80 % (a gibbous phase) */
+        memset(&land, 0, sizeof land);
+        song.playing = 0;
+        str_cpy(proj_name, "CEDAR RAIN", sizeof proj_name);
+        tessera.pl_length = 2;
+        go_title("LANDSCAPE");
+        land_open = 1;
+        land.rd = land_ev_at;
+        fm1_ms = 100000u;
+        land.last = land.tk = fm1_ms;
+        land.tt0 = land.st0 = fm1_ms - 5000u;
+        land.mset = 1, land.mx = 70 * 16, land.my = 24 * 16, land.lp = 30000u, land.ph = 26000u;
         break;
     case S_GEN_ENERGY:                              /* ENERGY: ARC 60, RESTS 40, stopped (the tide's curve, no dot) */
     case S_GEN_ENERGY_LEVEL:                        /* (LEVEL -35: the curve below the line) */
@@ -1705,17 +1820,26 @@ static void setup(int s)
         break;
     case S_GEN_TURING: case S_GEN_EUCLID: case S_GEN_MARKOV: case S_GEN_MORPH: case S_GEN_EVOLVE: case S_GEN_GRIDS:
     case S_GEN_EVOLVE_GRAV:                          /* (MARKOV's EVOLVE, OCT- held: ROLL ALL, GRAVITY 40) */
+    case S_GEN_EVOLVE_WAIT: case S_GEN_EVOLVE_WAIT_TURN:   /* (playing, ROLL turned: the seed waiting, dotted; turning:
+                                                     * large at the foot too, MENU > LARGE VALUE ON) */
         tessera_reset();                            /* (track 1's generator, from its defaults) */
         song.sel = 0;
         tessera_knob(0, s == S_GEN_TURING ? TESS_ENG_TURING : s == S_GEN_EUCLID ? TESS_ENG_EUCLID :
                         s == S_GEN_MORPH ? TESS_ENG_MORPH : s == S_GEN_GRIDS ? TESS_ENG_GRIDS : TESS_ENG_MARKOV);
         if (s == S_GEN_GRIDS) tessera_knob(3, 10);  /* DENSITY 70 */
-        if (s == S_GEN_EVOLVE || s == S_GEN_EVOLVE_GRAV) {
+        if (s == S_GEN_EVOLVE || s == S_GEN_EVOLVE_GRAV || s == S_GEN_EVOLVE_WAIT || s == S_GEN_EVOLVE_WAIT_TURN) {
             tessera_evolve_knob(0, 30);             /* LOCK 60 */
             tessera_evolve_knob(1, 1);
             tessera_evolve_knob(1, 1);              /* EVERY 2 bars */
         }
-        go_title(s == S_GEN_EVOLVE || s == S_GEN_EVOLVE_GRAV ? "EVOLVE" : "GEN");    /* (GEN: ARP's tap) */
+        go_title(s == S_GEN_EVOLVE || s == S_GEN_EVOLVE_GRAV || s == S_GEN_EVOLVE_WAIT || s == S_GEN_EVOLVE_WAIT_TURN ?
+                 "EVOLVE" : "GEN");                 /* (GEN: ARP's tap) */
+        if (s == S_GEN_EVOLVE_WAIT || s == S_GEN_EVOLVE_WAIT_TURN) {
+            song.playing = 1;
+            tessera.seed[0] = 12;
+            tessera_seed_turn(0, 116);              /* 128 waits for the bar line */
+            if (s == S_GEN_EVOLVE_WAIT_TURN) { ui.hot_col = 3; ui.hot_t = 30; LARGE_SAVED = LARGE_ON_TAG; }
+        }
         if (s == S_GEN_EVOLVE_GRAV) {
             tessera_param_set(0, TX_SD_GRAVITY, 40);
             fm1_in.buttons |= 1u << panel.btn[B_OCTDN];
@@ -2733,12 +2857,28 @@ int main(int argc, char **argv)
         fprintf(stderr, "ui_render: MENU > LARGE VALUE\n");
         nfind++;
     }
+    if (test_large_hold()) {                    /* LARGE VALUE ON (ui_test.c): large ~1 s after the knob stops */
+        fprintf(stderr, "ui_render: LARGE VALUE held\n");
+        nfind++;
+    }
+    if (test_text_idle_menu()) {                /* MENU > TEXT, IDLE (ui_test.c): BOLD drawn, saved in row 8 byte 30 */
+        fprintf(stderr, "ui_render: MENU > TEXT / IDLE\n");
+        nfind++;
+    }
+    if (test_idle_land()) {                     /* MENU > IDLE LANDSCAPE (ui_test.c): two minutes, the touch back */
+        fprintf(stderr, "ui_render: IDLE LANDSCAPE\n");
+        nfind++;
+    }
     if (test_landscape()) {                     /* LANDSCAPE (ui_test.c): the feed, the rings, drawn again only moving */
         fprintf(stderr, "ui_render: LANDSCAPE\n");
         nfind++;
     }
     if (test_perf()) {                          /* PERF (ui_test.c): the MACROs, a mod reading one, saved */
         fprintf(stderr, "ui_render: PERF\n");
+        nfind++;
+    }
+    if (test_roll_wait()) {                     /* ROLL playing (ui_test.c): the seed waiting for the bar line, dotted */
+        fprintf(stderr, "ui_render: ROLL waiting\n");
         nfind++;
     }
     {   /* the Mono lint itself: a value cut, a text against its box, two values touching */
@@ -2888,8 +3028,61 @@ int main(int argc, char **argv)
             return 1;
         }
     }
+    {   /* MIXER, a mute waiting for its bar line (MENU MUTES): under the strip's MUTE box (cell row 80, cells 2..26 of
+         * the strip) the bar gone solid, then a cell's gap, the rest dotted on the even cells (none on the odd); a strip not waiting: none */
+        static const uint8_t RUN[NTRK] = {15, 0, 15, 0};
+        uint32_t k, x, n, d;
+        setup(S_MIXER_WAIT); pal(UI_GRAY_INDEX); draw(S_MIXER_WAIT);
+        for (k = 0; k < NTRK; k++) {
+            const uint16_t *row = host_screen + (PV_STRIP_TOP + 160u) * 240u + CARD_X(k) - 2;
+            for (n = 0, x = 2; x < 27u && row[2u * x] != swap16(T_BG); x++) n++;
+            for (d = 0; x < 27u; x++) d += row[2u * x] != swap16(T_BG);
+            if (n != RUN[k] || d != (RUN[k] ? 5u : 0u)) {
+                fprintf(stderr, "ui_render: MIXER strip %u, a mute waiting: %u cells solid, %u dots under MUTE\n", k, n, d);
+                return 1;
+            }
+        }
+    }
+    {   /* every generator's GEN picture (for the short-glyph audit), and QUAD's DIR and RANGE: each value drawn its own way */
+        static uint32_t hq[GEN_QD_COUNT + GEN_QR_COUNT];
+        uint32_t m, v, j, i, h;
+        for (m = 1; m < TESS_ENG_COUNT; m++) {
+            state(); pal(UI_GRAY_INDEX);
+            tessera_reset();
+            song.sel = 0;
+            tessera_knob(0, (int32_t)m);
+            go_title("GEN");
+            cur_name = TX_N_MODE[m];
+            draw(-1);
+            lint();
+        }
+        for (v = 0; v < GEN_QD_COUNT + GEN_QR_COUNT; v++) {
+            setup(S_GEN_QUAD); pal(UI_GRAY_INDEX);
+            if (v < GEN_QD_COUNT) tessera.quad[0].dir = (uint8_t)v;
+            else tessera.quad[0].range = (uint8_t)(v - GEN_QD_COUNT);
+            cur_name = "QUAD DIR/RANGE";
+            draw(S_GEN_QUAD);
+            lint();
+            {
+                static const char *const QR[GEN_QR_COUNT] = {"3", "1", "2", "low"};
+                char name[40];
+                snprintf(name, sizeof name, "gen_quad_%s_%s", v < GEN_QD_COUNT ? "dir" : "range",
+                         v < GEN_QD_COUNT ? TX_N_QDIR[v] : QR[v - GEN_QD_COUNT]);
+                write_ppm(out, UI_PALETTES[UI_GRAY_INDEX].name, name);
+            }
+            for (h = 2166136261u, i = 0; i < 240u * 240u; i++)
+                h = (h ^ host_screen[i]) * 16777619u;
+            for (hq[v] = h, j = v < GEN_QD_COUNT ? 0 : GEN_QD_COUNT; j < v; j++)
+                if (hq[j] == h) {
+                    fprintf(stderr, "ui_render: QUAD's %s %u drawn as %u\n", v < GEN_QD_COUNT ? "DIR" : "RANGE",
+                            v < GEN_QD_COUNT ? v : v - GEN_QD_COUNT, v < GEN_QD_COUNT ? j : j - GEN_QD_COUNT);
+                    nfind++;
+                }
+        }
+    }
     sweep_columns();
     roll_frames(argc > 2 ? argv[2] : 0);
+    short_glyphs_write(out);                     /* (before the draw cost below draws the same screens again) */
     /* draw cost: a full redraw of a screen (all strips), and HOME frame by frame (the scope, every other frame) */
     {
         static const int COST[] = {S_HOME, S_PRESETS, S_STEP, S_ROLL_CHORDS, S_DRUM, S_MIXER, S_MENU, S_ABOUT_CREDITS, S_CONFIRM_PROJ, S_GEN_BOUNCE, S_GLO_PIECE, S_GLO_LAND, S_GLO_LAND_RAIN};

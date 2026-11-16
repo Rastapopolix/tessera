@@ -57,7 +57,7 @@ song_chain_two_banks.state 0x861b196e
 glo_mute_and_unmute 0x9b0e2f45 48
 glo_mute_and_unmute.state 0x7aba7593
 follow_step_melody_third 0x4ac5f28d 64
-follow_step_melody_third.state 0xa0c9aa6f
+follow_step_melody_third.state 0xe33a8327
 seed_back_markov_turing 0x1fa4908c 162
 seed_back_markov_turing.state 0xfb75b236
 seed_none_markov_turing 0x0ae946a9 79
@@ -149,29 +149,29 @@ answer_loops_shuffle_echo.state 0x7ae1892c
 chord_form_ab_evolve 0xcfe3794c 24
 chord_form_ab_evolve.state 0x88f8261d
 seed_turing_t1 0x28f38f45 48
-seed_turing_t1.state 0x91463737
+seed_turing_t1.state 0xd87bb27f
 seed_turing_t1_prob50_keep_rhythm 0xb87ffd38 48
-seed_turing_t1_prob50_keep_rhythm.state 0xa1cc3854
+seed_turing_t1_prob50_keep_rhythm.state 0x0057f31c
 seed_turing_t1_prob50_keep_pitch 0xc8f39f29 37
-seed_turing_t1_prob50_keep_pitch.state 0xbe47fdbe
+seed_turing_t1_prob50_keep_pitch.state 0xc23b5676
 seed_euclid_t1 0xb0ab8b73 20
-seed_euclid_t1.state 0xe90f63b9
+seed_euclid_t1.state 0x048dd7f1
 seed_euclid_t1_keep_rhythm 0xa816354d 48
-seed_euclid_t1_keep_rhythm.state 0xb2cfe306
+seed_euclid_t1_keep_rhythm.state 0x8b1de34e
 seed_markov_t1_leap0 0x50f767a2 49
-seed_markov_t1_leap0.state 0x6fed89fe
+seed_markov_t1_leap0.state 0xdebd2ab6
 seed_markov_t1_leap50_keep_rhythm 0x67cf8e77 48
-seed_markov_t1_leap50_keep_rhythm.state 0x2e6f7b0d
+seed_markov_t1_leap50_keep_rhythm.state 0x1a0628c5
 seed_markov_t1_leap50_keep_pitch 0x460df5b1 50
-seed_markov_t1_leap50_keep_pitch.state 0x83155322
+seed_markov_t1_leap50_keep_pitch.state 0xdc82516a
 seed_morph_t1_a 0x28f38f45 48
-seed_morph_t1_a.state 0xe69b9849
+seed_morph_t1_a.state 0x39e07f81
 seed_morph_t1_b_keep_rhythm 0x8caf586e 48
-seed_morph_t1_b_keep_rhythm.state 0xa6790553
+seed_morph_t1_b_keep_rhythm.state 0xc27fa69b
 seed_turing_t1_prob50_gravity100 0x28f38f45 48
-seed_turing_t1_prob50_gravity100.state 0x109d2101
+seed_turing_t1_prob50_gravity100.state 0x80c79649
 seed_markov_t1_leap100_gravity100 0x28f38f45 48
-seed_markov_t1_leap100_gravity100.state 0x556e035e
+seed_markov_t1_leap100_gravity100.state 0xd87d2e16
 seed_morph_t1_b_gravity100 0x28f38f45 48
-seed_morph_t1_b_gravity100.state 0x2fe3fb32
+seed_morph_t1_b_gravity100.state 0x97704d7a
 saved_block 0x46d772b4 906

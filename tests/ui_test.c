@@ -4793,6 +4793,13 @@ static int test_product_ux(void)
     press(B_OCTUP);
     ok &= tessera.sound_off[1] == 1u && tessera.midi_dmap[1] == 1u && !pop.on;
     bad += check("MIDI OUT: OCT- held KNOB 2 track 2's TRANSPOSE; the sheet: Sound T2 OFF (KNOB 2), Drum map T2 (OCT+)", ok);
+    hold(B_OCTUP);                                      /* (F2: Section PC T2, the sheet's tenth row) */
+    for (i = 0; i < 9u; i++) turn(EN_K1, 1);
+    turn(EN_K2, 1);
+    ok = pop.on && str_eq(pop.rows[pop.sel].label, "Section PC T2") && tessera.sec_pc == 2u;
+    press(B_OCTDN);
+    bad += check("MIDI OUT's sheet: Section PC T2 ON (KNOB 2), the other tracks OFF", ok && !pop.on && tessera.sec_pc == 2u);
+    tessera_param_set(1, TX_SECTION_PC, 0);
     tessera_param_set(1, TX_MIDI_TR, 0);
     tessera_param_set(1, TX_SOUND, 0);
     tessera_param_set(1, TX_MIDI_DMAP, 0);
@@ -5044,6 +5051,141 @@ static int test_large_menu(void)
     }
     return bad;
 }
+/* the lit pixels of s drawn at scale sc (ui_mono.c mo_text_s), on a canvas of its own */
+static uint32_t text_px(const char *s, int32_t sc)
+{
+    uint32_t n = 0, i;
+    cv_begin(240, 40, MO_BG);
+    mo_text_s(s, 0, 0, sc, MO_INK);
+    for (i = 0; i < 240u * 40u; i++)
+        n += cv_px[i] != swap16(MO_BG);
+    return n;
+}
+/* MENU > TEXT (NORMAL / BOLD) and IDLE (OFF / LANDSCAPE): saved with the favorites in row 8 byte 30 (tag 0xB8, bit 0
+ * BOLD, bit 1 LANDSCAPE), any other byte NORMAL and OFF; GROUND's byte 29 and LARGE VALUE's 28 untouched. BOLD: each
+ * lit cell of the small font 3 px wide, the large font (sc 2) as it was */
+static int test_text_idle_menu(void)
+{
+    int bad = 0;
+    persist_t p;
+    uint32_t thin, thin2, i, ok;
+    ui_power_on();
+    TEXT_IDLE_SAVED = 0;
+    thin = text_px("TESSERA 120", 1); thin2 = text_px("TESSERA 120", 2);
+    hold(B_HOME);
+    ui.menu_sel = MI_TEXT;
+    turn(EN_K2, 1);
+    bad += check("TEXT: the menu's KNOB 2 right: BOLD", ui.menu == 1 && TEXT_IDLE(TEXT_IDLE_BOLD) &&
+                 !TEXT_IDLE(TEXT_IDLE_LAND) && str_eq(menu_value(MI_TEXT, 0, 0), "BOLD"));
+    {   /* every lit cell a pixel wider (into a lit neighbour: nothing more), the letters still apart: each 12 px
+         * place's last pixel column dark */
+        uint32_t bold = text_px("TESSERA 120", 1), gap = 0, y;
+        for (i = 11u; i < 240u; i += 12u)
+            for (y = 0; y < 40u; y++)
+                gap += cv_px[y * 240u + i] != swap16(MO_BG);
+        bad += check("  BOLD: the small font's strokes heavier, up to 50 %", bold > thin && bold <= thin + thin / 2u);
+        bad += check("  .. the letters 1 px apart", !gap);
+        bad += check("  .. the large font as it was", text_px("TESSERA 120", 2) == thin2);
+    }
+    turn(EN_K2, -1);
+    bad += check("  left: NORMAL", !TEXT_IDLE(TEXT_IDLE_BOLD) && !TEXT_IDLE_SAVED && text_px("TESSERA 120", 1) == thin);
+    press(B_OCTUP);
+    bad += check("  OCT+ toggles: BOLD", TEXT_IDLE(TEXT_IDLE_BOLD));
+    ui.menu_sel = MI_IDLE;
+    bad += check("IDLE: OFF by default", str_eq(menu_value(MI_IDLE, 0, 0), "OFF"));
+    turn(EN_K2, 1);
+    bad += check("  KNOB 2 right: LANDSCAPE, BOLD kept", TEXT_IDLE(TEXT_IDLE_LAND) && TEXT_IDLE(TEXT_IDLE_BOLD) &&
+                 str_eq(menu_value(MI_IDLE, 0, 0), "LANDSCAPE"));
+    memset(&p, 0, sizeof p);
+    ux_ground = 1; LARGE_SAVED = LARGE_ON_TAG;
+    settings_export(&p);
+    bad += check("  saved in row 8 byte 30, GROUND (29) and LARGE VALUE (28) their own",
+                 p.favorites.factory[8][30] == (TEXT_IDLE_TAG | 3u) && p.favorites.factory[8][29] == GROUND_LIGHT_TAG &&
+                 p.favorites.factory[8][28] == LARGE_ON_TAG);
+    TEXT_IDLE_SAVED = 0; ux_ground = 0;
+    bad += check("  read back", settings_import(&p, sizeof p) && TEXT_IDLE(TEXT_IDLE_BOLD) && TEXT_IDLE(TEXT_IDLE_LAND) &&
+                 ux_ground);
+    for (i = ok = 0; i < 256u; i++) {                   /* untagged (the FX key map's 'K' 0x4B among them): off */
+        p.favorites.factory[8][30] = (uint8_t)i;
+        settings_import(&p, sizeof p);
+        ok += ((i & 0xFCu) == TEXT_IDLE_TAG) ? TEXT_IDLE(TEXT_IDLE_BOLD) == !!(i & 1u) && TEXT_IDLE(TEXT_IDLE_LAND) == !!(i & 2u)
+                                             : !TEXT_IDLE(TEXT_IDLE_BOLD) && !TEXT_IDLE(TEXT_IDLE_LAND);
+    }
+    bad += check("  an older record (any other byte): NORMAL, OFF", ok == 256u);
+    TEXT_IDLE_SAVED = 0; ux_ground = 0; LARGE_SAVED = 0;
+    palette_set(settings.palette);
+    ui.menu = 0;
+    return bad;
+}
+/* MENU > IDLE LANDSCAPE: two minutes untouched while playing, LANDSCAPE; the first touch (a button, a key, a knob)
+ * only goes back to the page it was on (or HOME); never while stopped, with IDLE OFF, or over the menu */
+static int test_idle_land(void)
+{
+    int bad = 0;
+    uint32_t i, ev;
+    int16_t v;
+    ui_power_on();
+    scrn.land = 0;
+    TEXT_IDLE_SAVED = 0;
+    text_idle_put(TEXT_IDLE_LAND, 1);
+    go_title("EVOLVE"); ev = ui.page;
+    song.playing = 1;
+    frame();
+    for (i = 0; i < 7u; i++) { fm1_ms += 17000u; frame(); }   /* 1:59 */
+    bad += check("IDLE: 1:59 untouched, still the page", ui.page == ev && !scrn.land);
+    fm1_ms += 2000u; frame();
+    bad += check("  2:00 playing: LANDSCAPE", !ui.home && cur_page()->graph == GR_LAND && scrn.land);
+    for (i = 0; i < 10u; i++) frame();
+    bad += check("  .. and it stays", cur_page()->graph == GR_LAND);
+    v = TSEL->p[P_MUTE];
+    press(B_SEQ);
+    bad += check("  a button: back on the page, nothing else done", ui.page == ev && !ui.home && !scrn.land &&
+                 TSEL->p[P_MUTE] == v);
+    for (i = 0; i < 30u; i++) frame();                  /* (the touch swallowed until let go 300 ms, screen.c) */
+    press(B_SEQ);
+    bad += check("  .. and its next press acts again (SEQ: GEN)", ui.page != ev);
+    ui.home = 1; ui.force = 1; frame();
+    fm1_ms += IDLE_MS; frame();
+    bad += check("  from HOME: LANDSCAPE", cur_page()->graph == GR_LAND && scrn.land == 2u);
+    turn(EN_K1, 1);
+    bad += check("  a knob: back HOME", ui.home && !scrn.land);
+    fm1_ms += IDLE_MS; frame();
+    tap_key(0);
+    bad += check("  a key: back HOME", ui.home && !scrn.land);
+    song.playing = 0;
+    fm1_ms += IDLE_MS; frame();
+    bad += check("  stopped: never", ui.home && !scrn.land);
+    song.playing = 1;
+    text_idle_put(TEXT_IDLE_LAND, 0);
+    fm1_ms += IDLE_MS; frame();
+    bad += check("  IDLE OFF: never", ui.home && !scrn.land);
+    text_idle_put(TEXT_IDLE_LAND, 1);
+    hold(B_HOME);
+    fm1_ms += IDLE_MS; frame();
+    bad += check("  the menu open: never", ui.menu == 1 && !scrn.land);
+    ui.menu = 0; song.playing = 0; TEXT_IDLE_SAVED = 0; scrn.land = 0;
+    return bad;
+}
+/* LARGE VALUE ON: the turned value stays large LARGE_HOLD_MS after the knob stops; AUTO as before (ui.hot_t) */
+static int test_large_hold(void)
+{
+    int bad = 0;
+    uint32_t i, m;
+    for (m = 0; m < 2u; m++) {
+        uint32_t t0, at = 0;
+        ui_power_on();
+        LARGE_SAVED = m ? LARGE_ON_TAG : 0u;
+        go_title("TEMPO"); frame();
+        turn(EN_K1, 1);
+        t0 = fm1_ms - 200u;                             /* (turn: the frame, then 200 ms) */
+        for (i = 0; i < 200u && ui.hot_t; i++) frame();
+        at = fm1_ms - t0;
+        bad += check(m ? "LARGE VALUE ON: large ~1 s after the knob stops" : "  AUTO: as before (40 frames)",
+                     m ? at >= LARGE_HOLD_MS && at < LARGE_HOLD_MS + 40u : at < LARGE_HOLD_MS);
+    }
+    LARGE_SAVED = 0;
+    return bad;
+}
 /* LANDSCAPE (ui_land.c): notes are drops only while the page shows; the still scene is not drawn again, a ring is */
 static uint32_t land_rings(void) { uint32_t n = 0; for (uint32_t i = 0; i < LAND_RIP; i++) n += land.used[i]; return n; }
 static int test_landscape(void)
@@ -5174,6 +5316,41 @@ static int test_perf(void)
     }
     cord_clear();
     tessera_reset();
+    return bad;
+}
+/* ROLL turned while playing (B4): its box keeps the seed playing, the one waiting for the bar line dotted under it
+ * (and beside it, large, while it turns) until it lands; then that one alone, solid */
+static int test_roll_wait(void)
+{
+    int bad = 0;
+    uint32_t tr, sig;
+    int32_t s0;
+    ui_power_on();
+    go_title("GEN");
+    tr = song.sel;
+    tessera_param_set(tr, TX_MODE, TESS_ENG_TURING);
+    frame();
+    go_title("EVOLVE");
+    s0 = tessera_param_get(tr, TX_EV_SEED);
+    song.playing = 1;
+    turn(EN_K4, 1);
+    frame();
+    bad += check("ROLL playing: the seed playing in its box, the one waiting marked (dotted under it)",
+                 tessera.roll[tr] == (uint32_t)s0 + 1u && atoi(mo_col[3].val) == s0 && mo_col[3].wait);
+    sig = mo_sig;
+    turn(EN_K4, 1);
+    frame();
+    bad += check("  turned on: drawn again (the waiting seed in the signature)", mo_sig != sig && mo_col[3].wait &&
+                 atoi(mo_col[3].val) == s0);
+    tess_roll_apply(tr);                                /* (the bar line) */
+    frame();
+    bad += check("  landed: the new seed, solid, nothing waiting", atoi(mo_col[3].val) == s0 + 2 && !mo_col[3].wait);
+    turn(EN_K4, 1);
+    turn(EN_K4, -1);
+    frame();
+    bad += check("  turned back to the seed playing: nothing waiting", !tessera.roll[tr] && !mo_col[3].wait);
+    stop_transport();
+    tessera_param_set(tr, TX_MODE, TESS_ENG_OFF);
     return bad;
 }
 #endif
@@ -6339,7 +6516,7 @@ static int test_quick_layers(void)
     ok = trk[1].p[P_MUTE] == 1 && ui.layer == LAYER_GLO && !gates() && mo_w == mo;
     a = leds_at(0); b2 = leds_at(250);
     ok &= ((a & b2) >> black(0)) & 1u && !(((a | b2) >> black(1)) & 1u);           /* T1 sounding lit, T2 muted dark */
-    ok &= ((a ^ b2) >> white(0)) & 1u && ((a ^ b2) >> white(7)) & 1u && !(((a | b2) >> white(5)) & 1u);
+    ok &= ((a ^ b2) >> white(0)) & 1u && ((a ^ b2) >> white(7)) & 1u && ((a ^ b2) >> white(5)) & 1u;   /* (D4 HOLD) */
     key_up(black(1)); btn_up(B_GLO); frame();
     bad += check("GLO + black key 2: T2 MUTE latched (SET), silent, no MIDI; LEDs: sounding lit, muted dark", ok &&
                  trk[1].p[P_MUTE] == 1 && !ui.layer);
@@ -6359,10 +6536,13 @@ static int test_quick_layers(void)
         a = leds_at(0); b2 = leds_at(125);
         ok &= ((a ^ b2) >> black(0)) & 1u;                                     /* (its key blinks) */
         btn_up(B_GLO); frame();
-        for (j = 1; j <= 12u && !at; j++) { units_block(beat / 2u); if (trk[0].p[P_MUTE]) at = j; }
-        /* (4 beats in: the block after the line, before its steps) */
-        bad += check("MUTES BAR: GLO's mute key, playing, lands on the next bar line, not before", ok && at == 8u &&
-                     !mute_waiting());
+        ok &= mute_wait_part(16u) == 2u;                                       /* (MIXER's underline: half a beat gone) */
+        units_block(beat * 2u);
+        ok &= mute_wait_part(16u) == 10u && mute_wait_part(25u) == 15u;
+        for (j = 1; j <= 8u && !at; j++) { units_block(beat / 2u); if (trk[0].p[P_MUTE]) at = j; }
+        /* (the line at 4 beats: the block after it, before its steps) */
+        bad += check("MUTES BAR: GLO's mute key, playing, lands on the next bar line, not before; the wait gone (MIXER)",
+                     ok && at == 4u && !mute_waiting());
         lay_combo(B_GLO, black(1)); key_up(black(1)); btn_up(B_GLO); frame();
         lay_combo(B_GLO, black(1)); key_up(black(1)); btn_up(B_GLO); frame();
         ok = !mute_waiting();
@@ -6370,8 +6550,10 @@ static int test_quick_layers(void)
         bad += check("  pressed again before the line: called off", ok && !trk[1].p[P_MUTE]);
         settings_mute_q = 2;
         lay_combo(B_GLO, black(1)); key_up(black(1)); btn_up(B_GLO); frame();
+        ok = mute_wait_part(4u * fc_bars()) == bar_n % fc_bars() * 4u + beat_n;      /* (PHRASE: the phrase gone) */
         for (j = 1; j <= 80u && !pw; j++) { units_block(beat); if (trk[1].p[P_MUTE]) pw = j; }
-        bad += check("MUTES PHRASE: on the CHAIN's phrase line", pw && bar_n % fc_bars() == 0u && bar_n >= fc_bars());
+        bad += check("MUTES PHRASE: on the CHAIN's phrase line; the wait gone counted in the phrase",
+                     ok && pw && bar_n % fc_bars() == 0u && bar_n >= fc_bars());
         btn_down(B_GLO); frame(); key_down(white(4)); frame(); key_up(white(4)); btn_up(B_GLO); frame();
         ok = trk[0].p[P_MUTE] && mute_waiting() == 3u;
         stop_transport(); units_block(beat);
@@ -6411,6 +6593,29 @@ static int test_quick_layers(void)
     ok &= msg_is("TAP: CLK IS EXT") && song.g[G_BPM] == 120;
     btn_up(B_GLO); frame(); song.g[G_CLOCK] = 0;
     bad += check("GLO + F4 x3 at 0.5 s: TAP 120 BPM; with CLK EXT: dimmed, it says why", ok);
+    /* GLO + D4: HOLD while held (lit, said), let go: off; tapped twice: latched past GLO; a further tap lets go */
+    lay_combo(B_GLO, white(5));
+    ok = tessera.hold && msg_is("HOLD") && ((leds_at(0) & leds_at(250)) >> white(5)) & 1u && !gates();
+    frames(500);
+    ok &= tessera.hold != 0;
+    key_up(white(5)); frame();
+    ok &= !tessera.hold && msg_is("HOLD OFF");
+    frames(500);                                        /* (a long press, then a slow one: no latch) */
+    key_down(white(5)); frame(); key_up(white(5)); frame();
+    ok &= !tessera.hold;
+    btn_up(B_GLO); frames(500);
+    bad += check("GLO + D4: HOLD while held, \"HOLD\" / \"HOLD OFF\", lit; a long press then another: not latched", ok);
+    btn_down(B_GLO); frame();
+    key_down(white(5)); frame(); key_up(white(5)); frame();
+    key_down(white(5)); frame();
+    ok = tessera.hold && msg_is("HOLD LATCHED");
+    key_up(white(5)); frame(); btn_up(B_GLO); frames(1000);
+    ok &= tessera.hold && !ui.layer;
+    lay_combo(B_GLO, white(5)); key_up(white(5)); frame();
+    ok &= !tessera.hold && msg_is("HOLD OFF");
+    btn_up(B_GLO); frames(1000);
+    bad += check("  tapped twice: \"HOLD LATCHED\", kept with GLO let go; a further tap: \"HOLD OFF\", no hold", ok &&
+                 !tessera.hold);
     go_home(); frame();
     turn(EN_SELECT, 2);
     ok = song.g[G_BPM] == 122 && ui.home && ui.bpm_t;
