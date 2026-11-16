@@ -224,14 +224,15 @@ static int32_t cord_lfo_raw(const track_t *t)
     return v > 32767 ? 32767 : v;
 }
 /* track tr's source s now (Q15): mod.c's (ENV: the latest note's envelope, one block late; the LFO with its FADE),
- * the generator's */
+ * the generator's or the STEP pattern's (GATE, NOTE; CV the generator's only) */
 static int32_t cord_src(uint32_t s, uint32_t tr)
 {
     const track_t *t = &trk[tr % NTRK];
-    if (s == CS_GATE)
-        return tr < TESSERA_TRACKS && tessera.mode[tr] != TESS_ENG_OFF && tessera.active_gate[tr] ? 32767 : 0;
-    if (s == CS_NOTE)
-        return tr < TESSERA_TRACKS && tessera.mode[tr] != TESS_ENG_OFF ? mod_key(tessera.last_note[tr]) : 0;
+    if (s == CS_GATE)                                   /* (a STEP track's: while its step's notes or its ARP's sound) */
+        return tr < TESSERA_TRACKS && (tessera.mode[tr] != TESS_ENG_OFF ? tessera.active_gate[tr] : t->seq_n || t->arp_note) ?
+               32767 : 0;
+    if (s == CS_NOTE)                                   /* (a STEP track's: seq.c keeps its last, 0 before its first) */
+        return tr < TESSERA_TRACKS && (tessera.mode[tr] != TESS_ENG_OFF || tessera.last_note[tr]) ? mod_key(tessera.last_note[tr]) : 0;
     if (s == CS_CV)
         return tr < TESSERA_TRACKS && tessera.mode[tr] != TESS_ENG_OFF ? tessera.cv[tr] : 0;
     if (s == CS_DRIFT)

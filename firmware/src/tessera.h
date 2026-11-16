@@ -266,6 +266,10 @@ typedef struct {
     uint8_t          macro[4];                   /* 0..100: PERF's MACRO 1..4 (cord.c CS_MACRO1..4) */
     uint8_t          pat_gen[TESSERA_TRACKS];    /* PAT GEN: 1 each pattern keeps its own generator setup (pat_gen.c) */
     uint8_t          midi_dmap[TESSERA_TRACKS];  /* MIDI OUT's DRUM MAP: TESS_DM_GM (as before), _ROW (midi_out.c) */
+    /* HOLD (GLO + D4, ui_layer.c; set each UI pass, not saved; the struct's last byte, padding before): 1 every
+     * generator keeps its line: EVOLVE's and STEP EVOLVE's rounds skipped, TURING as PROB 0, a recorded MARKOV /
+     * MORPH phrase and CONSTELLATION's loop as LOCK 100, ATLAS's bar kept. 0 as set */
+    uint8_t          hold;
 } tessera_state_t;
 _Static_assert(__builtin_offsetof(tessera_state_t, ch_sdir) == __builtin_offsetof(tessera_state_t, ch_strum) + TESSERA_TRACKS,
                "STRUM's part: DIR right after STRUM (project_tsp.c copies them as one)");

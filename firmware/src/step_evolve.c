@@ -149,13 +149,15 @@ const step_t *tessera_step_vary(track_t *t, const step_t *s, step_t *out)
     if (!SEQ_D(t).slot && tess_sv.steps[tr] >= tessera_every_bars(tessera.sv_every[tr]) * tess_steps_per_bar(t)) {
         uint8_t kind[NSTEP];
         const step_t *st = seq_steps(t);
-        for (k = 0; k < len && k < NSTEP; k++) kind[k] = (uint8_t)sv_kind(&st[k]);
-        if (!tess_sv.rnd[tr]) tess_sv.rnd[tr] = gen_stream(0x5EEDu + tr);
-        if (tessera.sv_how[tr] == TESS_SV_SERIAL) sv_serial_round(t, tr);
-        else vary_round(tess_sv.mut[tr], kind, len, tessera.sv_amount[tr], tessera.sv_lock[tr], &tess_sv.rnd[tr],
-                        tessera.sv_how[tr] == TESS_SV_ORNAMENT);
         tess_sv.steps[tr] = 0;
-        tess_sv.flash[tr] = 4;
+        if (!tessera.hold) {                            /* (HOLD: the round skipped, the changes kept as they are) */
+            for (k = 0; k < len && k < NSTEP; k++) kind[k] = (uint8_t)sv_kind(&st[k]);
+            if (!tess_sv.rnd[tr]) tess_sv.rnd[tr] = gen_stream(0x5EEDu + tr);
+            if (tessera.sv_how[tr] == TESS_SV_SERIAL) sv_serial_round(t, tr);
+            else vary_round(tess_sv.mut[tr], kind, len, tessera.sv_amount[tr], tessera.sv_lock[tr], &tess_sv.rnd[tr],
+                            tessera.sv_how[tr] == TESS_SV_ORNAMENT);
+            tess_sv.flash[tr] = 4;
+        }
     }
     tess_sv.steps[tr]++;
     if (tessera.sv_how[tr] == TESS_SV_SERIAL) return i < len && tess_sv.ser[tr] && sv_serial(t, tr, i, out) ? out : s;

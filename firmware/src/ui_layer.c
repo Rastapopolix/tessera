@@ -4,8 +4,9 @@
  * are its shortcuts and its map shows over the page. One table (LAYERS) drives the gesture, the keys, the knobs,
  * the LEDs and the overlay:
  *   GLO  SET   black keys 1..4 (F#3 G#3 A#3 C#4) T1..T4 MUTE (latched; lit = sounding), F3..B3 SOLO T1..T4 while
- *              held (HOLD cells, a corner triangle), C4 UNMUTE ALL, E4 FILL while held (conditional steps), F4 TAP
- *              tempo; KNOB 1..4 T1..T4 LEVEL;
+ *              held (HOLD cells, a corner triangle), C4 UNMUTE ALL, D4 HOLD while held (tapped twice: latched, a
+ *              further tap lets go; the generators keep their line, tessera.hold), E4 FILL while held (conditional
+ *              steps), F4 TAP tempo; KNOB 1..4 T1..T4 LEVEL;
  *              GLO + PLAY: from the top without stopping
  *   SCL  SET   any key: its note name is ROOT; KNOB 1..4 ROOT SCL CHRD VOIC (LY_SCL: the SCL page's first two,
  *              the CHORD page's two; QNT TRN stay on SCL); the LEDs show the root lit and the scale's notes blinking
@@ -40,7 +41,9 @@ static const page_t LY_SCL = {"SCL", FAM_SCL, SC_TRACK, GR_SCALE, {P_ROOT, P_SCA
 
 static struct {
     uint8_t l, trk, oct;               /* SET: layer, snapshot track, OCT- / OCT+ pressed (bits) */
+    uint8_t hold;                      /* GLO: D4's HOLD, LH_* (in the padding, as hold_t) */
     int16_t v[9];                      /* the values when it opened: GLO mutes, levels, BPM; SCL ROOT..TRN, CHRD VOIC */
+    uint16_t hold_t;                   /* D4 pressed, then (LH_TAP) a short press let go: fm1_ms */
     uint32_t solo;                     /* GLO: the keys held that solo */
     uint32_t fill;                     /* GLO: E4 held, FILL (seq.c seq_fill) */
     uint32_t tap[4];                   /* GLO TAP: the last taps (fm1_ms) */
@@ -51,6 +54,8 @@ static struct {
 } lys;
 
 static const uint32_t LY_DTAP_MS=300u;
+enum { LH_KEY = 1, LH_LATCH = 2, LH_TAP = 4 };   /* D4 held; HOLD latched; a tap just let go (the next press latches) */
+#define LY_D4 9u                       /* D4's key (0 = F3) */
 
 
 
@@ -284,6 +289,39 @@ static void glo_map_back(void)                           /* the map's keys or kn
     lys.snd = 0;
 }
 
+/* D4 pressed in GLO: HOLD while held; a press soon after a tap latches it; latched, a press lets go (no hold) */
+static void glo_hold_key(void)
+{
+    const char *m = "HOLD";
+    if (lys.hold & LH_LATCH) {
+        lys.hold = 0;
+        m = "HOLD OFF";
+    } else if (lys.hold & LH_TAP) {
+        lys.hold = LH_KEY | LH_LATCH;
+        m = "HOLD LATCHED";
+    } else {
+        lys.hold = LH_KEY;
+        lys.hold_t = (uint16_t)fm1_ms;
+    }
+    ui_message(m);
+}
+/* each pass: D4 let go (a short press: a tap, for LH_TAP's time), HOLD to the generators */
+static void glo_hold_pass(void)
+{
+    uint32_t dt = (uint16_t)((uint16_t)fm1_ms - lys.hold_t);
+    if ((lys.hold & LH_KEY) && !((kb_layer >> LY_D4) & 1u)) {
+        lys.hold &= (uint8_t)~LH_KEY;
+        if (!lys.hold) {
+            lys.hold = dt <= LY_DTAP_MS ? LH_TAP : 0u;
+            lys.hold_t = (uint16_t)fm1_ms;
+            ui_message("HOLD OFF");
+        }
+    } else if ((lys.hold & LH_TAP) && dt > LY_DTAP_MS) {
+        lys.hold = 0;
+    }
+    tessera.hold = (lys.hold & (LH_KEY | LH_LATCH)) != 0u;
+}
+
 /* a key pressed in layer l (k: 0 = F3 .. 26 = G5) */
 static void layer_key(uint32_t l, uint32_t k)
 {
@@ -297,6 +335,8 @@ static void layer_key(uint32_t l, uint32_t k)
             lys.solo |= 1u << k;                        /* (layer_masks: track_solo while held) */
         } else if (p == 4u) {
             mute_press(0, 1);
+        } else if (p == 5u) {
+            glo_hold_key();
         } else if (p == 6u) {
             lys.fill |= 1u << k;                        /* (layer_keys: FILL while held) */
         } else if (p == 7u) {
@@ -307,7 +347,8 @@ static void layer_key(uint32_t l, uint32_t k)
         if (tessera.key_link) scale_share(TSEL);       /* (KEY LINK: every melodic track's) */
     }
 }
-/* each pass: the keys the layer got now; then GLO's solo: the tracks of its keys still held (perform.c); FILL while E4 is */
+/* each pass: the keys the layer got now; then GLO's solo: the tracks of its keys still held (perform.c); FILL while E4
+ * is, HOLD while D4 is (or latched) */
 static void layer_keys(uint32_t keys)
 {
     uint32_t k, l = layer_open() ? layer_open() : ui.layer ? ui.layer : mixer_live() ? (uint32_t)LAYER_GLO : 0u, s = 0;
@@ -317,6 +358,7 @@ static void layer_keys(uint32_t keys)
     lys.solo &= kb_layer;
     lys.fill &= kb_layer;
     seq_fill = lys.fill != 0u;
+    glo_hold_pass();
     for (k = 0; k < 27u; k++)
         if ((lys.solo >> k) & 1u)
             s |= 1u << key_place(k);
@@ -403,7 +445,8 @@ static uint32_t layer_leds(void)
         uint32_t p = key_place(k), b = (uint32_t)key_black(k), on = 0, e;
         if (l == LAYER_GLO) {
             on = b ? p < NTRK && glo_sounding(p) :
-                 p < NTRK ? ((lys.solo >> k) & 1u) | blink : p == 4u ? blink : p == 6u ? ((lys.fill >> k) & 1u) | blink :
+                 p < NTRK ? ((lys.solo >> k) & 1u) | blink : p == 4u ? blink : p == 5u ? tessera.hold | blink :
+                 p == 6u ? ((lys.fill >> k) & 1u) | blink :
                  p == 7u && !song.g[G_CLOCK] && blink;
         } else if (l == LAYER_SCL) {                    /* the root lit, the scale's notes blink */
             e = (k + 5u + 12u - root) % 12u;
@@ -564,9 +607,9 @@ static void layer_cards(uint32_t l)
 
 #if MELODEE_LOOK
 /* Mono: the knobs as the knob pages' dials; GLO's keys as three rows of cells (the black keys MUTE 1..4, filled while
- * muted; the white keys SOLO 1..4, filled while held; C unmutes all, E FILL, F taps the tempo, dim with an outside
- * clock), SCL KNOB 2's scales 4 x 4 (the one now selected inverted); under them what OCT- and the button do. Drawn
- * whole under the header when anything on it changes */
+ * muted; the white keys SOLO 1..4, filled while held; C unmutes all, D HOLD (filled while on), E FILL, F taps the
+ * tempo, dim with an outside clock), SCL KNOB 2's scales 4 x 4 (the one now selected inverted); under them what OCT-
+ * and the button do. Drawn whole under the header when anything on it changes */
 static void mo_lcell(int32_t c, int32_t y, const char *name, const char *sub, int on, int dim, int trk)
 {                                                       /* (trk: a track's cell, in its colour) */
     int32_t cx = 15 + 30 * c;
@@ -595,6 +638,7 @@ static void mo_layer(uint32_t l)
         sig = (sig ^ p[i]) * 16777619u;
     if (l == LAYER_GLO)
         sig += track_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u + (uint32_t)(seq_fill | seq_fill_mod) * 7u +
+               tessera.hold * 11u +
                (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 | trk[3].p[P_MUTE] << 3) * 131u +
                (mute_waiting() ? 1u + ((fm1_ms / 250u) & 1u) : 0u) * 4099u;   /* (a waiting mute blinks) */
     else
@@ -619,8 +663,9 @@ static void mo_layer(uint32_t l)
                 mo_lcell((int32_t)c, 71, "SOLO", n, (track_solo >> c) & 1u, 0, 1);
             }
             mo_lcell(0, 90, "ALL", "C", 0, 0, 0);
-            mo_lcell(1, 90, "FILL", "E", (seq_fill || seq_fill_mod) != 0, 0, 0);
-            mo_lcell(2, 90, "TAP", "F", 0, song.g[G_CLOCK] != 0, 0);
+            mo_lcell(1, 90, "HOLD", "D", tessera.hold, 0, 0);
+            mo_lcell(2, 90, "FILL", "E", (seq_fill || seq_fill_mod) != 0, 0, 0);
+            mo_lcell(3, 90, "TAP", "F", 0, song.g[G_CLOCK] != 0, 0);
             x = mo_lhint(x, "OCT-", "UNDO");
             mo_lhint(x, "GLO", "DONE");
         } else {

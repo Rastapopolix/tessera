@@ -5176,6 +5176,41 @@ static int test_perf(void)
     tessera_reset();
     return bad;
 }
+/* ROLL turned while playing (B4): its box keeps the seed playing, the one waiting for the bar line dotted under it
+ * (and beside it, large, while it turns) until it lands; then that one alone, solid */
+static int test_roll_wait(void)
+{
+    int bad = 0;
+    uint32_t tr, sig;
+    int32_t s0;
+    ui_power_on();
+    go_title("GEN");
+    tr = song.sel;
+    tessera_param_set(tr, TX_MODE, TESS_ENG_TURING);
+    frame();
+    go_title("EVOLVE");
+    s0 = tessera_param_get(tr, TX_EV_SEED);
+    song.playing = 1;
+    turn(EN_K4, 1);
+    frame();
+    bad += check("ROLL playing: the seed playing in its box, the one waiting marked (dotted under it)",
+                 tessera.roll[tr] == (uint32_t)s0 + 1u && atoi(mo_col[3].val) == s0 && mo_col[3].wait);
+    sig = mo_sig;
+    turn(EN_K4, 1);
+    frame();
+    bad += check("  turned on: drawn again (the waiting seed in the signature)", mo_sig != sig && mo_col[3].wait &&
+                 atoi(mo_col[3].val) == s0);
+    tess_roll_apply(tr);                                /* (the bar line) */
+    frame();
+    bad += check("  landed: the new seed, solid, nothing waiting", atoi(mo_col[3].val) == s0 + 2 && !mo_col[3].wait);
+    turn(EN_K4, 1);
+    turn(EN_K4, -1);
+    frame();
+    bad += check("  turned back to the seed playing: nothing waiting", !tessera.roll[tr] && !mo_col[3].wait);
+    stop_transport();
+    tessera_param_set(tr, TX_MODE, TESS_ENG_OFF);
+    return bad;
+}
 #endif
 
 /* MENU > TRACK KNOB: LEFT swaps the ALGORITHM and PRESETS knobs' roles; saved with the settings */
@@ -6339,7 +6374,7 @@ static int test_quick_layers(void)
     ok = trk[1].p[P_MUTE] == 1 && ui.layer == LAYER_GLO && !gates() && mo_w == mo;
     a = leds_at(0); b2 = leds_at(250);
     ok &= ((a & b2) >> black(0)) & 1u && !(((a | b2) >> black(1)) & 1u);           /* T1 sounding lit, T2 muted dark */
-    ok &= ((a ^ b2) >> white(0)) & 1u && ((a ^ b2) >> white(7)) & 1u && !(((a | b2) >> white(5)) & 1u);
+    ok &= ((a ^ b2) >> white(0)) & 1u && ((a ^ b2) >> white(7)) & 1u && ((a ^ b2) >> white(5)) & 1u;   /* (D4 HOLD) */
     key_up(black(1)); btn_up(B_GLO); frame();
     bad += check("GLO + black key 2: T2 MUTE latched (SET), silent, no MIDI; LEDs: sounding lit, muted dark", ok &&
                  trk[1].p[P_MUTE] == 1 && !ui.layer);
@@ -6416,6 +6451,29 @@ static int test_quick_layers(void)
     ok &= msg_is("TAP: CLK IS EXT") && song.g[G_BPM] == 120;
     btn_up(B_GLO); frame(); song.g[G_CLOCK] = 0;
     bad += check("GLO + F4 x3 at 0.5 s: TAP 120 BPM; with CLK EXT: dimmed, it says why", ok);
+    /* GLO + D4: HOLD while held (lit, said), let go: off; tapped twice: latched past GLO; a further tap lets go */
+    lay_combo(B_GLO, white(5));
+    ok = tessera.hold && msg_is("HOLD") && ((leds_at(0) & leds_at(250)) >> white(5)) & 1u && !gates();
+    frames(500);
+    ok &= tessera.hold != 0;
+    key_up(white(5)); frame();
+    ok &= !tessera.hold && msg_is("HOLD OFF");
+    frames(500);                                        /* (a long press, then a slow one: no latch) */
+    key_down(white(5)); frame(); key_up(white(5)); frame();
+    ok &= !tessera.hold;
+    btn_up(B_GLO); frames(500);
+    bad += check("GLO + D4: HOLD while held, \"HOLD\" / \"HOLD OFF\", lit; a long press then another: not latched", ok);
+    btn_down(B_GLO); frame();
+    key_down(white(5)); frame(); key_up(white(5)); frame();
+    key_down(white(5)); frame();
+    ok = tessera.hold && msg_is("HOLD LATCHED");
+    key_up(white(5)); frame(); btn_up(B_GLO); frames(1000);
+    ok &= tessera.hold && !ui.layer;
+    lay_combo(B_GLO, white(5)); key_up(white(5)); frame();
+    ok &= !tessera.hold && msg_is("HOLD OFF");
+    btn_up(B_GLO); frames(1000);
+    bad += check("  tapped twice: \"HOLD LATCHED\", kept with GLO let go; a further tap: \"HOLD OFF\", no hold", ok &&
+                 !tessera.hold);
     go_home(); frame();
     turn(EN_SELECT, 2);
     ok = song.g[G_BPM] == 122 && ui.home && ui.bpm_t;
