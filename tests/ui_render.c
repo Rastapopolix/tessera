@@ -18,13 +18,16 @@
  * touching a pixel, everything inside the panel.
  * Output: OUTDIR/ppm/<PALETTE>_<screen>.ppm for MONO GREEN PAPER, OUTDIR/report.txt (findings, ellipsised free
  * text, the draw cost), OUTDIR/text_audit.tsv (MONO, per screen: texts, icons and keycaps with their ink-box px, the
- * ellipsised ones, the texts closer than 2 px to their cell's edge, the words).
+ * ellipsised ones, the texts closer than 2 px to their cell's edge, the words), OUTDIR/short_glyphs.txt (the short-glyph
+ * audit: every text under 2 characters a Mono picture draws, by the glyph and the picture).
  * Exit 1 on a finding or a MONO pixel off gray. */
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
 #include <math.h>
+#include <ctype.h>
+#include <stdlib.h>
 
 typedef struct { int16_t x0, y0, x1, y1; uint8_t flags; char s[28]; } rbox_t;
 static rbox_t pend[256], scr[1200];
@@ -42,6 +45,7 @@ static uint32_t nfree_seen;
 #if MELODEE_LOOK
 static void mono_icon(int32_t x0, int32_t y0, int32_t x1, int32_t y1, const char *s);   /* (below) */
 #endif
+static uint8_t in_pic;                          /* MO_HOOK_PIC: a Mono picture (ui_mono.c mo_picture) is being drawn */
 static void hk_text(int32_t x0, int32_t y0, int32_t x1, int32_t y1, const char *s, uint32_t flags)
 {
     n_text++;
@@ -78,11 +82,90 @@ static uint32_t mo_batt_seen, nbatt;           /* how many times a Mono header d
 #define MO_HOOK_BATT() (mo_batt_seen++)
 static void mono_cut_note(const char *full, const char *what);
 #define MO_HOOK_CUT(full, what) mono_cut_note(full, what)
+static void short_glyph(const char *s, int32_t x, int32_t y);   /* (below) */
+#define MO_HOOK_PIC(on) (in_pic = (uint8_t)(on))
+#define MO_HOOK_TEXT(s, x, y) (in_pic && (s)[0] ? short_glyph(s, x, y) : (void)0)
 #define UI_FILL_HOOK(x, y, w, h) hk_fill(x, y, w, h)
 static void fm6_hook(uint32_t kind, uint32_t a, uint32_t b);
 #define FM6_CHART_HOOK(kind, a, b) fm6_hook(kind, a, b)
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
+
+/* the short-glyph audit: every text of one character a Mono picture draws, by the text and the picture (the page, and on
+ * a generator's GEN page its mode), with its draws counted, where it is and the first screen named; then the words up
+ * to 8 characters with a sign in them (/4, +12: digits shown as 9; not prose). A one-character sign (/ + - . ?) is where the thin 5x7 face
+ * is hardest to read: the list says where they are. QUAD's picture draws no one-character sign (a finding) */
+#define SG_MAX 800u
+typedef struct { char t[9]; char pic[24]; uint32_t n; int16_t x, y; char first[40]; } shg_t;
+static shg_t shg[SG_MAX];
+static uint32_t nsg, sg_quad;
+static uint8_t sg_done;                         /* the list written: the draw cost's screens are not counted */
+static int sg_sign(int c) { return c > ' ' && !isalnum(c); }
+static void short_glyph(const char *s, int32_t x, int32_t y)
+{
+    const page_t *pg = cur_page();
+    char pic[24], t[9];
+    uint32_t i, sign = 0;
+    int gen;
+    if (sg_done || cv_oy) return;                  /* (a screen draws its picture once a half: the top half counts) */
+    for (i = 0; s[i] && i < sizeof t - 1u; i++) {
+        t[i] = isdigit((unsigned char)s[i]) && s[1] ? '9' : s[i];
+        sign |= (uint32_t)sg_sign((unsigned char)s[i]);
+    }
+    t[i] = 0;
+    if (s[1] && (!sign || s[i] || strchr(s, ' '))) return;   /* (a longer text: a word with a sign in it, not prose) */
+    gen = pg->fam == FAM_GEN && pg->graph == GR_STEPS && song.sel < TESSERA_TRACKS;
+    snprintf(pic, sizeof pic, "%s%s%s", mo_title(pg), gen ? " " : "", gen ? TX_N_MODE[tessera.mode[song.sel] % TESS_ENG_COUNT] : "");
+    if (gen && tessera.mode[song.sel] == TESS_ENG_QUAD && !s[1] && sign) sg_quad++;
+    for (i = 0; i < nsg; i++)
+        if (!strcmp(shg[i].t, t) && !strcmp(shg[i].pic, pic)) { shg[i].n++; return; }
+    if (nsg >= SG_MAX) return;
+    strcpy(shg[nsg].t, t);
+    shg[nsg].n = 1;
+    shg[nsg].x = (int16_t)x; shg[nsg].y = (int16_t)y;
+    strcpy(shg[nsg].pic, pic);
+    snprintf(shg[nsg].first, sizeof shg[nsg].first, "%s", cur_name);
+    nsg++;
+}
+static int sg_rank(const shg_t *g) { return g->t[1] ? 2 : sg_sign((unsigned char)g->t[0]) ? 0 : 1; }
+static int sg_cmp(const void *a, const void *b)    /* the one-character signs, the other single characters, the rest */
+{
+    const shg_t *x = a, *y = b;
+    int c = sg_rank(x) - sg_rank(y);
+    if (!c) c = strcmp(x->t, y->t);
+    return c ? c : strcmp(x->pic, y->pic);
+}
+static void short_glyphs_write(const char *out)
+{
+    static const char *const HEAD[3] = {"one-character signs", "other single characters", "words with a sign"};
+    char path[600];
+    FILE *f;
+    uint32_t i, n[3] = {0};
+    int r = -1;
+    snprintf(path, sizeof path, "%s/short_glyphs.txt", out);
+    if (!(f = fopen(path, "w"))) return;
+    sg_done = 1;
+    qsort(shg, nsg, sizeof shg[0], sg_cmp);
+    fprintf(f, "# the short-glyph audit (tests/ui_render.c): the texts of one character the Mono pictures draw, then the\n"
+               "# words up to 8 characters with a sign in them (digits as 9)\n# text\tpicture\tdraws\tat x,y (the first)\tfirst screen\n");
+    for (i = 0; i < nsg; i++) {
+        int k = sg_rank(&shg[i]);
+        if (k != r) fprintf(f, "\n## %s\n", HEAD[r = k]);
+        n[k]++;
+        if (!shg[i].t[1] && (unsigned char)shg[i].t[0] >= 127u)
+            fprintf(f, "\\x%02x", (unsigned char)shg[i].t[0]);
+        else
+            fprintf(f, "'%s'", shg[i].t);
+        fprintf(f, "\t%s\t%u\t%d,%d\t%s\n", shg[i].pic, shg[i].n, shg[i].x, shg[i].y, shg[i].first);
+    }
+    fclose(f);
+    fprintf(rep, "\nshort-glyph audit: %u one-character signs, %u other single characters, %u words with a sign "
+                 "(text and picture); %s\n", n[0], n[1], n[2], path);
+    if (sg_quad) {
+        fprintf(stderr, "ui_render: QUAD's picture drew %u one-character signs (its DIR and RANGE are pictures)\n", sg_quad);
+        nfind++;
+    }
+}
 
 /* the FM6 chart lint: each part of a chart (FMH_*) drawn alone onto a canvas of SENT, its pixels kept in fmp_mask
  * (bit: the part), then the canvas as drawn restored with the part on it; at FMH_END the parts are checked */
@@ -2904,8 +2987,46 @@ int main(int argc, char **argv)
             return 1;
         }
     }
+    {   /* every generator's GEN picture (for the short-glyph audit), and QUAD's DIR and RANGE: each value drawn its own way */
+        static uint32_t hq[GEN_QD_COUNT + GEN_QR_COUNT];
+        uint32_t m, v, j, i, h;
+        for (m = 1; m < TESS_ENG_COUNT; m++) {
+            state(); pal(UI_GRAY_INDEX);
+            tessera_reset();
+            song.sel = 0;
+            tessera_knob(0, (int32_t)m);
+            go_title("GEN");
+            cur_name = TX_N_MODE[m];
+            draw(-1);
+            lint();
+        }
+        for (v = 0; v < GEN_QD_COUNT + GEN_QR_COUNT; v++) {
+            setup(S_GEN_QUAD); pal(UI_GRAY_INDEX);
+            if (v < GEN_QD_COUNT) tessera.quad[0].dir = (uint8_t)v;
+            else tessera.quad[0].range = (uint8_t)(v - GEN_QD_COUNT);
+            cur_name = "QUAD DIR/RANGE";
+            draw(S_GEN_QUAD);
+            lint();
+            {
+                static const char *const QR[GEN_QR_COUNT] = {"3", "1", "2", "low"};
+                char name[40];
+                snprintf(name, sizeof name, "gen_quad_%s_%s", v < GEN_QD_COUNT ? "dir" : "range",
+                         v < GEN_QD_COUNT ? TX_N_QDIR[v] : QR[v - GEN_QD_COUNT]);
+                write_ppm(out, UI_PALETTES[UI_GRAY_INDEX].name, name);
+            }
+            for (h = 2166136261u, i = 0; i < 240u * 240u; i++)
+                h = (h ^ host_screen[i]) * 16777619u;
+            for (hq[v] = h, j = v < GEN_QD_COUNT ? 0 : GEN_QD_COUNT; j < v; j++)
+                if (hq[j] == h) {
+                    fprintf(stderr, "ui_render: QUAD's %s %u drawn as %u\n", v < GEN_QD_COUNT ? "DIR" : "RANGE",
+                            v < GEN_QD_COUNT ? v : v - GEN_QD_COUNT, v < GEN_QD_COUNT ? j : j - GEN_QD_COUNT);
+                    nfind++;
+                }
+        }
+    }
     sweep_columns();
     roll_frames(argc > 2 ? argv[2] : 0);
+    short_glyphs_write(out);                     /* (before the draw cost below draws the same screens again) */
     /* draw cost: a full redraw of a screen (all strips), and HOME frame by frame (the scope, every other frame) */
     {
         static const int COST[] = {S_HOME, S_PRESETS, S_STEP, S_ROLL_CHORDS, S_DRUM, S_MIXER, S_MENU, S_ABOUT_CREDITS, S_CONFIRM_PROJ, S_GEN_BOUNCE, S_GLO_PIECE, S_GLO_LAND, S_GLO_LAND_RAIN};

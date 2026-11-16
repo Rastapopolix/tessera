@@ -26,6 +26,12 @@ static uint16_t mo_tdim(uint32_t k) { return ux_mix(T_BG, T_TRK(k), UI_MID_PCT);
 #ifndef MO_HOOK_CUT
 #define MO_HOOK_CUT(full, shown) ((void)0)              /* a header cut a title or a chip (tests/ui_render.c) */
 #endif
+#ifndef MO_HOOK_PIC
+#define MO_HOOK_PIC(on) ((void)0)                       /* the picture is being drawn (tests/ui_render.c) */
+#endif
+#ifndef MO_HOOK_TEXT
+#define MO_HOOK_TEXT(s, x, y) ((void)0)                 /* a text drawn at x, y (tests/ui_render.c) */
+#endif
 
 static const int8_t MO_SIN[64] = {0, 12, 25, 37, 49, 60, 71, 81, 90, 98, 106, 112, 117, 122, 125, 126, 127, 126, 125, 122, 117, 112, 106, 98, 90, 81, 71, 60, 49, 37, 25, 12, 0, -12, -25, -37, -49, -60, -71, -81, -90, -98, -106, -112, -117, -122, -125, -126, -127, -126, -125, -122, -117, -112, -106, -98, -90, -81, -71, -60, -49, -37, -25, -12};
 
@@ -115,6 +121,7 @@ static int32_t mo_cos(int32_t a) { return mo_sin(a + 64); }
 static int32_t mo_tw(const char *s) { int32_t n = (int32_t)str_len(s); return n ? n * 6 - 1 : 0; }
 static int32_t mo_text_s(const char *s, int32_t x, int32_t y, int32_t sc, uint16_t c)   /* sc: cells a font pixel */
 {
+    MO_HOOK_TEXT(s, x, y);
     for (; *s; s++, x += 6 * sc) {
         uint32_t ch = mono_ch((uint8_t)*s), r, b;
         for (r = 0; r < 7u; r++)
@@ -1015,13 +1022,20 @@ static void mo_pic_poly(const gen_poly_t *p)
         else mo_box(x, 107 - h, 22, h, MO_INK);
     }
 }
-/* QUAD: the grid the tracks share, a row a track: T1 and its DIR, its four cells (a bar its pitch, a rest a dash; the
- * cell it plays solid), its RANGE and LINKs (a dot a track, solid when linked); a row not in QUAD dim. Over each column
- * its MOVE (a triangle the way it goes, RAND two dots, STOP a dash), under it its EVERY; the column OCT- edits marked */
+/* an arrowhead w px long, its point at x, y + 3, facing right (dx 1) or left (-1) */
+static void mo_qd_head(int32_t x, int32_t y, int32_t w, int32_t dx, uint16_t c)
+{
+    int32_t k;
+    for (k = 0; k < w; k++)
+        mo_vl(x - dx * k, y + 3 - k, 2 * k + 1, c);
+}
+/* QUAD: the grid the tracks share, a row a track: T1 and its DIR (an arrowhead the way it goes, back and forth a double
+ * arrow, RAND two dots, HOLD a bar), its four cells (a bar its pitch, a rest a dash; the cell it plays solid), its RANGE
+ * (a tick an octave, stacked; 1 either side a tick and a dot) and LINKs (a dot a track, solid when linked); a row not in
+ * QUAD dim. Over each column its MOVE (a triangle the way it goes, RAND two dots, STOP a dash), under it its EVERY; the
+ * column OCT- edits marked */
 static void mo_pic_quad(uint32_t tr)
 {
-    static const char *const QD[GEN_QD_COUNT] = {">", "<", "<>", "?", "="};
-    static const char *const QR[GEN_QR_COUNT] = {"3", "1", "2", "+-1"};
     int layer = quad_cols_on();
     uint32_t r, i, k;
     for (i = 0; i < 4u; i++) {
@@ -1050,8 +1064,18 @@ static void mo_pic_quad(uint32_t tr)
         char lb[3] = {'T', (char)('1' + r), 0};
         if (r == tr) mo_invc(lb, 2, y, MO_TRK(r));
         else mo_text(lb, 2, y, c);
-        mo_text(QD[q->dir % GEN_QD_COUNT], 16, y, c);
-        mo_text(QR[q->range % GEN_QR_COUNT], 102, y, c);
+        switch (q->dir) {
+        case GEN_QD_FWD: mo_qd_head(22, y, 4, 1, c); break;
+        case GEN_QD_BACK: mo_qd_head(19, y, 4, -1, c); break;
+        case GEN_QD_PEND: mo_qd_head(16, y, 3, -1, c); mo_hl(19, y + 3, 5, c); mo_qd_head(26, y, 3, 1, c); break;
+        case GEN_QD_RAND: mo_fill(18, y + 1, 2, 2, c); mo_fill(22, y + 4, 2, 2, c); break;
+        default: mo_fill(17, y + 2, 8, 3, c); break;   /* (HOLD) */
+        }
+        k = q->range == GEN_QR_FULL ? 3u : q->range == GEN_QR_TWO ? 2u : 1u;
+        while (k--)
+            mo_hl(102, y + 6 - 2 * (int32_t)k, 9, c);
+        if (q->range == GEN_QR_LOW)
+            mo_px(106, y + 3, c);
         for (k = 0; k < TESSERA_TRACKS; k++)            /* (its LINKs, under the RANGE) */
             if (k != r) mo_px(102 + (int32_t)k * 4, y + 8, on && ((q->link >> k) & 1u) ? MO_TRK(k) : mo_tdim(k));
         for (i = 0; i < 4u; i++) {
@@ -2555,7 +2579,9 @@ static void mono_page(void)
         if (cur_page()->graph != GR_LAND)               /* (LANDSCAPE: the scene in their place) */
             mo_cols();
         mo_cols_trk = 0;
+        MO_HOOK_PIC(1);
         mo_picture();
+        MO_HOOK_PIC(0);
         if (cur_page()->graph == GR_ROLL || !mo_turn())
             mo_foot();
         cv_oy = 0;
