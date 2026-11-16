@@ -3403,9 +3403,10 @@ static void mo_help(const char *name, const char *val, const char *text)
 
 /* ---- SAVE > PRESETS, the sound browser (browser_draw): drawn whole when anything on it changes ---- */
 /* the header: the track and its list inverted, the list's length (or the message) at the right. Left, LIST: its names
- * 9 cells apart, the one shown inverted. Right, the sounds: the one shown in a frame (its engine, its place), two before
- * and three after (dim further off); the place as a scroll bar; a fast turn's acceleration inverted (x4). The foot:
- * the favourite's star (KNOB 3), BACK (OCT-) outlined, OK (OCT+) filled */
+ * 9 cells apart (ALL FAV RECENT and the engines ink, the categories between them dim), ten at a time round the one
+ * shown, inverted. Right, the sounds: the one shown in a frame (its engine, its place), two before and three after (dim
+ * further off); the place as a scroll bar; a fast turn's acceleration inverted (x4). The foot: the favourite's star
+ * (KNOB 3), BACK (OCT-) outlined, OK (OCT+) filled */
 static uint32_t mo_br_sig;
 static void mo_browser(uint32_t cur, uint32_t total)
 {
@@ -3454,7 +3455,7 @@ static void mo_browser(uint32_t cur, uint32_t total)
             mo_cut(b, a, 7);
             if (i == m)
                 mo_fill(0, y - 1, 44, 9, MO_INK);
-            mo_text(b, 2, y, i == m ? MO_BG : i < LM_CAT ? MO_INK : MO_DIM);
+            mo_text(b, 2, y, i == m ? MO_BG : i < LM_CAT || i >= LM_ENG ? MO_INK : MO_DIM);
         }
         mo_vl(46, 11, 96, MO_DIM);
         if (!total) {

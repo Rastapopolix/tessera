@@ -3221,6 +3221,34 @@ static int test_browser(void)
         ok = total > 0u;
     }
     bad += check("BROWSE: every sound is in exactly one category (their lists add up to ALL)", sum == all && ok);
+    set_engine_of(TSEL, 6);
+    up_store(6, "MY TRIO");                                 /* (a general user preset: TRIO's, the track's engine) */
+    for (i = 0, sum = 0, ok = 1; i < NENG_SHOWN; i++) {
+        e = eng_vis(i);
+        list_set(LM_ENG + i);
+        preset_pos(&total);
+        sum += total;
+        for (k = 0, want = 0; k < total; k++) {
+            src = preset_at(k, &c);
+            ok &= src_engine(src, c) == e;
+            want += src == e;
+        }
+        ok &= want == ENGINES[e]->npresets && str_eq(list_name(LM_ENG + i), ENGINES[e]->name);
+    }
+    list_set(LM_ENG + eng_rank(6));
+    preset_pos(&total);
+    for (k = 0, c = 0; k < total; k++)
+        c |= preset_at(k, &first) == USER_GENERAL && first == 6u;
+    bad += check("BROWSE: an engine's LIST has its sounds alone, every factory one, its user presets too; together ALL",
+                 ok && sum == all + 1u && c);
+    up_put(6, 0);
+    list_set(LM_ENG + eng_rank(ENGI_ORACLE));
+    set_engine_of(&trk[1], ENGI_DRUM);
+    list_trk[1] = 0;
+    bad += check("LIST: a track without its own after an engine's was picked browses its own engine's (RAM only)",
+                 trk_list(1) == LM_ENG + eng_rank(ENGI_DRUM) && list_eng && !list_lcat && !favorites.filter);
+    list_set(LM_ALL);
+    bad += check("LIST: ALL again forgets the engine", !list_eng && trk_list(0) == LM_ALL);
     set_engine_of(TSEL, 6);                                /* (a general sound) */
     up_store(5, "SUB BASS 2");
     list_set(LM_CAT);                                      /* BASS */
@@ -3234,8 +3262,9 @@ static int test_browser(void)
     list_set(LM_ALL);
     for (i = 0; i < LM_N + 2u; i++)
         turn(EN_K1, 1);
-    bad += check("LIST (KNOB 1): ALL FAV RECENT, the categories, stopping at OTHER", list_mode() == LM_N - 1u &&
-                 str_eq(list_name(list_mode()), "OTHER"));
+    bad += check("LIST (KNOB 1): ALL FAV RECENT, the categories, the engines, stopping at the last (DRUM)",
+                 list_mode() == LM_N - 1u && str_eq(list_name(list_mode()), "DRUM") &&
+                 str_eq(list_name(LM_ENG - 1u), "OTHER") && str_eq(list_name(LM_ENG), "FM6"));
     for (i = 0; i < LM_N; i++)
         turn(EN_K1, -1);
     turn(EN_K1, 1);
