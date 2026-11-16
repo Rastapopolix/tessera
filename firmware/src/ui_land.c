@@ -326,7 +326,7 @@ static void mo_pic_land(void)
     if (ux.light && dusk)                                /* by day the outro: dusk, the sky thicker toward the hills */
         for (y = LAND_TOP; y < LAND_H; y++)
             for (x = 0; x < 120; x++)
-                if ((uint32_t)LAND_BY(x, y) * 2u * 56u * 56u < dusk * (uint32_t)((y - LAND_TOP) * (y - LAND_TOP)))
+                if ((uint32_t)(LAND_BY(x, y) + 1u) * 4u * 56u * 56u < dusk * (uint32_t)((y - LAND_TOP) * (y - LAND_TOP)) * (uint32_t)(y - LAND_TOP) / 56u)
                     mo_px(x, y, ux_mix(T_BG, moon, 45));
     for (i = 0; i < LAND_STARS && !ux.light; i++) {    /* the stars, always in the same places (by day none) */
         s = s * 1103515245u + 12345u;
@@ -368,7 +368,7 @@ static void mo_pic_land(void)
         mo_px(x, y0, hills);
         for (y = y0 + 1 + ((x ^ y0) & 1); y < LAND_H; y += 2) mo_px(x, y, hills);   /* (dithered) */
     }
-    if (fm1_ms - land.st0 < LAND_STAR_MS) {             /* the FORM came round: a star across, down to the left */
+    if (!ux.light && fm1_ms - land.st0 < LAND_STAR_MS) {   /* the FORM came round: a star across, down to the left (night) */
         uint32_t a = fm1_ms - land.st0;
         int32_t hx = 96 + (int32_t)(land.seed & 15u) - (int32_t)(a * 46u / LAND_STAR_MS), hy = LAND_TOP + 6 + (int32_t)(a * 18u / LAND_STAR_MS);
         for (i = 5; i >= 1u; i--) mo_px(hx + (int32_t)(i * 5u / 2u), hy - (int32_t)i, i > 2u ? MO_DIM : MO_HOT);
@@ -389,7 +389,7 @@ static void mo_pic_land(void)
             int32_t d = y - LAND_H - 1, sh = (int32_t)(fm1_ms / 350u);
             d = 8 - (d < 0 ? -d : d);
             for (x = 0; x < 120 && d > 0; x++)
-                if ((uint32_t)LAND_BY(x + sh + (y & 1) * 2, y) * 40u < land.mist * (uint32_t)d * 3u) mo_px(x, y, MO_DIM);
+                if ((uint32_t)LAND_BY(x + sh + (y & 1) * 2, y) * 32u < land.mist * (uint32_t)d) mo_px(x, y, deep);
         }
     if (land.fish == 1u) {                              /* the fish: out, over and back, nose first */
         uint32_t a = fm1_ms - land.ft0;
