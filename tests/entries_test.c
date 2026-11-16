@@ -424,11 +424,95 @@ static void test_roles(void)
     for (b = 0; b < 4u * bar_blocks(); b++) block();
     (void)tessera_entries_get(0, role);
     printf("entries:   AUTO: %u %u %u %u (track 3 averages %u)\n", role[0], role[1], role[2], role[3], et.avg[2] / 16u);
-    check("AUTO: CHORD harmony, ATLAS rhythm", role[0] == ET_HARMONY && role[1] == ET_RHYTHM);
-    check("AUTO: low notes bass, else melody", role[2] == (et.avg[2] < 48u * 16u ? ET_BASS : ET_MELODY) && role[3] != ET_RHYTHM);
+    check("AUTO: CHORD harmony, GRIDS rhythm", role[0] == ET_HARMONY && role[1] == ET_RHYTHM);
+    check("AUTO: the others bass or melody", (role[2] == ET_BASS || role[2] == ET_MELODY) && (role[3] == ET_BASS || role[3] == ET_MELODY));
     px(3, TX_ET_ROLE, ET_ANCHOR);
     (void)tessera_entries_get(0, role);
     check("a ROLE set wins over AUTO", role[3] == ET_ANCHOR);
+}
+
+/* AUTO judged from the settings and the tracks together (et_guess_all) */
+static void step_clear(uint32_t tr)                    /* (an empty STEP pattern of 16) */
+{
+    memset(trk[tr].step, 0, sizeof trk[tr].step);
+    for (uint32_t i = 0; i < NSTEP; i++) trk[tr].step[i].time = ST_REST;
+    trk[tr].p[P_SLEN] = 16;
+}
+static void step_notes(uint32_t tr, uint32_t note, uint32_t n)   /* every 4th step: n notes from note up */
+{
+    step_clear(tr);
+    for (uint32_t i = 0; i < 16u; i += 4u) {
+        trk[tr].step[i].time = ST_NOTE;
+        trk[tr].step[i].n = (uint8_t)n;
+        for (uint32_t j = 0; j < n; j++) trk[tr].step[i].note[j] = (uint8_t)(note + 4u * j);
+    }
+}
+static void gen_to(uint32_t tr, uint32_t mode)          /* (the GEN knob turned to mode, from wherever it is) */
+{
+    sel(tr);
+    tessera_knob(0, (int32_t)mode - (int32_t)tessera.mode[tr]);
+}
+static void roles_now(uint8_t role[NTRK]) { (void)tessera_entries_get(0, role); }
+static void test_auto(void)
+{
+    uint8_t role[NTRK];
+    uint32_t b, tr;
+    power_on(23);
+    seq_stop();
+    for (tr = 0; tr < NTRK; tr++) step_clear(tr), trk[tr].p[P_CHRD] = 0;
+    gen(0, TESS_ENG_CHORD);
+    trk[1].eng_req = ENGI_DRUM;                         /* (a kit, any pattern: rhythm) */
+    gen(2, TESS_ENG_BOUNCE);
+    gen(3, TESS_ENG_BOUNCE);
+    trk[3].p[P_TRANS] = -12;
+    roles_now(role);
+    printf("entries:   AUTO stopped: %u %u %u %u\n", role[0], role[1], role[2], role[3]);
+    check("AUTO before PLAY: CHORD harmony, a kit rhythm, the BOUNCE an octave down bass, the other melody",
+          role[0] == ET_HARMONY && role[1] == ET_RHYTHM && role[2] == ET_MELODY && role[3] == ET_BASS);
+    trk[3].p[P_TRANS] = 0;
+    roles_now(role);
+    check("..two BOUNCEs side by side: both melody (no bass drawn)", role[2] == ET_MELODY && role[3] == ET_MELODY);
+    gen_to(3, TESS_ENG_OFF);
+    trk[2].p[P_TRANS] = -7;
+    roles_now(role);
+    check("..one BOUNCE a fifth below the CHORD: bass", role[2] == ET_BASS && role[3] == ET_MELODY);
+    trk[2].p[P_TRANS] = -6;
+    roles_now(role);
+    check("..less than a fifth below: melody", role[2] == ET_MELODY);
+    trk[2].p[P_TRANS] = 0;
+    step_notes(3, 60, 3);
+    roles_now(role);
+    check("a STEP pattern of chords: harmony", role[3] == ET_HARMONY);
+    step_notes(3, 36, 1);
+    roles_now(role);
+    check("a STEP pattern of low notes: bass", role[3] == ET_BASS);
+    step_notes(3, 72, 1);
+    trk[3].p[P_CHRD] = 3;
+    roles_now(role);
+    check("a STEP track with chord keys on: harmony", role[3] == ET_HARMONY);
+    trk[3].p[P_CHRD] = 0;
+    if (ENGINES[ENGI_NOISE] != &ENG_RETIRED) {
+        trk[3].eng_req = ENGI_NOISE;
+        roles_now(role);
+        check("NOISE: rhythm", role[3] == ET_RHYTHM);
+    }
+    trk[3].eng_req = trk[2].eng_req;
+    step_notes(3, 72, 1);
+    gen_to(2, TESS_ENG_BOUNCE);
+    trk[2].p[P_TRANS] = -12;
+    px(0, TX_ET_AMOUNT, 50);
+    play();
+    for (b = 0; b < 2u * bar_blocks(); b++) block();
+    roles_now(role);
+    check("playing: the BOUNCE an octave down bass", role[2] == ET_BASS);
+    trk[2].p[P_TRANS] = 12;
+    for (b = 0; b < 2u * bar_blocks(); b++) block();
+    roles_now(role);
+    check("..moved up mid-section: the guess holds", role[2] == ET_BASS);
+    for (b = 0; b < 32u * bar_blocks(); b++) block();
+    roles_now(role);
+    printf("entries:   AUTO after a section: %u %u %u %u (track 3 heard %u)\n", role[0], role[1], role[2], role[3], et.avg[2] / 16u);
+    check("..on the next section's line: looked at again (melody)", role[2] == ET_MELODY);
 }
 
 /* ORDER: four tracks ENTRIES 100, DWELL 1 (each one ready every phrase) over 96 phrases (ABAC, WANDER 40); each track's
@@ -537,6 +621,7 @@ int main(void)
     test_hand();
     test_solo();
     test_roles();
+    test_auto();
     test_order();
     if (fails) {
         printf("entries: %d FAILED\n", fails);

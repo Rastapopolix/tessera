@@ -3,8 +3,9 @@
 /* Entries (long form, slice 2): tracks drop out and come back on the project's phrase lines. The ENTRIES page (GLO):
  * ENTRIES 0..100 (0 off: every track as set), DWELL 1-8 phrases a track stays in or out at least, STYLE CUT / FADE and
  * FADE 1-4 bars; OCT- held, KNOB k track k's ROLE (also OCT- held on FORM, KNOB 4): AUTO, BASS, RHYTHM, HARMONY,
- * MELODY or ANCHOR (never taken out). AUTO: CHORD harmony; ATLAS or a drum sound rhythm; notes mostly below C3 bass;
- * else melody. OCT- held, KNOB k track k's ORDER: AUTO, 1ST..4TH (et_rank: the order it comes in).
+ * MELODY or ANCHOR (never taken out). AUTO (et_guess_all): CHORD or chords harmony; GRIDS, a kit or NOISE rhythm; notes
+ * below C3, or the lowest track a fifth below the rest, bass; else melody (from the settings until heard; a guess
+ * holds through a section). OCT- held, KNOB k track k's ORDER: AUTO, 1ST..4TH (et_rank: the order it comes in).
  *   The phrase is the CHAIN's (PHRASE, counted from PLAY, its FORM on or OFF). A section begins where the CHAIN moves
  *   on to its next place (FORM OFF: every 4 phrases). There a number of tracks wanted out is drawn (ENTRIES: how many
  *   may be at most, of the tracks that have played, not ANCHOR, not muted by hand); one more on leaving A. Exits come
@@ -40,9 +41,12 @@ static struct {
     uint8_t final;                                    /* a planned piece's END STOP: every track out, the ANCHORs too */
     uint8_t since[TESSERA_TRACKS];                    /* phrases a track has been in or out since it changed, up to 255 */
     uint16_t avg[TESSERA_TRACKS];                     /* its notes' average, x16 (AUTO's bass), 0 none yet */
+    uint8_t guess[TESSERA_TRACKS];                    /* AUTO's guess, held while playing (et_guess_all) */
 } et;
 
 static int32_t tess_flourish(const track_t *t, uint32_t tr);
+static int32_t tess_trn(const track_t *t, uint32_t tr);
+static int32_t tess_key(const track_t *t, uint32_t tr);
 static void mute_tick(void);                          /* (MENU MUTES, below) */
 
 static uint32_t et_hash(uint32_t p, uint32_t salt)    /* a draw: the SEEDs, the phrase, what is drawn */
@@ -54,15 +58,65 @@ static uint32_t et_hash(uint32_t p, uint32_t salt)    /* a draw: the SEEDs, the 
 }
 static uint32_t et_count(uint32_t m) { uint32_t n = 0; for (; m; m &= m - 1u) n++; return n; }
 
+/* track tr's register, x16: the notes heard since PLAY; else what its settings say: a generator's middle (C3 and a
+ * fifth, its ROOT; ANSWER the keys' C4) and TRN, a STEP pattern its notes' average; 0 none (an empty pattern) */
+static uint32_t et_pitch(uint32_t tr)
+{
+    const track_t *t = &trk[tr];
+    uint32_t i, j, n = 0, sum = 0, len = t->p[P_SLEN] > 0 ? (uint32_t)t->p[P_SLEN] : 1u;
+    if (et.avg[tr]) return et.avg[tr];
+    if (tessera.mode[tr] != TESS_ENG_OFF) {
+        int32_t p = (tessera.mode[tr] == TESS_ENG_ANSWER ? 60 : 55 + (int32_t)(t->p[P_ROOT] % 12)) + tess_trn(t, tr);
+        return (uint32_t)(p < 1 ? 1 : p > 127 ? 127 : p) << 4;
+    }
+    for (i = 0; i < len && i < NSTEP; i++)
+        if (t->step[i].time != ST_REST)
+            for (j = 0; j < t->step[i].n && j < 4u; j++) sum += t->step[i].note[j], n++;
+    return n ? (sum << 4) / n : 0u;
+}
+/* 1: a STEP track that plays chords: its keys' CHRD on, or most of its pattern's notes in steps of three or more */
+static int et_chords(uint32_t tr)
+{
+    const track_t *t = &trk[tr];
+    uint32_t i, k = 0, c = 0, len = t->p[P_SLEN] > 0 ? (uint32_t)t->p[P_SLEN] : 1u;
+    if (tessera.mode[tr] != TESS_ENG_OFF) return 0;
+    if (t->p[P_CHRD]) return 1;
+    for (i = 0; i < len && i < NSTEP; i++)
+        if (t->step[i].time != ST_REST && t->step[i].n) k++, c += t->step[i].n >= 3u;
+    return k && c * 2u > k;
+}
+/* 1: a track of hits rather than notes: GRIDS, a kit (DRUM; SLICE's slices: the engine's own key map) or NOISE */
+static int et_hits(uint32_t tr)
+{
+    const track_t *t = &trk[tr];
+    const engine_t *e = ENGINES[eng_idx(t->eng_req)];
+    return tessera.mode[tr] == TESS_ENG_GRIDS || drum_track(t) || eng_idx(t->eng_req) == ENGI_NOISE ||
+           (e->keys && e->keys(t, 0) >= 0);
+}
+/* AUTO's guesses, the tracks judged together (et.guess): CHORD or a STEP track of chords HARMONY; hits RHYTHM; the
+ * rest by register: below C3 BASS, and the lowest a fifth or more below every other track with notes (a HARMONY's
+ * too) BASS; else MELODY. Worked out at PLAY and on each section's line, so a guess holds through a section */
+static void et_guess_all(void)
+{
+    uint32_t tr, p[TESSERA_TRACKS], lo = TESSERA_TRACKS, next = 0xFFFFu;
+    for (tr = 0; tr < TESSERA_TRACKS; tr++) {
+        uint32_t g = tessera.mode[tr] == TESS_ENG_CHORD || et_chords(tr) ? ET_HARMONY : et_hits(tr) ? ET_RHYTHM : ET_MELODY;
+        p[tr] = g == ET_RHYTHM ? 0u : et_pitch(tr);
+        if (g == ET_MELODY && p[tr] && p[tr] < 48u * 16u) g = ET_BASS;
+        et.guess[tr] = (uint8_t)g;
+        if (g == ET_MELODY && p[tr] && (lo == TESSERA_TRACKS || p[tr] < p[lo])) lo = tr;
+    }
+    if (lo == TESSERA_TRACKS) return;
+    for (tr = 0; tr < TESSERA_TRACKS; tr++)
+        if (tr != lo && p[tr] && p[tr] < next) next = p[tr];
+    if (next != 0xFFFFu && p[lo] + 7u * 16u <= next) et.guess[lo] = ET_BASS;
+}
 /* track tr's role: as set, or AUTO's guess */
 static uint32_t et_role(uint32_t tr)
 {
     uint32_t r = tessera.et_role[tr];
     if (r && r < ET_ROLES) return r;
-    if (tessera.mode[tr] == TESS_ENG_CHORD) return ET_HARMONY;
-    if (tessera.mode[tr] == TESS_ENG_GRIDS || drum_track(&trk[tr])) return ET_RHYTHM;
-    if (et.avg[tr] && et.avg[tr] < 48u * 16u) return ET_BASS;
-    return ET_MELODY;
+    return et.guess[tr] ? et.guess[tr] : ET_MELODY;
 }
 /* track tr's place in the layering order, ET_RANK_LO..ET_RANK_HI: an ORDER set, 1..4; AUTO, after them by ROLE, 4 +
  * BASS..MELODY (no ORDER set anywhere: the role order, as before ORDER); ANCHOR none (ET_RANK_HI + 1: never moved).
@@ -123,6 +177,7 @@ void entries_play(void)
     et.heard = 0;
     memset(et.avg, 0, sizeof et.avg);
     et_clear();
+    et_guess_all();                                   /* (AUTO's roles from the settings, for the first section) */
 }
 
 /* what the CHAIN does at phrase p: a section begins there; it is a return to A; the next phrase is one, after two
@@ -149,11 +204,13 @@ static void et_decide(uint32_t p)
     uint32_t sec, home, home_next, tr, i, r, n, h;
     uint32_t mute = et_hand_muted(), anchor = et_mask(ET_ANCHOR), lock = et.lock;
     uint32_t dwell = tessera.et_dwell < 1u ? 1u : tessera.et_dwell > 8u ? 8u : tessera.et_dwell;
-    uint32_t can, ready = 0, play, sup = et_mask(ET_BASS) | et_mask(ET_HARMONY), mel = 0;
+    uint32_t can, ready = 0, play, sup, mel = 0;
     uint32_t go_out = 0, come_in = 0, most, wanted;
+    et_chain(p, &sec, &home, &home_next);
+    if (sec) et_guess_all();                          /* (a new section: AUTO looks again, by what it has heard) */
+    sup = et_mask(ET_BASS) | et_mask(ET_HARMONY);
     for (tr = 0; tr < TESSERA_TRACKS; tr++)
         if (et_rank(tr) == ET_RANK_MEL) mel |= 1u << tr;   /* (the melodies that wait for their ground: AUTO's) */
-    et_chain(p, &sec, &home, &home_next);
     if (sec) lock = 0;                                /* (a new section: the hand's tracks are the rules' again) */
     can = et_present() & ~mute & ~anchor & ~lock;     /* (the tracks the rules may move) */
     for (tr = 0; tr < TESSERA_TRACKS; tr++)
@@ -388,6 +445,10 @@ uint32_t tessera_entries_get(uint32_t *warn, uint8_t role[TESSERA_TRACKS])
 {
     uint32_t tr;
     if (warn) *warn = song.playing && tessera.et_amount ? (uint32_t)(et.pend_in | et.pend_out) : 0u;
+    if (role && !song.playing) {                      /* (stopped: AUTO's guess from the settings as they are now) */
+        memset(et.avg, 0, sizeof et.avg);
+        et_guess_all();
+    }
     if (role)
         for (tr = 0; tr < TESSERA_TRACKS; tr++) role[tr] = (uint8_t)et_role(tr);
     return song.playing && (tessera.et_amount || et.final) ? et.out : 0u;
