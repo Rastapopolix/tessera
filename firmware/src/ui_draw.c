@@ -272,6 +272,7 @@ static int32_t page_tabs(int32_t x0, int32_t x1, int32_t y)
 #if MELODEE_LOOK                                        /* the Mono look's chrome (ui_mono.c) */
 static void mo_dhead(const char *chip, const char *msg, int32_t bat);
 static uint32_t mo_hold_sig(void);                     /* (OCT+ held: the sheet it opens) */
+static uint32_t mo_beat(void);                         /* (PLAY's triangle: the beat) */
 static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis);
 static int list_text(uint32_t r, char *lb, char *v, uint16_t *vc);   /* a list row's texts (ui_list.c) */
 static void mo_sound(const char *en, const char *nm);
@@ -316,7 +317,7 @@ static void draw_head(void)
           (ui.bpm_t != 0) * 31u + low * 7777u + (uint32_t)(bat + 1) * 2147483647u + (chain.running ? (chain.row + 1u) * 104729u : 0u) + ux.gen * 977u +
           (ui.home ? 0u : ui.page * 2654435761u) + page_sheet() * 524287u + (uint32_t)gen_layer_on() * 40503u;
 #if MELODEE_LOOK
-    sig += mo_hold_sig() * 7919u;                       /* (OCT+ held: the sheet's line filling) */
+    sig += mo_hold_sig() * 7919u + mo_beat() * 15485863u;   /* (OCT+ held: the sheet's line filling; the beat) */
 #endif
     if (bpm != ui.roll_bpm) {
         char a[8];
