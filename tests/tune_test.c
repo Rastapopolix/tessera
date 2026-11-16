@@ -93,7 +93,7 @@ static void pitch(void)
     over &= micro_pitch(t, 60) == 590000 && micro_pitch(t, 72) == 710000 && micro_pitch(t, 47) == 460000;
     t->p[P_ROOT] = t->p[P_TRANS] = 0;
     t->p[P_QUANT] = Q_OFF;
-    over &= micro_active(t);                                   /* (QNT OFF keeps the tuning) */
+    over &= !micro_active(t) && micro_chrom(t);                /* (QNT OFF keeps the tuning, the keys a piano's) */
     t->p[P_QUANT] = Q_ALL; t->eng_req = 10;
     over &= !micro_active(t);
     t->eng_req = trk[(song.sel + 1u) % NTRK].eng_req;
