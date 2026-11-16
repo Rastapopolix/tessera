@@ -7,7 +7,8 @@
  *   track in or out at least DWELL phrases, one track always playing, an ANCHOR never out, a melody only over a bass or
  *   harmony;  above 50 the phrase before A down to the anchors, A with everything;  FORM OFF: a section every 4
  *   phrases;  the same piece from PLAY;  CUT and FADE;  an out track starts no voice;  hand mutes and GLO's key;
- *   SOLO heard;  AUTO's roles;  ORDER: in by number, out the other way round, AUTO as by ROLE. */
+ *   SOLO heard;  MIDI OUT's velocity faded with a FADE (out and in, never 0), as played at full level and with CUT;
+ *   AUTO's roles;  ORDER: in by number, out the other way round, AUTO as by ROLE. */
 #define TESSERA_NOTE_HOOK et_note
 #define main hostsim_main
 #include "hostsim.c"
@@ -21,8 +22,10 @@ static void check(const char *what, int ok)
 }
 
 static uint32_t et_blk, et_nhash, et_nn, et_off_bad;
+static void mf_note(track_t *t, uint32_t vel);
 static void et_note(track_t *t, uint32_t note, uint32_t vel)   /* the sequencer's notes, before Entries */
 {
+    mf_note(t, vel);
     if (!vel) return;
     et_nhash = (et_nhash ^ (et_blk * 131u + note * 7u + trk_index(t))) * 16777619u;
     et_nn++;
@@ -77,6 +80,7 @@ static void block(void)
             et_gate[tr][i] = v->gate;
             et_vnote[tr][i] = v->note;
         }
+    mf_note(0, 0);
     et_blk++;
 }
 static uint32_t bar_blocks(void) { return 4u * beat_samples() / CTL; }
@@ -524,6 +528,75 @@ static void test_params(void)
     memset(tessera.et_order, 0, sizeof tessera.et_order);
 }
 
+/* MIDI OUT through a FADE (entries_vel): each sequencer note's velocity as sent (the USB queue), against the level
+ * at the note. Logged between one note and the next (mf_note, before Entries: the packets since are the last note's) */
+static int mf_on;
+static uint32_t mf_tr = 0xFFu, mf_vel, mf_g, mf_out;
+static uint32_t mf_n[3], mf_bad[3], mf_lost, mf_low[3];   /* by the level: full, fading out, fading in */
+static void mf_note(track_t *t, uint32_t vel)           /* t 0: the block's end */
+{
+    uint32_t got = 0, sent = 0;
+    if (!mf_on) return;
+    while (mo_r != mo_w) {
+        uint32_t pkt = midi_out_q[mo_r++ % MQ];
+        if ((pkt & 15u) == 0x09u && mf_tr < NTRK && ((pkt >> 8) & 15u) == mf_tr) got = pkt >> 24, sent = 1;
+    }
+    if (mf_tr < NTRK) {
+        uint32_t k = mf_g >= 32768u ? 0u : mf_out ? 1u : 2u, e = mf_vel > 127u ? 127u : mf_vel;
+        if (k) e = e * mf_g >> 15 ? e * mf_g >> 15 : 1u;
+        mf_n[k]++;
+        if (!sent) mf_lost++;
+        else if (got != e || !got) mf_bad[k]++;
+        else if (got * 4u < (mf_vel > 127u ? 127u : mf_vel)) mf_low[k]++;
+    }
+    mf_tr = 0xFFu;
+    if (!t || !vel) return;
+    mf_tr = trk_index(t);
+    mf_vel = vel;
+    mf_g = (uint32_t)entry_gain[mf_tr];
+    mf_out = tessera_entries_get(0, 0) >> mf_tr & 1u;
+    if (mf_out && !mf_g) mf_tr = 0xFFu;                 /* (out and silent: no note, none to MIDI OUT) */
+}
+static void mf_run(uint32_t style)
+{
+    uint32_t b, tr;
+    power_on(19);
+    p_four();
+    px(0, TX_FC_FORM, FM_ABAC);
+    px(0, TX_FC_PHRASE, 0);
+    px(0, TX_ET_AMOUNT, 100);
+    px(0, TX_ET_DWELL, 1);
+    px(0, TX_ET_STYLE, (int32_t)style);
+    px(0, TX_ET_FADE, 4);
+    for (tr = 0; tr < NTRK; tr++) px(tr, TX_MIDI_CH, (int32_t)tr + 1);   /* (a channel each: track tr on tr) */
+    settings_midi_out = MIDI_OUT_ALL;
+    usb.config = 1;
+    mo_r = mo_w = 0;
+    memset(mf_n, 0, sizeof mf_n);
+    memset(mf_bad, 0, sizeof mf_bad);
+    memset(mf_low, 0, sizeof mf_low);
+    mf_lost = 0;
+    mf_tr = 0xFFu;
+    mf_on = 1;
+    play();
+    for (b = 0; b < 96u * bar_blocks(); b++) block();
+    mf_on = 0;
+    usb.config = 0;
+    settings_midi_out = MIDI_OUT_KEYS;
+    memset(tessera.midi_ch, 0, sizeof tessera.midi_ch);
+}
+static void test_midi_fade(void)
+{
+    mf_run(1);
+    printf("entries:   FADE 4, MIDI OUT: %u notes at full level, %u fading out (%u under a quarter), %u fading in (%u)\n",
+           mf_n[0], mf_n[1], mf_low[1], mf_n[2], mf_low[2]);
+    check("FADE: MIDI OUT's velocity scaled by the level, fading out", mf_n[1] > 10u && !mf_bad[1] && mf_low[1]);
+    check("FADE: .. and fading in", mf_n[2] > 10u && !mf_bad[2] && mf_low[2]);
+    check("FADE: a level full, the velocity as played; every note sent, never 0", mf_n[0] > 100u && !mf_bad[0] && !mf_lost);
+    mf_run(0);
+    check("CUT: every note at its own velocity (none faded)", mf_n[0] > 100u && !mf_n[1] && !mf_n[2] && !mf_bad[0] && !mf_lost);
+}
+
 int main(void)
 {
     test_params();
@@ -536,6 +609,7 @@ int main(void)
     test_gate();
     test_hand();
     test_solo();
+    test_midi_fade();
     test_roles();
     test_order();
     if (fails) {

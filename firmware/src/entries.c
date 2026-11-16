@@ -15,7 +15,8 @@
  *   everything. At least one track always
  *   plays. Each change is decided a bar ahead: the track's mute key on GLO blinks quickly through that bar, and a track
  *   with FLOURISH set comes in on its flourish (the bar's last beat).
- *   A track out is silent like a muted one (no notes, none to MIDI OUT; the mix's level faded or cut). Hand wins: a
+ *   A track out is silent like a muted one (no notes, none to MIDI OUT; the mix's level faded or cut; a FADE
+ *   fades MIDI OUT's velocity too, entries_vel). Hand wins: a
  *   track muted by hand stays muted; its key on GLO brings an out track back, left alone until the next section; SOLO
  *   is heard whatever Entries says. Every draw is a hash of the SEEDs taken at PLAY, so a piece replays. Included by
  *   tessera.c after form_chain.c. */
@@ -317,6 +318,22 @@ static int entries_note(const track_t *t, uint32_t note)
         return 1;
     }
     return entry_gain[tr] > 0;
+}
+
+/* voice.c trk_note_on: the velocity a sequencer note goes to MIDI OUT with. While a FADE takes a track out or brings
+ * it in (its level under full), the velocity is scaled by that level, so a synth on MIDI OUT fades with the FM-1's own
+ * sound (one that ignores velocity still cuts). Never under 1: a note-on of 0 is a note-off, and a note the FM-1 still
+ * plays, faintly, goes out faintly too, so every note-on keeps its note-off (no floor that drops notes). CUT (the level
+ * 0 or full), a level full, SOLO (heard full), the keys and MIDI IN: as played. The FM-1's own voice and LANDSCAPE
+ * keep the velocity (the mix fades the level already) */
+static uint32_t entries_vel(const track_t *t, uint32_t vel)
+{
+    uint32_t tr = (uint32_t)(t - trk), g;
+    if (!vel || tr >= TESSERA_TRACKS || !midi_out_seq || (track_solo >> tr & 1u) ||
+        (g = (uint32_t)entry_gain[tr]) >= 32768u)
+        return vel;
+    vel = (vel > 127u ? 127u : vel) * g >> 15;        /* (as MIDI OUT would send it, 1..127, then scaled) */
+    return vel ? vel : 1u;
 }
 
 /* MENU MUTES (hand mutes on the beat): GLO's mute keys and C4's UNMUTE ALL, while playing, wait for the next bar line
