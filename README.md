@@ -36,6 +36,20 @@ makes a short phrase; EVOLVE and FORM set mutated phrases side by side into sect
 tiles arranged into a larger pattern. The word also meant a die, which suits the chance-driven generators.
 Tessera for FM-1 is not related to the Tessera plugins for VCV Rack.
 
+## New in 3.6
+
+- **HARM, a harmonizer**: with a CHORD track playing, a run up the keys (or MIDI IN, or a generator) climbs the
+  chord's notes; FOLLOW HOW HARM puts another track's line into the chords.
+- **ANSWER BEND**: a delay with a mind of its own, drifting and glitching while you play. ANSWER also keeps held
+  lengths, up to 16 notes, and answers chords as chords.
+- **22 more mod destinations**, in a grouped list that starts at the selected track.
+- **QNT per track** (QNT LINK OWN), and microtonal tunings that stay on with QNT OFF.
+- **MIDI clock PPQN** 24, 48, 4, 8 or 12, in and out.
+- **SIM CONTROL**: the FM-1's knobs and keys play the web simulator.
+- A fairer voice ceiling, faster FM6 and room in the flash again.
+
+A project saved on 3.6 does not load on 3.5.3 or older. The full list: [release notes](docs/RELEASE_3.6.md).
+
 ## New in 3.5
 
 <p align="center"><img src="assets/brand/social-3.5.png" alt="Tessera 3.5: two LFOs mixed on BUS A, watched on MOD SCOPE" width="480"></p>
