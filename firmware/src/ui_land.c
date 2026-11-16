@@ -67,7 +67,7 @@ static struct {
     uint16_t ph;                                        /* the moon's phase: the PIECE's SHAPE now (Q15) */
     int8_t wind;                                        /* -3 .. 3: ENERGY falling .. rising (the clouds' speed) */
     uint8_t sec, from, cpos, mist, wt;                  /* CHAIN's section, the one travelled from, its place; mist 0..16 */
-    uint8_t gx, gp;                                     /* A's torii: its left column, its terrace's height */
+    uint8_t gx, gp, wax;                                /* A's torii: its left column, its terrace's height; the moon waxing */
 } land;
 
 /* the moon: still while LENGTH is FREE; a planned piece's time played moves it on an arc, left to right (planner.c's
@@ -89,6 +89,7 @@ static void land_moon(uint32_t dt)
     land.lp = p;                                        /* (the phase: the SHAPE here, full at its peak) */
     left = (uint32_t)tessera_piece_shape(p);
     land.ph = (uint16_t)((int32_t)left < 0 ? 0 : left > 32767u ? 32767u : left);
+    land.wax = p + 656u < 65536u && (int32_t)tessera_piece_shape(p + 656u) > (int32_t)left;   /* (the SHAPE rising) */
     tx = (LAND_ML + (int32_t)(p * (uint32_t)(LAND_MR - LAND_ML) >> 16)) * 16;
     ty = (LAND_MB * 16 - (LAND_MB - LAND_MT) * 16 * mo_sin((int32_t)(p >> 9)) / 127);
     if (song.playing && plan.ending) ty = (LAND_H + 8) * 16;
@@ -343,10 +344,11 @@ static void mo_pic_land(void)
             if (y < land_hill(x)) mo_px(x, y, moon);
         }
     } else {
-        land_disc(mx, my, 5, moon);                     /* a crescent; a PIECE's: as full as its SHAPE here */
+        land_disc(mx, my, 5, moon);                     /* a crescent; a PIECE's: as full as its SHAPE here, waxing as it rises */
         if (!pl_secs()) land_disc(mx + 3, my - 2, 4, MO_BG);
         else if (land.ph < 31784u)
-            land_disc(mx + 2 + (((int32_t)land.ph * 8 + 16384) >> 15), my - ((2 * (32767 - (int32_t)land.ph) + 16384) >> 15), 4, MO_BG);
+            land_disc(mx + (land.wax ? -1 : 1) * (2 + (((int32_t)land.ph * 8 + 16384) >> 15)),   /* (waxing: lit on the right; */
+                      my - ((2 * (32767 - (int32_t)land.ph) + 16384) >> 15), 4, MO_BG);       /* waning: on the left) */
     }
     for (i = 0; i < clouds; i++) {                      /* the clouds: bands of dashes, lower and wider when full */
         int32_t w = 18 + (int32_t)cover + (int32_t)((i * 7u + (land.seed >> 27)) % 9u), cy = LAND_TOP + 6 + (int32_t)(i * 11u % 23u) +

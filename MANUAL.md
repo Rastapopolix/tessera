@@ -1205,7 +1205,8 @@ you can thin the music and watch the lake answer.
 - On **GROUND LIGHT** it is day: a sun (a ring with short rays) takes the moon's place on the same arc, and no stars
   come out. Rain, clouds, hills and the water are the same.
 - A **PIECE** (LENGTH set) moves the moon across the sky, rising at the left as it starts and setting at the right; its
-  **phase** is the piece's SHAPE there: a thin crescent where the plan is quiet, full at its peak. Over the piece's
+  **phase** is the piece's SHAPE there: a thin crescent where the plan is quiet, full at its peak; it waxes while the
+  SHAPE rises (lit on the right) and wanes as it falls (lit on the left), as the moon does over a month. Over the piece's
   last tenth dusk falls (GROUND LIGHT: the sky darkens from the hills up) and at night the stars come out. END STOP:
   the moon sets behind the hills.
 - **CHAIN**: each section has its own shore. When the form moves on, the new shore comes in from the right, as if
