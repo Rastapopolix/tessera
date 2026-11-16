@@ -8,7 +8,7 @@ Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues>
 what you expected and what happened).
 
 ## New in 3.6-beta8
-- Microtonal scales and your own Scala tunings now play with QNT OFF too: every key, and every MIDI note, is the next degree of the tuning, so 24EDO and the maqam scales keep their quarter tones without quantizing (they used to fall back to ordinary semitones). A project saved with a microtonal scale and QNT OFF now plays in its tuning.
+- Microtonal scales and your own Scala tunings now play with QNT OFF too. A scale of up to 12 degrees an octave (the maqamat RAST, BAYATI, HIJAZ, SABA, HUSAYN, SIKAH, the just and meantone scales, the Japanese pentatonics) keeps the keyboard a piano's: every key plays its own note, and the keys nearest the scale's degrees take its tuning. RAST on C: E and B play half flat, C# is an ordinary C#, so you play a maqam as you would on a piano and can still reach every note off it. A bigger tuning (24EDO, 31EDO, a large Scala file) plays every degree in a row, one a key and one a MIDI note. They used to fall back to ordinary semitones: a project saved with a microtonal scale and QNT OFF now plays in its tuning.
 
 ## New in 3.6-beta7
 - QNT link (SCL, the row after QNT): LINKED keeps one QNT for every track, as before; OWN gives each track its own QNT and MPC degree, so one track can take MPC pads while others follow the chords (CHRD) or HARM (#755). A project saved with OWN loads on older firmware with each track's QNT as saved.

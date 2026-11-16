@@ -606,7 +606,9 @@ Swing (the track's, KNOB 2), Clear pattern and Clear motion it has:
   halfway between two, it goes down. Two notes of a chord that land on the same note become one. With **QNT CHRD** (or
   HARM) and a CHORD track playing, notes go to the nearest note of the chord playing now. The header says how many moved
   (**SNAPPED 7**), or **ALL IN SCALE**. It works at any QNT, OFF included. On a microtonal scale or your own tuning
-  every note already is a degree of the scale, at any QNT, so nothing moves. A kit or slices has no such row.
+  every note already is a degree of the scale, so nothing moves; with QNT OFF on a scale of up to 12 degrees (the maqamat,
+  the just and meantone scales) its notes are semitones and go to the nearest semitone close to the scale. A kit or
+  slices has no such row.
 - **Double**: the pattern twice as long (up to 64 steps). Its steps, recorded notes and motion are copied after
   themselves; a playing pattern carries on into the copy.
 - **Half**: LEN halved (15 steps become 8). The steps past it stay, hidden, as when LEN is turned down.
@@ -1497,7 +1499,7 @@ saved, until a QNT is changed there.
 
 | QNT | What it does |
 |---|---|
-| **OFF** | Every key plays its own note, in the scale or not. |
+| **OFF** | Every key plays its own note, in the scale or not. A microtonal scale of up to 12 degrees (RAST, BAYATI, HIJAZ, SABA, HUSAYN, SIKAH, the just and meantone scales) tunes the keys nearest its degrees: RAST on C plays E and B half flat, C# an ordinary C#. A bigger one (24EDO) plays every degree in a row, a key each. |
 | **SNAP** | Every key plays; a note outside the scale moves down to the scale's next note below. |
 | **WHITE** | The scale on the white keys, from C4 = ROOT upwards; the black keys are silent. |
 | **ALL** | Every key, black and white, is the next note of the scale. |
@@ -1585,9 +1587,10 @@ and of most microtonal tools).
    slot. The editor reads the file and sends it; the slot takes the file's name (7 characters) and its description.
 2. On the device: **SCL > SCALES**, KNOB 1 to the **USER** family (after the favourites), KNOB 2 to the tuning. Or
    press **Play** in the editor. It is listed in **ALL** too, after the built-in scales.
-3. Play, as with the built-in microtonal scales. **QNT OFF** plays every degree in a row, one a key (and one a MIDI
-   note, 60 being ROOT), so a quarter-tone tuning such as 24EDO takes two keys a semitone; WHITE, ALL, MPC and SNAP lay
-   it out as for the built-in scales.
+3. Play, as with the built-in microtonal scales. **QNT OFF**: a tuning of up to 12 degrees an octave keeps the keys
+   a piano's, each degree tuning the key nearest it (see below); a bigger one, or one with another period, plays every
+   degree in a row, one a key (and one a MIDI note, 60 being ROOT), so 24EDO takes two keys a semitone. WHITE, ALL, MPC
+   and SNAP lay it out as for the built-in scales.
 
 - The tuning is the project's, like SCL: every melodic track plays it (a drum track does not). The keys, MIDI input,
   the generators, QNT, chords and recordings play its degrees; **ROOT** is degree 0 and **TRN** moves it.
