@@ -306,10 +306,20 @@ static int32_t mo_sheet_hold(const char **name)
     *name = NM[k];
     return ms >= OCT_HOLD_MS ? 1000 : (int32_t)((ms - 150u) * 1000u / (OCT_HOLD_MS - 150u));
 }
-/* the header's line: whole, or (a sheet's hold) solid as far as it has been held, dotted for the rest */
+/* a PIECE playing: how far it has got, 0..1000; -1 none (stopped, FREE or ended) */
+static int32_t mo_piece_line(void)
+{
+    uint32_t at, left;
+    return song.playing && tessera_piece_get(&at, &left) ? (int32_t)(at * 1000u >> 16) : -1;
+}
+/* the header's line: whole, or (a sheet's hold) solid as far as it has been held, dotted for the rest; no hold, a
+ * PIECE playing the same as far as it has got */
 static void mo_head_line(int32_t y, int32_t hold)
 {
-    int32_t x, w = hold < 0 ? 120 : 120 * hold / 1000;
+    int32_t x, w;
+    if (hold < 0)
+        hold = mo_piece_line();
+    w = hold < 0 ? 120 : 120 * hold / 1000;
     if (w)
         mo_hl(0, y, w, MO_INK);
     for (x = w + 1; x < 120; x += 2)
@@ -2467,7 +2477,8 @@ static void mo_sheet(void)
 static uint32_t mo_hold_sig(void)
 {
     const char *hn;
-    return (uint32_t)(mo_sheet_hold(&hn) / 25 + 1);
+    int32_t p = mo_piece_line();
+    return (uint32_t)(mo_sheet_hold(&hn) / 25 + 1) ^ (uint32_t)(p < 0 ? 0 : p * 120 / 1000 + 1) << 8;   /* (a PIECE: a pixel on) */
 }
 static uint32_t mo_signature(void)
 {
