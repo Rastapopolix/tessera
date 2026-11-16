@@ -804,7 +804,8 @@ static void tessera_evolve_tick(const track_t *t, uint32_t tr)
         } else if (fol) {
         } else if (ev->every && ++ev->bar_cnt >= tessera_every_bars(ev->every)) {
             ev->bar_cnt = 0;
-            if (ev->form) tess_form_advance(tr);
+            if (tessera.hold) ;              /* HOLD: no round (mutation, pull, section of its own); bars count on */
+            else if (ev->form) tess_form_advance(tr);
             else tess_gv_round(tr);          /* (a mutation or GRAVITY's pull: the loop back on step 1, rearmed) */
         }
     } else if (!ev->step_cnt && tessera.roll[tr]) {
@@ -857,7 +858,7 @@ static void tessera_phrase_apply(uint32_t tr, uint8_t *note, uint8_t *vel, int *
         if (q > 15u) q = 15u;
         sc->note[pos] = (uint8_t)((*trig ? 0x80u : 0u) | (*note & 0x7Fu));
         sc->vel[pos >> 1] = (uint8_t)((sc->vel[pos >> 1] & ~(0xFu << sh)) | (q << sh));
-    } else if (gen_rnd(&tessera.rnd[tr], 100u) < ev->lock) {
+    } else if (tessera.hold || gen_rnd(&tessera.rnd[tr], 100u) < ev->lock) {   /* (HOLD: as LOCK 100) */
         uint8_t b = sc->note[pos];
         *trig = (b >> 7) & 1;
         *note = b & 0x7Fu;
@@ -1604,8 +1605,12 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
 
     switch (tessera.mode[tr]) {
     case TESS_ENG_TURING:
-        if (!sd_turing(t, tr, &out))                    /* (a SOURCE: its loop instead) */
-            gen_turing_tick(&tessera.turing[tr], &clk, &tessera.rnd[tr], &out);
+        if (!sd_turing(t, tr, &out)) {                  /* (a SOURCE: its loop instead) */
+            gen_turing_t g = tessera.turing[tr];        /* HOLD: as PROB 0, the register repeats (PROB itself kept) */
+            if (tessera.hold) g.prob = 0;
+            gen_turing_tick(&g, &clk, &tessera.rnd[tr], &out);
+            tessera.turing[tr].reg = g.reg;
+        }
         break;
     case TESS_ENG_EUCLID:
         gen_euclid_tick(&tessera.euclid[tr], &clk, &tessera.rnd[tr], &out);
@@ -1619,12 +1624,16 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
         if (!sd_morph(t, tr, &out))                     /* (a SOURCE: A it, B a variation) */
             gen_morph_tick(&tessera.morph[tr], &clk, &tessera.rnd[tr], &out);
         break;
-    case TESS_ENG_GRIDS:
+    case TESS_ENG_GRIDS: {
+        uint8_t pt[3];
+        memcpy(pt, tessera.grids[tr].perturb, 3);
         gen_grids_tick(&tessera.grids[tr], &clk, &tessera.rnd[tr], &out);
+        if (tessera.hold) memcpy(tessera.grids[tr].perturb, pt, 3);   /* HOLD: CHAOS's bar kept, not drawn anew */
         tessera.cv[tr] = out.cv;
         if (!tess_logic(tr, out.gate) || !tess_cond(tr)) out.parts = 0;   /* (OR, XOR: no part to add) */
         tess_grids_play(t, tr, &out);
         return;
+    }
     case TESS_ENG_BOUNCE:
         gen_bounce_tick(&tessera.bounce[tr], &clk, &tessera.rnd[tr], &out);
         break;
@@ -1639,7 +1648,7 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
         gen_quad_tick(&tessera.quad[tr], &clk, &tessera.rnd[tr], &out);
         break;
     case TESS_ENG_CONSTEL:
-        tessera.constel[tr].keep = tessera.evolve[tr].lock;
+        tessera.constel[tr].keep = tessera.hold ? 100u : tessera.evolve[tr].lock;   /* (HOLD: its loop, as LOCK 100) */
         gen_constel_tick(&tessera.constel[tr], &clk, &tessera.rnd[tr], &out);
         break;
     case TESS_ENG_SERIES:
