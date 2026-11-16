@@ -1152,9 +1152,12 @@ section every 4 phrases), and on every track, STEP tracks too.
 | 4 | **FADE** (1–4 bars) | How long a FADE takes. |
 
 Hold **OCT-** for each track's **ROLE** (KNOB 1 to 4; also OCT- held on FORM, KNOB 4): **BASS**, **RHYTHM**,
-**HARMONY**, **MELODY** or **ANCHOR**. AUTO (the default) guesses: CHORD is harmony, ATLAS or a drum sound rhythm, a
-track whose notes sit mostly below C3 bass, anything else melody. The picture shows each track's role (AUTO's guess
-marked), whether it is IN, OUT or muted by hand, and its level.
+**HARMONY**, **MELODY** or **ANCHOR**. AUTO (the default) guesses, looking at all four tracks together: CHORD, chord
+keys (CHRD) or a STEP pattern mostly of chords is harmony; GRIDS, a drum kit, SLICE or NOISE is rhythm; of the rest, the
+lowest track is bass when it sits a fifth or more below every other track (or below C3), and anything else is melody.
+Before PLAY it goes by the settings (a generator's ROOT and TRN, a STEP pattern's notes), once playing by the notes
+heard; the guess is made at PLAY and on each section's line, and holds in between. The picture shows each track's
+role (AUTO's guess marked \*), whether it is IN, OUT or muted by hand, and its level.
 
 The ENTRIES sheet (hold **OCT+**) has each track's **ORDER** (Order T1 to T4, KNOB 2): **AUTO** (the default) or **1ST**, **2ND**, **3RD**, **4TH**,
 to choose the order tracks come in, for example the bass third instead of first. Numbered tracks come in first, one a
