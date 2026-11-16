@@ -9,6 +9,14 @@ what you expected and what happened).
 
 ## New in 3.6-beta9
 - MARKOV and MORPH: turn LOCK up from 0 while playing and the pass you just heard loops at once (in beta8 they played on fresh for two passes, then looped the second).
+- ENTRIES' ROLE AUTO now guesses each track's part before it plays, from its generator, sound and register, judging the four tracks together: CHORD and chord keys are HARMONY; GRIDS, a kit or NOISE RHYTHM; the lowest track clearly below the others BASS. The ROLE knob shows the guess. A project on AUTO may get different roles than in beta8.
+- ENTRIES with STYLE FADE now fades MIDI OUT too: while a track fades out or in, its notes go out with their velocity scaled by its level (a synth that ignores velocity still hears a cut). A track at SOUND OFF now fades over MIDI as well.
+- HOME: hold ENV and tap OCT- or OCT+ to move the selected track an octave down or up (its TRN, up to two octaves either way); ENV + both OCTs puts it back to 0. Plain OCT- and OCT+ still move the keys' octave.
+- PRESETS: LIST now has the engines after the categories (FM6, ORACLE, TRIO, PHYS, DRUM), each listing only that engine's sounds, its user presets included: an ORACLE pad is easy to find. HOME's PRESETS knob and GLO + PRESETS follow the list you pick, as before.
+- EDIT > VOICE starts with the track's Sound (SOUND KUGO HARP >): KNOB 2 steps through the sounds, OCT+ opens PRESETS right there; OK keeps the sound, BACK puts the old one back, and both bring you back to VOICE instead of HOME.
+- LANDSCAPE: during a PIECE the moon waxes lit on the left and wanes lit on the right, so it faces into the scene as it rises and sets.
+- Fewer crackles under heavy load: the FM-1 now holds back new voices as soon as the CPU passes 70 % (a new note takes over a fading one, the bass kept), before it has to cut a sound. A dense chord may lose a released tail a little earlier.
+- TRIO sounds (STRING MACH, WARM PAD ...) now share the work with the FM-1's second core, as FM6, ORACLE and DRUM already did: SYSTEM's CPU should sit lower with TRIO tracks. The sound is exactly the same.
 
 ## New in 3.6-beta8
 - Microtonal scales and your own Scala tunings now play with QNT OFF too. A scale of up to 12 degrees an octave (the maqamat RAST, BAYATI, HIJAZ, SABA, HUSAYN, SIKAH, the just and meantone scales, the Japanese pentatonics) keeps the keyboard a piano's: every key plays its own note, and the keys nearest the scale's degrees take its tuning. RAST on C: E and B play half flat, C# is an ordinary C#, so you play a maqam as you would on a piano and can still reach every note off it. A bigger tuning (24EDO, 31EDO, a large Scala file) plays every degree in a row, one a key and one a MIDI note. They used to fall back to ordinary semitones: a project saved with a microtonal scale and QNT OFF now plays in its tuning.
@@ -23,8 +31,6 @@ what you expected and what happened).
 - MIDI OUT's sheet, SECTION PC (one row a track, OFF by default): when the CHAIN goes to section A, B or C, the track sends Program Change 0, 1 or 2 on its MIDI OUT channel, before that bar's notes. A project with SECTION PC on loads on older firmware with it off.
 - MODS: a STEP track's GATE and NOTE sources now follow its pattern, as a generator track's do.
 - MENU > NOTE LIGHTS: the keys light up while a sequence plays their notes, for as long as each note lasts. OFF (the default) as before; STEP lights a STEP pattern's notes; ALL the generators' too.
-- PRESETS: LIST now has the engines after the categories (FM6, ORACLE, TRIO, PHYS, DRUM), each listing only that engine's sounds, its user presets included: an ORACLE pad is easy to find. HOME's PRESETS knob and GLO + PRESETS follow the list you pick, as before.
-- EDIT > VOICE starts with the track's Sound (SOUND KUGO HARP >): KNOB 2 steps through the sounds, OCT+ opens PRESETS right there; OK keeps the sound, BACK puts the old one back, and both bring you back to VOICE instead of HOME.
 
 ## New in 3.6-beta7
 - QNT link (SCL, the row after QNT): LINKED keeps one QNT for every track, as before; OWN gives each track its own QNT and MPC degree, so one track can take MPC pads while others follow the chords (CHRD) or HARM (#755). A project saved with OWN loads on older firmware with each track's QNT as saved.
@@ -73,6 +79,9 @@ what you expected and what happened).
 - Patterns (PAT GEN) keep ANSWER's first 8 notes; CHORD, held lengths and notes 9-16 belong to the track, not the pattern.
 
 ## Please try
+- ENTRIES with STYLE FADE and a track on an outside synth that responds to velocity (MENU > NOTES OUT ALL): its notes fade out and back in with the FM-1's level.
+- A project that crackled in beta8 (two dense FM6 tracks, or TRIO pads): fewer clicks, and SYSTEM's CPU peak lower.
+- ENTRIES with every ROLE on AUTO: the bass comes in first and the melody leaves first, from the first section.
 - MIDI clock from your gear (CLK USB or TRS): the FM-1 plays at the gear's tempo. If it plays twice as fast, set PPQN to 48 (GLO > MIDI IN, hold OCT-, KNOB 4). CLOCK OUT at 8 or 4 into gear that expects fewer pulses.
 - Save a project with a track on one of your own FM6 voices (F001 ..), switch off and on, load it: HOME names the voice, and PRESETS starts from its slot.
 - The installer with the editor or a DAW open: it names the MIDI port that is in use.
