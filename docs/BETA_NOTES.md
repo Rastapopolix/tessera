@@ -10,6 +10,8 @@ what you expected and what happened).
 ## New in 3.6-beta8
 - Microtonal scales and your own Scala tunings now play with QNT OFF too. A scale of up to 12 degrees an octave (the maqamat RAST, BAYATI, HIJAZ, SABA, HUSAYN, SIKAH, the just and meantone scales, the Japanese pentatonics) keeps the keyboard a piano's: every key plays its own note, and the keys nearest the scale's degrees take its tuning. RAST on C: E and B play half flat, C# is an ordinary C#, so you play a maqam as you would on a piano and can still reach every note off it. A bigger tuning (24EDO, 31EDO, a large Scala file) plays every degree in a row, one a key and one a MIDI note. They used to fall back to ordinary semitones: a project saved with a microtonal scale and QNT OFF now plays in its tuning.
 
+- LANDSCAPE: a named project gets a place of its own, made from its name (its hills or islands, its stars, where the moon rests, a torii gate on A's shore). The layers you switch on show in the scene: a PIECE's shape is the moon's phase, with dusk (or the stars coming out) over its last tenth; each CHAIN section has its own shore, the new one coming in from the right, and a shooting star when the form comes round; ENERGY blows the clouds right as it builds and left as it thins, and a rest lays mist on the water.
+
 ## New in 3.6-beta7
 - QNT link (SCL, the row after QNT): LINKED keeps one QNT for every track, as before; OWN gives each track its own QNT and MPC degree, so one track can take MPC pads while others follow the chords (CHRD) or HARM (#755). A project saved with OWN loads on older firmware with each track's QNT as saved.
 
