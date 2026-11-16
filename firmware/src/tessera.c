@@ -101,7 +101,7 @@ static void tess_roll_apply(uint32_t tr)
     tessera.evolve[tr].flash = 4;
 }
 /* ROLL turned by s (seeds 1..TESS_SEED_MAX, stopping at both ends: no jump from one end to the other). Playing, the seed waits for the track's next bar line
- * (tessera_evolve_tick; the knob shows it blinking): the new line starts in time, and a quick turn plays only the
+ * (tessera_evolve_tick; the knob shows it dotted beside the seed playing): the new line starts in time, and a quick turn plays only the
  * seed it stops on; turned back to the seed playing, nothing waits. Stopped: at once */
 void tessera_seed_turn(uint32_t tr, int32_t s)
 {
