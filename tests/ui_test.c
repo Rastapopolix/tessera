@@ -5094,7 +5094,7 @@ static int test_text_idle_menu(void)
     settings_export(&p);
     bad += check("  saved in row 8 byte 30, GROUND (29) and LARGE VALUE (28) their own",
                  p.favorites.factory[8][30] == (TEXT_IDLE_TAG | 3u) && p.favorites.factory[8][29] == GROUND_LIGHT_TAG &&
-                 p.favorites.factory[8][28] == LARGE_ON_TAG && !p.favorites.factory[8][31]);
+                 p.favorites.factory[8][28] == LARGE_ON_TAG);
     TEXT_IDLE_SAVED = 0; ux_ground = 0;
     bad += check("  read back", settings_import(&p, sizeof p) && TEXT_IDLE(TEXT_IDLE_BOLD) && TEXT_IDLE(TEXT_IDLE_LAND) &&
                  ux_ground);

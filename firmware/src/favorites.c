@@ -7,7 +7,7 @@
  *   row 8  (GRAIN, retired; Felucca 1.0's stars in bits 0..11) 2..3 tagged PPQN, 4..7 tagged USB VOLUME (settings_persist.c),
  *          8..15 the USER scales (uscale.h, settings_persist.c), 16..25 the FX key map (retired), 26 tagged KNOBS BAR (ui.c),
  *          27 tagged NOTE PREVIEW OFF, 28 tagged LARGE VALUE (ui.c), 29 tagged GROUND LIGHT, 30 tagged TEXT BOLD and
- *          IDLE LANDSCAPE (ui.c TEXT_IDLE_SAVED); 28..31 held the FX key map's tag 'F' 'X' 'K' 1 until 2026-10-11; free: 31
+ *          IDLE LANDSCAPE (ui.c TEXT_IDLE_SAVED); 28..31 held the FX key map's tag 'F' 'X' 'K' 1 until 2026-10-11
  *   row 14 (OBXF, retired; its old stars in 0..15)             16..27 the scale favorites, 28..31 their tag
  *   row 15 (CZ-1: factory tones bits 0..64, native slots 65..192) 26 tagged USB OUTPUT (was USB INPUT) (settings_persist.c), 27 SCREEN OFF,
  *          28 tagged AUTOSAVE OFF, 29 the PRESETS LIST (browse.c),
