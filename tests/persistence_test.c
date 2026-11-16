@@ -784,6 +784,31 @@ static int test_pat_gen(void)
                  midi_out_map(TESS_DM_ROW, 36) == 36u && midi_out_map(TESS_DM_ROW, 38) == 37u &&
                  midi_out_map(TESS_DM_ROW, 42) == 44u && midi_out_map(TESS_DM_GM, 38) == 38u &&
                  midi_out_map(TESS_DM_ROW, 60) == 60u);
+    reset();                                           /* MIDI OUT's SECTION PC (F2): the SECPC part, a byte of tracks */
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    bad += check("SECTION PC: all OFF writes no SECPC part, so older firmware sees none",
+                 len && tsp_valid(raw, len) && !tsp_seen.at[TSP_SECPC]);
+    tessera_param_set(1, TX_SECTION_PC, 1); tessera_param_set(3, TX_SECTION_PC, 1);
+    ok = !project_save_as(0, "TSP");
+    tessera_param_set(1, TX_SECTION_PC, 0); tessera_param_set(3, TX_SECTION_PC, 0);
+    project_load(0);
+    bad += check("SECTION PC: T2 and T4 ON come back with the slot, T1 and T3 OFF", ok &&
+                 tessera_param_get(1, TX_SECTION_PC) == 1 && tessera_param_get(3, TX_SECTION_PC) == 1 &&
+                 !tessera_param_get(0, TX_SECTION_PC) && !tessera_param_get(2, TX_SECTION_PC));
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_SECPC] && raw[tsp_seen.at[TSP_SECPC]] == 0x0Au;
+    raw[tsp_seen.at[TSP_SECPC]] = 1u << TESSERA_TRACKS;   /* (a track past the fourth) */
+    tsp_resum(raw);
+    bad += check("SECTION PC: the part holds the tracks ON as bits; a bit past T4 refuses the record", ok && !tsp_valid(raw, len));
+    raw[tsp_seen.at[TSP_SECPC]] = 0x0Au;
+    raw[tsp_seen.at[TSP_SECPC] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (an id older firmware does not know: skipped) */
+    tsp_resum(raw);
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_SECPC];
+    if (ok) tsp_restore(raw);
+    bad += check("SECTION PC: a record without the part (or with it, on older firmware) loads with every track OFF",
+                 ok && !tessera.sec_pc);
     reset();
     return bad;
 }

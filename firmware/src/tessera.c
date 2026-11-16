@@ -3263,6 +3263,7 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_FC_KEYB: case TX_FC_KEYC: return tessera.fc_key[x - TX_FC_KEYB];   /* (the project's) */
     case TX_KEY_LINK: return tessera.key_link;          /* (the project's, whichever track) */
     case TX_QNT_LINK: return !tessera.qnt_own;
+    case TX_SECTION_PC: return tessera.sec_pc >> tr & 1u;
     case TX_SD_SOURCE: return tessera.sd_src[tr];
     case TX_SD_KEEP: return tessera.sd_keep[tr];
     case TX_SD_GRAVITY: return tessera.sd_grav[tr];
@@ -3510,6 +3511,7 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
     case TX_FC_KEYB: case TX_FC_KEYC: tessera.fc_key[x - TX_FC_KEYB] = (int8_t)tess_clampi(v, -12, 12); return;
     case TX_KEY_LINK: tessera.key_link = (uint8_t)tess_clampi(v, 0, 1); return;
     case TX_QNT_LINK: tessera.qnt_own = (uint8_t)!tess_clampi(v, 0, 1); return;
+    case TX_SECTION_PC: tessera.sec_pc = (uint8_t)(v > 0 ? tessera.sec_pc | 1u << tr : tessera.sec_pc & ~(1u << tr)); return;
     case TX_SD_SOURCE:                                  /* (the loop filled again from the new source; ANSWER: its */
         tessera.sd_src[tr] = (uint8_t)tess_clampi(v, 0, TESSERA_TRACKS);   /* call, answered from the first) */
         tess_sd.load[tr] = 1;

@@ -4793,6 +4793,13 @@ static int test_product_ux(void)
     press(B_OCTUP);
     ok &= tessera.sound_off[1] == 1u && tessera.midi_dmap[1] == 1u && !pop.on;
     bad += check("MIDI OUT: OCT- held KNOB 2 track 2's TRANSPOSE; the sheet: Sound T2 OFF (KNOB 2), Drum map T2 (OCT+)", ok);
+    hold(B_OCTUP);                                      /* (F2: Section PC T2, the sheet's tenth row) */
+    for (i = 0; i < 9u; i++) turn(EN_K1, 1);
+    turn(EN_K2, 1);
+    ok = pop.on && str_eq(pop.rows[pop.sel].label, "Section PC T2") && tessera.sec_pc == 2u;
+    press(B_OCTDN);
+    bad += check("MIDI OUT's sheet: Section PC T2 ON (KNOB 2), the other tracks OFF", ok && !pop.on && tessera.sec_pc == 2u);
+    tessera_param_set(1, TX_SECTION_PC, 0);
     tessera_param_set(1, TX_MIDI_TR, 0);
     tessera_param_set(1, TX_SOUND, 0);
     tessera_param_set(1, TX_MIDI_DMAP, 0);
