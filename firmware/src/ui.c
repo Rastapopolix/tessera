@@ -121,6 +121,22 @@ static uint8_t browse_loads, browse_mark;    /* sound loads so far; at the brows
 #define LARGE_OFF_TAG 0xB4u
 enum { LARGE_AUTO, LARGE_ON, LARGE_OFF };
 #define LARGE_MODE (LARGE_SAVED == LARGE_ON_TAG ? LARGE_ON : LARGE_SAVED == LARGE_OFF_TAG ? LARGE_OFF : LARGE_AUTO)
+/* MENU > TEXT (Mono): NORMAL or BOLD, the small font's lit cells a pixel wider (ui_mono.c mo_text_s); MENU > IDLE: OFF
+ * or LANDSCAPE, untouched IDLE_MS while playing the screen moves to LANDSCAPE, the first touch goes back (screen.c
+ * scrn.land). favorites.factory[8][30]: TEXT_IDLE_TAG | bit 0 BOLD | bit 1 LANDSCAPE; any other byte NORMAL and OFF
+ * (firmware with the FX key map, before 2026-10-11, kept its tag's 'K' there) */
+#define TEXT_IDLE_SAVED (favorites.factory[8][30])
+#define TEXT_IDLE_TAG 0xB8u
+#define TEXT_IDLE_BOLD 1u
+#define TEXT_IDLE_LAND 2u
+#define TEXT_IDLE(bit) ((TEXT_IDLE_SAVED & 0xFCu) == TEXT_IDLE_TAG && (TEXT_IDLE_SAVED & (bit)))
+#define IDLE_MS 120000u
+static void text_idle_put(uint32_t bit, int on)
+{
+    uint32_t v = (TEXT_IDLE_SAVED & 0xFCu) == TEXT_IDLE_TAG ? TEXT_IDLE_SAVED & 3u : 0u;
+    v = on ? v | bit : v & ~bit;
+    TEXT_IDLE_SAVED = (uint8_t)(v ? TEXT_IDLE_TAG | v : 0u);
+}
 
 static uint8_t sync_reload;                  /* engine / preset / project / user preset loaded: editor RELOAD push */
 

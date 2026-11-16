@@ -113,14 +113,17 @@ static int32_t mo_sin(int32_t a)
 static int32_t mo_cos(int32_t a) { return mo_sin(a + 64); }
 
 static int32_t mo_tw(const char *s) { int32_t n = (int32_t)str_len(s); return n ? n * 6 - 1 : 0; }
-static int32_t mo_text_s(const char *s, int32_t x, int32_t y, int32_t sc, uint16_t c)   /* sc: cells a font pixel */
+/* sc: cells a font pixel. MENU > TEXT BOLD: at sc 1 each lit cell 3 px wide, a pixel into its right neighbour (a
+ * glyph has no 1-cell gap to close; between letters the gap is 1 px) */
+static int32_t mo_text_s(const char *s, int32_t x, int32_t y, int32_t sc, uint16_t c)
 {
+    int32_t w = sc * 2 + (sc == 1 && TEXT_IDLE(TEXT_IDLE_BOLD));
     for (; *s; s++, x += 6 * sc) {
         uint32_t ch = mono_ch((uint8_t)*s), r, b;
         for (r = 0; r < 7u; r++)
             for (b = 0; b < 5u; b++)
                 if (MO_FONT[ch - 32u][r] & (16u >> b))
-                    mo_fill(x + (int32_t)b * sc, y + (int32_t)r * sc, sc, sc, c);
+                    cv_rect((x + (int32_t)b * sc) * 2, (y + (int32_t)r * sc) * 2, w, sc * 2, c);
     }
     return x;
 }
