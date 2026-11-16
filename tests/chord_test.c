@@ -112,6 +112,7 @@ static int theory(void)
                 for (note = 36; note < 96u; note++) {
                     t->p[P_SCALE] = (int16_t)s; t->p[P_ROOT] = (int16_t)r;
                     t->p[P_CHRD] = (int16_t)(note & 1u ? CH_DIA3 : CH_DIA7);
+                    if (micro_active(t)) continue;      /* (a microtonal scale's notes are degrees, QNT OFF too: microtonal_test) */
                     n = chord_build(t, note, out);
                     ok &= n == (note & 1u ? 3u : 4u);
                     for (k = 0; k < n; k++)
