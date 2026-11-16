@@ -2165,8 +2165,9 @@ static void ui_draw_frame(void)
     }
     if (ui.bpm_t)
         ui.bpm_t--;
-    if (ui.hot_t)
-        ui.hot_t--;
+    if (ui.hot_t > 1u || (ui.hot_t && (!MELODEE_LOOK || LARGE_MODE != LARGE_ON ||
+                                       (uint16_t)(fm1_ms - ui.hot_ms) >= LARGE_HOLD_MS)))
+        ui.hot_t--;                                     /* (LARGE VALUE ON: large until LARGE_HOLD_MS after the turn) */
     ui.force = 0;
     scr_shown();
 }
