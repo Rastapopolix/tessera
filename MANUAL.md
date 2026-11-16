@@ -1182,11 +1182,26 @@ you can thin the music and watch the lake answer.
 - Each note a track plays is a drop on the water. **Pitch** sets where it lands, low notes at the left, high at the
   right. **T1** lands far out, **T4** close by. Louder notes open wider rings, with a second ring inside.
 - **ENERGY**'s tide moves the clouds: more and lower as it fills, a thin wisp as it falls sparse. While playing, the
-  clouds drift.
+  clouds drift with the wind: to the right while the tide builds, to the left while it thins, faster the steeper it
+  is, and still at its turns. Without ENERGY they drift right, as the wind always blew. A **rest** lays mist on the
+  water, and the moon's reflection fades into it until the notes come back.
 - **Stars** come out as the music thins and all of them once nothing has played for a few seconds. Then the water is
   still and the moon's reflection lies quiet.
 - On **GROUND LIGHT** it is day: a sun (a ring with short rays) takes the moon's place on the same arc, and no stars
   come out. Rain, clouds, hills and the water are the same.
+- A **PIECE** (LENGTH set) moves the moon across the sky, rising at the left as it starts and setting at the right; its
+  **phase** is the piece's SHAPE there: a thin crescent where the plan is quiet, full at its peak. Over the piece's
+  last tenth dusk falls (GROUND LIGHT: the sky darkens from the hills up) and at night the stars come out. END STOP:
+  the moon sets behind the hills.
+- **ENTRIES** lights a window for each track along the far shore, T1 to T4 from the left, in the track's colour: lit
+  while the track is in, dimmer as it fades, dark while it is out.
+- **CHAIN**: each section has its own shore. When the form moves on, the new shore comes in from the right, as if
+  you were travelling; back to A, you are home. When the whole form comes round, a shooting star crosses the sky.
+- **A place of its own**: a project with a name gets its own landscape, made from the name: the shape of its hills,
+  where its stars are, where the moon rests, and a small temple somewhere on A's shore. The same name is always the
+  same place; renaming a project takes it somewhere else. An unnamed project shows the lake as it always was.
+
+Each of these shows only when its layer is on; nothing new moves on the water but the rain.
 
 The scene only listens while the page shows. In the MOSAIC palette each track's drops are in its own colour.
 
@@ -2346,7 +2361,7 @@ LFO's rate gives every cycle its own length.
 **LAG**. On a MIX bus **(3.5)**, a slew on the result: how long a full move takes, 10 ms to 20 s. A GATE
 through a lagged bus is an envelope.
 
-**LANDSCAPE**. A night lake drawn by the music (GLO), by day on GROUND LIGHT **(3.5)**. It changes nothing in the
+**LANDSCAPE**. A night lake drawn by the music (GLO), by day on GROUND LIGHT **(3.5)**; a named project's own place, and PIECE, ENTRIES, CHAIN and ENERGY in the scene **(3.6)**. It changes nothing in the
 sound.
 
 **Layer**. In the manual, either one of Tessera's optional parts (sounds, generators, shaping, form, mods, performing)
