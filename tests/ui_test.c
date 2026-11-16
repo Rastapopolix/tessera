@@ -6374,7 +6374,7 @@ static int test_quick_layers(void)
     ok = trk[1].p[P_MUTE] == 1 && ui.layer == LAYER_GLO && !gates() && mo_w == mo;
     a = leds_at(0); b2 = leds_at(250);
     ok &= ((a & b2) >> black(0)) & 1u && !(((a | b2) >> black(1)) & 1u);           /* T1 sounding lit, T2 muted dark */
-    ok &= ((a ^ b2) >> white(0)) & 1u && ((a ^ b2) >> white(7)) & 1u && !(((a | b2) >> white(5)) & 1u);
+    ok &= ((a ^ b2) >> white(0)) & 1u && ((a ^ b2) >> white(7)) & 1u && ((a ^ b2) >> white(5)) & 1u;   /* (D4 HOLD) */
     key_up(black(1)); btn_up(B_GLO); frame();
     bad += check("GLO + black key 2: T2 MUTE latched (SET), silent, no MIDI; LEDs: sounding lit, muted dark", ok &&
                  trk[1].p[P_MUTE] == 1 && !ui.layer);
@@ -6446,6 +6446,29 @@ static int test_quick_layers(void)
     ok &= msg_is("TAP: CLK IS EXT") && song.g[G_BPM] == 120;
     btn_up(B_GLO); frame(); song.g[G_CLOCK] = 0;
     bad += check("GLO + F4 x3 at 0.5 s: TAP 120 BPM; with CLK EXT: dimmed, it says why", ok);
+    /* GLO + D4: HOLD while held (lit, said), let go: off; tapped twice: latched past GLO; a further tap lets go */
+    lay_combo(B_GLO, white(5));
+    ok = tessera.hold && msg_is("HOLD") && ((leds_at(0) & leds_at(250)) >> white(5)) & 1u && !gates();
+    frames(500);
+    ok &= tessera.hold != 0;
+    key_up(white(5)); frame();
+    ok &= !tessera.hold && msg_is("HOLD OFF");
+    frames(500);                                        /* (a long press, then a slow one: no latch) */
+    key_down(white(5)); frame(); key_up(white(5)); frame();
+    ok &= !tessera.hold;
+    btn_up(B_GLO); frames(500);
+    bad += check("GLO + D4: HOLD while held, \"HOLD\" / \"HOLD OFF\", lit; a long press then another: not latched", ok);
+    btn_down(B_GLO); frame();
+    key_down(white(5)); frame(); key_up(white(5)); frame();
+    key_down(white(5)); frame();
+    ok = tessera.hold && msg_is("HOLD LATCHED");
+    key_up(white(5)); frame(); btn_up(B_GLO); frames(1000);
+    ok &= tessera.hold && !ui.layer;
+    lay_combo(B_GLO, white(5)); key_up(white(5)); frame();
+    ok &= !tessera.hold && msg_is("HOLD OFF");
+    btn_up(B_GLO); frames(1000);
+    bad += check("  tapped twice: \"HOLD LATCHED\", kept with GLO let go; a further tap: \"HOLD OFF\", no hold", ok &&
+                 !tessera.hold);
     go_home(); frame();
     turn(EN_SELECT, 2);
     ok = song.g[G_BPM] == 122 && ui.home && ui.bpm_t;
