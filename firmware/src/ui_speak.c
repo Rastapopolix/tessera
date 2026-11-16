@@ -577,6 +577,10 @@ static void ui_speak(uint32_t now)
 {
     uint32_t ctx = sp_context();
     int playing = song.playing || chain_busy();
+    if (scrn.land) {                                    /* IDLE's LANDSCAPE (ui_draw.c scr_idle): nothing changed for
+        ann_tick(now);                                  * the reader; back on the page, still nothing new to say */
+        return;
+    }
     if (ann_on()) {
         int where = ann_where();
         if (!sp.started || where) {                     /* a new reader, or WHERE: everything, at once */

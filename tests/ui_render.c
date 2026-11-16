@@ -2850,6 +2850,18 @@ int main(int argc, char **argv)
         fprintf(stderr, "ui_render: MENU > LARGE VALUE\n");
         nfind++;
     }
+    if (test_large_hold()) {                    /* LARGE VALUE ON (ui_test.c): large ~1 s after the knob stops */
+        fprintf(stderr, "ui_render: LARGE VALUE held\n");
+        nfind++;
+    }
+    if (test_text_idle_menu()) {                /* MENU > TEXT, IDLE (ui_test.c): BOLD drawn, saved in row 8 byte 30 */
+        fprintf(stderr, "ui_render: MENU > TEXT / IDLE\n");
+        nfind++;
+    }
+    if (test_idle_land()) {                     /* MENU > IDLE LANDSCAPE (ui_test.c): two minutes, the touch back */
+        fprintf(stderr, "ui_render: IDLE LANDSCAPE\n");
+        nfind++;
+    }
     if (test_landscape()) {                     /* LANDSCAPE (ui_test.c): the feed, the rings, drawn again only moving */
         fprintf(stderr, "ui_render: LANDSCAPE\n");
         nfind++;

@@ -5044,6 +5044,141 @@ static int test_large_menu(void)
     }
     return bad;
 }
+/* the lit pixels of s drawn at scale sc (ui_mono.c mo_text_s), on a canvas of its own */
+static uint32_t text_px(const char *s, int32_t sc)
+{
+    uint32_t n = 0, i;
+    cv_begin(240, 40, MO_BG);
+    mo_text_s(s, 0, 0, sc, MO_INK);
+    for (i = 0; i < 240u * 40u; i++)
+        n += cv_px[i] != swap16(MO_BG);
+    return n;
+}
+/* MENU > TEXT (NORMAL / BOLD) and IDLE (OFF / LANDSCAPE): saved with the favorites in row 8 byte 30 (tag 0xB8, bit 0
+ * BOLD, bit 1 LANDSCAPE), any other byte NORMAL and OFF; GROUND's byte 29 and LARGE VALUE's 28 untouched. BOLD: each
+ * lit cell of the small font 3 px wide, the large font (sc 2) as it was */
+static int test_text_idle_menu(void)
+{
+    int bad = 0;
+    persist_t p;
+    uint32_t thin, thin2, i, ok;
+    ui_power_on();
+    TEXT_IDLE_SAVED = 0;
+    thin = text_px("TESSERA 120", 1); thin2 = text_px("TESSERA 120", 2);
+    hold(B_HOME);
+    ui.menu_sel = MI_TEXT;
+    turn(EN_K2, 1);
+    bad += check("TEXT: the menu's KNOB 2 right: BOLD", ui.menu == 1 && TEXT_IDLE(TEXT_IDLE_BOLD) &&
+                 !TEXT_IDLE(TEXT_IDLE_LAND) && str_eq(menu_value(MI_TEXT, 0, 0), "BOLD"));
+    {   /* every lit cell a pixel wider (into a lit neighbour: nothing more), the letters still apart: each 12 px
+         * place's last pixel column dark */
+        uint32_t bold = text_px("TESSERA 120", 1), gap = 0, y;
+        for (i = 11u; i < 240u; i += 12u)
+            for (y = 0; y < 40u; y++)
+                gap += cv_px[y * 240u + i] != swap16(MO_BG);
+        bad += check("  BOLD: the small font's strokes heavier, up to 50 %", bold > thin && bold <= thin + thin / 2u);
+        bad += check("  .. the letters 1 px apart", !gap);
+        bad += check("  .. the large font as it was", text_px("TESSERA 120", 2) == thin2);
+    }
+    turn(EN_K2, -1);
+    bad += check("  left: NORMAL", !TEXT_IDLE(TEXT_IDLE_BOLD) && !TEXT_IDLE_SAVED && text_px("TESSERA 120", 1) == thin);
+    press(B_OCTUP);
+    bad += check("  OCT+ toggles: BOLD", TEXT_IDLE(TEXT_IDLE_BOLD));
+    ui.menu_sel = MI_IDLE;
+    bad += check("IDLE: OFF by default", str_eq(menu_value(MI_IDLE, 0, 0), "OFF"));
+    turn(EN_K2, 1);
+    bad += check("  KNOB 2 right: LANDSCAPE, BOLD kept", TEXT_IDLE(TEXT_IDLE_LAND) && TEXT_IDLE(TEXT_IDLE_BOLD) &&
+                 str_eq(menu_value(MI_IDLE, 0, 0), "LANDSCAPE"));
+    memset(&p, 0, sizeof p);
+    ux_ground = 1; LARGE_SAVED = LARGE_ON_TAG;
+    settings_export(&p);
+    bad += check("  saved in row 8 byte 30, GROUND (29) and LARGE VALUE (28) their own",
+                 p.favorites.factory[8][30] == (TEXT_IDLE_TAG | 3u) && p.favorites.factory[8][29] == GROUND_LIGHT_TAG &&
+                 p.favorites.factory[8][28] == LARGE_ON_TAG);
+    TEXT_IDLE_SAVED = 0; ux_ground = 0;
+    bad += check("  read back", settings_import(&p, sizeof p) && TEXT_IDLE(TEXT_IDLE_BOLD) && TEXT_IDLE(TEXT_IDLE_LAND) &&
+                 ux_ground);
+    for (i = ok = 0; i < 256u; i++) {                   /* untagged (the FX key map's 'K' 0x4B among them): off */
+        p.favorites.factory[8][30] = (uint8_t)i;
+        settings_import(&p, sizeof p);
+        ok += ((i & 0xFCu) == TEXT_IDLE_TAG) ? TEXT_IDLE(TEXT_IDLE_BOLD) == !!(i & 1u) && TEXT_IDLE(TEXT_IDLE_LAND) == !!(i & 2u)
+                                             : !TEXT_IDLE(TEXT_IDLE_BOLD) && !TEXT_IDLE(TEXT_IDLE_LAND);
+    }
+    bad += check("  an older record (any other byte): NORMAL, OFF", ok == 256u);
+    TEXT_IDLE_SAVED = 0; ux_ground = 0; LARGE_SAVED = 0;
+    palette_set(settings.palette);
+    ui.menu = 0;
+    return bad;
+}
+/* MENU > IDLE LANDSCAPE: two minutes untouched while playing, LANDSCAPE; the first touch (a button, a key, a knob)
+ * only goes back to the page it was on (or HOME); never while stopped, with IDLE OFF, or over the menu */
+static int test_idle_land(void)
+{
+    int bad = 0;
+    uint32_t i, ev;
+    int16_t v;
+    ui_power_on();
+    scrn.land = 0;
+    TEXT_IDLE_SAVED = 0;
+    text_idle_put(TEXT_IDLE_LAND, 1);
+    go_title("EVOLVE"); ev = ui.page;
+    song.playing = 1;
+    frame();
+    for (i = 0; i < 7u; i++) { fm1_ms += 17000u; frame(); }   /* 1:59 */
+    bad += check("IDLE: 1:59 untouched, still the page", ui.page == ev && !scrn.land);
+    fm1_ms += 2000u; frame();
+    bad += check("  2:00 playing: LANDSCAPE", !ui.home && cur_page()->graph == GR_LAND && scrn.land);
+    for (i = 0; i < 10u; i++) frame();
+    bad += check("  .. and it stays", cur_page()->graph == GR_LAND);
+    v = TSEL->p[P_MUTE];
+    press(B_SEQ);
+    bad += check("  a button: back on the page, nothing else done", ui.page == ev && !ui.home && !scrn.land &&
+                 TSEL->p[P_MUTE] == v);
+    for (i = 0; i < 30u; i++) frame();                  /* (the touch swallowed until let go 300 ms, screen.c) */
+    press(B_SEQ);
+    bad += check("  .. and its next press acts again (SEQ: GEN)", ui.page != ev);
+    ui.home = 1; ui.force = 1; frame();
+    fm1_ms += IDLE_MS; frame();
+    bad += check("  from HOME: LANDSCAPE", cur_page()->graph == GR_LAND && scrn.land == 2u);
+    turn(EN_K1, 1);
+    bad += check("  a knob: back HOME", ui.home && !scrn.land);
+    fm1_ms += IDLE_MS; frame();
+    tap_key(0);
+    bad += check("  a key: back HOME", ui.home && !scrn.land);
+    song.playing = 0;
+    fm1_ms += IDLE_MS; frame();
+    bad += check("  stopped: never", ui.home && !scrn.land);
+    song.playing = 1;
+    text_idle_put(TEXT_IDLE_LAND, 0);
+    fm1_ms += IDLE_MS; frame();
+    bad += check("  IDLE OFF: never", ui.home && !scrn.land);
+    text_idle_put(TEXT_IDLE_LAND, 1);
+    hold(B_HOME);
+    fm1_ms += IDLE_MS; frame();
+    bad += check("  the menu open: never", ui.menu == 1 && !scrn.land);
+    ui.menu = 0; song.playing = 0; TEXT_IDLE_SAVED = 0; scrn.land = 0;
+    return bad;
+}
+/* LARGE VALUE ON: the turned value stays large LARGE_HOLD_MS after the knob stops; AUTO as before (ui.hot_t) */
+static int test_large_hold(void)
+{
+    int bad = 0;
+    uint32_t i, m;
+    for (m = 0; m < 2u; m++) {
+        uint32_t t0, at = 0;
+        ui_power_on();
+        LARGE_SAVED = m ? LARGE_ON_TAG : 0u;
+        go_title("TEMPO"); frame();
+        turn(EN_K1, 1);
+        t0 = fm1_ms - 200u;                             /* (turn: the frame, then 200 ms) */
+        for (i = 0; i < 200u && ui.hot_t; i++) frame();
+        at = fm1_ms - t0;
+        bad += check(m ? "LARGE VALUE ON: large ~1 s after the knob stops" : "  AUTO: as before (40 frames)",
+                     m ? at >= LARGE_HOLD_MS && at < LARGE_HOLD_MS + 40u : at < LARGE_HOLD_MS);
+    }
+    LARGE_SAVED = 0;
+    return bad;
+}
 /* LANDSCAPE (ui_land.c): notes are drops only while the page shows; the still scene is not drawn again, a ring is */
 static uint32_t land_rings(void) { uint32_t n = 0; for (uint32_t i = 0; i < LAND_RIP; i++) n += land.used[i]; return n; }
 static int test_landscape(void)
