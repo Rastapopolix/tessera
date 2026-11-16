@@ -313,10 +313,28 @@ static int32_t mo_sheet_hold(const char **name)
     *name = NM[k];
     return ms >= OCT_HOLD_MS ? 1000 : (int32_t)((ms - 150u) * 1000u / (OCT_HOLD_MS - 150u));
 }
-/* the header's line: whole, or (a sheet's hold) solid as far as it has been held, dotted for the rest */
+/* a PIECE playing: how far it has got, 0..1000; -1 none (stopped, FREE or ended) */
+static int32_t mo_piece_line(void)
+{
+    uint32_t at, left;
+    return song.playing && tessera_piece_get(&at, &left) ? (int32_t)(at * 1000u >> 16) : -1;
+}
+/* the PLAY triangle's beat (seq.c): 0 solid (a bar's 1, or stopped), 1 hollow (the off-beats), 2 out (a phrase line's
+ * 1 blinks: out every other sixteenth) */
+static uint32_t mo_beat(void)
+{
+    if (!song.playing) return 0;
+    if (beat_n) return 1u;
+    return !(bar_n % fc_bars()) && (beat_pos / (MIDI_BEAT_UNITS / 4u) & 1u) ? 2u : 0u;
+}
+/* the header's line: whole, or (a sheet's hold) solid as far as it has been held, dotted for the rest; no hold, a
+ * PIECE playing the same as far as it has got */
 static void mo_head_line(int32_t y, int32_t hold)
 {
-    int32_t x, w = hold < 0 ? 120 : 120 * hold / 1000;
+    int32_t x, w;
+    if (hold < 0)
+        hold = mo_piece_line();
+    w = hold < 0 ? 120 : 120 * hold / 1000;
     if (w)
         mo_hl(0, y, w, MO_INK);
     for (x = w + 1; x < 120; x += 2)
@@ -2491,7 +2509,8 @@ static void mo_sheet(void)
 static uint32_t mo_hold_sig(void)
 {
     const char *hn;
-    return (uint32_t)(mo_sheet_hold(&hn) / 25 + 1);
+    int32_t p = mo_piece_line();
+    return (uint32_t)(mo_sheet_hold(&hn) / 25 + 1) ^ (uint32_t)(p < 0 ? 0 : p * 120 / 1000 + 1) << 8;   /* (a PIECE: a pixel on) */
 }
 static uint32_t mo_signature(void)
 {
@@ -2603,8 +2622,10 @@ static void mo_dhead(const char *chip, const char *msg, int32_t bat)
     mo_text(b, x, 1, ui.bpm_t ? MO_HOT : MO_DIM);
     if (!msg || (int32_t)str_len(msg) * 6 <= x - 7 - (song.rec ? 7 : 0) - 6) {   /* (a message too long: in its place) */
         x -= 7;
-        if (chain.running || song.playing) {            /* PLAY: a triangle; STOP: a square */
-            for (int32_t r = 0; r < 3; r++) mo_vl(x + r, 1 + r, 7 - 2 * r, MO_INK);
+        if (chain.running || song.playing) {            /* PLAY: a triangle, hollow off the beat (mo_beat); STOP: a square */
+            uint32_t bt = mo_beat();
+            for (int32_t r = 0; r < 3 && bt < 2u; r++) mo_vl(x + r, 1 + r, 7 - 2 * r, MO_INK);
+            if (bt == 1u) mo_vl(x + 1, 3, 3, MO_BG);
         } else {
             mo_fill(x, 2, 5, 5, MO_DIM);
         }
@@ -2877,9 +2898,11 @@ static void mo_stage_head(void)
     } else if (hold >= 0) {                             /* OCT+ held: the sheet it opens */
         mo_text(hn, 1, 1, MO_INK);
     } else {
-        if (song.playing) {                             /* PLAY: a triangle; STOP: a square */
+        if (song.playing) {                             /* PLAY: a triangle, hollow off the beat (mo_beat); STOP: a square */
             int32_t r;
-            for (r = 0; r < 7; r++) mo_vl(1 + r / 2, 1 + r / 2, 7 - r / 2 * 2, MO_INK);
+            uint32_t bt = mo_beat();
+            for (r = 0; r < 7 && bt < 2u; r++) mo_vl(1 + r / 2, 1 + r / 2, 7 - r / 2 * 2, MO_INK);
+            if (bt == 1u) mo_vl(2, 3, 3, MO_BG), mo_px(3, 4, MO_BG);
         } else {
             mo_fill(1, 2, 5, 5, MO_INK);
         }
@@ -2999,7 +3022,7 @@ static uint32_t mo_stage_signature(void)
         for (k = 0; k < sizeof mo_col; k++)
             h = (h ^ p[k]) * 16777619u;
     }
-    return (h ^ mo_hold_sig()) * 16777619u;             /* (OCT+ held: the sheet's line filling) */
+    return (h ^ mo_hold_sig() ^ mo_beat() << 20) * 16777619u;   /* (OCT+ held: the sheet's line filling; the beat) */
 }
 static void mono_stage(void)
 {
