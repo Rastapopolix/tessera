@@ -2005,6 +2005,26 @@ static void draw_page(void)
         draw_foot();
 #endif
 }
+/* MENU > IDLE LANDSCAPE: IDLE_MS untouched while playing, on a page with nothing over it, the screen moves to
+ * LANDSCAPE, as it is (no page_entered: the page left keeps its state); the first touch only goes back (screen.c
+ * scr_input). The screen reader hears nothing of either (ui_speak.c) */
+static void scr_idle(void)
+{
+#if MELODEE_LOOK
+    uint32_t i;
+    if (!TEXT_IDLE(TEXT_IDLE_LAND) || scrn.land || !song.playing || ui.menu || ui.confirm || ui.layer || pop.on ||
+        name_on() || (int32_t)(fm1_ms - scrn.idle) < (int32_t)IDLE_MS)
+        return;
+    for (i = 0; i < NPAGES && PAGES[i].graph != GR_LAND; i++) ;
+    if (i >= NPAGES || (!ui.home && ui.page == i))
+        return;
+    scrn.land = (uint8_t)(1u + ui.home);
+    scrn.land_pg = ui.page;
+    ui.home = 0;
+    ui.page = (uint8_t)i;
+    ui.force = 1;
+#endif
+}
 static void ui_draw_frame(void);
 static void ui_draw(void)                               /* (gfx.c: the fills wait for the frame's canvases) */
 {
@@ -2020,6 +2040,7 @@ static void ui_draw_frame(void)
         return;
     }
     if (!scr_frame()) return;
+    if (!sim.on && !ui.uboot) scr_idle();
     ui.frame++;
     if (palette_track(song.sel))                       /* THEME is the selected track's colour */
         ui.force = 1;
