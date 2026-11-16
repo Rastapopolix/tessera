@@ -5176,6 +5176,41 @@ static int test_perf(void)
     tessera_reset();
     return bad;
 }
+/* ROLL turned while playing (B4): its box keeps the seed playing, the one waiting for the bar line dotted under it
+ * (and beside it, large, while it turns) until it lands; then that one alone, solid */
+static int test_roll_wait(void)
+{
+    int bad = 0;
+    uint32_t tr, sig;
+    int32_t s0;
+    ui_power_on();
+    go_title("GEN");
+    tr = song.sel;
+    tessera_param_set(tr, TX_MODE, TESS_ENG_TURING);
+    frame();
+    go_title("EVOLVE");
+    s0 = tessera_param_get(tr, TX_EV_SEED);
+    song.playing = 1;
+    turn(EN_K4, 1);
+    frame();
+    bad += check("ROLL playing: the seed playing in its box, the one waiting marked (dotted under it)",
+                 tessera.roll[tr] == (uint32_t)s0 + 1u && atoi(mo_col[3].val) == s0 && mo_col[3].wait);
+    sig = mo_sig;
+    turn(EN_K4, 1);
+    frame();
+    bad += check("  turned on: drawn again (the waiting seed in the signature)", mo_sig != sig && mo_col[3].wait &&
+                 atoi(mo_col[3].val) == s0);
+    tess_roll_apply(tr);                                /* (the bar line) */
+    frame();
+    bad += check("  landed: the new seed, solid, nothing waiting", atoi(mo_col[3].val) == s0 + 2 && !mo_col[3].wait);
+    turn(EN_K4, 1);
+    turn(EN_K4, -1);
+    frame();
+    bad += check("  turned back to the seed playing: nothing waiting", !tessera.roll[tr] && !mo_col[3].wait);
+    stop_transport();
+    tessera_param_set(tr, TX_MODE, TESS_ENG_OFF);
+    return bad;
+}
 #endif
 
 /* MENU > TRACK KNOB: LEFT swaps the ALGORITHM and PRESETS knobs' roles; saved with the settings */

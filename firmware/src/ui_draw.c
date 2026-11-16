@@ -457,6 +457,7 @@ static void mx_columns(void);                           /* MATRIX (ui_matrix.c) 
 static uint8_t mo_on;                                   /* a Mono page being drawn: its knobs to mo_capture (ui_mono.c) */
 static void mo_capture(uint32_t c, const char *label, const char *val, const char *unit, uint16_t vc, int32_t ratio,
                        int hot);
+static void mo_wait(uint32_t c);
 #endif
 static uint8_t col_sh;                                  /* the cards drawn this many to the right (a GEN engine's OCT- layer
                                                          * behind RANDOM, pr_draw); past the fourth: none */
@@ -1281,11 +1282,13 @@ static void draw_columns_(void)
         col_mods(PID_TESS(TX_EV_AMOUNT));
         draw_column(2, "AMOUNT", e2, e2u, VAL(2u), (int32_t)ev->amount * 10, ICON_AUTO);
         if (tr >= TESSERA_TRACKS || tessera.mode[tr] == TESS_ENG_OFF || !tessera.seed[tr]) str_cpy(e3, "--", sizeof e3);
-        else if (tessera.roll[tr] && ((fm1_ms / 250u) & 1u)) e3[0] = 0;   /* a seed waiting for the bar line: blinking */
-        else if (tessera.roll[tr]) fmt_int(e3, tessera.roll[tr]);
         else fmt_int(e3, tessera.seed[tr]);           /* (picked when a generator is first selected or played) */
         col_quiet = 1;                                  /* ROLL: each step a new line; the seed small, to find one again */
         draw_column(3, "ROLL", e3, "", VAL(3u), -1, ICON_AUTO);
+#if MELODEE_LOOK
+        if (mo_on && e3[0] != '-' && tessera.roll[tr]) mo_wait(3u + col_sh);   /* a seed waiting for the bar line: beside
+                                                         * the one playing, dotted (ui_mono.c mo_cols) */
+#endif
         return;
     }
     if (cur_page()->graph == GR_STEPS && cur_page()->fam == FAM_GEN) {   /* (PATTERN: upstream's columns) */

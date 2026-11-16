@@ -3642,11 +3642,12 @@ static void develop_run(char *res, size_t cap)
     snprintf(res, cap, "%u %u %u %u %u %u", exact, varied, kept, grav, hand, markov);
 }
 
-/* ROLL ALL (EVOLVE, OCT- held, KNOB 4): every generator track a new seed, STEP tracks untouched; left puts them back */
+/* ROLL ALL (EVOLVE, OCT- held, KNOB 4): every generator track a new seed, STEP tracks untouched; left puts them back,
+ * two levels (F4): the seeds before the last ROLL ALL, then those before the one before it, then nothing */
 static int test_roll_all(void)
 {
-    uint16_t before[TESSERA_TRACKS];
-    int ok = 1, back = 1;
+    uint16_t before[TESSERA_TRACKS], mid[TESSERA_TRACKS];
+    int ok = 1, back = 1, two = 1;
     tessera_reset();
     song.playing = 0;
     tessera_param_set(0, TX_MODE, TESS_ENG_TURING); tessera_param_set(1, TX_MODE, TESS_ENG_EUCLID);
@@ -3660,8 +3661,22 @@ static int test_roll_all(void)
     tessera_roll_all(-1);
     for (uint32_t t = 0; t < TESSERA_TRACKS; t++) back &= tessera.seed[t] == before[t];
     back &= !tessera_roll_all_back() && tessera_roll_all(-1) == 0u;
+    tessera_roll_all(1);                             /* two ROLL ALLs, then back twice: each level in turn */
+    for (uint32_t t = 0; t < TESSERA_TRACKS; t++) mid[t] = tessera.seed[t];
+    two &= tessera_roll_all(1) == 3u;
+    two &= tessera_roll_all(-1) == 3u;
+    for (uint32_t t = 0; t < TESSERA_TRACKS; t++) two &= tessera.seed[t] == mid[t];
+    two &= tessera_roll_all_back() && tessera_roll_all(-1) == 3u;
+    for (uint32_t t = 0; t < TESSERA_TRACKS; t++) two &= tessera.seed[t] == before[t];
+    two &= !tessera_roll_all_back() && tessera_roll_all(-1) == 0u;
+    tessera_roll_all(1);                             /* three: two back (to the first one's), no further */
+    for (uint32_t t = 0; t < TESSERA_TRACKS; t++) mid[t] = tessera.seed[t];
+    tessera_roll_all(1); tessera_roll_all(1);
+    two &= tessera_roll_all(-1) == 3u && tessera_roll_all(-1) == 3u && !tessera_roll_all_back();
+    for (uint32_t t = 0; t < TESSERA_TRACKS; t++) two &= tessera.seed[t] == mid[t];
     return check("ROLL ALL: 3 generator tracks new seeds, the STEP track its own; turned back, all as before (once)",
-                 ok && back);
+                 ok && back) +
+           check("ROLL ALL: two levels back (two ROLL ALLs undone in turn; a third ROLL ALL drops the oldest)", two);
 }
 
 int main(int argc, char **argv)

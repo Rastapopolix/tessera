@@ -39,6 +39,7 @@ static struct {
     char label[8], val[12], unit[8];
     int32_t ratio;                                      /* 0..1000, -1: a list value (boxed, no dial) */
     uint8_t used, dim, hot;
+    uint8_t wait;                                       /* ROLL: a seed waits for the bar line (tessera.roll; mo_wait) */
 } mo_col[4];
 static uint32_t mo_sig;
 
@@ -55,6 +56,7 @@ static void mo_capture(uint32_t c, const char *label, const char *val, const cha
     mo_col[c].dim = vc == T_DIM;
     mo_col[c].hot = (uint8_t)hot;
 }
+static void mo_wait(uint32_t c) { if (c < 4u) mo_col[c].wait = 1; }
 
 /* ---- drawing in cells (2 x 2 pixels; cv_oy picks the canvas's half) ---- */
 static void mo_fill(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c)
@@ -132,6 +134,27 @@ static int32_t mo_text_s(const char *s, int32_t x, int32_t y, int32_t sc, uint16
     return x;
 }
 static int32_t mo_text(const char *s, int32_t x, int32_t y, uint16_t c) { return mo_text_s(s, x, y, 1, c); }
+/* dotted: each cell of the text (sc cells a font pixel) one screen pixel, as the header's line is dotted for what is not
+ * there yet (ROLL's seed waiting for the bar line) */
+static void mo_text_dot(const char *s, int32_t x, int32_t y, int32_t sc, uint16_t c)
+{
+    for (; *s; s++, x += 6 * sc) {
+        uint32_t ch = mono_ch((uint8_t)*s), r, b;
+        int32_t i;
+        for (r = 0; r < 7u; r++)
+            for (b = 0; b < 5u; b++)
+                if (MO_FONT[ch - 32u][r] & (16u >> b))
+                    for (i = 0; i < sc * sc; i++)
+                        cv_rect((x + (int32_t)b * sc + i % sc) * 2, (y + (int32_t)r * sc + i / sc) * 2, 1, 1, c);
+    }
+}
+/* ROLL's seed waiting for the bar line (tessera.roll), "" none */
+static void mo_wait_s(char *d, uint32_t i)
+{
+    d[0] = 0;
+    if (mo_col[i].wait && song.sel < TESSERA_TRACKS && tessera.roll[song.sel])
+        fmt_int(d, tessera.roll[song.sel]);
+}
 static void mo_textc(const char *s, int32_t cx, int32_t y, uint16_t c) { mo_text(s, cx - mo_tw(s) / 2, y, c); }
 static void mo_textr(const char *s, int32_t rx, int32_t y, uint16_t c) { mo_text(s, rx - mo_tw(s), y, c); }
 static void mo_invc(const char *s, int32_t x, int32_t y, uint16_t c)   /* on a filled box of colour c */
@@ -541,6 +564,12 @@ static void mo_cols(void)
             mo_invc(v[i], tx, ty, MO_HOT);
         } else {
             mo_text(v[i], tx, ty, ink);
+        }
+        if (mo_col[i].wait) {                           /* ROLL: the seed waiting for the bar line, dotted under the one
+                                                         * playing until it lands (then that one, solid) */
+            char w[8];
+            mo_wait_s(w, i);
+            mo_text_dot(w, cx - mo_tw(w) / 2, 39, 1, ink);
         }
         mo_vals[i].fx0 = (int16_t)fx0, mo_vals[i].fx1 = (int16_t)fx1;
         mo_vals[i].tx0 = (int16_t)tx, mo_vals[i].tx1 = (int16_t)(tx + tw[i] - 1);
@@ -2528,6 +2557,7 @@ static uint32_t mo_signature(void)
              (uint32_t)tessera.grids[song.sel].step_idx << 16 ^ (uint32_t)tessera.turing[song.sel].reg << 24) * 16777619u;
         h = (h ^ tessera.morph[song.sel].step_idx ^ (uint32_t)tessera.markov[song.sel].cur_state << 8) * 16777619u;
         h = (h ^ tessera.markov[song.sel].last_hit ^ (uint32_t)tessera.markov[song.sel].tension << 8) * 16777619u;
+        h = (h ^ tessera.roll[song.sel]) * 16777619u;   /* (ROLL's seed waiting: mo_wait_s) */
     }
     if (cur_page()->graph == GR_ROLL)                   /* NOTES: the steps */
         h = (h ^ steps_hash(t) ^ (uint32_t)t->p[P_SLEN] << 8 ^ (uint32_t)t->p[P_SDIV] << 16) * 16777619u;
@@ -2554,6 +2584,7 @@ static uint32_t mo_signature(void)
 static int mo_turn(void)
 {
     uint32_t i;
+    int32_t x;
     char b[24];
     if (LARGE_MODE == LARGE_OFF || (LARGE_MODE == LARGE_AUTO && mo_pic_own))
         return 0;
@@ -2566,7 +2597,9 @@ static int mo_turn(void)
     str_cpy(b, mo_col[i].val, sizeof b);
     str_cpy(b + str_len(b), mo_col[i].unit, sizeof b - str_len(b));
     b[9] = 0;                                           /* (nine large characters across) */
-    mo_text_s(b, 2, 103, 2, MO_HOT);
+    x = mo_text_s(b, 2, 103, 2, MO_HOT);
+    mo_wait_s(b, i);                                    /* ROLL: the seed waiting, dotted beside it */
+    mo_text_dot(b, x + 12, 103, 2, MO_HOT);
     if (mo_col[i].ratio >= 0) {
         int32_t w = 40 * mo_col[i].ratio / 1000;
         mo_box(76, 92, 42, 7, MO_DIM);
