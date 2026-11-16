@@ -22,7 +22,8 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | A dialog: **OCT+** / **OCT-** | Yes / no |
 | Lists (menu, SCL, VOICE): **KNOB 1** / **KNOB 2** | The row / its value |
 | MENU > **GROUND** | What the ink is drawn on: DARK (black, the default) or LIGHT (paper, each ink's light version) |
-| MENU > **LARGE VALUE** | The knob turning, large at the foot: AUTO (pages without a picture), ON, OFF |
+| MENU > **LARGE VALUE** | The knob turning, large at the foot: AUTO (pages without a picture), ON (and a second after), OFF |
+| MENU > **TEXT** / **IDLE** | BOLD letters; LANDSCAPE after 2 minutes untouched while playing (the first touch only goes back) |
 
 ## The page buttons
 
