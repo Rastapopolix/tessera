@@ -513,7 +513,8 @@ static void seq_midi_reset(void)                    /* a new page/track ends MID
 }
 static void undo_seal(void);
 /* a page opened from FM6's map (1) or from MATRIX (2), drill_pg: OCT- goes back there (ui_input.c; tessera-notes
- * oct-taps.md); any other way to a page forgets it */
+ * oct-taps.md); PRESETS opened from VOICE's Sound row (3), drill_pg that list: OCT+ / OCT- go back to it instead of
+ * Stage (ui_browser.c browser_key); any other way to a page forgets it */
 static uint8_t drill_to, drill_pg;
 static void page_entered(void)
 {

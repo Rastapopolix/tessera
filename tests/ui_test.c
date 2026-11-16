@@ -3221,6 +3221,34 @@ static int test_browser(void)
         ok = total > 0u;
     }
     bad += check("BROWSE: every sound is in exactly one category (their lists add up to ALL)", sum == all && ok);
+    set_engine_of(TSEL, 6);
+    up_store(6, "MY TRIO");                                 /* (a general user preset: TRIO's, the track's engine) */
+    for (i = 0, sum = 0, ok = 1; i < NENG_SHOWN; i++) {
+        e = eng_vis(i);
+        list_set(LM_ENG + i);
+        preset_pos(&total);
+        sum += total;
+        for (k = 0, want = 0; k < total; k++) {
+            src = preset_at(k, &c);
+            ok &= src_engine(src, c) == e;
+            want += src == e;
+        }
+        ok &= want == ENGINES[e]->npresets && str_eq(list_name(LM_ENG + i), ENGINES[e]->name);
+    }
+    list_set(LM_ENG + eng_rank(6));
+    preset_pos(&total);
+    for (k = 0, c = 0; k < total; k++)
+        c |= preset_at(k, &first) == USER_GENERAL && first == 6u;
+    bad += check("BROWSE: an engine's LIST has its sounds alone, every factory one, its user presets too; together ALL",
+                 ok && sum == all + 1u && c);
+    up_put(6, 0);
+    list_set(LM_ENG + eng_rank(ENGI_ORACLE));
+    set_engine_of(&trk[1], ENGI_DRUM);
+    list_trk[1] = 0;
+    bad += check("LIST: a track without its own after an engine's was picked browses its own engine's (RAM only)",
+                 trk_list(1) == LM_ENG + eng_rank(ENGI_DRUM) && list_eng && !list_lcat && !favorites.filter);
+    list_set(LM_ALL);
+    bad += check("LIST: ALL again forgets the engine", !list_eng && trk_list(0) == LM_ALL);
     set_engine_of(TSEL, 6);                                /* (a general sound) */
     up_store(5, "SUB BASS 2");
     list_set(LM_CAT);                                      /* BASS */
@@ -3234,8 +3262,9 @@ static int test_browser(void)
     list_set(LM_ALL);
     for (i = 0; i < LM_N + 2u; i++)
         turn(EN_K1, 1);
-    bad += check("LIST (KNOB 1): ALL FAV RECENT, the categories, stopping at OTHER", list_mode() == LM_N - 1u &&
-                 str_eq(list_name(list_mode()), "OTHER"));
+    bad += check("LIST (KNOB 1): ALL FAV RECENT, the categories, the engines, stopping at the last (DRUM)",
+                 list_mode() == LM_N - 1u && str_eq(list_name(list_mode()), "DRUM") &&
+                 str_eq(list_name(LM_ENG - 1u), "OTHER") && str_eq(list_name(LM_ENG), "FM6"));
     for (i = 0; i < LM_N; i++)
         turn(EN_K1, -1);
     turn(EN_K1, 1);
@@ -3300,6 +3329,42 @@ static int test_browser(void)
     turn(EN_K2, 1);
     press(B_OCTUP);
     bad += check("BROWSER: OCT+ keeps the sound, to Stage", ui.home && list_cur(&total) == first + 1u);
+
+    go_title("VOICE");                                   /* VOICE's Sound row: PRESETS in place, back to VOICE */
+    frame();
+    {
+        char lb[16], v[16], tag[6], nm[16];
+        uint16_t vc;
+        uint32_t voice = ui.page;
+        lst.row = 0;
+        frame();
+        list_cap(list_at(list_on(), 0), lb, v, &vc);
+        cur_entry(&src, &k);
+        entry_label(src, k, tag, nm);
+        bad += check("VOICE: its first row is the track's sound, with a '>' (PRESETS behind it)",
+                     list_on() && str_eq(lb, "Sound") && str_eq(v, nm) && list_text(0, lb, v, &vc));
+        first = list_cur(&total);
+        press(B_OCTUP);
+        ok = !ui.home && cur_page()->graph == GR_BROWSE && drill_to == 3u;
+        turn(EN_K2, 1);
+        turn(EN_K2, 1);
+        ok &= list_cur(&total) == first + 2u;
+        press(B_OCTDN);
+        bad += check("VOICE Sound > PRESETS: OCT- (BACK) leaves the sound as it was, back to VOICE's list on its row",
+                     ok && !ui.home && ui.page == voice && list_on() && lst.row == 0u && list_cur(&total) == first &&
+                     !drill_to);
+        press(B_OCTUP);
+        turn(EN_K2, 1);
+        press(B_OCTUP);
+        bad += check("VOICE Sound > PRESETS: OCT+ (OK) keeps the sound picked, back to VOICE",
+                     !ui.home && ui.page == voice && lst.row == 0u && list_cur(&total) == first + 1u);
+        turn(EN_K2, 1);
+        bad += check("VOICE Sound: KNOB 2 browses as the PRESETS knob does", list_cur(&total) == first + 2u);
+        press(B_OCTUP);
+        turn(EN_SELECT, 1);
+        bad += check("VOICE Sound > PRESETS: left another way (SELECT), the way back is forgotten",
+                     !drill_to && cur_page()->graph != GR_BROWSE);
+    }
     PREF_BITS &= (uint8_t)~PREF_ACCEL_OFF;
 
     ui_power_on();
@@ -4365,8 +4430,8 @@ static int test_popups(void)
     {   /* list pages (ui_list.c): KNOB 1 the row, KNOB 2 its value, OCT+ its list (SCL's Scale: SCALES), OCT- Stage */
         ui_power_on(); go_title("VOICE"); frame();
         o = TSEL->p[P_DETUNE];
-        turn(EN_K1, 5); turn(EN_K2, 3);
-        bad += check("LISTS: VOICE 1-3 one list; KNOB 1 to row 6 (VOICE 2's DETUNE), KNOB 2 edits it",
+        turn(EN_K1, 6); turn(EN_K2, 3);                  /* (row 1: Sound, PRESETS) */
+        bad += check("LISTS: VOICE 1-3 one list; KNOB 1 to row 7 (VOICE 2's DETUNE), KNOB 2 edits it",
                      TSEL->p[P_DETUNE] == o + 3 && !page_visible(page_titled("VOICE 2")));
         turn(EN_K1, -5);
         press(B_OCTUP);
