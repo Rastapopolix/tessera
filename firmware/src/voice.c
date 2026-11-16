@@ -167,10 +167,19 @@ static uint32_t voice_budget_max(void)
     return (uint32_t)settings_budget;
 #endif
 }
+static uint8_t vtight;                                  /* voice_ceiling_early: admission held at what sounds */
+static uint32_t voices_busy(void);
+static uint32_t voice_ceiling_floor(void);
 static uint32_t voice_budget(void)
 {
     uint32_t b = voice_budget_max();
-    return vceil < b ? vceil : b;
+    b = vceil < b ? vceil : b;
+    if (vtight) {                                       /* a new voice replaces one instead of adding load */
+        uint32_t u = voices_busy(), f = voice_ceiling_floor();
+        u = u > f ? u : f;
+        b = u < b ? u : b;
+    }
+    return b;
 }
 
 static uint32_t voices_busy(void)                       /* budget units of all parts' sounding voices (not fading) */
@@ -215,6 +224,35 @@ static void voice_ceiling_tick(uint32_t load_q8)
     vceil_wait = 0;
     if (++vceil >= voice_budget_max())
         vceil = 0xFFu;
+}
+
+/* The early ceiling (after JIANT's load governor): act before a shed, whose fade (or the late half before it) is the
+ * click. Each half (audio.c shed_check, its load in %): over 70 % holds admission at the units sounding (never under
+ * half of BUDGET) until a half under 65 %; three halves in a row over 75 % take a unit off the ceiling and restart its
+ * recovery (voice_ceiling_tick). Test benches with fixed voices are left alone */
+#define VTIGHT_ON 70u
+#define VTIGHT_OFF 65u
+#define VHOT 75u
+#define VHOT_HALVES 3u
+static uint8_t vhot_n;
+static void voice_ceiling_early(uint32_t pct)
+{
+#if MELODEE_AUDIO_BENCH
+    if (audio_bench_active())
+        return;
+#endif
+    vtight = pct > VTIGHT_ON ? 1u : pct < VTIGHT_OFF ? 0u : vtight;
+    if (pct <= VHOT) {
+        vhot_n = 0;
+        return;
+    }
+    if (++vhot_n < VHOT_HALVES)
+        return;
+    vhot_n = 0;
+    uint32_t c = voice_budget(), u = voices_busy(), f = voice_ceiling_floor();
+    c = u < c ? u : c;
+    vceil = (uint8_t)(c > f + 1u ? c - 1u : f);
+    vceil_wait = 0;
 }
 
 static uint32_t lowest_held(const track_t *t)           /* index of the lowest held note (the bass), NVOICE = none */

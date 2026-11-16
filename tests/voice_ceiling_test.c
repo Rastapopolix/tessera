@@ -19,7 +19,7 @@ static void fresh(void)
     memset(resource,0,sizeof resource);
     host_tracks_init();
     memset(voice_kills_part,0,sizeof voice_kills_part);voice_kills=0;
-    audio_worker_online=1;vceil=0xFFu;vceil_wait=0;
+    audio_worker_online=1;vceil=0xFFu;vceil_wait=0;vtight=0;vhot_n=0;
     for(unsigned p=0;p<NPART;p++){
         host_preset(&trk[p],HOST_SYNTH,HOST_PLAIN);
         trk[p].p[P_VOICE]=V_POLY;
@@ -78,6 +78,35 @@ int main(void)
     fresh();trk_note_on(&trk[0],48u,100);assert(voices_busy()==2u);
     voice_ceiling_drop();assert(vceil==full/2u);
 
-    printf("Load ceiling: shed caps admission, replaces past it with the bass kept, ~250 ms a unit back, BUDGET the maximum, ~1 s a unit under load, floor half of BUDGET: OK\n");
+    /* the early ceiling: a half over 70 % holds admission at what sounds (a new note replaces one, no shed), until
+     * a half under 65 %; between the two it stays as it was */
+    fresh();
+    for(unsigned p=0;p<NPART;p++)for(unsigned n=0;n<3u;n++)trk_note_on(&trk[p],48u+4u*n,100);
+    assert(voices_busy()==24u || voices_busy()==full);
+    { uint32_t busy=voices_busy();
+      voice_ceiling_early(71);assert(vtight && vceil==0xFFu && voice_budget()==(busy<full?busy:full));
+      voice_kills=0;trk_note_on(&trk[2],70u,100);assert(voices_busy()<=busy && voice_kills);
+      for(unsigned p=0;p<NPART;p++)assert(trk[p].v[lowest_held(&trk[p])].note==48u);
+      voice_ceiling_early(68);assert(vtight);                 /* between 65 and 70 %: held */
+      voice_ceiling_early(64);assert(!vtight && voice_budget()==full); }
+    /* held with little sounding: never under half of BUDGET */
+    fresh();trk_note_on(&trk[0],48u,100);
+    voice_ceiling_early(90);assert(vtight && voice_budget()==full/2u);
+    /* three halves in a row over 75 %: a unit off what sounds, before any shed; recovery restarts */
+    fresh();
+    for(unsigned p=0;p<NPART;p++)for(unsigned n=0;n<3u;n++)trk_note_on(&trk[p],48u+4u*n,100);
+    { uint32_t busy=voices_busy(),top=busy<full?busy:full;voice_kills=0;
+      voice_ceiling_early(80);voice_ceiling_early(80);assert(vceil==0xFFu);
+      voice_ceiling_early(74);voice_ceiling_early(80);voice_ceiling_early(80);assert(vceil==0xFFu);  /* not in a row */
+      voice_ceiling_early(80);assert(vceil==top-1u && !voice_kills);
+      voice_ceiling_early(80);voice_ceiling_early(80);voice_ceiling_early(80);assert(vceil==top-2u);
+      voice_ceiling_early(50);assert(!vtight && voice_budget()==top-2u);
+      ticks(VCEIL_HALVES,0);assert(vceil==top-1u); }          /* then back as after a shed */
+    /* never under the floor */
+    fresh();trk_note_on(&trk[0],48u,100);
+    for(unsigned k=0;k<30u;k++)voice_ceiling_early(99);
+    assert(vceil==full/2u);
+
+    printf("Load ceiling: shed caps admission, replaces past it with the bass kept, ~250 ms a unit back, BUDGET the maximum, ~1 s a unit under load, floor half of BUDGET; early: held over 70 %, a unit off over 75 % x3: OK\n");
     return 0;
 }
