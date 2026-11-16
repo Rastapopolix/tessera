@@ -64,10 +64,12 @@ PROJ	project
 EXT	external
 EOC	end of cycle
 CLK	clock
+PPQN	pulses per beat
 QNT	quantize
 HOLD GLO SET	hold global to set its keys
 HOLD SCL SET	hold scale to set the key
 ERR	error
+SIM	simulator
 
 
 # pages and knobs
@@ -82,6 +84,9 @@ VOICE LEG	voice legato
 COND	condition
 CONTRA	contrary
 CANON#	canon #
+HOW HARM	how harmonizer
+QNT HARM	quantize harmonizer
+QUANTIZE HARM	quantize harmonizer
 QUAD EVERY # EVERY	quad column # every
 RAM	R A M
 CCS	controllers
@@ -312,3 +317,20 @@ BRIT	brightness
 VOWL	vowel
 TMBR	timbre
 MRPH	morph
+# more MODS destinations (codes 110..131)
+STR DIR	strum direction
+R CHANC	ratchet chance
+N LEN	note length
+VELO	velocity
+AN ECHO	answer echo
+AN SHFT	answer shift
+AN SPCE	answer space
+ACC LIM	accumulator limit
+TIDE SP	tide speed
+SWRM RT	swarm rate
+ARP RTE	arp rate
+ARP GTE	arp gate
+ARP OCT	arp octaves
+# MIDI OUT sheet: SECTION PC (a Program Change on the CHAIN's section)
+SECTION PC	section program change
+SEC PC	section program change

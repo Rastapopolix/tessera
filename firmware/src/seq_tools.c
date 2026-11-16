@@ -199,7 +199,7 @@ static int seqt_melodic(const track_t *t)
 static uint32_t seqt_snap_scale(const track_t *t)
 {
     uint32_t mask = scale_mask(t), pcs = 0, i;
-    if (t->p[P_QUANT] == Q_CHRD && tessera_chord_pcs())
+    if (Q_CHORDS(t->p[P_QUANT]) && tessera_chord_pcs())
         return tessera_chord_pcs();
     for (i = 0; i < 12u; i++)
         if ((mask >> i) & 1u)

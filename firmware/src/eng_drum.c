@@ -259,9 +259,11 @@ static voice_t *drum_reuse(track_t *t, uint32_t note)
 
 /* lanes hit since the UI last looked, a bit per lane (drum_lane) and track: Stage flashes their names (ui_stage.c) */
 static volatile uint8_t drum_flash[NTRK];
+#define DRUM_FRESH 65536                                 /* v->s[7] of a hit not heard yet (voice.c voice_fresh) */
 static void drum_note_on(track_t *t, voice_t *v)
 {
     drum_flash[(uint32_t)(t - trk) % NTRK] |= (uint8_t)(1u << drum_lane(v->note));
+    v->s[7]=DRUM_FRESH;                                  /* (its loudness: fresh, full, until it has played a block) */
     v->s[3]=(int32_t)drum_event_length; v->s[4]=drum_event_pitch; v->s[5]=drum_event_length!=0;
     if(drum_is909(t)) {
         drum909_part_t *k=drum909_of(t); if(!k)return;
@@ -383,13 +385,16 @@ static void drum_render_into(track_t *t,voice_t *v,int32_t *out,uint32_t n,const
         lane_mod.amp1 = mulq15(m->amp1, lane_gain);
         m = &lane_mod;
     }
+    int32_t pk = 0;
     for (i = 0; i < n; i++) {                            /* x1.25 and the knee below, in 32 bits */
         int32_t s = y[i];
         if (g)
             s = (softclip((s * g) >> 12) * mk) >> 15;
         s = voice_amp(soft_knee(s + (s >> 2), 24000), m, i);
         out[i] += s << 1;
+        pk |= s < 0 ? -s : s;                            /* (a bound of the peak: the OR's top bit is the peak's) */
     }
+    v->s[7] = pk;                                        /* the voice's loudness this block, for the shedder (audio.c) */
 }
 
 static void drum_render(track_t *t,voice_t *v,int32_t *out,uint32_t n,const vmod_t *m)

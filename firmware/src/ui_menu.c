@@ -9,7 +9,8 @@
  * and CLOCK OUT (midi_out.c), MIDI CC IN (ON or OFF: CCs and
  * NRPNs that set parameters; midi_cc.c), MIDI LEARN (a knob, then a CC; midi_learn.c, ui_learn.c), MUTES (GLO's
  * mute keys while playing: NOW, on the next BAR or PHRASE; entries.c mute_press), USB HOST (the USB-C port hosts a USB-MIDI device instead of talking to a
- * computer; not saved; usb_host.c),
+ * computer; not saved; usb_host.c), SIM CONTROL (the panel plays the web simulator only, while it mirrors the panel; not
+ * saved; panel.c sim, ui_input.c sim_enter),
  * AUTOSAVE (automatic project saves after five seconds stopped and untouched),
  * CALIBRATION (the setup screen: HARDWARE CALIBRATION), ABOUT.
  * PRESETS scrolls from ABOUT through all credits. ui.menu: 1 list, 2 information. */
@@ -19,7 +20,7 @@
  * together (menu_value, menu_input take them as a range) */
 enum { MI_COLOR,
 #if MELODEE_LOOK
-       MI_GROUND, MI_KNOBS, MI_LARGE,
+       MI_GROUND, MI_KNOBS, MI_LARGE, MI_TEXT, MI_IDLE,
 #endif
        MI_LIGHTS, MI_SCREEN, MI_BATTERY, MI_GAMMA,
        MI_HOLD, MI_ACCEL, MI_TRACK_KNOB,
@@ -31,12 +32,13 @@ enum { MI_COLOR,
 #if MELODEE_USB_HOST
        MI_USB_HOST,
 #endif
-       MI_DESIGNER, MI_PANEL, MI_ABOUT, MI_BACK,
+       MI_SIM,
+       MI_PANEL, MI_ABOUT, MI_BACK,
        MI_COUNT };
 static const char *const GAMMA_NAME[GAMMA_N] = {"G2.2", "G1.8", "G2.5", "G1.0", "TUNED", "TUNED+VCOM"};   /* (lcd.c) */
 static const char *const MI_NAME[MI_COUNT] = {"COLOR",
 #if MELODEE_LOOK
-                                              "GROUND", "KNOBS", "LARGE VALUE",
+                                              "GROUND", "KNOBS", "LARGE VALUE", "TEXT", "IDLE",
 #endif
                                               "LIGHTS", "SCREEN OFF", "BATTERY", "PANEL GAMMA",
                                               "HOLD", "KNOB ACCEL", "TRACK KNOB",
@@ -49,7 +51,8 @@ static const char *const MI_NAME[MI_COUNT] = {"COLOR",
 #if MELODEE_USB_HOST
                                               "USB HOST",
 #endif
-                                              "SOUND DESIGNER", "CALIBRATION", "ABOUT", "BACK"};
+                                              "SIM CONTROL",
+                                              "CALIBRATION", "ABOUT", "BACK"};
 _Static_assert(MI_ADD - MI_CLICK == 4, "MI_CLICK .. MI_ADD in a row");
 static uint8_t menu_cols;   /* Mono: the COLOR sheet open (KNOB 2 or OCT+ on COLOR; KNOB 1 off it, OCT- or closing folds it:
                              * HOME held shows the list first, beta3 Theo) */
@@ -233,6 +236,9 @@ static int32_t menu_text(const char *s, int32_t y, uint16_t col, int draw)
 }
 #endif
 
+#ifdef FM1_IRQ_TARGET
+static void space_report(uint32_t *flash, uint32_t *ram);   /* main.c */
+#endif
 static int32_t menu_document(int32_t y, int draw)
 {
     uint32_t i;
@@ -300,6 +306,23 @@ static int32_t menu_document(int32_t y, int draw)
         }
         y = menu_text(b, y, T_SEC, draw) + 12;
     }
+#ifdef FM1_IRQ_TARGET
+    {                                                 /* what this build leaves free (main.c space_report): room for
+                                                       * new features, "FLASH 18.9 KB FREE" */
+        char b[24];
+        uint32_t v[2];
+        space_report(&v[0], &v[1]);
+        y = menu_text("SPACE", y, T_THEME, draw);
+        for (i = 0; i < 2u; i++) {
+            uint32_t t = (v[i] * 10u + 512u) / 1024u;    /* tenths of a KB */
+            str_cpy(b, i ? "RAM " : "FLASH ", sizeof b);
+            fmt_fix(b + str_len(b), (int32_t)t, 1);
+            str_cpy(b + str_len(b), " KB FREE", 9);
+            y = menu_text(b, y, T_TEXT, draw);
+        }
+        y += 12;
+    }
+#endif
 #if MELODEE_USB_HOST
     if (uh.on && uh_dg.root) {                        /* what USB HOST's last scan found, port by port (usb_host.c) */
         char b[24];
@@ -432,6 +455,8 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
     if (i == MI_GROUND) value = ux_ground ? "LIGHT" : "DARK";
     if (i == MI_KNOBS) value = KNOBS_BAR ? "BAR" : "DIAL";
     if (i == MI_LARGE) value = (const char *const[]){"AUTO", "ON", "OFF"}[LARGE_MODE];
+    if (i == MI_TEXT) value = TEXT_IDLE(TEXT_IDLE_BOLD) ? "BOLD" : "NORMAL";
+    if (i == MI_IDLE) value = TEXT_IDLE(TEXT_IDLE_LAND) ? "LANDSCAPE" : "OFF";
 #endif
     if (i == MI_MIDI_OUT) value = (const char *const[]){"KEYS", "ALL", "OFF"}[settings_midi_out % MIDI_OUT_N];
     if (i == MI_CLOCK_OUT) value = settings_clock_out ? "ON" : "OFF";
@@ -446,6 +471,7 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
 #if MELODEE_USB_HOST
     if (i == MI_USB_HOST) value = uh.want ? "ON" : "OFF";
 #endif
+    if (i == MI_SIM) value = panel_out ? "OFF" : "NO SIM";   /* (on: the menu is out of reach, ui_input.c sim_input) */
     if (i == MI_MUTES) value = MUTE_Q_NAME[settings_mute_q % 3u];   /* (ui_popup.c: MIXER's sheet turns it too) */
     if (i == MI_AUTOSAVE) value = settings_autosave ? "ON" : "OFF";
     if (i == MI_BATTERY) value = settings_batt_off ? "WHEN LOW" : "ON";
@@ -639,6 +665,7 @@ static void enc_drop_but(uint32_t keep)
         if (!((keep >> k) & 1u)) panel_enc(k);
 }
 
+static void sim_enter(void);                           /* (ui_input.c) */
 static void menu_close(void)
 {
     settings_save();                                   /* palette / panel table, if changed */
@@ -777,6 +804,12 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         LARGE_SAVED = (uint8_t)(m == LARGE_ON ? LARGE_ON_TAG : m == LARGE_OFF ? LARGE_OFF_TAG : 0u);
         ui.force = 1; ok = 0;                          /* (ui_mono.c mo_turn, mo_stage_panel; saved with the favorites) */
     }
+    if ((s || ok) && ui.menu == 1 && (ui.menu_sel == MI_TEXT || ui.menu_sel == MI_IDLE)) {   /* KNOB 2 right BOLD /
+                                                       * LANDSCAPE, left NORMAL / OFF; OCT+ toggles */
+        uint32_t bit = ui.menu_sel == MI_TEXT ? TEXT_IDLE_BOLD : TEXT_IDLE_LAND;
+        text_idle_put(bit, s > 0 ? 1 : s < 0 ? 0 : !TEXT_IDLE(bit));
+        ui.force = 1; ok = 0;                          /* (ui_mono.c mo_text_s, screen.c scr_idle; saved with the favorites) */
+    }
 #endif
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_TRACK_KNOB) {   /* KNOB 2 right RIGHT, left LEFT; OCT+ toggles */
         settings_knob_swap = (uint8_t)(s > 0 ? 0u : s < 0 ? 1u : !settings_knob_swap);
@@ -801,6 +834,14 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         ui.force = 1; ok = 0;                          /* (not saved: the next boot is a USB device again; usb_host.c) */
     }
 #endif
+    if ((s > 0 || ok) && ui.menu == 1 && ui.menu_sel == MI_SIM) {   /* KNOB 2 right or OCT+: on, while the simulator */
+        if (panel_out) {                                /* listens (editor.c PANEL); it closes the menu */
+            sim_enter();
+            return;
+        }
+        ui_message("NO SIMULATOR");
+        ok = 0;
+    }
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_GAMMA) {   /* KNOB 2 / OCT+ the next panel gamma (saved on leaving) */
         gamma_put((gamma_get() + (s < 0 ? GAMMA_N - 1u : 1u)) % GAMMA_N);
         lcd_gamma_switch(gamma_get());                 /* (the panel black and on again: ui.force draws it all) */
@@ -831,9 +872,6 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         case MI_PANEL:
             panel_setup();
             ui.force = 1;
-            break;
-        case MI_DESIGNER:
-            menu_close();designer_open();
             break;
         case MI_ABOUT:
             ui.menu = 2;

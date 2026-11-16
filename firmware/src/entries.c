@@ -2,7 +2,7 @@
  * Copyright (C) 2026 Theo Dainis (melodee-tess) */
 /* Entries (long form, slice 2): tracks drop out and come back on the project's phrase lines. The ENTRIES page (GLO):
  * ENTRIES 0..100 (0 off: every track as set), DWELL 1-8 phrases a track stays in or out at least, STYLE CUT / FADE and
- * FADE 1-4 bars; OCT+ held, KNOB k track k's ROLE (also OCT+ held on FORM, KNOB 4): AUTO, BASS, RHYTHM, HARMONY,
+ * FADE 1-4 bars; OCT- held, KNOB k track k's ROLE (also OCT- held on FORM, KNOB 4): AUTO, BASS, RHYTHM, HARMONY,
  * MELODY or ANCHOR (never taken out). AUTO: CHORD harmony; ATLAS or a drum sound rhythm; notes mostly below C3 bass;
  * else melody. OCT- held, KNOB k track k's ORDER: AUTO, 1ST..4TH (et_rank: the order it comes in).
  *   The phrase is the CHAIN's (PHRASE, counted from PLAY, its FORM on or OFF). A section begins where the CHAIN moves
@@ -270,6 +270,7 @@ void entries_tick(uint32_t n)
     uint32_t tr, b = bar_n, bars = fc_bars(), step;
     mute_tick();                                      /* (MENU MUTES: before the downbeat's steps) */
     planner_tick(n);
+    fc_pc_tick();                                     /* (SECTION PC: form_chain.c, on the same phrase line) */
     if (et.final && song.playing) {
         /* (the end: everything fades out, nothing decided) */
     } else if (!song.playing || !tessera.et_amount) {
@@ -349,6 +350,13 @@ void mute_press(uint32_t tr, int all)
     }
 }
 uint32_t mute_waiting(void) { return song.playing ? mute_pend : 0u; }   /* the keys that blink */
+/* MIXER's underline under a waiting MUTE (ui_mono.c mo_strip): how much of the bar or phrase before its line has gone,
+ * in w parts (0..w-1; the bars counted from PLAY, as mute_tick counts them) */
+uint32_t mute_wait_part(uint32_t w)
+{
+    uint32_t n = settings_mute_q < 2u ? 1u : fc_bars(), beat = seq_beat_samples();
+    return ((bar_n % n * 4u + beat_n) * beat + beat_pos % beat) * w / (n * 4u * beat);
+}
 static void mute_tick(void)                           /* entries_tick: a waiting key's line */
 {
     uint32_t b = bar_n, tr;

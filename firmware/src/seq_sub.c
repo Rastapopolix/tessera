@@ -345,7 +345,7 @@ static void seq_gen_step(track_t *t, uint32_t tr, uint32_t span)
         seq_split[tr] = SPLIT_NONE;
         seq_gen_play(t, tr, 1u, 0u);
     }
-    seq_split[tr] = (uint8_t)(tessera.sub_ratch[tr] ? SPLIT_NONE : seq_split_toss(t, tr));   /* (RATCH wins; its CHANCE is
+    seq_split[tr] = (uint8_t)(cord_tess_get(tr, TX_SUB_RATCH) ? SPLIT_NONE : seq_split_toss(t, tr));   /* (RATCH wins; its CHANCE is
                                                          * only drawn after the notes, so the whole track) */
     late = seq_human_late(tr, span);
     if (seq_split[tr] == SPLIT_PUSH) late += span / 2u; /* (HUMAN's on top; at most 3/4 of the step) */

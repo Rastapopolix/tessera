@@ -146,7 +146,7 @@ static void new_words(char *d, const char *s, uint32_t n)
     }
 }
 /* the keys under NEW SONG (mock/r6_pages NEW SONG): OCT- back on the left, OCT+ on the right in the track's colour
- * (go, its icon); the sound designer's START too */
+ * (go, its icon) */
 static void new_keys_row(const char *go, uint32_t icon)
 {
     int32_t gw = text_w(&AF_S, go) + 30;

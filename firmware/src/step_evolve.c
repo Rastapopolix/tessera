@@ -5,7 +5,7 @@
  * first step, each change kept at LOCK %, then new ones up to AMOUNT's share (100: half the steps). A MOVE goes by degrees of the track's scale
  * (CHR: semitones), drum hits never MOVE or jump an OCT. Tied and recorded steps are left alone. AMOUNT 0 or EVERY OFF:
  * the steps as written. REC held keeps the changes: they become the steps (ui_input.c capture_take). Not saved: a
- * loaded project's steps start as written. HOW (OCT+ held on the page, KNOB 1; saved) says what a round makes: DRIFT
+ * loaded project's steps start as written. HOW (OCT- held on the page, KNOB 4; saved) says what a round makes: DRIFT
  * (as before: moves, octaves, drops, swaps, ghosts), ADORN (ornaments, only adding: ratchets, octave jumps, neighbour
  * notes, passing notes in the rests) or SERIAL (the whole phrase at once, for the round: RETROGRADE, INVERSION around
  * its first note, ROTATION, AUGMENTATION, half the phrase at half speed; AMOUNT the chance a round brings one, LOCK
@@ -149,13 +149,15 @@ const step_t *tessera_step_vary(track_t *t, const step_t *s, step_t *out)
     if (!SEQ_D(t).slot && tess_sv.steps[tr] >= tessera_every_bars(tessera.sv_every[tr]) * tess_steps_per_bar(t)) {
         uint8_t kind[NSTEP];
         const step_t *st = seq_steps(t);
-        for (k = 0; k < len && k < NSTEP; k++) kind[k] = (uint8_t)sv_kind(&st[k]);
-        if (!tess_sv.rnd[tr]) tess_sv.rnd[tr] = gen_stream(0x5EEDu + tr);
-        if (tessera.sv_how[tr] == TESS_SV_SERIAL) sv_serial_round(t, tr);
-        else vary_round(tess_sv.mut[tr], kind, len, tessera.sv_amount[tr], tessera.sv_lock[tr], &tess_sv.rnd[tr],
-                        tessera.sv_how[tr] == TESS_SV_ORNAMENT);
         tess_sv.steps[tr] = 0;
-        tess_sv.flash[tr] = 4;
+        if (!tessera.hold) {                            /* (HOLD: the round skipped, the changes kept as they are) */
+            for (k = 0; k < len && k < NSTEP; k++) kind[k] = (uint8_t)sv_kind(&st[k]);
+            if (!tess_sv.rnd[tr]) tess_sv.rnd[tr] = gen_stream(0x5EEDu + tr);
+            if (tessera.sv_how[tr] == TESS_SV_SERIAL) sv_serial_round(t, tr);
+            else vary_round(tess_sv.mut[tr], kind, len, tessera.sv_amount[tr], tessera.sv_lock[tr], &tess_sv.rnd[tr],
+                            tessera.sv_how[tr] == TESS_SV_ORNAMENT);
+            tess_sv.flash[tr] = 4;
+        }
     }
     tess_sv.steps[tr]++;
     if (tessera.sv_how[tr] == TESS_SV_SERIAL) return i < len && tess_sv.ser[tr] && sv_serial(t, tr, i, out) ? out : s;
@@ -242,7 +244,7 @@ uint32_t tessera_step_keep(uint32_t tr)
     return n;
 }
 
-/* OCT+ held on a STEP track's EVOLVE page: KNOB 1 HOW (ui_input.c) */
+/* OCT- held on a STEP track's EVOLVE page (behind ROLL ALL, ui_input.c): KNOB 3 PAT GEN (k 3), KNOB 4 HOW (k 0) */
 void tessera_sv_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;

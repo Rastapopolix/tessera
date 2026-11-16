@@ -280,7 +280,13 @@ async function editorMock() {
     await rq(E.req.set(1,41,16));
   }
   {
-    for(const id of [4,5,6,7,8,9,10,11,24,25,26]){
+    {   /* global 4: PPQN since it left the reserved ids (24 48 4 8 12; the device's, kept through project loads) */
+      const d=E.parse[E.CMD.DESC](await rq(E.req.desc(1,4)));
+      const r=E.parse[E.CMD.SET](await rq(E.req.set(1,4,1)));
+      ok(d.label==="PPQN" && d.min===0 && d.max===4 && d.names[1]==="48" && r.value===1,"editor: global 4 is PPQN, 0..4 (24 48 4 8 12)");
+      await rq(E.req.set(1,4,0));
+    }
+    for(const id of [5,6,7,8,9,10,11,24,25,26]){
       const d=E.parse[E.CMD.DESC](await rq(E.req.desc(1,id)));
       const r=E.parse[E.CMD.SET](await rq(E.req.set(1,id,127)));
       ok(!d.label && r.value===0,"editor: removed global effect parameter is inert "+id);
@@ -1547,7 +1553,7 @@ class FakeFM1 {
       this.waiting = null;
       this.served++;
       if (this.served >= this.unplugAfter) { this.input.state = this.output.state = "disconnected"; return; }
-      if (addr === 0xE0000000) setTimeout(() => this.boot(this.loader, this.loader === STOCK_LOADER ? "FM-1" : "Melodee Update"), 300);
+      if (addr === 0xE0000000) setTimeout(() => this.boot(this.loader, this.loader === STOCK_LOADER ? "FM-1" : "Tessera Update"), 300);
       else if (addr === 0xF0000000) setTimeout(() => this.boot(this.afterWrite, this.afterWrite === "FM-1_015" ? "FM-1" : "Tessera FM-1"), 300);
       else this.next();
     }
@@ -1593,7 +1599,7 @@ async function updater() {
       `fm1ota.js: ${product} never resumes in ${other}`);
   }
   const unnamed = new FakeFM1(image);
-  unnamed.boot(TESSERA_LOADER, "Melodee Update");
+  unnamed.boot(TESSERA_LOADER, "Tessera Update");
   ok(await new Updater(unnamed.access).resume(image, null, "FM-1_900") === false && unnamed.served === 0,
     "fm1ota.js: resume without the package's loader identity writes nothing");
   const recovery = new FakeFM1(image, {afterWrite:"FM-1_015"});
@@ -1603,7 +1609,7 @@ async function updater() {
     "fm1ota.js: an interrupted return to stock resumes in the official loader");
 
   const dev2 = new FakeFM1(image, { unplugAfter: 3 });
-  dev2.boot(TESSERA_LOADER, "Melodee Update");
+  dev2.boot(TESSERA_LOADER, "Melodee Update");   // a loader from an earlier version
   const t0 = Date.now();
   const done = await new Updater(dev2.access).resume(image, null, null, TESSERA_LOADER);
   ok(done === false && Date.now() - t0 < 6000, "fm1ota.js: unplugged during the write -> stops at once");
@@ -1611,8 +1617,26 @@ async function updater() {
   const dev3 = new FakeFM1(image, { unplugAfter: 2 });
   const e = await new Updater(dev3.access).install(image, "FM-1_900", null, TESSERA_LOADER).then(() => null, (x) => x);
   ok(e && e.code === "lost" && e.lastRead === 0x40, "fm1ota.js: unplugged in step 1 -> error code 'lost', last read address");
-  const e2 = await new Updater({ inputs: new Map(), outputs: new Map() }).install(image, "FM-1_900", null, TESSERA_LOADER).then(() => null, (x) => x);
+  const none = new Updater({ inputs: new Map(), outputs: new Map() });
+  none.findMs = 0;
+  const e2 = await none.install(image, "FM-1_900", null, TESSERA_LOADER).then(() => null, (x) => x);
   ok(e2 && e2.code === "notfound", "fm1ota.js: no device -> error code 'notfound'");
+
+  // #743: a port another app holds (Windows: one owner per MIDI port) is reported as busy, with its name
+  const held = new FakeFM1(image);
+  held.input.open = async () => { throw new Error("InvalidAccessError"); };
+  const hu = new Updater(held.access);
+  hu.findMs = 0;
+  const e3 = await hu.install(image, "FM-1_900", null, TESSERA_LOADER).then(() => null, (x) => x);
+  ok(e3 && e3.code === "busy" && e3.detail === held.input.name && held.served === 0,
+    "fm1ota.js: a MIDI port held by another app -> error code 'busy' naming the port, nothing sent");
+
+  // #743: an FM-1 that answers only after a moment (still starting, port just listed) is still found
+  const late = new FakeFM1(image);
+  const answer = late.rx.bind(late), t1 = Date.now();
+  late.rx = (d) => { if (Date.now() - t1 > 2500) answer(d); };
+  const got2 = await new Updater(late.access).install(image, "FM-1_900", null, TESSERA_LOADER);
+  ok(got2 === "FM-1_900" && late.bad === 0, "fm1ota.js: an FM-1 that answers after ~2.5 s is found, not 'notfound'");
 }
 
 async function patternProtocol() {
@@ -1664,6 +1688,11 @@ async function stockRestore() {
         async find(filter) {
           const id = loader ? {model:"ota-FM-1", text:loader} : {model:"FM-1", text:"FM-1_9010"};
           return filter(id) ? {id, link:{input:{},output:{},close() {}}} : null;
+        }
+        async findDevice(filter) {
+          const dev = await this.find(filter);
+          if (!dev) throw Object.assign(new Error("notfound"), {code:"notfound"});
+          return dev;
         }
         async install(image, product, step, own) {
           calls.push("install"); writes.push([product, own]);

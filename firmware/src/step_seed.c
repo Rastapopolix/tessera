@@ -101,7 +101,7 @@ static uint32_t sd_pitch(const track_t *t, uint32_t tr, uint32_t s, uint32_t not
     k = tessera.mode[tr] == TESS_ENG_TURING && tessera.turing[tr].oct_span ? tessera.turing[tr].oct_span : 2u;
     top = (int32_t)lo + 12 * (int32_t)k;
     if (top <= (int32_t)hi) top = (int32_t)hi + 1;
-    base = tessera_snap_note(t, (int32_t)lo);
+    base = tessera_snap_plain(t, (int32_t)lo);
     for (d = base, deg = 0; d < top && deg < 48; d = tess_scale_steps(t, d, 1)) deg++;
     deg = (int32_t)gen_rnd(&tessera.rnd[tr], (uint32_t)deg);
     d = tess_scale_steps(t, base, deg);
@@ -145,7 +145,7 @@ static int sd_turing(const track_t *t, uint32_t tr, gen_out_t *out)
     if (sd_pull(tr)) {                                  /* GRAVITY: the step as written again (a rest keeps its pitch) */
         uint8_t *e = &tess_sd.loop[tr][p];
         *e = sd_step(s - 1u, p, &note, &vel) ? (uint8_t)(0x80u | (note & 0x7Fu)) : (uint8_t)(*e & 0x7Fu);
-    } else if (tessera.turing[tr].prob && gen_rnd(&tessera.rnd[tr], 100u) < tessera.turing[tr].prob) {
+    } else if (tessera.turing[tr].prob && !tessera.hold && gen_rnd(&tessera.rnd[tr], 100u) < tessera.turing[tr].prob) {
         sd_drift(t, tr, p);
     }
     note = tess_sd.loop[tr][p] & 0x7Fu;
@@ -320,7 +320,8 @@ uint32_t tessera_sd_loop(uint32_t tr, uint8_t *now, uint8_t *home, uint32_t *at)
     return len;
 }
 
-/* OCT+ held on GEN, TURING, EUCLID, MARKOV or MORPH: KNOB 1 SOURCE, KNOB 2 KEEP, KNOB 3 GRAVITY (ui_input.c) */
+/* OCT- held on GEN, TURING, EUCLID, MARKOV or MORPH (behind RANDOM, ui_input.c gen_dn_knob): KNOB 2 SOURCE, KNOB 3
+ * KEEP, KNOB 4 GRAVITY */
 void tessera_sd_layer_knob(uint32_t k, int32_t s)
 {
     uint32_t tr = song.sel;

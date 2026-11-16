@@ -68,6 +68,38 @@ static uint32_t user_of(const track_t *t)    /* user preset slot its sound came 
 {
     return t->user && (t->user_native ? native_used(t->eng_req,t->user-1u) : up_used(t->user-1u)) ? t->user-1u : USER_NONE;
 }
+/* an FM6 track's own voice name -> b (cap bytes) when it is not its preset's: a user voice after a project load (the
+ * project keeps the patch, not the slot it came from, #744), or a voice sent from the editor. 0: show the preset's
+ * name: the patch still has its factory voice's name (an edited factory sound too). Compared with the factory
+ * patch, as the preset's name can differ (DX TINE is the ROM's TINE EP), and with the preset's name */
+static int fm6_own_name(const track_t *t, char *b, uint32_t cap)
+{
+#if MELODEE_FM6
+    const engine_t *e = ENGINES[t->eng_req % NENGINES];
+    uint8_t pk[FM6_PACKED];
+    const uint8_t *v;
+    char nm[11];
+    uint32_t i;
+    if (t->eng_req != ENGI_FM6 || !e->npresets) return 0;
+    v = fm6_patch[(t - trk) % NTRK];
+    fm6_factory(t->preset % e->npresets, pk);
+    for (i = 0; i < 10u && v[FP_NAME + i] == (pk[118u + i] & 0x7Fu); i++) ;   /* (packed: the name at 118) */
+    if (i == 10u) return 0;
+    fm6_name(nm, v);
+    if (!nm[0]) return 0;
+    {   /* or the preset's own name (its first ten characters): the voices past the factory patches (INIT VOICE,
+         * ZEN-1's), which fm6_factory does not hold */
+        const char *pn = eng_preset(e, t->preset % e->npresets)->name;
+        for (i = 0; i < 10u && nm[i] && nm[i] == pn[i]; i++) ;
+        if (!nm[i] && (!pn[i] || i == 10u)) return 0;
+    }
+    str_cpy(b, nm, cap);
+    return 1;
+#else
+    (void)t; (void)b; (void)cap;
+    return 0;
+#endif
+}
 static uint32_t up_gen;                      /* bumped on every user bank change (redraws) */
 static uint8_t browse_loads, browse_mark;    /* sound loads so far; at the browser's opening (ui_browser.c: back) */
 #include "favorites.c"
@@ -89,6 +121,23 @@ static uint8_t browse_loads, browse_mark;    /* sound loads so far; at the brows
 #define LARGE_OFF_TAG 0xB4u
 enum { LARGE_AUTO, LARGE_ON, LARGE_OFF };
 #define LARGE_MODE (LARGE_SAVED == LARGE_ON_TAG ? LARGE_ON : LARGE_SAVED == LARGE_OFF_TAG ? LARGE_OFF : LARGE_AUTO)
+#define LARGE_HOLD_MS 1000u          /* ON: the value stays large this long after the knob stops (ui_draw.c, ui.hot_ms) */
+/* MENU > TEXT (Mono): NORMAL or BOLD, the small font's lit cells a pixel wider (ui_mono.c mo_text_s); MENU > IDLE: OFF
+ * or LANDSCAPE, untouched IDLE_MS while playing the screen moves to LANDSCAPE, the first touch goes back (screen.c
+ * scrn.land). favorites.factory[8][30]: TEXT_IDLE_TAG | bit 0 BOLD | bit 1 LANDSCAPE; any other byte NORMAL and OFF
+ * (firmware with the FX key map, before 2026-10-11, kept its tag's 'K' there) */
+#define TEXT_IDLE_SAVED (favorites.factory[8][30])
+#define TEXT_IDLE_TAG 0xB8u
+#define TEXT_IDLE_BOLD 1u
+#define TEXT_IDLE_LAND 2u
+#define TEXT_IDLE(bit) ((TEXT_IDLE_SAVED & 0xFCu) == TEXT_IDLE_TAG && (TEXT_IDLE_SAVED & (bit)))
+#define IDLE_MS 120000u
+static void text_idle_put(uint32_t bit, int on)
+{
+    uint32_t v = (TEXT_IDLE_SAVED & 0xFCu) == TEXT_IDLE_TAG ? TEXT_IDLE_SAVED & 3u : 0u;
+    v = on ? v | bit : v & ~bit;
+    TEXT_IDLE_SAVED = (uint8_t)(v ? TEXT_IDLE_TAG | v : 0u);
+}
 
 static uint8_t sync_reload;                  /* engine / preset / project / user preset loaded: editor RELOAD push */
 
@@ -110,7 +159,6 @@ static uint8_t sync_reload;                  /* engine / preset / project / user
 #define H_FOOT 42
 
 static struct {
-    uint8_t designer_mode;       /* the sound designer: START, the stages (ui_designer.c) */
     uint8_t home;
     uint8_t drum_sound;
     uint8_t page;                /* index into PAGES */
@@ -163,6 +211,7 @@ static struct {
     uint8_t song_row;            /* SONG: row selected, count selects the next empty row */
     uint8_t uboot;               /* main.c: seconds left before UPDATE MODE (OCT- + OCT+ held), 0 = none */
     uint8_t proj_new;            /* SAVE > PROJECT: KNOB 1 past TMPL, NEW (a new song: ui_new.c); SLOT unchanged */
+    uint16_t hot_ms;             /* fm1_ms of hot_col's last turn (LARGE VALUE ON holds hot_t, LARGE_HOLD_MS) */
     uint32_t ly_t0;              /* the layer button's press time | 1, LY_* bits (ui_layer.c layer_gesture) */
     uint8_t ly;                  /* the layer whose button is down (LAYER_*), 0 = none */
     uint8_t lock; /* double-tapped quick layer */
@@ -185,24 +234,12 @@ static struct {
     int16_t roll_bpm;            /* the BPM last drawn */
 } ui;
 
-static int designer_on(void) { return ui.designer_mode != 0; }
-static void designer_open(void);
-static void designer_draw(void);
-static int designer_screen(void);
-static int designer_input(uint32_t pressed, uint32_t notes);
-static void designer_close(int discard);
-static int designer_head_chip(char *b);
-static void designer_pages(uint32_t *n, uint32_t *k);
-static int designer_tabs_on(void);
-static void designer_tabs(void);
-static int designer_foot(void);
-static void (*designer_quit)(int discard);   /* designer_close while it is open (project.c: a project loading) */
 
 #include "screen.c"
 
 enum { CF_NONE, CF_CLEAR_SEQ, CF_CLEAR_TRK, CF_OVR_PROJ, CF_OVR_USER,
        CF_DEL_ROW, CF_CLEAR_SONG, CF_INIT_SOUND, CF_CLEAR_MOTION, CF_ERASE_USER, CF_TAKE_JAM, CF_NEW_SONG, CF_ERASE_PROJ,
-       CF_DEL_PAT, CF_PASTE_PAT, CF_DISCARD_DESIGN, CF_IMPORT, CF_BULK_ERASE, CF_OLD_SETTINGS, CF_OLD_TEMPLATE,
+       CF_DEL_PAT, CF_PASTE_PAT, CF_IMPORT, CF_BULK_ERASE, CF_OLD_SETTINGS, CF_OLD_TEMPLATE,
        CF_PRINT };
                                      /* ui.confirm: REC held on SEQ / ARP, on TRACKS; SAVE over a used slot; a pattern
                                       * over the user's steps; USER ERASE; PATTERNS: Delete pattern, Copy to over a
@@ -221,7 +258,19 @@ static const page_t *arp2_page(void)
     return &PAGES[at % NPAGES];
 }
 static int arp2_on(void) { return !ui.home && !ui.menu && !ui.confirm && PAGES[ui.page].graph == GR_ARP && oct_dn_only(); }
-static const page_t *cur_page(void) { return page_over ? page_over : arp2_on() ? arp2_page() : &PAGES[ui.page]; }
+/* MIDI IN, OCT- held (the key grammar's rule 2): KNOB 4 is PPQN, the clock's pulses a beat, in place of CLK. Not one of
+ * PAGES (the page numbers stay); the same title, so the picture (ui_mono.c mo_pic_midiin) stays too */
+static const page_t MIDIIN2_PAGE = {"MIDI IN", FAM_GLO, SC_GLOBAL, GR_NONE, {G_MIDI, G_DRUMCH, G_ROUTE, G_PPQN}};
+static int midiin2_on(void)
+{
+    const page_t *p = &PAGES[ui.page];
+    return !ui.home && !ui.menu && !ui.confirm && p->scope == SC_GLOBAL && p->graph == GR_NONE && p->id[0] == G_MIDI &&
+           oct_dn_only();
+}
+static const page_t *cur_page(void)
+{
+    return page_over ? page_over : arp2_on() ? arp2_page() : midiin2_on() ? &MIDIIN2_PAGE : &PAGES[ui.page];
+}
 
 /* the quick layers (ui_layer.c): a button held, the keys and KNOB 1..4 are its shortcuts, its map over the page */
 /* the one hold time (the key grammar, tessera-notes audit-2026-11 M0): a button held this long is a hold (btn_hold:
@@ -869,7 +918,7 @@ static void load_begin(track_t *t, uint32_t what)
     u = undo_last();
     if (undo_top && u->keep && u->pattern_gen == t->pattern_gen && u->trk == i + 1u && track_sig(t) == u->after) {
         u->what |= (uint8_t)what;                 /* browsing on: the copy from before the first load stays */
-        if(!designer_on())motion_reset(t);
+        motion_reset(t);
         return;
     }
     u->keep = 0;
@@ -898,7 +947,7 @@ static void load_begin(track_t *t, uint32_t what)
     u->pat = pat_sig[i];
     u->patn = pat_last[i];
     motion_snapshot_track(t, &u->motion_backup);
-    if(!designer_on())motion_reset(t);
+    motion_reset(t);
 }
 
 static void load_end(track_t *t)
@@ -1038,24 +1087,30 @@ static int param_kept(uint32_t i)
            i == P_CHRD || i == P_VOIC || i == P_MPCDEG || i == P_RECQ || param_fx(i) || param_fx_send(i);
 }
 
-/* SCL, QNT and the MPC degree are the song's: one scale for every part, kept the same in each track's own slots
- * (the formats and the editor keep them per track). ROOT too while KEY LINK is on (Tessera: tessera.key_link), on
- * every melodic track (a drum track keeps its own); otherwise ROOT, and TRN always, stay the track's */
+/* SCL is the song's: one scale for every part, kept the same in each track's own slots (the formats and the editor
+ * keep them per track). QNT and the MPC degree too while QNT LINK is on (OWN, tessera.qnt_own: each track's, #755),
+ * and ROOT while KEY LINK is on (tessera.key_link), on every melodic track (a drum track keeps its own); otherwise
+ * ROOT, and TRN always, stay the track's */
 static int scale_shared(uint32_t id)
 {
-    return id == P_SCALE || id == P_QUANT || id == P_MPCDEG || (id == P_ROOT && tessera.key_link);
+    return id == P_SCALE || ((id == P_QUANT || id == P_MPCDEG) && !tessera.qnt_own) ||
+           (id == P_ROOT && tessera.key_link);
 }
-static void scale_share(const track_t *from)
+/* q: QNT and the MPC degree too (scale_share: while QNT LINK is on; a project's load: never, its own are kept) */
+static void scale_share_q(const track_t *from, int q)
 {
     uint32_t k;
     for (k = 0; k < NPART; k++) {
         trk[k].p[P_SCALE] = from->p[P_SCALE];
-        trk[k].p[P_QUANT] = from->p[P_QUANT];
-        trk[k].p[P_MPCDEG] = (int16_t)clamp(from->p[P_MPCDEG], 1, (int32_t)scale_count(from));
+        if (q) {
+            trk[k].p[P_QUANT] = from->p[P_QUANT];
+            trk[k].p[P_MPCDEG] = (int16_t)clamp(from->p[P_MPCDEG], 1, (int32_t)scale_count(from));
+        }
         if (tessera.key_link && !drum_track(&trk[k]) && !drum_track(from))
             trk[k].p[P_ROOT] = from->p[P_ROOT];
     }
 }
+static void scale_share(const track_t *from) { scale_share_q(from, !tessera.qnt_own); }
 
 #include "scale_picker.c"
 

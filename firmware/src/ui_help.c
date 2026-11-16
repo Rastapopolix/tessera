@@ -126,7 +126,7 @@ static const help_t HELP_PAGE[HP_COUNT] = {
                                            "sound."),
     /* MODS (the cords: ui_cords.c), MATRIX (ui_matrix.c) */
     H_(HP_CORD_SRC, "MOD SOURCE", "What moves it: a track's LFO, envelope, velocity, key, random, controllers, its "
-                                  "generator's gate, note or CV, or DRIFT, a slow wander, or its TIDE 1-3 or SWARM "
+                                  "gate or note (its generator's or STEP pattern's), CV, or DRIFT, a slow wander, or its TIDE 1-3 or SWARM "
                                   "1-8 (LFO > ORGANIC). -- leaves the mod a fixed move. OCT+: BI swings both ways "
                                   "from the knob, UNI (+) only one way, GATE (>) all or nothing: all while the "
                                   "source is over a threshold (OCT+ held + KNOB 4), HOLD (=) the source taken on "
@@ -156,8 +156,8 @@ static const help_t HELP_PAGE[HP_COUNT] = {
     H_(HP_POLY_RHY, "POLY RHY", "Which of the four rhythms DIV sets."),
     H_(HP_CONSTEL_SPEED, "CONSTELLATION SPEED", "How fast the sky flies by: a column a step, so this is the track's "
                                                 "DIV (PATTERN's too), from 4 bars a step to 1/32, straight divisions "
-                                                "only, so the notes land on the beat. Hold OCT+ for LOCK, LEN, FILL "
-                                                "and SIZE."),
+                                                "only, so the notes land on the beat. Hold OCT- for LOCK, LEN, FILL; "
+                                                "SIZE is on the GEN sheet."),
     /* FM6's pages (params.c FM6_OPD, FM6_GD, FM6_FD): an operator's (OP1 .. OP6: the PRESETS knob picks it) */
     H_(HP_FMOP + FP_R1, "EG RATE 1", "How fast the operator's envelope rises from L4 to L1 when a key goes down, its "
                                      "attack: 99 at once, 0 very slowly."),
@@ -569,7 +569,7 @@ static void help_find(uint32_t k)
     else if (pg->graph == GR_ENERGY && k < 3u) x = k == 2u ? TX_EN_LEVEL : k ? TX_EN_RESTS : TX_EN_ARC;
     else if (pg->graph == GR_MIDICH) { x = midi_layer_on() ? TX_MIDI_TR : TX_MIDI_CH; help_tr = k; }   /* (KNOB k:
                                                                                                     * track k's) */
-    else if (pg->graph == GR_KEYLINK && k < 3u) x = k ? TX_FC_KEYB + k - 1u : TX_KEY_LINK;
+    else if (pg->graph == GR_KEYLINK) x = k == 3u ? TX_QNT_LINK : k ? TX_FC_KEYB + k - 1u : TX_KEY_LINK;
     else if (pg->graph == GR_ORGANIC && k < 2u) x = k ? TX_ORG_RATE : TX_ORG_SPEED;
     else if (pg->graph == GR_FORM) {
         x = FM[k];

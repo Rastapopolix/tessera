@@ -11,9 +11,10 @@ typedef struct { const char *page; uint8_t slot; } lrow_t;
 enum { LP_NONE, LP_SCALE, LP_GRAPH };
 typedef struct { const char *title; uint8_t pic, n; lrow_t row[16]; } list_t;
 static const list_t LISTS[] = {
-    {"SCL", LP_SCALE, 9, {{"SCL", 0}, {"KEY", 0}, {"SCALES", 1}, {"SCL", 2}, {"MPC", 0}, {"SCL", 3}, {"SCL", 1},
-                           {"KEY", 1}, {"KEY", 2}}},
-                                                        /* (KEY: KEY LINK, the CHAIN's KEY B / C; MPC: QNT MPC's pad degree) */
+    {"SCL", LP_SCALE, 10, {{"SCL", 0}, {"KEY", 0}, {"SCALES", 1}, {"SCL", 2}, {"KEY", 3}, {"MPC", 0}, {"SCL", 3},
+                            {"SCL", 1}, {"KEY", 1}, {"KEY", 2}}},
+                                                        /* (KEY: KEY LINK, QNT LINK after QNT, the CHAIN's KEY B / C;
+                                                         * MPC: QNT MPC's pad degree) */
     {"VOICE", LP_NONE, 9, {{"VOICE", 0}, {"VOICE", 1}, {"VOICE", 2}, {"VOICE", 3}, {"VOICE 2", 0}, {"VOICE 2", 1},
                            {"VOICE 2", 2}, {"VOICE 2", 3}, {"VOICE 3", 0}}},
     {"FM LFO", LP_NONE, 7, {{"FM LFO", 0}, {"FM LFO", 1}, {"FM LFO", 2}, {"FM LFO", 3}, {"FM LFO 2", 0}, {"FM LFO 2", 1},
@@ -214,17 +215,18 @@ static void list_scale_pic(int32_t y, int32_t h)
     cv_blit(0, (uint32_t)y);
 }
 
-/* n rows from LIST_Y0, row r's label and value from cap (1: a list behind it, ">"), row lifted, first .. first + vis
- * shown, where they are as a bar at the right */
-static void list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
-                      int (*cap)(uint32_t r, char *lb, char *v, uint16_t *vc))
+static const list_t *list_drawn;                        /* (list_text) */
+static int list_text(uint32_t r, char *lb, char *v, uint16_t *vc);   /* (below) */
+/* n rows from LIST_Y0, row r's label and value from list_text (1: a list behind it, ">"), row lifted, first .. first
+ * + vis shown, where they are as a bar at the right */
+static void list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis)
 {
     uint32_t r;
     int32_t top;
     char lb[16], v[16];
     uint16_t vc;
 #if MELODEE_LOOK
-    mo_list_rows(n, row, first, vis, cap);
+    mo_list_rows(n, row, first, vis);
     return;
 #endif
     for (top = 0; top < (int32_t)vis * LIST_ROW; ) {   /* in slices between rows */
@@ -237,7 +239,7 @@ static void list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
             uint16_t bg = on ? T_LIFT : T_BG;
             if (y + LIST_ROW <= top || y >= top + sh)
                 continue;
-            more = cap(r, lb, v, &vc);
+            more = list_text(r, lb, v, &vc);
             if (on) {
                 cv_rect(0, y, 240, 20, T_LIFT);
                 cv_rect(0, y, 3, 20, T_THEME);
@@ -261,7 +263,6 @@ static void list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
         top += sh;
     }
 }
-static const list_t *list_drawn;                        /* (list_text) */
 static int list_text(uint32_t r, char *lb, char *v, uint16_t *vc)
 {
     list_cap(list_at(list_drawn, r), lb, v, vc);
@@ -296,7 +297,7 @@ static void list_draw(void)
     if (ui.force || sig != lst.sig) {
         lst.sig = sig;
         list_drawn = l;
-        list_rows(list_n(l), lst.row, lst.first, vis, list_text);
+        list_rows(list_n(l), lst.row, lst.first, vis);
     }
     if (l->pic == LP_SCALE) {
         static uint32_t ps;

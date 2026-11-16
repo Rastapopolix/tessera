@@ -5,7 +5,8 @@
  * fixed shapes, the voicings, at most 4 notes, the names, MONO plays the root, a key's or a MIDI note's release
  * ends exactly the notes it started (CHRD / VOIC changed while held too), shared notes, live recording writes the
  * chord into one step, the ARP gets the chord as held notes, QNT WHITE maps the key first, a kit (the DRUM engine,
- * SAMPLE PERC) ignores CHRD, MIDI OUT of the keys, and OFF plays exactly as before.
+ * SAMPLE PERC) ignores CHRD, MIDI OUT of the keys, and OFF plays exactly as before. QNT HARM: the keys and MIDI IN
+ * counted into a CHORD track's chord, a scale degree a chord note.
  * Run by tests/run_tests.sh (needs build/gen from one firmware build). */
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
@@ -111,6 +112,7 @@ static int theory(void)
                 for (note = 36; note < 96u; note++) {
                     t->p[P_SCALE] = (int16_t)s; t->p[P_ROOT] = (int16_t)r;
                     t->p[P_CHRD] = (int16_t)(note & 1u ? CH_DIA3 : CH_DIA7);
+                    if (micro_active(t)) continue;      /* (a microtonal scale's notes are degrees, QNT OFF too: microtonal_test) */
                     n = chord_build(t, note, out);
                     ok &= n == (note & 1u ? 3u : 4u);
                     for (k = 0; k < n; k++)
@@ -325,9 +327,57 @@ static int kits(void)
     return bad;
 }
 
+/* QNT HARM (seq.c kb_map, midi_map; tessera.c tessera_harm_*): a CHORD track's chord (set by hand on track 3), the keys
+ * and MIDI IN counted into it, a degree a chord note */
+static void harm_chord(uint32_t pcs, uint32_t root)
+{
+    tessera.mode[2] = TESS_ENG_CHORD;
+    tessera.chord_pc[2] = (uint16_t)pcs;
+    tessera.chord_root[2] = (uint8_t)root;
+}
+static int harm(void)
+{
+    int bad = 0, ok;
+    track_t *t = &trk[0];
+    int32_t i;
+    reset();
+    t->p[P_QUANT] = Q_HARM;
+    harm_chord(0x091u, 0);                                       /* C E G */
+    bad += check("HARM, C major on a C chord: keys C4 D4 E4 F4 play C4 E4 G4 C5, a black key nothing",
+                 kb_map(t, K_C4) == 60u && kb_map(t, K_D4) == 64u && kb_map(t, K_E4) == 67u && kb_map(t, K_E4 + 1u) == 72u &&
+                 kb_map(t, K_C4 + 1u) == KB_SILENT);
+    bad += check("  B3 below C4: the G below; OCT+ an octave up", kb_map(t, K_C4 - 1u) == 55u &&
+                 (song.octave = 1, kb_map(t, K_C4) == 72u) && (song.octave = 0, 1));
+    bad += check("  MIDI: D4 E4, C#4 as C4, B3", midi_map(t, 62) == 64u && midi_map(t, 64) == 67u && midi_map(t, 61) == 60u &&
+                 midi_map(t, 59) == 55u);
+    for (i = -40, ok = 1; i <= 40; i++) {
+        int32_t n = tessera_harm_tone(0x091u, 0, 60, i);
+        ok &= n >= 36 && n <= 83 && (n % 12 == 0 || n % 12 == 4 || n % 12 == 7);
+    }
+    bad += check("  any degree: a note of the chord, folded into two octaves either side of C4", ok);
+    harm_chord(0x884u, 7);                                       /* G B D (V) */
+    bad += check("  on a G chord: C4 D4 E4 play G3 B3 D4 (the G nearest C4)",
+                 kb_map(t, K_C4) == 55u && kb_map(t, K_D4) == 59u && kb_map(t, K_E4) == 62u);
+    harm_chord(0x891u, 0);                                       /* C E G B (Cmaj7): four notes an octave */
+    bad += check("  a seventh chord: C4 D4 E4 F4 G4 play C4 E4 G4 B4 C5",
+                 kb_map(t, K_C4) == 60u && kb_map(t, K_D4) == 64u && kb_map(t, K_E4) == 67u && kb_map(t, K_E4 + 1u) == 71u &&
+                 kb_map(t, K_E4 + 3u) == 72u);
+    bad += check("  NOTES KNOB 2: a chord note a detent", tessera_pitch_turn(t, 60, 1, 0) == 64 &&
+                 tessera_pitch_turn(t, 64, -2, 0) == 59);
+    harm_chord(0x091u, 0);
+    t->p[P_TRANS] = 2;
+    bad += check("  TRN after the count: C4 plays D4", kb_map(t, K_C4) == 62u);
+    t->p[P_TRANS] = 0;
+    tessera.chord_pc[2] = 0;
+    bad += check("  no CHORD track: the keys as WHITE, MIDI as it comes (as CHRD)",
+                 kb_map(t, K_C4) == 60u && kb_map(t, K_D4) == 62u && kb_map(t, K_E4) == 64u && midi_map(t, 61) == 61u);
+    tessera.mode[2] = TESS_ENG_OFF;
+    return bad;
+}
+
 int main(void)
 {
-    int bad = theory() + shapes_voicings() + keys() + arp_rec() + midi_in() + kits();
+    int bad = theory() + shapes_voicings() + keys() + arp_rec() + midi_in() + kits() + harm();
     printf("%s\n", bad ? "CHORD TEST FAILED" : "chord keys test passed");
     return bad != 0;
 }

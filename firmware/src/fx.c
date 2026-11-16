@@ -26,6 +26,9 @@ typedef struct {
     float rev_dc;
     int32_t glide;                /* ECHO: the delay read now (Q8, quarter-rate samples), gliding to its TIME */
     uint8_t slow;                 /* REVERB: blocks since SIZE's lines last moved a sample */
+    uint16_t quiet;               /* ECHO: ticks in a row that wrote and read only zeros (fx_time: asleep from ECHO_QUIET;
+                                   * in the struct's padding, no RAM). (REVERB's sleep was taken out for 3.6-beta6: its
+                                   * per-tick checks cost 15 % of the reverb while it plays, over the render-cost budget) */
 } fx_state_t;
 static fx_state_t fx_state[FX_STATE_COUNT];
 static volatile uint32_t fx_epoch;
@@ -265,6 +268,25 @@ static __attribute__((noinline,section(".audio_text"),aligned(16))) void fx_svf(
  * glides (at most 1/4 sample a tick, as a tape's speed: a pitch bend, no click).
  * The wet is interpolated back to FS as fx_up's is (Reverb's histories are free here): held, it mirrored the notes
  * around FS/4 as an audible whine. */
+#ifndef FX_SLEEP_OFF
+#define FX_SLEEP_OFF 0            /* (tests/fx_test.c: 1 keeps ECHO awake, to compare the output) */
+#endif
+/* ECHO asleep (fx_slot_run): after ECHO_QUIET ticks that read and wrote only zeros the whole 4096-sample ring is
+ * zero; with no input this block, TIME settled and MIX at its target, the block would read, write and return
+ * zeros: move the ring's place and the tick phase only, and leave fx_left / fx_right (all zero) as they are. Exact */
+#define ECHO_QUIET 4100u
+static inline __attribute__((always_inline)) int fx_time_asleep(fx_state_t *f,uint32_t n,int32_t target)
+{
+    if(FX_SLEEP_OFF || f->type!=FX_ECHO || f->quiet<ECHO_QUIET || f->mix!=target || f->rev_l || f->rev_r || f->rev_prev_l || f->rev_prev_r)
+        return 0;
+    if(f->glide!=(int32_t)(110u+(uint32_t)f->rate*31u)<<8)return 0;   /* (TIME still gliding) */
+    int32_t any=0;
+    for(uint32_t i=0;i<n;i++)any|=fx_left[i]|fx_right[i];
+    if(any)return 0;
+    uint32_t first=(4u-f->decim)&3u,ticks=first<n?1u+(n-1u-first)/4u:0u;
+    f->pos=(f->pos+ticks)&4095u;f->decim=(uint8_t)((f->decim+n)&3u);
+    return 1;
+}
 static __attribute__((noinline,section(".dsp_text"))) void fx_time(fx_state_t *restrict f,int16_t *restrict mem,uint32_t n,int32_t target)
 {
     static const uint16_t len[4]={149,211,263,293};
@@ -280,8 +302,10 @@ static __attribute__((noinline,section(".dsp_text"))) void fx_time(fx_state_t *r
                 if(at!=want)at+=fx_limit(want-at,-64,64);
                 uint32_t back=(uint32_t)at>>8;int32_t a=mem[(f->pos+4096u-back)&4095u],b=mem[(f->pos+4095u-back)&4095u];
                 f->echo=a+(((b-a)*(at&255))>>8);
-                mem[f->pos]=(int16_t)fx_limit(mono+fx_div_pow2(f->echo*feedback,15),-32767,32767);
+                int32_t w=fx_limit(mono+fx_div_pow2(f->echo*feedback,15),-32767,32767);
+                mem[f->pos]=(int16_t)w;
                 f->pos=(f->pos+1u)&4095u;
+                f->quiet=(a|b|w|f->echo)?0u:(uint16_t)(f->quiet+(f->quiet<0xFFFFu));
             }else{
                 int32_t sum=0;uint32_t off=0;
                 for(uint32_t k=0;k<4u;k++){
@@ -619,6 +643,7 @@ static __attribute__((noinline,section(".audio_text"),aligned(16))) int fx_slot_
 {
     if(!plan->active)return 0;
     fx_state_t *f=plan->f;int16_t *mem=plan->mem;int32_t target=plan->target;
+    if(fx_time_asleep(f,n,target))return 1;
     void (*volatile copy)(fx_state_t *,uint32_t)=fx_copy;copy(f,n);
     if(f->type==FX_FILTER){
         float c[3];void (*volatile design)(const fx_state_t *,float *)=fx_svf_design;design(f,c);

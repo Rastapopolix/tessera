@@ -4,7 +4,7 @@
 /* Melodee UI input: LEDs, knobs and buttons, SEQ step entry, panel setup. */
 #include "ui_name.c"                                    /* NAME: naming user presets and projects */
 #include "ui_new.c"                                     /* NEW SONG: key, tempo, roles */
-static uint8_t oct_eat, oct_deferred;                   /* (below, with OCT's taps; QUAD's OCT+ layer uses them first) */
+static uint8_t oct_eat, oct_deferred;                   /* (below, with OCT's taps; QUAD's OCT- layer uses them first) */
 /* ----------------------------------------------------------- LEDs --- */
 /* The LED picture is built off-line and copied one byte per column: clearing
  * and relighting would let the 10 kHz scan catch the dark gap and flicker. */
@@ -52,13 +52,13 @@ static int layer_set_open(void);                       /* (ui_layer.c) */
 static int grid_on(void);
 static int notes_oct(void)
 {
-    return !ui.home && cur_page()->graph == GR_ROLL && ((song.rec >> song.sel) & 1u) && !grid_on() && !designer_on() &&
+    return !ui.home && cur_page()->graph == GR_ROLL && ((song.rec >> song.sel) & 1u) && !grid_on() &&
            !ui.menu && !ui.confirm && !name_on() && !new_on() && !layer_set_open() && !pop.on && !smap.on;
 }
 static int oct_nav(void)
 {
     return !notes_oct() &&
-           (designer_on() || !ui.home || ui.menu || ui.confirm || name_on() || new_on() || layer_set_open() || pop.on || smap.on);
+           (!ui.home || ui.menu || ui.confirm || name_on() || new_on() || layer_set_open() || pop.on || smap.on);
 }
 static void notes_oct_say(void)                         /* (NOTES: no octave LEDs to read it from there) */
 {
@@ -80,7 +80,7 @@ static int oct_enter_ok(void)                           /* OCT+ tapped would do 
  * a list, a slot, MOTION, SCALES, the browser, Copy to and SONG keep their Enter on a slow press) */
 static int oct_no_sheet(void)
 {
-    return !ui.home && !ui.menu && !ui.confirm && !ui.layer && !name_on() && !new_on() && !designer_on() && !oct_enter_ok() &&
+    return !ui.home && !ui.menu && !ui.confirm && !ui.layer && !name_on() && !new_on() && !oct_enter_ok() &&
            !act_cols();
 }
 static int oct_dn_page(void)                            /* the page shown has an OCT- layer for the track shown */
@@ -94,7 +94,8 @@ static int oct_dn_page(void)                            /* the page shown has an
         return tessera.pl_shape == PL_USER;             /* USER's points */
     return g == GR_EVOLVE || g == GR_MIDICH || g == GR_ENTRIES || PAGES[ui.page].graph == GR_ARP ||   /* ROLL ALL,
                                                          * TRANSPOSE, ROLE, ARP's SWING PROB HOLD ORDER, */
-           g == GR_TIMING || g == GR_ENERGY || g == GR_CHAIN || g == GR_TRK || g == GR_CORDS;   /* SPLIT, DEPTH, REPEAT, PAN, CC */
+           g == GR_TIMING || g == GR_ENERGY || g == GR_CHAIN || g == GR_TRK || g == GR_CORDS ||   /* SPLIT, DEPTH, REPEAT, PAN, CC, */
+           (PAGES[ui.page].scope == SC_GLOBAL && g == GR_NONE && PAGES[ui.page].id[0] == G_MIDI);   /* MIDI IN's PPQN */
 }
 /* GEN or TWEAK, OCT- held (the key grammar, M3): KNOB 2-4 (slot 1-3; KNOB 1 is RANDOM). TWEAK: FOLLOW's HOW,
  * RHYTHM, HOLD; CHORD: STRUM (1 ms detents low, 10 ms high: tessera_strum_knob), its DIR (seq_strum.c), OCT; the other engines with a layer: its settings
@@ -129,7 +130,6 @@ static int cu_scope_held(void)
 }
 static uint32_t oct_leds(void)
 {
-    if (designer_on() && !name_on() && !ui.confirm) return 3u;
     uint32_t blink = ((fm1_ms / 250u) & 1u) == 0u;
     if ((name_on() || new_on()) && !ui.confirm && !ui.menu)   /* NAME, NEW SONG: OCT- cancels, OCT+ (blinking) goes on */
         return 1u | (blink ? 2u : 0u);
@@ -249,7 +249,7 @@ static uint32_t play_key_led(const track_t *t, uint32_t k)
         return KL_OFF;
     if (e->keys && e->keys(t, k) >= 0)
         return KL_DIM;
-    if (t->p[P_QUANT] == Q_OFF || kb_chrom)
+    if ((t->p[P_QUANT] == Q_OFF && !micro_active(t)) || kb_chrom)
         return (scale_mask(t) >> ((n + 120u - (uint32_t)t->p[P_ROOT]) % 12u)) & 1u ? KL_DIM : KL_OFF;
     return KL_DIM;
 }
@@ -273,6 +273,15 @@ static void ui_leds(void)
     if (!ready) {
         led_pos_init();
         ready = 1;
+    }
+    if (sim.on) {                                       /* SIM CONTROL: FX and GLO breathe (the way out), the rest dark */
+        uint8_t *plane = breath_on() ? fm1_led_dim[2] : fm1_led;
+        memset(fm1_led, 0, sizeof fm1_led);
+        memset(fm1_led_dim, 0, sizeof fm1_led_dim);
+        fm1_led_dim_mask[2] = BREATH[(fm1_ms / 125u) & 7u];
+        led_put(plane, panel.btn[B_FX], 1);
+        led_put(plane, panel.btn[B_GLO], 1);
+        return;
     }
     if (lights == LIGHTS_AUTO && !ui.menu && (int32_t)(fm1_ms - scrn.idle) >= (int32_t)LIGHTS_AUTO_MS) {
         memset(fm1_led, 0, sizeof fm1_led);             /* AUTO, untouched a while: all dark (screen.c scrn.idle) */
@@ -694,7 +703,7 @@ static void autosave_poll(uint32_t active)
     uint32_t r = usb.rx_pkts;
 #endif
     if (!settings_autosave || active || r != rx || transport_busy() || ui.menu || ui.confirm || name_on() || new_on() || ui.layer || momentary.active ||
-        browse_pending() || qsave_req || designer_on()) {
+        browse_pending() || qsave_req) {
         t0 = fm1_ms;
         rx = r;
         done = 0;
@@ -935,7 +944,7 @@ static void motion_unplayed(void)
 /* an edit of the engine's own patch (its bytes before: old, under motion_guard): its motion (motion.c) */
 static void native_motion(const uint8_t *old)
 {
-    if (!designer_on() && !momentary.active && motion_native_edited(TSEL, old))
+    if (!momentary.active && motion_native_edited(TSEL, old))
         motion_unplayed();
 }
 /* ROLL and ROLL ALL said on the screen (issue #528: a new seed changes values on the other pages, so this one gave
@@ -1069,6 +1078,11 @@ static void edit_param(uint32_t slot, int32_t steps)
         }
         if ((slot == 1u || slot == 2u) && steps)        /* KEY B / C: a semitone a detent */
             tessera_param_set(0, TX_FC_KEYB + slot - 1u, tessera.fc_key[slot - 1u] + steps);
+        if (slot == 3u && steps && (steps > 0) == (tessera.qnt_own != 0)) {   /* QNT LINK: right LINKED (every track
+                                                     * takes the selected track's QNT and MPC degree), left OWN */
+            tessera_param_set(0, TX_QNT_LINK, steps > 0);
+            if (!tessera.qnt_own) scale_share(TSEL);
+        }
         ui.force = 1;
         return;
     }
@@ -1127,7 +1141,7 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
-    if (pg->graph == GR_ENERGY && en_layer_on()) {  /* ENERGY, OCT+ held: the selected track's DEPTH */
+    if (pg->graph == GR_ENERGY && en_layer_on()) {  /* ENERGY, OCT- held: the selected track's DEPTH */
         tessera_en_layer_knob(slot, accel(EN_K1 + slot, steps, 100));
         oct_eat |= 2u;
         ui.oct_t0 |= 2u;
@@ -1174,7 +1188,7 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
-    if (pg->graph == GR_FORM && fm_layer_on()) {    /* a generator's FORM, OCT+ held: DEVELOP */
+    if (pg->graph == GR_FORM && fm_layer_on()) {    /* a generator's FORM, OCT- held: DEVELOP */
         tessera_fm_layer_knob(slot, steps);
         oct_eat |= 2u;
         ui.oct_t0 |= 2u;
@@ -1306,7 +1320,7 @@ static void edit_param(uint32_t slot, int32_t steps)
         settings_save();
         return;
     }
-    if ((pg->scope != SC_GLOBAL || pg->id[slot]==G_TRK_SEND) && !momentary.active && !designer_on()) {
+    if ((pg->scope != SC_GLOBAL || pg->id[slot]==G_TRK_SEND) && !momentary.active) {
         motion_capture(TSEL, (uint32_t)(vp - TSEL->p), *vp);
         if (motion_param((uint32_t)(vp - TSEL->p)))
             motion_unplayed();
@@ -1415,7 +1429,7 @@ static uint8_t oct_deferred;                            /* OCT+ pressed on Stage
  * (PATTERNS' Copy to: OCT+ pastes). The menu, dialogs, sheets and the map keep their taps */
 static int oct_hold_page(uint32_t k)                    /* k 0 OCT-, 1 OCT+ */
 {
-    return !k && !(ui.home || ui.menu || ui.confirm || pop.on || smap.on || name_on() || new_on() || designer_on());
+    return !k && !(ui.home || ui.menu || ui.confirm || pop.on || smap.on || name_on() || new_on());
 }
 static uint32_t oct_taps(uint32_t pressed, int here)
 {
@@ -1906,7 +1920,7 @@ static void seq_erase_update(uint32_t pressed)
     if (!(fm1_in.buttons & ed)) { ui.erase_gesture = ui.erase_owner = 0; }
 }
 
-/* KNOB k turned s on the page shown (the sound designer's pages too): what it edits there, its card hot */
+/* KNOB k turned s on the page shown: what it edits there, its card hot */
 #ifdef ANN_VER
 static void sp_turn(uint32_t k);                       /* ui_speak.c */
 #endif
@@ -1941,6 +1955,7 @@ static void page_knob(uint32_t k, int32_t s)
          * fixed-range global (SYSTEM's CPU: a meter, nothing to set, ui_help.c) is not a knob to invert */
         ui.hot_col = (uint8_t)k;
         ui.hot_t = 40;
+        ui.hot_ms = (uint16_t)fm1_ms;
     }
     if (list_on()) {                                    /* a list page: KNOB 1 the row, KNOB 2 its value (ui_list.c) */
         list_knob(k, s);
@@ -1964,14 +1979,14 @@ static void page_knob(uint32_t k, int32_t s)
         page_over = 0;
     } else {
         edit_param(k, s);
-        if (arp2_on()) oct_eat |= 1u;                   /* (ARP, OCT- held: its release is no Back) */
+        if (arp2_on() || midiin2_on()) oct_eat |= 1u;   /* (ARP, MIDI IN, OCT- held: its release is no Back) */
         pg = cur_page();
         if (!tess_knob(pg, k))                          /* (Tessera's own pages: no picker) */
             pick_touch(k);                              /* a name from a long list: its picker (ui_popup.c) */
     }
 }
 
-/* CHORD USER with OCT+ held on GEN: each key pressed the next chord, its root the key's note (rounded down to the
+/* CHORD USER with OCT- held on GEN: each key pressed the next chord, its root the key's note (rounded down to the
  * scale: tessera.c); the first key of a hold starts a new progression. Silent (keys_mode); OCT-'s release then does
  * nothing else */
 static uint8_t ch_user_first = 1;
@@ -2077,8 +2092,6 @@ static void ui_confirm_accept(void)
     } else if (kind == CF_PASTE_PAT) {          /* PATTERNS' Copy to over a pattern in use */
         if (ui.ptc_on && ui.ptc_trk == ui.confirm_trk)
             ptc_paste(1);
-    } else if (kind == CF_DISCARD_DESIGN) {    /* the sound designer's original back */
-        if (designer_on() && designer_quit) { designer_quit(1); ui_message("SOUND RESTORED"); }
     } else if (kind == CF_INIT_SOUND) {
         if (!chain_busy()) { sound_init_of(TSEL, TSEL->eng_req); ui_message("SOUND INIT"); }
     } else {
@@ -2102,7 +2115,53 @@ static void ui_confirm_accept(void)
     }
 }
 
-#include "ui_designer_input.c"
+/* SIM CONTROL (panel.c sim; the menu turns it on while the simulator mirrors the panel, panel_out): the keys go quiet
+ * (seq.c kb_remote) and every note playing stops; the UI takes no input but the knobs' turns, which PANEL sends on
+ * (panel_enc). The screen shows how to take the panel back (ui_draw.c draw_sim) and stays on */
+static void sim_enter(void)
+{
+    if (!panel_out)
+        return;
+    memset(&sim, 0, sizeof sim);
+    sim.on = 1;
+    kb_remote = 1;
+    panic_req = (1u << NTRK) - 1u;                      /* (every track's notes off: seq.c) */
+    menu_close();
+    ui_message("SIM CONTROL ON");                       /* (the screen reader says it: the card is no page) */
+}
+static void sim_leave(void)
+{
+    sim.on = 0;
+    kb_remote = 0;
+    ui.force = 1;
+    ui_message("PANEL BACK");
+}
+static int sim_input(void)                              /* ui_input, every pass: 1 = the pass is the simulator's */
+{
+    uint32_t k, pair = (1u << panel.btn[B_FX]) | (1u << panel.btn[B_GLO]);
+    if (!sim.on)
+        return 0;
+    for (k = 0; k < NE; k++)
+        (void)panel_enc(k);
+    panel_moved = 0;
+    scrn.idle = fm1_ms;
+    if (scrn.st != SCR_ON)
+        scr_wake();
+    if (sim.on == 2) {                                  /* ended by FX + GLO: theirs until both are let go */
+        if (!(fm1_in.buttons & pair))
+            sim_leave();
+    } else if (!panel_out) {                            /* the simulator gone (editor.c ed_panel) */
+        sim_leave();
+    } else if ((fm1_in.buttons & pair) != pair) {
+        sim.t0 = 0;
+    } else if (!sim.t0) {
+        sim.t0 = fm1_ms | 1u;
+    } else if (fm1_ms - sim.t0 >= SIM_EXIT_MS) {
+        sim.on = 2;
+    }
+    return 1;
+}
+
 static void ui_input(void)
 {
     uint32_t pressed = fm1_input_edges(0), notes = fm1_input_note_edges(), now = fm1_ticks(), id, b, k;
@@ -2116,10 +2175,11 @@ static void ui_input(void)
         boot_work_input(pressed);
         return;
     }
+    if (sim_input())
+        return;
     if(ui.import_refresh){pop.on=0;brw.on=0;ui.import_refresh=0;ui.force=1;}
     cu_adopt();                                         /* (Tessera: MOD's routes into MODS, ui_cords.c) */
     if (scr_input(pressed, notes)) return;
-    if (designer_on() && !name_on() && !ui.confirm && designer_input(pressed, notes)) return;
     if (notes)
         browse_commit();                              /* a key played while browsing: hear the sound shown */
     browse_poll();

@@ -77,7 +77,7 @@ static void ps_fav(void) { preset_mark(!preset_favorite()); }
 static void ps_undo(void) { undo_step(0); }
 static const sheet_row_t SHEET_SOUND[] = {
     {"Init sound", 0, 0, 0, CF_INIT_SOUND}, {"Save as user\x85", 0, 0, ps_save, 0}, {"Favourite", ps_fav_v, 0, ps_fav, 0},
-    {"Undo last load", 0, 0, ps_undo, 0}, {"Sound designer", 0, 0, designer_open, 0}};
+    {"Undo last load", 0, 0, ps_undo, 0}};
 /* the song's (SONG) */
 static int ps_song_free(void)
 {
@@ -233,7 +233,7 @@ static const sheet_row_t SHEET_MODS[] = {{"Clear mod", 0, 0, cu_clear, SR_RED}, 
 /* a page's settings past its eight knobs (the key grammar's rule 3, M3) as a sheet's rows: row k is setting sr.pid[k] of
  * track sr.tr[k], its value as its card says it (params.c param_format), KNOB 2 a step a detent (a percent: as turned),
  * OCT+ a step on (ON / OFF: round) */
-#define SR_N 8u
+#define SR_N 12u                                        /* (MIDI OUT's: SOUND, DRUM MAP, SECTION PC of four tracks) */
 static struct {
     uint16_t pid[SR_N];
     uint8_t tr[SR_N], n;
@@ -278,10 +278,13 @@ static void sr_turn(uint32_t k, int32_t s)
 }
 #define SR_ROW_(k) static void sr_v##k(char *b) { sr_v(b, k); } static void sr_t##k(int32_t s) { sr_turn(k, s); }
 SR_ROW_(0) SR_ROW_(1) SR_ROW_(2) SR_ROW_(3) SR_ROW_(4) SR_ROW_(5) SR_ROW_(6) SR_ROW_(7)
+SR_ROW_(8) SR_ROW_(9) SR_ROW_(10) SR_ROW_(11)
 #undef SR_ROW_
 static const sheet_row_t SHEET_SR[SR_N] = {{sr.lb[0], sr_v0, sr_t0, 0, 0}, {sr.lb[1], sr_v1, sr_t1, 0, 0},
     {sr.lb[2], sr_v2, sr_t2, 0, 0}, {sr.lb[3], sr_v3, sr_t3, 0, 0}, {sr.lb[4], sr_v4, sr_t4, 0, 0},
-    {sr.lb[5], sr_v5, sr_t5, 0, 0}, {sr.lb[6], sr_v6, sr_t6, 0, 0}, {sr.lb[7], sr_v7, sr_t7, 0, 0}};
+    {sr.lb[5], sr_v5, sr_t5, 0, 0}, {sr.lb[6], sr_v6, sr_t6, 0, 0}, {sr.lb[7], sr_v7, sr_t7, 0, 0},
+    {sr.lb[8], sr_v8, sr_t8, 0, 0}, {sr.lb[9], sr_v9, sr_t9, 0, 0}, {sr.lb[10], sr_v10, sr_t10, 0, 0},
+    {sr.lb[11], sr_v11, sr_t11, 0, 0}};
 /* GEN on a generator track: the engine's layer setting past KNOB 4 (OCT- held is RANDOM and three of them; CHORD: STRUM,
  * DIR, OCT, so CHRD, VOIC and LEN / BREATH here). The rows; 0: no sheet */
 static uint32_t gen_sheet_rows(void)
@@ -291,7 +294,16 @@ static uint32_t gen_sheet_rows(void)
     if (m == TESS_ENG_QUAD) sr_add("Range", PID_TESS(TX_QD_RANGE), tr);
     else if (m == TESS_ENG_CONSTEL) sr_add("Size", PID_TESS(TX_CS_SIZE), tr);
     else if (m == TESS_ENG_GRIDS) sr_add("Fourth part", PID_TESS(TX_GRD_TOMS), tr);
-    else if (m == TESS_ENG_ANSWER) sr_add("Space", PID_TESS(TX_AN_SPACE), tr);
+    else if (m == TESS_ENG_ANSWER) {                    /* (REPLY: SPACE and CHORD; BEND: TIME and BREAK in their */
+        if (tessera_answer(tr)->mode == TESS_AN_BEND) { /* rows; MODE the third in both) */
+            sr_add("Time", PID_TESS(TX_AN_TIME), tr);
+            sr_add("Break", PID_TESS(TX_AN_BREAK), tr);
+        } else {
+            sr_add("Space", PID_TESS(TX_AN_SPACE), tr);
+            sr_add("Chord", PID_TESS(TX_AN_CHORD), tr);
+        }
+        sr_add("Mode", PID_TESS(TX_AN_MODE), tr);
+    }
     else if (m == TESS_ENG_CHORD) {
         sr_add("Chord", PID_TRACK(P_CHRD), tr);
         sr_add("Voicing", PID_TRACK(P_VOIC), tr);
@@ -471,7 +483,7 @@ none:                                                   /* (KNOB 2 or a key plac
 static uint32_t page_sheet(void)
 {
     uint32_t fam;
-    if (designer_on() || ui.menu || ui.confirm || ui.layer || pop.on || name_on() || new_on() || slot_kind() || ptc_on())
+    if (ui.menu || ui.confirm || ui.layer || pop.on || name_on() || new_on() || slot_kind() || ptc_on())
         return 0;
     if (ui.home)
         return 1;
@@ -482,7 +494,7 @@ static uint32_t page_sheet(void)
     if (cur_page()->graph == GR_SONG)
         return 2;
     if (cur_page()->graph == GR_MIDICH)
-        return 7;                                       /* (each track's SOUND and DRUM MAP) */
+        return 7;                                       /* (each track's SOUND, DRUM MAP and SECTION PC) */
     if (cur_page()->graph == GR_ENTRIES)
         return 8;                                       /* (each track's ORDER) */
     if (cur_page()->graph == GR_PERF)
@@ -494,7 +506,7 @@ static uint32_t page_sheet(void)
     if (cur_page()->graph == GR_ROLL || (cur_page()->graph == GR_STEPS && (cur_page()->fam != FAM_GEN || gen_pattern_page(cur_page()))))
         return 3;                                       /* (GEN: only STEP and ARP's pattern page; a generator's is PATTERN) */
     if (cur_page()->graph == GR_STEPS)
-        return gen_sheet_rows() ? 6u : 0u;              /* (a generator's GEN: its layer's fourth setting, CHORD's three) */
+        return gen_sheet_rows() ? 6u : 0u;              /* (a generator's GEN: its layer's fourth setting, CHORD's three, ANSWER's three) */
     fam = cur_page()->fam;
     return fam == FAM_EDIT || fam == FAM_ENV || fam == FAM_LFO || fam == FAM_FX ? 1u : 0u;
 }
@@ -541,7 +553,8 @@ static void page_sheet_open(void)
         sr.n = 0;
         sr_tracks("Sound T1", TX_SOUND);
         sr_tracks("Drum map T1", TX_MIDI_DMAP);
-        sheet_open("MIDI out", "sound, drum map", SHEET_SR, sr.n);
+        sr_tracks("Section PC T1", TX_SECTION_PC);
+        sheet_open("MIDI out", "sound, map, PC", SHEET_SR, sr.n);
         break;
     case 8:
         sr.n = 0;

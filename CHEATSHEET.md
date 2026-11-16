@@ -22,7 +22,9 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | A dialog: **OCT+** / **OCT-** | Yes / no |
 | Lists (menu, SCL, VOICE): **KNOB 1** / **KNOB 2** | The row / its value |
 | MENU > **GROUND** | What the ink is drawn on: DARK (black, the default) or LIGHT (paper, each ink's light version) |
-| MENU > **LARGE VALUE** | The knob turning, large at the foot: AUTO (pages without a picture), ON, OFF |
+| MENU > **SIM CONTROL** | The FM-1's knobs and keys play only the web simulator (USB); **FX** + **GLO** held 1 s: the panel back |
+| MENU > **LARGE VALUE** | The knob turning, large at the foot: AUTO (pages without a picture), ON (and a second after), OFF |
+| MENU > **TEXT** / **IDLE** | BOLD letters; LANDSCAPE after 2 minutes untouched while playing (the first touch only goes back) |
 
 ## The page buttons
 
@@ -51,6 +53,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | **GLO** + black keys F#3 G#3 A#3 C#4 | Mute / unmute track 1 to 4 (lit: sounding); MENU > MUTES BAR or PHRASE waits for it (blinking) |
 | **GLO** + white keys F3 G3 A3 B3 | Solo track 1 to 4 while the key is held |
 | **GLO** + C4 / F4 | Unmute all / tap the tempo (three taps or more; INT clock) |
+| **GLO** + D4 | HOLD while held: the generators keep their line (no EVOLVE rounds, LOCK 100); tapped twice, latched |
 | **GLO** + E4 | FILL, while held (steps set to FILL / !FILL) |
 | **GLO** + KNOB 1 to 4 | Level of track 1 to 4 |
 | **GLO** + PRESETS | Browse the selected track's sounds, on any page (the sound shows large in place of the GLO map) |
@@ -138,6 +141,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | GLO > MIDI OUT: **OCT+** held | Its sheet: each track's SOUND (OFF: MIDI only) and DRUM MAP (GM, ROW) |
 | GLO > PIECE, SHAPE USER: **OCT-** held, **KNOB 1** / **2** | Picks one of its eight points / sets its level |
 | GLO > CHAIN: **OCT-** held, **KNOB 1** to **4** | Each place's REPEAT, 1 to 8 phrases |
+| GLO > MIDI IN: **OCT-** held, **KNOB 4** | PPQN: the MIDI clock's pulses a beat, 24, 48, 4, 8 or 12 (in and CLOCK OUT) |
 | GLO > ENTRIES: **OCT-** held, **KNOB 1** to **4** | Each track's ROLE for ENTRIES: AUTO, BASS, RHYTHM, HARMONY, MELODY, ANCHOR |
 | GLO > ENTRIES: **OCT+** held | Its sheet: each track's ORDER: AUTO (by ROLE), 1ST to 4TH (in in that order, out the other way) |
 | GLO: a black key on a track ENTRIES took out | Brings it back now, left alone until the next section |
@@ -148,7 +152,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 |---|---|
 | GEN: **KNOB 1** | MODE: STEP, ARP or a generator |
 | GEN: **OCT-** held, **KNOB 2** to **4** | The second layer: TURING, EUCLID, MARKOV, MORPH (SOURCE, KEEP, GRAVITY), QUAD (COL, MOVE, EVERY), CHORD (STRUM 1-250 ms, DIR, OCT), ATLAS (KICK, SNR, HAT), CONSTL (LOCK, LEN, FILL), ANSWER (SOURCE, ORDER, SHIFT) |
-| GEN: **OCT+** held | The GEN sheet: QUAD's RANGE, CONSTL's SIZE, ATLAS' fourth part, ANSWER's SPACE, CHORD's CHRD, VOIC and BREATH / LEN |
+| GEN: **OCT+** held | The GEN sheet: QUAD's RANGE, CONSTL's SIZE, ATLAS' fourth part, ANSWER's SPACE (TIME in BEND), CHORD and MODE (REPLY, BEND; BREAK in BEND), CHORD's CHRD, VOIC and BREATH / LEN |
 | EVOLVE: **OCT-** held | **KNOB 1** ROLL ALL; **KNOB 3** PAT GEN; **KNOB 4** GRAVITY (a generator) or HOW: DRIFT, ADORN, SERIAL (a STEP track) |
 | TIMING: **OCT-** held | **KNOB 1** SPLIT, the chance a step plays at half its division; **KNOB 2** HOW: DOUBLE, PUSH, MIX |
 | ATLAS: **OCT-** + a black key | The fourth part's sound (TOM, CLAP, OPEN HAT, RIM, BELL) |
@@ -160,7 +164,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | FORM: **OCT-** held, **KNOB 1** | DEVELOP: each return of a section varies a little (0: exact) |
 | FORM: **OCT-** held, **KNOB 2** / **3** | The CHAIN: FOLLOW or OWN; SKIP, the chance it lags a phrase |
 | FORM: **OCT-** held, **KNOB 4** | ROLE: this track's part for ENTRIES |
-| TWEAK: **OCT-** held, **KNOB 2** / **3** | FOLLOW's HOW (SAME, CHORD, CONTRA, BASS, CANON1 to 8); RHYTHM (OWN, SOURCE, BOTH) |
+| TWEAK: **OCT-** held, **KNOB 2** / **3** | FOLLOW's HOW (SAME, CHORD, CONTRA, BASS, CANON1 to 8, HARM); RHYTHM (OWN, SOURCE, BOTH) |
 | TWEAK: **OCT-** held, **KNOB 4** | FOLLOW's HOLD (shown as T3H2 on FOLLOW) |
 | MODS: **OCT+** | The picked mod: +- (both ways) / + (one way) / GATE |
 | MODS: **OCT-** held, **KNOB 4** / **KNOB 3** | A GATE's threshold / a CC mod's CC number |

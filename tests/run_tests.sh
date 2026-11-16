@@ -46,10 +46,20 @@
 #                   generators' notes out on MIDI channels 5..8 on the grid, one at a time, in the scale; the CV and gate;
 #                   STOP, PLAY again from the SEED, MUTE, CHAN OFF, ENERGY's DEPTH, a key, their pages, and tracks 1..4
 #                   bit for bit the same with them playing; its frames as PNGs in build/oled.
+# ANDAMENTO SCREENS (tests/and_ui_test.c): Andamento's two screens (platform/andamento/and_ui.c) in the same build:
+#                   the page screen (header, picture, tabs) and the dial screen on every page of an internal and an
+#                   external track and on HOME; the dial screen's layout lint (no value cut, each in its cell, a clear
+#                   pixel round a box's text and between neighbours); a setting turned (inverted, large in the
+#                   picture); both screens as PNGs in build/oled.
 # ANDAMENTO MASTER (tests/and_master_test.c): Andamento's master bus (platform/andamento/and_master.c), tilt EQ then
 #                   compressor, called directly (not through a project playing): MIX 0 is bit-identical, MIX 100 with
 #                   no gain reduction and no tilt is unchanged but for rounding, the compressor settles below a loud
 #                   tone and returns to unity gain under THRESH, MAKEUP's dB, TILT's direction, and determinism.
+# ANDAMENTO TEXTURE (tests/and_texture_test.c): Andamento's texture engine (platform/andamento/and_texture.c), a
+#                   granular cloud resampling and_master_block's output, called directly: MIX 0 is bit-identical,
+#                   an empty capture barely changes a tone, a filled one keeps sounding after the dry input stops,
+#                   FREEZE holds the capture still, a busier DENS is not quieter, AT_GRAINS (8) is never exceeded,
+#                   and determinism.
 # UI (tests/ui_test.c): the UI sources against stub display / buttons / knobs: sound loads keep the steps and
 #                   the track's ARP / SCL / SLICER, the SEQ > PATTERNS loader and its REPLACE? dialog, the
 #                   one-step undo of both (EDIT held), REC on TRACKS / SEQ / ARP, STEP and ARP while recording,
@@ -67,7 +77,8 @@
 # LEGACY FX (tests/no_effects_test.c): legacy values/automation do not process audio or allocate,
 #                   old notes survive, retired MIDI sends are inert, FX opens only the new knob page.
 # MOD / SPREAD (tests/mod_spread_test.c): the matrix's S&H / SLEW sources and DEPTH destination, SPREAD's sides.
-# LAYERS / SCREEN (tests/layer_screen_test.c): GLO/SCL double-tapped layers, SCREEN OFF, LFO 2.
+# LAYERS / SCREEN (tests/layer_screen_test.c): GLO/SCL double-tapped layers, SCREEN OFF, LFO 2; the header's PIECE line
+#                   and the PLAY triangle's beat (Mono).
 # INPUT (tests/input_test.c): the key / button debounce of hal/fm1_input.h against the TIMER5 scan and bouncing
 #                   contacts: a press within 2 scans (<= 2.3 ms), one note per bouncy press, no early or hanging
 #                   release, stray samples ignored, fast repeats, the encoders' detents.
@@ -182,10 +193,9 @@ qmap() {
         firmware/src/fx.c) QREG=1; QSEL="$QSEL $G_AUDIO fx_test fx_performance no_effects_test" ;;
         firmware/src/mod.c) QREG=1; QSEL="$QSEL $G_AUDIO mod_test mod_spread_test" ;;
         firmware/src/voice.c | firmware/src/mix.c | firmware/src/dsp.c | firmware/src/audio*.[ch] | firmware/src/engines.c | \
-            firmware/src/resources.c | firmware/src/native_presets.c) QREG=1; QSEL="$QSEL $G_AUDIO designer_test" ;;
+            firmware/src/resources.c | firmware/src/native_presets.c) QREG=1; QSEL="$QSEL $G_AUDIO" ;;
         firmware/src/ui_cords.c | firmware/src/cord.[ch]) QSEL="$QSEL $G_UI cord_test mod_test recipes_test" ;;
         firmware/src/ui_speak.c) QSEL="$QSEL $G_UI" ;;
-        firmware/src/ui_designer*) QSEL="$QSEL $G_UI designer_test" ;;
         firmware/src/ui_help.c | firmware/src/pid.[ch] | firmware/src/pid_help_unpack.h | firmware/src/params.c)
             QSEL="$QSEL $G_UI pid_test help_pack_test cord_test" ;;
         firmware/src/ui*.c | firmware/src/gfx.c | firmware/src/icons.c | firmware/src/screen.c | firmware/src/splash.c | \
@@ -203,7 +213,7 @@ qmap() {
             firmware/src/upreset.c | firmware/src/favorites.c) QSEL="$QSEL $G_STORE" ;;
         firmware/src/midi_*.c) QSEL="$QSEL $G_MIDI" ;;
         firmware/src/usb*) QSEL="$QSEL $G_USB" ;;
-        firmware/src/editor*.c | firmware/src/sysex_library.c) QSEL="$QSEL editor_test fm6_sysex_test web_tests designer_test" ;;
+        firmware/src/editor*.c | firmware/src/sysex_library.c) QSEL="$QSEL editor_test fm6_sysex_test web_tests" ;;
         firmware/src/scale*.[ch] | firmware/src/microtonal.h | firmware/src/tun*.h | firmware/src/uscale.h) QSEL="$QSEL $G_SCALE" ;;
         tests/golden.txt | tests/cpu_baseline.txt | tests/regress.c) QREG=1; QSEL="$QSEL regress" ;;
         tests/tessera_baseline.txt) QSEL="$QSEL tessera_test" ;;
@@ -212,12 +222,14 @@ qmap() {
         tests/target_budget.txt) QSEL="$QSEL target_budget" ;;
         tests/ui_render.*) QSEL="$QSEL ui_renders" ;;
         tests/oled_render.*) QSEL="$QSEL oled_render" ;;
-        platform/andamento/*) QSEL="$QSEL oled_render and_keys and_home and_ext and_master" ;;
+        platform/andamento/*) QSEL="$QSEL oled_render and_keys and_home and_ext and_ui and_master and_texture" ;;
         tests/and_keys_test.c) QSEL="$QSEL and_keys" ;;
         tests/and_home_test.c) QSEL="$QSEL and_home" ;;
         tests/and_ext_test.c) QSEL="$QSEL and_ext" ;;
+        tests/and_ui_test.c) QSEL="$QSEL and_ui" ;;
         tests/and_master_test.c) QSEL="$QSEL and_master" ;;
-        web/andamento/*) QSEL="$QSEL and_keys and_home and_ext and_master" ;;
+        tests/and_texture_test.c) QSEL="$QSEL and_texture" ;;
+        web/andamento/*) QSEL="$QSEL and_keys and_home and_ext and_ui and_master and_texture" ;;
         firmware/src/mo_font.h) QSEL="$QSEL $G_UI oled_render" ;;
         tests/demo_steps.h | tests/demo_projects.c) QSEL="$QSEL demo_projects" ;;
         tests/phys_ref.cpp | tests/phys_fixed.c) QSEL="$QSEL phys_ref" ;;
@@ -448,12 +460,28 @@ and_ext() {                                       # (the headers as and_keys: we
         "$OUT/and_ext" build/oled
     [ $PIL = 1 ] && { python3 tests/oled_render.py build/oled || fail "tests/oled_render.py"; }
 }
+and_ui() {                                        # (the headers as and_keys: web/andamento/build.sh --headers)
+    sh web/andamento/build.sh --headers > /dev/null || { fail "web/andamento/build.sh --headers"; return; }
+    build and_ui and_ui_test -w -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 \
+        -DMELODEE_PHYS=1 -Ibuild/andamento/gen -Ifirmware/src -Itests || return
+    mkdir -p build/oled/ppm
+    step "Andamento screens (platform/andamento/and_ui.c): the page and dial screens on every page, their layout, a setting turned" \
+        "$OUT/and_ui" build/oled
+    [ $PIL = 1 ] && { python3 tests/oled_render.py build/oled || fail "tests/oled_render.py"; }
+}
 and_master() {                                    # (the headers as and_keys: web/andamento/build.sh --headers)
     sh web/andamento/build.sh --headers > /dev/null || { fail "web/andamento/build.sh --headers"; return; }
     build and_master and_master_test -w -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 \
         -DMELODEE_PHYS=1 -Ibuild/andamento/gen -Ifirmware/src -Itests || return
     step "Andamento master bus (platform/andamento/and_master.c): MIX 0 bit-identical, bypass, compressor, release, makeup, tilt, determinism" \
         "$OUT/and_master"
+}
+and_texture() {                                   # (the headers as and_keys: web/andamento/build.sh --headers)
+    sh web/andamento/build.sh --headers > /dev/null || { fail "web/andamento/build.sh --headers"; return; }
+    build and_texture and_texture_test -w -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 \
+        -DMELODEE_PHYS=1 -Ibuild/andamento/gen -Ifirmware/src -Itests || return
+    step "Andamento texture engine (platform/andamento/and_texture.c): MIX 0 bit-identical, capture, FREEZE, DENS, AT_GRAINS bound, determinism" \
+        "$OUT/and_texture"
 }
 dsp_tracks() {
     build hostsim hostsim -O2 $FW || return
@@ -519,7 +547,7 @@ if core; then
     t "removed effects: old songs and motion, MIDI, physical input and dry output" no_effects_test -O1 $FW
     t "resident audio: four-track resource budget and removed buses" ram_audio_test -O2 $FW
     t "resident audio: expanded voice budget and CPU1 fallback" ram_voice_budget_test -O2 $FW
-    t "load ceiling: a shed caps admission, recovers under 60 %, BUDGET stays the maximum (#586)" voice_ceiling_test -O2 $FW
+    t "load ceiling: a shed caps admission (half of BUDGET at least), recovers, faster under 60 %, BUDGET stays the maximum (#586)" voice_ceiling_test -O2 $FW
     t "audio: calibrated reservations, release tails and overlapping hits" audio_admission_test -O2 $FW
     t "USB audio: four isolated track stems through the real mixer" usb_audio_tracks_test -O2 $FW
     t "boot stub: CRCs, rescue keys, damaged staging and retry fallback" boot_stub_test -O2
@@ -575,7 +603,6 @@ if core && [ $TABLES = 1 ]; then
     t "screen reader against the screen: every knob, every page, engine and MODE, said as drawn (tools/speak_screen.py)" \
         speak_screen:speak_test -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=1 -DMELODEE_ACCESS=1 -Itests $FW -- \
         sh -c "\"$OUT/speak_screen\" compare \"$OUT/speak_screen.tsv\" && python3 tools/speak_screen.py \"$OUT/speak_screen.tsv\""
-    t "Sound designer: native recipes, dependencies, compare, discard and save" designer_test -O2 -DMELODEE_USB_AUDIO=1 $FW
     t "Sequencer: tied length/move/delete, eight-level undo/redo, MIDI step entry and playing-step recording" seq_edit_test \
         -DMELODEE_USB_AUDIO=1 $FW
     t "Note/library gestures: quarter snapping, range moves/copies, undo and bulk preset erase" note_tools_test \
@@ -585,7 +612,9 @@ if core && [ $TABLES = 1 ]; then
     job and_keys
     job and_home
     job and_ext
+    job and_ui
     job and_master
+    job and_texture
     t "boot audio: codec waits for settled silent DMA and shuts down before I2S" audio_boot_test -w
     t "audio: overload protection, bounded fades and DMA diagnostics" audio_test $FW
     t "audio: silent bench keeps synthesis running and silences physical output" audio_silent_test:audio_test \
@@ -631,7 +660,7 @@ if core && [ $TABLES = 1 ]; then
     t "TABLES: the computed readouts (TIME, LFO Hz, CUTOFF, dB) equal the tables they replace" tables_test -O1 $FW
     t "CORDS: the destination table, frozen against tests/cord_dests.txt" cord_test \
         -O1 $FW -- "$OUT/cord_test" tests/cord_dests.txt
-    t "double-tap layers, SCREEN OFF, LFO 2 SYNC / TRIG / POL; MODS scrolled, FX + knobs, MODS AMOUNT, DIR sheet: no pixel sent twice" layer_screen_test \
+    t "double-tap layers, SCREEN OFF, LFO 2 SYNC / TRIG / POL; MODS scrolled, FX + knobs, MODS AMOUNT, DIR sheet: no pixel sent twice; the header's beat and PIECE line" layer_screen_test \
         -O1 -DMELODEE_USB_AUDIO=1 $FW
     t "DRUM EDITOR: synthesized 909, sound controls, individual pitch/length, undo and storage" drum_editor_test -O2 $FW
 fi

@@ -371,8 +371,9 @@ static int project_erase(uint32_t slot)
  * boxes): kept as last used (settings ext.glo), and a project load, a backup or the template leaves them as they are.
  * Projects still carry them (the record's layout is unchanged) */
 static const uint8_t GLO_KEPT[4] = {G_CLOCK, G_TUNE, G_MIDI, G_ROUTE};
-static int glo_kept(uint32_t i)
+static int glo_kept(uint32_t i)                   /* (G_PPQN too: the device's, saved apart, settings_ppqn) */
 {
+    if (i == G_PPQN) return 1;
     for (uint32_t k = 0; k < 4u; k++)
         if (GLO_KEPT[k] == i) return 1;
     return 0;
@@ -384,7 +385,6 @@ static int project_restore_runtime(const project_t *input)
     project_t *p = &proj_scratch;
     uint32_t i, k;
     if (!proj_ok(input)) return 1;
-    if(designer_on() && designer_quit)designer_quit(0);   /* a loaded project owns the new sound */
     if (p != input) memcpy(p, input, sizeof *p);
     transport_req = 2;
     panic_req = (1u << NTRK) - 1u;
@@ -455,7 +455,11 @@ static int project_restore_runtime(const project_t *input)
         }
         pat_sig[k] = ~steps_sig(t);                     /* a project's steps are the user's */
     }
-    scale_share(TSEL);                                  /* (older projects: one scale per part, the selected wins) */
+    scale_share_q(TSEL, 0);                             /* (older projects: one scale per part, the selected wins;
+                                                     * each track's QNT as saved: QNT LINK is the record's) */
+    native_relink_req = 0;                              /* #744: FM6 tracks find their user slot again (main loop: */
+    for (k = 0; k < NTRK; k++)                          /* native_relink_service) */
+        if (trk[k].eng_req == ENGI_FM6) native_relink_req |= (uint8_t)(1u << k);
     undo_depth--;
     sync_reload = 1;
     ui.force = 1;
@@ -579,6 +583,7 @@ static void glo_restore(void)                     /* power-on: the device's as l
     uint32_t k;
     for (k = 0; k < 4u; k++)
         song.g[GLO_KEPT[k]] = (int16_t)clamp(settings_glo[k], GP[GLO_KEPT[k]].min, GP[GLO_KEPT[k]].max);
+    song.g[G_PPQN] = (int16_t)clamp(settings_ppqn, GP[G_PPQN].min, GP[G_PPQN].max);
 }
 /* main loop: a kept value changed (a knob, the editor, a project load): saved 1.5 s after the last change, stopped */
 static void glo_poll(void)
@@ -592,6 +597,11 @@ static void glo_poll(void)
             dirty = 1;
             t = fm1_ms;
         }
+    if (song.g[G_PPQN] != settings_ppqn) {
+        settings_ppqn = song.g[G_PPQN];
+        dirty = 1;
+        t = fm1_ms;
+    }
     if (dirty && fm1_ms - t > 1500u && !song.playing && !seq_counting() && !momentary.active) {
         dirty = 0;
         settings_save();
@@ -709,7 +719,7 @@ static void template_key(uint32_t *root, uint32_t *scale, int32_t *bpm)
 static void project_new_blank(void)
 {
     uint32_t i, k;
-    int16_t kept[4];
+    int16_t kept[4], ppqn = song.g[G_PPQN];
     momentary_restore();
     tessera_stop_all();                               /* release what a Tessera track holds, then OFF */
     tessera_reset();
@@ -723,6 +733,7 @@ static void project_new_blank(void)
         song.g[i] = GP[i].def;
     for (k = 0; k < 4u; k++)
         song.g[GLO_KEPT[k]] = kept[k];
+    song.g[G_PPQN] = ppqn;
     TRK_DEF_SONG();
     undo_depth++;
     for (k = 0; k < NTRK; k++) {

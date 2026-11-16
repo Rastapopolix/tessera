@@ -223,7 +223,7 @@ static void pv_ring(uint32_t c, const char *label0, const char *val0, const char
         cv_rrect(1, 1, 56, h - 4, 7, bg, T_THEME);
     }
     if (label[0] || val[0]) {
-        if (gen_layer_on() && label[0]) {              /* OCT+'s layer: the labels on tiles, a set laid over the
+        if (gen_layer_on() && label[0]) {              /* OCT-'s layer: the labels on tiles, a set laid over the
                                                          * page's (ui_graph.c gen_layer_on) */
             int32_t w = text_w(&AF_X, label) + 8;
             if (w < 30) w = 30;
@@ -364,8 +364,6 @@ static void pv_sound(void)
     const char *en = ENGINES[eng_idx(TSEL->eng_req)]->name;
     uint32_t sig;
     int32_t x, tx;
-    if (designer_on() && designer_foot())                /* the sound designer: its keys (ui_designer.c) */
-        return;
     if(cur_page()->fam==FAM_FX && cur_page()->scope==SC_GLOBAL && cur_page()->id[0]!=G_TRK_SEND){en="SEND / RETURN";memcpy(nm,"ALL TRACKS",11);}
     else sound_name(TSEL, nm);
     sig = str_hash(str_hash(song.sel * 7u + ux.gen * 977u + ux.pal * 31u + ui.page * 2654435761u, en), nm);
@@ -902,8 +900,11 @@ static void pv_strip(uint32_t k)
 {
     track_t *t = &trk[k];
     uint32_t sel = k == song.sel, mute = t->p[P_MUTE] != 0, arm = (song.rec >> k) & 1u, lvl = trk_level(k), sig;
-    if ((mute_waiting() >> k) & 1u && (fm1_ms / 250u) & 1u)   /* (MENU MUTES: a mute waiting for its line blinks to */
-        mute = !mute;                                   /* what it will be) */
+    uint32_t wait = 0;
+    if ((mute_waiting() >> k) & 1u) {                   /* (MENU MUTES: a mute waiting for its line blinks to what it */
+        mute ^= (fm1_ms / 250u) & 1u;                   /* will be; under it the wait gone, of 25 cells: mo_strip) */
+        wait = 1u + 2u * mute_wait_part(25u);
+    }
     uint32_t octp = (uint32_t)oct_dn_only();                /* (OCT- held: the knobs are the pans) */
     uint32_t solo = (track_solo >> k) & 1u, quiet = mute || (track_solo && !solo);   /* (another's solo: silent) */
     uint32_t hot = ui.hot_t && ui.hot_col == k ? (octp ? 2u : 1u) : 0u;   /* this strip's knob: 1 LEVEL, 2 PAN */
@@ -915,14 +916,16 @@ static void pv_strip(uint32_t k)
     if (m < pvm.meter[k] - 1)
         m = pvm.meter[k] - 1;                           /* (falls ~2 dB a frame) */
     trk_short_name(k, nm);
-    sig = str_hash(1u + sel * 2u + mute * 4u + arm * 8u + hot * 16u + octp * 64u + solo * 128u + quiet * 256u, nm) +
+    sig = str_hash(1u + sel * 2u + mute * 4u + arm * 8u + hot * 16u + octp * 64u + solo * 128u + quiet * 256u +
+                   wait * 512u, nm) +
           lvl * 7919u + (uint32_t)(pan + 128) * 104729u;
 #if MELODEE_LOOK
     if (!ui.force && sig == pvm.strip[k] && m == pvm.meter[k])
         return;
     pvm.strip[k] = sig;
     pvm.meter[k] = (uint8_t)(m < 0 ? 0 : m);
-    mo_strip(k, nm, lvl, pan, sel | mute << 1 | solo << 2 | quiet << 3 | arm << 4 | hot << 5 | octp << 7, pvm.meter[k]);
+    mo_strip(k, nm, lvl, pan, sel | mute << 1 | solo << 2 | quiet << 3 | arm << 4 | hot << 5 | octp << 7 | wait << 8,
+             pvm.meter[k]);
     return;
 #endif
     if (!ui.force && sig == pvm.strip[k]) {
@@ -1095,16 +1098,14 @@ static void pv_draw(void)
         return;
     }
 #if !MELODEE_LOOK                                       /* (Mono: the rings and the curves are mono_page's) */
-    pv_tab_h = kind == PV_RINGS && (sec_on() || (designer_on() && designer_tabs_on())) ? SEC_TAB_H : 0;
+    pv_tab_h = kind == PV_RINGS && sec_on() ? SEC_TAB_H : 0;
     if (kind != PV_CURVE) {                             /* RINGS, FADERS */
         if (ui.force) {                                 /* (the parts then cover what they draw) */
             lcd_fill(0, H_HEAD, 240, PV_SOUND_Y - H_HEAD, T_BG);
             ui.graph_sig = 0;
         }
         draw_head();
-        if (pv_tab_h && designer_on()) {                /* the sound designer: its stages */
-            designer_tabs();
-        } else if (pv_tab_h) {                          /* an engine in sections: its tabs, the page noted */
+        if (pv_tab_h) {                          /* an engine in sections: its tabs, the page noted */
             sec_note();
             sec_tabs();
         }

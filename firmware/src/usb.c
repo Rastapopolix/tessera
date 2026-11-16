@@ -211,9 +211,11 @@ static const uint8_t STR0[4] = {4, 3, 0x09, 0x04};
 static const uint8_t STR1[] = {26, 3, 'E', 0, 'l', 0, 'l', 0, 'i', 0, 'c', 0, ' ', 0, 'S', 0, 't', 0, 'u', 0, 'd', 0,
                                'i', 0, 'o', 0};
 #ifdef MELODEE_LOADER
-static const uint8_t STR2[] = {30, 3, 'M', 0, 'e', 0, 'l', 0, 'o', 0, 'd', 0, 'e', 0, 'e', 0, ' ', 0, 'U', 0, 'p', 0,
+static const uint8_t STR2[] = {30, 3, 'T', 0, 'e', 0, 's', 0, 's', 0, 'e', 0, 'r', 0, 'a', 0, ' ', 0, 'U', 0, 'p', 0,
                                'd', 0, 'a', 0, 't', 0, 'e', 0};
-#else                                                   /* (the update loader stays "Melodee Update": the tools find it so).
+#else                                                   /* (the update loader: "Tessera Update" now, "Melodee Update"
+                                                         * before, the same length; the tools find both by name, and know it
+                                                         * by its identity ota-FM-1_900, which stays).
                                                          * "Tessera FM-1": Tessera's tools look for "Tessera", every other
                                                          * FM-1 firmware's installer for "FM-1" */
 static const uint8_t STR2[] = {26, 3, 'T', 0, 'e', 0, 's', 0, 's', 0, 'e', 0, 'r', 0, 'a', 0, ' ', 0, 'F', 0, 'M', 0,

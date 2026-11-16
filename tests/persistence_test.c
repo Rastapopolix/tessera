@@ -244,6 +244,30 @@ static int test_tsp_record(void)
         bad += check("TSP1: the CHAIN's KEY B / C at 0 write no FKEY part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_FKEY]);
         tessera_param_set(0, TX_FC_KEYB, -12); tessera_param_set(0, TX_FC_KEYC, 7);
     }
+    {   /* QNT LINK (#755): LINKED, the default, writes no QLINK part; OWN keeps each track's QNT and MPC degree */
+        int16_t q[NTRK], d[NTRK];
+        uint32_t k;
+        for (k = 0; k < NTRK; k++) { q[k] = trk[k].p[P_QUANT]; d[k] = trk[k].p[P_MPCDEG]; }
+        project_capture(&proj_scratch);
+        len = tsp_pack(raw, &proj_scratch, 1);
+        bad += check("TSP1: QNT LINK LINKED (the default) writes no QLINK part, so older firmware sees none",
+                     !tessera.qnt_own && len && tsp_valid(raw, len) && !tsp_seen.at[TSP_QLINK]);
+        tessera_param_set(0, TX_QNT_LINK, 0);
+        trk[0].p[P_QUANT] = Q_SNAP; trk[1].p[P_QUANT] = Q_MPC; trk[1].p[P_MPCDEG] = 3; trk[2].p[P_QUANT] = Q_HARM;
+        ok = !project_save_as(0, "TSP");
+        tessera_param_set(0, TX_QNT_LINK, 1);
+        for (k = 0; k < NTRK; k++) trk[k].p[P_QUANT] = Q_OFF;
+        project_load(0);
+        bad += check("TSP1: QNT LINK OWN comes back, with each track's own QNT and MPC degree", ok &&
+                     tessera.qnt_own && trk[0].p[P_QUANT] == Q_SNAP && trk[1].p[P_QUANT] == Q_MPC &&
+                     trk[1].p[P_MPCDEG] == 3 && trk[2].p[P_QUANT] == Q_HARM);
+        tessera_param_set(0, TX_QNT_LINK, 1);
+        for (k = 0; k < NTRK; k++) { trk[k].p[P_QUANT] = q[k]; trk[k].p[P_MPCDEG] = d[k]; }
+        ok = !project_save_as(0, "TSP");
+        tessera_param_set(0, TX_QNT_LINK, 0);
+        project_load(0);
+        bad += check("TSP1: a project saved LINKED (no QLINK part) loads LINKED", ok && !tessera.qnt_own);
+    }
     project_capture(&proj_scratch);
     len = tsp_pack(raw, &proj_scratch, 1);             /* (with the generators: the TESSERA part) */
     ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_TESSERA];
@@ -760,6 +784,31 @@ static int test_pat_gen(void)
                  midi_out_map(TESS_DM_ROW, 36) == 36u && midi_out_map(TESS_DM_ROW, 38) == 37u &&
                  midi_out_map(TESS_DM_ROW, 42) == 44u && midi_out_map(TESS_DM_GM, 38) == 38u &&
                  midi_out_map(TESS_DM_ROW, 60) == 60u);
+    reset();                                           /* MIDI OUT's SECTION PC (F2): the SECPC part, a byte of tracks */
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    bad += check("SECTION PC: all OFF writes no SECPC part, so older firmware sees none",
+                 len && tsp_valid(raw, len) && !tsp_seen.at[TSP_SECPC]);
+    tessera_param_set(1, TX_SECTION_PC, 1); tessera_param_set(3, TX_SECTION_PC, 1);
+    ok = !project_save_as(0, "TSP");
+    tessera_param_set(1, TX_SECTION_PC, 0); tessera_param_set(3, TX_SECTION_PC, 0);
+    project_load(0);
+    bad += check("SECTION PC: T2 and T4 ON come back with the slot, T1 and T3 OFF", ok &&
+                 tessera_param_get(1, TX_SECTION_PC) == 1 && tessera_param_get(3, TX_SECTION_PC) == 1 &&
+                 !tessera_param_get(0, TX_SECTION_PC) && !tessera_param_get(2, TX_SECTION_PC));
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_SECPC] && raw[tsp_seen.at[TSP_SECPC]] == 0x0Au;
+    raw[tsp_seen.at[TSP_SECPC]] = 1u << TESSERA_TRACKS;   /* (a track past the fourth) */
+    tsp_resum(raw);
+    bad += check("SECTION PC: the part holds the tracks ON as bits; a bit past T4 refuses the record", ok && !tsp_valid(raw, len));
+    raw[tsp_seen.at[TSP_SECPC]] = 0x0Au;
+    raw[tsp_seen.at[TSP_SECPC] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (an id older firmware does not know: skipped) */
+    tsp_resum(raw);
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_SECPC];
+    if (ok) tsp_restore(raw);
+    bad += check("SECTION PC: a record without the part (or with it, on older firmware) loads with every track OFF",
+                 ok && !tessera.sec_pc);
     reset();
     return bad;
 }
@@ -904,6 +953,25 @@ int main(void)
         bad += check("project load keeps the device's CLK TUNE MIDI ROUT, takes the project's BPM",
                      song.g[G_CLOCK] == 0 && song.g[G_TUNE] == -4 && song.g[G_MIDI] == GP[G_MIDI].min &&
                      song.g[G_ROUTE] == 0 && song.g[G_BPM] == 133);
+    }
+    {   /* PPQN is the device's too (like CLK): a project load keeps it; the settings keep it across power-off, tagged in
+         * favorites row 8 bytes 2..3 (an untagged or out-of-range byte: 24) */
+        song.g[G_PPQN] = 1;
+        project_save_as(3, "PPQN");
+        song.g[G_PPQN] = 3;
+        project_load(3);
+        int kept = song.g[G_PPQN] == 3;
+        settings_ppqn = song.g[G_PPQN]; settings_save();
+        persist_t rec; int n = st_load(OBJ_SETTINGS, &rec, sizeof rec);
+        settings_ppqn = 0; song.g[G_PPQN] = 0;
+        settings_import(&rec, n); glo_restore();
+        int saved = song.g[G_PPQN] == 3 && rec.favorites.factory[8][2] == 0xC5u && rec.favorites.factory[8][3] == 3u;
+        rec.favorites.factory[8][2] = 0x11; settings_import(&rec, n);
+        int untagged = settings_ppqn == 0;
+        rec.favorites.factory[8][2] = 0xC5u; rec.favorites.factory[8][3] = 9; settings_import(&rec, n);
+        bad += check("PPQN: a project load keeps the device's; saved with the settings; untagged or out of range is 24",
+                     kept && saved && untagged && settings_ppqn == 0);
+        song.g[G_PPQN] = 0; settings_ppqn = 0;
     }
     {   /* All inactive banks are validated before replacing the runtime. */
         step_t keep = trk[0].step[0];

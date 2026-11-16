@@ -144,9 +144,11 @@ static uint32_t voice_units(const track_t *t)
 static uint32_t vbudget_cpu1 = VBUDGET;
 /* The load ceiling (#586): the measured time's own limit under BUDGET. The weights don't see FX, USB, the mixer or
  * what a patch really costs, so a busy project kept admitting voices that the overload check (audio.c) then faded
- * one a half: clicks, and late halves anyway. An emergency shed drops the ceiling to the units sounding then; past
- * it a new voice replaces one (voice_victim's order: a released tail first) instead of adding load. 0xFF = none */
-static uint8_t vceil = 0xFFu, vceil_wait;
+ * one a half: clicks, and late halves anyway. An emergency shed drops the ceiling to the units sounding then (half
+ * of BUDGET at least); past it a new voice replaces one (voice_victim's order: a released tail first) instead of
+ * adding load. 0xFF = none */
+static uint8_t vceil = 0xFFu;
+static uint16_t vceil_wait;
 static uint32_t voice_budget_max(void)
 {
 #if MELODEE_AUDIO_BENCH
@@ -182,28 +184,33 @@ static uint32_t voices_busy(void)                       /* budget units of all p
     return u;
 }
 
-/* audio.c: an emergency shed has just faded a voice: the ceiling is what still sounds (2 units at least: each part's
- * protected voice is admitted past it anyway, voice_room) */
+/* audio.c: an emergency shed has just faded a voice: the ceiling is what still sounds, but never under half of BUDGET
+ * (a shed caught between hits, with few voices ringing, held every part to one or two voices: #716's dropped snares).
+ * Each part's protected voice is admitted past it anyway (voice_room) */
 #define VCEIL_MIN 2u
 #define VCEIL_LOW 154u                                  /* average load under 60 % (song.cpu_q8: 256 = a full half) */
 #define VCEIL_HALVES 86u                                /* ... for 86 halves (~250 ms): one unit back */
+#define VCEIL_HALVES_BUSY 344u                          /* at 60 % or more: one unit back per ~1 s without a new shed */
+static uint32_t voice_ceiling_floor(void)
+{
+    uint32_t f = voice_budget_max() / 2u;
+    return f > VCEIL_MIN ? f : VCEIL_MIN;
+}
 static void voice_ceiling_drop(void)
 {
-    uint32_t u = voices_busy();
-    vceil = (uint8_t)(u > VCEIL_MIN ? u : VCEIL_MIN);
+    uint32_t u = voices_busy(), f = voice_ceiling_floor();
+    vceil = (uint8_t)(u > f ? u : f);
     vceil_wait = 0;
 }
 
-/* each half (audio.c): recover slowly while the load stays low; let go at BUDGET */
+/* each half (audio.c): recover a unit per ~250 ms while the load stays under 60 %, per ~1 s above it (a load too
+ * high for the voices back sheds again, which drops it again: a held ceiling stayed down for the rest of a busy
+ * piece); let go at BUDGET */
 static void voice_ceiling_tick(uint32_t load_q8)
 {
     if (vceil == 0xFFu)
         return;
-    if (load_q8 >= VCEIL_LOW) {
-        vceil_wait = 0;
-        return;
-    }
-    if (++vceil_wait < VCEIL_HALVES)
+    if (++vceil_wait < (load_q8 >= VCEIL_LOW ? VCEIL_HALVES_BUSY : VCEIL_HALVES))
         return;
     vceil_wait = 0;
     if (++vceil >= voice_budget_max())
@@ -222,6 +229,23 @@ static uint32_t lowest_held(const track_t *t)           /* index of the lowest h
 /* the voice to give up for a new one (see the top); soft: only released voices and
  * extra voices of other non-POLY parts (also ones left after a mode change).
  * Returns its index, *pp its part; NVOICE = none */
+/* a released voice's loudness, Q24, for the shedder (audio.c shed_voice): its envelope; a drum's is held at full
+ * (eng_drum.c drum_amp), so its last block's peak instead (v->s[7], Q15): the quietest ringing tail goes first */
+static int32_t voice_level(const track_t *t, const voice_t *v)
+{
+    if (t->engine == ENGI_DRUM) {
+        int32_t pk = v->s[7] > 32767 ? 32767 : v->s[7];
+        return pk << 9;
+    }
+    return v->env;
+}
+/* a drum hit not heard yet (eng_drum.c drum_note_on: DRUM_FRESH until its first block): never given up to make room
+ * for a later hit (voice_victim); that hit gives way instead (voice_alloc), so at the ceiling a step's kick, snare
+ * and hat don't leave only the last. (An emergency shed, audio.c, may still take it: it must free time.) */
+static int voice_fresh(const track_t *t, const voice_t *v)
+{
+    return t->engine == ENGI_DRUM && v->s[7] > 32767;
+}
 static uint32_t voice_victim(const track_t *self, int soft, track_t **pp)
 {
     uint32_t p, i, best = NVOICE, cat = 4;
@@ -234,17 +258,18 @@ static uint32_t voice_victim(const track_t *self, int soft, track_t **pp)
         for (i = 0; i < NVOICE; i++) {
             const voice_t *v = &t->v[i];
             uint32_t c;
-            if (!v->active || v->stage == 4u)
+            if (!v->active || v->stage == 4u || voice_fresh(t, v))
                 continue;
             if (!v->gate)
-                c = 1;                                  /* released */
+                c = 1;                                  /* released: the quietest (then the oldest) */
             else if (mode != V_POLY && i > 0)
                 c = 2;                                  /* extra UNISON, or a voice left by a mode / cap change */
             else if (!soft && mode == V_POLY && i != low)
                 c = 3;                                  /* held, not the bass */
             else
                 continue;
-            if (c < cat || (c == cat && v->age < (*pp)->v[best].age)) {
+            if (c < cat || (c == cat && (c == 1u && v->env != (*pp)->v[best].env ? v->env < (*pp)->v[best].env
+                                                                                : v->age < (*pp)->v[best].age))) {
                 cat = c;
                 best = i;
                 *pp = t;
@@ -326,12 +351,15 @@ static voice_t *voice_alloc(track_t *t, uint32_t note)
         uint32_t k = voice_victim(t, 0, &vp);
         if (k < np && vp == t)
             return &t->v[k];                            /* our own: restart it in place (no click) */
-        if (k >= NVOICE)
+        if (k >= NVOICE) {
+            if (t->engine == ENGI_DRUM)
+                return 0;                               /* a drum hit with nothing to give up: it gives way */
             break;
+        }
         voice_capacity_kill(&vp->v[k]);
     }
     if (t->p[P_ALLOC] || t->p[P_GLIDE]) {
-        int32_t target=micro_active(t)?clamp(micro_pitch(t,(int32_t)note),0,1270000)*16/10000:(int32_t)note*16;
+        int32_t target=micro_active(t)?clamp(micro_pitch(t,(int32_t)note),0,1270000)*16/10000:micro_chrom(t)?clamp(micro_chrom_pitch(t,note),0,1270000)*16/10000:(int32_t)note*16;
         for (i = 0; i < np; i++) {
             int32_t d = t->v[i].pitch_cur - target;
             if (t->v[i].active)
@@ -387,8 +415,8 @@ static void glide_set(track_t *t, voice_t *v, int glide)
 /* Keep each sounding voice's pitch after SCL/ROOT/QNT changes, including release tails. */
 static void voice_scale_pitch(const track_t *t, voice_t *v, uint32_t note)
 {
-    if (micro_active(t)) {
-        int32_t pitch = clamp(micro_pitch(t, (int32_t)note), 0, 1270000);
+    if (micro_active(t) || micro_chrom(t)) {            /* (micro_chrom: QNT OFF, the keys a piano's, tuned) */
+        int32_t pitch = clamp(micro_active(t) ? micro_pitch(t, (int32_t)note) : micro_chrom_pitch(t, note), 0, 1270000);
         v->pitch16 = pitch * 16 / 10000;
         v->scale_fine = (pitch * 16 - v->pitch16 * 10000) * 2367 / 1600000;
     } else {
@@ -536,10 +564,15 @@ static void trk_note_on_work(track_t *t, uint32_t note, uint32_t vel)
     if (!any) {                                        /* fresh phrase: LFO retrigger (TRIG NOTE) and fade */
         if (!t->p[P_LTRIG])
             t->lfo_ph = (uint32_t)t->p[P_LPHASE] << 25;
-        t->lfo_fade = 0;
+        t->lfo_fade = t->p[P_LFADE] ? 0 : 32767;       /* (FADE 0: no fade-in to restart. 0 left the LFO out for a
+                                                     * block, a step and back: a click on a note still releasing) */
     }
     if (mode == V_POLY) {
         AP_START(alloc_start);voice_t *v = voice_alloc(t, note);AP_END(AP_ALLOC,alloc_start);
+        if (!v) {                                       /* a drum hit with no room: dropped (voice_alloc) */
+            admission_rejections++;
+            return;
+        }
         t->nmono = 0;                                   /* no stale mono stack after a mode change */
         t->mono_note = 0;
         v->fine = 0;
@@ -572,6 +605,7 @@ static void trk_note_on(track_t *t,uint32_t note,uint32_t vel)
 {
     if (!entries_note(t, note) || cord_play_shut((uint32_t)(t - trk)))   /* (PLAY shut by its mods: cord.c) */
         return;
+    vel = cord_vel((uint32_t)(t - trk), vel);          /* (VELO as its mods move it: cord.c) */
     land_note(t, note, vel);
     midi_out_on(t, note, vel);
     if (!tess_sound_off(t))

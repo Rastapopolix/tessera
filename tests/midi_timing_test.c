@@ -75,6 +75,59 @@ static int grid_test(void)
             }
     return bad;
 }
+/* PPQN: a master with 48, 4, 8 or 12 clocks a beat (G_PPQN) plays the FM-1's 16ths as 24 does, at its own tempo;
+ * with PPQN still 24, a 48-pulse master plays twice as fast (#747) */
+static int ppqn_grid(uint32_t bpm, uint32_t source, uint32_t setting, uint32_t master)
+{
+    uint32_t start = 24000000u, bad = 0, sixteenth = master / 4u;
+    timing_reset(source, start);
+    song.g[G_PPQN] = (int16_t)setting;
+    timing_packet(start, 0xFA, 0, 0, source);
+    for (uint32_t pulse = 0; pulse < master * 4u; pulse++) {
+        uint32_t at = start + (uint32_t)((uint64_t)pulse * 60000u * MIDI_TICKS_PER_MS / (bpm * master));
+        timing_packet(at, 0xF8, 0, 0, source);
+        if (pulse % sixteenth == 0) {
+            timing_packet(at + MIDI_TICKS_PER_MS, 0x90, 60 + pulse / sixteenth, 100, source);
+            timing_packet(at + 2u * MIDI_TICKS_PER_MS, 0x80, 60 + pulse / sixteenth, 0, source);
+        }
+        events_block(CTL);
+    }
+    events_block(CTL);
+    for (uint32_t i = 0; i < 16; i++)
+        if (trk[0].step[i].time != ST_NOTE || trk[0].step[i].n != 1 || trk[0].step[i].note[0] != 60 + i)
+            bad++;
+    if (song.g[G_BPM] < (int16_t)bpm - 1 || song.g[G_BPM] > (int16_t)bpm + 1) bad++;
+    song.g[G_PPQN] = 0;
+    return bad;
+}
+static int ppqn_test(void)
+{
+    static const uint8_t pulses[] = {24, 48, 4, 8, 12};
+    uint32_t bpm[] = {40, 97, 120, 173, 240};
+    int bad = 0;
+    for (uint32_t k = 0; k < NELEM(pulses); k++)
+        for (uint32_t source = 1; source <= 2; source++) {
+            int errors = 0;
+            for (uint32_t i = 0; i < NELEM(bpm); i++) errors += ppqn_grid(bpm[i], source, k, pulses[k]);
+            char label[100];
+            snprintf(label, sizeof label, "PPQN %u: %s clock at %u a beat records 16ths on the grid, its tempo shown, 40..240 BPM",
+                     pulses[k], source == 2 ? "TRS" : "USB", pulses[k]);
+            bad += check(label, !errors);
+        }
+    {   /* 48 a beat with PPQN left at 24: the 16 notes of one bar land on the first 8 steps (twice as fast) */
+        uint32_t start = 24000000u, steps = 0;
+        timing_reset(1, start);
+        timing_packet(start, 0xFA, 0, 0, 1);
+        for (uint32_t pulse = 0; pulse < 192u; pulse++) {
+            uint32_t at = start + (uint32_t)((uint64_t)pulse * 60000u * MIDI_TICKS_PER_MS / (120u * 48u));
+            timing_packet(at, 0xF8, 0, 0, 1);
+            events_block(CTL);
+        }
+        steps = song.g[G_BPM];
+        bad += check("PPQN 24 against a 48-pulse master: the tempo reads double (what PPQN 48 fixes)", steps == 240);
+    }
+    return bad;
+}
 static int timeline_test(void)
 {
     int bad = 0;
@@ -521,7 +574,7 @@ static int old_formats_and_overdub_test(void)
 #ifndef MIDI_TIMING_NO_MAIN
 int main(void)
 {
-    int bad = grid_test() + timeline_test() + phase_test() + long_session_test() + lfo_lock_test() + overflow_phase_test() + arp_catchup_test() + tempo_flutter_test() + divisions_test() + lengths_and_swing_test() +
+    int bad = grid_test() + ppqn_test() + timeline_test() + phase_test() + long_session_test() + lfo_lock_test() + overflow_phase_test() + arp_catchup_test() + tempo_flutter_test() + divisions_test() + lengths_and_swing_test() +
               loop_replay_test() + recorded_gate_storage_test() + old_formats_and_overdub_test();
     printf("%s\n", bad ? "MIDI TIMING TEST FAILED" : "MIDI timing tests passed");
     return bad != 0;

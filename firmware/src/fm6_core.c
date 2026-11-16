@@ -19,6 +19,10 @@
  * index). The patch is the 155-byte single-voice layout (FP_* below), operator 0 = the sixth operator. */
 
 #include "x0x/fastmath.h"
+#ifndef MELODEE_FM6_FAST
+#define MELODEE_FM6_FAST 1   /* upstream Melodee's exact FM6 fast paths (1.4.2; 1.5 70fc020's MARK I kernel, not its
+                                * MODERN one: no gain measured here); 0: the plain kernels */
+#endif
 
 /* the 155-byte patch: 6 x 21 operator bytes (the sixth operator first), then the voice */
 enum {
@@ -284,6 +288,12 @@ static __attribute__((noinline,section(".dsp_text"))) int32_t fm6_eg_step(fm6_eg
 
 static inline __attribute__((always_inline)) int32_t fm6_eg_step_run(fm6_eg_t *e, const uint8_t *op, int32_t ol, int32_t rs, int down)
 {
+#if MELODEE_FM6_FAST
+    /* Sustained and finished operators have no state transition. Avoid the
+     * far RAM call, while static holds still consume their exact samples. */
+    if (e->ix >= 3u && !e->hold && (e->ix >= 4u || down))
+        return e->level;
+#endif
     int32_t (*volatile run)(fm6_eg_t *, const uint8_t *, int32_t, int32_t, int) = fm6_eg_step;
     return run(e, op, ol, rs, down);
 }
@@ -397,6 +407,30 @@ static inline __attribute__((always_inline)) int32_t fm6_opl(int32_t ph, int32_t
             }                                                                                      \
     } while (0)
 #define FM6_SIN_G(x) (fm6_sin(x) * g)
+#if MELODEE_FM6_FAST
+/* The MARK I plan produces integral attenuation and steps, including wrapped
+ * overshoots. Keep its register allocation separate from the other modes. */
+static __attribute__((noinline,section(".dsp_text"))) void fm6_op_mark1(fm6_voice_t *s,uint32_t k,float *out,const float *in,int add,uint32_t n)
+{
+    uint32_t ph=s->ph[k],fq=(uint32_t)s->fq[k],i;
+    int32_t g=(int32_t)s->g[k],dg=(int32_t)s->dg[k];
+    /* Above 13 octaves of attenuation, every exponent ROM value shifts
+     * to zero. Preserve the negative half's -1 code, rather than replacing
+     * this with silence. Bound the whole ramp to exclude envelope wrap. */
+    int32_t first=g+dg,last=g+(int32_t)n*dg;
+    int32_t lo=first<last?first:last,hi=first>last?first:last;
+    if(lo>=13*1024 && hi<32768-(int32_t)FM6_MKI_LOG[0]){
+        if(in)
+            FM6_LOOP((fm6_phase(ph,in[i])&0x800000u)?-1.0f/2048.0f:0.0f);
+        else
+            FM6_LOOP((ph&0x800000u)?-1.0f/2048.0f:0.0f);
+    }else if(in)
+        FM6_LOOP((1.0f/16777216.0f)*fm6_mki((int32_t)fm6_phase(ph,in[i]),g));
+    else
+        FM6_LOOP((1.0f/16777216.0f)*fm6_mki((int32_t)(ph&0xffffffu),g));
+    s->ph[k]=ph;s->g[k]=(float)g;
+}
+#endif
 static __attribute__((section(".dsp_text"))) void fm6_op(fm6_voice_t *s, uint32_t k, float *out, const float *in, int add, uint32_t eng, uint32_t n)
 {
     uint32_t ph = s->ph[k], i, fq = (uint32_t)s->fq[k];
@@ -502,7 +536,13 @@ static inline __attribute__((always_inline)) void fm6_plan(fm6_voice_t *s, const
             f = 0xc4u, out = 0, in = 0, add = 4u;        /* MARK I: the loop runs from OP6 */
         if (eng == FM6_MODERN) {
             g1 = s->gout[k];
+#if MELODEE_FM6_FAST
+            /* exp2(-14) is exactly 2^-14 in the existing polynomial. Keep
+             * the original routing, phase advancement and gain ramp below. */
+            g2 = lv[k] == 0 ? 1.0f / 16384.0f : fm_exp2f((float)lv[k] * (1.0f / 16777216.0f) - 14.0f);
+#else
             g2 = fm_exp2f((float)lv[k] * (1.0f / 16777216.0f) - 14.0f);
+#endif
             run = g1 >= 1120.0f / 16777216.0f || g2 >= 1120.0f / 16777216.0f;
         } else if (eng == FM6_MARK1) {
             g1 = s->gout[k] ? s->gout[k] : 16383;
@@ -574,6 +614,12 @@ static __attribute__((noinline, section(".dsp_text"))) void fm6_run(fm6_voice_t 
             fm6_op_loop(s, out, n);
         else if (pl & FM6_P_FB)
             fm6_op_fb(s, k, out, pl & FM6_P_ADD, eng, n);
+#if MELODEE_FM6_FAST
+        else if(eng==FM6_MARK1){
+            void (*volatile run)(fm6_voice_t *,uint32_t,float *,const float *,int,uint32_t)=fm6_op_mark1;
+            run(s,k,out,in?bus[in-1u]:0,pl&FM6_P_ADD,n);
+        }
+#endif
         else
             fm6_op(s, k, out, in ? bus[in - 1u] : 0, pl & FM6_P_ADD, eng, n);
     }

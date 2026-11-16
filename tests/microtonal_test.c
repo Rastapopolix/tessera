@@ -58,9 +58,19 @@ static void mapping(void)
     t->p[P_SCALE] = scale_id("24EDO");
     t->p[P_QUANT] = Q_MPC; t->p[P_MPCDEG] = 24;
     assert(midi_map(t, 21) == 83 && midi_map(t, 19) == KB_SILENT);
-    t->p[P_QUANT] = Q_OFF;
-    voice_t v = {0}; voice_scale_pitch(t, &v, 69);
-    assert(v.pitch16 == 69 * 16 && !v.scale_fine);
+    t->p[P_QUANT] = Q_OFF;                                /* OFF keeps the tuning: each key, each MIDI note a degree */
+    assert(micro_active(t) && kb_map(t, 8) == 61 && kb_map(t, 9) == 62 && midi_map(t, 61) == 61);
+    voice_t v = {0}; voice_scale_pitch(t, &v, 61);                  /* 61: a quarter-tone above the root */
+    assert(v.pitch16 == 968 && !v.scale_fine);                     /* 60.5 semitones, not 61 */
+    t->p[P_SCALE] = scale_id("RAST"); t->p[P_ROOT] = 0;            /* up to 12 degrees: OFF keeps a piano's keys, tuned */
+    assert(!micro_active(t) && micro_chrom(t) && kb_map(t, 11) == 64 && kb_map(t, 8) == 61 && midi_map(t, 71) == 71);
+    v = (voice_t){0}; voice_scale_pitch(t, &v, 64); assert(v.pitch16 == 1016 && !v.scale_fine);   /* E: half flat */
+    v = (voice_t){0}; voice_scale_pitch(t, &v, 71); assert(v.pitch16 == 1128 && !v.scale_fine);   /* B: half flat */
+    v = (voice_t){0}; voice_scale_pitch(t, &v, 61); assert(v.pitch16 == 976 && !v.scale_fine);    /* C#: off the scale, 12-TET */
+    v = (voice_t){0}; voice_scale_pitch(t, &v, 65); assert(v.pitch16 == 1040 && !v.scale_fine);   /* F: in it, on its key */
+    t->p[P_ROOT] = 2;                                              /* on D: F# half flat, C# half flat */
+    v = (voice_t){0}; voice_scale_pitch(t, &v, 66); assert(v.pitch16 == 1048);
+    t->p[P_ROOT] = 0; t->p[P_SCALE] = scale_id("24EDO");
     t->p[P_SCALE] = scale_id("BP-ET"); t->p[P_QUANT] = Q_SNAP; song.octave = 1;
     assert(kb_map(t, 7) == 73 && micro_pitch(t, 73) == 600000 + micro_scale(t)->pitch[13]);
     song.octave = 0;

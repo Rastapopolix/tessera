@@ -55,8 +55,9 @@ Generators can be developed and tested on the PC; flash the device only to check
 - JieLi AC79 at 360 MHz. CPU1 is optional and retires itself on units that misread SRAM:
   everything must work single-core.
 - Audio at 44.1 kHz. Modulation runs at control rate (once per audio block).
-- Flash is the tight limit: the app image must fit the XIP window of 573,440 B, and the build prints
-  `image N B`. Measure every change and put the cost in the PR.
+- Flash is the tight limit: the app body must fit the XIP window of 573,440 B (0x8C000, up to the commit-marker
+  sector). The build prints `image N B`, which includes the 3,808 B boot stub, so the image limit is 577,248 B
+  (the build and the packager check the body). Measure every change and put the cost in the PR.
 - The build checks the audio working arena against the linker's `_resource_minimum`; it reports the
   free arena and fails below it. Watch RAM (.data+.bss of 98,304 B) as well.
 - Any function placed in `.audio_text` needs `aligned(16)` (the build fails otherwise).

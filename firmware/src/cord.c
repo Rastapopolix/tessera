@@ -1,9 +1,10 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis (melodee-tess) */
-/* Cords (cord.h): the destinations. Left out on purpose:
- *   GLIDE, UNISON DETUNE, VOICE MODE ..: read at a note-on (voice_alloc, mono_play), before the block's modulation
+/* Cords (cord.h): the destinations. GATE, SWING, GLIDE and ARP's RATE GATE OCT are read by the sequencer and at its
+ * note-ons, outside the block: CK_SEQ moves them around seq_advance too. Left out on purpose:
+ *   UNISON DETUNE, VOICE MODE ..: read at a note-on (voice_alloc, mono_play), before the block's modulation
  *   an insert's or a send effect's TYPE, FX MODE: a choice, not an amount
- *   ARP, PATTERN, SCALE ..: read by the sequencer, outside the block
+ *   ARP MODE, PATTERN, SCALE ..: a choice, read by the sequencer
  *   TEMPO and the other globals: one value for every track, a cord's amount would be every track's
  *   MODE, FORM, EVERY, ROLL, FOLLOW: a choice or a restart, not an amount to move by
  * tests/cord_test.c keeps the codes against tests/cord_dests.txt (frozen). */
@@ -13,6 +14,7 @@
 #define B_(c, p, n, f) {c, CK_BLOCK, 0, PID_TRACK(p), n CD_FULL(f)}
 #define S_(c, x, n, f) {c, CK_STEP, 0, PID_TESS(x), n CD_FULL(f)}
 #define G_(c, g, n, f) {c, CK_GLOBAL, 0, PID_GLOBAL(g), n CD_FULL(f)}
+#define Q_(c, p, n, f) {c, CK_SEQ, 0, PID_TRACK(p), n CD_FULL(f)}
 #define M_(k) [CD_M1_AMT + k - 1] = {CD_M1_AMT + k - 1, CK_CORD, 0, PID_NONE, "M" #k " AMT" \
                                      CD_FULL("MOD " #k "'s AMOUNT (a fixed mod's OFFSET), turned by another mod")}
 static const cord_dest_t CORD_DESTS[CD_N] = {
@@ -110,11 +112,34 @@ static const cord_dest_t CORD_DESTS[CD_N] = {
     [CD_BUS_A] = {CD_BUS_A, CK_BUS, 0, PID_NONE, "BUS A" CD_FULL("the project's MIX bus A: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS A")},
     [CD_CLOCK] = {CD_CLOCK, CK_CLOCK, 0, PID_NONE, "CLOCK" CD_FULL("steps the track's generator on each edge of the source, in place of its DIV (a GATE cord: OFFSET the threshold, a GATE source counts hits); AMOUNT is the division, 100 % every edge, 50 % every second, 33 % every third; negative: the gate closing")},
     [CD_BUS_B] = {CD_BUS_B, CK_BUS, 0, PID_NONE, "BUS B" CD_FULL("the project's MIX bus B: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS B")},
+    [CD_CH_STRUM] = S_(CD_CH_STRUM, TX_CH_STRUM, "STRUM", "CHORD's STRUM: how many ms apart a chord's notes start, at each strike"),
+    [CD_CH_SDIR] = S_(CD_CH_SDIR, TX_CH_SDIR, "STR DIR", "CHORD's strum DIR, stepped: UP DOWN ALT from the track's own"),
+    [CD_SUB_RATCH] = S_(CD_SUB_RATCH, TX_SUB_RATCH, "RATCH", "TIMING's RATCH: how many times a generator step's notes play, x1 .. x8"),
+    [CD_SUB_CHANCE] = S_(CD_SUB_CHANCE, TX_SUB_CHANCE, "R CHANC", "TIMING's CHANCE: how often a step ratchets"),
+    [CD_SGATE] = Q_(CD_SGATE, P_SGATE, "GATE", "the track's step GATE: how long its notes hold, a generator's and a STEP pattern's"),
+    [CD_NL_LEN] = S_(CD_NL_LEN, TX_NL_LEN, "N LEN", "NOTE LENGTH's LEN, stepped: FIXED's length, from a 32nd note to a bar"),
+    [CD_EV_LOCK] = S_(CD_EV_LOCK, TX_EV_LOCK, "LOCK", "EVOLVE's LOCK: how much of a generator's phrase stays (Turing: PROB turned round; Atlas: CHAOS)"),
+    [CD_VELO] = {CD_VELO, CK_VEL, 0, PID_NONE, "VELO" CD_FULL("the velocity of the track's notes, at each note-on: 100 % at a full source is the whole 1..127")},
+    [CD_SSWING] = Q_(CD_SSWING, P_SSWING, "SWING", "the track's SWING: its even steps later, its odd ones sooner"),
+    [CD_GLIDE] = Q_(CD_GLIDE, P_GLIDE, "GLIDE", "the track's GLIDE: at the sequencer's note-ons and its speed in the sound (a live key's note-on: as set)"),
+    [CD_SD_GRAVITY] = S_(CD_SD_GRAVITY, TX_SD_GRAVITY, "GRAVITY", "GRAVITY: the pull of a generator's phrase back home"),
+    [CD_FM_DEVELOP] = S_(CD_FM_DEVELOP, TX_FM_DEVELOP, "DEVELOP", "FORM's DEVELOP: how far a section varies each time FORM comes back to it"),
+    [CD_AN_ECHO] = S_(CD_AN_ECHO, TX_AN_ECHO, "AN ECHO", "ANSWER's ECHO: the chance a note it plays comes back once more"),
+    [CD_AN_SHIFT] = S_(CD_AN_SHIFT, TX_AN_SHIFT, "AN SHFT", "ANSWER's SHIFT: how many scale degrees up or down an answer may move"),
+    [CD_AN_SPACE] = S_(CD_AN_SPACE, TX_AN_SPACE, "AN SPCE", "ANSWER's SPACE: the rest before each answer"),
+    [CD_CH_BREATH] = S_(CD_CH_BREATH, TX_CH_BREATH, "BREATH", "CHORD's BREATH (HIT HOLD): how its voices are struck again, softer"),
+    [CD_ACC_LIMIT] = S_(CD_ACC_LIMIT, TX_ACC_LIMIT, "ACC LIM", "a STEP track's ACCUM LIMIT: how far a step's Accumulate climbs, in scale degrees"),
+    [CD_ORG_SPEED] = S_(CD_ORG_SPEED, TX_ORG_SPEED, "TIDE SP", "TIDE's SPEED: how fast the track's TIDE 1, 2, 3 drift"),
+    [CD_ORG_RATE] = S_(CD_ORG_RATE, TX_ORG_RATE, "SWRM RT", "SWARM's RATE: how fast the track's eight SWARM LFOs run"),
+    [CD_ARATE] = Q_(CD_ARATE, P_ARATE, "ARP RTE", "ARP's RATE, stepped through the divisions"),
+    [CD_AGATE] = Q_(CD_AGATE, P_AGATE, "ARP GTE", "ARP's GATE: how long its notes hold"),
+    [CD_AOCT] = Q_(CD_AOCT, P_AOCT, "ARP OCT", "ARP's OCT: over how many octaves it runs, 1..4"),
 };
 #undef V_
 #undef B_
 #undef S_
 #undef G_
+#undef Q_
 #undef M_
 
 const cord_dest_t *cord_dest(uint32_t code)
@@ -199,14 +224,15 @@ static int32_t cord_lfo_raw(const track_t *t)
     return v > 32767 ? 32767 : v;
 }
 /* track tr's source s now (Q15): mod.c's (ENV: the latest note's envelope, one block late; the LFO with its FADE),
- * the generator's */
+ * the generator's or the STEP pattern's (GATE, NOTE; CV the generator's only) */
 static int32_t cord_src(uint32_t s, uint32_t tr)
 {
     const track_t *t = &trk[tr % NTRK];
-    if (s == CS_GATE)
-        return tr < TESSERA_TRACKS && tessera.mode[tr] != TESS_ENG_OFF && tessera.active_gate[tr] ? 32767 : 0;
-    if (s == CS_NOTE)
-        return tr < TESSERA_TRACKS && tessera.mode[tr] != TESS_ENG_OFF ? mod_key(tessera.last_note[tr]) : 0;
+    if (s == CS_GATE)                                   /* (a STEP track's: while its step's notes or its ARP's sound) */
+        return tr < TESSERA_TRACKS && (tessera.mode[tr] != TESS_ENG_OFF ? tessera.active_gate[tr] : t->seq_n || t->arp_note) ?
+               32767 : 0;
+    if (s == CS_NOTE)                                   /* (a STEP track's: seq.c keeps its last, 0 before its first) */
+        return tr < TESSERA_TRACKS && (tessera.mode[tr] != TESS_ENG_OFF || tessera.last_note[tr]) ? mod_key(tessera.last_note[tr]) : 0;
     if (s == CS_CV)
         return tr < TESSERA_TRACKS && tessera.mode[tr] != TESS_ENG_OFF ? tessera.cv[tr] : 0;
     if (s == CS_DRIFT)
@@ -263,7 +289,8 @@ static int32_t cord_val(const cord_t *c, int32_t own)
 /* ------------------------------------------------------------ the cords --- */
 static cord_t cords[CORD_MAX];
 _Static_assert(CD_FILL == 100 && CD_TEMPO == 101 && CD_CC == 102 && CD_SUB_SPLIT == 103 && CD_SEQ_DIR == 104 &&
-               CD_BUS_A == 105 && CD_BUS_B == 106 && CD_MOD_DEPTH == 107 && CD_PLAY == 108 && CS_MACRO4 == 30 && CS_BUSA == 31 && CS_BUSB == 32 && CS_EOC == 33,
+               CD_BUS_A == 105 && CD_BUS_B == 106 && CD_MOD_DEPTH == 107 && CD_PLAY == 108 && CD_CH_STRUM == 110 &&
+               CD_SGATE == 114 && CD_VELO == 117 && CD_ACC_LIMIT == 126 && CD_AOCT == 131 && CS_MACRO4 == 30 && CS_BUSA == 31 && CS_BUSB == 32 && CS_EOC == 33,
                "cord codes are saved: never renumbered");
 /* CC OUT: each cord's CC number (0..119), the value it last sent (0xFF none yet) and the block it went at */
 static uint8_t cord_ccn[CORD_LIVE] = {[0 ... CORD_LIVE - 1] = 1}, cord_cc_was[CORD_LIVE] = {[0 ... CORD_LIVE - 1] = 0xFF};
@@ -278,6 +305,10 @@ void cord_cc_set(uint32_t i, uint32_t n)
 /* per destination track, the cords that reach it (bit i: cords[i]): mask in the audio block, smask at the step.
  * envsrc: bit t, a cord reads track t's ENV (its voices report it only with mod.c active: mod_begin keeps it on) */
 static uint32_t cord_mask[NTRK], cord_smask[NTRK];
+/* velm bit i: cords[i] goes onto a VELO (CK_VEL); qall, a CK_SEQ cord (cord_seq_begin; also in mask: the render's
+ * GLIDE); omask bit t, a cord moves track t's TIDE SPEED or SWARM RATE (organic.c, each block) */
+static uint16_t cord_velm, cord_qall;
+static uint8_t cord_omask;
 static uint8_t cord_envsrc;
 /* the mods of mods (CK_CORD): cmask bit i, cords[i] is an M AMT cord; amask bit i, one turns cords[i]; now[i], cords[i]'s
  * move (its AMOUNT, a fixed cord's OFFSET) as they make it this block (cord_amounts), else as set */
@@ -402,6 +433,8 @@ static void cord_masks(void)
 {
     uint32_t i, t;
     for (t = 0; t < NTRK; t++) cord_mask[t] = cord_smask[t] = 0;
+    cord_omask = 0;
+    cord_qall = cord_velm = 0;
     cord_envsrc = 0;
     cord_gmask = 0;
     cord_cmask = cord_amask = 0;
@@ -468,6 +501,12 @@ static void cord_masks(void)
             cord_playm[c->dst_trk] |= 1u << i;
             continue;
         }
+        if (kind == CK_VEL) {                           /* (cord_vel) */
+            cord_velm |= (uint16_t)(1u << i);
+            continue;
+        }
+        if (kind == CK_SEQ) cord_qall |= (uint16_t)(1u << i);   /* (cord_seq_begin; and the render's, below) */
+        if (c->dst == CD_ORG_SPEED || c->dst == CD_ORG_RATE) cord_omask |= (uint8_t)(1u << c->dst_trk);
         if (kind == CK_STEP) cord_smask[c->dst_trk] |= 1u << i;
         else if (kind == CK_GLOBAL) cord_gmask |= 1u << i;
         else cord_mask[c->dst_trk] |= 1u << i;
@@ -499,6 +538,8 @@ static void cord_reset(void)
 {
     uint32_t t;
     for (t = 0; t < NTRK; t++) cord_mask[t] = cord_smask[t] = cord_adopted[t] = 0;
+    cord_omask = 0;
+    cord_qall = cord_velm = 0;
     cord_envsrc = 0;
     cord_gmask = 0;
     cord_cmask = cord_amask = 0;
@@ -663,7 +704,7 @@ static __attribute__((noinline)) void cord_block(track_t *t, int32_t *off, int32
                               &mod.cut, &mod.shp, &mod.gain);
             if (o)
                 mod_voice_add(MS_ENV, d->md, 32768, cord_amt(o), &mod.pit, &mod.cut, &mod.shp, &mod.gain);
-        } else if (d->kind == CK_BLOCK) {
+        } else if (d->kind == CK_BLOCK || d->kind == CK_SEQ) {   /* (SEQ: GLIDE's speed in the render) */
             uint32_t id = d->pid;
             const param_desc_t *pd = id >= P_E0 ? &ENGINES[t->engine]->edit[id - P_E0] : &TP[id];
             for (j = 0; j < mod.nk && mod.kid[j] != id; j++)
@@ -977,14 +1018,15 @@ uint32_t cord_adopt(void)
 }
 
 /* ------------------------------------------------------------ at the generator's step --- */
-static struct { uint8_t n, x[CORD_MAX]; int16_t base[CORD_MAX], set[CORD_MAX]; } cord_held;
+static struct { uint8_t n, x[CORD_LIVE]; int16_t base[CORD_LIVE], set[CORD_LIVE]; } cord_held;   /* (a Tessera
+                                                         * setting each: at most one a live cord) */
 
 /* tessera_clock_step, before the step: the Tessera cords of track tr into its settings (tessera_param_poke: no side
  * effect; PULSES within STEPS ..) */
 static __attribute__((noinline)) void cord_step_begin(uint32_t tr)
 {
     uint32_t m = cord_smask[tr], i, j;
-    int32_t off[CORD_MAX];
+    int32_t off[CORD_LIVE];
     cord_held.n = 0;
     for (i = 0; m; i++, m >>= 1) {
         const cord_t *c = &cords[i];
@@ -1022,7 +1064,7 @@ static __attribute__((noinline)) void cord_step_end(uint32_t tr)
     cord_held.n = 0;
 }
 /* a Tessera setting of track tr as its cords make it now (seq_sub.c: HUMAN, outside the generator's step) */
-static int32_t cord_tess_get(uint32_t tr, uint32_t x)
+static __attribute__((noinline)) int32_t cord_tess_get(uint32_t tr, uint32_t x)
 {
     int32_t v;
     if (tr >= TESSERA_TRACKS || !cord_smask[tr]) return tessera_param_get(tr, x);
@@ -1030,4 +1072,59 @@ static int32_t cord_tess_get(uint32_t tr, uint32_t x)
     v = tessera_param_get(tr, x);
     cord_step_end(tr);
     return v;
+}
+
+/* ------------------------------------------------------------ at the sequencer --- */
+/* CK_SEQ: around seq.c seq_advance (outside the render, where mod_begin moves them), the track parameters the sequencer
+ * reads (GATE, SWING, GLIDE at its note-ons, ARP's RATE GATE OCT) as their cords make them, each cord in turn within
+ * the parameter's range; after it each one's move taken off again, the last cord first, so a change made inside stays
+ * (motion playback), as cord_step_end. qmove[i]: cords[i]'s move as made (a span is at most 127) */
+static int8_t cord_qmove[CORD_LIVE];
+static __attribute__((noinline)) void cord_seq_begin(void)
+{
+    uint32_t m = cord_qall, i;
+    for (i = 0; m; i++, m >>= 1) {
+        const cord_t *c = &cords[i];
+        const param_desc_t *pd;
+        int16_t *p, was;
+        if (!(m & 1u)) continue;
+        pd = &TP[cord_dest(c->dst)->pid];
+        p = &trk[c->dst_trk].p[cord_dest(c->dst)->pid];
+        was = *p;
+        *p = (int16_t)clamp(was + cord_steps(cord_share(c), pd->max - pd->min), pd->min, pd->max);
+        cord_qmove[i] = (int8_t)(*p - was);
+    }
+}
+static __attribute__((noinline)) void cord_seq_end(void)
+{
+    uint32_t i = CORD_LIVE;
+    while (i--)
+        if ((cord_qall >> i) & 1u) {
+            const cord_t *c = &cords[i];
+            const param_desc_t *pd = &TP[cord_dest(c->dst)->pid];
+            int16_t *p = &trk[c->dst_trk].p[cord_dest(c->dst)->pid];
+            *p = (int16_t)clamp(*p - cord_qmove[i], pd->min, pd->max);
+        }
+}
+
+/* VELO (CK_VEL): a note-on's velocity on track tr, its cords' shares added (100 %: the whole 1..127) */
+__attribute__((noinline)) uint32_t cord_vel(uint32_t tr, uint32_t vel)
+{
+    uint32_t m = cord_velm, i;
+    int32_t s = 0;
+    if (!m || !vel) return vel;
+    for (i = 0; m; i++, m >>= 1)
+        if ((m & 1u) && cords[i].dst_trk == tr) s += cord_share(&cords[i]);
+    return (uint32_t)clamp((int32_t)vel + (s * 127 + (s < 0 ? -16384 : 16384)) / 32768, 1, 127);
+}
+
+/* organic.c organic_tick, each block: track tr's TIDE SPEED and SWARM RATE as their cords make them (0: none on them) */
+static __attribute__((noinline)) int cord_org(uint32_t tr, int32_t *speed, int32_t *rate)
+{
+    if (tr >= TESSERA_TRACKS || !((cord_omask >> tr) & 1u)) return 0;
+    cord_step_begin(tr);
+    *speed = tessera_param_get(tr, TX_ORG_SPEED);
+    *rate = tessera_param_get(tr, TX_ORG_RATE);
+    cord_step_end(tr);
+    return 1;
 }

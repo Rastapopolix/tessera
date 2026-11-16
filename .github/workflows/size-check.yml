@@ -1,7 +1,10 @@
 name: Device build size
 
 # Builds the device image of a pull request and of its base branch (the JieLi toolchain, as the nightly does) and
-# writes their flash and RAM figures to the run summary. Nothing is published or released.
+# writes their flash and RAM figures to the run summary. Nothing is published or released. Every step runs in bash
+# with pipefail (the job's defaults): a build piped into tee fails its step when the build fails, not only when tee
+# does, so a branch over the flash limit fails the check. The base branch's build is for comparison only and may fail
+# (continue-on-error) without failing a pull request.
 on:
   pull_request:
     branches: [develop]
@@ -14,6 +17,9 @@ jobs:
   size:
     runs-on: ubuntu-22.04
     timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash                              # (bash -eo pipefail: a failed build is not hidden by | tee)
     env:
       JIELI_TOOLCHAIN: ${{ github.workspace }}/.nightly-deps/jieli/toolchain
       AC79_SDK: ${{ github.workspace }}/.nightly-deps/sdk
@@ -60,6 +66,7 @@ jobs:
           cd ../access && ./build.sh 2>&1 | tee "$GITHUB_WORKSPACE/access.log"
       - name: Build the base branch (dual core)
         if: github.event_name == 'pull_request'
+        continue-on-error: true                  # (for comparison: a broken base must not fail this PR)
         env:
           MELODEE_DUAL_CORE: '1'
         run: |

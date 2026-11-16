@@ -27,7 +27,7 @@
 0x018 ARP ORDER                track 0..1 def 0
 0x019 ROOT                     track 0..11 def 0
 0x01a SCALE                    track 0..76 def 0
-0x01b QUANTIZE                 track 0..5 def 0
+0x01b QUANTIZE                 track 0..6 def 0
 0x01c TRANSPOSE                track -24..24 def 0
 0x01d PATTERN LENGTH           track 1..64 def 16
 0x01e PATTERN DIVISION         track 0..9 def 2
@@ -95,6 +95,7 @@
 0x101 SWING                    global 0..100 def 0
 0x102 CLOCK SOURCE             global 0..2 def 0
 0x103 TUNE                     global -50..50 def 0
+0x104 CLOCK PPQN               global 0..4 def 0
 0x10c MIDI INPUT               global 0..1 def 0
 0x10d DRUM MIDI CHANNEL        global device 0..16 def 0
 0x10e MIDI ROUTING             global 0..4 def 0
@@ -268,7 +269,7 @@
 0x293 KEY C                    global -12..12 def 0
 0x294 TIMING SPLIT             track 0..100 def 0
 0x295 TIMING HOW               track 0..2 def 0
-0x296 FOLLOW HOW               track 0..11 def 0
+0x296 FOLLOW HOW               track 0..12 def 0
 0x297 FOLLOW RHYTHM            track 0..2 def 0
 0x298 PAT GEN                  track 0..1 def 0
 0x299 MIDI OUT DRUM MAP        track 0..1 def 0
@@ -281,3 +282,9 @@
 0x2a0 BUS B MODE               global 0..3 def 0
 0x2a1 BUS B LAG                global 0..11 def 0
 0x2a2 MOD DEPTH                global 0..100 def 100
+0x2a3 ANSWER CHORD             track 0..1 def 0
+0x2a4 ANSWER MODE              track 0..1 def 0
+0x2a5 ANSWER TIME              track 1..16 def 3
+0x2a6 ANSWER BREAK             track 0..100 def 0
+0x2a7 QNT LINK                 global 0..1 def 1
+0x2a8 SECTION PC               track 0..1 def 0

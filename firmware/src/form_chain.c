@@ -33,6 +33,7 @@ static struct {
     fc_st_t now, before;                              /* the newest phrase worked out, and the one before it */
     uint32_t seed;                                    /* the SEEDs' hash, at PLAY */
     uint8_t ok;                                       /* now / before hold */
+    uint8_t pc_sent;                                  /* SECTION PC: the section last sent + 1, 0 none since PLAY */
 } fchain __attribute__((section(".pool")));
 
 static uint32_t fc_bars(void) { return FC_PHRASE_BARS[tessera.fc_phrase < FC_PHRASES ? tessera.fc_phrase : 1u]; }
@@ -155,6 +156,7 @@ void fchain_play(void)
     for (tr = 0; tr < TESSERA_TRACKS; tr++) h = (h ^ tessera.seed[tr]) * 16777619u;
     fchain.seed = h;
     fchain.ok = 0;
+    fchain.pc_sent = 0;
 }
 
 /* track tr FOLLOWs the project's FORM: it is on, the track plays a generator, and it is set to FOLLOW (or not set,
@@ -223,6 +225,27 @@ static void fc_track_step(const track_t *t, uint32_t tr)
     s = fc_at(p);
     if ((s->moved & 1u) && fc_skips(s, p, tr)) return;
     if ((s->moved & 1u) || ev->sec != fc_letter_at(s->pos)) tess_sec_go(tr, fc_letter_at(s->pos), s->extra);
+}
+
+/* SECTION PC (MIDI OUT's sheet, a track's: tessera.sec_pc), each block (entries_tick, before the downbeat's steps): on
+ * a phrase line whose section is not the one last sent (or the first since PLAY), Program Change 0, 1 or 2 (A, B, C) on
+ * the MIDI OUT channel of each track set ON, once a channel. The project's section, as the CHAIN page shows it (a
+ * track's SKIP or OWN leave it alone). Nothing with FORM OFF, MIDI OUT OFF or the track's channel OFF; a muted track
+ * still sends (its gear keeps the form while it rests) */
+static void fc_pc_tick(void)
+{
+    uint32_t b = bar_n, bars = fc_bars(), c, tr, ch, sent = 0;
+    if (!tessera.sec_pc || !tessera.fc_form || !song.playing || b % bars) return;
+    c = fc_letter_at(fc_at(b / bars)->pos);
+    if (c + 1u == fchain.pc_sent) return;
+    fchain.pc_sent = (uint8_t)(c + 1u);
+    if (settings_midi_out == MIDI_OUT_OFF) return;
+    for (tr = 0; tr < TESSERA_TRACKS; tr++) {
+        if (!(tessera.sec_pc >> tr & 1u) || (ch = midi_out_channel(&trk[tr])) == MIDI_OUT_NONE || (sent >> ch & 1u))
+            continue;
+        sent |= 1u << ch;
+        midi_out_event(0x0Cu | (0xC0u | ch) << 8 | c << 16);
+    }
 }
 
 /* the CHAIN page's picture: the FORM's letters (n, 0 OFF), the place playing and the phrases left of it (stopped: the

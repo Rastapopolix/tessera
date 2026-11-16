@@ -33,7 +33,7 @@ static const char *const TX_N_CHHIT[] = {"HOLD", "BEAT", "STEP", "OFFBEAT"};   /
 static const char *const TX_N_GRP4[] = {"TOM", "CLAP", "HATOP", "RIM", "BELL"};
 static const char *const TX_N_SPLITHOW[] = {"DOUBLE", "PUSH", "MIX"};   /* (TESS_SPLIT_*) */
 static const char *const TX_N_FHOW[] = {"SAME", "CHORD", "CONTRA", "BASS", "CANON1", "CANON2", "CANON3", "CANON4",
-                                        "CANON5", "CANON6", "CANON7", "CANON8"};   /* (TESS_FH_*) */
+                                        "CANON5", "CANON6", "CANON7", "CANON8", "HARM"};   /* (TESS_FH_*) */
 static const char *const TX_N_FRHY[] = {"OWN", "SOURCE", "BOTH"};   /* (TESS_FR_*) */
 static const char *const TX_N_RATCH[] = {"x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8"};
 static const char *const TX_N_SHAPE[] = {"EVEN", "ACCEL", "DECEL"};   /* (SUB_EVEN ..) */
@@ -42,6 +42,8 @@ static const char *const TX_N_MIDICH[] = {"AUTO", "1", "2", "3", "4", "5", "6", 
                                           "14", "15", "16", "OFF"};   /* (TESS_MIDI_OFF) */
 static const char *const TX_N_ANORDER[] = {"PLAYED", "REVERSE", "SHUFFLE"};   /* (TESS_AN_*) */
 static const char *const TX_N_ANLEN[] = {"SHORT", "MID", "LONG"};
+static const char *const TX_N_ANCHORD[] = {"ARP", "TRUE"};   /* (TESS_AN_*) */
+static const char *const TX_N_ANMODE[] = {"REPLY", "BEND"};   /* (TESS_AN_*) */
 static const char *const TX_N_SDKEEP[] = {"FREE", "RHYTHM", "PITCH"};   /* (TESS_SD_*) */
 static const char *const TX_N_SVHOW[] = {"DRIFT", "ADORN", "SERIAL"};   /* (TESS_SV_*) */
 static const char *const TX_N_SOUND[] = {"ON", "OFF"};
@@ -167,6 +169,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_SUB_SHAPE] = PE("SHAPE", TX_N_SHAPE, 0),
     [TX_MIDI_CH] = PE("MIDI CH", TX_N_MIDICH, 0),
     [TX_KEY_LINK] = PE("KEY", TX_N_KEYLINK, 1),
+    [TX_QNT_LINK] = PE("QNT", TX_N_KEYLINK, 1),
     [TX_SD_SOURCE] = PE("SOURCE", TX_N_FOLLOW, 0),
     [TX_SD_KEEP] = PE("KEEP", TX_N_SDKEEP, 0),
     [TX_SUB_HUMAN] = {"HUMAN", F_INT, 0, TESS_HUMAN_MS, 0, 0, "ms"},
@@ -229,6 +232,11 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_BUSB_MODE] = PE("MODE", TX_N_BUSMODE, 0),
     [TX_BUSB_LAG] = PE("LAG", TX_N_BUSLAG, 0),
     [TX_MOD_DEPTH] = PD("MOD DEPTH", F_PCT, 0, 100, 100),
+    [TX_AN_CHORD] = PE("CHORD", TX_N_ANCHORD, 0),
+    [TX_AN_MODE] = PE("MODE", TX_N_ANMODE, 0),
+    [TX_AN_TIME] = PD("TIME", F_INT, 1, 16, 3),
+    [TX_AN_BREAK] = PD("BREAK", F_PCT, 0, 100, 0),
+    [TX_SECTION_PC] = PE("SEC PC", TX_N_PATGEN, 0),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -276,10 +284,12 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     T_(P_SCALE, "SCALE", "The scale the keys and the generators play in. SCALES' USER family has four of "
                          "your own, USER1 to USER4, made on the keys."),
     T_(P_QUANT, "QUANTIZE",
-        "How the keys meet the scale: OFF plays every key, SNAP moves a note into the scale, WHITE puts the "
+        "How the keys meet the scale: OFF plays every key (a microtonal scale tunes the keys nearest its degrees; one of over 12 degrees: every degree, a key each), SNAP moves a note into the scale, WHITE puts the "
         "scale on the white keys, ALL and MPC lay it out over the keys or MPC pads; CHRD snaps the keys, MIDI and "
-        "the generators to the nearest note of the chord a CHORD track plays (no CHORD track: as SNAP). Not OFF: "
-        "KNOB 2 on NOTES moves a note by the scale's notes (CHRD: the chord's). Notes already written stay: Snap to "
+        "the generators to the nearest note of the chord a CHORD track plays (no CHORD track: as SNAP). HARM "
+        "counts instead: each note of the scale up plays the next note of that chord up, the white keys from C4 "
+        "on, so a scale run is an arpeggio that changes with the chords. Not OFF: "
+        "KNOB 2 on NOTES moves a note by the scale's notes (CHRD, HARM: the chord's). Notes already written stay: Snap to "
         "scale in the pattern's sheet (OCT+ held) moves them onto the scale, once."),
     T_(P_TRANS, "TRANSPOSE", "Moves the track's notes up or down by semitones."),
     T_(P_SLEN, "PATTERN LENGTH", "How many steps the track's pattern has. Each of its 8 patterns keeps its own."),
@@ -376,6 +386,9 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     G_(G_SWING, 0, "SWING", "Delays every second step of every track, for a swung feel."),
     G_(G_CLOCK, 0, "CLOCK SOURCE", "Where the tempo comes from: the FM-1 itself, USB MIDI or the TRS MIDI input."),
     G_(G_TUNE, 0, "TUNE", "Fine tuning of every track, in cents."),
+    G_(G_PPQN, 0, "CLOCK PPQN",
+        "MIDI clock pulses per beat, for the clock the FM-1 follows and CLOCK OUT. 24 is the MIDI standard; 48 for a "
+        "clock that plays twice as fast; 4, 8 or 12 for gear that sends or expects fewer. MIDI IN, OCT- held: KNOB 4."),
     G_(G_MIDI, 0, "MIDI INPUT", "Which MIDI input plays the tracks: USB or TRS."),
     G_(G_DRUMCH, PID_F_DEVICE, "DRUM MIDI CHANNEL", "The MIDI channel the first drum track listens to and sends on (MIDI OUT). "
                                                     "OFF (the default): it follows ROUT like the other tracks. 10 is General MIDI's drum channel."),
@@ -453,7 +466,7 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_GRD_X, "ATLAS X", "Where on the map of drum patterns, left to right; between two, a blend of both."),
     X_(TX_GRD_Y, "ATLAS Y", "Where on the map of drum patterns, top to bottom; between two, a blend of both."),
     X_(TX_GRD_DENS, "ATLAS DENSITY", "How full the kick, snare, hat and toms are: 0 silent, 100 every hit the map "
-                                     "offers. Hold OCT+ on GEN for each part's own: KICK, SNR, HAT and TOMS."),
+                                     "offers. Hold OCT- on GEN for each part's own: KICK, SNR, HAT; TOMS is on the GEN sheet."),
     X_(TX_BNC_SPEED, "BOUNCE SPEED", "How far the ball travels each step: faster, more wall hits, more notes. In FALL, how fast the "
                                      "leaves fall."),
     X_(TX_BNC_ANGLE, "BOUNCE ANGLE", "The ball's path from the floor, in degrees: 0 and 90 go back and forth, an angle "
@@ -537,9 +550,9 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_CH_PROG, "CHORD PROG", "The progression, on the degrees of the track's scale: POP I V vi IV, 50S I vi IV V, "
                                  "2-5-1 ii V I I, CIRCLE the scale's fifths down, TWO I IV, DRONE I alone; WALK four "
                                  "chords of the track's SEED (ROLL another, EVOLVE changes one); USER up to eight of "
-                                 "your own: hold OCT+ on GEN and play their roots on the keys, one key a chord (rounded "
-                                 "down to the scale; letting OCT+ go ends it). SCL CHORD's CHRD and VOIC shape the "
-                                 "chords (CHRD OFF: triads); hold OCT+ on GEN for OCT, CHRD and VOIC."),
+                                 "your own: hold OCT- on GEN and play their roots on the keys, one key a chord (rounded "
+                                 "down to the scale; letting OCT- go ends it). SCL CHORD's CHRD and VOIC shape the "
+                                 "chords (CHRD OFF: triads); they are on the GEN sheet, OCT on OCT- held, KNOB 4."),
     X_(TX_CH_BARS, "CHORD BARS", "How long each chord lasts: half a bar, 1, 2 or 4 bars."),
     X_(TX_CH_HIT, "CHORD HIT", "How the chord plays: HOLD once, held to the next chord; BEAT struck again every beat; "
                                "STEP every step, for the step's GATE; OFFBEAT a short stab on the off-beats, the \"and\" halfway between "
@@ -568,7 +581,7 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                            "swapped, a ghost note in a rest. 0 plays the steps as written; the steps "
                                            "themselves never change until REC held keeps the changes."),
     X_(TX_GRD_PART4, "ATLAS PART4", "The fourth part's sound: TOM, CLAP, HATOP (the open hat), RIM or BELL, the DRUM "
-                                    "lanes besides the kick, snare and closed hat. Hold OCT+ on GEN and press its black "
+                                    "lanes besides the kick, snare and closed hat. Hold OCT- on GEN and press its black "
                                     "key (as on the drum grid: CP OH TM RS CB)."),
     X_(TX_SUB_RATCH, "TIMING RATCH", "Plays each step's notes 1 to 8 times in equal parts of the step, a ratchet; x1 "
                                      "plays them once, as written. Each hit gets its share of the step's GATE. Notes "
@@ -621,7 +634,7 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                "loops its first LEN steps and PROB changes them a step at a time; EUCLID plays its "
                                "notes in order on its hits; MARKOV learns what follows what in it (LEAP: jumps "
                                "anywhere); MORPH blends it (A) with a variation of it (B). OFF, or a pattern without "
-                               "notes: the generator's own. ANSWER: the pattern's first 8 notes are its call, read "
+                               "notes: the generator's own. ANSWER: the pattern's first 16 notes are its call, read "
                                "again before each answer; the keys then just play. A track with a generator: the notes it plays "
                                "are the call. OCT- held on GEN, KNOB 2."),
     X_(TX_SD_KEEP, "KEEP", "With a SOURCE, what stays as written. FREE: a step's pitch or its hit may change. "
@@ -759,10 +772,12 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                  "CHORD: the third, fifth or seventh of the chord on it, whichever is nearest this "
                                  "track's last note. CONTRA: moves the other way, mirrored around the first note "
                                  "followed. BASS: an octave or two down, on beats 1 and 3 only. CANON1..8: its note "
-                                 "that many notes back. TWEAK, OCT- held, KNOB 2."),
+                                 "that many notes back. HARM: each note of the scale up the other track goes, the "
+                                 "next note up of the chord a CHORD track plays, SHIFT chord notes away (no CHORD "
+                                 "track: as SAME). TWEAK, OCT- held, KNOB 2."),
     X_(TX_TW_FRHY, "FOLLOW RHYTHM", "When a following track plays. OWN: on its own hits. SOURCE: only when the "
                                     "followed track has played a note, so the two move together (a lower track "
-                                    "number lands on the same step). BOTH: its own hits and the other's. TWEAK, OCT+ "
+                                    "number lands on the same step). BOTH: its own hits and the other's. TWEAK, OCT- "
                                     "held, KNOB 3."),
     X_(TX_PAT_GEN, "PAT GEN", "ON: each of the track's 8 patterns keeps its own MODE, the generator's knobs, "
                               "SEED and EVOLVE's EVERY, AMOUNT and LOCK, so switching pattern (by hand, "
@@ -808,6 +823,32 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                    "CC's base and a GATE's threshold stay. 0: the patch dry. A mod onto MOD DEP (a MACRO) "
                                    "rides it. A GATE onto FILL at 100 % stops holding FILL under 50 %. GLO > PERF's "
                                    "sheet (OCT+ held)."),
+    X_(TX_AN_CHORD, "ANSWER CHORD", "ARP: notes played together are spread one a step apart (the old behaviour, so "
+                                    "an answer never surprises an old project). TRUE: they share the step and answer "
+                                    "back as a real chord. The GEN sheet (OCT+ held), Chord."),
+    X_(TX_AN_MODE, "ANSWER MODE", "REPLY: it waits for your phrase to end (a bar without a key), then SPACE, then "
+                                  "answers it (as before). BEND: it does not wait. Every note comes back TIME steps "
+                                  "later while you play, again and again, softer and more changed each time: a delay "
+                                  "with a mind of its own. FADE: how many repeats (at the top, on and on). VARY: how "
+                                  "far each repeat drifts. SHIFT: the repeats climb or sink, up to that many degrees "
+                                  "a bar, a new way each bar. ORDER: the first repeats play your line reversed or shuffled. BREAK: the "
+                                  "glitches. VARY, SHIFT, ECHO and BREAK at 0: a plain delay. The GEN sheet (OCT+ "
+                                  "held), Mode."),
+    X_(TX_AN_TIME, "ANSWER TIME", "BEND: the steps between a note and its repeat, and between repeats: 1 to 16 "
+                                  "(3: a dotted eighth at 16 steps a bar). The GEN sheet (OCT+ held), Time."),
+    X_(TX_AN_BREAK, "ANSWER BREAK", "BEND: the chance a repeat glitches, this once: it slips a step early or late, "
+                                    "skips, stutters (again a step later) or jumps back to a note you played a little "
+                                    "before. 0: never. The GEN sheet (OCT+ held), Break."),
+    XP_(TX_QNT_LINK, "QNT LINK", "LINKED: one QNT for the whole project, and one MPC degree: changing either on any "
+                                "track sets it on every track. OWN: each track its own, so one track can take MPC pads "
+                                "while others follow the chords (CHRD) or HARM. Turning it on gives every track the "
+                                "selected track's. SCL's QNT link row; on in a new project, saved with it."),
+    X_(TX_SECTION_PC, "SECTION PC", "ON: when the CHAIN goes to section A, B or C, the track sends Program Change "
+                                    "0, 1 or 2 on its MIDI OUT channel, so a sequencer or a groovebox on that "
+                                    "channel switches its pattern or scene with the piece's form. Sent on the "
+                                    "phrase line, before its first notes, and at PLAY; a repeat of the same "
+                                    "section sends nothing. Nothing with FORM OFF, MIDI OUT OFF or the track's "
+                                    "channel OFF. MIDI OUT's sheet (OCT+ held), Section PC T1 to T4."),
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT

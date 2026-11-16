@@ -694,6 +694,37 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
             } else
                 for (int32_t x = x0 + 1; x < x0 + sw - 3; x += 6) cv_rect(x, ly, 3, 2, dim);
         }
+    } else if (mode == TESS_ENG_ANSWER && tessera_answer(tr)->mode == TESS_AN_BEND) {
+        /* BEND: the repeats waiting, on a line of the steps ahead (the nearest at the left), a note a dot at its height
+         * (the lowest to the highest waiting), dim once it has repeated twice; the panel: BEND and how many wait */
+        int32_t x0 = is_panel ? 18 : 13, sw = is_panel ? 204 : 216, top = is_panel ? 12 : y_base - 2;
+        int32_t sh = is_panel ? 60 : 24;
+        uint32_t lo = 127, hi = 0, live = 0, span = 2u * tessera_answer(tr)->time + 2u, k;
+        char b[16];
+        for (k = 0; k < TESS_AN_TAPS; k++)
+            if (tess_an.t_left[tr][k]) {
+                uint32_t nt = tess_an.t_note[tr][k];
+                lo = nt < lo ? nt : lo;
+                hi = nt > hi ? nt : hi;
+                live++;
+            }
+        if (!live) lo = 60, hi = 72;
+        if (hi < lo + 12u) hi = lo + 12u;
+        cv_rect(x0, top + sh + 3, sw, 1, dim);
+        for (k = 0; k < TESS_AN_TAPS; k++) {
+            uint32_t l = tess_an.t_left[tr][k];
+            int32_t x, y;
+            if (!l) continue;
+            if (l > span) l = span;
+            x = x0 + 4 + (int32_t)(l - 1u) * (sw - 8) / (int32_t)(span - 1u);
+            y = top + sh - (int32_t)(tess_an.t_note[tr][k] - lo) * sh / (int32_t)(hi - lo);
+            cv_rect(x - 2, y - 2, 5, 5, tess_an.t_gen[tr][k] >= 2u ? dim : c);
+        }
+        if (is_panel) {
+            str_cpy(b, "BEND ", sizeof b);
+            fmt_int(b + 5, (int32_t)live);
+            cv_text(x0, top + sh + 13, &AF_S, live ? b : "PLAY KEYS", c);
+        }
     } else if (mode == TESS_ENG_ANSWER) {
         /* the phrase on a staff of its steps: a note a dot at its height (the lowest to the highest played), lines
          * joining them, the one playing ringed; under it what ANSWER does now: LISTENING, an answer of FADE's count
@@ -810,7 +841,7 @@ void graph_tessera_viz(uint32_t tr, int is_panel) {
         /* the whole grid whatever track is selected: a row a track, a cell a bar at its pitch (a rest a dash), the cell
          * each QUAD row plays lit; a row not in QUAD dim. Panel, on all four sides: above each column its MOVE (an arrow
          * down or up, RAND a dice's two dots, STOP a dash), below it its EVERY; left each row's track and DIR; right
-         * its RANGE and its LINKs (a dot a track, lit when linked). OCT+ held: the column KNOB 2 and 3 set lit */
+         * its RANGE and its LINKs (a dot a track, lit when linked). OCT- held: the column KNOB 3 and 4 set lit */
         int32_t top = is_panel ? 13 : y_base, lane = is_panel ? 21 : 6, x0 = is_panel ? 50 : 13, cw = is_panel ? 30 : 50;
         int32_t gap = is_panel ? 4 : 6;
         int layer = quad_cols_on();
@@ -2265,6 +2296,7 @@ static void trk_short_name(uint32_t c, char *b)      /* the track's sound, b hol
     const engine_t *e = ENGINES[t->eng_req % NENGINES];
     if(user_of(t)<USER_NONE && t->user_native)native_name(t->eng_req,user_of(t),b);
     else if (user_of(t) < UP_SLOTS)up_name(user_of(t), b);
+    else if (fm6_own_name(t, b, 13)) ;
     else if (e->npresets)
         str_cpy(b, eng_preset(e, t->preset % e->npresets)->name, 13);
     else

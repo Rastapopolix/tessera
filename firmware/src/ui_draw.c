@@ -177,8 +177,7 @@ static void head_chip_text(char *b)
 {
     const page_t *pg = cur_page();
     uint32_t e = TSEL->eng_req % NENGINES;
-    if (designer_on() && !name_on() && designer_head_chip(b)) {   /* the designer's START, FEATURES, original */
-    } else if (new_on()) {                                     /* NEW SONG */
+    if (new_on()) {                                     /* NEW SONG */
         str_cpy(b, "NEW SONG", 16);
     } else if (ptc_on()) {                              /* PATTERNS' Copy to: "copy 3 to 5" */
         str_cpy(b, "copy 1 to 1", 16);
@@ -202,15 +201,12 @@ static void head_chip_text(char *b)
         str_cpy(b, t, 16);
     }
 }
-/* the page's place in its family: n pages, the page the k-th (an engine in sections: the section's pages; the
- * designer: its stage's) */
+/* the page's place in its family: n pages, the page the k-th (an engine in sections: the section's pages) */
 static void page_place(uint32_t *pn, uint32_t *pk)
 {
     const page_t *pg = cur_page();
     uint32_t i, n = 0, k = 0, sc = sec_on() ? sec_of(ui.page) + 1u : 0u;
-    if (designer_on() && !name_on())
-        designer_pages(&n, &k);
-    else for (i = 0; i < NPAGES; i++)
+    for (i = 0; i < NPAGES; i++)
         if (PAGES[i].fam == pg->fam && page_visible(i) &&
             (!sc || (PAGES[i].scope == SC_FMOP ? PAGES[ui.page].scope == SC_FMOP : sec_of(i) + 1u == sc))) {
             if (i == ui.page)
@@ -276,8 +272,9 @@ static int32_t page_tabs(int32_t x0, int32_t x1, int32_t y)
 #if MELODEE_LOOK                                        /* the Mono look's chrome (ui_mono.c) */
 static void mo_dhead(const char *chip, const char *msg, int32_t bat);
 static uint32_t mo_hold_sig(void);                     /* (OCT+ held: the sheet it opens) */
-static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis,
-                         int (*cap)(uint32_t r, char *lb, char *v, uint16_t *vc));
+static uint32_t mo_beat(void);                         /* (PLAY's triangle: the beat) */
+static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis);
+static int list_text(uint32_t r, char *lb, char *v, uint16_t *vc);   /* a list row's texts (ui_list.c) */
 static void mo_sound(const char *en, const char *nm);
 static void mo_scale_pic(int32_t y, int32_t h);
 static void mo_confirm(const char *a, const char *b);
@@ -303,10 +300,8 @@ static void mo_grid_panel(void);
 static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fav);
 static void mo_slot_card(const char *tag, const char *nm, int used, const char *d, int boot, int32_t y);
 static void mo_slot_row(const char *tag, const char *nm, int used, int boot, int mark, int32_t y, int32_t ty, int32_t th);
-static void mo_dstart(void);
 static void mo_msc(void);
 static void mo_smap(uint32_t cur);
-static void mo_dfoot(const char *nm, const char *go);
 #endif
 static void draw_head(void)
 {
@@ -322,7 +317,7 @@ static void draw_head(void)
           (ui.bpm_t != 0) * 31u + low * 7777u + (uint32_t)(bat + 1) * 2147483647u + (chain.running ? (chain.row + 1u) * 104729u : 0u) + ux.gen * 977u +
           (ui.home ? 0u : ui.page * 2654435761u) + page_sheet() * 524287u + (uint32_t)gen_layer_on() * 40503u;
 #if MELODEE_LOOK
-    sig += mo_hold_sig() * 7919u;                       /* (OCT+ held: the sheet's line filling) */
+    sig += mo_hold_sig() * 7919u + mo_beat() * 15485863u;   /* (OCT+ held: the sheet's line filling; the beat) */
 #endif
     if (bpm != ui.roll_bpm) {
         char a[8];
@@ -397,9 +392,9 @@ static void draw_head(void)
             cv_text_c(8 + cw / 2, 3, &AF_X, chip, T_INK, T_THEME);
             l = 8 + cw;
         }
-        if (gen_layer_on()) {                           /* OCT+ held, a generator's layer: its key */
-            cv_keycap(l + 6, 3, KC_OCTUP, T_THEME, T_INK, T_BG);
-            l += 6 + kc_w(KC_OCTUP);
+        if (gen_layer_on()) {                           /* OCT- held, a page's layer: its key */
+            cv_keycap(l + 6, 3, KC_OCTDN, T_THEME, T_INK, T_BG);
+            l += 6 + kc_w(KC_OCTDN);
         } else if (page_sheet()) {                      /* the page has a sheet (OCT+ held) */
             cv_text_on(l + 4, 2, &AF_S, "\x85", T_MID, T_BG);
             l += 14;
@@ -462,6 +457,7 @@ static void mx_columns(void);                           /* MATRIX (ui_matrix.c) 
 static uint8_t mo_on;                                   /* a Mono page being drawn: its knobs to mo_capture (ui_mono.c) */
 static void mo_capture(uint32_t c, const char *label, const char *val, const char *unit, uint16_t vc, int32_t ratio,
                        int hot);
+static void mo_wait(uint32_t c);
 #endif
 static uint8_t col_sh;                                  /* the cards drawn this many to the right (a GEN engine's OCT- layer
                                                          * behind RANDOM, pr_draw); past the fourth: none */
@@ -634,6 +630,7 @@ static void sound_name(const track_t *t, char *b)
     if(t->user_native && user_of(t)<USER_NONE)native_name(t->eng_req,user_of(t),b);
     else if (user_of(t) < UP_SLOTS)
         up_name(user_of(t), b);
+    else if (fm6_own_name(t, b, 16)) ;
     else if (e->npresets)
         str_cpy(b, eng_preset(e, t->preset % e->npresets)->name, 16);
 }
@@ -931,7 +928,7 @@ static void draw_columns_(void)
         uint32_t tr = song.sel;
         const tessera_evolve_t *ev = &tessera.evolve[tr < TESSERA_TRACKS ? tr : 0u];
         char f2[16];
-        if (fm_layer_on()) {                            /* a generator's FORM, OCT+ held: DEVELOP (lit with a FORM on) */
+        if (fm_layer_on()) {                            /* a generator's FORM, OCT- held: DEVELOP (lit with a FORM on) */
             uint32_t dv = tessera.fm_dev[tr];
             fmt_int(f2, dv);
             col_mods(PID_TESS(TX_FM_DEVELOP));
@@ -1028,7 +1025,7 @@ static void draw_columns_(void)
             midi_tr_text(w, v);
             draw_column(k + 1u, k ? "KEY C" : "KEY B", w, "st", tessera.fc_form ? VAL(k + 1u) : T_DIM, (v + 12) * 1000 / 24, ICON_AUTO);
         }
-        draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+        draw_column(3, "QNT", tessera.qnt_own ? "OWN" : "LINKED", "", VAL(3u), tessera.qnt_own ? 0 : 1000, ICON_AUTO);
         return;
     }
     if (cur_page()->graph == GR_PIECE && piece_layer()) {   /* PIECE, SHAPE USER, OCT- held: KNOB 1 a point, KNOB 2 its
@@ -1125,7 +1122,7 @@ static void draw_columns_(void)
         }
         return;
     }
-    if (cur_page()->graph == GR_ENERGY && en_layer_on()) {   /* ENERGY, OCT+ held: the selected track's DEPTH */
+    if (cur_page()->graph == GR_ENERGY && en_layer_on()) {   /* ENERGY, OCT- held: the selected track's DEPTH */
         char w0[8];
         uint32_t dp = tessera.en_depth[song.sel % TESSERA_TRACKS];
         fmt_int(w0, dp);
@@ -1285,11 +1282,13 @@ static void draw_columns_(void)
         col_mods(PID_TESS(TX_EV_AMOUNT));
         draw_column(2, "AMOUNT", e2, e2u, VAL(2u), (int32_t)ev->amount * 10, ICON_AUTO);
         if (tr >= TESSERA_TRACKS || tessera.mode[tr] == TESS_ENG_OFF || !tessera.seed[tr]) str_cpy(e3, "--", sizeof e3);
-        else if (tessera.roll[tr] && ((fm1_ms / 250u) & 1u)) e3[0] = 0;   /* a seed waiting for the bar line: blinking */
-        else if (tessera.roll[tr]) fmt_int(e3, tessera.roll[tr]);
         else fmt_int(e3, tessera.seed[tr]);           /* (picked when a generator is first selected or played) */
         col_quiet = 1;                                  /* ROLL: each step a new line; the seed small, to find one again */
         draw_column(3, "ROLL", e3, "", VAL(3u), -1, ICON_AUTO);
+#if MELODEE_LOOK
+        if (mo_on && e3[0] != '-' && tessera.roll[tr]) mo_wait(3u + col_sh);   /* a seed waiting for the bar line: beside
+                                                         * the one playing, dotted (ui_mono.c mo_cols) */
+#endif
         return;
     }
     if (cur_page()->graph == GR_STEPS && cur_page()->fam == FAM_GEN) {   /* (PATTERN: upstream's columns) */
@@ -1472,6 +1471,12 @@ static void draw_columns_(void)
                                 (int32_t)(a->order % TESS_AN_ORDERS) * 1000 / (TESS_AN_ORDERS - 1), ICON_AUTO);
                     fmt_int(v2, a->shift);
                     draw_column(2, "SHIFT", a->shift ? v2 : "OFF", "", VAL(2u), (int32_t)a->shift * 1000 / 7, ICON_AUTO);
+                    if (a->mode == TESS_AN_BEND) {              /* (BEND: its TIME in SPACE's place) */
+                        fmt_int(v3, a->time);
+                        draw_column(3, "TIME", v3, "", VAL(3u), (int32_t)a->time * 1000 / (int32_t)TESS_AN_TIME_MAX,
+                                    ICON_AUTO);
+                        return;
+                    }
                     fmt_int(v3, a->space);
                     draw_column(3, "SPACE", v3, "%", VAL(3u), (int32_t)a->space * 10, ICON_AUTO);
                     return;
@@ -1483,8 +1488,9 @@ static void draw_columns_(void)
                 fmt_int(v2, a->echo);
                 draw_column(2, "ECHO", a->echo ? v2 : "OFF", a->echo ? "%" : "", VAL(2u), (int32_t)a->echo * 10, ICON_AUTO);
                 if (tessera_answer_count(tr)) fmt_int(v3, (int32_t)tessera_answer_count(tr));
+                else if (a->mode == TESS_AN_BEND) str_cpy(v3, "NEVER", sizeof v3);   /* (BEND: no loops, on and on) */
                 else str_cpy(v3, pid_desc(PID_TESS(TX_AN_LEN), tr)->names[a->len % TESS_AN_LENS], sizeof v3);
-                draw_column(3, tessera_answer_count(tr) ? "FADE" : "LOOPS", v3, "", VAL(3u), (int32_t)a->fade * 10, ICON_AUTO);
+                draw_column(3, tessera_answer_count(tr) || a->mode == TESS_AN_BEND ? "FADE" : "LOOPS", v3, "", VAL(3u), (int32_t)a->fade * 10, ICON_AUTO);
             } else if (m == TESS_ENG_CONSTEL) {
                 const gen_constel_t *c = tessera_constel(tr);
                 if (cs_layer_on()) {                            /* OCT- held: LOCK, LEN, FILL (SIZE: the sheet) */
@@ -1688,14 +1694,13 @@ static void draw_columns_(void)
                         cur_page()->id[c] == G_SLOT ? VAL(c) : T_DIM, -1, ICON_AUTO);
             continue;
         }
-        if (cur_page()->id[c] == G_INFO && cur_page()->scope == SC_GLOBAL) {
-            uint32_t a = song.cpu_q8 * 100u / 256u, pk = song.cpu_peak_q8 * 100u / 256u;   /* average/recent peak */
-            fmt_int(val, (int32_t)(a > 99u ? 99u : a));                     /* (99: at or past the limit; 5 chars) */
-            a = str_len(val);
-            val[a] = '/';
-            fmt_int(val + a + 1u, (int32_t)(pk > 99u ? 99u : pk));
-            unit = "%";
-        } else {
+        if (cur_page()->id[c] == G_INFO && cur_page()->scope == SC_GLOBAL) {   /* Theo 2026-11-14: SYSTEM's KNOB 2 is an
+             * empty slot -- no label, no frame. CPU has nothing to set (ui_help.c) and its number duplicated the CPU
+             * bar further down, raw and unsmoothed; SYSTEM's VOICES / CPU bars (mo_pic_system) are the one readout. */
+            draw_column(c, "", "", "", T_THEME, -1, ICON_AUTO);
+            continue;
+        }
+        {
             param_format(d, *vp, val, &unit);
             if(d->names==N_FX && *vp>=0 && *vp<FX_COUNT && (MELODEE_LOOK || *vp==FX_REVERB || *vp==FX_CHORUS))
                 str_cpy(val,N_FX[*vp],sizeof val);   /* (Mono: the whole name, ui_mono.c mo_fit shortens it: FILTR) */
@@ -1713,6 +1718,32 @@ static void draw_columns(void)
     col_sh = 0;
 }
 
+
+/* SIM CONTROL (panel.c sim, ui_input.c sim_input): the panel plays the web simulator; how to take it back, and FX + GLO
+ * held as a bar filling for SIM_EXIT_MS */
+static void draw_sim(void)
+{
+    static uint32_t shown;
+    uint32_t w = sim.on == 2u ? 200u : sim.t0 ? (fm1_ms - sim.t0) * 200u / SIM_EXIT_MS : 0u;
+    if (w > 200u)
+        w = 200u;
+    if (ui.force) {
+        lcd_fill(0, H_HEAD, 240, 240 - H_HEAD, T_BG);
+        ui.head_sig = ~0u;
+        draw_text_box(0, 60, 240, &AF_M, "SIM CONTROL", T_THEME, 1);
+        draw_text_box(0, 96, 240, &AF_S, "THE PANEL PLAYS", T_TEXT, 1);
+        draw_text_box(0, 114, 240, &AF_S, "THE SIMULATOR", T_TEXT, 1);
+        draw_text_box(0, 150, 240, &AF_S, "HOLD FX + GLO", T_MID, 1);
+        draw_text_box(0, 168, 240, &AF_S, "TO TAKE IT BACK", T_MID, 1);
+        shown = ~0u;
+    }
+    if (w != shown) {
+        lcd_fill(20, 200, 200, 6, T_DIM);
+        if (w)
+            lcd_fill(20, 200, w, 6, T_THEME);
+        shown = w;
+    }
+}
 
 /* UPDATE MODE countdown (main.c: OCT- + OCT+ held): over everything, the menu and the dialogs too */
 static void draw_uboot(void)
@@ -1813,10 +1844,6 @@ static void confirm_text(char *a, char *b)
         str_cpy(a + str_len(a), "?", 2);
         user_name(k, b);                             /* the sound stored there */
         break;
-    case CF_DISCARD_DESIGN:
-        str_cpy(a, "DISCARD THE DESIGN?", 24);
-        str_cpy(b, "The original sound returns", 32);
-        break;
     case CF_IMPORT:
         for (uint32_t slot = sx_import.first; slot < sx_import.first + sx_import.count; slot++) {
             if (sx_import.general ? up_old_bank(slot) : native_old(sx_import.engine, slot)) {
@@ -1901,7 +1928,6 @@ static void draw_confirm(void)
 #include "ui_slots.c"                                   /* PROJECT, USER, the STOREs: their slots */
 #include "ui_motion.c"                                  /* MOTION: its lanes */
 #include "ui_scales.c"                                  /* SCALES: a screen of its own */
-#include "ui_designer.c"                                /* guided native sound creation */
 #include "ui_awake.c"                                   /* AWAKE's step entry on GEN */
 #if MELODEE_LOOK
 #include "ui_mono.c"                                    /* the Mono look (MELODEE_LOOK 1) */
@@ -1912,12 +1938,12 @@ static int own_screen(void)                             /* a page drawn whole by
     return !ui.home && (g == GR_BROWSE || g == GR_PATGRID || g == GR_SONG || g == GR_SCALE_PICKER);
 }
 /* the foot has the page tabs, the header then no dots: the sound's strip (ui_pages.c pv_sound) on the pages pv_draw
- * draws with it, draw_foot's second row on the rest (not the notes', which end before it); not the designer's (its
- * stages are its tabs), MIXER's, MOD's or CORDS' (no foot) */
+ * draws with it, draw_foot's second row on the rest (not the notes', which end before it); not MIXER's, MOD's or
+ * CORDS' (no foot) */
 static int foot_tabs_on(void)
 {
     uint32_t k = pv_kind(), g = cur_page()->graph;
-    if (ui.home || designer_on() || own_screen() || slot_kind() || motion_page() || list_on())
+    if (ui.home || own_screen() || slot_kind() || motion_page() || list_on())
         return 0;
     if (k == PV_NONE)
         return !(g == GR_ROLL && (!grid_on() || live_rec_sel()));
@@ -1931,9 +1957,7 @@ static void draw_page(void)
         page_entered();
     }
     cursor_fix();
-    if (designer_screen()) {                            /* the sound designer's START, FEATURES (ui_designer.c) */
-        designer_draw();
-    } else if (!own_screen() && slot_kind()) {          /* a slot page (ui_slots.c) */
+    if (!own_screen() && slot_kind()) {          /* a slot page (ui_slots.c) */
         slot_draw();
     } else if (!own_screen() && motion_page()) {        /* MOTION's lanes (ui_motion.c) */
         motion_draw();
@@ -1985,6 +2009,26 @@ static void draw_page(void)
         draw_foot();
 #endif
 }
+/* MENU > IDLE LANDSCAPE: IDLE_MS untouched while playing, on a page with nothing over it, the screen moves to
+ * LANDSCAPE, as it is (no page_entered: the page left keeps its state); the first touch only goes back (screen.c
+ * scr_input). The screen reader hears nothing of either (ui_speak.c) */
+static void scr_idle(void)
+{
+#if MELODEE_LOOK
+    uint32_t i;
+    if (!TEXT_IDLE(TEXT_IDLE_LAND) || scrn.land || !song.playing || ui.menu || ui.confirm || ui.layer || pop.on ||
+        name_on() || (int32_t)(fm1_ms - scrn.idle) < (int32_t)IDLE_MS)
+        return;
+    for (i = 0; i < NPAGES && PAGES[i].graph != GR_LAND; i++) ;
+    if (i >= NPAGES || (!ui.home && ui.page == i))
+        return;
+    scrn.land = (uint8_t)(1u + ui.home);
+    scrn.land_pg = ui.page;
+    ui.home = 0;
+    ui.page = (uint8_t)i;
+    ui.force = 1;
+#endif
+}
 static void ui_draw_frame(void);
 static void ui_draw(void)                               /* (gfx.c: the fills wait for the frame's canvases) */
 {
@@ -2000,6 +2044,7 @@ static void ui_draw_frame(void)
         return;
     }
     if (!scr_frame()) return;
+    if (!sim.on && !ui.uboot) scr_idle();
     ui.frame++;
     if (palette_track(song.sel))                       /* THEME is the selected track's colour */
         ui.force = 1;
@@ -2010,6 +2055,12 @@ static void ui_draw_frame(void)
     if (ui.uboot) {
         draw_uboot();
         draw_head();
+        return;
+    }
+    if (sim.on) {
+        draw_sim();
+        draw_head();
+        ui.force = 0;
         return;
     }
     if (ui.menu) {
@@ -2118,8 +2169,9 @@ static void ui_draw_frame(void)
     }
     if (ui.bpm_t)
         ui.bpm_t--;
-    if (ui.hot_t)
-        ui.hot_t--;
+    if (ui.hot_t > 1u || (ui.hot_t && (!MELODEE_LOOK || LARGE_MODE != LARGE_ON ||
+                                       (uint16_t)(fm1_ms - ui.hot_ms) >= LARGE_HOLD_MS)))
+        ui.hot_t--;                                     /* (LARGE VALUE ON: large until LARGE_HOLD_MS after the turn) */
     ui.force = 0;
     scr_shown();
 }

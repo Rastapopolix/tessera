@@ -67,6 +67,40 @@ static uint8_t panel_out;
 static int16_t panel_out_steps[NE];
 static uint16_t panel_out_master;
 
+/* SIM CONTROL (menu; ui_input.c sim_*): while the simulator mirrors this panel, the panel plays the simulator only. Not
+ * saved: every boot starts with it off. FX + GLO held SIM_EXIT_MS, the simulator gone (PANEL's 3 s, a USB reset) or a
+ * reboot ends it. sim.on: 1 on, 2 ended by FX + GLO and waiting for both to be let go. The pair never reaches the
+ * simulator (sim_mask, editor.c ed_panel): a lone FX or GLO goes there SIM_WAIT_MS late (let go sooner: a tap, sent
+ * then), so the two pressed together are the FM-1's; one sent already is let go there when the other joins it (a GLO
+ * held there for GLO [SET] is called off) */
+#define SIM_WAIT_MS 150u
+#define SIM_EXIT_MS 1000u
+#define SIM_PAIR ((1u << B_FX) | (1u << B_GLO))
+static struct { uint8_t on, combo, lone, sent; uint32_t dn, t0; } sim;
+static uint32_t sim_mask(uint32_t m, uint32_t now)      /* the buttons by label -> those the simulator is sent */
+{
+    uint32_t pair = m & SIM_PAIR, out = m & ~SIM_PAIR, tap;
+    if (!sim.on)
+        return m;
+    if (pair == SIM_PAIR)
+        sim.combo = 1;
+    if (sim.combo || !pair) {                           /* the pair (until both are let go), or neither */
+        tap = !sim.combo && !sim.sent ? sim.lone : 0u;  /* (a lone one let go inside the wait: pressed now, let go next) */
+        sim.combo = (uint8_t)(sim.combo && pair);
+        sim.lone = 0;
+        return out | tap;
+    }
+    if (pair != sim.lone) {                             /* a lone FX or GLO pressed */
+        sim.lone = (uint8_t)pair;
+        sim.dn = now;
+        sim.sent = 0;
+    }
+    if (!sim.sent && now - sim.dn < SIM_WAIT_MS)
+        return out;
+    sim.sent = 1;
+    return m;
+}
+
 /* steps of a role, + = clockwise */
 static uint8_t panel_moved;
 static int32_t panel_enc(uint32_t role)

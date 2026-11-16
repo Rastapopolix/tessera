@@ -75,7 +75,7 @@
                                                    * since 2026-10-21: its tracks load FM's first voice) */
 #define TRIO_ON (MELODEE_TRIO || MELODEE_LEGACY_EXTRAS)
 #define PHYS_ON (MELODEE_PHYS || MELODEE_LEGACY_EXTRAS)
-#define ENGI_FALLBACK 12u        /* a retired engine's place (eng_rank, the designer, project.c): FM6 */
+#define ENGI_FALLBACK 12u        /* a retired engine's place (eng_rank, project.c): FM6 */
 #if !MELODEE_FM6
 #error "MELODEE_FM6: FM6 is the place of an engine left out"
 #endif
@@ -160,7 +160,8 @@ static int param_fx_send(uint32_t id) { return id>=P_FXSEND && id<=P_FXSEND3; }
 
 enum {                          /* global parameters */
     G_BPM, G_SWING, G_CLOCK, G_TUNE,
-    G_RESERVED4, G_RESERVED5, G_RESERVED6, G_RESERVED7,
+    G_PPQN, G_RESERVED5, G_RESERVED6, G_RESERVED7,   /* G_PPQN (was reserved, 0 in older projects = 24): MIDI clock
+                                                      * pulses a beat, in and CLOCK OUT (midi_clock.c); the device's */
     G_RESERVED8, G_RESERVED9, G_RESERVED10, G_RESERVED11,
     G_MIDI, G_DRUMCH, G_ROUTE, G_INFO, /* G_ROUTE: MIDI IN, 0 CH1-4 (channels 1..4 -> parts 1..4), 1 SEL, 2 CH5-8, 3 CH9-12, 4 CH13-16 (seq.c);
                                         * G_DRUMCH (was G_SYNC, unused): a device setting (settings_drumch) */
@@ -184,7 +185,7 @@ static int param_master_fx(uint32_t id){return id>=G_MFXTYPE && id<=G_MFX3CHAR;}
 static int param_reserved(uint32_t id)
 { return (id>=P_RESERVED33 && id<=P_RESERVED36) || (id>=P_RESERVED45 && id<=P_RESERVED48); }
 static int global_reserved(uint32_t id)
-{ return (id>=G_RESERVED4 && id<=G_RESERVED11) || (id>=G_RESERVED24 && id<=G_RESERVED26); }
+{ return (id>=G_RESERVED5 && id<=G_RESERVED11) || (id>=G_RESERVED24 && id<=G_RESERVED26); }
 
 /* stored parameters of an older layout -> today's P_* order. A store keeps np = the P_COUNT it was
  * written with; common parameters are only ever added just before P_E0, so the first np - 8 are
@@ -217,8 +218,10 @@ static int drum_from_phys(uint32_t engine, int16_t *e)
 
 /* ------------------------------------------------- voices, engines --- */
 enum { V_POLY, V_MONO, V_LEGATO, V_UNISON };   /* P_VOICE */
-enum { Q_OFF, Q_SNAP, Q_WHITE, Q_ALL, Q_MPC, Q_CHRD };  /* P_QUANT (seq.c kb_map, midi_map); 1 = SNAP, the former ON;
-                                                        * CHRD: SNAP, then to the CHORD track's chord (tessera.c) */
+enum { Q_OFF, Q_SNAP, Q_WHITE, Q_ALL, Q_MPC, Q_CHRD, Q_HARM };  /* P_QUANT (seq.c kb_map, midi_map); 1 = SNAP, the former
+                                                        * ON; CHRD: SNAP, then to the CHORD track's chord (tessera.c); HARM:
+                                                        * each scale degree the next tone of that chord (tessera_harm_note) */
+#define Q_CHORDS(q) ((q) == Q_CHRD || (q) == Q_HARM)   /* QNT CHRD or HARM: the CHORD track's chord leads */
 typedef struct {
     uint8_t side; /* stereo spread side, retained while sounding */
     uint8_t note, vel, gate, active;

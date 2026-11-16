@@ -95,11 +95,15 @@ static void shed_voice(void)
 {
     uint32_t p, i;
     voice_t *best = 0;
+    int32_t best_lv = 0;
     for (p = 0; p < NPART; p++)
         for (i = 0; i < NVOICE; i++) {
             voice_t *v = &trk[p].v[i];
-            if (v->active && !v->gate && v->stage != 4u && (!best || v->env < best->env))
-                best = v;
+            if (v->active && !v->gate && v->stage != 4u) {
+                int32_t lv = voice_level(&trk[p], v);
+                if (!best || lv < best_lv)
+                    best = v, best_lv = lv;
+            }
         }
     if (best) {
         voice_kill(best);

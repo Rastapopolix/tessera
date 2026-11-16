@@ -19,7 +19,7 @@ const IS_OTA = (id) => /^ota-/i.test(id.model);
 export const TESSERA_LOADER = "ota-FM-1_900";
 export const STOCK_LOADER = "ota-FM-1_015";
 
-// errors carry a code the pages translate: notfound, model, stopped, noloader, lost, noreturn,
+// errors carry a code the pages translate: notfound, busy (detail: the ports another app holds), model, stopped, noloader, lost, noreturn,
 // mismatch (detail: the identity the device reports), badreq, wrongloader (detail: the loader's
 // identity). A step-1 error has lastRead: the last image address the running firmware read.
 function fail(code, msg, detail = "") { const e = new Error(msg); e.code = code; e.detail = detail; return e; }
@@ -119,32 +119,59 @@ export class Updater {
   constructor(access, log) {
     this.access = access;
     this.log = log || (() => {});
+    this.findMs = 6000;   // how long install() and the pages look for the running firmware before giving up
   }
 
-  // every in/out pair with the same port name that answers the handshake
+  // every in/out pair with the same port name that answers the handshake. this.scan keeps what the last pass saw, so
+  // a miss can say why: busy (open() refused: another app, tab or DAW holds the port; on Windows a MIDI port has one
+  // owner at a time), silent (opened but no identity in time: still starting, or not an FM-1) and other (names the
+  // filter below never probes; logged so a report shows what the computer calls the FM-1)
   async find(filter) {
     const outs = [...this.access.outputs.values()];
+    const scan = this.scan = { busy: [], silent: [], other: [] };
     for (const input of this.access.inputs.values()) {
       if (input.state === "disconnected") continue;
-      if (!/fm-1|tessera|melodee|felucca|ota|composite|sinco|usb-midi/i.test(input.name || "")) continue;   // never probe other gear
+      if (!/fm-1|tessera|melodee|felucca|ota|composite|sinco|usb-midi/i.test(input.name || "")) {   // never probe other gear
+        scan.other.push(input.name || "?");
+        continue;
+      }
       const output = outs.find((o) => o.name === input.name && o.state !== "disconnected");
       if (!output) continue;
-      try { await input.open(); await output.open(); } catch (_) { continue; }
+      try { await input.open(); await output.open(); } catch (_) { scan.busy.push(input.name); continue; }
       const link = new Link(input, output);
       const id = await handshake(link, 2);
       if (id && (!filter || filter(id))) return { link, id, name: input.name };
       link.close();
+      if (!id) {
+        scan.silent.push(input.name);
+        // let go of a port that did not answer, so a Windows DAW or the editor can still have it
+        try { input.close && await input.close(); output.close && await output.close(); } catch (_) { /* closing is best effort */ }
+      }
+    }
+    if (scan.busy.length || scan.silent.length || scan.other.length) {
+      this.log(`MIDI scan: busy [${scan.busy}] silent [${scan.silent}] not probed [${scan.other}]`);
     }
     return null;
   }
 
+  // the running firmware, waited for a little: a single pass misses an FM-1 that is still starting, or a port the
+  // OS has not finished listing; notfound, or busy (detail: the ports another app holds) when that is the reason
+  async findDevice(filter, ms = this.findMs) {
+    const dev = await this.waitFor(filter, ms);
+    if (dev) return dev;
+    const busy = (this.scan && this.scan.busy) || [];
+    if (busy.length) throw fail("busy", `MIDI port in use by another app or tab: ${busy.join(", ")}`, busy.join(", "));
+    throw fail("notfound", "FM-1 not found (USB cable, and no other app using it?)");
+  }
+
   async waitFor(filter, ms) {
     const end = Date.now() + ms;
-    while (Date.now() < end) {
+    do {
       const dev = await this.find(filter);
       if (dev) return dev;
+      if (Date.now() >= end) break;
       await sleep(1000);
-    }
+    } while (Date.now() < end);
     return null;
   }
 
@@ -182,8 +209,7 @@ export class Updater {
   // package's own loader (TESSERA_LOADER, STOCK_LOADER), any other one gets nothing
   async install(image, product, onStep, loader) {
     const step = onStep || (() => {});
-    const dev = await this.find((id) => !IS_OTA(id));
-    if (!dev) throw fail("notfound", "FM-1 not found (USB cable, and no other app using it?)");
+    const dev = await this.findDevice((id) => !IS_OTA(id));
     const [model] = product.split("_");
     if (dev.id.model !== model) { dev.link.close(); throw fail("model", `the device is ${dev.id.text}, the package is for ${product}`); }
     step("start", dev.id.text);
