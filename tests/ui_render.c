@@ -1436,7 +1436,7 @@ static void setup(int s)
             land.cdr = 9000;                        /* (the clouds where the drift has taken them) */
         }
         break;
-    case S_GLO_LAND_PLACE:                          /* a named project's place: its hills and temple, a PIECE's moon at its */
+    case S_GLO_LAND_PLACE:                          /* a named project's place: its hills and torii, a PIECE's moon at its */
         tessera_reset();                            /* SHAPE 80 % (a gibbous phase), ENTRIES: T1 in, T2 half, T3 out, T4 in */
         memset(&land, 0, sizeof land);
         song.playing = 0;

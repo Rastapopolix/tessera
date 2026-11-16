@@ -1197,8 +1197,9 @@ you can thin the music and watch the lake answer.
   while the track is in, dimmer as it fades, dark while it is out.
 - **CHAIN**: each section has its own shore. When the form moves on, the new shore comes in from the right, as if
   you were travelling; back to A, you are home. When the whole form comes round, a shooting star crosses the sky.
-- **A place of its own**: a project with a name gets its own landscape, made from the name: the shape of its hills,
-  where its stars are, where the moon rests, and a small temple somewhere on A's shore. The same name is always the
+- **A place of its own**: a project with a name gets its own landscape, made from the name: the shape of its hills
+  (sometimes islands, with open water between), where its stars are, where the moon rests, and a torii gate somewhere
+  on A's shore (in MOSAIC pink: an ink of the palette's own, apart from the hills), or standing in the water. The same name is always the
   same place; renaming a project takes it somewhere else. An unnamed project shows the lake as it always was.
 
 Each of these shows only when its layer is on; nothing new moves on the water but the rain.
