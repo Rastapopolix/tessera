@@ -26,7 +26,7 @@ Or [start from a demo](#start-from-a-demo): load the piece nearest to what you w
 - [Two tracks answering each other (BRANCH)](#two-tracks-answering-each-other-branch)
 - [A harmony line that follows (FOLLOW)](#a-harmony-line-that-follows-follow)
 - [A harmony on your own melody (FOLLOW CHORD)](#a-harmony-on-your-own-melody-follow-chord)
-- [Any modulation, in harmony (FOLLOW HARM, beta)](#any-modulation-in-harmony-follow-harm-beta)
+- [Any modulation, in harmony (FOLLOW HARM, 3.6)](#any-modulation-in-harmony-follow-harm-36)
 - [Atlas: a groove with fills](#atlas-a-groove-with-fills)
 - [Atlas: variations that repeat (FORM)](#atlas-variations-that-repeat-form)
 - [Atlas: movement that repeats (an LFO on X or Y)](#atlas-movement-that-repeats-an-lfo-on-x-or-y)
@@ -297,7 +297,7 @@ Write or play in a melody, and let another track harmonise it, note for note, wi
 
 Keep the melody on a lower track number than the harmony: the harmony then lands on the same step.
 
-## Any modulation, in harmony (FOLLOW HARM, beta)
+## Any modulation, in harmony (FOLLOW HARM, 3.6)
 
 An LFO, a random source or a slow TIDE picks which note of the chord plays, and a CHORD track decides what the chord
 is: any modulation becomes a melody that follows the progression. After the CV harmonizer in Dreamsequence (a norns
@@ -328,7 +328,7 @@ not semitones: SHIFT 0 is the chord's root, 1 its third, 2 its fifth, 3 the root
 - With **SCL > QNT HARM** instead, the keys, MIDI IN and the generators are counted into the chord the same way, but
   SHIFT stays in semitones there: use FOLLOW for this recipe.
 
-Needs the current beta or later (HOW HARM); a project that uses it does not load on older firmware.
+Needs 3.6 or later (HOW HARM); a project that uses it does not load on older firmware.
 
 ## Atlas: a groove with fills
 
