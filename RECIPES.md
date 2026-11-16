@@ -874,8 +874,8 @@ MIDI OUT sends the notes spread too. On 3.4.x the chords play together, and SUS2
 - When EVOLVE wanders too far, turn up **GRAVITY** (OCT- on EVOLVE) rather than turning EVOLVE off: it still moves,
   but comes home.
 - A drone or a bass that should stay steady through ENERGY's tide: hold OCT- on ENERGY and set **DEPTH 0** on it.
-- A track at SOUND OFF (OCT- held on GLO > MIDI OUT) is a free modulation lane: its generator's GATE, NOTE and CV
-  still drive mods on the other tracks.
+- A track at SOUND OFF (OCT- held on GLO > MIDI OUT) is a free modulation lane: its GATE and NOTE (a generator's or a
+  written STEP pattern's) and a generator's CV still drive mods on the other tracks.
 - For long pieces, try the plan on a short PIECE LENGTH first, to hear the whole shape, then make it longer.
 - Crackles mean the FM-1 is out of breath: lower **BUDGET** (GLO > SYSTEM) or thin the busiest track.
 

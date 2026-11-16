@@ -444,6 +444,27 @@ int main(int argc, char **argv)
         tessera_param_set(tr, TX_MODE, TESS_ENG_OFF);
         frame();
     }
+    {                                                   /* ROLL playing: the seed playing, then the one waiting for the bar
+                                                         * line (drawn dotted beside it, B4); landed: that one alone */
+        char b[48], w[48];
+        uint32_t tr = song.sel;
+        tessera_param_set(tr, TX_MODE, TESS_ENG_TURING);
+        go_title("EVOLVE");
+        tessera.seed[tr] = 12;
+        song.playing = 1;
+        tessera_seed_turn(tr, 3);
+        settle();
+        if (!sp_knob(3, w, sizeof w)) w[0] = 0;
+        tess_roll_apply(tr);                            /* (the bar line) */
+        settle();
+        if (!sp_knob(3, b, sizeof b)) b[0] = 0;
+        bad += check("speak: ROLL playing, a seed waiting: ROLL 12 NEXT 15; landed: ROLL 15",
+                     strstr(w, "ROLL 12 NEXT 15") && strstr(b, "ROLL 15") && !strstr(b, "NEXT"));
+        printf("  said: %s / %s\n", w, b);
+        song.playing = 0;
+        tessera_param_set(tr, TX_MODE, TESS_ENG_OFF);
+        frame();
+    }
     said_clear();
     go_title("SCALES");
     settle();

@@ -3,7 +3,8 @@
  * double-tapped quick layers stay open and own the keys silently, FX LATCH, the FX key map (PRESETS assigns, EDIT
  * restores the default), MENU > SCREEN OFF (the panel dark while the transport runs, the wake press swallowed, NEVER),
  * LFO 2 (SYNC's increments at every division and tempo, TRIG NOTE / FREE, POL UNI, the transport's reset), and MODS
- * scrolled, the mod shortcut's knobs and MODS' AMOUNT turned (Mono) with no pixel sent twice in a frame. */
+ * scrolled, the mod shortcut's knobs and MODS' AMOUNT turned (Mono) with no pixel sent twice in a frame; the header's line a
+ * PIECE's progress and the PLAY triangle's beat (Mono). */
 #include <stdint.h>
 static uint32_t lcd_commands[8], lcd_count;
 #define UI_LCD_POWER(s) (lcd_commands[lcd_count++ % 8u] = (s))
@@ -249,5 +250,84 @@ static void test_dir_sheet(void)
     assert(changes <= 120u * 16u / 300u + 2u && !host_redrawn);   /* (at most one change in 300 ms; 44 before) */
     pop_close(); cord_clear();
 }
+/* B1 + B2: the header's line a PIECE's progress (every Mono header), the PLAY triangle's beat (HOME, the lists) */
+static int mo_lit(int32_t x, int32_t y) { return host_screen[(y * 2) * 240 + x * 2] == swap16(T_TEXT); }   /* (a cell: MO_INK) */
+static uint32_t head_dots(int32_t y, int32_t x0, int32_t x1)   /* the header's line from x0 to x1-1: 1 solid, 2 dotted, 0 */
+{
+    uint32_t n = 0;
+    int32_t x;
+    for (x = x0; x < x1; x++) n += (uint32_t)mo_lit(x, y);
+    return n == (uint32_t)(x1 - x0) ? 1u : n == (uint32_t)(x1 - x0) / 2u ? 2u : 0u;
+}
+static int test_head_beat_piece(void)
+{
+    int bad = 0;
+    char b[8];
+    int32_t tx;
+    ui_power_on();
+    stop_transport();
+    tessera.pl_length = 1;                              /* (a minute) */
+    memset(&plan, 0, sizeof plan);
+    go_title("ENV");
+    screen_clear(); ui.force = 1; frame();
+    bad += check("PIECE stopped: the header's line whole", head_dots(9, 0, 120) == 1u);
+    song.playing = 1;
+    bar_n = 1, beat_n = 1, beat_pos = 0;
+    plan.at_b = 15u * (uint32_t)FS;                     /* (a quarter of the minute played) */
+    frame();
+    bad += check("  a quarter played: solid a quarter of the way, dotted after (drawn again)",
+                 head_dots(9, 0, 26) == 1u && head_dots(9, 34, 120) == 2u);
+    plan.at_b = 45u * (uint32_t)FS;
+    frame();
+    bad += check("  three quarters: solid that far", head_dots(9, 0, 86) == 1u && head_dots(9, 94, 120) == 2u);
+    fm1_in.buttons |= 1u << panel.btn[B_OCTUP];         /* OCT+ held 425 ms of 700: the sheet's hold wins (half) */
+    ui.oct_t0 = ((fm1_ticks() - 425000u * FM1_TICKS_PER_US) | 1u) & ~2u;
+    ui_draw();
+    bad += check("  OCT+ held: the sheet's hold in its place", head_dots(9, 0, 56) == 1u && head_dots(9, 64, 120) == 2u);
+    fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
+    ui.oct_t0 = 0;
+    go_title("SCL");                                    /* a list: its header's line (row 8), the triangle */
+    plan.at_b = 15u * (uint32_t)FS;
+    screen_clear(); ui.force = 1; frame();
+    fmt_int(b, song.g[G_BPM]);
+    tx = 119 - mo_tw(b) - 7;
+    bad += check("  a list's header the same", head_dots(8, 0, 26) == 1u && head_dots(8, 34, 120) == 2u);
+    bad += check("  an off-beat: the list's triangle hollow", mo_lit(tx, 4) && mo_lit(tx + 1, 2) && !mo_lit(tx + 1, 4));
+    beat_n = 0;
+    frame();
+    bad += check("  the 1: solid (drawn again)", mo_lit(tx, 4) && mo_lit(tx + 1, 4));
+    tessera.fc_phrase = 0;                              /* (phrases of 4 bars) */
+    bar_n = 4;
+    beat_pos = MIDI_BEAT_UNITS / 4u;
+    frame();
+    bad += check("  a phrase line's 1 blinks: out a sixteenth ..", !mo_lit(tx, 4));
+    beat_pos = MIDI_BEAT_UNITS / 2u;
+    frame();
+    bad += check("  .. in the next", mo_lit(tx, 4) && mo_lit(tx + 1, 4));
+    go_home();
+    beat_n = 2;
+    screen_clear(); ui.force = 1; frame();
+    bad += check("  HOME: the line (four bars on: further), the triangle hollow off the beat",
+                 head_dots(9, 0, 40) == 1u && head_dots(9, 60, 120) == 2u && mo_lit(1, 4) && !mo_lit(2, 4) && !mo_lit(3, 4) &&
+                 mo_lit(4, 4));
+    beat_n = 0;
+    frame();
+    bad += check("  .. solid on the 1 (drawn again)", mo_lit(2, 4) && mo_lit(3, 4));
+    beat_pos = MIDI_BEAT_UNITS * 3u / 4u;
+    frame();
+    bad += check("  .. out on a phrase line's blink", !mo_lit(1, 4));
+    plan.done = 1;
+    frame();
+    bad += check("  the piece ended: the line whole again", head_dots(9, 0, 120) == 1u);
+    stop_transport();
+    frame();
+    bad += check("  stopped: the square", mo_lit(1, 4) && mo_lit(5, 4) && !mo_lit(0, 4));
+    memset(&plan, 0, sizeof plan);
+    tessera.pl_length = 0;
+    tessera.fc_phrase = 1;
+    bar_n = 0, beat_n = 0, beat_pos = 0;
+    return bad;
+}
 int main(void) { test_layers(); test_screen_sleep(); test_lfo(); test_mods_scroll();
-    test_msc_turns("ENV"); test_msc_turns("SEND FX 3"); test_mods_amount(); test_dir_sheet(); return 0; }
+    test_msc_turns("ENV"); test_msc_turns("SEND FX 3"); test_mods_amount(); test_dir_sheet();
+    assert(!test_head_beat_piece()); return 0; }

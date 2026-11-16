@@ -26,6 +26,12 @@ static uint16_t mo_tdim(uint32_t k) { return ux_mix(T_BG, T_TRK(k), UI_MID_PCT);
 #ifndef MO_HOOK_CUT
 #define MO_HOOK_CUT(full, shown) ((void)0)              /* a header cut a title or a chip (tests/ui_render.c) */
 #endif
+#ifndef MO_HOOK_PIC
+#define MO_HOOK_PIC(on) ((void)0)                       /* the picture is being drawn (tests/ui_render.c) */
+#endif
+#ifndef MO_HOOK_TEXT
+#define MO_HOOK_TEXT(s, x, y) ((void)0)                 /* a text drawn at x, y (tests/ui_render.c) */
+#endif
 
 static const int8_t MO_SIN[64] = {0, 12, 25, 37, 49, 60, 71, 81, 90, 98, 106, 112, 117, 122, 125, 126, 127, 126, 125, 122, 117, 112, 106, 98, 90, 81, 71, 60, 49, 37, 25, 12, 0, -12, -25, -37, -49, -60, -71, -81, -90, -98, -106, -112, -117, -122, -125, -126, -127, -126, -125, -122, -117, -112, -106, -98, -90, -81, -71, -60, -49, -37, -25, -12};
 
@@ -33,6 +39,7 @@ static struct {
     char label[8], val[12], unit[8];
     int32_t ratio;                                      /* 0..1000, -1: a list value (boxed, no dial) */
     uint8_t used, dim, hot;
+    uint8_t wait;                                       /* ROLL: a seed waits for the bar line (tessera.roll; mo_wait) */
 } mo_col[4];
 static uint32_t mo_sig;
 
@@ -49,6 +56,7 @@ static void mo_capture(uint32_t c, const char *label, const char *val, const cha
     mo_col[c].dim = vc == T_DIM;
     mo_col[c].hot = (uint8_t)hot;
 }
+static void mo_wait(uint32_t c) { if (c < 4u) mo_col[c].wait = 1; }
 
 /* ---- drawing in cells (2 x 2 pixels; cv_oy picks the canvas's half) ---- */
 static void mo_fill(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c)
@@ -118,6 +126,7 @@ static int32_t mo_tw(const char *s) { int32_t n = (int32_t)str_len(s); return n 
 static int32_t mo_text_s(const char *s, int32_t x, int32_t y, int32_t sc, uint16_t c)
 {
     int32_t w = sc * 2 + (sc == 1 && TEXT_IDLE(TEXT_IDLE_BOLD));
+    MO_HOOK_TEXT(s, x, y);
     for (; *s; s++, x += 6 * sc) {
         uint32_t ch = mono_ch((uint8_t)*s), r, b;
         for (r = 0; r < 7u; r++)
@@ -128,6 +137,27 @@ static int32_t mo_text_s(const char *s, int32_t x, int32_t y, int32_t sc, uint16
     return x;
 }
 static int32_t mo_text(const char *s, int32_t x, int32_t y, uint16_t c) { return mo_text_s(s, x, y, 1, c); }
+/* dotted: each cell of the text (sc cells a font pixel) one screen pixel, as the header's line is dotted for what is not
+ * there yet (ROLL's seed waiting for the bar line) */
+static void mo_text_dot(const char *s, int32_t x, int32_t y, int32_t sc, uint16_t c)
+{
+    for (; *s; s++, x += 6 * sc) {
+        uint32_t ch = mono_ch((uint8_t)*s), r, b;
+        int32_t i;
+        for (r = 0; r < 7u; r++)
+            for (b = 0; b < 5u; b++)
+                if (MO_FONT[ch - 32u][r] & (16u >> b))
+                    for (i = 0; i < sc * sc; i++)
+                        cv_rect((x + (int32_t)b * sc + i % sc) * 2, (y + (int32_t)r * sc + i / sc) * 2, 1, 1, c);
+    }
+}
+/* ROLL's seed waiting for the bar line (tessera.roll), "" none */
+static void mo_wait_s(char *d, uint32_t i)
+{
+    d[0] = 0;
+    if (mo_col[i].wait && song.sel < TESSERA_TRACKS && tessera.roll[song.sel])
+        fmt_int(d, tessera.roll[song.sel]);
+}
 static void mo_textc(const char *s, int32_t cx, int32_t y, uint16_t c) { mo_text(s, cx - mo_tw(s) / 2, y, c); }
 static void mo_textr(const char *s, int32_t rx, int32_t y, uint16_t c) { mo_text(s, rx - mo_tw(s), y, c); }
 static void mo_invc(const char *s, int32_t x, int32_t y, uint16_t c)   /* on a filled box of colour c */
@@ -309,10 +339,28 @@ static int32_t mo_sheet_hold(const char **name)
     *name = NM[k];
     return ms >= OCT_HOLD_MS ? 1000 : (int32_t)((ms - 150u) * 1000u / (OCT_HOLD_MS - 150u));
 }
-/* the header's line: whole, or (a sheet's hold) solid as far as it has been held, dotted for the rest */
+/* a PIECE playing: how far it has got, 0..1000; -1 none (stopped, FREE or ended) */
+static int32_t mo_piece_line(void)
+{
+    uint32_t at, left;
+    return song.playing && tessera_piece_get(&at, &left) ? (int32_t)(at * 1000u >> 16) : -1;
+}
+/* the PLAY triangle's beat (seq.c): 0 solid (a bar's 1, or stopped), 1 hollow (the off-beats), 2 out (a phrase line's
+ * 1 blinks: out every other sixteenth) */
+static uint32_t mo_beat(void)
+{
+    if (!song.playing) return 0;
+    if (beat_n) return 1u;
+    return !(bar_n % fc_bars()) && (beat_pos / (MIDI_BEAT_UNITS / 4u) & 1u) ? 2u : 0u;
+}
+/* the header's line: whole, or (a sheet's hold) solid as far as it has been held, dotted for the rest; no hold, a
+ * PIECE playing the same as far as it has got */
 static void mo_head_line(int32_t y, int32_t hold)
 {
-    int32_t x, w = hold < 0 ? 120 : 120 * hold / 1000;
+    int32_t x, w;
+    if (hold < 0)
+        hold = mo_piece_line();
+    w = hold < 0 ? 120 : 120 * hold / 1000;
     if (w)
         mo_hl(0, y, w, MO_INK);
     for (x = w + 1; x < 120; x += 2)
@@ -519,6 +567,12 @@ static void mo_cols(void)
             mo_invc(v[i], tx, ty, MO_HOT);
         } else {
             mo_text(v[i], tx, ty, ink);
+        }
+        if (mo_col[i].wait) {                           /* ROLL: the seed waiting for the bar line, dotted under the one
+                                                         * playing until it lands (then that one, solid) */
+            char w[8];
+            mo_wait_s(w, i);
+            mo_text_dot(w, cx - mo_tw(w) / 2, 39, 1, ink);
         }
         mo_vals[i].fx0 = (int16_t)fx0, mo_vals[i].fx1 = (int16_t)fx1;
         mo_vals[i].tx0 = (int16_t)tx, mo_vals[i].tx1 = (int16_t)(tx + tw[i] - 1);
@@ -1018,13 +1072,20 @@ static void mo_pic_poly(const gen_poly_t *p)
         else mo_box(x, 107 - h, 22, h, MO_INK);
     }
 }
-/* QUAD: the grid the tracks share, a row a track: T1 and its DIR, its four cells (a bar its pitch, a rest a dash; the
- * cell it plays solid), its RANGE and LINKs (a dot a track, solid when linked); a row not in QUAD dim. Over each column
- * its MOVE (a triangle the way it goes, RAND two dots, STOP a dash), under it its EVERY; the column OCT- edits marked */
+/* an arrowhead w px long, its point at x, y + 3, facing right (dx 1) or left (-1) */
+static void mo_qd_head(int32_t x, int32_t y, int32_t w, int32_t dx, uint16_t c)
+{
+    int32_t k;
+    for (k = 0; k < w; k++)
+        mo_vl(x - dx * k, y + 3 - k, 2 * k + 1, c);
+}
+/* QUAD: the grid the tracks share, a row a track: T1 and its DIR (an arrowhead the way it goes, back and forth a double
+ * arrow, RAND two dots, HOLD a bar), its four cells (a bar its pitch, a rest a dash; the cell it plays solid), its RANGE
+ * (a tick an octave, stacked; 1 either side a tick and a dot) and LINKs (a dot a track, solid when linked); a row not in
+ * QUAD dim. Over each column its MOVE (a triangle the way it goes, RAND two dots, STOP a dash), under it its EVERY; the
+ * column OCT- edits marked */
 static void mo_pic_quad(uint32_t tr)
 {
-    static const char *const QD[GEN_QD_COUNT] = {">", "<", "<>", "?", "="};
-    static const char *const QR[GEN_QR_COUNT] = {"3", "1", "2", "+-1"};
     int layer = quad_cols_on();
     uint32_t r, i, k;
     for (i = 0; i < 4u; i++) {
@@ -1053,8 +1114,18 @@ static void mo_pic_quad(uint32_t tr)
         char lb[3] = {'T', (char)('1' + r), 0};
         if (r == tr) mo_invc(lb, 2, y, MO_TRK(r));
         else mo_text(lb, 2, y, c);
-        mo_text(QD[q->dir % GEN_QD_COUNT], 16, y, c);
-        mo_text(QR[q->range % GEN_QR_COUNT], 102, y, c);
+        switch (q->dir) {
+        case GEN_QD_FWD: mo_qd_head(22, y, 4, 1, c); break;
+        case GEN_QD_BACK: mo_qd_head(19, y, 4, -1, c); break;
+        case GEN_QD_PEND: mo_qd_head(16, y, 3, -1, c); mo_hl(19, y + 3, 5, c); mo_qd_head(26, y, 3, 1, c); break;
+        case GEN_QD_RAND: mo_fill(18, y + 1, 2, 2, c); mo_fill(22, y + 4, 2, 2, c); break;
+        default: mo_fill(17, y + 2, 8, 3, c); break;   /* (HOLD) */
+        }
+        k = q->range == GEN_QR_FULL ? 3u : q->range == GEN_QR_TWO ? 2u : 1u;
+        while (k--)
+            mo_hl(102, y + 6 - 2 * (int32_t)k, 9, c);
+        if (q->range == GEN_QR_LOW)
+            mo_px(106, y + 3, c);
         for (k = 0; k < TESSERA_TRACKS; k++)            /* (its LINKs, under the RANGE) */
             if (k != r) mo_px(102 + (int32_t)k * 4, y + 8, on && ((q->link >> k) & 1u) ? MO_TRK(k) : mo_tdim(k));
         for (i = 0; i < 4u; i++) {
@@ -2470,7 +2541,8 @@ static void mo_sheet(void)
 static uint32_t mo_hold_sig(void)
 {
     const char *hn;
-    return (uint32_t)(mo_sheet_hold(&hn) / 25 + 1);
+    int32_t p = mo_piece_line();
+    return (uint32_t)(mo_sheet_hold(&hn) / 25 + 1) ^ (uint32_t)(p < 0 ? 0 : p * 120 / 1000 + 1) << 8;   /* (a PIECE: a pixel on) */
 }
 static uint32_t mo_signature(void)
 {
@@ -2488,6 +2560,7 @@ static uint32_t mo_signature(void)
              (uint32_t)tessera.grids[song.sel].step_idx << 16 ^ (uint32_t)tessera.turing[song.sel].reg << 24) * 16777619u;
         h = (h ^ tessera.morph[song.sel].step_idx ^ (uint32_t)tessera.markov[song.sel].cur_state << 8) * 16777619u;
         h = (h ^ tessera.markov[song.sel].last_hit ^ (uint32_t)tessera.markov[song.sel].tension << 8) * 16777619u;
+        h = (h ^ tessera.roll[song.sel]) * 16777619u;   /* (ROLL's seed waiting: mo_wait_s) */
     }
     if (cur_page()->graph == GR_ROLL)                   /* NOTES: the steps */
         h = (h ^ steps_hash(t) ^ (uint32_t)t->p[P_SLEN] << 8 ^ (uint32_t)t->p[P_SDIV] << 16) * 16777619u;
@@ -2514,6 +2587,7 @@ static uint32_t mo_signature(void)
 static int mo_turn(void)
 {
     uint32_t i;
+    int32_t x;
     char b[24];
     if (LARGE_MODE == LARGE_OFF || (LARGE_MODE == LARGE_AUTO && mo_pic_own))
         return 0;
@@ -2526,7 +2600,9 @@ static int mo_turn(void)
     str_cpy(b, mo_col[i].val, sizeof b);
     str_cpy(b + str_len(b), mo_col[i].unit, sizeof b - str_len(b));
     b[9] = 0;                                           /* (nine large characters across) */
-    mo_text_s(b, 2, 103, 2, MO_HOT);
+    x = mo_text_s(b, 2, 103, 2, MO_HOT);
+    mo_wait_s(b, i);                                    /* ROLL: the seed waiting, dotted beside it */
+    mo_text_dot(b, x + 12, 103, 2, MO_HOT);
     if (mo_col[i].ratio >= 0) {
         int32_t w = 40 * mo_col[i].ratio / 1000;
         mo_box(76, 92, 42, 7, MO_DIM);
@@ -2558,7 +2634,9 @@ static void mono_page(void)
         if (cur_page()->graph != GR_LAND)               /* (LANDSCAPE: the scene in their place) */
             mo_cols();
         mo_cols_trk = 0;
+        MO_HOOK_PIC(1);
         mo_picture();
+        MO_HOOK_PIC(0);
         if (cur_page()->graph == GR_ROLL || !mo_turn())
             mo_foot();
         cv_oy = 0;
@@ -2580,8 +2658,10 @@ static void mo_dhead(const char *chip, const char *msg, int32_t bat)
     mo_text(b, x, 1, ui.bpm_t ? MO_HOT : MO_DIM);
     if (!msg || (int32_t)str_len(msg) * 6 <= x - 7 - (song.rec ? 7 : 0) - 6) {   /* (a message too long: in its place) */
         x -= 7;
-        if (chain.running || song.playing) {            /* PLAY: a triangle; STOP: a square */
-            for (int32_t r = 0; r < 3; r++) mo_vl(x + r, 1 + r, 7 - 2 * r, MO_INK);
+        if (chain.running || song.playing) {            /* PLAY: a triangle, hollow off the beat (mo_beat); STOP: a square */
+            uint32_t bt = mo_beat();
+            for (int32_t r = 0; r < 3 && bt < 2u; r++) mo_vl(x + r, 1 + r, 7 - 2 * r, MO_INK);
+            if (bt == 1u) mo_vl(x + 1, 3, 3, MO_BG);
         } else {
             mo_fill(x, 2, 5, 5, MO_DIM);
         }
@@ -2854,9 +2934,11 @@ static void mo_stage_head(void)
     } else if (hold >= 0) {                             /* OCT+ held: the sheet it opens */
         mo_text(hn, 1, 1, MO_INK);
     } else {
-        if (song.playing) {                             /* PLAY: a triangle; STOP: a square */
+        if (song.playing) {                             /* PLAY: a triangle, hollow off the beat (mo_beat); STOP: a square */
             int32_t r;
-            for (r = 0; r < 7; r++) mo_vl(1 + r / 2, 1 + r / 2, 7 - r / 2 * 2, MO_INK);
+            uint32_t bt = mo_beat();
+            for (r = 0; r < 7 && bt < 2u; r++) mo_vl(1 + r / 2, 1 + r / 2, 7 - r / 2 * 2, MO_INK);
+            if (bt == 1u) mo_vl(2, 3, 3, MO_BG), mo_px(3, 4, MO_BG);
         } else {
             mo_fill(1, 2, 5, 5, MO_INK);
         }
@@ -2976,7 +3058,7 @@ static uint32_t mo_stage_signature(void)
         for (k = 0; k < sizeof mo_col; k++)
             h = (h ^ p[k]) * 16777619u;
     }
-    return (h ^ mo_hold_sig()) * 16777619u;             /* (OCT+ held: the sheet's line filling) */
+    return (h ^ mo_hold_sig() ^ mo_beat() << 20) * 16777619u;   /* (OCT+ held: the sheet's line filling; the beat) */
 }
 static void mono_stage(void)
 {
