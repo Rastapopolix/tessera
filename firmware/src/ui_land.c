@@ -12,7 +12,7 @@
  * section has a shore of its own (the new one comes in from the right) and a shooting star marks the FORM coming round;
  * ENERGY's tide is the wind in the clouds (right as it builds, left as it thins, still at the turns), its rests a mist
  * on the water. A named project is a place of its own: its name seeds the hills, the stars, where the moon rests and a
- * temple on A's shore (unnamed: the shore as before). Nothing new moves on the water but the rain. Included by
+ * torii on A's shore (unnamed: the shore as before). Nothing new moves on the water but the rain. Included by
  * ui_mono.c */
 #define LAND_TOP 10                                     /* the scene's rows: LAND_TOP .. MO_PY1 - 1 */
 #define LAND_H 66                                       /* the water's line */
@@ -34,19 +34,20 @@
  * hills, the water (its line and the moon in it), as track ink 0..3, or 4 the palette's white; the stars white; on GROUND
  * LIGHT the sun in the moon's place (SUNSET's moon ink is CHARCOAL on paper: its sun CRIMSON). A one-ink
  * palette: its ink, as before (its track inks are the ink, its white the ink) */
-static const struct { char name[7]; uint8_t moon, hills, water, sun; } LAND_INKS[] = {
-    {"MOSAIC", 0, 3, 1, 0},                             /* yellow moon, green hills, blue water; by day a sepia sun */
-    {"SUNSET", 3, 2, 0, 1},                             /* yellow moon, lilac hills, orange water; a crimson sun */
-    {"OCEAN", 4, 2, 1, 4},                              /* white moon, green hills, teal water; a charcoal sun */
-    {"NEON", 3, 2, 0, 3},                               /* orange moon, lime hills, cyan water; a sepia sun */
+static const struct { char name[7]; uint8_t moon, hills, water, sun, gate; } LAND_INKS[] = {
+    {"MOSAIC", 0, 3, 1, 0, 2},                          /* yellow moon, green hills, blue water; by day a sepia sun; a pink gate */
+    {"SUNSET", 3, 2, 0, 1, 1},                          /* yellow moon, lilac hills, orange water; a crimson sun and gate */
+    {"OCEAN", 4, 2, 1, 4, 3},                           /* white moon, green hills, teal water; a charcoal sun */
+    {"NEON", 3, 2, 0, 3, 1},                            /* orange moon, lime hills, cyan water; a sepia sun */
 };
-static uint16_t land_ink(uint32_t part, int dim)       /* part: 0 moon (by day the sun), 1 hills, 2 water */
+static uint16_t land_ink(uint32_t part, int dim)       /* part: 0 moon (by day the sun), 1 hills, 2 water, 3 the gate */
 {
     uint32_t i, k = 4u;
     for (i = 0; i < sizeof LAND_INKS / sizeof LAND_INKS[0]; i++)
         if (str_eq(UI_PALETTES[ux.pal].name, LAND_INKS[i].name))
             k = part == 0u ? (ux.light ? LAND_INKS[i].sun : LAND_INKS[i].moon) : part == 1u ? LAND_INKS[i].hills
-                                                                                 : LAND_INKS[i].water;
+                                                                                 : part == 2u ? LAND_INKS[i].water
+                                                                                              : LAND_INKS[i].gate;
     if (k > 3u) return dim ? MO_DIM : MO_HOT;
     return dim ? mo_tdim(k) : T_TRK(k);
 }
@@ -101,17 +102,21 @@ static void land_moon(uint32_t dt)
     land.my += d ? d : (ty > land.my) - (ty < land.my);
 }
 /* a shore's height at x: section sec of the place (unnamed A: the shore as it always was; otherwise two waves and
- * sometimes a peak, from the seed, never above 15 so the moon is never buried) */
+ * sometimes a peak, from the seed, never above 15 so the moon is never buried; 0 or less: open water, so a place can
+ * be islands) */
 static int32_t land_sky(int32_t x, uint32_t sec)
 {
     uint32_t h;
     int32_t hh, pk;
-    if (!land.seed && !sec) return 3 + (mo_sin(x * 3) + mo_sin(x * 7 + 40) / 2) * 3 / 127;
+    if (!land.seed && !sec) {
+        hh = 3 + (mo_sin(x * 3) + mo_sin(x * 7 + 40) / 2) * 3 / 127;
+        return hh < 1 ? 1 : hh;                         /* (the lake as it always was: one shore all along) */
+    }
     h = ((land.seed ? land.seed : 0x6D2B79F5u) ^ (sec + 1u) * 0x9E3779B1u) * 0x2C1B3C6Du;
     h ^= h >> 15;
-    hh = 2 + (int32_t)(h >> 16 & 1u) + (mo_sin(x * (2 + (int32_t)(h & 3u)) + (int32_t)(h >> 5 & 255u)) +
+    hh = 2 + (int32_t)(h >> 16 & 3u) + (mo_sin(x * (2 + (int32_t)(h & 3u)) + (int32_t)(h >> 5 & 255u)) +
                                         mo_sin(x * (5 + (int32_t)(h >> 2 & 7u)) + (int32_t)(h >> 5 & 255u) * 3) / 2) *
-                                           (2 + (int32_t)(h >> 13 & 3u)) >> 7;
+                                           (5 + (int32_t)(h >> 13 & 3u) * 2) >> 7;
     pk = (mo_sin(x * 2 + (int32_t)(h >> 20 & 255u)) * (4 + (int32_t)(h >> 28 & 7u)) >> 7) - 2;
     if (!(h >> 18 & 3u) && pk > 0) hh += pk;
     return hh > 15 ? 15 : hh;
@@ -124,7 +129,7 @@ static int32_t land_toff(void)                          /* a travel: how far the
 static int32_t land_hill(int32_t x)                    /* the far shore's top at x (travelling: the old one going left) */
 {
     int32_t w = x + land_toff(), h = w < 120 ? land_sky(w, land.from) : land_sky(w - 120, land.sec);
-    return LAND_H - (h < 1 ? 1 : h);
+    return LAND_H - (h < 0 ? 0 : h);                    /* (0: open water, the water's line) */
 }
 static void land_disc(int32_t cx, int32_t cy, int32_t r, uint16_t c)   /* mo_disc, behind the hills */
 {
@@ -272,18 +277,23 @@ static void land_ring(int32_t x, int32_t y, int32_t rx, int32_t ry, int dashed, 
 
 static const uint8_t LAND_BAYER[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
 #define LAND_BY(x, y) LAND_BAYER[((y) & 3) * 4 + ((x) & 3)]
-/* a place's temple: a finial, three roofs with upturned eaves, a door (11 x 12; bit 10 the left column) */
-static const uint16_t LAND_TEMPLE[12] = {0x020, 0x124, 0x1FC, 0x070, 0x202, 0x3FE, 0x0F8, 0x401, 0x7FF, 0x1FC, 0x1FC, 0x1DC};
+/* a place's torii: the top beam's ends turned up, the tie beam, the pillars (11 x 10; bit 10 the left column) */
+static const uint16_t LAND_GATE[10] = {0x401, 0x7FF, 0x3FE, 0x124, 0x7FF, 0x104, 0x104, 0x104, 0x104, 0x38E};
+static int32_t land_gate_x(void)                        /* between two of ENTRIES' windows (17, 44, 72, 99): never on one */
+{
+    uint32_t h = land.seed * 2246822519u, slot = h >> 9 & 3u;
+    return 20 + (int32_t)(slot == 3u ? 1u : slot) * 27 + (int32_t)(h >> 12 & 7u);
+}
 static void land_temple(int32_t gx, uint16_t hills)    /* on A's shore at gx, standing on the ground under its middle */
 {
     int32_t r, c, y, gy = land_hill(gx + 5);
-    gy = (gy > LAND_H - 1 ? LAND_H - 1 : gy) + 1 - 12;
-    for (r = 0; r < 12; r++)
+    uint16_t ink = land_ink(3, 0);                      /* (an ink of its own: MOSAIC pink, apart from the hills) */
+    gy = (gy > LAND_H - 1 ? LAND_H - 1 : gy) + 1 - 10;
+    for (r = 0; r < 10; r++)
         for (c = 0; c < 11; c++)
-            if (LAND_TEMPLE[r] >> (10 - c) & 1u) mo_px(gx + c, gy + r, hills);
-            else if (r == 11 && c == 5 && !ux.light) mo_px(gx + c, gy + r, land_ink(0, 1));   /* (a lamp in the door) */
+            if (LAND_GATE[r] >> (10 - c) & 1u) mo_px(gx + c, gy + r, ink);
     for (c = 0; c < 11; c++)                            /* (the ground under it, where the slope falls away) */
-        for (y = gy + 12; y < land_hill(gx + c); y++) mo_px(gx + c, y, hills);
+        for (y = gy + 10; y < land_hill(gx + c); y++) mo_px(gx + c, y, hills);
 }
 
 static void mo_pic_land(void)
@@ -342,10 +352,10 @@ static void mo_pic_land(void)
         for (i = 5; i >= 1u; i--) mo_px(hx + (int32_t)(i * 5u / 2u), hy - (int32_t)i, i > 2u ? MO_DIM : MO_HOT);
         mo_px(hx, hy, MO_HOT);
     }
-    if (land.seed && land.from == 0u && toff < 120)     /* the temple: only on A's shore, going with it and back */
-        land_temple(8 + (int32_t)(((land.seed * 2246822519u) >> 9 & 127u) * 96u >> 7) - toff, hills);
+    if (land.seed && land.from == 0u && toff < 120)     /* the torii: only on A's shore, going with it and back; */
+        land_temple(land_gate_x() - toff, hills);
     if (land.seed && land.sec == 0u)
-        land_temple(8 + (int32_t)(((land.seed * 2246822519u) >> 9 & 127u) * 96u >> 7) + 120 - toff, hills);
+        land_temple(land_gate_x() + 120 - toff, hills);
     if (tessera.et_amount)                              /* ENTRIES: a lit window a track, as bright as it is in */
         for (i = 0; i < 4u; i++) {
             int32_t lx = 17 + (int32_t)i * 27 + (int32_t)(i > 1u), ly = land_hill(lx) + 2, g = entry_gain[i];
