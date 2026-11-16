@@ -67,6 +67,7 @@ static struct {
     uint16_t ph;                                        /* the moon's phase: the PIECE's SHAPE now (Q15) */
     int8_t wind;                                        /* -3 .. 3: ENERGY falling .. rising (the clouds' speed) */
     uint8_t sec, from, cpos, mist, wt;                  /* CHAIN's section, the one travelled from, its place; mist 0..16 */
+    uint8_t gx, gp;                                     /* A's torii: its left column, its terrace's height */
 } land;
 
 /* the moon: still while LENGTH is FREE; a planned piece's time played moves it on an arc, left to right (planner.c's
@@ -121,23 +122,27 @@ static int32_t land_sky0(int32_t x, uint32_t sec)
     if (!(h >> 18 & 3u) && pk > 0) hh += pk;
     return hh > 15 ? 15 : hh;
 }
-static int32_t land_gate_x(void)                        /* where A's torii stands (its left column), from the seed */
+/* where A's torii stands: the flattest 11 columns of land, nearest where the seed would put it; its terrace is raised
+ * to their top (at least 3: never water), so the land is only ever built up under it, never cut (once a name) */
+static void land_gate_find(void)
 {
-    uint32_t h = land.seed * 2246822519u, slot = h >> 9 & 3u;
-    return 20 + (int32_t)(slot == 3u ? 1u : slot) * 27 + (int32_t)(h >> 12 & 7u);
+    int32_t x, c, h, lo, hi, sc, best = 0x7FFFFFFF, want = 8 + (int32_t)((land.seed * 2246822519u) >> 9 & 127u) * 3 / 4;
+    for (x = 4; x <= 105; x++) {
+        for (lo = 99, hi = -99, c = 0; c < 11; c++)
+            h = land_sky0(x + c, 0), lo = h < lo ? h : lo, hi = h > hi ? h : hi;
+        sc = (hi - lo) * 64 + (lo < 3 ? 512 : 0) + (x > want ? x - want : want - x);
+        if (sc < best) best = sc, land.gx = (uint8_t)x, land.gp = (uint8_t)(hi < 3 ? 3 : hi);
+    }
 }
-/* the shore: on a named place's A, a terrace for the torii, flat under all 11 columns (3 to 8 high, never water),
- * sloping off three cells each side where the land is lower */
+static int32_t land_gate_x(void) { return land.gx; }
+/* the shore: on a named place's A, the torii's terrace, flat under its 11 columns and sloping off three cells each
+ * side, only ever above the land */
 static int32_t land_sky(int32_t x, uint32_t sec)
 {
-    int32_t h = land_sky0(x, sec), g, p, d;
+    int32_t h = land_sky0(x, sec), d, g = land.gx;
     if (!land.seed || sec) return h;
-    g = land_gate_x();
     d = x < g ? g - x : x > g + 10 ? x - g - 10 : 0;
-    if (d > 3) return h;
-    p = land_sky0(g + 5, 0);
-    p = p < 3 ? 3 : p > 8 ? 8 : p;
-    return d && h > p - d ? h : p - d;
+    return d > 3 || h > (int32_t)land.gp - d ? h : (int32_t)land.gp - d;
 }
 static int32_t land_toff(void)                          /* a travel: how far the new shore has come in (120: arrived) */
 {
@@ -201,9 +206,11 @@ static void land_step(void)
     uint8_t seq[4];
     uint32_t pos, left, n = tessera_chain_get(seq, &pos, &left), sec = n ? seq[pos & 3u] : 0u;
     char nm[13];                                        /* (project_cur_name: 12 + its end) */
+    uint32_t was = land.seed;
     project_cur_name(nm);                               /* (the place: FNV-1a of the name) */
     for (land.seed = 2166136261u, i = 0; nm[i]; i++) land.seed = (land.seed ^ (uint8_t)nm[i]) * 16777619u;
     if (!nm[0]) land.seed = 0;
+    if (land.seed && (land.seed != was || !land_open)) land_gate_find();
     if (!land_open) {                                   /* (just opened: what played before is not news) */
         land_open = 1;
         land.rd = (uint8_t)at;
