@@ -58,9 +58,10 @@ static void mapping(void)
     t->p[P_SCALE] = scale_id("24EDO");
     t->p[P_QUANT] = Q_MPC; t->p[P_MPCDEG] = 24;
     assert(midi_map(t, 21) == 83 && midi_map(t, 19) == KB_SILENT);
-    t->p[P_QUANT] = Q_OFF;
-    voice_t v = {0}; voice_scale_pitch(t, &v, 69);
-    assert(v.pitch16 == 69 * 16 && !v.scale_fine);
+    t->p[P_QUANT] = Q_OFF;                                /* OFF keeps the tuning: each key, each MIDI note a degree */
+    assert(micro_active(t) && kb_map(t, 8) == 61 && kb_map(t, 9) == 62 && midi_map(t, 61) == 61);
+    voice_t v = {0}; voice_scale_pitch(t, &v, 61);                  /* 61: a quarter-tone above the root */
+    assert(v.pitch16 == 968 && !v.scale_fine);                     /* 60.5 semitones, not 61 */
     t->p[P_SCALE] = scale_id("BP-ET"); t->p[P_QUANT] = Q_SNAP; song.octave = 1;
     assert(kb_map(t, 7) == 73 && micro_pitch(t, 73) == 600000 + micro_scale(t)->pitch[13]);
     song.octave = 0;

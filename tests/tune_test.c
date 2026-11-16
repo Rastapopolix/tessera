@@ -93,13 +93,13 @@ static void pitch(void)
     over &= micro_pitch(t, 60) == 590000 && micro_pitch(t, 72) == 710000 && micro_pitch(t, 47) == 460000;
     t->p[P_ROOT] = t->p[P_TRANS] = 0;
     t->p[P_QUANT] = Q_OFF;
-    over &= !micro_active(t);
+    over &= micro_active(t);                                   /* (QNT OFF keeps the tuning) */
     t->p[P_QUANT] = Q_ALL; t->eng_req = 10;
     over &= !micro_active(t);
     t->eng_req = trk[(song.sel + 1u) % NTRK].eng_req;
     tune_sel = 2;                                              /* an empty slot: SCL's own scale */
     over &= micro_scale(t) == 0 && scale_count(t) == 12u;
-    verify("ROOT and TRN move it, QNT OFF and a drum track bypass it, an empty slot plays SCL", over);
+    verify("ROOT and TRN move it, QNT OFF keeps it, a drum track bypasses it, an empty slot plays SCL", over);
 }
 
 static void picker(void)

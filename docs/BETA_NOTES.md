@@ -7,6 +7,9 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues> (the firmware version, the steps,
 what you expected and what happened).
 
+## New in 3.6-beta8
+- Microtonal scales and your own Scala tunings now play with QNT OFF too: every key, and every MIDI note, is the next degree of the tuning, so 24EDO and the maqam scales keep their quarter tones without quantizing (they used to fall back to ordinary semitones). A project saved with a microtonal scale and QNT OFF now plays in its tuning.
+
 ## New in 3.6-beta7
 - QNT link (SCL, the row after QNT): LINKED keeps one QNT for every track, as before; OWN gives each track its own QNT and MPC degree, so one track can take MPC pads while others follow the chords (CHRD) or HARM (#755). A project saved with OWN loads on older firmware with each track's QNT as saved.
 
