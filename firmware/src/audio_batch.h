@@ -24,8 +24,8 @@ static uint8_t audio_batch_active;
 /* TIMER5 preempts CPU0 only. Partition a group around measured kernel
  * costs and a CPU0 service allowance. Profiling does not change scheduling. */
 static const uint32_t audio_batch_cost[AP_COUNT] __attribute__((section(".dsp_tables"),aligned(32)))={
-    [AP_ORACLE]=3100,[AP_FM6]=1250,[AP_CZ]=2100,
-    [AP_SID]=2000,[AP_808]=1150,[AP_909]=1900
+    [AP_ORACLE]=3100,[AP_FM6]=1250,[AP_TRIO]=1000,
+    [AP_PHYS]=1100,[AP_808]=1150,[AP_909]=1900
 };
 #if defined(FM1_IRQ_TARGET) && MELODEE_DUAL_CORE
 #define AB_LOAD(p) fm1_aw_load(p)
