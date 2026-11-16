@@ -347,8 +347,9 @@ static void mo_pic_land(void)
         land_disc(mx, my, 5, moon);                     /* a crescent; a PIECE's: as full as its SHAPE here, waxing as it rises */
         if (!pl_secs()) land_disc(mx + 3, my - 2, 4, MO_BG);
         else if (land.ph < 31784u)
-            land_disc(mx + (land.wax ? -1 : 1) * (2 + (((int32_t)land.ph * 8 + 16384) >> 15)),   /* (waxing: lit on the right; */
-                      my - ((2 * (32767 - (int32_t)land.ph) + 16384) >> 15), 4, MO_BG);       /* waning: on the left) */
+            land_disc(mx + (land.wax ? 1 : -1) * (2 + (((int32_t)land.ph * 8 + 16384) >> 15)),   /* (waxing: lit on the left, */
+                      my - ((2 * (32767 - (int32_t)land.ph) + 16384) >> 15), 4, MO_BG);       /* waning: on the right: */
+                                                                                               /* facing into the scene) */
     }
     for (i = 0; i < clouds; i++) {                      /* the clouds: bands of dashes, lower and wider when full */
         int32_t w = 18 + (int32_t)cover + (int32_t)((i * 7u + (land.seed >> 27)) % 9u), cy = LAND_TOP + 6 + (int32_t)(i * 11u % 23u) +
