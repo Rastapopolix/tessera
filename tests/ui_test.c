@@ -5924,7 +5924,8 @@ static int test_rec_gestures(void)
 }
 
 /* LIGHTS (menu): the keys that play glow (QNT OFF: the scale's notes; a layout: the keys not silent; a kit: every
- * key), a key sounding is bright (pressed, or its note held by MIDI on the track), the idle buttons glow; OFF: as 1.0 */
+ * key), a key sounding is bright (pressed, its note held by MIDI on the track, or the track's sequence playing it as
+ * NOTE LIGHTS asks: OFF, STEP, ALL), the idle buttons glow; OFF: as 1.0 */
 static uint32_t key_light(uint32_t id)                   /* 2 bright, 1 dim, 0 dark (led id: key k = 14 + k) */
 {
     uint8_t q = led_pos[id];
@@ -5958,6 +5959,34 @@ static int test_key_lights(void)
     midi_event(0x80, 0, 64, 0);
     frame(); ui_leds();
     bad += check("  .. and back to its glow when it is let go", key_light(14u + 64u - 53u) == 1u);
+    {   /* NOTE LIGHTS: the track's sequence playing E4, within its gate (seq.c seq_notes) */
+        uint32_t e4 = 14u + 64u - 53u;
+        uint8_t mode0 = tessera.mode[0];
+        TSEL->seq_notes[0] = 64u; TSEL->seq_n = 1; song.playing = 1;
+        NLIGHT_SAVED = 0;
+        frame(); ui_leds();
+        bad += check("  NOTE LIGHTS OFF (the default): a step playing E4 leaves its key glowing", key_light(e4) == 1u);
+        NLIGHT_SAVED = NLIGHT_STEP_TAG;
+        frame(); ui_leds();
+        bad += check("  NOTE LIGHTS STEP: a step playing E4, its key bright", key_light(e4) == 2u);
+        tessera.mode[0] = TESS_ENG_TURING;
+        frame(); ui_leds();
+        bad += check("  .. a generator playing E4: its key glowing", key_light(e4) == 1u);
+        NLIGHT_SAVED = NLIGHT_ALL_TAG;
+        frame(); ui_leds();
+        bad += check("  NOTE LIGHTS ALL: the generator's E4 bright", key_light(e4) == 2u);
+        tessera.mode[0] = mode0;
+        frame(); ui_leds();
+        bad += check("  .. and a step's", key_light(e4) == 2u);
+        TSEL->seq_n = 0;                                 /* (its gate over: seq.c seq_release) */
+        frame(); ui_leds();
+        bad += check("  .. back to its glow when the note's gate ends", key_light(e4) == 1u);
+        TSEL->seq_n = 1; song.playing = 0;
+        frame(); ui_leds();
+        bad += check("  .. and nothing lit stopped", key_light(e4) == 1u);
+        TSEL->seq_n = 0;
+        NLIGHT_SAVED = 0;
+    }
     TSEL->p[P_QUANT] = Q_WHITE;
     frame(); ui_leds();
     for (k = 0, ok = 1; k < 27u; k++)
@@ -6016,6 +6045,29 @@ static int test_key_lights(void)
         p.magic = PERSIST_MAGIC; p.panel = panel;
         settings_export(&p); settings_lights = LIGHTS_MID;
         bad += check("  AUTO kept with the settings", settings_import(&p, sizeof p) && settings_lights == LIGHTS_AUTO);
+    }
+    {   /* MENU > NOTE LIGHTS: KNOB 2 OFF, STEP, ALL; saved with the favorites (row 8 byte 31, tagged) */
+        persist_t p;
+        ui_power_on();
+        NLIGHT_SAVED = 0;
+        hold(B_HOME);
+        ui.menu_sel = MI_NLIGHT;
+        turn(EN_K2, 1);
+        bad += check("NOTE LIGHTS: the menu's KNOB 2 right: STEP", ui.menu == 1 && NLIGHT_MODE == NLIGHT_STEP);
+        turn(EN_K2, 1);
+        turn(EN_K2, 1);
+        bad += check("  right twice: ALL, and stays", NLIGHT_MODE == NLIGHT_ALL);
+        press(B_OCTUP);
+        bad += check("  OCT+ steps round: OFF", NLIGHT_MODE == NLIGHT_OFF);
+        turn(EN_K2, 1);
+        memset(&p, 0, sizeof p);
+        settings_export(&p);
+        NLIGHT_SAVED = 0;
+        bad += check("  saved with the settings", settings_import(&p, sizeof p) && NLIGHT_MODE == NLIGHT_STEP);
+        p.favorites.factory[8][31] = 0x01u;
+        settings_import(&p, sizeof p);
+        bad += check("  an older record (no tag): OFF", NLIGHT_MODE == NLIGHT_OFF);
+        ui.menu = 0;
     }
     settings_lights = LIGHTS_MID;
     led_pos_init();

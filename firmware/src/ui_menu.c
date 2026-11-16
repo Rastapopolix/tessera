@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
 /* Melodee menu (HOME held): COLOR, HOLD (the layer threshold), LIGHTS (the keys' and buttons'
- * glow: ui_input.c ui_leds), KNOB ACCEL (ui_input.c accel_by), TRACK KNOB (RIGHT: ALGORITHM picks the track, LEFT:
- * PRESETS does; panel.c), USB AUDIO (IN+OUT, IN, OUT or OFF; usb.c ua_off_set),
+ * glow: ui_input.c ui_leds), NOTE LIGHTS (OFF, STEP or ALL: the keys a sequence plays lit; ui.c NLIGHT_SAVED),
+ * KNOB ACCEL (ui_input.c accel_by), TRACK KNOB (RIGHT: ALGORITHM picks the track, LEFT: PRESETS does; panel.c),
+ * USB AUDIO (IN+OUT, IN, OUT or OFF; usb.c ua_off_set),
  * USB OUTPUT (what the FM-1 sends: the stereo mix or four track stems, both before MASTER; usb.c ua_tracks_set),
  * USB VOLUME (the computer's audio through the FM-1, 0..100 %, apart from MASTER; usb_audio_stream.c),
  * NOTES OUT (KEYS, ALL or OFF: the notes sent over USB MIDI; MIDI OUT until 3.3, renamed apart from GLO > MIDI OUT)
@@ -22,7 +23,7 @@ enum { MI_COLOR,
 #if MELODEE_LOOK
        MI_GROUND, MI_KNOBS, MI_LARGE,
 #endif
-       MI_LIGHTS, MI_SCREEN, MI_BATTERY, MI_GAMMA,
+       MI_LIGHTS, MI_NLIGHT, MI_SCREEN, MI_BATTERY, MI_GAMMA,
        MI_HOLD, MI_ACCEL, MI_TRACK_KNOB,
        MI_MUTES, MI_CLICK, MI_CLICK_LEVEL, MI_COUNTIN, MI_PREVIEW, MI_ADD, MI_AUTOSAVE,
        MI_MIDI_OUT, MI_CLOCK_OUT, MI_CC_IN, MI_MIDI_LEARN,
@@ -40,7 +41,7 @@ static const char *const MI_NAME[MI_COUNT] = {"COLOR",
 #if MELODEE_LOOK
                                               "GROUND", "KNOBS", "LARGE VALUE",
 #endif
-                                              "LIGHTS", "SCREEN OFF", "BATTERY", "PANEL GAMMA",
+                                              "LIGHTS", "NOTE LIGHTS", "SCREEN OFF", "BATTERY", "PANEL GAMMA",
                                               "HOLD", "KNOB ACCEL", "TRACK KNOB",
                                               "MUTES", "AUDIO CLICK", "CLICK LEVEL", "COUNT-IN", "NOTE PREVIEW", "CHORD ENTRY",
                                               "AUTOSAVE",
@@ -476,6 +477,7 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
     if (i == MI_SCREEN) value = (const char *const[]){"NEVER", "5 MIN", "15 MIN", "30 MIN", "60 MIN"}[scr_get()];
     if (i == MI_GAMMA) value = GAMMA_NAME[gamma_get()];
     if (i == MI_LIGHTS) value = LIGHTS_NAME[settings_lights % LIGHTS_N];
+    if (i == MI_NLIGHT) value = (const char *const[]){"OFF", "STEP", "ALL"}[NLIGHT_MODE];
 #if MELODEE_USB_AUDIO
     if (i == MI_USB_INPUT) value = ua_tracks_want ? "4 TRACKS" : "STEREO";
     if (i == MI_USB_VOLUME) { fmt_int(b, settings_usb_volume); str_cpy(b + str_len(b), "%", 2); value = b; }
@@ -763,6 +765,12 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         uint32_t v = settings_lights % LIGHTS_N;
         settings_lights = (uint8_t)(s > 0 ? (v + 1u < LIGHTS_N ? v + 1u : v) : s < 0 ? (v ? v - 1u : 0u) : (v + 1u) % LIGHTS_N);
         ok = 0;
+    }
+    if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_NLIGHT) {     /* KNOB 2 OFF, STEP, ALL; OCT+ steps round */
+        uint32_t m = NLIGHT_MODE;
+        m = s > 0 ? (m < NLIGHT_ALL ? m + 1u : m) : s < 0 ? (m ? m - 1u : m) : (m + 1u) % 3u;
+        NLIGHT_SAVED = (uint8_t)(m == NLIGHT_STEP ? NLIGHT_STEP_TAG : m == NLIGHT_ALL ? NLIGHT_ALL_TAG : 0u);
+        ui.force = 1; ok = 0;                          /* (saved with the favorites) */
     }
     if ((s != 0 || ok) && ui.menu == 1 && ui.menu_sel == MI_HOLD) {
         /* KNOB 2 steps 0.3 .. 0.6 s, OCT+ steps and wraps */

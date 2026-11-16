@@ -121,6 +121,14 @@ static uint8_t browse_loads, browse_mark;    /* sound loads so far; at the brows
 #define LARGE_OFF_TAG 0xB4u
 enum { LARGE_AUTO, LARGE_ON, LARGE_OFF };
 #define LARGE_MODE (LARGE_SAVED == LARGE_ON_TAG ? LARGE_ON : LARGE_SAVED == LARGE_OFF_TAG ? LARGE_OFF : LARGE_AUTO)
+/* MENU > NOTE LIGHTS: the keys light while the selected track's sequence plays their notes, for the note's gate (ui_input.c
+ * play_key_led; seq.c seq_notes). OFF (the default): only keys pressed or held by MIDI; STEP: a STEP pattern's notes;
+ * ALL: the generators' too. favorites.factory[8][31] tagged STEP or ALL, any other byte OFF (row 8 byte 30: TEXT / IDLE) */
+#define NLIGHT_SAVED (favorites.factory[8][31])
+#define NLIGHT_STEP_TAG 0xBCu
+#define NLIGHT_ALL_TAG 0xBDu
+enum { NLIGHT_OFF, NLIGHT_STEP, NLIGHT_ALL };
+#define NLIGHT_MODE (NLIGHT_SAVED == NLIGHT_STEP_TAG ? NLIGHT_STEP : NLIGHT_SAVED == NLIGHT_ALL_TAG ? NLIGHT_ALL : NLIGHT_OFF)
 
 static uint8_t sync_reload;                  /* engine / preset / project / user preset loaded: editor RELOAD push */
 
