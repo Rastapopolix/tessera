@@ -305,6 +305,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x2A5 | ANSWER TIME | 1 to 16 | 3 | BEND: the steps between a note and its repeat, and between repeats: 1 to 16 (3: a dotted eighth at 16 steps a bar). The GEN sheet (OCT+ held), Time. |
 | 0x2A6 | ANSWER BREAK | 0 to 100 % | 0 | BEND: the chance a repeat glitches, this once: it slips a step early or late, skips, stutters (again a step later) or jumps back to a note you played a little before. 0: never. The GEN sheet (OCT+ held), Break. |
 | 0x2A7 | QNT LINK | OWN, LINKED | LINKED | LINKED: one QNT for the whole project, and one MPC degree: changing either on any track sets it on every track. OWN: each track its own, so one track can take MPC pads while others follow the chords (CHRD) or HARM. Turning it on gives every track the selected track's. SCL's QNT link row; on in a new project, saved with it. |
+| 0x2A8 | SECTION PC | OFF, ON | OFF | ON: when the CHAIN goes to section A, B or C, the track sends Program Change 0, 1 or 2 on its MIDI OUT channel, so a sequencer or a groovebox on that channel switches its pattern or scene with the piece's form. Sent on the phrase line, before its first notes, and at PLAY; a repeat of the same section sends nothing. Nothing with FORM OFF, MIDI OUT OFF or the track's channel OFF. MIDI OUT's sheet (OCT+ held), Section PC T1 to T4. |
 
 ## Mods
 

@@ -7,67 +7,12 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues> (the firmware version, the steps,
 what you expected and what happened).
 
-## New in 3.6-beta8
-- Microtonal scales and your own Scala tunings now play with QNT OFF too. A scale of up to 12 degrees an octave (the maqamat RAST, BAYATI, HIJAZ, SABA, HUSAYN, SIKAH, the just and meantone scales, the Japanese pentatonics) keeps the keyboard a piano's: every key plays its own note, and the keys nearest the scale's degrees take its tuning. RAST on C: E and B play half flat, C# is an ordinary C#, so you play a maqam as you would on a piano and can still reach every note off it. A bigger tuning (24EDO, 31EDO, a large Scala file) plays every degree in a row, one a key and one a MIDI note. They used to fall back to ordinary semitones: a project saved with a microtonal scale and QNT OFF now plays in its tuning.
-
-- LANDSCAPE: a named project gets a place of its own, made from its name (its hills or islands, its stars, where the moon rests, a torii gate on A's shore). The layers you switch on show in the scene: a PIECE's shape is the moon's phase, with dusk (or the stars coming out) over its last tenth; each CHAIN section has its own shore, the new one coming in from the right, and a shooting star when the form comes round; ENERGY blows the clouds right as it builds and left as it thins, and a rest lays mist on the water.
+## New since 3.6
 - MENU > NOTE LIGHTS: the keys light up while a sequence plays their notes, for as long as each note lasts. OFF (the default) as before; STEP lights a STEP pattern's notes; ALL the generators' too.
 
-## New in 3.6-beta7
-- QNT link (SCL, the row after QNT): LINKED keeps one QNT for every track, as before; OWN gives each track its own QNT and MPC degree, so one track can take MPC pads while others follow the chords (CHRD) or HARM (#755). A project saved with OWN loads on older firmware with each track's QNT as saved.
-
-## New in 3.6-beta6
-- HARM, a harmonizer (after Dreamsequence's): with a CHORD track playing, each note of the scale up plays the chord's next note up, so a run up the keys is an arpeggio that follows the chords. SCL > QNT HARM does this for the keys, MIDI IN and the generators; FOLLOW's new HOW HARM does it to another track's line, SHIFT moving by chord notes. A project using HOW HARM does not load on older firmware.
-- MENU > ABOUT shows **SPACE**: how much flash and RAM this firmware leaves free for new features.
-- ECHO now rests while nothing reaches it and its tail has died away, which frees CPU when tracks are quiet. The sound is exactly the same.
-- PPQN, the MIDI clock's pulses per beat: on GLO > MIDI IN, hold OCT- and KNOB 4 sets 24 (the default, the MIDI standard), 48, 4, 8 or 12, for the clock the FM-1 follows and for CLOCK OUT. If the FM-1 plays twice as fast as the gear it follows (HOME shows double the tempo), try 48. Like CLK, it is kept through power-off and project loads (#747).
-- After a project loads, a track playing one of your own FM6 voices finds the user slot holding that voice again: HOME shows its name (not TINE EP) and PRESETS starts from it. If no slot holds it any more, HOME shows the name stored in the voice (#744).
-- The installer waits a few seconds for the FM-1 instead of giving up after one quick look, and when another app or tab holds the FM-1's MIDI port it says so and names the port, instead of FM-1 not found (#743).
-- The FM-1's update mode is now called Tessera Update on the computer (it was Melodee Update). A computer that has seen the old name may keep showing it.
-
-## New in 3.6-beta5
-- MODS: KNOB 1's source list now starts at the selected track too, as KNOB 3's does: on track 3, the first turn lands on T3 LFO.
-- When the FM-1 runs short of CPU and has to cut a sound early, it now cuts the quietest fading drum first (a hat's tail), not the kick or a snare in the middle of a roll.
-
-## New in 3.6-beta4
-- MODS: KNOB 3's list now starts at the selected track (it started at the mod's source's track, and at T1 for a new mod); a new mod's first turn of KNOB 3 lands on the selected track's PITCH. Thanks for the report (#724).
-
-## New in 3.6-beta3
-- SIM CONTROL (in the menu: hold HOME): with the web simulator open and the FM-1 connected by USB, the FM-1's knobs, buttons and keys play only the simulator, and the FM-1 itself stays silent. Hold FX + GLO for a second to get the panel back; closing the simulator or unplugging ends it too. It is off every time the FM-1 starts.
-
-## New in 3.6-beta2
-- MODS: 22 more destinations: STRUM, STR DIR, RATCH, R CHANC, GATE, N LEN, LOCK, VELO, SWING, GLIDE, GRAVITY, DEVELOP, AN ECHO, AN SHFT, AN SPCE, BREATH, ACC LIM, TIDE SP, SWRM RT, ARP RTE, ARP GTE and ARP OCT.
-- MODS: KNOB 3's destinations come in groups (SOUND, ENV, LFO, MIX, FX, GEN, FEEL, EVOLVE, ARP, MODS), and the list's title names the group under the cursor, for example T3 LFO.
-- MODS: a track lists only the destinations that act on what it plays (Turing's settings on a Turing track, STRUM on a CHORD track). A mod already set to one keeps it.
-- MODS: the list starts at the mod's own source track; a new mod's first turn of KNOB 3 lands on that track's PITCH.
-- The sound designer has been removed, to make room for new features. Saving and loading user sounds from the SOUND sheet works as before.
-
-## New since 3.5.3
-- ANSWER holds each note as long as you held its key in the call (when the track's LENGTH is on STEP, the default; FIXED and HIT still set the length).
-- ANSWER captures up to 16 notes in a call (was 8).
-- ANSWER CHORD (on the GEN sheet, hold OCT+): ARP spreads notes played together one step apart, as before; TRUE answers them as a real chord.
-
 ## Fixed
-- FM6 AEG (EDIT 2, KNOB 4): the slow side is usable all the way up. It slows the envelopes of the operators you hear by up to 24 rate steps (it was 40) and never to a release longer than about 15 s, unless the patch's own is longer; near the top, notes rang on for minutes and held voices. A project with AEG turned right sounds a little shorter in its tails than before; AEG 0 and the left side are as they were.
-- Web simulator, An FM-1 on USB: a click of the FM-1's knobs is one step again where Windows listed the FM-1 twice (lists such as the menu and MODS skipped every other row).
-- After an overload (a crackle), the voices come back within a few seconds while you keep playing, and one overload no longer holds every track to one or two voices.
-- Help on the device for ATLAS DENSITY, ATLAS PART4, CHORD PROG, FOLLOW RHYTHM and CONSTELLATION SPEED now says to hold OCT-, as the keys work.
-- SYSTEM: the CPU dial no longer shows its own jittering number. The CPU bar further down is the one readout.
 
 ## Good to know
-- A project that uses one of the new MODS destinations does not load on 3.6-beta1 or older.
-- The project format has changed: projects saved on this beta do not load on 3.5.3 or older. Keep a backup before you try it.
-- Patterns (PAT GEN) keep ANSWER's first 8 notes; CHORD, held lengths and notes 9-16 belong to the track, not the pattern.
 
 ## Please try
-- MIDI clock from your gear (CLK USB or TRS): the FM-1 plays at the gear's tempo. If it plays twice as fast, set PPQN to 48 (GLO > MIDI IN, hold OCT-, KNOB 4). CLOCK OUT at 8 or 4 into gear that expects fewer pulses.
-- Save a project with a track on one of your own FM6 voices (F001 ..), switch off and on, load it: HOME names the voice, and PRESETS starts from its slot.
-- The installer with the editor or a DAW open: it names the MIDI port that is in use.
-- SIM CONTROL: open the web simulator with the FM-1 on USB, turn SIM CONTROL on in the menu, play the FM-1: only the simulator answers. Hold FX + GLO for a second: the FM-1 plays again. Hold GLO alone while it is on: GLO's settings open in the simulator.
-- A mod onto GATE, SWING or ARP RTE on a playing track, RATCH on a generator track, VELO on a STEP track.
-- On MODS, a mod from T3's LFO: turn KNOB 3. T3 comes first and the title follows the groups; with T1 on Turing, T1 offers T PROB but not E PULSE.
-- The 909 on ATLAS at 85 BPM with DENSITY at 64 % or more: the snares keep playing. A busy four-track project: after a crackle, the voices come back within seconds.
-- A project from 3.5.3 loads and plays the same.
-- On an ANSWER track, hold some keys longer than others: the answer holds them too.
-- Set CHORD to TRUE and play a chord: the answer plays it as a chord.
-- Play a call of more than 8 notes: the answer plays all of them.
+- A project from 3.6 loads and plays the same.

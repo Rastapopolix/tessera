@@ -270,6 +270,7 @@ void entries_tick(uint32_t n)
     uint32_t tr, b = bar_n, bars = fc_bars(), step;
     mute_tick();                                      /* (MENU MUTES: before the downbeat's steps) */
     planner_tick(n);
+    fc_pc_tick();                                     /* (SECTION PC: form_chain.c, on the same phrase line) */
     if (et.final && song.playing) {
         /* (the end: everything fades out, nothing decided) */
     } else if (!song.playing || !tessera.et_amount) {

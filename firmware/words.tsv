@@ -331,3 +331,6 @@ SWRM RT	swarm rate
 ARP RTE	arp rate
 ARP GTE	arp gate
 ARP OCT	arp octaves
+# MIDI OUT sheet: SECTION PC (a Program Change on the CHAIN's section)
+SECTION PC	section program change
+SEC PC	section program change
