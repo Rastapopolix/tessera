@@ -1051,6 +1051,47 @@ static void follow_hold_run(char *res, size_t cap)
     snprintf(res, cap, "%u %u %u", n, bad, chg);
 }
 
+/* HOLD (GLO + D4; tessera.hold): TURING PROB 30 and MARKOV LOCK 50, each with EVOLVE every bar, CONSTELLATION LOCK 0,
+ * ATLAS CHAOS 80; held from bar 3 to bar 7. "same changed": the tracks whose held bars 3..6 each play bar 3's notes
+ * (bits), and those whose bars 7..9 differ from it (bits) */
+static void s_hold(void)
+{
+    gen(0, TESS_ENG_TURING);
+    tessera_param_set(0, TX_TUR_PROB, 30);
+    gen(1, TESS_ENG_MARKOV);
+    tessera_param_set(1, TX_EV_LOCK, 50);
+    gen(2, TESS_ENG_CONSTEL);
+    gen(3, TESS_ENG_GRIDS);
+    tessera_param_set(3, TX_EV_LOCK, 20);
+    for (uint32_t tr = 0; tr < 2u; tr++) {
+        tessera_param_set(tr, TX_EV_EVERY, 1);
+        tessera_param_set(tr, TX_EV_AMOUNT, 60);
+    }
+}
+static void b_hold(uint32_t bar) { tessera.hold = bar >= 3u && bar < 7u; }
+static uint32_t hold_bar(uint32_t tr, uint32_t bar)    /* a bar's notes on track tr, in order (not their timing) */
+{
+    uint32_t i, h = 2166136261u;
+    for (i = 0; i < tt_n; i++)
+        if (tt_ev[i].tr == tr && tt_ev[i].blk >= tt_bar_blk[bar] && tt_ev[i].blk < tt_bar_blk[bar + 1u])
+            h = fnv(fnv(h, tt_ev[i].note), tt_ev[i].vel);
+    return h;
+}
+static void hold_run(char *res, size_t cap)
+{
+    static const scen_t sc = {"hold", 11, 0x1061u, s_hold, b_hold, 0};
+    uint32_t tr, b, same = 0, chg = 0;
+    scen_run(&sc, 0, res, cap);
+    for (tr = 0; tr < 4u; tr++) {
+        uint32_t h = hold_bar(tr, 3), eq = 1, df = 0;
+        for (b = 4; b < 7u; b++) eq &= hold_bar(tr, b) == h;
+        for (b = 7; b < 10u; b++) df |= hold_bar(tr, b) != h;
+        same |= eq << tr;
+        chg |= df << tr;
+    }
+    snprintf(res, cap, "%u %u", same, chg);
+}
+
 /* STEP as seed: scenario name's track 2 notes: "count, in the melody's order, of the melody's notes, steps" (the
  * melody's notes without its rests: 60 62 64 67 65 72) */
 static void seed_run(const char *name, char *res, size_t cap)
@@ -3802,6 +3843,26 @@ int main(int argc, char **argv)
         }
         snprintf(line, sizeof line, "FOLLOW HOLD: %u notes, each the one track 2's last hit sampled (%u changes)", n3, chg);
         bad += check(line, n3 > 16u && !wrong && chg >= 4u && chg < n3 / 2u);
+    }
+    {   /* HOLD, in a child */
+        unsigned same = 0, chg = 0;
+        pid_t pid;
+        int fd[2];
+        if (!pipe(fd) && (pid = fork()) >= 0) {
+            if (!pid) {
+                close(fd[0]);
+                hold_run(res, sizeof res);
+                if (write(fd[1], res, strlen(res) + 1u) < 0) _exit(1);
+                _exit(0);
+            }
+            close(fd[1]);
+            if (read(fd[0], res, sizeof res - 1u) > 0) sscanf(res, "%u %u", &same, &chg);
+            close(fd[0]);
+            waitpid(pid, 0, 0);
+        }
+        snprintf(line, sizeof line, "HOLD: TURING, MARKOV (LOCK 50), CONSTELLATION, ATLAS repeat their line while held "
+                 "(0x%x), vary again let go (0x%x)", same, chg);
+        bad += check(line, same == 15u && (chg & 3u) == 3u);
     }
     {   /* FOLLOW HOLD's knob (TWEAK, OCT+ held, KNOB 4): OFF, the other tracks, never this one; the ends stay */
         int ok = 1;
