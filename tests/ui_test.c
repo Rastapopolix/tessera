@@ -7994,6 +7994,57 @@ static int test_stage_knobs_after_drum(void)
     return bad;
 }
 
+/* ENV + OCT- / OCT+ on HOME: the selected track's TRANSPOSE an octave down / up (within +-24), both OCTs 0; the keys'
+ * octave and ENV's page stay as they were; a DRUM track has none */
+static int test_env_oct_transpose(void)
+{
+    int bad = 0;
+    ui_power_on_general();
+    track_select(1);
+    go_home();
+    frame();
+    TSEL->p[P_TRANS] = 0;
+    btn_down(B_ENV);
+    frame();
+    press(B_OCTUP);
+    bad += check("ENV + OCT+ on HOME: the track's TRANSPOSE +12", TSEL->p[P_TRANS] == 12 && msg_is("TRANSPOSE +12"));
+    press(B_OCTUP);
+    press(B_OCTUP);
+    bad += check("..again: +24 at most", TSEL->p[P_TRANS] == 24 && !trk[0].p[P_TRANS]);
+    btn_up(B_ENV);
+    frame();
+    frame();
+    bad += check("..the keys' octave untouched, ENV let go: still HOME", !song.octave && ui.home && pop.on != POP_SHEET);
+    btn_down(B_ENV);
+    frame();
+    press(B_OCTDN);
+    bad += check("ENV + OCT-: -12", TSEL->p[P_TRANS] == 12 && msg_is("TRANSPOSE +12"));
+    btn_down(B_OCTDN);
+    frame();
+    btn_down(B_OCTUP);
+    frame();
+    btn_up(B_OCTUP);
+    btn_up(B_OCTDN);
+    frame();
+    bad += check("ENV + both OCTs: back to 0", TSEL->p[P_TRANS] == 0 && msg_is("TRANSPOSE 0") && !song.octave);
+    btn_up(B_ENV);
+    frame();
+    frame();
+    bad += check("..ENV let go: still HOME", ui.home);
+    press(B_OCTUP);
+    bad += check("OCT+ alone: the keys' octave as before", song.octave == 1 && TSEL->p[P_TRANS] == 0);
+    press(B_OCTDN);
+    set_engine_of(TSEL, ENGI_DRUM);
+    btn_down(B_ENV);
+    frame();
+    press(B_OCTUP);
+    btn_up(B_ENV);
+    frame();
+    bad += check("a DRUM track: NOT ON DRUMS, nothing moved", msg_is("NOT ON DRUMS") && TSEL->p[P_TRANS] == 0 && !song.octave);
+    ui_power_on();
+    return bad;
+}
+
 /* the header's battery (ui_draw.c batt_head): its level on the battery, a bolt on external power (a computer, or 5 V
  * at LDO5V); MENU BATTERY WHEN LOW hides it except when low; saved with the settings */
 static int test_battery(void)
@@ -8224,6 +8275,7 @@ int main(void)
     bad += test_fm6_charts();
     bad += test_pattern_key_handoff();
     bad += test_stage_knobs_after_drum();
+    bad += test_env_oct_transpose();
 
     if (getenv("UI_SCREEN_DIR")) chain_screens(getenv("UI_SCREEN_DIR"));
     printf(bad ? "ui: %d FAILED\n" : "ui: all passed\n", bad);

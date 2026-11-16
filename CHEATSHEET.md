@@ -73,6 +73,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | **LFO** + a knob | A momentary change: back as it was when LFO is let go |
 | **LFO** + a knob, then **OCT+** | Keeps the change ("KEPT") |
 | **OCT-** / **OCT+** on HOME | Octave down / up; both together: octave 0 |
+| **ENV** + **OCT-** / **OCT+** on HOME | The selected track an octave down / up (its TRN, up to ±24); both OCTs: TRN 0. Not on a DRUM track |
 
 ## Steps and notes (SEQ > NOTES)
 
