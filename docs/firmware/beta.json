@@ -1,14 +1,20 @@
 {
-  "version": "3.6-beta6",
+  "version": "3.6-beta7",
   "product": "FM-1_836",
   "branch": "develop",
-  "commit": "67aad3a674c60d464c4824328e999b4ebdf68aad",
-  "builtAt": "2026-11-15T19:57:29Z",
+  "commit": "d63486ce947260dd05e8a8b530d4bebe5185e806",
+  "builtAt": "2026-11-16T05:10:01Z",
   "pkg": {
-    "dual": "../../firmware/tessera-3.6-beta6.fwsc",
-    "single": "../../firmware/tessera-3.6-beta6-1core.fwsc"
+    "dual": "../../firmware/tessera-3.6-beta7.fwsc",
+    "single": "../../firmware/tessera-3.6-beta7-1core.fwsc"
   },
   "notes": [
+    [
+      "New in 3.6-beta7",
+      [
+        "QNT link (SCL, the row after QNT): LINKED keeps one QNT for every track, as before; OWN gives each track its own QNT and MPC degree, so one track can take MPC pads while others follow the chords (CHRD) or HARM (#755). A project saved with OWN loads on older firmware with each track's QNT as saved."
+      ]
+    ],
     [
       "New in 3.6-beta6",
       [
