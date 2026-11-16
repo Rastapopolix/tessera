@@ -23,6 +23,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | Lists (menu, SCL, VOICE): **KNOB 1** / **KNOB 2** | The row / its value |
 | MENU > **GROUND** | What the ink is drawn on: DARK (black, the default) or LIGHT (paper, each ink's light version) |
 | MENU > **LARGE VALUE** | The knob turning, large at the foot: AUTO (pages without a picture), ON, OFF |
+| MENU > **NOTE LIGHTS** | The keys a sequence plays, lit for each note: OFF, STEP (a STEP pattern's), ALL (the generators' too) |
 
 ## The page buttons
 

@@ -8,6 +8,7 @@ Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues>
 what you expected and what happened).
 
 ## New in 3.6-beta8
+- MENU > NOTE LIGHTS: the keys light up while a sequence plays their notes, for as long as each note lasts. OFF (the default) as before; STEP lights a STEP pattern's notes; ALL the generators' too.
 - Microtonal scales and your own Scala tunings now play with QNT OFF too: every key, and every MIDI note, is the next degree of the tuning, so 24EDO and the maqam scales keep their quarter tones without quantizing (they used to fall back to ordinary semitones). A project saved with a microtonal scale and QNT OFF now plays in its tuning.
 
 ## New in 3.6-beta7
