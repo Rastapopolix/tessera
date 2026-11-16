@@ -1200,13 +1200,14 @@ you can thin the music and watch the lake answer.
   clouds drift with the wind: to the right while the tide builds, to the left while it thins, faster the steeper it
   is, and still at its turns. Without ENERGY they drift right, as the wind always blew. A **rest** lays mist on the
   water, and the moon's reflection fades into it until the notes come back.
-- **Stars** come out as the music thins and all of them once nothing has played for a few seconds. Then the water is
-  still and the moon's reflection lies quiet.
+- **Stars** come out as the music thins and all of them once nothing has played for a few seconds. While playing the
+  moon's reflection shimmers, between notes too; stopped, the water is still and the reflection lies quiet.
 - On **GROUND LIGHT** it is day: a sun (a ring with short rays) takes the moon's place on the same arc, and no stars
   come out. Rain, clouds, hills and the water are the same.
 - A **PIECE** (LENGTH set) moves the moon across the sky, rising at the left as it starts and setting at the right; its
   **phase** is the piece's SHAPE there: a thin crescent where the plan is quiet, full at its peak; it waxes while the
-  SHAPE rises (lit on the right) and wanes as it falls (lit on the left), as the moon does over a month. Over the piece's
+  SHAPE rises (lit on the left) and wanes as it falls (lit on the right), as the moon does over a month seen from
+  the southern hemisphere: low at either end, it faces into the scene. Over the piece's
   last tenth dusk falls (GROUND LIGHT: the sky darkens from the hills up) and at night the stars come out. END STOP:
   the moon sets behind the hills.
 - **CHAIN**: each section has its own shore. When the form moves on, the new shore comes in from the right, as if
