@@ -104,7 +104,7 @@ static void land_moon(uint32_t dt)
 /* a shore's height at x: section sec of the place (unnamed A: the shore as it always was; otherwise two waves and
  * sometimes a peak, from the seed, never above 15 so the moon is never buried; 0 or less: open water, so a place can
  * be islands) */
-static int32_t land_sky(int32_t x, uint32_t sec)
+static int32_t land_sky0(int32_t x, uint32_t sec)
 {
     uint32_t h;
     int32_t hh, pk;
@@ -120,6 +120,24 @@ static int32_t land_sky(int32_t x, uint32_t sec)
     pk = (mo_sin(x * 2 + (int32_t)(h >> 20 & 255u)) * (4 + (int32_t)(h >> 28 & 7u)) >> 7) - 2;
     if (!(h >> 18 & 3u) && pk > 0) hh += pk;
     return hh > 15 ? 15 : hh;
+}
+static int32_t land_gate_x(void)                        /* where A's torii stands (its left column), from the seed */
+{
+    uint32_t h = land.seed * 2246822519u, slot = h >> 9 & 3u;
+    return 20 + (int32_t)(slot == 3u ? 1u : slot) * 27 + (int32_t)(h >> 12 & 7u);
+}
+/* the shore: on a named place's A, a terrace for the torii, flat under all 11 columns (3 to 8 high, never water),
+ * sloping off three cells each side where the land is lower */
+static int32_t land_sky(int32_t x, uint32_t sec)
+{
+    int32_t h = land_sky0(x, sec), g, p, d;
+    if (!land.seed || sec) return h;
+    g = land_gate_x();
+    d = x < g ? g - x : x > g + 10 ? x - g - 10 : 0;
+    if (d > 3) return h;
+    p = land_sky0(g + 5, 0);
+    p = p < 3 ? 3 : p > 8 ? 8 : p;
+    return d && h > p - d ? h : p - d;
 }
 static int32_t land_toff(void)                          /* a travel: how far the new shore has come in (120: arrived) */
 {
@@ -279,11 +297,6 @@ static const uint8_t LAND_BAYER[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 1
 #define LAND_BY(x, y) LAND_BAYER[((y) & 3) * 4 + ((x) & 3)]
 /* a place's torii: the top beam's ends turned up, the tie beam, the pillars (11 x 10; bit 10 the left column) */
 static const uint16_t LAND_GATE[10] = {0x401, 0x7FF, 0x3FE, 0x124, 0x7FF, 0x104, 0x104, 0x104, 0x104, 0x38E};
-static int32_t land_gate_x(void)                        /* between two of ENTRIES' windows (17, 44, 72, 99): never on one */
-{
-    uint32_t h = land.seed * 2246822519u, slot = h >> 9 & 3u;
-    return 20 + (int32_t)(slot == 3u ? 1u : slot) * 27 + (int32_t)(h >> 12 & 7u);
-}
 static void land_temple(int32_t gx, uint16_t hills)    /* on A's shore at gx, standing on the ground under its middle */
 {
     int32_t r, c, y, gy = land_hill(gx + 5);
@@ -356,14 +369,19 @@ static void mo_pic_land(void)
         land_temple(land_gate_x() - toff, hills);
     if (land.seed && land.sec == 0u)
         land_temple(land_gate_x() + 120 - toff, hills);
-    if (tessera.et_amount)                              /* ENTRIES: a lit window a track, as bright as it is in */
-        for (i = 0; i < 4u; i++) {
-            int32_t lx = 17 + (int32_t)i * 27 + (int32_t)(i > 1u), ly = land_hill(lx) + 2, g = entry_gain[i];
-            ly = ly > LAND_H - 2 ? LAND_H - 2 : ly;
-            mo_fill(lx - 1, ly - 1, 4, 3, MO_BG);
-            if (g > 21845) mo_fill(lx, ly - 1, 2, 2, MO_TRK(i));
-            else if (g > 10922) mo_fill(lx, ly, 2, 1, mo_tdim(i));
-            else if (g > 1638) mo_px(lx, ly, mo_tdim(i));
+    if (tessera.et_amount)                              /* ENTRIES: a lit window a track, as bright as it is in, set into a */
+        for (i = 0; i < 4u; i++) {                      /* hill near its place (none near: no window), never on the torii */
+            int32_t lx = 17 + (int32_t)i * 27 + (int32_t)(i > 1u), k, wx = -1, g = entry_gain[i], gx = land_gate_x();
+            for (k = 0; k < 24 && wx < 0; k++) {
+                int32_t x2 = lx + (k & 1 ? -(k + 1) / 2 : k / 2);
+                if (x2 < 1 || x2 > 117 || (land.seed && land.sec == 0u && toff >= 120 && x2 > gx - 3 && x2 < gx + 12)) continue;
+                if (land_hill(x2) <= LAND_H - 4 && land_hill(x2 + 1) <= LAND_H - 4) wx = x2;
+            }
+            if (wx < 0) continue;
+            k = (land_hill(wx) > land_hill(wx + 1) ? land_hill(wx) : land_hill(wx + 1)) + 2;   /* (inside the hill) */
+            if (g > 21845) mo_fill(wx, k, 2, 2, MO_TRK(i));
+            else if (g > 10922) mo_fill(wx, k + 1, 2, 1, mo_tdim(i));
+            else if (g > 1638) mo_px(wx, k + 1, mo_tdim(i));
         }
     mo_hl(0, LAND_H, 120, water);
     for (y = LAND_H + 3, i = 0; my - 5 < land_hill(mx) && y < MO_PY1 - 2 && i < 6u - land.mist * 6u / 16u; y += 4, i++) {   /* the moon in the water (it shivers under rings) */
