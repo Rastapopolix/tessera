@@ -850,14 +850,14 @@ static int32_t tess_flourish(const track_t *t, uint32_t tr)
     return ev->step_cnt > spb - win ? (int32_t)ev->flourish : 0;
 }
 
-/* Markov / Morph: LOCK% of steps replay the section's base phrase, the rest play fresh (not remembered) */
+/* Markov / Morph: LOCK% of steps replay the section's base phrase, the rest play fresh (not remembered). LOCK 0
+ * plays fresh every pass and writes each pass over the phrase, so HOLD (and LOCK turned up) repeats the last one */
 static void tessera_phrase_apply(uint32_t tr, uint8_t *note, uint8_t *vel, int *trig)
 {
     tessera_evolve_t *ev = &tessera.evolve[tr];
     tessera_sec_t *sc = &tessera.sec[tr][ev->sec % 3u];
     uint32_t pos = ev->pos_now & 31u, sh = (pos & 1u) * 4u;
-    if (!ev->lock) return;                                   /* 0 = fresh every pass (the old behaviour) */
-    if (ev->rec) {
+    if (ev->lock ? ev->rec : !tessera.hold) {               /* (LOCK 0 held: replays below) */
         uint32_t q = *vel < 64u ? 0u : (uint32_t)(*vel - 64u) / 4u;
         if (q > 15u) q = 15u;
         sc->note[pos] = (uint8_t)((*trig ? 0x80u : 0u) | (*note & 0x7Fu));

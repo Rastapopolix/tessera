@@ -1077,11 +1077,21 @@ static uint32_t hold_bar(uint32_t tr, uint32_t bar)    /* a bar's notes on track
             h = fnv(fnv(h, tt_ev[i].note), tt_ev[i].vel);
     return h;
 }
-static void hold_run(char *res, size_t cap)
+/* HOLD at LOCK 0: MARKOV and MORPH (no EVOLVE) play fresh every pass and write it over their phrase, so HOLD repeats
+ * the last pass */
+static void s_hold0(void)
+{
+    gen(0, TESS_ENG_MARKOV);
+    gen(1, TESS_ENG_MORPH);
+    tessera_param_set(0, TX_EV_LOCK, 0);
+    tessera_param_set(1, TX_EV_LOCK, 0);
+}
+static void hold_run(char *res, size_t cap, int lock0)
 {
     static const scen_t sc = {"hold", 11, 0x1061u, s_hold, b_hold, 0};
+    static const scen_t sc0 = {"hold0", 11, 0x1062u, s_hold0, b_hold, 0};
     uint32_t tr, b, same = 0, chg = 0;
-    scen_run(&sc, 0, res, cap);
+    scen_run(lock0 ? &sc0 : &sc, 0, res, cap);
     for (tr = 0; tr < 4u; tr++) {
         uint32_t h = hold_bar(tr, 3), eq = 1, df = 0;
         for (b = 4; b < 7u; b++) eq &= hold_bar(tr, b) == h;
@@ -3866,7 +3876,7 @@ int main(int argc, char **argv)
         if (!pipe(fd) && (pid = fork()) >= 0) {
             if (!pid) {
                 close(fd[0]);
-                hold_run(res, sizeof res);
+                hold_run(res, sizeof res, 0);
                 if (write(fd[1], res, strlen(res) + 1u) < 0) _exit(1);
                 _exit(0);
             }
@@ -3878,6 +3888,26 @@ int main(int argc, char **argv)
         snprintf(line, sizeof line, "HOLD: TURING, MARKOV (LOCK 50), CONSTELLATION, ATLAS repeat their line while held "
                  "(0x%x), vary again let go (0x%x)", same, chg);
         bad += check(line, same == 15u && (chg & 3u) == 3u);
+    }
+    {   /* HOLD at LOCK 0, in a child */
+        unsigned same = 0, chg = 0;
+        pid_t pid;
+        int fd[2];
+        if (!pipe(fd) && (pid = fork()) >= 0) {
+            if (!pid) {
+                close(fd[0]);
+                hold_run(res, sizeof res, 1);
+                if (write(fd[1], res, strlen(res) + 1u) < 0) _exit(1);
+                _exit(0);
+            }
+            close(fd[1]);
+            if (read(fd[0], res, sizeof res - 1u) > 0) sscanf(res, "%u %u", &same, &chg);
+            close(fd[0]);
+            waitpid(pid, 0, 0);
+        }
+        snprintf(line, sizeof line, "HOLD at LOCK 0: MARKOV, MORPH repeat their last pass while held "
+                 "(0x%x), vary again let go (0x%x)", same, chg);
+        bad += check(line, (same & 3u) == 3u && (chg & 3u) == 3u);
     }
     {   /* FOLLOW HOLD's knob (TWEAK, OCT+ held, KNOB 4): OFF, the other tracks, never this one; the ends stay */
         int ok = 1;

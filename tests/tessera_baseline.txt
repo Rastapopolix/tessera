@@ -9,13 +9,13 @@ euclid.state 0x9faef360
 euclid_13_5_rot3_roll 0x85ff1e96 49
 euclid_13_5_rot3_roll.state 0x1944bcbf
 markov 0x01be3a32 96
-markov.state 0x1e5e8c3d
+markov.state 0xd15642a0
 markov_tension81_density60_oct3 0xf75b2fde 82
-markov_tension81_density60_oct3.state 0x6a980ece
+markov_tension81_density60_oct3.state 0xaf36ecc9
 morph 0x7c475e2d 45
-morph.state 0xa9b5bbb6
+morph.state 0xc8b19734
 morph_64_son_rumba 0x2f20343d 48
-morph_64_son_rumba.state 0xb32a9b98
+morph_64_son_rumba.state 0x799aaff7
 evolve_turing_lock90_every1_amount50 0x30ee6171 130
 evolve_turing_lock90_every1_amount50.state 0x23dfd68e
 evolve_euclid_every1_amount80 0xbbc1aa07 86
@@ -31,39 +31,39 @@ form_markov_aaba_lock50.state 0xe306e69e
 form_euclid_abcb_morph_aabc 0xfebc064b 246
 form_euclid_abcb_morph_aabc.state 0x675c30a7
 tweak_shift_drop_human_follow 0xf041a8c0 118
-tweak_shift_drop_human_follow.state 0x157d14d1
+tweak_shift_drop_human_follow.state 0xef1f3811
 scale_root_transpose 0xdfd49597 94
 scale_root_transpose.state 0x4f31b7c6
 division_gate_length 0xd0fd4cc4 139
-division_gate_length.state 0x523c0eed
+division_gate_length.state 0x3523de37
 all_four_tracks 0xf04b8170 885
-all_four_tracks.state 0x0407cd08
+all_four_tracks.state 0x1420941b
 transport_stop_start 0xddf84dcf 248
 transport_stop_start.state 0x45f5f22d
 mute_and_unmute 0x621f77bf 52
 mute_and_unmute.state 0x804d8053
 knobs_while_playing 0x3fd2da5a 67
-knobs_while_playing.state 0x28a42602
+knobs_while_playing.state 0x949cdb26
 midi_clock_start_stop_continue 0xf271d3c2 126
-midi_clock_start_stop_continue.state 0x71b4876f
+midi_clock_start_stop_continue.state 0xed8407b7
 swing_track40_global30 0x896db78f 80
 swing_track40_global30.state 0xdcbc4f31
 track_len_shorter_than_loop 0xcf707c9f 80
 track_len_shorter_than_loop.state 0xdcbc4f31
 pattern_switch_while_playing 0x6774ae8a 94
-pattern_switch_while_playing.state 0x8f004bc1
+pattern_switch_while_playing.state 0xd6865960
 song_chain_two_banks 0x3f26c156 49
-song_chain_two_banks.state 0x31e550ee
+song_chain_two_banks.state 0xe2898877
 glo_mute_and_unmute 0x9b0e2f45 48
 glo_mute_and_unmute.state 0x804d8053
 follow_step_melody_third 0x4ac5f28d 64
-follow_step_melody_third.state 0xf3521ae7
+follow_step_melody_third.state 0x11300b0c
 seed_back_markov_turing 0x1fa4908c 162
-seed_back_markov_turing.state 0xee93abb6
+seed_back_markov_turing.state 0x46d81c0d
 seed_none_markov_turing 0x0ae946a9 79
-seed_none_markov_turing.state 0xc181ae9c
+seed_none_markov_turing.state 0xe9f34420
 replay_markov 0xeb0b606f 46
-replay_markov.state 0x1e5e8c3d
+replay_markov.state 0x3454e152
 grids 0x8c730f90 44
 grids.state 0x786f6dc2
 grids_x48_y228_dens80_chaos40_drop_human 0x1a6d42c5 234
@@ -89,19 +89,19 @@ poly_div_4_3_5_7_span2_human40.state 0x4501edc9
 evolve_poly_every1_amount100_ab 0x4c9a2fec 128
 evolve_poly_every1_amount100_ab.state 0x67bb9c50
 branch_markov_coin50_to_step_track 0x4b0f854b 89
-branch_markov_coin50_to_step_track.state 0x5fa91034
+branch_markov_coin50_to_step_track.state 0xf41c816b
 branch_euclid_toggle80_to_turing 0x715af46f 104
 branch_euclid_toggle80_to_turing.state 0x1940e9c3
 branch_bounce_latch60_to_euclid 0x981c3d87 63
 branch_bounce_latch60_to_euclid.state 0xd716e9b6
 logic_markov_and_euclid 0xf5e95311 38
-logic_markov_and_euclid.state 0x1c9e487f
+logic_markov_and_euclid.state 0x209f37b4
 logic_markov_or_euclid 0xe463fcb7 67
-logic_markov_or_euclid.state 0x0d6cbaa9
+logic_markov_or_euclid.state 0xa8b23562
 logic_markov_xor_euclid 0x58040c6f 49
-logic_markov_xor_euclid.state 0x1c1d7218
+logic_markov_xor_euclid.state 0xb1a4e6f3
 logic_markov_not_euclid 0xbc571289 47
-logic_markov_not_euclid.state 0x1663f9a6
+logic_markov_not_euclid.state 0xcfd99bcd
 logic_turing_and_higher_track 0x247725de 24
 logic_turing_and_higher_track.state 0x625dbed8
 cond_2of4_form_ab_grids_notfirst_not 0x05eeb8e8 164
@@ -137,7 +137,7 @@ chord.state 0x1c0abc4e
 chord_walk_half_beat_dia7 0xb05c1f59 128
 chord_walk_half_beat_dia7.state 0xe132a21a
 chord_link_turing_markov 0x98580dcf 159
-chord_link_turing_markov.state 0x59a8e3a6
+chord_link_turing_markov.state 0x829d11e9
 key_e_minor 0xe9929d44 334
 key_e_minor.state 0x9ceee9ff
 answer_heard_fade3 0x712e32b2 12
@@ -159,19 +159,19 @@ seed_euclid_t1.state 0xe6573631
 seed_euclid_t1_keep_rhythm 0xa816354d 48
 seed_euclid_t1_keep_rhythm.state 0x24be52ce
 seed_markov_t1_leap0 0x50f767a2 49
-seed_markov_t1_leap0.state 0xc46a4436
+seed_markov_t1_leap0.state 0xd6939bfa
 seed_markov_t1_leap50_keep_rhythm 0x67cf8e77 48
-seed_markov_t1_leap50_keep_rhythm.state 0x3e4b6405
+seed_markov_t1_leap50_keep_rhythm.state 0x53df17b9
 seed_markov_t1_leap50_keep_pitch 0x460df5b1 50
-seed_markov_t1_leap50_keep_pitch.state 0xa31c7fea
+seed_markov_t1_leap50_keep_pitch.state 0x0f7f7e68
 seed_morph_t1_a 0x28f38f45 48
-seed_morph_t1_a.state 0x399ae1c1
+seed_morph_t1_a.state 0xc93dc221
 seed_morph_t1_b_keep_rhythm 0x8caf586e 48
-seed_morph_t1_b_keep_rhythm.state 0xea1d035b
+seed_morph_t1_b_keep_rhythm.state 0x51cc6d96
 seed_turing_t1_prob50_gravity100 0x28f38f45 48
 seed_turing_t1_prob50_gravity100.state 0x4cf13a89
 seed_markov_t1_leap100_gravity100 0x28f38f45 48
-seed_markov_t1_leap100_gravity100.state 0x6301df96
+seed_markov_t1_leap100_gravity100.state 0xffcae5f6
 seed_morph_t1_b_gravity100 0x28f38f45 48
-seed_morph_t1_b_gravity100.state 0xcd399ffa
+seed_morph_t1_b_gravity100.state 0x9f464ada
 saved_block 0x46d772b4 906
