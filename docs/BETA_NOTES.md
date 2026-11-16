@@ -7,6 +7,9 @@ release it becomes the start of docs/RELEASE_X.Y.md, then this file starts again
 Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues> (the firmware version, the steps,
 what you expected and what happened).
 
+## New in 3.6-beta9
+- MARKOV and MORPH: turn LOCK up from 0 while playing and the pass you just heard loops at once (in beta8 they played on fresh for two passes, then looped the second).
+
 ## New in 3.6-beta8
 - Microtonal scales and your own Scala tunings now play with QNT OFF too. A scale of up to 12 degrees an octave (the maqamat RAST, BAYATI, HIJAZ, SABA, HUSAYN, SIKAH, the just and meantone scales, the Japanese pentatonics) keeps the keyboard a piano's: every key plays its own note, and the keys nearest the scale's degrees take its tuning. RAST on C: E and B play half flat, C# is an ordinary C#, so you play a maqam as you would on a piano and can still reach every note off it. A bigger tuning (24EDO, 31EDO, a large Scala file) plays every degree in a row, one a key and one a MIDI note. They used to fall back to ordinary semitones: a project saved with a microtonal scale and QNT OFF now plays in its tuning.
 
@@ -20,7 +23,6 @@ what you expected and what happened).
 - MIDI OUT's sheet, SECTION PC (one row a track, OFF by default): when the CHAIN goes to section A, B or C, the track sends Program Change 0, 1 or 2 on its MIDI OUT channel, before that bar's notes. A project with SECTION PC on loads on older firmware with it off.
 - MODS: a STEP track's GATE and NOTE sources now follow its pattern, as a generator track's do.
 - MENU > NOTE LIGHTS: the keys light up while a sequence plays their notes, for as long as each note lasts. OFF (the default) as before; STEP lights a STEP pattern's notes; ALL the generators' too.
-- MARKOV and MORPH at LOCK 0 now remember the pass they just played: turning LOCK up loops what you just heard (it looped an older phrase before).
 - PRESETS: LIST now has the engines after the categories (FM6, ORACLE, TRIO, PHYS, DRUM), each listing only that engine's sounds, its user presets included: an ORACLE pad is easy to find. HOME's PRESETS knob and GLO + PRESETS follow the list you pick, as before.
 - EDIT > VOICE starts with the track's Sound (SOUND KUGO HARP >): KNOB 2 steps through the sounds, OCT+ opens PRESETS right there; OK keeps the sound, BACK puts the old one back, and both bring you back to VOICE instead of HOME.
 
