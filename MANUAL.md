@@ -309,7 +309,8 @@ Hold **OCT+** on MIXER for its sheet: **Mutes**, when the mute keys take effect 
 the same setting as MENU > MUTES.
 
 **Lists** (the HOME menu, SCL, VOICE and the sheets): KNOB 1 picks the row, KNOB 2 changes its
-value.
+value. A row with `>` opens a page of its own on OCT+ and comes back to the list: SCL's Scale (SCALES), VOICE's Sound
+(PRESETS).
 
 **The look.** Tessera draws every screen in one ink on black, with a 5 x 7 pixel font: the selected item is
 inverted, and quieter things are drawn in a dimmer ink. MENU > COLOR picks the ink: **YELLOW** (the default),
@@ -469,9 +470,14 @@ one and a half times): one ORACLE track of pads or chords is fine; with two busy
 
 <p align="center"><img src="assets/gallery/oracle_osc.png" alt="ORACLE OSC A page" width="240"> <img src="assets/gallery/oracle_filter.png" alt="ORACLE FILTER page" width="240"> <img src="assets/gallery/oracle_env.png" alt="ORACLE AMP ENV page" width="240"></p>
 
-**PRESETS** (SAVE) browses the sounds. Its LIST knob picks ALL, the favourites, RECENT or a category, and it starts
-on ALL at power-on. The PRESETS knob browses the same list on HOME and on PRESETS; on any other page, hold GLO and
-turn it.
+**PRESETS** (SAVE) browses the sounds. Its LIST knob picks ALL, the favourites, RECENT, a category, or (after the
+categories) one engine: FM6, ORACLE, TRIO, PHYS or DRUM, each with only its own sounds, factory and user, so an
+ORACLE pad is ORACLE, then a turn of PRESETS. It starts on ALL at power-on. The PRESETS knob browses the same list on
+HOME and on PRESETS; on any other page, hold GLO and turn it.
+
+**EDIT > VOICE** starts with the track's **Sound** (`SOUND  KUGO HARP >`): KNOB 2 there steps through the PRESETS
+list as the PRESETS knob does, and **OCT+** opens PRESETS in place. OK (OCT+) there keeps the sound you picked, BACK
+(OCT-) puts back the one you had; either way you are back on VOICE's list, not on HOME.
 
 ### How many voices at once
 

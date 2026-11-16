@@ -21,6 +21,8 @@ what you expected and what happened).
 - MODS: a STEP track's GATE and NOTE sources now follow its pattern, as a generator track's do.
 - MENU > NOTE LIGHTS: the keys light up while a sequence plays their notes, for as long as each note lasts. OFF (the default) as before; STEP lights a STEP pattern's notes; ALL the generators' too.
 - MARKOV and MORPH at LOCK 0 now remember the pass they just played: turning LOCK up loops what you just heard (it looped an older phrase before).
+- PRESETS: LIST now has the engines after the categories (FM6, ORACLE, TRIO, PHYS, DRUM), each listing only that engine's sounds, its user presets included: an ORACLE pad is easy to find. HOME's PRESETS knob and GLO + PRESETS follow the list you pick, as before.
+- EDIT > VOICE starts with the track's Sound (SOUND KUGO HARP >): KNOB 2 steps through the sounds, OCT+ opens PRESETS right there; OK keeps the sound, BACK puts the old one back, and both bring you back to VOICE instead of HOME.
 
 ## New in 3.6-beta7
 - QNT link (SCL, the row after QNT): LINKED keeps one QNT for every track, as before; OWN gives each track its own QNT and MPC degree, so one track can take MPC pads while others follow the chords (CHRD) or HARM (#755). A project saved with OWN loads on older firmware with each track's QNT as saved.
