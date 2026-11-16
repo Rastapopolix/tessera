@@ -286,7 +286,8 @@ static uint32_t land_sig(void)
     anim = land_toff() < 120 || fm1_ms - land.st0 < LAND_STAR_MS || (land.mist && land.mist < 16u);
     return (land_moving() || anim ? fm1_ms / 40u + 1u : 0u) ^ land_stars() << 20 ^ land_cover() << 26 ^
            (uint32_t)(land.cdr / 700) << 8 ^ (uint32_t)(land.mx >> 4) << 12 ^ (uint32_t)(land.my >> 4) << 19 ^
-           (uint32_t)land.ph >> 11 << 24 ^ land_dusk() << 16 ^ land.seed ^ land.sec << 28 ^ (land.mist ? fm1_ms / 350u : 0u) << 5;
+           (uint32_t)land.ph >> 11 << 24 ^ land_dusk() << 16 ^ land.seed ^ land.sec << 28 ^ (land.mist ? fm1_ms / 350u : 0u) << 5 ^
+           (song.playing ? fm1_ms / 80u : 0u) << 2;         /* (playing: the moon's reflection shimmers, between notes too) */
 }
 
 static void land_ring(int32_t x, int32_t y, int32_t rx, int32_t ry, int dashed, uint16_t c)
@@ -380,7 +381,7 @@ static void mo_pic_land(void)
         land_temple(land_gate_x() + 120 - toff, hills);
     mo_hl(0, LAND_H, 120, water);
     for (y = LAND_H + 3, i = 0; my - 5 < land_hill(mx) && y < MO_PY1 - 2 && i < 6u - land.mist * 6u / 16u; y += 4, i++) {   /* the moon in the water (it shivers under rings) */
-        int32_t w = 7 - (int32_t)i, sh = land_moving() ? (int32_t)((fm1_ms / 80u + i) % 3u) - 1 : 0;
+        int32_t w = 7 - (int32_t)i, sh = land_moving() || song.playing ? (int32_t)((fm1_ms / 80u + i) % 3u) - 1 : 0;   /* (still when stopped) */
         if (w < 2) break;
         for (x = 0; x < w; x += 2) mo_px(mx - w / 2 + x + sh, y, deep);
     }
