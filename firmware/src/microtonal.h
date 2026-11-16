@@ -17,9 +17,10 @@ static const micro_scale_t *micro_scale(const track_t *t)
     if (uscale_on()) return 0;                      /* (a USER scale: 12 notes, uscale.h) */
     return s >= (int32_t)SCALE_LEGACY && s < (int32_t)SCALE_TOTAL ? &MICRO_SCALE[s - SCALE_LEGACY] : 0;
 }
+/* QNT OFF too: a microtonal scale or tuning has no notes off it, so OFF plays every degree in a row, as ALL does */
 static int micro_active(const track_t *t)
 {
-    return t->p[P_QUANT] != Q_OFF && t->eng_req != 10u && micro_scale(t) != 0;
+    return t->eng_req != 10u && micro_scale(t) != 0;
 }
 static int32_t micro_floor(int32_t n, int32_t d)
 {

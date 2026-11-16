@@ -283,7 +283,7 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     T_(P_SCALE, "SCALE", "The scale the keys and the generators play in. SCALES' USER family has four of "
                          "your own, USER1 to USER4, made on the keys."),
     T_(P_QUANT, "QUANTIZE",
-        "How the keys meet the scale: OFF plays every key, SNAP moves a note into the scale, WHITE puts the "
+        "How the keys meet the scale: OFF plays every key (a microtonal scale or tuning: every degree, a key each), SNAP moves a note into the scale, WHITE puts the "
         "scale on the white keys, ALL and MPC lay it out over the keys or MPC pads; CHRD snaps the keys, MIDI and "
         "the generators to the nearest note of the chord a CHORD track plays (no CHORD track: as SNAP). HARM "
         "counts instead: each note of the scale up plays the next note of that chord up, the white keys from C4 "
