@@ -67,7 +67,7 @@ static struct {
     uint16_t ph;                                        /* the moon's phase: the PIECE's SHAPE now (Q15) */
     int8_t wind;                                        /* -3 .. 3: ENERGY falling .. rising (the clouds' speed) */
     uint8_t sec, from, cpos, mist, wt;                  /* CHAIN's section, the one travelled from, its place; mist 0..16 */
-    uint8_t gx, gp;                                     /* A's torii: its left column, its terrace's height */
+    uint8_t gx, gp, wax;                                /* A's torii: its left column, its terrace's height; the moon waxing */
 } land;
 
 /* the moon: still while LENGTH is FREE; a planned piece's time played moves it on an arc, left to right (planner.c's
@@ -89,6 +89,7 @@ static void land_moon(uint32_t dt)
     land.lp = p;                                        /* (the phase: the SHAPE here, full at its peak) */
     left = (uint32_t)tessera_piece_shape(p);
     land.ph = (uint16_t)((int32_t)left < 0 ? 0 : left > 32767u ? 32767u : left);
+    land.wax = p + 656u < 65536u && (int32_t)tessera_piece_shape(p + 656u) > (int32_t)left;   /* (the SHAPE rising) */
     tx = (LAND_ML + (int32_t)(p * (uint32_t)(LAND_MR - LAND_ML) >> 16)) * 16;
     ty = (LAND_MB * 16 - (LAND_MB - LAND_MT) * 16 * mo_sin((int32_t)(p >> 9)) / 127);
     if (song.playing && plan.ending) ty = (LAND_H + 8) * 16;
@@ -285,7 +286,8 @@ static uint32_t land_sig(void)
     anim = land_toff() < 120 || fm1_ms - land.st0 < LAND_STAR_MS || (land.mist && land.mist < 16u);
     return (land_moving() || anim ? fm1_ms / 40u + 1u : 0u) ^ land_stars() << 20 ^ land_cover() << 26 ^
            (uint32_t)(land.cdr / 700) << 8 ^ (uint32_t)(land.mx >> 4) << 12 ^ (uint32_t)(land.my >> 4) << 19 ^
-           (uint32_t)land.ph >> 11 << 24 ^ land_dusk() << 16 ^ land.seed ^ land.sec << 28 ^ (land.mist ? fm1_ms / 350u : 0u) << 5;
+           (uint32_t)land.ph >> 11 << 24 ^ land_dusk() << 16 ^ land.seed ^ land.sec << 28 ^ (land.mist ? fm1_ms / 350u : 0u) << 5 ^
+           (song.playing ? fm1_ms / 80u : 0u) << 2;         /* (playing: the moon's reflection shimmers, between notes too) */
 }
 
 static void land_ring(int32_t x, int32_t y, int32_t rx, int32_t ry, int dashed, uint16_t c)
@@ -325,7 +327,7 @@ static void mo_pic_land(void)
     if (ux.light && dusk)                                /* by day the outro: dusk, the sky thicker toward the hills */
         for (y = LAND_TOP; y < LAND_H; y++)
             for (x = 0; x < 120; x++)
-                if ((uint32_t)LAND_BY(x, y) * 2u * 56u * 56u < dusk * (uint32_t)((y - LAND_TOP) * (y - LAND_TOP)))
+                if ((uint32_t)(LAND_BY(x, y) + 1u) * 4u * 56u * 56u < dusk * (uint32_t)((y - LAND_TOP) * (y - LAND_TOP)) * (uint32_t)(y - LAND_TOP) / 56u)
                     mo_px(x, y, ux_mix(T_BG, moon, 45));
     for (i = 0; i < LAND_STARS && !ux.light; i++) {    /* the stars, always in the same places (by day none) */
         s = s * 1103515245u + 12345u;
@@ -343,10 +345,12 @@ static void mo_pic_land(void)
             if (y < land_hill(x)) mo_px(x, y, moon);
         }
     } else {
-        land_disc(mx, my, 5, moon);                     /* a crescent; a PIECE's: as full as its SHAPE here */
+        land_disc(mx, my, 5, moon);                     /* a crescent; a PIECE's: as full as its SHAPE here, waxing as it rises */
         if (!pl_secs()) land_disc(mx + 3, my - 2, 4, MO_BG);
         else if (land.ph < 31784u)
-            land_disc(mx + 2 + (((int32_t)land.ph * 8 + 16384) >> 15), my - ((2 * (32767 - (int32_t)land.ph) + 16384) >> 15), 4, MO_BG);
+            land_disc(mx + (land.wax ? 1 : -1) * (2 + (((int32_t)land.ph * 8 + 16384) >> 15)),   /* (waxing: lit on the left, */
+                      my - ((2 * (32767 - (int32_t)land.ph) + 16384) >> 15), 4, MO_BG);       /* waning: on the right: */
+                                                                                               /* facing into the scene) */
     }
     for (i = 0; i < clouds; i++) {                      /* the clouds: bands of dashes, lower and wider when full */
         int32_t w = 18 + (int32_t)cover + (int32_t)((i * 7u + (land.seed >> 27)) % 9u), cy = LAND_TOP + 6 + (int32_t)(i * 11u % 23u) +
@@ -365,7 +369,7 @@ static void mo_pic_land(void)
         mo_px(x, y0, hills);
         for (y = y0 + 1 + ((x ^ y0) & 1); y < LAND_H; y += 2) mo_px(x, y, hills);   /* (dithered) */
     }
-    if (fm1_ms - land.st0 < LAND_STAR_MS) {             /* the FORM came round: a star across, down to the left */
+    if (!ux.light && fm1_ms - land.st0 < LAND_STAR_MS) {   /* the FORM came round: a star across, down to the left (night) */
         uint32_t a = fm1_ms - land.st0;
         int32_t hx = 96 + (int32_t)(land.seed & 15u) - (int32_t)(a * 46u / LAND_STAR_MS), hy = LAND_TOP + 6 + (int32_t)(a * 18u / LAND_STAR_MS);
         for (i = 5; i >= 1u; i--) mo_px(hx + (int32_t)(i * 5u / 2u), hy - (int32_t)i, i > 2u ? MO_DIM : MO_HOT);
@@ -377,7 +381,7 @@ static void mo_pic_land(void)
         land_temple(land_gate_x() + 120 - toff, hills);
     mo_hl(0, LAND_H, 120, water);
     for (y = LAND_H + 3, i = 0; my - 5 < land_hill(mx) && y < MO_PY1 - 2 && i < 6u - land.mist * 6u / 16u; y += 4, i++) {   /* the moon in the water (it shivers under rings) */
-        int32_t w = 7 - (int32_t)i, sh = land_moving() ? (int32_t)((fm1_ms / 80u + i) % 3u) - 1 : 0;
+        int32_t w = 7 - (int32_t)i, sh = land_moving() || song.playing ? (int32_t)((fm1_ms / 80u + i) % 3u) - 1 : 0;   /* (still when stopped) */
         if (w < 2) break;
         for (x = 0; x < w; x += 2) mo_px(mx - w / 2 + x + sh, y, deep);
     }
@@ -386,7 +390,7 @@ static void mo_pic_land(void)
             int32_t d = y - LAND_H - 1, sh = (int32_t)(fm1_ms / 350u);
             d = 8 - (d < 0 ? -d : d);
             for (x = 0; x < 120 && d > 0; x++)
-                if ((uint32_t)LAND_BY(x + sh + (y & 1) * 2, y) * 40u < land.mist * (uint32_t)d * 3u) mo_px(x, y, MO_DIM);
+                if ((uint32_t)LAND_BY(x + sh + (y & 1) * 2, y) * 32u < land.mist * (uint32_t)d) mo_px(x, y, deep);
         }
     if (land.fish == 1u) {                              /* the fish: out, over and back, nose first */
         uint32_t a = fm1_ms - land.ft0;

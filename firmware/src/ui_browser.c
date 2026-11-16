@@ -15,12 +15,12 @@
 
 static struct { uint32_t top, side, list, foot; } brv;  /* what each part drew */
 
-/* LIST's names on the screen; the categories by CAT_* */
+/* LIST's names on the screen; the categories by CAT_*, the engines as they are named everywhere (FM6, ORACLE) */
 static const char *const BR_CAT[CAT_N] = {"-", "Bass", "Lead", "Pad", "Pluck", "Keys", "Drums", "FX", "Other",
                                           "Organ", "Strings", "Brass", "Wind", "Bells"};
 static const char *browser_list_name(uint32_t m)
 {
-    return m == LM_ALL ? "All" : m == LM_FAV ? "Faves" : m == LM_RECENT ? "Recent" :
+    return m == LM_ALL ? "All" : m == LM_FAV ? "Faves" : m == LM_RECENT ? "Recent" : m >= LM_ENG ? list_name(m) :
            BR_CAT[m - LM_CAT < NELEM(CAT_ORDER) ? CAT_ORDER[m - LM_CAT] : CAT_OTHER];
 }
 static int browser_shown_fav(void)                      /* the sound shown is a favourite */
@@ -60,7 +60,8 @@ static void browser_top(uint32_t total)
     cv_blit(0, 0);
 }
 
-/* LIST: ALL, FAV, RECENT (mid), the categories (secondary), the one shown lifted with the track's mark */
+/* LIST: ALL, FAV, RECENT (mid), the categories (secondary), the engines (mid), the one shown lifted with the track's
+ * mark */
 static void browser_side(void)
 {
     uint32_t m = list_mode(), first, r, sig = m * 7u + ux.gen * 977u + ux.pal * 31u + song.sel;
@@ -73,7 +74,7 @@ static void browser_side(void)
         uint32_t i = first + r;
         int32_t y = 3 + (int32_t)r * 16, x = 9;
         int sel = i == m;
-        uint16_t bg = sel ? T_LIFT : T_BG, c = sel ? T_TEXT : i < LM_CAT ? T_MID : T_SEC;
+        uint16_t bg = sel ? T_LIFT : T_BG, c = sel ? T_TEXT : i < LM_CAT || i >= LM_ENG ? T_MID : T_SEC;
         if (sel) {
             cv_rect(0, y, 66, 15, T_LIFT);
             cv_rect(0, y, 3, 15, T_THEME);
@@ -182,7 +183,7 @@ static void browser_draw(void)
 }
 
 /* OCT+ keeps the sound shown (a pending one loads now), OCT- goes back to the one from before the browser (the loads
- * since are one undo level: ui.c load_begin); either way back to Stage */
+ * since are one undo level: ui.c load_begin); either way back to Stage, or to the list whose Sound row opened it */
 static void browser_key(int keep)
 {
     if (keep) {
@@ -191,6 +192,11 @@ static void browser_key(int keep)
         brw.on = 0;
         if (browse_loads != browse_mark)
             undo_step(0);
+    }
+    if (drill_to == 3u && drill_pg < NPAGES) {
+        ui.page = drill_pg;
+        page_entered();                                 /* (drill_to 0 again) */
+        return;
     }
     go_home();
 }

@@ -167,10 +167,19 @@ static uint32_t voice_budget_max(void)
     return (uint32_t)settings_budget;
 #endif
 }
+static uint8_t vtight;                                  /* voice_ceiling_early: admission held at what sounds */
+static uint32_t voices_busy(void);
+static uint32_t voice_ceiling_floor(void);
 static uint32_t voice_budget(void)
 {
     uint32_t b = voice_budget_max();
-    return vceil < b ? vceil : b;
+    b = vceil < b ? vceil : b;
+    if (vtight) {                                       /* a new voice replaces one instead of adding load */
+        uint32_t u = voices_busy(), f = voice_ceiling_floor();
+        u = u > f ? u : f;
+        b = u < b ? u : b;
+    }
+    return b;
 }
 
 static uint32_t voices_busy(void)                       /* budget units of all parts' sounding voices (not fading) */
@@ -215,6 +224,35 @@ static void voice_ceiling_tick(uint32_t load_q8)
     vceil_wait = 0;
     if (++vceil >= voice_budget_max())
         vceil = 0xFFu;
+}
+
+/* The early ceiling (after JIANT's load governor): act before a shed, whose fade (or the late half before it) is the
+ * click. Each half (audio.c shed_check, its load in %): over 70 % holds admission at the units sounding (never under
+ * half of BUDGET) until a half under 65 %; three halves in a row over 75 % take a unit off the ceiling and restart its
+ * recovery (voice_ceiling_tick). Test benches with fixed voices are left alone */
+#define VTIGHT_ON 70u
+#define VTIGHT_OFF 65u
+#define VHOT 75u
+#define VHOT_HALVES 3u
+static uint8_t vhot_n;
+static void voice_ceiling_early(uint32_t pct)
+{
+#if MELODEE_AUDIO_BENCH
+    if (audio_bench_active())
+        return;
+#endif
+    vtight = pct > VTIGHT_ON ? 1u : pct < VTIGHT_OFF ? 0u : vtight;
+    if (pct <= VHOT) {
+        vhot_n = 0;
+        return;
+    }
+    if (++vhot_n < VHOT_HALVES)
+        return;
+    vhot_n = 0;
+    uint32_t c = voice_budget(), u = voices_busy(), f = voice_ceiling_floor();
+    c = u < c ? u : c;
+    vceil = (uint8_t)(c > f + 1u ? c - 1u : f);
+    vceil_wait = 0;
 }
 
 static uint32_t lowest_held(const track_t *t)           /* index of the lowest held note (the bass), NVOICE = none */
@@ -600,6 +638,7 @@ static void midi_out_flush(uint32_t k);
 
 static int tess_sound_off(const track_t *t);           /* tessera.c: SOUND OFF, MIDI OUT and the mods only */
 static int entries_note(const track_t *t, uint32_t note);   /* tessera.c entries.c: 0 while Entries has it out */
+static uint32_t entries_vel(const track_t *t, uint32_t vel);   /* entries.c: MIDI OUT's velocity, faded with a FADE */
 static void land_note(const track_t *t, uint32_t note, uint32_t vel);   /* land_feed.c: LANDSCAPE's drops */
 static void trk_note_on(track_t *t,uint32_t note,uint32_t vel)
 {
@@ -607,7 +646,7 @@ static void trk_note_on(track_t *t,uint32_t note,uint32_t vel)
         return;
     vel = cord_vel((uint32_t)(t - trk), vel);          /* (VELO as its mods move it: cord.c) */
     land_note(t, note, vel);
-    midi_out_on(t, note, vel);
+    midi_out_on(t, note, entries_vel(t, vel));         /* (only MIDI OUT's: the voice's level fades in the mix) */
     if (!tess_sound_off(t))
         trk_note_on_work(t,note,vel);
 }
@@ -782,17 +821,22 @@ static void engine_batch_kernel(const void *data,int32_t *pcm)
     for(uint32_t k=0;k<8u;k++)params[P_E0+k]=j->engine_params[k];
     for(uint32_t k=0;k<DV_NLANE;k++)params[P_LN0+k]=j->lane_params[k];
     if(j->engine==&ENG_DRUM){dr_scratch_t scratch;drum_render_into(j->track,j->voice,pcm,j->n,&j->modulation,&scratch,params);}
+#if TRIO_ON
+    else if(j->engine==&ENG_TRIO)trio_render_p(params,j->voice,pcm,j->n,&j->modulation);
+#endif
     else j->engine->render(j->track,j->voice,pcm,j->n,&j->modulation);
 }
 
 static inline void engine_join(void) {}
 static void engine_render(track_t *t,voice_t *v,const engine_t *e,int32_t *out,uint32_t n,const vmod_t *m)
 {
-    if(audio_batch_active && e==&ENG_DRUM){
+    /* DRUM and TRIO voices go to the batch (CPU1 when it is online): their state is the voice's own, the settings a
+     * copy taken here */
+    if(audio_batch_active && (e==&ENG_DRUM || (TRIO_ON && e==&ENG_TRIO))){
         engine_batch_t j;j.track=t;j.voice=v;j.engine=e;j.modulation=*m;j.n=n;
         for(uint32_t k=0;k<8u;k++)j.engine_params[k]=t->p[P_E0+k];
         for(uint32_t k=0;k<DV_NLANE;k++)j.lane_params[k]=t->p[P_LN0+k];
-        audio_batch_push(engine_batch_kernel,&j,sizeof j,out,n,drum_is909(t)?AP_909:AP_808);return;
+        audio_batch_push(engine_batch_kernel,&j,sizeof j,out,n,e!=&ENG_DRUM?AP_TRIO:drum_is909(t)?AP_909:AP_808);return;
     }
     e->render(t,v,out,n,m);
 }

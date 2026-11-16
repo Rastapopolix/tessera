@@ -138,6 +138,14 @@ static void text_idle_put(uint32_t bit, int on)
     v = on ? v | bit : v & ~bit;
     TEXT_IDLE_SAVED = (uint8_t)(v ? TEXT_IDLE_TAG | v : 0u);
 }
+/* MENU > NOTE LIGHTS: the keys light while the selected track's sequence plays their notes, for the note's gate (ui_input.c
+ * play_key_led; seq.c seq_notes). OFF (the default): only keys pressed or held by MIDI; STEP: a STEP pattern's notes;
+ * ALL: the generators' too. favorites.factory[8][31] tagged STEP or ALL, any other byte OFF (row 8 byte 30: TEXT / IDLE) */
+#define NLIGHT_SAVED (favorites.factory[8][31])
+#define NLIGHT_STEP_TAG 0xBCu
+#define NLIGHT_ALL_TAG 0xBDu
+enum { NLIGHT_OFF, NLIGHT_STEP, NLIGHT_ALL };
+#define NLIGHT_MODE (NLIGHT_SAVED == NLIGHT_STEP_TAG ? NLIGHT_STEP : NLIGHT_SAVED == NLIGHT_ALL_TAG ? NLIGHT_ALL : NLIGHT_OFF)
 
 static uint8_t sync_reload;                  /* engine / preset / project / user preset loaded: editor RELOAD push */
 
@@ -505,7 +513,8 @@ static void seq_midi_reset(void)                    /* a new page/track ends MID
 }
 static void undo_seal(void);
 /* a page opened from FM6's map (1) or from MATRIX (2), drill_pg: OCT- goes back there (ui_input.c; tessera-notes
- * oct-taps.md); any other way to a page forgets it */
+ * oct-taps.md); PRESETS opened from VOICE's Sound row (3), drill_pg that list: OCT+ / OCT- go back to it instead of
+ * Stage (ui_browser.c browser_key); any other way to a page forgets it */
 static uint8_t drill_to, drill_pg;
 static void page_entered(void)
 {

@@ -262,6 +262,13 @@ static int sp_knob(uint32_t k, char *b, uint32_t size)
         col_style = cs;
         col = lcap[k & 3u].on;
     }
+    if (!e && (k & 3u) == 1u && list_on()) {            /* a list's row without a parameter (VOICE's Sound): its value
+                                                         * as the row draws it, not the page's own column */
+        uint16_t vc;
+        char lb[16];
+        list_cap(list_at(list_on(), lst.row), lb, v, &vc);
+        col = 0;
+    }
     if (unused && (!col || list_on())) return 0;                       /* (a knob the help calls unused but the page draws, as FM6
                                                          * STORE's SEND and INIT: said as drawn) */
     if ((!name || unused) && col) name = lcap[k & 3u].label;

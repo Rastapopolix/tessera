@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 /* List pages (docs/design README "Pages: lists or knobs", mock/r6_pages SCL): the pages one sets and leaves as a list,
- * a row a setting: KNOB 1 the row, KNOB 2 its value, OCT+ a list value's whole list (SCL's Scale: the SCALES page),
- * OCT- nothing (HOME: Stage). Only what has more than four settings (Kerem, 2026-10-11: four or fewer are a page's own four knobs;
+ * a row a setting: KNOB 1 the row, KNOB 2 its value, OCT+ a list value's whole list (SCL's Scale: the SCALES page;
+ * VOICE's Sound: SAVE > PRESETS, the browser, back here on OCT+ / OCT-), OCT- nothing (HOME: Stage). Only what has
+ * more than four settings (Kerem, 2026-10-11: four or fewer are a page's own four knobs;
  * TEMPO, GLOBAL, SYSTEM stay knobs too: BPM and TUNE are turned while playing). A list may gather a few
  * pages (VOICE 1-3, FM6's LFO and controller pages): the
  * others leave the SELECT round (list_gone). The rows' labels and values are the pages' own (draw_column captures
@@ -15,8 +16,11 @@ static const list_t LISTS[] = {
                             {"SCL", 1}, {"KEY", 1}, {"KEY", 2}}},
                                                         /* (KEY: KEY LINK, QNT LINK after QNT, the CHAIN's KEY B / C;
                                                          * MPC: QNT MPC's pad degree) */
-    {"VOICE", LP_NONE, 9, {{"VOICE", 0}, {"VOICE", 1}, {"VOICE", 2}, {"VOICE", 3}, {"VOICE 2", 0}, {"VOICE 2", 1},
-                           {"VOICE 2", 2}, {"VOICE 2", 3}, {"VOICE 3", 0}}},
+    {"VOICE", LP_NONE, 10, {{"PRESETS", 1}, {"VOICE", 0}, {"VOICE", 1}, {"VOICE", 2}, {"VOICE", 3}, {"VOICE 2", 0},
+                            {"VOICE 2", 1}, {"VOICE 2", 2}, {"VOICE 2", 3}, {"VOICE 3", 0}}},
+                                                        /* (PRESETS: the track's sound, KNOB 2 the PRESETS knob, OCT+
+                                                         * the browser; VOICE is the one list every engine has, and
+                                                         * the one about how the track's sound plays: 2026-11-17) */
     {"FM LFO", LP_NONE, 7, {{"FM LFO", 0}, {"FM LFO", 1}, {"FM LFO", 2}, {"FM LFO", 3}, {"FM LFO 2", 0}, {"FM LFO 2", 1},
                             {"FM LFO 2", 2}}},
     {"FM BEND", LP_NONE, 16, {{"FM BEND", 0}, {"FM BEND", 1}, {"FM BEND", 2}, {"FM BEND", 3}, {"FM PORTA", 0},
@@ -46,6 +50,8 @@ static const list_t *list_of(uint32_t page)             /* the list page i shows
             return &LISTS[l];
     return 0;
 }
+/* a row that opens a page of its own on OCT+ (">"), the page staying where it was: SCALES, PRESETS */
+static int list_picker(const char *t) { return str_eq(t, "SCALES") || str_eq(t, "PRESETS"); }
 /* page i gathered into another's list: not in the SELECT round (ui.c page_visible) */
 static int list_gone(uint32_t i)
 {
@@ -53,7 +59,7 @@ static int list_gone(uint32_t i)
     for (l = 0; l < NELEM(LISTS); l++)
         for (r = 0; r < LISTS[l].n; r++)
             if (!str_eq(LISTS[l].row[r].page, LISTS[l].title) && str_eq(LISTS[l].row[r].page, PAGES[i].title) &&
-                !str_eq(PAGES[i].title, "SCALES"))
+                !list_picker(PAGES[i].title))
                 return 1;
     return 0;
 }
@@ -102,15 +108,28 @@ static void list_words(char *d, const char *label, uint32_t n)
         }
     menu_words(d, label, n);
 }
-/* row r's label, value and unit as its page draws them (draw_column, CS_CAPTURE) */
+/* row r's label, value and unit as its page draws them (draw_column, CS_CAPTURE); PRESETS (the browser, no columns):
+ * "Sound" and the sound shown (a fast turn's pending one, as HOME; "--" one the list does not have) */
 static void list_cap(const lrow_t *rw, char *label, char *val, uint16_t *vc)
 {
-    uint32_t p = page_titled(rw->page), c = rw->slot & 3u;
+    uint32_t p = page_titled(rw->page), c = rw->slot & 3u, k;
     uint8_t pg = ui.page, cs = col_style;
+    char tag[6], nm[16];
     label[0] = val[0] = 0;
     *vc = T_TEXT;
     if (p >= NPAGES)
         return;
+    if (PAGES[p].graph == GR_BROWSE) {
+        str_cpy(label, "Sound", 12);
+        p = browse_shown(&k);
+        if (!entry_ok(p, k)) {                          /* (a retired engine's: none of the list's) */
+            str_cpy(val, "--", 16);
+            return;
+        }
+        entry_label(p, k, tag, nm);
+        str_cpy(val, nm[0] ? nm : tag, 16);
+        return;
+    }
     memset(lcap, 0, sizeof lcap);
     ui.page = (uint8_t)p;
     col_style = CS_CAPTURE;
@@ -168,7 +187,8 @@ static void list_knob(uint32_t k, int32_t s)
     edit_param(list_at(l, lst.row)->slot, s);
     ui.page = pg;
 }
-/* OCT+ on a row: SCL's Scale: the SCALES page; a list value: its whole list (ui_popup.c) */
+/* OCT+ on a row: SCL's Scale: the SCALES page; VOICE's Sound: PRESETS, OCT+ / OCT- there back to this list (drill_to
+ * 3, ui_browser.c browser_key); a list value: its whole list (ui_popup.c) */
 static void list_enter(void)
 {
     const list_t *l = list_on();
@@ -179,10 +199,14 @@ static void list_enter(void)
     if (!l)
         return;
     rw = list_at(l, lst.row);
-    if (str_eq(rw->page, "SCALES")) {
-        p = page_titled("SCALES");
-        ui.page = (uint8_t)p;
+    if (list_picker(rw->page)) {
+        uint8_t from = ui.page;
+        ui.page = (uint8_t)page_titled(rw->page);
         page_entered();
+        if (cur_page()->graph == GR_BROWSE) {
+            drill_to = 3;
+            drill_pg = from;
+        }
         return;
     }
     p = page_titled(rw->page);
@@ -266,7 +290,7 @@ static void list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis)
 static int list_text(uint32_t r, char *lb, char *v, uint16_t *vc)
 {
     list_cap(list_at(list_drawn, r), lb, v, vc);
-    return str_eq(list_at(list_drawn, r)->page, "SCALES");   /* (OCT+: its list) */
+    return list_picker(list_at(list_drawn, r)->page);   /* (OCT+: its page) */
 }
 static void list_draw(void)
 {

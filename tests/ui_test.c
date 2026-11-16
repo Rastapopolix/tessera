@@ -3221,6 +3221,34 @@ static int test_browser(void)
         ok = total > 0u;
     }
     bad += check("BROWSE: every sound is in exactly one category (their lists add up to ALL)", sum == all && ok);
+    set_engine_of(TSEL, 6);
+    up_store(6, "MY TRIO");                                 /* (a general user preset: TRIO's, the track's engine) */
+    for (i = 0, sum = 0, ok = 1; i < NENG_SHOWN; i++) {
+        e = eng_vis(i);
+        list_set(LM_ENG + i);
+        preset_pos(&total);
+        sum += total;
+        for (k = 0, want = 0; k < total; k++) {
+            src = preset_at(k, &c);
+            ok &= src_engine(src, c) == e;
+            want += src == e;
+        }
+        ok &= want == ENGINES[e]->npresets && str_eq(list_name(LM_ENG + i), ENGINES[e]->name);
+    }
+    list_set(LM_ENG + eng_rank(6));
+    preset_pos(&total);
+    for (k = 0, c = 0; k < total; k++)
+        c |= preset_at(k, &first) == USER_GENERAL && first == 6u;
+    bad += check("BROWSE: an engine's LIST has its sounds alone, every factory one, its user presets too; together ALL",
+                 ok && sum == all + 1u && c);
+    up_put(6, 0);
+    list_set(LM_ENG + eng_rank(ENGI_ORACLE));
+    set_engine_of(&trk[1], ENGI_DRUM);
+    list_trk[1] = 0;
+    bad += check("LIST: a track without its own after an engine's was picked browses its own engine's (RAM only)",
+                 trk_list(1) == LM_ENG + eng_rank(ENGI_DRUM) && list_eng && !list_lcat && !favorites.filter);
+    list_set(LM_ALL);
+    bad += check("LIST: ALL again forgets the engine", !list_eng && trk_list(0) == LM_ALL);
     set_engine_of(TSEL, 6);                                /* (a general sound) */
     up_store(5, "SUB BASS 2");
     list_set(LM_CAT);                                      /* BASS */
@@ -3234,8 +3262,9 @@ static int test_browser(void)
     list_set(LM_ALL);
     for (i = 0; i < LM_N + 2u; i++)
         turn(EN_K1, 1);
-    bad += check("LIST (KNOB 1): ALL FAV RECENT, the categories, stopping at OTHER", list_mode() == LM_N - 1u &&
-                 str_eq(list_name(list_mode()), "OTHER"));
+    bad += check("LIST (KNOB 1): ALL FAV RECENT, the categories, the engines, stopping at the last (DRUM)",
+                 list_mode() == LM_N - 1u && str_eq(list_name(list_mode()), "DRUM") &&
+                 str_eq(list_name(LM_ENG - 1u), "OTHER") && str_eq(list_name(LM_ENG), "FM6"));
     for (i = 0; i < LM_N; i++)
         turn(EN_K1, -1);
     turn(EN_K1, 1);
@@ -3300,6 +3329,42 @@ static int test_browser(void)
     turn(EN_K2, 1);
     press(B_OCTUP);
     bad += check("BROWSER: OCT+ keeps the sound, to Stage", ui.home && list_cur(&total) == first + 1u);
+
+    go_title("VOICE");                                   /* VOICE's Sound row: PRESETS in place, back to VOICE */
+    frame();
+    {
+        char lb[16], v[16], tag[6], nm[16];
+        uint16_t vc;
+        uint32_t voice = ui.page;
+        lst.row = 0;
+        frame();
+        list_cap(list_at(list_on(), 0), lb, v, &vc);
+        cur_entry(&src, &k);
+        entry_label(src, k, tag, nm);
+        bad += check("VOICE: its first row is the track's sound, with a '>' (PRESETS behind it)",
+                     list_on() && str_eq(lb, "Sound") && str_eq(v, nm) && list_text(0, lb, v, &vc));
+        first = list_cur(&total);
+        press(B_OCTUP);
+        ok = !ui.home && cur_page()->graph == GR_BROWSE && drill_to == 3u;
+        turn(EN_K2, 1);
+        turn(EN_K2, 1);
+        ok &= list_cur(&total) == first + 2u;
+        press(B_OCTDN);
+        bad += check("VOICE Sound > PRESETS: OCT- (BACK) leaves the sound as it was, back to VOICE's list on its row",
+                     ok && !ui.home && ui.page == voice && list_on() && lst.row == 0u && list_cur(&total) == first &&
+                     !drill_to);
+        press(B_OCTUP);
+        turn(EN_K2, 1);
+        press(B_OCTUP);
+        bad += check("VOICE Sound > PRESETS: OCT+ (OK) keeps the sound picked, back to VOICE",
+                     !ui.home && ui.page == voice && lst.row == 0u && list_cur(&total) == first + 1u);
+        turn(EN_K2, 1);
+        bad += check("VOICE Sound: KNOB 2 browses as the PRESETS knob does", list_cur(&total) == first + 2u);
+        press(B_OCTUP);
+        turn(EN_SELECT, 1);
+        bad += check("VOICE Sound > PRESETS: left another way (SELECT), the way back is forgotten",
+                     !drill_to && cur_page()->graph != GR_BROWSE);
+    }
     PREF_BITS &= (uint8_t)~PREF_ACCEL_OFF;
 
     ui_power_on();
@@ -4365,8 +4430,8 @@ static int test_popups(void)
     {   /* list pages (ui_list.c): KNOB 1 the row, KNOB 2 its value, OCT+ its list (SCL's Scale: SCALES), OCT- Stage */
         ui_power_on(); go_title("VOICE"); frame();
         o = TSEL->p[P_DETUNE];
-        turn(EN_K1, 5); turn(EN_K2, 3);
-        bad += check("LISTS: VOICE 1-3 one list; KNOB 1 to row 6 (VOICE 2's DETUNE), KNOB 2 edits it",
+        turn(EN_K1, 6); turn(EN_K2, 3);                  /* (row 1: Sound, PRESETS) */
+        bad += check("LISTS: VOICE 1-3 one list; KNOB 1 to row 7 (VOICE 2's DETUNE), KNOB 2 edits it",
                      TSEL->p[P_DETUNE] == o + 3 && !page_visible(page_titled("VOICE 2")));
         turn(EN_K1, -5);
         press(B_OCTUP);
@@ -6101,7 +6166,8 @@ static int test_rec_gestures(void)
 }
 
 /* LIGHTS (menu): the keys that play glow (QNT OFF: the scale's notes; a layout: the keys not silent; a kit: every
- * key), a key sounding is bright (pressed, or its note held by MIDI on the track), the idle buttons glow; OFF: as 1.0 */
+ * key), a key sounding is bright (pressed, its note held by MIDI on the track, or the track's sequence playing it as
+ * NOTE LIGHTS asks: OFF, STEP, ALL), the idle buttons glow; OFF: as 1.0 */
 static uint32_t key_light(uint32_t id)                   /* 2 bright, 1 dim, 0 dark (led id: key k = 14 + k) */
 {
     uint8_t q = led_pos[id];
@@ -6135,6 +6201,34 @@ static int test_key_lights(void)
     midi_event(0x80, 0, 64, 0);
     frame(); ui_leds();
     bad += check("  .. and back to its glow when it is let go", key_light(14u + 64u - 53u) == 1u);
+    {   /* NOTE LIGHTS: the track's sequence playing E4, within its gate (seq.c seq_notes) */
+        uint32_t e4 = 14u + 64u - 53u;
+        uint8_t mode0 = tessera.mode[0];
+        TSEL->seq_notes[0] = 64u; TSEL->seq_n = 1; song.playing = 1;
+        NLIGHT_SAVED = 0;
+        frame(); ui_leds();
+        bad += check("  NOTE LIGHTS OFF (the default): a step playing E4 leaves its key glowing", key_light(e4) == 1u);
+        NLIGHT_SAVED = NLIGHT_STEP_TAG;
+        frame(); ui_leds();
+        bad += check("  NOTE LIGHTS STEP: a step playing E4, its key bright", key_light(e4) == 2u);
+        tessera.mode[0] = TESS_ENG_TURING;
+        frame(); ui_leds();
+        bad += check("  .. a generator playing E4: its key glowing", key_light(e4) == 1u);
+        NLIGHT_SAVED = NLIGHT_ALL_TAG;
+        frame(); ui_leds();
+        bad += check("  NOTE LIGHTS ALL: the generator's E4 bright", key_light(e4) == 2u);
+        tessera.mode[0] = mode0;
+        frame(); ui_leds();
+        bad += check("  .. and a step's", key_light(e4) == 2u);
+        TSEL->seq_n = 0;                                 /* (its gate over: seq.c seq_release) */
+        frame(); ui_leds();
+        bad += check("  .. back to its glow when the note's gate ends", key_light(e4) == 1u);
+        TSEL->seq_n = 1; song.playing = 0;
+        frame(); ui_leds();
+        bad += check("  .. and nothing lit stopped", key_light(e4) == 1u);
+        TSEL->seq_n = 0;
+        NLIGHT_SAVED = 0;
+    }
     TSEL->p[P_QUANT] = Q_WHITE;
     frame(); ui_leds();
     for (k = 0, ok = 1; k < 27u; k++)
@@ -6193,6 +6287,29 @@ static int test_key_lights(void)
         p.magic = PERSIST_MAGIC; p.panel = panel;
         settings_export(&p); settings_lights = LIGHTS_MID;
         bad += check("  AUTO kept with the settings", settings_import(&p, sizeof p) && settings_lights == LIGHTS_AUTO);
+    }
+    {   /* MENU > NOTE LIGHTS: KNOB 2 OFF, STEP, ALL; saved with the favorites (row 8 byte 31, tagged) */
+        persist_t p;
+        ui_power_on();
+        NLIGHT_SAVED = 0;
+        hold(B_HOME);
+        ui.menu_sel = MI_NLIGHT;
+        turn(EN_K2, 1);
+        bad += check("NOTE LIGHTS: the menu's KNOB 2 right: STEP", ui.menu == 1 && NLIGHT_MODE == NLIGHT_STEP);
+        turn(EN_K2, 1);
+        turn(EN_K2, 1);
+        bad += check("  right twice: ALL, and stays", NLIGHT_MODE == NLIGHT_ALL);
+        press(B_OCTUP);
+        bad += check("  OCT+ steps round: OFF", NLIGHT_MODE == NLIGHT_OFF);
+        turn(EN_K2, 1);
+        memset(&p, 0, sizeof p);
+        settings_export(&p);
+        NLIGHT_SAVED = 0;
+        bad += check("  saved with the settings", settings_import(&p, sizeof p) && NLIGHT_MODE == NLIGHT_STEP);
+        p.favorites.factory[8][31] = 0x01u;
+        settings_import(&p, sizeof p);
+        bad += check("  an older record (no tag): OFF", NLIGHT_MODE == NLIGHT_OFF);
+        ui.menu = 0;
     }
     settings_lights = LIGHTS_MID;
     led_pos_init();
@@ -7877,6 +7994,57 @@ static int test_stage_knobs_after_drum(void)
     return bad;
 }
 
+/* ENV + OCT- / OCT+ on HOME: the selected track's TRANSPOSE an octave down / up (within +-24), both OCTs 0; the keys'
+ * octave and ENV's page stay as they were; a DRUM track has none */
+static int test_env_oct_transpose(void)
+{
+    int bad = 0;
+    ui_power_on_general();
+    track_select(1);
+    go_home();
+    frame();
+    TSEL->p[P_TRANS] = 0;
+    btn_down(B_ENV);
+    frame();
+    press(B_OCTUP);
+    bad += check("ENV + OCT+ on HOME: the track's TRANSPOSE +12", TSEL->p[P_TRANS] == 12 && msg_is("TRANSPOSE +12"));
+    press(B_OCTUP);
+    press(B_OCTUP);
+    bad += check("..again: +24 at most", TSEL->p[P_TRANS] == 24 && !trk[0].p[P_TRANS]);
+    btn_up(B_ENV);
+    frame();
+    frame();
+    bad += check("..the keys' octave untouched, ENV let go: still HOME", !song.octave && ui.home && pop.on != POP_SHEET);
+    btn_down(B_ENV);
+    frame();
+    press(B_OCTDN);
+    bad += check("ENV + OCT-: -12", TSEL->p[P_TRANS] == 12 && msg_is("TRANSPOSE +12"));
+    btn_down(B_OCTDN);
+    frame();
+    btn_down(B_OCTUP);
+    frame();
+    btn_up(B_OCTUP);
+    btn_up(B_OCTDN);
+    frame();
+    bad += check("ENV + both OCTs: back to 0", TSEL->p[P_TRANS] == 0 && msg_is("TRANSPOSE 0") && !song.octave);
+    btn_up(B_ENV);
+    frame();
+    frame();
+    bad += check("..ENV let go: still HOME", ui.home);
+    press(B_OCTUP);
+    bad += check("OCT+ alone: the keys' octave as before", song.octave == 1 && TSEL->p[P_TRANS] == 0);
+    press(B_OCTDN);
+    set_engine_of(TSEL, ENGI_DRUM);
+    btn_down(B_ENV);
+    frame();
+    press(B_OCTUP);
+    btn_up(B_ENV);
+    frame();
+    bad += check("a DRUM track: NOT ON DRUMS, nothing moved", msg_is("NOT ON DRUMS") && TSEL->p[P_TRANS] == 0 && !song.octave);
+    ui_power_on();
+    return bad;
+}
+
 /* the header's battery (ui_draw.c batt_head): its level on the battery, a bolt on external power (a computer, or 5 V
  * at LDO5V); MENU BATTERY WHEN LOW hides it except when low; saved with the settings */
 static int test_battery(void)
@@ -8107,6 +8275,7 @@ int main(void)
     bad += test_fm6_charts();
     bad += test_pattern_key_handoff();
     bad += test_stage_knobs_after_drum();
+    bad += test_env_oct_transpose();
 
     if (getenv("UI_SCREEN_DIR")) chain_screens(getenv("UI_SCREEN_DIR"));
     printf(bad ? "ui: %d FAILED\n" : "ui: all passed\n", bad);

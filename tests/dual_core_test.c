@@ -123,6 +123,33 @@ static void render_case(int parallel, uint32_t alg, uint32_t eng, uint32_t voice
         }
     }
 }
+/* TRIO's voices go to the batch as DRUM's do (voice.c engine_render): the concurrent mixer equals the serial one */
+static void trio_case(int parallel, uint32_t voices)
+{
+    setup_case(0, 0, 0);
+    for (uint32_t i = 0; i < NTRK; i++) {
+        host_preset(&trk[i], 6u /* TRIO */, i * 3u);
+        trk[i].p[P_LEVEL] = 70;
+        trk[i].p[P_M1SRC] = MS_LFO; trk[i].p[P_M1DST] = MD_PITCH; trk[i].p[P_M1AMT] = 12;
+        trk[i].p[P_VOICE] = V_POLY;
+    }
+    for (uint32_t i = 0; i < voices; i++) trk_note_on(&trk[i % NTRK], 48u + i, 70u + i * 3u);
+    audio_worker_online = parallel;
+    for (uint32_t pos = 0; pos < FRAMES; pos += CTL) {
+        int32_t out[2 * CTL];
+        if (pos == CTL * 32u) midi_bend_target[1] = 256;
+        if (pos == CTL * 48u) trk[2].p[P_E5] = 30;      /* a setting moved while voices sound */
+        if (pos == CTL * 64u) for (uint32_t i = 0; i < voices; i++) trk_note_off(&trk[i % NTRK], 48u + i);
+        if (pos == CTL * 96u) for (uint32_t i = 0; i < voices; i++) trk_note_on(&trk[i % NTRK], 60u + i, 110u);
+        mix_block(out, CTL);
+        assert(AW_LOAD(&audio_worker.request) == AW_LOAD(&audio_worker.complete));
+        if (!parallel) memcpy(reference + 2u * pos, out, sizeof out);
+        else if (memcmp(reference + 2u * pos, out, sizeof out)) {
+            fprintf(stderr, "difference: TRIO voices %u block %u (worker timeouts %u)\n", voices, pos/CTL, audio_worker.timeouts);
+            abort();
+        }
+    }
+}
 static uint32_t active_voices(const track_t *t)
 {
     uint32_t count=0;
@@ -222,6 +249,8 @@ static int dual_core_suite(void)
                 render_case(0, alg, eng, voices);
                 render_case(1, alg, eng, voices);
             }
+    for (uint32_t voices = 1; voices <= 16; voices += 3) { trio_case(0, voices); trio_case(1, voices); }
+    puts("TRIO voices on the worker: serial/concurrent bit equality, 1..16 voices: OK");
     for(uint32_t type=1;type<FX_COUNT;type++){shared_bus_case(0,type);shared_bus_case(1,type);}
     puts("Shared FX bus: 8 three-effect chains, four live synth tracks, serial/concurrent bit equality and joins: OK");
     shared_bus_retire();

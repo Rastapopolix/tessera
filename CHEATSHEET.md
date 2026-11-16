@@ -25,6 +25,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | MENU > **SIM CONTROL** | The FM-1's knobs and keys play only the web simulator (USB); **FX** + **GLO** held 1 s: the panel back |
 | MENU > **LARGE VALUE** | The knob turning, large at the foot: AUTO (pages without a picture), ON (and a second after), OFF |
 | MENU > **TEXT** / **IDLE** | BOLD letters; LANDSCAPE after 2 minutes untouched while playing (the first touch only goes back) |
+| MENU > **NOTE LIGHTS** | The keys a sequence plays, lit for each note: OFF, STEP (a STEP pattern's), ALL (the generators' too) |
 
 ## The page buttons
 
@@ -35,7 +36,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | **ARP** | How it is shaped. STEP: EVOLVE, TWEAK, TIMING. ARP: TWEAK (SWING, PROB, HOLD, ORDER: ARP with OCT- held). A generator: EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY |
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST; on FM6 then FM LFO; on ORACLE then LFO MOD, LFO ROUTE |
 | **ENV** | ENV, ENV DEST; on FM6 instead EG RATE, EG LVL, PITCH EG, PITCH LV; on ORACLE FILT ENV, AMP ENV |
-| **SCL** | SCALES, SCL, CHORD |
+| **SCL** (printed SEL) | SCALES, SCL, CHORD |
 | SCALES: **KNOB 1** to **USER** | Your own tunings: Scala files sent from the web editor (Projects > Tunings) |
 | **EDIT** | The sound's EDIT pages (ORACLE: MACRO, MACRO 2, OSC A, OSC B, OSC MIX, FILTER, POLY MOD, CHARACTER, ...) |
 | **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across, KNOB 2 rows (on the page last used in each), OCT+ opens (OCT- there: the map again), OCT- or EDIT closes |
@@ -72,6 +73,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | **LFO** + a knob | A momentary change: back as it was when LFO is let go |
 | **LFO** + a knob, then **OCT+** | Keeps the change ("KEPT") |
 | **OCT-** / **OCT+** on HOME | Octave down / up; both together: octave 0 |
+| **ENV** + **OCT-** / **OCT+** on HOME | The selected track an octave down / up (its TRN, up to ±24); both OCTs: TRN 0. Not on a DRUM track |
 
 ## Steps and notes (SEQ > NOTES)
 

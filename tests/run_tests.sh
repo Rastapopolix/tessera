@@ -120,8 +120,8 @@
 # ENTRIES (tests/entries_test.c): Entries (entries.c) through the sequencer: changes only on phrase lines, exits only where
 #                   a section begins, one entry a phrase, DWELL, at most ENTRIES out and one always playing, ANCHOR,
 #                   a melody over a bass or harmony, the breakdown before A and the full return, FORM OFF's sections,
-#                   PLAY again, CUT / FADE, no voice from a silent track, hand mutes and GLO's key, SOLO, AUTO's roles;
-#                   ENTRIES 0 with the rest turned plays the same notes.
+#                   PLAY again, CUT / FADE (MIDI OUT's velocity faded too), no voice from a silent track, hand mutes
+#                   and GLO's key, SOLO, AUTO's roles; ENTRIES 0 with the rest turned plays the same notes.
 # SPLIT (tests/split_test.c): TIMING's SPLIT through the real sequencer, read off MIDI OUT.
 # FOLLOW (tests/follow_test.c): FOLLOW's HOW and RHYTHM through the real sequencer, read off MIDI OUT.
 # CLOCK (tests/cordclock_test.c): a generator track stepped by a CLOCK cord (cord.c, seq.c seq_grid_tick): the DIV clock
@@ -187,7 +187,7 @@ qmap() {
         firmware/src/eng_drum.c | firmware/src/drum_808.c | firmware/src/x0x/*) eng DRUM drum_test drum_editor_test ;;
         firmware/src/eng_noise.c) eng NOISE noise_test ;;
         firmware/src/eng_oracle.c | firmware/src/oracle_*) eng ORACLE oracle_test ;;
-        firmware/src/eng_trio.c) eng TRIO ;;
+        firmware/src/eng_trio.c) eng TRIO dual_core_test ;;
         firmware/src/eng_wheel.c) eng WHEEL ;;
         firmware/src/eng_formant.c) eng VOICE ;;
         firmware/src/fx.c) QREG=1; QSEL="$QSEL $G_AUDIO fx_test fx_performance no_effects_test" ;;
@@ -547,7 +547,7 @@ if core; then
     t "removed effects: old songs and motion, MIDI, physical input and dry output" no_effects_test -O1 $FW
     t "resident audio: four-track resource budget and removed buses" ram_audio_test -O2 $FW
     t "resident audio: expanded voice budget and CPU1 fallback" ram_voice_budget_test -O2 $FW
-    t "load ceiling: a shed caps admission (half of BUDGET at least), recovers, faster under 60 %, BUDGET stays the maximum (#586)" voice_ceiling_test -O2 $FW
+    t "load ceiling: a shed caps admission (half of BUDGET at least), recovers, faster under 60 %, BUDGET stays the maximum (#586); the early ceiling holds admission over 70 %, a unit off over 75 % x3" voice_ceiling_test -O2 $FW
     t "audio: calibrated reservations, release tails and overlapping hits" audio_admission_test -O2 $FW
     t "USB audio: four isolated track stems through the real mixer" usb_audio_tracks_test -O2 $FW
     t "boot stub: CRCs, rescue keys, damaged staging and retry fallback" boot_stub_test -O2
@@ -672,7 +672,7 @@ if sound && [ $TABLES = 1 ]; then
         "$OUT/regress" tests/golden.txt tests/cpu_baseline.txt
     t "PHYS: stability C-1..G9 over the parameter corners, worst-case cost against FM6 DRAWBARS, demos" phys_test \
         -DMELODEE_LEGACY_EXTRAS=1 -O2 $FW -- "$OUT/phys_test" build/phys_demo
-    t "paired FM6 voices: serial/concurrent sample equality, a worker retired mid-song" dual_core_test \
+    t "paired FM6 and batched TRIO voices: serial/concurrent sample equality, a worker retired mid-song" dual_core_test \
         -O2 $FW -pthread
     t "audio: 1296 ordered engine assignments, releases, controls and concurrent PCM parity" audio_matrix_test -O2 $FW -pthread
     t "native fp32: FM6 against an independent reference, exact pitch" synth_fpu_test \

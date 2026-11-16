@@ -362,6 +362,19 @@ static void tess_rearm(uint32_t tr)
     tessera.evolve[tr].valid &= (uint8_t)~(1u << (tessera.evolve[tr].sec % 3u));   /* this section's phrase is being rewritten */
 }
 
+/* LOCK turned up from 0: Markov / Morph playing wrote every pass over the phrase (tessera_phrase_apply), so they loop
+ * the pass just heard, from where they are; otherwise (stopped, Constellation) the phrase is recorded again */
+static void tess_lock_up(uint32_t tr)
+{
+    tessera_evolve_t *ev = &tessera.evolve[tr];
+    if (song.playing && (tessera.mode[tr] == TESS_ENG_MARKOV || tessera.mode[tr] == TESS_ENG_MORPH)) {
+        ev->rec = 0;
+        ev->valid |= (uint8_t)(1u << (ev->sec % 3u));
+    } else {
+        tess_rearm(tr);
+    }
+}
+
 /* A phrase boundary (mutation, SEED, stop): rearm AND put the engines' own playheads back on step 1 */
 static void tess_realign(uint32_t tr)
 {
@@ -850,14 +863,14 @@ static int32_t tess_flourish(const track_t *t, uint32_t tr)
     return ev->step_cnt > spb - win ? (int32_t)ev->flourish : 0;
 }
 
-/* Markov / Morph: LOCK% of steps replay the section's base phrase, the rest play fresh (not remembered) */
+/* Markov / Morph: LOCK% of steps replay the section's base phrase, the rest play fresh (not remembered). LOCK 0
+ * plays fresh every pass and writes each pass over the phrase, so HOLD (and LOCK turned up) repeats the last one */
 static void tessera_phrase_apply(uint32_t tr, uint8_t *note, uint8_t *vel, int *trig)
 {
     tessera_evolve_t *ev = &tessera.evolve[tr];
     tessera_sec_t *sc = &tessera.sec[tr][ev->sec % 3u];
     uint32_t pos = ev->pos_now & 31u, sh = (pos & 1u) * 4u;
-    if (!ev->lock) return;                                   /* 0 = fresh every pass (the old behaviour) */
-    if (ev->rec) {
+    if (ev->lock ? ev->rec : !tessera.hold) {               /* (LOCK 0 held: replays below) */
         uint32_t q = *vel < 64u ? 0u : (uint32_t)(*vel - 64u) / 4u;
         if (q > 15u) q = 15u;
         sc->note[pos] = (uint8_t)((*trig ? 0x80u : 0u) | (*note & 0x7Fu));
@@ -924,7 +937,7 @@ static void tess_evolve_knob_body(uint32_t k, int32_t s)
             int32_t l = (int32_t)ev->lock + s * 2;
             uint8_t was = ev->lock;
             ev->lock = (uint8_t)(l < 0 ? 0 : l > 100 ? 100 : l);
-            if (!was && ev->lock) tess_rearm(tr);                  /* record the phrase that is playing next */
+            if (!was && ev->lock) tess_lock_up(tr);                /* (from 0: the pass just heard, or recorded again) */
         }
     } else if (k == 1u) {
         int32_t e = (int32_t)ev->every + (s > 0 ? 1 : -1);
@@ -3388,7 +3401,7 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
         } else if (tessera_lock_get(tr) >= 0 || tessera.mode[tr] == TESS_ENG_OFF) {   /* (the others have no LOCK) */
             uint8_t was = ev->lock;
             ev->lock = (uint8_t)v;
-            if (!was && ev->lock) tess_rearm(tr);
+            if (!was && ev->lock) tess_lock_up(tr);
         }
         return;
     case TX_EV_EVERY: ev->every = (uint8_t)tess_clampi(v, 0, 5); ev->bar_cnt = 0; return;

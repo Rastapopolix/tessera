@@ -264,9 +264,10 @@ static void trio_note_on(track_t *t, voice_t *v)
     v->s[5] = 0;                 /* cutoff drift */
 }
 
-static void trio_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
+/* p: the track's settings (only P_E0..P_E7 are read), the track's own or the audio batch's copy (voice.c
+ * engine_batch_kernel: CPU1 renders while CPU0 restores the track's modulated values) */
+static void trio_render_p(const int16_t *p, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
 {
-    const int16_t *p = t->p;
     const trio_set_t *ws = &TRIO_SETS[(uint32_t)p[P_E0] & 15u];
     uint32_t w1 = ws->w[0], w2 = ws->w[1], w3 = ws->w[2], i;
     uint32_t ring = ws->flags & TRIO_RING, sync = ws->flags & TRIO_SYNC;
@@ -341,6 +342,11 @@ static void trio_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const 
     v->s[3] = nz;
     v->s[4] = prev;
     v->s[5] = drift;
+}
+
+static void trio_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
+{
+    trio_render_p(t->p, v, out, n, m);
 }
 
 static const preset_t TRIO_PRESETS[] = {

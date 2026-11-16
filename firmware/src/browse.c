@@ -205,16 +205,20 @@ static void recent_push(uint32_t src, uint32_t k)
     recent[0] = v;
 }
 
-/* LIST: 0 ALL, 1 FAV, 2 RECENT, then a category (CAT_ORDER). Each track browses its own (list_trk, RAM): the one picked
- * while it was selected, so PRESETS on one track never turns its sound into the kind another track picked (upstream
- * Melodee 38aa10b). A track without one (power-on, a project) takes the last one picked, kept with the settings: a
- * category as the one of its own sound. The category is kept in a byte no engine uses (lcat: CAT_*, 0 none; earlier
- * firmware ignores it and keeps showing ALL / FAV as favorites.filter says, as do the editor and backups;
- * settings_persist.c puts it back to ALL at a load: Tessera, 2026-10-21); RECENT is not kept */
+/* LIST: 0 ALL, 1 FAV, 2 RECENT, then a category (CAT_ORDER), then an engine (ENGINE_ORDER: its sounds alone, factory
+ * and user, so an ORACLE pad is easy to find; after the categories, so LIST's first places stay where they were and
+ * the kinds of sound come before the engines that make them: 2026-11-17). Each track browses its own (list_trk, RAM):
+ * the one picked while it was selected, so PRESETS on one track never turns its sound into the kind another track
+ * picked (upstream Melodee 38aa10b). A track without one (power-on, a project) takes the last one picked, kept with
+ * the settings: a category as the one of its own sound, an engine as its own engine. The category is kept in a byte
+ * no engine uses (lcat: CAT_*, 0 none; earlier firmware ignores it and keeps showing ALL / FAV as favorites.filter
+ * says, as do the editor and backups; settings_persist.c puts it back to ALL at a load: Tessera, 2026-10-21); RECENT
+ * and an engine are not kept (RAM, list_recent and list_eng: UI state, ALL again at power-on) */
 #define list_lcat (favorites.factory[15][29])
 enum { LM_ALL, LM_FAV, LM_RECENT, LM_CAT };
-#define LM_N (LM_CAT + NELEM(CAT_ORDER))
-static uint8_t list_recent;
+#define LM_ENG (LM_CAT + NELEM(CAT_ORDER))                  /* the engines, eng_vis(m - LM_ENG) */
+#define LM_N (LM_ENG + NENG_SHOWN)
+static uint8_t list_recent, list_eng;
 static uint8_t list_trk[NTRK];                             /* each track's LIST + 1, 0 none */
 static struct { uint8_t on, trk, mode, x; uint16_t n; uint32_t t; } brw;   /* the pending place: list index n; x the
                                                                              * turn's acceleration (the browser's badge) */
@@ -231,6 +235,8 @@ static uint32_t list_saved(void)                            /* the last LIST pic
         return LM_FAV;
     if (list_recent)
         return LM_RECENT;
+    if (list_eng)
+        return LM_ENG;
     return list_lcat ? list_cat(list_lcat) : LM_ALL;
 }
 static uint32_t trk_list(uint32_t t)                        /* the LIST track t browses */
@@ -242,7 +248,7 @@ static uint32_t trk_list(uint32_t t)                        /* the LIST track t 
     if (m < LM_CAT)
         return m;
     cur_entry_of(&trk[t % NTRK], &src, &k);
-    return list_cat(entry_cat(src, k));
+    return m >= LM_ENG ? LM_ENG + eng_rank(src_engine(src, k)) : list_cat(entry_cat(src, k));
 }
 static uint32_t list_mode(void) { return trk_list(song.sel); }
 static void list_forget(void) { memset(list_trk, 0, sizeof list_trk); }   /* every track: the last LIST picked */
@@ -255,18 +261,21 @@ static void list_set(uint32_t m)                            /* the selected trac
     list_trk[song.sel % NTRK] = (uint8_t)(m + 1u);
     favorites.filter = m == LM_FAV;
     list_recent = m == LM_RECENT;
-    list_lcat = (uint8_t)(m >= LM_CAT && m < LM_N ? CAT_ORDER[m - LM_CAT] : 0u);
+    list_eng = m >= LM_ENG;
+    list_lcat = (uint8_t)(m >= LM_CAT && m < LM_ENG ? CAT_ORDER[m - LM_CAT] : 0u);
     brw.on = 0;
 }
 static const char *list_name(uint32_t m)
 {
     return m == LM_ALL ? "ALL" : m == LM_FAV ? "FAV" : m == LM_RECENT ? "RECENT" :
+           m >= LM_ENG ? ENGINES[eng_vis(m - LM_ENG)]->name :
            CAT_NAME[m - LM_CAT < NELEM(CAT_ORDER) ? CAT_ORDER[m - LM_CAT] : CAT_OTHER];
 }
 static int list_keep(uint32_t m, uint32_t src, uint32_t k)
 {
     return m == LM_ALL ? 1 : m == LM_FAV ? favorite_has(src, k) :
-           m >= LM_CAT && m < LM_N ? entry_cat(src, k) == CAT_ORDER[m - LM_CAT] : 0;
+           m >= LM_ENG ? m < LM_N && src_engine(src, k) == eng_vis(m - LM_ENG) :
+           m >= LM_CAT ? entry_cat(src, k) == CAT_ORDER[m - LM_CAT] : 0;
 }
 
 /* one pass over the list LIST keeps: *total its length; the place of entry (ws, wk) (total: not in it); entry n in

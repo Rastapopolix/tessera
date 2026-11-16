@@ -176,7 +176,7 @@ lets you do and when you would want it. Follow a link for the full description.
 **ENV**: the track's envelope and where it goes (on FM6 and ORACLE, the sound's own envelopes). *Use it to make a
 sound pluck, swell or sustain.*
 
-**SCL**: harmony
+**SCL** (the button printed **SEL**): harmony
 
 | Page | What it lets you do | Reach for it when |
 |---|---|---|
@@ -266,8 +266,8 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 | **SEQ** | What the track plays: GEN, then NOTES or ARP or PATTERN (by its MODE), TEMPO, PATTERNS, SONG | PATTERNS (the song under it) |
 | **ARP** | How the track's notes are shaped: EVOLVE, FORM, TWEAK, TIMING and the rest (by its MODE) | |
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST (an FM6 track: then FM LFO) | |
-| **ENV** | ENV, ENV DEST (an FM6 track: EG RATE, EG LVL, PITCH EG, PITCH LV) | |
-| **SCL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
+| **ENV** | ENV, ENV DEST (an FM6 track: EG RATE, EG LVL, PITCH EG, PITCH LV) | On HOME, with OCT- / OCT+: the selected track an octave down / up (its TRN, up to ±24; both OCTs: 0) |
+| **SCL** (printed SEL) | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
 | **EDIT** | The sound's EDIT pages; on an EDIT page, the map | With OCT- / OCT+: undo / redo |
 | **FX** | The insert and send effects | The mod amount of any knob you turn |
 | **GLO** | MIXER, [PERF](#perf-four-macros), [PIECE](#piece-a-length-and-a-shape), [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in), [LANDSCAPE](#landscape-rain-on-water), SYSTEM, MIDI IN, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, D4 holds the generators' line ([HOLD](#evolve)), E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
@@ -309,7 +309,8 @@ Hold **OCT+** on MIXER for its sheet: **Mutes**, when the mute keys take effect 
 the same setting as MENU > MUTES.
 
 **Lists** (the HOME menu, SCL, VOICE and the sheets): KNOB 1 picks the row, KNOB 2 changes its
-value.
+value. A row with `>` opens a page of its own on OCT+ and comes back to the list: SCL's Scale (SCALES), VOICE's Sound
+(PRESETS).
 
 **The look.** Tessera draws every screen in one ink on black, with a 5 x 7 pixel font: the selected item is
 inverted, and quieter things are drawn in a dimmer ink. MENU > COLOR picks the ink: **YELLOW** (the default),
@@ -374,7 +375,7 @@ key skips it.
 | Turn **PRESETS** with **GLO** held, on any page | Browses the selected track's sounds as PRESETS does on HOME. The GLO map gives way to the sound: the track, the list and the place in it, the sounds before and after, the sound's name large and its engine (a fast turn: the name the knob will load when it stops, with its speed, X4). It stays while GLO is held; a GLO key or knob brings the map back. Without GLO, PRESETS keeps the page's own job (or does nothing), so a stray turn never changes the sound. GLO + OCT- does not put the sound back. |
 | Tap **GLO** or **SCL** twice quickly | Locks its Quick SET open on the page you were on, so you need not hold the button: the header says **[GLO] LOCK** (or **[SCL] LOCK**), and the keys and knobs are the layer's. Tap the button again to close it; any other page button, the menu or a dialog closes it too (PLAY, REC and OCT keep working). |
 | **GLO** + **E4** (on MIXER, PERF or LANDSCAPE, E4) | Holds [FILL](#a-steps-condition-and-fill) for the steps whose condition is FILL or !FILL. |
-| **GLO** + **D4** (on MIXER, PERF or LANDSCAPE, D4) | **HOLD**: while the key is held every generator keeps the line it is playing. EVOLVE and STEP EVOLVE skip their rounds, TURING plays as PROB 0, MARKOV and MORPH replay their recorded phrase as LOCK 100 (only with LOCK above 0: at LOCK 0 they keep no phrase, and play on fresh), CONSTELLATION replays its loop and ATLAS keeps this bar's CHAOS. Let go and they carry on from where they are. Tap D4 twice to latch it (**HOLD LATCHED**), tap it again to let go (**HOLD OFF**). The GLO map's D cell and D4's light show it. Not saved. |
+| **GLO** + **D4** (on MIXER, PERF or LANDSCAPE, D4) | **HOLD**: while the key is held every generator keeps the line it is playing. EVOLVE and STEP EVOLVE skip their rounds, TURING plays as PROB 0, MARKOV and MORPH replay their phrase as LOCK 100 (at LOCK 0, the last pass they played), CONSTELLATION replays its loop and ATLAS keeps this bar's CHAOS. Let go and they carry on from where they are. Tap D4 twice to latch it (**HOLD LATCHED**), tap it again to let go (**HOLD OFF**). The GLO map's D cell and D4's light show it. Not saved. |
 | **GEN** on an AWAKE track, a white key | Picks that step: KNOB 1 sets its A, KNOB 2 its B. The same key lets it go. |
 | Hold **FX**, turn a knob | Sets how far a cord moves that knob's parameter (see [Mod shortcut](#mod-shortcut)). |
 | Hold **REC** | On a generator or ARP track: prints its last bars into STEP. On STEP EVOLVE: keeps the changes. On a STEP track: captures what you just played. |
@@ -469,9 +470,14 @@ one and a half times): one ORACLE track of pads or chords is fine; with two busy
 
 <p align="center"><img src="assets/gallery/oracle_osc.png" alt="ORACLE OSC A page" width="240"> <img src="assets/gallery/oracle_filter.png" alt="ORACLE FILTER page" width="240"> <img src="assets/gallery/oracle_env.png" alt="ORACLE AMP ENV page" width="240"></p>
 
-**PRESETS** (SAVE) browses the sounds. Its LIST knob picks ALL, the favourites, RECENT or a category, and it starts
-on ALL at power-on. The PRESETS knob browses the same list on HOME and on PRESETS; on any other page, hold GLO and
-turn it.
+**PRESETS** (SAVE) browses the sounds. Its LIST knob picks ALL, the favourites, RECENT, a category, or (after the
+categories) one engine: FM6, ORACLE, TRIO, PHYS or DRUM, each with only its own sounds, factory and user, so an
+ORACLE pad is ORACLE, then a turn of PRESETS. It starts on ALL at power-on. The PRESETS knob browses the same list on
+HOME and on PRESETS; on any other page, hold GLO and turn it.
+
+**EDIT > VOICE** starts with the track's **Sound** (`SOUND  KUGO HARP >`): KNOB 2 there steps through the PRESETS
+list as the PRESETS knob does, and **OCT+** opens PRESETS in place. OK (OCT+) there keeps the sound you picked, BACK
+(OCT-) puts back the one you had; either way you are back on VOICE's list, not on HOME.
 
 ### How many voices at once
 
@@ -968,11 +974,12 @@ On a generator track, EVOLVE mutates the phrase every few bars.
 | 3 | **AMOUNT** (0–100 %) | How much changes each time. |
 | 4 | **ROLL** (1–128) | The track's seed. While playing, a new seed starts on the track's next bar line (until then the new number shows dotted under the one playing, then solid in its place). The screen says **NEW LINE** (**NEW LINE AT BAR** while playing), as the new seed also changes values on the generator's other pages. Hold **OCT-** and turn **KNOB 1** for **ROLL ALL**: right and every generator track gets a new seed at once; turn left to get the seeds from before it back, and once more for those from before the ROLL ALL before it (two levels). STEP tracks keep theirs. |
 
-With LOCK up, Turing's loop is its LENGTH long; Markov's and Morph's loops are as long as PATTERN's **LEN**.
+With LOCK up, Turing's loop is its LENGTH long; Markov's and Morph's loops are as long as PATTERN's **LEN**. At LOCK 0
+Markov and Morph still remember the pass they just played: turn LOCK up while playing and that pass loops at once.
 
 **HOLD** (**GLO** + **D4**, while held; tap twice to latch, again to let go) is LOCK 100 for every track at once, as
 a key to play: no round of EVERY (a STEP track's STEP EVOLVE too), Turing as PROB 0, Markov's and Morph's recorded
-phrase every pass (with LOCK at 0 they have none, and play on fresh), Constellation's loop, Atlas' CHAOS as this bar.
+phrase every pass (at LOCK 0, the last pass they played), Constellation's loop, Atlas' CHAOS as this bar.
 Let go and they carry on from where they are. It is not saved.
 
 **GRAVITY** (OCT- held, KNOB 4; the same GRAVITY as the SOURCE layer's) lets the phrase drift and then come home.
@@ -1145,9 +1152,12 @@ section every 4 phrases), and on every track, STEP tracks too.
 | 4 | **FADE** (1–4 bars) | How long a FADE takes. |
 
 Hold **OCT-** for each track's **ROLE** (KNOB 1 to 4; also OCT- held on FORM, KNOB 4): **BASS**, **RHYTHM**,
-**HARMONY**, **MELODY** or **ANCHOR**. AUTO (the default) guesses: CHORD is harmony, ATLAS or a drum sound rhythm, a
-track whose notes sit mostly below C3 bass, anything else melody. The picture shows each track's role (AUTO's guess
-marked), whether it is IN, OUT or muted by hand, and its level.
+**HARMONY**, **MELODY** or **ANCHOR**. AUTO (the default) guesses, looking at all four tracks together: CHORD, chord
+keys (CHRD) or a STEP pattern mostly of chords is harmony; GRIDS, a drum kit, SLICE or NOISE is rhythm; of the rest, the
+lowest track is bass when it sits a fifth or more below every other track (or below C3), and anything else is melody.
+Before PLAY it goes by the settings (a generator's ROOT and TRN, a STEP pattern's notes), once playing by the notes
+heard; the guess is made at PLAY and on each section's line, and holds in between. The picture shows each track's
+role (AUTO's guess marked \*), whether it is IN, OUT or muted by hand, and its level.
 
 The ENTRIES sheet (hold **OCT+**) has each track's **ORDER** (Order T1 to T4, KNOB 2): **AUTO** (the default) or **1ST**, **2ND**, **3RD**, **4TH**,
 to choose the order tracks come in, for example the bass third instead of first. Numbered tracks come in first, one a
@@ -1173,6 +1183,8 @@ How it moves, in the ways music is usually built:
 - Each change is decided a bar ahead: that track's mute key on GLO blinks quickly through the bar. A track with
   FLOURISH set comes in on its flourish, the bar's last beat.
 - A track out plays no notes (none to MIDI OUT either), like a muted one.
+- With STYLE at FADE, MIDI OUT fades too: while a track fades out or in, its notes go out softer, their velocity
+  following its level (never below 1). A synth that ignores velocity still cuts. CUT sends every note as played.
 
 Your hand wins. A track you mute stays muted and is left out of the rules. Its mute key on GLO brings a track Entries
 took out straight back, and Entries leaves it alone until the next section. SOLO is heard whatever Entries says.
@@ -1194,12 +1206,14 @@ you can thin the music and watch the lake answer.
   clouds drift with the wind: to the right while the tide builds, to the left while it thins, faster the steeper it
   is, and still at its turns. Without ENERGY they drift right, as the wind always blew. A **rest** lays mist on the
   water, and the moon's reflection fades into it until the notes come back.
-- **Stars** come out as the music thins and all of them once nothing has played for a few seconds. Then the water is
-  still and the moon's reflection lies quiet.
+- **Stars** come out as the music thins and all of them once nothing has played for a few seconds. While playing the
+  moon's reflection shimmers, between notes too; stopped, the water is still and the reflection lies quiet.
 - On **GROUND LIGHT** it is day: a sun (a ring with short rays) takes the moon's place on the same arc, and no stars
   come out. Rain, clouds, hills and the water are the same.
 - A **PIECE** (LENGTH set) moves the moon across the sky, rising at the left as it starts and setting at the right; its
-  **phase** is the piece's SHAPE there: a thin crescent where the plan is quiet, full at its peak. Over the piece's
+  **phase** is the piece's SHAPE there: a thin crescent where the plan is quiet, full at its peak; it waxes while the
+  SHAPE rises (lit on the left) and wanes as it falls (lit on the right), as the moon does over a month seen from
+  the southern hemisphere: low at either end, it faces into the scene. Over the piece's
   last tenth dusk falls (GROUND LIGHT: the sky darkens from the hills up) and at night the stars come out. END STOP:
   the moon sets behind the hills.
 - **CHAIN**: each section has its own shore. When the form moves on, the new shore comes in from the right, as if
@@ -1885,6 +1899,7 @@ Hold **HOME** for the menu. Its rows come in groups: the screen, the knobs and b
 | **LARGE VALUE** | The knob you turn, its name and value large across the foot of the screen. **AUTO** (the default): on the home page and pages without a picture of their own, so a picture (a generator's sky, an envelope, the LFO) stays in view while you turn; **ON**: on every page; **OFF**: never. The value always shows, inverted, in the knob's column. With **ON** the value stays large about a second after the knob stops, so you can read it after you let go. Saved. |
 | **TEXT** | The weight of the screen's small letters: **NORMAL** (the default) or **BOLD**, each stroke a pixel wider, for a screen read from a distance or with low vision. The letters stay apart. KNOB 2 right BOLD, left NORMAL; OCT+ switches. Saved. |
 | **IDLE** | **OFF** (the default), or **LANDSCAPE**: after two minutes without a touch while playing, the screen moves to LANDSCAPE, for long pieces, installations or filming. The first touch (a button, a key or a knob) only takes you back to the page you were on; it does nothing else. The screen reader says nothing of it. Saved. |
+| **NOTE LIGHTS** | Lights each key while the selected track's sequence plays its note, for as long as the note lasts, so you can watch the line move over the keys. **OFF** (the default): only the keys you press and the notes MIDI holds light up. **STEP**: a STEP pattern's notes. **ALL**: every generator's notes too (TURING, EUCLID, GRIDS and the rest). Only notes in the keys' octave light; STEP's grid keeps its own lights. KNOB 2 steps, OCT+ steps round. Saved. |
 | **BATTERY** | **ON** (the default): every page's header shows the battery, its bars (none to three) on the battery, solid with a bolt in it on external power (a computer, a hub or a charger). A long message takes its place for as long as it shows. **WHEN LOW**: only when it is down to a bar or none, on the battery. Saved. Either way, when the last bar goes the screen says **BATTERY LOW** once; with autosave on, the project is then saved as soon as you press STOP (no five seconds' wait), so a long piece is not lost to a flat battery. It never saves while playing. |
 | **PANEL GAMMA** | The screen's contrast curve: the panel chip's own **G2.2** (the default), G1.8, G2.5 and G1.0, or TUNED and TUNED+VCOM. The screen goes black for a moment and redraws. Saved. |
 | **TRACK KNOB** | RIGHT: the ALGORITHM knob picks the track and PRESETS browses sounds, as printed. LEFT: the two swap. |
@@ -1921,7 +1936,8 @@ row from 36, in the order of a drum machine's tracks such as the Analog Rytm's (
 
 The page lists each track's channel as it is now, AUTO's included. The channels are saved with the project. Which
 notes go out at all is still the menu's **NOTES OUT** (KEYS, ALL or OFF): for the steps and the generators, set it to
-**ALL**.
+**ALL**. While **ENTRIES** fades a track out or in (STYLE FADE), its notes go out softer with its level; see
+[ENTRIES](#entries-tracks-out-and-back-in).
 
 **TRANSPOSE**: hold **OCT-** on **GLO > MIDI OUT** and turn **KNOB 1** to **4** to move a track's notes up or down
 on their way out, a semitone a detent (12 an octave), up to four octaves either way. For a synth or a MIDI-to-CV
@@ -2541,7 +2557,7 @@ smooth signal becomes steps. In Tessera: **S&H** is a source on each track (rand
 **Scale**. A set of notes the music stays within. 77 are built in; four **USER** scales **(3.5)** are yours, and
 **Scala tunings** are microtonal ones from the web editor.
 
-**SCL**. The harmony button: SCALES, the scale and key, QNT, CHORD.
+**SCL**. The harmony button, printed **SEL** on the panel: SCALES, the scale and key, QNT, CHORD.
 
 **Seed**. The starting number for a generator's random choices. The same seed plays the same line.
 
