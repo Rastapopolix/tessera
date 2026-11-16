@@ -739,7 +739,8 @@ SONG is not linked to [CHAIN](#chain-one-form-for-the-project): SONG counts patt
 > character; see [Which generator for what](#which-generator-for-what) for a quick guide.
 
 Each generator's three settings are on GEN, KNOB 2 to 4, and the panel under them shows what it plays. Every
-generator is also a mod source: its **GATE**, its **NOTE** and a **CV** (see [MODS](#mods-the-modulation-cords)).
+generator is also a mod source: its **GATE**, its **NOTE** and a **CV** (see [MODS](#mods-the-modulation-cords)); a STEP
+track gives the same GATE and NOTE from its pattern.
 
 | MODE | KNOB 2 | KNOB 3 | KNOB 4 | What it plays |
 |---|---|---|---|---|
@@ -1630,7 +1631,7 @@ at a time, each with an activity light and a moving mark.
 
 | Knob | What it sets |
 |---|---|
-| 1 | **Source**: `--`, then per track, from the selected track on (with T3 selected: T3, T4, T1, T2), LFO, ENV, VEL, KEY, RAND, MODW, AT, EXPR, S&H, SLEW, the generator's GATE, NOTE and CV, DRIFT, TIDE 1 to 3, SWARM 1 to 8 and EOC (the track's LFO cycle start: high from each wrap of the LFO until an eighth of the cycle has passed, a gate for GATE mods, FILL and the buses; setting its phase with TRIG or PLAY is not a wrap; the last of a track's sources in KNOB 1's list); and the project's ENERGY, [PERF](#perf-four-macros)'s MACRO 1 to 4 and the MIX buses BUS A and BUS B (see *MIX buses*). |
+| 1 | **Source**: `--`, then per track, from the selected track on (with T3 selected: T3, T4, T1, T2), LFO, ENV, VEL, KEY, RAND, MODW, AT, EXPR, S&H, SLEW, the track's GATE and NOTE (a generator's notes, or a STEP track's: its pattern, its recorded takes and its ARP; GATE high while the notes sound, for the step's GATE, NOTE the last one, the highest of a chord, held through the rests, 0 before the first) and a generator's CV, DRIFT, TIDE 1 to 3, SWARM 1 to 8 and EOC (the track's LFO cycle start: high from each wrap of the LFO until an eighth of the cycle has passed, a gate for GATE mods, FILL and the buses; setting its phase with TRIG or PLAY is not a wrap; the last of a track's sources in KNOB 1's list); and the project's ENERGY, [PERF](#perf-four-macros)'s MACRO 1 to 4 and the MIX buses BUS A and BUS B (see *MIX buses*). |
 | 2 | **Mod**: which of the 16 the other knobs edit. |
 | 3 | **Destination**, on a track: the voice (PITCH, CUTOFF, SHAPE, GAIN), the mix (LEVEL, PAN, SPREAD, FX SEND, SEND 2, SEND 3), the track's effects (FX1 MIX, FX1 RTE, FX1 CHR, the same for FX2 and FX3), the envelope and LFO settings, the engine's E1 to E8, and the generators' settings (T PROB, T LEN, E PULSE, E ROT, M LEAP, M DENS, MP POS, SHIFT, DROP, HUMAN, BRANCH, EV AMT, CONTR, AT X, AT Y, AT DENS, AT KICK, AT SNR, AT HAT, AT TOMS, B SPEED, B ANGLE, A PROB, Q PROB, C Y, C SIZE, C DENS, C AUTO, S START, CH PROG, AN VARY, AN ECHO, AN SHFT, AN SPCE, H TIME, SPLIT, RATCH, R CHANC, STRUM, STR DIR, BREATH, N LEN, LOCK, GRAVITY, DEVELOP, TIDE SP, SWRM RT, and a STEP track's ACC LIM), the sequencer's **GATE**, **SWING**, **GLIDE** and the arpeggiator's **ARP RTE**, **ARP GTE**, **ARP OCT** (moved at the sequencer's steps and note-ons; a key you play glides as set), **VELO** (each note's velocity, 100 % the whole 1 to 127), the STEP pattern's **DIR** (see *DIR* below), **CC** (a MIDI CC out, see *CC out*), **PLAY** (see *PLAY* below) and **CLOCK** (see *CLOCK* below). After the tracks' come the send effects', once, for every track: SF1 MIX, SF1 RTE, SF1 CHR (the same for SF2 and SF3) and RETURN; then **FILL** (see *FILL*) and **TEMPO** (see *TEMPO*); then the mods' own moves, **M1 AMT** to **M16 AMT** (see *Mods of mods* below), the MIX buses **BUS A** and **BUS B** (see *MIX buses*) and **MOD DEP** (see [PERF](#perf-four-macros)'s MOD DEPTH). |
 | 4 | **Amount**, −100 to +100 %. With no source (`--`) the cord is a fixed move and KNOB 4 sets its offset. |
@@ -1708,7 +1709,7 @@ at a time, each with an activity light and a moving mark.
   project with a mod to or from a bus (it ignores the bus settings alone).
 - **CLOCK.** A generator track with a mod onto **CLOCK** is stepped by the mod's edges and no longer by its DIV: a
   note, a step of its pattern or sequence, each time the source's gate opens. The mod is always a GATE mod (OCT- held,
-  KNOB 4: the threshold; a GATE source, the generator's GATE, counts its hits instead, so notes that run into each
+  KNOB 4: the threshold; a GATE source, a track's GATE, counts its hits instead, so notes that run into each
   other still count). **AMOUNT is the division**: 100 % every edge, 50 % every second, 33 % every third, down to
   every sixteenth; a negative AMOUNT steps when the gate closes. The track plays its first step at PLAY. DIV stays the
   step's length (GATE, RATCH, HUMAN) and is also the fastest it steps: an edge sooner than a DIV after the last step
@@ -1923,7 +1924,8 @@ track's TRANSPOSE after its channel when it is not 0 (**CH 1 ROUT -24**); it is 
 **SOUND**: on the MIDI OUT sheet (hold **OCT+** on **GLO > MIDI OUT**), Sound T1 to T4 (KNOB 2 right OFF, left ON). A track at SOUND
 OFF plays nothing on the FM-1 and takes none of its voices, but its notes still go out over MIDI on its channel, and
 its GATE, NOTE and CV still move the mods. So a track can play an outside synth alone, or, with its channel OFF too,
-be a lane that only modulates the other tracks (a generator driving their filters, say, through MODS). The keys
+be a lane that only modulates the other tracks (a generator or a written STEP pattern driving their filters, say,
+through MODS). The keys
 played on that track make no sound either. The page shows **SND OFF** after the channel (**MODS ONLY** when the
 channel is OFF too); it is saved with the project, and firmware before it plays the track's sound as usual.
 
@@ -2311,7 +2313,7 @@ own). [MANUAL](#tweak)
 
 **GATE**. On a modular, a signal that is high while a key is held and low when released. In Tessera: a *GATE mod* is
 a cord that moves its destination by its whole amount while the source is over a threshold, and not at all under it
-(**^**); a generator offers a **GATE** source (high on its notes); and a track's *gate* is how long its steps hold.
+(**^**); a generator or a STEP track offers a **GATE** source (high on its notes); and a track's *gate* is how long its steps hold.
 
 **GEN**. The first SEQ page: pick the track's MODE (STEP, ARP, or one of thirteen generators) and its main knobs.
 The **GEN layer** is the second set of knobs under OCT- held, and the **GEN sheet** (OCT+ held) has the rest.
@@ -2575,8 +2577,8 @@ destination that speeds the whole project up or slows it.
 
 **TRIO**. The engine for three oscillators with set intervals and detune.
 
-**Trigger**. A short pulse that says "now", where a gate says "while". In Tessera a generator's GATE source goes high
-with each of its notes; set a cord to GATE to use any source like a trigger or a switch.
+**Trigger**. A short pulse that says "now", where a gate says "while". In Tessera a track's GATE source (a generator's or a STEP
+pattern's) goes high with each of its notes; set a cord to GATE to use any source like a trigger or a switch.
 
 **Turing machine**. A looping random shift register: it plays a loop of a few notes and, with some chance, changes
 one as it comes round. Locked, it repeats exactly. In Tessera: **TURING** (LENGTH, PROB, SPAN).

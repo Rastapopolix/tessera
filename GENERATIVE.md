@@ -672,7 +672,7 @@ same principles: a system you set up, with an off position for everything automa
 Coming from a modular, a few differences matter:
 
 - **Four tracks, four LFOs.** Each track has one LFO, so a ring of four cross-modulated LFOs uses them all. The slow
-  sources (DRIFT, TIDE, SWARM, ENERGY), each generator's GATE, NOTE and CV, the two buses and each LFO's EOC are extra
+  sources (DRIFT, TIDE, SWARM, ENERGY), each track's GATE and NOTE (a generator's or a STEP pattern's), each generator's CV, the two buses and each LFO's EOC are extra
   sources that cost no LFO.
 - **Sixteen cords.** Most recipes here use three or fewer. A limit like this keeps a patch readable; **MATRIX**
   shows who moves whom, and the mod scope shows how.
