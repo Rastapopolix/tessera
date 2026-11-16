@@ -77,8 +77,8 @@ static void land_moon(uint32_t dt)
     int32_t tx, ty, d;
     if (!pl_secs()) {                                   /* (a named place: the moon rests where its name says) */
         uint32_t h = land.seed * 2654435761u;
-        land.mx = (land.seed ? 20 + (int32_t)((h >> 8) % 81u) : LAND_MX) * 16;
-        land.my = (land.seed ? 17 + (int32_t)((h >> 20) % 12u) : LAND_MY) * 16, land.mset = 0, land.lp = 0;
+        land.mx = (land.seed ? 20 + (int32_t)((h >> 8 & 127u) * 80u >> 7) : LAND_MX) * 16;
+        land.my = (land.seed ? 17 + (int32_t)(h >> 28) * 11 / 15 : LAND_MY) * 16, land.mset = 0, land.lp = 0;
         return;
     }
     if (song.playing) tessera_piece_get(&p, &left);
@@ -109,11 +109,11 @@ static int32_t land_sky(int32_t x, uint32_t sec)
     if (!land.seed && !sec) return 3 + (mo_sin(x * 3) + mo_sin(x * 7 + 40) / 2) * 3 / 127;
     h = ((land.seed ? land.seed : 0x6D2B79F5u) ^ (sec + 1u) * 0x9E3779B1u) * 0x2C1B3C6Du;
     h ^= h >> 15;
-    hh = 2 + (int32_t)(h >> 16) % 3 + (mo_sin(x * (2 + (int32_t)(h & 3u)) + (int32_t)(h >> 5 & 255u)) +
-                                       mo_sin(x * (5 + (int32_t)(h >> 2) % 7) + (int32_t)(h >> 5 & 255u) * 3) / 2) *
-                                          (2 + (int32_t)(h >> 13) % 5) / 127;
-    pk = mo_sin(x * 2 + (int32_t)(h >> 20 & 255u)) * (4 + (int32_t)(h >> 28) % 6) / 127 - 2;
-    if ((h >> 18) % 3u == 0u && pk > 0) hh += pk;
+    hh = 2 + (int32_t)(h >> 16 & 1u) + (mo_sin(x * (2 + (int32_t)(h & 3u)) + (int32_t)(h >> 5 & 255u)) +
+                                        mo_sin(x * (5 + (int32_t)(h >> 2 & 7u)) + (int32_t)(h >> 5 & 255u) * 3) / 2) *
+                                           (2 + (int32_t)(h >> 13 & 3u)) >> 7;
+    pk = (mo_sin(x * 2 + (int32_t)(h >> 20 & 255u)) * (4 + (int32_t)(h >> 28 & 7u)) >> 7) - 2;
+    if (!(h >> 18 & 3u) && pk > 0) hh += pk;
     return hh > 15 ? 15 : hh;
 }
 static int32_t land_toff(void)                          /* a travel: how far the new shore has come in (120: arrived) */
@@ -246,7 +246,7 @@ static uint32_t land_cover(void) { return (uint32_t)(energy_now() + 32767) >> 12
 /* what the scene shows, for mo_signature: drawn again only when it changes (a ring opening: 25 frames a second) */
 static uint32_t land_dusk(void)                         /* 0 .. 16 over a PIECE's last tenth */
 {
-    return pl_secs() && land.lp > 58982u ? (land.lp - 58982u) * 16u / 6554u : 0u;
+    return pl_secs() && land.lp > 58982u ? (land.lp - 58982u) * 5u >> 11 : 0u;
 }
 static uint32_t land_sig(void)
 {
@@ -317,7 +317,7 @@ static void mo_pic_land(void)
         land_disc(mx, my, 5, moon);                     /* a crescent; a PIECE's: as full as its SHAPE here */
         if (!pl_secs()) land_disc(mx + 3, my - 2, 4, MO_BG);
         else if (land.ph < 31784u)
-            land_disc(mx + 2 + ((int32_t)land.ph * 8 + 16383) / 32767, my - (2 * (32767 - (int32_t)land.ph) + 16383) / 32767, 4, MO_BG);
+            land_disc(mx + 2 + (((int32_t)land.ph * 8 + 16384) >> 15), my - ((2 * (32767 - (int32_t)land.ph) + 16384) >> 15), 4, MO_BG);
     }
     for (i = 0; i < clouds; i++) {                      /* the clouds: bands of dashes, lower and wider when full */
         int32_t w = 18 + (int32_t)cover + (int32_t)((i * 7u + (land.seed >> 27)) % 9u), cy = LAND_TOP + 6 + (int32_t)(i * 11u % 23u) +
@@ -338,14 +338,14 @@ static void mo_pic_land(void)
     }
     if (fm1_ms - land.st0 < LAND_STAR_MS) {             /* the FORM came round: a star across, down to the left */
         uint32_t a = fm1_ms - land.st0;
-        int32_t hx = 96 + (int32_t)(land.seed % 16u) - (int32_t)(a * 46u / LAND_STAR_MS), hy = LAND_TOP + 6 + (int32_t)(a * 18u / LAND_STAR_MS);
+        int32_t hx = 96 + (int32_t)(land.seed & 15u) - (int32_t)(a * 46u / LAND_STAR_MS), hy = LAND_TOP + 6 + (int32_t)(a * 18u / LAND_STAR_MS);
         for (i = 5; i >= 1u; i--) mo_px(hx + (int32_t)(i * 5u / 2u), hy - (int32_t)i, i > 2u ? MO_DIM : MO_HOT);
         mo_px(hx, hy, MO_HOT);
     }
     if (land.seed && land.from == 0u && toff < 120)     /* the temple: only on A's shore, going with it and back */
-        land_temple(8 + (int32_t)((land.seed * 2246822519u) >> 9) % 97 - toff, hills);
+        land_temple(8 + (int32_t)(((land.seed * 2246822519u) >> 9 & 127u) * 96u >> 7) - toff, hills);
     if (land.seed && land.sec == 0u)
-        land_temple(8 + (int32_t)((land.seed * 2246822519u) >> 9) % 97 + 120 - toff, hills);
+        land_temple(8 + (int32_t)(((land.seed * 2246822519u) >> 9 & 127u) * 96u >> 7) + 120 - toff, hills);
     if (tessera.et_amount)                              /* ENTRIES: a lit window a track, as bright as it is in */
         for (i = 0; i < 4u; i++) {
             int32_t lx = 17 + (int32_t)i * 27 + (int32_t)(i > 1u), ly = land_hill(lx) + 2, g = entry_gain[i];
