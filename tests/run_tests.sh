@@ -187,7 +187,7 @@ qmap() {
         firmware/src/eng_drum.c | firmware/src/drum_808.c | firmware/src/x0x/*) eng DRUM drum_test drum_editor_test ;;
         firmware/src/eng_noise.c) eng NOISE noise_test ;;
         firmware/src/eng_oracle.c | firmware/src/oracle_*) eng ORACLE oracle_test ;;
-        firmware/src/eng_trio.c) eng TRIO ;;
+        firmware/src/eng_trio.c) eng TRIO dual_core_test ;;
         firmware/src/eng_wheel.c) eng WHEEL ;;
         firmware/src/eng_formant.c) eng VOICE ;;
         firmware/src/fx.c) QREG=1; QSEL="$QSEL $G_AUDIO fx_test fx_performance no_effects_test" ;;
@@ -672,7 +672,7 @@ if sound && [ $TABLES = 1 ]; then
         "$OUT/regress" tests/golden.txt tests/cpu_baseline.txt
     t "PHYS: stability C-1..G9 over the parameter corners, worst-case cost against FM6 DRAWBARS, demos" phys_test \
         -DMELODEE_LEGACY_EXTRAS=1 -O2 $FW -- "$OUT/phys_test" build/phys_demo
-    t "paired FM6 voices: serial/concurrent sample equality, a worker retired mid-song" dual_core_test \
+    t "paired FM6 and batched TRIO voices: serial/concurrent sample equality, a worker retired mid-song" dual_core_test \
         -O2 $FW -pthread
     t "audio: 1296 ordered engine assignments, releases, controls and concurrent PCM parity" audio_matrix_test -O2 $FW -pthread
     t "native fp32: FM6 against an independent reference, exact pitch" synth_fpu_test \

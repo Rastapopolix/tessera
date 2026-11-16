@@ -820,17 +820,22 @@ static void engine_batch_kernel(const void *data,int32_t *pcm)
     for(uint32_t k=0;k<8u;k++)params[P_E0+k]=j->engine_params[k];
     for(uint32_t k=0;k<DV_NLANE;k++)params[P_LN0+k]=j->lane_params[k];
     if(j->engine==&ENG_DRUM){dr_scratch_t scratch;drum_render_into(j->track,j->voice,pcm,j->n,&j->modulation,&scratch,params);}
+#if TRIO_ON
+    else if(j->engine==&ENG_TRIO)trio_render_p(params,j->voice,pcm,j->n,&j->modulation);
+#endif
     else j->engine->render(j->track,j->voice,pcm,j->n,&j->modulation);
 }
 
 static inline void engine_join(void) {}
 static void engine_render(track_t *t,voice_t *v,const engine_t *e,int32_t *out,uint32_t n,const vmod_t *m)
 {
-    if(audio_batch_active && e==&ENG_DRUM){
+    /* DRUM and TRIO voices go to the batch (CPU1 when it is online): their state is the voice's own, the settings a
+     * copy taken here */
+    if(audio_batch_active && (e==&ENG_DRUM || (TRIO_ON && e==&ENG_TRIO))){
         engine_batch_t j;j.track=t;j.voice=v;j.engine=e;j.modulation=*m;j.n=n;
         for(uint32_t k=0;k<8u;k++)j.engine_params[k]=t->p[P_E0+k];
         for(uint32_t k=0;k<DV_NLANE;k++)j.lane_params[k]=t->p[P_LN0+k];
-        audio_batch_push(engine_batch_kernel,&j,sizeof j,out,n,drum_is909(t)?AP_909:AP_808);return;
+        audio_batch_push(engine_batch_kernel,&j,sizeof j,out,n,e!=&ENG_DRUM?AP_TRIO:drum_is909(t)?AP_909:AP_808);return;
     }
     e->render(t,v,out,n,m);
 }
