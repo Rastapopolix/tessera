@@ -1427,6 +1427,25 @@ static void act_do(void)
     }
 }
 
+/* ENV + OCT- / OCT+ on HOME: the selected track's TRANSPOSE (SCL's TRN) an octave down / up, within its +-24;
+ * both OCTs: 0. A DRUM track has none. The keys' own octave stays on OCT alone */
+static uint8_t env_oct_used;                            /* ENV held for it: its release opens no page */
+static void track_oct_shift(int32_t d)
+{
+    char b[8];
+    int32_t v;
+    if (drum_track(TSEL)) {
+        ui_message("NOT ON DRUMS");
+        return;
+    }
+    v = d ? clamp(TSEL->p[P_TRANS] + d, -24, 24) : 0;
+    TSEL->p[P_TRANS] = (int16_t)v;
+    b[0] = v > 0 ? '+' : 0;
+    fmt_int(b + (v > 0), v);
+    ui_say("TRANSPOSE ", b);
+    ui.force = 1;
+}
+
 /* OCT- / OCT+ as Esc / Enter (oct_nav): on release, and only a press that began there; both down together
  * (UPDATE MODE, main.c) is no tap. Bit 0 OCT-, bit 1 OCT+ */
 static uint8_t oct_eat;                                 /* OCT taps not to come (held for a sheet, used in a combo) */
@@ -2254,6 +2273,17 @@ static void ui_input(void)
         oct_eat |= (uint8_t)dir;
         oct &= ~dir;
     }
+    uint32_t env_oct = ui.home && !ui.ly && !ui.menu && !ui.confirm && !name_on() && !new_on() && !pop.on &&
+        (fm1_in.buttons & (1u << panel.btn[B_ENV])) ? pressed & octmask : 0u;
+    if (env_oct) {                                      /* ENV + OCT- / OCT+ on HOME: the track an octave down / up */
+        uint32_t dir = ((env_oct >> panel.btn[B_OCTDN]) & 1u) | (((env_oct >> panel.btn[B_OCTUP]) & 1u) << 1);
+        ui.oct_t0 |= 2u;                                /* (OCT+ then neither a tap nor the sheet) */
+        oct_deferred = 0;
+        oct_eat |= (uint8_t)dir;
+        oct &= ~dir;
+        env_oct_used = 1;
+        track_oct_shift((fm1_in.buttons & octmask) == octmask ? 0 : dir & 2u ? 12 : -12);
+    }
     oct = layer_oct(pressed, oct);                      /* (a SET layer's OCT-: put back) */
     layer_arm(pressed, now);
     layer_masks();                                      /* seq.c: keys pressed with a layer's button are its own */
@@ -2498,7 +2528,7 @@ static void ui_input(void)
         case B_OCTDN:
         case B_OCTUP: {
             uint32_t both = (1u << panel.btn[B_OCTDN]) | (1u << panel.btn[B_OCTUP]), bit = b == B_OCTUP ? 2u : 1u;
-            if (edit_oct & (1u << id))
+            if ((edit_oct | env_oct) & (1u << id))
                 break;
             if (pop.on == POP_PICK) {                   /* a picker: either closes it (ui_popup.c) */
                 pop_close();
@@ -2544,6 +2574,11 @@ static void ui_input(void)
         }
     }
     if(momentary.active)ui.pg_down&=(uint16_t)~(1u<<panel.btn[B_LFO]);
+    if (env_oct_used) {                                 /* (ENV used for a transpose: its release opens no page) */
+        ui.pg_down &= (uint16_t)~(1u << panel.btn[B_ENV]);
+        if (!(fm1_in.buttons & (1u << panel.btn[B_ENV])))
+            env_oct_used = 0;
+    }
     msc_frame();                                        /* (FX held for a mod amount: its release opens no page) */
     if (help.on) {                                      /* (ARP held for help: its release opens no page) */
         ui.pg_down &= (uint16_t)~(1u << panel.btn[B_ARP]);
