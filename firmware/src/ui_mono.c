@@ -2700,7 +2700,8 @@ static void mo_dhead(const char *chip, const char *msg, int32_t bat)
     cv_blit(0, Y_HEAD);
 }
 /* a list page's rows (list_rows; 22 px = 11 cells apart): the label at the left, the value at the right (dim), the
- * row picked inverted across the screen, a row with more behind it a '>'; a scroll bar when not all fit */
+ * row picked inverted across the screen, a row with more behind it a '>' (its value up to 12 letters, a name: KUGO
+ * HARP, HARMONIC MIN); a scroll bar when not all fit */
 static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis)
 {
     uint32_t r;
@@ -2719,7 +2720,7 @@ static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis)
             if (on)
                 mo_fill(0, y, 118, 10, MO_HOT);
             mo_ascii(a, v, sizeof a);
-            mo_cut(t, a, 9);
+            mo_cut(t, a, more ? 12u : 9u);              /* (a page behind it: Scale, Sound, short labels) */
             vw = mo_tw(t);
             mo_textr(t, more ? 109 : 115, y + 2, on ? MO_BG : vc == T_DIM ? MO_DIM : MO_INK);
             if (more)

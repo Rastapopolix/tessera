@@ -183,7 +183,7 @@ static void browser_draw(void)
 }
 
 /* OCT+ keeps the sound shown (a pending one loads now), OCT- goes back to the one from before the browser (the loads
- * since are one undo level: ui.c load_begin); either way back to Stage */
+ * since are one undo level: ui.c load_begin); either way back to Stage, or to the list whose Sound row opened it */
 static void browser_key(int keep)
 {
     if (keep) {
@@ -192,6 +192,11 @@ static void browser_key(int keep)
         brw.on = 0;
         if (browse_loads != browse_mark)
             undo_step(0);
+    }
+    if (drill_to == 3u && drill_pg < NPAGES) {
+        ui.page = drill_pg;
+        page_entered();                                 /* (drill_to 0 again) */
+        return;
     }
     go_home();
 }

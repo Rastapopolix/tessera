@@ -3329,6 +3329,42 @@ static int test_browser(void)
     turn(EN_K2, 1);
     press(B_OCTUP);
     bad += check("BROWSER: OCT+ keeps the sound, to Stage", ui.home && list_cur(&total) == first + 1u);
+
+    go_title("VOICE");                                   /* VOICE's Sound row: PRESETS in place, back to VOICE */
+    frame();
+    {
+        char lb[16], v[16], tag[6], nm[16];
+        uint16_t vc;
+        uint32_t voice = ui.page;
+        lst.row = 0;
+        frame();
+        list_cap(list_at(list_on(), 0), lb, v, &vc);
+        cur_entry(&src, &k);
+        entry_label(src, k, tag, nm);
+        bad += check("VOICE: its first row is the track's sound, with a '>' (PRESETS behind it)",
+                     list_on() && str_eq(lb, "Sound") && str_eq(v, nm) && list_text(0, lb, v, &vc));
+        first = list_cur(&total);
+        press(B_OCTUP);
+        ok = !ui.home && cur_page()->graph == GR_BROWSE && drill_to == 3u;
+        turn(EN_K2, 1);
+        turn(EN_K2, 1);
+        ok &= list_cur(&total) == first + 2u;
+        press(B_OCTDN);
+        bad += check("VOICE Sound > PRESETS: OCT- (BACK) leaves the sound as it was, back to VOICE's list on its row",
+                     ok && !ui.home && ui.page == voice && list_on() && lst.row == 0u && list_cur(&total) == first &&
+                     !drill_to);
+        press(B_OCTUP);
+        turn(EN_K2, 1);
+        press(B_OCTUP);
+        bad += check("VOICE Sound > PRESETS: OCT+ (OK) keeps the sound picked, back to VOICE",
+                     !ui.home && ui.page == voice && lst.row == 0u && list_cur(&total) == first + 1u);
+        turn(EN_K2, 1);
+        bad += check("VOICE Sound: KNOB 2 browses as the PRESETS knob does", list_cur(&total) == first + 2u);
+        press(B_OCTUP);
+        turn(EN_SELECT, 1);
+        bad += check("VOICE Sound > PRESETS: left another way (SELECT), the way back is forgotten",
+                     !drill_to && cur_page()->graph != GR_BROWSE);
+    }
     PREF_BITS &= (uint8_t)~PREF_ACCEL_OFF;
 
     ui_power_on();
@@ -4394,8 +4430,8 @@ static int test_popups(void)
     {   /* list pages (ui_list.c): KNOB 1 the row, KNOB 2 its value, OCT+ its list (SCL's Scale: SCALES), OCT- Stage */
         ui_power_on(); go_title("VOICE"); frame();
         o = TSEL->p[P_DETUNE];
-        turn(EN_K1, 5); turn(EN_K2, 3);
-        bad += check("LISTS: VOICE 1-3 one list; KNOB 1 to row 6 (VOICE 2's DETUNE), KNOB 2 edits it",
+        turn(EN_K1, 6); turn(EN_K2, 3);                  /* (row 1: Sound, PRESETS) */
+        bad += check("LISTS: VOICE 1-3 one list; KNOB 1 to row 7 (VOICE 2's DETUNE), KNOB 2 edits it",
                      TSEL->p[P_DETUNE] == o + 3 && !page_visible(page_titled("VOICE 2")));
         turn(EN_K1, -5);
         press(B_OCTUP);

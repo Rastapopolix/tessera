@@ -16,7 +16,7 @@ enum {
     HP_HIT_STEP, HP_HIT_DRUM, HP_HIT_PITCH, HP_HIT_LENGTH,
     HP_DRUM_SOUND, HP_DRUM_TUNE, HP_DRUM_DECAY, HP_DRUM_CHAR, HP_DRUM_LEVEL,
     HP_PATTERNS, HP_SONG_SECTION, HP_SONG_TRACK, HP_SONG_PATTERN, HP_SONG_REPEATS,
-    HP_BROWSE_LIST, HP_BROWSE_SOUND, HP_BROWSE_FAV, HP_BROWSE_ENGINE,
+    HP_BROWSE_LIST, HP_BROWSE_SOUND, HP_BROWSE_FAV, HP_BROWSE_ENGINE, HP_LIST_SOUND,
     HP_CORD_SRC, HP_CORD_MOD, HP_CORD_DST, HP_CORD_AMT, HP_MX_FROM, HP_MX_TO, HP_MX_MOD, HP_MX_OPEN,
     HP_SV_CLEAR, HP_FORM_CLEAR, HP_QUAD_COL, HP_AWAKE_A, HP_AWAKE_B, HP_POLY_RHY, HP_CONSTEL_SPEED,
     HP_FMOP,                                            /* FM6's operator pages: FP_R1 .. FP_OP from here */
@@ -117,13 +117,17 @@ static const help_t HELP_PAGE[HP_COUNT] = {
                                           "one pass of track 1's pattern."),
     /* SAVE > PRESETS (the browser) */
     H_(HP_BROWSE_LIST, "PRESETS LIST", "Which list the sounds come from: all of them, the favourites, the recent "
-                                       "ones, or a category (bass, lead, pad, keys, drums ..)."),
+                                       "ones, a category (bass, lead, pad, keys, drums ..), or one engine's sounds "
+                                       "(FM6, ORACLE, TRIO ..)."),
     H_(HP_BROWSE_SOUND, "PRESETS SOUND", "The sounds in the list (the PRESETS knob too); the one shown loads when the "
                                          "knob rests. OCT+ keeps it, OCT- goes back to the sound from before."),
     H_(HP_BROWSE_FAV, "PRESETS FAVOURITE", "Right marks the sound shown a favourite, left unmarks it; FAV lists "
                                            "them."),
     H_(HP_BROWSE_ENGINE, "PRESETS ENGINE", "Switches the track to the next or previous sound engine, at its first "
                                            "sound."),
+    H_(HP_LIST_SOUND, "SOUND", "The track's sound. KNOB 2 steps through PRESETS' list as the PRESETS knob does; OCT+ "
+                               "opens PRESETS here: OCT+ there keeps the sound picked, OCT- goes back to this one, "
+                               "and either returns to this list."),
     /* MODS (the cords: ui_cords.c), MATRIX (ui_matrix.c) */
     H_(HP_CORD_SRC, "MOD SOURCE", "What moves it: a track's LFO, envelope, velocity, key, random, controllers, its "
                                   "gate or note (its generator's or STEP pattern's), CV, or DRIFT, a slow wander, or its TIDE 1-3 or SWARM "
@@ -455,8 +459,8 @@ static void help_find(uint32_t k)
         help_named(HP_PATTERNS, "T1 ", k);
         return;
     }
-    if (pg->graph == GR_SONG || pg->graph == GR_BROWSE) {
-        help_hp((pg->graph == GR_SONG ? HP_SONG_SECTION : HP_BROWSE_LIST) + k);
+    if (pg->graph == GR_SONG || pg->graph == GR_BROWSE) {   /* (PRESETS as VOICE's Sound row: its own) */
+        help_hp(help_inner ? HP_LIST_SOUND : (pg->graph == GR_SONG ? HP_SONG_SECTION : HP_BROWSE_LIST) + k);
         return;
     }
     if (pg->graph == GR_SCALE_PICKER && k == 0u) {      /* (SCALES: KNOB 2 to 4 SCALE ROOT QNT, below) */
