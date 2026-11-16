@@ -347,6 +347,9 @@ static uint32_t distinct(const uint32_t *h, uint32_t n)
 static void lf_power_on(const patch_t *p)
 {
     host_tracks_init();
+    song.playing = 0;                                 /* (a power-on is stopped: the probe before left it playing,
+                                                       * and a setting set while playing can act otherwise, as LOCK
+                                                       * turned up from 0 does since #781) */
     tessera_reset();
     song.g[G_BPM] = 120;
     for (uint32_t tr = 0; tr < LF_TR; tr++) lf_open_note[tr] = -1;
