@@ -432,7 +432,7 @@ static int snap_to_scale(void)
         t->step[1].note[0] == 67 && t->step[2].note[0] == 64);
     tessera.mode[other] = TESS_ENG_OFF; tessera.chord_pc[other] = 0;
 
-    /* microtonal: with QNT on a note is a degree; QNT OFF: semitones, to those near the scale */
+    /* microtonal: a note is a degree, QNT OFF too (microtonal.h) */
     track_defaults_steps(t);
     t->p[P_SCALE] = (int16_t)snap_scale_id("IN"); t->p[P_ROOT] = 0; t->p[P_QUANT] = Q_SNAP;
     t->step[0] = (step_t){{61}, 1, ST_NOTE, 0, 0, 100};
@@ -442,7 +442,8 @@ static int snap_to_scale(void)
         msg_is("ALL IN SCALE"));
     t->p[P_QUANT] = Q_OFF;
     seqt_snap();
-    bad += check("  QNT OFF: on the semitones near it", snap_in_key(t, t->step[0].note[0]) && snap_in_key(t, t->step[1].note[0]));
+    bad += check("  QNT OFF: its degrees stay too", t->step[0].note[0] == 61 && t->step[1].note[0] == 66 &&
+        msg_is("ALL IN SCALE"));
 
     /* the sheet: a row on a melodic track, none on a kit */
     t->p[P_SCALE] = (int16_t)snap_scale_id("MAJ"); t->step[0].note[0] = 61; t->step[0].n = 1;

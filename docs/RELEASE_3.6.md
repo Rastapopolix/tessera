@@ -5,7 +5,7 @@
 ### 🎼 Harmony
 * **HARM, a harmonizer** (after Dreamsequence's): with a CHORD track playing, each note of the scale up plays the chord's next note up, so a run up the keys is an arpeggio that follows the chords. **SCL > QNT HARM** does this for the keys, MIDI IN and the generators; FOLLOW's new **HOW HARM** does it to another track's line, SHIFT moving by chord notes. A cord into SHIFT on a HOW HARM track picks chord notes: any modulation, in harmony ([RECIPES](https://github.com/Rastapopolix/tessera/blob/main/RECIPES.md)).
 * **QNT LINK** (SCL, the row after QNT): **LINKED** keeps one QNT for every track, as before; **OWN** gives each track its own QNT and MPC degree, so one track can take MPC pads while others follow the chords (CHRD) or HARM (#755). The MANUAL now has a table of QNT's modes, MPC included.
-* **Microtonal tunings with QNT OFF** @QNT_OFF@
+* **Microtonal tunings with QNT OFF**: microtonal scales and your own Scala tunings now play with QNT OFF too. Each key and MIDI note is the next degree, so 24EDO and the maqam scales keep their quarter tones. A project saved with a microtonal scale and QNT OFF now plays in its tuning instead of ordinary semitones.
 
 ### 🔁 ANSWER
 * **BEND**, a delay with a mind of its own (after Qu-Bit's Data Bender, the idea only): GEN sheet (OCT+ held), **Mode** REPLY (as before) or BEND. Every note comes back **TIME** steps later (1 to 16) while you are still playing, then again, drifting with VARY and SHIFT; **BREAK** is the chance a repeat glitches (slips, skips, stutters, jumps back). With VARY, SHIFT, ECHO and BREAK at 0 it is a plain tempo-synced delay. A STEP pattern as SOURCE is not heard in BEND yet (the keys, MIDI IN and a generator SOURCE are).
@@ -43,6 +43,7 @@ Open **[rastapopolix.github.io/tessera](https://rastapopolix.github.io/tessera/)
 * **On 3.5.3 and older, a project saved on 3.6 does not load** (the project format changed for ANSWER's held lengths, 16 notes, CHORD and BEND). Keep a copy if you may go back.
 * A project that uses one of the new MODS destinations, FOLLOW HOW HARM or QNT HARM needs 3.6. A project saved with QNT OWN loads on older firmware with each track's QNT as saved.
 * Patterns (PAT GEN) keep ANSWER's first 8 notes; CHORD, held lengths and notes 9 to 16 belong to the track, not the pattern.
+* A project saved with a microtonal scale and QNT OFF now plays in its tuning (see Harmony).
 * PPQN, like CLK, is kept through power-off and project loads.
 * The identity is **FM-1_836**: M-UPGRADE 3.11 and later recognise it, and the web installer offers 3.6 as an update.
 
