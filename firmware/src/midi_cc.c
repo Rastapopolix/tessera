@@ -48,7 +48,8 @@ static void midi_pid(track_t *t, uint32_t pid, uint32_t v, uint32_t full)
         return;
     }
     if (((chain.running || chain.armed) && pid >= P_SLEN && pid <= P_SGATE)   /* (a chain plays: as the editor's SET) */
-        || pid == P_SCALE || pid == P_QUANT || pid == P_MPCDEG || (pid == P_ROOT && tessera.key_link))
+        || pid == P_SCALE || ((pid == P_QUANT || pid == P_MPCDEG) && !tessera.qnt_own)
+        || (pid == P_ROOT && tessera.key_link))
         return;
     t->p[pid] = (int16_t)x;
     motion_capture(t, pid, (int16_t)x);

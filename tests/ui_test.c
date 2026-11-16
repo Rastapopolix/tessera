@@ -4405,10 +4405,34 @@ static int test_popups(void)
         turn(EN_K1, 1); turn(EN_K2, 1);                 /* (Key link: LINKED again) */
         bad += check("  LINKED again: every melodic track takes the selected track's key",
                      tessera.key_link && trk[m].p[P_ROOT] == 5 && (d == NTRK || trk[d].p[P_ROOT] == 3));
-        turn(EN_K1, 5); turn(EN_K2, 1); turn(EN_K2, 1);   /* (row 6, the last but one: Key in B, up two) */
+        turn(EN_K1, 6); turn(EN_K2, 1); turn(EN_K2, 1);   /* (row 7, the last but one: Key in B, up two) */
         turn(EN_K1, 1); turn(EN_K2, -1);                /* (the last: Key in C, down one) */
         bad += check("  Key in B / Key in C rows: the CHAIN's KEY B / C, a semitone a detent; ROOT untouched",
                      tessera.fc_key[0] == 2 && tessera.fc_key[1] == -1 && TSEL->p[P_ROOT] == 5);
+    }
+    {   /* QNT LINK (#755, SCL's row after QNT): LINKED one QNT for every track; OWN each track's, so one track can take
+         * MPC pads while another follows the chords */
+        uint32_t m = NTRK, k;
+        int ok;
+        ui_power_on();
+        for (k = 0; k < NTRK; k++) {
+            trk[k].p[P_QUANT] = Q_OFF;
+            if (k != song.sel && m == NTRK) m = k;
+        }
+        go_title("SCL"); frame();
+        lst.row = 0;
+        turn(EN_K1, 3); turn(EN_K2, 1);                 /* (row 3: QNT, OFF to SNAP) */
+        ok = !tessera.qnt_own && m < NTRK && TSEL->p[P_QUANT] == Q_SNAP && trk[m].p[P_QUANT] == Q_SNAP;
+        bad += check("QNT LINK: on in a new project; QNT on one track sets every track's", ok);
+        turn(EN_K1, 1); turn(EN_K2, -1);                /* (row 4: QNT link, OWN) */
+        turn(EN_K1, -1); turn(EN_K2, 1);                /* (QNT: SNAP to WHITE, this track only) */
+        ok = tessera.qnt_own && TSEL->p[P_QUANT] == Q_WHITE && trk[m].p[P_QUANT] == Q_SNAP;
+        bad += check("  OWN: QNT is the selected track's alone", ok);
+        turn(EN_K1, 1); turn(EN_K2, 1);                 /* (QNT link: LINKED again) */
+        bad += check("  LINKED again: every track takes the selected track's QNT",
+                     !tessera.qnt_own && trk[m].p[P_QUANT] == Q_WHITE);
+        tessera.qnt_own = 0;
+        for (k = 0; k < NTRK; k++) trk[k].p[P_QUANT] = Q_OFF;
     }
     {   /* sections (ui_sections.c): PRESETS the next section and back to the page last used; EDIT: the map */
         uint32_t f;

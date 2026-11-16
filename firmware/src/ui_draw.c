@@ -1023,7 +1023,7 @@ static void draw_columns_(void)
             midi_tr_text(w, v);
             draw_column(k + 1u, k ? "KEY C" : "KEY B", w, "st", tessera.fc_form ? VAL(k + 1u) : T_DIM, (v + 12) * 1000 / 24, ICON_AUTO);
         }
-        draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
+        draw_column(3, "QNT", tessera.qnt_own ? "OWN" : "LINKED", "", VAL(3u), tessera.qnt_own ? 0 : 1000, ICON_AUTO);
         return;
     }
     if (cur_page()->graph == GR_PIECE && piece_layer()) {   /* PIECE, SHAPE USER, OCT- held: KNOB 1 a point, KNOB 2 its

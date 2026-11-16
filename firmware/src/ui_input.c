@@ -1078,6 +1078,11 @@ static void edit_param(uint32_t slot, int32_t steps)
         }
         if ((slot == 1u || slot == 2u) && steps)        /* KEY B / C: a semitone a detent */
             tessera_param_set(0, TX_FC_KEYB + slot - 1u, tessera.fc_key[slot - 1u] + steps);
+        if (slot == 3u && steps && (steps > 0) == (tessera.qnt_own != 0)) {   /* QNT LINK: right LINKED (every track
+                                                     * takes the selected track's QNT and MPC degree), left OWN */
+            tessera_param_set(0, TX_QNT_LINK, steps > 0);
+            if (!tessera.qnt_own) scale_share(TSEL);
+        }
         ui.force = 1;
         return;
     }

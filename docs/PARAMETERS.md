@@ -304,6 +304,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x2A4 | ANSWER MODE | REPLY, BEND | REPLY | REPLY: it waits for your phrase to end (a bar without a key), then SPACE, then answers it (as before). BEND: it does not wait. Every note comes back TIME steps later while you play, again and again, softer and more changed each time: a delay with a mind of its own. FADE: how many repeats (at the top, on and on). VARY: how far each repeat drifts. SHIFT: the repeats climb or sink, up to that many degrees a bar, a new way each bar. ORDER: the first repeats play your line reversed or shuffled. BREAK: the glitches. VARY, SHIFT, ECHO and BREAK at 0: a plain delay. The GEN sheet (OCT+ held), Mode. |
 | 0x2A5 | ANSWER TIME | 1 to 16 | 3 | BEND: the steps between a note and its repeat, and between repeats: 1 to 16 (3: a dotted eighth at 16 steps a bar). The GEN sheet (OCT+ held), Time. |
 | 0x2A6 | ANSWER BREAK | 0 to 100 % | 0 | BEND: the chance a repeat glitches, this once: it slips a step early or late, skips, stutters (again a step later) or jumps back to a note you played a little before. 0: never. The GEN sheet (OCT+ held), Break. |
+| 0x2A7 | QNT LINK | OWN, LINKED | LINKED | LINKED: one QNT for the whole project, and one MPC degree: changing either on any track sets it on every track. OWN: each track its own, so one track can take MPC pads while others follow the chords (CHRD) or HARM. Turning it on gives every track the selected track's. SCL's QNT link row; on in a new project, saved with it. |
 
 ## Mods
 

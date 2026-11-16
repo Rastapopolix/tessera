@@ -1069,24 +1069,30 @@ static int param_kept(uint32_t i)
            i == P_CHRD || i == P_VOIC || i == P_MPCDEG || i == P_RECQ || param_fx(i) || param_fx_send(i);
 }
 
-/* SCL, QNT and the MPC degree are the song's: one scale for every part, kept the same in each track's own slots
- * (the formats and the editor keep them per track). ROOT too while KEY LINK is on (Tessera: tessera.key_link), on
- * every melodic track (a drum track keeps its own); otherwise ROOT, and TRN always, stay the track's */
+/* SCL is the song's: one scale for every part, kept the same in each track's own slots (the formats and the editor
+ * keep them per track). QNT and the MPC degree too while QNT LINK is on (OWN, tessera.qnt_own: each track's, #755),
+ * and ROOT while KEY LINK is on (tessera.key_link), on every melodic track (a drum track keeps its own); otherwise
+ * ROOT, and TRN always, stay the track's */
 static int scale_shared(uint32_t id)
 {
-    return id == P_SCALE || id == P_QUANT || id == P_MPCDEG || (id == P_ROOT && tessera.key_link);
+    return id == P_SCALE || ((id == P_QUANT || id == P_MPCDEG) && !tessera.qnt_own) ||
+           (id == P_ROOT && tessera.key_link);
 }
-static void scale_share(const track_t *from)
+/* q: QNT and the MPC degree too (scale_share: while QNT LINK is on; a project's load: never, its own are kept) */
+static void scale_share_q(const track_t *from, int q)
 {
     uint32_t k;
     for (k = 0; k < NPART; k++) {
         trk[k].p[P_SCALE] = from->p[P_SCALE];
-        trk[k].p[P_QUANT] = from->p[P_QUANT];
-        trk[k].p[P_MPCDEG] = (int16_t)clamp(from->p[P_MPCDEG], 1, (int32_t)scale_count(from));
+        if (q) {
+            trk[k].p[P_QUANT] = from->p[P_QUANT];
+            trk[k].p[P_MPCDEG] = (int16_t)clamp(from->p[P_MPCDEG], 1, (int32_t)scale_count(from));
+        }
         if (tessera.key_link && !drum_track(&trk[k]) && !drum_track(from))
             trk[k].p[P_ROOT] = from->p[P_ROOT];
     }
 }
+static void scale_share(const track_t *from) { scale_share_q(from, !tessera.qnt_own); }
 
 #include "scale_picker.c"
 

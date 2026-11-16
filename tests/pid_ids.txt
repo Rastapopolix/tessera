@@ -286,3 +286,4 @@
 0x2a4 ANSWER MODE              track 0..1 def 0
 0x2a5 ANSWER TIME              track 1..16 def 3
 0x2a6 ANSWER BREAK             track 0..100 def 0
+0x2a7 QNT LINK                 global 0..1 def 1

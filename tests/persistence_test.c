@@ -244,6 +244,30 @@ static int test_tsp_record(void)
         bad += check("TSP1: the CHAIN's KEY B / C at 0 write no FKEY part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_FKEY]);
         tessera_param_set(0, TX_FC_KEYB, -12); tessera_param_set(0, TX_FC_KEYC, 7);
     }
+    {   /* QNT LINK (#755): LINKED, the default, writes no QLINK part; OWN keeps each track's QNT and MPC degree */
+        int16_t q[NTRK], d[NTRK];
+        uint32_t k;
+        for (k = 0; k < NTRK; k++) { q[k] = trk[k].p[P_QUANT]; d[k] = trk[k].p[P_MPCDEG]; }
+        project_capture(&proj_scratch);
+        len = tsp_pack(raw, &proj_scratch, 1);
+        bad += check("TSP1: QNT LINK LINKED (the default) writes no QLINK part, so older firmware sees none",
+                     !tessera.qnt_own && len && tsp_valid(raw, len) && !tsp_seen.at[TSP_QLINK]);
+        tessera_param_set(0, TX_QNT_LINK, 0);
+        trk[0].p[P_QUANT] = Q_SNAP; trk[1].p[P_QUANT] = Q_MPC; trk[1].p[P_MPCDEG] = 3; trk[2].p[P_QUANT] = Q_HARM;
+        ok = !project_save_as(0, "TSP");
+        tessera_param_set(0, TX_QNT_LINK, 1);
+        for (k = 0; k < NTRK; k++) trk[k].p[P_QUANT] = Q_OFF;
+        project_load(0);
+        bad += check("TSP1: QNT LINK OWN comes back, with each track's own QNT and MPC degree", ok &&
+                     tessera.qnt_own && trk[0].p[P_QUANT] == Q_SNAP && trk[1].p[P_QUANT] == Q_MPC &&
+                     trk[1].p[P_MPCDEG] == 3 && trk[2].p[P_QUANT] == Q_HARM);
+        tessera_param_set(0, TX_QNT_LINK, 1);
+        for (k = 0; k < NTRK; k++) { trk[k].p[P_QUANT] = q[k]; trk[k].p[P_MPCDEG] = d[k]; }
+        ok = !project_save_as(0, "TSP");
+        tessera_param_set(0, TX_QNT_LINK, 0);
+        project_load(0);
+        bad += check("TSP1: a project saved LINKED (no QLINK part) loads LINKED", ok && !tessera.qnt_own);
+    }
     project_capture(&proj_scratch);
     len = tsp_pack(raw, &proj_scratch, 1);             /* (with the generators: the TESSERA part) */
     ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_TESSERA];
