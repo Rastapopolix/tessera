@@ -1158,14 +1158,16 @@ void tessera_hold_hit(uint32_t tr)
     cord_hold_note(tr);                                     /* (HOLD mods clocked by its notes) */
     tess_live_lead &= (uint8_t)~(1u << tr);                 /* (its own note is the newer one) */
     int32_t n = tessera.last_note[tr];                      /* (its note, as FOLLOW takes it: a STEP track's highest) */
-    if (tessera.mode[tr] == TESS_ENG_OFF)
+    if (tessera.mode[tr] == TESS_ENG_OFF) {
         for (uint32_t i = n = 0; i < trk[tr].seq_n; i++) if ((int32_t)trk[tr].seq_notes[i] > n) n = trk[tr].seq_notes[i];
+        tessera.last_note[tr] = (uint8_t)n;                 /* (the NOTE mod of a STEP track: cord.c; read nowhere else) */
+    }
     if (tessera.mode[tr] != TESS_ENG_OFF) tessera_answer_heard(tr, (uint32_t)n);   /* (an ANSWER with it as SOURCE) */
     tess_lead_note(tr, n);
 }
 /* a key (or MIDI IN) on track tr: the tracks that FOLLOW it hear it as one of its notes, as an ANSWER with it as
  * SOURCE does (tessera_answer_key); CANON, RHYTHM SOURCE and HOLD count it. A STEP pattern playing on tr still wins;
- * on a generator the newer note wins. Not the cords (the GATE / NOTE sources stay the generator's) */
+ * on a generator the newer note wins. Not the cords (the GATE / NOTE sources stay what the track plays) */
 void tessera_follow_key(uint32_t tr, uint32_t note)
 {
     if (tr >= TESSERA_TRACKS || note > 127u) return;

@@ -452,6 +452,7 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
                 }
             }
             t->arp_note = (uint8_t)clamp(note, 0, 127);
+            if (tr < TESSERA_TRACKS && tessera.mode[tr] == TESS_ENG_OFF) tessera.last_note[tr] = t->arp_note;   /* (NOTE mod) */
             t->arp_off = period * (uint32_t)t->p[P_AGATE] / 128u * (100u - cut) / 100u;
             if (rec_on(t))
                 rec_note(t, t->arp_note, vel);           /* recording: what the arp plays */
