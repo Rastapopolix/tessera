@@ -229,8 +229,8 @@ static void pattern_keys(uint32_t notes)
     }
     pattern_key_release();
 }
-/* key k of track t as the keys play now (LIGHTS): bright while it sounds (pressed, or its note held on the track by
- * a key or MIDI), dim when it plays something (a kit's or the slices' own map: every key; QNT OFF or a USER scale
+/* key k of track t as the keys play now (LIGHTS): bright while it sounds (pressed, its note held on the track by
+ * a key or MIDI, or the track's sequence playing it as NOTE LIGHTS asks: seq.c seq_notes, for the note's gate), dim when it plays something (a kit's or the slices' own map: every key; QNT OFF or a USER scale
  * being edited: the notes in the scale; the layouts: the keys not silent), else dark */
 enum { KL_OFF, KL_DIM, KL_ON };
 /* SCALES up with a USER scale picked: the keys edit it (scale_picker.c uscale_keys), each plays and lights by its own
@@ -239,11 +239,21 @@ static uint8_t uscale_edit(void)
 {
     return (uint8_t)(!ui.home && !ui.menu && !ui.confirm && cur_page()->graph == GR_SCALE_PICKER && uscale_on());
 }
+/* NOTE LIGHTS: note n is one the track's sequence plays now (STEP: a STEP pattern's; ALL: a generator's too) */
+static int seq_key_lit(const track_t *t, uint32_t n)
+{
+    uint32_t m = NLIGHT_MODE, ti = trk_index(t);
+    if (m == NLIGHT_OFF || !song.playing)
+        return 0;
+    if (m == NLIGHT_STEP && ti < TESSERA_TRACKS && tessera.mode[ti] != TESS_ENG_OFF)
+        return 0;                                       /* (a generator plays the track: seq.c seq_grid_tick) */
+    return audition_seq_has(t, n);
+}
 static uint32_t play_key_led(const track_t *t, uint32_t k)
 {
     const engine_t *e = ENGINES[eng_idx(t->eng_req)];
     uint32_t n = kb_map(t, k), ti = trk_index(t);
-    if (((fm1_in.notes >> k) & 1u) || (n < 128u && ((live_held[ti][n >> 5] >> (n & 31u)) & 1u)))
+    if (((fm1_in.notes >> k) & 1u) || (n < 128u && (((live_held[ti][n >> 5] >> (n & 31u)) & 1u) || seq_key_lit(t, n))))
         return KL_ON;
     if (n >= 128u)
         return KL_OFF;

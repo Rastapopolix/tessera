@@ -25,6 +25,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | MENU > **SIM CONTROL** | The FM-1's knobs and keys play only the web simulator (USB); **FX** + **GLO** held 1 s: the panel back |
 | MENU > **LARGE VALUE** | The knob turning, large at the foot: AUTO (pages without a picture), ON (and a second after), OFF |
 | MENU > **TEXT** / **IDLE** | BOLD letters; LANDSCAPE after 2 minutes untouched while playing (the first touch only goes back) |
+| MENU > **NOTE LIGHTS** | The keys a sequence plays, lit for each note: OFF, STEP (a STEP pattern's), ALL (the generators' too) |
 
 ## The page buttons
 

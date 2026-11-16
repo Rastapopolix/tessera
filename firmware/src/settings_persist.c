@@ -25,6 +25,7 @@
  * glo_kept); untagged = 0, 24 pulses. Older firmware keeps them with the favorites, unread.
  * favorites.factory[8][29]: tagged GROUND LIGHT (Mono, gfx.c ux_ground; since 3.5); any other byte DARK. The palette id
  * stays as it was, so older firmware keeps the ink (on black).
+ * favorites.factory[8][31]: tagged NOTE LIGHTS STEP or ALL (ui.c NLIGHT_SAVED); any other byte OFF.
  * bold: no longer used (one font weight); kept as it was saved, unless it holds the HOLD setting (panel.c). */
 typedef struct {
     uint32_t magic, palette, lowcut, zoom;
