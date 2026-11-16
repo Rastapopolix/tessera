@@ -249,7 +249,7 @@ static uint32_t play_key_led(const track_t *t, uint32_t k)
         return KL_OFF;
     if (e->keys && e->keys(t, k) >= 0)
         return KL_DIM;
-    if (t->p[P_QUANT] == Q_OFF || kb_chrom)
+    if ((t->p[P_QUANT] == Q_OFF && !micro_active(t)) || kb_chrom)
         return (scale_mask(t) >> ((n + 120u - (uint32_t)t->p[P_ROOT]) % 12u)) & 1u ? KL_DIM : KL_OFF;
     return KL_DIM;
 }
