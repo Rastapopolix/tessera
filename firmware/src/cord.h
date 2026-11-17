@@ -146,9 +146,11 @@ enum {
     CS_EOC,                       /* the track's LFO cycle start (end of cycle) as a gate: 1 from a wrap of the LFO to an
                                    * eighth of the cycle, else 0; a TRIG / phase reset is not a wrap. Added after the
                                    * project's sources: a track's source all the same (CS_PROJECT) */
+    CS_IN,                        /* whether the track is heard: 1 while it plays in the mix, 0 while MUTE, SOLO elsewhere
+                                   * or Entries has it out, and the fade between (mix.c mix_to). A track's source */
     CS_N
 };
-#define CS_PROJECT(s) ((s) >= CS_ENERGY && (s) != CS_EOC)   /* the project's sources (no track), not a track's */
+#define CS_PROJECT(s) ((s) >= CS_ENERGY && (s) != CS_EOC && (s) != CS_IN)   /* the project's sources (no track), not a track's */
 
 typedef struct {                  /* one cord, as saved (6 bytes: uni rides in src_trk's top two bits) */
     uint8_t src, src_trk;         /* CS_*, 0..3 */

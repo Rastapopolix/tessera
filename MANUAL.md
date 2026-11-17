@@ -176,7 +176,7 @@ lets you do and when you would want it. Follow a link for the full description.
 **ENV**: the track's envelope and where it goes (on FM6 and ORACLE, the sound's own envelopes). *Use it to make a
 sound pluck, swell or sustain.*
 
-**SCL** (the button printed **SEL**): harmony
+**SEL**: harmony
 
 | Page | What it lets you do | Reach for it when |
 |---|---|---|
@@ -267,7 +267,7 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 | **ARP** | How the track's notes are shaped: EVOLVE, FORM, TWEAK, TIMING and the rest (by its MODE) | |
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST (an FM6 track: then FM LFO) | |
 | **ENV** | ENV, ENV DEST (an FM6 track: EG RATE, EG LVL, PITCH EG, PITCH LV) | On HOME, with OCT- / OCT+: the selected track an octave down / up (its TRN, up to ±24; both OCTs: 0) |
-| **SCL** (printed SEL) | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
+| **SEL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
 | **EDIT** | The sound's EDIT pages; on an EDIT page, the map | With OCT- / OCT+: undo / redo |
 | **FX** | The insert and send effects | The mod amount of any knob you turn |
 | **GLO** | MIXER, [PERF](#perf-four-macros), [PIECE](#piece-a-length-and-a-shape), [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in), [LANDSCAPE](#landscape-rain-on-water), SYSTEM, MIDI IN, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, D4 holds the generators' line ([HOLD](#evolve)), E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
@@ -373,7 +373,7 @@ key skips it.
 | Hold **OCT-** on GEN or TWEAK, turn **KNOB 1** | **RANDOM**: turn right and the page's knobs get new values, each inside its range (GEN: the generator's KNOB 2 to 4; TWEAK: SHIFT, DROP and HUMAN). The screen says **RANDOMIZED**. Turn left to put back the values from before the last turn (**PUT BACK**, once). KNOB 2 to 4 of this layer are the generator's own ([The GEN layer](#the-gen-layer)); on TWEAK, FOLLOW's HOW, RHYTHM and HOLD. MODE, the seed, FOLLOW, QUAD's LINK and CONSTELLATION's AUTO never change. A STEP or ARP track says **NO GENERATOR**. |
 | Turn **SELECT** on HOME or MIXER, or with **GLO** held | Sets the tempo (BPM), as SEQ > TEMPO does; F4 with GLO held taps it. With CLK on USB or TRS the tempo is the clock's, and a Song Position from it (a DAW's PLAY from mid-song) starts the steps, the ARP and the generators where that song is, as if they had played from the top. |
 | Turn **PRESETS** with **GLO** held, on any page | Browses the selected track's sounds as PRESETS does on HOME. The GLO map gives way to the sound: the track, the list and the place in it, the sounds before and after, the sound's name large and its engine (a fast turn: the name the knob will load when it stops, with its speed, X4). It stays while GLO is held; a GLO key or knob brings the map back. Without GLO, PRESETS keeps the page's own job (or does nothing), so a stray turn never changes the sound. GLO + OCT- does not put the sound back. |
-| Tap **GLO** or **SCL** twice quickly | Locks its Quick SET open on the page you were on, so you need not hold the button: the header says **[GLO] LOCK** (or **[SCL] LOCK**), and the keys and knobs are the layer's. Tap the button again to close it; any other page button, the menu or a dialog closes it too (PLAY, REC and OCT keep working). |
+| Tap **GLO** or **SEL** twice quickly | Locks its Quick SET open on the page you were on, so you need not hold the button: the header says **[GLO] LOCK** (or **[SEL] LOCK**), and the keys and knobs are the layer's. Tap the button again to close it; any other page button, the menu or a dialog closes it too (PLAY, REC and OCT keep working). |
 | **GLO** + **E4** (on MIXER, PERF or LANDSCAPE, E4) | Holds [FILL](#a-steps-condition-and-fill) for the steps whose condition is FILL or !FILL. |
 | **GLO** + **D4** (on MIXER, PERF or LANDSCAPE, D4) | **HOLD**: while the key is held every generator keeps the line it is playing. EVOLVE and STEP EVOLVE skip their rounds, TURING plays as PROB 0, MARKOV and MORPH replay their phrase as LOCK 100 (at LOCK 0, the last pass they played), CONSTELLATION replays its loop and ATLAS keeps this bar's CHAOS. Let go and they carry on from where they are. Tap D4 twice to latch it (**HOLD LATCHED**), tap it again to let go (**HOLD OFF**). The GLO map's D cell and D4's light show it. Not saved. |
 | **GEN** on an AWAKE track, a white key | Picks that step: KNOB 1 sets its A, KNOB 2 its B. The same key lets it go. |
@@ -1211,9 +1211,10 @@ you can thin the music and watch the lake answer.
 - On **GROUND LIGHT** it is day: a sun (a ring with short rays) takes the moon's place on the same arc, and no stars
   come out. Rain, clouds, hills and the water are the same.
 - A **PIECE** (LENGTH set) moves the moon across the sky, rising at the left as it starts and setting at the right; its
-  **phase** is the piece's SHAPE there: a thin crescent where the plan is quiet, full at its peak; it waxes while the
-  SHAPE rises (lit on the left) and wanes as it falls (lit on the right), as the moon does over a month seen from
-  the southern hemisphere: low at either end, it faces into the scene. Over the piece's
+  **phase** follows its climb, evenly: a thin crescent as it rises, fuller as it climbs, full at the top half way
+  through the piece, then thinner to the other crescent as it sets. It waxes on the way up (lit on the left) and
+  wanes on the way down (lit on the right), as the moon does over a month seen from the southern hemisphere: low at
+  either end, it faces into the scene. Over the piece's
   last tenth dusk falls (GROUND LIGHT: the sky darkens from the hills up) and at night the stars come out. END STOP:
   the moon sets behind the hills.
 - **CHAIN**: each section has its own shore. When the form moves on, the new shore comes in from the right, as if
@@ -1520,7 +1521,7 @@ to STEP, and EDIT held brings the ARP back (hold the keys again to restart it).
 **One key for the project.** The scale (SCL) is always the same on every track, and QNT and the MPC degree are while
 **QNT link** is LINKED (below). The key
 note, ROOT, is too while **SCL > Key link** is **LINKED** (the default in a new project): change ROOT on any melodic
-track, from SCL's list or with SCL held and a key, and every melodic track follows; drum tracks keep their own.
+track, from SCL's list or with SEL held and a key, and every melodic track follows; drum tracks keep their own.
 **OWN** gives each track its own ROOT again; turning LINKED back on gives every track the selected track's key. Key
 link is saved with the project (a project saved before it loads as OWN). TRN still moves a single track. The **Key in B** and
 **Key in C** rows at the end of SCL's list change the key in the CHAIN's sections ([CHAIN](#chain-one-form-for-the-project)).
@@ -1651,7 +1652,7 @@ at a time, each with an activity light and a moving mark.
 
 | Knob | What it sets |
 |---|---|
-| 1 | **Source**: `--`, then per track, from the selected track on (with T3 selected: T3, T4, T1, T2), LFO, ENV, VEL, KEY, RAND, MODW, AT, EXPR, S&H, SLEW, the track's GATE and NOTE (a generator's notes, or a STEP track's: its pattern, its recorded takes and its ARP; GATE high while the notes sound, for the step's GATE, NOTE the last one, the highest of a chord, held through the rests, 0 before the first) and a generator's CV, DRIFT, TIDE 1 to 3, SWARM 1 to 8 and EOC (the track's LFO cycle start: high from each wrap of the LFO until an eighth of the cycle has passed, a gate for GATE mods, FILL and the buses; setting its phase with TRIG or PLAY is not a wrap; the last of a track's sources in KNOB 1's list); and the project's ENERGY, [PERF](#perf-four-macros)'s MACRO 1 to 4 and the MIX buses BUS A and BUS B (see *MIX buses*). |
+| 1 | **Source**: `--`, then per track, from the selected track on (with T3 selected: T3, T4, T1, T2), LFO, ENV, VEL, KEY, RAND, MODW, AT, EXPR, S&H, SLEW, the track's GATE and NOTE (a generator's notes, or a STEP track's: its pattern, its recorded takes and its ARP; GATE high while the notes sound, for the step's GATE, NOTE the last one, the highest of a chord, held through the rests, 0 before the first) and a generator's CV, DRIFT, TIDE 1 to 3, SWARM 1 to 8, EOC (the track's LFO cycle start: high from each wrap of the LFO until an eighth of the cycle has passed, a gate for GATE mods, FILL and the buses; setting its phase with TRIG or PLAY is not a wrap) and IN (whether the track is heard: high while it plays in the mix, low while MUTE, another track's SOLO or [Entries](#entries-tracks-out-and-back-in) has it out, in between through Entries' FADE; the last of a track's sources in KNOB 1's list; a track's GATE and NOTE go on while it is out, IN does not); and the project's ENERGY, [PERF](#perf-four-macros)'s MACRO 1 to 4 and the MIX buses BUS A and BUS B (see *MIX buses*). |
 | 2 | **Mod**: which of the 16 the other knobs edit. |
 | 3 | **Destination**, on a track: the voice (PITCH, CUTOFF, SHAPE, GAIN), the mix (LEVEL, PAN, SPREAD, FX SEND, SEND 2, SEND 3), the track's effects (FX1 MIX, FX1 RTE, FX1 CHR, the same for FX2 and FX3), the envelope and LFO settings, the engine's E1 to E8, and the generators' settings (T PROB, T LEN, E PULSE, E ROT, M LEAP, M DENS, MP POS, SHIFT, DROP, HUMAN, BRANCH, EV AMT, CONTR, AT X, AT Y, AT DENS, AT KICK, AT SNR, AT HAT, AT TOMS, B SPEED, B ANGLE, A PROB, Q PROB, C Y, C SIZE, C DENS, C AUTO, S START, CH PROG, AN VARY, AN ECHO, AN SHFT, AN SPCE, H TIME, SPLIT, RATCH, R CHANC, STRUM, STR DIR, BREATH, N LEN, LOCK, GRAVITY, DEVELOP, TIDE SP, SWRM RT, and a STEP track's ACC LIM), the sequencer's **GATE**, **SWING**, **GLIDE** and the arpeggiator's **ARP RTE**, **ARP GTE**, **ARP OCT** (moved at the sequencer's steps and note-ons; a key you play glides as set), **VELO** (each note's velocity, 100 % the whole 1 to 127), the STEP pattern's **DIR** (see *DIR* below), **CC** (a MIDI CC out, see *CC out*), **PLAY** (see *PLAY* below) and **CLOCK** (see *CLOCK* below). After the tracks' come the send effects', once, for every track: SF1 MIX, SF1 RTE, SF1 CHR (the same for SF2 and SF3) and RETURN; then **FILL** (see *FILL*) and **TEMPO** (see *TEMPO*); then the mods' own moves, **M1 AMT** to **M16 AMT** (see *Mods of mods* below), the MIX buses **BUS A** and **BUS B** (see *MIX buses*) and **MOD DEP** (see [PERF](#perf-four-macros)'s MOD DEPTH). |
 | 4 | **Amount**, −100 to +100 %. With no source (`--`) the cord is a fixed move and KNOB 4 sets its offset. |
@@ -1769,10 +1770,13 @@ at a time, each with an activity light and a moving mark.
   highest move ("SCOPE 2 BARS, CYCLING 2 A BAR, LOW -60 HIGH 60 %"; a GATE: how often it opens and whether it is open
   now). The same hold turns a GATE's threshold (KNOB 4), so you watch it move against the source. A cord
   from BUS A or BUS B draws the bus as its source. Nothing is saved; nothing changes until you hold it.
-- **Live marks**: a knob a cord reaches shows a mark where the cords move it now.
+- **Live marks**: a knob a cord reaches shows a mark where the cords move it now: on its dial a bead riding the ring
+  (a bar: a notch beside it), the effects' and the send effects' knobs too. CUTOFF and SHAPE, which act inside the
+  voice, show none.
 - **DRIFT** is each track's slow wander, a new point about every 12 seconds, eased between.
-- **Effects.** RTE is the effect's third knob (RATE; ECHO's TIME, ROOM's and REVERB's SIZE, FILTER's CUT), CHR its
-  fourth (DEPTH, REPEAT, DECAY, RES, as the effect names it). A moved ECHO TIME glides, as a tape's speed does, so the repeats bend in
+- **Effects.** An effect's third and fourth knobs are named as the effect names them: on a FILTER **FX1 CUT** and
+  **FX1 RES**, on an ECHO **FX1 TIM** and **FX1 RPT** (Mono: CUT1, RES1; a send effect's S1CT ..); RTE and CHR on
+  the others (RATE, CHAR). A moved ECHO TIME glides, as a tape's speed does, so the repeats bend in
   pitch instead of clicking (turning the knob glides too); REVERB changes SIZE a sample at a time. The send
   effects' mods are the project's, not a track's: MATRIX leaves them out. **FX held** + a knob on an FX page makes
   one too. A project with effect mods does not load in firmware before them.
@@ -1876,7 +1880,7 @@ the reader connects, so a DAW on the same port sees nothing.
 
 It says each page as you open it (its name, the track and the knobs), a knob's name and value once you stop turning it,
 the row of a list or menu with its place ("3 OF 8"), the messages in the header, PLAY and STOP, yes/no questions with
-their keys, the GLO and SCL layers while held, and a step when you press its key while stopped. PATTERNS, SONG, the
+their keys, the GLO and SEL layers while held, and a step when you press its key while stopped. PATTERNS, SONG, the
 sound browser, the slot pages and SCALES say what is selected. Tessera's abbreviations are said as words (T1 is
 "track 1", BP on SCALES is "Bohlen-Pierce").
 
@@ -2403,7 +2407,7 @@ LENGTH: the steps in its loop (2 to 16). PIECE's LENGTH: how long the whole piec
 **LFO** (low-frequency oscillator). A wave too slow to hear as a pitch, used to move something else: a vibrato, a
 filter sweep, a tremolo. In Tessera: each track has one (LFO, LFO 2, LFO DEST), also a source on MODS.
 
-**LFO SYNC**. On LFO 2: ties the track's LFO to the tempo: one cycle every 4 bars down to every 1/32, or OFF
+**LFO SYNC**. On LFO 2: ties the track's LFO to the tempo: one cycle every 64 bars (32, 16, 8, 4 ..) down to every 1/32, or OFF
 for its own RATE. It steps slow to fast under the knob, triplets between their neighbours.
 
 **LINK**. A QUAD setting: how the other QUAD tracks follow this one. Not Key link.
@@ -2557,7 +2561,9 @@ smooth signal becomes steps. In Tessera: **S&H** is a source on each track (rand
 **Scale**. A set of notes the music stays within. 77 are built in; four **USER** scales **(3.5)** are yours, and
 **Scala tunings** are microtonal ones from the web editor.
 
-**SCL**. The harmony button, printed **SEL** on the panel: SCALES, the scale and key, QNT, CHORD.
+**SCL**. The scale page (SCALES, the scale and key, QNT, CHORD), under the **SEL** button.
+
+**SEL**. The harmony button: its pages are SCALES, SCL and CHORD; held, a key sets ROOT.
 
 **Seed**. The starting number for a generator's random choices. The same seed plays the same line.
 

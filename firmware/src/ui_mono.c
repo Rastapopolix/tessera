@@ -40,6 +40,7 @@ static struct {
     int32_t ratio;                                      /* 0..1000, -1: a list value (boxed, no dial) */
     uint8_t used, dim, hot;
     uint8_t wait;                                       /* ROLL: a seed waits for the bar line (tessera.roll; mo_wait) */
+    int16_t live;                                       /* the mods' mark, 1..1001 (draw_column's live + 1); 0 none */
 } mo_col[4];
 static uint32_t mo_sig;
 
@@ -57,6 +58,9 @@ static void mo_capture(uint32_t c, const char *label, const char *val, const cha
     mo_col[c].hot = (uint8_t)hot;
 }
 static void mo_wait(uint32_t c) { if (c < 4u) mo_col[c].wait = 1; }
+/* the mods on column c's parameter move it to live (0..1000) now: a mark beside its dial (draw_column, cord_moves;
+ * Theo 2026-11-17: the detailed look's live marks, which Mono dropped). In mo_col, so mo_signature redraws it */
+static void mo_live(uint32_t c, int32_t live) { if (c < 4u && live >= 0) mo_col[c].live = (int16_t)(live > 1000 ? 1001 : live + 1); }
 
 /* ---- drawing in cells (2 x 2 pixels; cv_oy picks the canvas's half) ---- */
 static void mo_fill(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c)
@@ -548,6 +552,16 @@ static void mo_cols(void)
         if (mo_col[i].ratio >= 0 && mo_col[i].val[0] != '[') {
             if (KNOBS_BAR) mo_bar(cx, mo_col[i].ratio, ink);
             else mo_dial(cx, 28, 7, mo_col[i].ratio, ink);
+            if (mo_col[i].live) {                       /* the mods: where they move it now, a tick outside the ring
+                                                         * (bars: a notch at the bar's right) */
+                int32_t lv = mo_col[i].live - 1, a = -160 + lv * 192 / 1000;
+                if (KNOBS_BAR) mo_fill(cx + 9, 34 - 13 * lv / 1000, 2, 3, MO_HOT);
+                else {                                  /* (a bead riding the ring, 3 x 3 cells, cut out of it) */
+                    int32_t bx = cx + mo_cos(a) * 7 / 127, by = 28 + mo_sin(a) * 7 / 127;
+                    mo_fill(bx - 2, by - 2, 5, 5, MO_BG);
+                    mo_fill(bx - 1, by - 1, 3, 3, MO_HOT);
+                }
+            }
         }
         if (kind[i] != MV_DIAL)
             fx0 = x[i], fx1 = x[i] + w[i] - 1;
@@ -2609,6 +2623,8 @@ static int mo_turn(void)
         mo_box(76, 92, 42, 7, MO_DIM);
         if (w)
             mo_fill(77, 93, w, 5, MO_HOT);
+        if (mo_col[i].live)                             /* (the mods' mark, over the bar) */
+            mo_vl(77 + 40 * (mo_col[i].live - 1) / 1000, 89, 2, MO_INK);
     }
     return 1;
 }

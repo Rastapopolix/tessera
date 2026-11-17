@@ -458,6 +458,7 @@ static uint8_t mo_on;                                   /* a Mono page being dra
 static void mo_capture(uint32_t c, const char *label, const char *val, const char *unit, uint16_t vc, int32_t ratio,
                        int hot);
 static void mo_wait(uint32_t c);
+static void mo_live(uint32_t c, int32_t live);
 #endif
 static uint8_t col_sh;                                  /* the cards drawn this many to the right (a GEN engine's OCT- layer
                                                          * behind RANDOM, pr_draw); past the fourth: none */
@@ -485,6 +486,7 @@ static void draw_column(uint32_t c0, const char *label, const char *val, const c
 #if MELODEE_LOOK
     if (mo_on) {                                        /* Mono: the knob's texts to its dial (ui_mono.c) */
         mo_capture(c, label, val, unit, vc, ratio, hot);
+        mo_live(c, live);
         fmt_named = 0;
         return;
     }
@@ -1707,6 +1709,8 @@ static void draw_columns_(void)
         }
         if (vp >= TSEL->p && vp < TSEL->p + P_COUNT)     /* a track parameter: the mods on it, live */
             col_mods(PID_TRACK(vp - TSEL->p));
+        else if (vp >= song.g && vp < song.g + G_COUNT)  /* the project's (the send effects): theirs */
+            col_mods(PID_GLOBAL(vp - song.g));
         draw_column(c, d->label, val, unit,
                     vp == &TSEL->p[P_LRATE] && TSEL->p[P_LSYNC] ? T_DIM : VAL(c),   /* LFO 2 SYNC on: RATE does nothing */
                     d->fmt == F_ENUM && d->max < 2 ? -1 : RATIO(d, *vp), param_icon(d, *vp));

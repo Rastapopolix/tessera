@@ -97,7 +97,8 @@ static int reference(FILE *f)
             "GLO > PERF's KNOB 3, the project's: 0 .. 100 %", "GLO > PERF's KNOB 4, the project's: 0 .. 100 %",
             "the project's MIX bus A: its mods combined by its MODE, slewed by its LAG (MODS' sheet), one block late: "
             "-100 .. 100 %", "the project's MIX bus B, as BUS A",
-            "the track's LFO cycle start as a gate: 1 from each wrap of the LFO until an eighth of the cycle has passed, else 0 (a TRIG or PLAY phase set is not a wrap). Onto FILL, a GATE mod or a bus it marks each cycle"};
+            "the track's LFO cycle start as a gate: 1 from each wrap of the LFO until an eighth of the cycle has passed, else 0 (a TRIG or PLAY phase set is not a wrap). Onto FILL, a GATE mod or a bus it marks each cycle",
+            "whether the track is heard: 1 while it plays in the mix, 0 while MUTE, another track's SOLO or ENTRIES has it out, and in between through Entries' FADE. As a GATE mod, or a scaler on another mod, it acts only while a track is in (or, at a negative amount, out)"};
         fprintf(f, "\n## Mods\n\nA mod (the MODS page, under LFO) moves a destination on any track by a source on any "
                    "track: by its AMOUNT (-100 to 100 %%, at a full source the destination's whole range; PITCH: an octave) "
                    "plus its OFFSET. A mod's direction is shown under KNOB 1 and in its bar: +- moves both ways from the knob "
