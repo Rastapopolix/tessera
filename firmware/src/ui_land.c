@@ -107,6 +107,13 @@ static void land_moon(uint32_t dt)
 /* a shore's height at x: section sec of the place (unnamed A: the shore as it always was; otherwise two waves and
  * sometimes a peak, from the seed, never above 15 so the moon is never buried; 0 or less: open water, so a place can
  * be islands) */
+/* a named place's kind, from its seed: 0 islands (most), 1 land with narrow channels (a quarter), 2 all land (1 in 8:
+ * a seated Buddha in the torii's place) */
+static uint32_t land_kind(void)
+{
+    uint32_t k = (land.seed * 0x7FEB352Du) >> 28;
+    return !land.seed ? 0u : k < 2u ? 2u : k < 6u ? 1u : 0u;
+}
 static int32_t land_sky0(int32_t x, uint32_t sec)
 {
     uint32_t h;
@@ -122,6 +129,17 @@ static int32_t land_sky0(int32_t x, uint32_t sec)
                                            (5 + (int32_t)(h >> 13 & 3u) * 2) >> 7;
     pk = (mo_sin(x * 2 + (int32_t)(h >> 20 & 255u)) * (4 + (int32_t)(h >> 28 & 7u)) >> 7) - 2;
     if (!(h >> 18 & 3u) && pk > 0) hh += pk;
+    if (land_kind()) {                                  /* (land: raised, never water; channels: two or three cut back in) */
+        uint32_t g, n = 2u + (h >> 9 & 1u);
+        hh = hh + 7 < 3 ? 3 : hh + 7;
+        for (g = 0; land_kind() == 1u && g < n; g++) {
+            int32_t gp = 10 + (int32_t)((h >> (g * 7u) & 127u) * 100u >> 7) / (int32_t)n + (int32_t)g * 100 / (int32_t)n,
+                    w = 4 + (int32_t)(h >> (g * 5u + 3u) & 3u), d = x - gp, c;
+            d = d < 0 ? -d : d;
+            c = (d - w) * 2;                            /* (banks sloping two cells a column) */
+            if (c < hh) hh = c;
+        }
+    }
     return hh > 15 ? 15 : hh;
 }
 /* where A's torii stands: the flattest 11 columns of land, nearest where the seed would put it; its terrace is raised
@@ -151,9 +169,22 @@ static int32_t land_toff(void)                          /* a travel: how far the
     uint32_t a = fm1_ms - land.tt0;
     return a < LAND_TRAV_MS ? (int32_t)(a * 120u / LAND_TRAV_MS) : 120;
 }
+#ifndef LAND_SEAM
+#define LAND_SEAM 20
+#endif
+//                                    /* (travelling: the two shores blended over twice this) */
 static int32_t land_hill(int32_t x)                    /* the far shore's top at x (travelling: the old one going left) */
 {
-    int32_t w = x + land_toff(), h = w < 120 ? land_sky(w, land.from) : land_sky(w - 120, land.sec);
+    int32_t w = x + land_toff(), h;
+    if (!LAND_SEAM) h = w < 120 ? land_sky(w, land.from) : land_sky(w - 120, land.sec);
+    else if (w < 120 - LAND_SEAM) h = land_sky(w, land.from);
+    else if (w >= 120 + LAND_SEAM) h = land_sky(w - 120, land.sec);
+    else {                                              /* (where they meet: each shore carried on past its edge, mixed, */
+        int32_t t = w - (120 - LAND_SEAM), o = land_sky(w, land.from), n = land_sky(w - 120, land.sec),   /*  so a hill runs */
+                k = land_toff() < 120 - land_toff() ? land_toff() : 120 - land_toff();   /* on into the next; faded in */
+        k = k > LAND_SEAM ? LAND_SEAM : k;              /*  and out at the screen's edges, so nothing jumps as it starts or ends) */
+        h = ((t < LAND_SEAM ? o : n) * (LAND_SEAM - k) + (o * (2 * LAND_SEAM - t) + n * t) / (2 * LAND_SEAM) * k) / LAND_SEAM;
+    }
     return LAND_H - (h < 0 ? 0 : h);                    /* (0: open water, the water's line) */
 }
 static void land_disc(int32_t cx, int32_t cy, int32_t r, uint16_t c)   /* mo_disc, behind the hills */
@@ -268,10 +299,11 @@ static int land_moving(void)
         if (land.used[i]) return 1;
     return land.fish == 1u;
 }
-static uint32_t land_stars(void)                        /* none at four notes a second, all once quiet */
+#define LAND_STARS_MIN 10u                              /* (the stars always out at night, however busy) */
+static uint32_t land_stars(void)                        /* the few at four notes a second, all once quiet */
 {
     uint32_t q = land.act >> 8;
-    return q >= 16u ? 0u : LAND_STARS - q * LAND_STARS / 16u;
+    return q >= 16u ? LAND_STARS_MIN : LAND_STARS_MIN + (16u - q) * (LAND_STARS - LAND_STARS_MIN) / 16u;
 }
 static uint32_t land_cover(void) { return (uint32_t)(energy_now() + 32767) >> 12; }   /* 0 sparse .. 15 full */
 
@@ -306,14 +338,18 @@ static const uint8_t LAND_BAYER[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 1
 #define LAND_BY(x, y) LAND_BAYER[((y) & 3) * 4 + ((x) & 3)]
 /* a place's torii: the top beam's ends turned up, the tie beam, the pillars (11 x 10; bit 10 the left column) */
 static const uint16_t LAND_GATE[10] = {0x401, 0x7FF, 0x3FE, 0x124, 0x7FF, 0x104, 0x104, 0x104, 0x104, 0x38E};
+/* an all-land place's seated Buddha (Kamakura's), never with the torii (it stands in its place): the head and its knot, the shoulders, the hands in the lap, the
+ * crossed legs on a low base (11 x 10, as the torii) */
+static const uint16_t LAND_BUDDHA[10] = {0x1FC, 0x274, 0x4F9, 0x4F9, 0x471, 0x5FD, 0x376, 0x7FF, 0x7FF, 0x3FE};   /* (S2: the halo, Theo's pick) */
 static void land_temple(int32_t gx, uint16_t hills)    /* on A's shore at gx, standing on the ground under its middle */
 {
     int32_t r, c, y, gy = land_hill(gx + 5);
     uint16_t ink = land_ink(3, 0);                      /* (an ink of its own: MOSAIC pink, apart from the hills) */
+    const uint16_t *pic = land_kind() == 2u ? LAND_BUDDHA : LAND_GATE;
     gy = (gy > LAND_H - 1 ? LAND_H - 1 : gy) + 1 - 10;
     for (r = 0; r < 10; r++)
         for (c = 0; c < 11; c++)
-            if (LAND_GATE[r] >> (10 - c) & 1u) mo_px(gx + c, gy + r, ink);
+            if (pic[r] >> (10 - c) & 1u) mo_px(gx + c, gy + r, ink);
     for (c = 0; c < 11; c++)                            /* (the ground under it, where the slope falls away) */
         for (y = gy + 10; y < land_hill(gx + c); y++) mo_px(gx + c, y, hills);
 }
@@ -334,8 +370,8 @@ static void mo_pic_land(void)
         s = s * 1103515245u + 12345u;
         x = 2 + (int32_t)((s >> 8) % 116u);
         y = LAND_TOP + 2 + (int32_t)((s >> 20) % (uint32_t)(LAND_H - LAND_TOP - 12));
-        if (i < stars && ((x - mx) * (x - mx) + (y - my) * (y - my) > 81))
-            mo_px(x, y, (s >> 30) ? MO_HOT : MO_DIM);
+        if (i < stars + 3u && ((x - mx) * (x - mx) + (y - my) * (y - my) > 81))   /* (the next three: dim, coming or going) */
+            mo_px(x, y, i < stars && (s >> 30) ? MO_HOT : MO_DIM);
     }
     if (ux.light) {                                     /* by day the sun: a ring, eight short rays */
         land_disc(mx, my, 4, moon);
@@ -366,7 +402,9 @@ static void mo_pic_land(void)
         }
     }
     for (x = 0; x < 120; x++) {                         /* the far shore: low hills */
-        int32_t y0 = land_hill(x);
+        int32_t y0 = land_hill(x), yl = x > 0 ? land_hill(x - 1) : y0, yr = x < 119 ? land_hill(x + 1) : y0, ye;
+        ye = yl > yr ? yl : yr;                         /* (a cliff: the outline down to the lower neighbour, solid) */
+        for (y = y0; y < ye && y < LAND_H; y++) mo_px(x, y, hills);
         mo_px(x, y0, hills);
         for (y = y0 + 1 + ((x ^ y0) & 1); y < LAND_H; y += 2) mo_px(x, y, hills);   /* (dithered) */
     }
