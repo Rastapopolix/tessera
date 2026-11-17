@@ -151,9 +151,18 @@ static int32_t land_toff(void)                          /* a travel: how far the
     uint32_t a = fm1_ms - land.tt0;
     return a < LAND_TRAV_MS ? (int32_t)(a * 120u / LAND_TRAV_MS) : 120;
 }
+#define LAND_SEAM 20                                    /* (travelling: the two shores blended over twice this) */
 static int32_t land_hill(int32_t x)                    /* the far shore's top at x (travelling: the old one going left) */
 {
-    int32_t w = x + land_toff(), h = w < 120 ? land_sky(w, land.from) : land_sky(w - 120, land.sec);
+    int32_t w = x + land_toff(), h;
+    if (w < 120 - LAND_SEAM) h = land_sky(w, land.from);
+    else if (w >= 120 + LAND_SEAM) h = land_sky(w - 120, land.sec);
+    else {                                              /* (where they meet: each shore carried on past its edge, mixed, */
+        int32_t t = w - (120 - LAND_SEAM), o = land_sky(w, land.from), n = land_sky(w - 120, land.sec),   /*  so a hill runs */
+                k = land_toff() < 120 - land_toff() ? land_toff() : 120 - land_toff();   /* on into the next; faded in */
+        k = k > LAND_SEAM ? LAND_SEAM : k;              /*  and out at the screen's edges, so nothing jumps as it starts or ends) */
+        h = ((t < LAND_SEAM ? o : n) * (LAND_SEAM - k) + (o * (2 * LAND_SEAM - t) + n * t) / (2 * LAND_SEAM) * k) / LAND_SEAM;
+    }
     return LAND_H - (h < 0 ? 0 : h);                    /* (0: open water, the water's line) */
 }
 static void land_disc(int32_t cx, int32_t cy, int32_t r, uint16_t c)   /* mo_disc, behind the hills */
@@ -268,10 +277,11 @@ static int land_moving(void)
         if (land.used[i]) return 1;
     return land.fish == 1u;
 }
-static uint32_t land_stars(void)                        /* none at four notes a second, all once quiet */
+#define LAND_STARS_MIN 10u                              /* (the stars always out at night, however busy) */
+static uint32_t land_stars(void)                        /* the few at four notes a second, all once quiet */
 {
     uint32_t q = land.act >> 8;
-    return q >= 16u ? 0u : LAND_STARS - q * LAND_STARS / 16u;
+    return q >= 16u ? LAND_STARS_MIN : LAND_STARS_MIN + (16u - q) * (LAND_STARS - LAND_STARS_MIN) / 16u;
 }
 static uint32_t land_cover(void) { return (uint32_t)(energy_now() + 32767) >> 12; }   /* 0 sparse .. 15 full */
 
@@ -334,8 +344,8 @@ static void mo_pic_land(void)
         s = s * 1103515245u + 12345u;
         x = 2 + (int32_t)((s >> 8) % 116u);
         y = LAND_TOP + 2 + (int32_t)((s >> 20) % (uint32_t)(LAND_H - LAND_TOP - 12));
-        if (i < stars && ((x - mx) * (x - mx) + (y - my) * (y - my) > 81))
-            mo_px(x, y, (s >> 30) ? MO_HOT : MO_DIM);
+        if (i < stars + 3u && ((x - mx) * (x - mx) + (y - my) * (y - my) > 81))   /* (the next three: dim, coming or going) */
+            mo_px(x, y, i < stars && (s >> 30) ? MO_HOT : MO_DIM);
     }
     if (ux.light) {                                     /* by day the sun: a ring, eight short rays */
         land_disc(mx, my, 4, moon);
@@ -366,7 +376,9 @@ static void mo_pic_land(void)
         }
     }
     for (x = 0; x < 120; x++) {                         /* the far shore: low hills */
-        int32_t y0 = land_hill(x);
+        int32_t y0 = land_hill(x), yl = x > 0 ? land_hill(x - 1) : y0, yr = x < 119 ? land_hill(x + 1) : y0, ye;
+        ye = yl > yr ? yl : yr;                         /* (a cliff: the outline down to the lower neighbour, solid) */
+        for (y = y0; y < ye && y < LAND_H; y++) mo_px(x, y, hills);
         mo_px(x, y0, hills);
         for (y = y0 + 1 + ((x ^ y0) & 1); y < LAND_H; y += 2) mo_px(x, y, hills);   /* (dithered) */
     }

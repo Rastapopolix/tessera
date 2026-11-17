@@ -1209,7 +1209,8 @@ never changes the music.
   clouds drift with the wind: to the right while the tide builds, to the left while it thins, faster the steeper it
   is, and still at its turns. Without ENERGY they drift right, as the wind always blew. A **rest** lays mist on the
   water, and the moon's reflection fades into it until the notes come back.
-- **Stars** come out as the music thins and all of them once nothing has played for a few seconds. While playing the
+- **Stars** come out as the music thins and all of them once nothing has played for a few seconds; at night a few are
+  always out, however busy the music, and the next ones come and go dimly. While playing the
   moon's reflection shimmers, between notes too; stopped, the water is still and the reflection lies quiet.
 - On **GROUND LIGHT** it is day: a sun (a ring with short rays) takes the moon's place on the same arc, and no stars
   come out. Rain, clouds, hills and the water are the same.
@@ -1221,7 +1222,8 @@ never changes the music.
   last tenth dusk falls (GROUND LIGHT: the sky darkens from the hills up) and at night the stars come out. END STOP:
   the moon sets behind the hills.
 - **CHAIN**: each section has its own shore. When the form moves on, the new shore comes in from the right, as if
-  you were travelling; back to A, you are home. When the whole form comes round, a shooting star crosses the sky.
+  you were travelling; back to A, you are home. Where the two shores meet they run into each other, so a hill
+  carries on into the next. When the whole form comes round, a shooting star crosses the sky.
 - **A place of its own**: a project with a name gets its own landscape, made from the name: the shape of its hills
   (sometimes islands, with open water between), where its stars are, where the moon rests, and a torii gate somewhere
   on A's shore (in MOSAIC pink: an ink of the palette's own, apart from the hills), or standing in the water. The same name is always the

@@ -11,6 +11,7 @@ what you expected and what happened).
 - LANDSCAPE: KNOB 1 to 4 turn PERF's MACRO 1 to 4, shown large while turned, so you can make a big move and watch the lake answer. IDLE LANDSCAPE's first touch still only takes you back.
 
 ## Fixed
+- LANDSCAPE: at night a few stars stay out however busy the music (they no longer all vanish); travelling to a new CHAIN section, the two shores run into each other instead of meeting at a hard edge; steep slopes are drawn with a solid outline.
 
 ## Good to know
 

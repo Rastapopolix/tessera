@@ -5283,7 +5283,8 @@ static int test_landscape(void)
     bad += check("  gone after its life; the stars thinned by the notes", !land_rings() && land_stars() < LAND_STARS);
     for (i = 0; i < 20u; i++) trk_note_on(&trk[0], 40u + i, 100);
     frame();
-    bad += check("  a burst: no more rings than LAND_RIP, the newest kept", land_rings() == LAND_RIP && !land_stars());
+    bad += check("  a burst: no more rings than LAND_RIP, the newest kept; only the night's few stars still out",
+                 land_rings() == LAND_RIP && land_stars() == LAND_STARS_MIN);
     frame();
     bad += check("  the moon: still where it always was while LENGTH is FREE", land.mx == LAND_MX * 16 && land.my == LAND_MY * 16);
     tessera.pl_length = 1;                              /* (1 minute) */
@@ -5340,6 +5341,35 @@ static int test_landscape(void)
     i = land_ev_at;
     trk_note_on(&trk[1], 60, 100);
     bad += check("  left: notes not kept again", land_ev_at == i && !land_open);
+    return bad;
+}
+/* LANDSCAPE travelling to a new CHAIN section's shore: the two shores blended where they meet, nothing of the blend
+ * left at either end of the travel */
+static int test_land_seam(void)
+{
+    int bad = 0, ok = 1, mid = 0;
+    int32_t x;
+    ui_power_on();
+    song.playing = 0;
+    tessera_reset();
+    go_title("LANDSCAPE");
+    str_cpy(proj_name, "UNDERTOW", sizeof proj_name);
+    frame();
+    land.from = 0, land.sec = 1;
+    land.tt0 = fm1_ms;                                  /* (just set off: A's shore as it was) */
+    for (x = 0; x < 120; x++) ok &= land_hill(x) == LAND_H - (land_sky(x, 0) < 0 ? 0 : land_sky(x, 0));
+    land.tt0 = fm1_ms - LAND_TRAV_MS;                   /* (arrived: B's as it is) */
+    for (x = 0; x < 120; x++) ok &= land_hill(x) == LAND_H - (land_sky(x, 1) < 0 ? 0 : land_sky(x, 1));
+    land.tt0 = fm1_ms - LAND_TRAV_MS / 2u;              /* (half way: where they meet, between the two) */
+    for (x = 60 - LAND_SEAM; x < 60 + LAND_SEAM; x++) {
+        int32_t o = land_sky(x + 60, 0), n = land_sky(x - 60, 1), h = LAND_H - land_hill(x);
+        o = o < 0 ? 0 : o, n = n < 0 ? 0 : n;
+        mid |= h != (x < 60 ? o : n);
+        ok &= h >= (o < n ? o : n) && h <= (o > n ? o : n);
+    }
+    bad += check("LANDSCAPE travelling A to B: the shores as they were at the start and are at the end, blended between",
+                 ok && mid);
+    proj_name[0] = 0;
     return bad;
 }
 /* LANDSCAPE: KNOB 1 to 4 are PERF's MACROs (ui_input.c), the scene in place of their columns; a turned MACRO always
