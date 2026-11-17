@@ -72,7 +72,7 @@ The engine's eight (ENGINE 1 to 8) are named by the track's engine; their ranges
 | 0x059 | DRUM TOM | 0 to 127 | 127 | The tom's level in the kit. |
 | 0x05A | DRUM RIM | 0 to 127 | 127 | The rimshot's level in the kit. |
 | 0x05B | DRUM BELL | 0 to 127 | 127 | The bell's level in the kit. |
-| 0x05C | LFO SYNC | OFF, 4BAR, 2BAR, 1/1, 1/2, 1/4, 1/8, 8T, 1/16, 16T, 1/32 | OFF | Ties the LFO to the tempo: one cycle every bar, beat or step chosen; OFF runs at its own RATE. |
+| 0x05C | LFO SYNC | OFF, 4BAR, 2BAR, 1/1, 1/2, 1/4, 1/8, 8T, 1/16, 16T, 1/32, 8BAR, 16BAR, 32BAR, 64BAR | OFF | Ties the LFO to the tempo: one cycle every bar, beat or step chosen, up to 64 bars; OFF runs at its own RATE. |
 | 0x05D | LFO TRIGGER | NOTE, FREE | NOTE | NOTE starts the LFO again with each note; FREE lets it run on. |
 | 0x05E | LFO POLARITY | BI, UNI | BI | BI moves both ways from the setting; UNI only one way. For this page's depths: a mod from the LFO has its own + or +- (OCT+ on MODS). |
 | 0x05F | STEREO SPREAD | 0 to 127 | 0 | Spreads the track's voices from left to right. |

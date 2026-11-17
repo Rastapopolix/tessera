@@ -64,7 +64,7 @@
 0x059 DRUM TOM                 track 0..127 def 127
 0x05a DRUM RIM                 track 0..127 def 127
 0x05b DRUM BELL                track 0..127 def 127
-0x05c LFO SYNC                 track 0..10 def 0
+0x05c LFO SYNC                 track 0..14 def 0
 0x05d LFO TRIGGER              track 0..1 def 0
 0x05e LFO POLARITY             track 0..1 def 0
 0x05f STEREO SPREAD            track 0..127 def 0

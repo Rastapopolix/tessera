@@ -1027,14 +1027,48 @@ void tessera_piece_knob(uint32_t k, int32_t s, int layer)
     TESS_IRQ_ON();
 }
 
+/* ORDER by the knob: one turn of a track's knob (detents less than ET_TURN_MS apart) swaps only where it stops. A rank
+ * another track holds, passed on the way, is lent: that track gets it back at the next detent (Theo 2026-11-17: T1 1ST,
+ * T2 turned AUTO -> 2ND went through 1ST and left T1 AUTO). The editor, MIDI and the project's values swap as before */
+#define ET_TURN_MS 1500u
+static struct { uint8_t tr, k, krank, orig, last; uint32_t t; } et_turn;   /* tr, k: track + 1 (0 none); orig: tr's
+                                                                            * rank before the turn; k's lent krank */
+static void et_order_turn(uint32_t tr, int32_t dir)
+{
+    uint8_t note = 0;
+    int32_t o = (int32_t)tessera.et_order[tr] + (dir > 0 ? 1 : -1);   /* (the step from where the knob is) */
+    if (et_turn.tr == tr + 1u && fm1_ms - et_turn.t < ET_TURN_MS && tessera.et_order[tr] == et_turn.last) {
+        uint32_t k = et_turn.k ? et_turn.k - 1u : 0u;
+        if (et_turn.k && tessera.et_order[k] == et_turn.orig) {   /* (the rank lent: back to its track) */
+            tessera.et_order[k] = et_turn.krank;
+            note = et_turn.k;
+        }
+        tessera.et_order[tr] = et_turn.orig;
+    } else {
+        et_turn.orig = tessera.et_order[tr];
+    }
+    et_turn.k = 0;
+    et_swapped = 0;
+    tess_param_set_body(tr, TX_ET_ORDER, o);
+    if (et_swapped) {                                   /* (a rank taken: lent until the next detent) */
+        et_turn.k = et_swapped;
+        et_turn.krank = tessera.et_order[tr];
+    } else if (note && note != tr + 1u) {
+        et_swapped = note;                              /* ("T1 NOW 1ST": it has its rank back) */
+    }
+    et_turn.tr = (uint8_t)(tr + 1u);
+    et_turn.last = tessera.et_order[tr];
+    et_turn.t = fm1_ms;
+}
+
 /* the ENTRIES page (GLO), the project's: KNOB 1 ENTRIES, 2 DWELL, 3 STYLE, 4 FADE; OCT+ held (layer 1): KNOB k track
- * k's ROLE; OCT- held (layer 2): its ORDER */
+ * k's ROLE; OCT- held (layer 2): its ORDER (et_order_turn) */
 void tessera_entries_knob(uint32_t k, int32_t s, int layer)
 {
     tessera_ensure_init();
     if (!s || k > 3u) return;
     TESS_IRQ_OFF();
-    if (layer == 2) tess_param_set_body(k, TX_ET_ORDER, (int32_t)tessera.et_order[k] + (s > 0 ? 1 : -1));
+    if (layer == 2) et_order_turn(k, s);
     else if (layer) tess_param_set_body(k, TX_ET_ROLE, (int32_t)tessera.et_role[k] + (s > 0 ? 1 : -1));
     else if (k == 0u) tess_param_set_body(0, TX_ET_AMOUNT, (int32_t)tessera.et_amount + s * 2);
     else if (k == 1u) tess_param_set_body(0, TX_ET_DWELL, (int32_t)tessera.et_dwell + s);

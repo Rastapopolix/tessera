@@ -6575,7 +6575,7 @@ static int test_quick_layers(void)
 {
     static const uint8_t LB[2] = {B_GLO, B_SCL};
     static const uint8_t LL[2] = {LAYER_GLO, LAYER_SCL};
-    static const char *const HINT[2] = {"HOLD [GLO] SET", "HOLD [SCL] SET"};
+    static const char *const HINT[2] = {"HOLD [GLO] SET", "HOLD [SEL] SET"};
     int bad = 0, ok, flash, hint;
     uint32_t i, k, a, b2, mo;
     /* tap / peek / combo, the hint once */

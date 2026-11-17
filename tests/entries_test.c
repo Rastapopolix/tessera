@@ -610,6 +610,37 @@ static void test_params(void)
     px(2, TX_ET_ORDER, 0);
     check("..AUTO any number of tracks, no swap", !tessera.et_order[1] && !tessera.et_order[2] && !et_swapped);
     memset(tessera.et_order, 0, sizeof tessera.et_order);
+    /* the knob swaps only where a turn stops: a rank passed on the way is lent back */
+    fm1_ms += 10000u;
+    px(0, TX_ET_ORDER, 1);
+    px(2, TX_ET_ORDER, 3);
+    tessera_entries_knob(1, 1, 2);
+    check("a turn onto a held rank: lent (T2 1ST, T1 AUTO)", tessera.et_order[1] == 1u && tessera.et_order[0] == 0u);
+    fm1_ms += 100u;
+    tessera_entries_knob(1, 1, 2);
+    check("..on past it: T1 has 1ST back, T2 2ND, noted", tessera.et_order[0] == 1u && tessera.et_order[1] == 2u &&
+          tessera.et_order[2] == 3u && et_swapped == 1u);
+    fm1_ms += 100u;
+    tessera_entries_knob(1, 1, 2);
+    check("..onto T3's 3RD: T3 takes T2's rank from before the turn (AUTO), not the 2ND passed",
+          tessera.et_order[1] == 3u && tessera.et_order[2] == 0u && tessera.et_order[0] == 1u);
+    fm1_ms += 100u;
+    tessera_entries_knob(1, -1, 2);
+    check("..and back: T3 has 3RD again, T2 2ND", tessera.et_order[1] == 2u && tessera.et_order[2] == 3u && tessera.et_order[0] == 1u);
+    fm1_ms += 100u;
+    tessera_entries_knob(1, 1, 2);
+    fm1_ms += ET_TURN_MS;
+    tessera_entries_knob(1, -1, 2);
+    check("a pause ends the turn: the swap where it stopped holds (T3 AUTO, then T2 2ND, T3 stays AUTO)",
+          tessera.et_order[1] == 2u && tessera.et_order[2] == 0u && tessera.et_order[0] == 1u);
+    fm1_ms += ET_TURN_MS;
+    tessera_entries_knob(3, 1, 2);
+    fm1_ms += 100u;
+    tessera_entries_knob(3, 1, 2);
+    check("the reported case: T1 1ST, T4 turned AUTO -> 2ND leaves T1 1ST", tessera.et_order[0] == 1u && tessera.et_order[3] == 2u &&
+          tessera.et_order[1] == 0u);
+    memset(tessera.et_order, 0, sizeof tessera.et_order);
+    memset(&et_turn, 0, sizeof et_turn);
 }
 
 /* MIDI OUT through a FADE (entries_vel): each sequencer note's velocity as sent (the USB queue), against the level

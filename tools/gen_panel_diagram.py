@@ -162,7 +162,7 @@ CTRL = {
 }
 for i, x in enumerate((978, 1163, 1348, 1533)):
     CTRL[f"KNOB {i + 1}"] = (x, 178, (x - 45, 130, x + 45, 225))
-for row, y, names in ((0, 352, "FX SCL ENV LFO EDIT GLO"), (1, 454, "HOME SAVE ARP SEQ PLAY REC")):
+for row, y, names in ((0, 352, "FX SEL ENV LFO EDIT GLO"), (1, 454, "HOME SAVE ARP SEQ PLAY REC")):
     for x, n in zip(BTN_X, names.split()):
         CTRL[n] = (x, y, (x - 33, y - 28, x + 33, y + 30))
 
@@ -270,7 +270,7 @@ def build(photo_path):
     text("what a button does held", 1009, 82, 13.5, 450, op=0.8)
 
     # right: the top row of buttons, lanes above the row (FX the highest, so no leader crosses)
-    top = (("FX", "Unused", None), ("SCL", "Scale, chords", "SCL layer"), ("ENV", "Envelope", None),
+    top = (("FX", "Unused", None), ("SEL", "Scale, chords", "SEL layer"), ("ENV", "Envelope", None),
            ("LFO", "LFO, mod matrix", None), ("EDIT", "Engine", "EDIT layer"), ("GLO", "Mixer, global", "GLO layer"))
     RX, RW = 987, 190
     step = (PH - LH) / 5
@@ -315,7 +315,7 @@ def build(photo_path):
     CY = BY + LH + 16
     B = card(23, CY, 527, H - 9, "Hold for a quick layer", "symbol_modular")
     rows_of(B, (("GLO", ("mute, solo, tap tempo; KNOB 1–4 track levels",)),
-                ("SCL", ("a key sets the root; scale, chord keys",)),
+                ("SEL", ("a key sets the root; scale, chord keys",)),
                 ("EDIT", ("a white key picks the engine",))), 58, CY + 65)
     C = card(541, CY, 845, H - 9, "Hold a button", "symbol_stopwatch")
     rows_of(C, (("SAVE", ("undo, and redo",)), ("HOME", ("the menu",)), ("SEQ", ("SONG: chain patterns",))),
