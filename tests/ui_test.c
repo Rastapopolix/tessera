@@ -5344,8 +5344,8 @@ static int test_landscape(void)
     return bad;
 }
 /* LANDSCAPE's places (ui_land.c): a named project's kind of place, what stands on each CHAIN section's shore (one
- * thing a shore, B..D distinct, some bare), the bridge kept clear, the shores meeting while travelling, still when
- * stopped */
+ * thing a shore, B..D distinct, some bare), the bridge kept clear, still when stopped (the shores meeting:
+ * test_land_seam) */
 static uint32_t land_name(const char *nm)               /* the place of a project named nm, as LANDSCAPE sees it */
 {
     str_cpy(proj_name, nm, sizeof proj_name);
@@ -5390,13 +5390,6 @@ static int test_land_places(void)
                  k[0] > 320u && k[0] < 420u && k[1] > 110u && k[1] < 190u && k[2] > 45u && k[2] < 110u &&
                  cherry * 18u > shores * 2u / 3u && cherry * 18u < shores * 2u && bare * 4u > shores * 3u / 4u &&
                  bare * 4u < shores * 5u / 4u);
-    land_name("UNDERTOW");                              /* the shores meeting: nothing left of the blend at either end */
-    land.from = 0, land.sec = 1;
-    land.tt0 = fm1_ms;
-    for (ok = 1, x = 0; x < 120; x++) ok &= land_hill(x) == LAND_H - (land_sky(x, 0) < 0 ? 0 : land_sky(x, 0));
-    land.tt0 = fm1_ms - LAND_TRAV_MS;
-    for (x = 0; x < 120; x++) ok &= land_hill(x) == LAND_H - (land_sky(x, 1) < 0 ? 0 : land_sky(x, 1));
-    bad += check("  travelling A to B: A's shore as it was at the start, B's as it is at the end", ok);
     for (ok = 0, n = 0; n < 600u && !ok; n++) {         /* stopped and quiet: a cherry's petals and a lit lantern hold */
         char nm[13];
         snprintf(nm, sizeof nm, "PLACE %u", (unsigned)n);
@@ -5413,6 +5406,35 @@ static int test_land_places(void)
     proj_name[0] = 0;
     frame();
     bad += check("  unnamed: nothing on any shore, no bridge", !land.kind && land.el[0] == LE_NONE && land.el[1] == LE_NONE);
+    return bad;
+}
+/* LANDSCAPE travelling to a new CHAIN section's shore: the two shores blended where they meet, nothing of the blend
+ * left at either end of the travel */
+static int test_land_seam(void)
+{
+    int bad = 0, ok = 1, mid = 0;
+    int32_t x;
+    ui_power_on();
+    song.playing = 0;
+    tessera_reset();
+    go_title("LANDSCAPE");
+    str_cpy(proj_name, "UNDERTOW", sizeof proj_name);
+    frame();
+    land.from = 0, land.sec = 1;
+    land.tt0 = fm1_ms;                                  /* (just set off: A's shore as it was) */
+    for (x = 0; x < 120; x++) ok &= land_hill(x) == LAND_H - (land_sky(x, 0) < 0 ? 0 : land_sky(x, 0));
+    land.tt0 = fm1_ms - LAND_TRAV_MS;                   /* (arrived: B's as it is) */
+    for (x = 0; x < 120; x++) ok &= land_hill(x) == LAND_H - (land_sky(x, 1) < 0 ? 0 : land_sky(x, 1));
+    land.tt0 = fm1_ms - LAND_TRAV_MS / 2u;              /* (half way: where they meet, between the two) */
+    for (x = 60 - LAND_SEAM; x < 60 + LAND_SEAM; x++) {
+        int32_t o = land_sky(x + 60, 0), n = land_sky(x - 60, 1), h = LAND_H - land_hill(x);
+        o = o < 0 ? 0 : o, n = n < 0 ? 0 : n;
+        mid |= h != (x < 60 ? o : n);
+        ok &= h >= (o < n ? o : n) && h <= (o > n ? o : n);
+    }
+    bad += check("LANDSCAPE travelling A to B: the shores as they were at the start and are at the end, blended between",
+                 ok && mid);
+    proj_name[0] = 0;
     return bad;
 }
 /* LANDSCAPE: KNOB 1 to 4 are PERF's MACROs (ui_input.c), the scene in place of their columns; a turned MACRO always

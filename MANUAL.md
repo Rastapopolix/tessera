@@ -1222,11 +1222,12 @@ never changes the music.
   last tenth dusk falls (GROUND LIGHT: the sky darkens from the hills up) and at night the stars come out. END STOP:
   the moon sets behind the hills.
 - **CHAIN**: each section has its own shore. When the form moves on, the new shore comes in from the right, as if
-  you were travelling; back to A, you are home. When the whole form comes round, a shooting star crosses the sky.
+  you were travelling; back to A, you are home. Where the two shores meet they run into each other, so a hill
+  carries on into the next. When the whole form comes round, a shooting star crosses the sky.
 - **A place of its own**: a project with a name gets its own landscape, made from the name: the shape of its hills,
   where its stars are, where the moon rests, and its kind of place. Most are **islands**, with open water between;
   about a quarter are **land cut by narrow channels**, with an arched bridge over the first; about one in eight are
-  **all land**. A steep slope is drawn as a cliff. The same name is always the same place; renaming a project takes it
+  **all land**. The same name is always the same place; renaming a project takes it
   somewhere else. An unnamed project shows the lake as it always was, with nothing on its shores.
 - **One thing on each shore**: A's shore has a torii gate (on an all-land place, a seated Buddha with a halo in its
   place). With a CHAIN, B and C each have one of a pagoda, a stone lantern and a pine, in an order of the place's own,
@@ -1235,7 +1236,6 @@ never changes the music.
   upside down in the water below, rippling. The lantern is lit: its glow grows a little as the notes land. Each
   takes an ink of the palette's that suits it: the torii, pagoda and bridge the gate's (MOSAIC pink), the Buddha the
   moon's, the pine the hills', the cherry's blossom the gate's over a trunk of the hills'.
-- When the form moves on, the two shores run into each other where they meet, so a hill carries on into the next.
 
 Each of these shows only when its layer is on; nothing new moves on the water but the rain (and a cherry's petals).
 
