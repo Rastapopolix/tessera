@@ -7,7 +7,7 @@
                                     stays at webapp/installer/)
   media/gallery/, media/brand/      its pictures: assets/gallery (tests/gallery_render.c), assets/brand (tools/gen_brand.py)
   media/video/                      the demo video and its poster: assets/video (tools/demo_video.py)
-  manual/, start/                   MANUAL.md and GETTING_STARTED.md as pages (web/make_manual.py: needs python-markdown)
+  manual/, start/                   MANUAL.md and GETTING_STARTED.md as pages (web/make_manual.py: needs markdown-it-py)
   firmware/tessera-VER.fwsc    the package, both cores (+ LICENSE, LICENSING.md, LICENSES/: the
                                     packages hold JieLi SDK files under Apache-2.0, see LICENSING.md)
   firmware/tessera-VER-1core.fwsc the same release built with MELODEE_DUAL_CORE=0, for FM-1s that crash
