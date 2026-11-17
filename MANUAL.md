@@ -197,7 +197,7 @@ how far a cord moves the knob you turn ([Mod shortcut](#mod-shortcut)). *Use it 
 |---|---|---|
 | [MIXER](#the-panel-at-a-glance) | Levels, pans, mutes and solos for all four tracks, plus FILL and tap tempo on the keys. | You are playing live, or balancing the mix. |
 | [PERF](#perf-four-macros) | Four macro knobs that can each drive many mods at once. | You want one knob to do a big move live (a build, a breakdown). |
-| [LANDSCAPE](#landscape-rain-on-water) | A night lake drawn by the music; the knobs are PERF's macros. | You want something to watch while it plays. |
+| [LANDSCAPE](#landscape-rain-on-water) | A lake drawn by the music, at night or by day (GROUND LIGHT): every named project is a place of its own, with something to find on its shores. The knobs are PERF's macros. | You want something to watch while it plays. |
 | [PIECE](#piece-a-length-and-a-shape) | Plan a whole piece: how long, what shape (an arch, waves, builds), and what happens at the end. | You want a 20-minute or 2-hour piece that plays itself. |
 | [CHAIN](#chain-one-form-for-the-project) | Give all tracks one shared song form, so their sections change together. | Tracks with FORM should move from A to B at the same moment. |
 | [ENTRIES](#entries-tracks-out-and-back-in) | Let tracks drop out and come back in on phrase lines, like a band arranging itself. | The piece should thin out and fill up without you touching the mutes. |
@@ -1202,7 +1202,9 @@ The choices come from the tracks' SEEDs, so PLAY plays the same piece again; STO
 
 ### LANDSCAPE: rain on water
 
-> **In short:** a screen to watch while the music plays; it never changes the sound.
+> **In short:** a lake drawn by the music, to watch while it plays: by night, or by day on GROUND LIGHT. Every named
+> project is a place of its own, with something to find on its shores. The scene changes nothing; the knobs are
+> PERF's macros.
 
 **GLO > LANDSCAPE** is a page to look at while the music plays: a night lake, drawn by the music.
 It has no settings, and the scene itself changes nothing. The keys are MIXER's (mute, solo, FILL, tap) and **KNOB 1
