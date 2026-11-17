@@ -8,6 +8,7 @@ Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues>
 what you expected and what happened).
 
 ## New since 3.6.1
+- LANDSCAPE: KNOB 1 to 4 turn PERF's MACRO 1 to 4, shown large while turned, so you can make a big move and watch the lake answer. IDLE LANDSCAPE's first touch still only takes you back.
 
 ## Fixed
 
@@ -15,3 +16,4 @@ what you expected and what happened).
 
 ## Please try
 - A project from 3.6.1 loads and plays the same.
+- On LANDSCAPE, turn a knob with a macro driving a mod: the music moves and the value shows across the foot.

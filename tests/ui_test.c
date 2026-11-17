@@ -5212,8 +5212,9 @@ static int test_idle_land(void)
     ui.home = 1; ui.force = 1; frame();
     fm1_ms += IDLE_MS; frame();
     bad += check("  from HOME: LANDSCAPE", cur_page()->graph == GR_LAND && scrn.land == 2u);
+    tessera.macro[0] = 0;
     turn(EN_K1, 1);
-    bad += check("  a knob: back HOME", ui.home && !scrn.land);
+    bad += check("  a knob: back HOME, no MACRO moved", ui.home && !scrn.land && !tessera.macro[0]);
     fm1_ms += IDLE_MS; frame();
     tap_key(0);
     bad += check("  a key: back HOME", ui.home && !scrn.land);
@@ -5339,6 +5340,41 @@ static int test_landscape(void)
     i = land_ev_at;
     trk_note_on(&trk[1], 60, 100);
     bad += check("  left: notes not kept again", land_ev_at == i && !land_open);
+    return bad;
+}
+/* LANDSCAPE: KNOB 1 to 4 are PERF's MACROs (ui_input.c), the scene in place of their columns; a turned MACRO always
+ * shows large across the foot, whatever LARGE VALUE (ui_mono.c mo_turn), and is said as the column (ui_speak.c) */
+static int test_land_macros(void)
+{
+    int bad = 0;
+    uint32_t sig, m;
+    ui_power_on();
+    song.playing = 0;
+    tessera_reset();
+    scrn.land = 0;
+    go_title("LANDSCAPE");
+    turn(EN_K1 + 1u, 3);
+    turn(EN_K1 + 3u, 200);
+    frame();
+    bad += check("LANDSCAPE: KNOB 2 MACRO 2 up by 3, KNOB 4 stops at 100", tessera.macro[1] == 3u &&
+                 tessera.macro[3] == 100u && !tessera.macro[0] && !tessera.macro[2]);
+    bad += check("  the columns are the MACROs (said, shown large)", str_eq(mo_col[1].label, "MACRO 2") &&
+                 atoi(mo_col[1].val) == 3 && str_eq(mo_col[1].unit, "%"));
+    sig = mo_signature();
+    tessera.macro[1] = 41;                              /* (as a learned CC sets it: no ui.force) */
+    bad += check("  moved from elsewhere: drawn again", mo_signature() != sig);
+    for (m = 0; m < 3u; m++) {                          /* AUTO, ON, OFF: large on LANDSCAPE all the same */
+        static const uint8_t TAG[3] = {0, LARGE_ON_TAG, LARGE_OFF_TAG};
+        LARGE_SAVED = TAG[m];
+        ui.force = 1;
+        ui_draw();
+        memset(mo_col, 0, sizeof mo_col);
+        mo_col[1].used = 1; mo_col[1].hot = 1; str_cpy(mo_col[1].val, "41", sizeof mo_col[1].val);
+        bad += check(m == 0u ? "  a MACRO turned: large across the foot (LARGE VALUE AUTO)" :
+                     m == 1u ? "  .. ON" : "  .. OFF too (no columns to read it from)", mo_turn() == 1);
+    }
+    LARGE_SAVED = 0;
+    memset(tessera.macro, 0, 4);
     return bad;
 }
 /* PERF (GLO, Mono look): KNOB k MACRO k, the project's; a mod reads it as a 0..1 source; saved with the project only
