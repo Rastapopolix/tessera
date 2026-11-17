@@ -12,9 +12,12 @@
  * last tenth dusk by day and the stars coming out by night; each CHAIN
  * section has a shore of its own (the new one comes in from the right) and a shooting star marks the FORM coming round;
  * ENERGY's tide is the wind in the clouds (right as it builds, left as it thins, still at the turns), its rests a mist
- * on the water. A named project is a place of its own: its name seeds the hills, the stars, where the moon rests and a
- * torii on A's shore (unnamed: the shore as before). Nothing new moves on the water but the rain. Included by
- * ui_mono.c */
+ * on the water. A named project is a place of its own: its name seeds the hills, the stars, where the moon rests, its
+ * kind (islands, land cut by narrow channels, or all land) and one thing on each section's shore, never two: on A the
+ * torii (all land: a seated Buddha in its place), on B..D a pagoda, a stone lantern lit by the music and a pine (rarely
+ * a cherry, letting fall a few slow petals), in an order of its own, some shores bare; a channels place an arched
+ * bridge over its first channel. Each stands in the water upside down, rippling (unnamed: the shore as before, bare).
+ * Nothing new moves on the water but the rain and the petals. Included by ui_mono.c */
 #define LAND_TOP 10                                     /* the scene's rows: LAND_TOP .. MO_PY1 - 1 */
 #define LAND_H 66                                       /* the water's line */
 #define LAND_RIP 12                                     /* rings at once (the oldest gives way) */
@@ -68,7 +71,8 @@ static struct {
     uint16_t ph;                                        /* the moon's phase: the PIECE's SHAPE now (Q15) */
     int8_t wind;                                        /* -3 .. 3: ENERGY falling .. rising (the clouds' speed) */
     uint8_t sec, from, cpos, mist, wt;                  /* CHAIN's section, the one travelled from, its place; mist 0..16 */
-    uint8_t gx, gp, wax;                                /* A's torii: its left column, its terrace's height; the moon waxing */
+    uint8_t gx[4], gp[4], el[4], bx[4];                 /* each section's shore: its element's left column, its terrace's */
+    uint8_t kind, wax;                                  /* height, what it is (LE_), the bridge's middle; the place's kind */
 } land;
 
 /* the moon: still while LENGTH is FREE; a planned piece's time played moves it on an arc, left to right (planner.c's
@@ -104,6 +108,25 @@ static void land_moon(uint32_t dt)
     d = (ty - land.my) * (int32_t)dt / 1000;
     land.my += d ? d : (ty > land.my) - (ty < land.my);
 }
+/* a named place's kind, from its seed: 0 islands (most), 1 land with narrow channels (a quarter), 2 all land (1 in 8:
+ * a seated Buddha in the torii's place) */
+static uint32_t land_kind0(void)
+{
+    uint32_t k = (land.seed * 0x7FEB352Du) >> 28;
+    return !land.seed ? 0u : k < 2u ? 2u : k < 6u ? 1u : 0u;
+}
+static uint32_t land_kind(void) { return land.kind; }   /* (land_place: once a name) */
+static uint32_t land_hash(uint32_t sec)                /* a section's shore, from the place's seed */
+{
+    uint32_t h = ((land.seed ? land.seed : 0x6D2B79F5u) ^ (sec + 1u) * 0x9E3779B1u) * 0x2C1B3C6Du;
+    return h ^ h >> 15;
+}
+/* a channels place's channel g of n on a shore (h its hash): its middle; its half-width w (the first: 8, the bridge's) */
+static int32_t land_chan(uint32_t h, uint32_t g, uint32_t n, int32_t *w)
+{
+    *w = g ? 4 + (int32_t)(h >> (g * 5u + 3u) & 3u) : 8;
+    return 10 + (int32_t)((h >> (g * 7u) & 127u) * 100u >> 7) / (int32_t)n + (int32_t)g * 100 / (int32_t)n;
+}
 /* a shore's height at x: section sec of the place (unnamed A: the shore as it always was; otherwise two waves and
  * sometimes a peak, from the seed, never above 15 so the moon is never buried; 0 or less: open water, so a place can
  * be islands) */
@@ -115,36 +138,84 @@ static int32_t land_sky0(int32_t x, uint32_t sec)
         hh = 3 + (mo_sin(x * 3) + mo_sin(x * 7 + 40) / 2) * 3 / 127;
         return hh < 1 ? 1 : hh;                         /* (the lake as it always was: one shore all along) */
     }
-    h = ((land.seed ? land.seed : 0x6D2B79F5u) ^ (sec + 1u) * 0x9E3779B1u) * 0x2C1B3C6Du;
-    h ^= h >> 15;
+    h = land_hash(sec);
     hh = 2 + (int32_t)(h >> 16 & 3u) + (mo_sin(x * (2 + (int32_t)(h & 3u)) + (int32_t)(h >> 5 & 255u)) +
                                         mo_sin(x * (5 + (int32_t)(h >> 2 & 7u)) + (int32_t)(h >> 5 & 255u) * 3) / 2) *
                                            (5 + (int32_t)(h >> 13 & 3u) * 2) >> 7;
     pk = (mo_sin(x * 2 + (int32_t)(h >> 20 & 255u)) * (4 + (int32_t)(h >> 28 & 7u)) >> 7) - 2;
     if (!(h >> 18 & 3u) && pk > 0) hh += pk;
+    if (land_kind()) {                                  /* (land: raised, never water; channels: two or three cut back in) */
+        uint32_t g, n = 2u + (h >> 9 & 1u);
+        hh = hh + 7 < 3 ? 3 : hh + 7;
+        for (g = 0; land_kind() == 1u && g < n; g++) {
+            int32_t w, d = x - land_chan(h, g, n, &w), c;
+            d = d < 0 ? -d : d;
+            c = (d - w) * 2;                            /* (banks sloping two cells a column) */
+            if (c < hh) hh = c;
+        }
+    }
     return hh > 15 ? 15 : hh;
 }
-/* where A's torii stands: the flattest 11 columns of land, nearest where the seed would put it; its terrace is raised
- * to their top (at least 3: never water), so the land is only ever built up under it, never cut (once a name) */
-static void land_gate_find(void)
+/* the things on the shores (bit w - 1 the left column; LE_BRIDGE: its left half, 11 wide, mirrored), from
+ * docs/design/landscape-places/models.py in the notes: the torii (the top beam's ends turned up, the tie beam, the
+ * pillars); the seated Buddha (Kamakura's) with a halo, S2; the pagoda of three tiers, P1; the stone lantern, L1 (its
+ * window the gap in row 3); the pine, T1; the cherry (blossom rows 0..5, the trunk); the drum bridge, its arch a half
+ * circle on the water so its reflection closes it */
+enum { LE_NONE, LE_TORII, LE_BUDDHA, LE_PAGODA, LE_LANTERN, LE_PINE, LE_CHERRY, LE_BRIDGE };   /* (0 nothing: a cleared land) */
+static const uint16_t LAND_PICS[] = {
+    0x401, 0x7FF, 0x3FE, 0x124, 0x7FF, 0x104, 0x104, 0x104, 0x104, 0x38E,                    /* torii */
+    0x1FC, 0x272, 0x4F9, 0x4F9, 0x471, 0x5FD, 0x376, 0x7FF, 0x7FF, 0x3FE,                    /* Buddha */
+    0x20, 0x20, 0x70, 0x104, 0xF8, 0x50, 0x202, 0x1FC, 0x88, 0x401, 0x3FE, 0x104, 0x104, 0x3FE,   /* pagoda */
+    0x20, 0xF8, 0x3FE, 0x18C, 0x1FC, 0x70, 0x70, 0x70, 0x1FC, 0x3FE,                         /* lantern */
+    0x78, 0x1FE, 0x20, 0x3E0, 0x7F7, 0x5F, 0x60, 0x20, 0x20, 0x70,                           /* pine */
+    0x2A0, 0x5D4, 0xBEA, 0x15F4, 0xAEA, 0x4A8, 0xC0, 0x40, 0x40, 0xE0,                       /* cherry */
+    0x5, 0x17, 0x58, 0x60, 0x187, 0x118, 0x220, 0x440, 0x40, 0x80, 0x80, 0x80                /* bridge (its left half) */
+};
+static const uint8_t LAND_PIC[8][3] = {{0, 0, 0}, {0, 11, 10}, {10, 11, 10}, {20, 11, 14}, {34, 11, 10}, {44, 11, 10},
+                                       {54, 13, 10}, {64, 21, 12}};   /* (first row, width, height) */
+/* where a section's element stands: the flattest columns of land as wide as it, nearest where the seed would put it,
+ * clear of the bridge by 16; its terrace is raised to their top (at least 3: never water), so the land is only ever
+ * built up under it, never cut */
+static void land_gate_find(uint32_t sec)
 {
-    int32_t x, c, h, lo, hi, sc, best = 0x7FFFFFFF, want = 8 + (int32_t)((land.seed * 2246822519u) >> 9 & 127u) * 3 / 4;
-    for (x = 4; x <= 105; x++) {
-        for (lo = 99, hi = -99, c = 0; c < 11; c++)
-            h = land_sky0(x + c, 0), lo = h < lo ? h : lo, hi = h > hi ? h : hi;
-        sc = (hi - lo) * 64 + (lo < 3 ? 512 : 0) + (x > want ? x - want : want - x);
-        if (sc < best) best = sc, land.gx = (uint8_t)x, land.gp = (uint8_t)(hi < 3 ? 3 : hi);
+    int32_t x, c, h, lo, hi, sc, best = 0x7FFFFFFF, w = LAND_PIC[land.el[sec]][1], b = land.bx[sec],
+            want = 8 + (int32_t)(((land.seed ^ sec * 0x632BE5ABu) * 2246822519u) >> 9 & 127u) * 3 / 4;
+    for (x = 4; x <= 116 - w; x++) {
+        for (lo = 99, hi = -99, c = 0; c < w; c++)
+            h = land_sky0(x + c, sec), lo = h < lo ? h : lo, hi = h > hi ? h : hi;
+        sc = (hi - lo) * 64 + (lo < 3 ? 512 : 0) + (x > want ? x - want : want - x) +
+             (land.kind == 1u && x + w + 16 > b - 10 && x < b + 11 + 16 ? 4096 : 0);
+        if (sc < best) best = sc, land.gx[sec] = (uint8_t)x, land.gp[sec] = (uint8_t)(hi < 3 ? 3 : hi);
     }
 }
-static int32_t land_gate_x(void) { return land.gx; }
-/* the shore: on a named place's A, the torii's terrace, flat under its 11 columns and sloping off three cells each
- * side, only ever above the land */
+/* a new name: its kind, each section's element (A the torii or the Buddha; B..D the pagoda, the lantern and the pine
+ * in an order of the seed's, the pine a cherry at about 1 place in 6, about 1 shore in 4 of them bare), where each
+ * stands and the bridge's place (unnamed: nothing) */
+static void land_place(void)
+{
+    static const uint16_t ORD[6] = {0x345, 0x354, 0x435, 0x453, 0x534, 0x543};   /* (LE_PAGODA, LE_LANTERN, LE_PINE) */
+    uint32_t sec, e, n, o = (land.seed * 0x85EBCA6Bu >> 16) % 6u, cherry = (land.seed * 0xC2B2AE35u >> 16) % 6u == 0u;
+    int32_t w;
+    land.kind = (uint8_t)land_kind0();
+    for (sec = 0; sec < 4u; sec++) {
+        e = !sec ? (land.kind == 2u ? LE_BUDDHA : LE_TORII) : ORD[o] >> (12u - sec * 4u) & 15u;
+        if (e == LE_PINE && cherry) e = LE_CHERRY;
+        if (!land.seed || (sec && !((land.seed ^ sec * 0x9E3779B9u) * 0x27D4EB2Fu >> 30))) e = LE_NONE;
+        n = 2u + (land_hash(sec) >> 9 & 1u);
+        land.el[sec] = (uint8_t)e, land.bx[sec] = (uint8_t)land_chan(land_hash(sec), 0, n, &w);
+        if (e != LE_NONE) land_gate_find(sec);
+    }
+}
+/* the shore: where a section has an element, its terrace, flat under it and sloping off three cells each side, only
+ * ever above the land */
 static int32_t land_sky(int32_t x, uint32_t sec)
 {
-    int32_t h = land_sky0(x, sec), d, g = land.gx;
-    if (!land.seed || sec) return h;
-    d = x < g ? g - x : x > g + 10 ? x - g - 10 : 0;
-    return d > 3 || h > (int32_t)land.gp - d ? h : (int32_t)land.gp - d;
+    int32_t h = land_sky0(x, sec), d, g, w;
+    sec &= 3u;
+    if (land.el[sec] == LE_NONE) return h;
+    g = land.gx[sec], w = LAND_PIC[land.el[sec]][1];
+    d = x < g ? g - x : x > g + w - 1 ? x - g - w + 1 : 0;
+    return d > 3 || h > (int32_t)land.gp[sec] - d ? h : (int32_t)land.gp[sec] - d;
 }
 static int32_t land_toff(void)                          /* a travel: how far the new shore has come in (120: arrived) */
 {
@@ -221,7 +292,7 @@ static void land_step(void)
     project_cur_name(nm);                               /* (the place: FNV-1a of the name) */
     for (land.seed = 2166136261u, i = 0; nm[i]; i++) land.seed = (land.seed ^ (uint8_t)nm[i]) * 16777619u;
     if (!nm[0]) land.seed = 0;
-    if (land.seed && (land.seed != was || !land_open)) land_gate_find();
+    if (land.seed != was || !land_open) land_place();
     if (!land_open) {                                   /* (just opened: what played before is not news) */
         land_open = 1;
         land.rd = (uint8_t)at;
@@ -277,6 +348,12 @@ static int land_moving(void)
         if (land.used[i]) return 1;
     return land.fish == 1u;
 }
+static uint32_t land_glow(void)                         /* the lantern's glow: 4 still, up to 6 as the notes land */
+{
+    uint32_t a = land.act >> 9;
+    return 4u + (a > 2u ? 2u : a);
+}
+static int land_rip(void) { return land_moving() || song.playing; }   /* the water moving: reflections shimmer */
 #define LAND_STARS_MIN 10u                              /* (the stars always out at night, however busy) */
 static uint32_t land_stars(void)                        /* the few at four notes a second, all once quiet */
 {
@@ -298,7 +375,7 @@ static uint32_t land_sig(void)
     return (land_moving() || anim ? fm1_ms / 40u + 1u : 0u) ^ land_stars() << 20 ^ land_cover() << 26 ^
            (uint32_t)(land.cdr / 700) << 8 ^ (uint32_t)(land.mx >> 4) << 12 ^ (uint32_t)(land.my >> 4) << 19 ^
            (uint32_t)land.ph >> 11 << 24 ^ land_dusk() << 16 ^ land.seed ^ land.sec << 28 ^ (land.mist ? fm1_ms / 350u : 0u) << 5 ^
-           (song.playing ? fm1_ms / 80u : 0u) << 2;         /* (playing: the moon's reflection shimmers, between notes too) */
+           (song.playing ? fm1_ms / 80u : 0u) << 2 ^ land_glow() << 4;         /* (playing: the moon's reflection shimmers, between notes too) */
 }
 
 static void land_ring(int32_t x, int32_t y, int32_t rx, int32_t ry, int dashed, uint16_t c)
@@ -314,18 +391,56 @@ static void land_ring(int32_t x, int32_t y, int32_t rx, int32_t ry, int dashed, 
 
 static const uint8_t LAND_BAYER[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
 #define LAND_BY(x, y) LAND_BAYER[((y) & 3) * 4 + ((x) & 3)]
-/* a place's torii: the top beam's ends turned up, the tie beam, the pillars (11 x 10; bit 10 the left column) */
-static const uint16_t LAND_GATE[10] = {0x401, 0x7FF, 0x3FE, 0x124, 0x7FF, 0x104, 0x104, 0x104, 0x104, 0x38E};
-static void land_temple(int32_t gx, uint16_t hills)    /* on A's shore at gx, standing on the ground under its middle */
+/* an element el with its left column at gx: standing on the ground under its middle (the bridge: on the water), the
+ * ground filled under it where the slope falls away; upside down in the water below, every other cell, the water's
+ * dim ink, each two rows shifted by the ripples as the moon's */
+/* an element el with its left column at gx: standing on the ground under its middle (the bridge: on the water), the
+ * ground filled under it where the slope falls away; upside down in the water below, every other cell, the water's
+ * dim ink, each two rows shifted by the ripples as the moon's. The lantern lit: a glow round its window in the sky,
+ * then a dark cell round its stone (one ink: no blur), the stone, the window in the moon's ink */
+static void land_pic(uint32_t el, int32_t gx, uint16_t hills)
 {
-    int32_t r, c, y, gy = land_hill(gx + 5);
-    uint16_t ink = land_ink(3, 0);                      /* (an ink of its own: MOSAIC pink, apart from the hills) */
-    gy = (gy > LAND_H - 1 ? LAND_H - 1 : gy) + 1 - 10;
-    for (r = 0; r < 10; r++)
-        for (c = 0; c < 11; c++)
-            if (LAND_GATE[r] >> (10 - c) & 1u) mo_px(gx + c, gy + r, ink);
-    for (c = 0; c < 11; c++)                            /* (the ground under it, where the slope falls away) */
-        for (y = gy + 10; y < land_hill(gx + c); y++) mo_px(gx + c, y, hills);
+    const uint8_t *p = LAND_PIC[el];
+    int32_t w = p[1], h = p[2], pw = w > 16 ? 11 : w, gy, r, c, y, x, sh, pass, lit = el == LE_LANTERN && !ux.light;
+    uint16_t moon = land_ink(0, 0), hl = land_ink(1, 0), gate = land_ink(3, 0), deep = land_ink(2, 1),
+             ink = el == LE_BUDDHA ? moon : el == LE_PINE ? hl : el == LE_LANTERN ? (moon == MO_HOT ? MO_DIM : MO_HOT) : gate;
+    gy = el == LE_BRIDGE ? LAND_H - 1 : land_hill(gx + w / 2);
+    gy = (gy > LAND_H - 1 ? LAND_H - 1 : gy) + 1 - h;   /* (its top row) */
+    if (lit)
+        for (r = (int32_t)land_glow(), y = gy + 3 - r; y <= gy + 3 + r; y++)
+            for (x = gx + 5 - r; x <= gx + 5 + r; x++) {
+                int32_t d = (x - gx - 5) * (x - gx - 5) + (y - gy - 3) * (y - gy - 3);
+                if (!((x + y) & 1) && d <= r * r + 1 && y < land_hill(x)) mo_px(x, y, d <= 5 ? moon : land_ink(0, 1));
+            }
+    for (pass = !lit; pass < 2; pass++)
+        for (r = 0; r < h; r++) {
+            y = LAND_H + h - r;                         /* (the reflection: the bottom row just under the water's line) */
+            sh = land_rip() ? (int32_t)((fm1_ms / 80u + (uint32_t)(h - 1 - r) / 2u) % 3u) - 1 : 0;
+            for (c = 0; c < w; c++) {
+                if (!(LAND_PICS[p[0] + r] >> (pw - 1 - (c < pw ? c : w - 1 - c)) & 1)) continue;
+                if (!pass) { if (r < h - 1) mo_fill(gx + c - 1, gy + r - 1, 3, 3, MO_BG); continue; }
+                mo_px(gx + c, gy + r, el == LE_CHERRY && r > 5 ? hl : ink);
+                if (!((gx + c + y) & 1) && y < MO_PY1 - 1) mo_px(gx + c + sh, y, deep);
+            }
+        }
+    if (el == LE_LANTERN) mo_hl(gx + 4, gy + 3, 3, moon);
+    if (el == LE_CHERRY)                                /* a few petals, slow: from the blossom down onto the water, */
+        for (r = 0; r < 3; r++) {                       /*  drifting on it a while (moving only while playing) */
+            int32_t t = (int32_t)((land.drift >> 1) + (uint32_t)r * 2731u) & 8191;   /* (8 s down, 8 s afloat) */
+            x = gx + 3 + r * 3, y = gy + 2 + r;
+            if (t < 4096) x += t >> 11, y += (LAND_H + 1 - y) * t >> 12;
+            else x += 2 + ((t - 4096) >> 10), y = LAND_H + 1 + (r & 1) * 2;
+            mo_px(x, y, gate);
+        }
+    if (el != LE_BRIDGE)
+        for (c = 0; c < w; c++)
+            for (y = gy + h; y < land_hill(gx + c); y++) mo_px(gx + c, y, hills);
+}
+static void land_shore(uint32_t sec, int32_t off, uint16_t hills)   /* a section's shore's things, off across */
+{
+    sec &= 3u;
+    if (land.kind == 1u) land_pic(LE_BRIDGE, land.bx[sec] - 10 + off, hills);
+    if (land.el[sec] != LE_NONE) land_pic(land.el[sec], land.gx[sec] + off, hills);
 }
 
 static void mo_pic_land(void)
@@ -388,10 +503,8 @@ static void mo_pic_land(void)
         for (i = 5; i >= 1u; i--) mo_px(hx + (int32_t)(i * 5u / 2u), hy - (int32_t)i, i > 2u ? MO_DIM : MO_HOT);
         mo_px(hx, hy, MO_HOT);
     }
-    if (land.seed && land.from == 0u && toff < 120)     /* the torii: only on A's shore, going with it and back; */
-        land_temple(land_gate_x() - toff, hills);
-    if (land.seed && land.sec == 0u)
-        land_temple(land_gate_x() + 120 - toff, hills);
+    if (toff < 120) land_shore(land.from, -toff, hills);   /* each shore's things: the one leaving, the one here */
+    land_shore(land.sec, 120 - toff, hills);
     mo_hl(0, LAND_H, 120, water);
     for (y = LAND_H + 3, i = 0; my - 5 < land_hill(mx) && y < MO_PY1 - 2 && i < 6u - land.mist * 6u / 16u; y += 4, i++) {   /* the moon in the water (it shivers under rings) */
         int32_t w = 7 - (int32_t)i, sh = land_moving() || song.playing ? (int32_t)((fm1_ms / 80u + i) % 3u) - 1 : 0;   /* (still when stopped) */

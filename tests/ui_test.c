@@ -5343,6 +5343,71 @@ static int test_landscape(void)
     bad += check("  left: notes not kept again", land_ev_at == i && !land_open);
     return bad;
 }
+/* LANDSCAPE's places (ui_land.c): a named project's kind of place, what stands on each CHAIN section's shore (one
+ * thing a shore, B..D distinct, some bare), the bridge kept clear, still when stopped (the shores meeting:
+ * test_land_seam) */
+static uint32_t land_name(const char *nm)               /* the place of a project named nm, as LANDSCAPE sees it */
+{
+    str_cpy(proj_name, nm, sizeof proj_name);
+    frame();
+    return land_kind();
+}
+static int test_land_places(void)
+{
+    int bad = 0, ok;
+    uint32_t i, n, sec, k[3] = {0}, cherry = 0, bare = 0, shores = 0, sig;
+    int32_t x;
+    ui_power_on();
+    song.playing = 0;
+    tessera_reset();
+    go_title("LANDSCAPE");
+    bad += check("LANDSCAPE places: CEDAR RAIN islands, UNDERTOW channels, KOTO GARDEN all land",
+                 land_name("CEDAR RAIN") == 0u && land_name("UNDERTOW") == 1u && land_name("KOTO GARDEN") == 2u);
+    for (ok = 1, sec = 0; sec < 3u; sec++)
+        for (x = 0; x < 120; x++) ok &= land_sky(x, sec) > 0;
+    bad += check("  all land: no water on any shore; the Buddha on A, no torii", ok && land.el[0] == LE_BUDDHA);
+    land_name("CEDAR RAIN");
+    bad += check("  CEDAR RAIN (the hero clip): the torii on A where it always stood", land.el[0] == LE_TORII &&
+                 land.gx[0] == 60u);
+    for (ok = 1, n = 0; n < 600u; n++) {                /* many names: one thing a shore, B..D distinct, the rates */
+        char nm[13];
+        snprintf(nm, sizeof nm, "PLACE %u", (unsigned)n);
+        k[land_name(nm)]++;
+        ok &= land.el[0] == (land.kind == 2u ? LE_BUDDHA : LE_TORII);
+        for (sec = 1; sec < 4u; sec++) {
+            uint32_t e = land.el[sec], j;
+            ok &= e == LE_PAGODA || e == LE_LANTERN || e == LE_PINE || e == LE_CHERRY || e == LE_NONE;
+            for (j = 1; j < sec; j++) ok &= e == LE_NONE || e != land.el[j];
+            cherry += e == LE_CHERRY, bare += e == LE_NONE, shores++;
+            ok &= !(e == LE_CHERRY && (land.el[1] == LE_PINE || land.el[2] == LE_PINE || land.el[3] == LE_PINE));
+            if (land.kind == 1u && e != LE_NONE)        /* (the bridge: 16 clear columns from what stands by it) */
+                ok &= land.gx[sec] + LAND_PIC[e][1] + 16 <= land.bx[sec] - 10 || land.gx[sec] >= land.bx[sec] + 11 + 16;
+        }
+    }
+    bad += check("  600 names: A the torii or (all land) the Buddha; B..D distinct, never two on a shore",
+                 ok);
+    bad += check("  .. kinds near 5 : 2 : 1, a cherry for the pine about 1 in 6, about 1 shore in 4 bare",
+                 k[0] > 320u && k[0] < 420u && k[1] > 110u && k[1] < 190u && k[2] > 45u && k[2] < 110u &&
+                 cherry * 18u > shores * 2u / 3u && cherry * 18u < shores * 2u && bare * 4u > shores * 3u / 4u &&
+                 bare * 4u < shores * 5u / 4u);
+    for (ok = 0, n = 0; n < 600u && !ok; n++) {         /* stopped and quiet: a cherry's petals and a lit lantern hold */
+        char nm[13];
+        snprintf(nm, sizeof nm, "PLACE %u", (unsigned)n);
+        land_name(nm);
+        for (sec = 1; sec < 3u; sec++) ok |= land.el[sec] == LE_CHERRY && land.el[3u - sec] == LE_LANTERN;
+    }
+    for (sec = 1; sec < 3u && land.el[sec] != LE_CHERRY; sec++);
+    land.from = land.sec = (uint8_t)sec, land.tt0 = fm1_ms - LAND_TRAV_MS;
+    for (i = 0; i < 300u; i++) frame();
+    sig = mo_signature();
+    for (i = 0; i < 100u; i++) frame();
+    bad += check("  a cherry's shore, stopped and quiet: the petals still, the scene not drawn again",
+                 ok && mo_signature() == sig);
+    proj_name[0] = 0;
+    frame();
+    bad += check("  unnamed: nothing on any shore, no bridge", !land.kind && land.el[0] == LE_NONE && land.el[1] == LE_NONE);
+    return bad;
+}
 /* LANDSCAPE travelling to a new CHAIN section's shore: the two shores blended where they meet, nothing of the blend
  * left at either end of the travel */
 static int test_land_seam(void)

@@ -1224,12 +1224,20 @@ never changes the music.
 - **CHAIN**: each section has its own shore. When the form moves on, the new shore comes in from the right, as if
   you were travelling; back to A, you are home. Where the two shores meet they run into each other, so a hill
   carries on into the next. When the whole form comes round, a shooting star crosses the sky.
-- **A place of its own**: a project with a name gets its own landscape, made from the name: the shape of its hills
-  (sometimes islands, with open water between), where its stars are, where the moon rests, and a torii gate somewhere
-  on A's shore (in MOSAIC pink: an ink of the palette's own, apart from the hills), or standing in the water. The same name is always the
-  same place; renaming a project takes it somewhere else. An unnamed project shows the lake as it always was.
+- **A place of its own**: a project with a name gets its own landscape, made from the name: the shape of its hills,
+  where its stars are, where the moon rests, and its kind of place. Most are **islands**, with open water between;
+  about a quarter are **land cut by narrow channels**, with an arched bridge over the first; about one in eight are
+  **all land**. The same name is always the same place; renaming a project takes it
+  somewhere else. An unnamed project shows the lake as it always was, with nothing on its shores.
+- **One thing on each shore**: A's shore has a torii gate (on an all-land place, a seated Buddha with a halo in its
+  place). With a CHAIN, B and C each have one of a pagoda, a stone lantern and a pine, in an order of the place's own,
+  never two on a shore (the bridge aside). Sometimes a shore is left bare, just hills and water, and now and then a
+  flowering cherry stands in for the pine, letting fall a few slow petals while the music plays. Each stands
+  upside down in the water below, rippling. The lantern is lit: its glow grows a little as the notes land. Each
+  takes an ink of the palette's that suits it: the torii, pagoda and bridge the gate's (MOSAIC pink), the Buddha the
+  moon's, the pine the hills', the cherry's blossom the gate's over a trunk of the hills'.
 
-Each of these shows only when its layer is on; nothing new moves on the water but the rain.
+Each of these shows only when its layer is on; nothing new moves on the water but the rain (and a cherry's petals).
 
 The scene only listens while the page shows. In the MOSAIC palette each track's drops are in its own colour.
 
@@ -2398,7 +2406,8 @@ LFO's rate gives every cycle its own length.
 **LAG**. On a MIX bus **(3.5)**, a slew on the result: how long a full move takes, 10 ms to 20 s. A GATE
 through a lagged bus is an envelope.
 
-**LANDSCAPE**. A night lake drawn by the music (GLO), by day on GROUND LIGHT **(3.5)**; a named project's own place, and PIECE, ENTRIES, CHAIN and ENERGY in the scene **(3.6)**. The scene changes nothing in the
+**LANDSCAPE**. A night lake drawn by the music (GLO), by day on GROUND LIGHT **(3.5)**; a named project's own place, and PIECE, ENTRIES, CHAIN and ENERGY in the scene **(3.6)**; kinds of place (islands,
+channels, all land) and one thing on each section's shore, reflected in the water **(3.7)**. The scene changes nothing in the
 sound; its knobs turn PERF's macros **(3.7)**.
 
 **Layer**. In the manual, either one of Tessera's optional parts (sounds, generators, shaping, form, mods, performing)
