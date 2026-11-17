@@ -8,6 +8,7 @@ Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues>
 what you expected and what happened).
 
 ## New since 3.6
+- LANDSCAPE: during a PIECE the moon fills evenly as it climbs: a thin crescent as it rises, full at the top half way through the piece, then the other thin crescent as it sets. Its phase no longer follows the PIECE's SHAPE (which filled it close to the horizon on most shapes).
 
 ## Fixed
 

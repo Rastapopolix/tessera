@@ -7,7 +7,8 @@
  * and nothing is drawn again. Drawn from code; the notes come from land_feed.c, read only while the page is open. The
  * whole page below the header (no dials: the knobs do nothing here). GROUND LIGHT: the same water by day, a sun in the
  * moon's place and no stars.
- * The layers each tell something, and only when switched on: a PIECE's SHAPE is the moon's phase (full at the peak), its
+ * The layers each tell something, and only when switched on: a PIECE's time moves the moon on its arc and its phase (a
+ * thin crescent rising, full at the zenith, the other crescent setting), its
  * last tenth dusk by day and the stars coming out by night; each CHAIN
  * section has a shore of its own (the new one comes in from the right) and a shooting star marks the FORM coming round;
  * ENERGY's tide is the wind in the clouds (right as it builds, left as it thins, still at the turns), its rests a mist
@@ -86,10 +87,10 @@ static void land_moon(uint32_t dt)
     if (song.playing) tessera_piece_get(&p, &left);
     else if (land.mset) return;
     if (p > 65536u) p = 65536u;
-    land.lp = p;                                        /* (the phase: the SHAPE here, full at its peak) */
-    left = (uint32_t)tessera_piece_shape(p);
-    land.ph = (uint16_t)((int32_t)left < 0 ? 0 : left > 32767u ? 32767u : left);
-    land.wax = p + 656u < 65536u && (int32_t)tessera_piece_shape(p + 656u) > (int32_t)left;   /* (the SHAPE rising) */
+    land.lp = p;                                        /* (the phase: how far the moon has climbed, evenly in its time: */
+    left = p < 32768u ? p : 65536u - p;                 /*  a thin crescent at the horizon, full at the zenith half way, */
+    land.ph = (uint16_t)(left > 32767u ? 32767u : left);   /* the other thin crescent as it sets) */
+    land.wax = p < 32768u;                              /* (climbing: waxing) */
     tx = (LAND_ML + (int32_t)(p * (uint32_t)(LAND_MR - LAND_ML) >> 16)) * 16;
     ty = (LAND_MB * 16 - (LAND_MB - LAND_MT) * 16 * mo_sin((int32_t)(p >> 9)) / 127);
     if (song.playing && plan.ending) ty = (LAND_H + 8) * 16;
@@ -345,12 +346,12 @@ static void mo_pic_land(void)
             if (y < land_hill(x)) mo_px(x, y, moon);
         }
     } else {
-        land_disc(mx, my, 5, moon);                     /* a crescent; a PIECE's: as full as its SHAPE here, waxing as it rises */
+        land_disc(mx, my, 5, moon);                     /* a crescent; a PIECE's: as full as it has climbed, waxing as it rises */
         if (!pl_secs()) land_disc(mx + 3, my - 2, 4, MO_BG);
-        else if (land.ph < 31784u)
-            land_disc(mx + (land.wax ? 1 : -1) * (2 + (((int32_t)land.ph * 8 + 16384) >> 15)),   /* (waxing: lit on the left, */
-                      my - ((2 * (32767 - (int32_t)land.ph) + 16384) >> 15), 4, MO_BG);       /* waning: on the right: */
-                                                                                               /* facing into the scene) */
+        else if (land.ph < 31784u)                      /* (the shadow 1..10 cells off: lit about 30 % .. all, near evenly) */
+            land_disc(mx + (land.wax ? 1 : -1) * (1 + (((int32_t)land.ph * 9 + 16384) >> 15)),   /* (waxing: lit on the left, */
+                      my - (land.ph < 16384u), 4, MO_BG);                                        /* waning: on the right: */
+                                                                                                 /* facing into the scene) */
     }
     for (i = 0; i < clouds; i++) {                      /* the clouds: bands of dashes, lower and wider when full */
         int32_t w = 18 + (int32_t)cover + (int32_t)((i * 7u + (land.seed >> 27)) % 9u), cy = LAND_TOP + 6 + (int32_t)(i * 11u % 23u) +
