@@ -451,6 +451,16 @@ static int16_t pv_live = -1;                            /* (draw_column to the r
 static void col_mods(uint32_t pid) { col_pid = (uint16_t)pid; }
 static void draw_column(uint32_t c0, const char *label, const char *val, const char *unit, uint16_t vc,
                         int32_t ratio, uint32_t icon);
+/* a TX_* setting's card: its label and named value (pid.c's; mods: its live mods marked), lit or dim */
+static void col_names(uint32_t c, uint32_t x, int mods, uint32_t v, int on)
+{
+    const param_desc_t *d = &TX_DESC[x];
+    v %= (uint32_t)d->max + 1u;
+    if (mods) col_mods(PID_TESS(x));
+    draw_column(c, d->label, d->names[v], "", on ? VAL(c) : T_DIM, (int32_t)v * 1000 / d->max, ICON_AUTO);
+}
+/* GEN's first card: the generator's name (pid.c's MODE names) */
+static void col_mode(uint32_t m) { draw_column(0, "MODE", TX_N_MODE[m], "", VAL(0u), (int32_t)gen_arc(m), ICON_AUTO); }
 /* a number's card (pid: its live mods, PID_NONE none), lit */
 static void col_int(uint32_t c, uint32_t pid, const char *label, int32_t v, const char *unit, int32_t ratio)
 {
@@ -850,9 +860,7 @@ static int pr_draw(void)
         col_mods(PID_TESS(TX_CH_STRUM));
         draw_column(1, "STRUM", sm ? v : "OFF", sm ? "ms" : "", VAL(1u),     /* (the bar by detent: the fine low end shows) */
                     (int32_t)(tess_strum_detent(sm) * 1000u / TESS_STRUM_DETENTS), ICON_AUTO);
-        col_mods(PID_TESS(TX_CH_SDIR));
-        draw_column(2, "DIR", pid_desc(PID_TESS(TX_CH_SDIR), tr)->names[sd], "", sm ? VAL(2u) : T_DIM, (int32_t)sd * 500,
-                    ICON_AUTO);
+        col_names(2, TX_CH_SDIR, 1, sd, sm != 0);
         int32_t o = tessera_chord(tr)->oct;
         v[0] = o > 0 ? '+' : o < 0 ? '-' : '0';
         v[1] = o ? (char)('0' + (o < 0 ? -o : o)) : 0;
@@ -988,10 +996,8 @@ static void draw_columns_(void)
             uint32_t h = tessera.follow_hold[tr], fh = tessera.follow_how[tr] % TESS_FH_COUNT;
             uint32_t fr = tessera.follow_rhy[tr] % TESS_FR_COUNT;
             char w4[4] = {'T', (char)('0' + h), 0, 0};
-            draw_column(1, "HOW", pid_desc(PID_TESS(TX_TW_FHOW), 0)->names[fh], "", ev->follow ? VAL(1u) : T_DIM,
-                        (int32_t)fh * 1000 / (TESS_FH_COUNT - 1), ICON_AUTO);
-            draw_column(2, "RHYTHM", pid_desc(PID_TESS(TX_TW_FRHY), 0)->names[fr], "", ev->follow ? VAL(2u) : T_DIM,
-                        (int32_t)fr * 500, ICON_AUTO);
+            col_names(1, TX_TW_FHOW, 0, fh, ev->follow != 0);
+            col_names(2, TX_TW_FRHY, 0, fr, ev->follow != 0);
             draw_column(3, "HOLD", h ? w4 : "OFF", "", ev->follow ? VAL(3u) : T_DIM, (int32_t)h * 1000 / 4, ICON_AUTO);
             return;
         }
@@ -1150,7 +1156,7 @@ static void draw_columns_(void)
     if (cur_page()->graph == GR_TIMING && tm_layer_on()) {   /* TIMING, OCT+ held: SPLIT, HOW (dim at 0) */
         uint32_t tr = song.sel % TESSERA_TRACKS, sp = tessera.sub_split[tr], how = tessera.sub_split_how[tr] % TESS_SPLIT_HOWS;
         col_pct(0, PID_TESS(TX_SUB_SPLIT), "SPLIT", sp, 1);
-        draw_column(1, "HOW", pid_desc(PID_TESS(TX_SUB_SPLIT_HOW), 0)->names[how], "", sp ? VAL(1u) : T_DIM, (int32_t)how * 500, ICON_AUTO);
+        col_names(1, TX_SUB_SPLIT_HOW, 0, how, sp != 0);
         draw_column(2, "", "", "", T_DIM, -1, ICON_NONE);
         draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
         return;
@@ -1239,9 +1245,7 @@ static void draw_columns_(void)
             draw_column(2, "PAT GEN", pg ? "ON" : "OFF", "", pg ? VAL(2u) : T_DIM, (int32_t)pg * 1000, ICON_AUTO);
             if (sv) {
                 uint32_t how = tessera.sv_how[tr] % TESS_SV_HOWS;
-                col_mods(PID_TESS(TX_SV_HOW));
-                draw_column(3, "HOW", pid_desc(PID_TESS(TX_SV_HOW), tr)->names[how], "", VAL(3u),
-                            (int32_t)how * 1000 / (TESS_SV_HOWS - 1), ICON_AUTO);
+                col_names(3, TX_SV_HOW, 1, how, 1);
             } else {
                 uint32_t gv = tessera.sd_grav[tr];
                 col_pct(3, PID_TESS(TX_SD_GRAVITY), "GRAVITY", gv, ev->every && !ev->form);
@@ -1317,7 +1321,7 @@ static void draw_columns_(void)
             } else if (m == TESS_ENG_TURING) {
                 const gen_turing_t *tur = tessera_turing(tr);
                 uint8_t tlen = tur->len ? tur->len : 16;
-                draw_column(0, "MODE", "TURING", "", VAL(0u), (int32_t)gen_arc(1), ICON_AUTO);
+                col_mode(TESS_ENG_TURING);
                 col_int(1, PID_TESS(TX_TUR_LEN), "LEN", (int32_t)(tlen), "/16", (int32_t)(tlen - 1u) * 1000 / 15);
                 if (tur->prob == 0) {
                     str_cpy(v2, "LOCK", sizeof v2);
@@ -1331,7 +1335,7 @@ static void draw_columns_(void)
             } else if (m == TESS_ENG_EUCLID) {
                 const gen_euclid_t *euc = tessera_euclid(tr);
                 uint32_t esteps = euc->steps ? euc->steps : 16;
-                draw_column(0, "MODE", "EUCLID", "", VAL(0u), (int32_t)gen_arc(2), ICON_AUTO);
+                col_mode(TESS_ENG_EUCLID);
                 col_int(1, PID_NONE, "STEPS", (int32_t)(esteps), "", (int32_t)(esteps - 1u) * 1000 / 31);
                 col_int(2, PID_TESS(TX_EUC_PULSES), "PULSE", (int32_t)(euc->pulses), "", (int32_t)euc->pulses * 1000 / 32);
                 col_int(3, PID_TESS(TX_EUC_ROT), "ROT", (int32_t)(euc->rot), "", (int32_t)euc->rot * 1000 / 31);
@@ -1339,13 +1343,13 @@ static void draw_columns_(void)
                 const gen_markov_t *mk = tessera_markov(tr);
                 uint32_t moct = mk->oct_span ? mk->oct_span : 1;
                 uint32_t dens = (mk->density >= 5 && mk->density <= 100) ? mk->density : 100;
-                draw_column(0, "MODE", "MARKOV", "", VAL(0u), (int32_t)gen_arc(3), ICON_AUTO);
+                col_mode(TESS_ENG_MARKOV);
                 col_pct(1, PID_TESS(TX_MKV_LEAP), "LEAP", mk->tension, 1);
                 col_pct(2, PID_TESS(TX_MKV_DENS), "DENS", dens, 1);
                 col_int(3, PID_NONE, "SPAN", (int32_t)(moct), "OCT", (int32_t)(moct - 1u) * 1000 / 2);
             } else if (m == TESS_ENG_BOUNCE) {
                 const gen_bounce_t *b = tessera_bounce(tr);
-                draw_column(0, "MODE", "BOUNCE", "", VAL(0u), (int32_t)gen_arc(TESS_ENG_BOUNCE), ICON_AUTO);
+                col_mode(TESS_ENG_BOUNCE);
                 col_int(1, PID_TESS(TX_BNC_SPEED), "SPEED", (int32_t)(b->speed), "", (int32_t)(b->speed - 1u) * 1000 / 63);
                 fmt_int(v2, b->balls == GEN_BOUNCE_FALL ? (int32_t)b->angle - 45 : (int32_t)b->angle);
                 col_mods(PID_TESS(TX_BNC_ANGLE));
@@ -1370,7 +1374,7 @@ static void draw_columns_(void)
                     fmt_int(v1 + 1, vb);
                     draw_column(1, l1, v1, "", VAL(1u), (int32_t)vb * 1000 / 7, ICON_AUTO);
                 } else {
-                    draw_column(0, "MODE", "AWAKE", "", VAL(0u), (int32_t)gen_arc(TESS_ENG_AWAKE), ICON_AUTO);
+                    col_mode(TESS_ENG_AWAKE);
                     col_int(1, PID_NONE, "LEN A", (int32_t)(a->len_a), "", (int32_t)(a->len_a - 1u) * 1000 / 15);
                 }
                 col_int(2, PID_NONE, "LEN B", (int32_t)(a->len_b), "", (int32_t)(a->len_b - 1u) * 1000 / 15);
@@ -1378,7 +1382,7 @@ static void draw_columns_(void)
             } else if (m == TESS_ENG_POLY) {
                 const gen_poly_t *p = tessera_poly(tr);
                 uint32_t d = p->div[p->sel & 3u];
-                draw_column(0, "MODE", "POLY", "", VAL(0u), (int32_t)gen_arc(TESS_ENG_POLY), ICON_AUTO);
+                col_mode(TESS_ENG_POLY);
                 col_int(1, PID_NONE, "RHY", (int32_t)((p->sel & 3u) + 1u), "/4", (int32_t)(p->sel & 3u) * 1000 / 3);
                 if (d) v2[0] = '/', fmt_int(v2 + 1, d);    /* (every d steps: "/4", no unit) */
                 else str_cpy(v2, "OFF", sizeof v2);
@@ -1400,14 +1404,14 @@ static void draw_columns_(void)
                                 (int32_t)(q->range % GEN_QR_COUNT) * 1000 / (GEN_QR_COUNT - 1), ICON_AUTO);
                     return;
                 }
-                draw_column(0, "MODE", "QUAD", "", VAL(0u), (int32_t)gen_arc(TESS_ENG_QUAD), ICON_AUTO);
+                col_mode(TESS_ENG_QUAD);
                 draw_column(1, "DIR", QDIR[q->dir % GEN_QD_COUNT], "", VAL(1u), (int32_t)(q->dir % GEN_QD_COUNT) * 1000 / (GEN_QD_COUNT - 1), ICON_AUTO);
                 col_pct(2, PID_TESS(TX_QD_PROB), "PROB", q->prob, 1);
                 quad_link_text(q->link, v3);
                 draw_column(3, "LINK", v3, "", VAL(3u), (int32_t)(q->link & 15u) * 1000 / 15, ICON_AUTO);
             } else if (m == TESS_ENG_SERIES) {
                 const gen_series_t *g = tessera_series(tr);
-                draw_column(0, "MODE", "SERIES", "", VAL(0u), (int32_t)gen_arc(TESS_ENG_SERIES), ICON_AUTO);
+                col_mode(TESS_ENG_SERIES);
                 col_int(1, PID_TESS(TX_SR_START), "START", (int32_t)(g->start), "", (int32_t)g->start * 1000 / 127);
                 col_int(2, PID_NONE, "INTV", (int32_t)(g->intv), "", ((int32_t)g->intv - 1) * 1000 / 6);
                 if (g->loop) fmt_int(v3, g->loop);
@@ -1415,14 +1419,10 @@ static void draw_columns_(void)
                 draw_column(3, "LOOP", v3, "", VAL(3u), (int32_t)g->loop * 1000 / GEN_SR_LOOP, ICON_AUTO);
             } else if (m == TESS_ENG_CHORD) {
                 const gen_chord_t *g = tessera_chord(tr);
-                draw_column(0, "MODE", "CHORD", "", VAL(0u), (int32_t)gen_arc(TESS_ENG_CHORD), ICON_AUTO);
-                col_mods(PID_TESS(TX_CH_PROG));
-                draw_column(1, "PROG", pid_desc(PID_TESS(TX_CH_PROG), tr)->names[g->prog % GEN_CH_PROGS], "", VAL(1u),
-                            (int32_t)(g->prog % GEN_CH_PROGS) * 1000 / (GEN_CH_PROGS - 1), ICON_AUTO);
-                draw_column(2, "BARS", pid_desc(PID_TESS(TX_CH_BARS), tr)->names[g->bars % GEN_CH_BARS], "", VAL(2u),
-                            (int32_t)(g->bars % GEN_CH_BARS) * 1000 / (GEN_CH_BARS - 1), ICON_AUTO);
-                draw_column(3, "HIT", pid_desc(PID_TESS(TX_CH_HIT), tr)->names[g->hit % GEN_CH_HITS], "", VAL(3u),
-                            (int32_t)(g->hit % GEN_CH_HITS) * 1000 / (GEN_CH_HITS - 1), ICON_AUTO);
+                col_mode(TESS_ENG_CHORD);
+                col_names(1, TX_CH_PROG, 1, g->prog, 1);
+                col_names(2, TX_CH_BARS, 0, g->bars, 1);
+                col_names(3, TX_CH_HIT, 0, g->hit, 1);
             } else if (m == TESS_ENG_ANSWER) {
                 const tessera_answer_t *a = tessera_answer(tr);
                 if (an_layer_on()) {                            /* OCT- held: SOURCE, ORDER, SHIFT (SPACE: the sheet) */
@@ -1444,7 +1444,7 @@ static void draw_columns_(void)
                     col_pct(3, PID_NONE, "SPACE", a->space, 1);
                     return;
                 }
-                draw_column(0, "MODE", "ANSWER", "", VAL(0u), (int32_t)gen_arc(TESS_ENG_ANSWER), ICON_AUTO);
+                col_mode(TESS_ENG_ANSWER);
                 fmt_int(v1, a->vary);
                 col_mods(PID_TESS(TX_AN_VARY));
                 draw_column(1, "VARY", a->vary ? v1 : "OFF", a->vary ? "%" : "", VAL(1u), (int32_t)a->vary * 10, ICON_AUTO);
@@ -1465,7 +1465,7 @@ static void draw_columns_(void)
                     col_int(3, PID_TESS(TX_CS_SIZE), "SIZE", (int32_t)(c->size), "", (int32_t)c->size * 1000 / 7);
                     return;
                 }
-                draw_column(0, "MODE", "CONSTL", "", VAL(0u), (int32_t)gen_arc(TESS_ENG_CONSTEL), ICON_AUTO);
+                col_mode(TESS_ENG_CONSTEL);
                 fmt_int(v1, c->y);
                 col_mods(PID_TESS(TX_CS_Y));
                 draw_column(1, "Y", c->autop ? "AUTO" : v1, "", VAL(1u), (int32_t)c->y * 1000 / (GEN_CS_ROWS - 1u), ICON_AUTO);
@@ -1486,7 +1486,7 @@ static void draw_columns_(void)
                     else draw_column(3, p4, "OFF", "", VAL(3u), 0, ICON_AUTO);
                     return;
                 }
-                draw_column(0, "MODE", "ATLAS", "", VAL(0u), (int32_t)gen_arc(5), ICON_AUTO);
+                col_mode(TESS_ENG_GRIDS);
                 col_int(1, PID_TESS(TX_GRD_X), "X", (int32_t)(g->x), "", (int32_t)g->x * 1000 / 255);
                 col_int(2, PID_TESS(TX_GRD_Y), "Y", (int32_t)(g->y), "", (int32_t)g->y * 1000 / 255);
                 col_pct(3, PID_TESS(TX_GRD_DENS), "DENS", g->dens, 1);
@@ -1494,7 +1494,7 @@ static void draw_columns_(void)
                 const gen_morph_t *mo = tessera_morph(tr);
                 int32_t pa = (int32_t)(mo->step_idx >> 4) & 7;
                 int32_t pb = (int32_t)mo->oct_span & 7;
-                draw_column(0, "MODE", "MORPH", "", VAL(0u), (int32_t)gen_arc(4), ICON_AUTO);
+                col_mode(TESS_ENG_MORPH);
                 col_int(1, PID_TESS(TX_MRP_POS), "POS", (int32_t)(mo->morph_pos), "/127", (int32_t)mo->morph_pos * 1000 / 127);
                 col_int(2, PID_NONE, "SNP A", (int32_t)(pa + 1), "/8", pa * 1000 / 7);
                 col_int(3, PID_NONE, "SNP B", (int32_t)(pb + 1), "/8", pb * 1000 / 7);
