@@ -1317,8 +1317,8 @@ static void draw_columns_(void)
                                                              * col_sh) */
                 uint32_t src = tessera.sd_src[tr], kp = tessera.sd_keep[tr], gv = tessera.sd_grav[tr];
                 col_mods(PID_TESS(TX_SD_SOURCE));
-                draw_column(0, "SOURCE", pid_desc(PID_TESS(TX_SD_SOURCE), tr)->names[src % (TESSERA_TRACKS + 1u)], "",
-                            VAL(0u), (int32_t)src * 1000 / TESSERA_TRACKS, ICON_AUTO);
+                draw_column(0, "SOURCE", pid_desc(PID_TESS(TX_SD_SOURCE), tr)->names[src % (TESS_SD_KEYS + 1u)], "",
+                            VAL(0u), (int32_t)src * 1000 / TESS_SD_KEYS, ICON_AUTO);
                 col_mods(PID_TESS(TX_SD_KEEP));
                 draw_column(1, "KEEP", pid_desc(PID_TESS(TX_SD_KEEP), tr)->names[kp % TESS_SD_KEEPS], "",
                             src ? VAL(1u) : T_DIM, (int32_t)kp * 1000 / (TESS_SD_KEEPS - 1), ICON_AUTO);

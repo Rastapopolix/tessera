@@ -3515,6 +3515,49 @@ static void pack_run(char *res, size_t cap)
         ok &= gok;
         tessera_unpack(a);
     }
+    {   /* SOURCE KEYS (capture-to-loop): a TURING track's keys make a take in its ANSWER phrase while it rests; a bar
+         * without a key closes it and the generator plays it from where it has got to, read as a pattern of whole
+         * bars; REC held's print writes it into the STEP pattern and points SOURCE there; a STEP track (no generator)
+         * and ANSWER's own phrase are left as they were */
+        const tessera_answer_t *an = tessera_answer(1);
+        uint8_t now[SD_LOOP], home[SD_LOOP];
+        uint32_t i, at = 0, kok = 1, w = 0;
+        tessera_reset();
+        gen(1, TESS_ENG_TURING);
+        tessera_param_set(1, TX_SD_SOURCE, TESS_SD_KEYS);
+        kok &= tessera_param_get(1, TX_SD_SOURCE) == (int32_t)TESS_SD_KEYS && sd_source(1) == 0u;   /* (no take yet) */
+        kok &= tessera_sd_print(1, 0) == 0u;
+        tessera_answer_hear(&trk[1], 60, 90);
+        kok &= an->n == 1u && tess_an.phase[1] == TESS_AN_HEAR && sd_keys_wait(1, 16u);   /* (heard: it rests) */
+        tess_an.hclk[1] = 4;
+        tessera_answer_hear(&trk[1], 64, 110);
+        tess_an.hclk[1] = 20;                           /* (the second bar) */
+        tessera_answer_hear(&trk[1], 67, 100);
+        kok &= an->n == 3u && an->at[1] == 4u && an->at[2] == 20u && an->vel[1] == 110u;
+        for (i = 0; i < 15u; i++) kok &= sd_keys_wait(1, 16u) == 1;
+        kok &= sd_keys_wait(1, 16u) == 0 && tess_an.phase[1] == TESS_AN_IDLE && tess_sd.load[1] &&
+               tess_sd.pos[1] == 36u && !sd_keys_wait(1, 16u);   /* (closed: played from step 36 of the take) */
+        kok &= sd_source(1) == TESSERA_TRACKS + 2u && sd_len(TESSERA_TRACKS + 1u) == 32u;
+        tessera.turing[1].len = 16;
+        kok &= tessera_sd_loop(1, now, home, &at) == 16u && home[0] == (0x80u | 60u) && home[4] == (0x80u | 64u) &&
+               home[1] == 0u;
+        tessera_answer_hear(&trk[1], 72, 100);          /* (the next take replaces it) */
+        kok &= an->n == 1u && an->note[0] == 72u && tess_an.phase[1] == TESS_AN_HEAR;
+        tess_an.phase[1] = TESS_AN_IDLE;
+        memset(trk[1].step, 0, sizeof trk[1].step);
+        w = tessera_sd_print(1, 1);
+        kok &= w == 16u && trk[1].p[P_SLEN] == 16 && trk[1].step[0].n == 1u && trk[1].step[0].note[0] == 72u &&
+               trk[1].step[0].time == ST_NOTE && tessera.sd_src[1] == 2u && tessera_sd_print(1, 0) == 0u;
+        tessera_reset();                                /* (a STEP track: KEYS has no take) */
+        tessera_param_set(1, TX_SD_SOURCE, TESS_SD_KEYS);
+        tessera_answer_hear(&trk[1], 60, 90);
+        kok &= an->n == 0u && tessera_sd_print(1, 0) == 0u;
+        gen(1, TESS_ENG_ANSWER);                        /* (ANSWER: KEYS hears the keys, as OFF does) */
+        tessera_answer_hear(&trk[1], 61, 90);
+        kok &= an->n == 1u && an->note[0] == 61u;
+        ok &= kok;
+        tessera_unpack(a);
+    }
     {   /* ANSWER FADE on GEN's KNOB 4: a count a click, 1 .. 16, then LOOPS SHORT MID LONG (LEN) and no further; back
          * down the same way */
         uint32_t i, up = 1;

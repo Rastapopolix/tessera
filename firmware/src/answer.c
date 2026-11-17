@@ -123,12 +123,15 @@ void tessera_answer_hear_at(track_t *t, uint32_t note, uint32_t vel, uint32_t la
 {
     uint32_t tr = trk_index(t), n, at;
     tessera_answer_t *a;
-    if (tr >= TESSERA_TRACKS || tessera.mode[tr] != TESS_ENG_ANSWER || !vel || note > 127u) return;
-    if (tessera.answer[tr].mode == TESS_AN_BEND) {     /* (BEND: every note, a STEP SOURCE or not) */
+    if (tr >= TESSERA_TRACKS || !vel || note > 127u) return;
+    if (tessera.mode[tr] != TESS_ENG_ANSWER) {         /* (a generator with SOURCE KEYS: its take, step_seed.c) */
+        if (!sd_keys(tr) || !sd_mode(tr)) return;
+    } else if (tessera.answer[tr].mode == TESS_AN_BEND) {   /* (BEND: every note, a STEP SOURCE or not) */
         answer_bend_hear(tr, note, vel > 127u ? 127u : vel, late);
         return;
+    } else if (tessera.sd_src[tr] && answer_source(tr)) {
+        return;                                         /* (a SOURCE's call: the keys just play) */
     }
-    if (tessera.sd_src[tr] && answer_source(tr)) return;   /* (a SOURCE's call: the keys just play) */
     a = &tessera.answer[tr];
     if (tess_an.phase[tr] != TESS_AN_HEAR) {
         answer_restart(tr);
@@ -456,7 +459,8 @@ void tessera_answer_layer_knob(uint32_t k, int32_t s)
     if (tr >= TESSERA_TRACKS || !s) return;
     a = &tessera.answer[tr];
     TESS_IRQ_OFF();
-    if (k == 0u) tess_param_set_body(tr, TX_SD_SOURCE, (int32_t)tessera.sd_src[tr] + d);
+    if (k == 0u && (int32_t)tessera.sd_src[tr] + d <= (int32_t)TESSERA_TRACKS)   /* (KEYS: a generator's; ANSWER hears them) */
+        tess_param_set_body(tr, TX_SD_SOURCE, (int32_t)tessera.sd_src[tr] + d);
     else if (k == 1u) tess_param_set_body(tr, TX_AN_ORDER, (int32_t)a->order + d);
     else if (k == 2u) tess_param_set_body(tr, TX_AN_SHIFT, (int32_t)a->shift + d);
     TESS_IRQ_ON();
