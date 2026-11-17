@@ -37,7 +37,10 @@ jobs:
           python -m pip install Pillow fonttools==4.68.0
       - name: Check the pictures against the screens
         run: |
-          if ! tools/docs_images.sh --check | tee check.txt; then
+          # (no pipe: through tee the step took tee's status and passed with pictures stale)
+          tools/docs_images.sh --check > check.txt && ok=1 || ok=0
+          cat check.txt
+          if [ "$ok" = 0 ]; then
             {
               echo '### Docs pictures are out of date'
               echo
