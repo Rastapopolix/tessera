@@ -13,6 +13,7 @@ what you expected and what happened).
 - Capture-to-loop: TURING, EUCLID, MARKOV and MORPH have a new SOURCE, KEYS. Play a phrase on the track's keys (or MIDI IN), up to 16 notes; a bar without a key ends it, and the generator then plays and varies what you played, with KEEP and GRAVITY as for a STEP source. The next phrase you play replaces it. REC held prints the take into STEP so you can fix a note by hand, and the generator plays on from that pattern.
 
 ## Fixed
+- LANDSCAPE: at night a few stars stay out however busy the music (they no longer all vanish); travelling to a new CHAIN section, the two shores run into each other instead of meeting at a hard edge; steep slopes are drawn with a solid outline.
 
 ## Good to know
 - A project with a track set to SOURCE KEYS doesn't load on 3.6.1 or older firmware.

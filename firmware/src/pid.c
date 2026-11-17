@@ -723,7 +723,7 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     XP_(TX_ET_FADE, "ENTRIES FADE", "The bars a FADE takes, 1 to 4. GLO > ENTRIES, KNOB 4."),
     X_(TX_ET_ROLE, "ENTRIES ROLE", "What the track is to Entries: BASS comes in first and goes last, then RHYTHM, "
                                    "HARMONY, MELODY (a melody only over a bass or harmony). ANCHOR is never taken out. "
-                                   "AUTO: CHORD or chords harmony, GRIDS, drums or NOISE rhythm, the lowest track (a fifth "
+                                   "AUTO: CHORD or chords harmony, ATLAS, drums or NOISE rhythm, the lowest track (a fifth "
                                    "below the rest, or below C3) bass, else melody. GLO > ENTRIES with OCT- held, or OCT- held on FORM, KNOB 4."),
     XP_(TX_PL_LENGTH, "PIECE LENGTH", "FREE: the music plays on unplanned. A length, 1 minute to 4 hours: the piece is "
                                       "planned to it from PLAY, its SHAPE steering ENERGY (ARC how far), ENTRIES (how "
