@@ -6,7 +6,8 @@
 #include "../hal/fm1_eq.h"
 #define FX_RATE (FS/4u)
 #define FX_REV_DIV 8u
-enum { FX_OFF, FX_PHASER, FX_WIDTH, FX_FORMANT, FX_TAPE, FX_SPIT, FX_ECHO, FX_ROOM, FX_REVERB, FX_CHORUS, FX_FILTER, FX_COUNT };
+enum { FX_OFF, FX_PHASER, FX_WIDTH, FX_FORMANT, FX_TAPE, FX_SPIT, FX_ECHO, FX_ROOM, FX_REVERB, FX_CHORUS, FX_FILTER, FX_DRIVE, FX_COUNT };
+#define FX_MEMORY(type) ((type)>=FX_ECHO && (type)<=FX_CHORUS)   /* (the effects with a delay line, resource RES_FX0..) */
 typedef struct { float b0,b1,b2,a1,a2,z1,z2; } fx_bq_t;
 typedef struct {
     fx_bq_t q[2][4];
@@ -403,6 +404,33 @@ static inline __attribute__((always_inline)) int32_t fx_reverb_softclip(int32_t 
     else y=TANH_Q15[i]+((TANH_Q15[i+1]-TANH_Q15[i])*(a&255)>>8);
     return x<0?-y:y;
 }
+/* DRIVE: a soft clip (the tanh curve above) at the full rate, with no oversampling: RATE the drive (DRIVE, 1 to 32
+ * times into the curve), CHAR the fold (FOLD: blends the clip into a triangle wavefolder, which turns the peaks back
+ * instead of flattening them). The output is scaled back so a half-scale input stays about where it was. The gain
+ * moves a quarter of the way to RATE's each block (about 3 ms: a knob or a cord turned fast makes no click) and
+ * glides across the block with its make-up: f->glide, f->echo. */
+static void fx_drive_design(fx_state_t *f,int32_t *c)
+{
+    int32_t g=256+f->rate*f->rate/2,d=g-f->glide;                       /* (Q8) */
+    if(f->age)g=f->glide+fx_div_pow2(d,2)+(d>0)-(d<0);
+    c[0]=g;c[1]=(int32_t)((16384u<<15)/(uint32_t)fx_reverb_softclip(16384*g>>8));   /* (Q15) */
+    if(!f->age){f->glide=c[0];f->echo=c[1];f->age=1;}
+}
+static __attribute__((noinline,section(".audio_text"),aligned(16))) void fx_drive(fx_state_t *restrict f,uint32_t n,const int32_t *c,int32_t target)
+{
+    int32_t g=f->glide,k=f->echo,step=n?(int32_t)n:1,dg=(c[0]-g)/step,dk=(c[1]-k)/step,fold=f->character,mix=f->mix;
+    uint32_t channels=f->mono?1u:2u;
+    for(uint32_t i=0;i<n;i++){
+        int32_t y[2];g+=dg;k+=dk;
+        for(uint32_t ch=0;ch<channels;ch++){
+            int32_t u=((ch?fx_right[i]:fx_left[i])*g)>>8,a=fx_reverb_softclip(u);
+            int32_t p=(u+32768)&0x1FFFF,t=p<65536?p-32768:98304-p;      /* (the fold: a triangle, period 4 x 32768) */
+            y[ch]=((a+(((t-a)*fold)>>7))*k)>>15;
+        }
+        fx_return(target,FX_DRIVE,f->mono,i,y[0],f->mono?y[0]:y[1],&mix);
+    }
+    f->glide=c[0];f->echo=c[1];f->mix=mix;
+}
 static inline __attribute__((always_inline)) int32_t fx_reverb_ap(fx_state_t *f,int16_t *mem,uint32_t k,int32_t x,uint32_t off)
 {
     uint32_t pos=f->rev_ap[k];int32_t delayed=mem[off+pos];
@@ -544,7 +572,7 @@ static __attribute__((noinline,section(".dsp_text"))) void fx_up(fx_state_t *f,u
 }
 static __attribute__((noinline,section(".dsp_text"))) void fx_copy(fx_state_t *f,uint32_t n)
 {
-    uint32_t mono=(f->type<=FX_ECHO && f->type!=FX_WIDTH) || f->type==FX_FILTER;
+    uint32_t mono=(f->type<=FX_ECHO && f->type!=FX_WIDTH) || f->type>=FX_FILTER;
     for(uint32_t i=0;i<n;i++){
         fx_dry_l[i]=fx_left[i];fx_dry_r[i]=fx_right[i];if(fx_left[i]!=fx_right[i])mono=0;
     }
@@ -630,7 +658,7 @@ static void fx_slot_prepare(fx_plan_t *plan,uint32_t si,const int16_t *p)
     if(profiling){f->rate=(fx_profile_control>>12u)&127u;f->character=(fx_profile_control>>19u)&127u;}
 #endif
     int16_t *mem=0;
-    if(f->type>=FX_ECHO && f->type!=FX_FILTER){
+    if(FX_MEMORY(f->type)){
         uint32_t bytes=f->type==FX_CHORUS?FX_CHORUS_BYTES:f->type==FX_ROOM?2048u:f->type==FX_REVERB?FX_REVERB_BYTES:8192u;
         if(!f->failed && !resource[RES_FX0+si].size){
             void *(*volatile allocate)(uint32_t,uint32_t)=fx_memory;mem=allocate(RES_FX0+si,bytes);if(!mem)f->failed=1;
@@ -649,6 +677,9 @@ static __attribute__((noinline,section(".audio_text"),aligned(16))) int fx_slot_
         float c[3];void (*volatile design)(const fx_state_t *,float *)=fx_svf_design;design(f,c);
         if(!f->age){f->q[0][1].b0=c[0];f->q[0][1].b1=c[1];f->q[0][1].b2=c[2];f->age=1;}
         void (*volatile run)(fx_state_t *,uint32_t,const float *,int32_t)=fx_svf;run(f,n,c,target);
+    }else if(f->type==FX_DRIVE){
+        int32_t c[2];void (*volatile design)(fx_state_t *,int32_t *)=fx_drive_design;design(f,c);
+        void (*volatile run)(fx_state_t *,uint32_t,const int32_t *,int32_t)=fx_drive;run(f,n,c,target);
     }else if(f->type==FX_CHORUS){
         if(!n)return 1;
         if(!f->age){f->rev_l=f->rev_r=256*65536;f->age=1;}
@@ -809,7 +840,7 @@ static void fx_bus_start(uint32_t n)
     if((song.g[G_FXMODE]!=0)!=fx_bus_separate)fx_bus_target=0;
     /* A later allocation may compact earlier handles; snapshot pointers only
      * after all three preparations have completed. */
-    for(uint32_t slot=0;slot<FX_SLOTS;slot++)if(fx_bus_plan[slot].active && fx_bus_plan[slot].f->type>=FX_ECHO && fx_bus_plan[slot].f->type!=FX_FILTER)fx_bus_plan[slot].mem=resource[RES_FX0+NPART*FX_SLOTS+slot].ptr;
+    for(uint32_t slot=0;slot<FX_SLOTS;slot++)if(fx_bus_plan[slot].active && FX_MEMORY(fx_bus_plan[slot].f->type))fx_bus_plan[slot].mem=resource[RES_FX0+NPART*FX_SLOTS+slot].ptr;
     for(uint32_t i=0;i<n;i++){fx_left[i]=fx_send_l[i];fx_right[i]=fx_send_r[i];}
     AP_END(AP_FX,audio_start);
 #if defined(MELODEE_FX_PROFILE) && MELODEE_FX_PROFILE && defined(FM1_IRQ_TARGET)

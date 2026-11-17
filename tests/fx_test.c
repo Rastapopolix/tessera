@@ -540,10 +540,53 @@ static void sleep_exact(void)
     }
     reset_fx();
 }
+/* DRIVE (fx.c fx_drive): RATE pushes a sine into the tanh curve (peaks flatten: lower crest, bounded, the level kept
+ * near the dry's); CHAR folds the peaks back (more of the signal above the fundamental); a RATE jump glides, no step */
+static void drive_run(int rate,int cha,uint32_t inc,int32_t *peak,uint64_t *energy)
+{
+    reset_fx();track_t *t=&trk[0];t->p[P_FXTYPE]=FX_DRIVE;t->p[P_FXMIX]=127;t->p[P_FXRATE]=(int16_t)rate;t->p[P_FXCHAR]=(int16_t)cha;
+    uint32_t phase=0;int32_t b[CTL];*peak=0;*energy=0;
+    for(uint32_t frame=0;frame<FS/CTL;frame++){
+        for(uint32_t i=0;i<CTL;i++){phase+=inc;b[i]=sine_i(phase)/2;}
+        assert(fx_process(t,b,CTL));
+        for(uint32_t i=0;i<CTL;i++){
+            assert(fx_left[i]==fx_right[i]);   /* (mono in, mono out) */
+            if(frame>=FS/CTL/2u){if(abs(fx_left[i])>*peak)*peak=abs(fx_left[i]);*energy+=(uint64_t)((int64_t)fx_left[i]*fx_left[i]);}
+        }
+    }
+    assert(!resource[RES_FX0].size);   /* (no memory) */
+}
+static void drive_test(void)
+{
+    _Static_assert(FX_DRIVE==11,"stored FX IDs stay fixed");
+    const uint32_t k1=(uint32_t)(1000.0*4294967296.0/FS);
+    int32_t p0,p1,p2;uint64_t e0,e1,e2;
+    drive_run(0,0,k1,&p0,&e0);drive_run(127,0,k1,&p1,&e1);drive_run(127,127,k1,&p2,&e2);
+    uint64_t n=FS/CTL/2u*CTL;
+    /* crest factor (peak^2 / mean square): a sine 2, a clipped one towards 1 */
+    double c0=(double)p0*p0/((double)e0/n),c1=(double)p1*p1/((double)e1/n);
+    assert(c0>1.8 && c1<1.25);
+    assert(p0>14000 && p0<19000);      /* (DRIVE 0: a half-scale sine stays about half scale) */
+    assert(p1>12000 && p1<20000);      /* (DRIVE 100 %: flattened, the make-up keeps it near) */
+    assert(p2<=33000);                 /* (folded: still bounded) */
+    /* FOLD: the folded wave differs from the clipped one */
+    assert(e2!=e1);
+    reset_fx();track_t *t=&trk[0];t->p[P_FXTYPE]=FX_DRIVE;t->p[P_FXMIX]=127;t->p[P_FXCHAR]=0;
+    int32_t b[CTL],prev=0,jump=0;uint32_t phase=0;const uint32_t k100=(uint32_t)(100.0*4294967296.0/FS);
+    for(uint32_t frame=0;frame<2000u;frame++){
+        t->p[P_FXRATE]=(int16_t)((frame/40u)%2u?127:0);
+        for(uint32_t i=0;i<CTL;i++){phase+=k100;b[i]=sine_i(phase)/8;}
+        fx_process(t,b,CTL);
+        for(uint32_t i=0;i<CTL;i++){int32_t d=abs(fx_left[i]-prev);if(frame>100u && d>jump)jump=d;prev=fx_left[i];}
+    }
+    fprintf(stderr,"DRIVE: crest %.2f -> %.2f, peaks %d / %d / %d (fold), largest step on a RATE jump %d\n",c0,c1,p0,p1,p2,jump);
+    assert(jump<1500);                 /* (measured 991: the clipped 100 Hz wave's own edge, ~950) */
+    puts("DRIVE: soft clip flattens the peaks, level kept, FOLD changes it, bounded, RATE jumps glide, no memory: OK");
+}
 int main(int argc,char **argv)
 {
     sleep_exact();
-    legacy();frozen_three_slots();send_return();separate_sends();fx_chain_test();reverb_tail();reverb_presence();reverb_rate_conversion();rate_and_pan();tape_smooth();chorus_test();filter_test();
+    legacy();frozen_three_slots();send_return();separate_sends();fx_chain_test();reverb_tail();reverb_presence();reverb_rate_conversion();rate_and_pan();tape_smooth();chorus_test();filter_test();drive_test();
     fx_images_check(FX_ECHO);fx_images_check(FX_ROOM);
     uint64_t dry=fx_signal(FX_OFF,60,64,0,0);
     for(uint32_t mode=FX_PHASER;mode<FX_COUNT;mode++){

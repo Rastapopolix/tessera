@@ -780,7 +780,7 @@ static void pv_fx(void)
     }
     uint32_t base=cur_page()->id[0],master=cur_page()->scope==SC_GLOBAL,slot=(base-(master?G_MFXTYPE:P_FXTYPE))/FX_PARAMS;
     const int16_t *values=master?song.g:TSEL->p;uint32_t type=(uint32_t)clamp(values[base],0,FX_COUNT-1);
-    static const char *const hint[FX_COUNT]={"Dry signal","Moving notches","All-pass L / dry R","Random vowels","Crossover jitter","Jumping resonance","Short lo-fi echoes","Small lo-fi space","Diffused reverb","Pitch shimmer","Resonant low-pass"};
+    static const char *const hint[FX_COUNT]={"Dry signal","Moving notches","All-pass L / dry R","Random vowels","Crossover jitter","Jumping resonance","Short lo-fi echoes","Small lo-fi space","Diffused reverb","Pitch shimmer","Resonant low-pass","Soft clip, fold"};
     int32_t mix=values[base+1u],cha=values[base+3u],py=50*16;
     cv_text_on(12,8,&AF_X,hint[type],T_MID,T_PANEL);
     for(int32_t x=0;x<208;x++){
@@ -789,6 +789,7 @@ static void pv_fx(void)
         if(type==FX_PHASER || type==FX_WIDTH || type==FX_CHORUS)y+=ph*mix/9;
         else if(type==FX_FORMANT)y-=((ph+32)*mix)/15;
         else if(type==FX_TAPE || type==FX_SPIT)y+=(ph*((x*(cha+1)/32)%32))/4;
+        else if(type==FX_DRIVE)y+=clamp(ph*(16+values[base+2u])/3,-320,320);
         else if(type>=FX_ECHO)y+=(ph*mix*(208-x))/1900;
         y=clamp(y,27*16,76*16);cv_vspan_aa(16+x,py,y,type&&mix?T_THEME:T_DIM);py=y;
     }
