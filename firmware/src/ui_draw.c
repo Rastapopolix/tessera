@@ -1042,7 +1042,9 @@ static void draw_columns_(void)
         draw_column(3, "", "", "", T_DIM, -1, ICON_NONE);
         return;
     }
-    if (cur_page()->graph == GR_PERF) {                  /* PERF: the four MACROs (cord.c CS_MACRO1) */
+    if (cur_page()->graph == GR_PERF || cur_page()->graph == GR_LAND) {   /* PERF: the four MACROs (cord.c CS_MACRO1);
+                                                         * LANDSCAPE the same, not drawn (the scene in their place)
+                                                         * but turned, said and shown large (ui_mono.c mo_turn) */
         for (uint32_t k = 0; k < 4u; k++) {
             char w[8];
             fmt_int(w, tessera.macro[k]);

@@ -197,7 +197,7 @@ how far a cord moves the knob you turn ([Mod shortcut](#mod-shortcut)). *Use it 
 |---|---|---|
 | [MIXER](#the-panel-at-a-glance) | Levels, pans, mutes and solos for all four tracks, plus FILL and tap tempo on the keys. | You are playing live, or balancing the mix. |
 | [PERF](#perf-four-macros) | Four macro knobs that can each drive many mods at once. | You want one knob to do a big move live (a build, a breakdown). |
-| [LANDSCAPE](#landscape-rain-on-water) | A night lake drawn by the music. Changes nothing. | You want something to watch while it plays. |
+| [LANDSCAPE](#landscape-rain-on-water) | A night lake drawn by the music; the knobs are PERF's macros. | You want something to watch while it plays. |
 | [PIECE](#piece-a-length-and-a-shape) | Plan a whole piece: how long, what shape (an arch, waves, builds), and what happens at the end. | You want a 20-minute or 2-hour piece that plays itself. |
 | [CHAIN](#chain-one-form-for-the-project) | Give all tracks one shared song form, so their sections change together. | Tracks with FORM should move from A to B at the same moment. |
 | [ENTRIES](#entries-tracks-out-and-back-in) | Let tracks drop out and come back in on phrase lines, like a band arranging itself. | The piece should thin out and fill up without you touching the mutes. |
@@ -302,7 +302,7 @@ long lists (a mod's source and destination, LFO WAVE) open a list to pick from.
 **C4** unmutes them all, **D4** holds the generators' line (HOLD), **E4** holds FILL and **F4** taps the tempo, the same as with GLO held on any other page. The
 line above the page tabs says so: a black key MUTE, a white key SOLO, E FILL. Each strip shows MUTE or SOLO; a track
 silenced by another's solo dims. The keys stay the mixer's on the next two GLO pages, PERF and LANDSCAPE, so you can
-mute and solo while you turn the macros or watch the lake. Any other page button leaves them, and the keys play notes
+mute and solo while you turn the macros or watch the lake (the knobs turn the macros there too). Any other page button leaves them, and the keys play notes
 again. **SELECT** on MIXER sets the tempo; on the other GLO pages it turns the pages, past MIXER. A mute only silences the track: a
 muted track still leads the tracks that follow it (FOLLOW, an ANSWER's SOURCE, QNT CHRD's chord, QUAD's LINK, the cords).
 Hold **OCT+** on MIXER for its sheet: **Mutes**, when the mute keys take effect while playing (NOW, BAR or PHRASE),
@@ -1195,8 +1195,11 @@ The choices come from the tracks' SEEDs, so PLAY plays the same piece again; STO
 > **In short:** a screen to watch while the music plays; it never changes the sound.
 
 **GLO > LANDSCAPE** is a page to look at while the music plays: a night lake, drawn by the music.
-It has no settings and changes nothing; the knobs do nothing here. The keys are MIXER's (mute, solo, FILL, tap), so
-you can thin the music and watch the lake answer.
+It has no settings, and the scene itself changes nothing. The keys are MIXER's (mute, solo, FILL, tap) and **KNOB 1
+to 4** are PERF's **MACRO 1 to 4**, so you can thin the music or make a big move and watch the lake answer. A macro
+being turned shows large across the foot (whatever LARGE VALUE is set to; there are no columns here) and the screen
+reader says it. With **IDLE LANDSCAPE**, the first touch, a knob too, still only takes you back to your page: a bump
+never changes the music.
 
 <p align="center"><img src="assets/gallery/glo_land_rain.png" alt="LANDSCAPE" width="240"></p>
 
@@ -1206,7 +1209,8 @@ you can thin the music and watch the lake answer.
   clouds drift with the wind: to the right while the tide builds, to the left while it thins, faster the steeper it
   is, and still at its turns. Without ENERGY they drift right, as the wind always blew. A **rest** lays mist on the
   water, and the moon's reflection fades into it until the notes come back.
-- **Stars** come out as the music thins and all of them once nothing has played for a few seconds. While playing the
+- **Stars** come out as the music thins and all of them once nothing has played for a few seconds; at night a few are
+  always out, however busy the music, and the next ones come and go dimly. While playing the
   moon's reflection shimmers, between notes too; stopped, the water is still and the reflection lies quiet.
 - On **GROUND LIGHT** it is day: a sun (a ring with short rays) takes the moon's place on the same arc, and no stars
   come out. Rain, clouds, hills and the water are the same.
@@ -1218,7 +1222,8 @@ you can thin the music and watch the lake answer.
   last tenth dusk falls (GROUND LIGHT: the sky darkens from the hills up) and at night the stars come out. END STOP:
   the moon sets behind the hills.
 - **CHAIN**: each section has its own shore. When the form moves on, the new shore comes in from the right, as if
-  you were travelling; back to A, you are home. When the whole form comes round, a shooting star crosses the sky.
+  you were travelling; back to A, you are home. Where the two shores meet they run into each other, so a hill
+  carries on into the next. When the whole form comes round, a shooting star crosses the sky.
 - **A place of its own**: a project with a name gets its own landscape, made from the name: the shape of its hills
   (sometimes islands, with open water between), where its stars are, where the moon rests, and a torii gate somewhere
   on A's shore (in MOSAIC pink: an ink of the palette's own, apart from the hills), or standing in the water. The same name is always the
@@ -2393,8 +2398,8 @@ LFO's rate gives every cycle its own length.
 **LAG**. On a MIX bus **(3.5)**, a slew on the result: how long a full move takes, 10 ms to 20 s. A GATE
 through a lagged bus is an envelope.
 
-**LANDSCAPE**. A night lake drawn by the music (GLO), by day on GROUND LIGHT **(3.5)**; a named project's own place, and PIECE, ENTRIES, CHAIN and ENERGY in the scene **(3.6)**. It changes nothing in the
-sound.
+**LANDSCAPE**. A night lake drawn by the music (GLO), by day on GROUND LIGHT **(3.5)**; a named project's own place, and PIECE, ENTRIES, CHAIN and ENERGY in the scene **(3.6)**. The scene changes nothing in the
+sound; its knobs turn PERF's macros **(3.6.2)**.
 
 **Layer**. In the manual, either one of Tessera's optional parts (sounds, generators, shaping, form, mods, performing)
 or the *second set of knobs* a page shows with OCT- held ("the GEN layer"). See *OCT+ / OCT-*.

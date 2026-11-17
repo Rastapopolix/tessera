@@ -2589,7 +2589,8 @@ static uint32_t mo_signature(void)
         h = (h ^ land_sig()) * 16777619u;
     if (cur_page()->scope == SC_GLOBAL && cur_page()->id[1] == G_INFO)   /* SYSTEM: the voices, the CPU */
         h = (h ^ voices_busy() ^ voice_budget() << 6 ^ song.cpu_q8 << 12 ^ song.cpu_peak_q8 << 22) * 16777619u;
-    if (cur_page()->graph == GR_PERF)                   /* PERF: the MACROs (a learned CC moves them too) */
+    if (cur_page()->graph == GR_PERF || cur_page()->graph == GR_LAND)   /* PERF, LANDSCAPE: the MACROs (a learned CC
+                                                                           * moves them too) */
         h = (h ^ ((uint32_t)tessera.macro[0] | (uint32_t)tessera.macro[1] << 7 | (uint32_t)tessera.macro[2] << 14 |
                   (uint32_t)tessera.macro[3] << 21)) * 16777619u;
     return h;
@@ -2604,7 +2605,8 @@ static int mo_turn(void)
     uint32_t i;
     int32_t x;
     char b[24];
-    if (LARGE_MODE == LARGE_OFF || (LARGE_MODE == LARGE_AUTO && mo_pic_own))
+    if (cur_page()->graph != GR_LAND &&                 /* (LANDSCAPE: no columns, so a MACRO turned always shows) */
+        (LARGE_MODE == LARGE_OFF || (LARGE_MODE == LARGE_AUTO && mo_pic_own)))
         return 0;
     for (i = 0; i < 4u && !(mo_col[i].used && mo_col[i].hot); i++) ;
     if (i >= 4u || mo_col[i].val[0] == '[')
