@@ -171,7 +171,8 @@ inspired by **norns** scripts (ideas only, no code copied): **QUAD** by initener
 **ORACLE** is Melodee's Prophet engine (after the Prophet-5) under its own name, with its own sounds. The TIDE and SWARM mod sources are inspired by **Triple Sloth** by Nonlinear Circuits (Andrew Fitch) and **ochd** by
 Instruō and DivKid.
 
-Thanks to the testers and everyone who reported a bug or asked for a feature: BobFromson, pavig-coder, bambalaya,
+Thanks to the testers and everyone who reported a bug or asked for a feature: BobFromson, pavig-coder (u/paulvigo on Reddit, for all
+the feedback), bambalaya,
 alxantdroid, resocut, João Durães, tv-glotzer, il1893, fairplay, alexwlloyd, morgulbrut, @nrittamurti, Inputsignwave
 Charles Vestal (FM-1 Screen Reader), and
 @bitmap303 on YouTube, whose comment gave Tessera its tagline, "a pocket rabbit hole".
