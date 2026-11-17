@@ -1122,8 +1122,8 @@ static void edit_param(uint32_t slot, int32_t steps)
         ui.force = 1;
         return;
     }
-    if (pg->graph == GR_PERF) {                     /* PERF: KNOB k MACRO k, the project's, a percent a detent (faster
-                                                     * turned) */
+    if (pg->graph == GR_PERF || pg->graph == GR_LAND) {   /* PERF and LANDSCAPE: KNOB k MACRO k, the project's, a
+                                                     * percent a detent (faster turned) */
         tessera_param_set(0, TX_MACRO1 + slot, (int32_t)tessera.macro[slot & 3u] + accel(EN_K1 + slot, steps, 100));
         ui.force = 1;
         return;

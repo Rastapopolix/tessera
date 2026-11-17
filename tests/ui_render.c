@@ -2891,6 +2891,10 @@ int main(int argc, char **argv)
         fprintf(stderr, "ui_render: PERF\n");
         nfind++;
     }
+    if (test_land_macros()) {                   /* LANDSCAPE's knobs: the MACROs, shown large (ui_test.c) */
+        fprintf(stderr, "ui_render: LANDSCAPE MACROs\n");
+        nfind++;
+    }
     if (test_roll_wait()) {                     /* ROLL playing (ui_test.c): the seed waiting for the bar line, dotted */
         fprintf(stderr, "ui_render: ROLL waiting\n");
         nfind++;
