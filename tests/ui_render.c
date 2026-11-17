@@ -2887,6 +2887,10 @@ int main(int argc, char **argv)
         fprintf(stderr, "ui_render: LANDSCAPE\n");
         nfind++;
     }
+    if (test_land_places()) {                   /* LANDSCAPE's places (ui_test.c): kinds, a thing a shore, the seam */
+        fprintf(stderr, "ui_render: LANDSCAPE places\n");
+        nfind++;
+    }
     if (test_perf()) {                          /* PERF (ui_test.c): the MACROs, a mod reading one, saved */
         fprintf(stderr, "ui_render: PERF\n");
         nfind++;
