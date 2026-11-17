@@ -28,7 +28,7 @@ footer { margin-top: 2mm; color: #666; font-size: 6.6pt; text-align: right; }
 <body>
 <header>
 <h1>Tessera shortcuts</h1>
-<p><b>A + B</b>: hold A, then press or turn B. <b>Held</b>: about 0.7 s (the GLO and SCL layers: MENU &gt; HOLD, 0.3 to 0.6 s); ARP, FX, LFO and OCT&#8209; on GEN work as soon as they are down. Page buttons act when let go. KNOB 1 to 4 are the four knobs from the left.</p>
+<p><b>A + B</b>: hold A, then press or turn B. <b>Held</b>: about 0.7 s (the GLO and SEL layers: MENU &gt; HOLD, 0.3 to 0.6 s); ARP, FX, LFO and OCT&#8209; on GEN work as soon as they are down. Page buttons act when let go. KNOB 1 to 4 are the four knobs from the left.</p>
 </header>
 <main>
 <section>
@@ -60,7 +60,7 @@ footer { margin-top: 2mm; color: #666; font-size: 6.6pt; text-align: right; }
 <tr><td><b>ARP</b></td><td>How it is shaped. STEP: EVOLVE, TWEAK, TIMING. ARP: TWEAK (SWING, PROB, HOLD, ORDER: ARP with OCT&#8209; held). A generator: EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY</td></tr>
 <tr><td><b>LFO</b></td><td>MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST; on FM6 then FM LFO; on ORACLE then LFO MOD, LFO ROUTE</td></tr>
 <tr><td><b>ENV</b></td><td>ENV, ENV DEST; on FM6 instead EG RATE, EG LVL, PITCH EG, PITCH LV; on ORACLE FILT ENV, AMP ENV</td></tr>
-<tr><td><b>SCL</b> (printed SEL)</td><td>SCALES, SCL, CHORD</td></tr>
+<tr><td><b>SEL</b></td><td>SCALES, SCL, CHORD</td></tr>
 <tr><td>SCALES: <b>KNOB 1</b> to <b>USER</b></td><td>Your own tunings: Scala files sent from the web editor (Projects &gt; Tunings)</td></tr>
 <tr><td><b>EDIT</b></td><td>The sound's EDIT pages (ORACLE: MACRO, MACRO 2, OSC A, OSC B, OSC MIX, FILTER, POLY MOD, CHARACTER, ...)</td></tr>
 <tr><td><b>EDIT</b> on an EDIT page</td><td>The map of the sound's pages: KNOB 1 across, KNOB 2 rows (on the page last used in each), OCT+ opens (OCT&#8209; there: the map again), OCT&#8209; or EDIT closes</td></tr>
@@ -72,7 +72,7 @@ footer { margin-top: 2mm; color: #666; font-size: 6.6pt; text-align: right; }
 </table>
 </section>
 <section>
-<h2>Quick layers: hold GLO or SCL</h2>
+<h2>Quick layers: hold GLO or SEL</h2>
 <table>
 <tr><td><b>GLO</b> held</td><td>[GLO] SET over the page; tapped twice, [GLO] LOCK (no need to hold; tap again to close)</td></tr>
 <tr><td><b>GLO</b> + black keys F#3 G#3 A#3 C#4</td><td>Mute / unmute track 1 to 4 (lit: sounding); MENU &gt; MUTES BAR or PHRASE waits for it (blinking)</td></tr>
@@ -83,10 +83,10 @@ footer { margin-top: 2mm; color: #666; font-size: 6.6pt; text-align: right; }
 <tr><td><b>GLO</b> + KNOB 1 to 4</td><td>Level of track 1 to 4</td></tr>
 <tr><td><b>GLO</b> + PRESETS</td><td>Browse the selected track's sounds, on any page (the sound shows large in place of the GLO map)</td></tr>
 <tr><td><b>GLO</b> + PLAY</td><td>Restart from the top without stopping</td></tr>
-<tr><td><b>SCL</b> + any key</td><td>ROOT: that key's note name (every melodic track while SCL &gt; Key link is LINKED)</td></tr>
-<tr><td><b>SCL</b> + KNOB 1 to 4</td><td>ROOT, SCALE, CHRD, VOIC</td></tr>
-<tr><td><b>GLO</b> / <b>SCL</b> + OCT&#8209;</td><td>Puts back what the layer changed since it opened</td></tr>
-<tr><td><b>GLO</b> or <b>SCL</b> tapped twice</td><td>Locks the layer open; press it again to close</td></tr>
+<tr><td><b>SEL</b> + any key</td><td>ROOT: that key's note name (every melodic track while SCL &gt; Key link is LINKED)</td></tr>
+<tr><td><b>SEL</b> + KNOB 1 to 4</td><td>ROOT, SCALE, CHRD, VOIC</td></tr>
+<tr><td><b>GLO</b> / <b>SEL</b> + OCT&#8209;</td><td>Puts back what the layer changed since it opened</td></tr>
+<tr><td><b>GLO</b> or <b>SEL</b> tapped twice</td><td>Locks the layer open; press it again to close</td></tr>
 </table>
 </section>
 <section>
@@ -106,7 +106,7 @@ footer { margin-top: 2mm; color: #666; font-size: 6.6pt; text-align: right; }
 <tr><td>Keys</td><td>The cursor step (pressed together: a chord of up to 4); let go: the cursor moves on</td></tr>
 <tr><td>A key + SELECT</td><td>That note's length</td></tr>
 <tr><td><b>ENV</b> + SELECT or KNOB 1</td><td>The cursor's note longer / shorter</td></tr>
-<tr><td><b>SCL</b> + SELECT or KNOB 1</td><td>Moves the note (ties, chord and velocity with it)</td></tr>
+<tr><td><b>SEL</b> + SELECT or KNOB 1</td><td>Moves the note (ties, chord and velocity with it)</td></tr>
 <tr><td><b>EDIT</b> tapped</td><td>Deletes the note and its ties; the cursor moves on the way KNOB 1 last turned</td></tr>
 <tr><td><b>OCT+</b></td><td>The note's sheet (length, velocity, chance, ratchet x1–x8, nudge ±/16, accumulate ±7, condition 1:2..8:8, FILL...); an empty step: NOTHING THERE</td></tr>
 <tr><td><b>OCT+</b> + SELECT, KNOB 1 or 2</td><td>Selects a run of notes; let go: the Selected notes sheet (move, copy, quantize, delete)</td></tr>

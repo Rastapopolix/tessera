@@ -4,7 +4,7 @@ Short, tested ways to get somewhere with Tessera. Each uses only what the firmwa
 are the ones on the screen, and [MANUAL.md](MANUAL.md) explains each page in full. Where a step names a page, tap
 the button in brackets until it shows: GEN, NOTES and PATTERN are under **SEQ**; EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING
 and ENERGY under **ARP**; MODS, MATRIX
-and ORGANIC under **LFO**, SCL and CHORD under **SCL**.
+and ORGANIC under **LFO**, SCL and CHORD under **SEL**.
 
 Recipes tagged **(3.5)** need a feature that is new in 3.5 (the MIX buses, EOC, CLOCK, PLAY, MOD DEPTH,
 scaling and HOLD mods, DIR, CHORD STRUM and the new chord kinds). Update with the
@@ -228,7 +228,7 @@ patching, and the [glossary](MANUAL.md#glossary) for any term that is new.
 4. Track 4: MODE **ATLAS**, **DENS** at 50. A drum groove under it.
 5. Track 1 again, **EVOLVE**: turn **ROLL** a click at a time until you like the line. The number is its seed: write
    it down and you can always come back to it.
-6. **SCL** on track 1 to change the scale; the generator follows at once.
+6. **SEL** on track 1 to change the scale; the generator follows at once.
 
 ## A drone that breathes
 
@@ -252,7 +252,7 @@ Hear it in **STILL TIDE** (track 1).
 
 1. Track 2: **PRESETS**, **STRING MACH** (a TRIO pad). MODE **CHORD**, **PROG POP**, **BARS 1**, **HIT BEAT**.
 2. Track 3 (FLUTE): MODE **MARKOV**, **LEAP 30**, **DENS 60**.
-3. On track 3, **SCL**: **QNT** to **CHRD**. Its notes now snap to the chord track 2 plays, so the melody always
+3. On track 3, **SEL**: **QNT** to **CHRD**. Its notes now snap to the chord track 2 plays, so the melody always
    fits the harmony. The keys and MIDI input snap too, so you can play along on track 3.
 4. Try PROG **2-5-1** or **CIRCLE** for a jazzier walk; the melody follows every change.
 

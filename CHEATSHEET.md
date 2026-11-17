@@ -3,7 +3,7 @@
 The buttons and combinations of Tessera on one sheet, a supplement to the **[manual](MANUAL.md)**. A printable
 two-page version is [docs/cheatsheet/tessera-cheatsheet.pdf](docs/cheatsheet/tessera-cheatsheet.pdf).
 
-**A + B**: hold A, then press or turn B. **Held**: about 0.7 s (the GLO and SCL layers: MENU > HOLD, 0.3 to 0.6 s);
+**A + B**: hold A, then press or turn B. **Held**: about 0.7 s (the GLO and SEL layers: MENU > HOLD, 0.3 to 0.6 s);
 ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act when let go. KNOB 1 to 4 are the four knobs from the left.
 
 ## Getting around
@@ -36,7 +36,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | **ARP** | How it is shaped. STEP: EVOLVE, TWEAK, TIMING. ARP: TWEAK (SWING, PROB, HOLD, ORDER: ARP with OCT- held). A generator: EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY |
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST; on FM6 then FM LFO; on ORACLE then LFO MOD, LFO ROUTE |
 | **ENV** | ENV, ENV DEST; on FM6 instead EG RATE, EG LVL, PITCH EG, PITCH LV; on ORACLE FILT ENV, AMP ENV |
-| **SCL** (printed SEL) | SCALES, SCL, CHORD |
+| **SEL** | SCALES, SCL, CHORD |
 | SCALES: **KNOB 1** to **USER** | Your own tunings: Scala files sent from the web editor (Projects > Tunings) |
 | **EDIT** | The sound's EDIT pages (ORACLE: MACRO, MACRO 2, OSC A, OSC B, OSC MIX, FILTER, POLY MOD, CHARACTER, ...) |
 | **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across, KNOB 2 rows (on the page last used in each), OCT+ opens (OCT- there: the map again), OCT- or EDIT closes |
@@ -46,7 +46,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | On **MIXER**: **KNOB 1** to **4** / with **OCT-** held | Level / pan of track 1 to 4; on MIXER, PERF and LANDSCAPE the keys are GLO's without holding it |
 | **SAVE** | USER (save the sound), PROJECT, PRESETS |
 
-## Quick layers: hold GLO or SCL
+## Quick layers: hold GLO or SEL
 
 | Do this | And this happens |
 |---|---|
@@ -59,10 +59,10 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | **GLO** + KNOB 1 to 4 | Level of track 1 to 4 |
 | **GLO** + PRESETS | Browse the selected track's sounds, on any page (the sound shows large in place of the GLO map) |
 | **GLO** + PLAY | Restart from the top without stopping |
-| **SCL** + any key | ROOT: that key's note name (every melodic track while SCL > Key link is LINKED) |
-| **SCL** + KNOB 1 to 4 | ROOT, SCALE, CHRD, VOIC |
-| **GLO** / **SCL** + OCT- | Puts back what the layer changed since it opened |
-| **GLO** or **SCL** tapped twice | Locks the layer open; press it again to close |
+| **SEL** + any key | ROOT: that key's note name (every melodic track while SCL > Key link is LINKED) |
+| **SEL** + KNOB 1 to 4 | ROOT, SCALE, CHRD, VOIC |
+| **GLO** / **SEL** + OCT- | Puts back what the layer changed since it opened |
+| **GLO** or **SEL** tapped twice | Locks the layer open; press it again to close |
 
 ## Knob holds
 
@@ -82,7 +82,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | Keys | The cursor step (pressed together: a chord of up to 4); let go: the cursor moves on |
 | A key + SELECT | That note's length |
 | **ENV** + SELECT or KNOB 1 | The cursor's note longer / shorter |
-| **SCL** + SELECT or KNOB 1 | Moves the note (ties, chord and velocity with it) |
+| **SEL** + SELECT or KNOB 1 | Moves the note (ties, chord and velocity with it) |
 | **EDIT** tapped | Deletes the note and its ties; the cursor moves on the way KNOB 1 last turned |
 | **OCT+** | The note's sheet (length, velocity, chance, ratchet x1–x8, nudge ±/16, accumulate ±7, condition 1:2..8:8, FILL...); an empty step: NOTHING THERE |
 | **OCT+** + SELECT, KNOB 1 or 2 | Selects a run of notes; let go: the Selected notes sheet (move, copy, quantize, delete) |

@@ -176,7 +176,7 @@ lets you do and when you would want it. Follow a link for the full description.
 **ENV**: the track's envelope and where it goes (on FM6 and ORACLE, the sound's own envelopes). *Use it to make a
 sound pluck, swell or sustain.*
 
-**SCL** (the button printed **SEL**): harmony
+**SEL**: harmony
 
 | Page | What it lets you do | Reach for it when |
 |---|---|---|
@@ -267,7 +267,7 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 | **ARP** | How the track's notes are shaped: EVOLVE, FORM, TWEAK, TIMING and the rest (by its MODE) | |
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST (an FM6 track: then FM LFO) | |
 | **ENV** | ENV, ENV DEST (an FM6 track: EG RATE, EG LVL, PITCH EG, PITCH LV) | On HOME, with OCT- / OCT+: the selected track an octave down / up (its TRN, up to ±24; both OCTs: 0) |
-| **SCL** (printed SEL) | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
+| **SEL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
 | **EDIT** | The sound's EDIT pages; on an EDIT page, the map | With OCT- / OCT+: undo / redo |
 | **FX** | The insert and send effects | The mod amount of any knob you turn |
 | **GLO** | MIXER, [PERF](#perf-four-macros), [PIECE](#piece-a-length-and-a-shape), [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in), [LANDSCAPE](#landscape-rain-on-water), SYSTEM, MIDI IN, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, D4 holds the generators' line ([HOLD](#evolve)), E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
@@ -373,7 +373,7 @@ key skips it.
 | Hold **OCT-** on GEN or TWEAK, turn **KNOB 1** | **RANDOM**: turn right and the page's knobs get new values, each inside its range (GEN: the generator's KNOB 2 to 4; TWEAK: SHIFT, DROP and HUMAN). The screen says **RANDOMIZED**. Turn left to put back the values from before the last turn (**PUT BACK**, once). KNOB 2 to 4 of this layer are the generator's own ([The GEN layer](#the-gen-layer)); on TWEAK, FOLLOW's HOW, RHYTHM and HOLD. MODE, the seed, FOLLOW, QUAD's LINK and CONSTELLATION's AUTO never change. A STEP or ARP track says **NO GENERATOR**. |
 | Turn **SELECT** on HOME or MIXER, or with **GLO** held | Sets the tempo (BPM), as SEQ > TEMPO does; F4 with GLO held taps it. With CLK on USB or TRS the tempo is the clock's, and a Song Position from it (a DAW's PLAY from mid-song) starts the steps, the ARP and the generators where that song is, as if they had played from the top. |
 | Turn **PRESETS** with **GLO** held, on any page | Browses the selected track's sounds as PRESETS does on HOME. The GLO map gives way to the sound: the track, the list and the place in it, the sounds before and after, the sound's name large and its engine (a fast turn: the name the knob will load when it stops, with its speed, X4). It stays while GLO is held; a GLO key or knob brings the map back. Without GLO, PRESETS keeps the page's own job (or does nothing), so a stray turn never changes the sound. GLO + OCT- does not put the sound back. |
-| Tap **GLO** or **SCL** twice quickly | Locks its Quick SET open on the page you were on, so you need not hold the button: the header says **[GLO] LOCK** (or **[SCL] LOCK**), and the keys and knobs are the layer's. Tap the button again to close it; any other page button, the menu or a dialog closes it too (PLAY, REC and OCT keep working). |
+| Tap **GLO** or **SEL** twice quickly | Locks its Quick SET open on the page you were on, so you need not hold the button: the header says **[GLO] LOCK** (or **[SEL] LOCK**), and the keys and knobs are the layer's. Tap the button again to close it; any other page button, the menu or a dialog closes it too (PLAY, REC and OCT keep working). |
 | **GLO** + **E4** (on MIXER, PERF or LANDSCAPE, E4) | Holds [FILL](#a-steps-condition-and-fill) for the steps whose condition is FILL or !FILL. |
 | **GLO** + **D4** (on MIXER, PERF or LANDSCAPE, D4) | **HOLD**: while the key is held every generator keeps the line it is playing. EVOLVE and STEP EVOLVE skip their rounds, TURING plays as PROB 0, MARKOV and MORPH replay their phrase as LOCK 100 (at LOCK 0, the last pass they played), CONSTELLATION replays its loop and ATLAS keeps this bar's CHAOS. Let go and they carry on from where they are. Tap D4 twice to latch it (**HOLD LATCHED**), tap it again to let go (**HOLD OFF**). The GLO map's D cell and D4's light show it. Not saved. |
 | **GEN** on an AWAKE track, a white key | Picks that step: KNOB 1 sets its A, KNOB 2 its B. The same key lets it go. |
@@ -1520,7 +1520,7 @@ to STEP, and EDIT held brings the ARP back (hold the keys again to restart it).
 **One key for the project.** The scale (SCL) is always the same on every track, and QNT and the MPC degree are while
 **QNT link** is LINKED (below). The key
 note, ROOT, is too while **SCL > Key link** is **LINKED** (the default in a new project): change ROOT on any melodic
-track, from SCL's list or with SCL held and a key, and every melodic track follows; drum tracks keep their own.
+track, from SCL's list or with SEL held and a key, and every melodic track follows; drum tracks keep their own.
 **OWN** gives each track its own ROOT again; turning LINKED back on gives every track the selected track's key. Key
 link is saved with the project (a project saved before it loads as OWN). TRN still moves a single track. The **Key in B** and
 **Key in C** rows at the end of SCL's list change the key in the CHAIN's sections ([CHAIN](#chain-one-form-for-the-project)).
@@ -1876,7 +1876,7 @@ the reader connects, so a DAW on the same port sees nothing.
 
 It says each page as you open it (its name, the track and the knobs), a knob's name and value once you stop turning it,
 the row of a list or menu with its place ("3 OF 8"), the messages in the header, PLAY and STOP, yes/no questions with
-their keys, the GLO and SCL layers while held, and a step when you press its key while stopped. PATTERNS, SONG, the
+their keys, the GLO and SEL layers while held, and a step when you press its key while stopped. PATTERNS, SONG, the
 sound browser, the slot pages and SCALES say what is selected. Tessera's abbreviations are said as words (T1 is
 "track 1", BP on SCALES is "Bohlen-Pierce").
 
@@ -2557,7 +2557,9 @@ smooth signal becomes steps. In Tessera: **S&H** is a source on each track (rand
 **Scale**. A set of notes the music stays within. 77 are built in; four **USER** scales **(3.5)** are yours, and
 **Scala tunings** are microtonal ones from the web editor.
 
-**SCL**. The harmony button, printed **SEL** on the panel: SCALES, the scale and key, QNT, CHORD.
+**SCL**. The scale page (SCALES, the scale and key, QNT, CHORD), under the **SEL** button.
+
+**SEL**. The harmony button: its pages are SCALES, SCL and CHORD; held, a key sets ROOT.
 
 **Seed**. The starting number for a generator's random choices. The same seed plays the same line.
 

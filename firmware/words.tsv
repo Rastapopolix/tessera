@@ -68,6 +68,10 @@ PPQN	pulses per beat
 QNT	quantize
 HOLD GLO SET	hold global to set its keys
 HOLD SCL SET	hold scale to set the key
+HOLD SEL SET	hold scale to set the key
+SEL SET	scale set
+SEL LOCK	scale lock
+PRESS SEL	press scale
 ERR	error
 SIM	simulator
 
