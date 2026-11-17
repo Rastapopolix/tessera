@@ -1,0 +1,8 @@
+{
+  "version": "3.6",
+  "product": "FM-1_836",
+  "pkg": {
+    "dual": "../../firmware/tessera-3.6.fwsc",
+    "single": "../../firmware/tessera-3.6-1core.fwsc"
+  }
+}
