@@ -298,7 +298,15 @@ static int malformed_saves(void)
                  !request(ED_PROJECT, slot, sizeof slot) && !project_used(0));
     bad += check("UP_STORE rejects bytes after its name terminator without saving",
                  request(ED_UP_STORE, name, sizeof name) == 8u && host_wire[6] == 1 && !up_used(0));
-    bad += check("a successful PROJECT save confirms its slot", request(ED_PROJECT, save, sizeof save) == 9u && project_used(0));
+    bad += check("a successful PROJECT save confirms its slot", request(ED_PROJECT, save, sizeof save) == 10u && project_used(0) && !host_wire[8]);
+    {                                                  /* a query names the slot */
+        static const uint8_t query[] = {2, 0}, empty[] = {2, 1};
+        project_save_as(0, "DUB SKANK");
+        bad += check("PROJECT query sends the slot's name",
+                     request(ED_PROJECT, query, sizeof query) == 19u && host_wire[7] == 1 && !memcmp(&host_wire[8], "DUB SKANK", 10));
+        bad += check("PROJECT query of an empty slot sends no name",
+                     request(ED_PROJECT, empty, sizeof empty) == 10u && host_wire[7] == 0 && !host_wire[8]);
+    }
     oldlen = proj_bank_len[0]; memcpy(old, proj_bank_slot[0], oldlen);
     TSEL->p[P_LEVEL] = 21; song.playing = 1; host_progress = 0;
     bad += check("PROJECT never confirms an old used slot when STOP timed out",
