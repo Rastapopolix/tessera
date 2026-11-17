@@ -104,9 +104,6 @@ static void land_moon(uint32_t dt)
     d = (ty - land.my) * (int32_t)dt / 1000;
     land.my += d ? d : (ty > land.my) - (ty < land.my);
 }
-/* a shore's height at x: section sec of the place (unnamed A: the shore as it always was; otherwise two waves and
- * sometimes a peak, from the seed, never above 15 so the moon is never buried; 0 or less: open water, so a place can
- * be islands) */
 /* a named place's kind, from its seed: 0 islands (most), 1 land with narrow channels (a quarter), 2 all land (1 in 8:
  * a seated Buddha in the torii's place) */
 static uint32_t land_kind(void)
@@ -114,6 +111,9 @@ static uint32_t land_kind(void)
     uint32_t k = (land.seed * 0x7FEB352Du) >> 28;
     return !land.seed ? 0u : k < 2u ? 2u : k < 6u ? 1u : 0u;
 }
+/* a shore's height at x: section sec of the place (unnamed A: the shore as it always was; otherwise two waves and
+ * sometimes a peak, from the seed, never above 15 so the moon is never buried; 0 or less: open water, so a place can
+ * be islands) */
 static int32_t land_sky0(int32_t x, uint32_t sec)
 {
     uint32_t h;
@@ -169,15 +169,11 @@ static int32_t land_toff(void)                          /* a travel: how far the
     uint32_t a = fm1_ms - land.tt0;
     return a < LAND_TRAV_MS ? (int32_t)(a * 120u / LAND_TRAV_MS) : 120;
 }
-#ifndef LAND_SEAM
-#define LAND_SEAM 20
-#endif
-//                                    /* (travelling: the two shores blended over twice this) */
+#define LAND_SEAM 20                                    /* (travelling: the two shores blended over twice this) */
 static int32_t land_hill(int32_t x)                    /* the far shore's top at x (travelling: the old one going left) */
 {
     int32_t w = x + land_toff(), h;
-    if (!LAND_SEAM) h = w < 120 ? land_sky(w, land.from) : land_sky(w - 120, land.sec);
-    else if (w < 120 - LAND_SEAM) h = land_sky(w, land.from);
+    if (w < 120 - LAND_SEAM) h = land_sky(w, land.from);
     else if (w >= 120 + LAND_SEAM) h = land_sky(w - 120, land.sec);
     else {                                              /* (where they meet: each shore carried on past its edge, mixed, */
         int32_t t = w - (120 - LAND_SEAM), o = land_sky(w, land.from), n = land_sky(w - 120, land.sec),   /*  so a hill runs */
