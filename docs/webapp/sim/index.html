@@ -940,7 +940,7 @@ function build(name) {
   KNOBS.forEach((n, i) => {
     const [x, y, r] = L.knobs[i], g = el("g", {});
     el("circle", { cx: x, cy: y, r: r + 5, fill: "var(--well)" }, g);
-    el("circle", { cx: x, cy: y, r, fill: "var(--part)", stroke: "var(--edge)", "stroke-width": 2 }, g);
+    el("circle", { cx: x, cy: y, r, fill: "var(--part)", stroke: "var(--edge)", "stroke-width": 2, class: "face" }, g);
     const ind = n === "MASTER" ? el("line", { x1: x, y1: y - r + 5, x2: x, y2: y - r + 14, stroke: "var(--label)", "stroke-width": 3, "stroke-linecap": "round" }, g) : null;
     label(g, x, y - r - 12, n, 16, DOT);
     el("circle", { cx: x, cy: y, r: r + 12, fill: "transparent" }, g);
@@ -1048,6 +1048,14 @@ function release(e) {
 for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) device.addEventListener(t, release);
 
 function drawKnob(k) { if (k.ind) k.ind.setAttribute("transform", `rotate(${angle[k.name]} ${k.x} ${k.y})`); }
+// a knob turned shows the pressed ring (.held, as a key or button held): while it is dragged, and 250 ms after its
+// last detent from anywhere (wheel, arrows, MIDI CC knobs, an FM-1's PANEL)
+function ringKnob(k) {
+  if (!k) return;
+  k.g.classList.add("held");
+  clearTimeout(k.ring);
+  k.ring = setTimeout(() => { if (!k.drag) k.g.classList.remove("held"); }, 250);
+}
 function setMaster(v) {
   masterValue = Math.max(0, Math.min(1023, v));
   angle.MASTER = -135 + 270 * masterValue / 1023;
@@ -1055,6 +1063,7 @@ function setMaster(v) {
 }
 function turn(k, n) {
   if (!n) return;
+  ringKnob(k);
   if (k.role === "master") setMaster(masterValue + n * 16);
   else {
     angle[k.name] = (angle[k.name] + n * 18) % 360;            // 20 detents a turn
@@ -1068,6 +1077,8 @@ function bindKnob(k) {
     e.preventDefault();
     k.hit.setPointerCapture(e.pointerId);
     drag = { x: e.clientX, y: e.clientY, acc: 0 };
+    k.drag = true;
+    ringKnob(k);
   });
   k.hit.addEventListener("pointermove", (e) => {
     if (!drag) return;
@@ -1078,9 +1089,10 @@ function bindKnob(k) {
     const step = k.role === "master" ? 3 : 8, n = Math.trunc(drag.acc / step);
     if (n) { drag.acc -= n * step; turn(k, n); }
   });
-  const end = () => { drag = null; };
+  const end = () => { drag = null; k.drag = false; ringKnob(k); };
   k.hit.addEventListener("pointerup", end);
   k.hit.addEventListener("pointercancel", end);
+  k.hit.addEventListener("lostpointercapture", end);
   k.hit.addEventListener("wheel", (e) => {
     e.preventDefault();
     const dy = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
@@ -1258,7 +1270,7 @@ async function midiOn() {
           if (d.length < 2 || d[0] < 0x80 || d[0] >= 0xF0 || fm1Mirrors(input)) return;
           const k = knobsOn && (d[0] & 0xF0) === 0xB0 ? midiKnob(knobCC, d[1], d[2] || 0, knobMode) : null;
           if (!k) send({ type: "midi", data: [d[0], d[1], d[2] || 0] });
-          else if (k.master !== undefined) { setMaster(k.master); drawKnob(knobs.find((x) => x.role === "master")); }
+          else if (k.master !== undefined) { const m = knobs.find((x) => x.role === "master"); setMaster(k.master); drawKnob(m); ringKnob(m); }
           else turn(knobs.find((x) => x.role === k.role), k.n);
         };
       }
@@ -1313,8 +1325,10 @@ function fm1Message(input, d) {
     if (st === 0x9F && v) keyBy.set("m" + a, a); else keyBy.delete("m" + a);
     syncKeys();
   } else if (st === 0xBF && a === 27) {
+    const m = knobs.find((x) => x.role === "master");
     setMaster(Math.round(v * 1023 / 127));
-    drawKnob(knobs.find((x) => x.role === "master"));
+    drawKnob(m);
+    ringKnob(m);
   } else if (st === 0xBF && a >= 20 && a < 27) {
     turn(knobs.find((x) => x.role === a - 20), v < 64 ? v : 64 - v);
   }
