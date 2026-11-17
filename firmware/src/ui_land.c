@@ -348,11 +348,10 @@ static int land_moving(void)
         if (land.used[i]) return 1;
     return land.fish == 1u;
 }
-static uint32_t land_glow(void)                         /* the lantern's glow: 3 still, up to 6 with notes landing */
+static uint32_t land_glow(void)                         /* the lantern's glow: 4 still, up to 6 as the notes land */
 {
-    uint32_t i, f = 0, a = land.act >> 9;
-    for (i = 0; i < LAND_RIP; i++) f |= land.used[i] && fm1_ms - land.t0[i] < 250u;
-    return 3u + (a > 2u ? 2u : a) + f;
+    uint32_t a = land.act >> 9;
+    return 4u + (a > 2u ? 2u : a);
 }
 static int land_rip(void) { return land_moving() || song.playing; }   /* the water moving: reflections shimmer */
 #define LAND_STARS_MIN 10u                              /* (the stars always out at night, however busy) */
@@ -395,47 +394,43 @@ static const uint8_t LAND_BAYER[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 1
 /* an element el with its left column at gx: standing on the ground under its middle (the bridge: on the water), the
  * ground filled under it where the slope falls away; upside down in the water below, every other cell, the water's
  * dim ink, each two rows shifted by the ripples as the moon's */
-static int land_bit(uint32_t el, int32_t c, int32_t r)   /* element el's cell c, r (outside: none) */
-{
-    const uint8_t *p = LAND_PIC[el];
-    int32_t w = p[1], pw = w > 16 ? 11 : w;
-    if (c < 0 || c >= w || r < 0 || r >= p[2]) return 0;
-    return LAND_PICS[p[0] + r] >> (pw - 1 - (c < pw ? c : w - 1 - c)) & 1;
-}
+/* an element el with its left column at gx: standing on the ground under its middle (the bridge: on the water), the
+ * ground filled under it where the slope falls away; upside down in the water below, every other cell, the water's
+ * dim ink, each two rows shifted by the ripples as the moon's. The lantern lit: a glow round its window in the sky,
+ * then a dark cell round its stone (one ink: no blur), the stone, the window in the moon's ink */
 static void land_pic(uint32_t el, int32_t gx, uint16_t hills)
 {
     const uint8_t *p = LAND_PIC[el];
-    int32_t w = p[1], h = p[2], gy, r, c, y, x;
-    uint16_t moon = land_ink(0, 0), ink = el == LE_BUDDHA ? moon : el == LE_PINE ? land_ink(1, 0)
-                                       : el == LE_LANTERN ? (moon == MO_HOT ? MO_DIM : MO_HOT) : land_ink(3, 0),
-             deep = land_ink(2, 1);
+    int32_t w = p[1], h = p[2], pw = w > 16 ? 11 : w, gy, r, c, y, x, sh, pass, lit = el == LE_LANTERN && !ux.light;
+    uint16_t moon = land_ink(0, 0), hl = land_ink(1, 0), gate = land_ink(3, 0), deep = land_ink(2, 1),
+             ink = el == LE_BUDDHA ? moon : el == LE_PINE ? hl : el == LE_LANTERN ? (moon == MO_HOT ? MO_DIM : MO_HOT) : gate;
     gy = el == LE_BRIDGE ? LAND_H - 1 : land_hill(gx + w / 2);
     gy = (gy > LAND_H - 1 ? LAND_H - 1 : gy) + 1 - h;   /* (its top row) */
-    if (el == LE_LANTERN && !ux.light) {                /* lit: a glow round the window, dithered, in the sky only, a dark */
-        int32_t g = (int32_t)land_glow(), wx = gx + 5, wy = gy + 3, d;   /* cell kept round the stone (one ink: no blur) */
-        for (y = wy - g; y <= wy + g; y++)
-            for (x = wx - g; x <= wx + g; x++)
-                if (!((x + y) & 1) && (d = (x - wx) * (x - wx) + (y - wy) * (y - wy)) <= g * g + 1 && y < land_hill(x) &&
-                    !land_bit(el, x - gx, y - gy) && !land_bit(el, x - gx - 1, y - gy) && !land_bit(el, x - gx + 1, y - gy) &&
-                    !land_bit(el, x - gx, y - gy - 1) && !land_bit(el, x - gx, y - gy + 1))
-                    mo_px(x, y, d <= 5 ? moon : land_ink(0, 1));
-    }
-    for (r = 0; r < h; r++)
-        for (c = 0; c < w; c++) {
-            if (!land_bit(el, c, r)) continue;
-            mo_px(gx + c, gy + r, el == LE_CHERRY && r > 5 ? land_ink(1, 0) : ink);
+    if (lit)
+        for (r = (int32_t)land_glow(), y = gy + 3 - r; y <= gy + 3 + r; y++)
+            for (x = gx + 5 - r; x <= gx + 5 + r; x++) {
+                int32_t d = (x - gx - 5) * (x - gx - 5) + (y - gy - 3) * (y - gy - 3);
+                if (!((x + y) & 1) && d <= r * r + 1 && y < land_hill(x)) mo_px(x, y, d <= 5 ? moon : land_ink(0, 1));
+            }
+    for (pass = !lit; pass < 2; pass++)
+        for (r = 0; r < h; r++) {
             y = LAND_H + h - r;                         /* (the reflection: the bottom row just under the water's line) */
-            if (!((gx + c + y) & 1) && y < MO_PY1 - 1)
-                mo_px(gx + c + (land_rip() ? (int32_t)((fm1_ms / 80u + (uint32_t)(h - 1 - r) / 2u) % 3u) - 1 : 0), y, deep);
+            sh = land_rip() ? (int32_t)((fm1_ms / 80u + (uint32_t)(h - 1 - r) / 2u) % 3u) - 1 : 0;
+            for (c = 0; c < w; c++) {
+                if (!(LAND_PICS[p[0] + r] >> (pw - 1 - (c < pw ? c : w - 1 - c)) & 1)) continue;
+                if (!pass) { if (r < h - 1) mo_fill(gx + c - 1, gy + r - 1, 3, 3, MO_BG); continue; }
+                mo_px(gx + c, gy + r, el == LE_CHERRY && r > 5 ? hl : ink);
+                if (!((gx + c + y) & 1) && y < MO_PY1 - 1) mo_px(gx + c + sh, y, deep);
+            }
         }
-    if (el == LE_LANTERN) mo_hl(gx + 4, gy + 3, 3, moon);   /* (the window, in the moon's ink) */
+    if (el == LE_LANTERN) mo_hl(gx + 4, gy + 3, 3, moon);
     if (el == LE_CHERRY)                                /* a few petals, slow: from the blossom down onto the water, */
         for (r = 0; r < 3; r++) {                       /*  drifting on it a while (moving only while playing) */
             uint32_t t = (land.drift + (uint32_t)r * 3100u) % 9300u;
             x = gx + 3 + r * 3, y = gy + 2 + r;
-            if (t < 6400u) x += (int32_t)(t / 1600u) + mo_sin((int32_t)(t / 25u)) * 3 / 254, y += (LAND_H + 1 - y) * (int32_t)t / 6400;
+            if (t < 6400u) x += (int32_t)(t / 1600u), y += (LAND_H + 1 - y) * (int32_t)t / 6400;
             else x += 4 + (int32_t)((t - 6400u) / 1100u), y = LAND_H + 1 + (r & 1) * 2;
-            mo_px(x, y, land_ink(3, 0));
+            mo_px(x, y, gate);
         }
     if (el != LE_BRIDGE)
         for (c = 0; c < w; c++)
