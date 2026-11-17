@@ -1769,10 +1769,13 @@ at a time, each with an activity light and a moving mark.
   highest move ("SCOPE 2 BARS, CYCLING 2 A BAR, LOW -60 HIGH 60 %"; a GATE: how often it opens and whether it is open
   now). The same hold turns a GATE's threshold (KNOB 4), so you watch it move against the source. A cord
   from BUS A or BUS B draws the bus as its source. Nothing is saved; nothing changes until you hold it.
-- **Live marks**: a knob a cord reaches shows a mark where the cords move it now.
+- **Live marks**: a knob a cord reaches shows a mark where the cords move it now: on its dial a bead riding the ring
+  (a bar: a notch beside it), the effects' and the send effects' knobs too. CUTOFF and SHAPE, which act inside the
+  voice, show none.
 - **DRIFT** is each track's slow wander, a new point about every 12 seconds, eased between.
-- **Effects.** RTE is the effect's third knob (RATE; ECHO's TIME, ROOM's and REVERB's SIZE, FILTER's CUT), CHR its
-  fourth (DEPTH, REPEAT, DECAY, RES, as the effect names it). A moved ECHO TIME glides, as a tape's speed does, so the repeats bend in
+- **Effects.** An effect's third and fourth knobs are named as the effect names them: on a FILTER **FX1 CUT** and
+  **FX1 RES**, on an ECHO **FX1 TIM** and **FX1 RPT** (Mono: CUT1, RES1; a send effect's S1CT ..); RTE and CHR on
+  the others (RATE, CHAR). A moved ECHO TIME glides, as a tape's speed does, so the repeats bend in
   pitch instead of clicking (turning the knob glides too); REVERB changes SIZE a sample at a time. The send
   effects' mods are the project's, not a track's: MATRIX leaves them out. **FX held** + a knob on an FX page makes
   one too. A project with effect mods does not load in firmware before them.

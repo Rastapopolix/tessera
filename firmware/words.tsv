@@ -67,6 +67,32 @@ CLK	clock
 PPQN	pulses per beat
 QNT	quantize
 HOLD GLO SET	hold global to set its keys
+
+# mod destinations: an effect's knob as the effect names it (ui_cords.c cu_fx_name)
+FX# RTE	effect # rate
+FX# TIM	effect # time
+FX# SIZ	effect # size
+FX# CUT	effect # cutoff
+FX# CHR	effect # character
+FX# DPT	effect # depth
+FX# FOC	effect # focus
+FX# JIT	effect # jitter
+FX# BIT	effect # bite
+FX# RPT	effect # repeat
+FX# DCY	effect # decay
+FX# RES	effect # resonance
+SF# RTE	send effect # rate
+SF# TIM	send effect # time
+SF# SIZ	send effect # size
+SF# CUT	send effect # cutoff
+SF# CHR	send effect # character
+SF# DPT	send effect # depth
+SF# FOC	send effect # focus
+SF# JIT	send effect # jitter
+SF# BIT	send effect # bite
+SF# RPT	send effect # repeat
+SF# DCY	send effect # decay
+SF# RES	send effect # resonance
 HOLD SCL SET	hold scale to set the key
 HOLD SEL SET	hold scale to set the key
 SEL SET	scale set

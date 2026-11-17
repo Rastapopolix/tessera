@@ -161,9 +161,44 @@ static const char *cu_src_name(const cord_t *c)
     return b;
 }
 
-/* a destination's name: E1..E8 by the destination track's engine (as MOD names them) */
+/* an effect's RTE / CHR destination as that effect names the knob (FX1 CUT, FX1 RES on a FILTER; FX2 TIM on an ECHO),
+ * as the FX page's own labels (params.c track_desc / global_desc); 0 for any other destination. mono: Mono's four
+ * characters, the label and the slot (CUT1; a send effect's: S1CT ..) */
+static const char *cu_fx_name(const cord_t *c, int mono)
+{
+    static const struct { char l[7], s[4]; } AB[] = {{"RATE", "RTE"}, {"TIME", "TIM"}, {"SIZE", "SIZ"}, {"CUT", "CUT"},
+        {"CHAR", "CHR"}, {"DEPTH", "DPT"}, {"FOCUS", "FOC"}, {"JITTER", "JIT"}, {"BITE", "BIT"}, {"REPEAT", "RPT"},
+        {"DECAY", "DCY"}, {"RES", "RES"}};
+    static char b[8];
+    uint32_t slot, knob, i;
+    int send;
+    const param_desc_t *d;
+    const char *ab = 0;
+    if (c->dst >= CD_FX1_MIX && c->dst <= CD_FX3_CHAR) send = 0, slot = (c->dst - CD_FX1_MIX) / 3u, knob = (c->dst - CD_FX1_MIX) % 3u;
+    else if (c->dst >= CD_SF1_MIX && c->dst <= CD_SF3_CHAR) send = 1, slot = (c->dst - CD_SF1_MIX) / 3u, knob = (c->dst - CD_SF1_MIX) % 3u;
+    else return 0;
+    if (!knob) return 0;                                /* (MIX: as it is) */
+    d = send ? global_desc(G_MFXTYPE + slot * FX_PARAMS + 1u + knob)
+             : track_desc(&trk[c->dst_trk % NTRK], P_FXTYPE + slot * FX_PARAMS + 1u + knob);
+    for (i = 0; i < sizeof AB / sizeof AB[0] && !ab; i++)
+        if (str_eq(d->label, AB[i].l)) ab = AB[i].s;
+    if (!ab) return 0;
+    if (mono) {                                         /* CUT1 (the track's chip beside it); a send's S1 + two */
+        if (send) { b[0] = 'S'; b[1] = (char)('1' + slot); b[2] = ab[0]; b[3] = ab[2]; b[4] = 0; }
+        else { str_cpy(b, ab, 4); b[3] = (char)('1' + slot); b[4] = 0; }
+        return b;
+    }
+    b[0] = send ? 'S' : 'F'; b[1] = send ? 'F' : 'X'; b[2] = (char)('1' + slot); b[3] = ' ';
+    str_cpy(b + 4, ab, 4);
+    return b;
+}
+
+/* a destination's name: E1..E8 by the destination track's engine (as MOD names them); an effect's RTE, CHR by the
+ * effect (cu_fx_name) */
 static const char *cu_dst_name(const cord_t *c)
 {
+    const char *fx = cu_fx_name(c, 0);
+    if (fx) return fx;
     if (c->dst == CD_CC && c >= cord_get(0) && c < cord_get(0) + CORD_LIVE) {   /* CC OUT: "CC 74", its number */
         static char b[8];
         str_cpy(b, "CC ", sizeof b);
@@ -203,6 +238,7 @@ static const char *cu_dst_mono(const cord_t *c)
         str_cpy(b + (str_len(n) > 2u ? 1 : 2), n, 4);
         return b;
     }
+    if (cu_fx_name(c, 1)) return cu_fx_name(c, 1);    /* (an effect's knob: CUT1, S1CT) */
     if (c->dst < CD_M1_AMT || c->dst > CD_M16_AMT) return cu_dst_name(c);
     b[0] = 'M';
     fmt_int(b + 1, (int32_t)(c->dst - CD_M1_AMT + 1u));
@@ -454,7 +490,9 @@ static void cu_columns(void)
     else if (c->dst) {
         val[0] = 'T'; val[1] = (char)('1' + c->dst_trk); val[2] = ' ';
         str_cpy(val + 3, cu_dst_name(c), sizeof val - 3);
-        if (cu_eng_dst(c) && *cu_eng_dst(c) && LOOK(0, col_style != CS_CAPTURE))
+        if (cu_fx_name(c, 1) && LOOK(0, col_style != CS_CAPTURE))
+            str_cpy(val, cu_fx_name(c, 1), sizeof val);  /* (Mono's chip: the effect's knob and slot, as the row: CUT1) */
+        else if (cu_eng_dst(c) && *cu_eng_dst(c) && LOOK(0, col_style != CS_CAPTURE))
             str_cpy(val + 3, cu_eng_dst(c), sizeof val - 3);   /* (Mono's chip: the engine's knob, as the row: T3ML) */
         else if (cu_eng_dst(c)) {                       /* (CUTOFF, SHAPE: and what it moves, said) */
             str_cpy(val + str_len(val), " ", 2);
