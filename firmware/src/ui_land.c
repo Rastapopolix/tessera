@@ -161,7 +161,7 @@ static int32_t land_sky0(int32_t x, uint32_t sec)
  * pillars); the seated Buddha (Kamakura's) with a halo, S2; the pagoda of three tiers, P1; the stone lantern, L1 (its
  * window the gap in row 3); the pine, T1; the cherry (blossom rows 0..5, the trunk); the drum bridge, its arch a half
  * circle on the water so its reflection closes it */
-enum { LE_TORII, LE_BUDDHA, LE_PAGODA, LE_LANTERN, LE_PINE, LE_CHERRY, LE_BRIDGE, LE_NONE };
+enum { LE_NONE, LE_TORII, LE_BUDDHA, LE_PAGODA, LE_LANTERN, LE_PINE, LE_CHERRY, LE_BRIDGE };   /* (0 nothing: a cleared land) */
 static const uint16_t LAND_PICS[] = {
     0x401, 0x7FF, 0x3FE, 0x124, 0x7FF, 0x104, 0x104, 0x104, 0x104, 0x38E,                    /* torii */
     0x1FC, 0x272, 0x4F9, 0x4F9, 0x471, 0x5FD, 0x376, 0x7FF, 0x7FF, 0x3FE,                    /* Buddha */
@@ -171,8 +171,8 @@ static const uint16_t LAND_PICS[] = {
     0x2A0, 0x5D4, 0xBEA, 0x15F4, 0xAEA, 0x4A8, 0xC0, 0x40, 0x40, 0xE0,                       /* cherry */
     0x5, 0x17, 0x58, 0x60, 0x187, 0x118, 0x220, 0x440, 0x40, 0x80, 0x80, 0x80                /* bridge (its left half) */
 };
-static const uint8_t LAND_PIC[7][3] = {{0, 11, 10}, {10, 11, 10}, {20, 11, 14}, {34, 11, 10}, {44, 11, 10}, {54, 13, 10},
-                                       {64, 21, 12}};   /* (first row, width, height) */
+static const uint8_t LAND_PIC[8][3] = {{0, 0, 0}, {0, 11, 10}, {10, 11, 10}, {20, 11, 14}, {34, 11, 10}, {44, 11, 10},
+                                       {54, 13, 10}, {64, 21, 12}};   /* (first row, width, height) */
 /* where a section's element stands: the flattest columns of land as wide as it, nearest where the seed would put it,
  * clear of the bridge by 16; its terrace is raised to their top (at least 3: never water), so the land is only ever
  * built up under it, never cut */
@@ -193,7 +193,7 @@ static void land_gate_find(uint32_t sec)
  * stands and the bridge's place (unnamed: nothing) */
 static void land_place(void)
 {
-    static const uint16_t ORD[6] = {0x234, 0x243, 0x324, 0x342, 0x423, 0x432};   /* (LE_PAGODA, LE_LANTERN, LE_PINE) */
+    static const uint16_t ORD[6] = {0x345, 0x354, 0x435, 0x453, 0x534, 0x543};   /* (LE_PAGODA, LE_LANTERN, LE_PINE) */
     uint32_t sec, e, n, o = (land.seed * 0x85EBCA6Bu >> 16) % 6u, cherry = (land.seed * 0xC2B2AE35u >> 16) % 6u == 0u;
     int32_t w;
     land.kind = (uint8_t)land_kind0();
