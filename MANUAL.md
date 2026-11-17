@@ -1153,7 +1153,7 @@ section every 4 phrases), and on every track, STEP tracks too.
 
 Hold **OCT-** for each track's **ROLE** (KNOB 1 to 4; also OCT- held on FORM, KNOB 4): **BASS**, **RHYTHM**,
 **HARMONY**, **MELODY** or **ANCHOR**. AUTO (the default) guesses, looking at all four tracks together: CHORD, chord
-keys (CHRD) or a STEP pattern mostly of chords is harmony; GRIDS, a drum kit, SLICE or NOISE is rhythm; of the rest, the
+keys (CHRD) or a STEP pattern mostly of chords is harmony; ATLAS, a drum kit, SLICE or NOISE is rhythm; of the rest, the
 lowest track is bass when it sits a fifth or more below every other track (or below C3), and anything else is melody.
 Before PLAY it goes by the settings (a generator's ROOT and TRN, a STEP pattern's notes), once playing by the notes
 heard; the guess is made at PLAY and on each section's line, and holds in between. The picture shows each track's
@@ -1908,7 +1908,7 @@ Hold **HOME** for the menu. Its rows come in groups: the screen, the knobs and b
 | **LARGE VALUE** | The knob you turn, its name and value large across the foot of the screen. **AUTO** (the default): on the home page and pages without a picture of their own, so a picture (a generator's sky, an envelope, the LFO) stays in view while you turn; **ON**: on every page; **OFF**: never. The value always shows, inverted, in the knob's column. With **ON** the value stays large about a second after the knob stops, so you can read it after you let go. Saved. |
 | **TEXT** | The weight of the screen's small letters: **NORMAL** (the default) or **BOLD**, each stroke a pixel wider, for a screen read from a distance or with low vision. The letters stay apart. KNOB 2 right BOLD, left NORMAL; OCT+ switches. Saved. |
 | **IDLE** | **OFF** (the default), or **LANDSCAPE**: after two minutes without a touch while playing, the screen moves to LANDSCAPE, for long pieces, installations or filming. The first touch (a button, a key or a knob) only takes you back to the page you were on; it does nothing else. The screen reader says nothing of it. Saved. |
-| **NOTE LIGHTS** | Lights each key while the selected track's sequence plays its note, for as long as the note lasts, so you can watch the line move over the keys. **OFF** (the default): only the keys you press and the notes MIDI holds light up. **STEP**: a STEP pattern's notes. **ALL**: every generator's notes too (TURING, EUCLID, GRIDS and the rest). Only notes in the keys' octave light; STEP's grid keeps its own lights. KNOB 2 steps, OCT+ steps round. Saved. |
+| **NOTE LIGHTS** | Lights each key while the selected track's sequence plays its note, for as long as the note lasts, so you can watch the line move over the keys. **OFF** (the default): only the keys you press and the notes MIDI holds light up. **STEP**: a STEP pattern's notes. **ALL**: every generator's notes too (TURING, EUCLID, ATLAS and the rest). Only notes in the keys' octave light; STEP's grid keeps its own lights. KNOB 2 steps, OCT+ steps round. Saved. |
 | **BATTERY** | **ON** (the default): every page's header shows the battery, its bars (none to three) on the battery, solid with a bolt in it on external power (a computer, a hub or a charger). A long message takes its place for as long as it shows. **WHEN LOW**: only when it is down to a bar or none, on the battery. Saved. Either way, when the last bar goes the screen says **BATTERY LOW** once; with autosave on, the project is then saved as soon as you press STOP (no five seconds' wait), so a long piece is not lost to a flat battery. It never saves while playing. |
 | **PANEL GAMMA** | The screen's contrast curve: the panel chip's own **G2.2** (the default), G1.8, G2.5 and G1.0, or TUNED and TUNED+VCOM. The screen goes black for a moment and redraws. Saved. |
 | **TRACK KNOB** | RIGHT: the ALGORITHM knob picks the track and PRESETS browses sounds, as printed. LEFT: the two swap. |
@@ -2184,7 +2184,7 @@ KNOB). [MANUAL](#the-panel-at-a-glance)
 **ANCHOR**. An ENTRIES role: a track that never leaves, such as a drone or bass. See *ROLE*.
 
 **ANSWER**. A generator for call and response: you play a phrase, it plays it back, changed a little more each time.
-Its SOURCE can be another track. [MANUAL](#answer-source-order-shift-space)
+Its SOURCE can be another track. [MANUAL](#answer-source-order-shift-space-chord)
 
 **ARC**. ENERGY's slow tide: how far the music swings from sparse to full.
 
