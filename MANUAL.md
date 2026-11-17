@@ -2399,7 +2399,7 @@ LFO's rate gives every cycle its own length.
 through a lagged bus is an envelope.
 
 **LANDSCAPE**. A night lake drawn by the music (GLO), by day on GROUND LIGHT **(3.5)**; a named project's own place, and PIECE, ENTRIES, CHAIN and ENERGY in the scene **(3.6)**. The scene changes nothing in the
-sound; its knobs turn PERF's macros **(3.7)**.
+sound; its knobs turn PERF's macros **(3.6.2)**.
 
 **Layer**. In the manual, either one of Tessera's optional parts (sounds, generators, shaping, form, mods, performing)
 or the *second set of knobs* a page shows with OCT- held ("the GEN layer"). See *OCT+ / OCT-*.
