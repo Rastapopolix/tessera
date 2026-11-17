@@ -1826,6 +1826,14 @@ close to the original it stays.</p>
 <p><strong>SOURCE</strong> (OCT- held, KNOB 2) lets TURING, EUCLID, MARKOV or MORPH play from a STEP pattern you wrote. T1 to T4 is that
 track's pattern playing now, and it can be this track's own. The pattern itself never changes. OFF, or a pattern
 with no notes, plays the generator as usual.</p>
+<p><strong>KEYS</strong> (after T4) plays from what you play instead: a <strong>take</strong> on this track's keys or MIDI IN, up to 16 notes.
+The first note starts a take, and the generator rests while you play. A bar without a key ends the take, and the
+generator then plays it from where it has got to, so your bars stay where you played them. The take loops as whole
+bars, as many as it spans (up to four). Play again to make a new take; it replaces the old one. The take is kept in
+the project. Until there is one, the generator plays as usual.</p>
+<p><strong>Print a take:</strong> hold <strong>REC</strong> on a track with SOURCE KEYS and a take. The take goes into the track's STEP pattern as
+you played it (REPLACE STEPS? first if the pattern has steps), its LEN set to the take's, and SOURCE turns to that
+pattern. The generator plays on from it, so you can fix a wrong note by hand in STEP. EDIT held undoes the steps.</p>
 <ul>
 <li><strong>TURING</strong> loops the source's first LEN steps (up to 16). Each step, PROB is the chance that the step about to
 play changes and stays changed, as a Turing machine flips a bit. PROB 0 plays your melody as written; turn it up
@@ -1875,7 +1883,7 @@ TURING's changed step goes back to how you wrote it, MARKOV's chain carries on f
 source's own hit or rest, and MORPH plays A. 0 is off; 100 plays your pattern as written whatever the rest says.
 Drift with PROB, LEAP or MORPH, and let GRAVITY decide how far it may wander.</p>
 <p>The notes keep their written pitch, then follow this track's scale, TRN and SHIFT. Print (REC held) keeps what it
-played, as for any generator.</p>
+played, as for any generator (with SOURCE KEYS and a take: the take itself, see above).</p>
 <p>With a SOURCE, TURING's and MORPH's picture on GEN shows the loop as it plays now: a step as you wrote it is drawn plain,
 a changed one with the written step drawn over it hollow (its ghost: an empty frame is a note dropped). MORPH shows B, its variation. <strong>HOME</strong> under it is how far the loop has wandered: empty when it plays
 your pattern as written, full when every step has changed.</p>
@@ -2202,7 +2210,7 @@ section every 4 phrases), and on every track, STEP tracks too.</p>
 </table>
 <p>Hold <strong>OCT-</strong> for each track's <strong>ROLE</strong> (KNOB 1 to 4; also OCT- held on FORM, KNOB 4): <strong>BASS</strong>, <strong>RHYTHM</strong>,
 <strong>HARMONY</strong>, <strong>MELODY</strong> or <strong>ANCHOR</strong>. AUTO (the default) guesses, looking at all four tracks together: CHORD, chord
-keys (CHRD) or a STEP pattern mostly of chords is harmony; GRIDS, a drum kit, SLICE or NOISE is rhythm; of the rest, the
+keys (CHRD) or a STEP pattern mostly of chords is harmony; ATLAS, a drum kit, SLICE or NOISE is rhythm; of the rest, the
 lowest track is bass when it sits a fifth or more below every other track (or below C3), and anything else is melody.
 Before PLAY it goes by the settings (a generator's ROOT and TRN, a STEP pattern's notes), once playing by the notes
 heard; the guess is made at PLAY and on each section's line, and holds in between. The picture shows each track's
@@ -2269,12 +2277,20 @@ the moon sets behind the hills.</li>
 <li><strong>CHAIN</strong>: each section has its own shore. When the form moves on, the new shore comes in from the right, as if
 you were travelling; back to A, you are home. Where the two shores meet they run into each other, so a hill
 carries on into the next. When the whole form comes round, a shooting star crosses the sky.</li>
-<li><strong>A place of its own</strong>: a project with a name gets its own landscape, made from the name: the shape of its hills
-(sometimes islands, with open water between), where its stars are, where the moon rests, and a torii gate somewhere
-on A's shore (in MOSAIC pink: an ink of the palette's own, apart from the hills), or standing in the water. The same name is always the
-same place; renaming a project takes it somewhere else. An unnamed project shows the lake as it always was.</li>
+<li><strong>A place of its own</strong>: a project with a name gets its own landscape, made from the name: the shape of its hills,
+where its stars are, where the moon rests, and its kind of place. Most are <strong>islands</strong>, with open water between;
+about a quarter are <strong>land cut by narrow channels</strong>, with an arched bridge over the first; about one in eight are
+<strong>all land</strong>. The same name is always the same place; renaming a project takes it
+somewhere else. An unnamed project shows the lake as it always was, with nothing on its shores.</li>
+<li><strong>One thing on each shore</strong>: A's shore has a torii gate (on an all-land place, a seated Buddha with a halo in its
+place). With a CHAIN, B and C each have one of a pagoda, a stone lantern and a pine, in an order of the place's own,
+never two on a shore (the bridge aside). Sometimes a shore is left bare, just hills and water, and now and then a
+flowering cherry stands in for the pine, letting fall a few slow petals while the music plays. Each stands
+upside down in the water below, rippling. The lantern is lit: its glow grows a little as the notes land. Each
+takes an ink of the palette's that suits it: the torii, pagoda and bridge the gate's (MOSAIC pink), the Buddha the
+moon's, the pine the hills', the cherry's blossom the gate's over a trunk of the hills'.</li>
 </ul>
-<p>Each of these shows only when its layer is on; nothing new moves on the water but the rain.</p>
+<p>Each of these shows only when its layer is on; nothing new moves on the water but the rain (and a cherry's petals).</p>
 <p>The scene only listens while the page shows. In the MOSAIC palette each track's drops are in its own colour.</p>
 <h3 id="perf-four-macros">PERF: four macros</h3>
 <blockquote>
@@ -3304,7 +3320,7 @@ on your controller (and remembers them), and MUTES makes mutes land on the bar o
 </tr>
 <tr>
 <td><strong>NOTE LIGHTS</strong></td>
-<td>Lights each key while the selected track's sequence plays its note, for as long as the note lasts, so you can watch the line move over the keys. <strong>OFF</strong> (the default): only the keys you press and the notes MIDI holds light up. <strong>STEP</strong>: a STEP pattern's notes. <strong>ALL</strong>: every generator's notes too (TURING, EUCLID, GRIDS and the rest). Only notes in the keys' octave light; STEP's grid keeps its own lights. KNOB 2 steps, OCT+ steps round. Saved.</td>
+<td>Lights each key while the selected track's sequence plays its note, for as long as the note lasts, so you can watch the line move over the keys. <strong>OFF</strong> (the default): only the keys you press and the notes MIDI holds light up. <strong>STEP</strong>: a STEP pattern's notes. <strong>ALL</strong>: every generator's notes too (TURING, EUCLID, ATLAS and the rest). Only notes in the keys' octave light; STEP's grid keeps its own lights. KNOB 2 steps, OCT+ steps round. Saved.</td>
 </tr>
 <tr>
 <td><strong>BATTERY</strong></td>
@@ -3650,7 +3666,7 @@ Tessera the <strong>ALGORITHM</strong> knob on the panel is also the one that pi
 KNOB). <a href="#the-panel-at-a-glance">MANUAL</a></p>
 <p><strong>ANCHOR</strong>. An ENTRIES role: a track that never leaves, such as a drone or bass. See <em>ROLE</em>.</p>
 <p><strong>ANSWER</strong>. A generator for call and response: you play a phrase, it plays it back, changed a little more each time.
-Its SOURCE can be another track. <a href="#answer-source-order-shift-space">MANUAL</a></p>
+Its SOURCE can be another track. <a href="#answer-source-order-shift-space-chord">MANUAL</a></p>
 <p><strong>ARC</strong>. ENERGY's slow tide: how far the music swings from sparse to full.</p>
 <p><strong>ARP</strong> (arpeggiator). Plays the notes you hold one after another instead of together. In Tessera: a track's MODE can
 be ARP, and the <strong>ARP</strong> button is also the section for the pages that shape any track (EVOLVE, FORM, TWEAK and so on).
@@ -3792,7 +3808,8 @@ LFO's rate gives every cycle its own length.</p>
 <h3 id="l">L</h3>
 <p><strong>LAG</strong>. On a MIX bus <strong>(3.5)</strong>, a slew on the result: how long a full move takes, 10 ms to 20 s. A GATE
 through a lagged bus is an envelope.</p>
-<p><strong>LANDSCAPE</strong>. A night lake drawn by the music (GLO), by day on GROUND LIGHT <strong>(3.5)</strong>; a named project's own place, and PIECE, ENTRIES, CHAIN and ENERGY in the scene <strong>(3.6)</strong>. The scene changes nothing in the
+<p><strong>LANDSCAPE</strong>. A night lake drawn by the music (GLO), by day on GROUND LIGHT <strong>(3.5)</strong>; a named project's own place, and PIECE, ENTRIES, CHAIN and ENERGY in the scene <strong>(3.6)</strong>; kinds of place (islands,
+channels, all land) and one thing on each section's shore, reflected in the water <strong>(3.7)</strong>. The scene changes nothing in the
 sound; its knobs turn PERF's macros <strong>(3.6.2)</strong>.</p>
 <p><strong>Layer</strong>. In the manual, either one of Tessera's optional parts (sounds, generators, shaping, form, mods, performing)
 or the <em>second set of knobs</em> a page shows with OCT- held (&quot;the GEN layer&quot;). See <em>OCT+ / OCT-</em>.</p>
