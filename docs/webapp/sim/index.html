@@ -150,7 +150,7 @@ footer small { font-size: 11px; opacity: .8; }
 .gens dd { margin: 0; }
 .gens .what { margin: 0 0 6px; font-size: 13px; }
 </style>
-<main data-build="v3.5.3">
+<main data-build="v3.6">
 <div class="topbar"><label class="lang"><span id="lang-code" aria-hidden="true">EN</span><select id="lang" aria-label="Language">
   <option value="en" lang="en">English</option><option value="es" lang="es">Español</option>
   <option value="it" lang="it">Italiano</option><option value="de" lang="de">Deutsch</option>
@@ -231,7 +231,7 @@ footer small { font-size: 11px; opacity: .8; }
 </p>
 
 <footer>
-  <small class="version">Tessera v3.5.3 · <span data-t="noSaves">the simulator keeps no saves</span></small><br>
+  <small class="version">Tessera v3.6 · <span data-t="noSaves">the simulator keeps no saves</span></small><br>
   Tessera by Theo Dainis (Rastapopolix), a fork of <a href="https://github.com/keremimo/melodee" target="_blank" rel="noopener">Melodee</a> by keremimo,
   built on <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener">Felucca</a> by Leo Kuroshita, Hügelton Instruments ·
   <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener">GPL-3.0</a> · this page is Felucca's, after charlesvestal's
@@ -1273,14 +1273,19 @@ async function midiOn() {
 // buttons (CC 80..93), keys (notes 0..26), knobs (CC 20..26, sign bit) and MASTER (CC 27) on channel 16, which press,
 // turn and set this panel. Its other messages (the notes its tracks send) are left out, so a key plays once, and the
 // MIDI in box above never sees that port. Plug and play: on by itself where the browser already lets this site use
-// MIDI with SysEx (the installer and the editor ask for it); else one tick, which asks. The FM-1 still plays itself.
+// MIDI with SysEx (the installer and the editor ask for it); else one tick, which asks. The FM-1 still plays itself,
+// unless its menu's SIM CONTROL is on (FX + GLO, its way out, then never come here together: web/EDITOR_PROTOCOL.md).
 const FM1_ON = "melodee-tess-sim-fm1", FM1_PANEL = 75;
 const RE_FM1_PORT = /tessera|melodee|felucca|(^|[^a-z0-9])fm-?1($|[^a-z0-9])/i;
 const fm1Box = document.getElementById("fm1on"), fm1State = document.getElementById("fm1state");
 let fm1Wanted = null, fm1Access = null, fm1Timer = 0, fm1Port = null, fm1Asked = 0;
 const fm1Say = (k) => { fm1State.hidden = !k; fm1State.textContent = k ? tr(k) : ""; };
 langHooks.push(() => { if (!fm1State.hidden) fm1Say(fm1Port ? "fm1Live" : "fm1Old"); });
-const fm1Mirrors = (input) => !!fm1Port && input.id === fm1Port.id;
+// The one input that answered PANEL plays the panel. Windows can list an FM-1 twice under one id (Chrome's WinMM
+// port ids come from the name), and two copies of a knob's relative CC turned it two steps a click (Theo, 3.6-beta3):
+// so the object itself, not its id. The MIDI in box above skips both copies (fm1Mirrors).
+const fm1Is = (input) => !!fm1Port && input === fm1Port;
+const fm1Mirrors = (input) => !!fm1Port && (input === fm1Port || input.id === fm1Port.id);
 const fm1Ports = (m) => [...m.values()].filter((p) => p.state !== "disconnected" && RE_FM1_PORT.test(p.name || ""));
 function fm1Release() {                                           // the FM-1's held buttons and keys let go
   let b = 0, k = 0;
@@ -1291,13 +1296,14 @@ function fm1Release() {                                           // the FM-1's 
 function fm1Message(input, d) {
   if (d[0] === 0xF0) {                                            // PANEL's answer: F0 7D 46 4C 4B on F7
     if (d.length >= 7 && d[1] === 0x7D && d[2] === 0x46 && d[3] === 0x4C && d[4] === FM1_PANEL && d[5] === 1) {
-      if (!fm1Port || fm1Port.id !== input.id) { fm1Release(); fm1Port = input; }
+      if (!fm1Port) { fm1Release(); fm1Port = input; }
+      if (input !== fm1Port) return;                              // (a second copy of the same FM-1, or another one)
       fm1Asked = 0;
       fm1Say("fm1Live");
     }
     return;
   }
-  if (!fm1Mirrors(input) || d.length < 3) return;
+  if (!fm1Is(input) || d.length < 3) return;
   const st = d[0], a = d[1], v = d[2];
   if (st === 0xBF && a >= 80 && a < 94) {
     if (v) btnBy.set("m" + (a - 80), a - 80); else btnBy.delete("m" + (a - 80));
