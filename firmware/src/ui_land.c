@@ -340,7 +340,7 @@ static const uint8_t LAND_BAYER[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 1
 static const uint16_t LAND_GATE[10] = {0x401, 0x7FF, 0x3FE, 0x124, 0x7FF, 0x104, 0x104, 0x104, 0x104, 0x38E};
 /* an all-land place's seated Buddha (Kamakura's), never with the torii (it stands in its place): the head and its knot, the shoulders, the hands in the lap, the
  * crossed legs on a low base (11 x 10, as the torii) */
-static const uint16_t LAND_BUDDHA[10] = {0x1FC, 0x274, 0x4F9, 0x4F9, 0x471, 0x5FD, 0x376, 0x7FF, 0x7FF, 0x3FE};   /* (S2: the halo, Theo's pick) */
+static const uint16_t LAND_BUDDHA[10] = {0x1FC, 0x272, 0x4F9, 0x4F9, 0x471, 0x5FD, 0x376, 0x7FF, 0x7FF, 0x3FE};   /* (S2: the halo, Theo's pick) */
 static void land_temple(int32_t gx, uint16_t hills)    /* on A's shore at gx, standing on the ground under its middle */
 {
     int32_t r, c, y, gy = land_hill(gx + 5);
