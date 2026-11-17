@@ -939,13 +939,14 @@ function build(name) {
     el("circle", { cx: x, cy: y, r: r + 12, fill: "transparent" }, g);
     knobs.push({ g, ind, x, y, name: n, role: n === "MASTER" ? "master" : EN[n] });
   });
+  const FACE = { SCL: "SEL" };                                   // the label printed on the FM-1's button, where it differs from its name
   const button = ([x, y, w, h], n, sub) => {
-    const g = el("g", {});
+    const g = el("g", {}), face = FACE[n] || n;
     el("rect", { x, y, width: w, height: h, rx: 8, fill: "var(--btn)", stroke: "var(--btn-edge)", "stroke-width": 1.5, class: "face btn" }, g);
     const ink = n === "REC" ? "var(--rec)" : "var(--btn-ink)";
-    if (sub) { label(g, x + w / 2, y + h / 2 - 2, n, 10.8, SANS, ink); label(g, x + w / 2, y + h / 2 + 11, sub, 9.9, SANS, ink); }
-    else label(g, x + w / 2, y + h / 2 + 4.5, n, 12.6, SANS, ink);
-    buttons.push({ g, bit: B[n], name: sub ? `${n} / ${sub}` : n });
+    if (sub) { label(g, x + w / 2, y + h / 2 - 2, face, 10.8, SANS, ink); label(g, x + w / 2, y + h / 2 + 11, sub, 9.9, SANS, ink); }
+    else label(g, x + w / 2, y + h / 2 + 4.5, face, 12.6, SANS, ink);
+    buttons.push({ g, bit: B[n], name: sub ? `${face} / ${sub}` : face });
   };
   button(L.oct[0], "OCT-");
   button(L.oct[1], "OCT+");
