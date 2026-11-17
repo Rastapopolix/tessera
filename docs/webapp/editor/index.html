@@ -664,7 +664,7 @@ const parse = {
   },
   [CMD.STEP_SET](a) { return parse[CMD.STEP_GET](a); },
   [CMD.PRESET](a) { const r = new Reader(a); return { engine: r.b(), preset: r.b() | (a.length > 2 ? a[2] << 7 : 0) }; },
-  [CMD.PROJECT](a) { const r = new Reader(a); return { op: r.b(), slot: r.b(), used: r.b() }; },
+  [CMD.PROJECT](a) { const r = new Reader(a), o = { op: r.b(), slot: r.b(), used: r.b() }; o.name = r.i < a.length ? r.s() : null; return o; },   /* name: 3.6.1 on ("" none), null before */
   [CMD.PATTERN](a) {
     if (a.length !== 6 || a[3] > 7 || (a[4] > 7 && a[4] !== 127) || a[5] !== 8) throw new Error("Invalid pattern reply");
     return { track: a[0], op: a[1], rc: a[2], active: a[3], queued: a[4], count: a[5] };
@@ -2060,7 +2060,7 @@ function makeMockDevice(opt = {}) {
     E("VOIC", ["CLOSE", "OPEN", "INV1", "INV2", "+OCT"], 0),
     D("DEG", F.INT, 1, 12, 1));                      /* 83: QNT MPC, the degree of pad H02 */
   TP.push(...["KICK","SNARE","CLAP","HATCL","HATOP","TOM","RIM","BELL"].map(n=>D(n,F.PCT,0,127,127)));
-  TP.push(E("SYNC", ["OFF","4BAR","2BAR","1/1","1/2","1/4","1/8","8T","1/16","16T","1/32"],0), E("TRIG",["NOTE","FREE"],0), E("POL",["BI","UNI"],0), D("SPRD",F.PCT,0,127,0));
+  TP.push(E("SYNC", ["OFF","4BAR","2BAR","1/1","1/2","1/4","1/8","8T","1/16","16T","1/32","8BAR","16BAR","32BAR","64BAR"],0), E("TRIG",["NOTE","FREE"],0), E("POL",["BI","UNI"],0), D("SPRD",F.PCT,0,127,0));
   for(let slot=0;slot<3;slot++)TP.push(E("FX", ["OFF","PHASER","WIDTH","FORMANT","TAPE","SPIT","ECHO","ROOM","REVERB","CHORUS","FILTER"],0),D("MIX",F.PCT,0,127,0),D("RATE",F.LFOHZ,0,127,60),D("CHAR",F.PCT,0,127,64));
   TP.push(D("SEND",F.PCT,0,127,0),D("SEND 2",F.PCT,0,127,0),D("SEND 3",F.PCT,0,127,0));
   for(let slot=0;slot<3;slot++)GP.push(E("TYPE", ["OFF","PHASER","WIDTH","FORMANT","TAPE","SPIT","ECHO","ROOM","REVERB","CHORUS","FILTER"],0),D("MIX",F.PCT,0,127,127),D("RATE",F.LFOHZ,0,127,60),D("CHAR",F.PCT,0,127,64));
@@ -2529,6 +2529,8 @@ function makeMockDevice(opt = {}) {
           st.tracks.forEach((t) => { if (t.preset >= ENG[t.engine].presets.length) t.preset = 0; });
         }
         b(a[0]); b(k); b(st.slots[k] ? 1 : 0);
+        for (const c of String(st.slots[k]?.name || "").slice(0, 12)) b(c.charCodeAt(0) & 127);
+        b(0);
         break;
       }
       case CMD.NAMES:
@@ -5339,7 +5341,7 @@ async function connect() {
     });
     input.onmidimessage = (e) => link.receive(e.data);
     if (input.open) await input.open().catch(() => {});
-    dev = { link, input, output, info: null, pdesc: [], gdesc: [], names: [], dump: null, steps: [], slotUsed: [null, null, null, null],
+    dev = { link, input, output, info: null, pdesc: [], gdesc: [], names: [], dump: null, steps: [], slotUsed: [null, null, null, null], slotName: [null, null, null, null],
       keys: null, watch: false, bank: null, editOn: false, backedUp: false };
     connectedDevice = dev;
     setLabel($("connect"), t("disconnect"));
@@ -5432,7 +5434,7 @@ async function load(d) {
       d.titles[e] = r.titles;
     }
     for (let k = 0; k < 4; k++) {                    /* PROJECT op 2: is the slot used */
-      try { d.slotUsed[k] = parse[CMD.PROJECT](await sessionRequest(d, req.project(2, k))).used; }
+      try { const r = parse[CMD.PROJECT](await sessionRequest(d, req.project(2, k))); d.slotUsed[k] = r.used; d.slotName[k] = r.name; }
       catch (e) { if (e.message === "closed") throw e; }
     }
     try { d.smp = parse[CMD.SMP_INFO](await sessionRequest(d, req.smpInfo())); }
@@ -5904,9 +5906,9 @@ function renderSlots() {
   const box = $("slots");
   box.replaceChildren();
   for (let i = 0; i < 4; i++) {
-    const u = dev.slotUsed[i];
+    const u = dev.slotUsed[i], nm = u && dev.slotName[i];   /* the device's name for it (3.6.1 on), else used */
     box.append(el("span", { text: String.fromCharCode(65 + i) }),
-      el("span", { class: "dim", text: u == null ? t("unknown") : t(u ? "used" : "empty") }),
+      el("span", { class: nm ? "" : "dim", text: u == null ? t("unknown") : nm || t(u ? "used" : "empty") }),
       el("button", { ic: "symbol_folder_open", onclick: () => project(0, i) }, t("load")),
       el("button", { ic: "port_disk", onclick: () => project(1, i) }, t("save")));
   }
@@ -5920,6 +5922,7 @@ async function project(op, slot) {
     if (!op) selfLoad();
     const r = parse[CMD.PROJECT](await rq(req.project(op, slot), { timeout: 4000, retries: 0 }));
     dev.slotUsed[slot] = r.used;
+    dev.slotName[slot] = r.name;
     renderSlots();
     if (!op && r.used) { await afterSoundChange(); await readTunings(); }
     if (dev.info.chainRows) { dev.song = songParse(dev, await rq(songRequest(dev))); renderSong(); }
@@ -6030,7 +6033,7 @@ function renderDemos() {
     }
     const sel = el("select", { "aria-label": d.name });
     sel.append(el("option", { value: -1, text: t("demosSkip") }));
-    for (let k = 0; k < 4; k++) sel.append(el("option", { value: k, text: `${t("slot")} ${String.fromCharCode(65 + k)}` }));
+    for (let k = 0; k < 4; k++) sel.append(el("option", { value: k, text: `${t("slot")} ${String.fromCharCode(65 + k)}${dev?.slotName?.[k] ? ` · ${dev.slotName[k]}` : ""}` }));
     sel.value = String(d.slot);
     sel.addEventListener("change", () => { d.slot = +sel.value; });
     box.append(el("span", { text: d.name }), sel, el("span", { class: "dim", text: t(d.about) }));
@@ -6141,6 +6144,7 @@ $("demos-put").addEventListener("click", () => op(async () => {
       (done) => say("demosWorking", `${Math.round((base + done) / total * 100)}%`));
     base += bytes[i].length;
     d.slotUsed[picks[i].slot] = true;
+    d.slotName[picks[i].slot] = picks[i].name;
   }
   renderSlots();
   say("demosDone", picks.map(x => `${x.name} ${String.fromCharCode(65 + x.slot)}`).join(", "));
@@ -6150,7 +6154,7 @@ $("demos-put").addEventListener("click", () => op(async () => {
    as a demo goes on), the file the web simulator saves and loads. Nothing is written but on Load and its confirm. */
 function renderProjectFiles(caps) {
   const sel = $("pf-slot"), v = sel.value || "0";
-  sel.replaceChildren(...[0, 1, 2, 3].map((k) => el("option", { value: k, text: `${t("slot")} ${String.fromCharCode(65 + k)}` })));
+  sel.replaceChildren(...[0, 1, 2, 3].map((k) => el("option", { value: k, text: `${t("slot")} ${String.fromCharCode(65 + k)}${dev?.slotName?.[k] ? ` · ${dev.slotName[k]}` : ""}` })));
   sel.value = v;
   $("pf-save").disabled = !(caps & 1);
   $("pf-load").disabled = (caps & 3) !== 3;
@@ -6186,6 +6190,7 @@ $("pf-file").addEventListener("change", () => {
     }
     await putProject((r, o) => sessionRequest(d, r, o), slot, bytes, (done, total) => pfSay("pfWorking", `${Math.round(done / total * 100)}%`));
     d.slotUsed[slot] = true;
+    d.slotName[slot] = tspName(bytes) || "";
     renderSlots();
     const done = t("pfDone").replace("{s}", s) + name;
     $("pf-status").textContent = done; say(done);
