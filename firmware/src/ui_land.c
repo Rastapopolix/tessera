@@ -426,10 +426,10 @@ static void land_pic(uint32_t el, int32_t gx, uint16_t hills)
     if (el == LE_LANTERN) mo_hl(gx + 4, gy + 3, 3, moon);
     if (el == LE_CHERRY)                                /* a few petals, slow: from the blossom down onto the water, */
         for (r = 0; r < 3; r++) {                       /*  drifting on it a while (moving only while playing) */
-            uint32_t t = (land.drift + (uint32_t)r * 3100u) % 9300u;
+            int32_t t = (int32_t)((land.drift >> 1) + (uint32_t)r * 2731u) & 8191;   /* (8 s down, 8 s afloat) */
             x = gx + 3 + r * 3, y = gy + 2 + r;
-            if (t < 6400u) x += (int32_t)(t / 1600u), y += (LAND_H + 1 - y) * (int32_t)t / 6400;
-            else x += 4 + (int32_t)((t - 6400u) / 1100u), y = LAND_H + 1 + (r & 1) * 2;
+            if (t < 4096) x += t >> 11, y += (LAND_H + 1 - y) * t >> 12;
+            else x += 2 + ((t - 4096) >> 10), y = LAND_H + 1 + (r & 1) * 2;
             mo_px(x, y, gate);
         }
     if (el != LE_BRIDGE)
