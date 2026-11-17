@@ -664,7 +664,7 @@ const parse = {
   },
   [CMD.STEP_SET](a) { return parse[CMD.STEP_GET](a); },
   [CMD.PRESET](a) { const r = new Reader(a); return { engine: r.b(), preset: r.b() | (a.length > 2 ? a[2] << 7 : 0) }; },
-  [CMD.PROJECT](a) { const r = new Reader(a), o = { op: r.b(), slot: r.b(), used: r.b() }; o.name = r.i < a.length ? r.s() : null; return o; },   /* name: 3.7 on ("" none), null before */
+  [CMD.PROJECT](a) { const r = new Reader(a), o = { op: r.b(), slot: r.b(), used: r.b() }; o.name = r.i < a.length ? r.s() : null; return o; },   /* name: 3.6.1 on ("" none), null before */
   [CMD.PATTERN](a) {
     if (a.length !== 6 || a[3] > 7 || (a[4] > 7 && a[4] !== 127) || a[5] !== 8) throw new Error("Invalid pattern reply");
     return { track: a[0], op: a[1], rc: a[2], active: a[3], queued: a[4], count: a[5] };
@@ -5906,7 +5906,7 @@ function renderSlots() {
   const box = $("slots");
   box.replaceChildren();
   for (let i = 0; i < 4; i++) {
-    const u = dev.slotUsed[i], nm = u && dev.slotName[i];   /* the device's name for it (3.7 on), else used */
+    const u = dev.slotUsed[i], nm = u && dev.slotName[i];   /* the device's name for it (3.6.1 on), else used */
     box.append(el("span", { text: String.fromCharCode(65 + i) }),
       el("span", { class: nm ? "" : "dim", text: u == null ? t("unknown") : nm || t(u ? "used" : "empty") }),
       el("button", { ic: "symbol_folder_open", onclick: () => project(0, i) }, t("load")),
