@@ -237,7 +237,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <div data-h="hero_tag" class="tag">A pocket rabbit hole</div>
       <p data-h="hero_lede" class="lede">Generative firmware for the M-Vave FM-1: an instrument for composing through systems. Instead of programming every note, you set up how the music behaves, and it plays: four tracks of written steps or thirteen generators that listen to each other and grow into whole pieces.</p>
       <div class="cta">
-        <a data-h="hero_cta1" class="btn main" href="webapp/installer/">Install 3.5.3</a>
+        <a data-h="hero_cta1" class="btn main" href="webapp/installer/">Install 3.6</a>
         <a data-h="hero_cta2" class="btn" href="webapp/sim/">Try it in your browser</a>
         <a data-h="hero_cta3" class="btn" href="webapp/editor/">Web editor</a>
         <a data-h="hero_cta4" class="btn" href="https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md">Manual</a>
@@ -267,6 +267,17 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
         <a data-h="demo_dl" href="media/video/tessera-3.5-demo.mp4">Download the demo video (MP4, 8 MB)</a>
       </video>
     </div>
+  </div>
+</section>
+
+<section id="new36">
+  <div class="wrap">
+    <header>
+      <div data-h="new36_kicker" class="kicker">New in 3.6</div>
+      <h2 data-h="new36_h2">Harmony, echoes and more cords</h2>
+      <p data-h="new36_p1">HARM, a harmonizer: with a CHORD track playing, a run up the keys climbs the chord's notes, and FOLLOW puts another track's line into the chords. ANSWER BEND, a delay with a mind of its own. 22 more mod destinations, QNT for each track, microtonal tunings with QNT OFF, MIDI clock at other PPQNs, and the FM-1's own knobs playing the web simulator.</p>
+      <p data-h="new36_p2">Projects saved on 3.6 don't open on 3.5.3 or older. Everything new: <a href="https://github.com/Rastapopolix/tessera/blob/main/docs/RELEASE_3.6.md">the release notes</a>.</p>
+    </header>
   </div>
 </section>
 
@@ -415,7 +426,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
     </div>
     <p data-h="install_p2" style="margin-top:22px;color:var(--mid)">Do not unplug the FM-1 while it is writing. Tessera is experimental in every sense of the word: use it at your own risk.</p>
     <div class="cards">
-      <a class="card" style="--c:var(--p1)" href="webapp/installer/"><b data-h="install_cardb1">Install 3.5.3</b><span data-h="install_cards1">The web installer, in Chrome or Edge.</span></a>
+      <a class="card" style="--c:var(--p1)" href="webapp/installer/"><b data-h="install_cardb1">Install 3.6</b><span data-h="install_cards1">The web installer, in Chrome or Edge.</span></a>
       <a class="card" style="--c:var(--p2)" href="webapp/sim/"><b data-h="install_cardb2">Try it in your browser</b><span data-h="install_cards2">The same firmware on an on-screen FM-1, with sound.</span></a>
       <a class="card" style="--c:var(--p3)" href="https://github.com/Rastapopolix/tessera/blob/HEAD/MANUAL.md"><b data-h="install_cardb4">Manual</b><span data-h="install_cards4">Every page, knob and mode.</span></a>
       <a class="card" style="--c:var(--p4)" href="webapp/editor/"><b data-h="install_cardb6">Web editor</b><span data-h="install_cards6">Edit sounds and sequences from the computer.</span></a>
@@ -424,10 +435,10 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
     </div>
     <details class="more-ways">
       <summary data-h="install_more">Other ways to install, and the way back</summary>
-      <div class="dl"><b data-h="install_cardb3">Download .fwsc</b><span data-h="install_cards3"><a href="firmware/tessera-3.5.3.fwsc">Standard</a> ·
-        <a href="firmware/tessera-3.5.3-1core.fwsc">single core</a> ·
+      <div class="dl"><b data-h="install_cardb3">Download .fwsc</b><span data-h="install_cards3"><a href="firmware/tessera-3.6.fwsc">Standard</a> ·
+        <a href="firmware/tessera-3.6-1core.fwsc">single core</a> ·
         <a href="https://github.com/Rastapopolix/tessera/releases">all releases</a>. From a terminal:
-        <code>python3 tools/fm1_install.py tessera-3.5.3.fwsc</code> (<a href="https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py">fm1_install.py</a>, needs mido and python-rtmidi).</span></div>
+        <code>python3 tools/fm1_install.py tessera-3.6.fwsc</code> (<a href="https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py">fm1_install.py</a>, needs mido and python-rtmidi).</span></div>
       <div data-h="install_note1" class="note"><b>Back to the stock firmware.</b> Open the installer and choose <i>Return to official V15</i>, or
         install M-Vave's own <code>FM-1.fwsc</code> with <code>fm1_install.py</code>. If an update is cut off, see the
         <a href="https://github.com/Rastapopolix/tessera/blob/HEAD/docs/RECOVERY.md">recovery guide</a>.</div>
@@ -472,6 +483,10 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
  * and the same links and release marks as the English */
 window.HOME_TEXT = {
   es: {
+    new36_kicker: "Nuevo en 3.6",
+    new36_h2: "Armonía, ecos y más cables",
+    new36_p1: "HARM, un armonizador: con una pista CHORD sonando, una subida por las teclas recorre las notas del acorde, y FOLLOW lleva la línea de otra pista a los acordes. ANSWER BEND, un delay con mente propia. 22 destinos de mod más, QNT para cada pista, afinaciones microtonales con QNT OFF, reloj MIDI con otros PPQN, y los propios mandos del FM-1 tocando el simulador web.",
+    new36_p2: "Los proyectos guardados en 3.6 no se abren en 3.5.3 ni anteriores. Todo lo nuevo: <a href=\"https://github.com/Rastapopolix/tessera/blob/main/docs/RELEASE_3.6.md\">las notas de la versión</a> (en inglés).",
     nav_demo: "Demo",
     nav_generators: "Generadores",
     nav_inks: "Tintas",
@@ -480,7 +495,7 @@ window.HOME_TEXT = {
     nav_about: "Acerca de",
     hero_tag: "Una madriguera de bolsillo",
     hero_lede: "Firmware generativo para el M-Vave FM-1: un instrumento para componer a través de sistemas. En lugar de programar cada nota, decides cómo se comporta la música, y ella toca: cuatro pistas de pasos escritos o trece generadores que se escuchan entre sí y crecen hasta formar piezas enteras.",
-    hero_cta1: "Instalar 3.5.3",
+    hero_cta1: "Instalar 3.6",
     hero_cta2: "Pruébalo en el navegador",
     hero_cta3: "Editor web",
     hero_cta4: "Manual (inglés)",
@@ -564,12 +579,12 @@ window.HOME_TEXT = {
     install_steph33: "Toca",
     install_stepp3: "Pulsa SEQ, elige un MODE, pulsa PLAY. Edita los sonidos desde el ordenador con el <a href=\"webapp/editor/\">editor web</a>.",
     install_p2: "No desconectes el FM-1 mientras escribe. Tessera es experimental en todos los sentidos de la palabra: úsalo bajo tu propia responsabilidad.",
-    install_cardb1: "Instalar 3.5.3",
+    install_cardb1: "Instalar 3.6",
     install_cards1: "El instalador web, en Chrome o Edge.",
     install_cardb2: "Pruébalo en el navegador",
     install_cards2: "El mismo firmware en un FM-1 en pantalla, con sonido.",
     install_cardb3: "Descargar .fwsc",
-    install_cards3: "<a href=\"firmware/tessera-3.5.3.fwsc\">Estándar</a> · <a href=\"firmware/tessera-3.5.3-1core.fwsc\">un solo núcleo</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">todas las releases</a>. Desde un terminal: <code>python3 tools/fm1_install.py tessera-3.5.3.fwsc</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, necesita mido y python-rtmidi).",
+    install_cards3: "<a href=\"firmware/tessera-3.6.fwsc\">Estándar</a> · <a href=\"firmware/tessera-3.6-1core.fwsc\">un solo núcleo</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">todas las releases</a>. Desde un terminal: <code>python3 tools/fm1_install.py tessera-3.6.fwsc</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, necesita mido y python-rtmidi).",
     install_cardb4: "Manual",
     install_cards4: "Cada página, knob y modo (en inglés).",
     install_cardb5: "Hoja de referencia",
@@ -589,6 +604,10 @@ window.HOME_TEXT = {
     themeDark: "Oscuro",
   },
   it: {
+    new36_kicker: "Novità della 3.6",
+    new36_h2: "Armonia, echi e più cavi",
+    new36_p1: "HARM, un armonizzatore: con una traccia CHORD in riproduzione, una salita sui tasti percorre le note dell'accordo, e FOLLOW porta la linea di un'altra traccia dentro gli accordi. ANSWER BEND, un delay con una mente propria. 22 destinazioni di mod in più, QNT per ogni traccia, accordature microtonali con QNT OFF, clock MIDI con altri PPQN, e le manopole stesse dell'FM-1 che suonano il simulatore web.",
+    new36_p2: "I progetti salvati con la 3.6 non si aprono sulla 3.5.3 o precedenti. Tutte le novità: <a href=\"https://github.com/Rastapopolix/tessera/blob/main/docs/RELEASE_3.6.md\">le note di rilascio</a> (in inglese).",
     nav_demo: "Demo",
     nav_generators: "Generatori",
     nav_inks: "Inchiostri",
@@ -597,7 +616,7 @@ window.HOME_TEXT = {
     nav_about: "Chi sono",
     hero_tag: "Una tana del bianconiglio tascabile",
     hero_lede: "Firmware generativo per l'M-Vave FM-1: uno strumento per comporre attraverso i sistemi. Invece di programmare ogni nota, stabilisci come si comporta la musica, e lei suona: quattro tracce di passi scritti o tredici generatori che si ascoltano a vicenda e crescono fino a diventare brani interi.",
-    hero_cta1: "Installa 3.5.3",
+    hero_cta1: "Installa 3.6",
     hero_cta2: "Provalo nel browser",
     hero_cta3: "Editor web",
     hero_cta4: "Manuale (inglese)",
@@ -681,12 +700,12 @@ window.HOME_TEXT = {
     install_steph33: "Suona",
     install_stepp3: "Premi SEQ, scegli un MODE, premi PLAY. Modifica i suoni dal computer con l'<a href=\"webapp/editor/\">editor web</a>.",
     install_p2: "Non scollegare l'FM-1 mentre sta scrivendo. Tessera è sperimentale in ogni senso della parola: usalo a tuo rischio.",
-    install_cardb1: "Installa 3.5.3",
+    install_cardb1: "Installa 3.6",
     install_cards1: "L'installer web, in Chrome o Edge.",
     install_cardb2: "Provalo nel browser",
     install_cards2: "Lo stesso firmware su un FM-1 sullo schermo, con il suono.",
     install_cardb3: "Scarica .fwsc",
-    install_cards3: "<a href=\"firmware/tessera-3.5.3.fwsc\">Standard</a> · <a href=\"firmware/tessera-3.5.3-1core.fwsc\">single core</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">tutte le release</a>. Da un terminale: <code>python3 tools/fm1_install.py tessera-3.5.3.fwsc</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, richiede mido e python-rtmidi).",
+    install_cards3: "<a href=\"firmware/tessera-3.6.fwsc\">Standard</a> · <a href=\"firmware/tessera-3.6-1core.fwsc\">single core</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">tutte le release</a>. Da un terminale: <code>python3 tools/fm1_install.py tessera-3.6.fwsc</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, richiede mido e python-rtmidi).",
     install_cardb4: "Manuale",
     install_cards4: "Ogni pagina, manopola e modalità (in inglese).",
     install_cardb5: "Promemoria",
@@ -706,6 +725,10 @@ window.HOME_TEXT = {
     themeDark: "Scuro",
   },
   de: {
+    new36_kicker: "Neu in 3.6",
+    new36_h2: "Harmonie, Echos und mehr Kabel",
+    new36_p1: "HARM, ein Harmonizer: Spielt eine CHORD-Spur, steigt ein Lauf über die Tasten durch die Töne des Akkords, und FOLLOW führt die Linie einer anderen Spur in die Akkorde. ANSWER BEND, ein Delay mit eigenem Kopf. 22 weitere Mod-Ziele, QNT für jede Spur, mikrotonale Stimmungen mit QNT OFF, MIDI-Clock mit anderen PPQN, und die Regler des FM-1 selbst spielen den Web-Simulator.",
+    new36_p2: "Auf 3.6 gespeicherte Projekte lassen sich auf 3.5.3 und älter nicht öffnen. Alles Neue: <a href=\"https://github.com/Rastapopolix/tessera/blob/main/docs/RELEASE_3.6.md\">die Release Notes</a> (Englisch).",
     nav_demo: "Demo",
     nav_generators: "Generatoren",
     nav_inks: "Farben",
@@ -714,7 +737,7 @@ window.HOME_TEXT = {
     nav_about: "Über",
     hero_tag: "Ein Kaninchenbau für die Tasche",
     hero_lede: "Generative Firmware für das M-Vave FM-1: ein Instrument, um mit Systemen zu komponieren. Statt jede Note zu programmieren, legst du fest, wie sich die Musik verhält, und sie spielt: vier Spuren aus geschriebenen Steps oder dreizehn Generatoren, die einander zuhören und zu ganzen Stücken wachsen.",
-    hero_cta1: "3.5.3 installieren",
+    hero_cta1: "3.6 installieren",
     hero_cta2: "Im Browser ausprobieren",
     hero_cta3: "Web-Editor",
     hero_cta4: "Handbuch (englisch)",
@@ -798,12 +821,12 @@ window.HOME_TEXT = {
     install_steph33: "Spielen",
     install_stepp3: "Tippe SEQ, wähle einen MODE, drücke PLAY. Bearbeite Klänge am Computer mit dem <a href=\"webapp/editor/\">Web-Editor</a>.",
     install_p2: "Zieh das FM-1 nicht ab, während es schreibt. Tessera ist in jedem Sinne des Wortes experimentell: Benutzung auf eigene Gefahr.",
-    install_cardb1: "3.5.3 installieren",
+    install_cardb1: "3.6 installieren",
     install_cards1: "Der Web-Installer, in Chrome oder Edge.",
     install_cardb2: "Im Browser ausprobieren",
     install_cards2: "Dieselbe Firmware auf einem FM-1 auf dem Bildschirm, mit Ton.",
     install_cardb3: ".fwsc herunterladen",
-    install_cards3: "<a href=\"firmware/tessera-3.5.3.fwsc\">Standard</a> · <a href=\"firmware/tessera-3.5.3-1core.fwsc\">Single-Core</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">alle Releases</a>. Im Terminal: <code>python3 tools/fm1_install.py tessera-3.5.3.fwsc</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, braucht mido und python-rtmidi).",
+    install_cards3: "<a href=\"firmware/tessera-3.6.fwsc\">Standard</a> · <a href=\"firmware/tessera-3.6-1core.fwsc\">Single-Core</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">alle Releases</a>. Im Terminal: <code>python3 tools/fm1_install.py tessera-3.6.fwsc</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, braucht mido und python-rtmidi).",
     install_cardb4: "Handbuch",
     install_cards4: "Jede Seite, jeder Regler, jeder Modus (englisch).",
     install_cardb5: "Spickzettel",
@@ -823,6 +846,10 @@ window.HOME_TEXT = {
     themeDark: "Dunkel",
   },
   fr: {
+    new36_kicker: "Nouveau en 3.6",
+    new36_h2: "Harmonie, échos et plus de câbles",
+    new36_p1: "HARM, un harmoniseur : avec une piste CHORD qui joue, une montée sur les touches parcourt les notes de l'accord, et FOLLOW fait entrer la ligne d'une autre piste dans les accords. ANSWER BEND, un delay qui n'en fait qu'à sa tête. 22 destinations de mod de plus, un QNT par piste, les accordages microtonaux avec QNT OFF, l'horloge MIDI à d'autres PPQN, et les potentiomètres du FM-1 lui-même qui jouent le simulateur web.",
+    new36_p2: "Les projets enregistrés en 3.6 ne s'ouvrent pas en 3.5.3 ni avant. Toutes les nouveautés : <a href=\"https://github.com/Rastapopolix/tessera/blob/main/docs/RELEASE_3.6.md\">les notes de version</a> (en anglais).",
     nav_demo: "Démo",
     nav_generators: "Générateurs",
     nav_inks: "Encres",
@@ -831,7 +858,7 @@ window.HOME_TEXT = {
     nav_about: "À propos",
     hero_tag: "Un terrier de lapin de poche",
     hero_lede: "Un firmware génératif pour le M-Vave FM-1 : un instrument pour composer à travers des systèmes. Au lieu de programmer chaque note, vous réglez la façon dont la musique se comporte, et elle joue : quatre pistes de pas écrits ou treize générateurs qui s'écoutent les uns les autres et deviennent des morceaux entiers.",
-    hero_cta1: "Installer 3.5.3",
+    hero_cta1: "Installer 3.6",
     hero_cta2: "Essayer dans le navigateur",
     hero_cta3: "Éditeur web",
     hero_cta4: "Manuel (anglais)",
@@ -915,12 +942,12 @@ window.HOME_TEXT = {
     install_steph33: "Jouez",
     install_stepp3: "Appuyez sur SEQ, choisissez un MODE, appuyez sur PLAY. Éditez les sons depuis l'ordinateur avec l'<a href=\"webapp/editor/\">éditeur web</a>.",
     install_p2: "Ne débranchez pas le FM-1 pendant l'écriture. Tessera est expérimental dans tous les sens du terme : utilisez-le à vos risques.",
-    install_cardb1: "Installer 3.5.3",
+    install_cardb1: "Installer 3.6",
     install_cards1: "L'installateur web, dans Chrome ou Edge.",
     install_cardb2: "Essayer dans le navigateur",
     install_cards2: "Le même firmware sur un FM-1 à l'écran, avec le son.",
     install_cardb3: "Télécharger le .fwsc",
-    install_cards3: "<a href=\"firmware/tessera-3.5.3.fwsc\">Standard</a> · <a href=\"firmware/tessera-3.5.3-1core.fwsc\">mono-cœur</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">toutes les releases</a>. Depuis un terminal : <code>python3 tools/fm1_install.py tessera-3.5.3.fwsc</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, nécessite mido et python-rtmidi).",
+    install_cards3: "<a href=\"firmware/tessera-3.6.fwsc\">Standard</a> · <a href=\"firmware/tessera-3.6-1core.fwsc\">mono-cœur</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">toutes les releases</a>. Depuis un terminal : <code>python3 tools/fm1_install.py tessera-3.6.fwsc</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, nécessite mido et python-rtmidi).",
     install_cardb4: "Manuel",
     install_cards4: "Chaque page, bouton et mode (en anglais).",
     install_cardb5: "Aide-mémoire",
@@ -940,6 +967,10 @@ window.HOME_TEXT = {
     themeDark: "Sombre",
   },
   pt: {
+    new36_kicker: "Novo na 3.6",
+    new36_h2: "Harmonia, ecos e mais cabos",
+    new36_p1: "HARM, um harmonizador: com uma trilha CHORD tocando, uma subida pelas teclas percorre as notas do acorde, e FOLLOW leva a linha de outra trilha para dentro dos acordes. ANSWER BEND, um delay com vontade própria. Mais 22 destinos de mod, QNT para cada trilha, afinações microtonais com QNT OFF, clock MIDI com outros PPQN, e os próprios knobs do FM-1 tocando o simulador web.",
+    new36_p2: "Projetos salvos na 3.6 não abrem na 3.5.3 ou anteriores. Todas as novidades: <a href=\"https://github.com/Rastapopolix/tessera/blob/main/docs/RELEASE_3.6.md\">as notas da versão</a> (em inglês).",
     nav_demo: "Demo",
     nav_generators: "Geradores",
     nav_inks: "Cores",
@@ -948,7 +979,7 @@ window.HOME_TEXT = {
     nav_about: "Sobre",
     hero_tag: "Uma toca de coelho de bolso",
     hero_lede: "Firmware generativo para o M-Vave FM-1: um instrumento para compor por meio de sistemas. Em vez de programar cada nota, você define como a música se comporta, e ela toca: quatro trilhas de passos escritos ou treze geradores que escutam uns aos outros e crescem até virar peças inteiras.",
-    hero_cta1: "Instalar 3.5.3",
+    hero_cta1: "Instalar 3.6",
     hero_cta2: "Experimente no navegador",
     hero_cta3: "Editor web",
     hero_cta4: "Manual (inglês)",
@@ -1032,12 +1063,12 @@ window.HOME_TEXT = {
     install_steph33: "Toque",
     install_stepp3: "Toque em SEQ, escolha um MODE, aperte PLAY. Edite os sons pelo computador com o <a href=\"webapp/editor/\">editor web</a>.",
     install_p2: "Não desconecte o FM-1 enquanto ele estiver gravando. A Tessera é experimental em todos os sentidos da palavra: use por sua conta e risco.",
-    install_cardb1: "Instalar 3.5.3",
+    install_cardb1: "Instalar 3.6",
     install_cards1: "O instalador web, no Chrome ou no Edge.",
     install_cardb2: "Experimente no navegador",
     install_cards2: "O mesmo firmware num FM-1 na tela, com som.",
     install_cardb3: "Baixar .fwsc",
-    install_cards3: "<a href=\"firmware/tessera-3.5.3.fwsc\">Padrão</a> · <a href=\"firmware/tessera-3.5.3-1core.fwsc\">um núcleo</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">todas as releases</a>. Pelo terminal: <code>python3 tools/fm1_install.py tessera-3.5.3.fwsc</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, precisa de mido e python-rtmidi).",
+    install_cards3: "<a href=\"firmware/tessera-3.6.fwsc\">Padrão</a> · <a href=\"firmware/tessera-3.6-1core.fwsc\">um núcleo</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">todas as releases</a>. Pelo terminal: <code>python3 tools/fm1_install.py tessera-3.6.fwsc</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, precisa de mido e python-rtmidi).",
     install_cardb4: "Manual",
     install_cards4: "Cada página, knob e modo (em inglês).",
     install_cardb5: "Folha de consulta",
@@ -1057,6 +1088,10 @@ window.HOME_TEXT = {
     themeDark: "Escuro",
   },
   ko: {
+    new36_kicker: "3.6의 새 기능",
+    new36_h2: "화성, 메아리, 그리고 더 많은 케이블",
+    new36_p1: "하모나이저 HARM: CHORD 트랙이 연주되는 동안 건반을 따라 올라가면 코드의 음을 차례로 밟고, FOLLOW는 다른 트랙의 선율을 코드 안으로 옮깁니다. 제멋대로 움직이는 딜레이 ANSWER BEND. 22개의 새 모드 목적지, 트랙마다 따로 쓰는 QNT, QNT OFF에서도 유지되는 미분음 조율, 다른 PPQN의 MIDI 클럭, 그리고 FM-1 자체의 노브로 웹 시뮬레이터 연주.",
+    new36_p2: "3.6에서 저장한 프로젝트는 3.5.3 이하에서 열리지 않습니다. 새로운 모든 것: <a href=\"https://github.com/Rastapopolix/tessera/blob/main/docs/RELEASE_3.6.md\">릴리스 노트</a>(영어).",
     nav_demo: "데모",
     nav_generators: "제너레이터",
     nav_inks: "잉크",
@@ -1065,7 +1100,7 @@ window.HOME_TEXT = {
     nav_about: "소개",
     hero_tag: "주머니 속 토끼굴",
     hero_lede: "M-Vave FM-1을 위한 제너러티브 펌웨어: 시스템으로 작곡하는 악기입니다. 음 하나하나를 프로그래밍하는 대신 음악이 어떻게 움직일지 정해 두면, 음악이 스스로 연주합니다. 직접 쓴 스텝으로 된 네 개의 트랙, 또는 서로의 소리를 듣고 한 곡으로 자라나는 열세 가지 제너레이터로요.",
-    hero_cta1: "3.5.3 설치",
+    hero_cta1: "3.6 설치",
     hero_cta2: "브라우저에서 체험하기",
     hero_cta3: "웹 에디터",
     hero_cta4: "매뉴얼 (영어)",
@@ -1149,12 +1184,12 @@ window.HOME_TEXT = {
     install_steph33: "연주",
     install_stepp3: "SEQ를 누르고 MODE를 고른 뒤 PLAY를 누르세요. 소리는 컴퓨터에서 <a href=\"webapp/editor/\">웹 에디터</a>로 편집할 수 있습니다.",
     install_p2: "FM-1이 쓰는 중에는 연결을 끊지 마세요. Tessera는 모든 의미에서 실험적입니다. 사용에 따른 책임은 본인에게 있습니다.",
-    install_cardb1: "3.5.3 설치",
+    install_cardb1: "3.6 설치",
     install_cards1: "Chrome 또는 Edge에서 쓰는 웹 설치 프로그램.",
     install_cardb2: "브라우저에서 체험하기",
     install_cards2: "화면 속 FM-1에서 소리까지 나는 같은 펌웨어.",
     install_cardb3: ".fwsc 내려받기",
-    install_cards3: "<a href=\"firmware/tessera-3.5.3.fwsc\">표준</a> · <a href=\"firmware/tessera-3.5.3-1core.fwsc\">싱글 코어</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">모든 릴리스</a>. 터미널에서: <code>python3 tools/fm1_install.py tessera-3.5.3.fwsc</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, mido와 python-rtmidi 필요).",
+    install_cards3: "<a href=\"firmware/tessera-3.6.fwsc\">표준</a> · <a href=\"firmware/tessera-3.6-1core.fwsc\">싱글 코어</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">모든 릴리스</a>. 터미널에서: <code>python3 tools/fm1_install.py tessera-3.6.fwsc</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, mido와 python-rtmidi 필요).",
     install_cardb4: "매뉴얼",
     install_cards4: "모든 페이지, 노브, 모드 (영어).",
     install_cardb5: "치트시트",
@@ -1174,6 +1209,10 @@ window.HOME_TEXT = {
     themeDark: "어둡게",
   },
   ja: {
+    new36_kicker: "3.6 の新機能",
+    new36_h2: "ハーモニー、こだま、そしてもっと多くのケーブル",
+    new36_p1: "ハーモナイザー HARM：CHORD トラックが鳴っている間、鍵盤を上がっていくとコードの音をたどり、FOLLOW は別のトラックのラインをコードの中へ移します。気ままなディレイ ANSWER BEND。22 の新しいモッド行き先、トラックごとの QNT、QNT OFF でも効く微分音チューニング、ほかの PPQN の MIDI クロック、そして FM-1 自身のノブで弾くウェブシミュレーター。",
+    new36_p2: "3.6 で保存したプロジェクトは 3.5.3 以前では開けません。新機能のすべて：<a href=\"https://github.com/Rastapopolix/tessera/blob/main/docs/RELEASE_3.6.md\">リリースノート</a>（英語）。",
     nav_demo: "デモ",
     nav_generators: "ジェネレーター",
     nav_inks: "インク",
@@ -1182,7 +1221,7 @@ window.HOME_TEXT = {
     nav_about: "紹介",
     hero_tag: "ポケットの中のウサギの穴",
     hero_lede: "M-Vave FM-1 のためのジェネラティブ・ファームウェア。システムで作曲するための楽器です。音をひとつずつプログラムする代わりに、音楽のふるまいを決めておけば、あとは音楽が演奏します。書き込んだステップの4トラック、あるいは互いに耳を傾けながら一曲へと育つ13のジェネレーターで。",
-    hero_cta1: "3.5.3 をインストール",
+    hero_cta1: "3.6 をインストール",
     hero_cta2: "ブラウザで試す",
     hero_cta3: "Webエディター",
     hero_cta4: "マニュアル（英語）",
@@ -1266,12 +1305,12 @@ window.HOME_TEXT = {
     install_steph33: "演奏",
     install_stepp3: "SEQ を押し、MODE を選び、PLAY を押します。音色はパソコンから <a href=\"webapp/editor/\">Webエディター</a>で編集できます。",
     install_p2: "書き込み中は FM-1 を抜かないでください。Tessera はあらゆる意味で実験的です。自己責任でお使いください。",
-    install_cardb1: "3.5.3 をインストール",
+    install_cardb1: "3.6 をインストール",
     install_cards1: "Chrome または Edge で使う Webインストーラー。",
     install_cardb2: "ブラウザで試す",
     install_cards2: "同じファームウェアを画面上の FM-1 で、音付きで。",
     install_cardb3: ".fwsc をダウンロード",
-    install_cards3: "<a href=\"firmware/tessera-3.5.3.fwsc\">標準</a> · <a href=\"firmware/tessera-3.5.3-1core.fwsc\">シングルコア</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">すべてのリリース</a>。ターミナルから: <code>python3 tools/fm1_install.py tessera-3.5.3.fwsc</code>（<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>、mido と python-rtmidi が必要）。",
+    install_cards3: "<a href=\"firmware/tessera-3.6.fwsc\">標準</a> · <a href=\"firmware/tessera-3.6-1core.fwsc\">シングルコア</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">すべてのリリース</a>。ターミナルから: <code>python3 tools/fm1_install.py tessera-3.6.fwsc</code>（<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>、mido と python-rtmidi が必要）。",
     install_cardb4: "マニュアル",
     install_cards4: "すべてのページ、ノブ、モード（英語）。",
     install_cardb5: "チートシート",
