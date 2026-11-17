@@ -530,6 +530,18 @@ static void capture_take(int over)
     uint32_t until;
     if (chain_busy()) { ui_message("STOP TO CAPTURE"); return; }
     if ((song.rec >> k) & 1u) { ui_message("RECORDING"); return; }
+    if (pr && tessera_sd_print(k, 0)) {                 /* SOURCE KEYS with a take: the take itself, as steps */
+        if (notes_have_recording(t)) { ui_message("CLEAR TO PRINT"); return; }
+        if (!seq_is_empty(t) && !over) { confirm_open(CF_PRINT, k); return; }
+        load_begin(t, UNDO_PAT);
+        fm1_irq_off();
+        track_defaults_steps(t);
+        w = tessera_sd_print(k, 1);
+        t->seq_active = 1;
+        fm1_irq_on();
+        load_end(t);
+        goto said;
+    }
     if (!pr && tessera_step_varied(k)) {   /* STEP EVOLVE: the changes playing become the steps */
         char b[16];
         load_begin(t, UNDO_PAT);
@@ -651,6 +663,7 @@ static void capture_take(int over)
     }
     load_end(t);
     if (!put) { ui_message("NOTHING PLAYED"); return; }
+said:
     {
         char b[16];
         fmt_int(b, (int32_t)(w % 16u ? w : w / 16u));

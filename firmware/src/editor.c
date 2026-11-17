@@ -404,7 +404,9 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
     if (ed_native_handle(cmd, a, na)) { ed_send(); return; }
     if (ed_tune_handle(cmd, a, na)) { ed_send(); return; }
     switch (cmd) {
-    case 100: {
+#if MELODEE_AUDIO_PROFILE || MELODEE_AUDIO_BENCH
+    case 100: {                                    /* (timing and voice-contract metadata for audio_performance_device.py:
+                                                    * performance builds only, its other commands' builds) */
 #ifdef FM1_IRQ_TARGET
         if(na){ed_b(1);break;}
         uint32_t values[8u+NPART];fm1_irq_off();
@@ -419,6 +421,7 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
 #endif
         break;
     }
+#endif
     case 98: {
 #if MELODEE_AUDIO_PROFILE
         uint32_t values[AP_COUNT*3u+5u];

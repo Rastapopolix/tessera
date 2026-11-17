@@ -219,7 +219,7 @@ typedef struct {
                                                      * same on every track, as before; a zeroed state links) */
     /* STEP as seed (step_seed.c; OCT- held on GEN, TURING, EUCLID, MARKOV and MORPH): the record's SEED part (SOURCE,
      * KEEP) and GRAV part (GRAVITY), not the packed block */
-    uint8_t          sd_src[TESSERA_TRACKS];     /* SOURCE: 0 OFF, 1..4 that track's STEP pattern */
+    uint8_t          sd_src[TESSERA_TRACKS];     /* SOURCE: 0 OFF, 1..4 that track's STEP pattern, 5 KEYS */
     uint8_t          sd_keep[TESSERA_TRACKS];    /* KEEP: TESS_SD_FREE, _RHYTHM, _PITCH */
     uint8_t          sd_grav[TESSERA_TRACKS];    /* GRAVITY: 0..100 % of steps played as written, 0 off */
     /* FORM's DEVELOP (OCT- held on FORM, KNOB 1): the record's DEV part, not the packed block */
@@ -525,6 +525,8 @@ enum { TESS_SPLIT_DOUBLE, TESS_SPLIT_PUSH, TESS_SPLIT_MIX, TESS_SPLIT_HOWS };   
 #define TESS_ACC_LIMIT_DEF 7u
 enum { TESS_ACC_WRAP, TESS_ACC_PING, TESS_ACC_CLAMP, TESS_ACC_MODES };   /* TX_ACC_MODE */
 enum { TESS_SD_FREE, TESS_SD_RHYTHM, TESS_SD_PITCH, TESS_SD_KEEPS };   /* TX_SD_KEEP */
+#define TESS_SD_KEYS (TESSERA_TRACKS + 1u)                  /* TX_SD_SOURCE KEYS: the track's own take (step_seed.c) */
+uint32_t tessera_sd_print(uint32_t tr, int go);      /* REC held: a KEYS take into the STEP pattern (ui_input.c) */
 enum { TESS_SV_DRIFT, TESS_SV_ORNAMENT, TESS_SV_SERIAL, TESS_SV_HOWS };   /* TX_SV_HOW */
 void tessera_sd_play(void);                         /* seq.c, PLAY: STEP as seed's loops from their sources again */
 void tessera_sd_layer_knob(uint32_t k, int32_t s);  /* TURING / EUCLID / MARKOV / MORPH on GEN, OCT- held: KNOB 2
