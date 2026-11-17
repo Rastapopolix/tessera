@@ -10,7 +10,7 @@ Recipes tagged **(3.5)** need a feature that is new in 3.5 (the MIX buses, EOC, 
 scaling and HOLD mods, DIR, CHORD STRUM and the new chord kinds). Update with the
 [web installer](https://rastapopolix.github.io/tessera/webapp/installer/) (a project that uses them does not load on older firmware). Recipes
 without a tag work on 3.4.1 too. The keys are 3.5's: **OCT+ held** is the page's sheet, **OCT- held** its second
-knobs. For the long patches that use these features (Krell, long gates, stepped chaos, the brake), see
+knobs. Recipes tagged **(3.7)** need 3.7 (the IN source). For the long patches that use these features (Krell, long gates, stepped chaos, the brake), see
 [GENERATIVE.md](GENERATIVE.md).
 
 **New here?** Start with [First steps: you have a loop, what next?](#first-steps-you-have-a-loop-what-next).
@@ -58,6 +58,7 @@ Or [start from a demo](#start-from-a-demo): load the piece nearest to what you w
 - [Loosen a 1/8 line (TIMING SPLIT)](#loosen-a-18-line-timing-split)
 - [A pad that swells every cycle (a lagged bus, 3.5)](#a-pad-that-swells-every-cycle-a-lagged-bus-35)
 - [A fill every four bars (EOC, 3.5)](#a-fill-every-four-bars-eoc-35)
+- [Dub throws while the drums are out (IN, 3.7)](#dub-throws-while-the-drums-are-out-in-37)
 - [A melody that steps on another track's notes (CLOCK, 3.5)](#a-melody-that-steps-on-another-tracks-notes-clock-35)
 - [A part that comes and goes (PLAY, 3.5)](#a-part-that-comes-and-goes-play-35)
 - [A pattern that turns round on a gate (DIR, 3.5)](#a-pattern-that-turns-round-on-a-gate-dir-35)
@@ -760,6 +761,24 @@ any step.
 FILL is held for the eighth of the cycle after each wrap (half a bar every four bars), and the GLO layer's FILL lights
 while it is. SYNC **2BAR** for a fill every second bar. For a note on each cycle instead, send EOC to CLOCK: the Krell
 in [GENERATIVE.md](GENERATIVE.md#an-envelope-that-plays-itself).
+
+## Dub throws while the drums are out (IN, 3.7)
+
+An echo thrown on a skank now and then, at uneven gaps, and only while Entries has the drums out. **IN** is a track's
+source: high while the track is heard, low while MUTE, SOLO or Entries has it out. A track's GATE goes on while it is
+out (its notes still play, unheard), so it cannot tell you; IN can.
+
+1. Track 1 plays an offbeat chord; track 4 the drums. **ENTRIES** on (GLO > ENTRIES), so the drums leave now and then.
+2. **SEND FX 1** on **ECHO**, its MIX at 127. Track 1's **FX SEND** at 0: the skank is dry.
+3. **MODS**, mod 1: **T1 EOC** to **T1 FX SEND**, **+100**, tapped to **^** (a GATE). Each cycle of track 1's LFO opens
+   the send for an eighth of the cycle; the echo's repeats ring on after it closes.
+4. Mod 2: **T1 S&H** to **T1 LFO RTE**, about **+40**, and track 1's LFO with SYNC **OFF** and a slow RATE: each cycle
+   has its own length, so the throws come at uneven gaps.
+5. Mod 3: **T4 IN** to **M1 AMT**, **-100**, made a scaler (**OCT-** held, **KNOB 3** right: **M1\*** on the row). While
+   the drums play it closes mod 1; while they are out the throws get through. With Entries' STYLE on FADE it closes as
+   the drums fade back in.
+
+For a dub tail that swells, add **T4 IN** to **SF1 CHR** at **-30**: more repeats while the drums are out.
 
 ## A melody that steps on another track's notes (CLOCK, 3.5)
 
