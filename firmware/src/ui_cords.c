@@ -26,7 +26,7 @@ static void cu_adopt(void)
     was = left;
 }
 
-#define CU_SPT CS_ENERGY                                /* a track's sources (LFO .. OCHD8, then EOC, added later) */
+#define CU_SPT (CS_ENERGY + 1u)                         /* a track's sources (LFO .. OCHD8, then EOC and IN, added later) */
 #define CU_NSRC (1u + NTRK * CU_SPT + (CS_EOC - CS_ENERGY))   /* KNOB 1's list: --, track by track from the selected
                                                          * one on (T3: T3, T4, T1, T2), then the project's
                                                          * (ENERGY, the MACROs) once */
@@ -121,7 +121,7 @@ static uint32_t cu_src_of(const cord_t *c)
 {
     if (!c->src) return 0u;
     return cu_src_trk(c->src) ? 1u + (c->src_trk + NTRK - song.sel % NTRK) % NTRK * CU_SPT +
-                                    (c->src == CS_EOC ? CS_ENERGY - 1u : cu_tide(c->src) - 1u)
+                                    (c->src == CS_EOC ? CS_ENERGY - 1u : c->src == CS_IN ? (uint32_t)CS_ENERGY : cu_tide(c->src) - 1u)
                               : 1u + NTRK * CU_SPT + c->src - CS_ENERGY;
 }
 static uint32_t cu_src_at(uint32_t v, uint8_t *tr)     /* entry v of KNOB 1's list: its source, *tr its track */
@@ -131,7 +131,7 @@ static uint32_t cu_src_at(uint32_t v, uint8_t *tr)     /* entry v of KNOB 1's li
     v--;
     if (v >= NTRK * CU_SPT) return CS_ENERGY + v - NTRK * CU_SPT;
     *tr = (uint8_t)((v / CU_SPT + song.sel) % NTRK);  /* (the tracks from the selected one on, as KNOB 3's) */
-    return v % CU_SPT == CS_ENERGY - 1u ? (uint32_t)CS_EOC : cu_tide(1u + v % CU_SPT);
+    return v % CU_SPT == CS_ENERGY - 1u ? (uint32_t)CS_EOC : v % CU_SPT == CS_ENERGY ? (uint32_t)CS_IN : cu_tide(1u + v % CU_SPT);
 }
 static uint32_t cu_dst_of(const cord_t *c)
 {

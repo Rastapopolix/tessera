@@ -31,6 +31,7 @@ static __attribute__((noinline)) int8_t msc_q(int32_t v)   /* Q15 to -127..127 *
 /* the window for a source, in bars: what it takes to see its shape (a TIDE drawn over a second is a flat line) */
 static uint32_t mscope_bars(uint32_t s)
 {
+    if (s == CS_IN) return 16u;                         /* (Entries: phrases) */
     if (s == CS_DRIFT || (s >= CS_OCHD1 && s <= CS_OCHD8)) return 16u;
     if ((s >= CS_TORPOR && s <= CS_INERTIA) || s == CS_ENERGY) return 64u;
     if (s >= CS_MACRO1 && s < CS_EOC) return 4u;

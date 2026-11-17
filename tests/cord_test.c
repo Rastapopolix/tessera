@@ -797,6 +797,31 @@ static int eoc(void)
     check("...nor the block after", cord_src(CS_EOC, 1) == 0);
     return bad - fails;
 }
+/* IN (CS_IN): whether the track is heard, as the mix sets it: MUTE, SOLO and Entries' level */
+static int in_src(void)
+{
+    int fails = bad;
+    uint32_t i;
+    host_tracks_init();
+    tessera_reset();
+    track_solo = 0;
+    for (i = 0; i < NTRK; i++) entry_gain[i] = 32768;
+    check("in: the source after EOC, a track's, 0..1, named IN",
+          !strcmp(cord_src_name(CS_IN), "IN") && CS_IN == CS_EOC + 1u && !CS_PROJECT(CS_IN) && !cord_bipolar(CS_IN, 2));
+    check("...every track in at first", cord_src(CS_IN, 0) == 32767 && cord_src(CS_IN, 3) == 32767);
+    entry_gain[3] = 0;
+    check("...Entries takes track 4 out: its IN is 0, the others stay", !cord_src(CS_IN, 3) && cord_src(CS_IN, 2) == 32767);
+    entry_gain[3] = 16384;
+    check("...half through Entries' fade: half", cord_src(CS_IN, 3) == 16384);
+    entry_gain[3] = 32768;
+    trk[3].p[P_MUTE] = 1;
+    check("...MUTE: 0", !cord_src(CS_IN, 3));
+    trk[3].p[P_MUTE] = 0;
+    track_solo = 1u;
+    check("...SOLO on track 1: track 1 in, track 4 out", cord_src(CS_IN, 0) == 32767 && !cord_src(CS_IN, 3));
+    track_solo = 0;
+    return bad - fails;
+}
 static int buses(void)
 {
     int fails = bad;
@@ -807,7 +832,7 @@ static int buses(void)
     tessera_reset();
     check("buses: BUS A / B the sources after MACRO 4, bipolar, the project's (none of a track's)",
           !strcmp(cord_src_name(CS_BUSA), "BUS A") && !strcmp(cord_src_name(CS_BUSB), "BUS B") && cord_bipolar(CS_BUSA, 0) &&
-          cord_bipolar(CS_BUSB, 3) && CS_BUSA == CS_MACRO4 + 1u && CS_EOC == CS_BUSB + 1u && CS_N == CS_EOC + 1u);
+          cord_bipolar(CS_BUSB, 3) && CS_BUSA == CS_MACRO4 + 1u && CS_EOC == CS_BUSB + 1u && CS_IN == CS_EOC + 1u && CS_N == CS_IN + 1u);
     check("...a new project: SUM, LAG OFF, both at 0", !cord_bus_get(0) && !cord_bus_get(1) && !cord_bus_get(2) &&
           !cord_bus_get(3) && !cord_bus_now(0) && !cord_bus_now(1));
     cord_tick();
@@ -1355,6 +1380,7 @@ int main(int argc, char **argv)
     (void)drift_and_defaults();
     (void)buses();
     (void)eoc();
+    (void)in_src();
     (void)more_dests();
 
     {
