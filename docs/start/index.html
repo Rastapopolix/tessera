@@ -52,7 +52,10 @@ nav.side input { width: 100%; font: inherit; color: var(--text); background: var
 .results li { margin: 0 0 10px; }
 .results small { display: block; color: var(--dim); }
 .results mark { background: var(--ink); color: var(--bg); }
-main { padding: 8px 32px 80px; min-width: 0; }
+main { padding: 8px 32px 80px; min-width: 0; max-width: 900px; }
+main li { margin: 0 0 10px; }
+main li > p { margin: 6px 0; }
+main li > strong:first-child { color: var(--ink); }
 main h1, main h2, main h3, main h4 { color: var(--ink); font-family: var(--pixel); font-weight: 400; line-height: 1.2; }
 main h1 { font-size: clamp(28px, 4vw, 44px); margin: 24px 0 12px; }
 main h2 { font-size: clamp(22px, 3vw, 32px); margin: 56px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
@@ -116,7 +119,7 @@ first page, and tapping it again steps through the rest.</p>
 <ol>
 <li>Connect the FM-1 directly by USB (not through a hub).</li>
 <li>Open the <strong><a href="https://rastapopolix.github.io/tessera/webapp/installer/">web installer</a></strong> and follow it. Choose the
-   standard build; the single-core one is for the few FM-1s that crash with it.</li>
+standard build; the single-core one is for the few FM-1s that crash with it.</li>
 <li>Don't unplug the FM-1 while it is writing.</li>
 </ol>
 <p>The installer can also take you back to the official firmware later, with a backup first.</p>
@@ -124,7 +127,6 @@ first page, and tapping it again steps through the rest.</p>
 <p>Power on. Tessera starts with four sounds: <strong>KUGO HARP</strong> on track 1, <strong>KOTO WARM</strong> on track 2, <strong>FLUTE</strong> on track 3
 and the <strong>808 KIT</strong> on track 4, in the KUMOI scale on E. Play the keys: you hear the selected track.</p>
 <p align="center"><img src="../media/gallery/home.png" alt="HOME: the four tracks" width="240"><br><sub>HOME: the four tracks at a glance. SELECT sets the tempo here.</sub></p>
-
 <p><strong>Try:</strong> turn <strong>ALGORITHM</strong> to each track in turn and play a few notes.</p>
 <h2 id="3-let-a-generator-play">3. Let a generator play</h2>
 <p>A generator writes the notes for you, always in the project's scale.</p>
@@ -134,7 +136,6 @@ and the <strong>808 KIT</strong> on track 4, in the KUMOI scale on E. Play the k
 <li>Turn <strong>PROB</strong> to about 20: the loop changes a little each time round. At 0 it holds still.</li>
 </ol>
 <p align="center"><img src="../media/gallery/gen_turing.png" alt="GEN with TURING" width="240"><br><sub>GEN with MODE on TURING.</sub></p>
-
 <p><strong>Try:</strong> track 4 (the 808 KIT), MODE <strong>ATLAS</strong>, <strong>DENS</strong> at 50: a drum groove underneath.</p>
 <h2 id="4-find-a-line-you-like">4. Find a line you like</h2>
 <p>Every generator line comes from a seed: a number you can come back to.</p>
@@ -143,46 +144,43 @@ and the <strong>808 KIT</strong> on track 4, in the KUMOI scale on E. Play the k
 <li>Turn <strong>ROLL</strong> (KNOB 4) one click at a time. Each click is a new line; turn back for the last one.</li>
 <li>When you like it, note the number. That line is yours.</li>
 <li>Set <strong>EVERY</strong> to 4 and <strong>AMOUNT</strong> to about 30: now the line changes a little every four bars, so it never wears
-   out.</li>
+out.</li>
 </ol>
 <p align="center"><img src="../media/gallery/gen_evolve.png" alt="EVOLVE" width="240"><br><sub>EVOLVE: how often the line changes, how much, and its seed.</sub></p>
-
 <p><strong>Try:</strong> tap <strong>SEL</strong> on track 1 to change the scale. Every generator follows at once.</p>
 <h2 id="5-let-it-play-itself">5. Let it play itself</h2>
 <p>Three pages turn a loop into a piece that changes over minutes or hours. Each one starts switched off.</p>
 <ol>
 <li><strong>ARP</strong>, tap to <strong>ENERGY</strong>, and turn <strong>ARC</strong> to about 50: the tracks get sparser and busier in a slow tide.</li>
 <li><strong>GLO</strong>, tap to <strong>ENTRIES</strong>, and turn <strong>ENTRIES</strong> to about 50: tracks drop out and come back in on the phrase
-   lines, like a band arranging itself.</li>
+lines, like a band arranging itself.</li>
 <li><strong>GLO</strong>, tap to <strong>PIECE</strong>: <strong>10</strong> minutes, shape <strong>ARCH</strong>, END <strong>STOP</strong>. Now it has a beginning, a peak and an
-   end, and stops by itself.</li>
+end, and stops by itself.</li>
 </ol>
 <p align="center"><img src="../media/gallery/glo_entries.png" alt="ENTRIES" width="240"> <img src="../media/gallery/glo_piece.png" alt="PIECE" width="240"><br><sub>ENTRIES shows which tracks are in and out; PIECE shows the shape of the whole piece.</sub></p>
-
 <p><strong>Try:</strong> press <strong>PLAY</strong> and leave it for ten minutes.</p>
 <h2 id="6-watch-it">6. Watch it</h2>
 <p><strong>GLO</strong>, tap to <strong>LANDSCAPE</strong>: a night lake drawn by the music. Notes fall as rain, the moon crosses the sky as the
 piece goes on. The keys are the mixer's: the black keys mute tracks 1 to 4,
 <strong>C4</strong> brings them all back.</p>
 <p align="center"><img src="../media/gallery/glo_land_rain.png" alt="LANDSCAPE" width="240"><br><sub>LANDSCAPE while the music plays.</sub></p>
-
 <h2 id="7-save-it">7. Save it</h2>
 <p>Hold <strong>SAVE</strong> to save the project. Everything is kept: the sounds, the generators and their seeds, and every page you
 set.</p>
 <p>To start afresh: tap <strong>SAVE</strong> to the <strong>PROJECT</strong> page, turn <strong>KNOB 1</strong> to <strong>New song</strong> and press <strong>OCT+</strong>. Tessera
 asks for a key, a scale and a tempo, then a role for each track (drums, bass, chords, lead or pad).</p>
 <p align="center"><img src="../media/gallery/project.png" alt="SAVE > PROJECT" width="240"><br><sub>SAVE > PROJECT: your projects, and New song.</sub></p>
-
 <h2 id="where-next">Where next</h2>
 <ul>
 <li><strong><a href="https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md#first-steps-you-have-a-loop-what-next">First steps: you have a loop, what next?</a></strong>: the next six
-  moves, from live mutes to song sections.</li>
+moves, from live mutes to song sections.</li>
 <li><strong><a href="../manual/#tessera-in-plain-words">Tessera in plain words</a></strong>: what every page is for, and which generator to
-  reach for.</li>
+reach for.</li>
 <li><strong><a href="https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md">RECIPES</a></strong>: drones, chords that lead, pieces that play for hours, driving other synths.</li>
 <li><strong><a href="https://github.com/Rastapopolix/tessera/blob/HEAD/docs/cheatsheet/tessera-cheatsheet.pdf">The cheat sheet</a></strong>:
-  every button and combination on one printable page.</li>
+every button and combination on one printable page.</li>
 </ul>
+
 <p class="next">Next: <a href="../manual/#tessera-in-plain-words">Tessera in plain words</a>, then the whole <a href="../manual/">manual</a>.</p>
 </main>
 </div>
