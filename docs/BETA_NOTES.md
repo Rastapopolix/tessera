@@ -9,11 +9,14 @@ what you expected and what happened).
 
 ## New since 3.6.1
 - LANDSCAPE: KNOB 1 to 4 turn PERF's MACRO 1 to 4, shown large while turned, so you can make a big move and watch the lake answer. IDLE LANDSCAPE's first touch still only takes you back.
+- LANDSCAPE places: a named project is islands, land cut by narrow channels (with an arched bridge) or all land, and each CHAIN section's shore has one thing of its own: a torii on A (all land: a seated Buddha), on B and C a pagoda, a lit stone lantern or a pine (now and then a cherry, its petals falling slowly), some shores bare; each reflected in the water. At night a few stars stay out however busy the music; slopes are drawn as cliffs; two shores run into each other as the form moves on.
 
 ## Fixed
 
 ## Good to know
+- Named projects whose place is channels or all land look different from 3.6.1 (their hills are new); islands places keep their hills, the torii where it stood.
 
 ## Please try
 - A project from 3.6.1 loads and plays the same.
 - On LANDSCAPE, turn a knob with a macro driving a mod: the music moves and the value shows across the foot.
+- Name a project (try UNDERTOW, KOTO GARDEN, SALT MARSH) with a CHAIN FORM such as ABCA and watch LANDSCAPE as the sections change: one thing on each shore, its reflection rippling, the lantern's glow with the notes.
