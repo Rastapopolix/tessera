@@ -924,6 +924,16 @@ constellation and the crosshair colours of their own, the ship white.
 track's pattern playing now, and it can be this track's own. The pattern itself never changes. OFF, or a pattern
 with no notes, plays the generator as usual.
 
+**KEYS** (after T4) plays from what you play instead: a **take** on this track's keys or MIDI IN, up to 16 notes.
+The first note starts a take, and the generator rests while you play. A bar without a key ends the take, and the
+generator then plays it from where it has got to, so your bars stay where you played them. The take loops as whole
+bars, as many as it spans (up to four). Play again to make a new take; it replaces the old one. The take is kept in
+the project. Until there is one, the generator plays as usual.
+
+**Print a take:** hold **REC** on a track with SOURCE KEYS and a take. The take goes into the track's STEP pattern as
+you played it (REPLACE STEPS? first if the pattern has steps), its LEN set to the take's, and SOURCE turns to that
+pattern. The generator plays on from it, so you can fix a wrong note by hand in STEP. EDIT held undoes the steps.
+
 - **TURING** loops the source's first LEN steps (up to 16). Each step, PROB is the chance that the step about to
   play changes and stays changed, as a Turing machine flips a bit. PROB 0 plays your melody as written; turn it up
   and the melody drifts. A new SOURCE or LEN, or PLAY, starts again from the pattern.
@@ -950,7 +960,7 @@ source's own hit or rest, and MORPH plays A. 0 is off; 100 plays your pattern as
 Drift with PROB, LEAP or MORPH, and let GRAVITY decide how far it may wander.
 
 The notes keep their written pitch, then follow this track's scale, TRN and SHIFT. Print (REC held) keeps what it
-played, as for any generator.
+played, as for any generator (with SOURCE KEYS and a take: the take itself, see above).
 
 With a SOURCE, TURING's and MORPH's picture on GEN shows the loop as it plays now: a step as you wrote it is drawn plain,
 a changed one with the written step drawn over it hollow (its ghost: an empty frame is a note dropped). MORPH shows B, its variation. **HOME** under it is how far the loop has wandered: empty when it plays

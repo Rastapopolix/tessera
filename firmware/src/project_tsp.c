@@ -563,7 +563,7 @@ static const struct { uint8_t id, a, b; uint8_t at; uint16_t len; } TSP_PLAIN[] 
     {TSP_KEY, 1u, 0, 1u, 1u},
     {TSP_QLINK, 1u, 0, 1u, 1u},
     {TSP_SECPC, (1u << TESSERA_TRACKS) - 1u, 0, 1u, 1u},
-    {TSP_SEED, TESSERA_TRACKS, TESS_SD_KEEPS - 1u, NTRK, 2u * NTRK},
+    {TSP_SEED, TESS_SD_KEYS, TESS_SD_KEEPS - 1u, NTRK, 2u * NTRK},
     {TSP_GRAV, 100u, 0, NTRK, NTRK},
     {TSP_HOW, TESS_SV_HOWS - 1u, 0, NTRK, NTRK},
     {TSP_ENERGY, 200u, 100u, 1u, 1u + NTRK},

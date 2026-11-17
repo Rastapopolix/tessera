@@ -14,6 +14,7 @@ static const char *const TX_N_DIV[] = {"OFF", "/1", "/2", "/3", "/4", "/5", "/6"
 static const char *const TX_N_EVERY[] = {"OFF", "1", "2", "4", "8", "16"};
 static const char *const TX_N_FORM[] = {"OFF", "AB", "ABAC", "ABCB", "AABA", "ABCA", "AABC"};
 static const char *const TX_N_FOLLOW[] = {"OFF", "T1", "T2", "T3", "T4"};
+static const char *const TX_N_SDSRC[] = {"OFF", "T1", "T2", "T3", "T4", "KEYS"};
 static const char *const TX_N_BRMODE[] = {"COIN", "TOGGLE", "LATCH"};
 static const char *const TX_N_LOGIC[] = {"OFF", "AND", "OR", "XOR", "NOT"};
 static const char *const TX_N_COND[] = {"OFF", "1:2", "2:2", "1:4", "2:4", "3:4", "4:4", "1:8", "8:8", "FIRST", "!FIRST"};
@@ -170,7 +171,7 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_MIDI_CH] = PE("MIDI CH", TX_N_MIDICH, 0),
     [TX_KEY_LINK] = PE("KEY", TX_N_KEYLINK, 1),
     [TX_QNT_LINK] = PE("QNT", TX_N_KEYLINK, 1),
-    [TX_SD_SOURCE] = PE("SOURCE", TX_N_FOLLOW, 0),
+    [TX_SD_SOURCE] = PE("SOURCE", TX_N_SDSRC, 0),
     [TX_SD_KEEP] = PE("KEEP", TX_N_SDKEEP, 0),
     [TX_SUB_HUMAN] = {"HUMAN", F_INT, 0, TESS_HUMAN_MS, 0, 0, "ms"},
     [TX_ACC_LIMIT] = {"LIMIT", F_INT, 1, TESS_ACC_LIMIT, TESS_ACC_LIMIT_DEF, 0, 0},
@@ -631,7 +632,9 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                 "own ROOT. Turning it on gives every track the selected track's key. SCL's Key link row; "
                                 "on in a new project, saved with it."),
     X_(TX_SD_SOURCE, "SOURCE", "A STEP pattern for TURING, EUCLID, MARKOV or MORPH to play from: T1 to T4 is that "
-                               "track's pattern playing now (this track's own too), which stays as written. TURING "
+                               "track's pattern playing now (this track's own too), which stays as written. KEYS: a take "
+                               "played on this track's keys or MIDI IN (up to 16 notes; a bar without a key ends it, "
+                               "the next note starts a new one; REC held prints it to STEP). TURING "
                                "loops its first LEN steps and PROB changes them a step at a time; EUCLID plays its "
                                "notes in order on its hits; MARKOV learns what follows what in it (LEAP: jumps "
                                "anywhere); MORPH blends it (A) with a variation of it (B). OFF, or a pattern without "

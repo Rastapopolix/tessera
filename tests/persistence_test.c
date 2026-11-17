@@ -291,7 +291,7 @@ static int test_tsp_record(void)
     bad += check("TSP1: a KEY part out of range is refused", ok && !tsp_valid(raw, len));
     len = tsp_pack(raw, &proj_scratch, 1);
     ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_SEED];
-    raw[tsp_seen.at[TSP_SEED] + 2u] = (uint8_t)(TESSERA_TRACKS + 1u);   /* (track 3's SOURCE past T4) */
+    raw[tsp_seen.at[TSP_SEED] + 2u] = (uint8_t)(TESS_SD_KEYS + 1u);   /* (track 3's SOURCE past KEYS) */
     tsp_resum(raw);
     ok &= !tsp_valid(raw, len);
     len = tsp_pack(raw, &proj_scratch, 1);

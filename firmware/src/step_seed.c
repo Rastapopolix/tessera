@@ -28,9 +28,28 @@ static struct {
                                                          * SD_MORPH */
 } tess_sd __attribute__((section(".pool")));
 
+/* SOURCE KEYS (3.7, capture-to-loop): the track's keys or MIDI IN make a take, up to 16 notes, kept in its ANSWER phrase
+ * (tessera.answer[tr]: note, vel, at; saved with the project). It starts at the first note after the last take closed
+ * and closes after a bar without a key, as ANSWER's phrase does (tessera_answer_hear_at, sd_keys_wait); the generator
+ * rests while it is heard. The take is then read as a pattern of whole bars from its first note: the source index s
+ * TESSERA_TRACKS + tr (sd_source) is track tr's take, so everything below plays it as it plays a STEP pattern.
+ * REC held prints it into the STEP pattern (tessera_sd_print) */
+static uint32_t sd_len(uint32_t s);
+static int sd_keys(uint32_t tr) { return tessera.sd_src[tr] == TESS_SD_KEYS; }
 /* step i of track s's pattern playing: 1 a hit (*note its note, a drum hit's lane note; *vel its velocity) */
 static int sd_step(uint32_t s, uint32_t i, uint32_t *note, uint32_t *vel)
 {
+    if (s >= TESSERA_TRACKS) {                          /* (a take: its first note at step i) */
+        const tessera_answer_t *a = &tessera.answer[s - TESSERA_TRACKS];
+        i %= sd_len(s);
+        for (uint32_t j = 0; j < a->n; j++)
+            if (a->at[j] == i) {
+                *note = a->note[j];
+                *vel = a->vel[j] ? a->vel[j] : 100u;
+                return 1;
+            }
+        return 0;
+    }
     const track_t *t = &trk[s];
     const step_t *st = &t->step[i % (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP)];
     if (st->time != ST_NOTE || (!st->n && !st->hit)) return 0;
@@ -38,7 +57,15 @@ static int sd_step(uint32_t s, uint32_t i, uint32_t *note, uint32_t *vel)
     *vel = (st->flags & SF_ACCENT) ? 127u : st->vel ? st->vel : 100u;
     return 1;
 }
-static uint32_t sd_len(uint32_t s) { return (uint32_t)clamp(trk[s].p[P_SLEN], 1, NSTEP); }
+static uint32_t sd_len(uint32_t s)
+{
+    if (s >= TESSERA_TRACKS) {                          /* (a take: the whole bars it spans, 64 steps at most) */
+        const tessera_answer_t *a = &tessera.answer[s - TESSERA_TRACKS];
+        uint32_t b = tess_steps_per_bar(&trk[s - TESSERA_TRACKS]), n = a->n ? (a->at[a->n - 1u] / b + 1u) * b : b;
+        return n > NSTEP ? NSTEP : n;
+    }
+    return (uint32_t)clamp(trk[s].p[P_SLEN], 1, NSTEP);
+}
 /* tr's generator can play from a SOURCE */
 static int sd_mode(uint32_t tr)
 {
@@ -49,7 +76,8 @@ static int sd_mode(uint32_t tr)
 static uint32_t sd_source(uint32_t tr)
 {
     uint32_t s = tessera.sd_src[tr], i, note, vel;
-    if (!s || s > TESSERA_TRACKS || !sd_mode(tr)) return 0;
+    if (!s || !sd_mode(tr)) return 0;
+    if (s == TESS_SD_KEYS) s = TESSERA_TRACKS + tr + 1u;   /* (its take) */
     for (i = 0; i < sd_len(s - 1u); i++)
         if (sd_step(s - 1u, i, &note, &vel)) return s;
     return 0;
@@ -60,6 +88,43 @@ void tessera_sd_play(void)                              /* seq.c, PLAY: the loop
         tess_sd.load[tr] = 1;
         tess_sd.pos[tr] = tess_sd.n[tr] = 0;
     }
+}
+/* a step of a SOURCE KEYS generator (tess_clock_step_body): 1 = a take is being heard (it rests). A bar with no key
+ * closes it: the generator plays it from the step it has reached, so its bars stay where they were played */
+static int sd_keys_wait(uint32_t tr, uint32_t spb)
+{
+    if (!sd_keys(tr) || !sd_mode(tr) || tess_an.phase[tr] != TESS_AN_HEAR) return 0;
+    if (tess_an.hclk[tr] < 0xFFFFu) tess_an.hclk[tr]++;
+    if (++tess_an.cnt[tr] < spb) return 1;
+    tess_an.phase[tr] = TESS_AN_IDLE;
+    tess_sd.load[tr] = 1;
+    tess_sd.pos[tr] = (uint8_t)(tess_an.hclk[tr] - tess_an.hlate[tr]);
+    tess_sd.n[tr] = 0;
+    return 0;
+}
+/* REC held on a SOURCE KEYS generator with a take (ui_input.c capture_take): the take written into track tr's STEP
+ * pattern as steps (its LEN the take's), and SOURCE that pattern, so the generator plays on from it and a wrong note
+ * can be fixed by hand. go 0: only its LEN. The caller holds the undo level and IRQs off, and has cleared the steps.
+ * Its LEN in steps; 0 no take */
+uint32_t tessera_sd_print(uint32_t tr, int go)
+{
+    const tessera_answer_t *a = &tessera.answer[tr];
+    track_t *t = &trk[tr];
+    uint32_t j, len = sd_len(TESSERA_TRACKS + tr);
+    if (tr >= TESSERA_TRACKS || !a->n || !sd_keys(tr) || !sd_mode(tr)) return 0;
+    if (!go) return len;
+    for (j = 0; j < a->n; j++) {
+        step_t *st = &t->step[a->at[j] % NSTEP];
+        if (st->n) continue;                            /* (a chord played TRUE: its first note) */
+        st->note[0] = a->note[j];
+        st->n = 1;
+        st->time = ST_NOTE;
+        st->vel = a->vel[j];
+    }
+    t->p[P_SLEN] = (int16_t)len;
+    tessera.sd_src[tr] = (uint8_t)(tr + 1u);
+    tess_sd.load[tr] = 1;
+    return len;
 }
 static void sd_realign(uint32_t tr)                     /* a phrase boundary (tess_realign): from step 1 again */
 {

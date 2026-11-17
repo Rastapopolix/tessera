@@ -1656,7 +1656,7 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
     clk.steps_per_bar = (uint8_t)tess_steps_per_bar(t);
     clk.root = (uint8_t)(t->p[P_ROOT] % 12);
 
-    switch (tessera.mode[tr]) {
+    switch (sd_keys_wait(tr, clk.steps_per_bar) ? TESS_ENG_OFF : tessera.mode[tr]) {   /* (a KEYS take heard: a rest) */
     case TESS_ENG_TURING:
         if (!sd_turing(t, tr, &out)) {                  /* (a SOURCE: its loop instead) */
             gen_turing_t g = tessera.turing[tr];        /* HOLD: as PROB 0, the register repeats (PROB itself kept) */
@@ -3560,7 +3560,7 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
     case TX_QNT_LINK: tessera.qnt_own = (uint8_t)!tess_clampi(v, 0, 1); return;
     case TX_SECTION_PC: tessera.sec_pc = (uint8_t)(v > 0 ? tessera.sec_pc | 1u << tr : tessera.sec_pc & ~(1u << tr)); return;
     case TX_SD_SOURCE:                                  /* (the loop filled again from the new source; ANSWER: its */
-        tessera.sd_src[tr] = (uint8_t)tess_clampi(v, 0, TESSERA_TRACKS);   /* call, answered from the first) */
+        tessera.sd_src[tr] = (uint8_t)tess_clampi(v, 0, (int32_t)TESS_SD_KEYS);   /* call, answered from the first) */
         tess_sd.load[tr] = 1;
         if (tessera.mode[tr] == TESS_ENG_ANSWER) answer_restart(tr);
         return;
