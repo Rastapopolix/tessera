@@ -14,7 +14,7 @@ what you expected and what happened).
 ## Fixed
 
 ## Good to know
-- Named projects whose place is channels or all land look different from 3.6.1 (their hills are new); islands places keep their hills, the torii where it stood.
+- Named projects whose place is channels or all land look different from 3.6.1 (their hills are new); islands places keep their hills and the torii where it stood (B and C gain a little ground under their thing).
 
 ## Please try
 - A project from 3.6.1 loads and plays the same.
