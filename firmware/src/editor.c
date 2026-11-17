@@ -796,6 +796,11 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
         ed_b(a[0]);
         ed_b(a[1] & 3u);
         ed_b(project_used(a[1] & 3u));
+        {                                                  /* then the slot's name ("" none; OLD FORMAT) */
+            char nm[PROJ_NAME_LEN + 1u];
+            project_name(a[1] & 3u, nm);
+            ed_str(nm, PROJ_NAME_LEN);
+        }
         break;
     case ED_NAMES: {                                       /* engine [, first lo, hi] -> preset names of an engine */
         const engine_t *en;
