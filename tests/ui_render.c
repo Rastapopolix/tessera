@@ -2887,6 +2887,10 @@ int main(int argc, char **argv)
         fprintf(stderr, "ui_render: LANDSCAPE\n");
         nfind++;
     }
+    if (test_land_places()) {                   /* LANDSCAPE's places (ui_test.c): kinds, a thing a shore */
+        fprintf(stderr, "ui_render: LANDSCAPE places\n");
+        nfind++;
+    }
     if (test_land_seam()) {                     /* LANDSCAPE's shores meeting while travelling (ui_test.c) */
         fprintf(stderr, "ui_render: LANDSCAPE seam\n");
         nfind++;
