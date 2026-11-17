@@ -45,7 +45,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libharfbuzz-dev libfribidi-dev libraqm-dev
-          python -m pip install Pillow fonttools==4.68.0 markdown   # (the webfont check: Tessera Mono as generated; the manual's pages)
+          python -m pip install Pillow fonttools==4.68.0 markdown-it-py   # (the webfont check: Tessera Mono as generated; the manual's pages)
       - uses: actions/cache@v4
         with:
           path: .nightly-deps

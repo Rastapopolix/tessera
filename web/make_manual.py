@@ -12,19 +12,21 @@ page's text, with no network. Headings keep GitHub's anchors (lower case, punctu
 Links: MANUAL.md and GETTING_STARTED.md to these pages; every other file of the repository (RECIPES.md, docs/...) to
 it on GitHub; the pictures (assets/gallery, assets/brand) to the site's media/ (web/make_site.py copies them there).
 
-  web/make_manual.py OUT_DIR            (web/make_site.py calls it; needs python-markdown: pip install markdown)
+  web/make_manual.py OUT_DIR            (web/make_site.py calls it; needs markdown-it-py: pip install markdown-it-py)
 """
 import html
 import re
 import sys
 from pathlib import Path
 
-import markdown
+from markdown_it import MarkdownIt
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 REPO = "https://github.com/Rastapopolix/tessera/blob/HEAD/"
 PAGES = {"MANUAL.md": "manual", "GETTING_STARTED.md": "start"}
+# CommonMark, as GitHub reads it (a list item's lines indented by two, raw HTML kept), with its tables
+MD = MarkdownIt("commonmark", {"html": True}).enable("table")
 TITLES = {"manual": "Tessera manual", "start": "Getting started with Tessera"}
 
 
@@ -52,7 +54,7 @@ def link(url, here):
 
 def convert(md_text, here):
     """the markdown as HTML, the headings' ids GitHub's, the links the site's; and the headings (level, id, text)"""
-    body = markdown.markdown(md_text, extensions=["tables", "fenced_code", "sane_lists"], output_format="html")
+    body = MD.render(md_text)
     body = re.sub(r'(href|src)="([^"]*)"', lambda m: f'{m.group(1)}="{html.escape(link(html.unescape(m.group(2)), here))}"', body)
     seen, heads = {}, []
 
@@ -136,7 +138,10 @@ nav.side input {{ width: 100%; font: inherit; color: var(--text); background: va
 .results li {{ margin: 0 0 10px; }}
 .results small {{ display: block; color: var(--dim); }}
 .results mark {{ background: var(--ink); color: var(--bg); }}
-main {{ padding: 8px 32px 80px; min-width: 0; }}
+main {{ padding: 8px 32px 80px; min-width: 0; max-width: 900px; }}
+main li {{ margin: 0 0 10px; }}
+main li > p {{ margin: 6px 0; }}
+main li > strong:first-child {{ color: var(--ink); }}
 main h1, main h2, main h3, main h4 {{ color: var(--ink); font-family: var(--pixel); font-weight: 400; line-height: 1.2; }}
 main h1 {{ font-size: clamp(28px, 4vw, 44px); margin: 24px 0 12px; }}
 main h2 {{ font-size: clamp(22px, 3vw, 32px); margin: 56px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }}
