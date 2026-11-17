@@ -2403,7 +2403,7 @@ LENGTH: the steps in its loop (2 to 16). PIECE's LENGTH: how long the whole piec
 **LFO** (low-frequency oscillator). A wave too slow to hear as a pitch, used to move something else: a vibrato, a
 filter sweep, a tremolo. In Tessera: each track has one (LFO, LFO 2, LFO DEST), also a source on MODS.
 
-**LFO SYNC**. On LFO 2: ties the track's LFO to the tempo: one cycle every 4 bars down to every 1/32, or OFF
+**LFO SYNC**. On LFO 2: ties the track's LFO to the tempo: one cycle every 64 bars (32, 16, 8, 4 ..) down to every 1/32, or OFF
 for its own RATE. It steps slow to fast under the knob, triplets between their neighbours.
 
 **LINK**. A QUAD setting: how the other QUAD tracks follow this one. Not Key link.

@@ -77,7 +77,7 @@ static void test_lfo(void)
         t->p[P_LSYNC]=s;lfo_sync_rem[t-trk]=0;
         /* One cycle of units is exactly one turn, however the blocks fall (and at any tempo: units, mix.c). */
         uint32_t turn=0;
-        for(uint32_t left=seq_div_samples(LSYNC_DIV[s]);left;left-=lfo_block_units){
+        for(uint32_t left=lsync_cycle(s);left;left-=lfo_block_units){
             lfo_block_units=left<37u?left:37u;turn+=lfo_sync_inc(t);
         }
         assert(!turn);

@@ -55,11 +55,18 @@ static uint32_t seq_div_samples(uint32_t div);     /* (mix.c) */
 static uint32_t lfo_block_units;                   /* events_block, before the tracks render */
 static uint32_t lfo_units_run;                     /* .. all of them since power-on (MODS' scope: mscope.c) */
 static uint16_t lfo_sync_rem[NTRK];
+/* SYNC value v's cycle in units: LSYNC_DIV's note value; 8BAR..64BAR (11..14) 4BAR's doubled each step (64 bars:
+ * 6.3 M units, its x 6144: the remainder stays in 16 bits) */
+static uint32_t lsync_cycle(uint32_t v)
+{
+    return v >= NELEM(LSYNC_DIV) ? seq_div_samples(9u) << (v - (NELEM(LSYNC_DIV) - 1u) > 4u ? 4u : v - (NELEM(LSYNC_DIV) - 1u))
+                                 : seq_div_samples(LSYNC_DIV[v]);
+}
 static __attribute__((noinline)) uint32_t lfo_sync_inc(const track_t *t)   /* (not inlined: its divides stay out of
                                                                            * the audio ISR's loop over the tracks) */
 {
     uint32_t ti = (uint32_t)(t - trk) % NTRK, rem = lfo_sync_rem[ti], inc = 0;
-    uint32_t x = seq_div_samples(LSYNC_DIV[(uint32_t)t->p[P_LSYNC] % NELEM(LSYNC_DIV)]) / 1024u;
+    uint32_t x = lsync_cycle((uint32_t)t->p[P_LSYNC]) / 1024u;
     for (uint32_t n = lfo_block_units; n;) {
         uint32_t chunk = n < 512u ? n : 512u, v = (chunk << 22) + rem;
         inc += v / x;
