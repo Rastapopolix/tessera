@@ -72,7 +72,7 @@ Three pages turn a loop into a piece that changes over minutes or hours. Each on
 
 ## 6. Watch it
 
-**GLO**, tap to **LANDSCAPE**: a night lake drawn by the music. Notes fall as rain, the moon crosses the sky as the
+**GLO**, tap to **LANDSCAPE**: a night sea drawn by the music. Notes fall as rain, the moon crosses the sky as the
 piece goes on. The keys are the mixer's: the black keys mute tracks 1 to 4,
 **C4** brings them all back.
 

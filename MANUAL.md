@@ -197,7 +197,7 @@ how far a cord moves the knob you turn ([Mod shortcut](#mod-shortcut)). *Use it 
 |---|---|---|
 | [MIXER](#the-panel-at-a-glance) | Levels, pans, mutes and solos for all four tracks, plus FILL and tap tempo on the keys. | You are playing live, or balancing the mix. |
 | [PERF](#perf-four-macros) | Four macro knobs that can each drive many mods at once. | You want one knob to do a big move live (a build, a breakdown). |
-| [LANDSCAPE](#landscape-rain-on-water) | A lake drawn by the music, at night or by day (GROUND LIGHT): every named project is a place of its own, with something to find on its shores. The knobs are PERF's macros. | You want something to watch while it plays. |
+| [LANDSCAPE](#landscape-rain-on-water) | A sea drawn by the music, at night or by day (GROUND LIGHT): every named project is a place of its own, with something to find on its shores. The knobs are PERF's macros. | You want something to watch while it plays. |
 | [PIECE](#piece-a-length-and-a-shape) | Plan a whole piece: how long, what shape (an arch, waves, builds), and what happens at the end. | You want a 20-minute or 2-hour piece that plays itself. |
 | [CHAIN](#chain-one-form-for-the-project) | Give all tracks one shared song form, so their sections change together. | Tracks with FORM should move from A to B at the same moment. |
 | [ENTRIES](#entries-tracks-out-and-back-in) | Let tracks drop out and come back in on phrase lines, like a band arranging itself. | The piece should thin out and fill up without you touching the mutes. |
@@ -302,7 +302,7 @@ long lists (a mod's source and destination, LFO WAVE) open a list to pick from.
 **C4** unmutes them all, **D4** holds the generators' line (HOLD), **E4** holds FILL and **F4** taps the tempo, the same as with GLO held on any other page. The
 line above the page tabs says so: a black key MUTE, a white key SOLO, E FILL. Each strip shows MUTE or SOLO; a track
 silenced by another's solo dims. The keys stay the mixer's on the next two GLO pages, PERF and LANDSCAPE, so you can
-mute and solo while you turn the macros or watch the lake (the knobs turn the macros there too). Any other page button leaves them, and the keys play notes
+mute and solo while you turn the macros or watch the sea (the knobs turn the macros there too). Any other page button leaves them, and the keys play notes
 again. **SELECT** on MIXER sets the tempo; on the other GLO pages it turns the pages, past MIXER. A mute only silences the track: a
 muted track still leads the tracks that follow it (FOLLOW, an ANSWER's SOURCE, QNT CHRD's chord, QUAD's LINK, the cords).
 Hold **OCT+** on MIXER for its sheet: **Mutes**, when the mute keys take effect while playing (NOW, BAR or PHRASE),
@@ -1202,13 +1202,13 @@ The choices come from the tracks' SEEDs, so PLAY plays the same piece again; STO
 
 ### LANDSCAPE: rain on water
 
-> **In short:** a lake drawn by the music, to watch while it plays: by night, or by day on GROUND LIGHT. Every named
+> **In short:** a sea drawn by the music, to watch while it plays: by night, or by day on GROUND LIGHT. Every named
 > project is a place of its own, with something to find on its shores. The scene changes nothing; the knobs are
 > PERF's macros.
 
-**GLO > LANDSCAPE** is a page to look at while the music plays: a night lake, drawn by the music.
+**GLO > LANDSCAPE** is a page to look at while the music plays: a night sea, drawn by the music.
 It has no settings, and the scene itself changes nothing. The keys are MIXER's (mute, solo, FILL, tap) and **KNOB 1
-to 4** are PERF's **MACRO 1 to 4**, so you can thin the music or make a big move and watch the lake answer. A macro
+to 4** are PERF's **MACRO 1 to 4**, so you can thin the music or make a big move and watch the sea answer. A macro
 being turned shows large across the foot (whatever LARGE VALUE is set to; there are no columns here) and the screen
 reader says it. With **IDLE LANDSCAPE**, the first touch, a knob too, still only takes you back to your page: a bump
 never changes the music.
@@ -1240,7 +1240,7 @@ never changes the music.
   where its stars are, where the moon rests, and its kind of place. Most are **islands**, with open water between;
   about a quarter are **land cut by narrow channels**, with an arched bridge over the first; about one in eight are
   **all land**. The same name is always the same place; renaming a project takes it
-  somewhere else. An unnamed project shows the lake as it always was, with nothing on its shores.
+  somewhere else. An unnamed project keeps the old view: one long shore, with nothing on it.
 - **One thing on each shore**: A's shore has a torii gate (on an all-land place, a seated Buddha with a halo in its
   place). With a CHAIN, B and C each have one of a pagoda, a stone lantern and a pine, in an order of the place's own,
   never two on a shore (the bridge aside). Sometimes a shore is left bare, just hills and water, and now and then a
@@ -2418,7 +2418,7 @@ LFO's rate gives every cycle its own length.
 **LAG**. On a MIX bus **(3.5)**, a slew on the result: how long a full move takes, 10 ms to 20 s. A GATE
 through a lagged bus is an envelope.
 
-**LANDSCAPE**. A night lake drawn by the music (GLO), by day on GROUND LIGHT **(3.5)**; a named project's own place, and PIECE, ENTRIES, CHAIN and ENERGY in the scene **(3.6)**; kinds of place (islands,
+**LANDSCAPE**. A night sea drawn by the music (GLO), by day on GROUND LIGHT **(3.5)**; a named project's own place, and PIECE, ENTRIES, CHAIN and ENERGY in the scene **(3.6)**; kinds of place (islands,
 channels, all land) and one thing on each section's shore, reflected in the water **(3.7)**. The scene changes nothing in the
 sound; its knobs turn PERF's macros **(3.6.2)**.
 
