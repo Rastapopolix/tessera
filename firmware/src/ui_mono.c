@@ -2054,7 +2054,7 @@ static void mo_pic_fx(void)
 {
     static const char *const hint[FX_COUNT] = {"DRY SIGNAL", "MOVING NOTCHES", "ALL-PASS L/DRY R", "RANDOM VOWELS",
         "CROSSOVER JITTER", "JUMPING RESONANCE", "SHORT LO-FI ECHO", "SMALL LO-FI SPACE", "DIFFUSED REVERB", "PITCH SHIMMER",
-        "RESONANT LOW-PASS"};
+        "RESONANT LOW-PASS", "SOFT CLIP, FOLD"};
     uint32_t base = cur_page()->id[0], master, slot, type;
     const int16_t *values;
     int32_t mix, cha, py = 81, x;
@@ -2078,6 +2078,7 @@ static void mo_pic_fx(void)
         if (type == FX_PHASER || type == FX_WIDTH || type == FX_CHORUS) y += ph * mix / 9;
         else if (type == FX_FORMANT) y -= ((ph + 32) * mix) / 15;
         else if (type == FX_TAPE || type == FX_SPIT) y += (ph * ((x * 2 * (cha + 1) / 32) % 32)) / 4;
+        else if (type == FX_DRIVE) y += clamp(ph * (16 + values[base + 2u]) / 2, -320, 320);   /* (the wave clipped flat) */
         else if (type >= FX_ECHO) y += (ph * mix * (116 - x)) / 1060;
         y = clamp(y / 32, 68, 94);
         if (x) mo_line(1 + x, py, 2 + x, y, type && mix ? MO_INK : MO_DIM);

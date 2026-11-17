@@ -168,7 +168,7 @@ static const char *cu_fx_name(const cord_t *c, int mono)
 {
     static const struct { char l[7], s[4]; } AB[] = {{"RATE", "RTE"}, {"TIME", "TIM"}, {"SIZE", "SIZ"}, {"CUT", "CUT"},
         {"CHAR", "CHR"}, {"DEPTH", "DPT"}, {"FOCUS", "FOC"}, {"JITTER", "JIT"}, {"BITE", "BIT"}, {"REPEAT", "RPT"},
-        {"DECAY", "DCY"}, {"RES", "RES"}};
+        {"DECAY", "DCY"}, {"RES", "RES"}, {"DRIVE", "DRV"}, {"FOLD", "FLD"}};
     static char b[8];
     uint32_t slot, knob, i;
     int send;

@@ -8,10 +8,13 @@ Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues>
 what you expected and what happened).
 
 ## New since 3.7
+- A new effect, DRIVE: a soft clip that rounds the peaks off for warmth or grit (good on FM sounds). RATE is the drive, CHAR folds the peaks back as a wavefolder does, MIX blends it with the dry sound. Put it in FX1 to drive the track before its other effects. Thanks to pavig-coder / u/paulvigo (issue #824).
 
 ## Fixed
 
 ## Good to know
+- A project that uses DRIVE loads on older firmware, but plays that slot as a FILTER.
 
 ## Please try
 - A project from 3.7 loads and plays the same.
+- DRIVE on an FM6 track: turn RATE up slowly, then CHAR. Listen for clicks while turning, and for harshness at the top.

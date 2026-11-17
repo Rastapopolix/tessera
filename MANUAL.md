@@ -188,7 +188,7 @@ sound pluck, swell or sustain.*
 **EDIT**: the sound's own pages ([Sounds](#sounds)). Tap EDIT again for a map of them. *Use it to design or adjust a
 sound; save it to USER from SAVE.*
 
-**FX**: the insert and send effects (ECHO, ROOM, REVERB, CHORUS, TAPE, PHASER, FILTER and more). Held, it sets
+**FX**: the insert and send effects (ECHO, ROOM, REVERB, CHORUS, TAPE, PHASER, FILTER, DRIVE and more). Held, it sets
 how far a cord moves the knob you turn ([Mod shortcut](#mod-shortcut)). *Use it for space, colour, and the quickest way to make a mod.*
 
 **GLO**: the project and the long form
@@ -1805,6 +1805,10 @@ at a time, each with an activity light and a moving mark.
   pitch instead of clicking (turning the knob glides too); REVERB changes SIZE a sample at a time. The send
   effects' mods are the project's, not a track's: MATRIX leaves them out. **FX held** + a knob on an FX page makes
   one too. A project with effect mods does not load in firmware before them.
+- **DRIVE** is a soft clip: **DRIVE** (RATE) pushes the sound into a rounded curve that flattens its peaks (warmth
+  first, then grit; the level stays about the same), **FOLD** (CHAR) turns the peaks back as a wavefolder does, and MIX
+  blends it with the dry sound. In FX1 it drives the track before its other effects. It runs without oversampling, so
+  a bright sound driven hard aliases. A project with DRIVE plays that slot as a FILTER on older firmware.
 - **Mods of mods.** **M1 AMT** to **M16 AMT** at the end of KNOB 3's list move another mod's amount (a fixed mod's
   offset), as a hand on its KNOB 4 would: send T4 ENV to M3 AMT and each of track 4's notes deepens mod 3 for a moment, so
   one track's playing spreads into another's sound. What the mods add goes on top of the amount you set, up to 100 %
