@@ -1,0 +1,64 @@
+name: Core API (one save format)
+
+# Tessera's core API (platform/core) as every target builds it: the FM-1's options, the web simulator's, the plugin's
+# and the Daisy's at 48 kHz. tests/tsp_cross.sh checks that a .tsp saved by one loads in every other and is written
+# back byte for byte (ROADMAP: one save format everywhere). The host UI test builds and runs on the same two include
+# lists (firmware/src/core_sources.h, core_ui_sources.h). Nothing is published.
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - 'firmware/src/**'
+      - 'platform/core/**'
+      - 'platform/daisy/**'
+      - 'platform/plugin/**'
+      - 'web/sim/sim.c'
+      - 'tests/hostsim.c'
+      - 'tests/ui_test.c'
+      - 'tests/tsp_cross.*'
+      - 'demos/*.tsp'
+      - 'tools/**'
+      - '.github/workflows/core-api.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tsp-cross:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash                              # (bash -eo pipefail: a failure piped into tee still fails)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libharfbuzz-dev libfribidi-dev libraqm-dev
+          python -m pip install Pillow fonttools==4.68.0
+      - name: Generate the headers (44.1 kHz, and the Daisy's 48 kHz)
+        run: |
+          python -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+          python tools/gen_909_tables.py build/gen/x0x_drum_tables.h
+          sh web/andamento/build.sh --headers
+      - name: A .tsp saved by one target loads in the others
+        run: sh tests/tsp_cross.sh build/tsp_cross 2>&1 | tee tsp_cross.log
+      - name: The host UI test on the shared include lists
+        run: |
+          clang -w -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_USB_AUDIO=1 tests/ui_test.c -o ui_test -lm
+          ./ui_test > ui_test.log 2>&1 || { tail -40 ui_test.log; exit 1; }
+          tail -3 ui_test.log
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo '### Core API: one save format'
+            echo '```'
+            cat tsp_cross.log 2>/dev/null
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
