@@ -637,6 +637,50 @@ static const gstep_t G_PATTERNS[] = {
     {27100, 0, 0, 0, 0, "On its line it switches: a new bass part"},
     {32000, 0, 0, 0, 0, "JAM logs what you played. On SONG, the next page, take it as a song"},
 };
+/* post-rock: 90 BPM, E minor; track 1 a STEP line climbing the pentatonic in eighths on a ringing tine, a soft pad on
+ * CHORD, a sub on TURING, brushed 909 in STEP */
+static void g_postrock_scene(void)
+{
+    static const uint8_t N[8] = {64, 67, 69, 71, 74, 76, 79, 81};
+    song.g[G_BPM] = 90;
+    scale(4, SCL_MIN, 1);                               /* E MIN, QNT SNAP */
+    sends(110, 80, 80, 55);
+    sound(0, ENGI_FM6, V_TINE);
+    for (uint32_t i = 0; i < 8u; i++) step_note(0, i, N[i], i ? 84 : 104);
+    tx(0, TX_MODE, TESS_ENG_OFF);
+    trk[0].p[P_SDIV] = DIV_8; trk[0].p[P_SLEN] = 8;
+    mixer(0, 112, 10, 60, 50);
+    sound(1, ENGI_TRIO, TR_SOFT_PAD);
+    trk[1].p[P_CHRD] = 1;
+    gen(1, TESS_ENG_CHORD, 7);
+    tx(1, TX_CH_PROG, GEN_CH_POP); tx(1, TX_CH_BARS, 2); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 54, -25, 85, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_4;
+    gen(2, TESS_ENG_TURING, 33);
+    tx(2, TX_TUR_PROB, 20); tx(2, TX_TW_SHIFT, -12); tx(2, TX_TW_DROP, 40);
+    trk[2].p[P_QUANT] = Q_CHRD;
+    mixer(2, 84, 0, 0, 0);
+    sound(3, ENGI_DRUM, DK_909_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, 0, 0, L_RS, 0, 0, L_CH, L_BD, 0, L_BD, 0, L_RS, 0, L_CH, 0};
+        static const uint8_t V[16] = {80, 0, 0, 0, 62, 0, 0, 40, 70, 0, 60, 0, 62, 0, 44, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 70, 0, 25, 0);
+}
+static const gstep_t G_SHEET[] = {
+    {0, 0, 0, 0, 0, "Track 1 climbs eight notes. Its sheet can play them in another order"},
+    {3500, 6500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: GEN, track 1's pattern"},
+    {10000, 13000, 900, "OCT+", "SHEET", "Hold OCT+: the pattern's sheet"},
+    {16500, 19500, 1500, "KNOB 1", "DIRECTION", "Turn KNOB 1 to DIRECTION, now FWD: step 1 to 8", 6},
+    {24500, 27500, 900, "KNOB 2", "PEND", "Turn KNOB 2 to PEND: up, then back down", 2},
+    {37000, 40000, 300, "KNOB 2", "FOLD", "One more: FOLD, from the ends inwards (1 8 2 7 3 6 4 5)", 1},
+    {50000, 0, 0, 0, 0, "Each of the track's 8 patterns keeps its own Direction"},
+    {56000, 59000, 200, "OCT-", "BACK", "Tap OCT-: back to GEN"},
+};
 /* ambient house: 112 BPM, E minor; track 1 an empty STEP pattern (two bars of eighths) on a pluck, recorded live in the
  * clip; a glass pad on CHORD, a sub on EUCLID, a soft 909 four on the floor in STEP */
 static void g_ambhouse_scene(void)
@@ -892,6 +936,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
     G_RUN("r-patterns", "PATTERNS", "MOSAIC", 41, 4, g_citypop_scene, G_PATTERNS);   /* city pop */
+    G_RUN("r-sheet", "PLAY THE STEPS IN ANOTHER ORDER", "MOSAIC", 66, 4, g_postrock_scene, G_SHEET);   /* post-rock */
     G_RUN("r-rec", "RECORD LIVE", "MOSAIC", 50, 4, g_ambhouse_scene, G_REC);   /* ambient house */
     G_RUN("r-step-write", "WRITE NOTES BY HAND", "MOSAIC", 68, 4, g_lounge_scene, G_STEPW);   /* lounge */
     G_RUN("r-user-scale", "A SCALE OF YOUR OWN", "MOSAIC", 70, 4, g_ethno_scene, G_USCALE);   /* ethno-ambient */
