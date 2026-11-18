@@ -84,37 +84,38 @@ static void g_dubstep_scene(void)
     tx(3, TX_TUR_PROB, 10);
     mixer(3, 76, 25, 70, 60);
 }
-/* electro: 112 BPM, an 808 (kick on the one and the offbeats, claps on two and four, hats), a saw bass on TURING in
- * sixteenths, a lead on EUCLID, a pad under it. D minor */
-static void g_electro_scene(void)
+/* deep house: 112 BPM, A minor; a soft 909 (kick on the beat, claps on two and four, shaker hats), a round sub that
+ * moves (TURING, a little change each pass), tine chords on CHORD in the offbeats (ii V i), a pad under it */
+static void g_deephouse_scene(void)
 {
     song.g[G_BPM] = 112;
-    scale(2, SCL_MIN, 0);
-    sends(60, 50, 70, 45);
-    sound(0, ENGI_DRUM, DK_808_KIT);
+    song.g[G_SWING] = 10;
+    scale(9, SCL_MIN, 0);
+    sends(80, 65, 70, 45);
+    sound(0, ENGI_DRUM, DK_909_KIT);
     {
-        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_CP, 0, L_BD | L_CH, 0, 0, 0, L_BD | L_CH, 0, L_CP, 0, L_CH, L_CH};
-        static const uint8_t V[16] = {112, 0, 70, 0, 100, 0, 96, 0, 0, 0, 100, 0, 104, 0, 72, 60};
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_BD | L_CP, 0, L_CH, L_CH, L_BD, 0, L_CH, 0, L_BD | L_CP, 0, L_CH, L_CH};
+        static const uint8_t V[16] = {96, 0, 44, 0, 92, 0, 48, 36, 94, 0, 44, 0, 92, 0, 50, 36};
         for (uint32_t i = 0; i < 16u; i++) step_hits(0, i, L[i], V[i]);
         trk[0].p[P_SLEN] = 16;
     }
     tx(0, TX_MODE, TESS_ENG_OFF); trk[0].p[P_SDIV] = DIV_16;
-    mixer(0, 100, 0, 8, 0);
-    sound(1, ENGI_FM6, FX_SAW_BASS);
-    trk[1].p[P_SDIV] = DIV_16;
+    mixer(0, 86, 0, 12, 0);
+    sound(1, ENGI_TRIO, TR_SUB_BASS);
+    trk[1].p[P_SDIV] = DIV_8;
     gen(1, TESS_ENG_TURING, 33);
-    tx(1, TX_TUR_PROB, 0); tx(1, TX_TW_SHIFT, -12); tx(1, TX_TW_DROP, 35);
-    mixer(1, 92, 0, 0, 20);
-    sound(2, ENGI_FM6, FX_SYNC_LEAD);
-    trk[2].p[P_SDIV] = DIV_16;
-    gen(2, TESS_ENG_EUCLID, 15);
-    tx(2, TX_EUC_STEPS, 16); tx(2, TX_EUC_PULSES, 5); tx(2, TX_EUC_ROT, 2);
-    mixer(2, 70, 25, 30, 60);
+    tx(1, TX_TUR_PROB, 20); tx(1, TX_TW_SHIFT, -12); tx(1, TX_TW_DROP, 40);
+    mixer(1, 90, 0, 0, 0);
+    sound(2, ENGI_FM6, FX_TINE_EP);
+    trk[2].p[P_CHRD] = 2;                               /* DIA7 */
+    gen(2, TESS_ENG_CHORD, 15);
+    tx(2, TX_CH_PROG, GEN_CH_251); tx(2, TX_CH_BARS, 1); tx(2, TX_CH_HIT, GEN_CH_OFF);
+    mixer(2, 80, 20, 50, 30);
     sound(3, ENGI_ORACLE, OR_WARM_PAD);
     trk[3].p[P_CHRD] = 1;
     gen(3, TESS_ENG_CHORD, 4);
     tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
-    mixer(3, 60, -25, 70, 0);
+    mixer(3, 58, -25, 70, 0);
 }
 static const gstep_t G_MUTES[] = {
     {0, 0, 0, 0, 0, "A mute can wait for the next bar, so a drop lands in time"},
@@ -183,5 +184,5 @@ static void guide_e07(const char *out, FILE *tsv)
     G_RUN("e07-mixer", "MUTE, SOLO, FILL", "MOSAIC", 59, 4, g_mixer_scene, G_MIXER); /* a beat */
     G_RUN("e07-mutes", "MUTES ON THE BAR", "MOSAIC", 61, 4, g_dubstep_scene, G_MUTES); /* old-school dubstep */
     G_RUN("e07-perf", "PERF: FOUR MACROS", "MOSAIC", 46, 4, g_breakbeat_scene, G_PERF);   /* breakbeat */
-    G_RUN("e07-tempo", "THE TEMPO", "MOSAIC", 39, 4, g_electro_scene, G_TEMPO);        /* electro */
+    G_RUN("e07-tempo", "THE TEMPO", "MOSAIC", 39, 4, g_deephouse_scene, G_TEMPO);     /* deep house */
 }
