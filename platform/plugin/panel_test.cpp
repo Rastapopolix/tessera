@@ -43,7 +43,7 @@ static double run(Panel &p, double seconds)   // as the plugin's audio thread: i
     }
     for (int n = (int)(seconds * tess_core_rate() / 441); n > 0; n--)
     {
-        tess_core_render(L, R, 441);
+        tess_core_render(L, R, nullptr, 441);
         for (int k = 0; k < 441; k++) e += (double)L[k] * L[k];
     }
     return e;

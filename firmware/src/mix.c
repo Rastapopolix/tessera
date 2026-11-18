@@ -147,6 +147,9 @@ static uint32_t seq_div_samples(uint32_t div)
 static void events_block(uint32_t n);
 #if MELODEE_USB_AUDIO
 static int ua_capture_active(void);
+#ifdef TESS_PLUGIN_IO
+static uint8_t tess_plugin_stems;                   /* the plugin only (platform/plugin): its per-track outputs */
+#endif
 static uint8_t track_capture_on, master_capture_on;   /* track_capture holds the stems, or the stereo mix (L, R a frame) */
 static int32_t track_capture[CTL * NTRK];
 /* USB stereo recording before MASTER (upstream 1d02852): Tessera's MASTER sits before the limiter, so the recording
@@ -374,6 +377,9 @@ static __attribute__((noinline)) void mix_block(int32_t *out,uint32_t n)
 #endif
 #if MELODEE_USB_AUDIO
     {int cap=ua_capture_active();
+#ifdef TESS_PLUGIN_IO
+     if(tess_plugin_stems)cap=4;                        /* (the USB stems, for the plugin's track outputs) */
+#endif
      if(cap==2&&!master_capture_on){cap_lim=LIM_T;memset(cap_dc,0,sizeof cap_dc);}   /* (a recording starts clean) */
      track_capture_on=(uint8_t)(cap==4);master_capture_on=(uint8_t)(cap==2);}
     if(track_capture_on)memset(track_capture,0,n*NTRK*sizeof *track_capture);

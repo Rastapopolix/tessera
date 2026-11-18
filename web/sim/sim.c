@@ -95,6 +95,9 @@ static void web_frame(void)
 static float ring[RING * 2];
 static uint32_t ring_w, ring_r;
 
+#ifdef TESS_PLUGIN_IO
+static void tess_plugin_block(uint32_t frame);
+#endif
 static void web_ms(void)
 {
     fm1_ms++;
@@ -112,6 +115,9 @@ static void web_ms(void)
             ring[i] = (float)o[2u * k] * (1.0f / 32768.0f);
             ring[i + 1u] = (float)o[2u * k + 1u] * (1.0f / 32768.0f);
         }
+#ifdef TESS_PLUGIN_IO
+        tess_plugin_block(ring_w - CTL);             /* (the plugin, platform/plugin/tess_core.c: its track outputs) */
+#endif
     }
     if (!web_booted)
         return;

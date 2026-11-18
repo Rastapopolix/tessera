@@ -2,7 +2,9 @@
  * Copyright (C) 2026 Theo Dainis */
 /* Tessera as a CLAP instrument (phase 0 spike). clap-wrapper turns the same code into VST3 and a standalone app
  * (CMakeLists.txt). What it does:
- *   - one stereo out; the core runs at 44.1 kHz (tess_core.h) and is resampled (linear) to the host's rate;
+ *   - outputs: the main mix, then TRACK 1..4 alone (the FM-1's USB stems); a MIDI out with every track's notes on its
+ *     own channel (Settings > NOTES OUT ALL by default here; GLO > MIDI OUT per track);
+ *   - the core runs at 44.1 kHz (tess_core.h) and is resampled (linear) to the host's rate;
  *   - notes and MIDI in (CLAP or MIDI dialect) go to the core as USB MIDI does on the FM-1, at their sample;
  *   - the host's transport drives the song: PLAY starts every track where it would be from the DAW's zero, the DAW's
  *     beat position drives Tessera's clock (CLK INT), a loop or a locate seeks, STOP stops; with no transport (the
@@ -40,6 +42,9 @@ std::mutex input_lock, view_lock;
 PanelInput pending;           // input_lock: buttons, keys and MASTER as now, the detents summed
 tess_view_t shared_view{};    // view_lock: the latest view
 
+constexpr uint32_t NCH = 6;   // main L, R, then tracks 1..4 (the core's stems)
+constexpr uint32_t NSTEMS = 4;
+
 struct Tessera
 {
     clap_plugin_t plugin{};
@@ -47,31 +52,40 @@ struct Tessera
     double rate = 48000.0;
     double step = 44100.0 / 48000.0;      // core frames per host frame
     double pos = 0.0;                     // between prev and cur, 0..1
-    float prev_l = 0, prev_r = 0, cur_l = 0, cur_r = 0;
-    float buf_l[64], buf_r[64];
+    float prev[NCH] = {}, cur[NCH] = {};
+    float buf[NCH][64];
     uint32_t buf_n = 0, buf_i = 0;
+    uint32_t cur_frame = 0;               // the core frame in cur (tess_core_frames' count)
+    bool stems = false;                   // a track output is active: the core makes the stems
     bool transport_known = false, was_playing = false, free_started = false;
     uint32_t view_due = 0;               // host frames until the next view
+    std::vector<std::pair<uint32_t, uint32_t>> midi_wait;   // MIDI OUT packets (packet, core frame) not yet due
     std::unique_ptr<Gui> gui;
 
     void next_core_frame()
     {
         if (buf_i >= buf_n)
         {
-            tess_core_render(buf_l, buf_r, 64);
+            float *st[NSTEMS] = {buf[2], buf[3], buf[4], buf[5]};
+            tess_core_render(buf[0], buf[1], stems ? st : nullptr, 64);
+            if (!stems)
+                for (uint32_t c = 2; c < NCH; c++) std::memset(buf[c], 0, sizeof buf[c]);
             buf_n = 64;
             buf_i = 0;
         }
-        prev_l = cur_l;
-        prev_r = cur_r;
-        cur_l = buf_l[buf_i];
-        cur_r = buf_r[buf_i];
+        for (uint32_t c = 0; c < NCH; c++)
+        {
+            prev[c] = cur[c];
+            cur[c] = buf[c][buf_i];
+        }
+        cur_frame = tess_core_frames() - buf_n + buf_i;
         buf_i++;
     }
 
-    void render(float *l, float *r, uint32_t n)
+    // n host frames into out[c] + at (null: a channel nobody listens to)
+    void render(float *const *out, uint32_t at, uint32_t n)
     {
-        for (uint32_t k = 0; k < n; k++)
+        for (uint32_t k = at; k < at + n; k++)
         {
             while (pos >= 1.0)
             {
@@ -79,10 +93,42 @@ struct Tessera
                 pos -= 1.0;
             }
             float f = (float)pos;
-            if (l) l[k] = prev_l + (cur_l - prev_l) * f;
-            if (r) r[k] = prev_r + (cur_r - prev_r) * f;
+            for (uint32_t c = 0; c < NCH; c++)
+                if (out[c]) out[c][k] = prev[c] + (cur[c] - prev[c]) * f;
             pos += step;
         }
+    }
+
+    // MIDI OUT for a block of n host frames that ended with cur_frame: each packet at the host frame its core frame plays
+    void midi_out(const clap_output_events_t *out, uint32_t n)
+    {
+        uint32_t pkt, frame;
+        while (tess_core_midi_out(&pkt, &frame))
+            midi_wait.emplace_back(pkt, frame);
+        size_t keep = 0;
+        for (auto &m : midi_wait)
+        {
+            // host frames after this block's last one that core frame m.second plays at (cur_frame: the last)
+            double ahead = (double)(int32_t)(m.second - cur_frame) / step;
+            if (ahead > 0.5)
+            {
+                midi_wait[keep++] = m;   // (not yet: the next block)
+                continue;
+            }
+            int64_t t = (int64_t)n - 1 + (int64_t)std::lround(ahead);
+            if (t > (int64_t)n - 1) t = (int64_t)n - 1;
+            if (out)
+            {
+                clap_event_midi_t e = {};
+                e.header = {sizeof e, (uint32_t)(t < 0 ? 0 : t), CLAP_CORE_EVENT_SPACE_ID, CLAP_EVENT_MIDI, 0};
+                e.port_index = 0;
+                e.data[0] = (uint8_t)(m.first >> 8);
+                e.data[1] = (uint8_t)(m.first >> 16 & 127);
+                e.data[2] = (uint8_t)(m.first >> 24 & 127);
+                out->try_push(out, &e.header);
+            }
+        }
+        midi_wait.resize(keep);
     }
 };
 
@@ -208,18 +254,34 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
 {
     auto *t = self(p);
     uint32_t n = proc->frames_count;
-    float *l = nullptr, *r = nullptr;
-    if (proc->audio_outputs_count > 0 && proc->audio_outputs[0].data32)
+    // the outputs: main L R, then each track's port (its left; its right gets a copy)
+    float *out[NCH] = {};
+    bool any_stem = false;
+    for (uint32_t port = 0; port < proc->audio_outputs_count && port < 1 + NSTEMS; port++)
     {
-        l = proc->audio_outputs[0].data32[0];
-        r = proc->audio_outputs[0].channel_count > 1 ? proc->audio_outputs[0].data32[1] : nullptr;
+        const clap_audio_buffer_t &b = proc->audio_outputs[port];
+        if (!b.data32 || !b.channel_count)
+            continue;
+        if (port == 0)
+        {
+            out[0] = b.data32[0];
+            out[1] = b.channel_count > 1 ? b.data32[1] : nullptr;
+        }
+        else
+        {
+            out[1 + port] = b.data32[0];
+            any_stem = true;
+        }
     }
+    t->stems = t->stems || any_stem;   // (once asked for, the core keeps making them)
 
     std::unique_lock<std::mutex> g(core_lock, std::try_to_lock);
     if (!g.owns_lock())   // the main thread is saving or loading the project: a block of silence
     {
-        if (l) std::memset(l, 0, n * sizeof(float));
-        if (r) std::memset(r, 0, n * sizeof(float));
+        for (uint32_t port = 0; port < proc->audio_outputs_count; port++)
+            for (uint32_t c = 0; c < proc->audio_outputs[port].channel_count; c++)
+                if (proc->audio_outputs[port].data32)
+                    std::memset(proc->audio_outputs[port].data32[c], 0, n * sizeof(float));
         return CLAP_PROCESS_CONTINUE;
     }
 
@@ -267,7 +329,7 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
         uint32_t at = h->time < n ? h->time : n;
         if (at > done)
         {
-            t->render(l ? l + done : nullptr, r ? r + done : nullptr, at - done);
+            t->render(out, done, at - done);
             done = at;
         }
         if (h->space_id == CLAP_CORE_EVENT_SPACE_ID && h->type == CLAP_EVENT_PARAM_VALUE)
@@ -276,9 +338,15 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
             midi_in(h);
     }
     if (done < n)
-        t->render(l ? l + done : nullptr, r ? r + done : nullptr, n - done);
-    if (l && !r && proc->audio_outputs[0].channel_count > 1)
-        std::memcpy(proc->audio_outputs[0].data32[1], l, n * sizeof(float));
+        t->render(out, done, n - done);
+    for (uint32_t port = 0; port < proc->audio_outputs_count && port < 1 + NSTEMS; port++)   // (mono into stereo)
+    {
+        const clap_audio_buffer_t &b = proc->audio_outputs[port];
+        if (b.data32 && b.channel_count > 1 && (port || !out[1]))
+            std::memcpy(b.data32[1], b.data32[0], n * sizeof(float));
+    }
+
+    t->midi_out(proc->out_events, n);   // (the tracks' notes, each on its channel: GLO > MIDI OUT)
 
     params_out(proc->out_events, n ? n - 1 : 0);   // (MASTER or a MACRO turned on the panel or by a cord's source)
 
@@ -296,16 +364,19 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
     return CLAP_PROCESS_CONTINUE;
 }
 
-// ---- audio ports: one stereo out
+// ---- audio ports: main (the mix, as the FM-1's output), then TRACK 1..4 (each alone: the FM-1's USB stems)
 
-uint32_t ap_count(const clap_plugin_t *, bool is_input) { return is_input ? 0 : 1; }
+uint32_t ap_count(const clap_plugin_t *, bool is_input) { return is_input ? 0 : 1 + NSTEMS; }
 bool ap_get(const clap_plugin_t *, uint32_t index, bool is_input, clap_audio_port_info_t *info)
 {
-    if (is_input || index != 0)
+    if (is_input || index > NSTEMS)
         return false;
-    info->id = 0;
-    std::strncpy(info->name, "Main", sizeof(info->name));
-    info->flags = CLAP_AUDIO_PORT_IS_MAIN;
+    info->id = index;
+    if (index == 0)
+        std::strncpy(info->name, "Main", sizeof(info->name));
+    else
+        std::snprintf(info->name, sizeof(info->name), "Track %u", index);
+    info->flags = index == 0 ? CLAP_AUDIO_PORT_IS_MAIN : 0;
     info->channel_count = 2;
     info->port_type = CLAP_PORT_STEREO;
     info->in_place_pair = CLAP_INVALID_ID;
@@ -315,15 +386,15 @@ const clap_plugin_audio_ports_t audio_ports = {ap_count, ap_get};
 
 // ---- note ports: one in
 
-uint32_t np_count(const clap_plugin_t *, bool is_input) { return is_input ? 1 : 0; }
+uint32_t np_count(const clap_plugin_t *, bool) { return 1; }
 bool np_get(const clap_plugin_t *, uint32_t index, bool is_input, clap_note_port_info_t *info)
 {
-    if (!is_input || index != 0)
+    if (index != 0)
         return false;
-    info->id = 0;
-    info->supported_dialects = CLAP_NOTE_DIALECT_CLAP | CLAP_NOTE_DIALECT_MIDI;
+    info->id = is_input ? 0 : 1;
+    info->supported_dialects = is_input ? CLAP_NOTE_DIALECT_CLAP | CLAP_NOTE_DIALECT_MIDI : CLAP_NOTE_DIALECT_MIDI;
     info->preferred_dialect = CLAP_NOTE_DIALECT_MIDI;
-    std::strncpy(info->name, "MIDI in", sizeof(info->name));
+    std::strncpy(info->name, is_input ? "MIDI in" : "MIDI out", sizeof(info->name));
     return true;
 }
 const clap_plugin_note_ports_t note_ports = {np_count, np_get};

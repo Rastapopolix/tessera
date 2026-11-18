@@ -14,8 +14,15 @@ extern "C" {
 uint32_t tess_core_rate(void);
 /* power-on, once per process: STILL TIDE loaded in slot A (and KOTO GARDEN in B), stopped */
 void tess_core_boot(void);
-/* n stereo frames (n <= 1024) at tess_core_rate(), the device running until they exist */
-void tess_core_render(float *l, float *r, uint32_t n);
+/* n stereo frames (n <= 1024) at tess_core_rate(), the device running until they exist. stems: 0, or four buffers of n
+ * that get tracks 1..4 alone (the FM-1's USB stems: each track's sound after its level, before pan and the bus FX,
+ * mono); asked for once, the stems are made from then on */
+void tess_core_render(float *l, float *r, float *const *stems, uint32_t n);
+/* the core frames rendered so far (wraps) */
+uint32_t tess_core_frames(void);
+/* MIDI OUT (Settings > NOTES OUT; each track on its own channel, GLO > MIDI OUT), as USB MIDI packets: the next one
+ * whose frame (tess_core_frames' count) has been rendered. 0 = none */
+uint32_t tess_core_midi_out(uint32_t *pkt, uint32_t *frame);
 /* a MIDI channel message in, as from USB MIDI: 0 = the queue was full */
 uint32_t tess_core_midi(uint32_t status, uint32_t d1, uint32_t d2);
 /* the transport: 1 play (from where the song is), 0 stop. Does nothing if it is already so */

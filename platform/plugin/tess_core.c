@@ -8,15 +8,61 @@
 
 uint32_t tess_core_rate(void) { return FS; }
 
-void tess_core_boot(void) { web_boot(); }
-
-void tess_core_render(float *l, float *r, uint32_t n)
+void tess_core_boot(void)
 {
+    web_boot();
+    settings_midi_out = MIDI_OUT_ALL;             /* (a DAW wants the generators' notes too; MENU can change it) */
+}
+
+/* the stems beside sim.c's ring, frame for frame (tess_plugin_block: after each mix_block) */
+static float stem_ring[RING][NTRK];
+static void tess_plugin_block(uint32_t frame)
+{
+    uint32_t k, t;
+    if (!tess_plugin_stems)
+        return;
+    for (k = 0; k < CTL; k++)
+        for (t = 0; t < NTRK; t++)
+            stem_ring[(frame + k) % RING][t] = (float)track_capture[k * NTRK + t] * (1.0f / 32768.0f);
+}
+
+/* MIDI OUT: a ring of packets, each with the frame being made when it was sent */
+#define MO_RING 512u
+static uint32_t mo_pkt[MO_RING], mo_frame[MO_RING], mo_wr, mo_rd;
+static void tess_plugin_midi_out(uint32_t pkt)
+{
+    if (mo_wr - mo_rd >= MO_RING)
+        return;                                   /* (full: as the USB queue, dropped) */
+    mo_pkt[mo_wr % MO_RING] = pkt;
+    mo_frame[mo_wr % MO_RING] = ring_w;
+    mo_wr++;
+}
+uint32_t tess_core_midi_out(uint32_t *pkt, uint32_t *frame)
+{
+    if (mo_rd == mo_wr || (int32_t)(mo_frame[mo_rd % MO_RING] - ring_r) >= 0)
+        return 0;
+    *pkt = mo_pkt[mo_rd % MO_RING];
+    *frame = mo_frame[mo_rd % MO_RING];
+    mo_rd++;
+    return 1;
+}
+
+uint32_t tess_core_frames(void) { return ring_r; }
+
+void tess_core_render(float *l, float *r, float *const *stems, uint32_t n)
+{
+    uint32_t r0 = ring_r, k, t;
     if (n > 1024u)
         n = 1024u;
+    if (stems)
+        tess_plugin_stems = 1;
     web_render(n);
     memcpy(l, out_l, n * sizeof *l);
     memcpy(r, out_r, n * sizeof *r);
+    if (stems)
+        for (k = 0; k < n; k++)
+            for (t = 0; t < NTRK; t++)
+                stems[t][k] = stem_ring[(r0 + k) % RING][t];
 }
 
 uint32_t tess_core_midi(uint32_t status, uint32_t d1, uint32_t d2) { return web_midi(status, d1, d2); }

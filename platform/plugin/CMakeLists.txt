@@ -51,7 +51,7 @@ target_include_directories(tessera-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 if (WIN32)
     target_include_directories(tessera-core BEFORE PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/compat)
 endif()
-target_compile_definitions(tessera-core PRIVATE TESS_HOST_CLOCK=1 MELODEE_USB_AUDIO=1 MELODEE_ACCESS=0 MELODEE_LOOK=1 MELODEE_FM6=1
+target_compile_definitions(tessera-core PRIVATE TESS_HOST_CLOCK=1 TESS_PLUGIN_IO=1 MELODEE_USB_AUDIO=1 MELODEE_ACCESS=0 MELODEE_LOOK=1 MELODEE_FM6=1
     MELODEE_PHYS=1 "MELODEE_VERSION=\"plugin\"")
 set_target_properties(tessera-core PROPERTIES POSITION_INDEPENDENT_CODE ON C_VISIBILITY_PRESET hidden)
 if (MSVC)

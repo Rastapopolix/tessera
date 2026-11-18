@@ -29,7 +29,7 @@ static double daw = 0;   // the DAW's position, beats
 static void block(bool playing, double bpm)
 {
     tess_core_host(playing, 1, bpm, daw);
-    tess_core_render(L, R, tess_core_rate() / 100);
+    tess_core_render(L, R, nullptr, tess_core_rate() / 100);
     if (playing)
         daw += bpm / 60.0 / 100.0;
 }

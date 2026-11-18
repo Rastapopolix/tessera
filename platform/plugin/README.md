@@ -25,13 +25,17 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
 - **Parameters** (automatable): MASTER and PERF's MACRO 1..4 (the project's, so they are saved with it too). Turned on
   the panel or on PERF, the new value is sent back to the DAW.
 
+- **Track outputs:** besides the main mix, TRACK 1..4 each alone (the FM-1's USB stems: the track after its level,
+  before pan and the bus FX, mono on both sides). The core makes them once the DAW connects one.
+- **MIDI out:** every track's notes, each on its own channel (GLO > MIDI OUT; by default ROUT's 1..4), to drive other
+  instruments. NOTES OUT starts at ALL in the plugin (the generators' notes too); MENU can set KEYS or OFF.
+
 ## Not yet
 
 - No window on macOS (it plays as in phase 0).
 - No computer-keyboard shortcuts, no shell or ink picker (the ink is MENU > COLOR, as on the device).
 - One Tessera per DAW session: the firmware keeps its state in globals, so a second instance is refused, and a new
   instance carries on from the last one's state.
-- No multi-out, no MIDI out.
 
 ## Build
 
