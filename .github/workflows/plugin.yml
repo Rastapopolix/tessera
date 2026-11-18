@@ -3,7 +3,8 @@ name: Plugin (VST3 / CLAP / standalone)
 # Tessera as a plugin (platform/plugin): the firmware as the web simulator runs it, wrapped as a CLAP instrument and,
 # through clap-wrapper, as VST3 and a standalone app. Linux builds CLAP + VST3 and runs the render test (a minimal
 # CLAP host: STILL TIDE sounds, a note sounds, the state is a .tsp record). Windows builds CLAP, VST3 and the
-# standalone app with Visual Studio's clang (ClangCL) and keeps them as the run's artifact. Nothing is published.
+# standalone app with Visual Studio's clang (ClangCL), from the Linux job's generated headers, and keeps them as the
+# run's artifact. Nothing is published.
 on:
   pull_request:
     branches: [develop]
@@ -47,19 +48,23 @@ jobs:
             build/plugin/out/Tessera.clap
             build/plugin/out/Tessera.vst3
             build/plugin/still-tide-48k.wav
+      - uses: actions/upload-artifact@v4   # (the Windows job builds from these: its Pillow has no Raqm)
+        with:
+          name: generated-headers
+          path: build/gen/
 
   windows:
+    needs: linux
     runs-on: windows-2022
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/download-artifact@v4
         with:
-          python-version: '3.12'
-      - name: Install build dependencies
-        run: python -m pip install Pillow fonttools==4.68.0
+          name: generated-headers
+          path: build/gen
       - name: Configure (Visual Studio, ClangCL)
-        run: cmake -S platform/plugin -B build/plugin -G "Visual Studio 17 2022" -A x64 -T ClangCL -DTESS_PLUGIN_TESTS=OFF
+        run: cmake -S platform/plugin -B build/plugin -G "Visual Studio 17 2022" -A x64 -T ClangCL -DTESS_PLUGIN_TESTS=OFF -DTESS_GEN=OFF
       - name: Build
         run: cmake --build build/plugin --config Release --parallel
       - name: List the outputs

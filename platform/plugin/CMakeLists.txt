@@ -22,10 +22,17 @@ if (NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
 endif()
 
 # the generated headers (build/gen): fonts, tables, the simulator's demos
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
-execute_process(COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gen.py RESULT_VARIABLE TESS_GEN_RC)
-if (NOT TESS_GEN_RC EQUAL 0)
-    message(FATAL_ERROR "platform/plugin/gen.py failed (needs Python 3 with Pillow and fontTools)")
+# TESS_GEN OFF: build/gen is already there (on Windows, Pillow has no Raqm for the UI font: run gen.py in WSL, or
+# take build/gen from the Linux CI job, as plugin.yml does)
+option(TESS_GEN "Run platform/plugin/gen.py at configure time" ON)
+if (TESS_GEN)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    execute_process(COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gen.py RESULT_VARIABLE TESS_GEN_RC)
+    if (NOT TESS_GEN_RC EQUAL 0)
+        message(FATAL_ERROR "platform/plugin/gen.py failed (needs Python 3 with Pillow (with Raqm) and fontTools)")
+    endif()
+elseif (NOT EXISTS ${TESS_ROOT}/build/gen/sim_demos.h)
+    message(FATAL_ERROR "TESS_GEN is OFF but build/gen has no generated headers: run platform/plugin/gen.py first")
 endif()
 
 include(FetchContent)

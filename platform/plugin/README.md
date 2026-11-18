@@ -33,10 +33,11 @@ cmake --build build/plugin -j
 build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 still-tide.wav   # Linux / macOS
 ```
 
-Windows (Visual Studio 2022 with its "C++ Clang tools for Windows" component):
+Windows (Visual Studio 2022 with its "C++ Clang tools for Windows" component). Windows' Pillow has no Raqm for the
+UI font, so make the generated headers in WSL first (`tools/wsl.sh python3 platform/plugin/gen.py`), then:
 
 ```
-cmake -S platform/plugin -B build/plugin -G "Visual Studio 17 2022" -A x64 -T ClangCL -DTESS_PLUGIN_TESTS=OFF
+cmake -S platform/plugin -B build/plugin -G "Visual Studio 17 2022" -A x64 -T ClangCL -DTESS_PLUGIN_TESTS=OFF -DTESS_GEN=OFF
 cmake --build build/plugin --config Release
 ```
 
