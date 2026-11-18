@@ -50,7 +50,7 @@ jobs:
         run: sh tests/tsp_cross.sh build/tsp_cross 2>&1 | tee tsp_cross.log
       - name: The host UI test on the shared include lists
         run: |
-          clang -w -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_USB_AUDIO=1 tests/ui_test.c -o ui_test -lm
+          clang -w -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=0 tests/ui_test.c -o ui_test -lm   # (as run_tests.sh)
           ./ui_test > ui_test.log 2>&1 || { tail -40 ui_test.log; exit 1; }
           tail -3 ui_test.log
       - name: Summary
