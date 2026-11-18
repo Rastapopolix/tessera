@@ -551,6 +551,45 @@ static const gstep_t G_RATCHET[] = {
     {49000, 52000, 200, "OCT-", "CLOSE", "Tap OCT-, and listen: a hat roll near the end of each bar"},
     {59000, 0, 0, 0, 0, "TIMING's SHAPE makes a STEP track's rolls speed up or slow down"},
 };
+/* dream pop: 88 BPM, E major; a warm TRIO voice on TURING as track 1 (sparse; its LENGTH the clip changes), a soft
+ * 808, a bass on EUCLID, a chime line */
+static void g_dreampop_scene(void)
+{
+    song.g[G_BPM] = 88;
+    scale(4, 1, 0);                                     /* E, MAJ */
+    sends(110, 85, 65, 50);
+    sound(0, ENGI_TRIO, TR_WARM_PAD);
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_TURING, 46);
+    tx(0, TX_TUR_PROB, 15); tx(0, TX_TW_DROP, 55);
+    mixer(0, 100, -10, 90, 30);
+    sound(1, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, 0, L_BD, 0, L_CH, L_BD, L_SD, 0, L_CH, 0};
+        static const uint8_t V[16] = {92, 0, 46, 0, 84, 0, 46, 0, 88, 0, 46, 60, 86, 0, 50, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
+        trk[1].p[P_SLEN] = 16;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
+    mixer(1, 76, 0, 40, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 25);
+    tx(2, TX_EUC_STEPS, 16); tx(2, TX_EUC_PULSES, 4); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    mixer(2, 90, 0, 0, 0);
+    sound(3, ENGI_FM6, FX_FURIN);
+    trk[3].p[P_SDIV] = DIV_8;
+    gen(3, TESS_ENG_AWAKE, 38);
+    tx(3, TX_AWK_LENA, 5); tx(3, TX_AWK_LENB, 3); tx(3, TX_AWK_PROB, 35);
+    mixer(3, 62, 25, 100, 60);
+}
+static const gstep_t G_LENGTH[] = {
+    {0, 0, 0, 0, 0, "LENGTH: how long a generator's notes last"},
+    {3500, 6500, 200, "ARP", "EVOLVE", "Tap ARP: EVOLVE"},
+    {10000, 13000, 1500, "SELECT", "LENGTH", "Turn SELECT on to LENGTH", 4},
+    {18000, 21000, 900, "KNOB 1", "HIT", "Turn KNOB 1 to HIT: each note rings on until the next, so the gaps fill", 2},
+    {32000, 0, 0, 0, 0, "FIXED holds each note for LEN instead, with up to KEYS notes at once"},
+};
 static void guide_ref(const char *out, FILE *tsv)
 {
     G_RUN("r-landscape", "A SEA TO WATCH", "MOSAIC", 72, 4, g_neoclassical_scene, G_LANDSCAPE);   /* neo-classical */
@@ -563,6 +602,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-follow", "ONE TRACK FOLLOWS ANOTHER", "MOSAIC", 56, 4, g_cinematic_scene, G_FOLLOW);   /* cinematic */
     G_RUN("r-timing", "ROLLS AND FEEL", "GREEN", 58, 4, g_boombap_scene, G_TIMING);   /* boom bap */
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
+    G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
     G_RUN("r-mod-first", "YOUR FIRST MOD", "LILAC", 65, 4, g_triphop_scene, G_MOD_FIRST);   /* trip-hop */
