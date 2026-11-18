@@ -390,6 +390,46 @@ static const gstep_t G_ENERGY[] = {
     {31000, 34000, 4000, "KNOB 3", "LEVEL UP", "Turn it up to +100: busier and louder", 200},
     {45000, 0, 0, 0, 0, "ARC swings LEVEL as a slow tide over minutes; RESTS adds silences"},
 };
+/* folktronica: 98 BPM, G major; a plucked line on TURING as track 1 (the one the clip tweaks), a soft 808 with a
+ * shaker, a kalimba on EUCLID, a bass on two pulses */
+static void g_folktronica_scene(void)
+{
+    song.g[G_BPM] = 98;
+    scale(7, 1, 0);                                     /* G, MAJ */
+    sends(80, 65, 65, 45);
+    sound(0, ENGI_FM6, V_PLUCK);
+    trk[0].p[P_SDIV] = DIV_16;
+    gen(0, TESS_ENG_TURING, 62);
+    tx(0, TX_TUR_PROB, 10);
+    mixer(0, 100, -15, 40, 40);
+    sound(1, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, L_CH, L_RS, 0, L_CH, L_CH, L_BD, L_BD, L_CH, L_CH, L_RS, 0, L_CH, L_CH};
+        static const uint8_t V[16] = {96, 0, 44, 30, 80, 0, 46, 30, 90, 60, 44, 30, 82, 0, 46, 30};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
+        trk[1].p[P_SLEN] = 16;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
+    mixer(1, 80, 0, 15, 0);
+    sound(2, ENGI_FM6, FX_KALIMBA);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 23);
+    tx(2, TX_EUC_STEPS, 16); tx(2, TX_EUC_PULSES, 5); tx(2, TX_EUC_ROT, 2); tx(2, TX_TW_SHIFT, 12);
+    mixer(2, 66, 25, 60, 40);
+    sound(3, ENGI_TRIO, TR_SUB_BASS);
+    trk[3].p[P_SDIV] = DIV_4;
+    gen(3, TESS_ENG_EUCLID, 7);
+    tx(3, TX_EUC_STEPS, 8); tx(3, TX_EUC_PULSES, 2); tx(3, TX_TW_SHIFT, -12);
+    mixer(3, 90, 0, 0, 0);
+}
+static const gstep_t G_TWEAK[] = {
+    {0, 0, 0, 0, 0, "TWEAK reshapes what a generator plays, without changing the generator"},
+    {3500, 6500, 200, "ARP", "EVOLVE", "Tap ARP: EVOLVE"},
+    {10000, 13000, 900, "SELECT", "TWEAK", "Turn SELECT twice: TWEAK", 2},
+    {17000, 20000, 1500, "KNOB 1", "SHIFT", "Turn KNOB 1: SHIFT, here +12, the line an octave up", 12},
+    {27000, 30000, 2000, "KNOB 2", "DROP", "Turn KNOB 2: DROP, here 50 %, about half the notes left out", 25},
+    {38000, 0, 0, 0, 0, "KNOB 3, HUMAN, loosens its timing. KNOB 4, FOLLOW, has a clip of its own"},
+};
 static void guide_ref(const char *out, FILE *tsv)
 {
     G_RUN("r-landscape", "A SEA TO WATCH", "MOSAIC", 72, 4, g_neoclassical_scene, G_LANDSCAPE);   /* neo-classical */
@@ -398,6 +438,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-entries", "TRACKS OUT AND IN", "SUNSET", 60, 4, g_dnb_scene, G_ENTRIES);   /* liquid drum and bass */
     G_RUN("r-chain", "ONE FORM FOR ALL", "SUNSET", 64, 4, g_disco_scene, G_CHAIN);   /* disco */
     G_RUN("r-energy", "ENERGY BY HAND", "SUNSET", 54, 4, g_afrohouse_scene, G_ENERGY);   /* afro house */
+    G_RUN("r-tweak", "RESHAPE A LINE", "GREEN", 46, 4, g_folktronica_scene, G_TWEAK);   /* folktronica */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
     G_RUN("r-mod-first", "YOUR FIRST MOD", "LILAC", 65, 4, g_triphop_scene, G_MOD_FIRST);   /* trip-hop */
