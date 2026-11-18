@@ -309,7 +309,8 @@ main hr {{ border: 0; border-top: 1px solid var(--line); margin: 32px 0; }}
 
 NEXT = {
     "start": 'Next: <a href="../manual/#tessera-in-plain-words">Tessera in plain words</a>, then the whole <a href="../manual/">manual</a>.',
-    "manual": 'New to Tessera? Start with <a href="../start/">Getting started</a>.',
+    "manual": 'New to Tessera? Start with <a href="../start/">Getting started</a>. '
+              'To print it or read it offline: <a href="tessera-manual.pdf" download>the manual as a PDF</a>.',
 }
 
 
