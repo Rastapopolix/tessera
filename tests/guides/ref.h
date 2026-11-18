@@ -172,8 +172,51 @@ static const gstep_t G_COLOR[] = {
     {38000, 0, 0, 0, 0, "Back on HOME: the four tracks, each in its own colour"},
     {45500, 0, 0, 0, 0, "GROUND, just below COLOR, draws the ink on paper (LIGHT)"},
 };
+/* neo-classical: 72 BPM, A minor; a harp wandering on AWAKE (track 1: far out on the water), strings holding the
+ * chord, a flute on TURING, a kalimba on EUCLID (track 4: close by) */
+static void g_neoclassical_scene(void)
+{
+    song.g[G_BPM] = 72;
+    scale(9, SCL_MIN, 0);
+    sends(110, 85, 60, 50);
+    sound(0, ENGI_FM6, FX_HARP);
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_AWAKE, 19);
+    tx(0, TX_AWK_LENA, 7); tx(0, TX_AWK_LENB, 5); tx(0, TX_AWK_PROB, 60);
+    mixer(0, 92, -20, 80, 30);
+    sound(1, ENGI_TRIO, TR_STRING_MACH);
+    trk[1].p[P_CHRD] = 1;
+    gen(1, TESS_ENG_CHORD, 4);
+    tx(1, TX_CH_PROG, GEN_CH_DRONE); tx(1, TX_CH_BARS, 2); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 70, 0, 90, 0);
+    sound(2, ENGI_TRIO, TR_BREATH_FLUTE);
+    trk[2].p[P_SDIV] = DIV_4;
+    gen(2, TESS_ENG_TURING, 26);
+    tx(2, TX_TUR_PROB, 15); tx(2, TX_TW_DROP, 50);
+    mixer(2, 76, 20, 80, 40);
+    sound(3, ENGI_FM6, FX_KALIMBA);
+    trk[3].p[P_SDIV] = DIV_16;
+    gen(3, TESS_ENG_EUCLID, 37);
+    tx(3, TX_EUC_STEPS, 16); tx(3, TX_EUC_PULSES, 5); tx(3, TX_EUC_ROT, 3); tx(3, TX_TW_SHIFT, 12);
+    mixer(3, 74, 30, 60, 50);
+}
+static const gstep_t G_LANDSCAPE[] = {
+    {0, 0, 0, 0, 0, "LANDSCAPE: a night sea, drawn by the music"},
+    {3500, 6500, 200, "GLO", "MIXER", "Tap GLO twice: PERF"},
+    {0, 8000, 200, "GLO", "PERF", 0},
+    {12000, 15000, 2000, "SELECT", "LANDSCAPE", "Turn SELECT: on to LANDSCAPE", 4},
+    {21000, 0, 0, 0, 0, "Each note is a drop: low notes land left, high right"},
+    {29000, 0, 0, 0, 0, "Track 1's drops land far out, track 4's close by, each in its colour"},
+    {37000, 40000, 200, "F#3", "MUTE T1", "The keys are MIXER's: mute all four tracks"},
+    {0, 41500, 200, "G#3", "MUTE T2", 0},
+    {0, 43000, 200, "A#3", "MUTE T3", 0},
+    {0, 44500, 200, "C#4", "MUTE T4", 0},
+    {48000, 0, 0, 0, 0, "Muted, they make no drops: the water goes still"},
+    {56000, 59000, 200, "C4", "UNMUTE ALL", "C4 brings them all back"},
+};
 static void guide_ref(const char *out, FILE *tsv)
 {
+    G_RUN("r-landscape", "A SEA TO WATCH", "MOSAIC", 72, 4, g_neoclassical_scene, G_LANDSCAPE);   /* neo-classical */
     G_RUN("r-color", "THE SCREEN'S COLOUR", "YELLOW", 54, 4, g_chillout_scene, G_COLOR);   /* chillout */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
