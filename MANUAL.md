@@ -808,10 +808,12 @@ saved project keeps its seeds.
 > settings. This lets you shape the details without crowding the main page. A setting past those, where a generator
 > has one, is on the GEN sheet (hold OCT+).
 
-On the **GEN** page (tap **SEQ**), hold **OCT-**: the knobs' labels change to the layer's, KNOB 1 is **RANDOM** as on every generator (see
-[Shortcuts](#shortcuts)) and KNOB 2 to 4 set the layer. Let go to return; letting go never goes back a page. A
-generator with more settings than that has them on the **GEN sheet**: hold **OCT+** (or tap it) on GEN, pick the row
-with KNOB 1 and turn its value with KNOB 2.
+On the **GEN** page (tap **SEQ**):
+
+| Do this | What you get |
+|---|---|
+| Hold **OCT-** | **The GEN layer.** The knobs' labels change to the layer's. KNOB 1 is **RANDOM**, as on every generator (see [Shortcuts](#shortcuts)), and KNOB 2 to 4 set the layer. Let go to return; letting go never goes back a page. |
+| Hold **OCT+** (or tap it) | **The GEN sheet**, for a generator with more settings than that. Pick the row with **KNOB 1** and turn its value with **KNOB 2**. |
 
 <p align="center"><img src="assets/gallery/gen_grids_oct.png" alt="ATLAS with OCT- held" width="240"> <img src="assets/gallery/gen_chord_oct.png" alt="CHORD with OCT- held" width="240"> <img src="assets/gallery/gen_chord_user.png" alt="CHORD USER with OCT- held" width="240"></p>
 
@@ -822,48 +824,69 @@ with KNOB 1 and turn its value with KNOB 2.
 | 2 | **KICK** (0–100 %) | How much of DENS the kick gets: 0 silences it. |
 | 3 | **SNR** | The same for the snare. |
 | 4 | **HAT** | The same for the closed hat. |
-| GEN sheet | **Fourth part** (0–100 %) | A fourth part, on the tom at first: the hits the kick and snare only just miss, so fills follow the groove. 0 (OFF) none. |
+| GEN sheet | **Fourth part** (0–100 %) | A fourth part, on the tom at first: the hits the kick and snare only just miss, so fills follow the groove. 0 (OFF) plays none. |
 
-With OCT- held, a **black key** picks the fourth part's sound, as on the drum grid: TOM, CLAP, OPEN HAT, RIM or
-BELL. The parts are also mod destinations: AT KICK, AT SNR, AT HAT, AT TOMS.
+- **The fourth part's sound:** with OCT- held, a **black key** picks it, as on the drum grid: TOM, CLAP, OPEN HAT, RIM
+  or BELL.
+- The parts are also mod destinations: AT KICK, AT SNR, AT HAT, AT TOMS.
 
 ### CHORD: STRUM, DIR, OCT; CHRD, VOIC, BREATH (or LEN)
 
-Hold **OCT-** on GEN with a CHORD track: KNOB 1 is RANDOM, KNOB 2 and 3 set how the chord is struck, KNOB 4 its
+Hold **OCT-** on GEN with a CHORD track. KNOB 1 is RANDOM, KNOB 2 and 3 set how the chord is struck, and KNOB 4 its
 register. The chord's kind and voicing are on the GEN sheet (and on SCL > CHORD).
 
 <p align="center"><img src="assets/gallery/chord_strum.png" alt="CHORD with OCT- held: STRUM 40 ms, DOWN" width="240"></p>
 
 | Knob (OCT- held) | Setting | What it does |
 |---|---|---|
-| 2 | **STRUM** (OFF, 1 to 250 ms) | The time between one note of the chord and the next, as a strummed chord. A four-note chord at 40 ms spreads over 120 ms. The knob goes by 1 ms up to 10 (a flam), by 5 up to 60, then by 10: 100 ms and more is a slow roll that slow pads and strings let you hear. OFF strikes them together. |
-| 3 | **DIR** | **UP**: the lowest note first. **DOWN**: the highest first. **ALT**: up, down, up and so on, a strike each, like strumming (from PLAY, so a piece replays the same). |
-| 4 | **OCT** (−2 to +2) | The chords' register from their home around C3. |
-| GEN sheet | **Chord** | SCL > CHORD's chord kind: OFF plays triads; DIA3 and DIA7 triads and sevenths in the scale; MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9, MAJ6 (fixed shapes on any note). |
+| 2 | **STRUM** (OFF, 1 to 250 ms) | The time between one note of the chord and the next, as in a strummed chord. A four-note chord at 40 ms spreads over 120 ms. OFF strikes them together. |
+| 3 | **DIR** | **UP**: the lowest note first. **DOWN**: the highest first. **ALT**: up, down, up and so on, a strike each, like strumming (counted from PLAY, so a piece replays the same). |
+| 4 | **OCT** (−2 to +2) | The chords' register, from their home around C3. |
+| GEN sheet | **Chord** | SCL > CHORD's chord kind. OFF plays triads. DIA3 and DIA7 play triads and sevenths in the scale. MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9 and MAJ6 are fixed shapes on any note. |
 | GEN sheet | **Voicing** | CLOSE, OPEN, INV1, INV2 or +OCT. |
-| GEN sheet | **Breath** (0–100 %) | With HIT HOLD the chord breathes: each voice is struck again, softer, on a slow cycle of its own (11 to 19 s), and the same chord again is tied over. BREATH is the chance a voice above the lowest sits a cycle out; 0 (OFF) is off. |
+| GEN sheet | **Breath** (0–100 %) | With HIT HOLD, the chord breathes: each voice is struck again, softer, on a slow cycle of its own (11 to 19 s), and the same chord again is tied over. BREATH is the chance a voice above the lowest sits a cycle out. 0 (OFF) is off. |
 | GEN sheet | **Length** (USER only, in Breath's place) | How many of USER's chords play, 1 to 8. |
 
-**USER progressions.** Set PROG to USER, hold OCT- on GEN and play the roots on the keys, one key a chord (the keys
-are silent while OCT- is held; notes outside the scale round down to it). Letting OCT- go ends the entry, and the
-number of chords played sets Length.
+**STRUM's steps.** The knob moves by 1 ms up to 10 (a flam), by 5 up to 60, then by 10. 100 ms and more is a slow
+roll that slow pads and strings let you hear.
 
-- The strum fits in half the chord's length: a short BEAT, STEP or OFFBEAT stab strums tighter and keeps every
-  note. HOLD strums once for each chord; the other HITs every strike. All the notes end together.
-- **HUMAN** time moves the strike late; the strum starts from there. A **RATCH** strums its first hit;
-  the repeats strike the chord together. BREATH's single voices are not strummed.
+**Your own progression (USER):**
+
+1. Set PROG to USER.
+2. Hold **OCT-** on GEN and play the roots on the keys, one key a chord. The keys are silent while OCT- is held, and
+   notes outside the scale round down to it.
+3. Let OCT- go to end the entry. The number of chords you played sets Length.
+
+**How the strum plays:**
+
+- The strum fits in half the chord's length, so a short BEAT, STEP or OFFBEAT stab strums tighter and keeps every
+  note.
+- HOLD strums once for each chord; the other HITs strum every strike.
+- All the notes end together.
 - **MIDI OUT** sends each note when it sounds, so the notes go out strummed too (also with SOUND OFF).
-- Each note takes its voice when it starts. With fewer voices than notes the last ones steal, so DIR decides which
+
+<details>
+<summary>More detail on the strum</summary>
+
+- **HUMAN** time moves the strike late, and the strum starts from there.
+- A **RATCH** strums its first hit; the repeats strike the chord together.
+- BREATH's single voices are not strummed.
+- Each note takes its voice when it starts. With fewer voices than notes, the last ones steal, so DIR decides which
   note may take another's voice.
-- STRUM and DIR are saved with the project; firmware before STRUM plays the chords together. 3.5-beta4 and beta5
-  took STRUM up to 60 ms only: they do not load a project with a longer STRUM.
+- STRUM and DIR are saved with the project.
+
+</details>
 
 ### QUAD: columns and RANGE
 
-The grid's columns can turn between the rows, so notes travel from track to track. With OCT- held:
-KNOB 2 picks the column, KNOB 3 its **MOVE** (STOP, DOWN, UP or RAND), KNOB 4 its **EVERY** (/1 to /16 steps of
-the first QUAD track). **Range** on the GEN sheet (3 OCT, 1 OCT, 2 OCT or ±1) sets the octaves the row's notes fold
-into.
+The grid's columns can turn between the rows, so notes travel from track to track.
+
+| Knob (OCT- held) | Setting | What it does |
+|---|---|---|
+| 2 | **Column** | Which column KNOB 3 and 4 set. |
+| 3 | **MOVE** | STOP, DOWN, UP or RAND: which way the column turns. |
+| 4 | **EVERY** | How often it turns: /1 to /16 steps of the first QUAD track. |
+| GEN sheet | **Range** | 3 OCT, 1 OCT, 2 OCT or ±1: the octaves the row's notes fold into. |
 
 ### CONSTELLATION: LOCK, LEN, FILL; SIZE
 
@@ -874,45 +897,64 @@ into.
 | 4 | **FILL** | OFF: the steps between stars rest. ARP: the last four stars again, low to high and softer. |
 | GEN sheet | **Size** (0–7) | How many rows either side of the crosshair a star still plays in. |
 
+- **AUTO** steers the ship for you: OFF follows Y, 1 to 9 is a wander of its own (faster further up), and SEEK flies
+  to the next star. It has no knob: set it with a mod to **C AUTO** (a cord with no source is a fixed value; see
+  [MODS](#mods-the-modulation-cords)).
+- **Colours:** in the MOSAIC, SUNSET, OCEAN and NEON palettes the sky takes all four colours. Each star has the colour
+  of its size, the constellation and the crosshair have colours of their own, and the ship is white.
+
 ### ANSWER: SOURCE, ORDER, SHIFT; SPACE, CHORD
 
-With OCT- held, KNOB 2 is **SOURCE** (the call: the keys, or T1 to T4's pattern, or that track's keys while its pattern is empty), KNOB 3 **ORDER** (PLAYED,
-REVERSE or SHUFFLE) and KNOB 4 **SHIFT** (each answer moved by up to this many scale degrees). **Space** on the GEN
-sheet is the rest before each answer. SOURCE on its own track shows **OWN**: it answers the phrase written on its
-STEP page.
+ANSWER plays back what it hears. It has two modes, set on the GEN sheet's **Mode** row:
 
-**Chord**, also on the GEN sheet, is ARP (the old behaviour: notes played together on the keys are spread one a
-step apart, so a chord answers as an arpeggio) or TRUE (they share the step and answer back as a real chord). ARP
-is the default, so an old project still answers exactly as it did.
+- **REPLY** (the default) waits for your phrase to end, rests SPACE, then answers it.
+- **BEND** (after Qu-Bit's Data Bender, the idea only) answers while you play, like a delay locked to the tempo.
 
-**Mode**, the GEN sheet's third row, is **REPLY** (the default: it waits for your phrase to end, rests SPACE, then
-answers it) or **BEND** (after Qu-Bit's Data Bender, the idea only). BEND does not wait for you to stop: every note
-you play comes back **Time** steps later (1 to 16, 3 by default: a dotted eighth at 16 steps a bar), while you are
-still playing, and again every Time steps after that, like a delay locked to the tempo. Then the other settings
-bend it:
+| Knob (OCT- held) | Setting | What it does |
+|---|---|---|
+| 2 | **SOURCE** | The call: the keys, T1 to T4's pattern, or that track's keys while its pattern is empty. On its own track it shows **OWN**: it answers the phrase written on its STEP page. |
+| 3 | **ORDER** | PLAYED, REVERSE or SHUFFLE. |
+| 4 | **SHIFT** | Each answer moves by up to this many scale degrees. |
 
-- **FADE**: how many repeats, 1 to 16, each softer than the last. At the top (**NEVER**) the repeats go on at full
-  velocity; once 16 wait, the one repeated most makes room for what you play now.
-- **VARY**: the chance a repeat changes (a degree or two, an octave, silent this once, or the note you played next
-  to it), higher with each repeat. What changes is kept, so a line drifts further every time round.
-- **SHIFT**: the repeats climb or sink, up to that many scale degrees a bar, a new direction each bar.
-- **ORDER**: REVERSE or SHUFFLE plays your line's first repeats back to front or mixed up.
-- **ECHO**: as in REPLY, a note now and then comes back once more.
-- **Break**: the chance a repeat glitches, this once
-  only: it slips a step early or late, skips, stutters (plays again a step later) or jumps back to a note you played
-  a little before.
+**The GEN sheet's rows:**
 
-With VARY, SHIFT, ECHO and Break at 0, BEND is a plain delay. In BEND the sheet's rows are Time, Break and Mode; in
-REPLY, Space, Chord and Mode. On the OCT- layer, Time shows where SPACE does. The picture shows the repeats waiting,
-the nearest at the left. BEND hears the keys, MIDI IN and a generator SOURCE; a STEP pattern as SOURCE is not heard
-in BEND yet (the keys are). Switching Mode clears whatever is waiting. A project saved with BEND (or with Time or
-Break set) needs this version or later to open.
+| Row | In REPLY | In BEND |
+|---|---|---|
+| 1 | **Space**: the rest before each answer | **Time** (1 to 16 steps, 3 by default) |
+| 2 | **Chord**: ARP or TRUE | **Break** |
+| 3 | **Mode** | **Mode** |
 
-**AUTO** steers the ship for you: OFF follows Y, 1 to 9 is a wander of its own (faster further up), SEEK flies to
-the next star. It has no knob: set it with a mod to **C AUTO** (a cord with no source is a fixed value).
+**Chord** (REPLY): **ARP**, the default, spreads notes played together on the keys one step apart, so a chord answers
+as an arpeggio. **TRUE** keeps them on the same step, so they answer back as a real chord. Because ARP is the default,
+an old project still answers exactly as it did.
 
-In the MOSAIC, SUNSET, OCEAN and NEON palettes the sky takes all four colours: each star the colour of its size, the
-constellation and the crosshair colours of their own, the ship white.
+#### BEND: a delay that bends
+
+BEND does not wait for you to stop. Every note you play comes back **Time** steps later (3 by default: a dotted
+eighth at 16 steps a bar), while you are still playing, and again every Time steps after that. The other settings
+then bend the repeats:
+
+| Setting | What it does in BEND |
+|---|---|
+| **FADE** | How many repeats, 1 to 16, each softer than the last. At the top (**NEVER**) the repeats go on at full velocity; once 16 are waiting, the one repeated most makes room for what you play now. |
+| **VARY** | The chance a repeat changes: a degree or two, an octave, silent this once, or the note you played next to it. The chance grows with each repeat, and what changes is kept, so a line drifts further every time round. |
+| **SHIFT** | The repeats climb or sink, up to that many scale degrees a bar, in a new direction each bar. |
+| **ORDER** | REVERSE or SHUFFLE plays your line's first repeats back to front or mixed up. |
+| **ECHO** | As in REPLY: a note now and then comes back once more. |
+| **Break** | The chance a repeat glitches, this once only: it slips a step early or late, skips, stutters (plays again a step later) or jumps back to a note you played a little before. |
+
+With VARY, SHIFT, ECHO and Break at 0, BEND is a plain delay.
+
+<details>
+<summary>More detail on BEND</summary>
+
+- On the OCT- layer, Time shows where SPACE does.
+- The picture shows the repeats waiting, the nearest at the left.
+- BEND hears the keys, MIDI IN and a generator SOURCE. A STEP pattern as SOURCE is not heard in BEND yet (the keys
+  are).
+- Switching Mode clears whatever is waiting.
+
+</details>
 
 ### TURING, EUCLID, MARKOV and MORPH: SOURCE, KEEP, GRAVITY (STEP as seed)
 
@@ -920,33 +962,55 @@ constellation and the crosshair colours of their own, the ship white.
 > at the centre while it grows new versions of itself. KEEP says what must stay (the rhythm or the notes), GRAVITY how
 > close to the original it stays.
 
-**SOURCE** (OCT- held, KNOB 2) lets TURING, EUCLID, MARKOV or MORPH play from a STEP pattern you wrote. T1 to T4 is that
-track's pattern playing now, and it can be this track's own. The pattern itself never changes. OFF, or a pattern
-with no notes, plays the generator as usual.
+| Knob (OCT- held) | Setting | What it does |
+|---|---|---|
+| 2 | **SOURCE** | OFF, T1 to T4 (that track's STEP pattern), or KEYS (what you play). |
+| 3 | **KEEP** | FREE, RHYTHM or PITCH: what stays as written. |
+| 4 | **GRAVITY** | 0 to 100 %: how often a step plays the source exactly as written. |
+
+> **Try this:** write a short melody on a STEP track. Switch the track's MODE to TURING, hold **OCT-** on GEN and turn
+> **KNOB 2** (SOURCE) to the track's own number. With PROB at 0 it plays your melody as written. Turn PROB up and the
+> melody drifts; turn GRAVITY (KNOB 4) up to keep it near home.
+
+#### SOURCE: a pattern or what you play
+
+**A pattern (T1 to T4).** TURING, EUCLID, MARKOV or MORPH plays from a STEP pattern you wrote: that track's pattern
+playing now, which can be this track's own. The pattern itself never changes. OFF, or a pattern with no notes, plays
+the generator as usual.
 
 **KEYS** (after T4) plays from what you play instead: a **take** on this track's keys or MIDI IN, up to 16 notes.
-The first note starts a take, and the generator rests while you play. A bar without a key ends the take, and the
-generator then plays it from where it has got to, so your bars stay where you played them. The take loops as whole
-bars, as many as it spans (up to four). Play again to make a new take; it replaces the old one. The take is kept in
-the project. Until there is one, the generator plays as usual.
 
-**Print a take:** hold **REC** on a track with SOURCE KEYS and a take. The take goes into the track's STEP pattern as
-you played it (REPLACE STEPS? first if the pattern has steps), its LEN set to the take's, and SOURCE turns to that
-pattern. The generator plays on from it, so you can fix a wrong note by hand in STEP. EDIT held undoes the steps.
+- The first note starts a take, and the generator rests while you play.
+- A bar without a key ends the take. The generator then plays it from where it has got to, so your bars stay where
+  you played them.
+- The take loops as whole bars, as many as it spans (up to four).
+- Play again to make a new take; it replaces the old one.
+- The take is kept in the project. Until there is one, the generator plays as usual.
 
-- **TURING** loops the source's first LEN steps (up to 16). Each step, PROB is the chance that the step about to
+**Print a take.** Hold **REC** on a track with SOURCE KEYS and a take:
+
+- The take goes into the track's STEP pattern as you played it (it asks REPLACE STEPS? first if the pattern has
+  steps), with its LEN set to the take's.
+- SOURCE turns to that pattern, and the generator plays on from it. So you can fix a wrong note by hand in STEP.
+- EDIT held undoes the steps.
+
+#### What each generator does with it
+
+- **TURING** loops the source's first LEN steps (up to 16). At each step, PROB is the chance that the step about to
   play changes and stays changed, as a Turing machine flips a bit. PROB 0 plays your melody as written; turn it up
   and the melody drifts. A new SOURCE or LEN, or PLAY, starts again from the pattern.
 - **EUCLID** plays the source's notes in order on its own hits, so the melody gets a new rhythm.
 - **MARKOV** learns from the source what follows what. Each step plays what came after the step it just played,
-  somewhere in your pattern (when a note appears twice, either of its followers). LEAP is now the chance of a jump
-  to any step of the pattern instead. With LEAP 0 a melody where every note is different plays as written; repeated
-  notes and rests are where it branches off. DENS has no say: the rhythm comes from the pattern.
-- **MORPH** plays **A**, your pattern as written (its first 16 steps), against **B**, a variation of it made at
-  PLAY: about half of its steps changed the way TURING changes them. MORPH's position is B's share, and EVOLVE
-  changes a few more of B's steps each time.
+  somewhere in your pattern (when a note appears twice, either of its followers).
+  - LEAP becomes the chance of a jump to any step of the pattern.
+  - With LEAP 0, a melody where every note is different plays as written. Repeated notes and rests are where it
+    branches off.
+  - DENS has no say: the rhythm comes from the pattern.
+- **MORPH** plays **A**, your pattern as written (its first 16 steps), against **B**, a variation of it made at PLAY,
+  with about half of its steps changed the way TURING changes them. MORPH's position is B's share, and EVOLVE changes
+  a few more of B's steps each time.
 
-**KEEP** (KNOB 3) says what stays as written:
+#### KEEP: what stays as written
 
 | KEEP | TURING, MORPH's B | EUCLID | MARKOV |
 |---|---|---|---|
@@ -954,19 +1018,36 @@ pattern. The generator plays on from it, so you can fix a wrong note by hand in 
 | **RHYTHM** | only the pitches change (to another of your notes, or any note of the scale over SPAN octaves up from your lowest) | the source's own rhythm, on EUCLID's pitches | the source's rhythm, the notes from the chain |
 | **PITCH** | only the hits come and go | as FREE | the chain's rhythm, the notes in written order |
 
-**GRAVITY** (KNOB 4) pulls it all back home: at GRAVITY %, a step plays the source exactly as written at its place.
-TURING's changed step goes back to how you wrote it, MARKOV's chain carries on from there, EUCLID plays the
-source's own hit or rest, and MORPH plays A. 0 is off; 100 plays your pattern as written whatever the rest says.
-Drift with PROB, LEAP or MORPH, and let GRAVITY decide how far it may wander.
+#### GRAVITY: the pull back home
 
-The notes keep their written pitch, then follow this track's scale, TRN and SHIFT. Print (REC held) keeps what it
-played, as for any generator (with SOURCE KEYS and a take: the take itself, see above).
+At GRAVITY %, a step plays the source exactly as written at its place:
 
-With a SOURCE, TURING's and MORPH's picture on GEN shows the loop as it plays now: a step as you wrote it is drawn plain,
-a changed one with the written step drawn over it hollow (its ghost: an empty frame is a note dropped). MORPH shows B, its variation. **HOME** under it is how far the loop has wandered: empty when it plays
-your pattern as written, full when every step has changed.
+- TURING's changed step goes back to how you wrote it;
+- MARKOV's chain carries on from there;
+- EUCLID plays the source's own hit or rest;
+- MORPH plays A.
+
+0 is off; 100 plays your pattern as written, whatever the rest says. Drift with PROB, LEAP or MORPH, and let GRAVITY
+decide how far it may wander.
+
+#### Pitch, print and the picture
+
+- The notes keep their written pitch, then follow this track's scale, TRN and SHIFT.
+- Print (REC held) keeps what it played, as for any generator. With SOURCE KEYS and a take, it prints the take itself
+  (see above).
+- **The picture:** with a SOURCE, TURING's and MORPH's picture on GEN shows the loop as it plays now. A step as you
+  wrote it is drawn plain. A changed one has the written step drawn over it hollow (its ghost; an empty frame is a
+  note dropped). MORPH shows B, its variation.
+- **HOME**, under the picture, is how far the loop has wandered: empty when it plays your pattern as written, full
+  when every step has changed.
 
 <p align="center"><img src="assets/gallery/gen_seed.png" alt="TURING from a SOURCE" width="240"></p>
+
+### The GEN layer and older firmware
+
+- Firmware from before STRUM plays CHORD's chords together.
+- 3.5-beta4 and beta5 took STRUM up to 60 ms only: they do not load a project with a longer STRUM.
+- A project saved with ANSWER's BEND (or with Time or Break set) needs firmware with BEND to open.
 
 ---
 
