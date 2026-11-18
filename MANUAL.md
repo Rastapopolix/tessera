@@ -1543,20 +1543,22 @@ to STEP, and EDIT held brings the ARP back (hold the keys again to restart it).
 > **In short:** all tracks share one scale and key, so nothing clashes. Put a progression on a CHORD track, set the
 > others' QNT to CHRD, and their notes follow the chords as they change.
 
-**One key for the project.** The scale (SCL) is always the same on every track, and QNT and the MPC degree are while
-**QNT link** is LINKED (below). The key
-note, ROOT, is too while **SCL > Key link** is **LINKED** (the default in a new project): change ROOT on any melodic
-track, from SCL's list or with SEL held and a key, and every melodic track follows; drum tracks keep their own.
-**OWN** gives each track its own ROOT again; turning LINKED back on gives every track the selected track's key. Key
-link is saved with the project (a project saved before it loads as OWN). TRN still moves a single track. The **Key in B** and
-**Key in C** rows at the end of SCL's list change the key in the CHAIN's sections ([CHAIN](#chain-one-form-for-the-project)).
+**One key for the project.** What every track shares:
 
-**QNT: how the keys meet the scale.** SCL's **QNT** row. The **QNT link** row under it decides whether every track
-shares it: **LINKED** (the default, and how every project worked before it) sets QNT and the MPC degree on every track
-when you change them on one; **OWN** gives each track its own, so a track played from MPC pads can sit beside tracks
-on CHRD or HARM. Turning LINKED back on gives every track the selected track's. QNT link is saved with the project;
-a project saved before it loads as LINKED, and one saved with OWN loads on older firmware with each track's QNT as
-saved, until a QNT is changed there.
+| Setting | Shared? |
+|---|---|
+| **The scale (SCL)** | Always the same on every track. |
+| **The key note (ROOT)** | Shared while **SCL > Key link** is **LINKED** (the default in a new project). Change ROOT on any melodic track, from SCL's list or with SEL held and a key, and every melodic track follows; drum tracks keep their own. **OWN** gives each track its own ROOT again. |
+| **QNT and the MPC degree** | Shared while **QNT link** is **LINKED** (the default). **OWN** gives each track its own, so a track played from MPC pads can sit beside tracks on CHRD or HARM. |
+| **TRN** | Never: it still moves a single track. |
+
+- Turning either link back to LINKED gives every track the selected track's setting.
+- Both links are saved with the project. A project saved before Key link loads as OWN; one saved before QNT link loads
+  as LINKED.
+- The **Key in B** and **Key in C** rows at the end of SCL's list change the key in the CHAIN's sections (see
+  [CHAIN](#chain-one-form-for-the-project)).
+
+**QNT: how the keys meet the scale.** SCL's **QNT** row, with **QNT link** under it:
 
 | QNT | What it does |
 |---|---|
@@ -1564,9 +1566,19 @@ saved, until a QNT is changed there.
 | **SNAP** | Every key plays; a note outside the scale moves down to the scale's next note below. |
 | **WHITE** | The scale on the white keys, from C4 = ROOT upwards; the black keys are silent. |
 | **ALL** | Every key, black and white, is the next note of the scale. |
-| **MPC** | For playing Tessera from an MPC's pads (or any pad controller that sends the same notes). The FM-1's own keys work as WHITE. From MIDI IN only notes 20 to 35 play: the 16 pads of Bank H in MPC Sample's default map, H01 to H16. They play successive notes of the scale, pad by pad (H01 the lowest), and every other MIDI note is silent (on a drum track too; a kit keeps its own sounds on 20 to 35). **DEGREE**, a row of SCL's list that shows only with QNT MPC, is the scale degree pad **H02** plays (1 is ROOT, up to the scale's number of notes); H01 plays the one below it. The octave buttons (OCT- and OCT+ on HOME) move the pads by octaves. |
+| **MPC** | For playing Tessera from an MPC's pads (or any pad controller that sends the same notes). See below. |
 | **CHRD** | The keys, MIDI IN and the generators snap to the nearest note of the chord a CHORD track plays (no CHORD track: as SNAP). See below. |
 | **HARM** | Each note up the scale plays the next note up of that chord: [HARM: a harmonizer](#harm-a-harmonizer). |
+
+**QNT MPC:**
+
+- The FM-1's own keys work as WHITE.
+- From MIDI IN only notes 20 to 35 play: the 16 pads of Bank H in MPC Sample's default map, H01 to H16. They play
+  successive notes of the scale, pad by pad (H01 the lowest).
+- Every other MIDI note is silent, on a drum track too (a kit keeps its own sounds on 20 to 35).
+- **DEGREE**, a row of SCL's list that shows only with QNT MPC, is the scale degree pad **H02** plays (1 is ROOT, up to
+  the scale's number of notes). H01 plays the one below it.
+- The octave buttons (OCT- and OCT+ on HOME) move the pads by octaves.
 
 With any QNT but OFF, KNOB 2 on NOTES moves a note by the scale's notes (CHRD and HARM: the chord's). Notes already
 written stay where they are; **Snap to scale** on the pattern's sheet moves them onto the scale, once.
@@ -1592,18 +1604,28 @@ A **CHORD** track plays a progression; with **QNT CHRD** the other tracks follow
 > the keys and you play an arpeggio that changes with the chords; any line in the scale becomes one too.
 
 After the harmonizer in Dreamsequence (a norns script by dstroud), the idea only. QNT CHRD moves a note to the *nearest*
-note of the chord, so neighbouring keys can land on the same one. HARM *counts* instead: C4 plays the chord's root (the
-one nearest C4), the next note of the scale its next note up (the third), the next the one after (the fifth), and so
-on, an octave further every time the chord's notes run out; down from C4 the same way. Over a C chord, C D E F G A
-play C4 E4 G4 C5 E5 G5; when the progression moves to G, the same keys play G3 B3 D4 G4 B4 D5. Each note is
-counted when it starts, so a held note keeps its pitch through a chord change. The notes are kept within two octaves
-either side of C4.
+note of the chord, so neighbouring keys can land on the same one. HARM *counts* instead:
 
-- **SCL > QNT HARM** (every track's while QNT link is LINKED; with OWN, the track's own): the **keys** walk the scale on the white keys from C4, as WHITE
-  does, each a chord note; the black keys are silent. TRN and OCT move the result. **MIDI IN** is counted the same way:
-  a note's place in the scale (a note off the scale counts as the one below it), so a sequencer or a DAW clip playing
-  in the scale plays the chords' notes. The **generators** are counted too: a TURING, EUCLID or MARKOV line becomes an
-  arpeggio of the chords. ANSWER plays back what you played, counted already, so it is not counted again.
+- C4 plays the chord's root (the one nearest C4).
+- The next note of the scale plays the chord's next note up (the third), the next the one after (the fifth), and so
+  on, an octave further every time the chord's notes run out. Down from C4 works the same way.
+
+| You play | Over a C chord | Over a G chord |
+|---|---|---|
+| C D E F G A | C4 E4 G4 C5 E5 G5 | G3 B3 D4 G4 B4 D5 |
+
+- Each note is counted when it starts, so a held note keeps its pitch through a chord change.
+- The notes are kept within two octaves either side of C4.
+
+**Two ways to use it:**
+
+- **SCL > QNT HARM** (every track's while QNT link is LINKED; with OWN, the track's own):
+  - **The keys** walk the scale on the white keys from C4, as WHITE does, each a chord note. The black keys are
+    silent. TRN and OCT move the result.
+  - **MIDI IN** is counted the same way, by a note's place in the scale (a note off the scale counts as the one below
+    it). So a sequencer or a DAW clip playing in the scale plays the chords' notes.
+  - **The generators** are counted too: a TURING, EUCLID or MARKOV line becomes an arpeggio of the chords. ANSWER plays
+    back what you played, counted already, so it is not counted again.
 - **TWEAK > FOLLOW**, **HOW HARM** (OCT- held, KNOB 2): a generator track plays the followed track's notes counted
   into the chord, whatever QNT is. With **RHYTHM SOURCE** it plays on the other track's steps: a STEP melody, muted if
   you like, becomes a chord-aware second line. **SHIFT** moves it by chord notes (SHIFT 1: the third instead of the
@@ -1613,7 +1635,6 @@ either side of C4.
 - With no CHORD track, HARM plays the keys as WHITE and the rest as SNAP, and HOW HARM as SAME. A microtonal scale or
   your own tuning plays HARM as CHRD.
 - Notes you record keep the pitch they played at.
-- A project that uses HOW HARM does not load on firmware before it; one with QNT HARM loads with QNT CHRD.
 
 ### Your own scales (USER1 to USER4)
 
@@ -1630,10 +1651,9 @@ either side of C4.
   QNT, chords and FOLLOW use it as a built-in scale.
 - Picking a built-in scale or a tuning, or turning **SCL** itself, goes back to it. The USER scale stays as you made it.
 - The four are the **FM-1's**: kept with the settings, so they are there after power-off and in every project.
-- A project that plays a USER scale is **saved with it** and the other three, so it plays the same on another FM-1;
-  loading it brings them (until power-off, or kept for good at the next settings change). A project that plays a
-  built-in scale leaves your USER scales as they are. Firmware before USER scales plays the scale picked on SCL
-  under it.
+- A project that plays a USER scale is **saved with it** and the other three, so it plays the same on another FM-1.
+  Loading it brings them (until power-off, or kept for good at the next settings change). A project that plays a
+  built-in scale leaves your USER scales as they are.
 
 ### Your own tunings (Scala files)
 
@@ -1648,10 +1668,12 @@ and of most microtonal tools).
    slot. The editor reads the file and sends it; the slot takes the file's name (7 characters) and its description.
 2. On the device: **SCL > SCALES**, KNOB 1 to the **USER** family (after the favourites), KNOB 2 to the tuning. Or
    press **Play** in the editor. It is listed in **ALL** too, after the built-in scales.
-3. Play, as with the built-in microtonal scales. **QNT OFF**: a tuning of up to 12 degrees an octave keeps the keys
-   a piano's, each degree tuning the key nearest it (see below); a bigger one, or one with another period, plays every
-   degree in a row, one a key (and one a MIDI note, 60 being ROOT), so 24EDO takes two keys a semitone. WHITE, ALL, MPC
-   and SNAP lay it out as for the built-in scales.
+3. Play, as with the built-in microtonal scales:
+   - **QNT OFF**, a tuning of up to 12 degrees an octave: the keys stay a piano's, each degree tuning the key nearest
+     it.
+   - **QNT OFF**, a bigger tuning or one with another period: every degree in a row, one a key (and one a MIDI note,
+     60 being ROOT), so 24EDO takes two keys a semitone.
+   - **WHITE, ALL, MPC and SNAP** lay it out as for the built-in scales.
 
 - The tuning is the project's, like SCL: every melodic track plays it (a drum track does not). The keys, MIDI input,
   the generators, QNT, chords and recordings play its degrees; **ROOT** is degree 0 and **TRN** moves it.
@@ -1663,6 +1685,12 @@ and of most microtonal tools).
   project brings its own tunings; a project saved without any loads with all four slots empty.
 - A `.kbm` keyboard map is not used: ROOT places degree 0, and the layouts (WHITE, ALL, MPC) place the degrees on
   the keys as for the built-in scales. MIDI OUT sends no tuning messages, as for the built-in microtonal scales.
+
+### Harmony and older firmware
+
+- **QNT link OWN:** older firmware loads each track's QNT as saved, until a QNT is changed there.
+- **HOW HARM:** a project that uses it does not load on firmware before it. One with QNT HARM loads with QNT CHRD.
+- **USER scales:** firmware before them plays the scale picked on SCL under it.
 
 ---
 
@@ -1907,11 +1935,17 @@ Tessera can say what is on its screen. Plug the FM-1 into a computer by USB, ope
 its own voice, or hands the words to your screen reader (VoiceOver, NVDA, JAWS, TalkBack). Tessera stays silent until
 the reader connects, so a DAW on the same port sees nothing.
 
-It says each page as you open it (its name, the track and the knobs), a knob's name and value once you stop turning it,
-the row of a list or menu with its place ("3 OF 8"), the messages in the header, PLAY and STOP, yes/no questions with
-their keys, the GLO and SEL layers while held, and a step when you press its key while stopped. PATTERNS, SONG, the
-sound browser, the slot pages and SCALES say what is selected. Tessera's abbreviations are said as words (T1 is
-"track 1", BP on SCALES is "Bohlen-Pierce").
+**What it says:**
+
+- each page as you open it: its name, the track and the knobs;
+- a knob's name and value, once you stop turning it;
+- the row of a list or menu, with its place ("3 OF 8");
+- the messages in the header, PLAY and STOP, and yes/no questions with their keys;
+- the GLO and SEL layers while held;
+- a step, when you press its key while stopped;
+- what is selected on PATTERNS, SONG, the sound browser, the slot pages and SCALES.
+
+Tessera's abbreviations are said as words (T1 is "track 1", BP on SCALES is "Bohlen-Pierce").
 
 ---
 
