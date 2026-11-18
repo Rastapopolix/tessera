@@ -637,6 +637,53 @@ static const gstep_t G_PATTERNS[] = {
     {27100, 0, 0, 0, 0, "On its line it switches: a new bass part"},
     {32000, 0, 0, 0, 0, "JAM logs what you played. On SONG, the next page, take it as a song"},
 };
+/* nu-soul: 86 BPM, F minor; ORACLE warm pad holding a chord as track 1 with a cord (T1 LFO -> T1 CUTOFF, +60 %), a
+ * tine line on TURING, a sub on EUCLID, a laid-back 808 in STEP */
+static void g_nusoul_scene(void)
+{
+    song.g[G_BPM] = 86;
+    song.g[G_SWING] = 24;
+    scale(5, SCL_MIN, 1);                               /* F MIN, QNT SNAP */
+    sends(90, 70, 65, 45);
+    sound(0, ENGI_ORACLE, OR_WARM_PAD);
+    trk[0].p[P_CHRD] = 2;
+    gen(0, TESS_ENG_CHORD, 26);
+    tx(0, TX_CH_PROG, GEN_CH_TWO); tx(0, TX_CH_BARS, 2); tx(0, TX_CH_HIT, GEN_CH_HOLD);
+    trk[0].p[P_LRATE] = 30;
+    cord(0, CS_LFO, 0, CD_CUTOFF, 0, 60, 0, 0);
+    mixer(0, 100, 0, 55, 0);
+    sound(1, ENGI_FM6, FX_TINE_EP);
+    trk[1].p[P_SDIV] = DIV_8;
+    gen(1, TESS_ENG_TURING, 41);
+    tx(1, TX_TUR_PROB, 12); tx(1, TX_TW_DROP, 55);
+    mixer(1, 66, 25, 55, 35);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 17);
+    tx(2, TX_EUC_STEPS, 16); tx(2, TX_EUC_PULSES, 5); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    trk[2].p[P_QUANT] = Q_CHRD;
+    mixer(2, 88, 0, 0, 0);
+    sound(3, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_BD, 0, L_BD, L_CH, 0, L_SD, 0, L_CH, L_CH};
+        static const uint8_t V[16] = {92, 0, 42, 0, 78, 0, 46, 56, 0, 74, 42, 0, 80, 0, 48, 34};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 74, 0, 15, 0);
+}
+static const gstep_t G_SHAPES[] = {
+    {0, 0, 0, 0, 0, "A cord's shape sets how its source moves what it moves"},
+    {3500, 6500, 200, "LFO", "OPEN MODS", "Tap LFO: MODS. Cord 1 is T1 LFO onto T1 CUTOFF, the pad's filter"},
+    {11000, 14000, 5000, "OCT-", "SCOPE", "Hold OCT- and tap OCT+: the scope, pinned. The line is the mod"},
+    {0, 16000, 200, "OCT+", "PIN", 0},
+    {22000, 25000, 200, "OCT+", "+", "Tap OCT+: + (LFO+), one way only from the knob"},
+    {33000, 36000, 200, "OCT+", "GATE", "Again: GATE (LFO^), all or nothing"},
+    {44000, 47000, 200, "OCT+", "HOLD", "Again: HOLD (LFO=), taken once a bar and held"},
+    {55000, 58000, 200, "OCT+", "+-", "Again: back to +-, both ways"},
+    {63000, 66000, 200, "OCT-", "FREE", "Tap OCT-: SCOPE FREE, the rows come back"},
+};
 /* post-rock: 90 BPM, E minor; track 1 a STEP line climbing the pentatonic in eighths on a ringing tine, a soft pad on
  * CHORD, a sub on TURING, brushed 909 in STEP */
 static void g_postrock_scene(void)
@@ -936,6 +983,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
     G_RUN("r-patterns", "PATTERNS", "MOSAIC", 41, 4, g_citypop_scene, G_PATTERNS);   /* city pop */
+    G_RUN("r-mod-shapes", "A CORD'S SHAPE", "LILAC", 72, 4, g_nusoul_scene, G_SHAPES);   /* nu-soul */
     G_RUN("r-sheet", "PLAY THE STEPS IN ANOTHER ORDER", "MOSAIC", 66, 4, g_postrock_scene, G_SHEET);   /* post-rock */
     G_RUN("r-rec", "RECORD LIVE", "MOSAIC", 50, 4, g_ambhouse_scene, G_REC);   /* ambient house */
     G_RUN("r-step-write", "WRITE NOTES BY HAND", "MOSAIC", 68, 4, g_lounge_scene, G_STEPW);   /* lounge */
