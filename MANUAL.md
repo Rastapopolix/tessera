@@ -1051,32 +1051,36 @@ FORM strings mutated phrases into a short song form of sections A, B and C, each
 | 1 | **FORM** | OFF, AB, ABAC, ABCB, AABA, ABCA or AABC. Turning it on with EVERY OFF sets EVERY to 4 bars. |
 | 2 | **CONTR** (0–100 %) | Contrast: how far a new section moves from the one before. |
 | 3 | **CLEAR** | Forgets B and C: the phrase playing becomes A. |
-| 4 | **FLRSH** (−12 to +12) | Flourish: semitones added on the last beat of every phrase; 0 is off. |
+| 4 | **FLRSH** (−12 to +12) | Flourish: semitones added on the last beat of every phrase. 0 is off. |
+| 1, OCT- held | **DEVELOP** (0–100 %) | How far a section varies each time the form comes back to it. |
+| 2, OCT- held | **CHAIN** (FOLLOW or OWN) | This track's part in the project's [CHAIN](#chain-one-form-for-the-project). |
+| 3, OCT- held | **SKIP** (0–100 %) | The chance the track stays in its section one phrase longer where the CHAIN moves on. |
+| 4, OCT- held | **ROLE** | This track's part for [ENTRIES](#entries-tracks-out-and-back-in): the same setting as on the ENTRIES page. |
 
-B and C are made from the section before, by CONTR, the first time they are reached. Changing MODE or ROLL starts
-the form again at A.
+- B and C are made from the section before, by CONTR, the first time they are reached.
+- Changing MODE or ROLL starts the form again at A.
 
-**DEVELOP** (OCT- held, KNOB 1, 0–100 %): how far a section varies each time the form comes back to it. At 0 (the
-default) a section played again comes back exactly. Above 0 each return is the section with one change of
-that size, so it stays recognisable but is never quite the same; the section itself is kept, so the next return
-starts from it again and the form never drifts away over hours. GRAVITY (OCT- held on EVOLVE) is the chance a return
-stays exact. A knob turned while a section plays is kept in it, as without DEVELOP.
+**DEVELOP:**
 
-**CHAIN** (OCT- held, KNOB 2, FOLLOW or OWN) and **SKIP** (OCT- held, KNOB 3, 0–100 %): this track's part in the
-project's [CHAIN](#chain-one-form-for-the-project). FOLLOW: its sections change with the CHAIN's letters. OWN: it keeps
-its own FORM. Until you set it, a track follows when its own FORM is OFF and keeps its own when it has one. SKIP is the
-chance the track stays in its section one phrase longer where the CHAIN moves on (then it catches up; never twice
-running). Both are lit only while the CHAIN's FORM is on.
+- At 0 (the default), a section played again comes back exactly.
+- Above 0, each return is the section with one change of that size, so it stays recognisable but is never quite the
+  same.
+- The section itself is kept, so the next return starts from it again, and the form never drifts away over hours.
+- GRAVITY (OCT- held on EVOLVE) is the chance a return stays exact.
+- A knob turned while a section plays is kept in it, as without DEVELOP.
 
-**ROLE** (OCT- held, KNOB 4): this track's part for [ENTRIES](#entries-tracks-out-and-back-in), the same setting as
-on the ENTRIES page.
+**CHAIN and SKIP** (both lit only while the CHAIN's FORM is on):
+
+- **FOLLOW:** the track's sections change with the CHAIN's letters. **OWN:** it keeps its own FORM.
+- Until you set it, a track follows when its own FORM is OFF and keeps its own when it has one.
+- After a SKIP, the track catches up. It never skips twice running.
 
 ### PIECE: a length and a shape
 
 > **In short:** tell Tessera how long the piece should be and its shape (an arch, waves, a slow rise), and it steers
 > ENERGY, CHAIN and ENTRIES to follow it: an intro, a build, a peak and an ending, with nobody at the controls.
 
-**GLO > PIECE** plans the whole piece: how long it lasts and the shape it takes, sparse to full and back. It adds no
+**GLO > PIECE** plans the whole piece: how long it lasts, and the shape it takes, sparse to full and back. It adds no
 system of its own; it steers ENERGY, [CHAIN](#chain-one-form-for-the-project) and
 [ENTRIES](#entries-tracks-out-and-back-in) along the shape.
 
@@ -1085,26 +1089,52 @@ system of its own; it steers ENERGY, [CHAIN](#chain-one-form-for-the-project) an
 | Knob | Setting | What it does |
 |---|---|---|
 | 1 | **LENGTH** | FREE (the default: nothing planned, nothing changes), or 1 minute to 4 hours. |
-| 2 | **SHAPE** | ARCH (up to PEAK, down to the end), RISE, FALL, PLATEAU (up, held round PEAK, down), VALLEY (full, thin round PEAK, full), WAVES (COUNT swells), BUILDS (COUNT rises, each dropped at once), STEPS (the arch in COUNT terraces), FLAT or USER. |
+| 2 | **SHAPE** | The piece's shape (see below). |
 | 3 | **PEAK** (10–90 %) or **COUNT** (2–8) | PEAK: where ARCH, PLATEAU and VALLEY have their centre. COUNT: WAVES' swells, BUILDS' builds, STEPS' terraces. |
-| 4 | **END** | What happens at the end, on a phrase line: STOP (the tracks fade out, the tails ring, then it stops), LOOP (the same piece again from the top), NEW (new SEEDs, a new piece) or FREE (it carries on unplanned until STOP). |
+| 4 | **END** | What happens at the end, on a phrase line (see below). |
 
-With **SHAPE** USER, hold **OCT-**: **KNOB 1** picks one of its eight points (drawn bigger on the shape) and
-**KNOB 2** sets its level (0–100 %). The eight sit evenly along the piece, and the shape stays in view while you
-draw it. The picture shows the shape, where the piece is while playing, and the time left.
+| SHAPE | How it goes |
+|---|---|
+| **ARCH** | Up to PEAK, down to the end. |
+| **RISE** | A build to the end. |
+| **FALL** | Starts full and dissolves. |
+| **PLATEAU** | Up, held round PEAK, down. |
+| **VALLEY** | Full, thin round PEAK, full. |
+| **WAVES** | COUNT swells. |
+| **BUILDS** | COUNT rises, each dropped at once. |
+| **STEPS** | The arch in COUNT terraces. |
+| **FLAT** | Steady. |
+| **USER** | Your own, from eight points (see below). |
 
-The piece is counted in the time played since PLAY: a tempo change, a TEMPO mod or an external clock that drifts never
-jumps it to another place in its shape, and it lasts its LENGTH whatever the tempo (a faster tempo plays more bars).
-Every shape but RISE and FALL begins and ends sparse: an intro and an outro. While a LENGTH is set:
+Every shape but RISE and FALL begins and ends sparse: an intro and an outro.
 
-- ENERGY's tide is the shape (ARC is how far it swings; LEVEL sets its middle). RESTS' rests grow shorter in the shape's
-  upper half, and none comes at its top: the climax plays on.
-- ENTRIES keeps out as many tracks as the shape is low, of the most ENTRIES allows, one change a phrase, so the piece
-  layers in, thins and fills, and layers out at its end. At ENTRIES 0 no track moves.
-- The CHAIN's new sections depart further near the top (up to +20 CONTR), and the last 15 % of the piece (12 phrases
-  at most) stays on A, its home.
-- In its last 5 % the generators' notes are drawn more and more to the key's root and fifth (up to half of them at the
-  very end, a note at most two semitones away), so the piece resolves home.
+| END | What happens |
+|---|---|
+| **STOP** | The tracks fade out, the tails ring, then it stops. |
+| **LOOP** | The same piece again from the top. |
+| **NEW** | New SEEDs: a new piece. |
+| **FREE** | It carries on, unplanned, until STOP. |
+
+**Drawing a USER shape.** With SHAPE at USER, hold **OCT-**. **KNOB 1** picks one of its eight points (drawn bigger on
+the shape), and **KNOB 2** sets its level (0–100 %). The eight sit evenly along the piece, and the shape stays in view
+while you draw it.
+
+**The picture** shows the shape, where the piece is while playing, and the time left.
+
+**Time, not bars.** The piece is counted in the time played since PLAY. A tempo change, a TEMPO mod or an outside clock
+that drifts never jumps it to another place in its shape. It lasts its LENGTH whatever the tempo; a faster tempo plays
+more bars.
+
+**What a set LENGTH steers:**
+
+- **ENERGY:** its tide is the shape (ARC is how far it swings, LEVEL sets its middle). RESTS' rests grow shorter in the
+  shape's upper half, and none comes at its top: the climax plays on.
+- **ENTRIES:** keeps out as many tracks as the shape is low, of the most ENTRIES allows, one change a phrase. So the
+  piece layers in, thins and fills, and layers out at its end. At ENTRIES 0 no track moves.
+- **CHAIN:** new sections depart further near the top (up to +20 CONTR). The last 15 % of the piece (12 phrases at
+  most) stays on A, its home.
+- **The ending:** in the last 5 %, the generators' notes are drawn more and more to the key's root and fifth (up to half
+  of them at the very end, a note at most two semitones away), so the piece resolves home.
 
 The piece comes from the tracks' SEEDs, so PLAY plays it again the same.
 
@@ -1113,7 +1143,7 @@ The piece comes from the tracks' SEEDs, so PLAY plays it again the same.
 > **In short:** CHAIN makes all the tracks change section together, so the whole project moves from A to B at once,
 > like a band going into the chorus.
 
-**GLO > CHAIN** gives the whole project one FORM, so the tracks' sections line up: on each phrase line the CHAIN moves
+**GLO > CHAIN** gives the whole project one FORM, so the tracks' sections line up. On each phrase line the CHAIN moves
 to its next letter, and every generator track that FOLLOWs moves to its own A, B or C at the same moment (made by its
 CONTR the first time, recalled after, varied by its DEVELOP). Phrases are counted in bars from PLAY, so a change always
 lands on a downbeat, whatever each track's DIV.
@@ -1124,24 +1154,35 @@ lands on a downbeat, whatever each track's DIV.
 |---|---|---|
 | 1 | **FORM** | OFF, AB, ABAC, ABCB, AABA, ABCA or AABC. OFF (the default): every track as set, nothing changes. |
 | 2 | **PHRASE** | 4, 8 or 16 bars a phrase. |
-| 3 | **WANDER** (0–100 %) | 0 plays the FORM as written, round and round. Up, the next letter is more often chosen than read. |
+| 3 | **WANDER** (0–100 %) | 0 plays the FORM as written, round and round. Turned up, the next letter is more often chosen than read. |
+| 1 to 4, OCT- held | **REPEAT** (1 to 8 phrases) | How many phrases each place in the FORM plays. ABAC with A at 2 and C at 3 plays A A B A C C C, then again. |
 
-Hold **OCT-** for each place's **REPEAT** (KNOB 1 to 4, 1 to 8 phrases): ABAC with A at 2 and C at 3 plays
-A A B A C C C, then again. The picture shows the places as blocks as long as their repeats, the one playing filled with
-its phrases along the foot, and the tracks that follow.
+**The picture** shows the places as blocks as long as their repeats, the one playing filled with its phrases along the
+foot, and the tracks that follow.
 
-WANDER's choices keep a shape: A is home and comes back the longer the music is away; a letter not heard yet comes
-only after a return to A; a letter plays twice running only if the FORM has it twice (AABA); a chosen letter plays its
-first place's REPEAT. Each phrase further from A makes the next new section a little more different (up to +30 on its
-CONTR). The choices come from the tracks' SEEDs, so PLAY plays the same piece again. While a track follows, its own
-EVERY waits (the CHAIN's phrases are its sections) and FLOURISH plays on the CHAIN's last beat.
+**WANDER keeps a shape:**
 
-**A key for each section.** SCL's last rows, **Key in B** and **Key in C** (KEY B, KEY C: -12 to +12 semitones, 0 the default)
-move the key while the CHAIN plays its B or C: +5 takes B a fourth up, +7 a fifth, -2 a
-tone down. A is always the key as set. Every track that follows the CHAIN moves, its scale with it, on the phrase line;
-melodic STEP tracks move too (unless set OWN), drum tracks and OWN tracks never; a SKIP holds the track's key with its
-section. ROOT and TRN stay as set, so STOP is back in A's key. Saved with the project; older firmware plays every
-section in A's key.
+- A is home, and comes back the longer the music is away.
+- A letter not heard yet comes only after a return to A.
+- A letter plays twice running only if the FORM has it twice (AABA).
+- A chosen letter plays its first place's REPEAT.
+- Each phrase further from A makes the next new section a little more different (up to +30 on its CONTR).
+- The choices come from the tracks' SEEDs, so PLAY plays the same piece again.
+
+**A following track:** its own EVERY waits (the CHAIN's phrases are its sections), and FLOURISH plays on the CHAIN's
+last beat.
+
+#### A key for each section
+
+SCL's last rows, **Key in B** and **Key in C** (KEY B, KEY C: −12 to +12 semitones, 0 the default), move the key while
+the CHAIN plays its B or C. For example, +5 takes B a fourth up, +7 a fifth, −2 a tone down. A is always the key as
+set.
+
+- Every track that follows the CHAIN moves, its scale with it, on the phrase line.
+- Melodic STEP tracks move too (unless set OWN). Drum tracks and OWN tracks never move.
+- A SKIP holds the track's key with its section.
+- ROOT and TRN stay as set, so STOP is back in A's key.
+- Saved with the project.
 
 ### ENTRIES: tracks out and back in
 
@@ -1149,8 +1190,8 @@ section in A's key.
 > a musical order (the bass comes in first, the melody leaves first). You can still mute and unmute by hand.
 
 **GLO > ENTRIES** lets tracks drop out and come back on the CHAIN's phrase lines, so a piece thins and fills over
-time without a hand on the mutes. It works with the CHAIN's FORM on or OFF (OFF: phrases of the CHAIN's PHRASE, a
-section every 4 phrases), and on every track, STEP tracks too.
+time without a hand on the mutes. It works on every track, STEP tracks too, with the CHAIN's FORM on or OFF (OFF:
+phrases of the CHAIN's PHRASE, a section every 4 phrases).
 
 <p align="center"><img src="assets/gallery/glo_entries.png" alt="ENTRIES" width="240"> <img src="assets/gallery/glo_entries_roles.png" alt="ENTRIES with OCT- held: the roles" width="240"></p>
 
@@ -1160,45 +1201,67 @@ section every 4 phrases), and on every track, STEP tracks too.
 | 2 | **DWELL** (1–8 phrases) | The least a track stays in or out before it moves again (default 2). |
 | 3 | **STYLE** | CUT: in or out at once on the line. FADE (the default): its level fades over FADE bars from the line. |
 | 4 | **FADE** (1–4 bars) | How long a FADE takes. |
+| 1 to 4, OCT- held | **ROLE** | Each track's part: **BASS**, **RHYTHM**, **HARMONY**, **MELODY**, **ANCHOR** or AUTO (the default). Also on FORM (OCT- held, KNOB 4). |
 
-Hold **OCT-** for each track's **ROLE** (KNOB 1 to 4; also OCT- held on FORM, KNOB 4): **BASS**, **RHYTHM**,
-**HARMONY**, **MELODY** or **ANCHOR**. AUTO (the default) guesses, looking at all four tracks together: CHORD, chord
-keys (CHRD) or a STEP pattern mostly of chords is harmony; ATLAS, a drum kit, SLICE or NOISE is rhythm; of the rest, the
-lowest track is bass when it sits a fifth or more below every other track (or below C3), and anything else is melody.
-Before PLAY it goes by the settings (a generator's ROOT and TRN, a STEP pattern's notes), once playing by the notes
-heard; the guess is made at PLAY and on each section's line, and holds in between. The picture shows each track's
-role (AUTO's guess marked \*), whether it is IN, OUT or muted by hand, and its level.
+> **Try this:** set the CHAIN's FORM to ABAC and ENTRIES to 50 %. Press PLAY and leave it: tracks drop out where a
+> section begins and come back one a phrase, bass first.
 
-The ENTRIES sheet (hold **OCT+**) has each track's **ORDER** (Order T1 to T4, KNOB 2): **AUTO** (the default) or **1ST**, **2ND**, **3RD**, **4TH**,
-to choose the order tracks come in, for example the bass third instead of first. Numbered tracks come in first, one a
-phrase, lowest number first; the AUTO tracks follow by ROLE as below. They leave the other way round: last in, first
-out, so the AUTO tracks leave before the numbered ones and 1ST leaves last. Each number is one track's: setting a
-number another track holds swaps the two (the header says which track moved, for example T2 NOW AUTO); AUTO can be
-any number of tracks. A project saved with two tracks on one number keeps them, and they take turns. An
-ANCHOR still never leaves, and only an AUTO melody waits for a bass or harmony (a numbered one comes in when its turn
-comes). With every track on AUTO, ENTRIES picks the order itself. While OCT- is held the picture shows each track's
-ORDER in place of its role. ORDER is saved with the project; a project from before it loads as AUTO, and firmware
-before 3.5 loads a project that uses it with every track on AUTO (the rest of the project as saved).
+#### How it moves
 
-How it moves, in the ways music is usually built:
-
-- Where a section begins (the CHAIN moves on), a new number of tracks to leave out is chosen, one more or one fewer;
-  away from A mostly thinner, back on A fuller. Exits happen there, all at once, MELODY first, then HARMONY, RHYTHM
-  and BASS last (with ORDER set: the highest number first).
-- Entries come one a phrase the other way round, BASS first; a melody comes in only over a bass or harmony that is
-  playing.
-- With ENTRIES above 50, the phrase before a return to A (after two phrases away or more) drops to the anchors, and A
-  comes back with everything. Without an ANCHOR, the track lowest in that order plays on alone.
-- An **ANCHOR** is never taken out. At least one track always plays.
-- Each change is decided a bar ahead: that track's mute key on GLO blinks quickly through the bar. A track with
-  FLOURISH set comes in on its flourish, the bar's last beat.
-- A track out plays no notes (none to MIDI OUT either), like a muted one.
-- With STYLE at FADE, MIDI OUT fades too: while a track fades out or in, its notes go out softer, their velocity
+- **Where a section begins** (the CHAIN moves on), a new number of tracks to leave out is chosen, one more or one
+  fewer: away from A mostly thinner, back on A fuller. Exits happen there, all at once: MELODY first, then HARMONY,
+  RHYTHM and BASS last (with ORDER set: the highest number first).
+- **Entries** come one a phrase, the other way round: BASS first. A melody comes in only over a bass or harmony that
+  is playing.
+- **Before a return to A:** with ENTRIES above 50, the phrase before a return to A (after two phrases away or more)
+  drops to the anchors, and A comes back with everything. Without an ANCHOR, the track lowest in that order plays on
+  alone.
+- **An ANCHOR** is never taken out. At least one track always plays.
+- **A bar's warning:** each change is decided a bar ahead, and that track's mute key on GLO blinks quickly through the
+  bar. A track with FLOURISH set comes in on its flourish, the bar's last beat.
+- **A track that is out** plays no notes (none to MIDI OUT either), like a muted one.
+- **MIDI OUT fades too** with STYLE at FADE: while a track fades out or in, its notes go out softer, their velocity
   following its level (never below 1). A synth that ignores velocity still cuts. CUT sends every note as played.
 
-Your hand wins. A track you mute stays muted and is left out of the rules. Its mute key on GLO brings a track Entries
-took out straight back, and Entries leaves it alone until the next section. SOLO is heard whatever Entries says.
-The choices come from the tracks' SEEDs, so PLAY plays the same piece again; STOP brings every track back.
+#### Your hand wins
+
+- A track you mute stays muted and is left out of the rules.
+- Its mute key on GLO brings a track Entries took out straight back, and Entries leaves it alone until the next
+  section.
+- SOLO is heard whatever Entries says.
+- STOP brings every track back.
+- The choices come from the tracks' SEEDs, so PLAY plays the same piece again.
+
+#### How AUTO guesses a ROLE
+
+AUTO looks at all four tracks together:
+
+- CHORD, chord keys (CHRD) or a STEP pattern mostly of chords is **harmony**;
+- ATLAS, a drum kit, SLICE or NOISE is **rhythm**;
+- of the rest, the lowest track is **bass** when it sits a fifth or more below every other track (or below C3);
+- anything else is **melody**.
+
+Before PLAY it goes by the settings (a generator's ROOT and TRN, a STEP pattern's notes); once playing, by the notes
+heard. The guess is made at PLAY and on each section's line, and holds in between. The picture shows each track's role
+(AUTO's guess marked \*), whether it is IN, OUT or muted by hand, and its level.
+
+#### ORDER: choose who comes in first
+
+The ENTRIES sheet (hold **OCT+**) has each track's **ORDER** (Order T1 to T4, KNOB 2): **AUTO** (the default), or
+**1ST**, **2ND**, **3RD**, **4TH**. Use it to choose the order tracks come in, for example the bass third instead of
+first.
+
+- Numbered tracks come in first, one a phrase, lowest number first. The AUTO tracks follow by ROLE, as above.
+- They leave the other way round, last in first out: the AUTO tracks leave before the numbered ones, and 1ST leaves
+  last.
+- Each number belongs to one track. Setting a number another track holds swaps the two, and the header says which
+  track moved (for example T2 NOW AUTO). AUTO can be any number of tracks.
+- An ANCHOR still never leaves. Only an AUTO melody waits for a bass or harmony; a numbered one comes in when its turn
+  comes.
+- With every track on AUTO, ENTRIES picks the order itself.
+- While OCT- is held, the picture shows each track's ORDER in place of its role.
+- A project saved with two tracks on one number keeps them, and they take turns.
+- ORDER is saved with the project. A project from before it loads as AUTO.
 
 ### LANDSCAPE: rain on water
 
@@ -1206,80 +1269,128 @@ The choices come from the tracks' SEEDs, so PLAY plays the same piece again; STO
 > project is a place of its own, with something to find on its shores. The scene changes nothing; the knobs are
 > PERF's macros.
 
-**GLO > LANDSCAPE** is a page to look at while the music plays: a night sea, drawn by the music.
-It has no settings, and the scene itself changes nothing. The keys are MIXER's (mute, solo, FILL, tap) and **KNOB 1
-to 4** are PERF's **MACRO 1 to 4**, so you can thin the music or make a big move and watch the sea answer. A macro
-being turned shows large across the foot (whatever LARGE VALUE is set to; there are no columns here) and the screen
-reader says it. With **IDLE LANDSCAPE**, the first touch, a knob too, still only takes you back to your page: a bump
-never changes the music.
+**GLO > LANDSCAPE** is a page to look at while the music plays: a night sea, drawn by the music. It has no settings,
+and the scene itself changes nothing.
+
+- **The keys** are MIXER's (mute, solo, FILL, tap).
+- **KNOB 1 to 4** are PERF's **MACRO 1 to 4**, so you can thin the music or make a big move and watch the sea answer.
+  A macro being turned shows large across the foot (whatever LARGE VALUE is set to; there are no columns here), and
+  the screen reader says it.
+- **With IDLE LANDSCAPE**, the first touch, a knob too, still only takes you back to your page: a bump never changes
+  the music.
+- The scene only listens while the page shows.
 
 <p align="center"><img src="assets/gallery/glo_land_rain.png" alt="LANDSCAPE" width="240"></p>
 
-- Each note a track plays is a drop on the water. **Pitch** sets where it lands, low notes at the left, high at the
-  right. **T1** lands far out, **T4** close by. Louder notes open wider rings, with a second ring inside.
-- **ENERGY**'s tide moves the clouds: more and lower as it fills, a thin wisp as it falls sparse. While playing, the
-  clouds drift with the wind: to the right while the tide builds, to the left while it thins, faster the steeper it
-  is, and still at its turns. Without ENERGY they drift right, as the wind always blew. A **rest** lays mist on the
-  water, and the moon's reflection fades into it until the notes come back.
-- **Stars** come out as the music thins and all of them once nothing has played for a few seconds; at night a few are
-  always out, however busy the music, and the next ones come and go dimly. While playing the
-  moon's reflection shimmers, between notes too; stopped, the water is still and the reflection lies quiet.
+| What happens in the music | What you see |
+|---|---|
+| A track plays a note | A drop on the water. **Pitch** sets where it lands, low notes at the left, high at the right. **T1** lands far out, **T4** close by. Louder notes open wider rings, with a second ring inside. In the MOSAIC palette, each track's drops are in its own colour. |
+| **ENERGY**'s tide | Moves the clouds: more and lower as it fills, a thin wisp as it falls sparse. |
+| A **rest** | Mist on the water. The moon's reflection fades into it until the notes come back. |
+| The music thins | **Stars** come out, and all of them once nothing has played for a few seconds. |
+| A **PIECE** (LENGTH set) | The moon crosses the sky (see below). |
+| The **CHAIN** moves on | Each section has its own shore, coming in from the right (see below). |
+
+Each of these shows only when its layer is on. Nothing new moves on the water but the rain (and a cherry's petals).
+
+<details>
+<summary>More detail: clouds, stars and water</summary>
+
+- While playing, the clouds drift with the wind: to the right while the tide builds, to the left while it thins,
+  faster the steeper it is, and still at its turns. Without ENERGY they drift right, as the wind always blew.
+- At night a few stars are always out, however busy the music, and the next ones come and go dimly.
+- While playing, the moon's reflection shimmers, between notes too. Stopped, the water is still and the reflection lies
+  quiet.
 - On **GROUND LIGHT** it is day: a sun (a ring with short rays) takes the moon's place on the same arc, and no stars
   come out. Rain, clouds, hills and the water are the same.
-- A **PIECE** (LENGTH set) moves the moon across the sky, rising at the left as it starts and setting at the right; its
-  **phase** follows its climb, evenly: a thin crescent as it rises, fuller as it climbs, full at the top half way
-  through the piece, then thinner to the other crescent as it sets. It waxes on the way up (lit on the left) and
-  wanes on the way down (lit on the right), as the moon does over a month seen from the southern hemisphere: low at
-  either end, it faces into the scene. Over the piece's
-  last tenth dusk falls (GROUND LIGHT: the sky darkens from the hills up) and at night the stars come out. END STOP:
-  the moon sets behind the hills.
-- **CHAIN**: each section has its own shore. When the form moves on, the new shore comes in from the right, as if
-  you were travelling; back to A, you are home. Where the two shores meet they run into each other, so a hill
-  carries on into the next. When the whole form comes round, a shooting star crosses the sky.
-- **A place of its own**: a project with a name gets its own landscape, made from the name: the shape of its hills,
-  where its stars are, where the moon rests, and its kind of place. Most are **islands**, with open water between;
-  about a quarter are **land cut by narrow channels**, with an arched bridge over the first; about one in eight are
-  **all land**. The same name is always the same place; renaming a project takes it
-  somewhere else. An unnamed project keeps the old view: one long shore, with nothing on it.
-- **One thing on each shore**: A's shore has a torii gate (on an all-land place, a seated Buddha with a halo in its
-  place). With a CHAIN, B and C each have one of a pagoda, a stone lantern and a pine, in an order of the place's own,
-  never two on a shore (the bridge aside). Sometimes a shore is left bare, just hills and water, and now and then a
-  flowering cherry stands in for the pine, letting fall a few slow petals while the music plays. Each stands
-  upside down in the water below, rippling. The lantern is lit: its glow grows a little as the notes land. Each
-  takes an ink of the palette's that suits it: the torii, pagoda and bridge the gate's (MOSAIC pink), the Buddha the
-  moon's, the pine the hills', the cherry's blossom the gate's over a trunk of the hills'.
 
-Each of these shows only when its layer is on; nothing new moves on the water but the rain (and a cherry's petals).
+</details>
 
-The scene only listens while the page shows. In the MOSAIC palette each track's drops are in its own colour.
+#### The moon and a PIECE
+
+A **PIECE** (LENGTH set) moves the moon across the sky, rising at the left as it starts and setting at the right.
+
+- **Its phase** follows its climb, evenly: a thin crescent as it rises, fuller as it climbs, full at the top halfway
+  through the piece, then thinner to the other crescent as it sets.
+- It waxes on the way up (lit on the left) and wanes on the way down (lit on the right), as the moon does over a month
+  seen from the southern hemisphere: low at either end, it faces into the scene.
+- **Dusk:** over the piece's last tenth dusk falls (on GROUND LIGHT, the sky darkens from the hills up), and at night
+  the stars come out.
+- **END STOP:** the moon sets behind the hills.
+
+#### Shores and places
+
+- **The CHAIN:** each section has its own shore. When the form moves on, the new shore comes in from the right, as if
+  you were travelling; back to A, you are home. Where two shores meet they run into each other, so a hill carries on
+  into the next. When the whole form comes round, a shooting star crosses the sky.
+- **A place of its own:** a project with a name gets its own landscape, made from the name: the shape of its hills,
+  where its stars are, where the moon rests, and its kind of place. The same name is always the same place; renaming a
+  project takes it somewhere else. An unnamed project keeps the old view: one long shore, with nothing on it.
+
+| Kind of place | How often |
+|---|---|
+| **Islands**, with open water between | Most |
+| **Land cut by narrow channels**, with an arched bridge over the first | About a quarter |
+| **All land** | About one in eight |
+
+**One thing on each shore:**
+
+- **A's shore** has a torii gate (on an all-land place, a seated Buddha with a halo in its place).
+- **With a CHAIN,** B and C each have one of a pagoda, a stone lantern and a pine, in an order of the place's own,
+  never two on a shore (the bridge aside).
+- Sometimes a shore is left bare, just hills and water. Now and then a flowering cherry stands in for the pine,
+  letting fall a few slow petals while the music plays.
+- Each stands upside down in the water below, rippling. The lantern is lit, and its glow grows a little as the notes
+  land.
+- **Colours:** each takes an ink of the palette's that suits it. The torii, pagoda and bridge take the gate's (MOSAIC
+  pink), the Buddha the moon's, the pine the hills', and the cherry's blossom the gate's, over a trunk of the hills'.
 
 ### PERF: four macros
 
 > **In short:** four knobs for performing. Each macro can drive as many mods as you like, so one turn can open
 > filters, add reverb and speed up the tempo together.
 
-**GLO > PERF** (the page after MIXER; its keys are MIXER's: mute, solo, FILL, tap) gives you four hand controls for the whole project: **KNOB 1 to 4** set
-**MACRO 1 to 4**, 0 to 100 %. A macro does nothing by itself. In **MODS**, pick **MACRO 1 to 4** as a mod's source
-(they are the project's, so they show without a track) and send it anywhere: a filter, a level, an FX send, TEMPO,
-another mod's amount. One macro can drive as many mods as you like, so a single knob can open a filter, raise the
-reverb and push the tempo together.
+**GLO > PERF** is the page after MIXER, and its keys are MIXER's (mute, solo, FILL, tap). It gives you four hand
+controls for the whole project: **KNOB 1 to 4** set **MACRO 1 to 4**, 0 to 100 %.
+
+A macro does nothing by itself. In **MODS**, pick **MACRO 1 to 4** as a mod's source (they are the project's, so they
+show without a track) and send it anywhere: a filter, a level, an FX send, TEMPO, another mod's amount. One macro can
+drive as many mods as you like.
+
+> **Try this:** in MODS, make three cords from **MACRO 1**: to T1 CUTOFF, to SF1 MIX (a send effect) and to TEMPO.
+> Back on PERF, KNOB 1 now opens a filter, raises the effect and pushes the tempo together.
 
 <p align="center"><img src="assets/gallery/glo_perf.png" alt="PERF" width="240"></p>
 
-The page shows each macro as a bar and how many mods it drives. The macros are saved with the project. A project
-with a mod from a macro loses that mod on older firmware.
+The page shows each macro as a bar, and how many mods it drives. The macros are saved with the project.
 
-**MOD DEPTH** (hold **OCT+** on PERF for its sheet) is one control for how much of the whole patch plays, 0 to
-100 % (100, the default, plays every mod as set). It scales the moving part of every mod with a source (AMOUNT times
-the source), onto any destination, FILL, TEMPO and CC included; it never scales an OFFSET, so fixed mods, a CC's base
-value and a GATE's threshold stay where they are. At 0 the patch is dry: FILL is no longer held by mods, TEMPO is
-back at BPM, CCs sit at their offsets. It is the brake for a feedback patch and a dry / patched control for playing.
-A mod of mods and a mod into a MIX bus are scaled once, where what they move lands, so a chain is not scaled twice.
-A CLOCK mod is left as it is (its AMOUNT is a division, not a move).
-It is also a destination, **MOD DEP** at the end of KNOB 3's list on MODS: a MACRO onto it at -100 % turns the patch
-dry as the knob goes up. Mods onto MOD DEP are not scaled by it. Note: a GATE mod onto FILL at AMOUNT 100 stops holding
-FILL once MOD DEPTH is under 50 %. Saved with the project; older firmware plays it at 100 % and does not load a
-project with a mod onto MOD DEP.
+#### MOD DEPTH: a brake for the whole patch
+
+**MOD DEPTH** (hold **OCT+** on PERF for its sheet) sets how much of the whole patch plays, 0 to 100 %. 100, the
+default, plays every mod as set; 0 makes the patch dry. It is the brake for a feedback patch, and a dry / patched
+control for playing.
+
+- **What it scales:** the moving part of every mod with a source (AMOUNT times the source), onto any destination,
+  FILL, TEMPO and CC included.
+- **What it leaves:** it never scales an OFFSET, so fixed mods, a CC's base value and a GATE's threshold stay where
+  they are. A CLOCK mod is left as it is (its AMOUNT is a division, not a move).
+- **At 0:** FILL is no longer held by mods, TEMPO is back at BPM, and CCs sit at their offsets.
+- **Chains:** a mod of mods and a mod into a MIX bus are scaled once, where what they move lands, so a chain is not
+  scaled twice.
+- **As a destination:** **MOD DEP** sits at the end of KNOB 3's list on MODS. A MACRO onto it at −100 % turns the
+  patch dry as the knob goes up. Mods onto MOD DEP are not scaled by it.
+- **Note:** a GATE mod onto FILL at AMOUNT 100 stops holding FILL once MOD DEPTH is under 50 %.
+- Saved with the project.
+
+See the recipe [A brake for the whole patch](RECIPES.md#a-brake-for-the-whole-patch-mod-depth-35).
+
+### FORM and older firmware
+
+- **Key in B / Key in C:** older firmware plays every section in A's key.
+- **ENTRIES' ORDER:** firmware before 3.5 loads a project that uses it with every track on AUTO (the rest of the project
+  as saved).
+- **PERF:** a project with a mod from a macro loses that mod on older firmware.
+- **MOD DEPTH:** older firmware plays it at 100 %, and does not load a project with a mod onto MOD DEP.
 
 ---
 
