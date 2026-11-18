@@ -15,6 +15,7 @@
  *   build/host/demo_projects video OUTDIR      the demo video's audio, screens and captions (tools/demo_video.py)
  *   build/host/demo_projects tour OUTDIR       the 3.3 narrated tour's clips (tools/tour_video.py)
  *   build/host/demo_projects tour35 OUTDIR     the 3.5 demo video's clips (tools/tour_video.py demo35)
+ *   build/host/demo_projects guide OUTDIR      the manual's guided clips (tools/guide_video.py)
  *   build/host/demo_projects log N SECS        demo N's notes as CSV (time, track, note, velocity)
  *   build/host/demo_projects solo N T SECS [WAV] demo N with track T alone heard (0: all): the voices' cost, as a
  *                                              device CPU guide, and the render
@@ -2940,6 +2941,159 @@ static void solo(uint32_t d, uint32_t only, uint32_t secs, const char *wav)
            capacity_steals - steals0);
 }
 
+/* ------------------------------------------------------- the manual's guides --- */
+/* guide OUTDIR: the manual's guided clips (tools/guide_video.py), each a scene played with the keys and buttons a hand
+ * would press, every press after a caption that says what comes. OUTDIR/<clip>.wav, OUTDIR/<clip>/f00000.ppm ..,
+ * OUTDIR/guide.tsv: clip, caption at (s), press at (s), let go at (s), control, its label, caption ("-": the caption
+ * before it goes on). GUIDE_ONLY=prefix: those clips only */
+typedef struct { uint32_t cap_ms, act_ms, dur; const char *ctl, *label, *caption; int32_t turn; } gstep_t;
+/* ctl: a key (G_KEYS), a button (panel.c B_NAME) held dur ms, or a knob (E_NAME) turned turn detents over dur ms */
+static const char *const G_KEYS[] = {"F3", "F#3", "G3", "G#3", "A3", "A#3", "B3", "C4", "C#4", "D4", "D#4", "E4", "F4",
+                                     "F#4", "G4", "G#4", "A4", "A#4", "B4", "C5", "C#5", "D5", "D#5", "E5", "F5",
+                                     "F#5", "G5"};
+/* MIXER: four plain parts, nothing automatic (no ENTRIES, no PIECE, no mod on FILL), so every key is heard as pressed.
+ * T1 a 909 in STEP, its last three steps a snare roll on FILL; T2 a bass on EUCLID; T3 an ORACLE pad on CHORD; T4 a
+ * koto on TURING. A minor pentatonic, 100 BPM */
+static void g_mixer_scene(void)
+{
+    song.g[G_BPM] = 100;
+    scale(9, 6, 0);
+    sends(80, 60, 70, 45);
+    sound(0, ENGI_DRUM, DK_909_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, 0, L_BD, 0, L_CH, L_BD, L_SD, L_SD, L_SD, L_SD};
+        static const uint8_t V[16] = {104, 0, 70, 0, 96, 0, 70, 0, 104, 0, 70, 80, 96, 76, 88, 100};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(0, i, L[i], V[i]);
+        step_set_cond(&trk[0].step[13], SC_FILL); step_set_cond(&trk[0].step[14], SC_FILL);
+        step_set_cond(&trk[0].step[15], SC_FILL);
+        trk[0].p[P_SLEN] = 16;
+    }
+    tx(0, TX_MODE, TESS_ENG_OFF); trk[0].p[P_SDIV] = DIV_16;
+    mixer(0, 100, 0, 15, 0);
+    sound(1, ENGI_TRIO, TR_FAT_BASS);
+    trk[1].p[P_SDIV] = DIV_16;
+    gen(1, TESS_ENG_EUCLID, 44);
+    tx(1, TX_EUC_STEPS, 16); tx(1, TX_EUC_PULSES, 5); tx(1, TX_EUC_ROT, 0);
+    tx(1, TX_TW_SHIFT, -12); tx(1, TX_NL_MODE, 1); tx(1, TX_NL_LEN, 1);
+    mixer(1, 96, 0, 5, 0);
+    sound(2, ENGI_ORACLE, OR_WARM_PAD);
+    trk[2].p[P_CHRD] = 1;                               /* DIA3 */
+    gen(2, TESS_ENG_CHORD, 7);
+    tx(2, TX_CH_PROG, GEN_CH_DRONE); tx(2, TX_CH_BARS, 2); tx(2, TX_CH_HIT, GEN_CH_HOLD); tx(2, TX_CH_OCT, -1);
+    mixer(2, 78, -20, 80, 0);
+    sound(3, ENGI_FM6, FX_KOTO_PLUCK);
+    trk[3].p[P_SDIV] = DIV_8;
+    gen(3, TESS_ENG_TURING, 23);
+    mixer(3, 92, 25, 60, 40);
+}
+static const gstep_t G_MIXER[] = {
+    {0, 0, 0, 0, 0, "MIXER: mute, solo and FILL. Four tracks are playing"},
+    {3500, 6500, 200, "GLO", "OPEN MIXER", "Tap GLO: the MIXER page opens"},
+    {9000, 12000, 200, "F#3", "MUTE TRACK 1", "Black key F#3 mutes track 1, the drums"},
+    {15000, 18000, 200, "F#3", "UNMUTE TRACK 1", "Press F#3 again: the drums come back"},
+    {21000, 24000, 5500, "G3", "SOLO TRACK 2", "Hold white key G3: only track 2, the bass, plays. Let go: all four again"},
+    {31000, 34000, 5600, "E4", "FILL", "Hold E4 for FILL: the steps set to FILL play, here a snare roll"},
+    {40000, 43000, 200, "A#3", "MUTE TRACK 3", "Black keys A#3 and C#4 mute tracks 3 and 4"},
+    {0, 44000, 200, "C#4", "MUTE TRACK 4", 0},
+    {45500, 48500, 200, "C4", "UNMUTE ALL", "C4 unmutes every track at once"},
+    {50500, 0, 0, 0, 0, "On any other page, hold GLO for the same keys"},
+};
+/* Season 1, episode 1: find your way. STILL TIDE, a minute in */
+static const gstep_t G_PAGES[] = {
+    {0, 0, 0, 0, 0, "Buttons open pages. You can't break anything by looking"},
+    {3500, 6500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: the GEN page, what this track plays (here CHORD)"},
+    {11000, 14000, 1200, "SELECT", "NEXT PAGE", "Turn SELECT: the next page under the same button (PATTERN)", 1},
+    {19000, 22000, 200, "ARP", "OPEN ARP", "Tap ARP: how the notes are shaped (EVOLVE first)"},
+    {27000, 30000, 200, "HOME", "GO HOME", "Tap HOME: back to the four tracks, from anywhere"},
+    {35000, 0, 0, 0, 0, "The header always names the page you are on"},
+};
+/* Season 1, episode 3: change the sound */
+static const gstep_t G_SOUND[] = {
+    {0, 0, 0, 0, 0, "HOME: the four tracks, each with its sound"},
+    {3500, 6500, 600, "ALGORITHM", "PICK TRACK 2", "Turn ALGORITHM to pick a track: here track 2", 1},
+    {11000, 14000, 2400, "PRESETS", "NEXT SOUNDS", "Turn PRESETS: track 2 steps through the next sounds (here to WARM PAD)", 3},
+    {20500, 23500, 2400, "PRESETS", "BACK", "Turn PRESETS back: the sound you had (KOTO WARM) returns", -3},
+    {30000, 0, 0, 0, 0, "Hold SAVE to keep the project with its sounds"},
+};
+/* Season 1, episode 4: keep it in key */
+static const gstep_t G_KEY[] = {
+    {0, 0, 0, 0, 0, "Every track plays in the project's key. SEL sets it"},
+    {3500, 6500, 4500, "SEL", "SET THE KEY", "Hold SEL and press a key: that note is the new root (A becomes D)"},
+    {0, 8000, 300, "D4", "ROOT D", 0},
+    {13500, 16500, 4500, "SEL", "SET THE KEY", "Still holding SEL, turn KNOB 2: another scale (DORIAN becomes MIXOLYDIAN)"},
+    {0, 17500, 1500, "KNOB 2", "NEXT SCALE", 0, 1},
+    {24000, 0, 0, 0, 0, "Let go of SEL: all four tracks follow, nothing to retune"},
+};
+static void g_run(const char *out, FILE *tsv, const char *name, const char *title, uint32_t secs, uint32_t pre,
+                  void (*make)(void), const char *ink, const gstep_t *g, uint32_t n)
+{
+    static vkey_t keys[32];
+    static vbtn_t btns[32];
+    static vturn_t turns[16];
+    static vstep_t st[2];
+    uint32_t nk = 0, nb = 0, nt = 0;
+    const char *only = getenv("GUIDE_ONLY");
+    if (only && strncmp(name, only, strlen(only))) return;
+    fprintf(tsv, "%s\t-2\t-1\t-1\t-\t%s\t%s\t0\n", name, ink, title);   /* (the clip's ink and title: caption at -2) */
+    for (uint32_t i = 0; i < n; i++) {
+        uint32_t k;
+        fprintf(tsv, "%s\t%.3f\t%.3f\t%.3f\t%s\t%s\t%s\t%d\n", name, g[i].caption ? g[i].cap_ms / 1000.0 : -1.0,
+                g[i].ctl ? g[i].act_ms / 1000.0 : -1.0, g[i].ctl ? (g[i].act_ms + g[i].dur) / 1000.0 : -1.0,
+                g[i].ctl ? g[i].ctl : "-", g[i].label ? g[i].label : "-", g[i].caption ? g[i].caption : "-", g[i].turn);
+        if (!g[i].ctl) continue;
+        for (k = 0; k < sizeof G_KEYS / sizeof G_KEYS[0] && strcmp(G_KEYS[k], g[i].ctl); k++) {}
+        if (k < sizeof G_KEYS / sizeof G_KEYS[0]) {
+            keys[nk++] = (vkey_t){g[i].act_ms, k, 1};
+            keys[nk++] = (vkey_t){g[i].act_ms + g[i].dur, k, 0};
+            continue;
+        }
+        for (k = 0; k < NB && strcmp(B_NAME[k], g[i].ctl); k++) {}
+        if (k < NB) {
+            btns[nb++] = (vbtn_t){g[i].act_ms, k, 1};
+            btns[nb++] = (vbtn_t){g[i].act_ms + g[i].dur, k, 0};
+            continue;
+        }
+        for (k = 0; k < NE && strcmp(E_NAME[k], g[i].ctl); k++) {}
+        if (k < NE && nt < 16u) turns[nt++] = (vturn_t){g[i].act_ms, k, g[i].turn, g[i].dur};
+        else fprintf(stderr, "guide: no control %s\n", g[i].ctl);
+    }
+    /* (the presses in time order: v_run takes them in turn) */
+    for (uint32_t i = 1; i < nk; i++) for (uint32_t j = i; j && keys[j - 1].ms > keys[j].ms; j--) {
+        vkey_t t = keys[j]; keys[j] = keys[j - 1]; keys[j - 1] = t;
+    }
+    for (uint32_t i = 1; i < nb; i++) for (uint32_t j = i; j && btns[j - 1].ms > btns[j].ms; j--) {
+        vbtn_t t = btns[j]; btns[j] = btns[j - 1]; btns[j - 1] = t;
+    }
+    st[0] = (vstep_t){0, 1, 0, 0, "HOME"};
+    power_on();
+    make();
+    song.batt_raw = 600;                                /* (a full battery in the header: the host reads none) */
+    v_ink(ink);
+    vclip_t c = {.name = name, .secs = secs, .pre = pre, .st = st, .nst = 1, .keys = keys, .nkeys = nk,
+                 .btns = btns, .nbtns = nb, .turns = turns, .nturns = nt};
+    v_run(out, &c);
+}
+static void guide(const char *out)
+{
+    char path[600];
+    FILE *tsv;
+    mkdir(out, 0755);
+    snprintf(path, sizeof path, "%s/captions.txt", out);
+    if (!(v_cap = fopen(path, "w"))) return;
+    snprintf(path, sizeof path, "%s/guide.tsv", out);
+    if (!(tsv = fopen(path, "w"))) return;
+    v_t0 = 0;
+    /* the ink: the topic's (PLAN.md), MOSAIC where the four tracks are the point; the music: a different demo each */
+#define G_RUN(nm, title, ink, secs, pre, make, tab) \
+    g_run(out, tsv, nm, title, secs, pre, make, ink, tab, sizeof tab / sizeof tab[0])
+    G_RUN("e01-pages", "FIND YOUR WAY", "YELLOW", 40, 60, demo_still, G_PAGES);      /* ambient */
+    G_RUN("e03-sound", "CHANGE THE SOUND", "MOSAIC", 40, 30, demo_cedar, G_SOUND);   /* koto, ambient */
+    G_RUN("e04-key", "KEEP IT IN KEY", "BLUE", 44, 60, demo_dub, G_KEY);             /* ambient dub */
+    G_RUN("e07-mixer", "MUTE, SOLO, FILL", "MOSAIC", 56, 4, g_mixer_scene, G_MIXER); /* a beat */
+    fclose(tsv);
+    fclose(v_cap);
+}
+
 int main(int argc, char **argv)
 {
     int bad;
@@ -2980,6 +3134,7 @@ int main(int argc, char **argv)
     else if (argc >= 3 && !strcmp(argv[1], "video")) return video(argv[2]);
     else if (argc >= 3 && !strcmp(argv[1], "tour")) { t_only = getenv("TOUR_ONLY"); tour(argv[2]); return 0; }
     else if (argc >= 3 && !strcmp(argv[1], "tour35")) { t_only = getenv("TOUR_ONLY"); tour35(argv[2]); return 0; }
+    else if (argc >= 3 && !strcmp(argv[1], "guide")) { guide(argv[2]); return 0; }
     else if (argc >= 2 && !strcmp(argv[1], "levels")) { levels(argc > 2 ? (uint32_t)atoi(argv[2]) : 60u); return 0; }
     else { fprintf(stderr, "demo_projects [checks] make DIR [SECS] | [checks] check DIR\n"); return 2; }
     printf(bad ? "demos: %d FAILED\n" : "demos passed\n", bad);
