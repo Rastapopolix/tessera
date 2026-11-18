@@ -1920,73 +1920,169 @@ sound browser, the slot pages and SCALES say what is selected. Tessera's abbrevi
 > **In short:** device settings you set once and then forget, plus a few for playing: MIDI LEARN puts Tessera's knobs
 > on your controller (and remembers them), and MUTES makes mutes land on the bar or the phrase.
 
-Hold **HOME** for the menu. Its rows come in groups: the screen, the knobs and buttons, playing, MIDI, USB, then the tools. Tessera's additions, in that order:
+Hold **HOME** for the menu. Its rows come in groups: the screen, the knobs and buttons, playing, MIDI, USB, then the
+tools. Tessera's additions are below, in that order.
 
 <p align="center"><img src="assets/gallery/menu_ground.png" alt="The menu on GROUND" width="240"></p>
 
-| Item | What it does |
+#### The screen
+
+| Item | Choices | What it does |
+|---|---|---|
+| **COLOR** | YELLOW (the default), WHITE, GREEN, BLUE, RED, ORANGE, PINK, HOT PINK, LILAC; MOSAIC, SUNSET, OCEAN, NEON | The screen's ink, on black. MOSAIC, SUNSET, OCEAN and NEON give each track its own colour, with the selection in white. |
+| **GROUND** | **DARK** (the default), **LIGHT** | What the ink is drawn on: black, or warm paper with each ink's darker light version (see *The look* in [The panel at a glance](#the-panel-at-a-glance)). Saved. |
+| **KNOBS** | **DIAL** (the default), **BAR** | How the four knobs' values are drawn on every page. BAR is an upright bar that fills from the bottom. MIXER and the home page keep their dials. Saved. |
+| **LARGE VALUE** | **AUTO** (the default), **ON**, **OFF** | Shows the knob you turn, its name and value, large across the foot of the screen. Saved. |
+| **TEXT** | **NORMAL** (the default), **BOLD** | The weight of the screen's small letters. BOLD makes each stroke a pixel wider, for a screen read from a distance or with low vision; the letters stay apart. Saved. |
+| **IDLE** | **OFF** (the default), **LANDSCAPE** | With LANDSCAPE, after two minutes without a touch while playing, the screen moves to LANDSCAPE: for long pieces, installations or filming. Saved. |
+| **NOTE LIGHTS** | **OFF** (the default), **STEP**, **ALL** | Lights each key while the selected track's sequence plays its note, so you can watch the line move over the keys. Saved. |
+| **BATTERY** | **ON** (the default), **WHEN LOW** | When the header shows the battery. Saved. |
+| **PANEL GAMMA** | **G2.2** (the default, the panel chip's own), G1.8, G2.5, G1.0, TUNED, TUNED+VCOM | The screen's contrast curve. The screen goes black for a moment and redraws. Saved. |
+
+- **Picking a COLOR.** Holding HOME opens the list. Turn **KNOB 2** on COLOR (or press **OCT+**) and every colour shows
+  below it: ONE INK, then MOSAIC (the four-colour sets), with the one chosen framed. **KNOB 1** to another row, or
+  **OCT-**, folds them away.
+- **GROUND and TEXT:** KNOB 2 right picks LIGHT (BOLD), left DARK (NORMAL). OCT+ switches.
+- **LARGE VALUE:**
+  - **AUTO** shows it on the home page and on pages without a picture of their own, so a picture (a generator's sky,
+    an envelope, the LFO) stays in view while you turn.
+  - **ON** shows it on every page, and keeps it large for about a second after the knob stops, so you can read it
+    after you let go.
+  - **OFF** never shows it.
+  - Whatever the setting, the value always shows, inverted, in the knob's column.
+- **IDLE:** the first touch (a button, a key or a knob) only takes you back to the page you were on; it does nothing
+  else. The screen reader says nothing of it.
+- **NOTE LIGHTS:**
+  - **OFF:** only the keys you press and the notes MIDI holds light up.
+  - **STEP:** a STEP pattern's notes light too.
+  - **ALL:** every generator's notes light too (TURING, EUCLID, ATLAS and the rest).
+  - A key stays lit for as long as the note lasts. Only notes in the keys' octave light, and STEP's grid keeps its own
+    lights. KNOB 2 steps through the choices; OCT+ steps round.
+- **BATTERY:**
+  - **ON:** every page's header shows the battery, with its bars (none to three) on battery power, or solid with a bolt
+    in it on outside power (a computer, a hub or a charger). A long message takes its place while it shows.
+  - **WHEN LOW:** only when it is down to one bar or none, on the battery.
+  - Either way, when the last bar goes the screen says **BATTERY LOW** once. With autosave on, the project is then
+    saved as soon as you press STOP (no five seconds' wait), so a long piece is not lost to a flat battery. It never
+    saves while playing.
+
+#### The knobs and buttons
+
+| Item | Choices | What it does |
+|---|---|---|
+| **TRACK KNOB** | **RIGHT**, **LEFT** | RIGHT: the ALGORITHM knob picks the track and PRESETS browses sounds, as printed. LEFT: the two swap. |
+
+#### Playing
+
+| Item | Choices | What it does |
+|---|---|---|
+| **MUTES** | **NOW** (the default), **BAR**, **PHRASE** | When GLO's mute keys (and C4's UNMUTE ALL) take effect while playing: at once, on the next bar line, or on the next phrase line (the CHAIN's PHRASE, counted from PLAY). Saved. |
+
+- A mute key that is waiting blinks quickly. Press it again before the line to call it off.
+- When stopped, a press takes effect at once.
+- MUTES is also on MIXER's sheet (hold OCT+).
+
+#### MIDI
+
+| Item | Choices | What it does |
+|---|---|---|
+| **NOTES OUT** | **KEYS**, **ALL**, **OFF** | What goes out over USB MIDI: only the notes you play on the keys, or also the steps, the ARP, recordings and every generator. Each track goes out on its own channel: see [MIDI OUT channels](#midi-out-channels). |
+| **CLOCK OUT** | | Sends 24 pulses a beat (or GLO > MIDI IN's **PPQN**), with START and STOP, over USB while the clock is INT. |
+| **MIDI CC IN** | **ON** (the default), **OFF** | ON: CCs and NRPNs set the tracks' parameters (see [MIDI CC control](#midi-cc-control)). OFF: they move nothing, for a sequencer that sends CCs to other gear on the same channels. Bend, mod wheel, expression, sustain and aftertouch always play. Saved. |
+| **MIDI LEARN** | | Puts any knob on a CC of your controller (see below). |
+
+**MIDI LEARN, step by step:**
+
+1. Turn **KNOB 2** right on MIDI LEARN (or press **OCT+**). The menu closes and the screen says **LEARN: A KNOB**.
+2. Turn a knob on any page. It still edits; the screen names it and asks **SEND A CC**.
+3. Move your controller's knob. The screen shows **CC 21 =** then **T1 CUTOFF**.
+4. Repeat for up to 16 knobs. While learning, the header says **MIDI LEARN ON**. **OCT-** ends it, as does holding
+   HOME for the menu.
+
+- A learned CC works from any channel, on whatever page is shown. It takes over what the
+  [fixed CC map](#midi-cc-control) gave that CC, even with MIDI CC IN OFF.
+- The row shows how many knobs are learned. **KNOB 2** left asks **FORGET? OCT+**: OCT+ forgets them all, OCT- keeps
+  them.
+- They belong to the device, not to a project: they are kept through power-off and project loads (saved once the music
+  stops).
+
+#### USB
+
+| Item | Choices | What it does |
+|---|---|---|
+| **USB AUDIO** | **IN + OUT** (the default), **IN**, **OUT**, **OFF** | Which USB audio devices the computer sees, named from the FM-1's side. IN: the computer plays into the FM-1, through the device **Tessera In**. OUT: the computer records the FM-1 from the device **Tessera Out**. Saved. |
+| **USB OUTPUT** | **STEREO** (the default), **4 TRACKS** | What the FM-1 sends to the computer on Tessera Out: the mix on two channels, or each track on its own channel. See [Recording the four tracks as separate stems](#recording-the-four-tracks-as-separate-stems). Saved. |
+| **USB VOLUME** | **0 to 100 %** in 5 % steps (50 %, the default) | The level of the computer's audio played through the FM-1. Saved. |
+| **SIM CONTROL** | | Lets the FM-1's knobs, buttons and keys play the [web simulator](#saving-and-older-projects) only, while it mirrors the panel. Hold **FX + GLO** for a second to get the panel back. The row says **NO SIM** when no simulator is listening. Not saved: every start is off. |
+| **USB HOST** | **ON**, **OFF** (the default) | ON: the USB-C port hosts a USB-MIDI keyboard, controller, synth or MIDI-to-CV module, with no computer in between (see [USB host](#usb-host)). OFF: the port talks to a computer. Not saved: every start is OFF. |
+
+- **USB AUDIO:** the computer gets the change once the knob rests for a moment (the FM-1 reconnects).
+- **USB OUTPUT:** both choices are taken before MASTER.
+- **USB VOLUME:** this is apart from MASTER. The volume pot sets the FM-1's own sound, and USB VOLUME the computer's.
+  50 % is the old level at MASTER's default. What the FM-1 records over USB (stereo or four tracks) is taken before
+  MASTER too, so the pot never changes a recording's level.
+
+#### The tools
+
+| Item | What it shows |
 |---|---|
-| **COLOR** | The screen's ink, on black: YELLOW (the default), WHITE, GREEN, BLUE, RED, ORANGE, PINK, HOT PINK or LILAC; or MOSAIC, SUNSET, OCEAN or NEON, a colour per track with the selection in white. Holding HOME opens the list; turn KNOB 2 on COLOR (or press OCT+) and it shows them all below it: ONE INK, then MOSAIC (the four-colour sets), the one chosen framed. KNOB 1 to another row or OCT- folds them away. |
-| **GROUND** | What the ink is drawn on: **DARK** (the default), black, or **LIGHT**, warm paper with each ink's darker light version (see *The look*). KNOB 2 right LIGHT, left DARK; OCT+ switches. Saved. |
-| **KNOBS** | How the four knobs' values are drawn on every page: **DIAL** (the default) or **BAR**, an upright bar that fills from the bottom. MIXER and the home page keep their dials. Saved. |
-| **LARGE VALUE** | The knob you turn, its name and value large across the foot of the screen. **AUTO** (the default): on the home page and pages without a picture of their own, so a picture (a generator's sky, an envelope, the LFO) stays in view while you turn; **ON**: on every page; **OFF**: never. The value always shows, inverted, in the knob's column. With **ON** the value stays large about a second after the knob stops, so you can read it after you let go. Saved. |
-| **TEXT** | The weight of the screen's small letters: **NORMAL** (the default) or **BOLD**, each stroke a pixel wider, for a screen read from a distance or with low vision. The letters stay apart. KNOB 2 right BOLD, left NORMAL; OCT+ switches. Saved. |
-| **IDLE** | **OFF** (the default), or **LANDSCAPE**: after two minutes without a touch while playing, the screen moves to LANDSCAPE, for long pieces, installations or filming. The first touch (a button, a key or a knob) only takes you back to the page you were on; it does nothing else. The screen reader says nothing of it. Saved. |
-| **NOTE LIGHTS** | Lights each key while the selected track's sequence plays its note, for as long as the note lasts, so you can watch the line move over the keys. **OFF** (the default): only the keys you press and the notes MIDI holds light up. **STEP**: a STEP pattern's notes. **ALL**: every generator's notes too (TURING, EUCLID, ATLAS and the rest). Only notes in the keys' octave light; STEP's grid keeps its own lights. KNOB 2 steps, OCT+ steps round. Saved. |
-| **BATTERY** | **ON** (the default): every page's header shows the battery, its bars (none to three) on the battery, solid with a bolt in it on external power (a computer, a hub or a charger). A long message takes its place for as long as it shows. **WHEN LOW**: only when it is down to a bar or none, on the battery. Saved. Either way, when the last bar goes the screen says **BATTERY LOW** once; with autosave on, the project is then saved as soon as you press STOP (no five seconds' wait), so a long piece is not lost to a flat battery. It never saves while playing. |
-| **PANEL GAMMA** | The screen's contrast curve: the panel chip's own **G2.2** (the default), G1.8, G2.5 and G1.0, or TUNED and TUNED+VCOM. The screen goes black for a moment and redraws. Saved. |
-| **TRACK KNOB** | RIGHT: the ALGORITHM knob picks the track and PRESETS browses sounds, as printed. LEFT: the two swap. |
-| **MUTES** | When GLO's mute keys (and C4's UNMUTE ALL) take effect while playing. **NOW** (the default): at once. **BAR**: on the next bar line. **PHRASE**: on the next phrase line (the CHAIN's PHRASE, counted from PLAY). A key waiting blinks quickly; press it again before the line to call it off. Stopped, a press is at once. Saved. Also on MIXER's sheet (OCT+ held). |
-| **NOTES OUT** | What goes out over USB MIDI: **KEYS** (only the notes you play on the keys), **ALL** (also the steps, the ARP, recordings and every generator) or **OFF**. Each track on its own channel: see [MIDI OUT channels](#midi-out-channels). |
-| **CLOCK OUT** | 24 pulses a beat (or GLO > MIDI IN's **PPQN**) with START and STOP over USB, while the clock is INT. |
-| **MIDI CC IN** | **ON** (the default): CCs and NRPNs set the tracks' parameters (see [MIDI CC control](#midi-cc-control)). **OFF**: they move nothing, for a sequencer that sends CCs to other gear on the same channels. Bend, mod wheel, expression, sustain and aftertouch always play. Saved. |
-| **MIDI LEARN** | Puts any knob on a CC of your controller. Turn KNOB 2 right (or press OCT+): the menu closes and the screen says **LEARN: A KNOB**. Turn a knob on any page (it still edits; the screen names it and asks **SEND A CC**), then move the controller's knob: **CC 21 =** then **T1 CUTOFF**. Repeat for as many as 16 knobs. While learning, the header says **MIDI LEARN ON**; OCT- ends it, as does holding HOME for the menu. A learned CC works from any channel, on whatever page is shown, and takes over what the [fixed CC map](#midi-cc-control) gave it, even with MIDI CC IN OFF. The row shows how many are learned; KNOB 2 left asks **FORGET? OCT+**: OCT+ forgets them all, OCT- keeps them. They are the device's, not a project's: kept through power-off and project loads (saved once the music stops). |
-| **USB AUDIO** | Which USB audio devices the computer sees, named from the FM-1's side: **IN + OUT** (the default), **IN** (the computer plays into the FM-1, through device **Tessera In**), **OUT** (the computer records the FM-1 from device **Tessera Out**) or **OFF**. The computer gets the change once the knob rests for a moment (the FM-1 reconnects). Saved. |
-| **USB OUTPUT** | What the FM-1 sends to the computer on **Tessera Out**: **STEREO** (the default: the mix, two channels) or **4 TRACKS** (each track on its own channel). Both are taken before MASTER. For stems in a DAW see [Recording the four tracks as separate stems](#recording-the-four-tracks-as-separate-stems). Saved. |
-| **USB VOLUME** | The level of the computer's audio played through the FM-1, **0 to 100 %** in 5 % steps, apart from MASTER: the volume pot sets the FM-1's own sound, this the computer's. 50 % (the default) is the old level at MASTER's default. What the FM-1 records over USB (USB OUTPUT: stereo or four tracks) is taken before MASTER too, so the pot never changes a recording's level. Saved. |
-| **SIM CONTROL** | While the [web simulator](#saving-and-older-projects) mirrors the panel: the FM-1's knobs, buttons and keys play the simulator only. Hold **FX + GLO** for a second to get the panel back. **NO SIM**: no simulator listening. Not saved: every start is off. |
-| **USB HOST** | **ON**: the USB-C port hosts a USB-MIDI keyboard, controller, synth or MIDI-to-CV module, with no computer in between (see [USB host](#usb-host)). **OFF** (the default): the port talks to a computer. Not saved: every start is OFF. |
-| **ABOUT** | Version, credits, **POWER** (the battery's reading and bars, whether 5 V comes in), **SPACE** (how much flash and RAM this firmware leaves free for new features: FLASH 18.9 KB FREE, RAM 5.7 KB FREE; not space for your projects, and the RAM tail is used for sound while playing), and, after a crash, LAST CRASH (until power-off). |
+| **ABOUT** | The version and credits; **POWER**: the battery's reading and bars, and whether 5 V comes in; **SPACE**: how much flash and RAM this firmware leaves free for new features (FLASH 18.9 KB FREE, RAM 5.7 KB FREE); and, after a crash, LAST CRASH (until power-off). |
+
+SPACE is not space for your projects, and the RAM tail is used for sound while playing.
 
 ### MIDI OUT channels
 
 > **In short:** send each track to its own MIDI channel, so Tessera's generators can play your other synths. A track
 > can also go silent on the FM-1 and only play out over MIDI, or only modulate.
 
-**GLO > MIDI OUT** sets the channel each track's notes go out on, so every track can play its own instrument:
-**KNOB 1** to **4** for tracks 1 to 4.
+**GLO > MIDI OUT** sets the channel each track's notes go out on, so every track can play its own instrument.
+**KNOB 1** to **4** set tracks 1 to 4.
 
-- **AUTO** (the default): the channel follows **MIDI IN > ROUT** (CH1-4: tracks on 1 to 4). A drum
-  track does the same while **MIDI IN > DRUM** is **OFF** (the default); set DRUM to a channel, **10** for
-  General MIDI's drums, and a drum track uses that one instead.
-- **1** to **16**: that channel, whatever ROUT and DRUM say.
-- **OFF**: none of the track's notes go out.
+| Channel | What it does |
+|---|---|
+| **AUTO** (the default) | Follows **MIDI IN > ROUT** (CH1-4: tracks on channels 1 to 4). A drum track does the same while **MIDI IN > DRUM** is **OFF** (the default). Set DRUM to a channel (**10** for General MIDI's drums) and a drum track uses that one instead. |
+| **1** to **16** | That channel, whatever ROUT and DRUM say. |
+| **OFF** | None of the track's notes go out. |
 
-The MIDI OUT sheet (hold **OCT+**) sets each track's **DRUM MAP** (Drum map T1 to T4), the notes a drum track or ATLAS
-sends: **GM** (the default) General MIDI's drum notes, kick 36, snare 38, closed hat 42; **ROW** one note a drum in a
-row from 36, in the order of a drum machine's tracks such as the Analog Rytm's (kick, snare, rim, clap, -, low tom,
--, -, closed hat, open hat, -, bell). Then move the row onto the machine's first note with **TRANSPOSE**.
-
-The page lists each track's channel as it is now, AUTO's included. The channels are saved with the project. Which
-notes go out at all is still the menu's **NOTES OUT** (KEYS, ALL or OFF): for the steps and the generators, set it to
-**ALL**. While **ENTRIES** fades a track out or in (STYLE FADE), its notes go out softer with its level; see
-[ENTRIES](#entries-tracks-out-and-back-in).
-
-**TRANSPOSE**: hold **OCT-** on **GLO > MIDI OUT** and turn **KNOB 1** to **4** to move a track's notes up or down
-on their way out, a semitone a detent (12 an octave), up to four octaves either way. For a synth or a MIDI-to-CV
-module that plays them too high or too low: **-12** an octave down, **-24** two. Only what goes out over MIDI moves;
-the track's own sound stays where it is. A note moved past MIDI's range (0 to 127) is not sent. The page shows a
-track's TRANSPOSE after its channel when it is not 0 (**CH 1 ROUT -24**); it is saved with the project.
-
-**SOUND**: on the MIDI OUT sheet (hold **OCT+** on **GLO > MIDI OUT**), Sound T1 to T4 (KNOB 2 right OFF, left ON). A track at SOUND
-OFF plays nothing on the FM-1 and takes none of its voices, but its notes still go out over MIDI on its channel, and
-its GATE, NOTE and CV still move the mods. So a track can play an outside synth alone, or, with its channel OFF too,
-be a lane that only modulates the other tracks (a generator or a written STEP pattern driving their filters, say,
-through MODS). The keys
-played on that track make no sound either. The page shows **SND OFF** after the channel (**MODS ONLY** when the
-channel is OFF too); it is saved with the project, and firmware before it plays the track's sound as usual.
+- The page lists each track's channel as it is now, AUTO's included. The channels are saved with the project.
+- **Which notes go out at all** is still the menu's **NOTES OUT** (KEYS, ALL or OFF). For the steps and the
+  generators, set it to **ALL**.
+- While **ENTRIES** fades a track out or in (STYLE FADE), its notes go out softer with its level; see
+  [ENTRIES](#entries-tracks-out-and-back-in).
 
 <p align="center"><img src="assets/gallery/midi_out.png" alt="GLO > MIDI OUT" width="240"></p>
+
+#### TRANSPOSE: move the notes on their way out
+
+Hold **OCT-** on **GLO > MIDI OUT** and turn **KNOB 1** to **4** to move a track's notes up or down on their way out.
+
+- A semitone a detent (12 an octave), up to four octaves either way.
+- For a synth or a MIDI-to-CV module that plays them too high or too low: **-12** is an octave down, **-24** two.
+- Only what goes out over MIDI moves. The track's own sound stays where it is.
+- A note moved past MIDI's range (0 to 127) is not sent.
+- When it is not 0, the page shows a track's TRANSPOSE after its channel (**CH 1 ROUT -24**). It is saved with the
+  project.
+
+#### The MIDI OUT sheet: DRUM MAP and SOUND
+
+Hold **OCT+** on **GLO > MIDI OUT** for its sheet.
+
+**DRUM MAP** (Drum map T1 to T4) picks the notes a drum track or ATLAS sends:
+
+| Map | Notes |
+|---|---|
+| **GM** (the default) | General MIDI's drum notes: kick 36, snare 38, closed hat 42. |
+| **ROW** | One note per drum, in a row from 36, in the order of a drum machine's tracks such as the Analog Rytm's: kick, snare, rim, clap, -, low tom, -, -, closed hat, open hat, -, bell. Then move the row onto the machine's first note with **TRANSPOSE**. |
+
+**SOUND** (Sound T1 to T4; KNOB 2 right OFF, left ON). A track at SOUND OFF plays nothing on the FM-1 and takes none
+of its voices, but:
+
+- its notes still go out over MIDI on its channel, so it can play an outside synth alone;
+- its GATE, NOTE and CV still move the mods. With its channel OFF too, it becomes a lane that only modulates the other
+  tracks, for example a generator or a written STEP pattern driving their filters through MODS.
+
+The keys played on that track make no sound either. The page shows **SND OFF** after the channel (**MODS ONLY** when
+the channel is OFF too). It is saved with the project.
 
 ### MIDI CC control
 
@@ -1994,10 +2090,15 @@ channel is OFF too); it is saved with the project, and firmware before it plays 
 > MIDI LEARN in the menu is easier.
 
 External gear (a sequencer, a controller, norns or crow through a MIDI interface, a DAW) can turn Tessera's
-parameters. A track listens on the channel it plays on (**MIDI IN > ROUT**: CH1-4 is tracks 1 to 4 on channels 1 to 4;
-SEL the selected track; a drum track also on the **DRUM** channel, when DRUM is not OFF). A CC's 0 to 127 spans the whole range of the
-parameter, as turning its knob all the way would; the knob carries on from there. While recording, **MOTION** keeps
-the moves as it keeps the knob's. Cords and MOD go on adding to the value the CC sets.
+parameters.
+
+- **Which channel:** a track listens on the channel it plays on (**MIDI IN > ROUT**: CH1-4 is tracks 1 to 4 on
+  channels 1 to 4; SEL is the selected track). A drum track also listens on the **DRUM** channel, when DRUM is not OFF.
+- **The range:** a CC's 0 to 127 spans the parameter's whole range, as turning its knob all the way would. The knob
+  carries on from there.
+- While recording, **MOTION** keeps the moves, as it keeps the knob's.
+- Cords and MOD go on adding to the value the CC sets.
+- Turn **MIDI CC IN** off in the menu when another device's CCs should not reach Tessera.
 
 | CC | Sets |
 |---|---|
@@ -2019,63 +2120,115 @@ the moves as it keeps the knob's. Cords and MOD go on adding to the value the CC
 | 103 to 105 | The GEN page's KNOB 2 to 4 for the track's MODE (TURING: LENGTH, PROB, SPAN; EUCLID: STEPS, PULSE, ROT ..) |
 | 120, 121, 123 | All sound off, reset controllers, all notes off |
 
-**Every other parameter by NRPN.** Each parameter has a number, its ID in the
-[parameter reference](docs/PARAMETERS.md) (0x000 a track's, 0x100 the project's, 0x200 the generators'). Send
-NRPN MSB (CC 99) = ID / 128 and LSB (CC 98) = ID % 128, then the value with data entry: CC 6 (0 to 127), and CC 38 after
-it for 14-bit precision. Example: TURING PROB on track 1 is 0x202: CC 99 = 4, CC 98 = 2, CC 6 = the amount, on
-channel 1. A project setting (TEMPO, the send effects) answers on any channel a track listens on. Left out: the
-device's setup (MIDI input, clock source, ROUT), the buttons (LOAD, SAVE ..) and the song's scale (SCL, QNT), which
-stay on the device.
+#### Every other parameter, by NRPN
 
-Turn **MIDI CC IN** off in the menu when another device's CCs should not reach Tessera.
+Each parameter has a number: its ID in the [parameter reference](docs/PARAMETERS.md) (0x000 a track's, 0x100 the
+project's, 0x200 the generators').
+
+1. Send NRPN MSB (CC 99) = ID / 128, and LSB (CC 98) = ID % 128.
+2. Send the value with data entry: CC 6 (0 to 127), then CC 38 after it for 14-bit precision.
+
+Example: TURING PROB on track 1 is 0x202, so send CC 99 = 4, CC 98 = 2, CC 6 = the amount, on channel 1.
+
+- A project setting (TEMPO, the send effects) answers on any channel a track listens on.
+- Left out, and kept on the device: the device's setup (MIDI input, clock source, ROUT), the buttons (LOAD, SAVE ..)
+  and the song's scale (SCL, QNT).
 
 ### USB host
 
 > **In short:** plug a USB-MIDI keyboard or synth straight into the FM-1, with no computer in between.
 
-With **USB HOST** ON in the menu the FM-1 is the computer: plug a class-compliant USB-MIDI device into the USB-C port,
-directly or through a USB hub, and after a moment the screen says **USB MIDI READY**. A hub with another hub inside
-(as many USB-C hubs are) works too; a third hub is not followed.
+With **USB HOST** ON in the menu, the FM-1 is the computer. Plug a class-compliant USB-MIDI device into the USB-C port,
+directly or through a USB hub, and after a moment the screen says **USB MIDI READY**.
 
-- **In**: its notes, CCs, bend and clock arrive as USB MIDI from a computer would: MIDI ROUTING picks the tracks, CLK
+- **In:** its notes, CCs, bend and clock arrive as USB MIDI from a computer would. MIDI ROUTING picks the tracks, CLK
   on USB follows its clock, and the [CC map](#midi-cc-control) works from its knobs.
-- **Out**: what NOTES OUT and CLOCK OUT send goes to the device, so a USB synth or a USB-MIDI-to-CV module plays
-  Tessera's tracks and follows its clock (NOTES OUT **ALL** for the steps and generators).
-- **Power**: the FM-1 does not power the device. Use a **powered hub**, or a device with its own power supply.
-- One MIDI device at a time: the first one found (behind a hub, the first port with a MIDI device). Full-speed
-  devices only (**LOW SPEED** otherwise, behind a hub too); a device without USB-MIDI (a USB stick, crow) shows
-  **NO MIDI**. norns is itself a host, so connect it as before.
-- When nothing is found the screen adds **USB SCAN: ABOUT**: the menu's **ABOUT** then lists, under
-  **USB HOST SCAN**, what each hub port had: **P2 0103 NO MIDI 08** is port 2, its status in hex (1 connected,
-  2 enabled, 100 powered, 200 low speed, 400 high speed), what was found and the device's USB class in hex (01 audio
-  or MIDI, 03 a keyboard or mouse, 08 a stick, 09 a hub, 11 a hub's Billboard). Found: **EMPTY**, **LOW SPEED**,
-  **NO MIDI**, **HUB** (a hub inside, listed after it as HUB 2 with the port it is on), **MIDI**, or the step that
-  failed (**RESET FAIL**, **NOT ENABLED**, **NO ANSWER**, **ADDRESS FAIL**, **CONFIG FAIL**). Under the first line
-  (**ROOT**, what is plugged into the FM-1) come the try (a device that does not answer is reset up to four times,
-  over about four seconds), the controller's registers, and for a failure which request got which reply
-  (**@0 SETUP NO REPLY**: the device at address 0 did not answer the first request). A photo of it helps with a
-  report.
-- Unplugging shows **DEVICE LOST** and ends every note held from MIDI; plug it in again and it is found again.
-- While USB HOST is ON there is no computer link: no USB audio, no web editor, no updates. Turn it OFF, or restart the
-  FM-1 (it always starts OFF), to get them back.
+- **Out:** what NOTES OUT and CLOCK OUT send goes to the device, so a USB synth or a USB-MIDI-to-CV module plays
+  Tessera's tracks and follows its clock (set NOTES OUT to **ALL** for the steps and generators).
+- **Power:** the FM-1 does not power the device. Use a **powered hub**, or a device with its own power supply.
+- **One device at a time:** the first one found (behind a hub, the first port with a MIDI device).
+- **Hubs:** a hub with another hub inside (as many USB-C hubs are) works too; a third hub is not followed.
+- **Full-speed devices only.** A low-speed device shows **LOW SPEED** (behind a hub too). A device without USB-MIDI
+  (a USB stick, crow) shows **NO MIDI**. norns is itself a host, so connect it as before.
+- **Unplugging** shows **DEVICE LOST** and ends every note held from MIDI. Plug it in again and it is found again.
+- **No computer link while it's on:** no USB audio, no web editor, no updates. Turn USB HOST OFF, or restart the FM-1
+  (it always starts OFF), to get them back.
+
+<details>
+<summary>When nothing is found: reading USB HOST SCAN</summary>
+
+When nothing is found, the screen adds **USB SCAN: ABOUT**. The menu's **ABOUT** then lists, under
+**USB HOST SCAN**, what each hub port had. A photo of it helps with a report.
+
+**A port's line.** **P2 0103 NO MIDI 08** reads as:
+
+- **P2**: port 2;
+- **0103**: its status in hex (1 connected, 2 enabled, 100 powered, 200 low speed, 400 high speed);
+- **NO MIDI**: what was found;
+- **08**: the device's USB class in hex (01 audio or MIDI, 03 a keyboard or mouse, 08 a stick, 09 a hub, 11 a hub's
+  Billboard).
+
+**What was found:** **EMPTY**, **LOW SPEED**, **NO MIDI**, **HUB** (a hub inside, listed after it as HUB 2 with the
+port it is on), **MIDI**, or the step that failed: **RESET FAIL**, **NOT ENABLED**, **NO ANSWER**, **ADDRESS FAIL**,
+**CONFIG FAIL**.
+
+**Under the first line** (**ROOT**, what is plugged into the FM-1) come:
+
+- the try: a device that does not answer is reset up to four times, over about four seconds;
+- the controller's registers;
+- for a failure, which request got which reply (**@0 SETUP NO REPLY**: the device at address 0 did not answer the
+  first request).
+
+</details>
 
 ### Recording the four tracks as separate stems
 
-> **In short:** set USB OUTPUT to 4 TRACKS and the computer sees **Tessera Out** as a four-channel input, one mono channel per track, so each track records on its own DAW track.
+> **In short:** set USB OUTPUT to 4 TRACKS and the computer sees **Tessera Out** as a four-channel input, one mono
+> channel per track, so each track records on its own DAW track.
 
-1. Hold **HOME** for the menu and set **USB OUTPUT** to **4 TRACKS**. The FM-1 reconnects to the computer. (It is saved; **STEREO** takes you back to the mix.)
-2. In your DAW choose **Tessera Out** as the audio input device and enable its inputs 1 to 4. Inputs 1 to 4 are tracks 1 to 4.
-3. Make four audio tracks, each set to one input, and arm and record. Recording works while the FM-1 plays.
+1. Hold **HOME** for the menu and set **USB OUTPUT** to **4 TRACKS**. The FM-1 reconnects to the computer. (It is
+   saved; **STEREO** takes you back to the mix.)
+2. In your DAW, choose **Tessera Out** as the audio input device and enable its inputs 1 to 4. Inputs 1 to 4 are
+   tracks 1 to 4.
+3. Make four audio tracks, each set to one input, then arm and record. Recording works while the FM-1 plays.
 
-**What is in a stem.** A track's own sound after its insert effects, its LEVEL, MUTE/SOLO and [Entries](#entries-tracks-out-and-back-in), so a muted track is silent in its stem. It is taken before PAN and SPREAD, so each stem is mono, and without the shared SEND and RETURN effects, MASTER and the limiter. The stems are dry of the shared reverb and delay; USB VOLUME and the volume pot do not change them. A stem has the stereo recording's level (a centred track at MASTER's default) and a soft clip like the outputs', so a loud chord rounds off instead of crackling.
+**What is in a stem:**
 
-**Ableton Live.**
+- **In it:** the track's own sound after its insert effects, its LEVEL, MUTE/SOLO and
+  [Entries](#entries-tracks-out-and-back-in). So a muted track is silent in its stem.
+- **Not in it:** PAN and SPREAD (each stem is mono), the shared SEND and RETURN effects, MASTER and the limiter. The
+  stems are dry of the shared reverb and delay. USB VOLUME and the volume pot do not change them.
+- **The level:** a stem has the stereo recording's level (a centred track at MASTER's default), and a soft clip like
+  the outputs', so a loud chord rounds off instead of crackling.
 
-- **macOS** (all four channels show natively): Settings > Audio, Audio Input Device = **Tessera Out**. Under Input Config enable inputs 1 to 4 as four mono inputs. On each audio track set Audio From to Ext. In and the channel 1, 2, 3 or 4.
-- **Windows:** Live's MME/DirectX driver type opens only two channels of a device, so Input Config offers just 1/2. For four stems use an ASIO wrapper: **FlexASIO** (backend WASAPI, input *Synthesizer (Tessera Out)*, 4 channels) or **ASIO4ALL**; Live opens one ASIO device, so the wrapper also carries your output. Set Live to 44100 Hz. Then enable Input Config as on macOS. Windows lists the FM-1's recording device as *Synthesizer (...)*, not Microphone. A unit that once ran Melodee can show an old name or a disabled device, which Live leaves out: open the Sound control panel > Recording, right-click and choose Show Disabled Devices, and enable it. (Wrappers are not yet tested with the FM-1.)
-- **Other DAWs:** pick **Tessera Out** as the input device, enable all four channels as mono inputs (not as two stereo pairs), and send channel 1 to 4 to one track each. The sample rate is 44.1 kHz; set the project to match.
+**Reverb and delay.** The shared effects are not in the stems. Record dry and add your DAW's own reverb on a return,
+or record a second pass with USB OUTPUT on **STEREO** to keep the FM-1's wet mix.
 
-**Reverb and delay.** The shared effects are not in the stems. Record dry and add your DAW's own reverb on a return, or record a second pass with USB OUTPUT on **STEREO** to keep the FM-1's wet mix.
+#### Ableton Live
+
+- **macOS** (all four channels show natively): in Settings > Audio, set Audio Input Device to **Tessera Out**. Under
+  Input Config, enable inputs 1 to 4 as four mono inputs. On each audio track, set Audio From to Ext. In and the
+  channel 1, 2, 3 or 4.
+- **Windows:** Live's MME/DirectX driver type opens only two channels of a device, so Input Config offers just 1/2.
+  For four stems:
+  1. Use an ASIO wrapper: **FlexASIO** (backend WASAPI, input *Synthesizer (Tessera Out)*, 4 channels) or
+     **ASIO4ALL**. Live opens one ASIO device, so the wrapper also carries your output. (Wrappers are not yet tested
+     with the FM-1.)
+  2. Set Live to 44100 Hz.
+  3. Enable Input Config as on macOS.
+
+  Windows lists the FM-1's recording device as *Synthesizer (...)*, not Microphone. A unit that once ran Melodee can
+  show an old name or a disabled device, which Live leaves out: open the Sound control panel > Recording, right-click,
+  choose Show Disabled Devices, and enable it.
+
+#### Other DAWs
+
+Pick **Tessera Out** as the input device, enable all four channels as mono inputs (not as two stereo pairs), and send
+channels 1 to 4 to one track each. The sample rate is 44.1 kHz; set the project to match.
+
+### Settings and older firmware
+
+- A track at **SOUND OFF** plays its sound as usual on firmware from before SOUND.
 
 ---
 
