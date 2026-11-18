@@ -273,7 +273,9 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
                     shutil.copy(f, dest / f.name)
         import make_manual                          # the manual and Getting started, as pages (web/make_manual.py)
         make_manual.make(out)
-        shutil.copy(HERE.parent / make_manual.PDF_SRC, out / "manual" / make_manual.PDF_NAME)   # (its PDF link)
+        pdf, pdf_out = HERE.parent / make_manual.PDF_SRC, out / "manual" / make_manual.PDF_NAME   # (its PDF link)
+        if pdf.resolve() != pdf_out.resolve():      # (the site made into main's docs/: the PDF is there already)
+            shutil.copy(pdf, pdf_out)
     if sim and not installer_only:
         copy_sim(sim, out / "webapp" / "sim")
     print(f"site: {out}: webapp/installer ({len(html)} B), webapp/editor, firmware/{name} ({len(raw)} B) and "
