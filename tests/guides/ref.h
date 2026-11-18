@@ -214,10 +214,54 @@ static const gstep_t G_LANDSCAPE[] = {
     {48000, 0, 0, 0, 0, "Muted, they make no drops: the water goes still"},
     {56000, 59000, 200, "C4", "UNMUTE ALL", "C4 brings them all back"},
 };
+/* bossa nova: 128 BPM with a little swing, D dorian; a flute line on TURING as track 1 (its FORM), a plucked
+ * guitar on CHORD in the offbeats, a bass on EUCLID, rim and shaker on a 909 */
+static void g_bossa_scene(void)
+{
+    song.g[G_BPM] = 128;
+    song.g[G_SWING] = 12;
+    scale(2, SCL_DOR, 0);
+    sends(80, 60, 60, 40);
+    sound(0, ENGI_FM6, V_FLUTE);
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_TURING, 44);
+    tx(0, TX_TUR_PROB, 0);
+    mixer(0, 100, 15, 50, 30);
+    sound(1, ENGI_FM6, V_PLUCK);
+    trk[1].p[P_CHRD] = 2;
+    gen(1, TESS_ENG_CHORD, 7);
+    tx(1, TX_CH_PROG, GEN_CH_251); tx(1, TX_CH_BARS, 1); tx(1, TX_CH_HIT, GEN_CH_OFF);
+    mixer(1, 76, -20, 40, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 16);
+    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    mixer(2, 92, 0, 0, 0);
+    sound(3, ENGI_DRUM, DK_909_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, L_RS, L_CH, 0, L_RS | L_CH, 0, L_BD, 0, L_CH, L_RS, L_CH, 0, L_RS | L_CH, 0};
+        static const uint8_t V[16] = {80, 0, 50, 70, 46, 0, 72, 0, 76, 0, 50, 70, 46, 0, 72, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 74, 0, 15, 0);
+}
+static const gstep_t G_FORM[] = {
+    {0, 0, 0, 0, 0, "FORM makes one track's line a little song: A, then B, and back"},
+    {3500, 6500, 200, "ARP", "EVOLVE", "Tap ARP: EVOLVE, how the line changes"},
+    {10000, 13000, 200, "ARP", "FORM", "Tap ARP again: FORM"},
+    {17000, 20000, 600, "KNOB 1", "FORM AB", "Turn KNOB 1: FORM AB, each section 4 bars", 1},
+    {26000, 0, 0, 0, 0, "Section B: a new line, made from A (CONTRAST 60 %)"},
+    {33500, 0, 0, 0, 0, "Back to A"},
+    {41000, 0, 0, 0, 0, "B again, note for note: DEVELOP at 0 keeps each return exact"},
+    {48500, 0, 0, 0, 0, "Hold OCT- for DEVELOP: returns that change a little each time"},
+};
 static void guide_ref(const char *out, FILE *tsv)
 {
     G_RUN("r-landscape", "A SEA TO WATCH", "MOSAIC", 72, 4, g_neoclassical_scene, G_LANDSCAPE);   /* neo-classical */
     G_RUN("r-color", "THE SCREEN'S COLOUR", "YELLOW", 54, 4, g_chillout_scene, G_COLOR);   /* chillout */
+    G_RUN("r-form", "A TRACK AS A SONG", "SUNSET", 60, 4, g_bossa_scene, G_FORM);   /* bossa nova */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
     G_RUN("r-mod-first", "YOUR FIRST MOD", "LILAC", 45, 4, g_triphop_scene, G_MOD_FIRST);   /* trip-hop */
