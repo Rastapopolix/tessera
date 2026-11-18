@@ -13,7 +13,7 @@ GEN = build/gen
 
 CPP_SOURCES = main.cpp
 C_SOURCES = tessera_core.c
-C_INCLUDES = -I$(GEN) -I$(TESSERA)/firmware/src -I.
+C_INCLUDES = -I$(GEN) -I$(TESSERA)/firmware/src -I$(TESSERA)/platform/core -I.
 C_DEFS = -DMELODEE_USB_HOST=0 -DMELODEE_USB_AUDIO=0 -DMELODEE_ACCESS=0
 # (Tessera's warnings are checked by its own builds)
 CFLAGS += -w
@@ -40,7 +40,14 @@ memcheck: $(BUILD_DIR)/$(TARGET).elf
 	python3 memcheck.py $<
 
 # the generated headers, as tools/build.py makes them, with the tables at the Daisy's 48 kHz
-GEN_HEADERS = $(GEN)/melodee_tables.h $(GEN)/melodee_fm6.h $(GEN)/pid_help.h $(GEN)/x0x_drum_tables.h
+GEN_HEADERS = $(GEN)/melodee_tables.h $(GEN)/melodee_fm6.h $(GEN)/pid_help.h $(GEN)/x0x_drum_tables.h $(UI_HEADERS)
+# the FM-1's UI (built in, never run: the shared build, platform/core/core_unit.c): its fonts, icons, keycaps and
+# inks, as tools/build.py makes them (needs Pillow with Raqm, and fontTools)
+UI_HEADERS = $(GEN)/ui_fonts.h $(GEN)/ui_icons.h $(GEN)/ui_keycaps.h $(GEN)/ui_palettes.h
+$(UI_HEADERS) &: $(TESSERA)/tools/build.py
+	@mkdir -p $(GEN)
+	cd $(TESSERA) && python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+	cp $(addprefix $(TESSERA)/build/gen/,$(notdir $(UI_HEADERS))) $(GEN)/
 $(BUILD_DIR)/tessera_core.o: $(GEN_HEADERS)
 $(GEN)/melodee_tables.h: $(TESSERA)/tools/gen_tables.py
 	@mkdir -p $(GEN)
