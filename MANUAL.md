@@ -2220,8 +2220,8 @@ example before you try a busy part.
 
 ## If something goes wrong
 
-> **In short:** what to do when the editor can't find the FM-1, the FM-1 crashes, or it won't start: in most cases
-> a reinstall from the web installer fixes it.
+> **In short:** what to do when the web editor can't find the FM-1, when the FM-1 crashes, and how to start it in
+> update mode to reinstall.
 
 - **Web editor says "Tessera not found" on a Mac.** macOS keeps the MIDI port name it first saw, so the FM-1 can still be called "FM-1" (from the stock firmware or an older Tessera). The editor finds it anyway, if it answers as Tessera; renaming the device in Audio MIDI Setup, or replugging it, also works.
 - **Single core.** If your FM-1 crashes with the standard build (red crash screen, freezes, or restarts into update
