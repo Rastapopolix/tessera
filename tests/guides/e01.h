@@ -90,9 +90,36 @@ static const gstep_t G_PLAY[] = {
     {27000, 0, 0, 0, 0, "Every generator starts again from its seed, so you can always get back to it"},
 };
 
+/* drone: 56 BPM, E minor; an ORACLE pad holding the chord as track 1, a TRIO fifth held under it, wind chimes on
+ * AWAKE, a breath flute now and then */
+static void g_drone_scene(void)
+{
+    song.g[G_BPM] = 56;
+    scale(4, SCL_MIN, 0);
+    sends(120, 90, 50, 60);
+    sound(0, ENGI_ORACLE, OR_WARM_PAD);
+    trk[0].p[P_CHRD] = 1;
+    gen(0, TESS_ENG_CHORD, 13);
+    tx(0, TX_CH_PROG, GEN_CH_DRONE); tx(0, TX_CH_BARS, 3); tx(0, TX_CH_HIT, GEN_CH_HOLD); tx(0, TX_CH_OCT, -1);
+    mixer(0, 86, -10, 90, 0);
+    sound(1, ENGI_TRIO, TR_FIFTH_DRONE);
+    gen(1, TESS_ENG_CHORD, 2);
+    tx(1, TX_CH_PROG, GEN_CH_DRONE); tx(1, TX_CH_BARS, 3); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -2);
+    mixer(1, 74, 0, 40, 0);
+    sound(2, ENGI_FM6, FX_FURIN);
+    trk[2].p[P_SDIV] = DIV_4;
+    gen(2, TESS_ENG_AWAKE, 57);
+    tx(2, TX_AWK_LENA, 5); tx(2, TX_AWK_LENB, 3); tx(2, TX_AWK_PROB, 30);
+    mixer(2, 80, 25, 100, 60);
+    sound(3, ENGI_TRIO, TR_BREATH_FLUTE);
+    trk[3].p[P_SDIV] = DIV_4;
+    gen(3, TESS_ENG_TURING, 77);
+    tx(3, TX_TUR_PROB, 10); tx(3, TX_TW_DROP, 75);
+    mixer(3, 70, -25, 90, 40);
+}
 static void guide_e01(const char *out, FILE *tsv)
 {
-    G_RUN("e01-pages", "FIND YOUR WAY", "YELLOW", 43, 60, demo_still, G_PAGES);      /* ambient (demo: to replace) */
+    G_RUN("e01-pages", "FIND YOUR WAY", "YELLOW", 43, 8, g_drone_scene, G_PAGES);    /* drone */
     G_RUN("e01-back", "GET BACK", "YELLOW", 43, 0, g_ambient_scene, G_BACK);          /* ambient */
     G_RUN("e01-play", "THE SAME EACH TIME", "YELLOW", 36, 0, g_halfstep_scene, G_PLAY); /* half-step */
 }

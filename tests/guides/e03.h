@@ -5,8 +5,8 @@
 static const gstep_t G_SOUND[] = {
     {0, 0, 0, 0, 0, "HOME: the four tracks, each with its sound"},
     {3500, 6500, 600, "ALGORITHM", "PICK TRACK 2", "Turn ALGORITHM to pick a track: here track 2", 1},
-    {11000, 14000, 2400, "PRESETS", "NEXT SOUNDS", "Turn PRESETS: track 2 steps through the next sounds (here to WARM PAD)", 3},
-    {20500, 23500, 2400, "PRESETS", "BACK", "Turn PRESETS back: the sound you had (KOTO WARM) returns", -3},
+    {11000, 14000, 2400, "PRESETS", "NEXT SOUNDS", "Turn PRESETS: track 2 steps through the next sounds (here to KUGO HARP)", 2},
+    {20500, 23500, 2400, "PRESETS", "BACK", "Turn PRESETS back: the sound you had (KOTO RING) returns", -2},
     {30000, 0, 0, 0, 0, "Hold SAVE to keep the project with its sounds"},
 };
 
@@ -92,9 +92,40 @@ static const gstep_t G_EDIT[] = {
     {35000, 38000, 200, "OCT-", "BACK", "Tap OCT-: back to the map"},
     {43000, 46000, 200, "HOME", "GO HOME", "Tap HOME: done"},
 };
+/* koto ambient: 76 BPM, D in HIRA; two koto (a pluck on TURING, a ring on EUCLID as track 2), a mokugyo in STEP,
+ * a soft TRIO pad */
+static void g_koto_scene(void)
+{
+    song.g[G_BPM] = 76;
+    scale(2, SCL_HIRA, 0);
+    sends(95, 70, 70, 50);
+    sound(0, ENGI_FM6, FX_KOTO_PLUCK);
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_TURING, 35);
+    tx(0, TX_TUR_PROB, 12); tx(0, TX_TW_DROP, 30);
+    mixer(0, 92, -20, 60, 30);
+    sound(1, ENGI_FM6, FX_KOTO_RING);
+    trk[1].p[P_SDIV] = DIV_16;
+    gen(1, TESS_ENG_EUCLID, 48);
+    tx(1, TX_EUC_STEPS, 12); tx(1, TX_EUC_PULSES, 5); tx(1, TX_EUC_ROT, 1);
+    mixer(1, 86, 20, 70, 40);
+    sound(2, ENGI_FM6, FX_MOKUGYO);
+    {
+        static const uint8_t N[8] = {62, 0, 0, 69, 0, 62, 0, 0};
+        for (uint32_t i = 0; i < 8u; i++) step_note(2, i, N[i], 90);
+        trk[2].p[P_SLEN] = 8;
+    }
+    tx(2, TX_MODE, TESS_ENG_OFF); trk[2].p[P_SDIV] = DIV_8;
+    mixer(2, 72, 0, 50, 0);
+    sound(3, ENGI_TRIO, TR_SOFT_PAD);
+    trk[3].p[P_CHRD] = 1;
+    gen(3, TESS_ENG_CHORD, 21);
+    tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 3); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
+    mixer(3, 62, 0, 80, 0);
+}
 static void guide_e03(const char *out, FILE *tsv)
 {
     G_RUN("e03-glo-presets", "A SOUND FROM ANYWHERE", "ORANGE", 39, 4, g_lofi_scene, G_GLO_PRESETS);   /* lo-fi */
     G_RUN("e03-edit", "THE SOUND'S PAGES", "ORANGE", 53, 4, g_synthwave_scene, G_EDIT);   /* synthwave */
-    G_RUN("e03-sound", "CHANGE THE SOUND", "MOSAIC", 43, 30, demo_cedar, G_SOUND);   /* koto (demo: to replace) */
+    G_RUN("e03-sound", "CHANGE THE SOUND", "MOSAIC", 43, 4, g_koto_scene, G_SOUND);   /* koto ambient */
 }
