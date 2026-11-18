@@ -2087,7 +2087,7 @@ typedef struct vfn_s { uint32_t ms; void (*fn)(void); } vfn_t;
 static void v_run(const char *out, const vclip_t *c)
 {
     char dir[600], wav[600];
-    uint32_t frames = c->secs * FS, f, si = 0, ki = 0, bi = 0, b = 0, n = 0, done[16] = {0}, fi = 0;
+    uint32_t frames = c->secs * FS, f, si = 0, ki = 0, bi = 0, b = 0, n = 0, done[64] = {0}, fi = 0;
     int fired = 0;
     memset(dm_notes, 0, sizeof dm_notes);
     snprintf(dir, sizeof dir, "%s/%s", out, c->name);
@@ -2121,7 +2121,7 @@ static void v_run(const char *out, const vclip_t *c)
             else fm1_in.buttons &= ~m;
             bi++, input = 1;
         }
-        for (uint32_t t = 0; t < c->nturns && t < 16u; t++) {   /* (the detents due by now, evenly over dur) */
+        for (uint32_t t = 0; t < c->nturns && t < 64u; t++) {   /* (the detents due by now, evenly over dur) */
             const vturn_t *u = &c->turns[t];
             uint32_t all = (uint32_t)(u->steps < 0 ? -u->steps : u->steps), due;
             if (ms < u->ms || done[t] >= all) continue;
@@ -2954,9 +2954,9 @@ static const char *const G_KEYS[] = {"F3", "F#3", "G3", "G#3", "A3", "A#3", "B3"
 static void g_run(const char *out, FILE *tsv, const char *name, const char *title, uint32_t secs, uint32_t pre,
                   void (*make)(void), const char *ink, const gstep_t *g, uint32_t n)
 {
-    static vkey_t keys[32];
-    static vbtn_t btns[32];
-    static vturn_t turns[16];
+    static vkey_t keys[128];                            /* (a long clip: 64 presses of each kind, 64 turns) */
+    static vbtn_t btns[128];
+    static vturn_t turns[64];
     static vstep_t st[2];
     uint32_t nk = 0, nb = 0, nt = 0;
     const char *only = getenv("GUIDE_ONLY");
@@ -2968,6 +2968,10 @@ static void g_run(const char *out, FILE *tsv, const char *name, const char *titl
                 g[i].ctl ? g[i].act_ms / 1000.0 : -1.0, g[i].ctl ? (g[i].act_ms + g[i].dur) / 1000.0 : -1.0,
                 g[i].ctl ? g[i].ctl : "-", g[i].label ? g[i].label : "-", g[i].caption ? g[i].caption : "-", g[i].turn);
         if (!g[i].ctl) continue;
+        if (nk + 2u > 128u || nb + 2u > 128u || nt + 1u > 64u) {
+            fprintf(stderr, "guide: %s: too many actions\n", name);
+            exit(1);
+        }
         for (k = 0; k < sizeof G_KEYS / sizeof G_KEYS[0] && strcmp(G_KEYS[k], g[i].ctl); k++) {}
         if (k < sizeof G_KEYS / sizeof G_KEYS[0]) {
             keys[nk++] = (vkey_t){g[i].act_ms, k, 1};
@@ -2981,7 +2985,7 @@ static void g_run(const char *out, FILE *tsv, const char *name, const char *titl
             continue;
         }
         for (k = 0; k < NE && strcmp(E_NAME[k], g[i].ctl); k++) {}
-        if (k < NE && nt < 16u) turns[nt++] = (vturn_t){g[i].act_ms, k, g[i].turn, g[i].dur};
+        if (k < NE) turns[nt++] = (vturn_t){g[i].act_ms, k, g[i].turn, g[i].dur};
         else fprintf(stderr, "guide: no control %s\n", g[i].ctl);
     }
     /* (the presses in time order: v_run takes them in turn) */
