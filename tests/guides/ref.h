@@ -637,6 +637,48 @@ static const gstep_t G_PATTERNS[] = {
     {27100, 0, 0, 0, 0, "On its line it switches: a new bass part"},
     {32000, 0, 0, 0, 0, "JAM logs what you played. On SONG, the next page, take it as a song"},
 };
+/* exotica: 96 BPM, F lydian-ish (F MAJ); track 1 a flute on MARKOV in eighths (LEAP 0 to start: neighbours only), a
+ * soft vibraphone-like tine on CHORD, a sub on EUCLID, bongos from the 909's toms with a rim in STEP */
+static void g_exotica_scene(void)
+{
+    song.g[G_BPM] = 96;
+    song.g[G_SWING] = 22;
+    scale(5, 1, 1);                                     /* F MAJ, QNT SNAP */
+    sends(100, 75, 70, 45);
+    sound(0, ENGI_FM6, V_FLUTE);
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_MARKOV, 57);
+    tx(0, TX_MKV_LEAP, 0); tx(0, TX_MKV_DENS, 90); tx(0, TX_MKV_SPAN, 1); tx(0, TX_TW_SHIFT, 12);
+    mixer(0, 116, 10, 55, 40);
+    sound(1, ENGI_FM6, FX_TINE);
+    trk[1].p[P_CHRD] = 2;
+    gen(1, TESS_ENG_CHORD, 32);
+    tx(1, TX_CH_PROG, GEN_CH_251); tx(1, TX_CH_BARS, 1); tx(1, TX_CH_HIT, GEN_CH_BEAT); tx(1, TX_CH_OCT, -1);
+    mixer(1, 50, -25, 55, 20);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_4;
+    gen(2, TESS_ENG_EUCLID, 3);
+    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 4); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    trk[2].p[P_QUANT] = Q_CHRD;
+    mixer(2, 82, 0, 0, 0);
+    sound(3, ENGI_DRUM, DK_909_KIT);
+    {
+        static const uint8_t L[16] = {L_TM, 0, L_TM, L_TM, L_RS, 0, L_TM, 0, L_TM, 0, L_TM, L_TM, L_RS, 0, L_TM, L_TM};
+        static const uint8_t V[16] = {70, 0, 46, 54, 50, 0, 60, 0, 66, 0, 46, 54, 50, 0, 58, 44};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 66, 0, 20, 0);
+}
+static const gstep_t G_MARKOV[] = {
+    {0, 0, 0, 0, 0, "MARKOV walks between notes of the scale: mostly a step, sometimes a leap"},
+    {3500, 6500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: GEN. Track 1's flute is MARKOV, in one octave (SPAN 1OCT)"},
+    {15000, 18000, 2500, "KNOB 3", "DENS", "Turn KNOB 3: DENS down to 50 %, the chance a step plays", -8},
+    {28000, 31000, 900, "KNOB 4", "SPAN 3", "Turn KNOB 4: SPAN 3OCT. Each note picks one of three octaves", 2},
+    {41000, 0, 0, 0, 0, "KNOB 2, LEAP, tilts the walk from steps toward leaps"},
+    {48000, 0, 0, 0, 0, "A wandering line that never quite repeats"},
+};
 /* Afro-Cuban: 104 BPM, A dorian; track 1 a marimba on EUCLID (3 of 8, the tresillo, at sixteenths), electric piano
  * chords on CHORD in the offbeats, a sub on TURING, congas from the 909's toms with a rim clave in STEP */
 static void g_afrocuban_scene(void)
@@ -1347,6 +1389,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
     G_RUN("r-patterns", "PATTERNS", "MOSAIC", 41, 4, g_citypop_scene, G_PATTERNS);   /* city pop */
+    G_RUN("r-markov", "A WANDERING LINE: MARKOV", "MOSAIC", 56, 4, g_exotica_scene, G_MARKOV);   /* exotica */
     G_RUN("r-euclid", "EVEN HITS: EUCLID", "MOSAIC", 52, 4, g_afrocuban_scene, G_EUCLID);   /* Afro-Cuban */
     G_RUN("r-step-evolve", "VARY WHAT YOU WROTE", "MOSAIC", 72, 4, g_highlife_scene, G_SEVOLVE);   /* highlife */
     G_RUN("r-seed", "YOUR TUNE AS A SEED", "MOSAIC", 66, 4, g_ambfolk_scene, G_SEED);   /* ambient folk */
