@@ -135,9 +135,59 @@ static const gstep_t G_GRAVITY[] = {
     {0, 34000, 1500, "KNOB 4", "GRAVITY 60", 0, -60},
     {39000, 0, 0, 0, 0, "Now it wanders, and keeps coming back home"},
 };
+/* balearic: 104 BPM, G major; a plucked line on TURING as track 1, an electric piano on MARKOV, a bass on EUCLID, all
+ * three with EVERY on (the clip holds them), a soft 909 with a shaker-like hat in STEP */
+static void g_balearic_scene(void)
+{
+    song.g[G_BPM] = 104;
+    song.g[G_SWING] = 12;
+    scale(7, 1, 0);                                     /* G, MAJ */
+    sends(90, 70, 85, 55);
+    sound(0, ENGI_FM6, V_PLUCK);
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_TURING, 101);
+    tx(0, TX_TUR_LEN, 8); tx(0, TX_TUR_PROB, 0); tx(0, TX_TUR_SPAN, 2);
+    tx(0, TX_EV_EVERY, 1); tx(0, TX_EV_AMOUNT, 50);
+    mixer(0, 116, -25, 50, 50);
+    sound(1, ENGI_FM6, FX_TINE_EP);
+    trk[1].p[P_SDIV] = DIV_4;
+    gen(1, TESS_ENG_MARKOV, 30);
+    tx(1, TX_MKV_LEAP, 30); tx(1, TX_MKV_DENS, 70); tx(1, TX_MKV_SPAN, 1);
+    tx(1, TX_EV_LOCK, 100); tx(1, TX_EV_EVERY, 2); tx(1, TX_EV_AMOUNT, 50);
+    mixer(1, 84, 25, 60, 30);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 16);
+    tx(2, TX_EUC_STEPS, 16); tx(2, TX_EUC_PULSES, 5); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    tx(2, TX_EV_EVERY, 2); tx(2, TX_EV_AMOUNT, 40);
+    mixer(2, 84, 0, 5, 0);
+    sound(3, ENGI_DRUM, DK_909_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, L_CH, 0, L_CH, L_CH, 0, L_BD | L_RS, 0, L_CH, L_CH, 0, L_CH, L_OH, 0};
+        static const uint8_t V[16] = {90, 0, 44, 36, 0, 44, 36, 0, 84, 0, 44, 36, 0, 44, 52, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 74, 0, 20, 0);
+    g_solo_check();
+}
+/* Season 1, episode 6: HOLD: keep every line as it is */
+static const gstep_t G_HOLD[] = {
+    {0, 0, 0, 0, 0, "Three tracks here change as they play (EVERY)"},
+    {4500, 7500, 2500, "GLO", "HOLD GLO", "Hold GLO and tap D4 twice: HOLD LATCHED"},
+    {0, 8500, 150, "D4", "HOLD", 0},
+    {0, 8850, 150, "D4", "LATCH", 0},
+    {14000, 0, 0, 0, 0, "Now every line stays as it is, bar after bar"},
+    {25000, 28000, 1600, "GLO", "HOLD GLO", "Hold GLO and tap D4 once more: HOLD OFF"},
+    {0, 29000, 150, "D4", "LET GO", 0},
+    {34000, 0, 0, 0, 0, "They carry on changing from where they were"},
+    {42000, 0, 0, 0, 0, "HOLD is for playing: it is not saved"},
+};
 static void guide_e06(const char *out, FILE *tsv)
 {
     G_RUN("e06-roll", "A NEW LINE, AND BACK", "GREEN", 46, 4, g_pulse_scene, G_ROLL);   /* pulse minimalism */
     G_RUN("e06-every", "HOW OFTEN IT CHANGES", "GREEN", 49, 4, g_motorik_scene, G_EVERY);   /* motorik */
     G_RUN("e06-gravity", "DRIFT, THEN COME HOME", "GREEN", 58, 4, g_gamelan_scene, G_GRAVITY);   /* gamelan */
+    G_RUN("e06-hold", "HOLD THE LINES", "GREEN", 49, 4, g_balearic_scene, G_HOLD);   /* balearic */
 }
