@@ -5,10 +5,15 @@
  *   - with the host's transport playing at 48 kHz, STILL TIDE (the project it starts with) makes sound;
  *   - a note in on the selected track changes the output;
  *   - the state is a .tsp record (TSP1) and loads back;
+ *   - (Linux, with a DISPLAY, e.g. under xvfb-run) the window opens in a parent window and shows the FM-1's screen;
  *   - optionally writes the first seconds as a 16-bit WAV (third argument) to listen to.
- * usage: tessera-render-test path/to/Tessera.clap [seconds] [out.wav] */
+ * usage: tessera-render-test path/to/Tessera.clap [seconds] [out.wav] [window.ppm] */
 #include <clap/clap.h>
 #include <dlfcn.h>
+#if defined(__linux__)
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#endif
 
 #include <cmath>
 #include <cstdio>
@@ -227,6 +232,66 @@ int main(int argc, char **argv)
         clap_istream_t js = {&junk, is_read};
         CHECK(!st->load(p, &js), "junk state refused");
     }
+
+#if defined(__linux__)
+    // the window, in a parent window of ours, driven by its timer as a host would
+    if (std::getenv("DISPLAY"))
+    {
+        auto *gui = (const clap_plugin_gui_t *)p->get_extension(p, CLAP_EXT_GUI);
+        auto *tim = (const clap_plugin_timer_support_t *)p->get_extension(p, CLAP_EXT_TIMER_SUPPORT);
+        Display *d = XOpenDisplay(nullptr);
+        CHECK(gui && tim && d, "gui + timer extensions and a display");
+        if (gui && tim && d)
+        {
+            uint32_t w = 0, h = 0;
+            CHECK(gui->is_api_supported(p, CLAP_WINDOW_API_X11, false), "X11 supported");
+            CHECK(gui->create(p, CLAP_WINDOW_API_X11, false), "gui create");
+            gui->get_size(p, &w, &h);
+            Window parent = XCreateSimpleWindow(d, DefaultRootWindow(d), 0, 0, w, h, 0, 0, 0);
+            XMapWindow(d, parent);
+            XSync(d, False);
+            clap_window_t win = {CLAP_WINDOW_API_X11, {}};
+            win.x11 = parent;
+            CHECK(gui->set_parent(p, &win) && gui->show(p), "set_parent + show");
+            tr.flags = CLAP_TRANSPORT_IS_PLAYING | CLAP_TRANSPORT_HAS_TEMPO;
+            for (int i = 0; i < 30; i++)   // 1 s: audio blocks and the window's timer, as a host interleaves them
+            {
+                for (int b = 0; b < 3; b++) p->process(p, &proc);
+                tim->on_timer(p, 0);
+            }
+            XSync(d, False);
+            XImage *img = XGetImage(d, parent, 300, 52, 240, 240, AllPlanes, ZPixmap);
+            int lit = 0;
+            for (int y = 0; img && y < 240; y++)
+                for (int x = 0; x < 240; x++)
+                    lit += (XGetPixel(img, x, y) & 0xFFFFFF) != 0;
+            std::printf("window: %ux%u, %d of 57600 screen pixels lit\n", w, h, lit);
+            CHECK(lit > 500, "the window should show the FM-1's screen");
+            if (argc > 4 && img)
+            {
+                XImage *all = XGetImage(d, parent, 0, 0, w, h, AllPlanes, ZPixmap);
+                FILE *f = std::fopen(argv[4], "wb");
+                if (f && all)
+                {
+                    std::fprintf(f, "P6\n%u %u\n255\n", w, h);
+                    for (uint32_t y = 0; y < h; y++)
+                        for (uint32_t x = 0; x < w; x++)
+                        {
+                            unsigned long c = XGetPixel(all, (int)x, (int)y);
+                            unsigned char rgb[3] = {(unsigned char)(c >> 16), (unsigned char)(c >> 8), (unsigned char)c};
+                            std::fwrite(rgb, 1, 3, f);
+                        }
+                    std::fclose(f);
+                }
+                if (all) XDestroyImage(all);
+            }
+            if (img) XDestroyImage(img);
+            gui->destroy(p);
+            XDestroyWindow(d, parent);
+            XCloseDisplay(d);
+        }
+    }
+#endif
 
     if (argc > 3)
     {

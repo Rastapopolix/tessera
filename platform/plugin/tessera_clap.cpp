@@ -5,7 +5,9 @@
  *   - one stereo out; the core runs at 44.1 kHz (tess_core.h) and is resampled (linear) to the host's rate;
  *   - notes and MIDI in (CLAP or MIDI dialect) go to the core as USB MIDI does on the FM-1, at their sample;
  *   - the host's transport starts and stops the song; with no transport (the standalone app) it plays at once;
- *   - the plugin's state is the project as a .tsp record, the same bytes SAVE > PROJECT writes on the FM-1.
+ *   - the plugin's state is the project as a .tsp record, the same bytes SAVE > PROJECT writes on the FM-1;
+ *   - the window (gui.h, Windows and Linux) shows the FM-1: its screen, buttons, keys and knobs. The audio thread owns
+ *     the core: the window's input goes to it through a small queue, and it hands back a view ~30 times a second.
  * One instance per process: the firmware's state is global (a second instance is refused). */
 #include <clap/clap.h>
 
@@ -14,6 +16,7 @@
 #include <mutex>
 #include <vector>
 
+#include "gui.h"
 #include "tess_core.h"
 
 namespace
@@ -21,6 +24,11 @@ namespace
 std::mutex core_lock;                     // the core is not thread-safe: audio, state and boot all take it
 std::atomic<bool> instance_live{false};   // one instance at a time
 bool core_booted = false;
+
+// the window <-> the audio thread (one instance, so one of each)
+std::mutex input_lock, view_lock;
+PanelInput pending;           // input_lock: buttons, keys and MASTER as now, the detents summed
+tess_view_t shared_view{};    // view_lock: the latest view
 
 struct Tessera
 {
@@ -33,6 +41,8 @@ struct Tessera
     float buf_l[64], buf_r[64];
     uint32_t buf_n = 0, buf_i = 0;
     bool transport_known = false, was_playing = false, free_started = false;
+    uint32_t view_due = 0;               // host frames until the next view
+    std::unique_ptr<Gui> gui;
 
     void next_core_frame()
     {
@@ -115,6 +125,7 @@ bool p_init(const clap_plugin_t *p)
 
 void p_destroy(const clap_plugin_t *p)
 {
+    self(p)->gui.reset();
     delete self(p);
     instance_live = false;
 }
@@ -127,6 +138,11 @@ bool p_activate(const clap_plugin_t *p, double rate, uint32_t, uint32_t)
     t->pos = 1.0;
     t->buf_n = t->buf_i = 0;
     t->transport_known = t->free_started = false;
+    t->view_due = 0;
+    {
+        std::lock_guard<std::mutex> g(input_lock);   // MASTER where the window's knob starts
+        pending.changed = true;
+    }
     return true;
 }
 
@@ -168,6 +184,23 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
         t->free_started = true;
     }
 
+    {   // the window's input, if the window is not handing some in right now
+        std::unique_lock<std::mutex> in(input_lock, std::try_to_lock);
+        if (in.owns_lock() && pending.changed)
+        {
+            tess_core_buttons(pending.buttons);
+            tess_core_keys(pending.keys);
+            tess_core_master((uint32_t)pending.master);
+            for (int r = 0; r < TESS_NE; r++)
+                if (pending.enc[r])
+                {
+                    tess_core_enc((uint32_t)r, pending.enc[r]);
+                    pending.enc[r] = 0;
+                }
+            pending.changed = false;
+        }
+    }
+
     // events at their sample: render up to each, then hand it in
     uint32_t done = 0;
     uint32_t ne = proc->in_events ? proc->in_events->size(proc->in_events) : 0;
@@ -186,6 +219,18 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
         t->render(l ? l + done : nullptr, r ? r + done : nullptr, n - done);
     if (l && !r && proc->audio_outputs[0].channel_count > 1)
         std::memcpy(proc->audio_outputs[0].data32[1], l, n * sizeof(float));
+
+    if (t->view_due <= n)   // the view for the window, ~30 times a second
+    {
+        std::unique_lock<std::mutex> v(view_lock, std::try_to_lock);
+        if (v.owns_lock())
+        {
+            tess_core_view(&shared_view);
+            t->view_due = (uint32_t)(t->rate / 30);
+        }
+    }
+    else
+        t->view_due -= n;
     return CLAP_PROCESS_CONTINUE;
 }
 
@@ -263,8 +308,78 @@ bool st_load(const clap_plugin_t *, const clap_istream_t *s)
 }
 const clap_plugin_state_t state = {st_save, st_load};
 
+// ---- the window
+
+bool gui_is_api_supported(const clap_plugin_t *, const char *api, bool is_floating)
+{
+    return !is_floating && Gui::api() && !std::strcmp(api, Gui::api());
+}
+bool gui_get_preferred_api(const clap_plugin_t *, const char **api, bool *is_floating)
+{
+    if (!Gui::api()) return false;
+    *api = Gui::api();
+    *is_floating = false;
+    return true;
+}
+bool gui_create(const clap_plugin_t *p, const char *api, bool is_floating)
+{
+    auto *t = self(p);
+    if (!gui_is_api_supported(p, api, is_floating) || t->gui)
+        return false;
+    t->gui = Gui::make(t->host);
+    return t->gui != nullptr;
+}
+void gui_destroy(const clap_plugin_t *p) { self(p)->gui.reset(); }
+bool gui_set_scale(const clap_plugin_t *, double) { return false; }   // (fixed size, 1:1)
+bool gui_get_size(const clap_plugin_t *, uint32_t *w, uint32_t *h)
+{
+    *w = Panel::W;
+    *h = Panel::H;
+    return true;
+}
+bool gui_can_resize(const clap_plugin_t *) { return false; }
+bool gui_get_resize_hints(const clap_plugin_t *, clap_gui_resize_hints_t *) { return false; }
+bool gui_adjust_size(const clap_plugin_t *, uint32_t *w, uint32_t *h)
+{
+    *w = Panel::W;
+    *h = Panel::H;
+    return true;
+}
+bool gui_set_size(const clap_plugin_t *, uint32_t w, uint32_t h) { return w == Panel::W && h == Panel::H; }
+bool gui_set_parent(const clap_plugin_t *p, const clap_window_t *w)
+{
+    auto *t = self(p);
+    return t->gui && t->gui->set_parent(w);
+}
+bool gui_set_transient(const clap_plugin_t *, const clap_window_t *) { return false; }
+void gui_suggest_title(const clap_plugin_t *, const char *) {}
+bool gui_show(const clap_plugin_t *p)
+{
+    auto *t = self(p);
+    return t->gui && t->gui->show();
+}
+bool gui_hide(const clap_plugin_t *p)
+{
+    auto *t = self(p);
+    return t->gui && t->gui->hide();
+}
+const clap_plugin_gui_t gui_ext = {gui_is_api_supported, gui_get_preferred_api, gui_create, gui_destroy,
+                                   gui_set_scale, gui_get_size, gui_can_resize, gui_get_resize_hints,
+                                   gui_adjust_size, gui_set_size, gui_set_parent, gui_set_transient,
+                                   gui_suggest_title, gui_show, gui_hide};
+
+void timer_tick(const clap_plugin_t *p, clap_id)   // (X11: the host's timer drives the window)
+{
+    auto *t = self(p);
+    if (t->gui)
+        t->gui->tick();
+}
+const clap_plugin_timer_support_t timer_ext = {timer_tick};
+
 const void *p_get_extension(const clap_plugin_t *, const char *id)
 {
+    if (!std::strcmp(id, CLAP_EXT_GUI)) return Gui::api() ? &gui_ext : nullptr;
+    if (!std::strcmp(id, CLAP_EXT_TIMER_SUPPORT)) return &timer_ext;
     if (!std::strcmp(id, CLAP_EXT_AUDIO_PORTS)) return &audio_ports;
     if (!std::strcmp(id, CLAP_EXT_NOTE_PORTS)) return &note_ports;
     if (!std::strcmp(id, CLAP_EXT_STATE)) return &state;
@@ -323,4 +438,25 @@ void tessera_entry_deinit(void) {}
 const void *tessera_entry_get_factory(const char *id)
 {
     return !std::strcmp(id, CLAP_PLUGIN_FACTORY_ID) ? &factory : nullptr;
+}
+
+// ---- gui.h: the window's side of the queue
+void tess_gui_view(tess_view_t &v)
+{
+    std::lock_guard<std::mutex> g(view_lock);
+    v = shared_view;
+}
+void tess_gui_input(PanelInput &in)
+{
+    std::lock_guard<std::mutex> g(input_lock);
+    pending.buttons = in.buttons;
+    pending.keys = in.keys;
+    pending.master = in.master;
+    for (int r = 0; r < TESS_NE; r++)
+    {
+        pending.enc[r] += in.enc[r];
+        in.enc[r] = 0;
+    }
+    pending.changed = true;
+    in.changed = false;
 }

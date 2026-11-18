@@ -28,6 +28,24 @@ uint32_t tess_core_load(const uint8_t *in, uint32_t len);
 /* the largest record */
 uint32_t tess_core_tsp_max(void);
 
+/* ---- the panel (the plugin window): as web/sim/sim.c's page interface */
+enum { TESS_NB = 14, TESS_NE = 7, TESS_KEYS = 27, TESS_SCREEN = 240 };
+/* buttons held, bit b = label b (B_FX .. B_OCTUP: FX SEL ENV LFO EDIT GLO HOME SAVE ARP SEQ PLAY REC OCT- OCT+) */
+void tess_core_buttons(uint32_t mask);
+/* keys held, bit k = key k (F3 .. G5) */
+void tess_core_keys(uint32_t mask);
+/* an encoder turned n detents: role 0 SELECT, 1 ALGORITHM, 2 PRESETS, 3..6 KNOB 1..4 */
+void tess_core_enc(uint32_t role, int32_t n);
+/* MASTER 0..1023 */
+void tess_core_master(uint32_t v);
+/* what the panel shows */
+typedef struct {
+    uint16_t screen[TESS_SCREEN * TESS_SCREEN];   /* RGB565 (host order) */
+    uint32_t lit_buttons, lit_keys, dim_buttons, dim_keys, breath_buttons, breath_keys;   /* lit_buttons bit 14: PLAY green */
+    uint32_t screen_draws, playing;
+} tess_view_t;
+void tess_core_view(tess_view_t *v);
+
 #ifdef __cplusplus
 }
 #endif
