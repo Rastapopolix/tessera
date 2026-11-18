@@ -2007,168 +2007,469 @@ and of most microtonal tools).
 > track's notes, a PERF macro) and a destination (a filter, a level, a generator's setting, another synth's CC) and
 > the destination moves with the source. This is how tracks start to influence each other.
 
-Tap **LFO** for **MODS**: up to 16 cords, each from a source on any track to a destination on any track. Four show
-at a time, each with an activity light and a moving mark.
+Tap **LFO** for **MODS**. It holds up to 16 cords. Each cord takes a source on any track and moves a destination on
+any track. Four cords show at a time, each with an activity light and a moving mark.
 
-| Knob | What it sets |
-|---|---|
-| 1 | **Source**: `--`, then per track, from the selected track on (with T3 selected: T3, T4, T1, T2), LFO, ENV, VEL, KEY, RAND, MODW, AT, EXPR, S&H, SLEW, the track's GATE and NOTE (a generator's notes, or a STEP track's: its pattern, its recorded takes and its ARP; GATE high while the notes sound, for the step's GATE, NOTE the last one, the highest of a chord, held through the rests, 0 before the first) and a generator's CV, DRIFT, TIDE 1 to 3, SWARM 1 to 8, EOC (the track's LFO cycle start: high from each wrap of the LFO until an eighth of the cycle has passed, a gate for GATE mods, FILL and the buses; setting its phase with TRIG or PLAY is not a wrap) and IN (whether the track is heard: high while it plays in the mix, low while MUTE, another track's SOLO or [Entries](#entries-tracks-out-and-back-in) has it out, in between through Entries' FADE; the last of a track's sources in KNOB 1's list; a track's GATE and NOTE go on while it is out, IN does not); and the project's ENERGY, [PERF](#perf-four-macros)'s MACRO 1 to 4 and the MIX buses BUS A and BUS B (see *MIX buses*). |
-| 2 | **Mod**: which of the 16 the other knobs edit. |
-| 3 | **Destination**, on a track: the voice (PITCH, CUTOFF, SHAPE, GAIN), the mix (LEVEL, PAN, SPREAD, FX SEND, SEND 2, SEND 3), the track's effects (FX1 MIX, FX1 RTE, FX1 CHR, the same for FX2 and FX3), the envelope and LFO settings, the engine's E1 to E8, and the generators' settings (T PROB, T LEN, E PULSE, E ROT, M LEAP, M DENS, MP POS, SHIFT, DROP, HUMAN, BRANCH, EV AMT, CONTR, AT X, AT Y, AT DENS, AT KICK, AT SNR, AT HAT, AT TOMS, B SPEED, B ANGLE, A PROB, Q PROB, C Y, C SIZE, C DENS, C AUTO, S START, CH PROG, AN VARY, AN ECHO, AN SHFT, AN SPCE, H TIME, SPLIT, RATCH, R CHANC, STRUM, STR DIR, BREATH, N LEN, LOCK, GRAVITY, DEVELOP, TIDE SP, SWRM RT, and a STEP track's ACC LIM), the sequencer's **GATE**, **SWING**, **GLIDE** and the arpeggiator's **ARP RTE**, **ARP GTE**, **ARP OCT** (moved at the sequencer's steps and note-ons; a key you play glides as set), **VELO** (each note's velocity, 100 % the whole 1 to 127), the STEP pattern's **DIR** (see *DIR* below), **CC** (a MIDI CC out, see *CC out*), **PLAY** (see *PLAY* below) and **CLOCK** (see *CLOCK* below). After the tracks' come the send effects', once, for every track: SF1 MIX, SF1 RTE, SF1 CHR (the same for SF2 and SF3) and RETURN; then **FILL** (see *FILL*) and **TEMPO** (see *TEMPO*); then the mods' own moves, **M1 AMT** to **M16 AMT** (see *Mods of mods* below), the MIX buses **BUS A** and **BUS B** (see *MIX buses*) and **MOD DEP** (see [PERF](#perf-four-macros)'s MOD DEPTH). |
-| 4 | **Amount**, −100 to +100 %. With no source (`--`) the cord is a fixed move and KNOB 4 sets its offset. |
+> **Try this:** on MODS, turn **KNOB 1** to `T1 LFO` and **KNOB 3** to `T2 PAN`. Track 2 now sways from side to side
+> with track 1's LFO. A new cord starts at 50 %, so you hear it at once; turn **KNOB 4** for more or less. For more,
+> see the recipes [An LFO for another synth's filter](RECIPES.md#an-lfo-for-another-synths-filter-mods-out-as-cc),
+> [A cord that opens and closes](RECIPES.md#a-cord-that-opens-and-closes-scaling-a-mod-35) and
+> [A brake for the whole patch](RECIPES.md#a-brake-for-the-whole-patch-mod-depth-35).
 
-- **How KNOB 3's list is arranged.** Track by track, starting from the selected track (with T3 selected: T3, then T4,
-  T1, T2, whatever the mod's source), each track's destinations in groups: SOUND, ENV, LFO, MIX, FX, GEN, FEEL (VELO, HUMAN, GATE,
-  N LEN, SWING, GLIDE, SPLIT, RATCH, CLOCK ..), EVOLVE, ARP and MODS (TIDE SP, SWRM RT); then the project's: SEND FX,
-  PROJECT (FILL, TEMPO) and MODS (M1 AMT .., the buses, MOD DEP). The list's title names the group under the cursor
-  (**T3 FEEL**). A track lists only what acts on it as its MODE is: a generator's own settings on its tracks (T PROB
-  on a Turing track, STRUM on a CHORD track), the general generator ones (DROP, BRANCH, EV AMT, LOCK, RATCH, N LEN,
-  CLOCK ..) on any generator's, DIR and ACC LIM on STEP tracks. A mod keeps its destination when the track's MODE
-  changes; it shows in the list until you move off it.
+| Knob | Setting | What it does |
+|---|---|---|
+| 1 | **Source** | What moves the cord, or `--` for nothing. See [Sources](#sources). |
+| 2 | **Mod** | Which of the 16 cords the other knobs edit. |
+| 3 | **Destination** | What the cord moves. See [Destinations](#destinations). |
+| 4 | **Amount** | −100 to +100 %. With no source (`--`), the cord is a fixed move and KNOB 4 sets its offset. |
 
-- **Clearing a mod.** Hold **OCT+** on MODS for MODS' sheet; its header names the picked mod (**M3** at its right). Its
-  first row, **Clear mod** (red), clears that mod with **OCT+**: no source, no destination, no amount, +-, no SCALE,
-  CC 1. Mods that move it (M3 AMT) are left as they are. There is no undo; an empty mod says NOTHING THERE.
-
-- **+- and +: the mod's direction.** Under KNOB 1 a mod shows **+-** (it moves both ways from the knob) or **+** (one
-  way only), and its bar says the same: a +- mod's bar reaches as far below the middle as above it. A bipolar source
-  (LFO, KEY, RAND, S&H, SLEW, NOTE, DRIFT, TIDE, SWARM, ENERGY) is +-. Press **OCT+** on MODS to make the picked mod
-  **+**: the source folded to 0 to 1, so it moves one way only, as ENV does ("+" after the source's name). OCT+ again
-  makes it a GATE, then HOLD, and once more +- again (a 0 to 1 source goes +, GATE, HOLD).
-- **GATE: all or nothing.** A GATE mod ("^" after the source's name) moves its destination by its whole amount while
-  the source is over a threshold, and not at all under it, like a comparator on a modular. Hold **OCT-** and turn
-  **KNOB 4** to set the threshold (it starts at the middle of a +- source, at 50 % of a 0 to 1 one). Two GATE mods from
-  one source, one at -20 % with +50 and one at +20 % with -50, open a window: the destination moves only while the
-  source is between them. A little hysteresis keeps a slow source near the threshold from chattering.
-- **HOLD: once a bar.** A HOLD mod ("=" after the source's name) takes its source on the first step of each bar of
-  its destination's track and holds it until the next bar, like a sample and hold clocked by the bar. So TIDE, ENERGY,
-  a generator's CV or an LFO moves a setting in steps, a bar at a time, instead of sweeping it; onto DIR or a
-  generator's setting it changes the line on the bar line. It reads the source as +- does (a 0 to 1 source one way);
-  AMOUNT and OFFSET work as for +-. A destination of the project's (FILL, TEMPO, the send effects, M AMT) takes track
-  1's bar. Set while stopped, it takes the source at once; PLAY takes it again on the first step. (S&H, a source, holds
-  random values for an LFO cycle; FOLLOW HOLD takes another track's pitch on its notes.) Saved with the project;
-  firmware before it plays a HOLD mod as +-.
-  **On a track's notes.** Hold **OCT-** on a HOLD mod and turn **KNOB 1**: **HOLD ON T1 NOTES** to **T4**, and it
-  takes its source on each note that track plays instead of on the bar (left back to **HOLD A BAR**). So a random or
-  slow source steps with another voice's rhythm: `T1 RAND= -> T3 CUTOFF`, clocked by T2's notes, gives each of T2's
-  notes a new filter for track 3, as a sample and hold fed a gate. A note of the clock track a mod onto PLAY shuts
-  still counts. Firmware before it holds by the bar.
-- **DIR.** A mod onto a track's **DIR** picks the direction its STEP pattern plays in (see *Direction* on the
-  pattern's sheet), in whole steps from the pattern's own along FWD, BACK, PEND, FOLD, RAND, DRUNK: each 20 % of move
-  is one more, and it stops at the ends. So the amount and the offset say which directions it can reach: from FWD, a +
-  mod at 40 % goes FWD, BACK, PEND as its source rises. A GATE mod at 20 % plays BACK while its source is over the
-  threshold and FWD under it; S&H from the track's LFO synced to a bar or two picks a new direction at random. It is
-  read at each step and never moves the playhead: the next step comes from the one playing. With no mod, the
-  pattern's own. A generator track does not use it.
-- **FILL.** Near the end of KNOB 3's list is the project's **FILL**: held while the mod's move is past half, as if
-  you held FILL on the GLO layer (steps set to FILL play, NOT FILL steps rest). A GATE mod onto FILL turns an LFO,
-  TIDE or ENERGY into fills that come and go; the GLO layer's FILL lights while a mod holds it.
-- **TEMPO.** After FILL, **TEMPO** moves the project's tempo on CLK INT: a full move up doubles it, a full move down halves
-  it, half a move is half an octave (120 BPM: 170 or 85). BPM stays as you set it. The steps, ARP, synced LFOs and
-  CLOCK OUT all follow, with no step skipped or repeated. A planned piece (PIECE's LENGTH) is read in beats at BPM,
-  so a TEMPO mod plays it faster or slower and it lasts shorter or longer; it never jumps through the shape. With CLK
-  on USB or TRS the external clock sets the tempo and TEMPO does nothing.
-- **MIX buses.** **BUS A** and **BUS B**, at the end of KNOB 3's list, are two mixers of the project's. Every mod
-  into a bus is combined there, and the bus is then a source of its own (BUS A, BUS B at the end of KNOB 1's list) for
-  as many mods as you like. So a sum of two LFOs can drive a GATE, or one envelope can move four destinations without
-  setting four amounts that must match. Hold **OCT+** on MODS for MODS' sheet, where each bus
-  has two settings (KNOB 1 the row, KNOB 2 its value, OCT- closes):
-  - **Mode**, how its mods combine: **SUM** adds them (clamped to -100 .. 100 %, the default), **MAX** takes the
-    highest, **MIN** the lowest, **DIFF** how far apart the first two are. With GATE mods at +100 into a bus, MAX is
-    OR (either open), MIN is AND (both), DIFF is XOR (one or the other, not both): logic with no exact amounts to
-    remember. Read the bus as a GATE mod (threshold 50 %) to use the result as a gate.
-  - **Lag**, a slew on the result: OFF, or the time a whole move from 0 to 100 % takes, up and down (10 ms to 20 s). A
-    track's GATE into a lagged bus rises and falls as an envelope (Maths' slew), and a stepped source (S&H, a HOLD mod)
-    glides.
-
-  <p align="center"><img src="assets/gallery/mods_bus.png" alt="MODS' sheet: the buses' Mode and Lag" width="240"></p>
-
-  A bus is read one block (0.7 ms) after its mods, so it can feed itself or the other bus: BUS A into BUS A at +100 %
-  with a small fixed mod adds up (an integrator, stopping at 100 %); at a negative amount it settles or swings,
-  always within the clamp. With no mod into a bus it stays at 0 and nothing changes. Buses come from no track, so
-  MATRIX leaves their mods out. The settings are saved with the project. Firmware before the buses does not load a
-  project with a mod to or from a bus (it ignores the bus settings alone).
-- **CLOCK.** A generator track with a mod onto **CLOCK** is stepped by the mod's edges and no longer by its DIV: a
-  note, a step of its pattern or sequence, each time the source's gate opens. The mod is always a GATE mod (OCT- held,
-  KNOB 4: the threshold; a GATE source, a track's GATE, counts its hits instead, so notes that run into each
-  other still count). **AMOUNT is the division**: 100 % every edge, 50 % every second, 33 % every third, down to
-  every sixteenth; a negative AMOUNT steps when the gate closes. The track plays its first step at PLAY. DIV stays the
-  step's length (GATE, RATCH, HUMAN) and is also the fastest it steps: an edge sooner than a DIV after the last step
-  waits for it. SWING does nothing on it; a bar of its own (EVERY, COND) is the number of steps a bar of its DIV
-  holds. Print flattens it onto the grid, one step each. A STEP or ARP track ignores the mod. No mod, or AMOUNT 0:
-  the track plays as before. **EOC** as the source (a track's last): a note at the top of every cycle of an LFO; with
-  `T1 S&H` onto `T1 LFO RTE` each cycle has its own length (a Krell: a note each swell). Firmware before CLOCK does
-  not load a project with the mod.
-- **CC out.** A mod onto a track's **CC** sends its move over USB MIDI as a control change on that track's MIDI OUT
-  channel, so an LFO, TIDE, SWARM or a generator's CV can play an outside synth's filter or any other CC. Hold **OCT-**
-  and turn **KNOB 3** to pick the CC number (0 to 119; a new one starts on 1, the mod wheel); the destination shows it
-  (**T2 CC 74**). A +- source sends 0 to 127 around 64 (its whole range at 100 %), a + source and a fixed mod (no
-  source) from 0 up. A value goes out only when it changes, and at most about every 9 ms. Nothing is sent with
-  NOTES OUT OFF, the track's channel OFF or the track muted. A track at SOUND OFF with its channel set is a CC lane
-  that plays nothing itself. The CC numbers are saved with the project; firmware before CC out does not load a
-  project with a CC mod.
-- **Not the LFO's POL.** The LFO page's **POL** (BI, UNI) sets how that page's own depths move (LFO PIT, FLT, SHP,
-  AMP). It does not reach a mod: a mod from the LFO swings both ways whatever POL is, and its own +- or + alone says
-  which way it moves. So a UNI LFO is never shifted twice, and a + mod from a BI LFO moves one way.
-- **The lists** of KNOB 1 and KNOB 3 name each entry with its track (**T2 GATE**, **T4 DECAY**); the project's
-  ENERGY and the send effects' have none. On the MOSAIC colours an entry is in its track's colour.
-- Choosing a destination on a new cord sets the amount to 50 % (or a fixed move of 25 % with no source), so you hear
-  it at once.
-- **The scope.** Hold **OCT-** on MODS to see how the picked mod moves: its row stays at the top and, in the other
-  rows' place, its move over time (the line) over its source (the faint dots behind it), the dotted middle line 0,
-  the top +100 % of the destination's range. With AMOUNT under 100 % the gap between line and dots is the amount; a
-  mod of mods swells and shrinks inside its source. A mod faster than the window draws its middle, not a band; a
-  sudden jump is drawn as a jump. With a MOSAIC colour set the line is in its source's track colour (a BUS, MACRO or
-  other project source in the main ink). A GATE mod marks its threshold with a small wedge at each edge, filled while
-  the gate is open; turn its threshold (KNOB 4) and a dashed line runs across for a second, so you see where it opens.
-  A HOLD mod steps once a bar. It sweeps left to right (a gap marks now) over a window that suits the source, with
-  ticks on the bottom edge at the bars: a bar for the notes' own (ENV, VEL, GATE, NOTE, CV, S&H ...), 2 to 16 bars for
-  an LFO (it keeps 2 to 6 cycles in view), 4 for a MACRO, 16 for DRIFT and SWARM, 64 for TIDE and ENERGY. Let go and
-  the four rows come back. To keep it on screen, hold OCT- and tap **OCT+** (SCOPE PINNED): let go of OCT- and the
-  knobs work as usual, so you can turn the amount or pick another mod and watch it change. Tap OCT- (SCOPE FREE) or
-  leave MODS and the rows come back; the pin is not saved. With the screen reader, holding OCT- says it once: the window, the shape and the lowest and
-  highest move ("SCOPE 2 BARS, CYCLING 2 A BAR, LOW -60 HIGH 60 %"; a GATE: how often it opens and whether it is open
-  now). The same hold turns a GATE's threshold (KNOB 4), so you watch it move against the source. A cord
-  from BUS A or BUS B draws the bus as its source. Nothing is saved; nothing changes until you hold it.
-- **Live marks**: a knob a cord reaches shows a mark where the cords move it now: on its dial a bead riding the ring
-  (a bar: a notch beside it), the effects' and the send effects' knobs too. CUTOFF and SHAPE, which act inside the
-  voice, show none.
-- **DRIFT** is each track's slow wander, a new point about every 12 seconds, eased between.
-- **Effects.** An effect's third and fourth knobs are named as the effect names them: on a FILTER **FX1 CUT** and
-  **FX1 RES**, on an ECHO **FX1 TIM** and **FX1 RPT** (Mono: CUT1, RES1; a send effect's S1CT ..); RTE and CHR on
-  the others (RATE, CHAR). A moved ECHO TIME glides, as a tape's speed does, so the repeats bend in
-  pitch instead of clicking (turning the knob glides too); REVERB changes SIZE a sample at a time. The send
-  effects' mods are the project's, not a track's: MATRIX leaves them out. **FX held** + a knob on an FX page makes
-  one too. A project with effect mods does not load in firmware before them.
-- **DRIVE** is a soft clip: **DRIVE** (RATE) pushes the sound into a rounded curve that flattens its peaks (warmth
-  first, then grit; the level stays about the same), **FOLD** (CHAR) turns the peaks back as a wavefolder does, and MIX
-  blends it with the dry sound. In FX1 it drives the track before its other effects. It runs without oversampling, so
-  a bright sound driven hard aliases. A project with DRIVE plays that slot as a FILTER on older firmware.
-- **Mods of mods.** **M1 AMT** to **M16 AMT** at the end of KNOB 3's list move another mod's amount (a fixed mod's
-  offset), as a hand on its KNOB 4 would: send T4 ENV to M3 AMT and each of track 4's notes deepens mod 3 for a moment, so
-  one track's playing spreads into another's sound. What the mods add goes on top of the amount you set, up to 100 %
-  either way; set mod 3 to 0 and only the mods of mods move it, so it comes and goes. The bar under a moved mod shows
-  its amount as it is now. One level only: a mod that moves an M AMT mod, or itself, does nothing. They are the
-  project's (no track) and MATRIX leaves them out. **FX held** + **KNOB 4** on MODS makes one for the picked mod, from
-  the track's shortcut source. A project with them does not load in firmware before them.
-  **Scale (a VCA on a mod).** Hold **OCT-** on a mod of mods and turn **KNOB 3** right: it no longer adds, it
-  **scales** the other mod's move from 0 to 1 (**M3*** on the row; left adds again). Mod 3 keeps
-  the amount you set and the scaler opens and closes it: T2 GATE at +100 lets mod 3 through only while track 2
-  plays, T4 ENV at +100 shapes it with each note, +50 lets half through. At a negative amount the source closes it
-  instead (a duck: T1 GATE at -100 silences mod 3 while track 1 plays). Mods that add come first, then the scalers
-  multiply. A scaler at 0 does nothing. A project with one plays it as adding on older firmware.
-- **PLAY.** **PLAY**, near the end of a track's destinations, decides whether the track is heard: while its mods together
-  are at half or more its notes sound, under half they don't (new notes only: a note already sounding ends as it
-  would). No mod onto PLAY: the track plays as always. One GATE mod makes a gated voice: `T1 TIDE 2^ -> T2 PLAY +100`
-  plays track 2 only while TIDE 2 is high, with no base DROP and no cord to cancel it. A shut track plays on unheard,
-  as with MUTE: FOLLOW, an ANSWER's SOURCE and the GATE / NOTE mods still hear its notes, and it comes back in time.
-  It shuts MIDI OUT's notes too. At MOD DEPTH 0 every track plays. A project with a PLAY mod does not load on older
-  firmware.
-- Melodee's MOD routes, in old projects and sounds, become cords when they load. If all 16 are in use the screen
-  says **MODS FULL**.
+- Choosing a destination on a new cord sets the amount to 50 %, so you hear it at once. A fixed move (no source)
+  starts at 25 %.
+- When all 16 cords are in use, the screen says **MODS FULL**.
+- Melodee's MOD routes, in old projects and sounds, become cords when they load.
 
 <p align="center"><img src="assets/gallery/cords.png" alt="MODS" width="240"> <img src="assets/gallery/mods_live.png" alt="A live mod mark on BRANCH" width="240"> <img src="assets/gallery/mods_new.png" alt="3.5 mods: EOC clocks a track, a GATE turns mod 2's amount, BUS A plays track 3" width="240"></p>
+
+### Sources
+
+KNOB 1 lists `--`, then each track's sources, starting from the selected track (with T3 selected: T3, T4, T1, T2),
+then the project's. Each entry names its track (**T2 GATE**).
+
+| Source | What it is |
+|---|---|
+| **LFO** | The track's LFO. |
+| **ENV** | The track's envelope. |
+| **VEL** | The velocity of the track's latest note. |
+| **KEY** | The pitch of the track's latest note. |
+| **RAND** | A random value, new with each note. |
+| **MODW**, **AT**, **EXPR** | The mod wheel, aftertouch and expression, from MIDI. |
+| **S&H** | A random value, held for each cycle of the track's LFO. |
+| **SLEW** | S&H's values with a glide from one to the next. |
+| **GATE** | High while the track's notes sound. On a STEP track it follows the step's GATE. |
+| **NOTE** | The pitch of the track's last note (the highest of a chord), held through the rests. 0 before the first note. |
+| **CV** | The generator's own control line (see [The generators](#the-generators)). |
+| **DRIFT** | The track's slow wander: a new point about every 12 seconds, eased between. |
+| **TIDE 1** to **3** | Three very slow, chaotic movements, minutes a turn (see [ORGANIC](#organic-tide-and-swarm)). |
+| **SWARM 1** to **8** | Eight related slow wanderers (see [ORGANIC](#organic-tide-and-swarm)). |
+| **EOC** | The start of each cycle of the track's LFO, as a gate: high from each wrap until an eighth of the cycle has passed. Made for GATE mods, FILL and the buses. |
+| **IN** | Whether the track is heard. High while it plays in the mix, low while MUTE, another track's SOLO or [ENTRIES](#entries-tracks-out-and-back-in) has it out, and in between during ENTRIES' FADE. The last of a track's sources. |
+| **ENERGY** | The project's [ENERGY](#energy) (no track). |
+| **MACRO 1** to **4** | [PERF](#perf-four-macros)'s four macros (no track). |
+| **BUS A**, **BUS B** | The [MIX buses](#mix-buses) (no track). |
+
+<details>
+<summary>More detail on the sources</summary>
+
+- A track's GATE and NOTE come from a generator's notes, or from a STEP track's pattern, its recorded takes and its ARP.
+- GATE and NOTE keep going while the track is out (muted, soloed away or out through ENTRIES). IN does not.
+- Setting the LFO's phase with TRIG or PLAY is not a wrap, so EOC does not fire for it.
+
+</details>
+
+### Destinations
+
+KNOB 3 lists the tracks' destinations first, starting from the selected track (with T3 selected: T3, T4, T1, T2,
+whatever the mod's source), then the project's.
+
+**On each track:**
+
+- **The voice:** PITCH, CUTOFF, SHAPE, GAIN, and the engine's E1 to E8.
+- **The mix:** LEVEL, PAN, SPREAD, FX SEND, SEND 2, SEND 3.
+- **The track's effects:** FX1 MIX, FX1 RTE, FX1 CHR, and the same for FX2 and FX3 (see
+  [Effects as destinations](#effects-as-destinations)).
+- **The envelope and LFO settings.**
+- **The sequencer and arpeggiator:** GATE, SWING, GLIDE, ARP RTE, ARP GTE, ARP OCT. They are read at the sequencer's
+  steps and note-ons; a key you play glides as set.
+- **VELO:** each note's velocity; 100 % covers the whole 1 to 127.
+- **The generators' settings:** T PROB, E PULSE, AT X and the rest. The table below gives each one in full.
+- **Special destinations**, each with its own section below: [DIR](#dir-steer-a-step-patterns-direction),
+  [CLOCK](#clock-step-a-generator-from-a-mod), [CC](#cc-out-play-another-synth) and
+  [PLAY](#play-let-a-mod-decide-whether-a-track-is-heard).
+
+**For the whole project** (once, after the tracks):
+
+- **The send effects:** SF1 MIX, SF1 RTE, SF1 CHR (the same for SF2 and SF3) and RETURN.
+- [**FILL**](#fill-from-a-mod) and [**TEMPO**](#tempo-from-a-mod).
+- **M1 AMT** to **M16 AMT**: other mods' amounts (see [Mods of mods](#mods-of-mods)).
+- **BUS A** and **BUS B**: the [MIX buses](#mix-buses).
+- **MOD DEP**: [PERF](#perf-four-macros)'s MOD DEPTH.
+
+**How the list is grouped.** The list's title names the group under the cursor (**T3 FEEL**). Each track's
+destinations come in these groups: SOUND, ENV, LFO, MIX, FX, GEN, FEEL (VELO, HUMAN, GATE, N LEN, SWING, GLIDE,
+SPLIT, RATCH, CLOCK ..), EVOLVE, ARP and MODS (TIDE SP, SWRM RT). The project's groups follow: SEND FX, PROJECT
+(FILL, TEMPO) and MODS (M1 AMT .., the buses, MOD DEP).
+
+**A track lists only what acts on it in its MODE:**
+
+- a generator's own settings on its tracks (T PROB on a TURING track, STRUM on a CHORD track);
+- the settings every generator shares (DROP, BRANCH, EV AMT, LOCK, RATCH, N LEN, CLOCK ..) on any generator track;
+- DIR and ACC LIM on STEP tracks.
+
+A mod keeps its destination when the track's MODE changes. It stays in the list until you move off it.
+
+<details>
+<summary>The generators' settings, in full</summary>
+
+| In the list | What it moves |
+|---|---|
+| **T PROB** | TURING's PROB: how often its loop changes |
+| **T LEN** | TURING's loop length |
+| **E PULSE** | EUCLID's hits: more or fewer |
+| **E ROT** | EUCLID's rotation |
+| **M LEAP** | MARKOV's LEAP: how far its notes jump |
+| **M DENS** | MARKOV's density: how many steps play |
+| **MP POS** | MORPH's blend from rhythm A to B |
+| **AT X**, **AT Y** | ATLAS' X and Y: across and down its map of drum patterns |
+| **AT DENS** | ATLAS' density: how full its parts are |
+| **AT KICK**, **AT SNR**, **AT HAT** | ATLAS: how much of its density the kick, the snare and the hat get |
+| **AT TOMS** | ATLAS' TOMS: how many of the near misses play the tom |
+| **B SPEED** | BOUNCE's speed: how far the balls move a step |
+| **B ANGLE** | BOUNCE's angle: the balls' paths (FALL: the wind) |
+| **A PROB** | AWAKE's PROB: the chance a note plays |
+| **Q PROB** | QUAD's PROB: the chance a cell plays |
+| **C Y** | CONSTELLATION's Y: the crosshair's height (with AUTO OFF) |
+| **C SIZE** | CONSTELLATION's SIZE: how far from the crosshair a star is caught |
+| **C DENS** | CONSTELLATION's DENS: how many stars the sky holds |
+| **C AUTO** | CONSTELLATION's AUTO: who steers the ship (OFF, a wander, SEEK) |
+| **S START** | SERIES' START: where in the infinity series it plays |
+| **CH PROG** | CHORD's PROG: which progression its chords follow |
+| **STRUM** | CHORD's STRUM: how many ms apart a chord's notes start, at each strike |
+| **STR DIR** | CHORD's strum DIR, stepped: UP, DOWN, ALT from the track's own |
+| **BREATH** | CHORD's BREATH (HIT HOLD): how its voices are struck again, softer |
+| **AN VARY** | ANSWER's VARY: how much each answer changes the phrase |
+| **AN ECHO** | ANSWER's ECHO: the chance a note it plays comes back once more |
+| **AN SHFT** | ANSWER's SHIFT: how many scale degrees up or down an answer may move |
+| **AN SPCE** | ANSWER's SPACE: the rest before each answer |
+| **SHIFT** | TWEAK's SHIFT: transposes the generator's notes |
+| **DROP** | TWEAK's DROP: the chance a hit is left out |
+| **HUMAN** | TWEAK's HUMAN: velocity and gate variation |
+| **BRANCH** | TWEAK 2's BRANCH: the chance a hit plays on track TO |
+| **H TIME** | TIMING's HUMAN: how late a step may play |
+| **SPLIT** | TIMING's SPLIT: the chance a step plays at half its division |
+| **RATCH** | TIMING's RATCH: how many times a generator step's notes play, x1 to x8 |
+| **R CHANC** | TIMING's CHANCE: how often a step ratchets |
+| **N LEN** | NOTE LENGTH's LEN, stepped: FIXED's length, from a 32nd note to a bar |
+| **EV AMT** | EVOLVE's AMOUNT: how much each mutation changes |
+| **LOCK** | EVOLVE's LOCK: how much of a generator's phrase stays (TURING: PROB turned round; ATLAS: CHAOS) |
+| **GRAVITY** | GRAVITY: the pull of a generator's phrase back home |
+| **CONTR** | FORM's CONTRAST: how different a new section is |
+| **DEVELOP** | FORM's DEVELOP: how far a section varies each time FORM comes back to it |
+| **TIDE SP** | TIDE's SPEED: how fast the track's TIDE 1, 2, 3 drift |
+| **SWRM RT** | SWARM's RATE: how fast the track's eight SWARM LFOs run |
+| **ACC LIM** | A STEP track's ACCUM LIMIT: how far a step's Accumulate climbs, in scale degrees |
+
+</details>
+
+### A cord's shape: +-, +, GATE and HOLD
+
+Press **OCT+** on MODS to step the picked mod through its shapes: **+-**, then **+**, **GATE**, **HOLD** and back to
+**+-**. A source that only goes from 0 to 1 starts at **+** and goes +, GATE, HOLD. The shape shows under KNOB 1 and
+as a mark after the source's name.
+
+| Shape | Mark | What it does |
+|---|---|---|
+| **+-** | | Moves both ways from the knob. Its bar reaches as far below the middle as above it. The start for a bipolar source: LFO, KEY, RAND, S&H, SLEW, NOTE, DRIFT, TIDE, SWARM, ENERGY. |
+| **+** | `+` | Moves one way only: the source is folded to 0 to 1, the way ENV moves. |
+| **GATE** | `^` | All or nothing: the whole amount while the source is over a threshold, nothing under it. |
+| **HOLD** | `=` | Takes the source once a bar and holds it until the next bar. |
+
+#### GATE: all or nothing
+
+A GATE mod works like a comparator on a modular.
+
+- **The threshold:** hold **OCT-** and turn **KNOB 4**. It starts at the middle of a +- source, and at 50 % of a 0 to
+  1 source.
+- **No chatter:** a little hysteresis keeps a slow source near the threshold from flickering on and off.
+- **A window:** two GATE mods from one source, one at −20 % with +50 and one at +20 % with −50, move the destination
+  only while the source is between them.
+
+#### HOLD: once a bar
+
+A HOLD mod works like a sample and hold clocked by the bar.
+
+- TIDE, ENERGY, a generator's CV or an LFO moves a setting in steps, a bar at a time, instead of sweeping it.
+- Onto DIR or a generator's setting, it changes the line on the bar line.
+
+**On a track's notes instead of the bar.** Hold **OCT-** on a HOLD mod and turn **KNOB 1**: **HOLD ON T1 NOTES** to
+**T4**. The mod now takes its source on each note that track plays (turn back to **HOLD A BAR** for the bar). So a
+random or slow source steps with another voice's rhythm. For example, `T1 RAND= -> T3 CUTOFF`, clocked by T2's notes,
+gives each of T2's notes a new filter setting for track 3, like a sample and hold fed a gate.
+
+<details>
+<summary>More detail on HOLD</summary>
+
+- HOLD reads the source as +- does (a 0 to 1 source one way). AMOUNT and OFFSET work as they do for +-.
+- A destination of the project's (FILL, TEMPO, the send effects, M AMT) takes track 1's bar.
+- Set while stopped, a HOLD mod takes its source at once. PLAY takes it again on the first step.
+- The clock track's notes still count while a PLAY mod has shut that track.
+- Not to be confused with **S&H**, a source that holds random values for an LFO cycle, or **FOLLOW HOLD**, which takes
+  another track's pitch on its notes.
+- Saved with the project.
+
+</details>
+
+### Special destinations
+
+#### DIR: steer a STEP pattern's direction
+
+A mod onto a track's **DIR** picks the direction its STEP pattern plays in (see *Direction* on
+[the pattern's sheet](#the-patterns-sheet-snap-to-scale-double-half-euclid-accumulate)). The directions run in this
+order: FWD, BACK, PEND, FOLD, RAND, DRUNK. Starting from the pattern's own direction, every 20 % of move goes one
+further along the list, and it stops at the ends.
+
+- From FWD, a **+** mod at 40 % goes FWD, BACK, PEND as its source rises.
+- A **GATE** mod at 20 % plays BACK while its source is over the threshold, and FWD under it.
+- **S&H** from the track's LFO, synced to a bar or two, picks a new direction at random.
+
+<details>
+<summary>More detail on DIR</summary>
+
+- DIR is read at each step and never moves the playhead: the next step comes from the one playing.
+- With no mod, the pattern plays in its own direction.
+- A generator track does not use DIR.
+
+</details>
+
+#### FILL from a mod
+
+Near the end of KNOB 3's list is the project's **FILL**. It is held while the mod's move is past half, as if you held
+FILL on the GLO layer: steps set to FILL play and NOT FILL steps rest (see
+[A step's Condition, and FILL](#a-steps-condition-and-fill)).
+
+- A **GATE** mod onto FILL turns an LFO, TIDE or ENERGY into fills that come and go.
+- The GLO layer's FILL lights while a mod holds it.
+
+#### TEMPO from a mod
+
+After FILL comes **TEMPO**, which moves the project's tempo when CLK is INT.
+
+- A full move up doubles the tempo and a full move down halves it. Half a move is half an octave: at 120 BPM, 170 or 85.
+- BPM stays as you set it.
+- The steps, ARP, synced LFOs and CLOCK OUT all follow, with no step skipped or repeated.
+- A planned piece (PIECE's LENGTH) is counted in beats at BPM. So a TEMPO mod plays it faster or slower, and it lasts
+  shorter or longer; it never jumps through the shape.
+- With CLK on USB or TRS, the outside clock sets the tempo and TEMPO does nothing.
+
+#### CLOCK: step a generator from a mod
+
+A generator track with a mod onto **CLOCK** steps on the mod's edges instead of its DIV. It plays a note (a step of
+its pattern or sequence) each time the source's gate opens.
+
+- **Always a GATE mod.** Hold **OCT-** and turn **KNOB 4** to set the threshold. A gate source (a track's GATE) counts
+  its hits instead, so notes that run into each other still count.
+- **AMOUNT is the division:** 100 % steps on every edge, 50 % on every second, 33 % on every third, down to every
+  sixteenth. A negative AMOUNT steps when the gate closes.
+- The track plays its first step at PLAY.
+- With no mod, or AMOUNT 0, the track steps on its DIV.
+
+> **Try this:** pick **EOC** (a track's last source) as the source. The track plays a note at the top of every LFO
+> cycle. Add `T1 S&H` onto `T1 LFO RTE` and each cycle has its own length: a note each swell, like a Krell patch.
+
+<details>
+<summary>More detail on CLOCK</summary>
+
+- DIV still sets the step's length (for GATE, RATCH and HUMAN), and it is the fastest the track steps: an edge that
+  comes sooner than a DIV after the last step waits for it.
+- SWING does nothing on a clocked track.
+- A bar of its own (for EVERY and COND) is the number of steps a bar of its DIV holds.
+- Print flattens it onto the grid, one step each.
+- A STEP or ARP track ignores the mod.
+
+</details>
+
+#### CC out: play another synth
+
+A mod onto a track's **CC** sends its move over USB MIDI as a control change, on that track's MIDI OUT channel. So
+an LFO, TIDE, SWARM or a generator's CV can play an outside synth's filter, or any other CC.
+
+- **The CC number:** hold **OCT-** and turn **KNOB 3** (0 to 119). A new one starts on 1, the mod wheel. The
+  destination shows it: **T2 CC 74**.
+- **The values:** a +- source sends 0 to 127 around 64 (its whole range at 100 %). A + source, and a fixed mod with no
+  source, send from 0 up.
+- A value goes out only when it changes, and at most about every 9 ms.
+- Nothing is sent with NOTES OUT OFF, with the track's channel OFF, or with the track muted.
+- **A CC lane:** a track at SOUND OFF with its channel set plays nothing itself and only sends its CCs.
+- The CC numbers are saved with the project.
+
+See the recipe [An LFO for another synth's filter](RECIPES.md#an-lfo-for-another-synths-filter-mods-out-as-cc).
+
+#### PLAY: let a mod decide whether a track is heard
+
+**PLAY**, near the end of a track's destinations, decides whether the track is heard.
+
+- While its mods together are at half or more, its notes sound. Under half, they don't.
+- Only new notes are stopped: a note already sounding ends as it would.
+- With no mod onto PLAY, the track plays as always.
+- One GATE mod makes a gated voice: `T1 TIDE 2^ -> T2 PLAY +100` plays track 2 only while TIDE 2 is high, with no
+  base DROP and no second cord to cancel it.
+
+<details>
+<summary>More detail on PLAY</summary>
+
+- A shut track plays on unheard, as with MUTE: FOLLOW, an ANSWER's SOURCE and the GATE and NOTE mods still hear its
+  notes, and it comes back in time.
+- It shuts MIDI OUT's notes too.
+- At MOD DEPTH 0 every track plays.
+
+</details>
+
+### Effects as destinations
+
+- **Names:** an effect's third and fourth knobs are named as the effect names them: on a FILTER **FX1 CUT** and
+  **FX1 RES**, on an ECHO **FX1 TIM** and **FX1 RPT**. The other effects show RTE and CHR (RATE, CHAR). In Mono the
+  short names are CUT1, RES1, and a send effect's S1CT ..
+- **ECHO TIME glides** when a mod moves it, as a tape's speed does, so the repeats bend in pitch instead of clicking.
+  Turning the knob glides too.
+- **REVERB** changes SIZE a sample at a time.
+- The **send effects'** mods are the project's, not a track's, so [MATRIX](#matrix) leaves them out.
+- **FX held** + a knob on an FX page makes an effect mod too.
+
+**DRIVE** is a soft clip, with these knobs:
+
+| Knob | What it does |
+|---|---|
+| **DRIVE** (RATE) | Pushes the sound into a rounded curve that flattens its peaks: warmth first, then grit. The level stays about the same. |
+| **FOLD** (CHAR) | Turns the peaks back, as a wavefolder does. |
+| **MIX** | Blends it with the dry sound. |
+
+In FX1, DRIVE drives the track before its other effects. It runs without oversampling, so a bright sound driven
+hard aliases.
+
+### MIX buses
+
+**BUS A** and **BUS B**, at the end of KNOB 3's list, are two mixers of the project's. Every mod into a bus is
+combined there, and the bus is then a source of its own (BUS A, BUS B at the end of KNOB 1's list) for as many mods
+as you like. So a sum of two LFOs can drive a GATE, or one envelope can move four destinations without four amounts
+that must match.
+
+Each bus has two settings on MODS' sheet: hold **OCT+** on MODS, pick the row with **KNOB 1**, set its value with
+**KNOB 2**, and close it with **OCT-**.
+
+| Setting | Values | What it does |
+|---|---|---|
+| **Mode** | **SUM** (the default), **MAX**, **MIN**, **DIFF** | How the bus's mods combine. SUM adds them, clamped to −100 to 100 %. MAX takes the highest, MIN the lowest, and DIFF how far apart the first two are. |
+| **Lag** | OFF, 10 ms to 20 s | A slew on the result: the time a whole move from 0 to 100 % takes, up and down. |
+
+- **Logic with gates:** with GATE mods at +100 into a bus, MAX is OR (either one open), MIN is AND (both), and DIFF is
+  XOR (one or the other, not both). Read the bus as a GATE mod (threshold 50 %) to use the result as a gate.
+- **Envelopes and glides:** a track's GATE into a lagged bus rises and falls as an envelope (Maths' slew), and a
+  stepped source (S&H, a HOLD mod) glides.
+
+<p align="center"><img src="assets/gallery/mods_bus.png" alt="MODS' sheet: the buses' Mode and Lag" width="240"></p>
+
+<details>
+<summary>More detail on the buses</summary>
+
+- A bus is read one block (0.7 ms) after its mods, so it can feed itself or the other bus. BUS A into BUS A at +100 %,
+  with a small fixed mod, adds up like an integrator and stops at 100 %. At a negative amount it settles or swings,
+  always within the clamp.
+- With no mod into a bus, it stays at 0 and nothing changes.
+- Buses come from no track, so [MATRIX](#matrix) leaves their mods out.
+- The settings are saved with the project.
+
+</details>
+
+### Mods of mods
+
+**M1 AMT** to **M16 AMT**, at the end of KNOB 3's list, move another mod's amount (a fixed mod's offset), as a hand on
+its KNOB 4 would. Send `T4 ENV` to `M3 AMT` and each of track 4's notes deepens mod 3 for a moment, so one track's
+playing spreads into another's sound.
+
+- What the mods of mods add goes on top of the amount you set, up to 100 % either way. Set mod 3 to 0 and only the
+  mods of mods move it, so it comes and goes.
+- The bar under a moved mod shows its amount as it is now.
+- One level only: a mod that moves an M AMT mod, or itself, does nothing.
+- They are the project's (no track), so [MATRIX](#matrix) leaves them out.
+- **FX held** + **KNOB 4** on MODS makes one for the picked mod, from the track's
+  [shortcut source](#mod-shortcut).
+
+#### Scale: a VCA on a mod
+
+Hold **OCT-** on a mod of mods and turn **KNOB 3** right. It no longer adds: it **scales** the other mod's move, from
+0 to 1, and the row shows **M3\***. Turn left to make it add again.
+
+Mod 3 keeps the amount you set, and the scaler opens and closes it:
+
+- `T2 GATE` at +100 lets mod 3 through only while track 2 plays.
+- `T4 ENV` at +100 shapes it with each note.
+- +50 lets half through.
+- At a negative amount, the source closes it instead. A duck: `T1 GATE` at −100 silences mod 3 while track 1 plays.
+
+Mods that add come first, then the scalers multiply. A scaler at 0 does nothing. See the recipe
+[A cord that opens and closes](RECIPES.md#a-cord-that-opens-and-closes-scaling-a-mod-35).
+
+### The scope: watch a mod move
+
+Hold **OCT-** on MODS to see how the picked mod moves. Its row stays at the top, and in the other rows' place you see:
+
+- **the line:** the mod's move over time;
+- **the faint dots** behind it: its source;
+- **the dotted middle line:** 0. The top is +100 % of the destination's range.
+
+Let go and the four rows come back. Nothing is saved, and nothing changes until you hold it.
+
+**Keep it on screen.** Hold OCT- and tap **OCT+** (SCOPE PINNED). Let go of OCT- and the knobs work as usual, so you
+can turn the amount or pick another mod and watch it change. Tap OCT- (SCOPE FREE) or leave MODS and the rows come
+back. The pin is not saved.
+
+**Reading it:**
+
+- With AMOUNT under 100 %, the gap between the line and the dots is the amount.
+- A mod of mods swells and shrinks inside its source.
+- A mod faster than the window draws its middle, not a band. A sudden jump is drawn as a jump.
+- A HOLD mod steps once a bar.
+- A cord from BUS A or BUS B draws the bus as its source.
+- With a MOSAIC colour set, the line is in its source's track colour (a BUS, MACRO or other project source in the
+  main ink).
+- **A GATE mod** marks its threshold with a small wedge at each edge, filled while the gate is open. The same hold
+  turns the threshold (KNOB 4): a dashed line runs across for a second, so you see where it opens against the source.
+
+**The window.** The scope sweeps left to right (a gap marks now), with ticks on the bottom edge at the bars. Its
+length suits the source:
+
+| Source | Window |
+|---|---|
+| The notes' own: ENV, VEL, GATE, NOTE, CV, S&H .. | 1 bar |
+| An LFO | 2 to 16 bars, keeping 2 to 6 cycles in view |
+| A MACRO | 4 bars |
+| DRIFT, SWARM | 16 bars |
+| TIDE, ENERGY | 64 bars |
+
+**With the screen reader,** holding OCT- says it once: the window, the shape, and the lowest and highest move
+("SCOPE 2 BARS, CYCLING 2 A BAR, LOW -60 HIGH 60 %"). For a GATE, it says how often it opens and whether it is open now.
+
 <p align="center"><img src="assets/gallery/mods_scope.png" alt="MODS with OCT- held: the scope of a mod whose amount another mod turns" width="240"> <img src="assets/gallery/mods_scope_gate.png" alt="The scope of a GATE mod: its threshold a wedge at each edge" width="240"> <img src="assets/gallery/mods_scope_thresh.png" alt="The same while KNOB 4 turns the threshold: a dashed line across" width="240"></p>
+
+### Good to know
+
+- **Clearing a mod.** Hold **OCT+** on MODS for MODS' sheet; its header names the picked mod (**M3** at its right).
+  Its first row, **Clear mod** (in red), clears that mod with **OCT+**: no source, no destination, no amount, +-, no
+  SCALE, CC 1. Mods that move it (M3 AMT) are left as they are. There is no undo. An empty mod says NOTHING THERE.
+- **Live marks.** A knob a cord reaches shows where the cords move it now: a bead riding the ring of its dial (on a
+  bar, a notch beside it). The effects' and the send effects' knobs show them too. CUTOFF and SHAPE, which act inside
+  the voice, show none.
+- **The LFO's POL is not a mod's.** The LFO page's **POL** (BI, UNI) sets how that page's own depths move (LFO PIT,
+  FLT, SHP, AMP). It does not reach a mod: a mod from the LFO swings both ways whatever POL is, and its own +- or +
+  says which way it moves. So a UNI LFO is never shifted twice, and a + mod from a BI LFO moves one way.
+- **Names and colours.** The lists of KNOB 1 and KNOB 3 name each entry with its track (**T2 GATE**, **T4 DECAY**).
+  The project's ENERGY and the send effects' have none. On the MOSAIC colours, an entry is in its track's colour.
+
+### MODS and older firmware
+
+A project that uses any of these does not load on firmware from before the feature:
+
+- a mod to or from a MIX bus (the bus settings alone are ignored);
+- a CLOCK mod;
+- a CC mod;
+- a mod onto an effect;
+- a mod of mods;
+- a PLAY mod.
+
+These load, but play differently:
+
+- a HOLD mod plays as +-, and HOLD on a track's notes holds by the bar;
+- a scaling mod of mods adds instead;
+- a DRIVE effect plays as a FILTER.
 
 ---
 
