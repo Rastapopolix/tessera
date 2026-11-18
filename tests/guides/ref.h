@@ -308,12 +308,60 @@ static const gstep_t G_ENTRIES[] = {
     {46200, 0, 0, 0, 0, "Away from A it thins again: the melody leaves first"},
     {51800, 0, 0, 0, 0, "and is back on the next line. Your own mutes still win"},
 };
+/* disco: 116 BPM, A minor; an 808 four on the floor (open hats on the offbeat, claps), an octave bass on EUCLID, a
+ * clavinet on POLY, strings holding the chord. CHAIN FORM OFF until the clip turns it on; KEY B +5 (a fourth up) */
+static void g_disco_scene(void)
+{
+    static const uint8_t REP[4] = {1, 1, 1, 1};
+    song.g[G_BPM] = 116;
+    scale(9, SCL_MIN, 0);
+    sends(75, 60, 70, 45);
+    sound(0, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_OH, 0, L_BD | L_CP, 0, L_OH, 0, L_BD, 0, L_OH, 0, L_BD | L_CP, 0, L_OH, L_CH};
+        static const uint8_t V[16] = {110, 0, 70, 0, 104, 0, 70, 0, 106, 0, 72, 0, 104, 0, 70, 50};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(0, i, L[i], V[i]);
+        trk[0].p[P_SLEN] = 16;
+    }
+    tx(0, TX_MODE, TESS_ENG_OFF); trk[0].p[P_SDIV] = DIV_16;
+    mixer(0, 92, 0, 10, 0);
+    sound(1, ENGI_FM6, FX_SOLID_BASS);
+    trk[1].p[P_SDIV] = DIV_16;
+    gen(1, TESS_ENG_EUCLID, 18);
+    tx(1, TX_EUC_STEPS, 16); tx(1, TX_EUC_PULSES, 8); tx(1, TX_EUC_ROT, 1); tx(1, TX_TW_SHIFT, -12);
+    sections(1, 40, 0, 0);
+    mixer(1, 96, 0, 0, 0);
+    sound(2, ENGI_FM6, FX_CLAVINET);
+    trk[2].p[P_SDIV] = DIV_16;
+    gen(2, TESS_ENG_POLY, 52);
+    tx(2, TX_POL_DIV1, 3); tx(2, TX_POL_DIV2, 4); tx(2, TX_POL_DIV3, 6); tx(2, TX_POL_DIV4, 0); tx(2, TX_POL_SPAN, 1);
+    sections(2, 60, 0, 0);
+    mixer(2, 78, 20, 30, 40);
+    sound(3, ENGI_TRIO, TR_STRING_MACH);
+    trk[3].p[P_CHRD] = 1;
+    gen(3, TESS_ENG_CHORD, 6);
+    tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
+    mixer(3, 66, -20, 80, 0);
+    chain_set(FC_OFF, PH_4, 0, REP, 5, 0);
+}
+static const gstep_t G_CHAIN[] = {
+    {0, 0, 0, 0, 0, "CHAIN gives the whole project one FORM: the tracks change section together"},
+    {3500, 6500, 200, "GLO", "MIXER", "Tap GLO twice: PERF"},
+    {0, 8000, 200, "GLO", "PERF", 0},
+    {12000, 15000, 800, "SELECT", "CHAIN", "Turn SELECT: on to CHAIN", 2},
+    {19000, 22000, 600, "KNOB 1", "FORM AB", "Turn KNOB 1: FORM AB, a section every 4-bar phrase", 1},
+    {28000, 0, 0, 0, 0, "A: the project as it was. Tracks 2 to 4 follow the CHAIN"},
+    {37400, 0, 0, 0, 0, "B: each following track moves to its own B, all at once"},
+    {45700, 0, 0, 0, 0, "Back to A, together"},
+    {53900, 0, 0, 0, 0, "This project's B is a fourth up: Key in B, on SCL's last rows"},
+};
 static void guide_ref(const char *out, FILE *tsv)
 {
     G_RUN("r-landscape", "A SEA TO WATCH", "MOSAIC", 72, 4, g_neoclassical_scene, G_LANDSCAPE);   /* neo-classical */
     G_RUN("r-color", "THE SCREEN'S COLOUR", "YELLOW", 54, 4, g_chillout_scene, G_COLOR);   /* chillout */
     G_RUN("r-form", "A TRACK AS A SONG", "SUNSET", 60, 4, g_bossa_scene, G_FORM);   /* bossa nova */
     G_RUN("r-entries", "TRACKS OUT AND IN", "SUNSET", 60, 4, g_dnb_scene, G_ENTRIES);   /* liquid drum and bass */
+    G_RUN("r-chain", "ONE FORM FOR ALL", "SUNSET", 64, 4, g_disco_scene, G_CHAIN);   /* disco */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
     G_RUN("r-mod-first", "YOUR FIRST MOD", "LILAC", 65, 4, g_triphop_scene, G_MOD_FIRST);   /* trip-hop */
