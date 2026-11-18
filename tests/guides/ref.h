@@ -590,6 +590,53 @@ static const gstep_t G_LENGTH[] = {
     {18000, 21000, 900, "KNOB 1", "HIT", "Turn KNOB 1 to HIT: each note rings on until the next, so the gaps fill", 2},
     {32000, 0, 0, 0, 0, "FIXED holds each note for LEN instead, with up to KEYS notes at once"},
 };
+/* city pop: 108 BPM, D major; an 808 and a slap-ish bass written in STEP, two patterns each (pattern 2 busier: the
+ * clip switches to it), tine chords on CHORD, strings */
+static void g_citypop_scene(void)
+{
+    static const uint8_t D1[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, 0, L_BD, 0, L_CH, L_BD, L_SD, 0, L_CH, 0};
+    static const uint8_t D2[16] = {L_BD, 0, L_CH, L_CH, L_SD, 0, L_CH, L_BD, L_BD, 0, L_CH, L_BD, L_SD, L_SD, L_OH, L_SD};
+    static const uint8_t B1[16] = {38, 0, 0, 50, 0, 0, 38, 0, 43, 0, 0, 55, 0, 0, 43, 0};
+    static const uint8_t B2[16] = {38, 50, 38, 0, 45, 0, 38, 50, 43, 55, 43, 0, 47, 45, 43, 40};
+    song.g[G_BPM] = 108;
+    scale(2, 1, 0);                                     /* D, MAJ */
+    sends(75, 60, 65, 45);
+    sound(0, ENGI_DRUM, DK_808_KIT);
+    sound(1, ENGI_FM6, FX_SOLID_BASS);
+    for (uint32_t pat = 0; pat < 2u; pat++) {
+        for (uint32_t i = 0; i < 32u; i++) {
+            const uint8_t *D = pat ? D2 : D1, *B = pat ? B2 : B1;
+            step_hits(0, i, D[i % 16u], D[i % 16u] ? (uint8_t)(i % 4u ? 70 : 100) : 0);
+            if (B[i % 16u]) step_note(1, i, B[i % 16u], 96);
+        }
+        trk[0].p[P_SLEN] = 32; trk[1].p[P_SLEN] = 32;
+        if (!pat) { pattern_switch(&trk[0], 1); pattern_switch(&trk[1], 1); }
+    }
+    pattern_switch(&trk[0], 0); pattern_switch(&trk[1], 0);
+    tx(0, TX_MODE, TESS_ENG_OFF); trk[0].p[P_SDIV] = DIV_16;
+    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
+    mixer(0, 88, 0, 12, 0);
+    mixer(1, 90, 0, 0, 10);
+    sound(2, ENGI_FM6, FX_TINE_EP);
+    trk[2].p[P_CHRD] = 2;
+    gen(2, TESS_ENG_CHORD, 19);
+    tx(2, TX_CH_PROG, GEN_CH_251); tx(2, TX_CH_BARS, 1); tx(2, TX_CH_HIT, GEN_CH_OFF);
+    mixer(2, 74, 20, 50, 30);
+    sound(3, ENGI_TRIO, TR_STRING_MACH);
+    trk[3].p[P_CHRD] = 1;
+    gen(3, TESS_ENG_CHORD, 6);
+    tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
+    mixer(3, 56, -25, 80, 0);
+}
+static const gstep_t G_PATTERNS[] = {
+    {0, 0, 0, 0, 0, "Each track has 8 patterns, 8 pages of its own steps"},
+    {3500, 6500, 900, "SEQ", "PATTERNS", "Hold SEQ: PATTERNS, a row per track, a cell per pattern"},
+    {11000, 14000, 600, "KNOB 1", "TRACK 1: 2", "Turn KNOB 1: track 1's next pattern is 2. Dashed: it waits", 1},
+    {18200, 0, 0, 0, 0, "The pattern playing ends, and it switches: busier drums"},
+    {21500, 24500, 600, "KNOB 2", "TRACK 2: 2", "Turn KNOB 2: the bass queues its pattern 2 too", 1},
+    {27100, 0, 0, 0, 0, "On its line it switches: a new bass part"},
+    {32000, 0, 0, 0, 0, "JAM logs what you played. On SONG, the next page, take it as a song"},
+};
 static void guide_ref(const char *out, FILE *tsv)
 {
     G_RUN("r-landscape", "A SEA TO WATCH", "MOSAIC", 72, 4, g_neoclassical_scene, G_LANDSCAPE);   /* neo-classical */
@@ -603,6 +650,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-timing", "ROLLS AND FEEL", "GREEN", 58, 4, g_boombap_scene, G_TIMING);   /* boom bap */
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
+    G_RUN("r-patterns", "PATTERNS", "MOSAIC", 41, 4, g_citypop_scene, G_PATTERNS);   /* city pop */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
     G_RUN("r-mod-first", "YOUR FIRST MOD", "LILAC", 65, 4, g_triphop_scene, G_MOD_FIRST);   /* trip-hop */
