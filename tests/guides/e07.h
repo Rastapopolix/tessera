@@ -136,9 +136,52 @@ static const gstep_t G_TEMPO[] = {
     {0, 24440, 120, "F4", "TAP", 0},
     {31000, 0, 0, 0, 0, "With GLO held, SELECT sets the tempo on any page"},
 };
+/* breakbeat: 132 BPM, a broken 909 (ghost snares, open hat), a fat bass on TURING whose filter MACRO 1 opens, a sync
+ * lead on EUCLID that MACRO 1 sends into the reverb, a pad under it. D minor */
+static void g_breakbeat_scene(void)
+{
+    song.g[G_BPM] = 132;
+    scale(2, SCL_MIN, 0);
+    sends(95, 70, 70, 50);
+    sound(0, ENGI_DRUM, DK_909_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_SD, 0, 0, L_BD | L_CH, 0, L_SD, 0, L_OH, L_SD};
+        static const uint8_t V[16] = {112, 0, 72, 0, 104, 0, 70, 48, 0, 0, 100, 0, 106, 0, 76, 52};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(0, i, L[i], V[i]);
+        trk[0].p[P_SLEN] = 16;
+    }
+    tx(0, TX_MODE, TESS_ENG_OFF); trk[0].p[P_SDIV] = DIV_16;
+    mixer(0, 86, 0, 10, 0);
+    sound(1, ENGI_TRIO, TR_FAT_BASS);
+    trk[1].p[P_SDIV] = DIV_16;
+    gen(1, TESS_ENG_TURING, 52);
+    tx(1, TX_TUR_PROB, 5); tx(1, TX_TW_SHIFT, -12); tx(1, TX_TW_DROP, 45);
+    mixer(1, 100, 0, 0, 0);
+    sound(2, ENGI_FM6, FX_SYNC_LEAD);
+    trk[2].p[P_SDIV] = DIV_16;
+    gen(2, TESS_ENG_EUCLID, 27);
+    tx(2, TX_EUC_STEPS, 16); tx(2, TX_EUC_PULSES, 5); tx(2, TX_EUC_ROT, 3);
+    mixer(2, 112, 25, 0, 30);
+    sound(3, ENGI_ORACLE, OR_WARM_PAD);
+    trk[3].p[P_CHRD] = 1;
+    gen(3, TESS_ENG_CHORD, 2);
+    tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
+    mixer(3, 58, -25, 70, 0);
+    cord(0, CS_MACRO1, 0, CD_CUTOFF, 1, 100, -85, CU_UNI);   /* MACRO 1 -> T2 CUT: the bass from dark to open */
+    cord(1, CS_MACRO1, 0, CD_FX_SEND, 2, 100, 0, CU_UNI);    /* MACRO 1 -> T3 the reverb send */
+}
+static const gstep_t G_PERF[] = {
+    {0, 0, 0, 0, 0, "PERF: four knobs, each able to move many things at once"},
+    {3500, 6500, 200, "GLO", "OPEN MIXER", "Tap GLO: the MIXER page"},
+    {10000, 13000, 200, "GLO", "OPEN PERF", "Tap GLO again: PERF, the next page"},
+    {17000, 20000, 4500, "KNOB 1", "MACRO 1 UP", "Turn KNOB 1: MACRO 1 opens the bass and sends the lead into the reverb (its 2 MODS)", 90},
+    {28000, 31000, 3000, "KNOB 1", "MACRO 1 DOWN", "Turn it back: both close again", -90},
+    {38000, 0, 0, 0, 0, "In MODS, pick MACRO 1 to 4 as a mod's source and send it anywhere"},
+};
 static void guide_e07(const char *out, FILE *tsv)
 {
     G_RUN("e07-mixer", "MUTE, SOLO, FILL", "MOSAIC", 59, 4, g_mixer_scene, G_MIXER); /* a beat */
     G_RUN("e07-mutes", "MUTES ON THE BAR", "MOSAIC", 61, 4, g_dubstep_scene, G_MUTES); /* old-school dubstep */
+    G_RUN("e07-perf", "PERF: FOUR MACROS", "MOSAIC", 46, 4, g_breakbeat_scene, G_PERF);   /* breakbeat */
     G_RUN("e07-tempo", "THE TEMPO", "MOSAIC", 39, 4, g_electro_scene, G_TEMPO);        /* electro */
 }
