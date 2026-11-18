@@ -105,8 +105,18 @@ static uint32_t seq_beat_samples(void)
  * factor (Q12) first stretches the samples, its 1/4096ths of a sample carried too; all in 32 bits (the device's libgcc
  * has no 64-bit / or %) */
 static uint32_t int_clock_rem, int_clock_frac;
+#ifdef TESS_HOST_CLOCK
+/* The plugin only (platform/plugin/tess_core.c; never defined for the FM-1): while a DAW plays, its beat position
+ * gives CLK INT's units, so Tessera stays locked to the DAW's tempo, fractions and changes included */
+static uint8_t tess_host_clock;
+static uint32_t tess_host_units(uint32_t n);
+#endif
 static uint32_t int_clock_units(uint32_t n)
 {
+#ifdef TESS_HOST_CLOCK
+    if (tess_host_clock)
+        return tess_host_units(n);
+#endif
     uint32_t per = (uint32_t)FS * 60u, units = 0;
     if (seq_tempo_q12 != 4096u) {
         uint32_t q = n * seq_tempo_q12 + int_clock_frac;
@@ -137,6 +147,9 @@ static uint32_t seq_div_samples(uint32_t div)
 static void events_block(uint32_t n);
 #if MELODEE_USB_AUDIO
 static int ua_capture_active(void);
+#ifdef TESS_PLUGIN_IO
+static uint8_t tess_plugin_stems;                   /* the plugin only (platform/plugin): its per-track outputs */
+#endif
 static uint8_t track_capture_on, master_capture_on;   /* track_capture holds the stems, or the stereo mix (L, R a frame) */
 static int32_t track_capture[CTL * NTRK];
 /* USB stereo recording before MASTER (upstream 1d02852): Tessera's MASTER sits before the limiter, so the recording
@@ -364,6 +377,9 @@ static __attribute__((noinline)) void mix_block(int32_t *out,uint32_t n)
 #endif
 #if MELODEE_USB_AUDIO
     {int cap=ua_capture_active();
+#ifdef TESS_PLUGIN_IO
+     if(tess_plugin_stems)cap=4;                        /* (the USB stems, for the plugin's track outputs) */
+#endif
      if(cap==2&&!master_capture_on){cap_lim=LIM_T;memset(cap_dc,0,sizeof cap_dc);}   /* (a recording starts clean) */
      track_capture_on=(uint8_t)(cap==4);master_capture_on=(uint8_t)(cap==2);}
     if(track_capture_on)memset(track_capture,0,n*NTRK*sizeof *track_capture);

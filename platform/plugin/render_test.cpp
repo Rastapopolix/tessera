@@ -5,6 +5,8 @@
  *   - with the host's transport playing at 48 kHz, STILL TIDE (the project it starts with) makes sound;
  *   - a note in on the selected track changes the output;
  *   - the state is a .tsp record (TSP1) and loads back;
+ *   - the four track outputs sound, MIDI OUT sends the tracks' notes on their channels, in order;
+ *   - the parameters: MASTER and MACRO 1..4, automation in at its sample, the value read back;
  *   - (Linux, with a DISPLAY, e.g. under xvfb-run) the window opens in a parent window and shows the FM-1's screen;
  *   - optionally writes the first seconds as a 16-bit WAV (third argument) to listen to.
  * usage: tessera-render-test path/to/Tessera.clap [seconds] [out.wav] [window.ppm] */
@@ -49,7 +51,20 @@ struct Events
         return &static_cast<Events *>(l->ctx)->notes[i].header;
     }
 };
-static bool out_try_push(const clap_output_events_t *, const clap_event_header_t *) { return true; }
+// what the plugin sends: MIDI OUT's note-ons by channel, and the events out of order (there must be none)
+static uint32_t midi_on[16], out_of_order, out_last, out_frames;
+static bool out_try_push(const clap_output_events_t *, const clap_event_header_t *h)
+{
+    if (h->time < out_last) out_of_order++;
+    if (h->time >= out_frames) out_of_order++;
+    out_last = h->time;
+    if (h->type == CLAP_EVENT_MIDI)
+    {
+        auto *e = reinterpret_cast<const clap_event_midi_t *>(h);
+        if ((e->data[0] & 0xF0) == 0x90 && e->data[2]) midi_on[e->data[0] & 15]++;
+    }
+    return true;
+}
 
 // ---- streams
 struct Buf
@@ -151,6 +166,7 @@ int main(int argc, char **argv)
     proc.transport = &tr;
     proc.audio_outputs = &out;
     proc.audio_outputs_count = 1;
+    out_frames = block;
     proc.in_events = &in;
     proc.out_events = &oe;
 
@@ -213,6 +229,82 @@ int main(int argc, char **argv)
         ev.notes.push_back(off);
         p->process(p, &proc);
         ev.notes.clear();
+    }
+
+    // the track outputs and MIDI OUT: 8 s of STILL TIDE from the top with all five outputs
+    {
+        auto *ap = (const clap_plugin_audio_ports_t *)p->get_extension(p, CLAP_EXT_AUDIO_PORTS);
+        CHECK(ap && ap->count(p, false) == 5, "5 audio outputs (main + 4 tracks)");
+        static float tb[4][2][480];
+        float *tch[4][2];
+        clap_audio_buffer_t outs[5] = {out};
+        for (int k = 0; k < 4; k++)
+        {
+            tch[k][0] = tb[k][0];
+            tch[k][1] = tb[k][1];
+            outs[k + 1].data32 = tch[k];
+            outs[k + 1].channel_count = 2;
+        }
+        proc.audio_outputs = outs;
+        proc.audio_outputs_count = 5;
+        std::memset(midi_on, 0, sizeof midi_on);
+        out_of_order = 0;
+        double e[4] = {};
+        tr.flags = CLAP_TRANSPORT_HAS_TEMPO;
+        out_last = 0;
+        p->process(p, &proc);
+        tr.flags = CLAP_TRANSPORT_IS_PLAYING | CLAP_TRANSPORT_HAS_TEMPO;
+        out_of_order = 0;
+        for (int b = 0; b < 800; b++)
+        {
+            out_last = 0;
+            p->process(p, &proc);
+            for (int k = 0; k < 4; k++)
+                for (uint32_t i = 0; i < block; i++) e[k] += (double)tb[k][0][i] * tb[k][0][i];
+        }
+        int sounding = 0, chans = 0, ons = 0;
+        for (int k = 0; k < 4; k++) sounding += e[k] > 1e-3;
+        for (int c = 0; c < 16; c++) { chans += midi_on[c] > 0; ons += (int)midi_on[c]; }
+        std::printf("track outputs: energy %.3f %.3f %.3f %.3f; MIDI OUT: %d note-ons on %d channels (1-4: %u %u %u %u)\n",
+                    e[0], e[1], e[2], e[3], ons, chans, midi_on[0], midi_on[1], midi_on[2], midi_on[3]);
+        CHECK(sounding >= 3, "STILL TIDE's tracks should sound on their own outputs (%d)", sounding);
+        CHECK(ons >= 4 && chans >= 3, "MIDI OUT should send the tracks' notes on their channels");
+        CHECK(!out_of_order, "events out must be in order and inside the block (%u)", out_of_order);
+        proc.audio_outputs = &out;
+        proc.audio_outputs_count = 1;
+    }
+
+    // parameters: MASTER + MACRO 1..4; an automation event sets MACRO 2
+    auto *pa = (const clap_plugin_params_t *)p->get_extension(p, CLAP_EXT_PARAMS);
+    CHECK(pa && pa->count(p) == 5, "5 parameters");
+    if (pa && pa->count(p) == 5)
+    {
+        clap_param_info_t info;
+        pa->get_info(p, 2, &info);
+        CHECK(!std::strcmp(info.name, "MACRO 2") && (info.flags & CLAP_PARAM_IS_AUTOMATABLE), "MACRO 2 automatable");
+        struct PEvents
+        {
+            clap_event_param_value_t e;
+            static uint32_t size(const clap_input_events_t *) { return 1; }
+            static const clap_event_header_t *get(const clap_input_events_t *l, uint32_t)
+            {
+                return &static_cast<PEvents *>(l->ctx)->e.header;
+            }
+        } pe{};
+        pe.e.header = {sizeof pe.e, 100, CLAP_CORE_EVENT_SPACE_ID, CLAP_EVENT_PARAM_VALUE, 0};
+        pe.e.param_id = 2;
+        pe.e.note_id = pe.e.port_index = pe.e.channel = pe.e.key = -1;
+        pe.e.value = 73;
+        clap_input_events_t pin = {&pe, PEvents::size, PEvents::get};
+        proc.in_events = &pin;
+        p->process(p, &proc);
+        proc.in_events = &in;
+        double v = -1;
+        pa->get_value(p, 2, &v);
+        char txt[64];
+        pa->value_to_text(p, 0, 1023, txt, sizeof txt);
+        std::printf("params: MACRO 2 = %.0f after automation; MASTER 1023 reads \"%s\"\n", v, txt);
+        CHECK(v == 73, "MACRO 2 should be 73 (%.0f)", v);
     }
 
     // state: a .tsp record that loads back

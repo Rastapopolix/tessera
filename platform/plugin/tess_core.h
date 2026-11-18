@@ -14,8 +14,15 @@ extern "C" {
 uint32_t tess_core_rate(void);
 /* power-on, once per process: STILL TIDE loaded in slot A (and KOTO GARDEN in B), stopped */
 void tess_core_boot(void);
-/* n stereo frames (n <= 1024) at tess_core_rate(), the device running until they exist */
-void tess_core_render(float *l, float *r, uint32_t n);
+/* n stereo frames (n <= 1024) at tess_core_rate(), the device running until they exist. stems: 0, or four buffers of n
+ * that get tracks 1..4 alone (the FM-1's USB stems: each track's sound after its level, before pan and the bus FX,
+ * mono); asked for once, the stems are made from then on */
+void tess_core_render(float *l, float *r, float *const *stems, uint32_t n);
+/* the core frames rendered so far (wraps) */
+uint32_t tess_core_frames(void);
+/* MIDI OUT (Settings > NOTES OUT; each track on its own channel, GLO > MIDI OUT), as USB MIDI packets: the next one
+ * whose frame (tess_core_frames' count) has been rendered. 0 = none */
+uint32_t tess_core_midi_out(uint32_t *pkt, uint32_t *frame);
 /* a MIDI channel message in, as from USB MIDI: 0 = the queue was full */
 uint32_t tess_core_midi(uint32_t status, uint32_t d1, uint32_t d2);
 /* the transport: 1 play (from where the song is), 0 stop. Does nothing if it is already so */
@@ -42,9 +49,25 @@ void tess_core_master(uint32_t v);
 typedef struct {
     uint16_t screen[TESS_SCREEN * TESS_SCREEN];   /* RGB565 (host order) */
     uint32_t lit_buttons, lit_keys, dim_buttons, dim_keys, breath_buttons, breath_keys;   /* lit_buttons bit 14: PLAY green */
-    uint32_t screen_draws, playing;
+    uint32_t screen_draws, playing, master;   /* master 0..1023 */
 } tess_view_t;
 void tess_core_view(tess_view_t *v);
+
+/* ---- the DAW (phase 2) */
+/* each host block while the DAW plays, before its audio, and once when it stops: the DAW's transport. playing: its PLAY; bpm: its tempo; beats: its position
+ * at the block's start (quarter notes from its zero). With CLK INT, Tessera follows it: PLAY starts every track where it
+ * would be after playing from the DAW's zero (Song Position), its beat position drives the clock (fractional tempos,
+ * tempo changes, no drift), a jump (a loop, a locate) seeks again; STOP stops. has_pos 0: a transport with no position
+ * (start and stop only, Tessera's own BPM). */
+void tess_core_host(int playing, int has_pos, double bpm, double beats);
+/* PERF's MACRO 1..4 (k 0..3), 0..100: the project's, cord sources */
+uint32_t tess_core_macro(uint32_t k);
+void tess_core_macro_set(uint32_t k, uint32_t v);
+/* MASTER, 0..1023 */
+uint32_t tess_core_master_get(void);
+/* where the song is, in quarter notes from its top (the bar and beat counters); the BPM shown */
+double tess_core_position(void);
+uint32_t tess_core_bpm(void);
 
 #ifdef __cplusplus
 }

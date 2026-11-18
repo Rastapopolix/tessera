@@ -8,15 +8,61 @@
 
 uint32_t tess_core_rate(void) { return FS; }
 
-void tess_core_boot(void) { web_boot(); }
-
-void tess_core_render(float *l, float *r, uint32_t n)
+void tess_core_boot(void)
 {
+    web_boot();
+    settings_midi_out = MIDI_OUT_ALL;             /* (a DAW wants the generators' notes too; MENU can change it) */
+}
+
+/* the stems beside sim.c's ring, frame for frame (tess_plugin_block: after each mix_block) */
+static float stem_ring[RING][NTRK];
+static void tess_plugin_block(uint32_t frame)
+{
+    uint32_t k, t;
+    if (!tess_plugin_stems)
+        return;
+    for (k = 0; k < CTL; k++)
+        for (t = 0; t < NTRK; t++)
+            stem_ring[(frame + k) % RING][t] = (float)track_capture[k * NTRK + t] * (1.0f / 32768.0f);
+}
+
+/* MIDI OUT: a ring of packets, each with the frame being made when it was sent */
+#define MO_RING 512u
+static uint32_t mo_pkt[MO_RING], mo_frame[MO_RING], mo_wr, mo_rd;
+static void tess_plugin_midi_out(uint32_t pkt)
+{
+    if (mo_wr - mo_rd >= MO_RING)
+        return;                                   /* (full: as the USB queue, dropped) */
+    mo_pkt[mo_wr % MO_RING] = pkt;
+    mo_frame[mo_wr % MO_RING] = ring_w;
+    mo_wr++;
+}
+uint32_t tess_core_midi_out(uint32_t *pkt, uint32_t *frame)
+{
+    if (mo_rd == mo_wr || (int32_t)(mo_frame[mo_rd % MO_RING] - ring_r) >= 0)
+        return 0;
+    *pkt = mo_pkt[mo_rd % MO_RING];
+    *frame = mo_frame[mo_rd % MO_RING];
+    mo_rd++;
+    return 1;
+}
+
+uint32_t tess_core_frames(void) { return ring_r; }
+
+void tess_core_render(float *l, float *r, float *const *stems, uint32_t n)
+{
+    uint32_t r0 = ring_r, k, t;
     if (n > 1024u)
         n = 1024u;
+    if (stems)
+        tess_plugin_stems = 1;
     web_render(n);
     memcpy(l, out_l, n * sizeof *l);
     memcpy(r, out_r, n * sizeof *r);
+    if (stems)
+        for (k = 0; k < n; k++)
+            for (t = 0; t < NTRK; t++)
+                stems[t][k] = stem_ring[(r0 + k) % RING][t];
 }
 
 uint32_t tess_core_midi(uint32_t status, uint32_t d1, uint32_t d2) { return web_midi(status, d1, d2); }
@@ -82,4 +128,74 @@ void tess_core_view(tess_view_t *v)
     v->breath_keys = web_breath_keys();
     v->screen_draws = web_screen_draws();
     v->playing = song.playing;
+    v->master = tess_core_master_get();
 }
+
+/* ---- the DAW (TESS_HOST_CLOCK: mix.c int_clock_units asks tess_host_units while the DAW plays) */
+static double host_rate_u;                 /* units a core sample at the DAW's tempo */
+static double host_given, host_expect;     /* units handed out since the lock; where the DAW should be by now */
+static double host_frac;
+static uint32_t tess_host_units(uint32_t n)
+{
+    double want = n * host_rate_u, err = host_expect - host_given;
+    uint32_t u;
+    host_expect += want;
+    want += err * 0.02;                    /* (the gap to the DAW's own position: closed over ~50 blocks) */
+    if (want < 0)
+        want = 0;
+    want += host_frac;
+    u = (uint32_t)want;
+    host_frac = want - u;
+    host_given += u;
+    return u;
+}
+
+static void host_locate(double units)
+{
+    seq_start();                           /* (as a MIDI Continue after a Song Position: midi_clock_seek) */
+    if (units >= 1.0)
+        seq_seek((uint32_t)units);
+    host_given = host_expect = units;
+    host_frac = 0;
+}
+
+void tess_core_host(int playing, int has_pos, double bpm, double beats)
+{
+    if (!playing) {                        /* (the plugin calls this on the DAW's STOP only, not every stopped block) */
+        if (song.playing)
+            transport_req = 2;
+        tess_host_clock = 0;
+        return;
+    }
+    if (!has_pos || song.g[G_CLOCK] || bpm < 20.0 || bpm > 400.0) {   /* (CLK on MIDI: its master's clock rules) */
+        tess_host_clock = 0;
+        if (!song.playing)
+            transport_req = 1;
+        return;
+    }
+    double units = (beats > 0 ? beats : 0) * MIDI_BEAT_UNITS;
+    int bpm_i = (int)(bpm + 0.5);
+    song.g[G_BPM] = (int16_t)(bpm_i < 40 ? 40 : bpm_i > 240 ? 240 : bpm_i);   /* (the display, and timings set in ms) */
+    host_rate_u = bpm / 60.0 * MIDI_BEAT_UNITS / FS;
+    if (!tess_host_clock || !song.playing) {
+        tess_host_clock = 1;
+        host_locate(units);
+    } else if (units - host_expect > MIDI_BEAT_UNITS || host_expect - units > MIDI_BEAT_UNITS) {
+        host_locate(units);                /* (a loop or a locate while playing) */
+    } else {
+        host_expect = units;
+    }
+}
+
+uint32_t tess_core_macro(uint32_t k) { return tessera.macro[k & 3u]; }
+void tess_core_macro_set(uint32_t k, uint32_t v) { tessera_param_set(0, TX_MACRO1 + (k & 3u), (int32_t)(v > 100u ? 100u : v)); }
+uint32_t tess_core_master_get(void)
+{
+    uint32_t q = (uint32_t)song.master_q12 << 8, r = 0;   /* master_q12 = k10^2 >> 8 (web_master) */
+    while ((r + 1u) * (r + 1u) <= q)
+        r++;
+    return r > 1023u ? 1023u : r;
+}
+
+double tess_core_position(void) { return (bar_n * 4.0 + beat_n) + (double)beat_pos / MIDI_BEAT_UNITS; }
+uint32_t tess_core_bpm(void) { return (uint32_t)song.g[G_BPM]; }

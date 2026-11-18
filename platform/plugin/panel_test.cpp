@@ -35,14 +35,15 @@ static double run(Panel &p, double seconds)   // as the plugin's audio thread: i
     {
         tess_core_buttons(in.buttons);
         tess_core_keys(in.keys);
-        tess_core_master((uint32_t)in.master);
+        if (in.master >= 0) tess_core_master((uint32_t)in.master);
+        in.master = -1;
         for (int r = 0; r < TESS_NE; r++)
             if (in.enc[r]) { tess_core_enc((uint32_t)r, in.enc[r]); in.enc[r] = 0; }
         in.changed = false;
     }
     for (int n = (int)(seconds * tess_core_rate() / 441); n > 0; n--)
     {
-        tess_core_render(L, R, 441);
+        tess_core_render(L, R, nullptr, 441);
         for (int k = 0; k < 441; k++) e += (double)L[k] * L[k];
     }
     return e;
