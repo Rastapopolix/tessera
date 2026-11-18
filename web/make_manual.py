@@ -5,7 +5,7 @@
   start/index.html    GETTING_STARTED.md
 
 Each page: the project page's look (Tessera Mono and the colours from web/home/index.html, the light / dark choice it
-stores, tessera-theme), a sidebar of the chapters (the ## headings, the open one's ### under it) and a search over the
+stores, tessera-theme), a sidebar of the chapters (the ## headings, the open one's ### under it; the manual's grouped by button) and a search over the
 page's text, with no network. Headings keep GitHub's anchors (lower case, punctuation dropped, spaces as hyphens, -1
 -2 on repeats), so a link to MANUAL.md#a-section on GitHub works here as manual/#a-section.
 
@@ -78,19 +78,55 @@ def font_and_colours():
     return face, dark, light
 
 
-def sidebar(heads):
-    """the chapters (##), each with its sections (###), folded but for the open one (the script opens it)"""
-    out, open_ = [], False
+# The manual's sidebar, grouped by the FM-1 button that reaches each chapter: (label, heading ids). A ### id listed
+# here moves out of its chapter into this group (GLO's pages are written up under FORM). A chapter left out goes
+# at the end, and an id that no longer exists is reported: keep this in step with MANUAL.md's headings.
+GROUPS = {"manual": [
+    ("START", ["tessera-in-plain-words", "the-panel-at-a-glance", "shortcuts"]),
+    ("EDIT: the sounds", ["sounds"]),
+    ("SEQ: what a track plays", ["seq-the-mode-and-its-pages", "the-generators", "the-gen-layer"]),
+    ("ARP: shaping the notes", ["evolve", "form", "tweak", "tweak-2", "length", "timing", "energy"]),
+    ("GLO: the long form", ["piece-a-length-and-a-shape", "chain-one-form-for-the-project",
+                            "entries-tracks-out-and-back-in", "perf-four-macros", "landscape-rain-on-water"]),
+    ("REC", ["print-and-keep"]),
+    ("SEL: harmony", ["harmony-one-key-chord-and-qnt-chrd"]),
+    ("LFO and FX: movement", ["mods-the-modulation-cords", "matrix", "organic-tide-and-swarm", "mod-shortcut"]),
+    ("HOME and SAVE", ["menu-and-settings", "saving-and-older-projects"]),
+    ("HELP", ["what-a-knob-does", "if-something-goes-wrong", "glossary", "credits"]),
+]}
+
+
+def sidebar(heads, page):
+    """the chapters (##), each with its sections (###), folded but for the open one (the script opens it);
+    on the manual, under a label per button (GROUPS)"""
+    chapters, subs, cur = [], {}, None
     for level, hid, text in heads:
         if level == 2:
-            if open_:
-                out.append("</ol></li>")
-            out.append(f'<li><a href="#{hid}">{html.escape(text)}</a><ol>')
-            open_ = True
-        elif level == 3 and open_:
-            out.append(f'<li><a href="#{hid}">{html.escape(text)}</a></li>')
-    if open_:
-        out.append("</ol></li>")
+            cur = hid
+            chapters.append((hid, text))
+            subs[hid] = []
+        elif level == 3 and cur:
+            subs[cur].append((hid, text))
+    titles = {hid: text for level, hid, text in heads if level in (2, 3)}
+    groups = GROUPS.get(page, [("", [hid for hid, _ in chapters])])
+    moved = {hid for _, ids in groups for hid in ids if hid not in subs}
+    for _, ids in groups:
+        for hid in ids:
+            if hid not in titles:
+                print(f"make_manual: GROUPS names #{hid}, which {page} no longer has", file=sys.stderr)
+    rest = [hid for hid, _ in chapters if not any(hid in ids for _, ids in groups)]
+    if rest:
+        groups = groups + [("", rest)]
+
+    def item(hid):
+        kids = "".join(f'<li><a href="#{k}">{html.escape(t)}</a></li>' for k, t in subs.get(hid, []) if k not in moved)
+        return f'<li><a href="#{hid}">{html.escape(titles[hid])}</a>' + (f"<ol>{kids}</ol>" if kids else "") + "</li>"
+
+    out = []
+    for label, ids in groups:
+        if label:
+            out.append(f'<li class="group">{html.escape(label)}</li>')
+        out.extend(item(hid) for hid in ids if hid in titles)
     return "<ol class=\"toc\">" + "".join(out) + "</ol>"
 
 
@@ -134,6 +170,8 @@ nav.side input {{ width: 100%; font: inherit; color: var(--text); background: va
 .toc a {{ display: block; color: var(--mid); text-decoration: none; padding: 2px 4px; }}
 .toc a:hover {{ color: var(--bg); }}
 .toc li.open > a, .toc a.here {{ color: var(--ink); }}
+.toc li.group {{ margin: 16px 0 4px; padding: 0 4px; color: var(--dim); font: 14px/1.2 var(--pixel); }}
+.toc li.group:first-child {{ margin-top: 0; }}
 .results {{ list-style: none; margin: 0; padding: 0; }}
 .results li {{ margin: 0 0 10px; }}
 .results small {{ display: block; color: var(--dim); }}
@@ -280,7 +318,7 @@ def make(out):
                                     cur_start=' aria-current="page"' if page == "start" else "",
                                     cur_manual=' aria-current="page"' if page == "manual" else "",
                                     short="the manual" if page == "manual" else "this guide",
-                                    toc=sidebar(heads), body=body, next=NEXT[page],
+                                    toc=sidebar(heads, page), body=body, next=NEXT[page],
                                     intro=f'<p class="next" style="margin:16px 0 0;border:0;padding:0">{NEXT[page]}</p>' if page == "manual" else ""), encoding="utf-8")
         print(f"make_manual: {dest} ({len(heads)} headings)")
 
