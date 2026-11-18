@@ -355,6 +355,41 @@ static const gstep_t G_CHAIN[] = {
     {45700, 0, 0, 0, 0, "Back to A, together"},
     {53900, 0, 0, 0, 0, "This project's B is a fourth up: Key in B, on SCL's last rows"},
 };
+/* afro house: 120 BPM, A minor; a 909 on ATLAS as track 1 (a generator, so ENERGY moves it), a marimba on EUCLID, a
+ * bass on TURING, a pad holding the chord */
+static void g_afrohouse_scene(void)
+{
+    song.g[G_BPM] = 120;
+    song.g[G_SWING] = 8;
+    scale(9, SCL_MIN, 0);
+    sends(75, 60, 65, 45);
+    sound(0, ENGI_DRUM, DK_909_KIT);
+    gen(0, TESS_ENG_GRIDS, 21);
+    mixer(0, 90, 0, 10, 0);
+    sound(1, ENGI_FM6, V_DX_MARIMBA);
+    trk[1].p[P_SDIV] = DIV_16;
+    gen(1, TESS_ENG_EUCLID, 34);
+    tx(1, TX_EUC_STEPS, 12); tx(1, TX_EUC_PULSES, 7); tx(1, TX_EUC_ROT, 1);
+    mixer(1, 92, 20, 40, 30);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_TURING, 29);
+    tx(2, TX_TUR_PROB, 15); tx(2, TX_TW_SHIFT, -12); tx(2, TX_TW_DROP, 30);
+    mixer(2, 94, 0, 0, 0);
+    sound(3, ENGI_ORACLE, OR_WARM_PAD);
+    trk[3].p[P_CHRD] = 1;
+    gen(3, TESS_ENG_CHORD, 8);
+    tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
+    mixer(3, 58, -20, 80, 0);
+}
+static const gstep_t G_ENERGY[] = {
+    {0, 0, 0, 0, 0, "ENERGY: the project's mood, from sparse and soft to busy and loud"},
+    {3500, 6500, 200, "ARP", "EVOLVE", "Tap ARP: EVOLVE"},
+    {10000, 13000, 600, "SELECT", "ENERGY", "Turn SELECT back once: ENERGY, the last page", -1},
+    {17000, 20000, 3000, "KNOB 3", "LEVEL DOWN", "Turn KNOB 3: LEVEL to -100. The generators leave out hits and play softer", -100},
+    {31000, 34000, 4000, "KNOB 3", "LEVEL UP", "Turn it up to +100: busier and louder", 200},
+    {45000, 0, 0, 0, 0, "ARC swings LEVEL as a slow tide over minutes; RESTS adds silences"},
+};
 static void guide_ref(const char *out, FILE *tsv)
 {
     G_RUN("r-landscape", "A SEA TO WATCH", "MOSAIC", 72, 4, g_neoclassical_scene, G_LANDSCAPE);   /* neo-classical */
@@ -362,6 +397,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-form", "A TRACK AS A SONG", "SUNSET", 60, 4, g_bossa_scene, G_FORM);   /* bossa nova */
     G_RUN("r-entries", "TRACKS OUT AND IN", "SUNSET", 60, 4, g_dnb_scene, G_ENTRIES);   /* liquid drum and bass */
     G_RUN("r-chain", "ONE FORM FOR ALL", "SUNSET", 64, 4, g_disco_scene, G_CHAIN);   /* disco */
+    G_RUN("r-energy", "ENERGY BY HAND", "SUNSET", 54, 4, g_afrohouse_scene, G_ENERGY);   /* afro house */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
     G_RUN("r-mod-first", "YOUR FIRST MOD", "LILAC", 65, 4, g_triphop_scene, G_MOD_FIRST);   /* trip-hop */
