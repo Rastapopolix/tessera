@@ -100,8 +100,54 @@ static const gstep_t G_TURING[] = {
     {38000, 41000, 1000, "KNOB 3", "PROB 10%", "Turn PROB up a little (10%): it drifts slowly", 5},
     {50000, 0, 0, 0, 0, "PROB 0 keeps a line. A little PROB lets it wander"},
 };
+/* IDM: 126 BPM, A minor; a marimba on EUCLID as track 1 (the clip randomizes it), a broken 909 beat in STEP with a
+ * rim and a tom off the grid, a sub on TURING, a glass pad holding the chord */
+static void g_idm_scene(void)
+{
+    song.g[G_BPM] = 126;
+    scale(9, SCL_MIN, 0);
+    sends(80, 60, 95, 55);
+    sound(0, ENGI_FM6, V_DX_MARIMBA);
+    trk[0].p[P_SDIV] = DIV_16;
+    gen(0, TESS_ENG_EUCLID, 27);
+    tx(0, TX_EUC_STEPS, 16); tx(0, TX_EUC_PULSES, 5); tx(0, TX_EUC_ROT, 0);
+    mixer(0, 122, -10, 40, 50);
+    sound(1, ENGI_DRUM, DK_909_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, L_RS, 0, L_CH, L_BD, 0, L_SD, 0, L_CH, L_BD, 0, L_TM, L_CH, L_RS};
+        static const uint8_t V[16] = {104, 0, 54, 62, 0, 50, 84, 0, 96, 0, 56, 70, 0, 58, 50, 48};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
+        trk[1].p[P_SLEN] = 16;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
+    mixer(1, 80, 0, 15, 10);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_TURING, 14);
+    tx(2, TX_TUR_LEN, 8); tx(2, TX_TUR_PROB, 0); tx(2, TX_TW_SHIFT, -12); tx(2, TX_TW_DROP, 40);
+    mixer(2, 84, 0, 0, 0);
+    sound(3, ENGI_ORACLE, OR_GLASS_PAD);
+    trk[3].p[P_CHRD] = 1;
+    gen(3, TESS_ENG_CHORD, 8);
+    tx(3, TX_CH_PROG, GEN_CH_TWO); tx(3, TX_CH_BARS, 3); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
+    mixer(3, 60, 25, 100, 20);
+    g_solo_check();
+}
+/* Season 1, episode 5: RANDOM, and PUT BACK */
+static const gstep_t G_RANDOM[] = {
+    {0, 0, 0, 0, 0, "Stuck? RANDOM picks new settings for you"},
+    {3500, 6500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: track 1's EUCLID (16 steps, 5 pulses)"},
+    {11000, 14000, 4000, "OCT-", "HOLD OCT-", "Hold OCT- and turn KNOB 1 right: RANDOMIZED"},
+    {0, 15500, 400, "KNOB 1", "RANDOM", 0, 1},
+    {20000, 0, 0, 0, 0, "Now 27 steps, 4 pulses, ROT 15: a new rhythm"},
+    {28000, 31000, 4000, "OCT-", "HOLD OCT-", "Hold OCT- and turn KNOB 1 left: PUT BACK"},
+    {0, 32500, 400, "KNOB 1", "PUT BACK", 0, -1},
+    {37000, 0, 0, 0, 0, "The settings from before: 16 steps, 5 pulses"},
+    {44000, 0, 0, 0, 0, "RANDOM never changes MODE or the seed"},
+};
 static void guide_e05(const char *out, FILE *tsv)
 {
     G_RUN("e05-mode", "WHO WRITES THE NOTES", "GREEN", 51, 4, g_berlin_scene, G_MODE);   /* Berlin school */
     G_RUN("e05-turing", "LOCK A LINE", "GREEN", 57, 4, g_eno_scene, G_TURING);   /* loops after Eno */
+    G_RUN("e05-random", "RANDOM, AND BACK", "GREEN", 51, 4, g_idm_scene, G_RANDOM);   /* IDM */
 }
