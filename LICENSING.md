@@ -27,6 +27,8 @@ Every file in this tree that carries an `SPDX-License-Identifier: GPL-3.0-only` 
 - the host tests: `tests/`
 - the Daisy Seed build for Andamento: `platform/daisy/` (not its linker script, below), and Andamento's screen:
   `platform/andamento/`
+- the plugin build: `platform/plugin/` (the CLAP SDK, clap-wrapper and the VST3 SDK it downloads to build are MIT
+  and not part of this tree)
 
 Two source files are ports and keep the licence of their originals: `firmware/src/phys_dsp.c`
 (DaisySP, MIT) and `firmware/src/phys_symp.c` (Rings, MIT). `firmware/src/fm6_core.c` and

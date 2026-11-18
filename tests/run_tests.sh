@@ -55,6 +55,9 @@
 #                   compressor, called directly (not through a project playing): MIX 0 is bit-identical, MIX 100 with
 #                   no gain reduction and no tilt is unchanged but for rounding, the compressor settles below a loud
 #                   tone and returns to unity gain under THRESH, MAKEUP's dB, TILT's direction, and determinism.
+# TSP CROSS (tests/tsp_cross.sh): one save format everywhere: Tessera's core API (platform/core) built as the FM-1's
+#                   options, the web simulator's, the plugin's and the Daisy's (48 kHz) build it; every demo loaded,
+#                   played and saved by each, and each save loaded and saved again by every other, byte for byte.
 # ANDAMENTO TEXTURE (tests/and_texture_test.c): Andamento's texture engine (platform/andamento/and_texture.c), a
 #                   granular cloud resampling and_master_block's output, called directly: MIX 0 is bit-identical,
 #                   an empty capture barely changes a tone, a filled one keeps sounding after the dry input stops,
@@ -167,7 +170,7 @@ G_UI="ui_renders ui_test speak_test layer_screen_test theme_test text_ref_test t
 G_SEQ="seq_edit_test seq_notes_test pattern_test note_tools_test swing_test split_test follow_test cordclock_test motion_test recording_test"
 G_GEN="gen_test tessera_test chain_test entries_test planner_test split_test follow_test cordclock_test recipes_test"
 G_STORE="storage_test persistence_test upgrade_test backup_test demo_projects settings_test upreset_test storage_safety_test
-    settings_origin_test preset_boot_reset_test fm6_preset_test"
+    settings_origin_test preset_boot_reset_test fm6_preset_test tsp_cross"
 G_MIDI="midi_control_test midi_out_test seq_dir_test midi_timing_test midi_scale_test midi_uart_test recording_test"
 G_USB="usb_audio_test usb_audio_driver_test usb_audio_tracks_test usb_host_test usb_audio_desc_test"
 G_SCALE="scale_test microtonal_test scale_picker_test tune_test uscale_test tuning_test midi_scale_test"
@@ -229,6 +232,7 @@ qmap() {
         tests/and_ui_test.c) QSEL="$QSEL and_ui" ;;
         tests/and_master_test.c) QSEL="$QSEL and_master" ;;
         tests/and_texture_test.c) QSEL="$QSEL and_texture" ;;
+        platform/core/* | tests/tsp_cross.* | demos/*.tsp) QSEL="$QSEL tsp_cross" ;;
         web/andamento/*) QSEL="$QSEL and_keys and_home and_ext and_ui and_master and_texture" ;;
         firmware/src/mo_font.h) QSEL="$QSEL $G_UI oled_render" ;;
         tests/demo_steps.h | tests/demo_projects.c) QSEL="$QSEL demo_projects" ;;
@@ -460,6 +464,10 @@ and_ext() {                                       # (the headers as and_keys: we
         "$OUT/and_ext" build/oled
     [ $PIL = 1 ] && { python3 tests/oled_render.py build/oled || fail "tests/oled_render.py"; }
 }
+tsp_cross() {                                     # (its own builds: tests/tsp_cross.sh)
+    step "TSP CROSS: a .tsp saved by the FM-1's, the web's, the plugin's or the Daisy's build loads in every other, byte for byte" \
+        sh tests/tsp_cross.sh build/tsp_cross
+}
 and_ui() {                                        # (the headers as and_keys: web/andamento/build.sh --headers)
     sh web/andamento/build.sh --headers > /dev/null || { fail "web/andamento/build.sh --headers"; return; }
     build and_ui and_ui_test -w -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 \
@@ -615,6 +623,7 @@ if core && [ $TABLES = 1 ]; then
     job and_ui
     job and_master
     job and_texture
+    job tsp_cross
     t "boot audio: codec waits for settled silent DMA and shuts down before I2S" audio_boot_test -w
     t "audio: overload protection, bounded fades and DMA diagnostics" audio_test $FW
     t "audio: silent bench keeps synthesis running and silences physical output" audio_silent_test:audio_test \

@@ -125,7 +125,8 @@ static const menu_credit_t MENU_CREDITS[] = {
     {"https://github.com/Rastapopolix/tessera", MC_URL},
     {"", MC_TEXT},
     {"THANKS / TESTERS AND IDEAS", MC_TITLE},
-    {"BobFromson, pavig-coder, bambalaya, alxantdroid, resocut, Joao Duraes, tv-glotzer,", MC_TEXT},  /* Mono: ASCII only */
+    {"pavig-coder / u/paulvigo, for all the feedback", MC_TEXT},
+    {"BobFromson, bambalaya, alxantdroid, resocut, Joao Duraes, tv-glotzer,", MC_TEXT},  /* Mono: ASCII only */
     {"il1893, fairplay, alexwlloyd, morgulbrut, nrittamurti, Charles Vestal (FM-1 Screen Reader),", MC_TEXT},
     {"bitmap303 (the tagline: a pocket rabbit hole)", MC_TEXT},
     {"", MC_TEXT},

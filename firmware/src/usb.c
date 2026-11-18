@@ -137,8 +137,15 @@ static int midi_enqueue(uint32_t pkt, uint32_t source)
     return 1;
 }
 
+#ifdef TESS_PLUGIN_IO
+static void tess_plugin_midi_out(uint32_t pkt);    /* the plugin only (platform/plugin/tess_core.c): to the DAW */
+#endif
 static void midi_out_event(uint32_t pkt)            /* from the audio ISR */
 {
+#ifdef TESS_PLUGIN_IO
+    tess_plugin_midi_out(pkt);
+    return;
+#endif
     if (usb_midi_out_ready() && mo_w - mo_r < MQ) {
         midi_out_q[mo_w % MQ] = pkt;
         RING_PUBLISH();
