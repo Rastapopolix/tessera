@@ -637,6 +637,60 @@ static const gstep_t G_PATTERNS[] = {
     {27100, 0, 0, 0, 0, "On its line it switches: a new bass part"},
     {32000, 0, 0, 0, 0, "JAM logs what you played. On SONG, the next page, take it as a song"},
 };
+/* reggae: 76 BPM (a one drop), G major; drums and bass written in STEP, two patterns each (pattern 2 a variation),
+ * organ skanks on CHORD in the offbeats, a melodica-like flute on TURING */
+static void g_reggae_scene(void)
+{
+    static const uint8_t D1[16] = {0, 0, L_CH, 0, L_CH, 0, L_CH, 0, L_BD | L_RS, 0, L_CH, 0, L_CH, 0, L_CH, 0};
+    static const uint8_t D2[16] = {0, 0, L_CH, 0, L_CH, 0, L_CH, L_RS, L_BD | L_RS, 0, L_CH, 0, L_CH, L_RS, L_OH, L_RS};
+    static const uint8_t B1[16] = {43, 0, 0, 0, 0, 0, 47, 50, 0, 0, 0, 0, 45, 0, 0, 0};
+    static const uint8_t B2[16] = {40, 0, 0, 0, 0, 0, 43, 45, 0, 0, 47, 0, 48, 0, 47, 45};
+    song.g[G_BPM] = 76;
+    scale(7, 1, 0);                                     /* G, MAJ */
+    sends(70, 65, 90, 60);
+    sound(0, ENGI_DRUM, DK_808_KIT);
+    sound(1, ENGI_TRIO, TR_SUB_BASS);
+    for (uint32_t pat = 0; pat < 2u; pat++) {
+        for (uint32_t i = 0; i < 32u; i++) {
+            const uint8_t *D = pat ? D2 : D1, *B = pat ? B2 : B1;
+            step_hits(0, i, D[i % 16u], D[i % 16u] ? (uint8_t)(D[i % 16u] & L_BD ? 104 : 66) : 0);
+            if (B[i % 16u]) step_note(1, i, B[i % 16u], 100);
+        }
+        trk[0].p[P_SLEN] = 32; trk[1].p[P_SLEN] = 32;
+        if (!pat) { pattern_switch(&trk[0], 1); pattern_switch(&trk[1], 1); }
+    }
+    pattern_switch(&trk[0], 0); pattern_switch(&trk[1], 0);
+    tx(0, TX_MODE, TESS_ENG_OFF); trk[0].p[P_SDIV] = DIV_16;
+    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
+    mixer(0, 90, 0, 20, 20);
+    mixer(1, 96, 0, 0, 0);
+    sound(2, ENGI_FM6, FX_ORGAN);
+    trk[2].p[P_CHRD] = 1;
+    gen(2, TESS_ENG_CHORD, 23);
+    tx(2, TX_CH_PROG, GEN_CH_TWO); tx(2, TX_CH_BARS, 2); tx(2, TX_CH_HIT, GEN_CH_OFF);
+    mixer(2, 66, -20, 40, 60);
+    sound(3, ENGI_FM6, V_FLUTE);
+    trk[3].p[P_SDIV] = DIV_8;
+    gen(3, TESS_ENG_TURING, 34);
+    tx(3, TX_TUR_PROB, 15); tx(3, TX_TW_DROP, 60);
+    mixer(3, 74, 25, 50, 70);
+}
+static const gstep_t G_SONG[] = {
+    {0, 0, 0, 0, 0, "SONG lines up sets of patterns, one per track, into a song"},
+    {3500, 6500, 900, "SEQ", "PATTERNS", "Hold SEQ: PATTERNS"},
+    {10000, 13000, 600, "SELECT", "SONG", "Turn SELECT: SONG, empty for now", 1},
+    {16500, 19500, 600, "KNOB 3", "ADD A", "Turn KNOB 3 on +: a first section, A, from the patterns playing", 1},
+    {23500, 26500, 600, "KNOB 4", "A x2", "Turn KNOB 4: A plays twice", 1},
+    {30000, 33000, 600, "KNOB 1", "TO +", "Turn KNOB 1 to the + after it", 1},
+    {36500, 39500, 600, "KNOB 3", "ADD", "Turn KNOB 3: a second section, a copy of A", 1},
+    {43000, 46000, 600, "KNOB 2", "TRACK 2", "Turn KNOB 2 to track 2, the bass", 1},
+    {49500, 52500, 600, "KNOB 3", "B", "Turn KNOB 3: its pattern 2. The section is now B", 1},
+    {56000, 59000, 200, "OCT+", "STOP", "Tap OCT+ twice: the first stops what plays, the second plays the song"},
+    {0, 61000, 200, "OCT+", "PLAY SONG", 0},
+    {65000, 0, 0, 0, 0, "Section A, twice"},
+    {73600, 0, 0, 0, 0, "Section B: the bass plays its pattern 2"},
+    {81000, 0, 0, 0, 0, "After its last section the song stops, and the patterns are as they were"},
+};
 static void guide_ref(const char *out, FILE *tsv)
 {
     G_RUN("r-landscape", "A SEA TO WATCH", "MOSAIC", 72, 4, g_neoclassical_scene, G_LANDSCAPE);   /* neo-classical */
@@ -651,6 +705,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
     G_RUN("r-patterns", "PATTERNS", "MOSAIC", 41, 4, g_citypop_scene, G_PATTERNS);   /* city pop */
+    G_RUN("r-song", "A SONG FROM PATTERNS", "MOSAIC", 91, 4, g_reggae_scene, G_SONG);   /* reggae */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
     G_RUN("r-mod-first", "YOUR FIRST MOD", "LILAC", 65, 4, g_triphop_scene, G_MOD_FIRST);   /* trip-hop */
