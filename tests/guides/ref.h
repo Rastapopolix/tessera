@@ -637,6 +637,57 @@ static const gstep_t G_PATTERNS[] = {
     {27100, 0, 0, 0, 0, "On its line it switches: a new bass part"},
     {32000, 0, 0, 0, 0, "JAM logs what you played. On SONG, the next page, take it as a song"},
 };
+/* chillwave: 96 BPM, A minor; a kalimba with no generator as track 1 (played on the keys), a warm pad on CHORD round
+ * the pop progression (a chord a bar), a sub on EUCLID, an 808 in STEP */
+static void g_chillwave_scene(void)
+{
+    song.g[G_BPM] = 96;
+    scale(9, SCL_MIN, 1);                               /* A MIN, QNT SNAP */
+    sends(100, 75, 70, 45);
+    tx(0, TX_QNT_LINK, 0);                              /* QNT link OWN: only the kalimba's QNT changes */
+    sound(0, ENGI_FM6, FX_KALIMBA);
+    tx(0, TX_MODE, TESS_ENG_OFF);
+    mixer(0, 124, 15, 45, 35);
+    sound(1, ENGI_TRIO, TR_WARM_PAD);
+    trk[1].p[P_CHRD] = 1;
+    gen(1, TESS_ENG_CHORD, 24);
+    tx(1, TX_CH_PROG, GEN_CH_POP); tx(1, TX_CH_BARS, 1); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 50, -25, 80, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 9);
+    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    trk[2].p[P_QUANT] = Q_CHRD;                         /* (the bass on the chords' notes, so it moves with them) */
+    mixer(2, 86, 0, 0, 0);
+    sound(3, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_BD, 0, L_BD, L_CH, 0, L_SD, 0, L_CH, L_CH};
+        static const uint8_t V[16] = {96, 0, 44, 0, 80, 0, 48, 60, 0, 70, 44, 0, 80, 0, 50, 36};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 76, 0, 15, 0);
+}
+#define G_RUN6(t, lb) \
+    {0, (t), 250, "C4", lb, 0}, {0, (t) + 320, 250, "D4", lb, 0}, {0, (t) + 640, 250, "E4", lb, 0}, \
+    {0, (t) + 960, 250, "F4", lb, 0}, {0, (t) + 1280, 250, "G4", lb, 0}, {0, (t) + 1600, 600, "A4", lb, 0}
+static const gstep_t G_HARM[] = {
+    {0, 0, 0, 0, 0, "Track 2 plays chords. Track 1, a kalimba, is ours to play"},
+    {3500, 0, 0, 0, 0, "Play the white keys up from C4: the scale"},
+    G_RUN6(6200, "SCALE"),
+    {10500, 0, 0, 0, 0, "Next: the same run, counted into the chords"},
+    {13500, 16500, 200, "SEL", "OPEN SEL", "Tap SEL: the scales"},
+    {20000, 23000, 600, "SELECT", "SCL", "Turn SELECT: SCL, the key's settings", 1},
+    {27000, 30000, 900, "KNOB 1", "PICK QNT", "Turn KNOB 1 to the QUANTIZE row (now SNAP)", 3},
+    {34500, 37500, 1900, "KNOB 2", "QNT HARM", "Turn KNOB 2 to HARM", 5},
+    {42000, 45000, 200, "HOME", "HOME", "Tap HOME"},
+    {48500, 0, 0, 0, 0, "The same run: each step up is the chord's next note up"},
+    G_RUN6(51200, "ARPEGGIO"),
+    {55000, 0, 0, 0, 0, "Over another chord, another arpeggio"},
+    G_RUN6(58600, "ARPEGGIO"),
+    {62500, 0, 0, 0, 0, "Any line in the scale does the same: a generator, or MIDI IN"},
+};
 /* reggae: 76 BPM (a one drop), G major; drums and bass written in STEP, two patterns each (pattern 2 a variation),
  * organ skanks on CHORD in the offbeats, a melodica-like flute on TURING */
 static void g_reggae_scene(void)
@@ -705,6 +756,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
     G_RUN("r-patterns", "PATTERNS", "MOSAIC", 41, 4, g_citypop_scene, G_PATTERNS);   /* city pop */
+    G_RUN("r-harm", "RUN THE KEYS INTO CHORDS", "MOSAIC", 68, 4, g_chillwave_scene, G_HARM);   /* chillwave */
     G_RUN("r-song", "A SONG FROM PATTERNS", "MOSAIC", 91, 4, g_reggae_scene, G_SONG);   /* reggae */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
