@@ -637,6 +637,52 @@ static const gstep_t G_PATTERNS[] = {
     {27100, 0, 0, 0, 0, "On its line it switches: a new bass part"},
     {32000, 0, 0, 0, 0, "JAM logs what you played. On SONG, the next page, take it as a song"},
 };
+/* future garage: 132 BPM, C# minor, a shuffled 2-step; an ORACLE pad on CHORD as track 1 whose filter follows BUS A,
+ * which the bass's GATE feeds (cord 1: T3 GATE -> BUS A, cord 2: BUS A -> T1 CUTOFF), a tine line, a sub, an 808 */
+static void g_fgarage_scene(void)
+{
+    song.g[G_BPM] = 132;
+    song.g[G_SWING] = 28;
+    scale(1, SCL_MIN, 1);                               /* C# MIN, QNT SNAP */
+    sends(95, 75, 70, 50);
+    sound(0, ENGI_ORACLE, OR_WARM_PAD);
+    trk[0].p[P_CHRD] = 2;
+    gen(0, TESS_ENG_CHORD, 21);
+    tx(0, TX_CH_PROG, GEN_CH_TWO); tx(0, TX_CH_BARS, 2); tx(0, TX_CH_HIT, GEN_CH_HOLD);
+    cord(0, CS_GATE, 2, CD_BUS_A, 0, 100, 0, 0);
+    cord(1, CS_BUSA, 0, CD_CUTOFF, 0, 70, 0, 0);
+    mixer(0, 92, 0, 50, 0);
+    sound(1, ENGI_FM6, V_TINE);
+    trk[1].p[P_SDIV] = DIV_16;
+    gen(1, TESS_ENG_TURING, 52);
+    tx(1, TX_TUR_PROB, 8); tx(1, TX_TW_DROP, 70);
+    mixer(1, 56, 25, 60, 45);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 37);
+    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3); tx(2, TX_EUC_ROT, 2); tx(2, TX_TW_SHIFT, -12);
+    trk[2].p[P_QUANT] = Q_CHRD;
+    mixer(2, 86, 0, 0, 0);
+    sound(3, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_CH, 0, 0, L_BD | L_CH, 0, L_SD, 0, L_CH, L_RS};
+        static const uint8_t V[16] = {92, 0, 40, 0, 82, 0, 44, 30, 0, 0, 80, 0, 82, 0, 46, 40};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 74, 0, 15, 0);
+}
+static const gstep_t G_BUSES[] = {
+    {0, 0, 0, 0, 0, "Two MIX buses: mods go into one, and the bus is a source of its own"},
+    {3500, 6500, 200, "LFO", "OPEN MODS", "Tap LFO: MODS. Cord 1: the bass's GATE into BUS A"},
+    {12500, 0, 0, 0, 0, "Cord 2: BUS A onto the pad's filter. It opens while a bass note sounds"},
+    {19500, 22500, 900, "OCT+", "SHEET", "Hold OCT+: MODS' sheet, the buses' Mode and Lag"},
+    {26500, 29500, 600, "KNOB 1", "BUS A LAG", "Turn KNOB 1 to BUS A LAG, now OFF", 2},
+    {33500, 36500, 2000, "KNOB 2", "LAG", "Turn KNOB 2: 500 MS of lag. The filter now swells and falls", 6},
+    {46000, 49000, 200, "OCT-", "CLOSE", "Tap OCT-: the sheet closes"},
+    {55000, 0, 0, 0, 0, "One bus can feed as many mods as you like"},
+};
 /* new age: 76 BPM, E major; an ORACLE poly line on TURING as track 1 whose filter its LFO moves a little (cord 1, +10 %)
  * and SWARM 5 deepens and lightens (cord 2: T1 SWARM 5 -> M1 AMT, +70 %), a glass pad on CHORD, a sub, a soft rim */
 static void g_newage_scene(void)
@@ -1167,6 +1213,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
     G_RUN("r-patterns", "PATTERNS", "MOSAIC", 41, 4, g_citypop_scene, G_PATTERNS);   /* city pop */
+    G_RUN("r-buses", "MIX BUSES", "LILAC", 62, 4, g_fgarage_scene, G_BUSES);   /* future garage */
     G_RUN("r-mod-of-mod", "A MOD OF A MOD", "LILAC", 58, 4, g_newage_scene, G_MODMOD);   /* new age */
     G_RUN("r-matrix", "WHO MOVES WHAT", "LILAC", 55, 4, g_minhouse_scene, G_MATRIX);   /* minimal house */
     G_RUN("r-organic", "SLOW, LIVING MOVEMENT", "LILAC", 68, 4, g_space_scene, G_ORGANIC);   /* space ambient */
