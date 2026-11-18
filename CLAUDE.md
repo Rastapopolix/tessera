@@ -74,8 +74,10 @@ Generators can be developed and tested on the PC; flash the device only to check
 
 ## Rules
 
-- Follow the existing code conventions: the unity build (`melodee.c` and `tests/hostsim.c`
-  `#include` the `.c` files), C style, naming, comment density. New sources go in both.
+- Follow the existing code conventions: the unity build (`melodee.c` and the shared include lists
+  `firmware/src/core_sources.h` / `core_ui_sources.h` `#include` the `.c` files), C style, naming, comment density.
+  New sources go in `melodee.c` and in one of the two lists (the host tests, web sim, plugin and Daisy all build
+  from them). Other targets use Tessera's core API, `platform/core/tess_core.h` (README there).
 - Tessera is a hard fork. Rewrite or fold shared Melodee code when it makes Tessera cleaner or smaller. Port upstream fixes to low-level code (USB, audio, bootloader, flash) by hand when one turns up; don't merge upstream.
 - All hardware access stays behind the platform layer (`firmware/hal/`), so generator,
   sequencer, mod and UI code compiles for host tests and the web simulator.
