@@ -32,17 +32,13 @@ ROOT = Path(__file__).resolve().parents[1]
 FS, SPF = 44100, 1472                                   # samples a frame (demo_projects.c V_BLOCKS x 32)
 FPS = Fraction(FS, SPF)
 W, H = 1920, 1080
-BG, WHITE, HOT = (0, 0, 0), (255, 255, 255), (255, 208, 32)   # HOT: the clip's accent (its ink; YELLOW by default)
+BG, WHITE, HOT = (0, 0, 0), (255, 255, 255), (255, 208, 32)   # HOT: a control to use, always yellow (Theo, 2026-11-18)
+ACC = HOT                                               # the clip's topic accent: the step count, the rule, the flash
 ACCENT = {"YELLOW": (255, 208, 32), "WHITE": (240, 240, 240), "GREEN": (96, 255, 128), "BLUE": (136, 192, 255),
           "RED": (255, 112, 100), "ORANGE": (255, 144, 40), "PINK": (255, 176, 216), "HOT PINK": (255, 88, 176),
           "LILAC": (192, 150, 255), "MOSAIC": (240, 240, 240), "SUNSET": (240, 240, 240), "OCEAN": (240, 240, 240),
           "NEON": (240, 240, 240)}                      # (tools/gen_ui_palettes.py's inks; a four-ink set's accent is
-                                                        # white, so no track's colour also means "a control")
-TRACKS = {"MOSAIC": ((255, 208, 32), (136, 192, 255), (255, 88, 176), (96, 255, 128)),
-          "SUNSET": ((255, 144, 40), (255, 88, 176), (192, 150, 255), (255, 208, 32)),
-          "OCEAN": ((136, 192, 255), (64, 224, 208), (96, 255, 128), (192, 150, 255)),
-          "NEON": ((0, 230, 255), (255, 90, 230), (180, 255, 0), (255, 140, 0))}
-TRK = None                                              # (a four-ink clip: "track 2" in the caption in track 2's ink)
+                                                        # white)
 DIM, DIMTXT = (78, 78, 78), (150, 150, 150)             # the controls not in use
 EDGE = 0.012                                            # s: fade in
 TAIL = 3.0                                              # s: the end card, the music fading out under it
@@ -148,9 +144,9 @@ def draw_caption(im, text, controls, step, steps):
     d = ImageDraw.Draw(im)
     y0 = 808
     d.rectangle((0, y0, W, H), fill=BG)
-    d.line((60, y0, W - 60, y0), fill=HOT, width=4)
+    d.line((60, y0, W - 60, y0), fill=ACC, width=4)
     if step:
-        d.text((60, y0 + 22), f"STEP {step} OF {steps}", font=F_SMALL, fill=HOT)
+        d.text((60, y0 + 22), f"STEP {step} OF {steps}", font=F_SMALL, fill=ACC)
     y = y0 + (64 if step else 44)
     for line in wrap_px(d, text.split(), F_CAP, W - 220)[:2]:
         x = 60
@@ -160,15 +156,8 @@ def draw_caption(im, text, controls, step, steps):
                 if k not in spans and " ".join(line[k:k + n]).rstrip(",.:;") in controls:
                     spans[k] = n
                     break
-        trk = {}
-        if TRK:                                         # ("track 2", "tracks 3 and 4": each number in its track's ink)
-            for k, w in enumerate(line):
-                n = w.strip(",.:;()")
-                if n in "1234" and len(n) == 1 and k and (line[k - 1] in ("track", "tracks") or
-                                                          (line[k - 1] == "and" and k - 2 in trk)):
-                    trk[k] = TRK[int(n) - 1]
-                    if line[k - 1] == "track":
-                        trk[k - 1] = trk[k]
+        trk = {}                                        # (yellow means a control: tracks stay white in captions;
+                                                        # the screen shows their colours)
         k = 0
         while k < len(line):
             if k in spans:                              # (a control: a keycap, its punctuation after it)
@@ -352,7 +341,7 @@ def make(src, clip, title, rows, dst):
         draw_panel(im, 860, 120, states, scr, t)
         if flash is not None:                           # (the action lands: the screen's frame lights, then fades)
             a = 1 - flash / FLASH
-            ImageDraw.Draw(im).rectangle((52, 42, 788, 778), outline=tuple(round(c * a) for c in HOT), width=6)
+            ImageDraw.Draw(im).rectangle((52, 42, 788, 778), outline=tuple(round(c * a) for c in ACC), width=6)
         c = next((c for c in caps if c[0] <= t < c[1]), caps[-1])
         draw_caption(im, c[2], controls, c[3], steps)
         if t >= secs - TAIL:                            # (the clip fades into the end card)
@@ -374,9 +363,9 @@ def make(src, clip, title, rows, dst):
 def main(src, dst):
     src, dst = Path(src), Path(dst)
     dst.mkdir(parents=True, exist_ok=True)
-    global HOT, TRK
+    global ACC
     for clip, ((title, ink), rows) in rows_of(src).items():
-        HOT, TRK = ACCENT.get(ink, ACCENT["YELLOW"]), TRACKS.get(ink)
+        ACC = ACCENT.get(ink, ACCENT["YELLOW"])
         make(src, clip, title, rows, dst)
 
 
