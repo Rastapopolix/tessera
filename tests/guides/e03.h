@@ -46,8 +46,8 @@ static void g_lofi_scene(void)
 static const gstep_t G_GLO_PRESETS[] = {
     {0, 0, 0, 0, 0, "Change a track's sound without leaving the page you are on"},
     {3500, 6500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: we are on GEN now, away from HOME"},
-    {11000, 14000, 8000, "GLO", "HOLD GLO", "Hold GLO and turn PRESETS: track 1 gets the next sound (BELL), right here"},
-    {0, 15500, 1500, "PRESETS", "NEXT SOUND", 0, 1},
+    {11000, 14000, 8000, "GLO", "HOLD GLO", "Hold GLO and turn PRESETS: track 1 gets another sound (here ORGAN), right here"},
+    {0, 15500, 2500, "PRESETS", "NEW SOUND", 0, 6},
     {24500, 0, 0, 0, 0, "Let go of GLO: the same page, the new sound"},
     {30000, 0, 0, 0, 0, "Without GLO, a stray turn of PRESETS never changes the sound"},
 };
