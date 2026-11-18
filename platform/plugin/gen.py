@@ -3,10 +3,12 @@
 """The generated headers the plugin's core needs, in build/gen/ (as ./build.sh and web/sim/build.sh make them):
 UI fonts, icons, palettes, tables, the 909 tables and the two demos the simulator starts with. Run from anywhere;
 CMakeLists.txt runs it at configure time."""
+import os
 import subprocess
 import sys
 from pathlib import Path
 
+os.environ["PYTHONUTF8"] = "1"   # the generators read UTF-8 sources; Windows' default code page cannot
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 import build  # noqa: E402  (tools/build.py)
