@@ -10,7 +10,49 @@ static const gstep_t G_SOUND[] = {
     {30000, 0, 0, 0, 0, "Hold SAVE to keep the project with its sounds"},
 };
 
+/* lo-fi hip-hop: 84 BPM with swing, a tine piano on CHORD (ii V I, a chord a bar) as track 1, a lazy 808, a round
+ * bass on EUCLID, a flute now and then. C major */
+static void g_lofi_scene(void)
+{
+    song.g[G_BPM] = 84;
+    song.g[G_SWING] = 28;
+    scale(0, 1, 0);                                     /* C, MAJ */
+    sends(70, 60, 75, 40);
+    sound(0, ENGI_FM6, FX_TINE_EP);
+    trk[0].p[P_CHRD] = 2;
+    gen(0, TESS_ENG_CHORD, 6);
+    tx(0, TX_CH_PROG, GEN_CH_251); tx(0, TX_CH_BARS, 1); tx(0, TX_CH_HIT, GEN_CH_BEAT);
+    mixer(0, 96, -10, 60, 20);
+    sound(1, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_BD, 0, 0, L_BD | L_CH, 0, L_SD, 0, L_CH, 0};
+        static const uint8_t V[16] = {104, 0, 56, 0, 92, 0, 52, 70, 0, 0, 96, 0, 94, 0, 58, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
+        trk[1].p[P_SLEN] = 16;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
+    mixer(1, 92, 0, 15, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 19);
+    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    mixer(2, 98, 0, 0, 0);
+    sound(3, ENGI_FM6, FX_FLUTE);
+    trk[3].p[P_SDIV] = DIV_8;
+    gen(3, TESS_ENG_TURING, 40);
+    tx(3, TX_TUR_PROB, 10); tx(3, TX_TW_DROP, 70);
+    mixer(3, 74, 25, 70, 50);
+}
+static const gstep_t G_GLO_PRESETS[] = {
+    {0, 0, 0, 0, 0, "Change a track's sound without leaving the page you are on"},
+    {3500, 6500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: we are on GEN now, away from HOME"},
+    {11000, 14000, 8000, "GLO", "HOLD GLO", "Hold GLO and turn PRESETS: track 1 gets the next sound (BELL), right here"},
+    {0, 15500, 1500, "PRESETS", "NEXT SOUND", 0, 1},
+    {24500, 0, 0, 0, 0, "Let go of GLO: the same page, the new sound"},
+    {30000, 0, 0, 0, 0, "Without GLO, a stray turn of PRESETS never changes the sound"},
+};
 static void guide_e03(const char *out, FILE *tsv)
 {
+    G_RUN("e03-glo-presets", "A SOUND FROM ANYWHERE", "ORANGE", 39, 4, g_lofi_scene, G_GLO_PRESETS);   /* lo-fi */
     G_RUN("e03-sound", "CHANGE THE SOUND", "MOSAIC", 43, 30, demo_cedar, G_SOUND);   /* koto (demo: to replace) */
 }
