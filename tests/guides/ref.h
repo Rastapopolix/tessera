@@ -637,6 +637,53 @@ static const gstep_t G_PATTERNS[] = {
     {27100, 0, 0, 0, 0, "On its line it switches: a new bass part"},
     {32000, 0, 0, 0, 0, "JAM logs what you played. On SONG, the next page, take it as a song"},
 };
+/* ambient folk: 88 BPM, G major; track 1 a plucked melody written in STEP that TURING plays from (SOURCE T1), a breathy
+ * flute pad on CHORD, a sub on EUCLID, a light 808 in STEP */
+static void g_ambfolk_scene(void)
+{
+    static const uint8_t N[8] = {67, 71, 74, 72, 71, 67, 69, 62};
+    song.g[G_BPM] = 88;
+    scale(7, 1, 1);                                     /* G MAJ, QNT SNAP */
+    sends(95, 75, 70, 45);
+    sound(0, ENGI_FM6, V_PLUCK);
+    for (uint32_t i = 0; i < 8u; i++) step_note(0, i, N[i], i % 4u ? 84 : 104);
+    trk[0].p[P_SLEN] = 8;
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_TURING, 66);
+    tx(0, TX_TUR_PROB, 0); tx(0, TX_TUR_LEN, 8);
+    mixer(0, 116, 10, 50, 40);
+    sound(1, ENGI_TRIO, TR_BREATH_FLUTE);
+    trk[1].p[P_CHRD] = 1;
+    gen(1, TESS_ENG_CHORD, 8);
+    tx(1, TX_CH_PROG, GEN_CH_POP); tx(1, TX_CH_BARS, 2); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 46, -25, 80, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_4;
+    gen(2, TESS_ENG_EUCLID, 11);
+    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    trk[2].p[P_QUANT] = Q_CHRD;
+    mixer(2, 84, 0, 0, 0);
+    sound(3, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, 0, 0, L_RS, 0, L_CH, 0, 0, 0, L_BD, 0, L_RS, 0, L_CH, 0};
+        static const uint8_t V[16] = {80, 0, 0, 0, 56, 0, 36, 0, 0, 0, 66, 0, 56, 0, 40, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 66, 0, 25, 0);
+}
+static const gstep_t G_SEED[] = {
+    {0, 0, 0, 0, 0, "Track 1 is TURING, and has a tune written in STEP too"},
+    {3500, 6500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: GEN. TURING plays a loop of its own for now"},
+    {11000, 14000, 4500, "OCT-", "SOURCE", "Hold OCT- and turn KNOB 2: SOURCE T1, the tune"},
+    {0, 15500, 300, "KNOB 2", "SOURCE T1", 0, 1},
+    {21000, 0, 0, 0, 0, "PROB is LOCK: TURING plays the tune as written"},
+    {28000, 31000, 3000, "KNOB 3", "PROB", "Turn KNOB 3: PROB up. Each pass a few steps change, and stay", 15},
+    {42000, 45000, 5000, "OCT-", "GRAVITY", "Hold OCT- and turn KNOB 4: GRAVITY. More steps keep to the tune"},
+    {0, 46500, 3000, "KNOB 4", "GRAVITY", 0, 40},
+    {57000, 0, 0, 0, 0, "The tune itself never changes. KEEP can hold its rhythm or its notes"},
+};
 /* future garage: 132 BPM, C# minor, a shuffled 2-step; an ORACLE pad on CHORD as track 1 whose filter follows BUS A,
  * which the bass's GATE feeds (cord 1: T3 GATE -> BUS A, cord 2: BUS A -> T1 CUTOFF), a tine line, a sub, an 808 */
 static void g_fgarage_scene(void)
@@ -1213,6 +1260,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
     G_RUN("r-patterns", "PATTERNS", "MOSAIC", 41, 4, g_citypop_scene, G_PATTERNS);   /* city pop */
+    G_RUN("r-seed", "YOUR TUNE AS A SEED", "MOSAIC", 66, 4, g_ambfolk_scene, G_SEED);   /* ambient folk */
     G_RUN("r-buses", "MIX BUSES", "LILAC", 62, 4, g_fgarage_scene, G_BUSES);   /* future garage */
     G_RUN("r-mod-of-mod", "A MOD OF A MOD", "LILAC", 58, 4, g_newage_scene, G_MODMOD);   /* new age */
     G_RUN("r-matrix", "WHO MOVES WHAT", "LILAC", 55, 4, g_minhouse_scene, G_MATRIX);   /* minimal house */
