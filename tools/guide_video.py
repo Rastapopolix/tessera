@@ -6,7 +6,7 @@
   build/host/demo_projects guide build/guide        (tests/demo_projects.c, built with -DMELODEE_LOOK=1)
   python3 tools/guide_video.py build/guide OUTDIR    (needs Pillow and imageio-ffmpeg, or ffmpeg on the PATH)
 
-OUTDIR gets <clip>.mp4 and <clip>.srt for each clip in build/guide/guide.tsv. A frame: the screen at the left, drawn
+OUTDIR gets <clip>.mp4, <clip>.srt and <clip>-thumb.png (1280 x 720, for YouTube) for each clip in build/guide/guide.tsv. A frame: the screen at the left, drawn
 3x, nearest; at the right a drawing of the FM-1's panel, quiet but for the control about to be used; across the
 bottom the caption, large, white on black. One thing asks for the eye at a time: the caption, then the lit control,
 then the screen, whose frame lights for a moment as the action lands. Each caption comes up 3 s (guide.tsv)
@@ -198,6 +198,29 @@ def end_card(title):
     return im
 
 
+# ---------------------------------------------------------------------------------------------- the thumbnail
+F_THUMB = font(92, 800)
+
+
+def thumbnail(clip, title, screen):
+    """1280 x 720, one layout for every clip (PLAN.md): the lockup top left in the brand's yellow, the episode's
+    number large in the clip's ink, the title in white, the screen showing the clip's result at the right"""
+    im = Image.new("RGB", (1280, 720), BG)
+    d = ImageDraw.Draw(im)
+    mark(d, 70, 70, 16)
+    mono(d, 112, 54, "TESSERA", 5, INK)
+    num = clip[1:3].lstrip("0") if clip[:1] == "e" and clip[1:3].isdigit() else "R"
+    mono(d, 60, 150, num, 26, ACC)
+    lines = wrap_px(d, title.split(), F_THUMB, 560)[:3]
+    y = 720 - 70 - 104 * len(lines)
+    for line in lines:
+        d.text((60, y), " ".join(line), font=F_THUMB, fill=WHITE)
+        y += 104
+    d.rectangle((646, 76, 1234, 664), outline=ACC, width=6)
+    im.paste(screen.resize((576, 576), Image.NEAREST), (652, 82))
+    return im
+
+
 # ---------------------------------------------------------------------------------------------- the clip
 def state(r, t, tap):
     """a control's state at t: next (its caption is up), down (pressed, at least tap s), done (until the caption goes)"""
@@ -318,6 +341,10 @@ def make(src, clip, title, rows, dst):
     stills = [int(s) for s in __import__("os").environ.get("GUIDE_STILLS", "").split(",") if s]
     p = None if stills else subprocess.Popen(cmd, stdin=subprocess.PIPE)
     card = end_card(title)
+    acts = [r["t1"] for r in rows if r["ctl"] and r["ctl"] not in ("HOME", "PLAY")]   # (the thumbnail: the screen a
+    k = min(frames - 1, int(((max(acts) + 1.2) if acts else secs / 2) * FS / SPF))     # moment after the last action
+                                                                                        # that isn't going home)
+    thumbnail(clip, title, Image.open(frames_dir / f"f{k:05d}.ppm").convert("RGB")).save(dst / f"{clip}-thumb.png")
     for k in ([k for k in stills if k < frames] if stills else range(frames)):
         t = k * SPF / FS
         if t >= secs - TAIL + CUT:                     # (the end card, then nothing else)
