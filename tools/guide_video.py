@@ -7,10 +7,12 @@
   python3 tools/guide_video.py build/guide OUTDIR    (needs Pillow and imageio-ffmpeg, or ffmpeg on the PATH)
 
 OUTDIR gets <clip>.mp4 and <clip>.srt for each clip in build/guide/guide.tsv. A frame: the screen at the left, drawn
-3x, nearest; at the right a drawing of the FM-1's panel with the control in use lit, and under it the control and
-what it does; across the bottom the caption, large, white on black. Each caption comes up 3 s (guide.tsv)
+3x, nearest; at the right a drawing of the FM-1's panel, quiet but for the control about to be used; across the
+bottom the caption, large, white on black. One thing asks for the eye at a time: the caption, then the lit control,
+then the screen, whose frame lights for a moment as the action lands. Each caption comes up 3 s (guide.tsv)
 before its action: the control is outlined and pulses while it is next, solid while it is pressed or held.
-The .srt has the same captions at the same times.
+The .srt has the same captions at the same times. The last TAIL s are the end card (the mark, TESSERA and the
+version of the newest docs/RELEASE_*.md, the clip's title, the project page) while the music fades out.
 """
 import array
 import math
@@ -24,7 +26,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gen_brand import mark, text as mono, text_w   # noqa: E402  (the Mono look's 5 x 7 font and mark)
+from gen_brand import INK, centred, mark, text as mono, text_w   # noqa: E402  (the Mono look's font and mark)
 
 ROOT = Path(__file__).resolve().parents[1]
 FS, SPF = 44100, 1472                                   # samples a frame (demo_projects.c V_BLOCKS x 32)
@@ -33,8 +35,9 @@ W, H = 1920, 1080
 BG, WHITE, HOT = (0, 0, 0), (255, 255, 255), (255, 208, 32)   # HOT: the clip's accent (its ink; YELLOW by default)
 ACCENT = {"YELLOW": (255, 208, 32), "WHITE": (240, 240, 240), "GREEN": (96, 255, 128), "BLUE": (136, 192, 255),
           "RED": (255, 112, 100), "ORANGE": (255, 144, 40), "PINK": (255, 176, 216), "HOT PINK": (255, 88, 176),
-          "LILAC": (192, 150, 255), "MOSAIC": (255, 208, 32), "SUNSET": (255, 144, 40), "OCEAN": (136, 192, 255),
-          "NEON": (0, 230, 255)}                        # (tools/gen_ui_palettes.py: an ink, or a set's first track)
+          "LILAC": (192, 150, 255), "MOSAIC": (240, 240, 240), "SUNSET": (240, 240, 240), "OCEAN": (240, 240, 240),
+          "NEON": (240, 240, 240)}                      # (tools/gen_ui_palettes.py's inks; a four-ink set's accent is
+                                                        # white, so no track's colour also means "a control")
 TRACKS = {"MOSAIC": ((255, 208, 32), (136, 192, 255), (255, 88, 176), (96, 255, 128)),
           "SUNSET": ((255, 144, 40), (255, 88, 176), (192, 150, 255), (255, 208, 32)),
           "OCEAN": ((136, 192, 255), (64, 224, 208), (96, 255, 128), (192, 150, 255)),
@@ -42,8 +45,11 @@ TRACKS = {"MOSAIC": ((255, 208, 32), (136, 192, 255), (255, 88, 176), (96, 255, 
 TRK = None                                              # (a four-ink clip: "track 2" in the caption in track 2's ink)
 DIM, DIMTXT = (78, 78, 78), (150, 150, 150)             # the controls not in use
 EDGE = 0.012                                            # s: fade in
-TAIL = 1.5                                              # s: fade out at the end
+TAIL = 3.0                                              # s: the end card, the music fading out under it
+CUT = 0.4                                               # s: the clip fades into the end card
 TAP = 0.5                                               # s: a tap is drawn pressed this long at least
+HOLD = 1.5                                              # s: the shortest a caption shows
+FLASH = 1.0                                             # s: the screen's frame lights when an action lands
 RANK = {"done": 0, "next": 1, "down": 2}
 LEVEL_RMS, LEVEL_PEAK = -22.0, -3.0                     # dBFS: the clip's RMS, its highest peak
 FONT = ROOT / "assets/fonts/InterTight[wght].ttf"
@@ -146,13 +152,13 @@ def draw_caption(im, text, controls, step, steps):
     if step:
         d.text((60, y0 + 22), f"STEP {step} OF {steps}", font=F_SMALL, fill=HOT)
     y = y0 + (64 if step else 44)
-    for line in wrap_px(d, text.split(), F_CAP, W - 120)[:2]:
+    for line in wrap_px(d, text.split(), F_CAP, W - 220)[:2]:
         x = 60
-        hot = set()
+        spans = {}
         for k in range(len(line)):                      # (a control's name, one word or two: KNOB 2)
             for n in (2, 1):
-                if " ".join(line[k:k + n]).strip(",.:;") in controls:
-                    hot.update(range(k, k + n))
+                if k not in spans and " ".join(line[k:k + n]).rstrip(",.:;") in controls:
+                    spans[k] = n
                     break
         trk = {}
         if TRK:                                         # ("track 2", "tracks 3 and 4": each number in its track's ink)
@@ -163,30 +169,62 @@ def draw_caption(im, text, controls, step, steps):
                     trk[k] = TRK[int(n) - 1]
                     if line[k - 1] == "track":
                         trk[k - 1] = trk[k]
-        for k, w in enumerate(line):
-            d.text((x, y), w, font=F_CAP, fill=HOT if k in hot else trk.get(k, WHITE))
-            x += d.textlength(w + " ", font=F_CAP)
+        k = 0
+        while k < len(line):
+            if k in spans:                              # (a control: a keycap, its punctuation after it)
+                word = " ".join(line[k:k + spans[k]])
+                name = word.rstrip(",.:;")
+                w = d.textlength(name, font=F_CAP)
+                d.rounded_rectangle((x - 2, y + 2, x + w + 22, y + 84), 12, outline=HOT, width=4)
+                d.text((x + 10, y), name, font=F_CAP, fill=HOT)
+                x += w + 22
+                d.text((x, y), word[len(name):], font=F_CAP, fill=WHITE)
+                x += d.textlength(word[len(name):] + " ", font=F_CAP) + 4
+                k += spans[k]
+                continue
+            d.text((x, y), line[k], font=F_CAP, fill=trk.get(k, WHITE))
+            x += d.textlength(line[k] + " ", font=F_CAP)
+            k += 1
         y += 90
 
 
-def draw_status(im, row, state):
-    """under the panel: the control, what it does, and whether it is next or pressed"""
+# ---------------------------------------------------------------------------------------------- the end card
+def version():
+    """the newest docs/RELEASE_X.Y[.Z].md: the version on the end card"""
+    vs = [tuple(int(n) for n in f.stem[8:].split(".")) for f in (ROOT / "docs").glob("RELEASE_*.md")
+          if all(n.isdigit() for n in f.stem[8:].split("."))]
+    return ".".join(map(str, max(vs))) if vs else ""
+
+
+def end_card(title):
+    """the mark large, TESSERA and the version in the brand's ink, the clip's title, where to get it"""
+    im = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(im)
-    ctl, label = row["ctl"], row["label"]
-    px = 6
-    w = text_w(ctl, px) + 40
-    x, y = 860, 700
-    d.rounded_rectangle((x, y, x + w, y + 7 * px + 32), 12, fill=HOT)
-    mono(d, x + 20, y + 16, ctl, px, BG)
-    held = row["t1"] - row["t0"] > 1
-    if CTRL[ctl][0] == "knob":
-        word = {"next": "NEXT", "down": "TURN", "done": "DONE"}[state]
-    else:
-        word = {"next": "NEXT", "down": "HOLD" if held else "PRESS", "done": "LET GO" if held else "DONE"}[state]
-    d.text((x + w + 30, y + 8), f"{word}:  {label}", font=F_LABEL, fill=HOT if state == "down" else WHITE)
+    mark(d, W // 2, 330, 56)
+    centred(d, W, 500, f"TESSERA {version()}".strip(), 12, INK)
+    d.text((W // 2, 660), title, font=F_LABEL, fill=WHITE, anchor="mm")
+    d.text((W // 2, 760), "rastapopolix.github.io/tessera", font=F_LABEL, fill=(200, 200, 200), anchor="mm")
+    d.text((W // 2, 810), "Free, GPL-3.0. Try it in the browser.", font=F_SMALL, fill=(200, 200, 200),
+           anchor="mm")
+    return im
 
 
 # ---------------------------------------------------------------------------------------------- the clip
+def state(r, t, tap):
+    """a control's state at t: next (its caption is up), down (pressed, at least tap s), done (until the caption goes)"""
+    end = max(r["t1"], r["t0"] + tap)
+    if r["end"] - end < tap:                            # (no "done" too short to read: down until the caption goes)
+        end = max(end, r["end"])
+    return ("down" if r["t0"] <= t < end else
+            "next" if r["cap"] <= t < r["t0"] else "done" if r["t0"] <= t < r["end"] else None)
+
+
+def check(clip, rows, caps, secs):
+    """warn of a caption on screen shorter than HOLD"""
+    bad = [f"caption {c[2][:30]!r} {c[1] - c[0]:.1f} s" for c in caps if c[1] - c[0] < HOLD]
+    for b in bad:
+        print(f"guide_video: {clip}: shown too briefly: {b}")
+
 def rows_of(src):
     """{clip: (title, rows)}"""
     out, titles = {}, {}
@@ -256,10 +294,11 @@ def make(src, clip, title, rows, dst):
     frames_dir = src / clip
     frames = len(list(frames_dir.glob("f*.ppm")))
     secs = frames * SPF / FS
-    caps, steps = captions(rows, secs)
+    caps, steps = captions(rows, secs - TAIL)
     controls = {r["ctl"] for r in rows if r["ctl"]}
     for r in rows:                                      # (a control stays lit, done, until its caption goes)
         r["end"] = next(c[1] for c in caps if c[0] == r["cap"])
+    check(clip, rows, caps, secs - TAIL)
 
     with wave.open(str(src / f"{clip}.wav")) as r:
         a = array.array("h", r.readframes(r.getnframes()))
@@ -289,27 +328,35 @@ def make(src, clip, title, rows, dst):
            "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(mp4)]
     stills = [int(s) for s in __import__("os").environ.get("GUIDE_STILLS", "").split(",") if s]
     p = None if stills else subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    card = end_card(title)
     for k in ([k for k in stills if k < frames] if stills else range(frames)):
         t = k * SPF / FS
+        if t >= secs - TAIL + CUT:                     # (the end card, then nothing else)
+            if stills:
+                card.save(dst / f"{clip}-{k:05d}.png")
+            else:
+                p.stdin.write(card.tobytes())
+            continue
         scr = Image.open(frames_dir / f"f{k:05d}.ppm").convert("RGB")
         im = base.copy()
         im.paste(scr.resize((720, 720), Image.NEAREST), (60, 50))
-        states, cand = {}, []
+        states = {}
         for r in rows:
             if not r["ctl"]:
                 continue
-            st = ("down" if r["t0"] <= t < max(r["t1"], r["t0"] + TAP) else
-                  "next" if r["cap"] <= t < r["t0"] else "done" if r["t0"] <= t < r["end"] else None)
+            st = state(r, t, TAP)
+            st = None if st == "done" else st             # (pressed and let go: the panel goes quiet)
             if st and (RANK[st] > RANK.get(states.get(r["ctl"]), -1)):
                 states[r["ctl"]] = st
-            if st:
-                cand.append((RANK[st], r["t0"] if st != "next" else -r["t0"], r, st))
-        shown = max(cand, key=lambda c: c[:2])[2:] if cand else None   # (pressed, then next; the latest)
+        flash = min((t - r["t0"] for r in rows if r["ctl"] and 0 <= t - r["t0"] < FLASH), default=None)
         draw_panel(im, 860, 120, states, scr, t)
-        if shown:
-            draw_status(im, *shown)
+        if flash is not None:                           # (the action lands: the screen's frame lights, then fades)
+            a = 1 - flash / FLASH
+            ImageDraw.Draw(im).rectangle((52, 42, 788, 778), outline=tuple(round(c * a) for c in HOT), width=6)
         c = next((c for c in caps if c[0] <= t < c[1]), caps[-1])
         draw_caption(im, c[2], controls, c[3], steps)
+        if t >= secs - TAIL:                            # (the clip fades into the end card)
+            im = Image.blend(im, card, (t - (secs - TAIL)) / CUT)
         if stills:                                      # (GUIDE_STILLS=k,..: those frames as PNGs, no video)
             im.save(dst / f"{clip}-{k:05d}.png")
             continue
