@@ -637,6 +637,50 @@ static const gstep_t G_PATTERNS[] = {
     {27100, 0, 0, 0, 0, "On its line it switches: a new bass part"},
     {32000, 0, 0, 0, 0, "JAM logs what you played. On SONG, the next page, take it as a song"},
 };
+/* detroit techno: 124 BPM, A minor; a TRIO lead on TURING in sixteenths as track 1 (its filter gets the shortcut mod),
+ * a string machine on CHORD, a sub on EUCLID, a 909 in STEP */
+static void g_detroit_scene(void)
+{
+    song.g[G_BPM] = 124;
+    scale(9, SCL_MIN, 1);                               /* A MIN, QNT SNAP */
+    sends(80, 65, 70, 50);
+    sound(0, ENGI_TRIO, TR_ARP_LEAD);
+    trk[0].p[P_SDIV] = DIV_16;
+    gen(0, TESS_ENG_TURING, 62);
+    tx(0, TX_TUR_PROB, 8); tx(0, TX_TUR_LEN, 16); tx(0, TX_TUR_SPAN, 1);
+    trk[0].p[P_LRATE] = 35;
+    mixer(0, 92, 10, 35, 40);
+    sound(1, ENGI_TRIO, TR_STRING_MACH);
+    trk[1].p[P_CHRD] = 2;
+    gen(1, TESS_ENG_CHORD, 12);
+    tx(1, TX_CH_PROG, GEN_CH_TWO); tx(1, TX_CH_BARS, 2); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 50, -25, 80, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 23);
+    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3); tx(2, TX_EUC_ROT, 1); tx(2, TX_TW_SHIFT, -12);
+    trk[2].p[P_QUANT] = Q_CHRD;
+    mixer(2, 86, 0, 0, 0);
+    sound(3, ENGI_DRUM, DK_909_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_BD | L_CP, 0, L_OH, 0, L_BD, 0, L_CH, 0, L_BD | L_CP, 0, L_OH, L_CH};
+        static const uint8_t V[16] = {90, 0, 44, 0, 88, 0, 54, 0, 90, 0, 44, 0, 88, 0, 54, 34};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 74, 0, 12, 0);
+}
+static const gstep_t G_FXMOD[] = {
+    {0, 0, 0, 0, 0, "The quickest mod: hold FX and turn the knob you want to move"},
+    {3500, 6500, 200, "EDIT", "OPEN EDIT", "Tap EDIT: track 1's sound, a TRIO lead"},
+    {10000, 13000, 600, "SELECT", "TONE", "Turn SELECT: TONE, the filter. KNOB 2 is CUT", 1},
+    {17000, 20000, 6500, "FX", "HOLD FX", "Hold FX and turn KNOB 2: a cord, LFO to CUT. The turn is how far"},
+    {0, 21500, 4000, "KNOB 2", "AMOUNT", 0, 30},
+    {30000, 0, 0, 0, 0, "Let go: the filter now opens and closes with the LFO"},
+    {37000, 40000, 200, "LFO", "MODS", "Tap LFO: MODS. The shortcut's cord is there, to edit like any other"},
+    {47000, 0, 0, 0, 0, "Another source than the LFO: with FX held, turn SELECT first"},
+};
 /* nu-soul: 86 BPM, F minor; ORACLE warm pad holding a chord as track 1 with a cord (T1 LFO -> T1 CUTOFF, +60 %), a
  * tine line on TURING, a sub on EUCLID, a laid-back 808 in STEP */
 static void g_nusoul_scene(void)
@@ -983,6 +1027,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
     G_RUN("r-patterns", "PATTERNS", "MOSAIC", 41, 4, g_citypop_scene, G_PATTERNS);   /* city pop */
+    G_RUN("r-fx-mod", "THE MOD SHORTCUT", "LILAC", 52, 4, g_detroit_scene, G_FXMOD);   /* detroit techno */
     G_RUN("r-mod-shapes", "A CORD'S SHAPE", "LILAC", 72, 4, g_nusoul_scene, G_SHAPES);   /* nu-soul */
     G_RUN("r-sheet", "PLAY THE STEPS IN ANOTHER ORDER", "MOSAIC", 66, 4, g_postrock_scene, G_SHEET);   /* post-rock */
     G_RUN("r-rec", "RECORD LIVE", "MOSAIC", 50, 4, g_ambhouse_scene, G_REC);   /* ambient house */
