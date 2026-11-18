@@ -3005,7 +3005,7 @@ static const gstep_t G_PAGES[] = {
     {11000, 14000, 1200, "SELECT", "NEXT PAGE", "Turn SELECT: the next page under the same button (PATTERN)", 1},
     {19000, 22000, 200, "ARP", "OPEN ARP", "Tap ARP: how the notes are shaped (EVOLVE first)"},
     {27000, 30000, 200, "HOME", "GO HOME", "Tap HOME: back to the four tracks, from anywhere"},
-    {35000, 0, 0, 0, 0, "The header always names the page you are on"},
+    {35000, 0, 0, 0, 0, "Away from HOME, the lit tab at the foot of the screen names the page"},
 };
 /* Season 1, episode 3: change the sound */
 static const gstep_t G_SOUND[] = {
@@ -3022,7 +3022,7 @@ static const gstep_t G_KEY[] = {
     {0, 8000, 300, "D4", "ROOT D", 0},
     {13500, 16500, 4500, "SEL", "SET THE KEY", "Still holding SEL, turn KNOB 2: another scale (DORIAN becomes MIXOLYDIAN)"},
     {0, 18000, 1500, "KNOB 2", "NEXT SCALE", 0, 1},
-    {24000, 0, 0, 0, 0, "Let go of SEL: all four tracks follow, nothing to retune"},
+    {24000, 0, 0, 0, 0, "Let go of SEL: every melodic track follows (drums keep their own)"},
 };
 static void g_run(const char *out, FILE *tsv, const char *name, const char *title, uint32_t secs, uint32_t pre,
                   void (*make)(void), const char *ink, const gstep_t *g, uint32_t n)
