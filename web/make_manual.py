@@ -9,8 +9,9 @@ stores, tessera-theme), a sidebar of the chapters (the ## headings, the open one
 page's text, with no network. Headings keep GitHub's anchors (lower case, punctuation dropped, spaces as hyphens, -1
 -2 on repeats), so a link to MANUAL.md#a-section on GitHub works here as manual/#a-section.
 
-Links: MANUAL.md and GETTING_STARTED.md to these pages; every other file of the repository (RECIPES.md, docs/...) to
-it on GitHub; the pictures (assets/gallery, assets/brand) to the site's media/ (web/make_site.py copies them there).
+Links: MANUAL.md and GETTING_STARTED.md to these pages; the manual's PDF (docs/manual/tessera-manual.pdf, made by
+tools/gen_manual_pdf.py) to its copy at manual/tessera-manual.pdf (make_site.py puts it there); every other file of
+the repository (RECIPES.md, docs/...) to it on GitHub; the pictures (assets/gallery, assets/brand) to the site's media/ (web/make_site.py copies them there).
 
   web/make_manual.py OUT_DIR            (web/make_site.py calls it; needs markdown-it-py: pip install markdown-it-py)
 """
@@ -27,6 +28,8 @@ REPO = "https://github.com/Rastapopolix/tessera/blob/HEAD/"
 PAGES = {"MANUAL.md": "manual", "GETTING_STARTED.md": "start"}
 # CommonMark, as GitHub reads it (a list item's lines indented by two, raw HTML kept), with its tables
 MD = MarkdownIt("commonmark", {"html": True}).enable("table")
+PDF_SRC = "docs/manual/tessera-manual.pdf"          # the manual as a PDF (tools/gen_manual_pdf.py)
+PDF_NAME = "tessera-manual.pdf"                     # its name on the site, next to the manual's page
 TITLES = {"manual": "Tessera manual", "start": "Getting started with Tessera"}
 
 
@@ -46,6 +49,8 @@ def link(url, here):
     path = path.lstrip("./")
     if path in PAGES:
         return f"../{PAGES[path]}/" + (f"#{frag}" if frag else "")
+    if path == PDF_SRC:
+        return "../manual/" + PDF_NAME
     for src, dst in (("assets/gallery/", "media/gallery/"), ("assets/brand/", "media/brand/")):
         if path.startswith(src):
             return "../" + dst + path[len(src):]
@@ -221,6 +226,7 @@ main hr {{ border: 0; border-top: 1px solid var(--line); margin: 32px 0; }}
   <a class="home" href="../">TESSERA</a>
   <a href="../start/"{cur_start}>START</a>
   <a href="../manual/"{cur_manual}>MANUAL</a>
+  <a class="wide" href="../manual/tessera-manual.pdf" download title="The whole manual as a PDF, to print or read offline">PDF</a>
   <a class="wide" href="{repo}RECIPES.md">RECIPES</a>
   <a class="wide" href="../webapp/sim/">SIMULATOR</a>
   <button class="contents" id="contents" type="button" aria-expanded="false" aria-controls="side">CONTENTS</button>

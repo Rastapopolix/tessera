@@ -97,3 +97,5 @@ asks for a key, a scale and a tempo, then a role for each track (drums, bass, ch
 - **[RECIPES](RECIPES.md)**: drones, chords that lead, pieces that play for hours, driving other synths.
 - **[The cheat sheet](https://github.com/Rastapopolix/tessera/blob/HEAD/docs/cheatsheet/tessera-cheatsheet.pdf)**:
   every button and combination on one printable page.
+- **[The manual as a PDF](https://rastapopolix.github.io/tessera/manual/tessera-manual.pdf)**: the whole manual, to
+  print or read offline.
