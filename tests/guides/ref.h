@@ -130,8 +130,51 @@ static const gstep_t G_PIECE[] = {
     {74500, 0, 0, 0, 0, "Then it thins out the same way"},
     {99000, 0, 0, 0, 0, "At the end the tracks fade, the tails ring, and it stops"},
 };
+/* chillout: 96 BPM, E dorian (as E minor's brighter sister); a soft 808, a kalimba on QUAD-less EUCLID, a sub, an
+ * ORACLE pad: four parts, so MOSAIC has four colours to show */
+static void g_chillout_scene(void)
+{
+    song.g[G_BPM] = 96;
+    scale(4, SCL_DOR, 0);
+    sends(95, 70, 70, 50);
+    sound(0, ENGI_FM6, FX_KALIMBA);
+    trk[0].p[P_SDIV] = DIV_16;
+    gen(0, TESS_ENG_EUCLID, 13);
+    tx(0, TX_EUC_STEPS, 16); tx(0, TX_EUC_PULSES, 7); tx(0, TX_EUC_ROT, 2);
+    mixer(0, 92, 20, 60, 50);
+    sound(1, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_CP, 0, L_CH, 0, L_BD, 0, L_CH, L_BD, L_CP, 0, L_OH, 0};
+        static const uint8_t V[16] = {96, 0, 52, 0, 80, 0, 50, 0, 90, 0, 54, 62, 82, 0, 56, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
+        trk[1].p[P_SLEN] = 16;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
+    mixer(1, 84, 0, 20, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 41);
+    tx(2, TX_EUC_STEPS, 16); tx(2, TX_EUC_PULSES, 4); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    mixer(2, 94, 0, 0, 0);
+    sound(3, ENGI_ORACLE, OR_WARM_PAD);
+    trk[3].p[P_CHRD] = 1;
+    gen(3, TESS_ENG_CHORD, 12);
+    tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
+    mixer(3, 66, -20, 80, 0);
+}
+static const gstep_t G_COLOR[] = {
+    {0, 0, 0, 0, 0, "Pick the screen's colour: one ink, or a colour for each track"},
+    {3500, 6500, 900, "HOME", "MENU", "Hold HOME: the menu. COLOR is its first row"},
+    {11000, 14000, 2400, "KNOB 2", "INKS", "Turn KNOB 2: the inks (here to BLUE)", 3},
+    {20000, 23000, 3000, "KNOB 2", "MOSAIC", "Further: MOSAIC, a colour for each track", 6},
+    {29500, 32500, 200, "OCT-", "CLOSE", "Tap OCT- twice: the colour picker closes, then the menu"},
+    {0, 34200, 200, "OCT-", "CLOSE", 0},
+    {38000, 0, 0, 0, 0, "Back on HOME: the four tracks, each in its own colour"},
+    {45500, 0, 0, 0, 0, "GROUND, just below COLOR, draws the ink on paper (LIGHT)"},
+};
 static void guide_ref(const char *out, FILE *tsv)
 {
+    G_RUN("r-color", "THE SCREEN'S COLOUR", "YELLOW", 54, 4, g_chillout_scene, G_COLOR);   /* chillout */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
     G_RUN("r-mod-first", "YOUR FIRST MOD", "LILAC", 45, 4, g_triphop_scene, G_MOD_FIRST);   /* trip-hop */
