@@ -40,8 +40,11 @@ static const gstep_t G_MOD_FIRST[] = {
     {3500, 6500, 200, "LFO", "OPEN MODS", "Tap LFO: MODS, the cords"},
     {10500, 13500, 600, "KNOB 1", "SOURCE", "Turn KNOB 1: the source (here T1 LFO)", 1},
     {19000, 22000, 900, "KNOB 3", "DESTINATION", "Turn KNOB 3: what it moves (here T1 CUTOFF). It starts at +50 %, heard at once", 2},
-    {27500, 30500, 1500, "KNOB 4", "AMOUNT", "Turn KNOB 4: how far (+50 becomes +80 %: the sweep widens)", 30},
-    {37000, 0, 0, 0, 0, "Sixteen cords; any source, on any track, onto any destination"},
+    {27500, 30500, 6000, "OCT-", "SCOPE", "Hold OCT-: the scope. The line is the mod, the faint dots its source"},
+    {33000, 36000, 200, "OCT+", "PIN", "Still holding OCT-, tap OCT+: the scope stays (SCOPE PINNED)"},
+    {40000, 43000, 1500, "KNOB 4", "AMOUNT", "Turn KNOB 4: the amount, +50 to +80 %. The line swings wider", 30},
+    {49500, 52500, 200, "OCT-", "FREE", "Tap OCT-: SCOPE FREE, the rows come back"},
+    {57000, 0, 0, 0, 0, "Sixteen cords; any source, on any track, onto any destination"},
 };
 /* downtempo: 90 BPM, a marimba figure written in STEP as track 1 (eight notes, one to get a condition), a soft
  * 808, a sub on EUCLID, a pad. A minor */
@@ -313,5 +316,5 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-entries", "TRACKS OUT AND IN", "SUNSET", 60, 4, g_dnb_scene, G_ENTRIES);   /* liquid drum and bass */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
-    G_RUN("r-mod-first", "YOUR FIRST MOD", "LILAC", 45, 4, g_triphop_scene, G_MOD_FIRST);   /* trip-hop */
+    G_RUN("r-mod-first", "YOUR FIRST MOD", "LILAC", 65, 4, g_triphop_scene, G_MOD_FIRST);   /* trip-hop */
 }
