@@ -637,6 +637,53 @@ static const gstep_t G_PATTERNS[] = {
     {27100, 0, 0, 0, 0, "On its line it switches: a new bass part"},
     {32000, 0, 0, 0, 0, "JAM logs what you played. On SONG, the next page, take it as a song"},
 };
+/* minimal house: 122 BPM, G minor; an ORACLE pad on CHORD as track 1 that ducks under the bass (T3 GATE -> T1 GAIN), its
+ * filter on its LFO, a tine line on TURING whose DRIFT pans the hats (T2 DRIFT -> T4 PAN), a sub on EUCLID, a 909 */
+static void g_minhouse_scene(void)
+{
+    song.g[G_BPM] = 122;
+    scale(7, SCL_MIN, 1);                               /* G MIN, QNT SNAP */
+    sends(80, 65, 70, 45);
+    sound(0, ENGI_ORACLE, OR_WARM_PAD);
+    trk[0].p[P_CHRD] = 2;
+    gen(0, TESS_ENG_CHORD, 15);
+    tx(0, TX_CH_PROG, GEN_CH_TWO); tx(0, TX_CH_BARS, 2); tx(0, TX_CH_HIT, GEN_CH_HOLD);
+    trk[0].p[P_LRATE] = 25;
+    cord(0, CS_LFO, 0, CD_CUTOFF, 0, 40, 0, 0);
+    cord(1, CS_GATE, 2, CD_GAIN, 0, -45, 0, 0);
+    cord(2, CS_DRIFT, 1, CD_PAN, 3, 50, 0, 0);
+    mixer(0, 80, 0, 45, 0);
+    sound(1, ENGI_FM6, V_TINE);
+    trk[1].p[P_SDIV] = DIV_8;
+    gen(1, TESS_ENG_TURING, 47);
+    tx(1, TX_TUR_PROB, 10); tx(1, TX_TW_DROP, 55);
+    mixer(1, 62, 25, 50, 40);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 29);
+    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3); tx(2, TX_EUC_ROT, 1); tx(2, TX_TW_SHIFT, -12);
+    trk[2].p[P_QUANT] = Q_CHRD;
+    mixer(2, 90, 0, 0, 0);
+    sound(3, ENGI_DRUM, DK_909_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, L_CH, L_BD, 0, L_OH, 0, L_BD, 0, L_CH, L_CH, L_BD | L_CP, 0, L_OH, L_CH};
+        static const uint8_t V[16] = {90, 0, 40, 30, 88, 0, 50, 0, 90, 0, 40, 30, 88, 0, 50, 34};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 72, 0, 12, 0);
+}
+static const gstep_t G_MATRIX[] = {
+    {0, 0, 0, 0, 0, "MATRIX: which track moves which, at a glance"},
+    {3500, 6500, 200, "LFO", "OPEN MODS", "Tap LFO: MODS, three cords"},
+    {10000, 13000, 600, "SELECT", "MATRIX", "Turn SELECT: MATRIX. FROM down the left, TO along the top", 1},
+    {17500, 0, 0, 0, 0, "A lit cell: a cord goes that way, brighter the more it moves now"},
+    {24000, 27000, 600, "KNOB 1", "FROM T3", "Turn KNOB 1 to FROM T3, the bass. TO is T1, the pad", 2},
+    {31500, 0, 0, 0, 0, "That cell holds one cord: MOD 2"},
+    {37000, 40000, 200, "OCT+", "OPEN", "Tap OCT+: it opens in MODS. T3 GATE onto T1 GAIN, -45 %"},
+    {47000, 0, 0, 0, 0, "While a bass note sounds, the pad dips"},
+};
 /* space ambient: 70 BPM, D lydian; an ORACLE glass-like pad holding chords as track 1, its filter and pan on SWARM
  * (cords: T1 SWARM 3 -> T1 CUTOFF, T1 SWARM 6 -> T1 PAN), a tine line on TURING, a deep sub on EUCLID, no drums but a
  * soft rim now and then */
@@ -1074,6 +1121,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
     G_RUN("r-patterns", "PATTERNS", "MOSAIC", 41, 4, g_citypop_scene, G_PATTERNS);   /* city pop */
+    G_RUN("r-matrix", "WHO MOVES WHAT", "LILAC", 55, 4, g_minhouse_scene, G_MATRIX);   /* minimal house */
     G_RUN("r-organic", "SLOW, LIVING MOVEMENT", "LILAC", 68, 4, g_space_scene, G_ORGANIC);   /* space ambient */
     G_RUN("r-fx-mod", "THE MOD SHORTCUT", "LILAC", 52, 4, g_detroit_scene, G_FXMOD);   /* detroit techno */
     G_RUN("r-mod-shapes", "A CORD'S SHAPE", "LILAC", 72, 4, g_nusoul_scene, G_SHAPES);   /* nu-soul */
