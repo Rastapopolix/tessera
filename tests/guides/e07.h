@@ -129,13 +129,13 @@ static const gstep_t G_MUTES[] = {
 };
 static const gstep_t G_TEMPO[] = {
     {0, 0, 0, 0, 0, "Set the tempo with a knob, or tap it in"},
-    {3500, 6500, 1600, "SELECT", "TEMPO UP", "On HOME, turn SELECT: the tempo (112 becomes 120)", 8},
-    {12000, 15000, 200, "GLO", "OPEN MIXER", "Tap GLO: the MIXER page"},
-    {20000, 23000, 120, "F4", "TAP", "Tap F4 in time, four times: the tempo follows your taps (here 124)"},
-    {0, 23480, 120, "F4", "TAP", 0},
-    {0, 23960, 120, "F4", "TAP", 0},
-    {0, 24440, 120, "F4", "TAP", 0},
-    {31000, 0, 0, 0, 0, "With GLO held, SELECT sets the tempo on any page"},
+    {3500, 6500, 2400, "SELECT", "TEMPO UP", "On HOME, turn SELECT: the tempo (112 becomes 130)", 18},
+    {14000, 17000, 200, "GLO", "OPEN MIXER", "Tap GLO: the MIXER page"},
+    {21500, 24500, 120, "F4", "TAP", "Tap F4 in time, four times: the tempo follows your taps (here 89)"},
+    {0, 25167, 120, "F4", "TAP", 0},
+    {0, 25833, 120, "F4", "TAP", 0},
+    {0, 26500, 120, "F4", "TAP", 0},
+    {33000, 0, 0, 0, 0, "With GLO held, SELECT sets the tempo on any page"},
 };
 /* breakbeat: 132 BPM, a broken 909 (ghost snares, open hat), a fat bass on TURING whose filter MACRO 1 opens, a sync
  * lead on EUCLID that MACRO 1 sends into the reverb, a pad under it. D minor */
@@ -184,5 +184,5 @@ static void guide_e07(const char *out, FILE *tsv)
     G_RUN("e07-mixer", "MUTE, SOLO, FILL", "MOSAIC", 59, 4, g_mixer_scene, G_MIXER); /* a beat */
     G_RUN("e07-mutes", "MUTES ON THE BAR", "MOSAIC", 61, 4, g_dubstep_scene, G_MUTES); /* old-school dubstep */
     G_RUN("e07-perf", "PERF: FOUR MACROS", "MOSAIC", 46, 4, g_breakbeat_scene, G_PERF);   /* breakbeat */
-    G_RUN("e07-tempo", "THE TEMPO", "MOSAIC", 39, 4, g_deephouse_scene, G_TEMPO);     /* deep house */
+    G_RUN("e07-tempo", "THE TEMPO", "MOSAIC", 41, 4, g_deephouse_scene, G_TEMPO);     /* deep house */
 }
