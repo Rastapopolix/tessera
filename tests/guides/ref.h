@@ -257,11 +257,60 @@ static const gstep_t G_FORM[] = {
     {41000, 0, 0, 0, 0, "B again, note for note: DEVELOP at 0 keeps each return exact"},
     {48500, 0, 0, 0, 0, "Hold OCT- for DEVELOP: returns that change a little each time"},
 };
+/* liquid drum and bass: 172 BPM, F minor; a broken 909 as track 1 (RHYTHM), a sub on EUCLID (BASS), an ORACLE pad
+ * (HARMONY), a bell line on TURING (MELODY); the CHAIN ABAC in 4-bar phrases, so ENTRIES has lines to move on */
+static void g_dnb_scene(void)
+{
+    static const uint8_t REP[4] = {1, 1, 1, 1}, ROLE[4] = {RO_RHYTHM, RO_BASS, RO_HARMONY, RO_MELODY};
+    song.g[G_BPM] = 172;
+    scale(5, SCL_MIN, 0);
+    sends(95, 70, 70, 50);
+    sound(0, ENGI_DRUM, DK_909_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_BD, 0, 0, L_BD | L_CH, 0, L_SD, 0, L_CH, L_SD};
+        static const uint8_t V[16] = {108, 0, 62, 0, 104, 0, 60, 80, 0, 0, 96, 0, 104, 0, 64, 50};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(0, i, L[i], V[i]);
+        trk[0].p[P_SLEN] = 16;
+    }
+    tx(0, TX_MODE, TESS_ENG_OFF); trk[0].p[P_SDIV] = DIV_16;
+    mixer(0, 92, 0, 10, 0);
+    sound(1, ENGI_TRIO, TR_SUB_BASS);
+    trk[1].p[P_SDIV] = DIV_8;
+    gen(1, TESS_ENG_EUCLID, 22);
+    tx(1, TX_EUC_STEPS, 16); tx(1, TX_EUC_PULSES, 3); tx(1, TX_EUC_ROT, 0); tx(1, TX_TW_SHIFT, -12);
+    tx(1, TX_NL_MODE, 1); tx(1, TX_NL_LEN, 4);
+    mixer(1, 100, 0, 0, 0);
+    sound(2, ENGI_ORACLE, OR_WARM_PAD);
+    trk[2].p[P_CHRD] = 2;
+    gen(2, TESS_ENG_CHORD, 10);
+    tx(2, TX_CH_PROG, GEN_CH_TWO); tx(2, TX_CH_BARS, 2); tx(2, TX_CH_HIT, GEN_CH_HOLD); tx(2, TX_CH_OCT, -1);
+    mixer(2, 70, -20, 80, 0);
+    sound(3, ENGI_FM6, FX_RIN);
+    trk[3].p[P_SDIV] = DIV_8;
+    gen(3, TESS_ENG_TURING, 39);
+    tx(3, TX_TUR_PROB, 10);
+    mixer(3, 80, 25, 70, 50);
+    chain_set(FC_ABCB, PH_4, 0, REP, 0, 0);
+    entries_set(0, 1, 1, 1, ROLE);
+}
+static const gstep_t G_ENTRIES[] = {
+    {0, 0, 0, 0, 0, "ENTRIES arranges for you: tracks drop out and come back on phrase lines"},
+    {3500, 6500, 200, "GLO", "MIXER", "Tap GLO twice: PERF"},
+    {0, 8000, 200, "GLO", "PERF", 0},
+    {12000, 15000, 1500, "SELECT", "ENTRIES", "Turn SELECT: on to ENTRIES", 3},
+    {19000, 22000, 4000, "KNOB 1", "76 %", "Turn KNOB 1: ENTRIES 76 %, how many tracks may be out at once", 38},
+    {28500, 0, 0, 0, 0, "Each track's part decides its turn: bass in first, melody out first"},
+    {35100, 0, 0, 0, 0, "Before A comes round again, only the bass plays on"},
+    {40700, 0, 0, 0, 0, "A returns with everything"},
+    {46200, 0, 0, 0, 0, "Away from A it thins again: the melody leaves first"},
+    {51800, 0, 0, 0, 0, "and is back on the next line. Your own mutes still win"},
+};
 static void guide_ref(const char *out, FILE *tsv)
 {
     G_RUN("r-landscape", "A SEA TO WATCH", "MOSAIC", 72, 4, g_neoclassical_scene, G_LANDSCAPE);   /* neo-classical */
     G_RUN("r-color", "THE SCREEN'S COLOUR", "YELLOW", 54, 4, g_chillout_scene, G_COLOR);   /* chillout */
     G_RUN("r-form", "A TRACK AS A SONG", "SUNSET", 60, 4, g_bossa_scene, G_FORM);   /* bossa nova */
+    G_RUN("r-entries", "TRACKS OUT AND IN", "SUNSET", 60, 4, g_dnb_scene, G_ENTRIES);   /* liquid drum and bass */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
     G_RUN("r-mod-first", "YOUR FIRST MOD", "LILAC", 45, 4, g_triphop_scene, G_MOD_FIRST);   /* trip-hop */
