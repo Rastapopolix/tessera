@@ -93,8 +93,51 @@ static const gstep_t G_EVERY[] = {
     {32000, 35000, 800, "KNOB 2", "EVERY OFF", "Found one you like? Turn EVERY back to OFF", -2},
     {42000, 0, 0, 0, 0, "OFF keeps the line it has now"},
 };
+/* gamelan: 96 BPM in PELOG on D; a tine line in eighths on TURING as track 1 (EVERY bar a round: the clip pulls it
+ * home with GRAVITY), a marimba answering on AWAKE in quarters, a gong of a sub on every other bar, an ORACLE drone */
+static void g_gamelan_scene(void)
+{
+    song.g[G_BPM] = 96;
+    scale(2, 61, 0);                                    /* D, PELOG */
+    sends(110, 85, 80, 55);
+    sound(0, ENGI_FM6, FX_TINE);
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_TURING, 63);
+    tx(0, TX_TUR_LEN, 8); tx(0, TX_TUR_PROB, 0); tx(0, TX_TUR_SPAN, 2);
+    tx(0, TX_EV_EVERY, 1); tx(0, TX_EV_AMOUNT, 60);
+    mixer(0, 108, -20, 70, 30);
+    sound(1, ENGI_FM6, V_DX_MARIMBA);
+    trk[1].p[P_SDIV] = DIV_4;
+    gen(1, TESS_ENG_AWAKE, 25);
+    tx(1, TX_AWK_LENA, 5); tx(1, TX_AWK_LENB, 3); tx(1, TX_AWK_PROB, 60);
+    mixer(1, 110, 30, 60, 20);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_2;
+    gen(2, TESS_ENG_EUCLID, 4);
+    tx(2, TX_EUC_STEPS, 4); tx(2, TX_EUC_PULSES, 1); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    tx(2, TX_NL_MODE, 1); tx(2, TX_NL_LEN, 3);
+    mixer(2, 72, 0, 40, 0);
+    sound(3, ENGI_ORACLE, OR_DRONE);
+    trk[3].p[P_CHRD] = 1;
+    gen(3, TESS_ENG_CHORD, 2);
+    tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 3); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
+    mixer(3, 78, -10, 90, 0);
+    g_solo_check();
+}
+/* Season 1, episode 6: GRAVITY: drift, then come home */
+static const gstep_t G_GRAVITY[] = {
+    {0, 0, 0, 0, 0, "EVERY bar, track 1's line drifts further from where it began"},
+    {4500, 7500, 200, "ARP", "OPEN ARP", "Tap ARP: EVOLVE, EVERY 1 bar"},
+    {12000, 15000, 4000, "OCT-", "HOLD OCT-", "Hold OCT- and turn KNOB 4: GRAVITY up to 100%"},
+    {0, 16000, 2000, "KNOB 4", "GRAVITY 100", 0, 100},
+    {21000, 0, 0, 0, 0, "Each round now steps it back: home is the line it began with"},
+    {30000, 33000, 4000, "OCT-", "HOLD OCT-", "Hold OCT- and turn GRAVITY down to 60%"},
+    {0, 34000, 1500, "KNOB 4", "GRAVITY 60", 0, -60},
+    {39000, 0, 0, 0, 0, "Now it wanders, and keeps coming back home"},
+};
 static void guide_e06(const char *out, FILE *tsv)
 {
     G_RUN("e06-roll", "A NEW LINE, AND BACK", "GREEN", 46, 4, g_pulse_scene, G_ROLL);   /* pulse minimalism */
     G_RUN("e06-every", "HOW OFTEN IT CHANGES", "GREEN", 49, 4, g_motorik_scene, G_EVERY);   /* motorik */
+    G_RUN("e06-gravity", "DRIFT, THEN COME HOME", "GREEN", 58, 4, g_gamelan_scene, G_GRAVITY);   /* gamelan */
 }
