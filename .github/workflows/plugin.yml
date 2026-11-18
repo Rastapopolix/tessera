@@ -11,6 +11,7 @@ on:
     branches: [develop]
     paths:
       - 'platform/plugin/**'
+      - 'platform/core/**'
       - 'web/sim/sim.c'
       - 'firmware/src/**'
       - 'tests/hostsim.c'

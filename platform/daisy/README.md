@@ -2,19 +2,21 @@
 
 The first stage of Andamento, Tessera on hardware of its own around an Electrosmith Daisy Seed (STM32H750,
 480 MHz Cortex-M7). This builds Tessera's engines, voices, mods, mixer, sequencer and generators for the Seed with
-libDaisy, and plays a short C4-E4-G4 figure on FM6 through the Seed's codec at 48 kHz. The screen's driver
-(`platform/andamento/`) draws a bring-up card, but its SPI is not wired yet. There is no UI, storage or MIDI yet:
-those come next, behind the same stand-ins.
+libDaisy through Tessera's core API (`platform/core/`: the same build as the web simulator and the plugin, the same
+include lists as the host tests), starts as the FM-1 powers on and plays a short C4-E4-G4 figure on the keys through
+the Seed's codec at 48 kHz. Projects load and save as `.tsp` in RAM (`tess_core_save` / `tess_core_load`). The
+FM-1's UI is built in but never runs; the screen's driver (`platform/andamento/`) draws a bring-up card, but its SPI
+is not wired yet. There is no Andamento UI, storage or MIDI yet: those come next, on the same API.
 
 | File | What |
 | --- | --- |
-| `tessera_core.c` | the unity build of the portable core (the include list of `tests/hostsim.c`), with plain stand-ins for the FM-1's `fm1_*` names |
-| `tessera_core.h` | what `main.cpp` calls: init, one 32-frame block, the millisecond tick |
+| `tessera_core.c` | the unity build: `platform/core/core_unit.c` with the Daisy's options (48 kHz tables, the firmware's placements kept, the interrupt guard, no FM-1 UI or screen copy), then Andamento's screen |
+| `tessera_core.h` | what `main.cpp` calls besides `tess_core.h` (`tess_core_boot`, one 32-frame `tess_core_block`): the screen |
 | `main.cpp` | libDaisy: the board, the codec at 48 kHz in blocks of 32 frames, the audio callback, the fast memories filled at boot, the LED, the screen's frame buffer and its two SPI calls (empty until the board is here) |
 | `tessera_daisy.lds` | the memory map: libDaisy's QSPI one, with the audio path in ITCM and DTCM (below) |
 | `itcm_pick.py` | at build time, chooses the code that goes to ITCM, as much of the audio path as fits |
 | `memcheck.py` | after the link: fails on a section nothing would copy, and prints where the audio path landed |
-| `Makefile` | libDaisy's build, plus Tessera's generated headers with the tables at `MELODEE_FS=48000` |
+| `Makefile` | libDaisy's build, plus Tessera's generated headers with the tables at `MELODEE_FS=48000` (the UI's font headers need Python with Pillow and fontTools, as `tools/build.py`) |
 
 ## Build
 

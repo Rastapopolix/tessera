@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Theo Dainis
 // Andamento: Tessera on a Daisy Seed, first stage. libDaisy starts the board and the codec at 48 kHz in blocks
-// of 32 frames, Tessera's control block, and each audio callback asks tessera_core.c for one block. The main
-// loop keeps Tessera's millisecond clock and blinks the Seed's LED, so a board that runs but stays silent says so.
+// of 32 frames, Tessera's control block, and each audio callback asks Tessera's core (platform/core/tess_core.h,
+// built by tessera_core.c) for one block; audio time drives Tessera's clock. A short figure is played on the keys
+// so the board makes sound on day one, and the main loop blinks the Seed's LED, so a board that runs but stays
+// silent says so.
 // Where things live (tessera_daisy.lds): the audio path's code in ITCM, its tables and state in DTCM, the rest
 // of the data in the AXI SRAM, DMA buffers in RAM_D2_DMA, long buffers (later) in the SDRAM.
 #include "daisy_seed.h"
@@ -63,16 +65,30 @@ static void sdram_clear(void)            // after hw.Init, which starts the SDRA
         *d++ = 0;
 }
 
+// The bring-up figure on the keys (as tests/hostsim.c's 2 s figure): C4, E4, G4, at the frame the core is at
+static uint32_t figure_keys(uint32_t frame, uint32_t fs)
+{
+    uint32_t f = frame % (2u * fs), n = 0;
+    if (f > fs / 10 && f < fs / 2)
+        n |= 1u << 7;
+    if (f > fs * 45 / 100 && f < fs * 8 / 10)
+        n |= 1u << 11;
+    if (f > fs * 9 / 10 && f < fs * 12 / 10)
+        n |= 1u << 14;
+    return n;
+}
+
 // The audio callback: libDaisy's DMA interrupt, every 32 frames (0.67 ms at 48 kHz). It runs from QSPI itself (it
 // is short), and calls into ITCM for the rest. The block is on the stack, in DTCM.
 static void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, size_t size)
 {
     (void)in;
     load.OnBlockStart();
-    int32_t q15[2 * TESSERA_CORE_BLOCK]; // (mix_block clips to Q15 already: the float stays in -1..1)
-    for (size_t i = 0; i < size; i += TESSERA_CORE_BLOCK) {
-        tessera_core_block(q15);
-        for (size_t k = 0; k < TESSERA_CORE_BLOCK && i + k < size; k++) {
+    int32_t q15[2 * TESS_CORE_BLOCK];    // (mix_block clips to Q15 already: the float stays in -1..1)
+    for (size_t i = 0; i < size; i += TESS_CORE_BLOCK) {
+        tess_core_keys(figure_keys(tess_core_frames(), tess_core_rate()));
+        tess_core_block(q15);
+        for (size_t k = 0; k < TESS_CORE_BLOCK && i + k < size; k++) {
             out[0][i + k] = (float)q15[2 * k] * (1.0f / 32768.0f);       // Q15 -> -1..1
             out[1][i + k] = (float)q15[2 * k + 1] * (1.0f / 32768.0f);
         }
@@ -86,21 +102,16 @@ int main(void)
     tessera_memory_init();               // first: ITCM and DTCM, before any of Tessera's code runs
     hw.Init(true);                       // true: the CPU at its full 480 MHz
     sdram_clear();
-    hw.SetAudioBlockSize(TESSERA_CORE_BLOCK);
+    hw.SetAudioBlockSize(TESS_CORE_BLOCK);
     hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
     load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
-    tessera_core_init();
+    tess_core_boot();                    // the device's power-on (its tracks, BPM, scales), stopped
     tessera_core_screen_init();
     tessera_core_screen(screen_buf);     // the bring-up card (and_testcard)
     hw.StartAudio(AudioCallback);
 
-    uint32_t last = System::GetNow();
     for (;;) {
         uint32_t now = System::GetNow();
-        while (last != now) {            // Tessera's clock, one tick a millisecond
-            tessera_core_tick_ms();
-            last++;
-        }
         hw.SetLed((now / 500u) & 1u);    // alive: a slow blink
     }
 }
