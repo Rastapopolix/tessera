@@ -984,21 +984,44 @@ On a generator track, EVOLVE mutates the phrase every few bars.
 | 3 | **AMOUNT** (0–100 %) | How much changes each time. |
 | 4 | **ROLL** (1–128) | The track's seed. While playing, a new seed starts on the track's next bar line (until then the new number shows dotted under the one playing, then solid in its place). The screen says **NEW LINE** (**NEW LINE AT BAR** while playing), as the new seed also changes values on the generator's other pages. Hold **OCT-** and turn **KNOB 1** for **ROLL ALL**: right and every generator track gets a new seed at once; turn left to get the seeds from before it back, and once more for those from before the ROLL ALL before it (two levels). STEP tracks keep theirs. |
 
-With LOCK up, Turing's loop is its LENGTH long; Markov's and Morph's loops are as long as PATTERN's **LEN**. At LOCK 0
-Markov and Morph still remember the pass they just played: turn LOCK up while playing and that pass loops at once.
+- **Loop lengths:** with LOCK up, Turing's loop is its LENGTH long; Markov's and Morph's loops are as long as
+  PATTERN's **LEN**.
+- **Catch a pass:** at LOCK 0, Markov and Morph still remember the pass they just played. Turn LOCK up while playing
+  and that pass loops at once.
 
-**HOLD** (**GLO** + **D4**, while held; tap twice to latch, again to let go) is LOCK 100 for every track at once, as
-a key to play: no round of EVERY (a STEP track's STEP EVOLVE too), Turing as PROB 0, Markov's and Morph's recorded
-phrase every pass (at LOCK 0, the last pass they played), Constellation's loop, Atlas' CHAOS as this bar.
-Let go and they carry on from where they are. It is not saved.
+> **Try this:** put TURING on a track, set EVERY to 4 and AMOUNT to 30 %. Every four bars the line changes a little.
+> When you hear one you like, hold **GLO** + **D4** (HOLD) to keep it, or hold **REC** to [print](#print-and-keep) it.
+
+#### HOLD: freeze every track's line
+
+**HOLD** is **GLO** + **D4**: held, or tap twice to latch and once more to let go. It is LOCK 100 for every track at
+once, as a key to play:
+
+- no round of EVERY (a STEP track's STEP EVOLVE too);
+- Turing plays as at PROB 0;
+- Markov and Morph play their recorded phrase every pass (at LOCK 0, the last pass they played);
+- Constellation plays its loop;
+- Atlas' CHAOS stays as this bar.
+
+Let go and they carry on from where they are. HOLD is not saved.
+
+#### GRAVITY: drift, then come home
 
 **GRAVITY** (OCT- held, KNOB 4; the same GRAVITY as the SOURCE layer's) lets the phrase drift and then come home.
-Home is the generator as you last set it: a knob, ROLL, MODE or a loaded project. At GRAVITY %, a round of EVERY
-moves the generator a step back toward home instead of changing it. Turing flips a changed bit back, Euclid's
-rotation and pulses step back, Markov's LEAP, Atlas' X and Y, Bounce's angle and Morph's position move back. Awake,
-Poly, Quad, Series and Chord put a changed value back, and Constellation lets no star go. 0 is off; at 100 it goes
-home and stays there. With a SOURCE, GRAVITY plays the source instead (above), and with FORM on, the sections play
-as they are.
+**Home** is the generator as you last set it: by a knob, ROLL, MODE or a loaded project.
+
+- At GRAVITY %, a round of EVERY moves the generator a step back toward home instead of changing it.
+- 0 is off. At 100 it goes home and stays there.
+- With a SOURCE, GRAVITY plays the source instead (see [STEP as seed](#turing-euclid-markov-and-morph-source-keep-gravity-step-as-seed)),
+  and with FORM on, the sections play as they are.
+
+| Generator | A step back home |
+|---|---|
+| Turing | flips a changed bit back |
+| Euclid | its rotation and pulses step back |
+| Markov, Atlas, Bounce, Morph | LEAP, X and Y, the angle, the position move back |
+| Awake, Poly, Quad, Series, Chord | put a changed value back |
+| Constellation | lets no star go |
 
 ### STEP EVOLVE
 
@@ -1014,8 +1037,8 @@ On a **STEP** track, EVOLVE varies the steps you wrote, as they play, without ch
 | 3 | **AMOUNT** (0–100 %) | How many steps change, up to half: a note moved by a degree or two or an octave, a step dropped, two notes swapped, a ghost note in a rest. |
 | 4 | **CLEAR** | Shows how many steps are changed now; turn it to go back to the steps as written. |
 
-Hold **REC** to keep the changes playing: they become the steps (KEPT n STEPS). EDIT held undoes it. Switching
-pattern clears the changes.
+- Hold **REC** to keep the changes playing: they become the steps (KEPT n STEPS). EDIT held undoes it.
+- Switching pattern clears the changes.
 
 **HOW** (OCT- held on EVOLVE, KNOB 4) says what kind of change a round makes. It is saved with the project.
 
@@ -1027,11 +1050,14 @@ pattern clears the changes.
 
 Changing HOW puts the steps back as written. REC held keeps any of them, SERIAL's whole phrase included.
 
-The EVOLVE page's picture shows the steps across the phrase, by pitch, under the bars left until the next round. A
-step playing as written is drawn plain; a changed one has the step as written drawn hollow where it was: a ratchet is split into its hits, a passing or ghost note sits in a rest, a dropped note leaves only the
-hollow one. Under them: HOW, or SERIAL's transform this round (BACKWARDS, UPSIDE DOWN, ROTATE n, HALF SPEED), and
-**HOME**, how far the steps are from as written (empty: all as written). On NOTES, a changed step's note as it
-plays now is dashed, beside the note you wrote.
+**The picture** shows the steps across the phrase, by pitch, under the bars left until the next round:
+
+- A step playing as written is drawn plain.
+- A changed one has the step as written drawn hollow where it was: a ratchet is split into its hits, a passing or ghost
+  note sits in a rest, and a dropped note leaves only the hollow one.
+- Under them: HOW, or SERIAL's transform this round (BACKWARDS, UPSIDE DOWN, ROTATE n, HALF SPEED), and **HOME**, how
+  far the steps are from as written (empty: all as written).
+- On NOTES, a changed step's note as it plays now is dashed, beside the note you wrote.
 
 <p align="center"><img src="assets/gallery/gen_evolve.png" alt="EVOLVE" width="240"> <img src="assets/gallery/step_evolve.png" alt="STEP EVOLVE" width="240"></p>
 
@@ -1297,15 +1323,28 @@ project with a mod onto MOD DEP.
 
 Hold **OCT-** and turn **KNOB 1** right for random SHIFT, DROP and HUMAN; turn it left to put them back (as on GEN).
 
-**HOLD** (OCT- held, KNOB 4: OFF, or T1 to T4): a sample and hold for FOLLOW. The followed note is taken only when
-the HOLD track plays a note, and this track keeps playing that note, in its own rhythm, until the HOLD track plays
-again. So a bass can take a TURING line's note once a bar: FOLLOW the TURING track, and HOLD on a track that plays once
-a bar (a STEP track, or a EUCLID with one pulse; set it to SOUND OFF with its channel OFF to keep it silent). HOLD on a
-track with random hits (DROP, BRANCH) samples at random moments. OFF: a new note on each of this track's own hits, as
-before. HOLD is saved with the project; older firmware loads the project without it.
+**FOLLOW's second layer** (hold **OCT-**):
 
-**HOW** (OCT- held, KNOB 2) says what FOLLOW does with the other track's note. SHIFT still moves the result by scale
-steps.
+| Knob (OCT- held) | Setting | What it does |
+|---|---|---|
+| 2 | **HOW** | What FOLLOW does with the other track's note (table below). SAME is the default. |
+| 3 | **RHYTHM** | When it plays: **OWN** (the default), **SOURCE** or **BOTH** (below). |
+| 4 | **HOLD** (OFF, T1 to T4) | A sample and hold for FOLLOW (below). |
+
+#### FOLLOW HOLD: take the note now and then
+
+The followed note is taken only when the HOLD track plays a note, and this track keeps playing that note, in its own
+rhythm, until the HOLD track plays again. OFF takes a new note on each of this track's own hits.
+
+- **Example:** a bass can take a TURING line's note once a bar. FOLLOW the TURING track, and set HOLD to a track that
+  plays once a bar (a STEP track, or a EUCLID with one pulse; set it to SOUND OFF with its channel OFF to keep it
+  silent).
+- HOLD on a track with random hits (DROP, BRANCH) samples at random moments.
+- HOLD is saved with the project.
+
+#### FOLLOW HOW: what to play
+
+SHIFT still moves the result by scale steps.
 
 | HOW | What the following track plays |
 |---|---|
@@ -1316,16 +1355,23 @@ steps.
 | **CANON1** to **CANON8** | The other track's note from that many notes ago: a round. It stays silent until the other track has played that many. HOLD does nothing here. |
 | **HARM** | The other track's note counted into the chord a CHORD track plays: each note of the scale it goes up, the chord's next note up; SHIFT moves by chord notes. No CHORD track: as SAME. See [HARM: a harmonizer](#harm-a-harmonizer). |
 
-**RHYTHM** (OCT- held, KNOB 3) says when it plays. **OWN**: on this track's own hits. **SOURCE**: only
-when the followed track has played a note, so the two move together; this track's own rhythm is left out. **BOTH**:
-its own hits and the other track's. Follow a track with a lower number for the tightest timing: a lower track's note
-is that step's, a higher one's lands a step later. With BASS, the beats 1 and 3 still decide.
+#### FOLLOW RHYTHM: when to play
 
-SAME and OWN are the defaults: the other track's note, on this track's own hits. HOW and RHYTHM are saved with the project;
-older firmware (3.3 and before) loads it with SAME and OWN.
+| RHYTHM | The following track plays |
+|---|---|
+| **OWN** (the default) | on this track's own hits |
+| **SOURCE** | only when the followed track has played a note, so the two move together; this track's own rhythm is left out |
+| **BOTH** | on its own hits and the other track's |
 
-On an ATLAS track only DROP and HUMAN apply: SHIFT, FOLLOW and FLRSH would change which drum plays. On a STEP track
-TWEAK holds HUMAN alone.
+- **Tightest timing:** follow a track with a lower number. A lower track's note is that step's; a higher one's lands a
+  step later.
+- With BASS, the beats 1 and 3 still decide.
+- HOW and RHYTHM are saved with the project.
+
+**Which tracks use TWEAK:** on an ATLAS track only DROP and HUMAN apply (SHIFT, FOLLOW and FLRSH would change which drum
+plays). On a STEP track, TWEAK holds HUMAN alone.
+
+**Older firmware** loads a project without its FOLLOW HOLD. 3.3 and before load HOW and RHYTHM as SAME and OWN.
 
 ---
 
@@ -1380,11 +1426,10 @@ Ratchets: a step's notes played again within the step. And HUMAN: each step a li
 | 3 | **SHAPE** | Where the hits fall: **EVEN** in equal parts, **ACCEL** closer and closer (a roll that speeds up), **DECEL** further and further apart (a bounce). |
 | 4 | **HUMAN** (0–60 ms) | Plays each step a little late, as a player behind the beat: up to this many ms, a new amount each step, never early and never more than a quarter of the step. The same each time the piece plays. 0 keeps the grid. Also a cord destination (H TIME). |
 
-On a STEP track TIMING holds SHAPE and HUMAN: each step has its own Ratchet (below). HUMAN adds to a step's Nudge;
-an early Nudge stays as it is.
-
-Projects saved before HUMAN had its own knob keep their feel: a generator track's TWEAK HUMAN becomes this HUMAN at a
-fifth of it (TWEAK 100: 20 ms).
+- On a STEP track, TIMING holds SHAPE and HUMAN: each step has its own Ratchet (below).
+- HUMAN adds to a step's Nudge; an early Nudge stays as it is.
+- Projects saved before HUMAN had its own knob keep their feel: a generator track's TWEAK HUMAN becomes this HUMAN at a
+  fifth of it (TWEAK 100: 20 ms).
 
 <p align="center"><img src="assets/gallery/gen_timing.png" alt="TIMING, x4 ACCEL" width="240"> <img src="assets/gallery/gen_timing_split.png" alt="TIMING with OCT- held: SPLIT and HOW" width="240"></p>
 
@@ -1402,13 +1447,22 @@ grid: a 1/8 track now and then plays a pair of 1/16s, or a note pushed onto the 
 - **Gates:** each half gets half of the step's gate, as with a RATCH x2 step, and so does a pushed note.
 - **The tosses** have their own stream: SPLIT never changes which notes a generator picks. The same piece replays the same
   from PLAY; ROLL gives new tosses.
-- **Left as written:** the bar's first step, so the downbeat stays on the grid, and the pattern's first step; a generator
-  track with RATCH above x1 (even at its lower CHANCE), a STEP track's step with a Ratchet; an early Nudge (a late one adds
-  to PUSH, as HUMAN does); a tie, a slide and the step slid into; timed notes; and everything while the track records.
-  Notes that LENGTH holds (FIXED, HIT) can PUSH but not DOUBLE.
+- **Notes that LENGTH holds** (FIXED, HIT) can PUSH but not DOUBLE.
 
-A project with SPLIT plays on firmware before 3.3 without it. A project with a cord onto SPLIT can't be read by that
-firmware at all, as with every new cord destination.
+<details>
+<summary>What SPLIT leaves as written</summary>
+
+- the bar's first step, so the downbeat stays on the grid, and the pattern's first step;
+- a generator track with RATCH above x1 (even at its lower CHANCE), and a STEP track's step with a Ratchet;
+- an early Nudge (a late one adds to PUSH, as HUMAN does);
+- a tie, a slide and the step slid into;
+- timed notes;
+- everything, while the track records.
+
+</details>
+
+**Older firmware:** a project with SPLIT plays on firmware before 3.3 without it. A project with a cord onto SPLIT
+can't be read by that firmware at all, as with every new cord destination.
 
 ### Rolls and feel: which one to use
 
@@ -1440,22 +1494,33 @@ How they combine:
 > **In short:** per-step details for written patterns: a roll on one step (Ratchet), a step pushed slightly early or
 > late (Nudge), and a note that climbs a little higher each time round (Accumulate).
 
-On a STEP track's NOTES page, **OCT+** on a note opens its sheet (on the drum grid, OCT+ on a hit). On an empty
-step it opens nothing and the screen says **NOTHING THERE**: KNOB 2 or a key places a note (on the grid, KNOB 3 or a
-white key sets a hit). Held, OCT+ opens the pattern's sheet instead; once the hold is long enough the screen says
-**PATTERN SHEET**, so you know which one you get when you let go. Besides Length,
-Velocity and Chance it holds:
+**Opening a note's sheet:**
 
-- **Ratchet** (x1–x8): the step plays that many times in its own step, placed by TIMING's SHAPE.
-- **Nudge** (−8/16 to +7/16): the step plays that many sixteenths of a step late or early. An early step plays near
-  the end of the step before, and across the loop too, but not across a pattern change or a song's turn, nor while
-  recording: there it plays on its line.
-- **Accumulate** (−7 to +7, Off): the step's notes move that many scale degrees further each time the pattern comes
-  round, so a short loop climbs or falls on its own. They stay within the track's Accum limit and do what its Accum
-  mode says there (the pattern's sheet, above). PLAY and a new pattern start them again from the notes as written.
-  Every note of a chord moves, in the track's scale (with QNT OFF, in semitones). A TIE holds what played before
-  it, and drum hits and recorded notes do not move. On NOTES a small caret over a note points up when it
-  climbs, down when it falls; the notes are drawn as written.
+- On a STEP track's NOTES page, tap **OCT+** on a note (on the drum grid, on a hit).
+- On an empty step it opens nothing and the screen says **NOTHING THERE**: KNOB 2 or a key places a note (on the grid,
+  KNOB 3 or a white key sets a hit).
+- Held, OCT+ opens the pattern's sheet instead. Once the hold is long enough the screen says **PATTERN SHEET**, so you
+  know which one you get when you let go.
+
+Besides Length, Velocity and Chance, the note's sheet holds:
+
+| Row | Range | What it does |
+|---|---|---|
+| **Ratchet** | x1–x8 | The step plays that many times in its own step, placed by TIMING's SHAPE. |
+| **Nudge** | −8/16 to +7/16 | The step plays that many sixteenths of a step early or late. |
+| **Accumulate** | −7 to +7, Off | The step's notes move that many scale degrees further each time the pattern comes round, so a short loop climbs or falls on its own. |
+
+**Nudge:** an early step plays near the end of the step before, and across the loop too. It does not cross a pattern
+change or a song's turn, and not while recording: there it plays on its line.
+
+**Accumulate:**
+
+- The notes stay within the track's **Accum limit** and do what its **Accum mode** says there (the pattern's sheet,
+  above).
+- PLAY and a new pattern start them again from the notes as written.
+- Every note of a chord moves, in the track's scale (with QNT OFF, in semitones).
+- A TIE holds what played before it. Drum hits and recorded notes do not move.
+- On NOTES, a small caret over a note points up when it climbs and down when it falls; the notes are drawn as written.
 
 <p align="center"><img src="assets/gallery/sheet_note.png" alt="A note's sheet, Ratchet x3 and Nudge +2/16" width="240"></p>
 
@@ -1479,13 +1544,15 @@ plays in. KNOB 2 steps through them:
 | **FIRST** | in the first pass only |
 | **!FIRST** | in every pass but the first |
 
-Each track counts the passes of its own pattern (its own LEN) from PLAY; a pattern change, and each section of a
-song, start the count again at the first. A step whose condition is met then rolls its Chance as ever. On the drum
-grid the condition is the step's: every hit of that step shares it.
+- **Counting passes:** each track counts the passes of its own pattern (its own LEN) from PLAY. A pattern change, and
+  each section of a song, start the count again at the first.
+- A step whose condition is met then rolls its Chance as usual.
+- On the drum grid the condition is the step's: every hit of that step shares it.
+- Conditions are saved with the project. An older project plays every step.
 
-**FILL** is held with **GLO** + **E4** (on MIXER, PERF or LANDSCAPE, E4 alone), for as long as the key is held: a fill on the last bar,
-or a break with !FILL on the beat that drops out. Conditions are saved with the project; an older project plays
-every step as before.
+**FILL** is held with **GLO** + **E4** (on MIXER, PERF or LANDSCAPE, E4 alone), for as long as the key is held. Use it
+for a fill on the last bar, or a break with !FILL on the beat that drops out. FILL can also be held by a mod: see
+[FILL from a mod](#mods-the-modulation-cords).
 
 ---
 
@@ -1504,16 +1571,13 @@ off at 0.
 | 2 | **RESTS** (0–100 %) | How often the music rests: 8 to 18 s with the generator tracks silent (a CHORD track's held chord goes on), about every 4 minutes at 100, every 20 near 0, sooner while the tide is sparse. |
 | 3 | **LEVEL** (−100 to +100) | The energy by hand: the tide swings round it. Up is busier and louder, down is sparser and softer, as above. 0 is the tracks as set. |
 | 4 | **REST** | The seconds left of a rest. |
+| 1, OCT- held | **DEPTH** (0–100 %) | How much energy moves the selected track. 100 is all of it. 0 makes the track an anchor, a drone or a bass that plays as set through the tide, LEVEL and the rests. |
 
-Energy also sets how much EVOLVE changes: half its AMOUNT at the sparse end, half as much again at the full end.
-
-Hold **OCT-** for **DEPTH** (KNOB 1, 0–100 %): how much energy moves the selected track. 100 is all of it. 0 makes
-the track an anchor, a drone or a bass that plays as set through the tide, LEVEL and the rests.
-
-The picture shows a turn of the tide round LEVEL and, while playing, where it is now.
-
-PLAY starts the tide from the project's seeds, so a piece plays the same each time. ENERGY is also a cord source in
-MODS: send it to a filter or a send and the sound follows the tide too.
+- Energy also sets how much EVOLVE changes: half its AMOUNT at the sparse end, half as much again at the full end.
+- The picture shows a turn of the tide round LEVEL and, while playing, where it is now.
+- PLAY starts the tide from the project's seeds, so a piece plays the same each time.
+- ENERGY is also a cord source in [MODS](#mods-the-modulation-cords): send it to a filter or a send and the sound
+  follows the tide too.
 
 <p align="center"><img src="assets/gallery/gen_energy.png" alt="ENERGY" width="240"></p>
 
@@ -1524,17 +1588,15 @@ MODS: send it to a filter or a send and the sound follows the tide too.
 > **In short:** when a generator plays something you love, hold REC: its last bars become ordinary steps that you can
 > edit, and that never change unless you change them.
 
-Hold **REC** on a generator track to **print**: what the generator played in its last bars goes into the track's
-STEP pattern (1, 2 or 4 bars, as many as the notes span), and the track switches to STEP and plays on from the same
-place. Hold EDIT to undo, which puts the generator back.
-
-On an **ARP** track it prints what the arpeggio played (not the keys you held) the same way: the track switches
-to STEP, and EDIT held brings the ARP back (hold the keys again to restart it).
+| Track | Hold **REC** and | Undo (hold **EDIT**) |
+|---|---|---|
+| A generator | What it played in its last bars goes into the track's STEP pattern (1, 2 or 4 bars, as many as the notes span). The track switches to STEP and plays on from the same place. | Puts the generator back. |
+| **ARP** | What the arpeggio played (not the keys you held) is printed the same way, and the track switches to STEP. | Brings the ARP back (hold the keys again to restart it). |
+| STEP, with STEP EVOLVE's changes playing | Keeps the changes. | Undoes it. |
+| STEP, without them | Captures what you played on the keys in the last bars. | |
 
 - Steps written by hand already there: **REPLACE STEPS?** OCT+ prints over them, OCT- keeps them.
 - Recorded notes there: **CLEAR TO PRINT**.
-- On a STEP track playing STEP EVOLVE's changes, REC held keeps the changes instead.
-- On a STEP track without them, REC held captures what you played on the keys in the last bars.
 
 ---
 
