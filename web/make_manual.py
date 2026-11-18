@@ -159,6 +159,9 @@ main pre {{ background: var(--surf); padding: 12px; overflow-x: auto; }}
 main pre code {{ padding: 0; }}
 main blockquote {{ margin: 12px 0; padding: 8px 14px; border-left: 4px solid var(--ink); background: var(--surf); }}
 main blockquote p {{ margin: 0; }}
+main details {{ margin: 12px 0; padding: 6px 14px; border: 1px solid var(--line); }}
+main details[open] {{ background: var(--surf); }}
+main summary {{ cursor: pointer; color: var(--ink); }}
 main hr {{ border: 0; border-top: 1px solid var(--line); margin: 32px 0; }}
 .next {{ margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); }}
 @media (max-width: 900px) {{
