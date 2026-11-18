@@ -130,7 +130,7 @@ later) works with Tessera 3.3 and later only: earlier Tessera reports an identit
   track (MENU > COLOR). **GROUND LIGHT** puts it all on warm paper instead (new in 3.5).
 * **Screen reader**: every page, knob and message spoken through your computer's screen reader.
 
-New to Tessera? **[Getting started](GETTING_STARTED.md)** walks through your first half hour. The **[manual](MANUAL.md)** (also [on the site](https://rastapopolix.github.io/tessera/manual/), with search) covers every page, knob and shortcut, with a glossary of the terms at the end;
+New to Tessera? **[Getting started](GETTING_STARTED.md)** walks through your first half hour. The **[manual](MANUAL.md)** (also [on the site](https://rastapopolix.github.io/tessera/manual/), with search, and [as a PDF](https://rastapopolix.github.io/tessera/manual/tessera-manual.pdf) to print or read offline) covers every page, knob and shortcut, with a glossary of the terms at the end;
 **[RECIPES.md](RECIPES.md)** has step-by-step patches and tips. **[GENERATIVE.md](GENERATIVE.md)** explains the ideas
 behind generative patching, from modular synths to norns, and where each generator comes from.
 

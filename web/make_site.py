@@ -8,6 +8,7 @@
   media/gallery/, media/brand/      its pictures: assets/gallery (tests/gallery_render.c), assets/brand (tools/gen_brand.py)
   media/video/                      the demo video and its poster: assets/video (tools/demo_video.py)
   manual/, start/                   MANUAL.md and GETTING_STARTED.md as pages (web/make_manual.py: needs markdown-it-py)
+  manual/tessera-manual.pdf         the manual as a PDF: docs/manual/tessera-manual.pdf (tools/gen_manual_pdf.py)
   firmware/tessera-VER.fwsc    the package, both cores (+ LICENSE, LICENSING.md, LICENSES/: the
                                     packages hold JieLi SDK files under Apache-2.0, see LICENSING.md)
   firmware/tessera-VER-1core.fwsc the same release built with MELODEE_DUAL_CORE=0, for FM-1s that crash
@@ -272,6 +273,7 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
                     shutil.copy(f, dest / f.name)
         import make_manual                          # the manual and Getting started, as pages (web/make_manual.py)
         make_manual.make(out)
+        shutil.copy(HERE.parent / make_manual.PDF_SRC, out / "manual" / make_manual.PDF_NAME)   # (its PDF link)
     if sim and not installer_only:
         copy_sim(sim, out / "webapp" / "sim")
     print(f"site: {out}: webapp/installer ({len(html)} B), webapp/editor, firmware/{name} ({len(raw)} B) and "
