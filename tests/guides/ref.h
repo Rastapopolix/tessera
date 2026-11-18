@@ -507,6 +507,50 @@ static const gstep_t G_TIMING[] = {
     {38500, 41500, 600, "KNOB 3", "ACCEL", "Turn KNOB 3: SHAPE ACCEL, rolls that speed up", 1},
     {49500, 0, 0, 0, 0, "KNOB 4, HUMAN, plays each step a little late, like a player behind the beat"},
 };
+/* chill trap: 70 BPM (half time), F minor; an 808 written in STEP as track 1 (the step that rolls is a hat), a soft
+ * sub on EUCLID, a pad, a harp line on TURING */
+static void g_chilltrap_scene(void)
+{
+    song.g[G_BPM] = 70;
+    scale(5, SCL_MIN, 0);
+    sends(90, 70, 70, 50);
+    sound(0, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_CH, 0, L_CH, 0, L_SD | L_CH, 0, L_CH, L_BD, L_CH, 0, L_CH, 0};
+        static const uint8_t V[16] = {104, 0, 60, 0, 64, 0, 58, 0, 100, 0, 62, 80, 60, 0, 66, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(0, i, L[i], V[i]);
+        trk[0].p[P_SLEN] = 16;
+    }
+    tx(0, TX_MODE, TESS_ENG_OFF); trk[0].p[P_SDIV] = DIV_16;
+    mixer(0, 92, 0, 12, 0);
+    sound(1, ENGI_TRIO, TR_SUB_BASS);
+    trk[1].p[P_SDIV] = DIV_8;
+    gen(1, TESS_ENG_EUCLID, 30);
+    tx(1, TX_EUC_STEPS, 16); tx(1, TX_EUC_PULSES, 3); tx(1, TX_EUC_ROT, 0); tx(1, TX_TW_SHIFT, -12);
+    mixer(1, 94, 0, 0, 0);
+    sound(2, ENGI_ORACLE, OR_WARM_PAD);
+    trk[2].p[P_CHRD] = 1;
+    gen(2, TESS_ENG_CHORD, 17);
+    tx(2, TX_CH_PROG, GEN_CH_TWO); tx(2, TX_CH_BARS, 2); tx(2, TX_CH_HIT, GEN_CH_HOLD); tx(2, TX_CH_OCT, -1);
+    mixer(2, 62, -20, 80, 0);
+    sound(3, ENGI_FM6, FX_HARP);
+    trk[3].p[P_SDIV] = DIV_8;
+    gen(3, TESS_ENG_TURING, 59);
+    tx(3, TX_TUR_PROB, 12); tx(3, TX_TW_DROP, 50);
+    mixer(3, 74, 25, 70, 40);
+}
+static const gstep_t G_RATCHET[] = {
+    {0, 0, 0, 0, 0, "One step can roll: a ratchet plays it again, inside its own step"},
+    {3500, 6500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: track 1 is a drum pattern, written in STEP"},
+    {10000, 13000, 600, "SELECT", "NOTE", "Turn SELECT: NOTE, the drum grid", 1},
+    {16500, 19500, 600, "KNOB 2", "CH ROW", "Turn KNOB 2 to the CH row, the hats", 3},
+    {23000, 26000, 1200, "KNOB 1", "STEP 15", "Turn KNOB 1 to step 15", 14},
+    {29500, 32500, 200, "OCT+", "SHEET", "Tap OCT+: that hit's sheet"},
+    {36000, 39000, 900, "KNOB 1", "RATCHET", "Turn KNOB 1 to RATCHET", 3},
+    {42500, 45500, 900, "KNOB 2", "X4", "Turn KNOB 2 to X4: the hat plays four times in its step", 3},
+    {49000, 52000, 200, "OCT-", "CLOSE", "Tap OCT-, and listen: a hat roll near the end of each bar"},
+    {59000, 0, 0, 0, 0, "TIMING's SHAPE makes a STEP track's rolls speed up or slow down"},
+};
 static void guide_ref(const char *out, FILE *tsv)
 {
     G_RUN("r-landscape", "A SEA TO WATCH", "MOSAIC", 72, 4, g_neoclassical_scene, G_LANDSCAPE);   /* neo-classical */
@@ -518,6 +562,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-tweak", "RESHAPE A LINE", "GREEN", 46, 4, g_folktronica_scene, G_TWEAK);   /* folktronica */
     G_RUN("r-follow", "ONE TRACK FOLLOWS ANOTHER", "MOSAIC", 56, 4, g_cinematic_scene, G_FOLLOW);   /* cinematic */
     G_RUN("r-timing", "ROLLS AND FEEL", "GREEN", 58, 4, g_boombap_scene, G_TIMING);   /* boom bap */
+    G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
     G_RUN("r-mod-first", "YOUR FIRST MOD", "LILAC", 65, 4, g_triphop_scene, G_MOD_FIRST);   /* trip-hop */
