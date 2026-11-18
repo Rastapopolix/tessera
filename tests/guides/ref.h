@@ -471,6 +471,42 @@ static const gstep_t G_FOLLOW[] = {
     {33500, 36500, 1200, "KNOB 1", "SHIFT -7", "While following, SHIFT counts scale steps: KNOB 1 to -7, an octave down", 5},
     {44000, 0, 0, 0, 0, "The bass now doubles the harp an octave down, in its own rhythm"},
 };
+/* boom bap: 90 BPM with swing, C minor; a 909 on ATLAS as track 1 (the one that ratchets), a sparse sub on TURING,
+ * organ chords on the beat, a flute line now and then */
+static void g_boombap_scene(void)
+{
+    song.g[G_BPM] = 90;
+    song.g[G_SWING] = 30;
+    scale(0, SCL_MIN, 0);
+    sends(70, 55, 60, 40);
+    sound(0, ENGI_DRUM, DK_909_KIT);
+    gen(0, TESS_ENG_GRIDS, 44);
+    mixer(0, 94, 0, 12, 0);
+    sound(1, ENGI_TRIO, TR_SUB_BASS);
+    trk[1].p[P_SDIV] = DIV_8;
+    gen(1, TESS_ENG_TURING, 12);
+    tx(1, TX_TUR_PROB, 10); tx(1, TX_TW_SHIFT, -12); tx(1, TX_TW_DROP, 55);
+    mixer(1, 92, 0, 0, 0);
+    sound(2, ENGI_FM6, FX_ORGAN);
+    trk[2].p[P_CHRD] = 2;
+    gen(2, TESS_ENG_CHORD, 20);
+    tx(2, TX_CH_PROG, GEN_CH_TWO); tx(2, TX_CH_BARS, 1); tx(2, TX_CH_HIT, GEN_CH_BEAT);
+    mixer(2, 64, -20, 40, 0);
+    sound(3, ENGI_FM6, V_FLUTE);
+    trk[3].p[P_SDIV] = DIV_8;
+    gen(3, TESS_ENG_TURING, 53);
+    tx(3, TX_TUR_PROB, 15); tx(3, TX_TW_DROP, 70);
+    mixer(3, 72, 25, 60, 40);
+}
+static const gstep_t G_TIMING[] = {
+    {0, 0, 0, 0, 0, "TIMING: rolls and feel for a generator track. Here, the drums"},
+    {3500, 6500, 200, "ARP", "EVOLVE", "Tap ARP: EVOLVE"},
+    {10000, 13000, 1200, "SELECT", "TIMING", "Turn SELECT back twice: TIMING", -2},
+    {17000, 20000, 900, "KNOB 1", "RATCH x4", "Turn KNOB 1: RATCH x4, each step played four times", 3},
+    {26000, 29000, 6000, "KNOB 2", "CHANCE", "Turn KNOB 2: CHANCE down to 30 %, so only some steps roll", -70},
+    {38500, 41500, 600, "KNOB 3", "ACCEL", "Turn KNOB 3: SHAPE ACCEL, rolls that speed up", 1},
+    {49500, 0, 0, 0, 0, "KNOB 4, HUMAN, plays each step a little late, like a player behind the beat"},
+};
 static void guide_ref(const char *out, FILE *tsv)
 {
     G_RUN("r-landscape", "A SEA TO WATCH", "MOSAIC", 72, 4, g_neoclassical_scene, G_LANDSCAPE);   /* neo-classical */
@@ -481,6 +517,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-energy", "ENERGY BY HAND", "SUNSET", 54, 4, g_afrohouse_scene, G_ENERGY);   /* afro house */
     G_RUN("r-tweak", "RESHAPE A LINE", "GREEN", 46, 4, g_folktronica_scene, G_TWEAK);   /* folktronica */
     G_RUN("r-follow", "ONE TRACK FOLLOWS ANOTHER", "MOSAIC", 56, 4, g_cinematic_scene, G_FOLLOW);   /* cinematic */
+    G_RUN("r-timing", "ROLLS AND FEEL", "GREEN", 58, 4, g_boombap_scene, G_TIMING);   /* boom bap */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
     G_RUN("r-mod-first", "YOUR FIRST MOD", "LILAC", 65, 4, g_triphop_scene, G_MOD_FIRST);   /* trip-hop */
