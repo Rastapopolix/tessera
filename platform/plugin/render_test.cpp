@@ -5,6 +5,7 @@
  *   - with the host's transport playing at 48 kHz, STILL TIDE (the project it starts with) makes sound;
  *   - a note in on the selected track changes the output;
  *   - the state is a .tsp record (TSP1) and loads back;
+ *   - the parameters: MASTER and MACRO 1..4, automation in at its sample, the value read back;
  *   - (Linux, with a DISPLAY, e.g. under xvfb-run) the window opens in a parent window and shows the FM-1's screen;
  *   - optionally writes the first seconds as a 16-bit WAV (third argument) to listen to.
  * usage: tessera-render-test path/to/Tessera.clap [seconds] [out.wav] [window.ppm] */
@@ -213,6 +214,39 @@ int main(int argc, char **argv)
         ev.notes.push_back(off);
         p->process(p, &proc);
         ev.notes.clear();
+    }
+
+    // parameters: MASTER + MACRO 1..4; an automation event sets MACRO 2
+    auto *pa = (const clap_plugin_params_t *)p->get_extension(p, CLAP_EXT_PARAMS);
+    CHECK(pa && pa->count(p) == 5, "5 parameters");
+    if (pa && pa->count(p) == 5)
+    {
+        clap_param_info_t info;
+        pa->get_info(p, 2, &info);
+        CHECK(!std::strcmp(info.name, "MACRO 2") && (info.flags & CLAP_PARAM_IS_AUTOMATABLE), "MACRO 2 automatable");
+        struct PEvents
+        {
+            clap_event_param_value_t e;
+            static uint32_t size(const clap_input_events_t *) { return 1; }
+            static const clap_event_header_t *get(const clap_input_events_t *l, uint32_t)
+            {
+                return &static_cast<PEvents *>(l->ctx)->e.header;
+            }
+        } pe{};
+        pe.e.header = {sizeof pe.e, 100, CLAP_CORE_EVENT_SPACE_ID, CLAP_EVENT_PARAM_VALUE, 0};
+        pe.e.param_id = 2;
+        pe.e.note_id = pe.e.port_index = pe.e.channel = pe.e.key = -1;
+        pe.e.value = 73;
+        clap_input_events_t pin = {&pe, PEvents::size, PEvents::get};
+        proc.in_events = &pin;
+        p->process(p, &proc);
+        proc.in_events = &in;
+        double v = -1;
+        pa->get_value(p, 2, &v);
+        char txt[64];
+        pa->value_to_text(p, 0, 1023, txt, sizeof txt);
+        std::printf("params: MACRO 2 = %.0f after automation; MASTER 1023 reads \"%s\"\n", v, txt);
+        CHECK(v == 73, "MACRO 2 should be 73 (%.0f)", v);
     }
 
     // state: a .tsp record that loads back

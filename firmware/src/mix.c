@@ -105,8 +105,18 @@ static uint32_t seq_beat_samples(void)
  * factor (Q12) first stretches the samples, its 1/4096ths of a sample carried too; all in 32 bits (the device's libgcc
  * has no 64-bit / or %) */
 static uint32_t int_clock_rem, int_clock_frac;
+#ifdef TESS_HOST_CLOCK
+/* The plugin only (platform/plugin/tess_core.c; never defined for the FM-1): while a DAW plays, its beat position
+ * gives CLK INT's units, so Tessera stays locked to the DAW's tempo, fractions and changes included */
+static uint8_t tess_host_clock;
+static uint32_t tess_host_units(uint32_t n);
+#endif
 static uint32_t int_clock_units(uint32_t n)
 {
+#ifdef TESS_HOST_CLOCK
+    if (tess_host_clock)
+        return tess_host_units(n);
+#endif
     uint32_t per = (uint32_t)FS * 60u, units = 0;
     if (seq_tempo_q12 != 4096u) {
         uint32_t q = n * seq_tempo_q12 + int_clock_frac;

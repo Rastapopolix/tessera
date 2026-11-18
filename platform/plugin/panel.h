@@ -14,7 +14,7 @@ struct PanelInput
 {
     uint32_t buttons = 0, keys = 0;   // held now
     int32_t enc[TESS_NE] = {};        // detents turned since the last take
-    int32_t master = 700;             // 0..1023
+    int32_t master = -1;              // 0..1023 when the knob was turned, else -1
     bool changed = false;
 };
 
@@ -43,6 +43,7 @@ class Panel
     // a drag
     enum { NONE, KNOB, BUTTON, KEY } drag = NONE;
     int drag_i = -1, last_x = 0, last_y = 0, acc = 0;
+    int master_now = 700;   // MASTER as the core has it (the view: the DAW may automate it)
     int knob_at(int x, int y) const;
     int button_at(int x, int y) const;
     int key_at(int x, int y) const;

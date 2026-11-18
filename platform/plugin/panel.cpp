@@ -111,7 +111,7 @@ Panel::Panel()
     const int ROLE[8] = {-1, 0, 2, 1, 3, 4, 5, 6};
     for (int i = 0; i < 8; i++)
         knobs.push_back({K[i][0], K[i][1], K[i][2], KN[i], ROLE[i], 0});
-    knobs[0].angle = -135 + 270.0 * input.master / 1023;
+    knobs[0].angle = -135 + 270.0 * master_now / 1023;
     buttons.push_back({60, 258, 90, 34, B_OCTDN, "OCT-", nullptr});
     buttons.push_back({170, 258, 90, 34, B_OCTUP, "OCT+", nullptr});
     const int R1[6] = {B_FX, B_SCL, B_ENV, B_LFO, B_EDIT, B_GLO}, R2[6] = {B_HOME, B_SAVE, B_ARP, B_SEQ, B_PLAY, B_REC};
@@ -135,6 +135,8 @@ Panel::Panel()
 void Panel::draw(uint32_t *px, const tess_view_t &v)
 {
     Canvas c{px};
+    master_now = (int)v.master;
+    knobs[0].angle = -135 + 270.0 * (input.master >= 0 ? input.master : master_now) / 1023;
     static const double kPi = 3.14159265358979;
     // the breathing LEDs: dark .. lit and back in ~1.13 s (fm1_led_breath)
     static uint32_t frame = 0;
@@ -237,7 +239,7 @@ void Panel::turn(int i, int n)
     Knob &k = knobs[i];
     if (k.role < 0)
     {
-        int m = input.master + n * 16;
+        int m = (input.master >= 0 ? input.master : master_now) + n * 16;
         input.master = m < 0 ? 0 : m > 1023 ? 1023 : m;
         k.angle = -135 + 270.0 * input.master / 1023;
     }

@@ -42,6 +42,8 @@ jobs:
         run: cmake --build build/plugin -j4
       - name: Panel test
         run: build/plugin/tessera-panel-test
+      - name: Sync test (following the DAW)
+        run: build/plugin/tessera-sync-test
       - name: Render test (with the window, on a virtual display)
         run: xvfb-run -s "-screen 0 1280x800x24" build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
       - uses: actions/upload-artifact@v4
@@ -71,8 +73,10 @@ jobs:
         run: cmake -S platform/plugin -B build/plugin -G "Visual Studio 17 2022" -A x64 -T ClangCL -DTESS_GEN=OFF
       - name: Build
         run: cmake --build build/plugin --config Release --parallel
-      - name: Panel test
-        run: build/plugin/Release/tessera-panel-test.exe
+      - name: Panel and sync tests
+        run: |
+          build/plugin/Release/tessera-panel-test.exe
+          build/plugin/Release/tessera-sync-test.exe
       - name: List the outputs
         shell: bash
         run: find build/plugin/out -maxdepth 3 | sort

@@ -18,11 +18,17 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
   wheel over it. The LEDs light, dim and breathe as on the device. The window talks to the core through the audio
   thread, so it only moves while the host is processing audio.
 
+- **Following the DAW** (CLK INT): the DAW's PLAY starts every track where it would be after playing from the DAW's
+  zero (as a MIDI Song Position), its beat position drives Tessera's clock (fractional tempos and tempo changes, no
+  drift), a loop or a locate seeks, STOP stops. The BPM on the screen is the DAW's, rounded; a TEMPO mod has no effect
+  while the DAW plays. With CLK on MIDI, the MIDI master's clock rules and the DAW only starts and stops it.
+- **Parameters** (automatable): MASTER and PERF's MACRO 1..4 (the project's, so they are saved with it too). Turned on
+  the panel or on PERF, the new value is sent back to the DAW.
+
 ## Not yet
 
 - No window on macOS (it plays as in phase 0).
 - No computer-keyboard shortcuts, no shell or ink picker (the ink is MENU > COLOR, as on the device).
-- No tempo sync: Tessera keeps its own BPM; the host's tempo and bar position are ignored.
 - One Tessera per DAW session: the firmware keeps its state in globals, so a second instance is refused, and a new
   instance carries on from the last one's state.
 - No multi-out, no MIDI out.
@@ -36,6 +42,7 @@ time (the CLAP SDK, clap-wrapper and the VST3 SDK are downloaded at configure ti
 cmake -S platform/plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
 cmake --build build/plugin -j
 build/plugin/tessera-panel-test shots/                                             # the window's test: PPM pictures in shots/
+build/plugin/tessera-sync-test                                                     # following the DAW
 xvfb-run build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 still-tide.wav window.ppm   # Linux / macOS
 ```
 
