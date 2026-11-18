@@ -637,6 +637,52 @@ static const gstep_t G_PATTERNS[] = {
     {27100, 0, 0, 0, 0, "On its line it switches: a new bass part"},
     {32000, 0, 0, 0, 0, "JAM logs what you played. On SONG, the next page, take it as a song"},
 };
+/* lounge: 100 BPM, D dorian; track 1 an empty STEP pattern (8 eighths) on a flute, written on the keys in the clip;
+ * ORACLE keys on CHORD (two chords, on the beat), a sub on TURING, a light 909 in STEP */
+static void g_lounge_scene(void)
+{
+    song.g[G_BPM] = 100;
+    song.g[G_SWING] = 20;
+    scale(2, SCL_DOR, 1);                               /* D DOR, QNT SNAP */
+    sends(80, 65, 60, 40);
+    sound(0, ENGI_FM6, V_FLUTE);
+    tx(0, TX_MODE, TESS_ENG_OFF);
+    trk[0].p[P_SDIV] = DIV_8; trk[0].p[P_SLEN] = 8;
+    mixer(0, 120, 10, 45, 35);
+    sound(1, ENGI_ORACLE, V_OR_KEYS);
+    trk[1].p[P_CHRD] = 2;
+    gen(1, TESS_ENG_CHORD, 13);
+    tx(1, TX_CH_PROG, GEN_CH_TWO); tx(1, TX_CH_BARS, 2); tx(1, TX_CH_HIT, GEN_CH_BEAT);
+    mixer(1, 56, -25, 55, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_TURING, 21);
+    tx(2, TX_TUR_PROB, 20); tx(2, TX_TW_SHIFT, -12); tx(2, TX_TW_DROP, 50);
+    mixer(2, 86, 0, 0, 0);
+    sound(3, ENGI_DRUM, DK_909_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_RS, 0, L_CH, L_CH, L_BD, 0, L_CH, L_BD, L_RS, 0, L_CH, 0};
+        static const uint8_t V[16] = {84, 0, 46, 0, 64, 0, 50, 34, 74, 0, 46, 56, 64, 0, 52, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 72, 0, 15, 0);
+}
+static const gstep_t G_STEPW[] = {
+    {0, 0, 0, 0, 0, "Track 1, a flute, is an empty STEP pattern: write it on NOTES"},
+    {3500, 6500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: GEN, the pattern's page"},
+    {10000, 13000, 600, "SELECT", "NOTES", "Turn SELECT: NOTES. The cursor is on step 1", 1},
+    {17000, 20000, 300, "A4", "WRITE", "Press a key: A4 goes on step 1, and the cursor moves on"},
+    {24000, 27000, 300, "C5", "WRITE", "C5 on step 2"},
+    {29500, 32500, 900, "KNOB 1", "SKIP", "Turn KNOB 1 past a step to leave a rest", 1},
+    {36000, 39000, 300, "D5", "WRITE", "D5, E5, and C5"},
+    {0, 40000, 300, "E5", "WRITE", 0},
+    {0, 41000, 300, "C5", "WRITE", 0},
+    {45000, 48000, 900, "KNOB 1", "PICK STEP", "Turn KNOB 1 back to step 1, A4", -6},
+    {52000, 55000, 900, "KNOB 2", "PITCH", "Turn KNOB 2 down: a scale note a detent, A4 to F4", -2},
+    {60000, 0, 0, 0, 0, "The loop plays what you wrote, round and round"},
+};
 /* ethno-ambient: 84 BPM, C; a harp line on TURING as track 1, a warm ORACLE pad on a CHORD drone, a sparse sub on
  * EUCLID, hand drums from the 808's toms and rim in STEP. The scale becomes USER1, made on the keys */
 static void g_ethno_scene(void)
@@ -800,6 +846,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
     G_RUN("r-patterns", "PATTERNS", "MOSAIC", 41, 4, g_citypop_scene, G_PATTERNS);   /* city pop */
+    G_RUN("r-step-write", "WRITE NOTES BY HAND", "MOSAIC", 68, 4, g_lounge_scene, G_STEPW);   /* lounge */
     G_RUN("r-user-scale", "A SCALE OF YOUR OWN", "MOSAIC", 70, 4, g_ethno_scene, G_USCALE);   /* ethno-ambient */
     G_RUN("r-harm", "RUN THE KEYS INTO CHORDS", "MOSAIC", 68, 4, g_chillwave_scene, G_HARM);   /* chillwave */
     G_RUN("r-song", "A SONG FROM PATTERNS", "MOSAIC", 91, 4, g_reggae_scene, G_SONG);   /* reggae */
