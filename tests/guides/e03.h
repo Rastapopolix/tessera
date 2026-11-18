@@ -51,8 +51,50 @@ static const gstep_t G_GLO_PRESETS[] = {
     {24500, 0, 0, 0, 0, "Let go of GLO: the same page, the new sound"},
     {30000, 0, 0, 0, 0, "Without GLO, a stray turn of PRESETS never changes the sound"},
 };
+/* synthwave: 104 BPM, a gated 808 (big snare on two and four), a saw bass in eighths on EUCLID, a sync lead on
+ * TURING as track 1, a string pad. A minor */
+static void g_synthwave_scene(void)
+{
+    song.g[G_BPM] = 104;
+    scale(9, SCL_MIN, 0);
+    sends(100, 75, 80, 55);
+    sound(0, ENGI_FM6, FX_SYNC_LEAD);
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_TURING, 61);
+    tx(0, TX_TUR_PROB, 0); tx(0, TX_TW_DROP, 30);
+    mixer(0, 96, 15, 50, 60);
+    sound(1, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, 0, L_BD, 0, L_CH, L_BD, L_SD, 0, L_CH, 0};
+        static const uint8_t V[16] = {110, 0, 60, 0, 108, 0, 60, 0, 104, 0, 60, 80, 110, 0, 64, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
+        trk[1].p[P_SLEN] = 16;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
+    mixer(1, 92, 0, 40, 0);
+    sound(2, ENGI_FM6, FX_SAW_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 3);
+    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 8); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    mixer(2, 90, 0, 0, 0);
+    sound(3, ENGI_TRIO, TR_STRING_MACH);
+    trk[3].p[P_CHRD] = 1;
+    gen(3, TESS_ENG_CHORD, 9);
+    tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 3); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
+    mixer(3, 66, -25, 80, 0);
+}
+static const gstep_t G_EDIT[] = {
+    {0, 0, 0, 0, 0, "EDIT: the pages of the selected track's sound"},
+    {3500, 6500, 200, "EDIT", "OPEN EDIT", "Tap EDIT: the sound's first page (OPS, on FM6)"},
+    {11000, 14000, 200, "EDIT", "THE MAP", "Tap EDIT again: the map of all its pages"},
+    {19000, 22000, 600, "KNOB 1", "PICK", "Turn KNOB 1 to pick a page (here PATCH)", 1},
+    {27000, 30000, 200, "OCT+", "OPEN IT", "Tap OCT+: PATCH opens"},
+    {35000, 38000, 200, "OCT-", "BACK", "Tap OCT-: back to the map"},
+    {43000, 46000, 200, "HOME", "GO HOME", "Tap HOME: done"},
+};
 static void guide_e03(const char *out, FILE *tsv)
 {
     G_RUN("e03-glo-presets", "A SOUND FROM ANYWHERE", "ORANGE", 39, 4, g_lofi_scene, G_GLO_PRESETS);   /* lo-fi */
+    G_RUN("e03-edit", "THE SOUND'S PAGES", "ORANGE", 53, 4, g_synthwave_scene, G_EDIT);   /* synthwave */
     G_RUN("e03-sound", "CHANGE THE SOUND", "MOSAIC", 43, 30, demo_cedar, G_SOUND);   /* koto (demo: to replace) */
 }
