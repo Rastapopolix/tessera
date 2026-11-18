@@ -637,6 +637,47 @@ static const gstep_t G_PATTERNS[] = {
     {27100, 0, 0, 0, 0, "On its line it switches: a new bass part"},
     {32000, 0, 0, 0, 0, "JAM logs what you played. On SONG, the next page, take it as a song"},
 };
+/* Afro-Cuban: 104 BPM, A dorian; track 1 a marimba on EUCLID (3 of 8, the tresillo, at sixteenths), electric piano
+ * chords on CHORD in the offbeats, a sub on TURING, congas from the 909's toms with a rim clave in STEP */
+static void g_afrocuban_scene(void)
+{
+    song.g[G_BPM] = 104;
+    scale(9, SCL_DOR, 1);                               /* A DOR, QNT SNAP */
+    sends(70, 55, 55, 35);
+    sound(0, ENGI_FM6, V_MARIMBA);
+    trk[0].p[P_SDIV] = DIV_16;
+    gen(0, TESS_ENG_EUCLID, 35);
+    tx(0, TX_EUC_STEPS, 8); tx(0, TX_EUC_PULSES, 3); tx(0, TX_EUC_ROT, 0);
+    mixer(0, 120, 15, 30, 30);
+    sound(1, ENGI_FM6, FX_TINE_EP);
+    trk[1].p[P_CHRD] = 2;
+    gen(1, TESS_ENG_CHORD, 4);
+    tx(1, TX_CH_PROG, GEN_CH_TWO); tx(1, TX_CH_BARS, 1); tx(1, TX_CH_HIT, GEN_CH_OFF);
+    mixer(1, 52, -25, 35, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_TURING, 16);
+    tx(2, TX_TUR_PROB, 15); tx(2, TX_TW_SHIFT, -12); tx(2, TX_TW_DROP, 45);
+    trk[2].p[P_QUANT] = Q_CHRD;
+    mixer(2, 82, 0, 0, 0);
+    sound(3, ENGI_DRUM, DK_909_KIT);
+    {
+        static const uint8_t L[16] = {L_TM, 0, 0, L_RS, 0, 0, L_RS | L_TM, 0, 0, 0, L_RS | L_TM, 0, L_RS, 0, L_TM, L_TM};
+        static const uint8_t V[16] = {70, 0, 0, 60, 0, 0, 62, 0, 0, 0, 60, 0, 60, 0, 56, 66};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 70, 0, 20, 0);
+}
+static const gstep_t G_EUCLID[] = {
+    {0, 0, 0, 0, 0, "EUCLID spreads a number of hits over the steps, as evenly as they go"},
+    {3500, 6500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: GEN. Track 1's marimba: 3 hits in 8 steps, the tresillo"},
+    {12000, 15000, 600, "KNOB 3", "PULSES 5", "Turn KNOB 3: PULSES 3 to 5, five hits in the 8", 2},
+    {22000, 25000, 600, "KNOB 4", "ROT 2", "Turn KNOB 4: ROT 2, the same hits two steps later", 2},
+    {32000, 35000, 600, "KNOB 2", "STEPS 12", "Turn KNOB 2: STEPS 8 to 12, five hits in 12 steps now", 4},
+    {43000, 0, 0, 0, 0, "Against the 16 steps of the drums the pattern shifts round, bar by bar"},
+};
 /* highlife: 112 BPM, C major; track 1 a guitar-like pluck written in STEP (16 sixteenths, with rests) that STEP EVOLVE
  * varies, organ chords on the offbeats on CHORD, a walking sub on TURING, a 909 with shaker-like hats in STEP */
 static void g_highlife_scene(void)
@@ -1306,6 +1347,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
     G_RUN("r-patterns", "PATTERNS", "MOSAIC", 41, 4, g_citypop_scene, G_PATTERNS);   /* city pop */
+    G_RUN("r-euclid", "EVEN HITS: EUCLID", "MOSAIC", 52, 4, g_afrocuban_scene, G_EUCLID);   /* Afro-Cuban */
     G_RUN("r-step-evolve", "VARY WHAT YOU WROTE", "MOSAIC", 72, 4, g_highlife_scene, G_SEVOLVE);   /* highlife */
     G_RUN("r-seed", "YOUR TUNE AS A SEED", "MOSAIC", 66, 4, g_ambfolk_scene, G_SEED);   /* ambient folk */
     G_RUN("r-buses", "MIX BUSES", "LILAC", 62, 4, g_fgarage_scene, G_BUSES);   /* future garage */
