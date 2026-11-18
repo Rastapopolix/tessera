@@ -23,17 +23,17 @@ static void g_jazz_scene(void)
     trk[0].p[P_CHRD] = 2;                               /* DIA7 */
     gen(0, TESS_ENG_CHORD, 11);
     tx(0, TX_CH_PROG, GEN_CH_CIRCLE); tx(0, TX_CH_BARS, 1); tx(0, TX_CH_HIT, GEN_CH_BEAT);
-    mixer(0, 88, -15, 50, 0);
+    mixer(0, 52, -30, 70, 0);                          /* (the chords back, so the lines that follow them are heard) */
     sound(1, ENGI_FM6, V_DX_MARIMBA);
     trk[1].p[P_SDIV] = DIV_8;
     gen(1, TESS_ENG_TURING, 29);
     tx(1, TX_TUR_PROB, 25); tx(1, TX_TW_DROP, 35);
-    mixer(1, 100, 20, 55, 30);
+    mixer(1, 124, 20, 40, 20);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
     trk[2].p[P_SDIV] = DIV_4;
     gen(2, TESS_ENG_TURING, 8);
     tx(2, TX_TUR_PROB, 40); tx(2, TX_TW_SHIFT, -12);
-    mixer(2, 96, 0, 5, 0);
+    mixer(2, 88, 0, 5, 0);
     sound(3, ENGI_DRUM, DK_909_KIT);
     {
         static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_RS, 0, L_CH, 0, L_BD, 0, L_CH, 0, L_RS, 0, L_CH, L_CH};
