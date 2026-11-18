@@ -276,61 +276,105 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 | **OCT+** | On HOME: octave up. Elsewhere Enter: the row, slot, note or mod under the cursor, the action picked; where there is nothing to enter, nothing (the sheet is a hold) | The page's sheet; a page without one says NO SHEET (its second knobs are on OCT- held: see [The GEN layer](#the-gen-layer)) |
 | **OCT-** | On HOME: octave down. Elsewhere Back: closes a sheet, list, map or selection; a page opened from the EDIT map or from MATRIX goes back there. On a page with nothing open, nothing (HOME goes to the home page) | The page's second knobs while held; letting go returns to the page, never back |
 
-On the home page each track's tile shows its sound and engine. **ALGORITHM** picks the track on every page (or
-the left knob, with MENU > TRACK KNOB set to LEFT), and **SELECT** turns the pages of the section shown (on the home
-page, the tempo). When a section has more pages than the footer's tabs show, the header gives the page's place (4/10:
-SEQ counts GEN's pages and the sequencer's together, the way the button goes through them) and arrows at the footer's
-ends say more pages lie that way. A new project starts with the sounds of the CEDAR RAIN demo: **KUGO HARP**, **KOTO WARM** and **FLUTE** on FM6,
-and the **808 KIT** on DRUM, in **KUMOI** on E at 80 BPM, with a REVERB and an ECHO on the two send effects. Plucks ring
-out by themselves, so generators on all three melodic tracks stay within what the FM-1 can play (see
-[How many voices at once](#how-many-voices-at-once)). For a pad, load one with **PRESETS** (GLASS PAD, STRING MACH). A
-new project has no mods, so nothing moves until you patch it.
+**Getting around:**
 
-On every page the four knobs' values sit under their dials (or bars: MENU > KNOBS). The value you turn is drawn
-inverted. On the home page and on pages without a picture of their own, while you turn it its name and value also show
-large across the foot of the screen, with a bar for where it sits in its range; they go when the knob rests. Pages with
-a picture (a generator's, an envelope, the LFO, PIECE and the rest) keep the picture in view, so you see what the knob
-does: MENU > **LARGE VALUE** shows it on every page (ON) or on none (OFF). A value from a short list (DIV, ARP MODE,
-LFO SYNC, QNT, CHRD, VOIC, an FX type) steps under its knob as you turn; the ones in time order go slow to fast. Only
-long lists (a mod's source and destination, LFO WAVE) open a list to pick from.
+- On the home page, each track's tile shows its sound and engine.
+- **ALGORITHM** picks the track on every page (or the left knob, with MENU > TRACK KNOB set to LEFT).
+- **SELECT** turns the pages of the section shown (on the home page, the tempo).
+- When a section has more pages than the footer's tabs show, the header gives the page's place (4/10), and arrows at
+  the footer's ends say more pages lie that way. SEQ counts GEN's pages and the sequencer's together, the way the
+  button goes through them.
+
+**A new project** starts with the sounds of the CEDAR RAIN demo:
+
+- **KUGO HARP**, **KOTO WARM** and **FLUTE** on FM6, and the **808 KIT** on DRUM;
+- in **KUMOI** on E, at 80 BPM;
+- a REVERB and an ECHO on the two send effects;
+- no mods, so nothing moves until you patch it.
+
+Plucks ring out by themselves, so generators on all three melodic tracks stay within what the FM-1 can play (see
+[How many voices at once](#how-many-voices-at-once)). For a pad, load one with **PRESETS** (GLASS PAD, STRING MACH).
+
+**Knob values:**
+
+- On every page, the four knobs' values sit under their dials (or bars: MENU > KNOBS). The value you turn is drawn
+  inverted.
+- On the home page and on pages without a picture of their own, the name and value also show large across the foot of
+  the screen while you turn, with a bar for where it sits in its range. They go when the knob rests.
+- Pages with a picture (a generator's, an envelope, the LFO, PIECE and the rest) keep the picture in view, so you see
+  what the knob does. MENU > **LARGE VALUE** shows the large value on every page (ON) or on none (OFF).
+- A value from a short list (DIV, ARP MODE, LFO SYNC, QNT, CHRD, VOIC, an FX type) steps under its knob as you turn;
+  the ones in time order go slow to fast. Only long lists (a mod's source and destination, LFO WAVE) open a list to
+  pick from.
 
 <p align="center"><img src="assets/gallery/home.png" alt="HOME" width="320"> <img src="assets/gallery/mixer.png" alt="MIXER" width="320"></p>
 
-**MIXER** (tap GLO) is the four tracks as a mixer, and GLO's first page: **KNOB 1 to 4** set the levels of tracks 1 to
-4, and with **OCT-** held they set the pans (the pan dials light up). The keys are the mixer's while it is shown: the
-**black keys** F#3 G#3 A#3 C#4 mute and unmute tracks 1 to 4, the **white keys** F3 G3 A3 B3 solo a track while held,
-**C4** unmutes them all, **D4** holds the generators' line (HOLD), **E4** holds FILL and **F4** taps the tempo, the same as with GLO held on any other page. The
-line above the page tabs says so: a black key MUTE, a white key SOLO, E FILL. Each strip shows MUTE or SOLO; a track
-silenced by another's solo dims. The keys stay the mixer's on the next two GLO pages, PERF and LANDSCAPE, so you can
-mute and solo while you turn the macros or watch the sea (the knobs turn the macros there too). Any other page button leaves them, and the keys play notes
-again. **SELECT** on MIXER sets the tempo; on the other GLO pages it turns the pages, past MIXER. A mute only silences the track: a
-muted track still leads the tracks that follow it (FOLLOW, an ANSWER's SOURCE, QNT CHRD's chord, QUAD's LINK, the cords).
-Hold **OCT+** on MIXER for its sheet: **Mutes**, when the mute keys take effect while playing (NOW, BAR or PHRASE),
-the same setting as MENU > MUTES.
+**MIXER** (tap GLO) is the four tracks as a mixer, and GLO's first page.
+
+| Control | What it does on MIXER |
+|---|---|
+| **KNOB 1 to 4** | The levels of tracks 1 to 4. With **OCT-** held, the pans (the pan dials light up). |
+| **Black keys** F#3 G#3 A#3 C#4 | Mute and unmute tracks 1 to 4. |
+| **White keys** F3 G3 A3 B3 | Solo a track while held. |
+| **C4** | Unmutes them all. |
+| **D4** | Holds the generators' line ([HOLD](#evolve)). |
+| **E4** | Holds FILL. |
+| **F4** | Taps the tempo. |
+| **SELECT** | Sets the tempo. (On the other GLO pages it turns the pages, past MIXER.) |
+| **OCT+** held | MIXER's sheet: **Mutes**, when the mute keys take effect while playing (NOW, BAR or PHRASE), the same setting as MENU > MUTES. |
+
+- The keys work the same with GLO held on any other page. The line above the page tabs says so: a black key MUTE, a
+  white key SOLO, E FILL.
+- Each strip shows MUTE or SOLO; a track silenced by another's solo dims.
+- The keys stay the mixer's on the next two GLO pages, PERF and LANDSCAPE, so you can mute and solo while you turn the
+  macros or watch the sea (the knobs turn the macros there too). Any other page button leaves them, and the keys play
+  notes again.
+- A mute only silences the track: a muted track still leads the tracks that follow it (FOLLOW, an ANSWER's SOURCE, QNT
+  CHRD's chord, QUAD's LINK, the cords).
 
 **Lists** (the HOME menu, SCL, VOICE and the sheets): KNOB 1 picks the row, KNOB 2 changes its
 value. A row with `>` opens a page of its own on OCT+ and comes back to the list: SCL's Scale (SCALES), VOICE's Sound
 (PRESETS).
 
-**The look.** Tessera draws every screen in one ink on black, with a 5 x 7 pixel font: the selected item is
-inverted, and quieter things are drawn in a dimmer ink. MENU > COLOR picks the ink: **YELLOW** (the default),
-WHITE, GREEN, BLUE, RED, and ORANGE, PINK, HOT PINK and LILAC to match the FM-1's shells. In these the tracks are told
-apart by their numbers, not by colours. **MOSAIC** gives each track a colour of its own (T1 yellow, T2 blue, T3 hot pink,
-T4 green): the screen takes the selected track's, the pages that show all four (HOME, MIXER, PATTERNS, SONG, QUAD,
-FOLLOW, MATRIX, MIDI OUT, the cords) draw each in its own, and the value you turn and the row you pick show in white.
-**SUNSET** (orange, hot pink, lilac, yellow), **OCEAN** (blue, teal, green, lilac) and **NEON** (cyan, magenta, lime,
-orange) do the same in other colours. With COLOR picked in the menu, the inks and the four-colour sets show below it,
-the one chosen framed and its name large; KNOB 2 or OCT+ steps through them.
+**The look.** Tessera draws every screen in one ink on black, with a 5 x 7 pixel font. The selected item is inverted,
+and quieter things are drawn in a dimmer ink. MENU > COLOR picks the ink:
+
+| COLOR | Colours |
+|---|---|
+| **YELLOW** (the default), WHITE, GREEN, BLUE, RED; ORANGE, PINK, HOT PINK, LILAC (to match the FM-1's shells) | One ink. The tracks are told apart by their numbers, not by colours. |
+| **MOSAIC** | A colour per track: T1 yellow, T2 blue, T3 hot pink, T4 green. |
+| **SUNSET** | Orange, hot pink, lilac, yellow. |
+| **OCEAN** | Blue, teal, green, lilac. |
+| **NEON** | Cyan, magenta, lime, orange. |
+
+- **With a four-colour set,** the screen takes the selected track's colour, the pages that show all four (HOME, MIXER,
+  PATTERNS, SONG, QUAD, FOLLOW, MATRIX, MIDI OUT, the cords) draw each in its own, and the value you turn and the row
+  you pick show in white.
+- **Picking:** with COLOR picked in the menu, the inks and the four-colour sets show below it, the one chosen framed and
+  its name large. KNOB 2 or OCT+ steps through them.
 
 **GROUND.** MENU > GROUND, just below COLOR, sets what the ink is drawn on: **DARK** (the default, black, as above) or
 **LIGHT**, warm paper. On paper each ink becomes a darker version of itself that reads well there, and several inks
-share one: WHITE becomes pure BLACK (and COLOR calls it BLACK), YELLOW and ORANGE become SEPIA, GREEN FOREST, BLUE NAVY,
-RED, PINK and HOT PINK CRIMSON, and LILAC PLUM. On paper RED, PINK and HOT PINK look nearly the same, and so do YELLOW
-and ORANGE, so COLOR shows only PINK and YELLOW: a RED, HOT PINK or ORANGE you chose on DARK is shown and drawn as PINK
-or YELLOW, and is itself again on DARK. The four-colour sets keep four different inks: MOSAIC SEPIA, NAVY, CRIMSON and FOREST; SUNSET
-SEPIA, CRIMSON, PLUM and CHARCOAL; OCEAN NAVY, TEAL, FOREST and PLUM; NEON TEAL, PLUM, FOREST and SEPIA; the selection
-in CHARCOAL. While LIGHT is on, COLOR's sheet shows the light versions on paper, so you see what you pick. Older
-firmware keeps the ink you chose and draws it on black.
+share one:
+
+| On DARK | On LIGHT |
+|---|---|
+| WHITE | BLACK (COLOR calls it BLACK) |
+| YELLOW, ORANGE | SEPIA (COLOR shows YELLOW) |
+| GREEN | FOREST |
+| BLUE | NAVY |
+| RED, PINK, HOT PINK | CRIMSON (COLOR shows PINK) |
+| LILAC | PLUM |
+| MOSAIC | SEPIA, NAVY, CRIMSON, FOREST |
+| SUNSET | SEPIA, CRIMSON, PLUM, CHARCOAL |
+| OCEAN | NAVY, TEAL, FOREST, PLUM |
+| NEON | TEAL, PLUM, FOREST, SEPIA |
+
+- The selection is in CHARCOAL.
+- A RED, HOT PINK or ORANGE you chose on DARK is shown and drawn as PINK or YELLOW on paper, and is itself again on
+  DARK.
+- While LIGHT is on, COLOR's sheet shows the light versions on paper, so you see what you pick.
+- Older firmware keeps the ink you chose and draws it on black.
 
 <table>
 <tr>
@@ -410,13 +454,15 @@ Tessera has five engines on the device:
 
 <p align="center"><img src="assets/gallery/edit_fm6.png" alt="FM6 ALGO page" width="240"> <img src="assets/gallery/fm6_eg.png" alt="FM6 operator envelope" width="240"> <img src="assets/gallery/drum.png" alt="DRUM steps" width="240"></p>
 
-**PHYS**'s knobs each cover only their musical range, with wide sweet spots: STRC keeps
-MODAL's overtones in tune from 16 to 48, a chime's near 84 and a marimba's at the top (the picture names where it
-is); a dull, short or bowed sound is as loud as a bright one. A PHYS track in a project from before 2.0 plays as
-PHYS, a little differently towards the ends of the knobs. A track saved with SID or CZ-1 loads FM6's INIT, and a
-drum track saved with KIT SID or SID DIGI loads as the 909. FM6 and TRIO presets have
-releases that ring out, so short sequenced notes are not cut off. The slow pads (GLASS PAD, SOFT PAD, DEEP PAD, PAD,
-STRINGS) swell in slowly: they speak on long notes and drones, and stay quiet on short steps.
+- **PHYS's knobs** each cover only their musical range, with wide sweet spots. STRC keeps MODAL's overtones in tune
+  from 16 to 48, a chime's near 84 and a marimba's at the top (the picture names where it is). A dull, short or bowed
+  sound is as loud as a bright one.
+- **Releases:** FM6 and TRIO presets have releases that ring out, so short sequenced notes are not cut off.
+- **Slow pads** (GLASS PAD, SOFT PAD, DEEP PAD, PAD, STRINGS) swell in slowly: they speak on long notes and drones, and
+  stay quiet on short steps.
+- **Old projects:** a PHYS track in a project from before 2.0 plays as PHYS, a little differently towards the ends of
+  the knobs. A track saved with SID or CZ-1 loads FM6's INIT, and a drum track saved with KIT SID or SID DIGI loads as
+  the 909.
 
 **FM6's amp envelope.** FM6 has no ADSR of its own, as the DX7 had none: each carrier's envelope (ENV: EG RATE, EG
 LVL, an operator at a time) is the sound's volume. **AEG** (EDIT 2, KNOB 4) moves them all at once: turned right a
@@ -470,14 +516,17 @@ one and a half times): one ORACLE track of pads or chords is fine; with two busy
 
 <p align="center"><img src="assets/gallery/oracle_osc.png" alt="ORACLE OSC A page" width="240"> <img src="assets/gallery/oracle_filter.png" alt="ORACLE FILTER page" width="240"> <img src="assets/gallery/oracle_env.png" alt="ORACLE AMP ENV page" width="240"></p>
 
-**PRESETS** (SAVE) browses the sounds. Its LIST knob picks ALL, the favourites, RECENT, a category, or (after the
-categories) one engine: FM6, ORACLE, TRIO, PHYS or DRUM, each with only its own sounds, factory and user, so an
-ORACLE pad is ORACLE, then a turn of PRESETS. It starts on ALL at power-on. The PRESETS knob browses the same list on
-HOME and on PRESETS; on any other page, hold GLO and turn it.
+#### Choosing a sound
 
-**EDIT > VOICE** starts with the track's **Sound** (`SOUND  KUGO HARP >`): KNOB 2 there steps through the PRESETS
-list as the PRESETS knob does, and **OCT+** opens PRESETS in place. OK (OCT+) there keeps the sound you picked, BACK
-(OCT-) puts back the one you had; either way you are back on VOICE's list, not on HOME.
+**PRESETS** (SAVE) browses the sounds.
+
+- **Its LIST knob** picks ALL, the favourites, RECENT, a category, or (after the categories) one engine: FM6, ORACLE,
+  TRIO, PHYS or DRUM, each with only its own sounds, factory and user. So an ORACLE pad is ORACLE, then a turn of
+  PRESETS. It starts on ALL at power-on.
+- **The PRESETS knob** browses the same list on HOME and on PRESETS. On any other page, hold GLO and turn it.
+- **EDIT > VOICE** starts with the track's **Sound** (`SOUND  KUGO HARP >`). KNOB 2 there steps through the PRESETS
+  list as the PRESETS knob does, and **OCT+** opens PRESETS in place. OK (OCT+) there keeps the sound you picked, BACK
+  (OCT-) puts back the one you had; either way you are back on VOICE's list, not on HOME.
 
 ### How many voices at once
 
@@ -495,14 +544,18 @@ clean:
 - lower **BUDGET** (12, say): fewer voices ring at once, which leaves the FM-1 headroom; higher allows more, and
   crackles sooner.
 
-**GLO > SYSTEM** shows how hard the FM-1 is working in its second column, **CPU**, as two numbers: the average, then
-the worst moment of about the last second (`55/92 %`), USB audio and MIDI included; below, a **VOICES** bar (the voices sounding
-now out of the BUDGET) and a **CPU** bar (the average, a tick at the peak). When the second number reaches
-99, notes may drop or the sound crackle. A track nobody can hear costs next to nothing: at LEVEL 0, muted, left out
-by SOLO or taken out by [ENTRIES](#entries-tracks-out-and-back-in), its voices and insert effects stop after a moment,
-while its sequencer, LFO and the tracks that follow it go on; heard again, it fades back in. (A track whose ENV a cord
-reads always plays on.) Muting a busy part is a quick way to make room. For the full picture, the web editor's
-[Health](#saving-and-older-projects) reads the same numbers and more.
+**Watching the load on GLO > SYSTEM:**
+
+- **CPU**, in its second column, shows two numbers: the average, then the worst moment of about the last second
+  (`55/92 %`), USB audio and MIDI included. When the second number reaches 99, notes may drop or the sound crackle.
+- Below: a **VOICES** bar (the voices sounding now, out of the BUDGET) and a **CPU** bar (the average, with a tick at
+  the peak).
+- For the full picture, the web editor's [Health](#health-how-hard-the-fm-1-is-working) reads the same numbers and more.
+
+**A track nobody can hear costs next to nothing.** At LEVEL 0, muted, left out by SOLO or taken out by
+[ENTRIES](#entries-tracks-out-and-back-in), its voices and insert effects stop after a moment, while its sequencer, LFO
+and the tracks that follow it go on. Heard again, it fades back in. (A track whose ENV a cord reads always plays on.)
+Muting a busy part is a quick way to make room.
 
 <p align="center"><img src="assets/gallery/glo_system.png" alt="GLO > SYSTEM" width="240"></p>
 
@@ -2091,14 +2144,21 @@ them. Melodee's own preset banks are not carried over.
 
 <p align="center"><img src="assets/gallery/project.png" alt="SAVE > PROJECT" width="240"></p>
 
-**A new project**: tap **SAVE** to the **PROJECT** page, turn **KNOB 1** down the list to **New song** and press
-**OCT+** (playback stops; with unsaved changes, **OCT+** again answers Yes to "Start a new song?"). The NEW SONG
-screen asks for the key (**KNOB 1** root, **2** scale, **3** tempo), then,
-after **OCT+**, a role per track (**KNOB 1** to **4**): **KEEP** its sound, or **DRUMS**, **BASS**, **CHORDS**,
-**LEAD** or **PAD** for the first sound of that kind. The role also sets the track's ENTRIES **ROLE** (DRUMS: RHYTHM,
-BASS: BASS, CHORDS and PAD: HARMONY, LEAD: MELODY), so ENTRIES takes the parts out and back in a musical order; KEEP
-leaves it as it was. **OCT+** creates it with every pattern empty; **OCT-** goes back or cancels. It starts from the template when one is saved in TMPL, else from the power-on sounds, and has no slot
-until you save it.
+#### A new project
+
+1. Tap **SAVE** to the **PROJECT** page, turn **KNOB 1** down the list to **New song** and press **OCT+**. Playback
+   stops; with unsaved changes, **OCT+** again answers Yes to "Start a new song?".
+2. The NEW SONG screen asks for the key: **KNOB 1** root, **2** scale, **3** tempo. Press **OCT+**.
+3. Pick a role per track (**KNOB 1** to **4**): **KEEP** its sound, or **DRUMS**, **BASS**, **CHORDS**, **LEAD** or
+   **PAD** for the first sound of that kind.
+4. **OCT+** creates it, with every pattern empty. **OCT-** goes back or cancels.
+
+- The role also sets the track's ENTRIES **ROLE** (DRUMS: RHYTHM, BASS: BASS, CHORDS and PAD: HARMONY, LEAD: MELODY),
+  so ENTRIES takes the parts out and back in a musical order. KEEP leaves it as it was.
+- It starts from the template when one is saved in TMPL, else from the power-on sounds.
+- It has no slot until you save it.
+
+#### The web editor, backups and files
 
 The web editor only reads the FM-1 until you tick **Edit the FM-1** (beside **Disconnect**): connecting changes
 nothing, and a change made in the editor before then is not sent (the editor says so and shows the FM-1's value again).
@@ -2107,41 +2167,61 @@ Ticking it offers a **Complete backup** first. It is off again at every connecti
 Each slot keeps its last two saves. If the newest is ever damaged, loading the slot (or power-on) brings back the
 one before and the screen says **OLD SAVE LOADED**: save it again to keep it, or restore a backup.
 
-The web editor's **Complete backup** saves and restores the music, slots A to D, the sound banks and the settings.
-To try the [demo projects](demos/README.md), the editor's **Demo projects** (on the Projects tab) puts each into a
-slot you choose and leaves the rest of the FM-1 as it is; `tools/demo_backup.py` does the same with a backup file.
-**Project files** (on the same tab) saves one slot's project as a `.tsp` file, or puts a `.tsp` file into a slot. The
-[web simulator](https://rastapopolix.github.io/tessera/webapp/sim/) has the same two buttons under the FM-1, so a
-song made in the simulator goes onto the FM-1 as a file and back. Save it into a slot first (SAVE > PROJECT), and
-load a file you put into a slot from SAVE > PROJECT. A project made on a newer Tessera may not load on an older one.
+| In the web editor | What it does |
+|---|---|
+| **Complete backup** | Saves and restores the music, slots A to D, the sound banks and the settings. |
+| **Demo projects** (Projects tab) | Puts each [demo project](demos/README.md) into a slot you choose, and leaves the rest of the FM-1 as it is. `tools/demo_backup.py` does the same with a backup file. |
+| **Project files** (Projects tab) | Saves one slot's project as a `.tsp` file, or puts a `.tsp` file into a slot. |
+| **Health** (Settings tab) | Shows how hard the FM-1 is working (below). |
 
-The FM-1 itself can play the web simulator: plug it in by USB, open the simulator in Chrome or Edge and switch it on.
-Under the panel, **An FM-1 on USB: its knobs, buttons and keys play the simulator** finds the FM-1 by itself (it is
-ticked already when this site may use MIDI, as after the installer or the editor; else tick it and allow MIDI). It
-says **FM-1 connected**, and every knob, button, key and MASTER on the FM-1 then works the simulator's panel, holds and
-shortcuts included. The FM-1 keeps playing its own sound too: turn its volume down, or use SIM CONTROL (below). The
-two follow each other best when they start from the same project and page. A computer usually lets one program at a time use the FM-1's MIDI
-port, so close the editor or a DAW that holds it. An FM-1 with an older Tessera gets the message to update it.
+- The [web simulator](https://rastapopolix.github.io/tessera/webapp/sim/) has the same two file buttons under the FM-1,
+  so a song made in the simulator goes onto the FM-1 as a file and back. Save it into a slot first (SAVE > PROJECT),
+  and load a file you put into a slot from SAVE > PROJECT.
+- A project made on a newer Tessera may not load on an older one.
 
-**SIM CONTROL** (HOME held, the menu; KNOB 2 right or OCT+) makes the FM-1 a controller for the simulator only: its
-knobs, buttons and keys play the simulator and do nothing on the FM-1, which stops its notes and shows **SIM
-CONTROL** with how to get its panel back. FX and GLO breathe. Hold **FX + GLO** for a second (a bar fills) and let
-go: the panel is the FM-1's again. Closing the simulator, unplugging the cable or switching off ends it too, and
-every start has it off. The row says **NO SIM** while no simulator listens. Pressed together, FX and GLO never reach
-the simulator; either one alone does, a moment late. MASTER still sets the FM-1's volume, and holding OCT- + OCT+
-for update mode still works.
+#### Playing the simulator from the FM-1
 
-To see how hard the FM-1 is working, the editor's **Settings** tab has **Health**: press **Live** and it reads the
-CPU load, the worst audio half against its deadline, late halves, voices shed or stolen (per track too), the second
-core and the stacks once a second. Its USB rows show the audio to and from the computer, each way: whether it
-streams, how full its buffer is, underruns and overruns, missed frames and bad packets, and the slowest USB service;
-one of those marked points to a click on the USB side rather than an overloaded FM-1. A value shown inverted means a
-crackle or a cut voice is likely. **Reset worst**
-starts the worst times again, for example before you try a busy part.
+1. Plug the FM-1 in by USB, open the simulator in Chrome or Edge, and switch it on.
+2. Under the panel, **An FM-1 on USB: its knobs, buttons and keys play the simulator** finds the FM-1 by itself. It is
+   ticked already when this site may use MIDI (as after the installer or the editor); otherwise tick it and allow MIDI.
+3. It says **FM-1 connected**. Every knob, button, key and MASTER on the FM-1 then works the simulator's panel, holds
+   and shortcuts included.
+
+- The FM-1 keeps playing its own sound too: turn its volume down, or use SIM CONTROL (below).
+- The two follow each other best when they start from the same project and page.
+- A computer usually lets one program at a time use the FM-1's MIDI port, so close the editor or a DAW that holds it.
+- An FM-1 with an older Tessera gets the message to update it.
+
+**SIM CONTROL** (HOME held, the menu; KNOB 2 right or OCT+) makes the FM-1 a controller for the simulator only. Its
+knobs, buttons and keys play the simulator and do nothing on the FM-1, which stops its notes and shows **SIM CONTROL**
+with how to get its panel back. FX and GLO breathe.
+
+- **To get the panel back,** hold **FX + GLO** for a second (a bar fills) and let go.
+- Closing the simulator, unplugging the cable or switching off ends it too, and every start has it off.
+- The row says **NO SIM** while no simulator listens.
+- Pressed together, FX and GLO never reach the simulator; either one alone does, a moment late.
+- MASTER still sets the FM-1's volume, and holding OCT- + OCT+ for update mode still works.
+
+#### Health: how hard the FM-1 is working
+
+On the editor's **Settings** tab, press **Live** under **Health**. Once a second it reads:
+
+- the CPU load, the worst audio half against its deadline, and late halves;
+- voices shed or stolen (per track too);
+- the second core and the stacks;
+- **the USB rows:** the audio to and from the computer, each way: whether it streams, how full its buffer is, underruns
+  and overruns, missed frames and bad packets, and the slowest USB service. One of those marked points to a click on
+  the USB side rather than an overloaded FM-1.
+
+A value shown inverted means a crackle or a cut voice is likely. **Reset worst** starts the worst times again, for
+example before you try a busy part.
 
 ---
 
 ## If something goes wrong
+
+> **In short:** what to do when the editor can't find the FM-1, the FM-1 crashes, or it won't start: in most cases
+> a reinstall from the web installer fixes it.
 
 - **Web editor says "Tessera not found" on a Mac.** macOS keeps the MIDI port name it first saw, so the FM-1 can still be called "FM-1" (from the stock firmware or an older Tessera). The editor finds it anyway, if it answers as Tessera; renaming the device in Audio MIDI Setup, or replugging it, also works.
 - **Single core.** If your FM-1 crashes with the standard build (red crash screen, freezes, or restarts into update
