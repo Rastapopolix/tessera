@@ -14,6 +14,7 @@ project(tessera-plugin VERSION 0.0.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")   # static, as clap-wrapper builds its parts
 set(TESS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 option(TESS_PLUGIN_TESTS "Build the render test (a minimal CLAP host; not on Windows)" ON)
 
