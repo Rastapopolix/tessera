@@ -637,6 +637,52 @@ static const gstep_t G_PATTERNS[] = {
     {27100, 0, 0, 0, 0, "On its line it switches: a new bass part"},
     {32000, 0, 0, 0, 0, "JAM logs what you played. On SONG, the next page, take it as a song"},
 };
+/* ambient house: 112 BPM, E minor; track 1 an empty STEP pattern (two bars of eighths) on a pluck, recorded live in the
+ * clip; a glass pad on CHORD, a sub on EUCLID, a soft 909 four on the floor in STEP */
+static void g_ambhouse_scene(void)
+{
+    song.g[G_BPM] = 112;
+    scale(4, SCL_MIN, 1);                               /* E MIN, QNT SNAP */
+    sends(105, 80, 70, 45);
+    sound(0, ENGI_FM6, V_PLUCK);
+    tx(0, TX_MODE, TESS_ENG_OFF);
+    trk[0].p[P_SDIV] = DIV_8; trk[0].p[P_SLEN] = 16;
+    mixer(0, 118, 10, 50, 40);
+    sound(1, ENGI_FM6, V_GLASS_PAD);
+    trk[1].p[P_CHRD] = 1;
+    gen(1, TESS_ENG_CHORD, 19);
+    tx(1, TX_CH_PROG, GEN_CH_POP); tx(1, TX_CH_BARS, 2); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 52, -25, 85, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 27);
+    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3); tx(2, TX_EUC_ROT, 1); tx(2, TX_TW_SHIFT, -12);
+    trk[2].p[P_QUANT] = Q_CHRD;
+    mixer(2, 84, 0, 0, 0);
+    sound(3, ENGI_DRUM, DK_909_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_BD, 0, L_OH, 0, L_BD, 0, L_CH, 0, L_BD, 0, L_OH, L_CH};
+        static const uint8_t V[16] = {86, 0, 40, 0, 84, 0, 50, 0, 86, 0, 40, 0, 84, 0, 50, 30};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 70, 0, 20, 0);
+}
+static const gstep_t G_REC[] = {
+    {0, 0, 0, 0, 0, "Record the keys live, while it all plays. Track 1 is empty"},
+    {3500, 6500, 200, "REC", "ARM", "Tap REC: track 1 WAITS FOR LOOP, its pattern's start, then records"},
+    {11500, 14500, 250, "E4", "PLAY", "Play: what you play goes into the pattern"},
+    {0, 15040, 250, "G4", "PLAY", 0},
+    {0, 15580, 500, "B4", "PLAY", 0},
+    {0, 16650, 250, "A4", "PLAY", 0},
+    {0, 17190, 500, "G4", "PLAY", 0},
+    {20600, 23620, 250, "E5", "PLAY", "Round again: add more on top"},
+    {0, 25760, 250, "D5", "PLAY", 0},
+    {0, 26830, 400, "B4", "PLAY", 0},
+    {31000, 34000, 200, "REC", "STOP REC", "Tap REC again: the take ends"},
+    {40000, 0, 0, 0, 0, "Both passes play back together, round and round"},
+};
 /* lounge: 100 BPM, D dorian; track 1 an empty STEP pattern (8 eighths) on a flute, written on the keys in the clip;
  * ORACLE keys on CHORD (two chords, on the beat), a sub on TURING, a light 909 in STEP */
 static void g_lounge_scene(void)
@@ -846,6 +892,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
     G_RUN("r-patterns", "PATTERNS", "MOSAIC", 41, 4, g_citypop_scene, G_PATTERNS);   /* city pop */
+    G_RUN("r-rec", "RECORD LIVE", "MOSAIC", 50, 4, g_ambhouse_scene, G_REC);   /* ambient house */
     G_RUN("r-step-write", "WRITE NOTES BY HAND", "MOSAIC", 68, 4, g_lounge_scene, G_STEPW);   /* lounge */
     G_RUN("r-user-scale", "A SCALE OF YOUR OWN", "MOSAIC", 70, 4, g_ethno_scene, G_USCALE);   /* ethno-ambient */
     G_RUN("r-harm", "RUN THE KEYS INTO CHORDS", "MOSAIC", 68, 4, g_chillwave_scene, G_HARM);   /* chillwave */
