@@ -637,6 +637,50 @@ static const gstep_t G_PATTERNS[] = {
     {27100, 0, 0, 0, 0, "On its line it switches: a new bass part"},
     {32000, 0, 0, 0, 0, "JAM logs what you played. On SONG, the next page, take it as a song"},
 };
+/* ethno-ambient: 84 BPM, C; a harp line on TURING as track 1, a warm ORACLE pad on a CHORD drone, a sparse sub on
+ * EUCLID, hand drums from the 808's toms and rim in STEP. The scale becomes USER1, made on the keys */
+static void g_ethno_scene(void)
+{
+    song.g[G_BPM] = 84;
+    scale(0, 1, 1);                                     /* C MAJ, QNT SNAP */
+    sends(110, 80, 75, 50);
+    sound(0, ENGI_FM6, V_HARP);
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_TURING, 53);
+    tx(0, TX_TUR_PROB, 12); tx(0, TX_TUR_LEN, 8); tx(0, TX_TUR_SPAN, 1);
+    mixer(0, 118, 15, 55, 35);
+    sound(1, ENGI_ORACLE, OR_WARM_PAD);
+    trk[1].p[P_CHRD] = 0;
+    gen(1, TESS_ENG_CHORD, 31);
+    tx(1, TX_CH_PROG, GEN_CH_DRONE); tx(1, TX_CH_BARS, 2); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 54, -25, 85, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_TURING, 14);
+    tx(2, TX_TUR_PROB, 15); tx(2, TX_TW_SHIFT, -12); tx(2, TX_TW_DROP, 60);
+    mixer(2, 86, 0, 0, 0);
+    sound(3, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_TM, 0, 0, L_RS, 0, 0, L_TM, 0, L_TM, 0, L_RS, 0, 0, L_TM, 0, L_RS};
+        static const uint8_t V[16] = {90, 0, 0, 56, 0, 0, 70, 0, 80, 0, 60, 0, 0, 66, 0, 48};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 74, 0, 25, 0);
+}
+static const gstep_t G_USCALE[] = {
+    {0, 0, 0, 0, 0, "Four scales of your own, USER1 to USER4, made on the keys"},
+    {3500, 6500, 200, "SEL", "OPEN SEL", "Tap SEL: the scales"},
+    {10000, 13000, 3000, "KNOB 1", "USER", "Turn KNOB 1 to USER, the last family", 10},
+    {19000, 0, 0, 0, 0, "USER1 plays now. Never set, it is the major scale"},
+    {25000, 28000, 300, "D4", "D OUT", "Tap D, a note of the scale: it goes out (USER1 D OUT)"},
+    {32000, 35000, 300, "C#4", "C# IN", "Tap C#, not in the scale: it comes in"},
+    {39000, 42000, 300, "A4", "A OUT", "A out"},
+    {44500, 47500, 300, "G#4", "G# IN", "G# in"},
+    {51000, 0, 0, 0, 0, "Every track now plays C C# E F G G# B, the root still C"},
+    {58000, 61000, 200, "HOME", "HOME", "Tap HOME. USER1 stays on the FM-1, for every project"},
+};
 /* chillwave: 96 BPM, A minor; a kalimba with no generator as track 1 (played on the keys), a warm pad on CHORD round
  * the pop progression (a chord a bar), a sub on EUCLID, an 808 in STEP */
 static void g_chillwave_scene(void)
@@ -756,6 +800,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
     G_RUN("r-patterns", "PATTERNS", "MOSAIC", 41, 4, g_citypop_scene, G_PATTERNS);   /* city pop */
+    G_RUN("r-user-scale", "A SCALE OF YOUR OWN", "MOSAIC", 70, 4, g_ethno_scene, G_USCALE);   /* ethno-ambient */
     G_RUN("r-harm", "RUN THE KEYS INTO CHORDS", "MOSAIC", 68, 4, g_chillwave_scene, G_HARM);   /* chillwave */
     G_RUN("r-song", "A SONG FROM PATTERNS", "MOSAIC", 91, 4, g_reggae_scene, G_SONG);   /* reggae */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
