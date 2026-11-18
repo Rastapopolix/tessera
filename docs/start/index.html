@@ -48,6 +48,8 @@ nav.side input { width: 100%; font: inherit; color: var(--text); background: var
 .toc a { display: block; color: var(--mid); text-decoration: none; padding: 2px 4px; }
 .toc a:hover { color: var(--bg); }
 .toc li.open > a, .toc a.here { color: var(--ink); }
+.toc li.group { margin: 16px 0 4px; padding: 0 4px; color: var(--dim); font: 14px/1.2 var(--pixel); }
+.toc li.group:first-child { margin-top: 0; }
 .results { list-style: none; margin: 0; padding: 0; }
 .results li { margin: 0 0 10px; }
 .results small { display: block; color: var(--dim); }
@@ -73,6 +75,9 @@ main pre { background: var(--surf); padding: 12px; overflow-x: auto; }
 main pre code { padding: 0; }
 main blockquote { margin: 12px 0; padding: 8px 14px; border-left: 4px solid var(--ink); background: var(--surf); }
 main blockquote p { margin: 0; }
+main details { margin: 12px 0; padding: 6px 14px; border: 1px solid var(--line); }
+main details[open] { background: var(--surf); }
+main summary { cursor: pointer; color: var(--ink); }
 main hr { border: 0; border-top: 1px solid var(--line); margin: 32px 0; }
 .next { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); }
 @media (max-width: 900px) {
@@ -103,7 +108,7 @@ main hr { border: 0; border-top: 1px solid var(--line); margin: 32px 0; }
 <nav class="side" id="side" aria-label="Contents">
   <input id="q" type="search" placeholder="Search this guide" aria-label="Search this guide" autocomplete="off">
   <ol class="results" id="results" hidden></ol>
-  <ol class="toc"><li><a href="#1-install">1. Install</a><ol></ol></li><li><a href="#2-hear-it">2. Hear it</a><ol></ol></li><li><a href="#3-let-a-generator-play">3. Let a generator play</a><ol></ol></li><li><a href="#4-find-a-line-you-like">4. Find a line you like</a><ol></ol></li><li><a href="#5-let-it-play-itself">5. Let it play itself</a><ol></ol></li><li><a href="#6-watch-it">6. Watch it</a><ol></ol></li><li><a href="#7-save-it">7. Save it</a><ol></ol></li><li><a href="#where-next">Where next</a><ol></ol></li></ol>
+  <ol class="toc"><li><a href="#1-install">1. Install</a></li><li><a href="#2-hear-it">2. Hear it</a></li><li><a href="#3-let-a-generator-play">3. Let a generator play</a></li><li><a href="#4-find-a-line-you-like">4. Find a line you like</a></li><li><a href="#5-let-it-play-itself">5. Let it play itself</a></li><li><a href="#6-watch-it">6. Watch it</a></li><li><a href="#7-save-it">7. Save it</a></li><li><a href="#where-next">Where next</a></li></ol>
 </nav>
 <main id="main">
 <h1 id="getting-started-with-tessera">Getting started with Tessera</h1>
@@ -160,7 +165,7 @@ end, and stops by itself.</li>
 <p align="center"><img src="../media/gallery/glo_entries.png" alt="ENTRIES" width="240"> <img src="../media/gallery/glo_piece.png" alt="PIECE" width="240"><br><sub>ENTRIES shows which tracks are in and out; PIECE shows the shape of the whole piece.</sub></p>
 <p><strong>Try:</strong> press <strong>PLAY</strong> and leave it for ten minutes.</p>
 <h2 id="6-watch-it">6. Watch it</h2>
-<p><strong>GLO</strong>, tap to <strong>LANDSCAPE</strong>: a night lake drawn by the music. Notes fall as rain, the moon crosses the sky as the
+<p><strong>GLO</strong>, tap to <strong>LANDSCAPE</strong>: a night sea drawn by the music. Notes fall as rain, the moon crosses the sky as the
 piece goes on. The keys are the mixer's: the black keys mute tracks 1 to 4,
 <strong>C4</strong> brings them all back.</p>
 <p align="center"><img src="../media/gallery/glo_land_rain.png" alt="LANDSCAPE" width="240"><br><sub>LANDSCAPE while the music plays.</sub></p>
