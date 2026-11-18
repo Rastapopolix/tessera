@@ -3022,6 +3022,7 @@ static void g_run(const char *out, FILE *tsv, const char *name, const char *titl
 #include "guides/e08.h"
 #include "guides/e09.h"
 #include "guides/ref.h"
+#include "guides/ref-gen.h"
 static void guide(const char *out)
 {
     char path[600];
@@ -3033,7 +3034,7 @@ static void guide(const char *out)
     if (!(tsv = fopen(path, "w"))) return;
     v_t0 = 0;
     guide_e01(out, tsv); guide_e02(out, tsv); guide_e03(out, tsv); guide_e04(out, tsv); guide_e05(out, tsv);
-    guide_e06(out, tsv); guide_e07(out, tsv); guide_e08(out, tsv); guide_e09(out, tsv); guide_ref(out, tsv);
+    guide_e06(out, tsv); guide_e07(out, tsv); guide_e08(out, tsv); guide_e09(out, tsv); guide_ref(out, tsv); guide_ref_gen(out, tsv);
     fclose(tsv);
     fclose(v_cap);
 }
