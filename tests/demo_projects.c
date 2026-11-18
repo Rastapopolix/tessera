@@ -2994,7 +2994,7 @@ static const gstep_t G_MIXER[] = {
     {21000, 24000, 5500, "G3", "SOLO TRACK 2", "Hold white key G3: only track 2, the bass, plays. Let go: all four again"},
     {31000, 34000, 5600, "E4", "FILL", "Hold E4 for FILL: the steps set to FILL play, here a snare roll"},
     {40000, 43000, 200, "A#3", "MUTE TRACK 3", "Black keys A#3 and C#4 mute tracks 3 and 4"},
-    {0, 44000, 200, "C#4", "MUTE TRACK 4", 0},
+    {0, 44500, 200, "C#4", "MUTE TRACK 4", 0},
     {45500, 48500, 200, "C4", "UNMUTE ALL", "C4 unmutes every track at once"},
     {50500, 0, 0, 0, 0, "On any other page, hold GLO for the same keys"},
 };
@@ -3021,7 +3021,7 @@ static const gstep_t G_KEY[] = {
     {3500, 6500, 4500, "SEL", "SET THE KEY", "Hold SEL and press a key: that note is the new root (A becomes D)"},
     {0, 8000, 300, "D4", "ROOT D", 0},
     {13500, 16500, 4500, "SEL", "SET THE KEY", "Still holding SEL, turn KNOB 2: another scale (DORIAN becomes MIXOLYDIAN)"},
-    {0, 17500, 1500, "KNOB 2", "NEXT SCALE", 0, 1},
+    {0, 18000, 1500, "KNOB 2", "NEXT SCALE", 0, 1},
     {24000, 0, 0, 0, 0, "Let go of SEL: all four tracks follow, nothing to retune"},
 };
 static void g_run(const char *out, FILE *tsv, const char *name, const char *title, uint32_t secs, uint32_t pre,
@@ -3083,13 +3083,14 @@ static void guide(const char *out)
     snprintf(path, sizeof path, "%s/guide.tsv", out);
     if (!(tsv = fopen(path, "w"))) return;
     v_t0 = 0;
-    /* the ink: the topic's (PLAN.md), MOSAIC where the four tracks are the point; the music: a different demo each */
+    /* the ink: the topic's, MOSAIC where the four tracks are the point; the music: a different demo each; each 3 s
+     * longer than its last caption needs, for the end card (tools/guide_video.py TAIL) */
 #define G_RUN(nm, title, ink, secs, pre, make, tab) \
     g_run(out, tsv, nm, title, secs, pre, make, ink, tab, sizeof tab / sizeof tab[0])
-    G_RUN("e01-pages", "FIND YOUR WAY", "YELLOW", 40, 60, demo_still, G_PAGES);      /* ambient */
-    G_RUN("e03-sound", "CHANGE THE SOUND", "MOSAIC", 40, 30, demo_cedar, G_SOUND);   /* koto, ambient */
-    G_RUN("e04-key", "KEEP IT IN KEY", "BLUE", 44, 60, demo_dub, G_KEY);             /* ambient dub */
-    G_RUN("e07-mixer", "MUTE, SOLO, FILL", "MOSAIC", 56, 4, g_mixer_scene, G_MIXER); /* a beat */
+    G_RUN("e01-pages", "FIND YOUR WAY", "YELLOW", 43, 60, demo_still, G_PAGES);      /* ambient */
+    G_RUN("e03-sound", "CHANGE THE SOUND", "MOSAIC", 43, 30, demo_cedar, G_SOUND);   /* koto, ambient */
+    G_RUN("e04-key", "KEEP IT IN KEY", "BLUE", 47, 60, demo_dub, G_KEY);             /* ambient dub */
+    G_RUN("e07-mixer", "MUTE, SOLO, FILL", "MOSAIC", 59, 4, g_mixer_scene, G_MIXER); /* a beat */
     fclose(tsv);
     fclose(v_cap);
 }
