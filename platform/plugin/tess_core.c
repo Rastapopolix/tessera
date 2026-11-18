@@ -61,3 +61,25 @@ uint32_t tess_core_load(const uint8_t *in, uint32_t len)
     ui.force = 1;
     return 0;
 }
+
+/* ---- the panel */
+void tess_core_buttons(uint32_t mask) { web_buttons(mask); }
+void tess_core_keys(uint32_t mask) { web_keys(mask); }
+void tess_core_enc(uint32_t role, int32_t n) { web_enc(role, n); }
+void tess_core_master(uint32_t v) { web_master(v); }
+
+void tess_core_view(tess_view_t *v)
+{
+    uint32_t i;
+    const uint16_t *fb = web_screen();
+    for (i = 0; i < TESS_SCREEN * TESS_SCREEN; i++)        /* the panel's byte order -> RGB565 */
+        v->screen[i] = (uint16_t)(fb[i] >> 8 | fb[i] << 8);
+    v->lit_buttons = web_lit_buttons();
+    v->lit_keys = web_lit_keys();
+    v->dim_buttons = web_dim_buttons();
+    v->dim_keys = web_dim_keys();
+    v->breath_buttons = web_breath_buttons();
+    v->breath_keys = web_breath_keys();
+    v->screen_draws = web_screen_draws();
+    v->playing = song.playing;
+}

@@ -1,8 +1,8 @@
-# Tessera as a plugin (spike)
+# Tessera as a plugin
 
 Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument and, through
 [clap-wrapper](https://github.com/free-audio/clap-wrapper), as VST3 and a standalone app. This is the first step
-(phase 0): it plays, but has no window yet.
+(phases 0 and 1): it plays, and its window is the FM-1.
 
 ## What works
 
@@ -13,10 +13,15 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
 - **MIDI in:** notes and MIDI messages reach Tessera as USB MIDI does on the FM-1, at their exact sample.
 - **Saving:** the plugin's state in the DAW project is the Tessera project as a `.tsp` record, the same bytes SAVE >
   PROJECT writes on the FM-1.
+- **The window** (Windows and Linux): the FM-1 as the web simulator draws it, black shell. The screen at 1:1;
+  click the buttons and keys (drag across the keys to glide); drag a knob up/down or left/right, or use the mouse
+  wheel over it. The LEDs light, dim and breathe as on the device. The window talks to the core through the audio
+  thread, so it only moves while the host is processing audio.
 
 ## Not yet
 
-- No window: no screen, panel or knobs (next phase).
+- No window on macOS (it plays as in phase 0).
+- No computer-keyboard shortcuts, no shell or ink picker (the ink is MENU > COLOR, as on the device).
 - No tempo sync: Tessera keeps its own BPM; the host's tempo and bar position are ignored.
 - One Tessera per DAW session: the firmware keeps its state in globals, so a second instance is refused, and a new
   instance carries on from the last one's state.
@@ -30,14 +35,15 @@ time (the CLAP SDK, clap-wrapper and the VST3 SDK are downloaded at configure ti
 ```
 cmake -S platform/plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
 cmake --build build/plugin -j
-build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 still-tide.wav   # Linux / macOS
+build/plugin/tessera-panel-test shots/                                             # the window's test: PPM pictures in shots/
+xvfb-run build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 still-tide.wav window.ppm   # Linux / macOS
 ```
 
 Windows (Visual Studio 2022 with its "C++ Clang tools for Windows" component). Windows' Pillow has no Raqm for the
 UI font, so make the generated headers in WSL first (`tools/wsl.sh python3 platform/plugin/gen.py`), then:
 
 ```
-cmake -S platform/plugin -B build/plugin -G "Visual Studio 17 2022" -A x64 -T ClangCL -DTESS_PLUGIN_TESTS=OFF -DTESS_GEN=OFF
+cmake -S platform/plugin -B build/plugin -G "Visual Studio 17 2022" -A x64 -T ClangCL -DTESS_GEN=OFF
 cmake --build build/plugin --config Release
 ```
 
