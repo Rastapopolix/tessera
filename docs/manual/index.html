@@ -1916,7 +1916,7 @@ track gives the same GATE and NOTE from its pattern.</p>
 <td>VARY (0–100 %)</td>
 <td>ECHO (0–100 %)</td>
 <td>FADE (1–16, LOOPS)</td>
-<td>After Zen-1's call and response (the idea only): play a phrase on the track's keys (or MIDI IN), up to 16 notes, and a bar without a key ends it. ANSWER plays it back, after a rest, as answers that change a little more each time (VARY: a note moved a degree or two, an octave, left out or swapped), each softer than the last. ECHO repeats some notes once more at half the velocity. A note held down rings back that long too, when <a href="#length">LENGTH</a> is left at its default STEP (FIXED or HIT there still decide). FADE is how many answers it gives, 1 to 16, before it rests until you play again; turned on past 16 (LOOPS SHORT, MID or LONG, the loops' lengths) it never forgets and plays on as four loops of different lengths. Its OCT+ layer: SOURCE (below), ORDER (PLAYED, REVERSE, SHUFFLE), SHIFT (each answer moved up to this many scale degrees) and SPACE (the rest before an answer, up to 4 bars). The GEN sheet (OCT+ held) adds <strong>CHORD</strong>: ARP (the old behaviour: notes played together are spread one a step apart) or TRUE (they share the step and come back as a real chord), and <strong>MODE</strong>: REPLY (as above) or BEND, a delay with a mind of its own that repeats every note TIME steps later while you play, drifting (VARY, SHIFT) and glitching (BREAK) as it goes (see <a href="#answer-source-order-shift-space-chord">ANSWER: SOURCE, ORDER, SHIFT; SPACE, CHORD</a>). <strong>SOURCE</strong> (OFF, T1 to T4) makes a STEP pattern the call instead of the keys: that track's pattern playing now (this track's own too), its first 16 notes at their steps, read again before each answer, so a sequence you record in STEP gets answered, and answered anew when you change it. The keys then just play. While that track's pattern is empty, the notes you play live on its keys (or its MIDI IN) are the call instead, so you can play T1 and have T2 answer. The other way round, REC held prints ANSWER's answers into STEP (see <a href="#print-and-keep">Print and keep</a>).</td>
+<td>After Zen-1's call and response (the idea only): play a phrase on the track's keys (or MIDI IN), up to 16 notes, and a bar without a key ends it (with the transport stopped, a pause of a second and a half). ANSWER plays it back, after a rest, as answers that change a little more each time (VARY: a note moved a degree or two, an octave, left out or swapped), each softer than the last. ECHO repeats some notes once more at half the velocity. A note held down rings back that long too, when <a href="#length">LENGTH</a> is left at its default STEP (FIXED or HIT there still decide). FADE is how many answers it gives, 1 to 16, before it rests until you play again; turned on past 16 (LOOPS SHORT, MID or LONG, the loops' lengths) it never forgets and plays on as four loops of different lengths. Its OCT+ layer: SOURCE (below), ORDER (PLAYED, REVERSE, SHUFFLE), SHIFT (each answer moved up to this many scale degrees) and SPACE (the rest before an answer, up to 4 bars). The GEN sheet (OCT+ held) adds <strong>CHORD</strong>: ARP (the old behaviour: notes played together are spread one a step apart) or TRUE (they share the step and come back as a real chord), and <strong>MODE</strong>: REPLY (as above) or BEND, a delay with a mind of its own that repeats every note TIME steps later while you play, drifting (VARY, SHIFT) and glitching (BREAK) as it goes (see <a href="#answer-source-order-shift-space-chord">ANSWER: SOURCE, ORDER, SHIFT; SPACE, CHORD</a>). <strong>SOURCE</strong> (OFF, T1 to T4) makes a STEP pattern the call instead of the keys: that track's pattern playing now (this track's own too), its first 16 notes at their steps, read again before each answer, so a sequence you record in STEP gets answered, and answered anew when you change it. The keys then just play. While that track's pattern is empty, the notes you play live on its keys (or its MIDI IN) are the call instead, so you can play T1 and have T2 answer. The other way round, REC held prints ANSWER's answers into STEP (see <a href="#print-and-keep">Print and keep</a>).</td>
 </tr>
 </tbody>
 </table>
@@ -2047,7 +2047,7 @@ register. The chord's kind and voicing are on the GEN sheet (and on SCL &gt; CHO
 <tr>
 <td>GEN sheet</td>
 <td><strong>Chord</strong></td>
-<td>SCL &gt; CHORD's chord kind. OFF plays triads. DIA3 and DIA7 play triads and sevenths in the scale. MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9 and MAJ6 are fixed shapes on any note.</td>
+<td>SCL &gt; CHORD's chord kind. OFF plays triads. DIA3 and DIA7 play triads and sevenths in the scale, and 2NDS, 4THS and 5THS stack its seconds, fourths or fifths. MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9 and MAJ6 are fixed shapes on any note.</td>
 </tr>
 <tr>
 <td>GEN sheet</td>
@@ -3717,7 +3717,7 @@ edit, and that never change unless you change them.</p>
 <tbody>
 <tr>
 <td>A generator</td>
-<td>What it played in its last bars goes into the track's STEP pattern (1, 2 or 4 bars, as many as the notes span). The track switches to STEP and plays on from the same place.</td>
+<td>What it played in its last whole passes goes into the track's STEP pattern (1, 2 or 4 passes of PATTERN's LEN, as many as the notes span, up to 64 steps). The track switches to STEP and plays on from the same place.</td>
 <td>Puts the generator back.</td>
 </tr>
 <tr>
@@ -3740,7 +3740,14 @@ edit, and that never change unless you change them.</p>
 <ul>
 <li>Steps written by hand already there: <strong>REPLACE STEPS?</strong> OCT+ prints over them, OCT- keeps them.</li>
 <li>Recorded notes there: <strong>CLEAR TO PRINT</strong>.</li>
+<li>A print starts where a pass starts, so the loop joins up the way it played. With LEN 16 that is a bar; with LEN 12, two passes print as 24 steps.</li>
 </ul>
+<blockquote>
+<p><strong>Try this: an endless solo.</strong> A generator doesn't have to loop. Put <strong>MARKOV</strong> on a track, set LEAP to about 30 %
+and DENS to about 70 %, and on EVOLVE turn <strong>LOCK</strong> to 0: every pass is a new line, so it walks on for as long as
+you let it, never repeating. When it plays a phrase you want to keep, hold <strong>REC</strong>: its last bars (up to four)
+become steps you can loop and edit. For a solo that keeps coming back to its ideas, try LOCK at about 50 %.</p>
+</blockquote>
 <hr />
 <h2 id="harmony-one-key-chord-and-qnt-chrd">Harmony: one key, CHORD and QNT CHRD</h2>
 <blockquote>
@@ -3836,8 +3843,8 @@ written stay where they are; <strong>Snap to scale</strong> on the pattern's she
 <p>A <strong>CHORD</strong> track plays a progression; with <strong>QNT CHRD</strong> the other tracks follow it.</p>
 <ul>
 <li>On the CHORD track: GEN, MODE <strong>CHORD</strong>, then <strong>PROG</strong>, <strong>BARS</strong> and <strong>HIT</strong>. The chord's kind and voicing come
-from <strong>SCL &gt; CHORD</strong> (CHRD, VOIC), or the GEN sheet. CHRD OFF plays triads; DIA3 and DIA7
-stay in the scale, the fixed kinds (MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9, MAJ6) lay the same shape
+from <strong>SCL &gt; CHORD</strong> (CHRD, VOIC), or the GEN sheet. CHRD OFF plays triads; DIA3, DIA7, 2NDS, 4THS
+and 5THS stay in the scale, the fixed kinds (MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9, MAJ6) lay the same shape
 on every chord of the progression, so some may leave the key.</li>
 <li>On any other track: <strong>SCL</strong>, <strong>QNT</strong> to <strong>CHRD</strong>. Its keys, its MIDI input and its generator snap to the nearest
 note of the chord playing now, and KNOB 2 on NOTES steps through its notes. With no CHORD track, CHRD acts as
@@ -5526,7 +5533,8 @@ and key at the same time. Also the track setting on FORM, FOLLOW or OWN, that de
 <a href="#chain-one-form-for-the-project">MANUAL</a></p>
 <p><strong>CHORD</strong>. A generator that plays a progression of chords in your scale. Also the <strong>CHORD</strong> page on SCL for the chord
 kind and voicing. <a href="#chord-strum-dir-oct-chrd-voic-breath-or-len">MANUAL</a></p>
-<p><strong>CHRD</strong> (chord kind). Which chord shape a note makes: triads, sevenths in the scale (DIA3, DIA7), or fixed shapes
+<p><strong>CHRD</strong> (chord kind). Which chord shape a note makes: triads, sevenths in the scale (DIA3, DIA7), the scale's
+seconds, fourths or fifths stacked (2NDS, 4THS, 5THS <strong>(3.7.2)</strong>), or fixed shapes
 (MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW; SUS2, 7SUS4, ADD9, MAJ6 <strong>(3.5)</strong>). Used by the chord keys, MIDI in, the
 arpeggiator and the CHORD generator. See also <em>QNT</em> and <em>VOIC</em>.</p>
 <p><strong>CLK / CLOCK</strong>. The timing signal that keeps music in step. In Tessera: <strong>CLK</strong> (GLO &gt; MIDI IN) picks the clock
