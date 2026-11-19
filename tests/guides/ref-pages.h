@@ -3,8 +3,8 @@
  * sends, the LFOs, the sound engines' pages, ARP, TEMPO and the MENU. Each scene a style no other clip uses (the
  * HANDOVER registry). Rendered by tests/demo_projects.c guide (GUIDE_ONLY=r-... for one clip) */
 
-/* afrobeat: 108 BPM, D dorian; a marimba on EUCLID as track 1 (it BRANCHes onto track 2's sound), a muted guitar-like
- * pluck on EUCLID as track 2, a bass on TURING as track 3 (its LOGIC), an organ stab on CHORD as track 4 (its COND) */
+/* afrobeat: 108 BPM, D dorian; a marimba on EUCLID as track 1 (it BRANCHes onto track 2's sound), a bright kalimba
+ * far right on EUCLID as track 2, a bass on TURING as track 3 (its LOGIC), an organ stab on CHORD as track 4 (its COND) */
 static void g_afrobeat_scene(void)
 {
     song.g[G_BPM] = 108;
@@ -15,22 +15,22 @@ static void g_afrobeat_scene(void)
     trk[0].p[P_SDIV] = DIV_16;
     gen(0, TESS_ENG_EUCLID, 31);
     tx(0, TX_EUC_STEPS, 16); tx(0, TX_EUC_PULSES, 9); tx(0, TX_EUC_ROT, 1);
-    mixer(0, 100, -20, 30, 20);
-    sound(1, ENGI_FM6, V_PLUCK);
-    trk[1].p[P_SDIV] = DIV_16;
+    mixer(0, 112, -20, 30, 20);
+    sound(1, ENGI_FM6, FX_KALIMBA);                     /* (Theo: the BRANCH target must stand out: a bright kalimba */
+    trk[1].p[P_SDIV] = DIV_16;                          /* up high, far right, sparse on its own) */
     gen(1, TESS_ENG_EUCLID, 44);
-    tx(1, TX_EUC_STEPS, 16); tx(1, TX_EUC_PULSES, 5); tx(1, TX_EUC_ROT, 3); tx(1, TX_TW_SHIFT, 12);
-    mixer(1, 96, 25, 30, 25);
+    tx(1, TX_EUC_STEPS, 16); tx(1, TX_EUC_PULSES, 3); tx(1, TX_EUC_ROT, 3); tx(1, TX_TW_SHIFT, 12);
+    mixer(1, 114, 60, 30, 35);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
     trk[2].p[P_SDIV] = DIV_16;
     gen(2, TESS_ENG_TURING, 8);
     tx(2, TX_TUR_PROB, 10); tx(2, TX_TW_SHIFT, -12);
-    mixer(2, 88, 0, 0, 0);
+    mixer(2, 76, 0, 0, 0);
     sound(3, ENGI_FM6, FX_ORGAN);
     trk[3].p[P_CHRD] = 1;
     gen(3, TESS_ENG_CHORD, 5);
     tx(3, TX_CH_PROG, GEN_CH_TWO); tx(3, TX_CH_BARS, 1); tx(3, TX_CH_HIT, GEN_CH_BEAT);
-    mixer(3, 78, -10, 30, 0);
+    mixer(3, 70, -10, 30, 0);
     g_solo_check();
 }
 static const gstep_t G_TWEAK2[] = {
@@ -38,7 +38,7 @@ static const gstep_t G_TWEAK2[] = {
     {3000, 5000, 200, "ARP", "EVOLVE", "Tap ARP: EVOLVE, then turn SELECT three times: TWEAK 2. Track 1, the marimba"},
     {0, 7000, 1200, "SELECT", "TWEAK 2", 0, 3},
     {12000, 14000, 600, "KNOB 2", "TO T2", "Turn KNOB 2, TO: track 2 and a mode, COIN: each hit tossed", 1},
-    {19000, 21000, 2000, "KNOB 1", "BRANCH", "Turn KNOB 1, BRANCH: 50 %. Half the hits play on track 2's sound", 25},
+    {19000, 21000, 2000, "KNOB 1", "BRANCH", "Turn KNOB 1, BRANCH: 50 %. Half the hits play on track 2's kalimba, far right", 25},
     {28000, 30000, 600, "KNOB 2", "TOGGLE", "TOGGLE: it switches side on a toss won. Call and response", 1},
     {37000, 39000, 600, "KNOB 2", "LATCH", "LATCH: one toss a bar, a whole bar on one side", 1},
     {46000, 48000, 2500, "KNOB 1", "BRANCH 0", "BRANCH back to 0", -25},
