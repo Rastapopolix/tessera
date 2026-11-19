@@ -5652,6 +5652,70 @@ function updateBrowser() {
 }
 
 function visible(d) { return d && d.max > d.min && !!d.label && d.label !== "-"; }
+
+/* ------------------------------------------------------------ names for screen readers --- */
+/* A control's name: where it is (the group, its page) and its label in words, "ENV: attack (ATK)", from the
+   firmware's words file (the screen reader's, firmware/words.tsv: web/make_site.py names the file here; without it,
+   as when the page is opened from the repository, the labels stay as they are) and EDITOR_WORDS below. A slider
+   also says its value as the page shows it (aria-valuetext: "-4.0 dB", not "80"). */
+const WORDS_FILE = "";
+const EDITOR_WORDS = [["R#", "rate #"], ["L#", "level #"], ["PR#", "pitch rate #"], ["PL#", "pitch level #"],
+  ["BP", "break point"], ["LD", "left depth"], ["RD", "right depth"], ["LC", "left curve"], ["RC", "right curve"],
+  ["RS", "rate scaling"], ["AMS", "amp mod sensitivity"], ["KVS", "key velocity sensitivity"], ["OL", "output level"],
+  ["FC", "frequency coarse"], ["FF", "frequency fine"], ["DET", "detune"], ["OKS", "oscillator key sync"],
+  ["LFS", "LFO speed"], ["LFD", "LFO delay"], ["LPMD", "pitch mod depth"], ["LAMD", "amp mod depth"],
+  ["LKS", "LFO key sync"], ["LFW", "LFO wave"], ["LPMS", "pitch mod sensitivity"], ["TRNSP", "transpose"],
+  ["SPD", "speed"], ["DLY", "delay"], ["OP#", "operator #"], ["DEC", "decay"], ["FLT", "filter"], ["PIT", "pitch"],
+  ["PHS", "phase"], ["SWG", "swing"], ["CUT", "cutoff"], ["DIV", "division"], ["LEN", "length"], ["AMT", "amount"],
+  ["SRC", "source"], ["DST", "destination"], ["VEL", "velocity"], ["PAN", "pan"]];
+/* each entry as a pattern, the longest first (the first that fits is the one) */
+const wordPatterns = (list) => list.map(([k, v]) => [k, v,
+  new RegExp("^" + k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/#/g, "(-?\\d+)") + "$", "i")])
+  .sort((a, b) => b[0].length - a[0].length);
+let words = wordPatterns(EDITOR_WORDS);
+if (WORDS_FILE) fetch(new URL("../../words/" + WORDS_FILE, location.href)).then((r) => r.json()).then((j) => {
+  if (j && j.format === 1 && Array.isArray(j.words))
+    words = wordPatterns(EDITOR_WORDS.concat(j.words.filter((w) => Array.isArray(w) && typeof w[0] === "string" && typeof w[1] === "string"
+                                                                && w[0].length <= 120)));
+  for (const id of ["groups", "seqgroups", "setgroups"]) nameControls($(id));   /* (built before it came) */
+}).catch(() => { /* (no words file: the labels as they are) */ });
+/* a label in words: the longest entry that is the whole label ("#" a number), else word by word */
+function inWords(label) {
+  const whole = (l) => {
+    for (const [, v, re] of words) {
+      const m = re.exec(l);
+      if (m) { let n = 1; return v.replace(/#/g, () => m[n++] ?? ""); }
+    }
+    return null;
+  };
+  const w = whole(label);
+  if (w) return w;
+  const parts = label.split(/\s+/), said = parts.map((x) => whole(x) || x);
+  return said.join(" ");
+}
+/* the accessible name: "where: label in words (LABEL)" (the label kept, for voice control); a label already in
+   words is said once */
+function controlName(where, label) {
+  const w = inWords(label);
+  const said = w.toLowerCase() === label.toLowerCase() ? label : `${w} (${label})`;
+  return where ? `${where}: ${said}` : said;
+}
+/* every control of the built groups named from its group and page heading */
+function nameControls(box) {
+  for (const g of box.querySelectorAll(".group")) {
+    let h2 = g.querySelector("h2")?.textContent.trim() || "", h3 = "";
+    for (const c of g.children) {
+      if (c.tagName === "H3") { h3 = c.textContent.trim(); continue; }
+      if (!c.classList.contains("row")) continue;
+      const lead = c.querySelector(":scope > span")?.textContent.trim() || "";
+      const where = [h2, h3].filter(Boolean).join(" ") + (c.classList.contains("modrow") ? " " + lead : "");
+      for (const i of c.querySelectorAll("input, select")) {
+        const label = i.dataset.label || (c.classList.contains("modrow") ? "" : lead);
+        if (label) i.setAttribute("aria-label", controlName(where.trim(), label));
+      }
+    }
+  }
+}
 /* a matrix destination E1..E8 by the engine's label of that parameter (as the device shows it) */
 function modDst(d, txt) {
   const m = d && /^DST\d$/.test(d.label) && /^E([1-8])$/.exec(txt);
@@ -5702,7 +5766,7 @@ function buildGroups() {
     groups.groups.push(a, b);
     groups.setgroups.push(c);
   }
-  for (const [id, divs] of Object.entries(groups)) $(id).replaceChildren(...divs);
+  for (const [id, divs] of Object.entries(groups)) { $(id).replaceChildren(...divs); nameControls($(id)); }
 }
 
 function scalePickerRow(s, id, d) {
@@ -5794,6 +5858,7 @@ function paramRow(s, id) {
     });
   }
   input.title = d.label;
+  input.dataset.label = d.label;
   const out = el("span", { class: "v" });
   const row = el("div", { class: "row" }, el("span", { text: d.label }), input, out);
   ctl.set(k, { input, out, desc: d, scope: s, id, row });
@@ -5807,6 +5872,7 @@ function showValue(k, v, force) {
   if (c.render) { if (force || !touched(k)) c.render(v); return; }
   const [txt0, unit] = fmtValue(c.desc, v), txt = modDst(c.desc, txt0);
   c.out.textContent = unit ? `${txt} ${unit}` : txt;
+  if (c.input.type === "range") c.input.setAttribute("aria-valuetext", c.out.textContent);
   if (force || !touched(k)) c.input.value = String(v);
 }
 /* the user is working on this control: polling and pushes must not move it */
@@ -7394,12 +7460,12 @@ function fm6Set(i, val) {
     fm6Timer = setTimeout(() => op(() => fm6Send(true)), 150);
   }
 }
-function fm6Num(i, title) {
-  return el("input", { type: "number", min: 0, max: FM6.max(i), value: fm6v[i], title, class: "fm6n",
+function fm6Num(i, title, where = "") {
+  return el("input", { type: "number", min: 0, max: FM6.max(i), value: fm6v[i], title, class: "fm6n", "aria-label": controlName(where, title),
     onchange: (e) => { fm6Set(i, e.target.value); e.target.value = fm6v[i]; renderFm6Ops(); } });
 }
-function fm6Sel(i, names, title) {
-  const s = el("select", { title, onchange: (e) => { fm6Set(i, e.target.value); renderFm6(); } },
+function fm6Sel(i, names, title, where = "") {
+  const s = el("select", { title, "aria-label": controlName(where, title), onchange: (e) => { fm6Set(i, e.target.value); renderFm6(); } },
     ...names.map((n, k) => el("option", { value: k, text: n })));
   s.value = fm6v[i];
   return s;
@@ -7414,18 +7480,18 @@ function renderFm6Voice() {
     row("ALG", fm6Sel(V.ALG, Array.from({ length: 32 }, (_, k) => String(k + 1)), "ALG"),
       el("span", { class: "dim", text: ` ${t("fm6Carriers")} ${FM6.carriers(alg).join(" ")}, ${t("fm6Feedback")} OP${fb}` })),
     row("FB", fm6Num(V.FB, "FB"), " OKS ", fm6Num(V.OKS, "OKS"), " TRNSP ", fm6Num(V.TRNSP, "TRNSP")),
-    row("LFO", fm6Sel(V.LFW, FM6_WAVES, "WAVE"), " SPD ", fm6Num(V.LFS, "SPEED"), " DLY ", fm6Num(V.LFD, "DELAY"),
-      " PMD ", fm6Num(V.LPMD, "PMD"), " AMD ", fm6Num(V.LAMD, "AMD"), " PMS ", fm6Num(V.LPMS, "PMS"), " SYNC ", fm6Num(V.LKS, "SYNC")),
-    row(t("fm6PitchEg"), "R ", ...[0, 1, 2, 3].map((k) => fm6Num(V.PR1 + k, "R" + (k + 1))),
-      " L ", ...[0, 1, 2, 3].map((k) => fm6Num(V.PL1 + k, "L" + (k + 1))))));
+    row("LFO", fm6Sel(V.LFW, FM6_WAVES, "WAVE", "LFO"), " SPD ", fm6Num(V.LFS, "SPEED", "LFO"), " DLY ", fm6Num(V.LFD, "DELAY", "LFO"),
+      " PMD ", fm6Num(V.LPMD, "PMD", "LFO"), " AMD ", fm6Num(V.LAMD, "AMD", "LFO"), " PMS ", fm6Num(V.LPMS, "PMS", "LFO"), " SYNC ", fm6Num(V.LKS, "SYNC", "LFO")),
+    row(t("fm6PitchEg"), "R ", ...[0, 1, 2, 3].map((k) => fm6Num(V.PR1 + k, "R" + (k + 1), t("fm6PitchEg"))),
+      " L ", ...[0, 1, 2, 3].map((k) => fm6Num(V.PL1 + k, "L" + (k + 1), t("fm6PitchEg"))))));
 }
 function renderFm6Ops() {
   const car = FM6.carriers(fm6v[FM6.VI.ALG]);
   const head = el("tr", {}, el("th", { text: "OP" }), ...FM6.OP.map(([n]) => el("th", { text: n })), el("th", { text: t("fm6Freq") }));
   const rows = [1, 2, 3, 4, 5, 6].map((n) => el("tr", {},
     el("th", { text: (car.includes(n) ? "● " : "") + n }),
-    ...FM6.OP.map(([f]) => el("td", {}, f === "LC" || f === "RC" ? fm6Sel(FM6.at(n, f), FM6_CURVES, f)
-      : f === "MODE" ? fm6Sel(FM6.at(n, f), ["RATIO", "FIXED"], f) : fm6Num(FM6.at(n, f), `OP${n} ${f}`))),
+    ...FM6.OP.map(([f]) => el("td", {}, f === "LC" || f === "RC" ? fm6Sel(FM6.at(n, f), FM6_CURVES, `OP${n} ${f}`)
+      : f === "MODE" ? fm6Sel(FM6.at(n, f), ["RATIO", "FIXED"], `OP${n} ${f}`) : fm6Num(FM6.at(n, f), `OP${n} ${f}`))),
     el("td", { class: "dim", text: FM6.freqText(fm6v, n) })));
   $("fm6ops").replaceChildren(el("div", { class: "fm6ops" }, el("table", {}, head, ...rows)), el("p", { class: "dim", text: t("fm6Legend") }));
 }
