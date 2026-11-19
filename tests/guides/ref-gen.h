@@ -502,9 +502,20 @@ static const gstep_t G_ATLAS[] = {
     {11500, 14500, 1500, "KNOB 4", "DENS", "Turn KNOB 4, DENS, up: more hits", 15},
     {20500, 23500, 2000, "KNOB 2", "X", "Turn KNOB 2, X: a different groove, smoothly", 20},
     {29500, 32500, 2000, "KNOB 3", "Y", "Turn KNOB 3, Y: another way across the map", 20},
-    {38500, 41500, 3500, "OCT-", "HOLD OCT-", "Hold OCT- and turn KNOB 4, HAT, down"},
-    {0, 43000, 1500, "KNOB 4", "HAT", 0, -25},
-    {47000, 0, 0, 0, 0, "The hat thins out; kick and snare stay"},
+    {38500, 41500, 24000, "OCT-", "HOLD OCT-", "Hold OCT-: KICK, SNR and HAT, each part's share of DENS"},
+    {0, 44000, 1500, "KNOB 4", "HAT", 0, -25},
+    {45000, 0, 0, 0, 0, "KNOB 4, HAT, down: the hat thins out; kick and snare stay"},
+    {0, 52000, 2000, "KNOB 3", "SNR", 0, -30},
+    {52500, 0, 0, 0, 0, "KNOB 3, SNR: fewer snares, the strongest stay. 0 silences a part"},
+    {0, 59000, 2000, "KNOB 3", "SNR", 0, 30},
+    {68000, 71000, 800, "OCT+", "GEN SHEET", "Hold OCT+: the GEN sheet, with the fourth part"},
+    {0, 73500, 3000, "KNOB 2", "PART 4", 0, 60},
+    {75000, 0, 0, 0, 0, "The hits kick and snare only just miss, on the tom: fills that follow the groove"},
+    {82000, 85000, 200, "OCT-", "CLOSE", "Tap OCT-: the sheet closes"},
+    {88000, 91000, 2000, "OCT-", "HOLD OCT-", "Its sound: hold OCT- and tap a black key"},
+    {0, 92000, 200, "G#4", "RIM", 0},
+    {93500, 0, 0, 0, 0, "The drum grid's lane of that key: TOM, CLAP, OPEN HAT, RIM or BELL"},
+    {101000, 0, 0, 0, 0, "X, Y and DENS; KICK, SNR and HAT; a fourth part and its sound"},
 };
 static void guide_ref_gen(const char *out, FILE *tsv)
 {
@@ -517,5 +528,5 @@ static void guide_ref_gen(const char *out, FILE *tsv)
     G_RUN("r-chord", "CHORD: THE HARMONY", "GREEN", 152, 4, g_gospel_scene, G_CHORDS);   /* minor gospel */
     G_RUN("r-answer", "ANSWER: CALL AND RESPONSE", "GREEN", 164, 4, g_blues_scene, G_ANSWER);   /* blues */
     G_RUN("r-morph", "MORPH: A INTO B", "GREEN", 55, 4, g_dancehall_scene, G_MORPH);   /* dancehall */
-    G_RUN("r-atlas", "ATLAS: THE DRUM MAP", "GREEN", 54, 4, g_brokenbeat_scene, G_ATLAS);   /* broken beat */
+    G_RUN("r-atlas", "ATLAS: THE DRUM MAP", "GREEN", 107, 4, g_brokenbeat_scene, G_ATLAS);   /* broken beat */
 }
