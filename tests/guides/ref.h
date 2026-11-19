@@ -771,22 +771,23 @@ static void g_highlife_scene(void)
     song.g[G_BPM] = 112;
     scale(0, 1, 1);                                     /* C MAJ, QNT SNAP */
     sends(70, 55, 65, 40);
-    sound(0, ENGI_FM6, V_PLUCK);
+    sound(0, ENGI_TRIO, TR_SOFT_LEAD);                  /* (Theo: a softer pluck, dry) */
+    trk[0].p[P_E5] = 52; trk[0].p[P_ATK] = 0; trk[0].p[P_DEC] = 52; trk[0].p[P_SUS] = 0; trk[0].p[P_REL] = 40;
     for (uint32_t i = 0; i < 16u; i++) if (N[i]) step_note(0, i, N[i], i % 4u ? 80 : 100);
     tx(0, TX_MODE, TESS_ENG_OFF);
     trk[0].p[P_SDIV] = DIV_16; trk[0].p[P_SLEN] = 16;
-    mixer(0, 118, 15, 35, 35);
+    mixer(0, 127, 15, 0, 20);
     sound(1, ENGI_FM6, FX_ORGAN);
     trk[1].p[P_CHRD] = 1;
     gen(1, TESS_ENG_CHORD, 6);
     tx(1, TX_CH_PROG, GEN_CH_POP); tx(1, TX_CH_BARS, 1); tx(1, TX_CH_HIT, GEN_CH_OFF);
-    mixer(1, 52, -25, 40, 0);
+    mixer(1, 88, -25, 40, 0);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
     trk[2].p[P_SDIV] = DIV_8;
     gen(2, TESS_ENG_TURING, 24);
     tx(2, TX_TUR_PROB, 25); tx(2, TX_TW_SHIFT, -12); tx(2, TX_TW_DROP, 30);
     trk[2].p[P_QUANT] = Q_CHRD;
-    mixer(2, 84, 0, 0, 0);
+    mixer(2, 76, 0, 0, 0);
     sound(3, ENGI_DRUM, DK_909_KIT);
     {
         static const uint8_t L[16] = {L_BD, L_CH, L_CH, L_CH, L_RS, L_CH, L_CH, L_BD, L_CH, L_CH, L_BD, L_CH, L_RS, L_CH, L_CH, L_CH};
@@ -799,7 +800,7 @@ static void g_highlife_scene(void)
     g_solo_check();
 }
 static const gstep_t G_SEVOLVE[] = {
-    {0, 0, 0, 0, 0, "Track 1's guitar is written in STEP. EVOLVE can vary it as it plays"},
+    {0, 0, 0, 0, 0, "Track 1's soft pluck is written in STEP. EVOLVE can vary it as it plays"},
     {3500, 6500, 200, "ARP", "EVOLVE", "Tap ARP: EVOLVE, here STEP EVOLVE"},
     {10500, 0, 0, 0, 0, "EVERY 1BAR: a round of changes each bar. AMOUNT is OFF: none yet"},
     {17500, 20500, 2500, "KNOB 3", "AMOUNT", "Turn KNOB 3: AMOUNT, how many steps change (here 40 %)", 20},
@@ -810,13 +811,13 @@ static const gstep_t G_SEVOLVE[] = {
     {58000, 61000, 900, "KNOB 4", "CLEAR", "Turn KNOB 4: CLEAR, back to the steps as written", 1},
     {66000, 0, 0, 0, 0, "Like a variation? Hold REC to keep it as the steps"},
 };
-/* ambient folk: 88 BPM, G major; track 1 a plucked melody written in STEP that TURING plays from (SOURCE T1), a breathy
- * flute pad on CHORD, a sub on EUCLID, a light 808 in STEP */
+/* ambient folk: 88 BPM, A minor pentatonic; track 1 a plucked melody written in STEP that TURING plays from (SOURCE T1), a breathy
+ * soft strings on CHORD, a sub on EUCLID, a light 808 in STEP */
 static void g_ambfolk_scene(void)
 {
-    static const uint8_t N[8] = {67, 71, 74, 72, 71, 67, 69, 62};
+    static const uint8_t N[8] = {69, 72, 76, 74, 72, 69, 67, 64};
     song.g[G_BPM] = 88;
-    scale(7, 1, 1);                                     /* G MAJ, QNT SNAP */
+    scale(9, 6, 1);                                     /* A MPEN (minor pentatonic), QNT SNAP */
     sends(95, 75, 70, 45);
     sound(0, ENGI_FM6, V_PLUCK);
     for (uint32_t i = 0; i < 8u; i++) step_note(0, i, N[i], i % 4u ? 84 : 104);
@@ -824,18 +825,18 @@ static void g_ambfolk_scene(void)
     trk[0].p[P_SDIV] = DIV_8;
     gen(0, TESS_ENG_TURING, 66);
     tx(0, TX_TUR_PROB, 0); tx(0, TX_TUR_LEN, 8);
-    mixer(0, 116, 10, 50, 40);
-    sound(1, ENGI_TRIO, TR_BREATH_FLUTE);
+    mixer(0, 116, 10, 0, 25);                           /* (Theo: no reverb on the tune) */
+    sound(1, ENGI_ORACLE, OR_SOFT_STRINGS);             /* (Theo: the flute chord sounded like a hum) */
     trk[1].p[P_CHRD] = 1;
     gen(1, TESS_ENG_CHORD, 8);
-    tx(1, TX_CH_PROG, GEN_CH_POP); tx(1, TX_CH_BARS, 2); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
-    mixer(1, 46, -25, 80, 0);
+    tx(1, TX_CH_PROG, GEN_CH_TWO); tx(1, TX_CH_BARS, 2); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 56, -25, 60, 0);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
     trk[2].p[P_SDIV] = DIV_4;
     gen(2, TESS_ENG_EUCLID, 11);
     tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
     trk[2].p[P_QUANT] = Q_CHRD;
-    mixer(2, 84, 0, 0, 0);
+    mixer(2, 74, 0, 0, 0);
     sound(3, ENGI_DRUM, DK_808_KIT);
     {
         static const uint8_t L[16] = {L_BD, 0, 0, 0, L_RS, 0, L_CH, 0, 0, 0, L_BD, 0, L_RS, 0, L_CH, 0};
@@ -844,7 +845,7 @@ static void g_ambfolk_scene(void)
         trk[3].p[P_SLEN] = 16;
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
-    mixer(3, 66, 0, 25, 0);
+    mixer(3, 86, 0, 25, 0);
     g_solo_check();
 }
 static const gstep_t G_SEED[] = {
