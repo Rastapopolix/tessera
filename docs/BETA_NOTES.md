@@ -9,11 +9,15 @@ what you expected and what happened).
 
 ## New since 3.7.1
 - ECHO: TIME (knob 3) now reads in milliseconds, 10 to 367 ms, instead of %. The web editor shows it the same way. Only the display changed: the echo sounds the same and projects are unchanged.
+- Three new chord kinds on CHRD: 2NDS, 4THS and 5THS stack the scale's seconds, fourths or fifths, so they stay in key (quartal and quintal chords). On a microtonal scale they stack its own degrees, which gives close clusters (issue #852).
 
 ## Fixed
+- Capture and print (REC held) in a busy project: the log of notes played now holds 256 notes instead of 128. With all four tracks playing, a print of four bars could come out with its first bar missing.
 - ANSWER: with the transport stopped, a pause of a second and a half now ends the phrase, so the next key starts a new one. Before, every key played while stopped joined the same phrase, and once it held 16 notes the picture kept the old ones.
 
 ## Good to know
+- A project using 2NDS, 4THS or 5THS plays only the chord's root on 3.7.1 or older.
 
 ## Please try
+- SCL > CHORD: CHRD 4THS and 5THS on a few keys, with each VOIC, and on a CHORD generator track.
 - A project from 3.7.1 loads and plays the same.

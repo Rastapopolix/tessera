@@ -7689,6 +7689,27 @@ static int test_capture(void)
         stop_transport();
         cap_w = cap_from = 0; memset(cap_ev, 0, sizeof cap_ev);
     }
+    {   /* a busy jam: all four tracks play a note on every step for two and a half bars (160 events); the selected
+         * track's capture keeps every one of its 40 (the ring held 128 before: the oldest bar was lost) */
+        ui_power_on(); recording_reset();
+        for (i = 0; i < NTRK; i++) { track_defaults_steps(&trk[i]); trk[i].p[P_SLEN] = 16; }
+        cap_w = cap_from = 0; memset(cap_ev, 0, sizeof cap_ev);
+        transport_req = 1; events_block(1);
+        for (i = 0; i < 40u; i++) {
+            uint32_t track;
+            while (cap_step[0] != (uint16_t)i) events_block(1);
+            for (track = 0; track < NTRK; track++) input_on(&trk[track], 48 + track * 12 + i % 12, 100);
+            events_block(2);
+            for (track = 0; track < NTRK; track++) input_off(&trk[track], 48 + track * 12 + i % 12);
+        }
+        hold(B_REC);
+        bad += check("Capture in a busy jam (four tracks, 160 notes): the selected track's 40 notes all kept, LEN 64",
+                     cap_w - cap_from >= 160u && cap_events(TSEL) == 40u && TSEL->p[P_SLEN] == 64);
+        stop_transport();
+        for (i = 0; i < NTRK; i++) track_defaults_steps(&trk[i]);
+        recording_reset();
+        cap_w = cap_from = 0; memset(cap_ev, 0, sizeof cap_ev);
+    }
     {   /* autosave: a project with a slot, changed, stopped, untouched 5 s: saved once; unchanged: no write */
         uint32_t writes;
         ui_power_on();
