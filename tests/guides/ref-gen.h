@@ -147,6 +147,13 @@ static const gstep_t G_POLY[] = {
     {31000, 0, 0, 0, 0, "Where rhythms land together, the note plays once, louder"},
     {39000, 42000, 1000, "KNOB 3", "OFF", "Turn it back to OFF: two rhythms again", -5},
     {48000, 0, 0, 0, 0, "/4 against /3, against /5: the bars line up only now and then"},
+    {55000, 58000, 600, "KNOB 4", "SPAN 3", "Turn KNOB 4, SPAN, up: the four notes spread over 3 octaves", 1},
+    {64000, 67000, 8000, "OCT-", "HOLD OCT-", "Hold OCT-: POLY's layer is KNOB 1, RANDOM"},
+    {0, 68500, 300, "KNOB 1", "RANDOM", 0, 1},
+    {69000, 0, 0, 0, 0, "Turn it right: RHY's DIVISION and SPAN get new values"},
+    {0, 72500, 300, "KNOB 1", "PUT BACK", 0, -1},
+    {73000, 0, 0, 0, 0, "Turn it left: PUT BACK, the values from before"},
+    {80000, 0, 0, 0, 0, "RHY, DIVISION and SPAN; RANDOM"},
 };
 /* math rock: 132 BPM, E minor; QUAD on a clean pluck as track 1, an electric piano and a sub on the same grid (rows 2
  * and 3, at their own speeds), drums in STEP over 14 sixteenths (7/8); the clip turns DIR and a column's MOVE */
@@ -290,6 +297,14 @@ static const gstep_t G_SERIES[] = {
     {29000, 32000, 1000, "KNOB 4", "LOOP 4", "Turn KNOB 4, LOOP, to 4: the first 4 steps over and over", 4},
     {39000, 42000, 1000, "KNOB 4", "LOOP OFF", "Back to OFF: it unfolds again", -4},
     {48000, 0, 0, 0, 0, "Nothing random: the same START always plays the same tune"},
+    {54000, 57000, 1500, "KNOB 2", "START", "Turn KNOB 2, START: another place in the series, another tune", 10},
+    {66000, 69000, 1500, "KNOB 2", "START 0", "Back to 0: the first tune again, note for note", -10},
+    {77000, 80000, 8000, "OCT-", "HOLD OCT-", "Hold OCT-: SERIES's layer is KNOB 1, RANDOM"},
+    {0, 81500, 300, "KNOB 1", "RANDOM", 0, 1},
+    {82000, 0, 0, 0, 0, "Turn it right: START, INTV and LOOP get new values"},
+    {0, 85500, 300, "KNOB 1", "PUT BACK", 0, -1},
+    {86000, 0, 0, 0, 0, "Turn it left: PUT BACK, the values from before"},
+    {93000, 0, 0, 0, 0, "START, INTV and LOOP; RANDOM"},
 };
 /* minor gospel: 72 BPM, C minor, swung; CHORD on drawbar organ as track 1 (the clip turns PROG, HIT and BARS), a bass
  * on TURING and an electric piano on AWAKE both on QNT CHRD (they follow the chord), a slow backbeat in STEP */
@@ -559,10 +574,10 @@ static void guide_ref_gen(const char *out, FILE *tsv)
 {
     G_RUN("r-bounce", "BOUNCE AND FALL", "GREEN", 102, 4, g_kankyo_scene, G_BOUNCE);   /* kankyo ongaku */
     G_RUN("r-awake", "AWAKE: TWO LOOPS", "GREEN", 94, 4, g_chamberjazz_scene, G_AWAKE);   /* chamber jazz */
-    G_RUN("r-poly", "POLY: FOUR RHYTHMS", "GREEN", 55, 4, g_calypso_scene, G_POLY);   /* calypso */
+    G_RUN("r-poly", "POLY: FOUR RHYTHMS", "GREEN", 86, 4, g_calypso_scene, G_POLY);   /* calypso */
     G_RUN("r-quad", "QUAD: ONE GRID", "GREEN", 103, 4, g_mathrock_scene, G_QUAD);   /* math rock */
     G_RUN("r-constellation", "CONSTELLATION", "GREEN", 110, 4, g_scifi_scene, G_CONSTL);   /* library sci-fi */
-    G_RUN("r-series", "SERIES", "GREEN", 55, 4, g_feldman_scene, G_SERIES);   /* slow piano after Feldman */
+    G_RUN("r-series", "SERIES", "GREEN", 99, 4, g_feldman_scene, G_SERIES);   /* slow piano after Feldman */
     G_RUN("r-chord", "CHORD: THE HARMONY", "GREEN", 152, 4, g_gospel_scene, G_CHORDS);   /* minor gospel */
     G_RUN("r-answer", "ANSWER: CALL AND RESPONSE", "GREEN", 164, 4, g_blues_scene, G_ANSWER);   /* blues */
     G_RUN("r-morph", "MORPH: A INTO B", "GREEN", 110, 4, g_dancehall_scene, G_MORPH);   /* dancehall */
