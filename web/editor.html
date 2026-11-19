@@ -217,19 +217,19 @@
     </div>
     <div id="status"></div>
     <nav class="tabs" id="tabs" role="tablist">
-      <button role="tab" data-tab="sound" data-t="sound" data-ic="symbol_audio"></button>
-      <button role="tab" data-tab="fm6" data-t="tabFm6" data-ic="ui_knob"></button>
-      <button role="tab" data-tab="sequencer" data-t="tabSeq" data-ic="symbol_grid"></button>
-      <button role="tab" data-tab="tracks" data-t="tabTracks" data-ic="ui_slider_vertical"></button>
-      <button role="tab" data-tab="library" data-t="library" data-ic="symbol_books"></button>
-      <button role="tab" data-tab="projects" data-t="projects" data-ic="symbol_folder"></button>
-      <button role="tab" data-tab="settings" data-t="tabSettings" data-ic="symbol_cog"></button>
+      <button role="tab" data-tab="sound" id="tab-sound" aria-controls="p-sound" data-t="sound" data-ic="symbol_audio"></button>
+      <button role="tab" data-tab="fm6" id="tab-fm6" aria-controls="p-fm6" data-t="tabFm6" data-ic="ui_knob"></button>
+      <button role="tab" data-tab="sequencer" id="tab-sequencer" aria-controls="p-sequencer" data-t="tabSeq" data-ic="symbol_grid"></button>
+      <button role="tab" data-tab="tracks" id="tab-tracks" aria-controls="p-tracks" data-t="tabTracks" data-ic="ui_slider_vertical"></button>
+      <button role="tab" data-tab="library" id="tab-library" aria-controls="p-library" data-t="library" data-ic="symbol_books"></button>
+      <button role="tab" data-tab="projects" id="tab-projects" aria-controls="p-projects" data-t="projects" data-ic="symbol_folder"></button>
+      <button role="tab" data-tab="settings" id="tab-settings" aria-controls="p-settings" data-t="tabSettings" data-ic="symbol_cog"></button>
     </nav>
-    <div class="trackbar" id="trackbar" hidden><span class="dim" data-t="track"></span><span class="seg" id="trackbtns" role="group"></span></div>
+    <div class="trackbar" id="trackbar" hidden><span class="dim" id="tracklabel" data-t="track"></span><span class="seg" id="trackbtns" role="group" aria-labelledby="tracklabel"></span></div>
   </header>
   <p class="hint" id="hint" hidden></p>
 
-  <section class="panel" id="p-sound" data-tab="sound" data-dev hidden>
+  <section class="panel" id="p-sound" data-tab="sound" role="tabpanel" aria-labelledby="tab-sound" data-dev hidden>
     <div class="browser" id="browser">
       <label><span data-t="engine"></span><br><select id="engine"></select></label>
       <label><span data-t="presets"></span><br><select id="preset" size="8"></select></label>
@@ -245,7 +245,7 @@
     <div class="groups" id="groups"></div>
   </section>
 
-  <section class="panel" id="p-fm6" data-tab="fm6" data-dev hidden>
+  <section class="panel" id="p-fm6" data-tab="fm6" role="tabpanel" aria-labelledby="tab-fm6" data-dev hidden>
     <p class="dim" data-t="fm6Help"></p>
     <div class="group">
       <h2 data-t="fm6Source" data-ic="symbol_folder"></h2>
@@ -272,7 +272,7 @@
     </div>
   </section>
 
-  <section class="panel" id="p-sequencer" data-tab="sequencer" data-dev hidden>
+  <section class="panel" id="p-sequencer" data-tab="sequencer" role="tabpanel" aria-labelledby="tab-sequencer" data-dev hidden>
     <div class="groups" id="seqgroups"></div>
     <p id="patternbar" class="bar" hidden><label for="patternpick" data-t="pattern"></label><select id="patternpick"></select><span id="patternstate" class="dim"></span></p>
     <div id="steps">
@@ -291,14 +291,14 @@
     </div>
   </section>
 
-  <section class="panel" id="p-tracks" data-tab="tracks" data-dev hidden>
+  <section class="panel" id="p-tracks" data-tab="tracks" role="tabpanel" aria-labelledby="tab-tracks" data-dev hidden>
     <h2 data-t="mixer" data-ic="ui_slider_vertical"></h2>
     <div class="mixer" id="mixer"></div>
     <p class="dim" data-t="mixHelp"></p>
   </section>
 
   <!-- works without a device too (the device bank shows while connected) -->
-  <section class="panel" id="p-library" data-tab="library" hidden>
+  <section class="panel" id="p-library" data-tab="library" role="tabpanel" aria-labelledby="tab-library" hidden>
     <div class="group" id="device-presets" hidden>
       <h2 data-t="devicePresets"></h2>
       <p class="dim" data-t="deviceFavHelp"></p>
@@ -339,7 +339,7 @@
           <p class="bar"><label><span data-t="presetPool"></span> <select id="presetpool"><option value="0" data-t="poolGeneral"></option><option value="12" data-t="poolFm6"></option></select></label></p>
           <p class="dim" id="nativehint" data-t="nativeHint" hidden></p>
           <div class="bar"><b id="bankhead"></b></div>
-          <div class="list" id="banklist"></div>
+          <div class="list" id="banklist" role="region" aria-labelledby="bankhead"></div>
           <p class="bar" style="margin-top:6px">
             <button id="bkload" data-t="bankLoad" data-ic="symbol_folder_open"></button>
             <button id="bkstore" data-t="bankStore" data-ic="port_disk"></button>
@@ -357,7 +357,7 @@
     </div>
   </section>
 
-  <section class="panel" id="p-projects" data-tab="projects" data-dev hidden>
+  <section class="panel" id="p-projects" data-tab="projects" role="tabpanel" aria-labelledby="tab-projects" data-dev hidden>
     <h2 data-t="projects" data-ic="symbol_folder"></h2>
     <p class="dim" data-t="projHelp"></p>
     <div class="slots" id="slots"></div>
@@ -398,7 +398,7 @@
     </div>
   </section>
 
-  <section class="panel" id="p-settings" data-tab="settings" data-dev hidden>
+  <section class="panel" id="p-settings" data-tab="settings" role="tabpanel" aria-labelledby="tab-settings" data-dev hidden>
     <div class="groups" id="setgroups"></div>
     <div class="group" id="device-display" hidden style="margin-top:12px">
       <h2 data-t="deviceDisplay"></h2>
@@ -2967,7 +2967,7 @@ const TEXT = {
     ctlHelp: "スライダーはクリックしてからホイールか矢印キーで微調整（Shift で 10 ずつ）、ダブルクリックで初期値。",
     live: "● リアルタイム", polling: "○ ポーリング（古いファームウェア）",
     library: "ライブラリ", libSearch: "名前・タグで検索", allEngines: "全エンジン", allTags: "全タグ",
-    sortModified: "更新順", sortCreated: "作成順", sortName: "名前順", sortEngine: "エンジン順",
+    sortBy: "並べ替え", sortModified: "更新順", sortCreated: "作成順", sortName: "名前順", sortEngine: "エンジン順",
     name: "名前", tagsCol: "タグ", date: "更新",
     audition: "試聴", toSlot: "本体スロットへ", rename: "名前変更", tags: "タグ", duplicate: "複製", delete: "削除",
     exportPatch: "書き出し", saveToLib: "今の音色をライブラリへ", import: "読み込み", exportLib: "ライブラリを書き出し",
@@ -3094,7 +3094,7 @@ const TEXT = {
     ctlHelp: "Sliders: click, then fine-tune with the wheel or arrow keys (Shift: steps of 10); double-click resets.",
     live: "● Live", polling: "○ Polling (older firmware)",
     library: "Library", libSearch: "Search name or tag", allEngines: "All engines", allTags: "All tags",
-    sortModified: "Recently changed", sortCreated: "Recently added", sortName: "Name", sortEngine: "Engine",
+    sortBy: "Sort by", sortModified: "Recently changed", sortCreated: "Recently added", sortName: "Name", sortEngine: "Engine",
     name: "Name", tagsCol: "Tags", date: "Changed",
     audition: "Audition", toSlot: "To device slot", rename: "Rename", tags: "Tags", duplicate: "Duplicate", delete: "Delete",
     exportPatch: "Export", saveToLib: "Save current sound", import: "Import", exportLib: "Export library",
@@ -3335,7 +3335,7 @@ const TEXT = {
     libSearch: "Buscar nombre o etiqueta",
     allEngines: "Todos los motores",
     allTags: "Todas las etiquetas",
-    sortModified: "Cambiados recientemente",
+    sortBy: "Ordenar por", sortModified: "Cambiados recientemente",
     sortCreated: "Añadidos recientemente",
     sortName: "Nombre",
     sortEngine: "Motor",
@@ -3669,7 +3669,7 @@ const TEXT = {
     libSearch: "Cerca nome o tag",
     allEngines: "Tutti i motori",
     allTags: "Tutti i tag",
-    sortModified: "Modificati di recente",
+    sortBy: "Ordina per", sortModified: "Modificati di recente",
     sortCreated: "Aggiunti di recente",
     sortName: "Nome",
     sortEngine: "Motore",
@@ -4003,7 +4003,7 @@ const TEXT = {
     libSearch: "Name oder Tag suchen",
     allEngines: "Alle Engines",
     allTags: "Alle Tags",
-    sortModified: "Zuletzt geändert",
+    sortBy: "Sortieren nach", sortModified: "Zuletzt geändert",
     sortCreated: "Zuletzt hinzugefügt",
     sortName: "Name",
     sortEngine: "Engine",
@@ -4337,7 +4337,7 @@ const TEXT = {
     libSearch: "Rechercher un nom ou une étiquette",
     allEngines: "Tous les moteurs",
     allTags: "Toutes les étiquettes",
-    sortModified: "Modifiés récemment",
+    sortBy: "Trier par", sortModified: "Modifiés récemment",
     sortCreated: "Ajoutés récemment",
     sortName: "Nom",
     sortEngine: "Moteur",
@@ -4671,7 +4671,7 @@ const TEXT = {
     libSearch: "Buscar nome ou tag",
     allEngines: "Todos os motores",
     allTags: "Todas as tags",
-    sortModified: "Alterados recentemente",
+    sortBy: "Ordenar por", sortModified: "Alterados recentemente",
     sortCreated: "Adicionados recentemente",
     sortName: "Nome",
     sortEngine: "Motor",
@@ -5005,7 +5005,7 @@ const TEXT = {
     libSearch: "이름이나 태그 검색",
     allEngines: "모든 엔진",
     allTags: "모든 태그",
-    sortModified: "최근 변경순",
+    sortBy: "정렬", sortModified: "최근 변경순",
     sortCreated: "최근 추가순",
     sortName: "이름",
     sortEngine: "엔진",
@@ -5164,6 +5164,10 @@ function applyLang() {
   setLabel($("connect"), t(dev ? "disconnect" : "connect"));
   if (lastKey) $("status").textContent = t(lastKey) + lastArg;
   $("libq").placeholder = t("libSearch");
+  $("libq").setAttribute("aria-label", t("libSearch"));
+  $("libeng").setAttribute("aria-label", t("engine"));
+  $("libtag").setAttribute("aria-label", t("tags"));
+  $("libsort").setAttribute("aria-label", t("sortBy"));
   renderLive();
   renderLib();
   renderBank();
@@ -5530,7 +5534,7 @@ function renderTrackbar() {
   if (box.children.length !== ntrk || box.dataset.lang !== lang) {
     box.dataset.lang = lang;
     box.replaceChildren(...Array.from({ length: ntrk }, (_, i) => el("button", { type: "button", "data-i": i,
-      onclick: () => selectTrack(i) }, String(i + 1))));
+      "aria-label": `${t("track")} ${i + 1}`, onclick: () => selectTrack(i) }, String(i + 1))));
   }
   for (const b of box.children) b.setAttribute("aria-pressed", +b.dataset.i === (dev.sel || 0) ? "true" : "false");
 }
@@ -6215,7 +6219,7 @@ function renderMotion() {
   $("motion-clear").disabled = !m.count;
   const rows = $("motion-rows");
   if (rows.contains(document.activeElement)) return;
-  rows.replaceChildren(el("tr", {}, ...["motionStep", "motionParam", "motionValue"].map(k => el("th", {text:t(k)})), el("th")),
+  rows.replaceChildren(el("tr", {}, ...["motionStep", "motionParam", "motionValue"].map(k => el("th", {text:t(k)})), el("td")),
     ...m.events.map(e => {
       const native = e.param >= 112 && e.value >= 256, tag = native ? e.value >> 8 : 0, i = e.param - 112;
       const desc = native ? null : d.pdesc[e.param];   /* (tags 1 PROPHET, 2 CZ-1: retired) */
@@ -6272,7 +6276,7 @@ function renderSteps() {
   box.dataset.len = shape;
   const tables = [];
   for (let b = 0; b < len; b += 16) {
-    const tb = el("table", {}, el("tr", {}, el("th"), el("th", { text: t("notes") }), el("th", { text: t("hits") }), el("th", { text: t("time") }),
+    const tb = el("table", {}, el("tr", {}, el("td"), el("th", { text: t("notes") }), el("th", { text: t("hits") }), el("th", { text: t("time") }),
       el("th", { text: t("acc") }), el("th", { text: t("slide") }), el("th", { text: t("vel") }), ...(dev.info.chance ? [el("th", { text: t("chance") })] : [])));
     for (let i = b; i < Math.min(len, b + 16); i++) tb.append(stepRow(i));
     tables.push(tb);
@@ -6280,12 +6284,13 @@ function renderSteps() {
   box.replaceChildren(...tables);
 }
 function stepRow(i) {
-  const notes = el("input", { type: "text", placeholder: "—", spellcheck: "false" });
-  const hits = el("input", { type: "text", placeholder: "—", spellcheck: "false", class: "hits" });
-  const time = el("select", {}, ...TIMES.map((n, k) => el("option", { value: k, text: n })));
-  const acc = el("input", { type: "checkbox" });
-  const sl = el("input", { type: "checkbox" });
-  const vel = el("input", { type: "number", min: 0, max: 127 });
+  const name = (k) => `${t(k)} ${i + 1}`;              /* (screen readers: "Velocity 3", not "spin button") */
+  const notes = el("input", { type: "text", placeholder: "—", spellcheck: "false", "aria-label": name("notes") });
+  const hits = el("input", { type: "text", placeholder: "—", spellcheck: "false", class: "hits", "aria-label": name("hits") });
+  const time = el("select", { "aria-label": name("time") }, ...TIMES.map((n, k) => el("option", { value: k, text: n })));
+  const acc = el("input", { type: "checkbox", "aria-label": name("acc") });
+  const sl = el("input", { type: "checkbox", "aria-label": name("slide") });
+  const vel = el("input", { type: "number", min: 0, max: 127, "aria-label": name("vel") });
   const chance = dev.info.chance ? el("input", { type: "number", min: 0, max: 100, "aria-label": `${t("chance")} ${i + 1}` }) : null;
   const tr = el("tr", { "data-i": i }, el("td", { class: "i", text: String(i + 1) }),
     el("td", {}, notes), el("td", {}, hits), el("td", {}, time), el("td", {}, acc), el("td", {}, sl), el("td", {}, vel), ...(chance ? [el("td", {}, chance)] : []));
@@ -7040,12 +7045,16 @@ function renderLib() {
         el("td", { text: p.engineName || String(p.engine) }),
         el("td", { text: p.tags.join(", ") }),
         el("td", { text: new Date(p.modified).toLocaleDateString(lang) }));
+      tr.tabIndex = p.id === (v.some((q) => q.id === libSel) ? libSel : v[0]?.id) ? 0 : -1;
+      if (p.id === libSel) tr.setAttribute("aria-current", "true");
       tr.addEventListener("click", () => { libSel = p.id; renderLib(); });
+      rowKeys(tr, () => { libSel = p.id; renderLib(); },
+        () => libAudition(p.id));
       tr.addEventListener("dblclick", () => libAudition(p.id));
       tr.addEventListener("dragstart", (e) => { libSel = p.id; e.dataTransfer.setData("text/x-melodee-lib", p.id); e.dataTransfer.effectAllowed = "copy"; });
       tb.append(tr);
     }
-    box.replaceChildren(tb, ...(v.length ? [] : [el("div", { class: "none", text: t("noMatch") })]));
+    keepRowFocus(box, "id", () => box.replaceChildren(tb, ...(v.length ? [] : [el("div", { class: "none", text: t("noMatch") })])));
   }
   $("libcount").textContent = `${v.length} / ${lib.length}` + (libPersistent ? "" : " " + t("noLibDB"));
   const sel = lib.find((p) => p.id === libSel);
@@ -7057,6 +7066,23 @@ function renderLib() {
 }
 ["libq", "libeng", "libtag", "libsort"].forEach((id) => $(id).addEventListener(id === "libq" ? "input" : "change", renderLib));
 
+/* a list row from the keyboard: one Tab stop per list (the selected row), the arrow keys move between the rows,
+   Space selects one and Enter does what a double click does */
+function rowKeys(tr, select, open) {
+  tr.addEventListener("keydown", (e) => {
+    if (e.target !== tr) return;
+    const to = { ArrowDown: tr.nextElementSibling, ArrowUp: tr.previousElementSibling }[e.key];
+    if (to !== undefined) { e.preventDefault(); if (to && to.tabIndex !== undefined && to.querySelector("td")) to.focus(); }
+    else if (e.key === " ") { e.preventDefault(); select(); }
+    else if (e.key === "Enter") { e.preventDefault(); open(); }
+  });
+}
+/* a list redrawn under the keyboard focus: the focus goes back to the same row */
+function keepRowFocus(box, key, draw) {
+  const f = document.activeElement, was = box.contains(f) && f.tagName === "TR" ? f.dataset[key] : null;
+  draw();
+  if (was != null) for (const tr of box.querySelectorAll("tr")) if (tr.dataset[key] === was) { tr.focus(); break; }
+}
 function renderBank() {
   const pane = $("bankpane");
   $("bankhint").hidden = !!(dev && dev.bank);
@@ -7076,7 +7102,11 @@ function renderBank() {
       draggable: x.used ? "true" : null },
       el("td", { text: slotName(x.slot) }), el("td", { text: x.used ? x.name : t("empty") }),
       el("td", { text: x.used ? engineLabel(dev.info.engines, x.engine) : "" }));
+    tr.tabIndex = x.slot === (bankSel ?? 0) ? 0 : -1;
+    if (x.slot === bankSel) tr.setAttribute("aria-current", "true");
     tr.addEventListener("click", () => { bankSel = x.slot; renderBank(); renderLib(); });
+    rowKeys(tr, () => { bankSel = x.slot; renderBank(); renderLib(); },
+      () => { if (x.used) bankLoad(x.slot); });
     tr.addEventListener("dblclick", () => { if (x.used) bankLoad(x.slot); });
     tr.addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/x-melodee-slot", String(x.slot)); e.dataTransfer.effectAllowed = "copy"; });
     tr.addEventListener("dragover", (e) => { if (e.dataTransfer.types.includes("text/x-melodee-lib")) { e.preventDefault(); tr.classList.add("over"); } });
@@ -7089,7 +7119,7 @@ function renderBank() {
     });
     tb.append(tr);
   }
-  $("banklist").replaceChildren(tb);
+  keepRowFocus($("banklist"), "slot", () => $("banklist").replaceChildren(tb));
   const s = bankSel == null ? null : b.slots[bankSel];
   const idle = !libBusy;
   $("bkload").disabled = !s || !s.used || !idle;
@@ -7376,7 +7406,7 @@ function fm6Sel(i, names, title) {
 }
 function renderFm6Voice() {
   const V = FM6.VI, alg = fm6v[V.ALG], fb = FM6.feedbackOp(alg);
-  const nm = el("input", { type: "text", maxlength: 10, value: FM6.name(fm6v), size: 11,
+  const nm = el("input", { type: "text", maxlength: 10, value: FM6.name(fm6v), size: 11, "aria-label": t("name"),
     onchange: (e) => { FM6.setName(fm6v, e.target.value); fm6Set(0, fm6v[0]); e.target.value = FM6.name(fm6v); } });
   const row = (label, ...kids) => el("tr", {}, el("th", { text: label }), el("td", {}, ...kids));
   $("fm6voice").replaceChildren(el("table", {},

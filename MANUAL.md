@@ -517,7 +517,7 @@ one and a half times): one ORACLE track of pads or chords is fine; with two busy
 
 <p align="center"><img src="assets/gallery/oracle_osc.png" alt="ORACLE OSC A page" width="240"> <img src="assets/gallery/oracle_filter.png" alt="ORACLE FILTER page" width="240"> <img src="assets/gallery/oracle_env.png" alt="ORACLE AMP ENV page" width="240"></p>
 
-#### Choosing a sound
+### Choosing a sound
 
 **PRESETS** (SAVE) browses the sounds.
 
@@ -603,7 +603,7 @@ PLAY, on the same steps and bars, so an ATLAS groove picked under a playing chor
 plays on unheard, so when unmuted it comes back in time. BOUNCE, QUAD, CONSTELLATION and SERIES run free and simply
 carry on.
 
-#### The ARP page
+### The ARP page
 
 ARP's **MODE** is the order the held notes play in, over OCT octaves:
 
@@ -626,7 +626,7 @@ pressed. ORD always plays them as pressed.
   louder and shorter, as on a generator.
 - The arpeggio's tosses (RND's notes, RND1's order, PROB) come from the track's SEED, so PLAY plays it the same again.
 
-#### Writing notes on NOTES
+### Writing notes on NOTES
 
 On NOTES, **KNOB 2** sets the picked note's pitch:
 
@@ -1190,7 +1190,7 @@ On a generator track, EVOLVE mutates the phrase every few bars.
 > **Try this:** put TURING on a track, set EVERY to 4 and AMOUNT to 30 %. Every four bars the line changes a little.
 > When you hear one you like, hold **GLO** + **D4** (HOLD) to keep it, or hold **REC** to [print](#print-and-keep) it.
 
-#### HOLD: freeze every track's line
+### HOLD: freeze every track's line
 
 **HOLD** is **GLO** + **D4**: held, or tap twice to latch and once more to let go. It is LOCK 100 for every track at
 once, as a key to play:
@@ -1203,7 +1203,7 @@ once, as a key to play:
 
 Let go and they carry on from where they are. HOLD is not saved.
 
-#### GRAVITY: drift, then come home
+### GRAVITY: drift, then come home
 
 **GRAVITY** (OCT- held, KNOB 4; the same GRAVITY as the SOURCE layer's) lets the phrase drift and then come home.
 **Home** is the generator as you last set it: by a knob, ROLL, MODE or a loaded project.
@@ -1640,7 +1640,7 @@ Hold **OCT-** and turn **KNOB 1** right for random SHIFT, DROP and HUMAN; turn i
 | 3 | **RHYTHM** | When it plays: **OWN** (the default), **SOURCE** or **BOTH** (below). |
 | 4 | **HOLD** (OFF, T1 to T4) | A sample and hold for FOLLOW (below). |
 
-#### FOLLOW HOLD: take the note now and then
+### FOLLOW HOLD: take the note now and then
 
 The followed note is taken only when the HOLD track plays a note, and this track keeps playing that note, in its own
 rhythm, until the HOLD track plays again. OFF takes a new note on each of this track's own hits.
@@ -1651,7 +1651,7 @@ rhythm, until the HOLD track plays again. OFF takes a new note on each of this t
 - HOLD on a track with random hits (DROP, BRANCH) samples at random moments.
 - HOLD is saved with the project.
 
-#### FOLLOW HOW: what to play
+### FOLLOW HOW: what to play
 
 SHIFT still moves the result by scale steps.
 
@@ -1664,7 +1664,7 @@ SHIFT still moves the result by scale steps.
 | **CANON1** to **CANON8** | The other track's note from that many notes ago: a round. It stays silent until the other track has played that many. HOLD does nothing here. |
 | **HARM** | The other track's note counted into the chord a CHORD track plays: each note of the scale it goes up, the chord's next note up; SHIFT moves by chord notes. No CHORD track: as SAME. See [HARM: a harmonizer](#harm-a-harmonizer). |
 
-#### FOLLOW RHYTHM: when to play
+### FOLLOW RHYTHM: when to play
 
 | RHYTHM | The following track plays |
 |---|---|
@@ -2637,7 +2637,7 @@ tools. Tessera's additions are below, in that order.
 
 <p align="center"><img src="assets/gallery/menu_ground.png" alt="The menu on GROUND" width="240"></p>
 
-#### The screen
+### The screen
 
 | Item | Choices | What it does |
 |---|---|---|
@@ -2678,13 +2678,13 @@ tools. Tessera's additions are below, in that order.
     saved as soon as you press STOP (no five seconds' wait), so a long piece is not lost to a flat battery. It never
     saves while playing.
 
-#### The knobs and buttons
+### The knobs and buttons
 
 | Item | Choices | What it does |
 |---|---|---|
 | **TRACK KNOB** | **RIGHT**, **LEFT** | RIGHT: the ALGORITHM knob picks the track and PRESETS browses sounds, as printed. LEFT: the two swap. |
 
-#### Playing
+### Playing
 
 | Item | Choices | What it does |
 |---|---|---|
@@ -2694,7 +2694,7 @@ tools. Tessera's additions are below, in that order.
 - When stopped, a press takes effect at once.
 - MUTES is also on MIXER's sheet (hold OCT+).
 
-#### MIDI
+### MIDI
 
 | Item | Choices | What it does |
 |---|---|---|
@@ -2718,7 +2718,7 @@ tools. Tessera's additions are below, in that order.
 - They belong to the device, not to a project: they are kept through power-off and project loads (saved once the music
   stops).
 
-#### USB
+### USB
 
 | Item | Choices | What it does |
 |---|---|---|
@@ -2734,7 +2734,7 @@ tools. Tessera's additions are below, in that order.
   50 % is the old level at MASTER's default. What the FM-1 records over USB (stereo or four tracks) is taken before
   MASTER too, so the pot never changes a recording's level.
 
-#### The tools
+### The tools
 
 | Item | What it shows |
 |---|---|
@@ -2956,7 +2956,7 @@ them. Melodee's own preset banks are not carried over.
 
 <p align="center"><img src="assets/gallery/project.png" alt="SAVE > PROJECT" width="240"></p>
 
-#### A new project
+### A new project
 
 1. Tap **SAVE** to the **PROJECT** page, turn **KNOB 1** down the list to **New song** and press **OCT+**. Playback
    stops; with unsaved changes, **OCT+** again answers Yes to "Start a new song?".
@@ -2970,7 +2970,7 @@ them. Melodee's own preset banks are not carried over.
 - It starts from the template when one is saved in TMPL, else from the power-on sounds.
 - It has no slot until you save it.
 
-#### The web editor, backups and files
+### The web editor, backups and files
 
 The web editor only reads the FM-1 until you tick **Edit the FM-1** (beside **Disconnect**): connecting changes
 nothing, and a change made in the editor before then is not sent (the editor says so and shows the FM-1's value again).
@@ -2991,7 +2991,7 @@ one before and the screen says **OLD SAVE LOADED**: save it again to keep it, or
   and load a file you put into a slot from SAVE > PROJECT.
 - A project made on a newer Tessera may not load on an older one.
 
-#### Playing the simulator from the FM-1
+### Playing the simulator from the FM-1
 
 1. Plug the FM-1 in by USB, open the simulator in Chrome or Edge, and switch it on.
 2. Under the panel, **An FM-1 on USB: its knobs, buttons and keys play the simulator** finds the FM-1 by itself. It is
@@ -3014,7 +3014,7 @@ with how to get its panel back. FX and GLO breathe.
 - Pressed together, FX and GLO never reach the simulator; either one alone does, a moment late.
 - MASTER still sets the FM-1's volume, and holding OCT- + OCT+ for update mode still works.
 
-#### Health: how hard the FM-1 is working
+### Health: how hard the FM-1 is working
 
 On the editor's **Settings** tab, press **Live** under **Health**. Once a second it reads:
 
