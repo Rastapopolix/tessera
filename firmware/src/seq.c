@@ -486,8 +486,9 @@ static uint32_t step_samples(const track_t *t, uint32_t period, uint32_t idx)
 /* Capture: every note played (keys, MIDI, a chord's notes) while the transport runs and its track is not recording,
  * with its place: the steps the track has entered since PLAY (cap_step) and the 1/256 of the step, as recording.c
  * keeps them. A ring of 8-byte events (RAM is the audio arena's: kept small); REC held writes the selected track's last
- * bars into its pattern (ui_input.c capture_take). Durations in 1/256 of a step; tr bit 7: still held */
-#define CAP_N 128u
+ * bars into its pattern (ui_input.c capture_take). Durations in 1/256 of a step; tr bit 7: still held. 256 events:
+ * the four tracks share the ring, and with 128 a busy project's print of 64 steps came out short */
+#define CAP_N 256u
 typedef struct { uint16_t step, dur; uint8_t on, note, vel, tr; } cap_ev_t;
 static cap_ev_t cap_ev[CAP_N];
 static uint32_t cap_w, cap_from;                /* events written; the first of this run of the transport */

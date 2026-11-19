@@ -959,7 +959,7 @@ register. The chord's kind and voicing are on the GEN sheet (and on SCL > CHORD)
 | 2 | **STRUM** (OFF, 1 to 250 ms) | The time between one note of the chord and the next, as in a strummed chord. A four-note chord at 40 ms spreads over 120 ms. OFF strikes them together. |
 | 3 | **DIR** | **UP**: the lowest note first. **DOWN**: the highest first. **ALT**: up, down, up and so on, a strike each, like strumming (counted from PLAY, so a piece replays the same). |
 | 4 | **OCT** (−2 to +2) | The chords' register, from their home around C3. |
-| GEN sheet | **Chord** | SCL > CHORD's chord kind. OFF plays triads. DIA3 and DIA7 play triads and sevenths in the scale. MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9 and MAJ6 are fixed shapes on any note. |
+| GEN sheet | **Chord** | SCL > CHORD's chord kind. OFF plays triads. DIA3 and DIA7 play triads and sevenths in the scale, and 2NDS, 4THS and 5THS stack its seconds, fourths or fifths. MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9 and MAJ6 are fixed shapes on any note. |
 | GEN sheet | **Voicing** | CLOSE, OPEN, INV1, INV2 or +OCT. |
 | GEN sheet | **Breath** (0–100 %) | With HIT HOLD, the chord breathes: each voice is struck again, softer, on a slow cycle of its own (11 to 19 s), and the same chord again is tied over. BREATH is the chance a voice above the lowest sits a cycle out. 0 (OFF) is off. |
 | GEN sheet | **Length** (USER only, in Breath's place) | How many of USER's chords play, 1 to 8. |
@@ -1907,6 +1907,11 @@ off at 0.
 - Steps written by hand already there: **REPLACE STEPS?** OCT+ prints over them, OCT- keeps them.
 - Recorded notes there: **CLEAR TO PRINT**.
 
+> **Try this: an endless solo.** A generator doesn't have to loop. Put **MARKOV** on a track, set LEAP to about 30 %
+> and DENS to about 70 %, and on EVOLVE turn **LOCK** to 0: every pass is a new line, so it walks on for as long as
+> you let it, never repeating. When it plays a phrase you want to keep, hold **REC**: its last bars (up to four)
+> become steps you can loop and edit. For a solo that keeps coming back to its ideas, try LOCK at about 50 %.
+
 ---
 
 ## Harmony: one key, CHORD and QNT CHRD
@@ -1959,8 +1964,8 @@ written stay where they are; **Snap to scale** on the pattern's sheet moves them
 A **CHORD** track plays a progression; with **QNT CHRD** the other tracks follow it.
 
 - On the CHORD track: GEN, MODE **CHORD**, then **PROG**, **BARS** and **HIT**. The chord's kind and voicing come
-  from **SCL > CHORD** (CHRD, VOIC), or the GEN sheet. CHRD OFF plays triads; DIA3 and DIA7
-  stay in the scale, the fixed kinds (MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9, MAJ6) lay the same shape
+  from **SCL > CHORD** (CHRD, VOIC), or the GEN sheet. CHRD OFF plays triads; DIA3, DIA7, 2NDS, 4THS
+  and 5THS stay in the scale, the fixed kinds (MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW, SUS2, 7SUS4, ADD9, MAJ6) lay the same shape
   on every chord of the progression, so some may leave the key.
 - On any other track: **SCL**, **QNT** to **CHRD**. Its keys, its MIDI input and its generator snap to the nearest
   note of the chord playing now, and KNOB 2 on NOTES steps through its notes. With no CHORD track, CHRD acts as
@@ -3144,7 +3149,8 @@ and key at the same time. Also the track setting on FORM, FOLLOW or OWN, that de
 **CHORD**. A generator that plays a progression of chords in your scale. Also the **CHORD** page on SCL for the chord
 kind and voicing. [MANUAL](#chord-strum-dir-oct-chrd-voic-breath-or-len)
 
-**CHRD** (chord kind). Which chord shape a note makes: triads, sevenths in the scale (DIA3, DIA7), or fixed shapes
+**CHRD** (chord kind). Which chord shape a note makes: triads, sevenths in the scale (DIA3, DIA7), the scale's
+seconds, fourths or fifths stacked (2NDS, 4THS, 5THS **(3.7.2)**), or fixed shapes
 (MAJ, MIN, DOM7, MAJ7, MIN7, SUS4, POW; SUS2, 7SUS4, ADD9, MAJ6 **(3.5)**). Used by the chord keys, MIDI in, the
 arpeggiator and the CHORD generator. See also *QNT* and *VOIC*.
 
