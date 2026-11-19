@@ -1907,6 +1907,11 @@ off at 0.
 - Steps written by hand already there: **REPLACE STEPS?** OCT+ prints over them, OCT- keeps them.
 - Recorded notes there: **CLEAR TO PRINT**.
 
+> **Try this: an endless solo.** A generator doesn't have to loop. Put **MARKOV** on a track, set LEAP to about 30 %
+> and DENS to about 70 %, and on EVOLVE turn **LOCK** to 0: every pass is a new line, so it walks on for as long as
+> you let it, never repeating. When it plays a phrase you want to keep, hold **REC**: its last bars (up to four)
+> become steps you can loop and edit. For a solo that keeps coming back to its ideas, try LOCK at about 50 %.
+
 ---
 
 ## Harmony: one key, CHORD and QNT CHRD
