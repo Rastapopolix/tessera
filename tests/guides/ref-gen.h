@@ -346,6 +346,91 @@ static const gstep_t G_ANSWER[] = {
     {0, 44080, 500, "A3", "A", 0},
     {50000, 0, 0, 0, 0, "Two tracks can talk: SOURCE makes one answer the other"},
 };
+/* dancehall: 96 BPM, G minor; MORPH on a marimba as track 1 (the clip slides POS from preset A to preset B, then picks
+ * another B), a kick and snare in STEP, a sub on EUCLID's 3 of 8, offbeat chord stabs */
+static void g_dancehall_scene(void)
+{
+    song.g[G_BPM] = 96;
+    scale(7, SCL_MIN, 0);
+    sends(70, 70, 90, 40);
+    sound(0, ENGI_FM6, V_MARIMBA);
+    trk[0].p[P_SDIV] = DIV_16;
+    gen(0, TESS_ENG_MORPH, 17);
+    tx(0, TX_MRP_SNPA, 0); tx(0, TX_MRP_SNPB, 5); tx(0, TX_MRP_POS, 64);
+    mixer(0, 120, -15, 40, 50);
+    sound(1, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_BD | L_CH, 0, L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_CH};
+        static const uint8_t V[16] = {104, 0, 48, 0, 92, 0, 90, 0, 98, 0, 48, 0, 94, 0, 50, 40};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
+        trk[1].p[P_SLEN] = 16;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
+    mixer(1, 76, 0, 10, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 4);
+    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    mixer(2, 80, 0, 0, 0);
+    sound(3, ENGI_ORACLE, OR_DUB_CHORD);
+    trk[3].p[P_CHRD] = 1;
+    gen(3, TESS_ENG_CHORD, 6);
+    tx(3, TX_CH_PROG, GEN_CH_TWO); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_OFF);
+    mixer(3, 84, 25, 50, 60);
+    g_solo_check();
+}
+static const gstep_t G_MORPH[] = {
+    {0, 0, 0, 0, 0, "MORPH: one rhythm blended into another"},
+    {4000, 7000, 200, "SEQ", "OPEN SEQ", "Tap SEQ: SNP A and SNP B are two rhythms, POS is halfway"},
+    {12000, 15000, 1500, "KNOB 2", "POS 0", "Turn KNOB 2, POS, all the way down: rhythm A alone", -70},
+    {21000, 24000, 2500, "KNOB 2", "POS UP", "Now all the way up: rhythm B alone", 140},
+    {31000, 34000, 600, "KNOB 4", "SNP B", "Turn KNOB 4, SNP B, to another rhythm", -2},
+    {40000, 43000, 2000, "KNOB 2", "POS", "Back to halfway: each step drawn from A or B", -16},
+    {49000, 0, 0, 0, 0, "One knob between two rhythms"},
+};
+/* broken beat: 112 BPM, F dorian; ATLAS on the 909 kit as track 1 (the clip turns DENS, moves X and Y on the map and
+ * thins the hat), electric keys on the offbeats, a sub on TURING, a quiet flute on AWAKE */
+static void g_brokenbeat_scene(void)
+{
+    song.g[G_BPM] = 112;
+    song.g[G_SWING] = 20;
+    scale(5, SCL_DOR, 0);
+    sends(70, 60, 80, 40);
+    sound(0, ENGI_DRUM, DK_909_KIT);
+    trk[0].p[P_SDIV] = DIV_16;
+    gen(0, TESS_ENG_GRIDS, 9);
+    tx(0, TX_GRD_X, 40); tx(0, TX_GRD_Y, 60); tx(0, TX_GRD_DENS, 30);
+    tx(0, TX_GRD_KICK, 100); tx(0, TX_GRD_SNR, 100); tx(0, TX_GRD_HAT, 100);
+    mixer(0, 90, 0, 15, 0);
+    sound(1, ENGI_ORACLE, OR_KEYS);
+    trk[1].p[P_CHRD] = 1;
+    gen(1, TESS_ENG_CHORD, 13);
+    tx(1, TX_CH_PROG, GEN_CH_251); tx(1, TX_CH_BARS, 2); tx(1, TX_CH_HIT, GEN_CH_OFF); tx(1, TX_CH_OCT, -1);
+    mixer(1, 84, -25, 50, 50);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_TURING, 23);
+    tx(2, TX_TUR_LEN, 8); tx(2, TX_TUR_PROB, 0); tx(2, TX_TW_SHIFT, -12);
+    trk[2].p[P_QUANT] = Q_CHRD;
+    mixer(2, 90, 0, 0, 0);
+    sound(3, ENGI_ORACLE, OR_FLUTE);
+    trk[3].p[P_SDIV] = DIV_8;
+    gen(3, TESS_ENG_AWAKE, 66);
+    tx(3, TX_AWK_LENA, 7); tx(3, TX_AWK_LENB, 3); tx(3, TX_AWK_PROB, 40);
+    trk[3].p[P_QUANT] = Q_CHRD;
+    mixer(3, 90, 30, 80, 60);
+    g_solo_check();
+}
+static const gstep_t G_ATLAS[] = {
+    {0, 0, 0, 0, 0, "ATLAS: a map of drum grooves; X and Y pick a place on it"},
+    {4000, 7000, 200, "SEQ", "OPEN SEQ", "Tap SEQ: kick, snare and hat from the point X, Y"},
+    {11500, 14500, 1500, "KNOB 4", "DENS", "Turn KNOB 4, DENS, up: more hits", 15},
+    {20500, 23500, 2000, "KNOB 2", "X", "Turn KNOB 2, X: a different groove, smoothly", 20},
+    {29500, 32500, 2000, "KNOB 3", "Y", "Turn KNOB 3, Y: another way across the map", 20},
+    {38500, 41500, 3500, "OCT-", "HOLD OCT-", "Hold OCT- and turn KNOB 4, HAT, down"},
+    {0, 43000, 1500, "KNOB 4", "HAT", 0, -25},
+    {47000, 0, 0, 0, 0, "The hat thins out; kick and snare stay"},
+};
 static void guide_ref_gen(const char *out, FILE *tsv)
 {
     G_RUN("r-bounce", "BOUNCE AND FALL", "GREEN", 57, 4, g_kankyo_scene, G_BOUNCE);   /* kankyo ongaku */
@@ -356,4 +441,6 @@ static void guide_ref_gen(const char *out, FILE *tsv)
     G_RUN("r-series", "SERIES", "GREEN", 55, 4, g_feldman_scene, G_SERIES);   /* slow piano after Feldman */
     G_RUN("r-chord", "CHORD: THE HARMONY", "GREEN", 55, 4, g_gospel_scene, G_CHORDS);   /* minor gospel */
     G_RUN("r-answer", "ANSWER: CALL AND RESPONSE", "GREEN", 58, 4, g_blues_scene, G_ANSWER);   /* blues */
+    G_RUN("r-morph", "MORPH: A INTO B", "GREEN", 55, 4, g_dancehall_scene, G_MORPH);   /* dancehall */
+    G_RUN("r-atlas", "ATLAS: THE DRUM MAP", "GREEN", 54, 4, g_brokenbeat_scene, G_ATLAS);   /* broken beat */
 }
