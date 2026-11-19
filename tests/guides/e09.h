@@ -4,7 +4,7 @@
 /* (g_solo_check, the balance and note checks, is in e05.h) */
 
 /* UK garage: 132 BPM, C minor; an organ-like stab line on TURING as track 1 (the clip sends it out and silences it
- * here), a two-step 909 in STEP with the kick skipping, a sub on EUCLID, a soft pad holding the chord */
+ * here), a two-step 909 in STEP with the kick skipping, a sub written in STEP, a soft pad holding the chord */
 static void g_garage_scene(void)
 {
     song.g[G_BPM] = 132;
@@ -26,11 +26,15 @@ static void g_garage_scene(void)
     tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
     mixer(1, 80, 0, 10, 0);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
-    trk[2].p[P_SDIV] = DIV_16;
-    gen(2, TESS_ENG_EUCLID, 31);
-    tx(2, TX_EUC_STEPS, 16); tx(2, TX_EUC_PULSES, 5); tx(2, TX_EUC_ROT, 3); tx(2, TX_TW_SHIFT, -12);
-    tx(2, TX_NL_MODE, 1); tx(2, TX_NL_LEN, 2);
-    mixer(2, 80, 0, 0, 0);
+    {                                                   /* a steady written bass: C on the one, the octave and G
+                                                         * answering (Theo: the EUCLID bass was too up-and-down) */
+        static const uint8_t N[16] = {36, 0, 0, 36, 0, 0, 48, 0, 36, 0, 0, 36, 0, 43, 0, 0};
+        static const uint8_t V[16] = {110, 0, 0, 86, 0, 0, 80, 0, 104, 0, 0, 84, 0, 88, 0, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_note(2, i, N[i], V[i]);
+        trk[2].p[P_SLEN] = 16;
+    }
+    tx(2, TX_MODE, TESS_ENG_OFF); trk[2].p[P_SDIV] = DIV_16;
+    mixer(2, 92, 0, 0, 0);
     sound(3, ENGI_TRIO, TR_WARM_PAD);
     trk[3].p[P_CHRD] = 1;
     gen(3, TESS_ENG_CHORD, 5);
@@ -92,10 +96,15 @@ static const gstep_t G_CLOCK_IN[] = {
     {21000, 0, 0, 0, 0, "No clock comes in here, so it stops. From a DAW, it follows its tempo"},
     {30000, 33000, 400, "KNOB 4", "CLK INT", "Turn KNOB 4 back to INT: its own clock", -1},
     {37000, 40000, 200, "PLAY", "PLAY", "Tap PLAY: it plays on its own tempo again"},
-    {46000, 0, 0, 0, 0, "TRS picks the MIDI socket. Hold OCT- here for PPQN"},
+    {46000, 0, 0, 0, 0, "On KNOB 4, TRS picks the MIDI socket instead of USB"},
+    {52000, 55000, 9000, "OCT-", "HOLD OCT-", "Hold OCT-: KNOB 4 is now PPQN, the clock's pulses a beat"},
+    {0, 58000, 1600, "KNOB 4", "PPQN", 0, 4},
+    {60500, 0, 0, 0, 0, "24 (the MIDI standard), 48, 4, 8 or 12"},
+    {0, 61500, 800, "KNOB 4", "PPQN 24", 0, -4},
+    {64000, 0, 0, 0, 0, "Twice as fast as the gear it follows? Try 48"},
 };
 static void guide_e09(const char *out, FILE *tsv)
 {
     G_RUN("e09-midi-out", "PLAY YOUR OTHER SYNTHS", "WHITE", 54, 4, g_garage_scene, G_MIDI_OUT);   /* UK garage */
-    G_RUN("e09-clock", "FOLLOW ANOTHER CLOCK", "WHITE", 53, 4, g_electro_scene, G_CLOCK_IN);   /* electro */
+    G_RUN("e09-clock", "FOLLOW ANOTHER CLOCK", "WHITE", 70, 4, g_electro_scene, G_CLOCK_IN);   /* electro */
 }
