@@ -4,27 +4,27 @@
  * r-euclid, r-markov and r-gen-layer are in ref.h. (g_solo_check, the balance and note checks, is in e01.h) */
 
 /* kankyo ongaku (Japanese environmental music): 72 BPM, D major pentatonic; BOUNCE on a soft tine as track 1 (the clip
- * turns its SPEED, BALLS and FALL), a warm pad holding the chord, a low flute on AWAKE, a sub on two pulses */
+ * turns its SPEED, BALLS and FALL), a warm pad holding the chord, a glass pad on AWAKE, a sub on two pulses */
 static void g_kankyo_scene(void)
 {
     song.g[G_BPM] = 72;
     scale(2, 5, 0);                                     /* D, PEN */
-    sends(120, 90, 85, 70);
+    sends(120, 90, 85, 55);
     sound(0, ENGI_FM6, FX_DX_TINE);
     trk[0].p[P_SDIV] = DIV_16;
     gen(0, TESS_ENG_BOUNCE, 33);
     tx(0, TX_BNC_SPEED, 12); tx(0, TX_BNC_ANGLE, 37); tx(0, TX_BNC_BALLS, 1); tx(0, TX_TW_SHIFT, 12);
-    mixer(0, 104, -15, 90, 50);
+    mixer(0, 104, -15, 70, 75);
     sound(1, ENGI_TRIO, TR_WARM_PAD);
     trk[1].p[P_CHRD] = 1;
     gen(1, TESS_ENG_CHORD, 6);
     tx(1, TX_CH_PROG, GEN_CH_DRONE); tx(1, TX_CH_BARS, 3); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
     mixer(1, 64, -5, 100, 0);
-    sound(2, ENGI_TRIO, TR_BREATH_FLUTE);
+    sound(2, ENGI_ORACLE, OR_GLASS_PAD);   /* (Theo: not the flute) */
     trk[2].p[P_SDIV] = DIV_4;
     gen(2, TESS_ENG_AWAKE, 19);
     tx(2, TX_AWK_LENA, 7); tx(2, TX_AWK_LENB, 4); tx(2, TX_AWK_PROB, 35);
-    mixer(2, 76, 30, 100, 60);
+    mixer(2, 104, 30, 100, 60);
     sound(3, ENGI_TRIO, TR_SUB_BASS);
     trk[3].p[P_SDIV] = DIV_4;
     gen(3, TESS_ENG_EUCLID, 2);
@@ -41,8 +41,8 @@ static const gstep_t G_BOUNCE[] = {
     {39000, 0, 0, 0, 0, "Balls that hit on the same step play together, three notes at most"},
     {46000, 49000, 800, "KNOB 4", "FALL", "Past 4 balls: FALL. Eight leaves fall at their own speeds", 2},
     {54000, 0, 0, 0, 0, "Each plays where it lands: left low, right high"},
-    {60000, 63000, 1200, "KNOB 3", "WIND", "In FALL, KNOB 3 is WIND. Turned left, the melody leans low", -10},
-    {70000, 73000, 2600, "KNOB 3", "WIND", "Calm in the middle; further right it leans high, and gusts", 40},
+    {60000, 63000, 2500, "KNOB 3", "WIND", "In FALL, KNOB 3 is WIND. Turned far left, the melody leans low", -70},
+    {70000, 73000, 3500, "KNOB 3", "WIND", "Calm in the middle; far right it leans high, and gusts", 100},
     {81000, 84000, 8000, "OCT-", "HOLD OCT-", "Hold OCT-: BOUNCE's only layer knob is KNOB 1, RANDOM"},
     {0, 85500, 300, "KNOB 1", "RANDOM", 0, 1},
     {86500, 0, 0, 0, 0, "Turn it right: SPEED, ANGLE and BALLS get new values"},
