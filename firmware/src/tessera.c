@@ -1800,6 +1800,11 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
             tess_cap(t, (uint32_t)final_note, vel, off);
             tessera.last_note[tr] = (uint8_t)final_note;
             tessera_hold_hit(tr);
+            for (uint32_t i = 0; i < out.more_n && i < 2u; i++) {   /* (CHORD TRUE: the chord's other notes, as long) */
+                int32_t m = tess_snap_gen(t, tr, (int32_t)out.more[i] + tess_key(t, tr) + tess_flourish(t, tr)) + tess_trn(t, tr) + tw2->shift;
+                m = m < 0 ? 0 : m > 127 ? 127 : m;
+                if (m != final_note) { nl_on_for(t, tr, (uint32_t)m, vel, off); tess_cap(t, (uint32_t)m, vel, off); }
+            }
             return;
         }
         trk_note_on(t, (uint32_t)final_note, vel);
