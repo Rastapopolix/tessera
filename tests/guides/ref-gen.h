@@ -174,11 +174,22 @@ static const gstep_t G_QUAD[] = {
     {0, 0, 0, 0, 0, "QUAD: a 4 x 4 grid of notes, a row for each QUAD track"},
     {4000, 7000, 200, "SEQ", "OPEN SEQ", "Tap SEQ: tracks 1 to 3 play rows 1 to 3, each at its own speed"},
     {12000, 15000, 800, "KNOB 2", "PEND", "Turn KNOB 2, DIR, to PEND: row 1 goes back and forth", 2},
-    {21000, 24000, 3500, "OCT-", "HOLD OCT-", "Hold OCT- and turn KNOB 3, MOVE, to DOWN"},
-    {0, 25500, 400, "KNOB 3", "MOVE DOWN", 0, 1},
-    {30000, 0, 0, 0, 0, "Every 4 steps column 1 turns: its notes move down a track"},
-    {38000, 41000, 1200, "KNOB 3", "PROB", "Turn KNOB 3, PROB, down: some cells rest", -15},
-    {48000, 0, 0, 0, 0, "One grid, three tracks: the tune moves between them"},
+    {21000, 24000, 1200, "KNOB 3", "PROB", "Turn KNOB 3, PROB, down: some cells rest", -15},
+    {30000, 33000, 27000, "OCT-", "HOLD OCT-", "Hold OCT-: the grid's columns can turn between the rows"},
+    {0, 35000, 400, "KNOB 3", "MOVE DOWN", 0, 1},
+    {35500, 0, 0, 0, 0, "KNOB 3, MOVE DOWN: column 1 turns, its notes move a track down"},
+    {0, 42000, 600, "KNOB 4", "EVERY", 0, -2},
+    {42500, 0, 0, 0, 0, "KNOB 4, EVERY: how often it turns, in steps of the first QUAD track"},
+    {0, 49000, 300, "KNOB 2", "COLUMN 2", 0, 1},
+    {0, 50500, 800, "KNOB 3", "MOVE RAND", 0, 3},
+    {49500, 0, 0, 0, 0, "KNOB 2 picks column 2; MOVE RAND: its cells jump 1 to 3 rows"},
+    {60000, 63000, 300, "KNOB 4", "LINK T2", "Let go. Turn KNOB 4, LINK, to T2: track 1's steps move track 2 too", 1},
+    {71000, 74000, 800, "OCT+", "GEN SHEET", "Hold OCT+: the GEN sheet, with RANGE"},
+    {0, 77000, 300, "KNOB 2", "1 OCT", 0, 1},
+    {77500, 0, 0, 0, 0, "RANGE 1 OCT: the row's notes fold into one octave from the root"},
+    {84000, 87000, 200, "OCT-", "CLOSE", "Tap OCT-: the sheet closes"},
+    {90000, 0, 0, 0, 0, "DIR HOLD: a track that plays only when another one's LINK pulls it"},
+    {97000, 0, 0, 0, 0, "DIR, PROB, LINK; columns, MOVE, EVERY; and RANGE"},
 };
 /* library sci-fi (the 1970s library records): 96 BPM, A minor; CONSTL on a tine electric piano as track 1 (the clip moves the
  * crosshair, adds stars, the OCT- layer and SIZE), a glass pad holding the chord, a sub on EUCLID, soft toms in STEP */
@@ -522,7 +533,7 @@ static void guide_ref_gen(const char *out, FILE *tsv)
     G_RUN("r-bounce", "BOUNCE AND FALL", "GREEN", 102, 4, g_kankyo_scene, G_BOUNCE);   /* kankyo ongaku */
     G_RUN("r-awake", "AWAKE: TWO LOOPS", "GREEN", 55, 4, g_chamberjazz_scene, G_AWAKE);   /* chamber jazz */
     G_RUN("r-poly", "POLY: FOUR RHYTHMS", "GREEN", 55, 4, g_calypso_scene, G_POLY);   /* calypso */
-    G_RUN("r-quad", "QUAD: ONE GRID", "GREEN", 55, 4, g_mathrock_scene, G_QUAD);   /* math rock */
+    G_RUN("r-quad", "QUAD: ONE GRID", "GREEN", 103, 4, g_mathrock_scene, G_QUAD);   /* math rock */
     G_RUN("r-constellation", "CONSTELLATION", "GREEN", 110, 4, g_scifi_scene, G_CONSTL);   /* library sci-fi */
     G_RUN("r-series", "SERIES", "GREEN", 55, 4, g_feldman_scene, G_SERIES);   /* slow piano after Feldman */
     G_RUN("r-chord", "CHORD: THE HARMONY", "GREEN", 152, 4, g_gospel_scene, G_CHORDS);   /* minor gospel */
