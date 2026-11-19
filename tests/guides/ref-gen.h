@@ -180,14 +180,14 @@ static const gstep_t G_QUAD[] = {
     {38000, 41000, 1200, "KNOB 3", "PROB", "Turn KNOB 3, PROB, down: some cells rest", -15},
     {48000, 0, 0, 0, 0, "One grid, three tracks: the tune moves between them"},
 };
-/* library sci-fi (the 1970s library records): 96 BPM, A minor; CONSTL on a soft lead as track 1 (the clip moves the
- * crosshair, adds stars and turns LOCK), a glass pad holding the chord, a round bass on EUCLID, soft toms in STEP */
+/* library sci-fi (the 1970s library records): 96 BPM, A minor; CONSTL on a tine electric piano as track 1 (the clip moves the
+ * crosshair, adds stars, the OCT- layer and SIZE), a glass pad holding the chord, a sub on EUCLID, soft toms in STEP */
 static void g_scifi_scene(void)
 {
     song.g[G_BPM] = 96;
     scale(9, SCL_MIN, 0);
     sends(110, 100, 80, 60);
-    sound(0, ENGI_TRIO, TR_SOFT_LEAD);
+    sound(0, ENGI_FM6, FX_TINE_EP);                     /* (Theo: a tine EP, not the soft lead) */
     trk[0].p[P_SDIV] = DIV_8;
     gen(0, TESS_ENG_CONSTEL, 14);
     tx(0, TX_CS_Y, 5); tx(0, TX_CS_DENS, 40); tx(0, TX_CS_SIZE, 2);
@@ -197,11 +197,11 @@ static void g_scifi_scene(void)
     gen(1, TESS_ENG_CHORD, 9);
     tx(1, TX_CH_PROG, GEN_CH_TWO); tx(1, TX_CH_BARS, 3); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
     mixer(1, 70, 20, 90, 0);
-    sound(2, ENGI_FM6, FX_SOLID_BASS);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);                   /* (TRIO: FM6 is the subject's) */
     trk[2].p[P_SDIV] = DIV_16;
     gen(2, TESS_ENG_EUCLID, 5);
     tx(2, TX_EUC_STEPS, 16); tx(2, TX_EUC_PULSES, 5); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
-    mixer(2, 104, 0, 10, 0);
+    mixer(2, 84, 0, 10, 0);
     sound(3, ENGI_DRUM, DK_808_KIT);
     {
         static const uint8_t L[16] = {L_BD, 0, 0, 0, L_TM, 0, 0, L_CH, L_BD, 0, L_TM, 0, 0, 0, L_CH, 0};
@@ -218,10 +218,21 @@ static const gstep_t G_CONSTL[] = {
     {4000, 7000, 200, "SEQ", "OPEN SEQ", "Tap SEQ: the sky passes, the crosshair catches stars"},
     {12000, 15000, 1000, "KNOB 2", "Y UP", "Turn KNOB 2, Y, up: the crosshair rises, and the tune", 5},
     {21000, 24000, 1200, "KNOB 3", "DENS", "Turn KNOB 3, DENS, up: more stars, more notes", 15},
-    {30000, 33000, 4000, "OCT-", "HOLD OCT-", "Hold OCT- and turn KNOB 2, LOCK, up"},
-    {0, 34500, 1500, "KNOB 2", "LOCK", 0, 30},
-    {40000, 0, 0, 0, 0, "LOCK plays back the stars already caught: a phrase repeats"},
-    {48000, 0, 0, 0, 0, "Low LOCK roams, high LOCK repeats: the knob between them"},
+    {30000, 33000, 300, "KNOB 4", "SPEED", "Turn KNOB 4, SPEED: the sky passes faster", 1},
+    {37000, 40000, 300, "KNOB 4", "SPEED", "And back", -1},
+    {43000, 46000, 30000, "OCT-", "HOLD OCT-", "Hold OCT-: LOCK, LEN and FILL"},
+    {0, 48000, 1500, "KNOB 2", "LOCK", 0, 30},
+    {49500, 0, 0, 0, 0, "KNOB 2, LOCK: replay the stars already caught. A phrase repeats"},
+    {0, 57000, 1200, "KNOB 3", "LEN", 0, -8},
+    {57500, 0, 0, 0, 0, "KNOB 3, LEN: the loop's length. Shorter, a tighter phrase"},
+    {0, 65000, 400, "KNOB 4", "FILL ARP", 0, 1},
+    {65500, 0, 0, 0, 0, "KNOB 4, FILL ARP: between stars, the last four again, low to high, softer"},
+    {78000, 81000, 800, "OCT+", "GEN SHEET", "Hold OCT+: the GEN sheet, with SIZE"},
+    {0, 84000, 600, "KNOB 2", "SIZE", 0, 3},
+    {84500, 0, 0, 0, 0, "SIZE: how many rows either side of the crosshair still catch a star"},
+    {92000, 95000, 200, "OCT-", "CLOSE", "Tap OCT-: the sheet closes"},
+    {98000, 0, 0, 0, 0, "AUTO steers the ship for you: set it with a mod to C AUTO"},
+    {104000, 0, 0, 0, 0, "Y, DENS and SPEED; LOCK, LEN and FILL; the sheet's SIZE"},
 };
 /* slow piano after Feldman: 66 BPM, E minor; SERIES on soft electric keys in eighths as track 1 (the clip turns INTV
  * and LOOP), a soft pad holding one chord, a low fifth drone, nothing else */
@@ -471,7 +482,7 @@ static void guide_ref_gen(const char *out, FILE *tsv)
     G_RUN("r-awake", "AWAKE: TWO LOOPS", "GREEN", 55, 4, g_chamberjazz_scene, G_AWAKE);   /* chamber jazz */
     G_RUN("r-poly", "POLY: FOUR RHYTHMS", "GREEN", 55, 4, g_calypso_scene, G_POLY);   /* calypso */
     G_RUN("r-quad", "QUAD: ONE GRID", "GREEN", 55, 4, g_mathrock_scene, G_QUAD);   /* math rock */
-    G_RUN("r-constellation", "CONSTELLATION", "GREEN", 55, 4, g_scifi_scene, G_CONSTL);   /* library sci-fi */
+    G_RUN("r-constellation", "CONSTELLATION", "GREEN", 110, 4, g_scifi_scene, G_CONSTL);   /* library sci-fi */
     G_RUN("r-series", "SERIES", "GREEN", 55, 4, g_feldman_scene, G_SERIES);   /* slow piano after Feldman */
     G_RUN("r-chord", "CHORD: THE HARMONY", "GREEN", 152, 4, g_gospel_scene, G_CHORDS);   /* minor gospel */
     G_RUN("r-answer", "ANSWER: CALL AND RESPONSE", "GREEN", 58, 4, g_blues_scene, G_ANSWER);   /* blues */
