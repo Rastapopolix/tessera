@@ -1449,7 +1449,7 @@ static void g_chillwave_scene(void)
     tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 5); tx(2, TX_EUC_ROT, 0);
     tx(2, TX_TW_FOLLOW, 2); tx(2, TX_TW_FHOW, TESS_FH_HARM);   /* (FOLLOW T2, HOW HARM: SHIFT counts chord notes) */
     trk[2].p[P_LRATE] = 30;
-    cord(0, CS_LFO, 2, CD_TW_SHIFT, 2, 14, 0, 0);
+    cord(0, CS_LFO, 2, CD_TW_SHIFT, 2, 48, 0, 0);       /* (Theo: enough to hear it clearly) */
     trk[2].p[P_MUTE] = 1;
     mixer(2, 122, -20, 10, 45);
     sound(3, ENGI_DRUM, DK_808_KIT);
@@ -1489,10 +1489,12 @@ static const gstep_t G_HARM[] = {
     {0, 89000, 200, "ARP", "EVOLVE", 0},
     {0, 91000, 900, "SELECT", "TWEAK", 0, 2},
     {92000, 0, 0, 0, 0, "Its TWEAK page: SHIFT at +0, FOLLOW T2"},
-    {97000, 100000, 200, "LFO", "OPEN MODS", "Tap LFO: MODS. A cord, T3 LFO onto T3 SHIFT"},
-    {104000, 107000, 7000, "OCT-", "SCOPE", "Hold OCT-: the scope. The LFO swings SHIFT up and down"},
-    {115000, 0, 0, 0, 0, "Under HARM, SHIFT counts the chord's notes: the line climbs and falls inside the chord"},
-    {122000, 0, 0, 0, 0, "QNT HARM on the keys; FOLLOW's HOW HARM, and SHIFT by chord notes"},
+    {97000, 100000, 200, "LFO", "OPEN MODS", "Tap LFO: MODS. A cord: T3 LFO, a sine, onto T3 SHIFT"},
+    {104000, 107000, 6000, "OCT-", "SCOPE", "Hold OCT-: the scope. The sine swings SHIFT up and down"},
+    {114000, 0, 0, 0, 0, "Under HARM, SHIFT counts the chord's notes: the line climbs and falls inside the chord"},
+    {121000, 123000, 1200, "KNOB 1", "T3 RAND", "Turn KNOB 1, the source, to T3 RAND: a new random SHIFT on each note", 4},
+    {129000, 131000, 6000, "OCT-", "SCOPE", "The scope again: RAND jumps, and the line leaps about the chord"},
+    {139000, 0, 0, 0, 0, "QNT HARM on the keys; FOLLOW's HOW HARM, and SHIFT by chord notes"},
 };
 /* reggae: 76 BPM (a one drop), G major; drums and bass written in STEP, two patterns each (pattern 2 a variation),
  * organ skanks on CHORD in the offbeats, a melodica-like flute on TURING */
@@ -1576,7 +1578,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-rec", "RECORD LIVE", "MOSAIC", 50, 4, g_ambhouse_scene, G_REC);   /* ambient house */
     G_RUN("r-step-write", "WRITE NOTES BY HAND", "MOSAIC", 68, 4, g_lounge_scene, G_STEPW);   /* lounge */
     G_RUN("r-user-scale", "A SCALE OF YOUR OWN", "MOSAIC", 70, 4, g_ethno_scene, G_USCALE);   /* ethno-ambient */
-    G_RUN("r-harm", "RUN THE KEYS INTO CHORDS", "MOSAIC", 130, 4, g_chillwave_scene, G_HARM);   /* chillwave */
+    G_RUN("r-harm", "RUN THE KEYS INTO CHORDS", "MOSAIC", 146, 4, g_chillwave_scene, G_HARM);   /* chillwave */
     G_RUN("r-song", "A SONG FROM PATTERNS", "MOSAIC", 91, 4, g_reggae_scene, G_SONG);   /* reggae */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 160, 4, g_ambtechno_scene, G_PIECE);   /* slow ambient with drums */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
