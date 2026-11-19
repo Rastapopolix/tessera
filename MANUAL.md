@@ -1899,13 +1899,14 @@ off at 0.
 
 | Track | Hold **REC** and | Undo (hold **EDIT**) |
 |---|---|---|
-| A generator | What it played in its last bars goes into the track's STEP pattern (1, 2 or 4 bars, as many as the notes span). The track switches to STEP and plays on from the same place. | Puts the generator back. |
+| A generator | What it played in its last whole passes goes into the track's STEP pattern (1, 2 or 4 passes of PATTERN's LEN, as many as the notes span, up to 64 steps). The track switches to STEP and plays on from the same place. | Puts the generator back. |
 | **ARP** | What the arpeggio played (not the keys you held) is printed the same way, and the track switches to STEP. | Brings the ARP back (hold the keys again to restart it). |
 | STEP, with STEP EVOLVE's changes playing | Keeps the changes. | Undoes it. |
 | STEP, without them | Captures what you played on the keys in the last bars. | |
 
 - Steps written by hand already there: **REPLACE STEPS?** OCT+ prints over them, OCT- keeps them.
 - Recorded notes there: **CLEAR TO PRINT**.
+- A print starts where a pass starts, so the loop joins up the way it played. With LEN 16 that is a bar; with LEN 12, two passes print as 24 steps.
 
 > **Try this: an endless solo.** A generator doesn't have to loop. Put **MARKOV** on a track, set LEAP to about 30 %
 > and DENS to about 70 %, and on EVOLVE turn **LOCK** to 0: every pass is a new line, so it walks on for as long as

@@ -7604,6 +7604,36 @@ static int test_capture(void)
         cap_w = cap_from = 0;
         memset(cap_ev, 0, sizeof cap_ev);
     }
+    {   /* print with LEN 12: whole passes from a pass's start (not bars), so the printed loop joins up as it played */
+        uint32_t ok = 1, played = 0;
+        ui_power_on();
+        recording_reset();
+        track_defaults_steps(TSEL);
+        TSEL->p[P_SLEN] = 12;
+        cap_w = cap_from = 0;
+        memset(cap_ev, 0, sizeof cap_ev);
+        tessera_knob(0, TESS_ENG_EUCLID);
+        transport_req = 1;
+        events_block(1);
+        while (cap_step[0] != 29u) events_block(1);     /* two passes of 12 and five steps */
+        hold(B_REC);
+        for (i = 0; i < CAP_N; i++)
+            if (cap_ev[i].vel && (cap_ev[i].tr & 127u) == 0u && cap_ev[i].step < 24u) {
+                played++;
+                ok &= TSEL->step[cap_ev[i].step].n >= 1u && TSEL->step[cap_ev[i].step].note[0] == cap_ev[i].note;
+            }
+        bad += check("print, LEN 12: its two whole passes on their steps (LEN 24, not a bar's 16), then STEP",
+                     ok && played >= 4u && msg_is("PRINTED 24 STEPS") && TSEL->p[P_SLEN] == 24 &&
+                     tessera.mode[0] == TESS_ENG_OFF);
+        bad += check("  .. playing on from where it was (step 5 of 24)", TSEL->seq_idx == 5u || TSEL->seq_idx == 6u);
+        hold(B_EDIT);
+        stop_transport();
+        track_defaults_steps(TSEL);
+        tessera_knob(0, -TESS_ENG_EUCLID);
+        TSEL->p[P_SLEN] = 16;
+        cap_w = cap_from = 0;
+        memset(cap_ev, 0, sizeof cap_ev);
+    }
     {   /* print the ARP (issue #530): REC held on an ARP track takes what the arp played, not the keys, into STEP */
         uint32_t ok = 1, played = 0;
         static const uint8_t HELD[3] = {60, 64, 67};
