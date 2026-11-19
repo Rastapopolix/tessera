@@ -504,11 +504,34 @@ static void g_folktronica_scene(void)
 }
 static const gstep_t G_TWEAK[] = {
     {0, 0, 0, 0, 0, "TWEAK reshapes what a generator plays, without changing the generator"},
-    {3500, 6500, 200, "ARP", "EVOLVE", "Tap ARP: EVOLVE"},
-    {10000, 13000, 900, "SELECT", "TWEAK", "Turn SELECT twice: TWEAK", 2},
-    {17000, 20000, 1500, "KNOB 1", "SHIFT", "Turn KNOB 1: SHIFT, here +12, the line an octave up", 12},
-    {27000, 30000, 2000, "KNOB 2", "DROP", "Turn KNOB 2: DROP, here 50 %, about half the notes left out", 25},
-    {38000, 0, 0, 0, 0, "KNOB 3, HUMAN, varies each note's loudness and length. KNOB 4, FOLLOW, has a clip of its own"},
+    {3000, 5500, 200, "ARP", "EVOLVE", "Tap ARP: EVOLVE, then turn SELECT twice: TWEAK. Track 1, the harp"},
+    {0, 7500, 900, "SELECT", "TWEAK", 0, 2},
+    {13000, 15000, 1500, "KNOB 1", "SHIFT +12", "Turn KNOB 1, SHIFT: +12, the harp an octave up", 12},
+    {0, 21000, 1500, "KNOB 1", "SHIFT 0", 0, -12},
+    {21000, 0, 0, 0, 0, "And back to 0"},
+    {26000, 28000, 2000, "KNOB 2", "DROP 50 %", "Turn KNOB 2, DROP: 50 %, about half the notes left out", 25},
+    {0, 34500, 2000, "KNOB 2", "DROP 0", 0, -25},
+    {34500, 0, 0, 0, 0, "And back to 0"},
+    {39000, 41000, 2000, "KNOB 3", "HUMAN", "Turn KNOB 3, HUMAN: each note a little softer or louder, shorter or longer", 30},
+    {48000, 50000, 7000, "OCT-", "HOLD OCT-", "Hold OCT- and turn KNOB 1 right: RANDOM, new SHIFT, DROP and HUMAN"},
+    {0, 51500, 300, "KNOB 1", "RANDOM", 0, 1},
+    {0, 54500, 300, "KNOB 1", "PUT BACK", 0, -1},
+    {54500, 0, 0, 0, 0, "Turn it left: PUT BACK, the values from before"},
+    {59000, 61000, 600, "ALGORITHM", "TRACK 2", "Turn ALGORITHM to track 2, the bass", 1},
+    {65000, 67000, 600, "KNOB 4", "FOLLOW T1", "Turn KNOB 4, FOLLOW: T1. The bass takes the harp's notes, in its own rhythm", 1},
+    {74000, 76000, 1200, "KNOB 1", "SHIFT -7", "While following, SHIFT counts scale steps: -7, an octave down", 5},
+    {83000, 85000, 28000, "OCT-", "HOLD OCT-", "Hold OCT-: FOLLOW's own layer. KNOB 2, HOW: SAME, then CHORD"},
+    {0, 87000, 300, "KNOB 2", "CHORD", 0, 1},
+    {0, 91500, 300, "KNOB 2", "CONTRA", 0, 1},
+    {91500, 0, 0, 0, 0, "CONTRA: it goes down as the harp goes up"},
+    {0, 96000, 300, "KNOB 2", "BASS", 0, 1},
+    {96000, 0, 0, 0, 0, "BASS: an octave down, on beats 1 and 3. (Also CANON 1 to 8, and HARM)"},
+    {0, 100500, 600, "KNOB 2", "SAME", 0, -3},
+    {0, 102500, 300, "KNOB 3", "SOURCE", 0, 1},
+    {101000, 0, 0, 0, 0, "KNOB 3, RHYTHM: SOURCE, it plays only when the harp does"},
+    {0, 107000, 600, "KNOB 4", "HOLD T4", 0, 4},
+    {106500, 0, 0, 0, 0, "KNOB 4, HOLD T4: it takes a new note only when the toms play"},
+    {114000, 0, 0, 0, 0, "SHIFT, DROP, HUMAN, FOLLOW; RANDOM, HOW, RHYTHM and HOLD"},
 };
 /* cinematic: 84 BPM, D minor; a harp line on TURING as track 1 (the leader), a sub on EUCLID in quarters as track 2
  * (the follower: its own rhythm, until FOLLOW its own notes), strings holding the chord, soft toms in STEP */
@@ -521,12 +544,12 @@ static void g_cinematic_scene(void)
     trk[0].p[P_SDIV] = DIV_8;
     gen(0, TESS_ENG_TURING, 71);
     tx(0, TX_TUR_PROB, 15);
-    mixer(0, 96, -20, 80, 30);
+    mixer(0, 110, -20, 70, 30);
     sound(1, ENGI_TRIO, TR_SUB_BASS);
     trk[1].p[P_SDIV] = DIV_4;
     gen(1, TESS_ENG_EUCLID, 15);
     tx(1, TX_EUC_STEPS, 8); tx(1, TX_EUC_PULSES, 5); tx(1, TX_EUC_ROT, 0); tx(1, TX_TW_SHIFT, -12);
-    mixer(1, 100, 0, 0, 0);
+    mixer(1, 84, 0, 0, 0);
     sound(2, ENGI_TRIO, TR_STRING_MACH);
     trk[2].p[P_CHRD] = 1;
     gen(2, TESS_ENG_CHORD, 18);
@@ -543,15 +566,6 @@ static void g_cinematic_scene(void)
     mixer(3, 74, 0, 50, 0);
     g_solo_check();
 }
-static const gstep_t G_FOLLOW[] = {
-    {0, 0, 0, 0, 0, "FOLLOW: one track plays another's notes, in its own rhythm"},
-    {3500, 6500, 600, "ALGORITHM", "TRACK 2", "Turn ALGORITHM to track 2, the bass", 1},
-    {10000, 13000, 200, "ARP", "EVOLVE", "Tap ARP: EVOLVE"},
-    {16500, 19500, 900, "SELECT", "TWEAK", "Turn SELECT twice: TWEAK", 2},
-    {23500, 26500, 600, "KNOB 4", "FOLLOW T1", "Turn KNOB 4: FOLLOW T1. The bass takes the harp's notes", 1},
-    {33500, 36500, 1200, "KNOB 1", "SHIFT -7", "While following, SHIFT counts scale steps: KNOB 1 to -7, an octave down", 5},
-    {44000, 0, 0, 0, 0, "The bass now doubles the harp an octave down, in its own rhythm"},
-};
 /* boom bap: 90 BPM with swing, C minor; track 1 is ATLAS on the 909 playing only the hats (the track that ratchets:
  * Theo heard the kick roll and click when the whole kit rolled), a sparse sub on TURING, organ chords on the beat,
  * and the kick and snare written in STEP on track 4, so they stay put while the hats roll */
@@ -1538,8 +1552,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-entries", "TRACKS OUT AND IN", "SUNSET", 102, 4, g_dnb_scene, G_ENTRIES);   /* liquid drum and bass */
     G_RUN("r-chain", "ONE FORM FOR ALL", "SUNSET", 112, 4, g_disco_scene, G_CHAIN);   /* disco */
     G_RUN("r-energy", "ENERGY: TIDE AND RESTS", "SUNSET", 124, 4, g_afrohouse_scene, G_ENERGY);   /* afro house */
-    G_RUN("r-tweak", "RESHAPE A LINE", "GREEN", 46, 4, g_folktronica_scene, G_TWEAK);   /* folktronica */
-    G_RUN("r-follow", "ONE TRACK FOLLOWS ANOTHER", "MOSAIC", 56, 4, g_cinematic_scene, G_FOLLOW);   /* cinematic */
+    G_RUN("r-tweak", "TWEAK: RESHAPE AND FOLLOW", "MOSAIC", 120, 4, g_cinematic_scene, G_TWEAK);   /* cinematic (r-follow folded in) */
     G_RUN("r-timing", "ROLLS AND FEEL", "GREEN", 58, 4, g_boombap_scene, G_TIMING);   /* boom bap */
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
