@@ -2387,7 +2387,7 @@ function makeMockDevice(opt = {}) {
         break;
       }
       case CMD.INFO:
-        s(opt.legacy ? "MELODEE 0.4 BETA (MOCK)" : "MELODEE v1.2.1 (MOCK)"); b(ENG.length); b(P_COUNT); b(G_COUNT); b(NSTEP); b(P_E0);
+        s(opt.legacy ? "MELODEE 0.4 BETA (MOCK)" : "TESSERA 3.7.3 (MOCK)"); b(ENG.length); b(P_COUNT); b(G_COUNT); b(NSTEP); b(P_E0);
         ENG.forEach((e) => s(e.name));
         if (!opt.legacy) b(NTRK);
         if (!opt.legacy && !opt.v3 && !opt.v5) {
@@ -5320,10 +5320,11 @@ function selfLoad() {
 const stepEdit = new Map(); /* index -> time of the last edit */
 
 /* parameter ids (firmware/src/core.h); used only when P_COUNT / G_COUNT match */
-const EXPECT = { pcount: 119, gcount: 41, pe0: 111 };
+const EXPECT = { pcount: 119, gcount: 42, pe0: 111 };
 /* the same layout without the MPC degree (Felucca 1.0: P_COUNT 91, P_E0 83), the chord keys too (89, 81), the FM
    operator ENVs too (69, 61) or the matrix (firmware 1.0: 57, 49) */
-const knownLayout = (info) => (info.gcount===41 && info.pcount===119 && info.pe0===111) || (info.gcount===40 && info.pcount===117 && info.pe0===109) || info.gcount === 27 &&
+/* (G_BUDGET 41 made the globals 42: SYSTEM shows it; a 41-global firmware leaves it out) */
+const knownLayout = (info) => ((info.gcount===42 || info.gcount===41) && info.pcount===119 && info.pe0===111) || (info.gcount===40 && info.pcount===117 && info.pe0===109) || info.gcount === 27 &&
   [[116,108], [108,100], [104, 96], [100, 92], [92, 84], [91, 83], [89, 81], [69, 61], [57, 49]].some(([c, e]) => info.pcount === c && info.pe0 === e);
 const P = { LEVEL: 0, SLEN: 29 };
 const LAYOUT = (pe0) => [
