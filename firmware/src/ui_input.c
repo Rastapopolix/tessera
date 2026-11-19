@@ -527,7 +527,7 @@ static void capture_take(int over)
     uint64_t touched = 0;
     int empty;
     cap_ev_t captured[CAP_N];
-    uint32_t until;
+    uint32_t until, slot, len = (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP);
     if (chain_busy()) { ui_message("STOP TO CAPTURE"); return; }
     if ((song.rec >> k) & 1u) { ui_message("RECORDING"); return; }
     if (pr && tessera_sd_print(k, 0)) {                 /* SOURCE KEYS with a take: the take itself, as steps */
@@ -561,6 +561,7 @@ static void capture_take(int over)
     }
     fm1_irq_off();                                      /* the selected track's events of this run: the newest, the oldest */
     now = cap_now(t);
+    slot = SEQ_D(t).slot % len;                         /* (the step of the pass playing, in time: a print's passes) */
     from = cap_w - cap_from > CAP_N ? cap_w - CAP_N : cap_from;
     until = cap_w;
     memcpy(captured, cap_ev, sizeof captured);
@@ -568,7 +569,7 @@ static void capture_take(int over)
     for (i = from; i != until; i++) {
         const cap_ev_t *e = &captured[i % CAP_N];
         uint32_t back = (uint16_t)((now >> 8) - e->step);
-        if ((e->tr & 127u) != k || back >= 64u)
+        if ((e->tr & 127u) != k || back >= (pr ? 2u * NSTEP : NSTEP))
             continue;
         n++;
         if (back > last) last = back;
@@ -584,12 +585,16 @@ static void capture_take(int over)
         return;
     }
     {   /* (16-bit step counts: they wrap) */
-        uint32_t cur = (now >> 8) & 0xFFFFu, pos = cur & 15u, span;
-        end = (uint16_t)(cur - pos + (first <= pos && !pr ? 16u : 0u));   /* a bar's start (a print:
-                                                                         * whole bars, the one playing is not done) */
+        uint32_t cur = (now >> 8) & 0xFFFFu, pos = pr ? slot : cur & 15u, span;
+        end = (uint16_t)(cur - pos + (first <= pos && !pr ? 16u : 0u));   /* a bar's start (a print: the pass's,
+                                                                         * whole passes of LEN, the one playing is not done) */
         span = (uint16_t)(end - (uint16_t)(cur - last));
         empty = pr || (seq_is_empty(t) && !notes_have_recording(t));
-        w = empty ? (span <= 16u ? 16u : span <= 32u ? 32u : 64u) : (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP);
+        w = empty ? (span <= 16u ? 16u : span <= 32u ? 32u : 64u) : len;
+        if (pr)                                         /* 1, 2, 4 .. passes, as many as the notes span, up to 64 steps:
+                                                         * the loop joins up as the generator played it */
+            for (w = len; w < span && 2u * w <= NSTEP; w *= 2u)
+                ;
         start = (uint16_t)(end - w);
     }
     load_begin(t, UNDO_PAT);
