@@ -48,6 +48,7 @@ typedef gen_chord_t  tessera_chord_t;
  * variations (vary.c), echoes, each answer softer until it forgets. The saved part; what plays now is tess_an */
 #define TESS_AN_NOTES 16u
 #define TESS_AN_AT_MAX 63u                          /* a note's step in the phrase: 0..63 */
+#define TESS_AN_STOP_MS 1500u                       /* stopped: a key after this pause starts a new phrase */
 enum { TESS_AN_ASPLAYED, TESS_AN_REVERSE, TESS_AN_SHUFFLE, TESS_AN_ORDERS };
 enum { TESS_AN_SHORT, TESS_AN_MID, TESS_AN_LONG, TESS_AN_LENS };   /* LEN: the four loops at the top of FADE */
 enum { TESS_AN_ARP, TESS_AN_TRUE, TESS_AN_CHORDS };   /* TX_AN_CHORD: ARP spreads notes played together one a step
@@ -312,6 +313,7 @@ typedef struct {
     uint16_t hopen[TESSERA_TRACKS];             /* bit n: place n's key is still down (its hold not set yet);
                                                  * TESS_AN_NOTES is 16, so this needs all 16 bits, not 8 */
     uint32_t cnt[TESSERA_TRACKS];               /* steps in this phase (listening: since the last note) */
+    uint32_t hms[TESSERA_TRACKS];               /* fm1_ms of the phrase's last key (stopped: a pause closes it) */
     uint32_t rnd[TESSERA_TRACKS];               /* its random stream (from the SEED at PLAY) */
     uint8_t  mut[TESSERA_TRACKS][TESS_AN_NOTES];   /* each place's change (vary.c) */
     uint8_t  ord[TESSERA_TRACKS][TESS_AN_NOTES];   /* the note each place plays (ORDER) */

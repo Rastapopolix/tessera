@@ -93,7 +93,11 @@ static void lifecycle(void)
     assert(chord_make(t, 60, out, &root, &mask) == 4 && out[0] == 60 && out[1] == 62 && out[3] == 66);
     t->p[P_VOIC] = VC_OPEN;
     assert(chord_make(t, 60, out, &root, &mask) == 4 && out[3] == 86);
-    t->p[P_VOIC] = VC_CLOSE; t->p[P_CHRD] = CH_MAJ;
+    t->p[P_VOIC] = VC_CLOSE; t->p[P_CHRD] = CH_2NDS;     /* stacks: the scale's own neighbouring degrees (#852) */
+    assert(chord_make(t, 60, out, &root, &mask) == 3 && out[0] == 60 && out[1] == 61 && out[2] == 62);
+    t->p[P_CHRD] = CH_5THS;
+    assert(chord_make(t, 60, out, &root, &mask) == 4 && out[1] == 64 && out[3] == 72);
+    t->p[P_CHRD] = CH_MAJ;
     assert(chord_make(t, 60, out, &root, &mask) == 3 && out[1] == 68 && out[2] == 74);
     t->p[P_CHRD] = 0; t->p[P_AMODE] = 1; t->p[P_AOCT] = 2;
     arp_add(t, 60); arp_tick(t, 1); assert(t->arp_note == 60);
