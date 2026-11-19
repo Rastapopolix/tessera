@@ -179,33 +179,40 @@ static const gstep_t G_COLOR[] = {
     {38000, 0, 0, 0, 0, "Back on HOME: the four tracks, each in its own colour"},
     {45500, 0, 0, 0, 0, "GROUND, just below COLOR, draws the ink on paper (LIGHT)"},
 };
-/* neo-classical: 72 BPM, A minor; a harp wandering on AWAKE (track 1: far out on the water), strings holding the
- * chord, a flute on TURING, a kalimba on EUCLID (track 4: close by) */
+/* neo-classical: 72 BPM, D minor (Theo: another root; the drone stays); a harp wandering on AWAKE (track 1: far out
+ * on the water), strings holding the drone, a soft muted lead on TURING (in place of the flute), a kalimba on EUCLID
+ * (track 4: close by). The project is named STILL POOL (its own place) and has a CHAIN, A four phrases then B two,
+ * so the shore moves on in the clip */
 static void g_neoclassical_scene(void)
 {
+    static const uint8_t REP[4] = {4, 2, 1, 1};
     song.g[G_BPM] = 72;
-    scale(9, SCL_MIN, 0);
+    scale(2, SCL_MIN, 0);
     sends(110, 85, 60, 50);
     sound(0, ENGI_FM6, FX_HARP);
     trk[0].p[P_SDIV] = DIV_8;
     gen(0, TESS_ENG_AWAKE, 19);
     tx(0, TX_AWK_LENA, 7); tx(0, TX_AWK_LENB, 5); tx(0, TX_AWK_PROB, 60);
-    mixer(0, 92, -20, 80, 30);
+    mixer(0, 100, -20, 80, 30);
     sound(1, ENGI_TRIO, TR_STRING_MACH);
     trk[1].p[P_CHRD] = 1;
     gen(1, TESS_ENG_CHORD, 4);
     tx(1, TX_CH_PROG, GEN_CH_DRONE); tx(1, TX_CH_BARS, 2); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
-    mixer(1, 70, 0, 90, 0);
-    sound(2, ENGI_TRIO, TR_BREATH_FLUTE);
+    mixer(1, 58, 0, 90, 0);
+    sound(2, ENGI_TRIO, TR_SOFT_LEAD);
+    trk[2].p[P_E5] = 40;
+    trk[2].p[P_ATK] = 30; trk[2].p[P_REL] = 60;
     trk[2].p[P_SDIV] = DIV_4;
     gen(2, TESS_ENG_TURING, 26);
     tx(2, TX_TUR_PROB, 15); tx(2, TX_TW_DROP, 50);
-    mixer(2, 76, 20, 80, 40);
+    mixer(2, 76, 20, 60, 30);
     sound(3, ENGI_FM6, FX_KALIMBA);
     trk[3].p[P_SDIV] = DIV_16;
     gen(3, TESS_ENG_EUCLID, 37);
     tx(3, TX_EUC_STEPS, 16); tx(3, TX_EUC_PULSES, 5); tx(3, TX_EUC_ROT, 3); tx(3, TX_TW_SHIFT, 12);
-    mixer(3, 74, 30, 60, 50);
+    mixer(3, 96, 30, 60, 50);
+    chain_set(FC_AB, PH_4, 0, REP, 0, 0);
+    str_cpy(proj_name, "STILL POOL", sizeof proj_name);
     g_solo_check();
 }
 static const gstep_t G_LANDSCAPE[] = {
@@ -214,13 +221,21 @@ static const gstep_t G_LANDSCAPE[] = {
     {0, 8000, 200, "GLO", "PERF", 0},
     {12000, 15000, 2000, "SELECT", "LANDSCAPE", "Turn SELECT: on to LANDSCAPE", 4},
     {21000, 0, 0, 0, 0, "Each note is a drop: low notes land left, high right"},
-    {29000, 0, 0, 0, 0, "Track 1's drops land far out, track 4's close by, each in its colour"},
-    {37000, 40000, 200, "F#3", "MUTE T1", "The keys are MIXER's: mute all four tracks"},
-    {0, 41500, 200, "G#3", "MUTE T2", 0},
-    {0, 43000, 200, "A#3", "MUTE T3", 0},
-    {0, 44500, 200, "C#4", "MUTE T4", 0},
-    {48000, 0, 0, 0, 0, "Muted, they make no drops: the water goes still"},
-    {56000, 59000, 200, "C4", "UNMUTE ALL", "C4 brings them all back"},
+    {27000, 0, 0, 0, 0, "Track 1's drops land far out, track 4's close by, each in its colour"},
+    {33000, 0, 0, 0, 0, "This project is named STILL POOL. The name makes the place: its hills, stars and moon"},
+    {39500, 0, 0, 0, 0, "Here, land cut by channels, with a bridge. Other names make islands, or all land"},
+    {45000, 0, 0, 0, 0, "This is A's shore, with a torii gate. The project has a CHAIN: A, then B"},
+    {50500, 0, 0, 0, 0, "The CHAIN moves on to B: its shore comes in from the right, as if travelling"},
+    {57000, 0, 0, 0, 0, "B's shore has its own: here a stone lantern, glowing as the notes land"},
+    {64000, 0, 0, 0, 0, "The same name is always the same place. Rename the project: somewhere else"},
+    {71000, 0, 0, 0, 0, "Unnamed, it is one long, bare shore"},
+    {77000, 0, 0, 0, 0, "Back to A: home. When the whole form comes round, a shooting star"},
+    {84000, 85000, 200, "F#3", "MUTE T1", "The keys are MIXER's: mute all four tracks"},
+    {0, 86500, 200, "G#3", "MUTE T2", 0},
+    {0, 88000, 200, "A#3", "MUTE T3", 0},
+    {0, 89500, 200, "C#4", "MUTE T4", 0},
+    {92000, 0, 0, 0, 0, "Muted, they make no drops: the water goes still"},
+    {99000, 101000, 200, "C4", "UNMUTE ALL", "C4 brings them all back"},
 };
 /* bossa nova: 128 BPM with a little swing, D dorian; a flute line on TURING as track 1 (its FORM), a plucked
  * guitar on CHORD on the beats (HIT STEP at 1/4), a bass on EUCLID, rim and shaker on a 909 */
@@ -1463,7 +1478,7 @@ static const gstep_t G_SONG[] = {
 };
 static void guide_ref(const char *out, FILE *tsv)
 {
-    G_RUN("r-landscape", "A SEA TO WATCH", "MOSAIC", 72, 4, g_neoclassical_scene, G_LANDSCAPE);   /* neo-classical */
+    G_RUN("r-landscape", "A SEA TO WATCH", "MOSAIC", 108, 4, g_neoclassical_scene, G_LANDSCAPE);   /* neo-classical */
     G_RUN("r-color", "THE SCREEN'S COLOUR", "YELLOW", 54, 4, g_chillout_scene, G_COLOR);   /* chillout */
     G_RUN("r-form", "A TRACK AS A SONG", "SUNSET", 60, 4, g_bossa_scene, G_FORM);   /* bossa nova */
     G_RUN("r-entries", "TRACKS OUT AND IN", "SUNSET", 60, 4, g_dnb_scene, G_ENTRIES);   /* liquid drum and bass */
