@@ -92,7 +92,18 @@ static const gstep_t G_AWAKE[] = {
     {21000, 0, 0, 0, 0, "The same eight notes come back lifted differently each pass"},
     {29000, 32000, 1500, "KNOB 4", "PROB", "Turn KNOB 4, PROB, down: rests open up", -12},
     {38000, 41000, 600, "KNOB 2", "LEN A 6", "Turn KNOB 2, LEN A, to 6: a shorter melody", -2},
-    {47000, 0, 0, 0, 0, "On GEN, the white keys pick AWAKE's steps to set by hand"},
+    {47000, 50000, 200, "F3", "STEP 1", "On GEN the keys are AWAKE's steps. Tap the first white key: step 1"},
+    {0, 53500, 600, "KNOB 1", "A", 0, 2},
+    {54000, 0, 0, 0, 0, "KNOB 1 sets its A: the note, a scale degree (or a rest)"},
+    {0, 60000, 300, "KNOB 2", "B", 0, 1},
+    {60500, 0, 0, 0, 0, "KNOB 2 sets its B: how far it is lifted"},
+    {66000, 69000, 200, "F3", "LET GO", "Tap the same key again: the usual knobs"},
+    {73000, 76000, 8000, "OCT-", "HOLD OCT-", "Hold OCT-: AWAKE's layer is KNOB 1, RANDOM"},
+    {0, 77500, 300, "KNOB 1", "RANDOM", 0, 1},
+    {78000, 0, 0, 0, 0, "Turn it right: new LEN A, LEN B and PROB"},
+    {0, 81500, 300, "KNOB 1", "PUT BACK", 0, -1},
+    {82000, 0, 0, 0, 0, "Turn it left: PUT BACK, the values from before"},
+    {88000, 0, 0, 0, 0, "LEN A, LEN B and PROB; steps by hand; RANDOM"},
 };
 
 /* calypso: 104 BPM, F lydian; POLY on vibes-like marimba as track 1 (the clip adds a third rhythm), a bongo-like
@@ -547,7 +558,7 @@ static const gstep_t G_ATLAS[] = {
 static void guide_ref_gen(const char *out, FILE *tsv)
 {
     G_RUN("r-bounce", "BOUNCE AND FALL", "GREEN", 102, 4, g_kankyo_scene, G_BOUNCE);   /* kankyo ongaku */
-    G_RUN("r-awake", "AWAKE: TWO LOOPS", "GREEN", 55, 4, g_chamberjazz_scene, G_AWAKE);   /* chamber jazz */
+    G_RUN("r-awake", "AWAKE: TWO LOOPS", "GREEN", 94, 4, g_chamberjazz_scene, G_AWAKE);   /* chamber jazz */
     G_RUN("r-poly", "POLY: FOUR RHYTHMS", "GREEN", 55, 4, g_calypso_scene, G_POLY);   /* calypso */
     G_RUN("r-quad", "QUAD: ONE GRID", "GREEN", 103, 4, g_mathrock_scene, G_QUAD);   /* math rock */
     G_RUN("r-constellation", "CONSTELLATION", "GREEN", 110, 4, g_scifi_scene, G_CONSTL);   /* library sci-fi */
