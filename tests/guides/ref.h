@@ -653,35 +653,35 @@ static const gstep_t G_PATTERNS[] = {
     {27100, 0, 0, 0, 0, "On its line it switches: a new bass part"},
     {32000, 0, 0, 0, 0, "JAM logs what you played. On SONG, the next page, take it as a song"},
 };
-/* exotica: 96 BPM, F lydian-ish (F MAJ); track 1 a flute on MARKOV in eighths (LEAP 0 to start: neighbours only), a
+/* exotica, darker: 96 BPM, D harmonic minor; track 1 a koto pluck on MARKOV in eighths (LEAP 0 to start), a
  * soft vibraphone-like tine on CHORD, a sub on EUCLID, bongos from the 909's toms with a rim in STEP */
 static void g_exotica_scene(void)
 {
     song.g[G_BPM] = 96;
     song.g[G_SWING] = 22;
-    scale(5, 1, 1);                                     /* F MAJ, QNT SNAP */
+    scale(2, 7, 1);                                     /* D HARM (harmonic minor), QNT SNAP */
     sends(100, 75, 70, 45);
-    sound(0, ENGI_FM6, V_FLUTE);
+    sound(0, ENGI_FM6, FX_KOTO_PLUCK);                  /* (Theo: pluckier, more exotic, minor) */
     trk[0].p[P_SDIV] = DIV_8;
     gen(0, TESS_ENG_MARKOV, 57);
     tx(0, TX_MKV_LEAP, 0); tx(0, TX_MKV_DENS, 90); tx(0, TX_MKV_SPAN, 1); tx(0, TX_TW_SHIFT, 12);
     {   /* a melody on its STEP page, unheard until the clip turns SOURCE to it (OCT- layer) */
-        static const uint8_t N[16] = {65, 0, 67, 69, 0, 72, 0, 69, 67, 0, 65, 0, 62, 0, 65, 0};
+        static const uint8_t N[16] = {50, 0, 51, 54, 0, 57, 0, 54, 51, 0, 50, 0, 49, 0, 50, 0};   /* (+12: D4) */
         for (uint32_t i = 0; i < 16u; i++) if (N[i]) step_note(0, i, N[i], i % 4u ? 84 : 104);
         trk[0].p[P_SLEN] = 16;
     }
-    mixer(0, 116, 10, 55, 40);
+    mixer(0, 108, 10, 45, 40);
     sound(1, ENGI_FM6, FX_TINE);
     trk[1].p[P_CHRD] = 2;
     gen(1, TESS_ENG_CHORD, 32);
     tx(1, TX_CH_PROG, GEN_CH_251); tx(1, TX_CH_BARS, 1); tx(1, TX_CH_HIT, GEN_CH_BEAT); tx(1, TX_CH_OCT, -1);
-    mixer(1, 50, -25, 55, 20);
+    mixer(1, 70, -25, 55, 20);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
     trk[2].p[P_SDIV] = DIV_4;
     gen(2, TESS_ENG_EUCLID, 3);
     tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 4); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
     trk[2].p[P_QUANT] = Q_CHRD;
-    mixer(2, 82, 0, 0, 0);
+    mixer(2, 72, 0, 0, 0);
     sound(3, ENGI_DRUM, DK_909_KIT);
     {
         static const uint8_t L[16] = {L_TM, 0, L_TM, L_TM, L_RS, 0, L_TM, 0, L_TM, 0, L_TM, L_TM, L_RS, 0, L_TM, L_TM};
@@ -690,16 +690,16 @@ static void g_exotica_scene(void)
         trk[3].p[P_SLEN] = 16;
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
-    mixer(3, 66, 0, 20, 0);
+    mixer(3, 86, 0, 20, 0);
     g_solo_check();
 }
 static const gstep_t G_MARKOV[] = {
     {0, 0, 0, 0, 0, "MARKOV walks between notes of the scale: mostly a step, sometimes a leap"},
-    {3500, 6500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: GEN. Track 1's flute is MARKOV. LEAP 0: mostly small steps"},
-    {14000, 17000, 2500, "KNOB 2", "LEAP 80", "Turn KNOB 2: LEAP up to 80 %. Now the flute jumps", 20},
+    {3500, 6500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: GEN. Track 1's koto is MARKOV. LEAP 0: mostly small steps"},
+    {14000, 17000, 2500, "KNOB 2", "LEAP 80", "Turn KNOB 2: LEAP up to 80 %. Now the koto jumps", 20},
     {22000, 0, 0, 0, 0, "The bars are the odds of each next note: they level out, so wide leaps come often"},
     {29000, 32000, 2500, "KNOB 3", "DENS", "Turn KNOB 3: DENS down to 50 %, the chance a step plays", -8},
-    {41000, 44000, 900, "KNOB 4", "SPAN 3", "Turn KNOB 4: SPAN 3OCT. Each note picks one of three octaves", 2},
+    {41000, 44000, 600, "KNOB 4", "SPAN 2", "Turn KNOB 4: SPAN 2OCT. Each note picks one of two octaves (3OCT reaches higher)", 1},
     {53000, 56000, 20000, "OCT-", "HOLD OCT-", "Hold OCT-: SOURCE, KEEP and GRAVITY, as on TURING and EUCLID"},
     {0, 58000, 300, "KNOB 2", "SOURCE T1", 0, 1},
     {58500, 0, 0, 0, 0, "KNOB 2, SOURCE T1: MARKOV learns what follows what in track 1's written melody"},
