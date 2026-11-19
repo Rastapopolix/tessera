@@ -111,8 +111,69 @@ static const gstep_t G_FX[] = {
     {0, 108000, 1500, "KNOB 3", "TIME", 0, -10},
     {115000, 0, 0, 0, 0, "FX 1 to 3 on each track; FX SEND, FX SENDS; SEND FX 1 to 3"},
 };
+/* filter house: 122 BPM, G minor; string-machine chords on the offbeat as track 1 (its LFO opens and closes the
+ * filter), a 909 in STEP, a bass on EUCLID, a soft lead on AWAKE as track 4 (its LFO a vibrato that FADEs in) */
+static void g_filterhouse_scene(void)
+{
+    song.g[G_BPM] = 122;
+    scale(7, SCL_MIN, 0);
+    sends(70, 55, 60, 45);
+    sound(0, ENGI_TRIO, TR_STRING_MACH);
+    trk[0].p[P_E5] = 44;
+    trk[0].p[P_CHRD] = 1;
+    gen(0, TESS_ENG_CHORD, 21);
+    tx(0, TX_CH_PROG, GEN_CH_TWO); tx(0, TX_CH_BARS, 2); tx(0, TX_CH_HIT, GEN_CH_OFF);
+    mixer(0, 120, 0, 30, 20);
+    sound(1, ENGI_DRUM, DK_909_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_BD | L_CP, 0, L_CH, L_OH, L_BD, 0, L_CH, 0, L_BD | L_CP, 0, L_CH, 0};
+        static const uint8_t V[16] = {108, 0, 58, 0, 102, 0, 58, 54, 106, 0, 60, 0, 102, 0, 58, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
+        trk[1].p[P_SLEN] = 16;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
+    mixer(1, 70, 0, 10, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_16;
+    gen(2, TESS_ENG_EUCLID, 12);
+    tx(2, TX_EUC_STEPS, 16); tx(2, TX_EUC_PULSES, 5); tx(2, TX_EUC_ROT, 2); tx(2, TX_TW_SHIFT, -12);
+    mixer(2, 72, 0, 0, 0);
+    sound(3, ENGI_TRIO, TR_SOFT_LEAD);
+    trk[3].p[P_SDIV] = DIV_4;
+    gen(3, TESS_ENG_AWAKE, 9);
+    tx(3, TX_AWK_LENA, 5); tx(3, TX_AWK_LENB, 3); tx(3, TX_AWK_PROB, 45);
+    tx(3, TX_NL_MODE, 2); tx(3, TX_TW_SHIFT, 12);
+    trk[3].p[P_LRATE] = 88;                             /* (a vibrato's rate, about 5 Hz) */
+    mixer(3, 74, 20, 60, 40);
+    g_solo_check();
+}
+static const gstep_t G_LFO[] = {
+    {0, 0, 0, 0, 0, "LFO: each track's own slow wave, to move its sound"},
+    {3500, 5500, 200, "LFO", "OPEN", "Tap LFO: MODS, the cords, come first. SELECT turns on to LFO, track 1's own"},
+    {0, 9000, 600, "SELECT", "LFO", 0, 2},
+    {13000, 0, 0, 0, 0, "RATE, WAVE, PHS (where the wave starts), FADE (how slowly it comes in). It moves nothing yet"},
+    {20000, 22000, 600, "SELECT", "LFO DEST", "Turn SELECT to LFO DEST: how far it moves PIT, FLT, SHP and AMP", 3},
+    {27000, 29000, 2000, "KNOB 2", "FLT", "Turn KNOB 2, FLT: the strings' filter opens and closes", 35},
+    {36000, 38000, 600, "SELECT", "LFO", "Back to LFO. KNOB 1, RATE: faster", -3},
+    {0, 40000, 1500, "KNOB 1", "FASTER", 0, 20},
+    {45000, 47000, 2000, "KNOB 1", "SLOWER", "Slower: a sweep over bars", -30},
+    {53000, 55000, 600, "KNOB 2", "SQR", "KNOB 2, WAVE: SIN, TRI, SAW, SQR, S&H. SQR jumps between two places", 3},
+    {61000, 63000, 600, "KNOB 2", "S&H", "S&H: a new place, at random, each cycle", 1},
+    {0, 69000, 600, "KNOB 2", "SIN", 0, -4},
+    {70000, 72000, 600, "SELECT", "LFO 2", "LFO 2: KNOB 1, SYNC ties it to the tempo. 1/4: a cycle a beat", 1},
+    {0, 74000, 1500, "KNOB 1", "1/4", 0, 9},
+    {81000, 83000, 600, "KNOB 2", "FREE", "KNOB 2, TRIG: NOTE starts the wave again on each note, FREE lets it run", 1},
+    {89000, 91000, 600, "KNOB 3", "UNI", "KNOB 3, POL: BI swings both ways, UNI only up from where the setting is", 1},
+    {97000, 99000, 600, "ALGORITHM", "TRACK 4", "Turn ALGORITHM to track 4, the lead: its own LFO", 3},
+    {103000, 105000, 600, "SELECT", "LFO DEST", "Its LFO DEST: KNOB 1, PIT, a little: a vibrato", 2},
+    {0, 107000, 1200, "KNOB 1", "PIT", 0, 5},
+    {113000, 115000, 600, "SELECT", "LFO", "On LFO, KNOB 4, FADE: the vibrato comes in after each note starts", -3},
+    {0, 117000, 1500, "KNOB 4", "FADE", 0, 22},
+    {125000, 0, 0, 0, 0, "Each LFO is also a source on MODS: T1 LFO can move anything, on any track"},
+};
 static void guide_ref_pages(const char *out, FILE *tsv)
 {
+    G_RUN("r-lfo", "LFO: A WAVE THAT MOVES", "LILAC", 132, 4, g_filterhouse_scene, G_LFO);   /* filter house */
     G_RUN("r-fx", "FX: INSERTS AND SENDS", "LILAC", 122, 4, g_acid_scene, G_FX);   /* acid house */
     G_RUN("r-tweak2", "TWEAK 2: WHICH HITS PLAY", "MOSAIC", 112, 4, g_afrobeat_scene, G_TWEAK2);   /* afrobeat */
 }
