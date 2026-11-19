@@ -128,9 +128,133 @@ static const gstep_t G_POLY[] = {
     {39000, 42000, 1000, "KNOB 3", "OFF", "Turn it back to OFF: two rhythms again", -5},
     {48000, 0, 0, 0, 0, "/4 against /3, against /5: the bars line up only now and then"},
 };
+/* math rock: 132 BPM, E minor; QUAD on a clean pluck as track 1, an electric piano and a sub on the same grid (rows 2
+ * and 3, at their own speeds), drums in STEP over 14 sixteenths (7/8); the clip turns DIR and a column's MOVE */
+static void g_mathrock_scene(void)
+{
+    song.g[G_BPM] = 132;
+    scale(4, SCL_MIN, 0);
+    sends(90, 70, 80, 50);
+    sound(0, ENGI_FM6, V_PLUCK);
+    trk[0].p[P_SDIV] = DIV_16;
+    gen(0, TESS_ENG_QUAD, 21);
+    tx(0, TX_QD_DIR, GEN_QD_FWD); tx(0, TX_QD_PROB, 100);
+    mixer(0, 110, -20, 40, 30);
+    sound(1, ENGI_FM6, FX_TINE_EP);
+    trk[1].p[P_SDIV] = DIV_8;
+    gen(1, TESS_ENG_QUAD, 21);
+    tx(1, TX_QD_DIR, GEN_QD_FWD); tx(1, TX_QD_PROB, 100);
+    mixer(1, 80, 25, 50, 20);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_4;
+    gen(2, TESS_ENG_QUAD, 21);
+    tx(2, TX_QD_DIR, GEN_QD_FWD); tx(2, TX_QD_PROB, 100); tx(2, TX_QD_RANGE, GEN_QR_ONE); tx(2, TX_TW_SHIFT, -12);
+    mixer(2, 80, 0, 5, 0);
+    sound(3, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[14] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_BD, 0, L_CH, L_BD, 0, L_SD, L_CH};
+        static const uint8_t V[14] = {104, 0, 50, 0, 92, 0, 48, 86, 0, 50, 90, 0, 94, 46};
+        for (uint32_t i = 0; i < 14u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 14;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 80, 0, 10, 0);
+    g_solo_check();
+}
+static const gstep_t G_QUAD[] = {
+    {0, 0, 0, 0, 0, "QUAD: a 4 x 4 grid of notes, a row for each QUAD track"},
+    {4000, 7000, 200, "SEQ", "OPEN SEQ", "Tap SEQ: tracks 1 to 3 play rows 1 to 3, each at its own speed"},
+    {12000, 15000, 800, "KNOB 2", "PEND", "Turn KNOB 2, DIR, to PEND: row 1 goes back and forth", 2},
+    {21000, 24000, 3500, "OCT-", "HOLD OCT-", "Hold OCT- and turn KNOB 3, MOVE, to DOWN"},
+    {0, 25500, 400, "KNOB 3", "MOVE DOWN", 0, 1},
+    {30000, 0, 0, 0, 0, "Every 4 steps column 1 turns: its notes move down a track"},
+    {38000, 41000, 1200, "KNOB 3", "PROB", "Turn KNOB 3, PROB, down: some cells rest", -15},
+    {48000, 0, 0, 0, 0, "One grid, three tracks: the tune moves between them"},
+};
+/* library sci-fi (the 1970s library records): 96 BPM, A minor; CONSTL on a soft lead as track 1 (the clip moves the
+ * crosshair, adds stars and turns LOCK), a glass pad holding the chord, a round bass on EUCLID, soft toms in STEP */
+static void g_scifi_scene(void)
+{
+    song.g[G_BPM] = 96;
+    scale(9, SCL_MIN, 0);
+    sends(110, 100, 80, 60);
+    sound(0, ENGI_TRIO, TR_SOFT_LEAD);
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_CONSTEL, 14);
+    tx(0, TX_CS_Y, 5); tx(0, TX_CS_DENS, 40); tx(0, TX_CS_SIZE, 2);
+    mixer(0, 98, -15, 90, 60);
+    sound(1, ENGI_ORACLE, OR_GLASS_PAD);
+    trk[1].p[P_CHRD] = 1;
+    gen(1, TESS_ENG_CHORD, 9);
+    tx(1, TX_CH_PROG, GEN_CH_TWO); tx(1, TX_CH_BARS, 3); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 70, 20, 90, 0);
+    sound(2, ENGI_FM6, FX_SOLID_BASS);
+    trk[2].p[P_SDIV] = DIV_16;
+    gen(2, TESS_ENG_EUCLID, 5);
+    tx(2, TX_EUC_STEPS, 16); tx(2, TX_EUC_PULSES, 5); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    mixer(2, 104, 0, 10, 0);
+    sound(3, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, 0, 0, L_TM, 0, 0, L_CH, L_BD, 0, L_TM, 0, 0, 0, L_CH, 0};
+        static const uint8_t V[16] = {96, 0, 0, 0, 70, 0, 0, 44, 90, 0, 62, 0, 0, 0, 46, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 76, 0, 20, 0);
+    g_solo_check();
+}
+static const gstep_t G_CONSTL[] = {
+    {0, 0, 0, 0, 0, "CONSTL: a ship flies through stars; the ones it crosses play"},
+    {4000, 7000, 200, "SEQ", "OPEN SEQ", "Tap SEQ: the sky passes, the crosshair catches stars"},
+    {12000, 15000, 1000, "KNOB 2", "Y UP", "Turn KNOB 2, Y, up: the crosshair rises, and the tune", 5},
+    {21000, 24000, 1200, "KNOB 3", "DENS", "Turn KNOB 3, DENS, up: more stars, more notes", 15},
+    {30000, 33000, 4000, "OCT-", "HOLD OCT-", "Hold OCT- and turn KNOB 2, LOCK, up"},
+    {0, 34500, 1500, "KNOB 2", "LOCK", 0, 30},
+    {40000, 0, 0, 0, 0, "LOCK plays back the stars already caught: a phrase repeats"},
+    {48000, 0, 0, 0, 0, "Low LOCK roams, high LOCK repeats: the knob between them"},
+};
+/* slow piano after Feldman: 66 BPM, E minor; SERIES on soft electric keys in eighths as track 1 (the clip turns INTV
+ * and LOOP), a soft pad holding one chord, a low fifth drone, nothing else */
+static void g_feldman_scene(void)
+{
+    song.g[G_BPM] = 66;
+    scale(4, SCL_MIN, 0);
+    sends(120, 100, 80, 40);
+    sound(0, ENGI_ORACLE, OR_KEYS);
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_SERIES, 3);
+    tx(0, TX_SR_START, 0); tx(0, TX_SR_INTV, 1); tx(0, TX_SR_LOOP, 0);
+    mixer(0, 94, -10, 100, 30);
+    sound(1, ENGI_TRIO, TR_SOFT_PAD);
+    trk[1].p[P_CHRD] = 1;
+    gen(1, TESS_ENG_CHORD, 8);
+    tx(1, TX_CH_PROG, GEN_CH_DRONE); tx(1, TX_CH_BARS, 3); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 64, 20, 100, 0);
+    sound(2, ENGI_TRIO, TR_FIFTH_DRONE);
+    trk[2].p[P_SDIV] = DIV_1;
+    gen(2, TESS_ENG_EUCLID, 1);
+    tx(2, TX_EUC_STEPS, 2); tx(2, TX_EUC_PULSES, 1); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    mixer(2, 84, -20, 80, 0);
+    tx(3, TX_MODE, TESS_ENG_OFF);
+    mixer(3, 0, 0, 0, 0);
+    g_solo_check();
+}
+static const gstep_t G_SERIES[] = {
+    {0, 0, 0, 0, 0, "SERIES: a melody alike at every scale, after Per Nørgård"},
+    {4000, 7000, 200, "SEQ", "OPEN SEQ", "Tap SEQ: LOOP is OFF, so it never repeats"},
+    {12000, 15000, 800, "KNOB 3", "INTV 3", "Turn KNOB 3, INTV, to 3: each step now 3 scale notes", 2},
+    {22000, 0, 0, 0, 0, "The same shape, in wider leaps"},
+    {29000, 32000, 1000, "KNOB 4", "LOOP 4", "Turn KNOB 4, LOOP, to 4: the first 4 steps over and over", 4},
+    {39000, 42000, 1000, "KNOB 4", "LOOP OFF", "Back to OFF: it unfolds again", -4},
+    {48000, 0, 0, 0, 0, "Nothing random: the same START always plays the same tune"},
+};
 static void guide_ref_gen(const char *out, FILE *tsv)
 {
     G_RUN("r-bounce", "BOUNCE AND FALL", "GREEN", 57, 4, g_kankyo_scene, G_BOUNCE);   /* kankyo ongaku */
     G_RUN("r-awake", "AWAKE: TWO LOOPS", "GREEN", 55, 4, g_chamberjazz_scene, G_AWAKE);   /* chamber jazz */
     G_RUN("r-poly", "POLY: FOUR RHYTHMS", "GREEN", 55, 4, g_exotica_scene, G_POLY);   /* exotica */
+    G_RUN("r-quad", "QUAD: ONE GRID", "GREEN", 55, 4, g_mathrock_scene, G_QUAD);   /* math rock */
+    G_RUN("r-constellation", "CONSTELLATION", "GREEN", 55, 4, g_scifi_scene, G_CONSTL);   /* library sci-fi */
+    G_RUN("r-series", "SERIES", "GREEN", 55, 4, g_feldman_scene, G_SERIES);   /* slow piano after Feldman */
 }
