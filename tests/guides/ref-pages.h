@@ -233,54 +233,55 @@ static const gstep_t G_ARP[] = {
     G_CHORD3(113000, "G3", "B3", "E4", "G", "B", "E", "And G, B, E again"),
     {119000, 0, 0, 0, 0, "ORDER: from the lowest note, or as pressed. TWEAK's SHIFT moves the arpeggio"},
 };
-/* dub techno: 118 BPM, F minor; ORACLE dub chords on EUCLID as track 1 (deep in the echo: its PATTERN changes), an
- * 808 kick and rim in STEP, a sub on TURING, a hollow pad held under it all */
-static void g_dubtechno_scene(void)
+/* ambient (Theo: something more ambient than dub techno): 72 BPM, D dorian; ORACLE glass chords on EUCLID as track 1
+ * (its PATTERN changes), a soft 808 pulse in STEP, a slow sub on TURING, a far marimba on AWAKE */
+static void g_ambtempo_scene(void)
 {
-    song.g[G_BPM] = 118;
-    scale(5, SCL_MIN, 0);
-    sends(90, 70, 66, 60);
-    sound(0, ENGI_ORACLE, OR_DUB_CHORD);
-    trk[0].p[P_SDIV] = DIV_16;
+    song.g[G_BPM] = 72;
+    scale(2, SCL_DOR, 0);
+    sends(110, 85, 70, 60);
+    sound(0, ENGI_ORACLE, OR_GLASS_PAD);
+    trk[0].p[P_CHRD] = 1;
+    trk[0].p[P_SDIV] = DIV_8;
     gen(0, TESS_ENG_EUCLID, 15);
-    tx(0, TX_EUC_STEPS, 16); tx(0, TX_EUC_PULSES, 4); tx(0, TX_EUC_ROT, 2);
-    mixer(0, 106, 0, 50, 80);
+    tx(0, TX_EUC_STEPS, 16); tx(0, TX_EUC_PULSES, 5); tx(0, TX_EUC_ROT, 0);
+    mixer(0, 124, 0, 80, 50);
     sound(1, ENGI_DRUM, DK_808_KIT);
     {
-        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_BD, 0, L_CH, L_RS, L_BD, 0, L_CH, 0, L_BD, 0, L_CH, 0};
-        static const uint8_t V[16] = {110, 0, 50, 0, 106, 0, 52, 70, 108, 0, 50, 0, 106, 0, 54, 0};
+        static const uint8_t L[16] = {L_BD, 0, 0, 0, 0, 0, L_RS, 0, 0, 0, L_CH, 0, 0, 0, L_RS, 0};
+        static const uint8_t V[16] = {86, 0, 0, 0, 0, 0, 52, 0, 0, 0, 36, 0, 0, 0, 44, 0};
         for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
         trk[1].p[P_SLEN] = 16;
     }
     tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
-    mixer(1, 74, 0, 10, 0);
+    mixer(1, 76, 0, 40, 0);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
-    trk[2].p[P_SDIV] = DIV_8;
+    trk[2].p[P_SDIV] = DIV_4;
     gen(2, TESS_ENG_TURING, 22);
     tx(2, TX_TUR_PROB, 5); tx(2, TX_TUR_LEN, 8); tx(2, TX_TW_SHIFT, -12); tx(2, TX_TW_DROP, 40);
-    mixer(2, 76, 0, 0, 0);
-    sound(3, ENGI_TRIO, TR_HOLLOW_PAD);
-    trk[3].p[P_CHRD] = 1;
-    gen(3, TESS_ENG_CHORD, 6);
-    tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 4); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
-    mixer(3, 48, 0, 80, 0);
+    mixer(2, 72, 0, 0, 0);
+    sound(3, ENGI_FM6, V_DX_MARIMBA);
+    trk[3].p[P_SDIV] = DIV_4;
+    gen(3, TESS_ENG_AWAKE, 9);
+    tx(3, TX_AWK_LENA, 5); tx(3, TX_AWK_LENB, 3); tx(3, TX_AWK_PROB, 35); tx(3, TX_TW_SHIFT, 12);
+    mixer(3, 92, 30, 100, 60);
     g_solo_check();
 }
 static const gstep_t G_PATTEMPO[] = {
     {0, 0, 0, 0, 0, "PATTERN and TEMPO: how long, how fast, how it swings"},
     {3500, 5500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: GEN. Turn SELECT once: PATTERN, track 1's"},
     {0, 9000, 600, "SELECT", "PATTERN", 0, 1},
-    {13000, 0, 0, 0, 0, "LEN, DIV, SWG and GATE: the track's own, here the dub chords"},
+    {13000, 0, 0, 0, 0, "LEN, DIV, SWG and GATE: the track's own, here the glass chords"},
     {19000, 21000, 2000, "KNOB 1", "LEN 5", "KNOB 1, LEN: 5 steps. The chords loop across the bar", -11},
     {28000, 30000, 2000, "KNOB 1", "LEN 16", "Back to 16", 11},
-    {34000, 36000, 900, "KNOB 2", "1/8", "KNOB 2, DIV: 1/8, half as fast", -2},
-    {42000, 44000, 600, "KNOB 2", "16T", "16T: triplets", 1},
-    {49000, 51000, 600, "KNOB 2", "1/16", "And 1/16 again", 1},
+    {34000, 36000, 900, "KNOB 2", "1/4", "KNOB 2, DIV: 1/4, half as fast", -2},
+    {42000, 44000, 600, "KNOB 2", "8T", "8T: triplets", 1},
+    {49000, 51000, 600, "KNOB 2", "1/8", "And 1/8 again", 1},
     {54000, 56000, 4000, "KNOB 3", "SWG", "KNOB 3, SWG: every other step late. This track only", 35},
     {62000, 64000, 3500, "KNOB 4", "LONGER", "KNOB 4, GATE: longer chords", 30},
     {70000, 72000, 5000, "KNOB 4", "SHORTER", "Shorter: stabs", -60},
     {78000, 80000, 600, "SELECT", "TEMPO", "Turn SELECT: TEMPO, the project's BPM, SWG and QNT", 1},
-    {85000, 87000, 2000, "KNOB 1", "BPM UP", "KNOB 1, BPM: from 118 to 130", 12},
+    {85000, 87000, 2000, "KNOB 1", "BPM UP", "KNOB 1, BPM: from 72 to 84", 12},
     {93000, 94000, 2000, "KNOB 1", "BPM BACK", "And back", -12},
     {98000, 100000, 3500, "KNOB 2", "SWG", "KNOB 2, SWG here swings every track at once", 25},
     {106000, 108000, 2500, "KNOB 3", "QNT", "KNOB 3, QNT: where the notes you record land. 1/16, or OFF: as played", 9},
@@ -465,7 +466,7 @@ static void guide_ref_pages(const char *out, FILE *tsv)
     G_RUN("r-oracle", "ORACLE: AN ANALOGUE VOICE", "ORANGE", 128, 4, g_library_scene, G_ORACLE);   /* library electronica */
     G_RUN("r-fm6", "FM6: THE OPERATORS", "ORANGE", 122, 4, g_sophisti_scene, G_FM6);   /* sophisti-pop */
     G_RUN("r-menu", "THE MENU", "WHITE", 110, 4, g_synthfunk_scene, G_MENU);   /* synth funk */
-    G_RUN("r-tempo", "PATTERN AND TEMPO", "MOSAIC", 121, 4, g_dubtechno_scene, G_PATTEMPO);   /* dub techno */
+    G_RUN("r-tempo", "PATTERN AND TEMPO", "MOSAIC", 121, 4, g_ambtempo_scene, G_PATTEMPO);   /* ambient */
     G_RUN("r-arp", "ARP: ONE NOTE AT A TIME", "MOSAIC", 126, 4, g_folkarp_scene, G_ARP);   /* folktronica */
     G_RUN("r-lfo", "LFO: A WAVE THAT MOVES", "LILAC", 132, 4, g_filterhouse_scene, G_LFO);   /* filter house */
     G_RUN("r-fx", "FX: INSERTS AND SENDS", "LILAC", 122, 4, g_acid_scene, G_FX);   /* acid house */
