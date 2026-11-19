@@ -518,43 +518,44 @@ static const gstep_t G_MORPH[] = {
     {93000, 96000, 1500, "KNOB 2", "POS UP", "POS is now B's share: up, more of the variation", 12},
     {104000, 0, 0, 0, 0, "POS, SNP A and SNP B; SOURCE, KEEP and GRAVITY"},
 };
-/* broken beat: 112 BPM, F dorian; ATLAS on the 909 kit as track 1 (the clip turns DENS, moves X and Y on the map and
- * thins the hat), electric keys on the offbeats, a sub on TURING, a quiet flute on AWAKE */
+/* 808 hip-hop into broken beat: 90 BPM with swing, F dorian; ATLAS on the 808 kit as track 1 starts on a sparse
+ * hip-hop groove (the clip turns DENS, moves X and Y on the map and thins the hat), electric keys on the offbeats,
+ * a sub on TURING, a quiet TRIO lead on AWAKE */
 static void g_brokenbeat_scene(void)
 {
-    song.g[G_BPM] = 112;
-    song.g[G_SWING] = 20;
+    song.g[G_BPM] = 90;
+    song.g[G_SWING] = 35;
     scale(5, SCL_DOR, 0);
     sends(70, 60, 80, 40);
-    sound(0, ENGI_DRUM, DK_909_KIT);
+    sound(0, ENGI_DRUM, DK_808_KIT);                     /* (Theo: an 808, a hip-hop beat to start) */
     trk[0].p[P_SDIV] = DIV_16;
     gen(0, TESS_ENG_GRIDS, 9);
-    tx(0, TX_GRD_X, 40); tx(0, TX_GRD_Y, 60); tx(0, TX_GRD_DENS, 30);
+    tx(0, TX_GRD_X, 10); tx(0, TX_GRD_Y, 20); tx(0, TX_GRD_DENS, 35);
     tx(0, TX_GRD_KICK, 100); tx(0, TX_GRD_SNR, 100); tx(0, TX_GRD_HAT, 100);
     mixer(0, 90, 0, 15, 0);
     sound(1, ENGI_ORACLE, OR_KEYS);
     trk[1].p[P_CHRD] = 1;
     gen(1, TESS_ENG_CHORD, 13);
     tx(1, TX_CH_PROG, GEN_CH_251); tx(1, TX_CH_BARS, 2); tx(1, TX_CH_HIT, GEN_CH_OFF); tx(1, TX_CH_OCT, -1);
-    mixer(1, 84, -25, 50, 50);
+    mixer(1, 78, -25, 50, 50);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
     trk[2].p[P_SDIV] = DIV_8;
     gen(2, TESS_ENG_TURING, 23);
     tx(2, TX_TUR_LEN, 8); tx(2, TX_TUR_PROB, 0); tx(2, TX_TW_SHIFT, -12);
     trk[2].p[P_QUANT] = Q_CHRD;
-    mixer(2, 90, 0, 0, 0);
-    sound(3, ENGI_ORACLE, OR_FLUTE);
+    mixer(2, 84, 0, 0, 0);
+    sound(3, ENGI_TRIO, TR_SOFT_LEAD);                   /* (TRIO: lighter than a second ORACLE) */
     trk[3].p[P_SDIV] = DIV_8;
     gen(3, TESS_ENG_AWAKE, 66);
     tx(3, TX_AWK_LENA, 7); tx(3, TX_AWK_LENB, 3); tx(3, TX_AWK_PROB, 40);
     trk[3].p[P_QUANT] = Q_CHRD;
-    mixer(3, 90, 30, 80, 60);
+    mixer(3, 84, 30, 80, 60);
     g_solo_check();
 }
 static const gstep_t G_ATLAS[] = {
     {0, 0, 0, 0, 0, "ATLAS: a map of drum grooves; X and Y pick a place on it"},
     {4000, 7000, 200, "SEQ", "OPEN SEQ", "Tap SEQ: kick, snare and hat from the point X, Y"},
-    {11500, 14500, 1500, "KNOB 4", "DENS", "Turn KNOB 4, DENS, up: more hits", 15},
+    {11500, 14500, 1200, "KNOB 4", "DENS", "Turn KNOB 4, DENS, up: more hits", 8},
     {20500, 23500, 2000, "KNOB 2", "X", "Turn KNOB 2, X: a different groove, smoothly", 20},
     {29500, 32500, 2000, "KNOB 3", "Y", "Turn KNOB 3, Y: another way across the map", 20},
     {38500, 41500, 24000, "OCT-", "HOLD OCT-", "Hold OCT-: KICK, SNR and HAT, each part's share of DENS"},
