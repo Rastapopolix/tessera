@@ -1334,28 +1334,36 @@ static const gstep_t G_USCALE[] = {
     {51000, 0, 0, 0, 0, "Every track now plays C C# E F G G# B, the root still C"},
     {58000, 61000, 200, "HOME", "HOME", "Tap HOME. USER1 stays on the FM-1, for every project"},
 };
-/* chillwave: 96 BPM, A minor; a kalimba with no generator as track 1 (played on the keys), a warm pad on CHORD round
- * the pop progression (a chord a bar), a sub on EUCLID, an 808 in STEP */
+/* chillwave: 96 BPM, A minor; soft electric keys with no generator as track 1 (played on the keys; dry, Theo: no
+ * reverb, softer), a warm pad on CHORD round the pop progression (a chord a bar, an octave down: the low end too),
+ * track 3 a muted pluck on EUCLID that FOLLOWs track 2 with HOW HARM, an LFO on its SHIFT (the clip unmutes it), an
+ * 808 in STEP */
 static void g_chillwave_scene(void)
 {
     song.g[G_BPM] = 96;
     scale(9, SCL_MIN, 1);                               /* A MIN, QNT SNAP */
     sends(100, 75, 70, 45);
-    tx(0, TX_QNT_LINK, 0);                              /* QNT link OWN: only the kalimba's QNT changes */
-    sound(0, ENGI_FM6, FX_KALIMBA);
+    tx(0, TX_QNT_LINK, 0);                              /* QNT link OWN: only track 1's QNT changes */
+    sound(0, ENGI_ORACLE, OR_KEYS);
+    trk[0].p[P_E0] = -28;
     tx(0, TX_MODE, TESS_ENG_OFF);
-    mixer(0, 124, 15, 45, 35);
+    mixer(0, 100, 15, 0, 20);
     sound(1, ENGI_TRIO, TR_WARM_PAD);
     trk[1].p[P_CHRD] = 1;
     gen(1, TESS_ENG_CHORD, 24);
     tx(1, TX_CH_PROG, GEN_CH_POP); tx(1, TX_CH_BARS, 1); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
-    mixer(1, 50, -25, 80, 0);
-    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    mixer(1, 62, -25, 60, 0);
+    sound(2, ENGI_TRIO, TR_SOFT_LEAD);
+    trk[2].p[P_E5] = 72;
+    trk[2].p[P_ATK] = 0; trk[2].p[P_DEC] = 45; trk[2].p[P_SUS] = 0; trk[2].p[P_REL] = 35;
     trk[2].p[P_SDIV] = DIV_8;
     gen(2, TESS_ENG_EUCLID, 9);
-    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
-    trk[2].p[P_QUANT] = Q_CHRD;                         /* (the bass on the chords' notes, so it moves with them) */
-    mixer(2, 86, 0, 0, 0);
+    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 5); tx(2, TX_EUC_ROT, 0);
+    tx(2, TX_TW_FOLLOW, 2); tx(2, TX_TW_FHOW, TESS_FH_HARM);   /* (FOLLOW T2, HOW HARM: SHIFT counts chord notes) */
+    trk[2].p[P_LRATE] = 30;
+    cord(0, CS_LFO, 2, CD_TW_SHIFT, 2, 14, 0, 0);
+    trk[2].p[P_MUTE] = 1;
+    mixer(2, 112, -20, 10, 45);
     sound(3, ENGI_DRUM, DK_808_KIT);
     {
         static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_BD, 0, L_BD, L_CH, 0, L_SD, 0, L_CH, L_CH};
@@ -1371,7 +1379,7 @@ static void g_chillwave_scene(void)
     {0, (t), 250, "C4", lb, 0}, {0, (t) + 320, 250, "D4", lb, 0}, {0, (t) + 640, 250, "E4", lb, 0}, \
     {0, (t) + 960, 250, "F4", lb, 0}, {0, (t) + 1280, 250, "G4", lb, 0}, {0, (t) + 1600, 600, "A4", lb, 0}
 static const gstep_t G_HARM[] = {
-    {0, 0, 0, 0, 0, "Track 2 plays chords. Track 1, a kalimba, is ours to play"},
+    {0, 0, 0, 0, 0, "Track 2 plays chords. Track 1, soft keys, is ours to play"},
     {3500, 0, 0, 0, 0, "Play the white keys up from C4: the scale"},
     G_RUN6(6200, "SCALE"),
     {10500, 0, 0, 0, 0, "Next: the same run, counted into the chords"},
@@ -1385,6 +1393,18 @@ static const gstep_t G_HARM[] = {
     {55000, 0, 0, 0, 0, "Over another chord, another arpeggio"},
     G_RUN6(58600, "ARPEGGIO"),
     {62500, 0, 0, 0, 0, "Any line in the scale does the same: a generator, or MIDI IN"},
+    {69000, 72000, 200, "GLO", "MIXER", "Track 3 FOLLOWs track 2, the chords, with HOW HARM. Tap GLO: MIXER"},
+    {0, 74000, 200, "A#3", "UNMUTE T3", 0},
+    {75000, 0, 0, 0, 0, "A#3 brings it in: the chord's note, counted into the chord, in its own rhythm"},
+    {82000, 85000, 200, "HOME", "HOME", "Tap HOME"},
+    {0, 87000, 600, "ALGORITHM", "TRACK 3", 0, 2},
+    {0, 89000, 200, "ARP", "EVOLVE", 0},
+    {0, 91000, 900, "SELECT", "TWEAK", 0, 2},
+    {92000, 0, 0, 0, 0, "Its TWEAK page: SHIFT at +0, FOLLOW T2"},
+    {97000, 100000, 200, "LFO", "OPEN MODS", "Tap LFO: MODS. A cord, T3 LFO onto T3 SHIFT"},
+    {104000, 107000, 7000, "OCT-", "SCOPE", "Hold OCT-: the scope. The LFO swings SHIFT up and down"},
+    {115000, 0, 0, 0, 0, "Under HARM, SHIFT counts the chord's notes: the line climbs and falls inside the chord"},
+    {122000, 0, 0, 0, 0, "QNT HARM on the keys; FOLLOW's HOW HARM, and SHIFT by chord notes"},
 };
 /* reggae: 76 BPM (a one drop), G major; drums and bass written in STEP, two patterns each (pattern 2 a variation),
  * organ skanks on CHORD in the offbeats, a melodica-like flute on TURING */
@@ -1469,7 +1489,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-rec", "RECORD LIVE", "MOSAIC", 50, 4, g_ambhouse_scene, G_REC);   /* ambient house */
     G_RUN("r-step-write", "WRITE NOTES BY HAND", "MOSAIC", 68, 4, g_lounge_scene, G_STEPW);   /* lounge */
     G_RUN("r-user-scale", "A SCALE OF YOUR OWN", "MOSAIC", 70, 4, g_ethno_scene, G_USCALE);   /* ethno-ambient */
-    G_RUN("r-harm", "RUN THE KEYS INTO CHORDS", "MOSAIC", 68, 4, g_chillwave_scene, G_HARM);   /* chillwave */
+    G_RUN("r-harm", "RUN THE KEYS INTO CHORDS", "MOSAIC", 130, 4, g_chillwave_scene, G_HARM);   /* chillwave */
     G_RUN("r-song", "A SONG FROM PATTERNS", "MOSAIC", 91, 4, g_reggae_scene, G_SONG);   /* reggae */
     G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
