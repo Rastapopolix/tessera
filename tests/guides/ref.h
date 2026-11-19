@@ -483,8 +483,9 @@ static const gstep_t G_FOLLOW[] = {
     {33500, 36500, 1200, "KNOB 1", "SHIFT -7", "While following, SHIFT counts scale steps: KNOB 1 to -7, an octave down", 5},
     {44000, 0, 0, 0, 0, "The bass now doubles the harp an octave down, in its own rhythm"},
 };
-/* boom bap: 90 BPM with swing, C minor; a 909 on ATLAS as track 1 (the one that ratchets), a sparse sub on TURING,
- * organ chords on the beat, a flute line now and then */
+/* boom bap: 90 BPM with swing, C minor; track 1 is ATLAS on the 909 playing only the hats (the track that ratchets:
+ * Theo heard the kick roll and click when the whole kit rolled), a sparse sub on TURING, organ chords on the beat,
+ * and the kick and snare written in STEP on track 4, so they stay put while the hats roll */
 static void g_boombap_scene(void)
 {
     song.g[G_BPM] = 90;
@@ -493,26 +494,31 @@ static void g_boombap_scene(void)
     sends(70, 55, 60, 40);
     sound(0, ENGI_DRUM, DK_909_KIT);
     gen(0, TESS_ENG_GRIDS, 44);
-    mixer(0, 94, 0, 12, 0);
+    tx(0, TX_GRD_KICK, 0); tx(0, TX_GRD_SNR, 0); tx(0, TX_GRD_HAT, 100);
+    mixer(0, 127, 10, 12, 0);
     sound(1, ENGI_TRIO, TR_SUB_BASS);
     trk[1].p[P_SDIV] = DIV_8;
     gen(1, TESS_ENG_TURING, 12);
     tx(1, TX_TUR_PROB, 10); tx(1, TX_TW_SHIFT, -12); tx(1, TX_TW_DROP, 55);
-    mixer(1, 92, 0, 0, 0);
+    mixer(1, 74, 0, 0, 0);
     sound(2, ENGI_FM6, FX_ORGAN);
     trk[2].p[P_CHRD] = 2;
     gen(2, TESS_ENG_CHORD, 20);
     tx(2, TX_CH_PROG, GEN_CH_TWO); tx(2, TX_CH_BARS, 1); tx(2, TX_CH_HIT, GEN_CH_BEAT);
-    mixer(2, 64, -20, 40, 0);
-    sound(3, ENGI_FM6, V_FLUTE);
-    trk[3].p[P_SDIV] = DIV_8;
-    gen(3, TESS_ENG_TURING, 53);
-    tx(3, TX_TUR_PROB, 15); tx(3, TX_TW_DROP, 70);
-    mixer(3, 72, 25, 60, 40);
+    mixer(2, 52, -20, 40, 0);
+    sound(3, ENGI_DRUM, DK_909_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, 0, 0, L_SD, 0, 0, L_BD, 0, 0, L_BD, 0, L_SD, 0, 0, 0};
+        static const uint8_t V[16] = {110, 0, 0, 0, 100, 0, 0, 70, 0, 0, 96, 0, 104, 0, 0, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 82, 0, 10, 0);
     g_solo_check();
 }
 static const gstep_t G_TIMING[] = {
-    {0, 0, 0, 0, 0, "TIMING: rolls and feel for a generator track. Here, the drums"},
+    {0, 0, 0, 0, 0, "TIMING: rolls and feel for a generator track. Here, the hats on ATLAS"},
     {3500, 6500, 200, "ARP", "EVOLVE", "Tap ARP: EVOLVE"},
     {10000, 13000, 1200, "SELECT", "TIMING", "Turn SELECT back twice: TIMING", -2},
     {17000, 20000, 900, "KNOB 1", "RATCH x4", "Turn KNOB 1: RATCH x4, each step played four times", 3},
