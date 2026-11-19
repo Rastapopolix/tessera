@@ -45,7 +45,7 @@ static const gstep_t G_VOICES[] = {
     {30000, 33000, 1000, "SELECT", "MIXER", "Back to MIXER: F#3 mutes track 1, the busy one", -6},
     {0, 35000, 200, "F#3", "MUTE T1", 0},
     {0, 37000, 1000, "SELECT", "SYSTEM", 0, 6},
-    {41000, 0, 0, 0, 0, "Track 1 muted: its voices are freed, 10 down to 8"},
+    {41000, 0, 0, 0, 0, "Track 1 muted: its voices free up, 6 to 8 now ring"},
     {49000, 0, 0, 0, 0, "Crackles? Lower BUDGET, or thin the busiest track"},
 };
 static void guide_ref_more(const char *out, FILE *tsv)
