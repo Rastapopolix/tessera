@@ -249,6 +249,103 @@ static const gstep_t G_SERIES[] = {
     {39000, 42000, 1000, "KNOB 4", "LOOP OFF", "Back to OFF: it unfolds again", -4},
     {48000, 0, 0, 0, 0, "Nothing random: the same START always plays the same tune"},
 };
+/* minor gospel: 72 BPM, C minor, swung; CHORD on drawbar organ as track 1 (the clip turns PROG, HIT and BARS), a bass
+ * on TURING and an electric piano on AWAKE both on QNT CHRD (they follow the chord), a slow backbeat in STEP */
+static void g_gospel_scene(void)
+{
+    song.g[G_BPM] = 72;
+    song.g[G_SWING] = 30;
+    scale(0, SCL_MIN, 0);
+    sends(100, 80, 70, 40);
+    sound(0, ENGI_FM6, FX_DRAWBARS);
+    trk[0].p[P_CHRD] = 1;
+    gen(0, TESS_ENG_CHORD, 5);
+    tx(0, TX_CH_PROG, GEN_CH_POP); tx(0, TX_CH_BARS, 2); tx(0, TX_CH_HIT, GEN_CH_HOLD); tx(0, TX_CH_OCT, 0);
+    mixer(0, 96, 0, 60, 30);
+    sound(1, ENGI_FM6, FX_SOLID_BASS);
+    trk[1].p[P_SDIV] = DIV_4;
+    gen(1, TESS_ENG_TURING, 12);
+    tx(1, TX_TUR_LEN, 4); tx(1, TX_TUR_PROB, 0); tx(1, TX_TW_SHIFT, -12);
+    trk[1].p[P_QUANT] = Q_CHRD;
+    mixer(1, 122, 0, 5, 0);
+    sound(2, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, 0, 0, L_SD | L_CP, 0, 0, L_CH, L_BD, 0, L_BD, 0, L_SD | L_CP, 0, 0, L_CH};
+        static const uint8_t V[16] = {100, 0, 0, 0, 92, 0, 0, 46, 96, 0, 70, 0, 94, 0, 0, 50};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(2, i, L[i], V[i]);
+        trk[2].p[P_SLEN] = 16;
+    }
+    tx(2, TX_MODE, TESS_ENG_OFF); trk[2].p[P_SDIV] = DIV_16;
+    mixer(2, 76, 0, 15, 0);
+    sound(3, ENGI_FM6, FX_TINE_EP);
+    trk[3].p[P_SDIV] = DIV_8;
+    gen(3, TESS_ENG_AWAKE, 30);
+    tx(3, TX_AWK_LENA, 6); tx(3, TX_AWK_LENB, 4); tx(3, TX_AWK_PROB, 45);
+    trk[3].p[P_QUANT] = Q_CHRD;
+    mixer(3, 84, 25, 70, 30);
+    g_solo_check();
+}
+static const gstep_t G_CHORDS[] = {
+    {0, 0, 0, 0, 0, "CHORD: a progression's chords, in the track's scale"},
+    {4000, 7000, 200, "SEQ", "OPEN SEQ", "Tap SEQ: PROG is POP, a chord every 2 bars"},
+    {12000, 15000, 600, "KNOB 2", "2-5-1", "Turn KNOB 2, PROG, to 2-5-1", 2},
+    {20000, 0, 0, 0, 0, "Bass and piano are on QNT CHRD: they follow the chord"},
+    {28000, 31000, 400, "KNOB 4", "BEAT", "Turn KNOB 4, HIT, to BEAT: the chord on every beat", 1},
+    {37000, 40000, 600, "KNOB 3", "1 BAR", "Turn KNOB 3, BARS, to 1: a new chord every bar", -1},
+    {47000, 0, 0, 0, 0, "PROG, BARS and HIT: the whole harmony on three knobs"},
+};
+/* blues call and response: 84 BPM, A blues, shuffled; ANSWER on a clavinet as track 1 (the clip plays a call on the
+ * keys, then turns VARY), a warm pad on I and IV, a bass on EUCLID, a shuffle in STEP */
+static void g_blues_scene(void)
+{
+    song.g[G_BPM] = 84;
+    song.g[G_SWING] = 45;
+    scale(9, 12, 0);                                    /* A, BLUES */
+    sends(80, 70, 70, 40);
+    sound(0, ENGI_FM6, FX_CLAVINET);
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_ANSWER, 44);
+    tx(0, TX_AN_VARY, 10); tx(0, TX_AN_ECHO, 0);
+    mixer(0, 112, -10, 50, 30);
+    sound(1, ENGI_TRIO, TR_WARM_PAD);
+    trk[1].p[P_CHRD] = 1;
+    gen(1, TESS_ENG_CHORD, 3);
+    tx(1, TX_CH_PROG, GEN_CH_TWO); tx(1, TX_CH_BARS, 2); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 70, 25, 50, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 7);
+    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    trk[2].p[P_QUANT] = Q_CHRD;
+    mixer(2, 80, 0, 5, 0);
+    sound(3, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, L_CH, L_SD, 0, L_CH, L_CH, L_BD, 0, L_CH, L_BD, L_SD, 0, L_CH, L_CH};
+        static const uint8_t V[16] = {98, 0, 52, 40, 88, 0, 52, 40, 94, 0, 52, 60, 90, 0, 54, 42};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 76, 0, 10, 0);
+    g_solo_check();
+}
+static const gstep_t G_ANSWER[] = {
+    {0, 0, 0, 0, 0, "ANSWER: you play a phrase, it plays it back, changed"},
+    {3500, 6500, 200, "SEQ", "OPEN SEQ", "Tap SEQ, then play a phrase on the keys"},
+    {0, 10000, 250, "A3", "A", 0},
+    {0, 10360, 250, "C4", "C", 0},
+    {0, 10720, 250, "D4", "D", 0},
+    {0, 11080, 250, "D#4", "D#", 0},
+    {0, 11440, 500, "E4", "E", 0},
+    {13000, 0, 0, 0, 0, "A bar with no key ends it: then the answers"},
+    {22000, 25000, 1500, "KNOB 2", "VARY", "Turn KNOB 2, VARY, up: the answers stray further", 20},
+    {33000, 0, 0, 0, 0, "Each answer softer than the last; FADE 6: six of them"},
+    {40000, 43000, 250, "G4", "G", "Play a new phrase: a new call"},
+    {0, 43360, 250, "E4", "E", 0},
+    {0, 43720, 250, "D4", "D", 0},
+    {0, 44080, 500, "A3", "A", 0},
+    {50000, 0, 0, 0, 0, "Two tracks can talk: SOURCE makes one answer the other"},
+};
 static void guide_ref_gen(const char *out, FILE *tsv)
 {
     G_RUN("r-bounce", "BOUNCE AND FALL", "GREEN", 57, 4, g_kankyo_scene, G_BOUNCE);   /* kankyo ongaku */
@@ -257,4 +354,6 @@ static void guide_ref_gen(const char *out, FILE *tsv)
     G_RUN("r-quad", "QUAD: ONE GRID", "GREEN", 55, 4, g_mathrock_scene, G_QUAD);   /* math rock */
     G_RUN("r-constellation", "CONSTELLATION", "GREEN", 55, 4, g_scifi_scene, G_CONSTL);   /* library sci-fi */
     G_RUN("r-series", "SERIES", "GREEN", 55, 4, g_feldman_scene, G_SERIES);   /* slow piano after Feldman */
+    G_RUN("r-chord", "CHORD: THE HARMONY", "GREEN", 55, 4, g_gospel_scene, G_CHORDS);   /* minor gospel */
+    G_RUN("r-answer", "ANSWER: CALL AND RESPONSE", "GREEN", 58, 4, g_blues_scene, G_ANSWER);   /* blues */
 }
