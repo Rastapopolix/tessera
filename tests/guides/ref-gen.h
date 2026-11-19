@@ -592,6 +592,8 @@ static void g_coldwave_scene(void)
     gen(1, TESS_ENG_CHORD, 8);
     tx(1, TX_CH_PROG, GEN_CH_TWO); tx(1, TX_CH_BARS, 3); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
     mixer(1, 58, 20, 80, 0);
+    trk[1].p[P_LRATE] = 12;                             /* (Theo: a slow filter movement on the chord) */
+    cord(0, CS_LFO, 1, CD_CUTOFF, 1, 45, 0, 0);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
     trk[2].p[P_SDIV] = DIV_8;
     gen(2, TESS_ENG_EUCLID, 6);

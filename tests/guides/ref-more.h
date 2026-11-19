@@ -93,7 +93,7 @@ static const gstep_t G_STEMS[] = {
     {41000, 0, 0, 0, 0, "The stems are dry: add the reverb and delay in the computer"},
     {48000, 0, 0, 0, 0, "Back to STEREO for the mix as you hear it"},
 };
-/* nu-jazz: 100 BPM, D dorian; an electric piano on AWAKE as track 1, brushes-like 909 in STEP, a sub on TURING, a
+/* nu-jazz: 100 BPM, D dorian; a soft lead line written in STEP as track 1, brushes-like 909 in STEP, a sub on TURING, a
  * flute holding long notes on EUCLID: the band a USB keyboard would play along with */
 static void g_nujazz_scene(void)
 {
@@ -101,11 +101,15 @@ static void g_nujazz_scene(void)
     song.g[G_SWING] = 25;
     scale(2, SCL_DOR, 0);
     sends(90, 80, 70, 40);
-    sound(0, ENGI_FM6, FX_TINE_EP);
-    trk[0].p[P_SDIV] = DIV_8;
-    gen(0, TESS_ENG_AWAKE, 41);
-    tx(0, TX_AWK_LENA, 7); tx(0, TX_AWK_LENB, 5); tx(0, TX_AWK_PROB, 70);
-    mixer(0, 96, -15, 60, 30);
+    sound(0, ENGI_TRIO, TR_SOFT_LEAD);                  /* (Theo: less plucky than the tine, and a written line) */
+    trk[0].p[P_E5] = 58;
+    {
+        static const uint8_t N[16] = {62, 0, 65, 69, 0, 67, 65, 0, 64, 0, 62, 60, 0, 0, 62, 0};
+        for (uint32_t i = 0; i < 16u; i++) if (N[i]) step_note(0, i, N[i], i % 4u ? 82 : 100);
+        trk[0].p[P_SLEN] = 16;
+    }
+    tx(0, TX_MODE, TESS_ENG_OFF); trk[0].p[P_SDIV] = DIV_8;
+    mixer(0, 110, -15, 45, 30);
     sound(1, ENGI_DRUM, DK_909_KIT);
     {
         static const uint8_t L[16] = {L_BD, 0, L_CH, L_CH, L_RS, 0, L_CH, L_CH, 0, L_BD, L_CH, L_CH, L_RS, 0, L_CH, L_OH};
