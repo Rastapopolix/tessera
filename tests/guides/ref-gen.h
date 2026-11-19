@@ -458,13 +458,14 @@ static const gstep_t G_ANSWER[] = {
     {152000, 0, 0, 0, 0, "BREAK, on the sheet, makes a repeat slip, skip or stutter"},
     {158000, 0, 0, 0, 0, "VARY, ECHO, FADE; SOURCE, ORDER, SHIFT; SPACE, CHORD and BEND"},
 };
-/* dancehall: 96 BPM, G minor; MORPH on a marimba as track 1 (the clip slides POS from preset A to preset B, then picks
- * another B), a kick and snare in STEP, a sub on EUCLID's 3 of 8, offbeat chord stabs */
+/* slow dancehall, darker (Theo: less upbeat, less reverb): 84 BPM, G minor; MORPH on a marimba as track 1 (the clip
+ * slides POS, picks SNP A and B, then morphs a melody written on its STEP page), a kick and snare in STEP, a sub on
+ * EUCLID's 3 of 8, a warm pad held low */
 static void g_dancehall_scene(void)
 {
-    song.g[G_BPM] = 96;
+    song.g[G_BPM] = 84;
     scale(7, SCL_MIN, 0);
-    sends(70, 70, 90, 40);
+    sends(70, 60, 90, 40);
     sound(0, ENGI_FM6, V_MARIMBA);
     trk[0].p[P_SDIV] = DIV_16;
     gen(0, TESS_ENG_MORPH, 17);
@@ -474,7 +475,7 @@ static void g_dancehall_scene(void)
         for (uint32_t i = 0; i < 16u; i++) if (N[i]) step_note(0, i, N[i], i % 4u ? 84 : 104);
         trk[0].p[P_SLEN] = 16;
     }
-    mixer(0, 120, -15, 40, 50);
+    mixer(0, 120, -15, 15, 25);
     sound(1, ENGI_DRUM, DK_808_KIT);
     {
         static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_BD | L_CH, 0, L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_CH};
@@ -489,11 +490,11 @@ static void g_dancehall_scene(void)
     gen(2, TESS_ENG_EUCLID, 4);
     tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
     mixer(2, 80, 0, 0, 0);
-    sound(3, ENGI_ORACLE, OR_DUB_CHORD);
+    sound(3, ENGI_ORACLE, OR_WARM_PAD);
     trk[3].p[P_CHRD] = 1;
     gen(3, TESS_ENG_CHORD, 6);
-    tx(3, TX_CH_PROG, GEN_CH_TWO); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_OFF);
-    mixer(3, 84, 25, 50, 60);
+    tx(3, TX_CH_PROG, GEN_CH_TWO); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
+    mixer(3, 66, 25, 25, 0);
     g_solo_check();
 }
 static const gstep_t G_MORPH[] = {
