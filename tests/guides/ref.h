@@ -692,6 +692,11 @@ static void g_afrocuban_scene(void)
     trk[0].p[P_SDIV] = DIV_16;
     gen(0, TESS_ENG_EUCLID, 35);
     tx(0, TX_EUC_STEPS, 8); tx(0, TX_EUC_PULSES, 3); tx(0, TX_EUC_ROT, 0);
+    {   /* a melody on its STEP page, unheard until the clip turns SOURCE to it (OCT- layer) */
+        static const uint8_t N[16] = {69, 0, 72, 0, 74, 76, 0, 74, 72, 0, 69, 0, 67, 0, 69, 0};
+        for (uint32_t i = 0; i < 16u; i++) if (N[i]) step_note(0, i, N[i], i % 4u ? 84 : 104);
+        trk[0].p[P_SLEN] = 16;
+    }
     mixer(0, 120, 15, 30, 30);
     sound(1, ENGI_FM6, FX_TINE_EP);
     trk[1].p[P_CHRD] = 2;
@@ -724,6 +729,15 @@ static const gstep_t G_EUCLID[] = {
     {22000, 25000, 600, "KNOB 4", "ROT 2", "Turn KNOB 4: ROT 2, the same hits two steps later", 2},
     {32000, 35000, 600, "KNOB 2", "STEPS 12", "Turn KNOB 2: STEPS 8 to 12, five hits in 12 steps now", 4},
     {43000, 0, 0, 0, 0, "Against the 16 steps of the drums the pattern shifts round, bar by bar"},
+    {50000, 53000, 24000, "OCT-", "HOLD OCT-", "Hold OCT-: SOURCE, KEEP and GRAVITY, to play a melody you wrote"},
+    {0, 55000, 300, "KNOB 2", "SOURCE T1", 0, 1},
+    {55500, 0, 0, 0, 0, "KNOB 2, SOURCE T1: the melody on track 1's STEP page, in order, on EUCLID's hits"},
+    {0, 63000, 300, "KNOB 3", "RHYTHM", 0, 1},
+    {63500, 0, 0, 0, 0, "KNOB 3, KEEP RHYTHM: the melody's own rhythm instead, on EUCLID's pitches"},
+    {0, 70000, 300, "KNOB 3", "FREE", 0, -1},
+    {0, 71000, 2000, "KNOB 4", "GRAVITY", 0, 40},
+    {71000, 0, 0, 0, 0, "KNOB 4, GRAVITY: how often a step plays the melody's own hit or rest"},
+    {80000, 0, 0, 0, 0, "STEPS, PULSES and ROT; SOURCE, KEEP and GRAVITY"},
 };
 /* highlife: 112 BPM, C major; track 1 a guitar-like pluck written in STEP (16 sixteenths, with rests) that STEP EVOLVE
  * varies, organ chords on the offbeats on CHORD, a walking sub on TURING, a 909 with shaker-like hats in STEP */
@@ -1395,7 +1409,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
     G_RUN("r-patterns", "PATTERNS", "MOSAIC", 41, 4, g_citypop_scene, G_PATTERNS);   /* city pop */
     G_RUN("r-markov", "A WANDERING LINE: MARKOV", "MOSAIC", 60, 4, g_exotica_scene, G_MARKOV);   /* exotica */
-    G_RUN("r-euclid", "EVEN HITS: EUCLID", "MOSAIC", 52, 4, g_afrocuban_scene, G_EUCLID);   /* Afro-Cuban */
+    G_RUN("r-euclid", "EVEN HITS: EUCLID", "MOSAIC", 86, 4, g_afrocuban_scene, G_EUCLID);   /* Afro-Cuban */
     G_RUN("r-step-evolve", "VARY WHAT YOU WROTE", "MOSAIC", 72, 4, g_highlife_scene, G_SEVOLVE);   /* highlife */
     G_RUN("r-seed", "YOUR TUNE AS A SEED", "MOSAIC", 66, 4, g_ambfolk_scene, G_SEED);   /* ambient folk */
     G_RUN("r-buses", "MIX BUSES", "LILAC", 62, 4, g_fgarage_scene, G_BUSES);   /* future garage */
