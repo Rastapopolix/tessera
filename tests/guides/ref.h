@@ -302,43 +302,45 @@ static const gstep_t G_FORM[] = {
     {41000, 0, 0, 0, 0, "B again, note for note: DEVELOP at 0 keeps each return exact"},
     {48500, 0, 0, 0, 0, "Hold OCT- for DEVELOP: returns that change a little each time"},
 };
-/* liquid drum and bass: 172 BPM, F minor; a broken 909 as track 1 (RHYTHM), a sub on EUCLID (BASS), an ORACLE pad
- * (HARMONY), a soft lead's written line in STEP (MELODY); the CHAIN ABCB in 4-bar phrases, so ENTRIES has lines to move on */
-static void g_dnb_scene(void)
+/* the modal jazz of r-answer (Theo: that music here, the lead a little quieter): 84 BPM, A dorian, shuffled; the 808
+ * shuffle as track 1 (RHYTHM), a bass on EUCLID (BASS), the soft pad on i and IV (HARMONY), the electric keys playing a
+ * written line in STEP (MELODY); the CHAIN ABCB in 4-bar phrases, so ENTRIES has lines to move on */
+static void g_jazzent_scene(void)
 {
     static const uint8_t REP[4] = {1, 1, 1, 1}, ROLE[4] = {RO_RHYTHM, RO_BASS, RO_HARMONY, RO_MELODY};
-    song.g[G_BPM] = 172;
-    scale(5, SCL_MIN, 0);
-    sends(95, 70, 70, 50);
-    sound(0, ENGI_DRUM, DK_909_KIT);
+    song.g[G_BPM] = 84;
+    song.g[G_SWING] = 45;
+    scale(9, 3, 0);                                     /* A, DORIAN */
+    sends(80, 70, 70, 40);
+    sound(0, ENGI_DRUM, DK_808_KIT);
     {
-        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_BD, 0, 0, L_BD | L_CH, 0, L_SD, 0, L_CH, L_SD};
-        static const uint8_t V[16] = {108, 0, 62, 0, 104, 0, 60, 80, 0, 0, 96, 0, 104, 0, 64, 50};
+        static const uint8_t L[16] = {L_BD, 0, L_CH, L_CH, L_SD, 0, L_CH, L_CH, L_BD, 0, L_CH, L_BD, L_SD, 0, L_CH, L_CH};
+        static const uint8_t V[16] = {98, 0, 52, 40, 88, 0, 52, 40, 94, 0, 52, 60, 90, 0, 54, 42};
         for (uint32_t i = 0; i < 16u; i++) step_hits(0, i, L[i], V[i]);
         trk[0].p[P_SLEN] = 16;
     }
     tx(0, TX_MODE, TESS_ENG_OFF); trk[0].p[P_SDIV] = DIV_16;
-    mixer(0, 92, 0, 10, 0);
+    mixer(0, 88, 0, 10, 0);
     sound(1, ENGI_TRIO, TR_SUB_BASS);
     trk[1].p[P_SDIV] = DIV_8;
-    gen(1, TESS_ENG_EUCLID, 22);
-    tx(1, TX_EUC_STEPS, 16); tx(1, TX_EUC_PULSES, 3); tx(1, TX_EUC_ROT, 0); tx(1, TX_TW_SHIFT, -12);
-    tx(1, TX_NL_MODE, 1); tx(1, TX_NL_LEN, 4);
-    mixer(1, 86, 0, 0, 0);
-    sound(2, ENGI_ORACLE, OR_WARM_PAD);
-    trk[2].p[P_CHRD] = 2;
-    gen(2, TESS_ENG_CHORD, 10);
+    gen(1, TESS_ENG_EUCLID, 7);
+    tx(1, TX_EUC_STEPS, 8); tx(1, TX_EUC_PULSES, 3); tx(1, TX_EUC_ROT, 0); tx(1, TX_TW_SHIFT, -12);
+    trk[1].p[P_QUANT] = Q_CHRD;
+    mixer(1, 80, 0, 5, 0);
+    sound(2, ENGI_TRIO, TR_SOFT_PAD);
+    trk[2].p[P_CHRD] = 1;
+    gen(2, TESS_ENG_CHORD, 3);
     tx(2, TX_CH_PROG, GEN_CH_TWO); tx(2, TX_CH_BARS, 2); tx(2, TX_CH_HIT, GEN_CH_HOLD); tx(2, TX_CH_OCT, -1);
-    mixer(2, 80, -20, 80, 0);
-    sound(3, ENGI_TRIO, TR_SOFT_LEAD);                  /* (Theo: the bell line didn't fit; a soft lead, a written line) */
-    trk[3].p[P_E5] = 55;
+    mixer(2, 64, 25, 50, 0);
+    sound(3, ENGI_ORACLE, OR_KEYS);
+    trk[3].p[P_E0] = -10;
     {
-        static const uint8_t N[16] = {65, 0, 68, 0, 72, 0, 70, 68, 0, 67, 0, 63, 0, 65, 0, 0};
-        for (uint32_t i = 0; i < 16u; i++) if (N[i]) step_note(3, i, N[i], i % 4u ? 80 : 100);
+        static const uint8_t N[16] = {69, 0, 72, 74, 0, 76, 0, 74, 72, 0, 0, 69, 0, 67, 69, 0};
+        for (uint32_t i = 0; i < 16u; i++) if (N[i]) step_note(3, i, N[i], i % 4u ? 78 : 96);
         trk[3].p[P_SLEN] = 16;
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_8;
-    mixer(3, 100, 25, 60, 45);
+    mixer(3, 90, -10, 50, 30);
     chain_set(FC_ABCB, PH_4, 0, REP, 0, 0);
     entries_set(0, 1, 1, 1, ROLE);
     g_solo_check();
@@ -1552,7 +1554,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-landscape", "A SEA TO WATCH", "MOSAIC", 108, 4, g_neoclassical_scene, G_LANDSCAPE);   /* neo-classical */
     G_RUN("r-color", "THE SCREEN'S COLOUR", "YELLOW", 54, 4, g_chillout_scene, G_COLOR);   /* chillout */
     G_RUN("r-form", "A TRACK AS A SONG", "SUNSET", 60, 4, g_bossa_scene, G_FORM);   /* bossa nova */
-    G_RUN("r-entries", "TRACKS OUT AND IN", "SUNSET", 102, 4, g_dnb_scene, G_ENTRIES);   /* liquid drum and bass */
+    G_RUN("r-entries", "TRACKS OUT AND IN", "SUNSET", 102, 4, g_jazzent_scene, G_ENTRIES);   /* r-answer's modal jazz */
     G_RUN("r-chain", "ONE FORM FOR ALL", "SUNSET", 112, 4, g_disco_scene, G_CHAIN);   /* disco */
     G_RUN("r-energy", "ENERGY: TIDE AND RESTS", "SUNSET", 124, 4, g_afrohouse_scene, G_ENERGY);   /* afro house */
     G_RUN("r-tweak", "TWEAK: RESHAPE AND FOLLOW", "MOSAIC", 120, 4, g_cinematic_scene, G_TWEAK);   /* cinematic (r-follow folded in) */
