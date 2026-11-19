@@ -105,7 +105,8 @@
 enum {
     F_INT, F_PCT, F_BIPCT, F_TIME, F_LFOHZ, F_CUTOFF, F_DB, F_SEMI, F_ENUM, F_BPM, F_NOTE,
     F_ONOFF, F_OCT, F_STEPS,
-    F_OFS, F_FMNOTE, F_FMFRQ    /* FM6's pages: 0 at the middle of the range, the DX7 break point, an operator's frequency */
+    F_OFS, F_FMNOTE, F_FMFRQ,   /* FM6's pages: 0 at the middle of the range, the DX7 break point, an operator's frequency */
+    F_ECHOMS                    /* ECHO's TIME: its delay in ms (fx.c fx_time: 110 + 31 x the value, at FS/4) */
 };
 
 typedef struct {

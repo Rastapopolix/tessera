@@ -8,6 +8,7 @@ Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues>
 what you expected and what happened).
 
 ## New since 3.7.1
+- ECHO: TIME (knob 3) now reads in milliseconds, 10 to 367 ms, instead of %. The web editor shows it the same way. Only the display changed: the echo sounds the same and projects are unchanged.
 - Print (REC held on a generator or ARP track) now takes whole passes of the pattern's LEN, from where a pass starts, not bars. With a LEN other than 16 the printed loop now joins up the way it played: LEN 12 prints 12, 24 or 48 steps.
 - Three new chord kinds on CHRD: 2NDS, 4THS and 5THS stack the scale's seconds, fourths or fifths, so they stay in key (quartal and quintal chords). On a microtonal scale they stack its own degrees, which gives close clusters (issue #852).
 

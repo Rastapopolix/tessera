@@ -515,7 +515,7 @@ function parseScala(text, file = "") {
 const tuneValid = (t) => t && Array.isArray(t.pitch) && t.pitch.length >= 1 && t.pitch.length <= TUNE.DEGREES &&
   t.pitch.every((v, i) => Number.isInteger(v) && v > (i ? t.pitch[i - 1] : 0)) && t.pitch.at(-1) <= TUNE.PERIOD_MAX &&
   /^[\x20-\x7E]{1,7}$/.test(t.name) && /^[\x20-\x7E]{0,23}$/.test(t.title);
-const F = { INT: 0, PCT: 1, BIPCT: 2, TIME: 3, LFOHZ: 4, CUTOFF: 5, DB: 6, SEMI: 7, ENUM: 8, BPM: 9, NOTE: 10, ONOFF: 11, OCT: 12, STEPS: 13 };
+const F = { INT: 0, PCT: 1, BIPCT: 2, TIME: 3, LFOHZ: 4, CUTOFF: 5, DB: 6, SEMI: 7, ENUM: 8, BPM: 9, NOTE: 10, ONOFF: 11, OCT: 12, STEPS: 13, ECHOMS: 17 };
 
 const v14enc = (v) => { const u = Math.max(-8192, Math.min(8191, Math.round(v))) + 8192; return [u & 0x7F, (u >> 7) & 0x7F]; };
 const v14dec = (lo, hi) => (lo | (hi << 7)) - 8192;
@@ -1038,6 +1038,7 @@ function fmtValue(d, v) {
     case F.NOTE: return [NOTE_NAMES[((v % 12) + 12) % 12], ""];
     case F.ONOFF: return [v ? "ON" : "OFF", ""];
     case F.STEPS: return [String(v), "STEP"];
+    case F.ECHOMS: return [String(Math.trunc(((110 + 31 * v) * 80 + 441) / 882)), "ms"];   /* ECHO's TIME (fx.c fx_time) */
     default: return [String(v), d.unit || ""];
   }
 }
