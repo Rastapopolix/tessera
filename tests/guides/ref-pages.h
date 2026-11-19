@@ -286,8 +286,67 @@ static const gstep_t G_PATTEMPO[] = {
     {106000, 108000, 2500, "KNOB 3", "QNT", "KNOB 3, QNT: where the notes you record land. 1/16, or OFF: as played", 9},
     {115000, 0, 0, 0, 0, "On HOME, or with GLO held, SELECT sets the BPM too"},
 };
+/* synth funk: 104 BPM, E dorian; a clavinet on POLY as track 1, an 808 in STEP, a solid FM bass on TURING, ORACLE
+ * keys on CHORD. The menu's rows change the screen while it plays; AUDIO CLICK is heard */
+static void g_synthfunk_scene(void)
+{
+    song.g[G_BPM] = 104;
+    scale(4, SCL_DOR, 0);
+    sends(60, 50, 55, 40);
+    sound(0, ENGI_FM6, FX_CLAVINET);
+    trk[0].p[P_SDIV] = DIV_16;
+    gen(0, TESS_ENG_EUCLID, 27);
+    tx(0, TX_EUC_STEPS, 16); tx(0, TX_EUC_PULSES, 7); tx(0, TX_EUC_ROT, 2);
+    mixer(0, 100, -15, 10, 10);
+    sound(1, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_BD, 0, L_BD, L_CH, 0, L_SD, 0, L_CH, L_OH};
+        static const uint8_t V[16] = {108, 0, 56, 0, 100, 0, 54, 80, 0, 96, 58, 0, 100, 0, 54, 50};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
+        trk[1].p[P_SLEN] = 16;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
+    mixer(1, 80, 0, 10, 0);
+    sound(2, ENGI_FM6, FX_SOLID_BASS);
+    trk[2].p[P_SDIV] = DIV_16;
+    gen(2, TESS_ENG_TURING, 31);
+    tx(2, TX_TUR_PROB, 8); tx(2, TX_TUR_LEN, 8); tx(2, TX_TW_SHIFT, -24); tx(2, TX_TW_DROP, 30);
+    mixer(2, 106, 0, 0, 0);
+    sound(3, ENGI_ORACLE, OR_KEYS);
+    trk[3].p[P_CHRD] = 1;
+    gen(3, TESS_ENG_CHORD, 8);
+    tx(3, TX_CH_PROG, GEN_CH_TWO); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_BEAT);
+    mixer(3, 66, 15, 40, 0);
+    g_solo_check();
+}
+static const gstep_t G_MENU[] = {
+    {0, 0, 0, 0, 0, "The menu: settings for the screen, the knobs, playing, MIDI and USB"},
+    {3500, 5500, 900, "HOME", "MENU", "Hold HOME: the menu. KNOB 1 picks a row, KNOB 2 changes it"},
+    {10000, 12000, 600, "KNOB 1", "GROUND", "GROUND: LIGHT draws the ink on paper", 1},
+    {0, 13500, 600, "KNOB 2", "LIGHT", 0, 1},
+    {18000, 20000, 600, "KNOB 2", "DARK", "And DARK again", -1},
+    {23000, 25000, 600, "KNOB 1", "KNOBS", "KNOBS: BAR, an upright bar in place of each dial", 1},
+    {0, 26500, 600, "KNOB 2", "BAR", 0, 1},
+    {31000, 33000, 600, "KNOB 1", "LARGE VALUE", "LARGE VALUE: ON shows the knob you turn, large, on every page", 1},
+    {0, 34500, 600, "KNOB 2", "ON", 0, 1},
+    {39000, 41000, 600, "KNOB 1", "TEXT", "TEXT: BOLD, letters a pixel wider, to read from further away", 1},
+    {0, 42500, 600, "KNOB 2", "BOLD", 0, 1},
+    {47000, 49000, 600, "KNOB 1", "IDLE", "IDLE: LANDSCAPE after two minutes untouched. NOTE LIGHTS: the keys light with the notes", 1},
+    {55000, 57000, 3500, "KNOB 1", "MUTES", "Further down, MUTES: BAR, mutes wait for the bar line", 9},
+    {0, 61500, 600, "KNOB 2", "BAR", 0, 1},
+    {66000, 68000, 600, "KNOB 1", "AUDIO CLICK", "AUDIO CLICK: ON, a click to play along with. REC: only while recording", 1},
+    {0, 69500, 900, "KNOB 2", "ON", 0, 2},
+    {76000, 78000, 600, "KNOB 2", "OFF", "OFF again. CLICK LEVEL, COUNT-IN, NOTE PREVIEW come next", -2},
+    {83000, 85000, 1200, "KNOB 1", "AUTOSAVE", "AUTOSAVE: the project is saved a few seconds after STOP", 5},
+    {90000, 92000, 200, "OCT-", "CLOSE", "Tap OCT-: the menu closes. The settings stay"},
+    {94000, 96000, 200, "SEQ", "SEQ", "Tap SEQ: BOLD letters, bars, and the knob turned shown large"},
+    {0, 98000, 600, "KNOB 3", "PLS", 0, 1},
+    {0, 101000, 600, "KNOB 3", "PLS", 0, -1},
+    {104000, 0, 0, 0, 0, "They belong to the FM-1, not to a project: kept through power-off"},
+};
 static void guide_ref_pages(const char *out, FILE *tsv)
 {
+    G_RUN("r-menu", "THE MENU", "WHITE", 110, 4, g_synthfunk_scene, G_MENU);   /* synth funk */
     G_RUN("r-tempo", "PATTERN AND TEMPO", "MOSAIC", 121, 4, g_dubtechno_scene, G_PATTEMPO);   /* dub techno */
     G_RUN("r-arp", "ARP: ONE NOTE AT A TIME", "MOSAIC", 128, 4, g_trance_scene, G_ARP);   /* progressive trance */
     G_RUN("r-lfo", "LFO: A WAVE THAT MOVES", "LILAC", 132, 4, g_filterhouse_scene, G_LFO);   /* filter house */
