@@ -92,32 +92,43 @@ static const gstep_t G_COND[] = {
     {45000, 48000, 200, "OCT-", "CLOSE", "Tap OCT-, and listen: C5 now comes every other time"},
     {56000, 0, 0, 0, 0, "Others: 1:3 to 8:8, FIRST, !FIRST, and FILL for fills on demand"},
 };
-/* ambient techno: 118 BPM, A minor; a TRIO pad on CHORD, a tine line on TURING, a sub on EUCLID, a 909 on ATLAS. The
- * CHAIN ABAC in 4-bar phrases and ENTRIES at 75, so a PIECE has something to steer: layers out and in */
+/* slow ambient with drums: 76 BPM, C minor (Theo: new music, slow ambient with drums); a glass pad on CHORD, a soft
+ * muted lead on AWAKE, a sub on EUCLID, a soft half-time 808 in STEP. The CHAIN ABAC in 4-bar phrases and ENTRIES at
+ * 75, so a PIECE has something to steer: layers out and in */
 static void g_ambtechno_scene(void)
 {
     static const uint8_t REP[4] = {1, 1, 1, 1}, ROLE[4] = {RO_HARMONY, RO_MELODY, RO_BASS, RO_RHYTHM};
-    song.g[G_BPM] = 118;
-    scale(9, SCL_MIN, 0);
-    sends(95, 75, 75, 55);
-    sound(0, ENGI_TRIO, TR_WARM_PAD);
+    song.g[G_BPM] = 76;
+    scale(0, SCL_MIN, 0);
+    sends(105, 80, 70, 55);
+    sound(0, ENGI_ORACLE, OR_GLASS_PAD);
     trk[0].p[P_CHRD] = 1;
     gen(0, TESS_ENG_CHORD, 3);
-    tx(0, TX_CH_PROG, GEN_CH_DRONE); tx(0, TX_CH_BARS, 2); tx(0, TX_CH_HIT, GEN_CH_HOLD);
-    mixer(0, 80, -20, 80, 0);
-    sound(1, ENGI_FM6, FX_TINE_EP);
+    tx(0, TX_CH_PROG, GEN_CH_TWO); tx(0, TX_CH_BARS, 2); tx(0, TX_CH_HIT, GEN_CH_HOLD); tx(0, TX_CH_OCT, -1);
+    mixer(0, 78, -20, 80, 0);
+    sound(1, ENGI_TRIO, TR_SOFT_LEAD);
+    trk[1].p[P_E5] = 45;
+    trk[1].p[P_ATK] = 20; trk[1].p[P_REL] = 60;
     trk[1].p[P_SDIV] = DIV_8;
-    gen(1, TESS_ENG_TURING, 17);
-    tx(1, TX_TUR_PROB, 20);
-    mixer(1, 90, 25, 60, 40);
+    gen(1, TESS_ENG_AWAKE, 17);
+    tx(1, TX_AWK_LENA, 7); tx(1, TX_AWK_LENB, 5); tx(1, TX_AWK_PROB, 45);
+    trk[1].p[P_QUANT] = Q_CHRD;
+    mixer(1, 92, 25, 60, 45);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
     trk[2].p[P_SDIV] = DIV_8;
     gen(2, TESS_ENG_EUCLID, 5);
-    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3); tx(2, TX_TW_SHIFT, -12);
-    mixer(2, 92, 0, 10, 0);
-    sound(3, ENGI_DRUM, DK_909_KIT);
-    gen(3, TESS_ENG_GRIDS, 9);
-    mixer(3, 85, 0, 20, 0);
+    tx(2, TX_EUC_STEPS, 16); tx(2, TX_EUC_PULSES, 3); tx(2, TX_TW_SHIFT, -12);
+    trk[2].p[P_QUANT] = Q_CHRD;
+    mixer(2, 82, 0, 10, 0);
+    sound(3, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, 0, 0, L_CH, 0, L_RS, 0, L_CH, L_BD, 0, 0, L_CH, 0};
+        static const uint8_t V[16] = {96, 0, 40, 0, 0, 0, 44, 0, 78, 0, 40, 58, 0, 0, 46, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 92, 0, 25, 0);
     chain_set(FC_ABAC, PH_4, 0, REP, 0, 0);
     entries_set(75, 1, 1, 1, ROLE);
     g_solo_check();
@@ -127,14 +138,23 @@ static const gstep_t G_PIECE[] = {
     {3500, 6500, 200, "GLO", "OPEN MIXER", "Tap GLO: MIXER"},
     {10000, 13000, 200, "GLO", "PERF", "Tap GLO again: PERF"},
     {16500, 19500, 200, "GLO", "PIECE", "Once more: PIECE"},
-    {23000, 26000, 600, "KNOB 1", "1 MINUTE", "Turn KNOB 1: LENGTH, from FREE to 1 minute. SHAPE is ARCH", 1},
-    {30000, 33000, 200, "PLAY", "STOP", "Press PLAY twice: it starts from the top, and the piece with it"},
-    {0, 34500, 200, "PLAY", "PLAY", 0},
-    {37500, 0, 0, 0, 0, "It begins sparse: the bass alone"},
-    {46000, 0, 0, 0, 0, "As it builds, tracks come in on phrase lines"},
-    {58500, 0, 0, 0, 0, "The top of the arch: all four play"},
-    {74500, 0, 0, 0, 0, "Then it thins out the same way"},
-    {99000, 0, 0, 0, 0, "At the end the tracks fade, the tails ring, and it stops"},
+    {23000, 26000, 5000, "KNOB 1", "LENGTH UP", "Turn KNOB 1, LENGTH: from FREE, 1 minute, up to 4 hours", 40},
+    {33500, 35000, 4000, "KNOB 1", "FREE", "Back down to FREE for now: nothing planned", -60},
+    {43000, 45000, 7000, "KNOB 2", "SHAPES", "Turn KNOB 2, SHAPE: ARCH, RISE, FALL, PLATEAU, VALLEY, WAVES...", 5},
+    {0, 53000, 2500, "KNOB 2", "ARCH", 0, -5},
+    {53500, 0, 0, 0, 0, "...BUILDS, STEPS, FLAT, or your own. Back to ARCH"},
+    {58000, 60000, 2000, "KNOB 3", "PEAK", "KNOB 3, PEAK: where the arch has its top (WAVES and the others: COUNT)", -10},
+    {66000, 68000, 600, "KNOB 4", "LOOP", "KNOB 4, END: STOP, LOOP, NEW (new seeds) or FREE (carry on)", 1},
+    {0, 72000, 600, "KNOB 4", "STOP", 0, -1},
+    {72500, 0, 0, 0, 0, "STOP: the tracks fade, the tails ring, and it stops"},
+    {77000, 78000, 600, "KNOB 1", "1 MINUTE", "Now LENGTH 1 minute, and press PLAY twice: the piece starts from the top", 1},
+    {0, 80000, 200, "PLAY", "STOP", 0},
+    {0, 81500, 200, "PLAY", "PLAY", 0},
+    {85000, 0, 0, 0, 0, "It begins sparse and quiet"},
+    {98000, 0, 0, 0, 0, "As it builds, tracks come in on phrase lines"},
+    {111000, 0, 0, 0, 0, "The top of the arch, about half way (PEAK 52 %)"},
+    {124000, 0, 0, 0, 0, "Then it thins out the same way"},
+    {139000, 0, 0, 0, 0, "At the end the tracks fade, the tails ring, and it stops"},
 };
 /* chillout: 96 BPM, E dorian (as E minor's brighter sister); a soft 808, a kalimba on QUAD-less EUCLID, a sub, an
  * ORACLE pad: four parts, so MOSAIC has four colours to show */
@@ -1540,7 +1560,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-user-scale", "A SCALE OF YOUR OWN", "MOSAIC", 70, 4, g_ethno_scene, G_USCALE);   /* ethno-ambient */
     G_RUN("r-harm", "RUN THE KEYS INTO CHORDS", "MOSAIC", 130, 4, g_chillwave_scene, G_HARM);   /* chillwave */
     G_RUN("r-song", "A SONG FROM PATTERNS", "MOSAIC", 91, 4, g_reggae_scene, G_SONG);   /* reggae */
-    G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 116, 4, g_ambtechno_scene, G_PIECE);   /* ambient techno */
+    G_RUN("r-piece", "A PIECE WITH A SHAPE", "SUNSET", 160, 4, g_ambtechno_scene, G_PIECE);   /* slow ambient with drums */
     G_RUN("r-condition", "EVERY OTHER TIME", "MOSAIC", 64, 4, g_downtempo_scene, G_COND);   /* downtempo */
     G_RUN("r-mod-first", "YOUR FIRST MOD", "LILAC", 65, 4, g_triphop_scene, G_MOD_FIRST);   /* trip-hop */
 }
