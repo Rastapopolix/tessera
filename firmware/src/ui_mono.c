@@ -2049,7 +2049,9 @@ static void mo_pic_arp(const track_t *t)
     mo_textr(b, 118, 56, MO_DIM);
 }
 /* FX: what the effect does (its hint), its wave (moved by MIX, CHAOS: dim when OFF or dry), and a foot; the send
- * pages: where the signal goes, in words */
+ * pages: where the signal goes, in words. DRIVE: one cycle of a half-scale sine through fx_drive's own curve (DRV
+ * its gain into the soft clip, FOLD the blend into the triangle folder, the make-up gain after), so DRV rounds the
+ * wave flat, or with FOLD up turns its peaks back more times */
 static void mo_pic_fx(void)
 {
     static const char *const hint[FX_COUNT] = {"DRY SIGNAL", "MOVING NOTCHES", "ALL-PASS L/DRY R", "RANDOM VOWELS",
@@ -2057,7 +2059,7 @@ static void mo_pic_fx(void)
         "RESONANT LOW-PASS", "SOFT CLIP, FOLD"};
     uint32_t base = cur_page()->id[0], master, slot, type;
     const int16_t *values;
-    int32_t mix, cha, py = 81, x;
+    int32_t mix, cha, py = 81, x, g = 0, k = 0;
     const char *foot;
     if (base == G_TRK_SEND || base == P_FXSEND) {
         uint32_t sends = base == P_FXSEND;
@@ -2073,12 +2075,20 @@ static void mo_pic_fx(void)
     mix = values[base + 1u];
     cha = values[base + 3u];
     mo_text(hint[type], 2, 56, MO_DIM);
+    if (type == FX_DRIVE) {                             /* (as fx_drive_design: Q8 gain, Q15 make-up) */
+        g = clamp(values[base + 2u], 0, 127);
+        g = 256 + g * g / 2;
+        k = (int32_t)((16384u << 15) / (uint32_t)softclip(16384 * g >> 8));
+    }
     for (x = 0; x < 116; x++) {
         int32_t ph = (int32_t)(sine_i((uint32_t)x * 0x0AC00000u) >> 10), y = 81 * 32;
-        if (type == FX_PHASER || type == FX_WIDTH || type == FX_CHORUS) y += ph * mix / 9;
+        if (type == FX_DRIVE) {
+            int32_t u = (sine_i((uint32_t)x * 0x0234F72Cu) >> 1) * g >> 8, a = softclip(u);
+            int32_t p = (u + 32768) & 0x1FFFF, t = p < 65536 ? p - 32768 : 98304 - p;
+            y += ((((a + (((t - a) * clamp(cha, 0, 127)) >> 7)) * k) >> 15) * 11) >> 9;  /* (about +-12 rows) */
+        } else if (type == FX_PHASER || type == FX_WIDTH || type == FX_CHORUS) y += ph * mix / 9;
         else if (type == FX_FORMANT) y -= ((ph + 32) * mix) / 15;
         else if (type == FX_TAPE || type == FX_SPIT) y += (ph * ((x * 2 * (cha + 1) / 32) % 32)) / 4;
-        else if (type == FX_DRIVE) y += clamp(ph * (16 + values[base + 2u]) / 2, -320, 320);   /* (the wave clipped flat) */
         else if (type >= FX_ECHO) y += (ph * mix * (116 - x)) / 1060;
         y = clamp(y / 32, 68, 94);
         if (x) mo_line(1 + x, py, 2 + x, y, type && mix ? MO_INK : MO_DIM);
