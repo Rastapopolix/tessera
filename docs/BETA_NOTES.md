@@ -8,6 +8,7 @@ Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues>
 what you expected and what happened).
 
 ## New since 3.7.1
+- ECHO: TIME (knob 3) now reads in milliseconds, 10 to 367 ms, instead of %. The web editor shows it the same way. Only the display changed: the echo sounds the same and projects are unchanged.
 
 ## Fixed
 - ANSWER: with the transport stopped, a pause of a second and a half now ends the phrase, so the next key starts a new one. Before, every key played while stopped joined the same phrase, and once it held 16 notes the picture kept the old ones.
