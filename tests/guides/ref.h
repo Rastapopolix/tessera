@@ -388,6 +388,12 @@ static const gstep_t G_CHAIN[] = {
     {45700, 0, 0, 0, 0, "Back to A, together"},
     {53900, 0, 0, 0, 0, "This project's B is a fourth up: Key in B, on SCL's last rows"},
 };
+/* r-energy's skips ahead (the tide turns over minutes, a rest comes every few): the tide to its full end, then its
+ * sparse end; a rest due now, twice */
+static void g_en_full(void) { energy.ph = energy.per / 4u; }
+static void g_en_sparse(void) { energy.ph = energy.per * 3u / 4u; }
+static void g_en_rest(void) { energy.rest_left = 0; energy.rest_next = 1; }
+static const vfn_t G_ENERGY_FNS[] = {{52000, g_en_full}, {61000, g_en_sparse}, {80000, g_en_rest}, {110000, g_en_rest}};
 /* afro house: 120 BPM, A minor; a 909 on ATLAS as track 1 (a generator, so ENERGY moves it), a marimba on EUCLID, a
  * bass on TURING, a pad holding the chord */
 static void g_afrohouse_scene(void)
@@ -403,26 +409,37 @@ static void g_afrohouse_scene(void)
     trk[1].p[P_SDIV] = DIV_16;
     gen(1, TESS_ENG_EUCLID, 34);
     tx(1, TX_EUC_STEPS, 12); tx(1, TX_EUC_PULSES, 7); tx(1, TX_EUC_ROT, 1);
-    mixer(1, 92, 20, 40, 30);
+    mixer(1, 104, 20, 40, 30);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
     trk[2].p[P_SDIV] = DIV_8;
     gen(2, TESS_ENG_TURING, 29);
     tx(2, TX_TUR_PROB, 15); tx(2, TX_TW_SHIFT, -12); tx(2, TX_TW_DROP, 30);
-    mixer(2, 94, 0, 0, 0);
+    mixer(2, 84, 0, 0, 0);
     sound(3, ENGI_ORACLE, OR_WARM_PAD);
     trk[3].p[P_CHRD] = 1;
     gen(3, TESS_ENG_CHORD, 8);
     tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
     mixer(3, 58, -20, 80, 0);
+    g_fns = G_ENERGY_FNS, g_nfns = sizeof G_ENERGY_FNS / sizeof G_ENERGY_FNS[0];
     g_solo_check();
 }
 static const gstep_t G_ENERGY[] = {
     {0, 0, 0, 0, 0, "ENERGY: the project's mood, from sparse and soft to busy and loud"},
     {3500, 6500, 200, "ARP", "EVOLVE", "Tap ARP: EVOLVE"},
     {10000, 13000, 600, "SELECT", "ENERGY", "Turn SELECT back once: ENERGY, the last page", -1},
-    {17000, 20000, 3000, "KNOB 3", "LEVEL DOWN", "Turn KNOB 3: LEVEL to -100. The generators leave out hits and play softer", -100},
-    {31000, 34000, 4000, "KNOB 3", "LEVEL UP", "Turn it up to +100: busier and louder", 200},
-    {45000, 0, 0, 0, 0, "ARC swings LEVEL as a slow tide over minutes; RESTS adds silences"},
+    {16500, 19500, 3000, "KNOB 3", "LEVEL DOWN", "Turn KNOB 3: LEVEL to -100. The generators leave out hits and play softer", -100},
+    {27000, 30000, 4000, "KNOB 3", "LEVEL UP", "Turn it up to +100: busier and louder", 200},
+    {37500, 39000, 5000, "KNOB 3", "LEVEL 0", "Back to 0: the tracks as set", -100},
+    {45000, 48000, 3000, "KNOB 1", "ARC 100 %", "Turn KNOB 1, ARC, up: a slow tide round LEVEL, 3 to 6 minutes a turn", 100},
+    {52000, 0, 0, 0, 0, "Skipping ahead a minute or so: the full end of the tide. Busier, louder"},
+    {61000, 0, 0, 0, 0, "Skipping ahead again: the sparse end. Fewer hits, softer"},
+    {70000, 73000, 3000, "KNOB 2", "RESTS 100 %", "Turn KNOB 2, RESTS: how often the music rests, about every 4 minutes at 100", 100},
+    {80000, 0, 0, 0, 0, "Skipping ahead to a rest: the generators fall silent for 8 to 18 s. KNOB 4, REST, counts it"},
+    {88000, 0, 0, 0, 0, "The held chord goes on through a rest"},
+    {99000, 101000, 9000, "OCT-", "HOLD OCT-", "Hold OCT-: DEPTH, how much ENERGY moves this track. Turn it to 0"},
+    {0, 103500, 2500, "KNOB 1", "DEPTH 0", 0, -100},
+    {108000, 0, 0, 0, 0, "Track 1 is an anchor now. At the next rest, the drums play on"},
+    {116000, 0, 0, 0, 0, "ARC, RESTS, LEVEL, REST, and DEPTH with OCT- held"},
 };
 /* folktronica: 98 BPM, G major; a plucked line on TURING as track 1 (the one the clip tweaks), a soft 808 with a
  * shaker, a kalimba on EUCLID, a bass on two pulses */
@@ -1492,7 +1509,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-form", "A TRACK AS A SONG", "SUNSET", 60, 4, g_bossa_scene, G_FORM);   /* bossa nova */
     G_RUN("r-entries", "TRACKS OUT AND IN", "SUNSET", 102, 4, g_dnb_scene, G_ENTRIES);   /* liquid drum and bass */
     G_RUN("r-chain", "ONE FORM FOR ALL", "SUNSET", 64, 4, g_disco_scene, G_CHAIN);   /* disco */
-    G_RUN("r-energy", "ENERGY BY HAND", "SUNSET", 54, 4, g_afrohouse_scene, G_ENERGY);   /* afro house */
+    G_RUN("r-energy", "ENERGY: TIDE AND RESTS", "SUNSET", 124, 4, g_afrohouse_scene, G_ENERGY);   /* afro house */
     G_RUN("r-tweak", "RESHAPE A LINE", "GREEN", 46, 4, g_folktronica_scene, G_TWEAK);   /* folktronica */
     G_RUN("r-follow", "ONE TRACK FOLLOWS ANOTHER", "MOSAIC", 56, 4, g_cinematic_scene, G_FOLLOW);   /* cinematic */
     G_RUN("r-timing", "ROLLS AND FEEL", "GREEN", 58, 4, g_boombap_scene, G_TIMING);   /* boom bap */

@@ -2951,6 +2951,9 @@ typedef struct { uint32_t cap_ms, act_ms, dur; const char *ctl, *label, *caption
 static const char *const G_KEYS[] = {"F3", "F#3", "G3", "G#3", "A3", "A#3", "B3", "C4", "C#4", "D4", "D#4", "E4", "F4",
                                      "F#4", "G4", "G#4", "A4", "A#4", "B4", "C5", "C#5", "D5", "D#5", "E5", "F5",
                                      "F#5", "G5"};
+/* a scene's timed changes (each at its ms into the clip): set by the scene (make), as g_fns / g_nfns; none by default */
+static const vfn_t *g_fns;
+static uint32_t g_nfns;
 static void g_run(const char *out, FILE *tsv, const char *name, const char *title, uint32_t secs, uint32_t pre,
                   void (*make)(void), const char *ink, const gstep_t *g, uint32_t n)
 {
@@ -3004,7 +3007,7 @@ static void g_run(const char *out, FILE *tsv, const char *name, const char *titl
     song.batt_raw = 600;                                /* (a full battery in the header: the host reads none) */
     v_ink(ink);
     vclip_t c = {.name = name, .secs = secs, .pre = pre, .st = st, .nst = 1, .keys = keys, .nkeys = nk,
-                 .btns = btns, .nbtns = nb, .turns = turns, .nturns = nt};
+                 .btns = btns, .nbtns = nb, .turns = turns, .nturns = nt, .fns = g_fns, .nfns = g_nfns};
     v_run(out, &c);
     if (pid == 0) { fflush(stdout); fflush(v_cap); _exit(0); }
 }
