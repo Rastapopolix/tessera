@@ -144,7 +144,20 @@ static int shapes_voicings(void)
     t->p[P_CHRD] = CH_SUS2; t->p[P_VOIC] = VC_OPEN;
     bad += check("OPEN SUS2: C G D5 (1-5-9)", chord_is(60, (const uint8_t[]){60, 67, 74, 0}));
     t->p[P_VOIC] = VC_CLOSE;
-    bad += check("CHRD's list ends with MAJ6", TP[P_CHRD].max == CH_MAJ6);
+    bad += check("CHRD's list ends with 5THS", TP[P_CHRD].max == CH_5THS);
+    t->p[P_SCALE] = 1;                                 /* stacks (#852), C major */
+    t->p[P_CHRD] = CH_2NDS; bad += check("2NDS on C4: C D E", chord_is(60, (const uint8_t[]){60, 62, 64, 0}));
+    bad += check("2NDS on B3: B C D (in key, over the octave)", chord_is(59, (const uint8_t[]){59, 60, 62, 0}));
+    t->p[P_CHRD] = CH_4THS; bad += check("4THS on C4: C F B E5", chord_is(60, (const uint8_t[]){60, 65, 71, 76}));
+    bad += check("4THS on C#4: onto the scale note below (C)", chord_is(61, (const uint8_t[]){60, 65, 71, 76}));
+    t->p[P_CHRD] = CH_5THS; bad += check("5THS on C4: C G D5 A5", chord_is(60, (const uint8_t[]){60, 67, 74, 81}));
+    bad += check("5THS on B3: B F C G (B's fifth in key: F)", chord_is(59, (const uint8_t[]){59, 65, 72, 79}));
+    t->p[P_SCALE] = 2; t->p[P_ROOT] = 9;               /* A minor */
+    t->p[P_CHRD] = CH_4THS; bad += check("4THS on A3 in A minor: A D G C", chord_is(57, (const uint8_t[]){57, 62, 67, 72}));
+    t->p[P_SCALE] = 1; t->p[P_ROOT] = 0;
+    t->p[P_CHRD] = CH_4THS; t->p[P_VOIC] = VC_BASS;
+    bad += check("+OCT of 4THS: C3 C F E5 (four tones: the third dropped)", chord_is(60, (const uint8_t[]){48, 60, 65, 76}));
+    t->p[P_VOIC] = VC_CLOSE;
     t->p[P_CHRD] = CH_MIN; t->p[P_SCALE] = 1;
     bad += check("a fixed shape ignores the scale (MIN on D# in C major: D# F# A#)", chord_is(63, (const uint8_t[]){63, 66, 70, 0}));
     t->p[P_CHRD] = CH_MAJ;
