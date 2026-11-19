@@ -399,8 +399,70 @@ static const gstep_t G_FM6[] = {
     {108000, 0, 0, 0, 0, "FREQ, OUT, SCALE, CURVE, PITCH EG, FM LFO and the DX7's BEND and PORTA are there too"},
     {115000, 0, 0, 0, 0, "A turned knob is saved with the project; STORE keeps a patch in a slot"},
 };
+/* library electronica: 84 BPM, D minor; an ORACLE poly on CHORD as track 1 (its pages turned), a dusty 808 in STEP,
+ * a sub on TURING, an FM flute on AWAKE far back */
+static void g_library_scene(void)
+{
+    song.g[G_BPM] = 84;
+    scale(2, SCL_MIN, 0);
+    sends(85, 65, 60, 50);
+    sound(0, ENGI_ORACLE, V_OR_FAT_POLY);
+    trk[0].p[P_CHRD] = 1;
+    gen(0, TESS_ENG_CHORD, 19);
+    tx(0, TX_CH_PROG, GEN_CH_TWO); tx(0, TX_CH_BARS, 2); tx(0, TX_CH_HIT, GEN_CH_BEAT);
+    mixer(0, 88, 0, 50, 10);
+    sound(1, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, 0, L_CH, L_SD, 0, L_CH, 0, 0, L_BD, L_BD, L_CH, L_SD, 0, L_CH, 0};
+        static const uint8_t V[16] = {104, 0, 0, 44, 90, 0, 48, 0, 0, 80, 96, 46, 92, 0, 44, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
+        trk[1].p[P_SLEN] = 16;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
+    mixer(1, 78, 0, 20, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_TURING, 40);
+    tx(2, TX_TUR_PROB, 6); tx(2, TX_TUR_LEN, 8); tx(2, TX_TW_SHIFT, -12); tx(2, TX_TW_DROP, 45);
+    mixer(2, 76, 0, 0, 0);
+    sound(3, ENGI_FM6, V_FLUTE);
+    trk[3].p[P_SDIV] = DIV_4;
+    gen(3, TESS_ENG_AWAKE, 23);
+    tx(3, TX_AWK_LENA, 5); tx(3, TX_AWK_LENB, 4); tx(3, TX_AWK_PROB, 40);
+    tx(3, TX_NL_MODE, 2);
+    mixer(3, 76, 25, 80, 40);
+    g_solo_check();
+}
+static const gstep_t G_ORACLE[] = {
+    {0, 0, 0, 0, 0, "ORACLE: two oscillators, POLY MOD and a four-pole filter"},
+    {3500, 5500, 200, "EDIT", "OPEN EDIT", "Tap EDIT: MACRO, quick offsets on the sound. CUT, RES, TUNE A, TUNE B"},
+    {10000, 12000, 600, "SELECT", "OSC A", "SELECT: OSC A. FRQ, WAVE (SAW, PLS, S+P), PWA, SYNC", 2},
+    {0, 15000, 600, "KNOB 2", "PLS", 0, 1},
+    {20000, 22000, 600, "SELECT", "OSC B", "OSC B: KNOB 2, FNB, B a little sharp: a slow beating", 1},
+    {0, 24000, 2000, "KNOB 2", "FNB", 0, 20},
+    {29000, 31000, 1200, "SELECT", "FILTER", "FILTER: CTFF, RES, ENVM (how far FILT ENV opens it), KEY", 2},
+    {35000, 37000, 2500, "KNOB 1", "CLOSE", "KNOB 1: close it", -25},
+    {42000, 44000, 3000, "KNOB 2", "RES", "KNOB 2, RES: the filter sings", 35},
+    {0, 50000, 2500, "KNOB 1", "OPEN", 0, 25},
+    {55000, 57000, 600, "SELECT", "POLY MOD", "POLY MOD: OSC B moves A's pitch, note by note. KNOB 3, TO: FREQ", 1},
+    {0, 60000, 600, "KNOB 3", "FREQ", 0, 1},
+    {0, 62500, 2500, "KNOB 2", "OSC B", 0, 30},
+    {63000, 0, 0, 0, 0, "KNOB 2, OSCB: bells and metal"},
+    {0, 70000, 2500, "KNOB 2", "OSC B 0", 0, -30},
+    {74000, 76000, 600, "SELECT", "CHARACTER", "CHARACTER: MDL, an EARLY or LATE filter; VNTG, each voice drifts; GLD", 1},
+    {82000, 84000, 1200, "SELECT", "AMP ENV", "AMP ENV: ATK, DEC, SUS, REL. ENV opens FILT ENV and AMP ENV too", 2},
+    {0, 87500, 2500, "KNOB 1", "ATK", 0, 30},
+    {88000, 0, 0, 0, 0, "KNOB 1, ATK: the chords swell in"},
+    {94000, 96000, 2500, "KNOB 4", "REL", "KNOB 4, REL: and ring on after", 25},
+    {102000, 104000, 600, "SELECT", "LFO MOD", "LFO MOD: its own LFO. KNOB 2, AMNT, how much", 1},
+    {0, 106500, 2000, "KNOB 2", "AMNT", 0, 40},
+    {110000, 112000, 600, "SELECT", "LFO ROUTE", "LFO ROUTE: where it goes. KNOB 3, FILT ON: the filter breathes", 1},
+    {0, 114000, 600, "KNOB 3", "FILT", 0, 1},
+    {121000, 0, 0, 0, 0, "The sound is saved with the project; SAVE > SOUND keeps one in a USER slot"},
+};
 static void guide_ref_pages(const char *out, FILE *tsv)
 {
+    G_RUN("r-oracle", "ORACLE: AN ANALOGUE VOICE", "ORANGE", 128, 4, g_library_scene, G_ORACLE);   /* library electronica */
     G_RUN("r-fm6", "FM6: THE OPERATORS", "ORANGE", 122, 4, g_sophisti_scene, G_FM6);   /* sophisti-pop */
     G_RUN("r-menu", "THE MENU", "WHITE", 110, 4, g_synthfunk_scene, G_MENU);   /* synth funk */
     G_RUN("r-tempo", "PATTERN AND TEMPO", "MOSAIC", 121, 4, g_dubtechno_scene, G_PATTEMPO);   /* dub techno */
