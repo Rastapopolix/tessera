@@ -36,10 +36,19 @@ static const gstep_t G_BOUNCE[] = {
     {0, 0, 0, 0, 0, "BOUNCE: a ball in a box plays a note where it hits a wall"},
     {4000, 7000, 200, "SEQ", "OPEN SEQ", "Tap SEQ: the box, and the ball moving"},
     {11500, 14500, 1200, "KNOB 2", "SPEED", "Turn KNOB 2, SPEED, up: more hits, more notes", 12},
-    {20500, 23500, 800, "KNOB 4", "BALLS 3", "Turn KNOB 4, BALLS, to 3: each from its own place", 2},
-    {30000, 33000, 800, "KNOB 4", "FALL", "Past 4 balls: FALL, eight leaves landing (left low, right high)", 2},
-    {40000, 43000, 1200, "KNOB 3", "WIND", "In FALL, KNOB 3 is WIND: it leans the melody low or high", -12},
-    {50000, 0, 0, 0, 0, "Sparse, chime-like lines that never quite repeat"},
+    {21000, 24000, 1600, "KNOB 3", "ANGLE", "Turn KNOB 3, ANGLE: the ball's path, so the walls come in another rhythm", 20},
+    {31000, 34000, 800, "KNOB 4", "BALLS 3", "Turn KNOB 4, BALLS, to 3: each from its own place and angle", 2},
+    {39000, 0, 0, 0, 0, "Balls that hit on the same step play together, three notes at most"},
+    {46000, 49000, 800, "KNOB 4", "FALL", "Past 4 balls: FALL. Eight leaves fall at their own speeds", 2},
+    {54000, 0, 0, 0, 0, "Each plays where it lands: left low, right high"},
+    {60000, 63000, 1200, "KNOB 3", "WIND", "In FALL, KNOB 3 is WIND. Turned left, the melody leans low", -10},
+    {70000, 73000, 2600, "KNOB 3", "WIND", "Calm in the middle; further right it leans high, and gusts", 40},
+    {81000, 84000, 8000, "OCT-", "HOLD OCT-", "Hold OCT-: BOUNCE's only layer knob is KNOB 1, RANDOM"},
+    {0, 85500, 300, "KNOB 1", "RANDOM", 0, 1},
+    {86500, 0, 0, 0, 0, "Turn it right: SPEED, ANGLE and BALLS get new values"},
+    {0, 89500, 300, "KNOB 1", "PUT BACK", 0, -1},
+    {90000, 0, 0, 0, 0, "Turn it left: PUT BACK, the values from before"},
+    {96000, 0, 0, 0, 0, "Sparse, chime-like lines that never quite repeat"},
 };
 
 /* chamber jazz in the ECM way: 84 BPM, A dorian; AWAKE on a felt-like electric piano as track 1 (the clip turns its two
@@ -458,7 +467,7 @@ static const gstep_t G_ATLAS[] = {
 };
 static void guide_ref_gen(const char *out, FILE *tsv)
 {
-    G_RUN("r-bounce", "BOUNCE AND FALL", "GREEN", 57, 4, g_kankyo_scene, G_BOUNCE);   /* kankyo ongaku */
+    G_RUN("r-bounce", "BOUNCE AND FALL", "GREEN", 102, 4, g_kankyo_scene, G_BOUNCE);   /* kankyo ongaku */
     G_RUN("r-awake", "AWAKE: TWO LOOPS", "GREEN", 55, 4, g_chamberjazz_scene, G_AWAKE);   /* chamber jazz */
     G_RUN("r-poly", "POLY: FOUR RHYTHMS", "GREEN", 55, 4, g_calypso_scene, G_POLY);   /* calypso */
     G_RUN("r-quad", "QUAD: ONE GRID", "GREEN", 55, 4, g_mathrock_scene, G_QUAD);   /* math rock */
