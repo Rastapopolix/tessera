@@ -22,7 +22,7 @@ static const char *const N_ONOFF[] = {"OFF", "ON"};
 static const char *const N_QUANT[] = {"OFF", "SNAP", "WHITE", "ALL", "MPC", "CHRD", "HARM"};   /* Q_OFF .. Q_HARM (seq.c kb_map, midi_map) */
 /* chord keys (chord.c): OFF, the diatonic triad / seventh of the track's ROOT and SCALE on the key, fixed shapes */
 static const char *const N_CHRD[] = {"OFF", "DIA3", "DIA7", "MAJ", "MIN", "DOM7", "MAJ7", "MIN7", "SUS4", "POW",
-                                            "SUS2", "7SUS4", "ADD9", "MAJ6"};   /* CH_OFF .. CH_MAJ6 (chord.c; saved: append only) */
+                                            "SUS2", "7SUS4", "ADD9", "MAJ6", "2NDS", "4THS", "5THS"};   /* CH_OFF .. CH_5THS (chord.c; saved: append only) */
 static const char *const N_VOIC[] = {"CLOSE", "OPEN", "INV1", "INV2", "+OCT"};   /* VC_CLOSE .. VC_BASS */
 static const char *const N_VOICE[] = {"POLY", "MONO", "LEG", "UNI"};   /* V_POLY .. V_UNISON */
 static const char *const N_GLMODE[] = {"RATE", "TIME"};

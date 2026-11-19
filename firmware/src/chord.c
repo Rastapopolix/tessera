@@ -5,7 +5,9 @@
  *   CHRD OFF; DIA3 / DIA7: the triad / seventh of the track's scale (ROOT, SCALE) built on the key, every tone
  *        in key (a key outside the scale takes the scale note below it, as QNT SNAP does; CHR builds on the
  *        major scale of ROOT); MAJ MIN DOM7 MAJ7 MIN7 SUS4 POW SUS2 7SUS4 ADD9 MAJ6: that shape on the key,
- *        whatever the scale (the last four appended: CHRD values are saved).
+ *        whatever the scale (the last four appended: CHRD values are saved); 2NDS / 4THS / 5THS (3.7.2, issue
+ *        #852): the scale's 2nds (three neighbouring degrees), 4ths or 5ths (four tones) stacked as DIA stacks
+ *        its 3rds, in key, a microtonal scale's own degrees too. Older firmware plays their root alone.
  *   VOIC CLOSE (root position); OPEN (the second tone an octave up: 1-5-3); INV1 / INV2 (the lowest tone, then
  *        the next, an octave up); +OCT (the root an octave down added; a seventh drops its fifth). At most
  *        CHORD_MAX notes, notes outside 0..127 left out.
@@ -15,12 +17,12 @@
  * key, mchord for a MIDI note) and its release ends exactly those, so CHRD / VOIC changed while it is held
  * leave nothing hanging. A note several sources hold sounds once and ends with the last of them. */
 enum { CH_OFF, CH_DIA3, CH_DIA7, CH_MAJ, CH_MIN, CH_DOM7, CH_MAJ7, CH_MIN7, CH_SUS4, CH_POW,
-       CH_SUS2, CH_7SUS4, CH_ADD9, CH_MAJ6, CH_N };   /* (saved: append only, before CH_N) */
+       CH_SUS2, CH_7SUS4, CH_ADD9, CH_MAJ6, CH_2NDS, CH_4THS, CH_5THS, CH_N };   /* (saved: append only, before CH_N) */
 enum { VC_CLOSE, VC_OPEN, VC_INV1, VC_INV2, VC_BASS };
 #define CHORD_MAX 4u
 #define MCHORD_N 24u                     /* MIDI notes held as chords at once (more: their root alone) */
 
-static const int8_t CHORD_SHAPE[CH_N - CH_MAJ][CHORD_MAX] = {
+static const int8_t CHORD_SHAPE[CH_MAJ6 + 1 - CH_MAJ][CHORD_MAX] = {
     {0, 4, 7, -1}, {0, 3, 7, -1}, {0, 4, 7, 10}, {0, 4, 7, 11}, {0, 3, 7, 10}, {0, 5, 7, -1}, {0, 7, 12, -1},
     {0, 2, 7, -1}, {0, 5, 7, 10}, {0, 4, 7, 14}, {0, 4, 7, 9},
 };
@@ -40,15 +42,24 @@ static int chord_kit(const track_t *t)
     return e->oneshot || (e->keys && e->keys(t, 0) >= 0);
 }
 
-/* the tones of the chord (semitones above *root, ascending, iv[0] = 0) -> their number; DIA may move *root
+/* a chord stacked on the scale (DIA3 DIA7 2NDS 4THS 5THS): the degrees between its tones (2: every other one), else
+ * 0 (a fixed shape); *np its tones */
+static uint32_t chord_stack(uint32_t mode, uint32_t *np)
+{
+    static const uint8_t STEP[3] = {1, 3, 4};                   /* 2NDS 4THS 5THS */
+    *np = mode == CH_DIA3 || mode == CH_2NDS ? 3u : 4u;
+    return mode < CH_MAJ ? 2u : mode >= CH_2NDS ? STEP[mode - CH_2NDS] : 0u;
+}
+
+/* the tones of the chord (semitones above *root, ascending, iv[0] = 0) -> their number; a stack may move *root
  * down onto the scale */
 static uint32_t chord_tones(const track_t *t, uint32_t mode, int32_t *root, int32_t *iv)
 {
-    uint32_t n = 0, i;
+    uint32_t n = 0, i, cnt, step = chord_stack(mode, &cnt);
     if (micro_active(t)) {
-        if (mode < CH_MAJ) {
-            n = mode == CH_DIA7 ? 4u : 3u;
-            for (i = 0; i < n; i++) iv[i] = 2 * (int32_t)i;
+        if (step) {
+            n = cnt;
+            for (i = 0; i < n; i++) iv[i] = (int32_t)(step * i);
         } else {
             for (i = 0; i < CHORD_MAX && CHORD_SHAPE[mode - CH_MAJ][i] >= 0; i++) {
                 int32_t target = micro_pitch(t, *root) + CHORD_SHAPE[mode - CH_MAJ][i] * 10000;
@@ -63,7 +74,7 @@ static uint32_t chord_tones(const track_t *t, uint32_t mode, int32_t *root, int3
         }
         return n;
     }
-    if (mode >= CH_MAJ) {
+    if (!step) {
         for (i = 0; i < CHORD_MAX && CHORD_SHAPE[mode - CH_MAJ][i] >= 0; i++)
             iv[n++] = CHORD_SHAPE[mode - CH_MAJ][i];
         return n;
@@ -81,8 +92,8 @@ static uint32_t chord_tones(const track_t *t, uint32_t mode, int32_t *root, int3
                     at = c;
                 deg[c++] = i;
             }
-        for (i = 0; i < (mode == CH_DIA7 ? 4u : 3u); i++) {   /* every other note of the scale */
-            uint32_t k = at + 2u * i;
+        for (i = 0; i < cnt; i++) {                     /* every step-th note of the scale */
+            uint32_t k = at + step * i;
             iv[n++] = (int32_t)deg[k % c] + 12 * (int32_t)(k / c) - (int32_t)deg[at];
         }
         return n;
