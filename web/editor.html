@@ -43,6 +43,8 @@
   h1 a { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--fg); }
   h1 svg { width: 26px; height: 26px; }
   h1 small { font: 16px/1 var(--pixel); background: var(--fg); color: var(--bg); padding: 3px 5px 2px; }
+  /* a phone: the language and LIGHT / DARK above the title, not over it */
+  @media (max-width: 480px) { h1 { clear: both; } }
   .tbar { display: flex; gap: 4px; margin: 0 0 8px; } .tbar i { flex: 1; height: 6px; }
   .tbar i:nth-child(1) { background: var(--p1); } .tbar i:nth-child(2) { background: var(--p2); }
   .tbar i:nth-child(3) { background: var(--p3); } .tbar i:nth-child(4) { background: var(--p4); }
@@ -65,9 +67,13 @@
   #connect:hover:not(:disabled) { background: var(--bg); color: var(--fg); }
   button:disabled { opacity: .3; cursor: default; }
   select, input[type=text], input[type=number], input[type=search] {
-    font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--edge); padding: 2px 4px; border-radius: 0; }
-  input[type=range] { width: 100%; margin: 0; accent-color: var(--gold); }
-  input[type=checkbox] { accent-color: var(--gold); margin: 0; }
+    font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--edge); padding: 2px 4px; border-radius: 0;
+    min-height: 26px; box-sizing: border-box; }
+  /* touch targets at least 24 px (WCAG 2.5.8): the slider's whole row height takes the pointer, the boxes are 18 px
+     with room around them */
+  input[type=range] { width: 100%; height: 24px; margin: 0; accent-color: var(--gold); }
+  input[type=checkbox] { accent-color: var(--gold); margin: 3px; width: 18px; height: 18px; }
+  button { min-height: 26px; }
   .bar { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin: 0 0 8px; }
   .dim { color: var(--dim); }
   #status { min-height: 1.4em; }
@@ -95,9 +101,13 @@
   #steps input[type=text] { width: 120px; }
   #steps input[type=number] { width: 48px; }
   #steps .bad { outline: 1px solid var(--fg); text-decoration: underline wavy; }
+  /* the 6-OP operator table fits 1280 px: no spin arrows (the arrow keys still step), narrow boxes */
   .fm6ops { overflow-x: auto; }
-  .fm6ops td, .fm6ops th { padding: 0 2px; }
-  input.fm6n { width: 3.2em; }
+  .fm6ops td, .fm6ops th { padding: 0 1px; }
+  .fm6ops th { font-size: 12px; text-align: center; }
+  .fm6ops select { padding: 2px 1px; }
+  input.fm6n { width: 2.9em; padding: 2px 3px; text-align: right; -moz-appearance: textfield; appearance: textfield; }
+  input.fm6n::-webkit-inner-spin-button, input.fm6n::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   #steps tr.off td { color: var(--dim); }
   .stepcols { columns: 470px; column-gap: 24px; }
   .stepcols table { break-inside: avoid; }
@@ -157,6 +167,8 @@
   .tabs button { background: none; color: var(--dim); font: 16px/1 var(--pixel); text-transform: uppercase; padding: 5px 8px 3px; border: 1px solid transparent; border-bottom: 0; white-space: nowrap; }
   .tabs button:hover { color: var(--fg); }
   .tabs button[aria-selected="true"] { background: var(--hi); color: var(--hi-fg); }
+  /* on a phone the tabs stay one row that scrolls sideways */
+  @media (max-width: 600px) { .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; } }
   .trackbar { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
   .seg { display: inline-flex; flex-wrap: wrap; }
   .seg button, button.tog { background: var(--surf); color: var(--fg); border: 1px solid var(--edge); padding: 2px 10px; }
@@ -178,7 +190,7 @@
   .grid button .n { color: var(--dim); }
   .grid button .x { overflow: hidden; overflow-wrap: anywhere; flex: 1; }
   .grid button.on { background: var(--hi); color: var(--hi-fg); border-color: var(--hi); }
-  .grid button.on .n { color: inherit; opacity: .6; }
+  .grid button.on .n { color: inherit; }
   .grid button.acc .x { font-weight: 700; }
   .grid button.tie { border-style: dashed; border-color: var(--fg); }
   .grid button.beat { border-left-color: var(--fg); }
