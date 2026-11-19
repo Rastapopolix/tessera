@@ -86,9 +86,9 @@ static const gstep_t G_AWAKE[] = {
     {47000, 0, 0, 0, 0, "On GEN, the white keys pick AWAKE's steps to set by hand"},
 };
 
-/* exotica: 104 BPM, F lydian; POLY on vibes-like marimba as track 1 (the clip adds a third rhythm), a bongo-like
+/* calypso: 104 BPM, F lydian; POLY on vibes-like marimba as track 1 (the clip adds a third rhythm), a bongo-like
  * figure in STEP, a walking bass on TURING, a lounge organ holding the chord */
-static void g_exotica_scene(void)
+static void g_calypso_scene(void)
 {
     song.g[G_BPM] = 104;
     scale(5, 9, 0);                                     /* F, LYD */
@@ -435,7 +435,7 @@ static void guide_ref_gen(const char *out, FILE *tsv)
 {
     G_RUN("r-bounce", "BOUNCE AND FALL", "GREEN", 57, 4, g_kankyo_scene, G_BOUNCE);   /* kankyo ongaku */
     G_RUN("r-awake", "AWAKE: TWO LOOPS", "GREEN", 55, 4, g_chamberjazz_scene, G_AWAKE);   /* chamber jazz */
-    G_RUN("r-poly", "POLY: FOUR RHYTHMS", "GREEN", 55, 4, g_exotica_scene, G_POLY);   /* exotica */
+    G_RUN("r-poly", "POLY: FOUR RHYTHMS", "GREEN", 55, 4, g_calypso_scene, G_POLY);   /* calypso */
     G_RUN("r-quad", "QUAD: ONE GRID", "GREEN", 55, 4, g_mathrock_scene, G_QUAD);   /* math rock */
     G_RUN("r-constellation", "CONSTELLATION", "GREEN", 55, 4, g_scifi_scene, G_CONSTL);   /* library sci-fi */
     G_RUN("r-series", "SERIES", "GREEN", 55, 4, g_feldman_scene, G_SERIES);   /* slow piano after Feldman */
