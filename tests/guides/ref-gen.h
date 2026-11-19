@@ -377,20 +377,22 @@ static const gstep_t G_CHORDS[] = {
     {137000, 0, 0, 0, 0, "Let go: four chords, played in turn"},
     {146000, 0, 0, 0, 0, "PROG, BARS and HIT; STRUM, DIR and OCT; the sheet's kind and voicing"},
 };
-/* blues call and response: 84 BPM, A blues, shuffled; ANSWER on a clavinet as track 1 (the clip plays a call on the
- * keys, then turns VARY), a warm pad on I and IV, a bass on EUCLID, a shuffle in STEP */
-static void g_blues_scene(void)
+/* modal jazz call and response: 84 BPM, A dorian, shuffled; ANSWER on electric keys as track 1 (the clip plays a call on
+ * the keys, then turns VARY), a soft pad on i and IV under it (Theo: the clavinet and blues scale didn't sit with
+ * the chords), a bass on EUCLID, a shuffle in STEP */
+static void g_jazzcall_scene(void)
 {
     song.g[G_BPM] = 84;
     song.g[G_SWING] = 45;
-    scale(9, 12, 0);                                    /* A, BLUES */
+    scale(9, 3, 0);                                     /* A, DORIAN */
     sends(80, 70, 70, 40);
-    sound(0, ENGI_FM6, FX_CLAVINET);
+    sound(0, ENGI_ORACLE, OR_KEYS);
+    trk[0].p[P_E0] = -10;
     trk[0].p[P_SDIV] = DIV_8;
     gen(0, TESS_ENG_ANSWER, 44);
     tx(0, TX_AN_VARY, 10); tx(0, TX_AN_ECHO, 0);
-    mixer(0, 112, -10, 50, 30);
-    sound(1, ENGI_TRIO, TR_WARM_PAD);
+    mixer(0, 104, -10, 50, 30);
+    sound(1, ENGI_TRIO, TR_SOFT_PAD);
     trk[1].p[P_CHRD] = 1;
     gen(1, TESS_ENG_CHORD, 3);
     tx(1, TX_CH_PROG, GEN_CH_TWO); tx(1, TX_CH_BARS, 2); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
@@ -418,8 +420,8 @@ static const gstep_t G_ANSWER[] = {
     {0, 10000, 250, "A3", "A", 0},
     {0, 10360, 250, "C4", "C", 0},
     {0, 10720, 250, "D4", "D", 0},
-    {0, 11080, 250, "D#4", "D#", 0},
-    {0, 11440, 500, "E4", "E", 0},
+    {0, 11080, 250, "E4", "E", 0},
+    {0, 11440, 500, "G4", "G", 0},
     {13000, 0, 0, 0, 0, "A bar with no key ends it: then the answers"},
     {22000, 25000, 1500, "KNOB 2", "VARY", "Turn KNOB 2, VARY, up: the answers stray further", 20},
     {31000, 34000, 1000, "KNOB 3", "ECHO", "Turn KNOB 3, ECHO: now and then a note comes back once more, softer", 8},
@@ -439,7 +441,9 @@ static const gstep_t G_ANSWER[] = {
     {0, 95000, 300, "KNOB 1", "CHORD", 0, 1},
     {0, 96500, 300, "KNOB 2", "TRUE", 0, 1},
     {96000, 0, 0, 0, 0, "CHORD TRUE: notes played together answer as a chord (ARP spreads them)"},
-    {102000, 105000, 200, "OCT-", "CLOSE", "Tap OCT-, then play a chord"},
+    {101000, 103000, 200, "OCT-", "CLOSE", "Tap OCT-, and turn VARY down, so the chords come back clear"},
+    {0, 104500, 1000, "KNOB 2", "VARY", 0, -20},
+    {106000, 0, 0, 0, 0, "Then play two chords"},
     {0, 108000, 600, "A3", "A", 0},
     {0, 108000, 600, "C4", "C", 0},
     {0, 108000, 600, "E4", "E", 0},
@@ -644,7 +648,7 @@ static void guide_ref_gen(const char *out, FILE *tsv)
     G_RUN("r-constellation", "CONSTELLATION", "GREEN", 110, 4, g_scifi_scene, G_CONSTL);   /* library sci-fi */
     G_RUN("r-series", "SERIES", "GREEN", 99, 4, g_feldman_scene, G_SERIES);   /* slow piano after Feldman */
     G_RUN("r-chord", "CHORD: THE HARMONY", "GREEN", 152, 4, g_gospel_scene, G_CHORDS);   /* minor gospel */
-    G_RUN("r-answer", "ANSWER: CALL AND RESPONSE", "GREEN", 164, 4, g_blues_scene, G_ANSWER);   /* blues */
+    G_RUN("r-answer", "ANSWER: CALL AND RESPONSE", "GREEN", 164, 4, g_jazzcall_scene, G_ANSWER);   /* modal jazz */
     G_RUN("r-morph", "MORPH: A INTO B", "GREEN", 110, 4, g_dancehall_scene, G_MORPH);   /* dancehall */
     G_RUN("r-atlas", "ATLAS: THE DRUM MAP", "GREEN", 107, 4, g_brokenbeat_scene, G_ATLAS);   /* broken beat */
 }
