@@ -344,8 +344,64 @@ static const gstep_t G_MENU[] = {
     {0, 101000, 600, "KNOB 3", "PLS", 0, -1},
     {104000, 0, 0, 0, 0, "They belong to the FM-1, not to a project: kept through power-off"},
 };
+/* sophisti-pop: 96 BPM, B dorian; an FM6 electric piano on CHORD as track 1 (its pages turned), a soft 808 in STEP, a
+ * bass on TURING, ORACLE strings held low */
+static void g_sophisti_scene(void)
+{
+    song.g[G_BPM] = 96;
+    scale(11, SCL_DOR, 0);
+    sends(80, 60, 60, 45);
+    sound(0, ENGI_FM6, V_TINE);
+    trk[0].p[P_CHRD] = 1;
+    gen(0, TESS_ENG_CHORD, 14);
+    tx(0, TX_CH_PROG, GEN_CH_TWO); tx(0, TX_CH_BARS, 2); tx(0, TX_CH_HIT, GEN_CH_BEAT);
+    mixer(0, 87, -10, 40, 15);
+    sound(1, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_RS, 0, L_CH, 0, 0, L_BD, L_CH, 0, L_RS, 0, L_CH, L_CH};
+        static const uint8_t V[16] = {100, 0, 48, 0, 84, 0, 46, 0, 0, 90, 50, 0, 84, 0, 46, 40};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
+        trk[1].p[P_SLEN] = 16;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
+    mixer(1, 78, 0, 10, 0);
+    sound(2, ENGI_TRIO, TR_FAT_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_TURING, 17);
+    tx(2, TX_TUR_PROB, 6); tx(2, TX_TUR_LEN, 8); tx(2, TX_TW_SHIFT, -12); tx(2, TX_TW_DROP, 35);
+    mixer(2, 88, 0, 0, 0);
+    sound(3, ENGI_ORACLE, OR_SOFT_STRINGS);
+    trk[3].p[P_CHRD] = 1;
+    gen(3, TESS_ENG_CHORD, 14);
+    tx(3, TX_CH_PROG, GEN_CH_TWO); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
+    mixer(3, 56, 10, 70, 0);
+    g_solo_check();
+}
+static const gstep_t G_FM6[] = {
+    {0, 0, 0, 0, 0, "FM6: six operators, as on a DX7. Its pages are on EDIT"},
+    {3500, 5500, 200, "EDIT", "OPEN EDIT", "Tap EDIT: OPS, the four turned most. ALG, FB, MLVL, MRAT"},
+    {10000, 12000, 1500, "KNOB 3", "BRIGHTER", "KNOB 3, MLVL: the modulators louder, a brighter piano", 12},
+    {17000, 19000, 2500, "KNOB 3", "DARKER", "Down: darker and rounder", -24},
+    {0, 24000, 1500, "KNOB 3", "MLVL 0", 0, 12},
+    {26500, 28500, 600, "SELECT", "PATCH", "SELECT: PATCH. KNOB 4, AEG, the amp envelope of all the carriers", 1},
+    {0, 32000, 3000, "KNOB 4", "SLOWER", 0, 30},
+    {32500, 0, 0, 0, 0, "AEG right: a slower attack and a longer release"},
+    {40000, 42000, 4000, "KNOB 4", "SHORTER", "Left: shorter, a pluck", -60},
+    {0, 49000, 3000, "KNOB 4", "AEG 0", 0, 30},
+    {53000, 55000, 1500, "SELECT", "EG RATE", "SELECT on to EG RATE (ENV opens it too): one operator's envelope. OP1, a carrier", 5},
+    {60000, 62000, 3000, "KNOB 1", "R1", "KNOB 1, R1: how fast it rises. Lower: the note swells in", -40},
+    {69000, 71000, 600, "SELECT", "EG LVL", "SELECT: EG LVL, the levels L1 to L4 it moves between", 1},
+    {75000, 77000, 2000, "KNOB 2", "L2", "KNOB 2, L2: where it falls to after the attack. Higher: the note rings on", 20},
+    {83000, 85000, 600, "PRESETS", "OP2", "Turn PRESETS: the next operator, OP2, a modulator. Then SELECT to its EG LVL", 1},
+    {0, 89000, 900, "SELECT", "EG LVL", 0, 3},
+    {93000, 95000, 2500, "KNOB 2", "L2", "KNOB 2, L2 down: the brightness fades after the attack", -30},
+    {101000, 103000, 200, "EDIT", "MAP", "Tap EDIT: the map of all its pages, each operator a row"},
+    {108000, 0, 0, 0, 0, "FREQ, OUT, SCALE, CURVE, PITCH EG, FM LFO and the DX7's BEND and PORTA are there too"},
+    {115000, 0, 0, 0, 0, "A turned knob is saved with the project; STORE keeps a patch in a slot"},
+};
 static void guide_ref_pages(const char *out, FILE *tsv)
 {
+    G_RUN("r-fm6", "FM6: THE OPERATORS", "ORANGE", 122, 4, g_sophisti_scene, G_FM6);   /* sophisti-pop */
     G_RUN("r-menu", "THE MENU", "WHITE", 110, 4, g_synthfunk_scene, G_MENU);   /* synth funk */
     G_RUN("r-tempo", "PATTERN AND TEMPO", "MOSAIC", 121, 4, g_dubtechno_scene, G_PATTEMPO);   /* dub techno */
     G_RUN("r-arp", "ARP: ONE NOTE AT A TIME", "MOSAIC", 128, 4, g_trance_scene, G_ARP);   /* progressive trance */
