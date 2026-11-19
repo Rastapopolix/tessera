@@ -570,8 +570,68 @@ static const gstep_t G_ATLAS[] = {
     {93500, 0, 0, 0, 0, "The drum grid's lane of that key: TOM, CLAP, OPEN HAT, RIM or BELL"},
     {101000, 0, 0, 0, 0, "X, Y and DENS; KICK, SNR and HAT; a fourth part and its sound"},
 };
+/* coldwave, soft: 112 BPM, D minor; TURING on a harp as track 1 (the clip turns PROB, LEN and SPAN, then plays it from
+ * a melody written on its STEP page: SOURCE, KEEP, GRAVITY), a string machine on CHORD, a sub on EUCLID, an 808 */
+static void g_coldwave_scene(void)
+{
+    song.g[G_BPM] = 112;
+    scale(2, SCL_MIN, 0);
+    sends(90, 80, 95, 60);
+    sound(0, ENGI_FM6, FX_HARP);
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_TURING, 29);
+    tx(0, TX_TUR_LEN, 16); tx(0, TX_TUR_PROB, 30); tx(0, TX_TUR_SPAN, 2);
+    {   /* a melody on its STEP page, unheard until the clip turns SOURCE to it (OCT- layer) */
+        static const uint8_t N[8] = {62, 65, 69, 67, 65, 64, 62, 57};
+        for (uint32_t i = 0; i < 8u; i++) step_note(0, i, N[i], i % 2u ? 84 : 104);
+        trk[0].p[P_SLEN] = 8;
+    }
+    mixer(0, 110, -10, 55, 45);
+    sound(1, ENGI_TRIO, TR_STRING_MACH);
+    trk[1].p[P_CHRD] = 1;
+    gen(1, TESS_ENG_CHORD, 8);
+    tx(1, TX_CH_PROG, GEN_CH_TWO); tx(1, TX_CH_BARS, 3); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 58, 20, 80, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_8;
+    gen(2, TESS_ENG_EUCLID, 6);
+    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 4); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    mixer(2, 80, 0, 0, 0);
+    sound(3, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, 0, L_BD, 0, L_CH, L_BD, L_SD, 0, L_CH, 0};
+        static const uint8_t V[16] = {100, 0, 50, 0, 90, 0, 50, 0, 96, 0, 50, 70, 92, 0, 52, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
+    mixer(3, 76, 0, 15, 0);
+    g_solo_check();
+}
+static const gstep_t G_TURING_ALL[] = {
+    {0, 0, 0, 0, 0, "TURING: a loop of notes that can change as it comes round"},
+    {3500, 6500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: LEN 16, PROB 30 %: the line drifts"},
+    {11000, 14000, 2000, "KNOB 3", "LOCK", "Turn KNOB 3, PROB, to 0: LOCK. The loop repeats", -15},
+    {20000, 23000, 1200, "KNOB 2", "LEN 8", "Turn KNOB 2, LEN, to 8: a shorter loop", -8},
+    {29000, 32000, 400, "KNOB 4", "SPAN 3", "Turn KNOB 4, SPAN, to 3: the notes spread over 3 octaves", 1},
+    {38000, 41000, 800, "KNOB 3", "PROB", "PROB up a little: now and then a step changes, and stays", 5},
+    {47000, 50000, 28000, "OCT-", "HOLD OCT-", "Hold OCT-: SOURCE, KEEP and GRAVITY"},
+    {0, 52000, 300, "KNOB 2", "SOURCE T1", 0, 1},
+    {52500, 0, 0, 0, 0, "KNOB 2, SOURCE T1: the loop starts from the melody on track 1's STEP page"},
+    {0, 60000, 300, "KNOB 3", "RHYTHM", 0, 1},
+    {60500, 0, 0, 0, 0, "KNOB 3, KEEP RHYTHM: only its pitches change, the rhythm stays as written"},
+    {0, 67000, 2000, "KNOB 4", "GRAVITY", 0, 40},
+    {67500, 0, 0, 0, 0, "KNOB 4, GRAVITY: how often a step goes back to how you wrote it"},
+    {79000, 82000, 8000, "OCT-", "HOLD OCT-", "KNOB 1 on this layer is RANDOM"},
+    {0, 83500, 300, "KNOB 1", "RANDOM", 0, 1},
+    {84000, 0, 0, 0, 0, "Turn it right: new LEN, PROB and SPAN"},
+    {0, 87500, 300, "KNOB 1", "PUT BACK", 0, -1},
+    {88000, 0, 0, 0, 0, "Turn it left: PUT BACK, the values from before"},
+    {94000, 0, 0, 0, 0, "LEN, PROB and SPAN; SOURCE, KEEP and GRAVITY; RANDOM"},
+};
 static void guide_ref_gen(const char *out, FILE *tsv)
 {
+    G_RUN("r-turing", "TURING: A LOOP THAT DRIFTS", "GREEN", 100, 4, g_coldwave_scene, G_TURING_ALL);   /* coldwave */
     G_RUN("r-bounce", "BOUNCE AND FALL", "GREEN", 102, 4, g_kankyo_scene, G_BOUNCE);   /* kankyo ongaku */
     G_RUN("r-awake", "AWAKE: TWO LOOPS", "GREEN", 94, 4, g_chamberjazz_scene, G_AWAKE);   /* chamber jazz */
     G_RUN("r-poly", "POLY: FOUR RHYTHMS", "GREEN", 86, 4, g_calypso_scene, G_POLY);   /* calypso */
