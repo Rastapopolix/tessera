@@ -19,8 +19,11 @@
 /* /TESSERA-MONO */
   /* the project page's look (web/home/index.html): the Mono look's one ink on black, the four tracks as its fills;
      --hi is what the device inverts (the open tab, a pressed button, a set step) */
-  :root { --bg: #000; --fg: #ffd020; --dim: #9c7f15; --line: #3b3007; --surf: #0f0c02; --raise: #211b04;
-          --accent: var(--fg); --gold: var(--fg); --hi: var(--fg); --hi-fg: #000;
+  /* as the project page: the ink for what you act on and the headings, the text a soft off-white, the help a
+     quieter grey; --edge is a field's border (3:1 against the page, so the boxes can be seen) */
+  :root { --bg: #111; --fg: #ffd020; --text: #e6e0d0; --dim: #a39b8a; --line: #3b3007; --edge: #6f6a5c;
+          --surf: #19170f; --raise: #252113;
+          --accent: var(--fg); --gold: var(--fg); --hi: var(--fg); --hi-fg: #111;
           --t1: var(--fg); --t2: var(--fg); --t3: var(--fg); --t4: var(--fg);
           --p1: var(--fg);
           --p2: repeating-linear-gradient(135deg, var(--fg) 0 2px, transparent 2px 5px);
@@ -28,9 +31,12 @@
           --p4: repeating-linear-gradient(90deg, var(--fg) 0 2px, transparent 2px 4px);
           --pixel: "Tessera Mono", ui-monospace, monospace; }
   html { color-scheme: dark; }
+  /* the light version (dark ink on paper), from the LIGHT / DARK button (tessera-theme, as the project page) */
+  :root[data-theme="light"] { --bg: #f6f2e7; --fg: #1c1a14; --text: #1c1a14; --dim: #5f5745; --line: #c8bd9b;
+          --edge: #8a7f62; --surf: #eee8d6; --raise: #e2d9bf; --hi-fg: #f6f2e7; color-scheme: light; }
   :focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
-  body { margin: 0; background: var(--bg); color: var(--fg);
-         font: 12px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
          font-variant-numeric: tabular-nums; }
   main { max-width: 1100px; margin: 0 auto; padding: 16px; }
   h1 { display: flex; align-items: center; gap: 10px; font: 400 24px/1 var(--pixel); margin: 4px 0 8px; }
@@ -42,9 +48,12 @@
   .tbar i:nth-child(3) { background: var(--p3); } .tbar i:nth-child(4) { background: var(--p4); }
   h2 { font: 400 16px/1.2 var(--pixel); text-transform: uppercase; color: var(--accent);
        margin: 0 0 4px; padding-bottom: 2px; border-bottom: 1px solid var(--line); }
-  h3 { font-size: 11px; font-weight: 400; color: var(--dim); margin: 4px 0 0; }
+  h3 { font-size: 13px; font-weight: 400; color: var(--dim); margin: 6px 0 2px; }
   a { color: var(--accent); }
   /* the language menu: a short code (EN, DE ...) shown, the real select laid over it, so the list names each language */
+  .theme { float: right; margin-left: 10px; font: 16px/1 var(--pixel); color: var(--dim); background: none; padding: 3px 4px 2px;
+           text-transform: uppercase; }
+  .theme:hover:not(:disabled) { color: var(--bg); background: var(--fg); }
   .lang { float: right; position: relative; font: 16px/1 var(--pixel); color: var(--dim); padding: 3px 4px 2px; cursor: pointer;
           text-transform: uppercase; }
   .lang::after { content: " \25BE"; font-family: ui-monospace, monospace; }
@@ -56,16 +65,16 @@
   #connect:hover:not(:disabled) { background: var(--bg); color: var(--fg); }
   button:disabled { opacity: .3; cursor: default; }
   select, input[type=text], input[type=number], input[type=search] {
-    font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); padding: 1px 3px; border-radius: 0; }
+    font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--edge); padding: 2px 4px; border-radius: 0; }
   input[type=range] { width: 100%; margin: 0; accent-color: var(--gold); }
   input[type=checkbox] { accent-color: var(--gold); margin: 0; }
   .bar { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin: 0 0 8px; }
   .dim { color: var(--dim); }
   #status { min-height: 1.4em; }
   section { margin: 12px 0; }
-  .groups { columns: 250px; column-gap: 20px; }
+  .groups { columns: 300px; column-gap: 28px; }
   .group { break-inside: avoid; margin: 0 0 12px; }
-  .row { display: grid; grid-template-columns: 46px 1fr 70px; gap: 6px; align-items: center; min-height: 22px; }
+  .row { display: grid; grid-template-columns: 56px 1fr 84px; gap: 8px; align-items: center; min-height: 26px; }
   .row.scalepicker { grid-template-columns: minmax(0, 1fr); gap: 4px; align-items: start; }
   .scalecontrols { display: grid; gap: 6px; min-width: 0; }
   .scalefilters { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -109,14 +118,14 @@
   .smp input.name { width: 80px; text-transform: uppercase; }
   .smp input.root { width: 48px; }
   .smp .bad { text-decoration: underline wavy; }
-  footer { margin-top: 24px; font-size: 11px; color: var(--dim); }
+  footer { margin-top: 24px; font-size: 12px; color: var(--dim); }
   .row.pushed .v { font-weight: 600; }
   .row.modrow { grid-template-columns: 16px 1fr 1fr 1fr 52px; }
   /* librarian: local library and the device's user bank side by side, stacked on a phone */
   .libcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 8px 24px; margin-top: 6px; }
   .libcols > div { min-width: 0; }
   .libcols .bar input[type=search] { flex: 1 1 120px; min-width: 0; }
-  .list { height: 260px; overflow: auto; border: 1px solid var(--line); resize: vertical; }
+  .list { height: 260px; overflow: auto; border: 1px solid var(--edge); resize: vertical; }
   .list table { width: 100%; table-layout: fixed; }
   .list th { position: sticky; top: 0; background: var(--bg); padding: 1px 6px; }
   .list td { padding: 1px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -133,7 +142,7 @@
   /* wave choices: a page-drawn picker so the options can carry an icon (Chrome 135+); native menus get words only */
   @supports (appearance: base-select) {
     select.wave, select.wave::picker(select) { appearance: base-select; }
-    select.wave { padding: 1px 3px; min-block-size: 0; border: 1px solid var(--line); border-radius: 0; background: var(--bg); color: var(--fg); }
+    select.wave { padding: 2px 4px; min-block-size: 0; border: 1px solid var(--edge); border-radius: 0; background: var(--bg); color: var(--fg); }
     select.wave > button { font: inherit; background: none; color: inherit; padding: 0; text-align: start; }
     select.wave::picker(select) { border: 1px solid var(--line); background: var(--bg); color: var(--fg); padding: 0; }
     select.wave option { padding: 1px 6px; min-block-size: 0; }
@@ -150,7 +159,7 @@
   .tabs button[aria-selected="true"] { background: var(--hi); color: var(--hi-fg); }
   .trackbar { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
   .seg { display: inline-flex; flex-wrap: wrap; }
-  .seg button, button.tog { background: var(--surf); color: var(--fg); border: 1px solid var(--line); padding: 1px 10px; }
+  .seg button, button.tog { background: var(--surf); color: var(--fg); border: 1px solid var(--edge); padding: 2px 10px; }
   .seg button + button { border-left: 0; }
   .seg button[aria-pressed="true"], button.tog[aria-pressed="true"] { background: var(--hi); color: var(--hi-fg); border-color: var(--hi); }
   /* the track buttons and mixer strips: the one ink, as on the device (--t1..--t4 kept for a track colour ink) */
@@ -196,14 +205,16 @@
 </style>
 </head>
 <body>
+<script id="theme-early">try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <main>
+  <button class="theme" id="theme" type="button" aria-label="Light or dark page"></button>
   <label class="lang"><span id="lang-code" aria-hidden="true">EN</span><select id="lang" aria-label="Language">
     <option value="en" lang="en">English</option><option value="es" lang="es">Español</option>
     <option value="it" lang="it">Italiano</option><option value="de" lang="de">Deutsch</option>
     <option value="fr" lang="fr">Français</option><option value="pt" lang="pt-BR">Português</option>
     <option value="ko" lang="ko">한국어</option><option value="ja" lang="ja">日本語</option>
   </select></label>
-  <h1><a href="../../" aria-label="Tessera"><svg viewBox="0 0 78 78" aria-hidden="true"><rect x="4" y="5" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="31" y="3" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="53" y="2" width="22" height="22" fill="#ffd020"/><rect x="5" y="30" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="30" y="30" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="55" y="31" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="4" y="55" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="31" y="57" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="55" y="55" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/></svg>TESSERA</a> <small>EDITOR</small></h1>
+  <h1><a href="../../" aria-label="Tessera"><svg viewBox="0 0 78 78" aria-hidden="true"><rect x="4" y="5" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="3" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="53" y="2" width="22" height="22" fill="currentColor"/><rect x="5" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="30" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="31" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="4" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="57" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/></svg>TESSERA</a> <small>EDITOR</small></h1>
   <div class="tbar" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
   <p class="dim"><a href="../installer/" style="color:inherit" data-t="installer"></a></p>
   <!-- always visible: connection, version, sync mode, the tabs and (Sound / Sequencer / Tracks) the track selector -->
@@ -2883,6 +2894,7 @@ function setLabel(e, txt) { e.replaceChildren(...(e.dataset.ic ? [icon(e.dataset
 
 const TEXT = {
   ja: {
+    themeLight: "ライト", themeDark: "ダーク",
     pattern: "パターン", presetPool: "プリセット集", poolGeneral: "一般プリセット", poolFm6: "FM6 ボイス", nativeHint: "ネイティブ音色はプリセットブラウザに表示されます。読み込んでもエフェクトとトラック設定は変わりません。", importSyx: ".syx を読み込む", recTitle: "録音", recHelp: "クリック、カウントイン、停止中のノート編集。REC で待機、PLAY で録音開始。", favLocal: "お気に入りはこのブラウザに保存されます", poolFirst: "先に対応するプリセット集を選んでください", poolTrack: "先に現在のトラックのプリセット集を選んでください",
     tabFm6: "6-OP FM", fm6Help: "FM6 の音色を編集・SysEx から読み込み、トラックへ送ります。ユーザープリセットまたはプロジェクトへ保存すると、音色全体が保存されます。",
     fm6Source: "音色の出し入れ", fm6ReadBtn: "トラックから読む", fm6SendBtn: "トラックへ送る", fm6Live: "編集しながら送る",
@@ -3010,6 +3022,7 @@ const TEXT = {
     smpSlots: "サンプルスロット", userBank: "ユーザープリセット", none: "なし",
   },
   en: {
+    themeLight: "Light", themeDark: "Dark",
     pattern: "Pattern", presetPool: "Preset collection", poolGeneral: "General presets", poolFm6: "FM6 voices", nativeHint: "Native tones appear in the preset browser. Effects and track settings stay unchanged when loaded.", importSyx: "Import .syx", recTitle: "Recording", recHelp: "Click, count-in and stopped note editing. REC arms; PLAY starts recording.", favLocal: "Favorites are saved in this browser", poolFirst: "Select the matching preset collection first", poolTrack: "Select the current track's preset collection first",
     tabFm6: "6-OP FM", fm6Help: "Edit an FM6 voice, or import a SysEx file and pick a voice. Send it to a track, then save it in User presets or save the project. Each preset keeps its whole voice.",
     fm6Source: "Patches in and out", fm6ReadBtn: "Read from track", fm6SendBtn: "Send to track", fm6Live: "Send while editing",
@@ -3137,6 +3150,7 @@ const TEXT = {
     smpSlots: "Sample slots", userBank: "User presets", none: "none",
   },
   es: {
+    themeLight: "Claro", themeDark: "Oscuro",
     tabFm6: "FM 6-OP",
     fm6Help: "Edita una voz FM6, o importa un archivo SysEx y elige una voz. Envíala a una pista y luego guárdala en Presets de usuario o guarda el proyecto. Cada preset conserva su voz completa.",
     fm6Source: "Entrada y salida de patches",
@@ -3471,6 +3485,7 @@ const TEXT = {
     poolTrack: "Elige antes la colección de presets de la pista actual",
   },
   it: {
+    themeLight: "Chiaro", themeDark: "Scuro",
     tabFm6: "FM 6-OP",
     fm6Help: "Modifica una voce FM6, oppure importa un file SysEx e scegli una voce. Inviala a una traccia, poi salvala nei Preset utente o salva il progetto. Ogni preset conserva la sua voce completa.",
     fm6Source: "Patch in entrata e in uscita",
@@ -3805,6 +3820,7 @@ const TEXT = {
     poolTrack: "Seleziona prima la raccolta di preset della traccia attuale",
   },
   de: {
+    themeLight: "Hell", themeDark: "Dunkel",
     tabFm6: "6-OP-FM",
     fm6Help: "Bearbeite eine FM6-Stimme oder importiere eine SysEx-Datei und wähle eine Stimme. Sende sie an eine Spur und speichere sie dann in den User-Presets oder speichere das Projekt. Jedes Preset behält seine ganze Stimme.",
     fm6Source: "Patches rein und raus",
@@ -4139,6 +4155,7 @@ const TEXT = {
     poolTrack: "Wähle zuerst die Preset-Sammlung der aktuellen Spur",
   },
   fr: {
+    themeLight: "Clair", themeDark: "Sombre",
     tabFm6: "FM 6-OP",
     fm6Help: "Modifiez une voix FM6, ou importez un fichier SysEx et choisissez une voix. Envoyez-la à une piste, puis enregistrez-la dans les presets utilisateur ou enregistrez le projet. Chaque preset garde sa voix entière.",
     fm6Source: "Patches en entrée et en sortie",
@@ -4473,6 +4490,7 @@ const TEXT = {
     poolTrack: "Choisissez d'abord la collection de presets de la piste actuelle",
   },
   pt: {
+    themeLight: "Claro", themeDark: "Escuro",
     tabFm6: "FM 6-OP",
     fm6Help: "Edite uma voz FM6, ou importe um arquivo SysEx e escolha uma voz. Envie-a para uma faixa e depois salve-a nos presets de usuário ou salve o projeto. Cada preset guarda a voz inteira.",
     fm6Source: "Patches de entrada e saída",
@@ -4807,6 +4825,7 @@ const TEXT = {
     poolTrack: "Escolha antes a coleção de presets da faixa atual",
   },
   ko: {
+    themeLight: "밝게", themeDark: "어둡게",
     tabFm6: "6-OP FM",
     fm6Help: "FM6 보이스를 편집하거나 SysEx 파일을 가져와 보이스를 고르세요. 트랙으로 보낸 다음 사용자 프리셋에 저장하거나 프로젝트를 저장하세요. 각 프리셋은 보이스 전체를 담습니다.",
     fm6Source: "패치 주고받기",
@@ -5157,10 +5176,20 @@ const t = (k) => (TEXT[lang] || TEXT.en)[k] ?? TEXT.en[k] ?? k;
 let lastKey = null, lastArg = "";
 function sayK(k, arg = "") { lastKey = k; lastArg = arg; $("status").textContent = t(k) + arg; }
 function say(message) { lastKey = null; lastArg = ""; $("status").textContent = String(message); }
+/* LIGHT / DARK: the button names the other look; the choice is stored (tessera-theme), shared with the project
+   page, the manual, the installer and the simulator */
+const lightPage = () => document.documentElement.dataset.theme === "light";
+function showTheme() { $("theme").textContent = t(lightPage() ? "themeDark" : "themeLight"); }
+$("theme").addEventListener("click", () => {
+  document.documentElement.dataset.theme = lightPage() ? "dark" : "light";
+  try { localStorage.setItem("tessera-theme", document.documentElement.dataset.theme); } catch (e) { /* no storage */ }
+  showTheme();
+});
 function applyLang() {
   document.documentElement.lang = lang === "pt" ? "pt-BR" : lang;
   document.querySelectorAll("[data-t]").forEach((e) => setLabel(e, t(e.dataset.t)));
   $("lang").value = lang; $("lang-code").textContent = lang.toUpperCase();
+  showTheme();
   setLabel($("connect"), t(dev ? "disconnect" : "connect"));
   if (lastKey) $("status").textContent = t(lastKey) + lastArg;
   $("libq").placeholder = t("libSearch");
