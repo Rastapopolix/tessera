@@ -680,7 +680,7 @@ static const gstep_t G_MARKOV[] = {
     {48000, 0, 0, 0, 0, "A wandering line that never quite repeats"},
 };
 /* Afro-Cuban: 104 BPM, A dorian; track 1 a marimba on EUCLID (3 of 8, the tresillo, at sixteenths), electric piano
- * chords on CHORD in the offbeats, a sub on TURING, congas from the 909's toms with a rim clave in STEP */
+ * chords on CHORD in the offbeats, a sub on TURING, a 909 in STEP: soft kick, rim clave, cascara hat, tom fill */
 static void g_afrocuban_scene(void)
 {
     song.g[G_BPM] = 104;
@@ -695,7 +695,7 @@ static void g_afrocuban_scene(void)
     trk[1].p[P_CHRD] = 2;
     gen(1, TESS_ENG_CHORD, 4);
     tx(1, TX_CH_PROG, GEN_CH_TWO); tx(1, TX_CH_BARS, 1); tx(1, TX_CH_HIT, GEN_CH_OFF);
-    mixer(1, 52, -25, 35, 0);
+    mixer(1, 76, -25, 35, 0);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
     trk[2].p[P_SDIV] = DIV_8;
     gen(2, TESS_ENG_TURING, 16);
@@ -704,13 +704,16 @@ static void g_afrocuban_scene(void)
     mixer(2, 82, 0, 0, 0);
     sound(3, ENGI_DRUM, DK_909_KIT);
     {
-        static const uint8_t L[16] = {L_TM, 0, 0, L_RS, 0, 0, L_RS | L_TM, 0, 0, 0, L_RS | L_TM, 0, L_RS, 0, L_TM, L_TM};
-        static const uint8_t V[16] = {70, 0, 0, 60, 0, 0, 62, 0, 0, 0, 60, 0, 60, 0, 56, 66};
+        /* (Theo: the drums went unheard. Now a soft kick, the son clave on the rim, cascara on the hat, toms at the end) */
+        static const uint8_t L[16] = {L_BD | L_RS | L_CH, 0, L_CH, L_RS | L_CH, L_CH, 0, L_RS | L_CH, 0,
+                                      L_BD | L_CH, 0, L_RS | L_CH, L_CH, L_RS, L_CH, L_TM, L_TM};
+        static const uint8_t V[16] = {96, 0, 50, 72, 56, 0, 74, 0, 88, 0, 72, 54, 70, 50, 62, 70};
         for (uint32_t i = 0; i < 16u; i++) step_hits(3, i, L[i], V[i]);
         trk[3].p[P_SLEN] = 16;
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
-    mixer(3, 70, 0, 20, 0);
+    mixer(3, 86, 0, 20, 0);
+    g_solo_check();
 }
 static const gstep_t G_EUCLID[] = {
     {0, 0, 0, 0, 0, "EUCLID spreads a number of hits over the steps, as evenly as they go"},
