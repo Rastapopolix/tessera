@@ -341,7 +341,8 @@ static const gstep_t G_ENTRIES[] = {
     {95000, 0, 0, 0, 0, "Your own mutes still win. ENTRIES, DWELL, STYLE, FADE and the ROLEs"},
 };
 /* disco: 116 BPM, A minor; an 808 four on the floor (open hats on the offbeat, claps), an octave bass on EUCLID, a
- * clavinet on POLY, strings holding the chord. CHAIN FORM OFF until the clip turns it on; KEY B +5 (a fourth up) */
+ * clavinet on POLY, strings holding the chord. CHAIN FORM OFF until the clip turns it on; KEY B +5 (a fourth up),
+ * KEY C -2 (a tone down) */
 static void g_disco_scene(void)
 {
     static const uint8_t REP[4] = {1, 1, 1, 1};
@@ -356,25 +357,25 @@ static void g_disco_scene(void)
         trk[0].p[P_SLEN] = 16;
     }
     tx(0, TX_MODE, TESS_ENG_OFF); trk[0].p[P_SDIV] = DIV_16;
-    mixer(0, 92, 0, 10, 0);
+    mixer(0, 82, 0, 10, 0);
     sound(1, ENGI_FM6, FX_SOLID_BASS);
     trk[1].p[P_SDIV] = DIV_16;
     gen(1, TESS_ENG_EUCLID, 18);
     tx(1, TX_EUC_STEPS, 16); tx(1, TX_EUC_PULSES, 8); tx(1, TX_EUC_ROT, 1); tx(1, TX_TW_SHIFT, -12);
     sections(1, 40, 0, 0);
-    mixer(1, 96, 0, 0, 0);
+    mixer(1, 100, 0, 0, 0);
     sound(2, ENGI_FM6, FX_CLAVINET);
     trk[2].p[P_SDIV] = DIV_16;
     gen(2, TESS_ENG_POLY, 52);
     tx(2, TX_POL_DIV1, 3); tx(2, TX_POL_DIV2, 4); tx(2, TX_POL_DIV3, 6); tx(2, TX_POL_DIV4, 0); tx(2, TX_POL_SPAN, 1);
     sections(2, 60, 0, 0);
-    mixer(2, 78, 20, 30, 40);
+    mixer(2, 92, 20, 30, 40);
     sound(3, ENGI_TRIO, TR_STRING_MACH);
     trk[3].p[P_CHRD] = 1;
     gen(3, TESS_ENG_CHORD, 6);
     tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
     mixer(3, 66, -20, 80, 0);
-    chain_set(FC_OFF, PH_4, 0, REP, 5, 0);
+    chain_set(FC_OFF, PH_4, 0, REP, 5, -2);
     g_solo_check();
 }
 static const gstep_t G_CHAIN[] = {
@@ -382,11 +383,18 @@ static const gstep_t G_CHAIN[] = {
     {3500, 6500, 200, "GLO", "MIXER", "Tap GLO twice: PERF"},
     {0, 8000, 200, "GLO", "PERF", 0},
     {12000, 15000, 800, "SELECT", "CHAIN", "Turn SELECT: on to CHAIN", 2},
-    {19000, 22000, 600, "KNOB 1", "FORM AB", "Turn KNOB 1: FORM AB, a section every 4-bar phrase", 1},
-    {28000, 0, 0, 0, 0, "A: the project as it was. Tracks 2 to 4 follow the CHAIN"},
-    {37400, 0, 0, 0, 0, "B: each following track moves to its own B, all at once"},
-    {45700, 0, 0, 0, 0, "Back to A, together"},
-    {53900, 0, 0, 0, 0, "This project's B is a fourth up: Key in B, on SCL's last rows"},
+    {19000, 22000, 800, "KNOB 1", "FORM ABAC", "Turn KNOB 1, FORM: ABAC. On each phrase line the CHAIN moves on", 2},
+    {28000, 0, 0, 0, 0, "Tracks 2 to 4 follow it: each moves to its own A, B or C, all at once"},
+    {36000, 0, 0, 0, 0, "B is a fourth up, C a tone down: Key in B and Key in C, on SCL's last rows"},
+    {45000, 48000, 600, "KNOB 2", "PHRASE 8", "Turn KNOB 2, PHRASE: 8 bars a phrase, longer sections", 1},
+    {54000, 57000, 600, "KNOB 2", "PHRASE 4", "Back to 4 bars", -1},
+    {61000, 63000, 12000, "OCT-", "HOLD OCT-", "Hold OCT-: REPEAT, how many phrases each place plays"},
+    {0, 66000, 600, "KNOB 1", "A 2", 0, 1},
+    {66500, 0, 0, 0, 0, "KNOB 1 turns A to 2: A A B A C, then again"},
+    {76000, 0, 0, 0, 0, "The picture: each place a block as long as its repeats, the one playing filled"},
+    {84000, 87000, 3000, "KNOB 3", "WANDER", "Turn KNOB 3, WANDER: the next letter is more often chosen than read", 60},
+    {95000, 0, 0, 0, 0, "WANDER keeps a shape: A is home and comes back; a new letter only after A"},
+    {105000, 0, 0, 0, 0, "FORM, PHRASE, WANDER and REPEAT; a key for B and for C"},
 };
 /* r-energy's skips ahead (the tide turns over minutes, a rest comes every few): the tide to its full end, then its
  * sparse end; a rest due now, twice */
@@ -1508,7 +1516,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-color", "THE SCREEN'S COLOUR", "YELLOW", 54, 4, g_chillout_scene, G_COLOR);   /* chillout */
     G_RUN("r-form", "A TRACK AS A SONG", "SUNSET", 60, 4, g_bossa_scene, G_FORM);   /* bossa nova */
     G_RUN("r-entries", "TRACKS OUT AND IN", "SUNSET", 102, 4, g_dnb_scene, G_ENTRIES);   /* liquid drum and bass */
-    G_RUN("r-chain", "ONE FORM FOR ALL", "SUNSET", 64, 4, g_disco_scene, G_CHAIN);   /* disco */
+    G_RUN("r-chain", "ONE FORM FOR ALL", "SUNSET", 112, 4, g_disco_scene, G_CHAIN);   /* disco */
     G_RUN("r-energy", "ENERGY: TIDE AND RESTS", "SUNSET", 124, 4, g_afrohouse_scene, G_ENERGY);   /* afro house */
     G_RUN("r-tweak", "RESHAPE A LINE", "GREEN", 46, 4, g_folktronica_scene, G_TWEAK);   /* folktronica */
     G_RUN("r-follow", "ONE TRACK FOLLOWS ANOTHER", "MOSAIC", 56, 4, g_cinematic_scene, G_FOLLOW);   /* cinematic */
