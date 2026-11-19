@@ -171,67 +171,67 @@ static const gstep_t G_LFO[] = {
     {0, 117000, 1500, "KNOB 4", "FADE", 0, 22},
     {125000, 0, 0, 0, 0, "Each LFO is also a source on MODS: T1 LFO can move anything, on any track"},
 };
-/* progressive trance: 128 BPM, A minor; an ARP lead as track 1 (HOLD on: the keys held stay), a 909 kick and offbeat
- * hats in STEP, an offbeat bass on EUCLID, a glass pad holding A on CHORD DRONE */
-static void g_trance_scene(void)
+/* folktronica: 88 BPM, E minor; a harp ARP as track 1 (HOLD on: the keys held stay; the clip moves through Em, C,
+ * Am, D, G), a brushed 808 in STEP, a sub's pedal E and a fifth drone (E, B) in STEP under every chord (Theo: the
+ * trance one repeated for its own sake) */
+static void g_folkarp_scene(void)
 {
-    song.g[G_BPM] = 128;
-    scale(9, SCL_MIN, 0);
-    sends(80, 60, 66, 50);
-    sound(0, ENGI_TRIO, TR_ARP_LEAD);
+    song.g[G_BPM] = 88;
+    scale(4, SCL_MIN, 0);
+    sends(85, 65, 66, 50);
+    sound(0, ENGI_FM6, FX_HARP);
     tx(0, TX_MODE, TESS_ENG_OFF);
-    trk[0].p[P_AMODE] = 1; trk[0].p[P_ARATE] = DIV_16; trk[0].p[P_AHOLD] = 1;
-    mixer(0, 92, 0, 40, 50);
-    sound(1, ENGI_DRUM, DK_909_KIT);
+    trk[0].p[P_AMODE] = 3; trk[0].p[P_ARATE] = DIV_8; trk[0].p[P_AHOLD] = 1;   /* UPDN */
+    mixer(0, 106, -10, 60, 40);
+    sound(1, ENGI_DRUM, DK_808_KIT);
     {
-        static const uint8_t L[16] = {L_BD, 0, L_OH, 0, L_BD, 0, L_OH, 0, L_BD, 0, L_OH, 0, L_BD, 0, L_OH, L_CH};
-        static const uint8_t V[16] = {110, 0, 56, 0, 106, 0, 56, 0, 108, 0, 58, 0, 106, 0, 56, 44};
+        static const uint8_t L[16] = {L_BD, 0, L_CH, L_CH, L_RS, 0, L_CH, L_CH, L_BD, L_BD, L_CH, L_CH, L_RS, 0, L_CH, L_CH};
+        static const uint8_t V[16] = {92, 0, 40, 28, 74, 0, 42, 28, 84, 56, 40, 28, 76, 0, 42, 28};
         for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
         trk[1].p[P_SLEN] = 16;
     }
     tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
-    mixer(1, 72, 0, 10, 0);
-    sound(2, ENGI_TRIO, TR_SUB_BASS);
-    trk[2].p[P_SDIV] = DIV_8;
-    gen(2, TESS_ENG_EUCLID, 3);
-    tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 4); tx(2, TX_EUC_ROT, 1); tx(2, TX_TW_SHIFT, -12);
-    mixer(2, 72, 0, 0, 0);
-    sound(3, ENGI_ORACLE, OR_GLASS_PAD);
-    gen(3, TESS_ENG_CHORD, 4);
-    tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 4); tx(3, TX_CH_HIT, GEN_CH_HOLD);
-    mixer(3, 66, 0, 80, 0);
+    mixer(1, 78, 0, 15, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);                   /* a pedal E under every chord the clip plays */
+    {
+        static const uint8_t N[16] = {40, 0, 0, 0, 0, 0, 40, 0, 0, 0, 40, 0, 0, 0, 0, 0};
+        for (uint32_t i = 0; i < 16u; i++) if (N[i]) step_note(2, i, N[i], i ? 84 : 100);
+        trk[2].p[P_SLEN] = 16;
+    }
+    tx(2, TX_MODE, TESS_ENG_OFF); trk[2].p[P_SDIV] = DIV_8;
+    mixer(2, 80, 0, 0, 0);
+    sound(3, ENGI_TRIO, TR_FIFTH_DRONE);                /* E and B held: they sit under all of them */
+    step_note(3, 0, 52, 80);
+    trk[3].p[P_SLEN] = 1; trk[3].p[P_SGATE] = 127;
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_1;
+    mixer(3, 68, 20, 70, 0);
     g_solo_check();
 }
+#define G_CHORD3(ms, a, b, c, la, lb, lc, cap) \
+    {ms - 2000, ms, 1500, a, la, cap}, {0, ms, 1500, b, lb, 0}, {0, ms, 1500, c, lc, 0}
 static const gstep_t G_ARP[] = {
     {0, 0, 0, 0, 0, "ARP: hold notes, and it plays them one at a time"},
     {3500, 5500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: GEN. Track 1's MODE is ARP. Turn SELECT to ARP"},
     {0, 9000, 600, "SELECT", "ARP", 0, 2},
-    {13000, 15000, 1500, "A3", "A", "Hold A, C and E. HOLD is on, so the notes play on after you let go"},
-    {0, 15000, 1500, "C4", "C", 0},
-    {0, 15000, 1500, "E4", "E", 0},
-    {22000, 24000, 600, "KNOB 1", "DN", "KNOB 1, MODE: UP, then DN, high to low", 1},
-    {28000, 30000, 600, "KNOB 1", "UPDN", "UPDN: up, then down", 1},
-    {34000, 36000, 600, "KNOB 1", "RND", "RND: a new random note each step", 1},
-    {40000, 42000, 1200, "KNOB 1", "RND1", "RND1: one random order, played again and again", 4},
-    {46000, 48000, 1500, "KNOB 1", "UP", "Back to UP", -7},
-    {51000, 53000, 600, "KNOB 2", "16T", "KNOB 2, RATE: 16T, triplets", -1},
-    {57000, 59000, 600, "KNOB 2", "1/16", "And back to 1/16", 1},
-    {61000, 63000, 900, "KNOB 3", "OCT 3", "KNOB 3, OCT: over three octaves", 2},
-    {68000, 70000, 1500, "KNOB 4", "GATE", "KNOB 4, GATE: shorter notes", -30},
-    {75000, 77000, 15000, "OCT-", "HOLD OCT-", "Hold OCT-: SWING, PROB, HOLD and ORDER"},
-    {0, 80000, 1500, "KNOB 1", "SWING", 0, 30},
-    {80500, 0, 0, 0, 0, "KNOB 1, SWING: every second note later"},
-    {85000, 86000, 1500, "KNOB 2", "PROB", "KNOB 2, PROB: some notes rest", -40},
-    {94000, 96000, 1500, "F3", "F", "A new chord: F, A and C. The arpeggio takes the new notes"},
-    {0, 96000, 1500, "A3", "A", 0},
-    {0, 96000, 1500, "C4", "C", 0},
-    {103000, 105000, 1500, "G3", "G", "G, B and D"},
-    {0, 105000, 1500, "B3", "B", 0},
-    {0, 105000, 1500, "D4", "D", 0},
-    {112000, 114000, 1500, "A3", "A", "And A, C, E again"},
-    {0, 114000, 1500, "C4", "C", 0},
-    {0, 114000, 1500, "E4", "E", 0},
-    {120000, 0, 0, 0, 0, "ORDER: from the lowest note, or as pressed. TWEAK's SHIFT moves the arpeggio"},
+    G_CHORD3(15000, "G3", "B3", "E4", "G", "B", "E", "Hold G, B and E. HOLD is on, so they play on after you let go"),
+    {22000, 24000, 600, "KNOB 1", "DN", "KNOB 1, MODE: UPDN, up then down. Now DN, high to low", -1},
+    {28000, 30000, 900, "KNOB 1", "RND", "RND: a new random note each step", 2},
+    {34000, 36000, 1200, "KNOB 1", "RND1", "RND1: one random order, kept until the keys change", 4},
+    G_CHORD3(42000, "G3", "C4", "E4", "G", "C", "E", "A new chord: G, C, E. RND1 picks a new order for it"),
+    {46000, 48000, 1500, "KNOB 1", "UPDN", "Back to UPDN", -5},
+    {51000, 53000, 600, "KNOB 2", "16T", "KNOB 2, RATE: 1/8 to 16T, faster, in triplets", 1},
+    {57000, 59000, 600, "KNOB 2", "1/8", "And back to 1/8", -1},
+    G_CHORD3(63000, "A3", "C4", "E4", "A", "C", "E", "A, C, E"),
+    {65000, 67000, 600, "KNOB 3", "OCT 2", "KNOB 3, OCT: over two octaves", 1},
+    {71000, 73000, 2500, "KNOB 4", "GATE", "KNOB 4, GATE: shorter notes", -25},
+    {77000, 79000, 14000, "OCT-", "HOLD OCT-", "Hold OCT-: SWING, PROB, HOLD and ORDER"},
+    {0, 81000, 2500, "KNOB 1", "SWING", 0, 25},
+    {81500, 0, 0, 0, 0, "KNOB 1, SWING: every second note later"},
+    {86000, 87000, 2000, "KNOB 2", "PROB", "KNOB 2, PROB: some notes rest", -40},
+    G_CHORD3(97000, "F#3", "A3", "D4", "F#", "A", "D", "F#, A, D"),
+    G_CHORD3(105000, "G3", "B3", "D4", "G", "B", "D", "G, B, D"),
+    G_CHORD3(113000, "G3", "B3", "E4", "G", "B", "E", "And G, B, E again"),
+    {119000, 0, 0, 0, 0, "ORDER: from the lowest note, or as pressed. TWEAK's SHIFT moves the arpeggio"},
 };
 /* dub techno: 118 BPM, F minor; ORACLE dub chords on EUCLID as track 1 (deep in the echo: its PATTERN changes), an
  * 808 kick and rim in STEP, a sub on TURING, a hollow pad held under it all */
@@ -466,7 +466,7 @@ static void guide_ref_pages(const char *out, FILE *tsv)
     G_RUN("r-fm6", "FM6: THE OPERATORS", "ORANGE", 122, 4, g_sophisti_scene, G_FM6);   /* sophisti-pop */
     G_RUN("r-menu", "THE MENU", "WHITE", 110, 4, g_synthfunk_scene, G_MENU);   /* synth funk */
     G_RUN("r-tempo", "PATTERN AND TEMPO", "MOSAIC", 121, 4, g_dubtechno_scene, G_PATTEMPO);   /* dub techno */
-    G_RUN("r-arp", "ARP: ONE NOTE AT A TIME", "MOSAIC", 128, 4, g_trance_scene, G_ARP);   /* progressive trance */
+    G_RUN("r-arp", "ARP: ONE NOTE AT A TIME", "MOSAIC", 126, 4, g_folkarp_scene, G_ARP);   /* folktronica */
     G_RUN("r-lfo", "LFO: A WAVE THAT MOVES", "LILAC", 132, 4, g_filterhouse_scene, G_LFO);   /* filter house */
     G_RUN("r-fx", "FX: INSERTS AND SENDS", "LILAC", 122, 4, g_acid_scene, G_FX);   /* acid house */
     G_RUN("r-tweak2", "TWEAK 2: WHICH HITS PLAY", "MOSAIC", 112, 4, g_afrobeat_scene, G_TWEAK2);   /* afrobeat */
