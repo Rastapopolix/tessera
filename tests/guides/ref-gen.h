@@ -443,6 +443,11 @@ static void g_dancehall_scene(void)
     trk[0].p[P_SDIV] = DIV_16;
     gen(0, TESS_ENG_MORPH, 17);
     tx(0, TX_MRP_SNPA, 0); tx(0, TX_MRP_SNPB, 5); tx(0, TX_MRP_POS, 64);
+    {   /* a melody on its STEP page, unheard until the clip turns SOURCE to it (OCT- layer) */
+        static const uint8_t N[16] = {67, 0, 70, 72, 0, 74, 0, 72, 70, 0, 67, 0, 65, 0, 67, 0};
+        for (uint32_t i = 0; i < 16u; i++) if (N[i]) step_note(0, i, N[i], i % 4u ? 84 : 104);
+        trk[0].p[P_SLEN] = 16;
+    }
     mixer(0, 120, -15, 40, 50);
     sound(1, ENGI_DRUM, DK_808_KIT);
     {
@@ -471,8 +476,19 @@ static const gstep_t G_MORPH[] = {
     {12000, 15000, 1500, "KNOB 2", "POS 0", "Turn KNOB 2, POS, all the way down: rhythm A alone", -70},
     {21000, 24000, 2500, "KNOB 2", "POS UP", "Now all the way up: rhythm B alone", 140},
     {31000, 34000, 600, "KNOB 4", "SNP B", "Turn KNOB 4, SNP B, to another rhythm", -2},
-    {40000, 43000, 2000, "KNOB 2", "POS", "Back to halfway: each step drawn from A or B", -16},
-    {49000, 0, 0, 0, 0, "One knob between two rhythms"},
+    {38000, 41000, 600, "KNOB 3", "SNP A", "KNOB 3, SNP A, picks rhythm A the same way", 2},
+    {45000, 48000, 2000, "KNOB 2", "POS", "Back to halfway: each step drawn from A or B", -16},
+    {54000, 57000, 26000, "OCT-", "HOLD OCT-", "Hold OCT-: SOURCE, KEEP and GRAVITY, to morph a melody you wrote"},
+    {0, 59000, 300, "KNOB 2", "SOURCE T1", 0, 1},
+    {59500, 0, 0, 0, 0, "KNOB 2, SOURCE T1: A is the melody on track 1's STEP page, B a variation"},
+    {0, 66000, 300, "KNOB 3", "RHYTHM", 0, 1},
+    {66500, 0, 0, 0, 0, "KNOB 3, KEEP RHYTHM: B changes only the pitches"},
+    {0, 72500, 2500, "KNOB 4", "GRAVITY", 0, 50},
+    {73500, 0, 0, 0, 0, "KNOB 4, GRAVITY: how often a step plays the melody as written"},
+    {84000, 87000, 200, "PLAY", "STOP", "Let go. B is made at PLAY: press PLAY twice"},
+    {0, 88500, 200, "PLAY", "PLAY", 0},
+    {93000, 96000, 1500, "KNOB 2", "POS UP", "POS is now B's share: up, more of the variation", 12},
+    {104000, 0, 0, 0, 0, "POS, SNP A and SNP B; SOURCE, KEEP and GRAVITY"},
 };
 /* broken beat: 112 BPM, F dorian; ATLAS on the 909 kit as track 1 (the clip turns DENS, moves X and Y on the map and
  * thins the hat), electric keys on the offbeats, a sub on TURING, a quiet flute on AWAKE */
@@ -538,6 +554,6 @@ static void guide_ref_gen(const char *out, FILE *tsv)
     G_RUN("r-series", "SERIES", "GREEN", 55, 4, g_feldman_scene, G_SERIES);   /* slow piano after Feldman */
     G_RUN("r-chord", "CHORD: THE HARMONY", "GREEN", 152, 4, g_gospel_scene, G_CHORDS);   /* minor gospel */
     G_RUN("r-answer", "ANSWER: CALL AND RESPONSE", "GREEN", 164, 4, g_blues_scene, G_ANSWER);   /* blues */
-    G_RUN("r-morph", "MORPH: A INTO B", "GREEN", 55, 4, g_dancehall_scene, G_MORPH);   /* dancehall */
+    G_RUN("r-morph", "MORPH: A INTO B", "GREEN", 110, 4, g_dancehall_scene, G_MORPH);   /* dancehall */
     G_RUN("r-atlas", "ATLAS: THE DRUM MAP", "GREEN", 107, 4, g_brokenbeat_scene, G_ATLAS);   /* broken beat */
 }
