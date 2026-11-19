@@ -3,40 +3,40 @@
 /* Season 1, episode 8: save and come back to it: the guided clips (tests/demo_projects.c guide; tools/guide_video.py) */
 /* (g_solo_check, the balance and note checks, is in e05.h) */
 
-/* techno: 126 BPM, F minor; a blip line of sixteenths on TURING as track 1, changing every bar (the clip prints it),
- * a 909 four on the floor in STEP, chord stabs on the offbeats, a sub on EUCLID */
-static void g_techno_scene(void)
+/* synth-pop: 104 BPM, A dorian; an electric piano line of sixteenths on TURING as track 1, changing every bar (the clip
+ * prints it), a light 808 pop beat in STEP, a warm pad on CHORD every two bars, a round bass on EUCLID
+ * (Theo: the earlier techno blips did not suit the clip) */
+static void g_synthpop_scene(void)
 {
-    song.g[G_BPM] = 126;
-    scale(5, SCL_MIN, 0);
-    sends(80, 70, 95, 60);
-    sound(0, ENGI_ORACLE, OR_SEQ_BLIP);
-    trk[0].p[P_SDIV] = DIV_16;
-    gen(0, TESS_ENG_TURING, 41);
+    song.g[G_BPM] = 104;
+    scale(9, SCL_DOR, 0);
+    sends(85, 70, 90, 55);
+    sound(0, ENGI_FM6, FX_TINE_EP);
+    trk[0].p[P_SDIV] = DIV_16;                          /* (sixteenths: a print counts 16 steps a bar) */
+    gen(0, TESS_ENG_TURING, 23);
     tx(0, TX_TUR_LEN, 16); tx(0, TX_TUR_PROB, 0); tx(0, TX_TUR_SPAN, 2);
     tx(0, TX_EV_EVERY, 1); tx(0, TX_EV_AMOUNT, 50);
-    trk[0].p[P_VOICE] = 1;                              /* MONO */
-    mixer(0, 127, -15, 40, 60);
-    sound(1, ENGI_DRUM, DK_909_KIT);
+    mixer(0, 100, 10, 45, 50);
+    sound(1, ENGI_DRUM, DK_808_KIT);
     {
-        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_BD | L_CP, 0, L_OH, 0, L_BD, 0, L_CH, 0, L_BD | L_CP, 0, L_OH, L_CH};
-        static const uint8_t V[16] = {108, 0, 56, 0, 104, 0, 64, 0, 106, 0, 56, 0, 104, 0, 66, 44};
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_CP, 0, L_CH, L_BD, 0, L_BD, L_CH, 0, L_CP, 0, L_CH, 0};
+        static const uint8_t V[16] = {104, 0, 50, 0, 92, 0, 46, 70, 0, 84, 50, 0, 94, 0, 54, 0};
         for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
         trk[1].p[P_SLEN] = 16;
     }
     tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
-    mixer(1, 76, 0, 10, 0);
-    sound(2, ENGI_ORACLE, OR_DUB_CHORD);
+    mixer(1, 86, 0, 15, 0);
+    sound(2, ENGI_ORACLE, OR_WARM_PAD);
     trk[2].p[P_CHRD] = 1;
-    gen(2, TESS_ENG_CHORD, 7);
-    tx(2, TX_CH_PROG, GEN_CH_TWO); tx(2, TX_CH_BARS, 3); tx(2, TX_CH_HIT, GEN_CH_OFF);
-    mixer(2, 70, 20, 50, 90);
+    gen(2, TESS_ENG_CHORD, 5);
+    tx(2, TX_CH_PROG, GEN_CH_TWO); tx(2, TX_CH_BARS, 2); tx(2, TX_CH_HIT, GEN_CH_OFF);
+    mixer(2, 88, -20, 60, 20);
     sound(3, ENGI_TRIO, TR_SUB_BASS);
     trk[3].p[P_SDIV] = DIV_16;
     gen(3, TESS_ENG_EUCLID, 11);
-    tx(3, TX_EUC_STEPS, 16); tx(3, TX_EUC_PULSES, 4); tx(3, TX_EUC_ROT, 2); tx(3, TX_TW_SHIFT, -12);
+    tx(3, TX_EUC_STEPS, 16); tx(3, TX_EUC_PULSES, 5); tx(3, TX_EUC_ROT, 0); tx(3, TX_TW_SHIFT, -12);
     tx(3, TX_NL_MODE, 1); tx(3, TX_NL_LEN, 2);
-    mixer(3, 70, 0, 0, 0);
+    mixer(3, 74, 0, 0, 0);
     g_solo_check();
 }
 /* Season 1, episode 8: print a generator's bars into steps, and undo it */
@@ -96,6 +96,6 @@ static const gstep_t G_SAVE_IT[] = {
 };
 static void guide_e08(const char *out, FILE *tsv)
 {
-    G_RUN("e08-print", "PRINT AND KEEP", "GREEN", 50, 4, g_techno_scene, G_PRINT);   /* techno */
+    G_RUN("e08-print", "PRINT AND KEEP", "GREEN", 50, 4, g_synthpop_scene, G_PRINT);   /* synth-pop */
     G_RUN("e08-save", "SAVE IT", "YELLOW", 59, 4, g_minimal_scene, G_SAVE_IT);   /* minimal */
 }
