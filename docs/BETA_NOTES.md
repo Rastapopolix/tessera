@@ -10,6 +10,7 @@ what you expected and what happened).
 ## New since 3.7.1
 
 ## Fixed
+- ANSWER: with the transport stopped, a pause of a second and a half now ends the phrase, so the next key starts a new one. Before, every key played while stopped joined the same phrase, and once it held 16 notes the picture kept the old ones.
 
 ## Good to know
 
