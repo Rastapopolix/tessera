@@ -60,6 +60,10 @@ static void core_frame(void)
     ui_input();
     ui_leds();
     ui_draw();
+#ifdef ANN_VER
+    ui_speak(fm1_ms);                             /* the screen reader, as main.c (silent until a reader's HELLO: the
+                                                   * web simulator's page is one, web/sim/sim.c web_reader) */
+#endif
 }
 
 /* the FM-1's millisecond: its clock, and main.c's loop (a frame every 15 ms, ui_input between) */
