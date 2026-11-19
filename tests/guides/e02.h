@@ -36,7 +36,19 @@ static const gstep_t G_SLOT_LOAD[] = {
     {45000, 48000, 200, "PLAY", "PLAY", "Tap PLAY: NIGHT FERRY plays from the top"},
     {55000, 0, 0, 0, 0, "The web editor's Demo projects (Projects tab) puts the demos into the slots"},
 };
+/* episode 2: a tour of HOME, on EMBER FIELD (the demo, playing) */
+static void g_ember_scene(void) { demo_ember(); }
+static const gstep_t G_TOUR[] = {
+    {0, 0, 0, 0, 0, "HOME: EMBER FIELD's four tracks, a column each"},
+    {5000, 0, 0, 0, 0, "The header: PLAY and the tempo, and the selected track's engine"},
+    {11000, 0, 0, 0, 0, "A column: the track's role, its sound in two words, its engine"},
+    {17000, 0, 0, 0, 0, "Then the pattern playing (P1), and its bar as 4 x 4 steps"},
+    {23000, 0, 0, 0, 0, "At its foot: the track's level, in dB"},
+    {29000, 32000, 900, "ALGORITHM", "TRACK 3", "Turn ALGORITHM to track 3: its column is outlined, the header says FM6", 2},
+    {40000, 0, 0, 0, 0, "The track you pick here is the one every page works on"},
+};
 static void guide_e02(const char *out, FILE *tsv)
 {
+    G_RUN("e02-tour", "WHAT HOME SHOWS", "YELLOW", 48, 4, g_ember_scene, G_TOUR);   /* the demos themselves */
     G_RUN("e02-load", "PLAY A DEMO", "YELLOW", 64, 20, g_slots_scene, G_SLOT_LOAD);   /* the demos themselves */
 }
