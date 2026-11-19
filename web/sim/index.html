@@ -77,7 +77,9 @@ a:hover { background: var(--fg); color: var(--bg); text-decoration: none; }
 /* the shell picker: a swatch per FM-1 shell (body ring, button centre); picking one recolours the drawing and sets
  * the ink that goes with it */
 /* the language menu (as the installer's and the editor's): a short code shown, the real select laid over it */
-.topbar { display: flex; justify-content: flex-end; margin: 0 0 8px; }
+.topbar { display: flex; justify-content: flex-end; gap: 10px; margin: 0 0 8px; }
+.theme { font: 16px/1 var(--pixel); color: var(--dim); background: none; border: 0; padding: 3px 4px 2px; cursor: pointer; text-transform: uppercase; }
+.theme:hover { color: var(--bg); background: var(--fg); }
 .lang { position: relative; font: 16px/1 var(--pixel); color: var(--dim); padding: 3px 4px 2px; cursor: pointer; text-transform: uppercase; }
 .lang::after { content: " \25BE"; font-family: ui-monospace, monospace; }
 .lang:hover, .lang:focus-within { color: var(--bg); background: var(--fg); }
@@ -147,7 +149,8 @@ footer small { font-size: 11px; opacity: .8; }
 </style>
 <main data-build="@BUILD@">
 <h1 class="sr" data-t="simH1">Tessera simulator</h1>
-<div class="topbar"><label class="lang"><span id="lang-code" aria-hidden="true">EN</span><select id="lang" aria-label="Language">
+<script id="theme-early">try { var t = localStorage.getItem("tessera-theme"); if (t) { document.documentElement.dataset.theme = t; document.documentElement.style.colorScheme = t; } } catch (e) {}</script>
+<div class="topbar"><button class="theme" id="theme" type="button" aria-label="Light or dark page"></button><label class="lang"><span id="lang-code" aria-hidden="true">EN</span><select id="lang" aria-label="Language">
   <option value="en" lang="en">English</option><option value="es" lang="es">Español</option>
   <option value="it" lang="it">Italiano</option><option value="de" lang="de">Deutsch</option>
   <option value="fr" lang="fr">Français</option><option value="pt" lang="pt-BR">Português</option>
@@ -244,6 +247,7 @@ footer small { font-size: 11px; opacity: .8; }
  * the keys are its data-t / data-h names and EN_TEXT's): web/test_web.mjs checks every language has every key */
 window.SIM_TEXT = {
   es: {
+    themeLight: "Claro", themeDark: "Oscuro",
     simH1: "Simulador de Tessera",
     readerL: "Lector de pantalla: dice lo que muestra la pantalla",
     aloudL: "en voz alta, con la voz del navegador",
@@ -320,6 +324,7 @@ window.SIM_TEXT = {
     shHotPink: "Rosa intenso",
   },
   it: {
+    themeLight: "Chiaro", themeDark: "Scuro",
     simH1: "Simulatore di Tessera",
     readerL: "Lettore di schermo: dice ciò che mostra lo schermo",
     aloudL: "ad alta voce, con la voce del browser",
@@ -396,6 +401,7 @@ window.SIM_TEXT = {
     shHotPink: "Rosa acceso",
   },
   de: {
+    themeLight: "Hell", themeDark: "Dunkel",
     simH1: "Tessera-Simulator",
     readerL: "Bildschirmleser: sagt, was der Bildschirm zeigt",
     aloudL: "laut, mit der Stimme des Browsers",
@@ -472,6 +478,7 @@ window.SIM_TEXT = {
     shHotPink: "Pink",
   },
   fr: {
+    themeLight: "Clair", themeDark: "Sombre",
     simH1: "Simulateur Tessera",
     readerL: "Lecteur d'écran : dit ce que montre l'écran",
     aloudL: "à voix haute, avec la voix du navigateur",
@@ -548,6 +555,7 @@ window.SIM_TEXT = {
     shHotPink: "Rose vif",
   },
   pt: {
+    themeLight: "Claro", themeDark: "Escuro",
     simH1: "Simulador do Tessera",
     readerL: "Leitor de tela: diz o que a tela mostra",
     aloudL: "em voz alta, com a voz do navegador",
@@ -624,6 +632,7 @@ window.SIM_TEXT = {
     shHotPink: "Rosa-choque",
   },
   ko: {
+    themeLight: "밝게", themeDark: "어둡게",
     simH1: "Tessera 시뮬레이터",
     readerL: "화면 낭독: 화면에 보이는 내용을 읽어 줍니다",
     aloudL: "브라우저 음성으로 소리 내어",
@@ -700,6 +709,7 @@ window.SIM_TEXT = {
     shHotPink: "핫 핑크",
   },
   ja: {
+    themeLight: "ライト", themeDark: "ダーク",
     simH1: "Tessera シミュレーター",
     readerL: "スクリーンリーダー：画面に表示された内容を読み上げます",
     aloudL: "ブラウザーの音声で読み上げる",
@@ -808,6 +818,7 @@ const EN_TEXT = {
   noteRelease: "The beta: the next update, to try before its release.",
   shellTitle: "{name}: {ink} ink", shBlack: "Black", shMint: "Black / mint", shLavender: "Lavender", shOrange: "Orange",
   shCreamGrey: "Cream / grey", shCreamBlue: "Cream / blue", shCreamBrick: "Cream / brick", shHotPink: "Hot pink",
+  themeLight: "Light", themeDark: "Dark",
   fm1Live: "FM-1 connected", fm1Old: "this FM-1's firmware is older: update Tessera to play the simulator from it",
 };
 for (const e of document.querySelectorAll("[data-t]")) EN_TEXT[e.dataset.t] = e.textContent;
@@ -873,15 +884,31 @@ const mixLin = (a, b, s) => toHex(toLin(a).map((v, i) => v + (toLin(b)[i] - v) *
 // the LED levels as shares of the way from dark to lit (mint's, averaged over the channels)
 const LEVEL = { "--btn-dim": ["btn", .2], "--btn-breath": ["btn", .75], "--btn-lo": ["btn", .47], "--slit-dim": ["slit", .08],
                 "--slit-breath": ["slit", .74], "--slit-lo": ["slit", .49], "--slit-mid": ["slit", .35], "--slit-midlo": ["slit", .24] };
+/* LIGHT / DARK: the button names the other look; the choice is stored (tessera-theme), shared with the project
+   page, the manual, the installer and the editor */
+const lightPage = () => document.documentElement.dataset.theme === "light";
+function showTheme() { document.getElementById("theme").textContent = tr(lightPage() ? "themeDark" : "themeLight"); }
+document.getElementById("theme").addEventListener("click", () => {
+  document.documentElement.dataset.theme = lightPage() ? "dark" : "light";
+  document.documentElement.style.colorScheme = lightPage() ? "light" : "dark";
+  try { localStorage.setItem("tessera-theme", document.documentElement.dataset.theme); } catch {}
+  setShell(shell);
+  showTheme();
+});
+langHooks.push(showTheme);
+showTheme();
 function shellVars(sh) {
   const lit = sh.lit || "#f6f6f6", v = { "--body": sh.body, "--tray": sh.tray, "--btn": sh.btn, "--btn-edge": sh.edge,
     "--key": sh.btn, "--key-edge": sh.edge, "--btn-ink": sh.btnInk, "--lit-ink": sh.litInk || sh.btnInk, "--slit": sh.slit,
     "--label": sh.label, "--lit": lit, "--rec": sh.rec || "#c62a22" };
   for (const [k, [base, s]] of Object.entries(LEVEL)) v[k] = sh.fixed?.[k] || mixLin(sh[base], base === "slit" ? "#ffffff" : lit, s);
-  // the page takes the ink too (as the project page: one ink on black)
+  // the page takes the ink too (as the project page: one ink on black); the light page is dark ink on paper, as the
+  // project page's (the device keeps its shell)
   const ink = INKS[sh.ink];
-  Object.assign(v, { "--fg": ink, "--dim": mixLin("#000000", ink, .62), "--rule": mixLin("#000000", ink, .03),
-                     "--surf": mixLin("#000000", ink, .002), "--raise": mixLin("#000000", ink, .01) });
+  if (lightPage()) Object.assign(v, { "--bg": "#f6f2e7", "--fg": "#1c1a14", "--dim": "#5f5745", "--rule": "#c8bd9b",
+                                      "--surf": "#eee8d6", "--raise": "#e2d9bf" });
+  else Object.assign(v, { "--bg": "#000", "--fg": ink, "--dim": mixLin("#000000", ink, .62), "--rule": mixLin("#000000", ink, .03),
+                          "--surf": mixLin("#000000", ink, .002), "--raise": mixLin("#000000", ink, .01) });
   return v;
 }
 let shell = SHELLS[0];
