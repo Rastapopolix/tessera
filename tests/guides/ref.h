@@ -1363,7 +1363,7 @@ static void g_chillwave_scene(void)
     trk[2].p[P_LRATE] = 30;
     cord(0, CS_LFO, 2, CD_TW_SHIFT, 2, 14, 0, 0);
     trk[2].p[P_MUTE] = 1;
-    mixer(2, 112, -20, 10, 45);
+    mixer(2, 122, -20, 10, 45);
     sound(3, ENGI_DRUM, DK_808_KIT);
     {
         static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_BD, 0, L_BD, L_CH, 0, L_SD, 0, L_CH, L_CH};
