@@ -670,14 +670,16 @@ static void g_exotica_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 66, 0, 20, 0);
+    g_solo_check();
 }
 static const gstep_t G_MARKOV[] = {
     {0, 0, 0, 0, 0, "MARKOV walks between notes of the scale: mostly a step, sometimes a leap"},
-    {3500, 6500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: GEN. Track 1's flute is MARKOV, in one octave (SPAN 1OCT)"},
-    {15000, 18000, 2500, "KNOB 3", "DENS", "Turn KNOB 3: DENS down to 50 %, the chance a step plays", -8},
-    {28000, 31000, 900, "KNOB 4", "SPAN 3", "Turn KNOB 4: SPAN 3OCT. Each note picks one of three octaves", 2},
-    {41000, 0, 0, 0, 0, "KNOB 2, LEAP, tilts the walk from steps toward leaps"},
-    {48000, 0, 0, 0, 0, "A wandering line that never quite repeats"},
+    {3500, 6500, 200, "SEQ", "OPEN SEQ", "Tap SEQ: GEN. Track 1's flute is MARKOV. LEAP 0: mostly small steps"},
+    {14000, 17000, 2500, "KNOB 2", "LEAP 80", "Turn KNOB 2: LEAP up to 80 %. Now the flute jumps", 20},
+    {22000, 0, 0, 0, 0, "The bars are the odds of each next note: they level out, so wide leaps come often"},
+    {29000, 32000, 2500, "KNOB 3", "DENS", "Turn KNOB 3: DENS down to 50 %, the chance a step plays", -8},
+    {41000, 44000, 900, "KNOB 4", "SPAN 3", "Turn KNOB 4: SPAN 3OCT. Each note picks one of three octaves", 2},
+    {53000, 0, 0, 0, 0, "A wandering line that never quite repeats"},
 };
 /* Afro-Cuban: 104 BPM, A dorian; track 1 a marimba on EUCLID (3 of 8, the tresillo, at sixteenths), electric piano
  * chords on CHORD in the offbeats, a sub on TURING, a 909 in STEP: soft kick, rim clave, cascara hat, tom fill */
@@ -1392,7 +1394,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-ratchet", "ROLL ONE STEP", "GREEN", 67, 4, g_chilltrap_scene, G_RATCHET);   /* chill trap */
     G_RUN("r-length", "LET NOTES RING", "GREEN", 42, 4, g_dreampop_scene, G_LENGTH);   /* dream pop */
     G_RUN("r-patterns", "PATTERNS", "MOSAIC", 41, 4, g_citypop_scene, G_PATTERNS);   /* city pop */
-    G_RUN("r-markov", "A WANDERING LINE: MARKOV", "MOSAIC", 56, 4, g_exotica_scene, G_MARKOV);   /* exotica */
+    G_RUN("r-markov", "A WANDERING LINE: MARKOV", "MOSAIC", 60, 4, g_exotica_scene, G_MARKOV);   /* exotica */
     G_RUN("r-euclid", "EVEN HITS: EUCLID", "MOSAIC", 52, 4, g_afrocuban_scene, G_EUCLID);   /* Afro-Cuban */
     G_RUN("r-step-evolve", "VARY WHAT YOU WROTE", "MOSAIC", 72, 4, g_highlife_scene, G_SEVOLVE);   /* highlife */
     G_RUN("r-seed", "YOUR TUNE AS A SEED", "MOSAIC", 66, 4, g_ambfolk_scene, G_SEED);   /* ambient folk */
