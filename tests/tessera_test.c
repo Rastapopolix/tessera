@@ -2364,6 +2364,41 @@ static int test_answer_source_keys(void)
     tessera_reset();
     return check("ANSWER: SOURCE T1 hears T1's keys; another SOURCE does not; its own keys still count", ok);
 }
+/* ANSWER while stopped: no bars pass, so a pause of TESS_AN_STOP_MS closes the phrase and the next key starts a new
+ * one (Theo, 3.7.1: every key played stopped joined one phrase; at 16 the picture kept the old notes). Quicker keys
+ * still join it, and while playing a pause changes nothing (a bar without a key closes it, as before) */
+static int test_answer_stopped_pause(void)
+{
+    const tessera_answer_t *a = &tessera.answer[1];
+    uint32_t was = song.playing;
+    int ok;
+    tessera_reset();
+    gen(1, TESS_ENG_ANSWER);
+    song.playing = 0;
+    fm1_ms = 10000u;
+    tessera_answer_hear(&trk[1], 60, 90);
+    fm1_ms += TESS_AN_STOP_MS - 1u;                    /* (just under the pause: the same phrase) */
+    tessera_answer_hear(&trk[1], 62, 90);
+    ok = a->n == 2u && tess_an.phase[1] == TESS_AN_HEAR;
+    fm1_ms += TESS_AN_STOP_MS;                         /* (a pause: a new phrase) */
+    tessera_answer_hear(&trk[1], 67, 90);
+    ok &= a->n == 1u && a->note[0] == 67u && a->at[0] == 0u;
+    for (uint32_t i = 0; i < 20u; i++) tessera_answer_hear(&trk[1], 48u + i, 90);   /* (full at 16: the rest dropped) */
+    fm1_ms += TESS_AN_STOP_MS;
+    tessera_answer_hear(&trk[1], 72, 90);              /* (full, then a pause: a new phrase all the same) */
+    ok &= a->n == 1u && a->note[0] == 72u;
+    tessera_reset();
+    gen(1, TESS_ENG_ANSWER);
+    song.playing = 1;
+    tessera_answer_hear(&trk[1], 60, 90);
+    fm1_ms += 10u * TESS_AN_STOP_MS;                   /* (playing: a pause alone does not close it) */
+    tess_an.hclk[1] = 2;
+    tessera_answer_hear(&trk[1], 64, 90);
+    ok &= a->n == 2u;
+    song.playing = was;
+    tessera_reset();
+    return check("ANSWER: stopped, a pause closes the phrase and the next key starts a new one; playing, as before", ok);
+}
 /* ANSWER BEND: steps of answer_tick on track 1 (16 a bar), each step's gate and note into g / nt (0: none) */
 static void bend_steps(uint32_t n, uint8_t *g, uint8_t *nt, uint8_t *vel)
 {
@@ -3886,6 +3921,7 @@ int main(int argc, char **argv)
         bad += check("QUAD columns: DOWN and UP turn all four rows, each on its EVERY, on the first QUAD track's steps", ok);
     bad += test_answer_nearest();
     bad += test_answer_source_keys();
+    bad += test_answer_stopped_pause();
     bad += test_answer_chord();
     bad += test_answer_bend();
     bad += test_follow_live_keys();
