@@ -42,6 +42,7 @@ static void g_lofi_scene(void)
     gen(3, TESS_ENG_TURING, 40);
     tx(3, TX_TUR_PROB, 10); tx(3, TX_TW_DROP, 70);
     mixer(3, 74, 25, 70, 50);
+    g_solo_check();
 }
 static const gstep_t G_GLO_PRESETS[] = {
     {0, 0, 0, 0, 0, "Change a track's sound without leaving the page you are on"},
@@ -82,6 +83,7 @@ static void g_synthwave_scene(void)
     gen(3, TESS_ENG_CHORD, 9);
     tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 3); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
     mixer(3, 66, -25, 80, 0);
+    g_solo_check();
 }
 static const gstep_t G_EDIT[] = {
     {0, 0, 0, 0, 0, "EDIT: the pages of the selected track's sound"},
@@ -122,6 +124,7 @@ static void g_koto_scene(void)
     gen(3, TESS_ENG_CHORD, 21);
     tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 3); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
     mixer(3, 62, 0, 80, 0);
+    g_solo_check();
 }
 static void guide_e03(const char *out, FILE *tsv)
 {

@@ -34,6 +34,7 @@ static void g_triphop_scene(void)
     gen(3, TESS_ENG_TURING, 58);
     tx(3, TX_TUR_PROB, 10); tx(3, TX_TW_DROP, 60);
     mixer(3, 70, 25, 60, 40);
+    g_solo_check();
 }
 static const gstep_t G_MOD_FIRST[] = {
     {0, 0, 0, 0, 0, "A mod moves one thing with another. Make one: an LFO on a filter"},
@@ -78,6 +79,7 @@ static void g_downtempo_scene(void)
     gen(3, TESS_ENG_CHORD, 5);
     tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 3); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
     mixer(3, 60, 20, 80, 0);
+    g_solo_check();
 }
 static const gstep_t G_COND[] = {
     {0, 0, 0, 0, 0, "A step can play only on some passes, so a short loop sounds longer"},
@@ -118,6 +120,7 @@ static void g_ambtechno_scene(void)
     mixer(3, 85, 0, 20, 0);
     chain_set(FC_ABAC, PH_4, 0, REP, 0, 0);
     entries_set(75, 1, 1, 1, ROLE);
+    g_solo_check();
 }
 static const gstep_t G_PIECE[] = {
     {0, 0, 0, 0, 0, "PIECE plans a whole piece: how long it lasts, and its shape"},
@@ -164,6 +167,7 @@ static void g_chillout_scene(void)
     gen(3, TESS_ENG_CHORD, 12);
     tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
     mixer(3, 66, -20, 80, 0);
+    g_solo_check();
 }
 static const gstep_t G_COLOR[] = {
     {0, 0, 0, 0, 0, "Pick the screen's colour: one ink, or a colour for each track"},
@@ -202,6 +206,7 @@ static void g_neoclassical_scene(void)
     gen(3, TESS_ENG_EUCLID, 37);
     tx(3, TX_EUC_STEPS, 16); tx(3, TX_EUC_PULSES, 5); tx(3, TX_EUC_ROT, 3); tx(3, TX_TW_SHIFT, 12);
     mixer(3, 74, 30, 60, 50);
+    g_solo_check();
 }
 static const gstep_t G_LANDSCAPE[] = {
     {0, 0, 0, 0, 0, "LANDSCAPE: a night sea, drawn by the music"},
@@ -249,6 +254,7 @@ static void g_bossa_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 74, 0, 15, 0);
+    g_solo_check();
 }
 static const gstep_t G_FORM[] = {
     {0, 0, 0, 0, 0, "FORM makes one track's line a little song: A, then B, and back"},
@@ -295,6 +301,7 @@ static void g_dnb_scene(void)
     mixer(3, 80, 25, 70, 50);
     chain_set(FC_ABCB, PH_4, 0, REP, 0, 0);
     entries_set(0, 1, 1, 1, ROLE);
+    g_solo_check();
 }
 static const gstep_t G_ENTRIES[] = {
     {0, 0, 0, 0, 0, "ENTRIES arranges for you: tracks drop out and come back on phrase lines"},
@@ -343,6 +350,7 @@ static void g_disco_scene(void)
     tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
     mixer(3, 66, -20, 80, 0);
     chain_set(FC_OFF, PH_4, 0, REP, 5, 0);
+    g_solo_check();
 }
 static const gstep_t G_CHAIN[] = {
     {0, 0, 0, 0, 0, "CHAIN gives the whole project one FORM: the tracks change section together"},
@@ -381,6 +389,7 @@ static void g_afrohouse_scene(void)
     gen(3, TESS_ENG_CHORD, 8);
     tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
     mixer(3, 58, -20, 80, 0);
+    g_solo_check();
 }
 static const gstep_t G_ENERGY[] = {
     {0, 0, 0, 0, 0, "ENERGY: the project's mood, from sparse and soft to busy and loud"},
@@ -421,6 +430,7 @@ static void g_folktronica_scene(void)
     gen(3, TESS_ENG_EUCLID, 7);
     tx(3, TX_EUC_STEPS, 8); tx(3, TX_EUC_PULSES, 2); tx(3, TX_TW_SHIFT, -12);
     mixer(3, 90, 0, 0, 0);
+    g_solo_check();
 }
 static const gstep_t G_TWEAK[] = {
     {0, 0, 0, 0, 0, "TWEAK reshapes what a generator plays, without changing the generator"},
@@ -461,6 +471,7 @@ static void g_cinematic_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 74, 0, 50, 0);
+    g_solo_check();
 }
 static const gstep_t G_FOLLOW[] = {
     {0, 0, 0, 0, 0, "FOLLOW: one track plays another's notes, in its own rhythm"},
@@ -497,6 +508,7 @@ static void g_boombap_scene(void)
     gen(3, TESS_ENG_TURING, 53);
     tx(3, TX_TUR_PROB, 15); tx(3, TX_TW_DROP, 70);
     mixer(3, 72, 25, 60, 40);
+    g_solo_check();
 }
 static const gstep_t G_TIMING[] = {
     {0, 0, 0, 0, 0, "TIMING: rolls and feel for a generator track. Here, the drums"},
@@ -538,6 +550,7 @@ static void g_chilltrap_scene(void)
     gen(3, TESS_ENG_TURING, 59);
     tx(3, TX_TUR_PROB, 12); tx(3, TX_TW_DROP, 50);
     mixer(3, 74, 25, 70, 40);
+    g_solo_check();
 }
 static const gstep_t G_RATCHET[] = {
     {0, 0, 0, 0, 0, "One step can roll: a ratchet plays it again, inside its own step"},
@@ -582,6 +595,7 @@ static void g_dreampop_scene(void)
     gen(3, TESS_ENG_AWAKE, 38);
     tx(3, TX_AWK_LENA, 5); tx(3, TX_AWK_LENB, 3); tx(3, TX_AWK_PROB, 35);
     mixer(3, 62, 25, 100, 60);
+    g_solo_check();
 }
 static const gstep_t G_LENGTH[] = {
     {0, 0, 0, 0, 0, "LENGTH: how long a generator's notes last"},
@@ -627,6 +641,7 @@ static void g_citypop_scene(void)
     gen(3, TESS_ENG_CHORD, 6);
     tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
     mixer(3, 56, -25, 80, 0);
+    g_solo_check();
 }
 static const gstep_t G_PATTERNS[] = {
     {0, 0, 0, 0, 0, "Each track has 8 patterns, 8 pages of its own steps"},
@@ -781,6 +796,7 @@ static void g_highlife_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 72, 0, 10, 0);
+    g_solo_check();
 }
 static const gstep_t G_SEVOLVE[] = {
     {0, 0, 0, 0, 0, "Track 1's guitar is written in STEP. EVOLVE can vary it as it plays"},
@@ -829,6 +845,7 @@ static void g_ambfolk_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 66, 0, 25, 0);
+    g_solo_check();
 }
 static const gstep_t G_SEED[] = {
     {0, 0, 0, 0, 0, "Track 1 is TURING, and has a tune written in STEP too"},
@@ -876,6 +893,7 @@ static void g_fgarage_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 74, 0, 15, 0);
+    g_solo_check();
 }
 static const gstep_t G_BUSES[] = {
     {0, 0, 0, 0, 0, "Two MIX buses: mods go into one, and the bus is a source of its own"},
@@ -922,6 +940,7 @@ static void g_newage_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 62, 0, 50, 0);
+    g_solo_check();
 }
 static const gstep_t G_MODMOD[] = {
     {0, 0, 0, 0, 0, "A mod can move another mod's amount: a mod of a mod"},
@@ -934,7 +953,7 @@ static const gstep_t G_MODMOD[] = {
     {50000, 0, 0, 0, 0, "M1 AMT to M16 AMT are at the end of KNOB 3's list"},
 };
 /* minimal house: 122 BPM, G minor; an ORACLE pad on CHORD as track 1 that ducks under the bass (T3 GATE -> T1 GAIN), its
- * filter on its LFO, a tine line on TURING whose DRIFT pans the hats (T2 DRIFT -> T4 PAN), a sub on EUCLID, a 909 */
+ * filter on its LFO, a filtered soft lead on TURING whose DRIFT pans the hats (T2 DRIFT -> T4 PAN), a sub on EUCLID, a 909 */
 static void g_minhouse_scene(void)
 {
     song.g[G_BPM] = 122;
@@ -949,17 +968,18 @@ static void g_minhouse_scene(void)
     cord(1, CS_GATE, 2, CD_GAIN, 0, -45, 0, 0);
     cord(2, CS_DRIFT, 1, CD_PAN, 3, 50, 0, 0);
     mixer(0, 80, 0, 45, 0);
-    sound(1, ENGI_FM6, V_TINE);
+    sound(1, ENGI_TRIO, TR_SOFT_LEAD);
+    trk[1].p[P_E5] = 40; trk[1].p[P_E6] = 30;           /* (Theo: a more filtered lead) */
     trk[1].p[P_SDIV] = DIV_8;
     gen(1, TESS_ENG_TURING, 47);
     tx(1, TX_TUR_PROB, 10); tx(1, TX_TW_DROP, 55);
-    mixer(1, 62, 25, 50, 40);
+    mixer(1, 90, 25, 50, 40);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
     trk[2].p[P_SDIV] = DIV_8;
     gen(2, TESS_ENG_EUCLID, 29);
     tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3); tx(2, TX_EUC_ROT, 1); tx(2, TX_TW_SHIFT, -12);
     trk[2].p[P_QUANT] = Q_CHRD;
-    mixer(2, 90, 0, 0, 0);
+    mixer(2, 80, 0, 0, 0);
     sound(3, ENGI_DRUM, DK_909_KIT);
     {
         static const uint8_t L[16] = {L_BD, 0, L_CH, L_CH, L_BD, 0, L_OH, 0, L_BD, 0, L_CH, L_CH, L_BD | L_CP, 0, L_OH, L_CH};
@@ -969,6 +989,7 @@ static void g_minhouse_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 72, 0, 12, 0);
+    g_solo_check();
 }
 static const gstep_t G_MATRIX[] = {
     {0, 0, 0, 0, 0, "MATRIX: which track moves which, at a glance"},
@@ -1015,6 +1036,7 @@ static void g_space_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 60, 0, 60, 0);
+    g_solo_check();
 }
 static const gstep_t G_ORGANIC[] = {
     {0, 0, 0, 0, 0, "TIDE and SWARM: slow movement that never quite repeats"},
@@ -1060,6 +1082,7 @@ static void g_detroit_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 74, 0, 12, 0);
+    g_solo_check();
 }
 static const gstep_t G_FXMOD[] = {
     {0, 0, 0, 0, 0, "The quickest mod: hold FX and turn the knob you want to move"},
@@ -1106,6 +1129,7 @@ static void g_nusoul_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 74, 0, 15, 0);
+    g_solo_check();
 }
 static const gstep_t G_SHAPES[] = {
     {0, 0, 0, 0, 0, "A cord's shape sets how its source moves what it moves"},
@@ -1151,6 +1175,7 @@ static void g_postrock_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 70, 0, 25, 0);
+    g_solo_check();
 }
 static const gstep_t G_SHEET[] = {
     {0, 0, 0, 0, 0, "Track 1 climbs eight notes. Its sheet can play them in another order"},
@@ -1193,6 +1218,7 @@ static void g_ambhouse_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 70, 0, 20, 0);
+    g_solo_check();
 }
 static const gstep_t G_REC[] = {
     {0, 0, 0, 0, 0, "Record the keys live, while it all plays. Track 1 is empty"},
@@ -1239,6 +1265,7 @@ static void g_lounge_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 72, 0, 15, 0);
+    g_solo_check();
 }
 static const gstep_t G_STEPW[] = {
     {0, 0, 0, 0, 0, "Track 1, a flute, is an empty STEP pattern: write it on NOTES"},
@@ -1285,6 +1312,7 @@ static void g_ethno_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 74, 0, 25, 0);
+    g_solo_check();
 }
 static const gstep_t G_USCALE[] = {
     {0, 0, 0, 0, 0, "Four scales of your own, USER1 to USER4, made on the keys"},
@@ -1329,6 +1357,7 @@ static void g_chillwave_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 76, 0, 15, 0);
+    g_solo_check();
 }
 #define G_RUN6(t, lb) \
     {0, (t), 250, "C4", lb, 0}, {0, (t) + 320, 250, "D4", lb, 0}, {0, (t) + 640, 250, "E4", lb, 0}, \
@@ -1386,6 +1415,7 @@ static void g_reggae_scene(void)
     gen(3, TESS_ENG_TURING, 34);
     tx(3, TX_TUR_PROB, 15); tx(3, TX_TW_DROP, 60);
     mixer(3, 74, 25, 50, 70);
+    g_solo_check();
 }
 static const gstep_t G_SONG[] = {
     {0, 0, 0, 0, 0, "SONG lines up sets of patterns, one per track, into a song"},

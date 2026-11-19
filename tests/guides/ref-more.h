@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis (melodee-tess) */
 /* More reference clips (MANUAL by chapter): tests/demo_projects.c guide; tools/guide_video.py.
- * (g_solo_check, the balance and note checks, is in e05.h)
+ * (g_solo_check, the balance and note checks, is in e01.h)
  * r-stems and r-usb-host show menu rows the host build leaves out: render them from a build with
  * -DMELODEE_USB_AUDIO=1 -DMELODEE_USB_HOST=1 added */
 

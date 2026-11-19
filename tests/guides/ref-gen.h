@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis (melodee-tess) */
 /* The reference clips, one per generator (MANUAL "The generators"): tests/demo_projects.c guide; tools/guide_video.py.
- * r-euclid, r-markov and r-gen-layer are in ref.h. (g_solo_check, the balance and note checks, is in e05.h) */
+ * r-euclid, r-markov and r-gen-layer are in ref.h. (g_solo_check, the balance and note checks, is in e01.h) */
 
 /* kankyo ongaku (Japanese environmental music): 72 BPM, D major pentatonic; BOUNCE on a soft tine as track 1 (the clip
  * turns its SPEED, BALLS and FALL), a warm pad holding the chord, a low flute on AWAKE, a sub on two pulses */

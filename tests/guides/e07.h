@@ -35,6 +35,7 @@ static void g_mixer_scene(void)
     trk[3].p[P_SDIV] = DIV_8;
     gen(3, TESS_ENG_TURING, 23);
     mixer(3, 92, 25, 60, 40);
+    g_solo_check();
 }
 static const gstep_t G_MIXER[] = {
     {0, 0, 0, 0, 0, "MIXER: mute, solo and FILL. Four tracks are playing"},
@@ -81,6 +82,7 @@ static void g_soul_scene(void)
     gen(3, TESS_ENG_TURING, 48);
     tx(3, TX_TUR_PROB, 15); tx(3, TX_TW_DROP, 60);
     mixer(3, 78, 25, 60, 40);
+    g_solo_check();
 }
 /* deep house: 112 BPM, A minor; a soft 909 (kick on the beat, claps on two and four, shaker hats), a round sub that
  * moves (TURING, a little change each pass), tine chords on CHORD in the offbeats (ii V i), a pad under it */
@@ -114,6 +116,7 @@ static void g_deephouse_scene(void)
     gen(3, TESS_ENG_CHORD, 4);
     tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
     mixer(3, 58, -25, 70, 0);
+    g_solo_check();
 }
 static const gstep_t G_MUTES[] = {
     {0, 0, 0, 0, 0, "A mute can wait for the next bar, so a drop lands in time"},
@@ -168,6 +171,7 @@ static void g_breakbeat_scene(void)
     mixer(3, 58, -25, 70, 0);
     cord(0, CS_MACRO1, 0, CD_CUTOFF, 1, 100, -85, CU_UNI);   /* MACRO 1 -> T2 CUT: the bass from dark to open */
     cord(1, CS_MACRO1, 0, CD_FX_SEND, 2, 100, 0, CU_UNI);    /* MACRO 1 -> T3 the reverb send */
+    g_solo_check();
 }
 static const gstep_t G_PERF[] = {
     {0, 0, 0, 0, 0, "PERF: four knobs, each able to move many things at once"},

@@ -5,12 +5,6 @@
 /* checks, called last in a scene of episodes 5 and 6: GUIDE_SOLO=n (1..4) only track n heard (the others at LEVEL 0),
  * to balance a scene by measuring each track alone; GUIDE_NOTES=1 every generator note on stderr (s, track, note,
  * velocity), to check a caption such as "the line repeats" */
-static void g_solo_check(void)
-{
-    const char *s = getenv("GUIDE_SOLO");
-    if (getenv("GUIDE_NOTES")) dm_log = stderr;
-    if (s && *s >= '1' && *s <= '4') for (uint32_t j = 0; j < NTRK; j++) if (j != (uint32_t)(*s - '1')) trk[j].p[P_LEVEL] = 0;
-}
 /* Berlin school: 108 BPM, E minor; a sequencer line of sixteenths written in STEP as track 1 (the clip turns its
  * MODE), a bass pulsing in eighths, string-machine chords held four bars, a lead far away on AWAKE */
 static void g_berlin_scene(void)

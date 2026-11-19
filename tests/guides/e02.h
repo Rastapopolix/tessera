@@ -24,6 +24,7 @@ static void g_slots_scene(void)
     demo_ember();
     project_save_as(0, "EMBER FIELD");
     project_load(0);
+    g_solo_check();
 }
 static const gstep_t G_SLOT_LOAD[] = {
     {0, 0, 0, 0, 0, "Projects live in four slots. This is EMBER FIELD, in slot A"},

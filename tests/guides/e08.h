@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis (melodee-tess) */
 /* Season 1, episode 8: save and come back to it: the guided clips (tests/demo_projects.c guide; tools/guide_video.py) */
-/* (g_solo_check, the balance and note checks, is in e05.h) */
+/* (g_solo_check, the balance and note checks, is in e01.h) */
 
 /* synth-pop: 104 BPM, A dorian; an electric piano line of sixteenths on TURING as track 1, changing every bar (the clip
  * prints it), a light 808 pop beat in STEP, a warm pad on CHORD every two bars, a round bass on EUCLID

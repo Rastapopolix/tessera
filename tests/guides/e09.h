@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis (melodee-tess) */
 /* Season 1, episode 9: drive other gear: the guided clips (tests/demo_projects.c guide; tools/guide_video.py) */
-/* (g_solo_check, the balance and note checks, is in e05.h) */
+/* (g_solo_check, the balance and note checks, is in e01.h) */
 
 /* UK garage: 132 BPM, C minor; an organ-like stab line on TURING as track 1 (the clip sends it out and silences it
  * here), a two-step 909 in STEP with the kick skipping, a sub written in STEP, a soft pad holding the chord */

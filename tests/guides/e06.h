@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis (melodee-tess) */
 /* Season 1, episode 6: let it evolve: the guided clips (tests/demo_projects.c guide; tools/guide_video.py) */
-/* (g_solo_check, the balance and note checks, is in e05.h) */
+/* (g_solo_check, the balance and note checks, is in e01.h) */
 
 /* pulse minimalism: 112 BPM, D mixolydian; a harp line of sixteenths on TURING as track 1, locked (the clip rolls its
  * seed), a twelve-step marimba figure in STEP against it, strings pulsing the chord in eighths, a low lead holding */

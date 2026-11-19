@@ -43,6 +43,7 @@ static void g_jazz_scene(void)
     }
     tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_16;
     mixer(3, 78, 0, 20, 0);
+    g_solo_check();
 }
 static const gstep_t G_CHORD[] = {
     {0, 0, 0, 0, 0, "Track 1 plays chords. The other tracks only know the scale"},
@@ -83,6 +84,7 @@ static void g_dub_scene(void)
     gen(3, TESS_ENG_TURING, 66);
     tx(3, TX_TUR_PROB, 10); tx(3, TX_TW_DROP, 65);
     mixer(3, 72, 25, 80, 90);
+    g_solo_check();
 }
 static void guide_e04(const char *out, FILE *tsv)
 {

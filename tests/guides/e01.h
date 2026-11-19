@@ -5,6 +5,13 @@
  * EVOLVE EVERY), so a clip shows only what its keys do. */
 /* ambient: an ORACLE pad holding D dorian's chord, a bell wandering on AWAKE, a sub on two pulses, a kalimba now and
  * then. 64 BPM */
+/* the balance and note checks: GUIDE_SOLO=n plays track n alone, GUIDE_NOTES=1 logs generator notes */
+static void g_solo_check(void)
+{
+    const char *s = getenv("GUIDE_SOLO");
+    if (getenv("GUIDE_NOTES")) dm_log = stderr;
+    if (s && *s >= '1' && *s <= '4') for (uint32_t j = 0; j < NTRK; j++) if (j != (uint32_t)(*s - '1')) trk[j].p[P_LEVEL] = 0;
+}
 static void g_ambient_scene(void)
 {
     song.g[G_BPM] = 64;
@@ -30,6 +37,7 @@ static void g_ambient_scene(void)
     gen(3, TESS_ENG_TURING, 44);
     tx(3, TX_TUR_PROB, 10); tx(3, TX_TW_SHIFT, 7);
     mixer(3, 70, 30, 100, 70);
+    g_solo_check();
 }
 /* half-step: 70 BPM, the beat at half time (a kick, a snare on the third beat, eighth hats), a sub on EUCLID, a dark
  * pad and a bell line on TURING. F minor */
@@ -63,6 +71,7 @@ static void g_halfstep_scene(void)
     gen(3, TESS_ENG_TURING, 17);
     tx(3, TX_TUR_PROB, 15);
     mixer(3, 84, 25, 70, 50);
+    g_solo_check();
 }
 /* Season 1, episode 1: find your way. STILL TIDE, a minute in */
 static const gstep_t G_PAGES[] = {
@@ -116,6 +125,7 @@ static void g_drone_scene(void)
     gen(3, TESS_ENG_TURING, 77);
     tx(3, TX_TUR_PROB, 10); tx(3, TX_TW_DROP, 75);
     mixer(3, 70, -25, 90, 40);
+    g_solo_check();
 }
 static void guide_e01(const char *out, FILE *tsv)
 {
