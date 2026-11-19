@@ -10,6 +10,7 @@ what you expected and what happened).
 ## New since 3.7.1
 
 ## Fixed
+- Capture and print (REC held) in a busy project: the log of notes played now holds 256 notes instead of 128. With all four tracks playing, a print of four bars could come out with its first bar missing.
 - ANSWER: with the transport stopped, a pause of a second and a half now ends the phrase, so the next key starts a new one. Before, every key played while stopped joined the same phrase, and once it held 16 notes the picture kept the old ones.
 
 ## Good to know
