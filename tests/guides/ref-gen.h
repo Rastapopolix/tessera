@@ -384,12 +384,42 @@ static const gstep_t G_ANSWER[] = {
     {0, 11440, 500, "E4", "E", 0},
     {13000, 0, 0, 0, 0, "A bar with no key ends it: then the answers"},
     {22000, 25000, 1500, "KNOB 2", "VARY", "Turn KNOB 2, VARY, up: the answers stray further", 20},
-    {33000, 0, 0, 0, 0, "Each answer softer than the last; FADE 6: six of them"},
-    {40000, 43000, 250, "G4", "G", "Play a new phrase: a new call"},
-    {0, 43360, 250, "E4", "E", 0},
-    {0, 43720, 250, "D4", "D", 0},
-    {0, 44080, 500, "A3", "A", 0},
-    {50000, 0, 0, 0, 0, "Two tracks can talk: SOURCE makes one answer the other"},
+    {31000, 34000, 1000, "KNOB 3", "ECHO", "Turn KNOB 3, ECHO: now and then a note comes back once more, softer", 8},
+    {40000, 0, 0, 0, 0, "KNOB 4, FADE: how many answers, each softer. Past 16, LOOPS: it never forgets"},
+    {47000, 50000, 19000, "OCT-", "HOLD OCT-", "Hold OCT-: SOURCE, ORDER and SHIFT"},
+    {0, 52000, 400, "KNOB 3", "REVERSE", 0, 1},
+    {52500, 0, 0, 0, 0, "KNOB 3, ORDER: REVERSE plays the phrase back to front (or SHUFFLE)"},
+    {0, 58000, 600, "KNOB 4", "SHIFT 4", 0, 2},
+    {58500, 0, 0, 0, 0, "KNOB 4, SHIFT: each answer moves, up to this many degrees (4)"},
+    {63000, 0, 0, 0, 0, "KNOB 2, SOURCE: answer a STEP pattern, or another track's keys"},
+    {70000, 73000, 250, "G4", "G", "Let go, and play a new call"},
+    {0, 73360, 250, "E4", "E", 0},
+    {0, 73720, 250, "D4", "D", 0},
+    {0, 74080, 500, "A3", "A", 0},
+    {78000, 0, 0, 0, 0, "The answers come back to front, and shifted"},
+    {88000, 91000, 800, "OCT+", "GEN SHEET", "Hold OCT+: the GEN sheet. SPACE is the rest before each answer"},
+    {0, 95000, 300, "KNOB 1", "CHORD", 0, 1},
+    {0, 96500, 300, "KNOB 2", "TRUE", 0, 1},
+    {96000, 0, 0, 0, 0, "CHORD TRUE: notes played together answer as a chord (ARP spreads them)"},
+    {102000, 105000, 200, "OCT-", "CLOSE", "Tap OCT-, then play a chord"},
+    {0, 108000, 600, "A3", "A", 0},
+    {0, 108000, 600, "C4", "C", 0},
+    {0, 108000, 600, "E4", "E", 0},
+    {0, 109200, 600, "G4", "G", 0},
+    {0, 109200, 600, "D4", "D", 0},
+    {112000, 0, 0, 0, 0, "The chords come back as chords"},
+    {120000, 123000, 800, "OCT+", "GEN SHEET", "Hold OCT+ again: the last row, MODE"},
+    {0, 126000, 500, "KNOB 1", "MODE", 0, 2},
+    {0, 127500, 300, "KNOB 2", "BEND", 0, 1},
+    {127000, 0, 0, 0, 0, "BEND: a delay locked to the tempo, that answers while you play"},
+    {133000, 136000, 200, "OCT-", "CLOSE", "Tap OCT-, and play"},
+    {0, 139000, 250, "C4", "C", 0},
+    {0, 139720, 250, "D4", "D", 0},
+    {0, 140440, 250, "E4", "E", 0},
+    {0, 141160, 500, "G4", "G", 0},
+    {142000, 0, 0, 0, 0, "Each note comes back TIME steps later, again and again, drifting with VARY"},
+    {152000, 0, 0, 0, 0, "BREAK, on the sheet, makes a repeat slip, skip or stutter"},
+    {158000, 0, 0, 0, 0, "VARY, ECHO, FADE; SOURCE, ORDER, SHIFT; SPACE, CHORD and BEND"},
 };
 /* dancehall: 96 BPM, G minor; MORPH on a marimba as track 1 (the clip slides POS from preset A to preset B, then picks
  * another B), a kick and snare in STEP, a sub on EUCLID's 3 of 8, offbeat chord stabs */
@@ -485,7 +515,7 @@ static void guide_ref_gen(const char *out, FILE *tsv)
     G_RUN("r-constellation", "CONSTELLATION", "GREEN", 110, 4, g_scifi_scene, G_CONSTL);   /* library sci-fi */
     G_RUN("r-series", "SERIES", "GREEN", 55, 4, g_feldman_scene, G_SERIES);   /* slow piano after Feldman */
     G_RUN("r-chord", "CHORD: THE HARMONY", "GREEN", 152, 4, g_gospel_scene, G_CHORDS);   /* minor gospel */
-    G_RUN("r-answer", "ANSWER: CALL AND RESPONSE", "GREEN", 58, 4, g_blues_scene, G_ANSWER);   /* blues */
+    G_RUN("r-answer", "ANSWER: CALL AND RESPONSE", "GREEN", 164, 4, g_blues_scene, G_ANSWER);   /* blues */
     G_RUN("r-morph", "MORPH: A INTO B", "GREEN", 55, 4, g_dancehall_scene, G_MORPH);   /* dancehall */
     G_RUN("r-atlas", "ATLAS: THE DRUM MAP", "GREEN", 54, 4, g_brokenbeat_scene, G_ATLAS);   /* broken beat */
 }
