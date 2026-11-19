@@ -306,7 +306,7 @@ static const gstep_t G_SERIES[] = {
     {86000, 0, 0, 0, 0, "Turn it left: PUT BACK, the values from before"},
     {93000, 0, 0, 0, 0, "START, INTV and LOOP; RANDOM"},
 };
-/* minor gospel: 72 BPM, C minor, swung; CHORD on drawbar organ as track 1 (the clip turns PROG, HIT and BARS), a bass
+/* minor gospel: 72 BPM, C minor, swung; CHORD on filtered ORACLE keys as track 1 (the clip turns PROG, HIT and BARS), a bass
  * on TURING and an electric piano on AWAKE both on QNT CHRD (they follow the chord), a slow backbeat in STEP */
 static void g_gospel_scene(void)
 {
@@ -314,7 +314,8 @@ static void g_gospel_scene(void)
     song.g[G_SWING] = 30;
     scale(0, SCL_MIN, 0);
     sends(100, 80, 70, 40);
-    sound(0, ENGI_FM6, FX_DRAWBARS);
+    sound(0, ENGI_ORACLE, OR_KEYS);                     /* (Theo: a more filtered sound) */
+    trk[0].p[P_E0] = -24;
     trk[0].p[P_CHRD] = 1;
     gen(0, TESS_ENG_CHORD, 5);
     tx(0, TX_CH_PROG, GEN_CH_POP); tx(0, TX_CH_BARS, 2); tx(0, TX_CH_HIT, GEN_CH_HOLD); tx(0, TX_CH_OCT, 0);
@@ -353,8 +354,8 @@ static const gstep_t G_CHORDS[] = {
     {49000, 52000, 600, "KNOB 4", "BEAT", "Back to BEAT", -2},
     {55000, 58000, 600, "KNOB 3", "1 BAR", "Turn KNOB 3, BARS, to 1: a new chord every bar", -1},
     {64000, 67000, 17000, "OCT-", "HOLD OCT-", "Hold OCT-: how the chord is struck"},
-    {0, 69000, 2500, "KNOB 2", "STRUM", 0, 24},
-    {73000, 0, 0, 0, 0, "KNOB 2, STRUM: the notes one after another, like a strum"},
+    {0, 69000, 3000, "KNOB 2", "STRUM", 0, 36},
+    {73000, 0, 0, 0, 0, "KNOB 2, STRUM: the notes one after another. This long, a slow roll"},
     {0, 76500, 400, "KNOB 3", "DOWN", 0, 1},
     {77500, 0, 0, 0, 0, "KNOB 3, DIR: UP, DOWN or ALT. Here DOWN, the top note first"},
     {0, 81000, 400, "KNOB 4", "OCT +1", 0, 1},
