@@ -394,6 +394,7 @@ static void g_disco_scene(void)
     trk[3].p[P_CHRD] = 1;
     gen(3, TESS_ENG_CHORD, 6);
     tx(3, TX_CH_PROG, GEN_CH_DRONE); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
+    trk[3].p[P_E5] = 54; trk[3].p[P_LRATE] = 24; trk[3].p[P_LD_FLT] = 40;   /* (Theo: the drone's filter moves) */
     mixer(3, 66, -20, 80, 0);
     chain_set(FC_OFF, PH_4, 0, REP, 5, -2);
     g_solo_check();
@@ -554,7 +555,8 @@ static void g_cinematic_scene(void)
     trk[2].p[P_CHRD] = 1;
     gen(2, TESS_ENG_CHORD, 18);
     tx(2, TX_CH_PROG, GEN_CH_DRONE); tx(2, TX_CH_BARS, 3); tx(2, TX_CH_HIT, GEN_CH_HOLD); tx(2, TX_CH_OCT, -1);
-    mixer(2, 62, 20, 90, 0);
+    mixer(2, 50, 20, 90, 0);
+    trk[2].p[P_LRATE] = 20; trk[2].p[P_LD_AMP] = 34; trk[2].p[P_LD_FLT] = 18;   /* (Theo: a quieter drone, gently pulsing) */
     sound(3, ENGI_DRUM, DK_909_KIT);
     {
         static const uint8_t L[16] = {L_TM, 0, 0, 0, 0, 0, L_TM, 0, L_BD, 0, 0, 0, 0, 0, L_TM, L_TM};
@@ -742,16 +744,17 @@ static const gstep_t G_PATTERNS[] = {
     {27100, 0, 0, 0, 0, "On its line it switches: a new bass part"},
     {32000, 0, 0, 0, 0, "JAM logs what you played. On SONG, the next page, take it as a song"},
 };
-/* exotica, darker: 96 BPM, D harmonic minor; track 1 a koto pluck on MARKOV in eighths (LEAP 0 to start), a
+/* exotica, darker: 84 BPM, D harmonic minor; track 1 a soft koto pluck on MARKOV in quarters (LEAP 0 to start), a
  * soft vibraphone-like tine on CHORD, a sub on EUCLID, bongos from the 909's toms with a rim in STEP */
 static void g_exotica_scene(void)
 {
-    song.g[G_BPM] = 96;
+    song.g[G_BPM] = 84;
     song.g[G_SWING] = 22;
     scale(2, 7, 1);                                     /* D HARM (harmonic minor), QNT SNAP */
     sends(100, 75, 70, 45);
-    sound(0, ENGI_FM6, FX_KOTO_PLUCK);                  /* (Theo: pluckier, more exotic, minor) */
-    trk[0].p[P_SDIV] = DIV_8;
+    sound(0, ENGI_FM6, FX_KOTO_PLUCK);                  /* (Theo: pluckier, more exotic, minor; then softer and */
+    trk[0].p[P_E2] = -14;                               /* slower, with room between the notes: MLVL down, quarters) */
+    trk[0].p[P_SDIV] = DIV_4;
     gen(0, TESS_ENG_MARKOV, 57);
     tx(0, TX_MKV_LEAP, 0); tx(0, TX_MKV_DENS, 90); tx(0, TX_MKV_SPAN, 1); tx(0, TX_TW_SHIFT, 12);
     {   /* a melody on its STEP page, unheard until the clip turns SOURCE to it (OCT- layer) */
@@ -759,12 +762,12 @@ static void g_exotica_scene(void)
         for (uint32_t i = 0; i < 16u; i++) if (N[i]) step_note(0, i, N[i], i % 4u ? 84 : 104);
         trk[0].p[P_SLEN] = 16;
     }
-    mixer(0, 108, 10, 45, 40);
+    mixer(0, 110, 10, 45, 40);
     sound(1, ENGI_FM6, FX_TINE);
     trk[1].p[P_CHRD] = 2;
     gen(1, TESS_ENG_CHORD, 32);
     tx(1, TX_CH_PROG, GEN_CH_251); tx(1, TX_CH_BARS, 1); tx(1, TX_CH_HIT, GEN_CH_BEAT); tx(1, TX_CH_OCT, -1);
-    mixer(1, 70, -25, 55, 20);
+    mixer(1, 62, -25, 55, 20);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
     trk[2].p[P_SDIV] = DIV_4;
     gen(2, TESS_ENG_EUCLID, 3);
@@ -853,13 +856,13 @@ static const gstep_t G_EUCLID[] = {
     {71000, 0, 0, 0, 0, "KNOB 4, GRAVITY: how often a step plays the melody's own hit or rest"},
     {80000, 0, 0, 0, 0, "STEPS, PULSES and ROT; SOURCE, KEEP and GRAVITY"},
 };
-/* highlife: 112 BPM, C major; track 1 a guitar-like pluck written in STEP (16 sixteenths, with rests) that STEP EVOLVE
- * varies, organ chords on the offbeats on CHORD, a walking sub on TURING, a 909 with shaker-like hats in STEP */
+/* slow highlife: 96 BPM, A minor; track 1 a guitar-like pluck written in STEP (16 sixteenths, with rests) that STEP
+ * EVOLVE varies, a warm pad holding the chords on CHORD (no offbeat), a walking sub on TURING, a soft 909 in STEP */
 static void g_highlife_scene(void)
 {
     static const uint8_t N[16] = {72, 0, 76, 79, 0, 76, 74, 0, 72, 0, 69, 72, 0, 67, 69, 0};
-    song.g[G_BPM] = 112;
-    scale(0, 1, 1);                                     /* C MAJ, QNT SNAP */
+    song.g[G_BPM] = 96;
+    scale(9, SCL_MIN, 1);                               /* A minor, QNT SNAP (Theo: less upbeat; the line's notes stay) */
     sends(70, 55, 65, 40);
     sound(0, ENGI_TRIO, TR_SOFT_LEAD);                  /* (Theo: a softer pluck, dry) */
     trk[0].p[P_E5] = 52; trk[0].p[P_ATK] = 0; trk[0].p[P_DEC] = 52; trk[0].p[P_SUS] = 0; trk[0].p[P_REL] = 40;
@@ -867,11 +870,11 @@ static void g_highlife_scene(void)
     tx(0, TX_MODE, TESS_ENG_OFF);
     trk[0].p[P_SDIV] = DIV_16; trk[0].p[P_SLEN] = 16;
     mixer(0, 127, 15, 0, 20);
-    sound(1, ENGI_FM6, FX_ORGAN);
+    sound(1, ENGI_TRIO, TR_WARM_PAD);                   /* (Theo: no offbeat chord; a held one) */
     trk[1].p[P_CHRD] = 1;
     gen(1, TESS_ENG_CHORD, 6);
-    tx(1, TX_CH_PROG, GEN_CH_POP); tx(1, TX_CH_BARS, 1); tx(1, TX_CH_HIT, GEN_CH_OFF);
-    mixer(1, 88, -25, 40, 0);
+    tx(1, TX_CH_PROG, GEN_CH_TWO); tx(1, TX_CH_BARS, 2); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 62, -25, 0, 0);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
     trk[2].p[P_SDIV] = DIV_8;
     gen(2, TESS_ENG_TURING, 24);

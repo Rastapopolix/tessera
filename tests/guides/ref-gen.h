@@ -623,6 +623,7 @@ static const gstep_t G_TURING_ALL[] = {
     {11000, 14000, 2000, "KNOB 3", "LOCK", "Turn KNOB 3, PROB, to 0: LOCK. The loop repeats", -15},
     {20000, 23000, 1200, "KNOB 2", "LEN 8", "Turn KNOB 2, LEN, to 8: a shorter loop", -8},
     {29000, 32000, 400, "KNOB 4", "SPAN 3", "Turn KNOB 4, SPAN, to 3: the notes spread over 3 octaves", 1},
+    {35000, 36000, 400, "KNOB 4", "SPAN 2", "And back to 2: smaller leaps for the rest", -1},
     {38000, 41000, 800, "KNOB 3", "PROB", "PROB up a little: now and then a step changes, and stays", 5},
     {47000, 50000, 28000, "OCT-", "HOLD OCT-", "Hold OCT-: SOURCE, KEEP and GRAVITY"},
     {0, 52000, 300, "KNOB 2", "SOURCE T1", 0, 1},
