@@ -283,7 +283,7 @@ static const gstep_t G_FORM[] = {
     {48500, 0, 0, 0, 0, "Hold OCT- for DEVELOP: returns that change a little each time"},
 };
 /* liquid drum and bass: 172 BPM, F minor; a broken 909 as track 1 (RHYTHM), a sub on EUCLID (BASS), an ORACLE pad
- * (HARMONY), a bell line on TURING (MELODY); the CHAIN ABAC in 4-bar phrases, so ENTRIES has lines to move on */
+ * (HARMONY), a soft lead's written line in STEP (MELODY); the CHAIN ABCB in 4-bar phrases, so ENTRIES has lines to move on */
 static void g_dnb_scene(void)
 {
     static const uint8_t REP[4] = {1, 1, 1, 1}, ROLE[4] = {RO_RHYTHM, RO_BASS, RO_HARMONY, RO_MELODY};
@@ -304,17 +304,21 @@ static void g_dnb_scene(void)
     gen(1, TESS_ENG_EUCLID, 22);
     tx(1, TX_EUC_STEPS, 16); tx(1, TX_EUC_PULSES, 3); tx(1, TX_EUC_ROT, 0); tx(1, TX_TW_SHIFT, -12);
     tx(1, TX_NL_MODE, 1); tx(1, TX_NL_LEN, 4);
-    mixer(1, 100, 0, 0, 0);
+    mixer(1, 86, 0, 0, 0);
     sound(2, ENGI_ORACLE, OR_WARM_PAD);
     trk[2].p[P_CHRD] = 2;
     gen(2, TESS_ENG_CHORD, 10);
     tx(2, TX_CH_PROG, GEN_CH_TWO); tx(2, TX_CH_BARS, 2); tx(2, TX_CH_HIT, GEN_CH_HOLD); tx(2, TX_CH_OCT, -1);
-    mixer(2, 70, -20, 80, 0);
-    sound(3, ENGI_FM6, FX_RIN);
-    trk[3].p[P_SDIV] = DIV_8;
-    gen(3, TESS_ENG_TURING, 39);
-    tx(3, TX_TUR_PROB, 10);
-    mixer(3, 80, 25, 70, 50);
+    mixer(2, 80, -20, 80, 0);
+    sound(3, ENGI_TRIO, TR_SOFT_LEAD);                  /* (Theo: the bell line didn't fit; a soft lead, a written line) */
+    trk[3].p[P_E5] = 55;
+    {
+        static const uint8_t N[16] = {65, 0, 68, 0, 72, 0, 70, 68, 0, 67, 0, 63, 0, 65, 0, 0};
+        for (uint32_t i = 0; i < 16u; i++) if (N[i]) step_note(3, i, N[i], i % 4u ? 80 : 100);
+        trk[3].p[P_SLEN] = 16;
+    }
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_8;
+    mixer(3, 100, 25, 60, 45);
     chain_set(FC_ABCB, PH_4, 0, REP, 0, 0);
     entries_set(0, 1, 1, 1, ROLE);
     g_solo_check();
@@ -325,11 +329,16 @@ static const gstep_t G_ENTRIES[] = {
     {0, 8000, 200, "GLO", "PERF", 0},
     {12000, 15000, 1500, "SELECT", "ENTRIES", "Turn SELECT: on to ENTRIES", 3},
     {19000, 22000, 4000, "KNOB 1", "76 %", "Turn KNOB 1: ENTRIES 76 %, how many tracks may be out at once", 38},
-    {28500, 0, 0, 0, 0, "Each track's part decides its turn: bass in first, melody out first"},
-    {35100, 0, 0, 0, 0, "Before A comes round again, only the bass plays on"},
-    {40700, 0, 0, 0, 0, "A returns with everything"},
-    {46200, 0, 0, 0, 0, "Away from A it thins again: the melody leaves first"},
-    {51800, 0, 0, 0, 0, "and is back on the next line. Your own mutes still win"},
+    {28000, 0, 0, 0, 0, "Each track's part decides its turn: the bass comes in first, the melody leaves first"},
+    {34000, 37000, 6000, "OCT-", "HOLD OCT-", "Hold OCT-: each track's ROLE. RHYTHM, BASS, HARMONY, MELODY"},
+    {40000, 0, 0, 0, 0, "An ANCHOR is never taken out; AUTO guesses from the sound"},
+    {46000, 49000, 600, "KNOB 2", "DWELL 2", "Turn KNOB 2, DWELL: the least a track stays in or out, here 2 phrases", 1},
+    {55000, 58000, 600, "KNOB 3", "CUT", "Turn KNOB 3, STYLE: CUT, in or out at once on the line", -1},
+    {64000, 67000, 600, "KNOB 3", "FADE", "Back to FADE: its level fades in or out from the line", 1},
+    {72000, 75000, 900, "KNOB 4", "FADE 2", "Turn KNOB 4: FADE takes 2 bars", 1},
+    {81000, 0, 0, 0, 0, "Each change is decided a bar ahead: that track's mute key blinks"},
+    {88000, 0, 0, 0, 0, "Before A comes round, the anchors play alone; A returns with everything"},
+    {95000, 0, 0, 0, 0, "Your own mutes still win. ENTRIES, DWELL, STYLE, FADE and the ROLEs"},
 };
 /* disco: 116 BPM, A minor; an 808 four on the floor (open hats on the offbeat, claps), an octave bass on EUCLID, a
  * clavinet on POLY, strings holding the chord. CHAIN FORM OFF until the clip turns it on; KEY B +5 (a fourth up) */
@@ -1481,7 +1490,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-landscape", "A SEA TO WATCH", "MOSAIC", 108, 4, g_neoclassical_scene, G_LANDSCAPE);   /* neo-classical */
     G_RUN("r-color", "THE SCREEN'S COLOUR", "YELLOW", 54, 4, g_chillout_scene, G_COLOR);   /* chillout */
     G_RUN("r-form", "A TRACK AS A SONG", "SUNSET", 60, 4, g_bossa_scene, G_FORM);   /* bossa nova */
-    G_RUN("r-entries", "TRACKS OUT AND IN", "SUNSET", 60, 4, g_dnb_scene, G_ENTRIES);   /* liquid drum and bass */
+    G_RUN("r-entries", "TRACKS OUT AND IN", "SUNSET", 102, 4, g_dnb_scene, G_ENTRIES);   /* liquid drum and bass */
     G_RUN("r-chain", "ONE FORM FOR ALL", "SUNSET", 64, 4, g_disco_scene, G_CHAIN);   /* disco */
     G_RUN("r-energy", "ENERGY BY HAND", "SUNSET", 54, 4, g_afrohouse_scene, G_ENERGY);   /* afro house */
     G_RUN("r-tweak", "RESHAPE A LINE", "GREEN", 46, 4, g_folktronica_scene, G_TWEAK);   /* folktronica */
