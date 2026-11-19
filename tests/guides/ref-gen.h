@@ -287,12 +287,37 @@ static void g_gospel_scene(void)
 }
 static const gstep_t G_CHORDS[] = {
     {0, 0, 0, 0, 0, "CHORD: a progression's chords, in the track's scale"},
-    {4000, 7000, 200, "SEQ", "OPEN SEQ", "Tap SEQ: PROG is POP, a chord every 2 bars"},
-    {12000, 15000, 600, "KNOB 2", "2-5-1", "Turn KNOB 2, PROG, to 2-5-1", 2},
+    {4000, 7000, 200, "SEQ", "OPEN SEQ", "Tap SEQ: PROG is POP, BARS 2, HIT HOLD"},
+    {11500, 14500, 600, "KNOB 2", "2-5-1", "Turn KNOB 2, PROG, to 2-5-1", 2},
     {20000, 0, 0, 0, 0, "Bass and piano are on QNT CHRD: they follow the chord"},
-    {28000, 31000, 400, "KNOB 4", "BEAT", "Turn KNOB 4, HIT, to BEAT: the chord on every beat", 1},
-    {37000, 40000, 600, "KNOB 3", "1 BAR", "Turn KNOB 3, BARS, to 1: a new chord every bar", -1},
-    {47000, 0, 0, 0, 0, "PROG, BARS and HIT: the whole harmony on three knobs"},
+    {27000, 30000, 400, "KNOB 4", "BEAT", "Turn KNOB 4, HIT, to BEAT: the chord on every beat", 1},
+    {35000, 38000, 400, "KNOB 4", "STEP", "STEP: on every step of the track", 1},
+    {42000, 45000, 400, "KNOB 4", "OFFBEAT", "OFFBEAT: short stabs between the beats", 1},
+    {49000, 52000, 600, "KNOB 4", "BEAT", "Back to BEAT", -2},
+    {55000, 58000, 600, "KNOB 3", "1 BAR", "Turn KNOB 3, BARS, to 1: a new chord every bar", -1},
+    {64000, 67000, 17000, "OCT-", "HOLD OCT-", "Hold OCT-: how the chord is struck"},
+    {0, 69000, 2500, "KNOB 2", "STRUM", 0, 24},
+    {73000, 0, 0, 0, 0, "KNOB 2, STRUM: the notes one after another, like a strum"},
+    {0, 76500, 400, "KNOB 3", "DOWN", 0, 1},
+    {77500, 0, 0, 0, 0, "KNOB 3, DIR: UP, DOWN or ALT. Here DOWN, the top note first"},
+    {0, 81000, 400, "KNOB 4", "OCT +1", 0, 1},
+    {82000, 0, 0, 0, 0, "KNOB 4, OCT: the chords an octave up"},
+    {88000, 91000, 800, "OCT+", "GEN SHEET", "Hold OCT+: the GEN sheet. KNOB 1 picks a row, KNOB 2 sets it"},
+    {0, 94000, 400, "KNOB 2", "DIA7", 0, 1},
+    {95000, 0, 0, 0, 0, "CHORD: the chord's kind. DIA7: sevenths in the scale"},
+    {0, 101000, 300, "KNOB 1", "VOICING", 0, 1},
+    {0, 102500, 300, "KNOB 2", "OPEN", 0, 1},
+    {101500, 0, 0, 0, 0, "VOICING: OPEN spreads the notes wider"},
+    {108000, 0, 0, 0, 0, "BREATH, the last row, works with HIT HOLD: voices drift in and out"},
+    {114000, 117000, 200, "OCT-", "CLOSE", "Tap OCT-: the sheet closes"},
+    {121000, 124000, 1000, "KNOB 2", "USER", "Your own chords: turn KNOB 2, PROG, to USER", 5},
+    {128000, 131000, 4600, "OCT-", "HOLD OCT-", "Hold OCT- and play a root for each chord"},
+    {0, 132000, 500, "C4", "C", 0},
+    {0, 133000, 500, "G#4", "G#", 0},
+    {0, 134000, 500, "F4", "F", 0},
+    {0, 135000, 500, "G4", "G", 0},
+    {137000, 0, 0, 0, 0, "Let go: four chords, played in turn"},
+    {146000, 0, 0, 0, 0, "PROG, BARS and HIT; STRUM, DIR and OCT; the sheet's kind and voicing"},
 };
 /* blues call and response: 84 BPM, A blues, shuffled; ANSWER on a clavinet as track 1 (the clip plays a call on the
  * keys, then turns VARY), a warm pad on I and IV, a bass on EUCLID, a shuffle in STEP */
@@ -439,7 +464,7 @@ static void guide_ref_gen(const char *out, FILE *tsv)
     G_RUN("r-quad", "QUAD: ONE GRID", "GREEN", 55, 4, g_mathrock_scene, G_QUAD);   /* math rock */
     G_RUN("r-constellation", "CONSTELLATION", "GREEN", 55, 4, g_scifi_scene, G_CONSTL);   /* library sci-fi */
     G_RUN("r-series", "SERIES", "GREEN", 55, 4, g_feldman_scene, G_SERIES);   /* slow piano after Feldman */
-    G_RUN("r-chord", "CHORD: THE HARMONY", "GREEN", 55, 4, g_gospel_scene, G_CHORDS);   /* minor gospel */
+    G_RUN("r-chord", "CHORD: THE HARMONY", "GREEN", 152, 4, g_gospel_scene, G_CHORDS);   /* minor gospel */
     G_RUN("r-answer", "ANSWER: CALL AND RESPONSE", "GREEN", 58, 4, g_blues_scene, G_ANSWER);   /* blues */
     G_RUN("r-morph", "MORPH: A INTO B", "GREEN", 55, 4, g_dancehall_scene, G_MORPH);   /* dancehall */
     G_RUN("r-atlas", "ATLAS: THE DRUM MAP", "GREEN", 54, 4, g_brokenbeat_scene, G_ATLAS);   /* broken beat */
