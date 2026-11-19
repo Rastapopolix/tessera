@@ -223,7 +223,7 @@ static const gstep_t G_LANDSCAPE[] = {
     {56000, 59000, 200, "C4", "UNMUTE ALL", "C4 brings them all back"},
 };
 /* bossa nova: 128 BPM with a little swing, D dorian; a flute line on TURING as track 1 (its FORM), a plucked
- * guitar on CHORD in the offbeats, a bass on EUCLID, rim and shaker on a 909 */
+ * guitar on CHORD on the beats (HIT STEP at 1/4), a bass on EUCLID, rim and shaker on a 909 */
 static void g_bossa_scene(void)
 {
     song.g[G_BPM] = 128;
@@ -234,17 +234,18 @@ static void g_bossa_scene(void)
     trk[0].p[P_SDIV] = DIV_8;
     gen(0, TESS_ENG_TURING, 44);
     tx(0, TX_TUR_PROB, 0);
-    mixer(0, 100, 15, 50, 30);
+    mixer(0, 116, 15, 50, 30);
     sound(1, ENGI_FM6, V_PLUCK);
     trk[1].p[P_CHRD] = 2;
     gen(1, TESS_ENG_CHORD, 7);
-    tx(1, TX_CH_PROG, GEN_CH_251); tx(1, TX_CH_BARS, 1); tx(1, TX_CH_HIT, GEN_CH_OFF);
-    mixer(1, 76, -20, 40, 0);
+    tx(1, TX_CH_PROG, GEN_CH_251); tx(1, TX_CH_BARS, 1); tx(1, TX_CH_HIT, GEN_CH_STEP);
+    trk[1].p[P_SDIV] = DIV_4;                           /* (Theo: no offbeat chords here; HIT STEP on the beats) */
+    mixer(1, 86, -20, 40, 0);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
     trk[2].p[P_SDIV] = DIV_8;
     gen(2, TESS_ENG_EUCLID, 16);
     tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 3); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
-    mixer(2, 92, 0, 0, 0);
+    mixer(2, 80, 0, 0, 0);
     sound(3, ENGI_DRUM, DK_909_KIT);
     {
         static const uint8_t L[16] = {L_BD, 0, L_CH, L_RS, L_CH, 0, L_RS | L_CH, 0, L_BD, 0, L_CH, L_RS, L_CH, 0, L_RS | L_CH, 0};
