@@ -952,7 +952,7 @@ static void gen_chord_tick(gen_chord_t *g, const gen_clock_t *clk, gen_out_t *ou
         uint32_t per = g->hit == GEN_CH_STEP ? 1u : g->hit == GEN_CH_BEAT ? beat : g->hit == GEN_CH_OFF ? off : len;
         uint32_t spb = clk->steps_per_bar ? clk->steps_per_bar : 16u;
         g->sk = (uint8_t)(g->n % spb / per);
-        g->sn = (uint8_t)((spb + per - 1u) / per);
+        g->sn = (uint8_t)(spb / per);
         g->slast = (uint8_t)(in / per == (len - 1u) / per);
         g->bar = (uint8_t)(g->n / spb);
     }

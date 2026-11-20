@@ -1590,27 +1590,24 @@ static int tess_chord_when(uint32_t tr, const tessera_chord_t *g)
 /* MOVE BY: the strike's notes (out, n, ascending) moved; their count. The chord's root and tones stay (QNT CHRD) */
 static uint32_t tess_chord_move(const track_t *t, uint32_t tr, const tessera_chord_t *g, uint8_t *out, uint32_t n)
 {
-    static const int8_t ST[TESS_CB_DEG1] = {-2, -1, 1, 2, 3};
-    uint32_t by = tessera.ch_by[tr], i, p = scale_note_period(t);
-    int32_t r, x;
+    static const int8_t ST[TESS_CB_N] = {-2, -1, 1, 2, 3, 0, 0, 0, 0, 12, 0, -1};
+    uint32_t by = tessera.ch_by[tr], i;
+    int32_t r;
     uint16_t m;
-    if (by < TESS_CB_DEG1 || by == TESS_CB_OCT || by == TESS_CB_LEAD) {
-        x = by < TESS_CB_DEG1 ? ST[by] : by == TESS_CB_OCT ? (int32_t)p : -1;
-        if (by == TESS_CB_LEAD)                         /* (the next chord of the progression) */
-            n = tess_chord_build(t, gen_chord_degree(g, (g->idx + 1u) % gen_chord_len(g)), out, &r, &m);
-        for (i = 0; i < n; i++) out[i] = (uint8_t)clamp((int32_t)out[i] + x, 0, 127);
-    } else if (by <= TESS_CB_DEG2) {
-        n = tess_chord_build(t, g->deg + by - TESS_CB_DEG1 + 1u, out, &r, &m);
-    } else if (n > 1u && by == TESS_CB_INVU) {          /* (the lowest note an octave up, on top) */
-        x = out[0] + (int32_t)p;
+    if (by == TESS_CB_LEAD || by == TESS_CB_DEG1 || by == TESS_CB_DEG2)   /* (in key; LEAD the next chord) */
+        n = tess_chord_build(t, by == TESS_CB_LEAD ? gen_chord_degree(g, g->idx + 1u) : g->deg + by - TESS_CB_DEG1 + 1u,
+                             out, &r, &m);
+    for (i = 0; i < n; i++) out[i] = (uint8_t)(out[i] + ST[by]);   /* (tess_chord_play keeps them to 0..127) */
+    if (n > 1u && by == TESS_CB_INVU) {                 /* (the lowest note an octave up, on top) */
+        r = out[0] + 12;
         for (i = 1; i < n; i++) out[i - 1u] = out[i];
-        out[n - 1u] = (uint8_t)clamp(x, 0, 127);
+        out[n - 1u] = (uint8_t)r;
     } else if (n > 1u && by == TESS_CB_INVD) {          /* (the highest an octave down, below) */
-        x = out[n - 1u] - (int32_t)p;
+        r = out[n - 1u] - 12;
         for (i = n - 1u; i; i--) out[i] = out[i - 1u];
-        out[0] = (uint8_t)clamp(x, 0, 127);
+        out[0] = (uint8_t)r;
     } else if (by == TESS_CB_TOP) {
-        out[n - 1u] = (uint8_t)clamp(tess_scale_steps(t, out[n - 1u], 1), 0, 127);
+        out[n - 1u] = (uint8_t)tess_scale_steps(t, out[n - 1u], 1);
     }
     return n;
 }

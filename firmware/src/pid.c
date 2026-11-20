@@ -858,14 +858,12 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                     "phrase line, before its first notes, and at PLAY; a repeat of the same "
                                     "section sends nothing. Nothing with FORM OFF, MIDI OUT OFF or the track's "
                                     "channel OFF. MIDI OUT's sheet (OCT+ held), Section PC T1 to T4."),
-    X_(TX_CH_WHEN, "CHORD MOVE WHEN", "Which strikes of a BEAT, STEP or OFFBEAT chord move (BY), each back home on "
-                                      "the next: LAST the bar's last, as a skank pushed on the and of 4; LAST 2 its "
-                                      "last two; ODD every second; CHANGE the last before the chord changes; RAND one "
-                                      "a bar, from the SEED. OFF: none. The GEN sheet (OCT+ held), Move when."),
-    X_(TX_CH_BY, "CHORD MOVE BY", "How far a strike moves (WHEN): the whole shape -2 to +3 semitones (Am to Bm at "
-                                  "+2 ST); +1 or +2 degrees of the scale, in key (Am to C in A minor); INV+ or INV- "
-                                  "the next inversion; OCT+ an octave up; TOP the top note a degree up; LEAD the next "
-                                  "chord a semitone below, leading into it. The GEN sheet, Move by."),
+    X_(TX_CH_WHEN, "CHORD MOVE WHEN", "Which strikes of a BEAT, STEP or OFFBEAT chord move (BY), back home on the "
+                                      "next: LAST the bar's last, LAST 2, ODD every second, CHANGE the last before "
+                                      "a new chord, RAND one a bar. GEN sheet."),
+    X_(TX_CH_BY, "CHORD MOVE BY", "How far a strike moves: the whole shape by semitones (ST), up the scale in key "
+                                  "(DEG), turned over (INV), an octave, the top note a degree (TOP), or the next "
+                                  "chord a semitone below (LEAD). GEN sheet."),
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
