@@ -11,11 +11,12 @@ page's text, with no network. Headings keep GitHub's anchors (lower case, punctu
 
 Links: MANUAL.md and GETTING_STARTED.md to these pages; the manual's PDF (docs/manual/tessera-manual.pdf, made by
 tools/gen_manual_pdf.py) to its copy at manual/tessera-manual.pdf (make_site.py puts it there); every other file of
-the repository (RECIPES.md, docs/...) to it on GitHub; the pictures (assets/gallery, assets/brand) to the site's media/ (web/make_site.py copies them there).
+the repository (RECIPES.md, docs/...) to it on GitHub; the pictures (assets/gallery, assets/brand, assets/guides) to the site's media/ (web/make_site.py copies them there).
 
   web/make_manual.py OUT_DIR            (web/make_site.py calls it; needs markdown-it-py: pip install markdown-it-py)
 """
 import html
+import json
 import re
 import sys
 from pathlib import Path
@@ -51,10 +52,34 @@ def link(url, here):
         return f"../{PAGES[path]}/" + (f"#{frag}" if frag else "")
     if path == PDF_SRC:
         return "../manual/" + PDF_NAME
-    for src, dst in (("assets/gallery/", "media/gallery/"), ("assets/brand/", "media/brand/")):
+    for src, dst in (("assets/gallery/", "media/gallery/"), ("assets/brand/", "media/brand/"), ("assets/guides/", "media/guides/")):
         if path.startswith(src):
             return "../" + dst + path[len(src):]
     return REPO + path + (f"#{frag}" if frag else "")
+
+
+GUIDES = ROOT / "tools/guide_videos.json"           # the guided clips (tools/guide_links.py writes their lines)
+GUIDE_MARK = "<!-- guide videos -->"
+
+
+def videos(md_text, mode):
+    """the guided clips' lines of MANUAL.md (thumbnails linking to YouTube, as GitHub shows them) for the site ("web":
+    click-to-load players, nothing fetched from YouTube until one is played) or the PDF ("text": a line of links)"""
+    clips = {c["video"]: c for c in json.loads(GUIDES.read_text(encoding="utf-8"))["clips"]}
+
+    def one(m):
+        cs = [clips[v] for v in re.findall(r'href="https://youtu\.be/([\w-]+)"', m.group(0))]
+        if mode == "text":
+            links = ", ".join(f"[{c['title']}](https://youtu.be/{c['video']})" for c in cs)
+            return f"**{'Video' if len(cs) == 1 else 'Videos'}:** {links}"
+        figs = "".join(
+            f'<figure><a class="play" href="https://youtu.be/{c["video"]}" data-video="{c["video"]}" '
+            f'aria-label="Play the video: {html.escape(c["title"])}"><img src="assets/guides/{c["clip"]}.png" alt="" '
+            f'width="640" height="360" loading="lazy"></a><figcaption>{html.escape(c["title"])}</figcaption></figure>'
+            for c in cs)
+        return f'<div class="videos">{figs}</div>'
+
+    return re.sub(r"^<p><a href=\"https://youtu\.be/.*" + re.escape(GUIDE_MARK) + "$", one, md_text, flags=re.M)
 
 
 def convert(md_text, here):
@@ -197,6 +222,17 @@ main img {{ max-width: 100%; height: auto; image-rendering: pixelated; }}
 main p[align="center"] {{ text-align: center; }}
 main p[align="center"] img {{ display: inline-block; margin: 4px; }}
 main sub {{ color: var(--dim); font-size: 13px; }}
+main .videos {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 12px 0 20px; }}
+main .videos figure {{ margin: 0; }}
+main .videos figure.on {{ grid-column: 1 / -1; }}
+main .videos figcaption {{ color: var(--dim); font-size: 13px; margin-top: 4px; }}
+main .videos .play {{ position: relative; display: block; line-height: 0; border: 1px solid var(--line); }}
+main .videos .play:hover, main .videos .play:focus-visible {{ border-color: var(--ink); }}
+main .videos .play:focus-visible {{ outline: 2px solid var(--ink); outline-offset: 2px; }}
+main .videos .play img {{ width: 100%; image-rendering: auto; }}
+main .videos .play::before {{ content: ""; position: absolute; right: 4px; bottom: 4px; width: 36px; height: 24px; background: var(--bg); border: 1px solid var(--ink); }}
+main .videos .play::after {{ content: ""; position: absolute; right: 16px; bottom: 10px; border-style: solid; border-width: 6px 0 6px 10px; border-color: transparent transparent transparent var(--ink); }}
+main .videos iframe {{ display: block; width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--ink); }}
 main table {{ border-collapse: collapse; display: block; overflow-x: auto; margin: 12px 0; font-size: 14px; }}
 main th, main td {{ border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }}
 main th {{ background: var(--surf); color: var(--ink); font-weight: 400; }}
@@ -305,6 +341,24 @@ main hr {{ border: 0; border-top: 1px solid var(--line); margin: 32px 0; }}
   }});
   q.addEventListener("keydown", function (e) {{ if (e.key === "Escape") {{ q.value = ""; q.dispatchEvent(new Event("input")); }} }});
 }})();
+/* the guided clips: a thumbnail (a link to YouTube without script) becomes the player when played; nothing is
+   fetched from YouTube before that, and the player takes the focus */
+(function () {{
+  [].forEach.call(document.querySelectorAll("main .videos .play"), function (a) {{
+    a.addEventListener("click", function (e) {{
+      if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+      e.preventDefault();
+      var f = document.createElement("iframe"), fig = a.parentNode;
+      f.src = "https://www.youtube-nocookie.com/embed/" + a.dataset.video + "?autoplay=1&rel=0";
+      f.title = a.getAttribute("aria-label").replace("Play the video: ", "Video: ");
+      f.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+      f.allowFullscreen = true;
+      fig.className = "on";
+      fig.replaceChild(f, a);
+      f.focus();
+    }});
+  }});
+}})();
 /* LIGHT / DARK: names the other look; the choice is stored (tessera-theme), as on the project page */
 (function () {{
   var b = document.getElementById("theme"), r = document.documentElement;
@@ -333,7 +387,7 @@ def make(out):
     out = Path(out)
     face, dark, light = font_and_colours()
     for src, page in PAGES.items():
-        body, heads = convert((ROOT / src).read_text(encoding="utf-8"), page)
+        body, heads = convert(videos((ROOT / src).read_text(encoding="utf-8"), "web"), page)
         dest = out / page / "index.html"
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(PAGE.format(src=src, title=TITLES[page], face=face, dark=dark, light=light, repo=REPO,

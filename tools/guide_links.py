@@ -7,10 +7,12 @@ manual section it belongs to; the clips themselves are rendered by tests/demo_pr
   python3 tools/guide_links.py          rewrite the links in MANUAL.md
   python3 tools/guide_links.py --check  fail when MANUAL.md's links are not the JSON's
 
-Each section that has clips gets one line under its heading, "Video:" or "Videos:" and the clips in the JSON's order;
-the playlists go in one paragraph after "New to Tessera?". Every line it writes ends in MARK, so a rerun replaces
-them and a clip moved to another section moves with it.
+Each section that has clips gets one line under its heading: the clips' thumbnails (assets/guides/<clip>.png), each
+a link to its video, in the JSON's order. The site's manual turns that line into click-to-load players and the PDF
+into text links (web/make_manual.py videos()). The playlists go in one paragraph after "New to Tessera?". Every line
+it writes ends in MARK, so a rerun replaces them and a clip moved to another section moves with it.
 """
+import html
 import json
 import re
 import sys
@@ -22,6 +24,7 @@ DATA = ROOT / "tools/guide_videos.json"
 MARK = "<!-- guide videos -->"
 PLAYLIST = "https://www.youtube.com/playlist?list="
 VIDEO = "https://youtu.be/"
+THUMBS = "assets/guides/"                                   # each clip's thumbnail, 640x360
 AFTER = "**New to Tessera?**"                               # the playlists' paragraph follows this one
 
 
@@ -51,8 +54,9 @@ def build(text, data):
             h = m.group(1).strip()
             done.add(h)
             cs = by[h]
-            links = ", ".join(f"[{c['title']}]({VIDEO}{c['video']})" for c in cs)
-            out += ["", f"**{'Video' if len(cs) == 1 else 'Videos'}:** {links} {MARK}"]
+            thumbs = " ".join(f'<a href="{VIDEO}{c["video"]}"><img src="{THUMBS}{c["clip"]}.png" width="240" '
+                              f'alt="Video: {html.escape(c["title"])}"></a>' for c in cs)
+            out += ["", f"<p>{thumbs}</p> {MARK}"]
         if l.startswith(AFTER):
             while k + 1 < len(lines) and lines[k + 1] != "":
                 k += 1
