@@ -1,0 +1,598 @@
+{
+ "playlists": [
+  {
+   "title": "Tessera: getting started",
+   "id": "PLO1Q_qcfoes4"
+  },
+  {
+   "title": "Tessera reference: steps and patterns",
+   "id": "PLRyv3Qy2MzQ0"
+  },
+  {
+   "title": "Tessera reference: generators",
+   "id": "PLN7aK5SMl2vA"
+  },
+  {
+   "title": "Tessera reference: long form",
+   "id": "PLVXT4bgugQk4"
+  },
+  {
+   "title": "Tessera reference: harmony",
+   "id": "PLeU_ZorOoLxI"
+  },
+  {
+   "title": "Tessera reference: mods",
+   "id": "PLcOTnVq9xfok"
+  },
+  {
+   "title": "Tessera reference: sounds and effects",
+   "id": "PLXacQBye4j9M"
+  },
+  {
+   "title": "Tessera reference: settings",
+   "id": "PLdxRras8uNgg"
+  }
+ ],
+ "clips": [
+  {
+   "clip": "e01-pages",
+   "title": "Find your way around",
+   "video": "md3v8T15dVg",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "Every page, and why you would use it"
+  },
+  {
+   "clip": "e01-back",
+   "title": "Get back",
+   "video": "6FU-tiFkh1s",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "The panel at a glance"
+  },
+  {
+   "clip": "e01-play",
+   "title": "The same each time",
+   "video": "GAE0D6EDFgM",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "Tessera in plain words"
+  },
+  {
+   "clip": "e02-load",
+   "title": "Play a demo",
+   "video": "ymvzwJmKTWs",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "Saving and older projects"
+  },
+  {
+   "clip": "e02-tour",
+   "title": "What HOME shows",
+   "video": "SCrp2-y8JsQ",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "The panel at a glance"
+  },
+  {
+   "clip": "e03-sound",
+   "title": "Change the sound",
+   "video": "vJHdMg-8y0s",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "Choosing a sound"
+  },
+  {
+   "clip": "e03-glo-presets",
+   "title": "A sound from anywhere",
+   "video": "v0EAFYWEDCo",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "Shortcuts"
+  },
+  {
+   "clip": "e03-edit",
+   "title": "The sound's pages",
+   "video": "paX0NQLxHJQ",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "Sounds"
+  },
+  {
+   "clip": "e04-key",
+   "title": "Keep it in key",
+   "video": "M78Z5KqY8cc",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "Harmony: one key, CHORD and QNT CHRD"
+  },
+  {
+   "clip": "e04-chord",
+   "title": "Follow the chords",
+   "video": "yXq_t9nOha0",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "Harmony: one key, CHORD and QNT CHRD"
+  },
+  {
+   "clip": "e05-mode",
+   "title": "Who writes the notes",
+   "video": "CDoVeqAkvv8",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "SEQ: the MODE and its pages"
+  },
+  {
+   "clip": "e05-turing",
+   "title": "Lock a line",
+   "video": "-1sDYpQWxUQ",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "The generators"
+  },
+  {
+   "clip": "e05-random",
+   "title": "Random, and back",
+   "video": "fRsl8BEH-HU",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "The GEN layer"
+  },
+  {
+   "clip": "e06-roll",
+   "title": "A new line, and back",
+   "video": "59yKoHNhr2s",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "EVOLVE"
+  },
+  {
+   "clip": "e06-every",
+   "title": "How often it changes",
+   "video": "72yYBdtu6kE",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "EVOLVE"
+  },
+  {
+   "clip": "e06-gravity",
+   "title": "Drift, then come home",
+   "video": "up5eWX-EOJk",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "GRAVITY: drift, then come home"
+  },
+  {
+   "clip": "e06-hold",
+   "title": "Hold the lines",
+   "video": "AZeajGzNrD8",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "HOLD: freeze every track's line"
+  },
+  {
+   "clip": "e07-mixer",
+   "title": "Mute, solo and FILL",
+   "video": "rVL7WHqJ9zA",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "The panel at a glance"
+  },
+  {
+   "clip": "e07-mutes",
+   "title": "Mutes on the bar",
+   "video": "3PrI3lECqbE",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "Playing"
+  },
+  {
+   "clip": "e07-tempo",
+   "title": "The tempo",
+   "video": "kX7NwcYfDSQ",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "Shortcuts"
+  },
+  {
+   "clip": "e07-perf",
+   "title": "PERF: four macros",
+   "video": "piTuH7QNz9Y",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "PERF: four macros"
+  },
+  {
+   "clip": "e08-print",
+   "title": "Print and keep",
+   "video": "bTn2Go9OXgw",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "Print and keep"
+  },
+  {
+   "clip": "e08-save",
+   "title": "Save it",
+   "video": "X6e5LL4IeFs",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "Saving and older projects"
+  },
+  {
+   "clip": "e09-midi-out",
+   "title": "Play your other synths",
+   "video": "CiAXRHTrVUQ",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "MIDI OUT channels"
+  },
+  {
+   "clip": "e09-clock",
+   "title": "Follow another clock",
+   "video": "WGPaGG23Qug",
+   "playlist": "PLO1Q_qcfoes4",
+   "section": "MIDI"
+  },
+  {
+   "clip": "r-step-write",
+   "title": "Write notes by hand",
+   "video": "3nJsvgpO-mI",
+   "playlist": "PLRyv3Qy2MzQ0",
+   "section": "Writing notes on NOTES"
+  },
+  {
+   "clip": "r-arp",
+   "title": "ARP: one note at a time",
+   "video": "PpYMGIey_vg",
+   "playlist": "PLRyv3Qy2MzQ0",
+   "section": "The ARP page"
+  },
+  {
+   "clip": "r-rec",
+   "title": "Record live",
+   "video": "F85vgOe1-nI",
+   "playlist": "PLRyv3Qy2MzQ0",
+   "section": "Recording live"
+  },
+  {
+   "clip": "r-sheet",
+   "title": "Play the steps in another order",
+   "video": "XITnEeU4NbM",
+   "playlist": "PLRyv3Qy2MzQ0",
+   "section": "The pattern's sheet: Snap to scale, Double, Half, Euclid, Accumulate"
+  },
+  {
+   "clip": "r-patterns",
+   "title": "Patterns",
+   "video": "AOdqlhFV_mI",
+   "playlist": "PLRyv3Qy2MzQ0",
+   "section": "PATTERNS"
+  },
+  {
+   "clip": "r-tempo",
+   "title": "PATTERN and TEMPO",
+   "video": "HOReZkSzdxg",
+   "playlist": "PLRyv3Qy2MzQ0",
+   "section": "SEQ: the MODE and its pages"
+  },
+  {
+   "clip": "r-song",
+   "title": "A song from patterns",
+   "video": "O28GCeQLRPQ",
+   "playlist": "PLRyv3Qy2MzQ0",
+   "section": "SONG"
+  },
+  {
+   "clip": "r-condition",
+   "title": "Every other time",
+   "video": "3UDGum5zsjA",
+   "playlist": "PLRyv3Qy2MzQ0",
+   "section": "A step's Condition, and FILL"
+  },
+  {
+   "clip": "r-ratchet",
+   "title": "Roll one step",
+   "video": "TeWVoiI4q5M",
+   "playlist": "PLRyv3Qy2MzQ0",
+   "section": "A step's Ratchet, Nudge and Accumulate"
+  },
+  {
+   "clip": "r-euclid",
+   "title": "EUCLID",
+   "video": "PjTSFgYj-rM",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "The generators"
+  },
+  {
+   "clip": "r-markov",
+   "title": "MARKOV",
+   "video": "FzEVmVMSNw0",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "The generators"
+  },
+  {
+   "clip": "r-bounce",
+   "title": "BOUNCE and FALL",
+   "video": "saq-M4EltWE",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "The generators"
+  },
+  {
+   "clip": "r-awake",
+   "title": "AWAKE: two loops",
+   "video": "pN8b-juK3wk",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "The generators"
+  },
+  {
+   "clip": "r-poly",
+   "title": "POLY: four rhythms",
+   "video": "udtqspcUsAU",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "The generators"
+  },
+  {
+   "clip": "r-quad",
+   "title": "QUAD: one grid",
+   "video": "sAyFL8UjfOo",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "QUAD: columns and RANGE"
+  },
+  {
+   "clip": "r-constellation",
+   "title": "CONSTELLATION",
+   "video": "0RLXeXBCEVw",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "CONSTELLATION: LOCK, LEN, FILL; SIZE"
+  },
+  {
+   "clip": "r-series",
+   "title": "SERIES",
+   "video": "jB4Lz_WxXgg",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "The generators"
+  },
+  {
+   "clip": "r-chord",
+   "title": "CHORD: the harmony",
+   "video": "ciPIiE0swGM",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "CHORD: STRUM, DIR, OCT; CHRD, VOIC, BREATH (or LEN)"
+  },
+  {
+   "clip": "r-answer",
+   "title": "ANSWER: call and response",
+   "video": "RI9bHCbHapU",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "ANSWER: SOURCE, ORDER, SHIFT; SPACE, CHORD"
+  },
+  {
+   "clip": "r-morph",
+   "title": "MORPH: A into B",
+   "video": "dgauDM1618Y",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "The generators"
+  },
+  {
+   "clip": "r-atlas",
+   "title": "ATLAS: the drum map",
+   "video": "MjnlKy8_prM",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "ATLAS: KICK, SNR, HAT; the fourth part"
+  },
+  {
+   "clip": "r-seed",
+   "title": "Your tune as a seed",
+   "video": "ETxlCJx2wUw",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "TURING, EUCLID, MARKOV and MORPH: SOURCE, KEEP, GRAVITY (STEP as seed)"
+  },
+  {
+   "clip": "r-step-evolve",
+   "title": "Vary what you wrote",
+   "video": "QvbEVWthS_w",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "STEP EVOLVE"
+  },
+  {
+   "clip": "r-length",
+   "title": "Let notes ring",
+   "video": "o6nv_V9C75I",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "LENGTH"
+  },
+  {
+   "clip": "r-timing",
+   "title": "Rolls and feel",
+   "video": "-4eb71NAwRk",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "Rolls and feel: which one to use"
+  },
+  {
+   "clip": "r-tweak",
+   "title": "TWEAK: reshape and follow",
+   "video": "5j2aQVhbyk8",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "TWEAK"
+  },
+  {
+   "clip": "r-tweak2",
+   "title": "TWEAK 2: which hits play",
+   "video": "sN72I6n_Emo",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "TWEAK 2"
+  },
+  {
+   "clip": "r-turing",
+   "title": "TURING: a loop that drifts",
+   "video": "aBq42QwGNYs",
+   "playlist": "PLN7aK5SMl2vA",
+   "section": "The generators"
+  },
+  {
+   "clip": "r-form",
+   "title": "A track as a song",
+   "video": "qJwp-RsGcoI",
+   "playlist": "PLVXT4bgugQk4",
+   "section": "FORM"
+  },
+  {
+   "clip": "r-chain",
+   "title": "One form for all",
+   "video": "PvcYgkPKN3E",
+   "playlist": "PLVXT4bgugQk4",
+   "section": "CHAIN: one form for the project"
+  },
+  {
+   "clip": "r-entries",
+   "title": "Tracks out and in",
+   "video": "7zB8198DHy4",
+   "playlist": "PLVXT4bgugQk4",
+   "section": "ENTRIES: tracks out and back in"
+  },
+  {
+   "clip": "r-energy",
+   "title": "Energy by hand",
+   "video": "yzPgw_LcTes",
+   "playlist": "PLVXT4bgugQk4",
+   "section": "ENERGY"
+  },
+  {
+   "clip": "r-piece",
+   "title": "A piece with a shape",
+   "video": "qJ7HkkqsA9w",
+   "playlist": "PLVXT4bgugQk4",
+   "section": "PIECE: a length and a shape"
+  },
+  {
+   "clip": "r-landscape",
+   "title": "A sea to watch",
+   "video": "GRUcFFtM69U",
+   "playlist": "PLVXT4bgugQk4",
+   "section": "LANDSCAPE: rain on water"
+  },
+  {
+   "clip": "r-harm",
+   "title": "Run the keys into chords",
+   "video": "7CbD9BLODkw",
+   "playlist": "PLeU_ZorOoLxI",
+   "section": "HARM: a harmonizer"
+  },
+  {
+   "clip": "r-user-scale",
+   "title": "A scale of your own",
+   "video": "jFG-uBmzVRI",
+   "playlist": "PLeU_ZorOoLxI",
+   "section": "Your own scales (USER1 to USER4)"
+  },
+  {
+   "clip": "r-mod-first",
+   "title": "Your first mod",
+   "video": "n-9lCAFzmoU",
+   "playlist": "PLcOTnVq9xfok",
+   "section": "MODS: the modulation cords"
+  },
+  {
+   "clip": "r-lfo",
+   "title": "LFO: a wave that moves",
+   "video": "NTsUCJrTgUo",
+   "playlist": "PLcOTnVq9xfok",
+   "section": "Sources"
+  },
+  {
+   "clip": "r-mod-shapes",
+   "title": "A cord's shape",
+   "video": "Eh0i4fsIqtU",
+   "playlist": "PLcOTnVq9xfok",
+   "section": "A cord's shape: +-, +, GATE and HOLD"
+  },
+  {
+   "clip": "r-fx-mod",
+   "title": "The mod shortcut",
+   "video": "eAPPkG-DKog",
+   "playlist": "PLcOTnVq9xfok",
+   "section": "Mod shortcut"
+  },
+  {
+   "clip": "r-organic",
+   "title": "Slow, living movement",
+   "video": "csk3NQlam_s",
+   "playlist": "PLcOTnVq9xfok",
+   "section": "ORGANIC: TIDE and SWARM"
+  },
+  {
+   "clip": "r-matrix",
+   "title": "Who moves what",
+   "video": "J-vU1aUQmFE",
+   "playlist": "PLcOTnVq9xfok",
+   "section": "MATRIX"
+  },
+  {
+   "clip": "r-mod-of-mod",
+   "title": "A mod of a mod",
+   "video": "flZmIc8JX9A",
+   "playlist": "PLcOTnVq9xfok",
+   "section": "Mods of mods"
+  },
+  {
+   "clip": "r-buses",
+   "title": "Mix buses",
+   "video": "OpiXMYk4znY",
+   "playlist": "PLcOTnVq9xfok",
+   "section": "MIX buses"
+  },
+  {
+   "clip": "r-fx",
+   "title": "FX: inserts and sends",
+   "video": "tCmJ-fns_dY",
+   "playlist": "PLXacQBye4j9M",
+   "section": "Every page, and why you would use it"
+  },
+  {
+   "clip": "r-fm6",
+   "title": "FM6: the operators",
+   "video": "-ztS8lQAQ7E",
+   "playlist": "PLXacQBye4j9M",
+   "section": "Sounds"
+  },
+  {
+   "clip": "r-oracle",
+   "title": "ORACLE: an analogue voice",
+   "video": "V96G-abswgI",
+   "playlist": "PLXacQBye4j9M",
+   "section": "Sounds"
+  },
+  {
+   "clip": "r-trio",
+   "title": "TRIO: three oscillators",
+   "video": "Sb-ZcOb-5Zo",
+   "playlist": "PLXacQBye4j9M",
+   "section": "Sounds"
+  },
+  {
+   "clip": "r-phys",
+   "title": "PHYS: struck, plucked, bowed",
+   "video": "alSGN6S4j9o",
+   "playlist": "PLXacQBye4j9M",
+   "section": "Sounds"
+  },
+  {
+   "clip": "r-drum",
+   "title": "DRUM: the 808 and the 909",
+   "video": "jASqwwpbtEw",
+   "playlist": "PLXacQBye4j9M",
+   "section": "Sounds"
+  },
+  {
+   "clip": "r-color",
+   "title": "The screen's colour",
+   "video": "74_yJTis6Jg",
+   "playlist": "PLdxRras8uNgg",
+   "section": "The screen"
+  },
+  {
+   "clip": "r-menu",
+   "title": "The menu",
+   "video": "5iWt-yRDcos",
+   "playlist": "PLdxRras8uNgg",
+   "section": "Menu and settings"
+  },
+  {
+   "clip": "r-voices",
+   "title": "How many voices",
+   "video": "I-N4ikzKje0",
+   "playlist": "PLdxRras8uNgg",
+   "section": "How many voices at once"
+  },
+  {
+   "clip": "r-stems",
+   "title": "Four stems over USB",
+   "video": "ln_0NFFDc2M",
+   "playlist": "PLdxRras8uNgg",
+   "section": "Recording the four tracks as separate stems"
+  },
+  {
+   "clip": "r-usb-host",
+   "title": "USB host: no computer",
+   "video": "ouLw367LmZU",
+   "playlist": "PLdxRras8uNgg",
+   "section": "USB host"
+  }
+ ]
+}
