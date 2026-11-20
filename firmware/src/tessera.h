@@ -231,6 +231,11 @@ typedef struct {
      * side by side: project_tsp.c copies them as one) */
     uint8_t          ch_strum[TESSERA_TRACKS];   /* 0..TESS_STRUM_MS: 0 off, all at once (as before) */
     uint8_t          ch_sdir[TESSERA_TRACKS];    /* TESS_STR_UP, _DOWN, _ALT */
+    /* CHORD's MOVE (the GEN sheet): WHEN picks the strikes that move, BY how far; the next strike is home again. The
+     * record's CHMOVE part (the two side by side), not the packed block */
+    uint8_t          ch_when[TESSERA_TRACKS];    /* TESS_CW_*: OFF (as before) */
+    uint8_t          ch_by[TESSERA_TRACKS];      /* TESS_CB_*: +2 ST by default */
+    uint8_t          ch_rpick[TESSERA_TRACKS];   /* WHEN RAND: the strike of this bar that moves */
     /* ENERGY (energy.c; the ENERGY page), the project's, not a track's: its slow tide and its rests */
     uint8_t          en_arc;                     /* 0..100: how far the tide swings, 0 off */
     uint8_t          en_rests;                   /* 0..100: how often the notes rest, 0 off */
@@ -277,6 +282,8 @@ typedef struct {
 } tessera_state_t;
 _Static_assert(__builtin_offsetof(tessera_state_t, ch_sdir) == __builtin_offsetof(tessera_state_t, ch_strum) + TESSERA_TRACKS,
                "STRUM's part: DIR right after STRUM (project_tsp.c copies them as one)");
+_Static_assert(__builtin_offsetof(tessera_state_t, ch_by) == __builtin_offsetof(tessera_state_t, ch_when) + TESSERA_TRACKS,
+               "MOVE's part: BY right after WHEN (project_tsp.c copies them as one)");
 
 extern tessera_state_t tessera;
 /* STEP EVOLVE's changes as they play (not saved; cleared with `tessera` by tessera_init). In .pool: static RAM is
@@ -502,18 +509,26 @@ enum {
                                                      * BREAK, any track's) */
     TX_QNT_LINK,                                    /* (0x2A7: QNT LINK, the project's: one value, whichever track) */
     TX_SECTION_PC,                                  /* (0x2A8: MIDI OUT's SECTION PC, any track's: form_chain.c) */
+    TX_CH_WHEN, TX_CH_BY,                           /* (0x2A9, 0x2AA: CHORD's MOVE WHEN and BY, a CHORD track's) */
     TX_COUNT
 };
 _Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95 && TX_TW_FRHY == 0x97 &&
                TX_PAT_GEN == 0x98 && TX_MIDI_DMAP == 0x99 && TX_ET_ORDER == 0x9A && TX_SEQ_DIR == 0x9B &&
                TX_CH_SDIR == 0x9D && TX_BUSB_LAG == 0xA1 && TX_MOD_DEPTH == 0xA2 && TX_AN_CHORD == 0xA3 &&
-               TX_AN_BREAK == 0xA6 && TX_QNT_LINK == 0xA7 && TX_SECTION_PC == 0xA8,
+               TX_AN_BREAK == 0xA6 && TX_QNT_LINK == 0xA7 && TX_SECTION_PC == 0xA8 && TX_CH_BY == 0xAA,
                "parameter ids are stored: never renumbered");
 /* TX_SEQ_DIR: the order a STEP pattern plays its steps in (seq_dir.c) */
 enum { SEQ_FWD, SEQ_BACK, SEQ_PEND, SEQ_FOLD, SEQ_RAND, SEQ_DRUNK, SEQ_DIRS };
 #define TESS_STRUM_MS 250u                          /* TX_CH_STRUM: up to 250 ms between a chord's notes (a byte, in ms) */
 #define TESS_STRUM_DETENTS 39u                      /* its knob: 1..10 ms by 1, 15..60 by 5, 70..250 by 10 */
 enum { TESS_STR_UP, TESS_STR_DOWN, TESS_STR_ALT, TESS_STR_DIRS };   /* TX_CH_SDIR (saved: append only) */
+/* TX_CH_WHEN: which strikes of a BEAT, STEP or OFFBEAT chord move: the bar's last, its last two, every second, the last
+ * before the chord changes, one a bar from the SEED. TX_CH_BY: how far: the whole shape by semitones, by scale degrees
+ * (in key), the next inversion, an octave up, the top note a degree up, the next chord a semitone below (saved: append
+ * only) */
+enum { TESS_CW_OFF, TESS_CW_LAST, TESS_CW_LAST2, TESS_CW_ODD, TESS_CW_CHANGE, TESS_CW_RAND, TESS_CW_N };
+enum { TESS_CB_DN2, TESS_CB_DN1, TESS_CB_UP1, TESS_CB_UP2, TESS_CB_UP3, TESS_CB_DEG1, TESS_CB_DEG2, TESS_CB_INVU,
+       TESS_CB_INVD, TESS_CB_OCT, TESS_CB_TOP, TESS_CB_LEAD, TESS_CB_N };
 /* TX_TW_FHOW: the source's note as it is, the nearest chord tone, mirrored, a bass, CANON 1..8 notes back, or counted
  * into the CHORD track's chord (HARM, after the 8 CANONs: older firmware loads no project that uses it) */
 enum { TESS_FH_SAME, TESS_FH_CHORD, TESS_FH_CONTRA, TESS_FH_BASS, TESS_FH_CANON, TESS_FH_HARM = TESS_FH_CANON + 8,

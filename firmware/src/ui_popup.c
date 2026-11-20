@@ -309,6 +309,8 @@ static uint32_t gen_sheet_rows(void)
         sr_add("Voicing", PID_TRACK(P_VOIC), tr);
         if (tessera_chord(tr)->prog == GEN_CH_USER) sr_add("Length", PID_TESS(TX_CH_ULEN), tr);
         else sr_add("Breath", PID_TESS(TX_CH_BREATH), tr);
+        sr_add("Move when", PID_TESS(TX_CH_WHEN), tr);
+        sr_add("Move by", PID_TESS(TX_CH_BY), tr);
     }
     return sr.n;
 }

@@ -948,6 +948,13 @@ static void gen_chord_tick(gen_chord_t *g, const gen_clock_t *clk, gen_out_t *ou
     if (g->hit == GEN_CH_OFF) out->gate = (uint8_t)(in % off == (off + 1u) / 2u);
     else out->gate = (uint8_t)(!in || g->hit == GEN_CH_STEP || (g->hit == GEN_CH_BEAT && !(in % beat)));
     g->hold = (uint16_t)(g->hit == GEN_CH_HOLD ? len : g->hit == GEN_CH_BEAT ? (len - in < beat ? len - in : beat) : 0u);
+    {                                                   /* (the strike's place, for MOVE WHEN) */
+        uint32_t per = g->hit == GEN_CH_STEP ? 1u : g->hit == GEN_CH_BEAT ? beat : g->hit == GEN_CH_OFF ? off : len;
+        uint32_t spb = clk->steps_per_bar ? clk->steps_per_bar : 16u;
+        g->sk = (uint8_t)(g->n % spb / per);
+        g->sn = (uint8_t)((spb + per - 1u) / per);
+        g->slast = (uint8_t)(in / per == (len - 1u) / per);
+    }
     out->note = (uint8_t)deg;
     out->vel = (uint8_t)(in && !(g->hit == GEN_CH_OFF && in < off) ? 84u : 104u);
     out->cv = (int16_t)(deg * 32767u / 6u);
