@@ -288,3 +288,5 @@
 0x2a6 ANSWER BREAK             track 0..100 def 0
 0x2a7 QNT LINK                 global 0..1 def 1
 0x2a8 SECTION PC               track 0..1 def 0
+0x2a9 CHORD MOVE WHEN          track 0..5 def 0
+0x2aa CHORD MOVE BY            track 0..11 def 3

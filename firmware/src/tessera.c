@@ -172,6 +172,7 @@ void tessera_init(void)
     tessera.key_link = 1;                               /* (a new project: one key for every track) */
     memset(tessera.acc_limit, TESS_ACC_LIMIT_DEF, sizeof tessera.acc_limit);
     memset(tessera.en_depth, 100, sizeof tessera.en_depth);
+    memset(tessera.ch_by, TESS_CB_UP2, sizeof tessera.ch_by);   /* (CHORD MOVE: WHEN OFF, BY +2 ST) */
     tessera.fc_phrase = 1;                              /* (form chaining: OFF, 8-bar phrases, each place once) */
     memset(tessera.fc_rep, 1, sizeof tessera.fc_rep);
     tessera.et_dwell = 2;                               /* (Entries: off, 2 phrases, FADE over 2 bars, roles AUTO) */
@@ -1578,6 +1579,39 @@ static void tess_chord_breathe(track_t *t, uint32_t tr)
     }
 }
 
+/* MOVE: this strike moves (WHEN; never with HIT HOLD). RAND: one strike a bar, drawn from the SEED and the bar */
+static int tess_chord_when(uint32_t tr, const tessera_chord_t *g)
+{
+    uint32_t w = tessera.ch_when[tr], k = g->sk, n = g->sn;
+    if (!w || g->hit == GEN_CH_HOLD) return 0;
+    return w == TESS_CW_LAST ? k + 1u == n : w == TESS_CW_LAST2 ? k + 2u >= n : w == TESS_CW_ODD ? k & 1u :
+           w == TESS_CW_CHANGE ? g->slast : k == gen_stream(tessera.seed[tr] * 31u + g->bar) % (n ? n : 1u);
+}
+/* MOVE BY: the strike's notes (out, n, ascending) moved; their count. The chord's root and tones stay (QNT CHRD) */
+static uint32_t tess_chord_move(const track_t *t, uint32_t tr, const tessera_chord_t *g, uint8_t *out, uint32_t n)
+{
+    static const int8_t ST[TESS_CB_N] = {-2, -1, 1, 2, 3, 0, 0, 0, 0, 12, 0, -1};
+    uint32_t by = tessera.ch_by[tr], i;
+    int32_t r;
+    uint16_t m;
+    if (by == TESS_CB_LEAD || by == TESS_CB_DEG1 || by == TESS_CB_DEG2)   /* (in key; LEAD the next chord) */
+        n = tess_chord_build(t, by == TESS_CB_LEAD ? gen_chord_degree(g, g->idx + 1u) : g->deg + by - TESS_CB_DEG1 + 1u,
+                             out, &r, &m);
+    for (i = 0; i < n; i++) out[i] = (uint8_t)(out[i] + ST[by]);   /* (tess_chord_play keeps them to 0..127) */
+    if (n > 1u && by == TESS_CB_INVU) {                 /* (the lowest note an octave up, on top) */
+        r = out[0] + 12;
+        for (i = 1; i < n; i++) out[i - 1u] = out[i];
+        out[n - 1u] = (uint8_t)r;
+    } else if (n > 1u && by == TESS_CB_INVD) {          /* (the highest an octave down, below) */
+        r = out[n - 1u] - 12;
+        for (i = n - 1u; i; i--) out[i] = out[i - 1u];
+        out[0] = (uint8_t)r;
+    } else if (by == TESS_CB_TOP) {
+        out[n - 1u] = (uint8_t)tess_scale_steps(t, out[n - 1u], 1);
+    }
+    return n;
+}
+
 static void tess_chord_play(track_t *t, uint32_t tr, uint32_t gate)
 {
     const tessera_chord_t *g = &tessera.chord[tr];
@@ -1596,6 +1630,7 @@ static void tess_chord_play(track_t *t, uint32_t tr, uint32_t gate)
         vel = (uint32_t)(v < 1 ? 1 : v > 127 ? 127 : v);
     }
     n = tess_chord_build(t, g->deg, out, &r, &mask);
+    if (tess_chord_when(tr, g)) n = tess_chord_move(t, tr, g, out, n);
     period = seq_div_samples((uint32_t)t->p[P_SDIV]);
     br = tessera.ch_breath[tr] && g->hit == GEN_CH_HOLD;
     if (br && t->seq_n && tess_chord_same(t, g, out, n)) {
@@ -3258,6 +3293,8 @@ static const struct { uint8_t x; uint16_t off; int8_t lo; uint8_t hi; } TESS_PX[
     {TX_CH_BREATH, TPX(o, ch_breath), 0, 100},
     {TX_CH_STRUM, TPX(o, ch_strum), 0, TESS_STRUM_MS},
     {TX_CH_SDIR, TPX(o, ch_sdir), 0, TESS_STR_DIRS - 1},
+    {TX_CH_WHEN, TPX(o, ch_when), 0, TESS_CW_N - 1},
+    {TX_CH_BY, TPX(o, ch_by), 0, TESS_CB_N - 1},
     {TX_EN_DEPTH, TPX(o, en_depth), 0, 100},
     {TX_ORG_SPEED, TPX(o, org_speed), 0, 100},
     {TX_ORG_RATE, TPX(o, org_rate), 0, 100},
@@ -3717,6 +3754,7 @@ void tessera_param_poke(uint32_t tr, uint32_t x, int32_t v)
     case TX_CH_PROG: tessera.chord[tr].prog = (uint8_t)tess_clampi(v, 0, GEN_CH_PROGS - 1); break;
     case TX_AN_VARY: tessera.answer[tr].vary = (uint8_t)tess_clampi(v, 0, 100); break;
     case TX_AN_ECHO: case TX_AN_SHIFT: case TX_AN_SPACE: case TX_CH_STRUM: case TX_CH_SDIR: case TX_CH_BREATH:
+    case TX_CH_WHEN: case TX_CH_BY:
     case TX_SUB_RATCH: case TX_SUB_CHANCE: case TX_NL_LEN: case TX_SD_GRAVITY: case TX_FM_DEVELOP: case TX_ORG_SPEED:
     case TX_ORG_RATE:                               /* (their setter only clamps and stores: no side effect) */
         tess_param_set_body(tr, x, v); break;
