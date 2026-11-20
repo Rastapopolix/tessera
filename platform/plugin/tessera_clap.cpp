@@ -69,6 +69,9 @@ struct Tessera : GuiLink
     std::vector<Param> params;            // in id order (p_init)
     std::unique_ptr<std::atomic<int32_t>[]> param_now;   // each as the core has it (the audio thread writes)
     uint32_t param_scan = PARAM_LEGACY;   // the next of the core's to compare (params_out)
+    std::unique_ptr<uint32_t[]> param_look;   // how each reads (param_look_of): the engine, an FX type or the scale
+                                          // changes it ("ENGINE 1" as CUTOFF, FX 1 RATE as TIME); the audio thread
+    std::atomic<bool> text_stale{false};  // a look changed: the host rescans its texts (on its main thread)
     // the window <-> the audio thread
     std::mutex input_lock, view_lock;
     PanelInput pending;                   // input_lock: buttons, keys and MASTER as now, the detents summed
@@ -164,6 +167,7 @@ struct Tessera : GuiLink
     void param_in(const clap_event_param_value_t *e);
     void params_out(const clap_output_events_t *out, uint32_t at);
     void param_event(const clap_output_events_t *out, uint32_t at, int i, int32_t v);
+    uint32_t param_look_of(int i);
 
     // gui.h: the window's side of the queue
     void view(tess_view_t &v) override
@@ -285,7 +289,7 @@ void Tessera::changed_by_file()
         hs->mark_dirty(host);
     auto *hp = static_cast<const clap_host_params_t *>(host->get_extension(host, CLAP_EXT_PARAMS));
     if (hp && hp->rescan)
-        hp->rescan(host, CLAP_PARAM_RESCAN_VALUES);
+        hp->rescan(host, CLAP_PARAM_RESCAN_VALUES);   // (the texts: params_refresh asked for them)
 }
 
 void Tessera::midi_in(const clap_event_header_t *h)
@@ -358,8 +362,34 @@ void Tessera::params_make()
             params.push_back(q);
         }
     param_now.reset(new std::atomic<int32_t>[params.size()]);
+    param_look.reset(new uint32_t[params.size()]);
     for (size_t i = 0; i < params.size(); i++)
+    {
         param_now[i] = i == PARAM_MASTER ? 700 : param_core((int)i);
+        param_look[i] = param_look_of((int)i);
+    }
+}
+// (the core locked) a hash of how parameter i's values read: its texts at the ends and the middle of its range
+uint32_t Tessera::param_look_of(int i)
+{
+    if (i < PARAM_LEGACY)
+        return 0;
+    const Param &q = params[i];
+    uint32_t h = 2166136261u;   // (FNV-1a)
+    const int32_t at[3] = {q.min, q.min + (q.max - q.min) / 2, q.max};
+    for (int32_t v : at)
+    {
+        char s[48];
+        if (!core->param_text(q.pid, q.track, v, s, sizeof s))
+            s[0] = 0;
+        for (const char *c = s;; c++)
+        {
+            h = (h ^ (uint8_t)*c) * 16777619u;
+            if (!*c)
+                break;
+        }
+    }
+    return h;
 }
 int Tessera::param_index(clap_id id) const
 {
@@ -392,8 +422,15 @@ void Tessera::param_set(int i, int32_t v)
 // (the core locked) every value read again: a project came in
 void Tessera::params_refresh()
 {
+    bool look = false;
     for (size_t i = PARAM_MACRO1; i < params.size(); i++)
+    {
         param_now[i] = param_core((int)i);
+        uint32_t h = param_look_of((int)i);
+        if (h != param_look[i]) param_look[i] = h, look = true;
+    }
+    if (look && !text_stale.exchange(true) && host->request_callback)
+        host->request_callback(host);   // (its engines, FX and scales: p_on_main_thread)
 }
 void Tessera::param_in(const clap_event_param_value_t *e)
 {
@@ -432,6 +469,13 @@ void Tessera::params_out(const clap_output_events_t *out, uint32_t at)
         int i = (int)param_scan++;
         int32_t v = param_core(i);
         if (v != param_now[i]) param_now[i] = v, param_event(out, at, i, v);
+        uint32_t look = param_look_of(i);
+        if (look != param_look[i])
+        {
+            param_look[i] = look;
+            if (!text_stale.exchange(true) && host->request_callback)
+                host->request_callback(host);   // (p_on_main_thread)
+        }
     }
 }
 
@@ -842,7 +886,17 @@ const void *p_get_extension(const clap_plugin_t *, const char *id)
     return nullptr;
 }
 
-void p_on_main_thread(const clap_plugin_t *) {}
+// a setting's values read differently now (a track's engine, an FX type, the scale): the host's lists and lanes
+// show the new names ("CUTOFF 2.1kHz", not "ENGINE 1 54")
+void p_on_main_thread(const clap_plugin_t *p)
+{
+    auto *t = self(p);
+    if (!t->text_stale.exchange(false))
+        return;
+    auto *hp = static_cast<const clap_host_params_t *>(t->host->get_extension(t->host, CLAP_EXT_PARAMS));
+    if (hp && hp->rescan)
+        hp->rescan(t->host, CLAP_PARAM_RESCAN_TEXT);
+}
 
 // ---- factory
 

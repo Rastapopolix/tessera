@@ -36,10 +36,22 @@ static int fails = 0;
     } while (0)
 
 // ---- host
-static const void *h_get_extension(const clap_host_t *, const char *) { return nullptr; }
+static int callbacks = 0, rescans_text = 0;   // (the plugin asked for its main thread; the texts rescanned)
+static void h_rescan(const clap_host_t *, clap_param_rescan_flags f)
+{
+    if (f & CLAP_PARAM_RESCAN_TEXT) rescans_text++;
+}
+static void h_clear(const clap_host_t *, clap_id, clap_param_clear_flags) {}
+static void h_flush(const clap_host_t *) {}
+static const clap_host_params_t host_params = {h_rescan, h_clear, h_flush};
+static const void *h_get_extension(const clap_host_t *, const char *id)
+{
+    return !std::strcmp(id, CLAP_EXT_PARAMS) ? &host_params : nullptr;
+}
 static void h_nop(const clap_host_t *) {}
+static void h_callback(const clap_host_t *) { callbacks++; }
 static const clap_host_t host = {CLAP_VERSION_INIT, nullptr, "tessera-render-test", "Tessera", "", "0",
-                                 h_get_extension, h_nop, h_nop, h_nop};
+                                 h_get_extension, h_nop, h_nop, h_callback};
 
 // ---- events
 struct Events
@@ -385,6 +397,46 @@ int main(int argc, char **argv)
                         li.module, pt, len);
             CHECK(lv == 100 && back == 100, "T1 LEVEL automated to 100, its text back to 100 (%.0f, %.0f)", lv, back);
             CHECK(len == 32, "T2 PATTERN LENGTH's text back to 32 (%.0f)", len);
+        }
+        // an FX type changes how its RATE reads (DELAY: TIME in ms): the host is asked to rescan the texts
+        int fxt = -1, fxr = -1;
+        for (uint32_t i = 0; i < np; i++)
+        {
+            pa->get_info(p, i, &info);
+            if (!std::strcmp(info.name, "T1 FX 1 TYPE")) fxt = (int)i;
+            if (!std::strcmp(info.name, "T1 FX 1 RATE")) fxr = (int)i;
+        }
+        CHECK(fxt >= 0 && fxr >= 0, "T1 FX 1 TYPE and RATE are parameters");
+        if (fxt >= 0 && fxr >= 0)
+        {
+            clap_param_info_t ti, ri;
+            pa->get_info(p, (uint32_t)fxt, &ti);
+            pa->get_info(p, (uint32_t)fxr, &ri);
+            double was = -1;
+            pa->get_value(p, ti.id, &was);
+            char before[64], after[64];
+            pa->value_to_text(p, ri.id, 50, before, sizeof before);
+            for (int pass = 0; pass < 2; pass++)   // (DELAY, then back: the texts each time)
+            {
+                int c0 = callbacks, r0 = rescans_text;
+                pe.e.param_id = ti.id;
+                pe.e.value = pass == 0 ? (was == 6 ? 10 : 6) : was;
+                proc.in_events = &pin;
+                p->process(p, &proc);
+                proc.in_events = &in;
+                for (int b = 0; b < 40; b++) p->process(p, &proc);   // (more than a round of the list)
+                CHECK(callbacks == c0 + 1, "an FX type change asks for the main thread once (%d)", callbacks - c0);
+                p->on_main_thread(p);
+                p->on_main_thread(p);
+                CHECK(rescans_text == r0 + 1, "the texts rescanned once (%d)", rescans_text - r0);
+                if (pass == 0)
+                    pa->value_to_text(p, ri.id, 50, after, sizeof after);
+            }
+            std::printf("params: T1 FX 1 RATE 50 reads \"%s\", \"%s\" after its TYPE changed\n", before, after);
+            CHECK(std::strcmp(before, after), "T1 FX 1 RATE reads differently with another FX type");
+            int c0 = callbacks;
+            for (int b = 0; b < 40; b++) p->process(p, &proc);
+            CHECK(callbacks == c0, "no rescan while nothing changes (%d)", callbacks - c0);
         }
     }
 
