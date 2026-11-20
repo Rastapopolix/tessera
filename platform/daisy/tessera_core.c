@@ -43,6 +43,7 @@ static inline __attribute__((always_inline)) void daisy_irq_on(void)
 #define CORE_BIG __attribute__((section(".sdram_bss")))
 #define HOST_HAL_SCREEN 0                         /* (the FM-1's screen: drawn nowhere) */
 #define TESS_CORE_UI 0                            /* (Andamento's own UI comes: platform/andamento/and_ui.c) */
+#define CORE_OUT_HOOKS 1                          /* (Andamento's CV / gate pairs and DIN MIDI: and_out.c sets them) */
 #include "../core/core_unit.c"
 #include "../../firmware/src/mo_font.h"
 #include "../andamento/and_fb.c"                  /* the screen: a framebuffer of 16 levels */
