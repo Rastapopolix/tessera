@@ -291,37 +291,34 @@ static const gstep_t G_PATTEMPO[] = {
     {106000, 108000, 2500, "KNOB 3", "QNT", "KNOB 3, QNT: where the notes you record land. 1/16, or OFF: as played", 9},
     {115000, 0, 0, 0, 0, "On HOME, or with GLO held, SELECT sets the BPM too"},
 };
-/* synth funk: 104 BPM, E dorian; a clavinet on POLY as track 1, an 808 in STEP, a solid FM bass on TURING, ORACLE
- * keys on CHORD. The menu's rows change the screen while it plays; AUDIO CLICK is heard */
-static void g_synthfunk_scene(void)
+/* glacial ambient (Theo: an unobtrusive ambient piece under the menu): 62 BPM, F major, no drums, so AUDIO CLICK is
+ * heard plainly; soft electric-piano tines on EUCLID as track 1 (SEQ's PLS at the end), a hollow pad holding slow
+ * chords, far strings on MARKOV a bar a note, a low fifth drone */
+static void g_glacial_scene(void)
 {
-    song.g[G_BPM] = 104;
-    scale(4, SCL_DOR, 0);
-    sends(60, 50, 55, 40);
-    sound(0, ENGI_FM6, FX_CLAVINET);
-    trk[0].p[P_SDIV] = DIV_16;
-    gen(0, TESS_ENG_EUCLID, 27);
-    tx(0, TX_EUC_STEPS, 16); tx(0, TX_EUC_PULSES, 7); tx(0, TX_EUC_ROT, 2);
-    mixer(0, 100, -15, 10, 10);
-    sound(1, ENGI_DRUM, DK_808_KIT);
-    {
-        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_BD, 0, L_BD, L_CH, 0, L_SD, 0, L_CH, L_OH};
-        static const uint8_t V[16] = {108, 0, 56, 0, 100, 0, 54, 80, 0, 96, 58, 0, 100, 0, 54, 50};
-        for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
-        trk[1].p[P_SLEN] = 16;
-    }
-    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
-    mixer(1, 80, 0, 10, 0);
-    sound(2, ENGI_FM6, FX_SOLID_BASS);
-    trk[2].p[P_SDIV] = DIV_16;
-    gen(2, TESS_ENG_TURING, 31);
-    tx(2, TX_TUR_PROB, 8); tx(2, TX_TUR_LEN, 8); tx(2, TX_TW_SHIFT, -24); tx(2, TX_TW_DROP, 30);
-    mixer(2, 106, 0, 0, 0);
-    sound(3, ENGI_ORACLE, OR_KEYS);
-    trk[3].p[P_CHRD] = 1;
-    gen(3, TESS_ENG_CHORD, 8);
-    tx(3, TX_CH_PROG, GEN_CH_TWO); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_BEAT);
-    mixer(3, 66, 15, 40, 0);
+    song.g[G_BPM] = 62;
+    scale(5, 1, 0);
+    sends(110, 80, 75, 50);
+    sound(0, ENGI_FM6, FX_TINE_EP);
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_EUCLID, 19);
+    tx(0, TX_EUC_STEPS, 16); tx(0, TX_EUC_PULSES, 5); tx(0, TX_EUC_ROT, 3);
+    mixer(0, 92, -15, 70, 45);
+    sound(1, ENGI_TRIO, TR_HOLLOW_PAD);
+    trk[1].p[P_CHRD] = 1;
+    gen(1, TESS_ENG_CHORD, 14);
+    tx(1, TX_CH_PROG, GEN_CH_TWO); tx(1, TX_CH_BARS, 4); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 62, 20, 70, 0);
+    sound(2, ENGI_ORACLE, OR_SOFT_STRINGS);
+    trk[2].p[P_SDIV] = DIV_1;
+    gen(2, TESS_ENG_MARKOV, 6);
+    tx(2, TX_TW_SHIFT, 12);
+    mixer(2, 80, 35, 80, 0);
+    sound(3, ENGI_TRIO, TR_FIFTH_DRONE);
+    step_note(3, 0, 41, 70);
+    trk[3].p[P_SLEN] = 1; trk[3].p[P_SGATE] = 127;
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_1;
+    mixer(3, 78, -25, 50, 0);
     g_solo_check();
 }
 static const gstep_t G_MENU[] = {
@@ -469,7 +466,7 @@ static void guide_ref_pages(const char *out, FILE *tsv)
 {
     G_RUN("r-oracle", "ORACLE: AN ANALOGUE VOICE", "ORANGE", 128, 4, g_library_scene, G_ORACLE);   /* library electronica */
     G_RUN("r-fm6", "FM6: THE OPERATORS", "ORANGE", 122, 4, g_sophisti_scene, G_FM6);   /* sophisti-pop */
-    G_RUN("r-menu", "THE MENU", "WHITE", 110, 4, g_synthfunk_scene, G_MENU);   /* synth funk */
+    G_RUN("r-menu", "THE MENU", "WHITE", 110, 4, g_glacial_scene, G_MENU);   /* glacial ambient */
     G_RUN("r-tempo", "PATTERN AND TEMPO", "MOSAIC", 121, 4, g_ambtempo_scene, G_PATTEMPO);   /* ambient */
     G_RUN("r-arp", "ARP: ONE NOTE AT A TIME", "MOSAIC", 132, 4, g_folkarp_scene, G_ARP);   /* folktronica */
     G_RUN("r-lfo", "LFO: A WAVE THAT MOVES", "LILAC", 132, 4, g_filterhouse_scene, G_LFO);   /* filter house */
