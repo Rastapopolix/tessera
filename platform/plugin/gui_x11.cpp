@@ -8,6 +8,7 @@
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/keysym.h>
 #include <clap/ext/timer-support.h>
 
 #include <cstdio>
@@ -90,7 +91,8 @@ class GuiX11 : public Gui
             return false;
         int scr = DefaultScreen(dpy);
         wnd = XCreateSimpleWindow(dpy, (Window)w->x11, 0, 0, Panel::W, Panel::H, 0, 0, BlackPixel(dpy, scr));
-        XSelectInput(dpy, wnd, ExposureMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
+        XSelectInput(dpy, wnd, ExposureMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | KeyPressMask |
+                                   KeyReleaseMask | FocusChangeMask);
         gc = XCreateGC(dpy, wnd, 0, nullptr);
         Visual *vis = DefaultVisual(dpy, scr);
         img = XCreateImage(dpy, vis, DefaultDepth(dpy, scr), ZPixmap, 0, reinterpret_cast<char *>(px.data()),
@@ -174,6 +176,7 @@ class GuiX11 : public Gui
             switch (e.type)
             {
             case ButtonPress:
+                XSetInputFocus(dpy, wnd, RevertToParent, CurrentTime);   // (the keyboard, once clicked)
                 if (e.xbutton.button == Button1)
                     changed |= panel.down(e.xbutton.x, e.xbutton.y);
                 else if (e.xbutton.button == Button4 || e.xbutton.button == Button5)
@@ -185,6 +188,28 @@ class GuiX11 : public Gui
                 break;
             case MotionNotify:
                 changed |= panel.move(e.xmotion.x, e.xmotion.y);
+                break;
+            case KeyPress:
+            case KeyRelease:
+            {
+                // the computer keyboard (panel.h key): X's keycode - 8 is the PC scan code for the main keys
+                if (e.xkey.state & (ControlMask | Mod1Mask))
+                    break;   // (the host's)
+                if (e.type == KeyRelease && XEventsQueued(dpy, QueuedAfterReading))
+                {
+                    XEvent nx;
+                    XPeekEvent(dpy, &nx);
+                    if (nx.type == KeyPress && nx.xkey.keycode == e.xkey.keycode && nx.xkey.time == e.xkey.time)
+                        break;   // (auto-repeat: a release and a press at once; the key is still held)
+                }
+                KeySym ks = XLookupKeysym(&e.xkey, 0);
+                int code = ks == XK_Up ? Panel::KEY_UP : ks == XK_Down ? Panel::KEY_DOWN : ks == XK_Left ? Panel::KEY_LEFT
+                         : ks == XK_Right ? Panel::KEY_RIGHT : (int)e.xkey.keycode - 8;
+                changed |= panel.key(code, e.type == KeyPress);
+                break;
+            }
+            case FocusOut:
+                changed |= panel.release_keys();
                 break;
             default:
                 break;

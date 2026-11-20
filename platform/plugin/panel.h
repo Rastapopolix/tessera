@@ -31,6 +31,13 @@ class Panel
     bool move(int x, int y);
     bool up(int x, int y);
     bool wheel(int x, int y, int notches);
+    /* the computer keyboard, as the web simulator maps it (by where a key is, not what it prints): code a PC scan code
+     * (set 1: Z 0x2C, Q 0x10, 1 0x02 ..; what Windows reports, and X11's keycode - 8) or KEY_UP .. KEY_RIGHT. Z..' and
+     * Q..O the keys (F3..G5), 1..= the twelve buttons in the panel's order, [ ] OCT- OCT+ (each held while its key is),
+     * up / down SELECT, left / right ALGORITHM. true if the input changed. release_keys: every key up (focus lost) */
+    enum { KEY_UP = 0x148, KEY_LEFT = 0x14B, KEY_RIGHT = 0x14D, KEY_DOWN = 0x150 };
+    bool key(int code, bool down);
+    bool release_keys();
     PanelInput input;
     /* the project-file buttons under the keys: OPEN (a .tsp or an FM-1 backup) and SAVE (a .tsp). A click asks; the
      * window takes the ask (1 OPEN, 2 SAVE, 0 none) and shows the outcome with note() for a few seconds */
@@ -51,6 +58,9 @@ class Panel
     std::vector<Button> buttons;
     std::vector<Key> keys;
     int pitch = 0, kw = 0, kh = 0, sw = 0;
+    // held by the mouse and by the computer keyboard, apart (input.keys / input.buttons: the two together)
+    uint32_t mouse_keys = 0, mouse_buttons = 0, kbd_keys = 0, kbd_buttons = 0;
+    void merge_held();
     // a drag
     enum { NONE, KNOB, BUTTON, KEY } drag = NONE;
     int drag_i = -1, last_x = 0, last_y = 0, acc = 0;

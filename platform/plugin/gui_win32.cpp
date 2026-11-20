@@ -91,6 +91,30 @@ class GuiWin32 : public Gui
         case WM_CAPTURECHANGED:
             g->input(g->panel.up(0, 0));
             return 0;
+        case WM_KEYDOWN:
+        case WM_KEYUP:
+        {
+            // the computer keyboard (panel.h key): by scan code, as the web simulator does; Ctrl / Alt are the host's
+            if (GetKeyState(VK_CONTROL) < 0 || GetKeyState(VK_MENU) < 0)
+                break;
+            int sc = (int)(lp >> 16 & 0xFF), code = sc;
+            if (wp == VK_UP) code = Panel::KEY_UP;
+            else if (wp == VK_DOWN) code = Panel::KEY_DOWN;
+            else if (wp == VK_LEFT) code = Panel::KEY_LEFT;
+            else if (wp == VK_RIGHT) code = Panel::KEY_RIGHT;
+            else if (lp >> 24 & 1) break;   // (another extended key: not a panel key)
+            if (g->panel.key(code, msg == WM_KEYDOWN))
+            {
+                g->input(true);
+                return 0;
+            }
+            break;
+        }
+        case WM_GETDLGCODE:
+            return DLGC_WANTALLKEYS | DLGC_WANTARROWS;
+        case WM_KILLFOCUS:
+            g->input(g->panel.release_keys());
+            return 0;
         case WM_MOUSEWHEEL:
         {
             POINT p{x, y};   // (screen coordinates)

@@ -20,7 +20,10 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
   kdialog, whichever is installed. The DAW is told its saved state changed. Not on macOS yet (no window).
 - **The window** (Windows and Linux): the FM-1 as the web simulator draws it, black shell. The screen at 1:1;
   click the buttons and keys (drag across the keys to glide); drag a knob up/down or left/right, or use the mouse
-  wheel over it. The LEDs light, dim and breathe as on the device. The window talks to the core through the audio
+  wheel over it. **The computer keyboard** too, as in the web simulator (click the window first): Z..' and Q..O play
+  the keys, 1..= are the twelve buttons in the panel's order and [ ] OCT- / OCT+ (each held while its key is), up /
+  down turn SELECT, left / right ALGORITHM. Keys go by where they are, not what they print, so any layout works;
+  with Ctrl or Alt held they are the DAW's. The LEDs light, dim and breathe as on the device. The window talks to the core through the audio
   thread, so it only moves while the host is processing audio.
 
 - **Following the DAW** (CLK INT): the DAW's PLAY starts every track where it would be after playing from the DAW's
@@ -51,7 +54,7 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
 ## Not yet
 
 - No window on macOS (it plays as in phase 0).
-- No computer-keyboard shortcuts, no shell or ink picker (the ink is MENU > COLOR, as on the device).
+- No shell or ink picker (the ink is MENU > COLOR, as on the device).
 
 ## Build
 
