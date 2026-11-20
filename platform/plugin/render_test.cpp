@@ -144,7 +144,14 @@ int main(int argc, char **argv)
     CHECK(p && p->init(p), "create + init");
     if (fails)
         return 1;
-    CHECK(fac->create_plugin(fac, &host, id) == nullptr, "a second instance must be refused");
+    // several instances: each its own copy of the core (core_copies.h), 8 at once, the 9th refused
+    std::vector<const clap_plugin_t *> more;
+    for (const clap_plugin_t *q; more.size() < 32 && (q = fac->create_plugin(fac, &host, id));)
+        more.push_back(q);
+    std::printf("instances: %zu at once\n", 1 + more.size());
+    CHECK(more.size() == 7, "8 instances at once, the 9th refused (%zu)", 1 + more.size());
+    const clap_plugin_t *q = more.empty() ? nullptr : more[0];
+    CHECK(q && q->init(q) && q->activate(q, rate, block, block) && q->start_processing(q), "a second instance starts");
     CHECK(p->activate(p, rate, block, block), "activate");
     CHECK(p->start_processing(p), "start_processing");
 
@@ -190,6 +197,38 @@ int main(int argc, char **argv)
         if (fails)
             break;
     }
+    if (q)   // the second instance, stopped, beside the first playing: silent, and the first goes on sounding
+    {
+        std::vector<float> qL(block), qR(block);
+        float *qch[2] = {qL.data(), qR.data()};
+        clap_audio_buffer_t qout = {};
+        qout.data32 = qch;
+        qout.channel_count = 2;
+        clap_event_transport_t qtr = tr;
+        qtr.flags = CLAP_TRANSPORT_HAS_TEMPO;   // (stopped)
+        Events qev;
+        clap_input_events_t qin = {&qev, Events::size, Events::get};
+        clap_process_t qp = proc;
+        qp.transport = &qtr;
+        qp.audio_outputs = &qout;
+        qp.in_events = &qin;
+        qp.out_events = nullptr;
+        double eq = 0, ep = 0;
+        for (int b = 0; b < 100; b++)
+        {
+            CHECK(q->process(q, &qp) == CLAP_PROCESS_CONTINUE, "second instance process");
+            p->process(p, &proc);
+            for (uint32_t k = 0; k < block; k++)
+                eq += (double)qL[k] * qL[k] + (double)qR[k] * qR[k], ep += (double)L[k] * L[k] + (double)R[k] * R[k];
+        }
+        std::printf("two instances: energy %.4f playing, %.6f stopped\n", ep, eq);
+        CHECK(ep > 1e-3 && eq < 1e-9, "the second instance, stopped, is silent while the first plays");
+        q->stop_processing(q);
+        q->deactivate(q);
+    }
+    for (auto *x : more)
+        x->destroy(x);
+
     double rms = std::sqrt(sum2 / (2.0 * (blocks - blocks / 4) * block));
     std::printf("STILL TIDE at %u Hz, %.1f s: rms %.4f, peak %.4f\n", rate, seconds, rms, peak);
     CHECK(rms > 0.002, "STILL TIDE should be audible (rms %.5f)", rms);

@@ -29,24 +29,31 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
   before pan and the bus FX, mono on both sides). The core makes them once the DAW connects one.
 - **MIDI out:** every track's notes, each on its own channel (GLO > MIDI OUT; by default ROUT's 1..4), to drive other
   instruments. NOTES OUT starts at ALL in the plugin (the generators' notes too); MENU can set KEYS or OFF.
+- **Several instances:** up to 8 Tesseras in one DAW project, each wholly its own (its project, transport, window,
+  parameters), and they may run on different threads. The firmware keeps its state in globals, so the plugin carries
+  8 private copies of the core (`core_copy.c`: the core compiled once per copy, each of its shared names prefixed
+  `tc<k>_` from `build/gen/core_syms.h`) and each instance takes a free one; a 9th is refused. A new instance starts
+  from STILL TIDE; one put in a copy another instance had used starts from STILL TIDE again too, but that copy's
+  project slots A..D keep what the last one saved in them. The cost: the plugin file is about 16 MB (8 copies of the
+  core's code and tables) and each instance about 1 MB of memory more. `-DTESS_PLUGIN_COPIES=n` (1..16) builds
+  another number.
 
 ## Not yet
 
 - No window on macOS (it plays as in phase 0).
 - No computer-keyboard shortcuts, no shell or ink picker (the ink is MENU > COLOR, as on the device).
-- One Tessera per DAW session: the firmware keeps its state in globals, so a second instance is refused, and a new
-  instance carries on from the last one's state.
 
 ## Build
 
-Needs CMake 3.21+, clang, Python 3 with Pillow and fontTools (as `./build.sh` does), and network access the first
-time (the CLAP SDK, clap-wrapper and the VST3 SDK are downloaded at configure time).
+Needs CMake 3.21+, clang and nm (or llvm-nm), Python 3 with Pillow and fontTools (as `./build.sh` does), and network
+access the first time (the CLAP SDK, clap-wrapper and the VST3 SDK are downloaded at configure time).
 
 ```
 cmake -S platform/plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
 cmake --build build/plugin -j
 build/plugin/tessera-panel-test shots/                                             # the window's test: PPM pictures in shots/
 build/plugin/tessera-sync-test                                                     # following the DAW
+build/plugin/tessera-copies-test                                                   # several instances: the copies apart
 xvfb-run build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 still-tide.wav window.ppm   # Linux / macOS
 ```
 

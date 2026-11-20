@@ -9,9 +9,13 @@
 
 #include "panel.h"
 
-/* tessera_clap.cpp: the latest view the audio thread made, and the panel's input for the audio thread */
-void tess_gui_view(tess_view_t &v);
-void tess_gui_input(PanelInput &in);
+/* the window's instance (tessera_clap.cpp): the latest view its audio thread made, and the panel's input for it */
+struct GuiLink
+{
+    virtual ~GuiLink() = default;
+    virtual void view(tess_view_t &v) = 0;
+    virtual void input(PanelInput &in) = 0;
+};
 
 class Gui
 {
@@ -22,5 +26,5 @@ class Gui
     virtual bool hide() = 0;
     virtual void tick() = 0;   // ~30 times a second (X11: from the host's timer)
     static const char *api();  // CLAP_WINDOW_API_WIN32 / _X11, or nullptr
-    static std::unique_ptr<Gui> make(const clap_host_t *host);
+    static std::unique_ptr<Gui> make(const clap_host_t *host, GuiLink *link);
 };

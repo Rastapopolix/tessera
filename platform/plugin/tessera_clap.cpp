@@ -13,7 +13,9 @@
  *   - the plugin's state is the project as a .tsp record, the same bytes SAVE > PROJECT writes on the FM-1;
  *   - the window (gui.h, Windows and Linux) shows the FM-1: its screen, buttons, keys and knobs. The audio thread owns
  *     the core: the window's input goes to it through a small queue, and it hands back a view ~30 times a second.
- * One instance per process: the firmware's state is global (a second instance is refused). */
+ * Several instances: each takes one of the plugin's private copies of the core (core_copies.h; TESS_PLUGIN_COPIES of
+ * them, 8), so each Tessera is wholly its own; past that a new one is refused. A copy given back is used again by the
+ * next instance, which starts from the copy's power-on project (STILL TIDE) unless the host loads its state. */
 #include <clap/clap.h>
 
 #include <atomic>
@@ -24,31 +26,33 @@
 #include <mutex>
 #include <vector>
 
+#include "core_copies.h"
 #include "gui.h"
-#include "tess_core.h"
 
 namespace
 {
-std::mutex core_lock;                     // the core is not thread-safe: audio, state and boot all take it
-std::atomic<bool> instance_live{false};   // one instance at a time
-bool core_booted = false;
+// the copies of the core: which an instance holds, and which have booted (their power-on done once)
+std::mutex copies_lock;
+bool copy_used[16], copy_booted[16];
 
-// the parameters: MASTER (0..1023) and MACRO 1..4 (0..100), as the core has them (the audio thread writes)
+// the parameters: MASTER (0..1023) and MACRO 1..4 (0..100), as the core has them
 enum { PARAM_MASTER, PARAM_MACRO1, PARAM_COUNT = PARAM_MACRO1 + 4 };
-std::atomic<int32_t> param_now[PARAM_COUNT];
-
-// the window <-> the audio thread (one instance, so one of each)
-std::mutex input_lock, view_lock;
-PanelInput pending;           // input_lock: buttons, keys and MASTER as now, the detents summed
-tess_view_t shared_view{};    // view_lock: the latest view
 
 constexpr uint32_t NCH = 6;   // main L, R, then tracks 1..4 (the core's stems)
 constexpr uint32_t NSTEMS = 4;
 
-struct Tessera
+struct Tessera : GuiLink
 {
     clap_plugin_t plugin{};
     const clap_host_t *host = nullptr;
+    const tess_core_vt *core = nullptr;   // this instance's copy of the core
+    uint32_t copy = 0;
+    std::mutex core_lock;                 // the copy is not thread-safe: audio, state and the params' flush take it
+    std::atomic<int32_t> param_now[PARAM_COUNT];   // as the core has them (the audio thread writes)
+    // the window <-> the audio thread
+    std::mutex input_lock, view_lock;
+    PanelInput pending;                   // input_lock: buttons, keys and MASTER as now, the detents summed
+    tess_view_t shared_view{};            // view_lock: the latest view
     double rate = 48000.0;
     double step = 44100.0 / 48000.0;      // core frames per host frame
     double pos = 0.0;                     // between prev and cur, 0..1
@@ -67,7 +71,7 @@ struct Tessera
         if (buf_i >= buf_n)
         {
             float *st[NSTEMS] = {buf[2], buf[3], buf[4], buf[5]};
-            tess_core_render(buf[0], buf[1], stems ? st : nullptr, 64);
+            core->render(buf[0], buf[1], stems ? st : nullptr, 64);
             if (!stems)
                 for (uint32_t c = 2; c < NCH; c++) std::memset(buf[c], 0, sizeof buf[c]);
             buf_n = 64;
@@ -78,7 +82,7 @@ struct Tessera
             prev[c] = cur[c];
             cur[c] = buf[c][buf_i];
         }
-        cur_frame = tess_core_frames() - buf_n + buf_i;
+        cur_frame = core->frames() - buf_n + buf_i;
         buf_i++;
     }
 
@@ -103,7 +107,7 @@ struct Tessera
     void midi_out(const clap_output_events_t *out, uint32_t n)
     {
         uint32_t pkt, frame;
-        while (tess_core_midi_out(&pkt, &frame))
+        while (core->midi_out(&pkt, &frame))
             midi_wait.emplace_back(pkt, frame);
         size_t keep = 0;
         for (auto &m : midi_wait)
@@ -130,11 +134,39 @@ struct Tessera
         }
         midi_wait.resize(keep);
     }
+
+    void midi_in(const clap_event_header_t *h);
+    int32_t param_core(int id);
+    void param_in(const clap_event_param_value_t *e);
+    void params_out(const clap_output_events_t *out, uint32_t at);
+
+    // gui.h: the window's side of the queue
+    void view(tess_view_t &v) override
+    {
+        std::lock_guard<std::mutex> g(view_lock);
+        v = shared_view;
+    }
+    void input(PanelInput &in) override
+    {
+        std::lock_guard<std::mutex> g(input_lock);
+        pending.buttons = in.buttons;
+        pending.keys = in.keys;
+        if (in.master >= 0)
+            pending.master = in.master;
+        in.master = -1;
+        for (int r = 0; r < TESS_NE; r++)
+        {
+            pending.enc[r] += in.enc[r];
+            in.enc[r] = 0;
+        }
+        pending.changed = true;
+        in.changed = false;
+    }
 };
 
 Tessera *self(const clap_plugin_t *p) { return static_cast<Tessera *>(p->plugin_data); }
 
-void midi_in(const clap_event_header_t *h)
+void Tessera::midi_in(const clap_event_header_t *h)
 {
     if (h->space_id != CLAP_CORE_EVENT_SPACE_ID)
         return;
@@ -149,15 +181,15 @@ void midi_in(const clap_event_header_t *h)
         uint32_t ch = e->channel < 0 ? 0u : (uint32_t)e->channel & 15u;
         uint32_t vel = (uint32_t)(e->velocity * 127.0 + 0.5);
         if (h->type == CLAP_EVENT_NOTE_ON)
-            tess_core_midi(0x90u | ch, (uint32_t)e->key, vel ? vel : 1u);
+            core->midi(0x90u | ch, (uint32_t)e->key, vel ? vel : 1u);
         else
-            tess_core_midi(0x80u | ch, (uint32_t)e->key, vel);
+            core->midi(0x80u | ch, (uint32_t)e->key, vel);
         break;
     }
     case CLAP_EVENT_MIDI:
     {
         auto *e = reinterpret_cast<const clap_event_midi_t *>(h);
-        tess_core_midi(e->data[0], e->data[1], e->data[2]);
+        core->midi(e->data[0], e->data[1], e->data[2]);
         break;
     }
     default:
@@ -167,23 +199,23 @@ void midi_in(const clap_event_header_t *h)
 
 // ---- parameters (audio thread: the core is locked)
 
-int32_t param_core(int id)
+int32_t Tessera::param_core(int id)
 {
-    return id == PARAM_MASTER ? (int32_t)tess_core_master_get() : (int32_t)tess_core_macro((uint32_t)(id - PARAM_MACRO1));
+    return id == PARAM_MASTER ? (int32_t)core->master_get() : (int32_t)core->macro((uint32_t)(id - PARAM_MACRO1));
 }
-void param_in(const clap_event_param_value_t *e)
+void Tessera::param_in(const clap_event_param_value_t *e)
 {
     int id = (int)e->param_id;
     if (id < 0 || id >= PARAM_COUNT)
         return;
     int32_t v = (int32_t)std::lround(e->value);
     if (id == PARAM_MASTER)
-        tess_core_master((uint32_t)(v < 0 ? 0 : v > 1023 ? 1023 : v));
+        core->master((uint32_t)(v < 0 ? 0 : v > 1023 ? 1023 : v));
     else
-        tess_core_macro_set((uint32_t)(id - PARAM_MACRO1), (uint32_t)(v < 0 ? 0 : v));
+        core->macro_set((uint32_t)(id - PARAM_MACRO1), (uint32_t)(v < 0 ? 0 : v));
     param_now[id] = param_core(id);
 }
-void params_out(const clap_output_events_t *out, uint32_t at)
+void Tessera::params_out(const clap_output_events_t *out, uint32_t at)
 {
     for (int id = 0; id < PARAM_COUNT; id++)
     {
@@ -210,37 +242,44 @@ void params_out(const clap_output_events_t *out, uint32_t at)
 
 bool p_init(const clap_plugin_t *p)
 {
-    (void)p;
-    std::lock_guard<std::mutex> g(core_lock);
-    if (!core_booted)
+    auto *t = self(p);
+    std::lock_guard<std::mutex> g(t->core_lock);
+    bool again;
     {
-        tess_core_boot();
-        core_booted = true;
+        std::lock_guard<std::mutex> c(copies_lock);
+        again = copy_booted[t->copy];
+        copy_booted[t->copy] = true;
     }
+    t->core->boot();
+    if (again)                 // (a copy an instance gave back: its power-on project again, STILL TIDE in slot A)
+        t->core->slot_load(0);
     for (int id = 0; id < PARAM_COUNT; id++)
-        param_now[id] = id == PARAM_MASTER ? 700 : param_core(id);
+        t->param_now[id] = id == PARAM_MASTER ? 700 : t->param_core(id);
     return true;
 }
 
 void p_destroy(const clap_plugin_t *p)
 {
-    self(p)->gui.reset();
-    delete self(p);
-    instance_live = false;
+    auto *t = self(p);
+    t->gui.reset();
+    uint32_t copy = t->copy;
+    delete t;
+    std::lock_guard<std::mutex> c(copies_lock);
+    copy_used[copy] = false;
 }
 
 bool p_activate(const clap_plugin_t *p, double rate, uint32_t, uint32_t)
 {
     auto *t = self(p);
     t->rate = rate;
-    t->step = (double)tess_core_rate() / rate;
+    t->step = (double)t->core->rate() / rate;
     t->pos = 1.0;
     t->buf_n = t->buf_i = 0;
     t->transport_known = t->free_started = false;
     t->view_due = 0;
     {
-        std::lock_guard<std::mutex> g(input_lock);   // MASTER where the window's knob starts
-        pending.changed = true;
+        std::lock_guard<std::mutex> g(t->input_lock);   // MASTER where the window's knob starts
+        t->pending.changed = true;
     }
     return true;
 }
@@ -275,7 +314,7 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
     }
     t->stems = t->stems || any_stem;   // (once asked for, the core keeps making them)
 
-    std::unique_lock<std::mutex> g(core_lock, std::try_to_lock);
+    std::unique_lock<std::mutex> g(t->core_lock, std::try_to_lock);
     if (!g.owns_lock())   // the main thread is saving or loading the project: a block of silence
     {
         for (uint32_t port = 0; port < proc->audio_outputs_count; port++)
@@ -291,32 +330,33 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
         bool playing = (tr->flags & CLAP_TRANSPORT_IS_PLAYING) != 0;
         bool has_pos = (tr->flags & CLAP_TRANSPORT_HAS_BEATS_TIMELINE) && (tr->flags & CLAP_TRANSPORT_HAS_TEMPO);
         if (playing || (t->transport_known && t->was_playing))   // (stopped: once, so the panel's PLAY still works)
-            tess_core_host(playing, has_pos, tr->tempo, (double)tr->song_pos_beats / CLAP_BEATTIME_FACTOR);
+            t->core->host(playing, has_pos, tr->tempo, (double)tr->song_pos_beats / CLAP_BEATTIME_FACTOR);
         t->transport_known = true;
         t->was_playing = playing;
     }
     else if (!t->free_started)   // a free-running host (the standalone app): play at once
     {
-        tess_core_transport(1);
+        t->core->transport(1);
         t->free_started = true;
     }
 
     {   // the window's input, if the window is not handing some in right now
-        std::unique_lock<std::mutex> in(input_lock, std::try_to_lock);
-        if (in.owns_lock() && pending.changed)
+        std::unique_lock<std::mutex> in(t->input_lock, std::try_to_lock);
+        PanelInput &pi = t->pending;
+        if (in.owns_lock() && pi.changed)
         {
-            tess_core_buttons(pending.buttons);
-            tess_core_keys(pending.keys);
-            if (pending.master >= 0)
-                tess_core_master((uint32_t)pending.master);
-            pending.master = -1;
+            t->core->buttons(pi.buttons);
+            t->core->keys(pi.keys);
+            if (pi.master >= 0)
+                t->core->master((uint32_t)pi.master);
+            pi.master = -1;
             for (int r = 0; r < TESS_NE; r++)
-                if (pending.enc[r])
+                if (pi.enc[r])
                 {
-                    tess_core_enc((uint32_t)r, pending.enc[r]);
-                    pending.enc[r] = 0;
+                    t->core->enc((uint32_t)r, pi.enc[r]);
+                    pi.enc[r] = 0;
                 }
-            pending.changed = false;
+            pi.changed = false;
         }
     }
 
@@ -333,9 +373,9 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
             done = at;
         }
         if (h->space_id == CLAP_CORE_EVENT_SPACE_ID && h->type == CLAP_EVENT_PARAM_VALUE)
-            param_in(reinterpret_cast<const clap_event_param_value_t *>(h));
+            t->param_in(reinterpret_cast<const clap_event_param_value_t *>(h));
         else
-            midi_in(h);
+            t->midi_in(h);
     }
     if (done < n)
         t->render(out, done, n - done);
@@ -348,14 +388,14 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
 
     t->midi_out(proc->out_events, n);   // (the tracks' notes, each on its channel: GLO > MIDI OUT)
 
-    params_out(proc->out_events, n ? n - 1 : 0);   // (MASTER or a MACRO turned on the panel or by a cord's source)
+    t->params_out(proc->out_events, n ? n - 1 : 0);   // (MASTER or a MACRO turned on the panel or by a cord's source)
 
     if (t->view_due <= n)   // the view for the window, ~30 times a second
     {
-        std::unique_lock<std::mutex> v(view_lock, std::try_to_lock);
+        std::unique_lock<std::mutex> v(t->view_lock, std::try_to_lock);
         if (v.owns_lock())
         {
-            tess_core_view(&shared_view);
+            t->core->view(&t->shared_view);
             t->view_due = (uint32_t)(t->rate / 30);
         }
     }
@@ -401,13 +441,14 @@ const clap_plugin_note_ports_t note_ports = {np_count, np_get};
 
 // ---- state: the project as a .tsp record
 
-bool st_save(const clap_plugin_t *, const clap_ostream_t *s)
+bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
 {
-    std::vector<uint8_t> b(tess_core_tsp_max());
+    auto *t = self(p);
+    std::vector<uint8_t> b(t->core->tsp_max());
     uint32_t len;
     {
-        std::lock_guard<std::mutex> g(core_lock);
-        len = tess_core_save(b.data(), (uint32_t)b.size());
+        std::lock_guard<std::mutex> g(t->core_lock);
+        len = t->core->save(b.data(), (uint32_t)b.size());
     }
     if (!len)
         return false;
@@ -421,9 +462,10 @@ bool st_save(const clap_plugin_t *, const clap_ostream_t *s)
     return true;
 }
 
-bool st_load(const clap_plugin_t *, const clap_istream_t *s)
+bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
 {
-    std::vector<uint8_t> b(tess_core_tsp_max());
+    auto *t = self(p);
+    std::vector<uint8_t> b(t->core->tsp_max());
     uint32_t len = 0;
     for (;;)
     {
@@ -436,10 +478,10 @@ bool st_load(const clap_plugin_t *, const clap_istream_t *s)
             break;
         len += (uint32_t)got;
     }
-    std::lock_guard<std::mutex> g(core_lock);
-    bool ok = tess_core_load(b.data(), len) == 0;
+    std::lock_guard<std::mutex> g(t->core_lock);
+    bool ok = t->core->load(b.data(), len) == 0;
     for (int id = PARAM_MACRO1; id < PARAM_COUNT; id++)   // (the project's MACROs; the host rescans)
-        param_now[id] = param_core(id);
+        t->param_now[id] = t->param_core(id);
     return ok;
 }
 const clap_plugin_state_t state = {st_save, st_load};
@@ -468,11 +510,11 @@ bool pr_info(const clap_plugin_t *, uint32_t i, clap_param_info_t *info)
     }
     return true;
 }
-bool pr_value(const clap_plugin_t *, clap_id id, double *v)
+bool pr_value(const clap_plugin_t *p, clap_id id, double *v)
 {
     if (id >= PARAM_COUNT)
         return false;
-    *v = param_now[id];
+    *v = self(p)->param_now[id];
     return true;
 }
 bool pr_to_text(const clap_plugin_t *, clap_id id, double v, char *out, uint32_t size)
@@ -493,17 +535,18 @@ bool pr_from_text(const clap_plugin_t *, clap_id id, const char *text, double *v
     *v = id == PARAM_MASTER ? x * 1023 / 100 : x;
     return true;
 }
-void pr_flush(const clap_plugin_t *, const clap_input_events_t *in, const clap_output_events_t *out)
+void pr_flush(const clap_plugin_t *p, const clap_input_events_t *in, const clap_output_events_t *out)
 {
-    std::lock_guard<std::mutex> g(core_lock);   // (not processing: the main thread, or the audio thread between blocks)
+    auto *t = self(p);
+    std::lock_guard<std::mutex> g(t->core_lock);   // (not processing: the main thread, or the audio thread between blocks)
     uint32_t n = in ? in->size(in) : 0;
     for (uint32_t i = 0; i < n; i++)
     {
         const clap_event_header_t *h = in->get(in, i);
         if (h->space_id == CLAP_CORE_EVENT_SPACE_ID && h->type == CLAP_EVENT_PARAM_VALUE)
-            param_in(reinterpret_cast<const clap_event_param_value_t *>(h));
+            t->param_in(reinterpret_cast<const clap_event_param_value_t *>(h));
     }
-    params_out(out, 0);
+    t->params_out(out, 0);
 }
 const clap_plugin_params_t params_ext = {pr_count, pr_info, pr_value, pr_to_text, pr_from_text, pr_flush};
 
@@ -525,7 +568,7 @@ bool gui_create(const clap_plugin_t *p, const char *api, bool is_floating)
     auto *t = self(p);
     if (!gui_is_api_supported(p, api, is_floating) || t->gui)
         return false;
-    t->gui = Gui::make(t->host);
+    t->gui = Gui::make(t->host, t);
     return t->gui != nullptr;
 }
 void gui_destroy(const clap_plugin_t *p) { self(p)->gui.reset(); }
@@ -611,11 +654,19 @@ const clap_plugin_t *f_create(const clap_plugin_factory_t *, const clap_host_t *
 {
     if (!clap_version_is_compatible(host->clap_version) || std::strcmp(id, desc.id))
         return nullptr;
-    bool expected = false;
-    if (!instance_live.compare_exchange_strong(expected, true))
-        return nullptr;   // one Tessera per process (tess_core.h)
+    uint32_t copy = 0;
+    {
+        std::lock_guard<std::mutex> c(copies_lock);   // a free copy of the core, or none: refused
+        while (copy < tess_copy_count() && copy_used[copy])
+            copy++;
+        if (copy >= tess_copy_count())
+            return nullptr;
+        copy_used[copy] = true;
+    }
     auto *t = new Tessera();
     t->host = host;
+    t->copy = copy;
+    t->core = tess_copy(copy);
     t->plugin.desc = &desc;
     t->plugin.plugin_data = t;
     t->plugin.init = p_init;
@@ -640,25 +691,3 @@ const void *tessera_entry_get_factory(const char *id)
     return !std::strcmp(id, CLAP_PLUGIN_FACTORY_ID) ? &factory : nullptr;
 }
 
-// ---- gui.h: the window's side of the queue
-void tess_gui_view(tess_view_t &v)
-{
-    std::lock_guard<std::mutex> g(view_lock);
-    v = shared_view;
-}
-void tess_gui_input(PanelInput &in)
-{
-    std::lock_guard<std::mutex> g(input_lock);
-    pending.buttons = in.buttons;
-    pending.keys = in.keys;
-    if (in.master >= 0)
-        pending.master = in.master;
-    in.master = -1;
-    for (int r = 0; r < TESS_NE; r++)
-    {
-        pending.enc[r] += in.enc[r];
-        in.enc[r] = 0;
-    }
-    pending.changed = true;
-    in.changed = false;
-}

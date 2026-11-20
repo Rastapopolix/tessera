@@ -27,7 +27,8 @@ class GuiX11 : public Gui
     std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
     tess_view_t view{};
 
-    explicit GuiX11(const clap_host_t *h) : host(h) {}
+    GuiX11(const clap_host_t *h, GuiLink *l) : host(h), link(l) {}
+    GuiLink *link;   // this window's instance
     ~GuiX11() override
     {
         if (timers && timer != CLAP_INVALID_ID)
@@ -105,8 +106,8 @@ class GuiX11 : public Gui
             }
         }
         if (changed)
-            tess_gui_input(panel.input);
-        tess_gui_view(view);
+            link->input(panel.input);
+        link->view(view);
         panel.draw(px.data(), view);
         XPutImage(dpy, wnd, gc, img, 0, 0, 0, 0, Panel::W, Panel::H);
         XFlush(dpy);
@@ -115,4 +116,4 @@ class GuiX11 : public Gui
 }   // namespace
 
 const char *Gui::api() { return CLAP_WINDOW_API_X11; }
-std::unique_ptr<Gui> Gui::make(const clap_host_t *host) { return std::make_unique<GuiX11>(host); }
+std::unique_ptr<Gui> Gui::make(const clap_host_t *host, GuiLink *link) { return std::make_unique<GuiX11>(host, link); }

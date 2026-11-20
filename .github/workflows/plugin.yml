@@ -5,7 +5,8 @@ name: Plugin (VST3 / CLAP / standalone)
 # CLAP host: STILL TIDE sounds, a note sounds, the state is a .tsp record, the window shows the screen
 # under Xvfb) and the panel test. Windows builds CLAP, VST3 and the
 # standalone app with Visual Studio's clang (ClangCL), from the Linux job's generated headers, and keeps them as the
-# run's artifact. Nothing is published.
+# run's artifact. Both run the copies test (several instances: the private copies of the core apart). Nothing is
+# published.
 on:
   pull_request:
     branches: [develop]
@@ -45,6 +46,8 @@ jobs:
         run: build/plugin/tessera-panel-test
       - name: Sync test (following the DAW)
         run: build/plugin/tessera-sync-test
+      - name: Copies test (several instances)
+        run: build/plugin/tessera-copies-test
       - name: Render test (with the window, on a virtual display)
         run: xvfb-run -s "-screen 0 1280x800x24" build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
       - uses: actions/upload-artifact@v4
@@ -78,6 +81,7 @@ jobs:
         run: |
           build/plugin/Release/tessera-panel-test.exe
           build/plugin/Release/tessera-sync-test.exe
+          build/plugin/Release/tessera-copies-test.exe
       - name: List the outputs
         shell: bash
         run: find build/plugin/out -maxdepth 3 | sort

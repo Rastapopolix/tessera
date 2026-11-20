@@ -139,7 +139,6 @@ void Panel::draw(uint32_t *px, const tess_view_t &v)
     knobs[0].angle = -135 + 270.0 * (input.master >= 0 ? input.master : master_now) / 1023;
     static const double kPi = 3.14159265358979;
     // the breathing LEDs: dark .. lit and back in ~1.13 s (fm1_led_breath)
-    static uint32_t frame = 0;
     double breath = 0.5 - 0.5 * std::cos(2 * kPi * (frame++ / 30.0) / 1.13);
     for (int i = 0; i < W * H; i++)
         px[i] = 0xFF101011;

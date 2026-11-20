@@ -44,6 +44,7 @@ class Panel
     enum { NONE, KNOB, BUTTON, KEY } drag = NONE;
     int drag_i = -1, last_x = 0, last_y = 0, acc = 0;
     int master_now = 700;   // MASTER as the core has it (the view: the DAW may automate it)
+    uint32_t frame = 0;     // frames drawn (the breathing LEDs: each window its own)
     int knob_at(int x, int y) const;
     int button_at(int x, int y) const;
     int key_at(int x, int y) const;

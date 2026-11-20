@@ -19,6 +19,8 @@ extern "C" IMAGE_DOS_HEADER __ImageBase;   // this module (the class belongs to 
 class GuiWin32 : public Gui
 {
   public:
+    explicit GuiWin32(GuiLink *l) : link(l) {}
+    GuiLink *link;   // this window's instance
     HWND wnd = nullptr;
     Panel panel;
     std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
@@ -84,7 +86,7 @@ class GuiWin32 : public Gui
     {
         if (changed)
         {
-            tess_gui_input(panel.input);
+            link->input(panel.input);
             InvalidateRect(wnd, nullptr, FALSE);
         }
     }
@@ -128,11 +130,11 @@ class GuiWin32 : public Gui
     bool hide() override { return wnd && (ShowWindow(wnd, SW_HIDE), true); }
     void tick() override
     {
-        tess_gui_view(view);
+        link->view(view);
         InvalidateRect(wnd, nullptr, FALSE);
     }
 };
 }   // namespace
 
 const char *Gui::api() { return CLAP_WINDOW_API_WIN32; }
-std::unique_ptr<Gui> Gui::make(const clap_host_t *) { return std::make_unique<GuiWin32>(); }
+std::unique_ptr<Gui> Gui::make(const clap_host_t *, GuiLink *link) { return std::make_unique<GuiWin32>(link); }
