@@ -171,7 +171,7 @@ static const gstep_t G_LFO[] = {
     {0, 117000, 1500, "KNOB 4", "FADE", 0, 22},
     {125000, 0, 0, 0, 0, "Each LFO is also a source on MODS: T1 LFO can move anything, on any track"},
 };
-/* folktronica: 88 BPM, E minor; a harp ARP as track 1 (HOLD on: the keys held stay; the clip moves through Em, C,
+/* folktronica: 88 BPM, E minor; a plucked lead ARP as track 1 (Theo: GATE must be heard, so a sound that holds while the note does, not the decaying harp; HOLD on: the keys held stay; the clip moves through Em, C,
  * Am, D, G), a brushed 808 in STEP, a sub's pedal E and a fifth drone (E, B) in STEP under every chord (Theo: the
  * trance one repeated for its own sake) */
 static void g_folkarp_scene(void)
@@ -179,10 +179,10 @@ static void g_folkarp_scene(void)
     song.g[G_BPM] = 88;
     scale(4, SCL_MIN, 0);
     sends(85, 65, 66, 50);
-    sound(0, ENGI_FM6, FX_HARP);
+    sound(0, ENGI_TRIO, TR_ARP_LEAD);
     tx(0, TX_MODE, TESS_ENG_OFF);
     trk[0].p[P_AMODE] = 3; trk[0].p[P_ARATE] = DIV_8; trk[0].p[P_AHOLD] = 1;   /* UPDN */
-    mixer(0, 106, -10, 60, 40);
+    mixer(0, 92, -10, 60, 40);
     sound(1, ENGI_DRUM, DK_808_KIT);
     {
         static const uint8_t L[16] = {L_BD, 0, L_CH, L_CH, L_RS, 0, L_CH, L_CH, L_BD, L_BD, L_CH, L_CH, L_RS, 0, L_CH, L_CH};
@@ -223,15 +223,16 @@ static const gstep_t G_ARP[] = {
     {57000, 59000, 600, "KNOB 2", "1/8", "And back to 1/8", -1},
     G_CHORD3(63000, "A3", "C4", "E4", "A", "C", "E", "A, C, E"),
     {65000, 67000, 600, "KNOB 3", "OCT 2", "KNOB 3, OCT: over two octaves", 1},
-    {71000, 73000, 2500, "KNOB 4", "GATE", "KNOB 4, GATE: shorter notes", -25},
-    {77000, 79000, 14000, "OCT-", "HOLD OCT-", "Hold OCT-: SWING, PROB, HOLD and ORDER"},
-    {0, 81000, 2500, "KNOB 1", "SWING", 0, 25},
-    {81500, 0, 0, 0, 0, "KNOB 1, SWING: every second note later"},
-    {86000, 87000, 2000, "KNOB 2", "PROB", "KNOB 2, PROB: some notes rest", -40},
-    G_CHORD3(97000, "F#3", "A3", "D4", "F#", "A", "D", "F#, A, D"),
-    G_CHORD3(105000, "G3", "B3", "D4", "G", "B", "D", "G, B, D"),
-    G_CHORD3(113000, "G3", "B3", "E4", "G", "B", "E", "And G, B, E again"),
-    {119000, 0, 0, 0, 0, "ORDER: from the lowest note, or as pressed. TWEAK's SHIFT moves the arpeggio"},
+    {69500, 71500, 4000, "KNOB 4", "SHORT", "KNOB 4, GATE: down, short notes", -40},
+    {75000, 75500, 7500, "KNOB 4", "LONG", "Up: long notes that run into the next", 90},
+    {83000, 85000, 14000, "OCT-", "HOLD OCT-", "Hold OCT-: SWING, PROB, HOLD and ORDER"},
+    {0, 87000, 2500, "KNOB 1", "SWING", 0, 25},
+    {87500, 0, 0, 0, 0, "KNOB 1, SWING: every second note later"},
+    {92000, 93000, 2000, "KNOB 2", "PROB", "KNOB 2, PROB: some notes rest", -40},
+    G_CHORD3(103000, "F#3", "A3", "D4", "F#", "A", "D", "F#, A, D"),
+    G_CHORD3(111000, "G3", "B3", "D4", "G", "B", "D", "G, B, D"),
+    G_CHORD3(119000, "G3", "B3", "E4", "G", "B", "E", "And G, B, E again"),
+    {125000, 0, 0, 0, 0, "ORDER: from the lowest note, or as pressed. TWEAK's SHIFT moves the arpeggio"},
 };
 /* ambient (Theo: something more ambient than dub techno): 72 BPM, D dorian; ORACLE glass chords on EUCLID as track 1
  * (its PATTERN changes), a soft 808 pulse in STEP, a slow sub on TURING, a far marimba on AWAKE */
@@ -467,7 +468,7 @@ static void guide_ref_pages(const char *out, FILE *tsv)
     G_RUN("r-fm6", "FM6: THE OPERATORS", "ORANGE", 122, 4, g_sophisti_scene, G_FM6);   /* sophisti-pop */
     G_RUN("r-menu", "THE MENU", "WHITE", 110, 4, g_synthfunk_scene, G_MENU);   /* synth funk */
     G_RUN("r-tempo", "PATTERN AND TEMPO", "MOSAIC", 121, 4, g_ambtempo_scene, G_PATTEMPO);   /* ambient */
-    G_RUN("r-arp", "ARP: ONE NOTE AT A TIME", "MOSAIC", 126, 4, g_folkarp_scene, G_ARP);   /* folktronica */
+    G_RUN("r-arp", "ARP: ONE NOTE AT A TIME", "MOSAIC", 132, 4, g_folkarp_scene, G_ARP);   /* folktronica */
     G_RUN("r-lfo", "LFO: A WAVE THAT MOVES", "LILAC", 132, 4, g_filterhouse_scene, G_LFO);   /* filter house */
     G_RUN("r-fx", "FX: INSERTS AND SENDS", "LILAC", 122, 4, g_acid_scene, G_FX);   /* acid house */
     G_RUN("r-tweak2", "TWEAK 2: WHICH HITS PLAY", "MOSAIC", 112, 4, g_afrobeat_scene, G_TWEAK2);   /* afrobeat */
