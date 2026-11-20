@@ -57,6 +57,9 @@ static const char *const TX_N_ETROLE[] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "
 static const char *const TX_N_ETORDER[] = {"AUTO", "1ST", "2ND", "3RD", "4TH"};
 static const char *const TX_N_SEQDIR[] = {"FWD", "BACK", "PEND", "FOLD", "RAND", "DRUNK"};   /* (SEQ_*) */
 static const char *const TX_N_SDIR[] = {"UP", "DOWN", "ALT"};   /* (TESS_STR_*) */
+static const char *const TX_N_CWHEN[] = {"OFF", "LAST", "LAST 2", "ODD", "CHANGE", "RAND"};   /* (TESS_CW_*) */
+static const char *const TX_N_CBY[] = {"-2 ST", "-1 ST", "+1 ST", "+2 ST", "+3 ST", "+1 DEG", "+2 DEG", "INV+",
+                                       "INV-", "OCT+", "TOP", "LEAD"};   /* (TESS_CB_*) */
 static const char *const TX_N_BUSMODE[] = {"SUM", "MAX", "MIN", "DIFF"};   /* (cord.h CB_*) */
 static const char *const TX_N_BUSLAG[] = {"OFF", "10 ms", "20 ms", "50 ms", "100 ms", "200 ms", "500 ms", "1 s", "2 s",
                                           "5 s", "10 s", "20 s"};   /* (cord.c CORD_LAG_STEP) */
@@ -238,6 +241,8 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_AN_TIME] = PD("TIME", F_INT, 1, 16, 3),
     [TX_AN_BREAK] = PD("BREAK", F_PCT, 0, 100, 0),
     [TX_SECTION_PC] = PE("SEC PC", TX_N_PATGEN, 0),
+    [TX_CH_WHEN] = PE("WHEN", TX_N_CWHEN, 0),
+    [TX_CH_BY] = PE("BY", TX_N_CBY, TESS_CB_UP2),
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -853,6 +858,12 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                     "phrase line, before its first notes, and at PLAY; a repeat of the same "
                                     "section sends nothing. Nothing with FORM OFF, MIDI OUT OFF or the track's "
                                     "channel OFF. MIDI OUT's sheet (OCT+ held), Section PC T1 to T4."),
+    X_(TX_CH_WHEN, "CHORD MOVE WHEN", "Which strikes of a BEAT, STEP or OFFBEAT chord move (BY), back home on the "
+                                      "next: LAST the bar's last, LAST 2, ODD every second, CHANGE the last before "
+                                      "a new chord, RAND one a bar. GEN sheet."),
+    X_(TX_CH_BY, "CHORD MOVE BY", "How far a strike moves: the whole shape by semitones (ST), up the scale in key "
+                                  "(DEG), turned over (INV), an octave, the top note a degree (TOP), or the next "
+                                  "chord a semitone below (LEAD). GEN sheet."),
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT

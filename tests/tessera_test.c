@@ -1596,6 +1596,93 @@ static void br_check(char *res, size_t cap)
     snprintf(res, cap, "%u", (unsigned)ok);
 }
 
+/* ------------------------------------------------------------- MOVE --- */
+/* CHORD on track 0, POP a chord a bar, HIT OFFBEAT (four strikes a bar) for 8 s with MOVE WHEN when, BY by; the log's
+ * strikes into first[] (st_strikes); how many */
+static uint32_t st_strikes(uint32_t gap, uint32_t *first);
+static uint32_t mv_play(uint32_t when, uint32_t by, uint32_t *first)
+{
+    uint32_t f, total, i;
+    int32_t o[2 * CTL];
+    host_tracks_init();
+    tessera_reset();
+    song.g[G_BPM] = 120;
+    for (i = 0; i < NTRK; i++) tt_open[i] = -1;
+    tt_n = tt_blk = 0;
+    gen(0, TESS_ENG_CHORD);
+    tessera_param_set(0, TX_CH_PROG, GEN_CH_POP);
+    tessera_param_set(0, TX_CH_BARS, 1);
+    tessera_param_set(0, TX_CH_HIT, GEN_CH_OFF);
+    tessera_param_set(0, TX_CH_WHEN, (int32_t)when);
+    tessera_param_set(0, TX_CH_BY, (int32_t)by);
+    rng_state = 0x4D56u;
+    total = 8u * FS / CTL * CTL;
+    transport_req = 1;
+    for (f = 0; f < total + 4u * CTL; f += CTL) {
+        if (f >= total) transport_req = 2;
+        mix_block(o, CTL);
+        tt_blk++;
+    }
+    return st_strikes(60u, first);
+}
+/* strike s against strike h (its bar's first): 0 the same notes, 1 each d semitones higher, 2 h's turned over (its
+ * lowest an octave up, on top), 3 another chord whose lowest is 3 or 4 semitones up (a third, in C major), 4 else */
+static uint32_t mv_cmp(const uint32_t *first, uint32_t s, uint32_t h, int32_t d)
+{
+    uint32_t n = first[s + 1u] - first[s], m = first[h + 1u] - first[h], i, same = n == m, up = n == m, inv = n == m && n > 1u;
+    int32_t lo;
+    for (i = 0; i < n && i < m; i++) {
+        same &= tt_ev[first[s] + i].note == tt_ev[first[h] + i].note;
+        up &= (int32_t)tt_ev[first[s] + i].note == (int32_t)tt_ev[first[h] + i].note + d;
+        inv &= tt_ev[first[s] + i].note == (i + 1u < m ? tt_ev[first[h] + i + 1u].note : tt_ev[first[h]].note + 12u);
+    }
+    lo = (int32_t)tt_ev[first[s]].note - (int32_t)tt_ev[first[h]].note;
+    return same ? 0u : up ? 1u : inv ? 2u : (lo == 3 || lo == 4) ? 3u : 4u;
+}
+/* "1": OFF: a bar's four skanks alike; LAST +2 ST: the fourth the whole shape 2 semitones up, the next bar home again;
+ * LAST +2 DEG: a third up in key; ODD INV+: the second and fourth turned over; RAND: one skank a bar moved, the same
+ * again with the same SEED */
+static void mv_check(char *res, size_t cap)
+{
+    uint32_t ok = 1, first[65], n, s, bad = 0, moved[4], again[4];
+    n = mv_play(TESS_CW_OFF, TESS_CB_UP2, first);
+    for (s = 0; s < n; s++) bad += mv_cmp(first, s, s & ~3u, 0) != 0u;
+    printf("move: OFF: %u strikes, %u unlike their bar's first\n", (unsigned)n, (unsigned)bad);
+    ok &= n == 16u && !bad;
+    n = mv_play(TESS_CW_LAST, TESS_CB_UP2, first);
+    for (s = bad = 0; s < n; s++) bad += mv_cmp(first, s, s & ~3u, 2) != ((s & 3u) == 3u ? 1u : 0u);
+    printf("move: LAST +2 ST: %u strikes, %u wrong\n", (unsigned)n, (unsigned)bad);
+    ok &= n == 16u && !bad;
+    n = mv_play(TESS_CW_LAST, TESS_CB_DEG2, first);
+    for (s = bad = 0; s < n; s++) bad += mv_cmp(first, s, s & ~3u, 0) != ((s & 3u) == 3u ? 3u : 0u);
+    printf("move: LAST +2 DEG: %u strikes, %u wrong\n", (unsigned)n, (unsigned)bad);
+    ok &= n == 16u && !bad;
+    n = mv_play(TESS_CW_ODD, TESS_CB_INVU, first);
+    for (s = bad = 0; s < n; s++) bad += mv_cmp(first, s, s & ~3u, 0) != ((s & 1u) ? 2u : 0u);
+    printf("move: ODD INV+: %u strikes, %u wrong\n", (unsigned)n, (unsigned)bad);
+    ok &= n == 16u && !bad;
+    for (uint32_t r = 0; r < 2u; r++) {                 /* (each bar: three skanks alike, home; one +1 ST) */
+        uint32_t *c = r ? again : moved, b, k, h;
+        n = mv_play(TESS_CW_RAND, TESS_CB_UP1, first);
+        bad = n != 16u;
+        for (b = 0; b < 4u && n == 16u; b++) {
+            h = 4u * b + (mv_cmp(first, 4u * b, 4u * b + 1u, 0) && mv_cmp(first, 4u * b, 4u * b + 2u, 0));
+            c[b] = 0;
+            for (k = 4u * b; k < 4u * b + 4u; k++) {
+                uint32_t m = mv_cmp(first, k, h, 1);
+                if (m == 1u) c[b] = c[b] ? 9u : k - 4u * b + 1u;
+                else bad += m != 0u;
+            }
+            bad += !c[b] || c[b] > 4u;
+        }
+        printf("move: RAND +1 ST: %u strikes, %u wrong, moved %u %u %u %u\n", (unsigned)n, (unsigned)bad,
+               (unsigned)c[0], (unsigned)c[1], (unsigned)c[2], (unsigned)c[3]);
+        ok &= !bad && !(c[0] == c[1] && c[1] == c[2] && c[2] == c[3]);   /* (not the same skank every bar) */
+    }
+    ok &= !memcmp(moved, again, sizeof moved);
+    snprintf(res, cap, "%u", (unsigned)ok);
+}
+
 /* ------------------------------------------------------------- STRUM --- */
 /* CHORD on track 0, POP a chord a bar (2 s at 120 BPM), HIT hit, for 8 s with STRUM ms, DIR dir (RATCH ratch); the log
  * of its notes (tt_ev). Returns its voices still gated after the STOP */
@@ -4379,6 +4466,27 @@ int main(int argc, char **argv)
         }
         bad += check("BREATH: the drone tied over, its voices breathing on their own slow cycles; 0 strikes it as before; "
                      "the same with the same SEED; STOP releases", ok);
+    }
+    {   /* MOVE (CHORD) */
+        unsigned ok = 0;
+        pid_t pid;
+        int fd[2];
+        fflush(stdout);
+        if (!pipe(fd) && (pid = fork()) >= 0) {
+            if (!pid) {
+                close(fd[0]);
+                mv_check(res, sizeof res);
+                fflush(stdout);
+                if (write(fd[1], res, strlen(res) + 1u) < 0) _exit(1);
+                _exit(0);
+            }
+            close(fd[1]);
+            if (read(fd[0], res, sizeof res - 1u) > 0) sscanf(res, "%u", &ok);
+            close(fd[0]);
+            waitpid(pid, 0, 0);
+        }
+        bad += check("MOVE: a CHORD's chosen skanks moved (LAST +2 ST, +2 DEG in key, ODD INV+, RAND one a bar from the "
+                     "SEED), home again on the next; OFF as before", ok);
     }
     {   /* STRUM (CHORD) */
         unsigned ok = 0;
