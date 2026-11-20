@@ -3,7 +3,8 @@
 #
 # Tessera as a plugin (phase 0 spike): CLAP, VST3 and a standalone app from one CLAP implementation, through
 # clap-wrapper (MIT). The CLAP SDK (MIT), clap-wrapper and the VST3 SDK (MIT since 3.8) are downloaded at configure
-# time. The core is web/sim/sim.c, the firmware as the web simulator runs it (tess_core.c).
+# time. The core is Tessera's core API (platform/core/tess_core.h) as the web simulator builds it (web/sim/sim.c, for
+# its demos, over platform/core/core_unit.c).
 #
 #   cmake -S platform/plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release
 #   cmake --build build/plugin --config Release
@@ -45,9 +46,9 @@ FetchContent_Declare(clap-wrapper GIT_REPOSITORY https://github.com/free-audio/c
 FetchContent_MakeAvailable(clap-wrapper)
 
 # ---- the core: the firmware, as web/sim/build.sh builds it for the browser
-add_library(tessera-core STATIC tess_core.c)
-target_include_directories(tessera-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-    PRIVATE ${TESS_ROOT}/build/gen ${TESS_ROOT}/firmware/src ${TESS_ROOT}/tests ${TESS_ROOT}/web/sim)
+add_library(tessera-core STATIC ${TESS_ROOT}/web/sim/sim.c)
+target_include_directories(tessera-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${TESS_ROOT}/platform/core
+    PRIVATE ${TESS_ROOT}/build/gen ${TESS_ROOT}/firmware/src)
 if (WIN32)
     target_include_directories(tessera-core BEFORE PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/compat)
 endif()

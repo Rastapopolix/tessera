@@ -115,9 +115,9 @@ static void answer_bend_hear(uint32_t tr, uint32_t note, uint32_t vel, uint32_t 
 }
 
 /* a note on the track's keys: the first after an answer (or a closed phrase) starts a new phrase; up to 16, a step
- * apart at least (keys while stopped: a step each). On the nearest step, as REC places a note: one played past the
- * middle of a step (late) counts on the next, so a note played a touch early is not a whole step early (Theo, 3.3.1:
- * the answers felt off the grid) */
+ * apart at least (keys while stopped: a step each, and a pause of TESS_AN_STOP_MS closes the phrase). On the nearest
+ * step, as REC places a note: one played past the middle of a step (late) counts on the next, so a note played a
+ * touch early is not a whole step early (Theo, 3.3.1: the answers felt off the grid) */
 void tessera_answer_hear(track_t *t, uint32_t note, uint32_t vel) { tessera_answer_hear_at(t, note, vel, 0); }
 void tessera_answer_hear_at(track_t *t, uint32_t note, uint32_t vel, uint32_t late)
 {
@@ -133,13 +133,16 @@ void tessera_answer_hear_at(track_t *t, uint32_t note, uint32_t vel, uint32_t la
         return;                                         /* (a SOURCE's call: the keys just play) */
     }
     a = &tessera.answer[tr];
-    if (tess_an.phase[tr] != TESS_AN_HEAR) {
+    /* (stopped, no bars pass to close the phrase: a pause does, so the next key starts a new one. Theo, 3.7.1: keys
+     * played while stopped all joined one phrase, and once it held 16 the picture kept the old notes) */
+    if (tess_an.phase[tr] != TESS_AN_HEAR || (!song.playing && fm1_ms - tess_an.hms[tr] >= TESS_AN_STOP_MS)) {
         answer_restart(tr);
         a->n = 0;
         tess_an.phase[tr] = TESS_AN_HEAR;
         tess_an.hclk[tr] = 0;
         tess_an.hlate[tr] = late ? 1u : 0u;      /* (the phrase from its first note's step) */
     }
+    tess_an.hms[tr] = fm1_ms;
     n = a->n;
     if (n >= TESS_AN_NOTES) return;
     at = tess_an.hclk[tr] + (late ? 1u : 0u);

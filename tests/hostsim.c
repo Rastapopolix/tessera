@@ -22,52 +22,10 @@
 #define TRK_START_TESS 0                              /* (engines.c: Melodee's power-on start, what the tests are written for) */
 #endif
 #define __attribute__(x)
-#define memset melodee_memset
-#define memcpy melodee_memcpy
-#define memcmp melodee_memcmp
-#include "melodee_tables.h"
-#include "../firmware/src/libc.c"
-#undef memset
-#undef memcpy
-#undef memcmp
+#include "../firmware/src/core_sources.h"            /* the core: the list every build but the FM-1's shares */
 #undef __attribute__                                  /* the RAM tables the firmware fills at boot (fm1_main) */
 __attribute__((constructor)) static void host_dsp_tables(void) { dsp_tables_init(); }
 #define __attribute__(x)
-static struct { volatile uint32_t notes, buttons; } fm1_in;
-#include "../firmware/src/core.h"
-#include "../firmware/src/engines.c"
-#include "../firmware/src/params.c"
-#include "../firmware/src/mod.c"
-#include "../firmware/src/voice.c"
-#include "../firmware/src/mix.c"
-static void fm1_delay_ms(uint32_t ms) { (void)ms; }
-#if MELODEE_USB_HOST
-static void fm1_wdt_feed(void);                       /* (usb_host.c's waits; the including test defines it) */
-#endif
-#include "../firmware/src/usb.c"
-#include "../firmware/src/midi_uart.c"                /* TRS MIDI IN: its parser (um_byte) feeds midi_in_q */
-#include "../firmware/src/tessera.h"
-#include "../firmware/src/gen.c"
-#include "../firmware/src/song_chain.c"
-#ifdef TESSERA_NOTE_HOOK                       /* (SUB's repeats, seq_sub.c: a generator's notes too) */
-static void TESSERA_NOTE_HOOK(track_t *t, uint32_t note, uint32_t vel);
-#define SUB_NOTE_ON(t, n, v) (TESSERA_NOTE_HOOK((t), (n), (v)), trk_note_on((t), (n), (v)))
-#endif
-#include "../firmware/src/seq.c"
-#ifdef TESSERA_NOTE_HOOK                       /* tests/tessera_test.c: every note a generator plays, logged on its way */
-#define trk_note_on(t, n, v) (TESSERA_NOTE_HOOK((t), (n), (v)), trk_note_on((t), (n), (v)))
-#endif
-#define TESS_IRQ_OFF() ((void)0)                  /* (no audio interrupt on the host) */
-#define TESS_IRQ_ON() ((void)0)
-#define TESS_ENTROPY() 0x5EEDu                     /* (a fresh Turing register: fixed on the host, repeatable tests) */
-#include "../firmware/src/tessera.c"
-#include "../firmware/src/pat_gen.c"
-#include "../firmware/src/pid.c"
-#include "../firmware/src/cord.c"
-#include "../firmware/src/mscope.c"
-#ifdef TESSERA_NOTE_HOOK
-#undef trk_note_on
-#endif
 #define inst (trk[0])                   /* the single-part renders below: part 1 */
 
 static void wav_hdr(FILE *f, uint32_t frames)

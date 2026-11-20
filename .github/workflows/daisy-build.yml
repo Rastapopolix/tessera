@@ -6,7 +6,7 @@ name: Daisy build (Andamento)
 on:
   pull_request:
     branches: [develop]
-    paths: ['firmware/src/**', 'tools/gen_*.py', 'platform/daisy/**', 'platform/andamento/**', '.github/workflows/daisy-build.yml']
+    paths: ['firmware/src/**', 'tools/gen_*.py', 'tools/build.py', 'platform/core/**', 'platform/daisy/**', 'platform/andamento/**', '.github/workflows/daisy-build.yml']
   workflow_dispatch:
 
 permissions:
@@ -27,7 +27,9 @@ jobs:
       - name: Install the ARM toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+          sudo apt-get install -y gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib \
+            libharfbuzz-dev libfribidi-dev libraqm-dev
+          python -m pip install Pillow fonttools==4.68.0   # (the FM-1 UI's font headers: the shared build, platform/core)
       - uses: actions/cache@v4
         with:
           path: libDaisy
