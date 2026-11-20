@@ -487,6 +487,18 @@ typedef struct track {
     int16_t m_rnd;               /* .. its RAND */
     int32_t m_env;               /* the amp envelope of voice m_vi, last block (Q15) */
 } track_t;
+/* CORE_OUT_HOOKS (a build option, 0 on the FM-1, the web simulator and the plugin): a platform's own outputs besides
+ * USB, set by its front end (Andamento: platform/andamento/and_out.c). out_note_hook: every note a track starts (vel
+ * 1..127; a muted track's not) or ends (vel 0), as voice.c trk_note_on / trk_note_off see them, its SOUND OFF or not
+ * (CV / gate pairs). out_midi_hook: every MIDI OUT message, usb.c midi_out_event's packet (DIN / TRS MIDI). Both
+ * called from the audio ISR; 0: none */
+#ifndef CORE_OUT_HOOKS
+#define CORE_OUT_HOOKS 0
+#endif
+#if CORE_OUT_HOOKS
+static void (*out_note_hook)(const track_t *t, uint32_t note, uint32_t vel);
+static void (*out_midi_hook)(uint32_t pkt);
+#endif
 /* DIR (seq_dir.c): each track's, apart from track_t (growing it costs flash everywhere a track is indexed) */
 typedef struct {
     uint16_t slot;               /* the step of time in the pass (0..LEN-1); seq_idx the step playing on it: the same

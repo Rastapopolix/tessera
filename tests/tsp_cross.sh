@@ -14,7 +14,7 @@
 #           the host HAL (the device itself runs the same project.c / project_tsp.c)
 #   web     web/sim/build.sh's options, 44.1 kHz
 #   plugin  platform/plugin/CMakeLists.txt's options (the DAW clock, track outputs), 44.1 kHz
-#   daisy   platform/daisy's (no USB, no FM-1 UI or screen), the tables at 48 kHz
+#   daisy   platform/daisy's (no USB, no FM-1 UI or screen, Andamento's output hooks), the tables at 48 kHz
 set -u
 cd "$(dirname "$0")/.."
 OUT=${1:-build/tsp_cross}
@@ -36,7 +36,7 @@ build web build/gen -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=1 -DMELODEE_LOOK=1 -D
 build plugin build/gen -DTESS_HOST_CLOCK=1 -DTESS_PLUGIN_IO=1 -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 \
     -DMELODEE_FM6=1 -DMELODEE_PHYS=1 '-DMELODEE_VERSION="plugin"'
 build daisy build/andamento/gen -DMELODEE_USB_HOST=0 -DMELODEE_USB_AUDIO=0 -DMELODEE_ACCESS=0 -DHOST_HAL_SCREEN=0 \
-    -DTESS_CORE_UI=0 '-DMELODEE_VERSION="daisy"'
+    -DTESS_CORE_UI=0 -DCORE_OUT_HOOKS=1 '-DMELODEE_VERSION="daisy"'
 TARGETS="fm1 web plugin daisy"
 for t in $TARGETS; do printf '%-7s %s\n' "$t" "$("$OUT/tsp_cross_$t" info)"; done
 

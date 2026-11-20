@@ -48,6 +48,12 @@ jobs:
           sh web/andamento/build.sh --headers
       - name: A .tsp saved by one target loads in the others
         run: sh tests/tsp_cross.sh build/tsp_cross 2>&1 | tee tsp_cross.log
+      - name: The output hooks (CORE_OUT_HOOKS, Andamento's CV and MIDI outs) on the Daisy's options
+        run: |
+          clang -O1 -w -ffp-contract=off -Ifirmware/src -Iplatform/core -Ibuild/andamento/gen -DMELODEE_USB_HOST=0 \
+            -DMELODEE_USB_AUDIO=0 -DMELODEE_ACCESS=0 -DHOST_HAL_SCREEN=0 -DTESS_CORE_UI=0 -DCORE_OUT_HOOKS=1 \
+            '-DMELODEE_VERSION="daisy"' tests/core_hooks.c -o core_hooks -lm
+          for d in demos/*.tsp; do ./core_hooks "$d"; done
       - name: The host UI test on the shared include lists
         run: |
           clang -w -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=0 tests/ui_test.c -o ui_test -lm   # (as run_tests.sh)

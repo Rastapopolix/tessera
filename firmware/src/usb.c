@@ -142,6 +142,10 @@ static void tess_plugin_midi_out(uint32_t pkt);    /* the plugin only (platform/
 #endif
 static void midi_out_event(uint32_t pkt)            /* from the audio ISR */
 {
+#if CORE_OUT_HOOKS
+    if (out_midi_hook)                              /* (a platform's own MIDI outs: Andamento's DIN / TRS) */
+        out_midi_hook(pkt);
+#endif
 #ifdef TESS_PLUGIN_IO
     tess_plugin_midi_out(pkt);
     return;
