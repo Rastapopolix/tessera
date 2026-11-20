@@ -360,7 +360,15 @@ static const gstep_t G_ENTRIES[] = {
     {72000, 75000, 900, "KNOB 4", "FADE 2", "Turn KNOB 4: FADE takes 2 bars", 1},
     {81000, 0, 0, 0, 0, "Each change is decided a bar ahead: that track's mute key blinks"},
     {88000, 0, 0, 0, 0, "Before A comes round, the anchors play alone; A returns with everything"},
-    {95000, 0, 0, 0, 0, "Your own mutes still win. ENTRIES, DWELL, STYLE, FADE and the ROLEs"},
+    {95000, 98000, 800, "OCT+", "SHEET", "Hold OCT+: the ENTRIES sheet, each track's ORDER. AUTO goes by its ROLE"},
+    {0, 102000, 400, "KNOB 1", "ORDER T2", 0, 1},
+    {0, 103500, 600, "KNOB 2", "2ND", 0, 2},
+    {102000, 0, 0, 0, 0, "KNOB 1 picks a track, KNOB 2 its ORDER: T2 2ND, the bass comes in second"},
+    {0, 109000, 400, "KNOB 1", "ORDER T4", 0, 2},
+    {0, 110500, 400, "KNOB 2", "1ST", 0, 1},
+    {109000, 0, 0, 0, 0, "T4 1ST: the keys first. They leave the other way round: 1ST leaves last"},
+    {117000, 120000, 200, "OCT-", "CLOSE", "Tap OCT-: the sheet closes. The next entries follow the new order"},
+    {125000, 0, 0, 0, 0, "Your own mutes still win. ENTRIES, DWELL, STYLE, FADE, ROLE and ORDER"},
 };
 /* disco: 116 BPM, A minor; an 808 four on the floor (open hats on the offbeat, claps), an octave bass on EUCLID, a
  * clavinet on POLY, strings holding the chord. CHAIN FORM OFF until the clip turns it on; KEY B +5 (a fourth up),
@@ -1556,7 +1564,7 @@ static void guide_ref(const char *out, FILE *tsv)
     G_RUN("r-landscape", "A SEA TO WATCH", "MOSAIC", 108, 4, g_neoclassical_scene, G_LANDSCAPE);   /* neo-classical */
     G_RUN("r-color", "THE SCREEN'S COLOUR", "YELLOW", 54, 4, g_chillout_scene, G_COLOR);   /* chillout */
     G_RUN("r-form", "A TRACK AS A SONG", "SUNSET", 60, 4, g_bossa_scene, G_FORM);   /* bossa nova */
-    G_RUN("r-entries", "TRACKS OUT AND IN", "SUNSET", 102, 4, g_jazzent_scene, G_ENTRIES);   /* r-answer's modal jazz */
+    G_RUN("r-entries", "TRACKS OUT AND IN", "SUNSET", 132, 4, g_jazzent_scene, G_ENTRIES);   /* r-answer's modal jazz */
     G_RUN("r-chain", "ONE FORM FOR ALL", "SUNSET", 112, 4, g_disco_scene, G_CHAIN);   /* disco */
     G_RUN("r-energy", "ENERGY: TIDE AND RESTS", "SUNSET", 124, 4, g_afrohouse_scene, G_ENERGY);   /* afro house */
     G_RUN("r-tweak", "TWEAK: RESHAPE AND FOLLOW", "MOSAIC", 120, 4, g_cinematic_scene, G_TWEAK);   /* cinematic (r-follow folded in) */
