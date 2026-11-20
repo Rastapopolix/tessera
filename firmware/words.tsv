@@ -367,3 +367,9 @@ ARP OCT	arp octaves
 # MIDI OUT sheet: SECTION PC (a Program Change on the CHAIN's section)
 SECTION PC	section program change
 SEC PC	section program change
+# CHORD's GEN sheet: MOVE WHEN and BY
+1 DEG	1 degree
+# DEG	# degrees
+INV+	inversion up
+INV-	inversion down
+OCT+	octave up

@@ -95,6 +95,12 @@ if (typeof registerProcessor === "function") {
       else if (m.type === "midi") ex.web_midi(m.data[0] | 0, m.data[1] | 0, m.data[2] | 0);
       else if (m.type === "visible") this.period = m.on ? 1 / 30 : 1 / 4;
       else if (m.type === "demo" && ex.web_demo) ex.web_demo();   // melodee-tess
+      else if (m.type === "reader" && ex.web_reader) {              // melodee-tess: the screen reader on or off
+        this.reader = !!m.on;
+        this.readerBeat = ex.web_now_ms();
+        ex.web_said_clear();
+        ex.web_reader(this.reader ? 1 : 0);
+      }
       else if (m.type === "slotGet" && ex.web_slot_get) {         // melodee-tess: a slot's record, for a .tsp file
         const n = ex.web_slot_get(m.slot | 0);
         this.port.postMessage({ type: "slot", slot: m.slot, bytes: new Uint8Array(ex.memory.buffer, ex.web_slot_buf(), n).slice() });
@@ -139,7 +145,19 @@ if (typeof registerProcessor === "function") {
         this.sentWrites = writes;
         msg.sectors = storeSectors(new Uint8Array(mem, ex.web_nor(), ex.web_nor_size()));
       }
-      if (msg.leds || msg.fb || msg.sectors || msg.load !== undefined) this.port.postMessage(msg, transfer);
+      if (this.reader) {                              // what the firmware said since: its lines, for the page to say
+        const n = ex.web_said_n();
+        if (n) {
+          msg.said = String.fromCharCode(...new Uint8Array(mem, ex.web_said(), n));   // (7-bit text)
+          ex.web_said_clear();
+        }
+        const now = ex.web_now_ms();
+        if (now - this.readerBeat >= 2000) {          // the reader's HELLO again (the firmware lets go after 5 s)
+          this.readerBeat = now;
+          ex.web_reader(1);
+        }
+      }
+      if (msg.leds || msg.fb || msg.sectors || msg.said || msg.load !== undefined) this.port.postMessage(msg, transfer);
     }
 
     // A click's down and up can arrive within one render quantum, but the FM-1's contacts never close for less than

@@ -1388,7 +1388,7 @@ function editorTabs() {
       const rest = hh.slice(m.index + m[0].length), tag = new RegExp(`<(/?)${m[1]}\\b[^>]*>`, "g");
       for (let d = 1, t; (t = tag.exec(rest));) if (!(d += t[1] ? -1 : 1)) { EN[m[2]] = rest.slice(0, t.index); break; }
     }
-    EN.themeLight = "Light"; EN.themeDark = "Dark";
+    EN.themeLight = "Light"; EN.themeDark = "Dark"; EN.loopsPause = "Pause the screens"; EN.loopsPlay = "Play the screens";
     const marks = (v) => js([...v.matchAll(/href="([^"]*)"|@\w+@/g)].map((x) => x[1] ?? x[0]).sort());
     const gaps = [], links = [];
     for (const [l, T] of Object.entries(HT)) {

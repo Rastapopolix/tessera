@@ -75,6 +75,21 @@ EXPORT void web_master(uint32_t v) { tess_core_master(v); }
 /* a channel message from Web MIDI, as a USB-MIDI packet arrives: 0 = the queue was full */
 EXPORT uint32_t web_midi(uint32_t status, uint32_t d1, uint32_t d2) { return tess_core_midi(status, d1, d2); }
 
+/* the screen reader (announce.c, MELODEE_ACCESS): the page is its reader. web_reader(1) is the reader's HELLO
+ * (again at least every 5 s, or the firmware stops talking), web_reader(0) its BYE; what the firmware says collects
+ * in host_said (host_hal.h: a line each, "N text" cuts off what is being said, "Q text" queued, "K text" kept whole,
+ * "H name|words link" the HELLO back), read with web_said and emptied with web_said_clear */
+#if MELODEE_ACCESS
+EXPORT void web_reader(uint32_t on)
+{
+    static const uint8_t hello[5] = { ANN_H0, ANN_H1, ANN_H2, ANN_HELLO, ANN_VER }, bye[4] = { ANN_H0, ANN_H1, ANN_H2, ANN_BYE };
+    ann_frame(on ? hello : bye, on ? 5u : 4u, fm1_ms);
+}
+EXPORT char *web_said(void) { return host_said; }
+EXPORT uint32_t web_said_n(void) { return host_said_n; }
+EXPORT void web_said_clear(void) { host_said_n = 0; host_said[0] = 0; }
+#endif
+
 /* the LEDs: bit b = the button labelled b, keys bit k (tess_core.c) */
 EXPORT uint32_t web_lit_buttons(void) { return led_buttons(fm1_led); }
 EXPORT uint32_t web_lit_keys(void) { return led_keys(fm1_led); }

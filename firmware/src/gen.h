@@ -200,6 +200,9 @@ typedef struct {
     uint16_t n;           /* the steps played since PLAY or the section's start */
     uint8_t  user[GEN_CH_USER_N];   /* USER's degrees, 0..6 */
     uint8_t  ulen;        /* USER's chords, 1..8 (0: one, the tonic) */
+    uint8_t  sk, sn;      /* this strike's place in the bar, the bar's strikes (MOVE WHEN: tessera.c) */
+    uint8_t  slast;       /* 1: the chord's last strike before it changes */
+    uint8_t  bar;         /* the bars since PLAY (WHEN RAND's draw) */
 } gen_chord_t;
 
 /* A FORM section's settings for the generator that made it (tessera.h tessera_sec_t keeps them and the phrase).

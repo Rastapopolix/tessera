@@ -124,11 +124,24 @@ def channel(spec, label, stem, branch):
     return files, meta
 
 
+def words_file():
+    """the screen reader's words file for this checkout's firmware/words.tsv (tools/gen_words.py, as the build makes it:
+    web/words/<id>.json): the editor names its controls with it"""
+    import tempfile
+    sys.path.insert(0, str(HERE.parent / "tools"))
+    import gen_words
+    with tempfile.TemporaryDirectory() as tmp:
+        header = Path(tmp) / "ann_words.h"
+        gen_words.main(HERE.parent / "firmware" / "words.tsv", HERE / "words", header)
+        return re.search(r'/([0-9a-f]+\.json)"', header.read_text()).group(1)
+
+
 def copy_editor(ed):
     """this checkout's editor into ed: editor.html, its font and fm1backup.js, and the demo projects for its Demo
     projects (demos/*.tsp, demos/checks/*.tsp: the test projects)"""
     ed.mkdir(parents=True, exist_ok=True)
-    shutil.copy(HERE / "editor.html", ed / "index.html")
+    (ed / "index.html").write_text((HERE / "editor.html").read_text(encoding="utf-8").replace(
+        'const WORDS_FILE = "";', f'const WORDS_FILE = "{words_file()}";', 1), encoding="utf-8")
     for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt", "fm1backup.js"):
         if (HERE / f).exists():
             shutil.copy(HERE / f, ed / f)

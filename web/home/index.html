@@ -93,6 +93,9 @@ nav .links a:hover { color: var(--bg); background: var(--ink); }
 .btn:hover, .btn.main { background: var(--ink); color: var(--bg); }
 .btn.main:hover { background: var(--bg); color: var(--ink); }
 .screens { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.screens .loops { grid-column: 1 / -1; justify-self: end; font: 16px/1 var(--pixel); color: var(--mid); background: none; border: 0;
+                  padding: 3px 4px 2px; cursor: pointer; text-transform: uppercase; }
+.screens .loops:hover { color: var(--bg); background: var(--ink); }
 .screen { border: 2px solid var(--line); padding: 5px; }
 .screen img, .screen video { display: block; width: 100%; height: auto; image-rendering: pixelated; }
 @media (max-width: 860px) {
@@ -248,6 +251,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/brand/hero_land.png" width="480" height="480" aria-label="LANDSCAPE: rain on the water, a torii on the shore, and the moon rising, full and setting"><source src="media/gallery/loop_land.mp4" type="video/mp4"></video></div>
       <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/gen_constel.png" width="480" height="480" aria-label="CONSTELLATION: stars play as they cross the crosshair"><source src="media/gallery/loop_constel.mp4" type="video/mp4"></video></div>
       <div class="screen"><video class="loop" muted loop playsinline preload="none" poster="media/gallery/gen_chord.png" width="480" height="480" aria-label="CHORD: a progression"><source src="media/gallery/loop_chord.mp4" type="video/mp4"></video></div>
+      <button class="loops" id="loops" type="button" hidden></button>
     </div>
   </div>
 </div>
@@ -601,6 +605,8 @@ window.HOME_TEXT = {
     about_p1: "Soy Theo Dainis, de Aotearoa Nueva Zelanda. Llevo 15 años usando y construyendo sintetizadores, y me apasionan lo modular y el código abierto. Me influyen mucho Elektron, Mutable Instruments y el mundo de Monome y Whimsical Raps. Me encanta el lado DIY: construir cosas y aprender cómo funciona por dentro el hardware musical. Tessera es el secuenciador que quería en el FM-1: un modular en una caja, un pequeño instrumento que escribe contigo.",
     about_note1: "<b>Hecho con Claude Code.</b> Por mucho que me gustaría llevarme el mérito, el código de Tessera está escrito con <a href=\"https://claude.com/claude-code\">Claude Code</a>, la herramienta de programación con IA de Anthropic. Yo lo diseñé, tomé las decisiones y lo pruebo en mi propio FM-1. Es experimental, así que avisa de cualquier cosa rara. El código es abierto, así que puedes leer cada línea y cada cambio. Como todo firmware, no tiene garantía: guarda una <b>copia de seguridad completa</b> desde el <a href=\"webapp/editor/\">editor web</a> antes de flashear.",
     themeLight: "Claro",
+    loopsPause: "Pausar las pantallas",
+    loopsPlay: "Reproducir las pantallas",
     themeDark: "Oscuro",
   },
   it: {
@@ -722,6 +728,8 @@ window.HOME_TEXT = {
     about_p1: "Sono Theo Dainis, di Aotearoa Nuova Zelanda. Uso e costruisco sintetizzatori da 15 anni, e sono appassionato di modulare e open source. Sono molto influenzato da Elektron, Mutable Instruments e dal mondo di Monome e Whimsical Raps. Amo il lato DIY: costruire cose e capire come funziona dentro l'hardware musicale. Tessera è il sequencer che volevo sull'FM-1: un modulare in una scatola, un piccolo strumento che scrive con te.",
     about_note1: "<b>Fatto con Claude Code.</b> Per quanto mi piacerebbe prendermene il merito, il codice di Tessera è scritto con <a href=\"https://claude.com/claude-code\">Claude Code</a>, lo strumento di programmazione con IA di Anthropic. L'ho progettato io, ho preso le decisioni e lo provo sul mio FM-1. È sperimentale, quindi segnala qualsiasi cosa strana. Il codice è aperto, quindi puoi leggere ogni riga e ogni modifica. Come ogni firmware, non ha garanzia: salva un <b>backup completo</b> dall'<a href=\"webapp/editor/\">editor web</a> prima di flashare.",
     themeLight: "Chiaro",
+    loopsPause: "Metti in pausa gli schermi",
+    loopsPlay: "Riproduci gli schermi",
     themeDark: "Scuro",
   },
   de: {
@@ -843,6 +851,8 @@ window.HOME_TEXT = {
     about_p1: "Ich bin Theo Dainis aus Aotearoa Neuseeland. Ich benutze und baue seit 15 Jahren Synthesizer, und ich brenne für Modular und Open Source. Mich prägen vor allem Elektron, Mutable Instruments und die Welt von Monome und Whimsical Raps. Ich liebe die DIY-Seite: Dinge bauen und lernen, wie Musik-Hardware von innen funktioniert. Tessera ist der Sequencer, den ich mir für das FM-1 gewünscht habe: Modular in einer Kiste, ein kleines Instrument, das mit dir schreibt.",
     about_note1: "<b>Gebaut mit Claude Code.</b> So gern ich mir die Lorbeeren anheften würde: Tesseras Code ist mit <a href=\"https://claude.com/claude-code\">Claude Code</a> geschrieben, dem KI-Programmierwerkzeug von Anthropic. Ich habe es entworfen, die Entscheidungen getroffen und teste es auf meinem eigenen FM-1. Es ist experimentell, also melde bitte alles Merkwürdige. Der Quellcode ist offen, du kannst jede Zeile und jede Änderung lesen. Wie jede Firmware kommt es ohne Gewähr: Sichere vor dem Flashen ein <b>vollständiges Backup</b> mit dem <a href=\"webapp/editor/\">Web-Editor</a>.",
     themeLight: "Hell",
+    loopsPause: "Bildschirme anhalten",
+    loopsPlay: "Bildschirme abspielen",
     themeDark: "Dunkel",
   },
   fr: {
@@ -964,6 +974,8 @@ window.HOME_TEXT = {
     about_p1: "Je suis Theo Dainis, d'Aotearoa Nouvelle-Zélande. J'utilise et je construis des synthétiseurs depuis 15 ans, et je suis passionné de modulaire et d'open source. Je suis très influencé par Elektron, Mutable Instruments et l'univers de Monome et Whimsical Raps. J'adore le côté DIY : construire des choses, et apprendre comment le matériel musical fonctionne de l'intérieur. Tessera est le séquenceur que je voulais sur le FM-1 : un modulaire dans une boîte, un petit instrument qui écrit avec vous.",
     about_note1: "<b>Fait avec Claude Code.</b> J'aimerais bien m'en attribuer le mérite, mais le code de Tessera est écrit avec <a href=\"https://claude.com/claude-code\">Claude Code</a>, l'outil de programmation par IA d'Anthropic. Je l'ai conçu, j'ai pris les décisions, et je le teste sur mon propre FM-1. Il est expérimental : signalez tout ce qui vous semble bizarre. Le code est ouvert, vous pouvez lire chaque ligne et chaque changement. Comme tout firmware, il est fourni sans garantie : enregistrez une <b>sauvegarde complète</b> depuis l'<a href=\"webapp/editor/\">éditeur web</a> avant de flasher.",
     themeLight: "Clair",
+    loopsPause: "Mettre les écrans en pause",
+    loopsPlay: "Lire les écrans",
     themeDark: "Sombre",
   },
   pt: {
@@ -1085,6 +1097,8 @@ window.HOME_TEXT = {
     about_p1: "Sou Theo Dainis, de Aotearoa Nova Zelândia. Uso e construo sintetizadores há 15 anos, e sou apaixonado por modular e código aberto. Tenho muita influência da Elektron, da Mutable Instruments e do mundo da Monome e da Whimsical Raps. Adoro o lado DIY: construir coisas e aprender como o hardware musical funciona por dentro. A Tessera é o sequenciador que eu queria no FM-1: um modular numa caixa, um pequeno instrumento que escreve com você.",
     about_note1: "<b>Feito com Claude Code.</b> Por mais que eu quisesse levar o crédito, o código da Tessera é escrito com o <a href=\"https://claude.com/claude-code\">Claude Code</a>, a ferramenta de programação com IA da Anthropic. Eu projetei, tomei as decisões e testo no meu próprio FM-1. É experimental, então avise sobre qualquer coisa estranha. O código é aberto, então você pode ler cada linha e cada mudança. Como qualquer firmware, vem sem garantia: salve um <b>backup completo</b> pelo <a href=\"webapp/editor/\">editor web</a> antes de gravar.",
     themeLight: "Claro",
+    loopsPause: "Pausar as telas",
+    loopsPlay: "Reproduzir as telas",
     themeDark: "Escuro",
   },
   ko: {
@@ -1206,6 +1220,8 @@ window.HOME_TEXT = {
     about_p1: "저는 아오테아로아 뉴질랜드의 Theo Dainis입니다. 15년 동안 신시사이저를 쓰고 만들어 왔고, 모듈러와 오픈 소스를 사랑합니다. Elektron, Mutable Instruments, 그리고 Monome과 Whimsical Raps의 세계에서 많은 영향을 받았습니다. 무언가를 만들고, 음악 하드웨어가 안에서 어떻게 동작하는지 배우는 DIY를 좋아합니다. Tessera는 제가 FM-1에서 원했던 시퀀서입니다: 상자 속의 모듈러, 함께 써 내려가는 작은 악기.",
     about_note1: "<b>Claude Code로 만들었습니다.</b> 공을 제가 다 가져가고 싶지만, Tessera의 코드는 Anthropic의 AI 코딩 도구인 <a href=\"https://claude.com/claude-code\">Claude Code</a>로 작성됩니다. 설계와 결정은 제가 했고, 제 FM-1에서 직접 테스트합니다. 실험적인 프로젝트이니 이상한 점이 있으면 알려 주세요. 소스가 공개되어 있어 모든 줄과 모든 변경을 읽을 수 있습니다. 여느 펌웨어처럼 보증은 없습니다. 설치하기 전에 <a href=\"webapp/editor/\">웹 에디터</a>에서 <b>전체 백업</b>을 저장하세요.",
     themeLight: "밝게",
+    loopsPause: "화면 일시정지",
+    loopsPlay: "화면 재생",
     themeDark: "어둡게",
   },
   ja: {
@@ -1327,6 +1343,8 @@ window.HOME_TEXT = {
     about_p1: "アオテアロア・ニュージーランドの Theo Dainis です。15年にわたってシンセサイザーを使い、作ってきました。モジュラーとオープンソースが大好きです。Elektron、Mutable Instruments、そして Monome と Whimsical Raps の世界から大きな影響を受けています。ものを作ること、音楽ハードウェアの内側の仕組みを学ぶこと、つまり DIY が好きです。Tessera は私が FM-1 に欲しかったシーケンサーです。箱の中のモジュラー、一緒に書いてくれる小さな楽器。",
     about_note1: "<b>Claude Code で作っています。</b>手柄を独り占めしたいところですが、Tessera のコードは Anthropic の AI コーディングツール <a href=\"https://claude.com/claude-code\">Claude Code</a> で書かれています。設計と判断は私が行い、自分の FM-1 でテストしています。実験的なものなので、おかしな点があれば教えてください。ソースは公開されているので、すべての行とすべての変更を読めます。どのファームウェアとも同じく無保証です。書き込む前に <a href=\"webapp/editor/\">Webエディター</a>で<b>完全バックアップ</b>を保存してください。",
     themeLight: "ライト",
+    loopsPause: "画面を一時停止",
+    loopsPlay: "画面を再生",
     themeDark: "ダーク",
   },
 };
@@ -1335,7 +1353,7 @@ window.HOME_TEXT = {
    simulator), else the browser's first we have, else English. A missing line stays English. */
 var LANGS = ["en", "es", "it", "de", "fr", "pt", "ko", "ja"], LANG_KEY = "tessera-lang";
 var homeLang = (function () {
-  var EN = { themeLight: "Light", themeDark: "Dark" }, els = document.querySelectorAll("[data-h]"), k, lang = "en";
+  var EN = { themeLight: "Light", themeDark: "Dark", loopsPause: "Pause the screens", loopsPlay: "Play the screens" }, els = document.querySelectorAll("[data-h]"), k, lang = "en";
   for (k = 0; k < els.length; k++) EN[els[k].dataset.h] = els[k].innerHTML;
   try { var s = localStorage.getItem(LANG_KEY); if (LANGS.indexOf(s) >= 0) lang = s; } catch (e) {}
   if (lang === "en") {
@@ -1385,11 +1403,24 @@ var homeLang = (function () {
 </script>
 <script>/* the hero's screens: slow loops drawn by the firmware, playing only while on screen; with reduced motion, or no
    script, the stills */
+/* the PAUSE button stops them (and is remembered: tessera-loops) */
 if (!matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
+  const vids = [...document.querySelectorAll("video.loop")], seen = new Set(), btn = document.getElementById("loops");
+  let paused = false;
+  try { paused = localStorage.getItem("tessera-loops") === "off"; } catch (e) { /* no storage */ }
+  const run = (v) => { if (!paused && seen.has(v)) v.play().catch(() => {}); else v.pause(); };
   const io = new IntersectionObserver((es) => es.forEach((e) => {
-    if (e.isIntersecting) e.target.play().catch(() => {}); else e.target.pause();
+    if (e.isIntersecting) seen.add(e.target); else seen.delete(e.target);
+    run(e.target);
   }));
-  document.querySelectorAll("video.loop").forEach((v) => io.observe(v));
+  vids.forEach((v) => io.observe(v));
+  const show = () => { btn.textContent = homeLang.tr(paused ? "loopsPlay" : "loopsPause"); };
+  btn.addEventListener("click", () => {
+    paused = !paused;
+    try { localStorage.setItem("tessera-loops", paused ? "off" : "on"); } catch (e) { /* no storage */ }
+    vids.forEach(run); show();
+  });
+  btn.hidden = false; homeLang.hook(show); show();
 }
 </script>
 <script>/* LIGHT / DARK: names the other look; the choice is stored (tessera-theme) */

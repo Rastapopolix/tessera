@@ -156,6 +156,9 @@ body {{ margin: 0; background: var(--bg); color: var(--text); font: 400 16px/1.6
 a {{ color: var(--ink); text-underline-offset: 3px; }}
 a:hover {{ background: var(--ink); color: var(--bg); text-decoration: none; }}
 :focus-visible {{ outline: 2px solid var(--ink); outline-offset: 2px; }}
+.skip {{ position: absolute; left: 8px; top: -60px; z-index: 5; padding: 6px 10px; background: var(--ink); color: var(--bg); font: 16px/1 var(--pixel); }}
+.skip:focus {{ top: 8px; }}
+.sr {{ position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }}
 header {{ position: sticky; top: 0; z-index: 3; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
   padding: 10px 16px; background: var(--bg); border-bottom: 1px solid var(--line); font: 16px/1 var(--pixel); }}
 header .home {{ color: var(--ink); text-decoration: none; margin-right: auto; font-size: 20px; }}
@@ -222,6 +225,7 @@ main hr {{ border: 0; border-top: 1px solid var(--line); margin: 32px 0; }}
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to the text</a>
 <header>
   <a class="home" href="../">TESSERA</a>
   <a href="../start/"{cur_start}>START</a>
@@ -234,11 +238,12 @@ main hr {{ border: 0; border-top: 1px solid var(--line); margin: 32px 0; }}
 </header>
 <div class="layout">
 <nav class="side" id="side" aria-label="Contents">
-  <input id="q" type="search" placeholder="Search {short}" aria-label="Search {short}" autocomplete="off">
+  <input id="search-q" type="search" placeholder="Search {short}" aria-label="Search {short}" autocomplete="off">
+  <p class="sr" id="found" aria-live="polite"></p>
   <ol class="results" id="results" hidden></ol>
   {toc}
 </nav>
-<main id="main">
+<main id="main" tabindex="-1">
 {intro}{body}
 <p class="next">{next}</p>
 </main>
@@ -265,9 +270,18 @@ main hr {{ border: 0; border-top: 1px solid var(--line); margin: 32px 0; }}
     if (e.target.tagName === "A") {{ document.body.classList.remove("toc-open"); b.setAttribute("aria-expanded", "false"); }}
   }});
 }})();
+/* a table or code block wider than the page scrolls sideways: it then takes the keyboard focus, so the arrow keys
+   scroll it */
+(function () {{
+  var boxes = [].slice.call(document.querySelectorAll("main table, main pre"));
+  function fit() {{
+    boxes.forEach(function (b) {{ if (b.scrollWidth > b.clientWidth + 1) b.tabIndex = 0; else b.removeAttribute("tabindex"); }});
+  }}
+  fit(); window.addEventListener("resize", fit);
+}})();
 /* the search: every section's text (from its heading to the next), the matching ones listed with a line of each */
 (function () {{
-  var q = document.getElementById("q"), out = document.getElementById("results"), toc = document.querySelector(".toc"), secs = [], cur = null;
+  var q = document.getElementById("search-q"), out = document.getElementById("results"), found = document.getElementById("found"), toc = document.querySelector(".toc"), secs = [], cur = null;
   [].forEach.call(document.getElementById("main").children, function (el) {{
     if (/^H[1-4]$/.test(el.tagName) && el.id) {{ cur = {{ id: el.id, title: el.textContent, text: "" }}; secs.push(cur); }}
     else if (cur) cur.text += " " + el.textContent;
@@ -275,7 +289,7 @@ main hr {{ border: 0; border-top: 1px solid var(--line); margin: 32px 0; }}
   function esc(s) {{ return s.replace(/[&<>"]/g, function (c) {{ return {{ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }}[c]; }}); }}
   q.addEventListener("input", function () {{
     var w = q.value.trim().toLowerCase();
-    if (w.length < 2) {{ out.hidden = true; toc.hidden = false; return; }}
+    if (w.length < 2) {{ out.hidden = true; toc.hidden = false; found.textContent = ""; return; }}
     var html = "", n = 0;
     secs.forEach(function (s) {{
       if (n >= 40) return;
@@ -286,6 +300,7 @@ main hr {{ border: 0; border-top: 1px solid var(--line); margin: 32px 0; }}
       html += '<li><a href="#' + s.id + '">' + esc(s.title) + "</a>" + (line ? "<small>&hellip;" + line + "&hellip;</small>" : "") + "</li>";
     }});
     out.innerHTML = html || "<li><small>Nothing found.</small></li>";
+    found.textContent = n ? n + (n >= 40 ? "+" : "") + (n === 1 ? " section found" : " sections found") : "Nothing found";
     out.hidden = false; toc.hidden = true;
   }});
   q.addEventListener("keydown", function (e) {{ if (e.key === "Escape") {{ q.value = ""; q.dispatchEvent(new Event("input")); }} }});
