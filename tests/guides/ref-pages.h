@@ -51,18 +51,19 @@ static const gstep_t G_TWEAK2[] = {
     {95000, 97000, 600, "KNOB 4", "COND 1:4", "1:4: the first bar of four (also 2:4, 4:4, 1:8, FIRST, !FIRST)", 2},
     {106000, 0, 0, 0, 0, "BRANCH and TO, LOGIC, COND: two simple parts become one groove"},
 };
-/* acid house: 124 BPM, A minor; a TRIO saw bass on TURING as track 1 (its FX: DRIVE, FILTER, PHASER), a 909 in STEP,
- * ORACLE chord stabs on the offbeat, a soft pad. Send effects: 1 a reverb, 2 an echo (MODE goes to SPLIT in the clip) */
-static void g_acid_scene(void)
+/* organ house (Theo: an organ and keys for the effects, not the bass): 122 BPM, A minor; an organ's offbeat stabs on
+ * CHORD as track 1 (its FX 1 DRIVE, FX 2 FILTER), a 909 in STEP, ORACLE e-piano chords as track 3 (its FX 3 PHASER and
+ * its sends), a bass on TURING. Send effects: 1 a reverb, 2 an echo (MODE goes to SPLIT in the clip) */
+static void g_organhouse_scene(void)
 {
-    song.g[G_BPM] = 124;
+    song.g[G_BPM] = 122;
     scale(9, SCL_MIN, 0);
     sends(70, 55, 60, 45);
-    sound(0, ENGI_TRIO, TR_FAT_BASS);
-    trk[0].p[P_SDIV] = DIV_16;
-    gen(0, TESS_ENG_TURING, 47);
-    tx(0, TX_TUR_PROB, 5); tx(0, TX_TUR_LEN, 8); tx(0, TX_TW_SHIFT, -12);
-    mixer(0, 110, 0, 0, 0);
+    sound(0, ENGI_FM6, FX_DRAWBARS);
+    trk[0].p[P_CHRD] = 1;
+    gen(0, TESS_ENG_CHORD, 9);
+    tx(0, TX_CH_PROG, GEN_CH_TWO); tx(0, TX_CH_BARS, 2); tx(0, TX_CH_HIT, GEN_CH_OFF);
+    mixer(0, 110, -10, 20, 0);
     trk[0].p[P_FXRATE] = 12; trk[0].p[P_FXCHAR] = 0;   /* (DRIVE's DRV low and FOLD 0 when TYPE reaches it: the picture starts a plain sine) */
     sound(1, ENGI_DRUM, DK_909_KIT);
     {
@@ -72,23 +73,22 @@ static void g_acid_scene(void)
         trk[1].p[P_SLEN] = 16;
     }
     tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
-    mixer(1, 76, 0, 10, 0);
+    mixer(1, 72, 0, 10, 0);
     sound(2, ENGI_ORACLE, OR_KEYS);
-    trk[2].p[P_E0] = -15;
     trk[2].p[P_CHRD] = 1;
     gen(2, TESS_ENG_CHORD, 9);
-    tx(2, TX_CH_PROG, GEN_CH_TWO); tx(2, TX_CH_BARS, 2); tx(2, TX_CH_HIT, GEN_CH_OFF);
-    mixer(2, 70, 20, 40, 40);
-    sound(3, ENGI_TRIO, TR_WARM_PAD);
-    trk[3].p[P_CHRD] = 1;
-    gen(3, TESS_ENG_CHORD, 9);
-    tx(3, TX_CH_PROG, GEN_CH_TWO); tx(3, TX_CH_BARS, 2); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
-    mixer(3, 52, -20, 70, 0);
+    tx(2, TX_CH_PROG, GEN_CH_TWO); tx(2, TX_CH_BARS, 2); tx(2, TX_CH_HIT, GEN_CH_BEAT);
+    mixer(2, 90, 25, 30, 0);
+    sound(3, ENGI_TRIO, TR_SUB_BASS);
+    trk[3].p[P_SDIV] = DIV_8;
+    gen(3, TESS_ENG_TURING, 47);
+    tx(3, TX_TUR_PROB, 5); tx(3, TX_TUR_LEN, 8); tx(3, TX_TW_SHIFT, -12);
+    mixer(3, 80, 0, 0, 0);
     g_solo_check();
 }
 static const gstep_t G_FX[] = {
     {0, 0, 0, 0, 0, "FX: three insert effects on each track, and three send effects shared by all"},
-    {3500, 5500, 200, "FX", "OPEN FX", "Tap FX: FX 1, track 1's first insert. TYPE, MIX, and two of the effect's own"},
+    {3500, 5500, 200, "FX", "OPEN FX", "Tap FX: FX 1, the first insert on track 1, the organ. TYPE, MIX, and two of the effect's own"},
     {10000, 12000, 1500, "KNOB 1", "DRIVE", "Turn KNOB 1, TYPE: DRIVE, a soft clip", 11},
     {16500, 18500, 1500, "KNOB 2", "MIX", "KNOB 2, MIX: how much of it is heard", 30},
     {22000, 24000, 4500, "KNOB 3", "DRIVE UP", "KNOB 3, DRIVE: the picture's wave rounds off flat. Warmth, then grit", 40},
@@ -99,14 +99,15 @@ static const gstep_t G_FX[] = {
     {0, 48000, 1200, "KNOB 2", "MIX", 0, 30},
     {48500, 51000, 3000, "KNOB 3", "CUT", "KNOB 3, CUT: the filter closes. KNOB 4, RES, its resonance", -25},
     {0, 55000, 2000, "KNOB 4", "RES", 0, 25},
-    {60000, 62000, 600, "SELECT", "FX 3", "FX 3: a PHASER, last in the track's chain", 1},
-    {0, 64000, 600, "KNOB 1", "PHASER", 0, 1},
-    {0, 66000, 1200, "KNOB 2", "MIX", 0, 25},
+    {60000, 62000, 600, "ALGORITHM", "TRACK 3", "A PHASER suits the e-piano: turn ALGORITHM to track 3, then SELECT to FX 3", 2},
+    {0, 64000, 600, "SELECT", "FX 3", 0, 1},
+    {0, 66000, 600, "KNOB 1", "PHASER", 0, 1},
+    {0, 67500, 1200, "KNOB 2", "MIX", 0, 30},
     {72000, 74000, 600, "SELECT", "FX SEND", "FX SEND: this track's send, the RETURN level, and FX MODE", 1},
     {79000, 81000, 600, "KNOB 3", "SPLIT", "KNOB 3, MODE: CHAIN, one send through all three; SPLIT, a send to each", 1},
     {85000, 87000, 600, "SELECT", "FX SENDS", "FX SENDS: with SPLIT, this track's send to each of the three", 1},
     {0, 90000, 1500, "KNOB 2", "SEND 2", 0, 30},
-    {90000, 0, 0, 0, 0, "Turn KNOB 2: the bass into SEND FX 2, the echo"},
+    {90000, 0, 0, 0, 0, "Turn KNOB 2: the e-piano into SEND FX 2, the echo"},
     {97000, 99000, 600, "SELECT", "SEND FX 1", "SEND FX 1, 2 and 3: the shared effects, here a reverb", 1},
     {104000, 106000, 600, "SELECT", "SEND FX 2", "SEND FX 2: the echo. KNOB 3, its TIME", 1},
     {0, 108000, 1500, "KNOB 3", "TIME", 0, -10},
@@ -461,6 +462,6 @@ static void guide_ref_pages(const char *out, FILE *tsv)
     G_RUN("r-tempo", "PATTERN AND TEMPO", "MOSAIC", 121, 4, g_ambtempo_scene, G_PATTEMPO);   /* ambient */
     G_RUN("r-arp", "ARP: ONE NOTE AT A TIME", "MOSAIC", 132, 4, g_folkarp_scene, G_ARP);   /* folktronica */
     G_RUN("r-lfo", "LFO: A WAVE THAT MOVES", "LILAC", 141, 4, g_softdrone_scene, G_LFO);   /* soft drone */
-    G_RUN("r-fx", "FX: INSERTS AND SENDS", "LILAC", 122, 4, g_acid_scene, G_FX);   /* acid house */
+    G_RUN("r-fx", "FX: INSERTS AND SENDS", "LILAC", 122, 4, g_organhouse_scene, G_FX);   /* organ house */
     G_RUN("r-tweak2", "TWEAK 2: WHICH HITS PLAY", "MOSAIC", 112, 4, g_afrobeat_scene, G_TWEAK2);   /* afrobeat */
 }
