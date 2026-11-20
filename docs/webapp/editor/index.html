@@ -19,8 +19,11 @@
 /* /TESSERA-MONO */
   /* the project page's look (web/home/index.html): the Mono look's one ink on black, the four tracks as its fills;
      --hi is what the device inverts (the open tab, a pressed button, a set step) */
-  :root { --bg: #000; --fg: #ffd020; --dim: #9c7f15; --line: #3b3007; --surf: #0f0c02; --raise: #211b04;
-          --accent: var(--fg); --gold: var(--fg); --hi: var(--fg); --hi-fg: #000;
+  /* as the project page: the ink for what you act on and the headings, the text a soft off-white, the help a
+     quieter grey; --edge is a field's border (3:1 against the page, so the boxes can be seen) */
+  :root { --bg: #111; --fg: #ffd020; --text: #e6e0d0; --dim: #a39b8a; --line: #3b3007; --edge: #6f6a5c;
+          --surf: #19170f; --raise: #252113;
+          --accent: var(--fg); --gold: var(--fg); --hi: var(--fg); --hi-fg: #111;
           --t1: var(--fg); --t2: var(--fg); --t3: var(--fg); --t4: var(--fg);
           --p1: var(--fg);
           --p2: repeating-linear-gradient(135deg, var(--fg) 0 2px, transparent 2px 5px);
@@ -28,23 +31,31 @@
           --p4: repeating-linear-gradient(90deg, var(--fg) 0 2px, transparent 2px 4px);
           --pixel: "Tessera Mono", ui-monospace, monospace; }
   html { color-scheme: dark; }
+  /* the light version (dark ink on paper), from the LIGHT / DARK button (tessera-theme, as the project page) */
+  :root[data-theme="light"] { --bg: #f6f2e7; --fg: #1c1a14; --text: #1c1a14; --dim: #5f5745; --line: #c8bd9b;
+          --edge: #8a7f62; --surf: #eee8d6; --raise: #e2d9bf; --hi-fg: #f6f2e7; color-scheme: light; }
   :focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
-  body { margin: 0; background: var(--bg); color: var(--fg);
-         font: 12px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
          font-variant-numeric: tabular-nums; }
   main { max-width: 1100px; margin: 0 auto; padding: 16px; }
   h1 { display: flex; align-items: center; gap: 10px; font: 400 24px/1 var(--pixel); margin: 4px 0 8px; }
   h1 a { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--fg); }
   h1 svg { width: 26px; height: 26px; }
   h1 small { font: 16px/1 var(--pixel); background: var(--fg); color: var(--bg); padding: 3px 5px 2px; }
+  /* a phone: the language and LIGHT / DARK above the title, not over it */
+  @media (max-width: 480px) { h1 { clear: both; } }
   .tbar { display: flex; gap: 4px; margin: 0 0 8px; } .tbar i { flex: 1; height: 6px; }
   .tbar i:nth-child(1) { background: var(--p1); } .tbar i:nth-child(2) { background: var(--p2); }
   .tbar i:nth-child(3) { background: var(--p3); } .tbar i:nth-child(4) { background: var(--p4); }
   h2 { font: 400 16px/1.2 var(--pixel); text-transform: uppercase; color: var(--accent);
        margin: 0 0 4px; padding-bottom: 2px; border-bottom: 1px solid var(--line); }
-  h3 { font-size: 11px; font-weight: 400; color: var(--dim); margin: 4px 0 0; }
+  h3 { font-size: 13px; font-weight: 400; color: var(--dim); margin: 6px 0 2px; }
   a { color: var(--accent); }
   /* the language menu: a short code (EN, DE ...) shown, the real select laid over it, so the list names each language */
+  .theme { float: right; margin-left: 10px; font: 16px/1 var(--pixel); color: var(--dim); background: none; padding: 3px 4px 2px;
+           text-transform: uppercase; }
+  .theme:hover:not(:disabled) { color: var(--bg); background: var(--fg); }
   .lang { float: right; position: relative; font: 16px/1 var(--pixel); color: var(--dim); padding: 3px 4px 2px; cursor: pointer;
           text-transform: uppercase; }
   .lang::after { content: " \25BE"; font-family: ui-monospace, monospace; }
@@ -56,16 +67,20 @@
   #connect:hover:not(:disabled) { background: var(--bg); color: var(--fg); }
   button:disabled { opacity: .3; cursor: default; }
   select, input[type=text], input[type=number], input[type=search] {
-    font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); padding: 1px 3px; border-radius: 0; }
-  input[type=range] { width: 100%; margin: 0; accent-color: var(--gold); }
-  input[type=checkbox] { accent-color: var(--gold); margin: 0; }
+    font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--edge); padding: 2px 4px; border-radius: 0;
+    min-height: 26px; box-sizing: border-box; }
+  /* touch targets at least 24 px (WCAG 2.5.8): the slider's whole row height takes the pointer, the boxes are 18 px
+     with room around them */
+  input[type=range] { width: 100%; height: 24px; margin: 0; accent-color: var(--gold); }
+  input[type=checkbox] { accent-color: var(--gold); margin: 3px; width: 18px; height: 18px; }
+  button { min-height: 26px; }
   .bar { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin: 0 0 8px; }
   .dim { color: var(--dim); }
   #status { min-height: 1.4em; }
   section { margin: 12px 0; }
-  .groups { columns: 250px; column-gap: 20px; }
+  .groups { columns: 300px; column-gap: 28px; }
   .group { break-inside: avoid; margin: 0 0 12px; }
-  .row { display: grid; grid-template-columns: 46px 1fr 70px; gap: 6px; align-items: center; min-height: 22px; }
+  .row { display: grid; grid-template-columns: 56px 1fr 84px; gap: 8px; align-items: center; min-height: 26px; }
   .row.scalepicker { grid-template-columns: minmax(0, 1fr); gap: 4px; align-items: start; }
   .scalecontrols { display: grid; gap: 6px; min-width: 0; }
   .scalefilters { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -86,9 +101,13 @@
   #steps input[type=text] { width: 120px; }
   #steps input[type=number] { width: 48px; }
   #steps .bad { outline: 1px solid var(--fg); text-decoration: underline wavy; }
+  /* the 6-OP operator table fits 1280 px: no spin arrows (the arrow keys still step), narrow boxes */
   .fm6ops { overflow-x: auto; }
-  .fm6ops td, .fm6ops th { padding: 0 2px; }
-  input.fm6n { width: 3.2em; }
+  .fm6ops td, .fm6ops th { padding: 0 1px; }
+  .fm6ops th { font-size: 12px; text-align: center; }
+  .fm6ops select { padding: 2px 1px; }
+  input.fm6n { width: 2.9em; padding: 2px 3px; text-align: right; -moz-appearance: textfield; appearance: textfield; }
+  input.fm6n::-webkit-inner-spin-button, input.fm6n::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   #steps tr.off td { color: var(--dim); }
   .stepcols { columns: 470px; column-gap: 24px; }
   .stepcols table { break-inside: avoid; }
@@ -109,14 +128,14 @@
   .smp input.name { width: 80px; text-transform: uppercase; }
   .smp input.root { width: 48px; }
   .smp .bad { text-decoration: underline wavy; }
-  footer { margin-top: 24px; font-size: 11px; color: var(--dim); }
+  footer { margin-top: 24px; font-size: 12px; color: var(--dim); }
   .row.pushed .v { font-weight: 600; }
   .row.modrow { grid-template-columns: 16px 1fr 1fr 1fr 52px; }
   /* librarian: local library and the device's user bank side by side, stacked on a phone */
   .libcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 8px 24px; margin-top: 6px; }
   .libcols > div { min-width: 0; }
   .libcols .bar input[type=search] { flex: 1 1 120px; min-width: 0; }
-  .list { height: 260px; overflow: auto; border: 1px solid var(--line); resize: vertical; }
+  .list { height: 260px; overflow: auto; border: 1px solid var(--edge); resize: vertical; }
   .list table { width: 100%; table-layout: fixed; }
   .list th { position: sticky; top: 0; background: var(--bg); padding: 1px 6px; }
   .list td { padding: 1px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -133,7 +152,7 @@
   /* wave choices: a page-drawn picker so the options can carry an icon (Chrome 135+); native menus get words only */
   @supports (appearance: base-select) {
     select.wave, select.wave::picker(select) { appearance: base-select; }
-    select.wave { padding: 1px 3px; min-block-size: 0; border: 1px solid var(--line); border-radius: 0; background: var(--bg); color: var(--fg); }
+    select.wave { padding: 2px 4px; min-block-size: 0; border: 1px solid var(--edge); border-radius: 0; background: var(--bg); color: var(--fg); }
     select.wave > button { font: inherit; background: none; color: inherit; padding: 0; text-align: start; }
     select.wave::picker(select) { border: 1px solid var(--line); background: var(--bg); color: var(--fg); padding: 0; }
     select.wave option { padding: 1px 6px; min-block-size: 0; }
@@ -148,9 +167,11 @@
   .tabs button { background: none; color: var(--dim); font: 16px/1 var(--pixel); text-transform: uppercase; padding: 5px 8px 3px; border: 1px solid transparent; border-bottom: 0; white-space: nowrap; }
   .tabs button:hover { color: var(--fg); }
   .tabs button[aria-selected="true"] { background: var(--hi); color: var(--hi-fg); }
+  /* on a phone the tabs stay one row that scrolls sideways */
+  @media (max-width: 600px) { .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; } }
   .trackbar { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
   .seg { display: inline-flex; flex-wrap: wrap; }
-  .seg button, button.tog { background: var(--surf); color: var(--fg); border: 1px solid var(--line); padding: 1px 10px; }
+  .seg button, button.tog { background: var(--surf); color: var(--fg); border: 1px solid var(--edge); padding: 2px 10px; }
   .seg button + button { border-left: 0; }
   .seg button[aria-pressed="true"], button.tog[aria-pressed="true"] { background: var(--hi); color: var(--hi-fg); border-color: var(--hi); }
   /* the track buttons and mixer strips: the one ink, as on the device (--t1..--t4 kept for a track colour ink) */
@@ -169,7 +190,7 @@
   .grid button .n { color: var(--dim); }
   .grid button .x { overflow: hidden; overflow-wrap: anywhere; flex: 1; }
   .grid button.on { background: var(--hi); color: var(--hi-fg); border-color: var(--hi); }
-  .grid button.on .n { color: inherit; opacity: .6; }
+  .grid button.on .n { color: inherit; }
   .grid button.acc .x { font-weight: 700; }
   .grid button.tie { border-style: dashed; border-color: var(--fg); }
   .grid button.beat { border-left-color: var(--fg); }
@@ -196,14 +217,16 @@
 </style>
 </head>
 <body>
+<script id="theme-early">try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <main>
+  <button class="theme" id="theme" type="button" aria-label="Light or dark page"></button>
   <label class="lang"><span id="lang-code" aria-hidden="true">EN</span><select id="lang" aria-label="Language">
     <option value="en" lang="en">English</option><option value="es" lang="es">Español</option>
     <option value="it" lang="it">Italiano</option><option value="de" lang="de">Deutsch</option>
     <option value="fr" lang="fr">Français</option><option value="pt" lang="pt-BR">Português</option>
     <option value="ko" lang="ko">한국어</option><option value="ja" lang="ja">日本語</option>
   </select></label>
-  <h1><a href="../../" aria-label="Tessera"><svg viewBox="0 0 78 78" aria-hidden="true"><rect x="4" y="5" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="31" y="3" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="53" y="2" width="22" height="22" fill="#ffd020"/><rect x="5" y="30" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="30" y="30" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="55" y="31" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="4" y="55" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="31" y="57" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/><rect x="55" y="55" width="18" height="18" fill="none" stroke="#ffd020" stroke-width="4"/></svg>TESSERA</a> <small>EDITOR</small></h1>
+  <h1><a href="../../" aria-label="Tessera"><svg viewBox="0 0 78 78" aria-hidden="true"><rect x="4" y="5" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="3" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="53" y="2" width="22" height="22" fill="currentColor"/><rect x="5" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="30" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="31" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="4" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="57" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/></svg>TESSERA</a> <small>EDITOR</small></h1>
   <div class="tbar" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
   <p class="dim"><a href="../installer/" style="color:inherit" data-t="installer"></a></p>
   <!-- always visible: connection, version, sync mode, the tabs and (Sound / Sequencer / Tracks) the track selector -->
@@ -217,19 +240,19 @@
     </div>
     <div id="status"></div>
     <nav class="tabs" id="tabs" role="tablist">
-      <button role="tab" data-tab="sound" data-t="sound" data-ic="symbol_audio"></button>
-      <button role="tab" data-tab="fm6" data-t="tabFm6" data-ic="ui_knob"></button>
-      <button role="tab" data-tab="sequencer" data-t="tabSeq" data-ic="symbol_grid"></button>
-      <button role="tab" data-tab="tracks" data-t="tabTracks" data-ic="ui_slider_vertical"></button>
-      <button role="tab" data-tab="library" data-t="library" data-ic="symbol_books"></button>
-      <button role="tab" data-tab="projects" data-t="projects" data-ic="symbol_folder"></button>
-      <button role="tab" data-tab="settings" data-t="tabSettings" data-ic="symbol_cog"></button>
+      <button role="tab" data-tab="sound" id="tab-sound" aria-controls="p-sound" data-t="sound" data-ic="symbol_audio"></button>
+      <button role="tab" data-tab="fm6" id="tab-fm6" aria-controls="p-fm6" data-t="tabFm6" data-ic="ui_knob"></button>
+      <button role="tab" data-tab="sequencer" id="tab-sequencer" aria-controls="p-sequencer" data-t="tabSeq" data-ic="symbol_grid"></button>
+      <button role="tab" data-tab="tracks" id="tab-tracks" aria-controls="p-tracks" data-t="tabTracks" data-ic="ui_slider_vertical"></button>
+      <button role="tab" data-tab="library" id="tab-library" aria-controls="p-library" data-t="library" data-ic="symbol_books"></button>
+      <button role="tab" data-tab="projects" id="tab-projects" aria-controls="p-projects" data-t="projects" data-ic="symbol_folder"></button>
+      <button role="tab" data-tab="settings" id="tab-settings" aria-controls="p-settings" data-t="tabSettings" data-ic="symbol_cog"></button>
     </nav>
-    <div class="trackbar" id="trackbar" hidden><span class="dim" data-t="track"></span><span class="seg" id="trackbtns" role="group"></span></div>
+    <div class="trackbar" id="trackbar" hidden><span class="dim" id="tracklabel" data-t="track"></span><span class="seg" id="trackbtns" role="group" aria-labelledby="tracklabel"></span></div>
   </header>
   <p class="hint" id="hint" hidden></p>
 
-  <section class="panel" id="p-sound" data-tab="sound" data-dev hidden>
+  <section class="panel" id="p-sound" data-tab="sound" role="tabpanel" aria-labelledby="tab-sound" data-dev hidden>
     <div class="browser" id="browser">
       <label><span data-t="engine"></span><br><select id="engine"></select></label>
       <label><span data-t="presets"></span><br><select id="preset" size="8"></select></label>
@@ -245,7 +268,7 @@
     <div class="groups" id="groups"></div>
   </section>
 
-  <section class="panel" id="p-fm6" data-tab="fm6" data-dev hidden>
+  <section class="panel" id="p-fm6" data-tab="fm6" role="tabpanel" aria-labelledby="tab-fm6" data-dev hidden>
     <p class="dim" data-t="fm6Help"></p>
     <div class="group">
       <h2 data-t="fm6Source" data-ic="symbol_folder"></h2>
@@ -272,7 +295,7 @@
     </div>
   </section>
 
-  <section class="panel" id="p-sequencer" data-tab="sequencer" data-dev hidden>
+  <section class="panel" id="p-sequencer" data-tab="sequencer" role="tabpanel" aria-labelledby="tab-sequencer" data-dev hidden>
     <div class="groups" id="seqgroups"></div>
     <p id="patternbar" class="bar" hidden><label for="patternpick" data-t="pattern"></label><select id="patternpick"></select><span id="patternstate" class="dim"></span></p>
     <div id="steps">
@@ -291,14 +314,14 @@
     </div>
   </section>
 
-  <section class="panel" id="p-tracks" data-tab="tracks" data-dev hidden>
+  <section class="panel" id="p-tracks" data-tab="tracks" role="tabpanel" aria-labelledby="tab-tracks" data-dev hidden>
     <h2 data-t="mixer" data-ic="ui_slider_vertical"></h2>
     <div class="mixer" id="mixer"></div>
     <p class="dim" data-t="mixHelp"></p>
   </section>
 
   <!-- works without a device too (the device bank shows while connected) -->
-  <section class="panel" id="p-library" data-tab="library" hidden>
+  <section class="panel" id="p-library" data-tab="library" role="tabpanel" aria-labelledby="tab-library" hidden>
     <div class="group" id="device-presets" hidden>
       <h2 data-t="devicePresets"></h2>
       <p class="dim" data-t="deviceFavHelp"></p>
@@ -339,7 +362,7 @@
           <p class="bar"><label><span data-t="presetPool"></span> <select id="presetpool"><option value="0" data-t="poolGeneral"></option><option value="12" data-t="poolFm6"></option></select></label></p>
           <p class="dim" id="nativehint" data-t="nativeHint" hidden></p>
           <div class="bar"><b id="bankhead"></b></div>
-          <div class="list" id="banklist"></div>
+          <div class="list" id="banklist" role="region" aria-labelledby="bankhead"></div>
           <p class="bar" style="margin-top:6px">
             <button id="bkload" data-t="bankLoad" data-ic="symbol_folder_open"></button>
             <button id="bkstore" data-t="bankStore" data-ic="port_disk"></button>
@@ -357,7 +380,7 @@
     </div>
   </section>
 
-  <section class="panel" id="p-projects" data-tab="projects" data-dev hidden>
+  <section class="panel" id="p-projects" data-tab="projects" role="tabpanel" aria-labelledby="tab-projects" data-dev hidden>
     <h2 data-t="projects" data-ic="symbol_folder"></h2>
     <p class="dim" data-t="projHelp"></p>
     <div class="slots" id="slots"></div>
@@ -398,7 +421,7 @@
     </div>
   </section>
 
-  <section class="panel" id="p-settings" data-tab="settings" data-dev hidden>
+  <section class="panel" id="p-settings" data-tab="settings" role="tabpanel" aria-labelledby="tab-settings" data-dev hidden>
     <div class="groups" id="setgroups"></div>
     <div class="group" id="device-display" hidden style="margin-top:12px">
       <h2 data-t="deviceDisplay"></h2>
@@ -2364,7 +2387,7 @@ function makeMockDevice(opt = {}) {
         break;
       }
       case CMD.INFO:
-        s(opt.legacy ? "MELODEE 0.4 BETA (MOCK)" : "MELODEE v1.2.1 (MOCK)"); b(ENG.length); b(P_COUNT); b(G_COUNT); b(NSTEP); b(P_E0);
+        s(opt.legacy ? "MELODEE 0.4 BETA (MOCK)" : "TESSERA 3.7.3 (MOCK)"); b(ENG.length); b(P_COUNT); b(G_COUNT); b(NSTEP); b(P_E0);
         ENG.forEach((e) => s(e.name));
         if (!opt.legacy) b(NTRK);
         if (!opt.legacy && !opt.v3 && !opt.v5) {
@@ -2883,6 +2906,7 @@ function setLabel(e, txt) { e.replaceChildren(...(e.dataset.ic ? [icon(e.dataset
 
 const TEXT = {
   ja: {
+    themeLight: "ライト", themeDark: "ダーク",
     pattern: "パターン", presetPool: "プリセット集", poolGeneral: "一般プリセット", poolFm6: "FM6 ボイス", nativeHint: "ネイティブ音色はプリセットブラウザに表示されます。読み込んでもエフェクトとトラック設定は変わりません。", importSyx: ".syx を読み込む", recTitle: "録音", recHelp: "クリック、カウントイン、停止中のノート編集。REC で待機、PLAY で録音開始。", favLocal: "お気に入りはこのブラウザに保存されます", poolFirst: "先に対応するプリセット集を選んでください", poolTrack: "先に現在のトラックのプリセット集を選んでください",
     tabFm6: "6-OP FM", fm6Help: "FM6 の音色を編集・SysEx から読み込み、トラックへ送ります。ユーザープリセットまたはプロジェクトへ保存すると、音色全体が保存されます。",
     fm6Source: "音色の出し入れ", fm6ReadBtn: "トラックから読む", fm6SendBtn: "トラックへ送る", fm6Live: "編集しながら送る",
@@ -2967,7 +2991,7 @@ const TEXT = {
     ctlHelp: "スライダーはクリックしてからホイールか矢印キーで微調整（Shift で 10 ずつ）、ダブルクリックで初期値。",
     live: "● リアルタイム", polling: "○ ポーリング（古いファームウェア）",
     library: "ライブラリ", libSearch: "名前・タグで検索", allEngines: "全エンジン", allTags: "全タグ",
-    sortModified: "更新順", sortCreated: "作成順", sortName: "名前順", sortEngine: "エンジン順",
+    sortBy: "並べ替え", sortModified: "更新順", sortCreated: "作成順", sortName: "名前順", sortEngine: "エンジン順",
     name: "名前", tagsCol: "タグ", date: "更新",
     audition: "試聴", toSlot: "本体スロットへ", rename: "名前変更", tags: "タグ", duplicate: "複製", delete: "削除",
     exportPatch: "書き出し", saveToLib: "今の音色をライブラリへ", import: "読み込み", exportLib: "ライブラリを書き出し",
@@ -3010,6 +3034,7 @@ const TEXT = {
     smpSlots: "サンプルスロット", userBank: "ユーザープリセット", none: "なし",
   },
   en: {
+    themeLight: "Light", themeDark: "Dark",
     pattern: "Pattern", presetPool: "Preset collection", poolGeneral: "General presets", poolFm6: "FM6 voices", nativeHint: "Native tones appear in the preset browser. Effects and track settings stay unchanged when loaded.", importSyx: "Import .syx", recTitle: "Recording", recHelp: "Click, count-in and stopped note editing. REC arms; PLAY starts recording.", favLocal: "Favorites are saved in this browser", poolFirst: "Select the matching preset collection first", poolTrack: "Select the current track's preset collection first",
     tabFm6: "6-OP FM", fm6Help: "Edit an FM6 voice, or import a SysEx file and pick a voice. Send it to a track, then save it in User presets or save the project. Each preset keeps its whole voice.",
     fm6Source: "Patches in and out", fm6ReadBtn: "Read from track", fm6SendBtn: "Send to track", fm6Live: "Send while editing",
@@ -3094,7 +3119,7 @@ const TEXT = {
     ctlHelp: "Sliders: click, then fine-tune with the wheel or arrow keys (Shift: steps of 10); double-click resets.",
     live: "● Live", polling: "○ Polling (older firmware)",
     library: "Library", libSearch: "Search name or tag", allEngines: "All engines", allTags: "All tags",
-    sortModified: "Recently changed", sortCreated: "Recently added", sortName: "Name", sortEngine: "Engine",
+    sortBy: "Sort by", sortModified: "Recently changed", sortCreated: "Recently added", sortName: "Name", sortEngine: "Engine",
     name: "Name", tagsCol: "Tags", date: "Changed",
     audition: "Audition", toSlot: "To device slot", rename: "Rename", tags: "Tags", duplicate: "Duplicate", delete: "Delete",
     exportPatch: "Export", saveToLib: "Save current sound", import: "Import", exportLib: "Export library",
@@ -3137,6 +3162,7 @@ const TEXT = {
     smpSlots: "Sample slots", userBank: "User presets", none: "none",
   },
   es: {
+    themeLight: "Claro", themeDark: "Oscuro",
     tabFm6: "FM 6-OP",
     fm6Help: "Edita una voz FM6, o importa un archivo SysEx y elige una voz. Envíala a una pista y luego guárdala en Presets de usuario o guarda el proyecto. Cada preset conserva su voz completa.",
     fm6Source: "Entrada y salida de patches",
@@ -3335,7 +3361,7 @@ const TEXT = {
     libSearch: "Buscar nombre o etiqueta",
     allEngines: "Todos los motores",
     allTags: "Todas las etiquetas",
-    sortModified: "Cambiados recientemente",
+    sortBy: "Ordenar por", sortModified: "Cambiados recientemente",
     sortCreated: "Añadidos recientemente",
     sortName: "Nombre",
     sortEngine: "Motor",
@@ -3471,6 +3497,7 @@ const TEXT = {
     poolTrack: "Elige antes la colección de presets de la pista actual",
   },
   it: {
+    themeLight: "Chiaro", themeDark: "Scuro",
     tabFm6: "FM 6-OP",
     fm6Help: "Modifica una voce FM6, oppure importa un file SysEx e scegli una voce. Inviala a una traccia, poi salvala nei Preset utente o salva il progetto. Ogni preset conserva la sua voce completa.",
     fm6Source: "Patch in entrata e in uscita",
@@ -3669,7 +3696,7 @@ const TEXT = {
     libSearch: "Cerca nome o tag",
     allEngines: "Tutti i motori",
     allTags: "Tutti i tag",
-    sortModified: "Modificati di recente",
+    sortBy: "Ordina per", sortModified: "Modificati di recente",
     sortCreated: "Aggiunti di recente",
     sortName: "Nome",
     sortEngine: "Motore",
@@ -3805,6 +3832,7 @@ const TEXT = {
     poolTrack: "Seleziona prima la raccolta di preset della traccia attuale",
   },
   de: {
+    themeLight: "Hell", themeDark: "Dunkel",
     tabFm6: "6-OP-FM",
     fm6Help: "Bearbeite eine FM6-Stimme oder importiere eine SysEx-Datei und wähle eine Stimme. Sende sie an eine Spur und speichere sie dann in den User-Presets oder speichere das Projekt. Jedes Preset behält seine ganze Stimme.",
     fm6Source: "Patches rein und raus",
@@ -4003,7 +4031,7 @@ const TEXT = {
     libSearch: "Name oder Tag suchen",
     allEngines: "Alle Engines",
     allTags: "Alle Tags",
-    sortModified: "Zuletzt geändert",
+    sortBy: "Sortieren nach", sortModified: "Zuletzt geändert",
     sortCreated: "Zuletzt hinzugefügt",
     sortName: "Name",
     sortEngine: "Engine",
@@ -4139,6 +4167,7 @@ const TEXT = {
     poolTrack: "Wähle zuerst die Preset-Sammlung der aktuellen Spur",
   },
   fr: {
+    themeLight: "Clair", themeDark: "Sombre",
     tabFm6: "FM 6-OP",
     fm6Help: "Modifiez une voix FM6, ou importez un fichier SysEx et choisissez une voix. Envoyez-la à une piste, puis enregistrez-la dans les presets utilisateur ou enregistrez le projet. Chaque preset garde sa voix entière.",
     fm6Source: "Patches en entrée et en sortie",
@@ -4337,7 +4366,7 @@ const TEXT = {
     libSearch: "Rechercher un nom ou une étiquette",
     allEngines: "Tous les moteurs",
     allTags: "Toutes les étiquettes",
-    sortModified: "Modifiés récemment",
+    sortBy: "Trier par", sortModified: "Modifiés récemment",
     sortCreated: "Ajoutés récemment",
     sortName: "Nom",
     sortEngine: "Moteur",
@@ -4473,6 +4502,7 @@ const TEXT = {
     poolTrack: "Choisissez d'abord la collection de presets de la piste actuelle",
   },
   pt: {
+    themeLight: "Claro", themeDark: "Escuro",
     tabFm6: "FM 6-OP",
     fm6Help: "Edite uma voz FM6, ou importe um arquivo SysEx e escolha uma voz. Envie-a para uma faixa e depois salve-a nos presets de usuário ou salve o projeto. Cada preset guarda a voz inteira.",
     fm6Source: "Patches de entrada e saída",
@@ -4671,7 +4701,7 @@ const TEXT = {
     libSearch: "Buscar nome ou tag",
     allEngines: "Todos os motores",
     allTags: "Todas as tags",
-    sortModified: "Alterados recentemente",
+    sortBy: "Ordenar por", sortModified: "Alterados recentemente",
     sortCreated: "Adicionados recentemente",
     sortName: "Nome",
     sortEngine: "Motor",
@@ -4807,6 +4837,7 @@ const TEXT = {
     poolTrack: "Escolha antes a coleção de presets da faixa atual",
   },
   ko: {
+    themeLight: "밝게", themeDark: "어둡게",
     tabFm6: "6-OP FM",
     fm6Help: "FM6 보이스를 편집하거나 SysEx 파일을 가져와 보이스를 고르세요. 트랙으로 보낸 다음 사용자 프리셋에 저장하거나 프로젝트를 저장하세요. 각 프리셋은 보이스 전체를 담습니다.",
     fm6Source: "패치 주고받기",
@@ -5005,7 +5036,7 @@ const TEXT = {
     libSearch: "이름이나 태그 검색",
     allEngines: "모든 엔진",
     allTags: "모든 태그",
-    sortModified: "최근 변경순",
+    sortBy: "정렬", sortModified: "최근 변경순",
     sortCreated: "최근 추가순",
     sortName: "이름",
     sortEngine: "엔진",
@@ -5157,13 +5188,27 @@ const t = (k) => (TEXT[lang] || TEXT.en)[k] ?? TEXT.en[k] ?? k;
 let lastKey = null, lastArg = "";
 function sayK(k, arg = "") { lastKey = k; lastArg = arg; $("status").textContent = t(k) + arg; }
 function say(message) { lastKey = null; lastArg = ""; $("status").textContent = String(message); }
+/* LIGHT / DARK: the button names the other look; the choice is stored (tessera-theme), shared with the project
+   page, the manual, the installer and the simulator */
+const lightPage = () => document.documentElement.dataset.theme === "light";
+function showTheme() { $("theme").textContent = t(lightPage() ? "themeDark" : "themeLight"); }
+$("theme").addEventListener("click", () => {
+  document.documentElement.dataset.theme = lightPage() ? "dark" : "light";
+  try { localStorage.setItem("tessera-theme", document.documentElement.dataset.theme); } catch (e) { /* no storage */ }
+  showTheme();
+});
 function applyLang() {
   document.documentElement.lang = lang === "pt" ? "pt-BR" : lang;
   document.querySelectorAll("[data-t]").forEach((e) => setLabel(e, t(e.dataset.t)));
   $("lang").value = lang; $("lang-code").textContent = lang.toUpperCase();
+  showTheme();
   setLabel($("connect"), t(dev ? "disconnect" : "connect"));
   if (lastKey) $("status").textContent = t(lastKey) + lastArg;
   $("libq").placeholder = t("libSearch");
+  $("libq").setAttribute("aria-label", t("libSearch"));
+  $("libeng").setAttribute("aria-label", t("engine"));
+  $("libtag").setAttribute("aria-label", t("tags"));
+  $("libsort").setAttribute("aria-label", t("sortBy"));
   renderLive();
   renderLib();
   renderBank();
@@ -5275,10 +5320,11 @@ function selfLoad() {
 const stepEdit = new Map(); /* index -> time of the last edit */
 
 /* parameter ids (firmware/src/core.h); used only when P_COUNT / G_COUNT match */
-const EXPECT = { pcount: 119, gcount: 41, pe0: 111 };
+const EXPECT = { pcount: 119, gcount: 42, pe0: 111 };
 /* the same layout without the MPC degree (Felucca 1.0: P_COUNT 91, P_E0 83), the chord keys too (89, 81), the FM
    operator ENVs too (69, 61) or the matrix (firmware 1.0: 57, 49) */
-const knownLayout = (info) => (info.gcount===41 && info.pcount===119 && info.pe0===111) || (info.gcount===40 && info.pcount===117 && info.pe0===109) || info.gcount === 27 &&
+/* (G_BUDGET 41 made the globals 42: SYSTEM shows it; a 41-global firmware leaves it out) */
+const knownLayout = (info) => ((info.gcount===42 || info.gcount===41) && info.pcount===119 && info.pe0===111) || (info.gcount===40 && info.pcount===117 && info.pe0===109) || info.gcount === 27 &&
   [[116,108], [108,100], [104, 96], [100, 92], [92, 84], [91, 83], [89, 81], [69, 61], [57, 49]].some(([c, e]) => info.pcount === c && info.pe0 === e);
 const P = { LEVEL: 0, SLEN: 29 };
 const LAYOUT = (pe0) => [
@@ -5530,7 +5576,7 @@ function renderTrackbar() {
   if (box.children.length !== ntrk || box.dataset.lang !== lang) {
     box.dataset.lang = lang;
     box.replaceChildren(...Array.from({ length: ntrk }, (_, i) => el("button", { type: "button", "data-i": i,
-      onclick: () => selectTrack(i) }, String(i + 1))));
+      "aria-label": `${t("track")} ${i + 1}`, onclick: () => selectTrack(i) }, String(i + 1))));
   }
   for (const b of box.children) b.setAttribute("aria-pressed", +b.dataset.i === (dev.sel || 0) ? "true" : "false");
 }
@@ -5648,6 +5694,70 @@ function updateBrowser() {
 }
 
 function visible(d) { return d && d.max > d.min && !!d.label && d.label !== "-"; }
+
+/* ------------------------------------------------------------ names for screen readers --- */
+/* A control's name: where it is (the group, its page) and its label in words, "ENV: attack (ATK)", from the
+   firmware's words file (the screen reader's, firmware/words.tsv: web/make_site.py names the file here; without it,
+   as when the page is opened from the repository, the labels stay as they are) and EDITOR_WORDS below. A slider
+   also says its value as the page shows it (aria-valuetext: "-4.0 dB", not "80"). */
+const WORDS_FILE = "de23bfb129.json";
+const EDITOR_WORDS = [["R#", "rate #"], ["L#", "level #"], ["PR#", "pitch rate #"], ["PL#", "pitch level #"],
+  ["BP", "break point"], ["LD", "left depth"], ["RD", "right depth"], ["LC", "left curve"], ["RC", "right curve"],
+  ["RS", "rate scaling"], ["AMS", "amp mod sensitivity"], ["KVS", "key velocity sensitivity"], ["OL", "output level"],
+  ["FC", "frequency coarse"], ["FF", "frequency fine"], ["DET", "detune"], ["OKS", "oscillator key sync"],
+  ["LFS", "LFO speed"], ["LFD", "LFO delay"], ["LPMD", "pitch mod depth"], ["LAMD", "amp mod depth"],
+  ["LKS", "LFO key sync"], ["LFW", "LFO wave"], ["LPMS", "pitch mod sensitivity"], ["TRNSP", "transpose"],
+  ["SPD", "speed"], ["DLY", "delay"], ["OP#", "operator #"], ["DEC", "decay"], ["FLT", "filter"], ["PIT", "pitch"],
+  ["PHS", "phase"], ["SWG", "swing"], ["CUT", "cutoff"], ["DIV", "division"], ["LEN", "length"], ["AMT", "amount"],
+  ["SRC", "source"], ["DST", "destination"], ["VEL", "velocity"], ["PAN", "pan"]];
+/* each entry as a pattern, the longest first (the first that fits is the one) */
+const wordPatterns = (list) => list.map(([k, v]) => [k, v,
+  new RegExp("^" + k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/#/g, "(-?\\d+)") + "$", "i")])
+  .sort((a, b) => b[0].length - a[0].length);
+let words = wordPatterns(EDITOR_WORDS);
+if (WORDS_FILE) fetch(new URL("../../words/" + WORDS_FILE, location.href)).then((r) => r.json()).then((j) => {
+  if (j && j.format === 1 && Array.isArray(j.words))
+    words = wordPatterns(EDITOR_WORDS.concat(j.words.filter((w) => Array.isArray(w) && typeof w[0] === "string" && typeof w[1] === "string"
+                                                                && w[0].length <= 120)));
+  for (const id of ["groups", "seqgroups", "setgroups"]) nameControls($(id));   /* (built before it came) */
+}).catch(() => { /* (no words file: the labels as they are) */ });
+/* a label in words: the longest entry that is the whole label ("#" a number), else word by word */
+function inWords(label) {
+  const whole = (l) => {
+    for (const [, v, re] of words) {
+      const m = re.exec(l);
+      if (m) { let n = 1; return v.replace(/#/g, () => m[n++] ?? ""); }
+    }
+    return null;
+  };
+  const w = whole(label);
+  if (w) return w;
+  const parts = label.split(/\s+/), said = parts.map((x) => whole(x) || x);
+  return said.join(" ");
+}
+/* the accessible name: "where: label in words (LABEL)" (the label kept, for voice control); a label already in
+   words is said once */
+function controlName(where, label) {
+  const w = inWords(label);
+  const said = w.toLowerCase() === label.toLowerCase() ? label : `${w} (${label})`;
+  return where ? `${where}: ${said}` : said;
+}
+/* every control of the built groups named from its group and page heading */
+function nameControls(box) {
+  for (const g of box.querySelectorAll(".group")) {
+    let h2 = g.querySelector("h2")?.textContent.trim() || "", h3 = "";
+    for (const c of g.children) {
+      if (c.tagName === "H3") { h3 = c.textContent.trim(); continue; }
+      if (!c.classList.contains("row")) continue;
+      const lead = c.querySelector(":scope > span")?.textContent.trim() || "";
+      const where = [h2, h3].filter(Boolean).join(" ") + (c.classList.contains("modrow") ? " " + lead : "");
+      for (const i of c.querySelectorAll("input, select")) {
+        const label = i.dataset.label || (c.classList.contains("modrow") ? "" : lead);
+        if (label) i.setAttribute("aria-label", controlName(where.trim(), label));
+      }
+    }
+  }
+}
 /* a matrix destination E1..E8 by the engine's label of that parameter (as the device shows it) */
 function modDst(d, txt) {
   const m = d && /^DST\d$/.test(d.label) && /^E([1-8])$/.exec(txt);
@@ -5698,7 +5808,7 @@ function buildGroups() {
     groups.groups.push(a, b);
     groups.setgroups.push(c);
   }
-  for (const [id, divs] of Object.entries(groups)) $(id).replaceChildren(...divs);
+  for (const [id, divs] of Object.entries(groups)) { $(id).replaceChildren(...divs); nameControls($(id)); }
 }
 
 function scalePickerRow(s, id, d) {
@@ -5790,6 +5900,7 @@ function paramRow(s, id) {
     });
   }
   input.title = d.label;
+  input.dataset.label = d.label;
   const out = el("span", { class: "v" });
   const row = el("div", { class: "row" }, el("span", { text: d.label }), input, out);
   ctl.set(k, { input, out, desc: d, scope: s, id, row });
@@ -5803,6 +5914,7 @@ function showValue(k, v, force) {
   if (c.render) { if (force || !touched(k)) c.render(v); return; }
   const [txt0, unit] = fmtValue(c.desc, v), txt = modDst(c.desc, txt0);
   c.out.textContent = unit ? `${txt} ${unit}` : txt;
+  if (c.input.type === "range") c.input.setAttribute("aria-valuetext", c.out.textContent);
   if (force || !touched(k)) c.input.value = String(v);
 }
 /* the user is working on this control: polling and pushes must not move it */
@@ -6215,7 +6327,7 @@ function renderMotion() {
   $("motion-clear").disabled = !m.count;
   const rows = $("motion-rows");
   if (rows.contains(document.activeElement)) return;
-  rows.replaceChildren(el("tr", {}, ...["motionStep", "motionParam", "motionValue"].map(k => el("th", {text:t(k)})), el("th")),
+  rows.replaceChildren(el("tr", {}, ...["motionStep", "motionParam", "motionValue"].map(k => el("th", {text:t(k)})), el("td")),
     ...m.events.map(e => {
       const native = e.param >= 112 && e.value >= 256, tag = native ? e.value >> 8 : 0, i = e.param - 112;
       const desc = native ? null : d.pdesc[e.param];   /* (tags 1 PROPHET, 2 CZ-1: retired) */
@@ -6272,7 +6384,7 @@ function renderSteps() {
   box.dataset.len = shape;
   const tables = [];
   for (let b = 0; b < len; b += 16) {
-    const tb = el("table", {}, el("tr", {}, el("th"), el("th", { text: t("notes") }), el("th", { text: t("hits") }), el("th", { text: t("time") }),
+    const tb = el("table", {}, el("tr", {}, el("td"), el("th", { text: t("notes") }), el("th", { text: t("hits") }), el("th", { text: t("time") }),
       el("th", { text: t("acc") }), el("th", { text: t("slide") }), el("th", { text: t("vel") }), ...(dev.info.chance ? [el("th", { text: t("chance") })] : [])));
     for (let i = b; i < Math.min(len, b + 16); i++) tb.append(stepRow(i));
     tables.push(tb);
@@ -6280,12 +6392,13 @@ function renderSteps() {
   box.replaceChildren(...tables);
 }
 function stepRow(i) {
-  const notes = el("input", { type: "text", placeholder: "—", spellcheck: "false" });
-  const hits = el("input", { type: "text", placeholder: "—", spellcheck: "false", class: "hits" });
-  const time = el("select", {}, ...TIMES.map((n, k) => el("option", { value: k, text: n })));
-  const acc = el("input", { type: "checkbox" });
-  const sl = el("input", { type: "checkbox" });
-  const vel = el("input", { type: "number", min: 0, max: 127 });
+  const name = (k) => `${t(k)} ${i + 1}`;              /* (screen readers: "Velocity 3", not "spin button") */
+  const notes = el("input", { type: "text", placeholder: "—", spellcheck: "false", "aria-label": name("notes") });
+  const hits = el("input", { type: "text", placeholder: "—", spellcheck: "false", class: "hits", "aria-label": name("hits") });
+  const time = el("select", { "aria-label": name("time") }, ...TIMES.map((n, k) => el("option", { value: k, text: n })));
+  const acc = el("input", { type: "checkbox", "aria-label": name("acc") });
+  const sl = el("input", { type: "checkbox", "aria-label": name("slide") });
+  const vel = el("input", { type: "number", min: 0, max: 127, "aria-label": name("vel") });
   const chance = dev.info.chance ? el("input", { type: "number", min: 0, max: 100, "aria-label": `${t("chance")} ${i + 1}` }) : null;
   const tr = el("tr", { "data-i": i }, el("td", { class: "i", text: String(i + 1) }),
     el("td", {}, notes), el("td", {}, hits), el("td", {}, time), el("td", {}, acc), el("td", {}, sl), el("td", {}, vel), ...(chance ? [el("td", {}, chance)] : []));
@@ -7040,12 +7153,16 @@ function renderLib() {
         el("td", { text: p.engineName || String(p.engine) }),
         el("td", { text: p.tags.join(", ") }),
         el("td", { text: new Date(p.modified).toLocaleDateString(lang) }));
+      tr.tabIndex = p.id === (v.some((q) => q.id === libSel) ? libSel : v[0]?.id) ? 0 : -1;
+      if (p.id === libSel) tr.setAttribute("aria-current", "true");
       tr.addEventListener("click", () => { libSel = p.id; renderLib(); });
+      rowKeys(tr, () => { libSel = p.id; renderLib(); },
+        () => libAudition(p.id));
       tr.addEventListener("dblclick", () => libAudition(p.id));
       tr.addEventListener("dragstart", (e) => { libSel = p.id; e.dataTransfer.setData("text/x-melodee-lib", p.id); e.dataTransfer.effectAllowed = "copy"; });
       tb.append(tr);
     }
-    box.replaceChildren(tb, ...(v.length ? [] : [el("div", { class: "none", text: t("noMatch") })]));
+    keepRowFocus(box, "id", () => box.replaceChildren(tb, ...(v.length ? [] : [el("div", { class: "none", text: t("noMatch") })])));
   }
   $("libcount").textContent = `${v.length} / ${lib.length}` + (libPersistent ? "" : " " + t("noLibDB"));
   const sel = lib.find((p) => p.id === libSel);
@@ -7057,6 +7174,23 @@ function renderLib() {
 }
 ["libq", "libeng", "libtag", "libsort"].forEach((id) => $(id).addEventListener(id === "libq" ? "input" : "change", renderLib));
 
+/* a list row from the keyboard: one Tab stop per list (the selected row), the arrow keys move between the rows,
+   Space selects one and Enter does what a double click does */
+function rowKeys(tr, select, open) {
+  tr.addEventListener("keydown", (e) => {
+    if (e.target !== tr) return;
+    const to = { ArrowDown: tr.nextElementSibling, ArrowUp: tr.previousElementSibling }[e.key];
+    if (to !== undefined) { e.preventDefault(); if (to && to.tabIndex !== undefined && to.querySelector("td")) to.focus(); }
+    else if (e.key === " ") { e.preventDefault(); select(); }
+    else if (e.key === "Enter") { e.preventDefault(); open(); }
+  });
+}
+/* a list redrawn under the keyboard focus: the focus goes back to the same row */
+function keepRowFocus(box, key, draw) {
+  const f = document.activeElement, was = box.contains(f) && f.tagName === "TR" ? f.dataset[key] : null;
+  draw();
+  if (was != null) for (const tr of box.querySelectorAll("tr")) if (tr.dataset[key] === was) { tr.focus(); break; }
+}
 function renderBank() {
   const pane = $("bankpane");
   $("bankhint").hidden = !!(dev && dev.bank);
@@ -7076,7 +7210,11 @@ function renderBank() {
       draggable: x.used ? "true" : null },
       el("td", { text: slotName(x.slot) }), el("td", { text: x.used ? x.name : t("empty") }),
       el("td", { text: x.used ? engineLabel(dev.info.engines, x.engine) : "" }));
+    tr.tabIndex = x.slot === (bankSel ?? 0) ? 0 : -1;
+    if (x.slot === bankSel) tr.setAttribute("aria-current", "true");
     tr.addEventListener("click", () => { bankSel = x.slot; renderBank(); renderLib(); });
+    rowKeys(tr, () => { bankSel = x.slot; renderBank(); renderLib(); },
+      () => { if (x.used) bankLoad(x.slot); });
     tr.addEventListener("dblclick", () => { if (x.used) bankLoad(x.slot); });
     tr.addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/x-melodee-slot", String(x.slot)); e.dataTransfer.effectAllowed = "copy"; });
     tr.addEventListener("dragover", (e) => { if (e.dataTransfer.types.includes("text/x-melodee-lib")) { e.preventDefault(); tr.classList.add("over"); } });
@@ -7089,7 +7227,7 @@ function renderBank() {
     });
     tb.append(tr);
   }
-  $("banklist").replaceChildren(tb);
+  keepRowFocus($("banklist"), "slot", () => $("banklist").replaceChildren(tb));
   const s = bankSel == null ? null : b.slots[bankSel];
   const idle = !libBusy;
   $("bkload").disabled = !s || !s.used || !idle;
@@ -7364,19 +7502,19 @@ function fm6Set(i, val) {
     fm6Timer = setTimeout(() => op(() => fm6Send(true)), 150);
   }
 }
-function fm6Num(i, title) {
-  return el("input", { type: "number", min: 0, max: FM6.max(i), value: fm6v[i], title, class: "fm6n",
+function fm6Num(i, title, where = "") {
+  return el("input", { type: "number", min: 0, max: FM6.max(i), value: fm6v[i], title, class: "fm6n", "aria-label": controlName(where, title),
     onchange: (e) => { fm6Set(i, e.target.value); e.target.value = fm6v[i]; renderFm6Ops(); } });
 }
-function fm6Sel(i, names, title) {
-  const s = el("select", { title, onchange: (e) => { fm6Set(i, e.target.value); renderFm6(); } },
+function fm6Sel(i, names, title, where = "") {
+  const s = el("select", { title, "aria-label": controlName(where, title), onchange: (e) => { fm6Set(i, e.target.value); renderFm6(); } },
     ...names.map((n, k) => el("option", { value: k, text: n })));
   s.value = fm6v[i];
   return s;
 }
 function renderFm6Voice() {
   const V = FM6.VI, alg = fm6v[V.ALG], fb = FM6.feedbackOp(alg);
-  const nm = el("input", { type: "text", maxlength: 10, value: FM6.name(fm6v), size: 11,
+  const nm = el("input", { type: "text", maxlength: 10, value: FM6.name(fm6v), size: 11, "aria-label": t("name"),
     onchange: (e) => { FM6.setName(fm6v, e.target.value); fm6Set(0, fm6v[0]); e.target.value = FM6.name(fm6v); } });
   const row = (label, ...kids) => el("tr", {}, el("th", { text: label }), el("td", {}, ...kids));
   $("fm6voice").replaceChildren(el("table", {},
@@ -7384,18 +7522,18 @@ function renderFm6Voice() {
     row("ALG", fm6Sel(V.ALG, Array.from({ length: 32 }, (_, k) => String(k + 1)), "ALG"),
       el("span", { class: "dim", text: ` ${t("fm6Carriers")} ${FM6.carriers(alg).join(" ")}, ${t("fm6Feedback")} OP${fb}` })),
     row("FB", fm6Num(V.FB, "FB"), " OKS ", fm6Num(V.OKS, "OKS"), " TRNSP ", fm6Num(V.TRNSP, "TRNSP")),
-    row("LFO", fm6Sel(V.LFW, FM6_WAVES, "WAVE"), " SPD ", fm6Num(V.LFS, "SPEED"), " DLY ", fm6Num(V.LFD, "DELAY"),
-      " PMD ", fm6Num(V.LPMD, "PMD"), " AMD ", fm6Num(V.LAMD, "AMD"), " PMS ", fm6Num(V.LPMS, "PMS"), " SYNC ", fm6Num(V.LKS, "SYNC")),
-    row(t("fm6PitchEg"), "R ", ...[0, 1, 2, 3].map((k) => fm6Num(V.PR1 + k, "R" + (k + 1))),
-      " L ", ...[0, 1, 2, 3].map((k) => fm6Num(V.PL1 + k, "L" + (k + 1))))));
+    row("LFO", fm6Sel(V.LFW, FM6_WAVES, "WAVE", "LFO"), " SPD ", fm6Num(V.LFS, "SPEED", "LFO"), " DLY ", fm6Num(V.LFD, "DELAY", "LFO"),
+      " PMD ", fm6Num(V.LPMD, "PMD", "LFO"), " AMD ", fm6Num(V.LAMD, "AMD", "LFO"), " PMS ", fm6Num(V.LPMS, "PMS", "LFO"), " SYNC ", fm6Num(V.LKS, "SYNC", "LFO")),
+    row(t("fm6PitchEg"), "R ", ...[0, 1, 2, 3].map((k) => fm6Num(V.PR1 + k, "R" + (k + 1), t("fm6PitchEg"))),
+      " L ", ...[0, 1, 2, 3].map((k) => fm6Num(V.PL1 + k, "L" + (k + 1), t("fm6PitchEg"))))));
 }
 function renderFm6Ops() {
   const car = FM6.carriers(fm6v[FM6.VI.ALG]);
   const head = el("tr", {}, el("th", { text: "OP" }), ...FM6.OP.map(([n]) => el("th", { text: n })), el("th", { text: t("fm6Freq") }));
   const rows = [1, 2, 3, 4, 5, 6].map((n) => el("tr", {},
     el("th", { text: (car.includes(n) ? "● " : "") + n }),
-    ...FM6.OP.map(([f]) => el("td", {}, f === "LC" || f === "RC" ? fm6Sel(FM6.at(n, f), FM6_CURVES, f)
-      : f === "MODE" ? fm6Sel(FM6.at(n, f), ["RATIO", "FIXED"], f) : fm6Num(FM6.at(n, f), `OP${n} ${f}`))),
+    ...FM6.OP.map(([f]) => el("td", {}, f === "LC" || f === "RC" ? fm6Sel(FM6.at(n, f), FM6_CURVES, `OP${n} ${f}`)
+      : f === "MODE" ? fm6Sel(FM6.at(n, f), ["RATIO", "FIXED"], `OP${n} ${f}`) : fm6Num(FM6.at(n, f), `OP${n} ${f}`))),
     el("td", { class: "dim", text: FM6.freqText(fm6v, n) })));
   $("fm6ops").replaceChildren(el("div", { class: "fm6ops" }, el("table", {}, head, ...rows)), el("p", { class: "dim", text: t("fm6Legend") }));
 }
