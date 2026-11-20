@@ -460,29 +460,35 @@ static void g_arp_steps(uint32_t tr, const uint8_t *seq, uint32_t chords, uint32
     trk[tr].p[P_SLEN] = (int16_t)i;
     tx(tr, TX_MODE, TESS_ENG_OFF); trk[tr].p[P_SDIV] = (int16_t)div;
 }
-/* hip-hop: 88 BPM, A minor pentatonic; a PHYS MARIMBA on BOUNCE, three balls, as track 1 (its pages turned), a boom-bap
- * 808 in STEP, a TRIO sub on TURING; no track 4 (Theo: no drone) */
+/* slow hip-hop: 78 BPM, A minor; a PHYS MARIMBA playing a written four-bar melody (Am F Am G, a rhythm of its own) as
+ * track 1 (its pages turned), a boom-bap 808 in STEP, a TRIO sub on the roots; no track 4 (Theo: no drone, not an
+ * arpeggio, not BOUNCE) */
 static void g_physwalk_scene(void)
 {
     static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_BD, 0, 0, L_BD | L_CH, 0, L_SD, 0, L_CH, L_CH};
     static const uint8_t V[16] = {112, 0, 64, 0, 104, 0, 66, 84, 0, 0, 100, 0, 106, 0, 64, 50};
-    song.g[G_BPM] = 88;
-    scale(9, 5, 0);                                     /* A, PEN */
+    static const uint8_t M[64] = {64, 0, 0, 62, 0, 60, 0, 0, 57, 0, 0, 60, 0, 59, 0, 55,     /* Am */
+                                  57, 0, 0, 0, 0, 0, 64, 0, 65, 0, 64, 0, 62, 0, 60, 0,      /* F */
+                                  64, 0, 0, 62, 0, 60, 0, 0, 57, 0, 0, 60, 0, 62, 0, 64,     /* Am */
+                                  65, 0, 0, 64, 0, 62, 0, 0, 60, 0, 59, 0, 57, 0, 0, 0};     /* G .. A */
+    static const uint8_t B[4] = {33, 29, 33, 31};
+    song.g[G_BPM] = 78;
+    scale(9, SCL_MIN, 0);
     sends(85, 65, 60, 50);
     sound(0, ENGI_PHYS, 1);                             /* MARIMBA */
-    trk[0].p[P_SDIV] = DIV_16;
-    gen(0, TESS_ENG_BOUNCE, 33);
-    tx(0, TX_BNC_SPEED, 14); tx(0, TX_BNC_ANGLE, 37); tx(0, TX_BNC_BALLS, 3);
-    mixer(0, 108, 0, 45, 15);
+    for (uint32_t i = 0; i < 64u; i++) step_note(0, i, M[i], i % 16u == 0u || i % 16u == 8u ? 100u : 84u);
+    trk[0].p[P_SLEN] = 64;
+    tx(0, TX_MODE, TESS_ENG_OFF); trk[0].p[P_SDIV] = DIV_16;
+    mixer(0, 113, 0, 45, 15);
     sound(1, ENGI_DRUM, DK_808_KIT);
     for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
     trk[1].p[P_SLEN] = 16;
     tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
-    mixer(1, 80, 0, 10, 0);
+    mixer(1, 76, 0, 10, 0);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
-    trk[2].p[P_SDIV] = DIV_4;
-    gen(2, TESS_ENG_TURING, 12);
-    tx(2, TX_TUR_PROB, 4); tx(2, TX_TUR_LEN, 8); tx(2, TX_TW_SHIFT, -12); tx(2, TX_TW_DROP, 50);
+    for (uint32_t i = 0; i < 4u; i++) step_note(2, i, B[i], 90);
+    trk[2].p[P_SLEN] = 4; trk[2].p[P_SGATE] = 110;
+    tx(2, TX_MODE, TESS_ENG_OFF); trk[2].p[P_SDIV] = DIV_1;
     mixer(2, 72, 0, 0, 0);
     tx(3, TX_MODE, TESS_ENG_OFF);
     g_solo_check();
@@ -613,7 +619,7 @@ static void guide_ref_pages(const char *out, FILE *tsv)
     G_RUN("r-arp", "ARP: ONE NOTE AT A TIME", "MOSAIC", 132, 4, g_folkarp_scene, G_ARP);   /* folktronica */
     G_RUN("r-lfo", "LFO: A WAVE THAT MOVES", "LILAC", 141, 4, g_softdrone_scene, G_LFO);   /* soft drone */
     G_RUN("r-fx", "FX: INSERTS AND SENDS", "LILAC", 122, 4, g_organhouse_scene, G_FX);   /* organ house */
-    G_RUN("r-phys", "PHYS: STRUCK, PLUCKED, BOWED", "ORANGE", 148, 4, g_physwalk_scene, G_PHYS);   /* hip-hop */
+    G_RUN("r-phys", "PHYS: STRUCK, PLUCKED, BOWED", "ORANGE", 148, 4, g_physwalk_scene, G_PHYS);   /* slow hip-hop */
     G_RUN("r-drum", "DRUM: THE 808 AND THE 909", "ORANGE", 110, 4, g_drumhouse_scene, G_DRUM);   /* deep house */
     G_RUN("r-trio", "TRIO: THREE OSCILLATORS", "ORANGE", 86, 4, g_triopop_scene, G_TRIO);   /* synth-pop */
     G_RUN("r-tweak2", "TWEAK 2: WHICH HITS PLAY", "MOSAIC", 112, 4, g_afrobeat_scene, G_TWEAK2);   /* afrobeat */
