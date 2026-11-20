@@ -497,6 +497,59 @@ static const gstep_t G_PHYS[] = {
     {113000, 115000, 1000, "PRESETS", "VIBES", "... VIBES. Bells, mallets, plucks, bowed pads and drones", 1},
     {121000, 0, 0, 0, 0, "A turned knob is saved with the project; SAVE > SOUND keeps one in a USER slot"},
 };
+/* deep house: 118 BPM, F minor; an 808 groove written in STEP as track 1 (its grid and pages), a TRIO sub on TURING,
+ * ORACLE keys on CHORD stabs far back; no track 4 */
+static void g_drumhouse_scene(void)
+{
+    static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_BD | L_SD, 0, L_CH, 0, L_BD, 0, L_CH, 0, L_BD | L_SD, 0, L_CH, L_CH};
+    static const uint8_t V[16] = {110, 0, 70, 0, 110, 0, 74, 0, 108, 0, 70, 0, 110, 0, 74, 56};
+    song.g[G_BPM] = 118;
+    scale(5, SCL_MIN, 0);
+    sends(70, 60, 60, 50);
+    sound(0, ENGI_DRUM, DK_808_KIT);
+    for (uint32_t i = 0; i < 16u; i++) step_hits(0, i, L[i], V[i]);
+    trk[0].p[P_SLEN] = 16;
+    tx(0, TX_MODE, TESS_ENG_OFF); trk[0].p[P_SDIV] = DIV_16;
+    mixer(0, 92, 0, 15, 0);
+    sound(1, ENGI_TRIO, TR_SUB_BASS);
+    trk[1].p[P_SDIV] = DIV_8;
+    gen(1, TESS_ENG_TURING, 17);
+    tx(1, TX_TUR_PROB, 4); tx(1, TX_TUR_LEN, 8); tx(1, TX_TW_SHIFT, -12); tx(1, TX_TW_DROP, 40);
+    mixer(1, 78, 0, 0, 0);
+    sound(2, ENGI_ORACLE, V_OR_KEYS);
+    trk[2].p[P_CHRD] = 1;
+    gen(2, TESS_ENG_CHORD, 21);
+    tx(2, TX_CH_PROG, GEN_CH_TWO); tx(2, TX_CH_BARS, 2); tx(2, TX_CH_HIT, GEN_CH_BEAT);
+    mixer(2, 64, 20, 60, 30);
+    tx(3, TX_MODE, TESS_ENG_OFF);
+    g_solo_check();
+}
+static const gstep_t G_DRUM[] = {
+    {0, 0, 0, 0, 0, "DRUM: two kits, the 808 and the 909. Eight lanes: BD SD CP CH OH TM RS CB"},
+    {3500, 5500, 200, "SEQ", "OPEN SEQ", "Tap SEQ, SELECT to NOTES: the drum grid, a row a lane"},
+    {0, 7500, 600, "SELECT", "NOTES", 0, 1},
+    {12000, 14000, 1200, "KNOB 2", "LANE OH", "KNOB 2 picks a lane: OH, the open hat", 4},
+    {19000, 21000, 300, "A3", "STEP 3", "A white key adds a hit on its step: open hats on the off-beats"},
+    {0, 22500, 300, "E4", "STEP 7"},
+    {0, 24000, 300, "B4", "STEP 11"},
+    {0, 25500, 300, "F5", "STEP 15"},
+    {30000, 31000, 200, "HOME", "HOME", "Tap HOME, then EDIT: the KIT page, the whole kit. KNOB 4, DECY: longer, a booming kick"},
+    {0, 32000, 200, "EDIT", "OPEN EDIT"},
+    {0, 34000, 2000, "KNOB 4", "DECY", 0, 30},
+    {40000, 42000, 2000, "KNOB 2", "TUNE", "KNOB 2, TUNE: the kit lower", -20},
+    {48000, 50000, 600, "SELECT", "HIT", "SELECT: HIT. SNAP, ACC, KICK: PUNCH or ROUND, DRV", 1},
+    {0, 53000, 600, "KNOB 3", "ROUND", 0, 1},
+    {56000, 58000, 2000, "KNOB 4", "DRV", "KNOB 4, DRV: drive, a dirtier kit", 40},
+    {64000, 66000, 600, "SELECT", "SOUND", "SELECT: DRUM SOUND, one sound at a time. KNOB 1 picks it: the SNARE", 1},
+    {0, 68000, 600, "KNOB 1", "SNARE", 0, 1},
+    {71000, 73000, 2000, "KNOB 3", "DCY", "KNOB 3, DCY: a longer snare", 30},
+    {79000, 81000, 600, "SELECT", "MIX", "SELECT: DRUM MIX, each sound's level. The closed hat, KNOB 2 down", 1},
+    {0, 83000, 1500, "KNOB 1", "HAT C", 0, 6},
+    {0, 85500, 2000, "KNOB 2", "LVL", 0, -30},
+    {91000, 93000, 1200, "SELECT", "KIT", "Back on KIT, KNOB 1: the 909. The same pattern, the other machine", -3},
+    {0, 95500, 600, "KNOB 1", "909", 0, 1},
+    {104000, 0, 0, 0, 0, "The kit and each sound's settings are saved with the project"},
+};
 static void guide_ref_pages(const char *out, FILE *tsv)
 {
     G_RUN("r-oracle", "ORACLE: AN ANALOGUE VOICE", "ORANGE", 128, 4, g_library_scene, G_ORACLE);   /* library electronica */
@@ -507,5 +560,6 @@ static void guide_ref_pages(const char *out, FILE *tsv)
     G_RUN("r-lfo", "LFO: A WAVE THAT MOVES", "LILAC", 141, 4, g_softdrone_scene, G_LFO);   /* soft drone */
     G_RUN("r-fx", "FX: INSERTS AND SENDS", "LILAC", 122, 4, g_organhouse_scene, G_FX);   /* organ house */
     G_RUN("r-phys", "PHYS: STRUCK, PLUCKED, BOWED", "ORANGE", 128, 4, g_physwalk_scene, G_PHYS);   /* gamelan ambient */
+    G_RUN("r-drum", "DRUM: THE 808 AND THE 909", "ORANGE", 110, 4, g_drumhouse_scene, G_DRUM);   /* deep house */
     G_RUN("r-tweak2", "TWEAK 2: WHICH HITS PLAY", "MOSAIC", 112, 4, g_afrobeat_scene, G_TWEAK2);   /* afrobeat */
 }
