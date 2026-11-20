@@ -112,41 +112,32 @@ static const gstep_t G_FX[] = {
     {0, 108000, 1500, "KNOB 3", "TIME", 0, -10},
     {115000, 0, 0, 0, 0, "FX 1 to 3 on each track; FX SEND, FX SENDS; SEND FX 1 to 3"},
 };
-/* filter house: 122 BPM, G minor; string-machine chords on the offbeat as track 1 (its LFO opens and closes the
- * filter), a 909 in STEP, a bass on EUCLID, a soft lead on AWAKE as track 4 (its LFO a vibrato that FADEs in) */
-static void g_filterhouse_scene(void)
+/* soft drone (Theo: no beat, just a soft drone, so the LFO is all that moves): 70 BPM, G minor; string-machine chords
+ * held eight bars at a time as track 1 (its LFO opens and closes the filter), tracks 2 and 3 silent, a breathy flute
+ * on four long notes as track 4 (its LFO a vibrato that FADEs in) */
+static void g_softdrone_scene(void)
 {
-    song.g[G_BPM] = 122;
+    song.g[G_BPM] = 70;
     scale(7, SCL_MIN, 0);
-    sends(70, 55, 60, 45);
+    sends(100, 70, 60, 45);
     sound(0, ENGI_TRIO, TR_STRING_MACH);
     trk[0].p[P_E5] = 44;
-    trk[0].p[P_LTRIG] = 1;                              /* (FREE: with NOTE each short chord met the wave at its start, and SQR */
-    trk[0].p[P_CHRD] = 1;                               /* and S&H never changed; Theo) */
+    trk[0].p[P_LTRIG] = 1;                              /* (FREE: SQR and S&H move while the chord holds) */
+    trk[0].p[P_CHRD] = 1;
     gen(0, TESS_ENG_CHORD, 21);
-    tx(0, TX_CH_PROG, GEN_CH_TWO); tx(0, TX_CH_BARS, 2); tx(0, TX_CH_HIT, GEN_CH_OFF);
-    mixer(0, 120, 0, 30, 20);
-    sound(1, ENGI_DRUM, DK_909_KIT);
+    tx(0, TX_CH_PROG, GEN_CH_TWO); tx(0, TX_CH_BARS, 8); tx(0, TX_CH_HIT, GEN_CH_HOLD); tx(0, TX_CH_OCT, -1);
+    mixer(0, 84, 0, 60, 20);
+    tx(1, TX_MODE, TESS_ENG_OFF);
+    tx(2, TX_MODE, TESS_ENG_OFF);
+    sound(3, ENGI_TRIO, TR_BREATH_FLUTE);
     {
-        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_BD | L_CP, 0, L_CH, L_OH, L_BD, 0, L_CH, 0, L_BD | L_CP, 0, L_CH, 0};
-        static const uint8_t V[16] = {108, 0, 58, 0, 102, 0, 58, 54, 106, 0, 60, 0, 102, 0, 58, 0};
-        for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
-        trk[1].p[P_SLEN] = 16;
+        static const uint8_t N[4] = {74, 70, 72, 67};
+        for (uint32_t i = 0; i < 4u; i++) step_note(3, i, N[i], 80);
+        trk[3].p[P_SLEN] = 4; trk[3].p[P_SGATE] = 110;
     }
-    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
-    mixer(1, 70, 0, 10, 0);
-    sound(2, ENGI_TRIO, TR_SUB_BASS);
-    trk[2].p[P_SDIV] = DIV_16;
-    gen(2, TESS_ENG_EUCLID, 12);
-    tx(2, TX_EUC_STEPS, 16); tx(2, TX_EUC_PULSES, 5); tx(2, TX_EUC_ROT, 2); tx(2, TX_TW_SHIFT, -12);
-    mixer(2, 72, 0, 0, 0);
-    sound(3, ENGI_TRIO, TR_SOFT_LEAD);
-    trk[3].p[P_SDIV] = DIV_4;
-    gen(3, TESS_ENG_AWAKE, 9);
-    tx(3, TX_AWK_LENA, 5); tx(3, TX_AWK_LENB, 3); tx(3, TX_AWK_PROB, 45);
-    tx(3, TX_NL_MODE, 2); tx(3, TX_TW_SHIFT, 12);
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_1;
     trk[3].p[P_LRATE] = 88;                             /* (a vibrato's rate, about 5 Hz) */
-    mixer(3, 74, 20, 60, 40);
+    mixer(3, 80, 20, 70, 40);
     g_solo_check();
 }
 static const gstep_t G_LFO[] = {
@@ -167,12 +158,13 @@ static const gstep_t G_LFO[] = {
     {81000, 83000, 600, "KNOB 2", "NOTE", "KNOB 2, TRIG: FREE lets the wave run. NOTE starts it again on each note", -1},
     {0, 87000, 600, "KNOB 2", "FREE", 0, 1},
     {89000, 91000, 600, "KNOB 3", "UNI", "KNOB 3, POL: BI swings both ways, UNI only up from where the setting is", 1},
-    {97000, 99000, 600, "ALGORITHM", "TRACK 4", "Turn ALGORITHM to track 4, the lead: its own LFO", 3},
+    {97000, 99000, 600, "ALGORITHM", "TRACK 4", "Turn ALGORITHM to track 4, the flute: its own LFO", 3},
     {103000, 105000, 600, "SELECT", "LFO DEST", "Its LFO DEST: KNOB 1, PIT, a little: a vibrato", 2},
     {0, 107000, 1200, "KNOB 1", "PIT", 0, 5},
     {113000, 115000, 600, "SELECT", "LFO", "On LFO, KNOB 4, FADE: the vibrato comes in after each note starts", -3},
-    {0, 117000, 1500, "KNOB 4", "FADE", 0, 22},
-    {125000, 0, 0, 0, 0, "Each LFO is also a source on MODS: T1 LFO can move anything, on any track"},
+    {0, 117000, 8500, "KNOB 4", "FADE", 0, 85},
+    {127000, 0, 0, 0, 0, "Now each long note starts plain, and the vibrato grows in over half a second"},
+    {134000, 0, 0, 0, 0, "Each LFO is also a source on MODS: T1 LFO can move anything, on any track"},
 };
 /* folktronica: 88 BPM, E minor; a plucked lead ARP as track 1 (Theo: GATE must be heard, so a sound that holds while the note does, not the decaying harp; HOLD on: the keys held stay; the clip moves through Em, C,
  * Am, D, G), a brushed 808 in STEP, a sub's pedal E and a fifth drone (E, B) in STEP under every chord (Theo: the
@@ -469,7 +461,7 @@ static void guide_ref_pages(const char *out, FILE *tsv)
     G_RUN("r-menu", "THE MENU", "WHITE", 110, 4, g_glacial_scene, G_MENU);   /* glacial ambient */
     G_RUN("r-tempo", "PATTERN AND TEMPO", "MOSAIC", 121, 4, g_ambtempo_scene, G_PATTEMPO);   /* ambient */
     G_RUN("r-arp", "ARP: ONE NOTE AT A TIME", "MOSAIC", 132, 4, g_folkarp_scene, G_ARP);   /* folktronica */
-    G_RUN("r-lfo", "LFO: A WAVE THAT MOVES", "LILAC", 132, 4, g_filterhouse_scene, G_LFO);   /* filter house */
+    G_RUN("r-lfo", "LFO: A WAVE THAT MOVES", "LILAC", 141, 4, g_softdrone_scene, G_LFO);   /* soft drone */
     G_RUN("r-fx", "FX: INSERTS AND SENDS", "LILAC", 122, 4, g_acid_scene, G_FX);   /* acid house */
     G_RUN("r-tweak2", "TWEAK 2: WHICH HITS PLAY", "MOSAIC", 112, 4, g_afrobeat_scene, G_TWEAK2);   /* afrobeat */
 }
