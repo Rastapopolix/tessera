@@ -27,8 +27,13 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
   zero (as a MIDI Song Position), its beat position drives Tessera's clock (fractional tempos and tempo changes, no
   drift), a loop or a locate seeks, STOP stops. The BPM on the screen is the DAW's, rounded; a TEMPO mod has no effect
   while the DAW plays. With CLK on MIDI, the MIDI master's clock rules and the DAW only starts and stops it.
-- **Parameters** (automatable): MASTER and PERF's MACRO 1..4 (the project's, so they are saved with it too). Turned on
-  the panel or on PERF, the new value is sent back to the DAW.
+- **Parameters** (automatable): MASTER and PERF's MACRO 1..4 (the project's, so they are saved with it too), then
+  **every project setting** by its central ID (about 930): each track's ("T1 LEVEL", "T3 TURING LENGTH", in the
+  modules "Track n/Sound and sequence" and "Track n/Generator") and the song's ("Song"); not the device's own (A4, the
+  MIDI routing). Values read as the FM-1 shows them ("SAW", "1/16", "-6dB") and can be typed that way. ENGINE 1..8 mean
+  what the track's engine makes them (their range is the widest any engine has). Changed on the panel, by a project or
+  by the core, a value is sent back to the DAW (MASTER and the MACROs at once, the rest within ~20 blocks). Ids are
+  stable: 0..4 as before, then 0x10000 + slot * 0x1000 + pid (slot 0..3 a track, 4 the song).
 
 - **Track outputs:** besides the main mix, TRACK 1..4 each alone (the FM-1's USB stems: the track after its level,
   before pan and the bus FX, mono on both sides). The core makes them once the DAW connects one.

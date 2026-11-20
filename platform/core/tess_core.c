@@ -416,6 +416,20 @@ uint32_t tess_core_param_info(uint32_t pid, uint32_t track, tess_param_t *info)
     info->max = d->max;
     info->def = d->def;
     info->per_track = (e->flags & PID_F_TRACK) ? 1u : 0u;
+    info->settable = !(e->flags & PID_F_DEVICE) && (pid >= PID_TESS(0) || d->max > d->min);   /* (as pid_set) */
+    info->span_min = d->min;
+    info->span_max = d->max;
+    if (pid >= P_E0 && pid <= P_E7) {             /* an engine's knob: its range over every engine */
+        uint32_t k;
+        for (k = 0; k < NENGINES; k++)
+            if (ENGINES[k] && ENGINES[k]->edit) {
+                const param_desc_t *x = &ENGINES[k]->edit[pid - P_E0];
+                if (x->max > x->min) {
+                    info->span_min = x->min < info->span_min ? x->min : info->span_min;
+                    info->span_max = x->max > info->span_max ? x->max : info->span_max;
+                }
+            }
+    }
     return 1;
 }
 uint32_t tess_core_param_at(uint32_t n, uint32_t track, tess_param_t *info)
@@ -427,11 +441,31 @@ uint32_t tess_core_param_at(uint32_t n, uint32_t track, tess_param_t *info)
         info->name = e->name;
         info->min = info->max = info->def = 0;
         info->per_track = (e->flags & PID_F_TRACK) ? 1u : 0u;
+        info->settable = 0;
+        info->span_min = info->span_max = 0;
     }
     return e->pid;
 }
 int32_t tess_core_param_get(uint32_t pid, uint32_t track) { return pid_get(pid, track); }
 uint32_t tess_core_param_set(uint32_t pid, uint32_t track, int32_t v) { return pid_set(pid, track, v) ? 1u : 0u; }
+uint32_t tess_core_param_text(uint32_t pid, uint32_t track, int32_t v, char *out, uint32_t cap)
+{
+    const param_desc_t *d = pid_find(pid) ? pid_desc(pid, track) : 0;
+    char val[24];
+    const char *unit;
+    uint32_t n = 0, i;
+    if (!d || !cap)
+        return 0;
+    if (d->fmt == F_ENUM && d->names && (v < d->min || v > d->max))
+        v = clamp(v, d->min, d->max);             /* (a name's index: never past the list) */
+    param_format(d, v, val, &unit);
+    for (i = 0; val[i] && n + 1u < cap; i++)
+        out[n++] = val[i];
+    for (i = 0; unit[i] && n + 1u < cap; i++)
+        out[n++] = unit[i];
+    out[n] = 0;
+    return n;
+}
 
 /* ---- the DAW (TESS_HOST_CLOCK: mix.c int_clock_units asks tess_host_units while the DAW plays) */
 #ifdef TESS_HOST_CLOCK
