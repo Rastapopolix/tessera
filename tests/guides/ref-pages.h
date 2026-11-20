@@ -550,6 +550,47 @@ static const gstep_t G_DRUM[] = {
     {0, 95500, 600, "KNOB 1", "909", 0, 1},
     {104000, 0, 0, 0, 0, "The kit and each sound's settings are saved with the project"},
 };
+/* synth-pop: 108 BPM, C minor; a TRIO lead on TURING as track 1 (its pages turned), an 808 in STEP, an FM6 glass pad
+ * on CHORD far back; no track 4 */
+static void g_triopop_scene(void)
+{
+    static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, 0, L_BD, 0, L_BD | L_CH, 0, L_SD, 0, L_CH, 0};
+    static const uint8_t V[16] = {104, 0, 60, 0, 96, 0, 62, 0, 100, 0, 90, 0, 96, 0, 62, 0};
+    song.g[G_BPM] = 108;
+    scale(0, SCL_MIN, 0);
+    sends(80, 60, 60, 50);
+    sound(0, ENGI_TRIO, 1);                             /* ARP LEAD */
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_TURING, 44);
+    tx(0, TX_TUR_PROB, 5); tx(0, TX_TUR_LEN, 8);
+    mixer(0, 102, 0, 35, 25);
+    sound(1, ENGI_DRUM, DK_808_KIT);
+    for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
+    trk[1].p[P_SLEN] = 16;
+    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
+    mixer(1, 72, 0, 15, 0);
+    sound(2, ENGI_FM6, V_GLASS_PAD);
+    trk[2].p[P_CHRD] = 1;
+    gen(2, TESS_ENG_CHORD, 9);
+    tx(2, TX_CH_PROG, GEN_CH_TWO); tx(2, TX_CH_BARS, 2); tx(2, TX_CH_HIT, GEN_CH_HOLD); tx(2, TX_CH_OCT, -1);
+    mixer(2, 78, -20, 70, 0);
+    tx(3, TX_MODE, TESS_ENG_OFF);
+    g_solo_check();
+}
+static const gstep_t G_TRIO[] = {
+    {0, 0, 0, 0, 0, "TRIO: three oscillators in one voice, each at its own interval"},
+    {3500, 5500, 200, "EDIT", "OPEN EDIT", "Tap EDIT: OSC. WAVE, INT2, INT3, DTN"},
+    {10000, 12000, 1500, "KNOB 2", "INT2", "KNOB 2, INT2: the second oscillator's interval. From an octave up, +12, to a fifth, +7", -5},
+    {18000, 20000, 1500, "KNOB 3", "INT3", "KNOB 3, INT3: the third from the note itself to an octave up. A chord in one voice", 12},
+    {26000, 28000, 2000, "KNOB 4", "DTN", "KNOB 4, DTN: detune, the three beat against each other", 15},
+    {34000, 36000, 2500, "KNOB 1", "WAVE", "KNOB 1, WAVE: which waves the three play: saws, pulses, triangles ... SYNC, a harder edge", 7},
+    {44000, 46000, 600, "SELECT", "TONE", "SELECT: TONE, the filter. MODE, CUT, RES, PW", 1},
+    {0, 48500, 2000, "KNOB 2", "CUT", 0, -30},
+    {52000, 54000, 2000, "KNOB 3", "RES", "KNOB 3, RES: the filter rings", 40},
+    {60000, 62000, 2500, "KNOB 2", "CUT", "KNOB 2, CUT open again", 30},
+    {68000, 70000, 600, "SELECT", "VOIC", "SELECT: VOIC, how the track plays its notes. POLY or MONO, GLIDE, DETUNE, PAN", 1},
+    {78000, 0, 0, 0, 0, "A turned knob is saved with the project; SAVE > SOUND keeps one in a USER slot"},
+};
 static void guide_ref_pages(const char *out, FILE *tsv)
 {
     G_RUN("r-oracle", "ORACLE: AN ANALOGUE VOICE", "ORANGE", 128, 4, g_library_scene, G_ORACLE);   /* library electronica */
@@ -561,5 +602,6 @@ static void guide_ref_pages(const char *out, FILE *tsv)
     G_RUN("r-fx", "FX: INSERTS AND SENDS", "LILAC", 122, 4, g_organhouse_scene, G_FX);   /* organ house */
     G_RUN("r-phys", "PHYS: STRUCK, PLUCKED, BOWED", "ORANGE", 128, 4, g_physwalk_scene, G_PHYS);   /* gamelan ambient */
     G_RUN("r-drum", "DRUM: THE 808 AND THE 909", "ORANGE", 110, 4, g_drumhouse_scene, G_DRUM);   /* deep house */
+    G_RUN("r-trio", "TRIO: THREE OSCILLATORS", "ORANGE", 86, 4, g_triopop_scene, G_TRIO);   /* synth-pop */
     G_RUN("r-tweak2", "TWEAK 2: WHICH HITS PLAY", "MOSAIC", 112, 4, g_afrobeat_scene, G_TWEAK2);   /* afrobeat */
 }
