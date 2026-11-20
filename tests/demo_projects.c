@@ -15,6 +15,7 @@
  *   build/host/demo_projects video OUTDIR      the demo video's audio, screens and captions (tools/demo_video.py)
  *   build/host/demo_projects tour OUTDIR       the 3.3 narrated tour's clips (tools/tour_video.py)
  *   build/host/demo_projects tour35 OUTDIR     the 3.5 demo video's clips (tools/tour_video.py demo35)
+ *   build/host/demo_projects guide OUTDIR      the manual's guided clips (tools/guide_video.py)
  *   build/host/demo_projects log N SECS        demo N's notes as CSV (time, track, note, velocity)
  *   build/host/demo_projects solo N T SECS [WAV] demo N with track T alone heard (0: all): the voices' cost, as a
  *                                              device CPU guide, and the render
@@ -2086,7 +2087,7 @@ typedef struct vfn_s { uint32_t ms; void (*fn)(void); } vfn_t;
 static void v_run(const char *out, const vclip_t *c)
 {
     char dir[600], wav[600];
-    uint32_t frames = c->secs * FS, f, si = 0, ki = 0, bi = 0, b = 0, n = 0, done[16] = {0}, fi = 0;
+    uint32_t frames = c->secs * FS, f, si = 0, ki = 0, bi = 0, b = 0, n = 0, done[64] = {0}, fi = 0;
     int fired = 0;
     memset(dm_notes, 0, sizeof dm_notes);
     snprintf(dir, sizeof dir, "%s/%s", out, c->name);
@@ -2120,7 +2121,7 @@ static void v_run(const char *out, const vclip_t *c)
             else fm1_in.buttons &= ~m;
             bi++, input = 1;
         }
-        for (uint32_t t = 0; t < c->nturns && t < 16u; t++) {   /* (the detents due by now, evenly over dur) */
+        for (uint32_t t = 0; t < c->nturns && t < 64u; t++) {   /* (the detents due by now, evenly over dur) */
             const vturn_t *u = &c->turns[t];
             uint32_t all = (uint32_t)(u->steps < 0 ? -u->steps : u->steps), due;
             if (ms < u->ms || done[t] >= all) continue;
@@ -2940,6 +2941,109 @@ static void solo(uint32_t d, uint32_t only, uint32_t secs, const char *wav)
            capacity_steals - steals0);
 }
 
+/* ------------------------------------------------------- the manual's guides --- */
+/* guide OUTDIR: the manual's guided clips (tools/guide_video.py), each a scene played with the keys and buttons a hand
+ * would press, every press after a caption that says what comes. OUTDIR/<clip>.wav, OUTDIR/<clip>/f00000.ppm ..,
+ * OUTDIR/guide.tsv: clip, caption at (s), press at (s), let go at (s), control, its label, caption ("-": the caption
+ * before it goes on). GUIDE_ONLY=prefix: those clips only */
+typedef struct { uint32_t cap_ms, act_ms, dur; const char *ctl, *label, *caption; int32_t turn; } gstep_t;
+/* ctl: a key (G_KEYS), a button (panel.c B_NAME) held dur ms, or a knob (E_NAME) turned turn detents over dur ms */
+static const char *const G_KEYS[] = {"F3", "F#3", "G3", "G#3", "A3", "A#3", "B3", "C4", "C#4", "D4", "D#4", "E4", "F4",
+                                     "F#4", "G4", "G#4", "A4", "A#4", "B4", "C5", "C#5", "D5", "D#5", "E5", "F5",
+                                     "F#5", "G5"};
+/* a scene's timed changes (each at its ms into the clip): set by the scene (make), as g_fns / g_nfns; none by default */
+static const vfn_t *g_fns;
+static uint32_t g_nfns;
+static void g_run(const char *out, FILE *tsv, const char *name, const char *title, uint32_t secs, uint32_t pre,
+                  void (*make)(void), const char *ink, const gstep_t *g, uint32_t n)
+{
+    static vkey_t keys[128];                            /* (a long clip: 64 presses of each kind, 64 turns) */
+    static vbtn_t btns[128];
+    static vturn_t turns[64];
+    static vstep_t st[2];
+    uint32_t nk = 0, nb = 0, nt = 0;
+    const char *only = getenv("GUIDE_ONLY");
+    if (only && strncmp(name, only, strlen(only))) return;
+    fprintf(tsv, "%s\t-2\t-1\t-1\t-\t%s\t%s\t0\n", name, ink, title);   /* (the clip's ink and title: caption at -2) */
+    for (uint32_t i = 0; i < n; i++) {
+        uint32_t k;
+        fprintf(tsv, "%s\t%.3f\t%.3f\t%.3f\t%s\t%s\t%s\t%d\n", name, g[i].caption ? g[i].cap_ms / 1000.0 : -1.0,
+                g[i].ctl ? g[i].act_ms / 1000.0 : -1.0, g[i].ctl ? (g[i].act_ms + g[i].dur) / 1000.0 : -1.0,
+                g[i].ctl ? g[i].ctl : "-", g[i].label ? g[i].label : "-", g[i].caption ? g[i].caption : "-", g[i].turn);
+        if (!g[i].ctl) continue;
+        if (nk + 2u > 128u || nb + 2u > 128u || nt + 1u > 64u) {
+            fprintf(stderr, "guide: %s: too many actions\n", name);
+            exit(1);
+        }
+        for (k = 0; k < sizeof G_KEYS / sizeof G_KEYS[0] && strcmp(G_KEYS[k], g[i].ctl); k++) {}
+        if (k < sizeof G_KEYS / sizeof G_KEYS[0]) {
+            keys[nk++] = (vkey_t){g[i].act_ms, k, 1};
+            keys[nk++] = (vkey_t){g[i].act_ms + g[i].dur, k, 0};
+            continue;
+        }
+        for (k = 0; k < NB && strcmp(B_NAME[k], g[i].ctl); k++) {}
+        if (k < NB) {
+            btns[nb++] = (vbtn_t){g[i].act_ms, k, 1};
+            btns[nb++] = (vbtn_t){g[i].act_ms + g[i].dur, k, 0};
+            continue;
+        }
+        for (k = 0; k < NE && strcmp(E_NAME[k], g[i].ctl); k++) {}
+        if (k < NE) turns[nt++] = (vturn_t){g[i].act_ms, k, g[i].turn, g[i].dur};
+        else fprintf(stderr, "guide: no control %s\n", g[i].ctl);
+    }
+    /* (the presses in time order: v_run takes them in turn) */
+    for (uint32_t i = 1; i < nk; i++) for (uint32_t j = i; j && keys[j - 1].ms > keys[j].ms; j--) {
+        vkey_t t = keys[j]; keys[j] = keys[j - 1]; keys[j - 1] = t;
+    }
+    for (uint32_t i = 1; i < nb; i++) for (uint32_t j = i; j && btns[j - 1].ms > btns[j].ms; j--) {
+        vbtn_t t = btns[j]; btns[j] = btns[j - 1]; btns[j - 1] = t;
+    }
+    st[0] = (vstep_t){0, 1, 0, 0, "HOME"};
+    fflush(tsv); fflush(v_cap);                         /* (each clip in a process of its own, from the state at boot: it */
+    pid_t pid = fork();                                  /* sounds the same whichever clips ran before, GUIDE_ONLY or not) */
+    if (pid > 0) { waitpid(pid, 0, 0); return; }
+    power_on();
+    make();
+    song.batt_raw = 600;                                /* (a full battery in the header: the host reads none) */
+    v_ink(ink);
+    vclip_t c = {.name = name, .secs = secs, .pre = pre, .st = st, .nst = 1, .keys = keys, .nkeys = nk,
+                 .btns = btns, .nbtns = nb, .turns = turns, .nturns = nt, .fns = g_fns, .nfns = g_nfns};
+    v_run(out, &c);
+    if (pid == 0) { fflush(stdout); fflush(v_cap); _exit(0); }
+}
+/* each file one episode's clips (ids start with the episode), so accounts working on different episodes never edit the
+ * same file; ref.h the reference clips. A clip: G_RUN(id, title, ink, secs, pre, scene, steps) */
+#define G_RUN(nm, title, ink, secs, pre, make, tab) \
+    g_run(out, tsv, nm, title, secs, pre, make, ink, tab, sizeof tab / sizeof tab[0])
+#include "guides/e01.h"
+#include "guides/e02.h"
+#include "guides/e03.h"
+#include "guides/e04.h"
+#include "guides/e05.h"
+#include "guides/e06.h"
+#include "guides/e07.h"
+#include "guides/e08.h"
+#include "guides/e09.h"
+#include "guides/ref.h"
+#include "guides/ref-gen.h"
+#include "guides/ref-more.h"
+#include "guides/ref-pages.h"
+static void guide(const char *out)
+{
+    char path[600];
+    FILE *tsv;
+    mkdir(out, 0755);
+    snprintf(path, sizeof path, "%s/captions.txt", out);
+    if (!(v_cap = fopen(path, "w"))) return;
+    snprintf(path, sizeof path, "%s/guide.tsv", out);
+    if (!(tsv = fopen(path, "w"))) return;
+    v_t0 = 0;
+    guide_e01(out, tsv); guide_e02(out, tsv); guide_e03(out, tsv); guide_e04(out, tsv); guide_e05(out, tsv);
+    guide_e06(out, tsv); guide_e07(out, tsv); guide_e08(out, tsv); guide_e09(out, tsv); guide_ref(out, tsv); guide_ref_gen(out, tsv); guide_ref_more(out, tsv); guide_ref_pages(out, tsv);
+    fclose(tsv);
+    fclose(v_cap);
+}
+
 int main(int argc, char **argv)
 {
     int bad;
@@ -2980,6 +3084,7 @@ int main(int argc, char **argv)
     else if (argc >= 3 && !strcmp(argv[1], "video")) return video(argv[2]);
     else if (argc >= 3 && !strcmp(argv[1], "tour")) { t_only = getenv("TOUR_ONLY"); tour(argv[2]); return 0; }
     else if (argc >= 3 && !strcmp(argv[1], "tour35")) { t_only = getenv("TOUR_ONLY"); tour35(argv[2]); return 0; }
+    else if (argc >= 3 && !strcmp(argv[1], "guide")) { guide(argv[2]); return 0; }
     else if (argc >= 2 && !strcmp(argv[1], "levels")) { levels(argc > 2 ? (uint32_t)atoi(argv[2]) : 60u); return 0; }
     else { fprintf(stderr, "demo_projects [checks] make DIR [SECS] | [checks] check DIR\n"); return 2; }
     printf(bad ? "demos: %d FAILED\n" : "demos passed\n", bad);

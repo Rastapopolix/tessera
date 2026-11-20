@@ -1,0 +1,110 @@
+/* SPDX-License-Identifier: GPL-3.0-only
+ * Copyright (C) 2026 Theo Dainis (melodee-tess) */
+/* Season 1, episode 9: drive other gear: the guided clips (tests/demo_projects.c guide; tools/guide_video.py) */
+/* (g_solo_check, the balance and note checks, is in e01.h) */
+
+/* UK garage: 132 BPM, C minor; an organ-like stab line on TURING as track 1 (the clip sends it out and silences it
+ * here), a two-step 909 in STEP with the kick skipping, a sub written in STEP, a soft pad holding the chord */
+static void g_garage_scene(void)
+{
+    song.g[G_BPM] = 132;
+    song.g[G_SWING] = 30;
+    scale(0, SCL_MIN, 0);
+    sends(70, 60, 90, 50);
+    sound(0, ENGI_FM6, FX_ORGAN);
+    trk[0].p[P_SDIV] = DIV_16;
+    gen(0, TESS_ENG_TURING, 9);
+    tx(0, TX_TUR_LEN, 8); tx(0, TX_TUR_PROB, 0); tx(0, TX_TUR_SPAN, 1); tx(0, TX_TW_DROP, 40);
+    mixer(0, 122, -15, 30, 40);
+    sound(1, ENGI_DRUM, DK_909_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_BD, 0, 0, L_BD | L_CH, 0, L_SD, 0, L_CH, L_CH};
+        static const uint8_t V[16] = {104, 0, 58, 0, 96, 0, 62, 78, 0, 0, 92, 0, 98, 0, 60, 46};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
+        trk[1].p[P_SLEN] = 16;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
+    mixer(1, 80, 0, 10, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    {                                                   /* a steady written bass: C on the one, the octave and G
+                                                         * answering (Theo: the EUCLID bass was too up-and-down) */
+        static const uint8_t N[16] = {36, 0, 0, 36, 0, 0, 48, 0, 36, 0, 0, 36, 0, 43, 0, 0};
+        static const uint8_t V[16] = {110, 0, 0, 86, 0, 0, 80, 0, 104, 0, 0, 84, 0, 88, 0, 0};
+        for (uint32_t i = 0; i < 16u; i++) step_note(2, i, N[i], V[i]);
+        trk[2].p[P_SLEN] = 16;
+    }
+    tx(2, TX_MODE, TESS_ENG_OFF); trk[2].p[P_SDIV] = DIV_16;
+    mixer(2, 92, 0, 0, 0);
+    sound(3, ENGI_TRIO, TR_WARM_PAD);
+    trk[3].p[P_CHRD] = 1;
+    gen(3, TESS_ENG_CHORD, 5);
+    tx(3, TX_CH_PROG, GEN_CH_TWO); tx(3, TX_CH_BARS, 3); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
+    mixer(3, 66, 20, 80, 0);
+    settings_midi_out = MIDI_OUT_ALL;                   /* (MENU > NOTES OUT ALL, set before: the clip's last caption) */
+    g_solo_check();
+}
+static const gstep_t G_MIDI_OUT[] = {
+    {0, 0, 0, 0, 0, "Each track can play another synth over MIDI"},
+    {3500, 6500, 200, "GLO", "OPEN GLO", "Tap GLO, then turn SELECT to the last page, MIDI OUT"},
+    {0, 8000, 2400, "SELECT", "MIDI OUT", 0, 8},
+    {13500, 16500, 400, "KNOB 1", "T1 CH 1", "Turn KNOB 1: track 1 sends on channel 1 (AUTO becomes 1)", 1},
+    {22000, 25000, 800, "OCT+", "SHEET", "Hold OCT+: the sheet. SOUND T1 is the first row"},
+    {29500, 32500, 400, "KNOB 2", "SOUND OFF", "Turn KNOB 2 right: SOUND T1 OFF. Track 1 goes quiet here", 1},
+    {38000, 41000, 200, "OCT-", "CLOSE", "Tap OCT-: its notes still go out on channel 1"},
+    {45500, 0, 0, 0, 0, "First set MENU > NOTES OUT to ALL, or only the keys go out"},
+};
+/* electro: 116 BPM, E minor; an 808 electro beat in STEP, a round FM bass on EUCLID, a blip line on TURING as
+ * track 1, a glassy pad. (The clip is about the clock: a beat that shows the tempo) */
+static void g_electro_scene(void)
+{
+    song.g[G_BPM] = 116;
+    scale(4, SCL_MIN, 0);
+    sends(75, 60, 90, 55);
+    sound(0, ENGI_ORACLE, OR_SEQ_BLIP);
+    trk[0].p[P_SDIV] = DIV_16;
+    gen(0, TESS_ENG_TURING, 22);
+    tx(0, TX_TUR_LEN, 8); tx(0, TX_TUR_PROB, 0); tx(0, TX_TUR_SPAN, 2); tx(0, TX_TW_DROP, 30);
+    trk[0].p[P_VOICE] = 1;
+    mixer(0, 124, -20, 40, 70);
+    sound(1, ENGI_DRUM, DK_808_KIT);
+    {
+        static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD | L_CP, 0, L_CH, L_BD, 0, L_BD, L_CH, 0, L_SD | L_CP, 0, L_CH, L_CB};
+        static const uint8_t V[16] = {108, 0, 60, 0, 96, 0, 58, 84, 0, 90, 62, 0, 98, 0, 60, 50};
+        for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
+        trk[1].p[P_SLEN] = 16;
+    }
+    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
+    mixer(1, 84, 0, 10, 0);
+    sound(2, ENGI_FM6, FX_SOLID_BASS);
+    trk[2].p[P_SDIV] = DIV_16;
+    gen(2, TESS_ENG_EUCLID, 13);
+    tx(2, TX_EUC_STEPS, 16); tx(2, TX_EUC_PULSES, 6); tx(2, TX_EUC_ROT, 0); tx(2, TX_TW_SHIFT, -12);
+    tx(2, TX_NL_MODE, 1); tx(2, TX_NL_LEN, 1);
+    mixer(2, 100, 0, 0, 0);
+    sound(3, ENGI_ORACLE, OR_GLASS_PAD);
+    trk[3].p[P_CHRD] = 1;
+    gen(3, TESS_ENG_CHORD, 3);
+    tx(3, TX_CH_PROG, GEN_CH_TWO); tx(3, TX_CH_BARS, 3); tx(3, TX_CH_HIT, GEN_CH_HOLD); tx(3, TX_CH_OCT, -1);
+    mixer(3, 62, 20, 90, 0);
+    g_solo_check();
+}
+static const gstep_t G_CLOCK_IN[] = {
+    {0, 0, 0, 0, 0, "Tessera can follow another clock: a DAW or a sequencer"},
+    {3500, 6500, 200, "GLO", "OPEN GLO", "Tap GLO, then turn SELECT to MIDI IN"},
+    {0, 8000, 2100, "SELECT", "MIDI IN", 0, 7},
+    {13500, 16500, 400, "KNOB 4", "CLK USB", "Turn KNOB 4, CLK, from INT to USB", 1},
+    {21000, 0, 0, 0, 0, "No clock comes in here, so it stops. From a DAW, it follows its tempo"},
+    {30000, 33000, 400, "KNOB 4", "CLK INT", "Turn KNOB 4 back to INT: its own clock", -1},
+    {37000, 40000, 200, "PLAY", "PLAY", "Tap PLAY: it plays on its own tempo again"},
+    {46000, 0, 0, 0, 0, "On KNOB 4, TRS picks the MIDI socket instead of USB"},
+    {52000, 55000, 9000, "OCT-", "HOLD OCT-", "Hold OCT-: KNOB 4 is now PPQN, the clock's pulses a beat"},
+    {0, 58000, 1600, "KNOB 4", "PPQN", 0, 4},
+    {60500, 0, 0, 0, 0, "24 (the MIDI standard), 48, 4, 8 or 12"},
+    {0, 61500, 800, "KNOB 4", "PPQN 24", 0, -4},
+    {64000, 0, 0, 0, 0, "Twice as fast as the gear it follows? Try 48"},
+};
+static void guide_e09(const char *out, FILE *tsv)
+{
+    G_RUN("e09-midi-out", "PLAY YOUR OTHER SYNTHS", "WHITE", 54, 4, g_garage_scene, G_MIDI_OUT);   /* UK garage */
+    G_RUN("e09-clock", "FOLLOW ANOTHER CLOCK", "WHITE", 70, 4, g_electro_scene, G_CLOCK_IN);   /* electro */
+}
