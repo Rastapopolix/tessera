@@ -1440,8 +1440,7 @@ static void g_chillwave_scene(void)
     scale(9, SCL_MIN, 1);                               /* A MIN, QNT SNAP */
     sends(100, 75, 70, 45);
     tx(0, TX_QNT_LINK, 0);                              /* QNT link OWN: only track 1's QNT changes */
-    sound(0, ENGI_ORACLE, OR_KEYS);
-    trk[0].p[P_E0] = -28;
+    sound(0, ENGI_FM6, FX_DRAWBARS);                    /* (Theo: long notes: an organ holds at full while a key is down) */
     tx(0, TX_MODE, TESS_ENG_OFF);
     mixer(0, 100, 15, 0, 20);
     sound(1, ENGI_TRIO, TR_WARM_PAD);
@@ -1451,7 +1450,8 @@ static void g_chillwave_scene(void)
     mixer(1, 62, -25, 60, 0);
     sound(2, ENGI_TRIO, TR_SOFT_LEAD);
     trk[2].p[P_E5] = 72;
-    trk[2].p[P_ATK] = 0; trk[2].p[P_DEC] = 45; trk[2].p[P_SUS] = 0; trk[2].p[P_REL] = 35;
+    trk[2].p[P_ATK] = 0; trk[2].p[P_DEC] = 60; trk[2].p[P_SUS] = 110; trk[2].p[P_REL] = 70;   /* (long notes, Theo) */
+    trk[2].p[P_SGATE] = 120;
     trk[2].p[P_SDIV] = DIV_8;
     gen(2, TESS_ENG_EUCLID, 9);
     tx(2, TX_EUC_STEPS, 8); tx(2, TX_EUC_PULSES, 5); tx(2, TX_EUC_ROT, 0);
@@ -1459,7 +1459,7 @@ static void g_chillwave_scene(void)
     trk[2].p[P_LRATE] = 30;
     cord(0, CS_LFO, 2, CD_TW_SHIFT, 2, 48, 0, 0);       /* (Theo: enough to hear it clearly) */
     trk[2].p[P_MUTE] = 1;
-    mixer(2, 122, -20, 10, 45);
+    mixer(2, 96, -20, 10, 45);
     sound(3, ENGI_DRUM, DK_808_KIT);
     {
         static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_SD, 0, L_CH, L_BD, 0, L_BD, L_CH, 0, L_SD, 0, L_CH, L_CH};
@@ -1472,10 +1472,10 @@ static void g_chillwave_scene(void)
     g_solo_check();
 }
 #define G_RUN6(t, lb) \
-    {0, (t), 380, "C4", lb, 0}, {0, (t) + 400, 380, "D4", lb, 0}, {0, (t) + 800, 380, "E4", lb, 0}, \
-    {0, (t) + 1200, 380, "F4", lb, 0}, {0, (t) + 1600, 380, "G4", lb, 0}, {0, (t) + 2000, 1200, "A4", lb, 0}   /* (Theo: held longer) */
+    {0, (t), 600, "C4", lb, 0}, {0, (t) + 620, 600, "D4", lb, 0}, {0, (t) + 1240, 600, "E4", lb, 0}, \
+    {0, (t) + 1860, 600, "F4", lb, 0}, {0, (t) + 2480, 600, "G4", lb, 0}, {0, (t) + 3100, 1300, "A4", lb, 0}   /* (Theo: long notes) */
 static const gstep_t G_HARM[] = {
-    {0, 0, 0, 0, 0, "Track 2 plays chords. Track 1, soft keys, is ours to play"},
+    {0, 0, 0, 0, 0, "Track 2 plays chords. Track 1, an organ, is ours to play"},
     {3500, 0, 0, 0, 0, "Play the white keys up from C4: the scale"},
     G_RUN6(6200, "SCALE"),
     {10500, 0, 0, 0, 0, "Next: the same run, counted into the chords"},
