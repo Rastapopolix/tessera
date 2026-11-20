@@ -93,42 +93,29 @@ static const gstep_t G_STEMS[] = {
     {41000, 0, 0, 0, 0, "The stems are dry: add the reverb and delay in the computer"},
     {48000, 0, 0, 0, 0, "Back to STEREO for the mix as you hear it"},
 };
-/* nu-jazz: 100 BPM, D dorian; a soft lead line written in STEP as track 1, brushes-like 909 in STEP, a sub on TURING, a
- * flute holding long notes on EUCLID: the band a USB keyboard would play along with */
-static void g_nujazz_scene(void)
+/* lowercase ambient (Theo: unobtrusive ambient music in place of nu-jazz): 66 BPM, A major; a soft pad holding slow
+ * chords as track 1, a far marimba on AWAKE now and then, a low pedal A, no drums */
+static void g_lowercase_scene(void)
 {
-    song.g[G_BPM] = 100;
-    song.g[G_SWING] = 25;
-    scale(2, SCL_DOR, 0);
-    sends(90, 80, 70, 40);
-    sound(0, ENGI_TRIO, TR_SOFT_LEAD);                  /* (Theo: less plucky than the tine, and a written line) */
-    trk[0].p[P_E5] = 58;
-    {
-        static const uint8_t N[16] = {62, 0, 65, 69, 0, 67, 65, 0, 64, 0, 62, 60, 0, 0, 62, 0};
-        for (uint32_t i = 0; i < 16u; i++) if (N[i]) step_note(0, i, N[i], i % 4u ? 82 : 100);
-        trk[0].p[P_SLEN] = 16;
-    }
-    tx(0, TX_MODE, TESS_ENG_OFF); trk[0].p[P_SDIV] = DIV_8;
-    mixer(0, 110, -15, 45, 30);
-    sound(1, ENGI_DRUM, DK_909_KIT);
-    {
-        static const uint8_t L[16] = {L_BD, 0, L_CH, L_CH, L_RS, 0, L_CH, L_CH, 0, L_BD, L_CH, L_CH, L_RS, 0, L_CH, L_OH};
-        static const uint8_t V[16] = {90, 0, 52, 40, 70, 0, 52, 40, 0, 80, 52, 40, 72, 0, 54, 48};
-        for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
-        trk[1].p[P_SLEN] = 16;
-    }
-    tx(1, TX_MODE, TESS_ENG_OFF); trk[1].p[P_SDIV] = DIV_16;
-    mixer(1, 84, 10, 20, 0);
+    song.g[G_BPM] = 66;
+    scale(9, 1, 0);
+    sends(110, 80, 70, 45);
+    sound(0, ENGI_TRIO, TR_SOFT_PAD);
+    trk[0].p[P_CHRD] = 1;
+    gen(0, TESS_ENG_CHORD, 11);
+    tx(0, TX_CH_PROG, GEN_CH_TWO); tx(0, TX_CH_BARS, 4); tx(0, TX_CH_HIT, GEN_CH_HOLD); tx(0, TX_CH_OCT, -1);
+    mixer(0, 76, -15, 70, 0);
+    sound(1, ENGI_FM6, V_DX_MARIMBA);
+    trk[1].p[P_SDIV] = DIV_4;
+    gen(1, TESS_ENG_AWAKE, 5);
+    tx(1, TX_AWK_PROB, 35);
+    mixer(1, 112, 35, 85, 40);
     sound(2, ENGI_TRIO, TR_SUB_BASS);
-    trk[2].p[P_SDIV] = DIV_4;
-    gen(2, TESS_ENG_TURING, 33);
-    tx(2, TX_TUR_LEN, 8); tx(2, TX_TUR_PROB, 5); tx(2, TX_TW_SHIFT, -12);
-    mixer(2, 84, 0, 5, 0);
-    sound(3, ENGI_ORACLE, OR_FLUTE);
-    trk[3].p[P_SDIV] = DIV_2;
-    gen(3, TESS_ENG_EUCLID, 6);
-    tx(3, TX_EUC_STEPS, 8); tx(3, TX_EUC_PULSES, 3); tx(3, TX_EUC_ROT, 1);
-    mixer(3, 90, 30, 90, 50);
+    step_note(2, 0, 33, 80);
+    trk[2].p[P_SLEN] = 1; trk[2].p[P_SGATE] = 127;
+    tx(2, TX_MODE, TESS_ENG_OFF); trk[2].p[P_SDIV] = DIV_1;
+    mixer(2, 74, 0, 10, 0);
+    tx(3, TX_MODE, TESS_ENG_OFF);
     g_solo_check();
 }
 static const gstep_t G_USB_HOST[] = {
@@ -145,5 +132,5 @@ static void guide_ref_more(const char *out, FILE *tsv)
 {
     G_RUN("r-voices", "HOW MANY VOICES", "YELLOW", 56, 4, g_fourthworld_scene, G_VOICES);   /* fourth world */
     G_RUN("r-stems", "FOUR STEMS OVER USB", "YELLOW", 54, 4, g_italo_scene, G_STEMS);   /* italo disco */
-    G_RUN("r-usb-host", "USB HOST: NO COMPUTER", "WHITE", 54, 4, g_nujazz_scene, G_USB_HOST);   /* nu-jazz */
+    G_RUN("r-usb-host", "USB HOST: NO COMPUTER", "WHITE", 54, 4, g_lowercase_scene, G_USB_HOST);   /* lowercase ambient */
 }
