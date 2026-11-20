@@ -1472,8 +1472,8 @@ static void g_chillwave_scene(void)
     g_solo_check();
 }
 #define G_RUN6(t, lb) \
-    {0, (t), 250, "C4", lb, 0}, {0, (t) + 320, 250, "D4", lb, 0}, {0, (t) + 640, 250, "E4", lb, 0}, \
-    {0, (t) + 960, 250, "F4", lb, 0}, {0, (t) + 1280, 250, "G4", lb, 0}, {0, (t) + 1600, 600, "A4", lb, 0}
+    {0, (t), 380, "C4", lb, 0}, {0, (t) + 400, 380, "D4", lb, 0}, {0, (t) + 800, 380, "E4", lb, 0}, \
+    {0, (t) + 1200, 380, "F4", lb, 0}, {0, (t) + 1600, 380, "G4", lb, 0}, {0, (t) + 2000, 1200, "A4", lb, 0}   /* (Theo: held longer) */
 static const gstep_t G_HARM[] = {
     {0, 0, 0, 0, 0, "Track 2 plays chords. Track 1, soft keys, is ours to play"},
     {3500, 0, 0, 0, 0, "Play the white keys up from C4: the scale"},
