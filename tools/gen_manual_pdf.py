@@ -162,6 +162,7 @@ def page():
     md_text = SRC.read_text(encoding="utf-8")
     # the banner goes on the cover; the markdown's own copy of it is left out
     md_text = re.sub(r'^<p align="center"><img src="assets/brand/banner.png"[^\n]*</p>\n', "", md_text, count=1)
+    md_text = make_manual.videos(md_text, "text")      # the guided clips as a line of links, not thumbnails
     body, heads = convert(md_text)
     v = version()
     face = ('@font-face { font-family: "Tessera Mono"; src: url("data:font/woff;base64,'
