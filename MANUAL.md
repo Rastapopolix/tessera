@@ -963,9 +963,35 @@ register. The chord's kind and voicing are on the GEN sheet (and on SCL > CHORD)
 | GEN sheet | **Voicing** | CLOSE, OPEN, INV1, INV2 or +OCT. |
 | GEN sheet | **Breath** (0–100 %) | With HIT HOLD, the chord breathes: each voice is struck again, softer, on a slow cycle of its own (11 to 19 s), and the same chord again is tied over. BREATH is the chance a voice above the lowest sits a cycle out. 0 (OFF) is off. |
 | GEN sheet | **Length** (USER only, in Breath's place) | How many of USER's chords play, 1 to 8. |
+| GEN sheet | **Move when** | Which strikes of a BEAT, STEP or OFFBEAT chord move (below). OFF moves none. |
+| GEN sheet | **Move by** | How far they move (below). |
 
 **STRUM's steps.** The knob moves by 1 ms up to 10 (a flam), by 5 up to 60, then by 10. 100 ms and more is a slow
 roll that slow pads and strings let you hear.
+
+**Moving a strike (Move when, Move by).** A moved strike is home again on the next, so the push pulls back into
+the bar's first beat. HIT HOLD strikes once and never moves.
+
+| Move when | The strikes that move |
+|---|---|
+| **LAST** | The bar's last: with OFFBEAT, the and of 4 |
+| **LAST 2** | The bar's last two |
+| **ODD** | Every second strike, a rocking skank |
+| **CHANGE** | The last before the chord changes (with BARS 2 or 4, once a chord, not once a bar) |
+| **RAND** | One a bar, drawn from the track's SEED, so PLAY plays the same again |
+
+| Move by | What the strike plays |
+|---|---|
+| **-2 ST** to **+3 ST** | The whole shape moved by semitones, as up the frets: from Am, +1 is B♭m, +2 Bm, +3 Cm |
+| **+1 DEG**, **+2 DEG** | The chord one or two degrees up the scale, in key: in A minor, +2 turns Am into C; in A Phrygian, +1 turns it into B♭ |
+| **INV+**, **INV-** | The same chord turned over: the lowest note an octave up, or the highest an octave down |
+| **OCT+** | The same chord an octave up |
+| **TOP** | Only the top note, a degree up the scale (a sus-like push) |
+| **LEAD** | The next chord, a semitone below, leading into it |
+
+> **Try this: a pushed skank.** CHORD on a pad or ORACLE track, HIT **OFFBEAT**, a minor scale. On the GEN sheet set
+> **Move when** to LAST and **Move by** to +2 ST: the last skank of each bar steps up a whole step and drops back on
+> the one. For roots dub try +2 DEG (to the relative major); for a darker steppers feel, +1 ST.
 
 **Your own progression (USER):**
 
@@ -1163,6 +1189,7 @@ decide how far it may wander.
 ### The GEN layer and older firmware
 
 - Firmware from before STRUM plays CHORD's chords together.
+- Firmware from before Move when plays every strike at home.
 - 3.5-beta4 and beta5 took STRUM up to 60 ms only: they do not load a project with a longer STRUM.
 - A project saved with ANSWER's BEND (or with Time or Break set) needs firmware with BEND to open.
 
