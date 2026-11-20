@@ -21,11 +21,11 @@ static void g_afrobeat_scene(void)
     gen(1, TESS_ENG_EUCLID, 44);
     tx(1, TX_EUC_STEPS, 16); tx(1, TX_EUC_PULSES, 3); tx(1, TX_EUC_ROT, 3); tx(1, TX_TW_SHIFT, 12);
     mixer(1, 114, 60, 30, 35);
-    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    sound(2, ENGI_TRIO, TR_FAT_BASS);                   /* (Theo: the bass must be heard when LOGIC thins it: a fuller bass) */
     trk[2].p[P_SDIV] = DIV_16;
     gen(2, TESS_ENG_TURING, 8);
     tx(2, TX_TUR_PROB, 10); tx(2, TX_TW_SHIFT, -12);
-    mixer(2, 76, 0, 0, 0);
+    mixer(2, 110, 0, 0, 0);
     sound(3, ENGI_FM6, FX_ORGAN);
     trk[3].p[P_CHRD] = 1;
     gen(3, TESS_ENG_CHORD, 5);
