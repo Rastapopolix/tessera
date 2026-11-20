@@ -1,18 +1,57 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
 /* The plugin window on Linux (gui.h): an X11 child window of the host's. CLAP hosts run the plugin's GUI on their
- * own loop: the host's timer (timer-support) calls tick() ~30 times a second, which reads the X events and draws. */
+ * own loop: the host's timer (timer-support) calls tick() ~30 times a second, which reads the X events and draws.
+ * OPEN / SAVE under the keys ask zenity or kdialog for a file (whichever is installed), on a thread of their own so
+ * the host's window never waits; tick() opens or saves once the answer is in. */
 #include "gui.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/keysym.h>
 #include <clap/ext/timer-support.h>
 
+#include <cstdio>
 #include <cstdlib>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <thread>
 #include <vector>
 
 namespace
 {
+// a file dialog's answer, shared with its thread (which may outlive the window)
+struct Ask
+{
+    std::mutex lock;
+    bool done = false;
+    int req = 0;
+    std::string path, err;
+};
+
+bool have(const char *prog)
+{
+    std::string c = std::string("command -v ") + prog + " >/dev/null 2>&1";
+    return std::system(c.c_str()) == 0;
+}
+
+// the dialog's command line; name: a file name made by projfile (letters, digits, spaces, - _ .), quoted
+std::string dialog_command(int req, const std::string &name)
+{
+    std::string q = "'" + name + "'";
+    if (have("zenity"))
+        return req == Panel::FILE_OPEN
+                   ? "zenity --file-selection --title='Open a Tessera project' "
+                     "--file-filter='Tessera project or FM-1 backup | *.tsp *.json' 2>/dev/null"
+                   : "zenity --file-selection --save --confirm-overwrite --title='Save the Tessera project' --filename=" + q +
+                         " 2>/dev/null";
+    if (have("kdialog"))
+        return req == Panel::FILE_OPEN ? "kdialog --getopenfilename . '*.tsp *.json' 2>/dev/null"
+                                       : "kdialog --getsavefilename " + q + " '*.tsp' 2>/dev/null";
+    return "";
+}
+
 class GuiX11 : public Gui
 {
   public:
@@ -27,7 +66,8 @@ class GuiX11 : public Gui
     std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
     tess_view_t view{};
 
-    explicit GuiX11(const clap_host_t *h) : host(h) {}
+    GuiX11(const clap_host_t *h, GuiLink *l) : host(h), link(l) {}
+    GuiLink *link;   // this window's instance
     ~GuiX11() override
     {
         if (timers && timer != CLAP_INVALID_ID)
@@ -51,7 +91,8 @@ class GuiX11 : public Gui
             return false;
         int scr = DefaultScreen(dpy);
         wnd = XCreateSimpleWindow(dpy, (Window)w->x11, 0, 0, Panel::W, Panel::H, 0, 0, BlackPixel(dpy, scr));
-        XSelectInput(dpy, wnd, ExposureMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
+        XSelectInput(dpy, wnd, ExposureMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | KeyPressMask |
+                                   KeyReleaseMask | FocusChangeMask);
         gc = XCreateGC(dpy, wnd, 0, nullptr);
         Visual *vis = DefaultVisual(dpy, scr);
         img = XCreateImage(dpy, vis, DefaultDepth(dpy, scr), ZPixmap, 0, reinterpret_cast<char *>(px.data()),
@@ -76,10 +117,57 @@ class GuiX11 : public Gui
         XFlush(dpy);
         return true;
     }
+    std::shared_ptr<Ask> ask;   // a file dialog open, or none
+
+    // OPEN or SAVE clicked: its dialog on a thread; tick() takes the answer
+    void files()
+    {
+        if (ask)
+        {
+            std::lock_guard<std::mutex> g(ask->lock);
+            if (ask->done)
+            {
+                if (!ask->err.empty())
+                    panel.note(ask->err);
+                else if (!ask->path.empty())
+                    panel.note(ask->req == Panel::FILE_OPEN ? link->open_file(ask->path) : link->save_file(ask->path));
+                ask.reset();
+            }
+            return;
+        }
+        int req = panel.take_file_request();
+        if (req == Panel::FILE_NONE)
+            return;
+        std::string cmd = dialog_command(req, req == Panel::FILE_SAVE ? link->file_name() : std::string());
+        if (cmd.empty())
+        {
+            panel.note("NO FILE DIALOG: INSTALL ZENITY OR KDIALOG");
+            return;
+        }
+        ask = std::make_shared<Ask>();
+        ask->req = req;
+        std::thread([a = ask, cmd] {
+            std::string out;
+            if (FILE *f = popen(cmd.c_str(), "r"))
+            {
+                char buf[4096];
+                while (fgets(buf, sizeof buf, f))
+                    out += buf;
+                pclose(f);
+            }
+            while (!out.empty() && (out.back() == '\n' || out.back() == '\r'))
+                out.pop_back();
+            std::lock_guard<std::mutex> g(a->lock);
+            a->path = out;   // (empty: cancelled)
+            a->done = true;
+        }).detach();
+    }
+
     void tick() override
     {
         if (!dpy)
             return;
+        files();
         bool changed = false;
         while (XPending(dpy))
         {
@@ -88,6 +176,7 @@ class GuiX11 : public Gui
             switch (e.type)
             {
             case ButtonPress:
+                XSetInputFocus(dpy, wnd, RevertToParent, CurrentTime);   // (the keyboard, once clicked)
                 if (e.xbutton.button == Button1)
                     changed |= panel.down(e.xbutton.x, e.xbutton.y);
                 else if (e.xbutton.button == Button4 || e.xbutton.button == Button5)
@@ -100,13 +189,35 @@ class GuiX11 : public Gui
             case MotionNotify:
                 changed |= panel.move(e.xmotion.x, e.xmotion.y);
                 break;
+            case KeyPress:
+            case KeyRelease:
+            {
+                // the computer keyboard (panel.h key): X's keycode - 8 is the PC scan code for the main keys
+                if (e.xkey.state & (ControlMask | Mod1Mask))
+                    break;   // (the host's)
+                if (e.type == KeyRelease && XEventsQueued(dpy, QueuedAfterReading))
+                {
+                    XEvent nx;
+                    XPeekEvent(dpy, &nx);
+                    if (nx.type == KeyPress && nx.xkey.keycode == e.xkey.keycode && nx.xkey.time == e.xkey.time)
+                        break;   // (auto-repeat: a release and a press at once; the key is still held)
+                }
+                KeySym ks = XLookupKeysym(&e.xkey, 0);
+                int code = ks == XK_Up ? Panel::KEY_UP : ks == XK_Down ? Panel::KEY_DOWN : ks == XK_Left ? Panel::KEY_LEFT
+                         : ks == XK_Right ? Panel::KEY_RIGHT : (int)e.xkey.keycode - 8;
+                changed |= panel.key(code, e.type == KeyPress);
+                break;
+            }
+            case FocusOut:
+                changed |= panel.release_keys();
+                break;
             default:
                 break;
             }
         }
         if (changed)
-            tess_gui_input(panel.input);
-        tess_gui_view(view);
+            link->input(panel.input);
+        link->view(view);
         panel.draw(px.data(), view);
         XPutImage(dpy, wnd, gc, img, 0, 0, 0, 0, Panel::W, Panel::H);
         XFlush(dpy);
@@ -115,4 +226,4 @@ class GuiX11 : public Gui
 }   // namespace
 
 const char *Gui::api() { return CLAP_WINDOW_API_X11; }
-std::unique_ptr<Gui> Gui::make(const clap_host_t *host) { return std::make_unique<GuiX11>(host); }
+std::unique_ptr<Gui> Gui::make(const clap_host_t *host, GuiLink *link) { return std::make_unique<GuiX11>(host, link); }

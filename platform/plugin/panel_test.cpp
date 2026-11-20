@@ -135,6 +135,39 @@ int main(int argc, char **argv)
     std::printf("key: energy %.4f stopped, %.4f with the key held; keys held %#x\n", quiet, loud, p.input.keys);
     CHECK(loud > quiet * 4 + 1e-4, "a key held should sound");
 
+    // the computer keyboard, as the web simulator maps it: Z the first white key, 1 FX, a held key and a mouse hold
+    // apart, up arrow SELECT; repeats and other keys ignored
+    CHECK(p.key(0x2C, true) && (p.input.keys & 1u) && !p.key(0x2C, true), "Z holds the first key (a repeat: no change)");
+    CHECK(p.key(0x02, true) && (p.input.buttons & 1u), "1 holds FX");
+    p.down(36 + 12 + (int)(7.5 * ((928 - 24) / 16)), 332 + 192);   // (the mouse holds C4 meanwhile)
+    uint32_t c4 = p.input.keys & ~1u;
+    CHECK(p.key(0x2C, false) && !(p.input.keys & 1u) && (p.input.keys & c4) == c4 && c4, "Z let go; the mouse's key still held");
+    p.up(0, 0);
+    CHECK(p.key(0x02, false) && !(p.input.buttons & 1u), "1 let go: FX up");
+    p.input.enc[0] = 0;
+    CHECK(p.key(Panel::KEY_UP, true) && p.input.enc[0] == 1, "up arrow turns SELECT");
+    p.input.enc[0] = 0;
+    CHECK(!p.key(0x39, true), "space: not a panel key");
+    CHECK(p.key(0x10, true) && p.release_keys() && !p.input.keys, "focus lost: every key up");
+
+    // OPEN and SAVE under the keys: a click asks once (the window answers with its dialog), the outcome is shown
+    CHECK(p.take_file_request() == Panel::FILE_NONE, "no file asked for yet");
+    p.down(60 + 36, 588 + 5 + 12);
+    p.up(60 + 36, 588 + 5 + 12);
+    CHECK(p.take_file_request() == Panel::FILE_OPEN && p.take_file_request() == Panel::FILE_NONE, "OPEN asks once");
+    p.down(142 + 36, 588 + 5 + 12);
+    p.up(142 + 36, 588 + 5 + 12);
+    CHECK(p.take_file_request() == Panel::FILE_SAVE, "SAVE asks");
+    std::vector<uint32_t> before_note = px;
+    p.draw(before_note.data(), v);
+    p.note("Saved Undertow");
+    p.draw(px.data(), v);
+    if (!out.empty()) ppm(out + "/06_note.ppm", px);
+    int differ = 0;
+    for (int y = 588; y < Panel::H; y++)
+        for (int x = 230; x < 700; x++) differ += px[y * Panel::W + x] != before_note[y * Panel::W + x];
+    CHECK(differ > 100, "the note is drawn beside the buttons (%d pixels)", differ);
+
     std::printf(fails ? "panel test: %d FAILED\n" : "panel test: ok\n", fails);
     return fails ? 1 : 0;
 }

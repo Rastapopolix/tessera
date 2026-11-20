@@ -130,6 +130,16 @@ Panel::Panel()
         keys.push_back({x0 + 12 + (int)((i + 0.5) * pitch), y0 + h * 3 / 4, WHITE_K[i]});
     for (int j = 0; j < 11; j++)
         keys.push_back({x0 + 12 + (BLACK_AFTER[j] + 1) * pitch, y0 + h / 4, BLACK_K[j]});
+    files.push_back({60, KEYBED[1] + KEYBED[3] + 5, 72, 24, FILE_OPEN, "OPEN"});   // (in the shell, under the keys)
+    files.push_back({142, KEYBED[1] + KEYBED[3] + 5, 72, 24, FILE_SAVE, "SAVE"});
+}
+
+void Panel::note(const std::string &text)
+{
+    note_text.clear();
+    for (char ch : text)   // (the Mono face: capitals)
+        note_text += ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
+    note_frames = 150;     // (5 s at the window's 30 frames a second)
 }
 
 void Panel::draw(uint32_t *px, const tess_view_t &v)
@@ -139,7 +149,6 @@ void Panel::draw(uint32_t *px, const tess_view_t &v)
     knobs[0].angle = -135 + 270.0 * (input.master >= 0 ? input.master : master_now) / 1023;
     static const double kPi = 3.14159265358979;
     // the breathing LEDs: dark .. lit and back in ~1.13 s (fm1_led_breath)
-    static uint32_t frame = 0;
     double breath = 0.5 - 0.5 * std::cos(2 * kPi * (frame++ / 30.0) / 1.13);
     for (int i = 0; i < W * H; i++)
         px[i] = 0xFF101011;
@@ -208,6 +217,23 @@ void Panel::draw(uint32_t *px, const tess_view_t &v)
         else if (v.dim_keys & bit) s = mix(SLIT, 0xFFFFFFFF, 0.08);
         c.rrect(k.cx - sw / 2.0, y + kw * 0.4 + dy, sw, kh - kw * 0.8, sw / 2.0, s);
     }
+
+    // the project files: OPEN, SAVE, and what the last one did
+    for (size_t i = 0; i < files.size(); i++)
+    {
+        const FileButton &f = files[i];
+        int dy = file_held == (int)i ? 1 : 0;
+        c.rrect(f.x, f.y + dy, f.w, f.h, 6, EDGE);
+        c.rrect(f.x + 1.5, f.y + 1.5 + dy, f.w - 3, f.h - 3, 5, BTN);
+        c.text(f.x + f.w / 2, f.y + f.h / 2 - 7 + dy, f.face, 2, BTN_INK);
+    }
+    if (note_frames > 0)
+    {
+        note_frames--;
+        const FileButton &last = files.back();
+        int x = last.x + last.w + 16;
+        c.text(x + Canvas::text_w(note_text.c_str(), 2) / 2, last.y + last.h / 2 - 7, note_text.c_str(), 2, LABEL);
+    }
 }
 
 // ---- the mouse
@@ -232,6 +258,53 @@ int Panel::key_at(int x, int y) const
         if (std::abs(x - keys[i].cx) <= pitch / 2 && std::abs(y - keys[i].cy) <= KEYBED[3] * 24 / 100)
             return (int)i;
     return -1;
+}
+
+void Panel::merge_held()
+{
+    input.keys = mouse_keys | kbd_keys;
+    input.buttons = mouse_buttons | kbd_buttons;
+    input.changed = true;
+}
+
+// web/sim/index.html KEYMAP: F3..A#4 on the Z (white) and A (black) rows, B4..G5 on Q..O in semitones, the twelve
+// buttons on the number row in the panel's order, [ ] OCT
+bool Panel::key(int code, bool down)
+{
+    static const int WHITE_SC[10] = {0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35};   // Z X C V B N M , . /
+    static const int BLACK_SC[8][2] = {{0x1F, 1}, {0x20, 3}, {0x21, 5}, {0x23, 8}, {0x24, 10}, {0x26, 13}, {0x27, 15}, {0x28, 17}};
+    static const int TOP_SC[9] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18};             // Q W E R T Y U I O
+    static const int BTN_SC[12] = {0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D};   // 1 .. 0 - =
+    static const int BTN_BIT[12] = {B_FX, B_SCL, B_ENV, B_LFO, B_EDIT, B_GLO, B_HOME, B_SAVE, B_ARP, B_SEQ, B_PLAY, B_REC};
+    int k = -1, b = -1;
+    for (int i = 0; i < 10; i++) if (code == WHITE_SC[i]) k = WHITE_K[i];
+    for (int i = 0; i < 8; i++) if (code == BLACK_SC[i][0]) k = BLACK_SC[i][1];
+    for (int i = 0; i < 9; i++) if (code == TOP_SC[i]) k = 18 + i;
+    for (int i = 0; i < 12; i++) if (code == BTN_SC[i]) b = BTN_BIT[i];
+    if (code == 0x1A) b = B_OCTDN;
+    if (code == 0x1B) b = B_OCTUP;
+    if (code == KEY_UP || code == KEY_DOWN || code == KEY_LEFT || code == KEY_RIGHT)
+    {
+        if (!down) return false;
+        int role = code == KEY_UP || code == KEY_DOWN ? 0 : 1;   // SELECT, ALGORITHM
+        for (size_t i = 0; i < knobs.size(); i++)
+            if (knobs[i].role == role) turn((int)i, code == KEY_UP || code == KEY_RIGHT ? 1 : -1);
+        return true;
+    }
+    uint32_t was_k = kbd_keys, was_b = kbd_buttons;
+    if (k >= 0) kbd_keys = down ? kbd_keys | 1u << k : kbd_keys & ~(1u << k);
+    if (b >= 0) kbd_buttons = down ? kbd_buttons | 1u << b : kbd_buttons & ~(1u << b);
+    if (kbd_keys == was_k && kbd_buttons == was_b) return false;   // (not ours, or a key's repeat)
+    merge_held();
+    return true;
+}
+
+bool Panel::release_keys()
+{
+    if (!kbd_keys && !kbd_buttons) return false;
+    kbd_keys = kbd_buttons = 0;
+    merge_held();
+    return true;
 }
 
 void Panel::turn(int i, int n)
@@ -260,16 +333,24 @@ bool Panel::down(int x, int y)
     if ((drag_i = button_at(x, y)) >= 0)
     {
         drag = BUTTON;
-        input.buttons |= 1u << buttons[drag_i].bit;
-        return input.changed = true;
+        mouse_buttons |= 1u << buttons[drag_i].bit;
+        merge_held();
+        return true;
     }
     if ((drag_i = key_at(x, y)) >= 0)
     {
         drag = KEY;
-        input.keys |= 1u << keys[drag_i].k;
-        return input.changed = true;
+        mouse_keys |= 1u << keys[drag_i].k;
+        merge_held();
+        return true;
     }
     drag = NONE;
+    for (size_t i = 0; i < files.size(); i++)
+        if (x >= files[i].x && x < files[i].x + files[i].w && y >= files[i].y && y < files[i].y + files[i].h)
+        {
+            file_held = (int)i;
+            file_req = files[i].action;
+        }
     return false;
 }
 
@@ -289,9 +370,10 @@ bool Panel::move(int x, int y)
         int k = key_at(x, y);
         if (k >= 0 && k != drag_i)
         {
-            input.keys = (input.keys & ~(1u << keys[drag_i].k)) | 1u << keys[k].k;
+            mouse_keys = (mouse_keys & ~(1u << keys[drag_i].k)) | 1u << keys[k].k;
             drag_i = k;
-            return input.changed = true;
+            merge_held();
+            return true;
         }
     }
     return false;
@@ -300,9 +382,10 @@ bool Panel::move(int x, int y)
 bool Panel::up(int, int)
 {
     bool ch = false;
-    if (drag == BUTTON) { input.buttons &= ~(1u << buttons[drag_i].bit); ch = input.changed = true; }
-    if (drag == KEY) { input.keys &= ~(1u << keys[drag_i].k); ch = input.changed = true; }
+    if (drag == BUTTON) { mouse_buttons &= ~(1u << buttons[drag_i].bit); merge_held(); ch = true; }
+    if (drag == KEY) { mouse_keys &= ~(1u << keys[drag_i].k); merge_held(); ch = true; }
     drag = NONE;
+    file_held = -1;
     return ch;
 }
 

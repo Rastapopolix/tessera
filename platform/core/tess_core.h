@@ -91,6 +91,9 @@ typedef struct {
     const char *name;                /* "TURING LEN", "LFO RATE" */
     int32_t min, max, def;
     uint32_t per_track;              /* 1: one value per track */
+    uint32_t settable;               /* 1: tess_core_param_set sets it (0: a device setting, or no range) */
+    int32_t span_min, span_max;      /* the widest range it can have: an engine's knob over every engine (ENGINE 1..8
+                                      * change range with the track's engine), else min..max */
 } tess_param_t;
 /* the n-th parameter in ID order (n < tess_core_param_count): its ID; info filled. PID 0xFFFF past the end */
 uint32_t tess_core_param_count(void);
@@ -100,6 +103,9 @@ uint32_t tess_core_param_info(uint32_t pid, uint32_t track, tess_param_t *info);
 int32_t tess_core_param_get(uint32_t pid, uint32_t track);
 /* the stored value, clamped, as a project load sets it: 0 not settable (an action, a device setting) */
 uint32_t tess_core_param_set(uint32_t pid, uint32_t track, int32_t v);
+/* the value v as the FM-1's screen shows it ("SAW", "1/16", "250ms", "42%"), into out (cap bytes, terminated): its
+ * length, 0 if pid is not a parameter */
+uint32_t tess_core_param_text(uint32_t pid, uint32_t track, int32_t v, char *out, uint32_t cap);
 
 /* ---- a DAW's transport (a build with TESS_HOST_CLOCK). Each host block while the DAW plays, before its audio, and
  * once when it stops. playing: its PLAY; bpm: its tempo; beats: its position at the block's start (quarter notes

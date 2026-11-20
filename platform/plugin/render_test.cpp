@@ -144,7 +144,14 @@ int main(int argc, char **argv)
     CHECK(p && p->init(p), "create + init");
     if (fails)
         return 1;
-    CHECK(fac->create_plugin(fac, &host, id) == nullptr, "a second instance must be refused");
+    // several instances: each its own copy of the core (core_copies.h), 8 at once, the 9th refused
+    std::vector<const clap_plugin_t *> more;
+    for (const clap_plugin_t *q; more.size() < 32 && (q = fac->create_plugin(fac, &host, id));)
+        more.push_back(q);
+    std::printf("instances: %zu at once\n", 1 + more.size());
+    CHECK(more.size() == 7, "8 instances at once, the 9th refused (%zu)", 1 + more.size());
+    const clap_plugin_t *q = more.empty() ? nullptr : more[0];
+    CHECK(q && q->init(q) && q->activate(q, rate, block, block) && q->start_processing(q), "a second instance starts");
     CHECK(p->activate(p, rate, block, block), "activate");
     CHECK(p->start_processing(p), "start_processing");
 
@@ -190,6 +197,38 @@ int main(int argc, char **argv)
         if (fails)
             break;
     }
+    if (q)   // the second instance, stopped, beside the first playing: silent, and the first goes on sounding
+    {
+        std::vector<float> qL(block), qR(block);
+        float *qch[2] = {qL.data(), qR.data()};
+        clap_audio_buffer_t qout = {};
+        qout.data32 = qch;
+        qout.channel_count = 2;
+        clap_event_transport_t qtr = tr;
+        qtr.flags = CLAP_TRANSPORT_HAS_TEMPO;   // (stopped)
+        Events qev;
+        clap_input_events_t qin = {&qev, Events::size, Events::get};
+        clap_process_t qp = proc;
+        qp.transport = &qtr;
+        qp.audio_outputs = &qout;
+        qp.in_events = &qin;
+        qp.out_events = nullptr;
+        double eq = 0, ep = 0;
+        for (int b = 0; b < 100; b++)
+        {
+            CHECK(q->process(q, &qp) == CLAP_PROCESS_CONTINUE, "second instance process");
+            p->process(p, &proc);
+            for (uint32_t k = 0; k < block; k++)
+                eq += (double)qL[k] * qL[k] + (double)qR[k] * qR[k], ep += (double)L[k] * L[k] + (double)R[k] * R[k];
+        }
+        std::printf("two instances: energy %.4f playing, %.6f stopped\n", ep, eq);
+        CHECK(ep > 1e-3 && eq < 1e-9, "the second instance, stopped, is silent while the first plays");
+        q->stop_processing(q);
+        q->deactivate(q);
+    }
+    for (auto *x : more)
+        x->destroy(x);
+
     double rms = std::sqrt(sum2 / (2.0 * (blocks - blocks / 4) * block));
     std::printf("STILL TIDE at %u Hz, %.1f s: rms %.4f, peak %.4f\n", rate, seconds, rms, peak);
     CHECK(rms > 0.002, "STILL TIDE should be audible (rms %.5f)", rms);
@@ -274,14 +313,34 @@ int main(int argc, char **argv)
         proc.audio_outputs_count = 1;
     }
 
-    // parameters: MASTER + MACRO 1..4; an automation event sets MACRO 2
+    // parameters: MASTER + MACRO 1..4 (ids 0..4, as before), then every project setting by central ID; an automation
+    // event sets MACRO 2, another T1 LEVEL; values read as the FM-1 shows them, and back
     auto *pa = (const clap_plugin_params_t *)p->get_extension(p, CLAP_EXT_PARAMS);
-    CHECK(pa && pa->count(p) == 5, "5 parameters");
-    if (pa && pa->count(p) == 5)
+    uint32_t np = pa ? pa->count(p) : 0;
+    CHECK(np > 500, "the project's settings as parameters (%u)", np);
+    if (pa && np > 5)
     {
         clap_param_info_t info;
+        bool order = true;
+        clap_id last = 0;
+        int level = -1, plen = -1;
+        for (uint32_t i = 0; i < np; i++)
+        {
+            pa->get_info(p, i, &info);
+            order &= i == 0 || info.id > last;
+            last = info.id;
+            if (!std::strcmp(info.name, "T1 LEVEL")) level = (int)i;
+            if (!std::strcmp(info.name, "T2 PATTERN LENGTH")) plen = (int)i;
+        }
+        CHECK(order, "parameter ids unique, in order");
+        for (uint32_t i = 0; i < 5; i++)
+        {
+            pa->get_info(p, i, &info);
+            CHECK(info.id == i, "parameter %u keeps id %u", i, i);
+        }
         pa->get_info(p, 2, &info);
         CHECK(!std::strcmp(info.name, "MACRO 2") && (info.flags & CLAP_PARAM_IS_AUTOMATABLE), "MACRO 2 automatable");
+        CHECK(level >= 0 && plen >= 0, "T1 LEVEL and T2 PATTERN LENGTH are parameters");
         struct PEvents
         {
             clap_event_param_value_t e;
@@ -303,8 +362,30 @@ int main(int argc, char **argv)
         pa->get_value(p, 2, &v);
         char txt[64];
         pa->value_to_text(p, 0, 1023, txt, sizeof txt);
-        std::printf("params: MACRO 2 = %.0f after automation; MASTER 1023 reads \"%s\"\n", v, txt);
+        std::printf("params: %u; MACRO 2 = %.0f after automation; MASTER 1023 reads \"%s\"\n", np, v, txt);
         CHECK(v == 73, "MACRO 2 should be 73 (%.0f)", v);
+        if (level >= 0 && plen >= 0)
+        {
+            clap_param_info_t li, pi;
+            pa->get_info(p, (uint32_t)level, &li);
+            pa->get_info(p, (uint32_t)plen, &pi);
+            pe.e.param_id = li.id;
+            pe.e.value = 100;
+            proc.in_events = &pin;
+            p->process(p, &proc);
+            proc.in_events = &in;
+            double lv = -1, back = -1, len = -1;
+            pa->get_value(p, li.id, &lv);
+            char lt[64], pt[64];
+            pa->value_to_text(p, li.id, lv, lt, sizeof lt);
+            pa->value_to_text(p, pi.id, 32, pt, sizeof pt);
+            pa->text_to_value(p, pi.id, pt, &len);
+            pa->text_to_value(p, li.id, lt, &back);
+            std::printf("params: T1 LEVEL = %.0f \"%s\" (module %s); T2 PATTERN LENGTH 32 reads \"%s\", back %.0f\n", lv, lt,
+                        li.module, pt, len);
+            CHECK(lv == 100 && back == 100, "T1 LEVEL automated to 100, its text back to 100 (%.0f, %.0f)", lv, back);
+            CHECK(len == 32, "T2 PATTERN LENGTH's text back to 32 (%.0f)", len);
+        }
     }
 
     // state: a .tsp record that loads back
