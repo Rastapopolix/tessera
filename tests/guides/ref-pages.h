@@ -121,7 +121,8 @@ static void g_filterhouse_scene(void)
     sends(70, 55, 60, 45);
     sound(0, ENGI_TRIO, TR_STRING_MACH);
     trk[0].p[P_E5] = 44;
-    trk[0].p[P_CHRD] = 1;
+    trk[0].p[P_LTRIG] = 1;                              /* (FREE: with NOTE each short chord met the wave at its start, and SQR */
+    trk[0].p[P_CHRD] = 1;                               /* and S&H never changed; Theo) */
     gen(0, TESS_ENG_CHORD, 21);
     tx(0, TX_CH_PROG, GEN_CH_TWO); tx(0, TX_CH_BARS, 2); tx(0, TX_CH_HIT, GEN_CH_OFF);
     mixer(0, 120, 0, 30, 20);
@@ -163,7 +164,8 @@ static const gstep_t G_LFO[] = {
     {0, 69000, 600, "KNOB 2", "SIN", 0, -4},
     {70000, 72000, 600, "SELECT", "LFO 2", "LFO 2: KNOB 1, SYNC ties it to the tempo. 1/4: a cycle a beat", 1},
     {0, 74000, 1500, "KNOB 1", "1/4", 0, 9},
-    {81000, 83000, 600, "KNOB 2", "FREE", "KNOB 2, TRIG: NOTE starts the wave again on each note, FREE lets it run", 1},
+    {81000, 83000, 600, "KNOB 2", "NOTE", "KNOB 2, TRIG: FREE lets the wave run. NOTE starts it again on each note", -1},
+    {0, 87000, 600, "KNOB 2", "FREE", 0, 1},
     {89000, 91000, 600, "KNOB 3", "UNI", "KNOB 3, POL: BI swings both ways, UNI only up from where the setting is", 1},
     {97000, 99000, 600, "ALGORITHM", "TRACK 4", "Turn ALGORITHM to track 4, the lead: its own LFO", 3},
     {103000, 105000, 600, "SELECT", "LFO DEST", "Its LFO DEST: KNOB 1, PIT, a little: a vibrato", 2},
