@@ -130,6 +130,16 @@ Panel::Panel()
         keys.push_back({x0 + 12 + (int)((i + 0.5) * pitch), y0 + h * 3 / 4, WHITE_K[i]});
     for (int j = 0; j < 11; j++)
         keys.push_back({x0 + 12 + (BLACK_AFTER[j] + 1) * pitch, y0 + h / 4, BLACK_K[j]});
+    files.push_back({60, KEYBED[1] + KEYBED[3] + 5, 72, 24, FILE_OPEN, "OPEN"});   // (in the shell, under the keys)
+    files.push_back({142, KEYBED[1] + KEYBED[3] + 5, 72, 24, FILE_SAVE, "SAVE"});
+}
+
+void Panel::note(const std::string &text)
+{
+    note_text.clear();
+    for (char ch : text)   // (the Mono face: capitals)
+        note_text += ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
+    note_frames = 150;     // (5 s at the window's 30 frames a second)
 }
 
 void Panel::draw(uint32_t *px, const tess_view_t &v)
@@ -207,6 +217,23 @@ void Panel::draw(uint32_t *px, const tess_view_t &v)
         else if (v.dim_keys & bit) s = mix(SLIT, 0xFFFFFFFF, 0.08);
         c.rrect(k.cx - sw / 2.0, y + kw * 0.4 + dy, sw, kh - kw * 0.8, sw / 2.0, s);
     }
+
+    // the project files: OPEN, SAVE, and what the last one did
+    for (size_t i = 0; i < files.size(); i++)
+    {
+        const FileButton &f = files[i];
+        int dy = file_held == (int)i ? 1 : 0;
+        c.rrect(f.x, f.y + dy, f.w, f.h, 6, EDGE);
+        c.rrect(f.x + 1.5, f.y + 1.5 + dy, f.w - 3, f.h - 3, 5, BTN);
+        c.text(f.x + f.w / 2, f.y + f.h / 2 - 7 + dy, f.face, 2, BTN_INK);
+    }
+    if (note_frames > 0)
+    {
+        note_frames--;
+        const FileButton &last = files.back();
+        int x = last.x + last.w + 16;
+        c.text(x + Canvas::text_w(note_text.c_str(), 2) / 2, last.y + last.h / 2 - 7, note_text.c_str(), 2, LABEL);
+    }
 }
 
 // ---- the mouse
@@ -269,6 +296,12 @@ bool Panel::down(int x, int y)
         return input.changed = true;
     }
     drag = NONE;
+    for (size_t i = 0; i < files.size(); i++)
+        if (x >= files[i].x && x < files[i].x + files[i].w && y >= files[i].y && y < files[i].y + files[i].h)
+        {
+            file_held = (int)i;
+            file_req = files[i].action;
+        }
     return false;
 }
 
@@ -302,6 +335,7 @@ bool Panel::up(int, int)
     if (drag == BUTTON) { input.buttons &= ~(1u << buttons[drag_i].bit); ch = input.changed = true; }
     if (drag == KEY) { input.keys &= ~(1u << keys[drag_i].k); ch = input.changed = true; }
     drag = NONE;
+    file_held = -1;
     return ch;
 }
 

@@ -13,6 +13,11 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
 - **MIDI in:** notes and MIDI messages reach Tessera as USB MIDI does on the FM-1, at their exact sample.
 - **Saving:** the plugin's state in the DAW project is the Tessera project as a `.tsp` record, the same bytes SAVE >
   PROJECT writes on the FM-1.
+- **Project files:** OPEN and SAVE, under the keys, open a `.tsp` (the editor's "project file", the demos in
+  `demos/`) or an **FM-1 backup** (`.json` from the backup page or the Hub: its slots A..D go into the plugin's
+  slots, then the music it was playing loads), and save the project as `.tsp` under its name, for the FM-1's editor or
+  another Tessera. On Windows the system's dialogs (a file dropped on the window opens too); on Linux zenity or
+  kdialog, whichever is installed. The DAW is told its saved state changed. Not on macOS yet (no window).
 - **The window** (Windows and Linux): the FM-1 as the web simulator draws it, black shell. The screen at 1:1;
   click the buttons and keys (drag across the keys to glide); drag a knob up/down or left/right, or use the mouse
   wheel over it. The LEDs light, dim and breathe as on the device. The window talks to the core through the audio

@@ -48,6 +48,8 @@ jobs:
         run: build/plugin/tessera-sync-test
       - name: Copies test (several instances)
         run: build/plugin/tessera-copies-test
+      - name: Project files test (.tsp, FM-1 backups)
+        run: build/plugin/tessera-projfile-test
       - name: Render test (with the window, on a virtual display)
         run: xvfb-run -s "-screen 0 1280x800x24" build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
       - uses: actions/upload-artifact@v4
@@ -82,6 +84,7 @@ jobs:
           build/plugin/Release/tessera-panel-test.exe
           build/plugin/Release/tessera-sync-test.exe
           build/plugin/Release/tessera-copies-test.exe
+          build/plugin/Release/tessera-projfile-test.exe
       - name: List the outputs
         shell: bash
         run: find build/plugin/out -maxdepth 3 | sort

@@ -6,6 +6,7 @@
 #include <clap/clap.h>
 
 #include <memory>
+#include <string>
 
 #include "panel.h"
 
@@ -15,6 +16,11 @@ struct GuiLink
     virtual ~GuiLink() = default;
     virtual void view(tess_view_t &v) = 0;
     virtual void input(PanelInput &in) = 0;
+    /* the project files (on the host's main thread), each returning what to show under the keys: open a .tsp or an
+     * FM-1 backup (its music playing, its slots A..D); save the project as a .tsp; the name to offer for that */
+    virtual std::string open_file(const std::string &path_utf8) = 0;
+    virtual std::string save_file(const std::string &path_utf8) = 0;
+    virtual std::string file_name() = 0;
 };
 
 class Gui

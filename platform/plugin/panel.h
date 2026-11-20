@@ -5,6 +5,7 @@
  * Platform-independent: gui_win32.cpp / gui_x11.cpp give it pixels and the mouse. Not thread-safe: the GUI thread only. */
 #pragma once
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include "tess_core.h"
@@ -31,11 +32,21 @@ class Panel
     bool up(int x, int y);
     bool wheel(int x, int y, int notches);
     PanelInput input;
+    /* the project-file buttons under the keys: OPEN (a .tsp or an FM-1 backup) and SAVE (a .tsp). A click asks; the
+     * window takes the ask (1 OPEN, 2 SAVE, 0 none) and shows the outcome with note() for a few seconds */
+    enum { FILE_NONE, FILE_OPEN, FILE_SAVE };
+    int take_file_request() { int r = file_req; file_req = FILE_NONE; return r; }
+    void note(const std::string &text);
 
   private:
     struct Knob { int x, y, r; const char *name; int role; double angle; };   // role -1: MASTER
     struct Button { int x, y, w, h, bit; const char *face, *sub; };
     struct Key { int cx, cy, k; };
+    struct FileButton { int x, y, w, h, action; const char *face; };
+    std::vector<FileButton> files;
+    int file_req = FILE_NONE, file_held = -1;
+    std::string note_text;
+    int note_frames = 0;
     std::vector<Knob> knobs;
     std::vector<Button> buttons;
     std::vector<Key> keys;

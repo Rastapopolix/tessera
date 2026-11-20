@@ -10,7 +10,8 @@
  *     beat position drives Tessera's clock (CLK INT), a loop or a locate seeks, STOP stops; with no transport (the
  *     standalone app) it plays at once on its own clock;
  *   - parameters (automatable): MASTER and PERF's MACRO 1..4; turned on the panel, they are sent back to the host;
- *   - the plugin's state is the project as a .tsp record, the same bytes SAVE > PROJECT writes on the FM-1;
+ *   - the plugin's state is the project as a .tsp record, the same bytes SAVE > PROJECT writes on the FM-1; OPEN and
+ *     SAVE under the keys open a .tsp or an FM-1 backup (its slots A..D and its music) and save a .tsp;
  *   - the window (gui.h, Windows and Linux) shows the FM-1: its screen, buttons, keys and knobs. The audio thread owns
  *     the core: the window's input goes to it through a small queue, and it hands back a view ~30 times a second.
  * Several instances: each takes one of the plugin's private copies of the core (core_copies.h; TESS_PLUGIN_COPIES of
@@ -26,8 +27,12 @@
 #include <mutex>
 #include <vector>
 
+#include <clap/ext/params.h>
+#include <clap/ext/state.h>
+
 #include "core_copies.h"
 #include "gui.h"
+#include "projfile.h"
 
 namespace
 {
@@ -162,9 +167,98 @@ struct Tessera : GuiLink
         pending.changed = true;
         in.changed = false;
     }
+
+    // gui.h: the project files (the host's main thread)
+    std::string open_file(const std::string &path) override;
+    std::string save_file(const std::string &path) override;
+    std::string file_name() override;
+    void changed_by_file();
 };
 
 Tessera *self(const clap_plugin_t *p) { return static_cast<Tessera *>(p->plugin_data); }
+
+// ---- the project files (OPEN / SAVE under the keys)
+
+// the music as it is now, as a .tsp record
+static std::vector<uint8_t> record_of(Tessera *t)
+{
+    std::vector<uint8_t> b(t->core->tsp_max());
+    std::lock_guard<std::mutex> g(t->core_lock);
+    b.resize(t->core->save(b.data(), (uint32_t)b.size()));
+    return b;
+}
+
+std::string Tessera::open_file(const std::string &path)
+{
+    std::vector<uint8_t> bytes;
+    if (!projfile::read_file(path, bytes, 4u << 20))
+        return "CANNOT READ THAT FILE";
+    std::string name, err;
+    if (bytes.size() >= 4 && !std::memcmp(bytes.data(), "TSP1", 4))   // a project
+    {
+        if (!projfile::tsp_name(bytes, name))
+            return "A DAMAGED PROJECT FILE";
+        uint32_t r;
+        {
+            std::lock_guard<std::mutex> g(core_lock);
+            r = core->load(bytes.data(), (uint32_t)bytes.size());
+        }
+        if (r)
+            return "A PROJECT THIS VERSION CANNOT READ";
+        changed_by_file();
+        return "OPENED " + (name.empty() ? std::string("THE PROJECT") : name);
+    }
+    projfile::Backup bk;   // an FM-1 backup: its slots A..D, then the music it was playing
+    if (!projfile::backup_read(std::string(bytes.begin(), bytes.end()), bk, err))
+        return "NOT A PROJECT: " + err;
+    uint32_t slots = 0, r;
+    {
+        std::lock_guard<std::mutex> g(core_lock);
+        for (uint32_t k = 0; k < 4; k++)
+            if (!bk.slot[k].empty() && core->slot_put(k, bk.slot[k].data(), (uint32_t)bk.slot[k].size()) == 0)
+                slots++;
+        r = core->load(bk.music.data(), (uint32_t)bk.music.size());
+    }
+    projfile::tsp_name(bk.music, name);
+    changed_by_file();
+    if (r)
+        return "BACKUP: " + std::to_string(slots) + " SLOTS; ITS MUSIC THIS VERSION CANNOT READ";
+    return "BACKUP: " + (name.empty() ? std::string("ITS MUSIC") : name) + ", " + std::to_string(slots) + " SLOTS";
+}
+
+std::string Tessera::save_file(const std::string &path)
+{
+    std::vector<uint8_t> b = record_of(this);
+    std::string name;
+    if (b.empty() || !projfile::tsp_name(b, name))
+        return "COULD NOT SAVE THE PROJECT";
+    if (!projfile::write_file(path, b))
+        return "CANNOT WRITE THAT FILE";
+    return "SAVED " + (name.empty() ? std::string("THE PROJECT") : name);
+}
+
+std::string Tessera::file_name()
+{
+    std::string name;
+    projfile::tsp_name(record_of(this), name);
+    return projfile::tsp_file_name(name);
+}
+
+// a project came in from a file: the DAW's saved state and the MACROs it shows are out of date
+void Tessera::changed_by_file()
+{
+    {
+        std::lock_guard<std::mutex> g(core_lock);
+        for (int id = PARAM_MACRO1; id < PARAM_COUNT; id++)
+            param_now[id] = param_core(id);
+    }
+    auto *hs = static_cast<const clap_host_state_t *>(host->get_extension(host, CLAP_EXT_STATE));
+    if (hs && hs->mark_dirty)
+        hs->mark_dirty(host);
+    auto *hp = static_cast<const clap_host_params_t *>(host->get_extension(host, CLAP_EXT_PARAMS));
+    if (hp && hp->rescan)
+        hp->rescan(host, CLAP_PARAM_RESCAN_VALUES);
+}
 
 void Tessera::midi_in(const clap_event_header_t *h)
 {
