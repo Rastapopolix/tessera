@@ -450,6 +450,53 @@ static const gstep_t G_ORACLE[] = {
     {0, 114000, 600, "KNOB 3", "FILT", 0, 1},
     {121000, 0, 0, 0, 0, "The sound is saved with the project; SAVE > SOUND keeps one in a USER slot"},
 };
+/* gamelan-tinged ambient: 92 BPM, A minor pentatonic feel; a PHYS MARIMBA on TURING (a riff, so each change is heard on the same notes) as track 1 (its pages turned), a
+ * warm ORACLE pad holding the chord, a TRIO sub on TURING; no track 4 */
+static void g_physwalk_scene(void)
+{
+    song.g[G_BPM] = 92;
+    scale(9, SCL_MIN, 0);
+    sends(95, 70, 65, 50);
+    sound(0, ENGI_PHYS, 1);                             /* MARIMBA */
+    trk[0].p[P_SDIV] = DIV_8;
+    gen(0, TESS_ENG_TURING, 31);
+    tx(0, TX_TUR_PROB, 5); tx(0, TX_TUR_LEN, 8);
+    mixer(0, 112, 0, 45, 15);
+    sound(1, ENGI_ORACLE, OR_WARM_PAD);
+    trk[1].p[P_CHRD] = 1;
+    gen(1, TESS_ENG_CHORD, 7);
+    tx(1, TX_CH_PROG, GEN_CH_DRONE); tx(1, TX_CH_BARS, 4); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 60, -20, 80, 0);
+    sound(2, ENGI_TRIO, TR_SUB_BASS);
+    trk[2].p[P_SDIV] = DIV_4;
+    gen(2, TESS_ENG_TURING, 12);
+    tx(2, TX_TUR_PROB, 4); tx(2, TX_TUR_LEN, 8); tx(2, TX_TW_SHIFT, -12); tx(2, TX_TW_DROP, 50);
+    mixer(2, 72, 0, 0, 0);
+    tx(3, TX_MODE, TESS_ENG_OFF);
+    g_solo_check();
+}
+static const gstep_t G_PHYS[] = {
+    {0, 0, 0, 0, 0, "PHYS: physical models. Struck bars, plucked and bowed strings, drum heads"},
+    {3500, 5500, 200, "EDIT", "OPEN EDIT", "Tap EDIT: the BODY page, what is struck. The picture shows its overtones"},
+    {11000, 13000, 2000, "KNOB 2", "STRC", "KNOB 2, STRC: the bar's shape. From a tuned bar, a marimba, to a free bar, a chime", -40},
+    {20000, 22000, 2000, "KNOB 3", "BRIT", "KNOB 3, BRIT: a harder mallet, a brighter strike", 30},
+    {28000, 30000, 2000, "KNOB 4", "DAMP", "KNOB 4, DAMP: higher, and each note rings on longer", 30},
+    {36000, 38000, 600, "SELECT", "EXCT", "SELECT: EXCT, how it is played. KNOB 1, POS: where the mallet strikes", 1},
+    {0, 40000, 2000, "KNOB 1", "POS", 0, 40},
+    {46000, 48000, 2500, "KNOB 3", "BOW", "KNOB 3, BOW: a bow in place of the mallet. The notes swell and sing", 50},
+    {56000, 58000, 600, "SELECT", "BODY", "Back on BODY, KNOB 1, MODEL: STRNG. Now a bowed string", -1},
+    {0, 60000, 600, "KNOB 1", "STRNG", 0, 1},
+    {66000, 68000, 600, "SELECT", "EXCT", "On EXCT, BOW back down: a plucked string", 1},
+    {0, 70000, 2000, "KNOB 3", "BOW 0", 0, -50},
+    {76000, 78000, 600, "SELECT", "BODY", "MODEL: MEMB, a drum head. Each note a tuned hand drum", -1},
+    {0, 80000, 600, "KNOB 1", "MEMB", 0, 1},
+    {86000, 88000, 600, "KNOB 1", "SYMP", "MODEL: SYMP, a string with three more ringing along, as on a sitar. KNOB 2, CHRD tunes them", 1},
+    {98000, 100000, 200, "HOME", "HOME", "Tap HOME, turn PRESETS: PHYS's 17 sounds. KALIMBA ..."},
+    {0, 102000, 1500, "PRESETS", "KALIMBA", 0, 3},
+    {107000, 109000, 1500, "PRESETS", "HARP", "... HARP ...", 4},
+    {113000, 115000, 1000, "PRESETS", "VIBES", "... VIBES. Bells, mallets, plucks, bowed pads and drones", 1},
+    {121000, 0, 0, 0, 0, "A turned knob is saved with the project; SAVE > SOUND keeps one in a USER slot"},
+};
 static void guide_ref_pages(const char *out, FILE *tsv)
 {
     G_RUN("r-oracle", "ORACLE: AN ANALOGUE VOICE", "ORANGE", 128, 4, g_library_scene, G_ORACLE);   /* library electronica */
@@ -459,5 +506,6 @@ static void guide_ref_pages(const char *out, FILE *tsv)
     G_RUN("r-arp", "ARP: ONE NOTE AT A TIME", "MOSAIC", 132, 4, g_folkarp_scene, G_ARP);   /* folktronica */
     G_RUN("r-lfo", "LFO: A WAVE THAT MOVES", "LILAC", 141, 4, g_softdrone_scene, G_LFO);   /* soft drone */
     G_RUN("r-fx", "FX: INSERTS AND SENDS", "LILAC", 122, 4, g_organhouse_scene, G_FX);   /* organ house */
+    G_RUN("r-phys", "PHYS: STRUCK, PLUCKED, BOWED", "ORANGE", 128, 4, g_physwalk_scene, G_PHYS);   /* gamelan ambient */
     G_RUN("r-tweak2", "TWEAK 2: WHICH HITS PLAY", "MOSAIC", 112, 4, g_afrobeat_scene, G_TWEAK2);   /* afrobeat */
 }
