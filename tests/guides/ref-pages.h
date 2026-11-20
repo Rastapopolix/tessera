@@ -283,34 +283,33 @@ static const gstep_t G_PATTEMPO[] = {
     {106000, 108000, 2500, "KNOB 3", "QNT", "KNOB 3, QNT: where the notes you record land. 1/16, or OFF: as played", 9},
     {115000, 0, 0, 0, 0, "On HOME, or with GLO held, SELECT sets the BPM too"},
 };
-/* glacial ambient (Theo: an unobtrusive ambient piece under the menu): 62 BPM, F major, no drums, so AUDIO CLICK is
- * heard plainly; soft electric-piano tines on EUCLID as track 1 (SEQ's PLS at the end), a hollow pad holding slow
- * chords, far strings on MARKOV a bar a note, a low fifth drone */
-static void g_glacial_scene(void)
+/* drone (Theo: more drone-like, no melody): 60 BPM, D; a low fifth drone as track 1, a hollow pad holding one chord
+ * eight bars at a time, a far string drone an octave up, wind. Nothing plays a tune; AUDIO CLICK is heard plainly */
+static void g_menudrone_scene(void)
 {
-    song.g[G_BPM] = 62;
-    scale(5, 1, 0);
-    sends(110, 80, 75, 50);
-    sound(0, ENGI_FM6, FX_TINE_EP);
-    trk[0].p[P_SDIV] = DIV_8;
-    gen(0, TESS_ENG_EUCLID, 19);
-    tx(0, TX_EUC_STEPS, 16); tx(0, TX_EUC_PULSES, 5); tx(0, TX_EUC_ROT, 3);
-    mixer(0, 92, -15, 70, 45);
+    song.g[G_BPM] = 60;
+    scale(2, SCL_DOR, 0);
+    sends(115, 85, 75, 50);
+    sound(0, ENGI_TRIO, TR_FIFTH_DRONE);
+    step_note(0, 0, 38, 80);
+    trk[0].p[P_SLEN] = 1; trk[0].p[P_SGATE] = 127;
+    tx(0, TX_MODE, TESS_ENG_OFF); trk[0].p[P_SDIV] = DIV_1;
+    mixer(0, 90, 0, 40, 0);
     sound(1, ENGI_TRIO, TR_HOLLOW_PAD);
     trk[1].p[P_CHRD] = 1;
     gen(1, TESS_ENG_CHORD, 14);
-    tx(1, TX_CH_PROG, GEN_CH_TWO); tx(1, TX_CH_BARS, 4); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
-    mixer(1, 62, 20, 70, 0);
-    sound(2, ENGI_ORACLE, OR_SOFT_STRINGS);
-    trk[2].p[P_SDIV] = DIV_1;
-    gen(2, TESS_ENG_MARKOV, 6);
-    tx(2, TX_TW_SHIFT, 12);
-    mixer(2, 80, 35, 80, 0);
-    sound(3, ENGI_TRIO, TR_FIFTH_DRONE);
-    step_note(3, 0, 41, 70);
+    tx(1, TX_CH_PROG, GEN_CH_TWO); tx(1, TX_CH_BARS, 8); tx(1, TX_CH_HIT, GEN_CH_HOLD); tx(1, TX_CH_OCT, -1);
+    mixer(1, 66, -20, 75, 0);
+    sound(2, ENGI_ORACLE, OR_DRONE);
+    step_note(2, 0, 62, 70);
+    trk[2].p[P_SLEN] = 1; trk[2].p[P_SGATE] = 127;
+    tx(2, TX_MODE, TESS_ENG_OFF); trk[2].p[P_SDIV] = DIV_1;
+    mixer(2, 90, 30, 80, 0);
+    sound(3, ENGI_TRIO, TR_WIND);
+    step_note(3, 0, 74, 60);
     trk[3].p[P_SLEN] = 1; trk[3].p[P_SGATE] = 127;
-    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_1;
-    mixer(3, 78, -25, 50, 0);
+    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_2;
+    mixer(3, 84, -35, 60, 0);
     g_solo_check();
 }
 static const gstep_t G_MENU[] = {
@@ -334,8 +333,8 @@ static const gstep_t G_MENU[] = {
     {83000, 85000, 1200, "KNOB 1", "AUTOSAVE", "AUTOSAVE: the project is saved a few seconds after STOP", 5},
     {90000, 92000, 200, "OCT-", "CLOSE", "Tap OCT-: the menu closes. The settings stay"},
     {94000, 96000, 200, "SEQ", "SEQ", "Tap SEQ: BOLD letters, bars, and the knob turned shown large"},
-    {0, 98000, 600, "KNOB 3", "PLS", 0, 1},
-    {0, 101000, 600, "KNOB 3", "PLS", 0, -1},
+    {0, 98000, 600, "KNOB 4", "GATE", 0, -2},
+    {0, 101000, 600, "KNOB 4", "GATE", 0, 2},
     {104000, 0, 0, 0, 0, "They belong to the FM-1, not to a project: kept through power-off"},
 };
 /* sophisti-pop: 96 BPM, B dorian; an FM6 electric piano on CHORD as track 1 (its pages turned), a soft 808 in STEP, a
@@ -458,7 +457,7 @@ static void guide_ref_pages(const char *out, FILE *tsv)
 {
     G_RUN("r-oracle", "ORACLE: AN ANALOGUE VOICE", "ORANGE", 128, 4, g_library_scene, G_ORACLE);   /* library electronica */
     G_RUN("r-fm6", "FM6: THE OPERATORS", "ORANGE", 122, 4, g_sophisti_scene, G_FM6);   /* sophisti-pop */
-    G_RUN("r-menu", "THE MENU", "WHITE", 110, 4, g_glacial_scene, G_MENU);   /* glacial ambient */
+    G_RUN("r-menu", "THE MENU", "WHITE", 110, 4, g_menudrone_scene, G_MENU);   /* drone */
     G_RUN("r-tempo", "PATTERN AND TEMPO", "MOSAIC", 121, 4, g_ambtempo_scene, G_PATTEMPO);   /* ambient */
     G_RUN("r-arp", "ARP: ONE NOTE AT A TIME", "MOSAIC", 132, 4, g_folkarp_scene, G_ARP);   /* folktronica */
     G_RUN("r-lfo", "LFO: A WAVE THAT MOVES", "LILAC", 141, 4, g_softdrone_scene, G_LFO);   /* soft drone */
