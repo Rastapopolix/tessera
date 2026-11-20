@@ -285,7 +285,7 @@ static const gstep_t G_PATTEMPO[] = {
     {115000, 0, 0, 0, 0, "On HOME, or with GLO held, SELECT sets the BPM too"},
 };
 /* drone (Theo: more drone-like, no melody): 60 BPM, D; a low fifth drone as track 1, a hollow pad holding one chord
- * eight bars at a time, a far string drone an octave up, wind. Nothing plays a tune; AUDIO CLICK is heard plainly */
+ * eight bars at a time, a far string drone an octave up. Nothing plays a tune; AUDIO CLICK is heard plainly */
 static void g_menudrone_scene(void)
 {
     song.g[G_BPM] = 60;
@@ -306,11 +306,7 @@ static void g_menudrone_scene(void)
     trk[2].p[P_SLEN] = 1; trk[2].p[P_SGATE] = 127;
     tx(2, TX_MODE, TESS_ENG_OFF); trk[2].p[P_SDIV] = DIV_1;
     mixer(2, 90, 30, 80, 0);
-    sound(3, ENGI_TRIO, TR_WIND);
-    step_note(3, 0, 74, 60);
-    trk[3].p[P_SLEN] = 1; trk[3].p[P_SGATE] = 127;
-    tx(3, TX_MODE, TESS_ENG_OFF); trk[3].p[P_SDIV] = DIV_2;
-    mixer(3, 84, -35, 60, 0);
+    tx(3, TX_MODE, TESS_ENG_OFF);                       /* (Theo: lose the static-sounding track, the wind) */
     g_solo_check();
 }
 static const gstep_t G_MENU[] = {
