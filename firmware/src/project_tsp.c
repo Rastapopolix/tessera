@@ -790,8 +790,8 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
 
 /* the parts tsp_restore copies as they are, n bytes to a (then n more to b); none saved: 0 (zero), else
  * tessera_reset's (saved before the part: SUB, MIDI, SOUND ON, STEP as seed OFF FREE, GRAVITY 0, HOW DRIFT,
- * DEVELOP 0; then HOLD OFF, SPLIT off, ORDER AUTO, STRUM OFF UP, FOLLOW's SAME OWN, MACROs 0, DIR FWD, DRUM MAP GM,
- * SECTION PC OFF, MOVE OFF +2 ST) */
+ * DEVELOP 0, MOVE OFF +2 ST; then HOLD OFF, SPLIT off, ORDER AUTO, STRUM OFF UP, FOLLOW's SAME OWN, MACROs 0, DIR FWD, DRUM MAP GM,
+ * SECTION PC OFF) */
 static const struct { uint8_t id, zero; uint16_t n; uint8_t *a, *b; } TSP_COPY[] = {
     {TSP_SUB, 0, NTRK, tessera.sub_shape, 0},
     {TSP_MIDI, 0, NTRK, tessera.midi_ch, 0},
@@ -805,7 +805,7 @@ static const struct { uint8_t id, zero; uint16_t n; uint8_t *a, *b; } TSP_COPY[]
     {TSP_SPLIT, 1, NTRK, tessera.sub_split, tessera.sub_split_how},
     {TSP_EORDER, 1, NTRK, tessera.et_order, 0},
     {TSP_STRUM, 1, NTRK, tessera.ch_strum, tessera.ch_sdir},
-    {TSP_CHMOVE, 1, NTRK, tessera.ch_when, tessera.ch_by},
+    {TSP_CHMOVE, 0, NTRK, tessera.ch_when, tessera.ch_by},
     {TSP_FMODE, 1, NTRK, tessera.follow_how, tessera.follow_rhy},
     {TSP_SDIR, 1, sizeof pattern_dir, &pattern_dir[0][0], 0},
     {TSP_DMAP, 1, NTRK, tessera.midi_dmap, 0},

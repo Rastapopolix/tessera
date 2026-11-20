@@ -897,7 +897,7 @@ static int test_chord_user(void)
     turn(EN_K1, 1);
     turn(EN_K1, 1);                                     /* (a row a detent) */
     turn(EN_K2, -1);
-    bad += check("..the GEN sheet: Chord, Voicing, Length; KNOB 2 on Length: LEN 4", pop.on == POP_SHEET && pop.n == 3u &&
+    bad += check("..the GEN sheet: Chord, Voicing, Length, Move when, Move by; KNOB 2 on Length: LEN 4", pop.on == POP_SHEET && pop.n == 5u &&
                  str_eq(pop.rows[2].label, "Length") && g->ulen == 4u);
     pop_close();
     frame();

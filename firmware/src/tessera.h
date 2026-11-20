@@ -235,7 +235,6 @@ typedef struct {
      * record's CHMOVE part (the two side by side), not the packed block */
     uint8_t          ch_when[TESSERA_TRACKS];    /* TESS_CW_*: OFF (as before) */
     uint8_t          ch_by[TESSERA_TRACKS];      /* TESS_CB_*: +2 ST by default */
-    uint8_t          ch_rpick[TESSERA_TRACKS];   /* WHEN RAND: the strike of this bar that moves */
     /* ENERGY (energy.c; the ENERGY page), the project's, not a track's: its slow tide and its rests */
     uint8_t          en_arc;                     /* 0..100: how far the tide swings, 0 off */
     uint8_t          en_rests;                   /* 0..100: how often the notes rest, 0 off */

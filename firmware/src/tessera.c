@@ -1579,14 +1579,13 @@ static void tess_chord_breathe(track_t *t, uint32_t tr)
     }
 }
 
-/* MOVE: this strike moves (WHEN; never with HIT HOLD). RAND draws its strike on the bar's first */
+/* MOVE: this strike moves (WHEN; never with HIT HOLD). RAND: one strike a bar, drawn from the SEED and the bar */
 static int tess_chord_when(uint32_t tr, const tessera_chord_t *g)
 {
     uint32_t w = tessera.ch_when[tr], k = g->sk, n = g->sn;
     if (!w || g->hit == GEN_CH_HOLD) return 0;
-    if (w == TESS_CW_RAND && !k) tessera.ch_rpick[tr] = (uint8_t)gen_rnd(&tessera.rnd[tr], n ? n : 1u);
     return w == TESS_CW_LAST ? k + 1u == n : w == TESS_CW_LAST2 ? k + 2u >= n : w == TESS_CW_ODD ? k & 1u :
-           w == TESS_CW_CHANGE ? g->slast : k == tessera.ch_rpick[tr];
+           w == TESS_CW_CHANGE ? g->slast : k == gen_stream(tessera.seed[tr] * 31u + g->bar) % (n ? n : 1u);
 }
 /* MOVE BY: the strike's notes (out, n, ascending) moved; their count. The chord's root and tones stay (QNT CHRD) */
 static uint32_t tess_chord_move(const track_t *t, uint32_t tr, const tessera_chord_t *g, uint8_t *out, uint32_t n)
