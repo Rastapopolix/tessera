@@ -70,6 +70,17 @@ main img { max-width: 100%; height: auto; image-rendering: pixelated; }
 main p[align="center"] { text-align: center; }
 main p[align="center"] img { display: inline-block; margin: 4px; }
 main sub { color: var(--dim); font-size: 13px; }
+main .videos { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 12px 0 20px; }
+main .videos figure { margin: 0; }
+main .videos figure.on { grid-column: 1 / -1; }
+main .videos figcaption { color: var(--dim); font-size: 13px; margin-top: 4px; }
+main .videos .play { position: relative; display: block; line-height: 0; border: 1px solid var(--line); }
+main .videos .play:hover, main .videos .play:focus-visible { border-color: var(--ink); }
+main .videos .play:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+main .videos .play img { width: 100%; image-rendering: auto; }
+main .videos .play::before { content: ""; position: absolute; right: 4px; bottom: 4px; width: 36px; height: 24px; background: var(--bg); border: 1px solid var(--ink); }
+main .videos .play::after { content: ""; position: absolute; right: 16px; bottom: 10px; border-style: solid; border-width: 6px 0 6px 10px; border-color: transparent transparent transparent var(--ink); }
+main .videos iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--ink); }
 main table { border-collapse: collapse; display: block; overflow-x: auto; margin: 12px 0; font-size: 14px; }
 main th, main td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 main th { background: var(--surf); color: var(--ink); font-weight: 400; }
@@ -253,6 +264,24 @@ print or read offline.</li>
     out.hidden = false; toc.hidden = true;
   });
   q.addEventListener("keydown", function (e) { if (e.key === "Escape") { q.value = ""; q.dispatchEvent(new Event("input")); } });
+})();
+/* the guided clips: a thumbnail (a link to YouTube without script) becomes the player when played; nothing is
+   fetched from YouTube before that, and the player takes the focus */
+(function () {
+  [].forEach.call(document.querySelectorAll("main .videos .play"), function (a) {
+    a.addEventListener("click", function (e) {
+      if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+      e.preventDefault();
+      var f = document.createElement("iframe"), fig = a.parentNode;
+      f.src = "https://www.youtube-nocookie.com/embed/" + a.dataset.video + "?autoplay=1&rel=0";
+      f.title = a.getAttribute("aria-label").replace("Play the video: ", "Video: ");
+      f.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+      f.allowFullscreen = true;
+      fig.className = "on";
+      fig.replaceChild(f, a);
+      f.focus();
+    });
+  });
 })();
 /* LIGHT / DARK: names the other look; the choice is stored (tessera-theme), as on the project page */
 (function () {

@@ -55,7 +55,7 @@ would use it, then a table of goals and where to go for each.
 
 ## Tessera in plain words
 
-**Video:** [The same each time](https://youtu.be/GAE0D6EDFgM) <!-- guide videos -->
+<p><a href="https://youtu.be/GAE0D6EDFgM"><img src="assets/guides/e01-play.png" width="240" alt="Video: The same each time"></a></p> <!-- guide videos -->
 
 Tessera packs a lot into a small box. This part of the manual says what each part is *for*, in everyday words, so
 you know where to look before you need the detail. The rest of the manual then gives every knob in full; look for the
@@ -135,7 +135,7 @@ them. Every one starts OFF, and you can use any of them alone.
 
 ### Every page, and why you would use it
 
-**Videos:** [Find your way around](https://youtu.be/md3v8T15dVg), [FX: inserts and sends](https://youtu.be/tCmJ-fns_dY) <!-- guide videos -->
+<p><a href="https://youtu.be/md3v8T15dVg"><img src="assets/guides/e01-pages.png" width="240" alt="Video: Find your way around"></a> <a href="https://youtu.be/tCmJ-fns_dY"><img src="assets/guides/r-fx.png" width="240" alt="Video: FX: inserts and sends"></a></p> <!-- guide videos -->
 
 Tap a button to reach its pages; tap again (or turn **SELECT**) to step through them. The tables say what each page
 lets you do and when you would want it. Follow a link for the full description.
@@ -264,7 +264,7 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 
 ## The panel at a glance
 
-**Videos:** [Get back](https://youtu.be/6FU-tiFkh1s), [What HOME shows](https://youtu.be/SCrp2-y8JsQ), [Mute, solo and FILL](https://youtu.be/rVL7WHqJ9zA) <!-- guide videos -->
+<p><a href="https://youtu.be/6FU-tiFkh1s"><img src="assets/guides/e01-back.png" width="240" alt="Video: Get back"></a> <a href="https://youtu.be/SCrp2-y8JsQ"><img src="assets/guides/e02-tour.png" width="240" alt="Video: What HOME shows"></a> <a href="https://youtu.be/rVL7WHqJ9zA"><img src="assets/guides/e07-mixer.png" width="240" alt="Video: Mute, solo and FILL"></a></p> <!-- guide videos -->
 
 > **In short:** the buttons get you to pages, the four knobs set what is on the page, and holding a button opens a
 > second job. You rarely need more than HOME, SEQ, LFO and GLO to start.
@@ -414,7 +414,7 @@ key skips it.
 
 ## Shortcuts
 
-**Videos:** [A sound from anywhere](https://youtu.be/v0EAFYWEDCo), [The tempo](https://youtu.be/kX7NwcYfDSQ) <!-- guide videos -->
+<p><a href="https://youtu.be/v0EAFYWEDCo"><img src="assets/guides/e03-glo-presets.png" width="240" alt="Video: A sound from anywhere"></a> <a href="https://youtu.be/kX7NwcYfDSQ"><img src="assets/guides/e07-tempo.png" width="240" alt="Video: The tempo"></a></p> <!-- guide videos -->
 
 > **In short:** the combinations worth learning first are SEQ for GEN, FX held to make
 > a mod, REC held to keep what a generator played, and EDIT held with OCT- to undo.
@@ -449,7 +449,7 @@ key skips it.
 
 ## Sounds
 
-**Videos:** [The sound's pages](https://youtu.be/paX0NQLxHJQ), [FM6: the operators](https://youtu.be/-ztS8lQAQ7E), [ORACLE: an analogue voice](https://youtu.be/V96G-abswgI), [TRIO: three oscillators](https://youtu.be/Sb-ZcOb-5Zo), [PHYS: struck, plucked, bowed](https://youtu.be/alSGN6S4j9o), [DRUM: the 808 and the 909](https://youtu.be/jASqwwpbtEw) <!-- guide videos -->
+<p><a href="https://youtu.be/paX0NQLxHJQ"><img src="assets/guides/e03-edit.png" width="240" alt="Video: The sound&#x27;s pages"></a> <a href="https://youtu.be/-ztS8lQAQ7E"><img src="assets/guides/r-fm6.png" width="240" alt="Video: FM6: the operators"></a> <a href="https://youtu.be/V96G-abswgI"><img src="assets/guides/r-oracle.png" width="240" alt="Video: ORACLE: an analogue voice"></a> <a href="https://youtu.be/Sb-ZcOb-5Zo"><img src="assets/guides/r-trio.png" width="240" alt="Video: TRIO: three oscillators"></a> <a href="https://youtu.be/alSGN6S4j9o"><img src="assets/guides/r-phys.png" width="240" alt="Video: PHYS: struck, plucked, bowed"></a> <a href="https://youtu.be/jASqwwpbtEw"><img src="assets/guides/r-drum.png" width="240" alt="Video: DRUM: the 808 and the 909"></a></p> <!-- guide videos -->
 
 > **In short:** each track's voice. FM6 for bright, glassy and bell-like sounds, ORACLE for warm analogue pads, brass
 > and basses, TRIO for simple basses and leads, PHYS for plucks, mallets and bowed sounds, DRUM for kits. Browse them
@@ -531,7 +531,7 @@ one and a half times): one ORACLE track of pads or chords is fine; with two busy
 
 ### Choosing a sound
 
-**Video:** [Change the sound](https://youtu.be/vJHdMg-8y0s) <!-- guide videos -->
+<p><a href="https://youtu.be/vJHdMg-8y0s"><img src="assets/guides/e03-sound.png" width="240" alt="Video: Change the sound"></a></p> <!-- guide videos -->
 
 **PRESETS** (SAVE) browses the sounds.
 
@@ -545,7 +545,7 @@ one and a half times): one ORACLE track of pads or chords is fine; with two busy
 
 ### How many voices at once
 
-**Video:** [How many voices](https://youtu.be/I-N4ikzKje0) <!-- guide videos -->
+<p><a href="https://youtu.be/I-N4ikzKje0"><img src="assets/guides/r-voices.png" width="240" alt="Video: How many voices"></a></p> <!-- guide videos -->
 
 All the tracks share one pool of voices, set by **GLO > SYSTEM > BUDGET** (16 by default). A note that rings on in
 its release still holds a voice, so a busy generator on a sound with a long release can keep most of the pool
@@ -582,7 +582,7 @@ On the same page, **A4** (the FM-1's tuning reference, 440 Hz by default) and **
 
 ## SEQ: the MODE and its pages
 
-**Videos:** [Who writes the notes](https://youtu.be/CDoVeqAkvv8), [PATTERN and TEMPO](https://youtu.be/HOReZkSzdxg) <!-- guide videos -->
+<p><a href="https://youtu.be/CDoVeqAkvv8"><img src="assets/guides/e05-mode.png" width="240" alt="Video: Who writes the notes"></a> <a href="https://youtu.be/HOReZkSzdxg"><img src="assets/guides/r-tempo.png" width="240" alt="Video: PATTERN and TEMPO"></a></p> <!-- guide videos -->
 
 > **In short:** GEN's MODE decides what a track plays: your own steps, an arpeggio, or a generator that writes the
 > notes. SEQ (what plays) and ARP (how it is shaped) then only show the pages that matter for that choice.
@@ -623,7 +623,7 @@ carry on.
 
 ### The ARP page
 
-**Video:** [ARP: one note at a time](https://youtu.be/PpYMGIey_vg) <!-- guide videos -->
+<p><a href="https://youtu.be/PpYMGIey_vg"><img src="assets/guides/r-arp.png" width="240" alt="Video: ARP: one note at a time"></a></p> <!-- guide videos -->
 
 ARP's **MODE** is the order the held notes play in, over OCT octaves:
 
@@ -648,7 +648,7 @@ pressed. ORD always plays them as pressed.
 
 ### Writing notes on NOTES
 
-**Video:** [Write notes by hand](https://youtu.be/3nJsvgpO-mI) <!-- guide videos -->
+<p><a href="https://youtu.be/3nJsvgpO-mI"><img src="assets/guides/r-step-write.png" width="240" alt="Video: Write notes by hand"></a></p> <!-- guide videos -->
 
 On NOTES, **KNOB 2** sets the picked note's pitch:
 
@@ -672,7 +672,7 @@ high leaves the others readable. A page with only one pitch shows where it sits 
 
 ### Recording live
 
-**Video:** [Record live](https://youtu.be/F85vgOe1-nI) <!-- guide videos -->
+<p><a href="https://youtu.be/F85vgOe1-nI"><img src="assets/guides/r-rec.png" width="240" alt="Video: Record live"></a></p> <!-- guide videos -->
 
 > **In short:** play the keys and Tessera records them into the pattern, pass after pass, so you can build a part up
 > layer by layer.
@@ -698,7 +698,7 @@ QNT (TEMPO) snaps the take when it ends.
 
 ### The pattern's sheet: Snap to scale, Double, Half, Euclid, Accumulate
 
-**Video:** [Play the steps in another order](https://youtu.be/XITnEeU4NbM) <!-- guide videos -->
+<p><a href="https://youtu.be/XITnEeU4NbM"><img src="assets/guides/r-sheet.png" width="240" alt="Video: Play the steps in another order"></a></p> <!-- guide videos -->
 
 > **In short:** quick tools for a whole pattern. This lets you fix wrong notes after a scale change, double a loop to
 > add a variation, or drop in an even rhythm in one press.
@@ -822,7 +822,7 @@ unless **PAT GEN** is ON (EVOLVE page, hold **OCT-**, KNOB 3).
 
 #### PATTERNS
 
-**Video:** [Patterns](https://youtu.be/AOdqlhFV_mI) <!-- guide videos -->
+<p><a href="https://youtu.be/AOdqlhFV_mI"><img src="assets/guides/r-patterns.png" width="240" alt="Video: Patterns"></a></p> <!-- guide videos -->
 
 Hold **SEQ** (or turn to its page). It shows a row per track, and a cell per pattern, 1 to 8:
 
@@ -846,7 +846,7 @@ pattern in use, it asks first), and **OCT-** leaves. It works only while no song
 
 #### SONG
 
-**Video:** [A song from patterns](https://youtu.be/O28GCeQLRPQ) <!-- guide videos -->
+<p><a href="https://youtu.be/O28GCeQLRPQ"><img src="assets/guides/r-song.png" width="240" alt="Video: A song from patterns"></a></p> <!-- guide videos -->
 
 A song is up to 16 sections. Each section is one pattern per track, and how many times it plays (1 to 16).
 
@@ -889,7 +889,7 @@ SONG is not linked to [CHAIN](#chain-one-form-for-the-project): SONG counts patt
 
 ## The generators
 
-**Videos:** [Lock a line](https://youtu.be/-1sDYpQWxUQ), [EUCLID](https://youtu.be/PjTSFgYj-rM), [MARKOV](https://youtu.be/FzEVmVMSNw0), [BOUNCE and FALL](https://youtu.be/saq-M4EltWE), [AWAKE: two loops](https://youtu.be/pN8b-juK3wk), [POLY: four rhythms](https://youtu.be/udtqspcUsAU), [SERIES](https://youtu.be/jB4Lz_WxXgg), [MORPH: A into B](https://youtu.be/dgauDM1618Y), [TURING: a loop that drifts](https://youtu.be/aBq42QwGNYs) <!-- guide videos -->
+<p><a href="https://youtu.be/-1sDYpQWxUQ"><img src="assets/guides/e05-turing.png" width="240" alt="Video: Lock a line"></a> <a href="https://youtu.be/PjTSFgYj-rM"><img src="assets/guides/r-euclid.png" width="240" alt="Video: EUCLID"></a> <a href="https://youtu.be/FzEVmVMSNw0"><img src="assets/guides/r-markov.png" width="240" alt="Video: MARKOV"></a> <a href="https://youtu.be/saq-M4EltWE"><img src="assets/guides/r-bounce.png" width="240" alt="Video: BOUNCE and FALL"></a> <a href="https://youtu.be/pN8b-juK3wk"><img src="assets/guides/r-awake.png" width="240" alt="Video: AWAKE: two loops"></a> <a href="https://youtu.be/udtqspcUsAU"><img src="assets/guides/r-poly.png" width="240" alt="Video: POLY: four rhythms"></a> <a href="https://youtu.be/jB4Lz_WxXgg"><img src="assets/guides/r-series.png" width="240" alt="Video: SERIES"></a> <a href="https://youtu.be/dgauDM1618Y"><img src="assets/guides/r-morph.png" width="240" alt="Video: MORPH: A into B"></a> <a href="https://youtu.be/aBq42QwGNYs"><img src="assets/guides/r-turing.png" width="240" alt="Video: TURING: a loop that drifts"></a></p> <!-- guide videos -->
 
 > **In short:** a generator writes the notes for you, in your scale, at the track's speed. Each one has its own
 > character; see [Which generator for what](#which-generator-for-what) for a quick guide.
@@ -953,7 +953,7 @@ saved project keeps its seeds.
 
 ## The GEN layer
 
-**Video:** [Random, and back](https://youtu.be/fRsl8BEH-HU) <!-- guide videos -->
+<p><a href="https://youtu.be/fRsl8BEH-HU"><img src="assets/guides/e05-random.png" width="240" alt="Video: Random, and back"></a></p> <!-- guide videos -->
 
 > **In short:** on the GEN page (tap SEQ), hold OCT-: a generator gets a second set of knobs, not a page of its own: KNOB 1 RANDOM, KNOB 2 to 4 its finer
 > settings. This lets you shape the details without crowding the main page. A setting past those, where a generator
@@ -970,7 +970,7 @@ On the **GEN** page (tap **SEQ**):
 
 ### ATLAS: KICK, SNR, HAT; the fourth part
 
-**Video:** [ATLAS: the drum map](https://youtu.be/MjnlKy8_prM) <!-- guide videos -->
+<p><a href="https://youtu.be/MjnlKy8_prM"><img src="assets/guides/r-atlas.png" width="240" alt="Video: ATLAS: the drum map"></a></p> <!-- guide videos -->
 
 | Knob (OCT- held) | Setting | What it does |
 |---|---|---|
@@ -985,7 +985,7 @@ On the **GEN** page (tap **SEQ**):
 
 ### CHORD: STRUM, DIR, OCT; CHRD, VOIC, BREATH (or LEN)
 
-**Video:** [CHORD: the harmony](https://youtu.be/ciPIiE0swGM) <!-- guide videos -->
+<p><a href="https://youtu.be/ciPIiE0swGM"><img src="assets/guides/r-chord.png" width="240" alt="Video: CHORD: the harmony"></a></p> <!-- guide videos -->
 
 Hold **OCT-** on GEN with a CHORD track. KNOB 1 is RANDOM, KNOB 2 and 3 set how the chord is struck, and KNOB 4 its
 register. The chord's kind and voicing are on the GEN sheet (and on SCL > CHORD).
@@ -1060,7 +1060,7 @@ the bar's first beat. HIT HOLD strikes once and never moves.
 
 ### QUAD: columns and RANGE
 
-**Video:** [QUAD: one grid](https://youtu.be/sAyFL8UjfOo) <!-- guide videos -->
+<p><a href="https://youtu.be/sAyFL8UjfOo"><img src="assets/guides/r-quad.png" width="240" alt="Video: QUAD: one grid"></a></p> <!-- guide videos -->
 
 The grid's columns can turn between the rows, so notes travel from track to track.
 
@@ -1073,7 +1073,7 @@ The grid's columns can turn between the rows, so notes travel from track to trac
 
 ### CONSTELLATION: LOCK, LEN, FILL; SIZE
 
-**Video:** [CONSTELLATION](https://youtu.be/0RLXeXBCEVw) <!-- guide videos -->
+<p><a href="https://youtu.be/0RLXeXBCEVw"><img src="assets/guides/r-constellation.png" width="240" alt="Video: CONSTELLATION"></a></p> <!-- guide videos -->
 
 | Knob (OCT- held) | Setting | What it does |
 |---|---|---|
@@ -1090,7 +1090,7 @@ The grid's columns can turn between the rows, so notes travel from track to trac
 
 ### ANSWER: SOURCE, ORDER, SHIFT; SPACE, CHORD
 
-**Video:** [ANSWER: call and response](https://youtu.be/RI9bHCbHapU) <!-- guide videos -->
+<p><a href="https://youtu.be/RI9bHCbHapU"><img src="assets/guides/r-answer.png" width="240" alt="Video: ANSWER: call and response"></a></p> <!-- guide videos -->
 
 ANSWER plays back what it hears. It has two modes, set on the GEN sheet's **Mode** row:
 
@@ -1145,7 +1145,7 @@ With VARY, SHIFT, ECHO and Break at 0, BEND is a plain delay.
 
 ### TURING, EUCLID, MARKOV and MORPH: SOURCE, KEEP, GRAVITY (STEP as seed)
 
-**Video:** [Your tune as a seed](https://youtu.be/ETxlCJx2wUw) <!-- guide videos -->
+<p><a href="https://youtu.be/ETxlCJx2wUw"><img src="assets/guides/r-seed.png" width="240" alt="Video: Your tune as a seed"></a></p> <!-- guide videos -->
 
 > **In short:** write a short melody in STEP, then let a generator play and vary it. This lets you keep your own tune
 > at the centre while it grows new versions of itself. KEEP says what must stay (the rhythm or the notes), GRAVITY how
@@ -1243,7 +1243,7 @@ decide how far it may wander.
 
 ## EVOLVE
 
-**Videos:** [A new line, and back](https://youtu.be/59yKoHNhr2s), [How often it changes](https://youtu.be/72yYBdtu6kE) <!-- guide videos -->
+<p><a href="https://youtu.be/59yKoHNhr2s"><img src="assets/guides/e06-roll.png" width="240" alt="Video: A new line, and back"></a> <a href="https://youtu.be/72yYBdtu6kE"><img src="assets/guides/e06-every.png" width="240" alt="Video: How often it changes"></a></p> <!-- guide videos -->
 
 > **In short:** EVOLVE changes a generator's phrase every few bars, so a loop never wears out. ROLL picks a new line,
 > and GRAVITY lets it wander and then come home.
@@ -1267,7 +1267,7 @@ On a generator track, EVOLVE mutates the phrase every few bars.
 
 ### HOLD: freeze every track's line
 
-**Video:** [Hold the lines](https://youtu.be/AZeajGzNrD8) <!-- guide videos -->
+<p><a href="https://youtu.be/AZeajGzNrD8"><img src="assets/guides/e06-hold.png" width="240" alt="Video: Hold the lines"></a></p> <!-- guide videos -->
 
 **HOLD** is **GLO** + **D4**: held, or tap twice to latch and once more to let go. It is LOCK 100 for every track at
 once, as a key to play:
@@ -1282,7 +1282,7 @@ Let go and they carry on from where they are. HOLD is not saved.
 
 ### GRAVITY: drift, then come home
 
-**Video:** [Drift, then come home](https://youtu.be/up5eWX-EOJk) <!-- guide videos -->
+<p><a href="https://youtu.be/up5eWX-EOJk"><img src="assets/guides/e06-gravity.png" width="240" alt="Video: Drift, then come home"></a></p> <!-- guide videos -->
 
 **GRAVITY** (OCT- held, KNOB 4; the same GRAVITY as the SOURCE layer's) lets the phrase drift and then come home.
 **Home** is the generator as you last set it: by a knob, ROLL, MODE or a loaded project.
@@ -1302,7 +1302,7 @@ Let go and they carry on from where they are. HOLD is not saved.
 
 ### STEP EVOLVE
 
-**Video:** [Vary what you wrote](https://youtu.be/QvbEVWthS_w) <!-- guide videos -->
+<p><a href="https://youtu.be/QvbEVWthS_w"><img src="assets/guides/r-step-evolve.png" width="240" alt="Video: Vary what you wrote"></a></p> <!-- guide videos -->
 
 > **In short:** your written steps get small variations as they play (a note moved, an ornament, the phrase played
 > backwards), but the steps themselves stay as you wrote them. Hold REC to keep a variation you like.
@@ -1344,7 +1344,7 @@ Changing HOW puts the steps back as written. REC held keeps any of them, SERIAL'
 
 ## FORM
 
-**Video:** [A track as a song](https://youtu.be/qJwp-RsGcoI) <!-- guide videos -->
+<p><a href="https://youtu.be/qJwp-RsGcoI"><img src="assets/guides/r-form.png" width="240" alt="Video: A track as a song"></a></p> <!-- guide videos -->
 
 > **In short:** FORM turns one track's phrase into a little song: A, then a contrasting B, back to A, and so on. This
 > lets a single generator play with verses and choruses instead of one loop.
@@ -1384,7 +1384,7 @@ FORM strings mutated phrases into a short song form of sections A, B and C, each
 
 ### PIECE: a length and a shape
 
-**Video:** [A piece with a shape](https://youtu.be/qJ7HkkqsA9w) <!-- guide videos -->
+<p><a href="https://youtu.be/qJ7HkkqsA9w"><img src="assets/guides/r-piece.png" width="240" alt="Video: A piece with a shape"></a></p> <!-- guide videos -->
 
 > **In short:** tell Tessera how long the piece should be and its shape (an arch, waves, a slow rise), and it steers
 > ENERGY, CHAIN and ENTRIES to follow it: an intro, a build, a peak and an ending, with nobody at the controls.
@@ -1449,7 +1449,7 @@ The piece comes from the tracks' SEEDs, so PLAY plays it again the same.
 
 ### CHAIN: one form for the project
 
-**Video:** [One form for all](https://youtu.be/PvcYgkPKN3E) <!-- guide videos -->
+<p><a href="https://youtu.be/PvcYgkPKN3E"><img src="assets/guides/r-chain.png" width="240" alt="Video: One form for all"></a></p> <!-- guide videos -->
 
 > **In short:** CHAIN makes all the tracks change section together, so the whole project moves from A to B at once,
 > like a band going into the chorus.
@@ -1497,7 +1497,7 @@ set.
 
 ### ENTRIES: tracks out and back in
 
-**Video:** [Tracks out and in](https://youtu.be/7zB8198DHy4) <!-- guide videos -->
+<p><a href="https://youtu.be/7zB8198DHy4"><img src="assets/guides/r-entries.png" width="240" alt="Video: Tracks out and in"></a></p> <!-- guide videos -->
 
 > **In short:** ENTRIES arranges the piece for you by taking tracks out and bringing them back in on phrase lines, in
 > a musical order (the bass comes in first, the melody leaves first). You can still mute and unmute by hand.
@@ -1578,7 +1578,7 @@ first.
 
 ### LANDSCAPE: rain on water
 
-**Video:** [A sea to watch](https://youtu.be/GRUcFFtM69U) <!-- guide videos -->
+<p><a href="https://youtu.be/GRUcFFtM69U"><img src="assets/guides/r-landscape.png" width="240" alt="Video: A sea to watch"></a></p> <!-- guide videos -->
 
 > **In short:** a sea drawn by the music, to watch while it plays: by night, or by day on GROUND LIGHT. Every named
 > project is a place of its own, with something to find on its shores. The scene changes nothing; the knobs are
@@ -1662,7 +1662,7 @@ A **PIECE** (LENGTH set) moves the moon across the sky, rising at the left as it
 
 ### PERF: four macros
 
-**Video:** [PERF: four macros](https://youtu.be/piTuH7QNz9Y) <!-- guide videos -->
+<p><a href="https://youtu.be/piTuH7QNz9Y"><img src="assets/guides/e07-perf.png" width="240" alt="Video: PERF: four macros"></a></p> <!-- guide videos -->
 
 > **In short:** four knobs for performing. Each macro can drive as many mods as you like, so one turn can open
 > filters, add reverb and speed up the tempo together.
@@ -1713,7 +1713,7 @@ See the recipe [A brake for the whole patch](RECIPES.md#a-brake-for-the-whole-pa
 
 ## TWEAK
 
-**Video:** [TWEAK: reshape and follow](https://youtu.be/5j2aQVhbyk8) <!-- guide videos -->
+<p><a href="https://youtu.be/5j2aQVhbyk8"><img src="assets/guides/r-tweak.png" width="240" alt="Video: TWEAK: reshape and follow"></a></p> <!-- guide videos -->
 
 > **In short:** TWEAK moves a track's notes up or down, thins them out, loosens them like a human player, or makes the
 > track follow another track's notes, for harmonies and bass lines that move with the melody.
@@ -1781,7 +1781,7 @@ plays). On a STEP track, TWEAK holds HUMAN alone.
 
 ## TWEAK 2
 
-**Video:** [TWEAK 2: which hits play](https://youtu.be/sN72I6n_Emo) <!-- guide videos -->
+<p><a href="https://youtu.be/sN72I6n_Emo"><img src="assets/guides/r-tweak2.png" width="240" alt="Video: TWEAK 2: which hits play"></a></p> <!-- guide videos -->
 
 > **In short:** TWEAK 2 makes tracks interact: hits can jump to another track's sound (call and response), combine
 > with another track's rhythm (AND, OR, XOR), or play only in certain bars. This lets two simple parts become one
@@ -1802,7 +1802,7 @@ TWEAK 2 decides which hits play, and where. Everything starts OFF.
 
 ## LENGTH
 
-**Video:** [Let notes ring](https://youtu.be/o6nv_V9C75I) <!-- guide videos -->
+<p><a href="https://youtu.be/o6nv_V9C75I"><img src="assets/guides/r-length.png" width="240" alt="Video: Let notes ring"></a></p> <!-- guide videos -->
 
 > **In short:** LENGTH decides how long a generator's notes last. HIT lets every note ring until the next one, which
 > turns sparse notes into pads.
@@ -1874,7 +1874,7 @@ can't be read by that firmware at all, as with every new cord destination.
 
 ### Rolls and feel: which one to use
 
-**Video:** [Rolls and feel](https://youtu.be/-4eb71NAwRk) <!-- guide videos -->
+<p><a href="https://youtu.be/-4eb71NAwRk"><img src="assets/guides/r-timing.png" width="240" alt="Video: Rolls and feel"></a></p> <!-- guide videos -->
 
 > **In short:** RATCH and a step's Ratchet make rolls, SPLIT breaks steps into the finer division now and then, HUMAN and
 > Nudge move steps a little late (or early), and SWING moves every other step. Use one for a clear job rather than all
@@ -1901,7 +1901,7 @@ How they combine:
 
 ### A step's Ratchet, Nudge and Accumulate
 
-**Video:** [Roll one step](https://youtu.be/TeWVoiI4q5M) <!-- guide videos -->
+<p><a href="https://youtu.be/TeWVoiI4q5M"><img src="assets/guides/r-ratchet.png" width="240" alt="Video: Roll one step"></a></p> <!-- guide videos -->
 
 > **In short:** per-step details for written patterns: a roll on one step (Ratchet), a step pushed slightly early or
 > late (Nudge), and a note that climbs a little higher each time round (Accumulate).
@@ -1938,7 +1938,7 @@ change or a song's turn, and not while recording: there it plays on its line.
 
 ### A step's Condition, and FILL
 
-**Video:** [Every other time](https://youtu.be/3UDGum5zsjA) <!-- guide videos -->
+<p><a href="https://youtu.be/3UDGum5zsjA"><img src="assets/guides/r-condition.png" width="240" alt="Video: Every other time"></a></p> <!-- guide videos -->
 
 > **In short:** a step can play only on some passes (every second time, only the first time) or only while you hold
 > FILL. This lets a short loop sound longer, and gives you drum fills on demand.
@@ -1972,7 +1972,7 @@ for a fill on the last bar, or a break with !FILL on the beat that drops out. FI
 
 ## ENERGY
 
-**Video:** [Energy by hand](https://youtu.be/yzPgw_LcTes) <!-- guide videos -->
+<p><a href="https://youtu.be/yzPgw_LcTes"><img src="assets/guides/r-energy.png" width="240" alt="Video: Energy by hand"></a></p> <!-- guide videos -->
 
 > **In short:** ENERGY is the project's mood over minutes: a slow tide from sparse and quiet to busy and loud, and an
 > occasional rest where the generators fall silent. This lets a long piece breathe. Set DEPTH 0 on a track (a drone, a
@@ -2001,7 +2001,7 @@ off at 0.
 
 ## Print and keep
 
-**Video:** [Print and keep](https://youtu.be/bTn2Go9OXgw) <!-- guide videos -->
+<p><a href="https://youtu.be/bTn2Go9OXgw"><img src="assets/guides/e08-print.png" width="240" alt="Video: Print and keep"></a></p> <!-- guide videos -->
 
 > **In short:** when a generator plays something you love, hold REC: its last bars become ordinary steps that you can
 > edit, and that never change unless you change them.
@@ -2026,7 +2026,7 @@ off at 0.
 
 ## Harmony: one key, CHORD and QNT CHRD
 
-**Videos:** [Keep it in key](https://youtu.be/M78Z5KqY8cc), [Follow the chords](https://youtu.be/yXq_t9nOha0) <!-- guide videos -->
+<p><a href="https://youtu.be/M78Z5KqY8cc"><img src="assets/guides/e04-key.png" width="240" alt="Video: Keep it in key"></a> <a href="https://youtu.be/yXq_t9nOha0"><img src="assets/guides/e04-chord.png" width="240" alt="Video: Follow the chords"></a></p> <!-- guide videos -->
 
 > **In short:** all tracks share one scale and key, so nothing clashes. Put a progression on a CHORD track, set the
 > others' QNT to CHRD, and their notes follow the chords as they change.
@@ -2088,7 +2088,7 @@ A **CHORD** track plays a progression; with **QNT CHRD** the other tracks follow
 
 ### HARM: a harmonizer
 
-**Video:** [Run the keys into chords](https://youtu.be/7CbD9BLODkw) <!-- guide videos -->
+<p><a href="https://youtu.be/7CbD9BLODkw"><img src="assets/guides/r-harm.png" width="240" alt="Video: Run the keys into chords"></a></p> <!-- guide videos -->
 
 > **In short:** with a CHORD track playing, every note of the scale you go up plays the chord's next note up. Run up
 > the keys and you play an arpeggio that changes with the chords; any line in the scale becomes one too.
@@ -2128,7 +2128,7 @@ note of the chord, so neighbouring keys can land on the same one. HARM *counts* 
 
 ### Your own scales (USER1 to USER4)
 
-**Video:** [A scale of your own](https://youtu.be/jFG-uBmzVRI) <!-- guide videos -->
+<p><a href="https://youtu.be/jFG-uBmzVRI"><img src="assets/guides/r-user-scale.png" width="240" alt="Video: A scale of your own"></a></p> <!-- guide videos -->
 
 > **In short:** four 12-note scales of your own, made on the keys, played by every track and generator like a
 > built-in scale.
@@ -2188,7 +2188,7 @@ and of most microtonal tools).
 
 ## MODS: the modulation cords
 
-**Video:** [Your first mod](https://youtu.be/n-9lCAFzmoU) <!-- guide videos -->
+<p><a href="https://youtu.be/n-9lCAFzmoU"><img src="assets/guides/r-mod-first.png" width="240" alt="Video: Your first mod"></a></p> <!-- guide videos -->
 
 > **In short:** MODS are patch cables without the cables. Pick a source (an LFO, an envelope, a slow TIDE, another
 > track's notes, a PERF macro) and a destination (a filter, a level, a generator's setting, another synth's CC) and
@@ -2219,7 +2219,7 @@ any track. Four cords show at a time, each with an activity light and a moving m
 
 ### Sources
 
-**Video:** [LFO: a wave that moves](https://youtu.be/NTsUCJrTgUo) <!-- guide videos -->
+<p><a href="https://youtu.be/NTsUCJrTgUo"><img src="assets/guides/r-lfo.png" width="240" alt="Video: LFO: a wave that moves"></a></p> <!-- guide videos -->
 
 KNOB 1 lists `--`, then each track's sources, starting from the selected track (with T3 selected: T3, T4, T1, T2),
 then the project's. Each entry names its track (**T2 GATE**).
@@ -2351,7 +2351,7 @@ A mod keeps its destination when the track's MODE changes. It stays in the list 
 
 ### A cord's shape: +-, +, GATE and HOLD
 
-**Video:** [A cord's shape](https://youtu.be/Eh0i4fsIqtU) <!-- guide videos -->
+<p><a href="https://youtu.be/Eh0i4fsIqtU"><img src="assets/guides/r-mod-shapes.png" width="240" alt="Video: A cord&#x27;s shape"></a></p> <!-- guide videos -->
 
 Press **OCT+** on MODS to step the picked mod through its shapes: **+-**, then **+**, **GATE**, **HOLD** and back to
 **+-**. A source that only goes from 0 to 1 starts at **+** and goes +, GATE, HOLD. The shape shows under KNOB 1 and
@@ -2528,7 +2528,7 @@ hard aliases.
 
 ### MIX buses
 
-**Video:** [Mix buses](https://youtu.be/OpiXMYk4znY) <!-- guide videos -->
+<p><a href="https://youtu.be/OpiXMYk4znY"><img src="assets/guides/r-buses.png" width="240" alt="Video: Mix buses"></a></p> <!-- guide videos -->
 
 **BUS A** and **BUS B**, at the end of KNOB 3's list, are two mixers of the project's. Every mod into a bus is
 combined there, and the bus is then a source of its own (BUS A, BUS B at the end of KNOB 1's list) for as many mods
@@ -2564,7 +2564,7 @@ Each bus has two settings on MODS' sheet: hold **OCT+** on MODS, pick the row wi
 
 ### Mods of mods
 
-**Video:** [A mod of a mod](https://youtu.be/flZmIc8JX9A) <!-- guide videos -->
+<p><a href="https://youtu.be/flZmIc8JX9A"><img src="assets/guides/r-mod-of-mod.png" width="240" alt="Video: A mod of a mod"></a></p> <!-- guide videos -->
 
 **M1 AMT** to **M16 AMT**, at the end of KNOB 3's list, move another mod's amount (a fixed mod's offset), as a hand on
 its KNOB 4 would. Send `T4 ENV` to `M3 AMT` and each of track 4's notes deepens mod 3 for a moment, so one track's
@@ -2670,7 +2670,7 @@ These load, but play differently:
 
 ## MATRIX
 
-**Video:** [Who moves what](https://youtu.be/J-vU1aUQmFE) <!-- guide videos -->
+<p><a href="https://youtu.be/J-vU1aUQmFE"><img src="assets/guides/r-matrix.png" width="240" alt="Video: Who moves what"></a></p> <!-- guide videos -->
 
 > **In short:** an overview of the patch: which track moves which. Use it to find and open a cord once there are many.
 
@@ -2691,7 +2691,7 @@ top (TO). A cell is lit when a cord goes that way, brighter the more the cords m
 
 ## ORGANIC: TIDE and SWARM
 
-**Video:** [Slow, living movement](https://youtu.be/csk3NQlam_s) <!-- guide videos -->
+<p><a href="https://youtu.be/csk3NQlam_s"><img src="assets/guides/r-organic.png" width="240" alt="Video: Slow, living movement"></a></p> <!-- guide videos -->
 
 > **In short:** slow, natural-feeling movement. TIDE takes minutes a turn, and SWARM is eight related wanderers. Send
 > them to a filter or a pan for sounds that slowly drift and never repeat exactly.
@@ -2711,7 +2711,7 @@ PLAY restarts them from the track's seed, so a piece replays the same way. Pick 
 
 ## Mod shortcut
 
-**Video:** [The mod shortcut](https://youtu.be/eAPPkG-DKog) <!-- guide videos -->
+<p><a href="https://youtu.be/eAPPkG-DKog"><img src="assets/guides/r-fx-mod.png" width="240" alt="Video: The mod shortcut"></a></p> <!-- guide videos -->
 
 > **In short:** the fastest way to make a mod: hold FX and turn the knob you want to move. No need to open MODS.
 
@@ -2760,7 +2760,7 @@ Tessera's abbreviations are said as words (T1 is "track 1", BP on SCALES is "Boh
 
 ## Menu and settings
 
-**Video:** [The menu](https://youtu.be/5iWt-yRDcos) <!-- guide videos -->
+<p><a href="https://youtu.be/5iWt-yRDcos"><img src="assets/guides/r-menu.png" width="240" alt="Video: The menu"></a></p> <!-- guide videos -->
 
 > **In short:** device settings you set once and then forget, plus a few for playing: MIDI LEARN puts Tessera's knobs
 > on your controller (and remembers them), and MUTES makes mutes land on the bar or the phrase.
@@ -2772,7 +2772,7 @@ tools. Tessera's additions are below, in that order.
 
 ### The screen
 
-**Video:** [The screen's colour](https://youtu.be/74_yJTis6Jg) <!-- guide videos -->
+<p><a href="https://youtu.be/74_yJTis6Jg"><img src="assets/guides/r-color.png" width="240" alt="Video: The screen&#x27;s colour"></a></p> <!-- guide videos -->
 
 | Item | Choices | What it does |
 |---|---|---|
@@ -2821,7 +2821,7 @@ tools. Tessera's additions are below, in that order.
 
 ### Playing
 
-**Video:** [Mutes on the bar](https://youtu.be/3PrI3lECqbE) <!-- guide videos -->
+<p><a href="https://youtu.be/3PrI3lECqbE"><img src="assets/guides/e07-mutes.png" width="240" alt="Video: Mutes on the bar"></a></p> <!-- guide videos -->
 
 | Item | Choices | What it does |
 |---|---|---|
@@ -2833,7 +2833,7 @@ tools. Tessera's additions are below, in that order.
 
 ### MIDI
 
-**Video:** [Follow another clock](https://youtu.be/WGPaGG23Qug) <!-- guide videos -->
+<p><a href="https://youtu.be/WGPaGG23Qug"><img src="assets/guides/e09-clock.png" width="240" alt="Video: Follow another clock"></a></p> <!-- guide videos -->
 
 | Item | Choices | What it does |
 |---|---|---|
@@ -2883,7 +2883,7 @@ SPACE is not space for your projects, and the RAM tail is used for sound while p
 
 ### MIDI OUT channels
 
-**Video:** [Play your other synths](https://youtu.be/CiAXRHTrVUQ) <!-- guide videos -->
+<p><a href="https://youtu.be/CiAXRHTrVUQ"><img src="assets/guides/e09-midi-out.png" width="240" alt="Video: Play your other synths"></a></p> <!-- guide videos -->
 
 > **In short:** send each track to its own MIDI channel, so Tessera's generators can play your other synths. A track
 > can also go silent on the FM-1 and only play out over MIDI, or only modulate.
@@ -2989,7 +2989,7 @@ Example: TURING PROB on track 1 is 0x202, so send CC 99 = 4, CC 98 = 2, CC 6 = t
 
 ### USB host
 
-**Video:** [USB host: no computer](https://youtu.be/ouLw367LmZU) <!-- guide videos -->
+<p><a href="https://youtu.be/ouLw367LmZU"><img src="assets/guides/r-usb-host.png" width="240" alt="Video: USB host: no computer"></a></p> <!-- guide videos -->
 
 > **In short:** plug a USB-MIDI keyboard or synth straight into the FM-1, with no computer in between.
 
@@ -3038,7 +3038,7 @@ port it is on), **MIDI**, or the step that failed: **RESET FAIL**, **NOT ENABLED
 
 ### Recording the four tracks as separate stems
 
-**Video:** [Four stems over USB](https://youtu.be/ln_0NFFDc2M) <!-- guide videos -->
+<p><a href="https://youtu.be/ln_0NFFDc2M"><img src="assets/guides/r-stems.png" width="240" alt="Video: Four stems over USB"></a></p> <!-- guide videos -->
 
 > **In short:** set USB OUTPUT to 4 TRACKS and the computer sees **Tessera Out** as a four-channel input, one mono
 > channel per track, so each track records on its own DAW track.
@@ -3091,7 +3091,7 @@ channels 1 to 4 to one track each. The sample rate is 44.1 kHz; set the project 
 
 ## Saving and older projects
 
-**Videos:** [Play a demo](https://youtu.be/ymvzwJmKTWs), [Save it](https://youtu.be/X6e5LL4IeFs) <!-- guide videos -->
+<p><a href="https://youtu.be/ymvzwJmKTWs"><img src="assets/guides/e02-load.png" width="240" alt="Video: Play a demo"></a> <a href="https://youtu.be/X6e5LL4IeFs"><img src="assets/guides/e08-save.png" width="240" alt="Video: Save it"></a></p> <!-- guide videos -->
 
 > **In short:** a project keeps everything: patterns, sounds, generators and their seeds, forms and cords. Hold SAVE
 > to save. Start a new song from SAVE > PROJECT.
