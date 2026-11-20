@@ -7,6 +7,7 @@
 <b><a href="GETTING_STARTED.md">Getting started</a></b> ·
 <b><a href="MANUAL.md">Manual</a></b> ·
 <b><a href="RECIPES.md">Recipes</a></b> ·
+<b><a href="https://www.youtube.com/playlist?list=PLO1Q_qcfoes4">Guide videos</a></b> ·
 <b><a href="GENERATIVE.md">Generative patching</a></b> ·
 <b><a href="https://github.com/Rastapopolix/tessera/releases/latest">Releases</a></b>
 </p>
@@ -36,6 +37,24 @@ Melodee (Tess).
 makes a short phrase; EVOLVE and FORM set mutated phrases side by side into sections, so a piece is built from small
 tiles arranged into a larger pattern. The word also meant a die, which suits the chance-driven generators.
 Tessera for FM-1 is not related to the Tessera plugins for VCV Rack.
+
+## New in 3.7
+
+- **Capture-to-loop**: TURING, EUCLID, MARKOV and MORPH have a new SOURCE, **KEYS**. Play a phrase on the track's
+  keys or MIDI IN, leave it for a bar, and the generator loops what you played and varies it. Hold REC to print it
+  into steps and fix a note by hand. Prints now take whole passes of the pattern, so any LEN loops cleanly.
+- **DRIVE**, a new effect: a soft clip for warmth or grit, with a wavefolder on CHAR.
+- **Chords**: 2NDS, 4THS and 5THS stack the scale's seconds, fourths or fifths (quartal and quintal chords), and
+  **Move when / Move by** push chosen strikes off the chord, as a skank pushed up on the and of 4.
+- **ECHO's TIME** reads in milliseconds.
+- **LANDSCAPE** has more to find in a named project's place.
+- **Easier to read and to hear**: the manual as [web pages](https://rastapopolix.github.io/tessera/manual/) and
+  [a PDF](https://rastapopolix.github.io/tessera/manual/tessera-manual.pdf), with [guide videos](#guide-videos) for
+  every part; a clearer web editor with LIGHT and DARK, and the editor and web simulator work with a screen reader.
+
+A project using SOURCE KEYS does not load on 3.6.2 or older. The full lists: release notes for
+[3.7](docs/RELEASE_3.7.md), [3.7.1](docs/RELEASE_3.7.1.md), [3.7.2](docs/RELEASE_3.7.2.md),
+[3.7.3](docs/RELEASE_3.7.3.md) and [3.7.4](docs/RELEASE_3.7.4.md).
 
 ## New in 3.6
 
@@ -106,8 +125,8 @@ later) works with Tessera 3.3 and later only: earlier Tessera reports an identit
   hold. **GRAVITY** lets a drifting line come back home.
 * **Long form**: CHAIN plays the sections in an order, ENTRIES brings parts in and out in a musical order, ENERGY
   swings the whole piece between sparse and busy, and PIECE gives it a length and a shape over minutes or hours.
-* **Your steps as a seed**: TURING, EUCLID, MARKOV and MORPH can play from a STEP pattern you wrote (SOURCE) and vary
-  it, keeping its rhythm or its pitches as you choose.
+* **Your steps as a seed**: TURING, EUCLID, MARKOV and MORPH can play from a STEP pattern you wrote, or a phrase you
+  just played on the keys (SOURCE KEYS, new in 3.7), and vary it, keeping its rhythm or its pitches as you choose.
 * **Steps**: per step ratchets, nudges, conditions (1:2 to 8:8, FILL, FIRST) and a pitch accumulator that climbs each
   pass; the pattern's sheet doubles, halves or writes a Euclidean rhythm. Each pattern plays forwards, backwards,
   pendulum, folded, random or drunk (new in 3.5).
@@ -121,18 +140,31 @@ later) works with Tessera 3.3 and later only: earlier Tessera reports an identit
 * **Print**: hold REC to turn what a generator played into ordinary steps.
 * **Sounds**: FM6 (six-operator FM, three engine models), **ORACLE** (two oscillators, POLY MOD and a four-pole
   filter: a classic polyphonic analogue voice), TRIO, PHYS (physical models: bars, bells, strings, drum heads) and
-  DRUM (808, 909), with three insert effects a track and three send effects, a resonant FILTER among them.
+  DRUM (808, 909), with three insert effects a track and three send effects, a resonant FILTER and DRIVE (new in 3.7) among them.
 * **MIDI OUT** of every track and the generators, each on a channel of its own (GLO > MIDI OUT), and **CLOCK OUT**,
   over USB.
 * **USB audio**: stereo in and out with a computer, or the four tracks as separate stems (new in 3.5).
 * **Its own look**: one ink on black and a 5 x 7 pixel font, as on a monochrome OLED; YELLOW by default, or
   WHITE, GREEN, BLUE, RED, or ORANGE, PINK, HOT PINK or LILAC as the FM-1's shells, or MOSAIC, SUNSET, OCEAN or NEON: a colour per
   track (MENU > COLOR). **GROUND LIGHT** puts it all on warm paper instead (new in 3.5).
-* **Screen reader**: every page, knob and message spoken through your computer's screen reader.
+* **Screen reader**: every page, knob and message spoken through your computer's screen reader; the web editor and
+  simulator work with one too.
 
 New to Tessera? **[Getting started](GETTING_STARTED.md)** walks through your first half hour. The **[manual](MANUAL.md)** (also [on the site](https://rastapopolix.github.io/tessera/manual/), with search, and [as a PDF](https://rastapopolix.github.io/tessera/manual/tessera-manual.pdf) to print or read offline) covers every page, knob and shortcut, with a glossary of the terms at the end;
 **[RECIPES.md](RECIPES.md)** has step-by-step patches and tips. **[GENERATIVE.md](GENERATIVE.md)** explains the ideas
 behind generative patching, from modular synths to norns, and where each generator comes from.
+
+### Guide videos
+
+Short captioned clips show each part on the screen. Start with
+**[getting started](https://www.youtube.com/playlist?list=PLO1Q_qcfoes4)**, 25 clips in order, then the reference playlists:
+[steps and patterns](https://www.youtube.com/playlist?list=PLRyv3Qy2MzQ0),
+[generators](https://www.youtube.com/playlist?list=PLN7aK5SMl2vA),
+[long form](https://www.youtube.com/playlist?list=PLVXT4bgugQk4),
+[harmony](https://www.youtube.com/playlist?list=PLeU_ZorOoLxI),
+[mods](https://www.youtube.com/playlist?list=PLcOTnVq9xfok),
+[sounds and effects](https://www.youtube.com/playlist?list=PLXacQBye4j9M),
+[settings](https://www.youtube.com/playlist?list=PLdxRras8uNgg). Each section of the manual links its own clips.
 
 ---
 
