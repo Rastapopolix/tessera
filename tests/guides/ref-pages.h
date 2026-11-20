@@ -63,6 +63,7 @@ static void g_acid_scene(void)
     gen(0, TESS_ENG_TURING, 47);
     tx(0, TX_TUR_PROB, 5); tx(0, TX_TUR_LEN, 8); tx(0, TX_TW_SHIFT, -12);
     mixer(0, 110, 0, 0, 0);
+    trk[0].p[P_FXRATE] = 12; trk[0].p[P_FXCHAR] = 0;   /* (DRIVE's DRV low and FOLD 0 when TYPE reaches it: the picture starts a plain sine) */
     sound(1, ENGI_DRUM, DK_909_KIT);
     {
         static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_BD | L_CP, 0, L_CH, L_OH, L_BD, 0, L_CH, 0, L_BD | L_CP, 0, L_CH, L_OH};
@@ -90,9 +91,9 @@ static const gstep_t G_FX[] = {
     {3500, 5500, 200, "FX", "OPEN FX", "Tap FX: FX 1, track 1's first insert. TYPE, MIX, and two of the effect's own"},
     {10000, 12000, 1500, "KNOB 1", "DRIVE", "Turn KNOB 1, TYPE: DRIVE, a soft clip", 11},
     {16500, 18500, 1500, "KNOB 2", "MIX", "KNOB 2, MIX: how much of it is heard", 30},
-    {23000, 25000, 2500, "KNOB 3", "DRIVE UP", "KNOB 3, DRIVE: warmth first, then grit. The level stays about the same", 30},
-    {31000, 33000, 2000, "KNOB 4", "FOLD", "KNOB 4, FOLD: the peaks turned back, as a wavefolder does", 25},
-    {0, 39000, 1500, "KNOB 4", "FOLD 0", 0, -25},
+    {22000, 24000, 4500, "KNOB 3", "DRIVE UP", "KNOB 3, DRIVE: the picture's wave rounds off flat. Warmth, then grit", 40},
+    {30000, 32000, 6000, "KNOB 4", "FOLD", "KNOB 4, FOLD: the peaks turn back, more times the further up", 55},
+    {0, 38500, 4000, "KNOB 4", "FOLD 0", 0, -60},
     {41000, 43000, 600, "SELECT", "FX 2", "Turn SELECT: FX 2, the next insert. TYPE FILTER", 1},
     {0, 45000, 1500, "KNOB 1", "FILTER", 0, 10},
     {0, 48000, 1200, "KNOB 2", "MIX", 0, 30},
