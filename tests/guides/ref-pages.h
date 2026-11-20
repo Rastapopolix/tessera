@@ -450,18 +450,28 @@ static const gstep_t G_ORACLE[] = {
     {0, 114000, 600, "KNOB 3", "FILT", 0, 1},
     {121000, 0, 0, 0, 0, "The sound is saved with the project; SAVE > SOUND keeps one in a USER slot"},
 };
-/* gamelan-tinged ambient: 92 BPM, A minor pentatonic feel; a PHYS MARIMBA on TURING (a riff, so each change is heard on the same notes) as track 1 (its pages turned), a
+/* an arpeggio written in STEP: each chord's 8 notes rep times, the first of each 8 a little harder */
+static void g_arp_steps(uint32_t tr, const uint8_t *seq, uint32_t chords, uint32_t rep, uint32_t div)
+{
+    uint32_t i = 0;
+    for (uint32_t c = 0; c < chords; c++)
+        for (uint32_t r = 0; r < rep; r++)
+            for (uint32_t k = 0; k < 8u; k++, i++) step_note(tr, i, seq[c * 8u + k], k ? 84u : 104u);
+    trk[tr].p[P_SLEN] = (int16_t)i;
+    tx(tr, TX_MODE, TESS_ENG_OFF); trk[tr].p[P_SDIV] = (int16_t)div;
+}
+/* gamelan-tinged ambient: 92 BPM, A minor pentatonic feel; a PHYS MARIMBA playing a written arpeggio (Am F C G, so each change is heard on the same notes) as track 1 (its pages turned), a
  * warm ORACLE pad holding the chord, a TRIO sub on TURING; no track 4 */
 static void g_physwalk_scene(void)
 {
     song.g[G_BPM] = 92;
     scale(9, SCL_MIN, 0);
     sends(95, 70, 65, 50);
+    static const uint8_t A[32] = {57, 60, 64, 69, 72, 69, 64, 60,   53, 57, 60, 65, 69, 65, 60, 57,     /* Am, F */
+                                  55, 60, 64, 67, 72, 67, 64, 60,   55, 59, 62, 67, 71, 67, 62, 59};    /* C, G */
     sound(0, ENGI_PHYS, 1);                             /* MARIMBA */
-    trk[0].p[P_SDIV] = DIV_8;
-    gen(0, TESS_ENG_TURING, 31);
-    tx(0, TX_TUR_PROB, 5); tx(0, TX_TUR_LEN, 8);
-    mixer(0, 112, 0, 45, 15);
+    g_arp_steps(0, A, 4, 1, DIV_8);
+    mixer(0, 108, 0, 45, 15);
     sound(1, ENGI_ORACLE, OR_WARM_PAD);
     trk[1].p[P_CHRD] = 1;
     gen(1, TESS_ENG_CHORD, 7);
@@ -478,27 +488,30 @@ static void g_physwalk_scene(void)
 static const gstep_t G_PHYS[] = {
     {0, 0, 0, 0, 0, "PHYS: physical models. Struck bars, plucked and bowed strings, drum heads"},
     {3500, 5500, 200, "EDIT", "OPEN EDIT", "Tap EDIT: the BODY page, what is struck. The picture shows its overtones"},
-    {11000, 13000, 2000, "KNOB 2", "STRC", "KNOB 2, STRC: the bar's shape. From a tuned bar, a marimba, to a free bar, a chime", -40},
-    {20000, 22000, 2000, "KNOB 3", "BRIT", "KNOB 3, BRIT: a harder mallet, a brighter strike", 30},
-    {28000, 30000, 2000, "KNOB 4", "DAMP", "KNOB 4, DAMP: higher, and each note rings on longer", 30},
-    {36000, 38000, 600, "SELECT", "EXCT", "SELECT: EXCT, how it is played. KNOB 1, POS: where the mallet strikes", 1},
-    {0, 40000, 2000, "KNOB 1", "POS", 0, 40},
-    {46000, 48000, 2500, "KNOB 3", "BOW", "KNOB 3, BOW: a bow in place of the mallet. The notes swell and sing", 50},
-    {56000, 58000, 600, "SELECT", "BODY", "Back on BODY, KNOB 1, MODEL: STRNG. Now a bowed string", -1},
-    {0, 60000, 600, "KNOB 1", "STRNG", 0, 1},
-    {66000, 68000, 600, "SELECT", "EXCT", "On EXCT, BOW back down: a plucked string", 1},
-    {0, 70000, 2000, "KNOB 3", "BOW 0", 0, -50},
-    {76000, 78000, 600, "SELECT", "BODY", "MODEL: MEMB, a drum head. Each note a tuned hand drum", -1},
-    {0, 80000, 600, "KNOB 1", "MEMB", 0, 1},
-    {86000, 88000, 600, "KNOB 1", "SYMP", "MODEL: SYMP, a string with three more ringing along, as on a sitar. KNOB 2, CHRD tunes them", 1},
-    {98000, 100000, 200, "HOME", "HOME", "Tap HOME, turn PRESETS: PHYS's 17 sounds. KALIMBA ..."},
-    {0, 102000, 1500, "PRESETS", "KALIMBA", 0, 3},
-    {107000, 109000, 1500, "PRESETS", "HARP", "... HARP ...", 4},
-    {113000, 115000, 1000, "PRESETS", "VIBES", "... VIBES. Bells, mallets, plucks, bowed pads and drones", 1},
-    {121000, 0, 0, 0, 0, "A turned knob is saved with the project; SAVE > SOUND keeps one in a USER slot"},
+    {11000, 13000, 4000, "KNOB 2", "STRC", "KNOB 2, STRC: the bar's shape. From a tuned bar, a marimba, to a free bar, a chime", -40},
+    {20000, 22000, 5500, "KNOB 2", "STRC", "Lower, 16 to 48: the overtones in tune, a bar that rings like a string", -54},
+    {30000, 32000, 2500, "KNOB 2", "STRC", "At the bottom: a gong's crowded overtones", -24},
+    {38000, 40000, 8000, "KNOB 2", "STRC", "And back up to the chime", 78},
+    {50000, 52000, 2000, "KNOB 3", "BRIT", "KNOB 3, BRIT: a harder mallet, a brighter strike", 20},
+    {58000, 60000, 2000, "KNOB 4", "DAMP", "KNOB 4, DAMP: higher, and each note rings on longer", 30},
+    {66000, 68000, 600, "SELECT", "EXCT", "SELECT: EXCT, how it is played. KNOB 1, POS: where the mallet strikes", 1},
+    {0, 70000, 2000, "KNOB 1", "POS", 0, 40},
+    {76000, 78000, 2500, "KNOB 3", "BOW", "KNOB 3, BOW: a bow in place of the mallet. The notes swell and sing", 50},
+    {86000, 88000, 600, "SELECT", "BODY", "Back on BODY, KNOB 1, MODEL: STRNG. Now a bowed string", -1},
+    {0, 90000, 600, "KNOB 1", "STRNG", 0, 1},
+    {96000, 98000, 600, "SELECT", "EXCT", "On EXCT, BOW back down: a plucked string", 1},
+    {0, 100000, 2000, "KNOB 3", "BOW 0", 0, -50},
+    {106000, 108000, 600, "SELECT", "BODY", "MODEL: MEMB, a drum head. Each note a tuned hand drum", -1},
+    {0, 110000, 600, "KNOB 1", "MEMB", 0, 1},
+    {116000, 118000, 600, "KNOB 1", "SYMP", "MODEL: SYMP, a string with three more ringing along, as on a sitar. KNOB 2, CHRD tunes them", 1},
+    {128000, 130000, 200, "HOME", "HOME", "Tap HOME, turn PRESETS: PHYS's 17 sounds. KALIMBA ..."},
+    {0, 132000, 1500, "PRESETS", "KALIMBA", 0, 3},
+    {137000, 139000, 1500, "PRESETS", "HARP", "... HARP ...", 4},
+    {143000, 145000, 1000, "PRESETS", "VIBES", "... VIBES. Bells, mallets, plucks, bowed pads and drones", 1},
+    {151000, 0, 0, 0, 0, "A turned knob is saved with the project; SAVE > SOUND keeps one in a USER slot"},
 };
 /* deep house: 118 BPM, F minor; an 808 groove written in STEP as track 1 (its grid and pages), a TRIO sub on TURING,
- * ORACLE keys on CHORD stabs far back; no track 4 */
+ * an FM6 glass pad holding CHORD's chords far back; no track 4 */
 static void g_drumhouse_scene(void)
 {
     static const uint8_t L[16] = {L_BD, 0, L_CH, 0, L_BD | L_SD, 0, L_CH, 0, L_BD, 0, L_CH, 0, L_BD | L_SD, 0, L_CH, L_CH};
@@ -516,11 +529,11 @@ static void g_drumhouse_scene(void)
     gen(1, TESS_ENG_TURING, 17);
     tx(1, TX_TUR_PROB, 4); tx(1, TX_TUR_LEN, 8); tx(1, TX_TW_SHIFT, -12); tx(1, TX_TW_DROP, 40);
     mixer(1, 78, 0, 0, 0);
-    sound(2, ENGI_ORACLE, V_OR_KEYS);
+    sound(2, ENGI_FM6, V_GLASS_PAD);                    /* (Theo: enough off-beat chords) */
     trk[2].p[P_CHRD] = 1;
     gen(2, TESS_ENG_CHORD, 21);
-    tx(2, TX_CH_PROG, GEN_CH_TWO); tx(2, TX_CH_BARS, 2); tx(2, TX_CH_HIT, GEN_CH_BEAT);
-    mixer(2, 64, 20, 60, 30);
+    tx(2, TX_CH_PROG, GEN_CH_TWO); tx(2, TX_CH_BARS, 4); tx(2, TX_CH_HIT, GEN_CH_HOLD); tx(2, TX_CH_OCT, -1);
+    mixer(2, 78, 20, 70, 0);
     tx(3, TX_MODE, TESS_ENG_OFF);
     g_solo_check();
 }
@@ -550,7 +563,7 @@ static const gstep_t G_DRUM[] = {
     {0, 95500, 600, "KNOB 1", "909", 0, 1},
     {104000, 0, 0, 0, 0, "The kit and each sound's settings are saved with the project"},
 };
-/* synth-pop: 108 BPM, C minor; a TRIO lead on TURING as track 1 (its pages turned), an 808 in STEP, an FM6 glass pad
+/* synth-pop: 108 BPM, C minor; a TRIO lead playing a written arpeggio (Cm Ab Eb Bb) as track 1 (its pages turned), an 808 in STEP, an FM6 glass pad
  * on CHORD far back; no track 4 */
 static void g_triopop_scene(void)
 {
@@ -559,11 +572,11 @@ static void g_triopop_scene(void)
     song.g[G_BPM] = 108;
     scale(0, SCL_MIN, 0);
     sends(80, 60, 60, 50);
+    static const uint8_t A[32] = {60, 63, 67, 72, 75, 72, 67, 63,   56, 60, 63, 68, 72, 68, 63, 60,     /* Cm, Ab */
+                                  51, 55, 58, 63, 67, 63, 58, 55,   58, 62, 65, 70, 74, 70, 65, 62};    /* Eb, Bb */
     sound(0, ENGI_TRIO, 1);                             /* ARP LEAD */
-    trk[0].p[P_SDIV] = DIV_8;
-    gen(0, TESS_ENG_TURING, 44);
-    tx(0, TX_TUR_PROB, 5); tx(0, TX_TUR_LEN, 8);
-    mixer(0, 102, 0, 35, 25);
+    g_arp_steps(0, A, 4, 2, DIV_16);
+    mixer(0, 95, 0, 35, 25);
     sound(1, ENGI_DRUM, DK_808_KIT);
     for (uint32_t i = 0; i < 16u; i++) step_hits(1, i, L[i], V[i]);
     trk[1].p[P_SLEN] = 16;
@@ -600,7 +613,7 @@ static void guide_ref_pages(const char *out, FILE *tsv)
     G_RUN("r-arp", "ARP: ONE NOTE AT A TIME", "MOSAIC", 132, 4, g_folkarp_scene, G_ARP);   /* folktronica */
     G_RUN("r-lfo", "LFO: A WAVE THAT MOVES", "LILAC", 141, 4, g_softdrone_scene, G_LFO);   /* soft drone */
     G_RUN("r-fx", "FX: INSERTS AND SENDS", "LILAC", 122, 4, g_organhouse_scene, G_FX);   /* organ house */
-    G_RUN("r-phys", "PHYS: STRUCK, PLUCKED, BOWED", "ORANGE", 128, 4, g_physwalk_scene, G_PHYS);   /* gamelan ambient */
+    G_RUN("r-phys", "PHYS: STRUCK, PLUCKED, BOWED", "ORANGE", 158, 4, g_physwalk_scene, G_PHYS);   /* gamelan ambient */
     G_RUN("r-drum", "DRUM: THE 808 AND THE 909", "ORANGE", 110, 4, g_drumhouse_scene, G_DRUM);   /* deep house */
     G_RUN("r-trio", "TRIO: THREE OSCILLATORS", "ORANGE", 86, 4, g_triopop_scene, G_TRIO);   /* synth-pop */
     G_RUN("r-tweak2", "TWEAK 2: WHICH HITS PLAY", "MOSAIC", 112, 4, g_afrobeat_scene, G_TWEAK2);   /* afrobeat */
