@@ -579,6 +579,33 @@ static int test_tsp_record(void)
     raw[tsp_seen.at[TSP_STRUM] + NTRK + 2u] = TESS_STR_DIRS;   /* (track 3's DIR past ALT) */
     tsp_resum(raw);
     bad += check("TSP1: a DIR past ALT refused", ok && !tsp_valid(raw, len));
+    reset();                                           /* CHORD's MOVE: the CHMOVE part; none while WHEN is OFF */
+    tessera_param_set(1, TX_CH_BY, TESS_CB_INVU);      /* (a BY alone: WHEN OFF, no part) */
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    bad += check("TSP1: MOVE WHEN OFF everywhere writes no CHMOVE part", len && tsp_valid(raw, len) && !tsp_seen.at[TSP_CHMOVE]);
+    tessera_param_set(2, TX_CH_WHEN, TESS_CW_LAST); tessera_param_set(2, TX_CH_BY, TESS_CB_UP3);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_CHMOVE];
+    tessera_reset();
+    tsp_restore(raw);
+    bad += check("TSP1: MOVE WHEN and BY come back from their part", ok && tessera.ch_when[2] == TESS_CW_LAST &&
+                 tessera.ch_by[2] == TESS_CB_UP3 && tessera.ch_by[1] == TESS_CB_INVU && !tessera.ch_when[0] &&
+                 tessera.ch_by[0] == TESS_CB_UP2);
+    raw[tsp_seen.at[TSP_CHMOVE] - 4u] = (uint8_t)(TSP_PARTS + 1u);   /* (as older firmware sees it: skipped) */
+    tsp_resum(raw);
+    ok = tsp_valid(raw, len) && !tsp_seen.at[TSP_CHMOVE];
+    if (ok) tsp_restore(raw);
+    bad += check("TSP1: a record without the part loads with MOVE OFF, +2 ST", ok && !tessera.ch_when[2] &&
+                 tessera.ch_by[2] == TESS_CB_UP2);
+    tessera_param_set(0, TX_CH_WHEN, TESS_CW_ODD);
+    project_capture(&proj_scratch);
+    len = tsp_pack(raw, &proj_scratch, 1);
+    ok = len && tsp_valid(raw, len) && tsp_seen.at[TSP_CHMOVE];
+    raw[tsp_seen.at[TSP_CHMOVE] + NTRK + 1u] = TESS_CB_N;   /* (track 2's BY past LEAD) */
+    tsp_resum(raw);
+    bad += check("TSP1: a BY past LEAD refused", ok && !tsp_valid(raw, len));
     reset();                                           /* the MIX buses: the BUS part; none at SUM, OFF */
     {
         cord_t c = {CS_BUSA, 0, CD_BUS_B, 0, 50, 0, CU_BI};
