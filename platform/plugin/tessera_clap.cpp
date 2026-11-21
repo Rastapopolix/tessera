@@ -208,6 +208,8 @@ struct Tessera : GuiLink
             pending.enc[r] += in.enc[r];
             in.enc[r] = 0;
         }
+        pending.zones.insert(pending.zones.end(), in.zones.begin(), in.zones.end());
+        in.zones.clear();
         pending.changed = true;
         in.changed = false;
     }
@@ -757,6 +759,9 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
                     t->core->enc((uint32_t)r, pi.enc[r]);
                     pi.enc[r] = 0;
                 }
+            for (auto &a : pi.zones)   // the screen's zones: what the mouse did there, in order
+                t->core->zone_do(&a.z, a.action, a.n);
+            pi.zones.clear();          // (keeps its room: no allocation on this thread)
             pi.changed = false;
         }
     }

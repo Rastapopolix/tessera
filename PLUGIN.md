@@ -56,6 +56,22 @@ set ROUT to a channel range (CH1-8: channel 1 plays track 1, channel 2 track 2, 
 The window shows the FM-1, 1:1. Click the buttons and keys (drag across the keys to glide). Drag a knob up and down
 or left and right, or turn the mouse wheel over it.
 
+**The screen works with the mouse too.** Hover over something you can use and it gets a thin outline, with its name
+and value shown large in a box under the screen:
+
+- **A value** (one of the four columns of a page, KNOB 1 to 4): turn the mouse wheel over it, or drag it up and down,
+  as you would turn its knob. Double-click it to put it back to its default.
+- **A list's row** (SCL's Root, Scale, Quantize…, the MENU, a list that opens over a page): click to move there, turn
+  the wheel to change that row's value (on SCL's Scale row the wheel steps through the scales), double-click to move
+  there and press OK (Scale opens SCALES; a whole list takes the row you double-clicked).
+- **OK, BACK, YES and NO** on the screen: click them.
+- **The sound browser and SCALES:** the wheel over the left side turns KNOB 1 (the list, the scale family), over the
+  right side KNOB 2 (the sound, the scale).
+- **HOME:** click a track's column to select it.
+
+The panel's own knobs and buttons still do everything they did. The mouse on the screen only turns those knobs and
+presses those keys for you, so a page behaves the same either way.
+
 **The computer keyboard** plays it too, as in the web simulator (click the window first):
 
 - **Z** to **'** and **Q** to **O**: the keys.

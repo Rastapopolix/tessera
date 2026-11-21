@@ -10,3 +10,4 @@
 #define TESS_N_KEYS 27
 #define TESS_TIER TESS_TIER_DESKTOP
 #define TESS_HAS_BATTERY 1   /* (shows the FM-1's, as the device would) */
+#define TESS_HAS_POINTER 0   /* (not yet: the page would read the core's zones as the plugin does) */

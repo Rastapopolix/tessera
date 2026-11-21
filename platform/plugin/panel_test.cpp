@@ -5,6 +5,8 @@
  *   - a click on PLAY starts the song, and its LED lights; a click on SEQ changes the screen;
  *   - a knob dragged turns its encoder; a key clicked sounds;
  *   - TESSERA's shell (the default): its layout, its menu (a shell, an ink, FM-1 USB), the MIDI lamp;
+ *   - the screen's zones: the mouse over FX's MIX outlines it, with a card under the screen; the wheel there, a drag and a
+ *     double-click reach the core as that knob's turns and its default;
  *   - writes the window as PPM pictures (argument: a folder) to look at.
  * usage: tessera-panel-test [out-folder] */
 #include <cmath>
@@ -42,6 +44,8 @@ static double run(Panel &p, double seconds)   // as the plugin's audio thread: i
         in.track = -1;
         for (int r = 0; r < TESS_NE; r++)
             if (in.enc[r]) { tess_core_enc((uint32_t)r, in.enc[r]); in.enc[r] = 0; }
+        for (auto &a : in.zones) tess_core_zone_do(&a.z, a.action, a.n);
+        in.zones.clear();
         in.changed = false;
     }
     for (int n = (int)(seconds * tess_core_rate() / 441); n > 0; n--)
@@ -446,6 +450,60 @@ int main(int argc, char **argv)
         f.down(400, fy);
         f.up(400, fy);
         CHECK(f.take_fm1_request() == 0, "lit, it asks for off");
+    }
+
+    // ---- the screen's zones: FX's MIX column under the mouse
+    {
+        Panel z;
+        z.set_shell(1);
+        tess_core_buttons(1u << 0);   // FX
+        run(z, 0.05);
+        tess_core_buttons(0);
+        run(z, 0.3);
+        tess_core_view(&v);
+        z.draw(px.data(), v);
+        int mix = -1;
+        for (uint32_t i = 0; i < v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_KNOB && v.zones[i].role == 4) mix = (int)i;
+        CHECK(mix >= 0, "FX: KNOB 2's column is a zone");
+        if (mix >= 0)
+        {
+            const tess_zone_t m = v.zones[mix];
+            const int ox = 292 + 256 / 32, oy = 44 + 256 / 32, mx = ox + m.x + m.w / 2, my = oy + m.y + m.h / 2;
+            std::string v0 = m.value;
+            z.move(mx, my);
+            z.draw(px.data(), v);
+            int card = 0;
+            for (int yy = 44 + 256; yy < 44 + 256 + 40; yy++)   // (under the screen)
+                for (int xx = mx - 80; xx < mx + 80; xx++) card += px[yy * Panel::W + xx] == 0xFFFFD020u;
+            CHECK(card > 40, "the mouse over %s: a card with its value under the screen (%d yellow pixels)", m.name, card);
+            if (!out.empty()) ppm(out + "/09_zone_hover.ppm", px);
+            CHECK(z.wheel(mx, my, 2) && z.input.zones.size() == 1 && z.input.zones[0].action == TESS_ZA_TURN &&
+                      z.input.zones[0].n == 2, "the wheel on %s: two detents up for its knob", m.name);
+            CHECK(!z.wheel(5, 5, 1), "the wheel off the screen and the knobs: nothing");
+            run(z, 0.3);
+            tess_core_view(&v);
+            std::string v1 = v.zones[mix].value;
+            CHECK(v1 != v0, "%s turned by the wheel (%s, then %s)", m.name, v0.c_str(), v1.c_str());
+            z.down(mx, my);
+            for (int i = 1; i <= 3; i++) z.move(mx, my - 8 * i);
+            z.up(mx, my - 24);
+            int turned = 0;
+            for (auto &a : z.input.zones) turned += a.action == TESS_ZA_TURN ? a.n : 0;
+            CHECK(turned == 3, "a drag up 24 px on %s: three detents (%d)", m.name, turned);
+            run(z, 0.3);
+            tess_core_view(&v);
+            z.draw(px.data(), v);
+            std::string v2 = v.zones[mix].value;
+            CHECK(v2 != v1, "%s turned by the drag (%s, then %s)", m.name, v1.c_str(), v2.c_str());
+            z.down(mx, my), z.up(mx, my), z.down(mx, my), z.up(mx, my);
+            CHECK(!z.input.zones.empty() && z.input.zones.back().action == TESS_ZA_DOUBLE, "a double-click on %s asks for its default", m.name);
+            run(z, 0.3);
+            tess_core_view(&v);
+            std::printf("zones: %s %s, wheel %s, drag %s, double-click %s\n", m.name, v0.c_str(), v1.c_str(), v2.c_str(),
+                        v.zones[mix].value);
+            CHECK(std::string(v.zones[mix].value) != v2, "%s back to its default (%s)", m.name, v.zones[mix].value);
+        }
     }
 
     std::printf(fails ? "panel test: %d FAILED\n" : "panel test: ok\n", fails);

@@ -48,6 +48,8 @@ jobs:
         run: build/plugin/tessera-panel-test
       - name: Sync test (following the DAW)
         run: build/plugin/tessera-sync-test
+      - name: Zones test (the mouse on the screen)
+        run: build/plugin/tessera-zones-test
       - name: Copies test (several instances)
         run: build/plugin/tessera-copies-test
       - name: Project files test (.tsp, FM-1 backups)
@@ -89,6 +91,7 @@ jobs:
         run: |
           build/plugin/Release/tessera-panel-test.exe
           build/plugin/Release/tessera-sync-test.exe
+          build/plugin/Release/tessera-zones-test.exe
           build/plugin/Release/tessera-copies-test.exe
           build/plugin/Release/tessera-projfile-test.exe
           build/plugin/Release/tessera-fm1-test.exe
@@ -120,6 +123,7 @@ jobs:
         run: |
           build/plugin/tessera-panel-test
           build/plugin/tessera-sync-test
+          build/plugin/tessera-zones-test
           build/plugin/tessera-copies-test
           build/plugin/tessera-projfile-test
           build/plugin/tessera-fm1-test

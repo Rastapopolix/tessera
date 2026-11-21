@@ -59,6 +59,147 @@ void tess_core_boot(void)
 #endif
 }
 
+/* ---- the screen's zones (TESS_HAS_POINTER: ui_zones.c): what a front end's mouse asks of them, done through the
+ * knobs and keys. A queue, a step a millisecond (the UI reads the knobs every one): a list's rows one detent each, as
+ * a new turn (no acceleration: three rows are three, however quick), a key pressed 40 ms then let go; a turn's
+ * detents as the hand's (a quick wheel speeds up as a quick knob does) */
+#if TESS_HAS_POINTER
+_Static_assert(TESS_ZONES == UZ_MAX, "tess_core.h TESS_ZONES is ui_zones.c's UZ_MAX");
+enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE };
+#define ZQ_N 256u
+static uint32_t zq[ZQ_N], zq_r, zq_w, zq_wait, zq_rows;   /* zq_rows: a list's row moves still to run */
+static uint32_t zone_btn, host_btn;                   /* held by a zone's click, and by the front end (physical bits) */
+static void zq_put(uint32_t op, uint32_t arg, int32_t sign)
+{
+    if (zq_w - zq_r < ZQ_N)
+        zq[zq_w++ % ZQ_N] = op | (arg & 255u) << 8 | (sign < 0 ? 1u : 0u) << 16;
+}
+static void zq_turn(int32_t role, int32_t n)          /* n detents of a knob (at most 64 at once) */
+{
+    int32_t k, a = n < 0 ? -n : n;
+    if (role < 0 || role >= (int32_t)NE)
+        return;
+    for (k = 0; k < a && k < 64; k++)
+        zq_put(ZQ_DETENT, (uint32_t)role, n);
+}
+static void zq_run(void)
+{
+    uint32_t q, op, arg, m;
+    int32_t sg;
+    if (zq_wait) {
+        zq_wait--;
+        return;
+    }
+    if (zq_r == zq_w)
+        return;
+    q = zq[zq_r++ % ZQ_N];
+    op = q & 255u, arg = (q >> 8) & 255u, sg = (q >> 16) & 1u ? -1 : 1;
+    switch (op) {
+    case ZQ_STEP:                                     /* a row: one detent, a turn of its own */
+        ui.enc_t[arg % NE] = 0;
+        tess_core_enc(arg, sg);
+        if (zq_rows && !--zq_rows)
+            uz_list_sel_pending = -1;                 /* (the list's cursor is its own again when next drawn) */
+        break;
+    case ZQ_DETENT:
+        tess_core_enc(arg, sg);
+        break;
+    case ZQ_PRESS:
+        m = 1u << panel.btn[arg % NB];
+        host_pressed |= m & ~fm1_in.buttons;
+        zone_btn |= m;
+        fm1_in.buttons |= m;
+        zq_wait = 40u;
+        break;
+    case ZQ_RELEASE:
+        m = 1u << panel.btn[arg % NB];
+        zone_btn &= ~m;
+        fm1_in.buttons = host_btn | zone_btn;
+        zq_wait = 20u;
+        break;
+    }
+}
+static void zq_key(uint32_t b)                        /* a key tapped */
+{
+    zq_put(ZQ_PRESS, b, 1);
+    zq_put(ZQ_RELEASE, b, 1);
+}
+/* KNOB c+1's value back to its default (a double-click on its column): a page's own parameter only */
+static void zone_reset(int32_t role)
+{
+    int16_t *vp = 0;
+    const param_desc_t *d;
+    uint32_t c = (uint32_t)(role - EN_K1);
+    if (role < EN_K1 || role > EN_K4 || ui.home || ui.menu || ui.confirm || pop.on || ui.layer)
+        return;
+    d = page_desc(cur_page(), c, &vp);
+    if (d && vp && d->max > d->min && *vp != d->def)
+        edit_param(c, (int32_t)d->def - *vp);
+}
+static int zone_live(const tess_zone_t *z)          /* the zone is still on the screen */
+{
+    uint32_t i;
+    for (i = 0; i < uz_n; i++)
+        if (uz[i].kind == z->kind && uz[i].role == z->role && uz[i].vrole == z->vrole && uz[i].row == z->row)
+            return 1;
+    return 0;
+}
+#endif
+static void core_ui_input(void)
+{
+#if TESS_HAS_POINTER
+    zq_run();
+#endif
+    ui_input();
+}
+
+void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
+{
+#if TESS_HAS_POINTER
+    int32_t d, k;
+    if (!z || !zone_live(z))
+        return;
+    switch (z->kind) {
+    case TESS_ZONE_KNOB:
+        if (action == TESS_ZA_TURN)
+            zq_turn(z->role, n);
+        else if (action == TESS_ZA_DOUBLE)
+            zone_reset(z->role);
+        break;
+    case TESS_ZONE_ROW:
+        if (action == TESS_ZA_TURN && z->vrole < 0) {   /* a list that is its value (a picker, a whole list): it
+                                                         * scrolls */
+            zq_turn(z->role, n);
+            break;
+        }
+        d = z->row - uz_list.sel;                     /* there first: a detent a row */
+        for (k = 0; k < (d < 0 ? -d : d) && k < 64; k++) {
+            zq_put(ZQ_STEP, (uint32_t)z->role, d);
+            zq_rows++;
+        }
+        if (d) {
+            uz_list.sel = z->row;
+            uz_list_sel_pending = 1;
+        }
+        if (action == TESS_ZA_TURN)
+            zq_turn(z->vrole, n);                     /* then its value */
+        else if (action == TESS_ZA_DOUBLE && uz_list.ok)
+            zq_key(B_OCTUP);                          /* then OCT+: done, or its whole list */
+        break;
+    case TESS_ZONE_KEY:
+        if (action != TESS_ZA_TURN && z->row >= 0 && z->row < (int32_t)NB)
+            zq_key((uint32_t)z->row);
+        break;
+    case TESS_ZONE_TRACK:
+        if (action != TESS_ZA_TURN)
+            tess_core_track_select((uint32_t)z->row);
+        break;
+    }
+#else
+    (void)z, (void)action, (void)n;
+#endif
+}
+
 /* one pass of main.c's loop: what a host has (no USB, editor, UBOOT, flash) */
 static void core_frame(void)
 {
@@ -66,7 +207,7 @@ static void core_frame(void)
         track_select(core_track_req);
         core_track_req = 0xFFu;
     }
-    ui_input();
+    core_ui_input();
     ui_leds();
     ui_draw();
 #ifdef ANN_VER
@@ -87,7 +228,7 @@ static void core_tick_ms(void)
         core_last_frame = fm1_ms;
         core_frame();
     } else {
-        ui_input();
+        core_ui_input();
     }
 #endif
 }
@@ -129,7 +270,7 @@ static void core_ms(void)
         core_last_frame = fm1_ms;
         core_frame();
     } else {
-        ui_input();
+        core_ui_input();
     }
 #endif
 }
@@ -240,7 +381,12 @@ void tess_core_buttons(uint32_t labels)
         if ((labels >> b) & 1u)
             m |= 1u << panel.btn[b];
     host_pressed |= m & ~fm1_in.buttons;
+#if TESS_HAS_POINTER
+    host_btn = m;
+    fm1_in.buttons = m | zone_btn;                /* (a key a zone's click holds a moment: tess_core_zone_do) */
+#else
     fm1_in.buttons = m;
+#endif
 }
 void tess_core_keys(uint32_t mask)
 {
@@ -350,6 +496,28 @@ void tess_core_view(tess_view_t *v)
     v->master = tess_core_master_get();
     v->ink = settings.palette;
     v->track = song.sel;
+    v->zone_count = 0;
+    v->zone_gen = 0;
+#if TESS_HAS_POINTER
+    {                                             /* the zones, in the order a hit is looked for: a list over the
+                                                   * page, a dialog's or a screen's keys, the page's columns, a
+                                                   * screen's two lists, HOME's tracks */
+        static const uint8_t ORDER[UZ_GROUPS] = {UZ_G_LIST, UZ_G_KEYS, UZ_G_COLS, UZ_G_SIDES, UZ_G_TRACKS};
+        uint32_t g, n = 0;
+        for (g = 0; g < UZ_GROUPS; g++)
+            for (i = 0; i < uz_n && n < TESS_ZONES; i++)
+                if (uz[i].group == ORDER[g]) {
+                    tess_zone_t *z = &v->zones[n++];
+                    z->x = (uint16_t)uz[i].x, z->y = (uint16_t)uz[i].y, z->w = (uint16_t)uz[i].w, z->h = (uint16_t)uz[i].h;
+                    z->kind = uz[i].kind, z->group = uz[i].group;
+                    z->role = uz[i].role, z->vrole = uz[i].vrole, z->row = uz[i].row;
+                    str_cpy(z->name, uz[i].name, sizeof z->name);
+                    str_cpy(z->value, uz[i].value, sizeof z->value);
+                }
+        v->zone_count = n;
+        v->zone_gen = uz_gen;
+    }
+#endif
 }
 
 uint32_t tess_core_track(void) { return song.sel; }

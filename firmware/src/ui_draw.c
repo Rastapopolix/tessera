@@ -2007,6 +2007,7 @@ static void ui_draw_frame(void)
     if (!scr_frame()) return;
     if (!sim.on && !ui.uboot) scr_idle();
     ui.frame++;
+    UZ(uz_frame());                                     /* (a forced frame: the screen's zones drawn anew) */
     if (palette_track(song.sel))                       /* THEME is the selected track's colour */
         ui.force = 1;
     if(seq_counting()) { char text[24]="COUNT IN ";fmt_int(text+9,(int32_t)cin_left);

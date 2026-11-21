@@ -561,6 +561,8 @@ static void menu_mono(void)
 {
     uint32_t first = ui.menu_sel >= MENU_VISIBLE ? ui.menu_sel - MENU_VISIBLE + 1u : 0u, i;
     int32_t top, hh = (int32_t)MENU_VISIBLE * 11;
+    UZ(uz_list_set(EN_K1, EN_K2, (int32_t)ui.menu_sel, (int32_t)first, 1));
+    UZ(uz_begin(UZ_G_LIST));
     for (top = 0; top < 108; top += 54) {               /* (the rows below the menu's strip, in two canvases) */
         cv_begin(240, 108, MO_BG);
         cv_oy = -top * 2;
@@ -570,6 +572,9 @@ static void menu_mono(void)
             uint16_t ink = on ? MO_BG : MO_INK, dim = on ? MO_BG : MO_DIM;
             char b[24], a[24];
             const char *value = menu_value(i, b, sizeof b);
+            if (!top && ui.menu == 1)                   /* (zones: KNOB 1 the row, KNOB 2 its value) */
+                UZ(uz_add(UZ_G_LIST, UZ_ROW, 0, MENU_HEAD / 2 + y, 118, 10, EN_K1, EN_K2, (int32_t)i, MI_NAME[i],
+                          value ? value : ""));
             if (on)
                 mo_fill(0, y, 118, 10, MO_HOT);
             mo_text(MI_NAME[i], 2, y + 2, on ? MO_BG : MO_DIM);

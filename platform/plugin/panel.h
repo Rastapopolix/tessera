@@ -19,6 +19,9 @@ struct PanelInput
     int32_t enc[TESS_NE] = {};        // detents turned since the last take
     int32_t master = -1;              // 0..1023 when the knob was turned, else -1
     int32_t track = -1;               // a track to select (the 1-4 / 5-8 switch: T1 or T5), else -1
+    // what the mouse did on the screen's zones (tess_view_t.zones), in order, for tess_core_zone_do
+    struct ZoneAct { tess_zone_t z; uint32_t action; int32_t n; };
+    std::vector<ZoneAct> zones;
     bool changed = false;
 };
 
@@ -29,7 +32,10 @@ class Panel
     Panel();
     /* the whole window into px (W x H, 0xAARRGGBB, top row first) */
     void draw(uint32_t *px, const tess_view_t &v);
-    /* the mouse, in window pixels; wheel: notches, + = up / clockwise. Each returns true if the input changed */
+    /* the mouse, in window pixels; wheel: notches, + = up / clockwise. Each returns true if the input changed. On the
+     * screen, the zones the view has (tess_view_t.zones) come first: a value's column turns with a drag or the wheel
+     * (a double-click: its default), a list's row takes a click (a double-click: and OK; the wheel: its value), OK,
+     * BACK, YES, NO and HOME's tracks a click; the one under the mouse outlined, its name and value large beside it */
     bool down(int x, int y);
     bool move(int x, int y);
     bool up(int x, int y);
@@ -139,7 +145,7 @@ class Panel
     int keys_req = -1;
     void merge_held();
     // a drag
-    enum { NONE, KNOB, BUTTON, KEY } drag = NONE;
+    enum { NONE, KNOB, BUTTON, KEY, ZONE } drag = NONE;
     int drag_i = -1, last_x = 0, last_y = 0, acc = 0;
     int master_now = 700;   // MASTER as the core has it (the view: the DAW may automate it)
     uint32_t frame = 0;     // frames drawn (the breathing LEDs: each window its own)
@@ -147,4 +153,15 @@ class Panel
     int button_at(int x, int y) const;
     int key_at(int x, int y) const;
     void turn(int i, int n);
+    // the screen's zones: the view's last, the mouse over them, a click's time for a double-click
+    void draw_body(uint32_t *px, const tess_view_t &v);
+    void draw_hover(uint32_t *px);
+    std::vector<tess_zone_t> zones;
+    tess_zone_t drag_zone{}, click_zone{};
+    bool click_known = false, hover_in = false;
+    int hover_x = 0, hover_y = 0, click_x = 0, click_y = 0;
+    double click_t = 0;
+    int zone_at(int x, int y) const;
+    int zone_like(const tess_zone_t &z) const;   // the view's zone that is z, -1 none
+    void zone_act(const tess_zone_t &z, uint32_t action, int n);
 };

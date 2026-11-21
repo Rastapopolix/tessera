@@ -69,6 +69,24 @@ typedef struct {
     const uint16_t *pixels;
 } tess_screen_t;
 void tess_core_screen(tess_screen_t *s);
+/* the screen's zones (a build whose profile has TESS_HAS_POINTER, the plugin; else none): what a mouse can use, where
+ * the page drew it, in screen pixels. A front end finds the first zone under the mouse (the list is in that order) and
+ * hands it back to tess_core_zone_do as it got it. KNOB: a value (turn: the wheel, a drag; double-click: its default);
+ * ROW: a list's row (click: the cursor there; double-click: there and OCT+; turn: its value, or the list scrolls when
+ * the row is the value); KEY: OK, BACK, YES, NO (click); TRACK: HOME's column (click: that track) */
+enum { TESS_ZONES = 48 };
+enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK };
+typedef struct {
+    uint16_t x, y, w, h;
+    uint8_t kind, group;
+    int8_t role, vrole;              /* (the core's: the knob it turns, a row's value knob) */
+    int16_t row;                     /* (the core's: a row's place, a key's button label, a track) */
+    char name[16], value[16];        /* what it shows: a front end's hover */
+} tess_zone_t;
+enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE };
+/* do what the mouse did on zone z: TURN n detents (+ clockwise / up), CLICK, DOUBLE. A zone no longer on the screen
+ * is let go. Its steps run a millisecond each as the device plays (a row three away: three detents) */
+void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n);
 /* what the FM-1 panel shows */
 typedef struct {
     uint16_t screen[TESS_SCREEN * TESS_SCREEN];   /* RGB565 (host order) */
@@ -76,6 +94,8 @@ typedef struct {
     uint32_t screen_draws, playing, master;   /* master 0..1023 */
     uint32_t ink;                    /* MENU > COLOR's choice now (tess_core_ink_at's i) */
     uint32_t track;                  /* the selected track, 0 .. tess_core_tracks() - 1 (8 tracks: its bank, track & 4) */
+    uint32_t zone_count, zone_gen;   /* the screen's zones (above), and a count that changes when they do */
+    tess_zone_t zones[TESS_ZONES];
 } tess_view_t;
 void tess_core_view(tess_view_t *v);
 /* the selected track (0 .. tess_core_tracks() - 1), and selecting one as KNOB 1 on TRACKS does (its sound, pages and
