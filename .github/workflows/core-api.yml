@@ -15,6 +15,7 @@ on:
       - 'web/sim/sim.c'
       - 'tests/hostsim.c'
       - 'tests/ui_test.c'
+      - 'tests/bank_pages_test.c'
       - 'tests/tsp_cross.*'
       - 'tests/core_tracks.sh'
       - 'demos/*.tsp'
@@ -67,6 +68,11 @@ jobs:
           clang -w -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=0 -DCORE_TRACKS=8 tests/ui_test.c -o ui_test8 -lm
           ./ui_test8 > ui_test8.log 2>&1 || { tail -40 ui_test8.log; exit 1; }
           tail -3 ui_test8.log
+      - name: The pages at 8 tracks show the selected track's bank (Mono, CORE_TRACKS=8)
+        run: |
+          clang -w -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=1 -DCORE_TRACKS=8 tests/bank_pages_test.c -o bank_pages_test -lm
+          ./bank_pages_test > bank_pages.log 2>&1 || { tail -40 bank_pages.log; exit 1; }
+          tail -1 bank_pages.log
       - name: Summary
         if: always()
         run: |
