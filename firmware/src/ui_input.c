@@ -999,7 +999,7 @@ static void edit_param(uint32_t slot, int32_t steps)
         return;
     }
     if (pg->graph == GR_PATGRID) {                      /* PATTERNS: KNOB k queues track k's (ui_stage.c) */
-        patgrid_edit(slot, steps);
+        patgrid_edit(UI_BASE + slot, steps);           /* (8 tracks: the selected track's bank) */
         return;
     }
     if (pg->graph == GR_CORDS) {                        /* CORDS (ui_cords.c) */
@@ -1122,15 +1122,15 @@ static void edit_param(uint32_t slot, int32_t steps)
     }
     if (pg->graph == GR_MIDICH && midi_layer_on()) {   /* MIDI OUT, OCT- held: KNOB k track k's TRANSPOSE, a semitone a
                                                         * detent (SOUND, DRUM MAP: the MIDI OUT sheet) */
-        if (slot < TESSERA_TRACKS)
-            tessera_param_set(slot, TX_MIDI_TR, tessera_param_get(slot, TX_MIDI_TR) + steps);
+        if (slot < UI_NT)                               /* (8 tracks: the selected track's bank) */
+            tessera_param_set(UI_BASE + slot, TX_MIDI_TR, tessera_param_get(UI_BASE + slot, TX_MIDI_TR) + steps);
         oct_eat |= 1u;                                  /* (its release is no OCT-) */
         ui.force = 1;
         return;
     }
     if (pg->graph == GR_MIDICH) {                   /* MIDI OUT: KNOB k track k's channel, a step a detent */
-        if (slot < TESSERA_TRACKS)
-            tessera_param_set(slot, TX_MIDI_CH, tessera_param_get(slot, TX_MIDI_CH) + steps);
+        if (slot < UI_NT)                               /* (8 tracks: the selected track's bank) */
+            tessera_param_set(UI_BASE + slot, TX_MIDI_CH, tessera_param_get(UI_BASE + slot, TX_MIDI_CH) + steps);
         ui.force = 1;
         return;
     }
@@ -1169,7 +1169,8 @@ static void edit_param(uint32_t slot, int32_t steps)
     if (pg->graph == GR_ENTRIES) {                  /* ENTRIES, the project's: ENTRIES 2 a detent, DWELL, STYLE, FADE a
                                                      * step; OCT- held: KNOB k track k's ROLE (ORDER: the sheet) */
         int layer = entries_layer_on();
-        tessera_entries_knob(slot, slot == 0u && !layer ? accel(EN_K1 + slot, steps, 50) : steps, layer);
+        tessera_entries_knob(layer ? UI_BASE + slot : slot, slot == 0u && !layer ? accel(EN_K1 + slot, steps, 50) : steps,
+                             layer);                    /* (OCT- held, 8 tracks: the selected track's bank) */
         if (layer)
             oct_eat |= 1u;                              /* (its release is no OCT-) */
         ui.force = 1;

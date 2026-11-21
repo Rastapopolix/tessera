@@ -1077,7 +1077,7 @@ static void et_order_turn(uint32_t tr, int32_t dir)
 void tessera_entries_knob(uint32_t k, int32_t s, int layer)
 {
     tessera_ensure_init();
-    if (!s || k > 3u) return;
+    if (!s || k >= (layer ? (uint32_t)TESSERA_TRACKS : 4u)) return;   /* (a layer: k the track, 8 tracks: up to T8) */
     TESS_IRQ_OFF();
     if (layer == 2) et_order_turn(k, s);
     else if (layer) tess_param_set_body(k, TX_ET_ROLE, (int32_t)tessera.et_role[k] + (s > 0 ? 1 : -1));
