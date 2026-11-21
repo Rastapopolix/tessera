@@ -406,6 +406,34 @@ int main(int argc, char **argv)
         q.up(90, y);
         CHECK(q.take_fm1_request() == 1, "another Tessera has it: a click asks to take it");
         CHECK(q.menu_shown(), "the menu stays open");
+        // KEYS: the computer keyboard Tessera's (ON, the default) or the DAW's (OFF)
+        int ky = 46 + 10 + 5 * 36 + 2 * 18 + 22 + 18;   // (panel.cpp row_y(ROW_KEYS): the row's middle)
+        CHECK(q.keys_on() && q.take_keys_request() == -1, "KEYS on to start, nothing asked");
+        q.down(254, ky);   // OFF
+        q.up(254, ky);
+        CHECK(!q.keys_on() && q.take_keys_request() == 0 && q.take_keys_request() == -1, "KEYS OFF asks once");
+        CHECK(!q.key(0x2C, true) && !q.input.keys, "KEYS OFF: Z left to the DAW");
+        q.down(310, ky);   // ON
+        q.up(310, ky);
+        CHECK(q.keys_on() && q.take_keys_request() == 1, "KEYS ON asks for on");
+        CHECK(q.key(0x2C, true) && (q.input.keys & 1u) && q.key(0x2C, false), "KEYS ON: Z plays again");
+        q.key(0x01, true);   // (Esc: the menu shut)
+        CHECK(!q.menu_shown(), "Esc shuts the menu");
+        // a right-click latches a button or key: GLO held while FX is clicked, then let go; Esc lets every latch go
+        const int glo_x = 574 + 5 * 66 + 55, fx_x = 574 + 30, by = 174 + 20;
+        CHECK(q.latch(glo_x, by) && (q.input.buttons & (1u << 5)), "a right-click latches GLO");
+        q.down(fx_x, by);
+        CHECK((q.input.buttons & 1u) && (q.input.buttons & (1u << 5)), "FX clicked with GLO latched: both held");
+        q.up(fx_x, by);
+        CHECK(!(q.input.buttons & 1u) && (q.input.buttons & (1u << 5)), "FX let go, GLO still held");
+        CHECK(q.latch(glo_x, by) && !(q.input.buttons & (1u << 5)), "a second right-click lets GLO go");
+        q.latch(glo_x, by);
+        CHECK(q.down(glo_x, by) && !(q.input.buttons & (1u << 5)), "a click on a latched button lets it go");
+        q.up(glo_x, by);
+        const int c4x = 36 + 12 + (int)(7.5 * ((928 - 24) / 16)), c4y = 332 + 192;
+        CHECK(q.latch(c4x, c4y) && q.input.keys, "a right-click latches a key");
+        CHECK(q.key(0x01, true) && !q.input.keys && !q.input.buttons, "Esc lets every latch go");
+        CHECK(!q.latch(5, 5), "a right-click on nothing: no change");
         Panel f;
         f.set_tracks(8);
         f.set_shell(1);

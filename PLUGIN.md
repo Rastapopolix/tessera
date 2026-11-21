@@ -62,7 +62,12 @@ or left and right, or turn the mouse wheel over it.
 - **Up / Down**: turn SELECT. **Left / Right**: turn ALGORITHM.
 
 Keys go by where they sit, not what they print, so any keyboard layout works. With Ctrl or Alt held, keys go to the
-DAW.
+DAW. Keys reach Tessera only while its window has focus; click back in the DAW and its own shortcuts work as usual.
+To leave every key to the DAW, set **KEYS** to OFF in Tessera's menu (it applies to every Tessera window).
+
+**Button combos with the mouse:** right-click a button or key (Ctrl-click on a Mac) to latch it: it stays held, drawn
+as held, while you click the second one, so GLO + a button or SEL + a key work with one mouse. Right-click it again,
+click it, or press **Esc** to let go.
 
 **Shells:** the window opens in Tessera's own look. Click the Tessera mark at the top left for its menu:
 
