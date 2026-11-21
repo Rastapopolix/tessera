@@ -13,6 +13,7 @@
  * usage: tessera-render-test path/to/Tessera.clap [seconds] [out.wav] [window.ppm] */
 #include <clap/clap.h>
 #include <dlfcn.h>
+#include <string>
 #if defined(__linux__)
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -132,6 +133,20 @@ static void wav_write(const char *path, const std::vector<float> &l, const std::
     std::fclose(f);
 }
 
+// the library inside a plugin path: on macOS Tessera.clap is a bundle, its code in Contents/MacOS/Tessera
+static std::string clap_library(const char *path)
+{
+#ifdef __APPLE__
+    std::string p(path);
+    while (p.size() > 1 && p.back() == '/') p.pop_back();
+    std::string base = p.substr(p.find_last_of('/') == std::string::npos ? 0 : p.find_last_of('/') + 1);
+    std::string stem = base.substr(0, base.rfind('.'));   // (Tessera.clap: Tessera)
+    std::string inner = p + "/Contents/MacOS/" + stem;
+    if (FILE *f = std::fopen(inner.c_str(), "rb")) { std::fclose(f); return inner; }
+#endif
+    return path;
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -142,7 +157,7 @@ int main(int argc, char **argv)
     double seconds = argc > 2 ? std::atof(argv[2]) : 12.0;
     const uint32_t rate = 48000, block = 480;
 
-    void *lib = dlopen(argv[1], RTLD_NOW | RTLD_LOCAL);
+    void *lib = dlopen(clap_library(argv[1]).c_str(), RTLD_NOW | RTLD_LOCAL);
     if (!lib)
     {
         std::printf("FAIL: dlopen %s: %s\n", argv[1], dlerror());
