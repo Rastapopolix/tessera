@@ -8080,6 +8080,53 @@ static int test_battery(void)
 }
 #endif
 
+#if MELODEE_VOICE_BUDGET
+/* MENU > OVERLOAD (ui.c ovl_tick): the header's four dots blink once when the audio faded voices to catch up, twice when
+ * a half was late; nothing for the counts found at power-on; one blink at most every OVL_GAP_MS; OFF never; the totals
+ * kept for GLO > SYSTEM; saved with the favorites */
+static int test_overload_blink(void)
+{
+    int bad = 0, lit0, lit1, lit2, lit3;
+    uint32_t keep_ms = fm1_ms, t;
+    memset(&ovl, 0, sizeof ovl);
+    OVL_SAVED = 0;
+    ovl_host_sheds = 40; ovl_host_late = 7;             /* (as found: melodee_dbg survives a reset) */
+    fm1_ms = 100000; ovl_tick();
+    bad += check("overload: the counts at power-on: no blink, no total", !ovl_lit() && !ovl.tot_sheds && !ovl.tot_late);
+    ovl_tick();
+    bad += check("  nothing new: dark", !ovl_lit());
+    ovl_host_sheds++; ovl_tick();
+    lit0 = ovl_lit(); fm1_ms += OVL_ON_MS; ovl_tick(); lit1 = ovl_lit();
+    bad += check("  voices faded: lit, then dark after OVL_ON_MS, once", lit0 && !lit1 && !ovl.n && ovl.tot_sheds == 1u);
+    fm1_ms += 1000; ovl_host_late++; ovl_tick();
+    bad += check("  a late half within OVL_GAP_MS: no blink, counted", !ovl_lit() && ovl.tot_late == 1u);
+    fm1_ms += OVL_GAP_MS; ovl_host_late++; ovl_tick();
+    t = fm1_ms;
+    lit0 = ovl_lit(); fm1_ms = t + OVL_ON_MS; ovl_tick(); lit1 = ovl_lit();
+    fm1_ms = t + 2u * OVL_ON_MS; ovl_tick(); lit2 = ovl_lit();
+    fm1_ms = t + 3u * OVL_ON_MS; ovl_tick(); lit3 = ovl_lit();
+    bad += check("  a late half later: twice (lit, dark, lit, dark)", lit0 && !lit1 && lit2 && !lit3 && ovl.tot_late == 2u);
+    fm1_ms += 2u * OVL_GAP_MS;
+    OVL_SAVED = OVL_OFF_TAG; ovl_host_sheds += 3; ovl_host_late++; ovl_tick();
+    bad += check("  OFF: no blink, still counted for SYSTEM", !ovl_lit() && ovl.tot_sheds == 4u && ovl.tot_late == 3u);
+    {
+        static persist_t p;
+        memset(&p, 0, sizeof p);
+        settings_export(&p);
+        OVL_SAVED = 0;
+        bad += check("  OFF is saved with the settings", settings_import(&p, sizeof p) && !OVL_ON);
+        p.favorites.factory[8][25] = 3u;                /* (the retired FX key map's bytes) */
+        settings_import(&p, sizeof p);
+        bad += check("  any other byte there (settings before it): BLINK", OVL_ON);
+    }
+    OVL_SAVED = 0;
+    memset(&ovl, 0, sizeof ovl);
+    ovl_host_sheds = ovl_host_late = 0;
+    fm1_ms = keep_ms;
+    return bad;
+}
+#endif
+
 
 /* ARP HOLD (Theo, 3.5-beta7): keys held, ARP 2 KNOB 3 to HOLD ON, keys let go: the arpeggio goes on, stopped and
  * playing; new keys replace the latched chord; HOLD OFF releases it */
@@ -8183,6 +8230,9 @@ int main(void)
     bad += test_arp_hold_latch();
 #if TESS_HAS_BATTERY
     bad += test_battery();
+#endif
+#if MELODEE_VOICE_BUDGET
+    bad += test_overload_blink();
 #endif
     bad += test_home_notes();
     bad += test_stage();

@@ -2222,6 +2222,7 @@ static void ui_input(void)
 {
     uint32_t pressed = fm1_input_edges(0), notes = fm1_input_note_edges(), now = fm1_ticks(), id, b, k;
     mlearn_poll();                                      /* (MIDI LEARN: a CC for the knob picked) */
+    ovl_tick();                                         /* (MENU > OVERLOAD: the header's dots, ui.c) */
     if (mlearn_end_key(pressed))                        /* (learning: OCT- ends it, nothing else) */
         pressed &= ~(1u << panel.btn[B_OCTDN]);
     mlearn_show();

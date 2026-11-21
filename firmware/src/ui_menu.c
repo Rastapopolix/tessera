@@ -2,6 +2,7 @@
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
 /* Melodee menu (HOME held): COLOR, HOLD (the layer threshold), LIGHTS (the keys' and buttons'
  * glow: ui_input.c ui_leds), NOTE LIGHTS (OFF, STEP or ALL: the keys a sequence plays lit; ui.c NLIGHT_SAVED),
+ * OVERLOAD (BLINK or OFF: the header's four track dots filled a moment when the audio runs out of time; ui.c ovl_tick),
  * KNOB ACCEL (ui_input.c accel_by), TRACK KNOB (RIGHT: ALGORITHM picks the track, LEFT: PRESETS does; panel.c),
  * USB AUDIO (IN+OUT, IN, OUT or OFF; usb.c ua_off_set),
  * USB OUTPUT (what the FM-1 sends: the stereo mix or four track stems, both before MASTER; usb.c ua_tracks_set),
@@ -27,6 +28,9 @@ enum { MI_COLOR,
 #if TESS_HAS_BATTERY
        MI_BATTERY,
 #endif
+#if MELODEE_VOICE_BUDGET
+       MI_OVERLOAD,
+#endif
        MI_GAMMA,
        MI_HOLD, MI_ACCEL, MI_TRACK_KNOB,
        MI_MUTES, MI_CLICK, MI_CLICK_LEVEL, MI_COUNTIN, MI_PREVIEW, MI_ADD, MI_AUTOSAVE,
@@ -48,6 +52,9 @@ static const char *const MI_NAME[MI_COUNT] = {"COLOR",
                                               "LIGHTS", "NOTE LIGHTS", "SCREEN OFF",
 #if TESS_HAS_BATTERY
                                               "BATTERY",
+#endif
+#if MELODEE_VOICE_BUDGET
+                                              "OVERLOAD",
 #endif
                                               "PANEL GAMMA",
                                               "HOLD", "KNOB ACCEL", "TRACK KNOB",
@@ -501,6 +508,9 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
 #if TESS_HAS_BATTERY
     if (i == MI_BATTERY) value = settings_batt_off ? "WHEN LOW" : "ON";
 #endif
+#if MELODEE_VOICE_BUDGET
+    if (i == MI_OVERLOAD) value = OVL_ON ? "BLINK" : "OFF";
+#endif
     if (i == MI_SCREEN) value = (const char *const[]){"NEVER", "5 MIN", "15 MIN", "30 MIN", "60 MIN"}[scr_get()];
     if (i == MI_GAMMA) value = GAMMA_NAME[gamma_get()];
     if (i == MI_LIGHTS) value = LIGHTS_NAME[settings_lights % LIGHTS_N];
@@ -888,6 +898,12 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_BATTERY) {   /* KNOB 2 right ON, left WHEN LOW; OCT+ toggles */
         settings_batt_off = (uint8_t)(s > 0 ? 0u : s < 0 ? 1u : !settings_batt_off);
         ui.force = 1; ok = 0;                          /* (the header's battery: ui_draw.c batt_head) */
+    }
+#endif
+#if MELODEE_VOICE_BUDGET
+    if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_OVERLOAD) {   /* KNOB 2 right BLINK, left OFF; OCT+ toggles */
+        OVL_SAVED = (uint8_t)((s > 0 ? 1 : s < 0 ? 0 : !OVL_ON) ? 0u : OVL_OFF_TAG);
+        ui.force = 1; ok = 0;                          /* (ui.c ovl_tick; saved with the favorites) */
     }
 #endif
     if ((s || ok) && ui.menu==1 && ui.menu_sel==MI_SCREEN) {
