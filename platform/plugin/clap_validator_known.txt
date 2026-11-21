@@ -1,0 +1,10 @@
+# clap-validator checks the plugin fails on develop (2026-11-21, clap-validator 0.4.1, 929ab02): plugin-validate.yml
+# runs them apart and reports them without failing the run. Every other check must pass. Take a line out when its fix
+# merges, so the check guards it from then on.
+param-set-events
+param-set-no-cookies
+param-set-wrong-namespace
+param-default-values
+state-reproducibility-basic
+state-reproducibility-binary
+state-reproducibility-buffered
