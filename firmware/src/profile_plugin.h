@@ -11,3 +11,4 @@
 #define TESS_N_KEYS 27
 #define TESS_TIER TESS_TIER_DESKTOP
 #define TESS_HAS_BATTERY 0   /* (a computer: no battery icon, BATTERY setting or POWER lines) */
+#define TESS_HAS_POINTER 1   /* a mouse on the screen: its values, lists and keys as zones (ui_zones.c) */

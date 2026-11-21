@@ -10,3 +10,4 @@
 #define TESS_N_KEYS 27
 #define TESS_TIER TESS_TIER_TIGHT
 #define TESS_HAS_BATTERY 1   /* the FM-1 runs on its battery or USB */
+#define TESS_HAS_POINTER 0   /* (its knobs and keys only: no mouse on the screen) */

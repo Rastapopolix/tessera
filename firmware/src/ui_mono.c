@@ -61,6 +61,20 @@ static void mo_wait(uint32_t c) { if (c < 4u) mo_col[c].wait = 1; }
 /* the mods on column c's parameter move it to live (0..1000) now: a mark beside its dial (draw_column, cord_moves;
  * Theo 2026-11-17: the detailed look's live marks, which Mono dropped). In mo_col, so mo_signature redraws it */
 static void mo_live(uint32_t c, int32_t live) { if (c < 4u && live >= 0) mo_col[c].live = (int16_t)(live > 1000 ? 1001 : live + 1); }
+#if TESS_HAS_POINTER
+/* column c's zone (mo_cols): its knob's, the column's whole height; a key's box (OCT+, OCT-): that key */
+static void mo_uz_col(uint32_t c, int key, const char *shown, int32_t x, int32_t w)
+{
+    char v[24];
+    str_cpy(v, mo_col[c].val, sizeof v);
+    if (mo_col[c].unit[0] && str_len(v) + str_len(mo_col[c].unit) < sizeof v)
+        str_cpy(v + str_len(v), mo_col[c].unit, sizeof v - str_len(v));
+    if (key && (str_eq(shown, "OCT+") || str_eq(shown, "OCT-")))
+        uz_add(UZ_G_COLS, UZ_KEY, x, 21, w, 15, -1, -1, str_eq(shown, "OCT+") ? B_OCTUP : B_OCTDN, mo_col[c].label, shown);
+    else if (!key)
+        uz_add(UZ_G_COLS, UZ_KNOB, (int32_t)c * 30, 10, 30, 41, EN_K1 + (int32_t)c, -1, 0, mo_col[c].label, v);
+}
+#endif
 
 /* ---- drawing in cells (2 x 2 pixels; cv_oy picks the canvas's half) ---- */
 static void mo_fill(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c)
@@ -546,6 +560,7 @@ static void mo_cols(void)
         if (!moved)
             break;
     }
+    UZ(uz_begin(UZ_G_COLS));
     for (i = 0; i < 4u; i++) {
         int32_t cx = 15 + (int32_t)i * 30, tx = x[i] + (w[i] - tw[i]) / 2, ty, fx0 = -1, fx1 = -1;
         uint16_t dim = mo_cols_trk ? mo_tdim(i) : MO_DIM;
@@ -554,6 +569,7 @@ static void mo_cols(void)
         mo_vals[i].used = mo_col[i].used;
         if (!mo_col[i].used)
             continue;
+        UZ(mo_uz_col(i, kind[i] == MV_KEY, v[i], x[i], w[i]));
         mo_abbr(l, mo_col[i].label);
         mo_textc(l, cx, 12, mo_col[i].hot ? MO_HOT : dim);
         ty = mo_col[i].ratio >= 0 && mo_col[i].val[0] != '[' ? 39 : 25;
@@ -2492,6 +2508,14 @@ static void mo_list(int32_t x, int32_t y, int32_t w, const char *title, const ch
                     int32_t rows, int32_t sel, int32_t now, int more_up, int more_down)
 {
     int32_t y0 = title ? 12 : 2, h = y0 + rows * 10 + 1, top, i;
+#if TESS_HAS_POINTER
+    {                                                   /* (the rows as zones: the caller said whose, uz_list_set) */
+        const char *nm[10], *vv[10];
+        int32_t n = rows < 10 ? rows : 10;
+        for (i = 0; i < n; i++) nm[i] = row[i].name, vv[i] = row[i].val;
+        uz_list_rows(x + 2, y + y0, w - 4, 9, 10, n, nm, vv);
+    }
+#endif
     for (top = 0; top < h * 2; top += 120) {
         int32_t sh = h * 2 - top < 120 ? h * 2 - top : 120;
         cv_begin((uint32_t)w * 2u, (uint32_t)sh, MO_BG);
@@ -2554,6 +2578,7 @@ static void mo_pick(int32_t col, int32_t count, int32_t cur, int32_t first, int3
         r[i].trk = (uint8_t)(ux_multi && tr >= 0 ? tr + 1 : 0);
         r[i].dim = first + i - cur > 1 || cur - first - i > 1;
     }
+    UZ(uz_list_set(EN_K1 + col, -1, cur, first, 0));   /* (the knob's own: its value is the row) */
     mo_list(col < 2 ? 1 + 30 * col : 119 - w, 20, w, title[0] ? title : 0, 0, r, rows, cur - first, -1, first > 0,
             first + rows < count);
 }
@@ -2573,6 +2598,7 @@ static void mo_vlist(const char *title, const char *const *names, int32_t count,
     fmt_int(pos, sel + 1);                              /* where it is in the whole list: 3/12 */
     str_cpy(pos + str_len(pos), "/", 2);
     fmt_int(pos + str_len(pos), count);
+    UZ(uz_list_set(EN_K1, -1, sel, first, 1));         /* (KNOB 1 the row, OCT+ takes it) */
     mo_list(0, 120 - (12 + rows * 10 + 1), 120, title, pos, r, rows, sel - first, now - first, first > 0,
             first + rows < count);
 }
@@ -2596,6 +2622,7 @@ static void mo_sheet(void)
         r[i].dim = 0, r[i].trk = 0;
         r[i].warn = sr->cf != 0;
     }
+    UZ(uz_list_set(EN_K1, EN_K2, pop.sel, first, 1));  /* (KNOB 1 the row, KNOB 2 its value, OCT+ does it) */
     mo_list(0, 120 - (12 + rows * 10 + 1), 120, pop.title, pop.sub, r, rows, (int32_t)pop.sel - first, -1, first > 0,
             first + rows < n);
 }
@@ -2693,6 +2720,7 @@ static void mono_page(void)
     if (!ui.force && sig == mo_sig)
         return;
     mo_sig = sig;
+    UZ(uz_begin(UZ_G_COLS));                            /* (LANDSCAPE: no columns) */
     for (s = 0; s < 2u; s++) {                          /* the top half, then the bottom */
         cv_begin(240, 120, MO_BG);
         cv_oy = -(int32_t)s * 120;
@@ -2775,6 +2803,8 @@ static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis)
     int32_t top, hh = (int32_t)vis * 11;
     char lb[16], v[16], a[20], t[20];
     uint16_t vc;
+    UZ(uz_list_set(EN_K1, EN_K2, (int32_t)row, (int32_t)first, 1));   /* (KNOB 1 the row, KNOB 2 its value) */
+    UZ(uz_begin(UZ_G_LIST));
     for (top = 0; top < hh; top += 55) {                /* five rows a canvas (110 px) */
         int32_t sh = hh - top < 55 ? hh - top : 55;
         cv_begin(240, (uint32_t)sh * 2u, MO_BG);
@@ -2784,6 +2814,8 @@ static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis)
             if (y + 11 <= top || y >= top + sh)
                 continue;
             more = list_text(r, lb, v, &vc);
+            if (y >= top)                               /* (each row once: in the canvas it starts in) */
+                UZ(uz_add(UZ_G_LIST, UZ_ROW, 0, LIST_Y0 / 2 + y, 118, 10, EN_K1, EN_K2, (int32_t)r, lb, v));
             if (on)
                 mo_fill(0, y, 118, 10, MO_HOT);
             mo_ascii(a, v, sizeof a);
@@ -2891,6 +2923,9 @@ static void mo_confirm(const char *a, const char *b)
     mo_textc("NO", 28, 51, MO_INK);
     mo_fill(56, 49, 40, 11, MO_INK);
     mo_textc("YES", 76, 51, MO_BG);
+    UZ(uz_begin(UZ_G_KEYS));                            /* NO: OCT-, YES: OCT+ */
+    UZ(uz_add(UZ_G_KEYS, UZ_KEY, DLG_X / 2 + 8, DLG_Y / 2 + 49, 40, 11, -1, -1, B_OCTDN, "NO", a));
+    UZ(uz_add(UZ_G_KEYS, UZ_KEY, DLG_X / 2 + 56, DLG_Y / 2 + 49, 40, 11, -1, -1, B_OCTUP, "YES", a));
     cv_blit(DLG_X, DLG_Y);
 }
 
@@ -3154,8 +3189,18 @@ static void mono_stage(void)
         cv_begin(240, 120, MO_BG);
         cv_oy = 0;
         mo_stage_head();
-        for (k = UI_BASE; k < UI_BASE + UI_NT; k++)
+        UZ(uz_begin(UZ_G_TRACKS));
+        UZ(uz_begin(UZ_G_COLS));                        /* (the knobs' columns: only while they are out, below) */
+        for (k = UI_BASE; k < UI_BASE + UI_NT; k++) {
             mo_stage_col(k, 1);
+#if TESS_HAS_POINTER
+            {                                           /* (a click selects the track) */
+                char tn[4] = {'T', (char)('1' + k), 0, 0};
+                uz_add(UZ_G_TRACKS, UZ_TRACK, (int32_t)(k - UI_BASE) * 30, 10, 30, 78, -1, -1, (int32_t)k, tn,
+                       trk[k].p[P_MUTE] ? "MUTE" : "");
+            }
+#endif
+        }
         if (stage.out) {                                /* the knobs over the columns' tops */
             mo_fill(0, 10, 120, 50, MO_BG);
             mo_cols();
@@ -3582,6 +3627,15 @@ static void mo_browser(uint32_t cur, uint32_t total)
         mo_textc("BACK", 76, 111, back ? MO_INK : MO_DIM);
         mo_fill(93, 110, 27, 10, MO_INK);
         mo_textc("OK", 106, 111, MO_BG);
+        if (!s) {                                       /* (zones: the two lists' knobs, BACK and OK) */
+            UZ(uz_begin(UZ_G_SIDES));
+            UZ(uz_begin(UZ_G_KEYS));
+            UZ(uz_add(UZ_G_SIDES, UZ_KNOB, 0, 10, 46, 97, EN_K1, -1, 0, "LIST", ""));
+            UZ(uz_add(UZ_G_SIDES, UZ_KNOB, 47, 10, 73, 97, EN_K2, -1, 0, "SOUND", ""));
+            if (back)
+                UZ(uz_add(UZ_G_KEYS, UZ_KEY, 62, 110, 28, 10, -1, -1, B_OCTDN, "BACK", ""));
+            UZ(uz_add(UZ_G_KEYS, UZ_KEY, 93, 110, 27, 10, -1, -1, B_OCTUP, "OK", ""));
+        }
         cv_oy = 0;
         cv_blit(0, s * 120u);
     }
@@ -3963,6 +4017,14 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
         mo_textc("BACK", 76, 111, MO_INK);
         mo_fill(93, 110, 27, 10, MO_INK);
         mo_textc("OK", 106, 111, MO_BG);
+        if (!s) {                                       /* (zones: the families' knob, the scales', BACK and OK) */
+            UZ(uz_begin(UZ_G_SIDES));
+            UZ(uz_begin(UZ_G_KEYS));
+            UZ(uz_add(UZ_G_SIDES, UZ_KNOB, 0, 10, SC_SIDE_W / 2, 97, EN_K1, -1, 0, "FAMILY", ""));
+            UZ(uz_add(UZ_G_SIDES, UZ_KNOB, SC_SIDE_W / 2 + 1, 10, 119 - SC_SIDE_W / 2, 97, EN_K2, -1, 0, "SCALE", ""));
+            UZ(uz_add(UZ_G_KEYS, UZ_KEY, 62, 110, 28, 10, -1, -1, B_OCTDN, "BACK", ""));
+            UZ(uz_add(UZ_G_KEYS, UZ_KEY, 93, 110, 27, 10, -1, -1, B_OCTUP, "OK", ""));
+        }
         cv_oy = 0;
         cv_blit(0, s * 120u);
     }
