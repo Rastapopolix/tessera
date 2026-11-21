@@ -1365,22 +1365,34 @@ static void tess_quad_link(const track_t *t, uint32_t tr)
     }
 }
 /* QUAD's columns, on the first QUAD track's steps (before its row plays): a column whose MOVE is not STOP moves every
- * EVERY steps: DOWN its cells a row down the four tracks (track 4's to track 1), UP a row up, RAND by 1..3 rows (a draw
- * of that track's). All four rows turn, a track not in QUAD too: its row keeps the notes till it comes back */
+ * EVERY steps: DOWN its cells a row down the four tracks (track 4's to track 1; 8-track builds: tess_quad_rows), UP a
+ * row up, RAND by 1..3 rows (a draw of that track's). All four rows turn, a track not in QUAD too: its row keeps the
+ * notes till it comes back */
 uint32_t tessera_quad_every(uint32_t c) { return GEN_QC_EVERY[(tessera.qcol[c & 3u] >> 2) % GEN_QC_EVERY_N]; }
 #if CORE_TRACKS > 4
-#define TESS_QUAD_ROWS 4u                               /* (the grid's rows: tracks 1..4, as on the FM-1) */
+/* the grid's rows: tracks 1..4 as on the FM-1, all 8 once a track 5..8 is in QUAD (one 8-row grid: a column moves
+ * down tracks 1..8, track 8's cell to track 1). A project with no QUAD past track 4 plays as on the FM-1 */
+static uint32_t tess_quad_rows(void)
+{
+    for (uint32_t i = 4u; i < TESSERA_TRACKS; i++)
+        if (tessera.mode[i] == TESS_ENG_QUAD) return TESSERA_TRACKS;
+    return 4u;
+}
+#define TESS_QUAD_ROWS rows
 #else
 #define TESS_QUAD_ROWS TESSERA_TRACKS
 #endif
 static void tess_quad_cols(uint32_t tr)
 {
     uint32_t i, c;
+#if CORE_TRACKS > 4
+    uint32_t rows = tess_quad_rows();
+#endif
     for (i = 0; i < tr; i++)
         if (tessera.mode[i] == TESS_ENG_QUAD) return;
     for (c = 0; c < 4u; c++) {
         uint32_t m = tessera.qcol[c] & 3u, by;
-        uint8_t col[TESS_QUAD_ROWS];
+        uint8_t col[TESSERA_TRACKS];
         if (m == GEN_QC_STOP || ++tessera.qcol_cnt[c] < tessera_quad_every(c)) continue;
         tessera.qcol_cnt[c] = 0;
         by = m == GEN_QC_DOWN ? 1u : m == GEN_QC_UP ? TESS_QUAD_ROWS - 1u : 1u + gen_rnd(&tessera.rnd[tr], TESS_QUAD_ROWS - 1u);

@@ -18,6 +18,8 @@ on:
       - 'tests/bank_pages_test.c'
       - 'tests/tsp_cross.*'
       - 'tests/core_tracks.sh'
+      - 'tests/quad8_test.c'
+      - 'tests/xtrk_test.c'
       - 'demos/*.tsp'
       - 'tools/**'
       - '.github/workflows/core-api.yml'
