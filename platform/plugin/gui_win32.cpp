@@ -31,6 +31,7 @@ class GuiWin32 : public Gui
         panel.set_shell(l->shell());
         panel.set_inks(l->inks());
         panel.set_tracks(l->tracks());
+        panel.set_version(tess_version());
     }
     GuiLink *link;   // this window's instance
     HWND wnd = nullptr;
@@ -244,6 +245,7 @@ class GuiWin32 : public Gui
     void tick() override
     {
         link->view(view);
+        panel.set_midi(link->midi_count());
         ink_check();
         InvalidateRect(wnd, nullptr, FALSE);
     }

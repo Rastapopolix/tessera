@@ -1,7 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
 /* The plugin window's FM-1, drawn in software (no GUI library): the web simulator's wide layout (web/sim/index.html
- * LAYOUTS.wide, 1000 x 624) in one of the FM-1's shells, the screen at 1:1, the labels in the Mono face (firmware/src/mo_font.h).
+ * LAYOUTS.wide, 1000 x 624) in one of the FM-1's shells, or in TESSERA's own (shell 0, the default: the project page's
+ * look, flat and 1-bit, its settings in a menu under the mark), the screen at 1:1, the labels in the Mono face
+ * (firmware/src/mo_font.h).
  * Platform-independent: gui_win32.cpp / gui_x11.cpp give it pixels and the mouse. Not thread-safe: the GUI thread only. */
 #pragma once
 #include <cstdint>
@@ -42,13 +44,14 @@ class Panel
     PanelInput input;
     /* the build's tracks (tess_core_tracks): with 8, a 1-4 / 5-8 switch beside OPEN / SAVE selects T1 or T5 (Tab too),
      * the bank of the track selected lit */
-    void set_tracks(int n) { tracks_ = n; }
+    void set_tracks(int n) { tracks_ = n; layout(); }
     /* the project-file buttons under the keys: OPEN (a .tsp or an FM-1 backup) and SAVE (a .tsp). A click asks; the
      * window takes the ask (1 OPEN, 2 SAVE, 0 none) and shows the outcome with note() for a few seconds */
     enum { FILE_NONE, FILE_OPEN, FILE_SAVE };
     int take_file_request() { int r = file_req; file_req = FILE_NONE; return r; }
     void note(const std::string &text);
-    /* the FM-1's shells (web/sim/index.html SHELLS): a row of swatches under the keys. A click shows that shell at once
+    /* the shells: TESSERA's own (0), then the FM-1's (web/sim/index.html SHELLS). The FM-1's show a row of swatches
+     * under the keys; TESSERA's a menu under the mark (SHELL, INK, MODE, SIZE, ABOUT). A pick shows that shell at once
      * and asks for its ink (take_shell_request: the shell's index, -1 none); each shell's id (stored) and Mono ink
      * (MENU > COLOR's name) */
     static int shell_count();
@@ -65,8 +68,26 @@ class Panel
     void set_inks(const std::vector<Ink> &list) { inks = list; }
     int ink_count() const { return (int)inks.size(); }
     int take_ink_request() { int r = ink_req; ink_req = -1; return r; }
+    /* MIDI in, as the instance counts it (any change: notes came in): TESSERA's shell lights its MIDI lamp a moment */
+    void set_midi(uint32_t count);
+    /* the plugin's version (ABOUT in TESSERA's menu) */
+    void set_version(const std::string &v) { version = v; }
+    bool menu_shown() const { return menu_open; }
 
   private:
+    // TESSERA's shell (shell 0): its own drawing, its layout of the buttons and files, and its menu
+    bool native() const { return shell_ == 0; }
+    void layout();
+    void draw_native(uint32_t *px, const tess_view_t &v, double breath);
+    bool menu_open = false;
+    int menu_sub = 0, menu_hover = -1, sub_hover = -1;   // menu_sub: 0 none, 1 SHELL's list, 2 INK's swatches
+    int menu_row_at(int x, int y) const;
+    int sub_at(int x, int y) const;
+    bool menu_click(int x, int y);
+    uint32_t turned[8] = {};      // the frame each knob last turned (TESSERA's shell shows a turning encoder)
+    uint32_t midi_count = 0, midi_frame = 0;
+    bool midi_known = false;
+    std::string version;
     struct Knob { int x, y, r; const char *name; int role; double angle; };   // role -1: MASTER
     struct Button { int x, y, w, h, bit; const char *face, *sub; };
     struct Key { int cx, cy, k; };

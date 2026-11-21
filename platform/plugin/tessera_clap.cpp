@@ -218,6 +218,8 @@ struct Tessera : GuiLink
     void ink_picked(int i) override;
     void ink_seen(int i) override;
     int tracks() override { return (int)core->tracks(); }
+    std::atomic<uint32_t> midi_seen{0};   // MIDI in so far (the window's MIDI lamp)
+    uint32_t midi_count() override { return midi_seen.load(std::memory_order_relaxed); }
 };
 
 Tessera *self(const clap_plugin_t *p) { return static_cast<Tessera *>(p->plugin_data); }
@@ -365,6 +367,8 @@ void Tessera::midi_in(const clap_event_header_t *h)
 {
     if (h->space_id != CLAP_CORE_EVENT_SPACE_ID)
         return;
+    if (h->type == CLAP_EVENT_NOTE_ON || h->type == CLAP_EVENT_NOTE_OFF || h->type == CLAP_EVENT_MIDI)
+        midi_seen.fetch_add(1, std::memory_order_relaxed);
     switch (h->type)
     {
     case CLAP_EVENT_NOTE_ON:

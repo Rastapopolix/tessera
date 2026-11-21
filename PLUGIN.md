@@ -63,12 +63,19 @@ or left and right, or turn the mouse wheel over it.
 Keys go by where they sit, not what they print, so any keyboard layout works. With Ctrl or Alt held, keys go to the
 DAW.
 
-**Shells:** the swatches under the keys pick one of eight FM-1 colours, and each sets its own screen ink.
+**Shells:** the window opens in Tessera's own look. Click the Tessera mark at the top left for its menu:
 
-**Inks:** the row of swatches labelled INK, between the buttons and the keys, picks the screen's ink: the same 13
-choices as MENU > COLOR (nine inks, then MOSAIC, SUNSET, OCEAN and NEON, which colour each track). The one in use is
-ringed; hover over a swatch to see its name. Picking a shell sets that shell's ink; an ink you pick afterwards, here or
-in MENU > COLOR, stays until you pick a shell again.
+- **SHELL:** Tessera's look, or one of the eight FM-1 colours. Each shell sets its own screen ink.
+- **INK:** the screen's ink, the same 13 choices as MENU > COLOR (nine inks, then MOSAIC, SUNSET, OCEAN and NEON,
+  which colour each track). Hover over a swatch to see its name.
+- **MODE** and **SIZE:** FM-1 at 100% for now; EXPANDED and the larger sizes are coming.
+- **ABOUT:** the plugin's version.
+
+Esc, or a click outside, closes the menu. In an FM-1 shell, the swatches under the keys pick the shell (Tessera's is
+the first) and the row labelled INK, between the buttons and the keys, picks the ink.
+
+Picking a shell sets that shell's ink; an ink you pick afterwards, there or in MENU > COLOR, stays until you pick a
+shell again. The **MIDI** lamp beside the mark lights when notes come in from the DAW.
 
 Tessera remembers the last shell and the last ink for every new window, in any DAW. They are your settings, not the
 project's: a project opens in your shell and ink.

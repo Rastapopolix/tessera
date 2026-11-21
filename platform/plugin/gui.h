@@ -33,7 +33,19 @@ struct GuiLink
     virtual void ink_seen(int i) = 0;
     /* the build's tracks (4 or 8: the window's 1-4 / 5-8 switch) */
     virtual int tracks() = 0;
+    /* MIDI in so far (notes and messages from the host, a count that wraps): TESSERA's shell lights its MIDI lamp */
+    virtual uint32_t midi_count() { return 0; }
 };
+
+/* the plugin's version, for the window's ABOUT (TESS_VERSION, CMakeLists.txt) */
+inline const char *tess_version()
+{
+#ifdef TESS_VERSION_STR
+    return TESS_VERSION_STR;
+#else
+    return "";
+#endif
+}
 
 class Gui
 {
