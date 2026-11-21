@@ -163,6 +163,9 @@ static uint8_t vceil = 0xFFu;
 static uint16_t vceil_wait;
 static uint32_t voice_budget_max(void)
 {
+#if !MELODEE_VOICE_BUDGET
+    return NPART * NVOICE * 16u;                        /* no shared pool: more than every slot at any engine's units */
+#endif
 #if MELODEE_AUDIO_BENCH
     if(audio_bench_active())return NPART*NVOICE*3u;
 #endif

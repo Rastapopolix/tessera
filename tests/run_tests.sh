@@ -174,7 +174,7 @@ G_STORE="storage_test persistence_test upgrade_test backup_test demo_projects se
 G_MIDI="midi_control_test midi_out_test seq_dir_test midi_timing_test midi_scale_test midi_uart_test recording_test"
 G_USB="usb_audio_test usb_audio_driver_test usb_audio_tracks_test usb_host_test usb_audio_desc_test"
 G_SCALE="scale_test microtonal_test scale_picker_test tune_test uscale_test tuning_test midi_scale_test"
-G_AUDIO="regress audio_test audio_matrix_test ram_audio_test ram_voice_budget_test voice_ceiling_test audio_admission_test resources_test
+G_AUDIO="regress audio_test audio_matrix_test ram_audio_test ram_voice_budget_test voice_ceiling_test voice_free_test audio_admission_test resources_test
     dsp_tracks dual_core_test target_budget fs_test"
 eng() { QENG="$QENG $1"; shift; QSEL="$QSEL regress target_budget $*"; }
 qmap() {
@@ -580,6 +580,7 @@ if core; then
     t "resident audio: four-track resource budget and removed buses" ram_audio_test -O2 $FW
     t "resident audio: expanded voice budget and CPU1 fallback" ram_voice_budget_test -O2 $FW
     t "load ceiling: a shed caps admission (half of BUDGET at least), recovers, faster under 60 %, BUDGET stays the maximum (#586); the early ceiling holds admission over 70 %, a unit off over 75 % x3" voice_ceiling_test -O2 $FW
+    t "no shared voice budget (MELODEE_VOICE_BUDGET=0, the plugin): every track to its engine's own cap, none stolen across tracks" voice_free_test -O2 $FW
     t "audio: calibrated reservations, release tails and overlapping hits" audio_admission_test -O2 $FW
     t "USB audio: four isolated track stems through the real mixer" usb_audio_tracks_test -O2 $FW
     t "boot stub: CRCs, rescue keys, damaged staging and retry fallback" boot_stub_test -O2
