@@ -101,7 +101,7 @@ class GuiMac : public Gui
         if (req == Panel::FILE_NONE)
             return;
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"   // (allowedFileTypes: still the one for macOS 10.13)
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"   // (allowedFileTypes: allowedContentTypes needs macOS 11)
         if (req == Panel::FILE_OPEN)
         {
             NSOpenPanel *op = [NSOpenPanel openPanel];

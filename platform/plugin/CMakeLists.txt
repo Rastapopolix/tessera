@@ -11,6 +11,8 @@
 #
 # Windows: the firmware sources need clang, so configure with  -T ClangCL  (Visual Studio's LLVM toolset).
 cmake_minimum_required(VERSION 3.21)
+# macOS 10.15 at least: projfile.cpp's std::filesystem and fstream on a path need it (Catalina, 2019)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "the oldest macOS the plugin runs on")
 project(tessera-plugin VERSION 0.0.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)

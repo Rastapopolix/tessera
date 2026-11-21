@@ -110,7 +110,7 @@ jobs:
       - name: 'Configure (universal: arm64 + x86_64)'
         run: |
           cmake -S platform/plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release -DTESS_GEN=OFF \
-            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
       - name: Build
         run: cmake --build build/plugin -j4
       - name: Panel, sync, copies and project files tests
