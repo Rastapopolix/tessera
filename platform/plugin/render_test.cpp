@@ -149,6 +149,7 @@ static std::string clap_library(const char *path)
 
 int main(int argc, char **argv)
 {
+    std::setvbuf(stdout, nullptr, _IONBF, 0);   // (every line out before a crash, in CI's log too)
     if (argc < 2)
     {
         std::printf("usage: %s Tessera.clap [seconds] [out.wav]\n", argv[0]);
@@ -606,6 +607,7 @@ int main(int argc, char **argv)
                                                        styleMask:NSWindowStyleMaskBorderless
                                                          backing:NSBackingStoreBuffered
                                                            defer:NO];
+            nw.releasedWhenClosed = NO;   // (ARC owns it: closing must not release it a second time)
             clap_window_t win = {CLAP_WINDOW_API_COCOA, {}};
             win.cocoa = (__bridge void *)nw.contentView;
             CHECK(gui->set_parent(p, &win) && gui->show(p), "set_parent + show");
