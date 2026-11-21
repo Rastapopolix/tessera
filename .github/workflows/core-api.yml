@@ -16,6 +16,7 @@ on:
       - 'tests/hostsim.c'
       - 'tests/ui_test.c'
       - 'tests/tsp_cross.*'
+      - 'tests/core_tracks.sh'
       - 'demos/*.tsp'
       - 'tools/**'
       - '.github/workflows/core-api.yml'
@@ -54,11 +55,18 @@ jobs:
             -DMELODEE_USB_AUDIO=0 -DMELODEE_ACCESS=0 -DHOST_HAL_SCREEN=0 -DTESS_CORE_UI=0 -DCORE_OUT_HOOKS=1 \
             '-DMELODEE_VERSION="daisy"' tests/core_hooks.c -o core_hooks -lm
           for d in demos/*.tsp; do ./core_hooks "$d"; done
+      - name: Eight tracks (CORE_TRACKS=8) play and save the demos as four do
+        run: sh tests/core_tracks.sh build/core_tracks
       - name: The host UI test on the shared include lists
         run: |
           clang -w -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=0 tests/ui_test.c -o ui_test -lm   # (as run_tests.sh)
           ./ui_test > ui_test.log 2>&1 || { tail -40 ui_test.log; exit 1; }
           tail -3 ui_test.log
+      - name: The host UI test at 8 tracks (CORE_TRACKS=8, the panel on the selected track's bank)
+        run: |
+          clang -w -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=0 -DCORE_TRACKS=8 tests/ui_test.c -o ui_test8 -lm
+          ./ui_test8 > ui_test8.log 2>&1 || { tail -40 ui_test8.log; exit 1; }
+          tail -3 ui_test8.log
       - name: Summary
         if: always()
         run: |

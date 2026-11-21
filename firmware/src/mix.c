@@ -228,8 +228,16 @@ static __attribute__((noinline,section(".dsp_text"))) void mix_mono_samples(trac
     }
     t->peak=pk;
 }
+#if CORE_TRACKS > 4
+static int32_t solo_gain[NPART]={32768,32768,32768,32768,32768,32768,32768,32768};
+#else
 static int32_t solo_gain[NPART]={32768,32768,32768,32768};
+#endif
+#if CORE_TRACKS > 4   /* (8 tracks: 5..8 start in as 1..4 do; a 0 left them silent until ENTRIES ran) */
+static int32_t entry_gain[NPART]={32768,32768,32768,32768,32768,32768,32768,32768};
+#else
 static int32_t entry_gain[NPART]={32768,32768,32768,32768};   /* Tessera: Entries' level of each track (entries.c) */
+#endif
 /* the gain MUTE, SOLO and Entries set (SOLO: heard whatever Entries says); inline: .dsp_text calls it from RAM */
 static inline __attribute__((always_inline)) int32_t mix_to(const track_t *t,uint32_t ti)
 { return t->p[P_MUTE]?0:!track_solo?entry_gain[ti]:((track_solo>>ti)&1u)?32768:0; }

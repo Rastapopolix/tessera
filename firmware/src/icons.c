@@ -11,7 +11,7 @@
 #define ICON_CELL 12
 
 /* the circled numeral of track k (filled: the selected one), 12 or 16 px: tracks have no colours */
-static uint32_t trk_icon(uint32_t k, int filled) { return (filled ? ICON_X_TRK1 : ICON_X_TRK1_O) + k % NTRK; }
+static uint32_t trk_icon(uint32_t k, int filled) { return (filled ? ICON_X_TRK1 : ICON_X_TRK1_O) + k % UI_NT; }
 
 /* icon id at size 12, 16 or 24 px (24: the header battery and USB; one missing: its 12 px cell),
  * fg on bg; returns its width */

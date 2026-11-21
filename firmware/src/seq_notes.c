@@ -169,7 +169,7 @@ static void notes_preview_start(uint32_t midi)
     if(pg->scope==SC_DRUMHIT)chosen=drum_hit_selected();
     int32_t pitch=0;uint32_t gate=0;
     if(chosen<RECORD_MAX) { const recorded_note_t *r=&recording[chosen];nn[count]=r->note;vv[count++]=r->vel;
-        if(drum_track(TSEL)){pitch=r->pitch;if(r->length)gate=(uint32_t)(((uint64_t)r->duration<<(r->owner>>5))*seq_div_samples(TSEL->p[P_SDIV])/RECORD_UNIT);}
+        if(drum_track(TSEL)){pitch=r->pitch;if(REC_HITLEN(*r))gate=(uint32_t)(((uint64_t)r->duration<<REC_EXP(*r))*seq_div_samples(TSEL->p[P_SDIV])/RECORD_UNIT);}
     }
     else {
         uint32_t at=step_note_start(TSEL,ui.cursor);

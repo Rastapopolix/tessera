@@ -1888,11 +1888,19 @@ static void mo_pic_midiin(void)
 {
     uint32_t route = (uint32_t)song.g[G_ROUTE], first = route > 1u ? (route - 1u) * 4u : 0u, d = settings_drumch, dk, k;
     for (dk = 0; dk < NTRK && !drum_track(&trk[dk]); dk++) {}
+#if CORE_TRACKS > 4
+    if (!d || dk >= NTRK || (route != 1u && (d - 1u < first || d - 1u - first >= NPART)))
+        d = 0;                                          /* (8 tracks: ROUT's range is a channel a track, seq.c) */
+#else
     if (!d || dk >= NTRK || (route != 1u && (d - 1u < first || d - 1u - first >= 4u)))
         d = 0;                                          /* (DRUM's channel outside ROUT's range: not heard) */
+#endif
     for (k = 0; k < TESSERA_TRACKS; k++) {
         int32_t y = 54 + (int32_t)k * 11;
         uint32_t ch = route == 1u ? (k == song.sel ? 17u : 0u) : first + k + 1u;
+#if CORE_TRACKS > 4
+        if (route != 1u && ch > 16u) ch = 0;           /* (past channel 16: ROUT's range doesn't reach it) */
+#endif
         char n[3] = {'T', (char)('1' + k), 0}, b[16];
         if (d && k == dk) ch = d;
         else if (d && ch == d) ch = 0;
