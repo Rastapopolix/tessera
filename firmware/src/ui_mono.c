@@ -1890,6 +1890,13 @@ static void mo_pic_system(void)
     char b[16];
     uint32_t used = voices_busy(), bud = voice_budget(), a = cpu_disp_smooth(song.cpu_q8 * 100u / 256u),
              pk = song.cpu_peak_q8 * 100u / 256u;
+#if !MELODEE_VOICE_BUDGET
+    uint32_t p, i;                                      /* no budget (the plugin): the voices sounding of all the slots */
+    for (p = used = 0; p < NPART; p++)
+        for (i = 0; i < NVOICE; i++)
+            used += trk[p].v[i].active && trk[p].v[i].stage != 4u;
+    bud = NPART * NVOICE;
+#endif
     fmt_int(b, (int32_t)used);
     str_cpy(b + str_len(b), "/", 2);
     fmt_int(b + str_len(b), (int32_t)bud);

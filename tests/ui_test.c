@@ -2447,7 +2447,11 @@ static int test_midi(void)
         param_format(d, 4, v, &u);
         bad += check("GLO > MIDI IN K3: all four ranges exposed", d->max == 4 && str_eq(v, "13-16"));
         pg=&PAGES[page_first(FAM_GLO) + 6u];d=page_desc(pg,0,&vp);
+#if MELODEE_VOICE_BUDGET
         bad+=check("GLO > SYSTEM K1: device shared BUDGET",d && str_eq(pg->title,"SYSTEM") && str_eq(d->label,"BUDGET") && vp==&settings_budget && pg->id[0]==G_BUDGET);
+#else
+        bad+=check("GLO > SYSTEM K1: no BUDGET without the shared budget (the plugin)",str_eq(pg->title,"SYSTEM") && pg->id[0]==0xFF);
+#endif
         go_title("SYSTEM");
         int16_t budget = settings_budget;
         ui.hot_t = 0; ui.hot_col = 0xFFu;
@@ -2455,7 +2459,9 @@ static int test_midi(void)
         bad += check("SYSTEM's CPU column (fixed range, nothing to set) does not invert when its knob turns",
                      cur_page()->id[1] == G_INFO && !(ui.hot_t && ui.hot_col == 1u));
         turn(EN_K1, 1);
+#if MELODEE_VOICE_BUDGET
         bad += check("BUDGET (an editable column on the same page) still inverts", ui.hot_t != 0 && ui.hot_col == 0u);
+#endif
         settings_budget = budget;
 #if MELODEE_LOOK
         frame();
