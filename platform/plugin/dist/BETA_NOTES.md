@@ -29,7 +29,7 @@ its version, your system, the steps, what you expected and what happened).
 ## Not there yet
 - Tracks 5 to 8's settings are saved with your DAW song, but **their steps aren't saved yet**, and a `.tsp` holds
   tracks 1 to 4 only.
-- PHASE comes with its own 6 presets, not the CZ-1's original tones.
+- PHASE comes with 33 presets of its own, not the CZ-1's original tones.
 - One window size (the FM-1's). A larger, wider window is planned.
 - No presets in the DAW's own browser: use OPEN, or the DAW's way of saving a plugin's state.
 - No standalone app on Linux.
