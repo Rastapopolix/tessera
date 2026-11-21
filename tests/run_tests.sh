@@ -233,6 +233,10 @@ qmap() {
         tests/and_master_test.c) QSEL="$QSEL and_master" ;;
         tests/and_texture_test.c) QSEL="$QSEL and_texture" ;;
         platform/core/* | tests/tsp_cross.* | demos/*.tsp) QSEL="$QSEL tsp_cross" ;;
+        firmware/src/eng_sid.c | tests/sid_test.c) QSEL="$QSEL sid_test tsp_cross" ;;
+        firmware/src/drum_sid.c | tests/drum_sid_test.c) QSEL="$QSEL drum_sid_test tsp_cross" ;;
+        firmware/src/eng_macro.c | firmware/src/macro_glue.* | firmware/third_party/mi/* | tests/macro_test.c) QSEL="$QSEL macro_tests tsp_cross" ;;
+        tests/engines_extra.c) QSEL="$QSEL tsp_cross" ;;
         web/andamento/*) QSEL="$QSEL and_keys and_home and_ext and_ui and_master and_texture" ;;
         firmware/src/mo_font.h) QSEL="$QSEL $G_UI oled_render" ;;
         tests/demo_steps.h | tests/demo_projects.c) QSEL="$QSEL demo_projects" ;;
@@ -464,6 +468,22 @@ and_ext() {                                       # (the headers as and_keys: we
         "$OUT/and_ext" build/oled
     [ $PIL = 1 ] && { python3 tests/oled_render.py build/oled || fail "tests/oled_render.py"; }
 }
+macro_tests() {                                  # MACRO (eng_macro.c; plugin and Daisy only): Plaits' C++, then macro_test
+    if ! command -v c++ >/dev/null 2>&1; then echo "== MACRO: skipped (no c++)"; return; fi
+    mkdir -p "$OUT/mi"
+    _objs=
+    for _f in $(sh platform/daisy/plaits_sources.sh); do
+        _o=$OUT/mi/$(echo "$_f" | tr / _).o
+        c++ -O2 -std=c++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -w -DTEST -DPLAITS_LEAN \
+            -DPLAITS_SAMPLE_RATE=44100.0f -DPLAITS_SAMPLE_RATE_EXACT -DPLAITS_BLOCK_SIZE=16 -include stdio.h \
+            -Ifirmware/third_party/mi -Ifirmware/src -c "$_f" -o "$_o" || { fail "compile $_f (MACRO)"; return 1; }
+        _objs="$_objs $_o"
+    done
+    $CC -O2 $FW -DMELODEE_PLAITS=1 -DMELODEE_SID=1 -DMELODEE_SID_KIT=1 -c tests/macro_test.c -o "$OUT/macro_test.o" &&
+        c++ -o "$OUT/macro_test" "$OUT/macro_test.o" $_objs -lm || { fail "compile tests/macro_test.c (MACRO)"; return 1; }
+    step "MACRO (plugin and Daisy only): Plaits' models play, pitch, HIT, every knob, arena memory, cost against SID" "$OUT/macro_test"
+}
+drum_sid_dir() { mkdir -p build/sid_kit_demo && "$OUT/drum_sid_test" build/sid_kit_demo; }
 tsp_cross() {                                     # (its own builds: tests/tsp_cross.sh)
     step "TSP CROSS: a .tsp saved by the FM-1's, the web's, the plugin's or the Daisy's build loads in every other, byte for byte" \
         sh tests/tsp_cross.sh build/tsp_cross
@@ -624,6 +644,11 @@ if core && [ $TABLES = 1 ]; then
     job and_master
     job and_texture
     job tsp_cross
+    t "SID (plugin and Daisy only): oscillator/LFSR/register semantics, revisions and 32 factory presets" sid_test -O2 $FW \
+        -DMELODEE_SID=1 -DMELODEE_SID_KIT=1
+    t "DRUM SID (plugin and Daisy only): one 6581 on one voice, frame programs, DIGI on \$D418, filter routing, levels" \
+        drum_sid_test -O2 $FW -DMELODEE_SID=1 -DMELODEE_SID_KIT=1 -- drum_sid_dir
+    job macro_tests
     t "boot audio: codec waits for settled silent DMA and shuts down before I2S" audio_boot_test -w
     t "audio: overload protection, bounded fades and DMA diagnostics" audio_test $FW
     t "audio: silent bench keeps synthesis running and silences physical output" audio_silent_test:audio_test \

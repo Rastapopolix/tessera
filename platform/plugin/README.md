@@ -8,6 +8,9 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
 
 - **Sound:** the whole firmware (sequencer, generators, voices, FX) as the web simulator runs it (`web/sim/sim.c`),
   at 44.1 kHz inside, resampled to the host's rate.
+- **Engines the FM-1 has no room for:** SID (a whole MOS 6581 / 8580 per note), DRUM's SID KIT and SID DIGI, and
+  MACRO (Plaits' synthesis), besides the FM-1's own. A project with them opens on the FM-1 too: its SID and MACRO
+  tracks play FM6's INIT there, a SID kit the 909. The Daisy build (Andamento) has them as well.
 - **Start:** STILL TIDE is loaded (KOTO GARDEN in slot B), as in the simulator. The host's PLAY / STOP start and stop
   it; the standalone app has no transport, so it plays at once.
 - **MIDI in:** notes and MIDI messages reach Tessera as USB MIDI does on the FM-1, at their exact sample.

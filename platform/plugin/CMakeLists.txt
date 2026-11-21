@@ -65,8 +65,25 @@ function(tess_core_options tgt)
         target_compile_options(${tgt} PRIVATE -w -ffp-contract=off)
     endif()
 endfunction()
+# MACRO's Plaits voice (MELODEE_PLAITS in core_defs.txt; firmware/third_party/mi, MIT): C++, built once and shared by
+# every copy of the core (it keeps no state of its own: each voice lives in its track's memory, eng_macro.c)
+set(TESS_MI ${TESS_ROOT}/firmware/third_party/mi)
+file(GLOB TESS_MI_SRCS ${TESS_MI}/plaits/dsp/*.cc ${TESS_MI}/plaits/dsp/*/*.cc ${TESS_MI}/plaits/resources.cc
+     ${TESS_MI}/stmlib/dsp/*.cc ${TESS_MI}/stmlib/utils/*.cc)
+add_library(tessera-plaits STATIC ${TESS_MI_SRCS} ${TESS_ROOT}/firmware/src/macro_glue.cc)
+target_include_directories(tessera-plaits PRIVATE ${TESS_MI} ${TESS_ROOT}/firmware/src)
+target_compile_definitions(tessera-plaits PRIVATE TEST PLAITS_LEAN PLAITS_SAMPLE_RATE=44100.0f
+    PLAITS_SAMPLE_RATE_EXACT PLAITS_BLOCK_SIZE=16 _USE_MATH_DEFINES)
+set_target_properties(tessera-plaits PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET hidden)
+if (MSVC)
+    target_compile_options(tessera-plaits PRIVATE -w /FIstdio.h)
+else()
+    target_compile_options(tessera-plaits PRIVATE -w -fno-exceptions -fno-rtti -include stdio.h)
+endif()
+
 add_library(tessera-core STATIC ${TESS_ROOT}/web/sim/sim.c)
 tess_core_options(tessera-core)
+target_link_libraries(tessera-core PUBLIC tessera-plaits)
 
 if (TESS_PLUGIN_COPIES LESS 1 OR TESS_PLUGIN_COPIES GREATER 16)
     message(FATAL_ERROR "TESS_PLUGIN_COPIES: 1 to 16")
@@ -83,6 +100,7 @@ add_library(tessera-copies STATIC core_copies.c ${TESS_COPY_OBJECTS})
 target_include_directories(tessera-copies PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${TESS_ROOT}/platform/core)
 target_compile_definitions(tessera-copies PRIVATE TESS_PLUGIN_COPIES=${TESS_PLUGIN_COPIES})
 set_target_properties(tessera-copies PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(tessera-copies PUBLIC tessera-plaits)
 
 # ---- the CLAP implementation, then every format from it
 # the window: the panel drawn in software, in a native child window (Win32, X11; none on macOS yet)
