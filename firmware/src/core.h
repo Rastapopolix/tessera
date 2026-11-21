@@ -29,6 +29,10 @@ _Static_assert(CORE_TRACKS == 4 || CORE_TRACKS == 8, "CORE_TRACKS: 4 or 8");
 #define MELODEE_ADMISSION 0 /* enable only with a calibrated performance contract */
 #endif
 #define VOICE_BUDGET_DEFAULT (MELODEE_ADMISSION ? 16u : VBUDGET)
+#ifndef MELODEE_VOICE_BUDGET
+#define MELODEE_VOICE_BUDGET 1    /* the shared budget (voice.c); 0: the plugin's, no shared pool, each track up to its
+                                   * engine's own cap (SYSTEM's BUDGET hidden) */
+#endif
 #ifndef MELODEE_AUDIO_BENCH
 #define MELODEE_AUDIO_BENCH 0 /* laboratory fixed-voice admission bypass; never a release default */
 #endif

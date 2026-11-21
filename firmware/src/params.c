@@ -640,7 +640,7 @@ static const page_t PAGES[] = {
                                                                            * held each track's ROLE (entries.c) */
     {"LANDSCAPE", FAM_GLO, SC_GLOBAL, GR_LAND, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: rain on water, played by the
                                                                          * music (ui_land.c; the Mono look only) */
-    {"SYSTEM", FAM_GLO, SC_GLOBAL, GR_NONE, {G_BUDGET, G_INFO, G_A4, G_TUNE}},   /* the voices and the CPU they cost,
+    {"SYSTEM", FAM_GLO, SC_GLOBAL, GR_NONE, {MELODEE_VOICE_BUDGET ? G_BUDGET : 0xFF, G_INFO, G_A4, G_TUNE}},   /* the voices and the CPU they cost,
                                                                                * the tuning (ui_mono.c mo_pic_system) */
     {"MIDI IN", FAM_GLO, SC_GLOBAL, GR_NONE, {G_MIDI, G_DRUMCH, G_ROUTE, G_CLOCK}},   /* what comes in: the port, DRUM's
                                                                                    * channel, ROUT, the clock
