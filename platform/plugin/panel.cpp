@@ -547,8 +547,8 @@ int Panel::key_at(int x, int y) const
 
 void Panel::merge_held()
 {
-    input.keys = mouse_keys | kbd_keys;
-    input.buttons = mouse_buttons | kbd_buttons;
+    input.keys = mouse_keys | kbd_keys | latch_keys;
+    input.buttons = mouse_buttons | kbd_buttons | latch_buttons;
     input.changed = true;
 }
 
@@ -571,6 +571,15 @@ bool Panel::key(int code, bool down)
         if (down) menu_open = false;
         return false;
     }
+    if (code == 0x01 && (latch_keys || latch_buttons))   // Esc: every latch let go
+    {
+        if (!down) return false;
+        latch_keys = latch_buttons = 0;
+        merge_held();
+        return true;
+    }
+    if (!keys_on_)   // KEYS OFF: every key the DAW's
+        return false;
     if (code == 0x1A) b = B_OCTDN;
     if (code == 0x1B) b = B_OCTUP;
     if (code == 0x0F && tracks_ > 4)   // Tab: the other bank (T1 or T5)
@@ -642,14 +651,28 @@ bool Panel::down(int x, int y)
         return false;
     }
     if ((drag_i = knob_at(x, y)) >= 0) { drag = KNOB; return false; }
-    if ((drag_i = button_at(x, y)) >= 0)
+    if ((drag_i = button_at(x, y)) >= 0 && (latch_buttons >> buttons[drag_i].bit & 1u))   // a latched one: let go
+    {
+        drag = NONE;
+        latch_buttons &= ~(1u << buttons[drag_i].bit);
+        merge_held();
+        return true;
+    }
+    if (drag_i >= 0)
     {
         drag = BUTTON;
         mouse_buttons |= 1u << buttons[drag_i].bit;
         merge_held();
         return true;
     }
-    if ((drag_i = key_at(x, y)) >= 0)
+    if ((drag_i = key_at(x, y)) >= 0 && (latch_keys >> keys[drag_i].k & 1u))   // a latched one: let go
+    {
+        drag = NONE;
+        latch_keys &= ~(1u << keys[drag_i].k);
+        merge_held();
+        return true;
+    }
+    if (drag_i >= 0)
     {
         drag = KEY;
         mouse_keys |= 1u << keys[drag_i].k;
@@ -728,6 +751,22 @@ bool Panel::move(int x, int y)
     return false;
 }
 
+// a right-click: the button or key under it latched (held), or let go if it was
+bool Panel::latch(int x, int y)
+{
+    if (native() && menu_open)
+        return false;
+    int i;
+    if ((i = button_at(x, y)) >= 0)
+        latch_buttons ^= 1u << buttons[i].bit;
+    else if ((i = key_at(x, y)) >= 0)
+        latch_keys ^= 1u << keys[i].k;
+    else
+        return false;
+    merge_held();
+    return true;
+}
+
 bool Panel::up(int, int)
 {
     bool ch = false;
@@ -755,14 +794,14 @@ namespace
 {
 const uint32_t T_YEL = 0xFFFFD020, T_DIM = 0xFF3B3007, T_HELD = 0xFFE6E0D0, T_WORD = 0xFFB9B2A0, T_OFF = 0xFF5F5A4C,
                T_BLACK = 0xFF000000, T_BODY = 0xFF111111;
-const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 6, ROW_H = 36, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
+const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 7, ROW_H = 36, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
           INK_COLS = 5, INK_S = 32, INK_GAP = 12, FM1_LINE = 22;
-// SHELL, INK; MODE, SIZE; FM-1 USB and its state; ABOUT (a dotted line between each group)
-enum { ROW_SHELL, ROW_INK, ROW_MODE, ROW_SIZE, ROW_FM1, ROW_ABOUT };
+// SHELL, INK; MODE, SIZE; FM-1 USB and its state, KEYS; ABOUT (a dotted line between each group)
+enum { ROW_SHELL, ROW_INK, ROW_MODE, ROW_SIZE, ROW_FM1, ROW_KEYS, ROW_ABOUT };
 int row_y(int i)
 {
-    return MENU_Y + 10 + i * ROW_H + (i >= ROW_MODE ? 18 : 0) + (i >= ROW_FM1 ? 18 : 0) +
-           (i >= ROW_ABOUT ? FM1_LINE + 18 : 0);
+    return MENU_Y + 10 + i * ROW_H + (i >= ROW_MODE ? 18 : 0) + (i >= ROW_FM1 ? 18 : 0) + (i >= ROW_KEYS ? FM1_LINE : 0) +
+           (i >= ROW_ABOUT ? 18 : 0);
 }
 const int MENU_H = 2 + 8 + MENU_ROWS * ROW_H + 3 * 18 + FM1_LINE + 8 + 2;
 // FM-1 USB's two words, right to left from the row's right edge: ON, then OFF
@@ -916,7 +955,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
 
     // the menu: SHELL, INK; MODE, SIZE; ABOUT
     nbox(c, MENU_X, MENU_Y, MENU_W, MENU_H, T_DIM, T_BLACK);
-    static const char *NAMES[MENU_ROWS] = {"SHELL", "INK", "MODE", "SIZE", "FM-1 USB", "ABOUT"};
+    static const char *NAMES[MENU_ROWS] = {"SHELL", "INK", "MODE", "SIZE", "FM-1 USB", "KEYS", "ABOUT"};
     for (int r = 0; r < MENU_ROWS; r++)
     {
         int y = row_y(r);
@@ -960,6 +999,11 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
             if (fm1_on)
                 c.ptext(MENU_X + 16, y + ROW_H + 2, fm1_text.c_str(), 2, fm1_live ? T_YEL : T_WORD);
         }
+        else if (r == ROW_KEYS)   // the computer keyboard: Tessera's (ON) or the DAW's (OFF)
+        {
+            seg("ON", keys_on_, true);
+            seg("OFF", !keys_on_, true);
+        }
         else
         {
             std::string ver = version.empty() ? "TESSERA" : version;
@@ -969,7 +1013,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
     }
     dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_INK) + ROW_H + 8, T_DIM);
     dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_SIZE) + ROW_H + 8, T_DIM);
-    dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_FM1) + ROW_H + FM1_LINE + 8, T_DIM);
+    dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_KEYS) + ROW_H + 8, T_DIM);
 
     if (menu_sub == 1)   // the shells, the one shown marked
     {
@@ -1060,6 +1104,18 @@ bool Panel::menu_click(int x, int y)
     {
         int sg = fm1_seg_at(x);
         fm1_req = sg >= 0 ? sg : fm1_on && fm1_mine ? 0 : 1;
+        menu_sub = 0;
+        return false;
+    }
+    if (r == ROW_KEYS)   // OFF or ON (elsewhere on the row: the other one)
+    {
+        int sg = fm1_seg_at(x);
+        bool on = sg >= 0 ? sg == 1 : !keys_on_;
+        if (on != keys_on_)
+        {
+            set_keys(on);
+            keys_req = on;
+        }
         menu_sub = 0;
         return false;
     }

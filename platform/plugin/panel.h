@@ -34,6 +34,10 @@ class Panel
     bool move(int x, int y);
     bool up(int x, int y);
     bool wheel(int x, int y, int notches);
+    /* a right-click (or Ctrl-click on a Mac): a button or key latched, held until it is right-clicked or clicked again
+     * (or Esc), so the mouse can play the FM-1's two-handed combos (GLO + a button, SEL + a key). true if changed */
+    bool latch(int x, int y);
+    uint32_t latched_buttons() const { return latch_buttons; }
     /* the computer keyboard, as the web simulator maps it (by where a key is, not what it prints): code a PC scan code
      * (set 1: Z 0x2C, Q 0x10, 1 0x02 ..; what Windows reports, and X11's keycode - 8) or KEY_UP .. KEY_RIGHT. Z..' and
      * Q..O the keys (F3..G5), 1..= the twelve buttons in the panel's order, [ ] OCT- OCT+ (each held while its key is),
@@ -41,6 +45,11 @@ class Panel
     enum { KEY_UP = 0x148, KEY_LEFT = 0x14B, KEY_RIGHT = 0x14D, KEY_DOWN = 0x150 };
     bool key(int code, bool down);
     bool release_keys();
+    /* KEYS (TESSERA's menu): the computer keyboard plays Tessera (on), or every key is left to the DAW (off). A click
+     * asks (take_keys_request: 1 on, 0 off, -1 none); the window remembers it */
+    void set_keys(bool on) { keys_on_ = on; if (!on) release_keys(); }
+    bool keys_on() const { return keys_on_; }
+    int take_keys_request() { int r = keys_req; keys_req = -1; return r; }
     PanelInput input;
     /* the build's tracks (tess_core_tracks): with 8, a 1-4 / 5-8 switch beside OPEN / SAVE selects T1 or T5 (Tab too),
      * the bank of the track selected lit */
@@ -124,7 +133,9 @@ class Panel
     std::vector<Key> keys;
     int pitch = 0, kw = 0, kh = 0, sw = 0;
     // held by the mouse and by the computer keyboard, apart (input.keys / input.buttons: the two together)
-    uint32_t mouse_keys = 0, mouse_buttons = 0, kbd_keys = 0, kbd_buttons = 0;
+    uint32_t mouse_keys = 0, mouse_buttons = 0, kbd_keys = 0, kbd_buttons = 0, latch_keys = 0, latch_buttons = 0;
+    bool keys_on_ = true;
+    int keys_req = -1;
     void merge_held();
     // a drag
     enum { NONE, KNOB, BUTTON, KEY } drag = NONE;
