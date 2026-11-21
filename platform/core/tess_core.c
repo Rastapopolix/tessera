@@ -344,6 +344,7 @@ void tess_core_view(tess_view_t *v)
     v->screen_draws = (uint32_t)host_sent;
     v->playing = song.playing;
     v->master = tess_core_master_get();
+    v->ink = settings.palette;
     v->track = song.sel;
 }
 
@@ -510,6 +511,25 @@ uint32_t tess_core_ink(const char *name)
     (void)name;
 #endif
     return 0;
+}
+
+uint32_t tess_core_ink_at(uint32_t i, const char **name, uint32_t rgb[4])
+{
+#if MELODEE_LOOK
+    uint32_t k;
+    if (i < NPALETTES) {
+        if (name)
+            *name = UI_PALETTES[i].name;
+        for (k = 0; rgb && k < 4u; k++) {   /* RGB565 -> 0xRRGGBB */
+            uint32_t c = UI_PALETTES[i].trk[k];
+            rgb[k] = ((c >> 11 & 31u) * 255u / 31u) << 16 | ((c >> 5 & 63u) * 255u / 63u) << 8 | (c & 31u) * 255u / 31u;
+        }
+    }
+    return NPALETTES;
+#else
+    (void)i; (void)name; (void)rgb;
+    return 0;
+#endif
 }
 
 /* ---- the DAW (TESS_HOST_CLOCK: mix.c int_clock_units asks tess_host_units while the DAW plays) */

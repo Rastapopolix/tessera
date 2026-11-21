@@ -58,6 +58,13 @@ class Panel
     void set_shell(int i);
     int shell() const { return shell_; }
     int take_shell_request() { int r = shell_req; shell_req = -1; return r; }
+    /* the screen's inks (MENU > COLOR's choices, tess_core_ink_at): a row of swatches under the buttons, the one the
+     * view has (tess_view_t.ink) ringed, its name while the mouse is on one. A click asks for that ink
+     * (take_ink_request: its index, -1 none). rgb: the four track colours, alike for one ink */
+    struct Ink { std::string name; uint32_t rgb[4]; };
+    void set_inks(const std::vector<Ink> &list) { inks = list; }
+    int ink_count() const { return (int)inks.size(); }
+    int take_ink_request() { int r = ink_req; ink_req = -1; return r; }
 
   private:
     struct Knob { int x, y, r; const char *name; int role; double angle; };   // role -1: MASTER
@@ -74,6 +81,11 @@ class Panel
     int shell_ = 0, shell_req = -1, shell_hover = -1;
     void swatch_xy(int i, int &x, int &y) const;
     int swatch_at(int x, int y) const;
+    static constexpr int INK_R = 7;
+    std::vector<Ink> inks;
+    int ink_now = -1, ink_req = -1, ink_hover = -1, ink_pending = -1;
+    void ink_xy(int i, int &x, int &y) const;
+    int ink_at(int x, int y) const;
     int note_frames = 0;
     std::vector<Knob> knobs;
     std::vector<Button> buttons;

@@ -72,6 +72,7 @@ typedef struct {
     uint16_t screen[TESS_SCREEN * TESS_SCREEN];   /* RGB565 (host order) */
     uint32_t lit_buttons, lit_keys, dim_buttons, dim_keys, breath_buttons, breath_keys;   /* lit_buttons bit 14: PLAY green */
     uint32_t screen_draws, playing, master;   /* master 0..1023 */
+    uint32_t ink;                    /* MENU > COLOR's choice now (tess_core_ink_at's i) */
     uint32_t track;                  /* the selected track, 0 .. tess_core_tracks() - 1 (8 tracks: its bank, track & 4) */
 } tess_view_t;
 void tess_core_view(tess_view_t *v);
@@ -130,6 +131,9 @@ uint32_t tess_core_bpm(void);
 /* the Mono look's ink by name, as MENU > COLOR sets it ("YELLOW", "HOT PINK": tools/gen_ui_palettes.py MONO_INK): 1 if
  * set, 0 for an unknown name or a build without the Mono look. A device setting: not in the project */
 uint32_t tess_core_ink(const char *name);
+/* MENU > COLOR's choices: how many (0 without the Mono look); for i below that, choice i's name and its four track
+ * colours as 0xRRGGBB (alike for one ink; MOSAIC, SUNSET, OCEAN, NEON differ). name or rgb may be 0 */
+uint32_t tess_core_ink_at(uint32_t i, const char **name, uint32_t rgb[4]);
 
 #ifdef __cplusplus
 }

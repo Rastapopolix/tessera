@@ -23,8 +23,11 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
   kdialog, whichever is installed. The DAW is told its saved state changed. Not on macOS yet (no window).
 - **The window** (Windows and Linux): the FM-1 as the web simulator draws it, in any of its eight shells (the swatches
   under the keys, at the right; each sets its own Mono ink, as the web simulator's picker does, and MENU > COLOR still
-  changes the ink after). The shell picked is remembered for every window, in any DAW (a file `shell` in
-  `%APPDATA%\Tessera`, `~/.config/tessera` or `~/Library/Application Support/Tessera`), not in the project. The screen at 1:1;
+  changes the ink after), and MENU > COLOR's 13 inks as a row of swatches between the buttons and the keys (the one
+  the screen has ringed, its name on hover; tess_core_ink_at lists them, tess_view_t.ink is the one now). The shell
+  picked and the ink last shown (a pick there, a shell's ink, or MENU > COLOR) are remembered for every window, in any
+  DAW (files `shell` and `ink` in `%APPDATA%\Tessera`, `~/.config/tessera` or
+  `~/Library/Application Support/Tessera`; the ink over the shell's own), not in the project. The screen at 1:1;
   click the buttons and keys (drag across the keys to glide); drag a knob up/down or left/right, or use the mouse
   wheel over it. **The computer keyboard** too, as in the web simulator (click the window first): Z..' and Q..O play
   the keys, 1..= are the twelve buttons in the panel's order and [ ] OCT- / OCT+ (each held while its key is), up /
