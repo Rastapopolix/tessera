@@ -4,7 +4,7 @@
  *   - the panel draws; the screen shows the firmware's picture (not black) once it has run;
  *   - a click on PLAY starts the song, and its LED lights; a click on SEQ changes the screen;
  *   - a knob dragged turns its encoder; a key clicked sounds;
- *   - TESSERA's shell (the default): its layout, its menu (a shell, an ink), the MIDI lamp;
+ *   - TESSERA's shell (the default): its layout, its menu (a shell, an ink, FM-1 USB), the MIDI lamp;
  *   - writes the window as PPM pictures (argument: a folder) to look at.
  * usage: tessera-panel-test [out-folder] */
 #include <cmath>
@@ -382,6 +382,42 @@ int main(int argc, char **argv)
         q.up(100, 25);
         q.key(0x01, true);
         CHECK(!q.menu_shown(), "Esc shuts the menu");
+    }
+
+    // FM-1 USB: TESSERA's menu row (OFF / ON, or a click on the row: the other one), the FM-1 shells' button
+    {
+        Panel q;
+        CHECK(q.take_fm1_request() == -1, "FM-1 USB: nothing asked yet");
+        q.down(100, 20);   // (the mark: the menu)
+        q.up(100, 20);
+        int y = 46 + 10 + 4 * 36 + 2 * 18 + 18;   // (panel.cpp row_y(ROW_FM1): the row's middle)
+        q.down(310, y);   // ON (the right one)
+        q.up(310, y);
+        CHECK(q.take_fm1_request() == 1 && q.take_fm1_request() == -1, "the menu's ON asks once");
+        q.set_fm1(true, true, true, "FM-1 CONNECTED");
+        q.down(254, y);   // OFF
+        q.up(254, y);
+        CHECK(q.take_fm1_request() == 0, "the menu's OFF asks for off");
+        q.down(90, y);    // the row's name: the other one (on now: off)
+        q.up(90, y);
+        CHECK(q.take_fm1_request() == 0, "a click on the row while on asks for off");
+        q.set_fm1(true, false, false, "IN ANOTHER TESSERA");
+        q.down(90, y);
+        q.up(90, y);
+        CHECK(q.take_fm1_request() == 1, "another Tessera has it: a click asks to take it");
+        CHECK(q.menu_shown(), "the menu stays open");
+        Panel f;
+        f.set_tracks(8);
+        f.set_shell(1);
+        int fy = 0;
+        for (int yy = 560; yy < 624 && !fy; yy++)   // (the FM-1 USB button: under the keys, after 5-8)
+            if (f.down(400, yy), f.up(400, yy), f.take_fm1_request() == 1)
+                fy = yy;
+        CHECK(fy > 0, "the FM-1 shells' FM-1 USB button asks for on");
+        f.set_fm1(true, true, true, "FM-1 CONNECTED");
+        f.down(400, fy);
+        f.up(400, fy);
+        CHECK(f.take_fm1_request() == 0, "lit, it asks for off");
     }
 
     std::printf(fails ? "panel test: %d FAILED\n" : "panel test: ok\n", fails);

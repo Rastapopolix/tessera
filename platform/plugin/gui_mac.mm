@@ -166,6 +166,7 @@ class GuiMac : public Gui
     {
         link->view(view);
         panel.set_midi(link->midi_count());
+        gui_fm1_tick(panel, link);
         ink_check();
         draw();
     }

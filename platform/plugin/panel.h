@@ -73,6 +73,12 @@ class Panel
     /* the plugin's version (ABOUT in TESSERA's menu) */
     void set_version(const std::string &v) { version = v; }
     bool menu_shown() const { return menu_open; }
+    /* an FM-1 on USB playing this instance (fm1_link.h): TESSERA's menu has FM-1 USB OFF / ON with its state under it,
+     * the FM-1's shells an FM-1 USB button under the keys, lit while on. on: this instance wants it; mine: and no other
+     * Tessera has it; live: it plays this one; text: the state in words, shown as a note when it changes. A click asks
+     * (take_fm1_request: 1 on, taken from any other Tessera; 0 off; -1 none) */
+    void set_fm1(bool on, bool mine, bool live, const std::string &text);
+    int take_fm1_request() { int r = fm1_req; fm1_req = -1; return r; }
 
   private:
     // TESSERA's shell (shell 0): its own drawing, its layout of the buttons and files, and its menu
@@ -88,11 +94,16 @@ class Panel
     uint32_t midi_count = 0, midi_frame = 0;
     bool midi_known = false;
     std::string version;
+    bool fm1_on = false, fm1_mine = false, fm1_live = false, fm1_known = false;
+    std::string fm1_text;
+    int fm1_req = -1;
+    int fm1_seg_at(int x) const;       // TESSERA's menu: 0 OFF, 1 ON, -1 neither
     struct Knob { int x, y, r; const char *name; int role; double angle; };   // role -1: MASTER
     struct Button { int x, y, w, h, bit; const char *face, *sub; };
     struct Key { int cx, cy, k; };
     struct FileButton { int x, y, w, h, action; const char *face; };
     std::vector<FileButton> files;
+    FileButton usb{};                  // the FM-1's shells: FM-1 USB, under the keys
     FileButton banks[2];               // the 1-4 / 5-8 switch (8 tracks); action: the bank's first track
     int tracks_ = 4, track_now = 0, bank_held = -1;
     int bank_at(int x, int y) const;

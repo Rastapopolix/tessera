@@ -236,6 +236,7 @@ void Panel::layout()
         files.push_back({142, fy, 72, 24, FILE_SAVE, "SAVE"});
         banks[0] = {234, fy, 52, 24, 0, "1-4"};   // (one switch, two halves)
         banks[1] = {286, fy, 52, 24, 4, "5-8"};
+        usb = {tracks_ > 4 ? 348 : 224, fy, 112, 24, 0, "FM-1 USB"};
         return;
     }
     const int total = 72 + 10 + 72 + (tracks_ > 4 ? 20 + 104 : 0);
@@ -252,6 +253,21 @@ void Panel::set_midi(uint32_t count)
         midi_frame = frame + 1;   // (lit from the next frame for a few)
     midi_count = count;
     midi_known = true;
+}
+
+void Panel::set_fm1(bool on, bool mine, bool live, const std::string &text)
+{
+    bool was = fm1_on;
+    std::string before = fm1_text;
+    fm1_on = on;
+    fm1_mine = mine;
+    fm1_live = live;
+    fm1_text = text;
+    if (fm1_known && (on ? text != before : was))
+        note(on ? text : "FM-1 USB OFF");
+    else if (!fm1_known && on)
+        note(text);
+    fm1_known = true;
 }
 
 int Panel::bank_at(int x, int y) const
@@ -385,12 +401,24 @@ void Panel::draw(uint32_t *px, const tess_view_t &v)
             c.text(b.x + b.w / 2, b.y + b.h / 2 - 7 + dy, b.face, 2, lit ? LIT_INK : BTN_INK);
         }
     }
+    {   // FM-1 USB: lit while this instance listens to an FM-1 on USB
+        const FileButton &u = usb;
+        bool lit = fm1_on && fm1_mine;
+        int dy = file_held == 100 ? 1 : 0;
+        c.rrect(u.x, u.y + dy, u.w, u.h, 6, EDGE);
+        c.rrect(u.x + 1.5, u.y + 1.5 + dy, u.w - 3, u.h - 3, 5, lit ? LIT : BTN);
+        c.text(u.x + u.w / 2, u.y + u.h / 2 - 7 + dy, u.face, 2, lit ? LIT_INK : BTN_INK);
+    }
     if (note_frames > 0)
     {
         note_frames--;
-        const FileButton &last = tracks_ > 4 ? banks[1] : files.back();
-        int x = last.x + last.w + 16;
-        c.text(x + Canvas::text_w(note_text.c_str(), 2) / 2, last.y + last.h / 2 - 7, note_text.c_str(), 2, LABEL);
+        const FileButton &last = usb;
+        int x = last.x + last.w + 16, sx, sy;
+        swatch_xy(0, sx, sy);
+        std::string t = note_text;   // (cut short before the shells' swatches)
+        while (!t.empty() && x + Canvas::text_w(t.c_str(), 2) > sx - SWATCH_R - 12)
+            t.pop_back();
+        c.text(x + Canvas::text_w(t.c_str(), 2) / 2, last.y + last.h / 2 - 7, t.c_str(), 2, LABEL);
     }
 
     // the shells: a swatch each (its body round its buttons), the one shown ringed; its name while the mouse is on it
@@ -406,7 +434,7 @@ void Panel::draw(uint32_t *px, const tess_view_t &v)
     }
     int sx, sy;
     swatch_xy(0, sx, sy);
-    const char *what = shell_hover >= 0 ? SHELLS[shell_hover].name : "SHELL";
+    const char *what = shell_hover >= 0 ? SHELLS[shell_hover].name : note_frames > 0 ? "" : "SHELL";   // (a note there)
     c.text(sx - SWATCH_R - 14 - Canvas::text_w(what, 2) / 2, sy - 7, what, 2, LABEL);
 
     // the screen's inks: a swatch each (its ink on the screen's black), the one shown ringed; its name while the mouse
@@ -657,6 +685,11 @@ bool Panel::down(int x, int y)
             file_held = (int)i;
             file_req = files[i].action;
         }
+    if (!native() && x >= usb.x && x < usb.x + usb.w && y >= usb.y && y < usb.y + usb.h)
+    {
+        file_held = 100;   // (pressed in, as OPEN and SAVE)
+        fm1_req = fm1_on && fm1_mine ? 0 : 1;
+    }
     return false;
 }
 
@@ -722,11 +755,19 @@ namespace
 {
 const uint32_t T_YEL = 0xFFFFD020, T_DIM = 0xFF3B3007, T_HELD = 0xFFE6E0D0, T_WORD = 0xFFB9B2A0, T_OFF = 0xFF5F5A4C,
                T_BLACK = 0xFF000000, T_BODY = 0xFF111111;
-const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 5, ROW_H = 36, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
-          INK_COLS = 5, INK_S = 32, INK_GAP = 12;
-enum { ROW_SHELL, ROW_INK, ROW_MODE, ROW_SIZE, ROW_ABOUT };
-int row_y(int i) { return MENU_Y + 10 + i * ROW_H + (i >= ROW_MODE ? 18 : 0) + (i >= ROW_ABOUT ? 18 : 0); }
-const int MENU_H = 2 + 8 + MENU_ROWS * ROW_H + 2 * 18 + 8 + 2;
+const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 6, ROW_H = 36, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
+          INK_COLS = 5, INK_S = 32, INK_GAP = 12, FM1_LINE = 22;
+// SHELL, INK; MODE, SIZE; FM-1 USB and its state; ABOUT (a dotted line between each group)
+enum { ROW_SHELL, ROW_INK, ROW_MODE, ROW_SIZE, ROW_FM1, ROW_ABOUT };
+int row_y(int i)
+{
+    return MENU_Y + 10 + i * ROW_H + (i >= ROW_MODE ? 18 : 0) + (i >= ROW_FM1 ? 18 : 0) +
+           (i >= ROW_ABOUT ? FM1_LINE + 18 : 0);
+}
+const int MENU_H = 2 + 8 + MENU_ROWS * ROW_H + 3 * 18 + FM1_LINE + 8 + 2;
+// FM-1 USB's two words, right to left from the row's right edge: ON, then OFF
+const int SEG_RIGHT = MENU_X + MENU_W - 16;
+int seg_w(const char *t) { return Canvas::ptext_w(t, 2) + 12; }
 int shell_sub_y() { return row_y(ROW_SHELL) - 10; }
 int ink_sub_y() { return row_y(ROW_INK) - 10; }
 
@@ -875,7 +916,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
 
     // the menu: SHELL, INK; MODE, SIZE; ABOUT
     nbox(c, MENU_X, MENU_Y, MENU_W, MENU_H, T_DIM, T_BLACK);
-    static const char *NAMES[MENU_ROWS] = {"SHELL", "INK", "MODE", "SIZE", "ABOUT"};
+    static const char *NAMES[MENU_ROWS] = {"SHELL", "INK", "MODE", "SIZE", "FM-1 USB", "ABOUT"};
     for (int r = 0; r < MENU_ROWS; r++)
     {
         int y = row_y(r);
@@ -912,6 +953,13 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
             seg("150", false, false);
             seg("100", true, true);
         }
+        else if (r == ROW_FM1)   // OFF / ON, and under them what the FM-1 is doing
+        {
+            seg("ON", fm1_on, true);
+            seg("OFF", !fm1_on, true);
+            if (fm1_on)
+                c.ptext(MENU_X + 16, y + ROW_H + 2, fm1_text.c_str(), 2, fm1_live ? T_YEL : T_WORD);
+        }
         else
         {
             std::string ver = version.empty() ? "TESSERA" : version;
@@ -921,6 +969,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
     }
     dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_INK) + ROW_H + 8, T_DIM);
     dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_SIZE) + ROW_H + 8, T_DIM);
+    dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_FM1) + ROW_H + FM1_LINE + 8, T_DIM);
 
     if (menu_sub == 1)   // the shells, the one shown marked
     {
@@ -1007,9 +1056,24 @@ bool Panel::menu_click(int x, int y)
         return false;
     }
     int r = menu_row_at(x, y);
+    if (r == ROW_FM1)   // OFF or ON (a click elsewhere on the row: the other one); ON also takes it from another
+    {
+        int sg = fm1_seg_at(x);
+        fm1_req = sg >= 0 ? sg : fm1_on && fm1_mine ? 0 : 1;
+        menu_sub = 0;
+        return false;
+    }
     if (r == ROW_SHELL) menu_sub = menu_sub == 1 ? 0 : 1;
     else if (r == ROW_INK) menu_sub = menu_sub == 2 ? 0 : 2;
     else if (r < 0) menu_open = false;   // (MODE, SIZE, ABOUT: nothing to pick yet)
     sub_hover = -1;
     return false;
+}
+
+int Panel::fm1_seg_at(int x) const
+{
+    int on_l = SEG_RIGHT - seg_w("ON"), off_r = on_l - 4, off_l = off_r - seg_w("OFF");
+    if (x >= on_l && x < SEG_RIGHT) return 1;
+    if (x >= off_l && x < off_r) return 0;
+    return -1;
 }
