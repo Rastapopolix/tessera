@@ -595,6 +595,14 @@ bool p_init(const clap_plugin_t *p)
     t->core->boot();
     if (again)                 // (a copy an instance gave back: its power-on project again, STILL TIDE in slot A)
         t->core->slot_load(0);
+    // a shell and ink saved by a build before TESSERA's shell (or before this mark) are put aside once: the first window
+    // of this build opens in TESSERA's shell; picks after that are remembered as before
+    if (projfile::setting_get("shell_v") != "2")
+    {
+        projfile::setting_put("shell", Panel::shell_id(0));
+        projfile::setting_put("ink", "");
+        projfile::setting_put("shell_v", "2");
+    }
     int sh = Panel::shell_by_id(projfile::setting_get("shell"));   // (the shell last picked, and its ink)
     if (sh >= 0)
     {
