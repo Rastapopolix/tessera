@@ -432,6 +432,13 @@ void Panel::draw(uint32_t *px, const tess_view_t &v)
         c.circle(x, y, SWATCH_R, SHELLS[i].body);
         c.circle(x, y, SWATCH_R * 0.5, SHELLS[i].btn);
     }
+    {   // TESSERA's own swatch set apart from the FM-1's eight by a line
+        int x0, x1, y;
+        swatch_xy(0, x0, y);
+        swatch_xy(1, x1, y);
+        int lx = (x0 + SWATCH_R + x1 - SWATCH_R) / 2;
+        c.rrect(lx, y - SWATCH_R, 1, 2 * SWATCH_R, 0, mix(BODY, LABEL, 0.5));
+    }
     int sx, sy;
     swatch_xy(0, sx, sy);
     const char *what = shell_hover >= 0 ? SHELLS[shell_hover].name : note_frames > 0 ? "" : "SHELL";   // (a note there)
@@ -487,7 +494,7 @@ void Panel::set_shell(int i)
 // swatch i's centre: a row under the keys, at the right, as OPEN and SAVE are at the left
 void Panel::swatch_xy(int i, int &x, int &y) const
 {
-    x = KEYBED[0] + KEYBED[2] - SWATCH_R - 2 - (NSHELLS - 1 - i) * (2 * SWATCH_R + 10);
+    x = KEYBED[0] + KEYBED[2] - SWATCH_R - 2 - (NSHELLS - 1 - i) * (2 * SWATCH_R + 10) - (i == 0 ? SHELL_GAP : 0);
     y = KEYBED[1] + KEYBED[3] + 5 + 12;
 }
 // ink i's centre: a row between the buttons and the keys, at the right
@@ -839,7 +846,8 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
         c.ptext(SCREEN_X + SCREEN_S - 2 - Canvas::ptext_w(bank, 2), SCREEN_Y + SCREEN_S + 8, bank, 2, T_WORD);
     }
 
-    // knobs: a ring like the screen's dials; MASTER keeps its pointer, an encoder shows one (white) while it turns
+    // knobs: a ring like the screen's dials; MASTER keeps its pointer, an encoder shows one (white) while it turns; the
+    // pointer runs into the ring (no gap)
     for (size_t i = 0; i < knobs.size(); i++)
     {
         const Knob &k = knobs[i];
@@ -851,7 +859,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
         if (k.role < 0 || turning)
         {
             double a = (k.angle - 90) * kPi / 180;
-            c.line(k.x + std::cos(a) * 2, k.y + std::sin(a) * 2, k.x + std::cos(a) * (k.r - 8), k.y + std::sin(a) * (k.r - 8),
+            c.line(k.x + std::cos(a) * 2, k.y + std::sin(a) * 2, k.x + std::cos(a) * (k.r - 4), k.y + std::sin(a) * (k.r - 4),
                    4, ring);
         }
     }

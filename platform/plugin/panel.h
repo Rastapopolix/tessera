@@ -110,6 +110,7 @@ class Panel
     int file_req = FILE_NONE, file_held = -1;
     std::string note_text;
     static constexpr int SWATCH_R = 9;
+    static constexpr int SHELL_GAP = 14;   // (TESSERA's swatch apart from the FM-1's)
     int shell_ = 0, shell_req = -1, shell_hover = -1;
     void swatch_xy(int i, int &x, int &y) const;
     int swatch_at(int x, int y) const;
