@@ -66,7 +66,7 @@ class GuiX11 : public Gui
     std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
     tess_view_t view{};
 
-    GuiX11(const clap_host_t *h, GuiLink *l) : host(h), link(l) { panel.set_shell(l->shell()); }
+    GuiX11(const clap_host_t *h, GuiLink *l) : host(h), link(l) { panel.set_shell(l->shell()); panel.set_tracks(l->tracks()); }
     GuiLink *link;   // this window's instance
     ~GuiX11() override
     {

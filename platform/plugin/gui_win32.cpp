@@ -26,7 +26,7 @@ extern "C" IMAGE_DOS_HEADER __ImageBase;   // this module (the class belongs to 
 class GuiWin32 : public Gui
 {
   public:
-    explicit GuiWin32(GuiLink *l) : link(l) { panel.set_shell(l->shell()); }
+    explicit GuiWin32(GuiLink *l) : link(l) { panel.set_shell(l->shell()); panel.set_tracks(l->tracks()); }
     GuiLink *link;   // this window's instance
     HWND wnd = nullptr;
     Panel panel;
