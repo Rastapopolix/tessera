@@ -919,16 +919,26 @@ static void mo_pic_notes(const track_t *t)
  * mods filled from the left as far as their amounts reach (MOD: how many); the picked cell framed twice */
 static void mo_pic_matrix(void)
 {
-    uint32_t r, k;
+    uint32_t r, k, rb = UI_BANK(mx_from), cb = UI_BANK(mx_to);   /* (8 tracks: the four rows of the picked cell's
+                                                                 * FROM and the four columns of its TO) */
     mo_text("FR>TO", 1, 53, MO_DIM);
+#if CORE_TRACKS > 4
+    for (k = 0; k < UI_NT; k++) {
+        char n[2] = {(char)('1' + cb + k), 0};
+        mo_textc(n, 43 + (int32_t)k * 22, 53, MO_TRK(cb + k));
+        n[0] = (char)('1' + rb + k);
+        mo_textc(n, 25, 64 + (int32_t)k * 11, MO_TRK(rb + k));
+    }
+#else
     for (k = 0; k < NTRK; k++) {
         char n[2] = {(char)('1' + k), 0};
         mo_textc(n, 43 + (int32_t)k * 22, 53, MO_TRK(k));
         mo_textc(n, 25, 64 + (int32_t)k * 11, MO_TRK(k));
     }
-    for (r = 0; r < NTRK; r++)
-        for (k = 0; k < NTRK; k++) {
-            int32_t x = 33 + (int32_t)k * 22, y = 62 + (int32_t)r * 11;
+#endif
+    for (r = rb; r < rb + UI_NT; r++)
+        for (k = cb; k < cb + UI_NT; k++) {
+            int32_t x = 33 + (int32_t)(k - cb) * 22, y = 62 + (int32_t)(r - rb) * 11;
             uint32_t lv = mx_level(r, k);
             if (r == mx_from && k == mx_to)
                 mo_box(x - 1, y - 1, 22, 11, MO_HOT);
@@ -1782,8 +1792,8 @@ static void mo_pic_entries(void)
 {
     uint8_t role[TESSERA_TRACKS];
     uint32_t warn = 0, out = tessera_entries_get(&warn, role), on = tessera.et_amount != 0u, blink = (fm1_ms / 125u) & 1u;
-    for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
-        int32_t y = 54 + (int32_t)k * 11;
+    for (uint32_t k = UI_BASE; k < UI_BASE + UI_NT; k++) {   /* (8 tracks: the selected track's bank) */
+        int32_t y = 54 + (int32_t)(k - UI_BASE) * 11;
         char n[3] = {'T', (char)('1' + k), 0}, b[12];
         uint16_t ink = !on || ((warn >> k & 1u) && blink) ? mo_tdim(k) : MO_TRK(k);
         mo_invc(n, 3, y, MO_TRK(k));
@@ -1799,8 +1809,8 @@ static void mo_pic_entries(void)
  * 0, and the menu's NOTES OUT when it keeps the steps in (KEYS) or sends nothing (OFF) */
 static void mo_pic_midich(void)
 {
-    for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
-        int32_t y = 54 + (int32_t)k * 11;
+    for (uint32_t k = UI_BASE; k < UI_BASE + UI_NT; k++) {   /* (8 tracks: the selected track's bank) */
+        int32_t y = 54 + (int32_t)(k - UI_BASE) * 11;
         uint32_t ch = midi_out_channel(&trk[k]);
         char n[3] = {'T', (char)('1' + k), 0}, b[24];
         mo_invc(n, 3, y, MO_TRK(k));
@@ -1903,8 +1913,8 @@ static void mo_pic_midiin(void)
     if (!d || dk >= NTRK || (route != 1u && (d - 1u < first || d - 1u - first >= 4u)))
         d = 0;                                          /* (DRUM's channel outside ROUT's range: not heard) */
 #endif
-    for (k = 0; k < TESSERA_TRACKS; k++) {
-        int32_t y = 54 + (int32_t)k * 11;
+    for (k = UI_BASE; k < UI_BASE + UI_NT; k++) {      /* (8 tracks: the selected track's bank) */
+        int32_t y = 54 + (int32_t)(k - UI_BASE) * 11;
         uint32_t ch = route == 1u ? (k == song.sel ? 17u : 0u) : first + k + 1u;
 #if CORE_TRACKS > 4
         if (route != 1u && ch > 16u) ch = 0;           /* (past channel 16: ROUT's range doesn't reach it) */
@@ -2901,7 +2911,7 @@ static void mo_stage_col(uint32_t k, int top)
     uint32_t sel = k == song.sel, mute = t->p[P_MUTE] != 0u, arm = (song.rec >> k) & 1u, len = (uint32_t)t->p[P_SLEN];
     uint32_t page = song.playing && t->seq_idx < len ? t->seq_idx / 16u : 0u, ph = song.playing ? t->seq_idx : 0xFFFFu;
     uint32_t next = t->pattern_next < NPAT ? t->pattern_next + 1u : 0u, lvl = (uint32_t)t->p[P_LEVEL] & 127u, i, src, kk;
-    int32_t x0 = (int32_t)k * 30, cx = x0 + 15;
+    int32_t x0 = (int32_t)(k - UI_BASE) * 30, cx = x0 + 15;   /* (8 tracks: the selected track's bank) */
     uint16_t ink = mute ? mo_tdim(k) : MO_TRK(k), dim = mo_tdim(k);
     char nm[16], a[8], b[8], chip[3] = {'P', (char)('1' + t->pattern % NPAT), 0};
     if (sel && !stage.out)
@@ -2995,7 +3005,16 @@ static void mo_stage_head(void)
     }
     if (!msg) {                                         /* (a message: in the engine's place too) */
         str_cpy(b, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), 8);
+#if CORE_TRACKS > 4
+        if (right > 118) right = 118;
+        if (UI_BASE) {                                  /* tracks 5..8: their bank, inverted, after the engine (mo_head) */
+            right -= mo_tw("5-8") + 4;
+            mo_inv("5-8", right + 3, 1);
+        }
+        mo_textr(b, right, 1, MO_DIM);
+#else
         mo_textr(b, right < 119 ? right : 118, 1, MO_DIM);
+#endif
     }
     mo_head_line(9, hold);
 }
@@ -3124,7 +3143,7 @@ static void mono_stage(void)
         cv_begin(240, 120, MO_BG);
         cv_oy = 0;
         mo_stage_head();
-        for (k = 0; k < NTRK; k++)
+        for (k = UI_BASE; k < UI_BASE + UI_NT; k++)
             mo_stage_col(k, 1);
         if (stage.out) {                                /* the knobs over the columns' tops */
             mo_fill(0, 10, 120, 50, MO_BG);
@@ -3136,7 +3155,7 @@ static void mono_stage(void)
     }
     cv_begin(240, 120, MO_BG);                          /* the bottom half: steps, levels, the panel (every other frame) */
     cv_oy = -120;
-    for (k = 0; k < NTRK; k++)
+    for (k = UI_BASE; k < UI_BASE + UI_NT; k++)
         mo_stage_col(k, 0);
     mo_dash(0, 88, 120, MO_DIM);
     mo_stage_panel();
@@ -3204,7 +3223,7 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
     }
     if (arm) mo_disc(14, 84, 3, MO_TRK(k));
     else mo_circ(14, 84, 3, dim);
-    cv_blit((uint32_t)CARD_X(k) - 2u, PV_STRIP_TOP);
+    cv_blit((uint32_t)CARD_X(k - UI_BASE) - 2u, PV_STRIP_TOP);   /* (8 tracks: its place in the bank) */
 }
 /* under the strips: what the keys do here, a black key MUTE, a white key SOLO, E FILL (the GLO map has the rest);
  * then the GLO pages' tabs, MIXER the first */
@@ -3234,7 +3253,11 @@ static void mo_cu_side(int32_t x, uint32_t tr, const char *name, int has_trk, in
         return;
     }
     if (has_trk) {                                      /* the track: its numeral inverted */
+#if CORE_TRACKS > 4
+        a[0] = (char)('1' + tr % NTRK), a[1] = 0;      /* (8 tracks: 5..8 their own numerals) */
+#else
         a[0] = (char)('1' + (tr & 3u)), a[1] = 0;
+#endif
         mo_invc(a, x + 1, 3, MO_TRK(tr));
     }
     {                                                   /* the mark (+ one way, ^ GATE) outlasts the abbreviation */
@@ -3598,11 +3621,11 @@ static void mo_patterns(void)
             char c[2] = {(char)('1' + b), 0};
             mo_textc(c, 20 + 13 * (int32_t)b, 11, MO_DIM);
         }
-        for (k = 0; k < NTRK; k++) {
+        for (k = UI_BASE; k < UI_BASE + UI_NT; k++) {   /* (8 tracks: the selected track's bank) */
             const track_t *t = &trk[k];
             uint16_t tc = t->p[P_MUTE] ? mo_tdim(k) : MO_TRK(k);
             uint32_t prog = pt_prog(t);
-            int32_t y = 20 + (int32_t)k * 19;
+            int32_t y = 20 + (int32_t)(k - UI_BASE) * 19;
             char c[2] = {(char)('1' + k), 0};
             if (k == song.sel) {
                 mo_fill(1, y + 3, 9, 9, tc);
@@ -3692,6 +3715,12 @@ static void mo_song(void)
         cv_oy = -(int32_t)s * 120;
         mo_fill(0, 0, mo_tw("SONG") + 3, 8, MO_INK);    /* the header */
         x = mo_text("SONG", 1, 1, MO_BG) + 4;
+#if CORE_TRACKS > 4
+        if (UI_BASE) {                                  /* tracks 5..8: their bank, inverted (as mo_head) */
+            mo_inv("5-8", x, 1);
+            x += mo_tw("5-8") + 6;
+        }
+#endif
         if (sg.bars) {
             fmt_int(b, (int32_t)(secs / 60u));
             str_cpy(b + str_len(b), secs % 60u < 10u ? ":0" : ":", 3);
@@ -3740,10 +3769,10 @@ static void mo_song(void)
             if (r == sg.sel)
                 mo_hl(cx + 2, 19, mo_tw(l) + 2, MO_INK);
         }
-        for (k = 0; k < NTRK; k++) {                    /* a track's blocks */
+        for (k = UI_BASE; k < UI_BASE + UI_NT; k++) {   /* a track's blocks (8 tracks: the selected track's bank) */
             const track_t *t = &trk[k];
             uint16_t tc = t->p[P_MUTE] ? mo_tdim(k) : MO_TRK(k);
-            int32_t y = 23 + (int32_t)k * 18;
+            int32_t y = 23 + (int32_t)(k - UI_BASE) * 18;
             for (j = 0; j < SG_COLS && sg.first + j < n;) {
                 uint32_t r = sg.first + j, p = chain_patterns[r][k], e = j + 1u, pick = k == song.sel && r == sg.sel;
                 int used = pattern_used(k, p);
