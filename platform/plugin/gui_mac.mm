@@ -50,6 +50,7 @@ class GuiMac : public Gui
     explicit GuiMac(GuiLink *l) : link(l)
     {
         panel.set_shell(l->shell());
+        panel.set_keys(l->keys_on());
         panel.set_inks(l->inks());
         panel.set_tracks(l->tracks());
         panel.set_version(tess_version());
@@ -95,6 +96,9 @@ class GuiMac : public Gui
     // OPEN or SAVE, if one was clicked (and a shell picked): the system's dialog, then the instance opens or saves
     void files()
     {
+        int kr = panel.take_keys_request();    // (KEYS ON or OFF: every window's)
+        if (kr >= 0)
+            link->keys_set(kr == 1);
         int sh = panel.take_shell_request();   // (a shell picked: its ink)
         if (sh >= 0)
             link->shell_picked(sh);
@@ -184,7 +188,19 @@ void v_down(id self, SEL, NSEvent *e)
     {
         [[self window] makeFirstResponder:self];
         NSPoint p = g->where(e);
-        g->input(g->panel.down((int)p.x, (int)p.y));
+        if (e.modifierFlags & NSEventModifierFlagControl)   // Ctrl-click: as a right-click, a latch
+            g->input(g->panel.latch((int)p.x, (int)p.y));
+        else
+            g->input(g->panel.down((int)p.x, (int)p.y));
+    }
+}
+void v_right_down(id self, SEL, NSEvent *e)   // a button or key latched
+{
+    if (GuiMac *g = gui_of(self))
+    {
+        [[self window] makeFirstResponder:self];
+        NSPoint p = g->where(e);
+        g->input(g->panel.latch((int)p.x, (int)p.y));
     }
 }
 void v_drag(id self, SEL, NSEvent *e)
@@ -293,6 +309,7 @@ Class view_class()
     add(cls, @selector(acceptsFirstResponder), (IMP)v_yes, types_of(@selector(acceptsFirstResponder)));
     add(cls, @selector(acceptsFirstMouse:), (IMP)v_first_mouse, types_of(@selector(acceptsFirstMouse:)));
     add(cls, @selector(mouseDown:), (IMP)v_down, types_of(@selector(mouseDown:)));
+    add(cls, @selector(rightMouseDown:), (IMP)v_right_down, types_of(@selector(rightMouseDown:)));
     add(cls, @selector(mouseDragged:), (IMP)v_drag, types_of(@selector(mouseDragged:)));
     add(cls, @selector(mouseMoved:), (IMP)v_drag, types_of(@selector(mouseMoved:)));
     add(cls, @selector(mouseUp:), (IMP)v_up, types_of(@selector(mouseUp:)));

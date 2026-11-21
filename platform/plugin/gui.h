@@ -11,6 +11,7 @@
 
 #include "fm1_link.h"
 #include "panel.h"
+#include "projfile.h"
 
 /* the window's instance (tessera_clap.cpp): the latest view its audio thread made, and the panel's input for it */
 struct GuiLink
@@ -40,6 +41,9 @@ struct GuiLink
      * every Tessera) */
     virtual Fm1Link::State fm1_state() { return Fm1Link::OFF; }
     virtual void fm1_set(bool on) { (void)on; }
+    /* KEYS (TESSERA's menu): whether the computer keyboard plays Tessera, the same for every window (a setting) */
+    virtual bool keys_on() { return projfile::setting_get("keys") != "0"; }
+    virtual void keys_set(bool on) { projfile::setting_put("keys", on ? "1" : "0"); }
 };
 
 /* each window's tick: a click on FM-1 USB handed on, and its state shown */

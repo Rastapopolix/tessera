@@ -29,6 +29,7 @@ class GuiWin32 : public Gui
     explicit GuiWin32(GuiLink *l) : link(l)
     {
         panel.set_shell(l->shell());
+        panel.set_keys(l->keys_on());
         panel.set_inks(l->inks());
         panel.set_tracks(l->tracks());
         panel.set_version(tess_version());
@@ -73,6 +74,10 @@ class GuiWin32 : public Gui
             SetCapture(h);
             SetFocus(h);
             g->input(g->panel.down(x, y));
+            return 0;
+        case WM_RBUTTONDOWN:   // a button or key latched
+            SetFocus(h);
+            g->input(g->panel.latch(x, y));
             return 0;
         case WM_MOUSEMOVE:
             g->input(g->panel.move(x, y));
@@ -150,6 +155,9 @@ class GuiWin32 : public Gui
     // OPEN or SAVE, if one was clicked: the system's dialog, then the instance opens or saves
     void files()
     {
+        int kr = panel.take_keys_request();    // (KEYS ON or OFF: every window's)
+        if (kr >= 0)
+            link->keys_set(kr == 1);
         int sh = panel.take_shell_request();   // (a shell picked: its ink)
         if (sh >= 0)
             link->shell_picked(sh);

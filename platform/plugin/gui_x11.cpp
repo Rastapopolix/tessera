@@ -69,6 +69,7 @@ class GuiX11 : public Gui
     GuiX11(const clap_host_t *h, GuiLink *l) : host(h), link(l)
     {
         panel.set_shell(l->shell());
+        panel.set_keys(l->keys_on());
         panel.set_inks(l->inks());
         panel.set_tracks(l->tracks());
         panel.set_version(tess_version());
@@ -128,6 +129,9 @@ class GuiX11 : public Gui
     // OPEN or SAVE clicked: its dialog on a thread; tick() takes the answer
     void files()
     {
+        int kr = panel.take_keys_request();    // (KEYS ON or OFF: every window's)
+        if (kr >= 0)
+            link->keys_set(kr == 1);
         int sh = panel.take_shell_request();   // (a shell picked: its ink)
         if (sh >= 0)
             link->shell_picked(sh);
@@ -199,6 +203,8 @@ class GuiX11 : public Gui
                 XSetInputFocus(dpy, wnd, RevertToParent, CurrentTime);   // (the keyboard, once clicked)
                 if (e.xbutton.button == Button1)
                     changed |= panel.down(e.xbutton.x, e.xbutton.y);
+                else if (e.xbutton.button == Button3)   // a button or key latched
+                    changed |= panel.latch(e.xbutton.x, e.xbutton.y);
                 else if (e.xbutton.button == Button4 || e.xbutton.button == Button5)
                     changed |= panel.wheel(e.xbutton.x, e.xbutton.y, e.xbutton.button == Button4 ? 1 : -1);
                 break;
