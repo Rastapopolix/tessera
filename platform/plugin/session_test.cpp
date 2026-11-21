@@ -12,6 +12,7 @@
  * usage: tessera-session-test path/to/Tessera.clap */
 #include <clap/clap.h>
 #include <dlfcn.h>
+#include <string>
 
 #include <cmath>
 #include <cstdio>
@@ -226,6 +227,20 @@ static int differ(const std::map<clap_id, double> &a, const std::map<clap_id, do
     return n + (int)(b.size() > a.size() ? b.size() - a.size() : 0);
 }
 
+// the library inside a plugin path: on macOS Tessera.clap is a bundle, its code in Contents/MacOS/Tessera
+static std::string clap_library(const char *path)
+{
+#ifdef __APPLE__
+    std::string p(path);
+    while (p.size() > 1 && p.back() == '/') p.pop_back();
+    std::string base = p.substr(p.find_last_of('/') == std::string::npos ? 0 : p.find_last_of('/') + 1);
+    std::string stem = base.substr(0, base.rfind('.'));   // (Tessera.clap: Tessera)
+    std::string inner = p + "/Contents/MacOS/" + stem;
+    if (FILE *f = std::fopen(inner.c_str(), "rb")) { std::fclose(f); return inner; }
+#endif
+    return path;
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -233,7 +248,7 @@ int main(int argc, char **argv)
         std::printf("usage: %s Tessera.clap\n", argv[0]);
         return 2;
     }
-    void *lib = dlopen(argv[1], RTLD_NOW | RTLD_LOCAL);
+    void *lib = dlopen(clap_library(argv[1]).c_str(), RTLD_NOW | RTLD_LOCAL);
     if (!lib)
     {
         std::printf("FAIL: dlopen %s: %s\n", argv[1], dlerror());

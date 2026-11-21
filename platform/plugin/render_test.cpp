@@ -8,13 +8,18 @@
  *   - the four track outputs sound, MIDI OUT sends the tracks' notes on their channels, in order;
  *   - the parameters: MASTER and MACRO 1..4, automation in at its sample, the value read back;
  *   - (Linux, with a DISPLAY, e.g. under xvfb-run) the window opens in a parent window and shows the FM-1's screen;
+ *     (macOS: built as Objective-C++) the window opens in an NSWindow's view and draws the FM-1's screen into its layer;
  *   - optionally writes the first seconds as a 16-bit WAV (third argument) to listen to.
  * usage: tessera-render-test path/to/Tessera.clap [seconds] [out.wav] [window.ppm] */
 #include <clap/clap.h>
 #include <dlfcn.h>
+#include <string>
 #if defined(__linux__)
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#endif
+#if defined(__APPLE__)
+#import <Cocoa/Cocoa.h>
 #endif
 
 #include <cmath>
@@ -128,8 +133,23 @@ static void wav_write(const char *path, const std::vector<float> &l, const std::
     std::fclose(f);
 }
 
+// the library inside a plugin path: on macOS Tessera.clap is a bundle, its code in Contents/MacOS/Tessera
+static std::string clap_library(const char *path)
+{
+#ifdef __APPLE__
+    std::string p(path);
+    while (p.size() > 1 && p.back() == '/') p.pop_back();
+    std::string base = p.substr(p.find_last_of('/') == std::string::npos ? 0 : p.find_last_of('/') + 1);
+    std::string stem = base.substr(0, base.rfind('.'));   // (Tessera.clap: Tessera)
+    std::string inner = p + "/Contents/MacOS/" + stem;
+    if (FILE *f = std::fopen(inner.c_str(), "rb")) { std::fclose(f); return inner; }
+#endif
+    return path;
+}
+
 int main(int argc, char **argv)
 {
+    std::setvbuf(stdout, nullptr, _IONBF, 0);   // (every line out before a crash, in CI's log too)
     if (argc < 2)
     {
         std::printf("usage: %s Tessera.clap [seconds] [out.wav]\n", argv[0]);
@@ -138,7 +158,7 @@ int main(int argc, char **argv)
     double seconds = argc > 2 ? std::atof(argv[2]) : 12.0;
     const uint32_t rate = 48000, block = 480;
 
-    void *lib = dlopen(argv[1], RTLD_NOW | RTLD_LOCAL);
+    void *lib = dlopen(clap_library(argv[1]).c_str(), RTLD_NOW | RTLD_LOCAL);
     if (!lib)
     {
         std::printf("FAIL: dlopen %s: %s\n", argv[1], dlerror());
@@ -566,6 +586,84 @@ int main(int argc, char **argv)
             gui->destroy(p);
             XDestroyWindow(d, parent);
             XCloseDisplay(d);
+        }
+    }
+#endif
+
+#if defined(__APPLE__)
+    // the window, in an NSWindow's content view, on its own timer (the main run loop) as in a host
+    @autoreleasepool
+    {
+        [NSApplication sharedApplication];
+        auto *gui = (const clap_plugin_gui_t *)p->get_extension(p, CLAP_EXT_GUI);
+        CHECK(gui, "gui extension");
+        if (gui)
+        {
+            uint32_t w = 0, h = 0;
+            CHECK(gui->is_api_supported(p, CLAP_WINDOW_API_COCOA, false), "Cocoa supported");
+            CHECK(gui->create(p, CLAP_WINDOW_API_COCOA, false), "gui create");
+            gui->get_size(p, &w, &h);
+            NSWindow *nw = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, w, h)
+                                                       styleMask:NSWindowStyleMaskBorderless
+                                                         backing:NSBackingStoreBuffered
+                                                           defer:NO];
+            nw.releasedWhenClosed = NO;   // (ARC owns it: closing must not release it a second time)
+            clap_window_t win = {CLAP_WINDOW_API_COCOA, {}};
+            win.cocoa = (__bridge void *)nw.contentView;
+            CHECK(gui->set_parent(p, &win) && gui->show(p), "set_parent + show");
+            tr.flags = CLAP_TRANSPORT_IS_PLAYING | CLAP_TRANSPORT_HAS_TEMPO;
+            for (int i = 0; i < 30; i++)   // 1 s: audio blocks and the window's own timer in the run loop
+            {
+                for (int b = 0; b < 3; b++) p->process(p, &proc);
+                [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:1.0 / 30]];
+            }
+            NSView *v = nw.contentView.subviews.count ? nw.contentView.subviews[0] : nil;
+            CHECK(v && NSEqualSizes(v.frame.size, NSMakeSize(w, h)), "the plugin's view in the parent, %ux%u", w, h);
+            CGImageRef img = v ? (__bridge CGImageRef)v.layer.contents : nullptr;
+            int lit = 0;
+            std::vector<uint32_t> all(w * h);
+            if (img && CGImageGetWidth(img) == w && CGImageGetHeight(img) == h)
+            {
+                CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
+                CGContextRef c = CGBitmapContextCreate(all.data(), w, h, 8, w * 4, cs,
+                                                       kCGBitmapByteOrder32Little | (CGBitmapInfo)kCGImageAlphaNoneSkipFirst);
+                CGContextDrawImage(c, CGRectMake(0, 0, w, h), img);
+                CGContextRelease(c);
+                CGColorSpaceRelease(cs);
+                for (int y = 52; y < 52 + 240; y++)
+                    for (int x = 300; x < 300 + 240; x++)
+                        lit += (all[y * w + x] & 0xFFFFFF) != 0;
+            }
+            std::printf("window: %ux%u, %d of 57600 screen pixels lit\n", w, h, lit);
+            CHECK(lit > 500, "the window should show the FM-1's screen");
+            if (argc > 4 && img)
+                if (FILE *f = std::fopen(argv[4], "wb"))
+                {
+                    std::fprintf(f, "P6\n%u %u\n255\n", w, h);
+                    for (uint32_t i = 0; i < w * h; i++)
+                    {
+                        unsigned char rgb[3] = {(unsigned char)(all[i] >> 16), (unsigned char)(all[i] >> 8), (unsigned char)all[i]};
+                        std::fwrite(rgb, 1, 3, f);
+                    }
+                    std::fclose(f);
+                }
+            // a key and a click reach the panel: Z (F3) held, then the panel's view lets go of the keys on losing focus
+            if (v)
+            {
+                NSEvent *kd = [NSEvent keyEventWithType:NSEventTypeKeyDown location:NSZeroPoint modifierFlags:0
+                                              timestamp:0 windowNumber:nw.windowNumber context:nil characters:@"z"
+                            charactersIgnoringModifiers:@"z" isARepeat:NO keyCode:6];
+                NSEvent *ku = [NSEvent keyEventWithType:NSEventTypeKeyUp location:NSZeroPoint modifierFlags:0
+                                              timestamp:0 windowNumber:nw.windowNumber context:nil characters:@"z"
+                            charactersIgnoringModifiers:@"z" isARepeat:NO keyCode:6];
+                [v keyDown:kd];
+                for (int b = 0; b < 3; b++) p->process(p, &proc);
+                [v keyUp:ku];
+                for (int b = 0; b < 3; b++) p->process(p, &proc);
+            }
+            gui->destroy(p);
+            CHECK(nw.contentView.subviews.count == 0, "the view taken out of the parent on destroy");
+            [nw close];
         }
     }
 #endif

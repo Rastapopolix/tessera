@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
-/* The plugin window: a native child window of the host's (Win32 or X11) showing the Panel. gui_win32.cpp and
- * gui_x11.cpp implement it; on macOS there is no window yet (gui_none.cpp). All on the host's main thread. */
+/* The plugin window: a native child window of the host's (Win32, X11 or Cocoa) showing the Panel. gui_win32.cpp,
+ * gui_x11.cpp and gui_mac.mm implement it (gui_none.cpp: none, for a platform without one). All on the host's main
+ * thread. */
 #pragma once
 #include <clap/clap.h>
 
@@ -42,6 +43,6 @@ class Gui
     virtual bool show() = 0;
     virtual bool hide() = 0;
     virtual void tick() = 0;   // ~30 times a second (X11: from the host's timer)
-    static const char *api();  // CLAP_WINDOW_API_WIN32 / _X11, or nullptr
+    static const char *api();  // CLAP_WINDOW_API_WIN32 / _X11 / _COCOA, or nullptr
     static std::unique_ptr<Gui> make(const clap_host_t *host, GuiLink *link);
 };
