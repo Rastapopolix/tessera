@@ -72,8 +72,13 @@ typedef struct {
     uint16_t screen[TESS_SCREEN * TESS_SCREEN];   /* RGB565 (host order) */
     uint32_t lit_buttons, lit_keys, dim_buttons, dim_keys, breath_buttons, breath_keys;   /* lit_buttons bit 14: PLAY green */
     uint32_t screen_draws, playing, master;   /* master 0..1023 */
+    uint32_t track;                  /* the selected track, 0 .. tess_core_tracks() - 1 (8 tracks: its bank, track & 4) */
 } tess_view_t;
 void tess_core_view(tess_view_t *v);
+/* the selected track (0 .. tess_core_tracks() - 1), and selecting one as KNOB 1 on TRACKS does (its sound, pages and
+ * pattern; 8 tracks: the panel's bank of four with it). The selection happens at the UI's next pass */
+uint32_t tess_core_track(void);
+void tess_core_track_select(uint32_t t);
 
 /* ---- the project, as a .tsp record (TSP1: byte for byte what SAVE > PROJECT writes on the FM-1) */
 /* the music as it is now: its length, 0 = failed/too big */

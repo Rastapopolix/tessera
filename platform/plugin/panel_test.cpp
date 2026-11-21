@@ -37,6 +37,8 @@ static double run(Panel &p, double seconds)   // as the plugin's audio thread: i
         tess_core_keys(in.keys);
         if (in.master >= 0) tess_core_master((uint32_t)in.master);
         in.master = -1;
+        if (in.track >= 0) tess_core_track_select((uint32_t)in.track);
+        in.track = -1;
         for (int r = 0; r < TESS_NE; r++)
             if (in.enc[r]) { tess_core_enc((uint32_t)r, in.enc[r]); in.enc[r] = 0; }
         in.changed = false;
@@ -190,6 +192,50 @@ int main(int argc, char **argv)
     for (int i = 0; i < TESS_SCREEN * TESS_SCREEN; i++) moved += v.screen[i] != was[i];
     CHECK(moved > 50, "the ink changes the screen (%d pixels)", moved);
     tess_core_ink("YELLOW");
+
+    // 8 tracks: the 1-4 / 5-8 switch beside OPEN / SAVE selects T5 or T1, Tab the other bank; the screen's header shows
+    // 5-8 (inverted, before the track dots) while the selected track is in it
+    if (tess_core_tracks() == 8)
+    {
+        p.set_tracks(8);
+        auto head_lit = [&]() {   // the header's lit pixels left of the dots (logical x 60..96, y 0..8)
+            int n = 0;
+            for (int y = 0; y < 18; y++)
+                for (int x = 120; x < 192; x++) n += v.screen[y * TESS_SCREEN + x] != 0;
+            return n;
+        };
+        const int BY = 332 + 256 + 5 + 12;   // (KEYBED's bottom + 5, half the switch's height)
+        run(p, 0.3);
+        tess_core_view(&v);
+        int at1 = head_lit();
+        p.draw(px.data(), v);
+        uint32_t off = px[(BY + 8) * Panel::W + 286 + 6];
+        CHECK(v.track < 4, "the song starts on a track of 1-4 (%u)", v.track);
+        click(p, 286 + 26, BY);              // 5-8
+        run(p, 0.3);
+        tess_core_view(&v);
+        p.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/08_bank_5_8.ppm", px);
+        int at5 = head_lit();
+        std::printf("bank: 5-8 selects T%u (core T%u); header pixels %d -> %d\n", v.track + 1, tess_core_track() + 1, at1, at5);
+        CHECK(v.track == 4 && tess_core_track() == 4, "5-8 should select T5 (%u)", v.track);
+        CHECK(at5 > at1 + 150, "the header should show 5-8 (%d -> %d lit pixels)", at1, at5);
+        CHECK(px[(BY + 8) * Panel::W + 286 + 6] != off, "the 5-8 half should light");
+        click(p, 234 + 26, BY);              // 1-4
+        run(p, 0.3);
+        tess_core_view(&v);
+        CHECK(v.track == 0 && head_lit() == at1, "1-4 should select T1 and take the marker away (T%u, %d)", v.track + 1, head_lit());
+        p.draw(px.data(), v);
+        CHECK(p.key(0x0F, true) && !p.key(0x0F, false), "Tab asks for the other bank");
+        run(p, 0.3);
+        tess_core_view(&v);
+        CHECK(v.track == 4, "Tab should select T5 (T%u)", v.track + 1);
+        p.draw(px.data(), v);
+        CHECK(p.key(0x0F, true), "Tab again");
+        run(p, 0.3);
+        tess_core_view(&v);
+        CHECK(v.track == 0, "Tab again should select T1 (T%u)", v.track + 1);
+    }
 
     std::printf(fails ? "panel test: %d FAILED\n" : "panel test: ok\n", fails);
     return fails ? 1 : 0;

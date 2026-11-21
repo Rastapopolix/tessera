@@ -16,6 +16,7 @@ struct PanelInput
     uint32_t buttons = 0, keys = 0;   // held now
     int32_t enc[TESS_NE] = {};        // detents turned since the last take
     int32_t master = -1;              // 0..1023 when the knob was turned, else -1
+    int32_t track = -1;               // a track to select (the 1-4 / 5-8 switch: T1 or T5), else -1
     bool changed = false;
 };
 
@@ -39,6 +40,9 @@ class Panel
     bool key(int code, bool down);
     bool release_keys();
     PanelInput input;
+    /* the build's tracks (tess_core_tracks): with 8, a 1-4 / 5-8 switch beside OPEN / SAVE selects T1 or T5 (Tab too),
+     * the bank of the track selected lit */
+    void set_tracks(int n) { tracks_ = n; }
     /* the project-file buttons under the keys: OPEN (a .tsp or an FM-1 backup) and SAVE (a .tsp). A click asks; the
      * window takes the ask (1 OPEN, 2 SAVE, 0 none) and shows the outcome with note() for a few seconds */
     enum { FILE_NONE, FILE_OPEN, FILE_SAVE };
@@ -61,6 +65,9 @@ class Panel
     struct Key { int cx, cy, k; };
     struct FileButton { int x, y, w, h, action; const char *face; };
     std::vector<FileButton> files;
+    FileButton banks[2];               // the 1-4 / 5-8 switch (8 tracks); action: the bank's first track
+    int tracks_ = 4, track_now = 0, bank_held = -1;
+    int bank_at(int x, int y) const;
     int file_req = FILE_NONE, file_held = -1;
     std::string note_text;
     static constexpr int SWATCH_R = 9;

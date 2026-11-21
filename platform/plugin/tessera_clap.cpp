@@ -192,6 +192,9 @@ struct Tessera : GuiLink
         if (in.master >= 0)
             pending.master = in.master;
         in.master = -1;
+        if (in.track >= 0)
+            pending.track = in.track;
+        in.track = -1;
         for (int r = 0; r < TESS_NE; r++)
         {
             pending.enc[r] += in.enc[r];
@@ -210,6 +213,7 @@ struct Tessera : GuiLink
     int shell_i = 0;
     int shell() override { return shell_i; }
     void shell_picked(int i) override;
+    int tracks() override { return (int)core->tracks(); }
 };
 
 Tessera *self(const clap_plugin_t *p) { return static_cast<Tessera *>(p->plugin_data); }
@@ -636,6 +640,9 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
             if (pi.master >= 0)
                 t->master_set(pi.master);
             pi.master = -1;
+            if (pi.track >= 0)
+                t->core->track_select((uint32_t)pi.track);
+            pi.track = -1;
             for (int r = 0; r < TESS_NE; r++)
                 if (pi.enc[r])
                 {
