@@ -10,3 +10,4 @@
 #define TESS_N_ENCODERS 7
 #define TESS_N_KEYS 27
 #define TESS_TIER TESS_TIER_DESKTOP
+#define TESS_HAS_BATTERY 0   /* (a computer: no battery icon, BATTERY setting or POWER lines) */
