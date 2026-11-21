@@ -41,7 +41,7 @@
                                  * 2026-10-10: the flash for the redesign; PHASE with the CZ-1, 2026-10-22) */
 #endif
 /* Tessera (phase 4, tessera-notes/docs/design/phase4/PLAN.md): an engine left out of the build (0) is never offered; its stored ID
- * stays reserved and a project's track of it loads FM6's INIT (project.c). Its code goes where nothing reaches it */
+ * stays reserved and a project's track of it loads SID's INIT (project.c). Its code goes where nothing reaches it */
 /* CZ-1 and PROPHET: retired as engines 2026-10-22 (their IDs stay reserved), their stores and tones with the own
  * project format. The Prophet's engine came back as ORACLE (2026-10-29, ID 19): its own sounds, no factory bank */
 #ifndef MELODEE_ORACLE
@@ -49,6 +49,14 @@
 #endif
 #ifndef MELODEE_FM6
 #define MELODEE_FM6 1
+#endif
+#ifndef MELODEE_SID
+#define MELODEE_SID 0            /* SID as a melodic engine (eng_sid.c). Out of the FM-1 since 2026-10-21 (its tracks load FM6's
+                                  * INIT there); back 2026-11-21 for the plugin and the Daisy (core_defs.txt, Makefile) */
+#endif
+#ifndef MELODEE_SID_KIT
+#define MELODEE_SID_KIT 0        /* DRUM's SID KIT and SID DIGI (drum_sid.c, on eng_sid.c's chip); not on the FM-1 for flash
+                                  * (a stored KIT SID loads clamped there: the 909); on in the plugin and the Daisy */
 #endif
 #ifndef MELODEE_TRIO
 #define MELODEE_TRIO 1           /* TRIO (eng_trio.c), back 2026-10-17 */
@@ -68,13 +76,16 @@
 #else
 #define LOOK(d, m) (d)
 #endif
-/* SID (3) and MACRO (21, Plaits): engines no longer in the code (2026-11-12; SID out of the device since 2.0, DRUM's
- * SID KIT since 3.0, MACRO a prototype never shipped). Their IDs stay reserved: a track saved with them loads FM6's INIT */
-#define ENG_BUILT(e) ((e) == 3u ? 0 : (e) == 9u ? PHYS_ON : (e) == 12u ? MELODEE_FM6 : (e) == 15u ? 0 : (e) == 19u ? MELODEE_ORACLE : \
-                      (e) == 21u ? 0 : 1)   /* SID PHYS FM6 CZ-1 ORACLE MACRO (PHYS: left out, not retired,
+#ifndef MELODEE_PLAITS
+#define MELODEE_PLAITS 0         /* MACRO (eng_macro.c): Plaits' synthesis, C++ (macro_glue.cc, third_party/mi); never on the
+                                  * FM-1, on in the plugin and the Daisy (Andamento CORE_MIGRATION step 5) */
+#endif
+#define ENG_BUILT(e) ((e) == 3u ? MELODEE_SID : (e) == 9u ? PHYS_ON : (e) == 12u ? MELODEE_FM6 : (e) == 15u ? 0 : (e) == 19u ? MELODEE_ORACLE : \
+                      (e) == 21u ? MELODEE_PLAITS : 1)   /* SID PHYS FM6 CZ-1 ORACLE MACRO (PHYS: left out, not retired,
                                                    * since 2026-10-21: its tracks load FM's first voice) */
 #define TRIO_ON (MELODEE_TRIO || MELODEE_LEGACY_EXTRAS)
 #define PHYS_ON (MELODEE_PHYS || MELODEE_LEGACY_EXTRAS)
+#define ENGI_SID 3u
 #define ENGI_FALLBACK 12u        /* a retired engine's place (eng_rank, project.c): FM6 */
 #if !MELODEE_FM6
 #error "MELODEE_FM6: FM6 is the place of an engine left out"
@@ -84,14 +95,14 @@
 #define USER_GENERAL 16u
 #define USER_NATIVE_P5 20u
 #define NENGINES 22               /* 13 SLICE and 14 OBXF reserved; 15 native CZ-1; 20 reserved (USER_NATIVE_P5's
-                                   * namespace in the browser); 21 reserved (MACRO, removed) */
+                                   * namespace in the browser); 21 MACRO (Tessera) */
 #define USER_NATIVE_FM 17u
 #define USER_NATIVE_CZ 18u
 #define USER_NONE 256u
 #define ENGI_ANALOG 0u           /* retired in 1.2: never selectable (eng_ok), its stored sounds play silent */
 #define ENGI_DIGITAL 1u          /* retired: never selectable (eng_ok), its stored sounds play silent */
-#define NENG_SHOWN (NENGINES - 10u - !MELODEE_ORACLE - !MELODEE_SLICE - (MELODEE_LEGACY_EXTRAS ? 1u : 6u - MELODEE_TRIO - MELODEE_PHYS) - 2u /* SID, MACRO */ - \
-                    !MELODEE_FM6)   /* the engines one can pick: PRESETS, the EDIT
+#define NENG_SHOWN (NENGINES - 10u - !MELODEE_ORACLE - !MELODEE_SLICE - (MELODEE_LEGACY_EXTRAS ? 1u : 6u - MELODEE_TRIO - MELODEE_PHYS) - !MELODEE_SID - !MELODEE_FM6 - \
+                    !MELODEE_PLAITS)   /* the engines one can pick: PRESETS, the EDIT
                                                 * layer, the editor, in the display order of engines.c ENGINE_ORDER */
 #define ENGI_SLICE 13u           /* reserved without MELODEE_SLICE: never selectable (eng_ok) */
 #ifdef SMP_USER_SLOTS

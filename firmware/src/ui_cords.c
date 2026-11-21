@@ -215,6 +215,12 @@ static const char *cu_dst_name(const cord_t *c)
 static const char *cu_eng_dst(const cord_t *c)
 {
     static const struct { uint8_t e; char cut[5], shp[5]; } T[] = {
+#if MELODEE_SID
+        {3, "CUT", "PW"},                                             /* SID */
+#endif
+#if MELODEE_PLAITS
+        {21, "TMBR", "MRPH"},                                         /* MACRO */
+#endif
         {6, "CUT", "PW"}, {19, "CUT", "PW"},                          /* TRIO ORACLE */
         {11, "FREQ", "COLR"}, {5, "VOWL", "BUZZ"},                     /* NOISE VOICE */
         {12, "MLVL", "FB"}, {9, "BRIT", ""},                           /* FM6 PHYS */

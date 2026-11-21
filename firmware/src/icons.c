@@ -221,6 +221,9 @@ static uint32_t engine_icon(const char *name)
 {
     static const icon_map_t M[] = {
         {"PHASE", ICON_PHASE},
+#if MELODEE_SID
+        {"SID", ICON_BITS},
+#endif
         {"SAMPLE", ICON_SAMPLE}, {"VOICE", ICON_MOUTH}, {"TRIO", ICON_TRIO}, {"WHEEL", ICON_DRAWBAR},
         {"SLICE", ICON_SLICE},
         {"GRAIN", ICON_GRAIN},
