@@ -80,8 +80,13 @@
 #define MELODEE_PLAITS 0         /* MACRO (eng_macro.c): Plaits' synthesis, C++ (macro_glue.cc, third_party/mi); never on the
                                   * FM-1, on in the plugin and the Daisy (Andamento CORE_MIGRATION step 5) */
 #endif
-#define ENG_BUILT(e) ((e) == 3u ? MELODEE_SID : (e) == 9u ? PHYS_ON : (e) == 12u ? MELODEE_FM6 : (e) == 15u ? 0 : (e) == 19u ? MELODEE_ORACLE : \
-                      (e) == 21u ? MELODEE_PLAITS : 1)   /* SID PHYS FM6 CZ-1 ORACLE MACRO (PHYS: left out, not retired,
+#ifndef MELODEE_PHASE
+#define MELODEE_PHASE 0          /* PHASE (eng_phase.c): the CZ-1's phase distortion, on the CZ-1's ID (15). Out of the FM-1
+                                  * since 2026-10-22 (its tracks load FM6's INIT there); back 2026-11-21 for the plugin and
+                                  * the Daisy (core_defs.txt, Makefile) */
+#endif
+#define ENG_BUILT(e) ((e) == 3u ? MELODEE_SID : (e) == 9u ? PHYS_ON : (e) == 12u ? MELODEE_FM6 : (e) == 15u ? MELODEE_PHASE : (e) == 19u ? MELODEE_ORACLE : \
+                      (e) == 21u ? MELODEE_PLAITS : 1)   /* SID PHYS FM6 PHASE ORACLE MACRO (PHYS: left out, not retired,
                                                    * since 2026-10-21: its tracks load FM's first voice) */
 #define TRIO_ON (MELODEE_TRIO || MELODEE_LEGACY_EXTRAS)
 #define PHYS_ON (MELODEE_PHYS || MELODEE_LEGACY_EXTRAS)
@@ -90,7 +95,8 @@
 #if !MELODEE_FM6
 #error "MELODEE_FM6: FM6 is the place of an engine left out"
 #endif
-#define ENGI_CZ 15u      /* retired (the CZ-1) */
+#define ENGI_PHASE 15u   /* PHASE (MELODEE_PHASE): the CZ-1's place; the native CZ-1 tones and their store stay retired */
+#define ENGI_CZ ENGI_PHASE /* (the retired native CZ-1 pool: native_* refuse it) */
 #define ENGI_ORACLE 19u  /* ORACLE (the Prophet's ID until 2026-10-22); 16..18 reserved: historical preset namespaces */
 #define USER_GENERAL 16u
 #define USER_NATIVE_P5 20u
@@ -102,7 +108,7 @@
 #define ENGI_ANALOG 0u           /* retired in 1.2: never selectable (eng_ok), its stored sounds play silent */
 #define ENGI_DIGITAL 1u          /* retired: never selectable (eng_ok), its stored sounds play silent */
 #define NENG_SHOWN (NENGINES - 10u - !MELODEE_ORACLE - !MELODEE_SLICE - (MELODEE_LEGACY_EXTRAS ? 1u : 6u - MELODEE_TRIO - MELODEE_PHYS) - !MELODEE_SID - !MELODEE_FM6 - \
-                    !MELODEE_PLAITS)   /* the engines one can pick: PRESETS, the EDIT
+                    !MELODEE_PLAITS + MELODEE_PHASE)   /* the engines one can pick: PRESETS, the EDIT
                                                 * layer, the editor, in the display order of engines.c ENGINE_ORDER */
 #define ENGI_SLICE 13u           /* reserved without MELODEE_SLICE: never selectable (eng_ok) */
 #ifdef SMP_USER_SLOTS

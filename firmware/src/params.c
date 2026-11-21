@@ -57,9 +57,9 @@ static const char *const N_MSRC[] = {"OFF", "LFO", "ENV", "VEL", "KEY", "RAND", 
 static const char *const N_MDST[] = {"OFF", "PITCH", "CUT", "SHP", "AMP", "PAN", "", "", "", "", "RATE",
                                      "VIB", "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "DEPTH"};
 static const char *const N_ENGNAME[] = {"-", "-", "-", MELODEE_SID ? "SID" : "-", "-", MELODEE_LEGACY_EXTRAS ? "VOICE" : "-", TRIO_ON ? "TRIO" : "-", MELODEE_LEGACY_EXTRAS ? "WHEEL" : "-", "-", PHYS_ON ? "PHYS" : "-",
-                                             "DRUM", MELODEE_LEGACY_EXTRAS ? "NOISE" : "-", "FM6", MELODEE_SLICE ? "SLICE" : "-", "-", "-", "-", "-", "-",
+                                             "DRUM", MELODEE_LEGACY_EXTRAS ? "NOISE" : "-", "FM6", MELODEE_SLICE ? "SLICE" : "-", "-", MELODEE_PHASE ? "PHASE" : "-", "-", "-", "-",
                                              MELODEE_ORACLE ? "ORACLE" : "-", "-", MELODEE_PLAITS ? "MACRO" : "-"};   /* (15 CZ-1: retired
-                                                                                   * 2026-10-22; 19 PROPHET, then ORACLE; 20 reserved, 21 MACRO:
+                                                                                   * 2026-10-22, PHASE there since 2026-11-21; 19 PROPHET, then ORACLE; 20 reserved, 21 MACRO:
                                                                                    * one name per engine ID, NENGINES) */
 _Static_assert(NELEM(N_ENGNAME) == NENGINES, "N_ENGNAME: one name per engine ID");
 
@@ -303,6 +303,10 @@ static const param_desc_t *track_desc(const track_t *t, uint32_t id)
         degree.max = (int16_t)scale_count(t);
         return &degree;
     }
+#if MELODEE_PHASE
+    if (t->eng_req == ENGI_PHASE && id >= P_FM1_ATK && id <= P_FM4_LEVEL)
+        return &PHASE_ED[id - P_FM1_ATK];              /* PHASE's EG SPLIT envelopes (eng_phase.c) */
+#endif
     if (id >= P_E0 && id <= P_E7) {                   /* the engine asked for (t->engine follows after a fade) */
         const engine_t *e = ENGINES[eng_idx(t->eng_req)];
         const param_desc_t *d = e->desc ? e->desc(t, id - P_E0) : 0;   /* a mode-dependent label / names */
@@ -597,6 +601,15 @@ static const page_t PAGES[] = {
     {"AMP ENV", FAM_EDIT, SC_ORACLE, GR_ADSR, {OV_AA, OV_AD, OV_AS, OV_AR}},
     {"LFO MOD", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_RATE, OV_AMT, OV_LWAVE, OV_NMIX}},
     {"LFO ROUTE", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_L_PITCH, OV_L_PW, OV_L_FILT, 0xFF}},
+#if MELODEE_PHASE
+    /* PHASE only, with EG SPLIT (ui.c page_visible): the envelopes of DCW 1, DCW 2, DCA 2 and DCO (PTCH) in the track parameters
+     * FM4 once had (eng_phase.c), their depths */
+    {"DCW1 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM1_ATK, P_FM1_DEC, P_FM1_SUS, P_FM1_REL}},
+    {"DCW2 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM2_ATK, P_FM2_DEC, P_FM2_SUS, P_FM2_REL}},
+    {"DCA2 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM3_ATK, P_FM3_DEC, P_FM3_SUS, P_FM3_REL}},
+    {"PTCH ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM4_ATK, P_FM4_DEC, P_FM4_SUS, P_FM4_REL}},
+    {"ENV LVLS", FAM_EDIT, SC_TRACK, GR_NONE, {P_FM1_LEVEL, P_FM2_LEVEL, P_FM3_LEVEL, P_FM4_LEVEL}},
+#endif
     {"OP1 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM1_ATK, P_FM1_DEC, P_FM1_SUS, P_FM1_REL}},
     {"OP2 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM2_ATK, P_FM2_DEC, P_FM2_SUS, P_FM2_REL}},
     {"OP3 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM3_ATK, P_FM3_DEC, P_FM3_SUS, P_FM3_REL}},

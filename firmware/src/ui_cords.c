@@ -221,6 +221,9 @@ static const char *cu_eng_dst(const cord_t *c)
 #if MELODEE_PLAITS
         {21, "TMBR", "MRPH"},                                         /* MACRO */
 #endif
+#if MELODEE_PHASE
+        {15, "DCW", "DCW"},                                           /* PHASE: CUT and SHP both bend DCW */
+#endif
         {6, "CUT", "PW"}, {19, "CUT", "PW"},                          /* TRIO ORACLE */
         {11, "FREQ", "COLR"}, {5, "VOWL", "BUZZ"},                     /* NOISE VOICE */
         {12, "MLVL", "FB"}, {9, "BRIT", ""},                           /* FM6 PHYS */

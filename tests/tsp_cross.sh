@@ -28,8 +28,8 @@ mkdir -p "$OUT"
 
 COMMON="-O1 -w -ffp-contract=off -Ifirmware/src -Iplatform/core"
 CXX=${CXX:-clang++}
-# the engines the FM-1 leaves out (SID, DRUM's SID KIT, MACRO): on in the plugin and the Daisy, as their builds set them
-EXTRA="-DMELODEE_SID=1 -DMELODEE_SID_KIT=1 -DMELODEE_PLAITS=1"
+# the engines the FM-1 leaves out (SID, DRUM's SID KIT, MACRO, PHASE): on in the plugin and the Daisy, as their builds set them
+EXTRA="-DMELODEE_SID=1 -DMELODEE_SID_KIT=1 -DMELODEE_PLAITS=1 -DMELODEE_PHASE=1"
 plaits() {  # rate: MACRO's Plaits voice (firmware/third_party/mi, C++) at that rate, into $OUT/mi<rate>/
     d=$OUT/mi$1; mkdir -p "$d"; M=firmware/third_party/mi
     for f in $M/plaits/dsp/*.cc $M/plaits/dsp/*/*.cc $M/plaits/resources.cc $M/stmlib/dsp/*.cc $M/stmlib/utils/*.cc \
@@ -87,7 +87,7 @@ for demo in demos/*.tsp; do
         done
     done
 done
-for t in plugin daisy; do   # SID, the SID kit and MACRO play and save there (tests/engines_extra.c)
+for t in plugin daisy; do   # SID, the SID kit, MACRO and PHASE play and save there (tests/engines_extra.c)
     "$OUT/engines_extra_$t" > "$OUT/engines_extra_$t.log" 2>&1 || { cat "$OUT/engines_extra_$t.log"; fails=$((fails + 1)); }
     echo "$t: $(tail -1 "$OUT/engines_extra_$t.log")"
 done

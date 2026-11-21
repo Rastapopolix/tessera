@@ -16,8 +16,8 @@ C_SOURCES = tessera_core.c
 C_INCLUDES = -I$(GEN) -I$(TESSERA)/firmware/src -I$(TESSERA)/platform/core -I.
 C_DEFS = -DMELODEE_USB_HOST=0 -DMELODEE_USB_AUDIO=0 -DMELODEE_ACCESS=0
 # the engines the FM-1 leaves out for flash, on here (Theo 2026-11-21: what the plugin adds beyond the FM-1 also
-# serves Andamento): SID, DRUM's SID KIT and SID DIGI, MACRO (Plaits, C++ below)
-C_DEFS += -DMELODEE_SID=1 -DMELODEE_SID_KIT=1 -DMELODEE_PLAITS=1
+# serves Andamento): SID, DRUM's SID KIT and SID DIGI, MACRO (Plaits, C++ below), PHASE (the CZ-1's phase distortion)
+C_DEFS += -DMELODEE_SID=1 -DMELODEE_SID_KIT=1 -DMELODEE_PLAITS=1 -DMELODEE_PHASE=1
 # (Tessera's warnings are checked by its own builds)
 CFLAGS += -w
 
