@@ -13,7 +13,14 @@
 cmake_minimum_required(VERSION 3.21)
 # macOS 10.15 at least: projfile.cpp's std::filesystem and fstream on a path need it (Catalina, 2019)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "the oldest macOS the plugin runs on")
-project(tessera-plugin VERSION 0.0.1 LANGUAGES C CXX)
+# the plugin's version: what the DAW shows (CLAP, VST3, AU) and the bundles carry. A beta passes its own, e.g.
+# -DTESS_VERSION=0.1-beta1 (plugin-release.yml, from the branch plugin/0.1-beta1); bundles take its numeric part
+set(TESS_VERSION "0.0.1" CACHE STRING "the plugin's version, e.g. 0.1-beta1")
+string(REGEX MATCH "^[0-9]+(\\.[0-9]+)*" TESS_VERSION_NUM "${TESS_VERSION}")
+if (NOT TESS_VERSION_NUM)
+    message(FATAL_ERROR "TESS_VERSION ${TESS_VERSION}: start it with a number, e.g. 0.1-beta1")
+endif()
+project(tessera-plugin VERSION ${TESS_VERSION_NUM} LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -121,6 +128,7 @@ else()
 endif()
 add_library(tessera-impl STATIC tessera_clap.cpp projfile.cpp ${TESS_GUI})
 target_link_libraries(tessera-impl PUBLIC clap tessera-copies tessera-panel)
+target_compile_definitions(tessera-impl PRIVATE TESS_VERSION_STR="${TESS_VERSION}")
 if (WIN32)
     target_link_libraries(tessera-impl PUBLIC comdlg32 shell32)
 elseif (APPLE)

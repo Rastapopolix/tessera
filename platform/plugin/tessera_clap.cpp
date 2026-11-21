@@ -1080,6 +1080,9 @@ void p_on_main_thread(const clap_plugin_t *p)
 
 const char *features[] = {CLAP_PLUGIN_FEATURE_INSTRUMENT, CLAP_PLUGIN_FEATURE_SYNTHESIZER,
                           CLAP_PLUGIN_FEATURE_STEREO, nullptr};
+#ifndef TESS_VERSION_STR
+#define TESS_VERSION_STR "0.0.1"   // (CMakeLists.txt's TESS_VERSION)
+#endif
 const clap_plugin_descriptor_t desc = {
     CLAP_VERSION_INIT,
     "io.github.rastapopolix.tessera",
@@ -1088,8 +1091,8 @@ const clap_plugin_descriptor_t desc = {
     "https://github.com/Rastapopolix/tessera",
     "",
     "https://github.com/Rastapopolix/tessera",
-    "0.0.1",
-    "A pocket rabbit hole: Tessera's generative sequencer and voices (spike)",
+    TESS_VERSION_STR,
+    "A pocket rabbit hole: Tessera's generative sequencer and voices",
     features,
 };
 
