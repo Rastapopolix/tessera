@@ -21,7 +21,10 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
   slots, then the music it was playing loads), and save the project as `.tsp` under its name, for the FM-1's editor or
   another Tessera. On Windows the system's dialogs (a file dropped on the window opens too); on Linux zenity or
   kdialog, whichever is installed. The DAW is told its saved state changed. Not on macOS yet (no window).
-- **The window** (Windows and Linux): the FM-1 as the web simulator draws it, black shell. The screen at 1:1;
+- **The window** (Windows and Linux): the FM-1 as the web simulator draws it, in any of its eight shells (the swatches
+  under the keys, at the right; each sets its own Mono ink, as the web simulator's picker does, and MENU > COLOR still
+  changes the ink after). The shell picked is remembered for every window, in any DAW (a file `shell` in
+  `%APPDATA%\Tessera`, `~/.config/tessera` or `~/Library/Application Support/Tessera`), not in the project. The screen at 1:1;
   click the buttons and keys (drag across the keys to glide); drag a knob up/down or left/right, or use the mouse
   wheel over it. **The computer keyboard** too, as in the web simulator (click the window first): Z..' and Q..O play
   the keys, 1..= are the twelve buttons in the panel's order and [ ] OCT- / OCT+ (each held while its key is), up /
@@ -57,7 +60,6 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
 ## Not yet
 
 - No window on macOS (it plays as in phase 0).
-- No shell or ink picker (the ink is MENU > COLOR, as on the device).
 
 ## Build
 

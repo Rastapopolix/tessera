@@ -120,6 +120,9 @@ void tess_core_macro_set(uint32_t k, uint32_t v);
 /* where the song is, in quarter notes from its top (the bar and beat counters); the BPM shown */
 double tess_core_position(void);
 uint32_t tess_core_bpm(void);
+/* the Mono look's ink by name, as MENU > COLOR sets it ("YELLOW", "HOT PINK": tools/gen_ui_palettes.py MONO_INK): 1 if
+ * set, 0 for an unknown name or a build without the Mono look. A device setting: not in the project */
+uint32_t tess_core_ink(const char *name);
 
 #ifdef __cplusplus
 }

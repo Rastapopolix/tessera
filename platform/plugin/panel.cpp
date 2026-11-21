@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
-/* The plugin window's FM-1 (panel.h): web/sim/index.html's wide layout and black shell, drawn into a pixel buffer */
+/* The plugin window's FM-1 (panel.h): web/sim/index.html's wide layout and its shells, drawn into a pixel buffer */
 #include "panel.h"
 
 #include <cmath>
@@ -12,7 +12,7 @@ extern "C" {
 
 namespace
 {
-// ---- colours (web/sim/index.html SHELLS black; the LED levels mixed as shellVars does, in linear light)
+// ---- colours (web/sim/index.html SHELLS; the LED levels mixed as shellVars does, in linear light)
 struct Rgb { double r, g, b; };
 Rgb hex(uint32_t c)
 {
@@ -29,10 +29,37 @@ uint32_t mix(uint32_t a, uint32_t b, double s)
     Rgb x = hex(a), y = hex(b);
     return pack({x.r + (y.r - x.r) * s, x.g + (y.g - x.g) * s, x.b + (y.b - x.b) * s});
 }
-const uint32_t BODY = 0xFF1B1B1D, TRAY = 0xFF29292C, BTN = 0xFF3B3B40, EDGE = 0xFF505056, BTN_INK = 0xFFE4E4E6,
-               SLIT = 0xFF121214, LABEL = 0xFFD6D6D8, LIT = 0xFFF6F6F6, LIT_INK = 0xFF1B1B1D, REC = 0xFFC62A22,
-               WELL = 0xFF141415, PART = 0xFF2A2A2D, KEDGE = 0xFF3A3A3E, GREEN = 0xFF5FE08A, GREEN_INK = 0xFF0D2414,
+const uint32_t WELL = 0xFF141415, PART = 0xFF2A2A2D, KEDGE = 0xFF3A3A3E, GREEN = 0xFF5FE08A, GREEN_INK = 0xFF0D2414,
                BEZEL = 0xFF0B0B0C;
+
+// the FM-1's shells, as web/sim/index.html SHELLS has them (keep the two alike), each with the Mono ink made for it:
+// body, trays, buttons and keys, their edge, their ink, the slits, the labels on the body, the ink on a lit button,
+// a lit button, REC's ink (0: the defaults, the button ink, 0xF6F6F6, 0xC62A22). (mint's LED levels: mixed here, the
+// web sim's tuned ones are within a shade)
+struct Shell
+{
+    const char *id, *name, *ink;
+    uint32_t body, tray, btn, edge, btn_ink, slit, label, lit_ink, lit, rec;
+};
+const Shell SHELLS[] = {
+    {"black", "BLACK", "YELLOW", 0xFF1B1B1D, 0xFF29292C, 0xFF3B3B40, 0xFF505056, 0xFFE4E4E6, 0xFF121214, 0xFFD6D6D8,
+     0xFF1B1B1D, 0, 0},
+    {"mint", "BLACK / MINT", "GREEN", 0xFF1D1D1F, 0xFF5FC9AD, 0xFF7CD9C0, 0xFF4BB398, 0xFF0F2E27, 0xFF1E3A33, 0xFFD6D6D8,
+     0xFF0F2E27, 0xFFF2FFFA, 0},
+    {"lavender", "LAVENDER", "LILAC", 0xFFB8ACDF, 0xFFA394D4, 0xFFCBC1EE, 0xFF9283C8, 0xFF2A2240, 0xFF463C6C, 0xFF2A2240,
+     0, 0, 0},
+    {"orange", "ORANGE", "ORANGE", 0xFFEE8A30, 0xFFDC7720, 0xFFF6A656, 0xFFC86A16, 0xFF3A1E05, 0xFF6A3A10, 0xFF2E1804,
+     0, 0, 0},
+    {"cream-grey", "CREAM / GREY", "WHITE", 0xFFEBE5D5, 0xFF9B9B9E, 0xFFB6B6B9, 0xFF88888C, 0xFF1E1E20, 0xFF3A3A3D,
+     0xFF3A3630, 0, 0, 0},
+    {"cream-blue", "CREAM / BLUE", "BLUE", 0xFFEBE5D5, 0xFF4F7FC4, 0xFF6F99D7, 0xFF3E6CB0, 0xFF0D1D36, 0xFF1C3460,
+     0xFF3A3630, 0, 0, 0},
+    {"cream-brick", "CREAM / BRICK", "RED", 0xFFEBE5D5, 0xFFB4523C, 0xFFC96B53, 0xFF9A4230, 0xFF2B0D06, 0xFF4C1A10,
+     0xFF3A3630, 0, 0, 0},
+    {"hot-pink", "HOT PINK", "HOT PINK", 0xFFD6346C, 0xFFC42A60, 0xFFCF2F67, 0xFFA91F50, 0xFFFDE8EF, 0xFF5E0F2C,
+     0xFFFDE8EF, 0xFF3A0C20, 0, 0xFFFFE08A},
+};
+const int NSHELLS = (int)(sizeof SHELLS / sizeof SHELLS[0]);
 
 // ---- drawing: anti-aliased by distance at the edges
 struct Canvas
@@ -145,6 +172,10 @@ void Panel::note(const std::string &text)
 void Panel::draw(uint32_t *px, const tess_view_t &v)
 {
     Canvas c{px};
+    const Shell &sh = SHELLS[shell_];
+    const uint32_t BODY = sh.body, TRAY = sh.tray, BTN = sh.btn, EDGE = sh.edge, BTN_INK = sh.btn_ink, SLIT = sh.slit,
+                   LABEL = sh.label, LIT_INK = sh.lit_ink ? sh.lit_ink : sh.btn_ink, LIT = sh.lit ? sh.lit : 0xFFF6F6F6,
+                   REC = sh.rec ? sh.rec : 0xFFC62A22;
     master_now = (int)v.master;
     knobs[0].angle = -135 + 270.0 * (input.master >= 0 ? input.master : master_now) / 1023;
     static const double kPi = 3.14159265358979;
@@ -234,6 +265,57 @@ void Panel::draw(uint32_t *px, const tess_view_t &v)
         int x = last.x + last.w + 16;
         c.text(x + Canvas::text_w(note_text.c_str(), 2) / 2, last.y + last.h / 2 - 7, note_text.c_str(), 2, LABEL);
     }
+
+    // the shells: a swatch each (its body round its buttons), the one shown ringed; its name while the mouse is on it
+    for (int i = 0; i < NSHELLS; i++)
+    {
+        int x, y;
+        swatch_xy(i, x, y);
+        if (i == shell_ || i == shell_hover)
+            c.circle(x, y, SWATCH_R + 3, i == shell_ ? LABEL : mix(BODY, LABEL, 0.4));
+        c.circle(x, y, SWATCH_R + 1, BODY);
+        c.circle(x, y, SWATCH_R, SHELLS[i].body);
+        c.circle(x, y, SWATCH_R * 0.5, SHELLS[i].btn);
+    }
+    int sx, sy;
+    swatch_xy(0, sx, sy);
+    const char *what = shell_hover >= 0 ? SHELLS[shell_hover].name : "SHELL";
+    c.text(sx - SWATCH_R - 14 - Canvas::text_w(what, 2) / 2, sy - 7, what, 2, LABEL);
+}
+
+// ---- the shells
+
+int Panel::shell_count() { return NSHELLS; }
+const char *Panel::shell_id(int i) { return i >= 0 && i < NSHELLS ? SHELLS[i].id : ""; }
+const char *Panel::shell_ink(int i) { return i >= 0 && i < NSHELLS ? SHELLS[i].ink : ""; }
+int Panel::shell_by_id(const std::string &id)
+{
+    for (int i = 0; i < NSHELLS; i++)
+        if (id == SHELLS[i].id)
+            return i;
+    return -1;
+}
+void Panel::set_shell(int i)
+{
+    if (i >= 0 && i < NSHELLS)
+        shell_ = i;
+}
+// swatch i's centre: a row under the keys, at the right, as OPEN and SAVE are at the left
+void Panel::swatch_xy(int i, int &x, int &y) const
+{
+    x = KEYBED[0] + KEYBED[2] - SWATCH_R - 2 - (NSHELLS - 1 - i) * (2 * SWATCH_R + 10);
+    y = KEYBED[1] + KEYBED[3] + 5 + 12;
+}
+int Panel::swatch_at(int x, int y) const
+{
+    for (int i = 0; i < NSHELLS; i++)
+    {
+        int sx, sy;
+        swatch_xy(i, sx, sy);
+        if (std::hypot(x - sx, y - sy) <= SWATCH_R + 4)
+            return i;
+    }
+    return -1;
 }
 
 // ---- the mouse
@@ -345,6 +427,12 @@ bool Panel::down(int x, int y)
         return true;
     }
     drag = NONE;
+    int sw_i = swatch_at(x, y);
+    if (sw_i >= 0 && sw_i != shell_)
+    {
+        shell_ = sw_i;
+        shell_req = sw_i;
+    }
     for (size_t i = 0; i < files.size(); i++)
         if (x >= files[i].x && x < files[i].x + files[i].w && y >= files[i].y && y < files[i].y + files[i].h)
         {
@@ -356,6 +444,7 @@ bool Panel::down(int x, int y)
 
 bool Panel::move(int x, int y)
 {
+    shell_hover = drag == NONE ? swatch_at(x, y) : -1;
     int dx = x - last_x, dy = last_y - y;   // up or right: clockwise (the larger of the two)
     last_x = x;
     last_y = y;

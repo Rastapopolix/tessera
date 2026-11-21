@@ -197,6 +197,10 @@ struct Tessera : GuiLink
     std::string save_file(const std::string &path) override;
     std::string file_name() override;
     void changed_by_file();
+    // the shell (gui.h): the last one picked in any window, from the plugin's settings
+    int shell_i = 0;
+    int shell() override { return shell_i; }
+    void shell_picked(int i) override;
 };
 
 Tessera *self(const clap_plugin_t *p) { return static_cast<Tessera *>(p->plugin_data); }
@@ -290,6 +294,20 @@ void Tessera::changed_by_file()
     auto *hp = static_cast<const clap_host_params_t *>(host->get_extension(host, CLAP_EXT_PARAMS));
     if (hp && hp->rescan)
         hp->rescan(host, CLAP_PARAM_RESCAN_VALUES);   // (the texts: params_refresh asked for them)
+}
+
+// a shell picked under the keys: its ink on this Tessera's screen (as MENU > COLOR; after, that still changes it), and
+// the shell the next window opens with, in any instance
+void Tessera::shell_picked(int i)
+{
+    if (i < 0 || i >= Panel::shell_count())
+        return;
+    shell_i = i;
+    {
+        std::lock_guard<std::mutex> g(core_lock);
+        core->ink(Panel::shell_ink(i));
+    }
+    projfile::setting_put("shell", Panel::shell_id(i));
 }
 
 void Tessera::midi_in(const clap_event_header_t *h)
@@ -494,6 +512,12 @@ bool p_init(const clap_plugin_t *p)
     t->core->boot();
     if (again)                 // (a copy an instance gave back: its power-on project again, STILL TIDE in slot A)
         t->core->slot_load(0);
+    int sh = Panel::shell_by_id(projfile::setting_get("shell"));   // (the shell last picked, and its ink)
+    if (sh >= 0)
+    {
+        t->shell_i = sh;
+        t->core->ink(Panel::shell_ink(sh));
+    }
     t->params_make();
     return true;
 }

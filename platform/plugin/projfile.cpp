@@ -4,6 +4,7 @@
  * the same way); the backup as the backup page writes it (web/editor.html, tools/demo_backup.py). */
 #include "projfile.h"
 
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -268,6 +269,45 @@ bool write_file(const std::string &path, const std::vector<uint8_t> &data)
     std::ofstream f(std::filesystem::u8path(path), std::ios::binary | std::ios::trunc);
     if (!f) return false;
     f.write(reinterpret_cast<const char *>(data.data()), (std::streamsize)data.size());
+    return (bool)f;
+}
+
+static std::filesystem::path settings_dir()
+{
+    namespace fs = std::filesystem;
+#ifdef _WIN32
+    const wchar_t *app = _wgetenv(L"APPDATA");
+    return app && *app ? fs::path(app) / "Tessera" : fs::path();
+#else
+    const char *home = std::getenv("HOME");
+#ifdef __APPLE__
+    return home && *home ? fs::path(home) / "Library" / "Application Support" / "Tessera" : fs::path();
+#else
+    const char *xdg = std::getenv("XDG_CONFIG_HOME");
+    if (xdg && *xdg) return fs::path(xdg) / "tessera";
+    return home && *home ? fs::path(home) / ".config" / "tessera" : fs::path();
+#endif
+#endif
+}
+
+std::string setting_get(const char *name)
+{
+    std::filesystem::path d = settings_dir();
+    if (d.empty()) return "";
+    std::ifstream f(d / name);
+    std::string v;
+    if (!f || !std::getline(f, v)) return "";
+    while (!v.empty() && (v.back() == '\r' || v.back() == ' ')) v.pop_back();
+    return v;
+}
+
+bool setting_put(const char *name, const std::string &value)
+{
+    std::filesystem::path d = settings_dir();
+    std::error_code ec;
+    if (d.empty() || (std::filesystem::create_directories(d, ec), ec)) return false;
+    std::ofstream f(d / name, std::ios::trunc);
+    f << value << "\n";
     return (bool)f;
 }
 }   // namespace projfile
