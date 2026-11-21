@@ -18,6 +18,8 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <set>
+#include <array>
 #include <vector>
 
 static int fails = 0;
@@ -68,12 +70,13 @@ struct Events
     {
         return &static_cast<Events *>(l->ctx)->ev[i].h;
     }
-    void note(uint16_t type, int16_t key)
+    void note(uint16_t type, int16_t key, int16_t channel = 0)
     {
         Ev e = {};
         e.note.header = {sizeof e.note, 0, CLAP_CORE_EVENT_SPACE_ID, type, 0};
         e.note.note_id = -1;
         e.note.key = key;
+        e.note.channel = channel;
         e.note.velocity = 0.8;
         ev.push_back(e);
     }
@@ -88,7 +91,16 @@ struct Events
         ev.push_back(e);
     }
 };
-static bool out_try_push(const clap_output_events_t *, const clap_event_header_t *) { return true; }
+// ---- events out: the MIDI ones kept (status, data 1, data 2), the rest let go
+static bool out_try_push(const clap_output_events_t *l, const clap_event_header_t *h)
+{
+    if (h->space_id == CLAP_CORE_EVENT_SPACE_ID && h->type == CLAP_EVENT_MIDI)
+    {
+        auto *m = reinterpret_cast<const clap_event_midi_t *>(h);
+        static_cast<std::vector<std::array<uint8_t, 3>> *>(l->ctx)->push_back({m->data[0], m->data[1], m->data[2]});
+    }
+    return true;
+}
 
 // ---- streams
 struct Buf
@@ -126,7 +138,8 @@ struct Inst
     clap_event_transport_t tr = {};
     Events ev;
     clap_input_events_t in = {&ev, Events::size, Events::get};
-    clap_output_events_t oe = {nullptr, out_try_push};
+    std::vector<std::array<uint8_t, 3>> midi;   // MIDI OUT so far
+    clap_output_events_t oe = {&midi, out_try_push};
     clap_process_t proc = {};
     double beats = 0;
 
@@ -241,6 +254,28 @@ static std::string clap_library(const char *path)
     return path;
 }
 
+// the device's MIDI setup in a state (the bytes before "TGLO", ahead of "TMST"): empty if there is none
+static std::vector<uint8_t> setup_of(const std::vector<uint8_t> &st)
+{
+    size_t n = st.size();
+    if (n < 6 + 5 || std::memcmp(&st[n - 6], "TMST", 4)) return {};
+    n -= 6;
+    if (std::memcmp(&st[n - 4], "TGLO", 4)) return {};
+    size_t ns = st[n - 5];
+    return std::vector<uint8_t>(st.end() - 6 - 5 - (long)ns, st.end() - 6 - 5);
+}
+// the same state with its setup's bytes changed to s (the same length), or taken out (s empty)
+static std::vector<uint8_t> setup_put(std::vector<uint8_t> st, const std::vector<uint8_t> &s)
+{
+    std::vector<uint8_t> was = setup_of(st);
+    size_t at = st.size() - 6 - 5 - was.size();
+    if (s.empty())
+        st.erase(st.begin() + (long)at, st.end() - 6);
+    else
+        std::copy(s.begin(), s.end(), st.begin() + (long)at);
+    return st;
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -347,6 +382,119 @@ int main(int argc, char **argv)
         for (auto &x : c) x.close();
     }
     for (auto &x : b) x.close();
+
+    // ---- MIDI in a DAW: ROUT, the setup kept in the project, MIDI OUT's channels, wildcards and restarts
+    {
+        Inst m;
+        CHECK(m.open(), "an instance for MIDI opens");
+        if (fails) return 1;
+        std::vector<uint8_t> st = m.save(), su = setup_of(st);
+        CHECK(su.size() >= 5 && su[0] == 1 && su[1] == 1 && su[3] == 1,
+              "a fresh state keeps the MIDI setup: ROUT SEL, NOTES OUT ALL (%zu bytes)", su.size());
+        m.run(10, false);
+        m.ev.note(CLAP_EVENT_NOTE_ON, 60, 0);
+        double sel = m.run(30, false);
+        m.ev.note(CLAP_EVENT_NOTE_OFF, 60, 0);
+        m.run(200, false);
+        CHECK(sel > 1e-3, "ROUT SEL: a note on channel 1 plays the selected track (%.4f)", sel);
+        m.close();
+
+        // ROUT CH5-8 (2), DRUM channel 10, NOTES OUT ALL, TUNE +7: kept through a save and a reopen
+        std::vector<uint8_t> want = su;
+        if (want.size() >= 5) want[1] = 2, want[2] = 10, want[4] = 128 + 7;
+        std::vector<uint8_t> st2 = setup_put(st, want);
+        Inst r;
+        CHECK(r.open(), "an instance opens again");
+        if (fails) return 1;
+        CHECK(r.load(st2), "a state with a changed MIDI setup loads");
+        CHECK(setup_of(r.save()) == want, "the MIDI setup reads back as it was saved");
+        r.run(600, false);   // (the loaded project's tail dies away)
+        double quiet = r.run(30, false);
+        r.ev.note(CLAP_EVENT_NOTE_ON, 60, 0);
+        double ch1 = r.run(30, false);
+        r.ev.note(CLAP_EVENT_NOTE_OFF, 60, 0);
+        r.run(200, false);
+        r.ev.note(CLAP_EVENT_NOTE_ON, 60, 4);
+        double ch5 = r.run(30, false);
+        r.ev.note(CLAP_EVENT_NOTE_OFF, 60, 4);
+        r.run(200, false);
+        CHECK(ch1 <= quiet && ch5 > 1e-3 && ch5 > 100 * quiet,
+              "ROUT CH5-8 after a reopen: channel 1 silent (%.6f, the tail %.6f), channel 5 plays (%.4f)", ch1, quiet,
+              ch5);
+
+        // MIDI OUT while the DAW plays: only notes, each track on its own channel 1..8 whatever ROUT takes in; a
+        // restart of processing ends every note it left on
+        r.midi.clear();
+        r.run(600, true);   // 6 s
+        int notes = 0, system = 0, high = 0;
+        for (auto &e : r.midi)
+        {
+            if ((e[0] & 0xF0) == 0xF0) system++;
+            else if ((e[0] & 0xF0) == 0x90 || (e[0] & 0xF0) == 0x80) notes++, high += (e[0] & 15) >= 8;
+        }
+        CHECK(notes > 0 && !system && !high, "MIDI OUT: %d notes, %d on channels past 8, %d system messages", notes,
+              high, system);
+        std::set<int> on;
+        for (auto &e : r.midi)
+        {
+            int k = (e[0] & 15) << 7 | e[1];
+            if ((e[0] & 0xF0) == 0x90 && e[2]) on.insert(k);
+            else if ((e[0] & 0xF0) == 0x80 || (e[0] & 0xF0) == 0x90) on.erase(k);
+        }
+        int held = 0, left = 0;
+        for (int tries = 0; tries < 100 && on.empty(); tries++)   // (a moment with a note on)
+        {
+            r.midi.clear();
+            r.run(1, true);
+            for (auto &e : r.midi)
+            {
+                int k = (e[0] & 15) << 7 | e[1];
+                if ((e[0] & 0xF0) == 0x90 && e[2]) on.insert(k);
+                else on.erase(k);
+            }
+        }
+        held = (int)on.size();
+        r.p->stop_processing(r.p);
+        r.p->start_processing(r.p);
+        r.midi.clear();
+        r.run(1, true);
+        for (int k : on)
+        {
+            bool off = false;
+            for (auto &e : r.midi)
+                if (((e[0] & 15) << 7 | e[1]) == k && ((e[0] & 0xF0) == 0x80 || ((e[0] & 0xF0) == 0x90 && !e[2])))
+                    off = true;
+            left += !off;
+        }
+        CHECK(held > 0 && !left, "a restart of processing: %d notes were on, %d left on", held, left);
+        r.close();
+
+        // a state from before TGLO keeps the instance's own setup (here a fresh one's: ROUT SEL)
+        Inst o;
+        CHECK(o.open(), "an instance opens for an older state");
+        if (fails) return 1;
+        CHECK(o.load(setup_put(st2, {})), "a state without the MIDI setup loads");
+        CHECK(setup_of(o.save()) == su, "with no MIDI setup in the state, the instance keeps its own");
+
+        // a note-off for every key (key -1) ends a held note as its own note-off does: 3 s after, the same tail, and
+        // far less than a note still held
+        double after[3];
+        o.run(600, false);   // (the loaded project's tail)
+        for (int w = 0; w < 3; w++)
+        {
+            o.ev.note(CLAP_EVENT_NOTE_ON, 60, 0);
+            o.run(50, false);
+            if (w < 2) o.ev.note(CLAP_EVENT_NOTE_OFF, w ? -1 : 60, w ? -1 : 0);
+            o.run(300, false);
+            after[w] = o.run(20, false);
+            if (w == 2) o.ev.note(CLAP_EVENT_NOTE_OFF, 60, 0);
+            o.run(900, false);
+        }
+        std::printf("note-offs: its own %.6f, the wildcard %.6f, none %.6f\n", after[0], after[1], after[2]);
+        CHECK(after[2] > 1e-3 && after[0] < after[2] * 0.1 && after[1] < after[2] * 0.1,
+              "a wildcard note-off ends a held note as its own note-off does");
+        o.close();
+    }
 
     entry->deinit();
     std::printf(fails ? "session test: %d FAILED\n" : "session test: ok\n", fails);
