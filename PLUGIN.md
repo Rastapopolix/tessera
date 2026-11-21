@@ -49,8 +49,15 @@ or left and right, or turn the mouse wheel over it.
 Keys go by where they sit, not what they print, so any keyboard layout works. With Ctrl or Alt held, keys go to the
 DAW.
 
-**Shells:** the swatches under the keys pick one of eight FM-1 colours, and each sets its own screen ink. Tessera
-remembers the last one you picked for every new window, in any DAW. MENU > COLOR still changes the ink afterwards.
+**Shells:** the swatches under the keys pick one of eight FM-1 colours, and each sets its own screen ink.
+
+**Inks:** the row of swatches labelled INK, between the buttons and the keys, picks the screen's ink: the same 13
+choices as MENU > COLOR (nine inks, then MOSAIC, SUNSET, OCEAN and NEON, which colour each track). The one in use is
+ringed; hover over a swatch to see its name. Picking a shell sets that shell's ink; an ink you pick afterwards, here or
+in MENU > COLOR, stays until you pick a shell again.
+
+Tessera remembers the last shell and the last ink for every new window, in any DAW. They are your settings, not the
+project's: a project opens in your shell and ink.
 
 The window moves only while the DAW is processing audio. If it looks frozen, check that the DAW's audio engine is on.
 
