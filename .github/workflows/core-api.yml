@@ -62,6 +62,11 @@ jobs:
           clang -w -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=0 tests/ui_test.c -o ui_test -lm   # (as run_tests.sh)
           ./ui_test > ui_test.log 2>&1 || { tail -40 ui_test.log; exit 1; }
           tail -3 ui_test.log
+      - name: The host UI test at 8 tracks (CORE_TRACKS=8, the panel on the selected track's bank)
+        run: |
+          clang -w -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=0 -DCORE_TRACKS=8 tests/ui_test.c -o ui_test8 -lm
+          ./ui_test8 > ui_test8.log 2>&1 || { tail -40 ui_test8.log; exit 1; }
+          tail -3 ui_test8.log
       - name: Summary
         if: always()
         run: |

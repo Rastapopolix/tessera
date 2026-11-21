@@ -248,7 +248,11 @@ static void sr_add(const char *lb, uint32_t pid, uint32_t tr)
 }
 static void sr_tracks(const char *lb, uint32_t x)        /* "Sound T1" .. "Sound T4": TX_ x of each track */
 {
+#if CORE_TRACKS > 4
+    for (uint32_t k = UI_BASE; k < UI_BASE + UI_NT; k++) {   /* (the selected track's bank: 1..4 or 5..8) */
+#else
     for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
+#endif
         sr_add(lb, PID_TESS(x), k);
         sr.lb[sr.n - 1u][str_len(lb) - 1u] = (char)('1' + k);
     }
