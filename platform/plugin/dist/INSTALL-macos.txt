@@ -1,0 +1,33 @@
+Tessera plugin VERSION for macOS (Apple silicon and Intel, macOS 10.15 or later)
+================================================================================
+
+In this folder:
+  Tessera.clap        the CLAP instrument (Bitwig, Reaper, ...)
+  Tessera.vst3        the VST3 instrument (Ableton Live, Cubase, ...)
+  Tessera.component   the Audio Unit (Logic Pro, GarageBand, MainStage)
+  Tessera.app         the standalone app: no DAW needed
+
+Each runs natively on Apple silicon and on Intel Macs.
+
+Install
+-------
+1. Copy each plugin to your own Plug-Ins folders (in Finder: Go > Go to Folder..., paste the path):
+     Tessera.clap       to  ~/Library/Audio/Plug-Ins/CLAP/
+     Tessera.vst3       to  ~/Library/Audio/Plug-Ins/VST3/
+     Tessera.component  to  ~/Library/Audio/Plug-Ins/Components/
+   (Make the CLAP folder if it isn't there.) Tessera.app can go in Applications.
+2. SIGNING (see below).
+3. In your DAW, rescan the plugins. Tessera is an instrument, under "Tessera". Logic finds the Audio
+   Unit under AU Instruments > Tessera > Tessera; if it doesn't, restart Logic, or the Mac.
+
+Signing: "damaged" or "can't be verified"
+-----------------------------------------
+SIGNING_NOTE
+
+The manual for the plugin: https://github.com/Rastapopolix/tessera/blob/main/PLUGIN.md
+What's in this beta, and what isn't yet: BETA_NOTES.md in this folder.
+Found a problem? https://github.com/Rastapopolix/tessera/issues (the plugin's version, your DAW and its
+version, macOS' version, Apple silicon or Intel, the steps, what you expected and what happened).
+
+Tessera is free software under the GPL-3.0 (LICENSE). Credits and the licences of the parts it uses:
+LICENSING.md.
