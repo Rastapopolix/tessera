@@ -1,7 +1,7 @@
 # Tessera as a plugin
 
 Tessera also runs inside a DAW. The same firmware the FM-1 plays is built as a **CLAP** instrument, a **VST3**
-instrument and a **standalone app**. Its window is the FM-1: the same screen, buttons, knobs and keys, so everything
+instrument, an **Audio Unit** on macOS and a **standalone app**. Its window is the FM-1: the same screen, buttons, knobs and keys, so everything
 in the [manual](MANUAL.md) works the same way here. This page covers only what is different in a DAW.
 
 - [Install](#install)
@@ -20,14 +20,28 @@ in the [manual](MANUAL.md) works the same way here. This page covers only what i
 
 Copy the plugin where your DAW looks for plugins, then rescan in the DAW.
 
-| | CLAP (`Tessera.clap`) | VST3 (`Tessera.vst3`) |
-|---|---|---|
-| Windows | `C:\Program Files\Common Files\CLAP\` | `C:\Program Files\Common Files\VST3\` |
-| Linux | `~/.clap/` | `~/.vst3/` |
-| macOS | `~/Library/Audio/Plug-Ins/CLAP/` | `~/Library/Audio/Plug-Ins/VST3/` |
+Download the zip for your system from the [plugin's releases](https://github.com/Rastapopolix/tessera/releases)
+(the betas are marked *Pre-release*). Each zip has an INSTALL text with these steps and the beta's notes.
 
-Use CLAP if your DAW has it (Bitwig, Reaper, FL Studio and others): it is Tessera's own format, and VST3 is a wrapper
-around it. The standalone app (Windows) needs no DAW: start it, pick an audio output, and it plays at once.
+| | CLAP (`Tessera.clap`) | VST3 (`Tessera.vst3`) | Audio Unit (`Tessera.component`) |
+|---|---|---|---|
+| Windows | `C:\Program Files\Common Files\CLAP\` | `C:\Program Files\Common Files\VST3\` | |
+| Linux | `~/.clap/` | `~/.vst3/` | |
+| macOS | `~/Library/Audio/Plug-Ins/CLAP/` | `~/Library/Audio/Plug-Ins/VST3/` | `~/Library/Audio/Plug-Ins/Components/` |
+
+Use CLAP if your DAW has it (Bitwig, Reaper, FL Studio and others): it is Tessera's own format, and VST3 and the Audio
+Unit are wrappers around it. Logic and GarageBand use the Audio Unit. The standalone app (Windows and macOS) needs no
+DAW: start it, pick an audio output, and it plays at once.
+
+**macOS:** the beta isn't signed with an Apple Developer ID yet, so macOS calls it "damaged" or says it "can't be
+verified". After copying, clear the download's quarantine once, in Terminal:
+
+```
+xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/CLAP/Tessera.clap ~/Library/Audio/Plug-Ins/VST3/Tessera.vst3 ~/Library/Audio/Plug-Ins/Components/Tessera.component
+```
+
+(and the same for `Tessera.app` where you put it). **Windows:** SmartScreen may warn about the unsigned `Tessera.exe`
+the first time: click *More info*, then *Run anyway*.
 
 ## First sound
 
@@ -82,7 +96,7 @@ with its own project.
 
 - **OPEN** loads a `.tsp` project (from the editor, from the `demos/` folder, or saved by another Tessera) or an
   **FM-1 backup** (the `.json` from the backup page or the Hub). A backup's slots A to D go into the plugin's slots,
-  then the music it was playing loads. On Windows you can also drop a file on the window.
+  then the music it was playing loads. On Windows and macOS you can also drop a file on the window.
 - **SAVE** writes the project as a `.tsp` under its name, ready for the FM-1's editor or another Tessera.
 
 A `.tsp` from the plugin opens on the FM-1 too. Tracks on the plugin-only sounds play a stand-in there (see
@@ -99,7 +113,7 @@ shows **5-8**, inverted, before the track dots.
 
 ## Automation: the parameters
 
-Almost every project setting is a DAW parameter you can automate, about 890 in all:
+Almost every project setting is a DAW parameter you can automate, about 1,700 in all:
 
 - **MASTER** and PERF's **MACRO 1** to **MACRO 4** come first.
 - **Each track's** settings, named like `T1 LEVEL` or `T3 TURING LENGTH`, grouped under *Track 1/Sound and sequence*
@@ -117,10 +131,10 @@ project saves them.
 
 ## Track outputs and MIDI out
 
-- **Track outputs:** besides the main stereo mix, Tessera has four more outputs, TRACK 1 to TRACK 4, each track on
+- **Track outputs:** besides the main stereo mix, Tessera has eight more outputs, TRACK 1 to TRACK 8, each track on
   its own, as the FM-1's USB stems are: after the track's level, before pan and the bus effects. Route them to their
   own mixer channels in the DAW to process each track apart.
-- **MIDI out:** every track's notes, each on its own channel (GLO > MIDI OUT; by default channels 1 to 4), so
+- **MIDI out:** every track's notes, each on its own channel (GLO > MIDI OUT; by default channels 1 to 8), so
   Tessera's generators can play other instruments. NOTES OUT starts at ALL in the plugin (the generators' notes too).
   MENU can set it to KEYS or OFF.
 
@@ -152,5 +166,10 @@ the buffer to 256.
 
 ## Not there yet
 
-- **macOS:** it plays, but has no window yet.
-- **Four tracks**, as on the FM-1.
+- **Tracks 5 to 8's steps** aren't saved yet. Their settings are saved with the DAW song, but a `.tsp` holds tracks 1
+  to 4 only.
+- **PHASE** has its own 6 presets, not the CZ-1's original tones.
+- **One window size**, the FM-1's. A larger, wider window is planned.
+- **No presets in the DAW's browser** yet: use OPEN, or the DAW's own way of saving a plugin's state.
+- **No standalone app on Linux** yet.
+- **Not signed** on macOS or Windows yet (see [Install](#install)).
