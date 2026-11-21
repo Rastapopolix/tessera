@@ -20,6 +20,7 @@ its version, your system, the steps, what you expected and what happened).
 - MIDI in on channels 1 to 8 plays tracks 1 to 8; MIDI out sends each track's notes on its own channel.
 - About 1,700 settings as DAW parameters you can automate, with the FM-1's names and values.
 - Up to 8 Tesseras in one song, each with its own project.
+- No shared voice budget: each track plays as many voices as its engine has, however busy the others are.
 - OPEN and SAVE: `.tsp` projects and FM-1 backups (the `.json` from the Hub or the backup page). A `.tsp` from the
   plugin opens on the FM-1 too.
 - Sounds only the plugin has: SID, the SID drum kit and SID DIGI, MACRO, and PHASE (phase distortion in the manner of
