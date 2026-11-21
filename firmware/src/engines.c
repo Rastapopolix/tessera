@@ -15,6 +15,9 @@
 #include "eng_noise.c"
 #include "eng_fm6.c"            /* FM6: 6-operator FM rendered as Dexed renders it (fm6_core.c) */
 #include "eng_oracle.c"         /* ORACLE: two oscillators, Poly-Mod, a 4-pole ladder (the Prophet engine, back) */
+#if MELODEE_PHASE
+#include "eng_phase.c"          /* PHASE: the CZ-1's phase distortion (CrispyZebra's waveforms); plugin and Daisy builds */
+#endif
 #if MELODEE_SLICE
 #include "eng_slice.c"
 #else
@@ -59,6 +62,9 @@ static uint32_t eng_state_size(uint32_t e)
 #if MELODEE_ORACLE
     case ENGI_ORACLE: return sizeof(or_part_t);
 #endif
+#if MELODEE_PHASE
+    case ENGI_PHASE: return sizeof(ph_part_t);      /* PHASE: its six envelopes per voice (eng_phase.c) */
+#endif
 #if MELODEE_SLICE
     case ENGI_SLICE: return sizeof(slc_rb_t);
 #endif
@@ -84,6 +90,9 @@ static dsk_part_t *dsk_part(uint32_t part) { return resource_get(RES_ENGINE0 + p
 static drw_part_t *drw_of(const track_t *t) { return resource_get(RES_ENGINE0 + (uint32_t)(t - trk), sizeof(drw_part_t)); }
 static fm6_part_t *fm6_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(fm6_part_t)); }
 static or_part_t *or_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(or_part_t)); }
+#if MELODEE_PHASE
+static ph_part_t *ph_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(ph_part_t)); }
+#endif
 #if MELODEE_SID || MELODEE_SID_KIT
 static sid_part_t *sid_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(sid_part_t)); }
 #endif
@@ -95,7 +104,7 @@ static int16_t (*slc_rbuf(uint32_t part))[SLC_RB] { return resource_get(RES_ENGI
 static const engine_t *const ENGINES[NENGINES] = {
     &ENG_RETIRED,                /* 0: retired ANALOG; stored ID reserved */
     &ENG_RETIRED,                /* 1: retired DIGITAL; stored ID reserved */
-    &ENG_RETIRED,                /* 2: retired PHASE; stored ID reserved (its core was CZ-1's) */
+    &ENG_RETIRED,                /* 2: retired PHASE; stored ID reserved (PHASE is back on 15, MELODEE_PHASE) */
 #if MELODEE_SID
     &ENG_SID,                    /* 3: SID replaces LOFI without reusing a stored ID */
 #else
@@ -140,7 +149,11 @@ static const engine_t *const ENGINES[NENGINES] = {
     &ENG_RETIRED,             /* 13: reserved (MELODEE_SLICE=0 builds without SLICE) */
 #endif
     &ENG_RETIRED,                /* 14: retired OBXF; stored index reserved */
-    &ENG_RETIRED,                /* 15: retired CZ-1 (2026-10-22); stored ID reserved */
+#if MELODEE_PHASE
+    &ENG_PHASE,                  /* 15: PHASE, the CZ-1's phase distortion (the native CZ-1 retired 2026-10-22, its tones too) */
+#else
+    &ENG_RETIRED,                /* 15: retired CZ-1 (2026-10-22); stored ID reserved (PHASE, MELODEE_PHASE) */
+#endif
     &ENG_RETIRED, &ENG_RETIRED, &ENG_RETIRED, /* 16..18 reserved */
 #if MELODEE_ORACLE
     &ENG_ORACLE,                 /* 19: ORACLE (2026-10-29: the Prophet engine, retired 2026-10-22, back as its own) */
@@ -202,6 +215,9 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
 #endif
 #if MELODEE_PLAITS
     ENGI_MACRO,                  /* MACRO */
+#endif
+#if MELODEE_PHASE
+    ENGI_PHASE,                  /* PHASE */
 #endif
 #if MELODEE_SLICE
     13,                          /* SLICE */

@@ -9,7 +9,11 @@
 #define SEC_TAB_H 16                                    /* the tabs: rows 18 .. 33 */
 static const struct { const char *prefix, *name; } SEC_RULE[] = {   /* a page's section by its title (first match) */
     {"STORE", "Store"}, {"ALGO", "Algo"}, {"PITCH", "Pitch"}, {"FM LFO", "LFO"}, {"FM ", "Ctrl"}, {"OP", "Env"},
-    {"DRUM", "Drum"}, {"LANES", "Lanes"}, {"VOICE", "Voice"}, {"EDIT", "Sound"}};
+    {"DRUM", "Drum"}, {"LANES", "Lanes"}, {"VOICE", "Voice"}, {"EDIT", "Sound"},
+#if MELODEE_PHASE
+    {"DC", "Env"}, {"PD ", "Env"},                      /* PHASE's EG SPLIT pages */
+#endif
+};
 static const char *const SEC_OP[6] = {"OP1", "OP2", "OP3", "OP4", "OP5", "OP6"};
 static struct {
     uint8_t n, eng, e7, ok;

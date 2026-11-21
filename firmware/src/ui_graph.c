@@ -2163,6 +2163,9 @@ static const char *eng_abbr(const char *name)
 #if MELODEE_PLAITS
                                        {"MACRO", "MACR"},
 #endif
+#if MELODEE_PHASE
+                                       {"PHASE", "PHAS"},
+#endif
                                        {"SAMPLE", "SMPL"}, {"VOICE", "VOCL"}, {"TRIO", "TRIO"}, {"WHEEL", "WHEL"},
                                        {"GRAIN", "GRAN"}, {"PHYS", "PHYS"}, {"DRUM", "DRUM"},
                                        {"NOISE", "NOIS"}, {"FM6", "FM6"}, {"SLICE", "SLCE"}};

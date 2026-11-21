@@ -442,6 +442,11 @@ static int page_visible(uint32_t i)
     if (PAGES[i].graph == GR_SLICES)
         return 0;
 #endif
+#if MELODEE_PHASE
+    if (PAGES[i].fam == FAM_EDIT && PAGES[i].id[0] >= P_FM1_ATK && PAGES[i].id[0] <= P_FM4_LEVEL)
+        return (str_prefix(PAGES[i].title, "DC") || str_prefix(PAGES[i].title, "PD ")) &&
+               TSEL->eng_req == ENGI_PHASE && TSEL->p[P_E7];   /* PHASE's EG SPLIT pages (FM4's: never) */
+#endif
     return !(PAGES[i].fam == FAM_EDIT && PAGES[i].id[0] >= P_FM1_ATK &&
              PAGES[i].id[0] <= P_FM4_LEVEL);
 }
