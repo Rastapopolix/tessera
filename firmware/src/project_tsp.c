@@ -601,7 +601,7 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
 /* ---- reading */
 static struct { uint32_t at[TSP_PARTS], len[TSP_PARTS]; uint8_t ver[TSP_PARTS]; } tsp_seen;   /* the record tsp_valid read */
 static uint32_t tsp_u16_at(const uint8_t *b) { return b[0] | (uint32_t)b[1] << 8; }
-/* the kept parts (TSP_KEEP..) of the record raw (len bytes): their bytes, headers included (*n of them); move: also
+/* the kept parts (TSP_KEEP.., but for a part this build reads: an 8-track build's XTRK) of the record raw (len bytes): their bytes, headers included (*n of them); move: also
  * gathered, in order, at the start of raw (the record is then gone) */
 static uint32_t tsp_kept(uint8_t *raw, uint32_t len, uint32_t *n, int move)
 {
@@ -611,7 +611,11 @@ static uint32_t tsp_kept(uint8_t *raw, uint32_t len, uint32_t *n, int move)
     for (i = 0, parts = tsp_u16_at(raw + 8); i < parts; i++) {
         uint32_t size = 4u + tsp_u16_at(raw + pos + 2u), j;
         if (pos + 4u > len - 4u || pos + size > len - 4u) return 0;
+#if CORE_TRACKS > 4
+        if (raw[pos] >= TSP_KEEP && raw[pos] != TSP_XTRK) {   /* (XTRK: this build's own, written afresh) */
+#else
         if (raw[pos] >= TSP_KEEP) {
+#endif
             if (move) for (j = 0; j < size; j++) raw[k + j] = raw[pos + j];   /* (k < pos: forward is safe) */
             k += size;
             (*n)++;
@@ -1012,7 +1016,8 @@ static void tsp_restore(const uint8_t *raw)
         uint32_t pos = TSP_HEAD, n = tsp_u16_at(raw + 8), at = 0, len = 0;
         for (i = 0; i < n; i++) {
             uint32_t plen = tsp_u16_at(raw + pos + 2u);
-            if (raw[pos] == TSP_XTRK && raw[pos + 1u] == 1u) at = pos + 4u, len = plen;
+            if (raw[pos] == TSP_XTRK && raw[pos + 1u] == 1u) at = pos + 4u, len = plen;   /* (the part's own version:
+                                                                                               * its first byte) */
             pos += 4u + plen;
         }
         if (at && xtrk_read(raw + at, len, 0)) {
@@ -1061,15 +1066,16 @@ static int tsp_rename(uint8_t *raw, uint32_t len, const char *name)
  * Part TSP_XTRK, in the range TSP_KEEP leaves to other targets: the FM-1 skips it (as any part it does not know) and a
  * build with kept parts carries it through its saves. The 4-track parts stay what an FM-1 reads: a reference there to
  * a track past 4 (FOLLOW, TO, WITH, HOLD, SOURCE, SECTION PC, a cord) is written OFF, its true value kept here.
- * Version 1: the version, the build's tracks, then
- *   tracks 1..4's references (FOLLOW TO WITH HOLD SOURCE, a byte each), SECTION PC (a byte), the selected track;
+ * Version 2: the version, the build's tracks, then
+ *   tracks 1..4's references (FOLLOW TO WITH HOLD SOURCE QUAD-LINK, a byte each; version 1 has no QUAD LINK), SECTION
+ *   PC (a byte), the selected track;
  *   the cords that touch a track past 4: a count, then each one's index and its 6 bytes (cord_pack's);
  *   tracks 5..8 in turn: engine, preset, P_COUNT, each parameter (u16); the pattern playing; each pattern's steps
  *   that hold something (a count, then each one's index and its TSP_STEP_BYTES); each pattern's LEN DIV SWING GATE;
  *   the FM6 patch and FN, ORACLE's patch, the kit; the Tessera block's track (TESS_PK_TRACK); the track's settings
  *   (XT_B, then TRANSPOSE + 48, HOLD, SOURCE); each pattern's DIR; each SONG row's pattern; PAT GEN's slots if on;
  *   the timed notes of tracks 5..8: a count (u16), then each note's 10 bytes. */
-#define XT_VER 1u
+#define XT_VER 2u                                       /* (version 1: no QUAD LINK for tracks 1..4) */
 static uint8_t *const XT_B[] = {
     tessera.sub_shape, tessera.midi_ch, tessera.sound_off, tessera.sd_keep, tessera.sd_grav, tessera.sv_how,
     tessera.fm_dev, tessera.sub_split, tessera.sub_split_how, tessera.et_order, tessera.ch_strum, tessera.ch_sdir,
@@ -1103,6 +1109,7 @@ static void xtrk_put(tsp_w_t *w)
         const tessera_evolve_t *ev = &tessera.evolve[t];
         tsp_byte(w, ev->follow); tsp_byte(w, ev->br_to); tsp_byte(w, ev->lg_with);
         tsp_byte(w, tessera.follow_hold[t]); tsp_byte(w, tessera.sd_src[t]);
+        tsp_byte(w, tessera.quad[t].link);
     }
     tsp_byte(w, tessera.sec_pc); tsp_byte(w, song.sel);
     cord_pack(c);
@@ -1163,18 +1170,21 @@ static void xtrk_put(tsp_w_t *w)
 static int xtrk_read(const uint8_t *p, uint32_t len, int apply)
 {
     const uint8_t *e = p + len;
-    uint32_t t, b, i, n;
+    uint32_t t, b, i, n, ver, nr;
 #define XT_NEED(k) do { if ((uint32_t)(e - p) < (uint32_t)(k)) return 0; } while (0)
     XT_NEED(2u);
-    if (p[0] != XT_VER || p[1] != NTRK) return 0;
+    ver = p[0];
+    if (ver < 1u || ver > XT_VER || p[1] != NTRK) return 0;
+    nr = ver >= 2u ? 6u : 5u;                          /* (each track 1..4's references) */
     p += 2;
-    XT_NEED(PROJ_NTRK * 5u + 2u);
-    for (t = 0; t < PROJ_NTRK; t++, p += 5)
+    XT_NEED(PROJ_NTRK * nr + 2u);
+    for (t = 0; t < PROJ_NTRK; t++, p += nr)
         if (p[0] > NTRK || p[1] > NTRK || p[2] > NTRK || p[3] > NTRK || p[4] > TESS_SD_KEYS) return 0;
         else if (apply) {
             tessera_evolve_t *ev = &tessera.evolve[t];
             ev->follow = p[0]; ev->br_to = p[1]; ev->lg_with = p[2];
             tessera.follow_hold[t] = p[3]; tessera.sd_src[t] = p[4];
+            if (nr > 5u) tessera.quad[t].link = (uint8_t)(p[5] & ~(1u << t));   /* (never its own track) */
         }
     if (p[1] >= NTRK) return 0;
     if (apply) { tessera.sec_pc = p[0]; song.sel = p[1]; }
