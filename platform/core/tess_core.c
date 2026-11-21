@@ -368,6 +368,11 @@ uint32_t tess_core_save(uint8_t *out, uint32_t cap)
     project_t *p = &proj_scratch;
     uint32_t len;
     project_capture(p);
+#ifdef TESS_PLUGIN_IO
+    p->g[G_ROUTE] = 0;                            /* (the record's ROUT is the FM-1's power-on one: every target leaves it
+                                                   * unread (project.c GLO_KEPT), the plugin keeps its own beside the
+                                                   * record (tess_core_setup_save), and the bytes stay the FM-1's) */
+#endif
     proj_wire_gen++;
     len = tsp_pack(proj_wire_u.raw, p, 1);
     if (!len || len > cap)
