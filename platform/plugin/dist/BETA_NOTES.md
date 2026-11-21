@@ -25,6 +25,7 @@ its version, your system, the steps, what you expected and what happened).
 - Sounds only the plugin has: SID, the SID drum kit and SID DIGI, MACRO, and PHASE (phase distortion in the manner of
   the CZ-1). On the FM-1 those tracks play FM6's INIT sound instead.
 - Shell and ink pickers: your choice is remembered for every new window.
+- No shared voice budget: each track plays as many voices as its engine has, however busy the others are.
 
 ## Not there yet
 - Tracks 5 to 8's settings are saved with your DAW song, but **their steps aren't saved yet**, and a `.tsp` holds

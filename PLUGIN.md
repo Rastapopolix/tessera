@@ -195,6 +195,10 @@ Eight of them on one core take about 20 %, and less when the DAW spreads them ov
 buffers (64 samples) leave less room for the occasional slower block. If you hear clicks with several Tesseras, raise
 the buffer to 256.
 
+There's no shared voice budget as on the FM-1, where all the tracks share 16 points and a busy project steals notes:
+every track plays as many voices as its engine has (FM6 16, most engines 8). All eight tracks of 16 FM6 voices
+sounding at once take about 18 % of a core.
+
 ## Not there yet
 
 - **Tracks 5 to 8's steps** aren't saved yet. Their settings are saved with the DAW song, but a `.tsp` holds tracks 1
