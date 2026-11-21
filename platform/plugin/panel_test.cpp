@@ -356,7 +356,7 @@ int main(int argc, char **argv)
         CHECK(q.shell() == 4 && q.take_shell_request() == 4 && !q.menu_shown(), "a shell picked from the menu (%d)", q.shell());
         q.draw(px.data(), v);
         CHECK(px[320 * Panel::W + 12] == 0xFFEE8A30u, "the FM-1's orange shell drawn");
-        const int tx = 36 + 928 - 9 - 2 - 8 * (2 * 9 + 10), ty = 332 + 256 + 5 + 12;   // (swatch 0, TESSERA)
+        const int tx = 36 + 928 - 9 - 2 - 8 * (2 * 9 + 10) - 14, ty = 332 + 256 + 5 + 12;   // (swatch 0, TESSERA, set 14 apart)
         q.down(tx, ty);
         q.up(tx, ty);
         CHECK(q.shell() == 0 && q.take_shell_request() == 0, "TESSERA again from the FM-1's swatches");
