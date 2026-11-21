@@ -1,0 +1,139 @@
+# Tessera as a plugin
+
+Tessera also runs inside a DAW. The same firmware the FM-1 plays is built as a **CLAP** instrument, a **VST3**
+instrument and a **standalone app**. Its window is the FM-1: the same screen, buttons, knobs and keys, so everything
+in the [manual](MANUAL.md) works the same way here. This page covers only what is different in a DAW.
+
+- [Install](#install)
+- [First sound](#first-sound)
+- [The window](#the-window)
+- [Playing with the DAW](#playing-with-the-daw)
+- [Saving, and project files](#saving-and-project-files)
+- [Automation: the parameters](#automation-the-parameters)
+- [Track outputs and MIDI out](#track-outputs-and-midi-out)
+- [Several Tesseras in one song](#several-tesseras-in-one-song)
+- [Sounds only the plugin has](#sounds-only-the-plugin-has)
+- [How much CPU it takes](#how-much-cpu-it-takes)
+- [Not there yet](#not-there-yet)
+
+## Install
+
+Copy the plugin where your DAW looks for plugins, then rescan in the DAW.
+
+| | CLAP (`Tessera.clap`) | VST3 (`Tessera.vst3`) |
+|---|---|---|
+| Windows | `C:\Program Files\Common Files\CLAP\` | `C:\Program Files\Common Files\VST3\` |
+| Linux | `~/.clap/` | `~/.vst3/` |
+| macOS | `~/Library/Audio/Plug-Ins/CLAP/` | `~/Library/Audio/Plug-Ins/VST3/` |
+
+Use CLAP if your DAW has it (Bitwig, Reaper, FL Studio and others): it is Tessera's own format, and VST3 is a wrapper
+around it. The standalone app (Windows) needs no DAW: start it, pick an audio output, and it plays at once.
+
+## First sound
+
+A new Tessera opens with **STILL TIDE** loaded (and KOTO GARDEN in slot B). Press PLAY in the DAW and it plays. Play
+notes from a MIDI track or a keyboard routed to Tessera: they go to the selected track, as the FM-1's keys do.
+
+## The window
+
+The window shows the FM-1, 1:1. Click the buttons and keys (drag across the keys to glide). Drag a knob up and down
+or left and right, or turn the mouse wheel over it.
+
+**The computer keyboard** plays it too, as in the web simulator (click the window first):
+
+- **Z** to **'** and **Q** to **O**: the keys.
+- **1** to **=**: the twelve buttons, in the panel's order.
+- **[** and **]**: OCT- and OCT+.
+- **Up / Down**: turn SELECT. **Left / Right**: turn ALGORITHM.
+
+Keys go by where they sit, not what they print, so any keyboard layout works. With Ctrl or Alt held, keys go to the
+DAW.
+
+**Shells:** the swatches under the keys pick one of eight FM-1 colours, and each sets its own screen ink. Tessera
+remembers the last one you picked for every new window, in any DAW. MENU > COLOR still changes the ink afterwards.
+
+The window moves only while the DAW is processing audio. If it looks frozen, check that the DAW's audio engine is on.
+
+## Playing with the DAW
+
+Tessera follows the DAW's transport:
+
+- **PLAY** starts every track where it would be if the song had played from the DAW's zero. Starting at bar 9 sounds
+  like the song has been playing for eight bars.
+- **The DAW's tempo** drives Tessera's clock, tempo changes included. The BPM on the screen is the DAW's, rounded. A
+  TEMPO mod has no effect while the DAW plays.
+- **A loop or a jump** in the DAW moves Tessera to that point. **STOP** stops it.
+- With **CLK** set to MIDI, an outside MIDI clock leads instead, and the DAW only starts and stops it.
+
+## Saving, and project files
+
+**The DAW saves Tessera with your song.** The saved state is the Tessera project, the same bytes SAVE > PROJECT
+writes on the FM-1, plus the MASTER volume. Open the song again and every setting comes back as it was, each Tessera
+with its own project.
+
+**OPEN** and **SAVE**, under the keys, work with files:
+
+- **OPEN** loads a `.tsp` project (from the editor, from the `demos/` folder, or saved by another Tessera) or an
+  **FM-1 backup** (the `.json` from the backup page or the Hub). A backup's slots A to D go into the plugin's slots,
+  then the music it was playing loads. On Windows you can also drop a file on the window.
+- **SAVE** writes the project as a `.tsp` under its name, ready for the FM-1's editor or another Tessera.
+
+A `.tsp` from the plugin opens on the FM-1 too. Tracks on the plugin-only sounds play a stand-in there (see
+[Sounds only the plugin has](#sounds-only-the-plugin-has)).
+
+On Linux the file dialogs need `zenity` or `kdialog`.
+
+## Automation: the parameters
+
+Almost every project setting is a DAW parameter you can automate, about 890 in all:
+
+- **MASTER** and PERF's **MACRO 1** to **MACRO 4** come first.
+- **Each track's** settings, named like `T1 LEVEL` or `T3 TURING LENGTH`, grouped under *Track 1/Sound and sequence*
+  and *Track 1/Generator*, and so on.
+- **The song's** settings, under *Song*.
+
+Values read as the FM-1 shows them ("SAW", "1/16", "-6dB"), and you can type them that way. ENGINE 1 to 8 mean what
+the track's engine makes of them, as on the FM-1, so their names change when the engine does.
+
+When a setting changes on the panel, by loading a project or by Tessera itself (a scale shared by every track, a
+generator moving), the DAW hears about it: MASTER and the MACROs at once, the rest within a fraction of a second.
+
+Not parameters: the device's own settings (A4, the MIDI routing), and the MOD cords. Make those on the panel; the
+project saves them.
+
+## Track outputs and MIDI out
+
+- **Track outputs:** besides the main stereo mix, Tessera has four more outputs, TRACK 1 to TRACK 4, each track on
+  its own, as the FM-1's USB stems are: after the track's level, before pan and the bus effects. Route them to their
+  own mixer channels in the DAW to process each track apart.
+- **MIDI out:** every track's notes, each on its own channel (GLO > MIDI OUT; by default channels 1 to 4), so
+  Tessera's generators can play other instruments. NOTES OUT starts at ALL in the plugin (the generators' notes too).
+  MENU can set it to KEYS or OFF.
+
+## Several Tesseras in one song
+
+You can use up to **8 Tesseras** in one DAW song. Each is wholly its own: its project, its transport, its window and
+its parameters. A ninth won't open. Each new Tessera starts from STILL TIDE.
+
+## Sounds only the plugin has
+
+The plugin has room for engines the FM-1 can't fit:
+
+- **SID**: a whole MOS 6581 or 8580 chip per note, with 32 presets.
+- **DRUM: SID KIT** and **SID DIGI**: drums from one SID chip.
+- **MACRO**: a macro-oscillator with many synthesis models.
+
+The Daisy build (Andamento) has them too. On the FM-1, a SID or MACRO track plays FM6's INIT sound instead, and a SID
+kit plays the 909, so a project still opens and plays there.
+
+## How much CPU it takes
+
+On average, one Tessera playing a project takes about 2 % of one core of a 2.1 GHz desktop processor, at 48 kHz.
+Eight of them on one core take about 20 %, and less when the DAW spreads them over several cores. Very small audio
+buffers (64 samples) leave less room for the occasional slower block. If you hear clicks with several Tesseras, raise
+the buffer to 256.
+
+## Not there yet
+
+- **macOS:** it plays, but has no window yet.
+- **Four tracks**, as on the FM-1.
