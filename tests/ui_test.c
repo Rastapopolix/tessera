@@ -7779,6 +7779,7 @@ static int test_capture(void)
         turn(EN_K1, 1);
         for (i = 0; i < 200u; i++) frame();
         bad += check("  .. and any touch starts the rest again", stored_param(1, 0, P_LEVEL) == 77);
+#if TESS_HAS_BATTERY   /* (a target without one: none shown, nothing said) */
         {   /* battery low (no bars, on the battery): BATTERY LOW once, and the next STOP saves at once */
             int ok;
             uint8_t keep_cfg = usb.config, keep_pwr = song.pwr[0];
@@ -7820,6 +7821,7 @@ static int test_capture(void)
             bad += check("  charged past a bar: over; on a computer: never low", ok && !batt_low);
             usb.config = keep_cfg; song.pwr[0] = keep_pwr; song.batt_raw = keep_raw; frame();
         }
+#endif
         memset(proj_bank_len, 0, sizeof proj_bank_len);
         memset(proj_bank_slot, 0, sizeof proj_bank_slot);
     }
@@ -8041,6 +8043,7 @@ static int test_env_oct_transpose(void)
     return bad;
 }
 
+#if TESS_HAS_BATTERY
 /* the header's battery (ui_draw.c batt_head): its level on the battery, a bolt on external power (a computer, or 5 V
  * at LDO5V); MENU BATTERY WHEN LOW hides it except when low; saved with the settings */
 static int test_battery(void)
@@ -8075,6 +8078,7 @@ static int test_battery(void)
     settings_batt_off = keep_off; usb.config = keep_cfg; song.pwr[0] = keep_pwr; song.batt_raw = keep_raw;
     return bad;
 }
+#endif
 
 
 /* ARP HOLD (Theo, 3.5-beta7): keys held, ARP 2 KNOB 3 to HOLD ON, keys let go: the arpeggio goes on, stopped and
@@ -8177,7 +8181,9 @@ int main(void)
     bad += test_large_face();
 #endif
     bad += test_arp_hold_latch();
+#if TESS_HAS_BATTERY
     bad += test_battery();
+#endif
     bad += test_home_notes();
     bad += test_stage();
     bad += test_capture();

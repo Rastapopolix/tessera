@@ -707,6 +707,7 @@ static uint8_t batt_low;
 static int project_has_slot(void);                      /* (project.c: loaded from or saved to a slot) */
 static void batt_poll(void)
 {
+#if TESS_HAS_BATTERY
     int32_t lvl = batt_level();
     if (!song.batt_raw || batt_ext() || lvl >= 2) {
         batt_low = 0;
@@ -717,6 +718,7 @@ static void batt_poll(void)
         else str_cpy(ui.msg2, "SAVE YOUR WORK", sizeof ui.msg2);   /* second line; no slot or AUTOSAVE off: yours) */
         ui.msg_t = 120;
     }
+#endif
 }
 
 /* Autosave: stopped and untouched for AUTOSAVE_MS (no key, button, knob or MIDI), the project back to its slot when it
