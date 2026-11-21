@@ -193,7 +193,7 @@ qmap() {
         firmware/src/eng_trio.c) eng TRIO dual_core_test ;;
         firmware/src/eng_wheel.c) eng WHEEL ;;
         firmware/src/eng_formant.c) eng VOICE ;;
-        firmware/src/fx.c) QREG=1; QSEL="$QSEL $G_AUDIO fx_test fx_performance no_effects_test" ;;
+        firmware/src/fx.c) QREG=1; QSEL="$QSEL $G_AUDIO fx_test echo_sync_test echo_sync_test_plugin fx_performance no_effects_test" ;;
         firmware/src/mod.c) QREG=1; QSEL="$QSEL $G_AUDIO mod_test mod_spread_test" ;;
         firmware/src/voice.c | firmware/src/mix.c | firmware/src/dsp.c | firmware/src/audio*.[ch] | firmware/src/engines.c | \
             firmware/src/resources.c | firmware/src/native_presets.c) QREG=1; QSEL="$QSEL $G_AUDIO" ;;
@@ -536,6 +536,8 @@ phys_ref() {
 # the longest first: they set the length of the run
 sound && t "FX performance: all effects, four-track mixer, shared send bus and ordered three-effect chains" fx_performance -O2 $FW -- "$OUT/fx_performance" full
 sound && t "FX: three-slot chains, reverb decay/density/rate conversion, smooth Tape, track ownership, dry bypass and frozen legacy storage" fx_test -O1 $FW
+sound && t "SYNC ECHO: note values at the tempo, folded into the FM-1's 371 ms ring" echo_sync_test -O2 $FW
+sound && t "SYNC ECHO: note values at the tempo, the plugin's ~3 s ring" echo_sync_test_plugin:echo_sync_test -O2 $FW -DMELODEE_ECHO_RING=32768u -DCORE_TRACKS=8
 core && t "EQ accelerator: register layout, isolated histories and bounded timeout" eq_hw_test
 core && job web_tests
 sound && [ $TABLES = 1 ] && job dsp_tracks

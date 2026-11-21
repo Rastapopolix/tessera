@@ -195,7 +195,7 @@ sound pluck, swell or sustain.*
 **EDIT**: the sound's own pages ([Sounds](#sounds)). Tap EDIT again for a map of them. *Use it to design or adjust a
 sound; save it to USER from SAVE.*
 
-**FX**: the insert and send effects (ECHO, ROOM, REVERB, CHORUS, TAPE, PHASER, FILTER, DRIVE and more). Held, it sets
+**FX**: the insert and send effects (ECHO, SYNC ECHO, ROOM, REVERB, CHORUS, TAPE, PHASER, FILTER, DRIVE and more). Held, it sets
 how far a cord moves the knob you turn ([Mod shortcut](#mod-shortcut)). *Use it for space, colour, and the quickest way to make a mod.*
 
 **GLO**: the project and the long form
@@ -2511,6 +2511,11 @@ See the recipe [An LFO for another synth's filter](RECIPES.md#an-lfo-for-another
   short names are CUT1, RES1, and a send effect's S1CT ..
 - **ECHO TIME glides** when a mod moves it, as a tape's speed does, so the repeats bend in pitch instead of clicking.
   Turning the knob glides too.
+- **SYNC ECHO** is ECHO on the beat: its TIME is a note value (1/32, 16T, 1/16, 8T, 16D, 1/8, 4T, 8D, 1/4, 2T, 4D,
+  1/2, 2D, 1/1; T a triplet, D dotted), a knob step each, at the tempo playing (BPM, a MIDI clock, a TEMPO mod). It
+  follows a tempo change by gliding, as ECHO's TIME does. On the FM-1 the echo holds up to 371 ms: a longer note value
+  halves until it fits (a 1/4 at 120 BPM repeats on the 1/8s). The plugin holds about 3 s. Older firmware, without
+  SYNC ECHO, plays it as DRIVE.
 - **REVERB** changes SIZE a sample at a time.
 - The **send effects'** mods are the project's, not a track's, so [MATRIX](#matrix) leaves them out.
 - **FX held** + a knob on an FX page makes an effect mod too.

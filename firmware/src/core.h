@@ -188,6 +188,14 @@ enum {                          /* per-track parameters */
 };
 #define FX_SLOTS 3u
 #define FX_PARAMS 4u
+#ifndef MELODEE_ECHO_SYNC
+#define MELODEE_ECHO_SYNC 1       /* FX type SYNC ECHO: ECHO on note values at the tempo playing (fx.c) */
+#endif
+#ifndef MELODEE_ECHO_RING
+#define MELODEE_ECHO_RING 4096u   /* SYNC ECHO's ring at FS/4, a power of two: 4096 (the FM-1's ECHO, 371 ms; longer note
+                                   * values fold to the longest that fits), 32768 in the plugin (~3 s) */
+#endif
+_Static_assert((MELODEE_ECHO_RING & (MELODEE_ECHO_RING - 1u)) == 0 && MELODEE_ECHO_RING >= 4096u, "MELODEE_ECHO_RING");
 #define FX_CHAIN_COUNT (NPART+1u)
 #define FX_STATE_COUNT (FX_CHAIN_COUNT*FX_SLOTS)
 static int param_fx(uint32_t id) { return id>=P_FXTYPE && id<=P_FX3CHAR; }

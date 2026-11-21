@@ -2089,7 +2089,11 @@ static void mo_pic_fx(void)
 {
     static const char *const hint[FX_COUNT] = {"DRY SIGNAL", "MOVING NOTCHES", "ALL-PASS L/DRY R", "RANDOM VOWELS",
         "CROSSOVER JITTER", "JUMPING RESONANCE", "SHORT LO-FI ECHO", "SMALL LO-FI SPACE", "DIFFUSED REVERB", "PITCH SHIMMER",
-        "RESONANT LOW-PASS", "SOFT CLIP, FOLD"};
+        "RESONANT LOW-PASS", "SOFT CLIP, FOLD",
+#if MELODEE_ECHO_SYNC
+        "ECHO ON THE BEAT"
+#endif
+    };
     uint32_t base = cur_page()->id[0], master, slot, type;
     const int16_t *values;
     int32_t mix, cha, py = 81, x, g = 0, k = 0;
