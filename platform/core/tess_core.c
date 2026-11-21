@@ -26,6 +26,7 @@ static const int8_t FM1_KEYMAP[6][FM1_NCOL] = {
 };
 
 uint32_t tess_core_rate(void) { return FS; }
+uint32_t tess_core_tracks(void) { return NTRK; }
 
 static uint32_t core_booted, core_last_frame, core_samples_due;
 
