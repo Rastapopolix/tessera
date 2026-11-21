@@ -822,7 +822,7 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
 static const struct { uint8_t id, zero; uint16_t n; uint8_t *a, *b; } TSP_COPY[] = {
     {TSP_SUB, 0, PROJ_NTRK, tessera.sub_shape, 0},
     {TSP_MIDI, 0, PROJ_NTRK, tessera.midi_ch, 0},
-    {TSP_SOUND, 0, TESSERA_TRACKS, tessera.sound_off, 0},
+    {TSP_SOUND, 0, PROJ_NTRK, tessera.sound_off, 0},   /* (a record's tracks only: 5..8 keep theirs) */
     {TSP_SEED, 0, PROJ_NTRK, tessera.sd_src, tessera.sd_keep},
     {TSP_GRAV, 0, PROJ_NTRK, tessera.sd_grav, 0},
     {TSP_HOW, 0, PROJ_NTRK, tessera.sv_how, 0},
@@ -889,7 +889,7 @@ static void tsp_restore(const uint8_t *raw)
         }                                              /* (else tessera_reset's) */
     }
     if (tsp_seen.at[TSP_TRANSP])                       /* (saved before TRANSPOSE: tessera_reset's 0) */
-        for (uint32_t k = 0; k < TESSERA_TRACKS; k++)
+        for (uint32_t k = 0; k < PROJ_NTRK; k++)   /* (the record's tracks: past them, the next part's bytes) */
             tessera.midi_tr[k] = (int8_t)((int32_t)raw[tsp_seen.at[TSP_TRANSP] + k] - TESS_MIDI_TR);
     tessera.key_link = tsp_seen.at[TSP_KEY] ? raw[tsp_seen.at[TSP_KEY]] : 0u;   /* (saved before KEY LINK: OWN) */
     tessera.qnt_own = tsp_seen.at[TSP_QLINK] ? raw[tsp_seen.at[TSP_QLINK]] : 0u;   /* (none: LINKED, one QNT) */
