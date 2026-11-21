@@ -409,7 +409,7 @@ static int32_t list_accel(uint32_t role, int32_t s, uint32_t total, uint32_t *fa
  * its keys (ui_layer.c mixer_live), as GLO held */
 static void tracks_edit(uint32_t slot, int32_t steps)
 {
-    track_t *t = &trk[slot % NTRK];
+    track_t *t = &trk[(UI_BASE + slot) % NTRK];
     uint32_t pan = (uint32_t)oct_dn_only(), id = pan ? P_PAN : P_LEVEL;
     int16_t *vp = &t->p[id];
     const param_desc_t *d = &TP[id];

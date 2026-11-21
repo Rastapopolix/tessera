@@ -32,6 +32,13 @@ _Static_assert(CORE_TRACKS == 4 || CORE_TRACKS == 8, "CORE_TRACKS: 4 or 8");
 #define MELODEE_AUDIO_BENCH 0 /* laboratory fixed-voice admission bypass; never a release default */
 #endif
 #define NTRK NPART               /* tracks (the formats and the protocol count these): every track is a part */
+#if CORE_TRACKS > 4
+#define UI_NT 4u                 /* the panel's tracks: four at a time (MIXER, mutes, solo, GLO's levels), */
+#define UI_BASE (song.sel & 4u)  /* the bank of the selected track: 1..4 or 5..8 (SELECT past T4 moves it) */
+#else
+#define UI_NT NTRK
+#define UI_BASE 0u
+#endif
 #define NSTEP 64
 #define NPAT 8u
 #define HALF_FRAMES 128          /* I2S half buffer: 2.9 ms at 44.1 kHz (a key waits 0..1 half, then plays 1 half later) */

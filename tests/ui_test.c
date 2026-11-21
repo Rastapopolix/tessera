@@ -2697,9 +2697,9 @@ static int test_tracks(void)
     memcpy(before, trk, sizeof before);
     turn(EN_PRESET, 1);
     bad += check("MIXER: the PRESETS knob does nothing", trk[0].preset == before[0].preset && !memcmp(trk[0].p, before[0].p, sizeof before[0].p));
-    for (k = 0; k < NTRK; k++) turn(EN_K1 + k, -(int32_t)(k + 1u));
+    for (k = 0; k < UI_NT; k++) turn(EN_K1 + k, -(int32_t)(k + 1u));   /* (the panel's four: 1..4 with T1 selected) */
     ok = song.sel == 0u;
-    for (k = 0; k < NTRK; k++) ok &= trk[k].p[P_LEVEL] == before[k].p[P_LEVEL] - (int16_t)(k + 1u) && trk[k].p[P_PAN] == before[k].p[P_PAN];
+    for (k = 0; k < UI_NT; k++) ok &= trk[k].p[P_LEVEL] == before[k].p[P_LEVEL] - (int16_t)(k + 1u) && trk[k].p[P_PAN] == before[k].p[P_PAN];
     bad += check("MIXER: KNOB 1..4 are tracks 1..4's LEVEL (the selected track stays)", ok);
     {
         int8_t oct = song.octave;
