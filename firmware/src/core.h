@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include "tuning.h"
 #include "audio_profile.h"
+#include "tess_profile.h"           /* the target's facts: screen, controls, tier */
 
 /* ------------------------------------------------------------ sizes --- */
 #define NVOICE 16                /* voice slots per part (FM6 plays Dexed's 16) */

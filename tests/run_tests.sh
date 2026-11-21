@@ -544,6 +544,10 @@ sound && [ $TABLES = 1 ] && run "sample rate: every engine in tune at 48 kHz as 
 
 if core; then
     t "flash storage (A/B, torn writes)" storage_test
+    for _p in FM1 PLUGIN SIM DAISY; do   # each target's profile agrees with the core API (firmware/src/tess_profile.h)
+        t "platform profile $_p: its facts as the core API's" "profile_$_p:profile_test" -DTESS_TARGET=TESS_T_$_p \
+            -Iplatform/core $FW
+    done
     t "native FM6 user presets, scrolling, migration and interrupted saves" fm6_preset_test -O1 $FW
     t "ORACLE: its sounds in range and playing, the pages, the patch in a project" oracle_test -O1 -DMELODEE_USB_AUDIO=1 $FW
     t "resource lifetimes, cache eviction, tails and capacity" resources_test -O2 $FW

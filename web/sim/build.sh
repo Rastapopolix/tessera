@@ -36,7 +36,7 @@ elif [ -n "$1" ]; then
     echo "usage: web/sim/build.sh [--release X.Y[.Z]]"; exit 1
 fi
 ENGINES="-DMELODEE_ACCESS=${MELODEE_ACCESS:-1} -DMELODEE_LOOK=${MELODEE_LOOK:-1} -DMELODEE_FM6=${MELODEE_FM6:-1} -DMELODEE_PHYS=${MELODEE_PHYS:-1}"
-emcc -O2 -ffp-contract=off -w -DMELODEE_USB_AUDIO=1 $ENGINES "-DMELODEE_VERSION=\"$VERSION web\"" -Ibuild/gen -Ifirmware/src -Itests \
+emcc -O2 -ffp-contract=off -w -DTESS_TARGET=TESS_T_SIM -DMELODEE_USB_AUDIO=1 $ENGINES "-DMELODEE_VERSION=\"$VERSION web\"" -Ibuild/gen -Ifirmware/src -Itests \
     --no-entry -sSTANDALONE_WASM -sSTACK_SIZE=1048576 -sINITIAL_MEMORY=33554432 -sFILESYSTEM=0 \
     -o "$OUT/melodee.wasm" web/sim/sim.c
 cp web/sim/worklet.js "$OUT/"
