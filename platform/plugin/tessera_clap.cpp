@@ -220,6 +220,12 @@ struct Tessera : GuiLink
     int tracks() override { return (int)core->tracks(); }
     std::atomic<uint32_t> midi_seen{0};   // MIDI in so far (the window's MIDI lamp)
     uint32_t midi_count() override { return midi_seen.load(std::memory_order_relaxed); }
+    // an FM-1 on USB plays this Tessera (fm1_link.h): asked for from the first activate when the setting is on
+    Fm1Link::State fm1_state() override { return Fm1Link::get().state(this); }
+    void fm1_set(bool on) override;
+    bool fm1_started = false;
+    // the audio thread: held in the window and on the FM-1, apart (the core gets the two together)
+    uint32_t win_buttons = 0, win_keys = 0, fm1_buttons = 0, fm1_keys = 0;
 };
 
 Tessera *self(const clap_plugin_t *p) { return static_cast<Tessera *>(p->plugin_data); }
@@ -361,6 +367,16 @@ void Tessera::ink_seen(int i)
     const char *name = nullptr;
     if (i >= 0 && (uint32_t)i < core->ink_at((uint32_t)i, &name, nullptr) && name)
         projfile::setting_put("ink", name);
+}
+
+// FM-1 USB clicked: on takes the FM-1 for this Tessera; off is off for all; either is the setting a new one opens with
+void Tessera::fm1_set(bool on)
+{
+    if (on)
+        Fm1Link::get().want(this, true, true);
+    else
+        Fm1Link::get().off_all();
+    projfile::setting_put("fm1_usb", on ? "1" : "0");
 }
 
 void Tessera::midi_in(const clap_event_header_t *h)
@@ -597,6 +613,7 @@ void p_destroy(const clap_plugin_t *p)
 {
     auto *t = self(p);
     t->gui.reset();
+    Fm1Link::get().closed(t);
     uint32_t copy = t->copy;
     delete t;
     std::lock_guard<std::mutex> c(copies_lock);
@@ -612,6 +629,12 @@ bool p_activate(const clap_plugin_t *p, double rate, uint32_t, uint32_t)
     t->buf_n = t->buf_i = 0;
     t->transport_known = t->free_started = false;
     t->view_due = 0;
+    if (!t->fm1_started)   // (here, not at init: a DAW scanning its plugins opens and closes each without this)
+    {
+        t->fm1_started = true;
+        if (projfile::setting_get("fm1_usb") == "1")
+            Fm1Link::get().want(t, true, false);   // (behind any Tessera that has it already)
+    }
     {
         std::lock_guard<std::mutex> g(t->input_lock);   // MASTER where the window's knob starts
         t->pending.changed = true;
@@ -680,8 +703,10 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
         PanelInput &pi = t->pending;
         if (in.owns_lock() && pi.changed)
         {
-            t->core->buttons(pi.buttons);
-            t->core->keys(pi.keys);
+            t->win_buttons = pi.buttons;
+            t->win_keys = pi.keys;
+            t->core->buttons(t->win_buttons | t->fm1_buttons);
+            t->core->keys(t->win_keys | t->fm1_keys);
             if (pi.master >= 0)
                 t->master_set(pi.master);
             pi.master = -1;
@@ -695,6 +720,24 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
                     pi.enc[r] = 0;
                 }
             pi.changed = false;
+        }
+    }
+    {   // an FM-1 on USB (fm1_link.h): what it played since the last block, if this Tessera has it
+        Fm1Input fi;
+        if (Fm1Link::get().take(t, fi))
+        {
+            if (fi.buttons != t->fm1_buttons || fi.keys != t->fm1_keys)
+            {
+                t->fm1_buttons = fi.buttons;
+                t->fm1_keys = fi.keys;
+                t->core->buttons(t->win_buttons | t->fm1_buttons);
+                t->core->keys(t->win_keys | t->fm1_keys);
+            }
+            if (fi.master >= 0)
+                t->master_set(fi.master);
+            for (int r = 0; r < TESS_NE; r++)
+                if (fi.enc[r])
+                    t->core->enc((uint32_t)r, fi.enc[r]);
         }
     }
 

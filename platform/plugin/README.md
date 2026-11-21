@@ -37,6 +37,16 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
   with Ctrl or Alt held they are the DAW's. The LEDs light, dim and breathe as on the device. The window talks to the core through the audio
   thread, so it only moves while the host is processing audio.
 
+- **An FM-1 on USB plays the plugin** (FM-1 USB, in TESSERA's menu or under the keys in an FM-1 shell): the web
+  simulator's "An FM-1 on USB" (`fm1_link.h`). The plugin opens the FM-1's own MIDI ports (WinMM; ALSA's raw MIDI
+  devices, no library; CoreMIDI), not the DAW's, asks with PANEL (editor SysEx 75) about once a second, and decodes
+  channel 16's buttons, keys, knobs and MASTER into the same input the window gives the core (the two held together).
+  One FM-1 for the process, one instance at a time: a click on ON takes it; a new instance with the setting on waits
+  its turn. States: NO FM-1 FOUND, PORT IN USE (Windows: the DAW holds it), UPDATE THE FM-1 (no answer: 3.5 or older),
+  FM-1 CONNECTED, IN ANOTHER TESSERA. The setting is the file `fm1_usb` beside `shell` and `ink`; the link starts at
+  an instance's first activate, not at init, so a DAW's plugin scan opens no ports. No firmware change.
+  `tessera-fm1-test`: the decoder over captured byte streams, the port names, the link with a stand-in FM-1.
+
 - **Following the DAW** (CLK INT): the DAW's PLAY starts every track where it would be after playing from the DAW's
   zero (as a MIDI Song Position), its beat position drives Tessera's clock (fractional tempos and tempo changes, no
   drift), a loop or a locate seeks, STOP stops. The BPM on the screen is the DAW's, rounded; a TEMPO mod has no effect

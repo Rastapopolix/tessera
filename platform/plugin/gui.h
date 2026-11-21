@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 
+#include "fm1_link.h"
 #include "panel.h"
 
 /* the window's instance (tessera_clap.cpp): the latest view its audio thread made, and the panel's input for it */
@@ -35,7 +36,21 @@ struct GuiLink
     virtual int tracks() = 0;
     /* MIDI in so far (notes and messages from the host, a count that wraps): TESSERA's shell lights its MIDI lamp */
     virtual uint32_t midi_count() { return 0; }
+    /* an FM-1 on USB (fm1_link.h): this instance's state, and a click: on (taken from any other Tessera) or off (for
+     * every Tessera) */
+    virtual Fm1Link::State fm1_state() { return Fm1Link::OFF; }
+    virtual void fm1_set(bool on) { (void)on; }
 };
+
+/* each window's tick: a click on FM-1 USB handed on, and its state shown */
+inline void gui_fm1_tick(Panel &panel, GuiLink *link)
+{
+    int f = panel.take_fm1_request();
+    if (f >= 0)
+        link->fm1_set(f == 1);
+    Fm1Link::State s = link->fm1_state();
+    panel.set_fm1(s != Fm1Link::OFF, s != Fm1Link::ELSEWHERE, s == Fm1Link::LIVE, fm1_state_text(s));
+}
 
 /* the plugin's version, for the window's ABOUT (TESS_VERSION, CMakeLists.txt) */
 inline const char *tess_version()
