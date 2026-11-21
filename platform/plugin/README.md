@@ -73,6 +73,7 @@ build/plugin/tessera-panel-test shots/                                          
 build/plugin/tessera-sync-test                                                     # following the DAW
 build/plugin/tessera-copies-test                                                   # several instances: the copies apart
 xvfb-run build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 still-tide.wav window.ppm   # Linux / macOS
+build/plugin/tessera-session-test build/plugin/out/Tessera.clap                     # a DAW session saved and opened again
 build/plugin/tessera-cpu-bench build/plugin/out/Tessera.clap 10 48000 256          # what 1, 4 and 8 instances cost (measures only)
 ```
 
