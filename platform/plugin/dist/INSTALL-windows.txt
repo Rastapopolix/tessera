@@ -3,7 +3,7 @@ Tessera plugin VERSION for Windows (64-bit)
 
 In this folder:
   Tessera.clap    the CLAP instrument (use this one if your DAW has CLAP: Bitwig, Reaper, FL Studio, ...)
-  Tessera.vst3    the VST3 instrument (a folder: copy the whole folder)
+  Tessera.vst3    the VST3 instrument
   Tessera.exe     the standalone app: no DAW needed
 
 Install

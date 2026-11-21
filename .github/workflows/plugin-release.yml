@@ -129,7 +129,7 @@ jobs:
           d="Tessera-plugin-$V-windows"
           mkdir -p "pkg/$d"
           clap=$(find build/plugin/out -name Tessera.clap -type f | head -1)
-          vst3=$(find build/plugin/out -name Tessera.vst3 -type d | head -1)
+          vst3=$(find build/plugin/out -name Tessera.vst3 -prune | head -1)   # (a file here, a bundle folder elsewhere)
           exe=$(find build/plugin/out -name Tessera.exe -type f | head -1)
           [ -n "$clap" ] && [ -n "$vst3" ] && [ -n "$exe" ] || { echo "missing: clap '$clap' vst3 '$vst3' exe '$exe'"; exit 1; }
           grep -qaF "$V" "$clap" || { echo "Tessera.clap doesn't carry $V"; exit 1; }
