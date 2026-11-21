@@ -32,7 +32,11 @@ static const char *const N_ORDER[] = {"NOTE", "PLAY"};
 static const char *const N_CLOCK[] = {"INT", "USB", "TRS"};
 static const char *const N_MIDI_INPUT[] = {"USB", "TRS"};
 static const char *const N_PPQN[] = {"24", "48", "4", "8", "12"};   /* G_PPQN: 0 = 24, the MIDI standard (midi_clock.c PPQN) */
+#if CORE_TRACKS > 4   /* (8 tracks: a range reaches a track a channel, up to channel 16; seq.c midi_track) */
+static const char *const N_ROUTE[] = {"CH1-8", "SEL", "CH5-12", "CH9-16", "CH13-16"};
+#else
 static const char *const N_ROUTE[] = {"CH1-4", "SEL", "CH5-8", "CH9-12", "CH13-16"}; /* Keep saved CH1-4/SEL ids; append ranges. */
+#endif
 static const char *const N_NOTE[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 static const char *const N_DASH[] = {"--"};
 static const char *const N_GO[] = {"--", "GO"};
