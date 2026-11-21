@@ -444,7 +444,7 @@ static int page_visible(uint32_t i)
 #endif
 #if MELODEE_PHASE
     if (PAGES[i].fam == FAM_EDIT && PAGES[i].id[0] >= P_FM1_ATK && PAGES[i].id[0] <= P_FM4_LEVEL)
-        return (str_prefix(PAGES[i].title, "DC") || str_prefix(PAGES[i].title, "PD ")) &&
+        return (str_prefix(PAGES[i].title, "DC") || str_prefix(PAGES[i].title, "PTCH") || str_prefix(PAGES[i].title, "ENV L")) &&
                TSEL->eng_req == ENGI_PHASE && TSEL->p[P_E7];   /* PHASE's EG SPLIT pages (FM4's: never) */
 #endif
     return !(PAGES[i].fam == FAM_EDIT && PAGES[i].id[0] >= P_FM1_ATK &&

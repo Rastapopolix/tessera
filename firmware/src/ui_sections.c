@@ -11,7 +11,7 @@ static const struct { const char *prefix, *name; } SEC_RULE[] = {   /* a page's 
     {"STORE", "Store"}, {"ALGO", "Algo"}, {"PITCH", "Pitch"}, {"FM LFO", "LFO"}, {"FM ", "Ctrl"}, {"OP", "Env"},
     {"DRUM", "Drum"}, {"LANES", "Lanes"}, {"VOICE", "Voice"}, {"EDIT", "Sound"},
 #if MELODEE_PHASE
-    {"DC", "Env"}, {"PD ", "Env"},                      /* PHASE's EG SPLIT pages */
+    {"DC", "Env"}, {"PTCH", "Env"}, {"ENV L", "Env"},   /* PHASE's EG SPLIT pages */
 #endif
 };
 static const char *const SEC_OP[6] = {"OP1", "OP2", "OP3", "OP4", "OP5", "OP6"};

@@ -9,7 +9,7 @@
  * line (DTN) can be mixed or ring-modulated; SUB adds a sine an octave down.
  * Rate/target envelopes run separately for DCO, DCW and DCA on both lines: EG LINK
  * builds all six from the track's ENV; EG SPLIT gives DCW1, DCW2, DCA2 and DCO
- * their own (the track parameters P_FM1..P_FM4, unused by FM6; PD LEVEL their
+ * their own (the track parameters P_FM1..P_FM4, unused by FM6; ENV LVLS their
  * depths). Melodee's time scale, not a measured CZ-1 rate calibration.
  * Every setting is a track parameter: a PHASE track saves in TSP_TRACKS (no part of its own). */
 static const char *const N_PD_WAVE[] = {"SAW", "SQR", "PLS", "DSIN", "SPLS", "RSAW", "RTRI", "RTRP"};
