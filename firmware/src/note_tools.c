@@ -22,7 +22,7 @@ static int32_t note_snap(int32_t value,int32_t delta,uint32_t quantum)
 static void note_duration(recorded_note_t *r,uint32_t duration)
 {
     uint32_t exp=0;while(duration>65535u&&exp<7u){duration>>=1;exp++;}
-    r->duration=(uint16_t)duration;r->owner=(r->owner&31u)|(exp<<5);
+    r->duration=(uint16_t)duration;REC_SET_EXP(*r,exp);
 }
 static void note_onset(recorded_note_t *r,int32_t shift,uint32_t len,uint32_t quantum)
 {
@@ -105,7 +105,7 @@ static int note_convert(uint32_t start)
     step_delete(TSEL,start);memcpy(&TSEL->step[start],&source,sizeof source);TSEL->step[start].flags|=SF_RECORDED;
     for(uint32_t j=0,i=0;j<count;j++){
         while(recording[i].vel)i++;
-        recorded_note_t r={0};r.note=nn[j];r.vel=vv[j];r.owner=(uint8_t)recording_owner(TSEL);r.step=(uint8_t)start;r.length=drum_track(TSEL)?1u:0u;
+        recorded_note_t r={0};r.note=nn[j];r.vel=vv[j];r.owner=(uint8_t)recording_owner(TSEL);r.step=(uint8_t)start;REC_SET_HITLEN(r,drum_track(TSEL)?1u:0u);
         note_duration(&r,n*RECORD_UNIT);recording_restore_note(TSEL,i,r);i++;
     }
     cursor_set((int32_t)start);ui.note_pick=0;notes_selected(TSEL);return 1;
@@ -127,7 +127,7 @@ static void note_manual_length(int32_t delta,uint32_t quantum)
     fm1_irq_off();if(!note_transaction_begin()){fm1_irq_on();return;}
     if(!note_convert(at)){note_transaction.valid=0;fm1_irq_on();return;}
     for(uint32_t i=recording_head[recording_owner(TSEL)];i<RECORD_MAX;i=recording_next[i])if((recording[i].step&63u)==at){
-        uint32_t duration=recording[i].duration*(1u<<(recording[i].owner>>5));
+        uint32_t duration=recording[i].duration*(1u<<REC_EXP(recording[i]));
         note_duration(&recording[i],(uint32_t)clamp(note_snap((int32_t)duration,delta,quantum),(int32_t)quantum,128*RECORD_UNIT));
     }
     recording_generation++;ui.note_pick=0;notes_selected(TSEL);note_transaction_end();fm1_irq_on();

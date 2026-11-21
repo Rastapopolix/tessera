@@ -15,9 +15,20 @@ typedef struct {
 static midi_channel_t midi_ch[16];
 /* A note's owner, a nibble per note (two notes a byte): bits 0..2 track + 1, bit 3 key released, held by its
  * channel's pedal. mn_get / mn_set speak the byte form: track + 1, MIDI_PEDAL_NOTE */
+#if CORE_TRACKS > 4
+static uint8_t midi_sel_on[16][128];               /* (8 tracks: track + 1 needs four bits, a byte per note) */
+#else
 static uint8_t midi_sel_on[16][64];
+#endif
 static uint16_t midi_owners[NTRK];           /* avoids rescanning all 2048 entries for CC123 */
 #define MIDI_PEDAL_NOTE 0x80u
+#if CORE_TRACKS > 4
+static uint32_t mn_get(uint32_t ch, uint32_t note) { return midi_sel_on[ch][note & 127u]; }
+static void mn_set(uint32_t ch, uint32_t note, uint32_t v)
+{
+    midi_sel_on[ch][note & 127u] = (uint8_t)((v & 15u) | (v & MIDI_PEDAL_NOTE));
+}
+#else
 _Static_assert(NTRK < 8u, "a note's owner fits three bits");
 static uint32_t mn_get(uint32_t ch, uint32_t note)
 {
@@ -30,6 +41,7 @@ static void mn_set(uint32_t ch, uint32_t note, uint32_t v)
     uint32_t s = (note & 1u) * 4u, n = (v & 7u) | (v & MIDI_PEDAL_NOTE ? 8u : 0u);
     *b = (uint8_t)((*b & ~(15u << s)) | n << s);
 }
+#endif
 
 static midi_channel_t *midi_channel(uint32_t ch)
 {

@@ -255,9 +255,14 @@ static const uint8_t TRK_DEF[NPART][2] = {
     {ENGI_FM6, 38},                                 /* FM6 KOTO WARM (was TRIO STRING MACH: two FM6 pads under generators
                                                      * crackled, 2026-10-28; these are plucks, which ring out) */
     {ENGI_FM6, 20},                                 /* FM6 FLUTE (was BELLS) */
-    {ENGI_DRUM, 0}};                                /* DRUM KIT */
+    {ENGI_DRUM, 0}                                  /* DRUM KIT */
+#if NPART > 4
+    ,                                               /* tracks 5..8 (CORE_TRACKS 8): the pluck and the flute again */
+    {ENGI_FM6, 39}, {ENGI_FM6, 38}, {ENGI_FM6, 20}, {ENGI_FM6, 39}
+#endif
+};
 /* the power-on presets when project format 1 was written (project.c PROJ_DEF_SOUND): fixed, whatever TRK_DEF becomes */
-static const uint8_t TRK_DEF_V1[NPART] = {4, 4, 0, 0};
+static const uint8_t TRK_DEF_V1[NPART] = {4, 4, 0, 0};   /* (a project's tracks 1..4 only: PROJ_NTRK) */
 #if TRK_START_TESS
 #define TRK_DEF_BPM 80                              /* CEDAR RAIN's (85 before 3.5) */
 #define TRK_DEF_SCALE 74                            /* KUMOI on E, CEDAR RAIN's (scales.h N_SCALE; MPEN on C before 3.5) */

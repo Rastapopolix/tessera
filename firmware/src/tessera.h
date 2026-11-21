@@ -6,7 +6,15 @@
 #include <stdint.h>
 #include "gen.h"
 
-#define TESSERA_TRACKS 4
+#ifndef CORE_TRACKS
+#define CORE_TRACKS 4             /* (core.h: the build's tracks, 4 or 8) */
+#endif
+#define TESSERA_TRACKS CORE_TRACKS
+#if CORE_TRACKS > 4
+#define TESS_PK_TRACKS 4u         /* the tracks a Tessera block (a .tsp's) packs: the FM-1's 1..4; 5..8 keep their state */
+#else
+#define TESS_PK_TRACKS TESSERA_TRACKS
+#endif
 
 /* Engine types per track */
 enum {
