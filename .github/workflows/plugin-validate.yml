@@ -63,12 +63,13 @@ jobs:
           grep -q '^SUCCESS' pluginval.log
       - name: clap-validator (CLAP)
         run: |
-          x=$(grep -v '^#' platform/plugin/clap_validator_known.txt | sed '/^$/d' | sed 's/.*/^&$/' | sed 's/^/-x /' | tr '\n' ' ')
+          x=$(sed '/^#/d; /^$/d' platform/plugin/clap_validator_known.txt | sed 's/.*/^&$/' | sed 's/^/-x /' | tr '\n' ' ')
           xvfb-run -a ~/.cargo-cv/bin/clap-validator validate --only-failed $x build/plugin/out/Tessera.clap 2>&1 | tee cv.log
       - name: clap-validator, the known failures (reported, not failing)
         continue-on-error: true
         run: |
-          t=$(grep -v '^#' platform/plugin/clap_validator_known.txt | sed '/^$/d' | sed 's/.*/^&$/' | sed 's/^/-t /' | tr '\n' ' ')
+          t=$(sed '/^#/d; /^$/d' platform/plugin/clap_validator_known.txt | sed 's/.*/^&$/' | sed 's/^/-t /' | tr '\n' ' ')
+          [ -n "$t" ] || { echo 'no known failures'; exit 0; }
           xvfb-run -a ~/.cargo-cv/bin/clap-validator validate --only-failed $t build/plugin/out/Tessera.clap 2>&1 | tee cv_known.log
       - name: Summary
         if: always()
@@ -128,12 +129,13 @@ jobs:
           grep -q '^SUCCESS' pluginval.log
       - name: clap-validator (CLAP)
         run: |
-          x=$(grep -v '^#' platform/plugin/clap_validator_known.txt | sed '/^$/d' | sed 's/.*/^&$/' | sed 's/^/-x /' | tr '\n' ' ')
+          x=$(sed '/^#/d; /^$/d' platform/plugin/clap_validator_known.txt | sed 's/.*/^&$/' | sed 's/^/-x /' | tr '\n' ' ')
           ~/.cargo-cv/bin/clap-validator.exe validate --only-failed $x "$CLAP" 2>&1 | tee cv.log
       - name: clap-validator, the known failures (reported, not failing)
         continue-on-error: true
         run: |
-          t=$(grep -v '^#' platform/plugin/clap_validator_known.txt | sed '/^$/d' | sed 's/.*/^&$/' | sed 's/^/-t /' | tr '\n' ' ')
+          t=$(sed '/^#/d; /^$/d' platform/plugin/clap_validator_known.txt | sed 's/.*/^&$/' | sed 's/^/-t /' | tr '\n' ' ')
+          [ -n "$t" ] || { echo 'no known failures'; exit 0; }
           ~/.cargo-cv/bin/clap-validator.exe validate --only-failed $t "$CLAP" 2>&1 | tee cv_known.log
       - name: Summary
         if: always()
