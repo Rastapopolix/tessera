@@ -8,7 +8,8 @@
  * of the FM-1's numbers (TESS_SCR_W, not 240), so a wider screen (the plugin's EXPANDED mode, the FM-2) is a profile,
  * not a fork. The tier says how much room the target has (code space, RAM) for the features a tight build leaves out.
  *
- * For now the profiles only define these (nothing reads them yet: every build is as before). The core API's fixed
+ * TESS_HAS_BATTERY is read (no battery: no header icon, BATTERY setting, BATTERY LOW or POWER lines); the rest
+ * are not yet (every build is as before). The core API's fixed
  * numbers (platform/core/tess_core.h TESS_SCREEN, TESS_NB, TESS_NE, TESS_KEYS) must agree: tests/profile_test.c. */
 #ifndef TESS_PROFILE_H
 #define TESS_PROFILE_H
@@ -39,8 +40,9 @@
 #endif
 
 #if !defined(TESS_SCR_W) || !defined(TESS_SCR_H) || !defined(TESS_SCR_DEPTH) || !defined(TESS_SCR_COUNT) || \
-    !defined(TESS_N_BUTTONS) || !defined(TESS_N_ENCODERS) || !defined(TESS_N_KEYS) || !defined(TESS_TIER)
-#error "a profile defines every fact: TESS_SCR_W, _H, _DEPTH, _COUNT, TESS_N_BUTTONS, _ENCODERS, _KEYS, TESS_TIER"
+    !defined(TESS_N_BUTTONS) || !defined(TESS_N_ENCODERS) || !defined(TESS_N_KEYS) || !defined(TESS_TIER) || \
+    !defined(TESS_HAS_BATTERY)
+#error "a profile defines every fact: TESS_SCR_W, _H, _DEPTH, _COUNT, TESS_N_BUTTONS, _ENCODERS, _KEYS, TESS_TIER, TESS_HAS_BATTERY"
 #endif
 
 #endif

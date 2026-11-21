@@ -37,10 +37,14 @@ static int32_t batt_shown(void)
  * BATTERY OFF hides it, except when it runs low (a bar or none, on the battery) */
 static int32_t batt_head(void)
 {
+#if TESS_HAS_BATTERY
     int32_t lvl = batt_level();
     if (batt_ext())
         return settings_batt_off ? -1 : 4 + lvl;
     return lvl <= 1 || !settings_batt_off ? lvl : -1;
+#else
+    return -1;                                          /* (no battery on this target: never shown) */
+#endif
 }
 
 /* REC: filled, the selected track ready/recording; outlined, waiting or another track armed. */

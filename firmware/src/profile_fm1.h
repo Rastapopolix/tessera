@@ -9,3 +9,4 @@
 #define TESS_N_ENCODERS 7     /* SELECT, ALGORITHM, PRESETS, KNOB 1..4 (MASTER is a pot) */
 #define TESS_N_KEYS 27
 #define TESS_TIER TESS_TIER_TIGHT
+#define TESS_HAS_BATTERY 1   /* the FM-1 runs on its battery or USB */
