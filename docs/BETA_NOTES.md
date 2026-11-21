@@ -8,6 +8,7 @@ Found a problem? Open an issue: <https://github.com/Rastapopolix/tessera/issues>
 what you expected and what happened).
 
 ## New since 3.7.4
+- Overload blink: when the FM-1 runs out of time, the header's four track dots fill for a moment (once: a voice faded to catch up; twice: the sound was late, a crackle). GLO > SYSTEM counts both since power-on (FADED, LATE). MENU > OVERLOAD turns the blink off.
 
 ## Fixed
 
@@ -15,3 +16,4 @@ what you expected and what happened).
 
 ## Please try
 - A project from 3.7.4 loads and plays the same.
+- Push a busy project until it crackles: do the dots blink when you hear it, and stay still when you don't?
