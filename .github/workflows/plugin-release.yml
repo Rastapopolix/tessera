@@ -77,6 +77,7 @@ jobs:
           build/plugin/tessera-sync-test
           build/plugin/tessera-copies-test
           build/plugin/tessera-projfile-test
+          build/plugin/tessera-fm1-test
           xvfb-run -s "-screen 0 1280x800x24" build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
           build/plugin/tessera-session-test build/plugin/out/Tessera.clap
       - name: The version is stamped in
@@ -122,6 +123,7 @@ jobs:
           build/plugin/Release/tessera-sync-test.exe
           build/plugin/Release/tessera-copies-test.exe
           build/plugin/Release/tessera-projfile-test.exe
+          build/plugin/Release/tessera-fm1-test.exe
       - name: Pack
         shell: bash
         run: |
@@ -174,6 +176,7 @@ jobs:
           build/plugin/tessera-sync-test
           build/plugin/tessera-copies-test
           build/plugin/tessera-projfile-test
+          build/plugin/tessera-fm1-test
           build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
           build/plugin/tessera-session-test build/plugin/out/Tessera.clap
       - name: Both architectures, the version stamped in

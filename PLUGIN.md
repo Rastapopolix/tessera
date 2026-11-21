@@ -7,6 +7,7 @@ in the [manual](MANUAL.md) works the same way here. This page covers only what i
 - [Install](#install)
 - [First sound](#first-sound)
 - [The window](#the-window)
+- [Playing it from your FM-1](#playing-it-from-your-fm-1)
 - [Playing with the DAW](#playing-with-the-daw)
 - [Saving, and project files](#saving-and-project-files)
 - [Automation: the parameters](#automation-the-parameters)
@@ -69,6 +70,8 @@ DAW.
 - **INK:** the screen's ink, the same 13 choices as MENU > COLOR (nine inks, then MOSAIC, SUNSET, OCEAN and NEON,
   which colour each track). Hover over a swatch to see its name.
 - **MODE** and **SIZE:** FM-1 at 100% for now; EXPANDED and the larger sizes are coming.
+- **FM-1 USB:** OFF or ON. With it on, an FM-1 on USB plays the plugin (see
+  [Playing it from your FM-1](#playing-it-from-your-fm-1)); the line under it says what the FM-1 is doing.
 - **ABOUT:** the plugin's version.
 
 Esc, or a click outside, closes the menu. In an FM-1 shell, the swatches under the keys pick the shell (Tessera's is
@@ -81,6 +84,27 @@ Tessera remembers the last shell and the last ink for every new window, in any D
 project's: a project opens in your shell and ink.
 
 The window moves only while the DAW is processing audio. If it looks frozen, check that the DAW's audio engine is on.
+
+## Playing it from your FM-1
+
+An FM-1 running Tessera 3.5.1 or later can play the plugin from its own knobs, buttons and keys, as it can play the
+[web simulator](https://rastapopolix.github.io/tessera/webapp/sim/). Connect it by USB and turn on **FM-1 USB** (Tessera's
+menu, or the **FM-1 USB** button under the keys in an FM-1 shell). When the FM-1 answers, the menu says
+**FM-1 CONNECTED**.
+
+- **Turn on SIM CONTROL** on the FM-1 (its menu) so it plays only the plugin. Without it, the FM-1 plays its own
+  sounds as well. FX and GLO pressed together turn SIM CONTROL off again.
+- **Windows:** only one program can use the FM-1's MIDI port at a time. Turn the FM-1 off in the DAW's MIDI
+  settings, and close the editor if it's open in a browser. Otherwise the menu says **PORT IN USE**.
+- **macOS:** the DAW can keep the FM-1 on, but then its keys also reach whatever track the DAW sends them to. Turning
+  it off in the DAW is simplest.
+- **Several Tesseras:** the FM-1 plays one of them at a time. Turning FM-1 USB on in a Tessera's window takes the FM-1
+  for that one; the others say **IN ANOTHER TESSERA**. Turning it off turns it off for all of them.
+- **Other messages:** **NO FM-1 FOUND** means no FM-1 is plugged in, or its port has another name. **UPDATE THE FM-1**
+  means it doesn't answer: it runs Tessera 3.5 or older, or other firmware.
+
+Tessera remembers FM-1 USB for every new Tessera, like the shell and the ink. The FM-1 has no 1-4 / 5-8 switch: use
+the window's to reach tracks 5 to 8.
 
 ## Playing with the DAW
 
