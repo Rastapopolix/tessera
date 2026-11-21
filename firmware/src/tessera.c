@@ -2732,6 +2732,14 @@ static uint8_t *tess_put_v22(uint8_t *o, const tessera_answer_t *a)
     return o;
 }
 /* one track's record (TESS_PK_TRACK bytes; PAT GEN packs one track: pat_gen.c) */
+#if CORE_TRACKS > 4
+/* a .tsp's Tessera block (tracks 1..4, read by the FM-1): a reference past track 4 (FOLLOW, TO, WITH) written OFF
+ * while tessera_pk_clip is set; the record's XTRK part keeps the true value (project_tsp.c) */
+uint8_t tessera_pk_clip;
+#define TESS_PK_REF(v) ((uint8_t)(tessera_pk_clip && (v) > TESS_PK_TRACKS ? 0u : (v)))
+#else
+#define TESS_PK_REF(v) (v)
+#endif
 static uint8_t *tess_pack_track(uint8_t *o, uint32_t tr)
 {
     const tessera_turing_t *tu = &tessera.turing[tr];
@@ -2746,7 +2754,7 @@ static uint8_t *tess_pack_track(uint8_t *o, uint32_t tr)
     *o++ = mo->morph_pos; o = tess_put16(o, mo->snap_a); o = tess_put16(o, mo->snap_b);
     *o++ = mo->oct_span; *o++ = (uint8_t)(mo->step_idx >> 4);     /* (the high nibble: the A preset) */
     *o++ = ev->every; *o++ = ev->amount; *o++ = ev->lock; *o++ = ev->form; *o++ = ev->contrast;
-    *o++ = (uint8_t)ev->shift; *o++ = ev->drop; *o++ = ev->human; *o++ = ev->follow; *o++ = (uint8_t)ev->flourish;
+    *o++ = (uint8_t)ev->shift; *o++ = ev->drop; *o++ = ev->human; *o++ = TESS_PK_REF(ev->follow); *o++ = (uint8_t)ev->flourish;
     o = tess_put16(o, ev->base_reg); *o++ = ev->visited;
     for (uint32_t s = 0; s < 3u; s++) {
         const tessera_sec_t *sc = &tessera.sec[tr][s];
@@ -2756,7 +2764,7 @@ static uint8_t *tess_pack_track(uint8_t *o, uint32_t tr)
     *o++ = tessera.grids[tr].x; *o++ = tessera.grids[tr].y; *o++ = tessera.grids[tr].dens;
     *o++ = tessera.grids[tr].chaos;
     o = tess_put_v4(o, &tessera.bounce[tr], &tessera.awake[tr], &tessera.poly[tr]);
-    *o++ = ev->branch; *o++ = ev->br_to; *o++ = ev->br_mode; *o++ = ev->logic; *o++ = ev->lg_with; *o++ = ev->cond;
+    *o++ = ev->branch; *o++ = TESS_PK_REF(ev->br_to); *o++ = ev->br_mode; *o++ = ev->logic; *o++ = TESS_PK_REF(ev->lg_with); *o++ = ev->cond;
     *o++ = tessera.org_speed[tr]; *o++ = tessera.org_rate[tr];
     o = tess_put_v6(o, &tessera.quad[tr]);
     *o++ = tessera.nl_mode[tr]; *o++ = tessera.nl_len[tr]; *o++ = tessera.nl_keys[tr];
@@ -3224,6 +3232,15 @@ void tessera_track_up(uint32_t ver, const uint8_t *in, uint8_t *out)
 }
 
 /* 1 = loaded; 0 = refused, `tessera` untouched */
+#if CORE_TRACKS > 4
+/* one track's part of the block (TESS_PK_TRACK bytes), for a .tsp's XTRK (tracks 5..8, project_tsp.c): pack, check
+ * (apply 0) or load (apply 1, after tessera_unpack of tracks 1..4) */
+void tessera_pack_track(uint8_t *o, uint32_t tr) { tess_pack_track(o, tr); }
+int tessera_unpack_track(const uint8_t *in, uint32_t tr, int apply)
+{
+    return tr < TESSERA_TRACKS && tess_pk_track(in, tr, apply);
+}
+#endif
 int tessera_unpack(const uint8_t *in)
 {
     const uint8_t *tail = in + TESS_PK_TRACKS * TESS_PK_TRACK;
