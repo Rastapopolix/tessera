@@ -50,8 +50,8 @@ class GuiMac : public Gui
     explicit GuiMac(GuiLink *l) : link(l)
     {
         panel.set_shell(l->shell());
+        panel.set_inks(l->inks());
         panel.set_tracks(l->tracks());
-        // (the ink picker, #905: panel.set_inks(l->inks()) goes here, as in gui_x11.cpp / gui_win32.cpp)
     }
     GuiLink *link;   // this window's instance
     Panel panel;
@@ -97,6 +97,9 @@ class GuiMac : public Gui
         int sh = panel.take_shell_request();   // (a shell picked: its ink)
         if (sh >= 0)
             link->shell_picked(sh);
+        int ink = panel.take_ink_request();    // (an ink picked)
+        if (ink >= 0)
+            link->ink_picked(ink);
         int req = panel.take_file_request();
         if (req == Panel::FILE_NONE)
             return;
@@ -149,9 +152,19 @@ class GuiMac : public Gui
         CGImageRelease(img);
     }
 
+    // the screen's ink changed since the last frame (not at the window's first): the next window's
+    int ink_last = -1;
+    void ink_check()
+    {
+        if (ink_last >= 0 && (int)view.ink != ink_last)
+            link->ink_seen((int)view.ink);
+        ink_last = (int)view.ink;
+    }
+
     void tick() override
     {
         link->view(view);
+        ink_check();
         draw();
     }
 
