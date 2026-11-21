@@ -191,6 +191,58 @@ int main(int argc, char **argv)
     CHECK(moved > 50, "the ink changes the screen (%d pixels)", moved);
     tess_core_ink("YELLOW");
 
+    // the inks: MENU > COLOR's 13 as swatches under the buttons; a click asks once; the one the view has is ringed;
+    // the name while the mouse is on one
+    std::vector<Panel::Ink> inks;
+    uint32_t n_inks = tess_core_ink_at(0, nullptr, nullptr);
+    for (uint32_t i = 0; i < n_inks; i++)
+    {
+        const char *name = nullptr;
+        Panel::Ink k{};
+        tess_core_ink_at(i, &name, k.rgb);
+        k.name = name;
+        inks.push_back(k);
+    }
+    CHECK(n_inks == 13 && inks[0].name == "YELLOW" && inks[9].name == "MOSAIC", "MENU > COLOR's 13 (%u)", n_inks);
+    CHECK(inks[0].rgb[0] == inks[0].rgb[3] && inks[9].rgb[0] != inks[9].rgb[1], "an ink one colour, MOSAIC four");
+    for (int i = 0; i < Panel::shell_count(); i++)
+    {
+        bool found = false;
+        for (auto &k : inks) found |= k.name == Panel::shell_ink(i);
+        CHECK(found, "shell %d's ink %s is a choice", i, Panel::shell_ink(i));
+    }
+    p.set_inks(inks);
+    tess_core_view(&v);
+    CHECK(v.ink == 0, "the view's ink: YELLOW (%u)", v.ink);
+    auto ink_x = [](int i) { return 568 + 400 - 7 - 6 - (12 - i) * (2 * 7 + 6); };
+    const int iy = (300 + 332) / 2;
+    p.draw(px.data(), v);
+    std::vector<uint32_t> plain(px);
+    p.move(ink_x(9), iy);   // (MOSAIC: its name in place of INK)
+    p.draw(px.data(), v);
+    int named = 0;
+    for (int y = iy - 8; y < iy + 8; y++)
+        for (int x = 568; x < ink_x(0) - 10; x++) named += px[y * Panel::W + x] != plain[y * Panel::W + x];
+    CHECK(named > 40, "the hovered ink's name is shown (%d pixels)", named);
+    CHECK(px[(iy - 2) * Panel::W + ink_x(9) - 2] != px[(iy + 2) * Panel::W + ink_x(9) + 2], "MOSAIC in quarters");
+    CHECK(p.take_ink_request() == -1, "no ink asked for yet");
+    p.down(ink_x(8), iy);   // LILAC
+    p.up(ink_x(8), iy);
+    CHECK(p.take_ink_request() == 8 && p.take_ink_request() == -1, "an ink swatch asks once");
+    p.down(ink_x(8), iy);
+    p.up(ink_x(8), iy);
+    CHECK(p.take_ink_request() == -1, "the ink already picked: nothing asked");
+    CHECK(tess_core_ink(inks[8].name.c_str()) == 1, "LILAC set by name");
+    run(p, 0.2);
+    tess_core_view(&v);
+    CHECK(v.ink == 8, "the view has LILAC (%u)", v.ink);
+    p.move(10, 10);
+    p.draw(px.data(), v);
+    uint32_t lilac = 0xFF000000u | inks[8].rgb[0];
+    CHECK(px[iy * Panel::W + ink_x(8)] == lilac, "LILAC's swatch (%08X)", px[iy * Panel::W + ink_x(8)]);
+    if (!out.empty()) ppm(out + "/08_inks.ppm", px);
+    tess_core_ink("YELLOW");
+
     std::printf(fails ? "panel test: %d FAILED\n" : "panel test: ok\n", fails);
     return fails ? 1 : 0;
 }

@@ -92,6 +92,18 @@ struct Canvas
             }
     }
     void circle(double cx, double cy, double r, uint32_t c) { rrect(cx - r, cy - r, 2 * r, 2 * r, r, c); }
+    // a disc in four quarters (a multi-ink palette's track colours, clockwise from the top left)
+    void quad(double cx, double cy, double r, const uint32_t c[4])
+    {
+        for (int y = (int)(cy - r - 1); y <= (int)(cy + r + 1); y++)
+            for (int x = (int)(cx - r - 1); x <= (int)(cx + r + 1); x++)
+            {
+                double dx = x + 0.5 - cx, dy = y + 0.5 - cy, a = r + 0.5 - std::sqrt(dx * dx + dy * dy);
+                if (a <= 0) continue;
+                int q = dy < 0 ? (dx < 0 ? 0 : 1) : (dx < 0 ? 3 : 2);
+                blend(x, y, c[q], a > 1 ? 1 : a);
+            }
+    }
     void line(double x0, double y0, double x1, double y1, double wd, uint32_t c)
     {
         double len = std::hypot(x1 - x0, y1 - y0);
@@ -281,6 +293,36 @@ void Panel::draw(uint32_t *px, const tess_view_t &v)
     swatch_xy(0, sx, sy);
     const char *what = shell_hover >= 0 ? SHELLS[shell_hover].name : "SHELL";
     c.text(sx - SWATCH_R - 14 - Canvas::text_w(what, 2) / 2, sy - 7, what, 2, LABEL);
+
+    // the screen's inks: a swatch each (its ink on the screen's black), the one shown ringed; its name while the mouse
+    // is on it
+    if (ink_pending < 0 || (int)v.ink == ink_pending)   // (a pick stays ringed until the view has it)
+    {
+        ink_now = (int)v.ink;
+        ink_pending = -1;
+    }
+    for (int i = 0; i < (int)inks.size(); i++)
+    {
+        int x, y;
+        ink_xy(i, x, y);
+        if (i == ink_now || i == ink_hover)
+            c.circle(x, y, INK_R + 3, i == ink_now ? LABEL : mix(BODY, LABEL, 0.4));
+        c.circle(x, y, INK_R + 1, BODY);
+        c.circle(x, y, INK_R, 0xFF000000);
+        const uint32_t *k = inks[i].rgb;
+        uint32_t q[4] = {0xFF000000u | k[0], 0xFF000000u | k[1], 0xFF000000u | k[2], 0xFF000000u | k[3]};
+        if (k[0] == k[1] && k[0] == k[2] && k[0] == k[3])
+            c.circle(x, y, INK_R * 0.55, q[0]);
+        else
+            c.quad(x, y, INK_R * 0.6, q);
+    }
+    if (!inks.empty())
+    {
+        int ix, iy;
+        ink_xy(0, ix, iy);
+        const char *name = ink_hover >= 0 ? inks[ink_hover].name.c_str() : "INK";
+        c.text(ix - INK_R - 12 - Canvas::text_w(name, 2) / 2, iy - 7, name, 2, LABEL);
+    }
 }
 
 // ---- the shells
@@ -305,6 +347,23 @@ void Panel::swatch_xy(int i, int &x, int &y) const
 {
     x = KEYBED[0] + KEYBED[2] - SWATCH_R - 2 - (NSHELLS - 1 - i) * (2 * SWATCH_R + 10);
     y = KEYBED[1] + KEYBED[3] + 5 + 12;
+}
+// ink i's centre: a row between the buttons and the keys, at the right
+void Panel::ink_xy(int i, int &x, int &y) const
+{
+    x = 568 + 400 - INK_R - 6 - ((int)inks.size() - 1 - i) * (2 * INK_R + 6);
+    y = (300 + KEYBED[1]) / 2;
+}
+int Panel::ink_at(int x, int y) const
+{
+    for (int i = 0; i < (int)inks.size(); i++)
+    {
+        int ix, iy;
+        ink_xy(i, ix, iy);
+        if (std::hypot(x - ix, y - iy) <= INK_R + 3)
+            return i;
+    }
+    return -1;
 }
 int Panel::swatch_at(int x, int y) const
 {
@@ -433,6 +492,11 @@ bool Panel::down(int x, int y)
         shell_ = sw_i;
         shell_req = sw_i;
     }
+    int in_i = ink_at(x, y);
+    if (in_i >= 0 && in_i != ink_now)
+    {
+        ink_now = ink_pending = ink_req = in_i;   // (ringed at once; the view follows)
+    }
     for (size_t i = 0; i < files.size(); i++)
         if (x >= files[i].x && x < files[i].x + files[i].w && y >= files[i].y && y < files[i].y + files[i].h)
         {
@@ -445,6 +509,7 @@ bool Panel::down(int x, int y)
 bool Panel::move(int x, int y)
 {
     shell_hover = drag == NONE ? swatch_at(x, y) : -1;
+    ink_hover = drag == NONE ? ink_at(x, y) : -1;
     int dx = x - last_x, dy = last_y - y;   // up or right: clockwise (the larger of the two)
     last_x = x;
     last_y = y;
