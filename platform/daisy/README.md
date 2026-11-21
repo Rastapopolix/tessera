@@ -10,7 +10,8 @@ is not wired yet. There is no Andamento UI, storage or MIDI yet: those come next
 
 Besides the FM-1's engines it builds the ones the FM-1 has no flash for, as the plugin does: SID, DRUM's SID KIT
 and SID DIGI, and MACRO (Plaits, C++: `plaits_sources.sh`). On 2026-11-21 they cost about 49 KB of QSPI and no
-static RAM (MACRO's voice comes from the audio arena); their CPU on the Seed is still to be measured.
+static RAM (MACRO's voice comes from the audio arena); their CPU on the Seed is still to be measured. PHASE (the CZ-1's
+phase distortion, `eng_phase.c`) came back the same day, a few KB more; its voices' state comes from the audio arena too.
 
 | File | What |
 | --- | --- |

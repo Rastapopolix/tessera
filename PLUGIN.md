@@ -122,9 +122,12 @@ The plugin has room for engines the FM-1 can't fit:
 - **SID**: a whole MOS 6581 or 8580 chip per note, with 32 presets.
 - **DRUM: SID KIT** and **SID DIGI**: drums from one SID chip.
 - **MACRO**: a macro-oscillator with many synthesis models.
+- **PHASE**: phase distortion in the manner of Casio's CZ-1: two lines of bent-phase waves (saw, square, pulse,
+  double sine, saw-pulse and three resonant ones), mixed or ring-modulated, with 6 presets. EDIT 2's EG at SPLIT gives
+  DCW 1, DCW 2, DCA 2 and pitch their own envelopes (5 more pages).
 
-The Daisy build (Andamento) has them too. On the FM-1, a SID or MACRO track plays FM6's INIT sound instead, and a SID
-kit plays the 909, so a project still opens and plays there.
+The Daisy build (Andamento) has them too. On the FM-1, a SID, MACRO or PHASE track plays FM6's INIT sound instead, and
+a SID kit plays the 909, so a project still opens and plays there.
 
 ## How much CPU it takes
 
