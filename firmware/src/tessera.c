@@ -275,6 +275,10 @@ void tessera_init(void)
         tessera.answer[i].len = TESS_AN_MID;
         tessera.answer[i].time = 3;                       /* (BEND: a dotted eighth at 16 steps a bar; REPLY, no BREAK) */
     }
+#if CORE_TRACKS > 4
+    for (uint32_t i = 4; i < TESSERA_TRACKS; i++)       /* (5..8: no project brings their seed, so each has one now, */
+        tess_seed_fresh(i);                             /*  as a track gets at its first use: EVOLVE ROLL in range) */
+#endif
 }
 
 void tessera_kill(track_t *t)
