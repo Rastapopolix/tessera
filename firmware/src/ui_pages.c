@@ -908,7 +908,7 @@ static void pv_strip(uint32_t k)
     }
     uint32_t octp = (uint32_t)oct_dn_only();                /* (OCT- held: the knobs are the pans) */
     uint32_t solo = (track_solo >> k) & 1u, quiet = mute || (track_solo && !solo);   /* (another's solo: silent) */
-    uint32_t hot = ui.hot_t && ui.hot_col == k ? (octp ? 2u : 1u) : 0u;   /* this strip's knob: 1 LEVEL, 2 PAN */
+    uint32_t hot = ui.hot_t && ui.hot_col == k - UI_BASE ? (octp ? 2u : 1u) : 0u;   /* this strip's knob: 1 LEVEL, 2 PAN */
     int32_t pk = t->peak, m, pan = clamp(t->p[P_PAN], -64, 63);
     uint16_t tc = quiet ? T_DIM : T_TRK(k), bg = sel ? T_LIFT : T_PANEL;
     char nm[16], l1[16], l2[16], b[8];
@@ -1090,7 +1090,7 @@ static void pv_draw(void)
         if (ui.force)
             lcd_fill(0, H_HEAD, 240, 240 - H_HEAD, T_BG);
         draw_head();
-        for (k = 0; k < NTRK; k++)
+        for (k = UI_BASE; k < UI_BASE + UI_NT; k++)     /* (8 tracks: the selected track's bank) */
             pv_strip(k);
 #if MELODEE_LOOK
         if (ui.force)

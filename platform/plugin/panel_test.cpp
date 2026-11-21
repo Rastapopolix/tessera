@@ -286,6 +286,17 @@ int main(int argc, char **argv)
         run(p, 0.3);
         tess_core_view(&v);
         CHECK(v.track == 0, "Tab again should select T1 (T%u)", v.track + 1);
+        // HOME on 5-8: the columns are T5..T8, the selected one outlined at the left (it was off the screen)
+        CHECK(p.key(0x0F, true), "Tab to 5-8 for HOME");
+        click(p, 582 + 27, 236 + 24);        // HOME (row 2, first)
+        run(p, 0.5);
+        tess_core_view(&v);
+        p.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/09_home_5_8.ppm", px);
+        CHECK(v.track == 4 && v.screen[60 * TESS_SCREEN + 0] && v.screen[60 * TESS_SCREEN + 1],
+              "HOME on 5-8: T5's column outlined at the left (T%u)", v.track + 1);
+        CHECK(p.key(0x0F, true), "Tab back to 1-4");
+        run(p, 0.3);
     }
 
     std::printf(fails ? "panel test: %d FAILED\n" : "panel test: ok\n", fails);

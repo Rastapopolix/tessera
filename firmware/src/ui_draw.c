@@ -1072,10 +1072,14 @@ static void draw_columns_(void)
         return;
     }
     if (cur_page()->graph == GR_ENTRIES && entries_layer_on()) {   /* ENTRIES, OCT- held: each track's ROLE */
-        static const char *const NM[TESSERA_TRACKS] = {"ROLE 1", "ROLE 2", "ROLE 3", "ROLE 4"};
-        for (uint32_t k = 0; k < TESSERA_TRACKS; k++)
-            draw_column(k, NM[k], ET_ROLE_NAME[tessera.et_role[k] % ET_ROLES], "", VAL(k), (int32_t)tessera.et_role[k] * 200,
-                        ICON_AUTO);
+        static const char *const NM[TESSERA_TRACKS] = {"ROLE 1", "ROLE 2", "ROLE 3", "ROLE 4"
+#if CORE_TRACKS > 4
+                                                       , "ROLE 5", "ROLE 6", "ROLE 7", "ROLE 8"
+#endif
+                                                       };
+        for (uint32_t k = UI_BASE; k < UI_BASE + UI_NT; k++)   /* (8 tracks: the selected track's bank) */
+            draw_column(k - UI_BASE, NM[k], ET_ROLE_NAME[tessera.et_role[k] % ET_ROLES], "", VAL(k - UI_BASE),
+                        (int32_t)tessera.et_role[k] * 200, ICON_AUTO);
         return;
     }
     if (cur_page()->graph == GR_ENTRIES) {               /* ENTRIES (entries.c), the project's: ENTRIES, DWELL, STYLE, FADE */
@@ -1113,21 +1117,30 @@ static void draw_columns_(void)
         return;
     }
     if (cur_page()->graph == GR_MIDICH && midi_layer_on()) {   /* MIDI OUT, OCT- held: each track's TRANSPOSE */
-        static const char *const NAME[TESSERA_TRACKS] = {"TRACK 1", "TRACK 2", "TRACK 3", "TRACK 4"};
-        for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
+        static const char *const NAME[TESSERA_TRACKS] = {"TRACK 1", "TRACK 2", "TRACK 3", "TRACK 4"
+#if CORE_TRACKS > 4
+                                                        , "TRACK 5", "TRACK 6", "TRACK 7", "TRACK 8"
+#endif
+                                                        };
+        for (uint32_t k = UI_BASE; k < UI_BASE + UI_NT; k++) {   /* (8 tracks: the selected track's bank) */
             char w[8];
             int32_t v = tessera.midi_tr[k];
             midi_tr_text(w, v);
-            draw_column(k, NAME[k], w, "st", VAL(k), (v + TESS_MIDI_TR) * 1000 / (2 * TESS_MIDI_TR), ICON_AUTO);
+            draw_column(k - UI_BASE, NAME[k], w, "st", VAL(k - UI_BASE), (v + TESS_MIDI_TR) * 1000 / (2 * TESS_MIDI_TR), ICON_AUTO);
         }
         return;
     }
     if (cur_page()->graph == GR_MIDICH) {                /* MIDI OUT: each track's channel (AUTO, 1..16, OFF) */
-        static const char *const NAME[TESSERA_TRACKS] = {"TRACK 1", "TRACK 2", "TRACK 3", "TRACK 4"};
+        static const char *const NAME[TESSERA_TRACKS] = {"TRACK 1", "TRACK 2", "TRACK 3", "TRACK 4"
+#if CORE_TRACKS > 4
+                                                        , "TRACK 5", "TRACK 6", "TRACK 7", "TRACK 8"
+#endif
+                                                        };
         const param_desc_t *d = pid_desc(PID_TESS(TX_MIDI_CH), 0);
-        for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
+        for (uint32_t k = UI_BASE; k < UI_BASE + UI_NT; k++) {   /* (8 tracks: the selected track's bank) */
             uint32_t v = tessera.midi_ch[k] % (TESS_MIDI_OFF + 1u);
-            draw_column(k, NAME[k], d->names[v], "", VAL(k), (int32_t)v * 1000 / (int32_t)TESS_MIDI_OFF, ICON_AUTO);
+            draw_column(k - UI_BASE, NAME[k], d->names[v], "", VAL(k - UI_BASE), (int32_t)v * 1000 / (int32_t)TESS_MIDI_OFF,
+                        ICON_AUTO);
         }
         return;
     }

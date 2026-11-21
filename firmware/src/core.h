@@ -35,9 +35,11 @@ _Static_assert(CORE_TRACKS == 4 || CORE_TRACKS == 8, "CORE_TRACKS: 4 or 8");
 #if CORE_TRACKS > 4
 #define UI_NT 4u                 /* the panel's tracks: four at a time (MIXER, mutes, solo, GLO's levels), */
 #define UI_BASE (song.sel & 4u)  /* the bank of the selected track: 1..4 or 5..8 (SELECT past T4 moves it) */
+#define UI_BANK(k) ((k) & 4u)    /* track k's bank (MATRIX: the picked cell's row and column, each its own) */
 #else
 #define UI_NT NTRK
 #define UI_BASE 0u
+#define UI_BANK(k) 0u
 #endif
 #define NSTEP 64
 #define NPAT 8u
