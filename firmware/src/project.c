@@ -171,10 +171,10 @@ static void proj_steps(step_t *s)            /* a loaded sequence stays inside i
 /* FNV of each slot's stored bytes, as last written or read (0: unknown): autosave writes only what differs */
 static uint32_t proj_saved_hash[4];
 /* slot -> proj_wire_u (its record) and proj_scratch (its project); the record's length, 0 = none / unreadable */
-static int proj_read_slot(uint32_t slot)
+static uint8_t proj_ext;                     /* bit s: slot s's record holds kept parts (TSP_KEEP..: another target's) */
+static int proj_raw(uint32_t slot)           /* slot -> proj_wire_u as stored; its length (<= 0 none) */
 {
-    int n = -1, valid;
-    slot &= 3u;
+    int n = -1;
     proj_wire_gen++;
 #if MELODEE_FLASH
     if (flash_ok) n = st_load(OBJ_SLOT(slot), proj_wire_u.raw, sizeof proj_wire_u.raw);
@@ -182,7 +182,20 @@ static int proj_read_slot(uint32_t slot)
     n = (int)proj_bank_len[slot];
     if (n) memcpy(proj_wire_u.raw, proj_bank_slot[slot], (uint32_t)n);
 #endif
+    return n;
+}
+static void proj_ext_note(uint32_t slot, uint8_t *raw, uint32_t len)
+{
+    uint32_t n;
+    proj_ext = (uint8_t)((proj_ext & ~(1u << slot)) | (len && tsp_kept(raw, len, &n, 0) ? 1u << slot : 0u));
+}
+static int proj_read_slot(uint32_t slot)
+{
+    int n, valid;
+    slot &= 3u;
+    n = proj_raw(slot);
     valid = n > 0 && tsp_valid(proj_wire_u.raw, (uint32_t)n);
+    proj_ext_note(slot, proj_wire_u.raw, valid ? (uint32_t)n : 0u);
 #if MELODEE_FLASH && !defined(FM1_IRQ_TARGET)
     if (valid) { memcpy(proj_bank_slot[slot], proj_wire_u.raw, (uint32_t)n); proj_bank_len[slot] = (uint32_t)n; }   /* (the host tests' view) */
 #endif
@@ -208,6 +221,7 @@ static int proj_write_slot(uint32_t slot, const uint8_t *raw, uint32_t len)
     proj_bank_len[slot] = len;
     if (len) memcpy(proj_bank_slot[slot], raw, len);
 #endif
+    proj_ext_note(slot, (uint8_t *)raw, len);
     proj_meta[slot].used = len != 0;
     proj_meta[slot].old = 0;
     proj_saved_hash[slot] = len ? proj_hash(raw, len) : 0u;
@@ -254,6 +268,36 @@ static void project_capture(project_t *p)
     p->sum = proj_sum(p);
 }
 
+/* p -> proj_wire_u as a record, with the kept parts (TSP_KEEP..) of the record the music came from carried over
+ * unchanged: an 8-track target's project keeps its tracks 5.. through a save here. Its length (0: none); *lost 1:
+ * they did not fit beside the music (saved without them) */
+static uint32_t proj_pack(const project_t *p, int *lost)
+{
+    uint8_t *raw = proj_wire_u.raw;
+    uint32_t k = 0, kn = 0, len, sum;
+    int n;
+    *lost = 0;
+    if (proj_cur < 4u && (proj_ext >> proj_cur & 1u) && (n = proj_raw(proj_cur)) > 0) {
+        k = tsp_kept(raw, (uint32_t)n, &kn, 1);             /* (gathered at the start, then moved to the end) */
+        for (uint32_t j = k; j-- > 0;) raw[TSP_MAX - k + j] = raw[j];
+    }
+    proj_wire_gen++;
+    tsp_cap = TSP_MAX - k;
+    len = tsp_pack(raw, p, 1);
+    tsp_cap = TSP_MAX;
+    if (k && !len) { *lost = 1; return tsp_pack(raw, p, 1); }
+    if (!len || !k) return len;
+    len -= 4u;                                              /* (the sum goes: the kept parts take its place) */
+    for (uint32_t j = 0; j < k; j++) raw[len + j] = raw[TSP_MAX - k + j];
+    len += k;
+    kn += tsp_u16_at(raw + 8);
+    raw[8] = (uint8_t)kn; raw[9] = (uint8_t)(kn >> 8);
+    memcpy(raw + 4, &(uint32_t){len + 4u}, 4);
+    sum = proj_hash(raw, len);
+    memcpy(raw + len, &sum, 4);
+    return len + 4u;
+}
+
 /* the music as it is now -> slot, named `name` (0: the current name; "" none); 0 saved, nonzero refused or failed.
  * The current name becomes the saved one */
 static int project_save_as(uint32_t slot, const char *name)
@@ -269,13 +313,13 @@ static int project_save_as(uint32_t slot, const char *name)
         memset(p->name, 0, sizeof p->name);
         memcpy(p->name, name, str_len(name) < PROJ_NAME_LEN ? str_len(name) : PROJ_NAME_LEN);
     }
-    proj_wire_gen++;
-    uint32_t len = tsp_pack(proj_wire_u.raw, p, 1);    /* (the generators and cords in it too) */
+    int lost;
+    uint32_t len = proj_pack(p, &lost);                 /* (the generators and cords in it too) */
     if (!len) { ui_message("SAVE FORMAT ERR"); return 2; }
     if (proj_write_slot(slot, proj_wire_u.raw, len)) { ui_message("SAVE ERROR"); return 2; }
     proj_name_get(proj_name, (const uint8_t *)p->name);
     proj_cur = (uint8_t)(slot & 3u);
-    ui_message(MELODEE_FLASH ? "SAVED" : "SAVED (RAM)");
+    ui_message(lost ? "EXTRAS LOST" : MELODEE_FLASH ? "SAVED" : "SAVED (RAM)");
     return 0;
 }
 static int project_save(uint32_t slot) { return project_save_as(slot, 0); }
@@ -315,8 +359,8 @@ static void project_autosave(void)
     if (slot >= 4u || transport_busy())
         return;
     project_capture(p);
-    proj_wire_gen++;                                    /* (the staging RAM: a backup's copy there is gone) */
-    uint32_t len = tsp_pack(proj_wire_u.raw, p, 1);
+    int lost;                                           /* (the staging RAM: a backup's copy there is gone) */
+    uint32_t len = proj_pack(p, &lost);
     if (!len || proj_hash(proj_wire_u.raw, len) == proj_saved_hash[slot])
         return;                                         /* as saved (the generators are in the record): nothing to write */
     project_quick_save();
@@ -482,6 +526,7 @@ static void project_load(uint32_t slot)
     if (!project_restore_runtime(&proj_scratch)) {
         tsp_restore(proj_wire_u.raw);                  /* (the other patterns, the generators and the cords) */
         proj_cur = (uint8_t)(slot & 3u);
+        if (proj_ext >> proj_cur & 1u) ui_message("EXTRAS KEPT");   /* (another target's tracks 5.. or settings) */
 #if MELODEE_FLASH
         if (st_older & (1u << (slot & 3u))) ui_message("OLD SAVE LOADED");   /* #609: its last save is damaged */
 #endif

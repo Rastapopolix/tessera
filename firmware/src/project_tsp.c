@@ -90,13 +90,19 @@ _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRAN
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
 #endif
 
+/* Parts TSP_KEEP..255 are another target's (an 8-track build's tracks 5.., its own settings): this firmware reads none
+ * of them, and a save carries them over unchanged (project.c proj_pack), so a project comes back whole */
+#define TSP_KEEP 0xC0u
+_Static_assert(TSP_PARTS <= TSP_KEEP, "the parts this firmware reads stay under the kept ones");
+
 /* ---- writing */
 typedef struct { uint8_t *b; uint32_t pos, part, n; int ok; } tsp_w_t;
-static void tsp_byte(tsp_w_t *w, uint32_t v) { if (w->pos < TSP_MAX - 4u) w->b[w->pos++] = (uint8_t)v; else w->ok = 0; }
+static uint32_t tsp_cap = TSP_MAX;              /* the room tsp_pack may fill (less while kept parts wait at the end) */
+static void tsp_byte(tsp_w_t *w, uint32_t v) { if (w->pos < tsp_cap - 4u) w->b[w->pos++] = (uint8_t)v; else w->ok = 0; }
 static void tsp_u16(tsp_w_t *w, uint32_t v) { tsp_byte(w, v); tsp_byte(w, v >> 8); }
 static void tsp_bytes(tsp_w_t *w, const void *p, uint32_t n)
 {
-    if (w->pos + n > TSP_MAX - 4u) { w->ok = 0; return; }
+    if (w->pos + n > tsp_cap - 4u) { w->ok = 0; return; }
     memcpy(w->b + w->pos, p, n);
     w->pos += n;
 }
@@ -595,6 +601,25 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
 /* ---- reading */
 static struct { uint32_t at[TSP_PARTS], len[TSP_PARTS]; uint8_t ver[TSP_PARTS]; } tsp_seen;   /* the record tsp_valid read */
 static uint32_t tsp_u16_at(const uint8_t *b) { return b[0] | (uint32_t)b[1] << 8; }
+/* the kept parts (TSP_KEEP..) of the record raw (len bytes): their bytes, headers included (*n of them); move: also
+ * gathered, in order, at the start of raw (the record is then gone) */
+static uint32_t tsp_kept(uint8_t *raw, uint32_t len, uint32_t *n, int move)
+{
+    uint32_t pos = TSP_HEAD, k = 0, i, parts;
+    *n = 0;
+    if (len < TSP_HEAD + 4u) return 0;
+    for (i = 0, parts = tsp_u16_at(raw + 8); i < parts; i++) {
+        uint32_t size = 4u + tsp_u16_at(raw + pos + 2u), j;
+        if (pos + 4u > len - 4u || pos + size > len - 4u) return 0;
+        if (raw[pos] >= TSP_KEEP) {
+            if (move) for (j = 0; j < size; j++) raw[k + j] = raw[pos + j];   /* (k < pos: forward is safe) */
+            k += size;
+            (*n)++;
+        }
+        pos += size;
+    }
+    return k;
+}
 
 /* the TUNE part (p, len bytes; tsp_pack's): 1 a valid one; apply: TUNE and the slots from it (tune.h) */
 static int tsp_tune_read(const uint8_t *p, uint32_t len, int apply)
