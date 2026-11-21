@@ -726,7 +726,53 @@ bool np_get(const clap_plugin_t *, uint32_t index, bool is_input, clap_note_port
 }
 const clap_plugin_note_ports_t note_ports = {np_count, np_get};
 
-// ---- state: the project as a .tsp record, then MASTER (the device's, not the project's) as "TMST" and 2 bytes
+// ---- state: the project as a .tsp record (tracks 1..4: what an FM-1 reads), then tracks 5..8's settings as "TX58"
+// (the plugin's own, no TSP part: each track 5..8 setting by central ID, then the count and the tag), then MASTER (the
+// device's, not the project's) as "TMST" and 2 bytes. Tracks 5..8's steps and FM6 voices are not kept yet (they come
+// with their own TSP part, CORE_MIGRATION step 4). A state with TX58 does not load in a 4-track plugin build.
+
+constexpr uint32_t TX58_ENTRY = 7;   // track, pid (2 bytes), value (4 bytes), little-endian
+void tx58_put(std::vector<uint8_t> &o, uint32_t v, int n)
+{
+    for (int k = 0; k < n; k++) o.push_back((uint8_t)(v >> (8 * k)));
+}
+uint32_t tx58_get(const uint8_t *b, int n)
+{
+    uint32_t v = 0;
+    for (int k = 0; k < n; k++) v |= (uint32_t)b[k] << (8 * k);
+    return v;
+}
+// (the core locked) tracks 5..8's settings, as the parameters list them
+std::vector<uint8_t> tx58_save(Tessera *t)
+{
+    std::vector<uint8_t> o;
+    uint32_t n = 0;
+    for (const Param &q : t->params)
+        if (q.id >= PARAM_PID + (PARAM_SONG + 1) * 0x1000u)
+        {
+            tx58_put(o, q.track, 1);
+            tx58_put(o, q.pid, 2);
+            tx58_put(o, (uint32_t)t->core->param_get(q.pid, q.track), 4);
+            n++;
+        }
+    tx58_put(o, n, 4);
+    o.insert(o.end(), {'T', 'X', '5', '8'});
+    return o;
+}
+// (the core locked) after the project loaded (which resets tracks 5..8's generators): their settings back. Twice: a
+// setting can move another (an ENGINE its sound's), and the second pass puts back what the first one's later moved
+void tx58_load(Tessera *t, const uint8_t *b, uint32_t n)
+{
+    for (int pass = 0; pass < 2; pass++)
+        for (uint32_t i = 0; i < n; i++)
+        {
+            const uint8_t *e = b + i * TX58_ENTRY;
+            uint32_t trk = e[0], pid = tx58_get(e + 1, 2);
+            int32_t v = (int32_t)tx58_get(e + 3, 4);
+            if (trk >= 4 && trk < NTRACKS && (pass == 0 || t->core->param_get(pid, trk) != v))
+                t->core->param_set(pid, trk, v);
+        }
+}
 
 bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
 {
@@ -738,6 +784,10 @@ bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
         len = t->core->save(b.data(), (uint32_t)b.size());
         if (len)
         {
+            std::vector<uint8_t> x = tx58_save(t);
+            b.resize(len);
+            b.insert(b.end(), x.begin(), x.end());
+            len += (uint32_t)x.size();
             uint32_t m = (uint32_t)t->master;
             const uint8_t tail[6] = {'T', 'M', 'S', 'T', (uint8_t)m, (uint8_t)(m >> 8)};
             b.insert(b.begin() + len, tail, tail + 6);
@@ -759,7 +809,7 @@ bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
 bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
 {
     auto *t = self(p);
-    std::vector<uint8_t> b(t->core->tsp_max() + 6);
+    std::vector<uint8_t> b(t->core->tsp_max() + 6 + 8 + TX58_ENTRY * (uint32_t)t->params.size());
     uint32_t len = 0;
     for (;;)
     {
@@ -782,7 +832,19 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
             t->master_set((int32_t)m);
             t->param_now[PARAM_MASTER] = t->master;
         }
+        const uint8_t *x58 = nullptr;
+        uint32_t n58 = 0;
+        if (len >= 8 && !std::memcmp(&b[len - 4], "TX58", 4))
+        {
+            n58 = tx58_get(&b[len - 8], 4);
+            if ((uint64_t)n58 * TX58_ENTRY + 8 > len)
+                return false;   // (not a state this build wrote)
+            len -= 8 + n58 * TX58_ENTRY;
+            x58 = b.data() + len;
+        }
         ok = t->core->load(b.data(), len) == 0;
+        if (ok && x58)
+            tx58_load(t, x58, n58);
         t->params_refresh();
     }
     auto *hp = static_cast<const clap_host_params_t *>(t->host->get_extension(t->host, CLAP_EXT_PARAMS));
