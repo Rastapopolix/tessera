@@ -482,6 +482,10 @@ uint32_t tess_core_param_info(uint32_t pid, uint32_t track, tess_param_t *info)
     info->def = d->def;
     info->per_track = (e->flags & PID_F_TRACK) ? 1u : 0u;
     info->settable = !(e->flags & PID_F_DEVICE) && (pid >= PID_TESS(0) || d->max > d->min);   /* (as pid_set) */
+#ifdef TESS_PLUGIN_IO
+    if (pid == PID_GLOBAL(G_CLOCK))
+        info->settable = 0;                       /* (CLK stays INT in the plugin, tess_plugin_block: not a parameter) */
+#endif
     info->span_min = d->min;
     info->span_max = d->max;
     if (pid >= P_E0 && pid <= P_E7) {             /* an engine's knob: its range over every engine */
