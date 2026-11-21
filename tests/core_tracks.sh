@@ -39,5 +39,11 @@ $CC -O1 -w -ffp-contract=off -Ifirmware/src -Iplatform/core -Ibuild/gen -DTESS_H
     { echo "core_tracks: xtrk_test failed to build"; exit 1; }
 "$OUT/xtrk_test" demos/still-tide.tsp "$OUT/xtrk.tsp" > "$OUT/xtrk_test.log" || { cat "$OUT/xtrk_test.log"; fails=$((fails + 1)); }
 tail -1 "$OUT/xtrk_test.log"
+$CC -O1 -w -ffp-contract=off -Ifirmware/src -Iplatform/core -Ibuild/gen -DTESS_HOST_CLOCK=1 -DTESS_PLUGIN_IO=1 \
+    -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 -DMELODEE_PHYS=1 \
+    '-DMELODEE_VERSION="plugin"' -DCORE_TRACKS=8 tests/quad8_test.c -o "$OUT/quad8_test" -lm ||
+    { echo "core_tracks: quad8_test failed to build"; exit 1; }
+"$OUT/quad8_test" > "$OUT/quad8_test.log" || { cat "$OUT/quad8_test.log"; fails=$((fails + 1)); }
+tail -1 "$OUT/quad8_test.log"
 "$OUT/tracks4" load "$OUT/xtrk.tsp" "$OUT/xtrk.4.tsp" || { echo "FAIL: the 4-track build refuses an 8-track record with XTRK"; fails=$((fails + 1)); }
 [ "$fails" -eq 0 ]
