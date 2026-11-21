@@ -237,7 +237,6 @@ static void xtrk_none(void);
 static uint32_t xt_ref(uint32_t v);
 static uint32_t xt_src(uint32_t v);
 static uint32_t xt_cord_out(const uint8_t *c);
-static uint32_t xt_at, xt_len;
 #endif
 static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
 {
@@ -678,9 +677,6 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
     if (magic != TSP_MAGIC || size != len || sum != proj_hash(raw, len - 4u)) return 0;
     n = tsp_u16_at(raw + 8);
     memset(&tsp_seen, 0, sizeof tsp_seen);
-#if CORE_TRACKS > 4
-    xt_at = xt_len = 0;
-#endif
     for (i = 0; i < n; i++) {                          /* the part table: every part inside the record, once */
         uint32_t id, plen;
         if (pos + 4u > len - 4u) return 0;
@@ -690,9 +686,7 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
             if (tsp_seen.at[id]) return 0;
             tsp_seen.at[id] = pos + 4u; tsp_seen.len[id] = plen; tsp_seen.ver[id] = raw[pos + 1u];
         }
-#if CORE_TRACKS > 4
-        if (id == TSP_XTRK && raw[pos + 1u] == 1u) xt_at = pos + 4u, xt_len = plen;   /* (checked below) */
-#endif
+
         pos += 4u + plen;
     }
     if (pos != len - 4u || !tsp_plain_ok(raw)) return 0;
@@ -852,9 +846,6 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (tsp_seen.ver[TSP_CORDS] != 1u || tsp_seen.len[TSP_CORDS] != CORD_PK_BYTES ||
             !cord_check(raw + tsp_seen.at[TSP_CORDS])) return 0;
     }
-#if CORE_TRACKS > 4
-    if (xt_at && !xtrk_read(raw + xt_at, xt_len, 0)) xt_at = 0;   /* (a bad XTRK: tracks 5..8 as a new project's) */
-#endif
     q->sum = proj_sum(q);
     return proj_ok(q);
 }
@@ -991,12 +982,21 @@ static void tsp_restore(const uint8_t *raw)
             else tessera.sub_human[t] = (uint8_t)((tessera.evolve[t].human + 2u) / 5u);
         }
 #if CORE_TRACKS > 4
-    if (xt_at) {                                       /* (tracks 5..8, and 1..4's references past 4) */
-        fm1_irq_off();
-        xtrk_read(raw + xt_at, xt_len, 1);
-        fm1_irq_on();
-    } else
-        xtrk_none();
+    {   /* tracks 5..8, and 1..4's references past 4 (the part found again: a tsp_valid since, of another record,
+         * may have run between) */
+        uint32_t pos = TSP_HEAD, n = tsp_u16_at(raw + 8), at = 0, len = 0;
+        for (i = 0; i < n; i++) {
+            uint32_t plen = tsp_u16_at(raw + pos + 2u);
+            if (raw[pos] == TSP_XTRK && raw[pos + 1u] == 1u) at = pos + 4u, len = plen;
+            pos += 4u + plen;
+        }
+        if (at && xtrk_read(raw + at, len, 0)) {
+            fm1_irq_off();
+            xtrk_read(raw + at, len, 1);
+            fm1_irq_on();
+        } else
+            xtrk_none();
+    }
 #endif
 }
 
@@ -1061,7 +1061,6 @@ static const uint8_t XT_BMAX[] = {   /* (each one's largest, as the 4-track part
 };
 #define XT_NB (sizeof XT_B / sizeof XT_B[0])
 _Static_assert(sizeof XT_BMAX == XT_NB, "XT_B and XT_BMAX side by side");
-/* (xt_at, xt_len: the XTRK part tsp_valid found, 0 none, and checked) */
 
 /* a track's references to another as the FM-1 reads them: 1..4 kept, past 4 OFF (SOURCE: KEYS is the FM-1's 5) */
 static uint32_t xt_ref(uint32_t v) { return v > PROJ_NTRK ? 0u : v; }
@@ -1297,5 +1296,6 @@ static void xtrk_none(void)
         pat_last[k] = 0;
         pat_sig[k] = steps_sig(t);
     }
+    scale_share_q(TSEL, 0);                             /* (the project's scale, and its ROOT under KEY LINK) */
 }
 #endif
