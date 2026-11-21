@@ -12,7 +12,11 @@
 /* ------------------------------------------------------------ sizes --- */
 #define NVOICE 16                /* voice slots per part (FM6 plays Dexed's 16) */
 #define NPOLY 8                  /* the voices of an engine without its own cap (its per-voice state: engines.c eng_state) */
-#define NPART 4                  /* synth parts: tracks 1..4 */
+#ifndef CORE_TRACKS
+#define CORE_TRACKS 4            /* tracks in the build: the FM-1's 4, or 8 (the plugin's lifted limits, Andamento) */
+#endif
+_Static_assert(CORE_TRACKS == 4 || CORE_TRACKS == 8, "CORE_TRACKS: 4 or 8");
+#define NPART CORE_TRACKS        /* synth parts: tracks 1..CORE_TRACKS */
 #ifndef MELODEE_RAM_AUDIO
 #define MELODEE_RAM_AUDIO 0       /* resident audio profile: full audio graph executes in SRAM */
 #endif
@@ -28,6 +32,13 @@
 #define MELODEE_AUDIO_BENCH 0 /* laboratory fixed-voice admission bypass; never a release default */
 #endif
 #define NTRK NPART               /* tracks (the formats and the protocol count these): every track is a part */
+#if CORE_TRACKS > 4
+#define UI_NT 4u                 /* the panel's tracks: four at a time (MIXER, mutes, solo, GLO's levels), */
+#define UI_BASE (song.sel & 4u)  /* the bank of the selected track: 1..4 or 5..8 (SELECT past T4 moves it) */
+#else
+#define UI_NT NTRK
+#define UI_BASE 0u
+#endif
 #define NSTEP 64
 #define NPAT 8u
 #define HALF_FRAMES 128          /* I2S half buffer: 2.9 ms at 44.1 kHz (a key waits 0..1 half, then plays 1 half later) */
@@ -80,8 +91,13 @@
 #define MELODEE_PLAITS 0         /* MACRO (eng_macro.c): Plaits' synthesis, C++ (macro_glue.cc, third_party/mi); never on the
                                   * FM-1, on in the plugin and the Daisy (Andamento CORE_MIGRATION step 5) */
 #endif
-#define ENG_BUILT(e) ((e) == 3u ? MELODEE_SID : (e) == 9u ? PHYS_ON : (e) == 12u ? MELODEE_FM6 : (e) == 15u ? 0 : (e) == 19u ? MELODEE_ORACLE : \
-                      (e) == 21u ? MELODEE_PLAITS : 1)   /* SID PHYS FM6 CZ-1 ORACLE MACRO (PHYS: left out, not retired,
+#ifndef MELODEE_PHASE
+#define MELODEE_PHASE 0          /* PHASE (eng_phase.c): the CZ-1's phase distortion, on the CZ-1's ID (15). Out of the FM-1
+                                  * since 2026-10-22 (its tracks load FM6's INIT there); back 2026-11-21 for the plugin and
+                                  * the Daisy (core_defs.txt, Makefile) */
+#endif
+#define ENG_BUILT(e) ((e) == 3u ? MELODEE_SID : (e) == 9u ? PHYS_ON : (e) == 12u ? MELODEE_FM6 : (e) == 15u ? MELODEE_PHASE : (e) == 19u ? MELODEE_ORACLE : \
+                      (e) == 21u ? MELODEE_PLAITS : 1)   /* SID PHYS FM6 PHASE ORACLE MACRO (PHYS: left out, not retired,
                                                    * since 2026-10-21: its tracks load FM's first voice) */
 #define TRIO_ON (MELODEE_TRIO || MELODEE_LEGACY_EXTRAS)
 #define PHYS_ON (MELODEE_PHYS || MELODEE_LEGACY_EXTRAS)
@@ -90,7 +106,8 @@
 #if !MELODEE_FM6
 #error "MELODEE_FM6: FM6 is the place of an engine left out"
 #endif
-#define ENGI_CZ 15u      /* retired (the CZ-1) */
+#define ENGI_PHASE 15u   /* PHASE (MELODEE_PHASE): the CZ-1's place; the native CZ-1 tones and their store stay retired */
+#define ENGI_CZ ENGI_PHASE /* (the retired native CZ-1 pool: native_* refuse it) */
 #define ENGI_ORACLE 19u  /* ORACLE (the Prophet's ID until 2026-10-22); 16..18 reserved: historical preset namespaces */
 #define USER_GENERAL 16u
 #define USER_NATIVE_P5 20u
@@ -102,7 +119,7 @@
 #define ENGI_ANALOG 0u           /* retired in 1.2: never selectable (eng_ok), its stored sounds play silent */
 #define ENGI_DIGITAL 1u          /* retired: never selectable (eng_ok), its stored sounds play silent */
 #define NENG_SHOWN (NENGINES - 10u - !MELODEE_ORACLE - !MELODEE_SLICE - (MELODEE_LEGACY_EXTRAS ? 1u : 6u - MELODEE_TRIO - MELODEE_PHYS) - !MELODEE_SID - !MELODEE_FM6 - \
-                    !MELODEE_PLAITS)   /* the engines one can pick: PRESETS, the EDIT
+                    !MELODEE_PLAITS + MELODEE_PHASE)   /* the engines one can pick: PRESETS, the EDIT
                                                 * layer, the editor, in the display order of engines.c ENGINE_ORDER */
 #define ENGI_SLICE 13u           /* reserved without MELODEE_SLICE: never selectable (eng_ok) */
 #ifdef SMP_USER_SLOTS
@@ -339,10 +356,30 @@ enum { SC_OFF, SC_1_2, SC_2_2, SC_1_3, SC_2_3, SC_3_3, SC_1_4, SC_2_4, SC_3_4, S
        SC_FIRST, SC_NFIRST, SC_COUNT };
 #define RECORD_MAX 1024u
 #define RECORD_UNIT 65536u                     /* fractional onset within its swung step; duration uses an exponent */
-/* owner: bank/track in low 5 bits, duration exponent in high 3. step: actual index in
+/* owner: track * NPAT + bank in low 5 bits, duration exponent in high 3; length: the hit's own length (DRUM), 0 or 1.
+ * With 8 tracks (CORE_TRACKS 8) owner needs 6 bits: it is track * NPAT + bank alone, and length holds the exponent in
+ * bits 1..3 beside the hit's own length in bit 0 (REC_*: the one way to read and set them; a .tsp keeps the FM-1's).
+ * step: actual index in
  * low 6 bits, overview rounded forward in bit 6, wrapped to zero in bit 7. */
 typedef struct { uint16_t on, duration; uint8_t note, vel, owner, step; int8_t pitch; uint8_t length; } recorded_note_t;
 _Static_assert(sizeof(recorded_note_t) == 10u, "timed note layout");
+#if CORE_TRACKS > 4
+#define REC_OWNER_MASK 63u
+#define REC_EXP(x) ((uint32_t)(x).length >> 1)
+#define REC_HITLEN(x) ((x).length & 1u)
+#define REC_SET_EXP(x, e) ((x).length = (uint8_t)(((x).length & 1u) | ((e) << 1)))
+#define REC_LENGTH_MAX 15u
+#define REC_SET_HITLEN(x, v) ((x).length = (uint8_t)(((x).length & ~1u) | ((v) ? 1u : 0u)))
+#define REC_OWNER_EXP(o, e) ((uint8_t)(o))   /* (a new note's owner byte; its exponent: REC_SET_EXP) */
+#else
+#define REC_OWNER_MASK 31u
+#define REC_EXP(x) ((x).owner >> 5)
+#define REC_HITLEN(x) ((x).length)
+#define REC_SET_EXP(x, e) ((x).owner = (uint8_t)(((x).owner & 31u) | ((e) << 5)))
+#define REC_LENGTH_MAX 1u
+#define REC_SET_HITLEN(x, v) ((x).length = (v))
+#define REC_OWNER_EXP(o, e) ((uint8_t)((o) | ((e) << 5)))
+#endif
 /* Sound offsets: semitones, decay and voice character; zero preserves the factory kit. */
 typedef struct { int8_t c[16][4]; } drum_patch_t;
 static drum_patch_t drum_patch[NTRK];
@@ -421,6 +458,7 @@ static void step_set_cond(step_t *s, uint32_t c)
 static int step_acc_valid(const step_t *s) { return s->hit ? !(s->acc & ~s->hit) : s->time != ST_REST || !s->acc; }
 #define MOTION_MAX 64u
 /* Four tracks x64 steps fit one byte. Values retain their signed parameter range. */
+#define MOTION_TRACKS 4u         /* motion records on tracks 1..4: an event's place is track << 6 | step, a byte */
 typedef struct { uint8_t place, param; int16_t value; } motion_event_t;
 typedef struct { uint8_t count, on, rsv[2]; motion_event_t event[MOTION_MAX]; } motion_store_t;
 _Static_assert(sizeof(motion_store_t) == 260u, "motion disk layout");

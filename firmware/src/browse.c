@@ -43,6 +43,9 @@ static const char *const PRESET_CAT[NENGINES] = {
 #if MELODEE_PLAITS
     [21] = "OBPLKEBGUEE",                          /* MACRO (eng_macro.c MC_PRESETS) */
 #endif
+#if MELODEE_PHASE
+    [15] = "RGSLEU",                               /* PHASE (eng_phase.c): BRASS ORGAN STRING RESO BELL WIRE */
+#endif
 };
 static uint32_t cat_of_engine(uint32_t e) { return e == ENGI_DRUM ? CAT_DRUM : e == 11u ? CAT_FX : CAT_OTHER; }
 static uint32_t preset_cat(uint32_t e, uint32_t k)           /* factory preset k of engine e */

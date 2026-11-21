@@ -13,7 +13,7 @@
 #   fm1     the FM-1's firmware options (screen reader, USB audio and host), 44.1 kHz: the device's project code on
 #           the host HAL (the device itself runs the same project.c / project_tsp.c)
 #   web     web/sim/build.sh's options, 44.1 kHz
-#   plugin  platform/plugin/CMakeLists.txt's options (the DAW clock, track outputs, SID and MACRO), 44.1 kHz
+#   plugin  platform/plugin/core_defs.txt's options (the DAW clock, track outputs, SID and MACRO, 8 tracks), 44.1 kHz
 #   daisy   platform/daisy's (no USB, no FM-1 UI or screen, Andamento's output hooks, SID and MACRO), 48 kHz
 # The FM-1 reads a plugin's or a Daisy's SID or MACRO track as FM6's INIT: the demos have none. Then
 # tests/engines_extra.c on the plugin and the Daisy: SID, the SID kit and MACRO play, save and load (needs c++).
@@ -28,8 +28,8 @@ mkdir -p "$OUT"
 
 COMMON="-O1 -w -ffp-contract=off -Ifirmware/src -Iplatform/core"
 CXX=${CXX:-clang++}
-# the engines the FM-1 leaves out (SID, DRUM's SID KIT, MACRO): on in the plugin and the Daisy, as their builds set them
-EXTRA="-DMELODEE_SID=1 -DMELODEE_SID_KIT=1 -DMELODEE_PLAITS=1"
+# the engines the FM-1 leaves out (SID, DRUM's SID KIT, MACRO, PHASE): on in the plugin and the Daisy, as their builds set them
+EXTRA="-DMELODEE_SID=1 -DMELODEE_SID_KIT=1 -DMELODEE_PLAITS=1 -DMELODEE_PHASE=1"
 plaits() {  # rate: MACRO's Plaits voice (firmware/third_party/mi, C++) at that rate, into $OUT/mi<rate>/
     d=$OUT/mi$1; mkdir -p "$d"; M=firmware/third_party/mi
     for f in $M/plaits/dsp/*.cc $M/plaits/dsp/*/*.cc $M/plaits/resources.cc $M/stmlib/dsp/*.cc $M/stmlib/utils/*.cc \
@@ -61,7 +61,7 @@ build fm1 build/gen -DMELODEE_USB_AUDIO=1 -DMELODEE_USB_HOST=1 -DMELODEE_ACCESS=
 build web build/gen -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=1 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 -DMELODEE_PHYS=1 \
     '-DMELODEE_VERSION="web"'
 build plugin build/gen -DTESS_HOST_CLOCK=1 -DTESS_PLUGIN_IO=1 -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 \
-    -DMELODEE_FM6=1 -DMELODEE_PHYS=1 '-DMELODEE_VERSION="plugin"' $EXTRA
+    -DMELODEE_FM6=1 -DMELODEE_PHYS=1 '-DMELODEE_VERSION="plugin"' -DCORE_TRACKS=8 $EXTRA
 build daisy build/andamento/gen -DMELODEE_USB_HOST=0 -DMELODEE_USB_AUDIO=0 -DMELODEE_ACCESS=0 -DHOST_HAL_SCREEN=0 \
     -DTESS_CORE_UI=0 -DCORE_OUT_HOOKS=1 '-DMELODEE_VERSION="daisy"' $EXTRA
 TARGETS="fm1 web plugin daisy"
@@ -87,7 +87,7 @@ for demo in demos/*.tsp; do
         done
     done
 done
-for t in plugin daisy; do   # SID, the SID kit and MACRO play and save there (tests/engines_extra.c)
+for t in plugin daisy; do   # SID, the SID kit, MACRO and PHASE play and save there (tests/engines_extra.c)
     "$OUT/engines_extra_$t" > "$OUT/engines_extra_$t.log" 2>&1 || { cat "$OUT/engines_extra_$t.log"; fails=$((fails + 1)); }
     echo "$t: $(tail -1 "$OUT/engines_extra_$t.log")"
 done

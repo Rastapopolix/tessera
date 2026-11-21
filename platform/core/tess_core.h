@@ -19,15 +19,17 @@ extern "C" {
 enum { TESS_CORE_BLOCK = 32 };       /* frames of tess_core_block: Tessera's control block (CTL) */
 /* the core's own rate: 44,100 as the FM-1 (48,000 in a build made at MELODEE_FS=48000, as the Daisy's) */
 uint32_t tess_core_rate(void);
+/* the build's tracks: 4 as the FM-1, or 8 (CORE_TRACKS 8: the plugin, Andamento) */
+uint32_t tess_core_tracks(void);
 /* power-on, once: the device's start (its BPM, scales, the default ink), stopped. The web simulator and the plugin
  * then load their demos (tess_core_slot_put, tess_core_slot_load) */
 void tess_core_boot(void);
 
 /* ---- audio out. Audio time drives the device's clock, so an offline render plays as real time does. Use one of
  * the two, not both. */
-/* n stereo frames (n <= 1024), the device running until they exist. stems: 0, or four buffers of n that get tracks
- * 1..4 alone (the FM-1's USB stems: each track's sound after its level, before pan and the bus FX, mono); asked for
- * once, the stems are made from then on (a build with TESS_PLUGIN_IO only; else 0s) */
+/* n stereo frames (n <= 1024), the device running until they exist. stems: 0, or tess_core_tracks() buffers of n
+ * that get each track alone (the FM-1's USB stems: each track's sound after its level, before pan and the bus FX,
+ * mono); asked for once, the stems are made from then on (a build with TESS_PLUGIN_IO only; else 0s) */
 void tess_core_render(float *l, float *r, float *const *stems, uint32_t n);
 /* TESS_CORE_BLOCK stereo frames, interleaved L R, Q15 in int32 (mix_block's output): for a target that runs in
  * fixed blocks from its audio interrupt (the Daisy) */
@@ -71,8 +73,13 @@ typedef struct {
     uint32_t lit_buttons, lit_keys, dim_buttons, dim_keys, breath_buttons, breath_keys;   /* lit_buttons bit 14: PLAY green */
     uint32_t screen_draws, playing, master;   /* master 0..1023 */
     uint32_t ink;                    /* MENU > COLOR's choice now (tess_core_ink_at's i) */
+    uint32_t track;                  /* the selected track, 0 .. tess_core_tracks() - 1 (8 tracks: its bank, track & 4) */
 } tess_view_t;
 void tess_core_view(tess_view_t *v);
+/* the selected track (0 .. tess_core_tracks() - 1), and selecting one as KNOB 1 on TRACKS does (its sound, pages and
+ * pattern; 8 tracks: the panel's bank of four with it). The selection happens at the UI's next pass */
+uint32_t tess_core_track(void);
+void tess_core_track_select(uint32_t t);
 
 /* ---- the project, as a .tsp record (TSP1: byte for byte what SAVE > PROJECT writes on the FM-1) */
 /* the music as it is now: its length, 0 = failed/too big */

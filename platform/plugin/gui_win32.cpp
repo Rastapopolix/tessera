@@ -30,6 +30,7 @@ class GuiWin32 : public Gui
     {
         panel.set_shell(l->shell());
         panel.set_inks(l->inks());
+        panel.set_tracks(l->tracks());
     }
     GuiLink *link;   // this window's instance
     HWND wnd = nullptr;

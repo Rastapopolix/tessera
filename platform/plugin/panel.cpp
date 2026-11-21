@@ -171,6 +171,17 @@ Panel::Panel()
         keys.push_back({x0 + 12 + (BLACK_AFTER[j] + 1) * pitch, y0 + h / 4, BLACK_K[j]});
     files.push_back({60, KEYBED[1] + KEYBED[3] + 5, 72, 24, FILE_OPEN, "OPEN"});   // (in the shell, under the keys)
     files.push_back({142, KEYBED[1] + KEYBED[3] + 5, 72, 24, FILE_SAVE, "SAVE"});
+    banks[0] = {234, KEYBED[1] + KEYBED[3] + 5, 52, 24, 0, "1-4"};   // (one switch, two halves)
+    banks[1] = {286, KEYBED[1] + KEYBED[3] + 5, 52, 24, 4, "5-8"};
+}
+
+int Panel::bank_at(int x, int y) const
+{
+    if (tracks_ <= 4) return -1;
+    for (int i = 0; i < 2; i++)
+        if (x >= banks[i].x && x < banks[i].x + banks[i].w && y >= banks[i].y && y < banks[i].y + banks[i].h)
+            return i;
+    return -1;
 }
 
 void Panel::note(const std::string &text)
@@ -270,10 +281,25 @@ void Panel::draw(uint32_t *px, const tess_view_t &v)
         c.rrect(f.x + 1.5, f.y + 1.5 + dy, f.w - 3, f.h - 3, 5, BTN);
         c.text(f.x + f.w / 2, f.y + f.h / 2 - 7 + dy, f.face, 2, BTN_INK);
     }
+    // the bank switch (8 tracks): the half of the selected track's bank lit
+    track_now = (int)v.track;
+    if (tracks_ > 4)
+    {
+        const FileButton &a = banks[0];
+        c.rrect(a.x, a.y, banks[1].x + banks[1].w - a.x, a.h, 6, EDGE);
+        for (int i = 0; i < 2; i++)
+        {
+            const FileButton &b = banks[i];
+            bool lit = (track_now & 4) == b.action;
+            int dy = bank_held == i ? 1 : 0;
+            c.rrect(b.x + 1.5, b.y + 1.5 + dy, b.w - 3, b.h - 3, 5, lit ? LIT : BTN);
+            c.text(b.x + b.w / 2, b.y + b.h / 2 - 7 + dy, b.face, 2, lit ? LIT_INK : BTN_INK);
+        }
+    }
     if (note_frames > 0)
     {
         note_frames--;
-        const FileButton &last = files.back();
+        const FileButton &last = tracks_ > 4 ? banks[1] : files.back();
         int x = last.x + last.w + 16;
         c.text(x + Canvas::text_w(note_text.c_str(), 2) / 2, last.y + last.h / 2 - 7, note_text.c_str(), 2, LABEL);
     }
@@ -424,6 +450,14 @@ bool Panel::key(int code, bool down)
     for (int i = 0; i < 12; i++) if (code == BTN_SC[i]) b = BTN_BIT[i];
     if (code == 0x1A) b = B_OCTDN;
     if (code == 0x1B) b = B_OCTUP;
+    if (code == 0x0F && tracks_ > 4)   // Tab: the other bank (T1 or T5)
+    {
+        if (!down) return false;
+        input.track = (track_now & 4) ? 0 : 4;
+        track_now = input.track;   // (a second Tab before the view catches up: back again)
+        input.changed = true;
+        return true;
+    }
     if (code == KEY_UP || code == KEY_DOWN || code == KEY_LEFT || code == KEY_RIGHT)
     {
         if (!down) return false;
@@ -486,6 +520,16 @@ bool Panel::down(int x, int y)
         return true;
     }
     drag = NONE;
+    int bk = bank_at(x, y);
+    if (bk >= 0)
+    {
+        bank_held = bk;
+        if ((track_now & 4) == banks[bk].action) return false;   // (that bank already)
+        input.track = banks[bk].action;
+        track_now = input.track;
+        input.changed = true;
+        return true;
+    }
     int sw_i = swatch_at(x, y);
     if (sw_i >= 0 && sw_i != shell_)
     {
@@ -539,7 +583,7 @@ bool Panel::up(int, int)
     if (drag == BUTTON) { mouse_buttons &= ~(1u << buttons[drag_i].bit); merge_held(); ch = true; }
     if (drag == KEY) { mouse_keys &= ~(1u << keys[drag_i].k); merge_held(); ch = true; }
     drag = NONE;
-    file_held = -1;
+    file_held = bank_held = -1;
     return ch;
 }
 

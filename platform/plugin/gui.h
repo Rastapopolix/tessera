@@ -30,6 +30,8 @@ struct GuiLink
     virtual std::vector<Panel::Ink> inks() = 0;
     virtual void ink_picked(int i) = 0;
     virtual void ink_seen(int i) = 0;
+    /* the build's tracks (4 or 8: the window's 1-4 / 5-8 switch) */
+    virtual int tracks() = 0;
 };
 
 class Gui

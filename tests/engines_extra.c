@@ -1,16 +1,16 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
 /* The engines the FM-1 leaves out for flash, built where they fit: SID (engine 3), DRUM's SID KIT and SID DIGI, and
- * MACRO (engine 21, Plaits). On in the plugin (platform/plugin/core_defs.txt) and the Daisy (platform/daisy, Andamento),
+ * MACRO (engine 21, Plaits) and PHASE (engine 15, the CZ-1's phase distortion). On in the plugin (platform/plugin/core_defs.txt) and the Daisy (platform/daisy, Andamento),
  * off on the FM-1 (core.h). Built with a target's options (tests/tsp_cross.sh: plugin at 44.1 kHz, daisy at 48 kHz),
- * with MELODEE_SID, MELODEE_SID_KIT and MELODEE_PLAITS on and Plaits' objects linked. For each: the engine is offered
+ * with MELODEE_SID, MELODEE_SID_KIT, MELODEE_PLAITS and MELODEE_PHASE on and Plaits' objects linked. For each: the engine is offered
  * (eng_ok, in the engine order), a track of it plays a held note (sounding, finite, within full scale) and stops after
  * its release, and a .tsp saved with it loads back with the same engine and sound, byte for byte.
  *   engines_extra        exit 0: passed */
 #include "../platform/core/core_unit.c"
 
-#if !MELODEE_SID || !MELODEE_SID_KIT || !MELODEE_PLAITS
-#error "engines_extra.c: build with -DMELODEE_SID=1 -DMELODEE_SID_KIT=1 -DMELODEE_PLAITS=1"
+#if !MELODEE_SID || !MELODEE_SID_KIT || !MELODEE_PLAITS || !MELODEE_PHASE
+#error "engines_extra.c: build with -DMELODEE_SID=1 -DMELODEE_SID_KIT=1 -DMELODEE_PLAITS=1 -DMELODEE_PHASE=1"
 #endif
 
 static uint8_t tsp_a[65536], tsp_b[65536];
@@ -88,6 +88,45 @@ static void one(const char *name, uint32_t tr, uint32_t e, uint32_t p, uint32_t 
     check(na && nb == na && !memcmp(tsp_a, tsp_b, na), what);
 }
 
+/* PHASE with EG SPLIT: its own envelopes (P_FM1..P_FM4) take part, show PHASE's labels and pages, and save */
+static void split_env(void)
+{
+    track_t *t = &trk[0];
+    double pk = 0, ms = 0, pk2 = 0, ms2 = 0;
+    uint32_t i, rate = tess_core_rate(), na, nb, pages = 0;
+    tess_core_boot();
+    tess_core_transport(0);
+    for (i = 0; i < NTRK; i++)
+        trk[i].p[P_MUTE] = i != 0;
+    engine_load_of(t, ENGI_PHASE, 0);
+    t->p[P_E7] = 1;                               /* EG SPLIT */
+    t->p[P_FM3_REL] = 90;                         /* DCA 2: a long release */
+    t->p[P_E4] = 20;                              /* the second line on */
+    song.sel = 0;
+    for (i = 0; i < NELEM(PAGES); i++)
+        pages += page_visible(i) && PAGES[i].id[0] >= P_FM1_ATK && PAGES[i].id[0] <= P_FM4_LEVEL;
+    check(pages == 5u && str_eq(track_desc(t, P_FM1_ATK)->label, "AW1") && str_eq(track_desc(t, P_FM4_LEVEL)->label, "LVP"),
+          "PHASE: EG SPLIT shows its 5 pages, its labels (AW1 .. LVP)");
+    t->p[P_E7] = 0;
+    pages = 0;
+    for (i = 0; i < NELEM(PAGES); i++)
+        pages += page_visible(i) && PAGES[i].id[0] >= P_FM1_ATK && PAGES[i].id[0] <= P_FM4_LEVEL;
+    check(!pages, "PHASE: EG LINK hides them");
+    t->p[P_E7] = 1;
+    play(rate / 4u, &pk, &ms);
+    trk_note_on(t, 60, 100);
+    int fin = play(rate, &pk, &ms);
+    trk_note_off(t, 60);
+    fin &= play(rate / 2u, &pk2, &ms2);
+    printf("engines_extra:   PHASE (EG SPLIT): held peak %.3f, rms %.4f; 0.5 s after release peak %.4f\n", pk, sqrt(ms), pk2);
+    check(fin && sqrt(ms) > 0.001 && pk <= 1.0 && pk2 > 0.0005, "PHASE: EG SPLIT sounds, DCA 2's release rings on");
+    na = tess_core_save(tsp_a, sizeof tsp_a);
+    tess_core_boot();
+    nb = !tess_core_load(tsp_a, na) && trk[0].engine == ENGI_PHASE && trk[0].p[P_E7] == 1 && trk[0].p[P_FM3_REL] == 90 ?
+         tess_core_save(tsp_b, sizeof tsp_b) : 0;
+    check(na && nb == na && !memcmp(tsp_a, tsp_b, na), "PHASE: EG SPLIT's settings save and load (TSP_TRACKS)");
+}
+
 int main(void)
 {
     printf("engines_extra: rate %u\n", (unsigned)tess_core_rate());
@@ -98,6 +137,10 @@ int main(void)
     one("SID (INIT)", 0, ENGI_SID, 0, 60);
     one("SID (preset 26)", 0, ENGI_SID, 26, 48);
     one("MACRO (INIT VA)", 0, ENGI_MACRO, 0, 57);
+    one("PHASE (BRASS)", 0, ENGI_PHASE, 0, 60);
+    one("PHASE (RESO)", 0, ENGI_PHASE, 3, 48);
+    one("PHASE (WIRE: two lines)", 0, ENGI_PHASE, 5, 57);
+    split_env();
     one("DRUM SID KIT", 3, ENGI_DRUM, 2, 36);
     one("DRUM SID DIGI", 3, ENGI_DRUM, 3, 38);
     printf(fails ? "engines_extra: %d FAILED\n" : "engines_extra: all passed\n", fails);

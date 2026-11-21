@@ -1418,8 +1418,13 @@ static track_t *midi_track(uint32_t ch)
 {
     uint32_t k, route = (uint32_t)song.g[G_ROUTE];
     uint32_t first = route > 1u ? (route - 1u) * 4u : 0u;
+#if CORE_TRACKS > 4   /* (8 tracks: ROUT's range is a channel a track, 1-8 .. 13-16: params.c N_ROUTE) */
+    if (route != 1u && (ch < first || ch - first >= NPART))
+        return 0;
+#else
     if (route != 1u && (ch < first || ch - first >= 4u))
         return 0;
+#endif
     if (settings_drumch && ch + 1u == settings_drumch) {
         for (k = 0; k < NPART; k++)
             if (drum_track(&trk[k]))

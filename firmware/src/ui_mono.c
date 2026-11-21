@@ -381,6 +381,10 @@ static void mo_head(void)
     if (ui.msg_t && ui.msg[0] && (int32_t)str_len(ui.msg) * 6 + 2 > 96 - MO_BATT_W - 2)
         bat = -1;                                       /* (a message too long beside it: for as long as it shows) */
     right = bat >= 0 ? 96 - MO_BATT_W - 2 : 94;         /* (the title and the engine end here) */
+#if CORE_TRACKS > 4
+    if (UI_BASE && !(ui.msg_t && ui.msg[0]))            /* tracks 5..8 (8 tracks): their bank, inverted, before the */
+        right -= mo_tw("5-8") + 4;                      /* dots (1..4: nothing, as the FM-1) */
+#endif
     str_cpy(sub, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), sizeof sub);
     mo_place(at);                                       /* more pages than the footer shows: where this one is */
     room = right - mo_tw(sub) - 4 - (at[0] ? mo_tw(at) + 6 : 0);
@@ -418,12 +422,16 @@ static void mo_head(void)
         MO_HOOK_PLACE(at);
     }
     mo_textr(sub, right, 1, MO_DIM);
-    for (i = 0; i < 4u; i++) {                          /* the tracks: the selected one filled */
-        if (i == song.sel) mo_disc(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));
+#if CORE_TRACKS > 4
+    if (UI_BASE && !(ui.msg_t && ui.msg[0]))
+        mo_inv("5-8", right + 3, 1);
+#endif
+    for (i = 0; i < 4u; i++) {                          /* the tracks (8: the bank's four): the selected one filled */
+        if (UI_BASE + i == song.sel) mo_disc(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));
         else mo_circ(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));
     }
     if (song.rec & (1u << song.sel))                    /* REC: a bar under the track's dot */
-        mo_hl(97 + (int32_t)song.sel * 6, 8, 5, MO_INK);
+        mo_hl(97 + (int32_t)(song.sel - UI_BASE) * 6, 8, 5, MO_INK);
     mo_head_line(9, hold);
 }
 /* a value as its column shows it: five characters at most (MORPH, 0.25); longer, a number loses its last decimals
@@ -1888,11 +1896,19 @@ static void mo_pic_midiin(void)
 {
     uint32_t route = (uint32_t)song.g[G_ROUTE], first = route > 1u ? (route - 1u) * 4u : 0u, d = settings_drumch, dk, k;
     for (dk = 0; dk < NTRK && !drum_track(&trk[dk]); dk++) {}
+#if CORE_TRACKS > 4
+    if (!d || dk >= NTRK || (route != 1u && (d - 1u < first || d - 1u - first >= NPART)))
+        d = 0;                                          /* (8 tracks: ROUT's range is a channel a track, seq.c) */
+#else
     if (!d || dk >= NTRK || (route != 1u && (d - 1u < first || d - 1u - first >= 4u)))
         d = 0;                                          /* (DRUM's channel outside ROUT's range: not heard) */
+#endif
     for (k = 0; k < TESSERA_TRACKS; k++) {
         int32_t y = 54 + (int32_t)k * 11;
         uint32_t ch = route == 1u ? (k == song.sel ? 17u : 0u) : first + k + 1u;
+#if CORE_TRACKS > 4
+        if (route != 1u && ch > 16u) ch = 0;           /* (past channel 16: ROUT's range doesn't reach it) */
+#endif
         char n[3] = {'T', (char)('1' + k), 0}, b[16];
         if (d && k == dk) ch = d;
         else if (d && ch == d) ch = 0;

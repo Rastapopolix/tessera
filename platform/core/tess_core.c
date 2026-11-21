@@ -26,8 +26,10 @@ static const int8_t FM1_KEYMAP[6][FM1_NCOL] = {
 };
 
 uint32_t tess_core_rate(void) { return FS; }
+uint32_t tess_core_tracks(void) { return NTRK; }
 
 static uint32_t core_booted, core_last_frame, core_samples_due;
+static uint32_t core_track_req = 0xFFu;           /* tess_core_track_select: the track asked for (0xFF none) */
 
 /* power-on (main.c melodee_init via host_boot.h's ui_power_on, with the device's BPM and scale), in the default ink */
 void tess_core_boot(void)
@@ -58,6 +60,10 @@ void tess_core_boot(void)
 /* one pass of main.c's loop: what a host has (no USB, editor, UBOOT, flash) */
 static void core_frame(void)
 {
+    if (core_track_req < NTRK) {                  /* (between passes, as KNOB 1 on TRACKS would) */
+        track_select(core_track_req);
+        core_track_req = 0xFFu;
+    }
     ui_input();
     ui_leds();
     ui_draw();
@@ -339,6 +345,14 @@ void tess_core_view(tess_view_t *v)
     v->playing = song.playing;
     v->master = tess_core_master_get();
     v->ink = settings.palette;
+    v->track = song.sel;
+}
+
+uint32_t tess_core_track(void) { return song.sel; }
+void tess_core_track_select(uint32_t t)
+{
+    if (t < NTRK)
+        core_track_req = t;
 }
 
 /* ---- the project */

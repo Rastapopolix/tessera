@@ -1536,7 +1536,7 @@ static void notes_bar(const track_t *t, uint32_t i, uint32_t period, uint32_t a,
     recorded_note_t snapshot = recording_snapshot(i);
     const recorded_note_t *r = &snapshot;
     uint32_t loop = recording_loop(t, period), at = recording_raw_on(t, r, period);
-    uint64_t gate = (uint64_t)r->duration * (1u << (r->owner >> 5)) * period / RECORD_UNIT;
+    uint64_t gate = (uint64_t)r->duration * (1u << REC_EXP(*r)) * period / RECORD_UNIT;
     if (!gate) gate = 1;
     if (gate > loop) gate = loop;
     int32_t y = pr_row_y(r->note), bottom = PR_Y0 + PR_ROWS * PR_RH;
@@ -2162,6 +2162,9 @@ static const char *eng_abbr(const char *name)
 #endif
 #if MELODEE_PLAITS
                                        {"MACRO", "MACR"},
+#endif
+#if MELODEE_PHASE
+                                       {"PHASE", "PHAS"},
 #endif
                                        {"SAMPLE", "SMPL"}, {"VOICE", "VOCL"}, {"TRIO", "TRIO"}, {"WHEEL", "WHEL"},
                                        {"GRAIN", "GRAN"}, {"PHYS", "PHYS"}, {"DRUM", "DRUM"},

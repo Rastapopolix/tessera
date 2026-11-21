@@ -90,6 +90,13 @@ A `.tsp` from the plugin opens on the FM-1 too. Tracks on the plugin-only sounds
 
 On Linux the file dialogs need `zenity` or `kdialog`.
 
+## Tracks 1 to 4, and 5 to 8
+
+The plugin has eight tracks; the panel works on four at a time, as the FM-1's does. The **1-4 / 5-8** switch beside
+SAVE picks the bank: 1-4 selects T1, 5-8 selects T5 (**Tab** on the computer keyboard swaps them). The lit half is the
+bank of the track selected now, so it follows SELECT too. While a track of 5 to 8 is selected the screen's top line
+shows **5-8**, inverted, before the track dots.
+
 ## Automation: the parameters
 
 Almost every project setting is a DAW parameter you can automate, about 890 in all:
@@ -129,9 +136,12 @@ The plugin has room for engines the FM-1 can't fit:
 - **SID**: a whole MOS 6581 or 8580 chip per note, with 32 presets.
 - **DRUM: SID KIT** and **SID DIGI**: drums from one SID chip.
 - **MACRO**: a macro-oscillator with many synthesis models.
+- **PHASE**: phase distortion in the manner of Casio's CZ-1: two lines of bent-phase waves (saw, square, pulse,
+  double sine, saw-pulse and three resonant ones), mixed or ring-modulated, with 6 presets. EDIT 2's EG at SPLIT gives
+  DCW 1, DCW 2, DCA 2 and pitch their own envelopes (5 more pages).
 
-The Daisy build (Andamento) has them too. On the FM-1, a SID or MACRO track plays FM6's INIT sound instead, and a SID
-kit plays the 909, so a project still opens and plays there.
+The Daisy build (Andamento) has them too. On the FM-1, a SID, MACRO or PHASE track plays FM6's INIT sound instead, and
+a SID kit plays the 909, so a project still opens and plays there.
 
 ## How much CPU it takes
 

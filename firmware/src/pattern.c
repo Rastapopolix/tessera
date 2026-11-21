@@ -7,7 +7,11 @@ typedef struct { step_t step[NSTEP]; int16_t timing[4]; } pattern_t;
  * boot by pattern_init, not retained), so each bank of the audio arena and static RAM keep their headroom */
 static pattern_t pattern_pool[2][NPAT] __attribute__((section(".pool")));
 static pattern_t pattern_bss[NPAT];
+#if CORE_TRACKS > 4
+static pattern_t pattern_noinit[NTRK - 3u][NPAT] __attribute__((section(".noinit")));   /* (tracks 4..CORE_TRACKS) */
+#else
 static pattern_t pattern_noinit[NPAT] __attribute__((section(".noinit")));
+#endif
 static uint8_t chain_patterns[CHAIN_ROWS][NTRK];
 static uint8_t pattern_dir[NTRK][NPAT];             /* each pattern's DIR (TX_SEQ_DIR, SEQ_*; seq_dir.c), 0 FWD: kept
                                                      * apart from pattern_t, which the audio arena holds */
@@ -23,7 +27,12 @@ static uint32_t seq_dir_cont(const track_t *t, uint32_t from, uint32_t to, uint3
 static const step_t *seq_dir_tie(const track_t *t, const step_t *s, step_t *tv, uint32_t len);
 static pattern_t *pattern_at(uint32_t track, uint32_t bank)
 {
+#if CORE_TRACKS > 4
+    return track < 2u ? &pattern_pool[track][bank] : track == 2u ? &pattern_bss[bank] :
+           &pattern_noinit[(track - 3u) % (NTRK - 3u)][bank];
+#else
     return track < 2u ? &pattern_pool[track][bank] : track == 2u ? &pattern_bss[bank] : &pattern_noinit[bank];
+#endif
 }
 static void pattern_commit(track_t *t)
 {
