@@ -37,6 +37,7 @@ void tess_core_boot(void)
         return;
     dsp_tables_init();                            /* the RAM tables (fm1_main on the FM-1) */
     ui_power_on();
+    tessera_ensure_init();                        /* (the generators' settings now, not at the first step: a host reads them first) */
     TRK_DEF_SONG();                               /* (ui_power_on: the tests' start; main.c melodee_init: the device's) */
     for (i = 0; i < NTRK; i++)
         if (TRK_DEF[i][0] != ENGI_DRUM)
@@ -447,7 +448,19 @@ uint32_t tess_core_param_at(uint32_t n, uint32_t track, tess_param_t *info)
     return e->pid;
 }
 int32_t tess_core_param_get(uint32_t pid, uint32_t track) { return pid_get(pid, track); }
-uint32_t tess_core_param_set(uint32_t pid, uint32_t track, int32_t v) { return pid_set(pid, track, v) ? 1u : 0u; }
+/* as a project load would keep it, so a host's value saves and loads back the same: SCL (and a linked QNT, MPC degree,
+ * ROOT) on every track as the UI's knob does (ui.c scale_share), a QUAD LINK without its own track (tessera.c) */
+uint32_t tess_core_param_set(uint32_t pid, uint32_t track, int32_t v)
+{
+    track %= NTRK;
+    if (pid == PID_TESS(TX_QD_LINK))
+        v &= ~(int32_t)(1u << track);
+    if (!pid_set(pid, track, v))
+        return 0;
+    if (pid < PID_GLOBAL(0) && scale_shared(pid))
+        scale_share(&trk[track]);
+    return 1;
+}
 uint32_t tess_core_param_text(uint32_t pid, uint32_t track, int32_t v, char *out, uint32_t cap)
 {
     const param_desc_t *d = pid_find(pid) ? pid_desc(pid, track) : 0;
