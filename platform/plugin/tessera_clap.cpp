@@ -2,7 +2,8 @@
  * Copyright (C) 2026 Theo Dainis */
 /* Tessera as a CLAP instrument (phase 0 spike). clap-wrapper turns the same code into VST3 and a standalone app
  * (CMakeLists.txt). What it does:
- *   - outputs: the main mix, then TRACK 1..4 alone (the FM-1's USB stems); a MIDI out with every track's notes on its
+ *   - 8 tracks (core_defs.txt CORE_TRACKS=8: the FM-1's 4, then 5..8 on the panel's second bank);
+ *   - outputs: the main mix, then TRACK 1..8 alone (the FM-1's USB stems); a MIDI out with every track's notes on its
  *     own channel (Settings > NOTES OUT ALL by default here; GLO > MIDI OUT per track);
  *   - the core runs at 44.1 kHz (tess_core.h) and is resampled (linear) to the host's rate;
  *   - notes and MIDI in (CLAP or MIDI dialect) go to the core as USB MIDI does on the FM-1, at their sample;
@@ -43,11 +44,15 @@ std::mutex copies_lock;
 bool copy_used[16], copy_booted[16];
 
 // the parameters: MASTER (0..1023) and MACRO 1..4 (0..100) first, with the ids they had (0..4); then the core's by
-// central ID: id PARAM_PID + slot * 0x1000 + pid, slot 0..3 a track's, 4 the song's. Ids only ever grow in that order,
-// so a DAW's automation keeps its parameter while the list grows
+// central ID: id PARAM_PID + slot * 0x1000 + pid, slot 0..3 tracks 1..4, 4 the song's, 5..8 tracks 5..8 (added with
+// the 8 tracks: the song kept its slot). Ids only ever grow in that order, so a DAW's automation keeps its parameter
+// while the list grows
 enum { PARAM_MASTER, PARAM_MACRO1, PARAM_LEGACY = PARAM_MACRO1 + 4 };
 constexpr clap_id PARAM_PID = 0x10000;
 constexpr uint32_t PARAM_SONG = 4, PARAM_SCAN = 48;   // (the song's slot; values compared per block, round the list)
+constexpr uint32_t NTRACKS = 8;   // (the core's tracks: core_defs.txt CORE_TRACKS, checked at p_init)
+constexpr uint32_t PARAM_SLOTS = NTRACKS + 1;   // (the tracks' slots and the song's)
+constexpr uint32_t slot_track(uint32_t slot) { return slot < PARAM_SONG ? slot : slot - 1u; }   // (a track's slot)
 constexpr uint32_t PID_MOD_SLOT = 0x31;   // (MOD 1 SOURCE, core.h P_M1SRC: then DESTINATION, AMOUNT and MOD 2..4)
 struct Param
 {
@@ -57,8 +62,8 @@ struct Param
     char name[64], module[64];
 };
 
-constexpr uint32_t NCH = 6;   // main L, R, then tracks 1..4 (the core's stems)
-constexpr uint32_t NSTEMS = 4;
+constexpr uint32_t NSTEMS = NTRACKS;
+constexpr uint32_t NCH = 2 + NSTEMS;   // main L, R, then tracks 1..8 (the core's stems)
 
 struct Tessera : GuiLink
 {
@@ -96,7 +101,8 @@ struct Tessera : GuiLink
     {
         if (buf_i >= buf_n)
         {
-            float *st[NSTEMS] = {buf[2], buf[3], buf[4], buf[5]};
+            float *st[NSTEMS];
+            for (uint32_t k = 0; k < NSTEMS; k++) st[k] = buf[2 + k];
             core->render(buf[0], buf[1], stems ? st : nullptr, 64);
             if (!stems)
                 for (uint32_t c = 2; c < NCH; c++) std::memset(buf[c], 0, sizeof buf[c]);
@@ -346,8 +352,8 @@ void Tessera::midi_in(const clap_event_header_t *h)
 
 // ---- parameters (audio thread: the core is locked)
 
-// the list (after the core boots): MASTER, MACRO 1..4, then every settable project setting, each track's then the
-// song's (not the device's own: A4, the MIDI routing ..; MACRO 1..4 once only, as ids 1..4)
+// the list (after the core boots): MASTER, MACRO 1..4, then every settable project setting, tracks 1..4's, the
+// song's, then tracks 5..8's (not the device's own: A4, the MIDI routing ..; MACRO 1..4 once only, as ids 1..4)
 void Tessera::params_make()
 {
     params.clear();
@@ -359,23 +365,24 @@ void Tessera::params_make()
         params.push_back(m);
     }
     uint32_t n = core->param_count();
-    for (uint32_t slot = 0; slot <= PARAM_SONG; slot++)
+    for (uint32_t slot = 0; slot < PARAM_SLOTS; slot++)
         for (uint32_t i = 0; i < n; i++)
         {
             tess_param_t info;
-            uint32_t pid = core->param_at(i, slot < PARAM_SONG ? slot : 0, &info);
-            if (pid == 0xFFFFu || !info.settable || (info.per_track != 0) != (slot < PARAM_SONG) || pid >= 0x1000u)
+            bool song = slot == PARAM_SONG;
+            uint32_t trk = song ? 0 : slot_track(slot);
+            uint32_t pid = core->param_at(i, trk, &info);
+            if (pid == 0xFFFFu || !info.settable || (info.per_track != 0) == song || pid >= 0x1000u)
                 continue;
             if (!std::strncmp(info.name, "MACRO ", 6) && !info.per_track)
                 continue;   // (MACRO 1..4: ids 1..4 already)
             if (pid >= PID_MOD_SLOT && pid < PID_MOD_SLOT + 12u)
                 continue;   // (MOD 1..4's routes: the core makes each a cord at once (cord.c cord_adopt) and clears it)
-            Param q{PARAM_PID + slot * 0x1000u + pid, pid, slot < PARAM_SONG ? slot : 0, info.span_min, info.span_max,
-                    info.def, "", ""};
-            if (slot < PARAM_SONG)
+            Param q{PARAM_PID + slot * 0x1000u + pid, pid, trk, info.span_min, info.span_max, info.def, "", ""};
+            if (!song)
             {
-                std::snprintf(q.name, sizeof q.name, "T%u %s", slot + 1, info.name);
-                std::snprintf(q.module, sizeof q.module, "Track %u/%s", slot + 1, pid >= 0x200u ? "Generator" : "Sound and sequence");
+                std::snprintf(q.name, sizeof q.name, "T%u %s", trk + 1, info.name);
+                std::snprintf(q.module, sizeof q.module, "Track %u/%s", trk + 1, pid >= 0x200u ? "Generator" : "Sound and sequence");
             }
             else
             {
@@ -514,6 +521,8 @@ void Tessera::params_out(const clap_output_events_t *out, uint32_t at, bool all)
 bool p_init(const clap_plugin_t *p)
 {
     auto *t = self(p);
+    if (t->core->tracks() != NTRACKS)   // (core_defs.txt and NTRACKS disagree: the ports and ids would be wrong)
+        return false;
     std::lock_guard<std::mutex> g(t->core_lock);
     bool again;
     {
@@ -682,7 +691,7 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
     return CLAP_PROCESS_CONTINUE;
 }
 
-// ---- audio ports: main (the mix, as the FM-1's output), then TRACK 1..4 (each alone: the FM-1's USB stems)
+// ---- audio ports: main (the mix, as the FM-1's output), then TRACK 1..8 (each alone: the FM-1's USB stems)
 
 uint32_t ap_count(const clap_plugin_t *, bool is_input) { return is_input ? 0 : 1 + NSTEMS; }
 bool ap_get(const clap_plugin_t *, uint32_t index, bool is_input, clap_audio_port_info_t *info)

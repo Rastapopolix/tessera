@@ -282,14 +282,18 @@ int main(int argc, char **argv)
         ev.notes.clear();
     }
 
-    // the track outputs and MIDI OUT: 8 s of STILL TIDE from the top with all five outputs
+    // the track outputs and MIDI OUT: 8 s of STILL TIDE from the top with all nine outputs (main + 8 tracks); then,
+    // stopped, a note on MIDI channel 6 sounds on TRACK 6's output alone
     {
+        constexpr int NT = 8;
         auto *ap = (const clap_plugin_audio_ports_t *)p->get_extension(p, CLAP_EXT_AUDIO_PORTS);
-        CHECK(ap && ap->count(p, false) == 5, "5 audio outputs (main + 4 tracks)");
-        static float tb[4][2][480];
-        float *tch[4][2];
-        clap_audio_buffer_t outs[5] = {out};
-        for (int k = 0; k < 4; k++)
+        CHECK(ap && ap->count(p, false) == 1 + NT, "9 audio outputs (main + 8 tracks)");
+        clap_audio_port_info_t pi8 = {};
+        CHECK(ap && ap->get(p, NT, false, &pi8) && !std::strcmp(pi8.name, "Track 8"), "the last output is Track 8");
+        static float tb[NT][2][480];
+        float *tch[NT][2];
+        clap_audio_buffer_t outs[1 + NT] = {out};
+        for (int k = 0; k < NT; k++)
         {
             tch[k][0] = tb[k][0];
             tch[k][1] = tb[k][1];
@@ -297,10 +301,10 @@ int main(int argc, char **argv)
             outs[k + 1].channel_count = 2;
         }
         proc.audio_outputs = outs;
-        proc.audio_outputs_count = 5;
+        proc.audio_outputs_count = 1 + NT;
         std::memset(midi_on, 0, sizeof midi_on);
         out_of_order = 0;
-        double e[4] = {};
+        double e[NT] = {};
         tr.flags = CLAP_TRANSPORT_HAS_TEMPO;
         out_last = 0;
         p->process(p, &proc);
@@ -310,17 +314,51 @@ int main(int argc, char **argv)
         {
             out_last = 0;
             p->process(p, &proc);
-            for (int k = 0; k < 4; k++)
+            for (int k = 0; k < NT; k++)
                 for (uint32_t i = 0; i < block; i++) e[k] += (double)tb[k][0][i] * tb[k][0][i];
         }
         int sounding = 0, chans = 0, ons = 0;
         for (int k = 0; k < 4; k++) sounding += e[k] > 1e-3;
         for (int c = 0; c < 16; c++) { chans += midi_on[c] > 0; ons += (int)midi_on[c]; }
-        std::printf("track outputs: energy %.3f %.3f %.3f %.3f; MIDI OUT: %d note-ons on %d channels (1-4: %u %u %u %u)\n",
-                    e[0], e[1], e[2], e[3], ons, chans, midi_on[0], midi_on[1], midi_on[2], midi_on[3]);
+        std::printf("track outputs: energy %.3f %.3f %.3f %.3f (5-8: %.3f %.3f %.3f %.3f); MIDI OUT: %d note-ons on %d "
+                    "channels (1-4: %u %u %u %u)\n", e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7], ons, chans,
+                    midi_on[0], midi_on[1], midi_on[2], midi_on[3]);
         CHECK(sounding >= 3, "STILL TIDE's tracks should sound on their own outputs (%d)", sounding);
         CHECK(ons >= 4 && chans >= 3, "MIDI OUT should send the tracks' notes on their channels");
         CHECK(!out_of_order, "events out must be in order and inside the block (%u)", out_of_order);
+
+        tr.flags = CLAP_TRANSPORT_HAS_TEMPO;   // stopped, the tails gone: a note on channel 6
+        for (int b = 0; b < 600; b++)
+            p->process(p, &proc);
+        std::memset(midi_on, 0, sizeof midi_on);
+        clap_event_note_t on6 = {};
+        on6.header = {sizeof on6, 0, CLAP_CORE_EVENT_SPACE_ID, CLAP_EVENT_NOTE_ON, 0};
+        on6.note_id = -1;
+        on6.port_index = 0;
+        on6.channel = 5;
+        on6.key = 60;
+        on6.velocity = 1.0;
+        ev.notes.push_back(on6);
+        p->process(p, &proc);
+        ev.notes.clear();
+        double e6[NT] = {};
+        for (int b = 0; b < 20; b++)
+        {
+            p->process(p, &proc);
+            for (int k = 0; k < NT; k++)
+                for (uint32_t i = 0; i < block; i++) e6[k] += (double)tb[k][0][i] * tb[k][0][i];
+        }
+        double others = 0;
+        for (int k = 0; k < NT; k++)
+            if (k != 5) others += e6[k];
+        std::printf("note on channel 6: TRACK 6 energy %.4f, the other tracks %.4f; MIDI OUT channel 6: %u note-ons\n",
+                    e6[5], others, midi_on[5]);
+        CHECK(e6[5] > 1e-4 && e6[5] > others * 4, "a note on channel 6 should play track 6, on its output");
+        clap_event_note_t off6 = on6;
+        off6.header.type = CLAP_EVENT_NOTE_OFF;
+        ev.notes.push_back(off6);
+        p->process(p, &proc);
+        ev.notes.clear();
         proc.audio_outputs = &out;
         proc.audio_outputs_count = 1;
     }
@@ -335,7 +373,8 @@ int main(int argc, char **argv)
         clap_param_info_t info;
         bool order = true;
         clap_id last = 0;
-        int level = -1, plen = -1;
+        int level = -1, plen = -1, level6 = -1;
+        long song_id = -1;
         for (uint32_t i = 0; i < np; i++)
         {
             pa->get_info(p, i, &info);
@@ -343,6 +382,8 @@ int main(int argc, char **argv)
             last = info.id;
             if (!std::strcmp(info.name, "T1 LEVEL")) level = (int)i;
             if (!std::strcmp(info.name, "T2 PATTERN LENGTH")) plen = (int)i;
+            if (!std::strcmp(info.name, "T6 LEVEL")) level6 = (int)i;
+            if (!std::strcmp(info.module, "Song") && song_id < 0) song_id = (long)info.id;
         }
         CHECK(order, "parameter ids unique, in order");
         for (uint32_t i = 0; i < 5; i++)
@@ -353,6 +394,17 @@ int main(int argc, char **argv)
         pa->get_info(p, 2, &info);
         CHECK(!std::strcmp(info.name, "MACRO 2") && (info.flags & CLAP_PARAM_IS_AUTOMATABLE), "MACRO 2 automatable");
         CHECK(level >= 0 && plen >= 0, "T1 LEVEL and T2 PATTERN LENGTH are parameters");
+        if (level >= 0 && level6 >= 0)
+        {
+            clap_param_info_t l1, l6;
+            pa->get_info(p, (uint32_t)level, &l1);
+            pa->get_info(p, (uint32_t)level6, &l6);
+            std::printf("params: T1 LEVEL id 0x%x, T6 LEVEL id 0x%x (module %s), the song's first 0x%lx\n", l1.id, l6.id,
+                        l6.module, song_id);
+            CHECK(l6.id == l1.id + 6 * 0x1000u, "T6 LEVEL at slot 6 (tracks 5..8 after the song's slot 4)");
+        }
+        CHECK(level6 >= 0, "T6 LEVEL is a parameter (8 tracks)");
+        CHECK(song_id >= 0x14000 && song_id < 0x15000, "the song's settings keep slot 4's ids (0x%lx)", song_id);
         struct PEvents
         {
             clap_event_param_value_t e;
