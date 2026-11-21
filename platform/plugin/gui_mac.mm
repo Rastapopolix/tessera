@@ -47,7 +47,12 @@ GuiMac *gui_of(id view) { return *reinterpret_cast<GuiMac **>((char *)(__bridge 
 class GuiMac : public Gui
 {
   public:
-    explicit GuiMac(GuiLink *l) : link(l) { panel.set_shell(l->shell()); }
+    explicit GuiMac(GuiLink *l) : link(l)
+    {
+        panel.set_shell(l->shell());
+        panel.set_tracks(l->tracks());
+        // (the ink picker, #905: panel.set_inks(l->inks()) goes here, as in gui_x11.cpp / gui_win32.cpp)
+    }
     GuiLink *link;   // this window's instance
     Panel panel;
     std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
