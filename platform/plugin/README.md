@@ -35,7 +35,12 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
   DAW (files `shell` and `ink` in `%APPDATA%\Tessera`, `~/.config/tessera` or
   `~/Library/Application Support/Tessera`; the ink over the shell's own), not in the project. The screen at 1:1;
   click the buttons and keys (drag across the keys to glide); drag a knob up/down or left/right, or use the mouse
-  wheel over it. **The computer keyboard** too, as in the web simulator (click the window first): Z..' and Q..O play
+  wheel over it. **The screen's zones** (`tess_view_t.zones`, `ui_zones.c`, profile fact `TESS_HAS_POINTER`): the
+  Mono pages leave what a mouse can use as they draw it (a value's column, a list's row, OK / BACK / YES / NO, the
+  browser's and SCALES' two lists, HOME's tracks); the panel hit-tests them before its own knobs (wheel and drag on a
+  value, click and double-click on a row or a key) and sends `tess_core_zone_do`, which turns the knobs and presses the
+  keys from a queue (a row's detents never accelerated); the zone under the mouse outlined, its name and value large
+  under the screen. **The computer keyboard** too, as in the web simulator (click the window first): Z..' and Q..O play
   the keys, 1..= are the twelve buttons in the panel's order and [ ] OCT- / OCT+ (each held while its key is), up /
   down turn SELECT, left / right ALGORITHM. Keys go by where they are, not what they print, so any layout works;
   with Ctrl or Alt held they are the DAW's. The LEDs light, dim and breathe as on the device. The window talks to the core through the audio
