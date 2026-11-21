@@ -48,6 +48,7 @@ bool copy_used[16], copy_booted[16];
 enum { PARAM_MASTER, PARAM_MACRO1, PARAM_LEGACY = PARAM_MACRO1 + 4 };
 constexpr clap_id PARAM_PID = 0x10000;
 constexpr uint32_t PARAM_SONG = 4, PARAM_SCAN = 48;   // (the song's slot; values compared per block, round the list)
+constexpr uint32_t PID_MOD_SLOT = 0x31;   // (MOD 1 SOURCE, core.h P_M1SRC: then DESTINATION, AMOUNT and MOD 2..4)
 struct Param
 {
     clap_id id;
@@ -69,6 +70,8 @@ struct Tessera : GuiLink
     std::vector<Param> params;            // in id order (p_init)
     std::unique_ptr<std::atomic<int32_t>[]> param_now;   // each as the core has it (the audio thread writes)
     uint32_t param_scan = PARAM_LEGACY;   // the next of the core's to compare (params_out)
+    int32_t master = 700;   // MASTER as set (0..1023: the core keeps it squared, so it reads back a step off)
+    void master_set(int32_t v) { master = v < 0 ? 0 : v > 1023 ? 1023 : v; core->master((uint32_t)master); }
     std::unique_ptr<uint32_t[]> param_look;   // how each reads (param_look_of): the engine, an FX type or the scale
                                           // changes it ("ENGINE 1" as CUTOFF, FX 1 RATE as TIME); the audio thread
     std::atomic<bool> text_stale{false};  // a look changed: the host rescans its texts (on its main thread)
@@ -165,7 +168,7 @@ struct Tessera : GuiLink
     void param_set(int i, int32_t v);
     void params_refresh();
     void param_in(const clap_event_param_value_t *e);
-    void params_out(const clap_output_events_t *out, uint32_t at);
+    void params_out(const clap_output_events_t *out, uint32_t at, bool all = false);
     void param_event(const clap_output_events_t *out, uint32_t at, int i, int32_t v);
     uint32_t param_look_of(int i);
 
@@ -365,6 +368,8 @@ void Tessera::params_make()
                 continue;
             if (!std::strncmp(info.name, "MACRO ", 6) && !info.per_track)
                 continue;   // (MACRO 1..4: ids 1..4 already)
+            if (pid >= PID_MOD_SLOT && pid < PID_MOD_SLOT + 12u)
+                continue;   // (MOD 1..4's routes: the core makes each a cord at once (cord.c cord_adopt) and clears it)
             Param q{PARAM_PID + slot * 0x1000u + pid, pid, slot < PARAM_SONG ? slot : 0, info.span_min, info.span_max,
                     info.def, "", ""};
             if (slot < PARAM_SONG)
@@ -383,7 +388,8 @@ void Tessera::params_make()
     param_look.reset(new uint32_t[params.size()]);
     for (size_t i = 0; i < params.size(); i++)
     {
-        param_now[i] = i == PARAM_MASTER ? 700 : param_core((int)i);
+        param_now[i] = param_core((int)i);
+        params[i].def = param_now[i];   // (the default: what a new instance starts with, its first project's)
         param_look[i] = param_look_of((int)i);
     }
 }
@@ -423,14 +429,14 @@ int Tessera::param_index(clap_id id) const
 }
 int32_t Tessera::param_core(int i)
 {
-    if (i == PARAM_MASTER) return (int32_t)core->master_get();
+    if (i == PARAM_MASTER) return master;
     if (i < PARAM_LEGACY) return (int32_t)core->macro((uint32_t)(i - PARAM_MACRO1));
     return core->param_get(params[i].pid, params[i].track);
 }
 void Tessera::param_set(int i, int32_t v)
 {
     if (i == PARAM_MASTER)
-        core->master((uint32_t)(v < 0 ? 0 : v > 1023 ? 1023 : v));
+        master_set(v);
     else if (i < PARAM_LEGACY)
         core->macro_set((uint32_t)(i - PARAM_MACRO1), (uint32_t)(v < 0 ? 0 : v));
     else
@@ -473,13 +479,19 @@ void Tessera::param_event(const clap_output_events_t *out, uint32_t at, int i, i
 }
 // values the panel, a project or the core changed since the host last heard: MASTER and the MACROs each block, the
 // rest PARAM_SCAN at a time round the list (a full round in ~20 blocks)
-void Tessera::params_out(const clap_output_events_t *out, uint32_t at)
+void Tessera::params_out(const clap_output_events_t *out, uint32_t at, bool all)
 {
     for (int i = 0; i < PARAM_LEGACY && i < (int)params.size(); i++)
     {
         int32_t v = param_core(i);
         if (v != param_now[i]) param_now[i] = v, param_event(out, at, i, v);
     }
+    if (all)   // (the host set some: one can move others, as a QUAD's moves follow its LINK)
+        for (size_t i = PARAM_LEGACY; i < params.size(); i++)
+        {
+            int32_t v = param_core((int)i);
+            if (v != param_now[i]) param_now[i] = v, param_event(out, at, (int)i, v);
+        }
     uint32_t rest = (uint32_t)params.size() - PARAM_LEGACY;
     for (uint32_t k = 0; k < PARAM_SCAN && k < rest; k++)
     {
@@ -518,6 +530,7 @@ bool p_init(const clap_plugin_t *p)
         t->shell_i = sh;
         t->core->ink(Panel::shell_ink(sh));
     }
+    t->master_set(700);   // (MASTER's default)
     t->params_make();
     return true;
 }
@@ -612,7 +625,7 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
             t->core->buttons(pi.buttons);
             t->core->keys(pi.keys);
             if (pi.master >= 0)
-                t->core->master((uint32_t)pi.master);
+                t->master_set(pi.master);
             pi.master = -1;
             for (int r = 0; r < TESS_NE; r++)
                 if (pi.enc[r])
@@ -626,6 +639,7 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
 
     // events at their sample: render up to each, then hand it in
     uint32_t done = 0;
+    bool set = false;
     uint32_t ne = proc->in_events ? proc->in_events->size(proc->in_events) : 0;
     for (uint32_t i = 0; i < ne; i++)
     {
@@ -637,7 +651,7 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
             done = at;
         }
         if (h->space_id == CLAP_CORE_EVENT_SPACE_ID && h->type == CLAP_EVENT_PARAM_VALUE)
-            t->param_in(reinterpret_cast<const clap_event_param_value_t *>(h));
+            t->param_in(reinterpret_cast<const clap_event_param_value_t *>(h)), set = true;
         else
             t->midi_in(h);
     }
@@ -652,7 +666,7 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
 
     t->midi_out(proc->out_events, n);   // (the tracks' notes, each on its channel: GLO > MIDI OUT)
 
-    t->params_out(proc->out_events, n ? n - 1 : 0);   // (a setting changed on the panel, by a project or a cord's source)
+    t->params_out(proc->out_events, n ? n - 1 : 0, set);   // (a setting changed on the panel, by a project or a cord's source)
 
     if (t->view_due <= n)   // the view for the window, ~30 times a second
     {
@@ -703,7 +717,7 @@ bool np_get(const clap_plugin_t *, uint32_t index, bool is_input, clap_note_port
 }
 const clap_plugin_note_ports_t note_ports = {np_count, np_get};
 
-// ---- state: the project as a .tsp record
+// ---- state: the project as a .tsp record, then MASTER (the device's, not the project's) as "TMST" and 2 bytes
 
 bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
 {
@@ -713,6 +727,13 @@ bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
     {
         std::lock_guard<std::mutex> g(t->core_lock);
         len = t->core->save(b.data(), (uint32_t)b.size());
+        if (len)
+        {
+            uint32_t m = (uint32_t)t->master;
+            const uint8_t tail[6] = {'T', 'M', 'S', 'T', (uint8_t)m, (uint8_t)(m >> 8)};
+            b.insert(b.begin() + len, tail, tail + 6);
+            len += 6;
+        }
     }
     if (!len)
         return false;
@@ -729,7 +750,7 @@ bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
 bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
 {
     auto *t = self(p);
-    std::vector<uint8_t> b(t->core->tsp_max());
+    std::vector<uint8_t> b(t->core->tsp_max() + 6);
     uint32_t len = 0;
     for (;;)
     {
@@ -742,9 +763,22 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
             break;
         len += (uint32_t)got;
     }
-    std::lock_guard<std::mutex> g(t->core_lock);
-    bool ok = t->core->load(b.data(), len) == 0;
-    t->params_refresh();   // (the project's settings; the host rescans)
+    bool ok;
+    {
+        std::lock_guard<std::mutex> g(t->core_lock);
+        if (len >= 6 && !std::memcmp(&b[len - 6], "TMST", 4))
+        {
+            len -= 6;
+            uint32_t m = b[len + 4] | (uint32_t)b[len + 5] << 8;
+            t->master_set((int32_t)m);
+            t->param_now[PARAM_MASTER] = t->master;
+        }
+        ok = t->core->load(b.data(), len) == 0;
+        t->params_refresh();
+    }
+    auto *hp = static_cast<const clap_host_params_t *>(t->host->get_extension(t->host, CLAP_EXT_PARAMS));
+    if (hp && hp->rescan)
+        hp->rescan(t->host, CLAP_PARAM_RESCAN_VALUES);   // (the project's settings: the host reads them again)
     return ok;
 }
 const clap_plugin_state_t state = {st_save, st_load};
@@ -821,13 +855,14 @@ void pr_flush(const clap_plugin_t *p, const clap_input_events_t *in, const clap_
     auto *t = self(p);
     std::lock_guard<std::mutex> g(t->core_lock);   // (not processing: the main thread, or the audio thread between blocks)
     uint32_t n = in ? in->size(in) : 0;
+    bool any = false;
     for (uint32_t i = 0; i < n; i++)
     {
         const clap_event_header_t *h = in->get(in, i);
         if (h->space_id == CLAP_CORE_EVENT_SPACE_ID && h->type == CLAP_EVENT_PARAM_VALUE)
-            t->param_in(reinterpret_cast<const clap_event_param_value_t *>(h));
+            t->param_in(reinterpret_cast<const clap_event_param_value_t *>(h)), any = true;
     }
-    t->params_out(out, 0);
+    t->params_out(out, 0, any);
 }
 const clap_plugin_params_t params_ext = {pr_count, pr_info, pr_value, pr_to_text, pr_from_text, pr_flush};
 
