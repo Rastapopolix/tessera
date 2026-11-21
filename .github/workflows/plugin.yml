@@ -107,7 +107,7 @@ jobs:
         with:
           name: generated-headers
           path: build/gen
-      - name: Configure (universal: arm64 + x86_64)
+      - name: 'Configure (universal: arm64 + x86_64)'
         run: |
           cmake -S platform/plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release -DTESS_GEN=OFF \
             -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
@@ -132,7 +132,7 @@ jobs:
             lipo -info "$f"
             lipo "$f" -verify_arch arm64 x86_64
           done
-      - name: Pack (tar keeps the bundles whole)
+      - name: Pack the bundles in a tar
         run: tar -C build/plugin/out -czf build/plugin/tessera-plugin-macos.tar.gz Tessera.clap Tessera.vst3 Tessera.component Tessera.app
       - uses: actions/upload-artifact@v4
         with:
