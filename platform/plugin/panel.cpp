@@ -4,7 +4,9 @@
  * into a pixel buffer */
 #include "panel.h"
 
+#include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <cstdio>
 #include <cstring>
 
@@ -288,6 +290,13 @@ void Panel::note(const std::string &text)
 }
 
 void Panel::draw(uint32_t *px, const tess_view_t &v)
+{
+    zones.assign(v.zones, v.zones + (v.zone_count < (uint32_t)TESS_ZONES ? v.zone_count : (uint32_t)TESS_ZONES));
+    draw_body(px, v);
+    draw_hover(px);
+}
+
+void Panel::draw_body(uint32_t *px, const tess_view_t &v)
 {
     Canvas c{px};
     const Shell &sh = SHELLS[shell_];
@@ -657,6 +666,28 @@ bool Panel::down(int x, int y)
         menu_hover = sub_hover = -1;
         return false;
     }
+    int zi = zone_at(x, y);
+    if (zi >= 0)   // the screen: a zone (a double-click: the same zone, soon, where the first was)
+    {
+        const tess_zone_t z = zones[zi];
+        double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        bool dbl = click_known && zone_like(click_zone) == zi && now - click_t < 0.4 && std::abs(x - click_x) < 6 &&
+                   std::abs(y - click_y) < 6;
+        click_known = !dbl;
+        click_zone = z;
+        click_t = now, click_x = x, click_y = y;
+        if (z.kind == TESS_ZONE_KNOB)
+        {
+            drag = ZONE;
+            drag_zone = z;
+            if (dbl) zone_act(z, TESS_ZA_DOUBLE, 0);
+            return dbl;
+        }
+        drag = NONE;
+        if (dbl && z.kind != TESS_ZONE_ROW) return false;   // (OK, YES, a track: once, however often clicked)
+        zone_act(z, dbl ? TESS_ZA_DOUBLE : TESS_ZA_CLICK, 0);
+        return true;
+    }
     if ((drag_i = knob_at(x, y)) >= 0) { drag = KNOB; return false; }
     if ((drag_i = button_at(x, y)) >= 0 && (latch_buttons >> buttons[drag_i].bit & 1u))   // a latched one: let go
     {
@@ -735,10 +766,17 @@ bool Panel::move(int x, int y)
     }
     shell_hover = drag == NONE ? swatch_at(x, y) : -1;
     ink_hover = drag == NONE ? ink_at(x, y) : -1;
+    hover_in = true, hover_x = x, hover_y = y;
     int dx = x - last_x, dy = last_y - y;   // up or right: clockwise (the larger of the two)
     last_x = x;
     last_y = y;
-    if (drag == KNOB)
+    if (drag == ZONE)   // a value's column: as a knob, a detent every 8 px
+    {
+        acc += std::abs(dx) > std::abs(dy) ? dx : dy;
+        int n = acc / 8;
+        if (n) { acc -= n * 8; zone_act(drag_zone, TESS_ZA_TURN, n); return true; }
+    }
+    else if (drag == KNOB)
     {
         acc += std::abs(dx) > std::abs(dy) ? dx : dy;
         int step = knobs[drag_i].role < 0 ? 3 : 8, n = acc / step;
@@ -786,6 +824,12 @@ bool Panel::up(int, int)
 
 bool Panel::wheel(int x, int y, int notches)
 {
+    int zi = zone_at(x, y);
+    if (zi >= 0 && notches)   // a value, or a list's row: as its knob turned
+    {
+        zone_act(zones[zi], TESS_ZA_TURN, notches);
+        return true;
+    }
     int i = knob_at(x, y);
     if (i < 0 || !notches)
         return false;
@@ -1140,4 +1184,62 @@ int Panel::fm1_seg_at(int x) const
     if (x >= on_l && x < SEG_RIGHT) return 1;
     if (x >= off_l && x < off_r) return 0;
     return -1;
+}
+
+// ---- the screen's zones (tess_view_t.zones): where the page put its values, rows and keys
+int Panel::zone_at(int x, int y) const
+{
+    if (native() && menu_open) return -1;
+    int sx = x - (SCREEN_X + SCREEN_S / 32), sy = y - (SCREEN_Y + SCREEN_S / 32);
+    if (sx < 0 || sy < 0 || sx >= TESS_SCREEN || sy >= TESS_SCREEN) return -1;
+    for (size_t i = 0; i < zones.size(); i++)
+    {
+        const tess_zone_t &z = zones[i];
+        if (sx >= z.x && sx < z.x + z.w && sy >= z.y && sy < z.y + z.h) return (int)i;
+    }
+    return -1;
+}
+
+int Panel::zone_like(const tess_zone_t &z) const
+{
+    for (size_t i = 0; i < zones.size(); i++)
+        if (zones[i].kind == z.kind && zones[i].role == z.role && zones[i].vrole == z.vrole && zones[i].row == z.row)
+            return (int)i;
+    return -1;
+}
+
+void Panel::zone_act(const tess_zone_t &z, uint32_t action, int n)
+{
+    input.zones.push_back({z, action, n});
+    input.changed = true;
+}
+
+// the zone under the mouse (or being dragged): a hairline round it on the screen, and under the screen a card with its
+// name and its value large (the readability the FM-1's 5 x 7 text lacks), black with Tessera yellow
+void Panel::draw_hover(uint32_t *px)
+{
+    int zi = drag == ZONE ? zone_like(drag_zone) : hover_in && drag == NONE ? zone_at(hover_x, hover_y) : -1;
+    if (zi < 0) return;
+    const tess_zone_t &z = zones[zi];
+    Canvas c{px};
+    const uint32_t YEL = 0xFFFFD020, WORD = 0xFFB9B2A0, BLACK = 0xFF000000;
+    int ox = SCREEN_X + SCREEN_S / 32, oy = SCREEN_Y + SCREEN_S / 32;
+    c.box(ox + z.x, oy + z.y, z.w, 1, YEL);
+    c.box(ox + z.x, oy + z.y + z.h - 1, z.w, 1, YEL);
+    c.box(ox + z.x, oy + z.y, 1, z.h, YEL);
+    c.box(ox + z.x + z.w - 1, oy + z.y, 1, z.h, YEL);
+    if (!z.name[0] && !z.value[0]) return;
+    // the card: under the screen (it never covers it), centred on the zone, one line: the name, then the value large
+    std::string name = z.name, value = z.value;
+    for (auto &ch : name) ch = ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
+    int nw = Canvas::ptext_w(name.c_str(), 2), vw = value.empty() ? 0 : Canvas::ptext_w(value.c_str(), 3);
+    int w = nw + (vw ? vw + 14 : 0) + 20, h = 34;
+    int x = ox + z.x + z.w / 2 - w / 2, y = SCREEN_Y + SCREEN_S + 3;
+    if (x < SCREEN_X - 80) x = SCREEN_X - 80;
+    if (x + w > SCREEN_X + SCREEN_S + 80) x = SCREEN_X + SCREEN_S + 80 - w;
+    c.box(x, y, w, h, BLACK);
+    c.box(x, y, w, 2, YEL), c.box(x, y + h - 2, w, 2, YEL);
+    c.box(x, y, 2, h, YEL), c.box(x + w - 2, y, 2, h, YEL);
+    c.ptext(x + 10, y + 11, name.c_str(), 2, WORD);
+    if (vw) c.ptext(x + 10 + nw + 14, y + 7, value.c_str(), 3, YEL);
 }

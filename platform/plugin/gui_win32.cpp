@@ -37,6 +37,7 @@ class GuiWin32 : public Gui
     GuiLink *link;   // this window's instance
     HWND wnd = nullptr;
     Panel panel;
+    int wheel_acc = 0;   // (WM_MOUSEWHEEL's deltas not yet a notch)
     std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
     tess_view_t view{};
 
@@ -130,7 +131,11 @@ class GuiWin32 : public Gui
         {
             POINT p{x, y};   // (screen coordinates)
             ScreenToClient(h, &p);
-            g->input(g->panel.wheel(p.x, p.y, GET_WHEEL_DELTA_WPARAM(wp) / WHEEL_DELTA));
+            g->wheel_acc += GET_WHEEL_DELTA_WPARAM(wp);   // (a touchpad's small deltas gathered into notches)
+            int n = g->wheel_acc / WHEEL_DELTA;
+            g->wheel_acc -= n * WHEEL_DELTA;
+            if (n)
+                g->input(g->panel.wheel(p.x, p.y, n));
             return 0;
         }
         }
