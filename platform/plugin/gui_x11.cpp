@@ -66,7 +66,11 @@ class GuiX11 : public Gui
     std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
     tess_view_t view{};
 
-    GuiX11(const clap_host_t *h, GuiLink *l) : host(h), link(l) { panel.set_shell(l->shell()); }
+    GuiX11(const clap_host_t *h, GuiLink *l) : host(h), link(l)
+    {
+        panel.set_shell(l->shell());
+        panel.set_inks(l->inks());
+    }
     GuiLink *link;   // this window's instance
     ~GuiX11() override
     {
@@ -125,6 +129,9 @@ class GuiX11 : public Gui
         int sh = panel.take_shell_request();   // (a shell picked: its ink)
         if (sh >= 0)
             link->shell_picked(sh);
+        int ink = panel.take_ink_request();    // (an ink picked)
+        if (ink >= 0)
+            link->ink_picked(ink);
         if (ask)
         {
             std::lock_guard<std::mutex> g(ask->lock);
@@ -166,6 +173,14 @@ class GuiX11 : public Gui
         }).detach();
     }
 
+    // the screen's ink changed since the last frame (not at the window's first): the next window's
+    int ink_last = -1;
+    void ink_check()
+    {
+        if (ink_last >= 0 && (int)view.ink != ink_last)
+            link->ink_seen((int)view.ink);
+        ink_last = (int)view.ink;
+    }
     void tick() override
     {
         if (!dpy)
@@ -221,6 +236,7 @@ class GuiX11 : public Gui
         if (changed)
             link->input(panel.input);
         link->view(view);
+        ink_check();
         panel.draw(px.data(), view);
         XPutImage(dpy, wnd, gc, img, 0, 0, 0, 0, Panel::W, Panel::H);
         XFlush(dpy);

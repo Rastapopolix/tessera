@@ -26,7 +26,11 @@ extern "C" IMAGE_DOS_HEADER __ImageBase;   // this module (the class belongs to 
 class GuiWin32 : public Gui
 {
   public:
-    explicit GuiWin32(GuiLink *l) : link(l) { panel.set_shell(l->shell()); }
+    explicit GuiWin32(GuiLink *l) : link(l)
+    {
+        panel.set_shell(l->shell());
+        panel.set_inks(l->inks());
+    }
     GuiLink *link;   // this window's instance
     HWND wnd = nullptr;
     Panel panel;
@@ -147,6 +151,9 @@ class GuiWin32 : public Gui
         int sh = panel.take_shell_request();   // (a shell picked: its ink)
         if (sh >= 0)
             link->shell_picked(sh);
+        int ink = panel.take_ink_request();    // (an ink picked)
+        if (ink >= 0)
+            link->ink_picked(ink);
         int req = panel.take_file_request();
         if (req == Panel::FILE_NONE)
             return;
@@ -225,9 +232,18 @@ class GuiWin32 : public Gui
     }
     bool show() override { return wnd && (ShowWindow(wnd, SW_SHOW), true); }
     bool hide() override { return wnd && (ShowWindow(wnd, SW_HIDE), true); }
+    // the screen's ink changed since the last frame (not at the window's first): the next window's
+    int ink_last = -1;
+    void ink_check()
+    {
+        if (ink_last >= 0 && (int)view.ink != ink_last)
+            link->ink_seen((int)view.ink);
+        ink_last = (int)view.ink;
+    }
     void tick() override
     {
         link->view(view);
+        ink_check();
         InvalidateRect(wnd, nullptr, FALSE);
     }
 };

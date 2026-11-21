@@ -204,6 +204,10 @@ struct Tessera : GuiLink
     int shell_i = 0;
     int shell() override { return shell_i; }
     void shell_picked(int i) override;
+    // the inks (gui.h): MENU > COLOR's choices; the last one shown in any window, from the plugin's settings
+    std::vector<Panel::Ink> inks() override;
+    void ink_picked(int i) override;
+    void ink_seen(int i) override;
 };
 
 Tessera *self(const clap_plugin_t *p) { return static_cast<Tessera *>(p->plugin_data); }
@@ -311,6 +315,40 @@ void Tessera::shell_picked(int i)
         core->ink(Panel::shell_ink(i));
     }
     projfile::setting_put("shell", Panel::shell_id(i));
+}
+
+std::vector<Panel::Ink> Tessera::inks()
+{
+    std::vector<Panel::Ink> list;
+    uint32_t n = core->ink_at(0, nullptr, nullptr);
+    for (uint32_t i = 0; i < n; i++)
+    {
+        const char *name = "";
+        Panel::Ink k{};
+        core->ink_at(i, &name, k.rgb);
+        k.name = name;
+        list.push_back(k);
+    }
+    return list;
+}
+
+// an ink picked under the buttons: on this Tessera's screen, as MENU > COLOR would (ink_seen remembers it)
+void Tessera::ink_picked(int i)
+{
+    const char *name = nullptr;
+    if (i < 0 || (uint32_t)i >= core->ink_at((uint32_t)i, &name, nullptr) || !name)
+        return;
+    std::lock_guard<std::mutex> g(core_lock);
+    core->ink(name);
+}
+
+// the screen's ink changed, however: the ink the next window opens with, in any instance (over its shell's ink until
+// a shell is picked again)
+void Tessera::ink_seen(int i)
+{
+    const char *name = nullptr;
+    if (i >= 0 && (uint32_t)i < core->ink_at((uint32_t)i, &name, nullptr) && name)
+        projfile::setting_put("ink", name);
 }
 
 void Tessera::midi_in(const clap_event_header_t *h)
@@ -530,6 +568,9 @@ bool p_init(const clap_plugin_t *p)
         t->shell_i = sh;
         t->core->ink(Panel::shell_ink(sh));
     }
+    std::string ink = projfile::setting_get("ink");   // (the ink last shown, if it differs from the shell's)
+    if (!ink.empty())
+        t->core->ink(ink.c_str());
     t->master_set(700);   // (MASTER's default)
     t->params_make();
     return true;
