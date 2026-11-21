@@ -99,7 +99,7 @@ jobs:
 
   macos:
     needs: linux
-    runs-on: macos-14
+    runs-on: macos-latest   # (macos-14 is no longer offered: "not supported")
     timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
