@@ -47,7 +47,9 @@ the first time: click *More info*, then *Run anyway*.
 ## First sound
 
 A new Tessera opens with **STILL TIDE** loaded (and KOTO GARDEN in slot B). Press PLAY in the DAW and it plays. Play
-notes from a MIDI track or a keyboard routed to Tessera: they go to the selected track, as the FM-1's keys do.
+notes from a MIDI track or a keyboard routed to Tessera: they go to the selected track, as the FM-1's keys do, on
+any MIDI channel (GLO > SYSTEM ROUT starts at SEL in the plugin). To play each track from its own DAW track instead,
+set ROUT to a channel range (CH1-8: channel 1 plays track 1, channel 2 track 2, and so on).
 
 ## The window
 
@@ -120,7 +122,8 @@ Tessera follows the DAW's transport:
 - **The DAW's tempo** drives Tessera's clock, tempo changes included. The BPM on the screen is the DAW's, rounded. A
   TEMPO mod has no effect while the DAW plays.
 - **A loop or a jump** in the DAW moves Tessera to that point. **STOP** stops it.
-- With **CLK** set to MIDI, an outside MIDI clock leads instead, and the DAW only starts and stops it.
+- **CLK** stays INT in the plugin and **CLOCK OUT** stays off: the DAW keeps time, so Tessera neither follows nor sends
+  a MIDI clock.
 
 ## Saving, and project files
 
@@ -163,16 +166,19 @@ When a setting changes on the panel, by loading a project or by Tessera itself (
 generator moving), the DAW hears about it: MASTER and the MACROs at once, the rest within a fraction of a second.
 
 Not parameters: the device's own settings (A4, the MIDI routing), and the MOD cords. Make those on the panel; the
-project saves them.
+DAW project saves them: the cords in the Tessera project, and ROUT, DRUM's channel, NOTES OUT and TUNE beside it
+(they stay out of the `.tsp`, as on the FM-1, where they belong to the device and not to a project).
 
 ## Track outputs and MIDI out
 
 - **Track outputs:** besides the main stereo mix, Tessera has eight more outputs, TRACK 1 to TRACK 8, each track on
   its own, as the FM-1's USB stems are: after the track's level, before pan and the bus effects. Route them to their
   own mixer channels in the DAW to process each track apart.
-- **MIDI out:** every track's notes, each on its own channel (GLO > MIDI OUT; by default channels 1 to 8), so
-  Tessera's generators can play other instruments. NOTES OUT starts at ALL in the plugin (the generators' notes too).
-  MENU can set it to KEYS or OFF.
+- **MIDI out:** every track's notes, each on its own channel (GLO > MIDI OUT; by default channels 1 to 8, whatever
+  ROUT is set to, so the DAW's routing holds), so Tessera's generators can play other instruments. NOTES OUT starts
+  at ALL in the plugin (the generators' notes too). MENU can set it to KEYS or OFF. Only notes go out (no clock).
+  When the DAW stops, bypasses or restarts Tessera, every note it left on gets its note-off. Not every DAW takes MIDI
+  from an instrument: Bitwig and Reaper do, Ableton Live does not.
 
 ## Several Tesseras in one song
 

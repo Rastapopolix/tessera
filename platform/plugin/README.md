@@ -13,7 +13,11 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
   A project with them opens on the FM-1 too: its SID, MACRO and PHASE tracks play FM6's INIT there, a SID kit the 909. The Daisy build (Andamento) has them as well.
 - **Start:** STILL TIDE is loaded (KOTO GARDEN in slot B), as in the simulator. The host's PLAY / STOP start and stop
   it; the standalone app has no transport, so it plays at once.
-- **MIDI in:** notes and MIDI messages reach Tessera as USB MIDI does on the FM-1, at their exact sample.
+- **MIDI in:** notes and MIDI messages reach Tessera as USB MIDI does on the FM-1, at their exact sample. ROUT starts
+  at SEL (a DAW sends on channel 1: the notes play the selected track); a note-off for every key (key -1) is All
+  Notes Off, a choke All Sound Off. CLK stays INT and CLOCK OUT off (the DAW keeps time). The device's MIDI setup
+  (ROUT, DRUM's channel, NOTES OUT, TUNE: `tess_core_setup_save`) goes in the DAW state as its bytes, their count and
+  `TGLO`, before `TMST`, never in the `.tsp`; a reused core copy gets its power-on setup back.
 - **Saving:** the plugin's state in the DAW project is the Tessera project as a `.tsp` record, the same bytes SAVE >
   PROJECT writes on the FM-1.
 - **Project files:** OPEN and SAVE, under the keys, open a `.tsp` (the editor's "project file", the demos in
@@ -61,8 +65,10 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
 
 - **Track outputs:** besides the main mix, TRACK 1..4 each alone (the FM-1's USB stems: the track after its level,
   before pan and the bus FX, mono on both sides). The core makes them once the DAW connects one.
-- **MIDI out:** every track's notes, each on its own channel (GLO > MIDI OUT; by default ROUT's 1..4), to drive other
-  instruments. NOTES OUT starts at ALL in the plugin (the generators' notes too); MENU can set KEYS or OFF.
+- **MIDI out:** every track's notes, each on its own channel (GLO > MIDI OUT; AUTO is the track's own 1..8 here,
+  whatever ROUT takes in), to drive other instruments. NOTES OUT starts at ALL in the plugin (the generators' notes
+  too); MENU can set KEYS or OFF. Channel messages only (no clock or system messages). The notes left on when the host
+  stops processing (stop_processing, deactivate, reset) get their note-offs in the next block (`tess_core_notes_off`).
 - **Several instances:** up to 8 Tesseras in one DAW project, each wholly its own (its project, transport, window,
   parameters), and they may run on different threads. The firmware keeps its state in globals, so the plugin carries
   8 private copies of the core (`core_copy.c`: the core compiled once per copy, each of its shared names prefixed
