@@ -27,7 +27,7 @@ static uint64_t fx_signal(uint32_t type,int rate,int character,int mix,const cha
             if(frame%173u==0u && !i)b[i]+=18000;
         }
         int on=fx_process(t,b,CTL);
-        assert(resource[RES_FX0].size==(type==FX_ECHO && mix?8192u:type==FX_REVERB && mix?FX_REVERB_BYTES:type==FX_CHORUS && mix?FX_CHORUS_BYTES:type==FX_ROOM && mix?2048u:0u));
+        assert(resource[RES_FX0].size==(FX_IS_ECHO(type) && mix?fx_ring(&fx_state[0])*2u:type==FX_REVERB && mix?FX_REVERB_BYTES:type==FX_CHORUS && mix?FX_CHORUS_BYTES:type==FX_ROOM && mix?2048u:0u));
         for(uint32_t i=0;i<CTL;i++){
             int32_t l=on?fx_left[i]:b[i],r=on?fx_right[i]:b[i];
             assert(l>=-1000000 && l<=1000000 && r>=-1000000 && r<=1000000);

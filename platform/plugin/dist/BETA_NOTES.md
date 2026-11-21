@@ -25,6 +25,7 @@ its version, your system, the steps, what you expected and what happened).
 - Sounds only the plugin has: SID, the SID drum kit and SID DIGI, MACRO, and PHASE (phase distortion in the manner of
   the CZ-1). On the FM-1 those tracks play FM6's INIT sound instead.
 - Shell and ink pickers: your choice is remembered for every new window.
+- FX **SYNC ECHO**: an echo on note values (1/32 to 1/1, triplets, dotted) at the DAW's tempo, up to about 3 s.
 
 ## Not there yet
 - Tracks 5 to 8's settings are saved with your DAW song, but **their steps aren't saved yet**, and a `.tsp` holds

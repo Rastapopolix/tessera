@@ -6,8 +6,18 @@
 #include "../hal/fm1_eq.h"
 #define FX_RATE (FS/4u)
 #define FX_REV_DIV 8u
-enum { FX_OFF, FX_PHASER, FX_WIDTH, FX_FORMANT, FX_TAPE, FX_SPIT, FX_ECHO, FX_ROOM, FX_REVERB, FX_CHORUS, FX_FILTER, FX_DRIVE, FX_COUNT };
-#define FX_MEMORY(type) ((type)>=FX_ECHO && (type)<=FX_CHORUS)   /* (the effects with a delay line, resource RES_FX0..) */
+enum { FX_OFF, FX_PHASER, FX_WIDTH, FX_FORMANT, FX_TAPE, FX_SPIT, FX_ECHO, FX_ROOM, FX_REVERB, FX_CHORUS, FX_FILTER, FX_DRIVE,
+#if MELODEE_ECHO_SYNC
+       FX_SYNC,                   /* SYNC ECHO: ECHO on note values (appended: firmware without it plays DRIVE, the clamp) */
+#endif
+       FX_COUNT };
+#if MELODEE_ECHO_SYNC
+#define FX_IS_ECHO(type) ((type)==FX_ECHO || (type)==FX_SYNC)
+#else
+#define FX_IS_ECHO(type) ((type)==FX_ECHO)
+#endif
+#define FX_MEMORY(type) (((type)>=FX_ECHO && (type)<=FX_CHORUS) || FX_IS_ECHO(type))   /* (the effects with a delay line,
+                                                                                       * resource RES_FX0..) */
 typedef struct { float b0,b1,b2,a1,a2,z1,z2; } fx_bq_t;
 typedef struct {
     fx_bq_t q[2][4];
@@ -272,40 +282,68 @@ static __attribute__((noinline,section(".audio_text"),aligned(16))) void fx_svf(
 #ifndef FX_SLEEP_OFF
 #define FX_SLEEP_OFF 0            /* (tests/fx_test.c: 1 keeps ECHO awake, to compare the output) */
 #endif
-/* ECHO asleep (fx_slot_run): after ECHO_QUIET ticks that read and wrote only zeros the whole 4096-sample ring is
+/* ECHO asleep (fx_slot_run): after ECHO_QUIET ticks (a ring's more) that read and wrote only zeros the whole ring is
  * zero; with no input this block, TIME settled and MIX at its target, the block would read, write and return
  * zeros: move the ring's place and the tick phase only, and leave fx_left / fx_right (all zero) as they are. Exact */
 #define ECHO_QUIET 4100u
+#if MELODEE_ECHO_SYNC
+/* SYNC ECHO's TIME (RATE 0..127, 14 even steps): a note value in 1/24 beats, short to long, each triplet and dotted
+ * value between its straight neighbours (params.c N_ECHODIV names them) */
+static const uint8_t FX_SYNC_DIV[14] = {3, 4, 6, 8, 9, 12, 16, 18, 24, 32, 36, 48, 72, 96};
+static uint32_t beat_samples(void);                     /* mix.c: a beat at the tempo playing (DAW, MIDI clock, BPM) */
+#endif
+static uint32_t fx_ring(const fx_state_t *f)            /* ECHO's ring, in quarter-rate samples */
+{
+#if MELODEE_ECHO_SYNC
+    if (f->type == FX_SYNC) return MELODEE_ECHO_RING;
+#endif
+    (void)f;
+    return 4096u;
+}
+/* the delay ECHO glides to (Q8, quarter-rate samples): TIME's ms, or SYNC ECHO's note value at the tempo playing,
+ * halved until it fits the ring (a 1/2 note at 120 BPM in the FM-1's 371 ms: a 1/8) */
+static int32_t fx_echo_want(const fx_state_t *f)
+{
+#if MELODEE_ECHO_SYNC
+    if (f->type == FX_SYNC) {
+        uint32_t back = beat_samples() * FX_SYNC_DIV[(uint32_t)f->rate * 14u >> 7] / 96u;
+        while (back > MELODEE_ECHO_RING - 2u) back >>= 1;
+        return (int32_t)((back ? back : 1u) << 8);
+    }
+#endif
+    return (int32_t)(110u + (uint32_t)f->rate * 31u) << 8;
+}
 static inline __attribute__((always_inline)) int fx_time_asleep(fx_state_t *f,uint32_t n,int32_t target)
 {
-    if(FX_SLEEP_OFF || f->type!=FX_ECHO || f->quiet<ECHO_QUIET || f->mix!=target || f->rev_l || f->rev_r || f->rev_prev_l || f->rev_prev_r)
+    if(FX_SLEEP_OFF || !FX_IS_ECHO(f->type) || f->quiet<fx_ring(f)+(ECHO_QUIET-4096u) || f->mix!=target || f->rev_l || f->rev_r || f->rev_prev_l || f->rev_prev_r)
         return 0;
-    if(f->glide!=(int32_t)(110u+(uint32_t)f->rate*31u)<<8)return 0;   /* (TIME still gliding) */
+    if(f->glide!=fx_echo_want(f))return 0;              /* (TIME still gliding) */
     int32_t any=0;
     for(uint32_t i=0;i<n;i++)any|=fx_left[i]|fx_right[i];
     if(any)return 0;
     uint32_t first=(4u-f->decim)&3u,ticks=first<n?1u+(n-1u-first)/4u:0u;
-    f->pos=(f->pos+ticks)&4095u;f->decim=(uint8_t)((f->decim+n)&3u);
+    f->pos=(f->pos+ticks)&(fx_ring(f)-1u);f->decim=(uint8_t)((f->decim+n)&3u);
     return 1;
 }
 static __attribute__((noinline,section(".dsp_text"))) void fx_time(fx_state_t *restrict f,int16_t *restrict mem,uint32_t n,int32_t target)
 {
     static const uint16_t len[4]={149,211,263,293};
-    int32_t mix=f->mix,want=(int32_t)(110u+(uint32_t)f->rate*31u)<<8,at=f->glide?f->glide:want;
-    int32_t feedback=f->type==FX_ECHO?f->character*220:12000+f->character*120;
+    int32_t mix=f->mix,want=fx_echo_want(f),at=f->glide?f->glide:want;
+    uint32_t echo=FX_IS_ECHO(f->type),m=fx_ring(f)-1u;
+    int32_t feedback=echo?f->character*220:12000+f->character*120;
     if(f->type==FX_ROOM && (!f->rev_span[0] || f->rev_rate!=f->rate)){
         f->rev_rate=f->rate;for(uint32_t k=0;k<4u;k++)f->rev_span[k]=(uint16_t)((uint32_t)len[k]*(64u+(uint32_t)f->rate)/191u);
     }
     for(uint32_t i=0;i<n;i++){
         int32_t mono=fx_div_pow2(fx_left[i]+fx_right[i],1);
         if(!f->decim){
-            if(f->type==FX_ECHO){
+            if(echo){
                 if(at!=want)at+=fx_limit(want-at,-64,64);
-                uint32_t back=(uint32_t)at>>8;int32_t a=mem[(f->pos+4096u-back)&4095u],b=mem[(f->pos+4095u-back)&4095u];
+                uint32_t back=(uint32_t)at>>8;int32_t a=mem[(f->pos+m+1u-back)&m],b=mem[(f->pos+m-back)&m];
                 f->echo=a+(((b-a)*(at&255))>>8);
                 int32_t w=fx_limit(mono+fx_div_pow2(f->echo*feedback,15),-32767,32767);
                 mem[f->pos]=(int16_t)w;
-                f->pos=(f->pos+1u)&4095u;
+                f->pos=(f->pos+1u)&m;
                 f->quiet=(a|b|w|f->echo)?0u:(uint16_t)(f->quiet+(f->quiet<0xFFFFu));
             }else{
                 int32_t sum=0;uint32_t off=0;
@@ -659,7 +697,7 @@ static void fx_slot_prepare(fx_plan_t *plan,uint32_t si,const int16_t *p)
 #endif
     int16_t *mem=0;
     if(FX_MEMORY(f->type)){
-        uint32_t bytes=f->type==FX_CHORUS?FX_CHORUS_BYTES:f->type==FX_ROOM?2048u:f->type==FX_REVERB?FX_REVERB_BYTES:8192u;
+        uint32_t bytes=f->type==FX_CHORUS?FX_CHORUS_BYTES:f->type==FX_ROOM?2048u:f->type==FX_REVERB?FX_REVERB_BYTES:fx_ring(f)*2u;
         if(!f->failed && !resource[RES_FX0+si].size){
             void *(*volatile allocate)(uint32_t,uint32_t)=fx_memory;mem=allocate(RES_FX0+si,bytes);if(!mem)f->failed=1;
         }else if(resource[RES_FX0+si].size)mem=resource[RES_FX0+si].ptr;

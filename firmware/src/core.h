@@ -29,6 +29,14 @@ _Static_assert(CORE_TRACKS == 4 || CORE_TRACKS == 8, "CORE_TRACKS: 4 or 8");
 #define MELODEE_ADMISSION 0 /* enable only with a calibrated performance contract */
 #endif
 #define VOICE_BUDGET_DEFAULT (MELODEE_ADMISSION ? 16u : VBUDGET)
+#ifndef MELODEE_ECHO_SYNC
+#define MELODEE_ECHO_SYNC 1       /* FX type SYNC ECHO: ECHO on note values at the tempo playing (fx.c) */
+#endif
+#ifndef MELODEE_ECHO_RING
+#define MELODEE_ECHO_RING 4096u   /* SYNC ECHO's ring at FS/4, a power of two: 4096 (the FM-1's ECHO, 371 ms; longer note
+                                   * values fold to the longest that fits), 32768 in the plugin (~3 s) */
+#endif
+_Static_assert((MELODEE_ECHO_RING & (MELODEE_ECHO_RING - 1u)) == 0 && MELODEE_ECHO_RING >= 4096u, "MELODEE_ECHO_RING");
 #ifndef MELODEE_AUDIO_BENCH
 #define MELODEE_AUDIO_BENCH 0 /* laboratory fixed-voice admission bypass; never a release default */
 #endif

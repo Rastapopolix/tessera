@@ -188,6 +188,11 @@ The plugin has room for engines the FM-1 can't fit:
 The Daisy build (Andamento) has them too. On the FM-1, a SID, MACRO or PHASE track plays FM6's INIT sound instead, and
 a SID kit plays the 909, so a project still opens and plays there.
 
+## Echoes on the beat
+
+FX's **SYNC ECHO** repeats on a note value (1/32 to 1/1, triplets and dotted) at the DAW's tempo. The plugin's echo
+holds about 3 s, so a 1/2 or a 1/1 rings as set; on the FM-1 it holds 371 ms and a longer value halves until it fits.
+
 ## How much CPU it takes
 
 On average, one Tessera playing a project takes about 2 % of one core of a 2.1 GHz desktop processor, at 48 kHz.

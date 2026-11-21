@@ -54,6 +54,10 @@ C64	C 64
 4T	quarter triplet
 8T	eighth triplet
 16T	sixteenth triplet
+16D	dotted sixteenth
+8D	dotted eighth
+4D	dotted quarter
+2D	dotted half
 32T	thirty-second triplet
 50S	fifties
 

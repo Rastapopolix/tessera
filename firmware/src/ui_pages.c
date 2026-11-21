@@ -780,7 +780,11 @@ static void pv_fx(void)
     }
     uint32_t base=cur_page()->id[0],master=cur_page()->scope==SC_GLOBAL,slot=(base-(master?G_MFXTYPE:P_FXTYPE))/FX_PARAMS;
     const int16_t *values=master?song.g:TSEL->p;uint32_t type=(uint32_t)clamp(values[base],0,FX_COUNT-1);
-    static const char *const hint[FX_COUNT]={"Dry signal","Moving notches","All-pass L / dry R","Random vowels","Crossover jitter","Jumping resonance","Short lo-fi echoes","Small lo-fi space","Diffused reverb","Pitch shimmer","Resonant low-pass","Soft clip, fold"};
+    static const char *const hint[FX_COUNT]={"Dry signal","Moving notches","All-pass L / dry R","Random vowels","Crossover jitter","Jumping resonance","Short lo-fi echoes","Small lo-fi space","Diffused reverb","Pitch shimmer","Resonant low-pass","Soft clip, fold",
+#if MELODEE_ECHO_SYNC
+        "Echo on the beat"
+#endif
+    };
     int32_t mix=values[base+1u],cha=values[base+3u],py=50*16;
     cv_text_on(12,8,&AF_X,hint[type],T_MID,T_PANEL);
     for(int32_t x=0;x<208;x++){
