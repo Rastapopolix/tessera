@@ -54,6 +54,8 @@ void tess_core_boot(void)
     core_booted = 1;
 #ifdef TESS_PLUGIN_IO
     settings_midi_out = MIDI_OUT_ALL;             /* (a DAW wants the generators' notes too; MENU can change it) */
+    song.g[G_ROUTE] = 1;                          /* ROUT SEL: a DAW sends on channel 1, and the notes play the selected
+                                                   * track, as the panel's keys do (GLO > SYSTEM can set the ranges) */
 #endif
 }
 
@@ -151,6 +153,8 @@ static float stem_ring[RING][NTRK];
 static void tess_plugin_block(uint32_t frame)
 {
     uint32_t k, t;
+    song.g[G_CLOCK] = 0;                          /* the DAW is the clock: CLK stays INT (no MIDI clock reaches a */
+    settings_clock_out = 0;                       /* plugin, tess_core_midi), and no CLOCK OUT into the DAW */
     if (!tess_plugin_stems)
         return;
     for (k = 0; k < CTL; k++)
@@ -364,6 +368,11 @@ uint32_t tess_core_save(uint8_t *out, uint32_t cap)
     project_t *p = &proj_scratch;
     uint32_t len;
     project_capture(p);
+#ifdef TESS_PLUGIN_IO
+    p->g[G_ROUTE] = 0;                            /* (the record's ROUT is the FM-1's power-on one: every target leaves it
+                                                   * unread (project.c GLO_KEPT), the plugin keeps its own beside the
+                                                   * record (tess_core_setup_save), and the bytes stay the FM-1's) */
+#endif
     proj_wire_gen++;
     len = tsp_pack(proj_wire_u.raw, p, 1);
     if (!len || len > cap)
@@ -416,6 +425,46 @@ void tess_core_slot_load(uint32_t slot)
     ui.force = 1;
 }
 
+/* the device's own MIDI and tuning setup (project.c GLO_KEPT: a project load leaves it as it is), for a front end to
+ * keep beside the project: version 1, ROUT, DRUM's channel, NOTES OUT, TUNE (-50..50, +128) */
+#define SETUP_LEN 5u
+uint32_t tess_core_setup_save(uint8_t *out, uint32_t cap)
+{
+    if (cap < SETUP_LEN)
+        return 0;
+    out[0] = 1u;
+    out[1] = (uint8_t)song.g[G_ROUTE];
+    out[2] = settings_drumch;
+    out[3] = settings_midi_out;
+    out[4] = (uint8_t)(song.g[G_TUNE] + 128);
+    return SETUP_LEN;
+}
+uint32_t tess_core_setup_load(const uint8_t *in, uint32_t len)
+{
+    int32_t tune;
+    if (len < SETUP_LEN || in[0] != 1u)           /* (a later version: its first five bytes are these) */
+        return 1;
+    if (in[1] < sizeof N_ROUTE / sizeof N_ROUTE[0])
+        song.g[G_ROUTE] = in[1];
+    if (in[2] <= 16u)
+        settings_drumch = in[2];
+    if (in[3] < MIDI_OUT_N)
+        settings_midi_out = in[3];
+    tune = (int32_t)in[4] - 128;
+    if (tune >= -50 && tune <= 50)
+        song.g[G_TUNE] = (int16_t)tune;
+    ui.force = 1;
+    return 0;
+}
+
+/* every note MIDI OUT still has on goes off (each track's, midi_out.c), as a STOP sends them */
+void tess_core_notes_off(void)
+{
+    uint32_t k;
+    for (k = 0; k < NTRK; k++)
+        midi_out_flush(k);
+}
+
 /* ---- parameters by central ID (pid.c) */
 uint32_t tess_core_param_count(void) { return pid_count(); }
 uint32_t tess_core_param_info(uint32_t pid, uint32_t track, tess_param_t *info)
@@ -433,6 +482,10 @@ uint32_t tess_core_param_info(uint32_t pid, uint32_t track, tess_param_t *info)
     info->def = d->def;
     info->per_track = (e->flags & PID_F_TRACK) ? 1u : 0u;
     info->settable = !(e->flags & PID_F_DEVICE) && (pid >= PID_TESS(0) || d->max > d->min);   /* (as pid_set) */
+#ifdef TESS_PLUGIN_IO
+    if (pid == PID_GLOBAL(G_CLOCK))
+        info->settable = 0;                       /* (CLK stays INT in the plugin, tess_plugin_block: not a parameter) */
+#endif
     info->span_min = d->min;
     info->span_max = d->max;
     if (pid >= P_E0 && pid <= P_E7) {             /* an engine's knob: its range over every engine */

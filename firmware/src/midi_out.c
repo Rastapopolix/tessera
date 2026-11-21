@@ -4,7 +4,8 @@
  * MIDI OUT (Settings): KEYS the notes played on the keys (as Melodee always sent them), ALL also the steps, the
  * ARP, recordings and every generator, OFF nothing. Only notes started inside the sequencer (seq_advance) are sent
  * as ALL's extra ones, so MIDI IN is never echoed back. A track's channel is its own (GLO > MIDI OUT, tessera.midi_ch:
- * 1..16, or OFF: none of its notes), or AUTO: ROUT's (CH1-4: 1..4, CH5-8: 5..8, ..; SEL: 1..4), a drum track's the
+ * 1..16, or OFF: none of its notes), or AUTO: ROUT's (CH1-4: 1..4, CH5-8: 5..8, ..; SEL: 1..4; the plugin: always the
+ * track's own, 1..8), a drum track's the
  * SYSTEM DRUM channel. A track's TRANSPOSE (OCT+ held on GLO > MIDI OUT, tessera.midi_tr) moves its notes on the way
  * out only; one moved past 0..127 is not sent. Every note sent is remembered until its note-off went out, so
  * a STOP, a panic, a channel or a TRANSPOSE change never leaves a note hanging on the other side.
@@ -22,7 +23,11 @@ static uint32_t midi_out_clk;                    /* CLOCK OUT: 24 x the samples 
 #define MIDI_OUT_NONE 16u                        /* midi_out_channel: the track's MIDI OUT is OFF */
 static uint32_t midi_out_channel(const track_t *t)
 {
+#ifdef TESS_PLUGIN_IO   /* (the plugin: AUTO is the track's own 1..8, whatever ROUT takes in, so a DAW's routing holds) */
+    uint32_t first = 0, k = trk_index(t);
+#else
     uint32_t route = (uint32_t)song.g[G_ROUTE], first = route > 1u ? (route - 1u) * 4u : 0u, k = trk_index(t);
+#endif
     if (k < TESSERA_TRACKS && tessera.midi_ch[k])
         return tessera.midi_ch[k] >= TESS_MIDI_OFF ? MIDI_OUT_NONE : tessera.midi_ch[k] - 1u;
     if (settings_drumch && drum_track(t))

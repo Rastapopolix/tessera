@@ -6,7 +6,10 @@
  *   - outputs: the main mix, then TRACK 1..8 alone (the FM-1's USB stems); a MIDI out with every track's notes on its
  *     own channel (Settings > NOTES OUT ALL by default here; GLO > MIDI OUT per track);
  *   - the core runs at 44.1 kHz (tess_core.h) and is resampled (linear) to the host's rate;
- *   - notes and MIDI in (CLAP or MIDI dialect) go to the core as USB MIDI does on the FM-1, at their sample;
+ *   - notes and MIDI in (CLAP or MIDI dialect) go to the core as USB MIDI does on the FM-1, at their sample; ROUT
+ *     starts at SEL here (a DAW's channel 1 plays the selected track), a wildcard note-off or a choke is All Notes Off
+ *     / All Sound Off; CLK stays INT and CLOCK OUT off (the DAW keeps time), and MIDI OUT sends only the notes; the
+ *     device's MIDI setup (ROUT, DRUM's channel, NOTES OUT, TUNE) is kept in the DAW project beside the .tsp;
  *   - the host's transport drives the song: PLAY starts every track where it would be from the DAW's zero, the DAW's
  *     beat position drives Tessera's clock (CLK INT), a loop or a locate seeks, STOP stops; with no transport (the
  *     standalone app) it plays at once on its own clock;
@@ -42,6 +45,8 @@ namespace
 // the copies of the core: which an instance holds, and which have booted (their power-on done once)
 std::mutex copies_lock;
 bool copy_used[16], copy_booted[16];
+uint8_t copy_setup[16][64];   // each copy's MIDI setup at its power-on (tess_core_setup_save), for the next instance
+uint32_t copy_setup_n[16];
 
 // the parameters: MASTER (0..1023) and MACRO 1..4 (0..100) first, with the ids they had (0..4); then the core's by
 // central ID: id PARAM_PID + slot * 0x1000 + pid, slot 0..3 tracks 1..4, 4 the song's, 5..8 tracks 5..8 (added with
@@ -93,6 +98,7 @@ struct Tessera : GuiLink
     uint32_t cur_frame = 0;               // the core frame in cur (tess_core_frames' count)
     bool stems = false;                   // a track output is active: the core makes the stems
     bool transport_known = false, was_playing = false, free_started = false;
+    std::atomic<bool> notes_due{false};   // stopped processing: the notes MIDI OUT left on go off in the next block
     uint32_t view_due = 0;               // host frames until the next view
     std::vector<std::pair<uint32_t, uint32_t>> midi_wait;   // MIDI OUT packets (packet, core frame) not yet due
     std::unique_ptr<Gui> gui;
@@ -151,6 +157,8 @@ struct Tessera : GuiLink
                 midi_wait[keep++] = m;   // (not yet: the next block)
                 continue;
             }
+            if ((m.first >> 8 & 0xF0u) == 0xF0u)
+                continue;   // (system messages, a clock: the DAW keeps time; only the tracks' notes go out)
             int64_t t = (int64_t)n - 1 + (int64_t)std::lround(ahead);
             if (t > (int64_t)n - 1) t = (int64_t)n - 1;
             if (out)
@@ -383,14 +391,24 @@ void Tessera::midi_in(const clap_event_header_t *h)
 {
     if (h->space_id != CLAP_CORE_EVENT_SPACE_ID)
         return;
-    if (h->type == CLAP_EVENT_NOTE_ON || h->type == CLAP_EVENT_NOTE_OFF || h->type == CLAP_EVENT_MIDI)
+    if (h->type == CLAP_EVENT_NOTE_ON || h->type == CLAP_EVENT_NOTE_OFF || h->type == CLAP_EVENT_NOTE_CHOKE ||
+        h->type == CLAP_EVENT_MIDI)
         midi_seen.fetch_add(1, std::memory_order_relaxed);
     switch (h->type)
     {
     case CLAP_EVENT_NOTE_ON:
     case CLAP_EVENT_NOTE_OFF:
+    case CLAP_EVENT_NOTE_CHOKE:
     {
         auto *e = reinterpret_cast<const clap_event_note_t *>(h);
+        if (h->type != CLAP_EVENT_NOTE_ON && e->key < 0)   // (a wildcard: every key, on its channel or on all 16)
+        {
+            uint32_t cc = h->type == CLAP_EVENT_NOTE_CHOKE ? 120u : 123u;   // (All Sound Off / All Notes Off)
+            for (uint32_t c = 0; c < 16; c++)
+                if (e->channel < 0 || (uint32_t)e->channel == c)
+                    core->midi(0xB0u | c, cc, 0);
+            return;
+        }
         if (e->key < 0 || e->key > 127)
             return;
         uint32_t ch = e->channel < 0 ? 0u : (uint32_t)e->channel & 15u;
@@ -593,8 +611,13 @@ bool p_init(const clap_plugin_t *p)
         copy_booted[t->copy] = true;
     }
     t->core->boot();
-    if (again)                 // (a copy an instance gave back: its power-on project again, STILL TIDE in slot A)
+    if (again)                 // (a copy an instance gave back: its power-on project again, STILL TIDE in slot A, and
+    {                          // its power-on MIDI setup, not the last instance's ROUT, NOTES OUT ..)
         t->core->slot_load(0);
+        t->core->setup_load(copy_setup[t->copy], copy_setup_n[t->copy]);
+    }
+    else
+        copy_setup_n[t->copy] = t->core->setup_save(copy_setup[t->copy], sizeof copy_setup[0]);
     // a shell and ink saved by a build before TESSERA's shell (or before this mark) are put aside once: the first window
     // of this build opens in TESSERA's shell; picks after that are remembered as before
     if (projfile::setting_get("shell_v") != "2")
@@ -650,10 +673,15 @@ bool p_activate(const clap_plugin_t *p, double rate, uint32_t, uint32_t)
     return true;
 }
 
-void p_deactivate(const clap_plugin_t *) {}
+// (no events can go out here: the next block sends the note-offs, so a synth on MIDI OUT is not left holding them)
+void p_deactivate(const clap_plugin_t *p) { self(p)->notes_due = true; }
 bool p_start_processing(const clap_plugin_t *) { return true; }
-void p_stop_processing(const clap_plugin_t *) {}
-void p_reset(const clap_plugin_t *p) { self(p)->pos = 1.0; }
+void p_stop_processing(const clap_plugin_t *p) { self(p)->notes_due = true; }
+void p_reset(const clap_plugin_t *p)
+{
+    self(p)->pos = 1.0;
+    self(p)->notes_due = true;
+}
 
 clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc)
 {
@@ -689,6 +717,8 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
                     std::memset(proc->audio_outputs[port].data32[c], 0, n * sizeof(float));
         return CLAP_PROCESS_CONTINUE;
     }
+    if (t->notes_due.exchange(false))
+        t->core->notes_off();
 
     if (proc->transport)
     {
@@ -830,7 +860,9 @@ bool np_get(const clap_plugin_t *, uint32_t index, bool is_input, clap_note_port
 const clap_plugin_note_ports_t note_ports = {np_count, np_get};
 
 // ---- state: the project as a .tsp record (tracks 1..4 in the parts an FM-1 reads, tracks 5..8 in its XTRK part,
-// project_tsp.c), then MASTER (the device's, not the project's) as "TMST" and 2 bytes. A state of a plugin build
+// project_tsp.c), then the device's MIDI setup (ROUT, DRUM's channel, NOTES OUT, TUNE: tess_core_setup_save, never
+// in the .tsp) as its bytes, their count and "TGLO", then MASTER (the device's, not the project's) as "TMST" and 2
+// bytes. A state of a plugin build
 // before XTRK may also hold "TX58" (tracks 5..8's settings by central ID: the count and the tag), read as before; none
 // is written now (XTRK holds them, with the steps, voices and generators).
 
@@ -866,7 +898,16 @@ bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
         len = t->core->save(b.data(), (uint32_t)b.size());
         if (len)
         {
+            uint8_t setup[64];
+            uint32_t ns = t->core->setup_save(setup, sizeof setup);
             b.resize(len);
+            if (ns)
+            {
+                b.insert(b.end(), setup, setup + ns);
+                const uint8_t tag[5] = {(uint8_t)ns, 'T', 'G', 'L', 'O'};
+                b.insert(b.end(), tag, tag + 5);
+                len += ns + 5;
+            }
             uint32_t m = (uint32_t)t->master;
             const uint8_t tail[6] = {'T', 'M', 'S', 'T', (uint8_t)m, (uint8_t)(m >> 8)};
             b.insert(b.begin() + len, tail, tail + 6);
@@ -888,7 +929,7 @@ bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
 bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
 {
     auto *t = self(p);
-    std::vector<uint8_t> b(t->core->tsp_max() + 6 + 8 + TX58_ENTRY * (uint32_t)t->params.size());
+    std::vector<uint8_t> b(t->core->tsp_max() + 6 + 260 + 8 + TX58_ENTRY * (uint32_t)t->params.size());
     uint32_t len = 0;
     for (;;)
     {
@@ -911,6 +952,16 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
             t->master_set((int32_t)m);
             t->param_now[PARAM_MASTER] = t->master;
         }
+        const uint8_t *setup = nullptr;
+        uint32_t ns = 0;
+        if (len >= 5 && !std::memcmp(&b[len - 4], "TGLO", 4))
+        {
+            ns = b[len - 5];
+            if (ns + 5u > len)
+                return false;   // (not a state this build wrote)
+            len -= ns + 5;
+            setup = b.data() + len;
+        }
         const uint8_t *x58 = nullptr;
         uint32_t n58 = 0;
         if (len >= 8 && !std::memcmp(&b[len - 4], "TX58", 4))
@@ -922,6 +973,8 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
             x58 = b.data() + len;
         }
         ok = t->core->load(b.data(), len) == 0;
+        if (ok && setup)
+            t->core->setup_load(setup, ns);   // (a state from before TGLO keeps the setup this instance has)
         if (ok && x58)
             tx58_load(t, x58, n58);
         t->params_refresh();

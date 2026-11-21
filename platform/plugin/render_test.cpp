@@ -303,7 +303,8 @@ int main(int argc, char **argv)
     }
 
     // the track outputs and MIDI OUT: 8 s of STILL TIDE from the top with all nine outputs (main + 8 tracks); then,
-    // stopped, a note on MIDI channel 6 sounds on TRACK 6's output alone
+    // stopped, a note on MIDI channel 6 sounds on the selected track's output alone (ROUT SEL, the plugin's default:
+    // track 1; ROUT's channel ranges are the session test's)
     {
         constexpr int NT = 8;
         auto *ap = (const clap_plugin_audio_ports_t *)p->get_extension(p, CLAP_EXT_AUDIO_PORTS);
@@ -369,11 +370,11 @@ int main(int argc, char **argv)
                 for (uint32_t i = 0; i < block; i++) e6[k] += (double)tb[k][0][i] * tb[k][0][i];
         }
         double others = 0;
-        for (int k = 0; k < NT; k++)
-            if (k != 5) others += e6[k];
-        std::printf("note on channel 6: TRACK 6 energy %.4f, the other tracks %.4f; MIDI OUT channel 6: %u note-ons\n",
-                    e6[5], others, midi_on[5]);
-        CHECK(e6[5] > 1e-4 && e6[5] > others * 4, "a note on channel 6 should play track 6, on its output");
+        for (int k = 1; k < NT; k++) others += e6[k];
+        std::printf("note on channel 6: TRACK 1 (selected) energy %.4f, the other tracks %.4f; MIDI OUT channel 6: %u "
+                    "note-ons\n", e6[0], others, midi_on[5]);
+        CHECK(e6[0] > 1e-4 && e6[0] > others * 4,
+              "a note on channel 6 should play the selected track (ROUT SEL), on its output");
         clap_event_note_t off6 = on6;
         off6.header.type = CLAP_EVENT_NOTE_OFF;
         ev.notes.push_back(off6);

@@ -56,6 +56,8 @@ uint32_t tess_core_playing(void);
 /* ---- MIDI out (Settings > NOTES OUT; each track on its own channel, GLO > MIDI OUT), as USB MIDI packets: the
  * next one whose frame (tess_core_frames' count) has been rendered. 0 = none. A build with TESS_PLUGIN_IO only */
 uint32_t tess_core_midi_out(uint32_t *pkt, uint32_t *frame);
+/* note-offs for every note MIDI out still has on (they come out of tess_core_midi_out after the next render) */
+void tess_core_notes_off(void);
 
 /* ---- the screen and the panel */
 enum { TESS_NB = 14, TESS_NE = 7, TESS_KEYS = 27, TESS_SCREEN = 240 };
@@ -92,6 +94,11 @@ uint32_t tess_core_tsp_max(void);
 uint32_t tess_core_slot_get(uint32_t slot, uint8_t *out, uint32_t cap);   /* its length, 0 = empty */
 uint32_t tess_core_slot_put(uint32_t slot, const uint8_t *in, uint32_t len);   /* 0 done, 1 not a record */
 void tess_core_slot_load(uint32_t slot);                                /* as SAVE > PROJECT > LOAD */
+/* the device's MIDI and tuning setup (ROUT, DRUM's channel, NOTES OUT, TUNE), which a project load leaves alone: for a
+ * front end to keep with its own state (the plugin's, in the DAW project). save: its length, 0 = cap too small;
+ * load: 0 done, 1 not a setup this core reads */
+uint32_t tess_core_setup_save(uint8_t *out, uint32_t cap);
+uint32_t tess_core_setup_load(const uint8_t *in, uint32_t len);
 
 /* ---- parameters by central ID (firmware/src/pid.h: a track's P_* 0x000.., the project's G_* 0x100.., Tessera's TX_*
  * 0x200..). track 0..3 for a per-track one (else ignored) */
