@@ -2622,11 +2622,19 @@ static uint8_t *tess_put_v4(uint8_t *o, const tessera_bounce_t *b, const tessera
     return o;
 }
 /* version 6's part (after version 5's 88 bytes): Quad's row, DIR, PROB, LINK */
+#if CORE_TRACKS > 4
+/* a .tsp's Tessera block (tracks 1..4, read by the FM-1): a reference past track 4 (FOLLOW, TO, WITH, a QUAD LINK) written OFF
+ * while tessera_pk_clip is set; the record's XTRK part keeps the true value (project_tsp.c) */
+uint8_t tessera_pk_clip;
+#define TESS_PK_REF(v) ((uint8_t)(tessera_pk_clip && (v) > TESS_PK_TRACKS ? 0u : (v)))
+#else
+#define TESS_PK_REF(v) (v)
+#endif
 static uint8_t *tess_put_v6(uint8_t *o, const tessera_quad_t *q)
 {
     for (uint32_t i = 0; i < 4u; i++) *o++ = q->cell[i];
 #if CORE_TRACKS > 4
-    *o++ = q->dir; *o++ = q->prob; *o++ = (uint8_t)(q->link & 15u);   /* (a .tsp links tracks 1..4) */
+    *o++ = q->dir; *o++ = q->prob; *o++ = (uint8_t)(tessera_pk_clip ? q->link & 15u : q->link);   /* (a .tsp's block: 1..4) */
 #else
     *o++ = q->dir; *o++ = q->prob; *o++ = q->link;
 #endif
@@ -2744,14 +2752,6 @@ static uint8_t *tess_put_v22(uint8_t *o, const tessera_answer_t *a)
     return o;
 }
 /* one track's record (TESS_PK_TRACK bytes; PAT GEN packs one track: pat_gen.c) */
-#if CORE_TRACKS > 4
-/* a .tsp's Tessera block (tracks 1..4, read by the FM-1): a reference past track 4 (FOLLOW, TO, WITH) written OFF
- * while tessera_pk_clip is set; the record's XTRK part keeps the true value (project_tsp.c) */
-uint8_t tessera_pk_clip;
-#define TESS_PK_REF(v) ((uint8_t)(tessera_pk_clip && (v) > TESS_PK_TRACKS ? 0u : (v)))
-#else
-#define TESS_PK_REF(v) (v)
-#endif
 static uint8_t *tess_pack_track(uint8_t *o, uint32_t tr)
 {
     const tessera_turing_t *tu = &tessera.turing[tr];
@@ -2866,7 +2866,11 @@ static int tess_pk_track(const uint8_t *in, uint32_t tr, int apply)
         tw2[4] > TESSERA_TRACKS || tw2[5] >= TESS_COND_COUNT || tw2[6] > 100u || tw2[7] > 100u) return 0;
     for (i = 0; i < 4u; i++)
         if (qd[i] > 21u) return 0;
+#if CORE_TRACKS > 4
+    if (qd[4] >= GEN_QD_COUNT || qd[5] > 100u) return 0;   /* (LINK: any of the 8 tracks, a byte) */
+#else
     if (qd[4] >= GEN_QD_COUNT || qd[5] > 100u || qd[6] > 15u) return 0;
+#endif
     if (nl[0] >= NL_COUNT || nl[1] > 5u || nl[2] < 1u || nl[2] > NL_KEYS) return 0;
     if (cs[0] >= GEN_CS_ROWS || cs[1] > 100u || cs[2] > 7u || cs[3] > GEN_CS_SEEK) return 0;
     for (i = 0; i < 16u; i++)

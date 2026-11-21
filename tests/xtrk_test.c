@@ -80,6 +80,8 @@ int main(int argc, char **argv)
     tessera.follow_hold[2] = 8;
     tessera.sd_src[3] = 5;
     tessera.sec_pc = 0x31;
+    tessera.quad[0].link = (uint8_t)(1u << 1 | 1u << 5);  /* QUAD LINK: track 1 to 2 and 6, track 6 to 7 */
+    tessera.quad[5].link = (uint8_t)(1u << 6);
     dst = a_dest();
     cords[ci] = (cord_t){0};
     cords[ci].src = CS_LFO; cords[ci].src_trk = 5; cords[ci].dst = (uint8_t)dst; cords[ci].dst_trk = 1;
@@ -105,6 +107,8 @@ int main(int argc, char **argv)
           "..their Tessera settings, DIR, SONG column");
     CHECK(tessera.evolve[0].follow == 6 && tessera.evolve[1].br_to == 7 && tessera.follow_hold[2] == 8 &&
           tessera.sd_src[3] == 5 && tessera.sec_pc == 0x31 && song.sel == 5, "..tracks 1..4's references past 4");
+    CHECK(tessera.quad[0].link == (1u << 1 | 1u << 5) && tessera.quad[5].link == (1u << 6),
+          "..QUAD LINK across the banks (track 1: %02x, track 6: %02x)", tessera.quad[0].link, tessera.quad[5].link);
     CHECK(cords[ci].src == CS_LFO && cords[ci].src_trk == 5 && cords[ci].dst == dst && cords[ci].amount == 40,
           "..the cord from track 6");
     {
