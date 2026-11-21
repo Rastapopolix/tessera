@@ -1,0 +1,265 @@
+name: Plugin release (beta packages)
+
+# The plugin's downloads (platform/plugin): a branch plugin/X.Y[.Z]-suffix (e.g. plugin/0.1-beta1, made from develop)
+# builds that version for Windows (CLAP, VST3, standalone), macOS (universal CLAP, VST3, Audio Unit, standalone) and
+# Linux (CLAP, VST3), with the version stamped in (TESS_VERSION), each zipped with its INSTALL text, BETA_NOTES.md,
+# LICENSE and LICENSING.md, and puts them on a DRAFT GitHub release (tag plugin-vX.Y-suffix, a pre-release). Nothing
+# is public until someone opens the draft on GitHub and clicks "Publish release". Pushing the branch again rebuilds
+# the draft (a published release is left alone).
+#
+# macOS: signed with a Developer ID and notarised only when the repository has these secrets: MACOS_CERT_P12 (the
+# Developer ID Application certificate and key, .p12, base64), MACOS_CERT_PASSWORD, MACOS_SIGN_ID ("Developer ID
+# Application: Name (TEAMID)"), APPLE_ID, APPLE_TEAM_ID, APPLE_APP_PASSWORD (an app-specific password). Without them
+# the bundles are unsigned and INSTALL-macos.txt says how to clear the quarantine.
+#
+# A pull request that changes this workflow or platform/plugin/dist builds the packages as the run's artifacts only
+# (version 0.0.0-prN, no release), and so can a run by hand (Actions > Plugin release > Run workflow), to try it.
+on:
+  push:
+    branches: ['plugin/*']
+  pull_request:
+    branches: [develop]
+    paths:
+      - '.github/workflows/plugin-release.yml'
+      - 'platform/plugin/dist/**'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to stamp in (e.g. 0.1-beta1)'
+        default: '0.0.0-test'
+      release:
+        description: 'Also make the draft release (tag plugin-v<version>)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tessera-plugin-release
+  cancel-in-progress: false
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version
+        id: v
+        run: |
+          case "$GITHUB_EVENT_NAME" in
+            workflow_dispatch) v='${{ inputs.version }}' ;;
+            pull_request) v="0.0.0-pr${{ github.event.number }}" ;;
+            *) v="${GITHUB_REF_NAME#plugin/}" ;;
+          esac
+          echo "$v" | grep -Eq '^[0-9]+\.[0-9]+(\.[0-9]+)?(-[A-Za-z0-9]+)?$' ||
+            { echo "version '$v': use X.Y[.Z][-suffix], e.g. plugin/0.1-beta1"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "V=$v" >> "$GITHUB_ENV"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libharfbuzz-dev libfribidi-dev libraqm-dev libx11-dev xvfb
+          python -m pip install Pillow fonttools==4.68.0
+      - name: Configure
+        run: cmake -S platform/plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DTESS_VERSION="$V"
+      - name: Build
+        run: cmake --build build/plugin -j4
+      - name: Tests
+        run: |
+          build/plugin/tessera-panel-test
+          build/plugin/tessera-sync-test
+          build/plugin/tessera-copies-test
+          build/plugin/tessera-projfile-test
+          xvfb-run -s "-screen 0 1280x800x24" build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
+          build/plugin/tessera-session-test build/plugin/out/Tessera.clap
+      - name: The version is stamped in
+        run: grep -qaF "$V" build/plugin/out/Tessera.clap || { echo "Tessera.clap doesn't carry $V"; exit 1; }
+      - name: Pack
+        run: |
+          d="Tessera-plugin-$V-linux"
+          mkdir -p "pkg/$d"
+          cp build/plugin/out/Tessera.clap "pkg/$d/"
+          cp -R build/plugin/out/Tessera.vst3 "pkg/$d/"
+          sed "s/VERSION/$V/" platform/plugin/dist/INSTALL-linux.txt > "pkg/$d/INSTALL.txt"
+          cp platform/plugin/dist/BETA_NOTES.md LICENSE LICENSING.md "pkg/$d/"
+          tar -C pkg -czf "pkg/$d.tar.gz" "$d"
+          ls -l pkg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pkg-linux
+          path: pkg/*.tar.gz
+      - uses: actions/upload-artifact@v4   # (Windows and macOS build from these: Windows' Pillow has no Raqm)
+        with:
+          name: generated-headers
+          path: build/gen/
+
+  windows:
+    needs: linux
+    runs-on: windows-2022
+    timeout-minutes: 40
+    env:
+      V: ${{ needs.linux.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated-headers
+          path: build/gen
+      - name: Configure (Visual Studio, ClangCL)
+        run: cmake -S platform/plugin -B build/plugin -G "Visual Studio 17 2022" -A x64 -T ClangCL -DTESS_GEN=OFF -DTESS_VERSION="$env:V"
+      - name: Build
+        run: cmake --build build/plugin --config Release --parallel
+      - name: Tests
+        run: |
+          build/plugin/Release/tessera-panel-test.exe
+          build/plugin/Release/tessera-sync-test.exe
+          build/plugin/Release/tessera-copies-test.exe
+          build/plugin/Release/tessera-projfile-test.exe
+      - name: Pack
+        shell: bash
+        run: |
+          find build/plugin/out -maxdepth 4 | sort
+          d="Tessera-plugin-$V-windows"
+          mkdir -p "pkg/$d"
+          clap=$(find build/plugin/out -name Tessera.clap -type f | head -1)
+          vst3=$(find build/plugin/out -name Tessera.vst3 -type d | head -1)
+          exe=$(find build/plugin/out -name Tessera.exe -type f | head -1)
+          [ -n "$clap" ] && [ -n "$vst3" ] && [ -n "$exe" ] || { echo "missing: clap '$clap' vst3 '$vst3' exe '$exe'"; exit 1; }
+          grep -qaF "$V" "$clap" || { echo "Tessera.clap doesn't carry $V"; exit 1; }
+          cp "$clap" "$exe" "pkg/$d/"
+          cp -R "$vst3" "pkg/$d/"
+          sed "s/VERSION/$V/" platform/plugin/dist/INSTALL-windows.txt | sed 's/$/\r/' > "pkg/$d/INSTALL.txt"
+          cp platform/plugin/dist/BETA_NOTES.md LICENSE LICENSING.md "pkg/$d/"
+          (cd pkg && 7z a -tzip "$d.zip" "$d" > /dev/null)
+          ls -l pkg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pkg-windows
+          path: pkg/*.zip
+
+  macos:
+    needs: linux
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      V: ${{ needs.linux.outputs.version }}
+      MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+      MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+      MACOS_SIGN_ID: ${{ secrets.MACOS_SIGN_ID }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated-headers
+          path: build/gen
+      - name: 'Configure (universal: arm64 + x86_64)'
+        run: |
+          cmake -S platform/plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release -DTESS_GEN=OFF -DTESS_VERSION="$V" \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
+      - name: Build
+        run: cmake --build build/plugin -j4
+      - name: Tests
+        run: |
+          build/plugin/tessera-panel-test
+          build/plugin/tessera-sync-test
+          build/plugin/tessera-copies-test
+          build/plugin/tessera-projfile-test
+          build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
+          build/plugin/tessera-session-test build/plugin/out/Tessera.clap
+      - name: Both architectures, the version stamped in
+        run: |
+          for b in Tessera.clap Tessera.vst3 Tessera.component Tessera.app; do
+            f=$(find "build/plugin/out/$b" -path '*/Contents/MacOS/*' -type f | head -1)
+            [ -n "$f" ] || { echo "missing: $b"; exit 1; }
+            lipo "$f" -verify_arch arm64 x86_64
+          done
+          grep -qaF "$V" "$(find build/plugin/out/Tessera.clap -path '*/Contents/MacOS/*' -type f | head -1)" ||
+            { echo "Tessera.clap doesn't carry $V"; exit 1; }
+      - name: Gather the bundles
+        run: |
+          d="Tessera-plugin-$V-macos"
+          echo "D=$d" >> "$GITHUB_ENV"
+          mkdir -p "pkg/$d"
+          for b in Tessera.clap Tessera.vst3 Tessera.component Tessera.app; do ditto "build/plugin/out/$b" "pkg/$d/$b"; done
+      - name: Sign and notarise (only with the Developer ID secrets)
+        if: env.MACOS_CERT_P12 != '' && env.MACOS_SIGN_ID != '' && env.APPLE_ID != ''
+        run: |
+          kc="$RUNNER_TEMP/sign.keychain-db"; kp=$(uuidgen)
+          echo "$MACOS_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$kp" "$kc"
+          security set-keychain-settings -lut 3600 "$kc"
+          security unlock-keychain -p "$kp" "$kc"
+          security import "$RUNNER_TEMP/cert.p12" -k "$kc" -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$kp" "$kc"
+          security list-keychains -d user -s "$kc" $(security list-keychains -d user | tr -d '"')
+          for b in Tessera.clap Tessera.vst3 Tessera.component Tessera.app; do
+            codesign --force --deep --options runtime --timestamp --sign "$MACOS_SIGN_ID" "pkg/$D/$b"
+            codesign --verify --deep --strict "pkg/$D/$b"
+          done
+          ditto -c -k --keepParent "pkg/$D" "$RUNNER_TEMP/notarise.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/notarise.zip" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_PASSWORD" --wait
+          for b in Tessera.clap Tessera.vst3 Tessera.component Tessera.app; do xcrun stapler staple "pkg/$D/$b"; done
+          echo "SIGNED=1" >> "$GITHUB_ENV"
+      - name: Pack
+        run: |
+          if [ "${SIGNED:-0}" = 1 ]; then
+            echo 'This build is signed with a Developer ID and notarised by Apple: there is nothing to do.' > "$RUNNER_TEMP/signing.txt"
+          else
+            cp platform/plugin/dist/SIGNING-unsigned-macos.txt "$RUNNER_TEMP/signing.txt"
+          fi
+          python3 - "$V" "$RUNNER_TEMP/signing.txt" platform/plugin/dist/INSTALL-macos.txt "pkg/$D/INSTALL.txt" <<'EOF'
+          import sys
+          v, note, src, dst = sys.argv[1:]
+          t = open(src).read().replace("VERSION", v, 1).replace("SIGNING_NOTE", open(note).read().rstrip("\n"))
+          open(dst, "w").write(t)
+          EOF
+          cp platform/plugin/dist/BETA_NOTES.md LICENSE LICENSING.md "pkg/$D/"
+          ditto -c -k --keepParent "pkg/$D" "pkg/$D.zip"
+          ls -l pkg
+          sed -n '/^Signing/,/^The manual/p' "pkg/$D/INSTALL.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pkg-macos
+          path: pkg/*.zip
+
+  release:
+    needs: [linux, windows, macos]
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.release)
+    runs-on: ubuntu-24.04
+    env:
+      V: ${{ needs.linux.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pkg-*
+          path: pkg
+          merge-multiple: true
+      - name: Checksums
+        run: (cd pkg && sha256sum * | tee SHA256SUMS)
+      - name: The draft release
+        run: |
+          tag="plugin-v$V"
+          if gh release view "$tag" --json isDraft -q .isDraft > /tmp/draft 2>/dev/null; then
+            if [ "$(cat /tmp/draft)" = true ]; then
+              gh release delete "$tag" --yes   # (an older draft of this version: rebuilt)
+            else
+              echo "$tag is already published: leaving it alone"; exit 1
+            fi
+          fi
+          gh release create "$tag" pkg/* --draft --prerelease --target "$GITHUB_SHA" \
+            --title "Tessera plugin $V (beta)" --notes-file platform/plugin/dist/BETA_NOTES.md
+          echo "### Draft release $tag made" >> "$GITHUB_STEP_SUMMARY"
+          echo "Open it under Releases and click **Publish release** to make it public." >> "$GITHUB_STEP_SUMMARY"
