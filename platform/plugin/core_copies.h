@@ -16,7 +16,7 @@ extern "C" {
     X(rate) X(boot) X(render) X(block) X(frames) X(keys) X(buttons) X(enc) X(master) X(master_get) X(midi)           \
     X(transport) X(playing) X(midi_out) X(screen) X(view) X(save) X(load) X(tsp_max) X(slot_get) X(slot_put)         \
     X(slot_load) X(param_count) X(param_at) X(param_info) X(param_get) X(param_set) X(param_text) X(host) X(macro)   \
-    X(macro_set) X(position) X(bpm) X(ink) X(tracks)
+    X(macro_set) X(position) X(bpm) X(ink) X(tracks) X(track) X(track_select)
 
 #define TESS_CORE_VT_MEMBER(n) __typeof__(tess_core_##n) *n;
 typedef struct tess_core_vt {
