@@ -292,7 +292,8 @@ static __attribute__((noinline,section(".audio_text"),aligned(16))) void fx_svf(
 static const uint8_t FX_SYNC_DIV[14] = {3, 4, 6, 8, 9, 12, 16, 18, 24, 32, 36, 48, 72, 96};
 static uint32_t beat_samples(void);                     /* mix.c: a beat at the tempo playing (DAW, MIDI clock, BPM) */
 #endif
-static uint32_t fx_ring(const fx_state_t *f)            /* ECHO's ring, in quarter-rate samples */
+static inline __attribute__((always_inline)) uint32_t fx_ring(const fx_state_t *f)   /* ECHO's ring, quarter-rate
+                                                                                       * samples (inlined: SRAM code) */
 {
 #if MELODEE_ECHO_SYNC
     if (f->type == FX_SYNC) return MELODEE_ECHO_RING;
@@ -301,7 +302,8 @@ static uint32_t fx_ring(const fx_state_t *f)            /* ECHO's ring, in quart
     return 4096u;
 }
 /* the delay ECHO glides to (Q8, quarter-rate samples): TIME's ms, or SYNC ECHO's note value at the tempo playing,
- * halved until it fits the ring (a 1/2 note at 120 BPM in the FM-1's 371 ms: a 1/8) */
+ * halved until it fits the ring (a 1/2 note at 120 BPM in the FM-1's 371 ms: a 1/8). Flash code: fx_slot_prepare puts
+ * it in rev_input (REVERB's history, free in ECHO) for fx_time and fx_time_asleep, which run from SRAM */
 static int32_t fx_echo_want(const fx_state_t *f)
 {
 #if MELODEE_ECHO_SYNC
@@ -317,7 +319,7 @@ static inline __attribute__((always_inline)) int fx_time_asleep(fx_state_t *f,ui
 {
     if(FX_SLEEP_OFF || !FX_IS_ECHO(f->type) || f->quiet<fx_ring(f)+(ECHO_QUIET-4096u) || f->mix!=target || f->rev_l || f->rev_r || f->rev_prev_l || f->rev_prev_r)
         return 0;
-    if(f->glide!=fx_echo_want(f))return 0;              /* (TIME still gliding) */
+    if(f->glide!=f->rev_input)return 0;                 /* (TIME still gliding: rev_input, fx_echo_want) */
     int32_t any=0;
     for(uint32_t i=0;i<n;i++)any|=fx_left[i]|fx_right[i];
     if(any)return 0;
@@ -328,7 +330,7 @@ static inline __attribute__((always_inline)) int fx_time_asleep(fx_state_t *f,ui
 static __attribute__((noinline,section(".dsp_text"))) void fx_time(fx_state_t *restrict f,int16_t *restrict mem,uint32_t n,int32_t target)
 {
     static const uint16_t len[4]={149,211,263,293};
-    int32_t mix=f->mix,want=fx_echo_want(f),at=f->glide?f->glide:want;
+    int32_t mix=f->mix,want=f->rev_input,at=f->glide?f->glide:want;   /* (want: fx_slot_prepare's fx_echo_want) */
     uint32_t echo=FX_IS_ECHO(f->type),m=fx_ring(f)-1u;
     int32_t feedback=echo?f->character*220:12000+f->character*120;
     if(f->type==FX_ROOM && (!f->rev_span[0] || f->rev_rate!=f->rate)){
@@ -695,6 +697,7 @@ static void fx_slot_prepare(fx_plan_t *plan,uint32_t si,const int16_t *p)
 #if defined(MELODEE_FX_PROFILE) && MELODEE_FX_PROFILE && defined(FM1_IRQ_TARGET)
     if(profiling){f->rate=(fx_profile_control>>12u)&127u;f->character=(fx_profile_control>>19u)&127u;}
 #endif
+    if(FX_IS_ECHO(f->type))f->rev_input=fx_echo_want(f);   /* (the delay to glide to: fx_time runs from SRAM) */
     int16_t *mem=0;
     if(FX_MEMORY(f->type)){
         uint32_t bytes=f->type==FX_CHORUS?FX_CHORUS_BYTES:f->type==FX_ROOM?2048u:f->type==FX_REVERB?FX_REVERB_BYTES:fx_ring(f)*2u;
