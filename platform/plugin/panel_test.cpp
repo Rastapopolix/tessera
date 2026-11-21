@@ -4,6 +4,7 @@
  *   - the panel draws; the screen shows the firmware's picture (not black) once it has run;
  *   - a click on PLAY starts the song, and its LED lights; a click on SEQ changes the screen;
  *   - a knob dragged turns its encoder; a key clicked sounds;
+ *   - TESSERA's shell (the default): its layout, its menu (a shell, an ink), the MIDI lamp;
  *   - writes the window as PPM pictures (argument: a folder) to look at.
  * usage: tessera-panel-test [out-folder] */
 #include <cmath>
@@ -82,6 +83,8 @@ int main(int argc, char **argv)
     static tess_view_t v;
     std::vector<uint32_t> px(Panel::W * Panel::H);
     Panel p;
+    CHECK(p.shell() == 0 && !std::strcmp(Panel::shell_id(0), "tessera"), "TESSERA's shell first, the default");
+    p.set_shell(1);   // (the sections below: the FM-1's black shell, the web sim's layout)
     tess_core_boot();
     p.input.changed = true;
     run(p, 1.0);
@@ -171,13 +174,13 @@ int main(int argc, char **argv)
     CHECK(differ > 100, "the note is drawn beside the buttons (%d pixels)", differ);
 
     // the shells: a swatch under the keys shows that shell at once and asks for its ink; the ink changes the screen
-    CHECK(Panel::shell_count() == 8 && p.shell() == 0, "eight shells, black first (%d)", Panel::shell_count());
+    CHECK(Panel::shell_count() == 9 && p.shell() == 1, "nine shells: TESSERA, then black (%d)", Panel::shell_count());
     CHECK(p.take_shell_request() == -1, "no shell asked for yet");
-    CHECK(Panel::shell_by_id("orange") == 3 && Panel::shell_by_id("nope") == -1, "shells by id");
-    const int sx = 36 + 928 - 9 - 2 - 4 * (2 * 9 + 10), sy = 332 + 256 + 5 + 12;   // (swatch 3, ORANGE)
+    CHECK(Panel::shell_by_id("orange") == 4 && Panel::shell_by_id("nope") == -1, "shells by id");
+    const int sx = 36 + 928 - 9 - 2 - 4 * (2 * 9 + 10), sy = 332 + 256 + 5 + 12;   // (swatch 4, ORANGE)
     p.down(sx, sy);
     p.up(sx, sy);
-    CHECK(p.shell() == 3 && p.take_shell_request() == 3 && p.take_shell_request() == -1, "a swatch asks once");
+    CHECK(p.shell() == 4 && p.take_shell_request() == 4 && p.take_shell_request() == -1, "a swatch asks once");
     p.down(sx, sy);
     p.up(sx, sy);
     CHECK(p.take_shell_request() == -1, "the shell already shown: nothing asked");
@@ -185,7 +188,7 @@ int main(int argc, char **argv)
     if (!out.empty()) ppm(out + "/07_orange.ppm", px);
     CHECK(px[320 * Panel::W + 12] == 0xFFEE8A30u, "the body is orange (%08X)", px[320 * Panel::W + 12]);
     std::vector<uint16_t> was(v.screen, v.screen + TESS_SCREEN * TESS_SCREEN);
-    CHECK(tess_core_ink(Panel::shell_ink(3)) == 1 && tess_core_ink("NO SUCH INK") == 0, "the shell's ink is a palette");
+    CHECK(tess_core_ink(Panel::shell_ink(4)) == 1 && tess_core_ink("NO SUCH INK") == 0, "the shell's ink is a palette");
     run(p, 0.2);
     tess_core_view(&v);
     int moved = 0;
@@ -297,6 +300,88 @@ int main(int argc, char **argv)
               "HOME on 5-8: T5's column outlined at the left (T%u)", v.track + 1);
         CHECK(p.key(0x0F, true), "Tab back to 1-4");
         run(p, 0.3);
+    }
+
+    // TESSERA's shell: flat, its own layout (the button grid wider, the files centred), a menu under the mark
+    {
+        tess_core_track_select(0);
+        run(p, 0.2);
+        tess_core_view(&v);
+        Panel q;
+        q.set_inks(inks);
+        q.set_tracks((int)tess_core_tracks());
+        q.set_version("0.1-beta2");
+        q.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/10_tessera.ppm", px);
+        CHECK(px[320 * Panel::W + 12] == 0xFF111111u, "TESSERA's body (%08X)", px[320 * Panel::W + 12]);
+        CHECK(px[13 * Panel::W + 37] == 0xFFFFD020u, "the mark in Tessera yellow (%08X)", px[13 * Panel::W + 37]);
+        int screen = 0;
+        for (int y = 0; y < TESS_SCREEN; y++)
+            for (int x = 0; x < TESS_SCREEN; x++)
+            {
+                uint16_t c565 = v.screen[y * TESS_SCREEN + x];
+                uint32_t r = (c565 >> 11 & 31) * 255 / 31, g = (c565 >> 5 & 63) * 255 / 63, b = (c565 & 31) * 255 / 31;
+                screen += px[(44 + 8 + y) * Panel::W + 292 + 8 + x] == (0xFF000000u | r << 16 | g << 8 | b);
+            }
+        CHECK(screen == TESS_SCREEN * TESS_SCREEN, "the screen at 1:1 inside the hairline (%d)", screen);
+        q.down(574 + 5 * 66 + 55, 174 + 20);   // GLO, at the grid's right edge (wider than the FM-1's)
+        CHECK(q.input.buttons & (1u << 5), "GLO held where TESSERA draws it");
+        q.up(0, 0);
+        CHECK(!(q.input.buttons & (1u << 5)), "GLO let go");
+        CHECK(q.wheel(610, 100, 1) && q.input.enc[3] == 1, "a wheel turns KNOB 1");
+        q.input.enc[3] = 0;
+        // the MIDI lamp: lit a moment when MIDI comes in
+        q.set_midi(7);
+        q.draw(px.data(), v);
+        std::vector<uint32_t> quiet = px;
+        q.set_midi(8);
+        q.draw(px.data(), v);
+        int lamp = 0;
+        for (int y = 16; y < 34; y++)
+            for (int x = 200; x < 300; x++) lamp += px[y * Panel::W + x] != quiet[y * Panel::W + x];
+        CHECK(lamp >= 30, "the MIDI lamp lights (%d pixels)", lamp);
+        // the menu: the mark opens it; SHELL lists the shells, a pick shows it and asks for its ink
+        CHECK(!q.menu_shown(), "the menu shut at first");
+        q.down(100, 25);
+        q.up(100, 25);
+        CHECK(q.menu_shown(), "the mark opens the menu");
+        q.down(80, 46 + 10 + 18);   // SHELL
+        q.up(80, 46 + 10 + 18);
+        q.move(400, 46 + 10 + 30 * 4 + 15);
+        q.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/11_tessera_shells.ppm", px);
+        CHECK(q.take_shell_request() == -1, "no shell asked for yet");
+        q.down(400, 46 + 10 + 30 * 4 + 15);   // ORANGE (the fifth)
+        q.up(400, 46 + 10 + 30 * 4 + 15);
+        CHECK(q.shell() == 4 && q.take_shell_request() == 4 && !q.menu_shown(), "a shell picked from the menu (%d)", q.shell());
+        q.draw(px.data(), v);
+        CHECK(px[320 * Panel::W + 12] == 0xFFEE8A30u, "the FM-1's orange shell drawn");
+        const int tx = 36 + 928 - 9 - 2 - 8 * (2 * 9 + 10), ty = 332 + 256 + 5 + 12;   // (swatch 0, TESSERA)
+        q.down(tx, ty);
+        q.up(tx, ty);
+        CHECK(q.shell() == 0 && q.take_shell_request() == 0, "TESSERA again from the FM-1's swatches");
+        // INK: the swatches; one picked asks once and shuts the menu
+        q.down(100, 25);
+        q.up(100, 25);
+        q.down(80, 46 + 10 + 36 + 18);   // INK
+        q.up(80, 46 + 10 + 36 + 18);
+        const int ix = 344 + 18 + 3 * 44 + 16, iy = 46 + 10 + 36 - 10 + 18 + 44 + 16;   // (ink 8: LILAC)
+        q.move(ix, iy);
+        q.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/12_tessera_inks.ppm", px);
+        q.down(ix, iy);
+        q.up(ix, iy);
+        CHECK(q.take_ink_request() == 8 && q.take_ink_request() == -1 && !q.menu_shown(), "an ink picked from the menu");
+        // a click outside, or Esc, shuts it
+        q.down(100, 25);
+        q.up(100, 25);
+        q.down(800, 500);
+        CHECK(!q.menu_shown() && !(q.input.keys), "a click outside shuts the menu and plays nothing");
+        q.up(800, 500);
+        q.down(100, 25);
+        q.up(100, 25);
+        q.key(0x01, true);
+        CHECK(!q.menu_shown(), "Esc shuts the menu");
     }
 
     std::printf(fails ? "panel test: %d FAILED\n" : "panel test: ok\n", fails);

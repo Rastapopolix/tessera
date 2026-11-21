@@ -52,6 +52,7 @@ class GuiMac : public Gui
         panel.set_shell(l->shell());
         panel.set_inks(l->inks());
         panel.set_tracks(l->tracks());
+        panel.set_version(tess_version());
     }
     GuiLink *link;   // this window's instance
     Panel panel;
@@ -164,6 +165,7 @@ class GuiMac : public Gui
     void tick() override
     {
         link->view(view);
+        panel.set_midi(link->midi_count());
         ink_check();
         draw();
     }

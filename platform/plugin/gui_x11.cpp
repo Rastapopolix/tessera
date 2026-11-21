@@ -71,6 +71,7 @@ class GuiX11 : public Gui
         panel.set_shell(l->shell());
         panel.set_inks(l->inks());
         panel.set_tracks(l->tracks());
+        panel.set_version(tess_version());
     }
     GuiLink *link;   // this window's instance
     ~GuiX11() override
@@ -237,6 +238,7 @@ class GuiX11 : public Gui
         if (changed)
             link->input(panel.input);
         link->view(view);
+        panel.set_midi(link->midi_count());
         ink_check();
         panel.draw(px.data(), view);
         XPutImage(dpy, wnd, gc, img, 0, 0, 0, 0, Panel::W, Panel::H);
