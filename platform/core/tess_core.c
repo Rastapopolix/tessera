@@ -467,6 +467,24 @@ uint32_t tess_core_param_text(uint32_t pid, uint32_t track, int32_t v, char *out
     return n;
 }
 
+/* ---- the Mono look's ink (MENU > COLOR; the plugin's shell picker, as web/sim/sim.c web_ink) */
+uint32_t tess_core_ink(const char *name)
+{
+#if MELODEE_LOOK
+    uint32_t i;
+    for (i = 0; name && i < NPALETTES; i++)
+        if (!strcmp(UI_PALETTES[i].name, name)) {
+            settings.palette = i;
+            palette_set(i);
+            ui.force = 1;
+            return 1;
+        }
+#else
+    (void)name;
+#endif
+    return 0;
+}
+
 /* ---- the DAW (TESS_HOST_CLOCK: mix.c int_clock_units asks tess_host_units while the DAW plays) */
 #ifdef TESS_HOST_CLOCK
 static double host_rate_u;                 /* units a core sample at the DAW's tempo */

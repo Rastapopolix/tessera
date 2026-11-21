@@ -26,7 +26,7 @@ extern "C" IMAGE_DOS_HEADER __ImageBase;   // this module (the class belongs to 
 class GuiWin32 : public Gui
 {
   public:
-    explicit GuiWin32(GuiLink *l) : link(l) {}
+    explicit GuiWin32(GuiLink *l) : link(l) { panel.set_shell(l->shell()); }
     GuiLink *link;   // this window's instance
     HWND wnd = nullptr;
     Panel panel;
@@ -144,6 +144,9 @@ class GuiWin32 : public Gui
     // OPEN or SAVE, if one was clicked: the system's dialog, then the instance opens or saves
     void files()
     {
+        int sh = panel.take_shell_request();   // (a shell picked: its ink)
+        if (sh >= 0)
+            link->shell_picked(sh);
         int req = panel.take_file_request();
         if (req == Panel::FILE_NONE)
             return;

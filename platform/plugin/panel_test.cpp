@@ -168,6 +168,29 @@ int main(int argc, char **argv)
         for (int x = 230; x < 700; x++) differ += px[y * Panel::W + x] != before_note[y * Panel::W + x];
     CHECK(differ > 100, "the note is drawn beside the buttons (%d pixels)", differ);
 
+    // the shells: a swatch under the keys shows that shell at once and asks for its ink; the ink changes the screen
+    CHECK(Panel::shell_count() == 8 && p.shell() == 0, "eight shells, black first (%d)", Panel::shell_count());
+    CHECK(p.take_shell_request() == -1, "no shell asked for yet");
+    CHECK(Panel::shell_by_id("orange") == 3 && Panel::shell_by_id("nope") == -1, "shells by id");
+    const int sx = 36 + 928 - 9 - 2 - 4 * (2 * 9 + 10), sy = 332 + 256 + 5 + 12;   // (swatch 3, ORANGE)
+    p.down(sx, sy);
+    p.up(sx, sy);
+    CHECK(p.shell() == 3 && p.take_shell_request() == 3 && p.take_shell_request() == -1, "a swatch asks once");
+    p.down(sx, sy);
+    p.up(sx, sy);
+    CHECK(p.take_shell_request() == -1, "the shell already shown: nothing asked");
+    p.draw(px.data(), v);
+    if (!out.empty()) ppm(out + "/07_orange.ppm", px);
+    CHECK(px[320 * Panel::W + 12] == 0xFFEE8A30u, "the body is orange (%08X)", px[320 * Panel::W + 12]);
+    std::vector<uint16_t> was(v.screen, v.screen + TESS_SCREEN * TESS_SCREEN);
+    CHECK(tess_core_ink(Panel::shell_ink(3)) == 1 && tess_core_ink("NO SUCH INK") == 0, "the shell's ink is a palette");
+    run(p, 0.2);
+    tess_core_view(&v);
+    int moved = 0;
+    for (int i = 0; i < TESS_SCREEN * TESS_SCREEN; i++) moved += v.screen[i] != was[i];
+    CHECK(moved > 50, "the ink changes the screen (%d pixels)", moved);
+    tess_core_ink("YELLOW");
+
     std::printf(fails ? "panel test: %d FAILED\n" : "panel test: ok\n", fails);
     return fails ? 1 : 0;
 }

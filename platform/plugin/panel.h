@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
 /* The plugin window's FM-1, drawn in software (no GUI library): the web simulator's wide layout (web/sim/index.html
- * LAYOUTS.wide, 1000 x 624) in the black shell, the screen at 1:1, the labels in the Mono face (firmware/src/mo_font.h).
+ * LAYOUTS.wide, 1000 x 624) in one of the FM-1's shells, the screen at 1:1, the labels in the Mono face (firmware/src/mo_font.h).
  * Platform-independent: gui_win32.cpp / gui_x11.cpp give it pixels and the mouse. Not thread-safe: the GUI thread only. */
 #pragma once
 #include <cstdint>
@@ -44,6 +44,16 @@ class Panel
     enum { FILE_NONE, FILE_OPEN, FILE_SAVE };
     int take_file_request() { int r = file_req; file_req = FILE_NONE; return r; }
     void note(const std::string &text);
+    /* the FM-1's shells (web/sim/index.html SHELLS): a row of swatches under the keys. A click shows that shell at once
+     * and asks for its ink (take_shell_request: the shell's index, -1 none); each shell's id (stored) and Mono ink
+     * (MENU > COLOR's name) */
+    static int shell_count();
+    static const char *shell_id(int i);
+    static const char *shell_ink(int i);
+    static int shell_by_id(const std::string &id);   // -1 if none
+    void set_shell(int i);
+    int shell() const { return shell_; }
+    int take_shell_request() { int r = shell_req; shell_req = -1; return r; }
 
   private:
     struct Knob { int x, y, r; const char *name; int role; double angle; };   // role -1: MASTER
@@ -53,6 +63,10 @@ class Panel
     std::vector<FileButton> files;
     int file_req = FILE_NONE, file_held = -1;
     std::string note_text;
+    static constexpr int SWATCH_R = 9;
+    int shell_ = 0, shell_req = -1, shell_hover = -1;
+    void swatch_xy(int i, int &x, int &y) const;
+    int swatch_at(int x, int y) const;
     int note_frames = 0;
     std::vector<Knob> knobs;
     std::vector<Button> buttons;

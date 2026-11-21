@@ -27,4 +27,10 @@ bool backup_read(const std::string &json, Backup &out, std::string &err);
 /* whole files (path in UTF-8) */
 bool read_file(const std::string &path, std::vector<uint8_t> &out, size_t max);
 bool write_file(const std::string &path, const std::vector<uint8_t> &data);
+
+/* the plugin's own small settings (the shell the window shows), in the user's settings folder: %APPDATA%\Tessera,
+ * ~/Library/Application Support/Tessera, $XDG_CONFIG_HOME/tessera or ~/.config/tessera. A one-line value; "" if none.
+ * Shared by every instance and DAW, as the web simulator's localStorage is by its pages */
+std::string setting_get(const char *name);
+bool setting_put(const char *name, const std::string &value);
 }   // namespace projfile

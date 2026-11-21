@@ -66,7 +66,7 @@ class GuiX11 : public Gui
     std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
     tess_view_t view{};
 
-    GuiX11(const clap_host_t *h, GuiLink *l) : host(h), link(l) {}
+    GuiX11(const clap_host_t *h, GuiLink *l) : host(h), link(l) { panel.set_shell(l->shell()); }
     GuiLink *link;   // this window's instance
     ~GuiX11() override
     {
@@ -122,6 +122,9 @@ class GuiX11 : public Gui
     // OPEN or SAVE clicked: its dialog on a thread; tick() takes the answer
     void files()
     {
+        int sh = panel.take_shell_request();   // (a shell picked: its ink)
+        if (sh >= 0)
+            link->shell_picked(sh);
         if (ask)
         {
             std::lock_guard<std::mutex> g(ask->lock);
