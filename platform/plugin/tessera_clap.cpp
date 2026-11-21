@@ -774,41 +774,20 @@ bool np_get(const clap_plugin_t *, uint32_t index, bool is_input, clap_note_port
 }
 const clap_plugin_note_ports_t note_ports = {np_count, np_get};
 
-// ---- state: the project as a .tsp record (tracks 1..4: what an FM-1 reads), then tracks 5..8's settings as "TX58"
-// (the plugin's own, no TSP part: each track 5..8 setting by central ID, then the count and the tag), then MASTER (the
-// device's, not the project's) as "TMST" and 2 bytes. Tracks 5..8's steps and FM6 voices are not kept yet (they come
-// with their own TSP part, CORE_MIGRATION step 4). A state with TX58 does not load in a 4-track plugin build.
+// ---- state: the project as a .tsp record (tracks 1..4 in the parts an FM-1 reads, tracks 5..8 in its XTRK part,
+// project_tsp.c), then MASTER (the device's, not the project's) as "TMST" and 2 bytes. A state of a plugin build
+// before XTRK may also hold "TX58" (tracks 5..8's settings by central ID: the count and the tag), read as before; none
+// is written now (XTRK holds them, with the steps, voices and generators).
 
 constexpr uint32_t TX58_ENTRY = 7;   // track, pid (2 bytes), value (4 bytes), little-endian
-void tx58_put(std::vector<uint8_t> &o, uint32_t v, int n)
-{
-    for (int k = 0; k < n; k++) o.push_back((uint8_t)(v >> (8 * k)));
-}
 uint32_t tx58_get(const uint8_t *b, int n)
 {
     uint32_t v = 0;
     for (int k = 0; k < n; k++) v |= (uint32_t)b[k] << (8 * k);
     return v;
 }
-// (the core locked) tracks 5..8's settings, as the parameters list them
-std::vector<uint8_t> tx58_save(Tessera *t)
-{
-    std::vector<uint8_t> o;
-    uint32_t n = 0;
-    for (const Param &q : t->params)
-        if (q.id >= PARAM_PID + (PARAM_SONG + 1) * 0x1000u)
-        {
-            tx58_put(o, q.track, 1);
-            tx58_put(o, q.pid, 2);
-            tx58_put(o, (uint32_t)t->core->param_get(q.pid, q.track), 4);
-            n++;
-        }
-    tx58_put(o, n, 4);
-    o.insert(o.end(), {'T', 'X', '5', '8'});
-    return o;
-}
-// (the core locked) after the project loaded (which resets tracks 5..8's generators): their settings back. Twice: a
-// setting can move another (an ENGINE its sound's), and the second pass puts back what the first one's later moved
+// (the core locked) an older state's TX58, after its project loaded: tracks 5..8's settings back. Twice: a setting can
+// move another (an ENGINE its sound's), and the second pass puts back what the first one's later moved
 void tx58_load(Tessera *t, const uint8_t *b, uint32_t n)
 {
     for (int pass = 0; pass < 2; pass++)
@@ -832,10 +811,7 @@ bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
         len = t->core->save(b.data(), (uint32_t)b.size());
         if (len)
         {
-            std::vector<uint8_t> x = tx58_save(t);
             b.resize(len);
-            b.insert(b.end(), x.begin(), x.end());
-            len += (uint32_t)x.size();
             uint32_t m = (uint32_t)t->master;
             const uint8_t tail[6] = {'T', 'M', 'S', 'T', (uint8_t)m, (uint8_t)(m >> 8)};
             b.insert(b.begin() + len, tail, tail + 6);

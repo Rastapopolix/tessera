@@ -229,6 +229,15 @@ static uint32_t tsp_tess_ver(void)
 
 /* q (and, with runtime, the live patterns, song chain, motion tags, generators and cords) -> raw; its length, 0 when q
  * holds a value no field can take. runtime commits each track's current pattern first, as saving always did */
+#if CORE_TRACKS > 4
+#define TSP_XTRK 0xC0u                                  /* (tracks 5..8: TSP_KEEP's first, ROADMAP's claim) */
+static void xtrk_put(tsp_w_t *w);                       /* (tracks 5..8: the end of this file) */
+static int xtrk_read(const uint8_t *p, uint32_t len, int apply);
+static void xtrk_none(void);
+static uint32_t xt_ref(uint32_t v);
+static uint32_t xt_src(uint32_t v);
+static uint32_t xt_cord_out(const uint8_t *c);
+#endif
 static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
 {
     tsp_w_t w = {raw, TSP_HEAD, 0, 0, 1};
@@ -331,13 +340,23 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
         uint8_t blk[TESSERA_PK_BYTES];
         tsp_begin(&w, TSP_TESSERA, 1);
         tsp_byte(&w, tsp_tess_ver());
+#if CORE_TRACKS > 4
+        tessera_pk_clip = 1;                           /* (FOLLOW TO WITH past track 4: OFF here, true in XTRK) */
         tessera_pack(blk);
+        tessera_pk_clip = 0;
+#else
+        tessera_pack(blk);
+#endif
         tsp_bytes(&w, blk, sizeof blk);
         tsp_end(&w);
         tsp_begin(&w, TSP_CORDS, 1);
         {
             uint8_t c[CORD_PK_BYTES];
             cord_pack(c);
+#if CORE_TRACKS > 4
+            for (i = 0; i < CORD_MAX; i++)             /* (a cord touching a track past 4: left out, kept in XTRK) */
+                if (xt_cord_out(c + i * 6u)) memset(c + i * 6u, 0, 6u);
+#endif
             tsp_bytes(&w, c, sizeof c);
         }
         tsp_end(&w);
@@ -396,11 +415,19 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
         }
         if (tessera.sec_pc) {                          /* (SECTION PC: only when one is ON, so older firmware sees none) */
             tsp_begin(&w, TSP_SECPC, 1);
+#if CORE_TRACKS > 4
+            tsp_byte(&w, tessera.sec_pc & ((1u << PROJ_NTRK) - 1u));
+#else
             tsp_byte(&w, tessera.sec_pc);
+#endif
             tsp_end(&w);
         }
         tsp_begin(&w, TSP_SEED, 1);                    /* (STEP as seed: each track's SOURCE, each one's KEEP) */
+#if CORE_TRACKS > 4
+        for (i = 0; i < PROJ_NTRK; i++) tsp_byte(&w, xt_src(tessera.sd_src[i]));   /* (past 4: OFF; KEYS: 5) */
+#else
         tsp_bytes(&w, tessera.sd_src, PROJ_NTRK);
+#endif
         tsp_bytes(&w, tessera.sd_keep, PROJ_NTRK);
         tsp_end(&w);
         tsp_begin(&w, TSP_HUMAN, 1);                   /* (HUMAN TIME: each track's) */
@@ -527,7 +554,11 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
                 break;
             }
         tsp_begin(&w, TSP_HOLD, 1);                    /* (FOLLOW's HOLD: each track's) */
+#if CORE_TRACKS > 4
+        for (i = 0; i < PROJ_NTRK; i++) tsp_byte(&w, xt_ref(tessera.follow_hold[i]));
+#else
         tsp_bytes(&w, tessera.follow_hold, PROJ_NTRK);
+#endif
         tsp_end(&w);
         if (uscale_on()) {                             /* (a USER scale playing: it, then all four) */
             tsp_begin(&w, TSP_USCALE, 1);
@@ -548,6 +579,9 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
             }
         }
         tsp_end(&w);
+#if CORE_TRACKS > 4
+        xtrk_put(&w);                                  /* (tracks 5..8, and 1..4's references past 4) */
+#endif
     }
     motion_unguard(f);
     if (!w.ok) return 0;
@@ -652,6 +686,7 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
             if (tsp_seen.at[id]) return 0;
             tsp_seen.at[id] = pos + 4u; tsp_seen.len[id] = plen; tsp_seen.ver[id] = raw[pos + 1u];
         }
+
         pos += 4u + plen;
     }
     if (pos != len - 4u || !tsp_plain_ok(raw)) return 0;
@@ -946,6 +981,23 @@ static void tsp_restore(const uint8_t *raw)
             if (tessera.mode[t] == TESS_ENG_OFF) tessera.evolve[t].human = 0;
             else tessera.sub_human[t] = (uint8_t)((tessera.evolve[t].human + 2u) / 5u);
         }
+#if CORE_TRACKS > 4
+    {   /* tracks 5..8, and 1..4's references past 4 (the part found again: a tsp_valid since, of another record,
+         * may have run between) */
+        uint32_t pos = TSP_HEAD, n = tsp_u16_at(raw + 8), at = 0, len = 0;
+        for (i = 0; i < n; i++) {
+            uint32_t plen = tsp_u16_at(raw + pos + 2u);
+            if (raw[pos] == TSP_XTRK && raw[pos + 1u] == 1u) at = pos + 4u, len = plen;
+            pos += 4u + plen;
+        }
+        if (at && xtrk_read(raw + at, len, 0)) {
+            fm1_irq_off();
+            xtrk_read(raw + at, len, 1);
+            fm1_irq_on();
+        } else
+            xtrk_none();
+    }
+#endif
 }
 
 /* a record's length as its header gives it (0: not a TSP1 record or one longer than TSP_MAX) */
@@ -978,3 +1030,272 @@ static int tsp_rename(uint8_t *raw, uint32_t len, const char *name)
     tsp_resum(raw);
     return tsp_valid(raw, len);
 }
+
+#if CORE_TRACKS > 4
+/* ---- XTRK: what a record of an 8-track build (the plugin, Andamento) holds beyond the FM-1's tracks 1..4
+ * Part TSP_XTRK, in the range TSP_KEEP leaves to other targets: the FM-1 skips it (as any part it does not know) and a
+ * build with kept parts carries it through its saves. The 4-track parts stay what an FM-1 reads: a reference there to
+ * a track past 4 (FOLLOW, TO, WITH, HOLD, SOURCE, SECTION PC, a cord) is written OFF, its true value kept here.
+ * Version 1: the version, the build's tracks, then
+ *   tracks 1..4's references (FOLLOW TO WITH HOLD SOURCE, a byte each), SECTION PC (a byte), the selected track;
+ *   the cords that touch a track past 4: a count, then each one's index and its 6 bytes (cord_pack's);
+ *   tracks 5..8 in turn: engine, preset, P_COUNT, each parameter (u16); the pattern playing; each pattern's steps
+ *   that hold something (a count, then each one's index and its TSP_STEP_BYTES); each pattern's LEN DIV SWING GATE;
+ *   the FM6 patch and FN, ORACLE's patch, the kit; the Tessera block's track (TESS_PK_TRACK); the track's settings
+ *   (XT_B, then TRANSPOSE + 48, HOLD, SOURCE); each pattern's DIR; each SONG row's pattern; PAT GEN's slots if on;
+ *   the timed notes of tracks 5..8: a count (u16), then each note's 10 bytes. */
+#define XT_VER 1u
+static uint8_t *const XT_B[] = {
+    tessera.sub_shape, tessera.midi_ch, tessera.sound_off, tessera.sd_keep, tessera.sd_grav, tessera.sv_how,
+    tessera.fm_dev, tessera.sub_split, tessera.sub_split_how, tessera.et_order, tessera.ch_strum, tessera.ch_sdir,
+    tessera.ch_when, tessera.ch_by, tessera.follow_how, tessera.follow_rhy, tessera.midi_dmap, tessera.sub_human,
+    tessera.acc_limit, tessera.acc_mode, tessera.en_depth, tessera.fc_follow, tessera.fc_skip, tessera.et_role,
+    tessera.pat_gen,
+};
+static const uint8_t XT_BMAX[] = {   /* (each one's largest, as the 4-track parts check them) */
+    SUB_SHAPES - 1u, TESS_MIDI_OFF, 1u, TESS_SD_KEEPS - 1u, 100u, TESS_SV_HOWS - 1u,
+    100u, 100u, TESS_SPLIT_HOWS - 1u, ET_ORDERS - 1u, TESS_STRUM_MS, TESS_STR_DIRS - 1u,
+    TESS_CW_N - 1u, TESS_CB_N - 1u, TESS_FH_COUNT - 1u, TESS_FR_COUNT - 1u, TESS_DM_COUNT - 1u, TESS_HUMAN_MS,
+    TESS_ACC_LIMIT, TESS_ACC_MODES - 1u, 100u, 2u, 100u, 5u,
+    1u,
+};
+#define XT_NB (sizeof XT_B / sizeof XT_B[0])
+_Static_assert(sizeof XT_BMAX == XT_NB, "XT_B and XT_BMAX side by side");
+
+/* a track's references to another as the FM-1 reads them: 1..4 kept, past 4 OFF (SOURCE: KEYS is the FM-1's 5) */
+static uint32_t xt_ref(uint32_t v) { return v > PROJ_NTRK ? 0u : v; }
+static uint32_t xt_src(uint32_t v) { return v == TESS_SD_KEYS ? PROJ_NTRK + 1u : xt_ref(v); }
+/* the cords' block as the FM-1 reads it: a cord that touches a track past 4 left out (XTRK keeps it) */
+static uint32_t xt_cord_out(const uint8_t *c) { return (c[1] & 0x3Fu) >= PROJ_NTRK || c[3] >= PROJ_NTRK; }
+
+static void xtrk_put(tsp_w_t *w)
+{
+    uint8_t c[CORD_PK_BYTES], v[TSP_STEP_BYTES];
+    uint32_t t, b, i, n;
+    tsp_begin(w, TSP_XTRK, 1);
+    tsp_byte(w, XT_VER); tsp_byte(w, NTRK);
+    for (t = 0; t < PROJ_NTRK; t++) {
+        const tessera_evolve_t *ev = &tessera.evolve[t];
+        tsp_byte(w, ev->follow); tsp_byte(w, ev->br_to); tsp_byte(w, ev->lg_with);
+        tsp_byte(w, tessera.follow_hold[t]); tsp_byte(w, tessera.sd_src[t]);
+    }
+    tsp_byte(w, tessera.sec_pc); tsp_byte(w, song.sel);
+    cord_pack(c);
+    for (i = n = 0; i < CORD_MAX; i++) n += xt_cord_out(c + i * 6u);
+    tsp_byte(w, n);
+    for (i = 0; i < CORD_MAX; i++)
+        if (xt_cord_out(c + i * 6u)) { tsp_byte(w, i); tsp_bytes(w, c + i * 6u, 6u); }
+    for (t = PROJ_NTRK; t < NTRK; t++) {
+        track_t *k = &trk[t];
+        uint8_t blk[TESS_PK_TRACK], dw[DRUM_WIRE_BYTES];
+        tsp_byte(w, k->eng_req); tsp_byte(w, k->preset); tsp_byte(w, P_COUNT);
+        for (i = 0; i < P_COUNT; i++) tsp_u16(w, (uint16_t)k->p[i]);
+        tsp_byte(w, k->pattern);
+        pattern_commit(k);
+        for (b = 0; b < NPAT; b++) {
+            static const step_t empty = {{0}, 0, ST_REST, 0, 0, 0, 0, 0, 0, 0};
+            const step_t *s = pattern_at(t, b)->step;
+            for (i = n = 0; i < NSTEP; i++) n += memcmp(&s[i], &empty, sizeof empty) != 0;
+            tsp_byte(w, n);
+            for (i = 0; i < NSTEP; i++)
+                if (memcmp(&s[i], &empty, sizeof empty)) {
+                    if (!tsp_step_pack(v, &s[i])) w->ok = 0;
+                    tsp_byte(w, i); tsp_bytes(w, v, sizeof v);
+                }
+        }
+        for (b = 0; b < NPAT; b++)
+            for (i = 0; i < 4u; i++) tsp_byte(w, (uint8_t)pattern_at(t, b)->timing[i]);
+        {
+            uint8_t native[FP_SIZE + 1u], packed[FM6_PACKED];
+            memcpy(native, fm6_patch[t], sizeof native);
+            fm6_pack(native, packed);
+            tsp_bytes(w, packed, sizeof packed);
+            tsp_bytes(w, fm6_fn[t], FM6_NFN);
+        }
+        tsp_bytes(w, or_patch_of(k), OR_N);
+        drum_patch_pack(dw, &drum_patch[t]);
+        tsp_bytes(w, dw, sizeof dw);
+        tessera_pack_track(blk, t);
+        tsp_bytes(w, blk, sizeof blk);
+        for (i = 0; i < XT_NB; i++) tsp_byte(w, XT_B[i][t]);
+        tsp_byte(w, (uint32_t)(tessera.midi_tr[t] + TESS_MIDI_TR));
+        tsp_byte(w, tessera.follow_hold[t]); tsp_byte(w, tessera.sd_src[t]);
+        tsp_bytes(w, pattern_dir[t], NPAT);
+        for (i = 0; i < CHAIN_ROWS; i++) tsp_byte(w, chain_patterns[i][t]);
+        if (tessera.pat_gen[t]) tsp_bytes(w, tessera_pg_slots(t), NPAT * TESS_PG_BYTES);
+    }
+    for (i = n = 0; i < RECORD_MAX; i++)
+        n += recording[i].vel && (recording[i].owner & REC_OWNER_MASK) >= PROJ_NTRK * NPAT;
+    tsp_u16(w, n);
+    for (i = 0; i < RECORD_MAX; i++)
+        if (recording[i].vel && (recording[i].owner & REC_OWNER_MASK) >= PROJ_NTRK * NPAT)
+            tsp_bytes(w, &recording[i], sizeof recording[i]);
+    tsp_end(w);
+}
+
+/* the part checked whole (a length, a range, a step, a patch, a track of the Tessera block): 1 good. With apply, it is
+ * loaded too (after tsp_restore of tracks 1..4): checked first, then applied, so a bad part changes nothing */
+static int xtrk_read(const uint8_t *p, uint32_t len, int apply)
+{
+    const uint8_t *e = p + len;
+    uint32_t t, b, i, n;
+#define XT_NEED(k) do { if ((uint32_t)(e - p) < (uint32_t)(k)) return 0; } while (0)
+    XT_NEED(2u);
+    if (p[0] != XT_VER || p[1] != NTRK) return 0;
+    p += 2;
+    XT_NEED(PROJ_NTRK * 5u + 2u);
+    for (t = 0; t < PROJ_NTRK; t++, p += 5)
+        if (p[0] > NTRK || p[1] > NTRK || p[2] > NTRK || p[3] > NTRK || p[4] > TESS_SD_KEYS) return 0;
+        else if (apply) {
+            tessera_evolve_t *ev = &tessera.evolve[t];
+            ev->follow = p[0]; ev->br_to = p[1]; ev->lg_with = p[2];
+            tessera.follow_hold[t] = p[3]; tessera.sd_src[t] = p[4];
+        }
+    if (p[1] >= NTRK) return 0;
+    if (apply) { tessera.sec_pc = p[0]; song.sel = p[1]; }
+    p += 2;
+    XT_NEED(1u);
+    n = *p++;
+    XT_NEED(n * 7u);
+    {
+        cord_t got[CORD_MAX];
+        uint8_t c[CORD_PK_BYTES];
+        cord_pack(c);
+        for (i = 0; i < n; i++, p += 7) {
+            if (p[0] >= CORD_MAX) return 0;
+            memcpy(c + p[0] * 6u, p + 1, 6u);
+        }
+        if (!cord_parse(c, got)) return 0;
+        if (apply && n) {                  /* (these cords alone: the others as TSP_CORDS loaded them; a HOLD mod
+                                            * among them plays as BI) */
+            TESS_IRQ_OFF();
+            for (i = 0; i < n; i++) cords[p[(int32_t)(i - n) * 7] ] = got[p[(int32_t)(i - n) * 7]];
+            cord_masks();
+            TESS_IRQ_ON();
+        }
+    }
+    for (t = PROJ_NTRK; t < NTRK; t++) {
+        track_t *k = &trk[t];
+        uint32_t eng, gone;
+        XT_NEED(3u);
+        if (p[0] >= NENGINES || p[2] != P_COUNT) return 0;
+        eng = p[0]; gone = !ENG_BUILT(eng);
+        if (gone) eng = ENGI_FALLBACK;
+        XT_NEED(3u + 2u * P_COUNT + 1u);
+        if (p[3u + 2u * P_COUNT] >= NPAT) return 0;
+        if (apply) {
+            k->eng_req = (uint8_t)eng; k->user = 0; k->user_native = 0;
+            for (i = 0; i < P_COUNT; i++) {
+                const param_desc_t *d = param_desc_of(eng, i);
+                int16_t s = (int16_t)tsp_u16_at(p + 3u + 2u * i);
+                k->p[i] = param_reserved(i) ? 0 : gone && i >= P_E0 ? d->def : (int16_t)clamp(s, d->min, d->max);
+            }
+            k->preset = gone ? 0u : (uint8_t)(ENGINES[eng]->npresets ? p[1] % ENGINES[eng]->npresets : 0u);
+            k->pattern = p[3u + 2u * P_COUNT];
+        }
+        p += 3u + 2u * P_COUNT + 1u;
+        for (b = 0; b < NPAT; b++) {
+            pattern_t *pt = pattern_at(t, b);
+            XT_NEED(1u);
+            n = *p++;
+            if (n > NSTEP) return 0;
+            XT_NEED(n * (1u + TSP_STEP_BYTES));
+            if (apply)
+                for (i = 0; i < NSTEP; i++) pt->step[i] = (step_t){{0}, 0, ST_REST, 0, 0, 0, 0, 0, 0, 0};
+            for (i = 0; i < n; i++, p += 1u + TSP_STEP_BYTES) {
+                step_t s;
+                if (p[0] >= NSTEP || !tsp_step_unpack(&s, p + 1)) return 0;
+                if (apply) pt->step[p[0]] = s;
+            }
+        }
+        XT_NEED(NPAT * 4u);
+        for (b = 0; b < NPAT; b++)
+            for (i = 0; i < 4u; i++)
+                if (apply) pattern_at(t, b)->timing[i] = (int16_t)clamp(p[b * 4u + i], TP[P_SLEN + i].min, TP[P_SLEN + i].max);
+        p += NPAT * 4u;
+        XT_NEED(FM6_PACKED + FM6_NFN + OR_N + DRUM_WIRE_BYTES + TESS_PK_TRACK);
+        for (i = 0; i < FM6_PACKED; i++) if (p[i] > 127u) return 0;
+        if (!fm6_fn_ok(p + FM6_PACKED) || !or_patch_ok(p + FM6_PACKED + FM6_NFN)) return 0;
+        {
+            drum_patch_t dp;
+            const uint8_t *tb = p + FM6_PACKED + FM6_NFN + OR_N + DRUM_WIRE_BYTES;
+            if (!drum_patch_unpack(&dp, p + FM6_PACKED + FM6_NFN + OR_N) || !drum_patch_valid(&dp)) return 0;
+            if (!tessera_unpack_track(tb, t, 0)) return 0;
+            if (apply) {
+                uint8_t v[FP_SIZE + 1u];
+                fm6_unpack(p, v);
+                fm6_set_patch(t, v);
+                memcpy(fm6_fn[t], p + FM6_PACKED, FM6_NFN);
+                if (!or_set_patch(t, p + FM6_PACKED + FM6_NFN)) or_track_loaded(k);
+                drum_patch[t] = dp;
+                tessera_unpack_track(tb, t, 1);
+            }
+        }
+        p += FM6_PACKED + FM6_NFN + OR_N + DRUM_WIRE_BYTES + TESS_PK_TRACK;
+        XT_NEED(XT_NB + 3u + NPAT + CHAIN_ROWS);
+        for (i = 0; i < XT_NB; i++) if (p[i] > XT_BMAX[i]) return 0;
+        if (p[XT_NB] > 2u * TESS_MIDI_TR || p[XT_NB + 1u] > NTRK || p[XT_NB + 2u] > TESS_SD_KEYS) return 0;
+        for (i = 0; i < NPAT; i++) if (p[XT_NB + 3u + i] >= SEQ_DIRS) return 0;
+        for (i = 0; i < CHAIN_ROWS; i++) if (p[XT_NB + 3u + NPAT + i] >= NPAT) return 0;
+        if (apply) {
+            for (i = 0; i < XT_NB; i++) XT_B[i][t] = p[i];
+            tessera.midi_tr[t] = (int8_t)((int32_t)p[XT_NB] - (int32_t)TESS_MIDI_TR);
+            tessera.follow_hold[t] = p[XT_NB + 1u]; tessera.sd_src[t] = p[XT_NB + 2u];
+            memcpy(pattern_dir[t], p + XT_NB + 3u, NPAT);
+            for (i = 0; i < CHAIN_ROWS; i++) chain_patterns[i][t] = p[XT_NB + 3u + NPAT + i];
+        }
+        {
+            uint32_t pg = p[XT_NB - 1u];   /* (PAT GEN, XT_B's last) */
+            p += XT_NB + 3u + NPAT + CHAIN_ROWS;
+            if (pg) {
+                XT_NEED(NPAT * TESS_PG_BYTES);
+                for (b = 0; b < NPAT; b++) if (!tessera_pg_check(t, p + b * TESS_PG_BYTES)) return 0;
+                if (apply) tessera_pg_put(t, p);
+                p += NPAT * TESS_PG_BYTES;
+            }
+        }
+        if (apply) {
+            memcpy(k->step, pattern_at(t, k->pattern)->step, sizeof k->step);
+            for (i = 0; i < 4u; i++) k->p[P_SLEN + i] = pattern_at(t, k->pattern)->timing[i];
+        }
+    }
+    XT_NEED(2u);
+    n = tsp_u16_at(p); p += 2;
+    if (n > RECORD_MAX) return 0;
+    XT_NEED(n * sizeof(recorded_note_t));
+    for (i = 0; i < n; i++) {
+        recorded_note_t r;
+        memcpy(&r, p + i * sizeof r, sizeof r);
+        if (!r.vel || (r.owner & REC_OWNER_MASK) < PROJ_NTRK * NPAT || (r.owner & REC_OWNER_MASK) >= NTRK * NPAT ||
+            !recording_valid(&r)) return 0;
+    }
+    if (apply) {
+        uint32_t at = 0;
+        for (i = 0; i < n; i++) {
+            while (at < RECORD_MAX && recording[at].vel) at++;
+            if (at == RECORD_MAX) break;   /* (the ring full: the rest left out) */
+            memcpy(&recording[at], p + i * sizeof recording[at], sizeof recording[at]);
+        }
+        recording_reindex();
+    }
+    p += n * sizeof(recorded_note_t);
+    return p == e;
+#undef XT_NEED
+}
+
+/* tracks 5..8 when a record has no XTRK (the FM-1's, a 4-track build's): a new project's, as project_new gives 1..4 */
+static void xtrk_none(void)
+{
+    for (uint32_t k = PROJ_NTRK; k < NTRK; k++) {
+        track_t *t = &trk[k];
+        track_defaults(t);
+        set_engine_of(t, TRK_DEF[k][0]);
+        apply_preset_to(t, TRK_DEF[k][1]);
+        if (TRK_DEF[k][0] != ENGI_DRUM) TRK_DEF_SCALE_OF(t);
+        track_defaults_steps(t);
+        pat_last[k] = 0;
+        pat_sig[k] = steps_sig(t);
+    }
+    scale_share_q(TSEL, 0);                             /* (the project's scale, and its ROOT under KEY LINK) */
+}
+#endif
