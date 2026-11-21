@@ -840,9 +840,48 @@ static int test_pat_gen(void)
     return bad;
 }
 
+/* parts TSP_KEEP.. (another target's: an 8-track build's tracks 5..) come back unchanged through a save here */
+static int test_tsp_kept(void)
+{
+    static uint8_t rec[TSP_MAX];
+    static const uint8_t xtrk[] = {0xD0u, 1u, 6u, 0u, 5u, 6u, 7u, 8u, 9u, 10u};   /* (id, version, length 6, bytes) */
+    uint32_t len, at, n, k;
+    int bad = 0, ok;
+    reset();
+    ok = !project_save_as(0, "WIDE");
+    len = (uint32_t)proj_read_slot(0);
+    memcpy(rec, proj_wire_u.raw, len);
+    at = len - 4u;                                    /* (the part goes before the sum) */
+    memcpy(rec + at, xtrk, sizeof xtrk);
+    len += sizeof xtrk;
+    n = tsp_u16_at(rec + 8) + 1u; rec[8] = (uint8_t)n; rec[9] = (uint8_t)(n >> 8);
+    memcpy(rec + 4, &len, 4);
+    tsp_resum(rec);
+    ok = ok && !proj_write_slot(0, rec, len) && (proj_ext & 1u);
+    project_load(0);
+    bad += check("kept part: a record holding one loads here (the part skipped) and says so",
+                 ok && proj_cur == 0u && !strcmp(ui.msg, "EXTRAS KEPT"));
+    tessera_param_set(2, TX_SECTION_PC, 1);
+    ok = !project_save(0) && !strcmp(ui.msg, "SAVED");
+    len = (uint32_t)proj_read_slot(0);
+    k = tsp_kept(proj_wire_u.raw, len, &n, 0);
+    ok = ok && len && k == sizeof xtrk && n == 1u && !memcmp(proj_wire_u.raw + len - 4u - k, xtrk, k);
+    bad += check("kept part: a save back to its slot carries it over byte for byte, the music's change saved too",
+                 ok && tsp_seen.at[TSP_SECPC] && proj_wire_u.raw[tsp_seen.at[TSP_SECPC]] == 0x04u);
+    ok = !project_save_as(1, "WIDE B") && (proj_ext & 2u);
+    bad += check("kept part: SAVE to another slot takes it along", ok);
+    n = erases;
+    project_autosave();
+    bad += check("kept part: autosave sees the slot as saved (no write)", erases == n);
+    (void)proj_write_slot(0, rec, 0); (void)proj_write_slot(1, rec, 0);   /* (the slots empty again for main) */
+    proj_cur = PROJ_NO_SLOT;
+    reset();
+    return bad;
+}
+
 int main(void)
 {
-    int bad = test_boot_maintenance_writes() + test_tsp_record() + test_mlearn_save() + test_pat_gen(), ok;
+    int bad = test_boot_maintenance_writes() + test_tsp_record() + test_mlearn_save() + test_pat_gen() + test_tsp_kept(), ok;
     uint32_t before;
     persist_t p;
     static uint8_t old[TSP_MAX], keep[TSP_MAX];   /* (a slot's record as it was) */
