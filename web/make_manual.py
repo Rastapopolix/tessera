@@ -248,6 +248,9 @@ header a {{ color: var(--mid); text-decoration: none; padding: 3px 4px 2px; }}
 header a[aria-current] {{ color: var(--bg); background: var(--ink); }}
 .theme, .contents {{ font: 16px/1 var(--pixel); color: var(--mid); background: none; border: 0; padding: 3px 4px 2px; cursor: pointer; }}
 .theme:hover, .contents:hover {{ color: var(--bg); background: var(--ink); }}
+.theme {{ display: inline-flex; align-items: center; gap: 6px; }}
+.theme svg {{ width: 15px; height: 15px; flex: none; }}
+@media (max-width: 600px) {{ .theme-word {{ display: none; }} }}
 .contents {{ display: none; }}
 .layout {{ display: grid; grid-template-columns: 300px minmax(0, 1fr); max-width: 1240px; margin: 0 auto; }}
 nav.side {{ position: sticky; top: 49px; align-self: start; max-height: calc(100vh - 49px); overflow: auto; padding: 16px 12px 40px 16px;
@@ -435,7 +438,15 @@ main .downloads p {{ color: var(--mid); }}
 (function () {{
   var b = document.getElementById("theme"), r = document.documentElement;
   function light() {{ return r.dataset.theme === "light"; }}
-  function show() {{ b.textContent = light() ? "DARK" : "LIGHT"; }}
+  /* the LIGHT / DARK button: the sun or moon of the LANDSCAPE screen (firmware ui_land.c), then the word (hidden on
+   * phones, kept as the name) */
+  function themeFace(b, word, toLight) {{
+    b.innerHTML = '<svg viewBox="0 0 15 15" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="'
+      + (toLight ? "M7 0h1v2h-1zM3 3h1v1h-1zM5 3h5v1h-5zM11 3h1v1h-1zM4 4h2v1h-2zM9 4h2v1h-2zM3 5h2v1h-2zM10 5h2v1h-2zM3 6h1v3h-1zM11 6h1v3h-1zM0 7h2v1h-2zM13 7h2v1h-2zM3 9h2v1h-2zM10 9h2v1h-2zM4 10h2v1h-2zM9 10h2v1h-2zM3 11h1v1h-1zM5 11h5v1h-5zM11 11h1v1h-1zM7 13h1v2h-1z" : "M5 2h2v1h-2zM4 3h2v1h-2zM3 4h3v1h-3zM2 5h4v3h-4zM2 8h5v1h-5zM2 9h6v1h-6zM3 10h9v1h-9zM4 11h7v1h-7zM5 12h5v1h-5z") + '"/></svg>';
+    var s = document.createElement("span"); s.className = "theme-word"; s.textContent = word; b.appendChild(s);
+    b.setAttribute("aria-label", word); b.title = word;
+  }}
+  function show() {{ themeFace(b, light() ? "DARK" : "LIGHT", !light()); }}
   b.addEventListener("click", function () {{
     r.dataset.theme = light() ? "dark" : "light";
     try {{ localStorage.setItem("tessera-theme", r.dataset.theme); }} catch (e) {{}}
