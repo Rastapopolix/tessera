@@ -4369,7 +4369,7 @@ static uint32_t generate(uint32_t style, uint32_t seed, uint32_t variation, uint
     if (flags & GEN_KEEP_TEMPO) song.g[G_BPM] = bpm;
     sync_reload = 1;
     gen_last.style = (uint8_t)style; gen_last.seed = rnd_seed; gen_last.var = rnd_var; gen_last.made = 1;
-    if (playing) transport_req = 1;                 /* (a new project stops; it was playing: on again) */
+    if (playing && !song.playing) transport_req = 1;   /* (it was playing: on again, if anything stopped it) */
     ui.force = 1;
     return 0;
 }
@@ -4382,7 +4382,7 @@ static uint32_t generate_swap(void)
     if (!len || gen_load(gen_before, gen_before_len)) return 1;
     memcpy(gen_before, proj_wire_u.raw, len);
     gen_before_len = len;
-    if (playing) transport_req = 1;
+    if (playing && !song.playing) transport_req = 1;   /* (a load stops: it was playing, on again) */
     return 0;
 }
 /* the last piece made: its style, seed and VARIATION. 0 none yet */

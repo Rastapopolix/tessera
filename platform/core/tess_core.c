@@ -827,11 +827,29 @@ uint32_t tess_core_bpm(void) { return (uint32_t)song.g[G_BPM]; }
 #if TESS_GENERATE
 uint32_t tess_core_gen_styles(void) { return generate_styles(); }
 const char *tess_core_gen_style(uint32_t s) { return generate_style_name(s); }
+/* the DAW's clock: what generate or the swap stopped starts again where the DAW is (its next block: host_locate), not
+ * from the top */
+static void gen_host_follow(void)
+{
+#ifdef TESS_HOST_CLOCK
+    if (tess_host_clock && transport_req == 1u) {
+        transport_req = 0;
+        tess_host_clock = 0;
+    }
+#endif
+}
 uint32_t tess_core_generate(uint32_t style, uint32_t seed, uint32_t variation, uint32_t flags)
 {
-    return generate(style, seed, variation, flags & TESS_GEN_KEEP_TEMPO ? GEN_KEEP_TEMPO : 0u);
+    uint32_t r = generate(style, seed, variation, flags & TESS_GEN_KEEP_TEMPO ? GEN_KEEP_TEMPO : 0u);
+    gen_host_follow();
+    return r;
 }
-uint32_t tess_core_gen_swap(void) { return generate_swap(); }
+uint32_t tess_core_gen_swap(void)
+{
+    uint32_t r = generate_swap();
+    gen_host_follow();
+    return r;
+}
 uint32_t tess_core_gen_last(uint32_t *style, uint32_t *seed, uint32_t *variation) { return generate_last(style, seed, variation); }
 #else
 uint32_t tess_core_gen_styles(void) { return 0; }
