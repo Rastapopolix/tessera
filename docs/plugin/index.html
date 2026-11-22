@@ -140,7 +140,7 @@ main .downloads p { color: var(--mid); }
   <input id="search-q" type="search" placeholder="Search the plugin's guide" aria-label="Search the plugin's guide" autocomplete="off">
   <p class="sr" id="found" aria-live="polite"></p>
   <ol class="results" id="results" hidden></ol>
-  <ol class="toc"><li><a href="#download">Download</a></li><li><a href="#install">Install</a></li><li><a href="#first-sound">First sound</a></li><li><a href="#the-window">The window</a></li><li><a href="#playing-it-from-your-fm-1">Playing it from your FM-1</a></li><li><a href="#playing-with-the-daw">Playing with the DAW</a><ol><li><a href="#sections-and-banks-from-the-daw-program-change">Sections and banks from the DAW (Program Change)</a></li></ol></li><li><a href="#saving-and-project-files">Saving, and project files</a></li><li><a href="#tracks-1-to-4-and-5-to-8">Tracks 1 to 4, and 5 to 8</a></li><li><a href="#automation-the-parameters">Automation: the parameters</a></li><li><a href="#track-outputs-and-midi-out">Track outputs and MIDI out</a></li><li><a href="#several-tesseras-in-one-song">Several Tesseras in one song</a></li><li><a href="#sounds-only-the-plugin-has">Sounds only the plugin has</a></li><li><a href="#echoes-on-the-beat">Echoes on the beat</a></li><li><a href="#how-much-cpu-it-takes">How much CPU it takes</a></li><li><a href="#not-there-yet">Not there yet</a></li></ol>
+  <ol class="toc"><li><a href="#download">Download</a></li><li><a href="#install">Install</a></li><li><a href="#first-sound">First sound</a></li><li><a href="#the-window">The window</a></li><li><a href="#playing-it-from-your-fm-1">Playing it from your FM-1</a></li><li><a href="#playing-with-the-daw">Playing with the DAW</a><ol><li><a href="#sections-and-banks-from-the-daw-program-change">Sections and banks from the DAW (Program Change)</a></li></ol></li><li><a href="#saving-and-project-files">Saving, and project files</a></li><li><a href="#tracks-1-to-4-and-5-to-8">Tracks 1 to 4, and 5 to 8</a></li><li><a href="#automation-the-parameters">Automation: the parameters</a></li><li><a href="#track-outputs-and-midi-out">Track outputs and MIDI out</a></li><li><a href="#several-tesseras-in-one-song">Several Tesseras in one song</a></li><li><a href="#playing-with-an-mpe-controller">Playing with an MPE controller</a></li><li><a href="#sounds-only-the-plugin-has">Sounds only the plugin has</a></li><li><a href="#echoes-on-the-beat">Echoes on the beat</a></li><li><a href="#how-much-cpu-it-takes">How much CPU it takes</a></li><li><a href="#not-there-yet">Not there yet</a></li></ol>
 </nav>
 <main id="main" tabindex="-1">
 <h1 id="tessera-as-a-plugin">Tessera as a plugin</h1>
@@ -161,6 +161,7 @@ in a DAW.</p>
 <li><a href="#automation-the-parameters">Automation: the parameters</a></li>
 <li><a href="#track-outputs-and-midi-out">Track outputs and MIDI out</a></li>
 <li><a href="#several-tesseras-in-one-song">Several Tesseras in one song</a></li>
+<li><a href="#playing-with-an-mpe-controller">Playing with an MPE controller</a></li>
 <li><a href="#sounds-only-the-plugin-has">Sounds only the plugin has</a></li>
 <li><a href="#echoes-on-the-beat">Echoes on the beat</a></li>
 <li><a href="#how-much-cpu-it-takes">How much CPU it takes</a></li>
@@ -212,10 +213,16 @@ verified&quot;. After copying, clear the download's quarantine once, in Terminal
 <p>(and the same for <code>Tessera.app</code> where you put it). <strong>Windows:</strong> SmartScreen may warn about the unsigned <code>Tessera.exe</code>
 the first time: click <em>More info</em>, then <em>Run anyway</em>.</p>
 <h2 id="first-sound">First sound</h2>
-<p>A new Tessera opens with <strong>STILL TIDE</strong> loaded (and KOTO GARDEN in slot B). Press PLAY in the DAW and it plays. Play
-notes from a MIDI track or a keyboard routed to Tessera: they go to the selected track, as the FM-1's keys do, on
-any MIDI channel (GLO &gt; SYSTEM ROUT starts at SEL in the plugin). To play each track from its own DAW track instead,
-set ROUT to a channel range (CH1-8: channel 1 plays track 1, channel 2 track 2, and so on).</p>
+<p>A new Tessera opens on a <strong>new project</strong>, as an FM-1 with nothing saved does: each track has its power-on sound, every
+pattern is empty and no generator runs, so pressing PLAY in the DAW plays nothing yet. Play notes from a MIDI track or
+a keyboard routed to Tessera: they go to the selected track, as the FM-1's keys do, on any MIDI channel (GLO &gt; SYSTEM
+ROUT starts at SEL in the plugin). To play each track from its own DAW track instead, set ROUT to a channel range
+(CH1-8: channel 1 plays track 1, channel 2 track 2, and so on). To make it play on its own, pick a MODE on SEQ, as on
+the FM-1 (the <a href="../manual/">manual</a> shows how).</p>
+<p><strong>To hear what it can do,</strong> load a demo: in a DAW that lists CLAP presets (Bitwig, for one), all eight demos are in its
+preset browser under Tessera; <strong>STILL TIDE</strong> also waits in slot A and <strong>KOTO GARDEN</strong> in slot B (SAVE &gt; PROJECT, then
+LOAD); and every demo is a <code>.tsp</code> file in the <a href="https://github.com/Rastapopolix/tessera/blob/HEAD/demos/">demos folder</a> for <strong>OPEN</strong>. The <strong>standalone app</strong> has no DAW
+to send it notes, so it opens with STILL TIDE loaded and plays it at once.</p>
 <h2 id="the-window">The window</h2>
 <p>The window shows the FM-1's panel, 1:1, in Tessera's own look or one of the FM-1's colours (see <strong>Shells</strong> below). Click the buttons and keys (drag across the keys to glide). Drag a knob up and down
 or left and right, or turn the mouse wheel over it.</p>
@@ -326,7 +333,8 @@ with its own project.</p>
 <li><strong>OPEN</strong> loads a <code>.tsp</code> project (from the editor, from the <code>demos/</code> folder, or saved by another Tessera) or an
 <strong>FM-1 backup</strong> (the <code>.json</code> from the backup page or the Hub). A backup's slots A to D go into the plugin's slots,
 then the music it was playing loads. On Windows and macOS you can also drop a file on the window.</li>
-<li><strong>SAVE</strong> writes the project as a <code>.tsp</code> under its name, ready for the FM-1's editor or another Tessera.</li>
+<li><strong>SAVE</strong> writes the project as a <code>.tsp</code> under its name, ready for the FM-1's editor or another Tessera. It offers
+<strong>Documents/Tessera/Presets</strong>: what you save there shows in a CLAP host's preset browser beside the demos.</li>
 </ul>
 <p>A <code>.tsp</code> from the plugin opens on the FM-1 too. Tracks on the plugin-only sounds play a stand-in there (see
 <a href="#sounds-only-the-plugin-has">Sounds only the plugin has</a>).</p>
@@ -366,7 +374,22 @@ from an instrument: Bitwig and Reaper do, Ableton Live does not.</li>
 </ul>
 <h2 id="several-tesseras-in-one-song">Several Tesseras in one song</h2>
 <p>You can use up to <strong>8 Tesseras</strong> in one DAW song. Each is wholly its own: its project, its transport, its window and
-its parameters. A ninth won't open. Each new Tessera starts from STILL TIDE.</p>
+its parameters. A ninth won't open. Each new Tessera starts from a new project.</p>
+<h2 id="playing-with-an-mpe-controller">Playing with an MPE controller</h2>
+<p>Each note you play keeps its own <strong>pressure</strong> and <strong>slide</strong>. With a Seaboard, a LinnStrument, an Osmose or any MPE
+controller, or with a DAW's per-note expression (Bitwig's PRESSURE and TIMBRE, or a CLAP host's note expressions),
+pressing or sliding one key moves only that note. Poly Aftertouch works too.</p>
+<p>Choose where they go on the <strong>MODS</strong> page (under LFO), on the track you play:</p>
+<ul>
+<li><strong>AT</strong>: each note's pressure. On a voice destination of its own track (PITCH, CUTOFF, SHAPE, GAIN) every note follows
+its own key.</li>
+<li><strong>SLIDE</strong>: each note's slide (MPE's CC74), in the source list after IN. The plugin only.</li>
+</ul>
+<p>For example, AT → CUTOFF and SLIDE → SHAPE. Use <strong>ROUT SEL</strong> (the plugin's default): every channel then plays the
+selected track, which MPE needs because it sends each note on a channel of its own. Notes the sequencer or a
+generator plays read the track's last pressure and CC74.</p>
+<p>Not yet: pitch bend per note. An MPE note's bend still bends the whole track.</p>
+<p>On the FM-1 a project with a SLIDE mod plays without that mod, and AT is one value for the whole track.</p>
 <h2 id="sounds-only-the-plugin-has">Sounds only the plugin has</h2>
 <p>The plugin has room for engines the FM-1 can't fit:</p>
 <ul>
@@ -394,7 +417,8 @@ sounding at once take about 18 % of a core.</p>
 <h2 id="not-there-yet">Not there yet</h2>
 <ul>
 <li><strong>One window size</strong>, the FM-1's. A larger, wider window is planned.</li>
-<li><strong>No presets in the DAW's browser</strong> yet: use OPEN, or the DAW's own way of saving a plugin's state.</li>
+<li><strong>Presets in the DAW's browser</strong> only for the CLAP plugin: the VST3 and the Audio Unit don't list them yet. Use OPEN
+there, or the DAW's own way of saving a plugin's state.</li>
 <li><strong>No standalone app on Linux</strong> yet.</li>
 <li><strong>Not signed</strong> on macOS or Windows yet (see <a href="#install">Install</a>).</li>
 </ul>
