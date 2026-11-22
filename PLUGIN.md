@@ -46,10 +46,16 @@ the first time: click *More info*, then *Run anyway*.
 
 ## First sound
 
-A new Tessera opens with **STILL TIDE** loaded (and KOTO GARDEN in slot B). Press PLAY in the DAW and it plays. Play
-notes from a MIDI track or a keyboard routed to Tessera: they go to the selected track, as the FM-1's keys do, on
-any MIDI channel (GLO > SYSTEM ROUT starts at SEL in the plugin). To play each track from its own DAW track instead,
-set ROUT to a channel range (CH1-8: channel 1 plays track 1, channel 2 track 2, and so on).
+A new Tessera opens on a **new project**, as an FM-1 with nothing saved does: each track has its power-on sound, every
+pattern is empty and no generator runs, so pressing PLAY in the DAW plays nothing yet. Play notes from a MIDI track or
+a keyboard routed to Tessera: they go to the selected track, as the FM-1's keys do, on any MIDI channel (GLO > SYSTEM
+ROUT starts at SEL in the plugin). To play each track from its own DAW track instead, set ROUT to a channel range
+(CH1-8: channel 1 plays track 1, channel 2 track 2, and so on). To make it play on its own, pick a MODE on SEQ, as on
+the FM-1 (the [manual](MANUAL.md) shows how).
+
+**To hear what it can do,** load a demo: **STILL TIDE** waits in slot A and **KOTO GARDEN** in slot B (SAVE > PROJECT,
+then LOAD), and the rest are `.tsp` files in the [demos folder](demos/) for **OPEN**. The **standalone app** has no DAW
+to send it notes, so it opens with STILL TIDE loaded and plays it at once.
 
 ## The window
 
@@ -215,7 +221,7 @@ DAW project saves them: the cords in the Tessera project, and ROUT, DRUM's chann
 ## Several Tesseras in one song
 
 You can use up to **8 Tesseras** in one DAW song. Each is wholly its own: its project, its transport, its window and
-its parameters. A ninth won't open. Each new Tessera starts from STILL TIDE.
+its parameters. A ninth won't open. Each new Tessera starts from a new project.
 
 ## Sounds only the plugin has
 

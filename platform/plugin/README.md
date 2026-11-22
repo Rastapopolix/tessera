@@ -11,8 +11,10 @@ tracks, in TESSERA's own window or the FM-1's.
 - **Engines the FM-1 has no room for:** SID (a whole MOS 6581 / 8580 per note), DRUM's SID KIT and SID DIGI, and
   MACRO (Plaits' synthesis), PHASE (the CZ-1's phase distortion, CrispyZebra's waveforms), besides the FM-1's own.
   A project with them opens on the FM-1 too: its SID, MACRO and PHASE tracks play FM6's INIT there, a SID kit the 909. The Daisy build (Andamento) has them as well.
-- **Start:** STILL TIDE is loaded (KOTO GARDEN in slot B), as in the simulator. The host's PLAY / STOP start and stop
-  it; the standalone app has no transport, so it plays at once.
+- **Start:** a new project (`project_new_blank`, as an FM-1 with nothing saved: the power-on sounds, every pattern
+  empty, no generator), so a new instance plays nothing until it gets notes; STILL TIDE and KOTO GARDEN wait in slots
+  A and B (`web/sim/sim.c`). The host's PLAY / STOP start and stop the song. The standalone app has no transport and
+  no DAW to send notes: it loads STILL TIDE (slot A) at its first block, unless a state was loaded, and plays at once.
 - **MIDI in:** notes and MIDI messages reach Tessera as USB MIDI does on the FM-1, at their exact sample. ROUT starts
   at SEL (a DAW sends on channel 1: the notes play the selected track); a note-off for every key (key -1) is All
   Notes Off, a choke All Sound Off. **Program Change** (`TESS_PC_IN`, `form_chain.c tessera_pc_in`), on any channel:
@@ -90,8 +92,8 @@ tracks, in TESSERA's own window or the FM-1's.
   parameters), and they may run on different threads. The firmware keeps its state in globals, so the plugin carries
   8 private copies of the core (`core_copy.c`: the core compiled once per copy, each of its shared names prefixed
   `tc<k>_` from `build/gen/core_syms.h`) and each instance takes a free one; a 9th is refused. A new instance starts
-  from STILL TIDE; one put in a copy another instance had used starts from STILL TIDE again too, but that copy's
-  project slots A..D keep what the last one saved in them. The cost: the plugin file is about 16 MB (8 copies of the
+  from a new project; one put in a copy another instance had used starts from a new project too
+  (`tess_core_project_new`), but that copy's project slots A..D keep what the last one saved in them. The cost: the plugin file is about 16 MB (8 copies of the
   core's code and tables) and each instance about 1 MB of memory more. `-DTESS_PLUGIN_COPIES=n` (1..16) builds
   another number.
 
