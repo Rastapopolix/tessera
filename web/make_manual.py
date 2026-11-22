@@ -3,13 +3,14 @@
 """Make the site's manual pages (GitHub Pages), from the repository's markdown:
   manual/index.html   MANUAL.md
   start/index.html    GETTING_STARTED.md
+  plugin/index.html   PLUGIN.md: what differs in the plugin, with its downloads at the top (DOWNLOADS)
 
 Each page: the project page's look (Tessera Mono and the colours from web/home/index.html, the light / dark choice it
 stores, tessera-theme), a sidebar of the chapters (the ## headings, the open one's ### under it; the manual's grouped by button) and a search over the
 page's text, with no network. Headings keep GitHub's anchors (lower case, punctuation dropped, spaces as hyphens, -1
 -2 on repeats), so a link to MANUAL.md#a-section on GitHub works here as manual/#a-section.
 
-Links: MANUAL.md and GETTING_STARTED.md to these pages; the manual's PDF (docs/manual/tessera-manual.pdf, made by
+Links: MANUAL.md, GETTING_STARTED.md and PLUGIN.md to these pages; the manual's PDF (docs/manual/tessera-manual.pdf, made by
 tools/gen_manual_pdf.py) to its copy at manual/tessera-manual.pdf (make_site.py puts it there); every other file of
 the repository (RECIPES.md, docs/...) to it on GitHub; the pictures (assets/gallery, assets/brand, assets/guides) to the site's media/ (web/make_site.py copies them there).
 
@@ -26,12 +27,12 @@ from markdown_it import MarkdownIt
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 REPO = "https://github.com/Rastapopolix/tessera/blob/HEAD/"
-PAGES = {"MANUAL.md": "manual", "GETTING_STARTED.md": "start"}
+PAGES = {"MANUAL.md": "manual", "GETTING_STARTED.md": "start", "PLUGIN.md": "plugin"}
 # CommonMark, as GitHub reads it (a list item's lines indented by two, raw HTML kept), with its tables
 MD = MarkdownIt("commonmark", {"html": True}).enable("table")
 PDF_SRC = "docs/manual/tessera-manual.pdf"          # the manual as a PDF (tools/gen_manual_pdf.py)
 PDF_NAME = "tessera-manual.pdf"                     # its name on the site, next to the manual's page
-TITLES = {"manual": "Tessera manual", "start": "Getting started with Tessera"}
+TITLES = {"manual": "Tessera manual", "start": "Getting started with Tessera", "plugin": "Tessera as a plugin"}
 
 
 def slug(text, seen):
@@ -80,6 +81,38 @@ def videos(md_text, mode):
         return f'<div class="videos">{figs}</div>'
 
     return re.sub(r"^<p><a href=\"https://youtu\.be/.*" + re.escape(GUIDE_MARK) + "$", one, md_text, flags=re.M)
+
+
+# The plugin's downloads, one row per system: (system, its formats, the file's URL). A URL of None shows COMING SOON
+# in place of the link: fill them in when the public beta's release is out (its assets on GitHub Releases).
+DOWNLOADS = [
+    ("Windows", "CLAP, VST3 and the standalone app", None),
+    ("macOS", "CLAP, VST3, Audio Unit and the standalone app", None),
+    ("Linux", "CLAP and VST3", None),
+]
+DOWNLOADS_NOTE = ("The plugin is still being tested. Its public beta opens once the larger window, EXPANDED, is in. "
+                  'Until then, <a href="../webapp/sim/">try Tessera in your browser</a>: the same firmware on an '
+                  "on-screen FM-1.")
+# PLUGIN.md's lines between these marks (a note for GitHub) become the download block on the site
+DL_MARKS = re.compile(r"^<!-- downloads\b.*?-->$.*?^<!-- /downloads -->$", re.M | re.S)
+
+
+def downloads(md_text):
+    """PLUGIN.md with its downloads note swapped for the site's download block: a Download heading (in the
+    contents), a row per system, and a link or COMING SOON for each"""
+    soon = all(url is None for _, _, url in DOWNLOADS)
+    rows = "".join(
+        f'<li><b>{html.escape(name)}</b><span>{html.escape(formats)}</span>'
+        + (f'<a class="get" href="{html.escape(url)}" download>DOWNLOAD</a>' if url else '<span class="get soon">COMING SOON</span>')
+        + "</li>" for name, formats, url in DOWNLOADS)
+    note = DOWNLOADS_NOTE if soon else ('Betas are marked <i>Pre-release</i>; every version, and its notes, is under the '
+                                        '<a href="https://github.com/Rastapopolix/tessera/releases">releases</a>.')
+    block = (f'## Download\n\n<div class="downloads"><ul>{rows}</ul><p>{note} Free and open source, GPL-3.0. '
+             'How to install: see <a href="#install">Install</a>.</p></div>')
+    out, n = DL_MARKS.subn(lambda m: block, md_text)
+    if not n:
+        print("make_manual: PLUGIN.md has no <!-- downloads --> marks; the plugin page has no download block", file=sys.stderr)
+    return out
 
 
 def convert(md_text, here):
@@ -245,6 +278,16 @@ main details {{ margin: 12px 0; padding: 6px 14px; border: 1px solid var(--line)
 main details[open] {{ background: var(--surf); }}
 main summary {{ cursor: pointer; color: var(--ink); }}
 main hr {{ border: 0; border-top: 1px solid var(--line); margin: 32px 0; }}
+main .downloads ul {{ list-style: none; margin: 16px 0; padding: 0; display: grid; gap: 10px; }}
+main .downloads li {{ display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; gap: 6px 16px; align-items: center;
+  margin: 0; padding: 12px 16px; border: 2px solid var(--line); }}
+main .downloads li b {{ color: var(--ink); font: 18px/1.2 var(--pixel); font-weight: 400; }}
+main .downloads li > span {{ color: var(--mid); font-size: 14px; }}
+main .downloads .get {{ font: 16px/1 var(--pixel); padding: 8px 12px 6px; border: 2px solid var(--ink); text-decoration: none; white-space: nowrap; }}
+main .downloads a.get {{ background: var(--ink); color: var(--bg); }}
+main .downloads a.get:hover {{ background: var(--bg); color: var(--ink); }}
+main .downloads .soon {{ color: var(--dim); border-color: var(--line); }}
+main .downloads p {{ color: var(--mid); }}
 .next {{ margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); }}
 @media (max-width: 900px) {{
   .layout {{ display: block; }}
@@ -252,6 +295,10 @@ main hr {{ border: 0; border-top: 1px solid var(--line); margin: 32px 0; }}
   nav.side {{ display: none; position: fixed; top: 49px; left: 0; right: 0; bottom: 0; max-height: none; z-index: 2; background: var(--bg); border: 0; }}
   body.toc-open nav.side {{ display: block; }}
   main {{ padding: 8px 16px 60px; }}
+}}
+@media (max-width: 560px) {{
+  main .downloads li {{ grid-template-columns: minmax(0, 1fr) auto; }}
+  main .downloads li > span:not(.get) {{ grid-column: 1 / -1; grid-row: 2; }}
 }}
 @media (max-width: 600px) {{
   header {{ gap: 6px; }}
@@ -266,6 +313,7 @@ main hr {{ border: 0; border-top: 1px solid var(--line); margin: 32px 0; }}
   <a class="home" href="../">TESSERA</a>
   <a href="../start/"{cur_start}>START</a>
   <a href="../manual/"{cur_manual}>MANUAL</a>
+  <a href="../plugin/"{cur_plugin}>PLUGIN</a>
   <a class="wide" href="../manual/tessera-manual.pdf" download title="The whole manual as a PDF, to print or read offline">PDF</a>
   <a class="wide" href="{repo}RECIPES.md">RECIPES</a>
   <a class="wide" href="../webapp/sim/">SIMULATOR</a>
@@ -380,6 +428,8 @@ NEXT = {
     "start": 'Next: <a href="../manual/#tessera-in-plain-words">Tessera in plain words</a>, then the whole <a href="../manual/">manual</a>.',
     "manual": 'New to Tessera? Start with <a href="../start/">Getting started</a>. '
               'To print it or read it offline: <a href="tessera-manual.pdf" download>the manual as a PDF</a>.',
+    "plugin": 'Everything else, the same in the plugin as on the FM-1: the <a href="../manual/">manual</a>. New to Tessera? '
+              'Start with <a href="../start/">Getting started</a>.',
 }
 
 
@@ -387,13 +437,17 @@ def make(out):
     out = Path(out)
     face, dark, light = font_and_colours()
     for src, page in PAGES.items():
-        body, heads = convert(videos((ROOT / src).read_text(encoding="utf-8"), "web"), page)
+        text = videos((ROOT / src).read_text(encoding="utf-8"), "web")
+        body, heads = convert(downloads(text) if page == "plugin" else text, page)
         dest = out / page / "index.html"
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(PAGE.format(src=src, title=TITLES[page], face=face, dark=dark, light=light, repo=REPO,
-                                    cur_start=' aria-current="page"' if page == "start" else "",
+                                    # (a narrow screen has room for two of START, MANUAL and PLUGIN: the plugin's page drops START,
+                                    # the others PLUGIN)
+                                    cur_start=' aria-current="page"' if page == "start" else ' class="wide"' if page == "plugin" else "",
                                     cur_manual=' aria-current="page"' if page == "manual" else "",
-                                    short="the manual" if page == "manual" else "this guide",
+                                    cur_plugin=' aria-current="page"' if page == "plugin" else ' class="wide"',
+                                    short={"manual": "the manual", "plugin": "the plugin's guide"}.get(page, "this guide"),
                                     toc=sidebar(heads, page), body=body, next=NEXT[page],
                                     intro=f'<p class="next" style="margin:16px 0 0;border:0;padding:0">{NEXT[page]}</p>' if page == "manual" else ""), encoding="utf-8")
         print(f"make_manual: {dest} ({len(heads)} headings)")

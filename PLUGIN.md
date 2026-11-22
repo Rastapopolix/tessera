@@ -1,8 +1,18 @@
 # Tessera as a plugin
 
 Tessera also runs inside a DAW. The same firmware the FM-1 plays is built as a **CLAP** instrument, a **VST3**
-instrument, an **Audio Unit** on macOS and a **standalone app**. Its window is the FM-1: the same screen, buttons, knobs and keys, so everything
-in the [manual](MANUAL.md) works the same way here. This page covers only what is different in a DAW.
+instrument, an **Audio Unit** on macOS and a **standalone app**. Its window is the FM-1's panel: the same screen, buttons,
+knobs and keys, so everything in the [manual](MANUAL.md) works the same way here. This page covers only what is different
+in a DAW.
+
+<!-- downloads: the site's plugin page shows its download block here (web/make_manual.py) -->
+
+**Downloads are coming soon.** The plugin is still being tested; its public beta opens once its larger window
+(EXPANDED, under [Not there yet](#not-there-yet)) is in. The links will be on the
+[plugin's page](https://rastapopolix.github.io/tessera/plugin/#download) and under the
+[releases](https://github.com/Rastapopolix/tessera/releases).
+
+<!-- /downloads -->
 
 - [Install](#install)
 - [First sound](#first-sound)
@@ -10,10 +20,12 @@ in the [manual](MANUAL.md) works the same way here. This page covers only what i
 - [Playing it from your FM-1](#playing-it-from-your-fm-1)
 - [Playing with the DAW](#playing-with-the-daw)
 - [Saving, and project files](#saving-and-project-files)
+- [Tracks 1 to 4, and 5 to 8](#tracks-1-to-4-and-5-to-8)
 - [Automation: the parameters](#automation-the-parameters)
 - [Track outputs and MIDI out](#track-outputs-and-midi-out)
 - [Several Tesseras in one song](#several-tesseras-in-one-song)
 - [Sounds only the plugin has](#sounds-only-the-plugin-has)
+- [Echoes on the beat](#echoes-on-the-beat)
 - [How much CPU it takes](#how-much-cpu-it-takes)
 - [Not there yet](#not-there-yet)
 
@@ -21,8 +33,10 @@ in the [manual](MANUAL.md) works the same way here. This page covers only what i
 
 Copy the plugin where your DAW looks for plugins, then rescan in the DAW.
 
-Download the zip for your system from the [plugin's releases](https://github.com/Rastapopolix/tessera/releases)
-(the betas are marked *Pre-release*). Each zip has an INSTALL text with these steps and the beta's notes.
+Download the zip for your system (a `.tar.gz` on Linux) from the
+[plugin's page](https://rastapopolix.github.io/tessera/plugin/#download) or the
+[releases](https://github.com/Rastapopolix/tessera/releases), where the betas are marked *Pre-release*. Each zip has an
+INSTALL text with these steps and the beta's notes.
 
 | | CLAP (`Tessera.clap`) | VST3 (`Tessera.vst3`) | Audio Unit (`Tessera.component`) |
 |---|---|---|---|
@@ -53,7 +67,7 @@ set ROUT to a channel range (CH1-8: channel 1 plays track 1, channel 2 track 2, 
 
 ## The window
 
-The window shows the FM-1, 1:1. Click the buttons and keys (drag across the keys to glide). Drag a knob up and down
+The window shows the FM-1's panel, 1:1, in Tessera's own look or one of the FM-1's colours (see **Shells** below). Click the buttons and keys (drag across the keys to glide). Drag a knob up and down
 or left and right, or turn the mouse wheel over it.
 
 **The screen works with the mouse too.** Hover over something you can use and it gets a thin outline, with its name
@@ -141,6 +155,19 @@ Tessera follows the DAW's transport:
 - **CLK** stays INT in the plugin and **CLOCK OUT** stays off: the DAW keeps time, so Tessera neither follows nor sends
   a MIDI clock.
 
+### Sections and banks from the DAW (Program Change)
+
+A Program Change from a MIDI clip, on any channel, steers Tessera. It works the other way round from SECTION PC on
+MIDI OUT's sheet:
+
+| Program | Does |
+|---|---|
+| **0, 1, 2** | The CHAIN goes to section **A, B or C** at the next phrase line, whatever WANDER or the piece's plan would have picked. Then the FORM goes on from that letter's place. Sent while stopped, the next PLAY starts on it. Sending the letter already playing holds it for another phrase. It does nothing with FORM OFF or for a letter the FORM doesn't have. |
+| **8 .. 15** | Every track goes to pattern bank **1 .. 8**, as the PATTERNS page does: each track switches when its pattern comes round, at once while stopped, not while a SONG runs. |
+
+Other numbers do nothing. Nothing is saved: put the changes in a clip and the DAW sends them again each time it plays.
+To land on a phrase line, send the change during the phrase before it.
+
 ## Saving, and project files
 
 **The DAW saves Tessera with your song.** The saved state is the Tessera project, the same bytes SAVE > PROJECT
@@ -165,6 +192,9 @@ The plugin has eight tracks; the panel works on four at a time, as the FM-1's do
 SAVE picks the bank: 1-4 selects T1, 5-8 selects T5 (**Tab** on the computer keyboard swaps them). The lit half is the
 bank of the track selected now, so it follows SELECT too. While a track of 5 to 8 is selected the screen's top line
 shows **5-8**, inverted, before the track dots.
+
+All eight tracks are saved: with the DAW song, and in a `.tsp` from SAVE (tracks 5 to 8 in a part of their own an
+FM-1 skips, so the FM-1 still opens the file as its four tracks).
 
 ## Automation: the parameters
 
@@ -209,7 +239,8 @@ The plugin has room for engines the FM-1 can't fit:
 - **DRUM: SID KIT** and **SID DIGI**: drums from one SID chip.
 - **MACRO**: a macro-oscillator with many synthesis models.
 - **PHASE**: phase distortion in the manner of Casio's CZ-1: two lines of bent-phase waves (saw, square, pulse,
-  double sine, saw-pulse and three resonant ones), mixed or ring-modulated, with 33 presets. EDIT 2's EG at SPLIT gives
+  double sine, saw-pulse and three resonant ones), mixed or ring-modulated, with 33 presets of its own (brass, pads,
+  basses, keys, bells, sweeps, ring sounds; not the CZ-1's original tones). EDIT 2's EG at SPLIT gives
   DCW 1, DCW 2, DCA 2 and pitch their own envelopes (5 more pages).
 
 The Daisy build (Andamento) has them too. On the FM-1, a SID, MACRO or PHASE track plays FM6's INIT sound instead, and
@@ -233,9 +264,6 @@ sounding at once take about 18 % of a core.
 
 ## Not there yet
 
-- **Tracks 5 to 8's steps** aren't saved yet. Their settings are saved with the DAW song, but a `.tsp` holds tracks 1
-  to 4 only.
-- **PHASE** has 33 presets of its own (brass, pads, basses, keys, bells, sweeps, ring sounds), not the CZ-1's original tones.
 - **One window size**, the FM-1's. A larger, wider window is planned.
 - **No presets in the DAW's browser** yet: use OPEN, or the DAW's own way of saving a plugin's state.
 - **No standalone app on Linux** yet.
