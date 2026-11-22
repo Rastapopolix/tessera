@@ -52,6 +52,8 @@ steps, what you expected and what happened).
 - **Unsigned on macOS:** macOS will call the plugins "damaged" or say they "can't be verified" until you clear the
   download's quarantine. INSTALL-macos.txt has the one Terminal line.
 - **Unsigned on Windows:** SmartScreen may warn about Tessera.exe the first time: More info, then Run anyway.
+- Signing would take both away; it costs about USD 99 a year with Apple, plus a Windows certificate. If you'd like to
+  help get Tessera signed: [ko-fi.com/Rastapopolix](https://ko-fi.com/Rastapopolix).
 - The window moves only while the DAW's audio engine runs.
 - Some DAWs keep Tab for themselves; click the 1-4 / 5-8 switch instead.
 - If you hear clicks with several Tesseras, raise the audio buffer to 256 samples.

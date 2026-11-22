@@ -8,3 +8,6 @@ clear the quarantine once, in Terminal (Applications > Utilities > Terminal):
   xattr -dr com.apple.quarantine /Applications/Tessera.app
 
 (the last one where you put Tessera.app). Then restart your DAW and rescan.
+
+Signing takes these steps away, and costs about USD 99 a year with Apple. If you'd like to help get
+Tessera signed: https://ko-fi.com/Rastapopolix

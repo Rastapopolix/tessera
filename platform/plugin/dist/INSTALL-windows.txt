@@ -20,6 +20,9 @@ The standalone app needs no install: double-click Tessera.exe and pick an audio 
 This beta isn't signed, so Windows SmartScreen may warn about Tessera.exe the first time. Click
 "More info", then "Run anyway". The plugins themselves are loaded by your DAW and don't show this.
 
+Signing takes this warning away; a Windows code-signing certificate costs money every year. If you'd
+like to help get Tessera signed: https://ko-fi.com/Rastapopolix
+
 If Windows blocks the downloaded zip's files: right-click the zip, Properties, tick "Unblock", OK,
 then unzip again.
 

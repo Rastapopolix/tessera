@@ -64,6 +64,9 @@ xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/CLAP/Tessera.clap ~/Libr
 (and the same for `Tessera.app` where you put it). **Windows:** SmartScreen may warn about the unsigned `Tessera.exe`
 the first time: click *More info*, then *Run anyway*.
 
+Signing takes these steps away, and costs about USD 99 a year with Apple, plus a code-signing certificate for Windows.
+If you'd like to help get Tessera signed: [ko-fi.com/Rastapopolix](https://ko-fi.com/Rastapopolix).
+
 ## First sound
 
 A new Tessera opens on a **new project**, as an FM-1 with nothing saved does: each track has its power-on sound, every
