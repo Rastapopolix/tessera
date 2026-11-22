@@ -1240,7 +1240,7 @@ bool pl_from_location(const clap_plugin_t *p, uint32_t kind, const char *locatio
         return false;
     }
     t->gen_before = false;
-    t->changed_by_file();
+    t->changed_by_file("PRESET");   // (the DAW's undo: the preset loaded as one step)
     if (hpl && hpl->loaded) hpl->loaded(t->host, kind, location, load_key);
     return true;
 }
