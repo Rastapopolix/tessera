@@ -13,6 +13,9 @@
  *   - the host's transport drives the song: PLAY starts every track where it would be from the DAW's zero, the DAW's
  *     beat position drives Tessera's clock (CLK INT), a loop or a locate seeks, STOP stops; with no transport (the
  *     standalone app) it plays at once on its own clock;
+ *   - a new instance starts from a new project, as an FM-1 with nothing saved does (the power-on sounds, every
+ *     pattern empty, no generator): it plays nothing until it gets notes. STILL TIDE and KOTO GARDEN wait in slots A
+ *     and B (SAVE > PROJECT). The standalone app, which has no DAW to send notes, loads STILL TIDE and plays it;
  *   - parameters (automatable): MASTER and PERF's MACRO 1..4 (ids 0..4, as since phase 2), then every project setting
  *     by its central ID (pid.h), each track's and the song's, with the FM-1's names and values; changed on the panel
  *     or by the core, they are sent back to the host;
@@ -23,7 +26,7 @@
  *     the core: the window's input goes to it through a small queue, and it hands back a view ~30 times a second.
  * Several instances: each takes one of the plugin's private copies of the core (core_copies.h; TESS_PLUGIN_COPIES of
  * them, 8), so each Tessera is wholly its own; past that a new one is refused. A copy given back is used again by the
- * next instance, which starts from the copy's power-on project (STILL TIDE) unless the host loads its state. */
+ * next instance, which starts from a new project unless the host loads its state. */
 #include <clap/clap.h>
 
 #include <atomic>
@@ -105,6 +108,8 @@ struct Tessera : GuiLink
     uint32_t cur_frame = 0;               // the newest core frame the resampler has (tess_core_frames' count)
     bool stems = false;                   // a track output is active: the core makes the stems
     bool transport_known = false, was_playing = false, free_started = false;
+    bool demo_done = false;               // the standalone app's STILL TIDE: loaded once, at its first block, and not
+                                          // over a state the host loaded (st_load sets it too)
     std::atomic<bool> notes_due{false};   // stopped processing: the notes MIDI OUT left on go off in the next block
     uint32_t view_due = 0;               // host frames until the next view
     std::vector<std::pair<uint32_t, uint32_t>> midi_wait;   // MIDI OUT packets (packet, core frame) not yet due
@@ -858,9 +863,9 @@ bool p_init(const clap_plugin_t *p)
         copy_booted[t->copy] = true;
     }
     t->core->boot();
-    if (again)                 // (a copy an instance gave back: its power-on project again, STILL TIDE in slot A, and
-    {                          // its power-on MIDI setup, not the last instance's ROUT, NOTES OUT ..)
-        t->core->slot_load(0);
+    if (again)                 // (a copy an instance gave back: a new project, as a fresh copy starts with, and its
+    {                          // power-on MIDI setup, not the last instance's ROUT, NOTES OUT ..)
+        t->core->project_new();
         t->core->setup_load(copy_setup[t->copy], copy_setup_n[t->copy]);
     }
     else
@@ -986,8 +991,11 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
         t->transport_known = true;
         t->was_playing = playing;
     }
-    else if (!t->free_started)   // a free-running host (the standalone app): play at once
+    else if (!t->free_started)   // a free-running host (the standalone app): STILL TIDE (slot A), and play at once
     {
+        if (!t->demo_done)
+            t->core->slot_load(0);
+        t->demo_done = true;
         t->core->transport(1);
         t->free_started = true;
     }
@@ -1245,6 +1253,8 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
             x58 = b.data() + len;
         }
         ok = t->core->load(b.data(), len) == 0;
+        if (ok)
+            t->demo_done = true;     // (the standalone app: what the host loaded, not STILL TIDE over it)
         if (ok)
             t->gen_before = false;   // (GENERATE: what plays is the DAW's state, not BEFORE)
         if (ok && setup)

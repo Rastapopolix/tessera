@@ -78,6 +78,7 @@ static void act(int i, uint32_t a, int n = 0, int blocks = 30)
 int main()
 {
     tess_core_boot();
+    tess_core_slot_load(0);   // (STILL TIDE, slot A: the values below are its; a new project's FX MIX sits at 0 %)
     run(50);
 
     // ---- HOME: the tracks

@@ -2,14 +2,15 @@
  * Copyright (C) 2026 Theo Dainis */
 /* The plugin's session test: a DAW saves a session with three Tessera instances and opens it again, as a minimal
  * CLAP host (POSIX) over the built Tessera.clap:
- *   - three instances, each changed its own way (a track's level, a MACRO, a generator setting, MASTER, notes
+ *   - three instances, each with STILL TIDE loaded (demos/still-tide.tsp, as a state: a new one starts from a new
+ *     project), each changed its own way (a track's level, a MACRO, a generator setting, MASTER, notes
  *     played), each played for a while with the host's transport;
  *   - each saves its state; all three close (the session is closed);
  *   - three new instances open in another order and each loads one state: every parameter reads as before, the
  *     host is asked to rescan the values, and saving again gives the same bytes;
  *   - the instances stay apart: what one instance changed is not in the others;
  *   - opened twice from the same state and played from the DAW's zero, two instances play the same audio.
- * usage: tessera-session-test path/to/Tessera.clap */
+ * usage: tessera-session-test path/to/Tessera.clap   (from the repository's top: demos/) */
 #include <clap/clap.h>
 #include <dlfcn.h>
 #include <string>
@@ -295,11 +296,19 @@ int main(int argc, char **argv)
     fac = (const clap_plugin_factory_t *)entry->get_factory(CLAP_PLUGIN_FACTORY_ID);
     plugin_id = fac->get_plugin_descriptor(fac, 0)->id;
 
-    // ---- the session: three instances, each changed its own way, each played
+    // ---- the session: three instances, each with STILL TIDE, each changed its own way, each played
+    std::vector<uint8_t> demo;
+    if (FILE *f = std::fopen("demos/still-tide.tsp", "rb"))
+    {
+        uint8_t c[4096];
+        for (size_t n; (n = std::fread(c, 1, sizeof c, f)) > 0;) demo.insert(demo.end(), c, c + n);
+        std::fclose(f);
+    }
+    CHECK(demo.size() > 64, "demos/still-tide.tsp (run from the repository's top)");
     const int N = 3;
     Inst a[N];
     for (int k = 0; k < N; k++)
-        CHECK(a[k].open(), "instance %d opens", k + 1);
+        CHECK(a[k].open() && a[k].load(demo), "instance %d opens with STILL TIDE", k + 1);
     if (fails) return 1;
     clap_id level = a[0].find("T1 LEVEL"), macro1 = a[0].find("MACRO 1"), master = a[0].find("MASTER"),
             tlen = a[0].find("T1 TURING LENGTH");
@@ -386,7 +395,7 @@ int main(int argc, char **argv)
     // ---- MIDI in a DAW: ROUT, the setup kept in the project, MIDI OUT's channels, wildcards and restarts
     {
         Inst m;
-        CHECK(m.open(), "an instance for MIDI opens");
+        CHECK(m.open() && m.load(demo), "an instance for MIDI opens, with STILL TIDE (MIDI OUT's notes below)");
         if (fails) return 1;
         std::vector<uint8_t> st = m.save(), su = setup_of(st);
         CHECK(su.size() >= 5 && su[0] == 1 && su[1] == 1 && su[3] == 1,

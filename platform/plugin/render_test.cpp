@@ -2,7 +2,9 @@
  * Copyright (C) 2026 Theo Dainis */
 /* The plugin's render test: a minimal CLAP host (POSIX) that loads the built Tessera.clap and checks
  *   - one instance: a second create is refused while the first lives;
- *   - with the host's transport playing at 48 kHz, STILL TIDE (the project it starts with) makes sound;
+ *   - a new instance starts from a new project: with the host's transport playing it is silent;
+ *   - with the host's transport playing at 48 kHz, STILL TIDE (demos/still-tide.tsp, loaded as the host's state)
+ *     makes sound;
  *   - a note in on the selected track changes the output;
  *   - the state is a .tsp record (TSP1) and loads back;
  *   - the four track outputs sound, MIDI OUT sends the tracks' notes on their channels, in order;
@@ -12,7 +14,7 @@
  *     a click on GENERATE makes a new piece (the parameters change), held it brings back the project before it;
  *     (macOS: built as Objective-C++) the window opens in an NSWindow's view and draws the FM-1's screen into its layer;
  *   - optionally writes the first seconds as a 16-bit WAV (third argument) to listen to.
- * usage: tessera-render-test path/to/Tessera.clap [seconds] [out.wav] [window.ppm] */
+ * usage: tessera-render-test path/to/Tessera.clap [seconds] [out.wav] [window.ppm]   (from the repository's top: demos/) */
 #include <clap/clap.h>
 #include <clap/ext/draft/undo.h>
 #include <dlfcn.h>
@@ -239,6 +241,36 @@ int main(int argc, char **argv)
     out_frames = block;
     proc.in_events = &in;
     proc.out_events = &oe;
+
+    // a new Tessera opens on a new project, as an FM-1 with nothing saved: the DAW playing, it plays nothing
+    auto *st0 = (const clap_plugin_state_t *)p->get_extension(p, CLAP_EXT_STATE);
+    {
+        double e0 = 0;
+        for (int b = 0; b < 300; b++)   // (3 s)
+        {
+            CHECK(p->process(p, &proc) == CLAP_PROCESS_CONTINUE, "process");
+            for (uint32_t k = 0; k < block; k++) e0 += (double)L[k] * L[k] + (double)R[k] * R[k];
+        }
+        std::printf("a new instance, the DAW playing 3 s: energy %.9f\n", e0);
+        CHECK(e0 < 1e-6, "a new Tessera plays nothing until it gets notes (energy %.9f)", e0);
+        // then STILL TIDE, as a DAW's saved song brings it back (its state), played from the DAW's zero
+        tr.flags = CLAP_TRANSPORT_HAS_TEMPO;   // (stopped)
+        p->process(p, &proc);
+        Buf demo;
+        if (FILE *f = std::fopen("demos/still-tide.tsp", "rb"))
+        {
+            uint8_t c[4096];
+            for (size_t n; (n = std::fread(c, 1, sizeof c, f)) > 0;) demo.b.insert(demo.b.end(), c, c + n);
+            std::fclose(f);
+        }
+        CHECK(demo.b.size() > 64, "demos/still-tide.tsp (run from the repository's top)");
+        clap_istream_t dis = {&demo, is_read};
+        CHECK(st0 && st0->load(p, &dis), "STILL TIDE loads as the state");
+        p->on_main_thread(p);   // (as a host answers the load's request: its parameters' texts rescanned)
+        tr.flags = CLAP_TRANSPORT_IS_PLAYING | CLAP_TRANSPORT_HAS_TEMPO;
+        if (fails)
+            return 1;
+    }
 
     uint32_t blocks = (uint32_t)(seconds * rate / block);
     double sum2 = 0, peak = 0;
