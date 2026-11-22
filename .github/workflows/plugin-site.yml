@@ -1,0 +1,87 @@
+name: Plugin site (downloads)
+
+# Keeps the site's plugin page (docs/plugin/, made by web/make_manual.py) on the newest plugin release: when a release
+# tagged plugin-v... is published (Plugin release makes it a draft; publishing it on GitHub fires this), its files go
+# into web/plugin_release.json, the page is made again from that release's PLUGIN.md with its download buttons on
+# those files, and the change goes to main as a site pull request (branch site/plugin-<version>): merging it makes it
+# live. A run by hand (Actions > Plugin site > Run workflow) does the same for a release already out.
+#
+# The pull request needs "Allow GitHub Actions to create and approve pull requests" (Settings > Actions > General);
+# without it the branch is pushed and the run's summary says to open the pull request from it.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'The plugin release (plugin-vX.Y-suffix)'
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: tessera-plugin-site
+
+jobs:
+  site:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'plugin-v')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install markdown-it-py
+      - name: The release's files and its PLUGIN.md; the page
+        run: |
+          V="${TAG#plugin-v}"
+          echo "V=$V" >> "$GITHUB_ENV"
+          gh release view "$TAG" --json assets -q '.assets[].name' > "$RUNNER_TEMP/assets"
+          python3 - "$TAG" "$V" "$RUNNER_TEMP/assets" <<'PY'
+          import json, sys
+          tag, version, path = sys.argv[1:4]
+          names = open(path).read().split()
+          files = {}
+          for key in ("windows", "macos", "linux"):
+              hit = [n for n in names if f"-{key}." in n]
+              if hit:
+                  files[key] = hit[0]
+          json.dump({"tag": tag, "version": version, "files": files}, open("web/plugin_release.json", "w"), indent=2)
+          open("web/plugin_release.json", "a").write("\n")
+          print("plugin_release.json:", tag, files)
+          PY
+          git fetch --depth=1 origin "refs/tags/$TAG:refs/tags/$TAG"
+          git checkout "$TAG" -- PLUGIN.md
+          out="$RUNNER_TEMP/site"
+          mkdir -p "$out"
+          python web/make_manual.py "$out"
+          mkdir -p docs/plugin
+          cp "$out/plugin/index.html" docs/plugin/index.html   # (the plugin's page alone: the manual's pages follow
+                                                                # the firmware's releases)
+      - name: The site pull request
+        run: |
+          if [ -z "$(git status --porcelain -- web/plugin_release.json docs/plugin PLUGIN.md)" ]; then
+            echo "The plugin page already shows $TAG" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          b="site/plugin-$V"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$b"
+          git add web/plugin_release.json docs/plugin/index.html PLUGIN.md
+          git commit -m "site: the plugin page on $TAG (its downloads, its PLUGIN.md)"
+          git push -f origin "$b"
+          body="The plugin page's download buttons on [$TAG](https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG), and its text from that release's PLUGIN.md (made by .github/workflows/plugin-site.yml). Merging makes it live."
+          if gh pr create --base main --head "$b" --title "Site: the plugin page on $TAG" --body "$body"; then
+            echo "Site pull request opened from $b" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Branch $b pushed: open a pull request from it into main to make the page live" >> "$GITHUB_STEP_SUMMARY"
+          fi

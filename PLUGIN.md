@@ -5,12 +5,16 @@ instrument, an **Audio Unit** on macOS and a **standalone app**. Its window is t
 knobs and keys, so everything in the [manual](MANUAL.md) works the same way here. This page covers only what is different
 in a DAW.
 
+[![Tessera 0.1-beta2 in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE](assets/gallery/plugin-expanded.png)](assets/gallery/plugin-expanded.png)
+
+*EXPANDED: the FM-1's screen and, beside it, TRACKS with all eight tracks (0.1-beta2 playing STILL TIDE).*
+
 <!-- downloads: the site's plugin page shows its download block here (web/make_manual.py) -->
 
-**Downloads are coming soon.** The plugin is still being tested; its public beta opens once its larger window
-(EXPANDED, under [Not there yet](#not-there-yet)) is in. The links will be on the
-[plugin's page](https://rastapopolix.github.io/tessera/plugin/#download) and under the
-[releases](https://github.com/Rastapopolix/tessera/releases).
+**The plugin is in public beta.** Download it from the
+[plugin's page](https://rastapopolix.github.io/tessera/plugin/#download) or the
+[releases](https://github.com/Rastapopolix/tessera/releases) (marked *Pre-release*). It's a beta: expect some rough
+edges, and please report what you find.
 
 <!-- /downloads -->
 
@@ -21,6 +25,7 @@ in a DAW.
 - [Playing with the DAW](#playing-with-the-daw)
 - [Saving, and project files](#saving-and-project-files)
 - [Tracks 1 to 4, and 5 to 8](#tracks-1-to-4-and-5-to-8)
+- [EXPANDED: all eight tracks at once](#expanded-all-eight-tracks-at-once)
 - [Automation: the parameters](#automation-the-parameters)
 - [Track outputs and MIDI out](#track-outputs-and-midi-out)
 - [Several Tesseras in one song](#several-tesseras-in-one-song)
@@ -76,17 +81,19 @@ to send it notes, so it opens with STILL TIDE loaded and plays it at once.
 
 ## The window
 
-The window shows the FM-1's panel, 1:1, in Tessera's own look or one of the FM-1's colours (see **Shells** below). Click the buttons and keys (drag across the keys to glide). Drag a knob up and down
-or left and right, or turn the mouse wheel over it.
+The window shows the FM-1's panel, 1:1, in Tessera's own look or one of the FM-1's colours (see **Shells** below).
+Click the buttons and keys (drag across the keys to glide). Drag a knob up and down or left and right, or turn the
+mouse wheel over it. In the standalone app, drag the window's corner and it snaps from one SIZE to the next.
 
 **The screen works with the mouse too.** Hover over something you can use and it gets a thin outline, with its name
 and value shown large in a box under the screen:
 
 - **A value** (one of the four columns of a page, KNOB 1 to 4): turn the mouse wheel over it, or drag it up and down,
   as you would turn its knob. Double-click it to put it back to its default.
-- **A list's row** (SCL's Root, Scale, Quantize…, the MENU, a list that opens over a page): click to move there, turn
-  the wheel to change that row's value (on SCL's Scale row the wheel steps through the scales), double-click to move
-  there and press OK (Scale opens SCALES; a whole list takes the row you double-clicked).
+- **A list** (SCL's Root, Scale, Quantize…, the MENU, a list that opens over a page): the wheel scrolls it, a row a
+  notch. Click a row to move there; drag up or down on it to change that row's value (on SCL's Scale row, through the
+  scales); double-click to move there and press OK (Scale opens SCALES; a whole list takes the row you double-clicked).
+- **MENU > COLOR's inks:** click one to pick it; the wheel steps through them.
 - **OK, BACK, YES and NO** on the screen: click them.
 - **The sound browser and SCALES:** the wheel over the left side turns KNOB 1 (the list, the scale family), over the
   right side KNOB 2 (the sound, the scale).
@@ -115,7 +122,10 @@ click it, or press **Esc** to let go.
 - **SHELL:** Tessera's look, or one of the eight FM-1 colours. Each shell sets its own screen ink.
 - **INK:** the screen's ink, the same 13 choices as MENU > COLOR (nine inks, then MOSAIC, SUNSET, OCEAN and NEON,
   which colour each track). Hover over a swatch to see its name.
-- **MODE** and **SIZE:** FM-1 at 100% for now; EXPANDED and the larger sizes are coming.
+- **MODE:** FM-1 (the FM-1's panel) or EXPANDED (a wider window with every track on screen at once: see
+  [EXPANDED: all eight tracks at once](#expanded-all-eight-tracks-at-once)).
+- **SIZE:** the window at 100, 150 or 200%; in EXPANDED 100 or 125% (a larger EXPANDED window would not fit a
+  1080p screen).
 - **FM-1 USB:** OFF or ON. With it on, an FM-1 on USB plays the plugin (see
   [Playing it from your FM-1](#playing-it-from-your-fm-1)); the line under it says what the FM-1 is doing.
 - **ABOUT:** the plugin's version.
@@ -126,7 +136,7 @@ the first) and the row labelled INK, between the buttons and the keys, picks the
 Picking a shell sets that shell's ink; an ink you pick afterwards, there or in MENU > COLOR, stays until you pick a
 shell again. The **MIDI** lamp beside the mark lights when notes come in from the DAW.
 
-Tessera remembers the last shell and the last ink for every new window, in any DAW. They are your settings, not the
+Tessera remembers the last shell, ink, MODE and SIZE for every new window, in any DAW. They are your settings, not the
 project's: a project opens in your shell and ink.
 
 The window moves only while the DAW is processing audio. If it looks frozen, check that the DAW's audio engine is on.
@@ -200,6 +210,8 @@ On Linux the file dialogs need `zenity` or `kdialog`.
 
 ## Tracks 1 to 4, and 5 to 8
 
+(In EXPANDED mode all eight are on screen at once: see the next section.)
+
 The plugin has eight tracks; the panel works on four at a time, as the FM-1's does. The **1-4 / 5-8** switch beside
 SAVE picks the bank: 1-4 selects T1, 5-8 selects T5 (**Tab** on the computer keyboard swaps them). The lit half is the
 bank of the track selected now, so it follows SELECT too. While a track of 5 to 8 is selected the screen's top line
@@ -207,6 +219,28 @@ shows **5-8**, inverted, before the track dots.
 
 All eight tracks are saved: with the DAW song, and in a `.tsp` from SAVE (tracks 5 to 8 in a part of their own an
 FM-1 skips, so the FM-1 still opens the file as its four tracks).
+
+## EXPANDED: all eight tracks at once
+
+A new Tessera opens in EXPANDED when your screen has room for it (about 1600 pixels across, more on a scaled
+Windows screen), and in FM-1 mode on a smaller screen such as a 13" laptop's. Once you pick a MODE yourself, every
+new window opens in that one. In EXPANDED the window is wider (1500 x 624 at 100%) and a second screen,
+**TRACKS**, sits beside the FM-1's. The FM-1's screen and all its pages stay exactly as they are; the knobs and
+buttons move to the right of TRACKS and the 27 keys stretch across the window.
+
+TRACKS shows every track on a row of its own: its number, what it plays (PLCK, BASS, DRUM ..), the engine, the
+pattern, the 16 steps of the bar the track is in (a hit is a block; the box is the step playing, each track at its
+own), its level, and **M** and **S**. The selected track's row is boxed. Under the rows: the selected track's sound.
+
+- **Click a row** to select that track (as SELECT does).
+- **M** mutes or unmutes the track, as GLO's black keys do: with MENU > MUTES on BAR or PHRASE, M blinks until the
+  mute happens. A muted row is drawn dim.
+- **S** solos the track and keeps it soloed until you click S again (GLO's white keys solo only while held).
+- **The mouse wheel on a level** turns that track's level.
+
+Mutes and levels are saved with the project as always; a solo is not. There's no 1-4 / 5-8 switch in EXPANDED.
+EXPANDED is part of Tessera's own shell: picking an FM-1 shell shows the FM-1's panel, and Tessera's shell again
+brings EXPANDED back.
 
 ## Automation: the parameters
 
@@ -274,8 +308,7 @@ The plugin has room for engines the FM-1 can't fit:
 - **DRUM: SID KIT** and **SID DIGI**: drums from one SID chip.
 - **MACRO**: a macro-oscillator with many synthesis models.
 - **PHASE**: phase distortion in the manner of Casio's CZ-1: two lines of bent-phase waves (saw, square, pulse,
-  double sine, saw-pulse and three resonant ones), mixed or ring-modulated, with 33 presets of its own (brass, pads,
-  basses, keys, bells, sweeps, ring sounds; not the CZ-1's original tones). EDIT 2's EG at SPLIT gives
+  double sine, saw-pulse and three resonant ones), mixed or ring-modulated, with 33 presets. EDIT 2's EG at SPLIT gives
   DCW 1, DCW 2, DCA 2 and pitch their own envelopes (5 more pages).
 
 The Daisy build (Andamento) has them too. On the FM-1, a SID, MACRO or PHASE track plays FM6's INIT sound instead, and
@@ -299,6 +332,6 @@ sounding at once take about 18 % of a core.
 
 ## Not there yet
 
-- **One window size**, the FM-1's. A larger, wider window is planned.
+- **PHASE** has 33 presets of its own (brass, pads, basses, keys, bells, sweeps, ring sounds), not the CZ-1's original tones.
 - **No standalone app on Linux** yet.
 - **Not signed** on macOS or Windows yet (see [Install](#install)).

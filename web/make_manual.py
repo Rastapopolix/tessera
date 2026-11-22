@@ -3,7 +3,7 @@
 """Make the site's manual pages (GitHub Pages), from the repository's markdown:
   manual/index.html   MANUAL.md
   start/index.html    GETTING_STARTED.md
-  plugin/index.html   PLUGIN.md: what differs in the plugin, with its downloads at the top (DOWNLOADS)
+  plugin/index.html   PLUGIN.md: what differs in the plugin, with its downloads at the top (plugin_release.json)
 
 Each page: the project page's look (Tessera Mono and the colours from web/home/index.html, the light / dark choice it
 stores, tessera-theme), a sidebar of the chapters (the ## headings, the open one's ### under it; the manual's grouped by button) and a search over the
@@ -83,13 +83,30 @@ def videos(md_text, mode):
     return re.sub(r"^<p><a href=\"https://youtu\.be/.*" + re.escape(GUIDE_MARK) + "$", one, md_text, flags=re.M)
 
 
-# The plugin's downloads, one row per system: (system, its formats, the file's URL). A URL of None shows COMING SOON
-# in place of the link: fill them in when the public beta's release is out (its assets on GitHub Releases).
-DOWNLOADS = [
-    ("Windows", "CLAP, VST3 and the standalone app", None),
-    ("macOS", "CLAP, VST3, Audio Unit and the standalone app", None),
-    ("Linux", "CLAP and VST3", None),
+# The plugin's downloads, one row per system: (system, its formats, its file). The release they come from is in
+# web/plugin_release.json ({"tag", "version", "files": {"windows", "macos", "linux"}}), which .github/workflows/
+# plugin-site.yml writes when a plugin release is published; without it (or a file) the row shows COMING SOON.
+RELEASE_FILE = ROOT / "web" / "plugin_release.json"
+SYSTEMS = [
+    ("Windows", "CLAP, VST3 and the standalone app", "windows"),
+    ("macOS", "CLAP, VST3, Audio Unit and the standalone app", "macos"),
+    ("Linux", "CLAP and VST3", "linux"),
 ]
+REPO_URL = "https://github.com/Rastapopolix/tessera"
+
+
+def plugin_release():
+    """the release the downloads come from: its version and a URL per system (None: none yet)"""
+    try:
+        r = json.loads(RELEASE_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        r = {}
+    files = r.get("files") or {}
+    urls = {key: f"{REPO_URL}/releases/download/{r['tag']}/{files[key]}" if r.get("tag") and files.get(key) else None
+            for _, _, key in SYSTEMS}
+    return r.get("version"), urls
+
+
 DOWNLOADS_NOTE = ("The plugin is still being tested. Its public beta opens once the larger window, EXPANDED, is in. "
                   'Until then, <a href="../webapp/sim/">try Tessera in your browser</a>: the same firmware on an '
                   "on-screen FM-1.")
@@ -100,13 +117,17 @@ DL_MARKS = re.compile(r"^<!-- downloads\b.*?-->$.*?^<!-- /downloads -->$", re.M 
 def downloads(md_text):
     """PLUGIN.md with its downloads note swapped for the site's download block: a Download heading (in the
     contents), a row per system, and a link or COMING SOON for each"""
-    soon = all(url is None for _, _, url in DOWNLOADS)
+    version, urls = plugin_release()
+    soon = all(url is None for url in urls.values())
     rows = "".join(
         f'<li><b>{html.escape(name)}</b><span>{html.escape(formats)}</span>'
-        + (f'<a class="get" href="{html.escape(url)}" download>DOWNLOAD</a>' if url else '<span class="get soon">COMING SOON</span>')
-        + "</li>" for name, formats, url in DOWNLOADS)
-    note = DOWNLOADS_NOTE if soon else ('Betas are marked <i>Pre-release</i>; every version, and its notes, is under the '
-                                        '<a href="https://github.com/Rastapopolix/tessera/releases">releases</a>.')
+        + (f'<a class="get" href="{html.escape(urls[key])}" download>DOWNLOAD</a>' if urls[key]
+           else '<span class="get soon">COMING SOON</span>')
+        + "</li>" for name, formats, key in SYSTEMS)
+    note = DOWNLOADS_NOTE if soon else (
+        f'<b>{html.escape(version or "")}, public beta:</b> it still has some rough edges, so please '
+        f'<a href="{REPO_URL}/issues">report what you find</a>. Its notes and every version are under the '
+        f'<a href="{REPO_URL}/releases">releases</a> (marked <i>Pre-release</i>).')
     block = (f'## Download\n\n<div class="downloads"><ul>{rows}</ul><p>{note} Free and open source, GPL-3.0. '
              'How to install: see <a href="#install">Install</a>.</p></div>')
     out, n = DL_MARKS.subn(lambda m: block, md_text)

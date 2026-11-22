@@ -8,7 +8,7 @@
   media/gallery/, media/brand/      its pictures: assets/gallery (tests/gallery_render.c), assets/brand (tools/gen_brand.py)
   media/video/                      the demo video and its poster: assets/video (tools/demo_video.py)
   manual/, start/, plugin/          MANUAL.md, GETTING_STARTED.md and PLUGIN.md as pages (web/make_manual.py: needs
-                                    markdown-it-py); plugin/ with the plugin's downloads (make_manual.DOWNLOADS)
+                                    markdown-it-py); plugin/ with the plugin's downloads (web/plugin_release.json)
   manual/tessera-manual.pdf         the manual as a PDF: docs/manual/tessera-manual.pdf (tools/gen_manual_pdf.py)
   firmware/tessera-VER.fwsc    the package, both cores (+ LICENSE, LICENSING.md, LICENSES/: the
                                     packages hold JieLi SDK files under Apache-2.0, see LICENSING.md)
