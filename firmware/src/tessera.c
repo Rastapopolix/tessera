@@ -276,8 +276,9 @@ void tessera_init(void)
         tessera.answer[i].time = 3;                       /* (BEND: a dotted eighth at 16 steps a bar; REPLY, no BREAK) */
     }
 #if CORE_TRACKS > 4
-    for (uint32_t i = 4; i < TESSERA_TRACKS; i++)       /* (5..8: no project brings their seed, so each has one now, */
-        tess_seed_fresh(i);                             /*  as a track gets at its first use: EVOLVE ROLL in range) */
+    for (uint32_t i = 0; i < TESSERA_TRACKS; i++)       /* (8 tracks: every track has its seed now, as at its first use, */
+        tess_seed_fresh(i);                             /*  so EVOLVE ROLL is in range on a new project; a loaded one */
+                                                        /*  brings its own. 5..8: no project brings theirs) */
 #endif
 }
 
