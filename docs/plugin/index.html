@@ -219,8 +219,9 @@ a keyboard routed to Tessera: they go to the selected track, as the FM-1's keys 
 ROUT starts at SEL in the plugin). To play each track from its own DAW track instead, set ROUT to a channel range
 (CH1-8: channel 1 plays track 1, channel 2 track 2, and so on). To make it play on its own, pick a MODE on SEQ, as on
 the FM-1 (the <a href="../manual/">manual</a> shows how).</p>
-<p><strong>To hear what it can do,</strong> load a demo: in a DAW that lists CLAP presets (Bitwig, for one), all eight demos are in its
-preset browser under Tessera; <strong>STILL TIDE</strong> also waits in slot A and <strong>KOTO GARDEN</strong> in slot B (SAVE &gt; PROJECT, then
+<p><strong>To hear what it can do,</strong> load a demo: all eight demos are in the DAW's list of Tessera's presets (the preset
+browser for the CLAP plugin, as in Bitwig; the programs or factory presets menu for the VST3 and the Audio Unit, as in
+Reaper, Cubase or Logic); <strong>STILL TIDE</strong> also waits in slot A and <strong>KOTO GARDEN</strong> in slot B (SAVE &gt; PROJECT, then
 LOAD); and every demo is a <code>.tsp</code> file in the <a href="https://github.com/Rastapopolix/tessera/blob/HEAD/demos/">demos folder</a> for <strong>OPEN</strong>. The <strong>standalone app</strong> has no DAW
 to send it notes, so it opens with STILL TIDE loaded and plays it at once.</p>
 <h2 id="the-window">The window</h2>
@@ -334,7 +335,9 @@ with its own project.</p>
 <strong>FM-1 backup</strong> (the <code>.json</code> from the backup page or the Hub). A backup's slots A to D go into the plugin's slots,
 then the music it was playing loads. On Windows and macOS you can also drop a file on the window.</li>
 <li><strong>SAVE</strong> writes the project as a <code>.tsp</code> under its name, ready for the FM-1's editor or another Tessera. It offers
-<strong>Documents/Tessera/Presets</strong>: what you save there shows in a CLAP host's preset browser beside the demos.</li>
+<strong>Documents/Tessera/Presets</strong>: what you save there shows in the DAW's list of presets beside the demos (the VST3 and
+the Audio Unit read the folder once, when the DAW first loads Tessera, so there a new file shows after the DAW
+starts again).</li>
 </ul>
 <p>A <code>.tsp</code> from the plugin opens on the FM-1 too. Tracks on the plugin-only sounds play a stand-in there (see
 <a href="#sounds-only-the-plugin-has">Sounds only the plugin has</a>).</p>
@@ -420,8 +423,6 @@ sounding at once take about 18 % of a core.</p>
 <h2 id="not-there-yet">Not there yet</h2>
 <ul>
 <li><strong>One window size</strong>, the FM-1's. A larger, wider window is planned.</li>
-<li><strong>Presets in the DAW's browser</strong> only for the CLAP plugin: the VST3 and the Audio Unit don't list them yet. Use OPEN
-there, or the DAW's own way of saving a plugin's state.</li>
 <li><strong>No standalone app on Linux</strong> yet.</li>
 <li><strong>Not signed</strong> on macOS or Windows yet (see <a href="#install">Install</a>).</li>
 </ul>
