@@ -67,7 +67,7 @@ tracks, in TESSERA's own window or the FM-1's.
   the screen has ringed, its name on hover; tess_core_ink_at lists them, tess_view_t.ink is the one now). The shell
   picked and the ink last shown (a pick there, a shell's ink, or MENU > COLOR) are remembered for every window, in any
   DAW (files `shell` and `ink` in `%APPDATA%\Tessera`, `~/.config/tessera` or
-  `~/Library/Application Support/Tessera`; the ink over the shell's own), not in the project. **SIZE** (TESSERA's menu) 100, 150 or 200 %: the whole window larger (200 % each pixel doubled, 150 % smoothed), remembered for every window (file `size`); until one is picked, the host's scale for the screen (a HiDPI display) picks the nearest; a host that lets its frame be dragged snaps it to the nearest of the three. The screen at 1:1 within it;
+  `~/Library/Application Support/Tessera`; the ink over the shell's own), not in the project. **SIZE** (TESSERA's menu) 100, 150 or 200 % (EXPANDED: 100 or 125, `Panel::size_fit`): the whole window larger (200 % each pixel doubled, 125 and 150 % smoothed), remembered for every window (file `size`); until one is picked, the host's scale for the screen (a HiDPI display) picks the nearest; a host that lets its frame be dragged snaps it to the nearest the mode has. **MODE** (TESSERA's menu, file `mode`): FM-1, or EXPANDED (TESSERA's shell only; tessera-notes docs/design/PLUGIN_EXPANDED.md): 1500 x 624, the TRACKS screen (`tess_core_tracks_view`, firmware/src/ui_tracks.c, drawn by the audio thread with the view while `tracks_on`) at 568,52 beside the FM-1's, KNOB 1-4 and the buttons right of it, the keys across the window, no bank switch; TRACKS' zones (a row, M, S, a level) go to `tess_core_tracks_do` (`PanelInput::tzones`); each window follows `Panel::width()`. The screen at 1:1 within it;
   click the buttons and keys (drag across the keys to glide); drag a knob up/down or left/right, or use the mouse
   wheel over it. **The screen's zones** (`tess_view_t.zones`, `ui_zones.c`, profile fact `TESS_HAS_POINTER`): the
   Mono pages leave what a mouse can use as they draw it (a value's column, a list's row, OK / BACK / YES / NO, the
@@ -135,7 +135,7 @@ tracks, in TESSERA's own window or the FM-1's.
 ## Not yet
 
 The list for players is PLUGIN.md's "Not there yet". Here: the window (Windows, Linux, macOS: `gui_win32.cpp`,
-`gui_x11.cpp`, `gui_mac.mm`) is the FM-1's size only; the standalone app is Windows and macOS only; the builds are
+`gui_x11.cpp`, `gui_mac.mm`) has no free resize (SIZE's steps only); the standalone app is Windows and macOS only; the builds are
 not signed.
 
 ## Build

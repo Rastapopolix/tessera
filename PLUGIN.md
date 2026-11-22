@@ -100,7 +100,10 @@ click it, or press **Esc** to let go.
 - **SHELL:** Tessera's look, or one of the eight FM-1 colours. Each shell sets its own screen ink.
 - **INK:** the screen's ink, the same 13 choices as MENU > COLOR (nine inks, then MOSAIC, SUNSET, OCEAN and NEON,
   which colour each track). Hover over a swatch to see its name.
-- **MODE** and **SIZE:** FM-1 at 100% for now; EXPANDED and the larger sizes are coming.
+- **MODE:** FM-1 (the FM-1's panel) or EXPANDED (a wider window with every track on screen at once: see
+  [EXPANDED: all eight tracks at once](#expanded-all-eight-tracks-at-once)).
+- **SIZE:** the window at 100, 150 or 200%; in EXPANDED 100 or 125% (a larger EXPANDED window would not fit a
+  1080p screen).
 - **FM-1 USB:** OFF or ON. With it on, an FM-1 on USB plays the plugin (see
   [Playing it from your FM-1](#playing-it-from-your-fm-1)); the line under it says what the FM-1 is doing.
 - **ABOUT:** the plugin's version.
@@ -111,7 +114,7 @@ the first) and the row labelled INK, between the buttons and the keys, picks the
 Picking a shell sets that shell's ink; an ink you pick afterwards, there or in MENU > COLOR, stays until you pick a
 shell again. The **MIDI** lamp beside the mark lights when notes come in from the DAW.
 
-Tessera remembers the last shell and the last ink for every new window, in any DAW. They are your settings, not the
+Tessera remembers the last shell, ink, MODE and SIZE for every new window, in any DAW. They are your settings, not the
 project's: a project opens in your shell and ink.
 
 The window moves only while the DAW is processing audio. If it looks frozen, check that the DAW's audio engine is on.
@@ -183,6 +186,8 @@ On Linux the file dialogs need `zenity` or `kdialog`.
 
 ## Tracks 1 to 4, and 5 to 8
 
+(In EXPANDED mode all eight are on screen at once: see the next section.)
+
 The plugin has eight tracks; the panel works on four at a time, as the FM-1's does. The **1-4 / 5-8** switch beside
 SAVE picks the bank: 1-4 selects T1, 5-8 selects T5 (**Tab** on the computer keyboard swaps them). The lit half is the
 bank of the track selected now, so it follows SELECT too. While a track of 5 to 8 is selected the screen's top line
@@ -190,6 +195,26 @@ shows **5-8**, inverted, before the track dots.
 
 All eight tracks are saved: with the DAW song, and in a `.tsp` from SAVE (tracks 5 to 8 in a part of their own an
 FM-1 skips, so the FM-1 still opens the file as its four tracks).
+
+## EXPANDED: all eight tracks at once
+
+Set **MODE** to EXPANDED in Tessera's menu. The window gets wider (1500 x 624 at 100%) and a second screen,
+**TRACKS**, sits beside the FM-1's. The FM-1's screen and all its pages stay exactly as they are; the knobs and
+buttons move to the right of TRACKS and the 27 keys stretch across the window.
+
+TRACKS shows every track on a row of its own: its number, what it plays (PLCK, BASS, DRUM ..), the engine, the
+pattern, the 16 steps of the bar the track is in (a hit is a block; the box is the step playing, each track at its
+own), its level, and **M** and **S**. The selected track's row is boxed. Under the rows: the selected track's sound.
+
+- **Click a row** to select that track (as SELECT does).
+- **M** mutes or unmutes the track, as GLO's black keys do: with MENU > MUTES on BAR or PHRASE, M blinks until the
+  mute happens. A muted row is drawn dim.
+- **S** solos the track and keeps it soloed until you click S again (GLO's white keys solo only while held).
+- **The mouse wheel on a level** turns that track's level.
+
+Mutes and levels are saved with the project as always; a solo is not. There's no 1-4 / 5-8 switch in EXPANDED.
+EXPANDED is part of Tessera's own shell: picking an FM-1 shell shows the FM-1's panel, and Tessera's shell again
+brings EXPANDED back.
 
 ## Automation: the parameters
 
@@ -282,7 +307,6 @@ sounding at once take about 18 % of a core.
 ## Not there yet
 
 - **PHASE** has 33 presets of its own (brass, pads, basses, keys, bells, sweeps, ring sounds), not the CZ-1's original tones.
-- **One window size**, the FM-1's. A larger, wider window is planned.
 - **Presets in the DAW's browser** only for the CLAP plugin: the VST3 and the Audio Unit don't list them yet. Use OPEN
   there, or the DAW's own way of saving a plugin's state.
 - **No standalone app on Linux** yet.
