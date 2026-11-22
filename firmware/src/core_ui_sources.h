@@ -20,3 +20,4 @@
 #include "upreset.c"
 #include "project.c"
 #include "fm6_store.c"
+#include "generate.c"                /* GENERATE: a whole piece from a style and a seed (TESS_GENERATE; else nothing) */

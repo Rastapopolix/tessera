@@ -26,11 +26,14 @@
 #include <clap/clap.h>
 
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <mutex>
+#include <random>
+#include <string>
 #include <vector>
 
 #include <clap/ext/params.h>
@@ -223,6 +226,20 @@ struct Tessera : GuiLink
     bool fm1_started = false;
     // the audio thread: held in the window and on the FM-1, apart (the core gets the two together)
     uint32_t win_buttons = 0, win_keys = 0, fm1_buttons = 0, fm1_keys = 0;
+    // GENERATE (gui.h; the host's main thread): the style and VARIATION picked (the plugin's settings, for every
+    // window), the pieces made (style, VARIATION, seed: each made again exactly), the one now, before / after
+    struct Piece { int style, variation; uint32_t seed; };
+    int gen_style = 0, gen_variation = 100;
+    std::vector<Piece> gen_made;
+    int gen_at = -1;
+    bool gen_before = false;
+    std::vector<std::string> gen_styles() override;
+    std::string generate(int style, int variation) override;
+    std::string gen_swap() override;
+    std::string gen_recall(int dir) override;
+    void gen_pick(int style, int variation) override;
+    Panel::GenState gen_state() override;
+    std::string gen_make(const Piece &pc);
 };
 
 Tessera *self(const clap_plugin_t *p) { return static_cast<Tessera *>(p->plugin_data); }
@@ -264,6 +281,7 @@ std::string Tessera::open_file(const std::string &path)
         }
         if (r)
             return "A PROJECT THIS VERSION CANNOT READ";
+        gen_before = false;
         changed_by_file();
         return "OPENED " + (name.empty() ? std::string("THE PROJECT") : name);
     }
@@ -301,6 +319,102 @@ std::string Tessera::file_name()
     std::string name;
     projfile::tsp_name(record_of(this), name);
     return projfile::tsp_file_name(name);
+}
+
+// ---- GENERATE (TESSERA's strip): a whole piece from a style and a seed (firmware/src/generate.c)
+
+static const size_t GEN_KEEP = 16;   // the pieces the seed's wheel goes back through
+
+std::vector<std::string> Tessera::gen_styles()
+{
+    std::vector<std::string> names;
+    for (uint32_t i = 0, n = core->gen_styles(); i < n; i++)
+        names.emplace_back(core->gen_style(i));
+    return names;
+}
+
+void Tessera::gen_pick(int style, int variation)
+{
+    int n = (int)core->gen_styles();
+    if (style < 0 || style >= n) style = 0;
+    variation = variation < 0 ? 0 : variation > 100 ? 100 : variation;
+    if (style == gen_style && variation == gen_variation)
+        return;
+    gen_style = style;
+    gen_variation = variation;
+    projfile::setting_put("gen_style", core->gen_style((uint32_t)style));
+    projfile::setting_put("gen_variation", std::to_string(variation));
+}
+
+// a piece made (a new one or one made before): the tempo the DAW's while a DAW drives (its transport), the style's in
+// the standalone app; the DAW's state and parameters are out of date after
+std::string Tessera::gen_make(const Piece &pc)
+{
+    uint32_t r;
+    {
+        std::lock_guard<std::mutex> g(core_lock);
+        r = core->generate((uint32_t)pc.style, pc.seed, (uint32_t)pc.variation, transport_known ? TESS_GEN_KEEP_TEMPO : 0u);
+    }
+    if (r)
+        return "COULD NOT GENERATE";
+    gen_before = false;
+    changed_by_file();
+    return "";
+}
+
+std::string Tessera::generate(int style, int variation)
+{
+    gen_pick(style, variation);
+    static std::mt19937 rng{std::random_device{}() ^ (uint32_t)std::chrono::steady_clock::now().time_since_epoch().count()};
+    Piece pc{gen_style, gen_variation, 0};
+    while (!pc.seed) pc.seed = rng();
+    std::string said = gen_make(pc);
+    if (!said.empty())
+        return said;
+    gen_made.push_back(pc);   // (made after going back: the newer ones stay, this one after them)
+    if (gen_made.size() > GEN_KEEP) gen_made.erase(gen_made.begin());
+    gen_at = (int)gen_made.size() - 1;
+    return gen_made.size() == 1 ? "HOLD GENERATE FOR BEFORE" : "";   // (the strip shows the style and the seed)
+}
+
+std::string Tessera::gen_swap()
+{
+    uint32_t r;
+    {
+        std::lock_guard<std::mutex> g(core_lock);
+        r = core->gen_swap();
+    }
+    if (r)
+        return "NOTHING GENERATED YET";
+    gen_before = !gen_before;
+    changed_by_file();
+    return gen_before ? "BEFORE THE PIECE" : "THE PIECE AGAIN";
+}
+
+std::string Tessera::gen_recall(int dir)
+{
+    int to = gen_at + dir;
+    if (gen_made.empty() || to < 0 || to >= (int)gen_made.size())
+        return gen_made.empty() ? "NOTHING GENERATED YET" : dir < 0 ? "THE FIRST PIECE MADE" : "THE LAST PIECE MADE";
+    std::string said = gen_make(gen_made[to]);
+    if (!said.empty())
+        return said;
+    gen_at = to;
+    gen_style = gen_made[to].style;
+    gen_variation = gen_made[to].variation;
+    return "PIECE " + std::to_string(to + 1) + " OF " + std::to_string(gen_made.size());
+}
+
+Panel::GenState Tessera::gen_state()
+{
+    Panel::GenState s;
+    s.style = gen_style;
+    s.variation = gen_variation;
+    s.at = gen_at;
+    s.made = (int)gen_made.size();
+    s.seed = gen_at >= 0 ? gen_made[gen_at].seed : 0u;
+    s.before = gen_before;
+    return s;
 }
 
 // a project came in from a file: the DAW's saved state and the MACROs it shows are out of date
@@ -625,6 +739,12 @@ bool p_init(const clap_plugin_t *p)
     if (!ink.empty())
         t->core->ink(ink.c_str());
     t->master_set(700);   // (MASTER's default)
+    {   // GENERATE: the style (by name) and VARIATION last picked in any window
+        std::string st = projfile::setting_get("gen_style"), var = projfile::setting_get("gen_variation");
+        for (uint32_t i = 0, n = t->core->gen_styles(); i < n; i++)
+            if (st == t->core->gen_style(i)) t->gen_style = (int)i;
+        if (!var.empty()) t->gen_variation = std::atoi(var.c_str()) < 0 ? 0 : std::atoi(var.c_str()) > 100 ? 100 : std::atoi(var.c_str());
+    }
     t->params_make();
     return true;
 }
@@ -964,6 +1084,8 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
             x58 = b.data() + len;
         }
         ok = t->core->load(b.data(), len) == 0;
+        if (ok)
+            t->gen_before = false;   // (GENERATE: what plays is the DAW's state, not BEFORE)
         if (ok && setup)
             t->core->setup_load(setup, ns);   // (a state from before TGLO keeps the setup this instance has)
         if (ok && x58)

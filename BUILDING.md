@@ -104,6 +104,7 @@ Build options (environment; most use `0` or `1`; defaults in `firmware/src/build
 | `MELODEE_FS` | 44100 | the sample rate, read by `tools/gen_tables.py` into `FS` (`melodee_tables.h`); every rate-dependent number in the firmware is derived from it. The FM-1 is 44.1 kHz; 48000 is for other hardware (a Daisy Seed runs its codec at 48 or 96 kHz). `tests/fs_test.py` checks every engine plays in tune at 48 kHz |
 | `MELODEE_ECHO_SYNC` | 1 | FX type SYNC ECHO (fx.c FX_SYNC: ECHO on note values at the tempo playing; appended after DRIVE, so firmware without it plays it as DRIVE) |
 | `MELODEE_ECHO_RING` | 4096 (plugin: 32768) | SYNC ECHO's ring at FS/4, a power of two: 4096 holds 371 ms (longer note values halve until they fit), 32768 about 3 s (the host arena grows by a ring per FX slot) |
+| `TESS_GENERATE` | 0 (plugin: 1) | GENERATE (`firmware/src/generate.c`): a whole piece in one press from a style and a seed (LEMONADE SANDWICH's fifteen rolls), on the core API (`tess_core_generate`). One .tsp record of RAM (the project before the press, 34 KB); `0` (the FM-1) leaves the file empty |
 
 ## Samples
 

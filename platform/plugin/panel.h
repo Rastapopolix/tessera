@@ -94,8 +94,39 @@ class Panel
      * (take_fm1_request: 1 on, taken from any other Tessera; 0 off; -1 none) */
     void set_fm1(bool on, bool mine, bool live, const std::string &text);
     int take_fm1_request() { int r = fm1_req; fm1_req = -1; return r; }
+    /* GENERATE (TESSERA's shell, in the strip at the top; a build without it has no styles and shows none of it):
+     * GENERATE makes a new piece in the style shown, from a new seed; held half a second, BEFORE / AFTER: the project
+     * before the last piece and the piece change places. The style: a click on its name opens the list, the arrows or
+     * the wheel the next one or the one before. VAR 0..100: how wide each pick is (a drag or the wheel, 5 a detent; a
+     * double-click: 100). The seed: the piece's; the wheel over it makes the pieces made before again (and back). A
+     * press asks (take_gen_request); set_gen shows what the instance has */
+    enum { GEN_NONE, GEN_MAKE, GEN_SWAP, GEN_RECALL, GEN_SET };
+    struct GenRequest { int what = GEN_NONE, style = 0, variation = 100, dir = 0; };
+    struct GenState { int style = 0, variation = 100, at = -1, made = 0; uint32_t seed = 0; bool before = false; };
+    void set_gen_styles(const std::vector<std::string> &names) { gen_names = names; }
+    bool gen_known() const { return gen_names_asked; }
+    void gen_asked() { gen_names_asked = true; }
+    void set_gen(const GenState &g);
+    GenRequest take_gen_request() { GenRequest r = gen_req; gen_req = GenRequest{}; return r; }
 
   private:
+    // GENERATE's strip (TESSERA's shell): the button, the style, VAR, the seed; the style's list
+    std::vector<std::string> gen_names;
+    bool gen_names_asked = false;
+    GenState gen{};
+    GenRequest gen_req{};
+    bool gen_list = false, gen_swapped = false;
+    int gen_list_hover = -1;
+    uint32_t gen_down_frame = 0;
+    double gen_var_click = 0;
+    bool gen_on() const { return native() && !gen_names.empty(); }
+    enum { GP_BUTTON, GP_PREV, GP_STYLE, GP_NEXT, GP_VAR, GP_SEED };
+    int gen_part_at(int x, int y) const;   // GP_*, -1 none
+    int gen_list_at(int x, int y) const;
+    void gen_ask(int what, int dir = 0);
+    void gen_style_step(int n);
+    void gen_var_step(int n);
+    void draw_gen(uint32_t *px);
     // TESSERA's shell (shell 0): its own drawing, its layout of the buttons and files, and its menu
     bool native() const { return shell_ == 0; }
     void layout();
@@ -145,7 +176,7 @@ class Panel
     int keys_req = -1;
     void merge_held();
     // a drag
-    enum { NONE, KNOB, BUTTON, KEY, ZONE } drag = NONE;
+    enum { NONE, KNOB, BUTTON, KEY, ZONE, GEN_BUTTON, GEN_VAR } drag = NONE;
     int drag_i = -1, last_x = 0, last_y = 0, acc = 0;
     int master_now = 700;   // MASTER as the core has it (the view: the DAW may automate it)
     uint32_t frame = 0;     // frames drawn (the breathing LEDs: each window its own)

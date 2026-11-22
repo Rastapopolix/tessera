@@ -587,6 +587,11 @@ bool Panel::key(int code, bool down)
         if (down) menu_open = false;
         return false;
     }
+    if (code == 0x01 && gen_list)    // Esc: GENERATE's style list shut
+    {
+        if (down) gen_list = false;
+        return false;
+    }
     if (code == 0x01 && (latch_keys || latch_buttons))   // Esc: every latch let go
     {
         if (!down) return false;
@@ -657,6 +662,39 @@ bool Panel::down(int x, int y)
     {
         drag = NONE;
         return menu_click(x, y);
+    }
+    if (gen_list)   // GENERATE's style list: a style picked, or (anywhere else) the list shut
+    {
+        drag = NONE;
+        int j = gen_list_at(x, y);
+        gen_list = false;
+        if (j >= 0 && j != gen.style)
+        {
+            gen.style = j;
+            gen_ask(GEN_SET);
+        }
+        return false;
+    }
+    switch (gen_part_at(x, y))   // GENERATE's strip
+    {
+    case GP_BUTTON:
+        drag = GEN_BUTTON;
+        gen_down_frame = frame;
+        gen_swapped = false;
+        return false;
+    case GP_PREV: drag = NONE; gen_style_step(-1); return false;
+    case GP_NEXT: drag = NONE; gen_style_step(1); return false;
+    case GP_STYLE: drag = NONE; gen_list = true; gen_list_hover = -1; return false;
+    case GP_VAR:
+    {
+        double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        if (now - gen_var_click < 0.4) gen_var_step(20);   // (a double-click: 100)
+        gen_var_click = now;
+        drag = GEN_VAR;
+        return false;
+    }
+    case GP_SEED: drag = NONE; return false;
+    default: break;
     }
     if (native() && x >= 30 && x < 250 && y >= 6 && y < 44)   // the mark: the menu
     {
@@ -764,6 +802,13 @@ bool Panel::move(int x, int y)
         last_y = y;
         return false;
     }
+    if (gen_list)
+    {
+        gen_list_hover = gen_list_at(x, y);
+        last_x = x;
+        last_y = y;
+        return false;
+    }
     shell_hover = drag == NONE ? swatch_at(x, y) : -1;
     ink_hover = drag == NONE ? ink_at(x, y) : -1;
     hover_in = true, hover_x = x, hover_y = y;
@@ -775,6 +820,13 @@ bool Panel::move(int x, int y)
         acc += std::abs(dx) > std::abs(dy) ? dx : dy;
         int n = acc / 8;
         if (n) { acc -= n * 8; zone_act(drag_zone, TESS_ZA_TURN, n); return true; }
+    }
+    else if (drag == GEN_VAR)   // VAR: 5 a detent, a detent every 8 px
+    {
+        acc += std::abs(dx) > std::abs(dy) ? dx : dy;
+        int n = acc / 8;
+        if (n) { acc -= n * 8; gen_var_step(n); }
+        return false;
     }
     else if (drag == KNOB)
     {
@@ -815,6 +867,9 @@ bool Panel::latch(int x, int y)
 bool Panel::up(int, int)
 {
     bool ch = false;
+    if (drag == GEN_BUTTON && !gen_swapped)   // GENERATE let go before half a second: a new piece
+        gen_ask(GEN_MAKE);
+    gen_swapped = false;
     if (drag == BUTTON) { mouse_buttons &= ~(1u << buttons[drag_i].bit); merge_held(); ch = true; }
     if (drag == KEY) { mouse_keys &= ~(1u << keys[drag_i].k); merge_held(); ch = true; }
     drag = NONE;
@@ -824,6 +879,13 @@ bool Panel::up(int, int)
 
 bool Panel::wheel(int x, int y, int notches)
 {
+    switch (notches ? gen_part_at(x, y) : -1)   // GENERATE's strip: the style, VAR, the pieces made before
+    {
+    case GP_PREV: case GP_STYLE: case GP_NEXT: gen_style_step(-notches); return false;   // (up: the one before)
+    case GP_VAR: gen_var_step(notches); return false;
+    case GP_SEED: gen_ask(GEN_RECALL, notches > 0 ? -1 : 1); return false;   // (up: back to an older piece)
+    default: break;
+    }
     int zi = zone_at(x, y);
     if (zi >= 0 && notches)   // a value, or a list's row: as its knob turned
     {
@@ -859,6 +921,12 @@ const int MENU_H = 2 + 8 + MENU_ROWS * ROW_H + 3 * 18 + FM1_LINE + 8 + 2;
 const int SEG_RIGHT = MENU_X + MENU_W - 16;
 int seg_w(const char *t) { return Canvas::ptext_w(t, 2) + 12; }
 int shell_sub_y() { return row_y(ROW_SHELL) - 10; }
+
+// GENERATE's strip, between the MIDI lamp and the version: the button, the style (its arrows at the ends), VAR, the
+// seed; the style's list under its name
+const int GEN_Y = 10, GEN_H = 28, GB_X = 316, GB_W = 112, GS_X = 436, GS_W = 168, GS_ARROW = 24, GV_X = 612, GV_W = 88,
+          GD_X = 708, GD_W = 112, GL_Y = GEN_Y + GEN_H + 6, GL_ROW = 26;
+
 int ink_sub_y() { return row_y(ROW_INK) - 10; }
 
 // a box with its corners cut a dot (2 px): border, then the fill inside, `bottom` its lower edge's width
@@ -905,7 +973,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
     c.ptext(lx + 16, 18, "MIDI", 2, T_WORD);
     if (!version.empty())
     {
-        std::string ver = "PLUGIN " + version;
+        std::string ver = (gen_on() ? "" : "PLUGIN ") + version;   // (GENERATE's strip: the version alone)
         for (auto &ch : ver) ch = ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
         c.ptext(W - 36 - Canvas::ptext_w(ver.c_str(), 2), 18, ver.c_str(), 2, T_WORD);
     }
@@ -1002,6 +1070,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
         c.ptext(last.x + last.w + 16, last.y + last.h / 2 - 7, note_text.c_str(), 2, T_WORD);
     }
 
+    draw_gen(px);
     if (!menu_open)
         return;
 
@@ -1099,6 +1168,114 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
         int shown = sub_hover >= 0 ? sub_hover : ink_now;
         if (shown >= 0 && shown < n)
             c.ptext(SUB_X + 18, y0 + 18 + gh + 12, inks[shown].name.c_str(), 2, T_YEL);
+    }
+}
+
+// ---- GENERATE's strip (TESSERA's shell)
+
+void Panel::set_gen(const GenState &g)
+{
+    int style = gen.style, var = gen.variation;
+    gen = g;
+    if (gen_req.what == GEN_SET)   // (a pick not yet taken: the panel's, until it is)
+        gen.style = style, gen.variation = var;
+}
+
+int Panel::gen_part_at(int x, int y) const
+{
+    if (!gen_on() || y < GEN_Y || y >= GEN_Y + GEN_H)
+        return -1;
+    if (x >= GB_X && x < GB_X + GB_W) return GP_BUTTON;
+    if (x >= GS_X && x < GS_X + GS_ARROW) return GP_PREV;
+    if (x >= GS_X + GS_W - GS_ARROW && x < GS_X + GS_W) return GP_NEXT;
+    if (x >= GS_X && x < GS_X + GS_W) return GP_STYLE;
+    if (x >= GV_X && x < GV_X + GV_W) return GP_VAR;
+    if (x >= GD_X && x < GD_X + GD_W) return GP_SEED;
+    return -1;
+}
+
+int Panel::gen_list_at(int x, int y) const
+{
+    int j = (y - GL_Y - 10) / GL_ROW;
+    if (!gen_list || x < GS_X || x >= GS_X + GS_W || y < GL_Y + 10 || j < 0 || j >= (int)gen_names.size())
+        return -1;
+    return j;
+}
+
+void Panel::gen_ask(int what, int dir)
+{
+    if (gen_req.what != GEN_NONE && gen_req.what != GEN_SET && what == GEN_SET)
+        return;   // (a press waiting: the pick rides along with it)
+    gen_req.what = what;
+    gen_req.style = gen.style;
+    gen_req.variation = gen.variation;
+    gen_req.dir = dir;
+}
+
+void Panel::gen_style_step(int n)
+{
+    int k = (int)gen_names.size();
+    if (!k || !n) return;
+    gen.style = ((gen.style + n) % k + k) % k;
+    gen_ask(GEN_SET);
+}
+
+void Panel::gen_var_step(int n)
+{
+    int v = gen.variation + 5 * n;
+    v = v < 0 ? 0 : v > 100 ? 100 : v;
+    if (v == gen.variation) return;
+    gen.variation = v;
+    gen_ask(GEN_SET);
+}
+
+void Panel::draw_gen(uint32_t *px)
+{
+    Canvas c{px};
+    if (!gen_on())
+        return;
+    // held half a second: BEFORE / AFTER, once a press
+    if (drag == GEN_BUTTON && !gen_swapped && frame - gen_down_frame >= 15)
+    {
+        gen_swapped = true;
+        gen_ask(GEN_SWAP);
+    }
+    bool held = drag == GEN_BUTTON;
+    int lip = held ? 2 : 0;
+    nbox(c, GB_X, GEN_Y + lip, GB_W, GEN_H - lip, held ? T_HELD : T_YEL, held ? T_HELD : T_BODY, held ? 2 : 4);
+    c.ptext_c(GB_X + GB_W / 2, GEN_Y + lip + 6, gen_swapped && held ? (gen.before ? "BEFORE" : "AFTER") : "GENERATE", 2,
+              held ? T_BLACK : T_YEL);
+
+    // the style: < NAME >
+    nbox(c, GS_X, GEN_Y, GS_W, GEN_H, gen_list ? T_YEL : T_DIM, T_BLACK);
+    c.ptext(GS_X + 8, GEN_Y + 7, "<", 2, T_YEL);
+    c.ptext(GS_X + GS_W - 8 - Canvas::ptext_w(">", 2), GEN_Y + 7, ">", 2, T_YEL);
+    const char *name = gen.style >= 0 && gen.style < (int)gen_names.size() ? gen_names[gen.style].c_str() : "";
+    c.ptext_c(GS_X + GS_W / 2, GEN_Y + 7, name, 2, T_YEL);
+
+    // VAR 0..100
+    char b[24];
+    std::snprintf(b, sizeof b, "VAR %d", gen.variation);
+    nbox(c, GV_X, GEN_Y, GV_W, GEN_H, drag == GEN_VAR ? T_YEL : T_DIM, T_BLACK);
+    c.ptext_c(GV_X + GV_W / 2, GEN_Y + 7, b, 2, drag == GEN_VAR ? T_HELD : T_WORD);
+
+    // the seed: the piece's (BEFORE while the project before it plays), - none yet
+    if (gen.before) std::snprintf(b, sizeof b, "BEFORE");
+    else if (gen.made) std::snprintf(b, sizeof b, "%08X", (unsigned)gen.seed);
+    else std::snprintf(b, sizeof b, "-");
+    nbox(c, GD_X, GEN_Y, GD_W, GEN_H, T_DIM, T_BLACK);
+    c.ptext_c(GD_X + GD_W / 2, GEN_Y + 7, b, 2, gen.before ? T_HELD : T_WORD);
+
+    if (!gen_list)
+        return;
+    int n = (int)gen_names.size(), h = 20 + n * GL_ROW;
+    nbox(c, GS_X, GL_Y, GS_W, h, T_DIM, T_BLACK);
+    for (int j = 0; j < n; j++)
+    {
+        int y = GL_Y + 10 + j * GL_ROW;
+        if (gen_list_hover == j) c.box(GS_X + 2, y, GS_W - 4, GL_ROW, T_DIM);
+        if (j == gen.style) c.box(GS_X + 14, y + 9, 8, 8, T_YEL);
+        c.ptext(GS_X + 30, y + 6, gen_names[j].c_str(), 2, gen_list_hover == j ? T_YEL : T_WORD);
     }
 }
 
