@@ -491,6 +491,18 @@ static void voice_scale_pitch(const track_t *t, voice_t *v, uint32_t note)
     }
 }
 
+#if TESS_MPE
+/* the MIDI note-on being played (midi_control.c midi_event, around midi_note_event): its channel + 1 (0: none, the
+ * sequencer's or a generator's), key, and its channel's pressure and CC74 so far; a voice started meanwhile keeps them */
+static uint8_t mpe_on_ch, mpe_on_key, mpe_on_at, mpe_on_sl;
+static void voice_mpe_take(voice_t *v)
+{
+    v->mch = mpe_on_ch;
+    v->mkey = mpe_on_key;
+    v->mat = mpe_on_at;
+    v->msl = mpe_on_sl;
+}
+#endif
 static void voice_start(track_t *t, voice_t *v, uint32_t note, uint32_t vel, int glide)
 {
     AP_START(attack_start);
@@ -510,6 +522,9 @@ static void voice_start(track_t *t, voice_t *v, uint32_t note, uint32_t vel, int
     voice_scale_pitch(t, v, note);
     v->mvel = t->m_vel;                                 /* mod.c: the note's VEL and RAND */
     v->mrnd = t->m_rnd;
+#if TESS_MPE
+    voice_mpe_take(v);
+#endif
     t->m_vi = (uint8_t)(v - t->v);
     glide_set(t, v, glide);
     if (!sounding) {
@@ -566,6 +581,9 @@ static void mono_play(track_t *t, uint32_t note, uint32_t vel, int retrig, int g
             voice_scale_pitch(t, v, note);
             v->mvel = t->m_vel;
             v->mrnd = t->m_rnd;
+#if TESS_MPE
+            voice_mpe_take(v);                          /* (MPE legato: the new note's channel from here) */
+#endif
             if (vel > v->vel && nv == 1u)
                 v->vel = (uint8_t)vel;
             glide_set(t, v, glide);
