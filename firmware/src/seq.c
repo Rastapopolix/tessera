@@ -1049,6 +1049,7 @@ static void seq_seek(uint32_t units)
     for (i = 0; i < NTRK; i++) {
         track_t *t = &trk[i];
         uint32_t period = seq_div_samples((uint32_t)t->p[P_SDIV]), len = t->p[P_SLEN] > 0 ? (uint32_t)t->p[P_SLEN] : 1u;
+        lfo_seek(t, units);                            /* (voice.c: SYNC + FREE, on the bar from the top) */
         if (seq_clocked(t)) continue;                  /* (CLOCK: no grid to seek on; it steps at PLAY, then on its edges) */
         uint32_t pair = 2u * period, k = units / pair * 2u, r = units % pair, first = step_samples(t, period, k % len);
         if (r >= first) { k++; r -= first; }          /* (SWING: the pair's second step) */
