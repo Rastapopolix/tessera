@@ -20,9 +20,11 @@ int main(void)
     printf("profile: %s, screen %d x %d x %d bits (%d), %d buttons, %d encoders, %d keys, tier %d\n",
            NAMES[TESS_TARGET], TESS_SCR_W, TESS_SCR_H, TESS_SCR_DEPTH, TESS_SCR_COUNT, TESS_N_BUTTONS,
            TESS_N_ENCODERS, TESS_N_KEYS, TESS_TIER);
-    /* the core draws one 240 x 240 RGB565 screen and reads the FM-1's controls on every target until EXPANDED */
+    /* the core draws one 240 x 240 RGB565 screen (the plugin a second, TRACKS: tess_core_tracks_view) and reads the
+     * FM-1's controls on every target */
     CHECK(TESS_SCR_W == TESS_SCREEN && TESS_SCR_H == TESS_SCREEN, "the screen: the core API's %d", TESS_SCREEN);
-    CHECK(TESS_SCR_DEPTH == 16 && TESS_SCR_COUNT == 1, "one RGB565 screen");
+    CHECK(TESS_SCR_DEPTH == 16 && TESS_SCR_COUNT == (TESS_TARGET == TESS_T_PLUGIN ? 2 : 1),
+          "RGB565 screens: one, the plugin two (EXPANDED's TRACKS)");
     CHECK(TESS_N_BUTTONS == TESS_NB, "buttons: the core API's %d", TESS_NB);
     CHECK(TESS_N_ENCODERS == TESS_NE, "encoders: the core API's %d", TESS_NE);
     CHECK(TESS_N_KEYS == TESS_KEYS, "keys: the core API's %d", TESS_KEYS);

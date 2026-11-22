@@ -112,6 +112,27 @@ void tess_core_view(tess_view_t *v);
 uint32_t tess_core_track(void);
 void tess_core_track_select(uint32_t t);
 
+/* ---- screen 2, TRACKS (a build whose profile has a second screen, TESS_SCR_COUNT 2: the plugin's EXPANDED mode; else
+ * w and h 0 and nothing drawn). Every track at once, a row each (number, role, engine, pattern, the 16 steps of the bar
+ * playing with the playhead, level, M, S), the selected one boxed; drawn when asked, at the size asked: 480 x 240 (2 px
+ * a cell of the 5 x 7 face) or a small one such as 128 x 64 (1 px a cell, 21 characters a row: Andamento's screen) */
+enum { TESS_TRACKS_W = 480, TESS_TRACKS_H = 240, TESS_TRACKS_ZONES = 32 };
+/* its zones (the plugin: TESS_HAS_POINTER), in the order a hit is looked for: TESS_ZONE_MUTE, _SOLO and _LEVEL (row: the
+ * track), then TESS_ZONE_TRACK, the rows */
+enum { TESS_ZONE_MUTE = 5, TESS_ZONE_SOLO, TESS_ZONE_LEVEL };
+typedef struct {
+    uint32_t w, h;                   /* as drawn (0 0: no TRACKS page in this build) */
+    uint16_t screen[TESS_TRACKS_W * TESS_TRACKS_H];   /* RGB565 (host order), w x h of it, row by row */
+    uint32_t zone_count;
+    tess_zone_t zones[TESS_TRACKS_ZONES];
+} tess_tracks_t;
+void tess_core_tracks_view(tess_tracks_t *v, uint32_t w, uint32_t h);
+/* what the mouse did on a TRACKS zone, as tess_tracks_t gave it: a row's CLICK selects that track (as
+ * tess_core_track_select); M's CLICK is GLO's mute key (MENU MUTES: now, or waits for the bar or phrase); S's CLICK
+ * latches that track's solo, or lets it go (GLO's white keys solo while held; this one stays); TURN n on the level: its
+ * LEVEL n steps. Mute and the level are the project's, saved as ever; the latched solo is not, as GLO's isn't */
+void tess_core_tracks_do(const tess_zone_t *z, uint32_t action, int32_t n);
+
 /* ---- the project, as a .tsp record (TSP1: byte for byte what SAVE > PROJECT writes on the FM-1) */
 /* the music as it is now: its length, 0 = failed/too big */
 uint32_t tess_core_save(uint8_t *out, uint32_t cap);
