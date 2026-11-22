@@ -140,7 +140,11 @@ static const char *pal_name(uint32_t i)
 #else
 #define UX_PAL UI_PALETTES[ux.pal]
 #endif
+#if CORE_TRACKS > 4 && MELODEE_LOOK
+#define T_TRK(k) ux_trk(k)                             /* track k's colour (the mixer, lanes, track chips): ux_trk */
+#else
 #define T_TRK(k) UX_PAL.trk[(k) & 3u]                  /* track k's colour (the mixer, lanes, track chips) */
+#endif
 
 static inline uint16_t ux_gray(uint32_t x5) { return (uint16_t)((x5 << 11) | (x5 << 6) | x5); }
 /* a + (b - a) * pct / 100 per channel, rounded; MONO on the red channel, so it stays gray */
@@ -158,6 +162,18 @@ static uint16_t ux_mix(uint16_t a, uint16_t b, int32_t pct)
     }
     return (uint16_t)out;
 }
+#if CORE_TRACKS > 4 && MELODEE_LOOK
+/* tracks 5..8 (8 tracks: the plugin, Andamento): tracks 1..4's colours a step lighter (GROUND LIGHT: a step darker), so
+ * T1 and T5 differ where all eight show together (EXPANDED's TRACKS) and a MOSAIC palette keeps its four inks; one ink
+ * stays one ink (Theo, 2026-11-23) */
+static uint16_t ux_trk(uint32_t k)
+{
+    uint16_t c = UX_PAL.trk[k & 3u];
+    if (k < 4u || UX_PAL.trk[0] == UX_PAL.trk[1])
+        return c;
+    return ux_mix(c, ux_ground ? 0x0000u : 0xFFFFu, 40);
+}
+#endif
 static uint32_t ux_luma(uint16_t c)        /* 0..255 */
 {
     return ((c >> 11) * 255u / 31u * 54u + ((c >> 5) & 63u) * 255u / 63u * 183u + (c & 31u) * 255u / 31u * 19u) >> 8;

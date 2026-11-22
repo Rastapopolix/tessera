@@ -924,9 +924,9 @@ bool Panel::wheel(int x, int y, int notches)
         return true;
     }
     int zi = zone_at(x, y);
-    if (zi >= 0 && notches)   // a value, or a list's row: as its knob turned
+    if (zi >= 0 && notches)   // a value: as its knob turned; a list: it moves (a row a notch)
     {
-        zone_act(zones[zi], TESS_ZA_TURN, notches);
+        zone_act(zones[zi], TESS_ZA_WHEEL, notches);
         return true;
     }
     int i = knob_at(x, y);

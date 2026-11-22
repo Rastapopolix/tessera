@@ -583,8 +583,8 @@ int main(int argc, char **argv)
                 for (int xx = mx - 80; xx < mx + 80; xx++) card += px[yy * Panel::W + xx] == 0xFFFFD020u;
             CHECK(card > 40, "the mouse over %s: a card with its value under the screen (%d yellow pixels)", m.name, card);
             if (!out.empty()) ppm(out + "/09_zone_hover.ppm", px);
-            CHECK(z.wheel(mx, my, 2) && z.input.zones.size() == 1 && z.input.zones[0].action == TESS_ZA_TURN &&
-                      z.input.zones[0].n == 2, "the wheel on %s: two detents up for its knob", m.name);
+            CHECK(z.wheel(mx, my, 2) && z.input.zones.size() == 1 && z.input.zones[0].action == TESS_ZA_WHEEL &&
+                      z.input.zones[0].n == 2, "the wheel on %s: two notches up (its knob: two detents)", m.name);
             CHECK(!z.wheel(5, 5, 1), "the wheel off the screen and the knobs: nothing");
             run(z, 0.3);
             tess_core_view(&v);

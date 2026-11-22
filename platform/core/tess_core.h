@@ -80,9 +80,10 @@ typedef struct {
 void tess_core_screen(tess_screen_t *s);
 /* the screen's zones (a build whose profile has TESS_HAS_POINTER, the plugin; else none): what a mouse can use, where
  * the page drew it, in screen pixels. A front end finds the first zone under the mouse (the list is in that order) and
- * hands it back to tess_core_zone_do as it got it. KNOB: a value (turn: the wheel, a drag; double-click: its default);
- * ROW: a list's row (click: the cursor there; double-click: there and OCT+; turn: its value, or the list scrolls when
- * the row is the value); KEY: OK, BACK, YES, NO (click); TRACK: HOME's column (click: that track) */
+ * hands it back to tess_core_zone_do as it got it. KNOB: a value (turn or wheel: a drag, the wheel; double-click: its
+ * default); ROW: a list's row (click: the cursor there; double-click: there and OCT+; turn, a drag: its value, or the
+ * list moves when the row is the value; wheel: the list moves, a row a notch, up the wheel up the list); KEY: OK,
+ * BACK, YES, NO (click); TRACK: HOME's column (click: that track) */
 enum { TESS_ZONES = 48 };
 enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK };
 typedef struct {
@@ -92,8 +93,9 @@ typedef struct {
     int16_t row;                     /* (the core's: a row's place, a key's button label, a track) */
     char name[16], value[16];        /* what it shows: a front end's hover */
 } tess_zone_t;
-enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE };
-/* do what the mouse did on zone z: TURN n detents (+ clockwise / up), CLICK, DOUBLE. A zone no longer on the screen
+enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE, TESS_ZA_WHEEL };
+/* do what the mouse did on zone z: TURN n detents (+ clockwise / up: a drag), CLICK, DOUBLE, WHEEL n notches (+ up). A
+ * zone no longer on the screen
  * is let go. Its steps run a millisecond each as the device plays (a row three away: three detents) */
 void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n);
 /* what the FM-1 panel shows */
