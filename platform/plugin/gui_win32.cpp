@@ -118,6 +118,23 @@ class GuiWin32 : public Gui
             if (GetKeyState(VK_CONTROL) < 0 || GetKeyState(VK_MENU) < 0)
                 break;
             int sc = (int)(lp >> 16 & 0xFF), code = sc;
+            if (msg == WM_KEYDOWN && g->panel.typing())   // NAME open: the character the layout gives, typed
+            {
+                uint32_t ch = wp == VK_BACK ? TESS_TEXT_BACK : wp == VK_RETURN ? TESS_TEXT_OK : wp == VK_ESCAPE ? TESS_TEXT_CANCEL
+                            : wp == VK_LEFT ? TESS_TEXT_LEFT : wp == VK_RIGHT ? TESS_TEXT_RIGHT : wp == VK_DELETE ? TESS_TEXT_DELETE : 0;
+                if (!ch)
+                {
+                    BYTE state[256];
+                    WCHAR w[4];
+                    if (GetKeyboardState(state) && ToUnicode((UINT)wp, (UINT)sc, state, w, 4, 4) == 1 && w[0] >= 32)
+                        ch = w[0];   // (flag 4: the keyboard's dead-key state left alone)
+                }
+                if (ch && g->panel.text(ch))
+                {
+                    g->input(true);
+                    return 0;
+                }
+            }
             if (wp == VK_UP) code = Panel::KEY_UP;
             else if (wp == VK_DOWN) code = Panel::KEY_DOWN;
             else if (wp == VK_LEFT) code = Panel::KEY_LEFT;

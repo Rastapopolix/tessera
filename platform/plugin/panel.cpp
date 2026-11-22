@@ -332,6 +332,7 @@ void Panel::draw_body(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t
         ink_now = (int)v.ink;
         ink_pending = -1;
     }
+    typing_ = v.typing != 0;
     track_now = (int)v.track;
     if (native())
     {
@@ -589,6 +590,14 @@ void Panel::merge_held()
 
 // web/sim/index.html KEYMAP: F3..A#4 on the Z (white) and A (black) rows, B4..G5 on Q..O in semitones, the twelve
 // buttons on the number row in the panel's order, [ ] OCT
+bool Panel::text(uint32_t ch)
+{
+    if (!typing_ || !keys_on_ || menu_open || !ch) return false;
+    input.text.push_back(ch);
+    input.changed = true;
+    return true;
+}
+
 bool Panel::key(int code, bool down)
 {
     static const int WHITE_SC[10] = {0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35};   // Z X C V B N M , . /

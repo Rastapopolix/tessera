@@ -295,6 +295,20 @@ bool v_key(id self, NSEvent *e, bool down)
     GuiMac *g = gui_of(self);
     if (!g || (e.modifierFlags & (NSEventModifierFlagCommand | NSEventModifierFlagControl | NSEventModifierFlagOption)))
         return false;   // (the host's)
+    if (down && g->panel.typing())   // NAME open: the character the layout gives, typed
+    {
+        uint16_t kc = e.keyCode;
+        uint32_t ch = kc == 51 ? TESS_TEXT_BACK : kc == 36 || kc == 76 ? TESS_TEXT_OK : kc == 53 ? TESS_TEXT_CANCEL
+                    : kc == 123 ? TESS_TEXT_LEFT : kc == 124 ? TESS_TEXT_RIGHT : kc == 117 ? TESS_TEXT_DELETE : 0;
+        NSString *typed = e.characters;
+        if (!ch && typed.length == 1 && [typed characterAtIndex:0] >= 32 && [typed characterAtIndex:0] < 0xF700)
+            ch = [typed characterAtIndex:0];   // (0xF700..: the function keys' private codes)
+        if (ch && g->panel.text(ch))
+        {
+            g->input(true);
+            return true;
+        }
+    }
     int code = scan_code(e.keyCode);
     if (!code)
         return false;

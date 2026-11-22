@@ -24,6 +24,7 @@ struct PanelInput
     // screen's (tess_tracks_t.zones), for tess_core_tracks_do
     struct ZoneAct { tess_zone_t z; uint32_t action; int32_t n; };
     std::vector<ZoneAct> zones, tzones;
+    std::vector<uint32_t> text;       // characters typed while NAME is open, for tess_core_text
     bool changed = false;
 };
 
@@ -77,6 +78,10 @@ class Panel
      * up / down SELECT, left / right ALGORITHM. true if the input changed. release_keys: every key up (focus lost) */
     enum { KEY_UP = 0x148, KEY_LEFT = 0x14B, KEY_RIGHT = 0x14D, KEY_DOWN = 0x150 };
     bool key(int code, bool down);
+    // a character typed on the computer keyboard (the window's, as the layout gives it; TESS_TEXT_* for Backspace,
+    // Enter, Esc, the arrows, Delete): while NAME is open it goes to the name (true: the panel's, not a key)
+    bool text(uint32_t ch);
+    bool typing() const { return typing_; }
     bool release_keys();
     /* KEYS (TESSERA's menu): the computer keyboard plays Tessera (on), or every key is left to the DAW (off). A click
      * asks (take_keys_request: 1 on, 0 off, -1 none); the window remembers it */
@@ -174,6 +179,7 @@ class Panel
     void layout();
     void draw_native(uint32_t *px, const tess_view_t &v, double breath, const tess_tracks_t *t2);
     bool menu_open = false;
+    bool typing_ = false;   // the view's: NAME open
     bool expanded_ = false;
     int mode_req = -1;
     int mode_seg_at(int x) const;   // MODE's row: 0 FM-1, 1 EXPANDED, -1 none
