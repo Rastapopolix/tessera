@@ -894,6 +894,7 @@ bool p_init(const clap_plugin_t *p)
     }
     {   // GENERATE: the style (by name) and VARIATION last picked in any window
         std::string st = projfile::setting_get("gen_style"), var = projfile::setting_get("gen_variation");
+        if (st == "RND") st = "WILD";   // (RND's name before it was WILD)
         for (uint32_t i = 0, n = t->core->gen_styles(); i < n; i++)
             if (st == t->core->gen_style(i)) t->gen_style = (int)i;
         if (!var.empty()) t->gen_variation = std::atoi(var.c_str()) < 0 ? 0 : std::atoi(var.c_str()) > 100 ? 100 : std::atoi(var.c_str());
