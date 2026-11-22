@@ -412,6 +412,34 @@ int main(int argc, char **argv)
         q.down(ix, iy);
         q.up(ix, iy);
         CHECK(q.take_ink_request() == 8 && q.take_ink_request() == -1 && !q.menu_shown(), "an ink picked from the menu");
+        // INK's row shows the ink as its swatch does: a four-ink palette (MOSAIC) in quarters, not its first ink alone
+        {
+            int mos = -1;
+            for (int j = 0; j < (int)inks.size() && mos < 0; j++)
+                if (inks[j].rgb[0] != inks[j].rgb[1] && inks[j].rgb[1] != inks[j].rgb[2]) mos = j;
+            CHECK(mos >= 0, "a four-ink palette among the inks");
+            if (mos >= 0)
+            {
+                q.down(100, 25), q.up(100, 25);
+                q.down(80, 46 + 10 + 36 + 18), q.up(80, 46 + 10 + 36 + 18);   // INK
+                const int mx2 = 344 + 18 + mos % 5 * 44 + 16, my2 = 46 + 10 + 36 - 10 + 18 + mos / 5 * 44 + 16;
+                q.down(mx2, my2), q.up(mx2, my2);
+                q.take_ink_request();
+                q.down(100, 25), q.up(100, 25);   // (the menu again: INK's row)
+                q.draw(px.data(), v);
+                int seen = 0;
+                for (int i = 0; i < 4; i++)
+                {
+                    bool here = false;
+                    for (int y = 92; y < 92 + 36 && !here; y++)
+                        for (int x = 20; x < 340 && !here; x++) here = px[y * Panel::W + x] == (0xFF000000u | inks[mos].rgb[i]);
+                    seen += here;
+                }
+                CHECK(seen == 4, "INK's row: %s's four inks in quarters (%d of 4)", inks[mos].name.c_str(), seen);
+                if (!out.empty()) ppm(out + "/12b_tessera_ink_row.ppm", px);
+                q.key(0x01, true);
+            }
+        }
         // a click outside, or Esc, shuts it
         q.down(100, 25);
         q.up(100, 25);

@@ -33,7 +33,7 @@ static int fails = 0;
 
 static float L[1024], R[1024];
 static tess_view_t v;
-enum { B_FX = 0, B_SEL = 1, B_HOME = 6, B_SAVE = 7, B_OCTDN = 12 };
+enum { B_FX = 0, B_SEL = 1, B_GLO = 5, B_HOME = 6, B_SAVE = 7, B_SEQ = 9, B_OCTDN = 12 };
 
 static void run(int blocks)   // 10 ms blocks
 {
@@ -192,6 +192,118 @@ static void slots()   // SAVE > PROJECT: a zone a slot; a click picks it, the wh
     a = find("A", TESS_ZONE_ROW);
     b = find("B", TESS_ZONE_ROW);
     CHECK(a >= 0 && b >= 0 && v.zones[a].h > v.zones[b].h, "the wheel up two from C: A picked");
+    tap(B_HOME);
+}
+static int find_cell(const char *name, const char *value)   // a CELL by its hover: name, value's start
+{
+    for (uint32_t i = 0; i < v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_CELL && !std::strcmp(v.zones[i].name, name) &&
+            !std::strncmp(v.zones[i].value, value, std::strlen(value)))
+            return (int)i;
+    return -1;
+}
+static void grids()   // PATTERNS and SONG: a click on a cell turns its knobs to it
+{
+    tap(B_HOME);
+    for (int i = 0; i < 12 && count(TESS_ZONE_CELL) < 32; i++) tap(B_SEQ);   // (SEQ's pages: to PATTERNS)
+    int cells = count(TESS_ZONE_CELL), tracks = count(TESS_ZONE_TRACK);
+    CHECK(cells >= 32 && tracks >= 4, "PATTERNS: a cell a track and pattern (%d), a zone a track's number (%d)", cells,
+          tracks);
+    if (cells < 32) { dump("PATTERNS"); return; }
+    int c = find_cell("T2", "P5");
+    act(c, TESS_ZA_CLICK, 0, 60);
+    c = find_cell("T2", "P5");
+    CHECK(c >= 0 && std::strstr(v.zones[c].value, "PLAYING") || (c >= 0 && std::strstr(v.zones[c].value, "NEXT")),
+          "a click on T2's P5 queues it (%s)", c >= 0 ? v.zones[c].value : "?");
+    act(find_cell("T2", "P1"), TESS_ZA_CLICK, 0, 60);
+    c = find_cell("T2", "P1");
+    CHECK(c >= 0 && (std::strstr(v.zones[c].value, "PLAYING") || std::strstr(v.zones[c].value, "NEXT")),
+          "then a click on P1: back (%s)", c >= 0 ? v.zones[c].value : "?");
+    // a quick second click before the page is drawn again: the grid's cells are gone until it is (no stale turns)
+    c = find_cell("T3", "P4");
+    if (c >= 0)
+    {
+        tess_zone_t z = v.zones[c];
+        tess_core_zone_do(&z, TESS_ZA_CLICK, 0);
+        tess_core_zone_do(&z, TESS_ZA_CLICK, 0);   // (the same zone again at once: let go)
+        run(60);
+        tess_core_view(&v);
+        c = find_cell("T3", "P4");
+        CHECK(c >= 0 && (std::strstr(v.zones[c].value, "PLAYING") || std::strstr(v.zones[c].value, "NEXT")),
+              "two clicks at once on T3's P4: P4, not past it (%s)", c >= 0 ? v.zones[c].value : "?");
+        act(find_cell("T3", "P1"), TESS_ZA_CLICK, 0, 60);
+    }
+
+    // SONG (the next of SEQ's pages): a section's letter picks it; a block picks its section and its track
+    for (int i = 0; i < 12 && count(TESS_ZONE_CELL) >= 32; i++) tap(B_SEQ);
+    for (int i = 0; i < 12 && find("ADD", TESS_ZONE_CELL) < 0 && find("SECTION", TESS_ZONE_CELL) < 0; i++) tap(B_SEQ);
+    int add = find("ADD", TESS_ZONE_CELL), sec = find("SECTION", TESS_ZONE_CELL);
+    CHECK(add >= 0 || sec >= 0, "SONG: a zone a section (the one to add too)");
+    if (add < 0 && sec < 0) { dump("SONG"); tap(B_HOME); return; }
+    for (int i = 0; i < 2; i++)   // (two sections: + picked, KNOB 3 adds one there)
+    {
+        act(find("ADD", TESS_ZONE_CELL), TESS_ZA_CLICK, 0, 40);
+        tess_core_enc(5, 1);
+        run(40);
+        tess_core_view(&v);
+    }
+    int blocks = 0;
+    for (uint32_t i = 0; i < v.zone_count; i++) blocks += v.zones[i].kind == TESS_ZONE_CELL && v.zones[i].name[0] == 'T';
+    CHECK(blocks >= 8, "SONG with two sections: a block a track and section (%d)", blocks);
+    std::printf("SONG: %d sections' blocks\n", blocks);
+    if (blocks)
+    {
+        uint32_t want = v.track == 2 ? 1 : 2;
+        char tn[3] = {'T', (char)('1' + want), 0};
+        int b = -1;
+        for (uint32_t i = 0; i < v.zone_count && b < 0; i++)
+            if (v.zones[i].kind == TESS_ZONE_CELL && !std::strncmp(v.zones[i].name, tn, 2)) b = (int)i;
+        act(b, TESS_ZA_CLICK, 0, 60);
+        CHECK(v.track == want, "SONG: a click on T%u's block selects T%u (%u)", want + 1, want + 1, v.track + 1);
+    }
+    tap(B_HOME);
+}
+static uint32_t pid_named(const char *name)   // a track parameter's central ID, by its name
+{
+    tess_param_t info;
+    for (uint32_t n = 0; n < tess_core_param_count(); n++)
+    {
+        uint32_t pid = tess_core_param_at(n, 0, &info);
+        if (info.name && !std::strcmp(info.name, name)) return pid;
+    }
+    return 0xFFFFu;
+}
+static int find_strip(uint32_t kind, const char *track, const char *value)
+{
+    for (uint32_t i = 0; i < v.zone_count; i++)
+        if (v.zones[i].kind == kind && !std::strcmp(v.zones[i].name, track) && !std::strcmp(v.zones[i].value, value))
+            return (int)i;
+    return -1;
+}
+static void mixer()   // MIXER (GLO's first page): a strip's LEVEL, PAN, MUTE and SOLO
+{
+    tap(B_HOME);
+    for (int i = 0; i < 8 && find_strip(TESS_ZONE_PAN, "T1", "PAN") < 0; i++) tap(B_GLO);
+    uint32_t lvl = pid_named("LEVEL"), pan = pid_named("PAN"), mute = pid_named("MUTE");
+    int l2 = find_strip(TESS_ZONE_LEVEL, "T2", "LEVEL"), p2 = find_strip(TESS_ZONE_PAN, "T2", "PAN"),
+        m2 = find_strip(TESS_ZONE_MUTE, "T2", "MUTE"), s2 = find_strip(TESS_ZONE_SOLO, "T2", "SOLO");
+    CHECK(l2 >= 0 && p2 >= 0 && m2 >= 0 && s2 >= 0, "MIXER: T2's strip: LEVEL, PAN, MUTE, SOLO zones");
+    CHECK(lvl != 0xFFFFu && pan != 0xFFFFu && mute != 0xFFFFu, "LEVEL, PAN, MUTE by name");
+    if (l2 < 0 || p2 < 0 || m2 < 0 || s2 < 0) { dump("MIXER"); return; }
+    int32_t l0 = tess_core_param_get(lvl, 1), p0 = tess_core_param_get(pan, 1);
+    act(l2, TESS_ZA_TURN, -6, 40);
+    CHECK(tess_core_param_get(lvl, 1) < l0, "a drag down on T2's LEVEL lowers it (%d, was %d)", tess_core_param_get(lvl, 1), l0);
+    act(find_strip(TESS_ZONE_LEVEL, "T2", "LEVEL"), TESS_ZA_DOUBLE, 0, 40);
+    CHECK(tess_core_param_get(lvl, 1) == 104, "a double-click: T2's LEVEL back to its default (%d)", tess_core_param_get(lvl, 1));
+    act(find_strip(TESS_ZONE_PAN, "T2", "PAN"), TESS_ZA_TURN, 10, 40);
+    CHECK(tess_core_param_get(pan, 1) == p0 + 10, "a drag on T2's PAN turns it (%d, was %d)", tess_core_param_get(pan, 1), p0);
+    act(find_strip(TESS_ZONE_PAN, "T2", "PAN"), TESS_ZA_DOUBLE, 0, 40);
+    CHECK(tess_core_param_get(pan, 1) == 0, "a double-click: T2's PAN centred");
+    int32_t m0 = tess_core_param_get(mute, 1);
+    act(find_strip(TESS_ZONE_MUTE, "T2", "MUTE"), TESS_ZA_CLICK, 0, 40);
+    CHECK(tess_core_param_get(mute, 1) != m0, "a click on T2's MUTE mutes it (%d)", tess_core_param_get(mute, 1));
+    act(find_strip(TESS_ZONE_MUTE, "T2", "MUTE"), TESS_ZA_CLICK, 0, 40);
+    CHECK(tess_core_param_get(mute, 1) == m0, "again: unmuted");
     tap(B_HOME);
 }
 static void settings()
@@ -359,6 +471,8 @@ int main(int argc, char **argv)
 
     settings();
     slots();
+    grids();
+    mixer();
     tracks(argc > 1 ? argv[1] : nullptr);
     mosaic(argc > 2 ? argv[2] : nullptr);
 
