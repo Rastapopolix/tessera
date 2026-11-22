@@ -85,9 +85,10 @@ void tess_core_screen(tess_screen_t *s);
  * list moves when the row is the value; wheel: the list moves, a row a notch, up the wheel up the list); KEY: OK,
  * BACK, YES, NO (click); TRACK: HOME's column (click: that track); CELL: a place in a grid (PATTERNS, SONG: click,
  * double-click: its knobs turned to it, one or two; turn or wheel: its first knob); MIXER's strips: MUTE and SOLO
- * (click: as on TRACKS, below), LEVEL and PAN (turn or wheel: its track's; double-click: its default, centre) */
+ * (click: as on TRACKS, below), LEVEL and PAN (turn or wheel: its track's; double-click: its default, centre); SCROLL:
+ * a text to read (ABOUT, a HELP card: wheel up, up the text; a drag up, further down, as a page is pushed) */
 enum { TESS_ZONES = 48 };
-enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_ZONE_CELL = 8, TESS_ZONE_PAN };
+enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_ZONE_CELL = 8, TESS_ZONE_PAN, TESS_ZONE_SCROLL };
                                      /* (5..7, TESS_ZONE_MUTE, _SOLO, _LEVEL: below) */
 typedef struct {
     uint16_t x, y, w, h;
@@ -101,6 +102,13 @@ enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE, TESS_ZA_WHEEL };
  * zone no longer on the screen
  * is let go. Its steps run a millisecond each as the device plays (a row three away: three detents) */
 void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n);
+/* a character typed on a computer keyboard while NAME is open (tess_view_t.typing; a build with TESS_HAS_POINTER):
+ * a letter, digit, space or one of - . _ / # + at the cursor (letters upper case; anything else is ignored), or one
+ * of these: */
+enum { TESS_TEXT_BACK = 8, TESS_TEXT_OK = 13, TESS_TEXT_CANCEL = 27, TESS_TEXT_LEFT = 0x110, TESS_TEXT_RIGHT,
+       TESS_TEXT_DELETE };          /* BACK: the character before the cursor; OK, CANCEL: as OCT+, OCT-; DELETE: the
+                                     * one at it */
+void tess_core_text(uint32_t ch);
 /* what the FM-1 panel shows */
 typedef struct {
     uint16_t screen[TESS_SCREEN * TESS_SCREEN];   /* RGB565 (host order) */
@@ -110,6 +118,8 @@ typedef struct {
     uint32_t track;                  /* the selected track, 0 .. tess_core_tracks() - 1 (8 tracks: its bank, track & 4) */
     uint32_t zone_count, zone_gen;   /* the screen's zones (above), and a count that changes when they do */
     tess_zone_t zones[TESS_ZONES];
+    uint32_t typing;                 /* 1: NAME is open (a name being typed): a computer keyboard types into it
+                                      * (tess_core_text) rather than playing the keys */
 } tess_view_t;
 void tess_core_view(tess_view_t *v);
 /* the selected track (0 .. tess_core_tracks() - 1), and selecting one as KNOB 1 on TRACKS does (its sound, pages and

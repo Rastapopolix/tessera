@@ -3530,6 +3530,13 @@ static void mo_help(const char *name, const char *val, const char *text)
     if (n > rows && help.top + rows < n) hint = "CW: MORE  CCW: UP";
     else if (help.top) hint = "CCW: UP";
     else hint = "ARP + KNOB: HELP";
+#if TESS_HAS_POINTER
+    uz_begin(UZ_G_LIST);                                /* (zones: the card, over the page: its text under the wheel,
+                                                         * the knob it is about's) */
+    if (n > rows)
+        uz_add(UZ_G_LIST, UZ_SCROLL, HELP_X / 2, HELP_Y / 2, w, h, EN_K1 + (int32_t)help.knob, -1, 0, name ? name : "HELP",
+               "");
+#endif
     for (top = 0; top < h * 2; top += 120) {
         int32_t sh = h * 2 - top < 120 ? h * 2 - top : 120, y = HELP_T0 / 2;
         cv_begin((uint32_t)w * 2u, (uint32_t)sh, MO_BG);

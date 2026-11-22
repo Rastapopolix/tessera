@@ -171,6 +171,46 @@ static void nm_white(uint32_t p)
         nm.cur++;
     }
 }
+#if TESS_HAS_POINTER
+/* a character typed on a computer keyboard (tess_core_text): 0 NAME isn't open, 1 done, 2 OK (OCT+), 3 cancel (OCT-).
+ * The keys that aren't characters as tess_core.h's TESS_TEXT_* (checked there) */
+enum { NT_BACK = 8, NT_OK = 13, NT_CANCEL = 27, NT_LEFT = 0x110, NT_RIGHT, NT_DELETE };
+static void nm_do(uint32_t f);
+static int name_text(uint32_t ch)
+{
+    uint32_t i;
+    char c;
+    if (!name_on())
+        return 0;
+    if (ch == NT_OK || ch == NT_CANCEL) {
+        nm_commit();
+        return ch == NT_OK ? 2 : 3;
+    }
+    if (ch == NT_BACK || ch == NT_LEFT || ch == NT_RIGHT) {
+        nm_do(ch == NT_BACK ? NB_DEL : ch == NT_LEFT ? NB_LEFT : NB_RIGHT);
+        return 1;
+    }
+    nm_commit();
+    if (ch == NT_DELETE) {                     /* (the character at the cursor) */
+        if (nm.cur < nm.len) {
+            for (i = nm.cur; i < nm.len; i++)
+                nm.s[i] = nm.s[i + 1u];
+            nm.len--;
+        }
+        return 1;
+    }
+    if (ch >= 'a' && ch <= 'z')
+        ch -= 'a' - 'A';
+    if (ch > 127u)
+        return 1;
+    c = (char)ch;
+    for (i = 0; NM_SET[i] && NM_SET[i] != c; i++)
+        ;
+    if (NM_SET[i] && nm_insert(c))
+        nm.cur++;
+    return 1;
+}
+#endif
 static void nm_do(uint32_t f)                          /* a black key's function */
 {
     uint32_t i;

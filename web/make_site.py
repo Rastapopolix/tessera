@@ -281,7 +281,8 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
         for src, dest in ((HERE.parent / "assets/gallery", out / "media/gallery"),
                           (HERE.parent / "assets/brand", out / "media/brand"),
                           (HERE.parent / "assets/video", out / "media/video"),
-                          (HERE.parent / "assets/guides", out / "media/guides")):
+                          (HERE.parent / "assets/guides", out / "media/guides"),
+                          (HERE.parent / "assets/plugin", out / "media/plugin")):
             dest.mkdir(parents=True, exist_ok=True)
             for f in src.iterdir():
                 if f.suffix in (".png", ".svg", ".mp4", ".jpg"):

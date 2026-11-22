@@ -279,6 +279,21 @@ class GuiX11 : public Gui
                         break;   // (auto-repeat: a release and a press at once; the key is still held)
                 }
                 KeySym ks = XLookupKeysym(&e.xkey, 0);
+                if (e.type == KeyPress && panel.typing())   // NAME open: the character the layout gives, typed
+                {
+                    char c[8] = {};
+                    KeySym typed = 0;
+                    int n = XLookupString(&e.xkey, c, sizeof c - 1, &typed, nullptr);
+                    uint32_t ch = typed == XK_BackSpace ? TESS_TEXT_BACK : typed == XK_Return || typed == XK_KP_Enter ? TESS_TEXT_OK
+                                : typed == XK_Escape ? TESS_TEXT_CANCEL : typed == XK_Left ? TESS_TEXT_LEFT
+                                : typed == XK_Right ? TESS_TEXT_RIGHT : typed == XK_Delete ? TESS_TEXT_DELETE
+                                : n == 1 && (unsigned char)c[0] >= 32 ? (unsigned char)c[0] : 0;
+                    if (ch && panel.text(ch))
+                    {
+                        changed = true;
+                        break;
+                    }
+                }
                 int code = ks == XK_Up ? Panel::KEY_UP : ks == XK_Down ? Panel::KEY_DOWN : ks == XK_Left ? Panel::KEY_LEFT
                          : ks == XK_Right ? Panel::KEY_RIGHT : (int)e.xkey.keycode - 8;
                 changed |= panel.key(code, e.type == KeyPress);

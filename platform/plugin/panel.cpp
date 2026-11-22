@@ -332,6 +332,7 @@ void Panel::draw_body(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t
         ink_now = (int)v.ink;
         ink_pending = -1;
     }
+    typing_ = v.typing != 0;
     track_now = (int)v.track;
     if (native())
     {
@@ -589,6 +590,14 @@ void Panel::merge_held()
 
 // web/sim/index.html KEYMAP: F3..A#4 on the Z (white) and A (black) rows, B4..G5 on Q..O in semitones, the twelve
 // buttons on the number row in the panel's order, [ ] OCT
+bool Panel::text(uint32_t ch)
+{
+    if (!typing_ || !keys_on_ || menu_open || !ch) return false;
+    input.text.push_back(ch);
+    input.changed = true;
+    return true;
+}
+
 bool Panel::key(int code, bool down)
 {
     static const int WHITE_SC[10] = {0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35};   // Z X C V B N M , . /
@@ -743,7 +752,8 @@ bool Panel::down(int x, int y)
         click_known = !dbl;
         click_zone = z;
         click_t = now, click_x = x, click_y = y;
-        if (z.kind == TESS_ZONE_KNOB || z.kind == TESS_ZONE_LEVEL || z.kind == TESS_ZONE_PAN)   // (a value: dragged)
+        if (z.kind == TESS_ZONE_KNOB || z.kind == TESS_ZONE_LEVEL || z.kind == TESS_ZONE_PAN ||
+            z.kind == TESS_ZONE_SCROLL)   // (a value, a text: dragged)
         {
             drag = ZONE;
             drag_zone = z;
@@ -1092,6 +1102,14 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         else if (v.dim_buttons & bit) border = T_YEL, ink = T_YEL;
         int y = b.y + (down ? 2 : 0), h = b.h - (down ? 2 : 0), bottom = down ? 2 : 4;
         nbox(c, b.x, y, b.w, h, border, fill, bottom);
+        if (b.bit == B_OCTDN || b.bit == B_OCTUP)   // what they mostly do, large; the octave small under it
+        {                                           // (OCT- held: the knobs' second layer, SHIFT)
+            const char *does = b.bit == B_OCTUP ? "OK" : held ? "SHIFT" : "BACK";
+            int mid = (y + 2 + y + h - bottom) / 2;
+            c.ptext_c(b.x + b.w / 2, mid - 11, does, 2, ink);
+            c.ptext_c(b.x + b.w / 2, mid + 5, b.face, 1, ink);
+            continue;
+        }
         c.ptext_c(b.x + b.w / 2, (y + 2 + y + h - bottom) / 2 - 7, b.face, 2, ink);
     }
 

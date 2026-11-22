@@ -21,9 +21,9 @@ steps, what you expected and what happened).
 - **SIZE:** 100, 150 or 200% (EXPANDED: 100 or 125%); drag the window's corner and it snaps from one size to the next.
 - Eight tracks. In FM-1 mode the 1-4 / 5-8 switch (or Tab) picks which four the panel works on. All eight are saved,
   with the DAW song and in a `.tsp`.
-- **The mouse on the screen:** turn the wheel or drag a value; the wheel scrolls lists; click a list's row or an ink;
-  double-click for OK or a default.
-- **The computer keyboard** plays it, as in the web simulator.
+- **The mouse on the screen:** turn the wheel or drag a value; the wheel scrolls lists and texts; click a row, a slot,
+  a pattern, a section, an ink or a mixer strip's MUTE / SOLO; double-click for OK or a default.
+- **The computer keyboard** plays it, as in the web simulator, and types names (NAME) directly.
 - A new Tessera opens on an empty project and plays nothing until it gets notes; the demos are in slots A and B, in
   the DAW's preset list, and in the `demos/` folder. The standalone app opens with STILL TIDE playing.
 - The DAW's transport, tempo, loops and jumps drive Tessera; its undo takes back Tessera's GENERATE and preset loads.
@@ -45,14 +45,15 @@ steps, what you expected and what happened).
 - PHASE comes with 33 presets of its own, not the CZ-1's original tones.
 - No standalone app on Linux.
 - Not signed on macOS or Windows (see below).
-- Some screens (PATTERNS, SONG, MIXER, DRUM, MOTION, MODS) don't take the mouse yet: use the panel's knobs and keys
-  there.
+- DRUM, MOTION and MODS don't take the mouse yet: use the panel's knobs and keys there.
 - The device's own settings (A4, the MIDI routing) and the MOD cords aren't DAW parameters; set them on the panel.
 
 ## Good to know
 - **Unsigned on macOS:** macOS will call the plugins "damaged" or say they "can't be verified" until you clear the
   download's quarantine. INSTALL-macos.txt has the one Terminal line.
 - **Unsigned on Windows:** SmartScreen may warn about Tessera.exe the first time: More info, then Run anyway.
+- Signing would take both away; it costs about USD 99 a year with Apple, plus a Windows certificate. If you'd like to
+  help get Tessera signed: [ko-fi.com/Rastapopolix](https://ko-fi.com/Rastapopolix).
 - The window moves only while the DAW's audio engine runs.
 - Some DAWs keep Tab for themselves; click the 1-4 / 5-8 switch instead.
 - If you hear clicks with several Tesseras, raise the audio buffer to 256 samples.

@@ -254,6 +254,8 @@ struct Tessera : GuiLink
         in.zones.clear();
         pending.tzones.insert(pending.tzones.end(), in.tzones.begin(), in.tzones.end());
         in.tzones.clear();
+        pending.text.insert(pending.text.end(), in.text.begin(), in.text.end());
+        in.text.clear();
         pending.changed = true;
         in.changed = false;
     }
@@ -1167,6 +1169,9 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
             for (auto &a : pi.tzones)  // TRACKS' (EXPANDED)
                 t->core->tracks_do(&a.z, a.action, a.n);
             pi.tzones.clear();
+            for (uint32_t ch : pi.text)   // typed into NAME
+                t->core->text(ch);
+            pi.text.clear();
             pi.changed = false;
         }
     }
