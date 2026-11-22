@@ -743,7 +743,7 @@ bool Panel::down(int x, int y)
         click_known = !dbl;
         click_zone = z;
         click_t = now, click_x = x, click_y = y;
-        if (z.kind == TESS_ZONE_KNOB)
+        if (z.kind == TESS_ZONE_KNOB || z.kind == TESS_ZONE_LEVEL || z.kind == TESS_ZONE_PAN)   // (a value: dragged)
         {
             drag = ZONE;
             drag_zone = z;
@@ -1163,8 +1163,14 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             right -= Canvas::ptext_w(">", 2) + 10;
             if (r == ROW_SHELL)
                 c.ptext(right - Canvas::ptext_w(SHELLS[shell_].name, 2), y + 11, SHELLS[shell_].name, 2, T_YEL);
-            else if (ink_now >= 0 && ink_now < (int)inks.size())
-                c.box(right - 14, y + 11, 14, 14, 0xFF000000u | inks[ink_now].rgb[0]);
+            else if (ink_now >= 0 && ink_now < (int)inks.size())   // (as its swatch: a four-ink palette in quarters)
+            {
+                const uint32_t *k = inks[ink_now].rgb;
+                c.box(right - 14, y + 11, 7, 7, 0xFF000000u | k[0]);
+                c.box(right - 7, y + 11, 7, 7, 0xFF000000u | k[1]);
+                c.box(right - 7, y + 18, 7, 7, 0xFF000000u | k[2]);
+                c.box(right - 14, y + 18, 7, 7, 0xFF000000u | k[3]);
+            }
         }
         else if (r == ROW_MODE)   // FM-1: the FM-1's panel; EXPANDED: and TRACKS beside its screen
         {
