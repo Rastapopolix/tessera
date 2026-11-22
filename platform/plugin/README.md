@@ -20,6 +20,12 @@ tracks, in TESSERA's own window or the FM-1's.
   1..8 through PATTERNS' queue (`pattern_request`). CLK stays INT and CLOCK OUT off (the DAW keeps time). The device's MIDI setup
   (ROUT, DRUM's channel, NOTES OUT, TUNE: `tess_core_setup_save`) goes in the DAW state as its bytes, their count and
   `TGLO`, before `TMST`, never in the `.tsp`; a reused core copy gets its power-on setup back.
+- **MPE and note expression** (`TESS_MPE`): each note from MIDI remembers its channel and key, and keeps its own
+  pressure and slide: an MPE member channel's pressure and CC74, Poly AT, and a CLAP note's PRESSURE and BRIGHTNESS
+  (`CLAP_EVENT_NOTE_EXPRESSION` -> `tess_core_note_expr`, queued with the notes). The note port offers the CLAP, MIDI
+  and MIDI MPE dialects. In the mods, AT on a voice destination (PITCH, CUTOFF, SHAPE, GAIN) of its own track is each
+  note's own, and the new source SLIDE (cord code 35) too; a note not from MIDI reads the track's. Pitch bend is still
+  one per track (an MPE note's bend bends its track).
 - **Saving:** the plugin's state in the DAW project is the Tessera project as a `.tsp` record, the same bytes SAVE >
   PROJECT writes on the FM-1.
 - **Project files:** OPEN and SAVE, under the keys, open a `.tsp` (the editor's "project file", the demos in
@@ -77,6 +83,11 @@ tracks, in TESSERA's own window or the FM-1's.
   zero (as a MIDI Song Position), its beat position drives Tessera's clock (fractional tempos and tempo changes, no
   drift), a loop or a locate seeks, STOP stops. The BPM on the screen is the DAW's, rounded; a TEMPO mod has no effect
   while the DAW plays. CLK stays INT in the plugin (not a parameter), so the DAW is always the clock.
+- **Undo in the DAW:** a knob turned in the window (or on an FM-1 playing the plugin) sends its parameters' changes
+  between a gesture's begin and end, so the DAW makes each turn one undo step (and writes automation in its touch or
+  latch modes); the gesture ends once the knobs have been still half a second. A whole project changed (OPEN, a
+  backup, GENERATE and its BEFORE / AFTER) is told to a host with CLAP's undo extension (a draft: few hosts yet) as a
+  named step; elsewhere hold GENERATE to go back to the project before a piece.
 - **Parameters** (automatable): MASTER and PERF's MACRO 1..4 (the project's, so they are saved with it too), then
   **every project setting** by its central ID (about 1,700): each of the 8 tracks' ("T1 LEVEL", "T3 TURING LENGTH",
   in the modules "Track n/Sound and sequence" and "Track n/Generator") and the song's ("Song", TUNE, ROUT and MIDI
