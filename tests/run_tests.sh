@@ -172,7 +172,7 @@ start=$(date +%s)
 # ------------------------------------------------------------------ QUICK ---
 # qmap FILE: the jobs (QSEL) and regress's engines (QENG) for a changed file; returns 1 when no rule covers it.
 G_UI="ui_renders ui_test speak_test layer_screen_test theme_test text_ref_test text_spacing_test msg_len_test"
-G_SEQ="seq_edit_test seq_notes_test pattern_test note_tools_test swing_test split_test follow_test cordclock_test motion_test recording_test"
+G_SEQ="seq_edit_test seq_notes_test pattern_test note_tools_test swing_test split_test follow_test cordclock_test motion_test recording_test lfo_seek_test lfo_seek_test_8"
 G_GEN="gen_test tessera_test chain_test entries_test planner_test split_test follow_test cordclock_test recipes_test generate_test"
 G_STORE="storage_test persistence_test upgrade_test backup_test demo_projects settings_test upreset_test storage_safety_test
     settings_origin_test preset_boot_reset_test fm6_preset_test tsp_cross"
@@ -544,6 +544,8 @@ sound && t "FX performance: all effects, four-track mixer, shared send bus and o
 sound && t "FX: three-slot chains, reverb decay/density/rate conversion, smooth Tape, track ownership, dry bypass and frozen legacy storage" fx_test -O1 $FW
 sound && t "SYNC ECHO: note values at the tempo, folded into the FM-1's 371 ms ring" echo_sync_test -O2 $FW
 sound && t "SYNC ECHO: note values at the tempo, the plugin's ~3 s ring" echo_sync_test_plugin:echo_sync_test -O2 $FW -DMELODEE_ECHO_RING=32768u -DCORE_TRACKS=8
+core && t "LFO SYNC + FREE after a Song Position: on the bar, as from the top (a DAW's start, loop, locate)" lfo_seek_test -O1 $FW
+core && t "LFO SYNC + FREE after a Song Position, at the plugin's 8 tracks" lfo_seek_test_8:lfo_seek_test -O1 $FW -DCORE_TRACKS=8
 core && t "EQ accelerator: register layout, isolated histories and bounded timeout" eq_hw_test
 core && job web_tests
 sound && [ $TABLES = 1 ] && job dsp_tracks
