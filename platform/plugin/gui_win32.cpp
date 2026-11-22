@@ -4,6 +4,8 @@
  * OPEN / SAVE under the keys use the system's file dialogs; a .tsp or a backup dropped on the window opens too. */
 #include "gui.h"
 
+#include <memory>
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -33,15 +35,19 @@ class GuiWin32 : public Gui
         panel.set_inks(l->inks());
         panel.set_tracks(l->tracks());
         panel.set_version(tess_version());
+        panel.set_expanded(l->expanded());
+        pw = panel.width();
     }
     GuiLink *link;   // this window's instance
     HWND wnd = nullptr;
     Panel panel;
     int wheel_acc = 0;   // (WM_MOUSEWHEEL's deltas not yet a notch)
-    std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
-    int halves = 2;   // SIZE 100 / 150 / 200 % as 2 / 3 / 4: the panel drawn at 1:1, stretched to the window
+    std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W_MAX * Panel::H);
+    int pct = 100;          // SIZE 100 / 125 / 150 / 200 %: the panel drawn at 1:1, stretched to the window
+    int pw = Panel::W;      // the panel's width the window has (FM-1 or EXPANDED: panel.width())
     tess_view_t view{};
-    int at(int v) const { return v * 2 / halves; }   // a window pixel at 1:1
+    std::unique_ptr<tess_tracks_t> tracks{new tess_tracks_t()};   // TRACKS (EXPANDED)
+    int at(int v) const { return v * 100 / pct; }   // a window pixel at 1:1
 
     ~GuiWin32() override
     {
@@ -222,18 +228,20 @@ class GuiWin32 : public Gui
 
     void paint(HDC dc)
     {
-        panel.draw(px.data(), view);
+        bool t2 = panel.expanded() && link->tracks_view(*tracks);
+        panel.draw(px.data(), view, t2 ? tracks.get() : nullptr);
         BITMAPINFO bi{};
         bi.bmiHeader.biSize = sizeof bi.bmiHeader;
-        bi.bmiHeader.biWidth = Panel::W;
+        bi.bmiHeader.biWidth = pw;
         bi.bmiHeader.biHeight = -Panel::H;   // top row first
         bi.bmiHeader.biPlanes = 1;
         bi.bmiHeader.biBitCount = 32;
         bi.bmiHeader.biCompression = BI_RGB;
-        // 100 %: as it is; 200 %: each pixel doubled; 150 %: GDI's HALFTONE, each pixel the mean of what it covers
-        SetStretchBltMode(dc, halves == 3 ? HALFTONE : COLORONCOLOR);
-        if (halves == 3) SetBrushOrgEx(dc, 0, 0, nullptr);
-        StretchDIBits(dc, 0, 0, Panel::W * halves / 2, Panel::H * halves / 2, 0, 0, Panel::W, Panel::H, px.data(), &bi,
+        // 100 %: as it is; 200 %: each pixel doubled; 125, 150 %: GDI's HALFTONE, each pixel the mean of what it covers
+        bool soft = pct % 100 != 0;
+        SetStretchBltMode(dc, soft ? HALFTONE : COLORONCOLOR);
+        if (soft) SetBrushOrgEx(dc, 0, 0, nullptr);
+        StretchDIBits(dc, 0, 0, pw * pct / 100, Panel::H * pct / 100, 0, 0, pw, Panel::H, px.data(), &bi,
                       DIB_RGB_COLORS, SRCCOPY);
     }
 
@@ -251,8 +259,8 @@ class GuiWin32 : public Gui
             wc.lpszClassName = CLASS_NAME;
             RegisterClassExW(&wc);
         }
-        wnd = CreateWindowExW(0, CLASS_NAME, L"Tessera", WS_CHILD | WS_CLIPSIBLINGS, 0, 0, Panel::W * halves / 2,
-                              Panel::H * halves / 2,
+        wnd = CreateWindowExW(0, CLASS_NAME, L"Tessera", WS_CHILD | WS_CLIPSIBLINGS, 0, 0, pw * pct / 100,
+                              Panel::H * pct / 100,
                               static_cast<HWND>(w->win32), nullptr, inst, nullptr);
         if (!wnd)
             return false;
@@ -263,12 +271,19 @@ class GuiWin32 : public Gui
     }
     void set_scale(int n) override
     {
-        if (n == halves || n < 2 || n > 4)
+        if (n < 100 || n > 200)
             return;
-        halves = n;
+        pct = n;
+        resize();
+    }
+    // the window at the panel's width (FM-1 or EXPANDED) and SIZE
+    void resize()
+    {
+        panel.set_expanded(link->expanded());
+        pw = panel.width();
         if (wnd)
         {
-            SetWindowPos(wnd, nullptr, 0, 0, Panel::W * halves / 2, Panel::H * halves / 2,
+            SetWindowPos(wnd, nullptr, 0, 0, pw * pct / 100, Panel::H * pct / 100,
                          SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
             InvalidateRect(wnd, nullptr, FALSE);
         }
@@ -289,6 +304,8 @@ class GuiWin32 : public Gui
         panel.set_midi(link->midi_count());
         gui_fm1_tick(panel, link);
         gui_size_tick(panel, link);
+        if (panel.width() != pw)   // (MODE, or a shell picked: the window follows)
+            resize();
         gui_listen_tick(panel, link);
         gui_gen_tick(panel, link);
         ink_check();

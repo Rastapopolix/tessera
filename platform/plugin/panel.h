@@ -3,7 +3,8 @@
 /* The plugin window's FM-1, drawn in software (no GUI library): the web simulator's wide layout (web/sim/index.html
  * LAYOUTS.wide, 1000 x 624) in one of the FM-1's shells, or in TESSERA's own (shell 0, the default: the project page's
  * look, flat and 1-bit, its settings in a menu under the mark), the screen at 1:1, the labels in the Mono face
- * (firmware/src/mo_font.h).
+ * (firmware/src/mo_font.h). TESSERA's shell has a second mode, EXPANDED (MODE in its menu): 1500 x 624, the TRACKS
+ * screen (tess_core_tracks_view) beside the FM-1's, the knobs and buttons to its right, the keys as wide as the window.
  * Platform-independent: gui_win32.cpp / gui_x11.cpp give it pixels and the mouse. Not thread-safe: the GUI thread only. */
 #pragma once
 #include <cstdint>
@@ -19,30 +20,45 @@ struct PanelInput
     int32_t enc[TESS_NE] = {};        // detents turned since the last take
     int32_t master = -1;              // 0..1023 when the knob was turned, else -1
     int32_t track = -1;               // a track to select (the 1-4 / 5-8 switch: T1 or T5), else -1
-    // what the mouse did on the screen's zones (tess_view_t.zones), in order, for tess_core_zone_do
+    // what the mouse did on the screen's zones (tess_view_t.zones), in order, for tess_core_zone_do; and on the TRACKS
+    // screen's (tess_tracks_t.zones), for tess_core_tracks_do
     struct ZoneAct { tess_zone_t z; uint32_t action; int32_t n; };
-    std::vector<ZoneAct> zones;
+    std::vector<ZoneAct> zones, tzones;
     bool changed = false;
 };
 
 class Panel
 {
   public:
-    static constexpr int W = 1000, H = 624;
-    /* the window's size: SIZE 100, 150 or 200 % (TESSERA's menu), as halves: 2, 3 or 4. The panel draws at 1:1; a
-     * window shows it scale(n) times larger and hands the mouse in at 1:1 (x * 2 / n) */
-    static int size_halves(int pct) { return pct >= 200 ? 4 : pct >= 150 ? 3 : 2; }
-    static int size_pct(int halves) { return halves * 50; }
-    /* px (W x H) into out (W * n / 2 x H * n / 2): 100 % a copy, 200 % each pixel doubled, 150 % each window pixel the
-     * mean of the 1:1 pixels it covers (the 1-bit lines stay even, a little soft) */
-    static void scale(const uint32_t *px, uint32_t *out, int halves);
-    /* SIZE (TESSERA's menu): what the window is (set_size_pct), and a pick asks (take_size_request: 100, 150 or 200,
-     * -1 none) */
+    /* the panel's size at 1:1: W x H (FM-1 mode), EXPANDED's W_EXPANDED x H; width() the one it is now (a buffer of
+     * W_MAX x H holds either, row by row at width()) */
+    static constexpr int W = 1000, H = 624, W_EXPANDED = 1500, W_MAX = 1500;
+    static int width_of(bool expanded) { return expanded ? W_EXPANDED : W; }
+    int width() const { return width_of(expanded()); }
+    /* the window's size: SIZE in % (TESSERA's menu): 100, 150 or 200 in FM-1 mode, 100 or 125 in EXPANDED (2250 px would
+     * not fit a 1080p screen); size_fit: the nearest of those to pct. The panel draws at 1:1; a window shows it pct /
+     * 100 times larger and hands the mouse in at 1:1 (x * 100 / pct) */
+    static int size_fit(int pct, bool expanded)
+    {
+        if (expanded) return pct >= 113 ? 125 : 100;
+        return pct >= 175 ? 200 : pct >= 125 ? 150 : 100;
+    }
+    /* px (w x H) into out (w * pct / 100 x H * pct / 100): 100 % a copy, 200 % each pixel doubled, 125 and 150 % each
+     * window pixel the mean of the 1:1 pixels under its quarter points (the 1-bit lines stay even, a little soft) */
+    static void scale(const uint32_t *px, uint32_t *out, int w, int pct);
+    /* MODE (TESSERA's menu): FM-1 or EXPANDED, as the instance has it (set_expanded), and a pick asks
+     * (take_mode_request: 1 EXPANDED, 0 FM-1, -1 none). Only TESSERA's shell is EXPANDED: an FM-1 shell is FM-1 mode */
+    void set_expanded(bool on) { if (on != expanded_) { expanded_ = on; layout(); } }
+    bool expanded() const { return expanded_ && native(); }
+    int take_mode_request() { int r = mode_req; mode_req = -1; return r; }
+    /* SIZE (TESSERA's menu): what the window is (set_size_pct), and a pick asks (take_size_request: 100, 125, 150 or
+     * 200, -1 none) */
     void set_size_pct(int pct) { size_now = pct; }
     int take_size_request() { int r = size_req; size_req = -1; return r; }
     Panel();
-    /* the whole window into px (W x H, 0xAARRGGBB, top row first) */
-    void draw(uint32_t *px, const tess_view_t &v);
+    /* the whole window into px (width() x H, 0xAARRGGBB, top row first); EXPANDED: the TRACKS screen from t2 (none:
+     * black) */
+    void draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2 = nullptr);
     /* the mouse, in window pixels; wheel: notches, + = up / clockwise. Each returns true if the input changed. On the
      * screen, the zones the view has (tess_view_t.zones) come first: a value's column turns with a drag or the wheel
      * (a double-click: its default), a list's row takes a click (a double-click: and OK; the wheel: its value), OK,
@@ -152,10 +168,13 @@ class Panel
     // TESSERA's shell (shell 0): its own drawing, its layout of the buttons and files, and its menu
     bool native() const { return shell_ == 0; }
     void layout();
-    void draw_native(uint32_t *px, const tess_view_t &v, double breath);
+    void draw_native(uint32_t *px, const tess_view_t &v, double breath, const tess_tracks_t *t2);
     bool menu_open = false;
+    bool expanded_ = false;
+    int mode_req = -1;
+    int mode_seg_at(int x) const;   // MODE's row: 0 FM-1, 1 EXPANDED, -1 none
     int size_now = 100, size_req = -1;
-    int size_seg_at(int x) const;   // SIZE's row: 100, 150, 200, -1 none
+    int size_seg_at(int x) const;   // SIZE's row: 100, 125, 150, 200, -1 none
     int menu_sub = 0, menu_hover = -1, sub_hover = -1;   // menu_sub: 0 none, 1 SHELL's list, 2 INK's swatches
     int menu_row_at(int x, int y) const;
     int sub_at(int x, int y) const;
@@ -176,6 +195,7 @@ class Panel
     FileButton usb{};                  // the FM-1's shells: FM-1 USB, under the keys
     FileButton banks[2];               // the 1-4 / 5-8 switch (8 tracks); action: the bank's first track
     int tracks_ = 4, track_now = 0, bank_held = -1;
+    bool banked() const { return tracks_ > 4 && !expanded(); }   // the 1-4 / 5-8 switch (EXPANDED: TRACKS shows all)
     int bank_at(int x, int y) const;
     int file_req = FILE_NONE, file_held = -1;
     std::string note_text;
@@ -193,7 +213,7 @@ class Panel
     std::vector<Knob> knobs;
     std::vector<Button> buttons;
     std::vector<Key> keys;
-    int pitch = 0, kw = 0, kh = 0, sw = 0;
+    int pitch = 0, kw = 0, kh = 0, sw = 0, kb_w = 928;   // (kb_w: the keybed's width, as wide as the window less 72)
     // held by the mouse and by the computer keyboard, apart (input.keys / input.buttons: the two together)
     uint32_t mouse_keys = 0, mouse_buttons = 0, kbd_keys = 0, kbd_buttons = 0, latch_keys = 0, latch_buttons = 0;
     bool keys_on_ = true;
@@ -211,14 +231,15 @@ class Panel
     int key_at(int x, int y) const;
     void turn(int i, int n);
     // the screen's zones: the view's last, the mouse over them, a click's time for a double-click
-    void draw_body(uint32_t *px, const tess_view_t &v);
+    void draw_body(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2);
     void draw_hover(uint32_t *px);
-    std::vector<tess_zone_t> zones;
+    std::vector<tess_zone_t> zones, zones2;   // the FM-1 screen's, the TRACKS screen's (EXPANDED)
     tess_zone_t drag_zone{}, click_zone{};
     bool click_known = false, hover_in = false;
     int hover_x = 0, hover_y = 0, click_x = 0, click_y = 0;
     double click_t = 0;
     int zone_at(int x, int y) const;
+    int zone2_at(int x, int y) const;   // a TRACKS zone under the mouse (EXPANDED), -1 none
     int zone_like(const tess_zone_t &z) const;   // the view's zone that is z, -1 none
     void zone_act(const tess_zone_t &z, uint32_t action, int n);
 };

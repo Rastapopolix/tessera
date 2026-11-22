@@ -72,11 +72,12 @@ const int NSHELLS = (int)(sizeof SHELLS / sizeof SHELLS[0]);
 struct Canvas
 {
     uint32_t *px;
+    int w;   // the panel's width (its rows' length)
     void blend(int x, int y, uint32_t c, double a)
     {
-        if (x < 0 || y < 0 || x >= Panel::W || y >= Panel::H || a <= 0)
+        if (x < 0 || y < 0 || x >= w || y >= Panel::H || a <= 0)
             return;
-        uint32_t &d = px[y * Panel::W + x];
+        uint32_t &d = px[y * w + x];
         if (a >= 1) { d = c; return; }
         auto ch = [&](int s) {
             double v = (d >> s & 255) * (1 - a) + (c >> s & 255) * a;
@@ -190,7 +191,11 @@ const int WHITE_K[16] = {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 2
 const int BLACK_K[11] = {1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25};
 const int BLACK_AFTER[11] = {0, 1, 2, 4, 5, 7, 8, 9, 11, 12, 14};
 const int SCREEN_X = 292, SCREEN_Y = 44, SCREEN_S = 256;
-const int KEYBED[4] = {36, 332, 928, 256};
+const int KEYBED[4] = {36, 332, 928, 256};   // (EXPANDED: as wide as the window less 72, Panel::kb_w)
+// EXPANDED: the TRACKS screen beside the FM-1's (its frame as the FM-1's: 8 px round 480 x 240), and KNOB 1..4 and the
+// twelve buttons right of it
+const int T2_X = 560, T2_Y = SCREEN_Y, T2_W = TESS_TRACKS_W + 16, T2_H = TESS_TRACKS_H + 16, T2_IN = 8;
+const int XK_X = 1124, XK_PITCH = 96, XB_X = 1080, XB_STEP = 64, XB_W = 56;
 }   // namespace
 
 Panel::Panel()
@@ -203,28 +208,33 @@ Panel::Panel()
         knobs.push_back({K[i][0], K[i][1], K[i][2], KN[i], ROLE[i], 0});
     knobs[0].angle = -135 + 270.0 * master_now / 1023;
     layout();
-    const int x0 = KEYBED[0], y0 = KEYBED[1], w = KEYBED[2], h = KEYBED[3];
-    pitch = (w - 24) / 16;
-    kw = (int)(pitch * 0.78);
-    kh = (int)(h * 0.425);
-    sw = kw * 14 / 100 > 3 ? kw * 14 / 100 : 3;
-    for (int i = 0; i < 16; i++)
-        keys.push_back({x0 + 12 + (int)((i + 0.5) * pitch), y0 + h * 3 / 4, WHITE_K[i]});
-    for (int j = 0; j < 11; j++)
-        keys.push_back({x0 + 12 + (BLACK_AFTER[j] + 1) * pitch, y0 + h / 4, BLACK_K[j]});
 }
 
 // the buttons and the files where the shell has them: the FM-1's as the web sim's wide layout; TESSERA's grid a little
 // wider (room round the words), its files centred under the keys
 void Panel::layout()
 {
-    const bool n = native();
+    const bool n = native(), x = expanded();
+    for (int i = 4; i < 8; i++)   // KNOB 1..4: over the buttons (EXPANDED: right of TRACKS)
+        knobs[i].x = x ? XK_X + (i - 4) * XK_PITCH : 610 + (i - 4) * 104;
+    // the keys: the FM-1's 27 across the keybed (EXPANDED: wider, the pitch with it)
+    kb_w = x ? width() - 2 * KEYBED[0] : KEYBED[2];
+    const int x0 = KEYBED[0], y0 = KEYBED[1], h = KEYBED[3];
+    pitch = (kb_w - 24) / 16;
+    kw = (int)(pitch * 0.78);
+    kh = (int)(h * 0.425);
+    sw = kw * 14 / 100 > 3 ? kw * 14 / 100 : 3;
+    keys.clear();
+    for (int i = 0; i < 16; i++)
+        keys.push_back({x0 + 12 + (int)((i + 0.5) * pitch), y0 + h * 3 / 4, WHITE_K[i]});
+    for (int j = 0; j < 11; j++)
+        keys.push_back({x0 + 12 + (BLACK_AFTER[j] + 1) * pitch, y0 + h / 4, BLACK_K[j]});
     buttons.clear();
     buttons.push_back({60, 258, 90, 34, B_OCTDN, "OCT-", nullptr});
     buttons.push_back({170, 258, 90, 34, B_OCTUP, "OCT+", nullptr});
     const int R1[6] = {B_FX, B_SCL, B_ENV, B_LFO, B_EDIT, B_GLO}, R2[6] = {B_HOME, B_SAVE, B_ARP, B_SEQ, B_PLAY, B_REC};
     const char *F1[6] = {"FX", "SEL", "ENV", "LFO", "EDIT", "GLO"}, *F2[6] = {"HOME", "SAVE", "ARP", "SEQ", "PLAY", "REC"};
-    const int bx = n ? 574 : 582, step = n ? 66 : 63, bw = n ? 60 : 54;
+    const int bx = x ? XB_X : n ? 574 : 582, step = x ? XB_STEP : n ? 66 : 63, bw = x ? XB_W : n ? 60 : 54;
     for (int i = 0; i < 6; i++)
     {
         buttons.push_back({bx + i * step, 174, bw, 48, R1[i], F1[i], nullptr});
@@ -242,13 +252,13 @@ void Panel::layout()
         usb = {tracks_ > 4 ? 430 : 306, fy, 112, 24, 0, "FM-1 USB"};
         return;
     }
-    const int total = 3 * 72 + 2 * 10 + (tracks_ > 4 ? 20 + 104 : 0);
-    int x = W / 2 - total / 2;
-    files.push_back({x, fy - 1, 72, 26, FILE_OPEN, "OPEN"});
-    files.push_back({x + 82, fy - 1, 72, 26, FILE_SAVE, "SAVE"});
-    files.push_back({x + 164, fy - 1, 72, 26, FILE_MIDI, "MIDI"});
-    banks[0] = {x + 256, fy - 1, 52, 26, 0, "1-4"};
-    banks[1] = {x + 308, fy - 1, 52, 26, 4, "5-8"};
+    const int total = 3 * 72 + 2 * 10 + (banked() ? 20 + 104 : 0);   // (EXPANDED: no bank switch, TRACKS shows all)
+    int fx = width() / 2 - total / 2;
+    files.push_back({fx, fy - 1, 72, 26, FILE_OPEN, "OPEN"});
+    files.push_back({fx + 82, fy - 1, 72, 26, FILE_SAVE, "SAVE"});
+    files.push_back({fx + 164, fy - 1, 72, 26, FILE_MIDI, "MIDI"});
+    banks[0] = {fx + 256, fy - 1, 52, 26, 0, "1-4"};
+    banks[1] = {fx + 308, fy - 1, 52, 26, 4, "5-8"};
 }
 
 void Panel::set_midi(uint32_t count)
@@ -276,7 +286,7 @@ void Panel::set_fm1(bool on, bool mine, bool live, const std::string &text)
 
 int Panel::bank_at(int x, int y) const
 {
-    if (tracks_ <= 4) return -1;
+    if (!banked()) return -1;
     for (int i = 0; i < 2; i++)
         if (x >= banks[i].x && x < banks[i].x + banks[i].w && y >= banks[i].y && y < banks[i].y + banks[i].h)
             return i;
@@ -291,16 +301,21 @@ void Panel::note(const std::string &text)
     note_frames = 150;     // (5 s at the window's 30 frames a second)
 }
 
-void Panel::draw(uint32_t *px, const tess_view_t &v)
+void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
 {
     zones.assign(v.zones, v.zones + (v.zone_count < (uint32_t)TESS_ZONES ? v.zone_count : (uint32_t)TESS_ZONES));
-    draw_body(px, v);
+    if (expanded() && t2 && t2->w == TESS_TRACKS_W)
+        zones2.assign(t2->zones, t2->zones + (t2->zone_count < (uint32_t)TESS_TRACKS_ZONES ? t2->zone_count
+                                                                                          : (uint32_t)TESS_TRACKS_ZONES));
+    else
+        zones2.clear();
+    draw_body(px, v, t2);
     draw_hover(px);
 }
 
-void Panel::draw_body(uint32_t *px, const tess_view_t &v)
+void Panel::draw_body(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
 {
-    Canvas c{px};
+    Canvas c{px, width()};
     const Shell &sh = SHELLS[shell_];
     const uint32_t BODY = sh.body, TRAY = sh.tray, BTN = sh.btn, EDGE = sh.edge, BTN_INK = sh.btn_ink, SLIT = sh.slit,
                    LABEL = sh.label, LIT_INK = sh.lit_ink ? sh.lit_ink : sh.btn_ink, LIT = sh.lit ? sh.lit : 0xFFF6F6F6,
@@ -318,7 +333,7 @@ void Panel::draw_body(uint32_t *px, const tess_view_t &v)
     track_now = (int)v.track;
     if (native())
     {
-        draw_native(px, v, breath);
+        draw_native(px, v, breath, t2);
         return;
     }
     for (int i = 0; i < W * H; i++)
@@ -399,7 +414,7 @@ void Panel::draw_body(uint32_t *px, const tess_view_t &v)
         c.text(f.x + f.w / 2, f.y + f.h / 2 - 7 + dy, f.face, 2, BTN_INK);
     }
     // the bank switch (8 tracks): the half of the selected track's bank lit
-    if (tracks_ > 4)
+    if (banked())
     {
         const FileButton &a = banks[0];
         c.rrect(a.x, a.y, banks[1].x + banks[1].w - a.x, a.h, 6, EDGE);
@@ -605,7 +620,7 @@ bool Panel::key(int code, bool down)
         return false;
     if (code == 0x1A) b = B_OCTDN;
     if (code == 0x1B) b = B_OCTUP;
-    if (code == 0x0F && tracks_ > 4)   // Tab: the other bank (T1 or T5)
+    if (code == 0x0F && banked())   // Tab: the other bank (T1 or T5)
     {
         if (!down) return false;
         input.track = (track_now & 4) ? 0 : 4;
@@ -705,6 +720,15 @@ bool Panel::down(int x, int y)
         menu_sub = 0;
         menu_hover = sub_hover = -1;
         return false;
+    }
+    int z2 = zone2_at(x, y);
+    if (z2 >= 0)   // TRACKS (EXPANDED): a row, M, S (a click each; the level: the wheel)
+    {
+        drag = NONE;
+        if (zones2[z2].kind == TESS_ZONE_LEVEL) return false;
+        input.tzones.push_back({zones2[z2], TESS_ZA_CLICK, 0});
+        input.changed = true;
+        return true;
     }
     int zi = zone_at(x, y);
     if (zi >= 0)   // the screen: a zone (a double-click: the same zone, soon, where the first was)
@@ -888,6 +912,14 @@ bool Panel::wheel(int x, int y, int notches)
     case GP_SEED: gen_ask(GEN_RECALL, notches > 0 ? -1 : 1); return false;   // (up: back to an older piece)
     default: break;
     }
+    int z2 = zone2_at(x, y);
+    if (z2 >= 0 && notches)   // TRACKS: a level turned (elsewhere on a row: nothing)
+    {
+        if (zones2[z2].kind != TESS_ZONE_LEVEL) return false;
+        input.tzones.push_back({zones2[z2], TESS_ZA_TURN, notches});
+        input.changed = true;
+        return true;
+    }
     int zi = zone_at(x, y);
     if (zi >= 0 && notches)   // a value, or a list's row: as its knob turned
     {
@@ -922,6 +954,12 @@ const int MENU_H = 2 + 8 + MENU_ROWS * ROW_H + 3 * 18 + FM1_LINE + 8 + 2;
 // FM-1 USB's two words, right to left from the row's right edge: ON, then OFF
 const int SEG_RIGHT = MENU_X + MENU_W - 16;
 int seg_w(const char *t) { return Canvas::ptext_w(t, 2) + 12; }
+// SIZE's choices, right to left (0: no more): FM-1 mode 200 150 100, EXPANDED 125 100
+int size_choice(bool expanded, int i)
+{
+    static const int FM1[3] = {200, 150, 100}, EXP[3] = {125, 100, 0};
+    return i < 0 || i > 2 ? 0 : expanded ? EXP[i] : FM1[i];
+}
 // LISTEN's < value >: each one's left and right, from SEG_RIGHT leftwards
 const int LISTEN_SEG[3][2] = {{108, 136}, {32, 104}, {0, 28}};
 int shell_sub_y() { return row_y(ROW_SHELL) - 10; }
@@ -950,11 +988,12 @@ void dotted(Canvas &c, int x0, int x1, int y, uint32_t col)
 }
 }   // namespace
 
-void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
+void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const tess_tracks_t *t2)
 {
-    Canvas c{px};
+    Canvas c{px, width()};
     static const double kPi = 3.14159265358979;
-    for (int i = 0; i < W * H; i++)
+    const int PW = width();
+    for (int i = 0; i < PW * H; i++)
         px[i] = T_BODY;
 
     // the mark, the name, the menu's arrow, the MIDI lamp; the version at the right
@@ -979,7 +1018,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
     {
         std::string ver = (gen_on() ? "" : "PLUGIN ") + version;   // (GENERATE's strip: the version alone)
         for (auto &ch : ver) ch = ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
-        c.ptext(W - 36 - Canvas::ptext_w(ver.c_str(), 2), 18, ver.c_str(), 2, T_WORD);
+        c.ptext(PW - 36 - Canvas::ptext_w(ver.c_str(), 2), 18, ver.c_str(), 2, T_WORD);
     }
 
     // the screen: a dim hairline, a gap, the 240 x 240 at 1:1; under it the track and its bank
@@ -990,12 +1029,29 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
         {
             uint16_t p = v.screen[y * TESS_SCREEN + x];
             uint32_t r = (p >> 11 & 31) * 255 / 31, g = (p >> 5 & 63) * 255 / 63, b = (p & 31) * 255 / 31;
-            px[(SCREEN_Y + inset + y) * W + SCREEN_X + inset + x] = 0xFF000000u | r << 16 | g << 8 | b;
+            px[(SCREEN_Y + inset + y) * PW + SCREEN_X + inset + x] = 0xFF000000u | r << 16 | g << 8 | b;
         }
     char cap[8];
     std::snprintf(cap, sizeof cap, "T%d", track_now + 1);
     c.ptext(SCREEN_X + 2, SCREEN_Y + SCREEN_S + 8, cap, 2, T_WORD);
-    if (tracks_ > 4)
+    if (expanded())   // EXPANDED: PAGE under the page; TRACKS beside it, 1-8 (or 1-4) under it
+    {
+        c.ptext(SCREEN_X + SCREEN_S - 2 - Canvas::ptext_w("PAGE", 2), SCREEN_Y + SCREEN_S + 8, "PAGE", 2, T_WORD);
+        nbox(c, T2_X, T2_Y, T2_W, T2_H, T_DIM, T_BODY);
+        c.box(T2_X + T2_IN, T2_Y + T2_IN, TESS_TRACKS_W, TESS_TRACKS_H, T_BLACK);
+        if (t2 && t2->w == TESS_TRACKS_W && t2->h == TESS_TRACKS_H)
+            for (int y = 0; y < TESS_TRACKS_H; y++)
+                for (int x = 0; x < TESS_TRACKS_W; x++)
+                {
+                    uint16_t p = t2->screen[y * TESS_TRACKS_W + x];
+                    uint32_t r = (p >> 11 & 31) * 255 / 31, g = (p >> 5 & 63) * 255 / 63, b = (p & 31) * 255 / 31;
+                    px[(T2_Y + T2_IN + y) * PW + T2_X + T2_IN + x] = 0xFF000000u | r << 16 | g << 8 | b;
+                }
+        const char *all = tracks_ > 4 ? "1-8" : "1-4";
+        c.ptext(T2_X + 2, T2_Y + T2_H + 8, "TRACKS", 2, T_WORD);
+        c.ptext(T2_X + T2_W - 2 - Canvas::ptext_w(all, 2), T2_Y + T2_H + 8, all, 2, T_WORD);
+    }
+    else if (tracks_ > 4)
     {
         const char *bank = track_now & 4 ? "5-8" : "1-4";
         c.ptext(SCREEN_X + SCREEN_S - 2 - Canvas::ptext_w(bank, 2), SCREEN_Y + SCREEN_S + 8, bank, 2, T_WORD);
@@ -1037,7 +1093,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
     }
 
     // the keys: naturals a dim outline, sharps dim and solid; lit yellow, held warm white
-    dotted(c, KEYBED[0], KEYBED[0] + KEYBED[2], KEYBED[1], T_DIM);
+    dotted(c, KEYBED[0], KEYBED[0] + kb_w, KEYBED[1], T_DIM);
     for (size_t i = 0; i < keys.size(); i++)
     {
         const Key &k = keys[i];
@@ -1059,7 +1115,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
         nbox(c, f.x, f.y, f.w, f.h, held ? T_HELD : T_YEL, held ? T_HELD : T_BODY);
         c.ptext_c(f.x + f.w / 2, f.y + f.h / 2 - 7, f.face, 2, held ? T_BLACK : T_YEL);
     }
-    if (tracks_ > 4)
+    if (banked())
         for (int i = 0; i < 2; i++)
         {
             const FileButton &b = banks[i];
@@ -1070,7 +1126,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
     if (note_frames > 0)
     {
         note_frames--;
-        const FileButton &last = tracks_ > 4 ? banks[1] : files.back();
+        const FileButton &last = banked() ? banks[1] : files.back();
         c.ptext(last.x + last.w + 16, last.y + last.h / 2 - 7, note_text.c_str(), 2, T_WORD);
     }
 
@@ -1107,17 +1163,20 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
             else if (ink_now >= 0 && ink_now < (int)inks.size())
                 c.box(right - 14, y + 11, 14, 14, 0xFF000000u | inks[ink_now].rgb[0]);
         }
-        else if (r == ROW_MODE)
+        else if (r == ROW_MODE)   // FM-1: the FM-1's panel; EXPANDED: and TRACKS beside its screen
         {
-            seg("EXPANDED", false, false);   // (not there yet)
-            seg("FM-1", true, true);
+            seg("EXPANDED", expanded_, true);
+            seg("FM-1", !expanded_, true);
         }
-        else if (r == ROW_SIZE)   // the window's size
-        {
-            seg("200", size_now == 200, true);
-            seg("150", size_now == 150, true);
-            seg("100", size_now == 100, true);
-        }
+        else if (r == ROW_SIZE)   // the window's size (EXPANDED: 100 or 125)
+            for (int i = 0; i < 3; i++)
+            {
+                int pct = size_choice(expanded_, i);
+                if (!pct) break;
+                char t[8];
+                std::snprintf(t, sizeof t, "%d", pct);
+                seg(t, size_now == pct, true);
+            }
         else if (r == ROW_FM1)   // OFF / ON, and under them what the FM-1 is doing
         {
             seg("ON", fm1_on, true);
@@ -1253,7 +1312,7 @@ void Panel::gen_var_step(int n)
 
 void Panel::draw_gen(uint32_t *px)
 {
-    Canvas c{px};
+    Canvas c{px, width()};
     if (!gen_on())
         return;
     // held half a second: BEFORE / AFTER, once a press
@@ -1395,7 +1454,20 @@ bool Panel::menu_click(int x, int y)
         menu_sub = 0;
         return false;
     }
-    if (r == ROW_SIZE)   // 100, 150 or 200 (elsewhere on the row: nothing)
+    if (r == ROW_MODE)   // FM-1 or EXPANDED (elsewhere on the row: nothing)
+    {
+        int m = mode_seg_at(x);
+        if (m >= 0 && m != (int)expanded_)
+        {
+            set_expanded(m == 1);   // (at once; the window follows)
+            mode_req = m;
+        }
+        if (m >= 0)
+            menu_open = false;
+        menu_sub = 0;
+        return false;
+    }
+    if (r == ROW_SIZE)   // 100, 150 or 200; EXPANDED 100 or 125 (elsewhere on the row: nothing)
     {
         int pct = size_seg_at(x);
         if (pct > 0 && pct != size_now)
@@ -1407,39 +1479,48 @@ bool Panel::menu_click(int x, int y)
     }
     if (r == ROW_SHELL) menu_sub = menu_sub == 1 ? 0 : 1;
     else if (r == ROW_INK) menu_sub = menu_sub == 2 ? 0 : 2;
-    else if (r < 0) menu_open = false;   // (MODE, ABOUT: nothing to pick yet)
+    else if (r < 0) menu_open = false;   // (ABOUT: nothing to pick)
     sub_hover = -1;
     return false;
 }
 
 int Panel::size_seg_at(int x) const
 {
-    static const int PCT[3] = {200, 150, 100};   // (right to left, as drawn)
     int right = SEG_RIGHT;
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 3 && size_choice(expanded_, i); i++)   // (right to left, as drawn)
     {
         char t[8];
-        std::snprintf(t, sizeof t, "%d", PCT[i]);
+        std::snprintf(t, sizeof t, "%d", size_choice(expanded_, i));
         int l = right - seg_w(t);
-        if (x >= l && x < right) return PCT[i];
+        if (x >= l && x < right) return size_choice(expanded_, i);
         right = l - 4;
     }
     return -1;
 }
 
-void Panel::scale(const uint32_t *px, uint32_t *out, int n)
+int Panel::mode_seg_at(int x) const
 {
-    const int ow = W * n / 2, oh = H * n / 2;
-    if (n == 2)
+    int ex_l = SEG_RIGHT - seg_w("EXPANDED"), fm_r = ex_l - 4, fm_l = fm_r - seg_w("FM-1");
+    if (x >= ex_l && x < SEG_RIGHT) return 1;
+    if (x >= fm_l && x < fm_r) return 0;
+    return -1;
+}
+
+void Panel::scale(const uint32_t *px, uint32_t *out, int w, int pct)
+{
+    const int ow = w * pct / 100, oh = H * pct / 100;
+    if (pct == 100)
     {
-        std::memcpy(out, px, sizeof(uint32_t) * W * H);
+        std::memcpy(out, px, sizeof(uint32_t) * w * H);
         return;
     }
+    // each window pixel: the 1:1 pixels under its two quarter points, across and down
+    auto q = [pct](int o, int k) { return (4 * o + k) * 100 / (4 * pct); };
     std::vector<int> xa(ow), xb(ow);
-    for (int x = 0; x < ow; x++) xa[x] = 2 * x / n, xb[x] = (2 * x + 1) / n;
+    for (int x = 0; x < ow; x++) xa[x] = q(x, 1), xb[x] = q(x, 3);
     for (int y = 0; y < oh; y++)
     {
-        const uint32_t *ra = px + (2 * y / n) * W, *rb = px + ((2 * y + 1) / n) * W;
+        const uint32_t *ra = px + q(y, 1) * w, *rb = px + q(y, 3) * w;
         uint32_t *o = out + y * ow;
         for (int x = 0; x < ow; x++)
         {
@@ -1468,7 +1549,20 @@ int Panel::fm1_seg_at(int x) const
     return -1;
 }
 
-// ---- the screen's zones (tess_view_t.zones): where the page put its values, rows and keys
+// ---- the screen's zones (tess_view_t.zones): where the page put its values, rows and keys; TRACKS' (EXPANDED)
+int Panel::zone2_at(int x, int y) const
+{
+    if (!expanded() || menu_open) return -1;
+    int sx = x - (T2_X + T2_IN), sy = y - (T2_Y + T2_IN);
+    if (sx < 0 || sy < 0 || sx >= TESS_TRACKS_W || sy >= TESS_TRACKS_H) return -1;
+    for (size_t i = 0; i < zones2.size(); i++)
+    {
+        const tess_zone_t &z = zones2[i];
+        if (sx >= z.x && sx < z.x + z.w && sy >= z.y && sy < z.y + z.h) return (int)i;
+    }
+    return -1;
+}
+
 int Panel::zone_at(int x, int y) const
 {
     if (native() && menu_open) return -1;
@@ -1501,11 +1595,13 @@ void Panel::zone_act(const tess_zone_t &z, uint32_t action, int n)
 void Panel::draw_hover(uint32_t *px)
 {
     int zi = drag == ZONE ? zone_like(drag_zone) : hover_in && drag == NONE ? zone_at(hover_x, hover_y) : -1;
-    if (zi < 0) return;
-    const tess_zone_t &z = zones[zi];
-    Canvas c{px};
+    int z2 = zi < 0 && hover_in && drag == NONE ? zone2_at(hover_x, hover_y) : -1;   // (TRACKS, EXPANDED)
+    if (zi < 0 && z2 < 0) return;
+    const tess_zone_t &z = z2 >= 0 ? zones2[z2] : zones[zi];
+    Canvas c{px, width()};
     const uint32_t YEL = 0xFFFFD020, WORD = 0xFFB9B2A0, BLACK = 0xFF000000;
-    int ox = SCREEN_X + SCREEN_S / 32, oy = SCREEN_Y + SCREEN_S / 32;
+    const int SX = z2 >= 0 ? T2_X : SCREEN_X, SW = z2 >= 0 ? T2_W : SCREEN_S;   // (the screen it is on)
+    int ox = z2 >= 0 ? T2_X + T2_IN : SCREEN_X + SCREEN_S / 32, oy = z2 >= 0 ? T2_Y + T2_IN : SCREEN_Y + SCREEN_S / 32;
     c.box(ox + z.x, oy + z.y, z.w, 1, YEL);
     c.box(ox + z.x, oy + z.y + z.h - 1, z.w, 1, YEL);
     c.box(ox + z.x, oy + z.y, 1, z.h, YEL);
@@ -1517,8 +1613,8 @@ void Panel::draw_hover(uint32_t *px)
     int nw = Canvas::ptext_w(name.c_str(), 2), vw = value.empty() ? 0 : Canvas::ptext_w(value.c_str(), 3);
     int w = nw + (vw ? vw + 14 : 0) + 20, h = 34;
     int x = ox + z.x + z.w / 2 - w / 2, y = SCREEN_Y + SCREEN_S + 3;
-    if (x < SCREEN_X - 80) x = SCREEN_X - 80;
-    if (x + w > SCREEN_X + SCREEN_S + 80) x = SCREEN_X + SCREEN_S + 80 - w;
+    if (x < SX - 80) x = SX - 80;
+    if (x + w > SX + SW + 80) x = SX + SW + 80 - w;
     c.box(x, y, w, h, BLACK);
     c.box(x, y, w, 2, YEL), c.box(x, y + h - 2, w, 2, YEL);
     c.box(x, y, 2, h, YEL), c.box(x + w - 2, y, 2, h, YEL);

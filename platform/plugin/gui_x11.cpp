@@ -67,11 +67,13 @@ class GuiX11 : public Gui
     GC gc = nullptr;
     XImage *img = nullptr;
     Panel panel;
-    std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
+    std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W_MAX * Panel::H);
     std::vector<uint32_t> out;   // the window's pixels at SIZE (Panel::scale)
-    int halves = 2;              // SIZE 100 / 150 / 200 % as 2 / 3 / 4
+    int pct = 100;               // SIZE: 100, 125, 150, 200 %
+    int pw = Panel::W;           // the panel's width the window has (FM-1 or EXPANDED: panel.width())
     tess_view_t view{};
-    int at(int v) const { return v * 2 / halves; }   // a window pixel at 1:1
+    std::unique_ptr<tess_tracks_t> tracks{new tess_tracks_t()};   // TRACKS (EXPANDED)
+    int at(int v) const { return v * 100 / pct; }   // a window pixel at 1:1
 
     GuiX11(const clap_host_t *h, GuiLink *l) : host(h), link(l)
     {
@@ -80,6 +82,8 @@ class GuiX11 : public Gui
         panel.set_inks(l->inks());
         panel.set_tracks(l->tracks());
         panel.set_version(tess_version());
+        panel.set_expanded(l->expanded());
+        pw = panel.width();
     }
     GuiLink *link;   // this window's instance
     ~GuiX11() override
@@ -104,7 +108,7 @@ class GuiX11 : public Gui
         if (!(dpy = XOpenDisplay(nullptr)))
             return false;
         int scr = DefaultScreen(dpy);
-        wnd = XCreateSimpleWindow(dpy, (Window)w->x11, 0, 0, Panel::W * halves / 2, Panel::H * halves / 2, 0, 0,
+        wnd = XCreateSimpleWindow(dpy, (Window)w->x11, 0, 0, pw * pct / 100, Panel::H * pct / 100, 0, 0,
                                   BlackPixel(dpy, scr));
         XSelectInput(dpy, wnd, ExposureMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | KeyPressMask |
                                    KeyReleaseMask | FocusChangeMask);
@@ -119,7 +123,7 @@ class GuiX11 : public Gui
     // the XImage over out, at the window's size
     void make_image()
     {
-        int w = Panel::W * halves / 2, h = Panel::H * halves / 2, scr = DefaultScreen(dpy);
+        int w = pw * pct / 100, h = Panel::H * pct / 100, scr = DefaultScreen(dpy);
         if (img)
         {
             img->data = nullptr;
@@ -131,12 +135,23 @@ class GuiX11 : public Gui
     }
     void set_scale(int n) override
     {
-        if (n == halves || n < 2 || n > 4)
+        if (n < 100 || n > 200)
             return;
-        halves = n;
-        if (!dpy)
+        pct = n;
+        resize();
+    }
+    // the window at the panel's width (FM-1 or EXPANDED) and SIZE, if it isn't
+    void resize()
+    {
+        panel.set_expanded(link->expanded());
+        int w = panel.width();
+        if (!dpy || (w == pw && out.size() == (size_t)(w * pct / 100) * (Panel::H * pct / 100)))
+        {
+            pw = w;
             return;   // (set_parent makes the window at this size)
-        XResizeWindow(dpy, wnd, Panel::W * halves / 2, Panel::H * halves / 2);
+        }
+        pw = w;
+        XResizeWindow(dpy, wnd, pw * pct / 100, Panel::H * pct / 100);
         make_image();
         XFlush(dpy);
     }
@@ -285,9 +300,12 @@ class GuiX11 : public Gui
         ink_check();
         gui_size_tick(panel, link);
         gui_listen_tick(panel, link);
-        panel.draw(px.data(), view);
-        Panel::scale(px.data(), out.data(), halves);
-        XPutImage(dpy, wnd, gc, img, 0, 0, 0, 0, Panel::W * halves / 2, Panel::H * halves / 2);
+        if (panel.width() != pw)   // (MODE, or a shell picked: the window follows)
+            resize();
+        bool t2 = panel.expanded() && link->tracks_view(*tracks);
+        panel.draw(px.data(), view, t2 ? tracks.get() : nullptr);
+        Panel::scale(px.data(), out.data(), pw, pct);
+        XPutImage(dpy, wnd, gc, img, 0, 0, 0, 0, pw * pct / 100, Panel::H * pct / 100);
         XFlush(dpy);
     }
 };

@@ -595,8 +595,8 @@ void tess_core_tracks_view(tess_tracks_t *v, uint32_t w, uint32_t h)
                    TESS_ZONE_TRACK == UZ_TRACK, "tess_core.h's TRACKS zones are ui_tracks.c's");
     tracks_draw((int32_t)(w < 1u ? 1u : w), (int32_t)(h < 1u ? 1u : h), (fm1_ms / 250u) & 1u);
     v->w = (uint32_t)t2_w, v->h = (uint32_t)t2_h;
-    for (i = 0; i < v->w * v->h; i++)                  /* the panel's byte order -> RGB565 */
-        v->screen[i] = (uint16_t)(t2_px[i] >> 8 | t2_px[i] << 8);
+    for (i = 0; i < v->w * v->h; i++)                  /* (drawn as RGB565 already: no LCD byte order here) */
+        v->screen[i] = t2_px[i];
     v->zone_count = 0;
     for (i = 0; i < t2_zn; i++) {                       /* M, S and the levels first, then the rows */
         tess_zone_t *z = &v->zones[v->zone_count++];

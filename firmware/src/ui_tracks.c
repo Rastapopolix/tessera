@@ -15,7 +15,7 @@
 #define T2_W_MAX 480
 #define T2_H_MAX 240
 #define T2_ZONES 32
-static uint16_t t2_px[T2_W_MAX * T2_H_MAX];             /* (the panel's byte order, as the FM-1's screen) */
+static uint16_t t2_px[T2_W_MAX * T2_H_MAX];             /* RGB565 (ui_mono.c's inks as they are) */
 static int32_t t2_w, t2_h, t2_sc;                       /* the size drawn, the pixels a cell */
 static uz_t t2_z[T2_ZONES];
 static uint32_t t2_zn;

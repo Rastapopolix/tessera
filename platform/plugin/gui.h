@@ -43,10 +43,15 @@ struct GuiLink
      * every Tessera) */
     virtual Fm1Link::State fm1_state() { return Fm1Link::OFF; }
     virtual void fm1_set(bool on) { (void)on; }
-    /* SIZE (TESSERA's menu): the window's size now, as Panel's halves (2, 3, 4: 100, 150, 200 %), and a pick (100, 150
-     * or 200): the instance remembers it for every window and asks the host for the new size */
-    virtual int size_halves() { return 2; }
+    /* SIZE (TESSERA's menu): the window's size now in % (100, 150, 200; EXPANDED 100, 125: Panel::size_fit), and a
+     * pick: the instance remembers it for every window and asks the host for the new size */
+    virtual int size_pct() { return 100; }
     virtual void size_pick(int pct) { (void)pct; }
+    /* MODE (TESSERA's menu): EXPANDED picked (remembered for every window; the window is EXPANDED in TESSERA's shell),
+     * and a pick (the host asked for the new size); TRACKS as the core last drew it (EXPANDED: false if none yet) */
+    virtual bool expanded() { return false; }
+    virtual void mode_pick(bool on) { (void)on; }
+    virtual bool tracks_view(tess_tracks_t &t) { t.w = t.h = 0; t.zone_count = 0; return false; }
     /* GENERATE (TESSERA's strip; on the host's main thread): the styles' names (none: a build without it); a new piece
      * in a style at a VARIATION, from a new seed; before / after; a piece made before made again (dir -1 an older one,
      * +1 a newer); the style and VARIATION picked (remembered for the next window). Each returns what to show under the
@@ -78,13 +83,17 @@ inline void gui_fm1_tick(Panel &panel, GuiLink *link)
     panel.set_fm1(s != Fm1Link::OFF, s != Fm1Link::ELSEWHERE, s == Fm1Link::LIVE, fm1_state_text(s));
 }
 
-/* each window's tick: SIZE picked in the menu handed on; the size shown */
+/* each window's tick: MODE and SIZE picked in the menu handed on; the mode and the size shown */
 inline void gui_size_tick(Panel &panel, GuiLink *link)
 {
+    int m = panel.take_mode_request();
+    if (m >= 0)
+        link->mode_pick(m == 1);
+    panel.set_expanded(link->expanded());
     int pct = panel.take_size_request();
     if (pct > 0)
         link->size_pick(pct);
-    panel.set_size_pct(Panel::size_pct(link->size_halves()));
+    panel.set_size_pct(link->size_pct());
 }
 
 /* each window's tick: LISTEN and SPLIT in the menu (a step asked for handed on, the channel and SPLIT shown) */
@@ -140,8 +149,9 @@ class Gui
     virtual bool show() = 0;
     virtual bool hide() = 0;
     virtual void tick() = 0;   // ~30 times a second (X11: from the host's timer)
-    /* the window's size: the panel at n / 2 (2, 3, 4: 100, 150, 200 %); before set_parent, the size it opens at */
-    virtual void set_scale(int halves) { (void)halves; }
+    /* the window's size: the panel at pct % (100, 125, 150, 200), its width the panel's (FM-1 or EXPANDED: the window
+     * follows Panel::width() each tick); before set_parent, the size it opens at */
+    virtual void set_scale(int pct) { (void)pct; }
     static const char *api();  // CLAP_WINDOW_API_WIN32 / _X11 / _COCOA, or nullptr
     static std::unique_ptr<Gui> make(const clap_host_t *host, GuiLink *link);
 };
