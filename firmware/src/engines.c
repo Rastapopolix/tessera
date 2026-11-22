@@ -4,14 +4,20 @@
  * sounds at power-on. */
 #include "dsp.c"
 #include "audio_batch.h"
+#if MELODEE_SID || MELODEE_SID_KIT
+#include "eng_sid.c"            /* SID: the chip (also DRUM's SID KIT); plugin and Daisy builds, not the FM-1 */
+#endif
 #include "eng_formant.c"
 #include "eng_trio.c"
 #include "eng_wheel.c"
 #include "eng_phys.c"           /* PHYS: DaisySP physical models (phys_dsp.c, MIT) */
-#include "eng_drum.c"           /* DRUM: synthesized 808 circuits (drum_808.c) and the 909 */
+#include "eng_drum.c"           /* DRUM: synthesized 808 circuits (drum_808.c), the 909, a C64's SID (drum_sid.c) */
 #include "eng_noise.c"
 #include "eng_fm6.c"            /* FM6: 6-operator FM rendered as Dexed renders it (fm6_core.c) */
 #include "eng_oracle.c"         /* ORACLE: two oscillators, Poly-Mod, a 4-pole ladder (the Prophet engine, back) */
+#if MELODEE_PHASE
+#include "eng_phase.c"          /* PHASE: the CZ-1's phase distortion (CrispyZebra's waveforms); plugin and Daisy builds */
+#endif
 #if MELODEE_SLICE
 #include "eng_slice.c"
 #else
@@ -35,6 +41,7 @@ static const engine_t ENG_RETIRED = {         /* 13 without MELODEE_SLICE: reser
 /* Each track owns only its selected engine's working state. Simple engines
  * use voice_t alone. State is released after the old engine's switch fade. */
 #include "resources.c"
+#include "eng_macro.c"          /* MACRO: Plaits' synthesis (MELODEE_PLAITS; macro_glue.cc, third_party/mi) */
 static uint32_t eng_state_size(uint32_t e)
 {
     switch (e) {
@@ -44,10 +51,19 @@ static uint32_t eng_state_size(uint32_t e)
 #if MELODEE_LEGACY_EXTRAS
     case 7: return sizeof(drw_part_t);
 #endif
+#if MELODEE_SID || MELODEE_SID_KIT
+    case 3: return sizeof(sid_part_t);              /* SID (eng_sid.c) */
+#endif
+#if MELODEE_PLAITS
+    case ENGI_MACRO: return mc_bytes();             /* MACRO: Plaits' voice and its working memory (eng_macro.c) */
+#endif
     case ENGI_DRUM: return sizeof(drum909_part_t);
     case ENGI_FM6: return sizeof(fm6_part_t);
 #if MELODEE_ORACLE
     case ENGI_ORACLE: return sizeof(or_part_t);
+#endif
+#if MELODEE_PHASE
+    case ENGI_PHASE: return sizeof(ph_part_t);      /* PHASE: its six envelopes per voice (eng_phase.c) */
 #endif
 #if MELODEE_SLICE
     case ENGI_SLICE: return sizeof(slc_rb_t);
@@ -68,9 +84,18 @@ static int eng_state_prepare(const track_t *t)
 static phys_slot_t *phys_slots(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(phys_slot_t) * PHYS_POLY); }
 static drum909_part_t *drum909_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(drum909_part_t)); }
 static drum_lane_t *drum_kit_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(drum_lane_t) * DV_NLANE); }
+#if MELODEE_SID_KIT
+static dsk_part_t *dsk_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(dsk_part_t)); }
+#endif
 static drw_part_t *drw_of(const track_t *t) { return resource_get(RES_ENGINE0 + (uint32_t)(t - trk), sizeof(drw_part_t)); }
 static fm6_part_t *fm6_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(fm6_part_t)); }
 static or_part_t *or_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(or_part_t)); }
+#if MELODEE_PHASE
+static ph_part_t *ph_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(ph_part_t)); }
+#endif
+#if MELODEE_SID || MELODEE_SID_KIT
+static sid_part_t *sid_part(uint32_t part) { return resource_get(RES_ENGINE0 + part % NPART, sizeof(sid_part_t)); }
+#endif
 #if MELODEE_SLICE
 static int16_t (*slc_rbuf(uint32_t part))[SLC_RB] { return resource_get(RES_ENGINE0 + part % NPART, sizeof(slc_rb_t)); }
 #endif
@@ -79,8 +104,12 @@ static int16_t (*slc_rbuf(uint32_t part))[SLC_RB] { return resource_get(RES_ENGI
 static const engine_t *const ENGINES[NENGINES] = {
     &ENG_RETIRED,                /* 0: retired ANALOG; stored ID reserved */
     &ENG_RETIRED,                /* 1: retired DIGITAL; stored ID reserved */
-    &ENG_RETIRED,                /* 2: retired PHASE; stored ID reserved (its core was CZ-1's) */
-    &ENG_RETIRED,                /* 3: retired SID (was LOFI); stored ID reserved, its tracks load FM6's INIT */
+    &ENG_RETIRED,                /* 2: retired PHASE; stored ID reserved (PHASE is back on 15, MELODEE_PHASE) */
+#if MELODEE_SID
+    &ENG_SID,                    /* 3: SID replaces LOFI without reusing a stored ID */
+#else
+    &ENG_RETIRED,                /* 3: SID left out (core.h); its tracks load FM's INIT */
+#endif
     &ENG_RETIRED,                /* 4: retired SAMPLE; reserved to preserve stored indices */
 #if MELODEE_LEGACY_EXTRAS
     &ENG_FORMANT,                /* 5 VOICE (eng_formant.c: "voice" is a sounding note in voice.c) */
@@ -120,7 +149,11 @@ static const engine_t *const ENGINES[NENGINES] = {
     &ENG_RETIRED,             /* 13: reserved (MELODEE_SLICE=0 builds without SLICE) */
 #endif
     &ENG_RETIRED,                /* 14: retired OBXF; stored index reserved */
-    &ENG_RETIRED,                /* 15: retired CZ-1 (2026-10-22); stored ID reserved */
+#if MELODEE_PHASE
+    &ENG_PHASE,                  /* 15: PHASE, the CZ-1's phase distortion (the native CZ-1 retired 2026-10-22, its tones too) */
+#else
+    &ENG_RETIRED,                /* 15: retired CZ-1 (2026-10-22); stored ID reserved (PHASE, MELODEE_PHASE) */
+#endif
     &ENG_RETIRED, &ENG_RETIRED, &ENG_RETIRED, /* 16..18 reserved */
 #if MELODEE_ORACLE
     &ENG_ORACLE,                 /* 19: ORACLE (2026-10-29: the Prophet engine, retired 2026-10-22, back as its own) */
@@ -128,7 +161,11 @@ static const engine_t *const ENGINES[NENGINES] = {
     &ENG_RETIRED,                /* 19: ORACLE left out of the build; stored ID reserved */
 #endif
     &ENG_RETIRED,                /* 20: reserved (USER_NATIVE_P5, the browser's Prophet user bank) */
-    &ENG_RETIRED,                /* 21: retired MACRO (a Plaits prototype); stored ID reserved */
+#if MELODEE_PLAITS
+    &ENG_MACRO,                  /* 21: MACRO, Plaits' synthesis (Tessera) */
+#else
+    &ENG_RETIRED,                /* 21: MACRO left out of the build; stored ID reserved */
+#endif
 };
 
 /* a track's engine number as an index (the audio paths: a compare, cheaper than % NENGINES; a bad number: 0) */
@@ -162,16 +199,25 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
     ENGI_ORACLE,                 /* ORACLE */
 #endif
 #if MELODEE_LEGACY_EXTRAS
-    5,                           /* VOICE */
+    3, 5,                        /* SID VOICE */
     6, 7, 9,
     11,                          /* NOISE */
 #else
+#if MELODEE_SID
+    3,                           /* SID */
+#endif
 #if MELODEE_TRIO
     6,                           /* TRIO */
 #endif
 #if MELODEE_PHYS
     9,                           /* PHYS */
 #endif
+#endif
+#if MELODEE_PLAITS
+    ENGI_MACRO,                  /* MACRO */
+#endif
+#if MELODEE_PHASE
+    ENGI_PHASE,                  /* PHASE */
 #endif
 #if MELODEE_SLICE
     13,                          /* SLICE */
@@ -202,7 +248,7 @@ static uint32_t eng_rank(uint32_t e)
 {
     uint32_t n;
     if (!eng_ok(e))
-        e = ENGI_FALLBACK;                       /* (a retired or reserved engine: FM6's place) */
+        e = ENGI_FALLBACK;                       /* (a retired or reserved engine: FM6's place, or SID's) */
     for (n = 0; n < NENG_SHOWN && ENGINE_ORDER[n] != e; n++)
         ;
     return n < NENG_SHOWN ? n : 0u;
@@ -225,9 +271,14 @@ static const uint8_t TRK_DEF[NPART][2] = {
     {ENGI_FM6, 38},                                 /* FM6 KOTO WARM (was TRIO STRING MACH: two FM6 pads under generators
                                                      * crackled, 2026-10-28; these are plucks, which ring out) */
     {ENGI_FM6, 20},                                 /* FM6 FLUTE (was BELLS) */
-    {ENGI_DRUM, 0}};                                /* DRUM KIT */
+    {ENGI_DRUM, 0}                                  /* DRUM KIT */
+#if NPART > 4
+    ,                                               /* tracks 5..8 (CORE_TRACKS 8): the pluck and the flute again */
+    {ENGI_FM6, 39}, {ENGI_FM6, 38}, {ENGI_FM6, 20}, {ENGI_FM6, 39}
+#endif
+};
 /* the power-on presets when project format 1 was written (project.c PROJ_DEF_SOUND): fixed, whatever TRK_DEF becomes */
-static const uint8_t TRK_DEF_V1[NPART] = {4, 4, 0, 0};
+static const uint8_t TRK_DEF_V1[NPART] = {4, 4, 0, 0};   /* (a project's tracks 1..4 only: PROJ_NTRK) */
 #if TRK_START_TESS
 #define TRK_DEF_BPM 80                              /* CEDAR RAIN's (85 before 3.5) */
 #define TRK_DEF_SCALE 74                            /* KUMOI on E, CEDAR RAIN's (scales.h N_SCALE; MPEN on C before 3.5) */

@@ -2,6 +2,7 @@
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
 /* Melodee menu (HOME held): COLOR, HOLD (the layer threshold), LIGHTS (the keys' and buttons'
  * glow: ui_input.c ui_leds), NOTE LIGHTS (OFF, STEP or ALL: the keys a sequence plays lit; ui.c NLIGHT_SAVED),
+ * OVERLOAD (BLINK or OFF: the header's four track dots filled a moment when the audio runs out of time; ui.c ovl_tick),
  * KNOB ACCEL (ui_input.c accel_by), TRACK KNOB (RIGHT: ALGORITHM picks the track, LEFT: PRESETS does; panel.c),
  * USB AUDIO (IN+OUT, IN, OUT or OFF; usb.c ua_off_set),
  * USB OUTPUT (what the FM-1 sends: the stereo mix or four track stems, both before MASTER; usb.c ua_tracks_set),
@@ -23,7 +24,14 @@ enum { MI_COLOR,
 #if MELODEE_LOOK
        MI_GROUND, MI_KNOBS, MI_LARGE, MI_TEXT, MI_IDLE,
 #endif
-       MI_LIGHTS, MI_NLIGHT, MI_SCREEN, MI_BATTERY, MI_GAMMA,
+       MI_LIGHTS, MI_NLIGHT, MI_SCREEN,
+#if TESS_HAS_BATTERY
+       MI_BATTERY,
+#endif
+#if MELODEE_VOICE_BUDGET
+       MI_OVERLOAD,
+#endif
+       MI_GAMMA,
        MI_HOLD, MI_ACCEL, MI_TRACK_KNOB,
        MI_MUTES, MI_CLICK, MI_CLICK_LEVEL, MI_COUNTIN, MI_PREVIEW, MI_ADD, MI_AUTOSAVE,
        MI_MIDI_OUT, MI_CLOCK_OUT, MI_CC_IN, MI_MIDI_LEARN,
@@ -41,7 +49,14 @@ static const char *const MI_NAME[MI_COUNT] = {"COLOR",
 #if MELODEE_LOOK
                                               "GROUND", "KNOBS", "LARGE VALUE", "TEXT", "IDLE",
 #endif
-                                              "LIGHTS", "NOTE LIGHTS", "SCREEN OFF", "BATTERY", "PANEL GAMMA",
+                                              "LIGHTS", "NOTE LIGHTS", "SCREEN OFF",
+#if TESS_HAS_BATTERY
+                                              "BATTERY",
+#endif
+#if MELODEE_VOICE_BUDGET
+                                              "OVERLOAD",
+#endif
+                                              "PANEL GAMMA",
                                               "HOLD", "KNOB ACCEL", "TRACK KNOB",
                                               "MUTES", "AUDIO CLICK", "CLICK LEVEL", "COUNT-IN", "NOTE PREVIEW", "CHORD ENTRY",
                                               "AUTOSAVE",
@@ -162,6 +177,18 @@ static const menu_credit_t MENU_CREDITS[] = {
     {"msfa: Apache-2.0, Dexed: GPL-3.0", MC_TEXT},
     {"https://github.com/asb2m10/dexed", MC_URL},
     {"", MC_TEXT},
+#if MELODEE_SID || MELODEE_SID_KIT
+    {"RESID / SID MODEL", MC_TITLE},
+    {"Dag Lem / GPL-2.0-or-later", MC_TEXT},
+    {"https://github.com/libsidplayfp/resid", MC_URL},
+    {"", MC_TEXT},
+#endif
+#if MELODEE_PLAITS
+    {"PLAITS / MACRO", MC_TITLE},
+    {"Emilie Gillet / MIT", MC_TEXT},
+    {"https://github.com/pichenettes/eurorack", MC_URL},
+    {"", MC_TEXT},
+#endif
     {"RINGS / PHYS PORT", MC_TITLE},
     {"Emilie Gillet / MIT", MC_TEXT},
     {"https://github.com/pichenettes/eurorack", MC_URL},
@@ -281,6 +308,7 @@ static int32_t menu_document(int32_t y, int draw)
     }
     y += 246;
 #endif
+#if TESS_HAS_BATTERY
     {                                                 /* the battery and power as read (ui_draw.c batt_ext), for a
                                                        * report: the raw ADC, 5 V in, the P33 bytes */
         char b[32];
@@ -308,6 +336,7 @@ static int32_t menu_document(int32_t y, int draw)
         }
         y = menu_text(b, y, T_SEC, draw) + 12;
     }
+#endif
 #ifdef FM1_IRQ_TARGET
     {                                                 /* what this build leaves free (main.c space_report): room for
                                                        * new features, "FLASH 18.9 KB FREE" */
@@ -476,7 +505,12 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
     if (i == MI_SIM) value = panel_out ? "OFF" : "NO SIM";   /* (on: the menu is out of reach, ui_input.c sim_input) */
     if (i == MI_MUTES) value = MUTE_Q_NAME[settings_mute_q % 3u];   /* (ui_popup.c: MIXER's sheet turns it too) */
     if (i == MI_AUTOSAVE) value = settings_autosave ? "ON" : "OFF";
+#if TESS_HAS_BATTERY
     if (i == MI_BATTERY) value = settings_batt_off ? "WHEN LOW" : "ON";
+#endif
+#if MELODEE_VOICE_BUDGET
+    if (i == MI_OVERLOAD) value = OVL_ON ? "BLINK" : "OFF";
+#endif
     if (i == MI_SCREEN) value = (const char *const[]){"NEVER", "5 MIN", "15 MIN", "30 MIN", "60 MIN"}[scr_get()];
     if (i == MI_GAMMA) value = GAMMA_NAME[gamma_get()];
     if (i == MI_LIGHTS) value = LIGHTS_NAME[settings_lights % LIGHTS_N];
@@ -537,6 +571,8 @@ static void menu_mono(void)
 {
     uint32_t first = ui.menu_sel >= MENU_VISIBLE ? ui.menu_sel - MENU_VISIBLE + 1u : 0u, i;
     int32_t top, hh = (int32_t)MENU_VISIBLE * 11;
+    UZ(uz_list_set(EN_K1, EN_K2, (int32_t)ui.menu_sel, (int32_t)first, 1));
+    UZ(uz_begin(UZ_G_LIST));
     for (top = 0; top < 108; top += 54) {               /* (the rows below the menu's strip, in two canvases) */
         cv_begin(240, 108, MO_BG);
         cv_oy = -top * 2;
@@ -546,6 +582,9 @@ static void menu_mono(void)
             uint16_t ink = on ? MO_BG : MO_INK, dim = on ? MO_BG : MO_DIM;
             char b[24], a[24];
             const char *value = menu_value(i, b, sizeof b);
+            if (!top && ui.menu == 1)                   /* (zones: KNOB 1 the row, KNOB 2 its value) */
+                UZ(uz_add(UZ_G_LIST, UZ_ROW, 0, MENU_HEAD / 2 + y, 118, 10, EN_K1, EN_K2, (int32_t)i, MI_NAME[i],
+                          value ? value : ""));
             if (on)
                 mo_fill(0, y, 118, 10, MO_HOT);
             mo_text(MI_NAME[i], 2, y + 2, on ? MO_BG : MO_DIM);
@@ -860,10 +899,18 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         mute_q_step(s);
         ui.force = 1; ok = 0;                          /* (entries.c mute_press: GLO's mute keys while playing) */
     }
+#if TESS_HAS_BATTERY
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_BATTERY) {   /* KNOB 2 right ON, left WHEN LOW; OCT+ toggles */
         settings_batt_off = (uint8_t)(s > 0 ? 0u : s < 0 ? 1u : !settings_batt_off);
         ui.force = 1; ok = 0;                          /* (the header's battery: ui_draw.c batt_head) */
     }
+#endif
+#if MELODEE_VOICE_BUDGET
+    if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_OVERLOAD) {   /* KNOB 2 right BLINK, left OFF; OCT+ toggles */
+        OVL_SAVED = (uint8_t)((s > 0 ? 1 : s < 0 ? 0 : !OVL_ON) ? 0u : OVL_OFF_TAG);
+        ui.force = 1; ok = 0;                          /* (ui.c ovl_tick; saved with the favorites) */
+    }
+#endif
     if ((s || ok) && ui.menu==1 && ui.menu_sel==MI_SCREEN) {
         uint32_t value=scr_get(), top=4u;
         value=s>0?(value<top?value+1u:value):s<0?(value?value-1u:0u):(value+1u)%(top+1u);

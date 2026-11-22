@@ -14,7 +14,10 @@ GEN = build/gen
 CPP_SOURCES = main.cpp
 C_SOURCES = tessera_core.c
 C_INCLUDES = -I$(GEN) -I$(TESSERA)/firmware/src -I$(TESSERA)/platform/core -I.
-C_DEFS = -DMELODEE_USB_HOST=0 -DMELODEE_USB_AUDIO=0 -DMELODEE_ACCESS=0
+C_DEFS = -DTESS_TARGET=TESS_T_DAISY -DMELODEE_USB_HOST=0 -DMELODEE_USB_AUDIO=0 -DMELODEE_ACCESS=0
+# the engines the FM-1 leaves out for flash, on here (Theo 2026-11-21: what the plugin adds beyond the FM-1 also
+# serves Andamento): SID, DRUM's SID KIT and SID DIGI, MACRO (Plaits, C++ below), PHASE (the CZ-1's phase distortion)
+C_DEFS += -DMELODEE_SID=1 -DMELODEE_SID_KIT=1 -DMELODEE_PLAITS=1 -DMELODEE_PHASE=1
 # (Tessera's warnings are checked by its own builds)
 CFLAGS += -w
 
@@ -26,6 +29,19 @@ LDSCRIPT = tessera_daisy.lds
 
 SYSTEM_FILES_DIR = $(LIBDAISY_DIR)/core
 include $(SYSTEM_FILES_DIR)/Makefile
+
+# MACRO's C++: Plaits and stmlib (firmware/third_party/mi) and macro_glue.cc, the list and flags in plaits_sources.sh
+# (as andamento-fw builds them). libDaisy's rules know only .cpp, so .cc gets its own, into build/mi/. Not libDaisy's
+# CPPFLAGS: its forced -include stm32h7xx.h clashes with Plaits' TEST (a register of that name); -fno-math-errno lets
+# sqrtf be the FPU's vsqrt. They run from QSPI, not ITCM: itcm_pick.py reads only tessera_core.o
+PLAITS_SRC := $(shell sh plaits_sources.sh $(TESSERA))
+PLAITS_OBJ := $(patsubst $(TESSERA)/%.cc,$(BUILD_DIR)/mi/%.o,$(PLAITS_SRC))
+OBJECTS += $(PLAITS_OBJ)
+$(BUILD_DIR)/$(TARGET).elf: $(PLAITS_OBJ)
+$(BUILD_DIR)/mi/%.o: $(TESSERA)/%.cc plaits_sources.sh
+	@mkdir -p $(dir $@)
+	$(CXX) -c $(MCU) $(OPT) $(CPP_STANDARD) -fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-math-errno \
+	    -fdata-sections -ffunction-sections -w $(shell sh plaits_sources.sh --flags $(TESSERA)) $< -o $@
 
 # ITCM: what fits of the audio path, picked from the compiled core (itcm_pick.py; tessera_daisy.lds includes it)
 LDFLAGS += -L$(BUILD_DIR)

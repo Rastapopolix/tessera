@@ -122,6 +122,42 @@ static uint8_t browse_loads, browse_mark;    /* sound loads so far; at the brows
 enum { LARGE_AUTO, LARGE_ON, LARGE_OFF };
 #define LARGE_MODE (LARGE_SAVED == LARGE_ON_TAG ? LARGE_ON : LARGE_SAVED == LARGE_OFF_TAG ? LARGE_OFF : LARGE_AUTO)
 #define LARGE_HOLD_MS 1000u          /* ON: the value stays large this long after the knob stops (ui_draw.c, ui.hot_ms) */
+/* MENU > OVERLOAD (Mono): BLINK (the default) fills the header's four track dots for a moment when the FM-1 runs out
+ * of time: once when the audio faded voices to catch up (audio.c shed_voice), twice when a half was late (the DMA moved
+ * on: a crackle); OFF never. A voice the BUDGET takes doesn't count (the budget at work, rarely heard). At most one
+ * blink every OVL_GAP_MS: a long overload is heard anyway. Pointing at no track, as the faded voice is the quietest, not
+ * the cause. GLO > SYSTEM keeps the totals since power-on. favorites.factory[8][25] tagged OFF, any other byte BLINK
+ * (row 8 bytes 16..25: the retired FX key map, small numbers) */
+#define OVL_SAVED (favorites.factory[8][25])
+#define OVL_OFF_TAG 0xBEu
+#define OVL_ON (OVL_SAVED != OVL_OFF_TAG)
+#define OVL_ON_MS 220u                                  /* a blink: lit this long, then as long dark */
+#define OVL_GAP_MS 5000u
+#ifndef OVL_SHEDS
+static uint32_t ovl_host_sheds, ovl_host_late;          /* the hosts (no audio.c): tests raise them */
+#define OVL_SHEDS() ovl_host_sheds
+#define OVL_LATE() ovl_host_late
+#endif
+static struct { uint32_t sheds, late, t0, next, tot_sheds, tot_late; uint8_t n, primed; } ovl;
+static void ovl_tick(void)                              /* each UI frame (ui_input) */
+{
+    uint32_t s = OVL_SHEDS(), l = OVL_LATE(), ds, dl;
+    if (!ovl.primed) {                                  /* (the counts as found: melodee_dbg survives a reset) */
+        ovl.sheds = s, ovl.late = l, ovl.primed = 1;
+        return;
+    }
+    ds = s - ovl.sheds, dl = l - ovl.late;
+    ovl.sheds = s, ovl.late = l;
+    ovl.tot_sheds += ds, ovl.tot_late += dl;
+    if (ovl.n && fm1_ms - ovl.t0 >= (2u * ovl.n - 1u) * OVL_ON_MS)
+        ovl.n = 0;
+    if ((ds || dl) && OVL_ON && !ovl.n && (int32_t)(fm1_ms - ovl.next) >= 0) {
+        ovl.n = dl ? 2u : 1u;
+        ovl.t0 = fm1_ms;
+        ovl.next = fm1_ms + OVL_GAP_MS;
+    }
+}
+static int ovl_lit(void) { return ovl.n && (fm1_ms - ovl.t0) % (2u * OVL_ON_MS) < OVL_ON_MS; }   /* the dots filled */
 /* MENU > TEXT (Mono): NORMAL or BOLD, the small font's lit cells a pixel wider (ui_mono.c mo_text_s); MENU > IDLE: OFF
  * or LANDSCAPE, untouched IDLE_MS while playing the screen moves to LANDSCAPE, the first touch goes back (screen.c
  * scrn.land). favorites.factory[8][30]: TEXT_IDLE_TAG | bit 0 BOLD | bit 1 LANDSCAPE; any other byte NORMAL and OFF
@@ -441,6 +477,11 @@ static int page_visible(uint32_t i)
 #else
     if (PAGES[i].graph == GR_SLICES)
         return 0;
+#endif
+#if MELODEE_PHASE
+    if (PAGES[i].fam == FAM_EDIT && PAGES[i].id[0] >= P_FM1_ATK && PAGES[i].id[0] <= P_FM4_LEVEL)
+        return (str_prefix(PAGES[i].title, "DC") || str_prefix(PAGES[i].title, "PTCH") || str_prefix(PAGES[i].title, "ENV L")) &&
+               TSEL->eng_req == ENGI_PHASE && TSEL->p[P_E7];   /* PHASE's EG SPLIT pages (FM4's: never) */
 #endif
     return !(PAGES[i].fam == FAM_EDIT && PAGES[i].id[0] >= P_FM1_ATK &&
              PAGES[i].id[0] <= P_FM4_LEVEL);

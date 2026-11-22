@@ -9,6 +9,7 @@
 #include "icons.c"
 #include "ui_graph.c"
 #include "page_random.c"
+#include "ui_zones.c"               /* the screen's zones for a mouse (TESS_HAS_POINTER; else nothing) */
 #include "ui_draw.c"
 #include "ui_menu.c"
 #include "ui_input.c"
@@ -19,3 +20,4 @@
 #include "upreset.c"
 #include "project.c"
 #include "fm6_store.c"
+#include "generate.c"                /* GENERATE: a whole piece from a style and a seed (TESS_GENERATE; else nothing) */

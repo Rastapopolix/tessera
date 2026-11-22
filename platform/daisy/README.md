@@ -8,6 +8,11 @@ the Seed's codec at 48 kHz. Projects load and save as `.tsp` in RAM (`tess_core_
 FM-1's UI is built in but never runs; the screen's driver (`platform/andamento/`) draws a bring-up card, but its SPI
 is not wired yet. There is no Andamento UI, storage or MIDI yet: those come next, on the same API.
 
+Besides the FM-1's engines it builds the ones the FM-1 has no flash for, as the plugin does: SID, DRUM's SID KIT
+and SID DIGI, and MACRO (Plaits, C++: `plaits_sources.sh`). On 2026-11-21 they cost about 49 KB of QSPI and no
+static RAM (MACRO's voice comes from the audio arena); their CPU on the Seed is still to be measured. PHASE (the CZ-1's
+phase distortion, `eng_phase.c`) came back the same day, a few KB more; its voices' state comes from the audio arena too.
+
 | File | What |
 | --- | --- |
 | `tessera_core.c` | the unity build: `platform/core/core_unit.c` with the Daisy's options (48 kHz tables, the firmware's placements kept, the interrupt guard, no FM-1 UI or screen copy), then Andamento's screen |

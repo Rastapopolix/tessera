@@ -97,10 +97,14 @@ Build options (environment; most use `0` or `1`; defaults in `firmware/src/build
 | `MELODEE_UART` | 1 | TRS MIDI IN |
 | `MELODEE_DUAL_CORE` | 1 | paired FM6 rendering on CPU1; `0` builds serial-only firmware |
 | `MELODEE_SLICE` | 1 | the SLICE engine |
+| `MELODEE_VOICE_BUDGET` | 1 (plugin: 0) | the shared voice budget (voice.c, GLO > SYSTEM's BUDGET). `0` (the plugin) leaves it out: every track plays up to its engine's own voice count, the FM-1's CPU limit no longer shared out; SYSTEM's VOICES shows the voices sounding of all the slots |
 | `MELODEE_ICONS` | 1 | parameter icons on the knob cards |
 | `MELODEE_ACCESS` | 1 (host tests: 0) | screen reader support in place of the help cards (issue #430): `1` leaves out the cards (ARP held + a knob) and their texts, ~22 KB flash, and the cord destinations' sentences (cord.h `CD_FULL`, ~5.5 KB). MIDI LEARN and the mod shortcut still find a knob's parameter (`help_find`); docs/PARAMETERS.md keeps every text. `0` builds the cards back in (no room left for much else). What it says is put into words by `firmware/words.tsv` (`tools/gen_words.py`: `web/words/<id>.json`, published on the site, never changed); `tools/speak_audit.sh [../fm1-reader]` checks every page, knob, row, value and message with fm1-reader's audit |
 | `MELODEE_COMPRESS_AUDIO` | 1 | the five SRAM load images (`.ram_text`, `.dsp_text`, `.dsp_tables`, `.data`, `.audio_text`) stored as raw LZMA1 (`tools/boot_audio.py`) and unpacked by `fm1_cstart` before anything runs from SRAM (`firmware/src/boot_lzma.h`; a record that does not unpack exactly enters update mode); `0` stores them raw and copies them by words |
 | `MELODEE_FS` | 44100 | the sample rate, read by `tools/gen_tables.py` into `FS` (`melodee_tables.h`); every rate-dependent number in the firmware is derived from it. The FM-1 is 44.1 kHz; 48000 is for other hardware (a Daisy Seed runs its codec at 48 or 96 kHz). `tests/fs_test.py` checks every engine plays in tune at 48 kHz |
+| `MELODEE_ECHO_SYNC` | 1 | FX type SYNC ECHO (fx.c FX_SYNC: ECHO on note values at the tempo playing; appended after DRIVE, so firmware without it plays it as DRIVE) |
+| `MELODEE_ECHO_RING` | 4096 (plugin: 32768) | SYNC ECHO's ring at FS/4, a power of two: 4096 holds 371 ms (longer note values halve until they fit), 32768 about 3 s (the host arena grows by a ring per FX slot) |
+| `TESS_GENERATE` | 0 (plugin: 1) | GENERATE (`firmware/src/generate.c`): a whole piece in one press from a style and a seed (LEMONADE SANDWICH's fifteen rolls), on the core API (`tess_core_generate`). One .tsp record of RAM (the project before the press, 34 KB); `0` (the FM-1) leaves the file empty |
 
 ## Samples
 

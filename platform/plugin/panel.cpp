@@ -1,9 +1,13 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
-/* The plugin window's FM-1 (panel.h): web/sim/index.html's wide layout and black shell, drawn into a pixel buffer */
+/* The plugin window's FM-1 (panel.h): web/sim/index.html's wide layout and its shells, or TESSERA's own shell, drawn
+ * into a pixel buffer */
 #include "panel.h"
 
+#include <chrono>
 #include <cmath>
+#include <cstdlib>
+#include <cstdio>
 #include <cstring>
 
 extern "C" {
@@ -12,7 +16,7 @@ extern "C" {
 
 namespace
 {
-// ---- colours (web/sim/index.html SHELLS black; the LED levels mixed as shellVars does, in linear light)
+// ---- colours (web/sim/index.html SHELLS; the LED levels mixed as shellVars does, in linear light)
 struct Rgb { double r, g, b; };
 Rgb hex(uint32_t c)
 {
@@ -29,10 +33,40 @@ uint32_t mix(uint32_t a, uint32_t b, double s)
     Rgb x = hex(a), y = hex(b);
     return pack({x.r + (y.r - x.r) * s, x.g + (y.g - x.g) * s, x.b + (y.b - x.b) * s});
 }
-const uint32_t BODY = 0xFF1B1B1D, TRAY = 0xFF29292C, BTN = 0xFF3B3B40, EDGE = 0xFF505056, BTN_INK = 0xFFE4E4E6,
-               SLIT = 0xFF121214, LABEL = 0xFFD6D6D8, LIT = 0xFFF6F6F6, LIT_INK = 0xFF1B1B1D, REC = 0xFFC62A22,
-               WELL = 0xFF141415, PART = 0xFF2A2A2D, KEDGE = 0xFF3A3A3E, GREEN = 0xFF5FE08A, GREEN_INK = 0xFF0D2414,
+const uint32_t WELL = 0xFF141415, PART = 0xFF2A2A2D, KEDGE = 0xFF3A3A3E, GREEN = 0xFF5FE08A, GREEN_INK = 0xFF0D2414,
                BEZEL = 0xFF0B0B0C;
+
+// the FM-1's shells, as web/sim/index.html SHELLS has them (keep the two alike), each with the Mono ink made for it:
+// body, trays, buttons and keys, their edge, their ink, the slits, the labels on the body, the ink on a lit button,
+// a lit button, REC's ink (0: the defaults, the button ink, 0xF6F6F6, 0xC62A22). (mint's LED levels: mixed here, the
+// web sim's tuned ones are within a shade)
+struct Shell
+{
+    const char *id, *name, *ink;
+    uint32_t body, tray, btn, edge, btn_ink, slit, label, lit_ink, lit, rec;
+};
+const Shell SHELLS[] = {
+    // TESSERA's own (draw_native; these colours only make its swatch among the FM-1's)
+    {"tessera", "TESSERA", "YELLOW", 0xFF111111, 0xFF111111, 0xFFFFD020, 0xFF3B3007, 0xFFFFD020, 0xFF3B3007, 0xFFB9B2A0,
+     0xFF000000, 0xFFFFD020, 0xFFFFD020},
+    {"black", "BLACK", "YELLOW", 0xFF1B1B1D, 0xFF29292C, 0xFF3B3B40, 0xFF505056, 0xFFE4E4E6, 0xFF121214, 0xFFD6D6D8,
+     0xFF1B1B1D, 0, 0},
+    {"mint", "BLACK / MINT", "GREEN", 0xFF1D1D1F, 0xFF5FC9AD, 0xFF7CD9C0, 0xFF4BB398, 0xFF0F2E27, 0xFF1E3A33, 0xFFD6D6D8,
+     0xFF0F2E27, 0xFFF2FFFA, 0},
+    {"lavender", "LAVENDER", "LILAC", 0xFFB8ACDF, 0xFFA394D4, 0xFFCBC1EE, 0xFF9283C8, 0xFF2A2240, 0xFF463C6C, 0xFF2A2240,
+     0, 0, 0},
+    {"orange", "ORANGE", "ORANGE", 0xFFEE8A30, 0xFFDC7720, 0xFFF6A656, 0xFFC86A16, 0xFF3A1E05, 0xFF6A3A10, 0xFF2E1804,
+     0, 0, 0},
+    {"cream-grey", "CREAM / GREY", "WHITE", 0xFFEBE5D5, 0xFF9B9B9E, 0xFFB6B6B9, 0xFF88888C, 0xFF1E1E20, 0xFF3A3A3D,
+     0xFF3A3630, 0, 0, 0},
+    {"cream-blue", "CREAM / BLUE", "BLUE", 0xFFEBE5D5, 0xFF4F7FC4, 0xFF6F99D7, 0xFF3E6CB0, 0xFF0D1D36, 0xFF1C3460,
+     0xFF3A3630, 0, 0, 0},
+    {"cream-brick", "CREAM / BRICK", "RED", 0xFFEBE5D5, 0xFFB4523C, 0xFFC96B53, 0xFF9A4230, 0xFF2B0D06, 0xFF4C1A10,
+     0xFF3A3630, 0, 0, 0},
+    {"hot-pink", "HOT PINK", "HOT PINK", 0xFFD6346C, 0xFFC42A60, 0xFFCF2F67, 0xFFA91F50, 0xFFFDE8EF, 0xFF5E0F2C,
+     0xFFFDE8EF, 0xFF3A0C20, 0, 0xFFFFE08A},
+};
+const int NSHELLS = (int)(sizeof SHELLS / sizeof SHELLS[0]);
 
 // ---- drawing: anti-aliased by distance at the edges
 struct Canvas
@@ -65,6 +99,18 @@ struct Canvas
             }
     }
     void circle(double cx, double cy, double r, uint32_t c) { rrect(cx - r, cy - r, 2 * r, 2 * r, r, c); }
+    // a disc in four quarters (a multi-ink palette's track colours, clockwise from the top left)
+    void quad(double cx, double cy, double r, const uint32_t c[4])
+    {
+        for (int y = (int)(cy - r - 1); y <= (int)(cy + r + 1); y++)
+            for (int x = (int)(cx - r - 1); x <= (int)(cx + r + 1); x++)
+            {
+                double dx = x + 0.5 - cx, dy = y + 0.5 - cy, a = r + 0.5 - std::sqrt(dx * dx + dy * dy);
+                if (a <= 0) continue;
+                int q = dy < 0 ? (dx < 0 ? 0 : 1) : (dx < 0 ? 3 : 2);
+                blend(x, y, c[q], a > 1 ? 1 : a);
+            }
+    }
     void line(double x0, double y0, double x1, double y1, double wd, uint32_t c)
     {
         double len = std::hypot(x1 - x0, y1 - y0);
@@ -72,6 +118,50 @@ struct Canvas
         for (int i = 0; i <= n; i++)
             circle(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n, wd / 2, c);
     }
+    // a plain rectangle, no edge blending
+    void box(int x, int y, int w, int h, uint32_t c)
+    {
+        for (int py = y; py < y + h; py++)
+            for (int px_ = x; px_ < x + w; px_++)
+                blend(px_, py, c, 1);
+    }
+    // text in the Mono face spaced by each letter's ink (TESSERA's shell): a dot between letters, three for a space
+    static void glyph_cols(int ch, int &lo, int &hi)
+    {
+        lo = 5; hi = -1;
+        if (ch < 32 || ch > 'z') return;
+        const uint8_t *g = MO_FONT[ch - 32];
+        for (int row = 0; row < 7; row++)
+            for (int col = 0; col < 5; col++)
+                if (g[row] >> (4 - col) & 1) { if (col < lo) lo = col; if (col > hi) hi = col; }
+    }
+    static int ptext_w(const char *t, int s)
+    {
+        int w = 0;
+        for (const char *q = t; *q; q++)
+        {
+            int lo, hi;
+            glyph_cols((unsigned char)*q, lo, hi);
+            w += (hi < lo ? 3 : hi - lo + 1) + (q[1] ? 1 : 0);
+        }
+        return w * s;
+    }
+    void ptext(int x, int y, const char *t, int s, uint32_t c)   // (x: the left edge)
+    {
+        for (; *t; t++)
+        {
+            int ch = (unsigned char)*t, lo, hi;
+            glyph_cols(ch, lo, hi);
+            if (hi < lo) { x += 4 * s; continue; }
+            const uint8_t *g = MO_FONT[ch - 32];
+            for (int row = 0; row < 7; row++)
+                for (int col = lo; col <= hi; col++)
+                    if (g[row] >> (4 - col) & 1)
+                        box(x + (col - lo) * s, y + row * s, s, s, c);
+            x += (hi - lo + 2) * s;
+        }
+    }
+    void ptext_c(int cx, int y, const char *t, int s, uint32_t c) { ptext(cx - ptext_w(t, s) / 2, y, t, s, c); }
     // text in the Mono face, centred on cx, its top at y; s = pixels per font dot
     static int text_w(const char *t, int s) { return (int)std::strlen(t) * 6 * s - s; }
     void text(int cx, int y, const char *t, int s, uint32_t c)
@@ -112,15 +202,7 @@ Panel::Panel()
     for (int i = 0; i < 8; i++)
         knobs.push_back({K[i][0], K[i][1], K[i][2], KN[i], ROLE[i], 0});
     knobs[0].angle = -135 + 270.0 * master_now / 1023;
-    buttons.push_back({60, 258, 90, 34, B_OCTDN, "OCT-", nullptr});
-    buttons.push_back({170, 258, 90, 34, B_OCTUP, "OCT+", nullptr});
-    const int R1[6] = {B_FX, B_SCL, B_ENV, B_LFO, B_EDIT, B_GLO}, R2[6] = {B_HOME, B_SAVE, B_ARP, B_SEQ, B_PLAY, B_REC};
-    const char *F1[6] = {"FX", "SEL", "ENV", "LFO", "EDIT", "GLO"}, *F2[6] = {"HOME", "SAVE", "ARP", "SEQ", "PLAY", "REC"};
-    for (int i = 0; i < 6; i++)
-    {
-        buttons.push_back({582 + i * 63, 174, 54, 48, R1[i], F1[i], nullptr});
-        buttons.push_back({582 + i * 63, 174 + 62, 54, 48, R2[i], F2[i], R2[i] == B_PLAY ? "STOP" : nullptr});
-    }
+    layout();
     const int x0 = KEYBED[0], y0 = KEYBED[1], w = KEYBED[2], h = KEYBED[3];
     pitch = (w - 24) / 16;
     kw = (int)(pitch * 0.78);
@@ -132,15 +214,111 @@ Panel::Panel()
         keys.push_back({x0 + 12 + (BLACK_AFTER[j] + 1) * pitch, y0 + h / 4, BLACK_K[j]});
 }
 
+// the buttons and the files where the shell has them: the FM-1's as the web sim's wide layout; TESSERA's grid a little
+// wider (room round the words), its files centred under the keys
+void Panel::layout()
+{
+    const bool n = native();
+    buttons.clear();
+    buttons.push_back({60, 258, 90, 34, B_OCTDN, "OCT-", nullptr});
+    buttons.push_back({170, 258, 90, 34, B_OCTUP, "OCT+", nullptr});
+    const int R1[6] = {B_FX, B_SCL, B_ENV, B_LFO, B_EDIT, B_GLO}, R2[6] = {B_HOME, B_SAVE, B_ARP, B_SEQ, B_PLAY, B_REC};
+    const char *F1[6] = {"FX", "SEL", "ENV", "LFO", "EDIT", "GLO"}, *F2[6] = {"HOME", "SAVE", "ARP", "SEQ", "PLAY", "REC"};
+    const int bx = n ? 574 : 582, step = n ? 66 : 63, bw = n ? 60 : 54;
+    for (int i = 0; i < 6; i++)
+    {
+        buttons.push_back({bx + i * step, 174, bw, 48, R1[i], F1[i], nullptr});
+        buttons.push_back({bx + i * step, 174 + 62, bw, 48, R2[i], F2[i], R2[i] == B_PLAY ? "STOP" : nullptr});
+    }
+    files.clear();
+    const int fy = KEYBED[1] + KEYBED[3] + 5;
+    if (!n)
+    {
+        files.push_back({60, fy, 72, 24, FILE_OPEN, "OPEN"});   // (in the shell, under the keys)
+        files.push_back({142, fy, 72, 24, FILE_SAVE, "SAVE"});
+        banks[0] = {234, fy, 52, 24, 0, "1-4"};   // (one switch, two halves)
+        banks[1] = {286, fy, 52, 24, 4, "5-8"};
+        usb = {tracks_ > 4 ? 348 : 224, fy, 112, 24, 0, "FM-1 USB"};
+        return;
+    }
+    const int total = 72 + 10 + 72 + (tracks_ > 4 ? 20 + 104 : 0);
+    int x = W / 2 - total / 2;
+    files.push_back({x, fy - 1, 72, 26, FILE_OPEN, "OPEN"});
+    files.push_back({x + 82, fy - 1, 72, 26, FILE_SAVE, "SAVE"});
+    banks[0] = {x + 174, fy - 1, 52, 26, 0, "1-4"};
+    banks[1] = {x + 226, fy - 1, 52, 26, 4, "5-8"};
+}
+
+void Panel::set_midi(uint32_t count)
+{
+    if (midi_known && count != midi_count)
+        midi_frame = frame + 1;   // (lit from the next frame for a few)
+    midi_count = count;
+    midi_known = true;
+}
+
+void Panel::set_fm1(bool on, bool mine, bool live, const std::string &text)
+{
+    bool was = fm1_on;
+    std::string before = fm1_text;
+    fm1_on = on;
+    fm1_mine = mine;
+    fm1_live = live;
+    fm1_text = text;
+    if (fm1_known && (on ? text != before : was))
+        note(on ? text : "FM-1 USB OFF");
+    else if (!fm1_known && on)
+        note(text);
+    fm1_known = true;
+}
+
+int Panel::bank_at(int x, int y) const
+{
+    if (tracks_ <= 4) return -1;
+    for (int i = 0; i < 2; i++)
+        if (x >= banks[i].x && x < banks[i].x + banks[i].w && y >= banks[i].y && y < banks[i].y + banks[i].h)
+            return i;
+    return -1;
+}
+
+void Panel::note(const std::string &text)
+{
+    note_text.clear();
+    for (char ch : text)   // (the Mono face: capitals)
+        note_text += ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
+    note_frames = 150;     // (5 s at the window's 30 frames a second)
+}
+
 void Panel::draw(uint32_t *px, const tess_view_t &v)
 {
+    zones.assign(v.zones, v.zones + (v.zone_count < (uint32_t)TESS_ZONES ? v.zone_count : (uint32_t)TESS_ZONES));
+    draw_body(px, v);
+    draw_hover(px);
+}
+
+void Panel::draw_body(uint32_t *px, const tess_view_t &v)
+{
     Canvas c{px};
+    const Shell &sh = SHELLS[shell_];
+    const uint32_t BODY = sh.body, TRAY = sh.tray, BTN = sh.btn, EDGE = sh.edge, BTN_INK = sh.btn_ink, SLIT = sh.slit,
+                   LABEL = sh.label, LIT_INK = sh.lit_ink ? sh.lit_ink : sh.btn_ink, LIT = sh.lit ? sh.lit : 0xFFF6F6F6,
+                   REC = sh.rec ? sh.rec : 0xFFC62A22;
     master_now = (int)v.master;
     knobs[0].angle = -135 + 270.0 * (input.master >= 0 ? input.master : master_now) / 1023;
     static const double kPi = 3.14159265358979;
     // the breathing LEDs: dark .. lit and back in ~1.13 s (fm1_led_breath)
-    static uint32_t frame = 0;
     double breath = 0.5 - 0.5 * std::cos(2 * kPi * (frame++ / 30.0) / 1.13);
+    if (ink_pending < 0 || (int)v.ink == ink_pending)   // (a pick stays ringed until the view has it)
+    {
+        ink_now = (int)v.ink;
+        ink_pending = -1;
+    }
+    track_now = (int)v.track;
+    if (native())
+    {
+        draw_native(px, v, breath);
+        return;
+    }
     for (int i = 0; i < W * H; i++)
         px[i] = 0xFF101011;
     c.rrect(4, 4, W - 8, H - 8, 40, BODY);
@@ -208,6 +386,155 @@ void Panel::draw(uint32_t *px, const tess_view_t &v)
         else if (v.dim_keys & bit) s = mix(SLIT, 0xFFFFFFFF, 0.08);
         c.rrect(k.cx - sw / 2.0, y + kw * 0.4 + dy, sw, kh - kw * 0.8, sw / 2.0, s);
     }
+
+    // the project files: OPEN, SAVE, and what the last one did
+    for (size_t i = 0; i < files.size(); i++)
+    {
+        const FileButton &f = files[i];
+        int dy = file_held == (int)i ? 1 : 0;
+        c.rrect(f.x, f.y + dy, f.w, f.h, 6, EDGE);
+        c.rrect(f.x + 1.5, f.y + 1.5 + dy, f.w - 3, f.h - 3, 5, BTN);
+        c.text(f.x + f.w / 2, f.y + f.h / 2 - 7 + dy, f.face, 2, BTN_INK);
+    }
+    // the bank switch (8 tracks): the half of the selected track's bank lit
+    if (tracks_ > 4)
+    {
+        const FileButton &a = banks[0];
+        c.rrect(a.x, a.y, banks[1].x + banks[1].w - a.x, a.h, 6, EDGE);
+        for (int i = 0; i < 2; i++)
+        {
+            const FileButton &b = banks[i];
+            bool lit = (track_now & 4) == b.action;
+            int dy = bank_held == i ? 1 : 0;
+            c.rrect(b.x + 1.5, b.y + 1.5 + dy, b.w - 3, b.h - 3, 5, lit ? LIT : BTN);
+            c.text(b.x + b.w / 2, b.y + b.h / 2 - 7 + dy, b.face, 2, lit ? LIT_INK : BTN_INK);
+        }
+    }
+    {   // FM-1 USB: lit while this instance listens to an FM-1 on USB
+        const FileButton &u = usb;
+        bool lit = fm1_on && fm1_mine;
+        int dy = file_held == 100 ? 1 : 0;
+        c.rrect(u.x, u.y + dy, u.w, u.h, 6, EDGE);
+        c.rrect(u.x + 1.5, u.y + 1.5 + dy, u.w - 3, u.h - 3, 5, lit ? LIT : BTN);
+        c.text(u.x + u.w / 2, u.y + u.h / 2 - 7 + dy, u.face, 2, lit ? LIT_INK : BTN_INK);
+    }
+    if (note_frames > 0)
+    {
+        note_frames--;
+        const FileButton &last = usb;
+        int x = last.x + last.w + 16, sx, sy;
+        swatch_xy(0, sx, sy);
+        std::string t = note_text;   // (cut short before the shells' swatches)
+        while (!t.empty() && x + Canvas::text_w(t.c_str(), 2) > sx - SWATCH_R - 12)
+            t.pop_back();
+        c.text(x + Canvas::text_w(t.c_str(), 2) / 2, last.y + last.h / 2 - 7, t.c_str(), 2, LABEL);
+    }
+
+    // the shells: a swatch each (its body round its buttons), the one shown ringed; its name while the mouse is on it
+    for (int i = 0; i < NSHELLS; i++)
+    {
+        int x, y;
+        swatch_xy(i, x, y);
+        if (i == shell_ || i == shell_hover)
+            c.circle(x, y, SWATCH_R + 3, i == shell_ ? LABEL : mix(BODY, LABEL, 0.4));
+        c.circle(x, y, SWATCH_R + 1, BODY);
+        c.circle(x, y, SWATCH_R, SHELLS[i].body);
+        c.circle(x, y, SWATCH_R * 0.5, SHELLS[i].btn);
+    }
+    {   // TESSERA's own swatch set apart from the FM-1's eight by a line
+        int x0, x1, y;
+        swatch_xy(0, x0, y);
+        swatch_xy(1, x1, y);
+        int lx = (x0 + SWATCH_R + x1 - SWATCH_R) / 2;
+        c.rrect(lx, y - SWATCH_R, 1, 2 * SWATCH_R, 0, mix(BODY, LABEL, 0.5));
+    }
+    int sx, sy;
+    swatch_xy(0, sx, sy);
+    const char *what = shell_hover >= 0 ? SHELLS[shell_hover].name : note_frames > 0 ? "" : "SHELL";   // (a note there)
+    c.text(sx - SWATCH_R - 14 - Canvas::text_w(what, 2) / 2, sy - 7, what, 2, LABEL);
+
+    // the screen's inks: a swatch each (its ink on the screen's black), the one shown ringed; its name while the mouse
+    // is on it
+    for (int i = 0; i < (int)inks.size(); i++)
+    {
+        int x, y;
+        ink_xy(i, x, y);
+        if (i == ink_now || i == ink_hover)
+            c.circle(x, y, INK_R + 3, i == ink_now ? LABEL : mix(BODY, LABEL, 0.4));
+        c.circle(x, y, INK_R + 1, BODY);
+        c.circle(x, y, INK_R, 0xFF000000);
+        const uint32_t *k = inks[i].rgb;
+        uint32_t q[4] = {0xFF000000u | k[0], 0xFF000000u | k[1], 0xFF000000u | k[2], 0xFF000000u | k[3]};
+        if (k[0] == k[1] && k[0] == k[2] && k[0] == k[3])
+            c.circle(x, y, INK_R * 0.55, q[0]);
+        else
+            c.quad(x, y, INK_R * 0.6, q);
+    }
+    if (!inks.empty())
+    {
+        int ix, iy;
+        ink_xy(0, ix, iy);
+        const char *name = ink_hover >= 0 ? inks[ink_hover].name.c_str() : "INK";
+        c.text(ix - INK_R - 12 - Canvas::text_w(name, 2) / 2, iy - 7, name, 2, LABEL);
+    }
+}
+
+// ---- the shells
+
+int Panel::shell_count() { return NSHELLS; }
+const char *Panel::shell_id(int i) { return i >= 0 && i < NSHELLS ? SHELLS[i].id : ""; }
+const char *Panel::shell_ink(int i) { return i >= 0 && i < NSHELLS ? SHELLS[i].ink : ""; }
+int Panel::shell_by_id(const std::string &id)
+{
+    for (int i = 0; i < NSHELLS; i++)
+        if (id == SHELLS[i].id)
+            return i;
+    return -1;
+}
+void Panel::set_shell(int i)
+{
+    if (i >= 0 && i < NSHELLS)
+    {
+        shell_ = i;
+        layout();
+        menu_open = false;
+    }
+}
+// swatch i's centre: a row under the keys, at the right, as OPEN and SAVE are at the left
+void Panel::swatch_xy(int i, int &x, int &y) const
+{
+    x = KEYBED[0] + KEYBED[2] - SWATCH_R - 2 - (NSHELLS - 1 - i) * (2 * SWATCH_R + 10) - (i == 0 ? SHELL_GAP : 0);
+    y = KEYBED[1] + KEYBED[3] + 5 + 12;
+}
+// ink i's centre: a row between the buttons and the keys, at the right
+void Panel::ink_xy(int i, int &x, int &y) const
+{
+    x = 568 + 400 - INK_R - 6 - ((int)inks.size() - 1 - i) * (2 * INK_R + 6);
+    y = (300 + KEYBED[1]) / 2;
+}
+int Panel::ink_at(int x, int y) const
+{
+    if (native()) return -1;   // (TESSERA's shell: in its menu)
+    for (int i = 0; i < (int)inks.size(); i++)
+    {
+        int ix, iy;
+        ink_xy(i, ix, iy);
+        if (std::hypot(x - ix, y - iy) <= INK_R + 3)
+            return i;
+    }
+    return -1;
+}
+int Panel::swatch_at(int x, int y) const
+{
+    if (native()) return -1;
+    for (int i = 0; i < NSHELLS; i++)
+    {
+        int sx, sy;
+        swatch_xy(i, sx, sy);
+        if (std::hypot(x - sx, y - sy) <= SWATCH_R + 4)
+            return i;
+    }
+    return -1;
 }
 
 // ---- the mouse
@@ -234,6 +561,80 @@ int Panel::key_at(int x, int y) const
     return -1;
 }
 
+void Panel::merge_held()
+{
+    input.keys = mouse_keys | kbd_keys | latch_keys;
+    input.buttons = mouse_buttons | kbd_buttons | latch_buttons;
+    input.changed = true;
+}
+
+// web/sim/index.html KEYMAP: F3..A#4 on the Z (white) and A (black) rows, B4..G5 on Q..O in semitones, the twelve
+// buttons on the number row in the panel's order, [ ] OCT
+bool Panel::key(int code, bool down)
+{
+    static const int WHITE_SC[10] = {0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35};   // Z X C V B N M , . /
+    static const int BLACK_SC[8][2] = {{0x1F, 1}, {0x20, 3}, {0x21, 5}, {0x23, 8}, {0x24, 10}, {0x26, 13}, {0x27, 15}, {0x28, 17}};
+    static const int TOP_SC[9] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18};             // Q W E R T Y U I O
+    static const int BTN_SC[12] = {0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D};   // 1 .. 0 - =
+    static const int BTN_BIT[12] = {B_FX, B_SCL, B_ENV, B_LFO, B_EDIT, B_GLO, B_HOME, B_SAVE, B_ARP, B_SEQ, B_PLAY, B_REC};
+    int k = -1, b = -1;
+    for (int i = 0; i < 10; i++) if (code == WHITE_SC[i]) k = WHITE_K[i];
+    for (int i = 0; i < 8; i++) if (code == BLACK_SC[i][0]) k = BLACK_SC[i][1];
+    for (int i = 0; i < 9; i++) if (code == TOP_SC[i]) k = 18 + i;
+    for (int i = 0; i < 12; i++) if (code == BTN_SC[i]) b = BTN_BIT[i];
+    if (code == 0x01 && menu_open)   // Esc: the menu shut
+    {
+        if (down) menu_open = false;
+        return false;
+    }
+    if (code == 0x01 && gen_list)    // Esc: GENERATE's style list shut
+    {
+        if (down) gen_list = false;
+        return false;
+    }
+    if (code == 0x01 && (latch_keys || latch_buttons))   // Esc: every latch let go
+    {
+        if (!down) return false;
+        latch_keys = latch_buttons = 0;
+        merge_held();
+        return true;
+    }
+    if (!keys_on_)   // KEYS OFF: every key the DAW's
+        return false;
+    if (code == 0x1A) b = B_OCTDN;
+    if (code == 0x1B) b = B_OCTUP;
+    if (code == 0x0F && tracks_ > 4)   // Tab: the other bank (T1 or T5)
+    {
+        if (!down) return false;
+        input.track = (track_now & 4) ? 0 : 4;
+        track_now = input.track;   // (a second Tab before the view catches up: back again)
+        input.changed = true;
+        return true;
+    }
+    if (code == KEY_UP || code == KEY_DOWN || code == KEY_LEFT || code == KEY_RIGHT)
+    {
+        if (!down) return false;
+        int role = code == KEY_UP || code == KEY_DOWN ? 0 : 1;   // SELECT, ALGORITHM
+        for (size_t i = 0; i < knobs.size(); i++)
+            if (knobs[i].role == role) turn((int)i, code == KEY_UP || code == KEY_RIGHT ? 1 : -1);
+        return true;
+    }
+    uint32_t was_k = kbd_keys, was_b = kbd_buttons;
+    if (k >= 0) kbd_keys = down ? kbd_keys | 1u << k : kbd_keys & ~(1u << k);
+    if (b >= 0) kbd_buttons = down ? kbd_buttons | 1u << b : kbd_buttons & ~(1u << b);
+    if (kbd_keys == was_k && kbd_buttons == was_b) return false;   // (not ours, or a key's repeat)
+    merge_held();
+    return true;
+}
+
+bool Panel::release_keys()
+{
+    if (!kbd_keys && !kbd_buttons) return false;
+    kbd_keys = kbd_buttons = 0;
+    merge_held();
+    return true;
+}
+
 void Panel::turn(int i, int n)
 {
     Knob &k = knobs[i];
@@ -248,6 +649,7 @@ void Panel::turn(int i, int n)
         input.enc[k.role] += n;
         k.angle = std::fmod(k.angle + n * 18, 360);
     }
+    turned[i] = frame ? frame : 1;
     input.changed = true;
 }
 
@@ -256,29 +658,177 @@ bool Panel::down(int x, int y)
     last_x = x;
     last_y = y;
     acc = 0;
+    if (native() && menu_open)   // (a click with the menu open is the menu's, inside or out)
+    {
+        drag = NONE;
+        return menu_click(x, y);
+    }
+    if (gen_list)   // GENERATE's style list: a style picked, or (anywhere else) the list shut
+    {
+        drag = NONE;
+        int j = gen_list_at(x, y);
+        gen_list = false;
+        if (j >= 0 && j != gen.style)
+        {
+            gen.style = j;
+            gen_ask(GEN_SET);
+        }
+        return false;
+    }
+    switch (gen_part_at(x, y))   // GENERATE's strip
+    {
+    case GP_BUTTON:
+        drag = GEN_BUTTON;
+        gen_down_frame = frame;
+        gen_swapped = false;
+        return false;
+    case GP_PREV: drag = NONE; gen_style_step(-1); return false;
+    case GP_NEXT: drag = NONE; gen_style_step(1); return false;
+    case GP_STYLE: drag = NONE; gen_list = true; gen_list_hover = -1; return false;
+    case GP_VAR:
+    {
+        double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        if (now - gen_var_click < 0.4) gen_var_step(20);   // (a double-click: 100)
+        gen_var_click = now;
+        drag = GEN_VAR;
+        return false;
+    }
+    case GP_SEED: drag = NONE; return false;
+    default: break;
+    }
+    if (native() && x >= 30 && x < 250 && y >= 6 && y < 44)   // the mark: the menu
+    {
+        drag = NONE;
+        menu_open = true;
+        menu_sub = 0;
+        menu_hover = sub_hover = -1;
+        return false;
+    }
+    int zi = zone_at(x, y);
+    if (zi >= 0)   // the screen: a zone (a double-click: the same zone, soon, where the first was)
+    {
+        const tess_zone_t z = zones[zi];
+        double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        bool dbl = click_known && zone_like(click_zone) == zi && now - click_t < 0.4 && std::abs(x - click_x) < 6 &&
+                   std::abs(y - click_y) < 6;
+        click_known = !dbl;
+        click_zone = z;
+        click_t = now, click_x = x, click_y = y;
+        if (z.kind == TESS_ZONE_KNOB)
+        {
+            drag = ZONE;
+            drag_zone = z;
+            if (dbl) zone_act(z, TESS_ZA_DOUBLE, 0);
+            return dbl;
+        }
+        drag = NONE;
+        if (dbl && z.kind != TESS_ZONE_ROW) return false;   // (OK, YES, a track: once, however often clicked)
+        zone_act(z, dbl ? TESS_ZA_DOUBLE : TESS_ZA_CLICK, 0);
+        return true;
+    }
     if ((drag_i = knob_at(x, y)) >= 0) { drag = KNOB; return false; }
-    if ((drag_i = button_at(x, y)) >= 0)
+    if ((drag_i = button_at(x, y)) >= 0 && (latch_buttons >> buttons[drag_i].bit & 1u))   // a latched one: let go
+    {
+        drag = NONE;
+        latch_buttons &= ~(1u << buttons[drag_i].bit);
+        merge_held();
+        return true;
+    }
+    if (drag_i >= 0)
     {
         drag = BUTTON;
-        input.buttons |= 1u << buttons[drag_i].bit;
-        return input.changed = true;
+        mouse_buttons |= 1u << buttons[drag_i].bit;
+        merge_held();
+        return true;
     }
-    if ((drag_i = key_at(x, y)) >= 0)
+    if ((drag_i = key_at(x, y)) >= 0 && (latch_keys >> keys[drag_i].k & 1u))   // a latched one: let go
+    {
+        drag = NONE;
+        latch_keys &= ~(1u << keys[drag_i].k);
+        merge_held();
+        return true;
+    }
+    if (drag_i >= 0)
     {
         drag = KEY;
-        input.keys |= 1u << keys[drag_i].k;
-        return input.changed = true;
+        mouse_keys |= 1u << keys[drag_i].k;
+        merge_held();
+        return true;
     }
     drag = NONE;
+    int bk = bank_at(x, y);
+    if (bk >= 0)
+    {
+        bank_held = bk;
+        if ((track_now & 4) == banks[bk].action) return false;   // (that bank already)
+        input.track = banks[bk].action;
+        track_now = input.track;
+        input.changed = true;
+        return true;
+    }
+    int sw_i = swatch_at(x, y);
+    if (sw_i >= 0 && sw_i != shell_)
+    {
+        set_shell(sw_i);
+        shell_req = sw_i;
+        return false;
+    }
+    int in_i = ink_at(x, y);
+    if (in_i >= 0 && in_i != ink_now)
+    {
+        ink_now = ink_pending = ink_req = in_i;   // (ringed at once; the view follows)
+    }
+    for (size_t i = 0; i < files.size(); i++)
+        if (x >= files[i].x && x < files[i].x + files[i].w && y >= files[i].y && y < files[i].y + files[i].h)
+        {
+            file_held = (int)i;
+            file_req = files[i].action;
+        }
+    if (!native() && x >= usb.x && x < usb.x + usb.w && y >= usb.y && y < usb.y + usb.h)
+    {
+        file_held = 100;   // (pressed in, as OPEN and SAVE)
+        fm1_req = fm1_on && fm1_mine ? 0 : 1;
+    }
     return false;
 }
 
 bool Panel::move(int x, int y)
 {
+    if (native() && menu_open)
+    {
+        menu_hover = menu_row_at(x, y);
+        sub_hover = sub_at(x, y);
+        last_x = x;
+        last_y = y;
+        return false;
+    }
+    if (gen_list)
+    {
+        gen_list_hover = gen_list_at(x, y);
+        last_x = x;
+        last_y = y;
+        return false;
+    }
+    shell_hover = drag == NONE ? swatch_at(x, y) : -1;
+    ink_hover = drag == NONE ? ink_at(x, y) : -1;
+    hover_in = true, hover_x = x, hover_y = y;
     int dx = x - last_x, dy = last_y - y;   // up or right: clockwise (the larger of the two)
     last_x = x;
     last_y = y;
-    if (drag == KNOB)
+    if (drag == ZONE)   // a value's column: as a knob, a detent every 8 px
+    {
+        acc += std::abs(dx) > std::abs(dy) ? dx : dy;
+        int n = acc / 8;
+        if (n) { acc -= n * 8; zone_act(drag_zone, TESS_ZA_TURN, n); return true; }
+    }
+    else if (drag == GEN_VAR)   // VAR: 5 a detent, a detent every 8 px
+    {
+        acc += std::abs(dx) > std::abs(dy) ? dx : dy;
+        int n = acc / 8;
+        if (n) { acc -= n * 8; gen_var_step(n); }
+        return false;
+    }
+    else if (drag == KNOB)
     {
         acc += std::abs(dx) > std::abs(dy) ? dx : dy;
         int step = knobs[drag_i].role < 0 ? 3 : 8, n = acc / step;
@@ -289,28 +839,584 @@ bool Panel::move(int x, int y)
         int k = key_at(x, y);
         if (k >= 0 && k != drag_i)
         {
-            input.keys = (input.keys & ~(1u << keys[drag_i].k)) | 1u << keys[k].k;
+            mouse_keys = (mouse_keys & ~(1u << keys[drag_i].k)) | 1u << keys[k].k;
             drag_i = k;
-            return input.changed = true;
+            merge_held();
+            return true;
         }
     }
     return false;
 }
 
+// a right-click: the button or key under it latched (held), or let go if it was
+bool Panel::latch(int x, int y)
+{
+    if (native() && menu_open)
+        return false;
+    int i;
+    if ((i = button_at(x, y)) >= 0)
+        latch_buttons ^= 1u << buttons[i].bit;
+    else if ((i = key_at(x, y)) >= 0)
+        latch_keys ^= 1u << keys[i].k;
+    else
+        return false;
+    merge_held();
+    return true;
+}
+
 bool Panel::up(int, int)
 {
     bool ch = false;
-    if (drag == BUTTON) { input.buttons &= ~(1u << buttons[drag_i].bit); ch = input.changed = true; }
-    if (drag == KEY) { input.keys &= ~(1u << keys[drag_i].k); ch = input.changed = true; }
+    if (drag == GEN_BUTTON && !gen_swapped)   // GENERATE let go before half a second: a new piece
+        gen_ask(GEN_MAKE);
+    gen_swapped = false;
+    if (drag == BUTTON) { mouse_buttons &= ~(1u << buttons[drag_i].bit); merge_held(); ch = true; }
+    if (drag == KEY) { mouse_keys &= ~(1u << keys[drag_i].k); merge_held(); ch = true; }
     drag = NONE;
+    file_held = bank_held = -1;
     return ch;
 }
 
 bool Panel::wheel(int x, int y, int notches)
 {
+    switch (notches ? gen_part_at(x, y) : -1)   // GENERATE's strip: the style, VAR, the pieces made before
+    {
+    case GP_PREV: case GP_STYLE: case GP_NEXT: gen_style_step(-notches); return false;   // (up: the one before)
+    case GP_VAR: gen_var_step(notches); return false;
+    case GP_SEED: gen_ask(GEN_RECALL, notches > 0 ? -1 : 1); return false;   // (up: back to an older piece)
+    default: break;
+    }
+    int zi = zone_at(x, y);
+    if (zi >= 0 && notches)   // a value, or a list's row: as its knob turned
+    {
+        zone_act(zones[zi], TESS_ZA_TURN, notches);
+        return true;
+    }
     int i = knob_at(x, y);
     if (i < 0 || !notches)
         return false;
     turn(i, notches);
     return true;
+}
+
+// ---- TESSERA's shell: the project page's look (docs/index.html), flat and 1-bit: black and #111 body, Tessera yellow
+// for what is live or lit, a dim yellow for lines, warm white for what is held, warm grey for words; corners cut a
+// dot, buttons with a lip that sit down when lit or held; the menu under the mark
+
+namespace
+{
+const uint32_t T_YEL = 0xFFFFD020, T_DIM = 0xFF3B3007, T_HELD = 0xFFE6E0D0, T_WORD = 0xFFB9B2A0, T_OFF = 0xFF5F5A4C,
+               T_BLACK = 0xFF000000, T_BODY = 0xFF111111;
+const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 7, ROW_H = 36, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
+          INK_COLS = 5, INK_S = 32, INK_GAP = 12, FM1_LINE = 22;
+// SHELL, INK; MODE, SIZE; FM-1 USB and its state, KEYS; ABOUT (a dotted line between each group)
+enum { ROW_SHELL, ROW_INK, ROW_MODE, ROW_SIZE, ROW_FM1, ROW_KEYS, ROW_ABOUT };
+int row_y(int i)
+{
+    return MENU_Y + 10 + i * ROW_H + (i >= ROW_MODE ? 18 : 0) + (i >= ROW_FM1 ? 18 : 0) + (i >= ROW_KEYS ? FM1_LINE : 0) +
+           (i >= ROW_ABOUT ? 18 : 0);
+}
+const int MENU_H = 2 + 8 + MENU_ROWS * ROW_H + 3 * 18 + FM1_LINE + 8 + 2;
+// FM-1 USB's two words, right to left from the row's right edge: ON, then OFF
+const int SEG_RIGHT = MENU_X + MENU_W - 16;
+int seg_w(const char *t) { return Canvas::ptext_w(t, 2) + 12; }
+int shell_sub_y() { return row_y(ROW_SHELL) - 10; }
+
+// GENERATE's strip, between the MIDI lamp and the version: the button, the style (its arrows at the ends), VAR, the
+// seed; the style's list under its name
+const int GEN_Y = 10, GEN_H = 28, GB_X = 316, GB_W = 112, GS_X = 436, GS_W = 168, GS_ARROW = 24, GV_X = 612, GV_W = 88,
+          GD_X = 708, GD_W = 112, GL_Y = GEN_Y + GEN_H + 6, GL_ROW = 26;
+
+int ink_sub_y() { return row_y(ROW_INK) - 10; }
+
+// a box with its corners cut a dot (2 px): border, then the fill inside, `bottom` its lower edge's width
+void nbox(Canvas &c, int x, int y, int w, int h, uint32_t border, uint32_t fill, int bottom = 2)
+{
+    c.box(x, y, w, h, border);
+    c.box(x + 2, y + 2, w - 4, h - 2 - bottom, fill);
+    c.box(x, y, 2, 2, T_BODY);
+    c.box(x + w - 2, y, 2, 2, T_BODY);
+    c.box(x, y + h - 2, 2, 2, T_BODY);
+    c.box(x + w - 2, y + h - 2, 2, 2, T_BODY);
+}
+void dotted(Canvas &c, int x0, int x1, int y, uint32_t col)
+{
+    for (int x = x0; x < x1; x += 4)
+        c.box(x, y, 2, 2, col);
+}
+}   // namespace
+
+void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
+{
+    Canvas c{px};
+    static const double kPi = 3.14159265358979;
+    for (int i = 0; i < W * H; i++)
+        px[i] = T_BODY;
+
+    // the mark, the name, the menu's arrow, the MIDI lamp; the version at the right
+    for (int ty = 0; ty < 3; ty++)
+        for (int tx = 0; tx < 3; tx++)
+        {
+            int x = 36 + tx * 9, y = 12 + ty * 9;
+            c.box(x, y, 8, 8, T_YEL);
+            if (!(ty == 0 && tx == 2)) c.box(x + 2, y + 2, 4, 4, T_BODY);
+        }
+    c.ptext(72, 14, "TESSERA", 3, T_YEL);
+    int ax = 72 + Canvas::ptext_w("TESSERA", 3) + 10;
+    c.box(ax, 22, 12, 2, T_YEL);
+    c.box(ax + 2, 24, 8, 2, T_YEL);
+    c.box(ax + 4, 26, 4, 2, T_YEL);
+    int lx = ax + 12 + 20;
+    bool midi_lit = midi_frame && frame - midi_frame < 8;
+    c.box(lx, 20, 10, 10, T_YEL);
+    if (!midi_lit) c.box(lx + 2, 22, 6, 6, T_BLACK);
+    c.ptext(lx + 16, 18, "MIDI", 2, T_WORD);
+    if (!version.empty())
+    {
+        std::string ver = (gen_on() ? "" : "PLUGIN ") + version;   // (GENERATE's strip: the version alone)
+        for (auto &ch : ver) ch = ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
+        c.ptext(W - 36 - Canvas::ptext_w(ver.c_str(), 2), 18, ver.c_str(), 2, T_WORD);
+    }
+
+    // the screen: a dim hairline, a gap, the 240 x 240 at 1:1; under it the track and its bank
+    nbox(c, SCREEN_X, SCREEN_Y, SCREEN_S, SCREEN_S, T_DIM, T_BODY);
+    const int inset = SCREEN_S / 32;
+    for (int y = 0; y < TESS_SCREEN; y++)
+        for (int x = 0; x < TESS_SCREEN; x++)
+        {
+            uint16_t p = v.screen[y * TESS_SCREEN + x];
+            uint32_t r = (p >> 11 & 31) * 255 / 31, g = (p >> 5 & 63) * 255 / 63, b = (p & 31) * 255 / 31;
+            px[(SCREEN_Y + inset + y) * W + SCREEN_X + inset + x] = 0xFF000000u | r << 16 | g << 8 | b;
+        }
+    char cap[8];
+    std::snprintf(cap, sizeof cap, "T%d", track_now + 1);
+    c.ptext(SCREEN_X + 2, SCREEN_Y + SCREEN_S + 8, cap, 2, T_WORD);
+    if (tracks_ > 4)
+    {
+        const char *bank = track_now & 4 ? "5-8" : "1-4";
+        c.ptext(SCREEN_X + SCREEN_S - 2 - Canvas::ptext_w(bank, 2), SCREEN_Y + SCREEN_S + 8, bank, 2, T_WORD);
+    }
+
+    // knobs: a ring like the screen's dials; MASTER keeps its pointer, an encoder shows one (white) while it turns; the
+    // pointer runs into the ring (no gap)
+    for (size_t i = 0; i < knobs.size(); i++)
+    {
+        const Knob &k = knobs[i];
+        bool turning = turned[i] && frame - turned[i] < 15;
+        uint32_t ring = turning ? T_HELD : T_YEL;
+        c.ptext_c(k.x, k.y - 48, k.name, 2, T_WORD);
+        c.circle(k.x, k.y, k.r, ring);
+        c.circle(k.x, k.y, k.r - 4, T_BLACK);
+        if (k.role < 0 || turning)
+        {
+            double a = (k.angle - 90) * kPi / 180;
+            c.line(k.x + std::cos(a) * 2, k.y + std::sin(a) * 2, k.x + std::cos(a) * (k.r - 4), k.y + std::sin(a) * (k.r - 4),
+                   4, ring);
+        }
+    }
+
+    // buttons: lit (and PLAY green) solid yellow, held warm white, both sat down; breathing pulses; what is there a
+    // yellow outline, the rest dim
+    for (auto &b : buttons)
+    {
+        uint32_t bit = 1u << b.bit;
+        bool lit = (v.lit_buttons & bit) || (b.bit == B_PLAY && (v.lit_buttons >> PLAY_GREEN & 1));
+        bool held = input.buttons & bit, down = lit || held;
+        uint32_t border = T_DIM, fill = T_BLACK, ink = T_WORD;
+        if (held) border = fill = T_HELD, ink = T_BLACK;
+        else if (lit) border = fill = T_YEL, ink = T_BLACK;
+        else if (v.breath_buttons & bit) border = T_YEL, fill = mix(T_BLACK, T_YEL, 0.35 * breath), ink = T_YEL;
+        else if (v.dim_buttons & bit) border = T_YEL, ink = T_YEL;
+        int y = b.y + (down ? 2 : 0), h = b.h - (down ? 2 : 0), bottom = down ? 2 : 4;
+        nbox(c, b.x, y, b.w, h, border, fill, bottom);
+        c.ptext_c(b.x + b.w / 2, (y + 2 + y + h - bottom) / 2 - 7, b.face, 2, ink);
+    }
+
+    // the keys: naturals a dim outline, sharps dim and solid; lit yellow, held warm white
+    dotted(c, KEYBED[0], KEYBED[0] + KEYBED[2], KEYBED[1], T_DIM);
+    for (size_t i = 0; i < keys.size(); i++)
+    {
+        const Key &k = keys[i];
+        uint32_t bit = 1u << k.k;
+        bool natural = i < 16;
+        uint32_t base = natural ? T_BLACK : T_DIM, border = T_DIM, fill = base;
+        if (input.keys & bit) border = fill = T_HELD;
+        else if (v.lit_keys & bit) border = fill = T_YEL;
+        else if (v.breath_keys & bit) border = T_YEL, fill = mix(base, T_YEL, 0.6 * breath);
+        else if (v.dim_keys & bit) border = T_YEL;
+        nbox(c, k.cx - kw / 2, k.cy - kh / 2, kw, kh, border, fill);
+    }
+
+    // OPEN, SAVE and the bank switch, centred under the keys; what the last one did beside them
+    for (size_t i = 0; i < files.size(); i++)
+    {
+        const FileButton &f = files[i];
+        bool held = file_held == (int)i;
+        nbox(c, f.x, f.y, f.w, f.h, held ? T_HELD : T_YEL, held ? T_HELD : T_BODY);
+        c.ptext_c(f.x + f.w / 2, f.y + f.h / 2 - 7, f.face, 2, held ? T_BLACK : T_YEL);
+    }
+    if (tracks_ > 4)
+        for (int i = 0; i < 2; i++)
+        {
+            const FileButton &b = banks[i];
+            bool lit = (track_now & 4) == b.action;
+            nbox(c, b.x, b.y, b.w, b.h, T_YEL, lit ? T_YEL : T_BODY);
+            c.ptext_c(b.x + b.w / 2, b.y + b.h / 2 - 7, b.face, 2, lit ? T_BLACK : T_YEL);
+        }
+    if (note_frames > 0)
+    {
+        note_frames--;
+        const FileButton &last = tracks_ > 4 ? banks[1] : files.back();
+        c.ptext(last.x + last.w + 16, last.y + last.h / 2 - 7, note_text.c_str(), 2, T_WORD);
+    }
+
+    draw_gen(px);
+    if (!menu_open)
+        return;
+
+    // the menu: SHELL, INK; MODE, SIZE; ABOUT
+    nbox(c, MENU_X, MENU_Y, MENU_W, MENU_H, T_DIM, T_BLACK);
+    static const char *NAMES[MENU_ROWS] = {"SHELL", "INK", "MODE", "SIZE", "FM-1 USB", "KEYS", "ABOUT"};
+    for (int r = 0; r < MENU_ROWS; r++)
+    {
+        int y = row_y(r);
+        bool on = menu_hover == r || (r == ROW_SHELL && menu_sub == 1) || (r == ROW_INK && menu_sub == 2);
+        bool active = r == ROW_SHELL || r == ROW_INK;
+        if (on && active) c.box(MENU_X + 2, y, MENU_W - 4, ROW_H, T_DIM);
+        c.ptext(MENU_X + 16, y + 11, NAMES[r], 2, on && active ? T_YEL : T_WORD);
+        int right = MENU_X + MENU_W - 16;
+        // a choice of words, right to left: the chosen one solid yellow, the ones not there yet greyed
+        auto seg = [&](const char *t, bool chosen, bool there) {
+            int w = Canvas::ptext_w(t, 2) + 12;
+            right -= w;
+            if (chosen) c.box(right, y + 7, w, 22, T_YEL);
+            c.ptext(right + 6, y + 11, t, 2, chosen ? T_BLACK : there ? T_WORD : T_OFF);
+            right -= 4;
+        };
+        if (r == ROW_SHELL || r == ROW_INK)
+        {
+            c.ptext(right - Canvas::ptext_w(">", 2), y + 11, ">", 2, T_YEL);
+            right -= Canvas::ptext_w(">", 2) + 10;
+            if (r == ROW_SHELL)
+                c.ptext(right - Canvas::ptext_w(SHELLS[shell_].name, 2), y + 11, SHELLS[shell_].name, 2, T_YEL);
+            else if (ink_now >= 0 && ink_now < (int)inks.size())
+                c.box(right - 14, y + 11, 14, 14, 0xFF000000u | inks[ink_now].rgb[0]);
+        }
+        else if (r == ROW_MODE)
+        {
+            seg("EXPANDED", false, false);   // (not there yet)
+            seg("FM-1", true, true);
+        }
+        else if (r == ROW_SIZE)
+        {
+            seg("200", false, false);
+            seg("150", false, false);
+            seg("100", true, true);
+        }
+        else if (r == ROW_FM1)   // OFF / ON, and under them what the FM-1 is doing
+        {
+            seg("ON", fm1_on, true);
+            seg("OFF", !fm1_on, true);
+            if (fm1_on)
+                c.ptext(MENU_X + 16, y + ROW_H + 2, fm1_text.c_str(), 2, fm1_live ? T_YEL : T_WORD);
+        }
+        else if (r == ROW_KEYS)   // the computer keyboard: Tessera's (ON) or the DAW's (OFF)
+        {
+            seg("ON", keys_on_, true);
+            seg("OFF", !keys_on_, true);
+        }
+        else
+        {
+            std::string ver = version.empty() ? "TESSERA" : version;
+            for (auto &ch : ver) ch = ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
+            c.ptext(right - Canvas::ptext_w(ver.c_str(), 2), y + 11, ver.c_str(), 2, T_WORD);
+        }
+    }
+    dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_INK) + ROW_H + 8, T_DIM);
+    dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_SIZE) + ROW_H + 8, T_DIM);
+    dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_KEYS) + ROW_H + 8, T_DIM);
+
+    if (menu_sub == 1)   // the shells, the one shown marked
+    {
+        int y0 = shell_sub_y(), h = 20 + NSHELLS * SUB_ROW;
+        nbox(c, SUB_X, y0, 232, h, T_DIM, T_BLACK);
+        for (int j = 0; j < NSHELLS; j++)
+        {
+            int y = y0 + 10 + j * SUB_ROW;
+            if (sub_hover == j) c.box(SUB_X + 2, y, 228, SUB_ROW, T_DIM);
+            if (j == shell_) c.box(SUB_X + 16, y + 11, 8, 8, T_YEL);
+            c.ptext(SUB_X + 34, y + 8, SHELLS[j].name, 2, sub_hover == j ? T_YEL : T_WORD);
+        }
+    }
+    else if (menu_sub == 2 && !inks.empty())   // the inks as swatches (a four-ink palette in quarters), the name below
+    {
+        int n = (int)inks.size(), rows = (n + INK_COLS - 1) / INK_COLS, y0 = ink_sub_y();
+        int w = 36 + INK_COLS * INK_S + (INK_COLS - 1) * INK_GAP, gh = rows * INK_S + (rows - 1) * INK_GAP;
+        nbox(c, SUB_X, y0, w, 18 + gh + 12 + 14 + 18, T_DIM, T_BLACK);
+        for (int j = 0; j < n; j++)
+        {
+            int sx = SUB_X + 18 + j % INK_COLS * (INK_S + INK_GAP), sy = y0 + 18 + j / INK_COLS * (INK_S + INK_GAP);
+            uint32_t ring = j == ink_now ? T_HELD : j == sub_hover ? T_YEL : T_DIM;
+            nbox(c, sx, sy, INK_S, INK_S, ring, T_BLACK);
+            const uint32_t *k = inks[j].rgb;
+            const int half = (INK_S - 8) / 2;
+            c.box(sx + 4, sy + 4, half, half, 0xFF000000u | k[0]);
+            c.box(sx + 4 + half, sy + 4, half, half, 0xFF000000u | k[1]);
+            c.box(sx + 4 + half, sy + 4 + half, half, half, 0xFF000000u | k[2]);
+            c.box(sx + 4, sy + 4 + half, half, half, 0xFF000000u | k[3]);
+        }
+        int shown = sub_hover >= 0 ? sub_hover : ink_now;
+        if (shown >= 0 && shown < n)
+            c.ptext(SUB_X + 18, y0 + 18 + gh + 12, inks[shown].name.c_str(), 2, T_YEL);
+    }
+}
+
+// ---- GENERATE's strip (TESSERA's shell)
+
+void Panel::set_gen(const GenState &g)
+{
+    int style = gen.style, var = gen.variation;
+    gen = g;
+    if (gen_req.what == GEN_SET)   // (a pick not yet taken: the panel's, until it is)
+        gen.style = style, gen.variation = var;
+}
+
+int Panel::gen_part_at(int x, int y) const
+{
+    if (!gen_on() || y < GEN_Y || y >= GEN_Y + GEN_H)
+        return -1;
+    if (x >= GB_X && x < GB_X + GB_W) return GP_BUTTON;
+    if (x >= GS_X && x < GS_X + GS_ARROW) return GP_PREV;
+    if (x >= GS_X + GS_W - GS_ARROW && x < GS_X + GS_W) return GP_NEXT;
+    if (x >= GS_X && x < GS_X + GS_W) return GP_STYLE;
+    if (x >= GV_X && x < GV_X + GV_W) return GP_VAR;
+    if (x >= GD_X && x < GD_X + GD_W) return GP_SEED;
+    return -1;
+}
+
+int Panel::gen_list_at(int x, int y) const
+{
+    int j = (y - GL_Y - 10) / GL_ROW;
+    if (!gen_list || x < GS_X || x >= GS_X + GS_W || y < GL_Y + 10 || j < 0 || j >= (int)gen_names.size())
+        return -1;
+    return j;
+}
+
+void Panel::gen_ask(int what, int dir)
+{
+    if (gen_req.what != GEN_NONE && gen_req.what != GEN_SET && what == GEN_SET)
+        return;   // (a press waiting: the pick rides along with it)
+    gen_req.what = what;
+    gen_req.style = gen.style;
+    gen_req.variation = gen.variation;
+    gen_req.dir = dir;
+}
+
+void Panel::gen_style_step(int n)
+{
+    int k = (int)gen_names.size();
+    if (!k || !n) return;
+    gen.style = ((gen.style + n) % k + k) % k;
+    gen_ask(GEN_SET);
+}
+
+void Panel::gen_var_step(int n)
+{
+    int v = gen.variation + 5 * n;
+    v = v < 0 ? 0 : v > 100 ? 100 : v;
+    if (v == gen.variation) return;
+    gen.variation = v;
+    gen_ask(GEN_SET);
+}
+
+void Panel::draw_gen(uint32_t *px)
+{
+    Canvas c{px};
+    if (!gen_on())
+        return;
+    // held half a second: BEFORE / AFTER, once a press
+    if (drag == GEN_BUTTON && !gen_swapped && frame - gen_down_frame >= 15)
+    {
+        gen_swapped = true;
+        gen_ask(GEN_SWAP);
+    }
+    bool held = drag == GEN_BUTTON;
+    int lip = held ? 2 : 0;
+    nbox(c, GB_X, GEN_Y + lip, GB_W, GEN_H - lip, held ? T_HELD : T_YEL, held ? T_HELD : T_BODY, held ? 2 : 4);
+    c.ptext_c(GB_X + GB_W / 2, GEN_Y + lip + 6, gen_swapped && held ? (gen.before ? "BEFORE" : "AFTER") : "GENERATE", 2,
+              held ? T_BLACK : T_YEL);
+
+    // the style: < NAME >
+    nbox(c, GS_X, GEN_Y, GS_W, GEN_H, gen_list ? T_YEL : T_DIM, T_BLACK);
+    c.ptext(GS_X + 8, GEN_Y + 7, "<", 2, T_YEL);
+    c.ptext(GS_X + GS_W - 8 - Canvas::ptext_w(">", 2), GEN_Y + 7, ">", 2, T_YEL);
+    const char *name = gen.style >= 0 && gen.style < (int)gen_names.size() ? gen_names[gen.style].c_str() : "";
+    c.ptext_c(GS_X + GS_W / 2, GEN_Y + 7, name, 2, T_YEL);
+
+    // VAR 0..100
+    char b[24];
+    std::snprintf(b, sizeof b, "VAR %d", gen.variation);
+    nbox(c, GV_X, GEN_Y, GV_W, GEN_H, drag == GEN_VAR ? T_YEL : T_DIM, T_BLACK);
+    c.ptext_c(GV_X + GV_W / 2, GEN_Y + 7, b, 2, drag == GEN_VAR ? T_HELD : T_WORD);
+
+    // the seed: the piece's (BEFORE while the project before it plays), - none yet
+    if (gen.before) std::snprintf(b, sizeof b, "BEFORE");
+    else if (gen.made) std::snprintf(b, sizeof b, "%08X", (unsigned)gen.seed);
+    else std::snprintf(b, sizeof b, "-");
+    nbox(c, GD_X, GEN_Y, GD_W, GEN_H, T_DIM, T_BLACK);
+    c.ptext_c(GD_X + GD_W / 2, GEN_Y + 7, b, 2, gen.before ? T_HELD : T_WORD);
+
+    if (!gen_list)
+        return;
+    int n = (int)gen_names.size(), h = 20 + n * GL_ROW;
+    nbox(c, GS_X, GL_Y, GS_W, h, T_DIM, T_BLACK);
+    for (int j = 0; j < n; j++)
+    {
+        int y = GL_Y + 10 + j * GL_ROW;
+        if (gen_list_hover == j) c.box(GS_X + 2, y, GS_W - 4, GL_ROW, T_DIM);
+        if (j == gen.style) c.box(GS_X + 14, y + 9, 8, 8, T_YEL);
+        c.ptext(GS_X + 30, y + 6, gen_names[j].c_str(), 2, gen_list_hover == j ? T_YEL : T_WORD);
+    }
+}
+
+int Panel::menu_row_at(int x, int y) const
+{
+    if (x < MENU_X || x >= MENU_X + MENU_W)
+        return -1;
+    for (int r = 0; r < MENU_ROWS; r++)
+        if (y >= row_y(r) && y < row_y(r) + ROW_H)
+            return r;
+    return -1;
+}
+
+int Panel::sub_at(int x, int y) const
+{
+    if (menu_sub == 1)
+    {
+        int j = (y - shell_sub_y() - 10) / SUB_ROW;
+        if (x >= SUB_X && x < SUB_X + 232 && y >= shell_sub_y() + 10 && j >= 0 && j < NSHELLS)
+            return j;
+    }
+    else if (menu_sub == 2)
+        for (int j = 0; j < (int)inks.size(); j++)
+        {
+            int sx = SUB_X + 18 + j % INK_COLS * (INK_S + INK_GAP), sy = ink_sub_y() + 18 + j / INK_COLS * (INK_S + INK_GAP);
+            if (x >= sx && x < sx + INK_S && y >= sy && y < sy + INK_S)
+                return j;
+        }
+    return -1;
+}
+
+// a click with the menu open: a shell or an ink picked (the menu shuts), SHELL or INK opens its list, outside shuts it
+bool Panel::menu_click(int x, int y)
+{
+    int j = sub_at(x, y);
+    if (j >= 0 && menu_sub == 1)
+    {
+        menu_open = false;
+        if (j != shell_)
+        {
+            set_shell(j);
+            shell_req = j;
+        }
+        return false;
+    }
+    if (j >= 0 && menu_sub == 2)
+    {
+        menu_open = false;
+        if (j != ink_now)
+            ink_now = ink_pending = ink_req = j;
+        return false;
+    }
+    int r = menu_row_at(x, y);
+    if (r == ROW_FM1)   // OFF or ON (a click elsewhere on the row: the other one); ON also takes it from another
+    {
+        int sg = fm1_seg_at(x);
+        fm1_req = sg >= 0 ? sg : fm1_on && fm1_mine ? 0 : 1;
+        menu_sub = 0;
+        return false;
+    }
+    if (r == ROW_KEYS)   // OFF or ON (elsewhere on the row: the other one)
+    {
+        int sg = fm1_seg_at(x);
+        bool on = sg >= 0 ? sg == 1 : !keys_on_;
+        if (on != keys_on_)
+        {
+            set_keys(on);
+            keys_req = on;
+        }
+        menu_sub = 0;
+        return false;
+    }
+    if (r == ROW_SHELL) menu_sub = menu_sub == 1 ? 0 : 1;
+    else if (r == ROW_INK) menu_sub = menu_sub == 2 ? 0 : 2;
+    else if (r < 0) menu_open = false;   // (MODE, SIZE, ABOUT: nothing to pick yet)
+    sub_hover = -1;
+    return false;
+}
+
+int Panel::fm1_seg_at(int x) const
+{
+    int on_l = SEG_RIGHT - seg_w("ON"), off_r = on_l - 4, off_l = off_r - seg_w("OFF");
+    if (x >= on_l && x < SEG_RIGHT) return 1;
+    if (x >= off_l && x < off_r) return 0;
+    return -1;
+}
+
+// ---- the screen's zones (tess_view_t.zones): where the page put its values, rows and keys
+int Panel::zone_at(int x, int y) const
+{
+    if (native() && menu_open) return -1;
+    int sx = x - (SCREEN_X + SCREEN_S / 32), sy = y - (SCREEN_Y + SCREEN_S / 32);
+    if (sx < 0 || sy < 0 || sx >= TESS_SCREEN || sy >= TESS_SCREEN) return -1;
+    for (size_t i = 0; i < zones.size(); i++)
+    {
+        const tess_zone_t &z = zones[i];
+        if (sx >= z.x && sx < z.x + z.w && sy >= z.y && sy < z.y + z.h) return (int)i;
+    }
+    return -1;
+}
+
+int Panel::zone_like(const tess_zone_t &z) const
+{
+    for (size_t i = 0; i < zones.size(); i++)
+        if (zones[i].kind == z.kind && zones[i].role == z.role && zones[i].vrole == z.vrole && zones[i].row == z.row)
+            return (int)i;
+    return -1;
+}
+
+void Panel::zone_act(const tess_zone_t &z, uint32_t action, int n)
+{
+    input.zones.push_back({z, action, n});
+    input.changed = true;
+}
+
+// the zone under the mouse (or being dragged): a hairline round it on the screen, and under the screen a card with its
+// name and its value large (the readability the FM-1's 5 x 7 text lacks), black with Tessera yellow
+void Panel::draw_hover(uint32_t *px)
+{
+    int zi = drag == ZONE ? zone_like(drag_zone) : hover_in && drag == NONE ? zone_at(hover_x, hover_y) : -1;
+    if (zi < 0) return;
+    const tess_zone_t &z = zones[zi];
+    Canvas c{px};
+    const uint32_t YEL = 0xFFFFD020, WORD = 0xFFB9B2A0, BLACK = 0xFF000000;
+    int ox = SCREEN_X + SCREEN_S / 32, oy = SCREEN_Y + SCREEN_S / 32;
+    c.box(ox + z.x, oy + z.y, z.w, 1, YEL);
+    c.box(ox + z.x, oy + z.y + z.h - 1, z.w, 1, YEL);
+    c.box(ox + z.x, oy + z.y, 1, z.h, YEL);
+    c.box(ox + z.x + z.w - 1, oy + z.y, 1, z.h, YEL);
+    if (!z.name[0] && !z.value[0]) return;
+    // the card: under the screen (it never covers it), centred on the zone, one line: the name, then the value large
+    std::string name = z.name, value = z.value;
+    for (auto &ch : name) ch = ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
+    int nw = Canvas::ptext_w(name.c_str(), 2), vw = value.empty() ? 0 : Canvas::ptext_w(value.c_str(), 3);
+    int w = nw + (vw ? vw + 14 : 0) + 20, h = 34;
+    int x = ox + z.x + z.w / 2 - w / 2, y = SCREEN_Y + SCREEN_S + 3;
+    if (x < SCREEN_X - 80) x = SCREEN_X - 80;
+    if (x + w > SCREEN_X + SCREEN_S + 80) x = SCREEN_X + SCREEN_S + 80 - w;
+    c.box(x, y, w, h, BLACK);
+    c.box(x, y, w, 2, YEL), c.box(x, y + h - 2, w, 2, YEL);
+    c.box(x, y, 2, h, YEL), c.box(x + w - 2, y, 2, h, YEL);
+    c.ptext(x + 10, y + 11, name.c_str(), 2, WORD);
+    if (vw) c.ptext(x + 10 + nw + 14, y + 7, value.c_str(), 3, YEL);
 }

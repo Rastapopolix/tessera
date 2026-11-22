@@ -6,7 +6,15 @@
 #include <stdint.h>
 #include "gen.h"
 
-#define TESSERA_TRACKS 4
+#ifndef CORE_TRACKS
+#define CORE_TRACKS 4             /* (core.h: the build's tracks, 4 or 8) */
+#endif
+#define TESSERA_TRACKS CORE_TRACKS
+#if CORE_TRACKS > 4
+#define TESS_PK_TRACKS 4u         /* the tracks a Tessera block (a .tsp's) packs: the FM-1's 1..4; 5..8 keep their state */
+#else
+#define TESS_PK_TRACKS TESSERA_TRACKS
+#endif
 
 /* Engine types per track */
 enum {
@@ -427,6 +435,11 @@ void tessera_pg_put(uint32_t tr, const uint8_t *slots);
 int tessera_unpack(const uint8_t *in);              /* 1 loaded; 0 refused (range check), nothing changed */
 int tessera_unpack_ver(uint32_t ver, const uint8_t *in);   /* the same for a block of version ver (1..20) */
 int tessera_check(uint32_t ver, const uint8_t *in);        /* the same checks, nothing loaded: 1 it would load */
+#if CORE_TRACKS > 4
+extern uint8_t tessera_pk_clip;                 /* tessera_pack: references past track 4 written OFF (a .tsp's block) */
+void tessera_pack_track(uint8_t *o, uint32_t tr);                  /* one track's TESS_PK_TRACK bytes (XTRK) */
+int tessera_unpack_track(const uint8_t *in, uint32_t tr, int apply);   /* checked (apply 0) or loaded (1) */
+#endif
 uint32_t tessera_pk_bytes(uint32_t ver);            /* a version's block length, 0 none */
 void tessera_track_up(uint32_t ver, const uint8_t *in, uint8_t *out);   /* one track's record, version ver -> 20 */
 void tessera_reset(void);                           /* every track OFF, defaults */

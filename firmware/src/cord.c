@@ -921,7 +921,7 @@ static __attribute__((noinline)) void cord_play_tick(void)
     }
     cord_shut = (uint8_t)shut;
 }
-int cord_play_shut(uint32_t tr) { return (int)((cord_shut >> (tr & 3u)) & 1u); }
+int cord_play_shut(uint32_t tr) { return (int)((cord_shut >> (tr & (NTRK - 1u))) & 1u); }
 void cord_mdepth_set(int32_t v) { cord_mdset = (uint8_t)clamp(v, 0, 100); }
 
 /* fx.c fx_bus_settings (cord_gmask: some cord reaches them): the send effects' settings g (song.g from G_MFXTYPE to

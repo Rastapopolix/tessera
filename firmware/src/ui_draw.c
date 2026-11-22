@@ -37,10 +37,14 @@ static int32_t batt_shown(void)
  * BATTERY OFF hides it, except when it runs low (a bar or none, on the battery) */
 static int32_t batt_head(void)
 {
+#if TESS_HAS_BATTERY
     int32_t lvl = batt_level();
     if (batt_ext())
         return settings_batt_off ? -1 : 4 + lvl;
     return lvl <= 1 || !settings_batt_off ? lvl : -1;
+#else
+    return -1;                                          /* (no battery on this target: never shown) */
+#endif
 }
 
 /* REC: filled, the selected track ready/recording; outlined, waiting or another track armed. */
@@ -889,14 +893,14 @@ static void draw_columns_(void)
         if(cur_page()->id[1]==4){fmt_int(v,127-c[3]);draw_column(1,"LEVEL",v,"",VAL(1u),-1,ICON_AUTO);draw_column(2,"","","",T_THEME,-1,ICON_NONE);draw_column(3,"","","",T_THEME,-1,ICON_NONE);return;}
         fmt_int(v,c[0]);draw_column(1,"TUNE",v,"ST",VAL(1u),-1,ICON_PITCH);
         fmt_int(v,c[1]+64);draw_column(2,"DECAY",v,"",VAL(2u),-1,ICON_GATE);
-        fmt_int(v,c[2]+64);draw_column(3,(drum_is909(TSEL)?drum_character(sound):sound==D9_SD?"SNAPPY":"TONE"),v,"",VAL(3u),-1,ICON_AUTO);return;
+        fmt_int(v,c[2]+64);draw_column(3,(drum_is909(TSEL)?drum_character(sound):drum_issid(TSEL)?"SNAP":sound==D9_SD?"SNAPPY":"TONE"),v,"",VAL(3u),-1,ICON_AUTO);return;
     }
     if(cur_page()->scope==SC_DRUMHIT){
         char v[12];uint32_t i=drum_hit_selected();const recorded_note_t *r=i<RECORD_MAX?&recording[i]:0;
         fmt_int(v,ui.cursor+1);draw_column(0,"STEP",v,"",VAL(0u),-1,ICON_AUTO);
         draw_column(1,"DRUM",drum_sound_name(TSEL,ui.drum_sound%drum_sound_count(TSEL)),"",VAL(1u),-1,ICON_AUTO);
         fmt_int(v,r?r->pitch:0);draw_column(2,"PITCH",v,"ST",VAL(2u),-1,ICON_PITCH);
-        if(r && r->length){uint32_t x=((uint32_t)r->duration*(1u<<(r->owner>>5))*100u+RECORD_UNIT/2)/RECORD_UNIT;fmt_int(v,x/100);str_cpy(v+str_len(v),".",2);if(x%100<10)str_cpy(v+str_len(v),"0",2);fmt_int(v+str_len(v),x%100);}
+        if(r && REC_HITLEN(*r)){uint32_t x=((uint32_t)r->duration*(1u<<REC_EXP(*r))*100u+RECORD_UNIT/2)/RECORD_UNIT;fmt_int(v,x/100);str_cpy(v+str_len(v),".",2);if(x%100<10)str_cpy(v+str_len(v),"0",2);fmt_int(v+str_len(v),x%100);}
         else str_cpy(v,"FREE",sizeof v);
         draw_column(3,"LENGTH",v,"",VAL(3u),-1,ICON_GATE);return;
     }
@@ -1072,10 +1076,14 @@ static void draw_columns_(void)
         return;
     }
     if (cur_page()->graph == GR_ENTRIES && entries_layer_on()) {   /* ENTRIES, OCT- held: each track's ROLE */
-        static const char *const NM[TESSERA_TRACKS] = {"ROLE 1", "ROLE 2", "ROLE 3", "ROLE 4"};
-        for (uint32_t k = 0; k < TESSERA_TRACKS; k++)
-            draw_column(k, NM[k], ET_ROLE_NAME[tessera.et_role[k] % ET_ROLES], "", VAL(k), (int32_t)tessera.et_role[k] * 200,
-                        ICON_AUTO);
+        static const char *const NM[TESSERA_TRACKS] = {"ROLE 1", "ROLE 2", "ROLE 3", "ROLE 4"
+#if CORE_TRACKS > 4
+                                                       , "ROLE 5", "ROLE 6", "ROLE 7", "ROLE 8"
+#endif
+                                                       };
+        for (uint32_t k = UI_BASE; k < UI_BASE + UI_NT; k++)   /* (8 tracks: the selected track's bank) */
+            draw_column(k - UI_BASE, NM[k], ET_ROLE_NAME[tessera.et_role[k] % ET_ROLES], "", VAL(k - UI_BASE),
+                        (int32_t)tessera.et_role[k] * 200, ICON_AUTO);
         return;
     }
     if (cur_page()->graph == GR_ENTRIES) {               /* ENTRIES (entries.c), the project's: ENTRIES, DWELL, STYLE, FADE */
@@ -1113,21 +1121,30 @@ static void draw_columns_(void)
         return;
     }
     if (cur_page()->graph == GR_MIDICH && midi_layer_on()) {   /* MIDI OUT, OCT- held: each track's TRANSPOSE */
-        static const char *const NAME[TESSERA_TRACKS] = {"TRACK 1", "TRACK 2", "TRACK 3", "TRACK 4"};
-        for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
+        static const char *const NAME[TESSERA_TRACKS] = {"TRACK 1", "TRACK 2", "TRACK 3", "TRACK 4"
+#if CORE_TRACKS > 4
+                                                        , "TRACK 5", "TRACK 6", "TRACK 7", "TRACK 8"
+#endif
+                                                        };
+        for (uint32_t k = UI_BASE; k < UI_BASE + UI_NT; k++) {   /* (8 tracks: the selected track's bank) */
             char w[8];
             int32_t v = tessera.midi_tr[k];
             midi_tr_text(w, v);
-            draw_column(k, NAME[k], w, "st", VAL(k), (v + TESS_MIDI_TR) * 1000 / (2 * TESS_MIDI_TR), ICON_AUTO);
+            draw_column(k - UI_BASE, NAME[k], w, "st", VAL(k - UI_BASE), (v + TESS_MIDI_TR) * 1000 / (2 * TESS_MIDI_TR), ICON_AUTO);
         }
         return;
     }
     if (cur_page()->graph == GR_MIDICH) {                /* MIDI OUT: each track's channel (AUTO, 1..16, OFF) */
-        static const char *const NAME[TESSERA_TRACKS] = {"TRACK 1", "TRACK 2", "TRACK 3", "TRACK 4"};
+        static const char *const NAME[TESSERA_TRACKS] = {"TRACK 1", "TRACK 2", "TRACK 3", "TRACK 4"
+#if CORE_TRACKS > 4
+                                                        , "TRACK 5", "TRACK 6", "TRACK 7", "TRACK 8"
+#endif
+                                                        };
         const param_desc_t *d = pid_desc(PID_TESS(TX_MIDI_CH), 0);
-        for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
+        for (uint32_t k = UI_BASE; k < UI_BASE + UI_NT; k++) {   /* (8 tracks: the selected track's bank) */
             uint32_t v = tessera.midi_ch[k] % (TESS_MIDI_OFF + 1u);
-            draw_column(k, NAME[k], d->names[v], "", VAL(k), (int32_t)v * 1000 / (int32_t)TESS_MIDI_OFF, ICON_AUTO);
+            draw_column(k - UI_BASE, NAME[k], d->names[v], "", VAL(k - UI_BASE), (int32_t)v * 1000 / (int32_t)TESS_MIDI_OFF,
+                        ICON_AUTO);
         }
         return;
     }
@@ -1536,7 +1553,7 @@ static void draw_columns_(void)
         if(chosen<RECORD_MAX && drum_track(TSEL))fmt_int(sn,recording[chosen].pitch);
         draw_column(1, "PITCH", sn, chosen<RECORD_MAX && drum_track(TSEL)?"ST":"", selected ? VAL(1u) : T_DIM, -1, ICON_PITCH);
         if (chosen < RECORD_MAX) {
-            uint32_t hundredths = ((uint32_t)recording[chosen].duration * (1u << (recording[chosen].owner >> 5)) * 100u + RECORD_UNIT / 2u) / RECORD_UNIT;
+            uint32_t hundredths = ((uint32_t)recording[chosen].duration * (1u << REC_EXP(recording[chosen])) * 100u + RECORD_UNIT / 2u) / RECORD_UNIT;
             if (!hundredths) str_cpy(sn, "<.01", sizeof sn);
             else {
                 fmt_int(sn, (int32_t)(hundredths / 100u));
@@ -1990,6 +2007,7 @@ static void ui_draw_frame(void)
     if (!scr_frame()) return;
     if (!sim.on && !ui.uboot) scr_idle();
     ui.frame++;
+    UZ(uz_frame());                                     /* (a forced frame: the screen's zones drawn anew) */
     if (palette_track(song.sel))                       /* THEME is the selected track's colour */
         ui.force = 1;
     if(seq_counting()) { char text[24]="COUNT IN ";fmt_int(text+9,(int32_t)cin_left);

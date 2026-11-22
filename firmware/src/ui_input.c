@@ -409,7 +409,7 @@ static int32_t list_accel(uint32_t role, int32_t s, uint32_t total, uint32_t *fa
  * its keys (ui_layer.c mixer_live), as GLO held */
 static void tracks_edit(uint32_t slot, int32_t steps)
 {
-    track_t *t = &trk[slot % NTRK];
+    track_t *t = &trk[(UI_BASE + slot) % NTRK];
     uint32_t pan = (uint32_t)oct_dn_only(), id = pan ? P_PAN : P_LEVEL;
     int16_t *vp = &t->p[id];
     const param_desc_t *d = &TP[id];
@@ -619,9 +619,12 @@ static void capture_take(int over)
         dur = cap_len(e, now) << 8; exp = 0;
         while (dur > 65535u && exp < 7u) { dur >>= 1; exp++; }
         r.duration = (uint16_t)dur;
-        r.owner = (uint8_t)(recording_owner(t) | (exp << 5));
+        r.owner = REC_OWNER_EXP(recording_owner(t), exp);
+#if CORE_TRACKS > 4
+        REC_SET_EXP(r, exp);
+#endif
         r.step = (uint8_t)(actual | (view != actual ? 64u : 0u) | (!view && actual ? 128u : 0u));
-        r.length = drum_track(t) ? 1u : 0u;
+        REC_SET_HITLEN(r, drum_track(t) ? 1u : 0u);
         fm1_irq_off();
         recording_prune(t);
         /* Capturing an overlapping window again must not stack another voice
@@ -704,6 +707,7 @@ static uint8_t batt_low;
 static int project_has_slot(void);                      /* (project.c: loaded from or saved to a slot) */
 static void batt_poll(void)
 {
+#if TESS_HAS_BATTERY
     int32_t lvl = batt_level();
     if (!song.batt_raw || batt_ext() || lvl >= 2) {
         batt_low = 0;
@@ -714,6 +718,7 @@ static void batt_poll(void)
         else str_cpy(ui.msg2, "SAVE YOUR WORK", sizeof ui.msg2);   /* second line; no slot or AUTOSAVE off: yours) */
         ui.msg_t = 120;
     }
+#endif
 }
 
 /* Autosave: stopped and untouched for AUTOSAVE_MS (no key, button, knob or MIDI), the project back to its slot when it
@@ -844,15 +849,18 @@ static void drum_hit_edit(uint32_t slot,int32_t delta)
         if(i==RECORD_MAX){fm1_irq_on();ui_message("RECORDING FULL");return;}
     }
     note_assign(&after,&before);
-    if(created){after.note=(uint8_t)drum_sound_note(TSEL,ui.drum_sound);after.vel=96;after.owner=(uint8_t)(recording_owner(TSEL)|(1u<<5));after.duration=32768;after.step=ui.cursor;
+    if(created){after.note=(uint8_t)drum_sound_note(TSEL,ui.drum_sound);after.vel=96;after.owner=REC_OWNER_EXP(recording_owner(TSEL),1u);after.duration=32768;after.step=ui.cursor;
+#if CORE_TRACKS > 4
+    if(created)REC_SET_EXP(after,1u);
+#endif
         const step_t *st=&TSEL->step[ui.cursor];for(uint32_t j=0;j<st->n;j++)if(drum_sound_of(TSEL,st->note[j])==ui.drum_sound){after.note=st->note[j];break;}after.vel=(uint8_t)(step_accents(st)&(1u<<drum_lane(after.note))?127:st->vel?st->vel:96);}
     if(slot==2)after.pitch=(int8_t)clamp(after.pitch+delta,-24,24);
     else {
-        int32_t duration=(int32_t)after.duration*(1u<<(after.owner>>5));
+        int32_t duration=(int32_t)after.duration*(1u<<REC_EXP(after));
         duration+=clamp(delta,-128,128)*(int32_t)(RECORD_UNIT/16u);
-        after.length=duration>0;duration=clamp(duration,1,128*RECORD_UNIT);
+        REC_SET_HITLEN(after,duration>0);duration=clamp(duration,1,128*RECORD_UNIT);
         uint32_t exp=0;while(duration>65535&&exp<7u){duration>>=1;exp++;}
-        after.duration=(uint16_t)duration;after.owner=(uint8_t)((after.owner&31u)|(exp<<5));
+        after.duration=(uint16_t)duration;REC_SET_EXP(after,exp);
     }
     if(!created && !memcmp(&before,&after,sizeof before)){fm1_irq_on();return;}
     note_assign(&step_history.removed,&before);note_assign(&step_history.replacement,&after);step_history.removed_index=(uint16_t)i;step_history.has_removed=1;
@@ -993,7 +1001,7 @@ static void edit_param(uint32_t slot, int32_t steps)
         return;
     }
     if (pg->graph == GR_PATGRID) {                      /* PATTERNS: KNOB k queues track k's (ui_stage.c) */
-        patgrid_edit(slot, steps);
+        patgrid_edit(UI_BASE + slot, steps);           /* (8 tracks: the selected track's bank) */
         return;
     }
     if (pg->graph == GR_CORDS) {                        /* CORDS (ui_cords.c) */
@@ -1116,15 +1124,15 @@ static void edit_param(uint32_t slot, int32_t steps)
     }
     if (pg->graph == GR_MIDICH && midi_layer_on()) {   /* MIDI OUT, OCT- held: KNOB k track k's TRANSPOSE, a semitone a
                                                         * detent (SOUND, DRUM MAP: the MIDI OUT sheet) */
-        if (slot < TESSERA_TRACKS)
-            tessera_param_set(slot, TX_MIDI_TR, tessera_param_get(slot, TX_MIDI_TR) + steps);
+        if (slot < UI_NT)                               /* (8 tracks: the selected track's bank) */
+            tessera_param_set(UI_BASE + slot, TX_MIDI_TR, tessera_param_get(UI_BASE + slot, TX_MIDI_TR) + steps);
         oct_eat |= 1u;                                  /* (its release is no OCT-) */
         ui.force = 1;
         return;
     }
     if (pg->graph == GR_MIDICH) {                   /* MIDI OUT: KNOB k track k's channel, a step a detent */
-        if (slot < TESSERA_TRACKS)
-            tessera_param_set(slot, TX_MIDI_CH, tessera_param_get(slot, TX_MIDI_CH) + steps);
+        if (slot < UI_NT)                               /* (8 tracks: the selected track's bank) */
+            tessera_param_set(UI_BASE + slot, TX_MIDI_CH, tessera_param_get(UI_BASE + slot, TX_MIDI_CH) + steps);
         ui.force = 1;
         return;
     }
@@ -1163,7 +1171,8 @@ static void edit_param(uint32_t slot, int32_t steps)
     if (pg->graph == GR_ENTRIES) {                  /* ENTRIES, the project's: ENTRIES 2 a detent, DWELL, STYLE, FADE a
                                                      * step; OCT- held: KNOB k track k's ROLE (ORDER: the sheet) */
         int layer = entries_layer_on();
-        tessera_entries_knob(slot, slot == 0u && !layer ? accel(EN_K1 + slot, steps, 50) : steps, layer);
+        tessera_entries_knob(layer ? UI_BASE + slot : slot, slot == 0u && !layer ? accel(EN_K1 + slot, steps, 50) : steps,
+                             layer);                    /* (OCT- held, 8 tracks: the selected track's bank) */
         if (layer)
             oct_eat |= 1u;                              /* (its release is no OCT-) */
         ui.force = 1;
@@ -1590,12 +1599,12 @@ static void notes_event_edit(uint32_t slot, int32_t delta)
         else after.note=(uint8_t)pitch_turn(before.note,delta);
     }
     else if (slot == 2u || slot == 4u) {
-        int32_t duration = (int32_t)before.duration * (1u << (before.owner >> 5));
+        int32_t duration = (int32_t)before.duration * (1u << REC_EXP(before));
         uint32_t quantum=slot==4u?RECORD_UNIT/16u:RECORD_UNIT/4u;
         duration=clamp(note_snap(duration,delta,quantum),(int32_t)quantum,128*RECORD_UNIT);
         uint32_t exp=0;while(duration>65535&&exp<7u){duration>>=1;exp++;}
-        after.duration=(uint16_t)duration;after.owner=(uint8_t)((after.owner&31u)|(exp<<5));
-        if(drum_track(TSEL))after.length=1;
+        after.duration=(uint16_t)duration;REC_SET_EXP(after,exp);
+        if(drum_track(TSEL))REC_SET_HITLEN(after,1u);
     } else after.vel = (uint8_t)clamp((int32_t)before.vel + delta, 1, 127);
     if (!memcmp(&before, &after, sizeof before)) { fm1_irq_on(); return; }
     step_history.state[step_history_index()].selection = ui.note_pick;
@@ -2213,6 +2222,7 @@ static void ui_input(void)
 {
     uint32_t pressed = fm1_input_edges(0), notes = fm1_input_note_edges(), now = fm1_ticks(), id, b, k;
     mlearn_poll();                                      /* (MIDI LEARN: a CC for the knob picked) */
+    ovl_tick();                                         /* (MENU > OVERLOAD: the header's dots, ui.c) */
     if (mlearn_end_key(pressed))                        /* (learning: OCT- ends it, nothing else) */
         pressed &= ~(1u << panel.btn[B_OCTDN]);
     mlearn_show();

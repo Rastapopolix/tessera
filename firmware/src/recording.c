@@ -8,8 +8,14 @@ static uint8_t recording_flags[RECORD_MAX]; /* 1: live hold; 4: heard this loop;
 static uint32_t recording_fraction[NTRK];
 /* Index by bank and cache onset arithmetic outside the steady audio tick. */
 #define RECORDING_EMPTY8 RECORD_MAX, RECORD_MAX, RECORD_MAX, RECORD_MAX, RECORD_MAX, RECORD_MAX, RECORD_MAX, RECORD_MAX
+#if CORE_TRACKS > 4
+static uint16_t recording_head[NTRK * NPAT] = {RECORDING_EMPTY8, RECORDING_EMPTY8, RECORDING_EMPTY8, RECORDING_EMPTY8,
+                                               RECORDING_EMPTY8, RECORDING_EMPTY8, RECORDING_EMPTY8, RECORDING_EMPTY8};
+_Static_assert(NTRK * NPAT == 64u, "recording head initializer covers every bank");
+#else
 static uint16_t recording_head[NTRK * NPAT] = {RECORDING_EMPTY8, RECORDING_EMPTY8, RECORDING_EMPTY8, RECORDING_EMPTY8};
 _Static_assert(NTRK * NPAT == 32u, "recording head initializer covers every bank");
+#endif
 #undef RECORDING_EMPTY8
 static uint16_t recording_next[RECORD_MAX];
 /* Keep the onset cache in ordinary RAM: the expanded event payload remains in
@@ -35,7 +41,7 @@ static uint32_t recording_loop(const track_t *t, uint32_t period)
 }
 static int recording_valid(const recorded_note_t *r)
 {
-    return !r->vel || (r->pitch >= -24 && r->pitch <= 24 && r->length <= 1 && r->vel <= 127u && r->duration && r->note <= 127u && ((r->step & 128u) || (r->step & 63u) + ((r->step & 64u) != 0u) < NSTEP));
+    return !r->vel || (r->pitch >= -24 && r->pitch <= 24 && r->length <= REC_LENGTH_MAX && r->vel <= 127u && r->duration && r->note <= 127u && ((r->step & 128u) || (r->step & 63u) + ((r->step & 64u) != 0u) < NSTEP));
 }
 static uint32_t recording_view(const track_t *t, const recorded_note_t *r)
 {
@@ -44,7 +50,7 @@ static uint32_t recording_view(const track_t *t, const recorded_note_t *r)
 }
 static int recording_present(const recorded_note_t *r)
 {
-    uint32_t owner = r->owner & 31u, k = owner / NPAT, bank = owner % NPAT;
+    uint32_t owner = r->owner & REC_OWNER_MASK, k = owner / NPAT, bank = owner % NPAT;
     const step_t *steps = trk[k].pattern == bank ? trk[k].step : pattern_at(k, bank)->step;
     uint32_t view = recording_view(&trk[k], r);
     return view < NSTEP && steps[view].time == ST_NOTE && (steps[view].flags & SF_RECORDED);
@@ -52,7 +58,7 @@ static int recording_present(const recorded_note_t *r)
 static int recording_active(const track_t *t, uint32_t i)
 {
     const recorded_note_t *r = &recording[i];
-    if (!r->vel || (r->owner & 31u) != recording_owner(t) || (r->step & 63u) >= (uint32_t)t->p[P_SLEN]) return 0;
+    if (!r->vel || (r->owner & REC_OWNER_MASK) != recording_owner(t) || (r->step & 63u) >= (uint32_t)t->p[P_SLEN]) return 0;
     uint32_t view = recording_view(t, r);
     return t->step[view].time == ST_NOTE && (t->step[view].flags & SF_RECORDED);
 }
@@ -84,7 +90,7 @@ static void recording_reindex(void)
     recording_tracks = 0;
     memset(recording_refs, 0, sizeof recording_refs);
     for (uint32_t i = RECORD_MAX; i-- > 0;) if (recording[i].vel) {
-        uint32_t owner = recording[i].owner & 31u;
+        uint32_t owner = recording[i].owner & REC_OWNER_MASK;
         recording_next[i] = recording_head[owner]; recording_head[owner] = (uint16_t)i;
         recording_tracks |= (uint8_t)(1u << (owner / NPAT));
         if (recording_run[i].left && trk[owner / NPAT].pattern == owner % NPAT) recording_refs[owner / NPAT][recording[i].note]++;
@@ -94,7 +100,7 @@ static void recording_reindex(void)
 static void recording_unlink(uint32_t i)
 {
     if (!recording[i].vel) return;
-    uint16_t *link = &recording_head[recording[i].owner & 31u];
+    uint16_t *link = &recording_head[recording[i].owner & REC_OWNER_MASK];
     while (*link < RECORD_MAX && *link != i) link = &recording_next[*link];
     if (*link == i) *link = recording_next[i];
 }
@@ -115,7 +121,7 @@ static recorded_note_t recording_snapshot(uint32_t i)
         uint32_t held = recording_run[i].held, exponent = 0;
         while (held > 65535u && exponent < 7u) { held >>= 1; exponent++; }
         r.duration = (uint16_t)clamp((int32_t)held, 1, 65535);
-        r.owner = (r.owner & 31u) | (exponent << 5);
+        REC_SET_EXP(r, exponent);
     }
     return r;
 }
@@ -198,15 +204,15 @@ static int recording_note(track_t *t, uint32_t note, uint32_t vel, uint32_t step
     if (on > 65535u) on = 65535u;
     for (uint32_t i = 0; i < RECORD_MAX; i++) {
         recorded_note_t *r = &recording[i];
-        if ((r->owner & 31u) == owner && (recording_flags[i] & 1u) && r->note == note) recording_finish(i);
+        if ((r->owner & REC_OWNER_MASK) == owner && (recording_flags[i] & 1u) && r->note == note) recording_finish(i);
         /* Repeated passes replace the same pitch at the same captured time.
          * Distinct hits in one step remain separate events. */
         uint32_t same_time = r->on == on;
-        if (r->vel && (r->owner & 31u) == owner && r->note == note && (r->step & 63u) == actual && same_time) free = i;
+        if (r->vel && (r->owner & REC_OWNER_MASK) == owner && r->note == note && (r->step & 63u) == actual && same_time) free = i;
         else if (free == RECORD_MAX && (!r->vel || (!recording_present(r) && !recording_run[i].left && !(recording_flags[i] & 1u)))) free = i;
     }
     if (free == RECORD_MAX) { recording_full = 1; return 0; }
-    if (recording_run[free].left) recording_end(&trk[(recording[free].owner & 31u) / NPAT], free);
+    if (recording_run[free].left) recording_end(&trk[(recording[free].owner & REC_OWNER_MASK) / NPAT], free);
     recording_unlink(free);
     recorded_note_t *r = &recording[free];
     *r = (recorded_note_t){(uint16_t)on, 1, (uint8_t)note, (uint8_t)vel, (uint8_t)owner, (uint8_t)(actual | (step != actual ? 64u : 0u) | (step == 0u && actual ? 128u : 0u))};
@@ -274,19 +280,19 @@ static int recording_copy(track_t *t, uint32_t source, uint32_t dest, int apply)
 {
     uint32_t src = trk_index(t) * NPAT + source, dst = trk_index(t) * NPAT + dest, count = 0, free = 0;
     for (uint32_t i = 0; i < RECORD_MAX; i++) {
-        if (recording[i].vel && (recording[i].owner & 31u) == src) count++;
-        if (!recording[i].vel || (recording[i].owner & 31u) == dst) free++;
+        if (recording[i].vel && (recording[i].owner & REC_OWNER_MASK) == src) count++;
+        if (!recording[i].vel || (recording[i].owner & REC_OWNER_MASK) == dst) free++;
     }
     if (count > free) return 2;
     if (!apply) return 0;
-    for (uint32_t i = 0; i < RECORD_MAX; i++) if ((recording[i].owner & 31u) == dst) {
+    for (uint32_t i = 0; i < RECORD_MAX; i++) if ((recording[i].owner & REC_OWNER_MASK) == dst) {
         recording_end(t, i);
         memset(&recording[i], 0, sizeof recording[i]);
         memset(&recording_run[i], 0, sizeof recording_run[i]); recording_flags[i] = 0;
     }
-    for (uint32_t i = 0; i < RECORD_MAX; i++) if (recording[i].vel && (recording[i].owner & 31u) == src)
+    for (uint32_t i = 0; i < RECORD_MAX; i++) if (recording[i].vel && (recording[i].owner & REC_OWNER_MASK) == src)
         for (uint32_t j = 0; j < RECORD_MAX; j++) if (!recording[j].vel) {
-            recording[j] = recording_snapshot(i); recording[j].owner = (recording[j].owner & 224u) | dst;
+            recording[j] = recording_snapshot(i); recording[j].owner = (uint8_t)((recording[j].owner & (255u - REC_OWNER_MASK)) | dst);
             memset(&recording_run[j], 0, sizeof recording_run[j]); recording_flags[j] = 0;
             break;
         }
@@ -299,21 +305,21 @@ static int recording_double(track_t *t, uint32_t bank, uint32_t len, int apply)
 {
     uint32_t owner = trk_index(t) * NPAT + bank, count = 0, free = 0, i, j;
     for (i = 0; i < RECORD_MAX; i++) {
-        uint32_t a = recording[i].step & 63u, mine = recording[i].vel && (recording[i].owner & 31u) == owner;
+        uint32_t a = recording[i].step & 63u, mine = recording[i].vel && (recording[i].owner & REC_OWNER_MASK) == owner;
         if (mine && a < len) count++;
         if (!recording[i].vel || (mine && a >= len && a < 2u * len)) free++;
     }
     if (count > free) return 2;
     if (!apply) return 0;
     for (i = 0; i < RECORD_MAX; i++)
-        if (recording[i].vel && (recording[i].owner & 31u) == owner && (recording[i].step & 63u) >= len &&
+        if (recording[i].vel && (recording[i].owner & REC_OWNER_MASK) == owner && (recording[i].step & 63u) >= len &&
             (recording[i].step & 63u) < 2u * len) {
             recording_end(t, i);
             memset(&recording[i], 0, sizeof recording[i]);
             memset(&recording_run[i], 0, sizeof recording_run[i]); recording_flags[i] = 0;
         }
     for (i = j = 0; i < RECORD_MAX; i++)                /* (a copy lands past len: never copied again) */
-        if (recording[i].vel && (recording[i].owner & 31u) == owner && (recording[i].step & 63u) < len) {
+        if (recording[i].vel && (recording[i].owner & REC_OWNER_MASK) == owner && (recording[i].step & 63u) < len) {
             while (recording[j].vel) j++;
             recording[j] = recording_snapshot(i);
             recording[j].step = (uint8_t)(recording[j].step + len);
@@ -337,9 +343,9 @@ static void recording_fire(track_t *t, uint32_t i, uint32_t period, uint32_t lat
     if ((recording_flags[i] & 1u)) return;
     uint32_t chance = step_chance(&t->step[recording_view(t, r)]);
     if (chance < 100u && rng() % 100u >= chance) return;
-    uint32_t gate = (uint32_t)(((uint64_t)r->duration << (r->owner >> 5)) * period / RECORD_UNIT);
+    uint32_t gate = (uint32_t)(((uint64_t)r->duration << REC_EXP(*r)) * period / RECORD_UNIT);
     if (!gate) gate = 1;
-    drum_event_pitch=r->pitch; drum_event_length=r->length?gate:0;
+    drum_event_pitch=r->pitch; drum_event_length=REC_HITLEN(*r)?gate:0;
     trk_note_on(t, r->note, r->vel);
     drum_event_pitch=0; drum_event_length=0;
     uint32_t was = recording_run[i].left != 0;

@@ -32,9 +32,33 @@ static int write_file(const char *path, const uint8_t *b, uint32_t n)
     return fclose(f) == 0;
 }
 
+/* a record's FM-1 view: the parts of other targets (TSP part 0xC0 and up: XTRK, an 8-track build's tracks 5..8)
+ * left out, the header and the sum written again. What every target must agree on byte for byte */
+static uint32_t fm1_view(const uint8_t *in, uint32_t len, uint8_t *out)
+{
+    uint32_t n = in[8] | (uint32_t)in[9] << 8, pos = TSP_HEAD, o = TSP_HEAD, i, kept = 0, sum;
+    memcpy(out, in, TSP_HEAD);
+    for (i = 0; i < n && pos + 4u <= len - 4u; i++) {
+        uint32_t plen = in[pos + 2u] | (uint32_t)in[pos + 3u] << 8;
+        if (in[pos] < 0xC0u) { memcpy(out + o, in + pos, 4u + plen); o += 4u + plen; kept++; }
+        pos += 4u + plen;
+    }
+    memcpy(out + 4, &(uint32_t){o + 4u}, 4);
+    out[8] = (uint8_t)kept; out[9] = (uint8_t)(kept >> 8);
+    sum = proj_hash(out, o);
+    memcpy(out + o, &sum, 4);
+    return o + 4u;
+}
+
 int main(int argc, char **argv)
 {
     uint32_t n, out;
+    if (argc == 4 && !strcmp(argv[1], "fm1")) {   /* tsp_cross fm1 IN.tsp OUT.tsp: the FM-1 view (fm1_view) */
+        n = read_file(argv[2], buf_in, sizeof buf_in);
+        if (!n) return 3;
+        out = fm1_view(buf_in, n, buf_out);
+        return write_file(argv[3], buf_out, out) ? 0 : 3;
+    }
     if (argc == 2 && !strcmp(argv[1], "info")) {
         printf("rate %u  TSP_MAX %u  UI %d  screen %d  access %d  usb-audio %d  usb-host %d\n", (unsigned)tess_core_rate(),
                (unsigned)tess_core_tsp_max(), TESS_CORE_UI, HOST_HAL_SCREEN, MELODEE_ACCESS, MELODEE_USB_AUDIO,

@@ -137,6 +137,11 @@
 #                   LENGTH FREE with the rest turned plays the same notes, a 10-minute ARCH (intro, top, outro, the
 #                   CHAIN home for its last 15 %, ENERGY its curve, CONTRAST near the top), END STOP / LOOP / NEW / FREE,
 #                   a tempo change, the PIECE knobs.
+# GENERATE (tests/generate_test.c): GENERATE (generate.c, LEMONADE SANDWICH's rolls) on the core API as the plugin builds
+#                   it, every style: the same style, seed and VARIATION the same .tsp whatever came before, before / after
+#                   byte for byte both ways, VARIATION 0 repeatable; played a minute: no clipping, each track sounding
+#                   (KNOWN: a slow BOUNCE or CONSTELLATION under EVOLVE can stay silent, as in the rolls), the
+#                   generators' notes in key, every voice dying away after STOP. Then a 4-track build with the cost rules.
 # LONG-FORM (tests/longform_test.c): eight hours of ten patches left playing (notes only: the sequencer without the
 #                   voices, checked against mix_block for the first two minutes): no long silence, no collapse to one
 #                   note, no loop replayed for minutes, not thinning out by the last hour; a table of every measure in
@@ -168,13 +173,13 @@ start=$(date +%s)
 # qmap FILE: the jobs (QSEL) and regress's engines (QENG) for a changed file; returns 1 when no rule covers it.
 G_UI="ui_renders ui_test speak_test layer_screen_test theme_test text_ref_test text_spacing_test msg_len_test"
 G_SEQ="seq_edit_test seq_notes_test pattern_test note_tools_test swing_test split_test follow_test cordclock_test motion_test recording_test"
-G_GEN="gen_test tessera_test chain_test entries_test planner_test split_test follow_test cordclock_test recipes_test"
+G_GEN="gen_test tessera_test chain_test entries_test planner_test split_test follow_test cordclock_test recipes_test generate_test"
 G_STORE="storage_test persistence_test upgrade_test backup_test demo_projects settings_test upreset_test storage_safety_test
     settings_origin_test preset_boot_reset_test fm6_preset_test tsp_cross"
 G_MIDI="midi_control_test midi_out_test seq_dir_test midi_timing_test midi_scale_test midi_uart_test recording_test"
 G_USB="usb_audio_test usb_audio_driver_test usb_audio_tracks_test usb_host_test usb_audio_desc_test"
 G_SCALE="scale_test microtonal_test scale_picker_test tune_test uscale_test tuning_test midi_scale_test"
-G_AUDIO="regress audio_test audio_matrix_test ram_audio_test ram_voice_budget_test voice_ceiling_test audio_admission_test resources_test
+G_AUDIO="regress audio_test audio_matrix_test ram_audio_test ram_voice_budget_test voice_ceiling_test voice_free_test audio_admission_test resources_test
     dsp_tracks dual_core_test target_budget fs_test"
 eng() { QENG="$QENG $1"; shift; QSEL="$QSEL regress target_budget $*"; }
 qmap() {
@@ -193,7 +198,7 @@ qmap() {
         firmware/src/eng_trio.c) eng TRIO dual_core_test ;;
         firmware/src/eng_wheel.c) eng WHEEL ;;
         firmware/src/eng_formant.c) eng VOICE ;;
-        firmware/src/fx.c) QREG=1; QSEL="$QSEL $G_AUDIO fx_test fx_performance no_effects_test" ;;
+        firmware/src/fx.c) QREG=1; QSEL="$QSEL $G_AUDIO fx_test echo_sync_test echo_sync_test_plugin fx_performance no_effects_test" ;;
         firmware/src/mod.c) QREG=1; QSEL="$QSEL $G_AUDIO mod_test mod_spread_test" ;;
         firmware/src/voice.c | firmware/src/mix.c | firmware/src/dsp.c | firmware/src/audio*.[ch] | firmware/src/engines.c | \
             firmware/src/resources.c | firmware/src/native_presets.c) QREG=1; QSEL="$QSEL $G_AUDIO" ;;
@@ -211,7 +216,8 @@ qmap() {
         firmware/src/gen*.[ch] | firmware/src/tessera.[ch] | firmware/src/pat_gen.c | firmware/src/answer.c | \
             firmware/src/organic.c | firmware/src/vary.c | firmware/src/page_random.c) QSEL="$QSEL $G_GEN" ;;
         firmware/src/form_chain.c) QSEL="$QSEL chain_test entries_test planner_test" ;;
-        firmware/src/entries.c | firmware/src/energy.c | firmware/src/planner.c) QSEL="$QSEL entries_test planner_test" ;;
+        firmware/src/entries.c | firmware/src/energy.c | firmware/src/planner.c) QSEL="$QSEL entries_test planner_test generate_test" ;;
+        firmware/src/generate.c | tests/generate_test.c) QSEL="$QSEL generate_test" ;;
         firmware/src/storage*.c | firmware/src/project*.c | firmware/src/settings_persist.c | firmware/src/fm6_store.c | \
             firmware/src/upreset.c | firmware/src/favorites.c) QSEL="$QSEL $G_STORE" ;;
         firmware/src/midi_*.c) QSEL="$QSEL $G_MIDI" ;;
@@ -233,6 +239,10 @@ qmap() {
         tests/and_master_test.c) QSEL="$QSEL and_master" ;;
         tests/and_texture_test.c) QSEL="$QSEL and_texture" ;;
         platform/core/* | tests/tsp_cross.* | demos/*.tsp) QSEL="$QSEL tsp_cross" ;;
+        firmware/src/eng_sid.c | tests/sid_test.c) QSEL="$QSEL sid_test tsp_cross" ;;
+        firmware/src/drum_sid.c | tests/drum_sid_test.c) QSEL="$QSEL drum_sid_test tsp_cross" ;;
+        firmware/src/eng_macro.c | firmware/src/macro_glue.* | firmware/third_party/mi/* | tests/macro_test.c) QSEL="$QSEL macro_tests tsp_cross" ;;
+        tests/engines_extra.c) QSEL="$QSEL tsp_cross" ;;
         web/andamento/*) QSEL="$QSEL and_keys and_home and_ext and_ui and_master and_texture" ;;
         firmware/src/mo_font.h) QSEL="$QSEL $G_UI oled_render" ;;
         tests/demo_steps.h | tests/demo_projects.c) QSEL="$QSEL demo_projects" ;;
@@ -464,6 +474,22 @@ and_ext() {                                       # (the headers as and_keys: we
         "$OUT/and_ext" build/oled
     [ $PIL = 1 ] && { python3 tests/oled_render.py build/oled || fail "tests/oled_render.py"; }
 }
+macro_tests() {                                  # MACRO (eng_macro.c; plugin and Daisy only): Plaits' C++, then macro_test
+    if ! command -v c++ >/dev/null 2>&1; then echo "== MACRO: skipped (no c++)"; return; fi
+    mkdir -p "$OUT/mi"
+    _objs=
+    for _f in $(sh platform/daisy/plaits_sources.sh); do
+        _o=$OUT/mi/$(echo "$_f" | tr / _).o
+        c++ -O2 -std=c++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -w -DTEST -DPLAITS_LEAN \
+            -DPLAITS_SAMPLE_RATE=44100.0f -DPLAITS_SAMPLE_RATE_EXACT -DPLAITS_BLOCK_SIZE=16 -include stdio.h \
+            -Ifirmware/third_party/mi -Ifirmware/src -c "$_f" -o "$_o" || { fail "compile $_f (MACRO)"; return 1; }
+        _objs="$_objs $_o"
+    done
+    $CC -O2 $FW -DMELODEE_PLAITS=1 -DMELODEE_SID=1 -DMELODEE_SID_KIT=1 -c tests/macro_test.c -o "$OUT/macro_test.o" &&
+        c++ -o "$OUT/macro_test" "$OUT/macro_test.o" $_objs -lm || { fail "compile tests/macro_test.c (MACRO)"; return 1; }
+    step "MACRO (plugin and Daisy only): Plaits' models play, pitch, HIT, every knob, arena memory, cost against SID" "$OUT/macro_test"
+}
+drum_sid_dir() { mkdir -p build/sid_kit_demo && "$OUT/drum_sid_test" build/sid_kit_demo; }
 tsp_cross() {                                     # (its own builds: tests/tsp_cross.sh)
     step "TSP CROSS: a .tsp saved by the FM-1's, the web's, the plugin's or the Daisy's build loads in every other, byte for byte" \
         sh tests/tsp_cross.sh build/tsp_cross
@@ -516,6 +542,8 @@ phys_ref() {
 # the longest first: they set the length of the run
 sound && t "FX performance: all effects, four-track mixer, shared send bus and ordered three-effect chains" fx_performance -O2 $FW -- "$OUT/fx_performance" full
 sound && t "FX: three-slot chains, reverb decay/density/rate conversion, smooth Tape, track ownership, dry bypass and frozen legacy storage" fx_test -O1 $FW
+sound && t "SYNC ECHO: note values at the tempo, folded into the FM-1's 371 ms ring" echo_sync_test -O2 $FW
+sound && t "SYNC ECHO: note values at the tempo, the plugin's ~3 s ring" echo_sync_test_plugin:echo_sync_test -O2 $FW -DMELODEE_ECHO_RING=32768u -DCORE_TRACKS=8
 core && t "EQ accelerator: register layout, isolated histories and bounded timeout" eq_hw_test
 core && job web_tests
 sound && [ $TABLES = 1 ] && job dsp_tracks
@@ -524,6 +552,10 @@ sound && [ $TABLES = 1 ] && run "sample rate: every engine in tune at 48 kHz as 
 
 if core; then
     t "flash storage (A/B, torn writes)" storage_test
+    for _p in FM1 PLUGIN SIM DAISY; do   # each target's profile agrees with the core API (firmware/src/tess_profile.h)
+        t "platform profile $_p: its facts as the core API's" "profile_$_p:profile_test" -DTESS_TARGET=TESS_T_$_p \
+            -Iplatform/core $FW
+    done
     t "native FM6 user presets, scrolling, migration and interrupted saves" fm6_preset_test -O1 $FW
     t "ORACLE: its sounds in range and playing, the pages, the patch in a project" oracle_test -O1 -DMELODEE_USB_AUDIO=1 $FW
     t "resource lifetimes, cache eviction, tails and capacity" resources_test -O2 $FW
@@ -556,6 +588,7 @@ if core; then
     t "resident audio: four-track resource budget and removed buses" ram_audio_test -O2 $FW
     t "resident audio: expanded voice budget and CPU1 fallback" ram_voice_budget_test -O2 $FW
     t "load ceiling: a shed caps admission (half of BUDGET at least), recovers, faster under 60 %, BUDGET stays the maximum (#586); the early ceiling holds admission over 70 %, a unit off over 75 % x3" voice_ceiling_test -O2 $FW
+    t "no shared voice budget (MELODEE_VOICE_BUDGET=0, the plugin): every track to its engine's own cap, none stolen across tracks" voice_free_test -O2 $FW
     t "audio: calibrated reservations, release tails and overlapping hits" audio_admission_test -O2 $FW
     t "USB audio: four isolated track stems through the real mixer" usb_audio_tracks_test -O2 $FW
     t "boot stub: CRCs, rescue keys, damaged staging and retry fallback" boot_stub_test -O2
@@ -624,6 +657,11 @@ if core && [ $TABLES = 1 ]; then
     job and_master
     job and_texture
     job tsp_cross
+    t "SID (plugin and Daisy only): oscillator/LFSR/register semantics, revisions and 32 factory presets" sid_test -O2 $FW \
+        -DMELODEE_SID=1 -DMELODEE_SID_KIT=1
+    t "DRUM SID (plugin and Daisy only): one 6581 on one voice, frame programs, DIGI on \$D418, filter routing, levels" \
+        drum_sid_test -O2 $FW -DMELODEE_SID=1 -DMELODEE_SID_KIT=1 -- drum_sid_dir
+    job macro_tests
     t "boot audio: codec waits for settled silent DMA and shuts down before I2S" audio_boot_test -w
     t "audio: overload protection, bounded fades and DMA diagnostics" audio_test $FW
     t "audio: silent bench keeps synthesis running and silences physical output" audio_silent_test:audio_test \
@@ -659,6 +697,15 @@ if core && [ $TABLES = 1 ]; then
     t "RECIPES: GENERATIVE.md's Krell and Long gates played: a note each LFO cycle; a voice in and out with a bus's sum"         recipes_test -O2 $FW
     t "PIECE: the planner: the SHAPEs, FREE unchanged, ENERGY / Entries / the CHAIN steered, END STOP LOOP NEW FREE, tempo" \
         planner_test -O2 $FW
+    t "GENERATE: every style repeatable, before / after exact, plays in key, no clipping or hanging notes (the plugin's build)" \
+        generate_test -O1 $FW -Iplatform/core -DTESS_GENERATE=1 -DTESS_TARGET=TESS_T_PLUGIN -DTESS_HOST_CLOCK=1 \
+        -DTESS_PLUGIN_IO=1 -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 -DMELODEE_PHYS=1 \
+        -DMELODEE_SID=1 -DMELODEE_SID_KIT=1 -DMELODEE_PHASE=1 -DCORE_TRACKS=8 -DMELODEE_VOICE_BUDGET=0 \
+        '-DMELODEE_VERSION="plugin"'
+    t "GENERATE, 4 tracks with a voice budget: the cost rules; repeatable, before / after exact" \
+        generate_test_4:generate_test -O1 $FW -Iplatform/core -DTESS_GENERATE=1 -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 \
+        -DMELODEE_LOOK=1 -DMELODEE_FM6=1 -DMELODEE_PHYS=1 '-DMELODEE_VERSION="web"' -- env GEN_SEEDS=10 GEN_PLAY=1 \
+        "$OUT/generate_test_4"
     t "GEN: each generator on its own (gen.c alone): ranges, rests, draws per step, determinism, mutation, sections" \
         gen_test -O2 $FW
     t "LONG-FORM: 8 hours of 10 patches: no long silence, one-note collapse, frozen loop or thinning out" longform_test \

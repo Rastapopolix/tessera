@@ -222,7 +222,7 @@ static int motion_set_event(track_t *t, uint32_t step, uint32_t id, int16_t valu
 {
     uint32_t k = trk_index(t), i, f;
     const param_desc_t *d;
-    if (k >= NTRK || step >= NSTEP) return 1;
+    if (k >= MOTION_TRACKS || step >= NSTEP) return 1;   /* (an event's place: track << 6 | step, a byte) */
     if (motion_native_event(id,value)) {
         if (!motion_native_ok(id, value)) return 1;
     } else {

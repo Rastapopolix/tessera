@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
-/* The plugin window on Windows (gui.h): a child window of the host's, a timer at ~30 Hz, the panel drawn into a DIB */
+/* The plugin window on Windows (gui.h): a child window of the host's, a timer at ~30 Hz, the panel drawn into a DIB.
+ * OPEN / SAVE under the keys use the system's file dialogs; a .tsp or a backup dropped on the window opens too. */
 #include "gui.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
@@ -8,8 +9,14 @@
 #endif
 #include <windows.h>
 #include <windowsx.h>
+#include <commdlg.h>
+#include <shellapi.h>
 
+#include <string>
 #include <vector>
+
+#pragma comment(lib, "comdlg32.lib")
+#pragma comment(lib, "shell32.lib")
 
 namespace
 {
@@ -19,8 +26,18 @@ extern "C" IMAGE_DOS_HEADER __ImageBase;   // this module (the class belongs to 
 class GuiWin32 : public Gui
 {
   public:
+    explicit GuiWin32(GuiLink *l) : link(l)
+    {
+        panel.set_shell(l->shell());
+        panel.set_keys(l->keys_on());
+        panel.set_inks(l->inks());
+        panel.set_tracks(l->tracks());
+        panel.set_version(tess_version());
+    }
+    GuiLink *link;   // this window's instance
     HWND wnd = nullptr;
     Panel panel;
+    int wheel_acc = 0;   // (WM_MOUSEWHEEL's deltas not yet a notch)
     std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
     tess_view_t view{};
 
@@ -59,32 +76,135 @@ class GuiWin32 : public Gui
             SetFocus(h);
             g->input(g->panel.down(x, y));
             return 0;
+        case WM_RBUTTONDOWN:   // a button or key latched
+            SetFocus(h);
+            g->input(g->panel.latch(x, y));
+            return 0;
         case WM_MOUSEMOVE:
             g->input(g->panel.move(x, y));
             return 0;
         case WM_LBUTTONUP:
             ReleaseCapture();
             g->input(g->panel.up(x, y));
+            g->files();   // (OPEN or SAVE clicked: its dialog, once the button is up)
             return 0;
+        case WM_DROPFILES:
+        {
+            HDROP d = reinterpret_cast<HDROP>(wp);
+            UINT n = DragQueryFileW(d, 0, nullptr, 0);
+            std::wstring w(n + 1, L'\0');
+            DragQueryFileW(d, 0, &w[0], n + 1);
+            w.resize(n);
+            DragFinish(d);
+            g->panel.note(g->link->open_file(utf8(w)));
+            InvalidateRect(h, nullptr, FALSE);
+            return 0;
+        }
         case WM_CAPTURECHANGED:
             g->input(g->panel.up(0, 0));
+            return 0;
+        case WM_KEYDOWN:
+        case WM_KEYUP:
+        {
+            // the computer keyboard (panel.h key): by scan code, as the web simulator does; Ctrl / Alt are the host's
+            if (GetKeyState(VK_CONTROL) < 0 || GetKeyState(VK_MENU) < 0)
+                break;
+            int sc = (int)(lp >> 16 & 0xFF), code = sc;
+            if (wp == VK_UP) code = Panel::KEY_UP;
+            else if (wp == VK_DOWN) code = Panel::KEY_DOWN;
+            else if (wp == VK_LEFT) code = Panel::KEY_LEFT;
+            else if (wp == VK_RIGHT) code = Panel::KEY_RIGHT;
+            else if (lp >> 24 & 1) break;   // (another extended key: not a panel key)
+            if (g->panel.key(code, msg == WM_KEYDOWN))
+            {
+                g->input(true);
+                return 0;
+            }
+            break;
+        }
+        case WM_GETDLGCODE:
+            return DLGC_WANTALLKEYS | DLGC_WANTARROWS;
+        case WM_KILLFOCUS:
+            g->input(g->panel.release_keys());
             return 0;
         case WM_MOUSEWHEEL:
         {
             POINT p{x, y};   // (screen coordinates)
             ScreenToClient(h, &p);
-            g->input(g->panel.wheel(p.x, p.y, GET_WHEEL_DELTA_WPARAM(wp) / WHEEL_DELTA));
+            g->wheel_acc += GET_WHEEL_DELTA_WPARAM(wp);   // (a touchpad's small deltas gathered into notches)
+            int n = g->wheel_acc / WHEEL_DELTA;
+            g->wheel_acc -= n * WHEEL_DELTA;
+            if (n)
+                g->input(g->panel.wheel(p.x, p.y, n));
             return 0;
         }
         }
         return DefWindowProcW(h, msg, wp, lp);
     }
 
+    static std::string utf8(const std::wstring &w)
+    {
+        int n = WideCharToMultiByte(CP_UTF8, 0, w.c_str(), (int)w.size(), nullptr, 0, nullptr, nullptr);
+        std::string s(n, '\0');
+        WideCharToMultiByte(CP_UTF8, 0, w.c_str(), (int)w.size(), &s[0], n, nullptr, nullptr);
+        return s;
+    }
+    static std::wstring wide(const std::string &s)
+    {
+        int n = MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), nullptr, 0);
+        std::wstring w(n, L'\0');
+        MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), &w[0], n);
+        return w;
+    }
+
+    // OPEN or SAVE, if one was clicked: the system's dialog, then the instance opens or saves
+    void files()
+    {
+        int kr = panel.take_keys_request();    // (KEYS ON or OFF: every window's)
+        if (kr >= 0)
+            link->keys_set(kr == 1);
+        int sh = panel.take_shell_request();   // (a shell picked: its ink)
+        if (sh >= 0)
+            link->shell_picked(sh);
+        int ink = panel.take_ink_request();    // (an ink picked)
+        if (ink >= 0)
+            link->ink_picked(ink);
+        int req = panel.take_file_request();
+        if (req == Panel::FILE_NONE)
+            return;
+        wchar_t path[MAX_PATH * 4] = {};
+        OPENFILENAMEW of{};
+        of.lStructSize = sizeof of;
+        of.hwndOwner = GetAncestor(wnd, GA_ROOT);
+        of.lpstrFile = path;
+        of.nMaxFile = (DWORD)(sizeof path / sizeof path[0]);
+        if (req == Panel::FILE_OPEN)
+        {
+            of.lpstrFilter = L"Tessera project or FM-1 backup (*.tsp, *.json)\0*.tsp;*.json\0All files\0*.*\0";
+            of.lpstrTitle = L"Open a Tessera project";
+            of.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+            if (GetOpenFileNameW(&of))
+                panel.note(link->open_file(utf8(path)));
+        }
+        else
+        {
+            std::wstring name = wide(link->file_name());
+            wcsncpy(path, name.c_str(), sizeof path / sizeof path[0] - 1);
+            of.lpstrFilter = L"Tessera project (*.tsp)\0*.tsp\0";
+            of.lpstrDefExt = L"tsp";
+            of.lpstrTitle = L"Save the Tessera project";
+            of.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+            if (GetSaveFileNameW(&of))
+                panel.note(link->save_file(utf8(path)));
+        }
+        InvalidateRect(wnd, nullptr, FALSE);
+    }
+
     void input(bool changed)
     {
         if (changed)
         {
-            tess_gui_input(panel.input);
+            link->input(panel.input);
             InvalidateRect(wnd, nullptr, FALSE);
         }
     }
@@ -121,18 +241,31 @@ class GuiWin32 : public Gui
         if (!wnd)
             return false;
         SetWindowLongPtrW(wnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+        DragAcceptFiles(wnd, TRUE);
         SetTimer(wnd, 1, 33, nullptr);
         return true;
     }
     bool show() override { return wnd && (ShowWindow(wnd, SW_SHOW), true); }
     bool hide() override { return wnd && (ShowWindow(wnd, SW_HIDE), true); }
+    // the screen's ink changed since the last frame (not at the window's first): the next window's
+    int ink_last = -1;
+    void ink_check()
+    {
+        if (ink_last >= 0 && (int)view.ink != ink_last)
+            link->ink_seen((int)view.ink);
+        ink_last = (int)view.ink;
+    }
     void tick() override
     {
-        tess_gui_view(view);
+        link->view(view);
+        panel.set_midi(link->midi_count());
+        gui_fm1_tick(panel, link);
+        gui_gen_tick(panel, link);
+        ink_check();
         InvalidateRect(wnd, nullptr, FALSE);
     }
 };
 }   // namespace
 
 const char *Gui::api() { return CLAP_WINDOW_API_WIN32; }
-std::unique_ptr<Gui> Gui::make(const clap_host_t *) { return std::make_unique<GuiWin32>(); }
+std::unique_ptr<Gui> Gui::make(const clap_host_t *, GuiLink *link) { return std::make_unique<GuiWin32>(link); }

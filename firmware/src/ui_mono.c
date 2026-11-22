@@ -61,6 +61,20 @@ static void mo_wait(uint32_t c) { if (c < 4u) mo_col[c].wait = 1; }
 /* the mods on column c's parameter move it to live (0..1000) now: a mark beside its dial (draw_column, cord_moves;
  * Theo 2026-11-17: the detailed look's live marks, which Mono dropped). In mo_col, so mo_signature redraws it */
 static void mo_live(uint32_t c, int32_t live) { if (c < 4u && live >= 0) mo_col[c].live = (int16_t)(live > 1000 ? 1001 : live + 1); }
+#if TESS_HAS_POINTER
+/* column c's zone (mo_cols): its knob's, the column's whole height; a key's box (OCT+, OCT-): that key */
+static void mo_uz_col(uint32_t c, int key, const char *shown, int32_t x, int32_t w)
+{
+    char v[24];
+    str_cpy(v, mo_col[c].val, sizeof v);
+    if (mo_col[c].unit[0] && str_len(v) + str_len(mo_col[c].unit) < sizeof v)
+        str_cpy(v + str_len(v), mo_col[c].unit, sizeof v - str_len(v));
+    if (key && (str_eq(shown, "OCT+") || str_eq(shown, "OCT-")))
+        uz_add(UZ_G_COLS, UZ_KEY, x, 21, w, 15, -1, -1, str_eq(shown, "OCT+") ? B_OCTUP : B_OCTDN, mo_col[c].label, shown);
+    else if (!key)
+        uz_add(UZ_G_COLS, UZ_KNOB, (int32_t)c * 30, 10, 30, 41, EN_K1 + (int32_t)c, -1, 0, mo_col[c].label, v);
+}
+#endif
 
 /* ---- drawing in cells (2 x 2 pixels; cv_oy picks the canvas's half) ---- */
 static void mo_fill(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c)
@@ -381,6 +395,10 @@ static void mo_head(void)
     if (ui.msg_t && ui.msg[0] && (int32_t)str_len(ui.msg) * 6 + 2 > 96 - MO_BATT_W - 2)
         bat = -1;                                       /* (a message too long beside it: for as long as it shows) */
     right = bat >= 0 ? 96 - MO_BATT_W - 2 : 94;         /* (the title and the engine end here) */
+#if CORE_TRACKS > 4
+    if (UI_BASE && !(ui.msg_t && ui.msg[0]))            /* tracks 5..8 (8 tracks): their bank, inverted, before the */
+        right -= mo_tw("5-8") + 4;                      /* dots (1..4: nothing, as the FM-1) */
+#endif
     str_cpy(sub, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), sizeof sub);
     mo_place(at);                                       /* more pages than the footer shows: where this one is */
     room = right - mo_tw(sub) - 4 - (at[0] ? mo_tw(at) + 6 : 0);
@@ -418,21 +436,27 @@ static void mo_head(void)
         MO_HOOK_PLACE(at);
     }
     mo_textr(sub, right, 1, MO_DIM);
-    for (i = 0; i < 4u; i++) {                          /* the tracks: the selected one filled */
-        if (i == song.sel) mo_disc(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));
-        else mo_circ(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));
+#if CORE_TRACKS > 4
+    if (UI_BASE && !(ui.msg_t && ui.msg[0]))
+        mo_inv("5-8", right + 3, 1);
+#endif
+    for (i = 0; i < 4u; i++) {                          /* the tracks (8: the bank's four): the selected one filled; */
+        if (UI_BASE + i == song.sel || ovl_lit()) mo_disc(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));   /* all four a moment: */
+        else mo_circ(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));                                         /* overload (ui.c) */
     }
     if (song.rec & (1u << song.sel))                    /* REC: a bar under the track's dot */
-        mo_hl(97 + (int32_t)song.sel * 6, 8, 5, MO_INK);
+        mo_hl(97 + (int32_t)(song.sel - UI_BASE) * 6, 8, 5, MO_INK);
     mo_head_line(9, hold);
 }
 /* a value as its column shows it: five characters at most (MORPH, 0.25); longer, a number loses its last decimals
- * (128.00: 128.0) and a word its vowels from the end (MARKOV: MARKV, REVERB: REVRB), then an H; still longer, cut (1: the Mono
- * lint reports it) */
+ * (128.00: 128.0) and a word its vowels from the end (MARKOV: MARKV, REVERB: REVRB), then an H; still longer, its first word
+ * when that fits whole (SYNC ECHO: SYNC), else cut (1: the Mono lint reports it) */
 static int mo_fit(char *d, const char *s)
 {
     uint32_t n, i, j;
-    str_cpy(d, s, 16);
+    char w[16];                                         /* (s as given: d may be s) */
+    str_cpy(w, s, sizeof w);
+    str_cpy(d, w, 16);
     n = str_len(d);
     if (n > 5u && (d[0] == '-' || d[0] == '+' || (d[0] >= '0' && d[0] <= '9'))) {
         for (i = 0; d[i] && d[i] != '.'; i++) ;
@@ -453,6 +477,13 @@ static int mo_fit(char *d, const char *s)
         }
     if (n <= 5u)
         return 0;
+    for (i = 0; w[i] && w[i] != ' '; i++) ;             /* still too long: its first word, if that fits whole (SYNC
+                                                         * ECHO: SYNC), not five characters cut mid-word */
+    if (w[i] == ' ' && i >= 3u && i <= 5u) {
+        for (j = 0; j < i; j++) d[j] = w[j];
+        d[i] = 0;
+        return 0;
+    }
     d[5] = 0;
     return 1;
 }
@@ -538,6 +569,7 @@ static void mo_cols(void)
         if (!moved)
             break;
     }
+    UZ(uz_begin(UZ_G_COLS));
     for (i = 0; i < 4u; i++) {
         int32_t cx = 15 + (int32_t)i * 30, tx = x[i] + (w[i] - tw[i]) / 2, ty, fx0 = -1, fx1 = -1;
         uint16_t dim = mo_cols_trk ? mo_tdim(i) : MO_DIM;
@@ -546,6 +578,7 @@ static void mo_cols(void)
         mo_vals[i].used = mo_col[i].used;
         if (!mo_col[i].used)
             continue;
+        UZ(mo_uz_col(i, kind[i] == MV_KEY, v[i], x[i], w[i]));
         mo_abbr(l, mo_col[i].label);
         mo_textc(l, cx, 12, mo_col[i].hot ? MO_HOT : dim);
         ty = mo_col[i].ratio >= 0 && mo_col[i].val[0] != '[' ? 39 : 25;
@@ -911,16 +944,26 @@ static void mo_pic_notes(const track_t *t)
  * mods filled from the left as far as their amounts reach (MOD: how many); the picked cell framed twice */
 static void mo_pic_matrix(void)
 {
-    uint32_t r, k;
+    uint32_t r, k, rb = UI_BANK(mx_from), cb = UI_BANK(mx_to);   /* (8 tracks: the four rows of the picked cell's
+                                                                 * FROM and the four columns of its TO) */
     mo_text("FR>TO", 1, 53, MO_DIM);
+#if CORE_TRACKS > 4
+    for (k = 0; k < UI_NT; k++) {
+        char n[2] = {(char)('1' + cb + k), 0};
+        mo_textc(n, 43 + (int32_t)k * 22, 53, MO_TRK(cb + k));
+        n[0] = (char)('1' + rb + k);
+        mo_textc(n, 25, 64 + (int32_t)k * 11, MO_TRK(rb + k));
+    }
+#else
     for (k = 0; k < NTRK; k++) {
         char n[2] = {(char)('1' + k), 0};
         mo_textc(n, 43 + (int32_t)k * 22, 53, MO_TRK(k));
         mo_textc(n, 25, 64 + (int32_t)k * 11, MO_TRK(k));
     }
-    for (r = 0; r < NTRK; r++)
-        for (k = 0; k < NTRK; k++) {
-            int32_t x = 33 + (int32_t)k * 22, y = 62 + (int32_t)r * 11;
+#endif
+    for (r = rb; r < rb + UI_NT; r++)
+        for (k = cb; k < cb + UI_NT; k++) {
+            int32_t x = 33 + (int32_t)(k - cb) * 22, y = 62 + (int32_t)(r - rb) * 11;
             uint32_t lv = mx_level(r, k);
             if (r == mx_from && k == mx_to)
                 mo_box(x - 1, y - 1, 22, 11, MO_HOT);
@@ -1774,8 +1817,8 @@ static void mo_pic_entries(void)
 {
     uint8_t role[TESSERA_TRACKS];
     uint32_t warn = 0, out = tessera_entries_get(&warn, role), on = tessera.et_amount != 0u, blink = (fm1_ms / 125u) & 1u;
-    for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
-        int32_t y = 54 + (int32_t)k * 11;
+    for (uint32_t k = UI_BASE; k < UI_BASE + UI_NT; k++) {   /* (8 tracks: the selected track's bank) */
+        int32_t y = 54 + (int32_t)(k - UI_BASE) * 11;
         char n[3] = {'T', (char)('1' + k), 0}, b[12];
         uint16_t ink = !on || ((warn >> k & 1u) && blink) ? mo_tdim(k) : MO_TRK(k);
         mo_invc(n, 3, y, MO_TRK(k));
@@ -1791,8 +1834,8 @@ static void mo_pic_entries(void)
  * 0, and the menu's NOTES OUT when it keeps the steps in (KEYS) or sends nothing (OFF) */
 static void mo_pic_midich(void)
 {
-    for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
-        int32_t y = 54 + (int32_t)k * 11;
+    for (uint32_t k = UI_BASE; k < UI_BASE + UI_NT; k++) {   /* (8 tracks: the selected track's bank) */
+        int32_t y = 54 + (int32_t)(k - UI_BASE) * 11;
         uint32_t ch = midi_out_channel(&trk[k]);
         char n[3] = {'T', (char)('1' + k), 0}, b[24];
         mo_invc(n, 3, y, MO_TRK(k));
@@ -1872,6 +1915,13 @@ static void mo_pic_system(void)
     char b[16];
     uint32_t used = voices_busy(), bud = voice_budget(), a = cpu_disp_smooth(song.cpu_q8 * 100u / 256u),
              pk = song.cpu_peak_q8 * 100u / 256u;
+#if !MELODEE_VOICE_BUDGET
+    uint32_t p, i;                                      /* no budget (the plugin): the voices sounding of all the slots */
+    for (p = used = 0; p < NPART; p++)
+        for (i = 0; i < NVOICE; i++)
+            used += trk[p].v[i].active && trk[p].v[i].stage != 4u;
+    bud = NPART * NVOICE;
+#endif
     fmt_int(b, (int32_t)used);
     str_cpy(b + str_len(b), "/", 2);
     fmt_int(b + str_len(b), (int32_t)bud);
@@ -1881,6 +1931,17 @@ static void mo_pic_system(void)
     fmt_int(b + str_len(b), (int32_t)(pk > 99u ? 99u : pk));
     str_cpy(b + str_len(b), "%", 2);
     mo_pic_load("CPU", a, pk, 100u, b, 80);
+#if MELODEE_VOICE_BUDGET
+    {                                                   /* since power-on (ui.c ovl_tick): the audio caught up by */
+        uint32_t f = ovl.tot_sheds > 999u ? 999u : ovl.tot_sheds, l = ovl.tot_late > 999u ? 999u : ovl.tot_late;
+        str_cpy(b, "FADED ", sizeof b);                 /* fading voices; LATE: a half late, a crackle */
+        fmt_int(b + str_len(b), (int32_t)f);
+        mo_text(b, 2, 99, f ? MO_INK : MO_DIM);
+        str_cpy(b, "LATE ", sizeof b);
+        fmt_int(b + str_len(b), (int32_t)l);
+        mo_textr(b, 118, 99, l ? MO_INK : MO_DIM);
+    }
+#endif
 }
 /* GLO > MIDI IN: the channel each track hears (ROUT's range, SEL: all to the selected track, DRUM's channel to the
  * first DRUM track and to no other; seq.c midi_track) */
@@ -1888,11 +1949,19 @@ static void mo_pic_midiin(void)
 {
     uint32_t route = (uint32_t)song.g[G_ROUTE], first = route > 1u ? (route - 1u) * 4u : 0u, d = settings_drumch, dk, k;
     for (dk = 0; dk < NTRK && !drum_track(&trk[dk]); dk++) {}
+#if CORE_TRACKS > 4
+    if (!d || dk >= NTRK || (route != 1u && (d - 1u < first || d - 1u - first >= NPART)))
+        d = 0;                                          /* (8 tracks: ROUT's range is a channel a track, seq.c) */
+#else
     if (!d || dk >= NTRK || (route != 1u && (d - 1u < first || d - 1u - first >= 4u)))
         d = 0;                                          /* (DRUM's channel outside ROUT's range: not heard) */
-    for (k = 0; k < TESSERA_TRACKS; k++) {
-        int32_t y = 54 + (int32_t)k * 11;
+#endif
+    for (k = UI_BASE; k < UI_BASE + UI_NT; k++) {      /* (8 tracks: the selected track's bank) */
+        int32_t y = 54 + (int32_t)(k - UI_BASE) * 11;
         uint32_t ch = route == 1u ? (k == song.sel ? 17u : 0u) : first + k + 1u;
+#if CORE_TRACKS > 4
+        if (route != 1u && ch > 16u) ch = 0;           /* (past channel 16: ROUT's range doesn't reach it) */
+#endif
         char n[3] = {'T', (char)('1' + k), 0}, b[16];
         if (d && k == dk) ch = d;
         else if (d && ch == d) ch = 0;
@@ -2056,7 +2125,11 @@ static void mo_pic_fx(void)
 {
     static const char *const hint[FX_COUNT] = {"DRY SIGNAL", "MOVING NOTCHES", "ALL-PASS L/DRY R", "RANDOM VOWELS",
         "CROSSOVER JITTER", "JUMPING RESONANCE", "SHORT LO-FI ECHO", "SMALL LO-FI SPACE", "DIFFUSED REVERB", "PITCH SHIMMER",
-        "RESONANT LOW-PASS", "SOFT CLIP, FOLD"};
+        "RESONANT LOW-PASS", "SOFT CLIP, FOLD",
+#if MELODEE_ECHO_SYNC
+        "ECHO ON THE BEAT"
+#endif
+    };
     uint32_t base = cur_page()->id[0], master, slot, type;
     const int16_t *values;
     int32_t mix, cha, py = 81, x, g = 0, k = 0;
@@ -2455,6 +2528,14 @@ static void mo_list(int32_t x, int32_t y, int32_t w, const char *title, const ch
                     int32_t rows, int32_t sel, int32_t now, int more_up, int more_down)
 {
     int32_t y0 = title ? 12 : 2, h = y0 + rows * 10 + 1, top, i;
+#if TESS_HAS_POINTER
+    {                                                   /* (the rows as zones: the caller said whose, uz_list_set) */
+        const char *nm[10], *vv[10];
+        int32_t n = rows < 10 ? rows : 10;
+        for (i = 0; i < n; i++) nm[i] = row[i].name, vv[i] = row[i].val;
+        uz_list_rows(x + 2, y + y0, w - 4, 9, 10, n, nm, vv);
+    }
+#endif
     for (top = 0; top < h * 2; top += 120) {
         int32_t sh = h * 2 - top < 120 ? h * 2 - top : 120;
         cv_begin((uint32_t)w * 2u, (uint32_t)sh, MO_BG);
@@ -2517,6 +2598,7 @@ static void mo_pick(int32_t col, int32_t count, int32_t cur, int32_t first, int3
         r[i].trk = (uint8_t)(ux_multi && tr >= 0 ? tr + 1 : 0);
         r[i].dim = first + i - cur > 1 || cur - first - i > 1;
     }
+    UZ(uz_list_set(EN_K1 + col, -1, cur, first, 0));   /* (the knob's own: its value is the row) */
     mo_list(col < 2 ? 1 + 30 * col : 119 - w, 20, w, title[0] ? title : 0, 0, r, rows, cur - first, -1, first > 0,
             first + rows < count);
 }
@@ -2536,6 +2618,7 @@ static void mo_vlist(const char *title, const char *const *names, int32_t count,
     fmt_int(pos, sel + 1);                              /* where it is in the whole list: 3/12 */
     str_cpy(pos + str_len(pos), "/", 2);
     fmt_int(pos + str_len(pos), count);
+    UZ(uz_list_set(EN_K1, -1, sel, first, 1));         /* (KNOB 1 the row, OCT+ takes it) */
     mo_list(0, 120 - (12 + rows * 10 + 1), 120, title, pos, r, rows, sel - first, now - first, first > 0,
             first + rows < count);
 }
@@ -2559,6 +2642,7 @@ static void mo_sheet(void)
         r[i].dim = 0, r[i].trk = 0;
         r[i].warn = sr->cf != 0;
     }
+    UZ(uz_list_set(EN_K1, EN_K2, pop.sel, first, 1));  /* (KNOB 1 the row, KNOB 2 its value, OCT+ does it) */
     mo_list(0, 120 - (12 + rows * 10 + 1), 120, pop.title, pop.sub, r, rows, (int32_t)pop.sel - first, -1, first > 0,
             first + rows < n);
 }
@@ -2599,7 +2683,8 @@ static uint32_t mo_signature(void)
     if (cur_page()->graph == GR_LAND)                   /* LANDSCAPE: the scene, a step on */
         h = (h ^ land_sig()) * 16777619u;
     if (cur_page()->scope == SC_GLOBAL && cur_page()->id[1] == G_INFO)   /* SYSTEM: the voices, the CPU */
-        h = (h ^ voices_busy() ^ voice_budget() << 6 ^ song.cpu_q8 << 12 ^ song.cpu_peak_q8 << 22) * 16777619u;
+        h = (h ^ voices_busy() ^ voice_budget() << 6 ^ song.cpu_q8 << 12 ^ song.cpu_peak_q8 << 22 ^
+             (ovl.tot_sheds * 31u + ovl.tot_late) << 3) * 16777619u;   /* (.. the overloads since power-on) */
     if (cur_page()->graph == GR_PERF || cur_page()->graph == GR_LAND)   /* PERF, LANDSCAPE: the MACROs (a learned CC
                                                                            * moves them too) */
         h = (h ^ ((uint32_t)tessera.macro[0] | (uint32_t)tessera.macro[1] << 7 | (uint32_t)tessera.macro[2] << 14 |
@@ -2652,10 +2737,11 @@ static void mono_page(void)
     if (mo_flash_t)
         mo_flash_t--;
     land_open = cur_page()->graph == GR_LAND ? land_open : 0u;   /* (LANDSCAPE: its notes only while it shows) */
-    sig = mo_signature() ^ (mo_flash_t ? 0x5A5A5A5Au : 0u);
+    sig = mo_signature() ^ (mo_flash_t ? 0x5A5A5A5Au : 0u) ^ (ovl_lit() ? 0x0F1E2D3Cu : 0u);
     if (!ui.force && sig == mo_sig)
         return;
     mo_sig = sig;
+    UZ(uz_begin(UZ_G_COLS));                            /* (LANDSCAPE: no columns) */
     for (s = 0; s < 2u; s++) {                          /* the top half, then the bottom */
         cv_begin(240, 120, MO_BG);
         cv_oy = -(int32_t)s * 120;
@@ -2738,6 +2824,8 @@ static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis)
     int32_t top, hh = (int32_t)vis * 11;
     char lb[16], v[16], a[20], t[20];
     uint16_t vc;
+    UZ(uz_list_set(EN_K1, EN_K2, (int32_t)row, (int32_t)first, 1));   /* (KNOB 1 the row, KNOB 2 its value) */
+    UZ(uz_begin(UZ_G_LIST));
     for (top = 0; top < hh; top += 55) {                /* five rows a canvas (110 px) */
         int32_t sh = hh - top < 55 ? hh - top : 55;
         cv_begin(240, (uint32_t)sh * 2u, MO_BG);
@@ -2747,6 +2835,8 @@ static void mo_list_rows(uint32_t n, uint32_t row, uint32_t first, uint32_t vis)
             if (y + 11 <= top || y >= top + sh)
                 continue;
             more = list_text(r, lb, v, &vc);
+            if (y >= top)                               /* (each row once: in the canvas it starts in) */
+                UZ(uz_add(UZ_G_LIST, UZ_ROW, 0, LIST_Y0 / 2 + y, 118, 10, EN_K1, EN_K2, (int32_t)r, lb, v));
             if (on)
                 mo_fill(0, y, 118, 10, MO_HOT);
             mo_ascii(a, v, sizeof a);
@@ -2854,6 +2944,9 @@ static void mo_confirm(const char *a, const char *b)
     mo_textc("NO", 28, 51, MO_INK);
     mo_fill(56, 49, 40, 11, MO_INK);
     mo_textc("YES", 76, 51, MO_BG);
+    UZ(uz_begin(UZ_G_KEYS));                            /* NO: OCT-, YES: OCT+ */
+    UZ(uz_add(UZ_G_KEYS, UZ_KEY, DLG_X / 2 + 8, DLG_Y / 2 + 49, 40, 11, -1, -1, B_OCTDN, "NO", a));
+    UZ(uz_add(UZ_G_KEYS, UZ_KEY, DLG_X / 2 + 56, DLG_Y / 2 + 49, 40, 11, -1, -1, B_OCTUP, "YES", a));
     cv_blit(DLG_X, DLG_Y);
 }
 
@@ -2885,7 +2978,7 @@ static void mo_stage_col(uint32_t k, int top)
     uint32_t sel = k == song.sel, mute = t->p[P_MUTE] != 0u, arm = (song.rec >> k) & 1u, len = (uint32_t)t->p[P_SLEN];
     uint32_t page = song.playing && t->seq_idx < len ? t->seq_idx / 16u : 0u, ph = song.playing ? t->seq_idx : 0xFFFFu;
     uint32_t next = t->pattern_next < NPAT ? t->pattern_next + 1u : 0u, lvl = (uint32_t)t->p[P_LEVEL] & 127u, i, src, kk;
-    int32_t x0 = (int32_t)k * 30, cx = x0 + 15;
+    int32_t x0 = (int32_t)(k - UI_BASE) * 30, cx = x0 + 15;   /* (8 tracks: the selected track's bank) */
     uint16_t ink = mute ? mo_tdim(k) : MO_TRK(k), dim = mo_tdim(k);
     char nm[16], a[8], b[8], chip[3] = {'P', (char)('1' + t->pattern % NPAT), 0};
     if (sel && !stage.out)
@@ -2956,9 +3049,13 @@ static void mo_stage_col(uint32_t k, int top)
 static void mo_stage_head(void)
 {
     char b[16];
-    int32_t right = mo_batt_right(batt_head()), msg = ui.msg_t && ui.msg[0], hold;
+    int32_t lit = ovl_lit(), right = lit ? 96 : mo_batt_right(batt_head()), msg = ui.msg_t && ui.msg[0], hold;
     const char *hn = "";
     hold = msg ? -1 : mo_sheet_hold(&hn);
+    if (lit) {                                          /* overload (ui.c): the pages' four dots, filled, a moment in */
+        uint32_t i;                                     /* the engine's and the battery's place */
+        for (i = 0; i < 4u; i++) mo_disc(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));
+    }
     if (msg) {
         mo_cut(b, ui.msg, 15);
         mo_inv(b, 2, 1);
@@ -2977,9 +3074,18 @@ static void mo_stage_head(void)
         mo_text(b, 9, 1, ui.bpm_t ? MO_HOT : MO_DIM);
         if (ui.bpm_t) mo_hl(9, 8, mo_tw(b), MO_HOT);
     }
-    if (!msg) {                                         /* (a message: in the engine's place too) */
+    if (!msg && !lit) {                                 /* (a message: in the engine's place too; overload: the dots) */
         str_cpy(b, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), 8);
+#if CORE_TRACKS > 4
+        if (right > 118) right = 118;
+        if (UI_BASE) {                                  /* tracks 5..8: their bank, inverted, after the engine (mo_head) */
+            right -= mo_tw("5-8") + 4;
+            mo_inv("5-8", right + 3, 1);
+        }
+        mo_textr(b, right, 1, MO_DIM);
+#else
         mo_textr(b, right < 119 ? right : 118, 1, MO_DIM);
+#endif
     }
     mo_head_line(9, hold);
 }
@@ -3102,14 +3208,24 @@ static void mono_stage(void)
         stage_columns();
         mo_on = 0;
     }
-    sig = mo_stage_signature() ^ (uint32_t)(batt_head() + 1) * 2654435761u;
+    sig = mo_stage_signature() ^ (uint32_t)(batt_head() + 1) * 2654435761u ^ (ovl_lit() ? 0x0F1E2D3Cu : 0u);
     if (ui.force || sig != mo_stage_sig) {              /* the top half: header, roles, names, engines, patterns */
         mo_stage_sig = sig;
         cv_begin(240, 120, MO_BG);
         cv_oy = 0;
         mo_stage_head();
-        for (k = 0; k < NTRK; k++)
+        UZ(uz_begin(UZ_G_TRACKS));
+        UZ(uz_begin(UZ_G_COLS));                        /* (the knobs' columns: only while they are out, below) */
+        for (k = UI_BASE; k < UI_BASE + UI_NT; k++) {
             mo_stage_col(k, 1);
+#if TESS_HAS_POINTER
+            {                                           /* (a click selects the track) */
+                char tn[4] = {'T', (char)('1' + k), 0, 0};
+                uz_add(UZ_G_TRACKS, UZ_TRACK, (int32_t)(k - UI_BASE) * 30, 10, 30, 78, -1, -1, (int32_t)k, tn,
+                       trk[k].p[P_MUTE] ? "MUTE" : "");
+            }
+#endif
+        }
         if (stage.out) {                                /* the knobs over the columns' tops */
             mo_fill(0, 10, 120, 50, MO_BG);
             mo_cols();
@@ -3120,7 +3236,7 @@ static void mono_stage(void)
     }
     cv_begin(240, 120, MO_BG);                          /* the bottom half: steps, levels, the panel (every other frame) */
     cv_oy = -120;
-    for (k = 0; k < NTRK; k++)
+    for (k = UI_BASE; k < UI_BASE + UI_NT; k++)
         mo_stage_col(k, 0);
     mo_dash(0, 88, 120, MO_DIM);
     mo_stage_panel();
@@ -3188,7 +3304,7 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
     }
     if (arm) mo_disc(14, 84, 3, MO_TRK(k));
     else mo_circ(14, 84, 3, dim);
-    cv_blit((uint32_t)CARD_X(k) - 2u, PV_STRIP_TOP);
+    cv_blit((uint32_t)CARD_X(k - UI_BASE) - 2u, PV_STRIP_TOP);   /* (8 tracks: its place in the bank) */
 }
 /* under the strips: what the keys do here, a black key MUTE, a white key SOLO, E FILL (the GLO map has the rest);
  * then the GLO pages' tabs, MIXER the first */
@@ -3218,7 +3334,11 @@ static void mo_cu_side(int32_t x, uint32_t tr, const char *name, int has_trk, in
         return;
     }
     if (has_trk) {                                      /* the track: its numeral inverted */
+#if CORE_TRACKS > 4
+        a[0] = (char)('1' + tr % NTRK), a[1] = 0;      /* (8 tracks: 5..8 their own numerals) */
+#else
         a[0] = (char)('1' + (tr & 3u)), a[1] = 0;
+#endif
         mo_invc(a, x + 1, 3, MO_TRK(tr));
     }
     {                                                   /* the mark (+ one way, ^ GATE) outlasts the abbreviation */
@@ -3532,6 +3652,15 @@ static void mo_browser(uint32_t cur, uint32_t total)
         mo_textc("BACK", 76, 111, back ? MO_INK : MO_DIM);
         mo_fill(93, 110, 27, 10, MO_INK);
         mo_textc("OK", 106, 111, MO_BG);
+        if (!s) {                                       /* (zones: the two lists' knobs, BACK and OK) */
+            UZ(uz_begin(UZ_G_SIDES));
+            UZ(uz_begin(UZ_G_KEYS));
+            UZ(uz_add(UZ_G_SIDES, UZ_KNOB, 0, 10, 46, 97, EN_K1, -1, 0, "LIST", ""));
+            UZ(uz_add(UZ_G_SIDES, UZ_KNOB, 47, 10, 73, 97, EN_K2, -1, 0, "SOUND", ""));
+            if (back)
+                UZ(uz_add(UZ_G_KEYS, UZ_KEY, 62, 110, 28, 10, -1, -1, B_OCTDN, "BACK", ""));
+            UZ(uz_add(UZ_G_KEYS, UZ_KEY, 93, 110, 27, 10, -1, -1, B_OCTUP, "OK", ""));
+        }
         cv_oy = 0;
         cv_blit(0, s * 120u);
     }
@@ -3582,11 +3711,11 @@ static void mo_patterns(void)
             char c[2] = {(char)('1' + b), 0};
             mo_textc(c, 20 + 13 * (int32_t)b, 11, MO_DIM);
         }
-        for (k = 0; k < NTRK; k++) {
+        for (k = UI_BASE; k < UI_BASE + UI_NT; k++) {   /* (8 tracks: the selected track's bank) */
             const track_t *t = &trk[k];
             uint16_t tc = t->p[P_MUTE] ? mo_tdim(k) : MO_TRK(k);
             uint32_t prog = pt_prog(t);
-            int32_t y = 20 + (int32_t)k * 19;
+            int32_t y = 20 + (int32_t)(k - UI_BASE) * 19;
             char c[2] = {(char)('1' + k), 0};
             if (k == song.sel) {
                 mo_fill(1, y + 3, 9, 9, tc);
@@ -3676,6 +3805,12 @@ static void mo_song(void)
         cv_oy = -(int32_t)s * 120;
         mo_fill(0, 0, mo_tw("SONG") + 3, 8, MO_INK);    /* the header */
         x = mo_text("SONG", 1, 1, MO_BG) + 4;
+#if CORE_TRACKS > 4
+        if (UI_BASE) {                                  /* tracks 5..8: their bank, inverted (as mo_head) */
+            mo_inv("5-8", x, 1);
+            x += mo_tw("5-8") + 6;
+        }
+#endif
         if (sg.bars) {
             fmt_int(b, (int32_t)(secs / 60u));
             str_cpy(b + str_len(b), secs % 60u < 10u ? ":0" : ":", 3);
@@ -3724,10 +3859,10 @@ static void mo_song(void)
             if (r == sg.sel)
                 mo_hl(cx + 2, 19, mo_tw(l) + 2, MO_INK);
         }
-        for (k = 0; k < NTRK; k++) {                    /* a track's blocks */
+        for (k = UI_BASE; k < UI_BASE + UI_NT; k++) {   /* a track's blocks (8 tracks: the selected track's bank) */
             const track_t *t = &trk[k];
             uint16_t tc = t->p[P_MUTE] ? mo_tdim(k) : MO_TRK(k);
-            int32_t y = 23 + (int32_t)k * 18;
+            int32_t y = 23 + (int32_t)(k - UI_BASE) * 18;
             for (j = 0; j < SG_COLS && sg.first + j < n;) {
                 uint32_t r = sg.first + j, p = chain_patterns[r][k], e = j + 1u, pick = k == song.sel && r == sg.sel;
                 int used = pattern_used(k, p);
@@ -3907,6 +4042,14 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
         mo_textc("BACK", 76, 111, MO_INK);
         mo_fill(93, 110, 27, 10, MO_INK);
         mo_textc("OK", 106, 111, MO_BG);
+        if (!s) {                                       /* (zones: the families' knob, the scales', BACK and OK) */
+            UZ(uz_begin(UZ_G_SIDES));
+            UZ(uz_begin(UZ_G_KEYS));
+            UZ(uz_add(UZ_G_SIDES, UZ_KNOB, 0, 10, SC_SIDE_W / 2, 97, EN_K1, -1, 0, "FAMILY", ""));
+            UZ(uz_add(UZ_G_SIDES, UZ_KNOB, SC_SIDE_W / 2 + 1, 10, 119 - SC_SIDE_W / 2, 97, EN_K2, -1, 0, "SCALE", ""));
+            UZ(uz_add(UZ_G_KEYS, UZ_KEY, 62, 110, 28, 10, -1, -1, B_OCTDN, "BACK", ""));
+            UZ(uz_add(UZ_G_KEYS, UZ_KEY, 93, 110, 27, 10, -1, -1, B_OCTUP, "OK", ""));
+        }
         cv_oy = 0;
         cv_blit(0, s * 120u);
     }

@@ -1,0 +1,3 @@
+# clap-validator checks the plugin is known to fail: plugin-validate.yml runs them apart and reports them without
+# failing the run. Every other check must pass. Empty since the parameter and state fixes (2026-11-21): add a line only
+# for a failure that can't be fixed at once, and take it out when its fix merges, so the check guards it from then on.

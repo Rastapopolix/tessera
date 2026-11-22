@@ -17,7 +17,14 @@ static const char *const N_RECQ[] = {"OFF", "1/4", "1/8", "1/16", "1/32", "8T", 
 static const uint8_t N_RECQ_ORDER[11] = {0, 10, 9, 8, 7, 1, 5, 2, 6, 3, 4};   /* OFF, then N_DIV_ORDER's (+1) */
 static const char *const N_LTRIG[] = {"NOTE", "FREE"};
 static const char *const N_LPOL[] = {"BI", "UNI"};
-static const char *const N_FX[] = {"OFF", "PHASER", "WIDTH", "FORMANT", "TAPE", "SPIT", "ECHO", "ROOM", "REVERB", "CHORUS", "FILTER", "DRIVE"};
+static const char *const N_FX[] = {"OFF", "PHASER", "WIDTH", "FORMANT", "TAPE", "SPIT", "ECHO", "ROOM", "REVERB", "CHORUS", "FILTER", "DRIVE",
+#if MELODEE_ECHO_SYNC
+                                    "SYNC ECHO"
+#endif
+};
+/* SYNC ECHO's TIME (fx.c FX_SYNC_DIV): RATE's 0..127 in 14 zones, a knob's step a zone (ui_input.c zone_step) */
+static const char *const N_ECHODIV[] = {"1/32", "16T", "1/16", "8T", "16D", "1/8", "4T", "8D", "1/4", "2T", "4D", "1/2",
+                                        "2D", "1/1", 0};
 static const char *const N_ONOFF[] = {"OFF", "ON"};
 static const char *const N_QUANT[] = {"OFF", "SNAP", "WHITE", "ALL", "MPC", "CHRD", "HARM"};   /* Q_OFF .. Q_HARM (seq.c kb_map, midi_map) */
 /* chord keys (chord.c): OFF, the diatonic triad / seventh of the track's ROOT and SCALE on the key, fixed shapes */
@@ -32,7 +39,11 @@ static const char *const N_ORDER[] = {"NOTE", "PLAY"};
 static const char *const N_CLOCK[] = {"INT", "USB", "TRS"};
 static const char *const N_MIDI_INPUT[] = {"USB", "TRS"};
 static const char *const N_PPQN[] = {"24", "48", "4", "8", "12"};   /* G_PPQN: 0 = 24, the MIDI standard (midi_clock.c PPQN) */
+#if CORE_TRACKS > 4   /* (8 tracks: a range reaches a track a channel, up to channel 16; seq.c midi_track) */
+static const char *const N_ROUTE[] = {"CH1-8", "SEL", "CH5-12", "CH9-16", "CH13-16"};
+#else
 static const char *const N_ROUTE[] = {"CH1-4", "SEL", "CH5-8", "CH9-12", "CH13-16"}; /* Keep saved CH1-4/SEL ids; append ranges. */
+#endif
 static const char *const N_NOTE[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 static const char *const N_DASH[] = {"--"};
 static const char *const N_GO[] = {"--", "GO"};
@@ -56,10 +67,10 @@ static int16_t boot_cell;
 static const char *const N_MSRC[] = {"OFF", "LFO", "ENV", "VEL", "KEY", "RAND", "MODW", "AT", "EXPR", "S&H", "SLEW"};
 static const char *const N_MDST[] = {"OFF", "PITCH", "CUT", "SHP", "AMP", "PAN", "", "", "", "", "RATE",
                                      "VIB", "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "DEPTH"};
-static const char *const N_ENGNAME[] = {"-", "-", "-", "-", "-", MELODEE_LEGACY_EXTRAS ? "VOICE" : "-", TRIO_ON ? "TRIO" : "-", MELODEE_LEGACY_EXTRAS ? "WHEEL" : "-", "-", PHYS_ON ? "PHYS" : "-",
-                                             "DRUM", MELODEE_LEGACY_EXTRAS ? "NOISE" : "-", "FM6", MELODEE_SLICE ? "SLICE" : "-", "-", "-", "-", "-", "-",
-                                             MELODEE_ORACLE ? "ORACLE" : "-", "-", "-"};   /* (3 SID: removed
-                                                                                   * 2026-11-12; 15 CZ-1: retired 2026-10-22; 19 PROPHET, then ORACLE; 20 reserved, 21 MACRO (removed):
+static const char *const N_ENGNAME[] = {"-", "-", "-", MELODEE_SID ? "SID" : "-", "-", MELODEE_LEGACY_EXTRAS ? "VOICE" : "-", TRIO_ON ? "TRIO" : "-", MELODEE_LEGACY_EXTRAS ? "WHEEL" : "-", "-", PHYS_ON ? "PHYS" : "-",
+                                             "DRUM", MELODEE_LEGACY_EXTRAS ? "NOISE" : "-", "FM6", MELODEE_SLICE ? "SLICE" : "-", "-", MELODEE_PHASE ? "PHASE" : "-", "-", "-", "-",
+                                             MELODEE_ORACLE ? "ORACLE" : "-", "-", MELODEE_PLAITS ? "MACRO" : "-"};   /* (15 CZ-1: retired
+                                                                                   * 2026-10-22, PHASE there since 2026-11-21; 19 PROPHET, then ORACLE; 20 reserved, 21 MACRO:
                                                                                    * one name per engine ID, NENGINES) */
 _Static_assert(NELEM(N_ENGNAME) == NENGINES, "N_ENGNAME: one name per engine ID");
 
@@ -276,9 +287,10 @@ static const param_desc_t GP[G_COUNT] = {
 static const param_desc_t *global_desc(uint32_t id)
 {
     if(param_master_fx(id) && (id-G_MFXTYPE)%FX_PARAMS>=2u){
-        static param_desc_t d;static const char *const character[]={"CHAR","DEPTH","DEPTH","FOCUS","JITTER","BITE","REPEAT","DECAY","DEPTH","DEPTH","RES","FOLD"};
+        static param_desc_t d;static const char *const character[]={"CHAR","DEPTH","DEPTH","FOCUS","JITTER","BITE","REPEAT","DECAY","DEPTH","DEPTH","RES","FOLD","REPEAT"};
         uint32_t base=G_MFXTYPE+(id-G_MFXTYPE)/FX_PARAMS*FX_PARAMS,type=(uint32_t)clamp(song.g[base],0,NELEM(N_FX)-1);d=GP[id];
         if(id-base==3u)d.label=character[type];else if(type>=6u && type<=8u){d.label=type==6u?"TIME":"SIZE";d.fmt=type==6u?F_ECHOMS:F_PCT;}
+        else if(MELODEE_ECHO_SYNC && type==12u){d.label="TIME";d.fmt=F_INT;d.names=N_ECHODIV;}
         else if(type==10u){d.label="CUT";d.fmt=F_CUTOFF;}else if(type==11u){d.label="DRIVE";d.fmt=F_PCT;}return &d;
     }
     return &GP[id];
@@ -288,11 +300,13 @@ static const param_desc_t *track_desc(const track_t *t, uint32_t id)
 {
     if (param_fx(id) && ((id-P_FXTYPE)%FX_PARAMS)>=2u) {
         static param_desc_t fx_desc;
-        static const char *const character[] = {"CHAR", "DEPTH", "DEPTH", "FOCUS", "JITTER", "BITE", "REPEAT", "DECAY", "DEPTH", "DEPTH", "RES", "FOLD"};
+        static const char *const character[] = {"CHAR", "DEPTH", "DEPTH", "FOCUS", "JITTER", "BITE", "REPEAT", "DECAY", "DEPTH", "DEPTH", "RES", "FOLD", "REPEAT"};
         uint32_t base=P_FXTYPE+(id-P_FXTYPE)/FX_PARAMS*FX_PARAMS;
         fx_desc=TP[id];uint32_t type=(uint32_t)clamp(t->p[base],0,NELEM(N_FX)-1);
         if(id-base==3u)fx_desc.label=character[type];
         else if(type>=6u && type<=8u){fx_desc.label=type==6u?"TIME":"SIZE";fx_desc.fmt=type==6u?F_ECHOMS:F_PCT;}
+        else if(MELODEE_ECHO_SYNC && type==12u){fx_desc.label="TIME";fx_desc.fmt=F_INT;fx_desc.names=N_ECHODIV;}   /* (SYNC
+                                                                    * ECHO: a note value, fx.c fx_echo_want) */
         else if(type==10u){fx_desc.label="CUT";fx_desc.fmt=F_CUTOFF;}   /* (FILTER: fx.c fx_svf) */
         else if(type==11u){fx_desc.label="DRIVE";fx_desc.fmt=F_PCT;}   /* (DRIVE: fx.c fx_drive) */
         return &fx_desc;
@@ -303,6 +317,10 @@ static const param_desc_t *track_desc(const track_t *t, uint32_t id)
         degree.max = (int16_t)scale_count(t);
         return &degree;
     }
+#if MELODEE_PHASE
+    if (t->eng_req == ENGI_PHASE && id >= P_FM1_ATK && id <= P_FM4_LEVEL)
+        return &PHASE_ED[id - P_FM1_ATK];              /* PHASE's EG SPLIT envelopes (eng_phase.c) */
+#endif
     if (id >= P_E0 && id <= P_E7) {                   /* the engine asked for (t->engine follows after a fade) */
         const engine_t *e = ENGINES[eng_idx(t->eng_req)];
         const param_desc_t *d = e->desc ? e->desc(t, id - P_E0) : 0;   /* a mode-dependent label / names */
@@ -597,6 +615,15 @@ static const page_t PAGES[] = {
     {"AMP ENV", FAM_EDIT, SC_ORACLE, GR_ADSR, {OV_AA, OV_AD, OV_AS, OV_AR}},
     {"LFO MOD", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_RATE, OV_AMT, OV_LWAVE, OV_NMIX}},
     {"LFO ROUTE", FAM_EDIT, SC_ORACLE, GR_NONE, {OV_L_PITCH, OV_L_PW, OV_L_FILT, 0xFF}},
+#if MELODEE_PHASE
+    /* PHASE only, with EG SPLIT (ui.c page_visible): the envelopes of DCW 1, DCW 2, DCA 2 and DCO (PTCH) in the track parameters
+     * FM4 once had (eng_phase.c), their depths */
+    {"DCW1 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM1_ATK, P_FM1_DEC, P_FM1_SUS, P_FM1_REL}},
+    {"DCW2 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM2_ATK, P_FM2_DEC, P_FM2_SUS, P_FM2_REL}},
+    {"DCA2 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM3_ATK, P_FM3_DEC, P_FM3_SUS, P_FM3_REL}},
+    {"PTCH ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM4_ATK, P_FM4_DEC, P_FM4_SUS, P_FM4_REL}},
+    {"ENV LVLS", FAM_EDIT, SC_TRACK, GR_NONE, {P_FM1_LEVEL, P_FM2_LEVEL, P_FM3_LEVEL, P_FM4_LEVEL}},
+#endif
     {"OP1 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM1_ATK, P_FM1_DEC, P_FM1_SUS, P_FM1_REL}},
     {"OP2 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM2_ATK, P_FM2_DEC, P_FM2_SUS, P_FM2_REL}},
     {"OP3 ENV", FAM_EDIT, SC_TRACK, GR_ADSR, {P_FM3_ATK, P_FM3_DEC, P_FM3_SUS, P_FM3_REL}},
@@ -623,7 +650,7 @@ static const page_t PAGES[] = {
                                                                            * held each track's ROLE (entries.c) */
     {"LANDSCAPE", FAM_GLO, SC_GLOBAL, GR_LAND, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: rain on water, played by the
                                                                          * music (ui_land.c; the Mono look only) */
-    {"SYSTEM", FAM_GLO, SC_GLOBAL, GR_NONE, {G_BUDGET, G_INFO, G_A4, G_TUNE}},   /* the voices and the CPU they cost,
+    {"SYSTEM", FAM_GLO, SC_GLOBAL, GR_NONE, {MELODEE_VOICE_BUDGET ? G_BUDGET : 0xFF, G_INFO, G_A4, G_TUNE}},   /* the voices and the CPU they cost,
                                                                                * the tuning (ui_mono.c mo_pic_system) */
     {"MIDI IN", FAM_GLO, SC_GLOBAL, GR_NONE, {G_MIDI, G_DRUMCH, G_ROUTE, G_CLOCK}},   /* what comes in: the port, DRUM's
                                                                                    * channel, ROUT, the clock

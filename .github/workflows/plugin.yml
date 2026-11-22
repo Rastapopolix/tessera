@@ -5,7 +5,10 @@ name: Plugin (VST3 / CLAP / standalone)
 # CLAP host: STILL TIDE sounds, a note sounds, the state is a .tsp record, the window shows the screen
 # under Xvfb) and the panel test. Windows builds CLAP, VST3 and the
 # standalone app with Visual Studio's clang (ClangCL), from the Linux job's generated headers, and keeps them as the
-# run's artifact. Nothing is published.
+# run's artifact. macOS builds CLAP, VST3, AU and the standalone app as universal binaries (arm64 + x86_64) from the
+# same headers, runs the tests and the render test with the window (Cocoa: the screen drawn into the view's layer), and
+# keeps them (unsigned) as the run's artifact. All run the copies test (several instances: the private copies of the
+# core apart). Nothing is published.
 on:
   pull_request:
     branches: [develop]
@@ -45,8 +48,18 @@ jobs:
         run: build/plugin/tessera-panel-test
       - name: Sync test (following the DAW)
         run: build/plugin/tessera-sync-test
+      - name: Zones test (the mouse on the screen)
+        run: build/plugin/tessera-zones-test
+      - name: Copies test (several instances)
+        run: build/plugin/tessera-copies-test
+      - name: Project files test (.tsp, FM-1 backups)
+        run: build/plugin/tessera-projfile-test
+      - name: FM-1 on USB test (the decoder and the link, no hardware)
+        run: build/plugin/tessera-fm1-test
       - name: Render test (with the window, on a virtual display)
         run: xvfb-run -s "-screen 0 1280x800x24" build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
+      - name: Session test (three instances saved, closed and opened again)
+        run: build/plugin/tessera-session-test build/plugin/out/Tessera.clap
       - uses: actions/upload-artifact@v4
         with:
           name: tessera-plugin-linux
@@ -78,6 +91,10 @@ jobs:
         run: |
           build/plugin/Release/tessera-panel-test.exe
           build/plugin/Release/tessera-sync-test.exe
+          build/plugin/Release/tessera-zones-test.exe
+          build/plugin/Release/tessera-copies-test.exe
+          build/plugin/Release/tessera-projfile-test.exe
+          build/plugin/Release/tessera-fm1-test.exe
       - name: List the outputs
         shell: bash
         run: find build/plugin/out -maxdepth 3 | sort
@@ -85,3 +102,49 @@ jobs:
         with:
           name: tessera-plugin-windows
           path: build/plugin/out/
+
+  macos:
+    needs: linux
+    runs-on: macos-latest   # (macos-14 is no longer offered: "not supported")
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated-headers
+          path: build/gen
+      - name: 'Configure (universal: arm64 + x86_64)'
+        run: |
+          cmake -S platform/plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release -DTESS_GEN=OFF \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
+      - name: Build
+        run: cmake --build build/plugin -j4
+      - name: Panel, sync, copies and project files tests
+        run: |
+          build/plugin/tessera-panel-test
+          build/plugin/tessera-sync-test
+          build/plugin/tessera-zones-test
+          build/plugin/tessera-copies-test
+          build/plugin/tessera-projfile-test
+          build/plugin/tessera-fm1-test
+      - name: Render test (with the window)
+        run: build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
+      - name: Session test (three instances saved, closed and opened again)
+        run: build/plugin/tessera-session-test build/plugin/out/Tessera.clap
+      - name: List the outputs (both architectures in each)
+        run: |
+          find build/plugin/out -maxdepth 4 | sort
+          for b in Tessera.clap Tessera.vst3 Tessera.component Tessera.app; do
+            f=$(find "build/plugin/out/$b" -path '*/Contents/MacOS/*' -type f | head -1)
+            [ -n "$f" ] || { echo "missing: $b"; exit 1; }
+            lipo -info "$f"
+            lipo "$f" -verify_arch arm64 x86_64
+          done
+      - name: Pack the bundles in a tar
+        run: tar -C build/plugin/out -czf build/plugin/tessera-plugin-macos.tar.gz Tessera.clap Tessera.vst3 Tessera.component Tessera.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tessera-plugin-macos
+          path: |
+            build/plugin/tessera-plugin-macos.tar.gz
+            build/plugin/window.ppm

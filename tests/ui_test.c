@@ -1702,21 +1702,22 @@ static int test_tweak2(void)
                  !ev->br_to && !ev->logic && !ev->cond);
     turn(EN_K1, 25);
     bad += check("KNOB 1: BRANCH 50 %", ev->branch == 50u);
-    for (i = 0; i < 9u; i++) {                       /* T1 COIN TGL LATCH, T3 .., T4 .. (track 2 left out) */
+    for (i = 0; i < 3u * (NTRK - 1u); i++) {         /* T1 COIN TGL LATCH, T3 .., T4 .. (track 2 left out) */
         turn(EN_K1 + 1u, 1);
-        n &= ev->br_to == (i < 3u ? 1u : i < 6u ? 3u : 4u) && ev->br_mode == i % 3u;
+        n &= ev->br_to == (i < 3u ? 1u : i / 3u + 2u) && ev->br_mode == i % 3u;
     }
     turn(EN_K1 + 1u, 1);
-    n &= ev->br_to == 4u && ev->br_mode == TESS_BR_LATCH;   /* (stops at the end) */
-    for (i = 0; i < 9u; i++) turn(EN_K1 + 1u, -1);
+    n &= ev->br_to == NTRK && ev->br_mode == TESS_BR_LATCH;   /* (stops at the end) */
+    for (i = 0; i < 3u * (NTRK - 1u); i++) turn(EN_K1 + 1u, -1);
     n &= !ev->br_to;
     bad += check("KNOB 2: TO OFF, T1 COIN / TOGGLE / LATCH, T3 .., T4 ..: never this track, OFF again", n);
     n = 1;
-    for (i = 0; i < 12u; i++) {                      /* AND T1 T3 T4, OR .., XOR .., NOT .. */
+    for (i = 0; i < 4u * (NTRK - 1u); i++) {         /* AND T1 T3 T4, OR .., XOR .., NOT .. */
+        uint32_t w = i % (NTRK - 1u);
         turn(EN_K1 + 2u, 1);
-        n &= ev->logic == 1u + i / 3u && ev->lg_with == (i % 3u == 0u ? 1u : i % 3u == 1u ? 3u : 4u);
+        n &= ev->logic == 1u + i / (NTRK - 1u) && ev->lg_with == (w == 0u ? 1u : w + 2u);
     }
-    for (i = 0; i < 12u; i++) turn(EN_K1 + 2u, -1);
+    for (i = 0; i < 4u * (NTRK - 1u); i++) turn(EN_K1 + 2u, -1);
     n &= ev->logic == TESS_LG_OFF && !ev->lg_with;
     bad += check("KNOB 3: LOGIC OFF, AND / OR / XOR / NOT with T1, T3, T4 (never this track), OFF again", n);
     for (i = 0; i < TESS_COND_COUNT; i++) {
@@ -2446,7 +2447,11 @@ static int test_midi(void)
         param_format(d, 4, v, &u);
         bad += check("GLO > MIDI IN K3: all four ranges exposed", d->max == 4 && str_eq(v, "13-16"));
         pg=&PAGES[page_first(FAM_GLO) + 6u];d=page_desc(pg,0,&vp);
+#if MELODEE_VOICE_BUDGET
         bad+=check("GLO > SYSTEM K1: device shared BUDGET",d && str_eq(pg->title,"SYSTEM") && str_eq(d->label,"BUDGET") && vp==&settings_budget && pg->id[0]==G_BUDGET);
+#else
+        bad+=check("GLO > SYSTEM K1: no BUDGET without the shared budget (the plugin)",str_eq(pg->title,"SYSTEM") && pg->id[0]==0xFF);
+#endif
         go_title("SYSTEM");
         int16_t budget = settings_budget;
         ui.hot_t = 0; ui.hot_col = 0xFFu;
@@ -2454,7 +2459,9 @@ static int test_midi(void)
         bad += check("SYSTEM's CPU column (fixed range, nothing to set) does not invert when its knob turns",
                      cur_page()->id[1] == G_INFO && !(ui.hot_t && ui.hot_col == 1u));
         turn(EN_K1, 1);
+#if MELODEE_VOICE_BUDGET
         bad += check("BUDGET (an editable column on the same page) still inverts", ui.hot_t != 0 && ui.hot_col == 0u);
+#endif
         settings_budget = budget;
 #if MELODEE_LOOK
         frame();
@@ -2697,9 +2704,9 @@ static int test_tracks(void)
     memcpy(before, trk, sizeof before);
     turn(EN_PRESET, 1);
     bad += check("MIXER: the PRESETS knob does nothing", trk[0].preset == before[0].preset && !memcmp(trk[0].p, before[0].p, sizeof before[0].p));
-    for (k = 0; k < NTRK; k++) turn(EN_K1 + k, -(int32_t)(k + 1u));
+    for (k = 0; k < UI_NT; k++) turn(EN_K1 + k, -(int32_t)(k + 1u));   /* (the panel's four: 1..4 with T1 selected) */
     ok = song.sel == 0u;
-    for (k = 0; k < NTRK; k++) ok &= trk[k].p[P_LEVEL] == before[k].p[P_LEVEL] - (int16_t)(k + 1u) && trk[k].p[P_PAN] == before[k].p[P_PAN];
+    for (k = 0; k < UI_NT; k++) ok &= trk[k].p[P_LEVEL] == before[k].p[P_LEVEL] - (int16_t)(k + 1u) && trk[k].p[P_PAN] == before[k].p[P_PAN];
     bad += check("MIXER: KNOB 1..4 are tracks 1..4's LEVEL (the selected track stays)", ok);
     {
         int8_t oct = song.octave;
@@ -3772,7 +3779,7 @@ static int test_step_sheets(void)
     bad += check("..OCT+ on the note: its sheet (Length, Velocity, Chance, Condition, .., Delete note)", pop.on == POP_SHEET &&
                  pop.rows == SHEET_NOTE && !memcmp(pop.title, "Note ", 5));
     turn(EN_K2, 1);
-    bad += check("..KNOB 2 on Length snaps to 1.25 steps", notes_selected(t)<RECORD_MAX && recording[notes_selected(t)].duration*(1u<<(recording[notes_selected(t)].owner>>5))==5u*RECORD_UNIT/4u && pop.on == POP_SHEET);
+    bad += check("..KNOB 2 on Length snaps to 1.25 steps", notes_selected(t)<RECORD_MAX && recording[notes_selected(t)].duration*(1u<<REC_EXP(recording[notes_selected(t)]))==5u*RECORD_UNIT/4u && pop.on == POP_SHEET);
     turn(EN_K1, 1); turn(EN_K1, 1); turn(EN_K2, -10);
     bad += check("..Chance: 90 %", step_chance(&t->step[4]) == 90u);
     turn(EN_K1, 1);
@@ -4452,7 +4459,7 @@ static int test_chain(void)
     units_block(period);
     units_block(period);
     ok = chain.row == 1 && chain.remaining == 1;
-    for (i = 0; i < NTRK; i++) {
+    for (i = 0; i < 4u; i++) {                     /* (a project's tracks: 5..8 are not in one yet) */
         ok &= trk[i].seq_idx == 0 && trk[i].p[P_SLEN] == 3 && seq_steps(&trk[i])[0].note[0] == 65;
         for (k = 0; k < P_COUNT; k++)
             if (k < P_SLEN || k > P_SGATE) ok &= trk[i].p[k] == sounds[i][k];
@@ -7722,15 +7729,15 @@ static int test_capture(void)
     {   /* a busy jam: all four tracks play a note on every step for two and a half bars (160 events); the selected
          * track's capture keeps every one of its 40 (the ring held 128 before: the oldest bar was lost) */
         ui_power_on(); recording_reset();
-        for (i = 0; i < NTRK; i++) { track_defaults_steps(&trk[i]); trk[i].p[P_SLEN] = 16; }
+        for (i = 0; i < 4u; i++) { track_defaults_steps(&trk[i]); trk[i].p[P_SLEN] = 16; }
         cap_w = cap_from = 0; memset(cap_ev, 0, sizeof cap_ev);
         transport_req = 1; events_block(1);
         for (i = 0; i < 40u; i++) {
             uint32_t track;
             while (cap_step[0] != (uint16_t)i) events_block(1);
-            for (track = 0; track < NTRK; track++) input_on(&trk[track], 48 + track * 12 + i % 12, 100);
+            for (track = 0; track < 4u; track++) input_on(&trk[track], 48 + track * 12 + i % 12, 100);
             events_block(2);
-            for (track = 0; track < NTRK; track++) input_off(&trk[track], 48 + track * 12 + i % 12);
+            for (track = 0; track < 4u; track++) input_off(&trk[track], 48 + track * 12 + i % 12);
         }
         hold(B_REC);
         bad += check("Capture in a busy jam (four tracks, 160 notes): the selected track's 40 notes all kept, LEN 64",
@@ -7772,6 +7779,7 @@ static int test_capture(void)
         turn(EN_K1, 1);
         for (i = 0; i < 200u; i++) frame();
         bad += check("  .. and any touch starts the rest again", stored_param(1, 0, P_LEVEL) == 77);
+#if TESS_HAS_BATTERY   /* (a target without one: none shown, nothing said) */
         {   /* battery low (no bars, on the battery): BATTERY LOW once, and the next STOP saves at once */
             int ok;
             uint8_t keep_cfg = usb.config, keep_pwr = song.pwr[0];
@@ -7813,6 +7821,7 @@ static int test_capture(void)
             bad += check("  charged past a bar: over; on a computer: never low", ok && !batt_low);
             usb.config = keep_cfg; song.pwr[0] = keep_pwr; song.batt_raw = keep_raw; frame();
         }
+#endif
         memset(proj_bank_len, 0, sizeof proj_bank_len);
         memset(proj_bank_slot, 0, sizeof proj_bank_slot);
     }
@@ -8034,6 +8043,7 @@ static int test_env_oct_transpose(void)
     return bad;
 }
 
+#if TESS_HAS_BATTERY
 /* the header's battery (ui_draw.c batt_head): its level on the battery, a bolt on external power (a computer, or 5 V
  * at LDO5V); MENU BATTERY WHEN LOW hides it except when low; saved with the settings */
 static int test_battery(void)
@@ -8068,6 +8078,54 @@ static int test_battery(void)
     settings_batt_off = keep_off; usb.config = keep_cfg; song.pwr[0] = keep_pwr; song.batt_raw = keep_raw;
     return bad;
 }
+#endif
+
+#if MELODEE_VOICE_BUDGET
+/* MENU > OVERLOAD (ui.c ovl_tick): the header's four dots blink once when the audio faded voices to catch up, twice when
+ * a half was late; nothing for the counts found at power-on; one blink at most every OVL_GAP_MS; OFF never; the totals
+ * kept for GLO > SYSTEM; saved with the favorites */
+static int test_overload_blink(void)
+{
+    int bad = 0, lit0, lit1, lit2, lit3;
+    uint32_t keep_ms = fm1_ms, t;
+    memset(&ovl, 0, sizeof ovl);
+    OVL_SAVED = 0;
+    ovl_host_sheds = 40; ovl_host_late = 7;             /* (as found: melodee_dbg survives a reset) */
+    fm1_ms = 100000; ovl_tick();
+    bad += check("overload: the counts at power-on: no blink, no total", !ovl_lit() && !ovl.tot_sheds && !ovl.tot_late);
+    ovl_tick();
+    bad += check("  nothing new: dark", !ovl_lit());
+    ovl_host_sheds++; ovl_tick();
+    lit0 = ovl_lit(); fm1_ms += OVL_ON_MS; ovl_tick(); lit1 = ovl_lit();
+    bad += check("  voices faded: lit, then dark after OVL_ON_MS, once", lit0 && !lit1 && !ovl.n && ovl.tot_sheds == 1u);
+    fm1_ms += 1000; ovl_host_late++; ovl_tick();
+    bad += check("  a late half within OVL_GAP_MS: no blink, counted", !ovl_lit() && ovl.tot_late == 1u);
+    fm1_ms += OVL_GAP_MS; ovl_host_late++; ovl_tick();
+    t = fm1_ms;
+    lit0 = ovl_lit(); fm1_ms = t + OVL_ON_MS; ovl_tick(); lit1 = ovl_lit();
+    fm1_ms = t + 2u * OVL_ON_MS; ovl_tick(); lit2 = ovl_lit();
+    fm1_ms = t + 3u * OVL_ON_MS; ovl_tick(); lit3 = ovl_lit();
+    bad += check("  a late half later: twice (lit, dark, lit, dark)", lit0 && !lit1 && lit2 && !lit3 && ovl.tot_late == 2u);
+    fm1_ms += 2u * OVL_GAP_MS;
+    OVL_SAVED = OVL_OFF_TAG; ovl_host_sheds += 3; ovl_host_late++; ovl_tick();
+    bad += check("  OFF: no blink, still counted for SYSTEM", !ovl_lit() && ovl.tot_sheds == 4u && ovl.tot_late == 3u);
+    {
+        static persist_t p;
+        memset(&p, 0, sizeof p);
+        settings_export(&p);
+        OVL_SAVED = 0;
+        bad += check("  OFF is saved with the settings", settings_import(&p, sizeof p) && !OVL_ON);
+        p.favorites.factory[8][25] = 3u;                /* (the retired FX key map's bytes) */
+        settings_import(&p, sizeof p);
+        bad += check("  any other byte there (settings before it): BLINK", OVL_ON);
+    }
+    OVL_SAVED = 0;
+    memset(&ovl, 0, sizeof ovl);
+    ovl_host_sheds = ovl_host_late = 0;
+    fm1_ms = keep_ms;
+    return bad;
+}
+#endif
 
 
 /* ARP HOLD (Theo, 3.5-beta7): keys held, ARP 2 KNOB 3 to HOLD ON, keys let go: the arpeggio goes on, stopped and
@@ -8170,7 +8228,12 @@ int main(void)
     bad += test_large_face();
 #endif
     bad += test_arp_hold_latch();
+#if TESS_HAS_BATTERY
     bad += test_battery();
+#endif
+#if MELODEE_VOICE_BUDGET
+    bad += test_overload_blink();
+#endif
     bad += test_home_notes();
     bad += test_stage();
     bad += test_capture();
