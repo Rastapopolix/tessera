@@ -312,4 +312,12 @@ class GuiX11 : public Gui
 }   // namespace
 
 const char *Gui::api() { return CLAP_WINDOW_API_X11; }
+int Gui::screen_width()
+{
+    Display *d = XOpenDisplay(nullptr);
+    if (!d) return 0;
+    int w = DisplayWidth(d, DefaultScreen(d));
+    XCloseDisplay(d);
+    return w;
+}
 std::unique_ptr<Gui> Gui::make(const clap_host_t *host, GuiLink *link) { return std::make_unique<GuiX11>(host, link); }

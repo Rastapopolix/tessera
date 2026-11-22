@@ -315,4 +315,10 @@ class GuiWin32 : public Gui
 }   // namespace
 
 const char *Gui::api() { return CLAP_WINDOW_API_WIN32; }
+int Gui::screen_width()
+{
+    RECT r{};   // (the primary screen's work area: without the taskbar)
+    if (SystemParametersInfoW(SPI_GETWORKAREA, 0, &r, 0)) return (int)(r.right - r.left);
+    return GetSystemMetrics(SM_CXSCREEN);
+}
 std::unique_ptr<Gui> Gui::make(const clap_host_t *, GuiLink *link) { return std::make_unique<GuiWin32>(link); }

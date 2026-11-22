@@ -198,7 +198,9 @@ FM-1 skips, so the FM-1 still opens the file as its four tracks).
 
 ## EXPANDED: all eight tracks at once
 
-Set **MODE** to EXPANDED in Tessera's menu. The window gets wider (1500 x 624 at 100%) and a second screen,
+A new Tessera opens in EXPANDED when your screen has room for it (about 1600 pixels across, more on a scaled
+Windows screen), and in FM-1 mode on a smaller screen such as a 13" laptop's. Once you pick a MODE yourself, every
+new window opens in that one. In EXPANDED the window is wider (1500 x 624 at 100%) and a second screen,
 **TRACKS**, sits beside the FM-1's. The FM-1's screen and all its pages stay exactly as they are; the knobs and
 buttons move to the right of TRACKS and the 27 keys stretch across the window.
 

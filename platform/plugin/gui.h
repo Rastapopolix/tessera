@@ -153,5 +153,8 @@ class Gui
      * follows Panel::width() each tick); before set_parent, the size it opens at */
     virtual void set_scale(int pct) { (void)pct; }
     static const char *api();  // CLAP_WINDOW_API_WIN32 / _X11 / _COCOA, or nullptr
+    /* the main screen's width in the units a window is sized in (X11 and Windows pixels, macOS points; the room the
+     * OS leaves where it says), 0 if unknown: whether EXPANDED fits, for a window with no MODE picked yet */
+    static int screen_width();
     static std::unique_ptr<Gui> make(const clap_host_t *host, GuiLink *link);
 };

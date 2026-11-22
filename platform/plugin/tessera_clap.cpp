@@ -285,6 +285,15 @@ struct Tessera : GuiLink
     bool win_expanded() const { return mode_expanded.load() && shell_i == 0; }
     int win_w() const { return Panel::width_of(win_expanded()); }
     void mode_pick(bool on) override;
+    // no MODE picked yet: EXPANDED if a screen of width w (Gui::screen_width; 0 unknown: FM-1) has room for its window
+    // at the SIZE it would have, with EXPANDED_ROOM to spare for the DAW's frame; not remembered (a pick is)
+    static constexpr int EXPANDED_ROOM = 100;
+    void mode_default(int w)
+    {
+        int pct = Panel::size_fit(size_user ? size_user : size_host, true);
+        mode_expanded.store(w > 0 && w >= Panel::W_EXPANDED * pct / 100 + EXPANDED_ROOM);
+        tracks_on.store(win_expanded());
+    }
     void resize_window();               // the window and the host to the mode's width at SIZE
     bool tracks_view(tess_tracks_t &t) override
     {
@@ -1015,7 +1024,7 @@ bool p_init(const clap_plugin_t *p)
         std::string sz = projfile::setting_get("size");
         if (!sz.empty()) t->size_user = std::atoi(sz.c_str()) >= 100 ? std::atoi(sz.c_str()) : 100;
     }
-    t->mode_expanded.store(projfile::setting_get("mode") == "expanded");   // MODE: the one last picked
+    t->mode_expanded.store(projfile::setting_get("mode") == "expanded");   // MODE: the one last picked (none: gui_create)
     t->tracks_on.store(t->win_expanded());
     {   // GENERATE: the style (by name) and VARIATION last picked in any window
         std::string st = projfile::setting_get("gen_style"), var = projfile::setting_get("gen_variation");
@@ -1549,6 +1558,8 @@ bool gui_create(const clap_plugin_t *p, const char *api, bool is_floating)
     auto *t = self(p);
     if (!gui_is_api_supported(p, api, is_floating) || t->gui)
         return false;
+    if (projfile::setting_get("mode").empty())   // no MODE picked yet: EXPANDED if the screen has room for it
+        t->mode_default(Gui::screen_width());
     t->gui = Gui::make(t->host, t);
     if (t->gui)
         t->gui->set_scale(t->size_pct());
@@ -1563,6 +1574,13 @@ bool gui_set_scale(const clap_plugin_t *p, double scale)
     int pct = scale >= 1.75 ? 200 : scale >= 1.25 ? 150 : 100;
     bool was = t->size_pct() == Panel::size_fit(pct, t->win_expanded());
     t->size_host = pct;
+    if (projfile::setting_get("mode").empty())   // (no MODE picked: EXPANDED only if it still fits at this scale)
+    {
+        bool wide = t->win_expanded();
+        t->mode_default(Gui::screen_width());
+        if (wide != t->win_expanded() && t->gui)
+            t->resize_window();
+    }
     if (!was && t->gui && !t->size_user)
         t->gui->set_scale(t->size_pct());
     return true;

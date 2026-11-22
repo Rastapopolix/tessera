@@ -731,6 +731,17 @@ int main(int argc, char **argv)
             CHECK(gui->is_api_supported(p, CLAP_WINDOW_API_X11, false), "X11 supported");
             CHECK(gui->create(p, CLAP_WINDOW_API_X11, false), "gui create");
             gui->get_size(p, &w, &h);
+            {   // no MODE picked (a new user): EXPANDED when the screen has room (1600 wide at 100 %), FM-1 if not
+                bool picked = false;
+                if (const char *xdg = std::getenv("XDG_CONFIG_HOME"))
+                    picked = std::ifstream(std::string(xdg) + "/tessera/mode").good();
+                else if (const char *home = std::getenv("HOME"))
+                    picked = std::ifstream(std::string(home) + "/.config/tessera/mode").good();
+                int sw = DisplayWidth(d, DefaultScreen(d));
+                std::printf("window: opens %ux%u on a %d-wide screen%s\n", w, h, sw, picked ? " (MODE picked before)" : "");
+                CHECK(picked || w == (sw >= 1600 ? 1500u : 1000u), "no MODE picked: EXPANDED only if the screen has room (%u)", w);
+                CHECK(w == 1000, "this test wants FM-1 mode: run it on a screen under 1600 wide (xvfb-run's 1280)");
+            }
             Window parent = XCreateSimpleWindow(d, DefaultRootWindow(d), 0, 0, w, h, 0, 0, 0);
             XMapWindow(d, parent);
             XSync(d, False);

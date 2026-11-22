@@ -408,4 +408,9 @@ bool GuiMac::set_parent(const clap_window_t *w)
 }   // namespace
 
 const char *Gui::api() { return CLAP_WINDOW_API_COCOA; }
+int Gui::screen_width()
+{
+    NSScreen *s = [NSScreen mainScreen];   // (points; the visible frame: without the Dock)
+    return s ? (int)s.visibleFrame.size.width : 0;
+}
 std::unique_ptr<Gui> Gui::make(const clap_host_t *, GuiLink *link) { return std::make_unique<GuiMac>(link); }
