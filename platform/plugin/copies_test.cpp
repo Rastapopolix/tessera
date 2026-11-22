@@ -50,6 +50,18 @@ int main()
     CHECK(tess_copy(tess_copy_count()) == nullptr, "no copy past the count");
     a->boot();
     b->boot();
+    if (tess_copy_count() > 2)   // a new copy starts from a new project: playing, it is silent (copy 2, apart from a and b)
+    {
+        const tess_core_vt *c = tess_copy(2);
+        c->boot();
+        c->transport(1);
+        double ec = run(c, 400);
+        c->transport(0);
+        std::printf("a new copy playing: energy %.9f\n", ec);
+        CHECK(ec < 1e-6, "a new copy plays nothing until it gets notes");
+    }
+    a->slot_load(0);   // (STILL TIDE, slot A: the demos wait in the slots)
+    b->slot_load(0);
 
     // a alone, then a again from a fresh state (copy 2 if there is one, else skip) is not possible: so compare a with
     // a reference rendered by copy b first, before b does anything else

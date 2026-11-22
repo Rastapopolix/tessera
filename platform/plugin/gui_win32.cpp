@@ -175,6 +175,11 @@ class GuiWin32 : public Gui
         int req = panel.take_file_request();
         if (req == Panel::FILE_NONE)
             return;
+        if (req == Panel::FILE_MIDI)   // (no dialog: the clip goes to Documents/Tessera/MIDI)
+        {
+            panel.note(link->export_midi());
+            return;
+        }
         wchar_t path[MAX_PATH * 4] = {};
         OPENFILENAMEW of{};
         of.lStructSize = sizeof of;

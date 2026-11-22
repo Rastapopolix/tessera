@@ -626,6 +626,13 @@ void tess_core_slot_load(uint32_t slot)
     project_load(slot);
     ui.force = 1;
 }
+/* a new project, as an FM-1 with nothing saved starts with (project.c project_new_blank: the power-on sounds, every
+ * pattern empty, no generator running, the device's MIDI setup kept); the slots are left as they are */
+void tess_core_project_new(void)
+{
+    project_new_blank();
+    ui.force = 1;
+}
 
 /* the device's own MIDI and tuning setup (project.c GLO_KEPT: a project load leaves it as it is), for a front end to
  * keep beside the project: version 1, ROUT, DRUM's channel, NOTES OUT, TUNE (-50..50, +128) */
