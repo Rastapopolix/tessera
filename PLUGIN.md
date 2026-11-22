@@ -5,9 +5,9 @@ instrument, an **Audio Unit** on macOS and a **standalone app**. Its window is t
 knobs and keys, so everything in the [manual](MANUAL.md) works the same way here. This page covers only what is different
 in a DAW.
 
-[![Tessera 0.1-beta2 in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE](assets/plugin/plugin-expanded.png)](assets/plugin/plugin-expanded.png)
+[![Tessera in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE](assets/plugin/plugin-expanded.png)](assets/plugin/plugin-expanded.png)
 
-*EXPANDED: the FM-1's screen and, beside it, TRACKS with all eight tracks (0.1-beta2 playing STILL TIDE).*
+*EXPANDED: the FM-1's screen and, beside it, TRACKS with all eight tracks (the latest beta, playing STILL TIDE).*
 
 <!-- downloads: the site's plugin page shows its download block here (web/make_manual.py) -->
 
