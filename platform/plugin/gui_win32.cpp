@@ -289,6 +289,7 @@ class GuiWin32 : public Gui
         panel.set_midi(link->midi_count());
         gui_fm1_tick(panel, link);
         gui_size_tick(panel, link);
+        gui_listen_tick(panel, link);
         gui_gen_tick(panel, link);
         ink_check();
         InvalidateRect(wnd, nullptr, FALSE);

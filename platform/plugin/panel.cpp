@@ -909,10 +909,10 @@ namespace
 {
 const uint32_t T_YEL = 0xFFFFD020, T_DIM = 0xFF3B3007, T_HELD = 0xFFE6E0D0, T_WORD = 0xFFB9B2A0, T_OFF = 0xFF5F5A4C,
                T_BLACK = 0xFF000000, T_BODY = 0xFF111111;
-const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 7, ROW_H = 36, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
+const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 9, ROW_H = 36, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
           INK_COLS = 5, INK_S = 32, INK_GAP = 12, FM1_LINE = 22;
-// SHELL, INK; MODE, SIZE; FM-1 USB and its state, KEYS; ABOUT (a dotted line between each group)
-enum { ROW_SHELL, ROW_INK, ROW_MODE, ROW_SIZE, ROW_FM1, ROW_KEYS, ROW_ABOUT };
+// SHELL, INK; MODE, SIZE; FM-1 USB and its state, KEYS, LISTEN, SPLIT; ABOUT (a dotted line between each group)
+enum { ROW_SHELL, ROW_INK, ROW_MODE, ROW_SIZE, ROW_FM1, ROW_KEYS, ROW_LISTEN, ROW_SPLIT, ROW_ABOUT };
 int row_y(int i)
 {
     return MENU_Y + 10 + i * ROW_H + (i >= ROW_MODE ? 18 : 0) + (i >= ROW_FM1 ? 18 : 0) + (i >= ROW_KEYS ? FM1_LINE : 0) +
@@ -922,6 +922,8 @@ const int MENU_H = 2 + 8 + MENU_ROWS * ROW_H + 3 * 18 + FM1_LINE + 8 + 2;
 // FM-1 USB's two words, right to left from the row's right edge: ON, then OFF
 const int SEG_RIGHT = MENU_X + MENU_W - 16;
 int seg_w(const char *t) { return Canvas::ptext_w(t, 2) + 12; }
+// LISTEN's < value >: each one's left and right, from SEG_RIGHT leftwards
+const int LISTEN_SEG[3][2] = {{108, 136}, {32, 104}, {0, 28}};
 int shell_sub_y() { return row_y(ROW_SHELL) - 10; }
 
 // GENERATE's strip, between the MIDI lamp and the version: the button, the style (its arrows at the ends), VAR, the
@@ -1078,7 +1080,8 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
 
     // the menu: SHELL, INK; MODE, SIZE; ABOUT
     nbox(c, MENU_X, MENU_Y, MENU_W, MENU_H, T_DIM, T_BLACK);
-    static const char *NAMES[MENU_ROWS] = {"SHELL", "INK", "MODE", "SIZE", "FM-1 USB", "KEYS", "ABOUT"};
+    static const char *NAMES[MENU_ROWS] = {"SHELL", "INK", "MODE", "SIZE", "FM-1 USB", "KEYS", "LISTEN", "SPLIT",
+                                                "ABOUT"};
     for (int r = 0; r < MENU_ROWS; r++)
     {
         int y = row_y(r);
@@ -1127,6 +1130,23 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
             seg("ON", keys_on_, true);
             seg("OFF", !keys_on_, true);
         }
+        else if (r == ROW_LISTEN || r == ROW_SPLIT)   // < OFF > / < CH 16 >, < 48 >: fixed widths (LISTEN_SEG)
+        {
+            char t[8];
+            bool sp = r == ROW_SPLIT;
+            if (sp) std::snprintf(t, sizeof t, "%d", split_note);
+            else std::snprintf(t, sizeof t, listen_ch ? "CH %d" : "OFF", listen_ch);
+            const char *words[3] = {"<", t, ">"};
+            for (int i = 0; i < 3; i++)
+            {
+                int l = SEG_RIGHT - LISTEN_SEG[i][1], w = LISTEN_SEG[i][1] - LISTEN_SEG[i][0];
+                bool chosen = i == 1 && !sp && listen_ch > 0,
+                     there = sp ? (i == 1 && listen_ch > 0) || (i == 0 && split_note > 12) || (i == 2 && split_note < 108)
+                                : i == 1 || (i == 0 ? listen_ch > 0 : listen_ch < 16);
+                if (chosen) c.box(l, y + 7, w, 22, T_YEL);
+                c.ptext_c(l + w / 2, y + 11, words[i], 2, chosen ? T_BLACK : there ? T_WORD : T_OFF);
+            }
+        }
         else
         {
             std::string ver = version.empty() ? "TESSERA" : version;
@@ -1136,7 +1156,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
     }
     dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_INK) + ROW_H + 8, T_DIM);
     dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_SIZE) + ROW_H + 8, T_DIM);
-    dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_KEYS) + ROW_H + 8, T_DIM);
+    dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_SPLIT) + ROW_H + 8, T_DIM);
 
     if (menu_sub == 1)   // the shells, the one shown marked
     {
@@ -1350,6 +1370,31 @@ bool Panel::menu_click(int x, int y)
         menu_sub = 0;
         return false;
     }
+    if (r == ROW_LISTEN)   // < and > step the channel, the value turns it OFF or on again
+    {
+        int sg = listen_seg_at(x), ch = listen_ch;
+        if (sg == 0) ch = ch > 0 ? ch - 1 : 0;
+        else if (sg == 2) ch = ch < 16 ? ch + 1 : 16;
+        else if (sg == 1) ch = ch ? 0 : listen_last;
+        if (sg >= 0 && ch != listen_ch)
+        {
+            set_listen(ch);
+            listen_req = ch;
+        }
+        menu_sub = 0;
+        return false;
+    }
+    if (r == ROW_SPLIT)   // < and > move it an octave (a C, 12..108)
+    {
+        int sg = listen_seg_at(x), n = split_note + (sg == 0 ? -12 : sg == 2 ? 12 : 0);
+        if (n >= 12 && n <= 108 && n != split_note)
+        {
+            split_note = n;
+            split_req = n;
+        }
+        menu_sub = 0;
+        return false;
+    }
     if (r == ROW_SIZE)   // 100, 150 or 200 (elsewhere on the row: nothing)
     {
         int pct = size_seg_at(x);
@@ -1406,6 +1451,13 @@ void Panel::scale(const uint32_t *px, uint32_t *out, int n)
             o[x] = 0xFF000000u | r << 16 | g << 8 | b;
         }
     }
+}
+
+int Panel::listen_seg_at(int x) const
+{
+    for (int i = 0; i < 3; i++)
+        if (x >= SEG_RIGHT - LISTEN_SEG[i][1] && x < SEG_RIGHT - LISTEN_SEG[i][0]) return i;
+    return -1;
 }
 
 int Panel::fm1_seg_at(int x) const

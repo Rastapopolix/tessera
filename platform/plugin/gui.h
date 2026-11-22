@@ -58,6 +58,12 @@ struct GuiLink
     virtual void gen_pick(int style, int variation) { (void)style; (void)variation; }
     virtual Panel::GenState gen_state() { return {}; }
     /* KEYS (TESSERA's menu): whether the computer keyboard plays Tessera, the same for every window (a setting) */
+    // LISTEN: the MIDI channel whose notes set the key and GENERATE (listen.h), 0 off; this instance's
+    virtual int listen_channel() { return 0; }
+    virtual void listen_pick(int ch) { (void)ch; }
+    // LISTEN's SPLIT: the first note that sets the key (the notes under it GENERATE), a C 12..108; this instance's
+    virtual int listen_split_note() { return 48; }
+    virtual void listen_split_pick(int note) { (void)note; }
     virtual bool keys_on() { return projfile::setting_get("keys") != "0"; }
     virtual void keys_set(bool on) { projfile::setting_put("keys", on ? "1" : "0"); }
 };
@@ -79,6 +85,19 @@ inline void gui_size_tick(Panel &panel, GuiLink *link)
     if (pct > 0)
         link->size_pick(pct);
     panel.set_size_pct(Panel::size_pct(link->size_halves()));
+}
+
+/* each window's tick: LISTEN and SPLIT in the menu (a step asked for handed on, the channel and SPLIT shown) */
+inline void gui_listen_tick(Panel &panel, GuiLink *link)
+{
+    int ch = panel.take_listen_request();
+    if (ch >= 0)
+        link->listen_pick(ch);
+    int sp = panel.take_split_request();
+    if (sp >= 0)
+        link->listen_split_pick(sp);
+    panel.set_listen(link->listen_channel());
+    panel.set_split(link->listen_split_note());
 }
 
 /* each window's tick: GENERATE's strip (its styles once; a press handed on, its answer shown; the state shown) */

@@ -471,6 +471,31 @@ int main(int argc, char **argv)
         q.up(310, ky);
         CHECK(q.keys_on() && q.take_keys_request() == 1, "KEYS ON asks for on");
         CHECK(q.key(0x2C, true) && (q.input.keys & 1u) && q.key(0x2C, false), "KEYS ON: Z plays again");
+        // LISTEN: < OFF >, the channel whose notes steer (listen.h)
+        int ly = 46 + 10 + 6 * 36 + 2 * 18 + 22 + 18;   // (row_y(ROW_LISTEN)'s middle)
+        auto lclick = [&](int x) { q.down(x, ly), q.up(x, ly); return q.take_listen_request(); };
+        CHECK(q.listen() == 0 && q.take_listen_request() == -1, "LISTEN OFF to start, nothing asked");
+        CHECK(lclick(198) == -1, "< at OFF: nothing");
+        CHECK(lclick(306) == 1 && q.listen() == 1, "> : channel 1");
+        CHECK(lclick(306) == 2 && lclick(198) == 1, "> then <: 2, then 1");
+        CHECK(lclick(252) == 0 && q.listen() == 0, "its value: OFF");
+        CHECK(lclick(252) == 1, "its value again: back to the last channel (1)");
+        q.set_listen(16);
+        CHECK(lclick(306) == -1 && q.listen() == 16, "> at 16: nothing");
+        // SPLIT, the row under: 48 to start, < and > an octave, 12..108
+        int sy = ly + 36;   // (row_y(ROW_SPLIT)'s middle)
+        auto sclick = [&](int x) { q.down(x, sy), q.up(x, sy); return q.take_split_request(); };
+        CHECK(q.split() == 48 && q.take_split_request() == -1, "SPLIT 48 to start, nothing asked");
+        CHECK(sclick(198) == 36 && sclick(306) == 48 && sclick(306) == 60, "< 36, > 48, > 60");
+        CHECK(sclick(252) == -1 && q.split() == 60, "its value: nothing");
+        q.set_split(12);
+        CHECK(sclick(198) == -1 && q.split() == 12, "< at 12: nothing");
+        q.set_split(108);
+        CHECK(sclick(306) == -1 && q.split() == 108, "> at 108: nothing");
+        q.set_split(48);
+        q.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/15_tessera_listen.ppm", px);   // (the menu: LISTEN on CH 16)
+        CHECK(q.menu_shown(), "the menu stays open");
         q.key(0x01, true);   // (Esc: the menu shut)
         CHECK(!q.menu_shown(), "Esc shuts the menu");
         // a right-click latches a button or key: GLO held while FX is clicked, then let go; Esc lets every latch go
