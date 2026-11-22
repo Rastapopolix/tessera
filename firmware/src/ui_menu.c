@@ -546,6 +546,16 @@ static uint32_t menu_color_step(int32_t d)            /* COLOR's next ink, from 
 static void menu_colors(void)
 {
     uint32_t k, cur = pal_shown(settings.palette), ni = 0, nm = 0;
+#if TESS_HAS_POINTER
+    uint32_t at = 0, here = 0;                          /* (the zones: the swatches a list on KNOB 2, in its order) */
+    for (k = 0; k < NPALETTES; k++)
+        if (pal_shown(k) == k && k < cur)
+            here++;
+    if (!cv_oy) {                                       /* (the first canvas: the zones once) */
+        uz_list_set(EN_K2, -1, (int32_t)here, 0, 0);
+        uz_begin(UZ_G_LIST);
+    }
+#endif
     mo_text("ONE INK", 2, 16, MO_DIM);
     mo_text("MOSAIC", 2, 50, MO_DIM);
     for (k = 0; k < NPALETTES; k++) {
@@ -563,6 +573,11 @@ static void menu_colors(void)
         }
         if (k == cur)
             mo_box(x - 2, y - 2, w + 4, 15, MO_HOT);
+#if TESS_HAS_POINTER
+        if (!cv_oy)                                     /* a swatch: KNOB 2 to it (click), the inks (wheel) */
+            uz_add(UZ_G_LIST, UZ_ROW, x - 1, MENU_HEAD / 2 + y - 1, w + 2, 13, EN_K2, -1, (int32_t)at, pal_name(k), "");
+        at++;
+#endif
     }
     mo_hl(0, 82, 120, MO_DIM);
     mo_text_s(pal_name(cur), 2, 88, 2, MO_INK);
