@@ -1,0 +1,494 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<!-- Made by web/make_manual.py from PLUGIN.md: edit that file, not this one. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tessera as a plugin</title>
+<link rel="icon" href="../media/brand/logo.svg" type="image/svg+xml">
+<script>try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<style>
+@font-face { font-family: "Tessera Mono"; font-display: block; src: url("data:font/woff;base64,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") format("woff"); }
+:root {
+  /* the Mono look: one ink on near-black (Settings COLOR, YELLOW the default; tools/gen_ui_palettes.py) for headings,
+     labels and buttons, the body text a soft off-white (easier on the eyes in long text), the rest the ink at lower strengths; the four tracks as the device's fills: solid, hatched, dotted, striped */
+  --bg: #111; --ink: #ffd020; --surf: #19170f; --raise: #252113; --line: #3b3007; --text: #e6e0d0; --mid: #b9b2a0;
+  --dim: #8e877a;
+  --p1: var(--ink);
+  --p2: repeating-linear-gradient(135deg, var(--ink) 0 2px, transparent 2px 5px);
+  --p3: radial-gradient(circle, var(--ink) 1.2px, transparent 1.6px) 0 0 / 5px 5px;
+  --p4: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px);
+  --pixel: "Tessera Mono", ui-monospace, monospace;
+  --gap: 6px; --max: 1120px;
+}
+:root[data-theme="light"] { --bg: #f6f2e7; --ink: #1c1a14; --surf: #eee8d6; --raise: #e2d9bf; --line: #c8bd9b; --text: #1c1a14; --mid: #4b4535; --dim: #786e57; color-scheme: light; }
+* { box-sizing: border-box; }
+html { scroll-padding-top: 64px; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 400 16px/1.65 ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+a { color: var(--ink); text-underline-offset: 3px; }
+a:hover { background: var(--ink); color: var(--bg); text-decoration: none; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.skip { position: absolute; left: 8px; top: -60px; z-index: 5; padding: 6px 10px; background: var(--ink); color: var(--bg); font: 16px/1 var(--pixel); }
+.skip:focus { top: 8px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+header { position: sticky; top: 0; z-index: 3; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+  padding: 10px 16px; background: var(--bg); border-bottom: 1px solid var(--line); font: 16px/1 var(--pixel); }
+header .home { color: var(--ink); text-decoration: none; margin-right: auto; font-size: 20px; }
+header a { color: var(--mid); text-decoration: none; padding: 3px 4px 2px; }
+header a[aria-current] { color: var(--bg); background: var(--ink); }
+.theme, .contents { font: 16px/1 var(--pixel); color: var(--mid); background: none; border: 0; padding: 3px 4px 2px; cursor: pointer; }
+.theme:hover, .contents:hover { color: var(--bg); background: var(--ink); }
+.contents { display: none; }
+.layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); max-width: 1240px; margin: 0 auto; }
+nav.side { position: sticky; top: 49px; align-self: start; max-height: calc(100vh - 49px); overflow: auto; padding: 16px 12px 40px 16px;
+  border-right: 1px solid var(--line); font-size: 14px; line-height: 1.4; }
+nav.side input { width: 100%; font: inherit; color: var(--text); background: var(--surf); border: 1px solid var(--line); padding: 6px 8px; margin-bottom: 12px; }
+.toc, .toc ol { list-style: none; margin: 0; padding: 0; }
+.toc > li { margin: 0 0 4px; }
+.toc ol { display: none; margin: 2px 0 6px 12px; }
+.toc li.open > ol { display: block; }
+.toc a { display: block; color: var(--mid); text-decoration: none; padding: 2px 4px; }
+.toc a:hover { color: var(--bg); }
+.toc li.open > a, .toc a.here { color: var(--ink); }
+.toc li.group { margin: 16px 0 4px; padding: 0 4px; color: var(--dim); font: 14px/1.2 var(--pixel); }
+.toc li.group:first-child { margin-top: 0; }
+.results { list-style: none; margin: 0; padding: 0; }
+.results li { margin: 0 0 10px; }
+.results small { display: block; color: var(--dim); }
+.results mark { background: var(--ink); color: var(--bg); }
+main { padding: 8px 32px 80px; min-width: 0; max-width: 900px; }
+main li { margin: 0 0 10px; }
+main li > p { margin: 6px 0; }
+main li > strong:first-child { color: var(--ink); }
+main h1, main h2, main h3, main h4 { color: var(--ink); font-family: var(--pixel); font-weight: 400; line-height: 1.2; }
+main h1 { font-size: clamp(28px, 4vw, 44px); margin: 24px 0 12px; }
+main h2 { font-size: clamp(22px, 3vw, 32px); margin: 56px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+main h3 { font-size: 20px; margin: 36px 0 8px; }
+main h4 { font-size: 16px; margin: 24px 0 6px; }
+main img { max-width: 100%; height: auto; image-rendering: pixelated; }
+main p[align="center"] { text-align: center; }
+main p[align="center"] img { display: inline-block; margin: 4px; }
+main sub { color: var(--dim); font-size: 13px; }
+main .videos { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 12px 0 20px; }
+main .videos figure { margin: 0; }
+main .videos figure.on { grid-column: 1 / -1; }
+main .videos figcaption { color: var(--dim); font-size: 13px; margin-top: 4px; }
+main .videos .play { position: relative; display: block; line-height: 0; border: 1px solid var(--line); }
+main .videos .play:hover, main .videos .play:focus-visible { border-color: var(--ink); }
+main .videos .play:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+main .videos .play img { width: 100%; image-rendering: auto; }
+main .videos .play::before { content: ""; position: absolute; right: 4px; bottom: 4px; width: 36px; height: 24px; background: var(--bg); border: 1px solid var(--ink); }
+main .videos .play::after { content: ""; position: absolute; right: 16px; bottom: 10px; border-style: solid; border-width: 6px 0 6px 10px; border-color: transparent transparent transparent var(--ink); }
+main .videos iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--ink); }
+main table { border-collapse: collapse; display: block; overflow-x: auto; margin: 12px 0; font-size: 14px; }
+main th, main td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+main th { background: var(--surf); color: var(--ink); font-weight: 400; }
+main code { background: var(--surf); padding: 1px 4px; }
+main pre { background: var(--surf); padding: 12px; overflow-x: auto; }
+main pre code { padding: 0; }
+main blockquote { margin: 12px 0; padding: 8px 14px; border-left: 4px solid var(--ink); background: var(--surf); }
+main blockquote p { margin: 0; }
+main details { margin: 12px 0; padding: 6px 14px; border: 1px solid var(--line); }
+main details[open] { background: var(--surf); }
+main summary { cursor: pointer; color: var(--ink); }
+main hr { border: 0; border-top: 1px solid var(--line); margin: 32px 0; }
+main .downloads ul { list-style: none; margin: 16px 0; padding: 0; display: grid; gap: 10px; }
+main .downloads li { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; gap: 6px 16px; align-items: center;
+  margin: 0; padding: 12px 16px; border: 2px solid var(--line); }
+main .downloads li b { color: var(--ink); font: 18px/1.2 var(--pixel); font-weight: 400; }
+main .downloads li > span { color: var(--mid); font-size: 14px; }
+main .downloads .get { font: 16px/1 var(--pixel); padding: 8px 12px 6px; border: 2px solid var(--ink); text-decoration: none; white-space: nowrap; }
+main .downloads a.get { background: var(--ink); color: var(--bg); }
+main .downloads a.get:hover { background: var(--bg); color: var(--ink); }
+main .downloads .soon { color: var(--dim); border-color: var(--line); }
+main .downloads p { color: var(--mid); }
+.next { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); }
+@media (max-width: 900px) {
+  .layout { display: block; }
+  .contents { display: inline-block; }
+  nav.side { display: none; position: fixed; top: 49px; left: 0; right: 0; bottom: 0; max-height: none; z-index: 2; background: var(--bg); border: 0; }
+  body.toc-open nav.side { display: block; }
+  main { padding: 8px 16px 60px; }
+}
+@media (max-width: 560px) {
+  main .downloads li { grid-template-columns: minmax(0, 1fr) auto; }
+  main .downloads li > span:not(.get) { grid-column: 1 / -1; grid-row: 2; }
+}
+@media (max-width: 600px) {
+  header { gap: 6px; }
+  header .home { font-size: 18px; }
+  header .wide { display: none; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the text</a>
+<header>
+  <a class="home" href="../">TESSERA</a>
+  <a href="../start/" class="wide">START</a>
+  <a href="../manual/">MANUAL</a>
+  <a href="../plugin/" aria-current="page">PLUGIN</a>
+  <a class="wide" href="../manual/tessera-manual.pdf" download title="The whole manual as a PDF, to print or read offline">PDF</a>
+  <a class="wide" href="https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md">RECIPES</a>
+  <a class="wide" href="../webapp/sim/">SIMULATOR</a>
+  <button class="contents" id="contents" type="button" aria-expanded="false" aria-controls="side">CONTENTS</button>
+  <button class="theme" id="theme" type="button" aria-label="Light or dark page"></button>
+</header>
+<div class="layout">
+<nav class="side" id="side" aria-label="Contents">
+  <input id="search-q" type="search" placeholder="Search the plugin's guide" aria-label="Search the plugin's guide" autocomplete="off">
+  <p class="sr" id="found" aria-live="polite"></p>
+  <ol class="results" id="results" hidden></ol>
+  <ol class="toc"><li><a href="#download">Download</a></li><li><a href="#install">Install</a></li><li><a href="#first-sound">First sound</a></li><li><a href="#the-window">The window</a></li><li><a href="#playing-it-from-your-fm-1">Playing it from your FM-1</a></li><li><a href="#playing-with-the-daw">Playing with the DAW</a><ol><li><a href="#sections-and-banks-from-the-daw-program-change">Sections and banks from the DAW (Program Change)</a></li></ol></li><li><a href="#saving-and-project-files">Saving, and project files</a></li><li><a href="#tracks-1-to-4-and-5-to-8">Tracks 1 to 4, and 5 to 8</a></li><li><a href="#automation-the-parameters">Automation: the parameters</a></li><li><a href="#track-outputs-and-midi-out">Track outputs and MIDI out</a></li><li><a href="#several-tesseras-in-one-song">Several Tesseras in one song</a></li><li><a href="#sounds-only-the-plugin-has">Sounds only the plugin has</a></li><li><a href="#echoes-on-the-beat">Echoes on the beat</a></li><li><a href="#how-much-cpu-it-takes">How much CPU it takes</a></li><li><a href="#not-there-yet">Not there yet</a></li></ol>
+</nav>
+<main id="main" tabindex="-1">
+<h1 id="tessera-as-a-plugin">Tessera as a plugin</h1>
+<p>Tessera also runs inside a DAW. The same firmware the FM-1 plays is built as a <strong>CLAP</strong> instrument, a <strong>VST3</strong>
+instrument, an <strong>Audio Unit</strong> on macOS and a <strong>standalone app</strong>. Its window is the FM-1's panel: the same screen, buttons,
+knobs and keys, so everything in the <a href="../manual/">manual</a> works the same way here. This page covers only what is different
+in a DAW.</p>
+<h2 id="download">Download</h2>
+<div class="downloads"><ul><li><b>Windows</b><span>CLAP, VST3 and the standalone app</span><span class="get soon">COMING SOON</span></li><li><b>macOS</b><span>CLAP, VST3, Audio Unit and the standalone app</span><span class="get soon">COMING SOON</span></li><li><b>Linux</b><span>CLAP and VST3</span><span class="get soon">COMING SOON</span></li></ul><p>The plugin is still being tested. Its public beta opens once the larger window, EXPANDED, is in. Until then, <a href="https://github.com/Rastapopolix/tessera/blob/HEAD/webapp/sim/">try Tessera in your browser</a>: the same firmware on an on-screen FM-1. Free and open source, GPL-3.0. How to install: see <a href="#install">Install</a>.</p></div>
+<ul>
+<li><a href="#install">Install</a></li>
+<li><a href="#first-sound">First sound</a></li>
+<li><a href="#the-window">The window</a></li>
+<li><a href="#playing-it-from-your-fm-1">Playing it from your FM-1</a></li>
+<li><a href="#playing-with-the-daw">Playing with the DAW</a></li>
+<li><a href="#saving-and-project-files">Saving, and project files</a></li>
+<li><a href="#tracks-1-to-4-and-5-to-8">Tracks 1 to 4, and 5 to 8</a></li>
+<li><a href="#automation-the-parameters">Automation: the parameters</a></li>
+<li><a href="#track-outputs-and-midi-out">Track outputs and MIDI out</a></li>
+<li><a href="#several-tesseras-in-one-song">Several Tesseras in one song</a></li>
+<li><a href="#sounds-only-the-plugin-has">Sounds only the plugin has</a></li>
+<li><a href="#echoes-on-the-beat">Echoes on the beat</a></li>
+<li><a href="#how-much-cpu-it-takes">How much CPU it takes</a></li>
+<li><a href="#not-there-yet">Not there yet</a></li>
+</ul>
+<h2 id="install">Install</h2>
+<p>Copy the plugin where your DAW looks for plugins, then rescan in the DAW.</p>
+<p>Download the zip for your system (a <code>.tar.gz</code> on Linux) from the
+<a href="https://rastapopolix.github.io/tessera/plugin/#download">plugin's page</a> or the
+<a href="https://github.com/Rastapopolix/tessera/releases">releases</a>, where the betas are marked <em>Pre-release</em>. Each zip has an
+INSTALL text with these steps and the beta's notes.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>CLAP (<code>Tessera.clap</code>)</th>
+<th>VST3 (<code>Tessera.vst3</code>)</th>
+<th>Audio Unit (<code>Tessera.component</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Windows</td>
+<td><code>C:\Program Files\Common Files\CLAP\</code></td>
+<td><code>C:\Program Files\Common Files\VST3\</code></td>
+<td></td>
+</tr>
+<tr>
+<td>Linux</td>
+<td><code>~/.clap/</code></td>
+<td><code>~/.vst3/</code></td>
+<td></td>
+</tr>
+<tr>
+<td>macOS</td>
+<td><code>~/Library/Audio/Plug-Ins/CLAP/</code></td>
+<td><code>~/Library/Audio/Plug-Ins/VST3/</code></td>
+<td><code>~/Library/Audio/Plug-Ins/Components/</code></td>
+</tr>
+</tbody>
+</table>
+<p>Use CLAP if your DAW has it (Bitwig, Reaper, FL Studio and others): it is Tessera's own format, and VST3 and the Audio
+Unit are wrappers around it. Logic and GarageBand use the Audio Unit. The standalone app (Windows and macOS) needs no
+DAW: start it, pick an audio output, and it plays at once.</p>
+<p><strong>macOS:</strong> the beta isn't signed with an Apple Developer ID yet, so macOS calls it &quot;damaged&quot; or says it &quot;can't be
+verified&quot;. After copying, clear the download's quarantine once, in Terminal:</p>
+<pre><code>xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/CLAP/Tessera.clap ~/Library/Audio/Plug-Ins/VST3/Tessera.vst3 ~/Library/Audio/Plug-Ins/Components/Tessera.component
+</code></pre>
+<p>(and the same for <code>Tessera.app</code> where you put it). <strong>Windows:</strong> SmartScreen may warn about the unsigned <code>Tessera.exe</code>
+the first time: click <em>More info</em>, then <em>Run anyway</em>.</p>
+<h2 id="first-sound">First sound</h2>
+<p>A new Tessera opens with <strong>STILL TIDE</strong> loaded (and KOTO GARDEN in slot B). Press PLAY in the DAW and it plays. Play
+notes from a MIDI track or a keyboard routed to Tessera: they go to the selected track, as the FM-1's keys do, on
+any MIDI channel (GLO &gt; SYSTEM ROUT starts at SEL in the plugin). To play each track from its own DAW track instead,
+set ROUT to a channel range (CH1-8: channel 1 plays track 1, channel 2 track 2, and so on).</p>
+<h2 id="the-window">The window</h2>
+<p>The window shows the FM-1's panel, 1:1, in Tessera's own look or one of the FM-1's colours (see <strong>Shells</strong> below). Click the buttons and keys (drag across the keys to glide). Drag a knob up and down
+or left and right, or turn the mouse wheel over it.</p>
+<p><strong>The screen works with the mouse too.</strong> Hover over something you can use and it gets a thin outline, with its name
+and value shown large in a box under the screen:</p>
+<ul>
+<li><strong>A value</strong> (one of the four columns of a page, KNOB 1 to 4): turn the mouse wheel over it, or drag it up and down,
+as you would turn its knob. Double-click it to put it back to its default.</li>
+<li><strong>A list's row</strong> (SCL's Root, Scale, Quantize…, the MENU, a list that opens over a page): click to move there, turn
+the wheel to change that row's value (on SCL's Scale row the wheel steps through the scales), double-click to move
+there and press OK (Scale opens SCALES; a whole list takes the row you double-clicked).</li>
+<li><strong>OK, BACK, YES and NO</strong> on the screen: click them.</li>
+<li><strong>The sound browser and SCALES:</strong> the wheel over the left side turns KNOB 1 (the list, the scale family), over the
+right side KNOB 2 (the sound, the scale).</li>
+<li><strong>HOME:</strong> click a track's column to select it.</li>
+</ul>
+<p>The panel's own knobs and buttons still do everything they did. The mouse on the screen only turns those knobs and
+presses those keys for you, so a page behaves the same either way.</p>
+<p><strong>The computer keyboard</strong> plays it too, as in the web simulator (click the window first):</p>
+<ul>
+<li><strong>Z</strong> to <strong>'</strong> and <strong>Q</strong> to <strong>O</strong>: the keys.</li>
+<li><strong>1</strong> to <strong>=</strong>: the twelve buttons, in the panel's order.</li>
+<li><strong>[</strong> and <strong>]</strong>: OCT- and OCT+.</li>
+<li><strong>Up / Down</strong>: turn SELECT. <strong>Left / Right</strong>: turn ALGORITHM.</li>
+</ul>
+<p>Keys go by where they sit, not what they print, so any keyboard layout works. With Ctrl or Alt held, keys go to the
+DAW. Keys reach Tessera only while its window has focus; click back in the DAW and its own shortcuts work as usual.
+To leave every key to the DAW, set <strong>KEYS</strong> to OFF in Tessera's menu (it applies to every Tessera window).</p>
+<p><strong>Button combos with the mouse:</strong> right-click a button or key (Ctrl-click on a Mac) to latch it: it stays held, drawn
+as held, while you click the second one, so GLO + a button or SEL + a key work with one mouse. Right-click it again,
+click it, or press <strong>Esc</strong> to let go.</p>
+<p><strong>Shells:</strong> the window opens in Tessera's own look. Click the Tessera mark at the top left for its menu:</p>
+<ul>
+<li><strong>SHELL:</strong> Tessera's look, or one of the eight FM-1 colours. Each shell sets its own screen ink.</li>
+<li><strong>INK:</strong> the screen's ink, the same 13 choices as MENU &gt; COLOR (nine inks, then MOSAIC, SUNSET, OCEAN and NEON,
+which colour each track). Hover over a swatch to see its name.</li>
+<li><strong>MODE</strong> and <strong>SIZE:</strong> FM-1 at 100% for now; EXPANDED and the larger sizes are coming.</li>
+<li><strong>FM-1 USB:</strong> OFF or ON. With it on, an FM-1 on USB plays the plugin (see
+<a href="#playing-it-from-your-fm-1">Playing it from your FM-1</a>); the line under it says what the FM-1 is doing.</li>
+<li><strong>ABOUT:</strong> the plugin's version.</li>
+</ul>
+<p>Esc, or a click outside, closes the menu. In an FM-1 shell, the swatches under the keys pick the shell (Tessera's is
+the first) and the row labelled INK, between the buttons and the keys, picks the ink.</p>
+<p>Picking a shell sets that shell's ink; an ink you pick afterwards, there or in MENU &gt; COLOR, stays until you pick a
+shell again. The <strong>MIDI</strong> lamp beside the mark lights when notes come in from the DAW.</p>
+<p>Tessera remembers the last shell and the last ink for every new window, in any DAW. They are your settings, not the
+project's: a project opens in your shell and ink.</p>
+<p>The window moves only while the DAW is processing audio. If it looks frozen, check that the DAW's audio engine is on.</p>
+<h2 id="playing-it-from-your-fm-1">Playing it from your FM-1</h2>
+<p>An FM-1 running Tessera 3.5.1 or later can play the plugin from its own knobs, buttons and keys, as it can play the
+<a href="https://rastapopolix.github.io/tessera/webapp/sim/">web simulator</a>. Connect it by USB and turn on <strong>FM-1 USB</strong> (Tessera's
+menu, or the <strong>FM-1 USB</strong> button under the keys in an FM-1 shell). When the FM-1 answers, the menu says
+<strong>FM-1 CONNECTED</strong>.</p>
+<ul>
+<li><strong>Turn on SIM CONTROL</strong> on the FM-1 (its menu) so it plays only the plugin. Without it, the FM-1 plays its own
+sounds as well. FX and GLO pressed together turn SIM CONTROL off again.</li>
+<li><strong>Windows:</strong> only one program can use the FM-1's MIDI port at a time. Turn the FM-1 off in the DAW's MIDI
+settings, and close the editor if it's open in a browser. Otherwise the menu says <strong>PORT IN USE</strong>.</li>
+<li><strong>macOS:</strong> the DAW can keep the FM-1 on, but then its keys also reach whatever track the DAW sends them to. Turning
+it off in the DAW is simplest.</li>
+<li><strong>Several Tesseras:</strong> the FM-1 plays one of them at a time. Turning FM-1 USB on in a Tessera's window takes the FM-1
+for that one; the others say <strong>IN ANOTHER TESSERA</strong>. Turning it off turns it off for all of them.</li>
+<li><strong>Other messages:</strong> <strong>NO FM-1 FOUND</strong> means no FM-1 is plugged in, or its port has another name. <strong>UPDATE THE FM-1</strong>
+means it doesn't answer: it runs Tessera 3.5 or older, or other firmware.</li>
+</ul>
+<p>Tessera remembers FM-1 USB for every new Tessera, like the shell and the ink. The FM-1 has no 1-4 / 5-8 switch: use
+the window's to reach tracks 5 to 8.</p>
+<h2 id="playing-with-the-daw">Playing with the DAW</h2>
+<p>Tessera follows the DAW's transport:</p>
+<ul>
+<li><strong>PLAY</strong> starts every track where it would be if the song had played from the DAW's zero. Starting at bar 9 sounds
+like the song has been playing for eight bars.</li>
+<li><strong>The DAW's tempo</strong> drives Tessera's clock, tempo changes included. The BPM on the screen is the DAW's, rounded. A
+TEMPO mod has no effect while the DAW plays.</li>
+<li><strong>A loop or a jump</strong> in the DAW moves Tessera to that point. <strong>STOP</strong> stops it.</li>
+<li><strong>CLK</strong> stays INT in the plugin and <strong>CLOCK OUT</strong> stays off: the DAW keeps time, so Tessera neither follows nor sends
+a MIDI clock.</li>
+</ul>
+<h3 id="sections-and-banks-from-the-daw-program-change">Sections and banks from the DAW (Program Change)</h3>
+<p>A Program Change from a MIDI clip, on any channel, steers Tessera. It works the other way round from SECTION PC on
+MIDI OUT's sheet:</p>
+<table>
+<thead>
+<tr>
+<th>Program</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0, 1, 2</strong></td>
+<td>The CHAIN goes to section <strong>A, B or C</strong> at the next phrase line, whatever WANDER or the piece's plan would have picked. Then the FORM goes on from that letter's place. Sent while stopped, the next PLAY starts on it. Sending the letter already playing holds it for another phrase. It does nothing with FORM OFF or for a letter the FORM doesn't have.</td>
+</tr>
+<tr>
+<td><strong>8 .. 15</strong></td>
+<td>Every track goes to pattern bank <strong>1 .. 8</strong>, as the PATTERNS page does: each track switches when its pattern comes round, at once while stopped, not while a SONG runs.</td>
+</tr>
+</tbody>
+</table>
+<p>Other numbers do nothing. Nothing is saved: put the changes in a clip and the DAW sends them again each time it plays.
+To land on a phrase line, send the change during the phrase before it.</p>
+<h2 id="saving-and-project-files">Saving, and project files</h2>
+<p><strong>The DAW saves Tessera with your song.</strong> The saved state is the Tessera project, the same bytes SAVE &gt; PROJECT
+writes on the FM-1, plus the MASTER volume. Open the song again and every setting comes back as it was, each Tessera
+with its own project.</p>
+<p><strong>OPEN</strong> and <strong>SAVE</strong>, under the keys, work with files:</p>
+<ul>
+<li><strong>OPEN</strong> loads a <code>.tsp</code> project (from the editor, from the <code>demos/</code> folder, or saved by another Tessera) or an
+<strong>FM-1 backup</strong> (the <code>.json</code> from the backup page or the Hub). A backup's slots A to D go into the plugin's slots,
+then the music it was playing loads. On Windows and macOS you can also drop a file on the window.</li>
+<li><strong>SAVE</strong> writes the project as a <code>.tsp</code> under its name, ready for the FM-1's editor or another Tessera.</li>
+</ul>
+<p>A <code>.tsp</code> from the plugin opens on the FM-1 too. Tracks on the plugin-only sounds play a stand-in there (see
+<a href="#sounds-only-the-plugin-has">Sounds only the plugin has</a>).</p>
+<p>On Linux the file dialogs need <code>zenity</code> or <code>kdialog</code>.</p>
+<h2 id="tracks-1-to-4-and-5-to-8">Tracks 1 to 4, and 5 to 8</h2>
+<p>The plugin has eight tracks; the panel works on four at a time, as the FM-1's does. The <strong>1-4 / 5-8</strong> switch beside
+SAVE picks the bank: 1-4 selects T1, 5-8 selects T5 (<strong>Tab</strong> on the computer keyboard swaps them). The lit half is the
+bank of the track selected now, so it follows SELECT too. While a track of 5 to 8 is selected the screen's top line
+shows <strong>5-8</strong>, inverted, before the track dots.</p>
+<p>All eight tracks are saved: with the DAW song, and in a <code>.tsp</code> from SAVE (tracks 5 to 8 in a part of their own an
+FM-1 skips, so the FM-1 still opens the file as its four tracks).</p>
+<h2 id="automation-the-parameters">Automation: the parameters</h2>
+<p>Almost every project setting is a DAW parameter you can automate, about 1,700 in all:</p>
+<ul>
+<li><strong>MASTER</strong> and PERF's <strong>MACRO 1</strong> to <strong>MACRO 4</strong> come first.</li>
+<li><strong>Each track's</strong> settings, named like <code>T1 LEVEL</code> or <code>T3 TURING LENGTH</code>, grouped under <em>Track 1/Sound and sequence</em>
+and <em>Track 1/Generator</em>, and so on.</li>
+<li><strong>The song's</strong> settings, under <em>Song</em>.</li>
+</ul>
+<p>Values read as the FM-1 shows them (&quot;SAW&quot;, &quot;1/16&quot;, &quot;-6dB&quot;), and you can type them that way. ENGINE 1 to 8 mean what
+the track's engine makes of them, as on the FM-1, so their names change when the engine does.</p>
+<p>When a setting changes on the panel, by loading a project or by Tessera itself (a scale shared by every track, a
+generator moving), the DAW hears about it: MASTER and the MACROs at once, the rest within a fraction of a second.</p>
+<p>Not parameters: the device's own settings (A4, the MIDI routing), and the MOD cords. Make those on the panel; the
+DAW project saves them: the cords in the Tessera project, and ROUT, DRUM's channel, NOTES OUT and TUNE beside it
+(they stay out of the <code>.tsp</code>, as on the FM-1, where they belong to the device and not to a project).</p>
+<h2 id="track-outputs-and-midi-out">Track outputs and MIDI out</h2>
+<ul>
+<li><strong>Track outputs:</strong> besides the main stereo mix, Tessera has eight more outputs, TRACK 1 to TRACK 8, each track on
+its own, as the FM-1's USB stems are: after the track's level, before pan and the bus effects. Route them to their
+own mixer channels in the DAW to process each track apart.</li>
+<li><strong>MIDI out:</strong> every track's notes, each on its own channel (GLO &gt; MIDI OUT; by default channels 1 to 8, whatever
+ROUT is set to, so the DAW's routing holds), so Tessera's generators can play other instruments. NOTES OUT starts
+at ALL in the plugin (the generators' notes too). MENU can set it to KEYS or OFF. Only notes go out (no clock).
+When the DAW stops, bypasses or restarts Tessera, every note it left on gets its note-off. Not every DAW takes MIDI
+from an instrument: Bitwig and Reaper do, Ableton Live does not.</li>
+</ul>
+<h2 id="several-tesseras-in-one-song">Several Tesseras in one song</h2>
+<p>You can use up to <strong>8 Tesseras</strong> in one DAW song. Each is wholly its own: its project, its transport, its window and
+its parameters. A ninth won't open. Each new Tessera starts from STILL TIDE.</p>
+<h2 id="sounds-only-the-plugin-has">Sounds only the plugin has</h2>
+<p>The plugin has room for engines the FM-1 can't fit:</p>
+<ul>
+<li><strong>SID</strong>: a whole MOS 6581 or 8580 chip per note, with 32 presets.</li>
+<li><strong>DRUM: SID KIT</strong> and <strong>SID DIGI</strong>: drums from one SID chip.</li>
+<li><strong>MACRO</strong>: a macro-oscillator with many synthesis models.</li>
+<li><strong>PHASE</strong>: phase distortion in the manner of Casio's CZ-1: two lines of bent-phase waves (saw, square, pulse,
+double sine, saw-pulse and three resonant ones), mixed or ring-modulated, with 33 presets of its own (brass, pads,
+basses, keys, bells, sweeps, ring sounds; not the CZ-1's original tones). EDIT 2's EG at SPLIT gives
+DCW 1, DCW 2, DCA 2 and pitch their own envelopes (5 more pages).</li>
+</ul>
+<p>The Daisy build (Andamento) has them too. On the FM-1, a SID, MACRO or PHASE track plays FM6's INIT sound instead, and
+a SID kit plays the 909, so a project still opens and plays there.</p>
+<h2 id="echoes-on-the-beat">Echoes on the beat</h2>
+<p>FX's <strong>SYNC ECHO</strong> repeats on a note value (1/32 to 1/1, triplets and dotted) at the DAW's tempo. The plugin's echo
+holds about 3 s, so a 1/2 or a 1/1 rings as set; on the FM-1 it holds 371 ms and a longer value halves until it fits.</p>
+<h2 id="how-much-cpu-it-takes">How much CPU it takes</h2>
+<p>On average, one Tessera playing a project takes about 2 % of one core of a 2.1 GHz desktop processor, at 48 kHz.
+Eight of them on one core take about 20 %, and less when the DAW spreads them over several cores. Very small audio
+buffers (64 samples) leave less room for the occasional slower block. If you hear clicks with several Tesseras, raise
+the buffer to 256.</p>
+<p>There's no shared voice budget as on the FM-1, where all the tracks share 16 points and a busy project steals notes:
+every track plays as many voices as its engine has (FM6 16, most engines 8). All eight tracks of 16 FM6 voices
+sounding at once take about 18 % of a core.</p>
+<h2 id="not-there-yet">Not there yet</h2>
+<ul>
+<li><strong>One window size</strong>, the FM-1's. A larger, wider window is planned.</li>
+<li><strong>No presets in the DAW's browser</strong> yet: use OPEN, or the DAW's own way of saving a plugin's state.</li>
+<li><strong>No standalone app on Linux</strong> yet.</li>
+<li><strong>Not signed</strong> on macOS or Windows yet (see <a href="#install">Install</a>).</li>
+</ul>
+
+<p class="next">Everything else, the same in the plugin as on the FM-1: the <a href="../manual/">manual</a>. New to Tessera? Start with <a href="../start/">Getting started</a>.</p>
+</main>
+</div>
+<script>/* the contents: the chapter on screen opened and marked; on a narrow screen, CONTENTS shows them */
+(function () {
+  var links = [].slice.call(document.querySelectorAll(".toc a")), byId = {};
+  links.forEach(function (a) { byId[a.getAttribute("href").slice(1)] = a; });
+  var heads = [].slice.call(document.querySelectorAll("main h2[id], main h3[id]")).filter(function (h) { return byId[h.id]; });
+  function mark() {
+    var cur = null;
+    for (var i = 0; i < heads.length; i++) { if (heads[i].getBoundingClientRect().top < 90) cur = heads[i]; else break; }
+    links.forEach(function (a) { a.classList.remove("here"); a.parentNode.classList.remove("open"); });
+    if (!cur) return;
+    var a = byId[cur.id]; a.classList.add("here");
+    var li = a.parentNode; while (li && li.tagName === "LI") { li.classList.add("open"); li = li.parentNode.parentNode; }
+  }
+  var busy = false;
+  window.addEventListener("scroll", function () { if (!busy) { busy = true; requestAnimationFrame(function () { busy = false; mark(); }); } });
+  mark();
+  var b = document.getElementById("contents");
+  b.addEventListener("click", function () { var o = document.body.classList.toggle("toc-open"); b.setAttribute("aria-expanded", o); });
+  document.getElementById("side").addEventListener("click", function (e) {
+    if (e.target.tagName === "A") { document.body.classList.remove("toc-open"); b.setAttribute("aria-expanded", "false"); }
+  });
+})();
+/* a table or code block wider than the page scrolls sideways: it then takes the keyboard focus, so the arrow keys
+   scroll it */
+(function () {
+  var boxes = [].slice.call(document.querySelectorAll("main table, main pre"));
+  function fit() {
+    boxes.forEach(function (b) { if (b.scrollWidth > b.clientWidth + 1) b.tabIndex = 0; else b.removeAttribute("tabindex"); });
+  }
+  fit(); window.addEventListener("resize", fit);
+})();
+/* the search: every section's text (from its heading to the next), the matching ones listed with a line of each */
+(function () {
+  var q = document.getElementById("search-q"), out = document.getElementById("results"), found = document.getElementById("found"), toc = document.querySelector(".toc"), secs = [], cur = null;
+  [].forEach.call(document.getElementById("main").children, function (el) {
+    if (/^H[1-4]$/.test(el.tagName) && el.id) { cur = { id: el.id, title: el.textContent, text: "" }; secs.push(cur); }
+    else if (cur) cur.text += " " + el.textContent;
+  });
+  function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  q.addEventListener("input", function () {
+    var w = q.value.trim().toLowerCase();
+    if (w.length < 2) { out.hidden = true; toc.hidden = false; found.textContent = ""; return; }
+    var html = "", n = 0;
+    secs.forEach(function (s) {
+      if (n >= 40) return;
+      var t = s.text.replace(/\s+/g, " "), i = t.toLowerCase().indexOf(w), inTitle = s.title.toLowerCase().indexOf(w) >= 0;
+      if (i < 0 && !inTitle) return;
+      n++;
+      var line = i < 0 ? "" : esc(t.slice(Math.max(0, i - 40), i)) + "<mark>" + esc(t.substr(i, w.length)) + "</mark>" + esc(t.substr(i + w.length, 60));
+      html += '<li><a href="#' + s.id + '">' + esc(s.title) + "</a>" + (line ? "<small>&hellip;" + line + "&hellip;</small>" : "") + "</li>";
+    });
+    out.innerHTML = html || "<li><small>Nothing found.</small></li>";
+    found.textContent = n ? n + (n >= 40 ? "+" : "") + (n === 1 ? " section found" : " sections found") : "Nothing found";
+    out.hidden = false; toc.hidden = true;
+  });
+  q.addEventListener("keydown", function (e) { if (e.key === "Escape") { q.value = ""; q.dispatchEvent(new Event("input")); } });
+})();
+/* the guided clips: a thumbnail (a link to YouTube without script) becomes the player when played; nothing is
+   fetched from YouTube before that, and the player takes the focus */
+(function () {
+  [].forEach.call(document.querySelectorAll("main .videos .play"), function (a) {
+    a.addEventListener("click", function (e) {
+      if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+      e.preventDefault();
+      var f = document.createElement("iframe"), fig = a.parentNode;
+      f.src = "https://www.youtube-nocookie.com/embed/" + a.dataset.video + "?autoplay=1&rel=0";
+      f.title = a.getAttribute("aria-label").replace("Play the video: ", "Video: ");
+      f.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+      f.allowFullscreen = true;
+      fig.className = "on";
+      fig.replaceChild(f, a);
+      f.focus();
+    });
+  });
+})();
+/* LIGHT / DARK: names the other look; the choice is stored (tessera-theme), as on the project page */
+(function () {
+  var b = document.getElementById("theme"), r = document.documentElement;
+  function light() { return r.dataset.theme === "light"; }
+  function show() { b.textContent = light() ? "DARK" : "LIGHT"; }
+  b.addEventListener("click", function () {
+    r.dataset.theme = light() ? "dark" : "light";
+    try { localStorage.setItem("tessera-theme", r.dataset.theme); } catch (e) {}
+    show();
+  });
+  show();
+})();
+</script>
+</body>
+</html>
