@@ -2085,9 +2085,9 @@ function makeMockDevice(opt = {}) {
     D("DEG", F.INT, 1, 12, 1));                      /* 83: QNT MPC, the degree of pad H02 */
   TP.push(...["KICK","SNARE","CLAP","HATCL","HATOP","TOM","RIM","BELL"].map(n=>D(n,F.PCT,0,127,127)));
   TP.push(E("SYNC", ["OFF","4BAR","2BAR","1/1","1/2","1/4","1/8","8T","1/16","16T","1/32","8BAR","16BAR","32BAR","64BAR"],0), E("TRIG",["NOTE","FREE"],0), E("POL",["BI","UNI"],0), D("SPRD",F.PCT,0,127,0));
-  for(let slot=0;slot<3;slot++)TP.push(E("FX", ["OFF","PHASER","WIDTH","FORMANT","TAPE","SPIT","ECHO","ROOM","REVERB","CHORUS","FILTER","DRIVE"],0),D("MIX",F.PCT,0,127,0),D("RATE",F.LFOHZ,0,127,60),D("CHAR",F.PCT,0,127,64));
+  for(let slot=0;slot<3;slot++)TP.push(E("FX", ["OFF","PHASER","WIDTH","FORMANT","TAPE","SPIT","ECHO","ROOM","REVERB","CHORUS","FILTER","DRIVE","SYNC ECHO"],0),D("MIX",F.PCT,0,127,0),D("RATE",F.LFOHZ,0,127,60),D("CHAR",F.PCT,0,127,64));
   TP.push(D("SEND",F.PCT,0,127,0),D("SEND 2",F.PCT,0,127,0),D("SEND 3",F.PCT,0,127,0));
-  for(let slot=0;slot<3;slot++)GP.push(E("TYPE", ["OFF","PHASER","WIDTH","FORMANT","TAPE","SPIT","ECHO","ROOM","REVERB","CHORUS","FILTER","DRIVE"],0),D("MIX",F.PCT,0,127,127),D("RATE",F.LFOHZ,0,127,60),D("CHAR",F.PCT,0,127,64));
+  for(let slot=0;slot<3;slot++)GP.push(E("TYPE", ["OFF","PHASER","WIDTH","FORMANT","TAPE","SPIT","ECHO","ROOM","REVERB","CHORUS","FILTER","DRIVE","SYNC ECHO"],0),D("MIX",F.PCT,0,127,127),D("RATE",F.LFOHZ,0,127,60),D("CHAR",F.PCT,0,127,64));
   GP.push(D("RETURN",F.PCT,0,127,100),E("MODE",["CHAIN","SPLIT"],0),D("BUDGET",F.INT,8,32,16,null,"pts"));
   const P_COUNT = 119, G_COUNT = 42, NSTEP = 64, P_E0 = 111, G_ENGSEL = 20, P_RESERVED45 = 45;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -5700,7 +5700,7 @@ function visible(d) { return d && d.max > d.min && !!d.label && d.label !== "-";
    firmware's words file (the screen reader's, firmware/words.tsv: web/make_site.py names the file here; without it,
    as when the page is opened from the repository, the labels stay as they are) and EDITOR_WORDS below. A slider
    also says its value as the page shows it (aria-valuetext: "-4.0 dB", not "80"). */
-const WORDS_FILE = "de23bfb129.json";
+const WORDS_FILE = "3d172855b7.json";
 const EDITOR_WORDS = [["R#", "rate #"], ["L#", "level #"], ["PR#", "pitch rate #"], ["PL#", "pitch level #"],
   ["BP", "break point"], ["LD", "left depth"], ["RD", "right depth"], ["LC", "left curve"], ["RC", "right curve"],
   ["RS", "rate scaling"], ["AMS", "amp mod sensitivity"], ["KVS", "key velocity sensitivity"], ["OL", "output level"],
